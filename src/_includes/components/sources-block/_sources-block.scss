@@ -1,0 +1,10 @@
+// 參考來源區塊的外觀來自 .block + .default-table + ui/accordion（見同資料夾 html 檔頭）；
+// 本檔只擁有一個本元件自有的狀態：被答案內文的引用標記 [[N]] 點到的那一列。
+//
+// 為什麼狀態放這裡而不是 ui/citation-ref：被套用的元素是本元件的 <tr>，
+// class 的主人就該是本元件（§4 一名一主：不去別人的檔案裡改別人的 DOM）。
+.sources-block {
+    tr.is-cited {
+        background-color: var(--brand-tint);
+    }
+}

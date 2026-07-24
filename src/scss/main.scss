@@ -82,8 +82,12 @@
 @use "../_includes/ui/filter-fields/filter-fields";
 @use "../_includes/ui/prompt-card/prompt-card";
 @use "../_includes/ui/ab-test-block/ab-test-block";
-// sources-block、qa-detail-info：真實 scss 無專屬 class 規則（純語意/JS wrapper，視覺全由 block/default-table/accordion/form-table 提供），
+// qa-detail-info：真實 scss 無專屬 class 規則（純語意/JS wrapper，視覺全由 block/default-table/accordion/form-table 提供），
 // 無 scss 檔可搬，故不新增 @use（同 disclaimer-modal 先例）
+// sources-block 原屬同類，後因引用標記加入而有了一個自有狀態（.is-cited，被 [[N]] 點到的那一列）
+@use "../_includes/components/sources-block/sources-block";
+// 引用標記：答案內文的 [[N]] 上標小徽章（點擊跳到參考來源第 N 筆）
+@use "../_includes/ui/citation-ref/citation-ref";
 
 // 元件庫展示頁（component.html）專屬版型/說明樣式，放在最後避免與一般頁面規則衝突
 @use "guideline-var"; // showcase 頁專屬色盤（--gl-*，不進 _var）

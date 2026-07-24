@@ -386,6 +386,7 @@
   "qa.backendQa": "Backend Q&A",
   "qa.basicConversationInfo": "Basic conversation info",
   "qa.chatroomId": "Chatroom ID",
+  "qa.citationSourcePrefix": "Source",
   "qa.conversationDate": "Conversation date",
   "qa.conversationId": "Conversation ID",
   "qa.conversationTime": "Conversation time",

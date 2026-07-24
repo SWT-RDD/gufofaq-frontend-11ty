@@ -1,0 +1,39 @@
+// 引用標記（答案內文中的 [[N]]）：把來源編號變成可點的上標小徽章，點了跳到「參考來源」的第 N 筆。
+// markup（互動見同資料夾 citation-ref.js）：
+//   <button type="button" class="citation-ref js-citation" data-citation-no="1">
+//     <span class="sr-only" data-i18n="qa.citationSourcePrefix">來源</span>1</button>
+// 可及名稱＝「來源 1」：前綴是 chrome（可翻、sr-only），數字是資料（不翻、就是看得見的那個字）。
+// 為什麼是 <button> 而不是 <sup>/<span>：它是互動元素（點擊會捲動並展開來源列），
+// 用非互動標籤等於鍵盤使用者按不到。上標視覺由 vertical-align/font-size 做，不靠 <sup>。
+//
+// 真值來源：chatbot 生成的答案內文帶 [[N]]（agent 與傳統兩模式同一慣例），
+// N ＝「參考來源」表的第 N 筆（1-based）。React 端把文字節點裡的 [[N]] 換成本元件的 markup。
+.citation-ref {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.25rem;
+    height: 1.25rem;
+    padding: 0 0.25rem;
+    margin: 0 0.125rem;
+    // 邊框用填充角色的 --brand（不是 --brand-text）：後者是為「疊在表面上的文字」調的對比，
+    // 拿去當 background/border 會違反 §4 的角色分工（測試會擋）。
+    border: 1px solid var(--brand);
+    border-radius: 999px;
+    background-color: var(--brand-tint);
+    color: var(--brand-text);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    line-height: 1;
+    // 上標定位：跟著行高走，不用 <sup> 以免影響行距
+    vertical-align: 0.35em;
+    cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+
+    &:hover,
+    &:focus-visible {
+        background-color: var(--brand);
+        border-color: var(--brand);
+        color: var(--on-accent);
+    }
+}
