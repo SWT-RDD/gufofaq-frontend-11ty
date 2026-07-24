@@ -54,6 +54,39 @@
     .step-node-label {
         color: var(--text);
         font-weight: 600;
+
+        // 巢狀子步驟（skill 的 scoped 子迴圈）：以縮排 + 折線前綴表達層級，
+        // 讓「這一站是誰的子步驟」一眼可辨。層級由 depth 推導，最多兩層可見縮排。
+        &.is-nested {
+            font-weight: 500;
+
+            &::before {
+                content: "└";
+                margin-right: 6px;
+                color: var(--text-muted);
+            }
+        }
+
+        &.is-depth-1 { padding-left: 16px; }
+        &.is-depth-2 { padding-left: 32px; }
+        &.is-depth-3 { padding-left: 48px; }
+
+        // skill 呼叫本身：與正典管線的節點區分（它是租戶自訂的能力包，不是管線的一站）。
+        &.is-skill {
+            color: var(--brand-ink);
+        }
+    }
+
+    .step-node-version {
+        color: var(--text-muted);
+        font-size: 0.75rem;
+        margin-left: 6px;
+    }
+
+    .step-node-error {
+        // 文字色用 --danger-text 而非 --danger：後者是填充族（為襯白字壓深），
+        // 當文字色在深色模式讀不到（§4，guideline.test 的 COLOR_ROLES 守衛會擋）。
+        color: var(--danger-text);
     }
 
     .step-node-time,

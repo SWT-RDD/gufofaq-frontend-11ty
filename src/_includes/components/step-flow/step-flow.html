@@ -12,7 +12,12 @@
    每節點（摘要列＋隱藏詳細列）以 {% for %} 內嵌渲染（GUIDELINE §9 陷阱：元件內部的 for 不可再巢狀
      include 子元件，會靜默渲染成空白）。真值由 React 端串流事件驅動（lib/sse steps/toolActivity/
      thinkingByNode/summary + lib/stepFlow computeFlow）；此處為靜態示範。
-   參數：stepFlowNodes（選填，[{ label, state, time, tools, params, result, verdict, thinking }]）＋
+   巢狀（skill）：租戶自訂 skill 被 agent 呼叫時會跑一個 scoped 子 agent 迴圈，其子步驟由 chatbot
+     以 parent/skill_* 欄掛成巢狀節點。此處以 node.depth（0＝正典管線、1＋＝子步驟）做縮排，
+     skill 節點另有 skill/version/iterations/error 明細列——後端送什麼，這裡就要看得見；
+     刻意**不**收工具參數與結果原文（後端也不送，那是洩漏面）。
+   參數：stepFlowNodes（選填，[{ label, state, time, depth, skill, version, iterations, error,
+     tools, params, result, verdict, thinking }]）＋
      stepFlowSummary（選填，{ tokens, latency, ttft, results, model }）——使用頁換對話主題時「兩個一起覆寫」，
      否則摘要（檢索筆數/模型）會與節點對不上（§6 自洽）；內部變數用元件專屬名 stepFlowNodeRows／stepFlowSummaryData。
    進度「目前 X / N」全由 stepFlowNodeRows 推導（X＝已執行到的最後一步序號，N＝節點數），不烤字面量——
@@ -22,6 +27,10 @@
     { label: "初始化對話", state: "completed", time: "12ms" },
     { label: "Agent 推理", state: "completed", time: "340ms", thinking: "先判斷是否需要檢索；問題涉及具體規定，決定呼叫知識庫搜尋。" },
     { label: "檢索知識庫", state: "completed", time: "1.2s", tools: "search_knowledge_base", params: "{ query: '新住民 結婚 應備文件' }", result: "命中 8 筆片段（相似度 0.79–0.92），注入後續生成脈絡。" },
+    { label: "skill：refund-flow", state: "completed", time: "1.8s", depth: 1, skill: "refund-flow", version: "v2", iterations: "2", tools: "lookup-order, calculate" },
+    { label: "Agent 推理", state: "completed", time: "260ms", depth: 2, thinking: "先取訂單金額，再算折扣。" },
+    { label: "呼叫工具", state: "completed", time: "90ms", depth: 2, tools: "calculate" },
+    { label: "skill：lookup-order", state: "failed", time: "120ms", depth: 2, skill: "lookup-order", version: "v1", iterations: "1", error: "RuntimeError: 訂單服務逾時" },
     { label: "可回答性判定", state: "completed", time: "210ms", verdict: "generate（素材足以回答）" },
     { label: "生成答案", state: "running", time: "" },
     { label: "誠實查無", state: "skipped", time: "" },
@@ -72,26 +81,46 @@
                 {% for node in stepFlowNodeRows %}
                 <tr class="step-node is-{{ node.state }}">
                     <td class="step-node-dot-cell"><span class="step-node-dot"></span></td>
-                    <td><span class="step-node-label">{{ node.label }}</span></td>
+                    {# 縮排以 depth 推導（0＝正典管線節點，1＋＝skill 子步驟）；skill 呼叫本身另加
+                         標記 class 供樣式區分「這一站是租戶自訂能力包」而非正典管線的一站。 #}
+                    <td><span class="step-node-label{% if node.depth %} is-nested is-depth-{{ node.depth }}{% endif %}{% if node.skill %} is-skill{% endif %}">{{ node.label }}</span></td>
                     <td class="step-node-time">{{ node.time }}</td>
                     <td class="step-node-state">
                         {% if node.state == "completed" %}<span data-i18n="agent.stepCompleted">已完成</span>{% elif node.state == "running" %}<span data-i18n="agent.stepRunning">進行中</span>{% elif node.state == "skipped" %}<span data-i18n="agent.stepSkipped">略過</span>{% elif node.state == "failed" %}<span data-i18n="platform.resultFail">失敗</span>{% else %}<span data-i18n="agent.stepPending">待處理</span>{% endif %}
                     </td>
                     <td>
-                        {% if node.tools or node.params or node.result or node.verdict or node.thinking %}
+                        {% if node.tools or node.params or node.result or node.verdict or node.thinking or node.skill or node.error %}
                         <button type="button" class="button accordion-btn" aria-expanded="false" title="展開表格" data-i18n-title="common.expandRow">
                             <span class="sr-only" data-i18n="common.expandRow">展開表格</span>
                         </button>
                         {% endif %}
                     </td>
                 </tr>
-                {% if node.tools or node.params or node.result or node.verdict or node.thinking %}
+                {% if node.tools or node.params or node.result or node.verdict or node.thinking or node.skill or node.error %}
                 <tr class="detail-row">
                     <td colspan="5" class="detail-cell">
                         <div class="accordion-content">
                             {# tr 一律包 tbody（§4：table 直下放 tr 會 SSR/hydration mismatch） #}
                             <table class="accordion-table">
                                 <tbody>
+                                    {% if node.skill %}
+                                    <tr>
+                                        <th data-i18n="agent.skill">Skill</th>
+                                        <td><code class="step-flow-code">{{ node.skill }}</code>{% if node.version %} <span class="step-node-version">{{ node.version }}</span>{% endif %}</td>
+                                    </tr>
+                                    {% endif %}
+                                    {% if node.iterations %}
+                                    <tr>
+                                        <th data-i18n="agent.iterations">迭代次數</th>
+                                        <td>{{ node.iterations }}</td>
+                                    </tr>
+                                    {% endif %}
+                                    {% if node.error %}
+                                    <tr>
+                                        <th data-i18n="agent.errorReason">失敗原因</th>
+                                        <td class="step-node-error">{{ node.error }}</td>
+                                    </tr>
+                                    {% endif %}
                                     {% if node.tools %}
                                     <tr>
                                         <th data-i18n="agent.tool">工具</th>
