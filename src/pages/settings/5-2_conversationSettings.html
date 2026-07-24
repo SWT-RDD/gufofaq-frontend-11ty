@@ -216,8 +216,9 @@ permalink: 5-2_conversationSettings.html
 
 {# ═══ 子頁籤 2：生成設定 ═══
      全部欄位為值載體 → 掛 hook class js-<noun>、不掛 data-toast（§5）；統一由底部「儲存對話設定」直送。
-     模式適用性以 gufofaq-saas docs/mode-matrix.md 實測矩陣為準：僅某模式生效的欄位加 text-gray 標示
-     （search_total_number、use_knowledge_mode 為傳統搜尋專用）。 #}
+     模式適用性以 gufofaq-saas docs/mode-matrix.md 實測矩陣為準（search_total_number、use_knowledge_mode
+     為傳統搜尋專用）。**不適用的欄位不渲染**：切版是靜態稿故常駐，React 依 modeMatrix 決定渲染與否。
+     不用「顯示但標示不生效」——那只是把問題描述出來，使用者照樣填得下去、存得起來，永遠不會被執行。 #}
 <div class="tab-content" id="panelGeneration" style="display: none;">
     <div class="block">
         <div class="flex-row flex-wrap gap-16">
@@ -240,7 +241,6 @@ permalink: 5-2_conversationSettings.html
                 <div class="label"><label for="genSearchTotal" class="control-label" data-i18n="settings.searchTotalNumber">取用資料筆數</label></div>
                 <div class="field">
                     <input type="text" id="genSearchTotal" class="form-control js-search-total-number" value="16" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter">
-                    <span class="text-gray" data-i18n="settings.traditionalModeOnly">僅傳統搜尋模式生效</span>
                 </div>
             </div>
             <div class="form-group col-6-md col-12-sm">
@@ -259,7 +259,6 @@ permalink: 5-2_conversationSettings.html
                         <option value="assist" data-i18n="settings.knowledgeModeAssist">輔助參考</option>
                         <option value="strict" selected data-i18n="settings.knowledgeModeStrict">嚴格限定</option>
                     </select>
-                    <span class="text-gray" data-i18n="settings.traditionalModeOnly">僅傳統搜尋模式生效</span>
                 </div>
             </div>
             <div class="form-group col-6-md col-12-sm">
@@ -319,7 +318,8 @@ permalink: 5-2_conversationSettings.html
      產品系統提示詞（含版本史）沿用 components/prompt-edit + 版本卡（5-4-1 結構，另有 /prompts 版本端點）；
      機器人身分／Agent／回應／意圖判斷／聊天室提示詞為值載體、隨底部「儲存對話設定」直送。
      模式適用性以 gufofaq-saas docs/mode-matrix.md 實測矩陣為準：agent/respond 僅 Agent 模式生效、
-     intension 僅傳統搜尋模式生效（agent 無意圖路由階段）、role/chatroom 兩模式皆用——「進階提示詞」
+     intension 僅傳統搜尋模式生效（agent 無意圖路由階段）、role/chatroom 兩模式皆用；**不適用者不渲染**
+     （見「生成設定」子頁籤檔頭註的理由）——「進階提示詞」
      區塊即據此取代 product 的「Agent 提示詞」段（settings.agentPrompts，其整段「僅 Agent」暗示與
      矩陣相反），待回流 product。 #}
 <div class="tab-content" id="panelPrompts" style="display: none;">
@@ -420,7 +420,7 @@ permalink: 5-2_conversationSettings.html
         {% endfor %}
     </div>
 
-    {# 各欄模式適用性見本子頁籤檔頭註（依 docs/mode-matrix.md 實測）：role/chatroom 兩模式皆用、不標。 #}
+    {# 各欄模式適用性見本子頁籤檔頭註（依 docs/mode-matrix.md 實測）：role/chatroom 兩模式皆用、恆顯示。 #}
     <div class="block flex-row column gap-16">
         <div class="text-md text-bold" data-i18n="settings.advancedPrompts">進階提示詞</div>
         <div class="form-group">
@@ -430,21 +430,18 @@ permalink: 5-2_conversationSettings.html
         <div class="form-group">
             <div class="label">
                 <label for="agentSystemPromptInput" class="control-label" data-i18n="settings.agentSystemPrompt">Agent 系統提示詞</label>
-                <span class="text-gray" data-i18n="settings.agentModeOnly">僅 Agent 模式生效</span>
             </div>
             <div class="field"><textarea id="agentSystemPromptInput" class="form-control js-agent-system-prompt"></textarea></div>
         </div>
         <div class="form-group">
             <div class="label">
                 <label for="respondSystemPromptInput" class="control-label" data-i18n="settings.respondSystemPrompt">回應提示詞</label>
-                <span class="text-gray" data-i18n="settings.agentModeOnly">僅 Agent 模式生效</span>
             </div>
             <div class="field"><textarea id="respondSystemPromptInput" class="form-control js-respond-system-prompt"></textarea></div>
         </div>
         <div class="form-group">
             <div class="label">
                 <label for="intensionSystemPromptInput" class="control-label" data-i18n="settings.intensionSystemPrompt">意圖判斷提示詞</label>
-                <span class="text-gray" data-i18n="settings.traditionalModeOnly">僅傳統搜尋模式生效</span>
             </div>
             <div class="field"><textarea id="intensionSystemPromptInput" class="form-control js-intension-system-prompt"></textarea></div>
         </div>
@@ -691,7 +688,6 @@ permalink: 5-2_conversationSettings.html
      （round28 驗 saas apps/web/lib/i18n/messages.zh.json）。 #}
 <div class="tab-content" id="panelAgentTools" style="display: none;">
     <p class="text-gray" data-i18n="settings.agentToolsIntro">Agent 模式下可呼叫的工具：內建工具、綁定的術語表、以及平台已啟用的 MCP Server。</p>
-    <div class="text-gray mb-8" data-i18n="settings.agentModeOnly">僅 Agent 模式生效</div>
     {% set builtinTools = ["get_current_datetime", "date_tool", "calculate", "convert_units", "date_calculate", "lunar", "search_knowledge_base", "search_qa", "get_document", "summarize_document", "list_available_datasets", "ask_clarifying_question", "analyze_user_intent"] %}
     <div class="block mb-16 flex-row column gap-8">
         <div class="text-md text-bold" id="builtinToolsLabel" data-i18n="settings.builtinTools">內建工具</div>
@@ -786,15 +782,11 @@ permalink: 5-2_conversationSettings.html
         </div>
     </div>
 
-    {# 可回答性 grounding 閘（agent 模式）：收斂到的素材不足以回答時誠實查無、不硬生成無依據的答案。
+    {# 可回答性 grounding 閘：收斂/檢索到的素材不足以回答時誠實查無、不硬生成無依據的答案。
        mode(off/on)＋criteria 是租戶旋鈕，隨底部「儲存對話設定」直送 settings PUT；掛 hook class
        js-answerability-*（全站 scss 不引用），React 接手送 API。與 QA 直答同屬「可回答性」決策、故同頁。 #}
     <div class="block flex-row column gap-16 mt-16">
-        <div class="text-gray" data-i18n="settings.answerabilityIntro">Agent 模式：收斂到的資料不足以回答時，誠實告知查無、不硬生成無依據的答案。</div>
-        {# 模式適用性標示（同本頁「取用資料筆數」等欄的既有手法）：本閘只在 Agent 模式生效，
-           傳統模式開了也不會執行。切版常駐 text-gray，React 於傳統模式轉 text-red 明示
-           「設了也不生效」——否則租戶在傳統模式勾了它、存檔成功、卻永遠不會被執行，零信號。 #}
-        <span class="text-gray js-answerability-mode-only" data-i18n="settings.agentModeOnly">僅 Agent 模式生效</span>
+        <div class="text-gray" data-i18n="settings.answerabilityIntro">收斂或檢索到的資料不足以回答時，誠實告知查無、不硬生成無依據的答案。</div>
         <label class="form-checkbox">
             <input type="checkbox" class="js-answerability-mode">
             <span data-i18n="settings.answerabilityEnable">啟用可回答性閘（素材不足即誠實查無）</span>

@@ -89,26 +89,25 @@ permalink: 2-2-3_abTest.html
                     <input type="text" id="abSampleSelected-{{ ab.side }}" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control sample-count w100 js-sample-selected" value="8">
                 </div>
             </div>
-            {# 取用資料筆數（search_total_number）：僅傳統搜尋模式生效（modeMatrix traditional）；切版常駐＋標示，
-                 React 於 agent 模式停用並紅字說明。 #}
+            {# 取用資料筆數（search_total_number）：僅傳統搜尋模式生效（modeMatrix traditional）；
+                 切版常駐（靜態稿為「該欄適用」的狀態）；React 依 modeMatrix 決定**渲染與否**——不適用的模式下整欄不出現。
+                 AB 兩側各自獨立判斷（一側 agent、一側傳統時，只有傳統那側顯示本欄）。 #}
             <div class="form-group row mobile-col">
                 <div class="label ab-field-label">
                     <label for="abSampleTotal-{{ ab.side }}" class="control-label" data-i18n="settings.searchTotalNumber">取用資料筆數</label>
                 </div>
                 <div class="field">
                     <input type="text" id="abSampleTotal-{{ ab.side }}" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control sample-count w100 js-sample-total" value="16">
-                    <span class="text-gray" data-i18n="settings.traditionalModeOnly">僅傳統搜尋模式生效</span>
                 </div>
             </div>
             {# Agent 最大迭代次數（agent_max_iterations）：僅 Agent 模式生效（modeMatrix agent）；預設 5。
-                 切版常駐＋標示，React 於傳統模式停用並紅字說明。 #}
+                 切版常駐（靜態稿為「該欄適用」的狀態）；React 依 modeMatrix 決定**渲染與否**——不適用的模式下整欄不出現。 #}
             <div class="form-group row mobile-col">
                 <div class="label ab-field-label">
                     <label for="abAgentMaxIter-{{ ab.side }}" class="control-label" data-i18n="qaTest.agentMaxIter">Agent 最大迭代次數</label>
                 </div>
                 <div class="field">
                     <input type="text" id="abAgentMaxIter-{{ ab.side }}" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control js-agent-max-iter" value="5">
-                    <span class="text-gray" data-i18n="settings.agentModeOnly">僅 Agent 模式生效</span>
                 </div>
             </div>
         </div>

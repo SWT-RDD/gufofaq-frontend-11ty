@@ -81,25 +81,23 @@ permalink: 2-2-1_singleTest.html
             </div>
         </div>
         {# 取用資料筆數（search_total_number）：僅傳統搜尋模式生效（modeMatrix traditional）；agent 模式
-             改吃選用資料筆數。切版常駐＋標示，React 於 agent 模式停用並紅字說明「設了也不生效」。 #}
+             改吃選用資料筆數。切版常駐（靜態稿為「該欄適用」的狀態）；React 依 modeMatrix 決定**渲染與否**——不適用的模式下整欄不出現。 #}
         <div class="form-group filter-field row mobile-col col-4-md col-12-sm">
             <div class="label">
                 <label for="sampleTotalInput" class="control-label" data-i18n="settings.searchTotalNumber">取用資料筆數</label>
             </div>
             <div class="field">
                 <input type="text" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control" id="sampleTotalInput" value="16">
-                <span class="text-gray" data-i18n="settings.traditionalModeOnly">僅傳統搜尋模式生效</span>
             </div>
         </div>
         {# Agent 最大迭代次數（agent_max_iterations）：僅 Agent 模式生效（modeMatrix agent）；預設 5，
-             對齊 TestConfig.agent_max_iterations 預設。切版常駐＋標示，React 於傳統模式停用並紅字說明。 #}
+             對齊 TestConfig.agent_max_iterations 預設。切版常駐（靜態稿為「該欄適用」的狀態）；React 依 modeMatrix 決定**渲染與否**——不適用的模式下整欄不出現。 #}
         <div class="form-group filter-field row mobile-col col-4-md col-12-sm">
             <div class="label">
                 <label for="agentMaxIterInput" class="control-label" data-i18n="qaTest.agentMaxIter">Agent 最大迭代次數</label>
             </div>
             <div class="field">
                 <input type="text" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control js-agent-max-iter" id="agentMaxIterInput" value="5">
-                <span class="text-gray" data-i18n="settings.agentModeOnly">僅 Agent 模式生效</span>
             </div>
         </div>
     </div>
