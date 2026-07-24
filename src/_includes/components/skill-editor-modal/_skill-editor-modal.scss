@@ -1,0 +1,19 @@
+// 租戶自訂 skill 編輯器（skill-editor-modal）。
+// 版型全走既有 form-group／multiSelect／form-checkbox，本檔只補兩件事：
+//   1. 欄位輔助文字（.skill-editor-hint）——name 規則與 description 寫法是功能的一部分，
+//      不是裝飾：規則不寫出來租戶只會反覆撞 400，description 寫得含糊 skill 就不會被觸發。
+//   2. 執行指令 textarea 的高度——它是多步驟流程，預設兩行高度會讓人得在窄縫裡編輯。
+.skill-editor {
+    .skill-editor-hint {
+        color: var(--text-muted);
+        font-size: 0.8125rem;
+        line-height: 1.6;
+        margin: 6px 0 0;
+    }
+
+    .skill-editor-instructions {
+        min-height: 160px;
+        font-family: var(--fontFamilyMono);
+        line-height: 1.7;
+    }
+}

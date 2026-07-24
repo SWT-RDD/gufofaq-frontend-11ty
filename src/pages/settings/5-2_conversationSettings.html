@@ -725,6 +725,22 @@ permalink: 5-2_conversationSettings.html
                 </select>
             </div>
         </div>
+        {# 指派租戶自訂 skill 給本設定檔（config.skill_ids）。skill 是「一段指令＋一組工具」的
+             能力包，被指派後就成為 agent 可呼叫的一顆工具；庫在 3-4_skillManagement 頁維護。
+             本子頁籤整體只在 Agent 模式渲染（見頁首模式適用性），故此處不需再做模式判斷。 #}
+        <div class="form-group row mobile-col">
+            <div class="label label-md">
+                <label for="skillsSelect" class="control-label" data-i18n="settings.assignedSkills">指派 Skill</label>
+            </div>
+            <div class="field col-12-sm">
+                <select id="skillsSelect" class="form-control multiSelect js-skills" multiple="multiple" data-placeholder="請選擇" data-placeholder-key="common.pleaseSelect">
+                    <option value="1" selected>refund-flow</option>
+                    <option value="2">lookup-order</option>
+                    <option value="3">policy-lookup</option>
+                </select>
+                <p class="text-gray" data-i18n="settings.assignedSkillsHint">被指派的 skill 會成為 agent 可呼叫的工具，由它依「用途說明」自行決定何時使用。</p>
+            </div>
+        </div>
     </div>
 </div>
 

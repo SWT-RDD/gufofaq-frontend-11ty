@@ -1,0 +1,128 @@
+---
+layout: layouts/page-shell/page-shell.html
+title: GufoFAQ::Skill 管理
+titleKey: nav.skillMgmt
+pageHeading: Skill 管理
+permalink: 3-4_skillManagement.html
+---
+{% set breadcrumbItems = [
+  { label: "首頁", href: "2-1_qaRecord.html", i18nKey: "nav.home" },
+  { label: "資料配置", href: "", i18nKey: "nav.dataConfig" },
+  { label: "Skill 管理", i18nKey: "nav.skillMgmt" }
+] %}
+<div class="flex-row column gap-16">
+    {% include "ui/breadcrumb/breadcrumb.html" %}
+</div>
+
+{# 租戶自訂 skill 管理（SaaS 新需求，21 頁真 app 無對應）。逆向自 gufofaq-saas product
+     app/routers/skills.py：skill＝對 GufoRAG chatbot skill CRUD 的租戶隔離代理；一個 skill＝
+     一段指令＋一組工具白名單，以一顆工具暴露給問答 agent，被呼叫時跑一個 scoped 子迴圈。
+     能力閘 settings:read 檢視／settings:write 編輯（skill 是 agent 的行為設定，不是知識資產，
+     故與術語表的 data 閘刻意不同），真正把關在 product。
+     版型比照 3-2_glossaryManagement（新增區＋清單表＋條件開窗 modal）。示範 3 筆。 #}
+{% set skills = [
+  { name: "refund-flow", description: "處理退貨與退款試算。使用者問到退貨、退款、換貨時使用。", version: "v2", tools: "lookup-order, calculate", enabled: true },
+  { name: "lookup-order", description: "依訂單編號查出金額、狀態與品項。使用者提供訂單號時使用。", version: "v1", tools: "search_knowledge_base", enabled: true },
+  { name: "policy-lookup", description: "查詢公司政策與法規條文。使用者問到規定、條文時使用。", version: "v3", tools: "search_knowledge_base, 人資術語", enabled: false }
+] %}
+
+<p class="text-gray" data-i18n="settings.skillMgmtIntro">Skill 是可重用的能力包：把一段指令與一組工具打包起來，問答 agent 會依「用途說明」自行決定何時呼叫它。只在 Agent 模式生效。</p>
+
+{# 新增 skill：名稱（必填）＋用途說明（必填）＋新增鈕。細部設定（執行指令、工具白名單、
+     迭代上限）在建立後於編輯器內完成——一次要填的欄位太多會讓建立這件事變得沉重。
+     三態 toast：成功／必填未填／失敗（product skills.py 的 create 對 name 空字串與 chatbot
+     的定義驗證失敗都回 400）。 #}
+<div class="block mb-16 flex-row column gap-16">
+    <div class="text-md text-bold" data-i18n="settings.addSkill">新增 Skill</div>
+    <div class="flex-row flex-wrap gap-16 mobile-column sm-gap-16">
+        <div class="col-4-md col-12-sm">
+            <div class="form-group">
+                <div class="label">
+                    <label for="newSkillNameInput" class="control-label required" data-i18n="widget.tokenName">名稱</label>
+                </div>
+                <div class="field">
+                    <input type="text" id="newSkillNameInput" placeholder="如 refund-flow" data-i18n-placeholder="settings.pleaseEnterSkillName" class="form-control" required>
+                </div>
+            </div>
+        </div>
+        <div class="col-8-md col-12-sm">
+            <div class="form-group">
+                <div class="label">
+                    <label for="newSkillDescriptionInput" class="control-label required" data-i18n="settings.skillDescription">用途說明</label>
+                </div>
+                <div class="field">
+                    <input type="text" id="newSkillDescriptionInput" placeholder="做什麼＋什麼時候該用它" data-i18n-placeholder="settings.pleaseEnterSkillDescription" class="form-control" required>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="flex-row">
+        <button type="button" class="button button-primary" data-toast="Skill 已建立|名稱與用途說明不可為空|建立失敗，請稍後再試" data-i18n-data-toast="toast.createSkill" data-toast-type="success|warning|error">
+            <img src="./images/icon_add_white.png" width="48" height="48" decoding="async" alt="" class="icon">
+            <span data-i18n="settings.addSkill">新增 Skill</span>
+        </button>
+    </div>
+</div>
+
+{# Skill 清單：default-table。名稱／用途說明／版本／可用工具／狀態＋操作（編輯｜刪除）。
+     編輯與刪除都需先選定「哪一個 skill」＝業務條件開窗，故用 hook class
+     （.js-edit-skill／.js-delete-skill），不掛 data-open-modal（§5）。
+     版本欄反映 chatbot 的 active_version：每次存檔一筆不可變快照，進行中的對話綁當下版本，
+     半路改不破在途對話——故這裡顯示版本而不是「最後修改時間」。示範 3 筆。 #}
+<div class="block flex-row column gap-16">
+    <div class="text-md text-bold" data-i18n="settings.skillList">Skill 清單</div>
+    <div class="table-container scrollTable">
+        <table class="default-table">
+            <colgroup>
+                <col style="width:180px; min-width:180px;">
+                <col style="min-width:320px;">
+                <col style="width:80px; min-width:80px;">
+                <col style="min-width:220px;">
+                <col style="width:90px; min-width:90px;">
+                <col style="width:200px; min-width:200px;">
+            </colgroup>
+            <thead>
+                <tr>
+                    <th data-i18n="widget.tokenName">名稱</th>
+                    <th data-i18n="settings.skillDescription">用途說明</th>
+                    <th data-i18n="settings.version">版本</th>
+                    <th data-i18n="settings.skillAllowedTools">可使用的工具</th>
+                    <th data-i18n="dataImport.colStatus">狀態</th>
+                    <th data-i18n="common.actions">操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for skill in skills %}
+                <tr data-skill-id="{{ loop.index }}">
+                    <td><code class="skill-name">{{ skill.name }}</code></td>
+                    <td>{{ skill.description }}</td>
+                    <td class="text-center">{{ skill.version }}</td>
+                    <td>{{ skill.tools }}</td>
+                    <td class="text-center">
+                        {% if skill.enabled %}<span class="badge badge-success" data-i18n="settings.enabled">已啟用</span>{% else %}<span class="badge" data-i18n="settings.disabled">已停用</span>{% endif %}
+                    </td>
+                    <td>
+                        <div class="btn-group">
+                            <button type="button" class="button button-border button-sm js-edit-skill" data-i18n="action.edit">編輯</button>
+                            <button type="button" class="button button-red button-sm js-delete-skill" data-i18n="action.delete">刪除</button>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="6" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% include "components/skill-editor-modal/skill-editor-modal.html" %}
+{# 刪除 modal：.js-delete-skill 條件開窗（先選定要刪哪個 skill），確認鈕歸業務 js
+   （deleteConfirmBinding，不自動關窗）；skill 名由業務 js 填入 #deleteSkillName。
+   刪除無綁定守衛：product 驗過 ownership 即刪；設定檔的 skill_ids 允許懸空，
+   載入時略過失效 id 並記 ERROR log（GufoRAG agent_service._create_skill_tools）。 #}
+{% set deleteTargetId = "deleteSkillName" %}
+{% set deleteConfirmBinding = true %}
+{% set deleteToast = "Skill 已刪除|刪除失敗，請稍後再試" %}
+{% set deleteToastKey = "toast.deleteSkill" %}
+{% include "components/delete-modal/delete-modal.html" %}

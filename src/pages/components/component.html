@@ -518,6 +518,7 @@ bodyClass: guideline-page
                     <button type="button" class="button button-dark" data-open-modal="shareManageModal">開啟分享連結管理modal</button>
                     <button type="button" class="button button-dark" data-open-modal="manageMembersModal">開啟管理成員modal</button>
                     <button type="button" class="button button-dark" data-open-modal="glossaryEntriesModal">開啟術語表詞條modal</button>
+                    <button type="button" class="button button-dark" data-open-modal="skillEditorModal">開啟 Skill 編輯 modal</button>
                     <button type="button" class="button button-dark" data-open-modal="configCopyModal">開啟跨設定檔複製modal</button>
                     <button type="button" class="button button-dark" data-open-modal="qaImportModal">開啟 QA 匯入 modal</button>
                 </div>
@@ -826,6 +827,7 @@ bodyClass: guideline-page
 {% include "components/share-manage-modal/share-manage-modal.html" %}
 {% include "components/manage-members-modal/manage-members-modal.html" %}
 {% include "components/glossary-entries-modal/glossary-entries-modal.html" %}
+{% include "components/skill-editor-modal/skill-editor-modal.html" %}
 {# 元件庫版演出 React 條件渲染分支（§5 分支要看得到）：config-copy 的 production 警告＋inline 錯誤列、
    qa-import 的解析中＋解析失敗列；真實頁（5-2、3-3）不 set、不演 #}
 {% set configCopyShowWarning = true %}

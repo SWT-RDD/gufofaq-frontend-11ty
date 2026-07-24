@@ -1,0 +1,135 @@
+{# 租戶自訂 skill 編輯 modal，取自 3-4_skillManagement 頁「編輯」鈕（.js-edit-skill）：
+     開窗需先選定「編輯哪一個 skill」＝業務條件開窗，故該鈕保留 hook class、不掛 data-open-modal
+     （GUIDELINE §5）。
+   skill＝宣告式指令包：一段 instructions ＋ 一組工具白名單，以一顆工具暴露給問答 agent，
+     被呼叫時跑一個 scoped 子迴圈。逆向自 gufofaq-saas product app/routers/skills.py 與
+     GufoRAG chatbot app/routes/skills.py；欄位語意對齊 Agent Skills 開放標準
+     （name ≤64 小寫英數與連字號、description ≤1024 且須寫「做什麼＋何時用」）。
+   兩個欄位的輔助文字是功能的一部分、不是裝飾：
+     - name 的規則若不寫出來，租戶只會反覆撞 400（後端才是權威，但不該讓人用猜的）。
+     - description 是 agent 選不選這個 skill 的**唯一**依據，寫得含糊 skill 就永遠不會被觸發。
+   工具白名單四個 multi-select 對應 allowed_tools 的四個桶（內建工具／MCP server／術語表／
+     其他 skill）。它是**安全邊界**——子圖只用勾選的工具建起來，沒勾的在執行時根本不存在，
+     故 UI 不提供「全選」之類的捷徑（勾了什麼就是什麼）。
+   示範資料＝假資料，依 GUIDELINE §4-2「只翻 UI chrome、不翻假資料」不掛 data-i18n。
+   示範資料變數用元件專屬名 skillEditorTools（{% set %} 是頁面全域，§2/§6）。 #}
+{% set skillEditorBuiltinTools = [
+    { name: "calculate", checked: true },
+    { name: "convert_units", checked: false },
+    { name: "date_calculate", checked: false },
+    { name: "search_knowledge_base", checked: false },
+    { name: "search_qa", checked: false },
+    { name: "get_document", checked: false }
+] %}
+<dialog class="modals" id="skillEditorModal" aria-labelledby="skillEditorModal-title">
+    <div class="modals-dialog modals-lg">
+        <div class="modals-wrap">
+            {% include "ui/modal-close/modal-close.html" %}
+            <div class="modals-content">
+                <div class="modals-header">
+                    <h3 class="modals-title" id="skillEditorModal-title" data-i18n="settings.editSkill">編輯 Skill</h3>
+                </div>
+                <div class="modals-body">
+                    <div class="skill-editor flex-row column gap-16">
+                        <div class="form-group">
+                            <div class="label">
+                                <label for="skillNameInput" class="control-label required" data-i18n="widget.tokenName">名稱</label>
+                            </div>
+                            <div class="field">
+                                <input type="text" id="skillNameInput" class="form-control" value="refund-flow" aria-describedby="skillNameHint">
+                                <p class="skill-editor-hint" id="skillNameHint" data-i18n="settings.skillNameHint">小寫英數與連字號，長度 1-64；不可以連字號開頭／結尾，也不可連續連字號。此名稱同時就是 agent 看到的工具名。</p>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="label">
+                                <label for="skillDescriptionInput" class="control-label required" data-i18n="settings.skillDescription">用途說明</label>
+                            </div>
+                            <div class="field">
+                                <textarea id="skillDescriptionInput" class="form-control" aria-describedby="skillDescriptionHint">處理退貨與退款試算。使用者問到退貨、退款、換貨或想知道能退多少錢時使用。</textarea>
+                                <p class="skill-editor-hint" id="skillDescriptionHint" data-i18n="settings.skillDescriptionHint">請同時寫「這個 skill 做什麼」與「什麼時候該用它」——這是 agent 判斷要不要呼叫它的唯一依據，寫得含糊就不會被觸發。</p>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="label">
+                                <label for="skillInstructionsInput" class="control-label" data-i18n="settings.skillInstructions">執行步驟</label>
+                            </div>
+                            <div class="field">
+                                <textarea id="skillInstructionsInput" class="form-control skill-editor-instructions" aria-describedby="skillInstructionsHint">1. 先用 lookup-order 取得訂單金額。
+2. 依退貨政策用 calculate 算出應退金額。
+3. 用一句話回報金額與計算依據。</textarea>
+                                <p class="skill-editor-hint" id="skillInstructionsHint" data-i18n="settings.skillInstructionsHint">被呼叫時才載入，當作這個 skill 的系統提示詞。要照順序執行就在這裡寫清楚步驟。</p>
+                            </div>
+                        </div>
+
+                        <div class="text-md text-bold" data-i18n="settings.skillAllowedTools">可使用的工具</div>
+                        <p class="skill-editor-hint" data-i18n="settings.skillAllowedToolsHint">只有勾選的工具能被這個 skill 使用；沒勾的在執行時根本不存在，不是「不准用」而是「用不到」。</p>
+                        <div class="form-group row mobile-col">
+                            <div class="label label-md">
+                                <label class="control-label" id="skillBuiltinToolsLabel" data-i18n="settings.builtinTools">內建工具</label>
+                            </div>
+                            <div class="field col-12-sm">
+                                <div class="flex-row flex-wrap gap-16" role="group" aria-labelledby="skillBuiltinToolsLabel">
+                                    {% for tool in skillEditorBuiltinTools %}
+                                    <label class="form-checkbox">
+                                        <input type="checkbox" class="js-skill-builtin" value="{{ tool.name }}"{% if tool.checked %} checked{% endif %}>
+                                        <span>{{ tool.name }}</span>
+                                    </label>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group row mobile-col">
+                            <div class="label label-md">
+                                <label for="skillMcpSelect" class="control-label" data-i18n="settings.mcpServers">MCP Server</label>
+                            </div>
+                            <div class="field col-12-sm">
+                                <select id="skillMcpSelect" class="form-control multiSelect js-skill-mcp" multiple="multiple" data-placeholder="請選擇" data-placeholder-key="common.pleaseSelect">
+                                    <option value="1">時間工具</option>
+                                    <option value="2">內部文件搜尋</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group row mobile-col">
+                            <div class="label label-md">
+                                <label for="skillGlossarySelect" class="control-label" data-i18n="settings.glossaryTables">綁定術語表</label>
+                            </div>
+                            <div class="field col-12-sm">
+                                <select id="skillGlossarySelect" class="form-control multiSelect js-skill-glossary" multiple="multiple" data-placeholder="請選擇" data-placeholder-key="common.pleaseSelect">
+                                    <option value="1">人資術語</option>
+                                    <option value="2">產品術語</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group row mobile-col">
+                            <div class="label label-md">
+                                <label for="skillNestedSelect" class="control-label" data-i18n="settings.skillNested">巢狀 Skill</label>
+                            </div>
+                            <div class="field col-12-sm">
+                                <select id="skillNestedSelect" class="form-control multiSelect js-skill-nested" multiple="multiple" data-placeholder="請選擇" data-placeholder-key="common.pleaseSelect">
+                                    <option value="2" selected>lookup-order</option>
+                                    <option value="3">policy-lookup</option>
+                                </select>
+                                <p class="skill-editor-hint" data-i18n="settings.skillNestedHint">被引用的 skill 會成為這個 skill 可呼叫的工具。不可互相引用成環，巢狀深度上限 3 層。</p>
+                            </div>
+                        </div>
+                        <div class="form-group row mobile-col">
+                            <div class="label label-md">
+                                <label for="skillMaxIterationsInput" class="control-label" data-i18n="settings.skillMaxIterations">迭代次數上限</label>
+                            </div>
+                            <div class="field col-12-sm">
+                                <input type="number" id="skillMaxIterationsInput" class="form-control" value="5" min="1" max="20" aria-describedby="skillMaxIterationsHint">
+                                <p class="skill-editor-hint" id="skillMaxIterationsHint" data-i18n="settings.skillMaxIterationsHint">這個 skill 的子迴圈最多來回幾輪（1-20）。設太小會讓它還沒做完就被截斷。</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modals-footer">
+                    <div class="button-row center">
+                        <button type="button" class="button button-border btn-close-modals" data-i18n="action.cancel">取消</button>
+                        <button type="button" class="button button-primary btn-close-modals" data-toast="Skill 已更新|更新失敗" data-i18n-data-toast="toast.saveSkill" data-toast-type="success|error" data-i18n="action.save">儲存</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</dialog>
