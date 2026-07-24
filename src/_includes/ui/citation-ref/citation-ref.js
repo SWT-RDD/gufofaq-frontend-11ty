@@ -12,15 +12,11 @@ document.addEventListener("DOMContentLoaded", function () {
         if (!btn) return;
         e.preventDefault();
 
+        // 版型稿的 no 是寫死的示範值；守衛只是讓「這頁沒有來源區塊」時不炸開
+        //（chatroom 可被不含 sources-block 的頁面 include），不是錯誤處理。
         var no = parseInt(btn.getAttribute("data-citation-no"), 10);
-        if (!no || no < 1) {
-            console.error("[citation-ref] invalid data-citation-no:", btn.getAttribute("data-citation-no"));
-            return;
-        }
-        if (!window.GufoSources || !window.GufoSources.reveal) {
-            console.error("[citation-ref] no sources-block on this page; the citation has nowhere to jump to");
-            return;
-        }
+        if (!no || no < 1) return;
+        if (!window.GufoSources || !window.GufoSources.reveal) return;
         window.GufoSources.reveal(no);
     });
 });

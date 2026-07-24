@@ -17,8 +17,10 @@ document.addEventListener("DOMContentLoaded", function () {
         },
 
         // 顯示來源區塊並定位到第 no 筆（1-based，對齊答案內文 [[N]] 的語意）：
-        // 展開該列、捲到畫面中央、短暫高亮。指到不存在的筆數時大聲記錯，不靜默無反應
-        //（診斷訊息一律英文：那是給開發者看的 console 輸出，不是會被渲染的顯示字串）。
+        // 展開該列、捲到畫面中央、短暫高亮。
+        // 找不到該筆就只顯示區塊：切版的 no 是寫死的示範值、來源表也一定有那幾筆，
+        // 這條分支在版型稿裡不可達。「編號超出筆數」是真值才會發生的缺陷，該大聲報的地方
+        // 在消費端（apps/web 的 SourcesBlock，那裡的 N 來自 LLM 實際輸出）。
         reveal: function (no) {
             this.show();
             var block = document.querySelector(".sources-block");
@@ -26,10 +28,7 @@ document.addEventListener("DOMContentLoaded", function () {
             // 摘要列與 detail 列成對出現，故資料列＝tbody 內非 .detail-row 的那些。
             var rows = block.querySelectorAll(".sources-tbody > tr:not(.detail-row)");
             var row = rows[no - 1];
-            if (!row) {
-                console.error("[sources-block] citation points to source #" + no + " but only " + rows.length + " rows exist");
-                return;
-            }
+            if (!row) return;
             var toggle = row.querySelector(".accordion-btn");
             if (toggle && toggle.getAttribute("aria-expanded") !== "true") toggle.click();
             row.scrollIntoView({ behavior: "smooth", block: "center" });
