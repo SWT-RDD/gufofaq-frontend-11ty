@@ -791,6 +791,10 @@ permalink: 5-2_conversationSettings.html
        js-answerability-*（全站 scss 不引用），React 接手送 API。與 QA 直答同屬「可回答性」決策、故同頁。 #}
     <div class="block flex-row column gap-16 mt-16">
         <div class="text-gray" data-i18n="settings.answerabilityIntro">Agent 模式：收斂到的資料不足以回答時，誠實告知查無、不硬生成無依據的答案。</div>
+        {# 模式適用性標示（同本頁「取用資料筆數」等欄的既有手法）：本閘只在 Agent 模式生效，
+           傳統模式開了也不會執行。切版常駐 text-gray，React 於傳統模式轉 text-red 明示
+           「設了也不生效」——否則租戶在傳統模式勾了它、存檔成功、卻永遠不會被執行，零信號。 #}
+        <span class="text-gray js-answerability-mode-only" data-i18n="settings.agentModeOnly">僅 Agent 模式生效</span>
         <label class="form-checkbox">
             <input type="checkbox" class="js-answerability-mode">
             <span data-i18n="settings.answerabilityEnable">啟用可回答性閘（素材不足即誠實查無）</span>
