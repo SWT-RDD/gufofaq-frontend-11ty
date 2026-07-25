@@ -1,0 +1,31 @@
+// 分頁列版位：頁碼置中、每頁筆數釘左。
+// 為什麼用絕對定位而不是 justify-content: space-between —— 後者會把 .pagination 變成一個
+// 「內容寬」的 flex item 並推到列的右端，而它自己的 justify-content: center 只在它自己那塊裡生效，
+// 於是整排頁碼看起來歪掉。把每頁筆數移出正常流，頁碼才會相對**整列**置中（回到它原本的長相）。
+.pager-row {
+    // 刻意**不**在這層開 flex：`.pagination` 自己是 display:flex + justify-content:center，
+    // 只有讓它維持「獨占一整列的區塊」，那份置中才是相對整列的。一旦把這層變成 flex 容器，
+    // 它就縮成內容寬的 flex item、置中只在它自己那小塊裡生效（實測頁碼會跑到列的左端）。
+    position: relative;
+
+    .pager-row-size {
+        position: absolute;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+    }
+
+    // 窄視窗（頁碼本身也降成 3 顆，見 _pagination.scss 的 --pagination-visible）：
+    // 兩塊並排會撞在一起，改回文件流上下堆疊、整列置中。
+    @media screen and (max-width: 768px) {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+
+        .pager-row-size {
+            position: static;
+            transform: none;
+        }
+    }
+}

@@ -1,0 +1,17 @@
+{#
+  分頁列：每頁筆數（左）＋頁碼（置中）。原本這個外框在 6 個使用頁逐字重複，且用
+  `justify-content-between` 把 `ui/pagination` 變成靠右的 flex item——而 `.pagination` 自己是
+  `justify-content: center`，它原本獨占一整列所以頁碼是**置中**的，一旦變成 flex item 就整塊被推到右邊。
+  故收成元件並由本元件的 scss 負責版位：每頁筆數釘在左側（絕對定位、不參與置中計算），
+  頁碼照它自己的規則置中；窄視窗回到文件流、上下堆疊。
+  參數沿用兩個子元件的（頁面 include 前 set，§2 是頁面全域）：
+    total（必填，pagination 用）／perPage（選填，**兩個子元件共吃這一個**，見 page-size-select 檔頭）／
+    currentPage（選填）。本元件不吃自己的參數。
+#}
+<div class="pager-row mt-16">
+    {# 包一層本元件自有的 slot class：要定位別人的元件就給它一個自己的殼，不去寫 .page-size（§4） #}
+    <div class="pager-row-size">
+        {% include "components/page-size-select/page-size-select.html" %}
+    </div>
+    {% include "ui/pagination/pagination.html" %}
+</div>

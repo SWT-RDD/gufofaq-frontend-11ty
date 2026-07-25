@@ -53,7 +53,7 @@ src/
 ├── _includes/
 │   ├── layouts/            整頁模板（3 支，見下表）＋ 模板專屬樣式 `_chatbot-shell.scss`
 │   ├── ui/                 不依賴其他元件的元件（48 個）
-│   └── components/         會用到其他元件，或某大元件的專屬子片段（44 個）
+│   └── components/         會用到其他元件，或某大元件的專屬子片段（45 個）
 ├── scss/                   全域層（元件樣式住在元件資料夾）
 │   ├── _var.scss           設計 token：語意色 + [data-theme=dark] 覆寫（全站唯一色源，單層直值）
 │   ├── _mixin.scss         共用 mixin：scrollbar 系列、icon-mask（單色 PNG 遮罩上色）、nav-collapsed（header↔mobile-nav 的 1250px 斷點，兩者必須同值）
@@ -120,6 +120,7 @@ dist/                       build 輸出（勿手改）
 | `ui/chart-box` | `chartBoxId`（圖表容器 id 前綴）/`chartBoxTitleText`/`chartBoxTitleKey`；用於 5-3。 |
 | `components/page-size-select` | 每頁筆數選擇器（pager 旁）。吃頁面的 `perPage`（**與同頁 `ui/pagination` 同源**：一邊寫死、另一邊落回預設 10 就會出現「每頁 20 筆／共 12 頁」）；未設沿用 pagination 的預設 10。值載體 hook `js-page-size`。用於 1-1-3、3-1-1、3-1-3、3-1-6、4-1、5-7。 |
 | `components/reasoning-effort-select` | 思考深度 select。`reasoningEffortId`（必填，同頁唯一）/`reasoningEffortHook`/`reasoningEffortGroup`（分組的 `data-group`）/`reasoningEffortEmptyKey`・`reasoningEffortEmptyZh`（空值語意：主回答＝沿用模型預設、分組＝最低思考，行為不同故不共用 key）。用於 5-2（主回答＋4 組）、2-2-1、2-2-3。 |
+| `components/pager-row` | 分頁列（每頁筆數＋頁碼）。無自有參數，沿用兩個子元件的頁面層 `total`／`perPage`／`currentPage`；版位由自有 scss 負責——每頁筆數絕對定位釘左、`ui/pagination` 維持獨占一列所以頁碼相對整列置中（不可在這層開 flex，否則頁碼縮成內容寬跑到左端），≤768px 改回文件流上下堆疊。用於 1-1-3、3-1-1、3-1-3、3-1-6、4-1、5-7。 |
 | `components/skill-try-sandbox` | Skill 試跑沙盒（3-4）：`trySkillName`（選填示範名，預設 refund-flow）。開／關與「把列上的名字填進標題」由 `skill-try-sandbox.js` 當場做（正本也是純 UI state），觸發鈕沿用凍結的 `.js-try-skill`；「開始試跑」是送 API 的鈕、走 `data-toast`。內含 `components/step-flow`，其節點與摘要由使用頁成對覆寫。 |
 | `components/skill-editor-modal` | 租戶自訂 skill 編輯 modal（`modals-lg`）。無參數；內含 `ui/modal-close`。由 3-4 的 `.js-edit-skill` 條件開窗（不掛 `data-open-modal`），元件庫頁有示範觸發器。 |
 | `components/file-edit-modal` | `editConfirmBinding`（true＝儲存鈕交給業務 js 綁定、不自動關窗；真實頁 `1-2-1` 傳 true，元件庫展示版不傳）。 |
@@ -147,7 +148,7 @@ dist/                       build 輸出（勿手改）
 
 **`<元件名>.html` 的兩種身分**：被真實頁面 include 的是生產 markup；只被元件總覽頁 `component.html` include 的是展示片段（`button`、`checkbox`、`radio`、`switch`、`tab`、`form-control`、`multi-select`、`link-file`、`link-modal`、`list-style`、`divider-vertical`、`toast`、`tooltip`、`block`、`form-table`、`default-table`）。展示片段為了示範情境會用到別的元件，判斷桶歸屬時不算依賴（見 GUIDELINE §1-1）。
 
-> **上列不是完整清單**（`src/_includes/` 目前有 92 個元件）。完整結構以 `src/_includes/` 與元件總覽頁 `dist/component.html` 為準。跨檔一致性由 `npm test` 把關：有 js 的元件必須三方登記（實體檔 ⇄ `eleventy.config.js` ⇄ `base.html`）、有 scss 的必須在 `main.scss` `@use`、每個元件 html 都必須被 include（無孤兒）、每張圖都必須被引用。
+> **上列不是完整清單**（`src/_includes/` 目前有 93 個元件）。完整結構以 `src/_includes/` 與元件總覽頁 `dist/component.html` 為準。跨檔一致性由 `npm test` 把關：有 js 的元件必須三方登記（實體檔 ⇄ `eleventy.config.js` ⇄ `base.html`）、有 scss 的必須在 `main.scss` `@use`、每個元件 html 都必須被 include（無孤兒）、每張圖都必須被引用。
 
 ---
 

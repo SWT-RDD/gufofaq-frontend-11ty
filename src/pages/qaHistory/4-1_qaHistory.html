@@ -202,7 +202,4 @@ permalink: 4-1_qaHistory.html
 {% set total = 115 %}
 {# 每頁筆數與頁碼列吃同一個 perPage（§6 同源：選擇器顯示 20、頁碼卻按 10 算總頁數就是自打架）。 #}
 {% set perPage = 20 %}
-<div class="mt-16 flex-row flex-wrap justify-content-between align-items-center gap-16">
-    {% include "components/page-size-select/page-size-select.html" %}
-    {% include "ui/pagination/pagination.html" %}
-</div>
+{% include "components/pager-row/pager-row.html" %}
