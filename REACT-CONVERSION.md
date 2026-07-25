@@ -23,6 +23,14 @@
 - 走樣 scss 若把 hook class 選擇器寫成裸元素（如 `button:hover .tooltip` 而非 `.has-tooltip:hover .tooltip`），修回
   切版選擇器時 grep 所有 consumer、在觸發元素補上該 hook class——consumer 常是靠走樣的裸選擇器意外運作、自己沒掛 class。
 - 舊 jQuery 真 app 不看。
+- **切版搬桶（`ui/` ↔ `components/`）時 React 同步搬**：§1-1 的判準變了就搬（例：`citation-ref` 的 js 呼叫
+  `GufoSources.reveal()`＝呼叫「會產出可見 UI 的元件匯出」），並 grep 全 repo 更新 import **與檔頭／測試／
+  e2e 註解裡的切版路徑字串**——那些路徑是下一輪審查對回正本的指標，留舊路徑會讓下一輪讀錯檔。
+- **共用原子升格時三件一起交付**：切版把重複視覺升格成原子（`.step-flow-code`／`.skill-name`／裸 `<code>`
+  → `ui/inline-code`）時，React 要①建原子 scss ②刪掉各元件 scss 裡那份抄本 ③把**每一個** consumer 的
+  className 換成原子名（含 e2e locator 與測試的 selector）。只做前兩件＝那顆 class 全站無主人（渲染成裸文字），
+  而 stylelint 與 scss-diff 都看不到。交付門檻：grep 舊 class 名應為零命中。
+  原子是 scss-only（無 tsx）時，**每個用它的頁／元件自己 import 那支 scss**，不可依賴「剛好同 bundle 有人 import 過」。
 
 ## ① scss（byte-identical）
 
@@ -33,6 +41,14 @@
   `main.scss` 只放全域層 `@use`，元件 scss 由各自 tsx `import "./X.scss"`。
 - `@use`／`url()`／`icon-mask(...)` 的路徑在原行就地替換，不插入額外說明行（scss-diff 逐行比對）。
 - `scss-diff.mjs` exit 0。
+- **照抄 scss ≠ 抄到 token**：抄完 grep 它用到的每個 `var(--…)` 是否存在於 React `styles/_var.scss`；缺的連同
+  切版 `_var.scss` 的 **light + dark 兩處宣告**一起補（值與對比註解照抄）。缺 token 時 `scss-diff` 仍 exit 0、
+  `fpdiff` 幾何也不變，畫面卻靜默回退成繼承色（本輪 `--danger-ink`）。
+- **表格列的狀態底色一律下到 `> td`**：`default-table` 對 `tbody tr td` 下了不透明底，CSS 表格繪製層序 row < cell
+  ——寫在 `tr.is-*` 上是 100% 看不見的死樣式。抄到 `tr.is-*{background}` 就是抄到舊版。
+- **markdown renderer 產生的元素掛不上 class，允許保留一份自寫規則**（`.message-content .robot-msg code`），
+  但**值的正本在共用原子**：兩者 specificity 不同（(0,2,1) vs (0,1,0)），cascade 永遠是元件贏，所以「值一致」
+  無法靠層疊保證，只能靠註解 + `scss-diff` byte-identical；改原子的值時這份抄本要在同一個 commit 跟著改。
 - 跨元件同 specificity 的覆寫（如 `.pager-input{width:60px}` 蓋 `.form-control{width:100%}`）靠 cascade 順序決勝：
   切版由 `main.scss` 的 `@use` 順序保證；React 元件各自 import scss，**同頁多個元件 scss 的 import 順序照切版
   `main.scss` 的 `@use` 順序**（被覆寫者在前、覆寫者在後），否則同分規則翻盤。
@@ -56,6 +72,22 @@
 - 切版 template 產生的縮排空白文字節點：改切版消除，React 不補死節點。
 - 反向注意：HTML 裡 inline 元素間「換行縮排」渲染成一個空格（如 `共 <span>N</span> 頁` 的字距），
   JSX 會把元素間純空白行整個吃掉——這種**有意的**字間空格在 JSX 補 `{" "}`。
+  **判準是切版 markup 實際有沒有換行縮排，不是註解怎麼寫**：`ui/pagination` 的三顆 span 寫在同一行、
+  刻意零空白（分隔由譯文自帶，見 §③），那裡補 `{" "}` 會多出兩個空白節點，還會掩蓋「key 少了空白」這個 bug。
+- **`role="status"`／`aria-live` 的訊息槽不可條件渲染**：live region 必須在內容到達**之前**就存在於 DOM，
+  `{value && <p role="status">…}` 等於報讀器永遠不播報。切內容、不切節點（切版是連 label 一起常駐）。
+- **同頁兩個元件共吃的參數只能有一個來源**（GUIDELINE §6 同源；`perPage` 之於 `page-size-select` 與
+  `ui/pagination`）：由共同祖先持有一份 state、往兩個子元件各發一份，並把該 prop 在祖先上做成**必填無預設**。
+  子元件各自的 fallback 只服務「單獨使用」那條路，不得在祖先或第二個子元件再放一份預設——兩份預設＝畫面
+  同時說兩件事（選擇器顯示 20、頁碼按 10 算出「共 12 頁」，而 115÷20＝6）。切版靠模板的頁面全域變數保證，
+  React 只剩型別能保證。
+- **頁面層 `{% set X = v %}` → 該頁的 `useState` 初值**（互動可改者）或該頁的區域常數（不可改者），
+  不是 export 給多頁共用的模組常數、更不是子元件的預設值。判準：切版**元件檔頭**的 fallback（`perPage or 10`）
+  是元件預設；**使用頁** set 的值（`20`）是頁面資料。把頁面值搬進元件＝§6「元件不得寫死會因頁面而異的資料」。
+- **純版位元件（layout-only wrapper）照樣建成元件**：切版有一類元件不吃自己的參數，只提供版位並把頁面變數
+  轉給子元件（`components/pager-row`）——不得在每個使用頁展開成 inline markup（展開後 N 份各自分岔，
+  而版位約束沒有守門人）。這類元件的 scss 常帶**負向約束**（「刻意不在這層開 flex」），tsx 檔頭要把它
+  **複述成禁令**，並用一條「根元素 className 恰等於切版那串」的白名單斷言釘住（黑名單列舉 utility 名抓不到新的）。
 
 ## ③ i18n（react-i18next）
 
@@ -63,6 +95,21 @@
   `data-i18n-placeholder` 對到對應屬性）：帶 `data-i18n-<attr>` 的屬性一律用 `t()` 譯值，不是原文 label／資料值——
   同一顆節點的文字走 `t()`、屬性卻留原文 label 是常見漏網（沒有 `data-i18n-*` 標記的屬性才維持原文）。
 - markup 不掛 `data-i18n`／`.js-lang-toggle`。
+- **一顆 key 不得承載兩種行為語意**：行為契約不同就是兩顆 key，即使繁中字面相同。正典：思考深度的空值——
+  主回答空＝`settings.reasoningEffortDefault`（該模型預設），分組 LLM 空＝`settings.reasoningEffortMinimal`
+  （最低思考，product `_PROFILE_FIELD_DEFAULTS` 的 `reasoning_effort_*`）。共用元件把空值 key 做成**呼叫端
+  決定的 prop**，不要在元件內寫死一顆——寫死等於用元件把謊話複製到每個呼叫點。
+- **前綴／後綴 key 自帶分隔空白**（`"Total "`／`" pages"`／`"Source "`／`"Show "`／`" per page"`），不靠 JSX 補
+  `{" "}`、也不靠 CSS 的副作用。`.sr-only` 前綴 ＋ 緊接的數字（`來源 N`）同理。
+- **切版改 UI 用語時只改字典的值、不改 key 名**：key 是識別碼、已被 React／e2e 鏡射，而且常對應不隨 UI 改名的
+  後端契約（`widget.*` ↔ `X-Widget-Token`／`?wt=`）。React 端的工作量＝只改 `messages.{en,zh}.json`，`t()` 一行不動；
+  順手更新資料鏡射用的死 `label` 字面量（Breadcrumb items、`Header/menu.ts`），別留舊詞誤導下一個讀 code 的人。
+- **字典用程式比對，不對讀**：`messages.en.json` vs 切版 `src/i18n/en.json` 同 key 同值；`messages.zh.json` vs
+  從切版 `dist/*.html` 抽出的繁中同 key 同值（抽取形狀含 `data-i18n`、`data-i18n-<attr>`、`data-<槽>-key`＋
+  `data-<槽>`、`data-key-<態>`＋`data-text-<態>`、`data-page-title-key`＋`<title>`）。可接受的差異只有三種：
+  (a) 前後綴夾**資料**槽併成單一插值 key（槽裡是**元件**則不准併）；(b) 資料槽的繁中原文住 React 資料常數當
+  `t(key, fallback)` 的 fallback；(c) 純應用層 key。**跑成 vitest**——LLM 對讀會漏（本輪漏了 46 顆 key、45 條異值）。
+  孤兒 key（無 `t()` 引用）同進 CI，模板組合的 key 以前綴白名單放行。
 - 語言鈕標籤顯示要切去的語言（en→「中」、zh→「EN」，不進字典）；點擊 `i18n.changeLanguage` + `localStorage("lang")` +
   同步 `document.documentElement.lang`（`en`→`"en"`，否則`"zh-Hant"`）——不是只有 `<head>` no-flash 腳本首次載入設一次。
 - i18n init `lng="zh"`；client mount 後依 `localStorage("lang")` `changeLanguage`。
@@ -80,6 +127,8 @@
 - `data-open-modal`／`data-toast`／`data-print` → `onClick`；移除屬性、不自創 hook class、不留 document 委派。
 - `GufoSlide`→`useSlideToggle`、`showToast`→`useToast()`、`openModal`→受控 `<Modal>`、`aria-expanded`→綁 state。
 - 捲動鎖：開關掛 `data-scroll-lock`（`html:has([data-scroll-lock].active)` 在 `_base.scss`）。
+- fpdiff 的 identity key 排除 `.js-*` 只是**比對層的 normalize**，不是「React 不帶 `js-*`」的授權；也因為它被排除，
+  **漏帶業務 hook 是 fpdiff 抓不到的一類漂移**，靠審查與 vitest。
 - 業務 hook class（`.watchBtn`／`.copyBtn`／`.js-apply-production`／`.js-chat-mode`…）保留——含 `js-` 開頭的**業務**
   hook（條件開窗／值載體／切版新頁自創的 React 綁定記號，GUIDELINE §5 的組合矩陣）；業務值載體 `<select>`／`<input>`
   轉成受控元件、hook class 留在 className、change 綁定交業務層。真 app 以 **id 契約**綁定的控制項（2-2-1 的
@@ -114,16 +163,37 @@
   不外露——切版的 `document.querySelector` 只是沒有 props 時的替身。
 - 不可宣告的副作用（捲動、聚焦、暫時高亮）留在**被呼叫元件自己**的 `useEffect([意圖 state])`。
   JS 捲動照 GUIDELINE §5 讀 `prefers-reduced-motion` 退 `auto`；跳轉後焦點要跟著移到目標列。
-- 意圖 state 要能重放同一個值（連點同一顆 `[[N]]`）：用 `{no, seq}` 或 effect 尾端 reset，
-  否則 `setState(3)` 對已是 3 的 state 不重跑 effect＝第二次點沒反應。
-- 共用 Accordion 除 toggle／setAll 外還要能**由外部指定開啟第 N 列**（`reveal` 要展開被引用的那列）：
-  由持有列狀態的元件把 `openRows` 提上來受控，不是 `ref.current.click()`（切版的合成點擊是替身）。
+- 意圖 state 要能重放同一個值（連點同一顆 `[[N]]`）：用 `{no, seq}`（seq 單調遞增、物件身分每次都新）
+  或在 **effect 內部**尾端 reset。**`setX(null); setX(v)` 兩行相鄰不算重放**——React 自動批次會併成一次更新，
+  最終值與原值相同＝依賴沒變＝effect 不重跑（`await` 之後也一樣批次）。註解宣稱「先清再設」的地方要當 bug 讀。
+- **意圖 state 的作用範圍跟著它的宿主資料走**：同一顆 hook 裡另一條路徑換掉了被呼叫元件的資料來源
+  （`showFor` 換 detail／換訊息）時要一併把意圖清成 `null`，否則 `citedNo` 會套到新資料的同一個索引上
+  ——切版那條路徑（`show()`）根本不碰 `.is-cited`。
+- 共用 Accordion 是**單筆受控**（`open`／`onToggle`）；列集合的三種操作（單筆 toggle、全展／全收、被引用那列
+  自動展開）由**持有列資料的元件**用一顆 `Set<idx>` 管。`reveal` 展開第 N 列＝往那顆 Set 加 `N-1`，不是
+  `ref.current.click()`。切版 `GufoAccordion.setOpen` 回傳「有沒有真的動」以免重播 300ms 動畫，React 的等價物是
+  **已在 Set 裡就回傳同一個 Set 物件**（不觸發 re-render＝不重播）——`new Set(s)` 無條件複製會讓每次 reveal 都重播。
+- **「js 掛旗標 class + scss 給規則」兩半必須同一個 commit 交付**（`.open-up` 的 `placeDropdown()`、
+  `.is-cited` 的 `@keyframes`）。只搬 scss＝那條規則永遠不觸發，而 fpdiff 比的是預設狀態快照、抓不到。
+  需要「先上 class 再量測」的定位邏輯用 `useLayoutEffect`（`display:none` 量不到 `scrollHeight`；`useEffect`
+  在 paint 後才翻位置＝使用者看到閃跳）。量測用的 computed 值要容錯測試環境（jsdom 的 `overflow` 是空字串，
+  不當成 `visible` 會讓祖先探測在第一個祖先就 break）。
+- **新狀態 class 是既有 class 的前綴時**（`open` / `open-up`），既有測試的 `toContain("open")` 會失去辨識力：
+  改 `classList.contains()`。
+- **面板由外部 state 開啟時的捲動／聚焦是該元件自己的 `useEffect`**，不是可省的次要行為：切版 js 的
+  `scrollIntoView`（讀 `prefers-reduced-motion` 退 `auto`）＋ `focus({preventScroll:true})` 都要轉——
+  省掉的話鍵盤使用者按完觸發鈕還留在原地。
 
 ### 有時長的暫時狀態 class
 
 - `.is-cited` 這種一次性高亮：**時長歸 CSS**（scss 的 `animation`，不帶 `forwards`），React 只負責切
   class ＋重播（remove → 強制重排 → add）。不要搬成 `setTimeout`——那會多出「連點同一顆」「連點不同顆」
   兩道重入守衛，而且 `.is-cited` 的語意是「當前這一列」，計時器版一不小心就變成「曾經點過的所有列」。
+- 落點：`className` **仍宣告式**綁在「當前那一列」（React 擁有它的增減、換列自動搬家），重播在**同一顆 effect
+  內同步**做完 `remove → void el.offsetWidth → add`——同步收尾後 DOM 與 vdom 一致，後續 re-render 不會洗掉它。
+  **不要用 `key` 重掛整列**（會連帶重置該列的 accordion 開合與剛移過去的焦點）。
+- 全域 `_base.scss` 的 `prefers-reduced-motion` 已把 `animation-duration` 壓成 `0.01ms !important`，故這類
+  CSS 高亮**不必**在 JS 再判一次 reduced-motion——要判的只有 `scrollIntoView` 這種 JS 捲動。
 
 ## ⑤ 平台原生機制保留
 
@@ -168,6 +238,18 @@
 - 已知差異類別（fpdiff 遇到時對照本條、不重新 root-cause）：AI 訊息內容 React 走 ReactMarkdown（`<p>` +
   margin），切版 dist 是手寫凍結 HTML——高度/y 位移 cascade 限於訊息內文子樹；驗法＝scope 到單一訊息比
   x/width（應 0 diff），內文高度差記 report。切版對此欄位本無 string→markup 契約。
+- **元件在切版 `component.html` 沒有 showcase demo 時**（`components/page-size-select`、`components/pager-row`），
+  「對 `dist/component.html` 比」不成立：改對**該元件實際出現的業務頁** `dist/<page>.html`，並用 `--react-route`
+  把 React 端資料量對齊切版的示範參數（`total`）。full-width 版位元件同時受「容器寬要相同」那條約束
+  ——`--component` 只 normalize 根的 x/y，根自己的 width 仍在零容忍比對內。
+- **樹狀資料攤平渲染時，「目前 X / N」的母體是樹的頂層陣列**（正典管線），不是攤平後的列數；攤平列只供渲染。
+  並要有一條「**有**子節點時分母不變」的測試——只測「沒有子節點」等於沒測。
+- **樣板拼接的階梯 class**（`is-depth-${n}`）在 React 也要 `Math.min(n, 上限)` 夾住（scss 沒定義的階數＝靜默
+  不縮排），且 **scss 定義的每一階都要有一條測試或 gallery render 得到它**，否則是出貨死 CSS。
+  陷阱：後端同名欄位（事件的 `depth`）不等於顯示樹深，縮排只能用 DFS 深度。
+- **toast 的 `|` 段數是契約**：React 端把段數硬編成 `segs[0..n]`，字典段數一改所有索引位移＝在錯的情況彈錯訊息。
+  改字典必須同批改索引，並用測試斷言段數。切版有 warning 分支、React 卻用 `disabled` 讓它不可達＝把契約演掉了
+  ——要 disable 只能 disable「進行中」。
 - 新規則附負控 + 空轉守門；能白名單就別黑名單。
 - 一列多個示範元素只實作部分時，fpdiff 對每顆各自下 `:nth-child(N)` selector（`document.querySelector` 單 root）。
 
@@ -196,6 +278,11 @@
 ## 測試設定
 
 - `vitest.config.ts` 的 `resolve.alias` 補 `tsconfig.json` `paths` 的 `@/` 映射（Vitest 底層 Vite 不自動套 tsconfig paths）。
+- **`scss-diff.mjs` 要進 CI**（`package.json` 加 `scss:check`：對一張「切版路徑 ↔ React 路徑」清單逐對跑、全綠才算過）。
+  手動跑的結果是「當時對」不是「持續對」——本輪 `_var.scss`／`_chat-message.scss`／`_multi-select.scss` 三支
+  同時悄悄分岔，就是缺這張網。清單本身也是覆蓋率證據（新元件忘了登記＝看得出來）。
+- 顏色角色／對比度的正確性**不在 React 重算**（11ty 的 `COLOR_ROLES` 已守），React 只需守「複本沒跟上」。
+  反之 React 獨有的東西（import 順序、consumer className、i18n 字典對帳）11ty 守不到，那才是 React 要自己加測試的地方。
 
 ## 驗收
 

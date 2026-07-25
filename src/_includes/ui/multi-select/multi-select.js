@@ -92,7 +92,12 @@ document.addEventListener("DOMContentLoaded", function () {
             var limit = window.innerHeight;
             for (var el = control.parentElement; el && el !== document.body; el = el.parentElement) {
                 var of = getComputedStyle(el);
-                if (of.overflow !== "visible" || of.overflowY !== "visible") {
+                // 空字串當成 visible：瀏覽器的 computed overflow 永遠是關鍵字，但測試環境
+                // （jsdom）對沒宣告過的元素回空字串——不容錯的話「第一個祖先」就會被誤判成
+                // 裁切祖先，limit 變成 0、下拉永遠翻上開（而且是「因為錯的理由」翻對）。
+                var ovX = of.overflow || "visible";
+                var ovY = of.overflowY || "visible";
+                if (ovX !== "visible" || ovY !== "visible") {
                     limit = Math.min(limit, el.getBoundingClientRect().bottom);
                     break;
                 }
