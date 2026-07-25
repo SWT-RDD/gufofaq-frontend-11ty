@@ -1,0 +1,17 @@
+{#
+  每頁筆數選擇器（page-size / per-page）。放在頁面層 pager 旁的 wrapper（不進 pagination 原子，
+  那塊 markup 逐位元照抄真 app、不加料）。
+  業務 <select>：值交給 React 讀去重新分頁/查詢，只掛 hook class `js-page-size`、切版**不**假造行為
+  （GUIDELINE §5）。預設 20；選項 10/20/50/100（100 為後端 Limit 上限，見舊 .NET CompletionBotController）。
+  數字是 <option> 值、不嵌在翻譯字串裡（i18n §4-2：可變數字要獨立節點）。
+#}
+<div class="page-size">
+    <span class="page-size-text" data-i18n="pagination.perPagePrefix">每頁</span>
+    <select class="form-control select-sm singleSelect page-size-select js-page-size" aria-label="每頁筆數" data-i18n-aria-label="pagination.perPageAriaLabel">
+        <option value="10">10</option>
+        <option value="20" selected>20</option>
+        <option value="50">50</option>
+        <option value="100">100</option>
+    </select>
+    <span class="page-size-text" data-i18n="pagination.perPageSuffix">筆</span>
+</div>

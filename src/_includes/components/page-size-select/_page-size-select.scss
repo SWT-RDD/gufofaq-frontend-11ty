@@ -1,0 +1,19 @@
+// page-size（每頁筆數）選擇器：頁面層 pager 旁的小工具。只做排版，配色/尺寸沿用 form-control 原子。
+// `js-page-size` 是給 React 讀值送查詢的 hook（GUIDELINE §5），此檔**不得**對它寫樣式。
+// select 的寬度用本元件自有的 slot class `.page-size-select` 覆寫（不直接改 form-control，同 §4）。
+.page-size {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    .page-size-text {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+        white-space: nowrap;
+    }
+
+    // 內嵌小工具不吃滿寬（form-control 預設 100%）——用自有 slot class 收成 auto。
+    .page-size-select {
+        width: auto;
+    }
+}
