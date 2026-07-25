@@ -2094,6 +2094,7 @@ test("§4-2 繁中原文相同的 chrome 沿用既有 key、不另立（同文�
     //   2) DELIBERATE 白名單——語意/單複數/兩套 app chrome/組字上下文確實不同（各附裁決理由）
     const DELIBERATE = new Set([
         "時間", "標題", "內容", "檔案名稱", "資料集名稱",                  // dataImport/dataset/audit 各區段表頭語境（round15 裁決暫留的舊家族）
+        "啟用", "停用",                                                    // 動作鈕（Enable/Disable，3-4 每列直送 PATCH）vs 狀態/選項（widget.active=Active、qaDirectModeOff=Off）
         "資料集", "所屬群組",                                              // 單/複數語意（Dataset/Datasets、Group/Groups）
         "開始時間", "結束時間", "關鍵字", "狀態",                          // qa 篩選 vs settings 統計篩選；批次匯入欄 vs widget 欄
         "無", "結果", "共", "讚", "倒讚", "筆", "第", "頁",                 // 量詞/前綴/評價的組字上下文各異（「第…個對話」vs「第…頁」、「共 N 頁」vs「第 N 頁」的英文形不同）
@@ -2346,4 +2347,44 @@ test("§3-1 每個 page-shell 頁都要有 header 導覽入口（或在檔頭註
     const stale = [...NO_NAV.keys()].filter((k) => !seenExempt.has(k));
     assert.equal(stale.length, 0, `NO_NAV 有過期項（該頁已進導覽或已刪）：${stale.join("、")}`);
     assert.equal(hits.length, 0, `§3-1：新頁要有導覽入口：\n${fail(hits)}`);
+});
+
+test("§4/§5 元件 js 掛上的狀態 class 都要有樣式主人（半套交付＝掛了沒人畫）", () => {
+    // 這一輪真的發生過：js 已改成「靠 CSS 動畫自己退場」，scss 卻還沒加 @keyframes ——
+    // 於是 .is-cited 加上去就永遠不退。單看 js 或單看 scss 都是合理的，只有配對檢查抓得到。
+    // 白名單：全域工具 class（hidden/active…）由 utilities/base 擁有，不算元件的私有狀態。
+    const globalCss = ["src/scss/_utilities.scss", "src/scss/_base.scss", "src/scss/_form-check.scss"]
+        .filter((f) => existsSync(f)).map((f) => read(f)).join("\n");
+    const hits = [];
+    let seen = 0;
+    for (const { bucket, name, path } of componentDirs) {
+        const js = `${path}/${name}.js`;
+        if (!existsSync(js)) continue;
+        const code = read(js).split(/\r?\n/).map((l) => l.replace(/\/\/.*$/, "")).join("\n");
+        const ownScss = existsSync(`${path}/_${name}.scss`) ? read(`${path}/_${name}.scss`) : "";
+        // classList.add("x") / .toggle("x", …) / .remove("x")
+        for (const m of code.matchAll(/classList\.(?:add|toggle|remove)\(\s*["']([\w-]+)["']/g)) {
+            const cls = m[1];
+            seen++;
+            if (ownScss.includes(cls)) continue;                       // 自家 scss 有規則
+            if (new RegExp(`\\.${cls}\\b`).test(globalCss)) continue;  // 全域工具
+            // 別的元件擁有它也算（跨元件狀態：sources-block 的 .is-cited 由自家 scss 畫，這裡是保險）
+            const anyScss = srcScss.some((f) => new RegExp(`\\.${cls}\\b`).test(read(f)));
+            if (anyScss) continue;
+            hits.push(`${bucket}/${name}/${name}.js  classList → "${cls}"  ← 全站 scss 找不到它的規則`);
+        }
+    }
+    assert.ok(seen >= 20, `只掃到 ${seen} 個 js 狀態 class —— 這條測試在空轉`);
+    assert.equal(hits.length, 0, `§4：js 掛的狀態 class 沒有樣式主人（scss 那一半沒交付）：\n${fail(hits)}`);
+});
+
+test("§4 dropdown 的「翻上開」必須 js 與 scss 成對交付（只做一半＝旗標掛了沒效果）", () => {
+    // multiSelect 放進 <dialog> 後，下方空間不足時要往上開（實測：不翻的話下拉有 244px 落在
+    // 捲動容器可視框外＝使用者到不了）。js 掛 .open-up、scss 給它 top/bottom 反轉，缺一邊都沒用。
+    const js = read("src/_includes/ui/multi-select/multi-select.js");
+    const scss = read("src/_includes/ui/multi-select/_multi-select.scss");
+    const jsHas = /open-up/.test(js);
+    const scssHas = /\.open-up\b/.test(scss) && /bottom:\s*calc\(100% \+ 4px\)/.test(scss);
+    assert.ok(jsHas, "multi-select.js 沒有 .open-up 的判斷 —— 下拉在 modal 底部會被裁掉");
+    assert.ok(scssHas, "_multi-select.scss 沒有 .open-up 的位置反轉規則 —— js 掛了旗標但沒有任何效果");
 });

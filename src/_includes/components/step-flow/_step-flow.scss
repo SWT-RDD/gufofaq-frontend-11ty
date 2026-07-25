@@ -145,15 +145,5 @@
         }
     }
 
-    // 展開細節裡的工具/參數行內碼（沿用 chat-message 行內碼的墨色視覺：--brand-ink + --surface-sunken）
-    .step-flow-code {
-        display: inline-block;
-        padding: 0.0625rem 0.375rem;
-        border-radius: 4px;
-        background-color: var(--surface-sunken);
-        color: var(--brand-ink);
-        font-family: var(--fontFamilyMono);
-        font-size: 0.8125rem;
-        word-break: break-word;
-    }
+    // 行內碼的視覺已升格成共用原子 ui/inline-code（.inline-code），本檔不再抄一份（§4）。
 }

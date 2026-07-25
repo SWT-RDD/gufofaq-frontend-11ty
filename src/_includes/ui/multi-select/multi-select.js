@@ -79,9 +79,34 @@ document.addEventListener("DOMContentLoaded", function () {
         function selectedOptions() { return options().filter(function (o) { return o.selected; }); }
         function items() { return Array.prototype.slice.call(dropdown.querySelectorAll(".multi-select-option")); }
 
+        // 下拉往下放不下時改往上開。為什麼需要它：下拉是 position:absolute，會被任何「非 visible 溢出」
+        // 的祖先裁掉——`<dialog>` 的 .modals-wrap 為了圓角上了 overflow:hidden，所以放在 modal 靠下方的
+        // multiSelect（skill 編輯器的巢狀 skill 欄）一旦選項多到吃滿 max-height，下緣就被切掉。
+        // 只問「可用空間」不複寫任何斷點值（§5：斷點只有 mixin 那一份真相）。
+        function placeDropdown() {
+            wrapper.classList.remove("open-up");
+            var box = control.getBoundingClientRect();
+            // 需要的高度：實際 scrollHeight，但不超過 css 的 max-height（15rem）
+            var need = Math.min(dropdown.scrollHeight, parseFloat(getComputedStyle(dropdown).maxHeight) || Infinity);
+            // 最近的裁切祖先（overflow 非 visible）的下緣；沒有就用視窗下緣
+            var limit = window.innerHeight;
+            for (var el = control.parentElement; el && el !== document.body; el = el.parentElement) {
+                var of = getComputedStyle(el);
+                if (of.overflow !== "visible" || of.overflowY !== "visible") {
+                    limit = Math.min(limit, el.getBoundingClientRect().bottom);
+                    break;
+                }
+            }
+            var below = limit - box.bottom - 4;   // 4px＝下拉與控制項的間距（見 _multi-select.scss）
+            var above = box.top - 4;
+            if (need > below && above > below) wrapper.classList.add("open-up");
+        }
+
         function setOpen(open) {
             wrapper.classList.toggle("open", open);
             search.setAttribute("aria-expanded", open ? "true" : "false");
+            if (open) placeDropdown();
+            else wrapper.classList.remove("open-up");
             if (!open) {
                 search.value = "";
                 activeIndex = -1;

@@ -116,7 +116,7 @@
                                         <th data-i18n="agent.skill">Skill</th>
                                         {# 版號與 skill 名之間的間距只由 .step-node-version 的 margin 給，
                                              markup 不留字面空白（兩者疊加會變成雙倍距，同 beta-icon 的先例）。 #}
-                                        <td><code class="step-flow-code">{{ node.skill }}</code>{% if node.version %}<span class="step-node-version">{{ node.version }}</span>{% endif %}</td>
+                                        <td><code class="inline-code">{{ node.skill }}</code>{% if node.version %}<span class="step-node-version">{{ node.version }}</span>{% endif %}</td>
                                     </tr>
                                     {% endif %}
                                     {% if node.iterations %}
@@ -134,13 +134,13 @@
                                     {% if node.tools %}
                                     <tr>
                                         <th data-i18n="agent.tool">工具</th>
-                                        <td><code class="step-flow-code">{{ node.tools }}</code></td>
+                                        <td><code class="inline-code">{{ node.tools }}</code></td>
                                     </tr>
                                     {% endif %}
                                     {% if node.params %}
                                     <tr>
                                         <th data-i18n="agent.params">參數</th>
-                                        <td><code class="step-flow-code">{{ node.params }}</code></td>
+                                        <td><code class="inline-code">{{ node.params }}</code></td>
                                     </tr>
                                     {% endif %}
                                     {% if node.result %}

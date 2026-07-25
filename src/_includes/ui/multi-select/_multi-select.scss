@@ -167,6 +167,13 @@
     display: block;
 }
 
+// 往上開：下方空間不足時由 multi-select.js 掛 .open-up（例：`<dialog>` 的 .modals-wrap 為了圓角
+// 上了 overflow:hidden，放在 modal 靠下方的 multiSelect 選項一多，下緣就會被裁掉）。
+.multi-select.open-up .multi-select-dropdown {
+    top: auto;
+    bottom: calc(100% + 4px);
+}
+
 .multi-select-option {
     padding: 0.625rem 0.5rem;
     font-size: 1rem;

@@ -1,0 +1,20 @@
+// 行內碼（`.inline-code`）：把識別字（skill 名、工具名、參數）畫成一塊墨色 chip。
+// 這個視覺原本在三處各抄一份且數值已開始分岔（step-flow 的 .step-flow-code padding 0.0625/0.375、
+// radius 4、font-size .8125；chat-message 的 markdown `code` padding 0.125/0.25、radius 3、font-size .875；
+// 3-4 的裸 <code> 什麼都沒有）——§4「兩個以上元件必須同值的東西抽成共用正本」，故升格成 ui 原子。
+//
+// 無 html 檔：它是「直接在 markup 寫 class」的單元素原子（同 ui/button／ui/block 的用法）。
+// markup 契約：`<code class="inline-code">refund-flow</code>`。
+//
+// 唯一還留在別處的一份是 chat-message 的 markdown `code`：那顆元素由 markdown renderer 產生、
+// 掛不上 class，故它只能自己寫規則——但值以本檔為準（見該檔註解），不再各自漂移。
+.inline-code {
+    display: inline-block;
+    padding: 0.0625rem 0.375rem;
+    border-radius: 4px;
+    background-color: var(--surface-sunken);
+    color: var(--brand-ink); // 前景墨色疊 sunken（COLOR_ROLES.pairs 已登記 5.19／4.86）
+    font-family: var(--fontFamilyMono);
+    font-size: 0.8125rem;
+    word-break: break-word;
+}

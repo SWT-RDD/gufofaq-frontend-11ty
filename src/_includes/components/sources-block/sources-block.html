@@ -1,5 +1,8 @@
 {# 取自真實頁 pages/qaHistory/4-2_qaHistory_detail.html「參考來源」區塊（class 沿用真實系統）。
-     .sources-block 本身無 scss 規則（外觀來自 .block + .default-table + ui/accordion）；展開/收合互動的根改用 accordion 自有的 .js-accordion（見 ui/accordion，§1 原子解耦）。
+     .sources-block 的外觀主要來自 .block + .default-table + ui/accordion；自有 scss 只有一條狀態：
+     `tr.is-cited > td`＝被答案內文的引用標記（components/citation-ref 的 [[N]]）點到的那一列的高亮動畫
+     （見 _sources-block.scss；class 的主人是本元件，因為被套用的元素是本元件的 <tr>）。
+     展開/收合互動的根改用 accordion 自有的 .js-accordion（見 ui/accordion，§1 原子解耦）。
      參數（頁面 include 前 set，見 §3-2/§6）：
        sources：來源列陣列（每筆欄位：no/file/dataset/title/time/content/note1/note2/reference）
        sourcesHidden：true 時根加 .hidden（真實頁預設隱藏、等 JS 依載入狀態顯示）

@@ -13,9 +13,9 @@
      故 UI 不提供「全選」之類的捷徑（勾了什麼就是什麼）。
    示範資料＝假資料，依 GUIDELINE §4-2「只翻 UI chrome、不翻假資料」不掛 data-i18n。
    示範資料變數用元件專屬名 skillEditorBuiltinTools（{% set %} 是頁面全域，§2/§6）。
-   刻意未做（後端有、UI 緩做，§5 要求記載）：input_schema（agent 呼叫這顆工具的參數形狀，
-     chatbot SkillCreate.input_schema）與 enabled 開關（product SkillUpdateIn.enabled）——
-     3-4 的清單只顯示啟用狀態、沒有切換入口，兩者待補。 #}
+   欄位對齊正本：name／description／instructions／allowed_tools 四桶／input_schema／max_iterations
+     （chatbot SkillCreate、product SkillIn）；enabled 不在本窗，走清單列的啟用／停用直送鈕
+     （product SkillUpdateIn.enabled，見 3-4）。 #}
 {% set skillEditorBuiltinTools = [
     { name: "calculate", checked: true },
     { name: "convert_units", checked: false },
@@ -113,6 +113,19 @@
                                     <option value="3">policy-lookup</option>
                                 </select>
                                 <p class="skill-editor-hint" id="skillNestedHint" data-i18n="settings.skillNestedHint">被引用的 skill 會成為這個 skill 可呼叫的工具。不可互相引用成環，巢狀深度上限 3 層。</p>
+                            </div>
+                        </div>
+                        <div class="form-group row mobile-col">
+                            <div class="label label-md">
+                                <label for="skillInputSchemaInput" class="control-label" data-i18n="settings.skillInputSchema">參數格式</label>
+                            </div>
+                            <div class="field col-12-sm">
+                                <textarea id="skillInputSchemaInput" class="form-control skill-editor-instructions" aria-describedby="skillInputSchemaHint">{
+  "type": "object",
+  "properties": { "order_id": { "type": "string" } },
+  "required": ["order_id"]
+}</textarea>
+                                <p class="skill-editor-hint" id="skillInputSchemaHint" data-i18n="settings.skillInputSchemaHint">JSON Schema，決定 agent 呼叫這顆工具時要給什麼參數（頂層必須是 object；不可宣告 document_ids／indexes／dsl）。留空＝agent 用一句自然語言的 task 呼叫它。</p>
                             </div>
                         </div>
                         <div class="form-group row mobile-col">

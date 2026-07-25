@@ -1,6 +1,6 @@
 // 程式碼區塊（5-9 萃取 API 的 curl 範例）：等寬字 + 內嵌面板底色 + 水平捲動。
 // 純樣式元件（無 html/js）：markup 直接寫 <pre class="code-block"><code>…</code></pre>。
-// 等寬字用全域 --fontFamilyMono token（同 chat-message／step-flow-code；§4 共用字型堆疊抽全域）。顏色全用語意 token。
+// 等寬字用全域 --fontFamilyMono token（同 chat-message／ui/inline-code；§4 共用字型堆疊抽全域）。顏色全用語意 token。
 .code-block {
     margin: 0;
     padding: 0.75rem 1rem;

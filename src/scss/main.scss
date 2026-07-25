@@ -47,6 +47,7 @@
 // ⚠️ 這份清單的順序＝層疊順序，不要為了「照桶排整齊」而重排
 @use "../_includes/ui/default-table/default-table";
 @use "../_includes/ui/tablelist-title/tablelist-title";
+@use "../_includes/ui/inline-code/inline-code";
 @use "../_includes/ui/code-block/code-block";
 @use "../_includes/components/file-preview-modal/file-preview-modal";
 @use "../_includes/components/glossary-entries-modal/glossary-entries-modal";
@@ -90,6 +91,8 @@
 @use "../_includes/components/sources-block/sources-block";
 // 引用標記：答案內文的 [[N]] 上標小徽章（點擊跳到參考來源第 N 筆）
 @use "../_includes/components/citation-ref/citation-ref";
+// Skill 試跑沙盒：答案輸出槽（其餘版型走 .block／form-group／utilities）
+@use "../_includes/components/skill-try-sandbox/skill-try-sandbox";
 
 // 元件庫展示頁（component.html）專屬版型/說明樣式，放在最後避免與一般頁面規則衝突
 @use "guideline-var"; // showcase 頁專屬色盤（--gl-*，不進 _var）

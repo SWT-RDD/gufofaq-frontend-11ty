@@ -1,0 +1,14 @@
+// Skill 試跑沙盒。版型全走 .block／form-group／utilities，本檔只擁有答案輸出槽的長相——
+// 它是「一段會被串流填進來的長文」，需要可讀的行距與一塊與周邊區隔的底，才看得出哪裡是模型講的話。
+.skill-try {
+    .skill-try-answer {
+        padding: 0.75rem 1rem;
+        border-radius: 4px;
+        // 底用 sunken（同 code-block／accordion 內嵌面板的既有語意：這是一塊嵌進來的內容），
+        // 內文 --text 疊 sunken 已在 COLOR_ROLES.pairs 登記過。
+        background-color: var(--surface-sunken);
+        color: var(--text);
+        line-height: 1.8;
+        white-space: pre-wrap; // 串流回來的答案含換行，照原樣呈現
+    }
+}
