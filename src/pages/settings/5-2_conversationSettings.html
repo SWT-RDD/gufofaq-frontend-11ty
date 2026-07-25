@@ -310,6 +310,29 @@ permalink: 5-2_conversationSettings.html
                     </select>
                 </div>
             </div>
+            <div class="form-group col-6-md col-12-sm">
+                {# 時區（per-config）：日期/時間工具與顯示所用時區。值為 IANA 時區 id（非翻譯字串，故 option 不掛 data-i18n）。 #}
+                <div class="label"><label for="genTimezone" class="control-label" data-i18n="settings.timezone">時區</label></div>
+                <div class="field">
+                    <select class="form-control singleSelect js-timezone" id="genTimezone">
+                        <option value="Asia/Taipei" selected>Asia/Taipei</option>
+                        <option value="Asia/Shanghai">Asia/Shanghai</option>
+                        <option value="Asia/Hong_Kong">Asia/Hong_Kong</option>
+                        <option value="Asia/Tokyo">Asia/Tokyo</option>
+                        <option value="Asia/Singapore">Asia/Singapore</option>
+                        <option value="Asia/Seoul">Asia/Seoul</option>
+                        <option value="Asia/Kuala_Lumpur">Asia/Kuala_Lumpur</option>
+                        <option value="Asia/Bangkok">Asia/Bangkok</option>
+                        <option value="UTC">UTC</option>
+                        <option value="America/New_York">America/New_York</option>
+                        <option value="America/Los_Angeles">America/Los_Angeles</option>
+                        <option value="America/Chicago">America/Chicago</option>
+                        <option value="Europe/London">Europe/London</option>
+                        <option value="Europe/Paris">Europe/Paris</option>
+                        <option value="Australia/Sydney">Australia/Sydney</option>
+                    </select>
+                </div>
+            </div>
         </div>
     </div>
 </div>

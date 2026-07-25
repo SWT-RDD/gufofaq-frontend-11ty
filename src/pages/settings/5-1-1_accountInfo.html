@@ -69,6 +69,22 @@ permalink: 5-1-1_accountInfo.html
                 </div>
             </div>
         </div>
+        <div class="flex-row gap-40 mobile-column sm-gap-16">
+            <div class="col-6-md col-12-sm">
+                <div class="form-group">
+                    <div class="label">
+                        {# 語言＝送 chatbot 的 Accept-Language（控其系統/警告訊息語言）；per-tenant，值 zh-TW/en。 #}
+                        <label for="accountLanguageSelect" class="control-label" data-i18n="settings.language">語言</label>
+                    </div>
+                    <div class="field">
+                        <select id="accountLanguageSelect" class="form-control singleSelect account-language">
+                            <option value="zh-TW" selected data-i18n="settings.langZhTw">繁體中文</option>
+                            <option value="en" data-i18n="settings.langEn">English</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
     <div class="flex-row align-items-center justify-content-center gap-16">
         <button type="button" class="button button-border" data-i18n="action.cancel">取消</button>
