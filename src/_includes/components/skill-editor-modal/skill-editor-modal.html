@@ -12,7 +12,10 @@
      其他 skill）。它是**安全邊界**——子圖只用勾選的工具建起來，沒勾的在執行時根本不存在，
      故 UI 不提供「全選」之類的捷徑（勾了什麼就是什麼）。
    示範資料＝假資料，依 GUIDELINE §4-2「只翻 UI chrome、不翻假資料」不掛 data-i18n。
-   示範資料變數用元件專屬名 skillEditorTools（{% set %} 是頁面全域，§2/§6）。 #}
+   示範資料變數用元件專屬名 skillEditorBuiltinTools（{% set %} 是頁面全域，§2/§6）。
+   刻意未做（後端有、UI 緩做，§5 要求記載）：input_schema（agent 呼叫這顆工具的參數形狀，
+     chatbot SkillCreate.input_schema）與 enabled 開關（product SkillUpdateIn.enabled）——
+     3-4 的清單只顯示啟用狀態、沒有切換入口，兩者待補。 #}
 {% set skillEditorBuiltinTools = [
     { name: "calculate", checked: true },
     { name: "convert_units", checked: false },
@@ -62,13 +65,13 @@
                         </div>
 
                         <div class="text-md text-bold" data-i18n="settings.skillAllowedTools">可使用的工具</div>
-                        <p class="skill-editor-hint" data-i18n="settings.skillAllowedToolsHint">只有勾選的工具能被這個 skill 使用；沒勾的在執行時根本不存在，不是「不准用」而是「用不到」。</p>
+                        <p class="skill-editor-hint m-0" id="skillAllowedToolsHint" data-i18n="settings.skillAllowedToolsHint">只有勾選的工具能被這個 skill 使用；沒勾的在執行時根本不存在，不是「不准用」而是「用不到」。</p>
                         <div class="form-group row mobile-col">
                             <div class="label label-md">
                                 <label class="control-label" id="skillBuiltinToolsLabel" data-i18n="settings.builtinTools">內建工具</label>
                             </div>
                             <div class="field col-12-sm">
-                                <div class="flex-row flex-wrap gap-16" role="group" aria-labelledby="skillBuiltinToolsLabel">
+                                <div class="flex-row flex-wrap gap-16" role="group" aria-labelledby="skillBuiltinToolsLabel" aria-describedby="skillAllowedToolsHint">
                                     {% for tool in skillEditorBuiltinTools %}
                                     <label class="form-checkbox">
                                         <input type="checkbox" class="js-skill-builtin" value="{{ tool.name }}"{% if tool.checked %} checked{% endif %}>
@@ -105,11 +108,11 @@
                                 <label for="skillNestedSelect" class="control-label" data-i18n="settings.skillNested">巢狀 Skill</label>
                             </div>
                             <div class="field col-12-sm">
-                                <select id="skillNestedSelect" class="form-control multiSelect js-skill-nested" multiple="multiple" data-placeholder="請選擇" data-placeholder-key="common.pleaseSelect">
+                                <select id="skillNestedSelect" class="form-control multiSelect js-skill-nested" multiple="multiple" data-placeholder="請選擇" data-placeholder-key="common.pleaseSelect" aria-describedby="skillNestedHint">
                                     <option value="2" selected>lookup-order</option>
                                     <option value="3">policy-lookup</option>
                                 </select>
-                                <p class="skill-editor-hint" data-i18n="settings.skillNestedHint">被引用的 skill 會成為這個 skill 可呼叫的工具。不可互相引用成環，巢狀深度上限 3 層。</p>
+                                <p class="skill-editor-hint" id="skillNestedHint" data-i18n="settings.skillNestedHint">被引用的 skill 會成為這個 skill 可呼叫的工具。不可互相引用成環，巢狀深度上限 3 層。</p>
                             </div>
                         </div>
                         <div class="form-group row mobile-col">
@@ -126,7 +129,10 @@
                 <div class="modals-footer">
                     <div class="button-row center">
                         <button type="button" class="button button-border btn-close-modals" data-i18n="action.cancel">取消</button>
-                        <button type="button" class="button button-primary btn-close-modals" data-toast="Skill 已更新|更新失敗" data-i18n-data-toast="toast.saveSkill" data-toast-type="success|error" data-i18n="action.save">儲存</button>
+                        {# 不掛 btn-close-modals：驗證 warning 是「留在窗內就能改」的（名稱格式/重名、用途說明必填、
+                             迭代 1-20、巢狀成環或超深——全部是窗內欄位，chatbot validate_skill_definition
+                             回 400），每點必關窗會把剛編好的內容一起關掉（§5）。 #}
+                        <button type="button" class="button button-primary js-save-skill" data-toast="Skill 已更新|欄位未通過驗證（名稱格式或重複、用途說明必填、迭代 1-20、巢狀不可成環）|更新失敗" data-i18n-data-toast="toast.saveSkill" data-toast-type="success|warning|error" data-i18n="action.save">儲存</button>
                     </div>
                 </div>
             </div>

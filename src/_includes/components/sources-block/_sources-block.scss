@@ -1,10 +1,36 @@
 // 參考來源區塊的外觀來自 .block + .default-table + ui/accordion（見同資料夾 html 檔頭）；
 // 本檔只擁有一個本元件自有的狀態：被答案內文的引用標記 [[N]] 點到的那一列。
 //
-// 為什麼狀態放這裡而不是 ui/citation-ref：被套用的元素是本元件的 <tr>，
+// 為什麼狀態放這裡而不是 components/citation-ref：被套用的元素是本元件的 <tr>，
 // class 的主人就該是本元件（§4 一名一主：不去別人的檔案裡改別人的 DOM）。
+//
+// 三個約束決定了下面的寫法：
+//   1. **底色不能寫在 `<tr>` 上**：default-table 給 `tbody tr td` 上了不透明的 --surface-raised，
+//      而 cell 背景畫在 row 背景之上（CSS 表格繪製層序 row < cell）——寫在 tr 上的底色 100% 被蓋掉，
+//      是連 stylelint 與對比度測試都看不到的死樣式。狀態底色一律畫在 cell 上。
+//   2. **不換 cell 底色，改用邊界表達**：這一列裡有內文、連結與遮罩圖示，換底色就得逐一重算它們的
+//      對比（§4 硬規則，且 --text-muted 疊 --brand-tint 深色只有 3.74）。邊界不動任何前景：
+//      --brand 對 --surface-raised 4.89:1（深色 3.21:1）≥ 3:1（WCAG 1.4.11 圖形記號）。
+//   3. **動畫寫在 CSS**（§7：沒有計時器可搬）。不帶 forwards，跑完自己回到無邊界，故 js 不必卸 class、
+//      也不必為「連點同一顆 [[N]]」寫重入守衛（見 sources-block.js）。
 .sources-block {
-    tr.is-cited {
-        background-color: var(--brand-tint);
+    tr.is-cited > td {
+        animation: sources-cited-flash 1.6s ease-out;
+    }
+}
+
+// 上下兩道橫線橫貫整列後淡出。刻意不補左右側邊：box-shadow 畫在每一個 cell 上，
+// 側邊會落在每一格的兩側而變成格線，反而讀不出「這是一列」。
+@keyframes sources-cited-flash {
+    from {
+        box-shadow:
+            inset 0 2px 0 var(--brand),
+            inset 0 -2px 0 var(--brand);
+    }
+
+    to {
+        box-shadow:
+            inset 0 2px 0 transparent,
+            inset 0 -2px 0 transparent;
     }
 }

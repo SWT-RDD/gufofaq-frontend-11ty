@@ -15,6 +15,54 @@ document.addEventListener("DOMContentLoaded", function () {
         return (window.GufoI18n && window.GufoI18n.t) ? window.GufoI18n.t(key, zh) : zh;
     }
 
+    // 下面三個函式不依賴任何單一 .js-accordion 根（只從 btn 自己往上找列），故住在外層供所有根與
+    // 匯出的 API 共用——setOpen 是本元件唯一改變狀態的入口，aria/標籤/動畫都在它裡面一次寫齊。
+    function findContent(btn) {
+        var row = btn.closest("tr");
+        var detailRow = row ? row.nextElementSibling : null;
+        if (!detailRow || !detailRow.classList.contains("detail-row")) return null;
+        return detailRow.querySelector(".accordion-content");
+    }
+
+    // 一次寫齊：aria 狀態、可見/輔具標籤、以及供 lang-toggle 重譯用的 i18n key
+    function label(btn, open) {
+        var key = open ? KEY_COLLAPSE : KEY_EXPAND;
+        var text = open ? t(KEY_COLLAPSE, ZH_COLLAPSE) : t(KEY_EXPAND, ZH_EXPAND);
+        btn.setAttribute("aria-expanded", open ? "true" : "false");
+        btn.setAttribute("title", text);
+        btn.setAttribute("data-i18n-title", key);
+        var srOnly = btn.querySelector(".sr-only");
+        if (srOnly) {
+            srOnly.textContent = text;
+            srOnly.setAttribute("data-i18n", key);
+        }
+    }
+
+    // animate=false 用在初始態：頁面一載入不該看到明細「滑」出來又收回去
+    function setOpen(btn, open, animate) {
+        btn.classList.toggle("open", open);
+        label(btn, open);
+        var content = findContent(btn);
+        if (!content) return;
+        if (animate === false) window.GufoSlide.set(content, open);
+        else if (open) window.GufoSlide.down(content); // 真 app 是 slideDown(300)
+        else window.GufoSlide.up(content);
+    }
+
+    // 供別的元件呼叫（§5：要操作別的元件就呼叫它匯出的函式）。
+    // 為什麼需要這個匯出：`sources-block` 的「跳到第 N 筆來源」要順手展開那一列。沒有 API 時只剩
+    // `btn.click()` 一條路，而合成點擊會重新進入全站每一支 document 委派（例如祖先上的 data-toast
+    // 計數器會被多推一格），且 accordion 尚未綁定時它靜默失敗、呼叫端偵測不到。
+    // 回傳「有沒有真的動」：已是該狀態就不重播 300ms 動畫。
+    window.GufoAccordion = {
+        setOpen: function (btn, open) {
+            var want = open !== false;
+            if (!btn || btn.classList.contains("open") === want) return false;
+            setOpen(btn, want);
+            return true;
+        },
+    };
+
     // §1 原子解耦：掃描 accordion 自有的 .js-accordion 根，不再綁定 components/ 的 .sources-block
     var blocks = document.querySelectorAll(".js-accordion");
 
@@ -23,38 +71,6 @@ document.addEventListener("DOMContentLoaded", function () {
         block.querySelectorAll(".accordion-content").forEach(function (content) {
             content.style.display = "none";
         });
-
-        function findContent(btn) {
-            var row = btn.closest("tr");
-            var detailRow = row ? row.nextElementSibling : null;
-            if (!detailRow || !detailRow.classList.contains("detail-row")) return null;
-            return detailRow.querySelector(".accordion-content");
-        }
-
-        // 一次寫齊：aria 狀態、可見/輔具標籤、以及供 lang-toggle 重譯用的 i18n key
-        function label(btn, open) {
-            var key = open ? KEY_COLLAPSE : KEY_EXPAND;
-            var text = open ? t(KEY_COLLAPSE, ZH_COLLAPSE) : t(KEY_EXPAND, ZH_EXPAND);
-            btn.setAttribute("aria-expanded", open ? "true" : "false");
-            btn.setAttribute("title", text);
-            btn.setAttribute("data-i18n-title", key);
-            var srOnly = btn.querySelector(".sr-only");
-            if (srOnly) {
-                srOnly.textContent = text;
-                srOnly.setAttribute("data-i18n", key);
-            }
-        }
-
-        // animate=false 用在初始態：頁面一載入不該看到明細「滑」出來又收回去
-        function setOpen(btn, open, animate) {
-            btn.classList.toggle("open", open);
-            label(btn, open);
-            var content = findContent(btn);
-            if (!content) return;
-            if (animate === false) window.GufoSlide.set(content, open);
-            else if (open) window.GufoSlide.down(content); // 真 app 是 slideDown(300)
-            else window.GufoSlide.up(content);
-        }
 
         // 初始態：內容已隱藏 → aria-expanded=false（markup 未帶時補上，讓輔具在首次互動前就知道可展開）
         block.querySelectorAll(".accordion-btn").forEach(function (btn) {

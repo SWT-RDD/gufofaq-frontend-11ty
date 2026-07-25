@@ -7,7 +7,9 @@
     <div class="flex-row column gap-16">
         <div class="form-group">
             <div class="label">
-                <label class="control-label">帳號</label>
+                {# 展示片段的靜態欄位標題：沒有控制項可 for，故用 <span>——懸空 <label> 點了不會聚焦、
+                     對輔具也沒有語意（§4）。 #}
+                <span class="control-label">帳號</span>
             </div>
             <div class="field">test@example.com</div>
         </div>

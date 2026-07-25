@@ -235,7 +235,7 @@ scrollbar-thin scrollbar-thumb-scrollbar-thumb scrollbar-track-transparent
 - `body.chatbot-page { overflow: hidden }` 只限這頁，別寫成全域。
 
 ### 5-9. CSS 動畫（`@keyframes`）——**Tailwind 純 utility 表達不了具名 keyframe**
-**本專案全站沒有任何 `@keyframes`**（grep 可證）。modal 的進出場不是動畫，是 `<dialog>` 的 `[open]` 屬性驅動的 discrete transition：`opacity`/`transform` 搭配 `transition: display 0.3s allow-discrete, overlay 0.3s allow-discrete` 與 `@starting-style`（見 `_modals.scss`）。轉 v4 用 `starting:` variant + `transition-discrete`（`transition-behavior: allow-discrete`），**不是** `tailwindcss-animate`。`.modals::backdrop` 同理：`[open]::backdrop` 從 `@starting-style` 的 transparent 過渡到 `var(--overlay)`。toast 的 `.toast.show` 淡入也是 `transition: opacity`（`_toast.scss`），不是 keyframe——全站零 keyframe，一顆都不需要 `tailwindcss-animate`。
+**本專案只有一個 `@keyframes`**（`_sources-block.scss` 的 `sources-cited-flash`，見 Gotcha 20；其餘一個都沒有，grep 可證）。modal 的進出場不是動畫，是 `<dialog>` 的 `[open]` 屬性驅動的 discrete transition：`opacity`/`transform` 搭配 `transition: display 0.3s allow-discrete, overlay 0.3s allow-discrete` 與 `@starting-style`（見 `_modals.scss`）。轉 v4 用 `starting:` variant + `transition-discrete`（`transition-behavior: allow-discrete`），**不是** `tailwindcss-animate`。`.modals::backdrop` 同理：`[open]::backdrop` 從 `@starting-style` 的 transparent 過渡到 `var(--overlay)`。toast 的 `.toast.show` 淡入也是 `transition: opacity`（`_toast.scss`），不是 keyframe——除了那一顆一次性高亮，其餘零 keyframe，都不需要 `tailwindcss-animate`。
 
 ---
 
@@ -257,7 +257,21 @@ scrollbar-thin scrollbar-thumb-scrollbar-thumb scrollbar-track-transparent
 14. **z-index 值一律 arbitrary**：Tailwind 只出 `z-0..z-50`，但 code 有 `toast 2000`、`.skip-link 2000`、`header 1000`（子選單 `15`）、`modals 1000`（含 `.modals-close 1`）、`subscription-overlay 1000`、`mobile-nav 97~100`、`multi-select 20`、`switch 10`、`tooltip 10`、`qa-side-panel 10/2/1`、`chatroom-shell 5`、`login-wrapper 1` → 一律 `z-[N]`，別夾成 `z-50` 破壞疊層（小值如 `5` 也沒有對應 utility）。
 15. **事件委派的資料屬性不是樣式**：`data-open-modal="X"`（`ui/modals`）與 `data-toast="…"`（`ui/toast`）是切版期「markup 沒有 props 可傳」的替身，由掛在 `document` 的委派接手。轉 React 時**一律換成 `onClick`**（`onClick={() => openModal("X")}`），不要保留這兩個屬性、也不要保留 document-level 委派。
 16. **版面值裡的 `max()/min()/calc()`**：如 `qa-side-panel` 的 `top: max(72px, 100vh - 550px)` → arbitrary 並把算式包進 `calc()`：`top-[max(72px,calc(100vh-550px))]`（底線代空白、留意巢狀）。
-17. **相鄰兄弟選擇器機械轉抓不到**：`success-box p+p`、`header li+li`、`radio &+span`、`form-table &+.form-table-group`、`switch :checked+.switch-box` 這類 `+`/`~` 選擇器，class→className 會漏 → 用 `[&+p]:…` 等 arbitrary variant，或改結構。
+18. **模板算出來的 class 名 → 靜態列舉的查表，不是拼字串**：切版有 `is-{{ node.state }}`、
+    `is-depth-{{ node.depth }}`（step-flow）、`field-{{ field.key }}`（multi-select-box）這種樣板組出來的
+    class。Tailwind JIT 只掃字面 class，`` `pl-[${depth*16}px]` `` 與 `` `is-depth-${n}` `` 一律掃不到（且不是
+    §4-2 的資料驅動例外）→ 寫成 **key → 完整 utility 字串的靜態 map**，每個分支的 class 都字面出現在
+    原始碼裡：`const PAD = { 1: "pl-4", 2: "pl-8", 3: "pl-12" }`。值域照 **scss 實際宣告了哪幾階**
+    （`_step-flow.scss` 只到 `is-depth-3`，更深的由模板夾到第 3 階——照抄這個上限，別自己外推成公式）。
+    判準：**值域可枚舉 → 靜態 map；連續資料（storage-bar `84.3%`）→ §4-2 的行內 `style`**。
+19. **非樣式 class 不參與翻譯，原樣留在 `className`**：業務 hook（`.js-page-size`、`.copyBtn`…）與 slot
+    class 在 scss 找不到樣式，但它們是 React 綁定契約（GUIDELINE §5），不是可以被 utility 取代的東西——
+    utility 串**加在它旁邊**，不取代它。`page-size-select` 是極端例：除了 hook 什麼都沒有，零 CSS 路徑的
+    機械轉換最容易把它整條蒸發。
+20. **一次性高亮需要 `@keyframes`**：`.is-cited`（`_sources-block.scss`）是全站唯一的 keyframe 動畫——
+    §5-9「本專案全站沒有任何 `@keyframes`」已不成立。它可用 `animate-[…]` arbitrary animation ＋
+    `@theme` 裡的 keyframes 定義承接，不需要 `tailwindcss-animate`。
+21. **相鄰兄弟選擇器機械轉抓不到**：`success-box p+p`、`header li+li`、`radio &+span`、`form-table &+.form-table-group`、`switch :checked+.switch-box` 這類 `+`/`~` 選擇器，class→className 會漏 → 用 `[&+p]:…` 等 arbitrary variant，或改結構。
 
 ---
 

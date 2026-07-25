@@ -47,6 +47,7 @@
     --danger: #e40f0f; // 白字 4.80:1
     --danger-hover: #c51313;
     --danger-text: #e40f0f; // 錯誤訊息 / 必填星號等「危險色文字」（深色下提亮）
+    --danger-ink: #c51313; // 危險色前景墨色：疊 sunken 面也要 ≥4.5（--danger-text 疊 sunken 只有 4.40，同 --brand-ink 之於 --brand-text）
     --warning: #ffc700; // 黃底恆亮 → 配 --on-warning 深字
     --info: #0b7bbb; // toast-info 填充，白字 4.60:1
 
@@ -122,6 +123,7 @@
     --danger: #d51319; // 白字 5.33:1
     --danger-hover: #dd2b31;
     --danger-text: #f0555a; // 危險色文字在黑底要亮：vs 卡片 4.99:1
+    --danger-ink: #f0555a; // 深色下 sunken 面已夠暗，與 --danger-text 同值即可（vs sunken 5.25:1）
     --warning: #e6b800; // 黃底仍配 --on-warning 深字
     --info: #1778b2; // 白字 4.81:1
 

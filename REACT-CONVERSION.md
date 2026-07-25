@@ -92,6 +92,39 @@
 - 量測用臨時 DOM 節點（append 到 `document.body` 量文字寬等）加 `position:absolute`——append 目標可能是
   flex/grid 容器（節點會被 blockify 拉伸），absolute 讓它退出環境佈局。
 
+### 字串 → 元件（runtime token）
+
+- 元件無 `<名>.html`、markup 正本寫在別的元件示範內容裡時（`components/citation-ref` 的正本在
+  `components/chatroom` 的示範答案），照抄那份 markup 成 tsx，並在**答案文字的 renderer 裡**把 token
+  換成它：`[[N]]` → `<CitationRef no={N} />`。切版把徽章烤在凍結 HTML 裡是因為沒有 renderer，
+  **契約是 token，不是那兩顆示範徽章**。
+- 換算跑在 **text 節點層**（remark/rehype plugin 或 renderer 的文字對應），不是對 markdown 來源做字串
+  replace——`code`／`pre` 內的 `[[N]]` 是程式碼樣本，不得變成按鈕。
+- `N` 是資料（不翻）、`.sr-only` 前綴是 chrome（走 `t()`，且譯文自帶尾隨空白）：可及名稱＝「來源 N」，
+  兩者不可合成一個翻譯字串。
+
+### 跨元件命令（元件匯出的函式）
+
+- `GufoSources.show/reveal`、`GufoAccordion.setOpen`、`openFeedback` 這類「A 元件叫 B 元件做事」
+  （§1-1 判為會產出可見 UI 的匯出，不是 `GufoSlide`／`GufoI18n` 那種共享工具）：轉成**共同祖先持有的
+  意圖 state**，被呼叫的元件受控接收。不用 `useRef` + imperative handle 去戳它，也不用 context 開全域
+  單例（同頁兩顆會一起反應）。
+- 命令的參數就是那顆 state 的值：`show()`→`sourcesOpen`、`reveal(no)`→`citedNo`、
+  `openFeedback(vote)`→`feedback`。被呼叫元件的內部結構（`.sources-tbody`、摘要列與 detail 列的配對）
+  不外露——切版的 `document.querySelector` 只是沒有 props 時的替身。
+- 不可宣告的副作用（捲動、聚焦、暫時高亮）留在**被呼叫元件自己**的 `useEffect([意圖 state])`。
+  JS 捲動照 GUIDELINE §5 讀 `prefers-reduced-motion` 退 `auto`；跳轉後焦點要跟著移到目標列。
+- 意圖 state 要能重放同一個值（連點同一顆 `[[N]]`）：用 `{no, seq}` 或 effect 尾端 reset，
+  否則 `setState(3)` 對已是 3 的 state 不重跑 effect＝第二次點沒反應。
+- 共用 Accordion 除 toggle／setAll 外還要能**由外部指定開啟第 N 列**（`reveal` 要展開被引用的那列）：
+  由持有列狀態的元件把 `openRows` 提上來受控，不是 `ref.current.click()`（切版的合成點擊是替身）。
+
+### 有時長的暫時狀態 class
+
+- `.is-cited` 這種一次性高亮：**時長歸 CSS**（scss 的 `animation`，不帶 `forwards`），React 只負責切
+  class ＋重播（remove → 強制重排 → add）。不要搬成 `setTimeout`——那會多出「連點同一顆」「連點不同顆」
+  兩道重入守衛，而且 `.is-cited` 的語意是「當前這一列」，計時器版一不小心就變成「曾經點過的所有列」。
+
 ## ⑤ 平台原生機制保留
 
 - `<dialog>`／`popover`／`:has()`／`@starting-style`／`allow-discrete`／`mask`／`dvh` 保留，不改成 div + state。

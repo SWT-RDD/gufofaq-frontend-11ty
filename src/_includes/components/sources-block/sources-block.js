@@ -3,11 +3,9 @@
 //
 // 開啟的觸發鈕住在 components/chatroom（那是它的 class），故這裡只匯出函式讓它呼叫，
 // 不去指名別人的 .watchBtn（§5：要操作別的元件，呼叫該元件 js 提供的函式）。
-// 同理，答案內文的引用標記（ui/citation-ref）要「跳到第 N 筆來源」也是呼叫這裡的 reveal()——
+// 同理，答案內文的引用標記（components/citation-ref）要「跳到第 N 筆來源」也是呼叫這裡的 reveal()——
 // 本元件的 tbody 結構與 .is-cited 狀態都是本元件自己的事，不外露給別人去猜。
 document.addEventListener("DOMContentLoaded", function () {
-    var HIGHLIGHT_MS = 1600;
-
     window.GufoSources = {
         // 供 chatroom.js 呼叫：把本頁的參考來源區塊顯示出來
         show: function () {
@@ -29,13 +27,26 @@ document.addEventListener("DOMContentLoaded", function () {
             var rows = block.querySelectorAll(".sources-tbody > tr:not(.detail-row)");
             var row = rows[no - 1];
             if (!row) return;
+            // 展開那一列走 ui/accordion 匯出的 API（§5：要操作別的元件就呼叫它匯出的函式）。
+            // 不用 btn.click()：合成點擊會重新進入全站每一支 document 委派（祖先上的 data-toast
+            // 計數器會被多推一格），而且 accordion 尚未綁定時它靜默失敗、這裡偵測不到。
             var toggle = row.querySelector(".accordion-btn");
-            if (toggle && toggle.getAttribute("aria-expanded") !== "true") toggle.click();
-            row.scrollIntoView({ behavior: "smooth", block: "center" });
+            if (toggle && window.GufoAccordion) window.GufoAccordion.setOpen(toggle, true);
+            // JS 發起的平滑捲動要自己讀 prefers-reduced-motion（§5：_base 的 scroll-behavior:auto
+            // 只管 CSS 捲動，scrollIntoView 的 behavior 參數會蓋過它）。
+            var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+            row.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "center" });
+            // 高亮動畫寫在 CSS（§7：進出場動畫在 CSS、沒有計時器可搬）。這裡先移除 class 再強制重排
+            // 一次，好讓「連點同一顆 [[N]]」能重播；動畫不帶 forwards，跑完自己回到無底色，
+            // 故不必用計時器卸 class——也就不必為它再寫一道重入守衛。
+            row.classList.remove("is-cited");
+            void row.offsetWidth;
             row.classList.add("is-cited");
-            window.setTimeout(function () {
-                row.classList.remove("is-cited");
-            }, HIGHLIGHT_MS);
+            // 焦點跟著跳過去（原生 `<a href="#row">` 免費具備的事，換成 <button> + scrollIntoView
+            // 就掉了）：鍵盤使用者按 Enter 之後才接得下去，報讀器也才會念到這一列。
+            // preventScroll 讓上面那次 scrollIntoView 的置中不被 focus 的預設捲動蓋掉。
+            row.setAttribute("tabindex", "-1");
+            row.focus({ preventScroll: true });
         },
     };
 });

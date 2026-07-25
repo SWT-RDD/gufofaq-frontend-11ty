@@ -21,7 +21,11 @@
     border: 1px solid var(--brand);
     border-radius: 999px;
     background-color: var(--brand-tint);
-    color: var(--brand-text);
+    // 字色用 --brand-ink 而非 --brand-text：後者疊在 --brand-tint 上淺色模式只有 4.46:1 < AA 4.5
+    //（它的宣告值只保證疊 --surface／--surface-raised 讀得到，tint 面要另外算，§4）。
+    // --brand-ink 疊 tint 是 10.50:1／深色 5.12:1，且 11px 拿不到 large-text 豁免——這顆徽章
+    // 的資訊全靠這個字色承載（tint 對聊天泡泡底只有 1.01:1，底幾乎看不見）。
+    color: var(--brand-ink);
     font-size: 0.6875rem;
     font-weight: 700;
     line-height: 1;

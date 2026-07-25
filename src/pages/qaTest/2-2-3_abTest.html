@@ -74,13 +74,12 @@ permalink: 2-2-3_abTest.html
                     <label for="abReasoningEffortSelect-{{ ab.side }}" class="control-label" data-i18n="settings.reasoningEffort">思考深度</label>
                 </div>
                 <div class="field">
-                    <select id="abReasoningEffortSelect-{{ ab.side }}" class="form-control singleSelect js-reasoning-effort">
-                        <option value="" selected data-i18n="settings.reasoningEffortDefault">沿用模型預設</option>
-                        <option value="minimal">minimal</option>
-                        <option value="low">low</option>
-                        <option value="medium">medium</option>
-                        <option value="high">high</option>
-                    </select>
+                    {% set reasoningEffortId = "abReasoningEffortSelect-" + ab.side %}
+                    {% set reasoningEffortHook = "js-reasoning-effort" %}
+                    {% set reasoningEffortGroup = "" %}
+                    {% set reasoningEffortEmptyKey = "settings.reasoningEffortDefault" %}
+                    {% set reasoningEffortEmptyZh = "沿用模型預設" %}
+                    {% include "components/reasoning-effort-select/reasoning-effort-select.html" %}
                 </div>
             </div>
             {# 對話模式：每側各一組，id 以 -{{ ab.side }} 保持同頁唯一；對齊 product TestConfig.search_mode。

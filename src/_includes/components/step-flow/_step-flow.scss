@@ -56,17 +56,20 @@
         font-weight: 600;
 
         // 巢狀子步驟（skill 的 scoped 子迴圈）：以縮排 + 折線前綴表達層級，
-        // 讓「這一站是誰的子步驟」一眼可辨。層級由 depth 推導，最多兩層可見縮排。
+        // 讓「這一站是誰的子步驟」一眼可辨。
         &.is-nested {
             font-weight: 500;
 
             &::before {
                 content: "└";
-                margin-right: 6px;
+                margin-right: 4px;
                 color: var(--text-muted);
             }
         }
 
+        // 縮排階數＝節點在 parent 鏈上的**樹深**（見 html 檔頭：不是後端那個同名的 depth 欄）。
+        // 值域閉合在 1–3，更深的節點由模板夾到第 3 階（沒有 is-depth-4，插值出未定義的 class
+        // 就是靜默不縮排）。三階都有示範：3-4 的試跑沙盒演 refund-flow → lookup-order 的子樹。
         &.is-depth-1 { padding-left: 16px; }
         &.is-depth-2 { padding-left: 32px; }
         &.is-depth-3 { padding-left: 48px; }
@@ -80,13 +83,15 @@
     .step-node-version {
         color: var(--text-muted);
         font-size: 0.75rem;
-        margin-left: 6px;
+        margin-left: 4px;
     }
 
     .step-node-error {
-        // 文字色用 --danger-text 而非 --danger：後者是填充族（為襯白字壓深），
-        // 當文字色在深色模式讀不到（§4，guideline.test 的 COLOR_ROLES 守衛會擋）。
-        color: var(--danger-text);
+        // 不用填充族 --danger（為襯白字壓深，當文字在深色模式讀不到）；也不用 --danger-text——
+        // 這個 cell 的底是 accordion 給的 --surface-sunken，--danger-text 疊上去淺色只有 4.40:1 < AA
+        //（它的宣告值只保證疊 --surface／--surface-raised）。前景墨色 --danger-ink 疊 sunken 是
+        // 5.54:1／深色 5.25:1（同 round15 把 --brand-text 換成 --brand-ink 的理由）。
+        color: var(--danger-ink);
     }
 
     .step-node-time,
@@ -104,8 +109,12 @@
         }
 
         // 進行中＝當前步驟：深墨點＋標籤加粗＋整列淡底，一眼看出「現在在這」。
+        // 列底色寫在 cell 上：default-table 給 `tbody tr td` 上了不透明的 --surface-raised，
+        // 而 cell 背景畫在 row 背景之上（CSS 表格繪製層序 row < cell）——寫在 tr 上等於死樣式。
         &.is-running {
-            background-color: var(--surface-sunken);
+            > td {
+                background-color: var(--surface-sunken);
+            }
 
             .step-node-dot {
                 background-color: var(--brand-ink);

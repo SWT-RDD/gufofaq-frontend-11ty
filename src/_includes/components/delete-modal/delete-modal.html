@@ -4,7 +4,10 @@
      deleteTargetName     —— 靜態示範用的項目名稱（預設「檔案名稱2.pdf」）
      deleteConfirmBinding —— true＝確認鈕交給業務 js 綁定（不掛 btn-close-modals 自動關窗）
      deleteConfirmClass   —— 選填，加在確認鈕上的業務 hook class（如 confirm-delete-btn）
-     deleteToast / deleteToastKey —— 選填，確認鈕的多結果 toast（「成功|失敗」）與它的 i18n key #}
+     deleteToast / deleteToastKey —— 選填，確認鈕的多結果 toast（「成功|失敗」）與它的 i18n key
+     deleteToastType      —— 選填，對位 deleteToast 的語意（預設 success|error）。訊息多於兩段時**必須**一起給，
+                             否則第三段會沿用 error、演不出「使用者自己修得掉」的 warning（如 3-4 的
+                             「仍被參照，無法刪除」）。 #}
 <dialog class="modals" id="deleteModal" aria-labelledby="deleteModal-title">
     <div class="modals-dialog modals-sm">
         <div class="modals-wrap">
@@ -19,7 +22,7 @@
                 <div class="modals-footer">
                     <div class="button-row center">
                         <button type="button" class="button button-border btn-close-modals" data-i18n="action.cancel">取消</button>
-                        <button type="button" class="button button-primary{% if deleteConfirmClass %} {{ deleteConfirmClass }}{% endif %}{% if not deleteConfirmBinding %} btn-close-modals{% endif %}"{% if deleteToast %} data-toast="{{ deleteToast }}" data-i18n-data-toast="{{ deleteToastKey }}" data-toast-type="success|error"{% endif %} data-i18n="action.confirm">確認</button>
+                        <button type="button" class="button button-primary{% if deleteConfirmClass %} {{ deleteConfirmClass }}{% endif %}{% if not deleteConfirmBinding %} btn-close-modals{% endif %}"{% if deleteToast %} data-toast="{{ deleteToast }}" data-i18n-data-toast="{{ deleteToastKey }}" data-toast-type="{{ deleteToastType or "success|error" }}"{% endif %} data-i18n="action.confirm">確認</button>
                     </div>
                 </div>
             </div>

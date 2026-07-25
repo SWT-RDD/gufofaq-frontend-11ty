@@ -77,7 +77,10 @@ permalink: 5-1-1_accountInfo.html
                         <label for="accountLanguageSelect" class="control-label" data-i18n="settings.language">語言</label>
                     </div>
                     <div class="field">
-                        <select id="accountLanguageSelect" class="form-control singleSelect account-language">
+                        {# 值載體：值交給 React 讀去送 API，故只掛 hook class（§5）。命名用 js-<名詞>
+                             ——同輪 5-2 的 js-timezone 同型；沿用 account-* 家族會與真 app 鏡射掛點
+                             （account-email／account-company）混淆，那些有出處、這顆是切版新增。 #}
+                        <select id="accountLanguageSelect" class="form-control singleSelect js-language">
                             <option value="zh-TW" selected data-i18n="settings.langZhTw">繁體中文</option>
                             <option value="en" data-i18n="settings.langEn">English</option>
                         </select>

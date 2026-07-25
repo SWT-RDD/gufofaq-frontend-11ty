@@ -65,13 +65,12 @@ permalink: 2-2-1_singleTest.html
                 <label for="reasoningEffortSelect" class="control-label" data-i18n="settings.reasoningEffort">思考深度</label>
             </div>
             <div class="field">
-                <select class="form-control singleSelect js-reasoning-effort" id="reasoningEffortSelect">
-                    <option value="" selected data-i18n="settings.reasoningEffortDefault">沿用模型預設</option>
-                    <option value="minimal">minimal</option>
-                    <option value="low">low</option>
-                    <option value="medium">medium</option>
-                    <option value="high">high</option>
-                </select>
+                {% set reasoningEffortId = "reasoningEffortSelect" %}
+                {% set reasoningEffortHook = "js-reasoning-effort" %}
+                {% set reasoningEffortGroup = "" %}
+                {% set reasoningEffortEmptyKey = "settings.reasoningEffortDefault" %}
+                {% set reasoningEffortEmptyZh = "沿用模型預設" %}
+                {% include "components/reasoning-effort-select/reasoning-effort-select.html" %}
             </div>
         </div>
         {# 對話模式：傳統搜尋 / Agent 對話（value 對應 product TestConfig.search_mode，預設 traditional；option 文字是 chrome 走 i18n，value 為業務值不翻）。

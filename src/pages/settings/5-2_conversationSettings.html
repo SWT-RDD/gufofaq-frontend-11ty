@@ -16,6 +16,9 @@ permalink: 5-2_conversationSettings.html
      階層＝資料真實階層：跨三設置共用的（前台預設）在 profile 頁籤之外；每設置
      各一份的旋鈕在 profile 頁籤底下的主題子頁籤內。設計正本：spec 2026-07-22-conversation-
      settings-hub-design.md。 #}
+{# 可用模型目錄：主回答與分組 LLM 填的是同一份 available models（React 端來自
+     GET /api/config/models ∩ 租戶 available_models），故本頁只留一份陣列、兩處都從它渲染（§6）。 #}
+{% set llmModels = ["openai:gpt-4o", "openai:gpt-4o-mini", "openai:gpt-4.1", "anthropic:claude-3-5-sonnet"] %}
 {% set breadcrumbItems = [
   { label: "首頁", href: "2-1_qaRecord.html", i18nKey: "nav.home" },
   { label: "設定", href: "", i18nKey: "nav.settings" },
@@ -89,7 +92,9 @@ permalink: 5-2_conversationSettings.html
             </div>
         </div>
     </div>
-    <div class="text-gray mt-8" data-i18n="settings.modeApplicabilityHint">對話模式決定下方哪些欄位生效，另一模式專用的欄位會標示。</div>
+    {# round30 起「不生效的選項不顯示」（不再標示、直接不渲染），故這句說明也不能再說「會標示」——
+         它是出貨文案不是註解，留著就是對租戶說謊（saas 端同句待回流）。 #}
+    <div class="text-gray mt-8" data-i18n="settings.modeApplicabilityHint">對話模式決定下方哪些欄位生效，另一模式專用的欄位不會出現。</div>
 </div>
 
 {# ── 主題子頁籤（two-level tab 的第二層 .sub-tabs，每個 data-target 對應一個 .tab-content 面板）。
@@ -225,24 +230,26 @@ permalink: 5-2_conversationSettings.html
             <div class="form-group col-6-md col-12-sm">
                 <div class="label"><label for="genModel" class="control-label" data-i18n="settings.modelName">模型</label></div>
                 <div class="field">
+                    {# 可用模型目錄只有一份（llmModels，宣告在本頁頂端）：主回答與分組 LLM 填的是同一份
+                         available models，各烤一份遲早分岔（曾經：分組少了 anthropic 那一個）。 #}
                     <select class="form-control singleSelect js-model-name" id="genModel">
-                        <option value="openai:gpt-4o" selected>openai:gpt-4o</option>
-                        <option value="openai:gpt-4o-mini">openai:gpt-4o-mini</option>
-                        <option value="openai:gpt-4.1">openai:gpt-4.1</option>
-                        <option value="anthropic:claude-3-5-sonnet">anthropic:claude-3-5-sonnet</option>
+                        {% for m in llmModels %}
+                        <option value="{{ m }}"{% if loop.first %} selected{% endif %}>{{ m }}</option>
+                        {% endfor %}
                     </select>
                 </div>
             </div>
             <div class="form-group col-6-md col-12-sm">
                 <div class="label"><label for="genReasoningEffort" class="control-label" data-i18n="settings.reasoningEffort">思考深度</label></div>
                 <div class="field">
-                    <select class="form-control singleSelect js-reasoning-effort" id="genReasoningEffort">
-                        <option value="" selected data-i18n="settings.reasoningEffortDefault">沿用模型預設</option>
-                        <option value="minimal">minimal</option>
-                        <option value="low">low</option>
-                        <option value="medium">medium</option>
-                        <option value="high">high</option>
-                    </select>
+                    {# 主回答的空值＝該模型預設（product settings_hub 的 reasoning_effort 註解），
+                         故用元件的預設語意；分組那組的空值是「最低思考」，見下方分組區。 #}
+                    {% set reasoningEffortId = "genReasoningEffort" %}
+                    {% set reasoningEffortHook = "js-reasoning-effort" %}
+                    {% set reasoningEffortGroup = "" %}
+                    {% set reasoningEffortEmptyKey = "settings.reasoningEffortDefault" %}
+                    {% set reasoningEffortEmptyZh = "沿用模型預設" %}
+                    {% include "components/reasoning-effort-select/reasoning-effort-select.html" %}
                 </div>
             </div>
             <div class="form-group col-6-md col-12-sm">
@@ -352,9 +359,11 @@ permalink: 5-2_conversationSettings.html
          → chatbot init_llm_group。React 端各組模型選單填 available models（含「繼承主模型」）、
          思考深度選單依該組**生效模型**的 reasoning_options 動態；切版此處為靜態代表性選項。
          每組明列「對應哪些功能」，讓設定者清楚各旋鈕作用範圍。 #}
-    <div class="block">
-        <div class="label"><label class="control-label" data-i18n="settings.reasoningGroupsHeading">分組 LLM（進階）</label></div>
-        <p class="text-gray" data-i18n="settings.reasoningGroupsIntro">主回答（使用者最終看到的回覆）以外的各內部 LLM 呼叫，可各自選用不同模型與思考深度。留空＝繼承主模型／最低思考。</p>
+    <div class="block flex-row column gap-24">
+        {# 區塊標題用 .text-md.text-bold（同本頁 Agent 工具區的做法）：它不 label 任何控制項，
+             寫成 <label> 會是一顆點了不會聚焦、對輔具也沒有語意的空殼（§4）。 #}
+        <div class="text-md text-bold" data-i18n="settings.reasoningGroupsHeading">分組 LLM（進階）</div>
+        <p class="text-gray m-0" data-i18n="settings.reasoningGroupsIntro">主回答（使用者最終看到的回覆）以外的各內部 LLM 呼叫，可各自選用不同模型與思考深度。留空＝繼承主模型／最低思考。</p>
         {% set reasoningGroups = [
             { key: "intent", label: "意圖判斷", labelKey: "settings.reasoningGroupIntent",
               desc: "分析使用者輸入的語言、關鍵字、時間範圍與檔名意圖（傳統搜尋模式的意圖判斷階段）。", descKey: "settings.reasoningGroupIntentDesc" },
@@ -367,30 +376,35 @@ permalink: 5-2_conversationSettings.html
         ] %}
         {% for g in reasoningGroups %}
         <div class="flex-row column gap-16">
-            <div class="label"><label class="control-label" data-i18n="{{ g.labelKey }}">{{ g.label }}</label></div>
-            <p class="text-gray" data-i18n="{{ g.descKey }}">{{ g.desc }}</p>
-            <div class="flex-row flex-wrap gap-16">
+            {# 組標題是這兩顆 select 的群組名：掛 id ＋容器 role=group／aria-labelledby，否則同頁
+                 5 顆「模型」與 5 顆「思考深度」的可及名稱一模一樣，報讀器聽不出這是哪一組（§4）。 #}
+            <span class="control-label" id="reasoningGroup-{{ g.key }}-label" data-i18n="{{ g.labelKey }}">{{ g.label }}</span>
+            <p class="text-gray m-0" data-i18n="{{ g.descKey }}">{{ g.desc }}</p>
+            <div class="flex-row flex-wrap gap-16" role="group" aria-labelledby="reasoningGroup-{{ g.key }}-label">
                 <div class="form-group col-6-md col-12-sm">
                     <div class="label"><label for="genModel_{{ g.key }}" class="control-label" data-i18n="settings.modelName">模型</label></div>
                     <div class="field">
                         <select class="form-control singleSelect js-group-model" data-group="{{ g.key }}" id="genModel_{{ g.key }}">
                             <option value="" selected data-i18n="settings.inheritMainModel">繼承主模型</option>
-                            <option value="openai:gpt-4o">openai:gpt-4o</option>
-                            <option value="openai:gpt-4o-mini">openai:gpt-4o-mini</option>
-                            <option value="openai:gpt-4.1">openai:gpt-4.1</option>
+                            {% for m in llmModels %}
+                            <option value="{{ m }}">{{ m }}</option>
+                            {% endfor %}
                         </select>
                     </div>
                 </div>
                 <div class="form-group col-6-md col-12-sm">
                     <div class="label"><label for="genReasoning_{{ g.key }}" class="control-label" data-i18n="settings.reasoningEffort">思考深度</label></div>
                     <div class="field">
-                        <select class="form-control singleSelect js-group-reasoning" data-group="{{ g.key }}" id="genReasoning_{{ g.key }}">
-                            <option value="" selected data-i18n="settings.reasoningEffortDefault">沿用模型預設</option>
-                            <option value="minimal">minimal</option>
-                            <option value="low">low</option>
-                            <option value="medium">medium</option>
-                            <option value="high">high</option>
-                        </select>
+                        {# 分組的空值語意與主回答**不同**：主回答空＝該模型預設，分組空＝最低思考
+                             （product settings_hub `_PROFILE_FIELD_DEFAULTS` 的 reasoning_effort_* 註解、
+                             chatbot chat.py 的 init_llm_group 走 reasoning=False）。故給另一顆 key，
+                             不與主回答共用「沿用模型預設」——同字面兩種行為就是在說謊。 #}
+                        {% set reasoningEffortId = "genReasoning_" + g.key %}
+                        {% set reasoningEffortHook = "js-group-reasoning" %}
+                        {% set reasoningEffortGroup = g.key %}
+                        {% set reasoningEffortEmptyKey = "settings.reasoningEffortMinimal" %}
+                        {% set reasoningEffortEmptyZh = "最低思考" %}
+                        {% include "components/reasoning-effort-select/reasoning-effort-select.html" %}
                     </div>
                 </div>
             </div>

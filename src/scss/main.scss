@@ -89,7 +89,7 @@
 // sources-block 原屬同類，後因引用標記加入而有了一個自有狀態（.is-cited，被 [[N]] 點到的那一列）
 @use "../_includes/components/sources-block/sources-block";
 // 引用標記：答案內文的 [[N]] 上標小徽章（點擊跳到參考來源第 N 筆）
-@use "../_includes/ui/citation-ref/citation-ref";
+@use "../_includes/components/citation-ref/citation-ref";
 
 // 元件庫展示頁（component.html）專屬版型/說明樣式，放在最後避免與一般頁面規則衝突
 @use "guideline-var"; // showcase 頁專屬色盤（--gl-*，不進 _var）

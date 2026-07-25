@@ -57,7 +57,7 @@ permalink: 3-4_skillManagement.html
         </div>
     </div>
     <div class="flex-row">
-        <button type="button" class="button button-primary" data-toast="Skill 已建立|名稱與用途說明不可為空|建立失敗，請稍後再試" data-i18n-data-toast="toast.createSkill" data-toast-type="success|warning|error">
+        <button type="button" class="button button-primary" data-toast="Skill 已建立|名稱與用途說明不可為空|名稱格式不符或已存在|建立失敗，請稍後再試" data-i18n-data-toast="toast.createSkill" data-toast-type="success|warning|warning|error">
             <img src="./images/icon_add_white.png" width="48" height="48" decoding="async" alt="" class="icon">
             <span data-i18n="settings.addSkill">新增 Skill</span>
         </button>
@@ -94,12 +94,14 @@ permalink: 3-4_skillManagement.html
             <tbody>
                 {% for skill in skills %}
                 <tr data-skill-id="{{ loop.index }}">
-                    <td><code class="skill-name">{{ skill.name }}</code></td>
+                    <td><code>{{ skill.name }}</code></td>
                     <td>{{ skill.description }}</td>
                     <td class="text-center">{{ skill.version }}</td>
                     <td>{{ skill.tools }}</td>
                     <td class="text-center">
-                        {% if skill.enabled %}<span class="badge badge-success" data-i18n="settings.enabled">已啟用</span>{% else %}<span class="badge" data-i18n="settings.disabled">已停用</span>{% endif %}
+                        {# 狀態用既有的文字工具（同 1-2-1 匯入結果欄的 .text-bold／.text-red 慣例）：
+                             全站沒有 badge 系統，掛 .badge 只會得到兩態長得一模一樣的裸文字。 #}
+                        {% if skill.enabled %}<span class="text-bold" data-i18n="settings.enabled">已啟用</span>{% else %}<span class="text-gray" data-i18n="settings.disabled">已停用</span>{% endif %}
                     </td>
                     <td>
                         <div class="btn-group">
@@ -119,22 +121,46 @@ permalink: 3-4_skillManagement.html
 
 {# 試跑沙盒：把選定的 skill 臨時指派給**測試** config 跑一輪 Agent 問答，作者部署前就能看到
      它實際被怎麼呼叫、選了哪些工具。正式設定檔完全不受影響（product qatest.py 只寫測試 config）。
-     選定「試跑哪一個 skill」＝業務條件（.js-try-skill），故本區塊由業務 js 顯示/填入名稱；
-     切版一律呈現展開狀態。執行流程沿用既有 components/step-flow（skill 的子步驟以縮排掛在
-     呼叫節點底下），此處用它的預設示範資料。 #}
+     選定「試跑哪一個 skill」＝業務條件（.js-try-skill），故該鈕保留 hook class；本區塊的顯示/填入
+     名稱由業務 js 接手，但**區塊內的純前端鈕（關閉）是切版自己的行為**，行為寫在
+     components/skill-try-sandbox（§5 ④：區塊的顯示條件是業務的，不代表區塊內的鈕也是）。
+   執行流程沿用既有 components/step-flow，但**節點與摘要一起覆寫**（§6 成對規則）：元件內建示範是
+     移民主題（配 2-2-1），而本頁演的是 refund-flow 的試跑——沿用預設會出現「試跑退款 skill、
+     檢索卻在查新住民結婚」這種不可能的一輪。本頁示範同時演到 skill 子樹的三階縮排
+     （refund-flow → lookup-order → 它的工具呼叫）與 skill 失敗的明細列。 #}
+{% set stepFlowNodes = [
+  { label: "初始化對話", state: "completed", time: "10ms" },
+  { label: "Agent 推理", state: "completed", time: "280ms", thinking: "使用者問「能退多少錢」，用途說明命中 refund-flow，決定呼叫它。" },
+  { label: "檢索知識庫", state: "skipped", time: "" },
+  { label: "skill：refund-flow", state: "failed", time: "1.9s", depth: 1, skill: "refund-flow", version: "v2", iterations: "2", tools: "lookup-order, calculate", error: "RuntimeError: 退貨政策表讀取逾時" },
+  { label: "Agent 推理", state: "completed", time: "240ms", depth: 2, thinking: "先用 lookup-order 取訂單金額，再依退貨政策試算。" },
+  { label: "skill：lookup-order", state: "completed", time: "430ms", depth: 2, skill: "lookup-order", version: "v1", iterations: "1", tools: "search_knowledge_base" },
+  { label: "呼叫工具", state: "completed", time: "180ms", depth: 3, tools: "search_knowledge_base" },
+  { label: "呼叫工具", state: "completed", time: "95ms", depth: 2, tools: "calculate" },
+  { label: "可回答性判定", state: "completed", time: "150ms", verdict: "insufficient（skill 未完成，素材不足）" },
+  { label: "生成答案", state: "skipped", time: "" },
+  { label: "誠實查無", state: "running", time: "" },
+  { label: "生成推薦問題", state: "pending", time: "" },
+  { label: "完成對話", state: "pending", time: "" },
+  { label: "輸出合規檢查", state: "pending", time: "" }
+] %}
+{# 檢索被略過，故摘要的檢索筆數是 0（§6：摘要要與節點對得上）。 #}
+{% set stepFlowSummary = {
+    tokens: "612", latency: "2.8s", ttft: "—", results: "0", model: "openai:gpt-4o-mini"
+} %}
 <div class="block mt-16 flex-row column gap-16">
-    <div class="text-md text-bold"><span data-i18n="settings.trySkill">試跑</span>：<code class="skill-name" id="trySkillName">refund-flow</code></div>
+    <div class="text-md text-bold"><span data-i18n="settings.trySkill">試跑</span>：<code id="trySkillName">refund-flow</code></div>
     <p class="text-gray" data-i18n="settings.trySkillHint">把這個 skill 臨時指派給測試設定跑一輪 Agent 問答；正式設定檔完全不受影響。下方流程圖會顯示它實際被怎麼呼叫。</p>
     <div class="flex-row flex-wrap gap-16 mobile-column sm-gap-16">
         <div class="col-9-md col-12-sm">
             <div class="form-group">
                 <div class="field">
-                    <input type="text" id="trySkillQueryInput" class="form-control" placeholder="輸入一個會觸發這個 skill 的問題" data-i18n-placeholder="settings.trySkillPlaceholder">
+                    <input type="text" id="trySkillQueryInput" class="form-control" placeholder="輸入一個會觸發這個 skill 的問題" data-i18n-placeholder="settings.trySkillPlaceholder" aria-label="試跑問句" data-i18n-aria-label="settings.trySkillQueryLabel">
                 </div>
             </div>
         </div>
         <div class="flex-row gap-8">
-            <button type="button" class="button button-primary js-run-try-skill" data-i18n="settings.trySkillRun">開始試跑</button>
+            <button type="button" class="button button-primary js-run-try-skill" data-toast="回答生成中...|請先輸入問題|試跑失敗" data-i18n-data-toast="toast.runTrySkill" data-toast-type="info|warning|error" data-i18n="settings.trySkillRun">開始試跑</button>
             <button type="button" class="button button-border js-close-try-skill" data-i18n="action.close">關閉</button>
         </div>
     </div>
@@ -144,10 +170,14 @@ permalink: 3-4_skillManagement.html
 {% include "components/skill-editor-modal/skill-editor-modal.html" %}
 {# 刪除 modal：.js-delete-skill 條件開窗（先選定要刪哪個 skill），確認鈕歸業務 js
    （deleteConfirmBinding，不自動關窗）；skill 名由業務 js 填入 #deleteSkillName。
-   刪除無綁定守衛：product 驗過 ownership 即刪；設定檔的 skill_ids 允許懸空，
-   載入時略過失效 id 並記 ERROR log（GufoRAG agent_service._create_skill_tools）。 #}
+   刪除**有**參照守衛：被其他 skill 的 allowed_tools.skill_ids、或任何設定檔的 skill_ids 參照時
+   一律拒刪並要求先移除參照（GufoRAG chatbot routes/skills.py 的 delete_skill）——故 toast 有第三態，
+   且那一態是使用者自己修得掉的 warning，不是「請稍後再試」。執行期另有容錯（載不出的 skill 略過
+   並記 ERROR log，agent_service._create_skill_tools），但那只涵蓋已停用／版本快照缺漏，
+   不代表刪除端點允許懸空。 #}
 {% set deleteTargetId = "deleteSkillName" %}
 {% set deleteConfirmBinding = true %}
-{% set deleteToast = "Skill 已刪除|刪除失敗，請稍後再試" %}
+{% set deleteToast = "Skill 已刪除|此 Skill 仍被其他 Skill 或設定檔參照，請先移除參照|刪除失敗，請稍後再試" %}
+{% set deleteToastType = "success|warning|error" %}
 {% set deleteToastKey = "toast.deleteSkill" %}
 {% include "components/delete-modal/delete-modal.html" %}

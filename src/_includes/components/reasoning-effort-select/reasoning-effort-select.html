@@ -1,0 +1,22 @@
+{#
+  思考深度（reasoning effort）選擇器。同一份枚舉原本在 5-2（主回答＋分組 LLM）、2-2-1、2-2-3 逐字抄了
+    四份，依 §3-3（出現在 2 頁以上→切；同頁重複出現→切）切成元件——枚舉會變（models_catalog 的
+    reasoning_options 依模型而異，新模型用 none 取代 minimal），四份抄本改一處就會漏。
+  業務 <select>：值交給 React 讀去送 API，只掛 hook class、切版不假造行為（§5 值載體）。
+  React 端的選項依「該組生效模型」的 reasoning_options 動態（product settings_hub 註解：前端由
+    GET /api/config/models 的 reasoning_options 填），此處列代表性枚舉當版型示範。
+  參數（§2：set 是頁面全域，同頁每次 include 前都要重新 set 全部參數）：
+    reasoningEffortId（必填）＝同頁唯一 id；
+    reasoningEffortHook（選填，預設 js-reasoning-effort）＝React 綁定用的 hook class；
+    reasoningEffortGroup（選填）＝分組 LLM 的 data-group 列鍵；
+    reasoningEffortEmptyKey／reasoningEffortEmptyZh（選填，預設「沿用模型預設」）＝空值選項的語意——
+      主回答空＝該模型預設，分組空＝最低思考（兩者行為不同，故不共用同一顆 i18n key，見 5-2 註解）。
+  內部變數用元件專屬名 reasoningEffortOptions（§6）。
+#}
+{% set reasoningEffortOptions = ["minimal", "low", "medium", "high"] %}
+<select class="form-control singleSelect {{ reasoningEffortHook or "js-reasoning-effort" }}" id="{{ reasoningEffortId }}"{% if reasoningEffortGroup %} data-group="{{ reasoningEffortGroup }}"{% endif %}>
+    <option value="" selected data-i18n="{{ reasoningEffortEmptyKey or "settings.reasoningEffortDefault" }}">{{ reasoningEffortEmptyZh or "沿用模型預設" }}</option>
+    {% for effort in reasoningEffortOptions %}
+    <option value="{{ effort }}">{{ effort }}</option>
+    {% endfor %}
+</select>

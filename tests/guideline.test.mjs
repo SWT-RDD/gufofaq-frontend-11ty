@@ -1378,7 +1378,7 @@ const COLOR_ROLES = {
         "--success-text"],
     // 前景墨色：文字與「不承載文字的圖形記號」（勾記、radio 圓點、進度條、步驟底線）共用一顆。
     // 它是前景不是填充，故套文字的 ≥4.5:1 門檻（自然也滿足圖形的 1.4.11 ≥3:1）。見 §4。
-    inkOnSurface: ["--brand-ink"],
+    inkOnSurface: ["--brand-ink", "--danger-ink"],
     surfaces: ["--surface", "--surface-raised", "--surface-sunken", "--surface-hover", "--surface-disabled", "--surface-input"],
     // 成對的：[前景, 背景] 要 ≥4.5:1。只列 markup 裡真的疊在一起的組合 ——
     // token 的宣告只保證它疊在 --surface / --surface-raised 上讀得到，疊到 hover 面或 tint 面就得另外算。
@@ -1393,6 +1393,10 @@ const COLOR_ROLES = {
         ["--text", "--surface-sunken"], // code-block 參數碼、step-flow 摘要 metric 值、chat-message pre
         ["--text-muted", "--surface-sunken"], // step-flow 摘要 metric 標籤 span、is-running 列 time/state（step-flow 新增疊法，4.82 light／5.19 dark）
         ["--text-strong", "--surface-sunken"], // ui/tab .tabs-title 疊 .tab-wrap（2-1 側欄）
+        // round31：--danger-text 疊 sunken 只有 4.40 < AA（它的宣告值只保證疊 surface/raised），
+        // step-flow 的失敗原因 cell 底是 accordion 的 sunken → 改用 --danger-ink。同 --brand-ink 的先例。
+        ["--danger-ink", "--surface-sunken"], // step-flow .step-node-error 疊 accordion 的 th/td 底
+        ["--text", "--brand-tint"], // chat-message 使用者泡泡（tint 面上的內文）
     ],
     // 圖形記號／元件邊界：不承載文字，門檻 3:1（WCAG 1.4.11）。一樣只列真的疊在一起的。
     // 曾經：這幾顆全被當成 chrome 而完全豁免，深色 switch 的把手疊在綠軌上只有 2.60、軌道對卡片只有 1.75。
@@ -1630,8 +1634,15 @@ test("§1-1 桶歸屬：components/ 要用到其他元件（或是專屬子片�
             for (const [fn, o] of [
                 ["openModal", "ui/modals"], ["closeModal", "ui/modals"], ["showToast", "ui/toast"],
                 ["openFeedback", "components/faq-feedback-modal"], ["GufoSources", "components/sources-block"],
-            ])
-                if (new RegExp(String.raw`\b${fn}\s*\(`).test(read(jsPath))) add(o);
+                ["GufoAccordion", "ui/accordion"],
+            ]) {
+                // 成員呼叫也算（`GufoSources.reveal(…)`／`GufoAccordion.setOpen(…)`）。原本只認 `fn(`，
+                // 而命名空間物件的呼叫形狀永遠是 `fn.method(` —— 那兩條探針從加進來就沒命中過任何檔案，
+                // 是讀起來像覆蓋、實際放行的死分支（`ui/citation-ref` 呼叫 GufoSources 因此逃過整輪）。
+                // 先剝 `//` 註解：modals.js 的檔頭只是「提到」openFeedback，不是呼叫。
+                const code = read(jsPath).split(/\r?\n/).map((l) => l.replace(/\/\/.*$/, "")).join("\n");
+                if (new RegExp(String.raw`\b${fn}\s*(?:\.\w+\s*)?\(`).test(code)) add(o);
+            }
 
         if (bucket === "components" && deps.size === 0 && !subFragment) bad.push(`${self} 零依賴、也不是專屬子片段 → 應搬去 ui/`);
         if (bucket === "ui" && deps.size > 0) bad.push(`${self} 用到 ${[...deps].join("、")} → 應搬去 components/`);
@@ -2178,4 +2189,161 @@ test("§5/§6 逐列可刪/撤銷的管理表要帶 {% else %} 無資料列（Sa
     const staleExempt = [...EXEMPT].filter((k) => !seenExempt.has(k));
     assert.equal(staleExempt.length, 0, `EXEMPT 有過期項（表已改名／加了 else／移除該列動作）——請重新核對：${staleExempt.join("、")}`);
     assert.equal(missing.length, 0, `逐列可刪的管理表缺無資料列（§5 無資料列正典；真 app 鏡射頁請入 EXEMPT 並附出處）：\n${fail(missing)}`);
+});
+
+const TOAST_TYPES_R31 = ["success", "error", "warning", "info"];
+
+// ─────────────────────────── round31 反向補測 ───────────────────────────
+
+test("§5 JS 發起的平滑捲動一律要有 prefers-reduced-motion 守衛（_base 的 scroll-behavior 管不到它）", () => {
+    // `scrollIntoView({behavior:"smooth"})` 的 behavior 參數會蓋過 CSS 的 scroll-behavior，
+    // 所以 _base 的 @media (prefers-reduced-motion) 對它完全無效——必須在 js 自己讀。
+    // 白名單制：不帶 behavior 的 scrollIntoView（multi-select 的 block:"nearest"）預設就是 auto，不入列。
+    const strip = (t) => t.split(/\r?\n/).map((l) => l.replace(/\/\/.*$/, "")).join("\n");
+    const hits = [];
+    let sites = 0;
+    for (const f of [...srcJs, ...srcHtml]) {
+        const code = strip(read(f));
+        if (!/behavior\s*:/.test(code)) continue;
+        sites++;
+        // 字面 "smooth" ＝沒有分支，一定違規；動態值則要求同檔有 matchMedia 守衛
+        if (/behavior\s*:\s*["']smooth["']/.test(code)) hits.push(`${f}  ← behavior: "smooth" 寫死，沒有 reduced-motion 分支`);
+        else if (!/matchMedia\s*\(\s*["']\(prefers-reduced-motion/.test(code)) hits.push(`${f}  ← 有動態 behavior 但整檔沒有 prefers-reduced-motion 查詢`);
+    }
+    assert.ok(sites >= 3, `只掃到 ${sites} 處 JS 捲動 —— 這條測試在空轉`);
+    assert.equal(hits.length, 0, `§5：JS 平滑捲動要自行退 auto（正典見 faq-chatroom.js／sources-block.js）：\n${fail(hits)}`);
+});
+
+test("§5/§6 元件 scss 的巢狀狀態/變體 class（&.is-*）都要有頁面演得出來（含階梯家族每一階）", () => {
+    // 既有的死 CSS 測試只採「頂層根 class」，`&.is-depth-3` 這種巢在根之下、又寫成單行的規則雙重漏網。
+    // 曾經：is-depth-3 定義了卻沒有任何示範資料演得到＝出貨死 CSS，而 91 條測試全綠。
+    const distMarkup = distHtml.map((f) => distDoc(f)).join("\n");
+    const jsBlob = srcJs.map((f) => read(f)).join("\n");
+    // 執行期以前綴串接生成的 class：由 toast 的型別常數推導，不手打（同 data-toast-type 白名單那條的來源）
+    const runtimeGenerated = new Set(/toast\s+toast-/.test(jsBlob) ? TOAST_TYPES_R31.map((t) => `toast-${t}`) : []);
+    const hits = [];
+    let seen = 0;
+    for (const { bucket, name, path } of componentDirs) {
+        const scss = `${path}/_${name}.scss`;
+        if (!existsSync(scss)) continue;
+        for (const m of read(scss).matchAll(/&\.([a-zA-Z][\w-]*)/g)) {
+            const cls = m[1];
+            seen++;
+            if (runtimeGenerated.has(cls)) continue;
+            const re = new RegExp(`(?:class="[^"]*\\b${cls}\\b|\\b${cls}\\b)`);
+            if (re.test(distMarkup) || jsBlob.includes(cls)) continue;
+            hits.push(`${bucket}/${name}  &.${cls}  ← scss 定義了，但沒有任何 dist 頁面或元件 js 用到它`);
+        }
+    }
+    assert.ok(seen >= 60, `只掃到 ${seen} 個巢狀狀態 class —— 這條測試在空轉`);
+    assert.equal(hits.length, 0, `§5：沒有頁面演得出的狀態 class＝出貨死 CSS（示範資料補到演得到，或刪掉規則）：\n${fail(hits)}`);
+});
+
+test("§4/§6 表格列的狀態底色不可寫在 <tr> 上（cell 的不透明底會蓋掉 row 底，是死樣式）", () => {
+    // default-table 給 `tbody tr td` 上了不透明 --surface-raised，而 CSS 表格繪製層序是 row < cell。
+    // 曾經：sources-block 的 tr.is-cited 與 step-flow 的 .step-node.is-running 兩處底色都 100% 看不見。
+    const css = read("dist/css/main.css");
+    const blocks = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)];
+    assert.ok(blocks.length > 300, `只解析到 ${blocks.length} 條規則 —— 這條測試在空轉`);
+    assert.ok(/tbody\s+tr\s+td\s*\{[^}]*background-color/.test(css.replace(/\s+/g, " ")),
+        "找不到 `tbody tr td { background-color }` —— 本規則的前提（cell 有不透明底）不成立，請重新確認");
+    const hits = [];
+    for (const [, sel, body] of blocks) {
+        if (!/(?:^|[\s;])background(?:-color)?\s*:/.test(body)) continue;
+        for (const one of sel.split(",")) {
+            const last = one.trim().split(/\s*[>+~]\s*|\s+/).pop() || "";
+            // 命中「最後一個 compound 是 tr 開頭且帶狀態 class」，如 `tr.is-cited`
+            if (/^tr\.[\w-]/.test(last)) hits.push(`${one.trim()} { ${body.trim().slice(0, 60)} } ← 底色請下到 > td`);
+        }
+    }
+    assert.equal(hits.length, 0, `§4：<tr> 上的狀態底色被 cell 底色蓋掉（死樣式）：\n${fail(hits)}`);
+});
+
+test("§4 <label> 必須有 for、或包住控制項、或有 id 被 aria-labelledby 指到（懸空 label 是空殼）", () => {
+    // 懸空 <label> 是 valid HTML（不報錯），但點了不聚焦、對輔具無語意，
+    // 且 eslint-plugin-jsx-a11y 的 label-has-associated-control 在 Next.js 預設 config 是 build 阻斷。
+    const LABELABLE = /<(?:input|select|textarea|button|meter|output|progress)\b/;
+    const hits = [];
+    let seen = 0;
+    for (const f of distHtml) {
+        const html = distDoc(f);
+        const referenced = new Set();
+        for (const m of html.matchAll(/aria-labelledby="([^"]+)"/g)) for (const id of m[1].split(/\s+/)) referenced.add(id);
+        for (const m of html.matchAll(/<label\b([^>]*)>([\s\S]*?)<\/label>/g)) {
+            seen++;
+            const [, attrs, inner] = m;
+            if (/\sfor="[^"]+"/.test(attrs)) continue;
+            if (LABELABLE.test(inner)) continue;
+            const id = (attrs.match(/\sid="([^"]+)"/) || [])[1];
+            if (id && referenced.has(id)) continue;
+            hits.push(`${basename(f)}  <label${attrs.trim() ? " " + attrs.trim().slice(0, 70) : ""}>  ← 既無 for、未包控制項、也沒被 aria-labelledby 指到`);
+        }
+    }
+    assert.ok(seen >= 60, `只掃到 ${seen} 個 <label> —— 這條測試在空轉`);
+    assert.equal(hits.length, 0, `§4：懸空 <label>（純標題文字請改 <span class="control-label">／.text-md.text-bold）：\n${fail(hits)}`);
+});
+
+test("§6 同頁的 page-size 選中值必須等於 pagination 生效的 perPage（兩者同源）", () => {
+    // 曾經：元件寫死 selected=20、六個使用頁都沒 set perPage → pagination 落回預設 10，
+    // 於是同一列同時顯示「每頁 20 筆」與「共 12 頁」（115÷20＝6）。
+    const hits = [];
+    let seen = 0;
+    for (const f of distHtml) {
+        const html = distDoc(f);
+        if (!/class="[^"]*\bpage-size\b/.test(html)) continue;
+        seen++;
+        const sel = html.match(/<select[^>]*\bpage-size-select\b[\s\S]*?<\/select>/);
+        const chosen = sel && (sel[0].match(/<option value="(\d+)"[^>]*\bselected\b/) || [])[1];
+        const pager = html.match(/<div class="pagination"[^>]*>/);
+        const perPage = pager && (pager[0].match(/data-per-page="(\d+)"/) || [, "10"])[1];
+        if (!chosen || !pager) { hits.push(`${basename(f)}  ← 有 .page-size 卻找不到 selected option 或 .pagination`); continue; }
+        if (chosen !== perPage) hits.push(`${basename(f)}  每頁筆數 selected=${chosen}，但 pagination 生效 perPage=${perPage}`);
+    }
+    assert.ok(seen >= 6, `只掃到 ${seen} 頁含 page-size-select —— 這條測試在空轉`);
+    assert.equal(hits.length, 0, `§6：耦合參數要同源（使用頁 set 一次 perPage，兩個元件都吃它）：\n${fail(hits)}`);
+});
+
+test("§4-2 sr-only 前綴 ＋ 緊接的英數值：譯文必須自帶分隔空白（否則英文模式黏成 Source1）", () => {
+    // 繁中「來源1」正常（中文不需空格），要察覺得切到英文語境；sr-only 沒有視覺，fpdiff 也抓不到。
+    // 收窄 population：只看「</span> 緊接英數字元」且該 key 的英譯尾字也是英數的情形（標點當邊界時不需空白）。
+    const en = JSON.parse(read("src/i18n/en.json"));
+    const hits = [];
+    let seen = 0;
+    for (const f of distHtml) {
+        for (const m of distDoc(f).matchAll(/<span class="sr-only"[^>]*data-i18n="([^"]+)"[^>]*>[^<]*<\/span>([A-Za-z0-9])/g)) {
+            seen++;
+            const val = en[m[1]];
+            if (typeof val === "string" && val && /[A-Za-z0-9]$/.test(val))
+                hits.push(`${basename(f)}  ${m[1]} = "${val}" ＋緊接 "${m[2]}" → 可及名稱黏成一個字`);
+        }
+    }
+    assert.ok(seen >= 2, `只掃到 ${seen} 處 sr-only 前綴＋英數值 —— 這條測試在空轉`);
+    assert.equal(hits.length, 0, `§4-2：前綴 key 要自帶尾隨空白（同 pagination.totalPrefix 的正典）：\n${fail([...new Set(hits)])}`);
+});
+
+test("§3-1 每個 page-shell 頁都要有 header 導覽入口（或在檔頭註明無入口頁的理由）", () => {
+    // 曾經：3-4_skillManagement 只能從頁面目錄進，麵包屑卻宣告了「資料配置」父節點——app 內導不到它。
+    // 例外＝真的沒有導覽入口且有理由的頁；目前一個都不需要（流程中間頁靠「被別頁連到」自然放行）。
+    const NO_NAV = new Map();
+    const menu = read("src/_includes/components/header/header.html");
+    const hrefs = new Set([...menu.matchAll(/href:\s*"([^"?#]+)/g)].map((m) => m[1]));
+    assert.ok(hrefs.size >= 10, `header menuItems 只解析到 ${hrefs.size} 個 href —— 這條測試在空轉`);
+    const seenExempt = new Set();
+    const hits = [];
+    for (const f of srcHtml) {
+        const src = read(f);
+        if (!/^layout:\s*layouts\/page-shell/m.test(src)) continue;
+        const permalink = (src.match(/^permalink:\s*(\S+)/m) || [])[1];
+        if (!permalink) continue;
+        if (hrefs.has(permalink)) continue;
+        if (NO_NAV.has(permalink)) { seenExempt.add(permalink); continue; }
+        // 流程中間頁：由同流程的前一頁連過去（markup 內被別頁連到即可）。
+        // **catalog.html 不算**——它是部署首頁的全站連結清單，什麼都連得到；把它算進來這條測試就恆綠。
+        const linked = srcHtml.some((g) => g !== f && !g.endsWith("catalog.html") && read(g).includes(permalink));
+        if (linked) continue;
+        hits.push(`${basename(f)}  ← 不在 header menuItems、也沒有任何頁面連到它`);
+    }
+    const stale = [...NO_NAV.keys()].filter((k) => !seenExempt.has(k));
+    assert.equal(stale.length, 0, `NO_NAV 有過期項（該頁已進導覽或已刪）：${stale.join("、")}`);
+    assert.equal(hits.length, 0, `§3-1：新頁要有導覽入口：\n${fail(hits)}`);
 });

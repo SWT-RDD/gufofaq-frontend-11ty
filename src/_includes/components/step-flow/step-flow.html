@@ -13,24 +13,27 @@
      include 子元件，會靜默渲染成空白）。真值由 React 端串流事件驅動（lib/sse steps/toolActivity/
      thinkingByNode/summary + lib/stepFlow computeFlow）；此處為靜態示範。
    巢狀（skill）：租戶自訂 skill 被 agent 呼叫時會跑一個 scoped 子 agent 迴圈，其子步驟由 chatbot
-     以 parent/skill_* 欄掛成巢狀節點。此處以 node.depth（0＝正典管線、1＋＝子步驟）做縮排，
+     以 parent 欄掛成子樹（`agent_service` 的 `_record`；巢狀樹由 parent 鏈組成）。
+     **`depth` 是「顯示用的樹深」，不是後端那個同名欄**：後端的 depth 是 skill 遞迴層數，一個 skill
+     呼叫與它自己的子步驟同值（見 GufoRAG chatbot `agent_service._record` 與 saas `lib/stepFlow` 的
+     `attachSkillSteps` 測試）；縮排要的是 parent 鏈的層數，故 1＝被正典節點呼叫的 skill、2＝它的子步驟、
+     3＝再一層。值域夾在 3（與 saas `components/StepFlow` 的 `Math.min(depth, 3)` 對齊）——插值出
+     `is-depth-4` 這種未定義的 class 只會靜默不縮排，所以夾在模板裡而不是靠資料自律。
      skill 節點另有 skill/version/iterations/error 明細列——後端送什麼，這裡就要看得見；
      刻意**不**收工具參數與結果原文（後端也不送，那是洩漏面）。
    參數：stepFlowNodes（選填，[{ label, state, time, depth, skill, version, iterations, error,
      tools, params, result, verdict, thinking }]）＋
      stepFlowSummary（選填，{ tokens, latency, ttft, results, model }）——使用頁換對話主題時「兩個一起覆寫」，
      否則摘要（檢索筆數/模型）會與節點對不上（§6 自洽）；內部變數用元件專屬名 stepFlowNodeRows／stepFlowSummaryData。
-   進度「目前 X / N」全由 stepFlowNodeRows 推導（X＝已執行到的最後一步序號，N＝節點數），不烤字面量——
-     使用頁改節點數，烤死的總數就會說謊（§6）。
+     **不覆寫＝主動採用內建示範**，那份示範必須與使用頁的其他內容自洽（內建示範是移民主題，配 2-2-1）。
+   進度「目前 X / N」只數**正典管線節點**（無 depth 者）：N＝正典節點數、X＝已執行到的最後一個正典節點序號。
+     巢狀子步驟不計入——它們是某一站底下的細節，算進分母會讓進度隨串流冒出子步驟而倒退（正典管線是
+     固定長度，見 saas `lib/stepFlow` 的 CANONICAL_PIPELINE）。不烤字面量：使用頁改節點數，烤死的總數就會說謊（§6）。
    示範資料＝假資料（工具名/參數/結果/推理），依 GUIDELINE §4-2「只翻 UI chrome、不翻假資料」不掛 data-i18n。 #}
 {% set stepFlowNodeRows = stepFlowNodes or [
     { label: "初始化對話", state: "completed", time: "12ms" },
     { label: "Agent 推理", state: "completed", time: "340ms", thinking: "先判斷是否需要檢索；問題涉及具體規定，決定呼叫知識庫搜尋。" },
     { label: "檢索知識庫", state: "completed", time: "1.2s", tools: "search_knowledge_base", params: "{ query: '新住民 結婚 應備文件' }", result: "命中 8 筆片段（相似度 0.79–0.92），注入後續生成脈絡。" },
-    { label: "skill：refund-flow", state: "completed", time: "1.8s", depth: 1, skill: "refund-flow", version: "v2", iterations: "2", tools: "lookup-order, calculate" },
-    { label: "Agent 推理", state: "completed", time: "260ms", depth: 2, thinking: "先取訂單金額，再算折扣。" },
-    { label: "呼叫工具", state: "completed", time: "90ms", depth: 2, tools: "calculate" },
-    { label: "skill：lookup-order", state: "failed", time: "120ms", depth: 2, skill: "lookup-order", version: "v1", iterations: "1", error: "RuntimeError: 訂單服務逾時" },
     { label: "可回答性判定", state: "completed", time: "210ms", verdict: "generate（素材足以回答）" },
     { label: "生成答案", state: "running", time: "" },
     { label: "誠實查無", state: "skipped", time: "" },
@@ -43,16 +46,20 @@
 {% set stepFlowSummaryData = stepFlowSummary or {
     tokens: "1,284", latency: "2.4s", ttft: "480ms", results: "8", model: "openai:gpt-4o-mini"
 } %}
-{# 進度序號由陣列推導：已執行到的最後一步（completed/running/failed 都算已執行；skipped 是未走分支、
-     pending 尚未到，都不算）。nunjucks 迴圈內 set 會外溢到迴圈外（同 frame），故可累加取最後一步。 #}
+{# 進度序號與總數只數正典節點（無 depth 者），巢狀子步驟不計入（見檔頭）。
+     已執行＝completed/running/failed；skipped 是未走的分支、pending 尚未到，都不算。
+     **迴圈內的 `{% set %}` 只有在外層 frame 已宣告同名變數時才會外溢**（nunjucks 的 for 會 push
+     新 frame，resolveUp 只寫得回已存在的名字）——所以下面兩行預先宣告不是多餘的初始化，
+     刪掉它們兩個數字會靜默渲染成空字串。 #}
 {% set stepFlowCurrent = 0 %}
-{% for node in stepFlowNodeRows %}{% if node.state == "completed" or node.state == "running" or node.state == "failed" %}{% set stepFlowCurrent = loop.index %}{% endif %}{% endfor %}
+{% set stepFlowTotal = 0 %}
+{% for node in stepFlowNodeRows %}{% if not node.depth %}{% set stepFlowTotal = stepFlowTotal + 1 %}{% if node.state == "completed" or node.state == "running" or node.state == "failed" %}{% set stepFlowCurrent = stepFlowTotal %}{% endif %}{% endif %}{% endfor %}
 <div class="step-flow js-accordion mt-24">
     <div class="flex-row justify-content-between align-items-center flex-wrap gap-8">
         <span class="text-lg text-bold" data-i18n="agent.execFlow">執行流程</span>
         <div class="flex-row align-items-center gap-8 flex-wrap">
             {# 進度前後綴走 i18n、數字由陣列推導（stepFlowCurrent／stepFlowNodeRows.length），不烤字面量（§6） #}
-            <span class="step-flow-progress"><span data-i18n="agent.stepProgressPrefix">目前</span> {{ stepFlowCurrent }} / {{ stepFlowNodeRows.length }}</span>
+            <span class="step-flow-progress"><span data-i18n="agent.stepProgressPrefix">目前</span> {{ stepFlowCurrent }} / {{ stepFlowTotal }}</span>
             <button type="button" class="button button-border button-sm js-expand-all" data-i18n="common.expandAll">全部展開</button>
             <button type="button" class="button button-border button-sm js-collapse-all" data-i18n="common.collapseAll">全部收合</button>
         </div>
@@ -81,9 +88,10 @@
                 {% for node in stepFlowNodeRows %}
                 <tr class="step-node is-{{ node.state }}">
                     <td class="step-node-dot-cell"><span class="step-node-dot"></span></td>
-                    {# 縮排以 depth 推導（0＝正典管線節點，1＋＝skill 子步驟）；skill 呼叫本身另加
-                         標記 class 供樣式區分「這一站是租戶自訂能力包」而非正典管線的一站。 #}
-                    <td><span class="step-node-label{% if node.depth %} is-nested is-depth-{{ node.depth }}{% endif %}{% if node.skill %} is-skill{% endif %}">{{ node.label }}</span></td>
+                    {# 縮排以樹深 depth 推導（無＝正典管線節點，1＋＝子樹）；階數夾在 3（scss 只定義到
+                         is-depth-3，插值出未定義的 class 會靜默不縮排）。skill 呼叫本身另加標記 class
+                         供樣式區分「這一站是租戶自訂能力包」而非正典管線的一站。 #}
+                    <td><span class="step-node-label{% if node.depth %} is-nested is-depth-{% if node.depth > 3 %}3{% else %}{{ node.depth }}{% endif %}{% endif %}{% if node.skill %} is-skill{% endif %}">{{ node.label }}</span></td>
                     <td class="step-node-time">{{ node.time }}</td>
                     <td class="step-node-state">
                         {% if node.state == "completed" %}<span data-i18n="agent.stepCompleted">已完成</span>{% elif node.state == "running" %}<span data-i18n="agent.stepRunning">進行中</span>{% elif node.state == "skipped" %}<span data-i18n="agent.stepSkipped">略過</span>{% elif node.state == "failed" %}<span data-i18n="platform.resultFail">失敗</span>{% else %}<span data-i18n="agent.stepPending">待處理</span>{% endif %}
@@ -106,7 +114,9 @@
                                     {% if node.skill %}
                                     <tr>
                                         <th data-i18n="agent.skill">Skill</th>
-                                        <td><code class="step-flow-code">{{ node.skill }}</code>{% if node.version %} <span class="step-node-version">{{ node.version }}</span>{% endif %}</td>
+                                        {# 版號與 skill 名之間的間距只由 .step-node-version 的 margin 給，
+                                             markup 不留字面空白（兩者疊加會變成雙倍距，同 beta-icon 的先例）。 #}
+                                        <td><code class="step-flow-code">{{ node.skill }}</code>{% if node.version %}<span class="step-node-version">{{ node.version }}</span>{% endif %}</td>
                                     </tr>
                                     {% endif %}
                                     {% if node.iterations %}
