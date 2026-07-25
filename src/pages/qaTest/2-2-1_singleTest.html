@@ -58,6 +58,22 @@ permalink: 2-2-1_singleTest.html
                 </select>
             </div>
         </div>
+        {# 思考深度（reasoning effort）：與模型同排的一次性測試覆寫。選項依所選模型的 reasoning_options
+             動態（React 端）；切版靜態列代表性枚舉。空＝沿用該模型預設（chatbot init_llm clamp）。 #}
+        <div class="form-group filter-field row mobile-col col-4-md col-12-sm">
+            <div class="label">
+                <label for="reasoningEffortSelect" class="control-label" data-i18n="settings.reasoningEffort">思考深度</label>
+            </div>
+            <div class="field">
+                <select class="form-control singleSelect js-reasoning-effort" id="reasoningEffortSelect">
+                    <option value="" selected data-i18n="settings.reasoningEffortDefault">沿用模型預設</option>
+                    <option value="minimal">minimal</option>
+                    <option value="low">low</option>
+                    <option value="medium">medium</option>
+                    <option value="high">high</option>
+                </select>
+            </div>
+        </div>
         {# 對話模式：傳統搜尋 / Agent 對話（value 對應 product TestConfig.search_mode，預設 traditional；option 文字是 chrome 走 i18n，value 為業務值不翻）。
              示範選 agent（§6 示範資料要自洽：本頁下方展示 agent 工具軌跡與串流狀態，傳統搜尋模式不會有）。 #}
         <div class="form-group filter-field row mobile-col col-4-md col-12-sm">

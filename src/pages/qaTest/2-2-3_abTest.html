@@ -67,6 +67,22 @@ permalink: 2-2-3_abTest.html
                     </select>
                 </div>
             </div>
+            {# 思考深度（reasoning effort）：與模型同排的一次性測試覆寫（A/B 各一份）。選項依所選模型
+                 動態（React 端）；切版靜態列代表性枚舉。空＝沿用該模型預設（chatbot init_llm clamp）。 #}
+            <div class="form-group row mobile-col">
+                <div class="label ab-field-label">
+                    <label for="abReasoningEffortSelect-{{ ab.side }}" class="control-label" data-i18n="settings.reasoningEffort">思考深度</label>
+                </div>
+                <div class="field">
+                    <select id="abReasoningEffortSelect-{{ ab.side }}" class="form-control singleSelect js-reasoning-effort">
+                        <option value="" selected data-i18n="settings.reasoningEffortDefault">沿用模型預設</option>
+                        <option value="minimal">minimal</option>
+                        <option value="low">low</option>
+                        <option value="medium">medium</option>
+                        <option value="high">high</option>
+                    </select>
+                </div>
+            </div>
             {# 對話模式：每側各一組，id 以 -{{ ab.side }} 保持同頁唯一；對齊 product TestConfig.search_mode。
                  示範選 agent（§6 示範自洽：本頁下方展示 agent 工具軌跡，傳統搜尋模式不會有）。 #}
             <div class="form-group row mobile-col">

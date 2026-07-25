@@ -234,6 +234,18 @@ permalink: 5-2_conversationSettings.html
                 </div>
             </div>
             <div class="form-group col-6-md col-12-sm">
+                <div class="label"><label for="genReasoningEffort" class="control-label" data-i18n="settings.reasoningEffort">思考深度</label></div>
+                <div class="field">
+                    <select class="form-control singleSelect js-reasoning-effort" id="genReasoningEffort">
+                        <option value="" selected data-i18n="settings.reasoningEffortDefault">沿用模型預設</option>
+                        <option value="minimal">minimal</option>
+                        <option value="low">low</option>
+                        <option value="medium">medium</option>
+                        <option value="high">high</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group col-6-md col-12-sm">
                 <div class="label"><label for="genTemp" class="control-label" data-i18n="settings.temperature">溫度</label></div>
                 <div class="field"><input type="text" id="genTemp" class="form-control js-temperature" value="0.0" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter"></div>
             </div>
@@ -334,6 +346,56 @@ permalink: 5-2_conversationSettings.html
                 </div>
             </div>
         </div>
+    </div>
+    {# ── 分組 LLM（進階）：主回答以外各內部 LLM 呼叫可各自選模型與思考深度 ──
+         值載體，隨底部「儲存對話設定」直送 product settings_hub（model_name_*/reasoning_effort_*）
+         → chatbot init_llm_group。React 端各組模型選單填 available models（含「繼承主模型」）、
+         思考深度選單依該組**生效模型**的 reasoning_options 動態；切版此處為靜態代表性選項。
+         每組明列「對應哪些功能」，讓設定者清楚各旋鈕作用範圍。 #}
+    <div class="block">
+        <div class="label"><label class="control-label" data-i18n="settings.reasoningGroupsHeading">分組 LLM（進階）</label></div>
+        <p class="text-gray" data-i18n="settings.reasoningGroupsIntro">主回答（使用者最終看到的回覆）以外的各內部 LLM 呼叫，可各自選用不同模型與思考深度。留空＝繼承主模型／最低思考。</p>
+        {% set reasoningGroups = [
+            { key: "intent", label: "意圖判斷", labelKey: "settings.reasoningGroupIntent",
+              desc: "分析使用者輸入的語言、關鍵字、時間範圍與檔名意圖（傳統搜尋模式的意圖判斷階段）。", descKey: "settings.reasoningGroupIntentDesc" },
+            { key: "judge", label: "判定（可回答性／QA／政策）", labelKey: "settings.reasoningGroupJudge",
+              desc: "判定檢索素材是否足以回答（可回答性 grounding 閘與分層檢索的 IsAnswerable）、QA 直答裁決、內容政策 topics 裁決。", descKey: "settings.reasoningGroupJudgeDesc" },
+            { key: "tools", label: "工具迴圈", labelKey: "settings.reasoningGroupTools",
+              desc: "Agent 對話模式下，每一輪選擇與呼叫工具的推理（不含最終答案生成）。", descKey: "settings.reasoningGroupToolsDesc" },
+            { key: "skill", label: "技能子圖", labelKey: "settings.reasoningGroupSkill",
+              desc: "租戶自訂技能（skill）內部的工具迴圈與回覆（技能產物是回饋主 Agent 的工具結果）。", descKey: "settings.reasoningGroupSkillDesc" }
+        ] %}
+        {% for g in reasoningGroups %}
+        <div class="flex-row column gap-16">
+            <div class="label"><label class="control-label" data-i18n="{{ g.labelKey }}">{{ g.label }}</label></div>
+            <p class="text-gray" data-i18n="{{ g.descKey }}">{{ g.desc }}</p>
+            <div class="flex-row flex-wrap gap-16">
+                <div class="form-group col-6-md col-12-sm">
+                    <div class="label"><label for="genModel_{{ g.key }}" class="control-label" data-i18n="settings.modelName">模型</label></div>
+                    <div class="field">
+                        <select class="form-control singleSelect js-group-model" data-group="{{ g.key }}" id="genModel_{{ g.key }}">
+                            <option value="" selected data-i18n="settings.inheritMainModel">繼承主模型</option>
+                            <option value="openai:gpt-4o">openai:gpt-4o</option>
+                            <option value="openai:gpt-4o-mini">openai:gpt-4o-mini</option>
+                            <option value="openai:gpt-4.1">openai:gpt-4.1</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group col-6-md col-12-sm">
+                    <div class="label"><label for="genReasoning_{{ g.key }}" class="control-label" data-i18n="settings.reasoningEffort">思考深度</label></div>
+                    <div class="field">
+                        <select class="form-control singleSelect js-group-reasoning" data-group="{{ g.key }}" id="genReasoning_{{ g.key }}">
+                            <option value="" selected data-i18n="settings.reasoningEffortDefault">沿用模型預設</option>
+                            <option value="minimal">minimal</option>
+                            <option value="low">low</option>
+                            <option value="medium">medium</option>
+                            <option value="high">high</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
     </div>
 </div>
 
