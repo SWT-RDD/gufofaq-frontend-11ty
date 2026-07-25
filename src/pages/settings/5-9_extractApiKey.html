@@ -1,8 +1,8 @@
 ---
 layout: layouts/page-shell/page-shell.html
-title: GufoFAQ::萃取 API 金鑰
+title: GufoFAQ::API 金鑰
 titleKey: nav.extractApiKey
-pageHeading: 萃取 API 金鑰
+pageHeading: API 金鑰
 permalink: 5-9_extractApiKey.html
 ---
 {% set breadcrumbItems = [
@@ -15,15 +15,23 @@ permalink: 5-9_extractApiKey.html
 </div>
 
 {# 萃取 API 金鑰管理（獨立設定頁）。SaaS 新需求，逆向自 product extract.py：
-     每租戶一把金鑰，供外部程式以 X-API-Key 標頭呼叫萃取端點（國家／時間）；
-     重新產生後舊金鑰立即失效。/api-key 的 GET／POST 皆僅租戶管理者可用
-     （require_admin，比照 widget-tokens；extract.py:25-48）。
-     無金鑰首次態（api_key=null 顯示「尚未產生」）由 React 依 API 呈現，切版以已產生態示範。 #}
-<p class="text-gray" data-i18n="extractKey.intro">此金鑰供外部程式以 X-API-Key 標頭呼叫萃取 API（國家／時間），請妥善保管。重新產生後舊金鑰會立即失效。</p>
+     每租戶一把金鑰，供外部程式以 X-API-Key 標頭呼叫萃取端點（國家／時間）與資料 API
+     （/api/v1）；重新產生後舊金鑰立即失效。/api-key 的 GET／POST 皆僅租戶管理者可用
+     （require_admin，比照 widget-tokens）。
+     **明碼只在產生的那一次出現**：product 端只存雜湊，重新載入後只回得出末四碼 hint。
+     故本頁有兩種態：剛產生（顯示完整金鑰＋「唯一一次」警語，顯示/隱藏可用）與
+     已存在（只顯示 hint＋「只保存雜湊」說明，顯示/隱藏無意義）。
+     無金鑰首次態（尚未產生）由 React 依 API 呈現，切版以「剛產生」態示範。 #}
+<p class="text-gray" data-i18n="extractKey.intro">此金鑰供外部程式以 X-API-Key 標頭呼叫萃取 API（國家／時間）與資料 API（/api/v1），請妥善保管。重新產生後舊金鑰會立即失效。</p>
 
 {# 金鑰顯示欄：readonly，預設遮蔽（type=password）+ 顯示/隱藏切換 + 複製 + 產生/重新產生 #}
 <div class="block mb-16 flex-row column gap-16">
     <div class="text-md text-bold" data-i18n="extractKey.currentKey">目前金鑰</div>
+    {# 儲存模型說明（**恆常顯示**，兩種態都成立）＋「唯一一次」警語（**只在剛產生時**出現）。
+         沒有這兩句的話，使用者會以為金鑰隨時回得來，下次進來看到末四碼才發現已經拿不回。
+         切版示範「剛產生」態（兩句都在）；React 依有無明碼決定是否渲染警語那一句。 #}
+    <p class="text-gray" data-i18n="extractKey.storedHint">系統只保存金鑰的雜湊值，無法再顯示明碼；遺失請重新產生。</p>
+    <p class="text-warning" data-i18n="extractKey.onceOnly">這是這把金鑰唯一一次顯示明碼——關閉或重新整理本頁後就只看得到末四碼。請現在複製並妥善保存。</p>
     <div class="flex-row align-items-center gap-8 flex-wrap">
         <div class="col-6-md col-12-sm">
             <div class="form-group">
@@ -51,7 +59,7 @@ permalink: 5-9_extractApiKey.html
 <div class="block flex-row column gap-16">
     <div class="text-md text-bold" data-i18n="extractKey.howToTitle">如何呼叫萃取 API</div>
     <p class="text-gray" data-i18n="extractKey.howToDesc">以 X-API-Key 標頭呼叫；mode 1=國家、2=時間、3=兩者；text 長度 2–5000 字；額度用罄回 429。</p>
-    <pre class="code-block"><code>curl -X POST "https://&lt;your-product-host&gt;/extract/country-or-time" \
+    <pre class="code-block"><code>curl -X POST "https://&lt;your-host&gt;/api/extract/country-or-time" \
   -H "X-API-Key: YOUR_KEY" \
   -H "Content-Type: application/json" \
   -d '{"text":"我們下週三在東京開會","mode":3}'</code></pre>
