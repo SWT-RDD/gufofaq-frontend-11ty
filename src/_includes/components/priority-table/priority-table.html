@@ -2,6 +2,13 @@
      資料由使用頁面在 include 前 set（見 §3-2/§6）：
        rows = [{ category, description, prompt, priority }]
        priority 對應「變更優先級」下拉的選中值（"高優先級"/"中優先級"/"低優先級"/"不使用"，空字串＝未選）；rows 空陣列＝空狀態表。
+       tierless（選填，預設 false）＝**取消三層、只分使用/不使用**的變體，供 Agent 對話模式用。
+         依實測矩陣（gufofaq-saas docs/mode-matrix.md 列 25），`index_tiers` 只有傳統搜尋吃；
+         agent 的 search_knowledge_base 只看 selected_index，而 selected_index 是由「有沒有被分到
+         任一層」決定的——也就是說 agent 模式下高/中/低毫無差別、但「使用/不使用」照樣生效。
+         給三個沒有差別的選項＝讓使用者以為自己在調一個實際不存在的旋鈕，故此變體把下拉收成
+         「使用中/不使用」兩項、表頭改「變更使用狀態」。**選項值仍用同一組業務詞**（"高優先級"
+         代表使用中）：切回傳統模式時原本的分層要還在，值域換掉就等於一切模式資料就被抹平。
      可編輯欄位：任務描述 td.edit-cell.description、任務對應提示詞 td.edit-cell.prompt，內容用 div.ellipsis-2 包覆；
      編輯/設定按鈕、textarea 切換屬 main.js 業務邏輯，不在此列。
      用法：component.html（單張示範）、5-2_conversationSettings.html（檢索與欄位子頁籤依高/中/低優先級分組，每組 set rows 後 include）。 #}
@@ -20,7 +27,11 @@
                 <th data-i18n="comp.taskDescription">任務描述</th>
                 <th data-i18n="comp.taskPrompt">任務對應提示詞</th>
                 <th class="text-center" data-i18n="common.functions">功能</th>
+                {% if tierless %}
+                <th data-i18n="comp.changeUsage">變更使用狀態</th>
+                {% else %}
                 <th data-i18n="comp.changePriority">變更優先級</th>
+                {% endif %}
             </tr>
         </thead>
         <tbody>
@@ -43,6 +54,14 @@
                     <div class="form-group">
                         <div class="field">
                             {# .priority-select 是真 app 的 change 掛點（knowledgeRetrieval.js:643 的 $(document).on('change','.priority-select')）#}
+                            {% if tierless %}
+                            <select class="form-control select-sm singleSelect priority-select" aria-label="變更使用狀態" data-i18n-aria-label="comp.changeUsage">
+                                <option></option>
+                                {# 值沿用「高優先級」＝使用中：agent 模式不分層，但切回傳統時分層資料要還在（見檔頭）。 #}
+                                <option value="高優先級" data-i18n="comp.inUse"{% if row.priority != "不使用" and row.priority %} selected{% endif %}>使用中</option>
+                                <option value="不使用" data-i18n="comp.doNotUse"{% if row.priority == "不使用" %} selected{% endif %}>不使用</option>
+                            </select>
+                            {% else %}
                             <select class="form-control select-sm singleSelect priority-select" aria-label="變更優先級" data-i18n-aria-label="comp.changePriority">
                                 <option></option>
                                 <option value="高優先級" data-i18n="comp.highPriority"{% if row.priority == "高優先級" %} selected{% endif %}>高優先級</option>
@@ -50,6 +69,7 @@
                                 <option value="低優先級" data-i18n="comp.lowPriority"{% if row.priority == "低優先級" %} selected{% endif %}>低優先級</option>
                                 <option value="不使用" data-i18n="comp.doNotUse"{% if row.priority == "不使用" %} selected{% endif %}>不使用</option>
                             </select>
+                            {% endif %}
                         </div>
                     </div>
                 </td>
