@@ -69,3 +69,18 @@ permalink: 4-2_qaHistory_detail.html
 {% include "components/sources-block/sources-block.html" %}
 
 {% include "components/share-manage-modal/share-manage-modal.html" %}
+
+{# 撤銷分享連結的二次確認：撤銷是軟刪且不可逆（該連結永久失效），故走與刪除同一顆確認彈窗
+   （components/delete-modal 的泛用版：標題／內文換成「撤銷」）。開窗需先選定「撤銷哪一條連結」
+   ＝業務條件開窗，故 share-manage-modal 那顆鈕保留 hook class .js-revoke-share、不掛 data-open-modal（§5）；
+   成敗 toast 掛在這顆確認鈕上（原本掛在列上的 toast.revokeShare 移到這裡，key 不變）。 #}
+{% set deleteTitleKey = "action.revoke" %}
+{% set deleteTitleZh = "撤銷" %}
+{% set deleteMessageKey = "common.confirmRevoke" %}
+{% set deleteMessageZh = "確定要撤銷" %}
+{% set deleteTargetId = "revokeShareTarget" %}
+{% set deleteConfirmBinding = true %}
+{% set deleteConfirmClass = "js-revoke-share-confirm" %}
+{% set deleteToast = "連結已撤銷|撤銷失敗，請稍後再試" %}
+{% set deleteToastKey = "toast.revokeShare" %}
+{% include "components/delete-modal/delete-modal.html" %}

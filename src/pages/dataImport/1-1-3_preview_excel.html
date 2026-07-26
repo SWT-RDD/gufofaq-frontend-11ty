@@ -26,6 +26,31 @@ permalink: 1-1-3_preview_excel.html
     {% include "components/step-btn-wrap/step-btn-wrap.html" %}
 </div>
 
+{# 工作表選擇：多工作表的活頁簿原本只會匯入第一張，其餘**靜默消失**——使用者上傳三張表，看到「匯入成功」，
+     另外兩張連提示都沒有。選了哪一張要跟著預覽與匯入走（值載體 → hook class .js-excel-sheet，不掛 data-toast，§5）。
+     只有一張時整個欄位不渲染（`{% if sheets.length > 1 %}`，React 依清單長度同理）。
+     後端現況（gufofaq-saas services/product）：`ExcelImportIn.sheet_name: str | None` 已經收具名工作表
+     （app/routers/datasets.py），但 **preview 端點還沒有**——`app/excel.py` 的 `read_preview(path)` 固定讀
+     `wb.worksheets[0]`、回應只帶它讀的那一張的 `sheet_name`，沒有工作表清單。
+     ⚠️ product 待跟上兩件：①preview 回應加上工作表清單（否則選單填不出選項）②preview 接受 sheet_name
+     （否則選了別張、預覽仍是第一張）。示範 3 張。 #}
+{% set sheets = ["問答集", "產品清單", "備用資料"] %}
+{% if sheets.length > 1 %}
+<div class="form-group row mobile-col mb-16">
+    <div class="label label-md">
+        <label for="excelSheetSelect" class="control-label" data-i18n="dataImport.sheet">工作表</label>
+    </div>
+    <div class="field">
+        <select id="excelSheetSelect" class="form-control singleSelect js-excel-sheet" aria-describedby="excelSheetHint">
+            {% for sheet in sheets %}
+            <option value="{{ sheet }}"{% if loop.first %} selected{% endif %}>{{ sheet }}</option>
+            {% endfor %}
+        </select>
+        <span class="text-gray" id="excelSheetHint" data-i18n="dataImport.sheetHint">這份活頁簿有多張工作表；只有選取的這一張會被預覽與匯入。</span>
+    </div>
+</div>
+{% endif %}
+
 {# 資料預覽表格：真實頁 thead/tbody 由 js/previewExcel.js 依上傳的 excel 欄位動態產生（本檔為「動態產生」註解），
      此處欄位取用與後續 1-1-4_columnSelect_excel 欄位對應步驟一致的樣本（客服問題／客服回覆／建立時間／圖片連結），
      用 set+for 資料化示範 3 筆，父層與 table class 沿用 ui/default-table 同一組真實系統 class #}

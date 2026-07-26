@@ -3093,3 +3093,122 @@ test("§4 已停用列的底色要對「普通 .default-table」生效（收進�
     assert.match(rule[1], /^\.default-table tbody tr\.is-inactive>td$/, `選擇器被縮進變體裡了：${rule[1]}`);
     assert.match(rule[2], /background-color:var\(--surface-sunken\)/);
 });
+
+test("§6 有分頁的清單頁：「共 N 筆資料」必須等於頁碼列的總筆數（不是這一頁渲染了幾列）", () => {
+    // 伺服器端分頁的頁面，計數列講的是**伺服器總筆數**。寫成 rows.length 的話，示範頁會出現
+    // 「共 3 筆資料」配「共 6 頁」；真實環境則會變成「共 500 筆」——那正是稽核日誌的病灶：
+    // 看起來像全部只有 500 筆，而第 501 筆以前的證跡在畫面上不存在。
+    const hits = [];
+    let checked = 0;
+    for (const f of distHtml) {
+        // 元件庫頁是 showcase：`.data-info`（ui/block 的示範「共 12 筆資料」）與頁碼示範是兩個無關的展示，
+        // 本來就不同源（同其他測試的 SHOWCASE 慣例）。
+        if (f === "component.html") continue;
+        const html = distDoc(f);
+        const info = html.match(/<div class="data-info">[\s\S]*?<\/div>/);
+        const total = html.match(/data-total="(\d+)"/);
+        if (!info || !total) continue;
+        // 先剝標籤再找數字：屬性名 data-i18n 裡的「18」會被誤讀成計數（本輪就先中了一次）
+        const n = info[0].replace(/<[^>]*>/g, "").match(/(\d[\d,]*)/);
+        if (!n) { hits.push(`dist/${f} 的 .data-info 裡沒有數字`); continue; }
+        checked++;
+        if (n[1].replace(/,/g, "") !== total[1])
+            hits.push(`dist/${f} 計數列寫 ${n[1]}，頁碼列的總筆數是 ${total[1]}（同一個數字要同源，§6）`);
+    }
+    assert.ok(checked >= 2, `只檢查到 ${checked} 個「計數列 + 頁碼列」的頁面 —— 這條測試在空轉`);
+    assert.equal(hits.length, 0, fail(hits));
+});
+
+// ───────── 分享連結：有效期、狀態、撤銷二次確認 ─────────
+
+test("§5/§6 分享連結管理：有效天數欄（可留空＝永久）＋ 三種狀態都演得出來 ＋ 過期/撤銷的列不留可按的撤銷鈕", () => {
+    // 後端 POST /share 早就收 expires_days、回應也帶 expires_at／disabled，前端一個都沒接 ⇒ 每一條分享連結
+    // 都是永久有效的，而分享連結是全服務唯一免憑證就讀得到問答內容的東西。
+    const html = distDoc("4-2_qaHistory_detail.html");
+    const modal = html.slice(html.indexOf('id="shareManageModal"'), html.indexOf('id="deleteModal"'));
+    assert.ok(modal.length > 500, "4-2 取不到分享管理彈窗 —— 這條測試在空轉");
+
+    const input = modal.match(/<input[^>]*id="shareExpiresDaysInput"[^>]*>/);
+    assert.ok(input, "缺「有效天數」欄");
+    assert.match(input[0], /type="number"/, "有效天數要是數值輸入");
+    assert.match(input[0], /min="1"/, "min 要對齊後端「expires_days must be positive」");
+    assert.match(input[0], /aria-describedby="shareExpiresDaysHint"/, "說明要用 aria-describedby 接起來（§4）");
+    assert.ok(!/required/.test(input[0]), "留空＝永久有效，不能設成必填");
+
+    // 狀態三態都要有示範（§5：沒有頁面演得出來的分支＝沒驗收過）
+    for (const [key, label] of [["share.stateActive", "生效中"], ["share.stateExpired", "已過期"], ["widget.revoked", "已撤銷"]])
+        assert.match(modal, new RegExp(`data-i18n="${key.replace(".", "\\.")}"`), `缺「${label}」狀態的示範`);
+    assert.match(modal, /data-i18n="share\.neverExpires"/, "缺「永久有效」（expires_at 為 null）的示範");
+
+    // 已過期／已撤銷的列：撤銷鈕要 disabled（那一列已經沒有東西可撤，留著就是一顆按了什麼都不會發生的鈕）
+    const revokeBtns = [...modal.matchAll(/<button[^>]*js-revoke-share[^>]*>/g)].map((m) => m[0]);
+    assert.equal(revokeBtns.length, 4, `示範列應為 4 列（永久／有到期日／已過期／已撤銷），實際 ${revokeBtns.length}`);
+    assert.equal(revokeBtns.filter((b) => /\bdisabled\b/.test(b)).length, 2, "已過期與已撤銷這兩列的撤銷鈕要 disabled");
+    // 條件開窗：撤銷鈕只留 hook，成敗 toast 掛在確認鈕上（§5）
+    for (const b of revokeBtns) assert.ok(!/data-toast/.test(b), "撤銷鈕是條件開窗（要先選定撤銷哪一條），不掛 data-toast");
+});
+
+test("§5 撤銷是不可逆動作：4-2 與 5-8 都走二次確認，且確認窗說的是「撤銷」不是「刪除」", () => {
+    for (const [page, toastKey] of [["4-2_qaHistory_detail.html", "toast.revokeShare"], ["5-8_widgetTokens.html", "toast.revokeWidgetToken"]]) {
+        const html = distDoc(page);
+        const dlg = html.slice(html.indexOf('id="deleteModal"'));
+        assert.ok(dlg.length > 300, `${page} 沒有 include 撤銷用的確認彈窗`);
+        assert.match(dlg, /data-i18n="action\.revoke"/, `${page} 的確認窗標題應是「撤銷」`);
+        assert.match(dlg, /data-i18n="common\.confirmRevoke"/, `${page} 的確認窗內文應是「確定要撤銷」`);
+        assert.match(dlg, new RegExp(`data-i18n-data-toast="${toastKey.replace(".", "\\.")}"`), `${page} 的成敗 toast 應掛在確認鈕上`);
+        // 列上的撤銷鈕：條件開窗（先選定撤銷哪一列），只留 hook
+        const rowBtn = html.match(/<button[^>]*js-revoke-(?:share|token)[^>]*>/);
+        assert.ok(rowBtn, `${page} 找不到列上的撤銷鈕`);
+        assert.ok(!/data-toast/.test(rowBtn[0]), `${page} 列上的撤銷鈕不該直接掛 toast（改由確認鈕演）`);
+    }
+});
+
+test("§6 delete-modal 參數化後，預設仍是「刪除」（沒傳參數的頁面不能被改到）", () => {
+    // 泛用化最容易出事的地方是預設值：3-1-1／1-2-1 那些沒傳 title/message 的頁面必須一字不變。
+    const html = distDoc("3-1-1_datasetList.html");
+    const dlg = html.slice(html.indexOf('id="deleteModal"'));
+    assert.match(dlg, /data-i18n="action\.delete">刪除</, "預設標題應為「刪除」");
+    assert.match(dlg, /data-i18n="common\.confirmDelete">確定要刪除</, "預設內文應為「確定要刪除」");
+});
+
+// ───────── Excel 工作表選擇（G）與 MCP env 編輯（H）─────────
+
+test("§5/§6 1-1-3 預覽要能選工作表（多工作表的活頁簿原本只匯第一張、其餘靜默消失）", () => {
+    const html = distDoc("1-1-3_preview_excel.html");
+    const sel = html.match(/<select[^>]*id="excelSheetSelect"[^>]*>([\s\S]*?)<\/select>/);
+    assert.ok(sel, "1-1-3 缺工作表選擇器");
+    assert.match(sel[0], /\bjs-excel-sheet\b/, "值載體要掛 hook class 交給 React 讀（§5 ②）");
+    assert.ok(!/data-toast/.test(sel[0]), "值載體不掛 data-toast（成敗由 React 演）");
+    const options = [...sel[1].matchAll(/<option[^>]*>([^<]*)<\/option>/g)];
+    assert.ok(options.length >= 2, `示範要有多張工作表才演得到這個欄位的存在意義，實際 ${options.length} 張`);
+    assert.equal([...sel[1].matchAll(/\bselected\b/g)].length, 1, "要有且只有一張預設選取");
+    // 說明文字要接得起來（§4：帶約束條件的輔助文字）
+    const describedby = sel[0].match(/aria-describedby="([^"]+)"/);
+    assert.ok(describedby, "工作表選擇器要用 aria-describedby 接上說明");
+    assert.ok(html.includes(`id="${describedby[1]}"`), "aria-describedby 指到不存在的 id");
+});
+
+test("§5/§6 5-6-2 列編輯要能改 env（輪替憑證），且 args／env 是一行一筆、不是空白或逗號切", () => {
+    // 原本 env 只有建立時填得了，之後永遠改不掉 ⇒ 輪替金鑰只能把整台 server 刪掉重建。
+    // 而 args 以空白切、env 以逗號切，含空白／逗號的值表達不出來，切壞了也不會有提示。
+    const html = distDoc("5-6-2_platformMcpServers.html");
+    const rows = [...html.matchAll(/<tr data-mcp-id="\d+">([\s\S]*?)<\/tr>/g)].map((m) => m[1]);
+    assert.ok(rows.length >= 3, `只掃到 ${rows.length} 列 server —— 這條測試在空轉`);
+    for (const row of rows) {
+        assert.match(row, /<textarea[^>]*aria-label="參數"/, "參數要是一行一個的 textarea");
+        assert.match(row, /<textarea[^>]*aria-label="環境變數"/, "列編輯缺環境變數欄（輪替憑證用）");
+        // 執行指令與參數要分開（原本擠在同一格，看不出界線）
+        const cmd = row.match(/<input[^>]*aria-label="執行指令"[^>]*>/);
+        assert.ok(cmd, "缺執行指令欄");
+        const value = (cmd[0].match(/value="([^"]*)"/) || ["", ""])[1];
+        assert.ok(!value.includes(" "), `執行指令欄不該再把 args 併進來：${value}`);
+    }
+    // 建立表單同樣換成 textarea（兩邊形狀要一致，否則建立與編輯各切各的）
+    for (const id of ["newMcpArgsInput", "newMcpEnvInput"])
+        assert.match(html, new RegExp(`<textarea[^>]*id="${id}"`), `建立表單的 #${id} 應為 textarea`);
+    // env 的值在讀取路徑是遮罩字面（chatbot _mask_env）：示範資料要照實演，不要演成明文憑證
+    const envCells = (html.match(/<textarea[^>]*aria-label="環境變數"[^>]*>([\s\S]*?)<\/textarea>/g) || [])
+        .map((s) => s.replace(/<[^>]*>/g, "")).filter((s) => s.trim());
+    assert.ok(envCells.length >= 1, "示範資料裡沒有任何一台 server 帶 env —— 那一欄等於沒演到");
+    assert.ok(envCells.some((s) => s.includes("***")), "env 值要演成遮罩字面 ***（讀取路徑本來就只回鍵名）");
+});

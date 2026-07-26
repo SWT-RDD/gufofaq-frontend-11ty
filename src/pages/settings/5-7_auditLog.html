@@ -78,6 +78,15 @@ permalink: 5-7_auditLog.html
      代理者（impersonator）：第 1 筆由平台人員代理登入該租戶操作（staff@sys.tw）；其餘兩筆無代理關係
      故留空——這裡的空白是「沒有代理者」（一種真實狀態），與操作者欄用「—」表示「登入失敗查無操作者」
      是不同語意，兩者不可混用。 #}
+{# 分頁是**伺服器端**的（product GET /audit 收 limit（1–1000，預設 100）與 offset）：換頁＝重新查詢，
+     不是把一大包抓回來自己切。故「共 N 筆資料」必須是**伺服器總筆數**（total），不是這一頁渲染了幾列——
+     顯示成本頁列數的話，「共 500 筆」看起來就像全部只有 500 筆，而稽核日誌是 ISO 證跡，
+     「看不到更舊的」與「總數是錯的」都不能接受。
+     total／perPage 先於列表宣告，計數列與 pager-row 吃同一個值（§6 同源）。
+     ⚠️ product 待跟上：GET /audit 目前回的是裸 list，沒有總筆數——要能顯示總數與最後一頁，
+     回應需附總數（envelope 或 X-Total-Count），否則前端只能做「上一頁／下一頁」。 #}
+{% set total = 115 %}
+{% set perPage = 20 %}
 {% set rows = [
     {
         time: "2026/07/13 14:22:05",
@@ -110,7 +119,7 @@ permalink: 5-7_auditLog.html
         ip: "198.51.100.2"
     }
 ] %}
-<div class="data-info"><span data-i18n="qa.totalOf">共</span> {{ rows.length }} <span data-i18n="qa.records">筆資料</span></div>
+<div class="data-info"><span data-i18n="qa.totalOf">共</span> {{ total }} <span data-i18n="qa.records">筆資料</span></div>
 <div class="table-container scrollTable">
     <table class="default-table">
         <colgroup>
@@ -152,7 +161,5 @@ permalink: 5-7_auditLog.html
     </table>
 </div>
 
-{% set total = 115 %}
-{# 每頁筆數與頁碼列吃同一個 perPage（§6 同源：選擇器顯示 20、頁碼卻按 10 算總頁數就是自打架）。 #}
-{% set perPage = 20 %}
+{# total／perPage 已在列表前宣告（計數列與頁碼列同源，§6）。 #}
 {% include "components/pager-row/pager-row.html" %}

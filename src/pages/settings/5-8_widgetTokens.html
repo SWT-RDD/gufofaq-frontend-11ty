@@ -59,9 +59,9 @@ permalink: 5-8_widgetTokens.html
 {# 金鑰清單：default-table。名稱 / 金鑰（可複製）/ 允許網域 / 狀態 / 操作（複製嵌入連結 + 撤銷）。
      token 本就嵌在瀏覽器端、非機密，故清單直接顯示全值供複製。撤銷鈕只在啟用中的列出現（業務條件，
      用 hook class .js-revoke-token）。示範 2 筆（一啟用一已撤銷）。
-     撤銷鈕的演出：查過 components/delete-modal 的參數化程度——它的標題/內文是寫死「刪除」（data-i18n="action.delete"），
-     不支援自訂標題/文案，故不套用它；改比照同頁「產生金鑰」的直接動作模式，data-toast 直接掛在 .js-revoke-token 上
-    （接上原本孤兒的 toast.revokeWidgetToken key）。 #}
+     撤銷鈕的演出：本輪 components/delete-modal 已參數化標題/內文（deleteTitleKey／deleteMessageKey），
+     故撤銷改走與刪除同一顆二次確認彈窗（本頁底部 include），不再是「按下去就撤銷」的直接動作——
+     撤銷不可逆，而且撤下去前台所有掛這把金鑰的嵌入頁當場失效。toast.revokeWidgetToken 移到確認鈕上。 #}
 {% set tokens = [
     {
         name: "官網客服",
@@ -124,7 +124,10 @@ permalink: 5-8_widgetTokens.html
                         <div class="btn-group">
                             <button type="button" class="button button-border button-sm copyBtn" data-toast="嵌入連結已複製" data-i18n-data-toast="widget.embedCopied" data-i18n="widget.copyEmbed">複製嵌入連結</button>
                             {% if not row.disabled %}
-                            <button type="button" class="button button-red button-sm js-revoke-token" data-toast="已撤銷|撤銷失敗，請稍後再試" data-i18n-data-toast="toast.revokeWidgetToken" data-toast-type="success|error" data-i18n="action.revoke">撤銷</button>
+                            {# 撤銷改走二次確認（彈窗本體見頁尾）：不可逆，而且撤銷後前台所有掛這把金鑰的
+                                 嵌入頁當場失效。開窗需先選定「撤銷哪一把」＝業務條件開窗，故只留 hook class、
+                                 不掛 data-open-modal；成敗 toast 移到確認鈕上（§5）。 #}
+                            <button type="button" class="button button-red button-sm js-revoke-token" data-i18n="action.revoke">撤銷</button>
                             {% endif %}
                         </div>
                     </td>
@@ -136,3 +139,15 @@ permalink: 5-8_widgetTokens.html
         </table>
     </div>
 </div>
+
+{# 撤銷金鑰的二次確認（.js-revoke-token 條件開窗的彈窗本體）：金鑰名稱由業務 js 填入 #revokeTokenTarget。 #}
+{% set deleteTitleKey = "action.revoke" %}
+{% set deleteTitleZh = "撤銷" %}
+{% set deleteMessageKey = "common.confirmRevoke" %}
+{% set deleteMessageZh = "確定要撤銷" %}
+{% set deleteTargetId = "revokeTokenTarget" %}
+{% set deleteConfirmBinding = true %}
+{% set deleteConfirmClass = "js-revoke-token-confirm" %}
+{% set deleteToast = "已撤銷|撤銷失敗，請稍後再試" %}
+{% set deleteToastKey = "toast.revokeWidgetToken" %}
+{% include "components/delete-modal/delete-modal.html" %}

@@ -105,6 +105,11 @@ permalink: 4-1_qaHistory.html
 {# 資料表格：真實頁 tbody 為 js/qaHistory.js 依查詢結果動態渲染（初始「共0筆資料」），
      此處以 set+for 資料化示範 3 筆已載入狀態。cell 級結構鏡射真 app 的列模板（qaHistory.js createRow：
      編號純文字、link-file 連結掛在「使用者對話內容」、AI 內容包 div.ellipsis-2 截斷、query 參數為 ?logSn=）。 #}
+{# 「共 N 筆資料」是**伺服器總筆數**（total，與下方頁碼列同源），不是本頁渲染的列數——
+     示範列只有 3 筆，寫成 rows.length 會出現「共 3 筆資料」配「共 6 頁」的自打架（§6）。
+     total／perPage 在這裡宣告一次，計數列與頁尾的 pager-row 共用同一份。 #}
+{% set total = 115 %}
+{% set perPage = 20 %}
 {% set rows = [
     {
         id: "12173",
@@ -137,7 +142,7 @@ permalink: 4-1_qaHistory.html
         href: "4-2_qaHistory_detail.html?logSn=12175"
     }
 ] %}
-<div class="data-info"><span data-i18n="qa.totalOf">共</span> {{ rows.length }} <span data-i18n="qa.records">筆資料</span></div>
+<div class="data-info"><span data-i18n="qa.totalOf">共</span> {{ total }} <span data-i18n="qa.records">筆資料</span></div>
 <div class="table-container scrollTable">
     <table class="default-table">
         <colgroup>
@@ -197,9 +202,7 @@ permalink: 4-1_qaHistory.html
     </table>
 </div>
 
-{# 分頁：真實頁由 js/qaHistory.js renderPagination() 動態產生；
-     ui/pagination 現在也是同一套 data-total 驅動的 js render，total 挑大一點的假數字讓省略號露出來 #}
-{% set total = 115 %}
-{# 每頁筆數與頁碼列吃同一個 perPage（§6 同源：選擇器顯示 20、頁碼卻按 10 算總頁數就是自打架）。 #}
-{% set perPage = 20 %}
+{# 分頁：真實頁由 js/qaHistory.js renderPagination() 動態產生；ui/pagination 現在也是同一套 data-total
+     驅動的 js render。total／perPage 在列表前就宣告過（計數列與頁碼列同源，§6），這裡不再重設——
+     total 挑大一點的假數字是為了讓省略號露得出來。 #}
 {% include "components/pager-row/pager-row.html" %}

@@ -25,10 +25,13 @@ permalink: 5-6-2_platformMcpServers.html
      「（停用中）」標示（跨頁自洽；理由見 5-2 該欄位註解：停用是可逆狀態，寫入層刻意不驗 is_active，
      濾掉會讓「先建好設定、之後再啟用」做不到，也會讓已選取的 server 在被停用時從選單消失）。
      ⚠️ product 待跟上：mcp.py 的 list_tenant_mcp_catalog 目前把停用中的濾掉。 #}
+{# env 的值在讀取路徑一律被遮成 "***"（GufoRAG chatbot routes/mcp.py 的 _mask_env：管理 API 沒有認證，
+     原樣回傳等於任何連得到本服務的人都讀得到那些憑證），寫入時值仍是 "***" 的鍵沿用原值（_merge_env）。
+     故示範值就是遮罩字面——這不是佔位符，是**真的會從 API 拿到的東西**。 #}
 {% set mcpServers = [
-  { name: "時間工具", command: "uvx", args: "mcp-server-time", description: "提供目前時間與時區換算。", active: true },
-  { name: "內部文件搜尋", command: "npx", args: "-y @acme/doc-mcp", description: "查詢內部知識庫文件。", active: true },
-  { name: "舊版文件搜尋", command: "npx", args: "-y @acme/doc-mcp-legacy", description: "舊版內部文件查詢，已停用。", active: false }
+  { name: "時間工具", command: "uvx", args: ["mcp-server-time", "--local-timezone=Asia/Taipei"], env: [], description: "提供目前時間與時區換算。", active: true },
+  { name: "內部文件搜尋", command: "npx", args: ["-y", "@acme/doc-mcp"], env: ["ACME_API_KEY=***", "ACME_REGION=ap-northeast-1"], description: "查詢內部知識庫文件。", active: true },
+  { name: "舊版文件搜尋", command: "npx", args: ["-y", "@acme/doc-mcp-legacy"], env: ["ACME_API_KEY=***"], description: "舊版內部文件查詢，已停用。", active: false }
 ] %}
 
 <p class="text-gray" data-i18n="settings.mcpServersIntro">MCP Server 讓 Agent 連上外部工具。註冊即在 Agent 主機執行指定指令，屬高權限操作，僅平台管理者可管理；租戶只能在對話設定勾選已註冊的 Server。</p>
@@ -66,7 +69,7 @@ permalink: 5-6-2_platformMcpServers.html
                     <label for="newMcpArgsInput" class="control-label" data-i18n="agent.params">參數</label>
                 </div>
                 <div class="field">
-                    <input type="text" id="newMcpArgsInput" placeholder="以空白分隔" data-i18n-placeholder="settings.pleaseEnterMcpArgs" class="form-control">
+                    <textarea id="newMcpArgsInput" class="form-control size-sm" placeholder="一行一個參數" data-i18n-placeholder="settings.pleaseEnterMcpArgs"></textarea>
                 </div>
             </div>
         </div>
@@ -76,7 +79,7 @@ permalink: 5-6-2_platformMcpServers.html
                     <label for="newMcpEnvInput" class="control-label" data-i18n="settings.mcpEnv">環境變數</label>
                 </div>
                 <div class="field">
-                    <input type="text" id="newMcpEnvInput" placeholder="KEY=value，以逗號分隔" data-i18n-placeholder="settings.pleaseEnterMcpEnv" class="form-control">
+                    <textarea id="newMcpEnvInput" class="form-control size-sm" placeholder="一行一個 KEY=value" data-i18n-placeholder="settings.pleaseEnterMcpEnv"></textarea>
                 </div>
             </div>
         </div>
@@ -111,9 +114,11 @@ permalink: 5-6-2_platformMcpServers.html
     <div class="table-container scrollTable">
         <table class="default-table">
             <colgroup>
-                <col style="width:180px; min-width:180px;">
+                <col style="width:160px; min-width:160px;">
+                <col style="width:160px; min-width:160px;">
                 <col style="width:220px; min-width:220px;">
-                <col style="min-width:260px;">
+                <col style="width:240px; min-width:240px;">
+                <col style="min-width:220px;">
                 <col style="width:90px; min-width:90px;">
                 <col style="width:320px; min-width:320px;">
             </colgroup>
@@ -121,6 +126,8 @@ permalink: 5-6-2_platformMcpServers.html
                 <tr>
                     <th data-i18n="widget.tokenName">名稱</th>
                     <th data-i18n="settings.mcpCommand">執行指令</th>
+                    <th data-i18n="agent.params">參數</th>
+                    <th data-i18n="settings.mcpEnv">環境變數</th>
                     <th data-i18n="settings.mcpDescription">描述</th>
                     <th data-i18n="widget.active">啟用</th>
                     <th data-i18n="common.actions">操作</th>
@@ -131,7 +138,16 @@ permalink: 5-6-2_platformMcpServers.html
                 {# data-mcp-id＝React 列鍵契約（saas 端 <tr data-mcp-id={server.id}>），示範以 loop.index 代 id（同 3-3 data-qa-set-id）#}
                 <tr data-mcp-id="{{ loop.index }}">
                     <td><input type="text" class="form-control" value="{{ server.name }}" aria-label="名稱" data-i18n-aria-label="widget.tokenName"></td>
-                    <td><input type="text" class="form-control" value="{{ server.command }} {{ server.args }}" aria-label="執行指令" data-i18n-aria-label="settings.mcpCommand"></td>
+                    <td><input type="text" class="form-control" value="{{ server.command }}" aria-label="執行指令" data-i18n-aria-label="settings.mcpCommand"></td>
+                    {# 參數一行一個、env 一行一個 KEY=value：原本 args 以空白切、env 以逗號切，
+                         含空白或逗號的值表達不出來，切壞了也不會有任何提示。 #}
+                    <td><textarea class="form-control size-sm" aria-label="參數" data-i18n-aria-label="agent.params">{% for arg in server.args %}{{ arg }}
+{% endfor %}</textarea></td>
+                    {# 環境變數＝該 server 的憑證。值在讀取路徑已被遮成 "***"（chatbot _mask_env），
+                         原樣送回等於沿用原值（_merge_env）；要輪替就把該行的值改掉。
+                         沒有這一欄的時候，輪替金鑰只能把整台 server 刪掉重建。 #}
+                    <td><textarea class="form-control size-sm" aria-label="環境變數" data-i18n-aria-label="settings.mcpEnv" placeholder="一行一個 KEY=value" data-i18n-placeholder="settings.pleaseEnterMcpEnv">{% for pair in server.env %}{{ pair }}
+{% endfor %}</textarea></td>
                     <td><input type="text" class="form-control" value="{{ server.description }}" aria-label="描述" data-i18n-aria-label="settings.mcpDescription"></td>
                     <td class="text-center">
                         <label class="form-checkbox in-cell">

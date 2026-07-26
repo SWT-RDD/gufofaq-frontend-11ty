@@ -1,9 +1,27 @@
 {# 後台歷史分享連結「管理」modal（詳情頁 4-2「分享」鈕開啟）。沿用 ui/modals 結構。
-     可建立新的唯讀分享連結，並列出目前生效連結逐一複製/撤銷（撤銷＝軟刪，立即失效）。
+     可建立新的唯讀分享連結（可指定有效天數），並列出目前連結逐一複製/撤銷（撤銷＝軟刪，立即失效）。
      與前台 faq-share-modal（單一連結、只複製）不同：此為登入態的多連結管理。
      建立＝零輸入零目標歧義的直接動作（比照 5-8「產生 Token」），不掛 hook class，直接 data-toast 演出成敗；
      每列複製鈕補 .shareBtn（真 app 剪貼簿 hook，同 faq-share-modal 的 .share-link-btn.shareBtn）；
-     撤銷鈕每列目標需由業務 js 認列，保留 hook class（.js-revoke-share），同樣掛 data-toast 演出成敗。 #}
+     撤銷鈕每列目標需由業務 js 認列，保留 hook class（.js-revoke-share）。
+
+  **有效期與狀態**（product app/routers/share.py）：
+    · 建立：`POST /share` 收 `expires_days`（正整數；≤0 回 400，**留空＝永久**），回應帶 `expires_at`／`disabled`。
+      前端原本一個都沒接，所以每一條分享連結都是永久有效的——而分享連結是全服務唯一免憑證就讀得到問答內容的東西。
+    · 列表：`GET /share?log_id=` 只回**未撤銷**的連結（`disabled.is_(False)`），但**過期的仍會回**
+      （只比對 disabled），故列表要能顯示「已過期」；「已撤銷」是撤銷當下的即時態（下次重讀就不在清單裡了），
+      切版把它演出來是為了讓那一列的鈕不再是一顆還能按的「撤銷」。
+      ⚠️ 若日後要看得到撤銷史，得由 product 讓 GET 回 disabled 的列（現況查不到）。
+    · 撤銷：破壞性且不可逆（軟刪後該連結永久失效），故加二次確認——沿用 components/delete-modal 的
+      泛用確認版（deleteTitleKey／deleteMessageKey），文案用「撤銷」而不是「刪除」。
+
+  參數：無（單一用途）。示範 4 列演完狀態的每一種：永久生效／有到期日生效中／已過期／剛撤銷。 #}
+{% set shareRows = [
+  { url: "https://gufofaq.com/shared/shr_aaa", expires: "", state: "active" },
+  { url: "https://gufofaq.com/shared/shr_bbb", expires: "2026/08/26 14:30", state: "active" },
+  { url: "https://gufofaq.com/shared/shr_ccc", expires: "2026/07/01 09:00", state: "expired" },
+  { url: "https://gufofaq.com/shared/shr_ddd", expires: "2026/09/30 18:00", state: "revoked" }
+] %}
 <dialog class="modals" id="shareManageModal" aria-labelledby="shareManageModal-title">
     <div class="modals-dialog modals-md">
         <div class="modals-wrap">
@@ -17,23 +35,39 @@
                     <div class="share-text">
                         本連結內容由 AI 系統初步產出，僅作為草稿或參考依據使用，尚未經人工確認或修改，若需進一步採用，請先檢閱並確認內容之正確性與完整性。
                     </div>
+                    {# 有效天數：值載體（React 讀去組 POST /share 的 expires_days），留空＝永久。
+                         min=1 對齊後端「expires_days must be positive」（≤0 回 400）。 #}
+                    <div class="form-group row mobile-col mt-16">
+                        <div class="label label-md">
+                            <label for="shareExpiresDaysInput" class="control-label" data-i18n="share.expiresDays">有效天數</label>
+                        </div>
+                        <div class="field">
+                            <input type="number" id="shareExpiresDaysInput" class="form-control js-share-expires-days" min="1" step="1"
+                                placeholder="留空＝永久有效" data-i18n-placeholder="share.expiresDaysPlaceholder" aria-describedby="shareExpiresDaysHint">
+                            <span class="text-gray" id="shareExpiresDaysHint" data-i18n="share.expiresDaysHint">分享連結不需登入即可讀取；建議設定天數，到期後自動失效。</span>
+                        </div>
+                    </div>
                     <div class="flex-row mt-16 mb-16">
-                        <button type="button" class="button button-primary" data-toast="連結已建立|建立失敗，請稍後再試" data-i18n-data-toast="toast.createShare" data-toast-type="success|error">
+                        <button type="button" class="button button-primary" data-toast="連結已建立|有效天數必須是正整數|建立失敗，請稍後再試" data-i18n-data-toast="toast.createShare" data-toast-type="success|warning|error">
                             <img src="./images/icon_add_white.png" width="48" height="48" decoding="async" alt="" class="icon">
                             <span data-i18n="share.createLink">建立分享連結</span>
                         </button>
                     </div>
-                    {# 目前生效的分享連結（示範 2 筆）；每列＝連結唯讀框 + 複製 + 撤銷 #}
-                    {% set shareRows = [
-                      { url: "https://gufofaq.com/shared/shr_aaa" },
-                      { url: "https://gufofaq.com/shared/shr_bbb" }
-                    ] %}
+                    {# 每列＝連結唯讀框 + 到期時間 + 狀態 + 複製 + 撤銷。
+                         到期時間是資料（不翻）；空值代表永久，用 chrome 的「永久有效」表示（§4-2 資料與 chrome 分開）。
+                         已撤銷／已過期的列：撤銷鈕改為 disabled（那一列已經沒有東西可撤），避免「按了什麼都不會發生」。 #}
                     <div class="flex-row column gap-8">
                         {% for row in shareRows %}
-                        <div class="flex-row align-items-center gap-8">
+                        <div class="flex-row align-items-center gap-8 flex-wrap">
                             <input class="form-control flex-1" aria-label="分享連結" data-i18n-aria-label="modals.shareLink" readonly value="{{ row.url }}">
+                            <span class="text-gray">
+                                {% if row.expires %}<span data-i18n="share.expiresAt">到期：</span>{{ row.expires }}{% else %}<span data-i18n="share.neverExpires">永久有效</span>{% endif %}
+                            </span>
+                            {% if row.state == "revoked" %}<span class="text-gray" data-i18n="widget.revoked">已撤銷</span>
+                            {% elif row.state == "expired" %}<span class="text-gray" data-i18n="share.stateExpired">已過期</span>
+                            {% else %}<span class="text-bold" data-i18n="share.stateActive">生效中</span>{% endif %}
                             <button type="button" class="button button-border button-sm shareBtn" data-toast="連結已複製!" data-i18n-data-toast="modals.linkCopied" data-i18n="action.copy">複製</button>
-                            <button type="button" class="button button-red button-sm js-revoke-share" data-toast="連結已撤銷|撤銷失敗，請稍後再試" data-i18n-data-toast="toast.revokeShare" data-toast-type="success|error" data-i18n="action.revoke">撤銷</button>
+                            <button type="button" class="button button-red button-sm js-revoke-share"{% if row.state != "active" %} disabled{% endif %} data-i18n="action.revoke">撤銷</button>
                         </div>
                         {% endfor %}
                     </div>
