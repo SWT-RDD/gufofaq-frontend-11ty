@@ -1,0 +1,81 @@
+// 內建工具卡（5-2 Agent 工具子頁籤）。外觀主要來自 .block + ui/accordion + ui/switch + form-control；
+// 本檔只畫「卡片模式 accordion 需要、而原子沒有」的那幾塊，以及卡頭/參數面板的版位。
+//
+// 為什麼卡片模式的樣式在這裡而不是 ui/accordion：原子既有的開合樣式寫死在表格結構上
+// （.detail-row > .detail-cell > .accordion-content），卡片走不到那條路。這裡不去鬆動那份表格樣式，
+// 改在自有 slot class 上補：
+//   .builtin-tool-body＝掛在 .accordion-content 上的 slot（預設隱藏＋與卡頭的分隔線），
+//     排版交給它內層的 flex 工具 —— GufoSlide 重新展開時只問得回 display:block（見 slide-toggle.js
+//     的 shownDisplay），所以被隱藏的這一層不能是 flex。
+// 顏色一律語意 token：參數面板是內嵌面板故用 --surface-sunken，其上的字用登記過的 sunken 疊法
+// （--text / --text-muted / --text-strong / --brand-ink / --danger-ink，見測試的 COLOR_ROLES.pairs）。
+.builtin-tool-card {
+    .builtin-tool-head {
+        // 卡頭在收合時就是整張卡，故不留下緣間距；展開時的分隔由 .builtin-tool-body 的上邊框負責
+        min-height: 2rem;
+    }
+
+    // 啟用開關固定靠右（卡頭其餘元素由左往右自然排列）
+    .builtin-tool-switch {
+        margin-left: auto;
+    }
+
+    // 「已自訂」標記：品牌淡底 + 前景墨色（--brand-ink on --brand-tint 已登記 pairs）
+    .builtin-tool-flag {
+        padding: 0.0625rem 0.375rem;
+        border-radius: 4px;
+        background-color: var(--brand-tint);
+        color: var(--brand-ink);
+        font-size: 0.875rem;
+        white-space: nowrap;
+    }
+
+    .builtin-tool-body {
+        display: none; // 初始態；開合由 ui/accordion 的 js 走 GufoSlide 切行內 display
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border);
+    }
+
+    // 唯讀參數清單：內嵌面板底色 + 邊框，與底下兩個可填欄位明顯分離
+    // （這一區是「AI 呼叫工具時要填什麼」，不能看起來像可以打字的地方）
+    .builtin-tool-params {
+        padding: 0.75rem 1rem;
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        background-color: var(--surface-sunken);
+    }
+
+    .builtin-tool-params-title {
+        color: var(--text-strong);
+        font-weight: 500;
+    }
+
+    .builtin-tool-param-flag {
+        color: var(--text-muted);
+        font-size: 0.875rem;
+        white-space: nowrap;
+
+        // 必填用危險色墨色（疊 sunken 面要 ≥4.5，故取 --danger-ink 而非 --danger-text）
+        &.is-required {
+            color: var(--danger-ink);
+        }
+    }
+
+    .builtin-tool-param-desc {
+        color: var(--text-muted);
+        font-size: 0.875rem;
+    }
+
+    // 欄位下方的填寫範例與字數提示（字數由本元件 js 即時更新）
+    .builtin-tool-example,
+    .builtin-tool-count {
+        color: var(--text-muted);
+        font-size: 0.875rem;
+    }
+
+    .builtin-tool-count {
+        white-space: nowrap;
+        font-variant-numeric: tabular-nums; // 位數變動時不要讓整行跳動
+    }
+}

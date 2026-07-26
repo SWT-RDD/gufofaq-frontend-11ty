@@ -2388,3 +2388,404 @@ test("§4 dropdown 的「翻上開」必須 js 與 scss 成對交付（只做一
     assert.ok(jsHas, "multi-select.js 沒有 .open-up 的判斷 —— 下拉在 modal 底部會被裁掉");
     assert.ok(scssHas, "_multi-select.scss 沒有 .open-up 的位置反轉規則 —— js 掛了旗標但沒有任何效果");
 });
+
+// ───────── 內建工具卡（components/builtin-tool-card）＋ ui/accordion 卡片模式 ─────────
+
+// 從 dist 切出每一張工具卡的 outerHTML（div 巢狀計數；dist 標籤是平衡的，見檔頭說明）。
+function builtinToolCards(html) {
+    const cards = [];
+    const open = /<div class="[^"]*\bbuiltin-tool-card\b[^"]*"[^>]*\bdata-tool="([^"]+)"[^>]*>/g;
+    let m;
+    while ((m = open.exec(html))) {
+        const divs = /<(\/?)div\b[^>]*>/g;
+        divs.lastIndex = m.index + m[0].length;
+        let depth = 1, end = divs.lastIndex, d;
+        while (depth > 0 && (d = divs.exec(html))) {
+            depth += d[1] ? -1 : 1;
+            end = divs.lastIndex;
+        }
+        cards.push({ name: m[1], html: html.slice(m.index, end) });
+    }
+    return cards;
+}
+
+// 卡內（或頁內）某個區塊的 outerHTML：從帶該 class 的 <div> 起，數 div 巢狀到它自己的結尾
+function innerBlock(html, cls) {
+    const open = new RegExp(`<div class="[^"]*\\b${cls}\\b[^"]*"[^>]*>`, "g");
+    const m = open.exec(html);
+    if (!m) return null;
+    const divs = /<(\/?)div\b[^>]*>/g;
+    divs.lastIndex = m.index + m[0].length;
+    let depth = 1, end = divs.lastIndex, d;
+    while (depth > 0 && (d = divs.exec(html))) {
+        depth += d[1] ? -1 : 1;
+        end = divs.lastIndex;
+    }
+    return html.slice(m.index, end);
+}
+
+test("§6 5-2 內建工具：13 張卡包在同一個 .js-accordion 根裡，並有全部展開／收合", () => {
+    const html = distDoc("5-2_conversationSettings.html");
+    // 掃描根＝accordion 原子自有的 .js-accordion（同 sources-block／step-flow）；
+    // 兩顆批次鈕必須在同一個根內，否則 accordion.js 的 block.querySelector 找不到它們＝點了沒反應。
+    const root = innerBlock(html, "js-accordion");
+    assert.ok(root, "5-2 找不到 .js-accordion 根 —— 工具卡的開合會整組失效");
+    assert.equal(builtinToolCards(root).length, 13, "13 顆內建工具＝13 張卡（chatbot BUILTIN_TOOL_NAMES 全集）");
+    assert.match(root, /class="[^"]*\bjs-expand-all\b/, ".js-expand-all 不在 accordion 根內");
+    assert.match(root, /class="[^"]*\bjs-collapse-all\b/, ".js-collapse-all 不在 accordion 根內");
+    // 三態說明：改成逐工具開關後，「未勾選任何工具＝全部啟用」那句敘述已經不成立
+    assert.ok(!/未勾選任何工具/.test(html), "settings.builtinToolsHint 還在描述舊的勾選框行為（§3-2：行為改了要順手改出貨文案）");
+});
+
+test("§6/§4 內建工具卡：卡頭有中文標題＋英文識別字＋啟用開關（識別字不翻、開關可及名稱各卡不同）", () => {
+    const cards = builtinToolCards(distDoc("5-2_conversationSettings.html"));
+    assert.equal(cards.length, 13, "空轉守門：切不出 13 張卡");
+    const hits = [];
+    for (const { name, html } of cards) {
+        const head = innerBlock(html, "builtin-tool-head");
+        if (!head) { hits.push(`${name}：找不到卡頭 .builtin-tool-head`); continue; }
+        // 中文標題走 i18n（key 由工具名組出）；標題文字必須是繁中，不是把識別字再印一次
+        const title = head.match(new RegExp(`data-i18n="tool\\.${name}\\.title">([^<]+)<`));
+        if (!title) hits.push(`${name}：卡頭缺 data-i18n="tool.${name}.title" 的中文標題`);
+        else if (!CJK.test(title[1])) hits.push(`${name}：卡頭標題「${title[1]}」不是中文標題`);
+        // 英文識別字：業務識別字，不翻譯（不掛 data-i18n），且用共用的行內碼原子
+        if (!head.includes(`<code class="inline-code">${name}</code>`))
+            hits.push(`${name}：卡頭缺 <code class="inline-code">${name}</code> 識別字`);
+        // 啟用開關：沿用原本勾選框的 hook class 與 value（React 端的啟用邏輯不換名字）
+        const sw = head.match(/<input[^>]*\bjs-builtin-tool\b[^>]*>/);
+        if (!sw) { hits.push(`${name}：卡頭缺 .js-builtin-tool 開關`); continue; }
+        if (!sw[0].includes(`value="${name}"`)) hits.push(`${name}：開關的 value 不是工具名`);
+        if (!sw[0].includes(`role="switch"`)) hits.push(`${name}：開關缺 role="switch"`);
+        // 同頁 13 顆開關不得共用同一個可及名稱（§4）：各自指向自己那張卡的標題
+        if (!sw[0].includes(`aria-labelledby="tool-${name}-title"`))
+            hits.push(`${name}：開關的 aria-labelledby 沒有指向本卡標題（13 顆會同名）`);
+    }
+    assert.equal(hits.length, 0, `內建工具卡卡頭不完整：\n${fail(hits)}`);
+});
+
+test("§5/§6 內建工具卡：參數清單唯讀、兩個 textarea 帶 hook class 與 1024 上限、還原預設鈕在位", () => {
+    const cards = builtinToolCards(distDoc("5-2_conversationSettings.html"));
+    assert.equal(cards.length, 13, "空轉守門：切不出 13 張卡");
+    const hits = [];
+    let withParams = 0, noParams = 0;
+    for (const { name, html } of cards) {
+        const params = innerBlock(html, "builtin-tool-params");
+        if (!params) { hits.push(`${name}：找不到參數面板 .builtin-tool-params`); continue; }
+        // 唯讀：參數是「AI 呼叫這顆工具要填什麼」，不是租戶要填的東西——面板內不得有任何控制項
+        for (const tag of ["input", "textarea", "select", "button"])
+            if (new RegExp(`<${tag}\\b`).test(params)) hits.push(`${name}：參數面板出現 <${tag}>（參數清單必須唯讀）`);
+        // 只數參數列本身（.builtin-tool-param）：不能用 \b 收尾，否則 .builtin-tool-param-desc
+        // 也會被算成一列，「無參數」那兩張卡就會被誤判成有參數（分支覆蓋率的斷言跟著假綠）
+        const rows = (params.match(/class="builtin-tool-param(?=[\s"])/g) || []).length;
+        if (rows) withParams++;
+        else {
+            noParams++;
+            if (!params.includes('data-i18n="settings.toolNoParams"')) hits.push(`${name}：零參數卻沒有顯示「無參數」`);
+        }
+        // 兩個租戶可填欄位：hook class（React 讀值組 builtin_tool_overrides）＋後端硬上限
+        for (const [hook, label] of [["js-tool-description", "工具描述"], ["js-tool-extra-prompt", "工具內提示詞"]]) {
+            const ta = html.match(new RegExp(`<textarea[^>]*\\b${hook}\\b[^>]*>`));
+            if (!ta) { hits.push(`${name}：缺 ${label} 的 textarea（.${hook}）`); continue; }
+            if (!/maxlength="1024"/.test(ta[0])) hits.push(`${name}：${label} 沒有 maxlength="1024"（product tool_refs.py 的 MAX_BUILTIN_TOOL_TEXT_LEN）`);
+            if (!/aria-describedby="/.test(ta[0])) hits.push(`${name}：${label} 沒有接上範例與字數上限（§4 帶約束的輔助文字要 aria-describedby）`);
+        }
+        // 字數提示：兩欄各一顆，且已填數要等於欄位實際內容長度（模板從同一份資料算，不烤字面量）
+        for (const hook of ["js-tool-description", "js-tool-extra-prompt"]) {
+            const field = html.match(new RegExp(`<textarea[^>]*\\b${hook}\\b[^>]*>([\\s\\S]*?)</textarea>`));
+            const slot = hook === "js-tool-description" ? "description" : "extra-prompt";
+            const count = html.match(new RegExp(`id="tool-${name}-${slot}-count">(\\d+) / 1024<`));
+            if (!count) { hits.push(`${name}：${hook} 缺字數提示（N / 1024）`); continue; }
+            if (field && Number(count[1]) !== field[1].length)
+                hits.push(`${name}：${hook} 的字數提示 ${count[1]} 對不上實際內容長度 ${field[1].length}`);
+        }
+        if (!/class="[^"]*\bjs-tool-reset\b/.test(html)) hits.push(`${name}：缺「還原預設」鈕（.js-tool-reset）`);
+    }
+    // 兩個分支都要有頁面演得出來（§5：沒有資料演得到的分支等於沒驗收過）
+    assert.ok(withParams > 0 && noParams > 0, `參數清單的兩個分支要各有示範（有參數 ${withParams}／無參數 ${noParams}）`);
+    assert.equal(hits.length, 0, `內建工具卡的欄位區不完整：\n${fail(hits)}`);
+});
+
+test("§5 內建工具卡：只有 customized 的那張預設展開（markup 就帶 .open + aria-expanded=true）", () => {
+    const cards = builtinToolCards(distDoc("5-2_conversationSettings.html"));
+    assert.equal(cards.length, 13, "空轉守門：切不出 13 張卡");
+    const open = [], hits = [];
+    for (const { name, html } of cards) {
+        const btn = html.match(/<button[^>]*\baccordion-btn\b[^>]*>/);
+        if (!btn) { hits.push(`${name}：卡頭沒有 .accordion-btn 展開鈕`); continue; }
+        const hasOpen = /\baccordion-btn open\b/.test(btn[0]);
+        const expanded = /aria-expanded="true"/.test(btn[0]);
+        // 兩者必須同步：class 決定初始開合（accordion.js 讀 markup），aria 是輔具讀的那一半
+        if (hasOpen !== expanded) hits.push(`${name}：.open 與 aria-expanded 不一致（${btn[0]}）`);
+        // 標籤也要對得上狀態：展開的那張初始就該說「收合」
+        const wantKey = hasOpen ? "common.collapseRow" : "common.expandRow";
+        if (!html.includes(`data-i18n="${wantKey}"`)) hits.push(`${name}：展開鈕的 sr-only 標籤 key 不是 ${wantKey}`);
+        if (hasOpen) open.push(name);
+        const flagged = html.includes('data-i18n="settings.toolCustomized"');
+        if (flagged !== hasOpen) hits.push(`${name}：「已自訂」標記（${flagged}）與預設展開（${hasOpen}）不成對`);
+        // 已自訂＝兩欄至少一欄真的有值（§6 示範資料要自洽：標記說已自訂，欄位不能是空的）
+        if (flagged) {
+            const filled = [...html.matchAll(/<textarea[^>]*>([\s\S]*?)<\/textarea>/g)].some((m) => m[1].trim());
+            if (!filled) hits.push(`${name}：標了「已自訂」卻兩欄全空`);
+        }
+    }
+    assert.equal(open.length, 1, `預設展開的卡應恰好 1 張（示範用），實際 ${open.length} 張：${open.join("、")}`);
+    assert.equal(hits.length, 0, `預設展開／已自訂狀態不自洽：\n${fail(hits)}`);
+});
+
+// 元件行為的最小 DOM stub：跑 **src 的原文**（本專案零依賴、沒有 jsdom），只實作被測 js 真的
+// 用到的那幾個 API（class/tag 選擇器、closest、事件委派、style.display、value/textContent）。
+// 用它驗 ui/accordion 的卡片模式與 builtin-tool-card 的字數／還原預設。
+// 卡片模式那組的負控在本區最後：把卡片路徑從原文精準移除後，同一組斷言必須失敗——
+// 否則那些斷言驗的不是卡片模式。
+function runStubDom(jsSrc, build) {
+    // 只需要「單一 compound（.class 或 tag）」與逗號並列（builtin-tool-card.js 用
+    // ".js-tool-description, .js-tool-extra-prompt" 一次抓兩欄）
+    const matchOne = (n, sel) => (sel.startsWith(".") ? n.classes.has(sel.slice(1)) : n.tag === sel);
+    const matches = (n, sel) => sel.split(",").map((s) => s.trim()).filter(Boolean).some((s) => matchOne(n, s));
+    const descendants = (n) => n.children.flatMap((c) => [c, ...descendants(c)]);
+    function node(tag, cls) {
+        const n = {
+            tag, classes: new Set((cls || "").split(/\s+/).filter(Boolean)),
+            children: [], parent: null, style: {}, attrs: new Map(), handlers: new Map(), textContent: "",
+        };
+        n.classList = {
+            contains: (c) => n.classes.has(c),
+            add: (c) => n.classes.add(c),
+            remove: (c) => n.classes.delete(c),
+            toggle: (c, force) => (force === undefined
+                ? (n.classes.has(c) ? n.classes.delete(c) : n.classes.add(c))
+                : (force ? n.classes.add(c) : n.classes.delete(c))),
+        };
+        n.setAttribute = (k, v) => n.attrs.set(k, String(v));
+        n.getAttribute = (k) => (n.attrs.has(k) ? n.attrs.get(k) : null);
+        n.append = (...kids) => { for (const k of kids) { k.parent = n; n.children.push(k); } return n; };
+        n.addEventListener = (type, fn) => n.handlers.set(type, [...(n.handlers.get(type) || []), fn]);
+        n.dispatch = (type, event) => (n.handlers.get(type) || []).forEach((fn) => fn(event));
+        n.contains = (other) => { for (let p = other; p; p = p.parent) if (p === n) return true; return false; };
+        n.closest = (sel) => { for (let p = n; p; p = p.parent) if (matches(p, sel)) return p; return null; };
+        n.querySelectorAll = (sel) => descendants(n).filter((d) => matches(d, sel));
+        n.querySelector = (sel) => n.querySelectorAll(sel)[0] || null;
+        Object.defineProperty(n, "nextElementSibling", {
+            get: () => { const s = n.parent ? n.parent.children : []; return s[s.indexOf(n) + 1] || null; },
+        });
+        return n;
+    }
+    const root = node("body");
+    const docHandlers = new Map();
+    const document = {
+        addEventListener: (type, fn) => docHandlers.set(type, [...(docHandlers.get(type) || []), fn]),
+        querySelectorAll: (sel) => root.querySelectorAll(sel),
+        querySelector: (sel) => root.querySelector(sel),
+    };
+    // GufoSlide 是共享行為工具（§1-1），這裡只需要它「把 display 扳到位」那一面
+    const window = {
+        GufoSlide: {
+            set: (el, open) => { el.style.display = open ? "block" : "none"; return open; },
+            down: (el) => { el.style.display = "block"; return true; },
+            up: (el) => { el.style.display = "none"; return false; },
+        },
+    };
+    const fixture = build(node, root);
+    new Function("document", "window", jsSrc)(document, window);
+    (docHandlers.get("DOMContentLoaded") || []).forEach((fn) => fn({}));
+    const fireDoc = (type, target) => (docHandlers.get(type) || []).forEach((fn) => fn({ target }));
+    return {
+        fixture, root, window, fireDoc,
+        // accordion 的委派掛在 .js-accordion 根上；找不到根就退回 body（table 版的 fixture 也有根）
+        click: (n) => (n.closest(".js-accordion") || root).dispatch("click", { target: n }),
+    };
+}
+
+// 卡片模式的樹（照 components/builtin-tool-card 的實際結構：卡片不是表格，btn 與內容同住一張卡內）
+const cardTree = (node, root) => {
+    const block = node("div", "js-accordion");
+    const mk = (extra) => {
+        const card = node("div", "block builtin-tool-card js-accordion-item");
+        const head = node("div", "builtin-tool-head");
+        const btn = node("button", "button accordion-btn" + (extra === "preopen" ? " open" : ""));
+        btn.append(node("span", "sr-only"));
+        head.append(btn);
+        const content = node("div", "accordion-content builtin-tool-body");
+        card.append(head, content);
+        return { card, btn, content };
+    };
+    const expandAll = node("button", "button js-expand-all");
+    const collapseAll = node("button", "button js-collapse-all");
+    const a = mk("");
+    const b = mk("");
+    const preopen = mk("preopen");
+    block.append(expandAll, collapseAll, a.card, b.card, preopen.card);
+    root.append(block);
+    return { a, b, preopen, expandAll, collapseAll };
+};
+
+test("§5 ui/accordion 卡片模式：點卡頭開合、範圍收在自己那張卡、aria-expanded 同步", () => {
+    const src = read("src/_includes/ui/accordion/accordion.js");
+    const { fixture, click } = runStubDom(src, cardTree);
+    const { a, b } = fixture;
+    assert.equal(a.content.style.display, "none", "初始應收合");
+    assert.equal(a.btn.getAttribute("aria-expanded"), "false", "初始 aria-expanded 應為 false");
+
+    click(a.btn);
+    assert.equal(a.content.style.display, "block", "點卡頭應展開本卡內容（卡片模式的 findContent 沒找到內容）");
+    assert.equal(a.btn.classList.contains("open"), true);
+    assert.equal(a.btn.getAttribute("aria-expanded"), "true");
+    assert.equal(b.content.style.display, "none", "只該動自己那張卡（範圍要收在最近的 .js-accordion-item）");
+
+    click(a.btn);
+    assert.equal(a.content.style.display, "none", "再點一次應收合");
+    assert.equal(a.btn.getAttribute("aria-expanded"), "false");
+});
+
+test("§5 ui/accordion 卡片模式：全部展開／收合會動，且 aria 每條路徑都同步", () => {
+    const src = read("src/_includes/ui/accordion/accordion.js");
+    const { fixture } = runStubDom(src, cardTree);
+    const { a, b, preopen, expandAll, collapseAll } = fixture;
+
+    expandAll.dispatch("click", { target: expandAll });
+    for (const c of [a, b, preopen]) {
+        assert.equal(c.content.style.display, "block", "全部展開應展開每一張卡");
+        assert.equal(c.btn.getAttribute("aria-expanded"), "true", "全部展開後 aria-expanded 應同步");
+    }
+    collapseAll.dispatch("click", { target: collapseAll });
+    for (const c of [a, b, preopen]) {
+        assert.equal(c.content.style.display, "none", "全部收合應收合每一張卡");
+        assert.equal(c.btn.getAttribute("aria-expanded"), "false", "全部收合後 aria-expanded 應同步");
+    }
+});
+
+test("§5 ui/accordion 初始態讀 markup 的 .open（已自訂的工具卡預設展開），其餘一律收合", () => {
+    const src = read("src/_includes/ui/accordion/accordion.js");
+    const { fixture } = runStubDom(src, cardTree);
+    const { a, b, preopen } = fixture;
+    assert.equal(preopen.content.style.display, "block", "markup 帶 .open 的那張卡，載入後應是展開的");
+    assert.equal(preopen.btn.getAttribute("aria-expanded"), "true");
+    assert.equal(a.content.style.display, "none");
+    assert.equal(b.content.style.display, "none");
+});
+
+test("§5 ui/accordion 表格模式不受卡片模式影響（擴充而非改寫：tr 路徑先判、命中就返回）", () => {
+    const src = read("src/_includes/ui/accordion/accordion.js");
+    const { fixture, click } = runStubDom(src, (node, root) => {
+        const block = node("div", "js-accordion");
+        const tbody = node("tbody", "");
+        const row = node("tr", "");
+        const cell = node("td", "");
+        const btn = node("button", "button accordion-btn");
+        btn.append(node("span", "sr-only"));
+        cell.append(btn);
+        row.append(cell);
+        const detail = node("tr", "detail-row");
+        const detailCell = node("td", "detail-cell");
+        const content = node("div", "accordion-content");
+        detailCell.append(content);
+        detail.append(detailCell);
+        tbody.append(row, detail);
+        block.append(tbody);
+        root.append(block);
+        return { btn, content };
+    });
+    assert.equal(fixture.content.style.display, "none", "表格模式初始應收合");
+    click(fixture.btn);
+    assert.equal(fixture.content.style.display, "block", "表格模式（sources-block／step-flow）的開合被改壞了");
+});
+
+test("§5 ui/accordion 卡片模式的負控：把卡片路徑從原文移除後，卡片必須不會展開", () => {
+    // 沒有這條，上面那幾條卡片測試可能只是「表格路徑剛好也回得出內容」而假綠。
+    const src = read("src/_includes/ui/accordion/accordion.js");
+    const legacy = src.replace(
+        /var item = btn\.closest\("\.js-accordion-item"\);[\s\S]*?return item \? item\.querySelector\("\.accordion-content"\) : null;/,
+        "return null;"
+    );
+    assert.notEqual(legacy, src, "負控的錨點沒命中 —— accordion.js 的卡片路徑寫法改了，請更新這條測試");
+    const { fixture, click } = runStubDom(legacy, cardTree);
+    click(fixture.a.btn);
+    assert.equal(fixture.a.content.style.display, "none", "移掉卡片路徑後居然還會展開 —— 卡片測試沒有在驗卡片模式");
+    assert.equal(fixture.a.btn.getAttribute("aria-expanded"), "true", "aria 仍會切（那一半不靠 findContent），確認負控只拿掉了內容那一半");
+});
+
+test("§4-2 dist 渲染出來的每個 i18n key 都要在 en.json（模板組出來的動態 key 只有這裡驗得到）", () => {
+    // 靜態掃描只看得到字面 key，`data-i18n="tool.{{ tool.name }}.title"` 這種串接 key 一律跳過——
+    // 於是「動態 key 少一顆英文」的唯一症狀是英文模式默默顯示繁中（§4-2）。這條在渲染後的 dist 上驗，
+    // 正反兩向都釘：dist 出現的 key 都要有英文，且動態家族（field.* / tool.* …）不得有沒被任何頁渲染到的孤兒。
+    const en = JSON.parse(read("src/i18n/en.json"));
+    const rendered = new Set();
+    for (const f of distHtml) {
+        const html = distDoc(f);
+        for (const m of html.matchAll(/\bdata-i18n(?:-[a-z-]+)?="([^"]+)"/g)) rendered.add(m[1]);
+        for (const m of html.matchAll(/\bdata-placeholder-key="([^"]+)"/g)) rendered.add(m[1]);
+        for (const m of html.matchAll(/\bdata-key-[a-z]+="([^"]+)"/g)) rendered.add(m[1]);
+        for (const m of html.matchAll(/\bdata-page-title-key="([^"]+)"/g)) rendered.add(m[1]);
+    }
+    assert.ok(rendered.size > 400, `dist 只收到 ${rendered.size} 個 key —— 這條測試在空轉`);
+    const missing = [...rendered].filter((k) => en[k] == null);
+    assert.equal(missing.length, 0, `英文模式會默默顯示繁中：\n${missing.join("\n")}`);
+    // 動態前綴（由既有的收集邏輯推導，不手打清單）：那些家族在孤兒 key 測試裡是整批放行的
+    const { dynamicPrefixes } = collectUsedI18nKeys();
+    assert.ok(dynamicPrefixes.size > 0, "收不到任何動態前綴 —— 這半條測試在空轉");
+    const orphans = Object.keys(en).filter((k) => [...dynamicPrefixes].some((p) => k.startsWith(p)) && !rendered.has(k));
+    assert.equal(orphans.length, 0, `動態家族的孤兒 key（沒有任何頁面渲染得出來的死翻譯）：\n${orphans.join("\n")}`);
+});
+
+// builtin-tool-card.js 的兩個純前端互動（§8：行為 js 的邊界輸入要有可重跑的斷言，手動點過不算驗收）。
+// 樹只搭 js 真的會走到的那幾層：兩張卡 × 兩欄，每欄一個 .field 裡放 textarea + .builtin-tool-count。
+const toolCardTree = (node, root) => {
+    const mkField = (hook, value, max) => {
+        const field = node("div", "field");
+        const ta = node("textarea", "form-control " + hook);
+        ta.value = value;
+        if (max !== null) ta.setAttribute("maxlength", String(max));
+        const count = node("span", "builtin-tool-count");
+        count.textContent = "?";
+        field.append(ta, count);
+        return { field, ta, count };
+    };
+    const mkCard = (descValue, extraValue) => {
+        const card = node("div", "block builtin-tool-card js-accordion-item");
+        const desc = mkField("js-tool-description", descValue, 1024);
+        const extra = mkField("js-tool-extra-prompt", extraValue, 1024);
+        const reset = node("button", "button button-border button-sm js-tool-reset");
+        card.append(desc.field, extra.field, reset);
+        root.append(card);
+        return { card, desc, extra, reset };
+    };
+    return { a: mkCard("描述文字", ""), b: mkCard("鄰卡不該被清掉", "鄰卡的提示詞") };
+};
+
+test("§5/§8 builtin-tool-card.js：字數提示載入即同步（含空值 0）、上限讀 markup 的 maxlength", () => {
+    const src = read("src/_includes/components/builtin-tool-card/builtin-tool-card.js");
+    const { fixture } = runStubDom(src, toolCardTree);
+    assert.equal(fixture.a.desc.count.textContent, "4 / 1024", "有值的欄位載入時要顯示真實字數");
+    assert.equal(fixture.a.extra.count.textContent, "0 / 1024", "空欄位的邊界值是 0，不是空白");
+    assert.equal(fixture.b.desc.count.textContent, "7 / 1024");
+});
+
+test("§5/§8 builtin-tool-card.js：打字即更新字數（貼邊值也算得出來）", () => {
+    const src = read("src/_includes/components/builtin-tool-card/builtin-tool-card.js");
+    const { fixture, fireDoc } = runStubDom(src, toolCardTree);
+    const { ta, count } = fixture.a.extra;
+    ta.value = "x";
+    fireDoc("input", ta);
+    assert.equal(count.textContent, "1 / 1024", "打第一個字就要更新");
+    ta.value = "x".repeat(1024);
+    fireDoc("input", ta);
+    assert.equal(count.textContent, "1024 / 1024", "貼到上限時要顯示上限值（1024 是後端硬限制）");
+});
+
+test("§5/§8 builtin-tool-card.js：還原預設清掉本卡兩欄並把字數歸零，且不動隔壁卡", () => {
+    const src = read("src/_includes/components/builtin-tool-card/builtin-tool-card.js");
+    const { fixture, fireDoc } = runStubDom(src, toolCardTree);
+    fixture.a.extra.ta.value = "打過字";
+    fireDoc("input", fixture.a.extra.ta);
+    assert.equal(fixture.a.extra.count.textContent, "3 / 1024", "前提：清之前兩欄都有值（否則這條測試會假綠）");
+
+    fireDoc("click", fixture.a.reset);
+    assert.equal(fixture.a.desc.ta.value, "", "工具描述沒有被清掉");
+    assert.equal(fixture.a.extra.ta.value, "", "工具內提示詞沒有被清掉");
+    assert.equal(fixture.a.desc.count.textContent, "0 / 1024", "清了值卻沒有把字數歸零");
+    assert.equal(fixture.a.extra.count.textContent, "0 / 1024");
+    // 範圍：委派掛在 document 上，清的必須是「按鈕所在那張卡」
+    assert.equal(fixture.b.desc.ta.value, "鄰卡不該被清掉", "還原預設把隔壁卡也清了（範圍沒收在 .builtin-tool-card）");
+    assert.equal(fixture.b.extra.ta.value, "鄰卡的提示詞");
+    assert.equal(fixture.b.desc.count.textContent, "7 / 1024", "隔壁卡的字數也被動到了");
+});

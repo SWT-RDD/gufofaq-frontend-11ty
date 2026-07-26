@@ -2,6 +2,11 @@
 // 開合的高度動畫走 ui/slide-toggle（同一套 300ms，與手機選單共用）
 // 只轉切版互動（開合本身），資料載入/API 等業務邏輯不在此列
 //
+// 兩種 markup 結構都吃：**表格**（摘要列 + 下一列 tr.detail-row 內的 .accordion-content）與
+// **卡片**（一張 .js-accordion-item 內含自己的 .accordion-btn 與 .accordion-content，如
+// components/builtin-tool-card）。差異只在 findContent 怎麼找到內容，其餘（動畫、aria、i18n 標籤、
+// 全部展開／收合）兩者共用同一份實作——卡片模式不另寫一套 js。
+//
 // a11y：按鈕的 aria-expanded 必須反映實際狀態——單筆開合與「全部展開／收合」都走同一組 open/close，避免批次操作後狀態殘留。
 // i18n：展開↔收合的標籤由 JS 切換，故除了寫入文字，也同步改寫 data-i18n / data-i18n-title 的 key，
 //       這樣之後切換語言時 lang-toggle 的 apply() 會依「當下狀態的 key」重譯（見 gufo:langchange）。
@@ -17,11 +22,18 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // 下面三個函式不依賴任何單一 .js-accordion 根（只從 btn 自己往上找列），故住在外層供所有根與
     // 匯出的 API 共用——setOpen 是本元件唯一改變狀態的入口，aria/標籤/動畫都在它裡面一次寫齊。
+    // 兩種結構：表格（明細在下一列 tr.detail-row 裡）與卡片（明細在同一張卡內）。
+    // 表格路徑先試、命中就返回，既有 sources-block / step-flow / default-table 的行為一個字都不變。
     function findContent(btn) {
         var row = btn.closest("tr");
         var detailRow = row ? row.nextElementSibling : null;
-        if (!detailRow || !detailRow.classList.contains("detail-row")) return null;
-        return detailRow.querySelector(".accordion-content");
+        if (detailRow && detailRow.classList.contains("detail-row")) {
+            return detailRow.querySelector(".accordion-content");
+        }
+        // 卡片模式：非表格的手風琴（如 components/builtin-tool-card）。內容是同一張卡內的
+        // .accordion-content，範圍收在最近的 .js-accordion-item，避免抓到隔壁卡的內容。
+        var item = btn.closest(".js-accordion-item");
+        return item ? item.querySelector(".accordion-content") : null;
     }
 
     // 一次寫齊：aria 狀態、可見/輔具標籤、以及供 lang-toggle 重譯用的 i18n key
@@ -67,14 +79,18 @@ document.addEventListener("DOMContentLoaded", function () {
     var blocks = document.querySelectorAll(".js-accordion");
 
     blocks.forEach(function (block) {
-        // 預設隱藏所有詳細內容
+        // 預設隱藏所有詳細內容（markup 標了 .open 的那幾筆在下一步會被扳回展開）
         block.querySelectorAll(".accordion-content").forEach(function (content) {
             content.style.display = "none";
         });
 
-        // 初始態：內容已隱藏 → aria-expanded=false（markup 未帶時補上，讓輔具在首次互動前就知道可展開）
+        // 初始態依 markup 的 .open 決定（animate=false：頁面一載入不該看到明細「滑」出來又收回去），
+        // 並補齊 aria-expanded／標籤，讓輔具在首次互動前就知道每一筆是開還是關。
+        // 為什麼要讀 markup 而不是一律 false：初始開合可能是伺服器決定的狀態
+        // （5-2 的 builtin-tool-card：已自訂的工具預設展開），寫死 false 會讓那個狀態在 js 一跑就被關掉。
+        // 未標 .open 的一律關 —— 既有表格用法（sources-block／step-flow）markup 都沒有 .open，行為不變。
         block.querySelectorAll(".accordion-btn").forEach(function (btn) {
-            setOpen(btn, false, false);
+            setOpen(btn, btn.classList.contains("open"), false);
         });
 
         // 單筆開關

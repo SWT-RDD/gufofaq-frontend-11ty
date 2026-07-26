@@ -138,6 +138,20 @@
 - 零自帶 js、行為全借共用原子 hook 的元件（step-flow 借 `ui/accordion` 的 `.js-accordion`／`.js-expand-all`／
   `.js-collapse-all`）：React 端由共用 Accordion 邏輯（含 setAll 全展/全收、aria-expanded 每路徑同步）供行為，
   元件自己不重寫一份。
+- **共用 Accordion 吃兩種結構**：表格（明細在 `tr.detail-row`）與卡片（`.js-accordion-item` 內含自己的
+  `.accordion-btn` 與 `.accordion-content`，如 `components/builtin-tool-card`）。React 端是**同一顆**受控
+  Accordion，差別只在 markup——不要為卡片再開一份 hook。切版的 `.js-accordion-item` 是原子的範圍根
+  （切版自有行為），不帶過去；同層的業務 `data-*` 列鍵（`data-tool`）要帶。
+- **初始 `open` 來自資料，不是「點過」**：切版把伺服器決定的初始展開寫成 markup 的 `.open`
+  （builtin-tool-card 的 `customized`），accordion.js 初始化時讀它。React 端對應「open state 的初值由該筆
+  資料算出」（`useState(() => item.customized)` 或列集合 Set 的初值），不可一律 false 再靠 effect 點開
+  ——那會多播一次 300ms 動畫。
+- **「N / 上限」字數提示：上限只有一份真相**（切版是 textarea 的 `maxlength`，值來自後端寫入層常數），
+  計數與欄位值同源（`value.length`）。React 端從同一顆常數/props 取上限，不要在計數器字串裡再抄一次數字；
+  超過上限由 `maxLength` 擋，不用自己截字。
+- **「還原預設」是切版自有行為**（`.js-tool-reset`：清掉該卡的兩個文字欄＝回到內建預設，placeholder 就是
+  預設原文，同 `ui/filter-fields` 的 `.js-filter-clear`）→ 轉成 `onClick` 清那筆 state，class 不帶過去、
+  不打 API（override 隨整份 profile config 一起 PUT）。
 - 量測用臨時 DOM 節點（append 到 `document.body` 量文字寬等）加 `position:absolute`——append 目標可能是
   flex/grid 容器（節點會被 blockify 拉伸），absolute 讓它退出環境佈局。
 

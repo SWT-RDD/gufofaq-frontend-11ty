@@ -323,7 +323,7 @@ tag 式多選由本範本提供（切版需要展示互動）：在原生 `<sele
 | 樣板算出來的 class 名（`is-depth-{{ node.depth }}`、`is-{{ node.state }}`） | scss 原樣複製路徑照抄成模板字串即可；**Tailwind 路徑必須靜態列舉**（JIT 掃不到拼出來的 class），見 TAILWIND-CONVERSION |
 | 前後綴 i18n key 夾**控制項**（`perPagePrefix` ＋ `<select>` ＋ `perPageSuffix`） | **不可併成單一插值 key**（插值槽塞不進互動元素）：用 `<Trans>` 的元件插值，或維持兩顆 key 各自 `t()`。判準：槽裡是**資料**→併成一顆；是**元件**→不併 |
 
-accordion 的行為規格（`ui/accordion/accordion.js`）：各列**獨立開合**（點哪列就 toggle 哪列，不會自動關其他列），掃描根為 accordion 自有的 `.js-accordion`（原子，不綁定任何 `components/` 的 class）。轉 React 時由各 accordion 元件自管開合狀態（`useState` 記住開啟的列），不要跨元件共用一份全域狀態。
+accordion 的行為規格（`ui/accordion/accordion.js`）：各列**獨立開合**（點哪列就 toggle 哪列，不會自動關其他列），掃描根為 accordion 自有的 `.js-accordion`（原子，不綁定任何 `components/` 的 class）。轉 React 時由各 accordion 元件自管開合狀態（`useState` 記住開啟的列），不要跨元件共用一份全域狀態。它吃**兩種 markup 結構**：表格（明細在下一列 `tr.detail-row` 裡）與卡片（一張 `.js-accordion-item` 內含自己的鈕與 `.accordion-content`）——差別只在「內容在哪」，開合／aria／標籤／全部展開收合共用同一份實作，卡片模式不另寫一套。**初始開合讀 markup 的 `.open`**（伺服器/資料決定的初始態，如已自訂的設定卡預設展開）：轉 React 時那是 open state 的**資料初值**，不是「使用者點過」。
 
 單色圖示（`icon-mask()`）的行為規格：**alpha 是字形、顏色是語意 token**。轉 React 時直接改成內嵌 SVG component + `fill="currentColor"` —— 那正是遮罩在模擬的東西。`_dark-icons.scss` 的 `img[src*="_black"]` 反相規則屆時可整條刪掉。
 

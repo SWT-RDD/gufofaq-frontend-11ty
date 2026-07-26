@@ -1,6 +1,8 @@
 {# 展示片段，取自真實 app pages/components/component.html 12 Accordion手風琴 section（節錄兩列，class 沿用真實系統） #}
 {# 手風琴表格使用「.accordion-table」class，父層用「div.accordion-content」包覆；<tr class="detail-row"> <td colspan class="detail-cell"> 包覆要開合的內容；
-     button.accordion-btn 加上 .open 時切換箭頭圖示。開合行為見 accordion.js（掃描根為 accordion 自有的 .js-accordion） #}
+     button.accordion-btn 加上 .open 時切換箭頭圖示。開合行為見 accordion.js（掃描根為 accordion 自有的 .js-accordion）。
+     本片段示範**表格結構**；同一份行為也吃**卡片結構**（一張 .js-accordion-item 內含自己的 .accordion-btn 與
+     .accordion-content，生產實例見 components/builtin-tool-card），且初始開合讀 markup 的 .open。 #}
 <div class="js-accordion">
     <div class="table-container scrollTable mt-16">
         <table class="default-table no-border">

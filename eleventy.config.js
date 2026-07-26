@@ -37,6 +37,7 @@ module.exports = function (eleventyConfig) {
         "src/_includes/ui/lang-toggle/lang-toggle.js": "js/lang-toggle.js",
         "src/_includes/components/citation-ref/citation-ref.js": "js/citation-ref.js",
         "src/_includes/components/skill-try-sandbox/skill-try-sandbox.js": "js/skill-try-sandbox.js",
+        "src/_includes/components/builtin-tool-card/builtin-tool-card.js": "js/builtin-tool-card.js",
     });
 
     // 開發時 sass 另外編譯 dist/css，讓 eleventy --serve 監看 css 變動也即時重載

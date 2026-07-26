@@ -94,6 +94,8 @@
 @use "../_includes/components/citation-ref/citation-ref";
 // Skill 試跑沙盒：答案輸出槽（其餘版型走 .block／form-group／utilities）
 @use "../_includes/components/skill-try-sandbox/skill-try-sandbox";
+// 內建工具卡（5-2 Agent 工具）：卡片模式 accordion 的版位與唯讀參數面板
+@use "../_includes/components/builtin-tool-card/builtin-tool-card";
 
 // 元件庫展示頁（component.html）專屬版型/說明樣式，放在最後避免與一般頁面規則衝突
 @use "guideline-var"; // showcase 頁專屬色盤（--gl-*，不進 _var）

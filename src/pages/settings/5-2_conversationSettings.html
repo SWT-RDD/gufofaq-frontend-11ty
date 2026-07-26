@@ -820,28 +820,193 @@ permalink: 5-2_conversationSettings.html
 </div>
 
 {# ═══ 子頁籤 6：Agent 工具（NET-NEW）═══
-     內建工具白名單（勾選；未勾任何＝全部啟用＝enabled_builtin_tools None。後端另有 []＝全部停用
-     （settings_hub.py 明分 None/[]），本 UI 刻意不提供「全停用」入口——React 端同（page.tsx 送
-     next.length ? next : null））、綁定術語表、勾選 MCP Server（從平台**已啟用**清單選——product
-     mcp.py list_tenant_mcp_catalog 只回啟用中的 server；示範 2 筆）。皆為 Agent 模式；值載體隨底部
-     「儲存對話設定」直送。builtin_tool_overrides（自訂描述/extra_prompt）後端已支援、本頁與 React
-     皆刻意緩做（spec 列為進階旋鈕，UI 待需求）。工具名／術語表名／Server 名為業務資料（識別字），不翻。
+     內建工具（**一工具一張可展開的卡**，見 components/builtin-tool-card）、綁定術語表、勾選 MCP Server
+     （從平台**已啟用**清單選——product mcp.py list_tenant_mcp_catalog 只回啟用中的 server；示範 2 筆）。
+     皆為 Agent 模式；值載體隨底部「儲存對話設定」直送。工具名／參數名／術語表名／Server 名為業務資料
+     （識別字），不翻。
      agentToolsIntro 的「已啟用」對齊 mcp.py 只回啟用中的 server；product catalog 已對齊「已啟用」
-     （round28 驗 saas apps/web/lib/i18n/messages.zh.json）。 #}
+     （round28 驗 saas apps/web/lib/i18n/messages.zh.json）。
+
+     本輪兩處行為改變（原本是一列英文識別字的勾選框）：
+     ① 啟用是**三態**，逐工具一顆開關：全開＝全部啟用（enabled_builtin_tools 送全部工具名或 None，
+        兩者對引擎等效）、只開部分＝白名單、**全關＝停用所有內建工具（送 []）**。後端本來就明分 None/[]（settings_hub.py 的
+        ProfileConfigIn 註解與 chatbot agent_service.py `_enabled_builtin_tools is not None` 的過濾），
+        原本刻意不開的「全停用」入口本輪開放，故 settings.builtinToolsHint 改成敘述三態。
+        ⚠️ saas 端待跟上：apps/web/app/(app)/conversation-settings/page.tsx 目前是
+        `setField("enabled_builtin_tools", next.length ? next : null)`——空選取被送成 null（＝全部啟用），
+        三態下必須改送 []（切版是正本，見 README「與真 app 的刻意差異」）。
+     ② builtin_tool_overrides（逐工具自訂描述／工具內提示詞）本輪補上 UI（原註「刻意緩做」已不成立）。
+        後端契約：settings_hub.py ProfileConfigIn.builtin_tool_overrides（dict[str, dict] | None）＋
+        tool_refs.py assert_valid_builtin_tool_overrides（每欄上限 MAX_BUILTIN_TOOL_TEXT_LEN = 1024、
+        不得含 XML/HTML 標籤）。兩欄都只是「寫進工具描述」的文字、不是引擎參數（chatbot 端
+        description 覆寫原描述、extra_prompt 換行附加其後），故卡片刻意不放任何執行參數旋鈕。
+     工具目錄（識別字／內建預設描述／參數清單）＝ product `GET /settings/builtin-tools`
+        （settings_hub.py list_builtin_tools → chatbot builtin_tool_catalog.build_builtin_tool_catalog，
+        順序＝BUILTIN_TOOL_NAMES 的工具生成順序；saas 已有 apps/web/app/api/settings/builtin-tools/route.ts）。
+        切版把它資料化在本頁（§6：這份業務目錄只有一份，卡片元件不烤第二份），中文標題／解釋／參數說明／
+        範例是切版寫給租戶看的 chrome（走 i18n），defaultDescription 是引擎原文（API 資料，不翻）。 #}
 <div class="tab-content" id="panelAgentTools" style="display: none;">
     <p class="text-gray" data-i18n="settings.agentToolsIntro">Agent 模式下可呼叫的工具：內建工具、綁定的術語表、以及平台已啟用的 MCP Server。</p>
-    {% set builtinTools = ["get_current_datetime", "date_tool", "calculate", "convert_units", "date_calculate", "lunar", "search_knowledge_base", "search_qa", "get_document", "summarize_document", "list_available_datasets", "ask_clarifying_question", "analyze_user_intent"] %}
-    <div class="block mb-16 flex-row column gap-8">
-        <div class="text-md text-bold" id="builtinToolsLabel" data-i18n="settings.builtinTools">內建工具</div>
-        <div class="text-gray" data-i18n="settings.builtinToolsHint">未勾選任何工具＝全部啟用（預設）。</div>
-        <div class="flex-row flex-wrap gap-16" role="group" aria-labelledby="builtinToolsLabel">
-            {% for tool in builtinTools %}
-            <label class="form-checkbox">
-                <input type="checkbox" class="js-builtin-tool" value="{{ tool }}" checked>
-                <span>{{ tool }}</span>
-            </label>
-            {% endfor %}
+    {# 內建工具目錄＋切版寫的中文說明與範例（13 筆，順序＝chatbot BUILTIN_TOOL_NAMES 的工具生成順序）。
+         defaultDescription 逐字取自 GufoRAG chatbot app/services/agent_service.py `_create_builtin_tools`
+         各工具 docstring 的首段（那就是目錄回傳的 description 原文）；params 的名稱與必填取自同處的函式簽章
+         （`_params()` 讀 args_schema：無預設值＝required）。
+         示範狀態：13 顆皆 enabled（＝全部啟用那一態）；customized 只給 ask_clarifying_question
+         ——那張卡同時演「已自訂」標記、預設展開、以及兩欄已填值的樣子（§6 示範資料要自洽：
+         標記說已自訂，欄位就不能是空的）。 #}
+    {% set builtinTools = [
+      {
+        name: "get_current_datetime", title: "目前日期時間", enabled: true,
+        desc: "取得此刻的日期與時間，用於回答「現在幾點」「今天幾號」這類問題。時區固定用本設定檔的時區設定，AI 不能自行更改。",
+        defaultDescription: "取得目前的日期和時間（使用本聊天室設定的時區）。呼叫本工具不需要提供任何參數。",
+        params: [],
+        exampleDescription: "只有在使用者問到「現在」「今天」等與當下時間有關的問題時才呼叫。",
+        exampleExtraPrompt: "回覆時一併說明使用的時區。"
+      },
+      {
+        name: "date_tool", title: "日期輔助", enabled: true,
+        desc: "民國年與西元年互換，以及把「明天」「下週三」這類說法換算成實際日期。",
+        defaultDescription: "日期輔助工具：取得目前時間、民國年與西元年互換、解析常見中文相對日期。",
+        params: [
+          { name: "op", required: true, desc: "要做的事——now（現在時間）、roc_to_ad（民國轉西元）、ad_to_roc（西元轉民國）、resolve_relative（解析相對日期）" },
+          { name: "value", required: false, desc: "依 op 而定的輸入值，例如民國年「114」或「下週三」" }
+        ],
+        exampleDescription: "使用者提到民國年，或用「明天」「下週」等相對說法時呼叫。",
+        exampleExtraPrompt: "換算後同時附上民國年與西元年，避免誤讀。"
+      },
+      {
+        name: "calculate", title: "算式計算", enabled: true,
+        desc: "計算數學算式（四則運算、次方、開根號、三角函數等）。只處理數字，不處理變數。",
+        defaultDescription: "安全計算數學算式（不支援變數，只支援數值運算）。",
+        params: [
+          { name: "expression", required: true, desc: "要計算的算式，例如 2+3*4 或 sqrt(16)" }
+        ],
+        exampleDescription: "使用者要求試算金額、數量或比例時呼叫，不要自己心算。",
+        exampleExtraPrompt: "回覆時附上算式，讓使用者能核對。"
+      },
+      {
+        name: "convert_units", title: "單位換算", enabled: true,
+        desc: "同類單位之間的換算（長度、質量、溫度、面積、體積）。跨類別換算（例如公尺換公斤）會直接回報錯誤，不會硬換出數字。",
+        defaultDescription: "單位換算（僅限同一分類內：長度/質量/溫度/面積/體積）。",
+        params: [
+          { name: "value", required: true, desc: "要換算的數值" },
+          { name: "from_unit", required: true, desc: "原始單位，例如 kg" },
+          { name: "to_unit", required: true, desc: "目標單位，例如 lb" }
+        ],
+        exampleDescription: "使用者給的單位與我們資料的單位不同時，先換算再回答。",
+        exampleExtraPrompt: "換算結果保留一位小數，並同時列出原始數值與單位。"
+      },
+      {
+        name: "date_calculate", title: "日期運算", enabled: true,
+        desc: "計算兩個日期相差幾天、日期加減天數、查詢某天是星期幾。",
+        defaultDescription: "日期運算工具：計算兩日期相差天數、日期加減天數、查星期幾。",
+        params: [
+          { name: "op", required: true, desc: "要做的事——days_between（相差天數）、add_days（加減天數）、weekday（星期幾）" },
+          { name: "value", required: true, desc: "依 op 而定的輸入值，例如 2026-01-01,2026-03-01" }
+        ],
+        exampleDescription: "使用者問「還有幾天」「幾號到期」「那天星期幾」時呼叫。",
+        exampleExtraPrompt: "回覆時把推算所用的起訖日期寫出來。"
+      },
+      {
+        name: "lunar", title: "農曆與節氣", enabled: true,
+        desc: "國曆與農曆互換，以及查詢 24 節氣。",
+        defaultDescription: "國曆↔農曆 + 24 節氣工具（cnlunar）。",
+        params: [
+          { name: "op", required: true, desc: "要做的事——solar_to_lunar（國曆轉農曆）、solar_term（查節氣）、lunar_to_solar（農曆轉國曆）" },
+          { name: "value", required: true, desc: "日期 YYYY-MM-DD；查整年節氣時可只給四位數年份" }
+        ],
+        exampleDescription: "使用者問到農曆日期、節氣或傳統節日時呼叫。",
+        exampleExtraPrompt: "回覆時同時附上對應的國曆日期。"
+      },
+      {
+        name: "search_knowledge_base", title: "搜尋知識庫", enabled: true,
+        desc: "在本租戶的知識庫文件中找出與問題相關的內容。搜尋範圍與筆數由設定檔決定，AI 只能決定要搜尋什麼字詞。",
+        defaultDescription: "搜尋租戶知識庫中的文件內容，找到後可用於回答使用者問題。",
+        params: [
+          { name: "query", required: true, desc: "要搜尋的內容" }
+        ],
+        exampleDescription: "使用者問到與我們業務、產品或規定有關的問題時，一律先搜尋知識庫再回答。",
+        exampleExtraPrompt: "先用使用者的原句搜尋；沒有結果時換關鍵字再試一次，不要直接說查不到。"
+      },
+      {
+        name: "search_qa", title: "搜尋 QA 問答集", enabled: true,
+        desc: "在租戶的 QA 問答集（成對的問題與答案）中尋找相符的問題，命中時可直接用該筆答案回覆。",
+        defaultDescription: "搜尋租戶的 QA 問答集（問題-答案對），找到相符的問題時可用其答案回答使用者。",
+        params: [
+          { name: "query", required: true, desc: "要搜尋的內容" }
+        ],
+        exampleDescription: "常見問題優先查 QA 集，查不到再搜尋知識庫文件。",
+        exampleExtraPrompt: "命中的 QA 答案照原文引用，不要改寫用詞。"
+      },
+      {
+        name: "get_document", title: "取得文件全文", enabled: true,
+        desc: "取回某份文件的完整內容。文件編號必須來自先前的搜尋結果，不能自行編造。",
+        defaultDescription: "取得指定文件的完整內容（全部片段）。",
+        params: [
+          { name: "document_id", required: true, desc: "文件編號（來自搜尋結果的真實值）" }
+        ],
+        exampleDescription: "搜尋結果的片段不足以完整回答時，取全文再回答。",
+        exampleExtraPrompt: "只取真正需要的那一份，不要把搜到的文件全部取回。"
+      },
+      {
+        name: "summarize_document", title: "摘要文件", enabled: true,
+        desc: "取得整份文件後產生摘要，用於文件過長或使用者要求整份重點時。",
+        defaultDescription: "摘要指定文件的完整內容（取得全部片段後用 LLM 產生摘要）。",
+        params: [
+          { name: "document_id", required: true, desc: "文件編號（來自搜尋結果的真實值）" }
+        ],
+        exampleDescription: "使用者要求「整份的重點」或文件過長時使用。",
+        exampleExtraPrompt: "摘要控制在五點以內，逐點附上依據的段落。"
+      },
+      {
+        name: "list_available_datasets", title: "列出可查資料集", enabled: true,
+        desc: "列出這個設定檔目前搜尋得到的資料集名稱與說明，讓 AI 知道自己查得到哪些範圍。",
+        defaultDescription: "列出目前聊天室可搜尋的資料集（index）名稱與描述，用於了解自己能查詢的知識庫範圍。",
+        params: [],
+        exampleDescription: "不確定問題屬於哪個資料範圍時，先列出可查的資料集再決定怎麼搜。",
+        exampleExtraPrompt: "若使用者問的主題不在可查範圍內，直接說明我們沒有這類資料。"
+      },
+      {
+        name: "ask_clarifying_question", title: "反問澄清", enabled: true, customized: true,
+        desc: "問題含糊、範圍太廣或缺少關鍵條件時，反問使用者以取得必要資訊，而不是猜著回答。呼叫後對話會停下來等使用者回覆。",
+        defaultDescription: "向使用者反問以澄清含糊、範圍過廣或缺少關鍵條件的問題。",
+        params: [
+          { name: "question", required: true, desc: "要反問使用者的澄清問題（會原文當成本次回覆呈現）" },
+          { name: "options", required: false, desc: "提供給使用者快速點選的常見選項" }
+        ],
+        description: "使用者問洗澡、剪毛、住宿的價格或想預約，卻沒有說是哪一種寵物時，用本工具反問是哪種動物。",
+        extraPrompt: "語氣親切，一次只問動物種類這一個條件；options 給狗、貓、兔子、鼠類。",
+        exampleDescription: "當使用者詢問服務價格或預約，但沒有說明是哪一種寵物時，用本工具反問是哪種動物。",
+        exampleExtraPrompt: "一次只問一個最關鍵的條件，語氣親切；在 options 給常見選項：狗、貓、兔子、鼠類。"
+      },
+      {
+        name: "analyze_user_intent", title: "分析使用者意圖", enabled: true,
+        desc: "把使用者的問題拆解成語言、完整問題、關鍵字等結構化資訊。一般對話用不到。",
+        defaultDescription: "分析使用者的問題，取得語言、完整問題、關鍵字、是否為程式碼問題等結構化結果。",
+        params: [
+          { name: "user_input", required: true, desc: "使用者的輸入文字" }
+        ],
+        exampleDescription: "使用者一次問了多件事、需要先拆解再逐項處理時呼叫。",
+        exampleExtraPrompt: "拆解後依序回答每一項，不要漏掉其中任何一個。"
+      }
+    ] %}
+    {# 13 張卡包在 accordion 自有的 .js-accordion 掃描根裡（卡片模式），「全部展開／收合」沿用原子的
+         .js-expand-all／.js-collapse-all（同 sources-block／step-flow 的用法）。
+         這一層刻意不是 .block：每張卡自己就是一個 .block，再套一層會變成卡中卡。 #}
+    <div class="js-accordion mb-16 flex-row column gap-8">
+        <div class="flex-row justify-content-between align-items-center flex-wrap gap-8">
+            <div class="flex-row column gap-4">
+                <div class="text-md text-bold" data-i18n="settings.builtinTools">內建工具</div>
+                <div class="text-gray" data-i18n="settings.builtinToolsHint">全部開啟＝全部啟用；只開部分＝只有開啟的工具可用；全部關閉＝停用所有內建工具。</div>
+            </div>
+            <div class="flex-row align-items-center gap-8 flex-wrap">
+                <button type="button" class="button button-border button-sm js-expand-all" data-i18n="common.expandAll">全部展開</button>
+                <button type="button" class="button button-border button-sm js-collapse-all" data-i18n="common.collapseAll">全部收合</button>
+            </div>
         </div>
+        {% for tool in builtinTools %}
+        {% include "components/builtin-tool-card/builtin-tool-card.html" %}
+        {% endfor %}
     </div>
 
     <div class="block flex-row column gap-16">
