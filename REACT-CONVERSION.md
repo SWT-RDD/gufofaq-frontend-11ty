@@ -287,6 +287,11 @@
 - Modal：受控 `<dialog>`，effect 依 `open` 呼 `showModal()`／`close()`。
 - MultiSelect：切版的 visually-hidden 原生 `<select>`（vanilla 的資料源）不轉——React 資料模型是
   `options/value/onChange` props；fpdiff 比對時切版側先移除該 hidden select 再比。
+  **選項標籤＝資料 ＋ 可翻的狀態後綴**：切版用 `data-suffix`／`data-suffix-key` 兩個槽組出
+  `名稱（停用中）`（`<option>` 塞不進第二個節點）。React 端對應 `label: name + t(key)`——由**資料的
+  狀態欄**（如 `is_active`）決定要不要接後綴，名稱本身不進字典（業務識別字）。後綴的譯文自帶前導空白
+  （`" (inactive)"`），別在 JSX 補 `{" "}`。**不可用的選項照樣要 render**（只加標示）：清單濾掉它＝
+  那筆已選取的值在下一次 onChange 被靜默丟掉。
 - useSlideToggle：介面 `(open) → { ref, setImmediate }`；mount 首次不動畫。
 
 ## 測試設定

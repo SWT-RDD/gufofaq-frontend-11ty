@@ -821,11 +821,11 @@ permalink: 5-2_conversationSettings.html
 
 {# ═══ 子頁籤 6：Agent 工具（NET-NEW）═══
      內建工具（**一工具一張可展開的卡**，見 components/builtin-tool-card）、綁定術語表、勾選 MCP Server
-     （從平台**已啟用**清單選——product mcp.py list_tenant_mcp_catalog 只回啟用中的 server；示範 2 筆）。
+     （列平台**註冊**的 server、停用中的標示出來而不是濾掉，理由見該欄位的註解；示範 3 筆）。
      皆為 Agent 模式；值載體隨底部「儲存對話設定」直送。工具名／參數名／術語表名／Server 名為業務資料
      （識別字），不翻。
-     agentToolsIntro 的「已啟用」對齊 mcp.py 只回啟用中的 server；product catalog 已對齊「已啟用」
-     （round28 驗 saas apps/web/lib/i18n/messages.zh.json）。
+     agentToolsIntro 本輪把「平台已啟用的 MCP Server」改成「平台註冊的」——停用中的現在也列得出來，
+     留著「已啟用」就是出貨文案在描述舊行為（product catalog 的同句待回流）。
 
      本輪兩處行為改變（原本是一列英文識別字的勾選框）：
      ① 啟用是**三態**，逐工具一顆開關：全開＝全部啟用（enabled_builtin_tools 送全部工具名或 None，
@@ -846,7 +846,7 @@ permalink: 5-2_conversationSettings.html
         切版把它資料化在本頁（§6：這份業務目錄只有一份，卡片元件不烤第二份），中文標題／解釋／參數說明／
         範例是切版寫給租戶看的 chrome（走 i18n），defaultDescription 是引擎原文（API 資料，不翻）。 #}
 <div class="tab-content" id="panelAgentTools" style="display: none;">
-    <p class="text-gray" data-i18n="settings.agentToolsIntro">Agent 模式下可呼叫的工具：內建工具、綁定的術語表、以及平台已啟用的 MCP Server。</p>
+    <p class="text-gray" data-i18n="settings.agentToolsIntro">Agent 模式下可呼叫的工具：內建工具、綁定的術語表、以及平台註冊的 MCP Server。</p>
     {# 內建工具目錄＋切版寫的中文說明與範例（13 筆，順序＝chatbot BUILTIN_TOOL_NAMES 的工具生成順序）。
          defaultDescription 逐字取自 GufoRAG chatbot app/services/agent_service.py `_create_builtin_tools`
          各工具 docstring 的首段（那就是目錄回傳的 description 原文）；params 的名稱與必填取自同處的函式簽章
@@ -1021,15 +1021,31 @@ permalink: 5-2_conversationSettings.html
                 </select>
             </div>
         </div>
+        {# MCP Server：列出平台**註冊**的 server（不只啟用中的），停用中的以「（停用中）」標示。
+             為什麼不濾掉停用的（原本濾掉）：寫入層刻意不驗 is_active——「停用是可逆的營運狀態，不是
+             這個 id 不存在；擋在寫入層會讓『先建好設定、之後再啟用』這種正常流程失敗」（GufoRAG
+             chatbot services/mcp_client.py 的 validate_mcp_server_ids），而濾掉清單等於在 UI 上把那個
+             流程拿掉；更糟的是**已選取的 server 一旦被平台停用就從選單消失**，租戶只要碰一下這個多選
+             就把它弄丟了（多選的值來自 <option>，選單沒有它＝選取狀態不存在）。
+             停用期間不會被呼叫（chatbot routes/chat.py 的 _select_mcp_servers 以 id.in_() ＋ is_active
+             兩道過濾，落差記 WARNING），故文案是「要等平台啟用後才會被呼叫」而不是「不能設定」。
+             ⚠️ product 待跟上：mcp.py 的 list_tenant_mcp_catalog 目前 `if … s.get("is_active")` 把停用中
+             的濾掉（投影本身已含 is_active，濾掉的是清單），要拿掉那個條件才餵得出本頁的清單。
+             示範 3 筆＝5-6-2 註冊表的三筆（跨頁自洽）；選取 1 筆啟用 ＋ 1 筆停用中，把「已選取卻被停用」
+             那一態演出來（§5：每個分支都要有頁面演得到）。「（停用中）」是 chrome 走 i18n，Server 名是
+             業務識別字不翻——<option> 裡塞不進第二個節點，故用 ui/multi-select 的 data-suffix／
+             data-suffix-key 兩個槽組出來（§4-2 資料槽慣例）。 #}
         <div class="form-group row mobile-col">
             <div class="label label-md">
                 <label for="mcpServersSelect" class="control-label" data-i18n="settings.mcpServers">MCP Server</label>
             </div>
             <div class="field col-12-sm">
                 <select id="mcpServersSelect" class="form-control multiSelect js-mcp-servers" multiple="multiple" data-placeholder="請選擇" data-placeholder-key="common.pleaseSelect">
-                    <option value="1">時間工具</option>
+                    <option value="1" selected>時間工具</option>
                     <option value="2">內部文件搜尋</option>
+                    <option value="3" selected data-suffix="（停用中）" data-suffix-key="settings.mcpServerInactive">舊版文件搜尋</option>
                 </select>
+                <p class="text-gray" data-i18n="settings.mcpServersHint">標示「停用中」的 Server 仍可先加入設定，但要等平台啟用後才會被呼叫。</p>
             </div>
         </div>
         {# 指派租戶自訂 skill 給本設定檔（config.skill_ids）。skill 是「一段指令＋一組工具」的

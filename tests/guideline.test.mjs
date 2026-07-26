@@ -572,7 +572,10 @@ function collectUsedI18nKeys() {
             for (const m of line.matchAll(/\bdata-i18n(?:-[a-z-]+)?="([^"]+)"/g)) note(m[1], where);
             // 兩態切換的 data-key-<態>（§4-2）：prompt-edit 的 open/close、reveal-input 的 show/hide…—— 收任何狀態後綴
             for (const m of line.matchAll(/\bdata-key-[a-z]+="([^"]+)"/g)) note(m[1], where);
-            for (const m of line.matchAll(/\bdata-placeholder-key="([^"]+)"/g)) note(m[1], where);
+            // 資料槽的 key（§4-2 的 `data-<槽名>` + `data-<槽名>-key`：multi-select 的 placeholder、
+            // 選項的 suffix…）。**不列舉槽名**：寫死 data-placeholder-key 的話，新槽的 key 會被
+            // 判成孤兒（或反過來，漏掉「有人用卻沒補英文」）。
+            for (const m of line.matchAll(/\bdata-[a-z-]+-key="([^"]+)"/g)) note(m[1], where);
             for (const m of line.matchAll(/^titleKey:\s*([\w.]+)\s*$/g)) note(m[1], where);
             // 全站的選單／目錄／麵包屑／欄位提示，key 都住在 {% set %} 的資料陣列裡，
             // 靠 data-i18n="{{ item.i18nKey }}" 渲染 —— 上面那幾條 regex 抓到的是 `{{ ... }}` 字面，一律被 note() 跳過。
@@ -2713,9 +2716,9 @@ test("§4-2 dist 渲染出來的每個 i18n key 都要在 en.json（模板組出
     for (const f of distHtml) {
         const html = distDoc(f);
         for (const m of html.matchAll(/\bdata-i18n(?:-[a-z-]+)?="([^"]+)"/g)) rendered.add(m[1]);
-        for (const m of html.matchAll(/\bdata-placeholder-key="([^"]+)"/g)) rendered.add(m[1]);
+        // 資料槽（data-<槽名>-key：placeholder／suffix／page-title…）與兩態切換（data-key-<態>）
+        for (const m of html.matchAll(/\bdata-[a-z-]+-key="([^"]+)"/g)) rendered.add(m[1]);
         for (const m of html.matchAll(/\bdata-key-[a-z]+="([^"]+)"/g)) rendered.add(m[1]);
-        for (const m of html.matchAll(/\bdata-page-title-key="([^"]+)"/g)) rendered.add(m[1]);
     }
     assert.ok(rendered.size > 400, `dist 只收到 ${rendered.size} 個 key —— 這條測試在空轉`);
     const missing = [...rendered].filter((k) => en[k] == null);
@@ -2788,4 +2791,79 @@ test("§5/§8 builtin-tool-card.js：還原預設清掉本卡兩欄並把字數�
     assert.equal(fixture.b.desc.ta.value, "鄰卡不該被清掉", "還原預設把隔壁卡也清了（範圍沒收在 .builtin-tool-card）");
     assert.equal(fixture.b.extra.ta.value, "鄰卡的提示詞");
     assert.equal(fixture.b.desc.count.textContent, "7 / 1024", "隔壁卡的字數也被動到了");
+});
+
+// ───────── ui/multi-select 的選項狀態後綴（data-suffix / data-suffix-key）─────────
+
+// 直接把 multi-select.js 的 optionLabel 原文切出來跑（同 paginationWindowCalc 的做法：
+// 驗真檔案的邏輯，不是重寫一份）。t() 只需最小 stub。
+function optionLabelFn() {
+    const src = read("src/_includes/ui/multi-select/multi-select.js");
+    const i = src.indexOf("function optionLabel(option) {");
+    const j = src.indexOf("// ── optionLabel 結束 ──");
+    if (i < 0 || j <= i) throw new Error("multi-select.js 找不到 optionLabel 的錨點 —— 原始碼結構變了，測試要更新錨點");
+    return new Function("option", "dict", `
+        function t(key, zh) { return Object.prototype.hasOwnProperty.call(dict, key) ? dict[key] : zh; }
+        ${src.slice(i, j)}
+        return optionLabel(option);
+    `);
+}
+
+test("§4-2 ui/multi-select 的選項標籤＝資料 ＋ 選填狀態後綴（無槽時原樣、有 key 時走 t()）", () => {
+    const label = optionLabelFn();
+    const zh = {};
+    const en = { "settings.mcpServerInactive": " (inactive)" };
+    // 沒有槽的選項：原樣輸出（既有 5-2／2-2-1 等全部的 multiSelect 都走這條）
+    assert.equal(label({ textContent: "人資術語", dataset: {} }, zh), "人資術語");
+    // 有槽：繁中用 data-suffix 當原文
+    const inactive = { textContent: "舊版文件搜尋", dataset: { suffix: "（停用中）", suffixKey: "settings.mcpServerInactive" } };
+    assert.equal(label(inactive, zh), "舊版文件搜尋（停用中）");
+    // 切英文：走字典值，且譯文自帶分隔空白（§4-2 前後綴 key 自帶空白，不靠 JSX/CSS 補）
+    assert.equal(label(inactive, en), "舊版文件搜尋 (inactive)");
+});
+
+test("§4-2 選項的狀態後綴：data-suffix 與 data-suffix-key 必須成對（少一邊＝英文模式漏字或漏翻）", () => {
+    const hits = [];
+    let pairs = 0;
+    for (const f of srcHtml) {
+        stripNjk(read(f)).split(/\r?\n/).forEach((line, i) => {
+            for (const { tag, attrs } of tagsOf(line)) {
+                if (tag !== "option") continue;
+                const hasSuffix = /\bdata-suffix="/.test(attrs);
+                const hasKey = /\bdata-suffix-key="/.test(attrs);
+                if (!hasSuffix && !hasKey) continue;
+                pairs++;
+                if (hasSuffix !== hasKey) hits.push(`${f}:${i + 1}  <option> 的 data-suffix／data-suffix-key 只給了一邊`);
+            }
+        });
+    }
+    assert.ok(pairs > 0, "沒有任何帶狀態後綴的 <option> —— 這條測試在空轉（5-2 的 MCP Server 清單應有一筆停用中）");
+    assert.equal(hits.length, 0, fail(hits));
+});
+
+test("§6 5-2 的 MCP Server 勾選清單與 5-6-2 註冊表跨頁自洽（三筆都列得出來，停用那筆標示停用中）", () => {
+    // 原本 5-2 只列啟用中的兩筆、停用那筆整個濾掉：於是「先建好設定、之後再啟用」在 UI 上做不到，
+    // 而且已選取的 server 被平台停用後會從選單消失（多選的值來自 <option>，選單沒有它＝選取狀態不存在）。
+    const registry = read("src/pages/settings/5-6-2_platformMcpServers.html");
+    const servers = [...registry.matchAll(/\{\s*name:\s*"([^"]+)",[^}]*active:\s*(true|false)/g)]
+        .map(([, name, active]) => ({ name, active: active === "true" }));
+    assert.ok(servers.length >= 3, `5-6-2 只解析到 ${servers.length} 筆註冊 server —— 這條測試在空轉`);
+
+    const select = distDoc("5-2_conversationSettings.html").match(/<select[^>]*js-mcp-servers[^>]*>([\s\S]*?)<\/select>/);
+    assert.ok(select, "5-2 找不到 .js-mcp-servers 多選");
+    const options = [...select[1].matchAll(/<option\b([^>]*)>([^<]*)<\/option>/g)].map(([, attrs, text]) => ({ attrs, text }));
+    assert.equal(options.length, servers.length, `5-2 的選項數（${options.length}）與 5-6-2 的註冊數（${servers.length}）不一致`);
+
+    const hits = [];
+    for (const s of servers) {
+        const opt = options.find((o) => o.text === s.name);
+        if (!opt) { hits.push(`5-2 選單缺「${s.name}」（5-6-2 已註冊，濾掉就選不到）`); continue; }
+        const marked = /\bdata-suffix-key="settings\.mcpServerInactive"/.test(opt.attrs);
+        if (s.active && marked) hits.push(`「${s.name}」在 5-6-2 是啟用中，5-2 卻標了（停用中）`);
+        if (!s.active && !marked) hits.push(`「${s.name}」在 5-6-2 是停用中，5-2 卻沒標示——選了會以為立即生效`);
+    }
+    // 「已選取卻被停用」那一態要有頁面演得到（§5）
+    const selectedInactive = options.some((o) => /\bselected\b/.test(o.attrs) && /mcpServerInactive/.test(o.attrs));
+    if (!selectedInactive) hits.push("沒有任何示範演出「已選取、但已被平台停用」那一態");
+    assert.equal(hits.length, 0, fail(hits));
 });

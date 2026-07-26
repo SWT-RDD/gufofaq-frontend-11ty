@@ -17,9 +17,11 @@ permalink: 5-6-2_platformMcpServers.html
 {# 平台管理者專屬：MCP Server 全域註冊表（SaaS 新需求，真 app 無對應）。逆向自 gufofaq-saas
      product /platform/mcp（代理 GufoRAG chatbot /api/mcp，require_platform_admin）。
      MCP Server ＝ Stdio 子程序（command/args/env）＝在 agent 主機執行任意指令，等同 RCE，
-     故只准平台管理者註冊；租戶端只能在對話設定頁「勾選」已啟用的 server（product mcp.py
-     list_tenant_mcp_catalog 只回啟用中；不碰此頁）。示範 3 筆：前 2 筆啟用（＝5-2 勾選清單的
-     兩個選項，跨頁自洽）、第 3 筆停用（演停用態，不出現在 5-2）。 #}
+     故只准平台管理者註冊；租戶端只能在對話設定頁「勾選」已註冊的 server（唯讀投影，不碰此頁）。
+     示範 3 筆：前 2 筆啟用、第 3 筆停用——**三筆都出現在 5-2 的勾選清單**，停用那筆在那邊以
+     「（停用中）」標示（跨頁自洽；理由見 5-2 該欄位註解：停用是可逆狀態，寫入層刻意不驗 is_active，
+     濾掉會讓「先建好設定、之後再啟用」做不到，也會讓已選取的 server 在被停用時從選單消失）。
+     ⚠️ product 待跟上：mcp.py 的 list_tenant_mcp_catalog 目前把停用中的濾掉。 #}
 {% set mcpServers = [
   { name: "時間工具", command: "uvx", args: "mcp-server-time", description: "提供目前時間與時區換算。", active: true },
   { name: "內部文件搜尋", command: "npx", args: "-y @acme/doc-mcp", description: "查詢內部知識庫文件。", active: true },
@@ -151,9 +153,17 @@ permalink: 5-6-2_platformMcpServers.html
 </div>
 
 {# 刪除 modal：.js-delete-mcp 條件開窗（先選定要刪哪個 Server），確認鈕歸業務 js
-   （deleteConfirmBinding）；Server 名由業務 js 填入 #deleteMcpName。 #}
+   （deleteConfirmBinding）；Server 名由業務 js 填入 #deleteMcpName。
+   刪除**有**參照守衛（與 3-4 skill 同一道防護、同一種 toast 三態）：被任何 skill 的
+   allowed_tools.mcp_server_ids 或任何設定檔的 mcp_server_ids 參照時一律拒刪，並在訊息裡指名是哪些
+   skill／config（GufoRAG chatbot routes/mcp.py 的 delete_mcp_server → error_json(INVALID_OPERATION,
+   "error_mcp_server_still_referenced", detail="skill=…; config=…")；INVALID_OPERATION=1005 <2000 故
+   HTTP 400，product mcp.py 的 _PASSTHROUGH_STATUS 含 400 會原樣透傳）。
+   那一態是使用者自己修得掉的 warning，不是「請稍後再試」——只列成敗兩段的話，這條可行動的訊息
+   無處可放，會被顯示成「請稍後再試」而重試永遠不會成功。 #}
 {% set deleteTargetId = "deleteMcpName" %}
 {% set deleteConfirmBinding = true %}
-{% set deleteToast = "MCP Server 已刪除|刪除失敗，請稍後再試" %}
+{% set deleteToast = "MCP Server 已刪除|此 MCP Server 仍被 Skill 或設定檔參照，請先移除參照|刪除失敗，請稍後再試" %}
+{% set deleteToastType = "success|warning|error" %}
 {% set deleteToastKey = "toast.deleteMcpServer" %}
 {% include "components/delete-modal/delete-modal.html" %}

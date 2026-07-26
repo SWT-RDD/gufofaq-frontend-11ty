@@ -7,12 +7,28 @@
 //   搜尋框 = role=combobox（aria-expanded / aria-controls / aria-activedescendant），下拉 = role=listbox（aria-multiselectable），
 //   選項 = role=option（aria-selected）。鍵盤：↑↓ 移動、Enter/Space 選取、Esc 關閉、Home/End 跳首尾、Backspace 移除最後一個標籤。
 // i18n：placeholder／空狀態／移除鈕標籤由 JS 產生，故走 GufoI18n.t(key, 繁中原文)，並在 gufo:langchange 時重畫。
+//   選項標籤同理：`<option>` 內放不進第二個節點，故「資料＋狀態後綴」（如「舊版文件搜尋（停用中）」）
+//   由 data-suffix／data-suffix-key 兩個槽組出來，見 optionLabel。
 document.addEventListener("DOMContentLoaded", function () {
     var uid = 0;
 
     function t(key, zh) {
         return (window.GufoI18n && window.GufoI18n.t) ? window.GufoI18n.t(key, zh) : zh;
     }
+
+    // ── optionLabel：資料 ＋ 選填的狀態後綴 ──
+    // 選項的顯示標籤＝**資料**（option 的文字，如 MCP Server 名稱，業務識別字不翻）＋選填的
+    // **狀態後綴**（chrome，要翻，如「（停用中）」）。<option> 裡放不進第二個節點，所以後綴走
+    // §4-2 的資料槽慣例：markup 給 data-suffix（繁中原文）＋ data-suffix-key（i18n key），
+    // 由本元件在畫標籤與下拉項時組起來，並在 gufo:langchange 時跟著重畫（見檔尾的 render）。
+    // 原生 <option> 的文字維持純資料——它是唯一資料來源，也是轉 React 後 options 的 label 來源。
+    function optionLabel(option) {
+        var suffix = option.dataset.suffix;
+        var key = option.dataset.suffixKey;
+        if (!suffix && !key) return option.textContent;
+        return option.textContent + (key ? t(key, suffix || "") : suffix);
+    }
+    // ── optionLabel 結束 ──
 
     document.querySelectorAll("select.multiSelect[multiple]").forEach(enhanceMultiSelect);
 
@@ -157,13 +173,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 var label = document.createElement("span");
                 label.className = "multi-select-tag-label";
-                label.textContent = option.textContent;
+                label.textContent = optionLabel(option);
                 tag.appendChild(label);
 
                 var remove = document.createElement("button");
                 remove.type = "button";
                 remove.className = "multi-select-tag-remove";
-                remove.setAttribute("aria-label", t("action.remove", "移除") + " " + option.textContent);
+                remove.setAttribute("aria-label", t("action.remove", "移除") + " " + optionLabel(option));
                 remove.textContent = "×";
                 remove.addEventListener("click", function (event) { removeOption(option, event); });
                 tag.appendChild(remove);
@@ -186,7 +202,8 @@ document.addEventListener("DOMContentLoaded", function () {
             var n = 0;
 
             options().forEach(function (option) {
-                var text = option.textContent;
+                // 過濾也用組好的標籤：打「停用」找得到被標示停用中的選項（使用者看到的字就是可搜的字）
+                var text = optionLabel(option);
                 if (keyword && text.toLowerCase().indexOf(keyword) === -1) return;
 
                 var item = document.createElement("div");
