@@ -83,12 +83,17 @@ permalink: 5-2_conversationSettings.html
                 </select>
             </div>
         </div>
+        {# 數值欄一律 type="number" ＋ 合法區間（見本頁「生成設定」子頁籤檔頭的理由與出處）：
+             agent_max_iterations 的 1–20 來自 product app/chat_config_limits.py 的
+             MIN_AGENT_MAX_ITERATIONS／MAX_AGENT_MAX_ITERATIONS（settings_hub.py ProfileConfigIn 以它們設 ge/le）。 #}
         <div class="form-group filter-field row mobile-col col-4-md col-12-sm">
             <div class="label">
                 <label for="profileAgentMaxIter" class="control-label" data-i18n="qaTest.agentMaxIter">Agent 最大迭代次數</label>
             </div>
             <div class="field">
-                <input type="text" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control js-agent-max-iter" id="profileAgentMaxIter" value="5">
+                <input type="number" min="1" max="20" step="1" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter"
+                    class="form-control js-agent-max-iter" id="profileAgentMaxIter" value="5" aria-describedby="profileAgentMaxIterRange">
+                <span class="text-gray" id="profileAgentMaxIterRange">1 – 20</span>
             </div>
         </div>
     </div>
@@ -295,23 +300,45 @@ permalink: 5-2_conversationSettings.html
                     {% include "components/reasoning-effort-select/reasoning-effort-select.html" %}
                 </div>
             </div>
+            {# 數值欄一律 type="number" ＋ 合法區間 ＋ 欄下可見的範圍提示（aria-describedby 接起來，§4）。
+                 為什麼不能是 type="text"：值交給 React 讀去送 API，text ＋ Number() 打錯一個字就是 NaN，
+                 序列化成 JSON 是 null，一路寫進該租戶的正式設定；後端投影欄型別是 float，下次開這頁就 500。
+                 後端現在會擋（顯式 null → 422），但體驗仍是「打錯字→存檔失敗→看不懂為什麼」，故把區間搬到
+                 輸入層：瀏覽器就地擋 + 使用者看得到範圍。區間出處＝product settings_hub.py ProfileConfigIn
+                 的 Field(ge/le) 與 app/chat_config_limits.py（MIN/MAX_SEARCH_NUMBER = 1/100）。
+                 浮點欄用 step="any"（契約只有 ge/le，沒有級距；寫死 0.1 會把 0.35 這種合法值判成無效），
+                 整數欄用 step="1"。memory_count 刻意無上界（同 ProfileConfigIn 只有 ge=0）。 #}
             <div class="form-group col-6-md col-12-sm">
                 <div class="label"><label for="genTemp" class="control-label" data-i18n="settings.temperature">溫度</label></div>
-                <div class="field"><input type="text" id="genTemp" class="form-control js-temperature" value="0.0" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter"></div>
+                <div class="field">
+                    <input type="number" min="0" max="1" step="any" id="genTemp" class="form-control js-temperature" value="0.0"
+                        placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" aria-describedby="genTempRange">
+                    <span class="text-gray" id="genTempRange">0 – 1</span>
+                </div>
             </div>
             <div class="form-group col-6-md col-12-sm">
                 <div class="label"><label for="genSearchTotal" class="control-label" data-i18n="settings.searchTotalNumber">取用資料筆數</label></div>
                 <div class="field">
-                    <input type="text" id="genSearchTotal" class="form-control js-search-total-number" value="16" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter">
+                    <input type="number" min="1" max="100" step="1" id="genSearchTotal" class="form-control js-search-total-number" value="16"
+                        placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" aria-describedby="genSearchTotalRange">
+                    <span class="text-gray" id="genSearchTotalRange">1 – 100</span>
                 </div>
             </div>
             <div class="form-group col-6-md col-12-sm">
                 <div class="label"><label for="genSearchSelected" class="control-label" data-i18n="settings.searchSelectedNumber">選用資料筆數</label></div>
-                <div class="field"><input type="text" id="genSearchSelected" class="form-control js-search-selected-number" value="8" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter"></div>
+                <div class="field">
+                    <input type="number" min="1" max="100" step="1" id="genSearchSelected" class="form-control js-search-selected-number" value="8"
+                        placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" aria-describedby="genSearchSelectedRange">
+                    <span class="text-gray" id="genSearchSelectedRange">1 – 100</span>
+                </div>
             </div>
             <div class="form-group col-6-md col-12-sm">
                 <div class="label"><label for="genRatio" class="control-label" data-i18n="settings.dataSourceRatio">資料來源比例（主題／向量）</label></div>
-                <div class="field"><input type="text" id="genRatio" class="form-control js-data-source-ratio" value="0.0" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter"></div>
+                <div class="field">
+                    <input type="number" min="0" max="1" step="any" id="genRatio" class="form-control js-data-source-ratio" value="0.0"
+                        placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" aria-describedby="genRatioRange">
+                    <span class="text-gray" id="genRatioRange">0 – 1</span>
+                </div>
             </div>
             <div class="form-group col-6-md col-12-sm">
                 <div class="label"><label for="genKnowledgeMode" class="control-label" data-i18n="settings.useKnowledgeMode">知識使用模式</label></div>
@@ -343,7 +370,11 @@ permalink: 5-2_conversationSettings.html
             </div>
             <div class="form-group col-6-md col-12-sm">
                 <div class="label"><label for="genMemory" class="control-label" data-i18n="settings.memoryCount">對話記憶輪數</label></div>
-                <div class="field"><input type="text" id="genMemory" class="form-control js-memory-count" value="5" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter"></div>
+                <div class="field">
+                    <input type="number" min="0" step="1" id="genMemory" class="form-control js-memory-count" value="5"
+                        placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" aria-describedby="genMemoryRange">
+                    <span class="text-gray" id="genMemoryRange">≥ 0</span>
+                </div>
             </div>
             <div class="form-group col-6-md col-12-sm">
                 <div class="label"><span class="control-label" data-i18n="settings.enableSuggestQuestions">啟用建議問題</span></div>

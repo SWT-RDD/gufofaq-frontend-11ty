@@ -42,3 +42,15 @@
         }
     }
 }
+
+// 不支援的副檔名（放置區的下方，upload-box.js 在 drop 時揭示）。切版新增：真 app 把不合格的檔案
+// 靜默丟掉，使用者只看到「少了幾個」。
+.upload-error {
+    margin: 0.5rem 0 0;
+    color: var(--danger-text);
+    font-size: 0.875rem;
+
+    .upload-error-files {
+        word-break: break-all; // 檔名可能很長，不要把版面撐破
+    }
+}

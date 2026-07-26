@@ -48,6 +48,7 @@ bodyClass: guideline-page
             <li><a class="aside-link" href="#tooltipSection">Tooltip提示</a></li>
             <li><a class="aside-link" href="#subscriptionGateSection">使用期閘門遮罩</a></li>
             <li><a class="aside-link" href="#stepFlowSection">執行流程觀測</a></li>
+            <li><a class="aside-link" href="#errorPageSection">整頁錯誤狀態</a></li>
         </ul>
     </aside>
     <div class="main-container">
@@ -539,8 +540,13 @@ bodyClass: guideline-page
             </div>
             <br>
             <div>
+                {# uploadErrorFiles 只在本頁設：讓「拖進不支援的副檔名」那一列看得到（真實頁由 upload-box.js
+                     在 drop 時填入被略過的檔名；§5 分支要有頁面演得出來）。下一個 include（qa-import-modal
+                     內含 upload-box）之前會重設，否則 §2 的頁面全域 set 會把它帶過去。 #}
+                {% set uploadErrorFiles = "報價單.docx, 名單.csv" %}
                 {% include "ui/upload-box/upload-box.html" %}
-                <div class="subtitle">描述：檔案上傳區，使用「.upload-box」這個class</div>
+                {% set uploadErrorFiles = "" %}
+                <div class="subtitle">描述：檔案上傳區，使用「.upload-box」這個class；不支援的副檔名拖進來時，下方「.upload-error」列出被略過的檔名（不靜默丟掉）</div>
             </div>
             <br>
             <div>
@@ -696,6 +702,18 @@ bodyClass: guideline-page
             {% include "components/step-flow/step-flow.html" %}
         </section>
 
+        <section id="errorPageSection">
+            <h2 class="section-title"><span>24</span><span>整頁錯誤狀態</span></h2>
+            <div class="caption">
+                <ul>
+                    <li>ui/error-page：整頁置中的錯誤碼 + 說明（+ 選填的返回鈕）。生產 markup 是 src/404.html（找不到頁面）</li>
+                    <li>下面這一態是<strong>公開分享連結被節流（HTTP 429）</strong>：正式落點是 React 的 /shared/{token}，切版沒有那一頁，故這裡是唯一看得到它的地方（GUIDELINE §5）</li>
+                    <li>刻意與「找不到」分成兩顆 key：連結還有效、只是此刻太頻繁——寫成找不到會讓使用者以為連結被撤銷而回頭要新的</li>
+                </ul>
+            </div>
+            {% include "ui/error-page/error-page.html" %}
+        </section>
+
         <footer class="footer">
             <p>GufoFAQ ｜ 元件庫</p>
         </footer>
@@ -823,6 +841,9 @@ bodyClass: guideline-page
 {% include "components/apply-settings-compare-modal/apply-settings-compare-modal.html" %}
 {% include "components/knowledge-retrieval-modal/knowledge-retrieval-modal.html" %}
 {% include "components/reset-password-modal/reset-password-modal.html" %}
+{# 本頁把「取不到租戶用量」那一態打開：它在 5-6-1 是 React 依 error state 條件渲染的分支，
+     沒有真實頁演得出來（§5）。 #}
+{% set manageTenantShowUsageError = true %}
 {% include "components/manage-tenant-modal/manage-tenant-modal.html" %}
 {% include "components/share-manage-modal/share-manage-modal.html" %}
 {% include "components/manage-members-modal/manage-members-modal.html" %}

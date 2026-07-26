@@ -2867,3 +2867,88 @@ test("§6 5-2 的 MCP Server 勾選清單與 5-6-2 註冊表跨頁自洽（三�
     if (!selectedInactive) hits.push("沒有任何示範演出「已選取、但已被平台停用」那一態");
     assert.equal(hits.length, 0, fail(hits));
 });
+
+// ───────── 5-2 的數值欄（type=number ＋ 合法區間）─────────
+
+test("§5/§6 5-2 的數值旋鈕必須是 type=number 並帶後端的合法區間（text＋Number() 打錯字會寫進 null）", () => {
+    // 為什麼要釘死：這六欄的值由 React 讀去送 API。type="text" ＋ Number() 打錯一個字就是 NaN、
+    // 序列化成 JSON 是 null，一路寫進該租戶的正式設定；後端投影欄是 float，下次開這頁就 500。
+    // 區間出處＝product settings_hub.py ProfileConfigIn 的 Field(ge/le) 與 app/chat_config_limits.py。
+    const SPEC = [
+        { hook: "js-temperature", min: "0", max: "1", step: "any" },
+        { hook: "js-search-total-number", min: "1", max: "100", step: "1" },
+        { hook: "js-search-selected-number", min: "1", max: "100", step: "1" },
+        { hook: "js-data-source-ratio", min: "0", max: "1", step: "any" },
+        { hook: "js-memory-count", min: "0", max: null, step: "1" }, // 刻意無上界
+        { hook: "js-agent-max-iter", min: "1", max: "20", step: "1" },
+    ];
+    const html = distDoc("5-2_conversationSettings.html");
+    const ids = new Set([...html.matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]));
+    const hits = [];
+    for (const { hook, min, max, step } of SPEC) {
+        const tag = html.match(new RegExp(`<input[^>]*\\b${hook}\\b[^>]*>`));
+        if (!tag) { hits.push(`${hook}：5-2 找不到這個欄位`); continue; }
+        const attr = (name) => (tag[0].match(new RegExp(`\\b${name}="([^"]*)"`)) || [])[1] ?? null;
+        if (attr("type") !== "number") hits.push(`${hook}：type 是 ${attr("type")}，不是 number`);
+        if (attr("min") !== min) hits.push(`${hook}：min 是 ${attr("min")}，應為 ${min}`);
+        if (attr("max") !== max) hits.push(`${hook}：max 是 ${attr("max")}，應為 ${max === null ? "（無上界）" : max}`);
+        if (attr("step") !== step) hits.push(`${hook}：step 是 ${attr("step")}，應為 ${step}`);
+        // 區間要看得到，且用 aria-describedby 接起來（§4：帶約束條件的輔助文字）
+        const describedby = attr("aria-describedby");
+        if (!describedby) hits.push(`${hook}：沒有 aria-describedby 指向可見的範圍提示`);
+        else if (!describedby.split(/\s+/).every((id) => ids.has(id))) hits.push(`${hook}：aria-describedby 指向不存在的 id`);
+    }
+    assert.equal(hits.length, 0, `§5 數值欄的區間契約：\n${fail(hits)}`);
+});
+
+// ───────── ui/upload-box：不支援的副檔名 ─────────
+
+// 把 upload-box.js 的 accepted() 原文切出來跑（同 optionLabel／paginationWindowCalc 的手法）
+function acceptedFn() {
+    const src = read("src/_includes/ui/upload-box/upload-box.js");
+    const i = src.indexOf("function accepted(name) {");
+    const j = src.indexOf("if (errorRow) box.addEventListener");
+    if (i < 0 || j <= i) throw new Error("upload-box.js 找不到 accepted() 的錨點 —— 原始碼結構變了，測試要更新錨點");
+    return new Function("name", "acceptAttr", `
+        var input = { getAttribute: function () { return acceptAttr; } };
+        ${src.slice(i, j)}
+        return accepted(name);
+    `);
+}
+
+test("§5 upload-box：副檔名比對（accept 清單、大小寫、多副檔名、未設 accept＝不限制）", () => {
+    const accepted = acceptedFn();
+    assert.equal(accepted("報價.xlsx", ".xlsx"), true);
+    assert.equal(accepted("報價.XLSX", ".xlsx"), true, "副檔名比對要不分大小寫");
+    assert.equal(accepted("報價.docx", ".xlsx"), false);
+    assert.equal(accepted("名單.csv", ".xlsx,.csv"), true, "accept 可以是多個副檔名");
+    assert.equal(accepted("archive.tar.gz", ".gz"), true, "比對的是結尾，不是最後一個點之後的字");
+    assert.equal(accepted("任何檔案.bin", ""), true, "沒給 accept＝不限制");
+    // 邊界：檔名比副檔名還短時不得誤判成通過（slice 的負索引陷阱）
+    assert.equal(accepted("x", ".xlsx"), false);
+});
+
+test("§5/§4-2 upload-box：不支援檔案的提示是 live region，且元件庫頁演得出來", () => {
+    const gallery = distDoc("component.html");
+    const row = gallery.match(/<p class="upload-error[^"]*"[^>]*>[\s\S]*?<\/p>/);
+    assert.ok(row, "元件庫頁沒有 .upload-error 那一列 —— 這個分支沒有頁面演得出來（§5）");
+    assert.match(row[0], /role="alert"/, "內容是之後才到的訊息，節點要是 live region（§4）");
+    assert.ok(!/\bhidden\b/.test(row[0].split(">")[0]), "元件庫頁的示範應該是可見的（uploadErrorFiles 有值時不掛 .hidden）");
+    assert.match(row[0], /data-i18n="dataImport\.unsupportedFile"/, "訊息前綴要走 i18n");
+    // 真實上傳頁：同一列必須存在但預設隱藏（不能一進頁面就說有檔案被略過）。
+    // 對「按鈕版」的頁面驗（1-2-1）：連結版（1-1-2 的 uploadNextHref）沒有 file input、不吃 drop，本來就不渲染這一列。
+    const real = distDoc("1-2-1_uploadFile_pdf.html").match(/<p class="upload-error[^"]*"[^>]*>/);
+    assert.ok(real, "1-2-1 沒有 .upload-error 列 —— drop 到不支援的檔案時無處可報");
+    assert.match(real[0], /\bhidden\b/, "真實頁的預設態必須是隱藏（沒有檔案被略過）");
+});
+
+test("§5 platform.usageError／share.rateLimited 這兩個 React 條件狀態，元件庫頁都演得出來", () => {
+    // 兩者都沒有真實頁 markup（用量取不到→不開窗；/shared/{token} 切版沒有這一頁），
+    // 依 §5 由元件庫頁的靜態示範當唯一可見處——沒有示範就等於只有字典裡有字、沒人看過它的長相。
+    const gallery = distDoc("component.html");
+    assert.match(gallery, /data-i18n="platform\.usageError"/, "元件庫頁缺「取不到租戶用量」那一態的示範");
+    assert.match(gallery, /data-i18n="share\.rateLimited"/, "元件庫頁缺「分享連結被節流」那一態的示範");
+    // 反向：真實頁不得常駐這兩句（它們是錯誤態，不是預設態）
+    for (const page of ["5-6-1_platformTenants.html"])
+        assert.ok(!/data-i18n="platform\.usageError"/.test(distDoc(page)), `${page} 常駐了錯誤態訊息（預設態不能是錯的）`);
+});

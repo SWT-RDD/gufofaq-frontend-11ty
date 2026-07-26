@@ -5,6 +5,9 @@
      uploadMultiple：true 時可多選
      uploadHintText / uploadHintKey：放置區主提示（預設「點選或拖曳檔案至該區域上傳」／comp.uploadDropHint）
      uploadDescText / uploadDescKey：格式與大小說明（預設 xlsx／10MB／comp.uploadDescXlsx）
+     uploadErrorFiles：**僅示範用**——先填好檔名並讓「不支援的副檔名」那一列可見，
+                       讓這個分支在元件庫頁看得到（§5：沒有頁面演得出來的分支等於沒驗收過）；
+                       真實頁不設，由 upload-box.js 在 drop 時填入被略過的檔名
    真實 app 上傳完由業務 JS 自動跳到預覽頁（此頁無下一步按鈕，§5 不做）。
    放置區是可點的東西，故一律用真 `<a>`／`<button>`，不用 div 假扮（§4）。內容用 `<span>` 不用 `<div>`：
    `<button>` 只吃 phrasing content，包 `<div>` 是非法巢狀（§4）；排版由 class 決定，與標籤無關。
@@ -25,4 +28,10 @@
     </span>
 </button>
 <input type="file" class="upload-input" accept="{{ uploadAccept or '.xlsx' }}"{% if uploadMultiple %} multiple{% endif %} hidden>
+{# 不支援的副檔名：拖進來的檔案不在 accept 清單內時，就地列出被略過的檔名——不靜默丟掉。
+     支援的副檔名就寫在上面那行 .upload-desc，故訊息只負責「哪些沒被加入」。
+     live region（role=alert）：內容是之後才到的，節點必須先在（§5／REACT-CONVERSION ②）。 #}
+<p class="upload-error{% if not uploadErrorFiles %} hidden{% endif %}" role="alert">
+    <span data-i18n="dataImport.unsupportedFile">下列檔案不是支援的格式，未加入：</span><span class="upload-error-files">{{ uploadErrorFiles }}</span>
+</p>
 {% endif %}

@@ -20,7 +20,11 @@
      （§5：一個 dialog id 只能由一個元件宣告）。故改在頁面層 include——見 5-6-1_platformTenants.html
      底部（比照 footer 內含 disclaimer-modal 的「誰的按鈕開的彈窗、彈窗就 include 在誰裡面」，
      只是這裡的「誰」落在頁面而非本元件，因為本元件已被 component.html 共用）。
-     無參數——單一用途的確認彈窗，同 components/apply-settings-modal 的模式。 #}
+     參數（示範開關；React 端為條件渲染，元件庫頁 set true 演出該分支，同 config-copy-modal 的 configCopyShowError）：
+       manageTenantShowUsageError＝**取不到該租戶目前用量**時的持久錯誤列。這一態要與一般「載入失敗」分開
+         講：額度欄拿不到現值就會顯示 0，按下儲存等於把該租戶的額度歸零鎖死，所以 React 端在用量取不到時
+         不開窗（改用同一顆 key 彈 toast），開了窗也不得讓額度可存——訊息因此寫成「暫時無法管理」，
+         兩種呈現共用同一句。 #}
 {% set manageMembers = [
   { email: "admin@example.com", isAdmin: true, isActive: true },
   { email: "editor@example.com", isAdmin: false, isActive: true },
@@ -36,6 +40,9 @@
                 </div>
                 <div class="modals-body">
                     <div class="flex-row column gap-24">
+                        {% if manageTenantShowUsageError %}
+                        <p class="text-red m-0" role="alert" data-i18n="platform.usageError">無法取得這個租戶的目前用量；為避免把額度誤存成 0，暫時無法管理，請稍後再試。</p>
+                        {% endif %}
                         {# 額度三欄位＝product QuotaIn 的 qa_limit／extraction_limit／storage_limit_mb（本 modal 是 React 藍圖，欄位集要跟契約） #}
                         <div class="flex-row flex-wrap gap-40 mobile-column sm-gap-16">
                             <div class="col-6-md col-12-sm">

@@ -33,5 +33,31 @@ document.addEventListener("DOMContentLoaded", function () {
                 box.classList.remove("drag-over");
             });
         });
+
+        // 不支援的副檔名：拖進來的檔案不在 accept 清單內時，列出被略過的檔名。
+        // 為什麼切版就要做：這是純前端互動（比對副檔名、報出結果），沒有業務主人（§5 ④）；
+        // 而「靜默丟掉」正是這條要修的行為——使用者只會看到「怎麼少了幾個檔案」。
+        var errorRow = input ? input.nextElementSibling : null;
+        if (errorRow && !errorRow.classList.contains("upload-error")) errorRow = null;
+        var errorFiles = errorRow ? errorRow.querySelector(".upload-error-files") : null;
+
+        // accept 支援 ".xlsx,.csv" 這種副檔名清單（本專案全站都是這種寫法）；沒給就是不限制
+        function accepted(name) {
+            var accept = (input.getAttribute("accept") || "").trim();
+            if (!accept) return true;
+            var lower = name.toLowerCase();
+            return accept.split(",").some(function (ext) {
+                ext = ext.trim().toLowerCase();
+                return ext ? lower.slice(-ext.length) === ext : true;
+            });
+        }
+
+        if (errorRow) box.addEventListener("drop", function (e) {
+            var files = e.dataTransfer ? Array.prototype.slice.call(e.dataTransfer.files || []) : [];
+            var rejected = files.filter(function (f) { return !accepted(f.name); }).map(function (f) { return f.name; });
+            // 分隔符用中性的「, 」：檔名是資料、兩種語言共用同一份 DOM（不寫語言專屬的頓號）
+            errorFiles.textContent = rejected.join(", ");
+            errorRow.classList.toggle("hidden", rejected.length === 0);
+        });
     });
 });
