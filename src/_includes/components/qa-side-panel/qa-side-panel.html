@@ -1,8 +1,8 @@
 {# 問答紀錄可收合側欄（單測 2-2-1 / AB測試 2-2-3 頁共用）。
      展開/收合（切換 .collapsed）為純視覺互動，由 qa-side-panel.js 提供（點 .js-side-toggle 切換、點外部收合）；
      載入問答資料等屬業務邏輯不在此。內含 qa-record-tabs，其 qaRecordTabs 資料由頁面提供。
-     參數：sidePanelHidden（true 時加 .hidden，如 AB測頁尚未支援、整個隱藏）。 #}
-<div class="qa-side-panel collapsed{% if sidePanelHidden %} hidden{% endif %}">
+     無參數：單測與 AB 測試兩頁都交付這個側欄（原本 AB 頁用 sidePanelHidden 整個藏起來，見該頁註解）。 #}
+<div class="qa-side-panel collapsed">
     {# 初始為 .collapsed，故 aria-expanded=false、標籤是「展開」；狀態與標籤由 qa-side-panel.js 同步 #}
     <button type="button" class="qa-side-panel-toggle js-side-toggle" aria-expanded="false" title="展開問答紀錄" data-i18n-title="comp.expandQaRecord">
         <span class="qa-side-panel-title" data-i18n="qa.qaRecords">問答紀錄</span>

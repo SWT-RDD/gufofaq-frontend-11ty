@@ -110,7 +110,7 @@ dist/                       build 輸出（勿手改）
 | `components/qa-detail-info` | 頁面 set `conversation = { chatroomId, id, time, intent, userMessage, satisfaction: { label, icon }, feedback }`（短欄位）；AI 回答與「提示詞」收合欄（`.collapse-text`，其展開屬業務 JS 不在範圍）為長文，依 GUIDELINE §3-2 直接寫在元件 markup。 |
 | `components/qa-record-tabs` | 頁面 set `qaRecordTabs = [{ label, active }]`；單測/AB測試/前台對話預覽三頁共用的 `.tab-group` 頁籤清單。外層 `.tab-wrap` 等 chrome 各頁自帶。 |
 | `components/prompt-edit` | 單測/AB測試頁的「提示詞」收合編輯區；`promptDefaultOpen`（true 時加 `data-default-open`）。展開/收合（切換 `.open`、注入編輯 textarea）由 `prompt-edit.js` 提供；實際儲存/建版本 API 屬業務邏輯不在範圍。 |
-| `components/qa-side-panel` | 單測/AB測試頁的可收合問答紀錄側欄（toggle + 開啟新對話 + 頁籤）；`sidePanelHidden`（true 加 `.hidden`）。展開/收合（切換 `.collapsed`）由 `qa-side-panel.js` 提供。內含 `qa-record-tabs`（其 `qaRecordTabs` 由頁面提供）。 |
+| `components/qa-side-panel` | 單測/AB測試頁的可收合問答紀錄側欄（toggle + 開啟新對話 + 頁籤）；**無參數**（兩頁都交付；原本 AB 頁用 `sidePanelHidden` 整個藏起來，SaaS 已有 `GET /qatest/ab-history` 供它，故本輪交付、參數移除）。展開/收合（切換 `.collapsed`）由 `qa-side-panel.js` 提供。內含 `qa-record-tabs`（其 `qaRecordTabs` 由頁面提供）。 |
 | `components/chatroom` | `chatInputHidden`（true 時不渲染輸入區；`2-1` 是唯讀的問答紀錄預覽，真實頁沒有輸入框，單測頁 `2-2-1` 需要）。 |
 | `components/priority-table` | 頁面 set `rows = [{ category, description, prompt, priority }]`；渲染 5 欄意圖判斷表（`.default-table.priority-table`）。`rows` 空陣列＝空狀態。用於 5-2（檢索與欄位子頁籤依優先級分組，每組 set 後 include）。 |
 | `components/delete-modal` | `deleteTargetId`（設了就渲染空 `<span id>`，由業務 js 填入待刪除項目名稱）／`deleteTargetName`（靜態示範名稱）／`deleteConfirmBinding`（true＝確認鈕交給業務 js 綁定、不自動關窗）／`deleteConfirmClass`・`deleteToast`・`deleteToastKey`（確認鈕的 hook class 與成敗 toast，見元件檔頭）。 |
@@ -182,6 +182,7 @@ dist/                       build 輸出（勿手改）
 | `4-1_qaHistory` 底部的 `ui/pagination` 頁碼列 | 真 app 的 4-1 只有 `.data-info`（「共 N 筆資料」）。它的 `.pagination` 只出現在 component / 1-1-3 / 3-1-1 / 3-1-3 / 3-1-6 |
 | `2-1_qaRecord` 的 `.qa-count` | 真 app 的 2-1 沒有（它來自 2-2-1）。輸入框則以 `chatInputHidden` 關掉——那個真 app 的 2-1 也沒有 |
 | 前台訊息動作列的讚／倒讚／分享 | `scss/faq.scss` 有 `.button-icon.like/.dislike/.share` 的樣式，但 `js/main.js` 產生的 `.message-icon` 只放得出複製鈕 |
+| `2-2-3_abTest` 的問答紀錄側欄 | 真 app 在 AB 頁把它整個 `hidden`（當時不支援）。SaaS 已有 `GET /qatest/ab-history`（product `qatest.py`，每筆＝一次比較、含 A/B 兩側 log_id），故切版交付它——藏著就是「後端查得到、前端有實作、只差版面」的死功能 |
 | 深色模式（`data-theme`）、中英切換（`data-i18n`） | 兩份真 app 都完全沒有 |
 | toast 的失敗／警告／資訊語意（`toast-error/warning/info`） | 真 app 只有 `toast-success`。切版是原型：每個按鈕該有的結果狀態都要看得見（`data-toast="成功訊息｜失敗訊息"` 逐次輪替） |
 | 遮罩上色的圖示（`icon-mask()`） | 真 app 是 `background-image`（且無深色模式）。遮罩讓顏色跟著 token 走，也刪掉本專案 5 張被遮罩取代的 `*_bluehover.png`（真 app 的 hover 是換整張圖，那邊有 6 張） |

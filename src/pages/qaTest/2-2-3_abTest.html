@@ -161,7 +161,11 @@ permalink: 2-2-3_abTest.html
 
 {# 對話區：AB 雙欄比較訊息真實系統無對應既有元件（components/chatroom 是單欄 user/robot 結構），
      故聊天視窗外殼（.chatroom-wrap/.chatroom-block/.chat-input-container）逐字寫死、僅回覆訊息改用 .ab-compare 雙欄比較 markup，
-     與 2-2-1_singleTest 共用同一份聊天室外殼樣式；右側問答紀錄面板真實頁預設 hidden（AB頁尚未支援），逐字保留。
+     與 2-2-1_singleTest 共用同一份聊天室外殼樣式；右側問答紀錄側欄與 2-2-1 同款、**本輪起交付**——
+     凍結的真 app 在這頁把它藏起來（AB 頁當時不支援），但 SaaS 已有 `GET /qatest/ab-history`
+     （product qatest.py，docstring 明寫「供問答紀錄側欄」，每筆＝一次比較、含 A/B 兩側 log_id），
+     再藏著就是「後端查得到、前端有實作、只差版面」的死功能。故 qa-side-panel 的 sidePanelHidden 參數
+     一併移除（已無消費者）。這是 README「與真 app 的刻意差異」的一條。
      刻意不含 chatroom 的串流狀態列與建議追問 chip：雙欄各自串流沒有單一狀態文案，
      suggest_questions 也只在單一問答流回傳（ask.py 的 chat_room chunk 允許清單）——非漏植 #}
 <div class="mt-24">
@@ -245,15 +249,12 @@ permalink: 2-2-3_abTest.html
                     <div class="form-group chat-input-field">
                         <div class="field">
                             <textarea class="form-control chat-input-control" placeholder="輸入問題" data-i18n-placeholder="comp.enterQuestion" aria-label="輸入問題" data-i18n-aria-label="comp.enterQuestion"></textarea>
-                            <span class="error-prompt" role="alert" data-i18n="common.errorText">錯誤訊息文字</span>
                         </div>
                     </div>
                     <button type="submit" class="button button-primary chat-input-submit" data-toast="回答生成中...|回答生成成功|回答生成失敗" data-i18n-data-toast="toast.chatSubmit" data-toast-type="info|success|error" data-i18n="action.submit">送出</button>
                 </div>
             </div>
         </div>
-
-        {% set sidePanelHidden = true %}
         {% include "components/qa-side-panel/qa-side-panel.html" %}
     </div>
 </div>

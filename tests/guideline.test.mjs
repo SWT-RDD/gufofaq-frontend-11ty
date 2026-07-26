@@ -3212,3 +3212,51 @@ test("§5/§6 5-6-2 列編輯要能改 env（輪替憑證），且 args／env �
     assert.ok(envCells.length >= 1, "示範資料裡沒有任何一台 server 帶 env —— 那一欄等於沒演到");
     assert.ok(envCells.some((s) => s.includes("***")), "env 值要演成遮罩字面 ***（讀取路徑本來就只回鍵名）");
 });
+
+// ───────── 表單驗證的單一回報方式（J）─────────
+
+test("§4 欄位級錯誤槽不得是通用佔位：.error-prompt 要嘛訊息具體、要嘛是業務 js 會填的空 live region", () => {
+    // 定調前的現況：全站 23 處 `.error-prompt` 寫著「錯誤訊息文字」，顯示條件是 .form-group:has(.error)
+    // 而沒有任何一頁會掛 .error ⇒ 兩套都寫了、兩套都不作用。驗證結果一律走送出鈕 data-toast 的 warning 段，
+    // 欄位本身只加 .error 標紅；佔位式的槽全數移除，這條擋它們回來。
+    // 唯一豁免：ui/form-control 的展示片段——它就是「.error + .error-prompt 長什麼樣」那張示範圖，
+    // 只被元件庫頁 include，不是任何真實表單的欄位槽（同其他測試的 SHOWCASE 慣例）。
+    const SHOWCASE_DEMO = "src/_includes/ui/form-control/form-control.html";
+    const hits = [];
+    let checked = 0;
+    for (const f of srcHtml) {
+        if (f.replace(/\\/g, "/") === SHOWCASE_DEMO) continue;
+        stripNjk(read(f)).split(/\r?\n/).forEach((line, i) => {
+            const m = line.match(/<span class="error-prompt[^"]*"[^>]*>([^<]*)<\/span>/);
+            if (!m) return;
+            checked++;
+            const text = m[1].trim();
+            const key = (line.match(/data-i18n="([\w.]+)"/) || [])[1];
+            // 空的 live region（由真 app 業務 js 填、通常另有 id）是合法的；有文字時必須是具體訊息
+            if (!text) return;
+            if (/^錯誤訊息(文字)?$/.test(text) || key === "common.errorText")
+                hits.push(`${f}:${i + 1}  通用佔位的欄位錯誤槽（訊息不具體、也沒有人會觸發它）`);
+        });
+    }
+    assert.ok(checked >= 5, `只掃到 ${checked} 個 .error-prompt —— 這條測試在空轉`);
+    assert.equal(hits.length, 0, fail(hits));
+});
+
+test("§4 送出鈕的 data-toast 是驗證結果的唯一出口：需要驗證的建立表單都要有 warning 段", () => {
+    // 有必填欄的建立/儲存表單，如果 toast 只有「成功|失敗」，使用者填錯時只會看到「失敗」——
+    // 那正是移除欄位級訊息之後**必須**補上的那一段。抽樣釘住幾顆已知有必填欄的建立鈕。
+    const CASES = [
+        ["5-5-1_userManagement.html", "toast.createUser"],
+        ["5-6-1_platformTenants.html", "toast.createTenant"],
+        ["5-8_widgetTokens.html", "toast.createWidgetToken"],
+        ["3-4_skillManagement.html", "toast.createSkill"],
+    ];
+    const hits = [];
+    for (const [page, key] of CASES) {
+        const btn = distDoc(page).match(new RegExp(`<button[^>]*data-i18n-data-toast="${key.replace(".", "\\.")}"[^>]*>`));
+        if (!btn) { hits.push(`${page} 找不到 ${key} 的鈕`); continue; }
+        const types = (btn[0].match(/data-toast-type="([^"]*)"/) || ["", ""])[1].split("|");
+        if (!types.includes("warning")) hits.push(`${page} 的 ${key} 沒有 warning 段（填錯時只會顯示「失敗」）`);
+    }
+    assert.equal(hits.length, 0, fail(hits));
+});

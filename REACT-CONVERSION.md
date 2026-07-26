@@ -137,6 +137,10 @@
   （`auditor` ＝ auditor 與 admin 都可）。React 讀 `/api/me` 的 `platform_role`（不是只讀 `is_platform_admin`
   ——那會把唯讀稽核員一起排除掉）。低於該級時：**動作鈕不渲染**、**值控制項渲染成 `disabled`**（狀態要看得見
   才稽核得到）。屬性本身不帶進 tsx（它是切版寫給轉換用的規格，不是執行期 hook）。
+- **表單驗證的回報方式只有一種**（GUIDELINE §4）：送出鈕 `data-toast` 的 warning 段就是「哪裡填錯」，
+  欄位本身加 `.error` 標紅；切版**不再有**逐欄的 `.error-prompt` 佔位（那批「錯誤訊息文字」已移除——
+  顯示條件沒人觸發、內容沒人知道要填什麼）。React 端照這個分工做：欄位級只加 class，訊息走同一顆 toast key。
+  `.error-prompt` 只剩「訊息具體」或「真 app 業務 js 會填」的少數幾處，那幾處照抄。
 - 業務邏輯（抓資料／SSE／圖表／表單驗證／日期）不轉。串流狀態列（`role="status"` live region）與建議追問 chip
   （`.js-ask-suggested`）markup 照切版轉、內容改由 SSE 事件驅動（切版是凍結的一格示範）。
 - 零自帶 js、行為全借共用原子 hook 的元件（step-flow 借 `ui/accordion` 的 `.js-accordion`／`.js-expand-all`／
