@@ -1409,6 +1409,10 @@ const COLOR_ROLES = {
         ["--control-track", "--surface-raised", "switch OFF 軌道 vs 卡片"],
         ["--toggle-on", "--surface-raised", "switch ON 軌道 vs 卡片"],
         ["--brand-ink", "--control-track-alt", "storage-bar 填色 vs 空軌"],
+        // 已停用的表格列（default-table 的 tr.is-inactive > td 上內嵌面底色）上面就站著 ui/switch，
+        // 那是「換了列底色就要重算該列所有前景」的實例（§4）——不登記的話這組疊法沒有任何測試看得到。
+        ["--control-track", "--surface-sunken", "switch OFF 軌道 vs 已停用列底色"],
+        ["--toggle-on", "--surface-sunken", "switch ON 軌道 vs 已停用列底色"],
     ],
     // chrome 零件：不承載內文，不做內文對比斷言（邊框/捲軸/tint/陰影/遮罩/漸層）。
     // --control-track-alt 是 storage-bar 填色後面的軌道：資訊由「填色 vs 軌道」承載（已在 graphicPairs），
@@ -2951,4 +2955,141 @@ test("§5 platform.usageError／share.rateLimited 這兩個 React 條件狀態�
     // 反向：真實頁不得常駐這兩句（它們是錯誤態，不是預設態）
     for (const page of ["5-6-1_platformTenants.html"])
         assert.ok(!/data-i18n="platform\.usageError"/.test(distDoc(page)), `${page} 常駐了錯誤態訊息（預設態不能是錯的）`);
+});
+
+// ───────── 5-5-1 成員啟用／停用 ─────────
+
+test("§5/§6 5-5-1 每位成員都要看得到啟用狀態、切得動，且停用列一眼看得出來", () => {
+    // 後端早就收 is_active（product users.py 的 PATCH /users/{id}），但這頁原本沒有顯示也沒有切換——
+    // 離職員工的帳號留在啟用狀態，畫面上與在職的一模一樣，租戶管理者只能去找平台管理員。
+    const html = distDoc("5-5-1_userManagement.html");
+    const table = html.match(/<table class="default-table">([\s\S]*?)<\/table>/);
+    assert.ok(table, "5-5-1 找不到成員表");
+    const rows = [...table[1].matchAll(/<tr([^>]*)>([\s\S]*?)<\/tr>/g)].filter(([, , body]) => body.includes("<td"));
+    assert.ok(rows.length >= 3, `只掃到 ${rows.length} 列成員 —— 這條測試在空轉`);
+
+    let inactive = 0;
+    const hits = [];
+    for (const [, attrs, body] of rows) {
+        const sw = body.match(/<input[^>]*\bjs-member-active\b[^>]*>/);
+        if (!sw) { hits.push("有一列沒有啟用/停用切換（.js-member-active）"); continue; }
+        if (!/role="switch"/.test(sw[0])) hits.push("啟用切換缺 role=switch");
+        const checked = /\bchecked\b/.test(sw[0]);
+        const showsEnabled = body.includes('data-i18n="settings.enabled"');
+        const showsDisabled = body.includes('data-i18n="settings.disabled"');
+        // 開關與文字說的必須是同一件事（只看開關的人與只讀文字的人不能得到相反結論）
+        if (checked !== showsEnabled || checked === showsDisabled)
+            hits.push(`開關(${checked}) 與狀態文字(啟用=${showsEnabled}/停用=${showsDisabled}) 不一致`);
+        const rowInactive = /\bis-inactive\b/.test(attrs);
+        if (rowInactive === checked) hits.push(`列的 .is-inactive(${rowInactive}) 與開關狀態(${checked}) 對不起來`);
+        if (rowInactive) inactive++;
+    }
+    assert.ok(inactive >= 1, "示範資料裡沒有任何一列是已停用 —— 那個狀態沒有頁面演得出來（§5）");
+    assert.equal(hits.length, 0, fail(hits));
+});
+
+test("§5 5-5-1 儲存鈕要演出後端的兩道守衛（最後一位管理者 400／平台角色 403），不能只有成敗兩態", () => {
+    // 只列「成功|失敗」的話，那兩句可行動的訊息無處可放，使用者只看到「儲存失敗」而不知道要先指派另一位管理者。
+    const html = distDoc("5-5-1_userManagement.html");
+    const btn = html.match(/<button[^>]*data-i18n-data-toast="toast\.saveMember"[^>]*>/);
+    assert.ok(btn, "5-5-1 找不到成員列的儲存鈕");
+    const toast = btn[0].match(/data-toast="([^"]*)"/)[1].split("|");
+    const types = btn[0].match(/data-toast-type="([^"]*)"/)[1].split("|");
+    assert.equal(toast.length, 4, `儲存鈕應演出 4 種結果（成功／最後一位管理者／平台角色／失敗），實際 ${toast.length}`);
+    assert.deepEqual(types, ["success", "warning", "warning", "error"], "兩道守衛是使用者修得掉的，語意應為 warning");
+    const en = JSON.parse(read("src/i18n/en.json"))["toast.saveMember"].split("|");
+    assert.equal(en.length, 4, "en.json 的 toast.saveMember 段數要跟 markup 一致");
+    assert.match(en[1], /last active tenant admin/i, "400 那段英文要講得出是「最後一位在職管理者」");
+    assert.match(en[2], /platform role/i, "403 那段英文要講得出是「平台角色持有者」");
+});
+
+// ───────── 平台兩級可見性（auditor／admin）─────────
+
+// 導覽入口宣告的層級（header.html 的 menuItems）→ 頁面檔名
+function platformNavPages() {
+    const src = read("src/_includes/components/header/header.html");
+    const out = new Map();
+    for (const m of src.matchAll(/href:\s*"([\w.-]+\.html)"[^}]*platformRole:\s*"(\w+)"/g)) out.set(m[1], m[2]);
+    for (const m of src.matchAll(/platformRole:\s*"(\w+)"[^}]*href:\s*"([\w.-]+\.html)"/g)) out.set(m[2], m[1]);
+    return out;
+}
+
+test("§5 平台入口要宣告最低角色，且值只能是 auditor／admin（唯讀稽核員不是「不是管理員」）", () => {
+    const nav = platformNavPages();
+    assert.ok(nav.size >= 2, `header 的 menuItems 只掃到 ${nav.size} 個帶 platformRole 的入口 —— 這條測試在空轉`);
+    const bad = [...nav].filter(([, role]) => !["auditor", "admin"].includes(role));
+    assert.equal(bad.length, 0, `platformRole 值只能是 auditor／admin：${JSON.stringify(bad)}`);
+    // 渲染到 dist 的導覽（桌機 header + 手機 mobile-nav 兩份都要帶，否則手機版少一道 gate）
+    const html = distDoc("5-6-1_platformTenants.html");
+    for (const [page, role] of nav) {
+        const hits = [...html.matchAll(new RegExp(`data-platform-role="(\\w+)"[^>]*>\\s*<a href="${page.replace(/[.*+?^$()|[\\]\\\\]/g, "\\\\$&")}"`, "g"))];
+        assert.ok(hits.length >= 2, `${page} 的導覽入口在 dist 只出現 ${hits.length} 次（桌機 + 手機共應 2 次）`);
+        for (const h of hits) assert.equal(h[1], role, `${page} 的導覽入口宣告成 ${h[1]}，應為 ${role}`);
+    }
+});
+
+test("§5 整頁需要平台角色的頁面：每個控制項都要落在宣告了層級的容器內（否則稽核員會看到按不動的鈕）", () => {
+    // 原本的做法是把整塊平台管理 gate 在 is_platform_admin：唯讀稽核員在 UI 上等於不存在；
+    // 反過來破壞性控制無條件渲染，稽核員每顆都按得到、每顆都失敗。這條把「哪一顆需要哪一級」變成可驗的宣告。
+    const nav = platformNavPages();
+    const CONTROL = new Set(["button", "input", "select", "textarea"]);
+    const hits = [];
+    let checked = 0;
+    for (const page of nav.keys()) {
+        const html = distDoc(page);
+        // 只看 <main> 內的頁面內容：header／footer 是 layout 的 chrome，各有自己的 gate
+        const main = html.slice(html.indexOf("<main"), html.indexOf("</main>"));
+        assert.ok(main.length > 500, `${page} 取不到 <main> 內容 —— 這條測試在空轉`);
+        const stack = [];
+        for (const ev of tagEvents(main)) {
+            if (ev.type === "open") {
+                const role = (ev.attrs.match(/\bdata-platform-role="(\w+)"/) || [])[1];
+                if (role && !["auditor", "admin"].includes(role)) hits.push(`dist/${page} data-platform-role="${role}" 不是合法值`);
+                if (CONTROL.has(ev.tag)) {
+                    // <dialog> 內部豁免：彈窗打不打得開由**觸發鈕**決定，而觸發鈕本身在這條測試的涵蓋範圍內
+                    // （manage-tenant-modal 仍自己標了 admin——那是給 React 讀的規格；reset-password／delete
+                    // 兩顆是與租戶頁共用的通用元件，不能在元件裡標死平台層級）。
+                    const inDialog = stack.some((fr) => fr.tag === "dialog");
+                    if (!inDialog) {
+                        checked++;
+                        const covered = role || stack.some((fr) => /\bdata-platform-role="/.test(fr.attrs));
+                        if (!covered) hits.push(`dist/${page} <${ev.tag}> 沒有任何祖先宣告 data-platform-role：${ev.attrs.trim().slice(0, 80)}`);
+                    }
+                }
+                stack.push({ tag: ev.tag, attrs: ev.attrs });
+            } else {
+                stack.pop();
+            }
+        }
+    }
+    assert.ok(checked > 20, `只檢查到 ${checked} 個控制項 —— 這條測試在空轉`);
+    assert.equal(hits.length, 0, `平台頁的控制項缺少層級宣告：\n${fail(hits)}`);
+});
+
+test("§5 稽核日誌的跨租戶篩選是 auditor 的能力（標成 admin 會把唯讀稽核員排除掉）", () => {
+    // product app/routers/audit.py 的 list_audit 用 is_platform_auditor 判斷 scope=all／tenant_id／operator，
+    // 該檔明寫「用 is_platform_admin 判斷會把唯讀稽核員一起排除掉」。
+    const html = distDoc("5-7_auditLog.html");
+    for (const id of ["auditScopeAllInput", "auditOperatorInput"]) {
+        const idx = html.indexOf(`id="${id}"`);
+        assert.ok(idx > 0, `5-7 找不到 #${id}`);
+        // 往前找最近的 form-group 開標籤，它就是這一欄的容器
+        const before = html.slice(0, idx);
+        const group = before.slice(before.lastIndexOf("<div class=\"form-group"));
+        assert.match(group, /data-platform-role="auditor"/, `#${id} 的欄位容器要宣告 auditor（不是 admin、也不是沒宣告）`);
+    }
+    // 反向：這一頁的其他控制項（操作類型、查詢、清除）不需要平台角色，不得被誤標
+    const actionSelect = html.slice(html.indexOf('id="auditActionSelect"') - 400, html.indexOf('id="auditActionSelect"'));
+    assert.ok(!/data-platform-role/.test(actionSelect), "操作類型篩選是一般使用者也有的，不該掛平台角色宣告");
+});
+
+test("§4 已停用列的底色要對「普通 .default-table」生效（收進變體裡＝那條規則永遠不觸發）", () => {
+    // 本輪先錯過一次：規則被寫進 `&.no-border` 變體，編譯成 `.default-table.no-border tbody tr.is-inactive>td`，
+    // 而 5-5-1 的成員表沒有 no-border ⇒ 整條規則對它永遠不生效。selector 檢查抓得到，
+    // 「markup 有 class、scss 有規則」這種分開看的檢查抓不到。
+    const css = read("dist/css/main.css");
+    const rule = css.match(/([^{}]*tr\.is-inactive[^{}]*)\{([^}]*)\}/);
+    assert.ok(rule, "編譯後的 css 找不到 tr.is-inactive 的規則");
+    assert.match(rule[1], /^\.default-table tbody tr\.is-inactive>td$/, `選擇器被縮進變體裡了：${rule[1]}`);
+    assert.match(rule[2], /background-color:var\(--surface-sunken\)/);
 });

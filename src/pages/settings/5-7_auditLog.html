@@ -16,8 +16,11 @@ permalink: 5-7_auditLog.html
 
 {# 查詢區：操作類型篩選（singleSelect，對照後端 GET /audit?action= 精確比對）；此靜態頁列代表性選項，
      React 端列完整操作類型清單。真實頁 tbody 由 React 依查詢結果渲染，此處以 set+for 資料化示範 3 筆。
-     租戶（全部租戶 checkbox，送 scope=all）與操作者（送 operator=<id>）兩個篩選欄位僅平台管理員看得到
-     （React 端依 /api/me 的 is_platform_admin 決定是否渲染），此靜態頁展示的是平台管理員視角的完整版面。 #}
+     租戶（全部租戶 switch，送 scope=all）與操作者（送 operator=<id>）兩個篩選欄位要**平台角色**才看得到，
+     而那是 auditor 亦有的能力：product app/routers/audit.py 的 list_audit 以 is_platform_auditor
+     （platform_role ∈ {auditor, admin}）判斷 scope=all／tenant_id／operator，該檔自註「用 is_platform_admin
+     判斷會把唯讀稽核員一起排除掉」。故兩欄掛 data-platform-role="auditor"（§5 兩級可見性），
+     React 端依 /api/me 的 platform_role 決定是否渲染；此靜態頁展示的是有平台角色時的完整版面。 #}
 <div class="block block-sm border corner-md mt-16">
     <div class="flex-row column gap-16">
         <div class="flex-row gap-8 mobile-column sm-gap-16">
@@ -39,7 +42,7 @@ permalink: 5-7_auditLog.html
                     </select>
                 </div>
             </div>
-            <div class="form-group col-2-md col-12-sm">
+            <div class="form-group col-2-md col-12-sm" data-platform-role="auditor">
                 <div class="label">
                     <label for="auditScopeAllInput" class="control-label" data-i18n="audit.allTenants">全部租戶</label>
                 </div>
@@ -52,7 +55,7 @@ permalink: 5-7_auditLog.html
                     </label>
                 </div>
             </div>
-            <div class="form-group col-3-md col-12-sm">
+            <div class="form-group col-3-md col-12-sm" data-platform-role="auditor">
                 <div class="label">
                     <label for="auditOperatorInput" class="control-label" data-i18n="audit.operator">操作者</label>
                 </div>

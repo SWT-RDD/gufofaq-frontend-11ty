@@ -30,7 +30,10 @@
   { email: "editor@example.com", isAdmin: false, isActive: true },
   { email: "viewer@example.com", isAdmin: false, isActive: false }
 ] %}
-<dialog class="modals" id="manageTenantModal" aria-labelledby="manageTenantModal-title">
+{# data-platform-role="admin"：本 modal 裡的每一顆動作（額度／使用期／模型開通／凍結／代理登入／刪除）
+     在 product 都是 require_platform_admin，唯讀稽核員一顆都按不動——所以整份不渲染給他，而不是渲染完
+     讓他每按一次得到一次 403（§5 兩級可見性）。 #}
+<dialog class="modals" id="manageTenantModal" data-platform-role="admin" aria-labelledby="manageTenantModal-title">
     <div class="modals-dialog modals-md">
         <div class="modals-wrap">
             {% include "ui/modal-close/modal-close.html" %}

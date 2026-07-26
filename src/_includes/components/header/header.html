@@ -1,6 +1,13 @@
 {# i18n：每個 label 帶 i18nKey，markup 渲染成 data-i18n；繁中文字即預設。
    語言＋夜間切換抽到共用 components/header-controls；桌機放這裡（nav 之後、漢堡之前），
-   窄視窗改由 mobile-nav 放進展開的選單裡（header 只留 logo + 漢堡）。此選單只剩導覽與登出。 #}
+   窄視窗改由 mobile-nav 放進展開的選單裡（header 只留 logo + 漢堡）。此選單只剩導覽與登出。
+
+   platformRole（選填）＝這個入口需要的**最低平台角色**，渲染成 `data-platform-role`（§5 的兩級可見性契約）。
+   平台層有兩種角色而不是一種：`auditor`（唯讀稽核，ISO 情境刻意設計的職責分離）與 `admin`（全權）。
+   把整塊「平台管理」gate 在 is_platform_admin，等於讓稽核員在 UI 上不存在（只能手動打 URL）。
+   對照 product：`GET /platform/tenants`／`usage`／`license-usage`／`admins`／`tenants/export` 等唯讀端點是
+   `require_platform_auditor`（app/authz.py：platform_role ∈ {auditor, admin}），故 5-6-1 是 auditor 入得去；
+   5-6-2 的 MCP 全域註冊表**連讀都是** `require_platform_admin`（app/routers/mcp.py 整支平台 router），故標 admin。 #}
 {% set menuItems = [
   {
     label: "資料配置", i18nKey: "nav.dataConfig",
@@ -42,10 +49,10 @@
     ]
   },
   {
-    label: "平台管理", i18nKey: "nav.platformMgmt",
+    label: "平台管理", i18nKey: "nav.platformMgmt", platformRole: "auditor",
     submenu: [
-      { label: "租戶功能開通", i18nKey: "nav.tenantEnable", href: "5-6-1_platformTenants.html" },
-      { label: "MCP Server 管理", i18nKey: "nav.mcpServers", href: "5-6-2_platformMcpServers.html" }
+      { label: "租戶功能開通", i18nKey: "nav.tenantEnable", href: "5-6-1_platformTenants.html", platformRole: "auditor" },
+      { label: "MCP Server 管理", i18nKey: "nav.mcpServers", href: "5-6-2_platformMcpServers.html", platformRole: "admin" }
     ]
   },
   {
@@ -64,12 +71,12 @@
         <nav class="desktop-nav" aria-label="主要選單" data-i18n-aria-label="nav.mainMenu">
             <ul class="main-menu">
                 {% for item in menuItems %}
-                <li{% if item.hidden %} class="hidden"{% endif %}>
+                <li{% if item.hidden %} class="hidden"{% endif %}{% if item.platformRole %} data-platform-role="{{ item.platformRole }}"{% endif %}>
                     {% if item.submenu %}
                     <a href="#" class="dropdown" title="{{ item.label }}" aria-haspopup="true" aria-expanded="false" data-i18n="{{ item.i18nKey }}" data-i18n-title="{{ item.i18nKey }}">{{ item.label }}</a>
                     <ul>
                         {% for sub in item.submenu %}
-                        <li{% if sub.hidden %} class="hidden"{% endif %}>
+                        <li{% if sub.hidden %} class="hidden"{% endif %}{% if sub.platformRole %} data-platform-role="{{ sub.platformRole }}"{% endif %}>
                             <a href="{{ sub.href }}" title="{{ sub.label }}" data-i18n="{{ sub.i18nKey }}" data-i18n-title="{{ sub.i18nKey }}">{{ sub.label }}{% if sub.beta %}<img src="./images/icon_beta.png" width="52" height="28" decoding="async" alt="BETA" class="beta-icon">{% endif %}</a>
                         </li>
                         {% endfor %}

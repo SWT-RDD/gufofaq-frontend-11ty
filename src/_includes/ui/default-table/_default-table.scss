@@ -38,6 +38,16 @@
     }
 
     tbody {
+        // 已停用的列（成員停用，日後其他「還在、但不生效」的列同用）：整列退到內嵌面底色，一眼看得出誰是關掉的。
+        // **底色下在 `> td` 而不是 `<tr>`**：cell 的不透明底畫在 row 底之上，寫在 tr 上是 100% 看不見的
+        // 死樣式（§4，有測試把關）。也刻意寫在 `.default-table` 這一層而不是 `&.no-border` 變體裡——
+        // 用到它的 5-5-1 是沒有 no-border 的普通表，收進變體等於這條規則對它永遠不生效。
+        // 前景照 §4 重算過：--text／--text-muted 疊 sunken 已在 COLOR_ROLES.pairs；列上的 ui/switch
+        // 軌道與把手對 sunken 也補進了 graphicPairs（≥3:1）。
+        tr.is-inactive > td {
+            background-color: var(--surface-sunken);
+        }
+
         tr {
             border: 1px solid var(--border);
             height: auto;

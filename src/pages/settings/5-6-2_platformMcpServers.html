@@ -14,6 +14,9 @@ permalink: 5-6-2_platformMcpServers.html
     {% include "ui/breadcrumb/breadcrumb.html" %}
 </div>
 
+{# 兩級可見性（§5 data-platform-role）：本頁**整頁只有 platform_role=admin**——product
+     app/routers/mcp.py 的平台 router 每一支（含 list／tools／test 這些唯讀端點）都是
+     require_platform_admin，稽核員連讀都沒有，故導覽入口也標 admin（見 components/header 的 menuItems）。 #}
 {# 平台管理者專屬：MCP Server 全域註冊表（SaaS 新需求，真 app 無對應）。逆向自 gufofaq-saas
      product /platform/mcp（代理 GufoRAG chatbot /api/mcp，require_platform_admin）。
      MCP Server ＝ Stdio 子程序（command/args/env）＝在 agent 主機執行任意指令，等同 RCE，
@@ -34,7 +37,7 @@ permalink: 5-6-2_platformMcpServers.html
      成功／名稱已存在／失敗——chatbot routes/mcp.py 的 create 只查名稱重複（400），連線測試是獨立的
      /servers/{id}/test 端點、不在建立路徑上。product catalog 的 toast.createMcpServer 仍含
      「或連線測試失敗」死分支，此處為修正後值，待回流 product）#}
-<div class="block mb-16 flex-row column gap-16">
+<div class="block mb-16 flex-row column gap-16" data-platform-role="admin">
     <div class="text-md text-bold" data-i18n="settings.addMcpServer">新增 MCP Server</div>
     <div class="flex-row flex-wrap gap-16 mobile-column sm-gap-16">
         <div class="col-6-md col-12-sm">
@@ -103,7 +106,7 @@ permalink: 5-6-2_platformMcpServers.html
 {# Server 清單：default-table。名稱／執行指令／描述（逐列可就地編輯）＋狀態＋操作
      （儲存｜測試連線｜刪除）。測試連線是送 API 的動作鈕（列全結果 toast），儲存同理。
      刪除需先選定「哪一個 Server」＝業務條件開窗 → hook class（.js-delete-mcp）。示範 3 筆（見上）。 #}
-<div class="block flex-row column gap-16">
+<div class="block flex-row column gap-16" data-platform-role="admin">
     <div class="text-md text-bold" data-i18n="settings.mcpServerList">MCP Server 清單</div>
     <div class="table-container scrollTable">
         <table class="default-table">
