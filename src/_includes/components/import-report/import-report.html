@@ -13,9 +13,13 @@
        importFileReports = [{ filename, structure?, droppedLinks?, unprocessableTables? }]（選填）
          structure = [{ labelKey, label, value }]——word 與 pdf 的欄位不同（product app/docx.py 的
            DocxStats 是段落/表格/表格列數；app/pdf_tables.py 的 PdfStats 是頁數/表格/表格列數/
-           跨頁被切斷的表格/有格線卻抽不出表格的頁數），故做成通用 label-value 列而不是寫死的句子
+           沒有表頭的續表/有格線卻抽不出表格的頁數），故做成通用 label-value 列而不是寫死的句子
          droppedLinks = { count, urls: [...] }——HTML→Markdown 剝掉的連結
          unprocessableTables = [ 描述, ... ]——無法保真轉換的表格；筆數由陣列推導，不另烤一個數字（§6）
+         suspectedHeaderlessTables = [ 描述, ... ]——**轉出來了但欄名可能不對**的表格（多欄排版裡
+           被切成兩段、後半段沒有表頭）。與 unprocessableTables 分開兩塊，因為兩者要使用者做的事
+           不同：前者是「這張表沒進知識庫的逐列描述，請人工處理」，後者是「進去了，但欄名請核對」。
+           混成一塊會告訴使用者一件不是事實的事
 
      被剝除連結區塊是「把連結搬回答案端」的入口：連結在匯入時就從內文剝掉了，要讓它回到答案裡
      只能靠〈對話設定 → 出口替換規則〉在生成後替換（product app/routers/settings_hub.py 的
@@ -74,9 +78,19 @@
 
         {% if report.unprocessableTables %}
         <div data-i18n="dataImport.unprocessableTables">下列表格無法保真轉換</div>
-        <div class="text-gray" data-i18n="dataImport.unprocessableTablesHint">這些表格的欄數與表頭對不上，內容已按原樣存入，請人工確認。</div>
+        <div class="text-gray" data-i18n="dataImport.unprocessableTablesHint">這些表格無法保真轉成逐列描述（欄數與表頭對不上、有跨欄合併的儲存格、欄名重複、或是沒有表頭的續表）。內容已按原樣存入，請人工確認。</div>
         <ul class="list-style-disc">
             {% for detail in report.unprocessableTables %}
+            <li>{{ detail }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+
+        {% if report.suspectedHeaderlessTables %}
+        <div data-i18n="dataImport.suspectedHeaderlessTables">下列表格疑似沒有表頭</div>
+        <div class="text-gray" data-i18n="dataImport.suspectedHeaderlessTablesHint">這些表格的欄寬與前一張相同、位置不同（多欄排版），第 1 列可能是資料而不是表頭。內容已照常轉換，欄名請人工核對。</div>
+        <ul class="list-style-disc">
+            {% for detail in report.suspectedHeaderlessTables %}
             <li>{{ detail }}</li>
             {% endfor %}
         </ul>

@@ -195,7 +195,7 @@ permalink: 1-2-1_uploadFile_pdf.html
      成功 1 檔可能是新增、也可能是把同鍵舊版換掉，只看檔數分不出來，故兩者並列不是重複。
      抽取統計是「實際抽出多少內容」，不是原始結構數：表格 0 個而檔案明明有表格，就是這次沒抽到
      （出處：product app/docx.py 的 DocxStats＝段落/表格/表格列數；app/pdf_tables.py 的 PdfStats
-     另有頁數/跨頁被切斷的表格/有格線卻抽不出表格的頁數）。這裡示範 word 那組。
+     另有頁數/沒有表頭的續表/有格線卻抽不出表格的頁數）。這裡示範 word 那組。
      示範值與上面的成功列自洽（§6）：2 檔成功、外部主鍵未填故都是純新增，failed 1 對到失敗列那一檔。
      兩種副檔名各演一份統計，因為**欄位本來就不同**：pdf 是頁數／表格／表格列數＋兩個警訊欄，
      word 是段落／表格／表格列數。只演一種的話，另一種的那幾個標籤全站沒有任何頁面看得到。 #}
@@ -207,7 +207,7 @@ permalink: 1-2-1_uploadFile_pdf.html
             { labelKey: "dataImport.structPages", label: "頁數", value: 12 },
             { labelKey: "dataImport.structTables", label: "表格", value: 1 },
             { labelKey: "dataImport.structTableRows", label: "表格列數", value: 43 },
-            { labelKey: "dataImport.structCrossPageTables", label: "跨頁被切斷的表格", value: 1 },
+            { labelKey: "dataImport.structContinuationTables", label: "沒有表頭的續表", value: 1 },
             { labelKey: "dataImport.structSuspectedTablePages", label: "有格線卻抽不出表格的頁數", value: 2 }
         ],
         droppedLinks: {
@@ -216,6 +216,9 @@ permalink: 1-2-1_uploadFile_pdf.html
         },
         unprocessableTables: [
             "第 2 個表格第 7 列有 5 欄，表頭只有 4 欄"
+        ],
+        suspectedHeaderlessTables: [
+            "第 3 個表格疑似無表頭的續表：欄寬與前一張表相同但欄界不同（多欄排版）"
         ]
     },
     {
