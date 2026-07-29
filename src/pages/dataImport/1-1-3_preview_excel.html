@@ -103,12 +103,15 @@ permalink: 1-1-3_preview_excel.html
 </div>
 
 {# 重新預覽：改了上面任一項就要重讀這份檔案（送 API，故照 §5 用 data-toast 列出所有可能結果）。
-     結果路徑：200／400（product `excel.ExcelFormatError`・`ExcelReadError`，例如指定的表頭列數讀出重複或空白欄名、
-     unpivot 左側欄超出範圍）／連線失敗。 #}
+     四個結果路徑，**前兩個要分開**——它們是不同的事：
+     ①成功；②欄位值本身不合法（表頭列數不在 1–10、或交叉表開著卻沒填合法的列標題欄）——這條**根本沒送出
+       請求**，故不能沿用 product 400 的那句話；③product 讀不出這組設定（`excel.ExcelFormatError`／
+       `ExcelReadError`，例如指定的表頭列數讀出重複或空白欄名、unpivot 左側欄超出範圍）；④連線失敗。
+     驗證結果只走這顆 toast 的 warning 段、欄位本身加 `.error`（§4：全站一種回報方式，不做逐欄內嵌訊息）。 #}
 <div class="flex-row mb-16">
     <button type="button" class="button button-primary js-excel-repreview"
-        data-toast="已依新設定重新預覽|這份檔案讀不出指定的表頭列數或交叉表欄位，請確認設定|重新預覽失敗"
-        data-i18n-data-toast="toast.rePreviewExcel" data-toast-type="success|warning|error"
+        data-toast="已依新設定重新預覽|表頭列數要在 1 到 10 之間；交叉表開啟時列標題欄至少要有一個 1 以上的整數（一行一個）|這份檔案讀不出指定的表頭列數或交叉表欄位，請確認設定|重新預覽失敗"
+        data-i18n-data-toast="toast.rePreviewExcel" data-toast-type="success|warning|warning|error"
         data-i18n="dataImport.rePreview">重新預覽</button>
 </div>
 

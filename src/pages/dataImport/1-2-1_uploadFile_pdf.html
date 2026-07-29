@@ -26,22 +26,35 @@ permalink: 1-2-1_uploadFile_pdf.html
     {% include "components/step-btn-wrap/step-btn-wrap.html" %}
 </div>
 
-{# 上傳區：PDF 流程可多選、上限 30MB，與元件預設（.xlsx、單檔、10MB）不同，由本頁 set 覆寫（§6） #}
-{% set uploadAccept = ".pdf" %}
+{# 上傳區：這一條是**非結構化文件**流程（PDF 與 Word 同一條），可多選、上限 30MB，與元件預設
+     （.xlsx、單檔、10MB）不同，由本頁 set 覆寫（§6）。
+     accept 收 `.pdf` 與 `.docx`：product 的 `import_pdf` 與 `batch_import_documents` 兩支都以副檔名
+     分派這兩種（gufofaq-saas services/product/app/routers/datasets.py），1-1-1 的上傳選單也有 WORD 卡
+     指向本頁。只寫 `.pdf` 會讓拖進來的 Word 檔被 upload-box 當成不支援的格式擋掉——那條路後端是通的。
+     說明文字另立 key（不沿用 `dataImport.uploadDescPdf`）：那顆是 1-1-1 上傳選單「PDF 卡」的說明，
+     那張卡講的就只有 PDF，改它的值會讓卡片說謊。 #}
+{% set uploadAccept = ".pdf,.docx" %}
 {% set uploadMultiple = true %}
-{% set uploadDescText = "支援上傳pdf檔案，檔案最大不超過30MB" %}
-{% set uploadDescKey = "dataImport.uploadDescPdf" %}
+{% set uploadDescText = "支援上傳pdf、docx檔案，檔案最大不超過30MB" %}
+{% set uploadDescKey = "dataImport.uploadDescPdfWord" %}
 {% include "ui/upload-box/upload-box.html" %}
 
 {# 檔案列表表格：真實頁 thead/tbody 皆為 js/uploadFilePdf.js 動態渲染（renderTableHeaders()/renderFileList()），
      欄位取其固定欄（檔案名稱、標題、時間、檔案大小、功能，略過依租戶而異的自訂欄位），
      用 set+for 資料化示範 2 筆，father/table class 沿用 ui/default-table 同一組真實系統 class #}
+{# PDF 與 Word 同一條流程，故示範兩種副檔名各一（另加一筆演匯入失敗）。 #}
 {% set fileRows = [
     {
         name: "20251119105623_公文範本.pdf",
         title: "公文範本",
         time: "2025/11/19 10:56",
         sizeMB: "1.20"
+    },
+    {
+        name: "20251119112044_作業要點.docx",
+        title: "作業要點",
+        time: "2025/11/19 11:20",
+        sizeMB: "0.32"
     },
     {
         name: "20251120091503_服務條款.pdf",
@@ -135,7 +148,8 @@ permalink: 1-2-1_uploadFile_pdf.html
    示範 1 成功 1 失敗兩列；真實頁筆數由送出結果動態渲染。 #}
 {# 成功/失敗拆兩陣列（§6：數字能推導就從陣列渲染、不烤字面量；正典＝5-6-1 審核結果拆 ok/fail 兩陣列）。 #}
 {% set batchOkRows = [
-    { filename: "20251119105623_公文範本.pdf", message: "" }
+    { filename: "20251119105623_公文範本.pdf", message: "" },
+    { filename: "20251119112044_作業要點.docx", message: "" }
 ] %}
 {% set batchFailRows = [
     { filename: "20251120091503_服務條款.pdf", message: "萃取額度已用罄" }
@@ -182,8 +196,10 @@ permalink: 1-2-1_uploadFile_pdf.html
      抽取統計是「實際抽出多少內容」，不是原始結構數：表格 0 個而檔案明明有表格，就是這次沒抽到
      （出處：product app/docx.py 的 DocxStats＝段落/表格/表格列數；app/pdf_tables.py 的 PdfStats
      另有頁數/跨頁被切斷的表格/有格線卻抽不出表格的頁數）。這裡示範 word 那組。
-     示範值與上面的成功列自洽（§6）：1 檔成功、外部主鍵未填故是純新增，failed 1 對到失敗列那一檔。 #}
-{% set importCounts = { inserted: 1, updated: 0, failed: 1 } %}
+     示範值與上面的成功列自洽（§6）：2 檔成功、外部主鍵未填故都是純新增，failed 1 對到失敗列那一檔。
+     兩種副檔名各演一份統計，因為**欄位本來就不同**：pdf 是頁數／表格／表格列數＋兩個警訊欄，
+     word 是段落／表格／表格列數。只演一種的話，另一種的那幾個標籤全站沒有任何頁面看得到。 #}
+{% set importCounts = { inserted: 2, updated: 0, failed: 1 } %}
 {% set importFileReports = [
     {
         filename: "20251119105623_公文範本.pdf",
@@ -200,6 +216,14 @@ permalink: 1-2-1_uploadFile_pdf.html
         },
         unprocessableTables: [
             "第 2 個表格第 7 列有 5 欄，表頭只有 4 欄"
+        ]
+    },
+    {
+        filename: "20251119112044_作業要點.docx",
+        structure: [
+            { labelKey: "dataImport.structParagraphs", label: "段落", value: 229 },
+            { labelKey: "dataImport.structTables", label: "表格", value: 1 },
+            { labelKey: "dataImport.structTableRows", label: "表格列數", value: 43 }
         ]
     }
 ] %}
