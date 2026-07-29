@@ -78,7 +78,7 @@
 
         {% if report.unprocessableTables %}
         <div data-i18n="dataImport.unprocessableTables">下列表格無法保真轉換</div>
-        <div class="text-gray" data-i18n="dataImport.unprocessableTablesHint">這些表格無法保真轉成逐列描述（欄數與表頭對不上、有跨欄合併的儲存格、欄名重複、或是沒有表頭的續表）。內容已按原樣存入，請人工確認。</div>
+        <div class="text-gray" data-i18n="dataImport.unprocessableTablesHint">這些表格無法保真轉成逐列描述（欄數與表頭對不上、有跨欄合併的儲存格、欄名重複且該欄有合併格、或是沒有表頭的續表）。內容已按原樣存入，請人工確認。</div>
         <ul class="list-style-disc">
             {% for detail in report.unprocessableTables %}
             <li>{{ detail }}</li>
