@@ -30,3 +30,25 @@ permalink: 1-1-6_uploadSuccess_excel.html
 {% set successRetryHref = "1-1-1_dataImport.html" %}
 {% set successViewHref = "3-1-1_datasetList.html" %}
 {% include "components/success-box/success-box.html" %}
+
+{# 匯入結果回報：Excel 端點回的三計數與「被剝除的連結」（product `_do_excel_mapping_import` 的
+     `dropped_links`——儲存格裡的 HTML 轉 Markdown 時剝掉的網址）。Excel 一次一個檔，故逐檔清單只有一項；
+     它沒有抽取統計（那是 PDF/Word 的 `structure`，見 1-2-1）。
+     示範 updated=1＝這次帶了外部主鍵、取代掉同鍵舊版（與 1-1-4 的外部主鍵欄自洽，§6）；
+     failed 在單筆端點恆為 0（失敗＝HTTP 錯誤碼，見 product `import_excel` 的回應）。 #}
+{% set importCounts = { inserted: 3, updated: 1, failed: 0 } %}
+{% set importFileReports = [
+    {
+        filename: "客服問答集.xlsx",
+        droppedLinks: {
+            count: 2,
+            urls: [
+                "https://www.immigration.gov.tw/faq/entry-visa",
+                "https://www.immigration.gov.tw/download/application-form.pdf"
+            ]
+        }
+    }
+] %}
+<div class="mt-24">
+    {% include "components/import-report/import-report.html" %}
+</div>

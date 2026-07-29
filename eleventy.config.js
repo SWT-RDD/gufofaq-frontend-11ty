@@ -38,6 +38,7 @@ module.exports = function (eleventyConfig) {
         "src/_includes/components/citation-ref/citation-ref.js": "js/citation-ref.js",
         "src/_includes/components/skill-try-sandbox/skill-try-sandbox.js": "js/skill-try-sandbox.js",
         "src/_includes/components/builtin-tool-card/builtin-tool-card.js": "js/builtin-tool-card.js",
+        "src/_includes/components/import-report/import-report.js": "js/import-report.js",
     });
 
     // 開發時 sass 另外編譯 dist/css，讓 eleventy --serve 監看 css 變動也即時重載

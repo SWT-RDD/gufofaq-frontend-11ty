@@ -1,0 +1,86 @@
+{# 匯入結果回報：Excel（1-1-6）與 PDF/Word（1-2-1 送出後）共用同一塊，故切成元件（GUIDELINE §3-3 第 1 條）。
+     出處：gufofaq-saas services/product/app/routers/datasets.py。`import_excel` 與
+     `batch_import_documents` 兩支的回應同形，都帶 `inserted`／`updated`／`failed` 三個計數
+     （`_tally`）；`structure`（抽取統計）／`dropped_links`／`unprocessable_tables` 三者是**逐檔**的
+     （批次端點放在 `results` 的每一項裡），故本元件也做成逐檔一塊、標上檔名——彙總成一份的話，
+     使用者看得到「有 2 個連結被移除」卻不知道是哪一個檔，那條訊息就不可行動了。
+
+     三計數必須一起顯示：`updated` 是「同 external_key 的舊版被取代」，只報「匯入 N 筆」的話，
+     使用者分不出這次是新增了 N 筆，還是把 N 筆舊資料換掉了。
+
+     頁面 include 前 set（GUIDELINE §6，資料因頁面而異）：
+       importCounts = { inserted, updated, failed }（必填）
+       importFileReports = [{ filename, structure?, droppedLinks?, unprocessableTables? }]（選填）
+         structure = [{ labelKey, label, value }]——word 與 pdf 的欄位不同（product app/docx.py 的
+           DocxStats 是段落/表格/表格列數；app/pdf_tables.py 的 PdfStats 是頁數/表格/表格列數/
+           跨頁被切斷的表格/有格線卻抽不出表格的頁數），故做成通用 label-value 列而不是寫死的句子
+         droppedLinks = { count, urls: [...] }——HTML→Markdown 剝掉的連結
+         unprocessableTables = [ 描述, ... ]——無法保真轉換的表格；筆數由陣列推導，不另烤一個數字（§6）
+
+     被剝除連結區塊是「把連結搬回答案端」的入口：連結在匯入時就從內文剝掉了，要讓它回到答案裡
+     只能靠〈對話設定 → 出口替換規則〉在生成後替換（product app/routers/settings_hub.py 的
+     `output_replacements`）。「複製為出口替換規則」把每個網址轉成一條可直接貼進「替換內容」欄的
+     值 `[${0}](網址)`（`${0}`＝命中的別名文字），別名由租戶自己填——匯入端剝連結時只留得下 href，
+     拿不到原本的錨文字（product app/html_md.py 的 `_register_link`）。
+     複製是純前端互動（GUIDELINE §5 ④），行為在 import-report.js 當場做，toast 走 data-toast 委派。 #}
+<div class="block flex-row column gap-16">
+    {# 三計數串成一句：前綴／中綴 key 夾資料槽，寫法沿用同一批的批次結果摘要（1-2-1 的
+         dataImport.batchSummary*，分隔空白在 markup、譯文不帶），最後一段直接沿用它的
+         `batchSummaryFailMid`——同一個「、失敗」不另立 key（§4-2）。
+         轉 React 時併成單一插值 key（GUIDELINE §7 對照表：槽裡是資料就可以併）。 #}
+    <div class="text-md text-bold"><span data-i18n="dataImport.countInsertedPrefix">新增</span> {{ importCounts.inserted }}<span data-i18n="dataImport.countUpdatedMid">、更新</span> {{ importCounts.updated }}<span data-i18n="dataImport.batchSummaryFailMid">、失敗</span> {{ importCounts.failed }}</div>
+
+    {% for report in importFileReports %}
+    <div class="flex-row column gap-8 js-file-report">
+        <div class="text-bold">{{ report.filename }}</div>
+
+        {% if report.structure %}
+        <div class="table-container scrollTable">
+            <table class="default-table">
+                <colgroup>
+                    <col style="min-width:280px;">
+                    <col style="width:120px; min-width:120px;">
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th data-i18n="dataImport.structItem">抽取統計</th>
+                        <th data-i18n="dataImport.structValue">數量</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stat in report.structure %}
+                    <tr>
+                        <td data-i18n="{{ stat.labelKey }}">{{ stat.label }}</td>
+                        <td>{{ stat.value }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
+        {% if report.droppedLinks %}
+        <div><span data-i18n="dataImport.droppedLinksPrefix">已移除</span> {{ report.droppedLinks.count }} <span data-i18n="dataImport.droppedLinksSuffix">個連結</span></div>
+        <div class="text-gray" data-i18n="dataImport.droppedLinksHint">HTML 轉換只留下連結文字、網址不進知識庫。要讓網址回到答案裡，請到「對話設定 → 出口替換規則」加一條規則。</div>
+        <ul class="list-style-disc">
+            {% for url in report.droppedLinks.urls %}
+            <li class="js-dropped-link">{{ url }}</li>
+            {% endfor %}
+        </ul>
+        <div class="flex-row">
+            <button type="button" class="button button-border button-sm js-copy-dropped-links" data-toast="已複製為出口替換規則，貼到「對話設定 → 出口替換規則」的替換內容欄" data-i18n-data-toast="dataImport.rulesCopied" data-toast-type="success" data-i18n="dataImport.copyAsOutputRules">複製為出口替換規則</button>
+        </div>
+        {% endif %}
+
+        {% if report.unprocessableTables %}
+        <div data-i18n="dataImport.unprocessableTables">下列表格無法保真轉換</div>
+        <div class="text-gray" data-i18n="dataImport.unprocessableTablesHint">這些表格的欄數與表頭對不上，內容已按原樣存入，請人工確認。</div>
+        <ul class="list-style-disc">
+            {% for detail in report.unprocessableTables %}
+            <li>{{ detail }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>

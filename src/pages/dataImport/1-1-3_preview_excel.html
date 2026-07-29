@@ -26,14 +26,18 @@ permalink: 1-1-3_preview_excel.html
     {% include "components/step-btn-wrap/step-btn-wrap.html" %}
 </div>
 
+{# ── 來源結構：工作表／表頭列數／交叉表 unpivot ────────────────────────────────────
+     這三個設定決定「這份檔案讀出來的欄名長什麼樣」，而下一步（1-1-4）的欄位對應就是照這裡看到的
+     欄名做的。所以它們是**同一組值**：改完要重新預覽，送出匯入時也必須原封不動帶著同一組。
+     出處：gufofaq-saas services/product/app/routers/datasets.py 的 `preview_excel`（Form 參數
+     `sheet_name`／`header_rows`／`unpivot`／`unpivot_row_label_cols`）與 `ExcelImportIn`（同名欄位）。
+     ⚠️ 兩邊不一致的後果不對稱：`unpivot` 漏帶會被來源欄存在性檢查擋成 400（看得見），
+     `header_rows` 漏帶則一路 200——`field_schema.combine_row_to_slots` 找不到來源欄是直接略過、
+     不報錯，於是內容欄整批空字串而畫面上寫著「匯入成功」。三個都是值載體，掛 hook class 交 React。 #}
+
 {# 工作表選擇：多工作表的活頁簿原本只會匯入第一張，其餘**靜默消失**——使用者上傳三張表，看到「匯入成功」，
      另外兩張連提示都沒有。選了哪一張要跟著預覽與匯入走（值載體 → hook class .js-excel-sheet，不掛 data-toast，§5）。
-     只有一張時整個欄位不渲染（`{% if sheets.length > 1 %}`，React 依清單長度同理）。
-     後端現況（gufofaq-saas services/product）：`ExcelImportIn.sheet_name: str | None` 已經收具名工作表
-     （app/routers/datasets.py），但 **preview 端點還沒有**——`app/excel.py` 的 `read_preview(path)` 固定讀
-     `wb.worksheets[0]`、回應只帶它讀的那一張的 `sheet_name`，沒有工作表清單。
-     ⚠️ product 待跟上兩件：①preview 回應加上工作表清單（否則選單填不出選項）②preview 接受 sheet_name
-     （否則選了別張、預覽仍是第一張）。示範 3 張。 #}
+     只有一張時整個欄位不渲染（`{% if sheets.length > 1 %}`，React 依清單長度同理）。示範 3 張。 #}
 {% set sheets = ["問答集", "產品清單", "備用資料"] %}
 {% if sheets.length > 1 %}
 <div class="form-group row mobile-col mb-16">
@@ -50,6 +54,63 @@ permalink: 1-1-3_preview_excel.html
     </div>
 </div>
 {% endif %}
+
+{# 表頭列數：數值欄一律 type="number" ＋合法區間（同 5-2 的理由）。區間出處＝product app/excel.py 的
+     `MAX_HEADER_ROWS = 10` 與 `preview_excel` 的 `Form(default=1, ge=1, le=excel.MAX_HEADER_ROWS)`。
+     **這是使用者的明示指定，不是偵測結果**：偵測只會回下面那條提示請他確認，絕不自動套用。 #}
+<div class="form-group row mobile-col mb-16">
+    <div class="label label-md">
+        <label for="excelHeaderRows" class="control-label" data-i18n="dataImport.headerRows">表頭列數</label>
+    </div>
+    <div class="field">
+        <input type="number" min="1" max="10" step="1" id="excelHeaderRows" class="form-control js-excel-header-rows" value="1"
+            placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" aria-describedby="excelHeaderRowsHint">
+        <span class="text-gray" id="excelHeaderRowsHint" data-i18n="dataImport.headerRowsHint">1 – 10；表頭佔前幾列，多列會串接成單一欄名。改了要重新預覽，欄位對應也會重來。</span>
+    </div>
+</div>
+
+{# 疑似多列表頭：product `read_preview` 回的 `header_warning`（偵測而非判定，預覽的欄位與資料一個位元組
+     都不會因它而變）。訊息是 product 產的業務字串、不翻；live region 的節點必須先在，內容之後才到
+     （§5／REACT-CONVERSION ②）。示範填一句讓這個分支看得到（§5：沒有頁面演得出來的分支等於沒驗收過）。 #}
+{% set excelHeaderWarning = "第 1 列含合併儲存格，疑似多列表頭，請確認" %}
+<p class="text-red mb-16{% if not excelHeaderWarning %} hidden{% endif %}" role="alert">{{ excelHeaderWarning }}</p>
+
+{# 交叉表 unpivot：開啟時預覽回的就是轉換後的三欄（列標題／欄標題／值），使用者也是照那三欄做對應。
+     列標題欄是 **1-based** 欄位序號、可多欄（真實交叉表左側常是「產品大類／產品」兩欄才定位一列），
+     出處：product `preview_excel` 的 `unpivot_row_label_cols: list[int] = Form(default=[1])`。
+     一行一個數字（同 5-6-2 的 args/env：空白或逗號切法在「值本身含空白」時就分不開了）。 #}
+<div class="form-group row mobile-col mb-16">
+    <div class="label label-md">
+        <span id="excelUnpivotLabel" class="control-label" data-i18n="dataImport.unpivot">交叉表轉直式</span>
+    </div>
+    <div class="field">
+        <label class="switch">
+            <input type="checkbox" class="switch-checkbox js-excel-unpivot" role="switch" aria-label="交叉表轉直式" data-i18n-aria-label="dataImport.unpivot" aria-describedby="excelUnpivotHint">
+            <span class="switch-box"><span class="switch-btn"></span></span>
+        </label>
+        <span class="text-gray" id="excelUnpivotHint" data-i18n="dataImport.unpivotHint">開啟後，橫向展開的年度／月份欄會轉成「列標題／欄標題／值」三欄。</span>
+    </div>
+</div>
+<div class="form-group row mobile-col mb-16">
+    <div class="label label-md">
+        <label for="excelUnpivotCols" class="control-label" data-i18n="dataImport.unpivotRowLabelCols">列標題欄</label>
+    </div>
+    <div class="field">
+        <textarea id="excelUnpivotCols" rows="2" class="form-control js-excel-unpivot-cols" placeholder="請輸入"
+            data-i18n-placeholder="common.pleaseEnter" aria-describedby="excelUnpivotColsHint">1</textarea>
+        <span class="text-gray" id="excelUnpivotColsHint" data-i18n="dataImport.unpivotRowLabelColsHint">一行一個欄位序號（從 1 起算），左側用來定位一列的欄；只在「交叉表轉直式」開啟時生效。</span>
+    </div>
+</div>
+
+{# 重新預覽：改了上面任一項就要重讀這份檔案（送 API，故照 §5 用 data-toast 列出所有可能結果）。
+     結果路徑：200／400（product `excel.ExcelFormatError`・`ExcelReadError`，例如指定的表頭列數讀出重複或空白欄名、
+     unpivot 左側欄超出範圍）／連線失敗。 #}
+<div class="flex-row mb-16">
+    <button type="button" class="button button-primary js-excel-repreview"
+        data-toast="已依新設定重新預覽|這份檔案讀不出指定的表頭列數或交叉表欄位，請確認設定|重新預覽失敗"
+        data-i18n-data-toast="toast.rePreviewExcel" data-toast-type="success|warning|error"
+        data-i18n="dataImport.rePreview">重新預覽</button>
+</div>
 
 {# 資料預覽表格：真實頁 thead/tbody 由 js/previewExcel.js 依上傳的 excel 欄位動態產生（本檔為「動態產生」註解），
      此處欄位取用與後續 1-1-4_columnSelect_excel 欄位對應步驟一致的樣本（客服問題／客服回覆／建立時間／圖片連結），

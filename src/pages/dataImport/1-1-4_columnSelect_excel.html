@@ -6,8 +6,12 @@ pageHeading: 資料匯入
 permalink: 1-1-4_columnSelect_excel.html
 ---
 {# 欄位對應資料（多選/預覽兩欄共用）——依 §3-2/§6 由頁面提供，components/multi-select-box 只負責 for 渲染。
-   固定 14 槽 schema（title/content/source/date/category/number/flag/tags/privilege/note1..note5），
-   使用者把 Excel 欄位對應到這 14 個槽；label 用各槽預設顯示名。
+   固定槽 schema（title/content/source/date/category/number/flag/tags/privilege/note1..note10/date2/date3，
+   出處：gufofaq-saas services/product/app/field_schema.py 的 `SLOTS`——順序與 default_label 逐字對齊）；
+   note6..note10 是 TEXT 篩選槽、date2/date3 是 DATE 篩選槽（`FILTERABLE_TEXT_SLOTS`／`FILTERABLE_DATE_SLOTS`，
+   對得到 DSL 的 $note6／$date2）。少列一個槽的後果是那個篩選欄在 UI 上根本指派不到，
+   而後端早就收得下——使用者只會覺得「文件裡寫的篩選欄不存在」。
+   使用者把 Excel 欄位對應到這些槽；label 用各槽預設顯示名。
    §6 示範要是真實可能的狀態：真 app（columnSelect_excel.js）給**每個槽同一份選項清單＝上傳 excel 的欄位**，
    故 14 個槽共用同一份 4 欄樣本（客服問題/客服回覆/建立時間/圖片連結，同 1-1-3 的預覽樣本）；
    已對應的槽 selected + 預覽該欄第一列值，未對應的槽空選（multi-select 顯示 placeholder）、預覽空。
@@ -194,6 +198,97 @@ permalink: 1-1-4_columnSelect_excel.html
             { value: "3", label: "圖片連結" }
         ],
         preview: ""
+    },
+    {
+        key: "note6",
+        label: "備註6",
+        placeholder: "建議選擇「備註6」屬性欄位",
+        placeholderKey: "fieldHint.note6",
+        options: [
+            { value: "0", label: "客服問題" },
+            { value: "1", label: "客服回覆" },
+            { value: "2", label: "建立時間" },
+            { value: "3", label: "圖片連結" }
+        ],
+        preview: ""
+    },
+    {
+        key: "note7",
+        label: "備註7",
+        placeholder: "建議選擇「備註7」屬性欄位",
+        placeholderKey: "fieldHint.note7",
+        options: [
+            { value: "0", label: "客服問題" },
+            { value: "1", label: "客服回覆" },
+            { value: "2", label: "建立時間" },
+            { value: "3", label: "圖片連結" }
+        ],
+        preview: ""
+    },
+    {
+        key: "note8",
+        label: "備註8",
+        placeholder: "建議選擇「備註8」屬性欄位",
+        placeholderKey: "fieldHint.note8",
+        options: [
+            { value: "0", label: "客服問題" },
+            { value: "1", label: "客服回覆" },
+            { value: "2", label: "建立時間" },
+            { value: "3", label: "圖片連結" }
+        ],
+        preview: ""
+    },
+    {
+        key: "note9",
+        label: "備註9",
+        placeholder: "建議選擇「備註9」屬性欄位",
+        placeholderKey: "fieldHint.note9",
+        options: [
+            { value: "0", label: "客服問題" },
+            { value: "1", label: "客服回覆" },
+            { value: "2", label: "建立時間" },
+            { value: "3", label: "圖片連結" }
+        ],
+        preview: ""
+    },
+    {
+        key: "note10",
+        label: "備註10",
+        placeholder: "建議選擇「備註10」屬性欄位",
+        placeholderKey: "fieldHint.note10",
+        options: [
+            { value: "0", label: "客服問題" },
+            { value: "1", label: "客服回覆" },
+            { value: "2", label: "建立時間" },
+            { value: "3", label: "圖片連結" }
+        ],
+        preview: ""
+    },
+    {
+        key: "date2",
+        label: "日期2",
+        placeholder: "YYYY/MM/DD HH:mm:ss || YYYY-MM-DD HH:mm:ss",
+        options: [
+            { value: "0", label: "客服問題" },
+            { value: "1", label: "客服回覆" },
+            { value: "2", label: "建立時間" },
+            { value: "3", label: "圖片連結" }
+        ],
+        preview: "",
+        error: true
+    },
+    {
+        key: "date3",
+        label: "日期3",
+        placeholder: "YYYY/MM/DD HH:mm:ss || YYYY-MM-DD HH:mm:ss",
+        options: [
+            { value: "0", label: "客服問題" },
+            { value: "1", label: "客服回覆" },
+            { value: "2", label: "建立時間" },
+            { value: "3", label: "圖片連結" }
+        ],
+        preview: "",
+        error: true
     }
 ] %}
 {% set breadcrumbItems = [
@@ -216,6 +311,39 @@ permalink: 1-1-4_columnSelect_excel.html
     {% set stepPrevHref = "1-1-3_preview_excel.html" %}
     {% set stepNextHref = "1-1-6_uploadSuccess_excel.html" %}
     {% include "components/step-btn-wrap/step-btn-wrap.html" %}
+</div>
+
+{# ── 匯入選項 ─────────────────────────────────────────────────────────────────────
+     出處：gufofaq-saas services/product/app/routers/datasets.py 的 `ExcelImportIn`
+     （`convert_html`、`external_key`）。兩者都是值載體，掛 hook class 交 React（§5）。
+     HTML 轉換：儲存格裡的 HTML 標籤原樣進向量與答案是這批要修的缺口，故預設開；但**已經是純文字的
+     資料不該被動到**，所以要關得掉（型別槽本來就不套用，見 product `field_schema.is_typed_slot`）。
+     外部主鍵：留白＝純新增（既有行為）。填了就是「這份資料的新版」，同資料集同鍵的舊版會在同一個交易裡
+     被取代——它是「重複匯入同一份檔案就多一份舊資料」的唯一解，故欄下要講清楚留白與填了的差別。 #}
+<div class="block flex-row column gap-16 mb-24">
+    <div class="text-md text-bold" data-i18n="dataImport.importOptions">匯入選項</div>
+    <div class="form-group row mobile-col">
+        <div class="label label-md">
+            <span id="excelConvertHtmlLabel" class="control-label" data-i18n="dataImport.convertHtml">HTML 轉 Markdown</span>
+        </div>
+        <div class="field">
+            <label class="switch">
+                <input type="checkbox" class="switch-checkbox js-excel-convert-html" role="switch" aria-label="HTML 轉 Markdown" data-i18n-aria-label="dataImport.convertHtml" aria-describedby="excelConvertHtmlHint" checked>
+                <span class="switch-box"><span class="switch-btn"></span></span>
+            </label>
+            <span class="text-gray" id="excelConvertHtmlHint" data-i18n="dataImport.convertHtmlHint">文字欄若含 HTML 標籤就轉成 Markdown，連結網址會被移除並列在匯入結果裡。純文字資料原樣通過。</span>
+        </div>
+    </div>
+    <div class="form-group row mobile-col">
+        <div class="label label-md">
+            <label for="excelExternalKey" class="control-label" data-i18n="dataImport.externalKey">外部主鍵</label>
+        </div>
+        <div class="field">
+            <input type="text" id="excelExternalKey" class="form-control js-excel-external-key" placeholder="請輸入"
+                data-i18n-placeholder="common.pleaseEnter" aria-describedby="excelExternalKeyHint">
+            <span class="text-gray" id="excelExternalKeyHint" data-i18n="dataImport.externalKeyHint">留白＝直接新增。填了就是「這份資料的新版」，同資料集內同一把鍵的舊版會被取代。</span>
+        </div>
+    </div>
 </div>
 
 {% include "components/multi-select-box/multi-select-box.html" %}
