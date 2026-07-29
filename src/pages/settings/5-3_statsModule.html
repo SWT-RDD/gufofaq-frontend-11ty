@@ -10,6 +10,36 @@ permalink: 5-3_statsModule.html
   { label: "設定", href: "", i18nKey: "nav.settings" },
   { label: "統計模組", i18nKey: "nav.statsModule" }
 ] %}
+{# 歸因槽值域：product `app/field_schema.py` 的 `ATTRIBUTION_SLOT_KEYS`＝`SLOT_KEYS` 減 `tags`（清單槽，
+     整串會變成一個維度值）與 `content`（答案本體，逐列唯一＝分群等於沒分），故是 21 減 2＝19 個。
+     同一份目錄本頁用兩次（統計維度 select ＋ 歸因維度多選），故 set 成一個陣列共用（GUIDELINE §6）。
+     **React 端不得把這 19 個硬編**：`GET /settings/attribution` 回的 `available_slots` 就是這份值域的
+     單一真相（product `app/routers/settings_hub.py`），值域一變前端才不會跟著漂。
+     `label` 是各槽的**預設**顯示名——真實環境顯示的是租戶為該槽取的名字（per-profile `field_labels`，
+     如「承辦組室」），屬業務資料故不掛 data-i18n（同 5-2 的 MCP server 名）。
+     示範裡這個租戶把 note1／note2 取名為「承辦組室」「業務範疇」（與 4-2 來源區塊的歸因列同一個租戶），
+     其餘槽維持預設名。 #}
+{% set attributionSlots = [
+  { key: "title", label: "標題" },
+  { key: "source", label: "來源" },
+  { key: "date", label: "日期" },
+  { key: "category", label: "分類" },
+  { key: "number", label: "數值" },
+  { key: "flag", label: "標記" },
+  { key: "privilege", label: "權限" },
+  { key: "note1", label: "承辦組室" },
+  { key: "note2", label: "業務範疇" },
+  { key: "note3", label: "備註3" },
+  { key: "note4", label: "備註4" },
+  { key: "note5", label: "備註5" },
+  { key: "note6", label: "備註6" },
+  { key: "note7", label: "備註7" },
+  { key: "note8", label: "備註8" },
+  { key: "note9", label: "備註9" },
+  { key: "note10", label: "備註10" },
+  { key: "date2", label: "日期2" },
+  { key: "date3", label: "日期3" }
+] %}
 <div class="flex-row column gap-16">
     {% include "ui/breadcrumb/breadcrumb.html" %}
 </div>
@@ -64,6 +94,45 @@ permalink: 5-3_statsModule.html
                 </div>
             </div>
         </div>
+        {# 統計維度：`dataset`（依資料集）或 `attribution:<slot>`（依租戶指定的歸因欄位分群）。
+             值域＝上面的 attributionSlots（product `field_schema.ATTRIBUTION_SLOT_KEYS`），選項文字是
+             租戶取的欄位名＝業務資料不翻；「資料集」那顆是 chrome 走 i18n。
+             值載體 select → 只掛 hook class（GUIDELINE §5 組合矩陣②），成敗由旁邊的「查詢」鈕演。 #}
+        <div class="form-group row flex-row mobile-column-xs gap-16">
+            <div class="label mobile-align">
+                <label for="statsDimension" class="control-label" data-i18n="settings.statsDimension">統計維度</label>
+            </div>
+            <div class="field col-12-sm">
+                <select id="statsDimension" class="form-control js-stats-dimension">
+                    <option value="dataset" selected data-i18n="common.dataset">資料集</option>
+                    {% for slot in attributionSlots %}
+                    <option value="attribution:{{ slot.key }}">{{ slot.label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        {# 計數方式：一則問答命中多份文件時，`per_log` 同一則的同一個值只計一次、`per_hit` 逐筆命中各計一次。
+             兩者的總數都回在回應的 totals 裡（見下方指標列），報表才自證得了它算的是什麼。
+             product `/stats` 的**預設是 per_log**（`app/routers/stats.py` 的 `count_mode`），故這裡預設選它。 #}
+        <div class="form-group row flex-row mobile-column-xs gap-16">
+            <div class="label mobile-align">
+                <label id="countModeLabel" class="control-label" data-i18n="settings.countMode">計數方式</label>
+            </div>
+            <div class="field flex-row gap-24 col-12-sm mobile-column-xs" role="radiogroup" aria-labelledby="countModeLabel">
+                <div class="function">
+                    <label class="form-radio">
+                        <input type="radio" name="count-mode" value="per_log" checked>
+                        <span data-i18n="settings.countModePerLog">每則計一次</span>
+                    </label>
+                </div>
+                <div class="function">
+                    <label class="form-radio">
+                        <input type="radio" name="count-mode" value="per_hit">
+                        <span data-i18n="settings.countModePerHit">每個命中計一次</span>
+                    </label>
+                </div>
+            </div>
+        </div>
         <div class="form-group row flex-row mobile-column-xs gap-16">
             <div class="label mobile-align">
                 <label id="queryDataTypeLabel" class="control-label" data-i18n="settings.queryDataType">查詢資料類型</label>
@@ -94,6 +163,26 @@ permalink: 5-3_statsModule.html
         <button type="button" class="button button-border" data-i18n="action.cancel">取消</button>
         <button type="button" class="button button-primary" data-toast="正在查詢資料...|查詢成功|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.query" data-toast-type="info|success|error" data-i18n="action.query">查詢</button>
     </div>
+</div>
+
+{# 指標列：報表要能自證「它算的是什麼、分母是誰」（Spec 庚 §4）。
+     - 統計維度／計數方式是**回應的回聲**（不是畫面上的選擇），送出的與算出來的不一致時才看得出來。
+     - 無命中率＝零命中則數 ÷ 對話則數。**只有這一個比率、沒有第二個「拒答率」**：上游在誠實查無時
+       會把 search_results 清空（GufoRAG chatbot `services/chat.py`／`services/agent_service.py`），
+       所以拒答必然落在零命中裡，而零命中還含「本來就不需要文件的提問」（招呼、閒聊）——
+       product 手上只有這一個量得到的集合（`app/routers/stats.py` 的 `StatsOut.no_hit_rate`）。
+       同一個數字掛兩個名字，報表看起來就像量了兩件事。期間內一則都沒有時回 null，畫面顯示「—」
+       而不是 0%（0% 會被讀成「每一則都有命中」）。
+     - 已計入／群組數＝`totals.counted`／`totals.groups`：前者恆等於排行各列次數的總和（有沒有被吃掉
+       只有這裡看得出來），後者是**合併「其他（N 個來源）」之前**的真實組數。 #}
+<div class="block flex-row gap-24 flex-wrap mt-16">
+    <p><span class="bold" data-i18n="settings.statsDimensionLabel">統計維度：</span><span id="stats-dimension-echo">-</span></p>
+    <p><span class="bold" data-i18n="settings.countModeLabel">計數方式：</span><span id="stats-count-mode-echo">-</span></p>
+    <p><span class="bold" data-i18n="settings.noHitRate">無命中率：</span><span id="stats-no-hit-rate">-</span></p>
+    <p><span class="bold" data-i18n="settings.conversationCount">對話次數：</span><span id="stats-total-logs">0</span></p>
+    <p><span class="bold" data-i18n="settings.retrievedCount">取用資料數：</span><span id="stats-total-hits">0</span></p>
+    <p><span class="bold" data-i18n="settings.countedTotal">已計入：</span><span id="stats-total-counted">0</span></p>
+    <p><span class="bold" data-i18n="settings.groupCount">群組數：</span><span id="stats-total-groups">0</span></p>
 </div>
 
 {# 圖表區塊：沿用 ui/chart-box，.chart 內僅放 <canvas> 佔位，不掛 Chart.js（業務 JS 不轉）。
@@ -128,5 +217,39 @@ permalink: 5-3_statsModule.html
                 <p><span class="bold" data-i18n="settings.retrievedCount">取用資料數：</span><span id="chart3-retrieved">0</span></p>
             </div>
         </div>
+    </div>
+</div>
+
+{# ── 歸因維度（Spec 庚 §1）────────────────────────────────────────────────────────
+     租戶指定哪幾個欄位是「歸因維度」＝報表要依哪些欄位歸戶（承辦組室、業務範疇…）。
+     這份設定是**每租戶一份**（product `TenantSetting.attribution_slots`，`GET/PUT /settings/attribution`），
+     不是 per-profile，所以放在本頁而不是 5-2 的三份設定裡。
+     它同時決定三個地方：問答詳情來源區塊的歸因列（4-2）、歷史匯出 CSV 的歸因欄、以及上面那顆
+     「統計維度」下拉能對到的欄位；**清單順序即報表欄序**（product 照收不排序）。
+     選項文字＝租戶為該槽取的顯示名（業務資料不翻，見頁首 attributionSlots 註解）。
+     儲存鈕是送 API 的鈕（③）→ 列出全部結果：成功／權限不足（`require_capability("settings","write")`
+     回 403）／其他失敗。**權限不足那一段不可以改用 disabled 讓它不可達**——那是把契約演掉。 #}
+<div class="block flex-row column gap-16 mt-24">
+    <div class="flex-row column gap-8">
+        <div class="text-lg text-bold" data-i18n="settings.attributionDimensions">歸因維度</div>
+        <div class="text-gray" data-i18n="settings.attributionDimensionsIntro">選定要用來歸戶的欄位；清單順序即報表與匯出檔的欄位順序。未選＝不做歸因，問答詳情與匯出檔不會長出歸因欄。</div>
+    </div>
+    <div class="form-group row mobile-col">
+        <div class="label label-md">
+            <label for="attributionSlots" class="control-label" data-i18n="settings.attributionSlots">歸因欄位</label>
+        </div>
+        <div class="field col-12-sm">
+            <select id="attributionSlots" class="form-control multiSelect" multiple="multiple" data-placeholder="請選擇" data-placeholder-key="common.pleaseSelect">
+                {% for slot in attributionSlots %}
+                <option value="{{ slot.key }}"{% if slot.key == "note1" or slot.key == "note2" %} selected{% endif %}>{{ slot.label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+    <div class="flex-row justify-content-end">
+        <button type="button" class="button button-primary js-save-attribution"
+            data-toast="歸因維度已儲存|權限不足，無法儲存|儲存失敗，請稍後再試"
+            data-i18n-data-toast="toast.saveAttribution" data-toast-type="success|warning|error"
+            data-i18n="action.save">儲存</button>
     </div>
 </div>

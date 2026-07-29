@@ -4,7 +4,16 @@
      （見 _sources-block.scss；class 的主人是本元件，因為被套用的元素是本元件的 <tr>）。
      展開/收合互動的根改用 accordion 自有的 .js-accordion（見 ui/accordion，§1 原子解耦）。
      參數（頁面 include 前 set，見 §3-2/§6）：
-       sources：來源列陣列（每筆欄位：no/file/dataset/title/time/content/note1/note2/reference）
+       sources：來源列陣列（每筆欄位：no/file/dataset/title/time/content/note1/note2/reference
+                ＋選填 attribution）
+       source.attribution：這一筆命中的**歸因欄位值**，`[{ label, value }]`，追加在詳細列的最後。
+                「歸因欄位」是租戶自己指定的分群欄（承辦組室、業務範疇…），不是固定欄位——
+                值域與順序都是租戶設定，故 label 是資料值（不掛 data-i18n），順序照給的順序
+                （＝報表欄序）。**值為空的槽照樣列一列**：這一筆沒填那個欄位，正是統計報表把它
+                歸進「未標註」的原因，空白列讓那件事在單則層看得見；濾掉空值的話，讀的人只會
+                以為這份文件沒有歸因維度。出處：product `app/routers/settings_hub.py` 的
+                `GET /settings/attribution`（回 `slots`＋值域 `available_slots`）、
+                `app/attribution.py::attribution_values`。
        sourcesHidden：true 時根加 .hidden（真實頁預設隱藏、等 JS 依載入狀態顯示）
        sourcesInfo / sourcesInfoClass：標題後的說明字與其 class（預設「(挑選規則 16取8…)」/ .sources-info；AB 測試頁用 .js-sources-side「(設定A)」）
        sourcesRating：{ value, icon } 有值時顯示使用者滿意度（標籤是 chrome 走 i18n，value 是資料不翻）
@@ -92,6 +101,14 @@
                                         <th data-i18n="common.referenceData">參考資料</th>
                                         <td colspan="3">{{ source.reference }}</td>
                                     </tr>
+                                    {# 歸因欄位：追加在既有欄位之後（同匯出 CSV「新欄一律追加」的作法），
+                                         租戶沒指定任何歸因維度時整段不渲染。label 是租戶取的名字＝資料值，不翻。 #}
+                                    {% for a in source.attribution %}
+                                    <tr>
+                                        <th>{{ a.label }}</th>
+                                        <td colspan="3">{{ a.value }}</td>
+                                    </tr>
+                                    {% endfor %}
                                 </tbody>
                             </table>
                         </div>

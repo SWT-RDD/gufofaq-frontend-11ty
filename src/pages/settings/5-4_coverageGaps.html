@@ -1,0 +1,221 @@
+---
+layout: layouts/page-shell/page-shell.html
+title: GufoFAQ::覆蓋缺口
+titleKey: nav.coverageGaps
+pageHeading: 覆蓋缺口
+permalink: 5-4_coverageGaps.html
+---
+{# 覆蓋缺口報表（Spec 庚 §5，SaaS 新頁、真 app 無對應）。逆向自 product
+     `app/routers/stats.py` 的 `GET /stats/coverage-gaps`（`CoverageGapsOut`）。
+
+     這份清單回答的是「知識庫下一步該補什麼」：**問得最多、卻一份文件都沒撈到**的那些題目。
+     母集合＝零命中，判定與 5-3 的無命中率共用同一個函式（`_is_no_answer_log`），兩張報表不會
+     對同一段期間各給一個數字。
+
+     招呼／閒聊也在裡面，而且**照實列出、不做關鍵字猜測**——「你好，請問輸美關稅多少」也以「你好」
+     開頭，猜的話真缺料會被靜靜濾掉。要拿掉的是人：每一列的「排除」把那句提問原文加進 `exclude`
+     參數（**修剪空白後全字比對**，不是前綴也不是子字串），排除量一律回報成「已排除則數」，
+     且 `sum(groups[].count) + excluded_count == total_no_answer` 恆成立——藏起來多少永遠看得見。
+
+     排除清單**不持久化**（product 未存租戶設定），每次查詢都要重送；React 端自己記在本地。
+
+     權限：這支掛的是 `require_capability("history")`（不是 5-3 的 `settings`）——它回的是**提問原文**，
+     屬歷史內容。故本頁的導覽入口與 5-3 同在「設定」選單下，但兩頁需要的能力不同。
+
+     分群：意圖分類（Spec 丙／Phase 4）上線前只有「未分類」一組，`groups` 的形狀現在就固定，
+     分群上線時版面不必改。群組名稱是 API 回的資料（`label`），不掛 data-i18n。 #}
+{% set breadcrumbItems = [
+  { label: "首頁", href: "2-1_qaRecord.html", i18nKey: "nav.home" },
+  { label: "設定", href: "", i18nKey: "nav.settings" },
+  { label: "覆蓋缺口", i18nKey: "nav.coverageGaps" }
+] %}
+{# 示範資料要自洽（GUIDELINE §6）：134（本組）＋ 3（已排除）＝ 137（查無則數）；
+     樣本 10 筆是上限、相異提問 84 種＝被截到剩 10 筆，兩個數擺在一起才看得出「不是只有 10 種」；
+     樣本次數遞減且總和 61 ≤ 本組 134。 #}
+{% set gapSummary = {
+    range: "2024/12/01 00:00 ~ 2024/12/02 00:00",
+    totalLogs: 1200,
+    totalNoAnswer: 137,
+    excludedCount: 3
+} %}
+{% set gapExcluded = ["你好"] %}
+{% set gapGroups = [
+    {
+        label: "未分類",
+        count: 134,
+        distinctQuestions: 84,
+        sampleCap: 10,
+        samples: [
+            { question: "臺灣輸美關稅多少", count: 12 },
+            { question: "外籍配偶申請定居要準備哪些文件", count: 9 },
+            { question: "你好，請問居留證遺失怎麼補辦", count: 8 },
+            { question: "外國人在台灣開公司的最低資本額", count: 7 },
+            { question: "依親居留可以工作嗎", count: 6 },
+            { question: "永久居留證每年要入境幾次", count: 5 },
+            { question: "越南籍配偶的健保投保方式", count: 4 },
+            { question: "居留證延期要提前多久辦", count: 4 },
+            { question: "新住民子女的就學補助", count: 3 },
+            { question: "喪失國籍證明要去哪裡申請", count: 3 }
+        ]
+    }
+] %}
+<div class="flex-row column gap-16">
+    {% include "ui/breadcrumb/breadcrumb.html" %}
+</div>
+
+{# 篩選列：與 5-3 統計模組同一組參數（range / start / end / data_type），起訖欄真實頁由 flatpickr 掛載 #}
+<div class="block flex-row column gap-24 mt-10">
+    <div class="flex-row column gap-16">
+        <div class="text-gray" data-i18n="settings.coverageGapsIntro">列出這段期間問得最多、卻一份文件都沒撈到的提問原文。招呼與閒聊照實列出，不做關鍵字猜測；要拿掉哪一句由你逐句指定。</div>
+        <div class="form-group row flex-row mobile-column-xs gap-16">
+            <div class="label mobile-align">
+                <label id="gapTimeFilterLabel" class="control-label" data-i18n="settings.dataTimeFilter">資料時間篩選</label>
+            </div>
+            <div class="field w100" role="group" aria-labelledby="gapTimeFilterLabel">
+                <div class="flex-row gap-16 mobile-column flex-wrap field-with-input-group">
+                    <div class="flex-row gap-16 mobile-column-xs col-12-xs">
+                        <div class="function">
+                            <label class="form-radio border-wrap w100">
+                                <input type="radio" name="gap-time" checked>
+                                <span data-i18n="settings.last24h">近24小時</span>
+                            </label>
+                        </div>
+                        <div class="function">
+                            <label class="form-radio border-wrap w100">
+                                <input type="radio" name="gap-time">
+                                <span data-i18n="settings.lastWeek">上週</span>
+                            </label>
+                        </div>
+                        <div class="function">
+                            <label class="form-radio border-wrap w100">
+                                <input type="radio" name="gap-time">
+                                <span data-i18n="settings.lastMonth">上個月</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="flex-row gap-16 mobile-column-xs field-with-input">
+                        <div class="function">
+                            <label class="form-radio">
+                                <input type="radio" name="gap-time">
+                                <span data-i18n="settings.timeRange">時間區間</span>
+                            </label>
+                        </div>
+                        <div class="function">
+                            <div class="flex-row align-items-center gap-16 mobile-column-xs col-12-xs">
+                                <input type="text" class="form-control start-date with-input" placeholder="請選擇開始時間"
+                                    data-i18n-placeholder="settings.pleaseSelectStartTime" aria-label="開始時間" data-i18n-aria-label="settings.startTime" disabled>
+                                <span data-i18n="settings.to">至</span>
+                                <input type="text" class="form-control end-date with-input" placeholder="請選擇結束時間"
+                                    data-i18n-placeholder="settings.pleaseSelectEndTime" aria-label="結束時間" data-i18n-aria-label="settings.endTime" disabled>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="form-group row flex-row mobile-column-xs gap-16">
+            <div class="label mobile-align">
+                <label id="gapDataTypeLabel" class="control-label" data-i18n="settings.queryDataType">查詢資料類型</label>
+            </div>
+            <div class="field flex-row gap-24 col-12-sm mobile-column-xs" role="radiogroup" aria-labelledby="gapDataTypeLabel">
+                <div class="function">
+                    <label class="form-radio">
+                        <input type="radio" name="gap-data-type" checked>
+                        <span data-i18n="common.all">全部</span>
+                    </label>
+                </div>
+                <div class="function">
+                    <label class="form-radio">
+                        <input type="radio" name="gap-data-type">
+                        <span data-i18n="qa.frontendQa">前台問答</span>
+                    </label>
+                </div>
+                <div class="function">
+                    <label class="form-radio">
+                        <input type="radio" name="gap-data-type">
+                        <span data-i18n="qa.backendQa">後台問答</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="flex-row align-items-center justify-content-center gap-16">
+        <button type="button" class="button button-border" data-i18n="action.cancel">取消</button>
+        <button type="button" class="button button-primary" data-toast="正在查詢資料...|查詢成功|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.query" data-toast-type="info|success|error" data-i18n="action.query">查詢</button>
+    </div>
+</div>
+
+{# 摘要列：查無則數要有分母才讀得出是多還是少（product 回 total_logs 就是為了這件事）；
+     已排除則數與它並列，是「加總永遠對得起來」的可視化。 #}
+<div class="block flex-row gap-24 flex-wrap mt-16">
+    <p><span class="bold" data-i18n="settings.dataTimeLabel">資料時間：</span><span id="gap-range">{{ gapSummary.range }}</span></p>
+    <p><span class="bold" data-i18n="settings.conversationCount">對話次數：</span><span id="gap-total-logs">{{ gapSummary.totalLogs }}</span></p>
+    <p><span class="bold" data-i18n="settings.noAnswerTotal">查無則數：</span><span id="gap-total-no-answer">{{ gapSummary.totalNoAnswer }}</span></p>
+    <p><span class="bold" data-i18n="settings.excludedTotal">已排除則數：</span><span id="gap-excluded-count">{{ gapSummary.excludedCount }}</span></p>
+</div>
+
+{# 已排除的提問：排除的是「呈現」不是「事實」，所以被藏起來的每一句都列在這裡、可以放回去。
+     兩顆鈕都會重新查詢（送 API），故走 data-toast 列全結果（GUIDELINE §5 矩陣③）。 #}
+<div class="block flex-row column gap-8 mt-16">
+    <div class="text-bold" data-i18n="settings.excludedQuestions">已排除的提問</div>
+    <div class="flex-row gap-8 flex-wrap align-items-center">
+        {% for q in gapExcluded %}
+        <div class="flex-row align-items-center gap-4">
+            <span>{{ q }}</span>
+            <button type="button" class="button button-border button-sm js-undo-exclude-question"
+                data-toast="正在查詢資料...|查詢成功|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.query" data-toast-type="info|success|error"
+                data-i18n="action.undoExclude">取消排除</button>
+        </div>
+        {% else %}
+        <span class="text-gray" data-i18n="common.noData">無資料</span>
+        {% endfor %}
+    </div>
+</div>
+
+{# 缺料清單：一組一張表。`count`（該組查無則數）與 `distinctQuestions`（相異提問數）兩個都要——
+     只有前者看不出「300 則是同一題問 300 次，還是 300 個不同題目」，而兩種情況該補的東西完全不同。
+     `sampleCap` 是每組列出的樣本上限（product `MAX_GAP_SAMPLES`）：把它與相異提問數擺在一起，
+     讀的人才分得出「只有 10 種」與「被截到剩 10 種」。 #}
+{% for group in gapGroups %}
+<div class="block flex-row column gap-16 mt-16">
+    <div class="flex-row justify-content-between align-items-center flex-wrap gap-8">
+        <div class="text-lg text-bold">{{ group.label }}</div>
+        <div class="flex-row gap-16 flex-wrap">
+            <p><span class="bold" data-i18n="settings.groupNoAnswerTotal">本組查無則數：</span><span>{{ group.count }}</span></p>
+            <p><span class="bold" data-i18n="settings.distinctQuestions">相異提問數：</span><span>{{ group.distinctQuestions }}</span></p>
+            <p><span class="bold" data-i18n="settings.sampleCap">樣本上限：</span><span>{{ group.sampleCap }}</span></p>
+        </div>
+    </div>
+    <div class="table-container scrollTable">
+        <table class="default-table">
+            <thead>
+                <tr>
+                    <th data-i18n="common.seq">序號</th>
+                    <th data-i18n="settings.questionText">提問原文</th>
+                    <th data-i18n="settings.noAnswerCount">查無次數</th>
+                    <th data-i18n="common.actions">操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sample in group.samples %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ sample.question }}</td>
+                    <td>{{ sample.count }}</td>
+                    <td>
+                        <button type="button" class="button button-border button-sm js-exclude-question"
+                            data-toast="正在查詢資料...|查詢成功|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.query" data-toast-type="info|success|error"
+                            data-i18n="action.exclude">排除</button>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="4" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% else %}
+{# 全期間都答得出來時 product 回空的 groups（不列一個 count=0 的空組充數），畫面就只剩這一句。 #}
+<div class="block text-center text-gray mt-16" data-i18n="common.noData">無資料</div>
+{% endfor %}
