@@ -17,7 +17,9 @@ permalink: 5-4_coverageGaps.html
      參數（**修剪空白後全字比對**，不是前綴也不是子字串），排除量一律回報成「已排除則數」，
      且 `sum(groups[].count) + excluded_count == total_no_answer` 恆成立——藏起來多少永遠看得見。
 
-     排除清單**不持久化**（product 未存租戶設定），每次查詢都要重送；React 端自己記在本地。
+     排除清單**不持久化**（product 未存租戶設定），每次查詢都要把整份清單重送。畫面上列出來的
+     那一份是**回應的回聲**（product 修剪空白＋去重後的樣子），不是送出去的原字串——貼回來的字
+     帶了空白時，看得到的要是伺服器實際比對的那一份。
 
      權限：這支掛的是 `require_capability("history")`（不是 5-3 的 `settings`）——它回的是**提問原文**，
      屬歷史內容。故本頁的導覽入口與 5-3 同在「設定」選單下，但兩頁需要的能力不同。
@@ -30,7 +32,8 @@ permalink: 5-4_coverageGaps.html
   { label: "覆蓋缺口", i18nKey: "nav.coverageGaps" }
 ] %}
 {# 示範資料要自洽（GUIDELINE §6）：134（本組）＋ 3（已排除）＝ 137（查無則數）；
-     樣本 10 筆是上限、相異提問 84 種＝被截到剩 10 筆，兩個數擺在一起才看得出「不是只有 10 種」；
+     樣本 10 筆（＝product 每組上限）、相異提問 84 種＝被截到剩 10 筆，兩個數擺在一起才看得出
+     「不是只有 10 種」；
      樣本次數遞減且總和 61 ≤ 本組 134。 #}
 {% set gapSummary = {
     range: "2024/12/01 00:00 ~ 2024/12/02 00:00",
@@ -44,7 +47,6 @@ permalink: 5-4_coverageGaps.html
         label: "未分類",
         count: 134,
         distinctQuestions: 84,
-        sampleCap: 10,
         samples: [
             { question: "臺灣輸美關稅多少", count: 12 },
             { question: "外籍配偶申請定居要準備哪些文件", count: 9 },
@@ -174,8 +176,9 @@ permalink: 5-4_coverageGaps.html
 
 {# 缺料清單：一組一張表。`count`（該組查無則數）與 `distinctQuestions`（相異提問數）兩個都要——
      只有前者看不出「300 則是同一題問 300 次，還是 300 個不同題目」，而兩種情況該補的東西完全不同。
-     `sampleCap` 是每組列出的樣本上限（product `MAX_GAP_SAMPLES`）：把它與相異提問數擺在一起，
-     讀的人才分得出「只有 10 種」與「被截到剩 10 種」。 #}
+     「已列出」是這次實際列出的樣本筆數（product 每組上限 `MAX_GAP_SAMPLES`）：與相異提問數擺在
+     一起，讀的人才分得出「只有 10 種」與「被截到剩 10 種」。這個數字從樣本陣列推導、不烤字面量
+     ——上限值只有 product 知道，前端抄一份就會在它改動時開始說謊。 #}
 {% for group in gapGroups %}
 <div class="block flex-row column gap-16 mt-16">
     <div class="flex-row justify-content-between align-items-center flex-wrap gap-8">
@@ -183,7 +186,7 @@ permalink: 5-4_coverageGaps.html
         <div class="flex-row gap-16 flex-wrap">
             <p><span class="bold" data-i18n="settings.groupNoAnswerTotal">本組查無則數：</span><span>{{ group.count }}</span></p>
             <p><span class="bold" data-i18n="settings.distinctQuestions">相異提問數：</span><span>{{ group.distinctQuestions }}</span></p>
-            <p><span class="bold" data-i18n="settings.sampleCap">樣本上限：</span><span>{{ group.sampleCap }}</span></p>
+            <p><span class="bold" data-i18n="settings.samplesShown">已列出：</span><span>{{ group.samples.length }}</span></p>
         </div>
     </div>
     <div class="table-container scrollTable">

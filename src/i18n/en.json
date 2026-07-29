@@ -729,7 +729,7 @@
   "settings.retrievalAndFields": "Retrieval & fields",
   "settings.retrievedCount": "Retrieved items:",
   "settings.role": "Role",
-  "settings.sampleCap": "Sample cap: ",
+  "settings.samplesShown": "Shown: ",
   "settings.saveConfig": "Save conversation settings",
   "settings.searchMember": "Search members",
   "settings.searchMemberPlaceholder": "Search members...",
