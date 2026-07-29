@@ -89,9 +89,17 @@ permalink: 4-1_qaHistory.html
                 </div>
             </div>
         </div>
-        <div class="flex-row align-items-center justify-content-center gap-16">
+        <div class="flex-row align-items-center justify-content-center gap-16 flex-wrap">
             <button type="button" class="button button-border js-filter-clear" data-i18n="action.clear">清除</button>
             <button type="button" class="button button-primary" data-toast="正在查詢資料...|查詢成功|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.query" data-toast-type="info|success|error" data-i18n="action.query">查詢</button>
+            {# 統計表頭（product `GET /history/export?with_header=true`）：在 CSV 最前面加一段統計區間／
+                 製表時間／使用人次／使用人數／滿意度計數。**預設關閉**——開著會改變檔案首列，
+                 下游既有的解析會全部錯位。值載體 checkbox → 只掛 hook class（§5 矩陣②），
+                 成敗由旁邊的下載鈕演。 #}
+            <label class="form-checkbox">
+                <input type="checkbox" class="js-export-with-header">
+                <span data-i18n="qa.exportWithHeader">含統計表頭</span>
+            </label>
             <button type="button" class="button button-green" data-toast="下載已開始|只提供31日間的問答記錄下載|下載失敗" data-i18n-data-toast="toast.downloadRecords" data-toast-type="success|warning|error" data-i18n="action.download">下載</button>
         </div>
     </div>

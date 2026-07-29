@@ -458,6 +458,7 @@
   "qa.detailConvOf": "of",
   "qa.detailPageTitle": "Conversation details",
   "qa.endTime": "End time",
+  "qa.exportWithHeader": "Include stats header",
   "qa.frontendQa": "Frontend Q&A",
   "qa.hasIntentDetection": "Intent detection performed",
   "qa.keyword": "Keyword",
