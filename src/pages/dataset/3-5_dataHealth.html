@@ -64,7 +64,21 @@ permalink: 3-5_dataHealth.html
      ⑥ **任何上限／截斷都在消費點外顯**：清單的 `total`／`page`／`size`（分頁）、總覽每組只附
         `top_n` 筆（不是分頁，要逐筆看走清單）、命中窗 `window_days`（預設 7 天而不是 30——上游
         一次最多彙總 5000 則）、單次掃描的記錄數上限（超過就 400 擋下、不靜默只掃前 N 筆）、
-        以及三項命中檢查這一次到底跑了沒有（`hit_checks` 三態）。
+        三項命中檢查這一次到底跑了沒有（`hit_checks` 三態），以及**這一次哪些記錄的哪一項
+        沒有被檢查**（`slotless_records`／`exact_match_only_records`，見下）。
+
+     ⑦ **「這一次沒有做這一項」與「做了、沒問題」必須分得出來**。掃描回應有兩個數字專門
+        承載這件事，兩者都是**排除的事實**、不是統計花絮：
+          · `slotless_records`＝資料夾匯入的整份文件（它們沒有欄位槽，欄位對照是逐列匯入
+            才有的東西）。這些記錄**被排除在標籤缺口與未填基準日之外**——不是「檢查過而且
+            沒有缺口」。少了這個數字，兩者在畫面上長得一模一樣。
+          · `exact_match_only_records`＝內容長度超過兩兩比對上限的記錄
+            （product `health_checks.NEAR_DUPLICATE_PAIRWISE_MAX_CHARS`）。相似度是
+            O(la·lb) 的兩兩比對（實測 20000 字一對 18.95 秒），所以超過上限的那一批**只做
+            逐字相同判定**：同一份上傳兩次仍然抓得到，「幾乎一樣的兩份」這一次沒有比。
+            這是**漏報方向**的偏差，與本頁其他地方的取捨相反，所以更要寫出來。
+        兩個數字**常駐**（0 也畫），理由與 `hit_checks` 那一格相同：只在非 0 才出現的話，
+        看不到它就分不出是「這一次沒有被排除」還是「這個版本不報這件事」。
 
      i18n 的兩處刻意分 key（§4-2「語意確實不同、英譯必須區別才分 key」）：
        · `health.statusOpen`（未處置／Open）與既有的 `agent.stepPending`（待處理／Pending）——
@@ -108,7 +122,11 @@ permalink: 3-5_dataHealth.html
      `new + reopened + touched == findings`（6 ＋ 1 ＋ 26 ＝ 33，product `upsert_findings` 保證
      這三個數是一個分割）；`records` 1180 ＜ 上限 20000；`files` 9 ＝ 掃到的 7 ＋ 沒掃到的 2。
      `hitChecks` 演的是 **unavailable** 那一態：三態裡唯一會讓人「以為乾淨」的一種——沒有這一格，
-     「沒有陳舊高頻」與「這一次根本沒算」在畫面上長得一模一樣。 #}
+     「沒有陳舊高頻」與「這一次根本沒算」在畫面上長得一模一樣。
+     ⑦ 的兩個數字也自洽：掃到的 7 個檔都是資料夾匯入的整份文件，一檔一筆記錄 ⇒
+     `slotlessRecords` 7（其餘 1173 筆是逐列匯入的，它們有欄位槽）；那 7 筆裡有 5 筆內容
+     超過兩兩比對上限 ⇒ `exactMatchOnlyRecords` 5。兩者都 ≦ `records`，後者 ≦ 前者不是規則
+     （逐列匯入的答案也可能過長），這一份示範剛好如此。 #}
 {% set healthScan = {
     scannedAt: "2024/12/02 03:15",
     datasets: 4,
@@ -119,6 +137,8 @@ permalink: 3-5_dataHealth.html
     new: 6,
     reopened: 1,
     touched: 26,
+    slotlessRecords: 7,
+    exactMatchOnlyRecords: 5,
     hitChecks: "unavailable",
     hitChecksDetail: "取不到問答紀錄，這一次沒有重算「陳舊高頻／從未被命中／高頻查無」：這段期間的問答筆數超過單次彙總上限（5000 則），請縮短時間窗再試。"
 } %}
@@ -396,6 +416,18 @@ permalink: 3-5_dataHealth.html
     {% if healthScan.hitChecksDetail %}
     <p class="text-red">{{ healthScan.hitChecksDetail }}</p>
     {% endif %}
+    {# ⑦ 這一次沒有做到的檢查（`slotless_records`／`exact_match_only_records`）。
+         **兩個數字是「排除的事實」的載體**，不是統計花絮：它們與上面那排計數刻意分開一塊、
+         標題直接說「沒有做完的檢查」，因為混在「這一次算出來的發現」那一排裡，讀起來會變成
+         「這些也檢查過了」。0 也照畫（同 `hit_checks` 三態的理由）。 #}
+    <div class="text-md text-bold" data-i18n="health.partialTitle">這一次沒有做完的檢查</div>
+    <p class="text-gray" data-i18n="health.partialHint">下面兩個數字說的是「哪些記錄的哪一項沒有被檢查」，不是「檢查過了而且沒問題」。這兩件事在發現清單上長得一模一樣——清單只列得出算出來的發現，列不出「這一項根本沒算」。</p>
+    <div class="flex-row gap-24 flex-wrap">
+        <p><span class="bold" data-i18n="health.scanSlotless">沒有欄位槽、標籤兩項不適用的記錄：</span><span>{{ healthScan.slotlessRecords }}</span></p>
+        <p><span class="bold" data-i18n="health.scanExactMatchOnly">內容過長、只比了逐字相同的記錄：</span><span>{{ healthScan.exactMatchOnlyRecords }}</span></p>
+    </div>
+    <p class="text-gray" data-i18n="health.scanSlotlessHint">資料夾匯入的整份文件沒有欄位槽——欄位對照是逐列匯入才有的東西，系統沒有任何路徑寫得進它們的標籤。所以「標籤缺口」與「缺基準日」這兩項把它們排除在外，這幾筆不會因為沒標而出現在清單上，也不代表它們標好了。要讓這些內容也受維度過濾管轄，得改用逐列匯入。</p>
+    <p class="text-gray" data-i18n="health.scanExactMatchOnlyHint">內容超過長度上限的記錄，這一次的「近似重複」只對它們做逐字相同判定：同一份文件上傳兩次仍然抓得到，但「幾乎一樣的兩份」沒有被比。上限存在的理由是相似度為兩兩比對，長文件一對就要十幾秒，幾十份共用樣板的月報會讓整趟掃描跑不完——而那是全部檢查一起停擺，比單一項漏報嚴重。</p>
     {# ⑤ 沒掃到的檔：逐檔列出來，不是靜靜跳過。`reason` 與 `detail` 是 API 回的資料（不翻）。 #}
     <div class="text-md text-bold" data-i18n="health.uncoveredTitle">這一次沒有看到的檔</div>
     <p class="text-gray" data-i18n="health.uncoveredHint">這些檔不在這一次的檢查範圍裡——它們的內容不會出現在任何一項檢查上。列出來是因為漏報比誤報嚴重：一份沒被看過的檔，在清單上長得跟「乾淨」一模一樣。</p>

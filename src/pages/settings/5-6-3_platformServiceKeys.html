@@ -1,0 +1,287 @@
+---
+layout: layouts/page-shell/page-shell.html
+title: GufoFAQ::平台機器憑證
+titleKey: nav.platformServiceKeys
+pageHeading: 平台機器憑證
+permalink: 5-6-3_platformServiceKeys.html
+---
+{% set breadcrumbItems = [
+  { label: "首頁", href: "2-1_qaRecord.html", i18nKey: "nav.home" },
+  { label: "平台管理", href: "", i18nKey: "nav.platformMgmt" },
+  { label: "平台機器憑證", i18nKey: "nav.platformServiceKeys" }
+] %}
+<div class="flex-row column gap-16">
+    {% include "ui/breadcrumb/breadcrumb.html" %}
+</div>
+
+{# 平台機器憑證（SaaS 新需求，真 app 21 頁無對應）。逆向自 gufofaq-saas product
+     `app/routers/platform.py` 的四支端點與 `app/authz.py` 的授權模型：
+       · `GET /platform/service-keys/scopes`（`require_platform_auditor`）→ `{範圍: 說明}`，
+         值域正本是 `authz.PLATFORM_SERVICE_KEY_SCOPES` 本人（端點回的是那份 dict，不是手抄的清單）
+       · `POST /platform/service-keys`（`require_platform_admin`）→ 201 `ServiceKeyOut`，
+         **`key` 這一欄只有這一次有值**
+       · `GET /platform/service-keys?include_revoked=`（`require_platform_auditor`）→ `ServiceKeyOut[]`，
+         每一列的 `key` 恆為 null
+       · `DELETE /platform/service-keys/{id}`（`require_platform_admin`）→ 軟刪（`revoked_at`／
+         `revoked_by`），已撤銷的再撤一次回 409
+     憑證形狀：`psk_` ＋ 32 bytes 隨機，**DB 只存 SHA-256 雜湊**＋一段 `key_hint`（前綴＋末四碼）。
+
+     **兩級可見性（§5 `data-platform-role`）**：整頁 `auditor` 進得來（盤點與值域是唯讀端點），
+     但**核發與撤銷是 `admin`**。故導覽入口標 `auditor`，核發那一塊與每一列的撤銷鈕標 `admin`
+     ——把整頁 gate 在 admin 等於讓唯讀稽核員看不到「這個平台上有哪幾把機器憑證」，而那正是
+     稽核要查的東西；反過來把撤銷鈕畫給稽核員則是給他一顆按不動的鈕。
+
+     這一頁要外顯四件「不寫出來就會出事」的事，逐一：
+
+     ① **明碼只出現一次，而這件事要在核發之前就講清楚**。核發那一塊的說明與確認勾選框都在
+        送出鈕**之前**：勾了才送得出去。事後才知道的話，那把憑證就只能撤銷重發——而重發的
+        代價是「這段期間排程是啞的」。核發後的明碼另成一塊（`.js-service-key-issued`），
+        帶「唯一一次」警語與「我已經保存好」的關閉鈕；關掉之後畫面上就只剩 hint。
+        盤點表**永遠回不出明碼**（DB 沒有它），所以那句話在表格上方常駐、不是只在剛核發時出現。
+
+     ② **明碼的目的地是 Secret Manager，不是終端機**。核發流程寫在畫面上：這一頁的複製鈕
+        ＋貼進祕密管理，而不是「拿一段 curl 自己打」——後者會把明碼留在 shell 歷史、留在
+        `ps` 的 argv 上、留在螢幕錄影裡。
+
+     ③ **`last_used_at` 是輪替的唯一判準**。零停機輪替的做法是「核發新的 → 讓消費者拿到新的
+        → 確認舊那把的最後使用時間不再前進 → 撤銷舊的」。**同一個範圍可以同時有多把有效憑證**
+        （product 刻意不強制一個範圍一把——強制的話每一次輪替中間都有一段憑證真空，那段時間
+        排程是啞的而且沒有人會注意到）。所以這一欄要在表上、輪替步驟要寫在旁邊。
+
+     ④ **撤銷是軟刪、當場生效**。列留著（誰在什麼時候撤了它是稽核線索），而 `key_hash` 的
+        unique 約束在列還在時也讓那個明碼永遠不可能被重新啟用。撤銷過的預設不列
+        （`include_revoked`），要看歷史才勾。重複撤銷回 409——不是靜靜再回一次 200 假裝做了事。
+
+     **授權範圍不是「有沒有帶憑證」的布林**：每一把憑證帶一個範圍，端點宣告自己要哪一個，
+     閘門逐字相等比對（product 那邊有一格突變測試專門釘「不可用子字串比對」——一個叫
+     `health-scan-readonly` 的範圍會滿足 `health-scan`，看起來更窄的名字反而成了更寬的鑰匙）。
+     值域來自端點、不是這一頁抄一份：抄的那份會漂成「選得到、送出去 400」。 #}
+{# 授權範圍值域（`GET /platform/service-keys/scopes`）。今天一個鍵；說明文字是 API 回的資料
+     （不翻），逐字取自 product `authz.PLATFORM_SERVICE_KEY_SCOPES`。 #}
+{% set serviceKeyScopes = [
+  { value: "health-scan", detail: "每日資料健檢全量重掃：POST /health/scan/daily，外加時區守門要讀的 GET /platform/timezone（僅這兩支）" }
+] %}
+{# 盤點（`GET /platform/service-keys`）。示範三列，把三種狀態各演一次（GUIDELINE §5）：
+     · 第 1 列＝正在服役的那一把（`lastUsedAt` 有值且在前進）
+     · 第 2 列＝**同一個範圍的第二把**，剛核發、還沒有人用過（`lastUsedAt` 空）——輪替中間態，
+       示範資料自己證明「一個範圍可以同時有多把有效憑證」
+     · 第 3 列＝已撤銷（`revokedAt` 有值），只有勾了「含已撤銷」才會出現
+     `keyHint` 是 product `security.platform_service_key_hint` 的形狀（前綴 ＋ … ＋ 末四碼）。 #}
+{% set serviceKeys = [
+  {
+    id: 3, name: "每日健檢 CronJob", scope: "health-scan", keyHint: "psk_…7f2a",
+    createdAt: "2024/11/02 10:14", createdBy: "7",
+    lastUsedAt: "2024/12/02 03:20", revokedAt: "", revokedBy: ""
+  },
+  {
+    id: 8, name: "每日健檢 CronJob（輪替新把）", scope: "health-scan", keyHint: "psk_…c091",
+    createdAt: "2024/12/02 09:41", createdBy: "7",
+    lastUsedAt: "", revokedAt: "", revokedBy: ""
+  },
+  {
+    id: 1, name: "每日健檢 CronJob（初版）", scope: "health-scan", keyHint: "psk_…10b4",
+    createdAt: "2024/09/18 16:03", createdBy: "7",
+    lastUsedAt: "2024/11/02 03:20", revokedAt: "2024/11/03 11:27", revokedBy: "7"
+  }
+] %}
+
+<p class="text-gray" data-i18n="serviceKey.intro">機器憑證給「不是人」的呼叫端用——今天只有每日資料健檢的排程。它不是平台萬能鑰匙：每一把只帶一個授權範圍，範圍以外的端點一律拒絕，而且它在任何需要登入身分的端點上根本不構成身分。核發與撤銷要平台系統管理員，盤點稽核員也讀得到。</p>
+
+{# ── 核發 ─────────────────────────────────────────────────────────────────────
+     `POST /platform/service-keys`（admin）。**show-once 的說明與確認勾選框都排在送出鈕之前**
+     ——這一塊的存在理由就是「不要讓人核發完才發現明碼拿不回來」。
+     用途名稱與範圍是值載體（GUIDELINE §5 組合矩陣②）＝只掛 hook、不掛 data-toast。 #}
+<div class="block mb-16 flex-row column gap-16" data-platform-role="admin">
+    <div class="text-md text-bold" data-i18n="serviceKey.issueTitle">核發一把新憑證</div>
+    <p class="text-warning" data-i18n="serviceKey.issueBeforeWarn">按下核發之後，明碼只會顯示這一次。系統只保存它的 SHA-256 雜湊，關掉這一頁、重新整理、或按下「我已經保存好」之後就再也拿不回來——沒有「再看一次」這個選項，只能撤銷重發。請先準備好要把它貼到哪裡，再按核發。</p>
+    <p class="text-gray" data-i18n="serviceKey.issueDestinationHint">正式環境的目的地是 Secret Manager 的 product-health-scan-key：用下面的複製鈕複製，再貼進祕密管理，不要用終端機把明碼打出來——那會把它留在 shell 歷史、留在 ps 的參數列上，也留在任何一份螢幕錄影裡。</p>
+    <div class="flex-row flex-wrap gap-16 mobile-column sm-gap-16">
+        <div class="col-6-md col-12-sm">
+            <div class="form-group">
+                <div class="label">
+                    <label for="newServiceKeyName" class="control-label required" data-i18n="serviceKey.name">用途名稱</label>
+                </div>
+                <div class="field">
+                    <input type="text" id="newServiceKeyName" class="form-control js-new-service-key-name" placeholder="這一把是誰在用" data-i18n-placeholder="serviceKey.namePlaceholder" aria-describedby="newServiceKeyNameHint" required>
+                    <span id="newServiceKeyNameHint" class="text-gray" data-i18n="serviceKey.nameHint">輪替時要分得出「這一列是誰在用」，所以請寫得出消費者是什麼（例如「每日健檢 CronJob」）。名稱不影響權限，只影響你之後看不看得懂這張表。</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-6-md col-12-sm">
+            <div class="form-group">
+                <div class="label">
+                    <label for="newServiceKeyScope" class="control-label required" data-i18n="serviceKey.scope">授權範圍</label>
+                </div>
+                <div class="field">
+                    <select id="newServiceKeyScope" class="form-control js-new-service-key-scope" aria-describedby="newServiceKeyScopeHint">
+                        {% for s in serviceKeyScopes %}
+                        <option value="{{ s.value }}">{{ s.value }}</option>
+                        {% endfor %}
+                    </select>
+                    <span id="newServiceKeyScopeHint" class="text-gray" data-i18n="serviceKey.scopeHint">範圍決定這一把能打哪幾支端點，逐字相等比對——不在清單裡的值核發當下就會被擋下。可選的範圍與各自涵蓋的端點見下面那張表。</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    {# 確認勾選框：值載體（只掛 hook）。它擋的不是安全，是「核發完才知道」——React 端以它
+         gate 送出鈕，未勾就走 data-toast 的第 2 段。 #}
+    <label class="form-checkbox">
+        <input type="checkbox" class="js-service-key-ack">
+        <span data-i18n="serviceKey.ackOnce">我知道明碼只會顯示這一次，而且已經準備好要把它貼到哪裡。</span>
+    </label>
+    <div class="flex-row">
+        <button type="button" class="button button-primary js-issue-service-key"
+            data-toast="已核發，請立即複製下方明碼|請先填寫用途名稱|請先勾選「明碼只顯示一次」的確認|這個授權範圍不在值域內，核發被擋下|核發失敗，請稍後再試"
+            data-i18n-data-toast="toast.issueServiceKey" data-toast-type="success|warning|warning|warning|error"
+            data-i18n="serviceKey.issue">核發</button>
+    </div>
+</div>
+
+{# ── 剛核發的明碼（show-once）───────────────────────────────────────────────────
+     `POST` 回應的 `key` 欄。**只有那一次的回應有值**，所以這一整塊在 React 端是條件渲染：
+     沒有明碼就整塊不畫（不是畫一個空欄位——空欄位讀起來像「還沒產生」，而實際上是
+     「產生過了，只是拿不回來」）。切版以「剛核發」那一態示範。
+     欄位是 readonly、預設遮蔽；顯示/隱藏由 ui/reveal-input 委派切 type（純前端互動，無業務）。 #}
+<div class="block mb-16 flex-row column gap-16 js-service-key-issued" data-platform-role="admin">
+    <div class="text-md text-bold" data-i18n="serviceKey.plainTitle">剛核發的明碼</div>
+    <p class="text-warning" data-i18n="serviceKey.plainOnce">這是這把憑證唯一一次顯示明碼。離開或重新整理這一頁之後，畫面上就只剩下末四碼；系統本身也只有雜湊，沒有任何人能把它讀回來。</p>
+    <div class="flex-row align-items-center gap-8 flex-wrap">
+        <div class="col-6-md col-12-sm">
+            <div class="form-group">
+                <div class="field">
+                    <input type="password" id="serviceKeyPlain" class="form-control" value="psk_sample000000000000000000000c091" readonly aria-label="剛核發的明碼" data-i18n-aria-label="serviceKey.plainTitle">
+                </div>
+            </div>
+        </div>
+        <button type="button" class="button button-border" data-reveal-target="serviceKeyPlain"
+            data-text-show="顯示" data-text-hide="隱藏" data-key-show="extractKey.show" data-key-hide="extractKey.hide"
+            data-i18n="extractKey.show">顯示</button>
+        <button type="button" class="button-icon copy copyBtn has-tooltip" data-toast="已複製憑證明碼" data-i18n-data-toast="toast.copyServiceKey">
+            <span class="tooltip" data-i18n="action.copy">複製</span>
+        </button>
+    </div>
+    <div class="flex-row">
+        <button type="button" class="button button-border js-dismiss-service-key" data-i18n="serviceKey.savedDismiss">我已經保存好，關閉</button>
+    </div>
+</div>
+
+{# ── 授權範圍值域 ─────────────────────────────────────────────────────────────
+     `GET /platform/service-keys/scopes`。列出來的理由：核發前要選一個，而「有哪些可選、各自
+     涵蓋哪幾支端點」不該靠翻程式碼。說明文字是 API 回的資料（不翻）。 #}
+<div class="block mb-16 flex-row column gap-16">
+    <div class="text-md text-bold" data-i18n="serviceKey.scopesTitle">可核發的授權範圍</div>
+    <p class="text-gray" data-i18n="serviceKey.scopesHint">這張表是端點回的值域本身，不是這一頁抄的一份。範圍決定一把憑證能做什麼，而不是「有沒有帶憑證」——一把 health-scan 的憑證打租戶清單、稽核、時區寫入或再核發一把，全部會被擋下。</p>
+    <div class="table-container scrollTable">
+        <table class="default-table">
+            <colgroup>
+                <col style="width:60px; min-width:60px;">
+                <col style="width:200px; min-width:200px;">
+                <col style="min-width:420px;">
+            </colgroup>
+            <thead>
+                <tr>
+                    <th data-i18n="common.seq">序號</th>
+                    <th data-i18n="serviceKey.scope">授權範圍</th>
+                    <th data-i18n="serviceKey.scopeCovers">涵蓋哪幾支端點</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in serviceKeyScopes %}
+                <tr data-scope="{{ s.value }}">
+                    <td>{{ loop.index }}</td>
+                    <td><code class="inline-code">{{ s.value }}</code></td>
+                    <td>{{ s.detail }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="3" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{# ── 盤點 ─────────────────────────────────────────────────────────────────────
+     `GET /platform/service-keys`（auditor＋，故整塊標 auditor）。「含已撤銷」是值載體 checkbox
+     （值交給 React 讀去送 `include_revoked`）＝只掛 hook、不掛 data-toast。
+     撤銷鈕在列上另標 `admin`：盤點讀得到不等於撤得掉。 #}
+<div class="block flex-row column gap-16" data-platform-role="auditor">
+    <div class="flex-row justify-content-between align-items-center flex-wrap gap-16">
+        <div class="text-md text-bold" data-i18n="serviceKey.listTitle">現有憑證</div>
+        <label class="form-checkbox">
+            <input type="checkbox" class="js-service-key-include-revoked">
+            <span data-i18n="serviceKey.includeRevoked">含已撤銷</span>
+        </label>
+    </div>
+    <p class="text-gray" data-i18n="serviceKey.listStoredHint">這張表永遠回不出明碼：系統只保存 SHA-256 雜湊與一段辨識用的末四碼。認不出某一列是哪一把時，請看用途名稱與末四碼；對不上就撤掉它重發，不要猜。</p>
+    <p class="text-gray" data-i18n="serviceKey.rotateHint">零停機輪替：先核發新的一把（同一個範圍可以同時有多把有效憑證），把新的貼進 Secret Manager 並讓消費者取到，接著盯「最後使用時間」——舊那把不再前進就代表沒有人在用它了，這時候才撤銷。強制「一個範圍只准一把」會讓每一次輪替中間都有一段憑證真空，那段時間排程是啞的，而且沒有人會注意到。</p>
+    <div class="table-container scrollTable">
+        <table class="default-table">
+            <colgroup>
+                <col style="width:70px; min-width:70px;">
+                <col style="min-width:220px;">
+                <col style="width:150px; min-width:150px;">
+                <col style="width:130px; min-width:130px;">
+                <col style="width:160px; min-width:160px;">
+                <col style="width:170px; min-width:170px;">
+                <col style="width:200px; min-width:200px;">
+                <col style="width:110px; min-width:110px;">
+            </colgroup>
+            <thead>
+                <tr>
+                    <th data-i18n="serviceKey.id">編號</th>
+                    <th data-i18n="serviceKey.name">用途名稱</th>
+                    <th data-i18n="serviceKey.scope">授權範圍</th>
+                    <th data-i18n="serviceKey.hint">末四碼</th>
+                    <th data-i18n="serviceKey.createdAt">核發時間</th>
+                    <th data-i18n="serviceKey.lastUsedAt">最後使用時間</th>
+                    <th data-i18n="serviceKey.revokedAt">撤銷時間</th>
+                    <th data-i18n="common.actions">操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for k in serviceKeys %}
+                <tr data-service-key-id="{{ k.id }}">
+                    <td>{{ k.id }}</td>
+                    <td>{{ k.name }}</td>
+                    <td><code class="inline-code">{{ k.scope }}</code></td>
+                    <td><code class="inline-code">{{ k.keyHint }}</code></td>
+                    <td>{{ k.createdAt }}</td>
+                    {# 沒被用過的那一把要說出「從來沒有」，不是一格空白——空白讀起來像「這一欄
+                         沒資料」，而它其實是輪替判準的起點（剛核發、還沒有人取到）。 #}
+                    <td>{% if k.lastUsedAt %}{{ k.lastUsedAt }}{% else %}<span class="text-gray" data-i18n="serviceKey.neverUsed">從來沒有被用過</span>{% endif %}</td>
+                    <td>{% if k.revokedAt %}{{ k.revokedAt }}{% else %}<span class="text-gray" data-i18n="serviceKey.active">有效</span>{% endif %}</td>
+                    <td>
+                        {% if k.revokedAt %}
+                        <span class="text-gray" data-i18n="widget.revoked">已撤銷</span>
+                        {% else %}
+                        {# 撤銷走二次確認（彈窗本體見頁尾）：不可逆，而且撤下去的那一刻消費者就會開始
+                             拿 401——而排程的 401 只寫在 Job 日誌裡，沒有人在看。開窗需先選定「撤銷
+                             哪一把」＝業務條件開窗，故只留 hook class、不掛 data-open-modal；
+                             成敗 toast 移到確認鈕上（§5）。 #}
+                        <button type="button" class="button button-red button-sm js-revoke-service-key" data-platform-role="admin" data-i18n="action.revoke">撤銷</button>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="8" class="text-center text-gray" data-i18n="serviceKey.none">目前沒有任何有效的機器憑證。排程要跑得動就得有一把——沒有的話它每天會失敗，而失敗只寫在 Job 的日誌裡。</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <p class="text-gray" data-i18n="serviceKey.revokeHint">撤銷是軟刪、當場生效（不像登入 session 要等到期）：這一列會留著，因為「這把曾經存在、誰在什麼時候撤了它」是稽核要查得到的事實，而列還在也讓那個明碼永遠不可能被重新啟用。撤銷過的預設不列，要看歷史請勾「含已撤銷」。</p>
+</div>
+
+{# 撤銷憑證的二次確認（`.js-revoke-service-key` 條件開窗的彈窗本體）：用途名稱由業務 js 填入
+     `#revokeServiceKeyTarget`。三段 toast——重複撤銷是 product 的 409，那是「使用者自己看得懂
+     也修得掉」的一種，故語意是 warning 而不是 error。 #}
+{% set deleteTitleKey = "action.revoke" %}
+{% set deleteTitleZh = "撤銷" %}
+{% set deleteMessageKey = "common.confirmRevoke" %}
+{% set deleteMessageZh = "確定要撤銷" %}
+{% set deleteTargetId = "revokeServiceKeyTarget" %}
+{% set deleteConfirmBinding = true %}
+{% set deleteConfirmClass = "js-revoke-service-key-confirm" %}
+{% set deleteToast = "已撤銷，這一把當場失效|這一把已經撤銷過了|撤銷失敗，請稍後再試" %}
+{% set deleteToastKey = "toast.revokeServiceKey" %}
+{% set deleteToastType = "success|warning|error" %}
+{% include "components/delete-modal/delete-modal.html" %}

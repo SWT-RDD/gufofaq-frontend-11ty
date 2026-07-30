@@ -7,7 +7,9 @@
    把整塊「平台管理」gate 在 is_platform_admin，等於讓稽核員在 UI 上不存在（只能手動打 URL）。
    對照 product：`GET /platform/tenants`／`usage`／`license-usage`／`admins`／`tenants/export` 等唯讀端點是
    `require_platform_auditor`（app/authz.py：platform_role ∈ {auditor, admin}），故 5-6-1 是 auditor 入得去；
-   5-6-2 的 MCP 全域註冊表**連讀都是** `require_platform_admin`（app/routers/mcp.py 整支平台 router），故標 admin。 #}
+   5-6-2 的 MCP 全域註冊表**連讀都是** `require_platform_admin`（app/routers/mcp.py 整支平台 router），故標 admin；
+   5-6-3 的機器憑證盤點與值域是 `require_platform_auditor`、核發與撤銷才是 `require_platform_admin`
+   （app/routers/platform.py 的四支），故入口標 auditor、頁內兩塊寫入標 admin。 #}
 {% set menuItems = [
   {
     label: "資料配置", i18nKey: "nav.dataConfig",
@@ -56,7 +58,8 @@
     label: "平台管理", i18nKey: "nav.platformMgmt", platformRole: "auditor",
     submenu: [
       { label: "租戶功能開通", i18nKey: "nav.tenantEnable", href: "5-6-1_platformTenants.html", platformRole: "auditor" },
-      { label: "MCP Server 管理", i18nKey: "nav.mcpServers", href: "5-6-2_platformMcpServers.html", platformRole: "admin" }
+      { label: "MCP Server 管理", i18nKey: "nav.mcpServers", href: "5-6-2_platformMcpServers.html", platformRole: "admin" },
+      { label: "平台機器憑證", i18nKey: "nav.platformServiceKeys", href: "5-6-3_platformServiceKeys.html", platformRole: "auditor" }
     ]
   },
   {

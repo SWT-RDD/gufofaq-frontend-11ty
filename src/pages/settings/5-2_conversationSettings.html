@@ -890,11 +890,15 @@ permalink: 5-2_conversationSettings.html
   { value: "link_max", label: "連結數上限", i18nKey: "settings.outputRuleLinkMax" },
   { value: "max_chars", label: "字數上限（只回報）", i18nKey: "settings.outputRuleMaxChars" },
   { value: "max_bullets", label: "條列項數上限（只回報）", i18nKey: "settings.outputRuleMaxBullets" },
-  { value: "constant_route", label: "情境常數", i18nKey: "settings.outputRuleConstantRoute" }
+  { value: "constant_route", label: "情境常數", i18nKey: "settings.outputRuleConstantRoute" },
+  { value: "state_as_of", label: "標註資料基準日", i18nKey: "settings.outputRuleStateAsOf" },
+  { value: "flag_conflict", label: "並列說法要全講", i18nKey: "settings.outputRuleFlagConflict" }
 ] %}
 {# 示範規則。descKey 隨列走（不用 filter 反查——§2 只准 | safe）；情境常數兩筆各帶自己的常數名／
      預設值／條件，其餘 kind 的示範參數值直接寫在該 kind 的分支裡（一種 kind 只有一列，不需要參數化）。
-     啟用 8 條／共 12 條 ⇒ outputRulesAnyEnabled = true，故顯示「已失去逐字串流」那一句。 #}
+     啟用 9 條／共 14 條 ⇒ outputRulesAnyEnabled = true，故顯示「已失去逐字串流」那一句。
+     末兩條是事實時效那一族（product `output_rules.py` 的 E 類）：兩條都沒有參數，參數欄因此
+     落在分支鏈最後那一支的「此規則沒有參數。」 #}
 {% set outputRules = [
   { kind: "list_marker", enabled: true, descKey: "settings.outputRuleListMarkerDesc", desc: "把行首的 1)、(1)、一、 等寫法統一成 1.，保留原本的編號值與縮排（不重新編號）。" },
   { kind: "strip_heading", enabled: false, descKey: "settings.outputRuleStripHeadingDesc", desc: "移除 markdown 標題行與粗體小標開頭行；該行還有內容時只去掉標記，不整行刪掉。" },
@@ -912,7 +916,9 @@ permalink: 5-2_conversationSettings.html
   { kind: "constant_route", enabled: false, descKey: "settings.outputRuleConstantRouteDesc", desc: "提示詞裡只寫佔位符，實際值由本規則依這一輪的意圖判定填入；判不出情境時填預設值。",
     constName: "申辦網址", constDefault: "https://www.trade.gov.tw/",
     cases: [{ slot: "topic", op: "is_set", operand: "", value: "https://www.trade.gov.tw/apply" },
-            { slot: "channel", op: "in", operand: "web, line", value: "https://www.trade.gov.tw/online" }] }
+            { slot: "channel", op: "in", operand: "web, line", value: "https://www.trade.gov.tw/online" }] },
+  { kind: "state_as_of", enabled: true, descKey: "settings.outputRuleStateAsOfDesc", desc: "答案引用到的資料若帶基準日，就在句末補一句「（本資訊以 YYYY-MM-DD 為準）」。引用到多筆時取最舊的那一個日期——答案的時效由裡面最舊的那一筆決定。" },
+  { kind: "flag_conflict", enabled: false, descKey: "settings.outputRuleFlagConflictDesc", desc: "同一個主題有多筆並列最新、彼此說法不同時，改成把幾種說法與各自的日期都講出來，不挑一個講。挑一個講會讓答案聽起來很確定，而那正是它最不該確定的時候。" }
 ] %}
 {% set outputRulesAnyEnabled = true %}
 <div class="tab-content" id="panelOutputRules" style="display: none;">
@@ -938,7 +944,7 @@ permalink: 5-2_conversationSettings.html
 
         <div class="data-info flex-row flex-wrap gap-24">
             <span><span data-i18n="settings.outputRulesCountLabel">規則數：</span> {{ outputRules.length }} / 30</span>
-            <span><span data-i18n="settings.outputRulesEnabledLabel">啟用中：</span> 8</span>
+            <span><span data-i18n="settings.outputRulesEnabledLabel">啟用中：</span> 9</span>
         </div>
 
         <div class="table-container scrollTable">
