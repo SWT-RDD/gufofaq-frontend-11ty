@@ -82,8 +82,13 @@ permalink: 2-2-5_regressionRun.html
      只有 overrides 看不出沿用來的值到底是什麼，只有 effective_config 看不出哪幾個是這一輪
      刻意換掉的。所以這張表兩件事一起講——值 ＋ 來源。
 
-     只列「執行這一套案例集」改得動的那幾個旋鈕（product `_OVERRIDE_FIELDS`＝TestConfig 的欄位
-     扣掉 profile_no）。設定檔的其餘設定這一輪一律沿用，那支端點在結構上碰不到它們。
+     列的是 product `_OVERRIDE_FIELDS`（＝TestConfig 的欄位扣掉 profile_no）**全部九個**，不只
+     2-2-4 畫得出來的六個——`資料來源比例`／`Agent 最大迭代次數`／`指派 Skill` 那三個那一頁沒有
+     輸入，所以永遠沿用，而「永遠沿用」也是這張表要回答的事。設定檔的其餘設定（內容政策、輸出
+     規則…）這一輪一律沿用，那支端點在結構上碰不到它們。
+
+     列序：**這一次指定的排前面**（覆寫才是這一輪要看的東西），同一組之內＝提示詞 → 2-2-4 上
+     其餘那幾顆照畫面順序 → 那一頁改不動的三顆排最後。
 
      示範自洽（§6）：#311 明確指定了提示詞／對話模式／取用資料筆數三個，其餘六個沿用
      ——對得上 2-2-4 的「這一次明確指定的旋鈕：3 個」。 #}
@@ -94,8 +99,8 @@ permalink: 2-2-5_regressionRun.html
   { labelKey: "qaTest.llmModel", label: "LLM模型", value: "OpenAI gpt-4o-mini", sourceKey: "regression.overrideInherit", source: "沿用設定檔", sourceClass: "is-muted" },
   { labelKey: "settings.reasoningEffort", label: "思考深度", valueKey: "settings.reasoningEffortDefault", value: "沿用模型預設", sourceKey: "regression.overrideInherit", source: "沿用設定檔", sourceClass: "is-muted" },
   { labelKey: "settings.searchSelectedNumber", label: "選用資料筆數", value: "8", sourceKey: "regression.overrideInherit", source: "沿用設定檔", sourceClass: "is-muted" },
-  { labelKey: "qaTest.agentMaxIter", label: "Agent 最大迭代次數", value: "5", sourceKey: "regression.overrideInherit", source: "沿用設定檔", sourceClass: "is-muted" },
   { labelKey: "settings.dataSourceRatio", label: "資料來源比例（主題／向量）", value: "0.25", sourceKey: "regression.overrideInherit", source: "沿用設定檔", sourceClass: "is-muted" },
+  { labelKey: "qaTest.agentMaxIter", label: "Agent 最大迭代次數", value: "5", sourceKey: "regression.overrideInherit", source: "沿用設定檔", sourceClass: "is-muted" },
   { labelKey: "settings.assignedSkills", label: "指派 Skill", value: "3、7", sourceKey: "regression.overrideInherit", source: "沿用設定檔", sourceClass: "is-muted" }
 ] %}
 <div class="block mt-16 flex-row column gap-16">
