@@ -87,36 +87,55 @@ permalink: 2-2-5_regressionRun.html
      輸入，所以永遠沿用，而「永遠沿用」也是這張表要回答的事。設定檔的其餘設定（內容政策、輸出
      規則…）這一輪一律沿用，那支端點在結構上碰不到它們。
 
-     列序：**這一次指定的排前面**（覆寫才是這一輪要看的東西），同一組之內＝提示詞 → 2-2-4 上
-     其餘那幾顆照畫面順序 → 那一頁改不動的三顆排最後。
+     列序：**兩輪不同的排最前面**（挑了基準時，「兩輪的設定差在哪」就是這張表要回答的問題），
+     其次是這一次指定的（覆寫才是這一輪刻意換掉的東西），同一組之內＝提示詞 → 2-2-4 上其餘
+     那幾顆照畫面順序 → 那一頁改不動的三顆排最後。沒挑基準時第一層判準整個消失，退回
+     「這一次指定的排前面」。
 
-     示範自洽（§6）：#311 明確指定了提示詞／對話模式／取用資料筆數三個，其餘六個沿用
-     ——對得上 2-2-4 的「這一次明確指定的旋鈕：3 個」。 #}
+     ## 挑了基準：兩輪的設定**並排**，不是只標差異
+
+     看到「退步」時，人要問的是「兩輪的設定差在哪」。這裡的做法是多兩欄（基準的值、兩輪差異）
+     而**不是只列出不同的那幾個**，理由有三：
+       ① **「完全相同」本身就是答案**——它把「退步是設定造成的」整個排除掉，而只列差異的表在
+          這一態下是空的，空表讀起來是「沒比」（同 `not_compared`／空桶子那一族的假訊號）；
+       ② 只列差異要先決定「相同」的判準，而**缺席的鍵**（基準那一輪還沒有這顆旋鈕）在只標差異
+          的版面上會直接消失；並排時它是一格「—」，看得見；
+       ③ 這張表沒挑基準時就已經是逐旋鈕一列，多一欄是同一張表加寬，不是第二種版面。
+
+     示範自洽（§6）：#311 明確指定了提示詞／LLM模型／對話模式／取用資料筆數四個，其餘五個沿用
+     ——對得上 2-2-4 的「這一次明確指定的旋鈕：4 個」。與基準 #310 相比有 3 個不同
+     （提示詞／LLM模型／取用資料筆數），對得上下方「有 3 個旋鈕不同」那一句。 #}
 {% set effectiveConfigRows = [
-  { field: "prompt", labelKey: "comp.prompt", label: "提示詞", value: "你是一位專業的知識庫問答助手，回答必須僅依據檢索到的資料片段。資料不足時明確說明「無法從現有資料判斷」。", sourceKey: "regression.overrideSet", source: "這一次指定", sourceClass: "is-warn" },
-  { field: "search_mode", labelKey: "qaTest.chatMode", label: "對話模式", valueKey: "qaTest.chatModeTraditional", value: "傳統搜尋", sourceKey: "regression.overrideSet", source: "這一次指定", sourceClass: "is-warn" },
-  { field: "search_total_number", labelKey: "settings.searchTotalNumber", label: "取用資料筆數", value: "24", sourceKey: "regression.overrideSet", source: "這一次指定", sourceClass: "is-warn" },
-  { field: "model_name", labelKey: "qaTest.llmModel", label: "LLM模型", value: "OpenAI gpt-4o-mini", sourceKey: "regression.overrideInherit", source: "沿用設定檔", sourceClass: "is-muted" },
-  { field: "reasoning_effort", labelKey: "settings.reasoningEffort", label: "思考深度", valueKey: "settings.reasoningEffortDefault", value: "沿用模型預設", sourceKey: "regression.overrideInherit", source: "沿用設定檔", sourceClass: "is-muted" },
-  { field: "search_selected_number", labelKey: "settings.searchSelectedNumber", label: "選用資料筆數", value: "8", sourceKey: "regression.overrideInherit", source: "沿用設定檔", sourceClass: "is-muted" },
-  { field: "data_source_ratio", labelKey: "settings.dataSourceRatio", label: "資料來源比例（主題／向量）", value: "0.25", sourceKey: "regression.overrideInherit", source: "沿用設定檔", sourceClass: "is-muted" },
-  { field: "agent_max_iterations", labelKey: "qaTest.agentMaxIter", label: "Agent 最大迭代次數", value: "5", sourceKey: "regression.overrideInherit", source: "沿用設定檔", sourceClass: "is-muted" },
-  { field: "skill_ids", labelKey: "settings.assignedSkills", label: "指派 Skill", value: "3、7", sourceKey: "regression.overrideInherit", source: "沿用設定檔", sourceClass: "is-muted" }
+  { field: "prompt", labelKey: "comp.prompt", label: "提示詞", baseline: "你是一位知識庫問答助手，請依據檢索到的資料片段回答。", value: "你是一位專業的知識庫問答助手，回答必須僅依據檢索到的資料片段。資料不足時明確說明「無法從現有資料判斷」。", diffKey: "regression.effectiveDiffDiffer", diff: "不同", diffClass: "is-warn", sourceKey: "regression.overrideSet", source: "這一次指定", sourceClass: "is-warn" },
+  { field: "model_name", labelKey: "qaTest.llmModel", label: "LLM模型", baseline: "openai:gpt-5-mini", value: "openai:gpt-4o-mini", diffKey: "regression.effectiveDiffDiffer", diff: "不同", diffClass: "is-warn", sourceKey: "regression.overrideSet", source: "這一次指定", sourceClass: "is-warn" },
+  { field: "search_total_number", labelKey: "settings.searchTotalNumber", label: "取用資料筆數", baseline: "16", value: "24", diffKey: "regression.effectiveDiffDiffer", diff: "不同", diffClass: "is-warn", sourceKey: "regression.overrideSet", source: "這一次指定", sourceClass: "is-warn" },
+  { field: "search_mode", labelKey: "qaTest.chatMode", label: "對話模式", baselineKey: "qaTest.chatModeTraditional", baseline: "傳統搜尋", valueKey: "qaTest.chatModeTraditional", value: "傳統搜尋", diffKey: "regression.effectiveDiffSame", diff: "相同", diffClass: "is-muted", sourceKey: "regression.overrideSet", source: "這一次指定", sourceClass: "is-warn" },
+  { field: "reasoning_effort", labelKey: "settings.reasoningEffort", label: "思考深度", baselineKey: "settings.reasoningEffortDefault", baseline: "沿用模型預設", valueKey: "settings.reasoningEffortDefault", value: "沿用模型預設", diffKey: "regression.effectiveDiffSame", diff: "相同", diffClass: "is-muted", sourceKey: "regression.overrideInherit", source: "沿用設定檔", sourceClass: "is-muted" },
+  { field: "search_selected_number", labelKey: "settings.searchSelectedNumber", label: "選用資料筆數", baseline: "8", value: "8", diffKey: "regression.effectiveDiffSame", diff: "相同", diffClass: "is-muted", sourceKey: "regression.overrideInherit", source: "沿用設定檔", sourceClass: "is-muted" },
+  { field: "data_source_ratio", labelKey: "settings.dataSourceRatio", label: "資料來源比例（主題／向量）", baseline: "0.25", value: "0.25", diffKey: "regression.effectiveDiffSame", diff: "相同", diffClass: "is-muted", sourceKey: "regression.overrideInherit", source: "沿用設定檔", sourceClass: "is-muted" },
+  { field: "agent_max_iterations", labelKey: "qaTest.agentMaxIter", label: "Agent 最大迭代次數", baseline: "5", value: "5", diffKey: "regression.effectiveDiffSame", diff: "相同", diffClass: "is-muted", sourceKey: "regression.overrideInherit", source: "沿用設定檔", sourceClass: "is-muted" },
+  { field: "skill_ids", labelKey: "settings.assignedSkills", label: "指派 Skill", baseline: "3、7", value: "3、7", diffKey: "regression.effectiveDiffSame", diff: "相同", diffClass: "is-muted", sourceKey: "regression.overrideInherit", source: "沿用設定檔", sourceClass: "is-muted" }
 ] %}
 <div class="block mt-16 flex-row column gap-16">
     <div class="text-md text-bold" data-i18n="regression.effectiveSection">這一輪實際用的設定</div>
     <p class="text-gray" data-i18n="regression.effectiveIntro">這是這一輪實際送給問答引擎的那一份設定，開跑當下就落庫——不是現在回頭去讀設定檔（設定檔後來被改過，這裡仍然是當時真正跑的那一份）。標成「沿用設定檔」的欄位，跑的時候取的是被測設定檔當下的值；標成「這一次指定」的才是這一輪刻意換掉的。</p>
+    {# 挑了基準才有這一句（與那兩欄同進同出）。單一句型把 0 那一態寫進句子裡，故切版演一態就夠。 #}
+    <p><span class="text-bold" data-i18n="regression.effectiveDiffCountPrefix">與基準 </span><span>#310</span><span data-i18n="regression.effectiveDiffCountMid"> 相比，有 </span><span>3</span><span data-i18n="regression.effectiveDiffCountSuffix"> 個旋鈕不同——0 個時，兩輪跑的是同一組設定，退步就不是設定造成的。</span></p>
     <div class="table-container scrollTable">
         <table class="default-table">
             <colgroup>
                 <col style="width:200px; min-width:200px;">
-                <col style="min-width:360px;">
+                <col style="min-width:300px;">
+                <col style="min-width:300px;">
+                <col style="width:110px; min-width:110px;">
                 <col style="width:140px; min-width:140px;">
             </colgroup>
             <thead>
                 <tr>
                     <th data-i18n="regression.effectiveKnob">旋鈕</th>
+                    <th data-i18n="regression.effectiveBaselineValue">基準那一輪的值</th>
                     <th data-i18n="regression.effectiveValue">這一輪的值</th>
+                    <th data-i18n="regression.effectiveDiff">兩輪差異</th>
                     <th data-i18n="regression.effectiveSource">值的來源</th>
                 </tr>
             </thead>
@@ -124,15 +143,20 @@ permalink: 2-2-5_regressionRun.html
                 {% for row in effectiveConfigRows %}
                 <tr data-effective-field="{{ row.field }}">
                     <td class="text-bold" data-i18n="{{ row.labelKey }}">{{ row.label }}</td>
+                    <td{% if row.baselineKey %} data-i18n="{{ row.baselineKey }}"{% endif %}>{{ row.baseline }}</td>
                     <td{% if row.valueKey %} data-i18n="{{ row.valueKey }}"{% endif %}>{{ row.value }}</td>
+                    <td><span class="verdict-tag {{ row.diffClass }}" data-i18n="{{ row.diffKey }}">{{ row.diff }}</span></td>
                     <td><span class="verdict-tag {{ row.sourceClass }}" data-i18n="{{ row.sourceKey }}">{{ row.source }}</span></td>
                 </tr>
                 {% else %}
-                <tr><td colspan="3" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
+                <tr><td colspan="5" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
+    {# 基準那一輪沒有落下 effective_config 時：那兩欄整個不渲染，並在這裡大聲說出來
+         ——填滿九列「—」再逐列標「不同」等於憑空捏造一份差異。 #}
+    <p class="text-red hidden" data-i18n="regression.effectiveBaselineMissing">基準那一輪沒有留下實際使用的設定，所以「兩輪的設定差在哪」這一次答不出來——不要把下面這張表讀成「兩輪設定相同」。</p>
     <p class="text-gray" data-i18n="regression.effectiveRestHint">這張表只列「執行這一套案例集」改得動的那幾個旋鈕。設定檔的其餘設定（內容政策、輸出規則、QA 直答、標籤過濾…）這一輪一律沿用，那支端點在結構上碰不到它們——把它們塞進覆寫會被擋成「未知的覆寫欄位」。</p>
 </div>
 
@@ -211,6 +235,8 @@ permalink: 2-2-5_regressionRun.html
     </div>
     {# 基準那一次自己的狀態也要看得見，否則 partial 會被當成 complete。 #}
     <p class="text-gray"><span data-i18n="regression.baselineStatePrefix">基準 </span><span>#310</span><span data-i18n="regression.baselineStateMid"> 的狀態是 </span><span data-i18n="regression.statusFinished">完成</span><span data-i18n="regression.baselineStateRan">，跑完 </span><span>10</span><span data-i18n="regression.casesUnit"> 則</span></p>
+    {# 命中清單為什麼要兩側並排，以及它有上界這件事——講在比較區塊的入口，不是只寫在某一格裡。 #}
+    <p class="text-gray" data-i18n="regression.hitsWhy">下面每一塊多了「基準引用」與「這一次引用」兩欄：退步最常見的原因就是「以前引 A、現在引 B」，而那只有兩側擺在一起才看得出來。逐筆命中只留文件身分與來源線索（不存全文），而且每一則有筆數上界——被夾掉時那一格會明說共幾筆，不要把它讀成「只引了這幾份」。</p>
 </div>
 
 {# ── 五個桶子 ───────────────────────────────────────────────────────────────
@@ -221,13 +247,16 @@ permalink: 2-2-5_regressionRun.html
      示範自洽（§6）：退步 1、修好了 1、無變化 8＝比得成的 10 則（＝基準與這一次都有結果的
      那幾則）；另有 2 則沒得比（這一次中斷前沒跑到），與上面「跑完 10 則、基準 10 則」相符
      ——案例集共 12 則，這一次跑到第 10 則就中斷。 #}
+{# 「引用的文件」兩欄的示範刻意演四種狀態（GUIDELINE §6）：
+     #41 兩側引到不同文件（＝「以前引 A、現在引 B」，退步的核心線索）、
+     #38 基準零命中、#37 兩側相同、#40 這一次被夾掉（格子裡明說共幾筆）。 #}
 {% set compareBuckets = [
   {
     key: "regressed", titleKey: "regression.bucketRegressed", title: "退步（本來對、現在錯）",
     tagClass: "is-fail", count: "1",
     whyKey: "regression.bucketRegressedWhy", why: "這一份是整份報表的價值所在：基準那一次通過、這一次沒過，也就是這次改動弄壞的東西。",
     rows: [
-      { caseNo: "#41", question: "臺灣輸美鋼品的關稅稅率是多少", before: "通過", beforeKey: "regression.verdictPass", beforeClass: "is-pass", after: "未通過", afterKey: "regression.verdictFail", afterClass: "is-fail", detail: "答案缺少：25%" }
+      { caseNo: "#41", question: "臺灣輸美鋼品的關稅稅率是多少", before: "通過", beforeKey: "regression.verdictPass", beforeClass: "is-pass", after: "未通過", afterKey: "regression.verdictFail", afterClass: "is-fail", beforeHits: "鋼品關稅表_2025.pdf／稅則號列對照.xlsx", afterHits: "一般貿易須知.pdf", detail: "答案缺少：25%" }
     ]
   },
   {
@@ -235,7 +264,7 @@ permalink: 2-2-5_regressionRun.html
     tagClass: "is-pass", count: "1",
     whyKey: "regression.bucketFixedWhy", why: "基準那一次沒過、這一次通過了。",
     rows: [
-      { caseNo: "#38", question: "出口鋼品要準備哪些文件", before: "未通過", beforeKey: "regression.verdictFail", beforeClass: "is-fail", after: "通過", afterKey: "regression.verdictPass", afterClass: "is-pass", detail: "" }
+      { caseNo: "#38", question: "出口鋼品要準備哪些文件", before: "未通過", beforeKey: "regression.verdictFail", beforeClass: "is-fail", after: "通過", afterKey: "regression.verdictPass", afterClass: "is-pass", beforeHitsKey: "regression.hitsNone", beforeHits: "（零命中）", afterHits: "出口文件清單.pdf", detail: "" }
     ]
   },
   {
@@ -243,8 +272,8 @@ permalink: 2-2-5_regressionRun.html
     tagClass: "is-muted", count: "8",
     whyKey: "regression.bucketUnchangedWhy", why: "兩次的確定性判定相同（含兩次都沒過）。這一塊不含「沒得比」與「評審整批壞掉」——那兩件事各自在上面。",
     rows: [
-      { caseNo: "#37", question: "鋼品的稅則號列怎麼查", before: "通過", beforeKey: "regression.verdictPass", beforeClass: "is-pass", after: "通過", afterKey: "regression.verdictPass", afterClass: "is-pass", detail: "" },
-      { caseNo: "#40", question: "美國對鋁材的配額是多少", before: "未通過", beforeKey: "regression.verdictFail", beforeClass: "is-fail", after: "未通過", afterKey: "regression.verdictFail", afterClass: "is-fail", detail: "答案缺少：配額" }
+      { caseNo: "#37", question: "鋼品的稅則號列怎麼查", before: "通過", beforeKey: "regression.verdictPass", beforeClass: "is-pass", after: "通過", afterKey: "regression.verdictPass", afterClass: "is-pass", beforeHits: "稅則號列對照.xlsx", afterHits: "稅則號列對照.xlsx", detail: "" },
+      { caseNo: "#40", question: "美國對鋁材的配額是多少", before: "未通過", beforeKey: "regression.verdictFail", beforeClass: "is-fail", after: "未通過", afterKey: "regression.verdictFail", afterClass: "is-fail", beforeHits: "配額公告.pdf", afterHits: "配額公告.pdf／配額問答.pdf", afterHitsTotal: "63", afterHitsShown: "50", detail: "答案缺少：配額" }
     ]
   }
 ] %}
@@ -272,6 +301,8 @@ permalink: 2-2-5_regressionRun.html
                 <col style="min-width:280px;">
                 <col style="width:120px; min-width:120px;">
                 <col style="width:120px; min-width:120px;">
+                <col style="min-width:240px;">
+                <col style="min-width:240px;">
                 <col style="min-width:280px;">
             </colgroup>
             <thead>
@@ -280,6 +311,8 @@ permalink: 2-2-5_regressionRun.html
                     <th data-i18n="regression.caseQuestion">案例的問題</th>
                     <th data-i18n="regression.baselineVerdict">基準判定</th>
                     <th data-i18n="regression.currentVerdict">這一次判定</th>
+                    <th data-i18n="regression.hitsBaseline">基準引用</th>
+                    <th data-i18n="regression.hitsCurrent">這一次引用</th>
                     <th data-i18n="agent.errorReason">失敗原因</th>
                 </tr>
             </thead>
@@ -290,10 +323,12 @@ permalink: 2-2-5_regressionRun.html
                     <td>{{ row.question }}</td>
                     <td><span class="verdict-tag {{ row.beforeClass }}" data-i18n="{{ row.beforeKey }}">{{ row.before }}</span></td>
                     <td><span class="verdict-tag {{ row.afterClass }}" data-i18n="{{ row.afterKey }}">{{ row.after }}</span></td>
+                    <td><span{% if row.beforeHitsKey %} data-i18n="{{ row.beforeHitsKey }}"{% endif %}>{{ row.beforeHits }}</span>{% if row.beforeHitsTotal %}<span data-i18n="regression.hitsTruncatedPrefix">（這一格只列了前 </span><span>{{ row.beforeHitsShown }}</span><span data-i18n="regression.hitsTruncatedMid"> 筆，實際命中 </span><span>{{ row.beforeHitsTotal }}</span><span data-i18n="regression.hitsTruncatedSuffix"> 筆）</span>{% endif %}</td>
+                    <td><span{% if row.afterHitsKey %} data-i18n="{{ row.afterHitsKey }}"{% endif %}>{{ row.afterHits }}</span>{% if row.afterHitsTotal %}<span data-i18n="regression.hitsTruncatedPrefix">（這一格只列了前 </span><span>{{ row.afterHitsShown }}</span><span data-i18n="regression.hitsTruncatedMid"> 筆，實際命中 </span><span>{{ row.afterHitsTotal }}</span><span data-i18n="regression.hitsTruncatedSuffix"> 筆）</span>{% endif %}</td>
                     <td>{{ row.detail }}</td>
                 </tr>
                 {% else %}
-                <tr><td colspan="5" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
+                <tr><td colspan="7" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -384,7 +419,19 @@ permalink: 2-2-5_regressionRun.html
      示範刻意留一則 0 輪的多輪案例——那正是要被看到的那一格。
 
      「主觀分」欄三態各自不同：有分數就印分數（**不因為分數低而變黃燈**，後端刻意不設門檻）、
-     沒有 judge 斷言印「無主觀分」、有判準卻沒評出來印「評審未完成」（黃燈：那是量不到）。 #}
+     沒有 judge 斷言印「無主觀分」、有判準卻沒評出來印「評審未完成」（黃燈：那是量不到）。
+
+     ## 命中文件那一列
+
+     `RegressionResult.hits` 逐筆只有**身分（檔名／文件 id）＋ 來源線索**（資料來源、索引、
+     第幾段、分數）——整份文件的欄位包不落庫（200 則 × 每則十幾筆命中把全文再存一份是幾十 MB）。
+     這一列與比較表那兩欄是同一份資料的兩種粒度：那兩欄回答「以前引 A、現在引 B」，這一列回答
+     「為什麼是這幾份」。
+
+     線索欄位缺席時整段不渲染（存一串空值只是噪音）——示範第 2 筆刻意只有檔名與分數。
+     **三種「不可以留白」**：零命中、命中沒有身分、清單被夾掉；空白會被讀成「這一題零命中」，
+     那是一個看起來正常的錯誤答案。示範這裡演第二種（第 3 筆），另外兩種在比較表那兩欄
+     （#38 的基準零命中、#40 的這一次被夾掉）——三種用的是同一組 key。 #}
 {% set runResultRows = [
   {
     caseNo: "#41", question: "臺灣輸美鋼品的關稅稅率是多少",
@@ -397,6 +444,11 @@ permalink: 2-2-5_regressionRun.html
       "主觀評分判準：答案有沒有正面回答「稅率是多少」"
     ],
     answer: "鋼品出口到美國需要依照 HS 稅則號列申報，實際稅率請洽海關。",
+    hits: [
+      { name: "一般貿易須知.pdf", source: "貿易法規資料集", index: "tenant7_trade", chunk: "3", score: "0.71" },
+      { name: "出口實務問答.pdf", score: "0.64" },
+      { noIdentity: "3" }
+    ],
     failures: ["答案缺少：25%"]
   },
   {
@@ -406,6 +458,9 @@ permalink: 2-2-5_regressionRun.html
     latency: "1,780", tokens: "884", turnsSent: "0",
     expectations: ["答案須包含：10%"],
     answer: "鋁材輸美目前適用 10% 的關稅。",
+    hits: [
+      { name: "鋁材關稅公告.pdf", source: "關稅資料集", index: "tenant7_tariff", chunk: "1", score: "0.88" }
+    ],
     failures: []
   }
 ] %}
@@ -475,6 +530,26 @@ permalink: 2-2-5_regressionRun.html
                                     <tr>
                                         <th data-i18n="regression.actualAnswer">實際答案</th>
                                         <td colspan="3">{{ row.answer }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th data-i18n="regression.hitsRow">命中文件</th>
+                                        <td colspan="3">
+                                            <ul class="list-style-disc">
+                                                {% for h in row.hits %}
+                                                <li>
+                                                    {%- if h.noIdentity %}<span data-i18n="regression.hitsNoIdentityPrefix">（第 </span><span>{{ h.noIdentity }}</span><span data-i18n="regression.hitsNoIdentitySuffix"> 筆命中沒有文件身分）</span>{% else %}<span>{{ h.name }}</span>{% endif -%}
+                                                    {%- if h.source %}<span data-i18n="regression.hitSource">｜來源：</span><span>{{ h.source }}</span>{% endif -%}
+                                                    {%- if h.index %}<span data-i18n="regression.hitIndex">｜索引：</span><span>{{ h.index }}</span>{% endif -%}
+                                                    {%- if h.chunk %}<span data-i18n="regression.hitChunkPrefix">｜第 </span><span>{{ h.chunk }}</span><span data-i18n="regression.hitChunkSuffix"> 段</span>{% endif -%}
+                                                    {%- if h.score %}<span data-i18n="regression.hitScore">｜分數 </span><span>{{ h.score }}</span>{% endif -%}
+                                                </li>
+                                                {% else %}
+                                                <li data-i18n="regression.hitsNone">（零命中）</li>
+                                                {% endfor %}
+                                            </ul>
+                                            {# 被夾掉時才有（hidden 演另一態）。數字與上面列出的筆數自洽：列了 3 筆、實際 63 筆。 #}
+                                            <p class="text-gray hidden"><span data-i18n="regression.hitsTruncatedPrefix">（這一格只列了前 </span><span>3</span><span data-i18n="regression.hitsTruncatedMid"> 筆，實際命中 </span><span>63</span><span data-i18n="regression.hitsTruncatedSuffix"> 筆）</span></p>
+                                        </td>
                                     </tr>
                                     <tr>
                                         <th data-i18n="agent.errorReason">失敗原因</th>

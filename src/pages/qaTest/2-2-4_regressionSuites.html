@@ -512,12 +512,25 @@ permalink: 2-2-4_regressionSuites.html
 
      「知識檢索」不在兩態之內：它是 body 頂層的 `profile_no`＝「要測哪一個設定檔」，不是覆寫。
 
-     示範刻意 3 覆寫 ／ 3 沿用（兩態都要演得出來），而且互不矛盾：對話模式覆寫成傳統搜尋，
+     示範刻意 4 覆寫 ／ 2 沿用（兩態都要演得出來），而且互不矛盾：對話模式覆寫成傳統搜尋，
      所以「取用資料筆數」這一欄在這一輪真的會生效。每個旋鈕的包裝（名稱 ＋ 狀態標記 ＋ 勾選）
      是同一套，但裡面的控制項各不相同（select／輸入框／textarea），而 Nunjucks 的 include 沒有
-     slot，故逐個寫出來；沿用態下沒有控制項可掛 for，故名稱改用 <span class="control-label">。 #}
+     slot，故逐個寫出來；沿用態下沒有控制項可掛 for，故名稱改用 <span class="control-label">。
+
+     ## LLM模型是 select，不是輸入框
+
+     可選的模型＝這個租戶被允許使用的那幾顆（`GET /qatest/models`＝GufoRAG 模型目錄 ∩ 平台開通
+     給該租戶的清單，同 2-2-1／2-2-3）。**自由輸入的失敗方式是「要按下開始執行才知道打錯」**
+     ——後端回 403「無權限使用模型」，而那一次已經耗掉了使用者的等待。
+
+     兩句紅字是**選了目錄裡 product 自己驅動不了的那種模型**時才出現的（切版用 `hidden` 演兩態）。
+     判準不在畫面上：`GET /settings/llm-contract` 投影 product `app/llm.py` 的
+     `PROVIDER_PREFIXES`／`REASONING_EFFORT_PREFIXES`，前端不得自己抄一份前綴清單。
+     為什麼會壞：judge 斷言的評審模型讀的是設定檔的判定分組，**分組沒設就繼承這一輪的
+     `model_name`**；繼承到 product 建不起來的 provider 時，這一輪每一則主觀分斷言都會變成
+     「評審未完成」——報表看起來只是「評審漂移」，沒有人會知道是這一顆旋鈕造成的。 #}
 {% set regressionTurnTotal = 4 %}
-{% set regressionOverrideCount = 3 %}
+{% set regressionOverrideCount = 4 %}
 {% set regressionLimits = [
   { labelKey: "regression.limitCases", label: "單次執行案例上限：", value: "200", unitKey: "regression.casesUnit", unit: " 則" },
   { labelKey: "regression.limitContextTurns", label: "前置對話上限：", value: "10", unitKey: "regression.turnsUnit", unit: " 輪" },
@@ -548,19 +561,27 @@ permalink: 2-2-4_regressionSuites.html
                 </div>
             </div>
         </div>
-        {# LLM模型（model_name）——沿用態：控制項整個不出現。 #}
+        {# LLM模型（model_name）——覆寫態：控制項是 select（值域來自 GET /qatest/models），不是輸入框。
+             兩句紅字用 hidden 演另一態：選到 product 驅動不了的 provider 時才出現（見上方檔頭）。 #}
         <div class="col-4-md col-12-sm">
             <div class="form-group">
                 <div class="label">
-                    <span class="control-label" data-i18n="qaTest.llmModel">LLM模型</span>
-                    <span class="verdict-tag is-muted" data-i18n="regression.overrideInherit">沿用設定檔</span>
+                    <label for="runLlmSelect" class="control-label" data-i18n="qaTest.llmModel">LLM模型</label>
+                    <span class="verdict-tag is-warn" data-i18n="regression.overrideSet">這一次指定</span>
                 </div>
                 <div class="field flex-row column gap-8">
                     <label class="form-checkbox">
-                        <input type="checkbox" class="js-override-model-name">
+                        <input type="checkbox" class="js-override-model-name" checked>
                         <span data-i18n="regression.overrideThisRun">這一次改用指定值</span>
                     </label>
-                    <p class="text-gray" data-i18n="regression.overrideInheritHint">這一欄不隨這次執行送出，跑的是被測設定檔當下的值。</p>
+                    <select id="runLlmSelect" class="form-control singleSelect js-llm-select" aria-describedby="runLlmSelectHint">
+                        <option value="openai:gpt-4o-mini" selected>OpenAI gpt-4o-mini</option>
+                        <option value="openai:gpt-5-mini">OpenAI gpt-5-mini</option>
+                        <option value="anthropic:claude-opus-4-8">Anthropic claude-opus-4-8</option>
+                    </select>
+                    <p id="runLlmSelectHint" class="text-gray" data-i18n="regression.llmFromCatalog">可以選的就是這個租戶被允許使用的那幾顆模型；這一欄不接受自己打字——打錯的話要按下開始執行才會被擋掉，而那一次的等待已經花掉了。</p>
+                    <p class="text-red hidden" data-i18n="regression.llmProviderUnsupported">這顆模型的供應商不在本產品建得起來的範圍內：設定檔的判定分組沒有另外指定模型時，評審會繼承這一輪的模型而建不起來——這一輪每一則主觀分斷言都會是「評審未完成」。答案本身仍由問答引擎產生。</p>
+                    <p class="text-red hidden" data-i18n="regression.llmEffortUnsupported">本產品送不出思考深度給這顆模型：設定檔的判定分組若設了思考深度，評審一樣會建不起來（同樣只影響主觀分，不影響答案）。</p>
                 </div>
             </div>
         </div>
