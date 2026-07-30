@@ -1,11 +1,15 @@
 {# 一筆健檢記錄的**可讀身分**（gufofaq-saas product `app/routers/health_findings.py` 的
      `RecordOut`）。使用頁在 `{% for %}` 內 `{% set recordIdentity = … %}` 之後 include。
 
-     參數 `recordIdentity = { title, titleChars, titleSourceLabel, titleSourceKey, filename,
-     row, unavailableReason }`（逐欄對回 `RecordOut`；`titleSourceLabel`／`titleSourceKey` 是
-     `title_source` 那個閉合值域在示範列上的投影——切版沒有查表可用，React 端是一張真的對照表）。
+     參數 `recordIdentity = { title, titleChars, titleSource, filename, row, unavailableReason }`
+     （**逐欄逐值對回 `RecordOut`**，包含 `titleSource` 的三個識別字本身）。
      `unavailableDetail`（product 算出來的那一整段話）**不在這裡畫**：它是一段獨立的說明文字，
      由「涉及的記錄」那一列在身分後面另起一段，處置選項那幾格只需要短標記。
+
+     種類標記走 `{% if %}` 鏈、key 逐條寫成字面，**不走「示範列上帶一組 label／key」那套投影**
+     （本頁的 `severityLabel`／`severityKey` 是那一套）：投影出來的 `data-i18n="{{ … }}"` 是模板
+     變數，saas 端 `lib/i18n/parity.test.ts` 的抽取器對它是瞎的（它明文記著那一族「沒有任何網」，
+     `settings.outputRule*Desc` 就是這樣漏了一整輪）。寫成字面的三顆因此逐字受那條測試守門。
 
      放 `components/` 而不是 `ui/`：它在自己的 markup 寫了 `ui/inline-code` 的 class
      （GUIDELINE §1-1 的「用到其他元件」第二種形式）。
@@ -47,7 +51,8 @@
      N 字而不說原本多長，讀的人會以為那就是全部——而這裡正是他要據以選擇的那一格，所以截斷的
      提示在每一處都出現，不是只出現在清單那一份。 #}
 {% if recordIdentity.unavailableReason %}<span class="text-gray" data-i18n="health.recordUnavailable">（讀不出這一筆的標題）</span>
-<code class="inline-code">{{ recordIdentity.unavailableReason }}</code>{% else %}<span class="text-gray" data-i18n="{{ recordIdentity.titleSourceKey }}">{{ recordIdentity.titleSourceLabel }}</span>
+<code class="inline-code">{{ recordIdentity.unavailableReason }}</code>{% else %}
+{% if recordIdentity.titleSource == "title_slot" %}<span class="text-gray" data-i18n="health.recordSourceRow">〔資料列〕</span>{% elif recordIdentity.titleSource == "filename" %}<span class="text-gray" data-i18n="health.recordSourceDocument">〔整份文件〕</span>{% elif recordIdentity.titleSource == "no_answer_question" %}<span class="text-gray" data-i18n="health.recordSourceQuestion">〔使用者的問法〕</span>{% endif %}
 {% if recordIdentity.title %}<span class="bold">{{ recordIdentity.title }}</span>{% else %}<span class="text-gray" data-i18n="health.recordTitleBlank">（這一筆的標題欄是空的）</span>{% endif %}
 {% if recordIdentity.titleChars > recordIdentity.title.length %}<span class="text-gray" data-i18n="health.recordTitleCutPrefix">（只顯示開頭，原文共 </span><span class="text-gray">{{ recordIdentity.titleChars }}</span><span class="text-gray" data-i18n="health.recordTitleCutSuffix"> 字）</span>{% endif %}
 {% endif %}

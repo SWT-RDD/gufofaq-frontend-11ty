@@ -305,7 +305,8 @@ permalink: 3-5_dataHealth.html
      `noteLines` 是 `note` 逐行拆開（product 用 `\n\n` 把「上一次的處置理由」與「為什麼又回來」
      分成兩段；React 端是 `note.split("\n")` 去掉空行，切版沒有字串運算可用故列成陣列）。
 
-     **`records` 逐筆＝`FindingOut.records[]`（`RecordOut`）**，渲染走 `ui/record-identity`。
+     **`records` 逐筆＝`FindingOut.records[]`（`RecordOut`）**，渲染走 `components/record-identity`
+     （`titleSource` 是 product 的識別字本身，不是投影出來的 label／key 一組——理由見該元件檔頭）。
      示範刻意把每一種身分與每一種「讀不出來」各演到（否則那幾個分支沒有人看過它們的長相）：
        · 901 的前兩筆**標題逐字相同**（近似重複本來就長這樣）⇒ 只有檔案與列號分得開；第三筆的
          **標題欄是空的**（`title` 空字串，不是 null）
@@ -334,9 +335,9 @@ permalink: 3-5_dataHealth.html
       { key: "max_similarity", value: "0.9884" }
     ],
     records: [
-      { key: "b7c1e93a4d20", title: "犬貓專案怎麼申請", titleChars: 8, titleSourceLabel: "〔資料列〕", titleSourceKey: "health.recordSourceRow", filename: "常見問答_2026Q1.xlsx", row: 12 },
-      { key: "1f4a08d6cc51", title: "犬貓專案怎麼申請", titleChars: 8, titleSourceLabel: "〔資料列〕", titleSourceKey: "health.recordSourceRow", filename: "客服話術彙編.xlsx", row: 137 },
-      { key: "9e2b7710af83", title: "", titleChars: 0, titleSourceLabel: "〔資料列〕", titleSourceKey: "health.recordSourceRow", filename: "客服話術彙編.xlsx", row: 138 }
+      { key: "b7c1e93a4d20", title: "犬貓專案怎麼申請", titleChars: 8, titleSource: "title_slot", filename: "常見問答_2026Q1.xlsx", row: 12 },
+      { key: "1f4a08d6cc51", title: "犬貓專案怎麼申請", titleChars: 8, titleSource: "title_slot", filename: "客服話術彙編.xlsx", row: 137 },
+      { key: "9e2b7710af83", title: "", titleChars: 0, titleSource: "title_slot", filename: "客服話術彙編.xlsx", row: 138 }
     ],
     noteLines: [], resolvedAt: "", resolvedBy: "",
     actions: ["dismiss", "merge", "disable"]
@@ -353,8 +354,8 @@ permalink: 3-5_dataHealth.html
       { key: "max_similarity", value: "0.9410" }
     ],
     records: [
-      { key: "5a30b1cf7e64", title: "退貨的運費由誰負擔", titleChars: 9, titleSourceLabel: "〔資料列〕", titleSourceKey: "health.recordSourceRow", filename: "客服直答集.xlsx", row: 4 },
-      { key: "c81d69204b7f", title: "退貨運費誰要出", titleChars: 7, titleSourceLabel: "〔資料列〕", titleSourceKey: "health.recordSourceRow", filename: "客服直答集.xlsx", row: 19 }
+      { key: "5a30b1cf7e64", title: "退貨的運費由誰負擔", titleChars: 9, titleSource: "title_slot", filename: "客服直答集.xlsx", row: 4 },
+      { key: "c81d69204b7f", title: "退貨運費誰要出", titleChars: 7, titleSource: "title_slot", filename: "客服直答集.xlsx", row: 19 }
     ],
     noteLines: [], resolvedAt: "", resolvedBy: "",
     actions: ["dismiss", "disable"]
@@ -370,7 +371,7 @@ permalink: 3-5_dataHealth.html
       { key: "valid_until", value: "2024-11-30" }
     ],
     records: [
-      { key: "3c9f52ea18b6", title: "貨物稅減免申請的有效期到什麼時候", titleChars: 16, titleSourceLabel: "〔資料列〕", titleSourceKey: "health.recordSourceRow", filename: "法規彙編_2026.xlsx", row: 58 }
+      { key: "3c9f52ea18b6", title: "貨物稅減免申請的有效期到什麼時候", titleChars: 16, titleSource: "title_slot", filename: "法規彙編_2026.xlsx", row: 58 }
     ],
     noteLines: [
       "同一份規定在 11 月底之前仍然有效，不算過期。",
@@ -390,8 +391,8 @@ permalink: 3-5_dataHealth.html
       { key: "claims", value: "{\"7d18b0a3f5c2\":[\"15%\"],\"ae64c9017d3b\":[\"20%\"]}" }
     ],
     records: [
-      { key: "7d18b0a3f5c2", title: "汽車貨物稅的稅率是多少", titleChars: 11, titleSourceLabel: "〔資料列〕", titleSourceKey: "health.recordSourceRow", filename: "法規彙編_2026.xlsx", row: 21 },
-      { key: "ae64c9017d3b", title: "小客車貨物稅稅率", titleChars: 8, titleSourceLabel: "〔資料列〕", titleSourceKey: "health.recordSourceRow", filename: "稅務問答_舊版.xlsx", row: 9 }
+      { key: "7d18b0a3f5c2", title: "汽車貨物稅的稅率是多少", titleChars: 11, titleSource: "title_slot", filename: "法規彙編_2026.xlsx", row: 21 },
+      { key: "ae64c9017d3b", title: "小客車貨物稅稅率", titleChars: 8, titleSource: "title_slot", filename: "稅務問答_舊版.xlsx", row: 9 }
     ],
     noteLines: [], resolvedAt: "", resolvedBy: "",
     actions: ["dismiss", "supersede"]
@@ -407,7 +408,7 @@ permalink: 3-5_dataHealth.html
       { key: "kind", value: "noun_phrase" }
     ],
     records: [
-      { key: "6b02da4e9137", title: "退運作業", titleChars: 4, titleSourceLabel: "〔資料列〕", titleSourceKey: "health.recordSourceRow", filename: "常見問答_2026Q1.xlsx", row: 77 }
+      { key: "6b02da4e9137", title: "退運作業", titleChars: 4, titleSource: "title_slot", filename: "常見問答_2026Q1.xlsx", row: 77 }
     ],
     noteLines: [], resolvedAt: "", resolvedBy: "",
     actions: ["dismiss", "add-phrasing"]
@@ -422,7 +423,7 @@ permalink: 3-5_dataHealth.html
       { key: "missing_slots", value: "note1" }
     ],
     records: [
-      { key: "0d7c34fb85a9", title: "2026 新制什麼時候上路", titleChars: 12, titleSourceLabel: "〔資料列〕", titleSourceKey: "health.recordSourceRow", filename: "2026新制問答_v3.xlsx", row: 3 }
+      { key: "0d7c34fb85a9", title: "2026 新制什麼時候上路", titleChars: 12, titleSource: "title_slot", filename: "2026新制問答_v3.xlsx", row: 3 }
     ],
     noteLines: [], resolvedAt: "", resolvedBy: "",
     actions: ["dismiss"]
@@ -438,7 +439,7 @@ permalink: 3-5_dataHealth.html
       { key: "window_days", value: "7" }
     ],
     records: [
-      { key: "c4a70f18d59e", title: "犬貓入境檢疫作業手冊.pdf", titleChars: 13, titleSourceLabel: "〔整份文件〕", titleSourceKey: "health.recordSourceDocument", filename: "犬貓入境檢疫作業手冊.pdf", row: "" }
+      { key: "c4a70f18d59e", title: "犬貓入境檢疫作業手冊.pdf", titleChars: 13, titleSource: "filename", filename: "犬貓入境檢疫作業手冊.pdf", row: "" }
     ],
     noteLines: [], resolvedAt: "", resolvedBy: "",
     actions: ["dismiss"]
@@ -454,7 +455,7 @@ permalink: 3-5_dataHealth.html
       { key: "asks_at_least", value: "10" }
     ],
     records: [
-      { key: "no-answer-topic:5f1c0b8a7d3e94216ac5d0f83b7e1c4a92d6708fb35ce41d8a09627f4bd3e15c", title: "犬貓可以帶上飛機嗎", titleChars: 9, titleSourceLabel: "〔使用者的問法〕", titleSourceKey: "health.recordSourceQuestion", filename: "", row: "" }
+      { key: "no-answer-topic:5f1c0b8a7d3e94216ac5d0f83b7e1c4a92d6708fb35ce41d8a09627f4bd3e15c", title: "犬貓可以帶上飛機嗎", titleChars: 9, titleSource: "no_answer_question", filename: "", row: "" }
     ],
     noteLines: [], resolvedAt: "", resolvedBy: "",
     actions: ["dismiss"]
@@ -471,9 +472,9 @@ permalink: 3-5_dataHealth.html
       { key: "max_similarity", value: "0.9915" }
     ],
     records: [
-      { key: "44e1a7c0b96d", title: "犬貓輸入檢疫要準備哪些文件", titleChars: 13, titleSourceLabel: "〔資料列〕", titleSourceKey: "health.recordSourceRow", filename: "常見問答_2026Q1.xlsx", row: 41 },
-      { key: "e903cb2517f4", title: "本公司自一一三年一月一日起受理犬貓輸入檢疫申請案件，申請人應於預定輸入日前三十日，檢附輸出國政府動物檢疫機關簽發之動物檢疫證明書、狂犬病不活化疫苗接種證明書、狂犬病抗體力價檢測報告及晶片植入紀錄，向本公司客服信箱提出申請，經審查合格後核發輸入同意文件；未依規定檢附文件或文件內容與申請書所載不符者，本公司得不予受理並以書面通知補正，補正期限自通知送達之次日起算十四日，逾期未補正者駁回其申請案件，並函", titleChars: 231, titleSourceLabel: "〔資料列〕", titleSourceKey: "health.recordSourceRow", filename: "常見問答_2026Q1.xlsx", row: 42 },
-      { key: "82fd6b0c4ae1", title: "", titleChars: "", titleSourceLabel: "", titleSourceKey: "",
+      { key: "44e1a7c0b96d", title: "犬貓輸入檢疫要準備哪些文件", titleChars: 13, titleSource: "title_slot", filename: "常見問答_2026Q1.xlsx", row: 41 },
+      { key: "e903cb2517f4", title: "本公司自一一三年一月一日起受理犬貓輸入檢疫申請案件，申請人應於預定輸入日前三十日，檢附輸出國政府動物檢疫機關簽發之動物檢疫證明書、狂犬病不活化疫苗接種證明書、狂犬病抗體力價檢測報告及晶片植入紀錄，向本公司客服信箱提出申請，經審查合格後核發輸入同意文件；未依規定檢附文件或文件內容與申請書所載不符者，本公司得不予受理並以書面通知補正，補正期限自通知送達之次日起算十四日，逾期未補正者駁回其申請案件，並函", titleChars: 231, titleSource: "title_slot", filename: "常見問答_2026Q1.xlsx", row: 42 },
+      { key: "82fd6b0c4ae1", title: "", titleChars: "", titleSource: "",
         filename: "", row: "",
         unavailableReason: "record_not_found",
         unavailableDetail: "這一筆記錄在本租戶的資料集裡找不到——可能是上一次掃描之後那一列已被刪除或重新匯入（重新匯入會換一組文件編號）。重新掃描就會拿到最新的清單。" }
