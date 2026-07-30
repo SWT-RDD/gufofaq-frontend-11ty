@@ -93,15 +93,15 @@ permalink: 2-2-5_regressionRun.html
      示範自洽（§6）：#311 明確指定了提示詞／對話模式／取用資料筆數三個，其餘六個沿用
      ——對得上 2-2-4 的「這一次明確指定的旋鈕：3 個」。 #}
 {% set effectiveConfigRows = [
-  { labelKey: "comp.prompt", label: "提示詞", value: "你是一位專業的知識庫問答助手，回答必須僅依據檢索到的資料片段。資料不足時明確說明「無法從現有資料判斷」。", sourceKey: "regression.overrideSet", source: "這一次指定", sourceClass: "is-warn" },
-  { labelKey: "qaTest.chatMode", label: "對話模式", valueKey: "qaTest.chatModeTraditional", value: "傳統搜尋", sourceKey: "regression.overrideSet", source: "這一次指定", sourceClass: "is-warn" },
-  { labelKey: "settings.searchTotalNumber", label: "取用資料筆數", value: "24", sourceKey: "regression.overrideSet", source: "這一次指定", sourceClass: "is-warn" },
-  { labelKey: "qaTest.llmModel", label: "LLM模型", value: "OpenAI gpt-4o-mini", sourceKey: "regression.overrideInherit", source: "沿用設定檔", sourceClass: "is-muted" },
-  { labelKey: "settings.reasoningEffort", label: "思考深度", valueKey: "settings.reasoningEffortDefault", value: "沿用模型預設", sourceKey: "regression.overrideInherit", source: "沿用設定檔", sourceClass: "is-muted" },
-  { labelKey: "settings.searchSelectedNumber", label: "選用資料筆數", value: "8", sourceKey: "regression.overrideInherit", source: "沿用設定檔", sourceClass: "is-muted" },
-  { labelKey: "settings.dataSourceRatio", label: "資料來源比例（主題／向量）", value: "0.25", sourceKey: "regression.overrideInherit", source: "沿用設定檔", sourceClass: "is-muted" },
-  { labelKey: "qaTest.agentMaxIter", label: "Agent 最大迭代次數", value: "5", sourceKey: "regression.overrideInherit", source: "沿用設定檔", sourceClass: "is-muted" },
-  { labelKey: "settings.assignedSkills", label: "指派 Skill", value: "3、7", sourceKey: "regression.overrideInherit", source: "沿用設定檔", sourceClass: "is-muted" }
+  { field: "prompt", labelKey: "comp.prompt", label: "提示詞", value: "你是一位專業的知識庫問答助手，回答必須僅依據檢索到的資料片段。資料不足時明確說明「無法從現有資料判斷」。", sourceKey: "regression.overrideSet", source: "這一次指定", sourceClass: "is-warn" },
+  { field: "search_mode", labelKey: "qaTest.chatMode", label: "對話模式", valueKey: "qaTest.chatModeTraditional", value: "傳統搜尋", sourceKey: "regression.overrideSet", source: "這一次指定", sourceClass: "is-warn" },
+  { field: "search_total_number", labelKey: "settings.searchTotalNumber", label: "取用資料筆數", value: "24", sourceKey: "regression.overrideSet", source: "這一次指定", sourceClass: "is-warn" },
+  { field: "model_name", labelKey: "qaTest.llmModel", label: "LLM模型", value: "OpenAI gpt-4o-mini", sourceKey: "regression.overrideInherit", source: "沿用設定檔", sourceClass: "is-muted" },
+  { field: "reasoning_effort", labelKey: "settings.reasoningEffort", label: "思考深度", valueKey: "settings.reasoningEffortDefault", value: "沿用模型預設", sourceKey: "regression.overrideInherit", source: "沿用設定檔", sourceClass: "is-muted" },
+  { field: "search_selected_number", labelKey: "settings.searchSelectedNumber", label: "選用資料筆數", value: "8", sourceKey: "regression.overrideInherit", source: "沿用設定檔", sourceClass: "is-muted" },
+  { field: "data_source_ratio", labelKey: "settings.dataSourceRatio", label: "資料來源比例（主題／向量）", value: "0.25", sourceKey: "regression.overrideInherit", source: "沿用設定檔", sourceClass: "is-muted" },
+  { field: "agent_max_iterations", labelKey: "qaTest.agentMaxIter", label: "Agent 最大迭代次數", value: "5", sourceKey: "regression.overrideInherit", source: "沿用設定檔", sourceClass: "is-muted" },
+  { field: "skill_ids", labelKey: "settings.assignedSkills", label: "指派 Skill", value: "3、7", sourceKey: "regression.overrideInherit", source: "沿用設定檔", sourceClass: "is-muted" }
 ] %}
 <div class="block mt-16 flex-row column gap-16">
     <div class="text-md text-bold" data-i18n="regression.effectiveSection">這一輪實際用的設定</div>
@@ -122,7 +122,7 @@ permalink: 2-2-5_regressionRun.html
             </thead>
             <tbody>
                 {% for row in effectiveConfigRows %}
-                <tr>
+                <tr data-effective-field="{{ row.field }}">
                     <td class="text-bold" data-i18n="{{ row.labelKey }}">{{ row.label }}</td>
                     <td{% if row.valueKey %} data-i18n="{{ row.valueKey }}"{% endif %}>{{ row.value }}</td>
                     <td><span class="verdict-tag {{ row.sourceClass }}" data-i18n="{{ row.sourceKey }}">{{ row.source }}</span></td>
