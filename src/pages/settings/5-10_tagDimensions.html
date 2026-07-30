@@ -175,7 +175,7 @@ permalink: 5-10_tagDimensions.html
         <p id="tagKindHint" class="text-gray" data-i18n="settings.tagKindHint">單值＝三選一；多值＝可複選；日期＝做大小比較。日期槽（date2／date3）只能是日期型別，其餘槽不能是日期型別——配錯的組合每一次檢索都會被上游擋下。</p>
         <p id="tagRoleHint" class="text-gray" data-i18n="settings.tagRoleHint">角色是給引擎內建機制認的：valid_until／as_of 只能掛在日期維度、fact_topic／superseded_by 只能掛在單值維度。配錯不會報錯，只會讓該機制完全跳過這個維度——設定頁看起來一切正常，而它從頭到尾沒有作用過。</p>
         {# ④ 日期上下界：講在**填之前**。這一段對 kind=date 常駐顯示（React 依所選型別擇一渲染）。 #}
-        <p class="text-red" data-i18n="settings.filterableDateRangeHint">日期維度的值必須落在 1677-09-21 到 2262-04-11 之間：檢索引擎把日期存成 64 位元奈秒數，超出去會溢位成另一端的時間。出界的值存得進去、精確比對也找得到，但**任何用到日期範圍的過濾都會漏掉那份資料**，查詢時它只是不見了、不會有錯誤訊息。若本來就是想表示「永遠有效」，請把該格**留白**，系統會自己補上不會過期的值。</p>
+        <p class="text-red" data-i18n="settings.filterableDateRangeHint">日期維度的值必須落在 1677-09-21 到 2262-04-11 之間：檢索引擎把日期存成 64 位元奈秒數，超出去會溢位成另一端的時間。出界的值存得進去、精確比對也找得到，但任何用到日期範圍的過濾都會漏掉那份資料，查詢時它只是不見了、不會有錯誤訊息。若本來就是想表示「永遠有效」，請把該格留白，系統會自己補上不會過期的值。</p>
     </div>
     <div class="flex-row">
         <button type="button" class="button button-primary" data-toast="標籤維度已建立|這個槽或角色已經有維度了|建立失敗，請稍後再試" data-i18n-data-toast="toast.createTagDimension" data-toast-type="success|warning|error">
@@ -378,15 +378,15 @@ permalink: 5-10_tagDimensions.html
      ——只演成功等於把整道閘門演掉了。 #}
 <div class="block flex-row column gap-16">
     <div class="text-md text-bold" data-i18n="settings.tagFilter">標籤檢索過濾</div>
-    <p class="text-gray" data-i18n="settings.tagFilterIntro">開啟之後，問答會先判斷這一題屬於哪些業務維度，再把判斷結果編成檢索過濾條件送給引擎。判不準時**整組條件一起丟棄**（連時間窗一起），不會退成一條寬鬆的條件。</p>
+    <p class="text-gray" data-i18n="settings.tagFilterIntro">開啟之後，問答會先判斷這一題屬於哪些業務維度，再把判斷結果編成檢索過濾條件送給引擎。判不準時整組條件一起丟棄（連時間窗一起），不會退成一條寬鬆的條件。</p>
 
     {# ② 覆蓋率不足＝大規模誤殺的警語，就放在開開關的地方。兩態各自完整敘述後果，未生效的那句掛
          .hidden（React 依「還有沒有維度拿不出零筆未標註的證明」擇一渲染）。 #}
-    <p class="text-red" data-i18n="settings.tagFilterCoverageWarnBlocked">目前還有維度拿不出「零筆未標註」的證明。在這個狀態下開啟過濾，那些沒標註的文件會被過濾條件**靜默排除**——agent 模式沒有無結果放寬階梯，被濾掉就是真的消失，而使用者只會體驗成「有些資料查不到」。這正是這顆旋鈕預設關閉的理由。</p>
+    <p class="text-red" data-i18n="settings.tagFilterCoverageWarnBlocked">目前還有維度拿不出「零筆未標註」的證明。在這個狀態下開啟過濾，那些沒標註的文件會被過濾條件靜默排除——agent 模式沒有無結果放寬階梯，被濾掉就是真的消失，而使用者只會體驗成「有些資料查不到」。這正是這顆旋鈕預設關閉的理由。</p>
     <p class="text-gray hidden" data-i18n="settings.tagFilterCoverageWarnOk">目前每一個「未標註表達不出來」的維度都量到零筆未標註，可以開啟。之後若又匯入一批該欄留白的文件，覆蓋率會掉下去而旋鈕還開著——那些文件會被靜默濾掉，所以補完資料請回來重新量測一次。</p>
 
     {# ③ 時間窗不能獨立於維度存在：講清楚它跟著意圖判定走、判不準就一起歸零，以及為什麼。 #}
-    <p class="text-gray" data-i18n="settings.recencyWindowNote">「最新資料時間窗」不是一顆可以單獨生效的開關：它只在意圖分類**判定這一題在問最新資料**時才會出現，而判不準時整組條件連同時間窗一起丟棄。理由是時間窗是唯一沒有「未標註」分支的述詞——留著它就會連沒有發布日的文件一起濾掉。</p>
+    <p class="text-gray" data-i18n="settings.recencyWindowNote">「最新資料時間窗」不是一顆可以單獨生效的開關：它只在意圖分類判定這一題在問最新資料時才會出現，而判不準時整組條件連同時間窗一起丟棄。理由是時間窗是唯一沒有「未標註」分支的述詞——留著它就會連沒有發布日的文件一起濾掉。</p>
 
     <div class="table-container scrollTable">
         <table class="default-table">
