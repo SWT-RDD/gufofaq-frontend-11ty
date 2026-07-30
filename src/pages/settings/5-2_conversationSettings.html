@@ -28,6 +28,14 @@ permalink: 5-2_conversationSettings.html
     {% include "ui/breadcrumb/breadcrumb.html" %}
 </div>
 
+{# 存檔失敗時把後端的 detail 原樣外顯（fail loud，不靜默還原成舊值）。本頁近百個欄位，制式的
+     「儲存失敗」等於要人逐欄猜；輸出規則的驗證訊息本來就會指名第幾條、哪個參數、界線是多少
+     （product app/output_rules.py），丟掉它就是把那份指名浪費掉。role="alert" 讓它是 live region
+     ——存檔是使用者按了鈕才發生的，訊息出現時焦點不在這裡，不報讀就等於沒說。
+     示範內容取自輸出規則的 400 訊息；空字串時整條掛 .hidden（同 1-1-3 的 excelHeaderWarning）。 #}
+{% set saveConfigError = "output_rules 第 0 條（link_max）的 value 必須介於 1 與 20 之間（收到 -1）" %}
+<p class="text-red mb-16{% if not saveConfigError %} hidden{% endif %}" role="alert">{{ saveConfigError }}</p>
+
 <p class="text-gray" data-i18n="settings.conversationSettingsIntro">一頁設定三套設定檔（設置一／二／三）的全部對話行為。每個旋鈕各設置一份，於上方切換設置；前台問答預設使用哪一套為跨設置共用設定。</p>
 
 {# ── 租戶層（跨三設置共用；profile 頁籤之外）──
@@ -111,6 +119,7 @@ permalink: 5-2_conversationSettings.html
         <button type="button" class="tab" data-target="panelPrompts" title="提示詞" data-i18n="comp.prompt" data-i18n-title="comp.prompt">提示詞</button>
         <button type="button" class="tab" data-target="panelWelcome" title="歡迎語" data-i18n="settings.welcomeMessage" data-i18n-title="settings.welcomeMessage">歡迎語</button>
         <button type="button" class="tab" data-target="panelPolicy" title="內容政策" data-i18n="settings.contentPolicy" data-i18n-title="settings.contentPolicy">內容政策</button>
+        <button type="button" class="tab" data-target="panelOutputRules" title="輸出規則" data-i18n="settings.outputRules" data-i18n-title="settings.outputRules">輸出規則</button>
         <button type="button" class="tab" data-target="panelAgentTools" title="Agent 工具" data-i18n="settings.agentTools" data-i18n-title="settings.agentTools">Agent 工具</button>
         <button type="button" class="tab" data-target="panelQaDirect" title="QA 直答" data-i18n="settings.qaDirect" data-i18n-title="settings.qaDirect">QA 直答</button>
     </div>
@@ -846,7 +855,249 @@ permalink: 5-2_conversationSettings.html
     </div>
 </div>
 
-{# ═══ 子頁籤 6：Agent 工具（NET-NEW）═══
+{# ═══ 子頁籤 6：輸出規則（NET-NEW，Spec 丁）═══
+     生成答案之後、送進合規閘門之前，對**整段**答案做的確定性後處理（不經 LLM）。契約正本＝
+     gufofaq-saas services/product/app/output_rules.py 的 OUTPUT_RULE_CONTRACT（鏡射自 GufoRAG
+     chatbot app/services/output_rules.py，指紋 acb0ace9…a9fc54）：11 種 kind、規則數上限 30、
+     逐 kind 的參數型別與上下界。本頁的選單值域、參數欄與區間都照它演出。
+
+     本區有三件事是**規格要求外顯**、不是版面裝飾：
+     ① **順序**：出口替換 →輸出規則 →合規閘門，由平台固定（GufoRAG app/routes/_chat_stream.py
+        的 run_output_pipeline 是唯一的順序宣告）。故用 <ol> 把三段依序畫出來，且**不提供任何重排
+        入口**——版面不得暗示三段可以換順序。合規閘門永遠最後一段，本層改寫過的文字仍要過它。
+     ② **串流代價**：只要有任一條規則 enabled，chatbot 會把整輪 MESSAGE chunk 全程緩衝、到
+        CHAT_ROOM chunk 才一次送出（規則的判準本質上是全文的：連結總數、清單編號、篇幅），
+        使用者因此**失去逐字串流**。這句話要在**開開關的地方**看得到，不能讓人事後才發現，故
+        兩態各一句（啟用中／全部停用）放在表格上方，未生效的那句掛 .hidden（同 1-1-3 的
+        excelHeaderWarning 兩態寫法）。
+     ③ **上限 30 在消費點看得見**：規則數畫成「N / 30」，30 是**資料**不是譯文——寫進句子裡的話，
+        上限改了譯文會靜默過期（本 repo 有「匯出缺 total 靜默截斷」的前例）。
+     逐欄值載體掛 hook class js-orule-*（全站 scss 不引用），隨底部「儲存對話設定」直送
+     PUT /settings/profiles/{no} 的 output_rules。示範 12 筆＝11 種 kind 各一 ＋ 情境常數第二筆
+     （同一種 kind 可以有多條：每個常數各要一條規則）。
+
+     刻意不做的事：**不演出「違規紀錄」區塊**。C 類（字數／條列數）只回報不改文字，但那份
+     violations 目前只進 chatbot 的 log，沒有持久化、也沒有隨 SSE 送到 product——畫一個空的
+     「這裡會顯示違規紀錄」等於對租戶承諾一個還不存在的東西。 #}
+{% set outputRuleKinds = [
+  { value: "list_marker", label: "條列標記統一", i18nKey: "settings.outputRuleListMarker" },
+  { value: "strip_heading", label: "移除標題行", i18nKey: "settings.outputRuleStripHeading" },
+  { value: "strip_bracket_tag", label: "移除行首括號標籤", i18nKey: "settings.outputRuleStripBracketTag" },
+  { value: "strip_lead_phrase", label: "移除起首套語", i18nKey: "settings.outputRuleStripLeadPhrase" },
+  { value: "strip_lead_yesno", label: "移除開頭的是／否斷句", i18nKey: "settings.outputRuleStripLeadYesno" },
+  { value: "link_anchor", label: "連結統一成 markdown", i18nKey: "settings.outputRuleLinkAnchor" },
+  { value: "link_hide_url", label: "連結文字改成短名", i18nKey: "settings.outputRuleLinkHideUrl" },
+  { value: "link_max", label: "連結數上限", i18nKey: "settings.outputRuleLinkMax" },
+  { value: "max_chars", label: "字數上限（只回報）", i18nKey: "settings.outputRuleMaxChars" },
+  { value: "max_bullets", label: "條列項數上限（只回報）", i18nKey: "settings.outputRuleMaxBullets" },
+  { value: "constant_route", label: "情境常數", i18nKey: "settings.outputRuleConstantRoute" }
+] %}
+{# 示範規則。descKey 隨列走（不用 filter 反查——§2 只准 | safe）；情境常數兩筆各帶自己的常數名／
+     預設值／條件，其餘 kind 的示範參數值直接寫在該 kind 的分支裡（一種 kind 只有一列，不需要參數化）。
+     啟用 8 條／共 12 條 ⇒ outputRulesAnyEnabled = true，故顯示「已失去逐字串流」那一句。 #}
+{% set outputRules = [
+  { kind: "list_marker", enabled: true, descKey: "settings.outputRuleListMarkerDesc", desc: "把行首的 1)、(1)、一、 等寫法統一成 1.，保留原本的編號值與縮排（不重新編號）。" },
+  { kind: "strip_heading", enabled: false, descKey: "settings.outputRuleStripHeadingDesc", desc: "移除 markdown 標題行與粗體小標開頭行；該行還有內容時只去掉標記，不整行刪掉。" },
+  { kind: "strip_bracket_tag", enabled: true, descKey: "settings.outputRuleStripBracketTagDesc", desc: "移除行首的括號式標籤。要移除哪些由下方清單指定，清單外的括號原樣保留。" },
+  { kind: "strip_lead_phrase", enabled: true, descKey: "settings.outputRuleStripLeadPhraseDesc", desc: "移除答案開頭的套語。要移除哪些由下方清單指定；同時命中多個時取最長的那個。" },
+  { kind: "strip_lead_yesno", enabled: false, descKey: "settings.outputRuleStripLeadYesnoDesc", desc: "答案開頭若是單獨的「是。」「否。」斷句就移除它；只移除完整斷句，不會把句子砍半。" },
+  { kind: "link_anchor", enabled: true, descKey: "settings.outputRuleLinkAnchorDesc", desc: "把裸網址、角括號網址與 HTML 連結標籤統一成 markdown 連結 [文字](網址)。答案是以 markdown 渲染的，HTML 連結標籤留著會變成畫面上的字面標籤。" },
+  { kind: "link_hide_url", enabled: true, descKey: "settings.outputRuleLinkHideUrlDesc", desc: "可見文字剛好等於網址時，換成網域加路徑末段；網址本身仍留在連結目的地。" },
+  { kind: "link_max", enabled: true, descKey: "settings.outputRuleLinkMaxDesc", desc: "連結數超過上限時保留最前面幾個，其餘只留可見文字。" },
+  { kind: "max_chars", enabled: true, descKey: "settings.outputRuleMaxCharsDesc", desc: "答案字數超過上限時僅回報違規，不會裁切答案——句界截斷會砍掉讓答案成立的但書。可依這一輪的意圖判定逐代碼覆寫上限。" },
+  { kind: "max_bullets", enabled: false, descKey: "settings.outputRuleMaxBulletsDesc", desc: "條列項數超過上限時僅回報違規，不會刪減項目。" },
+  { kind: "constant_route", enabled: true, descKey: "settings.outputRuleConstantRouteDesc", desc: "提示詞裡只寫佔位符，實際值由本規則依這一輪的意圖判定填入；判不出情境時填預設值。",
+    constName: "客服專線", constDefault: "0800-000-123",
+    cases: [{ slot: "topic", op: "eq", operand: "tariff", value: "0800-000-456" }] },
+  { kind: "constant_route", enabled: false, descKey: "settings.outputRuleConstantRouteDesc", desc: "提示詞裡只寫佔位符，實際值由本規則依這一輪的意圖判定填入；判不出情境時填預設值。",
+    constName: "申辦網址", constDefault: "https://www.trade.gov.tw/",
+    cases: [{ slot: "topic", op: "is_set", operand: "", value: "https://www.trade.gov.tw/apply" },
+            { slot: "channel", op: "in", operand: "web, line", value: "https://www.trade.gov.tw/online" }] }
+] %}
+{% set outputRulesAnyEnabled = true %}
+<div class="tab-content" id="panelOutputRules" style="display: none;">
+    <p class="text-gray" data-i18n="settings.outputRulesIntro">生成答案之後、送進合規閘門之前，對整段答案做確定性的後處理（不經 AI）。三段出口處理的順序由平台固定，不可調整。</p>
+
+    {# 順序外顯：<ol> 的語意就是「有序」，編號由 .list-style-decimal 畫出來，不用手寫①②③
+         （手寫的數字與實際順序會各自漂）。三段沒有任何拖曳／上下移動入口。 #}
+    <div class="block mb-16 flex-row column gap-8">
+        <div class="text-md text-bold" data-i18n="settings.outputPipelineOrder">出口處理順序（固定）</div>
+        <ol class="list-style-decimal">
+            <li data-i18n="settings.outputPipelineStage1">出口替換：把命中的別名換成指定內容（設定在「內容政策」分頁）。</li>
+            <li data-i18n="settings.outputPipelineStage2">輸出規則：本頁的規則，作用在出口替換之後的文字。</li>
+            <li data-i18n="settings.outputPipelineStage3">合規閘門：政策主題的輸出動作與詞彙過濾（設定在「內容政策」分頁）。</li>
+        </ol>
+        <div class="text-gray" data-i18n="settings.outputPipelineOrderHint">三段的順序不可重排。合規閘門永遠是最後一段——本頁規則改寫後的文字仍要通過它，所以輸出規則不會成為繞過閘門的路徑。</div>
+    </div>
+
+    <div class="block flex-row column gap-16">
+        {# 串流代價兩態：只會顯示一句，另一句掛 .hidden。兩句都自帶完整的代價敘述——只看到其中
+             一句的人也必須讀得到「啟用＝失去逐字串流」。 #}
+        <p class="text-red{% if not outputRulesAnyEnabled %} hidden{% endif %}" data-i18n="settings.outputRulesStreamingCostOn">已啟用輸出規則：本設定檔的回答不再逐字顯示。規則要看完整段答案才判得準（連結總數、清單編號、篇幅），所以答案會在生成完畢後一次出現，中途沒有文字。把規則全部停用即可恢復逐字顯示。</p>
+        <p class="text-gray{% if outputRulesAnyEnabled %} hidden{% endif %}" data-i18n="settings.outputRulesStreamingCostOff">目前沒有啟用任何輸出規則，回答維持逐字顯示。只要啟用任一條，本設定檔的回答就會改成生成完畢後一次出現、中途沒有文字（規則要看完整段答案才判得準）。</p>
+
+        <div class="data-info flex-row flex-wrap gap-24">
+            <span><span data-i18n="settings.outputRulesCountLabel">規則數：</span> {{ outputRules.length }} / 30</span>
+            <span><span data-i18n="settings.outputRulesEnabledLabel">啟用中：</span> 8</span>
+        </div>
+
+        <div class="table-container scrollTable">
+            <table class="default-table">
+                <colgroup>
+                    <col style="width:80px; min-width:80px;">
+                    <col style="width:260px; min-width:260px;">
+                    <col style="min-width:420px;">
+                    <col style="width:90px; min-width:90px;">
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th class="text-center" data-i18n="widget.active">啟用</th>
+                        <th data-i18n="settings.outputRuleKind">規則</th>
+                        <th data-i18n="agent.params">參數</th>
+                        <th data-i18n="common.actions">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for rule in outputRules %}
+                    <tr>
+                        <td class="text-center">
+                            <label class="form-checkbox in-cell">
+                                <input type="checkbox" class="js-orule-enabled"{% if rule.enabled %} checked{% endif %}>
+                                <span class="sr-only" data-i18n="widget.active">啟用</span>
+                            </label>
+                        </td>
+                        <td>
+                            <select class="form-control select-sm singleSelect js-orule-kind" aria-label="規則" data-i18n-aria-label="settings.outputRuleKind">
+                                {% for k in outputRuleKinds %}
+                                <option value="{{ k.value }}" data-i18n="{{ k.i18nKey }}"{% if rule.kind == k.value %} selected{% endif %}>{{ k.label }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="text-gray mt-8" data-i18n="{{ rule.descKey }}">{{ rule.desc }}</div>
+                        </td>
+                        <td>
+                            {% if rule.kind == "strip_bracket_tag" %}
+                            <div class="form-group">
+                                <div class="label"><label for="oruleValues{{ loop.index }}" class="control-label" data-i18n="settings.outputRuleValues">清單（一行一個）</label></div>
+                                <div class="field">
+                                    <textarea id="oruleValues{{ loop.index }}" class="form-control size-sm js-orule-values" aria-describedby="oruleValuesHint{{ loop.index }}">（結論）
+（補充）
+（提醒）</textarea>
+                                    <span id="oruleValuesHint{{ loop.index }}" class="text-gray" data-i18n="settings.outputRuleValuesHint">一行一個，最多 50 項、每項 200 字；前後空白會被去掉。</span>
+                                </div>
+                            </div>
+                            {% elif rule.kind == "strip_lead_phrase" %}
+                            <div class="form-group">
+                                <div class="label"><label for="oruleValues{{ loop.index }}" class="control-label" data-i18n="settings.outputRuleValues">清單（一行一個）</label></div>
+                                <div class="field">
+                                    <textarea id="oruleValues{{ loop.index }}" class="form-control size-sm js-orule-values" aria-describedby="oruleValuesHint{{ loop.index }}">答案：
+說明如下：
+以下為說明：</textarea>
+                                    <span id="oruleValuesHint{{ loop.index }}" class="text-gray" data-i18n="settings.outputRuleValuesHint">一行一個，最多 50 項、每項 200 字；前後空白會被去掉。</span>
+                                </div>
+                            </div>
+                            {% elif rule.kind == "link_max" %}
+                            <div class="form-group">
+                                <div class="label"><label for="oruleValue{{ loop.index }}" class="control-label" data-i18n="settings.outputRuleValue">上限</label></div>
+                                <div class="field">
+                                    <input type="number" id="oruleValue{{ loop.index }}" class="form-control js-orule-value" value="5" min="1" max="20" step="1" aria-describedby="oruleValueHint{{ loop.index }}">
+                                    <span id="oruleValueHint{{ loop.index }}" class="text-gray" data-i18n="settings.outputRuleLinkMaxRange">1 至 20 個連結。</span>
+                                </div>
+                            </div>
+                            {% elif rule.kind == "max_bullets" %}
+                            <div class="form-group">
+                                <div class="label"><label for="oruleValue{{ loop.index }}" class="control-label" data-i18n="settings.outputRuleValue">上限</label></div>
+                                <div class="field">
+                                    <input type="number" id="oruleValue{{ loop.index }}" class="form-control js-orule-value" value="12" min="1" max="1000" step="1" aria-describedby="oruleValueHint{{ loop.index }}">
+                                    <span id="oruleValueHint{{ loop.index }}" class="text-gray" data-i18n="settings.outputRuleMaxBulletsRange">1 至 1000 個項目。</span>
+                                </div>
+                            </div>
+                            {% elif rule.kind == "max_chars" %}
+                            <div class="flex-row column gap-8">
+                                <div class="form-group">
+                                    <div class="label"><label for="oruleValue{{ loop.index }}" class="control-label" data-i18n="settings.outputRuleValue">上限</label></div>
+                                    <div class="field">
+                                        <input type="number" id="oruleValue{{ loop.index }}" class="form-control js-orule-value" value="1200" min="1" max="100000" step="1" aria-describedby="oruleValueHint{{ loop.index }}">
+                                        <span id="oruleValueHint{{ loop.index }}" class="text-gray" data-i18n="settings.outputRuleMaxCharsRange">1 至 100000 字。</span>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <div class="label"><label for="oruleCategorySlot{{ loop.index }}" class="control-label" data-i18n="settings.outputRuleCategorySlot">意圖維度槽</label></div>
+                                    <div class="field">
+                                        <input type="text" id="oruleCategorySlot{{ loop.index }}" class="form-control js-orule-category-slot" value="topic" aria-describedby="oruleCategoryHint{{ loop.index }}">
+                                        <span id="oruleCategoryHint{{ loop.index }}" class="text-gray" data-i18n="settings.outputRuleCategoryHint">維度槽與逐代碼上限要一起設；只設一邊，逐代碼上限不會生效。最多 50 個代碼、每個代碼上限 1 至 100000 字。</span>
+                                    </div>
+                                </div>
+                                <div class="text-bold" data-i18n="settings.outputRuleCategoryOverrides">逐代碼覆寫上限</div>
+                                {% for cat in [{ code: "tariff", limit: "2000" }, { code: "procedure", limit: "800" }] %}
+                                <div class="flex-row flex-wrap gap-8">
+                                    <input type="text" class="form-control js-orule-category-code" value="{{ cat.code }}" aria-label="代碼" data-i18n-aria-label="settings.outputRuleCategoryCode">
+                                    <input type="number" class="form-control js-orule-category-limit" value="{{ cat.limit }}" min="1" max="100000" step="1" aria-label="上限" data-i18n-aria-label="settings.outputRuleValue">
+                                    <button type="button" class="button button-border button-sm js-remove-orule-category" data-i18n="action.delete">刪除</button>
+                                </div>
+                                {% endfor %}
+                                <div class="flex-row">
+                                    <button type="button" class="button button-border button-sm js-add-orule-category" data-i18n="settings.addOutputRuleCategory">新增代碼上限</button>
+                                </div>
+                            </div>
+                            {% elif rule.kind == "constant_route" %}
+                            <div class="flex-row column gap-8">
+                                <div class="form-group">
+                                    <div class="label"><label for="oruleConstName{{ loop.index }}" class="control-label" data-i18n="settings.outputRuleConstName">常數名稱</label></div>
+                                    <div class="field">
+                                        <input type="text" id="oruleConstName{{ loop.index }}" class="form-control js-orule-const-name" value="{{ rule.constName }}" aria-describedby="oruleConstNameHint{{ loop.index }}">
+                                        <span id="oruleConstNameHint{{ loop.index }}" class="text-gray"><span data-i18n="settings.outputRuleConstNameHint">提示詞裡要寫成同名的佔位符（不可有前後空白、不可含大括號），例如</span> <code class="inline-code">{{ "{{客服專線}}" }}</code></span>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <div class="label"><label for="oruleConstDefault{{ loop.index }}" class="control-label" data-i18n="settings.outputRuleConstDefault">預設值</label></div>
+                                    <div class="field">
+                                        <input type="text" id="oruleConstDefault{{ loop.index }}" class="form-control js-orule-const-default" value="{{ rule.constDefault }}" aria-describedby="oruleConstDefaultHint{{ loop.index }}">
+                                        <span id="oruleConstDefaultHint{{ loop.index }}" class="text-gray" data-i18n="settings.outputRuleConstDefaultHint">必填：判不出情境的那幾輪用這個值，不可留空。</span>
+                                    </div>
+                                </div>
+                                <div class="text-bold" data-i18n="settings.outputRuleCases">情境條件</div>
+                                <div class="text-gray" data-i18n="settings.outputRuleCasesHint">由上而下依序比對，第一個成立的出線；都不成立就用預設值。最多 20 條。</div>
+                                {% for case in rule.cases %}
+                                <div class="flex-row flex-wrap gap-8">
+                                    <input type="text" class="form-control js-orule-case-slot" value="{{ case.slot }}" aria-label="意圖維度槽" data-i18n-aria-label="settings.outputRuleCategorySlot">
+                                    <select class="form-control select-sm singleSelect js-orule-case-op" aria-label="述詞" data-i18n-aria-label="settings.outputRuleCaseOp">
+                                        <option value="is_set" data-i18n="settings.outputRuleOpIsSet"{% if case.op == "is_set" %} selected{% endif %}>已判定</option>
+                                        <option value="is_not_set" data-i18n="settings.outputRuleOpIsNotSet"{% if case.op == "is_not_set" %} selected{% endif %}>未判定</option>
+                                        <option value="eq" data-i18n="settings.outputRuleOpEq"{% if case.op == "eq" %} selected{% endif %}>等於代碼</option>
+                                        <option value="in" data-i18n="settings.outputRuleOpIn"{% if case.op == "in" %} selected{% endif %}>屬於代碼清單</option>
+                                    </select>
+                                    {% if case.op == "eq" or case.op == "in" %}
+                                    <input type="text" class="form-control js-orule-case-operand" value="{{ case.operand }}" aria-label="比對代碼" data-i18n-aria-label="settings.outputRuleCaseOperand">
+                                    {% endif %}
+                                    <input type="text" class="form-control js-orule-case-value" value="{{ case.value }}" aria-label="填入值" data-i18n-aria-label="settings.outputRuleCaseValue">
+                                    <button type="button" class="button button-border button-sm js-remove-orule-case" data-i18n="action.delete">刪除</button>
+                                </div>
+                                {% endfor %}
+                                <div class="text-gray" data-i18n="settings.outputRuleCaseOperandHint">述詞選「等於代碼」時填一個代碼；選「屬於代碼清單」時用逗號分隔，最多 20 個。「已判定」「未判定」不吃代碼。</div>
+                                <div class="flex-row">
+                                    <button type="button" class="button button-border button-sm js-add-orule-case" data-i18n="settings.addOutputRuleCase">新增條件</button>
+                                </div>
+                            </div>
+                            {% else %}
+                            <span class="text-gray" data-i18n="settings.outputRuleNoParams">此規則沒有參數。</span>
+                            {% endif %}
+                        </td>
+                        <td><button type="button" class="button button-border button-sm js-remove-orule" data-i18n="action.delete">刪除</button></td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="4" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="flex-row">
+            <button type="button" class="button button-border button-sm js-add-orule" data-i18n="settings.addOutputRule">新增規則</button>
+        </div>
+        <div class="text-gray" data-i18n="settings.outputRulesMaxHint">單一設定檔的規則數有上限，達上限後「新增規則」會停用；要換規則請先刪掉一條。</div>
+    </div>
+</div>
+
+{# ═══ 子頁籤 7：Agent 工具（NET-NEW）═══
      內建工具（**一工具一張可展開的卡**，見 components/builtin-tool-card）、綁定術語表、勾選 MCP Server
      （列平台**註冊**的 server、停用中的標示出來而不是濾掉，理由見該欄位的註解；示範 3 筆）。
      皆為 Agent 模式；值載體隨底部「儲存對話設定」直送。工具名／參數名／術語表名／Server 名為業務資料
@@ -1094,7 +1345,7 @@ permalink: 5-2_conversationSettings.html
     </div>
 </div>
 
-{# ═══ 子頁籤 7：QA 直答（NET-NEW，Spec B）═══
+{# ═══ 子頁籤 8：QA 直答（NET-NEW，Spec B）═══
      使用者問句完美命中某 QA 集的問題時，直接回該 QA 的答案原文（qa_direct）；judge 模式再加一道 LLM 裁決。
      模式(off/exact/judge)＋judge 判準 textarea 是租戶旋鈕，隨底部「儲存對話設定」直送 settings PUT；
      「參與直答的 QA 集」multi-select 是 RetrievalProfile.qa_direct_dataset_ids（另走 retrieval PUT
