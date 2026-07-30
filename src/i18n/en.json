@@ -678,6 +678,7 @@
   "settings.outputRuleCases": "Cases",
   "settings.outputRuleCasesHint": "Evaluated top down; the first case that holds wins, and if none holds the default value is used. Up to 20 cases.",
   "settings.outputRuleCategoryCode": "Code",
+  "settings.outputRuleCategoryDuplicate": "Duplicate code: only the last row takes effect — delete the duplicate.",
   "settings.outputRuleCategoryHint": "The dimension slot and the per-code caps have to be set together; with only one of them the overrides never take effect. Up to 50 codes, each cap between 1 and 100000 characters.",
   "settings.outputRuleCategoryOverrides": "Per-code cap overrides",
   "settings.outputRuleCategorySlot": "Intent dimension slot",

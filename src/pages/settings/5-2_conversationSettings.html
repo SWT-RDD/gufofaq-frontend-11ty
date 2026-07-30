@@ -1028,6 +1028,10 @@ permalink: 5-2_conversationSettings.html
                                     </div>
                                 </div>
                                 <div class="text-bold" data-i18n="settings.outputRuleCategoryOverrides">逐代碼覆寫上限</div>
+                                {# 代碼重複時只有最後一列會生效（送出去是 JSON 物件，同鍵只留一個）——這是本區
+                                     唯一會**靜默**吃掉租戶輸入的地方，所以在那組欄位旁邊講出來，不是只寫進 console。
+                                     示範資料沒有重複（§6 示範要自洽），故這句掛 .hidden。 #}
+                                <p class="text-red hidden" data-i18n="settings.outputRuleCategoryDuplicate">代碼重複，只有最後一列會生效——請把重複的那列刪掉。</p>
                                 {% for cat in [{ code: "tariff", limit: "2000" }, { code: "procedure", limit: "800" }] %}
                                 <div class="flex-row flex-wrap gap-8">
                                     <input type="text" class="form-control js-orule-category-code" value="{{ cat.code }}" aria-label="代碼" data-i18n-aria-label="settings.outputRuleCategoryCode">
