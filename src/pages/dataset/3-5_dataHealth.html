@@ -53,9 +53,13 @@ permalink: 3-5_dataHealth.html
         寫回去會連第二次的一起抹掉，只拿掉這一次的又會留下一個誰都沒寫過的中間狀態。兩個都不是
         反向操作，所以 409 指名。兩種 409 的文案不同，兩條都列在還原鈕的 toast 分支裡。
 
-     ⑤ **「沒掃到」是誠實記錄，不得被藏起來**。`connector_type != 'excel'`（資料夾匯入，整份是
-        一份文件、沒有欄位槽）與讀不開的檔逐檔列進 `ScanOut.uncovered`，各帶 `reason` 與 `detail`。
-        漏報比誤報嚴重，而「以為乾淨、其實沒掃」的唯一解藥是讓沒掃到的部分出現在使用者眼前。
+     ⑤ **「沒掃到」是誠實記錄，不得被藏起來**。掃不到的檔逐檔列進 `ScanOut.uncovered`，各帶
+        `reason` 與 `detail`。五種原因（`health_findings._collect_records` ＋ `_folder_record`／
+        `health_extract.REASON_*`）：`not_row_imported`（不是逐列匯入、也沒有逐列的擷取連結）、
+        `file_not_linkable`（沒有落地檔名／擷取連結的舊列）、`no_extractor`（圖片、舊版 .doc 等
+        本機沒有擷取器的格式）、`source_file_missing`（列還在、磁碟上那一份不見了）、
+        `extract_failed`（擷取器讀不出來）。漏報比誤報嚴重，而「以為乾淨、其實沒掃」的唯一解藥
+        是讓沒掃到的部分出現在使用者眼前。
 
      ⑥ **任何上限／截斷都在消費點外顯**：清單的 `total`／`page`／`size`（分頁）、總覽每組只附
         `top_n` 筆（不是分頁，要逐筆看走清單）、命中窗 `window_days`（預設 7 天而不是 30——上游
@@ -118,18 +122,19 @@ permalink: 3-5_dataHealth.html
     hitChecks: "unavailable",
     hitChecksDetail: "取不到問答紀錄，這一次沒有重算「陳舊高頻／從未被命中／高頻查無」：這段期間的問答筆數超過單次彙總上限（5000 則），請縮短時間窗再試。"
 } %}
-{# 這一次沒有看到的檔（`ScanOut.uncovered`）。兩種 `reason` 各演一筆：資料夾匯入的整份文件，
-     以及讀不開的來源檔。`reason` 與 `detail` 都是 API 回的資料（不翻）。 #}
+{# 這一次沒有看到的檔（`ScanOut.uncovered`）。兩種 `reason` 各演一筆：本機沒有擷取器的格式，
+     以及不是逐列匯入、也沒有逐列擷取連結的檔。`reason` 與 `detail` 都是 API 回的資料（不翻），
+     兩段文字逐字取自 product（`_folder_record`／`_collect_records`）。 #}
 {% set healthUncovered = [
   {
-    datasetId: 3, fileId: 41, filename: "2026關務法規彙編.pdf",
-    reason: "not_row_imported",
-    detail: "這個檔不是逐列匯入的（整份是一份文件，沒有欄位槽），健檢不會檢查它的內容——它不會出現在任何一項檢查裡。要讓內容也被檢查，請改用逐列匯入（Excel 欄位對照／PDF 結構化匯入）。"
+    datasetId: 3, fileId: 41, filename: "關稅稅則對照表.png",
+    reason: "no_extractor",
+    detail: "「關稅稅則對照表.png」這種檔沒有可用的內文擷取器（目前只有 .docx、.pdf），健檢讀不到它的內容——它不會出現在任何一項檢查裡。圖片類要讓內容被檢查，得先有文字辨識；其餘格式請改用逐列匯入。"
   },
   {
     datasetId: 7, fileId: 58, filename: "2026新制問答_v3.xlsx",
-    reason: "normalized_source_missing",
-    detail: "找不到這個檔的正規化來源檔，這一次沒有讀到它的任何一列。"
+    reason: "not_row_imported",
+    detail: "這個檔不是逐列匯入的、也沒有記下逐列的擷取連結，健檢算不出它每一列的文件編號——它不會出現在任何一項檢查裡。要讓內容也被檢查，請改用逐列匯入（Excel 欄位對照／PDF 結構化匯入）。"
   }
 ] %}
 {# 總覽（`OverviewOut`）。**排序的證明就在示範資料裡**：`tag_gap` 的未處置數最多（24 筆）卻排在
