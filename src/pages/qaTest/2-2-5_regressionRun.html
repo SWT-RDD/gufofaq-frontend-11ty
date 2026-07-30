@@ -249,7 +249,9 @@ permalink: 2-2-5_regressionRun.html
      ——案例集共 12 則，這一次跑到第 10 則就中斷。 #}
 {# 「引用的文件」兩欄的示範刻意演四種狀態（GUIDELINE §6）：
      #41 兩側引到不同文件（＝「以前引 A、現在引 B」，退步的核心線索）、
-     #38 基準零命中、#37 兩側相同、#40 這一次被夾掉（格子裡明說共幾筆）。 #}
+     #38 基準零命中、#37 兩側相同、#40 這一次被夾掉（格子裡明說列了幾筆／實際幾筆）。
+     ⚠️ 被夾掉那一格的兩個數字要與**真的列出來的檔名數**自洽：列了 2 個檔名就是「只列了前 2 筆」
+     （真實資料的上界是幾十筆，切版列不完，所以示範用小數字；那個數字是資料不是規則）。 #}
 {% set compareBuckets = [
   {
     key: "regressed", titleKey: "regression.bucketRegressed", title: "退步（本來對、現在錯）",
@@ -273,7 +275,7 @@ permalink: 2-2-5_regressionRun.html
     whyKey: "regression.bucketUnchangedWhy", why: "兩次的確定性判定相同（含兩次都沒過）。這一塊不含「沒得比」與「評審整批壞掉」——那兩件事各自在上面。",
     rows: [
       { caseNo: "#37", question: "鋼品的稅則號列怎麼查", before: "通過", beforeKey: "regression.verdictPass", beforeClass: "is-pass", after: "通過", afterKey: "regression.verdictPass", afterClass: "is-pass", beforeHits: "稅則號列對照.xlsx", afterHits: "稅則號列對照.xlsx", detail: "" },
-      { caseNo: "#40", question: "美國對鋁材的配額是多少", before: "未通過", beforeKey: "regression.verdictFail", beforeClass: "is-fail", after: "未通過", afterKey: "regression.verdictFail", afterClass: "is-fail", beforeHits: "配額公告.pdf", afterHits: "配額公告.pdf／配額問答.pdf", afterHitsTotal: "63", afterHitsShown: "50", detail: "答案缺少：配額" }
+      { caseNo: "#40", question: "美國對鋁材的配額是多少", before: "未通過", beforeKey: "regression.verdictFail", beforeClass: "is-fail", after: "未通過", afterKey: "regression.verdictFail", afterClass: "is-fail", beforeHits: "配額公告.pdf", afterHits: "配額公告.pdf／配額問答.pdf", afterHitsTotal: "63", afterHitsShown: "2", detail: "答案缺少：配額" }
     ]
   }
 ] %}
@@ -447,7 +449,7 @@ permalink: 2-2-5_regressionRun.html
     hits: [
       { name: "一般貿易須知.pdf", source: "貿易法規資料集", index: "tenant7_trade", chunk: "3", score: "0.71" },
       { name: "出口實務問答.pdf", score: "0.64" },
-      { noIdentity: "3" }
+      { noIdentity: "3", source: "貿易法規資料集", score: "0.2" }
     ],
     failures: ["答案缺少：25%"]
   },
