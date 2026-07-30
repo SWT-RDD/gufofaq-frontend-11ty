@@ -24,29 +24,52 @@ permalink: 5-4_coverageGaps.html
      權限：這支掛的是 `require_capability("history")`（不是 5-3 的 `settings`）——它回的是**提問原文**，
      屬歷史內容。故本頁的導覽入口與 5-3 同在「設定」選單下，但兩頁需要的能力不同。
 
-     分群：意圖分類（Spec 丙／Phase 4）上線前只有「未分類」一組，`groups` 的形狀現在就固定，
-     分群上線時版面不必改。群組名稱是 API 回的資料（`label`），不掛 data-i18n。 #}
+     分群：帶 `dimension=<標籤維度 slot_key>` 就依**提問的意圖**分群（不帶＝完全不分類，一次模型
+     都不打）。群組名稱是 API 回的資料（`label`），不掛 data-i18n；但**每一組的 `kind` 要外顯**，
+     理由見下面 gapGroups 上方那段。 #}
 {% set breadcrumbItems = [
   { label: "首頁", href: "2-1_qaRecord.html", i18nKey: "nav.home" },
   { label: "設定", href: "", i18nKey: "nav.settings" },
   { label: "覆蓋缺口", i18nKey: "nav.coverageGaps" }
 ] %}
-{# 示範資料要自洽（GUIDELINE §6）：134（本組）＋ 3（已排除）＝ 137（查無則數）；
-     樣本 10 筆（＝product 每組上限）、相異提問 84 種＝被截到剩 10 筆，兩個數擺在一起才看得出
-     「不是只有 10 種」；
-     樣本次數遞減且總和 61 ≤ 本組 134。 #}
+{# 示範資料要自洽（GUIDELINE §6）：88 ＋ 24 ＋ 14 ＋ 7 ＋ 4（五組）＋ 3（已排除）＝ 140（查無則數）；
+     第一組樣本 10 筆（＝product 每組上限 `MAX_GAP_SAMPLES`）、相異提問 80 種＝被截到剩 10 筆，
+     兩個數擺在一起才看得出「不是只有 10 種」；樣本次數遞減且總和 ≤ 本組則數。
+     已分類提問數 80 ＋ 9 ＋ 6 ＋ 5 ＝ 100 ＝ 分類上限 ⇒ 剩下 4 種相異提問**根本沒送去分類**，
+     落在 `unclassified` 那一組——這正是「上限也要在消費點看得見」的那一格。 #}
 {% set gapSummary = {
     range: "2024/12/01 00:00 ~ 2024/12/02 00:00",
     totalLogs: 1200,
-    totalNoAnswer: 137,
-    excludedCount: 3
+    totalNoAnswer: 140,
+    excludedCount: 3,
+    dimensionName: "業務範疇",
+    classifiedQuestions: 100,
+    classifyLimit: 100
 } %}
 {% set gapExcluded = ["你好"] %}
+{# 分群維度：值域是**標籤維度的 slot_key**（不是 5-3 統計模組那個 `dataset`／`attribution:<slot>`），
+     同名不同值域，打錯的值 product 一律 400 並指名原因、**不退回「不分群」**（退回的話畫面看起來
+     一切正常，只是每一題都落在未分類）。日期維度與字典是空的維度沒有受控詞彙可挑，故不列進選項，
+     並在下面用一句話交代它們為什麼不在。 #}
+{% set gapDimensions = [
+    { slotKey: "note1", name: "業務範疇" },
+    { slotKey: "note2", name: "業務方向" }
+] %}
+{# ★ 四種 `kind` 是**四種不同的事實**，畫面上絕不可以併成一列（product `app/routers/stats.py`
+     的 `(kind, key)` 才是分群鍵）：
+       · `code`          ＝分類器把這些提問分到這個業務代碼 → 這個業務面缺料，先補它
+       · `out_of_scope`  ＝分類器**有把握地**說不屬於任何代碼（招呼、閒聊）→ 擴字典或用「排除」拿掉
+       · `undetermined`  ＝分類器**沒有結論**（含分類器整批失效）→ 這一列異常大就去看後端錯誤日誌
+       · `unclassified`  ＝**根本沒送去分類**（沒帶維度，或超出分類上限）→ 這是報表的界線，不是資料的性質
+     把 undetermined 併進 out_of_scope 的話，「分類器整批壞掉」在畫面上會長得像「這些提問都是閒聊」
+     ——一個沒有任何人看得出來的假訊號；併進 unclassified 則等於宣稱分類器看過它們並放棄了。
+     代碼本身沒有禁止叫 `undetermined`，所以列上要同時看得到 kind 與 key。 #}
 {% set gapGroups = [
     {
-        label: "未分類",
-        count: 134,
-        distinctQuestions: 84,
+        kind: "code", kindHint: "", kindHintKey: "",
+        key: "B06", label: "關稅與稅則",
+        count: 88,
+        distinctQuestions: 80,
         samples: [
             { question: "臺灣輸美關稅多少", count: 12 },
             { question: "外籍配偶申請定居要準備哪些文件", count: 9 },
@@ -58,6 +81,54 @@ permalink: 5-4_coverageGaps.html
             { question: "居留證延期要提前多久辦", count: 4 },
             { question: "新住民子女的就學補助", count: 3 },
             { question: "喪失國籍證明要去哪裡申請", count: 3 }
+        ]
+    },
+    {
+        kind: "code", kindHint: "", kindHintKey: "",
+        key: "B02", label: "居留與簽證",
+        count: 24,
+        distinctQuestions: 9,
+        samples: [
+            { question: "投資移民要準備多少錢", count: 6 },
+            { question: "居留證可以線上換發嗎", count: 5 },
+            { question: "外僑永久居留的居住天數怎麼算", count: 4 }
+        ]
+    },
+    {
+        kind: "out_of_scope",
+        kindHint: "分類器有把握地判定這些提問不落在任何一個代碼上（招呼、閒聊居多）。要擴字典，或用每列的「排除」把它們拿掉。",
+        kindHintKey: "settings.gapKindOutOfScopeHint",
+        key: "out_of_scope", label: "不屬於任何代碼",
+        count: 14,
+        distinctQuestions: 6,
+        samples: [
+            { question: "早安", count: 4 },
+            { question: "你是誰做的", count: 3 },
+            { question: "謝謝", count: 2 }
+        ]
+    },
+    {
+        kind: "undetermined",
+        kindHint: "分類器跑了，但沒有結論——含「模型自己說不確定」與「分類器整批失效」兩種，型別上分不開，所以這份報表也不假裝分得開。這一列異常大時請去看後端的錯誤日誌，那不是「這些提問都是閒聊」。",
+        kindHintKey: "settings.gapKindUndeterminedHint",
+        key: "undetermined", label: "判不準",
+        count: 7,
+        distinctQuestions: 5,
+        samples: [
+            { question: "那個表格要怎麼填", count: 2 },
+            { question: "上次講的那個", count: 2 }
+        ]
+    },
+    {
+        kind: "unclassified",
+        kindHint: "這些提問根本沒送去分類：沒有帶分群維度，或超出單次請求的分類上限（預算花在問得最多的那些題目上）。這是報表的界線，不是資料的性質。",
+        kindHintKey: "settings.gapKindUnclassifiedHint",
+        key: "unclassified", label: "未分類",
+        count: 4,
+        distinctQuestions: 4,
+        samples: [
+            { question: "外國人可以買農地嗎", count: 1 },
+            { question: "戶籍謄本英文版要去哪裡申請", count: 1 }
         ]
     }
 ] %}
@@ -140,6 +211,22 @@ permalink: 5-4_coverageGaps.html
                 </div>
             </div>
         </div>
+        {# 分群維度：值載體 select（值交給 React 讀去送 API）＝只掛 hook class、不掛 data-toast
+             （GUIDELINE §5 組合矩陣②）。 #}
+        <div class="form-group row flex-row mobile-column-xs gap-16">
+            <div class="label mobile-align">
+                <label for="gapDimensionSelect" class="control-label" data-i18n="settings.gapDimension">依意圖維度分群</label>
+            </div>
+            <div class="field flex-row column gap-8">
+                <select id="gapDimensionSelect" class="form-control js-gap-dimension" aria-describedby="gapDimensionHint">
+                    <option value="" data-i18n="settings.gapNoGrouping">不分群</option>
+                    {% for dim in gapDimensions %}
+                    <option value="{{ dim.slotKey }}">{{ dim.name }}（{{ dim.slotKey }}）</option>
+                    {% endfor %}
+                </select>
+                <p id="gapDimensionHint" class="text-gray" data-i18n="settings.gapDimensionHint">選了維度才會把每一則提問送去分類（一題一次、結果會快取）。日期維度與字典是空的維度不在清單上——它們沒有受控詞彙可挑，分不出群。不分群時完全不打模型，所有提問落在「沒送去分類」一組。</p>
+            </div>
+        </div>
     </div>
     <div class="flex-row align-items-center justify-content-center gap-16">
         <button type="button" class="button button-border" data-i18n="action.cancel">取消</button>
@@ -148,12 +235,22 @@ permalink: 5-4_coverageGaps.html
 </div>
 
 {# 摘要列：查無則數要有分母才讀得出是多還是少（product 回 total_logs 就是為了這件事）；
-     已排除則數與它並列，是「加總永遠對得起來」的可視化。 #}
-<div class="block flex-row gap-24 flex-wrap mt-16">
-    <p><span class="bold" data-i18n="settings.dataTimeLabel">資料時間：</span><span id="gap-range">{{ gapSummary.range }}</span></p>
-    <p><span class="bold" data-i18n="settings.conversationCount">對話次數：</span><span id="gap-total-logs">{{ gapSummary.totalLogs }}</span></p>
-    <p><span class="bold" data-i18n="settings.noAnswerTotal">查無則數：</span><span id="gap-total-no-answer">{{ gapSummary.totalNoAnswer }}</span></p>
-    <p><span class="bold" data-i18n="settings.excludedTotal">已排除則數：</span><span id="gap-excluded-count">{{ gapSummary.excludedCount }}</span></p>
+     已排除則數與它並列，是「加總永遠對得起來」的可視化。
+     **分類上限也在這裡外顯**（product 回 `classify_limit` 就是為了這件事）：一次請求最多只分類
+     N 種相異提問，超出的那些照實落在「沒送去分類」而不是消失。已分類數等於上限時多一句提示
+     ——不然「這份報表只看了前 100 種」這件事沒有任何地方講得出來。 #}
+<div class="block flex-row column gap-8 mt-16">
+    <div class="flex-row gap-24 flex-wrap">
+        <p><span class="bold" data-i18n="settings.dataTimeLabel">資料時間：</span><span id="gap-range">{{ gapSummary.range }}</span></p>
+        <p><span class="bold" data-i18n="settings.conversationCount">對話次數：</span><span id="gap-total-logs">{{ gapSummary.totalLogs }}</span></p>
+        <p><span class="bold" data-i18n="settings.noAnswerTotal">查無則數：</span><span id="gap-total-no-answer">{{ gapSummary.totalNoAnswer }}</span></p>
+        <p><span class="bold" data-i18n="settings.excludedTotal">已排除則數：</span><span id="gap-excluded-count">{{ gapSummary.excludedCount }}</span></p>
+        <p><span class="bold" data-i18n="settings.gapGroupedBy">分群維度：</span><span id="gap-dimension">{{ gapSummary.dimensionName }}</span></p>
+        <p><span class="bold" data-i18n="settings.gapClassifiedQuestions">已分類提問數：</span><span id="gap-classified">{{ gapSummary.classifiedQuestions }} / {{ gapSummary.classifyLimit }}</span></p>
+    </div>
+    {% if gapSummary.classifiedQuestions == gapSummary.classifyLimit %}
+    <p class="text-red" data-i18n="settings.gapClassifyLimitReached">已達單次請求的分類上限：超出的相異提問這一次沒有送去分類，照實落在下面的「沒送去分類」那一組。預算花在問得最多的那些題目上，所以留在界外的是尾巴上只被問過一兩次的。</p>
+    {% endif %}
 </div>
 
 {# 已排除的提問：排除的是「呈現」不是「事實」，所以被藏起來的每一句都列在這裡、可以放回去。
@@ -180,15 +277,28 @@ permalink: 5-4_coverageGaps.html
      一起，讀的人才分得出「只有 10 種」與「被截到剩 10 種」。這個數字從樣本陣列推導、不烤字面量
      ——上限值只有 product 知道，前端抄一份就會在它改動時開始說謊。 #}
 {% for group in gapGroups %}
-<div class="block flex-row column gap-16 mt-16">
+<div class="block flex-row column gap-16 mt-16" data-gap-kind="{{ group.kind }}">
     <div class="flex-row justify-content-between align-items-center flex-wrap gap-8">
-        <div class="text-lg text-bold">{{ group.label }}</div>
+        <div class="flex-row align-items-center gap-8 flex-wrap">
+            <div class="text-lg text-bold">{{ group.label }}</div>
+            {# kind 與 key 都畫出來，兩個都是 API 回的**資料**（不翻）。理由：分群鍵是 `(kind, key)`
+                 這一對，只看 label 分不出這一列是「一個業務代碼」還是「判不準」（代碼本身沒有禁止
+                 叫 undetermined）；而 code 列的 key 要逐字看得到——自訂 TEXT 篩選欄位在上游是逐位
+                 元組比對，模型回小寫的 `b06` 而字典寫的是 `B06` 時，那條述詞零命中且完全無聲。 #}
+            <span class="text-gray">{{ group.kind }}</span>
+            {% if group.kind == "code" %}<code class="inline-code">{{ group.key }}</code>{% endif %}
+        </div>
         <div class="flex-row gap-16 flex-wrap">
             <p><span class="bold" data-i18n="settings.groupNoAnswerTotal">本組查無則數：</span><span>{{ group.count }}</span></p>
             <p><span class="bold" data-i18n="settings.distinctQuestions">相異提問數：</span><span>{{ group.distinctQuestions }}</span></p>
             <p><span class="bold" data-i18n="settings.samplesShown">已列出：</span><span>{{ group.samples.length }}</span></p>
         </div>
     </div>
+    {# 三種「沒分到類」各自帶一句自己的解讀說明——它們的下一步動作完全不同，
+         而且合併任兩者都會讓「分類器整批壞掉」看起來像別的事。業務代碼那幾組沒有這一句。 #}
+    {% if group.kindHint %}
+    <p class="text-gray" data-i18n="{{ group.kindHintKey }}">{{ group.kindHint }}</p>
+    {% endif %}
     <div class="table-container scrollTable">
         <table class="default-table">
             <thead>
