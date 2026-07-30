@@ -892,7 +892,7 @@ permalink: 5-2_conversationSettings.html
   { value: "max_bullets", label: "條列項數上限（只回報）", i18nKey: "settings.outputRuleMaxBullets" },
   { value: "constant_route", label: "情境常數", i18nKey: "settings.outputRuleConstantRoute" },
   { value: "state_as_of", label: "標註資料基準日", i18nKey: "settings.outputRuleStateAsOf" },
-  { value: "flag_conflict", label: "並列說法要全講", i18nKey: "settings.outputRuleFlagConflict" }
+  { value: "flag_conflict", label: "並列最新逐份列出", i18nKey: "settings.outputRuleFlagConflict" }
 ] %}
 {# 示範規則。descKey 隨列走（不用 filter 反查——§2 只准 | safe）；情境常數兩筆各帶自己的常數名／
      預設值／條件，其餘 kind 的示範參數值直接寫在該 kind 的分支裡（一種 kind 只有一列，不需要參數化）。
@@ -917,8 +917,8 @@ permalink: 5-2_conversationSettings.html
     constName: "申辦網址", constDefault: "https://www.trade.gov.tw/",
     cases: [{ slot: "topic", op: "is_set", operand: "", value: "https://www.trade.gov.tw/apply" },
             { slot: "channel", op: "in", operand: "web, line", value: "https://www.trade.gov.tw/online" }] },
-  { kind: "state_as_of", enabled: true, descKey: "settings.outputRuleStateAsOfDesc", desc: "答案引用到的資料若帶基準日，就在句末補一句「（本資訊以 YYYY-MM-DD 為準）」。引用到多筆時取最舊的那一個日期——答案的時效由裡面最舊的那一筆決定。" },
-  { kind: "flag_conflict", enabled: false, descKey: "settings.outputRuleFlagConflictDesc", desc: "同一個主題有多筆並列最新、彼此說法不同時，改成把幾種說法與各自的日期都講出來，不挑一個講。挑一個講會讓答案聽起來很確定，而那正是它最不該確定的時候。" }
+  { kind: "state_as_of", enabled: true, descKey: "settings.outputRuleStateAsOfDesc", desc: "答案引用到的資料若帶基準日，就在句末補上「（本資訊以 2024-11-30 為準）」這樣一句註記。引用到多筆時取最舊的那一個——一段話只要引用了一份較舊的資料，它就只保證到那一天為止，寫最新的那一天等於替已經過期的那部分背書。註記接在最後一個散文行的句末；那一行如果是表格、清單、引言、標題或程式碼圍欄就另起一段，不會被那一行吃掉。" },
+  { kind: "flag_conflict", enabled: false, descKey: "settings.outputRuleFlagConflictDesc", desc: "同一個主題有多筆並列最新的資料時，在答案後面另起一段，逐份列出它們的基準日與來源名稱，並說明這幾份的說法可能不同——不是挑一份講。這一段講不出各份「說了什麼」：出口處理不經 AI，手上只有日期與來源名稱，替租戶總結那幾份資料的內容會是一句沒有依據的話。同一份文件被切成好幾段只算一份；能列出日期與來源的不到兩份時就不加這一段。" }
 ] %}
 {% set outputRulesAnyEnabled = true %}
 <div class="tab-content" id="panelOutputRules" style="display: none;">
