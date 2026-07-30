@@ -1,0 +1,50 @@
+// 判定標記：一顆語意小標，回歸案例編輯（2-2-4）與回歸執行報表（2-2-5）共用。
+//
+// 純樣式元件、**無 html**，故 markup 契約逐字寫在這裡（GUIDELINE §1-2）：
+//
+//     <span class="verdict-tag is-pass">通過</span>
+//
+// 四個變體。**判準寫在這裡，是因為顏色本身就會說話——挑錯一顆就是在畫面上說謊**：
+//
+//   .is-pass   確定性斷言全過／執行完整跑完／「修好了」。綠色只給這一類。
+//   .is-fail   確定性斷言有一條沒過／執行中斷／「退步」。紅色只給這一類。
+//   .is-warn   **量不到**：評審未完成、沒得比、評審漂移、還在跑。
+//              **不是「分數低」**——主觀分不參與判定也不設門檻（gufofaq-saas
+//              services/product/app/routers/regression.py 的 `_compare_runs`：judge_score
+//              完全不參與分類，`_judge_status` 只回 none／scored／unavailable 三態）。
+//              拿分數塗黃燈等於替使用者發明一個後端刻意不做的門檻。
+//   .is-muted  中性事實：無變化、本來就沒有主觀分、斷言的「確定性」型別標記。
+//
+// 顏色一律語意 token：填充族（--success／--danger／--warning）配成對的前景
+// （--on-accent／--on-warning），中性態用表面色配次要文字（GUIDELINE §4 對比度硬規則）。
+.verdict-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.125rem 0.5rem;
+    border-radius: 0.75rem;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    white-space: nowrap;
+
+    &.is-pass {
+        background-color: var(--success);
+        color: var(--on-accent);
+    }
+
+    &.is-fail {
+        background-color: var(--danger);
+        color: var(--on-accent);
+    }
+
+    &.is-warn {
+        background-color: var(--warning);
+        color: var(--on-warning);
+    }
+
+    &.is-muted {
+        background-color: var(--surface-sunken);
+        color: var(--text-muted);
+        border: 1px solid var(--border);
+    }
+}

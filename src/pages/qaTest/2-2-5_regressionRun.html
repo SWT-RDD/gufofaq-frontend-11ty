@@ -1,0 +1,441 @@
+---
+layout: layouts/page-shell/page-shell.html
+title: GufoFAQ::回歸執行報表
+titleKey: regression.runReportTitle
+pageHeading: 回歸執行報表
+permalink: 2-2-5_regressionRun.html
+---
+{# 一次回歸執行的報表（SaaS 新需求，21 頁真 app 無對應）。逆向自 gufofaq-saas
+     services/product/app/routers/regression.py 的 `GET /qatest/runs/{run_id}`
+     （帶 `?baseline=<run_id>` 時多出比較區塊）與 `GET /qatest/runs/{run_id}/export`。
+     案例集與案例編輯在 2-2-4_regressionSuites（本頁由它的「看報表」連過來）。
+
+     ## 比較有**五個**桶子，不是三個
+
+     判定的唯一依據是 `passed`（確定性斷言）：基準過、這次敗＝退步；反向＝修好了；相同＝無變化。
+     `judge_score` 完全不參與分類（`_compare_runs`：主觀分是每次重打的 LLM 評分，讓它決定
+     紅綠燈等於把評審的抖動讀成回歸）。
+
+     另外兩個桶子存在的理由只有一個——**它們的預設歸宿都是「無變化」，而那是假綠燈**：
+
+       `not_compared`  只有一邊有結果（案例在基準之後才建立／某一次中斷前沒跑到）。
+                       一次跑到第 2 則就中斷的執行，若把另外 198 則算進「無變化」，
+                       報表會說「198 則沒有變化、0 退步」——最令人安心的假報表。
+       `judge_drift`   評審整批壞掉。這些案例的確定性判定**確實**沒變（分類是對的），
+                       但這一次的主觀分整批不見了。判別式讀的是 `judge_status` 的**轉移**
+                       （scored ⇄ unavailable），不是「分數在不在」。
+
+     所以版面上這兩塊**不併進「無變化」，而且排在「無變化」前面**：200 則無變化之後的區塊
+     等於沒有人會看到。頁面順序＝退步 → 沒得比 → 評審漂移 → 修好了 → 無變化；
+     API 的鍵序（regressed 置頂）是給人讀的約定，前端靠鍵名取值、不靠位置。
+
+     ## 主觀分不畫紅綠燈
+
+     `judge_status` 三態：`none`＝這則本來就沒有 judge 斷言、`scored`＝有分數、
+     `unavailable`＝有判準但評審沒跑成功。**只有 `unavailable` 是黃燈**（量不到），
+     分數低不是——後端刻意不設門檻，前端設一個就是替使用者發明它。
+     `judge_avg` 只平均有分數的那幾則，另有 `judge_unscored_cases` 逐則點名。
+
+     ## 中斷過的執行
+
+     `status`／`summary.aborted_reason` 在頁首就要看得見，匯出鈕旁邊也要——那份 CSV 只有已經
+     跑完的那幾則，最後一列會附註（`_partial_notice`）。「一份少了列卻長得很完整的 CSV」
+     是這支端點最糟的失敗方式。 #}
+{% set breadcrumbItems = [
+  { label: "首頁", href: "2-1_qaRecord.html", i18nKey: "nav.home" },
+  { label: "問答測試區", href: "", i18nKey: "nav.qaTest" },
+  { label: "批次回歸", href: "2-2-4_regressionSuites.html", i18nKey: "nav.regression" },
+  { label: "回歸執行報表", i18nKey: "regression.runReportTitle" }
+] %}
+<div class="flex-row column gap-16">
+    {% include "ui/breadcrumb/breadcrumb.html" %}
+</div>
+
+{# ── 執行身分 ───────────────────────────────────────────────────────────────
+     示範刻意選一次**中斷過**的執行：那是唯一會讓報表說謊的狀態，畫面上每一個受影響的地方
+     （狀態標記、中斷原因、摘要的分母、匯出提示、比較的「沒得比」）都要演得出來。 #}
+<div class="block mt-16 flex-row column gap-16">
+    <div class="flex-row justify-content-between align-items-center flex-wrap gap-16">
+        <div class="text-md text-bold"><span data-i18n="regression.runNo">執行編號</span><span> #311</span></div>
+        <span class="verdict-tag is-fail" data-i18n="regression.statusAborted">中斷</span>
+    </div>
+    <div class="flex-row gap-24 flex-wrap">
+        <p><span class="text-bold" data-i18n="regression.suiteName">案例集名稱</span><span>：關稅問答基準集</span></p>
+        <p><span class="text-bold" data-i18n="qaTest.knowledgeRetrieval">知識檢索</span><span>：</span><span data-i18n="settings.config1">設置一</span></p>
+        <p><span class="text-bold" data-i18n="regression.configVersion">設定版本</span><span>：7</span></p>
+        <p><span class="text-bold" data-i18n="qa.startTime">開始時間</span><span>：2026/07/27 18:40</span></p>
+        <p><span class="text-bold" data-i18n="qa.endTime">結束時間</span><span>：2026/07/27 18:52</span></p>
+    </div>
+    <p class="text-red"><span class="text-bold" data-i18n="regression.abortedReason">中斷原因：</span><span>問答額度不足（案例 41 的第 1 輪）——已完成的結果保留</span></p>
+    <p class="text-red" data-i18n="regression.abortedMeaning">這不是完整的一次回歸：只有下面列出的那幾則真的跑過，其餘的案例「有沒有回歸」這一次量不到。</p>
+</div>
+
+{# ── 摘要 ───────────────────────────────────────────────────────────────────
+     示範自洽（GUIDELINE §6）：通過 9 ＋ 未通過 1 ＝ 總數 10（＝下方逐案例 2 列的比例縮影，
+     逐案例區只列前 2 則當版型示範）；有分數 8 ＋ 評審未完成 1 ＝ 有 judge 判準的 9 則。 #}
+<div class="block mt-16 flex-row column gap-16">
+    <div class="text-md text-bold" data-i18n="regression.summary">執行摘要</div>
+    <div class="flex-row gap-24 flex-wrap">
+        <p><span class="text-bold" data-i18n="regression.summaryTotal">跑完的案例：</span><span>10</span></p>
+        <p><span class="text-bold" data-i18n="regression.summaryPassed">通過：</span><span>9</span></p>
+        <p><span class="text-bold" data-i18n="regression.summaryFailed">未通過：</span><span>1</span></p>
+        <p><span class="text-bold" data-i18n="regression.summaryJudgeAvg">主觀分平均：</span><span>4.1</span></p>
+        <p><span class="text-bold" data-i18n="regression.summaryContextTurns">送出的前置對話：</span><span>6</span><span data-i18n="regression.turnsUnit"> 輪</span></p>
+    </div>
+    {# judge_avg 的分母要講出來，否則「4.1」讀起來像是全部案例的平均。 #}
+    <p class="text-gray"><span data-i18n="regression.judgeAvgBasePrefix">主觀分平均只算有分數的 </span><span>8</span><span data-i18n="regression.judgeAvgBaseMid"> 則；另有 </span><span>1</span><span data-i18n="regression.judgeAvgBaseSuffix"> 則評審未完成，沒有被當成 0 分拉低平均。評審未完成的案例：</span><span>#41</span></p>
+</div>
+
+{# ── 上限與截斷 ─────────────────────────────────────────────────────────────
+     `summary.limits` 原樣攤在消費點。`upstream_memory_count` 是**上游的截斷**：chatbot 只把
+     最近 N 輪餵進提示詞，前置輪數 ＋ 本題超過它的案例，最早那幾輪不會出現在 LLM 眼前——
+     本引擎攔不住它，但逐案例點名，讓「這個追問案例好像沒有承接前文」有地方查。 #}
+{% set runLimitRows = [
+  { labelKey: "regression.limitCases", label: "單次執行案例上限：", value: "200", unitKey: "regression.casesUnit", unit: " 則" },
+  { labelKey: "regression.limitContextTurns", label: "前置對話上限：", value: "10", unitKey: "regression.turnsUnit", unit: " 輪" },
+  { labelKey: "regression.limitCaseTimeout", label: "單則案例逾時：", value: "600", unitKey: "regression.secondsUnit", unit: " 秒" },
+  { labelKey: "regression.limitConcurrency", label: "同時執行的案例數：", value: "1", unitKey: "regression.casesUnit", unit: " 則" },
+  { labelKey: "regression.limitMemoryCount", label: "上游記憶輪數：", value: "5", unitKey: "regression.turnsUnit", unit: " 輪" }
+] %}
+<div class="block mt-16 flex-row column gap-16">
+    <div class="text-md text-bold" data-i18n="regression.limitsSection">這一次的上限</div>
+    <div class="flex-row gap-24 flex-wrap">
+        {% for limit in runLimitRows %}
+        <p><span class="text-bold" data-i18n="{{ limit.labelKey }}">{{ limit.label }}</span><span>{{ limit.value }}</span><span data-i18n="{{ limit.unitKey }}">{{ limit.unit }}</span></p>
+        {% endfor %}
+    </div>
+    <p class="text-red"><span data-i18n="regression.overMemoryPrefix">這幾則案例的「前置輪數 ＋ 本題」超過上游記憶輪數，最早那幾輪不會進到模型眼前：</span><span>#7、#19</span></p>
+</div>
+
+{# ── 匯出 ───────────────────────────────────────────────────────────────────
+     截斷必須在消費點看得見：中斷過／還在跑的執行，那份 CSV 只有已經跑完的那幾則。 #}
+<div class="block mt-16 flex-row column gap-16">
+    <div class="text-md text-bold" data-i18n="regression.exportSection">匯出</div>
+    <p class="text-red"><span data-i18n="regression.exportPartialPrefix">這一次執行是中斷的，匯出的 CSV 只有 </span><span>10</span><span data-i18n="regression.exportPartialSuffix"> 則案例的結果，最後一列會明說筆數與中斷原因——不要把它讀成「整套案例都跑過」。</span></p>
+    <div class="flex-row">
+        <button type="button" class="button button-border js-export-run" data-toast="報表已下載|匯出失敗，請稍後再試" data-i18n-data-toast="toast.exportRun" data-toast-type="success|error" data-i18n="regression.exportCsv">下載結果 CSV</button>
+    </div>
+    <p class="text-gray" data-i18n="regression.exportColumns">六欄：案例／期望／實際答案／通過與否／命中文件／評審分數。「命中文件」逐列都是「未落庫」——回歸結果目前不存命中清單，留白會被讀成「這一題零命中」。</p>
+</div>
+
+{# ── 基準比較 ───────────────────────────────────────────────────────────────
+     基準必須是同一個案例集的另一次執行（不同案例集的案例 id 天生對不起來，後端回 400 並
+     同時列出兩個案例集；跨租戶一律 404、訊息與「不存在」相同）。
+     沒有挑基準時後端**不回空的比較區塊**——空的「退步」讀起來是「比過了、沒有回歸」，
+     而實際上根本沒有比。故這一塊在 React 端是「挑了基準才渲染」。 #}
+<div class="block mt-16 flex-row column gap-16">
+    <div class="text-md text-bold" data-i18n="regression.compareSection">與基準比較</div>
+    <div class="flex-row gap-16 align-items-end flex-wrap">
+        <div class="col-5-md col-12-sm">
+            <div class="form-group">
+                <div class="label">
+                    <label for="baselineSelect" class="control-label" data-i18n="regression.baselineRun">基準執行</label>
+                </div>
+                <div class="field">
+                    <select id="baselineSelect" class="form-control js-baseline-select">
+                        <option value="310" selected>#310（2026/07/27 11:02）</option>
+                        <option value="309">#309（2026/07/26 09:30）</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="flex-row">
+            <button type="button" class="button button-primary js-compare-baseline" data-toast="正在比較…|比較完成|不能拿這一次執行自己當基準|載入比較結果失敗，請稍後再試" data-i18n-data-toast="toast.compareBaseline" data-toast-type="info|success|warning|error" data-i18n="regression.compare">比較</button>
+        </div>
+    </div>
+    {# 基準那一次自己的狀態也要看得見，否則 partial 會被當成 complete。 #}
+    <p class="text-gray"><span data-i18n="regression.baselineStatePrefix">基準 </span><span>#310</span><span data-i18n="regression.baselineStateMid"> 的狀態是 </span><span data-i18n="regression.statusFinished">完成</span><span data-i18n="regression.baselineStateRan">，跑完 </span><span>10</span><span data-i18n="regression.casesUnit"> 則</span></p>
+</div>
+
+{# ── 五個桶子 ───────────────────────────────────────────────────────────────
+     退步／修好了／無變化三塊的 markup 完全相同（差別只有標題、標記顏色與那一句說明），
+     故資料化成 compareBuckets 由 for 渲染（§3-2）；「沒得比」與「評審漂移」的欄位不同，
+     各自成塊。每一塊是一個有名字的 region，這樣輔具可以直接跳到「退步」那一塊。
+
+     示範自洽（§6）：退步 1、修好了 1、無變化 8＝比得成的 10 則（＝基準與這一次都有結果的
+     那幾則）；另有 2 則沒得比（這一次中斷前沒跑到），與上面「跑完 10 則、基準 10 則」相符
+     ——案例集共 12 則，這一次跑到第 10 則就中斷。 #}
+{% set compareBuckets = [
+  {
+    key: "regressed", titleKey: "regression.bucketRegressed", title: "退步（本來對、現在錯）",
+    tagClass: "is-fail", count: "1",
+    whyKey: "regression.bucketRegressedWhy", why: "這一份是整份報表的價值所在：基準那一次通過、這一次沒過，也就是這次改動弄壞的東西。",
+    rows: [
+      { caseNo: "#41", question: "臺灣輸美鋼品的關稅稅率是多少", before: "通過", beforeKey: "regression.verdictPass", beforeClass: "is-pass", after: "未通過", afterKey: "regression.verdictFail", afterClass: "is-fail", detail: "答案缺少：25%" }
+    ]
+  },
+  {
+    key: "fixed", titleKey: "regression.bucketFixed", title: "修好了（本來錯、現在對）",
+    tagClass: "is-pass", count: "1",
+    whyKey: "regression.bucketFixedWhy", why: "基準那一次沒過、這一次通過了。",
+    rows: [
+      { caseNo: "#38", question: "出口鋼品要準備哪些文件", before: "未通過", beforeKey: "regression.verdictFail", beforeClass: "is-fail", after: "通過", afterKey: "regression.verdictPass", afterClass: "is-pass", detail: "" }
+    ]
+  },
+  {
+    key: "unchanged", titleKey: "regression.bucketUnchanged", title: "無變化",
+    tagClass: "is-muted", count: "8",
+    whyKey: "regression.bucketUnchangedWhy", why: "兩次的確定性判定相同（含兩次都沒過）。這一塊不含「沒得比」與「評審整批壞掉」——那兩件事各自在上面。",
+    rows: [
+      { caseNo: "#37", question: "鋼品的稅則號列怎麼查", before: "通過", beforeKey: "regression.verdictPass", beforeClass: "is-pass", after: "通過", afterKey: "regression.verdictPass", afterClass: "is-pass", detail: "" },
+      { caseNo: "#40", question: "美國對鋁材的配額是多少", before: "未通過", beforeKey: "regression.verdictFail", beforeClass: "is-fail", after: "未通過", afterKey: "regression.verdictFail", afterClass: "is-fail", detail: "答案缺少：配額" }
+    ]
+  }
+] %}
+{% set notComparedRows = [
+  { caseNo: "#42", question: "鋁材的反傾銷稅率", reasonKey: "regression.reasonAbsentInThisRun", reason: "這一次沒跑到", detail: "這一次沒有跑到這則案例（執行中斷）——它有沒有回歸，這一次量不到" },
+  { caseNo: "#43", question: "鋼品出口的檢驗規定", reasonKey: "regression.reasonAbsentInBaseline", reason: "基準沒有它", detail: "基準那一次沒有這則案例的結果（案例在基準之後才建立，或基準中斷前沒跑到）——沒有可以比較的對象，不是「沒有變化」" }
+] %}
+{% set judgeDriftGroups = [
+  { key: "unavailableNow", titleKey: "regression.driftUnavailableNow", title: "上次評得出來、這次評不出來", tagClass: "is-warn", cases: "#41", count: "1" },
+  { key: "availableNow", titleKey: "regression.driftAvailableNow", title: "上次評不出來、這次評得出來", tagClass: "is-muted", cases: "—", count: "0" }
+] %}
+
+{% for bucket in compareBuckets %}
+{# 「退步」是第一塊：它是唯一會讓人停下來看的清單，埋在 200 則無變化後面等於沒有。 #}
+<section class="block mt-16 flex-row column gap-16" aria-labelledby="bucket-{{ bucket.key }}-title">
+    <div class="flex-row align-items-center gap-10 flex-wrap">
+        <h2 id="bucket-{{ bucket.key }}-title" class="text-md text-bold m-0" data-i18n="{{ bucket.titleKey }}">{{ bucket.title }}</h2>
+        <span class="verdict-tag {{ bucket.tagClass }}">{{ bucket.count }}</span>
+    </div>
+    <p class="text-gray" data-i18n="{{ bucket.whyKey }}">{{ bucket.why }}</p>
+    <div class="table-container scrollTable">
+        <table class="default-table">
+            <colgroup>
+                <col style="width:90px; min-width:90px;">
+                <col style="min-width:280px;">
+                <col style="width:120px; min-width:120px;">
+                <col style="width:120px; min-width:120px;">
+                <col style="min-width:280px;">
+            </colgroup>
+            <thead>
+                <tr>
+                    <th data-i18n="regression.caseNo">案例</th>
+                    <th data-i18n="regression.caseQuestion">案例的問題</th>
+                    <th data-i18n="regression.baselineVerdict">基準判定</th>
+                    <th data-i18n="regression.currentVerdict">這一次判定</th>
+                    <th data-i18n="agent.errorReason">失敗原因</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in bucket.rows %}
+                <tr>
+                    <td>{{ row.caseNo }}</td>
+                    <td>{{ row.question }}</td>
+                    <td><span class="verdict-tag {{ row.beforeClass }}" data-i18n="{{ row.beforeKey }}">{{ row.before }}</span></td>
+                    <td><span class="verdict-tag {{ row.afterClass }}" data-i18n="{{ row.afterKey }}">{{ row.after }}</span></td>
+                    <td>{{ row.detail }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% if bucket.key == "regressed" %}
+{# ── 沒得比 ── 排在「無變化」之前：它的預設歸宿就是「無變化」，那正是假綠燈。 #}
+<section class="block mt-16 flex-row column gap-16" aria-labelledby="bucket-notCompared-title">
+    <div class="flex-row align-items-center gap-10 flex-wrap">
+        <h2 id="bucket-notCompared-title" class="text-md text-bold m-0" data-i18n="regression.bucketNotCompared">沒得比（只有一邊有結果）</h2>
+        <span class="verdict-tag is-warn">2</span>
+    </div>
+    <p class="text-red" data-i18n="regression.bucketNotComparedWhy">這些案例只有一邊有結果，所以它們有沒有回歸「這一次量不到」——不是「沒有變化」。把它們算進無變化，一次跑到一半就中斷的執行會比出「0 退步」。</p>
+    <div class="table-container scrollTable">
+        <table class="default-table">
+            <colgroup>
+                <col style="width:90px; min-width:90px;">
+                <col style="min-width:280px;">
+                <col style="width:140px; min-width:140px;">
+                <col style="min-width:320px;">
+            </colgroup>
+            <thead>
+                <tr>
+                    <th data-i18n="regression.caseNo">案例</th>
+                    <th data-i18n="regression.caseQuestion">案例的問題</th>
+                    <th data-i18n="regression.notComparedReason">哪一邊缺</th>
+                    <th data-i18n="regression.notComparedDetail">為什麼沒得比</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in notComparedRows %}
+                <tr>
+                    <td>{{ row.caseNo }}</td>
+                    <td>{{ row.question }}</td>
+                    <td><span class="verdict-tag is-warn" data-i18n="{{ row.reasonKey }}">{{ row.reason }}</span></td>
+                    <td>{{ row.detail }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="4" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+{# ── 評審漂移 ── 同樣排在「無變化」之前，理由同上。 #}
+<section class="block mt-16 flex-row column gap-16" aria-labelledby="bucket-judgeDrift-title">
+    <div class="flex-row align-items-center gap-10 flex-wrap">
+        <h2 id="bucket-judgeDrift-title" class="text-md text-bold m-0" data-i18n="regression.bucketJudgeDrift">評審漂移（主觀分量不到了）</h2>
+        <span class="verdict-tag is-warn">1</span>
+    </div>
+    <p class="text-red" data-i18n="regression.bucketJudgeDriftWhy">這些案例的確定性判定確實沒變，所以它們真的落在「無變化」——但這一次的主觀分整批不見了。少了這一塊，報表會顯示「什麼都沒變」，而事實是這一批根本沒有主觀分。它讀的是「評得出來 ⇄ 評不出來」的轉移，不是分數高低。</p>
+    <div class="table-container scrollTable">
+        <table class="default-table">
+            <colgroup>
+                <col style="min-width:280px;">
+                <col style="width:90px; min-width:90px;">
+                <col style="min-width:200px;">
+            </colgroup>
+            <thead>
+                <tr>
+                    <th data-i18n="regression.driftDirection">轉移方向</th>
+                    <th class="text-center" data-i18n="regression.caseCount">案例數</th>
+                    <th data-i18n="regression.driftCases">涉及的案例</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for group in judgeDriftGroups %}
+                <tr>
+                    <td><span class="verdict-tag {{ group.tagClass }}" data-i18n="{{ group.titleKey }}">{{ group.title }}</span></td>
+                    <td class="text-center">{{ group.count }}</td>
+                    <td>{{ group.cases }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endif %}
+{% endfor %}
+
+{# ── 逐案例展開 ─────────────────────────────────────────────────────────────
+     ui/accordion 的表格結構：摘要列 ＋ 下一列 tr.detail-row。展開後放這一則的期望（逐條講成
+     人話）、實際答案、失敗的斷言（含引擎量到的實測值）與實際送出的前置對話輪數。
+
+     `context_turns_sent` 一定要顯示實際輪數而不是只顯示「有沒有勾」：勾了卻拿到 0 輪是常態
+     （產品的正式問答每一題各自成一個聊天室），畫面上零訊號的話使用者會以為前置對話帶進去了。
+     示範刻意留一則 0 輪的多輪案例——那正是要被看到的那一格。
+
+     「主觀分」欄三態各自不同：有分數就印分數（**不因為分數低而變黃燈**，後端刻意不設門檻）、
+     沒有 judge 斷言印「無主觀分」、有判準卻沒評出來印「評審未完成」（黃燈：那是量不到）。 #}
+{% set runResultRows = [
+  {
+    caseNo: "#41", question: "臺灣輸美鋼品的關稅稅率是多少",
+    verdict: "未通過", verdictKey: "regression.verdictFail", verdictClass: "is-fail",
+    judgeKind: "unavailable", judgeText: "評審未完成", judgeKey: "regression.judgeUnavailable", judgeClass: "is-warn",
+    latency: "2,140", tokens: "1,096", turnsSent: "2",
+    expectations: [
+      "答案須包含：25%／鋼品",
+      "須引用文件：9f2c1b7e…a41",
+      "主觀評分判準：答案有沒有正面回答「稅率是多少」"
+    ],
+    answer: "鋼品出口到美國需要依照 HS 稅則號列申報，實際稅率請洽海關。",
+    failures: ["答案缺少：25%"]
+  },
+  {
+    caseNo: "#39", question: "鋁材的關稅是多少（追問）",
+    verdict: "通過", verdictKey: "regression.verdictPass", verdictClass: "is-pass",
+    judgeKind: "none", judgeText: "無主觀分", judgeKey: "regression.judgeNone", judgeClass: "is-muted",
+    latency: "1,780", tokens: "884", turnsSent: "0",
+    expectations: ["答案須包含：10%"],
+    answer: "鋁材輸美目前適用 10% 的關稅。",
+    failures: []
+  }
+] %}
+<div class="block mt-16 flex-row column gap-16 js-accordion">
+    <div class="flex-row justify-content-between align-items-center flex-wrap gap-16">
+        <div class="text-md text-bold" data-i18n="regression.perCase">逐案例結果</div>
+        <div class="btn-group">
+            <button type="button" class="button button-border button-sm js-expand-all" data-i18n="common.expandAll">全部展開</button>
+            <button type="button" class="button button-border button-sm js-collapse-all" data-i18n="common.collapseAll">全部收合</button>
+        </div>
+    </div>
+    <div class="table-container scrollTable">
+        <table class="default-table">
+            <colgroup>
+                <col style="width:40px; min-width:40px;">
+                <col style="width:90px; min-width:90px;">
+                <col style="min-width:280px;">
+                <col style="width:110px; min-width:110px;">
+                <col style="width:130px; min-width:130px;">
+                <col style="width:110px; min-width:110px;">
+                <col style="width:110px; min-width:110px;">
+                <col style="width:130px; min-width:130px;">
+            </colgroup>
+            <thead>
+                <tr>
+                    <th><span class="sr-only" data-i18n="common.expandRow">展開表格</span></th>
+                    <th data-i18n="regression.caseNo">案例</th>
+                    <th data-i18n="regression.caseQuestion">案例的問題</th>
+                    <th data-i18n="regression.currentVerdict">這一次判定</th>
+                    <th data-i18n="regression.judgeScore">評審分數</th>
+                    <th class="text-center" data-i18n="agent.summaryLatency">延遲</th>
+                    <th class="text-center" data-i18n="agent.summaryTokens">Token</th>
+                    <th class="text-center" data-i18n="regression.contextTurnsSent">送出前置對話</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in runResultRows %}
+                <tr data-case-no="{{ row.caseNo }}">
+                    <td>
+                        <button type="button" class="button accordion-btn" aria-expanded="false" title="展開表格" data-i18n-title="common.expandRow">
+                            <span class="sr-only" data-i18n="common.expandRow">展開表格</span>
+                        </button>
+                    </td>
+                    <td>{{ row.caseNo }}</td>
+                    <td>{{ row.question }}</td>
+                    <td><span class="verdict-tag {{ row.verdictClass }}" data-i18n="{{ row.verdictKey }}">{{ row.verdict }}</span></td>
+                    <td><span class="verdict-tag {{ row.judgeClass }}" data-i18n="{{ row.judgeKey }}">{{ row.judgeText }}</span></td>
+                    <td class="text-center">{{ row.latency }}<span data-i18n="regression.msUnit"> ms</span></td>
+                    <td class="text-center">{{ row.tokens }}</td>
+                    <td class="text-center">{{ row.turnsSent }}<span data-i18n="regression.turnsUnit"> 輪</span></td>
+                </tr>
+                <tr class="detail-row">
+                    <td colspan="8" class="detail-cell">
+                        <div class="accordion-content">
+                            <table class="accordion-table">
+                                <tbody>
+                                    <tr>
+                                        <th data-i18n="regression.expectation">期望</th>
+                                        <td colspan="3">
+                                            <ul class="list-style-disc">
+                                                {% for e in row.expectations %}
+                                                <li>{{ e }}</li>
+                                                {% endfor %}
+                                            </ul>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th data-i18n="regression.actualAnswer">實際答案</th>
+                                        <td colspan="3">{{ row.answer }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th data-i18n="agent.errorReason">失敗原因</th>
+                                        <td colspan="3">
+                                            <ul class="list-style-disc">
+                                                {% for f in row.failures %}
+                                                <li>{{ f }}</li>
+                                                {% else %}
+                                                <li data-i18n="regression.noFailure">沒有失敗的斷言</li>
+                                                {% endfor %}
+                                            </ul>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th data-i18n="regression.contextTurnsSent">送出前置對話</th>
+                                        <td colspan="3">{{ row.turnsSent }}<span data-i18n="regression.turnsUnit"> 輪</span><span data-i18n="regression.contextTurnsSentHint">（重放時只送出使用者那一半；帶不到前置對話時這裡就是 0，那是常態不是故障——產品的正式問答每一題各自成一個聊天室）</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="8" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <p class="text-gray" data-i18n="regression.judgeNoThreshold">主觀分不參與通過與否，也沒有門檻：分數低不會讓案例變紅，只有「有判準卻沒評出來」會標成評審未完成。</p>
+</div>

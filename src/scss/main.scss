@@ -43,6 +43,7 @@
 @use "../_includes/ui/list-style/list-style";
 @use "../_includes/ui/toast/toast";
 @use "../_includes/ui/theme-toggle/theme-toggle";
+@use "../_includes/ui/verdict-tag/verdict-tag";
 
 // 頁面級區塊（ui/ 與 components/ 都有——桶歸屬看依賴，載入順序看層疊，兩者無關）
 // ⚠️ 這份清單的順序＝層疊順序，不要為了「照桶排整齊」而重排

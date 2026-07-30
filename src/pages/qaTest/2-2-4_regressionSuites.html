@@ -1,0 +1,676 @@
+---
+layout: layouts/page-shell/page-shell.html
+title: GufoFAQ::批次回歸
+titleKey: nav.regression
+pageHeading: 批次回歸
+permalink: 2-2-4_regressionSuites.html
+---
+{# 批次回歸 harness — 案例集與案例編輯（SaaS 新需求，21 頁真 app 無對應）。
+     逆向自 gufofaq-saas services/product/app/routers/regression.py：
+       `POST/GET /qatest/suites`、`GET/DELETE /qatest/suites/{id}`、
+       `POST /qatest/suites/{id}/cases`、`POST /qatest/suites/{id}/cases/from-log`、
+       `DELETE /qatest/suites/{id}/cases/{cid}`、`POST /qatest/suites/{id}/run`（SSE）。
+     執行報表在 2-2-5_regressionRun。
+
+     這一頁回答的是「改了提示詞／換了模型／調了檢索設定之後，那幾十題還答得對嗎」。判準是
+     **資料**（案例自帶斷言），不是程式。
+
+     三件後端已定案、這一頁必須忠實呈現的事：
+
+     ① **案例至少要有一條「確定性」斷言**（`_validate_assertions` 的第二道閘門）。主觀分
+        （judge）不進 `passed`，只有 judge 的案例永遠 `passed=true`，在基準比較裡永遠落在
+        「無變化」——它偵測不到任何回歸，而報表讀起來與「真的沒退步」一模一樣。所以斷言列
+        逐列標出「確定性／主觀分」，不是等使用者送出去吃 400 才知道。
+     ② **一鍵建案例是實務上唯一會被用起來的建立路徑**（見 components/case-from-log-modal
+        的檔頭），故它是主要按鈕、手動建立在下方。
+     ③ **跑一次會扣問答額度**：每一則案例的每一輪前置對話與本題各是一次真的問答
+        （`_replay_case` 逐輪 `consume_qa_quota`）。所以「預計扣多少」寫在開跑鈕旁邊，
+        不是跑完才在用量頁看到。
+
+     ⚠️ 覆寫欄位為什麼一次送齊：`qatest._build_test_config` 的第 ③ 層把
+     `product_system_prompt`／`reasoning_effort`／`search_total_number`／
+     `search_selected_number`／`search_mode`／`agent_max_iterations` **無條件**寫成
+     `TestConfig` 的值（未帶＝該欄的預設，不是設定檔的現值）。所以這幾欄一律由畫面送出、
+     並以被測設定檔的現值預填——畫面上看到的就是這一次真的會跑的那一組。
+     `model_name`／`data_source_ratio`／`skill_ids` 未帶才是真的「沿用設定檔」。
+
+     權限：本頁的寫入面是 `settings:write`（案例集屬租戶資產）；「開始執行」另需租戶的
+     `ask` 功能開通（真的會問答）；「從問答紀錄建立」另需 `history` 能力（它讀的是提問與
+     答案原文）。三道各自的 403 由 React 依 /api/me 決定鈕的可用性。 #}
+{% set breadcrumbItems = [
+  { label: "首頁", href: "2-1_qaRecord.html", i18nKey: "nav.home" },
+  { label: "問答測試區", href: "", i18nKey: "nav.qaTest" },
+  { label: "批次回歸", i18nKey: "nav.regression" }
+] %}
+<div class="flex-row column gap-16">
+    {% include "ui/breadcrumb/breadcrumb.html" %}
+</div>
+
+<p class="text-gray" data-i18n="regression.intro">案例集是一組自帶「斷言」的題目。跑一次就把整套重放一遍，逐則判定通過與否，再拿去跟上一次比——退步的那幾則就是這次改動弄壞的東西。</p>
+
+{# ── 新增案例集 ─────────────────────────────────────────────────────────────
+     名稱必填 ⇒ 送出鈕的 data-toast 要有 warning 段（GUIDELINE §4：驗證結果的唯一出口）。 #}
+<div class="block mt-16 flex-row column gap-16">
+    <div class="text-md text-bold" data-i18n="regression.addSuite">新增案例集</div>
+    <div class="flex-row flex-wrap gap-16 mobile-column sm-gap-16">
+        <div class="col-5-md col-12-sm">
+            <div class="form-group">
+                <div class="label">
+                    <label for="newSuiteName" class="control-label required" data-i18n="regression.suiteName">案例集名稱</label>
+                </div>
+                <div class="field">
+                    <input type="text" id="newSuiteName" class="form-control" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" required>
+                </div>
+            </div>
+        </div>
+        <div class="col-7-md col-12-sm">
+            <div class="form-group">
+                <div class="label">
+                    <label for="newSuiteDesc" class="control-label" data-i18n="regression.suiteDesc">說明</label>
+                </div>
+                <div class="field">
+                    <input type="text" id="newSuiteDesc" class="form-control" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter">
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="flex-row">
+        <button type="button" class="button button-primary" data-toast="案例集已建立|案例集名稱不可為空白|建立失敗，請稍後再試" data-i18n-data-toast="toast.createSuite" data-toast-type="success|warning|error">
+            <img src="./images/icon_add_white.png" width="48" height="48" decoding="async" alt="" class="icon">
+            <span data-i18n="regression.addSuite">新增案例集</span>
+        </button>
+    </div>
+</div>
+
+{# ── 案例集清單 ─────────────────────────────────────────────────────────────
+     「跑過就凍結」：有執行紀錄的案例集刪不掉（409 `suite_has_runs`）——舊 run 的
+     `summary.total` 是跑完當下寫死的數字，連帶刪掉會讓那些歷史對不起來。所以刪除是
+     條件開窗（先選定要刪哪一列）＝ hook class、不掛 data-open-modal（GUIDELINE §5）。
+     示範 2 筆：一筆跑過（3 次執行）、一筆沒跑過——兩種列都要看得到。 #}
+{% set regressionSuites = [
+  { name: "關稅問答基準集", desc: "上線前必跑的 24 題", caseCount: 24, runCount: 3, createdAt: "2026/06/12 10:05" },
+  { name: "追問情境集（多輪）", desc: "承接前一輪主題的追問題目", caseCount: 6, runCount: 0, createdAt: "2026/07/02 14:41" }
+] %}
+<div class="block mt-16 flex-row column gap-16">
+    <div class="text-md text-bold" data-i18n="regression.suiteList">案例集清單</div>
+    <div class="table-container scrollTable">
+        <table class="default-table">
+            <colgroup>
+                <col style="min-width:220px;">
+                <col style="min-width:240px;">
+                <col style="width:100px; min-width:100px;">
+                <col style="width:100px; min-width:100px;">
+                <col style="width:170px; min-width:170px;">
+                <col style="width:200px; min-width:200px;">
+            </colgroup>
+            <thead>
+                <tr>
+                    <th data-i18n="regression.suiteName">案例集名稱</th>
+                    <th data-i18n="regression.suiteDesc">說明</th>
+                    <th class="text-center" data-i18n="regression.caseCount">案例數</th>
+                    <th class="text-center" data-i18n="regression.runCount">執行次數</th>
+                    <th data-i18n="common.createdAt">建立時間</th>
+                    <th data-i18n="common.actions">操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for suite in regressionSuites %}
+                <tr data-suite-id="{{ loop.index }}">
+                    <td>{{ suite.name }}</td>
+                    <td>{{ suite.desc }}</td>
+                    <td class="text-center">{{ suite.caseCount }}</td>
+                    <td class="text-center">{{ suite.runCount }}</td>
+                    <td>{{ suite.createdAt }}</td>
+                    <td>
+                        <div class="btn-group">
+                            <button type="button" class="button button-border button-sm js-open-suite" data-i18n="regression.openSuite">檢視案例</button>
+                            <button type="button" class="button button-red button-sm js-delete-suite" data-i18n="action.delete">刪除</button>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="6" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{# ── 檢視中的案例集：案例清單 ───────────────────────────────────────────────
+     展開列（ui/accordion 的表格結構）放這一則案例的完整內容：逐條斷言講成人話、逐輪前置
+     對話、備註（一鍵建立時自動寫入的出處）。
+     示範 2 筆刻意演兩種形狀：一筆多輪＋多型斷言，一筆單輪＋`no_answer`（無參數斷言）。 #}
+{% set regressionCases = [
+  {
+    question: "臺灣輸美鋼品的關稅稅率是多少",
+    contextTurns: [
+      { human: "我要出口鋼品到美國", ai: "好的，請問您想了解關稅、配額還是文件？" },
+      { human: "先看關稅", ai: "了解，請告訴我品項。" }
+    ],
+    assertions: [
+      { type: "contains", text: "答案須包含：25%／鋼品" },
+      { type: "cites_document", text: "須引用文件：9f2c1b7e…a41" },
+      { type: "judge", text: "主觀評分判準：答案有沒有正面回答「稅率是多少」" }
+    ],
+    note: "從問答紀錄 #48213 建立（這則問答的主要來源是 document_id=「9f2c1b7e…a41」，期望它仍然引用得到）"
+  },
+  {
+    question: "火星的關稅稅率是多少",
+    contextTurns: [],
+    assertions: [
+      { type: "no_answer", text: "須為誠實查無" }
+    ],
+    note: "從問答紀錄 #48377 建立（這則問答是誠實查無（零命中），期望它仍然誠實查無）"
+  }
+] %}
+<div class="block mt-16 flex-row column gap-16 js-accordion">
+    <div class="flex-row justify-content-between align-items-center flex-wrap gap-16">
+        <div class="text-md text-bold"><span data-i18n="regression.casesOf">案例：</span><span>關稅問答基準集</span></div>
+        <div class="btn-group">
+            <button type="button" class="button button-border button-sm js-expand-all" data-i18n="common.expandAll">全部展開</button>
+            <button type="button" class="button button-border button-sm js-collapse-all" data-i18n="common.collapseAll">全部收合</button>
+            <button type="button" class="button button-primary button-sm js-case-from-log" data-i18n="regression.fromLog">從問答紀錄建立案例</button>
+        </div>
+    </div>
+    <div class="table-container scrollTable">
+        <table class="default-table">
+            <colgroup>
+                <col style="width:40px; min-width:40px;">
+                <col style="width:60px; min-width:60px;">
+                <col style="min-width:320px;">
+                <col style="width:120px; min-width:120px;">
+                <col style="width:110px; min-width:110px;">
+                <col style="width:110px; min-width:110px;">
+            </colgroup>
+            <thead>
+                <tr>
+                    <th><span class="sr-only" data-i18n="common.expandRow">展開表格</span></th>
+                    <th data-i18n="common.seq">序號</th>
+                    <th data-i18n="regression.caseQuestion">案例的問題</th>
+                    <th class="text-center" data-i18n="regression.contextTurns">前置對話</th>
+                    <th class="text-center" data-i18n="regression.assertionCount">斷言數</th>
+                    <th data-i18n="common.actions">操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for case in regressionCases %}
+                <tr data-case-id="{{ loop.index }}">
+                    <td>
+                        <button type="button" class="button accordion-btn" aria-expanded="false" title="展開表格" data-i18n-title="common.expandRow">
+                            <span class="sr-only" data-i18n="common.expandRow">展開表格</span>
+                        </button>
+                    </td>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ case.question }}</td>
+                    <td class="text-center">{{ case.contextTurns.length }}<span data-i18n="regression.turnsUnit"> 輪</span></td>
+                    <td class="text-center">{{ case.assertions.length }}</td>
+                    <td>
+                        <button type="button" class="button button-red button-sm js-delete-case" data-i18n="action.delete">刪除</button>
+                    </td>
+                </tr>
+                <tr class="detail-row">
+                    <td colspan="6" class="detail-cell">
+                        <div class="accordion-content">
+                            <table class="accordion-table">
+                                <tbody>
+                                    <tr>
+                                        <th data-i18n="regression.assertions">斷言</th>
+                                        <td colspan="3">
+                                            <ul class="list-style-disc">
+                                                {% for a in case.assertions %}
+                                                <li>{{ a.text }} {% if a.type == "judge" %}<span class="verdict-tag is-warn" data-i18n="regression.subjective">主觀分</span>{% else %}<span class="verdict-tag is-muted" data-i18n="regression.deterministic">確定性</span>{% endif %}</li>
+                                                {% endfor %}
+                                            </ul>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th data-i18n="regression.contextTurns">前置對話</th>
+                                        <td colspan="3">
+                                            <ul class="list-style-disc">
+                                                {% for turn in case.contextTurns %}
+                                                <li>{{ turn.human }}</li>
+                                                {% else %}
+                                                <li data-i18n="regression.noContextTurns">沒有前置對話（單輪案例）</li>
+                                                {% endfor %}
+                                            </ul>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th data-i18n="regression.caseNote">備註</th>
+                                        <td colspan="3">{{ case.note }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="6" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <p class="text-gray" data-i18n="regression.aiTurnNotSent">前置對話重放時只送出使用者那一半：AI 那一半由上游重新生成（GufoRAG 的續談只吃聊天室編號，沒有任何欄位可以注入前幾輪的 AI 回覆）。</p>
+</div>
+
+{# ── 手動新增案例 ───────────────────────────────────────────────────────────
+     斷言列：型別 select（11 型，值域＝引擎的 `ASSERTION_TYPES`）＋依型別而異的參數欄。
+     示範 7 列刻意各演一種**參數形狀**（values／平台規則名／整數／連結前綴／文件身分／
+     維度槽＋代碼／判準），而且七條放在同一則案例上互不矛盾——那是一則真的可能存在的案例。
+
+     `matches`／`not_matches` 的 pattern 是**平台清單裡的名稱、不是 regex 原文**
+     （`app/regression.py::PLATFORM_PATTERNS`）：收原文的話任何呼叫端都能把一段會回溯爆炸的
+     regex 存進案例，之後每次執行都在 product 的事件迴圈上跑它。所以這一欄是 select 不是輸入框。
+
+     `direction_is` 的 slot 值域＝受控詞彙維度掛得上的槽（`regression.tag_code_slots()`＝
+     `models.TAG_DIMENSION_SLOTS` 扣掉 DATE 槽）；選項的顯示名是租戶自己取的維度名（資料，不翻）。 #}
+{% set regressionAssertionTypes = [
+  { value: "contains", label: "答案須包含", i18nKey: "regression.typeContains" },
+  { value: "not_contains", label: "答案不得出現", i18nKey: "regression.typeNotContains" },
+  { value: "matches", label: "須符合平台規則", i18nKey: "regression.typeMatches" },
+  { value: "not_matches", label: "不得符合平台規則", i18nKey: "regression.typeNotMatches" },
+  { value: "has_link", label: "答案須有連結", i18nKey: "regression.typeHasLink" },
+  { value: "max_chars", label: "答案字數上限", i18nKey: "regression.typeMaxChars" },
+  { value: "max_links", label: "答案連結數上限", i18nKey: "regression.typeMaxLinks" },
+  { value: "cites_document", label: "須引用文件", i18nKey: "regression.typeCitesDocument" },
+  { value: "direction_is", label: "命中文件的維度值", i18nKey: "regression.typeDirectionIs" },
+  { value: "no_answer", label: "須為誠實查無", i18nKey: "regression.typeNoAnswer" },
+  { value: "judge", label: "主觀評分判準", i18nKey: "regression.typeJudge" }
+] %}
+{% set regressionPatterns = [
+  { value: "markdown_link", label: "markdown 連結", i18nKey: "regression.patternMarkdownLink" },
+  { value: "bare_url", label: "可見的裸網址", i18nKey: "regression.patternBareUrl" },
+  { value: "raw_html_tag", label: "原始 HTML 標籤", i18nKey: "regression.patternRawHtmlTag" },
+  { value: "unresolved_placeholder", label: "未解析的替換佔位符", i18nKey: "regression.patternUnresolvedPlaceholder" },
+  { value: "markdown_heading", label: "markdown 標題行", i18nKey: "regression.patternMarkdownHeading" }
+] %}
+{% set regressionSlots = [
+  { value: "note1", label: "業務方向" },
+  { value: "note2", label: "法規依據" }
+] %}
+{% set regressionNewAssertions = [
+  { type: "contains", shape: "values", values: "25%\n鋼品" },
+  { type: "not_matches", shape: "pattern", pattern: "bare_url" },
+  { type: "max_chars", shape: "number", value: "500" },
+  { type: "has_link", shape: "prefix", prefix: "https://www.trade.gov.tw/" },
+  { type: "cites_document", shape: "document", idKind: "document_id", identity: "9f2c1b7e…a41" },
+  { type: "direction_is", shape: "slot", slotKey: "note1", value: "EXPORT" },
+  { type: "judge", shape: "criteria", criteria: "答案有沒有正面回答「稅率是多少」，而不是只講申報流程" }
+] %}
+<div class="block mt-16 flex-row column gap-16">
+    <div class="text-md text-bold" data-i18n="regression.addCase">手動新增案例</div>
+    <p class="text-gray" data-i18n="regression.addCaseIntro">先試「從問答紀錄建立案例」——真實紀錄推導得出的斷言比手寫的可靠。手動建立留給還沒發生過的題目。</p>
+
+    <div class="form-group">
+        <div class="label">
+            <label for="newCaseQuestion" class="control-label required" data-i18n="regression.caseQuestion">案例的問題</label>
+        </div>
+        <div class="field">
+            <textarea id="newCaseQuestion" class="form-control" maxlength="2000" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" aria-describedby="newCaseQuestionHint" required>臺灣輸美鋼品的關稅稅率是多少</textarea>
+            <p id="newCaseQuestionHint" class="text-gray"><span data-i18n="regression.caseQuestionLimit">問題字數上限：</span><span>2000</span><span data-i18n="regression.charsUnit"> 字</span><span data-i18n="regression.caseQuestionBlank">。只有空白（含全形空白）會被擋下，不會存成一則每次重放都拿到錯誤的案例。</span></p>
+        </div>
+    </div>
+
+    {# 前置對話：逐輪的 human 才會被送出（見上方說明）。上限 10 輪，超過整筆擋下、不截斷。 #}
+    <div class="form-group">
+        <div class="label">
+            <span id="newCaseContextLabel" class="control-label" data-i18n="regression.contextTurns">前置對話</span>
+        </div>
+        <div class="field flex-row column gap-8" role="group" aria-labelledby="newCaseContextLabel">
+            <input type="text" id="newCaseContext1" class="form-control" aria-label="第 1 輪前置對話的提問" data-i18n-aria-label="regression.contextTurnAria1" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" value="我要出口鋼品到美國">
+            <input type="text" id="newCaseContext2" class="form-control" aria-label="第 2 輪前置對話的提問" data-i18n-aria-label="regression.contextTurnAria2" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" value="先看關稅">
+            <div class="flex-row gap-16 align-items-center flex-wrap">
+                <button type="button" class="button button-border button-sm js-add-context-turn" data-i18n="regression.addContextTurn">新增一輪前置對話</button>
+                <span class="text-gray"><span data-i18n="regression.limitContextTurns">前置對話上限：</span><span>10</span><span data-i18n="regression.turnsUnit"> 輪</span><span data-i18n="regression.limitContextTurnsWhy">。每一輪在每一次執行都各扣一次問答額度。</span></span>
+            </div>
+        </div>
+    </div>
+
+    {# 斷言列 #}
+    <div class="flex-row column gap-16">
+        <span class="control-label" data-i18n="regression.assertions">斷言</span>
+        <p class="text-red" data-i18n="regression.assertionGate">至少要有一條「確定性」斷言。主觀分不進通過與否——只有主觀分的案例永遠通過，在基準比較裡永遠落在「無變化」，也就是永遠偵測不到回歸。</p>
+        {% for a in regressionNewAssertions %}
+        <div class="flex-row gap-16 flex-wrap align-items-end" role="group" aria-labelledby="assertionRowLabel-{{ loop.index }}">
+            <span id="assertionRowLabel-{{ loop.index }}" class="sr-only"><span data-i18n="regression.assertionRowPrefix">斷言設定 </span>{{ loop.index }}</span>
+            <div class="col-3-md col-12-sm">
+                <div class="form-group">
+                    <div class="label">
+                        <label for="assertionType-{{ loop.index }}" class="control-label" data-i18n="regression.assertionType">斷言型別</label>
+                    </div>
+                    <div class="field">
+                        <select id="assertionType-{{ loop.index }}" class="form-control js-assertion-type">
+                            {% for t in regressionAssertionTypes %}
+                            <option value="{{ t.value }}"{% if t.value == a.type %} selected{% endif %} data-i18n="{{ t.i18nKey }}">{{ t.label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="col-7-md col-12-sm">
+                {% if a.shape == "values" %}
+                <div class="form-group">
+                    <div class="label">
+                        <label for="assertionValues-{{ loop.index }}" class="control-label" data-i18n="regression.assertionValues">關鍵字（一行一個）</label>
+                    </div>
+                    <div class="field">
+                        <textarea id="assertionValues-{{ loop.index }}" class="form-control js-assertion-values" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter">{{ a.values }}</textarea>
+                    </div>
+                </div>
+                {% endif %}
+                {% if a.shape == "pattern" %}
+                <div class="form-group">
+                    <div class="label">
+                        <label for="assertionPattern-{{ loop.index }}" class="control-label" data-i18n="regression.assertionPattern">平台規則</label>
+                    </div>
+                    <div class="field">
+                        <select id="assertionPattern-{{ loop.index }}" class="form-control js-assertion-pattern" aria-describedby="assertionPatternHint-{{ loop.index }}">
+                            {% for p in regressionPatterns %}
+                            <option value="{{ p.value }}"{% if p.value == a.pattern %} selected{% endif %} data-i18n="{{ p.i18nKey }}">{{ p.label }}</option>
+                            {% endfor %}
+                        </select>
+                        <p id="assertionPatternHint-{{ loop.index }}" class="text-gray" data-i18n="regression.assertionPatternHint">只能從平台清單裡挑，不收自撰的正規表達式——那會讓任意 pattern 被存進案例、之後每次執行都在伺服器上跑它。</p>
+                    </div>
+                </div>
+                {% endif %}
+                {% if a.shape == "number" %}
+                <div class="form-group">
+                    <div class="label">
+                        <label for="assertionNumber-{{ loop.index }}" class="control-label" data-i18n="regression.assertionNumber">上限值</label>
+                    </div>
+                    <div class="field">
+                        <input type="number" id="assertionNumber-{{ loop.index }}" class="form-control js-assertion-number" min="0" step="1" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" value="{{ a.value }}">
+                    </div>
+                </div>
+                {% endif %}
+                {% if a.shape == "prefix" %}
+                <div class="form-group">
+                    <div class="label">
+                        <label for="assertionPrefix-{{ loop.index }}" class="control-label" data-i18n="regression.assertionPrefix">連結前綴</label>
+                    </div>
+                    <div class="field">
+                        <input type="text" id="assertionPrefix-{{ loop.index }}" class="form-control js-assertion-prefix" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" aria-describedby="assertionPrefixHint-{{ loop.index }}" value="{{ a.prefix }}">
+                        <p id="assertionPrefixHint-{{ loop.index }}" class="text-gray" data-i18n="regression.assertionPrefixHint">留空＝只要求「有連結」。不要填空字串當作不限前綴——每個網址都符合空前綴，這條斷言會退化成「有沒有連結」而你以為自己限定了網域。</p>
+                    </div>
+                </div>
+                {% endif %}
+                {% if a.shape == "document" %}
+                <div class="flex-row gap-16 flex-wrap mobile-column">
+                    <div class="col-4-md col-12-sm">
+                        <div class="form-group">
+                            <div class="label">
+                                <label for="assertionIdKind-{{ loop.index }}" class="control-label" data-i18n="regression.assertionIdKind">文件身分</label>
+                            </div>
+                            <div class="field">
+                                <select id="assertionIdKind-{{ loop.index }}" class="form-control js-assertion-id-kind">
+                                    <option value="document_id"{% if a.idKind == "document_id" %} selected{% endif %}>document_id</option>
+                                    <option value="doc_name"{% if a.idKind == "doc_name" %} selected{% endif %}>doc_name</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-8-md col-12-sm">
+                        <div class="form-group">
+                            <div class="label">
+                                <label for="assertionIdentity-{{ loop.index }}" class="control-label" data-i18n="regression.assertionIdentity">身分值</label>
+                            </div>
+                            <div class="field">
+                                <input type="text" id="assertionIdentity-{{ loop.index }}" class="form-control js-assertion-identity" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" aria-describedby="assertionIdentityHint-{{ loop.index }}" value="{{ a.identity }}">
+                                <p id="assertionIdentityHint-{{ loop.index }}" class="text-gray" data-i18n="regression.assertionIdentityHint">兩者擇一。`document_id` 是穩定定址，換檔名不會讓案例莫名變紅。</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                {% if a.shape == "slot" %}
+                <div class="flex-row gap-16 flex-wrap mobile-column">
+                    <div class="col-5-md col-12-sm">
+                        <div class="form-group">
+                            <div class="label">
+                                <label for="assertionSlot-{{ loop.index }}" class="control-label" data-i18n="regression.assertionSlot">維度</label>
+                            </div>
+                            <div class="field">
+                                <select id="assertionSlot-{{ loop.index }}" class="form-control js-assertion-slot">
+                                    {% for s in regressionSlots %}
+                                    <option value="{{ s.value }}"{% if s.value == a.slotKey %} selected{% endif %}>{{ s.label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-7-md col-12-sm">
+                        <div class="form-group">
+                            <div class="label">
+                                <label for="assertionCode-{{ loop.index }}" class="control-label" data-i18n="regression.assertionCode">維度代碼</label>
+                            </div>
+                            <div class="field">
+                                <input type="text" id="assertionCode-{{ loop.index }}" class="form-control js-assertion-code" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" aria-describedby="assertionCodeHint-{{ loop.index }}" value="{{ a.value }}">
+                                <p id="assertionCodeHint-{{ loop.index }}" class="text-gray" data-i18n="regression.assertionCodeHint">一條斷言只放一個代碼。要同時要求兩個代碼請寫兩條。</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                {% if a.shape == "criteria" %}
+                <div class="form-group">
+                    <div class="label">
+                        <label for="assertionCriteria-{{ loop.index }}" class="control-label" data-i18n="regression.assertionCriteria">評分判準</label>
+                    </div>
+                    <div class="field">
+                        <textarea id="assertionCriteria-{{ loop.index }}" class="form-control js-assertion-criteria" maxlength="1024" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" aria-describedby="assertionCriteriaHint-{{ loop.index }}">{{ a.criteria }}</textarea>
+                        <p id="assertionCriteriaHint-{{ loop.index }}" class="text-gray"><span data-i18n="regression.assertionCriteriaHint">判準原文每評一次就進一次提示詞（一次回歸是幾十則答案 × 每則好幾條判準）。判準字數上限：</span><span>1024</span><span data-i18n="regression.charsUnit"> 字</span></p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            <div class="col-2-md col-12-sm">
+                <div class="flex-row gap-8 align-items-center flex-wrap">
+                    {% if a.type == "judge" %}<span class="verdict-tag is-warn" data-i18n="regression.subjective">主觀分</span>{% else %}<span class="verdict-tag is-muted" data-i18n="regression.deterministic">確定性</span>{% endif %}
+                    <button type="button" class="button button-border button-sm js-remove-assertion" data-i18n="action.remove">移除</button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        <div class="flex-row">
+            <button type="button" class="button button-border button-sm js-add-assertion" data-i18n="regression.addAssertion">新增一條斷言</button>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <div class="label">
+            <label for="newCaseNote" class="control-label" data-i18n="regression.caseNote">備註</label>
+        </div>
+        <div class="field">
+            <input type="text" id="newCaseNote" class="form-control" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter">
+        </div>
+    </div>
+
+    <div class="flex-row">
+        <button type="button" class="button button-primary" data-toast="案例已新增|至少要有一條確定性斷言（主觀分不進通過與否）|新增失敗，請稍後再試" data-i18n-data-toast="toast.createCase" data-toast-type="success|warning|error" data-i18n="regression.addCase">手動新增案例</button>
+    </div>
+</div>
+
+{# ── 開始執行 ───────────────────────────────────────────────────────────────
+     示範自洽（GUIDELINE §6）：上面 2 則案例＝(2 輪前置 + 1 本題) + (0 輪前置 + 1 本題) = 4 輪，
+     故「預計扣 4 次」。React 端由案例陣列推導（Σ 前置輪數 + 1），這裡因模板無 filter 而 set。 #}
+{% set regressionTurnTotal = 4 %}
+{% set regressionLimits = [
+  { labelKey: "regression.limitCases", label: "單次執行案例上限：", value: "200", unitKey: "regression.casesUnit", unit: " 則" },
+  { labelKey: "regression.limitContextTurns", label: "前置對話上限：", value: "10", unitKey: "regression.turnsUnit", unit: " 輪" },
+  { labelKey: "regression.limitCaseTimeout", label: "單則案例逾時：", value: "600", unitKey: "regression.secondsUnit", unit: " 秒" },
+  { labelKey: "regression.limitConcurrency", label: "同時執行的案例數：", value: "1", unitKey: "regression.casesUnit", unit: " 則" }
+] %}
+<div class="block mt-16 flex-row column gap-16">
+    <div class="text-md text-bold" data-i18n="regression.runSection">執行這一套案例集</div>
+
+    <p class="text-red"><span data-i18n="regression.quotaWarnPrefix">跑一次會扣問答額度：這一套預計扣 </span><span>{{ regressionTurnTotal }}</span><span data-i18n="regression.quotaWarnSuffix"> 次（每一則案例的每一輪前置對話與本題各是一次真的問答）。中斷過的執行已經扣掉的不會退還。</span></p>
+
+    <div class="flex-row flex-wrap gap-16 mobile-column sm-gap-16">
+        <div class="col-4-md col-12-sm">
+            <div class="form-group">
+                <div class="label">
+                    <label for="runProfileSelect" class="control-label" data-i18n="qaTest.knowledgeRetrieval">知識檢索</label>
+                </div>
+                <div class="field">
+                    <select id="runProfileSelect" class="form-control js-knowledge-select">
+                        <option value="1" selected data-i18n="settings.config1">設置一</option>
+                        <option value="2" data-i18n="settings.config2">設置二</option>
+                        <option value="3" data-i18n="settings.config3">設置三</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="col-4-md col-12-sm">
+            <div class="form-group">
+                <div class="label">
+                    <label for="runLlmSelect" class="control-label" data-i18n="qaTest.llmModel">LLM模型</label>
+                </div>
+                <div class="field">
+                    <select id="runLlmSelect" class="form-control js-llm-select">
+                        <option></option>
+                        <option value="OpenAI gpt-4o-mini" selected>OpenAI gpt-4o-mini</option>
+                        <option value="OpenAI gpt-4o">OpenAI gpt-4o</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="col-4-md col-12-sm">
+            <div class="form-group">
+                <div class="label">
+                    <label for="runReasoningEffortSelect" class="control-label" data-i18n="settings.reasoningEffort">思考深度</label>
+                </div>
+                <div class="field">
+                    {% set reasoningEffortId = "runReasoningEffortSelect" %}
+                    {% set reasoningEffortHook = "js-reasoning-effort" %}
+                    {% set reasoningEffortGroup = "" %}
+                    {% set reasoningEffortEmptyKey = "settings.reasoningEffortDefault" %}
+                    {% set reasoningEffortEmptyZh = "沿用模型預設" %}
+                    {% include "components/reasoning-effort-select/reasoning-effort-select.html" %}
+                </div>
+            </div>
+        </div>
+        <div class="col-4-md col-12-sm">
+            <div class="form-group">
+                <div class="label">
+                    <label for="runChatModeSelect" class="control-label" data-i18n="qaTest.chatMode">對話模式</label>
+                </div>
+                <div class="field">
+                    <select id="runChatModeSelect" class="form-control js-chat-mode">
+                        <option value="traditional" selected data-i18n="qaTest.chatModeTraditional">傳統搜尋</option>
+                        <option value="agent" data-i18n="qaTest.chatModeAgent">Agent 對話</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        {# 選用資料筆數（search_selected_number）：兩模式皆適用（modeMatrix both），不標模式。 #}
+        <div class="col-4-md col-12-sm">
+            <div class="form-group">
+                <div class="label">
+                    <label for="runSampleSelected" class="control-label" data-i18n="settings.searchSelectedNumber">選用資料筆數</label>
+                </div>
+                <div class="field">
+                    <input type="text" id="runSampleSelected" class="form-control js-sample-selected" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" value="8">
+                </div>
+            </div>
+        </div>
+        {# 取用資料筆數（search_total_number）：僅傳統搜尋模式生效（modeMatrix traditional）；
+             切版常駐（靜態稿為「該欄適用」的狀態），React 依 modeMatrix 決定渲染與否。 #}
+        <div class="col-4-md col-12-sm">
+            <div class="form-group">
+                <div class="label">
+                    <label for="runSampleTotal" class="control-label" data-i18n="settings.searchTotalNumber">取用資料筆數</label>
+                </div>
+                <div class="field">
+                    <input type="text" id="runSampleTotal" class="form-control js-sample-total" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" value="16">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="flex-row column gap-8">
+        <span class="control-label" data-i18n="comp.prompt">提示詞</span>
+        <textarea class="form-control size-lg js-prompt-input" aria-label="提示詞" data-i18n-aria-label="comp.prompt">你是一位專業的知識庫問答助手，回答必須僅依據檢索到的資料片段。資料不足時明確說明「無法從現有資料判斷」。</textarea>
+        <p class="text-gray" data-i18n="regression.overrideScope">上面這幾欄一律隨這次執行送出（未填＝用測試預設值，不是設定檔的現值），並且只寫進本次執行專用的暫時設定，跑完就刪——上線設定檔一個字都不會被改到。</p>
+    </div>
+
+    <div class="flex-row gap-24 flex-wrap">
+        {% for limit in regressionLimits %}
+        <p><span class="text-bold" data-i18n="{{ limit.labelKey }}">{{ limit.label }}</span><span>{{ limit.value }}</span><span data-i18n="{{ limit.unitKey }}">{{ limit.unit }}</span></p>
+        {% endfor %}
+    </div>
+    <p class="text-gray" data-i18n="regression.limitsWhy">超過上限一律擋下，不會只跑前面幾則——那會是一份看起來全綠的假報表。案例太多請拆成多個案例集。</p>
+
+    <div class="flex-row">
+        <button type="button" class="button button-primary" data-toast="開始執行回歸…|回歸執行完成|案例數超過單次執行上限，請拆成多個案例集|執行中斷，已完成的結果保留" data-i18n-data-toast="toast.runRegression" data-toast-type="info|success|warning|error" data-i18n="regression.startRun">開始執行</button>
+    </div>
+</div>
+
+{# ── 執行紀錄 ───────────────────────────────────────────────────────────────
+     示範 3 筆刻意演三種終態：完整跑完、中斷（要看得出原因與實際跑到幾則）、還在跑。
+     「看報表」連到 2-2-5；匯出是送 API 的鈕，中斷過的執行匯出時列數會少，故該列旁邊
+     當場講出來（後端也會在 CSV 最後一列附註，見 `_partial_notice`）。 #}
+{% set regressionRuns = [
+  { no: "#312", startedAt: "2026/07/28 09:12", profile: "設置一", profileKey: "settings.config1", version: "7", status: "finished", statusLabel: "完成", statusKey: "regression.statusFinished", statusClass: "is-pass", passed: "22", total: "24", note: "" },
+  { no: "#311", startedAt: "2026/07/27 18:40", profile: "設置一", profileKey: "settings.config1", version: "7", status: "aborted", statusLabel: "中斷", statusKey: "regression.statusAborted", statusClass: "is-fail", passed: "9", total: "10", note: "問答額度不足（案例 41 的第 1 輪）——已完成的結果保留" },
+  { no: "#310", startedAt: "2026/07/27 11:02", profile: "設置二", profileKey: "settings.config2", version: "6", status: "running", statusLabel: "進行中", statusKey: "agent.stepRunning", statusClass: "is-warn", passed: "3", total: "3", note: "" }
+] %}
+<div class="block mt-16 flex-row column gap-16">
+    <div class="text-md text-bold" data-i18n="regression.runList">執行紀錄</div>
+    <div class="table-container scrollTable">
+        <table class="default-table">
+            <colgroup>
+                <col style="width:80px; min-width:80px;">
+                <col style="width:170px; min-width:170px;">
+                <col style="width:110px; min-width:110px;">
+                <col style="width:110px; min-width:110px;">
+                <col style="width:110px; min-width:110px;">
+                <col style="min-width:300px;">
+                <col style="width:200px; min-width:200px;">
+            </colgroup>
+            <thead>
+                <tr>
+                    <th data-i18n="regression.runNo">執行編號</th>
+                    <th data-i18n="qa.startTime">開始時間</th>
+                    <th data-i18n="qaTest.knowledgeRetrieval">知識檢索</th>
+                    <th class="text-center" data-i18n="regression.configVersion">設定版本</th>
+                    <th data-i18n="dataImport.colStatus">狀態</th>
+                    <th class="text-center" data-i18n="regression.passedOfTotal">通過 / 總數</th>
+                    <th data-i18n="common.actions">操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for run in regressionRuns %}
+                <tr data-run-id="{{ run.no }}">
+                    <td>{{ run.no }}</td>
+                    <td>{{ run.startedAt }}</td>
+                    <td data-i18n="{{ run.profileKey }}">{{ run.profile }}</td>
+                    <td class="text-center">{{ run.version }}</td>
+                    <td><span class="verdict-tag {{ run.statusClass }}" data-i18n="{{ run.statusKey }}">{{ run.statusLabel }}</span></td>
+                    <td class="text-center">{{ run.passed }} / {{ run.total }}{% if run.note %}<span class="text-red">（{{ run.note }}）</span>{% endif %}</td>
+                    <td>
+                        <div class="btn-group">
+                            <a href="2-2-5_regressionRun.html" class="button button-border button-sm" data-i18n="regression.viewReport">看報表</a>
+                            <button type="button" class="button button-border button-sm js-export-run" data-toast="報表已下載|匯出失敗，請稍後再試" data-i18n-data-toast="toast.exportRun" data-toast-type="success|error" data-i18n="action.download">下載</button>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="7" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <p class="text-gray" data-i18n="regression.exportPartialHint">中斷過或還在跑的執行也匯得出來，但那份 CSV 只會有已經跑完的那幾則——檔案最後一列會明說只有幾則、以及中斷的原因，不要把它讀成「整套案例都跑過」。</p>
+</div>
+
+{# 一鍵建案例 modal：由上方 .js-case-from-log 條件開窗（先選定加到哪一個案例集）。 #}
+{% include "components/case-from-log-modal/case-from-log-modal.html" %}
+
+{# 刪除 modal：案例集與案例共用同一份（都是「跑過就凍結」的 409）。名稱由業務 js 填入
+   #deleteRegressionTarget，確認鈕歸業務 js（不自動關窗）。 #}
+{% set deleteTargetId = "deleteRegressionTarget" %}
+{% set deleteConfirmBinding = true %}
+{% set deleteToast = "已刪除|已經有執行紀錄引用它，請先刪除執行紀錄|刪除失敗，請稍後再試" %}
+{% set deleteToastKey = "toast.deleteRegression" %}
+{% set deleteToastType = "success|warning|error" %}
+{% include "components/delete-modal/delete-modal.html" %}

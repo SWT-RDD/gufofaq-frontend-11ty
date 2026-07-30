@@ -522,6 +522,7 @@ bodyClass: guideline-page
                     <button type="button" class="button button-dark" data-open-modal="skillEditorModal">開啟 Skill 編輯 modal</button>
                     <button type="button" class="button button-dark" data-open-modal="configCopyModal">開啟跨設定檔複製modal</button>
                     <button type="button" class="button button-dark" data-open-modal="qaImportModal">開啟 QA 匯入 modal</button>
+                    <button type="button" class="button button-dark" data-open-modal="caseFromLogModal">開啟從問答紀錄建案例 modal</button>
                 </div>
                 <div class="caption description mt-16">
                     <ul>
@@ -857,6 +858,7 @@ bodyClass: guideline-page
 {% set qaImportShowParsing = true %}
 {% set qaImportShowError = true %}
 {% include "components/qa-import-modal/qa-import-modal.html" %}
+{% include "components/case-from-log-modal/case-from-log-modal.html" %}
 
 <button type="button" class="button btn_gotop">
     TOP
