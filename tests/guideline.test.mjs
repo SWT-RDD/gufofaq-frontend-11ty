@@ -636,10 +636,12 @@ test("§4-2 en.json 不得有孤兒 key（每個 key 都要被 markup／js 引�
 test("§4-2 markup 引用到的 key，en.json 的值不得是空字串（allowlist 除外）", () => {
     // 「孤兒 key」測試擋的是「en.json 有、沒人用」；這條反過來擋「有人用、卻沒有英文內容」——
     // 英文模式下會顯示一片空白，比顯示繁中更容易被誤以為是「這裡本來就沒有文字」。
-    // 三顆刻意留空（見各自 en.json 旁的定義）：comp.copyright（頁尾版權，真 app 就是空字串）、
+    // 四顆刻意留空（見各自 en.json 旁的定義）：comp.copyright（頁尾版權，真 app 就是空字串）、
     // qa.detailConvItems（分頁「共 N 筆」的裝飾字，英文版式不需要這個字）、
-    // pagination.pageSuffix（"Page 3"英文不需要中文「頁」那個字尾）。
-    const ALLOWLIST = new Set(["comp.copyright", "qa.detailConvItems", "pagination.pageSuffix"]);
+    // pagination.pageSuffix（"Page 3"英文不需要中文「頁」那個字尾）、
+    // health.recordRowSuffix（「第 137 列」的「列」，英文 "row 137" 沒有這個字尾——同 §4-2
+    // 「英文語法不需要的字段允許空字串譯文」的量詞後綴那一族）。
+    const ALLOWLIST = new Set(["comp.copyright", "qa.detailConvItems", "pagination.pageSuffix", "health.recordRowSuffix"]);
     const en = JSON.parse(read("src/i18n/en.json"));
     const { used } = collectUsedI18nKeys();
     assert.ok(used.size > 100, `只收集到 ${used.size} 個用到的 key —— 這條測試在空轉`);

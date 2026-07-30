@@ -1,0 +1,55 @@
+{# 一筆健檢記錄的**可讀身分**（gufofaq-saas product `app/routers/health_findings.py` 的
+     `RecordOut`）。使用頁在 `{% for %}` 內 `{% set recordIdentity = … %}` 之後 include。
+
+     參數 `recordIdentity = { title, titleChars, titleSourceLabel, titleSourceKey, filename,
+     row, unavailableReason }`（逐欄對回 `RecordOut`；`titleSourceLabel`／`titleSourceKey` 是
+     `title_source` 那個閉合值域在示範列上的投影——切版沒有查表可用，React 端是一張真的對照表）。
+     `unavailableDetail`（product 算出來的那一整段話）**不在這裡畫**：它是一段獨立的說明文字，
+     由「涉及的記錄」那一列在身分後面另起一段，處置選項那幾格只需要短標記。
+
+     放 `components/` 而不是 `ui/`：它在自己的 markup 寫了 `ui/inline-code` 的 class
+     （GUIDELINE §1-1 的「用到其他元件」第二種形式）。
+
+     **為什麼是元件**：同一頁出現五處——「涉及的記錄」那一列，以及合併／停用／取代／補寫四支
+     處置的選項清單。五份抄本改一處就會漏（GUIDELINE §3-3 第 2 條），而漏掉的那一份正是使用者
+     按下去的那一格。
+
+     ## 種類標記與標題同進同出
+
+     product 的 `title` 有**三種來源**，三種東西長得都像標題：
+       · 逐列匯入的一列 → 那一列的**標題槽**（`TITLE_FROM_SLOT`；合併真的寫進來源檔的那個
+         字串就是它，`merge_records` 讀同一格）
+       · 資料夾匯入的整份文件 → **原始檔名**（`TITLE_FROM_FILENAME`；不是內容，也不是落地
+         檔名——`record_from_document` 的 title 恆為空是刻意的）
+       · 查無主題 → 它代表的那個**問法**（`TITLE_FROM_QUESTION`；`record_keys` 是
+         `no-answer-topic:` ＋ sha256，它本來就不是知識庫裡的一筆記錄）
+     使用者是**據此按下「保留這一筆」**的，而那會改資料。把一份 PDF 的檔名與一則問答的問法混
+     在一起呈現，那句話的意思就變了——所以種類標記不是只寫在清單那一處，它跟著標題走。
+
+     ## 檔案與列號不是裝飾
+
+     兩筆近似重複的問法常常**逐字相同**（那正是它們被抓出來的原因）。同名時只有 `filename`
+     與 `row` 分得開，少了它們，radio 上會出現兩個一模一樣的選項。整份文件與查無主題沒有列號
+     （product 那兩支回 `row: null`），查無主題連檔案都沒有，所以那兩段各自不渲染、不是印一個
+     0 或一格空白。
+
+     ## 空標題不是「讀不出來」
+
+     `title` 是空字串＝**這一筆的標題欄留白**（一件關於資料的事實，處置是回去補標）；
+     `title` 為 null ＝**標題讀不出來**。兩者都退成一格空白的話，畫面對兩件要人做不同事的事說
+     同一句話。讀不出來時畫的是一句固定的短標記 ＋ **product 的原因代碼**（`record_not_found`／
+     `source_unreadable`／`topic_question_missing`，同 `uncovered` 那張表的 `reason` 欄：代碼是
+     API 資料不翻，而說得出「這代表什麼」的那句話只有後端算得出來，前端不另立映射表）。
+
+     ## 截斷跟著標題走
+
+     product 只回前 `RECORD_TITLE_MAX_CHARS` 個字，`titleChars` 一律是**原文**長度。只印前
+     N 字而不說原本多長，讀的人會以為那就是全部——而這裡正是他要據以選擇的那一格，所以截斷的
+     提示在每一處都出現，不是只出現在清單那一份。 #}
+{% if recordIdentity.unavailableReason %}<span class="text-gray" data-i18n="health.recordUnavailable">（讀不出這一筆的標題）</span>
+<code class="inline-code">{{ recordIdentity.unavailableReason }}</code>{% else %}<span class="text-gray" data-i18n="{{ recordIdentity.titleSourceKey }}">{{ recordIdentity.titleSourceLabel }}</span>
+{% if recordIdentity.title %}<span class="bold">{{ recordIdentity.title }}</span>{% else %}<span class="text-gray" data-i18n="health.recordTitleBlank">（這一筆的標題欄是空的）</span>{% endif %}
+{% if recordIdentity.titleChars > recordIdentity.title.length %}<span class="text-gray" data-i18n="health.recordTitleCutPrefix">（只顯示開頭，原文共 </span><span class="text-gray">{{ recordIdentity.titleChars }}</span><span class="text-gray" data-i18n="health.recordTitleCutSuffix"> 字）</span>{% endif %}
+{% endif %}
+{% if recordIdentity.filename %}<span class="text-gray">{{ recordIdentity.filename }}</span>{% endif %}
+{% if recordIdentity.row %}<span class="text-gray" data-i18n="health.recordRowPrefix">第 </span><span class="text-gray">{{ recordIdentity.row }}</span><span class="text-gray" data-i18n="health.recordRowSuffix"> 列</span>{% endif %}

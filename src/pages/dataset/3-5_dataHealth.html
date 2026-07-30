@@ -9,12 +9,17 @@ permalink: 3-5_dataHealth.html
      `app/routers/health_findings.py`：
        · `GET /health/findings`（`FindingsOut`：`total`／`page`／`size`／`findings[]`，逐筆
          `FindingOut` 帶 `check_type`／`severity`／`status`／`dataset_id`／`record_keys`／
-         `evidence`／`note`／`resolved_by`／`resolved_at`／`first_seen_at`／`last_seen_at`／
-         `available_actions`）
+         `records[]`／`evidence`／`note`／`resolved_by`／`resolved_at`／`first_seen_at`／
+         `last_seen_at`／`available_actions`；`records[]` 與 `record_keys` **同序等長**，
+         逐筆 `RecordOut` 帶 `key`／`title`／`title_chars`／`title_source`／`dataset_id`／
+         `filename`／`row`／`unavailable_reason`／`unavailable_detail`）
        · `GET /health/findings/overview`（`OverviewOut`：`window_days`／`window_start`／
          `window_end`／`total_open`／`total_hits`／`top_n`／`groups[]`，逐組 `OverviewGroupOut`
          帶 `check_type`／`open_count`／`hit_sum`／`top[]`）
        · `POST /health/scan`（`ScanIn` 的 `dataset_id`／`include_hit_checks` → `ScanOut`）
+       · `GET /health/scan/last`（`LastScanOut`：`scan` 是上一次**成功**的掃描
+         ＝`ScanOut` ＋ `trigger`，`failure` 是**比它新**的那一次失敗嘗試
+         ＝`failed_at`／`trigger`／`detail`；兩格都可能是 null）
        · 五支處置：`…/dismiss`／`…/disable`／`…/merge`／`…/supersede`／`…/add-phrasing`
        · 還原：`…/undo`（`UndoIn.reason`）
      檢查判準、證據形狀與重新開啟的判準出自 `app/health_checks.py`
@@ -59,13 +64,19 @@ permalink: 3-5_dataHealth.html
         `file_not_linkable`（沒有落地檔名／擷取連結的舊列）、`no_extractor`（圖片、舊版 .doc 等
         本機沒有擷取器的格式）、`source_file_missing`（列還在、磁碟上那一份不見了）、
         `extract_failed`（擷取器讀不出來）。漏報比誤報嚴重，而「以為乾淨、其實沒掃」的唯一解藥
-        是讓沒掃到的部分出現在使用者眼前。
+        是讓沒掃到的部分出現在使用者眼前。**那張表自己也有筆數上限**，所以
+        `uncovered_total`（總共幾個）與 `uncovered_by_reason`（逐原因幾個，不受截斷影響）兩個
+        數字要一起畫出來——少了後者，被切掉的那一族（例如唯一一個擷取失敗的檔）會整族從畫面上
+        消失，而它往往正是最該看的那一個。
 
      ⑥ **任何上限／截斷都在消費點外顯**：清單的 `total`／`page`／`size`（分頁）、總覽每組只附
         `top_n` 筆（不是分頁，要逐筆看走清單）、命中窗 `window_days`（預設 7 天而不是 30——上游
-        一次最多彙總 5000 則）、單次掃描的記錄數上限（超過就 400 擋下、不靜默只掃前 N 筆）、
-        三項命中檢查這一次到底跑了沒有（`hit_checks` 三態），以及**這一次哪些記錄的哪一項
-        沒有被檢查**（`slotless_records`／`exact_match_only_records`，見下）。
+        一次最多彙總 5000 則）、單次掃描的記錄數上限（`ScanOut.max_records`，超過就 400 擋下、
+        不靜默只掃前 N 筆）、沒掃到的檔那張表的列出數與總數（見⑤）、記錄標題只回前 N 個字而
+        `title_chars` 是原文長度、三項命中檢查這一次到底跑了沒有（`hit_checks` 三態），以及
+        **這一次哪些記錄的哪一項沒有被檢查**（`slotless_records`／`exact_match_only_records`，
+        見下）。**每一個上限的數字都由 API 給**：前端自己抄一份常數的那一天，改了上限畫面照樣
+        印舊的數字，而「掃了一半」與「掃完了」正是靠那一對數字才分得出來。
 
      ⑦ **「這一次沒有做這一項」與「做了、沒問題」必須分得出來**。掃描回應有兩個數字專門
         承載這件事，兩者都是**排除的事實**、不是統計花絮：
@@ -86,12 +97,14 @@ permalink: 3-5_dataHealth.html
        · `health.actionDismiss`（判定為非問題）與 `health.statusDismissed`（已判定為非問題）——
          一個是動作、一個是狀態，繁中已經分得開。
 
-     **記錄只畫得出 `document_id`**：`GET /health/findings` 的 `record_keys` 是一串雜湊，product
-     沒有回它們的標題或內容，也沒有「拿一批 document_id 換回原文」的端點。所以「保留哪一筆」
-     「哪一筆是現行版」這幾個選項上只有 id——這是**現況的忠實呈現，不是設計**：畫一個編出來的標題
-     比畫 id 更糟（使用者會據此做選擇）。要讓這幾個選項讀得懂，需要 product 在 `FindingOut` 上附
-     每一筆記錄的標題（或開一支批次查詢），已列為交辦。在那之前，「涉及的記錄」那一列與各動作的
-     選項都只列 id，並在那一列講出對照的方法。
+     **記錄的可讀身分**：`FindingOut.records[]` 與 `record_keys` 同序等長，逐筆帶得出標題
+     （`RecordOut`）。「保留哪一筆」「哪一筆是現行版」「補寫在哪一筆」三個選項是使用者據此做出
+     的、**會改資料的決定**——只有 `document_id` 雜湊時那幾支處置在畫面上沒有辦法用。
+     渲染走 `ui/record-identity`（同一頁五處共用）：**標題永遠帶著「這是哪一種身分」**
+     （逐列匯入的一列／資料夾匯入的整份文件／查無主題的問法，三種東西長得都像標題但意思不同）、
+     同名時靠檔案與列號分辨、標題欄空白與標題讀不出來分成兩句話講、截斷說得出原文有多長。
+     處置端點吃的仍是 `record_keys`（畫面上讀的是 `records[]`，兩者不得分家），所以「涉及的
+     記錄」那一列在標題後面仍然列得出文件識別碼。
 
      權限：清單與總覽掛 `data:read`，掃描與五支處置＋還原掛 `data:write`
      （product `require_capability("data", …)`）。切版不做權限過濾（那是 React 應用層的事）。 #}
@@ -118,29 +131,54 @@ permalink: 3-5_dataHealth.html
   { value: "never_hit", label: "從未被命中", i18nKey: "health.checkNeverHit" },
   { value: "no_answer_topic", label: "高頻查無", i18nKey: "health.checkNoAnswerTopic" }
 ] %}
-{# 上一次掃描的回應（`ScanOut`）。示範資料要自洽（GUIDELINE §6）：
+{# 上一次**成功**的掃描（`GET /health/scan/last` 的 `scan`＝`ScanOut` ＋ `trigger`）。
+     這一塊**開頁就畫得出來**：product 把每一次掃描的結果落庫（一租戶一列，覆寫），所以重新整理
+     之後「這一次沒有看到的檔」與「三項命中檢查跑了沒有」還在。少了那一支讀取端點的日子裡，這兩
+     格只活在 `POST /health/scan` 的那一次回應裡，而每日重掃那一趟根本沒有人看著回應。
+
+     示範資料要自洽（GUIDELINE §6）：
      `new + reopened + touched == findings`（6 ＋ 1 ＋ 26 ＝ 33，product `upsert_findings` 保證
      這三個數是一個分割）；`records` 1180 ＜ 上限 20000；`files` 9 ＝ 掃到的 7 ＋ 沒掃到的 2。
+     `maxRecords` ＝ `ScanOut.max_records`：**這個數字由 API 給**，不是前端的常數（改了上限而
+     畫面照樣印舊的分母時，「掃了一半」與「掃完了」就再也分不出來）。
+     `trigger` 演的是 **daily**：三種觸發來源（`manual`／`import`／`daily`）讀起來完全不同——
+     「上一次檢查是 20 分鐘前」在「有人剛按過」與「排程跑的」之間不是同一件事。
      `hitChecks` 演的是 **unavailable** 那一態：三態裡唯一會讓人「以為乾淨」的一種——沒有這一格，
      「沒有陳舊高頻」與「這一次根本沒算」在畫面上長得一模一樣。
      ⑦ 的兩個數字也自洽：掃到的 7 個檔都是資料夾匯入的整份文件，一檔一筆記錄 ⇒
      `slotlessRecords` 7（其餘 1173 筆是逐列匯入的，它們有欄位槽）；那 7 筆裡有 5 筆內容
      超過兩兩比對上限 ⇒ `exactMatchOnlyRecords` 5。兩者都 ≦ `records`，後者 ≦ 前者不是規則
-     （逐列匯入的答案也可能過長），這一份示範剛好如此。 #}
+     （逐列匯入的答案也可能過長），這一份示範剛好如此。
+     `uncoveredTotal` 2 ＝ 下面 `healthUncovered` 的兩筆（這一份示範沒有被截斷；截斷時它會大於
+     列出來的筆數，而畫面上那一對數字正是唯一看得出來的地方）。 #}
 {% set healthScan = {
     scannedAt: "2024/12/02 03:15",
+    trigger: "daily",
     datasets: 4,
     files: 9,
     records: 1180,
-    recordLimit: 20000,
+    maxRecords: 20000,
     findings: 33,
     new: 6,
     reopened: 1,
     touched: 26,
     slotlessRecords: 7,
     exactMatchOnlyRecords: 5,
+    uncoveredTotal: 2,
     hitChecks: "unavailable",
     hitChecksDetail: "取不到問答紀錄，這一次沒有重算「陳舊高頻／從未被命中／高頻查無」：這段期間的問答筆數超過單次彙總上限（5000 則），請縮短時間窗再試。"
+} %}
+{# 最近一次**失敗**的掃描嘗試（`GET /health/scan/last` 的 `failure`）。
+     product 只在它**比上一次成功的掃描新**的時候才回這一格（判準是時間，不是「有沒有」——一次
+     成功之後舊的失敗只是噪音，而噪音會讓人連真的那一次也一起略過），所以這一塊與上面那一排數字
+     同時出現是一個真實可能的狀態：09:40 有人手動按了重新檢查、被擋下來了，而畫面上那一排仍然是
+     03:15 排程那一趟的結果。失敗**不覆蓋**成功那一列，否則上一次的 `uncovered` 會被一起沖走。
+     `detail` 是 product 自己那句話（`_failure_message` 取結構化 detail 的人話那一段），原樣端出來
+     ——這裡逐字取自 `scan_now` 的 `too_many_records`。 #}
+{% set healthScanFailure = {
+    failedAt: "2024/12/02 09:40",
+    trigger: "manual",
+    detail: "這個租戶有 24310 筆記錄，超過單次健檢上限 20000。近似重複是兩兩比對，超過上限會讓掃描跑到沒有人等得下去——掃一半與掃完在清單上看不出差別，所以擋在這裡而不是只掃前面幾筆。"
 } %}
 {# 這一次沒有看到的檔（`ScanOut.uncovered`）。兩種 `reason` 各演一筆：本機沒有擷取器的格式，
      以及不是逐列匯入、也沒有逐列擷取連結的檔。`reason` 與 `detail` 都是 API 回的資料（不翻），
@@ -157,16 +195,28 @@ permalink: 3-5_dataHealth.html
     detail: "這個檔不是逐列匯入的、也沒有記下逐列的擷取連結，健檢算不出它每一列的文件編號——它不會出現在任何一項檢查裡。要讓內容也被檢查，請改用逐列匯入（Excel 欄位對照／PDF 結構化匯入）。"
   }
 ] %}
-{# 總覽（`OverviewOut`）。**排序的證明就在示範資料裡**：`tag_gap` 的未處置數最多（24 筆）卻排在
-     最後——它涉及的記錄在這個窗內一次都沒有被命中（`hitSum` 0）；`expired` 只有 2 筆，但那兩筆
-     被命中 312 次，所以排第一。照發現數量排的話這兩組的位置會恰好對調，而那正是 spec 明文說
-     不要的排序。`totalOpen` 34 ＝ 2 ＋ 5 ＋ 1 ＋ 2 ＋ 24（五組未處置數加總）；每組的 `top` 逐筆
+{# 沒掃到的檔**逐原因幾個**（`ScanOut.uncovered_by_reason`，product 那邊是 `{原因: 幾個}`，
+     這裡是同一份資料的陣列形狀——切版沒有物件走訪，React 端走 `Object.entries()`）。
+     它算的是**全部**，不受上面那張表的筆數上限影響：被切掉的那一族只剩這個數字看得見。
+     與 `healthUncovered` 自洽——兩筆各一種原因。 #}
+{% set healthUncoveredByReason = [
+  { reason: "no_extractor", count: 1 },
+  { reason: "not_row_imported", count: 1 }
+] %}
+{# 總覽（`OverviewOut`）。**排序的證明就在示範資料裡**：`tag_gap` 的未處置數最多（24 筆）卻被
+     排到 2 筆的 `expired` 後面——它涉及的記錄在這個窗內一次都沒有被命中（`hitSum` 0），而
+     `expired` 那兩筆被命中 312 次。照發現數量排的話這兩組的位置會恰好對調，而那正是 spec 明文說
+     不要的排序。命中同為 0 的三組再照未處置數遞減、最後照 `check_type` 字典序定序
+     （`tag_gap` 24 → `never_hit` 1 → `no_answer_topic` 1）。
+     `totalOpen` 36 ＝ 2 ＋ 5 ＋ 1 ＋ 2 ＋ 24 ＋ 1 ＋ 1（七組未處置數加總）；每組的 `top` 逐筆
      `hitSum` 遞減、加總 ≤ 該組的 `hitSum`（`near_duplicate` 96 ＞ 前五筆的 96 恰好相等，
-     因為那一組只有 5 筆；`tag_gap` 24 筆只列得下 5 筆，那正是 `topN` 要外顯的截斷）。 #}
+     因為那一組只有 5 筆；`tag_gap` 24 筆只列得下 5 筆，那正是 `topN` 要外顯的截斷）。
+     `never_hit` 的 `hitSum` 恆為 0 是它的定義（「從未被命中」），不是資料湊巧；`no_answer_topic`
+     的記錄鍵不是 document_id，命中統計上沒有它，所以也是 0。 #}
 {% set healthOverview = {
     windowDays: 7,
     windowRange: "2024/11/25 03:15 ~ 2024/12/02 03:15",
-    totalOpen: 34,
+    totalOpen: 36,
     totalHits: 4820,
     topN: 5
 } %}
@@ -215,12 +265,26 @@ permalink: 3-5_dataHealth.html
       { id: 953, severityLabel: "確定", severityKey: "health.severityConfirmed", hitSum: 0, records: 1 },
       { id: 954, severityLabel: "確定", severityKey: "health.severityConfirmed", hitSum: 0, records: 1 }
     ]
+  },
+  {
+    checkType: "never_hit", label: "從未被命中", labelKey: "health.checkNeverHit",
+    openCount: 1, hitSum: 0,
+    top: [
+      { id: 960, severityLabel: "候選", severityKey: "health.severityCandidate", hitSum: 0, records: 1 }
+    ]
+  },
+  {
+    checkType: "no_answer_topic", label: "高頻查無", labelKey: "health.checkNoAnswerTopic",
+    openCount: 1, hitSum: 0,
+    top: [
+      { id: 970, severityLabel: "候選", severityKey: "health.severityCandidate", hitSum: 0, records: 1 }
+    ]
   }
 ] %}
-{# 逐項清單（`FindingsOut`）。`total` 34 ＞ 本頁列數 ⇒ 分頁列演得到「這一頁不是全部」。
+{# 逐項清單（`FindingsOut`）。`total` 36 ＞ 本頁列數 ⇒ 分頁列演得到「這一頁不是全部」。
      **這裡沒有命中次數欄**：`GET /health/findings` 不回它（命中數在上游的問答紀錄裡，那一支
      是分頁的、不去碰上游），畫一個欄位出來就得自己算一份，而那會是第二個真相。
-     示範七列刻意把每一支處置動作與每一種狀態各演一次（GUIDELINE §5「每個分支結果都要看得到」）：
+     示範九列刻意把每一支處置動作與每一種狀態各演一次（GUIDELINE §5「每個分支結果都要看得到」）：
        · 901 近似重複（跨資料集）→ dismiss ＋ merge ＋ disable
        · 903 近似重複（**QA 集**）→ dismiss ＋ disable，**沒有 merge**：對 qa_direct 的完全命中
          而言多問法是資產不是重複，併成一份就是把那幾種問法的直答一起停用掉（product
@@ -231,11 +295,32 @@ permalink: 3-5_dataHealth.html
        · 940 標題不是問句 → dismiss ＋ add-phrasing
        · 950 標籤缺口 → **只有 dismiss**：該標哪一個代碼是租戶自己才知道的業務值，系統挑一個
          填進去就是替使用者做業務判斷
+       · 960 從未被命中，涉及的是**資料夾匯入的整份文件** → **只有 dismiss**：五支處置動作全部
+         是「改正規化來源檔的某一列」，而整份文件沒有那一列（product `_available_actions` 的
+         `has_document_record`），清單畫出「停用」按下去只會拿到 404
+       · 970 高頻查無 → **只有 dismiss**（product `_ACTIONS_BY_CHECK["no_answer_topic"]` 是空的：
+         它根本沒有記錄可以改，`record_keys` 是 `no-answer-topic:` ＋問法的 sha256）
        · 907 近似重複，**已處置**（`status` resolved）→ 可用動作只有 `undo`
-     `evidence` 的鍵與值、`recordKeys`（`document_id`）、`note` 都是 API 回的資料（不翻）。
+     `evidence` 的鍵與值、`records[].key`（`document_id`）、`note` 都是 API 回的資料（不翻）。
      `noteLines` 是 `note` 逐行拆開（product 用 `\n\n` 把「上一次的處置理由」與「為什麼又回來」
-     分成兩段；React 端是 `note.split("\n")` 去掉空行，切版沒有字串運算可用故列成陣列）。 #}
-{% set healthFindingsPage = { total: 34, perPage: 10, currentPage: 1 } %}
+     分成兩段；React 端是 `note.split("\n")` 去掉空行，切版沒有字串運算可用故列成陣列）。
+
+     **`records` 逐筆＝`FindingOut.records[]`（`RecordOut`）**，渲染走 `ui/record-identity`。
+     示範刻意把每一種身分與每一種「讀不出來」各演到（否則那幾個分支沒有人看過它們的長相）：
+       · 901 的前兩筆**標題逐字相同**（近似重複本來就長這樣）⇒ 只有檔案與列號分得開；第三筆的
+         **標題欄是空的**（`title` 空字串，不是 null）
+       · 960 那一筆是 `filename`：**整份文件的身分是原始檔名**，沒有列號
+       · 970 那一筆是 `no_answer_question`：標題是它代表的**問法**（取自該發現自己的
+         `evidence.question`），沒有資料集、沒有檔、沒有列號
+       · 918 那一筆的標題**被截斷**（`titleChars` 214 ＞ 顯示出來的字數）
+       · 907 的第三筆 `unavailableReason` 是 `record_not_found`（合併之後有人把那一列刪了）；
+         那一筆的 `filename`／`row` 也是空的——product 對這一種原因回的就是三格 null（找不到那
+         一列，自然也說不出它在哪個檔的第幾列）
+     三種 `unavailableReason` 要人做的事完全不同（`record_not_found` 重新掃描就會收掉、
+     `source_unreadable` 重新掃描一百次也沒有用要去看那個檔、`topic_question_missing` 它本來就
+     不是一筆記錄），而**說得出這件事的只有後端**：畫面上是「原因代碼＋product 那一整段話」，
+     與上面 `uncovered` 那張表同一個做法，前端不另立映射表。 #}
+{% set healthFindingsPage = { total: 36, perPage: 10, currentPage: 1 } %}
 {% set healthFindings = [
   {
     id: 901, checkLabel: "近似重複", checkLabelKey: "health.checkNearDuplicate", checkType: "near_duplicate",
@@ -249,9 +334,9 @@ permalink: 3-5_dataHealth.html
       { key: "max_similarity", value: "0.9884" }
     ],
     records: [
-      { key: "b7c1e93a4d20" },
-      { key: "1f4a08d6cc51" },
-      { key: "9e2b7710af83" }
+      { key: "b7c1e93a4d20", title: "犬貓專案怎麼申請", titleChars: 8, titleSourceLabel: "〔資料列〕", titleSourceKey: "health.recordSourceRow", filename: "常見問答_2026Q1.xlsx", row: 12 },
+      { key: "1f4a08d6cc51", title: "犬貓專案怎麼申請", titleChars: 8, titleSourceLabel: "〔資料列〕", titleSourceKey: "health.recordSourceRow", filename: "客服話術彙編.xlsx", row: 137 },
+      { key: "9e2b7710af83", title: "", titleChars: 0, titleSourceLabel: "〔資料列〕", titleSourceKey: "health.recordSourceRow", filename: "客服話術彙編.xlsx", row: 138 }
     ],
     noteLines: [], resolvedAt: "", resolvedBy: "",
     actions: ["dismiss", "merge", "disable"]
@@ -268,8 +353,8 @@ permalink: 3-5_dataHealth.html
       { key: "max_similarity", value: "0.9410" }
     ],
     records: [
-      { key: "5a30b1cf7e64" },
-      { key: "c81d69204b7f" }
+      { key: "5a30b1cf7e64", title: "退貨的運費由誰負擔", titleChars: 9, titleSourceLabel: "〔資料列〕", titleSourceKey: "health.recordSourceRow", filename: "客服直答集.xlsx", row: 4 },
+      { key: "c81d69204b7f", title: "退貨運費誰要出", titleChars: 7, titleSourceLabel: "〔資料列〕", titleSourceKey: "health.recordSourceRow", filename: "客服直答集.xlsx", row: 19 }
     ],
     noteLines: [], resolvedAt: "", resolvedBy: "",
     actions: ["dismiss", "disable"]
@@ -285,7 +370,7 @@ permalink: 3-5_dataHealth.html
       { key: "valid_until", value: "2024-11-30" }
     ],
     records: [
-      { key: "3c9f52ea18b6" }
+      { key: "3c9f52ea18b6", title: "貨物稅減免申請的有效期到什麼時候", titleChars: 16, titleSourceLabel: "〔資料列〕", titleSourceKey: "health.recordSourceRow", filename: "法規彙編_2026.xlsx", row: 58 }
     ],
     noteLines: [
       "同一份規定在 11 月底之前仍然有效，不算過期。",
@@ -305,8 +390,8 @@ permalink: 3-5_dataHealth.html
       { key: "claims", value: "{\"7d18b0a3f5c2\":[\"15%\"],\"ae64c9017d3b\":[\"20%\"]}" }
     ],
     records: [
-      { key: "7d18b0a3f5c2" },
-      { key: "ae64c9017d3b" }
+      { key: "7d18b0a3f5c2", title: "汽車貨物稅的稅率是多少", titleChars: 11, titleSourceLabel: "〔資料列〕", titleSourceKey: "health.recordSourceRow", filename: "法規彙編_2026.xlsx", row: 21 },
+      { key: "ae64c9017d3b", title: "小客車貨物稅稅率", titleChars: 8, titleSourceLabel: "〔資料列〕", titleSourceKey: "health.recordSourceRow", filename: "稅務問答_舊版.xlsx", row: 9 }
     ],
     noteLines: [], resolvedAt: "", resolvedBy: "",
     actions: ["dismiss", "supersede"]
@@ -322,7 +407,7 @@ permalink: 3-5_dataHealth.html
       { key: "kind", value: "noun_phrase" }
     ],
     records: [
-      { key: "6b02da4e9137" }
+      { key: "6b02da4e9137", title: "退運作業", titleChars: 4, titleSourceLabel: "〔資料列〕", titleSourceKey: "health.recordSourceRow", filename: "常見問答_2026Q1.xlsx", row: 77 }
     ],
     noteLines: [], resolvedAt: "", resolvedBy: "",
     actions: ["dismiss", "add-phrasing"]
@@ -337,7 +422,39 @@ permalink: 3-5_dataHealth.html
       { key: "missing_slots", value: "note1" }
     ],
     records: [
-      { key: "0d7c34fb85a9" }
+      { key: "0d7c34fb85a9", title: "2026 新制什麼時候上路", titleChars: 12, titleSourceLabel: "〔資料列〕", titleSourceKey: "health.recordSourceRow", filename: "2026新制問答_v3.xlsx", row: 3 }
+    ],
+    noteLines: [], resolvedAt: "", resolvedBy: "",
+    actions: ["dismiss"]
+  },
+  {
+    id: 960, checkLabel: "從未被命中", checkLabelKey: "health.checkNeverHit", checkType: "never_hit",
+    severityLabel: "候選", severityKey: "health.severityCandidate",
+    statusLabel: "未處置", statusKey: "health.statusOpen", disposed: false, reopened: false,
+    datasetName: "法規彙編",
+    firstSeenAt: "2024/11/26 04:02", lastSeenAt: "2024/12/02 03:15",
+    evidence: [
+      { key: "live_since", value: "2024-10-15" },
+      { key: "window_days", value: "7" }
+    ],
+    records: [
+      { key: "c4a70f18d59e", title: "犬貓入境檢疫作業手冊.pdf", titleChars: 13, titleSourceLabel: "〔整份文件〕", titleSourceKey: "health.recordSourceDocument", filename: "犬貓入境檢疫作業手冊.pdf", row: "" }
+    ],
+    noteLines: [], resolvedAt: "", resolvedBy: "",
+    actions: ["dismiss"]
+  },
+  {
+    id: 970, checkLabel: "高頻查無", checkLabelKey: "health.checkNoAnswerTopic", checkType: "no_answer_topic",
+    severityLabel: "候選", severityKey: "health.severityCandidate",
+    statusLabel: "未處置", statusKey: "health.statusOpen", disposed: false, reopened: false,
+    datasetName: "",
+    firstSeenAt: "2024/11/28 04:02", lastSeenAt: "2024/12/02 03:15",
+    evidence: [
+      { key: "question", value: "犬貓可以帶上飛機嗎" },
+      { key: "asks_at_least", value: "10" }
+    ],
+    records: [
+      { key: "no-answer-topic:5f1c0b8a7d3e94216ac5d0f83b7e1c4a92d6708fb35ce41d8a09627f4bd3e15c", title: "犬貓可以帶上飛機嗎", titleChars: 9, titleSourceLabel: "〔使用者的問法〕", titleSourceKey: "health.recordSourceQuestion", filename: "", row: "" }
     ],
     noteLines: [], resolvedAt: "", resolvedBy: "",
     actions: ["dismiss"]
@@ -354,9 +471,12 @@ permalink: 3-5_dataHealth.html
       { key: "max_similarity", value: "0.9915" }
     ],
     records: [
-      { key: "44e1a7c0b96d" },
-      { key: "e903cb2517f4" },
-      { key: "82fd6b0c4ae1" }
+      { key: "44e1a7c0b96d", title: "犬貓輸入檢疫要準備哪些文件", titleChars: 13, titleSourceLabel: "〔資料列〕", titleSourceKey: "health.recordSourceRow", filename: "常見問答_2026Q1.xlsx", row: 41 },
+      { key: "e903cb2517f4", title: "本公司自一一三年一月一日起受理犬貓輸入檢疫申請案件，申請人應於預定輸入日前三十日，檢附輸出國政府動物檢疫機關簽發之動物檢疫證明書、狂犬病不活化疫苗接種證明書、狂犬病抗體力價檢測報告及晶片植入紀錄，向本公司客服信箱提出申請，經審查合格後核發輸入同意文件；未依規定檢附文件或文件內容與申請書所載不符者，本公司得不予受理並以書面通知補正，補正期限自通知送達之次日起算十四日，逾期未補正者駁回其申請案件，並函", titleChars: 231, titleSourceLabel: "〔資料列〕", titleSourceKey: "health.recordSourceRow", filename: "常見問答_2026Q1.xlsx", row: 42 },
+      { key: "82fd6b0c4ae1", title: "", titleChars: "", titleSourceLabel: "", titleSourceKey: "",
+        filename: "", row: "",
+        unavailableReason: "record_not_found",
+        unavailableDetail: "這一筆記錄在本租戶的資料集裡找不到——可能是上一次掃描之後那一列已被刪除或重新匯入（重新匯入會換一組文件編號）。重新掃描就會拿到最新的清單。" }
     ],
     noteLines: ["合併：保留 44e1a7c0b96d，併入 2 個問法，其餘 2 筆停用（未刪除）"],
     resolvedAt: "2024/12/01 15:08", resolvedBy: "42",
@@ -390,22 +510,46 @@ permalink: 3-5_dataHealth.html
 </div>
 
 {# ── 上一次檢查 ───────────────────────────────────────────────────────────────
-     `ScanOut`。三個計數是一個分割（`new + reopened + touched == findings`）。
+     `GET /health/scan/last`。**開頁就畫**：掃描結果落庫（一租戶一列，覆寫），所以重新整理之後
+     「這一次沒有看到的檔」與「三項命中檢查跑了沒有」還在——那兩格正是「以為乾淨」的解藥，
+     重新整理一次就不見的話等於不存在。三態各有各的畫法：
+       · `scan` 有值 → 下面那一排（含 `trigger`：手動複驗／匯入後／每日排程）
+       · `scan` 是 null → **一句「還沒有跑過健檢」**，不是一排 0（一排 0 讀起來是「掃過了、
+         什麼都沒有」，那是三態裡最糟的一種誤讀）
+       · `failure` 非空 → 另外一塊紅字（見下）：它只在**比上一次成功的掃描新**的時候才出現
+     三個計數是一個分割（`new + reopened + touched == findings`）。
      記錄數與上限並列：超過上限 product 一律 400 擋下、不靜默只掃前 N 筆——掃一半與掃完在清單上
-     看不出差別，而後者是「以為乾淨、其實沒掃」。 #}
+     看不出差別，而後者是「以為乾淨、其實沒掃」。**那個分母是 `ScanOut.max_records`**，由 API 給。 #}
 <div class="block mt-16 flex-row column gap-16">
     <div class="text-md text-bold" data-i18n="health.lastScanTitle">上一次檢查</div>
+    {# 最近一次**失敗**的嘗試。排在數字之前，因為它改變下面那一排的讀法：那些數字是上一次
+         **成功**那一趟的，不是最近一次。product 刻意不讓失敗覆蓋成功那一列（覆蓋會把上一次的
+         `uncovered` 一起沖走），所以兩者同時出現是正常狀態，不是矛盾。 #}
+    {% if healthScanFailure %}
+    <div class="block block-sm border corner-md flex-row column gap-8">
+        <div class="text-bold text-red" data-i18n="health.scanFailedTitle">最近一次檢查沒有做完</div>
+        <p class="text-gray" data-i18n="health.scanFailedHint">這一次的嘗試失敗了，所以下面那一排數字仍然是上一次成功那一趟的結果，不是最近一次的。失敗不會覆蓋掉上一次成功的結果——覆蓋的話，連「那一次有哪些檔沒掃到」都會一起消失。下一次成功的檢查之後，這一塊就不再出現。</p>
+        <div class="flex-row gap-24 flex-wrap">
+            <p><span class="bold" data-i18n="health.scanFailedAt">失敗時間：</span><span>{{ healthScanFailure.failedAt }}</span></p>
+            <p><span class="bold" data-i18n="health.scanTrigger">觸發來源：</span><code class="inline-code">{{ healthScanFailure.trigger }}</code></p>
+        </div>
+        <p>{{ healthScanFailure.detail }}</p>
+    </div>
+    {% endif %}
+    {% if healthScan %}
     <div class="flex-row gap-24 flex-wrap">
         <p><span class="bold" data-i18n="health.scannedAt">檢查時間：</span><span>{{ healthScan.scannedAt }}</span></p>
+        <p><span class="bold" data-i18n="health.scanTrigger">觸發來源：</span><code class="inline-code">{{ healthScan.trigger }}</code></p>
         <p><span class="bold" data-i18n="health.scanDatasets">資料集：</span><span>{{ healthScan.datasets }}</span></p>
         <p><span class="bold" data-i18n="health.scanFiles">檔案：</span><span>{{ healthScan.files }}</span></p>
-        <p><span class="bold" data-i18n="health.scanRecords">讀到的記錄：</span><span>{{ healthScan.records }} / {{ healthScan.recordLimit }}</span></p>
+        <p><span class="bold" data-i18n="health.scanRecords">讀到的記錄：</span><span>{{ healthScan.records }} / {{ healthScan.maxRecords }}</span></p>
         <p><span class="bold" data-i18n="health.scanFindings">這一次算出來的發現：</span><span>{{ healthScan.findings }}</span></p>
         <p><span class="bold" data-i18n="health.scanNew">新增：</span><span>{{ healthScan.new }}</span></p>
         <p><span class="bold" data-i18n="health.scanReopened">重新開啟：</span><span>{{ healthScan.reopened }}</span></p>
         <p><span class="bold" data-i18n="health.scanTouched">沿用既有：</span><span>{{ healthScan.touched }}</span></p>
     </div>
-    <p class="text-gray" data-i18n="health.scanRecordLimitHint">「讀到的記錄」超過單次健檢上限時，這一次一筆都不檢查、也不寫任何發現：近似重複是兩兩比對，超過上限會讓檢查跑到沒有人等得下去，而「掃了一半」與「掃完了」在清單上長得一模一樣。</p>
+    <p class="text-gray" data-i18n="health.scanTriggerLegend">manual ＝有人按了上面那顆「重新檢查」；import ＝匯入資料之後自動跟著跑的那一次；daily ＝每天排程的全量重掃（三項需要問答紀錄的檢查只有它一定會算）。「上一次檢查是 20 分鐘前」在「有人剛按過」與「排程跑的」之間不是同一件事。</p>
+    <p class="text-gray" data-i18n="health.scanRecordLimitHint">「讀到的記錄」超過單次健檢上限時，這一次一筆都不檢查、也不寫任何發現：近似重複是兩兩比對，超過上限會讓檢查跑到沒有人等得下去，而「掃了一半」與「掃完了」在清單上長得一模一樣。斜線後面那個上限由後端給，不是畫面上寫死的數字。</p>
     {# 三項命中檢查這一次跑了沒有（`hit_checks`）。三態各自的意思常駐在旁邊——少了這一格，
          「沒有陳舊高頻」與「這一次根本沒算陳舊高頻」在畫面上分不出來，而後者是本功能最常見的
          「以為乾淨」入口。 #}
@@ -428,9 +572,22 @@ permalink: 3-5_dataHealth.html
     </div>
     <p class="text-gray" data-i18n="health.scanSlotlessHint">資料夾匯入的整份文件沒有欄位槽——欄位對照是逐列匯入才有的東西，系統沒有任何路徑寫得進它們的標籤。所以「標籤缺口」與「缺基準日」這兩項把它們排除在外，這幾筆不會因為沒標而出現在清單上，也不代表它們標好了。要讓這些內容也受維度過濾管轄，得改用逐列匯入。</p>
     <p class="text-gray" data-i18n="health.scanExactMatchOnlyHint">內容超過長度上限的記錄，這一次的「近似重複」只對它們做逐字相同判定：同一份文件上傳兩次仍然抓得到，但「幾乎一樣的兩份」沒有被比。上限存在的理由是相似度為兩兩比對，長文件一對就要十幾秒，幾十份共用樣板的月報會讓整趟掃描跑不完——而那是全部檢查一起停擺，比單一項漏報嚴重。</p>
-    {# ⑤ 沒掃到的檔：逐檔列出來，不是靜靜跳過。`reason` 與 `detail` 是 API 回的資料（不翻）。 #}
+    {# ⑤ 沒掃到的檔：逐檔列出來，不是靜靜跳過。`reason` 與 `detail` 是 API 回的資料（不翻）。
+         **那張表自己有筆數上限**，所以「列出幾筆／總共幾個」並列，並把逐原因的計數畫出來
+         （`uncovered_by_reason` 算的是全部、不受截斷影響）——被切掉的那一族只剩那個數字看得見，
+         而它往往正是最該看的那一個（例如整批裡唯一一個擷取失敗的檔）。 #}
     <div class="text-md text-bold" data-i18n="health.uncoveredTitle">這一次沒有看到的檔</div>
     <p class="text-gray" data-i18n="health.uncoveredHint">這些檔不在這一次的檢查範圍裡——它們的內容不會出現在任何一項檢查上。列出來是因為漏報比誤報嚴重：一份沒被看過的檔，在清單上長得跟「乾淨」一模一樣。</p>
+    <div class="flex-row gap-24 flex-wrap">
+        <p><span class="bold" data-i18n="health.uncoveredCount">這張表列出／總共沒掃到：</span><span>{{ healthUncovered.length }} / {{ healthScan.uncoveredTotal }}</span></p>
+        {% for u in healthUncoveredByReason %}
+        <p><code class="inline-code">{{ u.reason }}</code>
+            <span>{{ u.count }}</span></p>
+        {% else %}
+        <p class="text-gray" data-i18n="health.uncoveredNoReason">沒有任何原因要列</p>
+        {% endfor %}
+    </div>
+    <p class="text-gray" data-i18n="health.uncoveredCountHint">斜線兩邊不一樣就代表下面那張表被截斷了：前面是這張表列得出來的筆數，後面是這一次沒掃到的檔總數。旁邊逐個原因的計數算的是全部、不受截斷影響——被切掉的那一族只剩那個數字看得見。</p>
     <div class="table-container scrollTable">
         <table class="default-table">
             <colgroup>
@@ -461,6 +618,9 @@ permalink: 3-5_dataHealth.html
             </tbody>
         </table>
     </div>
+    {% else %}
+    <p class="text-gray" data-i18n="health.lastScanNever">這個租戶還沒有跑過健檢。按上面那顆「重新檢查」就會跑第一次；匯入資料之後系統也會自動跑一次。在那之前，下面的總覽與清單都是空的——那代表「還沒有檢查過」，不代表「檢查過而且沒有問題」。</p>
+    {% endif %}
 </div>
 
 {# ── ① 健檢總覽：依影響排序 ───────────────────────────────────────────────────
@@ -645,10 +805,15 @@ permalink: 3-5_dataHealth.html
                                     <tr>
                                         <th data-i18n="health.involvedRecords">涉及的記錄</th>
                                         <td>
-                                            <p class="text-gray" data-i18n="health.recordKeyHint">這裡列的是每一筆記錄的文件識別碼。健檢目前拿不到它們的標題與內容——要看那一筆到底寫了什麼，請到該資料集的內容預覽頁用同一個識別碼對照。</p>
+                                            <p class="text-gray" data-i18n="health.recordSourceHint">標題前面的標記說的是「這個標題是什麼」，三者不是同一種東西：〔資料列〕＝逐列匯入的那一列的標題欄（合併時真的寫進來源檔的就是這個字串）；〔整份文件〕＝資料夾匯入的一份檔，標題是它的原始檔名、不是內容；〔使用者的問法〕＝一群查不到答案的提問，它本來就不是知識庫裡的一筆記錄。後面那個識別碼是處置動作實際送出去的值。</p>
                                             <ul class="list-style-disc">
                                                 {% for r in f.records %}
-                                                <li><code class="inline-code">{{ r.key }}</code></li>
+                                                {% set recordIdentity = r %}
+                                                <li>
+                                                    {% include "components/record-identity/record-identity.html" %}
+                                                    <code class="inline-code">{{ r.key }}</code>
+                                                    {% if r.unavailableDetail %}<p class="text-gray">{{ r.unavailableDetail }}</p>{% endif %}
+                                                </li>
                                                 {% else %}
                                                 <li data-i18n="common.noData">無資料</li>
                                                 {% endfor %}
@@ -716,9 +881,10 @@ permalink: 3-5_dataHealth.html
                                         </div>
                                         <div class="field flex-row column gap-8" role="radiogroup" aria-labelledby="healthKeepLabel-{{ f.id }}">
                                             {% for r in f.records %}
+                                            {% set recordIdentity = r %}
                                             <label class="form-radio">
                                                 <input type="radio" name="healthKeep-{{ f.id }}" class="js-health-keep" value="{{ r.key }}">
-                                                <span>{{ r.key }}</span>
+                                                <span>{% include "components/record-identity/record-identity.html" %}</span>
                                             </label>
                                             {% endfor %}
                                         </div>
@@ -740,9 +906,10 @@ permalink: 3-5_dataHealth.html
                                         </div>
                                         <div class="field flex-row column gap-8" role="group" aria-labelledby="healthDisableLabel-{{ f.id }}">
                                             {% for r in f.records %}
+                                            {% set recordIdentity = r %}
                                             <label class="form-checkbox">
                                                 <input type="checkbox" class="js-health-disable-record" value="{{ r.key }}" checked>
-                                                <span>{{ r.key }}</span>
+                                                <span>{% include "components/record-identity/record-identity.html" %}</span>
                                             </label>
                                             {% endfor %}
                                         </div>
@@ -772,9 +939,10 @@ permalink: 3-5_dataHealth.html
                                         </div>
                                         <div class="field flex-row column gap-8" role="radiogroup" aria-labelledby="healthCurrentLabel-{{ f.id }}">
                                             {% for r in f.records %}
+                                            {% set recordIdentity = r %}
                                             <label class="form-radio">
                                                 <input type="radio" name="healthCurrent-{{ f.id }}" class="js-health-current" value="{{ r.key }}">
-                                                <span>{{ r.key }}</span>
+                                                <span>{% include "components/record-identity/record-identity.html" %}</span>
                                             </label>
                                             {% endfor %}
                                         </div>
@@ -797,9 +965,10 @@ permalink: 3-5_dataHealth.html
                                         </div>
                                         <div class="field flex-row column gap-8" role="radiogroup" aria-labelledby="healthPhrasingRecordLabel-{{ f.id }}">
                                             {% for r in f.records %}
+                                            {% set recordIdentity = r %}
                                             <label class="form-radio">
                                                 <input type="radio" name="healthPhrasingRecord-{{ f.id }}" class="js-health-phrasing-record" value="{{ r.key }}">
-                                                <span>{{ r.key }}</span>
+                                                <span>{% include "components/record-identity/record-identity.html" %}</span>
                                             </label>
                                             {% endfor %}
                                         </div>
