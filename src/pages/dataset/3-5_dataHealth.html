@@ -471,8 +471,7 @@ permalink: 3-5_dataHealth.html
                                 <code class="inline-code">{{ tf.id }}</code>
                                 <span data-i18n="{{ tf.severityKey }}">{{ tf.severityLabel }}</span>
                                 <span data-i18n="health.hitCountLabel">命中次數：</span>{{ tf.hitSum }}
-                                <span data-i18n="health.recordCountLabel">涉及記錄：</span>{{ tf.records }}
-                            </li>
+                                <span data-i18n="health.recordCountLabel">涉及記錄：</span>{{ tf.records }}</li>
                             {% else %}
                             <li data-i18n="common.noData">無資料</li>
                             {% endfor %}
@@ -566,9 +565,7 @@ permalink: 3-5_dataHealth.html
                              查得到的事實，前提改變不會讓它沒發生過）。 #}
                         {% if f.reopened %}<span class="text-red" data-i18n="health.reopenedTag">（處置過又回來）</span>{% endif %}
                     </td>
-                    <td>
-                        {% if f.datasetName %}{{ f.datasetName }}{% else %}<span class="text-gray" data-i18n="health.crossDataset">跨資料集或不屬於任何資料集</span>{% endif %}
-                    </td>
+                    <td>{% if f.datasetName %}{{ f.datasetName }}{% else %}<span class="text-gray" data-i18n="health.crossDataset">跨資料集或不屬於任何資料集</span>{% endif %}</td>
                     <td class="text-center">{{ f.records.length }}</td>
                     <td>{{ f.lastSeenAt }}</td>
                 </tr>
