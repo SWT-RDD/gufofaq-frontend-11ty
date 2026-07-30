@@ -68,6 +68,13 @@ permalink: 3-5_dataHealth.html
        · `health.actionDismiss`（判定為非問題）與 `health.statusDismissed`（已判定為非問題）——
          一個是動作、一個是狀態，繁中已經分得開。
 
+     **記錄只畫得出 `document_id`**：`GET /health/findings` 的 `record_keys` 是一串雜湊，product
+     沒有回它們的標題或內容，也沒有「拿一批 document_id 換回原文」的端點。所以「保留哪一筆」
+     「哪一筆是現行版」這幾個選項上只有 id——這是**現況的忠實呈現，不是設計**：畫一個編出來的標題
+     比畫 id 更糟（使用者會據此做選擇）。要讓這幾個選項讀得懂，需要 product 在 `FindingOut` 上附
+     每一筆記錄的標題（或開一支批次查詢），已列為交辦。在那之前，「涉及的記錄」那一列與各動作的
+     選項都只列 id，並在那一列講出對照的方法。
+
      權限：清單與總覽掛 `data:read`，掃描與五支處置＋還原掛 `data:write`
      （product `require_capability("data", …)`）。切版不做權限過濾（那是 React 應用層的事）。 #}
 {% set breadcrumbItems = [
@@ -217,9 +224,9 @@ permalink: 3-5_dataHealth.html
       { key: "max_similarity", value: "0.9884" }
     ],
     records: [
-      { key: "b7c1e93a4d20", title: "中國大陸產犬貓專案申請流程" },
-      { key: "1f4a08d6cc51", title: "從中國大陸輸入犬貓要怎麼申請" },
-      { key: "9e2b7710af83", title: "陸產犬貓專案輸入的申請步驟" }
+      { key: "b7c1e93a4d20" },
+      { key: "1f4a08d6cc51" },
+      { key: "9e2b7710af83" }
     ],
     noteLines: [], resolvedAt: "", resolvedBy: "",
     actions: ["dismiss", "merge", "disable"]
@@ -236,8 +243,8 @@ permalink: 3-5_dataHealth.html
       { key: "max_similarity", value: "0.9410" }
     ],
     records: [
-      { key: "5a30b1cf7e64", title: "退運的貨要付倉租嗎" },
-      { key: "c81d69204b7f", title: "退運貨物需要負擔倉租費用嗎" }
+      { key: "5a30b1cf7e64" },
+      { key: "c81d69204b7f" }
     ],
     noteLines: [], resolvedAt: "", resolvedBy: "",
     actions: ["dismiss", "disable"]
@@ -253,7 +260,7 @@ permalink: 3-5_dataHealth.html
       { key: "valid_until", value: "2024-11-30" }
     ],
     records: [
-      { key: "3c9f52ea18b6", title: "2024 年度暫准通關證件費率" }
+      { key: "3c9f52ea18b6" }
     ],
     noteLines: [
       "同一份規定在 11 月底之前仍然有效，不算過期。",
@@ -273,8 +280,8 @@ permalink: 3-5_dataHealth.html
       { key: "claims", value: "{\"7d18b0a3f5c2\":[\"15%\"],\"ae64c9017d3b\":[\"20%\"]}" }
     ],
     records: [
-      { key: "7d18b0a3f5c2", title: "小客車貨物稅怎麼算" },
-      { key: "ae64c9017d3b", title: "汽車貨物稅稅率調整說明" }
+      { key: "7d18b0a3f5c2" },
+      { key: "ae64c9017d3b" }
     ],
     noteLines: [], resolvedAt: "", resolvedBy: "",
     actions: ["dismiss", "supersede"]
@@ -290,7 +297,7 @@ permalink: 3-5_dataHealth.html
       { key: "kind", value: "noun_phrase" }
     ],
     records: [
-      { key: "6b02da4e9137", title: "退運作業" }
+      { key: "6b02da4e9137" }
     ],
     noteLines: [], resolvedAt: "", resolvedBy: "",
     actions: ["dismiss", "add-phrasing"]
@@ -305,7 +312,7 @@ permalink: 3-5_dataHealth.html
       { key: "missing_slots", value: "note1" }
     ],
     records: [
-      { key: "0d7c34fb85a9", title: "新制上路後的申報期限" }
+      { key: "0d7c34fb85a9" }
     ],
     noteLines: [], resolvedAt: "", resolvedBy: "",
     actions: ["dismiss"]
@@ -322,9 +329,9 @@ permalink: 3-5_dataHealth.html
       { key: "max_similarity", value: "0.9915" }
     ],
     records: [
-      { key: "44e1a7c0b96d", title: "郵包進口要不要繳稅" },
-      { key: "e903cb2517f4", title: "國際郵包的進口稅怎麼算" },
-      { key: "82fd6b0c4ae1", title: "寄回台灣的郵包會被課稅嗎" }
+      { key: "44e1a7c0b96d" },
+      { key: "e903cb2517f4" },
+      { key: "82fd6b0c4ae1" }
     ],
     noteLines: ["合併：保留 44e1a7c0b96d，併入 2 個問法，其餘 2 筆停用（未刪除）"],
     resolvedAt: "2024/12/01 15:08", resolvedBy: "42",
@@ -604,9 +611,10 @@ permalink: 3-5_dataHealth.html
                                     <tr>
                                         <th data-i18n="health.involvedRecords">涉及的記錄</th>
                                         <td>
+                                            <p class="text-gray" data-i18n="health.recordKeyHint">這裡列的是每一筆記錄的文件識別碼。健檢目前拿不到它們的標題與內容——要看那一筆到底寫了什麼，請到該資料集的內容預覽頁用同一個識別碼對照。</p>
                                             <ul class="list-style-disc">
                                                 {% for r in f.records %}
-                                                <li><code class="inline-code">{{ r.key }}</code> {{ r.title }}</li>
+                                                <li><code class="inline-code">{{ r.key }}</code></li>
                                                 {% else %}
                                                 <li data-i18n="common.noData">無資料</li>
                                                 {% endfor %}
@@ -676,7 +684,7 @@ permalink: 3-5_dataHealth.html
                                             {% for r in f.records %}
                                             <label class="form-radio">
                                                 <input type="radio" name="healthKeep-{{ f.id }}" class="js-health-keep" value="{{ r.key }}">
-                                                <span>{{ r.title }}（{{ r.key }}）</span>
+                                                <span>{{ r.key }}</span>
                                             </label>
                                             {% endfor %}
                                         </div>
@@ -700,7 +708,7 @@ permalink: 3-5_dataHealth.html
                                             {% for r in f.records %}
                                             <label class="form-checkbox">
                                                 <input type="checkbox" class="js-health-disable-record" value="{{ r.key }}" checked>
-                                                <span>{{ r.title }}（{{ r.key }}）</span>
+                                                <span>{{ r.key }}</span>
                                             </label>
                                             {% endfor %}
                                         </div>
@@ -732,7 +740,7 @@ permalink: 3-5_dataHealth.html
                                             {% for r in f.records %}
                                             <label class="form-radio">
                                                 <input type="radio" name="healthCurrent-{{ f.id }}" class="js-health-current" value="{{ r.key }}">
-                                                <span>{{ r.title }}（{{ r.key }}）</span>
+                                                <span>{{ r.key }}</span>
                                             </label>
                                             {% endfor %}
                                         </div>
@@ -757,7 +765,7 @@ permalink: 3-5_dataHealth.html
                                             {% for r in f.records %}
                                             <label class="form-radio">
                                                 <input type="radio" name="healthPhrasingRecord-{{ f.id }}" class="js-health-phrasing-record" value="{{ r.key }}">
-                                                <span>{{ r.title }}（{{ r.key }}）</span>
+                                                <span>{{ r.key }}</span>
                                             </label>
                                             {% endfor %}
                                         </div>

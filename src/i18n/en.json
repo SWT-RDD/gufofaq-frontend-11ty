@@ -371,6 +371,7 @@
   "health.overviewWindowHint": "The window is 7 days rather than 30 by default: upstream aggregates at most 5000 conversations per request, and for a moderately busy tenant a 30-day window is bound to cross that line, which would make the overview impossible to open. When a longer window cannot be opened, the response says that is the reason.",
   "health.recordCount": "Records",
   "health.recordCountLabel": "Records involved: ",
+  "health.recordKeyHint": "These are the document ids of the records. The health check cannot reach their titles or content — to see what a record actually says, look the same id up in that dataset's content preview.",
   "health.reopenedHint": "A disposed finding only comes back to the list when the premise of the original decision changed — that is, the evidence computed this time, or the confidence, is not the same as when the decision was made. If the premise has not changed, re-checking only updates “Last seen” and does not push it back. An undone disposal also lands here. Below is the reason the system wrote down, including the evidence as it stood at the time of the disposal.",
   "health.reopenedTag": "(disposed, then came back)",
   "health.reopenedTitle": "This one was disposed of, and came back to the open list",
