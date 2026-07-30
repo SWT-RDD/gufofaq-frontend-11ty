@@ -27,12 +27,10 @@ permalink: 2-2-4_regressionSuites.html
         （`_replay_case` 逐輪 `consume_qa_quota`）。所以「預計扣多少」寫在開跑鈕旁邊，
         不是跑完才在用量頁看到。
 
-     ⚠️ 覆寫欄位為什麼一次送齊：`qatest._build_test_config` 的第 ③ 層把
-     `product_system_prompt`／`reasoning_effort`／`search_total_number`／
-     `search_selected_number`／`search_mode`／`agent_max_iterations` **無條件**寫成
-     `TestConfig` 的值（未帶＝該欄的預設，不是設定檔的現值）。所以這幾欄一律由畫面送出、
-     並以被測設定檔的現值預填——畫面上看到的就是這一次真的會跑的那一組。
-     `model_name`／`data_source_ratio`／`skill_ids` 未帶才是真的「沿用設定檔」。
+     ⚠️ 覆寫只送「這一次明確指定的那幾個」：`overrides` 沒帶的旋鈕由
+     `regression._inherit_from_profile` 沿用被測設定檔當下的值，所以畫面把每個旋鈕做成兩態
+     （沿用設定檔／這一次改用指定值），沿用態下那一欄整個不出現在請求裡。詳見「開始執行」
+     區塊的檔頭註解。
 
      權限：本頁的寫入面是 `settings:write`（案例集屬租戶資產）；「開始執行」另需租戶的
      `ask` 功能開通（真的會問答）；「從問答紀錄建立」另需 `history` 能力（它讀的是提問與
@@ -492,8 +490,34 @@ permalink: 2-2-4_regressionSuites.html
 
 {# ── 開始執行 ───────────────────────────────────────────────────────────────
      示範自洽（GUIDELINE §6）：上面 2 則案例＝(2 輪前置 + 1 本題) + (0 輪前置 + 1 本題) = 4 輪，
-     故「預計扣 4 次」。React 端由案例陣列推導（Σ 前置輪數 + 1），這裡因模板無 filter 而 set。 #}
+     故「預計扣 4 次」。React 端由案例陣列推導（Σ 前置輪數 + 1），這裡因模板無 filter 而 set。
+
+     ## 調校旋鈕是兩態的：沿用設定檔 ／ 這一次改用指定值
+
+     `POST /qatest/suites/{id}/run` 的 `overrides` 只收「這一次明確指定的那幾個旋鈕」；沒帶的
+     由 `regression._inherit_from_profile` 沿用被測設定檔當下的值。所以什麼都不勾就是
+     「測設定檔目前的行為」——那正是這一頁存在的理由（改了提示詞／換了模型之後，那幾十題還
+     答得對嗎）。反過來說，把欄位一律送齊等於「使用者明確指定要用測試預設值跑」，後端會忠實
+     照做，於是報表上的「退步／無變化」講的不是設定檔目前的行為，而畫面上一個訊號都沒有。
+
+     沿用中的欄位刻意不顯示設定檔的現值，只顯示「沿用設定檔」這個狀態（控制項整個不出現）。
+     兩個理由：
+       ① 顯示現值要在前端重寫一份 `regression._profile_value` 的規則（缺席／null 退回欄位契約
+          預設、`product_system_prompt` 歸 /prompts 專管）並多打兩支 API——抄錯就是畫面寫著
+          16、實際跑 30，而且是靜默的；
+       ② 就算抄對，那也只是開頁那一刻的快照。設定檔在別處被改掉之後，畫面仍理直氣壯地寫著
+          舊值而送出去的是新值——那正是這一頁要消滅的失敗方式。
+     「這一輪到底用了什麼」有一個不會過期的來源：跑完在 2-2-5 的「這一輪實際用的設定」
+     （`RegressionRun.effective_config`＝實際送給問答引擎的那一份）。
+
+     「知識檢索」不在兩態之內：它是 body 頂層的 `profile_no`＝「要測哪一個設定檔」，不是覆寫。
+
+     示範刻意 3 覆寫 ／ 3 沿用（兩態都要演得出來），而且互不矛盾：對話模式覆寫成傳統搜尋，
+     所以「取用資料筆數」這一欄在這一輪真的會生效。每個旋鈕的包裝（名稱 ＋ 狀態標記 ＋ 勾選）
+     是同一套，但裡面的控制項各不相同（select／輸入框／textarea），而 Nunjucks 的 include 沒有
+     slot，故逐個寫出來；沿用態下沒有控制項可掛 for，故名稱改用 <span class="control-label">。 #}
 {% set regressionTurnTotal = 4 %}
+{% set regressionOverrideCount = 3 %}
 {% set regressionLimits = [
   { labelKey: "regression.limitCases", label: "單次執行案例上限：", value: "200", unitKey: "regression.casesUnit", unit: " 則" },
   { labelKey: "regression.limitContextTurns", label: "前置對話上限：", value: "10", unitKey: "regression.turnsUnit", unit: " 輪" },
@@ -505,7 +529,11 @@ permalink: 2-2-4_regressionSuites.html
 
     <p class="text-red"><span data-i18n="regression.quotaWarnPrefix">跑一次會扣問答額度：這一套預計扣 </span><span>{{ regressionTurnTotal }}</span><span data-i18n="regression.quotaWarnSuffix"> 次（每一則案例的每一輪前置對話與本題各是一次真的問答）。中斷過的執行已經扣掉的不會退還。</span></p>
 
+    <p class="text-gray" data-i18n="regression.overrideScope">只有勾了「這一次改用指定值」的欄位會隨這次執行送出；沒勾的不會出現在請求裡，由後端沿用被測設定檔當下的值——所以什麼都不勾，跑的就是設定檔目前的行為。沿用中的欄位刻意不預填設定檔的現值：那是一份開頁那一刻的抄本，設定檔在別處被改掉之後它會理直氣壯地寫著舊值。這一輪真正用了什麼，跑完在報表的「這一輪實際用的設定」看得到。覆寫只寫進本次執行專用的暫時設定，跑完就刪——上線設定檔一個字都不會被改到。「知識檢索」不是覆寫，它是「要測哪一個設定檔」。</p>
+    <p><span class="text-bold" data-i18n="regression.overrideSummaryPrefix">這一次明確指定的旋鈕：</span><span>{{ regressionOverrideCount }}</span><span data-i18n="regression.overrideSummarySuffix"> 個；其餘沿用被測設定檔當下的值——指定 0 個時，跑的就是設定檔目前的行為。</span></p>
+
     <div class="flex-row flex-wrap gap-16 mobile-column sm-gap-16">
+        {# 知識檢索＝body 頂層的 profile_no（要測哪一個設定檔），不是覆寫，故沒有兩態。 #}
         <div class="col-4-md col-12-sm">
             <div class="form-group">
                 <div class="label">
@@ -520,41 +548,51 @@ permalink: 2-2-4_regressionSuites.html
                 </div>
             </div>
         </div>
+        {# LLM模型（model_name）——沿用態：控制項整個不出現。 #}
         <div class="col-4-md col-12-sm">
             <div class="form-group">
                 <div class="label">
-                    <label for="runLlmSelect" class="control-label" data-i18n="qaTest.llmModel">LLM模型</label>
+                    <span class="control-label" data-i18n="qaTest.llmModel">LLM模型</span>
+                    <span class="verdict-tag is-muted" data-i18n="regression.overrideInherit">沿用設定檔</span>
                 </div>
-                <div class="field">
-                    <select id="runLlmSelect" class="form-control js-llm-select">
-                        <option></option>
-                        <option value="OpenAI gpt-4o-mini" selected>OpenAI gpt-4o-mini</option>
-                        <option value="OpenAI gpt-4o">OpenAI gpt-4o</option>
-                    </select>
+                <div class="field flex-row column gap-8">
+                    <label class="form-checkbox">
+                        <input type="checkbox" class="js-override-model">
+                        <span data-i18n="regression.overrideThisRun">這一次改用指定值</span>
+                    </label>
+                    <p class="text-gray" data-i18n="regression.overrideInheritHint">這一欄不隨這次執行送出，跑的是被測設定檔當下的值。</p>
                 </div>
             </div>
         </div>
+        {# 思考深度（reasoning_effort）——沿用態。覆寫態的控制項＝components/reasoning-effort-select
+             （2-2-1／2-2-3／5-2 都用同一份，那裡是它的正本）。 #}
         <div class="col-4-md col-12-sm">
             <div class="form-group">
                 <div class="label">
-                    <label for="runReasoningEffortSelect" class="control-label" data-i18n="settings.reasoningEffort">思考深度</label>
+                    <span class="control-label" data-i18n="settings.reasoningEffort">思考深度</span>
+                    <span class="verdict-tag is-muted" data-i18n="regression.overrideInherit">沿用設定檔</span>
                 </div>
-                <div class="field">
-                    {% set reasoningEffortId = "runReasoningEffortSelect" %}
-                    {% set reasoningEffortHook = "js-reasoning-effort" %}
-                    {% set reasoningEffortGroup = "" %}
-                    {% set reasoningEffortEmptyKey = "settings.reasoningEffortDefault" %}
-                    {% set reasoningEffortEmptyZh = "沿用模型預設" %}
-                    {% include "components/reasoning-effort-select/reasoning-effort-select.html" %}
+                <div class="field flex-row column gap-8">
+                    <label class="form-checkbox">
+                        <input type="checkbox" class="js-override-reasoning-effort">
+                        <span data-i18n="regression.overrideThisRun">這一次改用指定值</span>
+                    </label>
+                    <p class="text-gray" data-i18n="regression.overrideInheritHint">這一欄不隨這次執行送出，跑的是被測設定檔當下的值。</p>
                 </div>
             </div>
         </div>
+        {# 對話模式（search_mode）——覆寫態：控制項出現，狀態標記轉黃。 #}
         <div class="col-4-md col-12-sm">
             <div class="form-group">
                 <div class="label">
                     <label for="runChatModeSelect" class="control-label" data-i18n="qaTest.chatMode">對話模式</label>
+                    <span class="verdict-tag is-warn" data-i18n="regression.overrideSet">這一次指定</span>
                 </div>
-                <div class="field">
+                <div class="field flex-row column gap-8">
+                    <label class="form-checkbox">
+                        <input type="checkbox" class="js-override-search-mode" checked>
+                        <span data-i18n="regression.overrideThisRun">這一次改用指定值</span>
+                    </label>
                     <select id="runChatModeSelect" class="form-control js-chat-mode">
                         <option value="traditional" selected data-i18n="qaTest.chatModeTraditional">傳統搜尋</option>
                         <option value="agent" data-i18n="qaTest.chatModeAgent">Agent 對話</option>
@@ -562,35 +600,55 @@ permalink: 2-2-4_regressionSuites.html
                 </div>
             </div>
         </div>
-        {# 選用資料筆數（search_selected_number）：兩模式皆適用（modeMatrix both），不標模式。 #}
+        {# 選用資料筆數（search_selected_number）：兩模式皆適用（modeMatrix both），不標模式。沿用態。 #}
         <div class="col-4-md col-12-sm">
             <div class="form-group">
                 <div class="label">
-                    <label for="runSampleSelected" class="control-label" data-i18n="settings.searchSelectedNumber">選用資料筆數</label>
+                    <span class="control-label" data-i18n="settings.searchSelectedNumber">選用資料筆數</span>
+                    <span class="verdict-tag is-muted" data-i18n="regression.overrideInherit">沿用設定檔</span>
                 </div>
-                <div class="field">
-                    <input type="text" id="runSampleSelected" class="form-control js-sample-selected" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" value="8">
+                <div class="field flex-row column gap-8">
+                    <label class="form-checkbox">
+                        <input type="checkbox" class="js-override-search-selected-number">
+                        <span data-i18n="regression.overrideThisRun">這一次改用指定值</span>
+                    </label>
+                    <p class="text-gray" data-i18n="regression.overrideInheritHint">這一欄不隨這次執行送出，跑的是被測設定檔當下的值。</p>
                 </div>
             </div>
         </div>
-        {# 取用資料筆數（search_total_number）：僅傳統搜尋模式生效（modeMatrix traditional）；
-             切版常駐（靜態稿為「該欄適用」的狀態），React 依 modeMatrix 決定渲染與否。 #}
+        {# 取用資料筆數（search_total_number）：僅傳統搜尋模式生效（modeMatrix traditional）。
+             覆寫態；示範與上面的「對話模式＝傳統搜尋」自洽，所以這一輪它真的會生效。
+             React 只在「對話模式被這一次明確覆寫成 Agent」時整欄不渲染——沿用態下畫面判斷不出
+             設定檔是哪個模式，把欄位藏起來等於連指定的機會一起拿掉。 #}
         <div class="col-4-md col-12-sm">
             <div class="form-group">
                 <div class="label">
                     <label for="runSampleTotal" class="control-label" data-i18n="settings.searchTotalNumber">取用資料筆數</label>
+                    <span class="verdict-tag is-warn" data-i18n="regression.overrideSet">這一次指定</span>
                 </div>
-                <div class="field">
-                    <input type="text" id="runSampleTotal" class="form-control js-sample-total" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" value="16">
+                <div class="field flex-row column gap-8">
+                    <label class="form-checkbox">
+                        <input type="checkbox" class="js-override-search-total-number" checked>
+                        <span data-i18n="regression.overrideThisRun">這一次改用指定值</span>
+                    </label>
+                    <input type="text" id="runSampleTotal" class="form-control js-sample-total" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" aria-describedby="runSampleTotalHint" value="24">
+                    <p id="runSampleTotalHint" class="text-gray" data-i18n="regression.sampleTotalOnlyTraditional">只在傳統搜尋模式生效。對話模式沿用設定檔時，這一欄會不會被用到取決於設定檔目前是哪個模式——跑完看報表的「這一輪實際用的設定」。</p>
                 </div>
             </div>
         </div>
     </div>
 
+    {# 提示詞（prompt）——覆寫態（整列寬）。這一欄是「改了提示詞之後那幾十題還答得對嗎」的主角。 #}
     <div class="flex-row column gap-8">
-        <span class="control-label" data-i18n="comp.prompt">提示詞</span>
-        <textarea class="form-control size-lg js-prompt-input" aria-label="提示詞" data-i18n-aria-label="comp.prompt">你是一位專業的知識庫問答助手，回答必須僅依據檢索到的資料片段。資料不足時明確說明「無法從現有資料判斷」。</textarea>
-        <p class="text-gray" data-i18n="regression.overrideScope">上面這幾欄一律隨這次執行送出（未填＝用測試預設值，不是設定檔的現值），並且只寫進本次執行專用的暫時設定，跑完就刪——上線設定檔一個字都不會被改到。</p>
+        <div class="flex-row align-items-center gap-10 flex-wrap">
+            <label for="runPromptInput" class="control-label" data-i18n="comp.prompt">提示詞</label>
+            <span class="verdict-tag is-warn" data-i18n="regression.overrideSet">這一次指定</span>
+        </div>
+        <label class="form-checkbox">
+            <input type="checkbox" class="js-override-prompt" checked>
+            <span data-i18n="regression.overrideThisRun">這一次改用指定值</span>
+        </label>
+        <textarea id="runPromptInput" class="form-control size-lg js-prompt-input">你是一位專業的知識庫問答助手，回答必須僅依據檢索到的資料片段。資料不足時明確說明「無法從現有資料判斷」。</textarea>
     </div>
 
     <div class="flex-row gap-24 flex-wrap">

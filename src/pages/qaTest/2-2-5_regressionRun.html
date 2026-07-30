@@ -36,6 +36,12 @@ permalink: 2-2-5_regressionRun.html
      分數低不是——後端刻意不設門檻，前端設一個就是替使用者發明它。
      `judge_avg` 只平均有分數的那幾則，另有 `judge_unscored_cases` 逐則點名。
 
+     ## 這一輪到底用了什麼設定
+
+     `run.effective_config` 是實際送給問答引擎的那一份（開跑當下落庫），`run.overrides` 是這一次
+     明確指定的那幾個旋鈕。兩者缺一，報表就答不出「這一輪測的是不是設定檔目前的行為」——那正是
+     整份報表的前提，所以它自己一塊、緊接在執行身分後面（見「這一輪實際用的設定」）。
+
      ## 中斷過的執行
 
      `status`／`summary.aborted_reason` 在頁首就要看得見，匯出鈕旁邊也要——那份 CSV 只有已經
@@ -68,6 +74,61 @@ permalink: 2-2-5_regressionRun.html
     </div>
     <p class="text-red"><span class="text-bold" data-i18n="regression.abortedReason">中斷原因：</span><span>問答額度不足（案例 41 的第 1 輪）——已完成的結果保留</span></p>
     <p class="text-red" data-i18n="regression.abortedMeaning">這不是完整的一次回歸：只有下面列出的那幾則真的跑過，其餘的案例「有沒有回歸」這一次量不到。</p>
+</div>
+
+{# ── 這一輪實際用的設定 ─────────────────────────────────────────────────────
+     `RegressionRun.effective_config`＝這一輪實際送給問答引擎的那一份 config（開跑當下落庫，
+     不是現在回頭去讀設定檔）。它與 `run.overrides`（這一次明確指定的那幾個旋鈕）缺一不可：
+     只有 overrides 看不出沿用來的值到底是什麼，只有 effective_config 看不出哪幾個是這一輪
+     刻意換掉的。所以這張表兩件事一起講——值 ＋ 來源。
+
+     只列「執行這一套案例集」改得動的那幾個旋鈕（product `_OVERRIDE_FIELDS`＝TestConfig 的欄位
+     扣掉 profile_no）。設定檔的其餘設定這一輪一律沿用，那支端點在結構上碰不到它們。
+
+     示範自洽（§6）：#311 明確指定了提示詞／對話模式／取用資料筆數三個，其餘六個沿用
+     ——對得上 2-2-4 的「這一次明確指定的旋鈕：3 個」。 #}
+{% set effectiveConfigRows = [
+  { labelKey: "comp.prompt", label: "提示詞", value: "你是一位專業的知識庫問答助手，回答必須僅依據檢索到的資料片段。資料不足時明確說明「無法從現有資料判斷」。", sourceKey: "regression.overrideSet", source: "這一次指定", sourceClass: "is-warn" },
+  { labelKey: "qaTest.chatMode", label: "對話模式", valueKey: "qaTest.chatModeTraditional", value: "傳統搜尋", sourceKey: "regression.overrideSet", source: "這一次指定", sourceClass: "is-warn" },
+  { labelKey: "settings.searchTotalNumber", label: "取用資料筆數", value: "24", sourceKey: "regression.overrideSet", source: "這一次指定", sourceClass: "is-warn" },
+  { labelKey: "qaTest.llmModel", label: "LLM模型", value: "OpenAI gpt-4o-mini", sourceKey: "regression.overrideInherit", source: "沿用設定檔", sourceClass: "is-muted" },
+  { labelKey: "settings.reasoningEffort", label: "思考深度", valueKey: "settings.reasoningEffortDefault", value: "沿用模型預設", sourceKey: "regression.overrideInherit", source: "沿用設定檔", sourceClass: "is-muted" },
+  { labelKey: "settings.searchSelectedNumber", label: "選用資料筆數", value: "8", sourceKey: "regression.overrideInherit", source: "沿用設定檔", sourceClass: "is-muted" },
+  { labelKey: "qaTest.agentMaxIter", label: "Agent 最大迭代次數", value: "5", sourceKey: "regression.overrideInherit", source: "沿用設定檔", sourceClass: "is-muted" },
+  { labelKey: "settings.dataSourceRatio", label: "資料來源比例（主題／向量）", value: "0.25", sourceKey: "regression.overrideInherit", source: "沿用設定檔", sourceClass: "is-muted" },
+  { labelKey: "settings.assignedSkills", label: "指派 Skill", value: "3、7", sourceKey: "regression.overrideInherit", source: "沿用設定檔", sourceClass: "is-muted" }
+] %}
+<div class="block mt-16 flex-row column gap-16">
+    <div class="text-md text-bold" data-i18n="regression.effectiveSection">這一輪實際用的設定</div>
+    <p class="text-gray" data-i18n="regression.effectiveIntro">這是這一輪實際送給問答引擎的那一份設定，開跑當下就落庫——不是現在回頭去讀設定檔（設定檔後來被改過，這裡仍然是當時真正跑的那一份）。標成「沿用設定檔」的欄位，跑的時候取的是被測設定檔當下的值；標成「這一次指定」的才是這一輪刻意換掉的。</p>
+    <div class="table-container scrollTable">
+        <table class="default-table">
+            <colgroup>
+                <col style="width:200px; min-width:200px;">
+                <col style="min-width:360px;">
+                <col style="width:140px; min-width:140px;">
+            </colgroup>
+            <thead>
+                <tr>
+                    <th data-i18n="regression.effectiveKnob">旋鈕</th>
+                    <th data-i18n="regression.effectiveValue">這一輪的值</th>
+                    <th data-i18n="regression.effectiveSource">值的來源</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in effectiveConfigRows %}
+                <tr>
+                    <td class="text-bold" data-i18n="{{ row.labelKey }}">{{ row.label }}</td>
+                    <td{% if row.valueKey %} data-i18n="{{ row.valueKey }}"{% endif %}>{{ row.value }}</td>
+                    <td><span class="verdict-tag {{ row.sourceClass }}" data-i18n="{{ row.sourceKey }}">{{ row.source }}</span></td>
+                </tr>
+                {% else %}
+                <tr><td colspan="3" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <p class="text-gray" data-i18n="regression.effectiveRestHint">這張表只列「執行這一套案例集」改得動的那幾個旋鈕。設定檔的其餘設定（內容政策、輸出規則、QA 直答、標籤過濾…）這一輪一律沿用，那支端點在結構上碰不到它們——把它們塞進覆寫會被擋成「未知的覆寫欄位」。</p>
 </div>
 
 {# ── 摘要 ───────────────────────────────────────────────────────────────────
@@ -115,7 +176,7 @@ permalink: 2-2-5_regressionRun.html
     <div class="flex-row">
         <button type="button" class="button button-border js-export-run" data-toast="報表已下載|匯出失敗，請稍後再試" data-i18n-data-toast="toast.exportRun" data-toast-type="success|error" data-i18n="regression.exportCsv">下載結果 CSV</button>
     </div>
-    <p class="text-gray" data-i18n="regression.exportColumns">六欄：案例／期望／實際答案／通過與否／命中文件／評審分數。「命中文件」逐列都是「未落庫」——回歸結果目前不存命中清單，留白會被讀成「這一題零命中」。</p>
+    <p class="text-gray" data-i18n="regression.exportColumns">七欄：案例／期望／實際答案／通過與否／命中文件／評審分數／未通過原因。「通過與否」逐字只有「通過」或「未通過」兩種，失敗細節在自己那一欄（下游做樞紐分析時，塞進狀態欄的每一句細節都會變成一個新的狀態值）；「命中文件」印的是真的引用到哪幾份，零命中的列寫「（零命中）」、被夾掉時明說共幾筆——留白會被讀成「這一題零命中」。</p>
 </div>
 
 {# ── 基準比較 ───────────────────────────────────────────────────────────────
