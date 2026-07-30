@@ -73,7 +73,7 @@ src/
 ├── 404.html                GitHub Pages 的 404 fallback
 ├── catalog.html            部署站台首頁＝頁面目錄（permalink → index.html；右上角有語言/深淺鈕，在 i18n 範圍內）
 └── pages/                  內頁：依 section 分資料夾，permalink 輸出扁平檔名到 dist/ 根
-    ├── dataImport/(7) dataset/(8) qaHistory/(2) qaRecord/(1) qaTest/(4) settings/(12)  ← 管理端，走 page-shell
+    ├── dataImport/(7) dataset/(9) qaHistory/(2) qaRecord/(1) qaTest/(4) settings/(12)  ← 管理端，走 page-shell
     ├── faq/(1)                                                                        ← 前台 FAQ，走 chatbot-shell
     └── components/(1)                                                                 ← 元件總覽（showcase），走 base
 tests/guideline.test.mjs    GUIDELINE 規則的可執行版本（npm test）
@@ -87,7 +87,7 @@ dist/                       build 輸出（勿手改）
 
 | layout | 自動提供 | 用它的頁面 |
 |---|---|---|
-| `layouts/page-shell/page-shell.html` | `<head>` + skip-link + `header`（導覽 + 語言/夜間）+ `<main id="main">`（含 h1）+ `footer` | 管理端 34 頁；front matter 必填 `titleKey` / `pageHeading` |
+| `layouts/page-shell/page-shell.html` | `<head>` + skip-link + `header`（導覽 + 語言/夜間）+ `<main id="main">`（含 h1）+ `footer` | 管理端 35 頁；front matter 必填 `titleKey` / `pageHeading` |
 | `layouts/chatbot-shell/chatbot-shell.html` | `<head>` + skip-link + `chatbot-header`（logo + 語言/夜間，無導覽）+ 滿版 `<main id="main">` + `footer` | 前台 FAQ 聊天頁 |
 | `layouts/base/base.html` | 只有 `<head>` + 空白外框 + script 清單 | 登入頁、404、頁面目錄、元件總覽（各自在內容裡放唯一的 h1） |
 
@@ -176,9 +176,10 @@ dist/                       build 輸出（勿手改）
 
 | 位置 | 真 app 的狀況 |
 |---|---|
-| `5-5-1_userManagement`、`5-6-1_platformTenants`、`5-6-2_platformMcpServers` | 沒有這三頁（真 app 管理端 21 頁，本專案加成 34 頁；`5-6-2` MCP Server 註冊表為平台管理者專屬） |
+| `5-5-1_userManagement`、`5-6-1_platformTenants`、`5-6-2_platformMcpServers` | 沒有這三頁（真 app 管理端 21 頁，本專案加成 35 頁；`5-6-2` MCP Server 註冊表為平台管理者專屬） |
 | `5-10_tagDimensions` | 沒有這頁（SaaS 新增需求：標籤維度／受控詞彙／標註覆蓋率／檢索過濾旋鈕。逆向自 product `app/routers/tags.py`、`app/routers/retrieval.py` 的 `PUT /retrieval/profiles/{no}/tag-filter`、`app/retrieval_filter.py` 的 `slots_requiring_full_coverage`。旋鈕預設關閉，開啟是「量到零筆未標註」的硬閘門而不是勾一下，故頁面要講得出還差幾筆、那幾筆在哪個資料集，以及覆蓋率不足時開啟＝大規模誤殺） |
 | `2-2-4_regressionSuites`、`2-2-5_regressionRun` | 沒有這兩頁（SaaS 新增需求：批次回歸 harness——案例集／案例（自帶斷言）＋一次執行的報表。逆向自 product `app/routers/regression.py`：`POST /qatest/suites/{id}/run`（SSE 逐案例回報）、`GET /qatest/runs/{id}?baseline=`（基準比較）、`GET /qatest/runs/{id}/export`（結果 CSV）、`POST /qatest/suites/{id}/cases/from-log`（從問答紀錄一鍵建案例）。比較有**五個**桶子不是三個：`not_compared`（只有一邊有結果）與 `judge_drift`（評審整批壞掉）的預設歸宿都是「無變化」＝假綠燈，故各自成塊、且排在「無變化」之前） |
+| `3-5_dataHealth` | 沒有這頁（SaaS 新增需求：資料健檢——把知識庫裡「答得出來、但答得不對」的資料撈成一張待處理清單，逐項附證據與可用的處置動作。逆向自 product `app/routers/health_findings.py`（`GET /health/findings`／`GET /health/findings/overview`／`POST /health/scan`＋五支處置＋`/undo`）與 `app/health_checks.py`（十一種檢查、兩種確定程度、重新開啟的判準）。三件不外顯就會靜默出事的事：總覽依「涉及記錄的命中次數總和」排序而清單依 `(check_type, id)` 排，兩張表照什麼排都要講明；已處置的發現只有在證據或確定程度變了才回到清單，畫面要答得出「這一筆為什麼又出現了」；掃描沒看到的檔逐檔列在回應裡，那份誠實不得被藏起來） |
 | `5-4_coverageGaps` | 沒有這頁（SaaS 新增需求：覆蓋缺口報表——把「查無／拒答」的提問原文依次數排出來，就是知識庫下一步該補什麼的清單。逆向自 product `app/routers/stats.py` 的 `GET /stats/coverage-gaps`；權限掛 `history` 而非同屬「設定」選單的 5-3 的 `settings`，因為它回的是提問原文） |
 | `5-7_auditLog`、`5-8_widgetTokens`、`5-5-2_groupManagement`、`5-9_extractApiKey`、`3-2_glossaryManagement`、`3-3_qaSetManagement`、`3-4_skillManagement` | 沒有這七頁（皆為 SaaS 新增需求：稽核日誌、嵌入金鑰自助管理（UI 用語；後端契約名仍是 widget token，見該頁檔頭）、群組（分組）＋群組權限管理、萃取 API 金鑰自助管理（逆向自 product extract.py）、術語表管理（逆向自 product glossary.py，對 GufoRAG chatbot 術語表的租戶隔離代理）、QA 集管理（QA 集＝kind='qa' 的 TenantIndex，逆向自 product datasets.py 的 import_qa／qa_direct 管道）、Skill 管理（租戶自訂能力包＝一段指令＋一組工具白名單，以一顆工具暴露給問答 agent，逆向自 product skills.py，對 GufoRAG chatbot skill CRUD 的租戶隔離代理），真 app 21 頁裡都查無對應頁面） |
 | `5-2_conversationSettings`（對話設定 hub） | 沒有這頁（SaaS 新需求：把散落於 5-2-1／5-4-1／5-4-2 的 GufoRAG per-profile 對話設定整合成單一 hub，並補齊內容政策／Agent 工具（內建工具白名單＋術語表／MCP 勾選）等後端已支援、前端原無入口的旋鈕。逆向自 product settings_hub.py 的 `_PROFILE_FIELD_DEFAULTS`／`ProfileConfigIn`；主題子頁籤沿用 ui/tab 雙層機制，本頁整合並取代原三頁——含原 5-4-2 歡迎語版本管理，故該頁亦已移除） |

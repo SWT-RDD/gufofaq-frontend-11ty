@@ -1,0 +1,822 @@
+---
+layout: layouts/page-shell/page-shell.html
+title: GufoFAQ::資料健檢
+titleKey: nav.dataHealth
+pageHeading: 資料健檢
+permalink: 3-5_dataHealth.html
+---
+{# 資料健檢（SaaS 新頁，真 app 21 頁無對應）。逆向自 gufofaq-saas product
+     `app/routers/health_findings.py`：
+       · `GET /health/findings`（`FindingsOut`：`total`／`page`／`size`／`findings[]`，逐筆
+         `FindingOut` 帶 `check_type`／`severity`／`status`／`dataset_id`／`record_keys`／
+         `evidence`／`note`／`resolved_by`／`resolved_at`／`first_seen_at`／`last_seen_at`／
+         `available_actions`）
+       · `GET /health/findings/overview`（`OverviewOut`：`window_days`／`window_start`／
+         `window_end`／`total_open`／`total_hits`／`top_n`／`groups[]`，逐組 `OverviewGroupOut`
+         帶 `check_type`／`open_count`／`hit_sum`／`top[]`）
+       · `POST /health/scan`（`ScanIn` 的 `dataset_id`／`include_hit_checks` → `ScanOut`）
+       · 五支處置：`…/dismiss`／`…/disable`／`…/merge`／`…/supersede`／`…/add-phrasing`
+       · 還原：`…/undo`（`UndoIn.reason`）
+     檢查判準、證據形狀與重新開啟的判準出自 `app/health_checks.py`
+     （`HEALTH_CHECK_TYPES` 十一項、`HEALTH_SEVERITIES` 兩態、`_premise_changes`／`_reopen_note`）。
+
+     這一頁要外顯六件「不寫出來就會靜默出事」的事，逐一：
+
+     ① **排序依影響、不依發現數量**。總覽那一支把每一組「涉及記錄的命中次數總和」算出來排序
+        （product `findings_overview`：`groups.sort(key=(-hit_sum, -open_count, check_type))`），
+        因為一筆從沒被命中過的重複遠不如一筆每天被命中 50 次的過期答案重要。命中數取的是
+        **剝掉批次回歸重放之後**的問答紀錄（`_fetch_window_logs` 走 `stats._fetch_logs` 本人）
+        ——另抄一份取回邏輯的話，跑一次回歸就會把被重放的那幾筆推上頂端，而畫面上看起來就是
+        「這幾筆最常被問」。
+        **逐項清單那一支排的是 `(check_type, id)`**：命中次數住在上游的問答紀錄裡、排不進 SQL，
+        而清單是分頁的，在一頁之內排等於假排序（第 2 頁的高命中筆數永遠上不了第 1 頁）。
+        兩張表照什麼排各自在畫面上講明；不講的話沒有人分得出來。
+
+     ② **消音之後又冒出來，畫面要答得出「為什麼」**。product 只在 `evidence_digest` 或 `severity`
+        變了才重新開啟（`_premise_changes`），並把「原判定的前提已改變（…）。處置當時的證據：…」
+        寫進 `note`（`_reopen_note`；這一次掃描的證據馬上要覆蓋掉舊的，`note` 是它唯一留得住的
+        地方）。判準是 API 給得出來的：`status` 是 `open` 而 `resolved_at` 還在 ⇒ 這一筆被處置過
+        又回到未處置（前提改變重新開啟，或被 `/undo` 退回；兩者都刻意留著 `resolved_by`／
+        `resolved_at`）。少了這一格，清單每天跳同樣的既有發現，人看兩次就不看了。
+
+     ③ **六支處置是具體的資料操作，不是「標記已讀」**。`dismiss` 是唯一不動資料的一支（product
+        那支逐字寫著「只動發現這一列，一個字都不碰資料」）；`disable` 寫哨兵有效期、`merge` 改
+        保留者的內容、`supersede` 寫外部主鍵、`add-phrasing` 新增一列。**檢查本身不改資料**
+        （八項檢查連寫記錄的路都組不出來），這句話要在按下重新檢查之前就看得到。
+        `disable`／`supersede` 在租戶還沒宣告對應角色維度時會 400 並指名缺的前提
+        （`_require_valid_until_slot`／`_require_superseded_by_slot`），故兩支的說明與 toast
+        分支都講得出那個前提。
+
+     ④ **`/undo` 不是永遠成功**。判準是「我們寫出去的那一份還在不在」（稽核裡的 `content_after`
+        與現況逐字比對），不是「試著算出反向操作」。合併把問法併進內容開頭那一行，而再併一次是
+        就地擴充同一行——同一筆保留者被第二個發現又併過之後，那一行同時裝著兩次的問法，把舊內容
+        寫回去會連第二次的一起抹掉，只拿掉這一次的又會留下一個誰都沒寫過的中間狀態。兩個都不是
+        反向操作，所以 409 指名。兩種 409 的文案不同，兩條都列在還原鈕的 toast 分支裡。
+
+     ⑤ **「沒掃到」是誠實記錄，不得被藏起來**。`connector_type != 'excel'`（資料夾匯入，整份是
+        一份文件、沒有欄位槽）與讀不開的檔逐檔列進 `ScanOut.uncovered`，各帶 `reason` 與 `detail`。
+        漏報比誤報嚴重，而「以為乾淨、其實沒掃」的唯一解藥是讓沒掃到的部分出現在使用者眼前。
+
+     ⑥ **任何上限／截斷都在消費點外顯**：清單的 `total`／`page`／`size`（分頁）、總覽每組只附
+        `top_n` 筆（不是分頁，要逐筆看走清單）、命中窗 `window_days`（預設 7 天而不是 30——上游
+        一次最多彙總 5000 則）、單次掃描的記錄數上限（超過就 400 擋下、不靜默只掃前 N 筆）、
+        以及三項命中檢查這一次到底跑了沒有（`hit_checks` 三態）。
+
+     i18n 的兩處刻意分 key（§4-2「語意確實不同、英譯必須區別才分 key」）：
+       · `health.statusOpen`（未處置／Open）與既有的 `agent.stepPending`（待處理／Pending）——
+         前者是發現還沒有人處置，後者是管線節點還沒開始跑，英譯本來就不同。
+       · `health.actionDismiss`（判定為非問題）與 `health.statusDismissed`（已判定為非問題）——
+         一個是動作、一個是狀態，繁中已經分得開。
+
+     權限：清單與總覽掛 `data:read`，掃描與五支處置＋還原掛 `data:write`
+     （product `require_capability("data", …)`）。切版不做權限過濾（那是 React 應用層的事）。 #}
+{% set breadcrumbItems = [
+  { label: "首頁", href: "2-1_qaRecord.html", i18nKey: "nav.home" },
+  { label: "資料配置", href: "", i18nKey: "nav.dataConfig" },
+  { label: "資料健檢", i18nKey: "nav.dataHealth" }
+] %}
+{# 檢查項目的閉合值域＝product `models.HEALTH_CHECK_TYPES` 十一項。這是本頁的**單一目錄**：
+     篩選下拉由它渲染。列上的 `checkLabel`／`checkLabelKey` 是這份目錄在示範列上的投影（切版
+     沒有查表可用；React 端是一張 `CHECK_LABEL_KEY` 表，不是第二份字典）。後三項（陳舊高頻／
+     從未被命中／高頻查無）要上游的問答紀錄才算得出來，只在「一併重算」開著的那一次掃描才更新
+     ——值域照樣列出來，篩選得到才看得出「這一類今天有沒有東西」。 #}
+{% set healthCheckTypes = [
+  { value: "near_duplicate", label: "近似重複", i18nKey: "health.checkNearDuplicate" },
+  { value: "conflict", label: "事實衝突", i18nKey: "health.checkConflict" },
+  { value: "expired", label: "內容已過期", i18nKey: "health.checkExpired" },
+  { value: "zero_value", label: "零知識價值", i18nKey: "health.checkZeroValue" },
+  { value: "non_question", label: "標題不是問句", i18nKey: "health.checkNonQuestion" },
+  { value: "duplicate_question", label: "同問法重複", i18nKey: "health.checkDuplicateQuestion" },
+  { value: "tag_gap", label: "標籤缺口", i18nKey: "health.checkTagGap" },
+  { value: "missing_as_of", label: "缺基準日", i18nKey: "health.checkMissingAsOf" },
+  { value: "stale_hot", label: "陳舊高頻", i18nKey: "health.checkStaleHot" },
+  { value: "never_hit", label: "從未被命中", i18nKey: "health.checkNeverHit" },
+  { value: "no_answer_topic", label: "高頻查無", i18nKey: "health.checkNoAnswerTopic" }
+] %}
+{# 上一次掃描的回應（`ScanOut`）。示範資料要自洽（GUIDELINE §6）：
+     `new + reopened + touched == findings`（6 ＋ 1 ＋ 26 ＝ 33，product `upsert_findings` 保證
+     這三個數是一個分割）；`records` 1180 ＜ 上限 20000；`files` 9 ＝ 掃到的 7 ＋ 沒掃到的 2。
+     `hitChecks` 演的是 **unavailable** 那一態：三態裡唯一會讓人「以為乾淨」的一種——沒有這一格，
+     「沒有陳舊高頻」與「這一次根本沒算」在畫面上長得一模一樣。 #}
+{% set healthScan = {
+    scannedAt: "2024/12/02 03:15",
+    datasets: 4,
+    files: 9,
+    records: 1180,
+    recordLimit: 20000,
+    findings: 33,
+    new: 6,
+    reopened: 1,
+    touched: 26,
+    hitChecks: "unavailable",
+    hitChecksDetail: "取不到問答紀錄，這一次沒有重算「陳舊高頻／從未被命中／高頻查無」：這段期間的問答筆數超過單次彙總上限（5000 則），請縮短時間窗再試。"
+} %}
+{# 這一次沒有看到的檔（`ScanOut.uncovered`）。兩種 `reason` 各演一筆：資料夾匯入的整份文件，
+     以及讀不開的來源檔。`reason` 與 `detail` 都是 API 回的資料（不翻）。 #}
+{% set healthUncovered = [
+  {
+    datasetId: 3, fileId: 41, filename: "2026關務法規彙編.pdf",
+    reason: "not_row_imported",
+    detail: "這個檔不是逐列匯入的（整份是一份文件，沒有欄位槽），健檢不會檢查它的內容——它不會出現在任何一項檢查裡。要讓內容也被檢查，請改用逐列匯入（Excel 欄位對照／PDF 結構化匯入）。"
+  },
+  {
+    datasetId: 7, fileId: 58, filename: "2026新制問答_v3.xlsx",
+    reason: "normalized_source_missing",
+    detail: "找不到這個檔的正規化來源檔，這一次沒有讀到它的任何一列。"
+  }
+] %}
+{# 總覽（`OverviewOut`）。**排序的證明就在示範資料裡**：`tag_gap` 的未處置數最多（24 筆）卻排在
+     最後——它涉及的記錄在這個窗內一次都沒有被命中（`hitSum` 0）；`expired` 只有 2 筆，但那兩筆
+     被命中 312 次，所以排第一。照發現數量排的話這兩組的位置會恰好對調，而那正是 spec 明文說
+     不要的排序。`totalOpen` 34 ＝ 2 ＋ 5 ＋ 1 ＋ 2 ＋ 24（五組未處置數加總）；每組的 `top` 逐筆
+     `hitSum` 遞減、加總 ≤ 該組的 `hitSum`（`near_duplicate` 96 ＞ 前五筆的 96 恰好相等，
+     因為那一組只有 5 筆；`tag_gap` 24 筆只列得下 5 筆，那正是 `topN` 要外顯的截斷）。 #}
+{% set healthOverview = {
+    windowDays: 7,
+    windowRange: "2024/11/25 03:15 ~ 2024/12/02 03:15",
+    totalOpen: 34,
+    totalHits: 4820,
+    topN: 5
+} %}
+{% set healthGroups = [
+  {
+    checkType: "expired", label: "內容已過期", labelKey: "health.checkExpired",
+    openCount: 2, hitSum: 312,
+    top: [
+      { id: 918, severityLabel: "確定", severityKey: "health.severityConfirmed", hitSum: 287, records: 1 },
+      { id: 922, severityLabel: "候選", severityKey: "health.severityCandidate", hitSum: 25, records: 1 }
+    ]
+  },
+  {
+    checkType: "near_duplicate", label: "近似重複", labelKey: "health.checkNearDuplicate",
+    openCount: 5, hitSum: 96,
+    top: [
+      { id: 901, severityLabel: "候選", severityKey: "health.severityCandidate", hitSum: 61, records: 3 },
+      { id: 903, severityLabel: "候選", severityKey: "health.severityCandidate", hitSum: 18, records: 2 },
+      { id: 907, severityLabel: "候選", severityKey: "health.severityCandidate", hitSum: 9, records: 3 },
+      { id: 911, severityLabel: "候選", severityKey: "health.severityCandidate", hitSum: 5, records: 2 },
+      { id: 915, severityLabel: "候選", severityKey: "health.severityCandidate", hitSum: 3, records: 2 }
+    ]
+  },
+  {
+    checkType: "conflict", label: "事實衝突", labelKey: "health.checkConflict",
+    openCount: 1, hitSum: 44,
+    top: [
+      { id: 930, severityLabel: "候選", severityKey: "health.severityCandidate", hitSum: 44, records: 2 }
+    ]
+  },
+  {
+    checkType: "non_question", label: "標題不是問句", labelKey: "health.checkNonQuestion",
+    openCount: 2, hitSum: 7,
+    top: [
+      { id: 940, severityLabel: "候選", severityKey: "health.severityCandidate", hitSum: 7, records: 1 },
+      { id: 941, severityLabel: "候選", severityKey: "health.severityCandidate", hitSum: 0, records: 1 }
+    ]
+  },
+  {
+    checkType: "tag_gap", label: "標籤缺口", labelKey: "health.checkTagGap",
+    openCount: 24, hitSum: 0,
+    top: [
+      { id: 950, severityLabel: "確定", severityKey: "health.severityConfirmed", hitSum: 0, records: 1 },
+      { id: 951, severityLabel: "確定", severityKey: "health.severityConfirmed", hitSum: 0, records: 1 },
+      { id: 952, severityLabel: "確定", severityKey: "health.severityConfirmed", hitSum: 0, records: 1 },
+      { id: 953, severityLabel: "確定", severityKey: "health.severityConfirmed", hitSum: 0, records: 1 },
+      { id: 954, severityLabel: "確定", severityKey: "health.severityConfirmed", hitSum: 0, records: 1 }
+    ]
+  }
+] %}
+{# 逐項清單（`FindingsOut`）。`total` 34 ＞ 本頁列數 ⇒ 分頁列演得到「這一頁不是全部」。
+     **這裡沒有命中次數欄**：`GET /health/findings` 不回它（命中數在上游的問答紀錄裡，那一支
+     是分頁的、不去碰上游），畫一個欄位出來就得自己算一份，而那會是第二個真相。
+     示範七列刻意把每一支處置動作與每一種狀態各演一次（GUIDELINE §5「每個分支結果都要看得到」）：
+       · 901 近似重複（跨資料集）→ dismiss ＋ merge ＋ disable
+       · 903 近似重複（**QA 集**）→ dismiss ＋ disable，**沒有 merge**：對 qa_direct 的完全命中
+         而言多問法是資產不是重複，併成一份就是把那幾種問法的直答一起停用掉（product
+         `_available_actions`：只要有任何一筆不是 `kind == "file"` 就不提供合併）
+       · 918 內容已過期，**處置過又回到未處置**（`status` open 而 `resolvedAt` 還在）→ 這一格
+         答的是「這一筆為什麼又出現了」
+       · 930 事實衝突 → dismiss ＋ supersede
+       · 940 標題不是問句 → dismiss ＋ add-phrasing
+       · 950 標籤缺口 → **只有 dismiss**：該標哪一個代碼是租戶自己才知道的業務值，系統挑一個
+         填進去就是替使用者做業務判斷
+       · 907 近似重複，**已處置**（`status` resolved）→ 可用動作只有 `undo`
+     `evidence` 的鍵與值、`recordKeys`（`document_id`）、`note` 都是 API 回的資料（不翻）。
+     `noteLines` 是 `note` 逐行拆開（product 用 `\n\n` 把「上一次的處置理由」與「為什麼又回來」
+     分成兩段；React 端是 `note.split("\n")` 去掉空行，切版沒有字串運算可用故列成陣列）。 #}
+{% set healthFindingsPage = { total: 34, perPage: 10, currentPage: 1 } %}
+{% set healthFindings = [
+  {
+    id: 901, checkLabel: "近似重複", checkLabelKey: "health.checkNearDuplicate", checkType: "near_duplicate",
+    severityLabel: "候選", severityKey: "health.severityCandidate",
+    statusLabel: "未處置", statusKey: "health.statusOpen", disposed: false, reopened: false,
+    datasetName: "",
+    firstSeenAt: "2024/11/18 04:02", lastSeenAt: "2024/12/02 03:15",
+    evidence: [
+      { key: "representative", value: "b7c1e93a4d20" },
+      { key: "min_similarity", value: "0.9231" },
+      { key: "max_similarity", value: "0.9884" }
+    ],
+    records: [
+      { key: "b7c1e93a4d20", title: "中國大陸產犬貓專案申請流程" },
+      { key: "1f4a08d6cc51", title: "從中國大陸輸入犬貓要怎麼申請" },
+      { key: "9e2b7710af83", title: "陸產犬貓專案輸入的申請步驟" }
+    ],
+    noteLines: [], resolvedAt: "", resolvedBy: "",
+    actions: ["dismiss", "merge", "disable"]
+  },
+  {
+    id: 903, checkLabel: "近似重複", checkLabelKey: "health.checkNearDuplicate", checkType: "near_duplicate",
+    severityLabel: "候選", severityKey: "health.severityCandidate",
+    statusLabel: "未處置", statusKey: "health.statusOpen", disposed: false, reopened: false,
+    datasetName: "客服直答集",
+    firstSeenAt: "2024/11/22 04:02", lastSeenAt: "2024/12/02 03:15",
+    evidence: [
+      { key: "representative", value: "5a30b1cf7e64" },
+      { key: "min_similarity", value: "0.9410" },
+      { key: "max_similarity", value: "0.9410" }
+    ],
+    records: [
+      { key: "5a30b1cf7e64", title: "退運的貨要付倉租嗎" },
+      { key: "c81d69204b7f", title: "退運貨物需要負擔倉租費用嗎" }
+    ],
+    noteLines: [], resolvedAt: "", resolvedBy: "",
+    actions: ["dismiss", "disable"]
+  },
+  {
+    id: 918, checkLabel: "內容已過期", checkLabelKey: "health.checkExpired", checkType: "expired",
+    severityLabel: "確定", severityKey: "health.severityConfirmed",
+    statusLabel: "未處置", statusKey: "health.statusOpen", disposed: false, reopened: true,
+    datasetName: "法規彙編",
+    firstSeenAt: "2024/10/03 04:02", lastSeenAt: "2024/12/02 03:15",
+    evidence: [
+      { key: "reasons", value: "valid_until_passed" },
+      { key: "valid_until", value: "2024-11-30" }
+    ],
+    records: [
+      { key: "3c9f52ea18b6", title: "2024 年度暫准通關證件費率" }
+    ],
+    noteLines: [
+      "同一份規定在 11 月底之前仍然有效，不算過期。",
+      "原判定的前提已改變（證據）。處置當時的證據：{\"reasons\":[\"superseded_by_newer\"],\"valid_until\":\"2025-11-30\"}"
+    ],
+    resolvedAt: "2024/11/12 09:41", resolvedBy: "42",
+    actions: ["dismiss", "disable"]
+  },
+  {
+    id: 930, checkLabel: "事實衝突", checkLabelKey: "health.checkConflict", checkType: "conflict",
+    severityLabel: "候選", severityKey: "health.severityCandidate",
+    statusLabel: "未處置", statusKey: "health.statusOpen", disposed: false, reopened: false,
+    datasetName: "法規彙編",
+    firstSeenAt: "2024/11/29 04:02", lastSeenAt: "2024/12/02 03:15",
+    evidence: [
+      { key: "fact_topic", value: "汽車貨物稅稅率" },
+      { key: "claims", value: "{\"7d18b0a3f5c2\":[\"15%\"],\"ae64c9017d3b\":[\"20%\"]}" }
+    ],
+    records: [
+      { key: "7d18b0a3f5c2", title: "小客車貨物稅怎麼算" },
+      { key: "ae64c9017d3b", title: "汽車貨物稅稅率調整說明" }
+    ],
+    noteLines: [], resolvedAt: "", resolvedBy: "",
+    actions: ["dismiss", "supersede"]
+  },
+  {
+    id: 940, checkLabel: "標題不是問句", checkLabelKey: "health.checkNonQuestion", checkType: "non_question",
+    severityLabel: "候選", severityKey: "health.severityCandidate",
+    statusLabel: "未處置", statusKey: "health.statusOpen", disposed: false, reopened: false,
+    datasetName: "常見問答",
+    firstSeenAt: "2024/11/30 04:02", lastSeenAt: "2024/12/02 03:15",
+    evidence: [
+      { key: "title", value: "退運作業" },
+      { key: "kind", value: "noun_phrase" }
+    ],
+    records: [
+      { key: "6b02da4e9137", title: "退運作業" }
+    ],
+    noteLines: [], resolvedAt: "", resolvedBy: "",
+    actions: ["dismiss", "add-phrasing"]
+  },
+  {
+    id: 950, checkLabel: "標籤缺口", checkLabelKey: "health.checkTagGap", checkType: "tag_gap",
+    severityLabel: "確定", severityKey: "health.severityConfirmed",
+    statusLabel: "未處置", statusKey: "health.statusOpen", disposed: false, reopened: false,
+    datasetName: "2026 新制問答",
+    firstSeenAt: "2024/12/02 03:15", lastSeenAt: "2024/12/02 03:15",
+    evidence: [
+      { key: "missing_slots", value: "note1" }
+    ],
+    records: [
+      { key: "0d7c34fb85a9", title: "新制上路後的申報期限" }
+    ],
+    noteLines: [], resolvedAt: "", resolvedBy: "",
+    actions: ["dismiss"]
+  },
+  {
+    id: 907, checkLabel: "近似重複", checkLabelKey: "health.checkNearDuplicate", checkType: "near_duplicate",
+    severityLabel: "候選", severityKey: "health.severityCandidate",
+    statusLabel: "已處置", statusKey: "health.statusResolved", disposed: true, reopened: false,
+    datasetName: "常見問答",
+    firstSeenAt: "2024/11/20 04:02", lastSeenAt: "2024/12/02 03:15",
+    evidence: [
+      { key: "representative", value: "44e1a7c0b96d" },
+      { key: "min_similarity", value: "0.9702" },
+      { key: "max_similarity", value: "0.9915" }
+    ],
+    records: [
+      { key: "44e1a7c0b96d", title: "郵包進口要不要繳稅" },
+      { key: "e903cb2517f4", title: "國際郵包的進口稅怎麼算" },
+      { key: "82fd6b0c4ae1", title: "寄回台灣的郵包會被課稅嗎" }
+    ],
+    noteLines: ["合併：保留 44e1a7c0b96d，併入 2 個問法，其餘 2 筆停用（未刪除）"],
+    resolvedAt: "2024/12/01 15:08", resolvedBy: "42",
+    actions: ["undo"]
+  }
+] %}
+<div class="flex-row column gap-16">
+    {% include "ui/breadcrumb/breadcrumb.html" %}
+</div>
+
+<p class="text-gray" data-i18n="health.intro">健檢把知識庫裡「答得出來、但答得不對」的那些資料撈出來：重複的問法、彼此打架的數字、已經過期卻還在被命中的答案。檢查本身只讀不寫，一個字都不會改到你的資料；會改資料的是下面那幾支處置動作，而它們每一支都留得下稽核、也都退得回去。</p>
+
+{# ── 立即重新檢查 ─────────────────────────────────────────────────────────────
+     `POST /health/scan`。要 `data:write` 而不是 `data:read`——它會寫發現清單（新增／重新開啟／
+     更新最後看到的時間），而且近似重複是兩兩比對的 n² 級計算。
+     「一併重算」是值載體 checkbox（值交給 React 讀去送 `include_hit_checks`）＝只掛 hook、
+     不掛 data-toast（GUIDELINE §5 組合矩陣②）。 #}
+<div class="block mt-16 flex-row column gap-16">
+    <div class="text-md text-bold" data-i18n="health.rescanTitle">立即重新檢查</div>
+    <label class="form-checkbox">
+        <input type="checkbox" class="js-health-hit-checks" aria-describedby="healthHitChecksHint">
+        <span data-i18n="health.includeHitChecks">一併重算需要問答紀錄的三項（陳舊高頻／從未被命中／高頻查無）</span>
+    </label>
+    <p id="healthHitChecksHint" class="text-gray" data-i18n="health.includeHitChecksHint">那三項要向上游取回整個時間窗的問答紀錄才算得出來，所以預設不重算：處置完立刻複驗時改的是資料，命中統計一秒之內不會變，開著跑只是每按一次多付一次上游取回，還會把「能不能複驗」綁在「統計上游活著」上。每日全量重掃一定會算它們。</p>
+    <div class="flex-row">
+        <button type="button" class="button button-primary js-health-scan"
+            data-toast="正在重新檢查…|檢查完成|資料筆數超過單次健檢上限，這一次一筆都沒有檢查|檢查失敗，請稍後再試"
+            data-i18n-data-toast="toast.healthScan" data-toast-type="info|success|warning|error"
+            data-i18n="health.rescan">重新檢查</button>
+    </div>
+</div>
+
+{# ── 上一次檢查 ───────────────────────────────────────────────────────────────
+     `ScanOut`。三個計數是一個分割（`new + reopened + touched == findings`）。
+     記錄數與上限並列：超過上限 product 一律 400 擋下、不靜默只掃前 N 筆——掃一半與掃完在清單上
+     看不出差別，而後者是「以為乾淨、其實沒掃」。 #}
+<div class="block mt-16 flex-row column gap-16">
+    <div class="text-md text-bold" data-i18n="health.lastScanTitle">上一次檢查</div>
+    <div class="flex-row gap-24 flex-wrap">
+        <p><span class="bold" data-i18n="health.scannedAt">檢查時間：</span><span>{{ healthScan.scannedAt }}</span></p>
+        <p><span class="bold" data-i18n="health.scanDatasets">資料集：</span><span>{{ healthScan.datasets }}</span></p>
+        <p><span class="bold" data-i18n="health.scanFiles">檔案：</span><span>{{ healthScan.files }}</span></p>
+        <p><span class="bold" data-i18n="health.scanRecords">讀到的記錄：</span><span>{{ healthScan.records }} / {{ healthScan.recordLimit }}</span></p>
+        <p><span class="bold" data-i18n="health.scanFindings">這一次算出來的發現：</span><span>{{ healthScan.findings }}</span></p>
+        <p><span class="bold" data-i18n="health.scanNew">新增：</span><span>{{ healthScan.new }}</span></p>
+        <p><span class="bold" data-i18n="health.scanReopened">重新開啟：</span><span>{{ healthScan.reopened }}</span></p>
+        <p><span class="bold" data-i18n="health.scanTouched">沿用既有：</span><span>{{ healthScan.touched }}</span></p>
+    </div>
+    <p class="text-gray" data-i18n="health.scanRecordLimitHint">「讀到的記錄」超過單次健檢上限時，這一次一筆都不檢查、也不寫任何發現：近似重複是兩兩比對，超過上限會讓檢查跑到沒有人等得下去，而「掃了一半」與「掃完了」在清單上長得一模一樣。</p>
+    {# 三項命中檢查這一次跑了沒有（`hit_checks`）。三態各自的意思常駐在旁邊——少了這一格，
+         「沒有陳舊高頻」與「這一次根本沒算陳舊高頻」在畫面上分不出來，而後者是本功能最常見的
+         「以為乾淨」入口。 #}
+    <div class="flex-row gap-24 flex-wrap">
+        <p><span class="bold" data-i18n="health.hitChecks">需要問答紀錄的三項：</span><span>{{ healthScan.hitChecks }}</span></p>
+    </div>
+    <p class="text-gray" data-i18n="health.hitChecksLegend">ran ＝這一次算了；not_requested ＝這一次沒有要求算（陳舊高頻／從未被命中／高頻查無這三類維持上一次的結果，那不等於「沒有問題」）；unavailable ＝要求了但取不到問答紀錄，原因見下一行。</p>
+    {% if healthScan.hitChecksDetail %}
+    <p class="text-red">{{ healthScan.hitChecksDetail }}</p>
+    {% endif %}
+    {# ⑤ 沒掃到的檔：逐檔列出來，不是靜靜跳過。`reason` 與 `detail` 是 API 回的資料（不翻）。 #}
+    <div class="text-md text-bold" data-i18n="health.uncoveredTitle">這一次沒有看到的檔</div>
+    <p class="text-gray" data-i18n="health.uncoveredHint">這些檔不在這一次的檢查範圍裡——它們的內容不會出現在任何一項檢查上。列出來是因為漏報比誤報嚴重：一份沒被看過的檔，在清單上長得跟「乾淨」一模一樣。</p>
+    <div class="table-container scrollTable">
+        <table class="default-table">
+            <colgroup>
+                <col style="width:60px; min-width:60px;">
+                <col style="min-width:220px;">
+                <col style="width:200px; min-width:200px;">
+                <col style="min-width:320px;">
+            </colgroup>
+            <thead>
+                <tr>
+                    <th data-i18n="common.seq">序號</th>
+                    <th data-i18n="common.file">檔案</th>
+                    <th data-i18n="health.uncoveredReason">原因代碼</th>
+                    <th data-i18n="health.uncoveredDetail">這代表什麼</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in healthUncovered %}
+                <tr data-dataset-id="{{ u.datasetId }}" data-file-id="{{ u.fileId }}">
+                    <td>{{ loop.index }}</td>
+                    <td>{{ u.filename }}</td>
+                    <td><code class="inline-code">{{ u.reason }}</code></td>
+                    <td>{{ u.detail }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="4" class="text-center text-gray" data-i18n="health.uncoveredNone">這一次每一個檔都看過了</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{# ── ① 健檢總覽：依影響排序 ───────────────────────────────────────────────────
+     `GET /health/findings/overview`。排序鍵是「這一組所有未處置發現涉及記錄的命中次數總和」，
+     同分時未處置數多者在前、再以檢查項目字典序（定序，同分的兩組不會每次重新整理換一次位置）。 #}
+<div class="block mt-16 flex-row column gap-16">
+    <div class="text-md text-bold" data-i18n="health.overviewTitle">健檢總覽（依影響排序）</div>
+    <div class="flex-row gap-24 flex-wrap">
+        <p><span class="bold" data-i18n="health.overviewWindow">命中統計時間窗：</span><span>{{ healthOverview.windowRange }}</span></p>
+        <p><span class="bold" data-i18n="health.overviewWindowDays">天數：</span><span>{{ healthOverview.windowDays }}</span></p>
+        <p><span class="bold" data-i18n="health.overviewTotalOpen">未處置發現：</span><span>{{ healthOverview.totalOpen }}</span></p>
+        <p><span class="bold" data-i18n="health.overviewTotalHits">這個窗內的總命中次數：</span><span>{{ healthOverview.totalHits }}</span></p>
+    </div>
+    <p class="text-gray" data-i18n="health.overviewSortHint">這張表不是照發現數量排的，是照「這一組涉及的記錄在這個時間窗內被檢索命中幾次」的總和排——一筆從沒被命中過的重複，遠不如一筆每天被命中 50 次的過期答案重要。命中次數已經扣掉批次回歸的重放，所以跑一次回歸不會把被重放的那幾筆推上頂端。</p>
+    <p class="text-gray" data-i18n="health.overviewWindowHint">時間窗預設 7 天而不是 30 天：上游一次最多彙總 5000 則問答，30 天的窗對稍微忙一點的租戶必然跨過那條線，總覽會變成永遠打不開。窗拉長之後打不開時，回應會說得出是這個原因。</p>
+    <div class="table-container scrollTable">
+        <table class="default-table">
+            <colgroup>
+                <col style="width:60px; min-width:60px;">
+                <col style="width:200px; min-width:200px;">
+                <col style="width:120px; min-width:120px;">
+                <col style="width:140px; min-width:140px;">
+                <col style="min-width:360px;">
+            </colgroup>
+            <thead>
+                <tr>
+                    <th data-i18n="common.seq">序號</th>
+                    <th data-i18n="health.checkType">檢查項目</th>
+                    <th class="text-center" data-i18n="health.openCount">未處置數</th>
+                    <th class="text-center" data-i18n="health.hitSum">命中次數總和</th>
+                    <th data-i18n="health.topFindings">最該先看的幾筆</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for g in healthGroups %}
+                <tr data-check-type="{{ g.checkType }}">
+                    <td>{{ loop.index }}</td>
+                    <td><span data-i18n="{{ g.labelKey }}">{{ g.label }}</span> <code class="inline-code">{{ g.checkType }}</code></td>
+                    <td class="text-center">{{ g.openCount }}</td>
+                    <td class="text-center">{{ g.hitSum }}</td>
+                    <td>
+                        <ul class="list-style-disc">
+                            {% for tf in g.top %}
+                            <li>
+                                <code class="inline-code">{{ tf.id }}</code>
+                                <span data-i18n="{{ tf.severityKey }}">{{ tf.severityLabel }}</span>
+                                <span data-i18n="health.hitCountLabel">命中次數：</span>{{ tf.hitSum }}
+                                <span data-i18n="health.recordCountLabel">涉及記錄：</span>{{ tf.records }}
+                            </li>
+                            {% else %}
+                            <li data-i18n="common.noData">無資料</li>
+                            {% endfor %}
+                        </ul>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <p class="text-gray" data-i18n="health.overviewTopHint">每一組只列前 5 筆，那不是分頁：它的用途是把最該先看的那幾筆撈到眼前，要逐筆看請用下面的清單。上面「標籤缺口」有 24 筆未處置、這裡只看得到 5 筆，其餘 19 筆在清單上。</p>
+</div>
+
+{# ── 逐項清單 ─────────────────────────────────────────────────────────────────
+     `GET /health/findings`。`status` 預設 `open`：這是一張未處置的工作清單，預設把已處置的一起
+     端出來會讓它每天變長、人看兩次就不看了。 #}
+<div class="block mt-16 flex-row column gap-16 js-accordion">
+    <div class="flex-row justify-content-between align-items-center flex-wrap gap-16">
+        <div class="text-md text-bold" data-i18n="health.findingsTitle">逐項清單</div>
+        <div class="btn-group">
+            <button type="button" class="button button-border button-sm js-expand-all" data-i18n="common.expandAll">全部展開</button>
+            <button type="button" class="button button-border button-sm js-collapse-all" data-i18n="common.collapseAll">全部收合</button>
+        </div>
+    </div>
+    <div class="form-group row flex-row mobile-column-xs gap-16">
+        <div class="label mobile-align">
+            <label for="healthStatusSelect" class="control-label" data-i18n="health.findingStatus">處置狀態</label>
+        </div>
+        <div class="field flex-row gap-16 mobile-column-xs">
+            <select id="healthStatusSelect" class="form-control js-health-status">
+                <option value="open" data-i18n="health.statusOpen">未處置</option>
+                <option value="resolved" data-i18n="health.statusResolved">已處置</option>
+                <option value="dismissed" data-i18n="health.statusDismissed">已判定為非問題</option>
+                <option value="all" data-i18n="common.all">全部</option>
+            </select>
+            <select id="healthCheckTypeSelect" class="form-control js-health-check-type" aria-label="檢查項目" data-i18n-aria-label="health.checkType">
+                <option value="" data-i18n="health.allCheckTypes">全部檢查項目</option>
+                {% for ct in healthCheckTypes %}
+                <option value="{{ ct.value }}" data-i18n="{{ ct.i18nKey }}">{{ ct.label }}</option>
+                {% endfor %}
+            </select>
+            <button type="button" class="button button-primary js-health-query"
+                data-toast="正在查詢資料...|查詢成功|載入資料失敗，請重新整理頁面"
+                data-i18n-data-toast="toast.query" data-toast-type="info|success|error"
+                data-i18n="action.query">查詢</button>
+        </div>
+    </div>
+    <p class="text-gray" data-i18n="health.findingsSortHint">這張清單照「檢查項目 → 發現編號」排，不是照影響排：命中次數住在上游的問答紀錄裡、排不進資料庫的排序，而這張清單是分頁的——在一頁之內排等於假的排序，第 2 頁那筆每天被命中 50 次的永遠上不了第 1 頁。要照影響看請用上面的總覽。</p>
+    <div class="table-container scrollTable">
+        <table class="default-table">
+            <colgroup>
+                <col style="width:40px; min-width:40px;">
+                <col style="width:90px; min-width:90px;">
+                <col style="width:150px; min-width:150px;">
+                <col style="width:110px; min-width:110px;">
+                <col style="width:180px; min-width:180px;">
+                <col style="min-width:200px;">
+                <col style="width:110px; min-width:110px;">
+                <col style="width:150px; min-width:150px;">
+            </colgroup>
+            <thead>
+                <tr>
+                    <th><span class="sr-only" data-i18n="common.expandRow">展開表格</span></th>
+                    <th data-i18n="health.findingNo">發現編號</th>
+                    <th data-i18n="health.checkType">檢查項目</th>
+                    <th class="text-center" data-i18n="health.severity">確定程度</th>
+                    <th data-i18n="health.findingStatus">處置狀態</th>
+                    <th data-i18n="common.dataset">資料集</th>
+                    <th class="text-center" data-i18n="health.recordCount">涉及記錄</th>
+                    <th data-i18n="health.lastSeenAt">最後看到</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for f in healthFindings %}
+                <tr data-finding-id="{{ f.id }}" data-check-type="{{ f.checkType }}">
+                    <td>
+                        <button type="button" class="button accordion-btn" aria-expanded="false" title="展開表格" data-i18n-title="common.expandRow">
+                            <span class="sr-only" data-i18n="common.expandRow">展開表格</span>
+                        </button>
+                    </td>
+                    <td>{{ f.id }}</td>
+                    <td><span data-i18n="{{ f.checkLabelKey }}">{{ f.checkLabel }}</span></td>
+                    <td class="text-center"><span data-i18n="{{ f.severityKey }}">{{ f.severityLabel }}</span></td>
+                    <td>
+                        <span data-i18n="{{ f.statusKey }}">{{ f.statusLabel }}</span>
+                        {# ② 處置過又回到未處置：清單這一層就看得到，不必先展開。判準是 API 給得出來的
+                             ——`status` 是 `open` 而 `resolved_at` 還在（product 重新開啟與 `/undo` 都
+                             刻意留著 `resolved_by`／`resolved_at`：誰在什麼時候做過那個處置是稽核要
+                             查得到的事實，前提改變不會讓它沒發生過）。 #}
+                        {% if f.reopened %}<span class="text-red" data-i18n="health.reopenedTag">（處置過又回來）</span>{% endif %}
+                    </td>
+                    <td>
+                        {% if f.datasetName %}{{ f.datasetName }}{% else %}<span class="text-gray" data-i18n="health.crossDataset">跨資料集或不屬於任何資料集</span>{% endif %}
+                    </td>
+                    <td class="text-center">{{ f.records.length }}</td>
+                    <td>{{ f.lastSeenAt }}</td>
+                </tr>
+                <tr class="detail-row">
+                    <td colspan="8" class="detail-cell">
+                        <div class="accordion-content">
+                            {# ② 「這一筆為什麼又出現了」。product 的 `_reopen_note` 把「改的是證據還是
+                                 確定程度」與處置當時的證據原文一起寫進 `note`，因為這一次掃描的證據
+                                 馬上要覆蓋掉它、`note` 是它唯一留得住的地方。下面那幾行是 API 回的
+                                 資料（不翻），旁邊那句解釋才是 chrome。 #}
+                            {% if f.reopened %}
+                            <div class="block block-sm border corner-md flex-row column gap-8 mb-16">
+                                <div class="text-bold text-red" data-i18n="health.reopenedTitle">這一筆處置過，又回到未處置</div>
+                                <p class="text-gray" data-i18n="health.reopenedHint">已處置的發現只有在「原判定的前提改變」時才會回到清單上——也就是這一次算出來的證據，或確定程度，與當初做判定時的那一份不一樣了。前提沒變的話，重新檢查只會更新「最後看到」的時間，不會把它推回來。被還原的處置也會回到這裡。下面是系統寫下的原因，含當初處置時的證據原文。</p>
+                                <div class="flex-row gap-24 flex-wrap">
+                                    <p><span class="bold" data-i18n="health.lastDisposalAt">上一次處置時間：</span><span>{{ f.resolvedAt }}</span></p>
+                                    <p><span class="bold" data-i18n="health.lastDisposalBy">處置人（使用者編號）：</span><span>{{ f.resolvedBy }}</span></p>
+                                </div>
+                                {% for line in f.noteLines %}
+                                <p>{{ line }}</p>
+                                {% else %}
+                                <p data-i18n="common.noData">無資料</p>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            <table class="accordion-table">
+                                <tbody>
+                                    <tr>
+                                        <th data-i18n="health.evidence">證據</th>
+                                        <td>
+                                            <ul class="list-style-disc">
+                                                {% for e in f.evidence %}
+                                                <li><code class="inline-code">{{ e.key }}</code> {{ e.value }}</li>
+                                                {% else %}
+                                                <li data-i18n="common.noData">無資料</li>
+                                                {% endfor %}
+                                            </ul>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th data-i18n="health.involvedRecords">涉及的記錄</th>
+                                        <td>
+                                            <ul class="list-style-disc">
+                                                {% for r in f.records %}
+                                                <li><code class="inline-code">{{ r.key }}</code> {{ r.title }}</li>
+                                                {% else %}
+                                                <li data-i18n="common.noData">無資料</li>
+                                                {% endfor %}
+                                            </ul>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th data-i18n="health.firstSeenAt">第一次看到</th>
+                                        <td>{{ f.firstSeenAt }}</td>
+                                    </tr>
+                                    {% if f.disposed %}
+                                    <tr>
+                                        <th data-i18n="health.disposalNote">處置紀錄</th>
+                                        <td>
+                                            <div class="flex-row gap-24 flex-wrap">
+                                                <p><span class="bold" data-i18n="health.lastDisposalAt">上一次處置時間：</span><span>{{ f.resolvedAt }}</span></p>
+                                                <p><span class="bold" data-i18n="health.lastDisposalBy">處置人（使用者編號）：</span><span>{{ f.resolvedBy }}</span></p>
+                                            </div>
+                                            {% for line in f.noteLines %}
+                                            <p>{{ line }}</p>
+                                            {% else %}
+                                            <p data-i18n="common.noData">無資料</p>
+                                            {% endfor %}
+                                        </td>
+                                    </tr>
+                                    {% endif %}
+                                </tbody>
+                            </table>
+                            {# ③ 處置動作。**渲染哪幾支由 `available_actions` 決定，前端不自己算**：
+                                 product 的 `_assert_action_available` 與清單的 `available_actions` 是
+                                 同一支函式算出來的——分開算的話，介面藏起了「合併」而端點照收，
+                                 一支 curl 就能對 QA 集做掉那件「正確處置恰好相反」的事。
+                                 每一支各自是一小塊表單（要填的東西不一樣），送出鈕依 GUIDELINE §5
+                                 矩陣③列出它所有可能的結果；欄位是值載體（矩陣②）只掛 hook。 #}
+                            <div class="flex-row column gap-16 mt-16">
+                                <div class="text-bold" data-i18n="health.actionsTitle">處置動作</div>
+                                <p class="text-gray" data-i18n="health.actionsHint">這幾支不是「標記已讀」，每一支都會真的改到你的資料——唯一的例外是「判定為非問題」，它只寫發現這一列。改法一律是停用或補寫，不刪除；每一支都留得下稽核，也都退得回去。這一筆能用哪幾支由後端決定，畫面只畫得出後端提供的那幾支。</p>
+                                {% for action in f.actions %}
+                                {% if action == "dismiss" %}
+                                <div class="block block-sm border corner-md flex-row column gap-8" data-health-action="dismiss">
+                                    <div class="text-bold" data-i18n="health.actionDismiss">判定為非問題</div>
+                                    <p class="text-gray" data-i18n="health.actionDismissHint">五支裡唯一不動資料的一支：只在這一列記下「誰在什麼時候判定它不是問題、理由是什麼」。理由必填——空白的理由等於只查得到前半段，下次換人還是要重判一次。判定之後這一筆不再出現在未處置清單上，直到證據或確定程度真的變了才會回來。</p>
+                                    <div class="form-group">
+                                        <div class="label">
+                                            <label for="healthDismissReason-{{ f.id }}" class="control-label required" data-i18n="health.disposalReason">判定理由</label>
+                                        </div>
+                                        <div class="field">
+                                            <textarea id="healthDismissReason-{{ f.id }}" class="form-control js-health-reason" rows="2" placeholder="為什麼判定它不是問題" data-i18n-placeholder="health.dismissReasonPlaceholder" required></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="flex-row">
+                                        <button type="button" class="button button-primary button-sm js-health-dismiss"
+                                            data-toast="已判定為非問題（資料一個字都沒動）|請填寫判定理由|這個發現已經處置過了，下一次檢查會依前提是否改變決定要不要把它推回清單|操作失敗，請稍後再試"
+                                            data-i18n-data-toast="toast.healthDismiss" data-toast-type="success|warning|warning|error"
+                                            data-i18n="health.actionDismiss">判定為非問題</button>
+                                    </div>
+                                </div>
+                                {% elif action == "merge" %}
+                                <div class="block block-sm border corner-md flex-row column gap-8" data-health-action="merge">
+                                    <div class="text-bold" data-i18n="health.actionMerge">合併問法</div>
+                                    <p class="text-gray" data-i18n="health.actionMergeHint">把其餘幾筆的問法併進你選的那一筆的內容開頭，其餘幾筆停用、不刪除。理由是一份文件承載所有問法：全刪會讓那幾種問法的使用者查不到，全留則在檢索時吃掉前十六名的好幾個名額。這一支在 QA 集上不提供——對直答而言多問法是資產不是重複，併成一份就是把那幾種問法的直答一起停用掉。</p>
+                                    <div class="form-group">
+                                        <div class="label">
+                                            <span id="healthKeepLabel-{{ f.id }}" class="control-label required" data-i18n="health.mergeKeep">保留哪一筆</span>
+                                        </div>
+                                        <div class="field flex-row column gap-8" role="radiogroup" aria-labelledby="healthKeepLabel-{{ f.id }}">
+                                            {% for r in f.records %}
+                                            <label class="form-radio">
+                                                <input type="radio" name="healthKeep-{{ f.id }}" class="js-health-keep" value="{{ r.key }}">
+                                                <span>{{ r.title }}（{{ r.key }}）</span>
+                                            </label>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    <div class="flex-row">
+                                        <button type="button" class="button button-primary button-sm js-health-merge"
+                                            data-toast="已合併（問法併入保留的那一筆，其餘停用未刪除）|請選擇要保留哪一筆|這個租戶還沒有宣告「有效期」維度，被併的那幾筆停用不了|這個發現已經處置過了，下一次檢查會依前提是否改變決定要不要把它推回清單|操作失敗，請稍後再試"
+                                            data-i18n-data-toast="toast.healthMerge" data-toast-type="success|warning|warning|warning|error"
+                                            data-i18n="health.actionMerge">合併問法</button>
+                                    </div>
+                                </div>
+                                {% elif action == "disable" %}
+                                <div class="block block-sm border corner-md flex-row column gap-8" data-health-action="disable">
+                                    <div class="text-bold" data-i18n="health.actionDisable">停用（不刪除）</div>
+                                    <p class="text-gray" data-i18n="health.actionDisableHint">把這幾筆的有效期改寫成一個已經過去的哨兵日期，讓它們離開檢索集合。資料還在來源檔與索引裡，只是有效期已過；判斷錯了，把那一格改回去就回來了。前提是這個租戶要先在「標籤維度」宣告一個角色是 valid_until 的日期維度，資料上才有地方表達「已停用」——沒有宣告的話這一支會被擋下，並指名缺的是什麼。一筆都不勾＝停用這個發現涉及的全部記錄。</p>
+                                    <div class="form-group">
+                                        <div class="label">
+                                            <span id="healthDisableLabel-{{ f.id }}" class="control-label" data-i18n="health.disableRecords">要停用哪幾筆</span>
+                                        </div>
+                                        <div class="field flex-row column gap-8" role="group" aria-labelledby="healthDisableLabel-{{ f.id }}">
+                                            {% for r in f.records %}
+                                            <label class="form-checkbox">
+                                                <input type="checkbox" class="js-health-disable-record" value="{{ r.key }}" checked>
+                                                <span>{{ r.title }}（{{ r.key }}）</span>
+                                            </label>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="label">
+                                            <label for="healthDisableReason-{{ f.id }}" class="control-label required" data-i18n="health.disposalReason">判定理由</label>
+                                        </div>
+                                        <div class="field">
+                                            <textarea id="healthDisableReason-{{ f.id }}" class="form-control js-health-reason" rows="2" placeholder="為什麼要停用這幾筆" data-i18n-placeholder="health.disableReasonPlaceholder" required></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="flex-row">
+                                        <button type="button" class="button button-primary button-sm js-health-disable"
+                                            data-toast="已停用（有效期設成哨兵日期，未刪除）|請填寫判定理由|這個租戶還沒有宣告「有效期」維度，資料上沒有地方可以表達停用|這個發現已經處置過了，下一次檢查會依前提是否改變決定要不要把它推回清單|操作失敗，請稍後再試"
+                                            data-i18n-data-toast="toast.healthDisable" data-toast-type="success|warning|warning|warning|error"
+                                            data-i18n="health.actionDisable">停用（不刪除）</button>
+                                    </div>
+                                </div>
+                                {% elif action == "supersede" %}
+                                <div class="block block-sm border corner-md flex-row column gap-8" data-health-action="supersede">
+                                    <div class="text-bold" data-i18n="health.actionSupersede">設取代參照</div>
+                                    <p class="text-gray" data-i18n="health.actionSupersedeHint">在被取代的那幾筆上寫下「我已經被哪一份取代」，讓時效收斂跟著指標找到現行版。填進去的值是現行版所在檔案的外部主鍵，所以取代參照的粒度是檔案：現行版與被取代的那幾筆不能在同一個檔案裡，而現行版所在的檔案也必須有外部主鍵，否則那會是一個指不到東西的斷掉指標。這一支同樣要租戶先宣告一個角色是 superseded_by 的維度。</p>
+                                    <div class="form-group">
+                                        <div class="label">
+                                            <span id="healthCurrentLabel-{{ f.id }}" class="control-label required" data-i18n="health.supersedeCurrent">哪一筆是現行版</span>
+                                        </div>
+                                        <div class="field flex-row column gap-8" role="radiogroup" aria-labelledby="healthCurrentLabel-{{ f.id }}">
+                                            {% for r in f.records %}
+                                            <label class="form-radio">
+                                                <input type="radio" name="healthCurrent-{{ f.id }}" class="js-health-current" value="{{ r.key }}">
+                                                <span>{{ r.title }}（{{ r.key }}）</span>
+                                            </label>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    <p class="text-gray" data-i18n="health.supersedeRestHint">沒有被選成現行版的那幾筆，就是被它取代的那幾筆。</p>
+                                    <div class="flex-row">
+                                        <button type="button" class="button button-primary button-sm js-health-supersede"
+                                            data-toast="已設取代參照|請選擇哪一筆是現行版|現行版所在的檔案沒有外部主鍵，指不到東西的取代參照是一個斷掉的指標|這幾筆與現行版在同一個檔案裡，取代參照的粒度是檔案，同檔案請改用合併或停用|這個租戶還沒有宣告「取代參照」維度|操作失敗，請稍後再試"
+                                            data-i18n-data-toast="toast.healthSupersede" data-toast-type="success|warning|warning|warning|warning|error"
+                                            data-i18n="health.actionSupersede">設取代參照</button>
+                                    </div>
+                                </div>
+                                {% elif action == "add-phrasing" %}
+                                <div class="block block-sm border corner-md flex-row column gap-8" data-health-action="add-phrasing">
+                                    <div class="text-bold" data-i18n="health.actionAddPhrasing">補寫問法</div>
+                                    <p class="text-gray" data-i18n="health.actionAddPhrasingHint">把使用者真的會打進來的問法新增為一列，與原標題並存、共用同一個答案，不取代原標題——原字面往往才是真實的輸入，改掉它等於把一種會被問到的問法從索引裡拿走。新列會複製原列的每一個欄位、只換標題，所以標籤、有效期、基準日全部跟著走。</p>
+                                    <div class="form-group">
+                                        <div class="label">
+                                            <span id="healthPhrasingRecordLabel-{{ f.id }}" class="control-label required" data-i18n="health.addPhrasingRecord">補寫在哪一筆</span>
+                                        </div>
+                                        <div class="field flex-row column gap-8" role="radiogroup" aria-labelledby="healthPhrasingRecordLabel-{{ f.id }}">
+                                            {% for r in f.records %}
+                                            <label class="form-radio">
+                                                <input type="radio" name="healthPhrasingRecord-{{ f.id }}" class="js-health-phrasing-record" value="{{ r.key }}">
+                                                <span>{{ r.title }}（{{ r.key }}）</span>
+                                            </label>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="label">
+                                            <label for="healthPhrasing-{{ f.id }}" class="control-label required" data-i18n="health.addPhrasingText">補寫的問法</label>
+                                        </div>
+                                        <div class="field">
+                                            <input type="text" id="healthPhrasing-{{ f.id }}" class="form-control js-health-phrasing" placeholder="使用者實際會怎麼問這一題" data-i18n-placeholder="health.addPhrasingPlaceholder" required>
+                                        </div>
+                                    </div>
+                                    <div class="flex-row">
+                                        <button type="button" class="button button-primary button-sm js-health-add-phrasing"
+                                            data-toast="已補寫問法（新增為一列，原標題保留）|請填寫要補寫的問法|補寫的問法與原標題逐字相同，新增一列只會多出一筆完全重複的記錄|這個發現已經處置過了，下一次檢查會依前提是否改變決定要不要把它推回清單|操作失敗，請稍後再試"
+                                            data-i18n-data-toast="toast.healthAddPhrasing" data-toast-type="success|warning|warning|warning|error"
+                                            data-i18n="health.actionAddPhrasing">補寫問法</button>
+                                    </div>
+                                </div>
+                                {% elif action == "undo" %}
+                                {# ④ 還原。五種處置都退得回去，但不是永遠成功：判準是「我們寫出去的那一份
+                                     還在不在」，不是「試著算出反向操作」。合併把問法併進內容開頭那一行，
+                                     而再併一次是就地擴充同一行——同一筆保留者被第二個發現又併過之後，
+                                     那一行同時裝著兩次的問法，此時把舊內容寫回去會連第二次的一起抹掉，
+                                     只拿掉這一次的又會留下一個誰都沒寫過的中間狀態。兩個都不是反向操作，
+                                     所以後端 409 指名，而不是挑一個寫下去。 #}
+                                <div class="block block-sm border corner-md flex-row column gap-8" data-health-action="undo">
+                                    <div class="text-bold" data-i18n="health.actionUndo">還原這次處置</div>
+                                    <p class="text-gray" data-i18n="health.actionUndoHint">把上一次處置對資料做的事退回去，並讓這一筆回到未處置。還原不是永遠成功的：它只在「處置寫下去的那一份原封不動」時才是確定的——資料在那之後又被改過的話，把舊值寫回去會連後來那次改動一起抹掉，所以後端會擋下並指名是哪一格對不上。合併尤其如此：同一筆被第二個發現再併一次之後，那一行同時裝著兩次的問法，沒有任何一種寫法算得上是反向操作。被擋下來的時候請直接編輯資料，不要用還原。</p>
+                                    <div class="form-group">
+                                        <div class="label">
+                                            <label for="healthUndoReason-{{ f.id }}" class="control-label required" data-i18n="health.undoReason">還原理由</label>
+                                        </div>
+                                        <div class="field">
+                                            <textarea id="healthUndoReason-{{ f.id }}" class="form-control js-health-undo-reason" rows="2" placeholder="為什麼要把這次處置退回去" data-i18n-placeholder="health.undoReasonPlaceholder" required></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="flex-row">
+                                        <button type="button" class="button button-border button-sm js-health-undo"
+                                            data-toast="已還原這次處置，這一筆回到未處置|請填寫還原理由|保留的那一筆內容已經不是這次合併寫出去的那一份（多半是又被另一個發現併過一次），把舊內容寫回去會連那一次的問法一起抹掉|處置寫下去的那一格在那之後又被改過，還原的前提不成立，請直接編輯資料|查不到這個發現的處置紀錄，沒有辦法知道當初改了哪一格、把什麼值蓋掉了|操作失敗，請稍後再試"
+                                            data-i18n-data-toast="toast.healthUndo" data-toast-type="success|warning|warning|warning|warning|error"
+                                            data-i18n="health.actionUndo">還原這次處置</button>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="8" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {# 分頁：`total` 是後端算出來的全部筆數，本頁只是其中一頁——⑥「這一頁不是全部」要看得見。 #}
+    {% set total = healthFindingsPage.total %}
+    {% set perPage = healthFindingsPage.perPage %}
+    {% set currentPage = healthFindingsPage.currentPage %}
+    {% include "components/pager-row/pager-row.html" %}
+</div>
