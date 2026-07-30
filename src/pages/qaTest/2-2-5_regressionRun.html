@@ -222,7 +222,11 @@ permalink: 2-2-5_regressionRun.html
                     <label for="baselineSelect" class="control-label" data-i18n="regression.baselineRun">基準執行</label>
                 </div>
                 <div class="field">
+                    {# 空值那一顆是**結構**不是裝飾：「還沒挑基準」得有一顆 option 承載它，
+                         否則下拉一開頁就顯示著第一次執行、而「比較」鈕是停用的——畫面說已經挑好了、
+                         系統說還沒。示範仍停在「已經挑了 #310」那一態（下面五個桶子只有那一態才在）。 #}
                     <select id="baselineSelect" class="form-control js-baseline-select">
+                        <option value="" data-i18n="common.pleaseSelect">請選擇</option>
                         <option value="310" selected>#310（2026/07/27 11:02）</option>
                         <option value="309">#309（2026/07/26 09:30）</option>
                     </select>
