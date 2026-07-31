@@ -93,7 +93,7 @@ permalink: 5-6-3_platformServiceKeys.html
      用途名稱與範圍是值載體（GUIDELINE §5 組合矩陣②）＝只掛 hook、不掛 data-toast。 #}
 <div class="block mb-16 flex-row column gap-16" data-platform-role="admin">
     <div class="text-md text-bold" data-i18n="serviceKey.issueTitle">核發一把新憑證</div>
-    <p class="text-warning" data-i18n="serviceKey.issueBeforeWarn">按下核發之後，明碼只會顯示這一次。系統只保存它的 SHA-256 雜湊，關掉這一頁、重新整理、或按下「我已經保存好」之後就再也拿不回來——沒有「再看一次」這個選項，只能撤銷重發。請先準備好要把它貼到哪裡，再按核發。</p>
+    <p class="text-red" data-i18n="serviceKey.issueBeforeWarn">按下核發之後，明碼只會顯示這一次。系統只保存它的 SHA-256 雜湊，關掉這一頁、重新整理、或按下「我已經保存好」之後就再也拿不回來——沒有「再看一次」這個選項，只能撤銷重發。請先準備好要把它貼到哪裡，再按核發。</p>
     <p class="text-gray" data-i18n="serviceKey.issueDestinationHint">正式環境的目的地是 Secret Manager 的 product-health-scan-key：用下面的複製鈕複製，再貼進祕密管理，不要用終端機把明碼打出來——那會把它留在 shell 歷史、留在 ps 的參數列上，也留在任何一份螢幕錄影裡。</p>
     <div class="flex-row flex-wrap gap-16 mobile-column sm-gap-16">
         <div class="col-6-md col-12-sm">
@@ -144,7 +144,7 @@ permalink: 5-6-3_platformServiceKeys.html
      欄位是 readonly、預設遮蔽；顯示/隱藏由 ui/reveal-input 委派切 type（純前端互動，無業務）。 #}
 <div class="block mb-16 flex-row column gap-16 js-service-key-issued" data-platform-role="admin">
     <div class="text-md text-bold" data-i18n="serviceKey.plainTitle">剛核發的明碼</div>
-    <p class="text-warning" data-i18n="serviceKey.plainOnce">這是這把憑證唯一一次顯示明碼。離開或重新整理這一頁之後，畫面上就只剩下末四碼；系統本身也只有雜湊，沒有任何人能把它讀回來。</p>
+    <p class="text-red" data-i18n="serviceKey.plainOnce">這是這把憑證唯一一次顯示明碼。離開或重新整理這一頁之後，畫面上就只剩下末四碼；系統本身也只有雜湊，沒有任何人能把它讀回來。</p>
     <div class="flex-row align-items-center gap-8 flex-wrap">
         <div class="col-6-md col-12-sm">
             <div class="form-group">

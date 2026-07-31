@@ -5,7 +5,9 @@
      id 不是轉換契約（React 不靠 getElementById）；真正要原樣保留的業務掛點是 .js-apply-title / .js-confirm-apply（§5）。
      確認鈕 toast 只列 success|error（key toast.applyProductionCompare、2 段）：權限不足在 React 走**獨立的**
      apply-settings-no-permission-modal（saas apps/web ab-test/page.tsx 的 setNoPermOpen），不是本鈕的 toast 分支，
-     故不列（§5：分支要對得上真實結果的**機制**）。單一測試頁的 apply-settings-modal 才把權限不足演成 inline warning。 #}
+     故不列（§5：分支要對得上真實結果的**機制**）。單一測試頁的 apply-settings-modal 才把權限不足演成 inline warning。
+     `.sample-count` 同樣是凍結前端的掛點（`js/abTest.js` 的 `$col.find('input.sample-count')`），
+     本 repo scss/js 零引用，寬度來自同掛的 `.w100`（§4：無樣式 class 要寫出真 app 出處）。 #}
 {% set settingColumns = [
     { title: "原設定", titleKey: "modals.originalSettings", retrieval: "配置一", llm: "OpenAI gpt-4o-mini", sampleMin: "4", sampleMax: "6" },
     { title: "設定B", titleKey: "modals.settingB", retrieval: "配置一", llm: "OpenAI gpt-4o-mini", sampleMin: "4", sampleMax: "6", jsApplyTitle: true }
