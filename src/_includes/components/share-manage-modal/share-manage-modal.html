@@ -60,9 +60,7 @@
                         {% for row in shareRows %}
                         <div class="flex-row align-items-center gap-8 flex-wrap">
                             <input class="form-control flex-1" aria-label="分享連結" data-i18n-aria-label="modals.shareLink" readonly value="{{ row.url }}">
-                            <span class="text-gray">
-                                {% if row.expires %}<span data-i18n="share.expiresAt">到期：</span>{{ row.expires }}{% else %}<span data-i18n="share.neverExpires">永久有效</span>{% endif %}
-                            </span>
+                            <span class="text-gray">{% if row.expires %}<span data-i18n="share.expiresAt">到期：</span>{{ row.expires }}{% else %}<span data-i18n="share.neverExpires">永久有效</span>{% endif %}</span>
                             {% if row.state == "revoked" %}<span class="text-gray" data-i18n="widget.revoked">已撤銷</span>
                             {% elif row.state == "expired" %}<span class="text-gray" data-i18n="share.stateExpired">已過期</span>
                             {% else %}<span class="text-bold" data-i18n="share.stateActive">生效中</span>{% endif %}

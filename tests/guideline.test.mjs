@@ -1016,8 +1016,25 @@ test("§4-2 同一個 i18n key 的繁中原文全站必須一致", () => {
         // title 欄位也收：catalog 的 section 列用 title:（round18 抓到的收集盲區）。
         // [^{}] 不准跨物件邊界：header.html 的父項 i18nKey 後面緊接 submenu 的第一個 label，
         // 用 [^}] 會把父 key 配到子 label 上，變成假陽性。
-        for (const m of html.matchAll(/(?:label|title):\s*"([^"]*)"[^{}]*?i18nKey:\s*"([\w.]+)"/g)) record(m[2], m[1].trim(), f);
-        for (const m of html.matchAll(/i18nKey:\s*"([\w.]+)"[^{}]*?(?:label|title):\s*"([^"]*)"/g)) record(m[1], m[2].trim(), f);
+        // round32：原本只認 label/title＋i18nKey 兩個欄位名，於是 severityKey／labelKey／descKey／
+        // statusKey／placeholderKey… 那一整族（~200 對）的繁中側從來沒進過這條測試的視野——
+        // 以突變證明過：把同一顆 key 的其中一處繁中改掉，這條測試照樣綠。
+        // 判準改成**看形狀、不列舉欄位名**：任何 `<stem>Key` 的繁中夥伴，是同一個物件裡的
+        // `<stem>` 或 `<stem>Label`（severityKey↔severityLabel、labelKey↔label、descKey↔desc…），
+        // `i18nKey`↔`label`/`title` 是既有正典特例。逐個「不含巢狀大括號的 { … }」收欄位再配對，
+        // 才不會跨物件邊界（header.html 的父項 key 會被配到 submenu 第一個 label 上）。
+        for (const obj of html.matchAll(/\{([^{}]*)\}/g)) {
+            const fields = new Map();
+            for (const fm of obj[1].matchAll(/(\w+):\s*"([^"]*)"/g)) fields.set(fm[1], fm[2]);
+            for (const [name, val] of fields) {
+                if (!name.endsWith("Key") || !/^[\w.]+$/.test(val) || !val.includes(".")) continue;
+                const stem = name.slice(0, -3);
+                // `<stem>Label` 優先於 `<stem>`：同一個物件常常兩個都有，而 `<stem>` 放的是
+                // 機器碼（`status: "running"` ↔ `statusLabel: "進行中"`），拿它當繁中會假陽性。
+                const zh = stem === "i18n" ? fields.get("label") ?? fields.get("title") : fields.get(`${stem}Label`) ?? fields.get(stem);
+                if (zh) record(val, zh.trim(), f);
+            }
+        }
     }
     // 元件 js 的 t("key", "繁中") fallback 也是「同 key 的繁中原文」——js 與 markup 各持一份時必須同字
     // （round18 抓到的收集盲區：pagination.js 的 fallback 從未進過這條測試的視野）
