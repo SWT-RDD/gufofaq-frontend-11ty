@@ -1,6 +1,9 @@
 {# 資料取自真實 app pages/dataImport/1-1-1_dataImport.html 檔案匯入類型選單（.upload-card-list 內 4 張卡片）。
      真實 app 點卡片後由業務 JS 驗證+上傳+取 sn 才跳頁（§5 不做）；此處提供「簡化版靜態跳轉」：
      卡片直接連到該類型的上傳頁（excel→1-1-2、pdf/word/image→1-2-1）。
+     真 app 跳頁時帶 `?type=` 讓 1-2-1 在執行期把 accept／說明文字收窄成該類型
+     （dataImport.js:193-205 的 switch、uploadFilePdf.js:98-121 的查表）；切版沒有查詢字串，
+     故 1-2-1 的 accept 取三種的聯集——見該頁檔頭。`data-type` 就是 React 要讀去組路由參數的那顆。
      卡片是可點的東西，一律是真 `<a>`（§4）；不做「不跳轉的卡片」——那會退化成 javascript:void(0) 死連結。 #}
 {# 示範資料用元件專屬名 uploadCards（§6：set 是頁面全域，泛用名會與使用頁同名變數互相覆蓋） #}
 {% set uploadCards = [

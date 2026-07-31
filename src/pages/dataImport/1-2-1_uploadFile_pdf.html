@@ -26,17 +26,22 @@ permalink: 1-2-1_uploadFile_pdf.html
     {% include "components/step-btn-wrap/step-btn-wrap.html" %}
 </div>
 
-{# 上傳區：這一條是**非結構化文件**流程（PDF 與 Word 同一條），可多選、上限 30MB，與元件預設
-     （.xlsx、單檔、10MB）不同，由本頁 set 覆寫（§6）。
-     accept 收 `.pdf` 與 `.docx`：product 的 `import_pdf` 與 `batch_import_documents` 兩支都以副檔名
-     分派這兩種（gufofaq-saas services/product/app/routers/datasets.py），1-1-1 的上傳選單也有 WORD 卡
-     指向本頁。只寫 `.pdf` 會讓拖進來的 Word 檔被 upload-box 當成不支援的格式擋掉——那條路後端是通的。
-     說明文字另立 key（不沿用 `dataImport.uploadDescPdf`）：那顆是 1-1-1 上傳選單「PDF 卡」的說明，
-     那張卡講的就只有 PDF，改它的值會讓卡片說謊。 #}
-{% set uploadAccept = ".pdf,.docx" %}
+{# 上傳區：這一條是**非結構化文件**流程，可多選、上限 30MB，與元件預設（.xlsx、單檔、10MB）不同，
+     由本頁 set 覆寫（§6）。
+     **本頁是三個執行期變體的靜態合體**：真 app 由 1-1-1 的卡片帶 `?type=pdf|word|image` 進來，
+     uploadFilePdf.js:98 的 getFileTypeConfig 依 type 查表，:130 才把 accept 寫上去、:133 一併改寫
+     說明文字（pdf→`.pdf`／word→`.doc,.docx`／image→`.png,.jpg,.jpeg`）。切版沒有查詢字串，
+     一頁只有一組 accept，故取三者的**聯集**——上傳選單那四張卡有三張指向本頁（PDF／WORD／Image，
+     見 ui/upload-card），accept 只要少列一種，那張卡就變成點得進來、卻選不到自己廣告的檔案的死路。
+     說明文字同理列全三種，另立 key（不沿用 `dataImport.uploadDescPdf`）：那顆是「PDF 卡」的說明，
+     那張卡講的就只有 PDF，改它的值會讓卡片說謊。
+     **待 saas 回流**：product 目前只認 `.pdf`／`.docx`（datasets.py:2287-2292、2381-2389 逐副檔名分派，
+     其餘一律 400「僅支援 .pdf / .docx」），沒有影像匯入端點。切版照真 app 保留 Image 卡；
+     要嘛 saas 補影像匯入，要嘛兩邊一起撤掉那張卡——**這是 saas 端要決定的事，切版不先自行砍掉**。 #}
+{% set uploadAccept = ".pdf,.doc,.docx,.png,.jpg,.jpeg" %}
 {% set uploadMultiple = true %}
-{% set uploadDescText = "支援上傳pdf、docx檔案，檔案最大不超過30MB" %}
-{% set uploadDescKey = "dataImport.uploadDescPdfWord" %}
+{% set uploadDescText = "支援上傳pdf、doc、docx、png、jpg檔案，檔案最大不超過30MB" %}
+{% set uploadDescKey = "dataImport.uploadDescDocs" %}
 {% include "ui/upload-box/upload-box.html" %}
 
 {# 檔案列表表格：真實頁 thead/tbody 皆為 js/uploadFilePdf.js 動態渲染（renderTableHeaders()/renderFileList()），
