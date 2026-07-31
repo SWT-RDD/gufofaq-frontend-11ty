@@ -263,7 +263,9 @@ permalink: 5-4_coverageGaps.html
         {% for q in gapExcluded %}
         <div class="flex-row align-items-center gap-4">
             <span>{{ q }}</span>
-            <button type="button" class="button button-border button-sm js-undo-exclude-question"
+            {# data-question＝React 動作目標：product 的排除清單與提問原文用同一套正規化（修剪空白後
+                 全字比對），所以鈕要帶得走那句原文，而不是去讀兄弟節點的 textContent。 #}
+            <button type="button" class="button button-border button-sm js-undo-exclude-question" data-question="{{ q }}"
                 data-toast="正在查詢資料...|查詢成功|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.query" data-toast-type="info|success|error"
                 data-i18n="action.undoExclude">取消排除</button>
         </div>
@@ -279,7 +281,7 @@ permalink: 5-4_coverageGaps.html
      一起，讀的人才分得出「只有 10 種」與「被截到剩 10 種」。這個數字從樣本陣列推導、不烤字面量
      ——上限值只有 product 知道，前端抄一份就會在它改動時開始說謊。 #}
 {% for group in gapGroups %}
-<div class="block flex-row column gap-16 mt-16" data-gap-kind="{{ group.kind }}">
+<div class="block flex-row column gap-16 mt-16">
     <div class="flex-row justify-content-between align-items-center flex-wrap gap-8">
         <div class="flex-row align-items-center gap-8 flex-wrap">
             <div class="text-lg text-bold">{{ group.label }}</div>
@@ -318,7 +320,7 @@ permalink: 5-4_coverageGaps.html
                     <td>{{ sample.question }}</td>
                     <td>{{ sample.count }}</td>
                     <td>
-                        <button type="button" class="button button-border button-sm js-exclude-question"
+                        <button type="button" class="button button-border button-sm js-exclude-question" data-question="{{ sample.question }}"
                             data-toast="正在查詢資料...|查詢成功|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.query" data-toast-type="info|success|error"
                             data-i18n="action.exclude">排除</button>
                     </td>
