@@ -48,52 +48,11 @@ permalink: 5-3_statsModule.html
      僅保留原生 class 與 disabled 預設狀態）+ 查詢資料類型單選 #}
 <div class="block flex-row column gap-24 mt-10">
     <div class="flex-row column gap-16">
-        <div class="form-group row flex-row mobile-column-xs gap-16">
-            <div class="label mobile-align">
-                <label id="dataTimeFilterLabel" class="control-label" data-i18n="settings.dataTimeFilter">資料時間篩選</label>
-            </div>
-            <div class="field w100" role="group" aria-labelledby="dataTimeFilterLabel">
-                <div class="flex-row gap-16 mobile-column flex-wrap field-with-input-group">
-                    <div class="flex-row gap-16 mobile-column-xs col-12-xs">
-                        <div class="function">
-                            <label class="form-radio border-wrap w100">
-                                <input type="radio" name="data-time">
-                                <span data-i18n="settings.last24h">近24小時</span>
-                            </label>
-                        </div>
-                        <div class="function">
-                            <label class="form-radio border-wrap w100">
-                                <input type="radio" name="data-time" checked>
-                                <span data-i18n="settings.lastWeek">上週</span>
-                            </label>
-                        </div>
-                        <div class="function">
-                            <label class="form-radio border-wrap w100">
-                                <input type="radio" name="data-time">
-                                <span data-i18n="settings.lastMonth">上個月</span>
-                            </label>
-                        </div>
-                    </div>
-                    <div class="flex-row gap-16 mobile-column-xs field-with-input">
-                        <div class="function">
-                            <label class="form-radio">
-                                <input type="radio" name="data-time">
-                                <span data-i18n="settings.timeRange">時間區間</span>
-                            </label>
-                        </div>
-                        <div class="function">
-                            <div class="flex-row align-items-center gap-16 mobile-column-xs col-12-xs">
-                                <input type="text" class="form-control start-date with-input" placeholder="請選擇開始時間"
-                                    data-i18n-placeholder="settings.pleaseSelectStartTime" aria-label="開始時間" data-i18n-aria-label="settings.startTime" disabled>
-                                <span data-i18n="settings.to">至</span>
-                                <input type="text" class="form-control end-date with-input" placeholder="請選擇結束時間"
-                                    data-i18n-placeholder="settings.pleaseSelectEndTime" aria-label="結束時間" data-i18n-aria-label="settings.endTime" disabled>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+        {# 這一列與 5-4 逐字相同，抽成 components/data-time-filter（§3-3）。 #}
+        {% set timeFilterName = "data-time" %}
+        {% set timeFilterLabelId = "dataTimeFilterLabel" %}
+        {% set timeFilterChecked = "lastWeek" %}
+        {% include "components/data-time-filter/data-time-filter.html" %}
         {# 統計維度：`dataset`（依資料集）或 `attribution:<slot>`（依租戶指定的歸因欄位分群）。
              值域＝上面的 attributionSlots（product `field_schema.ATTRIBUTION_SLOT_KEYS`），選項文字是
              租戶取的欄位名＝業務資料不翻；「資料集」那顆是 chrome 走 i18n。
@@ -133,31 +92,10 @@ permalink: 5-3_statsModule.html
                 </div>
             </div>
         </div>
-        <div class="form-group row flex-row mobile-column-xs gap-16">
-            <div class="label mobile-align">
-                <label id="queryDataTypeLabel" class="control-label" data-i18n="settings.queryDataType">查詢資料類型</label>
-            </div>
-            <div class="field flex-row gap-24 col-12-sm mobile-column-xs" role="group" aria-labelledby="queryDataTypeLabel">
-                <div class="function">
-                    <label class="form-radio">
-                        <input type="radio" name="data-type" checked>
-                        <span data-i18n="common.all">全部</span>
-                    </label>
-                </div>
-                <div class="function">
-                    <label class="form-radio">
-                        <input type="radio" name="data-type">
-                        <span data-i18n="qa.frontendQa">前台問答</span>
-                    </label>
-                </div>
-                <div class="function">
-                    <label class="form-radio">
-                        <input type="radio" name="data-type">
-                        <span data-i18n="qa.backendQa">後台問答</span>
-                    </label>
-                </div>
-            </div>
-        </div>
+        {# 同上，與 5-4 逐字相同 → components/data-type-filter（§3-3）。 #}
+        {% set dataTypeName = "data-type" %}
+        {% set dataTypeLabelId = "queryDataTypeLabel" %}
+        {% include "components/data-type-filter/data-type-filter.html" %}
     </div>
     {# 這一頁的查詢打的是 `GET /stats`，`_fetch_logs` 對 `total > MAX_STATS_LOGS`（5000，stats.py:41）
          回 400「此時間範圍資料量過大…請縮小範圍」（stats.py:209-213）。時間篩選最長給到 365 天，

@@ -142,77 +142,14 @@ permalink: 5-4_coverageGaps.html
 <div class="block flex-row column gap-24 mt-10">
     <div class="flex-row column gap-16">
         <div class="text-gray" data-i18n="settings.coverageGapsIntro">列出這段期間問得最多、卻一份文件都沒撈到的提問原文。招呼與閒聊照實列出，不做關鍵字猜測；要拿掉哪一句由你逐句指定。</div>
-        <div class="form-group row flex-row mobile-column-xs gap-16">
-            <div class="label mobile-align">
-                <label id="gapTimeFilterLabel" class="control-label" data-i18n="settings.dataTimeFilter">資料時間篩選</label>
-            </div>
-            <div class="field w100" role="group" aria-labelledby="gapTimeFilterLabel">
-                <div class="flex-row gap-16 mobile-column flex-wrap field-with-input-group">
-                    <div class="flex-row gap-16 mobile-column-xs col-12-xs">
-                        <div class="function">
-                            <label class="form-radio border-wrap w100">
-                                <input type="radio" name="gap-time" checked>
-                                <span data-i18n="settings.last24h">近24小時</span>
-                            </label>
-                        </div>
-                        <div class="function">
-                            <label class="form-radio border-wrap w100">
-                                <input type="radio" name="gap-time">
-                                <span data-i18n="settings.lastWeek">上週</span>
-                            </label>
-                        </div>
-                        <div class="function">
-                            <label class="form-radio border-wrap w100">
-                                <input type="radio" name="gap-time">
-                                <span data-i18n="settings.lastMonth">上個月</span>
-                            </label>
-                        </div>
-                    </div>
-                    <div class="flex-row gap-16 mobile-column-xs field-with-input">
-                        <div class="function">
-                            <label class="form-radio">
-                                <input type="radio" name="gap-time">
-                                <span data-i18n="settings.timeRange">時間區間</span>
-                            </label>
-                        </div>
-                        <div class="function">
-                            <div class="flex-row align-items-center gap-16 mobile-column-xs col-12-xs">
-                                <input type="text" class="form-control start-date with-input" placeholder="請選擇開始時間"
-                                    data-i18n-placeholder="settings.pleaseSelectStartTime" aria-label="開始時間" data-i18n-aria-label="settings.startTime" disabled>
-                                <span data-i18n="settings.to">至</span>
-                                <input type="text" class="form-control end-date with-input" placeholder="請選擇結束時間"
-                                    data-i18n-placeholder="settings.pleaseSelectEndTime" aria-label="結束時間" data-i18n-aria-label="settings.endTime" disabled>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="form-group row flex-row mobile-column-xs gap-16">
-            <div class="label mobile-align">
-                <label id="gapDataTypeLabel" class="control-label" data-i18n="settings.queryDataType">查詢資料類型</label>
-            </div>
-            <div class="field flex-row gap-24 col-12-sm mobile-column-xs" role="radiogroup" aria-labelledby="gapDataTypeLabel">
-                <div class="function">
-                    <label class="form-radio">
-                        <input type="radio" name="gap-data-type" checked>
-                        <span data-i18n="common.all">全部</span>
-                    </label>
-                </div>
-                <div class="function">
-                    <label class="form-radio">
-                        <input type="radio" name="gap-data-type">
-                        <span data-i18n="qa.frontendQa">前台問答</span>
-                    </label>
-                </div>
-                <div class="function">
-                    <label class="form-radio">
-                        <input type="radio" name="gap-data-type">
-                        <span data-i18n="qa.backendQa">後台問答</span>
-                    </label>
-                </div>
-            </div>
-        </div>
+        {# 這兩列與 5-3 逐字相同，抽成 components/data-time-filter ＋ components/data-type-filter（§3-3）。 #}
+        {% set timeFilterName = "gap-time" %}
+        {% set timeFilterLabelId = "gapTimeFilterLabel" %}
+        {% set timeFilterChecked = "last24h" %}
+        {% include "components/data-time-filter/data-time-filter.html" %}
+        {% set dataTypeName = "gap-data-type" %}
+        {% set dataTypeLabelId = "gapDataTypeLabel" %}
+        {% include "components/data-type-filter/data-type-filter.html" %}
         {# 分群維度：值載體 select（值交給 React 讀去送 API）＝只掛 hook class、不掛 data-toast
              （GUIDELINE §5 組合矩陣②）。 #}
         <div class="form-group row flex-row mobile-column-xs gap-16">

@@ -1,0 +1,32 @@
+{# 「查詢資料類型」整列（全部／前台問答／後台問答）。5-3 與 5-4 逐字相同（§3-3）。
+     兩頁的抄本已經分岔過一次：一頁寫 `role="group"`、另一頁寫 `role="radiogroup"`——
+     這是一組互斥 radio，正確的是 `radiogroup`（`group` 讀不出「三選一」）。
+     參數（使用頁在 include 前 set）：
+       dataTypeName    —— radio 的 name（同頁多組要不同）
+       dataTypeLabelId —— 群組標題的 id（供 aria-labelledby 指到；同頁唯一）
+     三顆都不帶條件 checked：`全部` 是唯一的預設值（值域只有三種，預設全部＝不過濾）。 #}
+<div class="form-group row flex-row mobile-column-xs gap-16">
+    <div class="label mobile-align">
+        <label id="{{ dataTypeLabelId }}" class="control-label" data-i18n="settings.queryDataType">查詢資料類型</label>
+    </div>
+    <div class="field flex-row gap-24 col-12-sm mobile-column-xs" role="radiogroup" aria-labelledby="{{ dataTypeLabelId }}">
+        <div class="function">
+            <label class="form-radio">
+                <input type="radio" name="{{ dataTypeName }}" checked>
+                <span data-i18n="common.all">全部</span>
+            </label>
+        </div>
+        <div class="function">
+            <label class="form-radio">
+                <input type="radio" name="{{ dataTypeName }}">
+                <span data-i18n="qa.frontendQa">前台問答</span>
+            </label>
+        </div>
+        <div class="function">
+            <label class="form-radio">
+                <input type="radio" name="{{ dataTypeName }}">
+                <span data-i18n="qa.backendQa">後台問答</span>
+            </label>
+        </div>
+    </div>
+</div>
