@@ -2499,6 +2499,33 @@ test("§4/§6 表格列的狀態底色不可寫在 <tr> 上（cell 的不透明�
     assert.equal(hits.length, 0, `§4：<tr> 上的狀態底色被 cell 底色蓋掉（死樣式）：\n${fail(hits)}`);
 });
 
+test("§4 control-label required 與控制項的 required 成對（星號是視覺，required 是報讀器與 React 表單庫讀的那一份）", () => {
+    // 為什麼要釘死：星號畫了、控制項沒 required，兩份就在說不同的話——報讀器不會念「必填」，
+    // React 表單庫（RHF/zod）從 markup 推不出這一欄是必填，於是必填只剩後端 400 那一道。
+    // round34 抓到 7 顆（qa-import 兩顆 select、skill-editor 的 name/description、
+    // 3-1-2/3-3 的所屬群組、5-6-3 的授權範圍），既有測試一條都看不到。
+    const esc = (x) => x.replace(/[^\w-]/g, (c) => "\\" + c);
+    let pairs = 0;
+    const hits = [];
+    for (const f of srcHtml) {
+        const t = stripNjk(read(f));
+        const controls = [...t.matchAll(/<(input|select|textarea)\b((?:"[^"]*"|[^>"])*)>/g)];
+        for (const m of t.matchAll(/<label\b((?:"[^"]*"|[^>"])*)>/g)) {
+            const attrs = m[1];
+            if (!/class="[^"]*\bcontrol-label\b[^"]*"/.test(attrs)) continue;
+            if (!/class="[^"]*\brequired\b[^"]*"/.test(attrs)) continue;
+            const fo = attrs.match(/\bfor="([^"]+)"/);
+            if (!fo) { hits.push(`${f}  有 control-label required 卻沒有 for=`); continue; }
+            const ctl = controls.find((c) => new RegExp("\\bid=\"" + esc(fo[1]) + "\"").test(c[2]));
+            if (!ctl) { hits.push(`${f}  #${fo[1]} 的 required label 指不到任何控制項`); continue; }
+            if (/\brequired\b/.test(ctl[2])) pairs++;
+            else hits.push(`${f}  <${ctl[1]} id="${fo[1]}"> 少了 required（label 上的星號在說謊）`);
+        }
+    }
+    assert.ok(pairs >= 30, `只掃到 ${pairs} 組成對的必填欄 —— label/控制項掃描壞了？整條在空轉`);
+    assert.equal(hits.length, 0, fail(hits));
+});
+
 test("§4 <label> 必須有 for、或包住控制項、或有 id 被 aria-labelledby 指到（懸空 label 是空殼）", () => {
     // 懸空 <label> 是 valid HTML（不報錯），但點了不聚焦、對輔具無語意，
     // 且 eslint-plugin-jsx-a11y 的 label-has-associated-control 在 Next.js 預設 config 是 build 阻斷。

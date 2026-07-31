@@ -6,6 +6,9 @@
      增刪列＝React local state 操作（onClick 元件作用域直綁、product 無 hook），儲存時才整批 PUT
      gufofaq-saas product app/routers/glossary.py（「編輯一張表→整批 PUT /glossary/{id}/entries」，
      不做逐筆 diff）——故增刪鈕不掛 hook、不掛 data-toast；aliases 以逗號分隔字串編輯。
+     詞條／定義的 maxlength 是契約欄位（§6），出處＝GufoRAG chatbot app/services/glossary.py 的
+     `MAX_TERM_LEN = 200`（:41）／`MAX_DEFINITION_LEN = 2000`（:42），逐筆檢查在 :129/:133、
+     經 product glossary.py 的 `_as_bad_request` 映成 400。別名沒有單獨的長度上限、故不掛。
      對 product 的刻意結構差異（皆為設計系統改良，待回流 product）：table-container.scrollTable 包裹＋
      colgroup 欄寬（product table 裸落容器）、操作欄 sr-only th（product 空 th）、空狀態 {% else %}
      colspan 無資料列（product 為表格後的 <p>；站內無資料列正典優先）。標題的表名是執行期資料，由 React 填。 #}
@@ -43,8 +46,8 @@
                                 <tbody>
                                     {% for entry in glossaryEntryRows %}
                                     <tr>
-                                        <td><input type="text" class="form-control" value="{{ entry.term }}" aria-label="詞條" data-i18n-aria-label="settings.term"></td>
-                                        <td><input type="text" class="form-control" value="{{ entry.definition }}" aria-label="定義" data-i18n-aria-label="settings.definition"></td>
+                                        <td><input type="text" class="form-control" maxlength="200" value="{{ entry.term }}" aria-label="詞條" data-i18n-aria-label="settings.term"></td>
+                                        <td><input type="text" class="form-control" maxlength="2000" value="{{ entry.definition }}" aria-label="定義" data-i18n-aria-label="settings.definition"></td>
                                         <td><input type="text" class="form-control" value="{{ entry.aliases }}" aria-label="別名（逗號分隔）" data-i18n-aria-label="settings.aliases"></td>
                                         <td><button type="button" class="button button-border button-sm" data-i18n="action.delete">刪除</button></td>
                                     </tr>

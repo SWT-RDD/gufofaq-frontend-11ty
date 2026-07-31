@@ -113,7 +113,7 @@ permalink: 5-6-3_platformServiceKeys.html
                     <label for="newServiceKeyScope" class="control-label required" data-i18n="serviceKey.scope">授權範圍</label>
                 </div>
                 <div class="field">
-                    <select id="newServiceKeyScope" class="form-control js-new-service-key-scope" aria-describedby="newServiceKeyScopeHint">
+                    <select required id="newServiceKeyScope" class="form-control js-new-service-key-scope" aria-describedby="newServiceKeyScopeHint">
                         {% for s in serviceKeyScopes %}
                         <option value="{{ s.value }}">{{ s.value }}</option>
                         {% endfor %}

@@ -1101,7 +1101,6 @@
   "settings.pleaseEnterDisplayName": "Enter display name",
   "settings.pleaseEnterGlossaryTableName": "Enter a glossary table name",
   "settings.pleaseEnterGroupName": "Enter a group name",
-  "settings.pleaseEnterInitialPassword": "Please enter initial password",
   "settings.pleaseEnterKeyword": "Enter a keyword to search",
   "settings.pleaseEnterMcpArgs": "One argument per line",
   "settings.pleaseEnterMcpEnv": "One KEY=value per line",

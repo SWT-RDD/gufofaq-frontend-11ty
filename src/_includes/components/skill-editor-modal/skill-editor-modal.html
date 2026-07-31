@@ -5,6 +5,10 @@
      被呼叫時跑一個 scoped 子迴圈。逆向自 gufofaq-saas product app/routers/skills.py 與
      GufoRAG chatbot app/routes/skills.py；欄位語意對齊 Agent Skills 開放標準
      （name ≤64 小寫英數與連字號、description ≤1024 且須寫「做什麼＋何時用」）。
+   長度上限落地成 markup 的 maxlength（契約欄位，§6）——出處逐字：GufoRAG chatbot
+     app/services/skills.py 的 `MAX_SKILL_NAME_LEN = 64`（:60）／`MAX_SKILL_DESCRIPTION_LEN = 1024`（:61）／
+     `MAX_SKILL_INSTRUCTIONS_LEN = 20000`（:64）。`SKILL_NAME_RE` 的格式驗證不掛 `pattern`：
+     §4 明訂驗證結果走 toast 的 warning 分支，長度才是宣告在控制項上的契約。
    兩個欄位的輔助文字是功能的一部分、不是裝飾：
      - name 的規則若不寫出來，租戶只會反覆撞 400（後端才是權威，但不該讓人用猜的）。
      - description 是 agent 選不選這個 skill 的**唯一**依據，寫得含糊 skill 就永遠不會被觸發。
@@ -39,7 +43,7 @@
                                 <label for="skillNameInput" class="control-label required" data-i18n="widget.tokenName">名稱</label>
                             </div>
                             <div class="field">
-                                <input type="text" id="skillNameInput" class="form-control" value="refund-flow" aria-describedby="skillNameHint">
+                                <input type="text" required maxlength="64" id="skillNameInput" class="form-control" value="refund-flow" aria-describedby="skillNameHint">
                                 <p class="skill-editor-hint" id="skillNameHint" data-i18n="settings.skillNameHint">小寫英數與連字號，長度 1-64；不可以連字號開頭／結尾，也不可連續連字號。此名稱同時就是 agent 看到的工具名。</p>
                             </div>
                         </div>
@@ -48,7 +52,7 @@
                                 <label for="skillDescriptionInput" class="control-label required" data-i18n="settings.skillDescription">用途說明</label>
                             </div>
                             <div class="field">
-                                <textarea id="skillDescriptionInput" class="form-control" aria-describedby="skillDescriptionHint">處理退貨與退款試算。使用者問到退貨、退款、換貨或想知道能退多少錢時使用。</textarea>
+                                <textarea required maxlength="1024" id="skillDescriptionInput" class="form-control" aria-describedby="skillDescriptionHint">處理退貨與退款試算。使用者問到退貨、退款、換貨或想知道能退多少錢時使用。</textarea>
                                 <p class="skill-editor-hint" id="skillDescriptionHint" data-i18n="settings.skillDescriptionHint">請同時寫「這個 skill 做什麼」與「什麼時候該用它」——這是 agent 判斷要不要呼叫它的唯一依據，寫得含糊就不會被觸發。</p>
                             </div>
                         </div>
@@ -57,7 +61,7 @@
                                 <label for="skillInstructionsInput" class="control-label" data-i18n="settings.skillInstructions">執行步驟</label>
                             </div>
                             <div class="field">
-                                <textarea id="skillInstructionsInput" class="form-control skill-editor-instructions" aria-describedby="skillInstructionsHint">1. 先用 lookup-order 取得訂單金額。
+                                <textarea id="skillInstructionsInput" maxlength="20000" class="form-control skill-editor-instructions" aria-describedby="skillInstructionsHint">1. 先用 lookup-order 取得訂單金額。
 2. 依退貨政策用 calculate 算出應退金額。
 3. 用一句話回報金額與計算依據。</textarea>
                                 <p class="skill-editor-hint" id="skillInstructionsHint" data-i18n="settings.skillInstructionsHint">被呼叫時才載入，當作這個 skill 的系統提示詞。要照順序執行就在這裡寫清楚步驟。</p>
