@@ -39,7 +39,7 @@ permalink: login.html
                 {# type=button：真 app 由業務 js fetch 登入（不走原生 form 送出）；原型若留 type=submit，
                      無 handler 的 form 會原生 GET 重載、toast 演出瞬間被殺掉（§5 每個結果都要演得出來）。
                      React 端換回 type=submit + onSubmit(preventDefault)。 #}
-                <button type="button" class="button button-primary login-btn" data-toast="登入成功！|登入時發生錯誤，請稍後再試" data-i18n-data-toast="toast.login" data-toast-type="success|error" data-i18n="faq.login">登入</button>
+                <button type="button" class="button button-primary login-btn" data-toast="登入成功！|帳號已停用，請聯絡管理者|嘗試次數過多，請稍後再試|登入時發生錯誤，請稍後再試" data-i18n-data-toast="toast.login" data-toast-type="success|warning|warning|error" data-i18n="faq.login">登入</button>
             </form>
         </div>
 

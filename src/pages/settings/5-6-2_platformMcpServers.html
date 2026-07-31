@@ -108,7 +108,7 @@ permalink: 5-6-2_platformMcpServers.html
             <input type="checkbox" checked>
             <span data-i18n="widget.active">啟用</span>
         </label>
-        <button type="button" class="button button-primary" data-toast="MCP Server 已建立|名稱已存在|執行指令不在允許清單（僅 python／python3／node／npx／uvx／uv）|建立失敗，請稍後再試" data-i18n-data-toast="toast.createMcpServer" data-toast-type="success|warning|warning|error">
+        <button type="button" class="button button-primary" data-toast="MCP Server 已建立|名稱已存在|執行指令不在允許清單（僅 python／python3／node／npx／uvx／uv）|環境變數的值不可以是「***」（那是讀取時的遮罩），請填入真正的值|建立失敗，請稍後再試" data-i18n-data-toast="toast.createMcpServer" data-toast-type="success|warning|warning|warning|error">
             <img src="./images/icon_add_white.png" width="48" height="48" decoding="async" alt="" class="icon">
             <span data-i18n="settings.addMcpServer">新增 MCP Server</span>
         </button>
@@ -166,14 +166,14 @@ permalink: 5-6-2_platformMcpServers.html
                     </td>
                     <td>
                         <div class="btn-group">
-                            <button type="button" class="button button-border button-sm" data-toast="MCP Server 已更新|名稱已存在|執行指令不在允許清單（僅 python／python3／node／npx／uvx／uv）|儲存失敗" data-i18n-data-toast="toast.saveMcpServer" data-toast-type="success|warning|warning|error" data-i18n="action.save">儲存</button>
+                            <button type="button" class="button button-border button-sm" data-toast="MCP Server 已更新|名稱已存在|執行指令不在允許清單（僅 python／python3／node／npx／uvx／uv）|新增的環境變數鍵不可以填「***」（那是讀取時的遮罩），請填入真正的值|儲存失敗" data-i18n-data-toast="toast.saveMcpServer" data-toast-type="success|warning|warning|warning|error" data-i18n="action.save">儲存</button>
                             <button type="button" class="button button-border button-sm" data-toast="連線成功，已取得工具清單|連線測試失敗" data-i18n-data-toast="toast.testMcpServer" data-toast-type="success|error" data-i18n="settings.testConnection">測試連線</button>
                             <button type="button" class="button button-red button-sm js-delete-mcp" data-i18n="action.delete">刪除</button>
                         </div>
                     </td>
                 </tr>
                 {% else %}
-                <tr><td colspan="8" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
+                <tr><td colspan="7" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
                 {% endfor %}
             </tbody>
         </table>

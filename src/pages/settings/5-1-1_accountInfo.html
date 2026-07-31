@@ -91,7 +91,10 @@ permalink: 5-1-1_accountInfo.html
     </div>
     <div class="flex-row align-items-center justify-content-center gap-16">
         <button type="button" class="button button-border" data-i18n="action.cancel">取消</button>
-        <button type="button" class="button button-primary" data-toast="帳號資訊已儲存|儲存失敗" data-i18n-data-toast="toast.saveAccount" data-toast-type="success|error" data-i18n="action.save">儲存</button>
+        {# PUT /account 掛的是 `require_capability("settings", "write")`（account.py:137），
+             該 dep 在 authz.py:185 raise 403「missing capability」——同一道守衛在 5-3 的歸因儲存鈕
+             是自成一段的 warning（那顆端點的 dep 逐字相同），這裡不能折進 error（§5 分支集合一致）。 #}
+        <button type="button" class="button button-primary" data-toast="帳號資訊已儲存|權限不足，無法儲存|儲存失敗" data-i18n-data-toast="toast.saveAccount" data-toast-type="success|warning|error" data-i18n="action.save">儲存</button>
     </div>
 </div>
 
@@ -161,6 +164,6 @@ permalink: 5-1-1_accountInfo.html
         </div>
     </div>
     <div class="flex-row">
-        <button type="button" class="button button-primary" data-toast="密碼已變更|兩次新密碼不一致|舊密碼錯誤或變更失敗" data-i18n-data-toast="toast.changePassword" data-toast-type="success|warning|error" data-i18n="settings.changePassword">變更密碼</button>
+        <button type="button" class="button button-primary" data-toast="密碼已變更|兩次新密碼不一致|舊密碼錯誤|變更失敗，請稍後再試" data-i18n-data-toast="toast.changePassword" data-toast-type="success|warning|warning|error" data-i18n="settings.changePassword">變更密碼</button>
     </div>
 </div>

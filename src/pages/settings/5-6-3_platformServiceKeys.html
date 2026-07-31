@@ -161,7 +161,7 @@ permalink: 5-6-3_platformServiceKeys.html
         </button>
     </div>
     <div class="flex-row">
-        <button type="button" class="button button-border js-dismiss-service-key" data-dismiss-target="serviceKeyIssued" data-i18n="serviceKey.savedDismiss">我已經保存好，關閉</button>
+        <button type="button" class="button button-border" data-dismiss-target="serviceKeyIssued" data-i18n="serviceKey.savedDismiss">我已經保存好，關閉</button>
     </div>
 </div>
 
@@ -209,8 +209,12 @@ permalink: 5-6-3_platformServiceKeys.html
 <div class="block flex-row column gap-16" data-platform-role="auditor">
     <div class="flex-row justify-content-between align-items-center flex-wrap gap-16">
         <div class="text-md text-bold" data-i18n="serviceKey.listTitle">現有憑證</div>
+        {# **預設勾起來**：篩選控制項的預設值就是示範資料的前提（§6）。下面三列裡第 3 列是
+             已撤銷的，而 `list_service_keys` 在 `include_revoked` 為 false 時
+             `q.where(PlatformServiceKey.revoked_at.is_(None))`（platform.py:1563-1574）
+             ——沒勾的話那一列不可能回得來，畫面卻同時說著兩件事。 #}
         <label class="form-checkbox">
-            <input type="checkbox" class="js-service-key-include-revoked">
+            <input type="checkbox" class="js-service-key-include-revoked" checked>
             <span data-i18n="serviceKey.includeRevoked">含已撤銷</span>
         </label>
     </div>
@@ -274,7 +278,7 @@ permalink: 5-6-3_platformServiceKeys.html
                     </td>
                 </tr>
                 {% else %}
-                <tr><td colspan="8" class="text-center text-gray" data-i18n="serviceKey.none">目前沒有任何有效的機器憑證。排程要跑得動就得有一把——沒有的話它每天會失敗，而失敗只寫在 Job 的日誌裡。</td></tr>
+                <tr><td colspan="10" class="text-center text-gray" data-i18n="serviceKey.none">目前沒有任何有效的機器憑證。排程要跑得動就得有一把——沒有的話它每天會失敗，而失敗只寫在 Job 的日誌裡。</td></tr>
                 {% endfor %}
             </tbody>
         </table>

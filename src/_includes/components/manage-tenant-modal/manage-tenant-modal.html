@@ -161,9 +161,18 @@
                                         <span class="text-gray"><span data-i18n="{% if member.isAdmin %}role.admin{% else %}role.member{% endif %}">{% if member.isAdmin %}管理者{% else %}成員{% endif %}</span>{% if not member.isActive %} · <span data-i18n="settings.disabled">已停用</span>{% endif %}</span>
                                     </div>
                                     <div class="btn-group">
-                                        <button type="button" class="button button-border button-sm" data-toast="已代理登入該成員|權限不足，無法代理登入|代理登入失敗，請稍後再試" data-i18n-data-toast="toast.impersonateTenant" data-toast-type="success|warning|error" data-i18n="action.impersonate">代理登入</button>
-                                        {# 停用有具名 409 分支（product platform.py：不可停用最後一位在職租戶管理者）→ 列進結果（§5 全結果） #}
-                                        <button type="button" class="button button-border button-sm" data-toast="已更新使用者狀態|無法停用最後一位在職管理者|更新失敗，請稍後再試" data-i18n-data-toast="toast.setUserActive" data-toast-type="success|warning|error" data-i18n="{% if member.isActive %}platform.disableUser{% else %}platform.enableUser{% endif %}">{% if member.isActive %}停用{% else %}啟用{% endif %}</button>
+                                        {# 已停用的帳號代理不了：`platform.py:725-726` `if not target.is_active:
+                                             raise HTTPException(403, "cannot impersonate a disabled account")`。
+                                             無條件渲染會在停用列上留一顆**按了必定失敗**的鈕，而它掛的 warning
+                                             講的又是另一件事（權限不足）。比照 share-manage-modal 的做法改成
+                                             disabled——那一列已經沒有東西可代理（§5「按了什麼都不會發生」）。 #}
+                                        <button type="button" class="button button-border button-sm"{% if not member.isActive %} disabled{% endif %} data-toast="已代理登入該成員|權限不足，無法代理登入|代理登入失敗，請稍後再試" data-i18n-data-toast="toast.impersonateTenant" data-toast-type="success|warning|error" data-i18n="action.impersonate">代理登入</button>
+                                        {# 停用路徑上有**兩道**具名 409（platform.py:1117-1120 的 `last_tenant_admin`
+                                             與 :1121 呼叫的 `_assert_not_last_platform_admin`，後者回
+                                             `last_platform_admin`「不可停用/刪除/降級最後一位平台系統管理員」）。
+                                             同一頁的刪除鈕早就把這兩道分開列了（5-6-1 的 deleteToast），
+                                             這裡卻只列一道——抄版型而不是逐 raise 對鈕（§5）。 #}
+                                        <button type="button" class="button button-border button-sm" data-toast="已更新使用者狀態|無法停用最後一位在職管理者|無法停用最後一位平台系統管理員|更新失敗，請稍後再試" data-i18n-data-toast="toast.setUserActive" data-toast-type="success|warning|warning|error" data-i18n="{% if member.isActive %}platform.disableUser{% else %}platform.enableUser{% endif %}">{% if member.isActive %}停用{% else %}啟用{% endif %}</button>
                                         <button type="button" class="button button-border button-sm js-reset-password" data-i18n="settings.resetPassword">重設密碼</button>
                                         <button type="button" class="button button-red button-sm js-delete-user" data-i18n="action.delete">刪除</button>
                                     </div>

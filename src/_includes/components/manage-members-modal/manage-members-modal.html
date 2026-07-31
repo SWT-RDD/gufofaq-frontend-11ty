@@ -48,7 +48,13 @@
                 <div class="modals-footer">
                     <div class="button-row center">
                         <button type="button" class="button button-border btn-close-modals" data-i18n="action.cancel">取消</button>
-                        <button type="button" class="button button-primary btn-close-modals" data-toast="成員已更新|儲存失敗" data-i18n-data-toast="toast.saveMembers" data-toast-type="success|error" data-i18n="action.save">儲存</button>
+                        {# 送的是 `PATCH /users/{id}` 的 group_ids，而該端點在 404 之後**無條件**呼叫
+                             `_assert_tenant_manageable`（users.py:286-287 → :87-104），對平台角色持有者回 403。
+                             平台管理員／稽核員就寄生在一般租戶裡，`GET /users` 會把他列進這張勾選清單，
+                             所以這條路按得到；同一道守衛在 5-5-1 的列儲存鈕上就是具名 warning。
+                             補了 warning 之後**不能再掛 btn-close-modals**：那是「取消勾選那一位就能修正」
+                             的窗內驗證，每點必關窗會把使用者剛勾好的內容一起丟掉（§5）。 #}
+                        <button type="button" class="button button-primary" data-toast="成員已更新|平台角色持有者不可在租戶端變更，請由平台管理端處理|儲存失敗" data-i18n-data-toast="toast.saveMembers" data-toast-type="success|warning|error" data-i18n="action.save">儲存</button>
                     </div>
                 </div>
             </div>

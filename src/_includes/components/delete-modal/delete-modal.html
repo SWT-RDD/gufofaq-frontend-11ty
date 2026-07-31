@@ -7,6 +7,10 @@
      deleteMessageKey / deleteMessageZh —— 選填，內文前綴（預設 common.confirmDelete／「確定要刪除」）
      deleteTargetId       —— 設了就渲染空 <span id="…">，由業務 js 填入待刪除項目名稱；未設則印 deleteTargetName
      deleteTargetName     —— 靜態示範用的項目名稱（預設「檔案名稱2.pdf」）
+     deleteHideTarget     —— true＝內文完全不接項目名稱。給「目標只有一個、講不出是哪一個」的動作用
+                             （5-9 的 API 金鑰是每租戶一把，`generate_api_key` 直接覆寫 `tenant.api_key_hash`，
+                             沒有「哪一把」可指），且那種頁的內文本身就是完整句子——接上去會變成
+                             「…確定要重新產生嗎？ 檔案名稱2.pdf」
      deleteConfirmBinding —— true＝確認鈕交給業務 js 綁定（不掛 btn-close-modals 自動關窗）
      deleteConfirmClass   —— 選填，加在確認鈕上的業務 hook class（如 confirm-delete-btn）
      deleteConfirmId      —— 選填，加在確認鈕上的 **id 契約**（如 confirmDeleteBtn）。§5 矩陣：React 綁定記號
@@ -25,7 +29,7 @@
                     <h3 class="modals-title" id="deleteModal-title" data-i18n="{{ deleteTitleKey or 'action.delete' }}">{{ deleteTitleZh or "刪除" }}</h3>
                 </div>
                 <div class="modals-body">
-                    <p class="text-center delete-modal-text"><span data-i18n="{{ deleteMessageKey or 'common.confirmDelete' }}">{{ deleteMessageZh or "確定要刪除" }}</span> {% if deleteTargetId %}<span id="{{ deleteTargetId }}"></span>{% else %}{{ deleteTargetName or "檔案名稱2.pdf" }}{% endif %}</p>
+                    <p class="text-center delete-modal-text"><span data-i18n="{{ deleteMessageKey or 'common.confirmDelete' }}">{{ deleteMessageZh or "確定要刪除" }}</span>{% if not deleteHideTarget %} {% if deleteTargetId %}<span id="{{ deleteTargetId }}"></span>{% else %}{{ deleteTargetName or "檔案名稱2.pdf" }}{% endif %}{% endif %}</p>
                 </div>
                 <div class="modals-footer">
                     <div class="button-row center">
