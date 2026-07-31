@@ -345,7 +345,9 @@ tag 式多選由本範本提供（切版需要展示互動）：在原生 `<sele
 
 accordion 的行為規格（`ui/accordion/accordion.js`）：各列**獨立開合**（點哪列就 toggle 哪列，不會自動關其他列），掃描根為 accordion 自有的 `.js-accordion`（原子，不綁定任何 `components/` 的 class）。轉 React 時由各 accordion 元件自管開合狀態（`useState` 記住開啟的列），不要跨元件共用一份全域狀態。它吃**兩種 markup 結構**：表格（明細在下一列 `tr.detail-row` 裡）與卡片（一張 `.js-accordion-item` 內含自己的鈕與 `.accordion-content`）——差別只在「內容在哪」，開合／aria／標籤／全部展開收合共用同一份實作，卡片模式不另寫一套。**初始開合讀 markup 的 `.open`**（伺服器/資料決定的初始態，如已自訂的設定卡預設展開）：轉 React 時那是 open state 的**資料初值**，不是「使用者點過」。
 
-單色圖示（`icon-mask()`）的行為規格：**alpha 是字形、顏色是語意 token**。轉 React 時直接改成內嵌 SVG component + `fill="currentColor"` —— 那正是遮罩在模擬的東西。`_dark-icons.scss` 的 `img[src*="_black"]` 反相規則屆時可整條刪掉。
+單色圖示（`icon-mask()`）的行為規格：**alpha 是字形、顏色是語意 token**——概念上等價於內嵌 SVG + `fill="currentColor"`，遮罩正是在模擬那件事。
+
+> ⚠️ **但機械轉換階段不做這個替換。** 轉換的驗收門檻是 `scss-diff.mjs` byte-identical（[REACT-CONVERSION](REACT-CONVERSION.md) §①），而把 `icon-mask()` 換成 SVG 會讓那條門檻結構上不可能成立——兩份文件不可以同時要求「逐字照抄」與「換掉這個 mixin」。**這一輪照抄**：`icon-mask()` 與 `_dark-icons.scss` 的 `img[src*="_black"]` 反相規則隨 scss 原樣搬過去。改 SVG 是轉換**之後**另一次獨立重構（屆時 `_dark-icons` 才連同整條刪掉），要做就整批做、重跑 fpdiff，不夾在機械轉換裡。
 
 HTML → JSX 多數是機械式替換：`class`→`className`、`for`→`htmlFor`、標籤自閉合、`{# #}`→`{/* */}`。
 **唯一不能照抄的是表單初值**：`<textarea>值</textarea>`、`<option selected>`、`<input checked>`、`<input value>` 在切版表達的是**資料初值**，JSX 要改成 `defaultValue`／`defaultChecked`／`<select defaultValue>`（或搬進受控元件的 state 初值）——textarea 那條是 React 直接丟錯，不是警告。配方見 [REACT-CONVERSION](REACT-CONVERSION.md) §②。
