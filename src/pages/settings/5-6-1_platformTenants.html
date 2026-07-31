@@ -185,17 +185,21 @@ permalink: 5-6-1_platformTenants.html
                     <th data-i18n="settings.tenant">租戶</th>
                     <th data-i18n="settings.userCount">使用者數</th>
                     {% for feature in features %}
-                    <th class="text-center" data-i18n="{{ feature.i18nKey }}">{{ feature.label }}</th>
+                    <th class="text-center" id="tenantFeatureHead-{{ feature.key }}" data-i18n="{{ feature.i18nKey }}">{{ feature.label }}</th>
                     {% endfor %}
                     <th data-i18n="common.actions">操作</th>
                 </tr>
             </thead>
             <tbody>
                 {% for tenant in tenants %}
-                <tr>
+                {# data-tenant-id＝React 列鍵契約（同 5-6-2 的 data-mcp-id）：這一列的儲存鈕送
+                     PATCH /platform/tenants/{id}/features、.js-manage-tenant 也要知道管的是哪一個租戶。
+                     示範以 loop.index 代 id。租戶名另給 id，供同列 20 顆開關併讀出「哪個租戶的哪個功能」。 #}
+{% set tenantIdx = loop.index %}
+                <tr data-tenant-id="{{ tenantIdx }}">
                     <td>
                         <div class="flex-row align-items-center gap-8 flex-wrap">
-                            <span>{{ tenant.name }}</span>
+                            <span id="tenantName-{{ tenantIdx }}">{{ tenant.name }}</span>
                             {# tooltip 不寫死天數（門檻可設定，見本頁 overdueDaysLabel 輸入框）：title 是原子屬性、無法用 §4-2 的拆節點做法，故改為不含數字的通用語 #}
                             {% if tenant.reviewDue %}<span class="text-red text-bold" title="已逾審核期限，請審核處置" data-i18n-title="platform.reviewDueTooltip" data-i18n="platform.reviewDue">ISO 待審</span>{% endif %}
                             {% if tenant.frozen %}<span class="text-gray" data-i18n="platform.statusFrozen">已凍結</span>{% endif %}
@@ -206,7 +210,7 @@ permalink: 5-6-1_platformTenants.html
                     {# 開關是值控制項：auditor 看得到目前開通狀態（渲染成 disabled），只有 admin 改得動 #}
                     <td class="text-center" data-platform-role="admin">
                         <label class="switch">
-                            <input type="checkbox" class="switch-checkbox" role="switch" aria-label="啟用切換" data-i18n-aria-label="settings.enableToggle"{% if feature.key in tenant.features %} checked{% endif %}>
+                            <input type="checkbox" class="switch-checkbox" role="switch" aria-labelledby="tenantName-{{ tenantIdx }} tenantFeatureHead-{{ feature.key }}"{% if feature.key in tenant.features %} checked{% endif %}>
                             <span class="switch-box">
                                 <span class="switch-btn"></span>
                             </span>
