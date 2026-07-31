@@ -28,10 +28,15 @@ permalink: 5-6-2_platformMcpServers.html
 {# env 的值在讀取路徑一律被遮成 "***"（GufoRAG chatbot routes/mcp.py 的 _mask_env：管理 API 沒有認證，
      原樣回傳等於任何連得到本服務的人都讀得到那些憑證），寫入時值仍是 "***" 的鍵沿用原值（_merge_env）。
      故示範值就是遮罩字面——這不是佔位符，是**真的會從 API 拿到的東西**。 #}
+{# id＝MCP Server 主鍵（product `app/routers/mcp.py:85` 的 `server_id: int`）。**不可拿 loop.index 當列鍵**：
+     這張表刪得掉列，位置不是身分——刪掉前一列之後，後面每一列的列鍵都會往前頂一格，
+     React 端的 key 與逐列動作的目標會一起指錯人（§6 列鍵）。
+     1/2/3 這三個號碼另有出處：5-2 對話設定的 MCP 勾選清單 `<option value>` 就是它們
+     （跨頁同一份目錄，測試 §6「5-2 的 MCP Server 勾選清單與 5-6-2 註冊表跨頁自洽」把關）。 #}
 {% set mcpServers = [
-  { name: "時間工具", command: "uvx", args: ["mcp-server-time", "--local-timezone=Asia/Taipei"], env: [], description: "提供目前時間與時區換算。", active: true },
-  { name: "內部文件搜尋", command: "npx", args: ["-y", "@acme/doc-mcp"], env: ["ACME_API_KEY=***", "ACME_REGION=ap-northeast-1"], description: "查詢內部知識庫文件。", active: true },
-  { name: "舊版文件搜尋", command: "npx", args: ["-y", "@acme/doc-mcp-legacy"], env: ["ACME_API_KEY=***"], description: "舊版內部文件查詢，已停用。", active: false }
+  { id: 1, name: "時間工具", command: "uvx", args: ["mcp-server-time", "--local-timezone=Asia/Taipei"], env: [], description: "提供目前時間與時區換算。", active: true },
+  { id: 2, name: "內部文件搜尋", command: "npx", args: ["-y", "@acme/doc-mcp"], env: ["ACME_API_KEY=***", "ACME_REGION=ap-northeast-1"], description: "查詢內部知識庫文件。", active: true },
+  { id: 3, name: "舊版文件搜尋", command: "npx", args: ["-y", "@acme/doc-mcp-legacy"], env: ["ACME_API_KEY=***"], description: "舊版內部文件查詢，已停用。", active: false }
 ] %}
 
 <p class="text-gray" data-i18n="settings.mcpServersIntro">MCP Server 讓 Agent 連上外部工具。註冊即在 Agent 主機執行指定指令，屬高權限操作，僅平台管理者可管理；租戶只能在對話設定勾選已註冊的 Server。</p>
@@ -140,7 +145,7 @@ permalink: 5-6-2_platformMcpServers.html
             <tbody>
                 {% for server in mcpServers %}
                 {# data-mcp-id＝React 列鍵契約（saas 端 <tr data-mcp-id={server.id}>），示範以 loop.index 代 id（同 3-3 data-qa-set-id）#}
-                <tr data-mcp-id="{{ loop.index }}">
+                <tr data-mcp-id="{{ server.id }}">
                     <td><input type="text" class="form-control" value="{{ server.name }}" aria-label="名稱" data-i18n-aria-label="widget.tokenName"></td>
                     <td><input type="text" class="form-control" value="{{ server.command }}" aria-label="執行指令" data-i18n-aria-label="settings.mcpCommand"></td>
                     {# 參數一行一個、env 一行一個 KEY=value：原本 args 以空白切、env 以逗號切，

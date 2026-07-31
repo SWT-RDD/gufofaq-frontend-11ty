@@ -19,9 +19,12 @@ permalink: 3-3_qaSetManagement.html
      qa_direct.py）：問題→title 槽、答案→content 槽（field_schema.py 的 SLOTS）。哪些 QA 集參與直答在
      「對話設定 ▸ QA 直答」子頁籤選。版型比照資料集列表＋術語表管理（新增區＋清單表＋條件開窗 modal）。示範 2 筆。
      nav.qaSetMgmt 英譯 QA Set Management（站內 nav 家族一致）；product catalog 已對齊（round28 驗 saas messages.en.json）。 #}
+{# id＝QA 集主鍵（切版新頁，product 尚無對應 router；比照同族資源用整數 id）。
+     **不可拿 loop.index 當列鍵**：這張表刪得掉列，位置不是身分——刪掉前一列之後，
+     後面每一列的列鍵都會往前頂一格，React 端的 key 與逐列動作的目標會一起指錯人（§6 列鍵）。 #}
 {% set qaSets = [
-  { name: "客服問答集", group: "管理群組", count: "512", createdAt: "2025/11/05 09:12", updatedAt: "2026/06/20 14:30" },
-  { name: "產品 FAQ", group: "業務群組", count: "128", createdAt: "2026/01/12 10:48", updatedAt: "2026/06/28 16:05" }
+  { id: 2, name: "客服問答集", group: "管理群組", count: "512", createdAt: "2025/11/05 09:12", updatedAt: "2026/06/20 14:30" },
+  { id: 3, name: "產品 FAQ", group: "業務群組", count: "128", createdAt: "2026/01/12 10:48", updatedAt: "2026/06/28 16:05" }
 ] %}
 
 <p class="text-gray" data-i18n="qaSet.intro">QA 集是問答對集合：使用者問句完全命中某題的問題時，直接回該題答案原文、不經 AI 重組。可在「對話設定 ▸ QA 直答」選擇哪些 QA 集參與直答。</p>
@@ -90,7 +93,7 @@ permalink: 3-3_qaSetManagement.html
             </thead>
             <tbody>
                 {% for qa in qaSets %}
-                <tr data-qa-set-id="{{ loop.index }}">
+                <tr data-qa-set-id="{{ qa.id }}">
                     <td>{{ qa.name }}</td>
                     <td>{{ qa.group }}</td>
                     <td class="text-center">{{ qa.count }} <span data-i18n="dataset.recordsUnit">筆</span></td>

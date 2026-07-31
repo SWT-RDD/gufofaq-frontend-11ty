@@ -85,9 +85,12 @@ permalink: 2-2-4_regressionSuites.html
      `summary.total` 是跑完當下寫死的數字，連帶刪掉會讓那些歷史對不起來。所以刪除是
      條件開窗（先選定要刪哪一列）＝ hook class、不掛 data-open-modal（GUIDELINE §5）。
      示範 2 筆：一筆跑過（3 次執行）、一筆沒跑過——兩種列都要看得到。 #}
+{# id＝案例集主鍵（product 的 TestSuite.id，整數；regression.py:201 `_owned_suite(db, tenant_id, suite_id)`）。
+     **不可拿 loop.index 當列鍵**：這張表刪得掉列，位置不是身分——刪掉第一列之後第二列就頂上
+     原本的 `data-suite-id="1"`，React 端的 key 與動作目標會一起指錯人（§6 列鍵）。 #}
 {% set regressionSuites = [
-  { name: "關稅問答基準集", desc: "上線前必跑的 12 題", caseCount: 12, runCount: 4, createdAt: "2026/06/12 10:05" },
-  { name: "追問情境集（多輪）", desc: "承接前一輪主題的追問題目", caseCount: 6, runCount: 0, createdAt: "2026/07/02 14:41" }
+  { id: 7, name: "關稅問答基準集", desc: "上線前必跑的 12 題", caseCount: 12, runCount: 4, createdAt: "2026/06/12 10:05" },
+  { id: 8, name: "追問情境集（多輪）", desc: "承接前一輪主題的追問題目", caseCount: 6, runCount: 0, createdAt: "2026/07/02 14:41" }
 ] %}
 <div class="block mt-16 flex-row column gap-16">
     <div class="text-md text-bold" data-i18n="regression.suiteList">案例集清單</div>
@@ -113,7 +116,7 @@ permalink: 2-2-4_regressionSuites.html
             </thead>
             <tbody>
                 {% for suite in regressionSuites %}
-                <tr data-suite-id="{{ loop.index }}">
+                <tr data-suite-id="{{ suite.id }}">
                     <td>{{ suite.name }}</td>
                     <td>{{ suite.desc }}</td>
                     <td class="text-center">{{ suite.caseCount }}</td>
@@ -138,8 +141,12 @@ permalink: 2-2-4_regressionSuites.html
      展開列（ui/accordion 的表格結構）放這一則案例的完整內容：逐條斷言講成人話、逐輪前置
      對話、備註（一鍵建立時自動寫入的出處）。
      示範 2 筆刻意演兩種形狀：一筆多輪＋多型斷言，一筆單輪＋`no_answer`（無參數斷言）。 #}
+{# id＝案例主鍵（product 的 TestCase.id，整數；regression.py:208 `_owned_case(db, tenant_id, suite_id, case_id)`），
+     與畫面上的「序號」欄不是同一件事——序號是這一頁的排序位置，id 才是身分。
+     41 這個號碼在本頁另有出處：執行紀錄 #311 的中斷說明寫「案例 41 的第 1 輪」，指的就是這一則。 #}
 {% set regressionCases = [
   {
+    id: 41,
     question: "臺灣輸美鋼品的關稅稅率是多少",
     contextTurns: [
       { human: "我要出口鋼品到美國", ai: "好的，請問您想了解關稅、配額還是文件？" },
@@ -153,6 +160,7 @@ permalink: 2-2-4_regressionSuites.html
     note: "從問答紀錄 #48213 建立（這則問答的主要來源是 document_id=「9f2c1b7e…a41」，期望它仍然引用得到）"
   },
   {
+    id: 42,
     question: "火星的關稅稅率是多少",
     contextTurns: [],
     assertions: [
@@ -192,7 +200,7 @@ permalink: 2-2-4_regressionSuites.html
             </thead>
             <tbody>
                 {% for case in regressionCases %}
-                <tr data-case-id="{{ loop.index }}">
+                <tr data-case-id="{{ case.id }}">
                     <td>
                         <button type="button" class="button accordion-btn" aria-expanded="false" title="展開表格" data-i18n-title="common.expandRow">
                             <span class="sr-only" data-i18n="common.expandRow">展開表格</span>

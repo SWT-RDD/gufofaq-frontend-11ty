@@ -3081,8 +3081,8 @@ test("§6 5-2 的 MCP Server 勾選清單與 5-6-2 註冊表跨頁自洽（三�
     // 原本 5-2 只列啟用中的兩筆、停用那筆整個濾掉：於是「先建好設定、之後再啟用」在 UI 上做不到，
     // 而且已選取的 server 被平台停用後會從選單消失（多選的值來自 <option>，選單沒有它＝選取狀態不存在）。
     const registry = read("src/pages/settings/5-6-2_platformMcpServers.html");
-    const servers = [...registry.matchAll(/\{\s*name:\s*"([^"]+)",[^}]*active:\s*(true|false)/g)]
-        .map(([, name, active]) => ({ name, active: active === "true" }));
+    const servers = [...registry.matchAll(/\{\s*id:\s*(\d+),\s*name:\s*"([^"]+)",[^}]*active:\s*(true|false)/g)]
+        .map(([, id, name, active]) => ({ id, name, active: active === "true" }));
     assert.ok(servers.length >= 3, `5-6-2 只解析到 ${servers.length} 筆註冊 server —— 這條測試在空轉`);
 
     const select = distDoc("5-2_conversationSettings.html").match(/<select[^>]*js-mcp-servers[^>]*>([\s\S]*?)<\/select>/);
@@ -3094,6 +3094,9 @@ test("§6 5-2 的 MCP Server 勾選清單與 5-6-2 註冊表跨頁自洽（三�
     for (const s of servers) {
         const opt = options.find((o) => o.text === s.name);
         if (!opt) { hits.push(`5-2 選單缺「${s.name}」（5-6-2 已註冊，濾掉就選不到）`); continue; }
+        // option 的 value 就是 5-6-2 的列鍵：兩邊各自寫死一組號碼，改了一邊不會有人發現
+        const val = opt.attrs.match(/\svalue="([^"]*)"/);
+        if (!val || val[1] !== s.id) hits.push(`「${s.name}」在 5-6-2 的 id 是 ${s.id}，5-2 的 <option value> 卻是 ${val ? val[1] : "（沒有 value）"}`);
         const marked = /\bdata-suffix-key="settings\.mcpServerInactive"/.test(opt.attrs);
         if (s.active && marked) hits.push(`「${s.name}」在 5-6-2 是啟用中，5-2 卻標了（停用中）`);
         if (!s.active && !marked) hits.push(`「${s.name}」在 5-6-2 是停用中，5-2 卻沒標示——選了會以為立即生效`);

@@ -20,10 +20,13 @@ permalink: 3-4_skillManagement.html
      能力閘 settings:read 檢視／settings:write 編輯（skill 是 agent 的行為設定，不是知識資產，
      故與術語表的 data 閘刻意不同），真正把關在 product。
      版型比照 3-2_glossaryManagement（新增區＋清單表＋條件開窗 modal）。示範 3 筆。 #}
+{# id＝Skill 主鍵（product `app/routers/skills.py:128` 的 `skill_id: int`）。**不可拿 loop.index 當列鍵**：
+     這張表刪得掉列，位置不是身分——刪掉前一列之後，後面每一列的列鍵都會往前頂一格，
+     React 端的 key 與逐列動作的目標會一起指錯人（§6 列鍵）。 #}
 {% set skills = [
-  { name: "refund-flow", description: "處理退貨與退款試算。使用者問到退貨、退款、換貨時使用。", version: "v2", tools: "lookup-order, calculate", enabled: true },
-  { name: "lookup-order", description: "依訂單編號查出金額、狀態與品項。使用者提供訂單號時使用。", version: "v1", tools: "search_knowledge_base", enabled: true },
-  { name: "policy-lookup", description: "查詢公司政策與法規條文。使用者問到規定、條文時使用。", version: "v3", tools: "search_knowledge_base, 人資術語", enabled: false }
+  { id: 11, name: "refund-flow", description: "處理退貨與退款試算。使用者問到退貨、退款、換貨時使用。", version: "v2", tools: "lookup-order, calculate", enabled: true },
+  { id: 12, name: "lookup-order", description: "依訂單編號查出金額、狀態與品項。使用者提供訂單號時使用。", version: "v1", tools: "search_knowledge_base", enabled: true },
+  { id: 13, name: "policy-lookup", description: "查詢公司政策與法規條文。使用者問到規定、條文時使用。", version: "v3", tools: "search_knowledge_base, 人資術語", enabled: false }
 ] %}
 
 <p class="text-gray" data-i18n="settings.skillMgmtIntro">Skill 是可重用的能力包：把一段指令與一組工具打包起來，問答 agent 會依「用途說明」自行決定何時呼叫它。只在 Agent 模式生效。</p>
@@ -93,7 +96,7 @@ permalink: 3-4_skillManagement.html
             </thead>
             <tbody>
                 {% for skill in skills %}
-                <tr data-skill-id="{{ loop.index }}">
+                <tr data-skill-id="{{ skill.id }}">
                     <td><code class="inline-code">{{ skill.name }}</code></td>
                     <td>{{ skill.description }}</td>
                     <td class="text-center">{{ skill.version }}</td>
