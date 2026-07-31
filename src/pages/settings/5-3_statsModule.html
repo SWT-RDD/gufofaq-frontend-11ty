@@ -176,13 +176,13 @@ permalink: 5-3_statsModule.html
      - 已計入／群組數＝`totals.counted`／`totals.groups`：前者恆等於排行各列次數的總和（有沒有被吃掉
        只有這裡看得出來），後者是**合併「其他（N 個來源）」之前**的真實組數。 #}
 <div class="block flex-row gap-24 flex-wrap mt-16">
-    <p><span class="bold" data-i18n="settings.statsDimensionLabel">統計維度：</span><span id="stats-dimension-echo">-</span></p>
-    <p><span class="bold" data-i18n="settings.countModeLabel">計數方式：</span><span id="stats-count-mode-echo">-</span></p>
-    <p><span class="bold" data-i18n="settings.noHitRate">無命中率：</span><span id="stats-no-hit-rate">-</span></p>
-    <p><span class="bold" data-i18n="settings.conversationCount">對話次數：</span><span id="stats-total-logs">0</span></p>
-    <p><span class="bold" data-i18n="settings.retrievedCount">取用資料數：</span><span id="stats-total-hits">0</span></p>
-    <p><span class="bold" data-i18n="settings.countedTotal">已計入：</span><span id="stats-total-counted">0</span></p>
-    <p><span class="bold" data-i18n="settings.groupCount">群組數：</span><span id="stats-total-groups">0</span></p>
+    <p><span class="text-bold" data-i18n="settings.statsDimensionLabel">統計維度：</span><span id="stats-dimension-echo">-</span></p>
+    <p><span class="text-bold" data-i18n="settings.countModeLabel">計數方式：</span><span id="stats-count-mode-echo">-</span></p>
+    <p><span class="text-bold" data-i18n="settings.noHitRate">無命中率：</span><span id="stats-no-hit-rate">-</span></p>
+    <p><span class="text-bold" data-i18n="settings.conversationCount">對話次數：</span><span id="stats-total-logs">0</span></p>
+    <p><span class="text-bold" data-i18n="settings.retrievedCount">取用資料數：</span><span id="stats-total-hits">0</span></p>
+    <p><span class="text-bold" data-i18n="settings.countedTotal">已計入：</span><span id="stats-total-counted">0</span></p>
+    <p><span class="text-bold" data-i18n="settings.groupCount">群組數：</span><span id="stats-total-groups">0</span></p>
 </div>
 
 {# 圖表區塊：沿用 ui/chart-box，.chart 內僅放 <canvas> 佔位，不掛 Chart.js（業務 JS 不轉）。
@@ -200,10 +200,10 @@ permalink: 5-3_statsModule.html
         <div class="chart-title" data-i18n="settings.contributionRanking">貢獻度排行與優先續建議</div>
         <div class="chart chart-auto" id="chart2-ranking"></div>
         <div class="chart-desc">
-            <p><span class="bold" data-i18n="settings.dataTimeLabel">資料時間：</span><span id="chart2-time">-</span></p>
+            <p><span class="text-bold" data-i18n="settings.dataTimeLabel">資料時間：</span><span id="chart2-time">-</span></p>
             <div class="flex-row gap-10 flex-wrap">
-                <p><span class="bold" data-i18n="settings.conversationCount">對話次數：</span><span id="chart2-qa">0</span></p>
-                <p><span class="bold" data-i18n="settings.retrievedCount">取用資料數：</span><span id="chart2-retrieved">0</span></p>
+                <p><span class="text-bold" data-i18n="settings.conversationCount">對話次數：</span><span id="chart2-qa">0</span></p>
+                <p><span class="text-bold" data-i18n="settings.retrievedCount">取用資料數：</span><span id="chart2-retrieved">0</span></p>
             </div>
         </div>
     </div>
@@ -211,10 +211,10 @@ permalink: 5-3_statsModule.html
         <div class="chart-title" data-i18n="settings.weeklyRetrievalTrend">近4周取用次數變化</div>
         <div class="chart"><canvas id="chart3-line"></canvas></div>
         <div class="chart-desc">
-            <p><span class="bold" data-i18n="settings.dataTimeLabel">資料時間：</span><span id="chart3-time">-</span></p>
+            <p><span class="text-bold" data-i18n="settings.dataTimeLabel">資料時間：</span><span id="chart3-time">-</span></p>
             <div class="flex-row gap-10 flex-wrap">
-                <p><span class="bold" data-i18n="settings.conversationCount">對話次數：</span><span id="chart3-qa">0</span></p>
-                <p><span class="bold" data-i18n="settings.retrievedCount">取用資料數：</span><span id="chart3-retrieved">0</span></p>
+                <p><span class="text-bold" data-i18n="settings.conversationCount">對話次數：</span><span id="chart3-qa">0</span></p>
+                <p><span class="text-bold" data-i18n="settings.retrievedCount">取用資料數：</span><span id="chart3-retrieved">0</span></p>
             </div>
         </div>
     </div>

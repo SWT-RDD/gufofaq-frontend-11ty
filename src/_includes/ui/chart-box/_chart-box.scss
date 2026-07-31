@@ -52,12 +52,11 @@
             }
         }
 
+        // 「粗體」走全域正本 .text-bold（_utilities）。這裡曾有一條 `.bold { font-weight: 600 }`，
+        // 但它只在 .chart-box .chart-desc p 底下成立——被複製到別頁後就是一顆沒有字重的裸 class。
         p {
             margin: 0;
             font-size: 18px;
-            .bold {
-                font-weight: 600;
-            }
         }
     }
 }

@@ -241,12 +241,12 @@ permalink: 5-4_coverageGaps.html
      ——不然「這份報表只看了前 100 種」這件事沒有任何地方講得出來。 #}
 <div class="block flex-row column gap-8 mt-16">
     <div class="flex-row gap-24 flex-wrap">
-        <p><span class="bold" data-i18n="settings.dataTimeLabel">資料時間：</span><span id="gap-range">{{ gapSummary.range }}</span></p>
-        <p><span class="bold" data-i18n="settings.conversationCount">對話次數：</span><span id="gap-total-logs">{{ gapSummary.totalLogs }}</span></p>
-        <p><span class="bold" data-i18n="settings.noAnswerTotal">查無則數：</span><span id="gap-total-no-answer">{{ gapSummary.totalNoAnswer }}</span></p>
-        <p><span class="bold" data-i18n="settings.excludedTotal">已排除則數：</span><span id="gap-excluded-count">{{ gapSummary.excludedCount }}</span></p>
-        <p><span class="bold" data-i18n="settings.gapGroupedBy">分群維度：</span><span id="gap-dimension">{{ gapSummary.dimensionName }}</span></p>
-        <p><span class="bold" data-i18n="settings.gapClassifiedQuestions">已分類提問數：</span><span id="gap-classified">{{ gapSummary.classifiedQuestions }} / {{ gapSummary.classifyLimit }}</span></p>
+        <p><span class="text-bold" data-i18n="settings.dataTimeLabel">資料時間：</span><span id="gap-range">{{ gapSummary.range }}</span></p>
+        <p><span class="text-bold" data-i18n="settings.conversationCount">對話次數：</span><span id="gap-total-logs">{{ gapSummary.totalLogs }}</span></p>
+        <p><span class="text-bold" data-i18n="settings.noAnswerTotal">查無則數：</span><span id="gap-total-no-answer">{{ gapSummary.totalNoAnswer }}</span></p>
+        <p><span class="text-bold" data-i18n="settings.excludedTotal">已排除則數：</span><span id="gap-excluded-count">{{ gapSummary.excludedCount }}</span></p>
+        <p><span class="text-bold" data-i18n="settings.gapGroupedBy">分群維度：</span><span id="gap-dimension">{{ gapSummary.dimensionName }}</span></p>
+        <p><span class="text-bold" data-i18n="settings.gapClassifiedQuestions">已分類提問數：</span><span id="gap-classified">{{ gapSummary.classifiedQuestions }} / {{ gapSummary.classifyLimit }}</span></p>
     </div>
     {% if gapSummary.classifiedQuestions == gapSummary.classifyLimit %}
     <p class="text-red" data-i18n="settings.gapClassifyLimitReached">已達單次請求的分類上限：超出的相異提問這一次沒有送去分類，照實落在下面的「沒送去分類」那一組。預算花在問得最多的那些題目上，所以留在界外的是尾巴上只被問過一兩次的。</p>
@@ -289,9 +289,9 @@ permalink: 5-4_coverageGaps.html
             {% if group.kind == "code" %}<code class="inline-code">{{ group.key }}</code>{% endif %}
         </div>
         <div class="flex-row gap-16 flex-wrap">
-            <p><span class="bold" data-i18n="settings.groupNoAnswerTotal">本組查無則數：</span><span>{{ group.count }}</span></p>
-            <p><span class="bold" data-i18n="settings.distinctQuestions">相異提問數：</span><span>{{ group.distinctQuestions }}</span></p>
-            <p><span class="bold" data-i18n="settings.samplesShown">已列出：</span><span>{{ group.samples.length }}</span></p>
+            <p><span class="text-bold" data-i18n="settings.groupNoAnswerTotal">本組查無則數：</span><span>{{ group.count }}</span></p>
+            <p><span class="text-bold" data-i18n="settings.distinctQuestions">相異提問數：</span><span>{{ group.distinctQuestions }}</span></p>
+            <p><span class="text-bold" data-i18n="settings.samplesShown">已列出：</span><span>{{ group.samples.length }}</span></p>
         </div>
     </div>
     {# 三種「沒分到類」各自帶一句自己的解讀說明——它們的下一步動作完全不同，

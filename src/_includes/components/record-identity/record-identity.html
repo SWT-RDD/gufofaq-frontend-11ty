@@ -53,7 +53,7 @@
 {% if recordIdentity.unavailableReason %}<span class="text-gray" data-i18n="health.recordUnavailable">（讀不出這一筆的標題）</span>
 <code class="inline-code">{{ recordIdentity.unavailableReason }}</code>{% else %}
 {% if recordIdentity.titleSource == "title_slot" %}<span class="text-gray" data-i18n="health.recordSourceRow">〔資料列〕</span>{% elif recordIdentity.titleSource == "filename" %}<span class="text-gray" data-i18n="health.recordSourceDocument">〔整份文件〕</span>{% elif recordIdentity.titleSource == "no_answer_question" %}<span class="text-gray" data-i18n="health.recordSourceQuestion">〔使用者的問法〕</span>{% endif %}
-{% if recordIdentity.title %}<span class="bold">{{ recordIdentity.title }}</span>{% else %}<span class="text-gray" data-i18n="health.recordTitleBlank">（這一筆的標題欄是空的）</span>{% endif %}
+{% if recordIdentity.title %}<span class="text-bold">{{ recordIdentity.title }}</span>{% else %}<span class="text-gray" data-i18n="health.recordTitleBlank">（這一筆的標題欄是空的）</span>{% endif %}
 {% if recordIdentity.titleChars > recordIdentity.title.length %}<span class="text-gray" data-i18n="health.recordTitleCutPrefix">（只顯示開頭，原文共 </span><span class="text-gray">{{ recordIdentity.titleChars }}</span><span class="text-gray" data-i18n="health.recordTitleCutSuffix"> 字）</span>{% endif %}
 {% endif %}
 {% if recordIdentity.filename %}<span class="text-gray">{{ recordIdentity.filename }}</span>{% endif %}
