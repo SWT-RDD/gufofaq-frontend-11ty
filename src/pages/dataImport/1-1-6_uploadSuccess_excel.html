@@ -34,9 +34,11 @@ permalink: 1-1-6_uploadSuccess_excel.html
 {# 匯入結果回報：Excel 端點回的三計數與「被剝除的連結」（product `_do_excel_mapping_import` 的
      `dropped_links`——儲存格裡的 HTML 轉 Markdown 時剝掉的網址）。Excel 一次一個檔，故逐檔清單只有一項；
      它沒有抽取統計（那是 PDF/Word 的 `structure`，見 1-2-1）。
-     示範 updated=1＝這次帶了外部主鍵、取代掉同鍵舊版（與 1-1-4 的外部主鍵欄自洽，§6）；
-     failed 在單筆端點恆為 0（失敗＝HTTP 錯誤碼，見 product `import_excel` 的回應）。 #}
-{% set importCounts = { inserted: 3, updated: 1, failed: 0 } %}
+     **三計數的單位是「檔」不是「列」，而且 inserted／updated 互斥**：product `datasets.py` 的單筆
+     Excel 端點回的是 `"inserted": 0 if superseded else 1`、`"updated": 1 if superseded else 0`，
+     兩者相加恆為 1；failed 恆為 0（失敗＝HTTP 錯誤碼，見 `import_excel` 的回應）。
+     示範走「直接新增」那一態：1-1-4 的外部主鍵欄留白＝不取代（superseded is None）⇒ inserted=1。 #}
+{% set importCounts = { inserted: 1, updated: 0, failed: 0 } %}
 {% set importFileReports = [
     {
         filename: "客服問答集.xlsx",

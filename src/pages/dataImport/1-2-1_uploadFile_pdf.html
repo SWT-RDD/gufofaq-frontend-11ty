@@ -200,12 +200,16 @@ permalink: 1-2-1_uploadFile_pdf.html
      兩種副檔名各演一份統計，因為**欄位本來就不同**：pdf 是頁數／表格／表格列數＋兩個警訊欄，
      word 是段落／表格／表格列數。只演一種的話，另一種的那幾個標籤全站沒有任何頁面看得到。 #}
 {% set importCounts = { inserted: 2, updated: 0, failed: 1 } %}
+{# `structTables` 是**偵測到的表格總數**：pdf_tables 的 `stats["tables"] += 1` 在判定
+     「這張處理不了」之前就無條件加一，所以無法處理的那幾張也算在內。下面 unprocessableTables
+     指名了「第 2 個表格」、suspectedHeaderlessTables 指名「第 3 個表格」，故總數至少是 3
+     ——寫 1 的話那兩筆指的是不存在的表格（§6：計數與具名清單要互推得出來）。 #}
 {% set importFileReports = [
     {
         filename: "20251119105623_公文範本.pdf",
         structure: [
             { labelKey: "dataImport.structPages", label: "頁數", value: 12 },
-            { labelKey: "dataImport.structTables", label: "表格", value: 1 },
+            { labelKey: "dataImport.structTables", label: "表格", value: 3 },
             { labelKey: "dataImport.structTableRows", label: "表格列數", value: 43 },
             { labelKey: "dataImport.structContinuationTables", label: "沒有表頭的續表", value: 1 },
             { labelKey: "dataImport.structSuspectedTablePages", label: "有格線卻抽不出表格的頁數", value: 2 }
