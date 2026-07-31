@@ -251,14 +251,18 @@ test("§4-1 每個 <N>vh 都要緊接一行同值 <N>dvh fallback（不只 100vh
     // §4-1 的規則寫的是「vh 佔比尺寸一律配同值 dvh（**不只 100vh**：`max-height: 88vh` 同理）」，
     // 但這條測試原本寫死 /100vh/，非 100 的那些完全不設防——scss 是 byte-identical 搬進 React 的，
     // 這種缺陷會原封不動繼承。改成逐個數值比對。
+    // round35 突變證明：原本 `if (/dvh/.test(line)) return null` 排在算 nums 之前，於是
+    // 「同一行任何位置出現 dvh」（另一個屬性的、值不同的、甚至註解裡的）就讓該行所有 vh 免驗——
+    // `max-height: 55vh; max-height: 88dvh;` 寫在同一行照樣全綠。改成逐個 vh 值檢查
+    // 「同一行或下一行」有沒有同值的 dvh，不再整行跳過。
     let seen = 0;
     const hits = scanLines(srcScss, (line, f, i, lines) => {
-        if (/^\s*\/\//.test(line) || /dvh/.test(line)) return null;
+        if (/^\s*\/\//.test(line)) return null;
         const nums = [...line.matchAll(/(\d+(?:\.\d+)?)vh\b/g)].map((m) => m[1]);
         if (!nums.length) return null;
         seen += nums.length;
-        const next = lines[i + 1] || "";
-        const missing = nums.filter((n) => !new RegExp(n + "dvh\\b").test(next));
+        const scope = line + "\n" + (lines[i + 1] || "");
+        const missing = nums.filter((n) => !new RegExp(n + "dvh\\b").test(scope));
         return missing.length ? `缺 ${missing.map((n) => n + "dvh").join("、")} fallback` : null;
     });
     assert.ok(seen >= 5, `只掃到 ${seen} 個 vh 值 —— 這條測試在空轉`);
@@ -347,8 +351,11 @@ test("§4 .btn-group 只在 .default-table 裡有規則，表格外掛它等於�
     const hits = [];
     for (const f of distHtml) {
         const t = read(`dist/${f}`);
-        let i = -1;
-        while ((i = t.indexOf('class="btn-group"', i + 1)) >= 0) {
+        // round35 突變證明：原本字面比對 `class="btn-group"`，於是 `class="btn-group align-items-center"`
+        // （旁邊多一個工具 class，是常態）完全看不到。改成逐個 class 屬性掃。
+        for (const cm of t.matchAll(/\bclass="([^"]*)"/g)) {
+            if (!cm[1].split(/\s+/).includes("btn-group")) continue;
+            const i = cm.index;
             seen++;
             const before = t.slice(0, i);
             const open = (before.match(/<table\b/g) || []).length;
@@ -401,7 +408,11 @@ test("§4 markup 上的每個 class 都要有主人（反向網：css 規則／�
 
     const css = read("dist/css/main.css");
     const cssClasses = new Set([...css.matchAll(/\.(-?[_a-zA-Z][\w-]*)/g)].map((m) => m[1]));
-    const jsBlob = srcJs.map((f) => read(f)).join("\n");
+    // round35 突變證明：原本直接吃 js 原始檔，於是「在任何一支元件 js 的**註解**裡提一次」
+    // 就足以讓一個全站無主的 class 過關——而 §4 第②種死法正是「新造一個看起來像掛點的 class」。
+    // 剝掉行註解與區塊註解再比對（`//` 前面是 `:` 的不剝，那是網址）。
+    const stripJsComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/.*$/gm, "$1");
+    const jsBlob = srcJs.map((f) => stripJsComments(read(f))).join("\n");
     assert.ok(cssClasses.size > 300, `編譯後 css 只解析到 ${cssClasses.size} 個 class —— 這條測試在空轉`);
 
     const seen = new Map();
@@ -494,7 +505,13 @@ test("§7 所有 modal 的外殼逐字相同（只差尺寸 class）——React 
             continue;
         }
         const afterClose = afterWrap.replace(/^\s*\{%\s*include\s+"ui\/modal-close\/modal-close\.html"\s*%\}/, "");
-        if (!/^\s*<div class="modals-content">/.test(afterClose)) hits.push(`${d.f}：ui/modal-close 之後不是 <div class="modals-content">`);
+        if (!/^\s*<div class="modals-content">/.test(afterClose)) { hits.push(`${d.f}：ui/modal-close 之後不是 <div class="modals-content">`); continue; }
+        // round35 突變證明：只驗到 `.modals-content` 的**開頭**，於是「.modals-content 收尾之後、
+        // .modals-wrap 之內再長出一個兄弟」照樣全綠——那顆 modal 的殼一樣共用不了。
+        // 補驗後半段：.modals-wrap 的直接子元素恰好是 modal-close ＋ .modals-content 兩個。
+        const wrapInner = afterWrap.slice(0, lastIndexOfBalanced(afterWrap));
+        const siblings = topLevelTags(wrapInner);
+        if (siblings.length !== 2) hits.push(`${d.f}：.modals-wrap 的直接子元素有 ${siblings.length} 個（殼只准 ui/modal-close ＋ .modals-content 兩個）`);
     }
     assert.equal(hits.length, 0, fail(hits));
 });
@@ -502,10 +519,13 @@ test("§7 所有 modal 的外殼逐字相同（只差尺寸 class）——React 
 test("§4 頁籤的選中態要同時掛 .active 與 aria-current=\"true\"（.active 只是視覺，報讀器聽不到）", () => {
     // §4 要求「初始 markup 也帶」，但既有測試對 aria-current 一次命中都沒有。React 端 .active 會變 state，
     // aria-current 沒被帶過去的話沒有任何網子接得到——而它是 fpdiff 的零容忍欄位。
+    // round35 突變證明：原本只掃 `<button>`，而「死頁籤」那條測試的註解自己寫著
+    // 「③本身是 <a> 連到別頁」——`<a>` 頁籤是本專案認可的第三種形狀，它的選中態原本沒有任何網。
+    // 改成掃任何帶 `.tab` 的元素。
     let seen = 0;
     const hits = [];
     for (const f of distHtml) {
-        for (const m of read(`dist/${f}`).matchAll(/<button\b((?:"[^"]*"|[^>"])*)>/g)) {
+        for (const m of read(`dist/${f}`).matchAll(/<[a-z]+\b((?:"[^"]*"|[^>"])*)>/g)) {
             const attrs = m[1];
             if (!/class="[^"]*\btab\b[^"]*"/.test(attrs)) continue;
             const active = /class="[^"]*\bactive\b[^"]*"/.test(attrs);
@@ -784,6 +804,34 @@ test("§4 不得依頁面覆寫元件（body-class 範圍選擇器只准出現�
 // 剝掉 nunjucks 註解、以換行等長替換（行號不位移）：註解掉的 include／data-i18n／{% set %} 不算
 // 「在服役」，否則死元件、孤兒 key、撞名變數靠一段 {# #} 就能永遠活著（round17）。
 const countLines = (text, idx) => text.slice(0, idx).split(String.fromCharCode(10)).length;
+
+// 從一段「已在某個 <div> 內部」的字串裡，找出該 div 的收尾位置（字串感知的大括號/標籤配對）
+function lastIndexOfBalanced(inner) {
+    let depth = 1;
+    const re = /<(\/?)div\b[^>]*>/g;
+    let m;
+    while ((m = re.exec(inner))) {
+        depth += m[1] ? -1 : 1;
+        if (depth === 0) return m.index;
+    }
+    return inner.length;
+}
+
+// 一段 html 裡「最外層」的標籤（含 {% include %}）依序列出
+function topLevelTags(inner) {
+    const out = [];
+    let depth = 0;
+    const re = /<(\/?)([a-z0-9]+)\b[^>]*?(\/?)>|\{%\s*include\s+"([^"]+)"\s*%\}/g;
+    let m;
+    while ((m = re.exec(inner))) {
+        if (m[4]) { if (depth === 0) out.push(`include:${m[4]}`); continue; }
+        const [, close, tag, selfClose] = m;
+        if (selfClose || /^(img|input|br|hr|col|meta|link)$/.test(tag)) { if (depth === 0) out.push(tag); continue; }
+        if (close) depth--;
+        else { if (depth === 0) out.push(tag); depth++; }
+    }
+    return out;
+}
 
 function stripNjk(str) {
     return str.replace(/\{#[\s\S]*?#\}/g, (m) => m.replace(/[^\n]/g, ""));
@@ -2349,7 +2397,20 @@ test("§6 元件內部 {% set %} 示範變數名：跨元件唯一、且不與�
     // ui/chart-desc），而同一顆子元件也被頁面直接 include。那不是撞名，是組合：外層與頁面各自
     // 在 include 前把子元件的參數設齊即可（§2 那條「第二次用到要先重設」已經在管頁面那一半）。
     // 判準用讀的、不用列舉：這個名字被外層 set，且**它 include 的某個子元件真的讀了這個名字**。
-    const readsVar = (file, name) => new RegExp("\\{[{%][^}]*\\b" + name + "\\b").test(stripNjk(read(file)));
+    // round35 突變證明：原本判準是「名字在子元件任何 {{ }}／{% %} 裡出現過」——屬性存取
+    // （`{{ stepFlowSummaryData.tokens }}`）與迴圈變數都算，於是任意元件只要 include 一個
+    // 剛好提過那個字的子元件，就能夾帶一個與頁面層真撞名的名字（實測：把 `{% set tokens %}`
+    // 放進 skill-try-sandbox 就全綠，放進沒有子元件的 step-nodes 才會紅——同一個撞名兩種結果）。
+    // 改成「子元件把它當**參數**讀」：名字要出現在運算式的開頭位置，不能只是別人的屬性名。
+    const readsVar = (file, name) => {
+        const n = name.replace(/[^\w-]/g, "");
+        const pat = [
+            "\\{\\{-?\\s*" + n + "(\\s|\\.|\\||\\}|$)", // {{ name }} / {{ name.x }} / {{ name | f }}
+            "\\{%-?\\s*(if|elif)\\s+(not\\s+)?" + n + "(\\s|\\.|%|$)", // {% if name %}
+            "\\{%-?\\s*for\\s+\\w+\\s+in\\s+" + n + "(\\s|\\.|%|$)", // {% for x in name %}
+        ].join("|");
+        return new RegExp(pat, "m").test(stripNjk(read(file)));
+    };
     const passesThrough = (ownerFile, name) => {
         for (const m of stripNjk(read(ownerFile)).matchAll(/\{%\s*include\s+"([^"]+)"/g)) {
             const child = `src/_includes/${m[1]}`;
@@ -2454,11 +2515,10 @@ test("§4-2 繁中原文相同的 chrome 沿用既有 key、不另立（同文�
         "時間", "標題", "內容", "檔案名稱", "資料集名稱",                  // dataImport/dataset/audit 各區段表頭語境（round15 裁決暫留的舊家族）
         "啟用", "停用",                                                    // 動作鈕（Enable/Disable，3-4 每列直送 PATCH）vs 狀態/選項（widget.active=Active、qaDirectModeOff=Off）
         "資料集", "所屬群組",                                              // 單/複數語意（Dataset/Datasets、Group/Groups）
-        "開始時間", "結束時間", "關鍵字", "狀態",                          // qa 篩選 vs settings 統計篩選；批次匯入欄 vs widget 欄
+        "開始時間", "結束時間", "狀態",                                    // qa 篩選 vs settings 統計篩選；批次匯入欄 vs widget 欄
         "無", "結果", "共", "讚", "倒讚", "筆", "第", "頁",                 // 量詞/前綴/評價的組字上下文各異（「第…個對話」vs「第…頁」、「共 N 頁」vs「第 N 頁」的英文形不同）
-        "登入", "至少 8 碼", "刪除", "設定",                               // 管理端 vs 前台 chrome／type-to-confirm／nav vs 通稱
+        "登入", "刪除", "設定",                                           // 管理端 vs 前台 chrome／type-to-confirm／nav vs 通稱
         "知識檢索", "套用為正式設定", "欄位對應", "歷史紀錄", "資料匯入",   // nav vs 功能標題 vs audit 動作詞彙
-        "Token",                                                          // step-flow 執行摘要的 LLM 用量計數（英譯 Tokens）vs widget.token 前台嵌入憑證字串（英譯 Token）＝語意確實不同
         // round33 補 dist 掃描後才看得到的兩組（英譯本來就不同，屬 §4-2「語意確實不同才分 key」）：
         "來源",                                                            // qa.citationSourcePrefix="Source "（引用徽章前綴，§4-2 前綴 key 自帶尾空白）vs field.source="Source"（欄位槽名）
         "成員",                                                            // role.member="Member"（角色，單數）vs settings.members="Members"（欄名/計數，複數）
@@ -2518,8 +2578,14 @@ test("§4-2 繁中原文相同的 chrome 沿用既有 key、不另立（同文�
         if (!byZh.has(n)) byZh.set(n, new Set());
         byZh.get(n).add(k);
     }
+    // round35：白名單也會過期——「至少 8 碼」與「Token」今天都只剩 1 個 key 掛在上面
+    //（前者四處 placeholder 已統一成同一顆，後者 `widget.token` 的繁中早改成「金鑰」），
+    // 也就是說它們今天不放行任何東西，而下一個人在同一句繁中另立新 key 時會被靜默放行。
+    // 過期項當場報出來，逼人重新裁決。
+    const usedDeliberate = new Set();
     const hits = [];
     for (const [zh, keys] of byZh) {
+        if (keys.size >= 2 && DELIBERATE.has(zh)) usedDeliberate.add(zh);
         if (keys.size < 2 || DELIBERATE.has(zh)) continue;
         if ([...keys].every((k) => k.startsWith("toast."))) continue;
         // `tool.<工具名>.param.<參數名>` 鏡射 product 的內建工具目錄，key 空間**刻意**逐工具一份
@@ -2528,6 +2594,12 @@ test("§4-2 繁中原文相同的 chrome 沿用既有 key、不另立（同文�
         if ([...keys].every((k) => /^tool\./.test(k))) continue;
         hits.push(`「${zh}」 掛了 ${keys.size} 個 key：${[...keys].join("、")}`);
     }
+    const staleDeliberate = [...DELIBERATE].filter((z) => !usedDeliberate.has(z));
+    assert.equal(
+        staleDeliberate.length,
+        0,
+        `DELIBERATE 有過期項（今天只剩 1 個 key 掛在這句繁中，白名單已無作用，卻會靜默放行下一次的另立）：${staleDeliberate.join("、")}`,
+    );
     assert.equal(hits.length, 0, `同繁中另立 key（§4-2：沿用既有 key；語意確實不同才進 DELIBERATE 白名單）：\n${fail(hits)}`);
 });
 
@@ -2705,23 +2777,47 @@ test("§5 每顆按鈕都要有主人：行為屬性／js- hook／具名真 app 
 
 test("§4 送 API 的數字欄三件套：type=number ＋ min/max/step ＋ 可見區間（aria-describedby 接得上）", () => {
     // §4 那條規則寫了「三件套一起給」，但寫下來的當天全站 28 顆數字欄只有 16 顆有第三件——
-    // 一條在自己寫下來當天就被違反一半的規則，教會下一個讀的人忽略它。這條把第三件釘死。
-    // 第一、二件（type/min/step）已由 5-2 那條專屬測試守著它自己那六顆；這裡守全站的第三件。
+    // 一條在自己寫下來當天就被違反一半的規則，教會下一個讀的人忽略它。
+    // round35 突變證明：這條原本只驗第三件（aria-describedby）——把 min/max/step 全拿掉、
+    // 或把 type="number" 改回 type="text"，148 條照樣全綠。而 2-2-1 的檔頭正記載
+    // 「凍結前端原本就是 type=text，切版改成 number」，回歸的形狀就是那個。三件一起驗。
+    // 兩邊都沒有界線的欄位：逐筆列出＋理由（新增前先去正本確認它真的兩邊都不設限）
+    const NO_BOUND = new Map([
+        ["tenantTrialDaysInput", "延展天數：正數延展、負數縮短，兩邊都沒有界線（platform.py:566 只擋 0）"],
+    ]);
+    const seenNoBound = new Set();
     let seen = 0;
     const hits = [];
     for (const f of srcHtml) {
         const t = stripNjk(read(f));
         for (const m of t.matchAll(/<input\b((?:"[^"]*"|[^>"])*)>/g)) {
             const a = m[1];
+            const id = (a.match(/\bid="([^"]*)"/) || [, ""])[1];
+            const cls = (a.match(/class="([^"]*)"/) || [, ""])[1];
+            const where = `${f}:${t.slice(0, m.index).split(/\r?\n/).length}  ${id || cls || "(無 id)"}`;
+            // 第一件：帶了 min/max/step 就代表它是數值欄，那就必須是 type="number"
+            //（text ＋ Number() 打錯一個字就是 NaN → 序列化成 null → 寫進正式設定）
+            if (/\b(min|max|step)="/.test(a) && !/type="number"/.test(a)) {
+                hits.push(`${where} 有 min/max/step 卻不是 type="number"`);
+                continue;
+            }
             if (!/type="number"/.test(a)) continue;
             seen++;
-            if (/aria-describedby=/.test(a)) continue;
-            const id = (a.match(/\bid="([^"]*)"/) || [, ""])[1];
-            const line = t.slice(0, m.index).split(/\r?\n/).length;
-            hits.push(`${f}:${line}  ${id || "(無 id)"} 缺可見區間提示（aria-describedby）`);
+            // 第二件：後端的區間。`step` 一定要有（整數 vs 小數是每一欄都有的事實）；
+            // 界線至少要有一邊——上界不是每一欄都有（genMemory 刻意無上界），下界則有
+            // 「負值合法」的欄位（延展天數：正數延展、負數縮短），逐筆豁免並附理由。
+            if (!/\bstep="/.test(a)) hits.push(`${where} 缺 step（三件套第二件）`);
+            if (!/\b(min|max)="/.test(a)) {
+                if (NO_BOUND.has(id)) seenNoBound.add(id);
+                else hits.push(`${where} 缺 min／max（三件套第二件；真的兩邊都沒界線就進 NO_BOUND 並寫理由）`);
+            }
+            // 第三件：可見的區間提示，接得上輔具
+            if (!/aria-describedby=/.test(a)) hits.push(`${where} 缺可見區間提示（aria-describedby）`);
         }
     }
     assert.ok(seen >= 20, `只掃到 ${seen} 顆數字欄 —— 這條測試在空轉`);
+    const staleNoBound = [...NO_BOUND.keys()].filter((k) => !seenNoBound.has(k));
+    assert.equal(staleNoBound.length, 0, `NO_BOUND 有過期項（欄位已改名或已補上界線）：${staleNoBound.join("、")}`);
     assert.equal(hits.length, 0, fail(hits));
 });
 
