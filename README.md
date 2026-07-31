@@ -52,7 +52,7 @@ push 到 `master` 會自動觸發 [`.github/workflows/deploy.yml`](.github/workf
 src/
 ├── _includes/
 │   ├── layouts/            整頁模板（3 支，見下表）＋ 模板專屬樣式 `_chatbot-shell.scss`
-│   ├── ui/                 不依賴其他元件的元件（52 個）
+│   ├── ui/                 不依賴其他元件的元件（53 個）
 │   └── components/         會用到其他元件，或某大元件的專屬子片段（52 個）
 ├── scss/                   全域層（元件樣式住在元件資料夾）
 │   ├── _var.scss           設計 token：語意色 + [data-theme=dark] 覆寫（全站唯一色源，單層直值）
@@ -156,7 +156,7 @@ dist/                       build 輸出（勿手改）
 
 **`<元件名>.html` 的兩種身分**：被真實頁面 include 的是生產 markup；只被元件總覽頁 `component.html` include 的是展示片段（`button`、`checkbox`、`radio`、`switch`、`tab`、`form-control`、`multi-select`、`link-file`、`link-modal`、`list-style`、`divider-vertical`、`toast`、`tooltip`、`block`、`form-table`、`default-table`、`error-page`）。展示片段為了示範情境會用到別的元件，判斷桶歸屬時不算依賴（見 GUIDELINE §1-1）。
 
-> **上列不是完整清單**（`src/_includes/` 目前有 104 個元件）。完整結構以 `src/_includes/` 與元件總覽頁 `dist/component.html` 為準。跨檔一致性由 `npm test` 把關：有 js 的元件必須三方登記（實體檔 ⇄ `eleventy.config.js` ⇄ `base.html`）、有 scss 的必須在 `main.scss` `@use`、每個元件 html 都必須被 include（無孤兒）、每張圖都必須被引用。
+> **上列不是完整清單**（`src/_includes/` 目前有 105 個元件）。完整結構以 `src/_includes/` 與元件總覽頁 `dist/component.html` 為準。跨檔一致性由 `npm test` 把關：有 js 的元件必須三方登記（實體檔 ⇄ `eleventy.config.js` ⇄ `base.html`）、有 scss 的必須在 `main.scss` `@use`、每個元件 html 都必須被 include（無孤兒）、每張圖都必須被引用。
 
 ---
 
@@ -195,6 +195,7 @@ dist/                       build 輸出（勿手改）
 | `2-1_qaRecord` 的 `.qa-count` | 真 app 的 2-1 沒有（它來自 2-2-1）。輸入框則以 `chatInputHidden` 關掉——那個真 app 的 2-1 也沒有 |
 | 前台訊息動作列的讚／倒讚／分享 | `scss/faq.scss` 有 `.button-icon.like/.dislike/.share` 的樣式，但 `js/main.js` 產生的 `.message-icon` 只放得出複製鈕 |
 | `2-2-3_abTest` 的問答紀錄側欄 | 真 app 在 AB 頁把它整個 `hidden`（當時不支援）。SaaS 已有 `GET /qatest/ab-history`（product `qatest.py`，每筆＝一次比較、含 A/B 兩側 log_id），故切版交付它——藏著就是「後端查得到、前端有實作、只差版面」的死功能 |
+| 登入後每頁右下角的浮動前台入口（`ui/faq-launcher`，貓頭鷹鈕） | 真 app 管理端沒有這顆鈕（`icon_owl.png` 只出現在前台 Standard 前端的機器人頭像）。掛在 `layouts/page-shell` 上＝「登入態」這個出現條件本身，不逐頁 include；`target="_blank"` 另開 `faq.html`，開新分頁與轉焦點都是瀏覽器的預設行為，零 js |
 | 深色模式（`data-theme`）、中英切換（`data-i18n`） | 兩份真 app 都完全沒有 |
 | toast 的失敗／警告／資訊語意（`toast-error/warning/info`） | 真 app 只有 `toast-success`。切版是原型：每個按鈕該有的結果狀態都要看得見（`data-toast="成功訊息｜失敗訊息"` 逐次輪替） |
 | 遮罩上色的圖示（`icon-mask()`） | 真 app 是 `background-image`（且無深色模式）。遮罩讓顏色跟著 token 走，也刪掉本專案 5 張被遮罩取代的 `*_bluehover.png`（真 app 的 hover 是換整張圖，那邊有 6 張） |

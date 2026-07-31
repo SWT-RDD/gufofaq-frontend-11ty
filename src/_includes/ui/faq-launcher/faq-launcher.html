@@ -1,0 +1,18 @@
+{# 浮動的前台入口（貓頭鷹鈕）：登入後每一頁的右下角都有，點了另開前台 FAQ 聊天機器人頁。
+     SaaS 新需求——真 app 後台沒有這顆鈕（`icon_owl.png` 原本只出現在前台 Standard 前端的機器人頭像）。
+
+     住在 `layouts/page-shell`（＝登入後的外殼）而不是逐頁 include：它的出現條件就是「登入態」，
+     而 login／404／catalog／component 走的是 `base.html`，天然不會有它；前台 faq 頁自己走
+     `chatbot-shell`，也不會冒出一顆連到自己的鈕。**這顆鈕沒有任何條件判斷**，所以不掛 hook class。
+
+     是 `<a>` 不是 `<button>`：它做的事是「去另一個頁面」＝導覽。§4 那條「可點的東西一律用真 button」
+     說的是**動作**；導覽用連結才有 Ctrl+click／中鍵開新分頁／複製連結網址，換成 button 全部消失。
+
+     `target="_blank"`：開新分頁並把焦點移過去是瀏覽器對使用者手勢的預設行為，不需要任何 js
+     （§5 ④ 純前端行為）。`rel="noopener"` 必附——沒有它，新分頁的 `window.opener` 指得回本頁。
+
+     可及名稱寫明「另開新視窗」：報讀器使用者看不到 `target` 屬性，不講就是焦點無預警跳到別的文件。 #}
+<a class="faq-launcher" href="faq.html" target="_blank" rel="noopener"
+    aria-label="開啟 FAQ 聊天機器人（另開新視窗）" data-i18n-aria-label="a11y.openFaqChatbot">
+    <img src="./images/icon_owl.png" width="40" height="40" decoding="async" alt="">
+</a>

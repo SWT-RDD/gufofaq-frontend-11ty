@@ -704,6 +704,47 @@ test("§4 圖示按鈕要有可及名稱（aria-label、按鈕內的文字、或
     assert.equal(hits.length, 0, `螢幕報讀器只會念「按鈕」：\n${fail(hits)}`);
 });
 
+test("§4/§5 target=\"_blank\" 三件套：rel=noopener ＋ 可及名稱講明另開新視窗 ＋ 英譯也要講", () => {
+    // 開新分頁有三個各自獨立、各自只做一半也「看起來正常」的地方：
+    //   ① 少了 rel="noopener"：新分頁的 window.opener 指得回本頁
+    //   ② 可及名稱不講「另開新視窗」：報讀器使用者看不到 target 屬性，焦點就是無預警跳到另一份文件
+    //   ③ 中文講了、英譯漏掉：英文模式沒有這個提示（fpdiff 與「同繁中同英譯」兩張網都看不到屬性）
+    // 判準收在 aria-label 上（而不是可見文字）：這種鈕在本專案都是圖示鈕，名字本來就住在 aria-label。
+    // 哪天有一顆用可見文字當名字的 _blank 連結，再把判準擴到內文——別為了那個假設先把規則寫寬。
+    const en = JSON.parse(read("src/i18n/en.json"));
+    const NEW_WINDOW_ZH = /另開|新視窗|新分頁/;
+    const NEW_WINDOW_EN = /new (window|tab)/i;
+    const rule = (t) => {
+        if (!/(?:^|\s)target="_blank"/.test(t.attrs)) return null;
+        if (!/(?:^|\s)rel="[^"]*\bnoopener\b/.test(t.attrs)) return "少了 rel=\"noopener\"";
+        const label = t.attrs.match(/(?:^|\s)aria-label="([^"]*)"/);
+        if (!label) return "沒有 aria-label（可及名稱要講得出「另開新視窗」）";
+        if (!NEW_WINDOW_ZH.test(label[1])) return `可及名稱沒講另開新視窗："${label[1]}"`;
+        const key = t.attrs.match(/(?:^|\s)data-i18n-aria-label="([^"]*)"/);
+        if (!key) return "aria-label 沒有 data-i18n-aria-label（英文模式會留著繁中）";
+        const val = en[key[1]];
+        if (typeof val !== "string" || !NEW_WINDOW_EN.test(val)) return `英譯沒講 new window/tab：${key[1]} = "${val}"`;
+        return null;
+    };
+    const hits = [];
+    let seen = 0;
+    for (const f of srcHtml) {
+        const src = stripNjk(read(f));
+        seen += [...tagsOf(src)].filter((t) => /(?:^|\s)target="_blank"/.test(t.attrs)).length;
+        hits.push(...scanTags(src, rule, f));
+    }
+    assert.ok(seen >= 1, "全站一個 target=\"_blank\" 都沒有 —— 這條測試在空轉（正典：ui/faq-launcher）");
+    probe("§4 _blank 三件套", (s) => scanTags(s, rule),
+        ['<a href="faq.html" target="_blank" aria-label="開啟（另開新視窗）" data-i18n-aria-label="a11y.openFaqChatbot">x</a>',
+            '<a href="faq.html" target="_blank" rel="noopener">x</a>',
+            '<a href="faq.html" target="_blank" rel="noopener" aria-label="開啟 FAQ" data-i18n-aria-label="a11y.openFaqChatbot">x</a>',
+            '<a href="faq.html" target="_blank" rel="noopener" aria-label="開啟（另開新視窗）">x</a>',
+            '<a href="faq.html" target="_blank" rel="noopener" aria-label="開啟（另開新視窗）" data-i18n-aria-label="a11y.skipToContent">x</a>'],
+        ['<a href="faq.html" target="_blank" rel="noopener" aria-label="開啟（另開新視窗）" data-i18n-aria-label="a11y.openFaqChatbot">x</a>',
+            '<a href="3-1-1_datasetList.html">同分頁導覽，不在此規則</a>']);
+    assert.equal(hits.length, 0, `另開新視窗的三件套沒做齊：\n${fail(hits)}`);
+});
+
 test("§4-2 data-i18n-<後綴> 的後綴，必須是同一個標籤上真的存在的屬性", () => {
     // 「後綴永遠等於它要翻譯的那個屬性名，零例外」。打錯字（data-i18n-arialabel）不會有人發現：
     // 繁中版看不出來，英文版就是那個屬性沒被翻譯，靜默的。

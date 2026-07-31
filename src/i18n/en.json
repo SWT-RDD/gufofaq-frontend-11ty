@@ -1,4 +1,5 @@
 {
+  "a11y.openFaqChatbot": "Open the FAQ chatbot (opens in a new window)",
   "a11y.skipToContent": "Skip to main content",
   "action.addDataset": "Add dataset",
   "action.cancel": "Cancel",

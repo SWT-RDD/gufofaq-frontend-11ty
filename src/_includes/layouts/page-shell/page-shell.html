@@ -18,4 +18,8 @@ layout: layouts/base/base.html
     </div>
 </main>
 
+{# 浮動的前台入口（右下角貓頭鷹鈕）：出現條件就是「登入態」，而登入態＝走這個外殼的頁面，
+   所以掛在這裡而不是逐頁 include。放在 footer 之後＝DOM 順序上是頁面的最後一顆可聚焦元素
+   （它是離開本頁去別的文件的出口，不該擋在內容或導覽前面）；版位由它自己的 position: fixed 決定。 #}
 {% include "components/footer/footer.html" %}
+{% include "ui/faq-launcher/faq-launcher.html" %}

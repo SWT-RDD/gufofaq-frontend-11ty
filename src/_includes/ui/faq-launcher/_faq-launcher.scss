@@ -1,0 +1,51 @@
+// 登入後每一頁右下角的浮動前台入口（貓頭鷹鈕）。markup 見 faq-launcher.html。
+//
+// 視覺語言刻意與前台 `components/faq-chatroom` 的機器人頭像同一套（`--brand-gradient` 的圓形
+// ＋ `icon_owl.png`）：使用者在後台看到的這顆鈕，跟他點進去之後看到的那個機器人是同一個東西。
+//
+// 位置用 `position: fixed` 而不是黏在某個容器裡：它要跟著視窗、不跟著頁面捲動，而後台每一頁的
+// 主容器高度都不一樣（表格頁很長、設定頁很短），掛在容器上就會有些頁「捲到底才看得到」。
+.faq-launcher {
+    position: fixed;
+    right: 24px;
+    bottom: 24px;
+    // 頁面內容之上、`ui/modals`（1000）與 `ui/toast`（2000）之下：彈窗開著時它不該浮在遮罩上面。
+    // （<dialog> 進 top layer 後本來就蓋得住它，這個值是給非 dialog 的浮層一致的順序。）
+    z-index: 900;
+    width: 56px;
+    height: 56px;
+    border-radius: 100px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-image: var(--brand-gradient);
+    box-shadow: 0 2px 8px 0 var(--shadow-strong);
+    // reduced-motion 由 _base 全域壓成 0.01ms，這裡不必再自己判一次
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+    img {
+        width: 28px;
+        height: 28px;
+        object-fit: contain;
+    }
+
+    // hover 與鍵盤焦點給同一組回饋（焦點環本身由 _base 的 :focus-visible 提供）
+    &:hover,
+    &:focus-visible {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px 0 var(--shadow-strong);
+    }
+
+    // 窄螢幕縮一號並靠邊：56px 的鈕在手機上會蓋掉表格最右欄的操作鈕
+    @media screen and (max-width: 768px) {
+        right: 16px;
+        bottom: 16px;
+        width: 48px;
+        height: 48px;
+
+        img {
+            width: 24px;
+            height: 24px;
+        }
+    }
+}
