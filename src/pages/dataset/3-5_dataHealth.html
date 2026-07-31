@@ -329,7 +329,6 @@ permalink: 3-5_dataHealth.html
      product 端 `list_findings` 的**預設**仍是 open（那是 API 契約，不是這張示範演的那一態）。 #}
 {% set healthFindingsPage = { total: 41, perPage: 10, currentPage: 1 } %}
 {% set healthFindings = [
-  ,
   {
     id: 930, checkLabel: "事實衝突", checkLabelKey: "health.checkConflict", checkType: "conflict",
     severityLabel: "候選", severityKey: "health.severityCandidate",
@@ -347,7 +346,6 @@ permalink: 3-5_dataHealth.html
     noteLines: [], resolvedAt: "", resolvedBy: "",
     actions: ["dismiss", "supersede"]
   },
-  ,
   {
     id: 918, checkLabel: "內容已過期", checkLabelKey: "health.checkExpired", checkType: "expired",
     severityLabel: "確定", severityKey: "health.severityConfirmed",
@@ -387,7 +385,6 @@ permalink: 3-5_dataHealth.html
     noteLines: [], resolvedAt: "", resolvedBy: "",
     actions: ["dismiss", "merge", "disable"]
   },
-  ,
   {
     id: 903, checkLabel: "近似重複", checkLabelKey: "health.checkNearDuplicate", checkType: "near_duplicate",
     severityLabel: "候選", severityKey: "health.severityCandidate",
@@ -406,7 +403,6 @@ permalink: 3-5_dataHealth.html
     noteLines: [], resolvedAt: "", resolvedBy: "",
     actions: ["dismiss", "disable"]
   },
-  ,
   {
     id: 907, checkLabel: "近似重複", checkLabelKey: "health.checkNearDuplicate", checkType: "near_duplicate",
     severityLabel: "候選", severityKey: "health.severityCandidate",
@@ -430,7 +426,6 @@ permalink: 3-5_dataHealth.html
     resolvedAt: "2024/12/01 15:08", resolvedBy: "42",
     actions: ["undo"]
   },
-  ,
   {
     id: 960, checkLabel: "從未被命中", checkLabelKey: "health.checkNeverHit", checkType: "never_hit",
     severityLabel: "候選", severityKey: "health.severityCandidate",
@@ -447,7 +442,6 @@ permalink: 3-5_dataHealth.html
     noteLines: [], resolvedAt: "", resolvedBy: "",
     actions: ["dismiss"]
   },
-  ,
   {
     id: 970, checkLabel: "高頻查無", checkLabelKey: "health.checkNoAnswerTopic", checkType: "no_answer_topic",
     severityLabel: "候選", severityKey: "health.severityCandidate",
@@ -464,7 +458,6 @@ permalink: 3-5_dataHealth.html
     noteLines: [], resolvedAt: "", resolvedBy: "",
     actions: ["dismiss"]
   },
-  ,
   {
     id: 940, checkLabel: "標題不是問句", checkLabelKey: "health.checkNonQuestion", checkType: "non_question",
     severityLabel: "候選", severityKey: "health.severityCandidate",
@@ -481,7 +474,6 @@ permalink: 3-5_dataHealth.html
     noteLines: [], resolvedAt: "", resolvedBy: "",
     actions: ["dismiss", "add-phrasing"]
   },
-  ,
   {
     id: 950, checkLabel: "標籤缺口", checkLabelKey: "health.checkTagGap", checkType: "tag_gap",
     severityLabel: "確定", severityKey: "health.severityConfirmed",
