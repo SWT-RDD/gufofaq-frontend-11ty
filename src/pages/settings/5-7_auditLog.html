@@ -20,7 +20,10 @@ permalink: 5-7_auditLog.html
      而那是 auditor 亦有的能力：product app/routers/audit.py 的 list_audit 以 is_platform_auditor
      （platform_role ∈ {auditor, admin}）判斷 scope=all／tenant_id／operator，該檔自註「用 is_platform_admin
      判斷會把唯讀稽核員一起排除掉」。故兩欄掛 data-platform-role="auditor"（§5 兩級可見性），
-     React 端依 /api/me 的 platform_role 決定是否渲染；此靜態頁展示的是有平台角色時的完整版面。 #}
+     **這兩顆是值控制項（switch／number input），不是動作鈕**，所以套的是 §5 兩級可見性的另一半：
+     低於該級時**照渲染但 disabled**，不是不渲染——狀態要看得見才稽核得到。
+     （原本這裡寫「決定是否渲染」，照著做會做出規則的反面；5-6-1／5-6-3 兩頁寫的才是對的。）
+     此靜態頁展示的是有平台角色、可操作時的完整版面。 #}
 <div class="block block-sm border corner-md mt-16">
     <div class="flex-row column gap-16">
         <div class="flex-row gap-8 mobile-column sm-gap-16">
@@ -65,7 +68,11 @@ permalink: 5-7_auditLog.html
                     <label for="auditOperatorInput" class="control-label" data-i18n="audit.impersonator">代理者</label>
                 </div>
                 <div class="field">
-                    <input type="number" id="auditOperatorInput" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control">
+                    <input type="number" id="auditOperatorInput" min="1" step="1" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control" aria-describedby="auditOperatorHint">
+                    {# 數字欄的三件套（§4）：type=number ＋ 區間 ＋ **可見的**說明。「填的是使用者 id
+                         不是 email」原本只寫在上面的 nunjucks 註解裡——那段 build 時就被移除，
+                         使用者永遠讀不到。值域是正整數（`operator=<使用者 id>`，audit.py:37-39）。 #}
+                    <span class="text-gray" id="auditOperatorHint" data-i18n="audit.impersonatorHint">填使用者 id（正整數），不是 email</span>
                 </div>
             </div>
         </div>

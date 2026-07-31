@@ -31,7 +31,7 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-        var close = event.target.closest ? event.target.closest(".skill-try-close") : null;
+        var close = event.target.closest ? event.target.closest(".js-skill-try-close") : null;
         if (close && sandbox.contains(close)) sandbox.classList.add("hidden");
     });
 });

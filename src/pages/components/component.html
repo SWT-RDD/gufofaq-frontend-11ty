@@ -554,6 +554,16 @@ bodyClass: guideline-page
                 {% include "components/success-box/success-box.html" %}
                 <div class="subtitle">描述：上傳成功通知，使用「.success-box」這個class</div>
             </div>
+            <br>
+            <div>
+                {# prompt-edit 的「開頁即展開」那一態（`promptDefaultOpen`）在生產頁沒有人 set
+                     ——唯一使用者 5-2 走的是收合初始態。沒有這一份示範，prompt-edit.js:51-52
+                     那條分支全站沒有人看得到（§5 每個分支結果都要看得到）。 #}
+                {% set promptDefaultOpen = true %}
+                {% include "components/prompt-edit/prompt-edit.html" %}
+                {% set promptDefaultOpen = false %}
+                <div class="subtitle">描述：系統提示詞編輯器（.prompt-edit）。此處示範 data-default-open＝開頁即展開那一態；5-2 用的是收合初始態</div>
+            </div>
         </section>
 
         <section id="stepsSection">

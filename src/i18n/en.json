@@ -59,6 +59,7 @@
   "audit.allTenants": "All tenants",
   "audit.detail": "Detail",
   "audit.impersonator": "Operator (impersonation)",
+  "audit.impersonatorHint": "Enter a user id (positive integer), not an email",
   "audit.operator": "Operator",
   "audit.sourceIp": "Source IP",
   "audit.target": "Target",
@@ -1357,7 +1358,7 @@
   "toast.measureCoverage": "Measuring tagging coverage...|Measurement complete|Too many documents for one scan. Please measure a single dataset instead|Measurement failed. Please try again later.",
   "toast.newConversation": "New conversation started",
   "toast.query": "Loading data…|Query complete|Failed to load data. Please refresh the page.",
-  "toast.queryAudit": "Loading data…|Query complete|Failed to load audit log. Please refresh the page",
+  "toast.queryAudit": "Loading data…|Query complete|Failed to load audit log. Please refresh the page.",
   "toast.queryHistory": "Loading data…|Enter a start time, an end time and a user type|Query complete|Failed to load data. Please refresh the page.",
   "toast.queryPrompt": "Query complete|Unable to load prompt version list",
   "toast.queryStats": "Loading data…|Query complete|This time range holds more data than one request can handle — please narrow it|Failed to load data. Please refresh the page.",
@@ -1481,7 +1482,6 @@
   "widget.revoked": "Revoked",
   "widget.status": "Status",
   "widget.token": "Key",
-  "widget.tokenCopied": "Key copied",
   "widget.tokenList": "Key list",
   "widget.tokenName": "Name"
 }

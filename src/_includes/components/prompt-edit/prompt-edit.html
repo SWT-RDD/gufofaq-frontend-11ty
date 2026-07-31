@@ -1,7 +1,10 @@
 {# 提示詞（收合 / 展開編輯）：取自真實 app pages/qaTest 單測/AB測試頁，class 沿用真實系統。
      展開/收合（切換 .open，注入編輯 textarea / 首行預覽）為純視覺互動，由 prompt-edit.js 提供；
      實際儲存/建新版本等 API 屬業務邏輯不在此。
-     參數：promptDefaultOpen（true 時加 data-default-open，AB 測試頁的預設展開欄用）。 #}
+     參數：promptDefaultOpen（true 時加 data-default-open，開頁即展開）。
+     **唯一使用者是 5-2 對話設定頁**（AB 測試頁不用這支元件，見 2-2-3 檔頭）；
+     元件庫展示頁另放一份 `promptDefaultOpen: true` 的示範——沒有那一份，
+     prompt-edit.js:51-52 的「預設展開」初始態全站沒有人看得到（§5 每個分支都要演得出來）。 #}
 {# 示範提示詞取領域中性的知識庫助手文案（§6 示範自洽：本元件同時用在 2-2-1（移民問答情境）與
      2-2-3（產品問答情境），綁定單一領域的提示詞會與其中一頁的對話矛盾） #}
 <div class="prompt-edit"{% if promptDefaultOpen %} data-default-open="true"{% endif %} data-full-text="角色定位：
