@@ -33,8 +33,10 @@ permalink: 3-4_skillManagement.html
 
 {# 新增 skill：名稱（必填）＋用途說明（必填）＋新增鈕。細部設定（執行指令、工具白名單、
      迭代上限）在建立後於編輯器內完成——一次要填的欄位太多會讓建立這件事變得沉重。
-     三態 toast：成功／必填未填／失敗（product skills.py 的 create 對 name 空字串與 chatbot
-     的定義驗證失敗都回 400）。 #}
+     四態 toast：成功／必填未填／名稱格式或重名／失敗。守衛全在 chatbot——
+     `_validate_name`（GufoRAG skills.py:145-152，`SKILL_NAME_RE` 格式與同租戶重名各一道）與
+     `_validate_description`（:159-169，空值），product `skills.py:114-115` 的 `_as_bad_request`
+     把 `RuntimeError` 映成 400。product 自己的 create 只做 `.strip()`，不驗空名。 #}
 <div class="block mb-16 flex-row column gap-16">
     <div class="text-md text-bold" data-i18n="settings.addSkill">新增 Skill</div>
     <div class="flex-row flex-wrap gap-16 mobile-column sm-gap-16">

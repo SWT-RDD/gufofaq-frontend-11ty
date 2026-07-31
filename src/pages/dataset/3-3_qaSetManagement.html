@@ -19,7 +19,9 @@ permalink: 3-3_qaSetManagement.html
      qa_direct.py）：問題→title 槽、答案→content 槽（field_schema.py 的 SLOTS）。哪些 QA 集參與直答在
      「對話設定 ▸ QA 直答」子頁籤選。版型比照資料集列表＋術語表管理（新增區＋清單表＋條件開窗 modal）。示範 2 筆。
      nav.qaSetMgmt 英譯 QA Set Management（站內 nav 家族一致）；product catalog 已對齊（round28 驗 saas messages.en.json）。 #}
-{# id＝QA 集主鍵（切版新頁，product 尚無對應 router；比照同族資源用整數 id）。
+{# id＝`TenantIndex.id`（product `app/routers/datasets.py` 的 `dataset_id: int`）——QA 集是
+     `kind='qa'` 的資料集，與資料集共用同一支 router（`list_datasets` 的 `kind` 參數註解逐字寫著
+     「QA 集管理頁用 kind=qa」）。
      **不可拿 loop.index 當列鍵**：這張表刪得掉列，位置不是身分——刪掉前一列之後，
      後面每一列的列鍵都會往前頂一格，React 端的 key 與逐列動作的目標會一起指錯人（§6 列鍵）。 #}
 {% set qaSets = [

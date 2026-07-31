@@ -44,7 +44,7 @@ permalink: 3-5_dataHealth.html
         又回到未處置（前提改變重新開啟，或被 `/undo` 退回；兩者都刻意留著 `resolved_by`／
         `resolved_at`）。少了這一格，清單每天跳同樣的既有發現，人看兩次就不看了。
 
-     ③ **六支處置是具體的資料操作，不是「標記已讀」**。`dismiss` 是唯一不動資料的一支（product
+     ③ **五支處置裡有四支是具體的資料操作，不是「標記已讀」**。`dismiss` 是唯一不動資料的一支（product
         那支逐字寫著「只動發現這一列，一個字都不碰資料」）；`disable` 寫哨兵有效期、`merge` 改
         保留者的內容、`supersede` 寫外部主鍵、`add-phrasing` 新增一列。**檢查本身不改資料**
         （八項檢查連寫記錄的路都組不出來），這句話要在按下重新檢查之前就看得到。
@@ -145,8 +145,10 @@ permalink: 3-5_dataHealth.html
      「上一次檢查是 20 分鐘前」在「有人剛按過」與「排程跑的」之間不是同一件事。
      `hitChecks` 演的是 **unavailable** 那一態：三態裡唯一會讓人「以為乾淨」的一種——沒有這一格，
      「沒有陳舊高頻」與「這一次根本沒算」在畫面上長得一模一樣。
-     ⑦ 的兩個數字也自洽：掃到的 7 個檔都是資料夾匯入的整份文件，一檔一筆記錄 ⇒
-     `slotlessRecords` 7（其餘 1173 筆是逐列匯入的，它們有欄位槽）；那 7 筆裡有 5 筆內容
+     ⑦ 的兩個數字也自洽：`files` 9 裡有 7 個是資料夾匯入的整份文件（一檔一筆記錄，`_folder_record`
+     產出恰好一筆 `slotted=False`）⇒ `slotlessRecords` 7；另外 2 個是逐列匯入的 .xlsx，
+     那 1173 筆逐列記錄（`slotted=True`）就是它們貢獻的——**逐列匯入的檔也算進 `files`**，
+     所以「掃到的檔都是資料夾檔」那句推導不成立，`records` 才會是 1180 而不是 7。那 7 筆裡有 5 筆內容
      超過兩兩比對上限 ⇒ `exactMatchOnlyRecords` 5。兩者都 ≦ `records`，後者 ≦ 前者不是規則
      （逐列匯入的答案也可能過長），這一份示範剛好如此。
      `uncoveredTotal` 2 ＝ 下面 `healthUncovered` 的兩筆（這一份示範沒有被截斷；截斷時它會大於
@@ -190,7 +192,7 @@ permalink: 3-5_dataHealth.html
     detail: "「關稅稅則對照表.png」這種檔沒有可用的內文擷取器（目前只有 .docx、.pdf），健檢讀不到它的內容——它不會出現在任何一項檢查裡。圖片類要讓內容被檢查，得先有文字辨識；其餘格式請改用逐列匯入。"
   },
   {
-    datasetId: 7, fileId: 58, filename: "2026新制問答_v3.xlsx",
+    datasetId: 7, fileId: 58, filename: "舊版問答_匯出.xlsx",
     reason: "not_row_imported",
     detail: "這個檔不是逐列匯入的、也沒有記下逐列的擷取連結，健檢算不出它每一列的文件編號——它不會出現在任何一項檢查裡。要讓內容也被檢查，請改用逐列匯入（Excel 欄位對照／PDF 結構化匯入）。"
   }
@@ -209,8 +211,8 @@ permalink: 3-5_dataHealth.html
      不要的排序。命中同為 0 的三組再照未處置數遞減、最後照 `check_type` 字典序定序
      （`tag_gap` 24 → `never_hit` 1 → `no_answer_topic` 1）。
      `totalOpen` 35 ＝ 2 ＋ 4 ＋ 1 ＋ 2 ＋ 24 ＋ 1 ＋ 1（七組未處置數加總）；每組的 `top` 逐筆
-     `hitSum` 遞減、加總 ≤ 該組的 `hitSum`（`near_duplicate` 96 ＞ 前五筆的 96 恰好相等，
-     因為那一組未處置的只有 4 筆；`tag_gap` 24 筆只列得下 5 筆，那正是 `topN` 要外顯的截斷）。
+     `hitSum` 遞減、加總 ≤ 該組的 `hitSum`（`near_duplicate` 的 87 ＝ 前四筆 61+18+5+3 恰好相等，
+     因為那一組未處置的只有 4 筆、全部列得下；`tag_gap` 24 筆只列得下 5 筆，那正是 `topN` 要外顯的截斷）。
      `never_hit` 的 `hitSum` 恆為 0 是它的定義（「從未被命中」），不是資料湊巧；`no_answer_topic`
      的記錄鍵不是 document_id，命中統計上沒有它，所以也是 0。 #}
 {% set healthOverview = {
@@ -280,7 +282,9 @@ permalink: 3-5_dataHealth.html
     ]
   }
 ] %}
-{# 逐項清單（`FindingsOut`）。`total` 36 ＞ 本頁列數 ⇒ 分頁列演得到「這一頁不是全部」。
+{# 逐項清單（`FindingsOut`）。**列序照端點的 `.order_by(check_type, id)`**
+     （health_findings.py:1182，本頁 `health.listOrder` 那句話也是這樣寫給使用者看的）——
+     示範資料的順序若不是這個，畫面上那句話就沒有對應的證據。`total` 41 ＞ 本頁列數 ⇒ 分頁列演得到「這一頁不是全部」（35 未處置 ＋ 6 已處置）。
      **這裡沒有命中次數欄**：`GET /health/findings` 不回它（命中數在上游的問答紀錄裡，那一支
      是分頁的、不去碰上游），畫一個欄位出來就得自己算一份，而那會是第二個真相。
      示範九列刻意把每一支處置動作與每一種狀態各演一次（GUIDELINE §5「每個分支結果都要看得到」）：
@@ -325,43 +329,25 @@ permalink: 3-5_dataHealth.html
      product 端 `list_findings` 的**預設**仍是 open（那是 API 契約，不是這張示範演的那一態）。 #}
 {% set healthFindingsPage = { total: 41, perPage: 10, currentPage: 1 } %}
 {% set healthFindings = [
+  ,
   {
-    id: 901, checkLabel: "近似重複", checkLabelKey: "health.checkNearDuplicate", checkType: "near_duplicate",
+    id: 930, checkLabel: "事實衝突", checkLabelKey: "health.checkConflict", checkType: "conflict",
     severityLabel: "候選", severityKey: "health.severityCandidate",
     statusLabel: "未處置", statusKey: "health.statusOpen", disposed: false, reopened: false,
-    datasetName: "",
-    firstSeenAt: "2024/11/18 04:02", lastSeenAt: "2024/12/02 03:15",
+    datasetName: "法規彙編",
+    firstSeenAt: "2024/11/29 04:02", lastSeenAt: "2024/12/02 03:15",
     evidence: [
-      { key: "representative", value: "b7c1e93a4d20" },
-      { key: "min_similarity", value: "0.9231" },
-      { key: "max_similarity", value: "0.9884" }
+      { key: "fact_topic", value: "汽車貨物稅稅率" },
+      { key: "claims", value: "{\"7d18b0a3f5c2\":[\"15%\"],\"ae64c9017d3b\":[\"20%\"]}" }
     ],
     records: [
-      { key: "b7c1e93a4d20", title: "犬貓專案怎麼申請", titleChars: 8, titleSource: "title_slot", filename: "常見問答_2026Q1.xlsx", row: 12 },
-      { key: "1f4a08d6cc51", title: "犬貓專案怎麼申請", titleChars: 8, titleSource: "title_slot", filename: "客服話術彙編.xlsx", row: 137 },
-      { key: "9e2b7710af83", title: "", titleChars: 0, titleSource: "title_slot", filename: "客服話術彙編.xlsx", row: 138 }
+      { key: "7d18b0a3f5c2", title: "汽車貨物稅的稅率是多少", titleChars: 11, titleSource: "title_slot", filename: "法規彙編_2026.xlsx", row: 21 },
+      { key: "ae64c9017d3b", title: "小客車貨物稅稅率", titleChars: 8, titleSource: "title_slot", filename: "稅務問答_舊版.xlsx", row: 9 }
     ],
     noteLines: [], resolvedAt: "", resolvedBy: "",
-    actions: ["dismiss", "merge", "disable"]
+    actions: ["dismiss", "supersede"]
   },
-  {
-    id: 903, checkLabel: "近似重複", checkLabelKey: "health.checkNearDuplicate", checkType: "near_duplicate",
-    severityLabel: "候選", severityKey: "health.severityCandidate",
-    statusLabel: "未處置", statusKey: "health.statusOpen", disposed: false, reopened: false,
-    datasetName: "客服直答集",
-    firstSeenAt: "2024/11/22 04:02", lastSeenAt: "2024/12/02 03:15",
-    evidence: [
-      { key: "representative", value: "5a30b1cf7e64" },
-      { key: "min_similarity", value: "0.9410" },
-      { key: "max_similarity", value: "0.9410" }
-    ],
-    records: [
-      { key: "5a30b1cf7e64", title: "退貨的運費由誰負擔", titleChars: 9, titleSource: "title_slot", filename: "客服直答集.xlsx", row: 4 },
-      { key: "c81d69204b7f", title: "退貨運費誰要出", titleChars: 7, titleSource: "title_slot", filename: "客服直答集.xlsx", row: 19 }
-    ],
-    noteLines: [], resolvedAt: "", resolvedBy: "",
-    actions: ["dismiss", "disable"]
-  },
+  ,
   {
     id: 918, checkLabel: "內容已過期", checkLabelKey: "health.checkExpired", checkType: "expired",
     severityLabel: "確定", severityKey: "health.severityConfirmed",
@@ -383,85 +369,44 @@ permalink: 3-5_dataHealth.html
     actions: ["dismiss", "disable"]
   },
   {
-    id: 930, checkLabel: "事實衝突", checkLabelKey: "health.checkConflict", checkType: "conflict",
-    severityLabel: "候選", severityKey: "health.severityCandidate",
-    statusLabel: "未處置", statusKey: "health.statusOpen", disposed: false, reopened: false,
-    datasetName: "法規彙編",
-    firstSeenAt: "2024/11/29 04:02", lastSeenAt: "2024/12/02 03:15",
-    evidence: [
-      { key: "fact_topic", value: "汽車貨物稅稅率" },
-      { key: "claims", value: "{\"7d18b0a3f5c2\":[\"15%\"],\"ae64c9017d3b\":[\"20%\"]}" }
-    ],
-    records: [
-      { key: "7d18b0a3f5c2", title: "汽車貨物稅的稅率是多少", titleChars: 11, titleSource: "title_slot", filename: "法規彙編_2026.xlsx", row: 21 },
-      { key: "ae64c9017d3b", title: "小客車貨物稅稅率", titleChars: 8, titleSource: "title_slot", filename: "稅務問答_舊版.xlsx", row: 9 }
-    ],
-    noteLines: [], resolvedAt: "", resolvedBy: "",
-    actions: ["dismiss", "supersede"]
-  },
-  {
-    id: 940, checkLabel: "標題不是問句", checkLabelKey: "health.checkNonQuestion", checkType: "non_question",
-    severityLabel: "候選", severityKey: "health.severityCandidate",
-    statusLabel: "未處置", statusKey: "health.statusOpen", disposed: false, reopened: false,
-    datasetName: "常見問答",
-    firstSeenAt: "2024/11/30 04:02", lastSeenAt: "2024/12/02 03:15",
-    evidence: [
-      { key: "title", value: "退運作業" },
-      { key: "kind", value: "noun_phrase" }
-    ],
-    records: [
-      { key: "6b02da4e9137", title: "退運作業", titleChars: 4, titleSource: "title_slot", filename: "常見問答_2026Q1.xlsx", row: 77 }
-    ],
-    noteLines: [], resolvedAt: "", resolvedBy: "",
-    actions: ["dismiss", "add-phrasing"]
-  },
-  {
-    id: 950, checkLabel: "標籤缺口", checkLabelKey: "health.checkTagGap", checkType: "tag_gap",
-    severityLabel: "確定", severityKey: "health.severityConfirmed",
-    statusLabel: "未處置", statusKey: "health.statusOpen", disposed: false, reopened: false,
-    datasetName: "2026 新制問答",
-    firstSeenAt: "2024/12/02 03:15", lastSeenAt: "2024/12/02 03:15",
-    evidence: [
-      { key: "missing_slots", value: "note1" }
-    ],
-    records: [
-      { key: "0d7c34fb85a9", title: "2026 新制什麼時候上路", titleChars: 13, titleSource: "title_slot", filename: "2026新制問答_v3.xlsx", row: 3 }
-    ],
-    noteLines: [], resolvedAt: "", resolvedBy: "",
-    actions: ["dismiss"]
-  },
-  {
-    id: 960, checkLabel: "從未被命中", checkLabelKey: "health.checkNeverHit", checkType: "never_hit",
-    severityLabel: "候選", severityKey: "health.severityCandidate",
-    statusLabel: "未處置", statusKey: "health.statusOpen", disposed: false, reopened: false,
-    datasetName: "法規彙編",
-    firstSeenAt: "2024/11/26 04:02", lastSeenAt: "2024/12/02 03:15",
-    evidence: [
-      { key: "live_since", value: "2024-10-15" },
-      { key: "window_days", value: "7" }
-    ],
-    records: [
-      { key: "c4a70f18d59e", title: "犬貓入境檢疫作業手冊.pdf", titleChars: 14, titleSource: "filename", filename: "犬貓入境檢疫作業手冊.pdf", row: "" }
-    ],
-    noteLines: [], resolvedAt: "", resolvedBy: "",
-    actions: ["dismiss"]
-  },
-  {
-    id: 970, checkLabel: "高頻查無", checkLabelKey: "health.checkNoAnswerTopic", checkType: "no_answer_topic",
+    id: 901, checkLabel: "近似重複", checkLabelKey: "health.checkNearDuplicate", checkType: "near_duplicate",
     severityLabel: "候選", severityKey: "health.severityCandidate",
     statusLabel: "未處置", statusKey: "health.statusOpen", disposed: false, reopened: false,
     datasetName: "",
-    firstSeenAt: "2024/11/28 04:02", lastSeenAt: "2024/12/02 03:15",
+    firstSeenAt: "2024/11/18 04:02", lastSeenAt: "2024/12/02 03:15",
     evidence: [
-      { key: "question", value: "犬貓可以帶上飛機嗎" },
-      { key: "asks_at_least", value: "10" }
+      { key: "representative", value: "b7c1e93a4d20" },
+      { key: "min_similarity", value: "0.9231" },
+      { key: "max_similarity", value: "0.9884" }
     ],
     records: [
-      { key: "no-answer-topic:5f1c0b8a7d3e94216ac5d0f83b7e1c4a92d6708fb35ce41d8a09627f4bd3e15c", title: "犬貓可以帶上飛機嗎", titleChars: 9, titleSource: "no_answer_question", filename: "", row: "" }
+      { key: "b7c1e93a4d20", title: "犬貓專案怎麼申請", titleChars: 8, titleSource: "title_slot", filename: "常見問答_2026Q1.xlsx", row: 12 },
+      { key: "1f4a08d6cc51", title: "犬貓專案怎麼申請", titleChars: 8, titleSource: "title_slot", filename: "客服話術彙編.xlsx", row: 137 },
+      { key: "9e2b7710af83", title: "", titleChars: 0, titleSource: "title_slot", filename: "客服話術彙編.xlsx", row: 138 }
     ],
     noteLines: [], resolvedAt: "", resolvedBy: "",
-    actions: ["dismiss"]
+    actions: ["dismiss", "merge", "disable"]
   },
+  ,
+  {
+    id: 903, checkLabel: "近似重複", checkLabelKey: "health.checkNearDuplicate", checkType: "near_duplicate",
+    severityLabel: "候選", severityKey: "health.severityCandidate",
+    statusLabel: "未處置", statusKey: "health.statusOpen", disposed: false, reopened: false,
+    datasetName: "客服直答集",
+    firstSeenAt: "2024/11/22 04:02", lastSeenAt: "2024/12/02 03:15",
+    evidence: [
+      { key: "representative", value: "5a30b1cf7e64" },
+      { key: "min_similarity", value: "0.9410" },
+      { key: "max_similarity", value: "0.9410" }
+    ],
+    records: [
+      { key: "5a30b1cf7e64", title: "退貨的運費由誰負擔", titleChars: 9, titleSource: "title_slot", filename: "客服直答集.xlsx", row: 4 },
+      { key: "c81d69204b7f", title: "退貨運費誰要出", titleChars: 7, titleSource: "title_slot", filename: "客服直答集.xlsx", row: 19 }
+    ],
+    noteLines: [], resolvedAt: "", resolvedBy: "",
+    actions: ["dismiss", "disable"]
+  },
+  ,
   {
     id: 907, checkLabel: "近似重複", checkLabelKey: "health.checkNearDuplicate", checkType: "near_duplicate",
     severityLabel: "候選", severityKey: "health.severityCandidate",
@@ -484,7 +429,75 @@ permalink: 3-5_dataHealth.html
     noteLines: ["合併：保留 44e1a7c0b96d，併入 2 個問法，其餘 2 筆停用（未刪除）"],
     resolvedAt: "2024/12/01 15:08", resolvedBy: "42",
     actions: ["undo"]
+  },
+  ,
+  {
+    id: 960, checkLabel: "從未被命中", checkLabelKey: "health.checkNeverHit", checkType: "never_hit",
+    severityLabel: "候選", severityKey: "health.severityCandidate",
+    statusLabel: "未處置", statusKey: "health.statusOpen", disposed: false, reopened: false,
+    datasetName: "法規彙編",
+    firstSeenAt: "2024/11/26 04:02", lastSeenAt: "2024/12/02 03:15",
+    evidence: [
+      { key: "live_since", value: "2024-10-15" },
+      { key: "window_days", value: "7" }
+    ],
+    records: [
+      { key: "c4a70f18d59e", title: "犬貓入境檢疫作業手冊.pdf", titleChars: 14, titleSource: "filename", filename: "犬貓入境檢疫作業手冊.pdf", row: "" }
+    ],
+    noteLines: [], resolvedAt: "", resolvedBy: "",
+    actions: ["dismiss"]
+  },
+  ,
+  {
+    id: 970, checkLabel: "高頻查無", checkLabelKey: "health.checkNoAnswerTopic", checkType: "no_answer_topic",
+    severityLabel: "候選", severityKey: "health.severityCandidate",
+    statusLabel: "未處置", statusKey: "health.statusOpen", disposed: false, reopened: false,
+    datasetName: "",
+    firstSeenAt: "2024/11/28 04:02", lastSeenAt: "2024/12/02 03:15",
+    evidence: [
+      { key: "question", value: "犬貓可以帶上飛機嗎" },
+      { key: "asks_at_least", value: "10" }
+    ],
+    records: [
+      { key: "no-answer-topic:5f1c0b8a7d3e94216ac5d0f83b7e1c4a92d6708fb35ce41d8a09627f4bd3e15c", title: "犬貓可以帶上飛機嗎", titleChars: 9, titleSource: "no_answer_question", filename: "", row: "" }
+    ],
+    noteLines: [], resolvedAt: "", resolvedBy: "",
+    actions: ["dismiss"]
+  },
+  ,
+  {
+    id: 940, checkLabel: "標題不是問句", checkLabelKey: "health.checkNonQuestion", checkType: "non_question",
+    severityLabel: "候選", severityKey: "health.severityCandidate",
+    statusLabel: "未處置", statusKey: "health.statusOpen", disposed: false, reopened: false,
+    datasetName: "常見問答",
+    firstSeenAt: "2024/11/30 04:02", lastSeenAt: "2024/12/02 03:15",
+    evidence: [
+      { key: "title", value: "退運作業" },
+      { key: "kind", value: "noun_phrase" }
+    ],
+    records: [
+      { key: "6b02da4e9137", title: "退運作業", titleChars: 4, titleSource: "title_slot", filename: "常見問答_2026Q1.xlsx", row: 77 }
+    ],
+    noteLines: [], resolvedAt: "", resolvedBy: "",
+    actions: ["dismiss", "add-phrasing"]
+  },
+  ,
+  {
+    id: 950, checkLabel: "標籤缺口", checkLabelKey: "health.checkTagGap", checkType: "tag_gap",
+    severityLabel: "確定", severityKey: "health.severityConfirmed",
+    statusLabel: "未處置", statusKey: "health.statusOpen", disposed: false, reopened: false,
+    datasetName: "2026 新制問答",
+    firstSeenAt: "2024/12/02 03:15", lastSeenAt: "2024/12/02 03:15",
+    evidence: [
+      { key: "missing_slots", value: "note1" }
+    ],
+    records: [
+      { key: "0d7c34fb85a9", title: "2026 新制什麼時候上路", titleChars: 13, titleSource: "title_slot", filename: "2026新制問答_v3.xlsx", row: 3 }
+    ],
+    noteLines: [], resolvedAt: "", resolvedBy: "",
+    actions: ["dismiss"]
   }
+
 ] %}
 <div class="flex-row column gap-16">
     {% include "ui/breadcrumb/breadcrumb.html" %}
@@ -930,7 +943,7 @@ permalink: 3-5_dataHealth.html
                                     </div>
                                     <div class="flex-row">
                                         <button type="button" class="button button-primary button-sm js-health-disable"
-                                            data-toast="已停用（有效期設成哨兵日期，未刪除）|請填寫判定理由|這個租戶還沒有宣告「有效期」維度，資料上沒有地方可以表達停用|這個發現已經處置過了，下一次檢查會依前提是否改變決定要不要把它推回清單|操作失敗，請稍後再試"
+                                            data-toast="已停用（有效期設成哨兵日期，未刪除）|請填寫停用理由|這個租戶還沒有宣告「有效期」維度，資料上沒有地方可以表達停用|這個發現已經處置過了，下一次檢查會依前提是否改變決定要不要把它推回清單|操作失敗，請稍後再試"
                                             data-i18n-data-toast="toast.healthDisable" data-toast-type="success|warning|warning|warning|error"
                                             data-i18n="health.actionDisable">停用（不刪除）</button>
                                     </div>

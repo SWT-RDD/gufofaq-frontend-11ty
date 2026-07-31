@@ -15,7 +15,7 @@ permalink: 5-3_statsModule.html
      （對應 `privilege`／`tags`／`flag`／`content` 四個槽），故是 21 減 4＝17 個。
      照槽名列名單會無聲落後（product 該函式的 docstring 就是這樣寫的）——這裡照角色判準，不自己列。
      同一份目錄本頁用兩次（統計維度 select ＋ 歸因維度多選），故 set 成一個陣列共用（GUIDELINE §6）。
-     **React 端不得把這 19 個硬編**：`GET /settings/attribution` 回的 `available_slots` 就是這份值域的
+     **React 端不得把這 17 個硬編**：`GET /settings/attribution` 回的 `available_slots` 就是這份值域的
      單一真相（product `app/routers/settings_hub.py`），值域一變前端才不會跟著漂。
      `label` 是各槽的**預設**顯示名——真實環境顯示的是租戶為該槽取的名字（per-profile `field_labels`，
      如「承辦組室」），屬業務資料故不掛 data-i18n（同 5-2 的 MCP server 名）。
