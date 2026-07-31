@@ -57,7 +57,12 @@ permalink: 2-2-4_regressionSuites.html
                     <label for="newSuiteName" class="control-label required" data-i18n="regression.suiteName">案例集名稱</label>
                 </div>
                 <div class="field">
-                    <input type="text" id="newSuiteName" class="form-control" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" required>
+                    <input type="text" id="newSuiteName" class="form-control" maxlength="200" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" required aria-describedby="newSuiteNameHint">
+                    {# 長度上限是契約欄位（§6）：`_clean_text(body.name, what="案例集名稱", max_len=200)`
+                         （regression.py:510 → :237 的 400）。同一頁的 `#newCaseQuestion`（2000）與
+                         `#assertionCriteria`（1024）早就落地了，就這一格沒接——打了 250 字會拿到
+                         紅色的「建立失敗，請稍後再試」，而重試永遠不會成功。 #}
+                    <span class="text-gray" id="newSuiteNameHint" data-i18n="regression.suiteNameHint">最多 200 字</span>
                 </div>
             </div>
         </div>
@@ -515,6 +520,17 @@ permalink: 2-2-4_regressionSuites.html
 
      ## 調校旋鈕是兩態的：沿用設定檔 ／ 這一次改用指定值
 
+     **`_OVERRIDE_FIELDS` 有 9 個，這一頁只做 6 個**（§3-2：request 收得下的每個參數都要有落點，
+     不做的在檔頭寫明理由）。`_OVERRIDE_FIELDS = frozenset(TestConfig.model_fields) - {"profile_no"}`
+     （regression.py:346）。做了的：model_name／reasoning_effort／search_mode／
+     search_selected_number／search_total_number／prompt。沒做的三個與理由：
+       · `data_source_ratio` —— 全前端只有 5-2 有輸入（那是設定檔層的旋鈕），這一頁沒有對應控制項
+         的話它一定沿用設定檔，正是預期行為；
+       · `agent_max_iterations` —— 只在 agent 模式有意義，而這一頁的模式覆寫是逐次選的，
+         同時給兩個會讓「這一次跑的是哪一種模式」多一個要對帳的地方；
+       · `skill_ids` —— 屬試跑沙盒的範圍（3-4 的 skill-try-sandbox），回歸跑的是設定檔當下的組合。
+     九列的完整對照在 2-2-5 的「實際使用的設定」表（那一頁列得出每一欄是指定還是沿用）。
+
      `POST /qatest/suites/{id}/run` 的 `overrides` 只收「這一次明確指定的那幾個旋鈕」；沒帶的
      由 `regression._inherit_from_profile` 沿用被測設定檔當下的值。所以什麼都不勾就是
      「測設定檔目前的行為」——那正是這一頁存在的理由（改了提示詞／換了模型之後，那幾十題還
@@ -595,10 +611,17 @@ permalink: 2-2-4_regressionSuites.html
                         <input type="checkbox" aria-labelledby="runLlmSelectLabel overrideThisRunText" class="js-override-model-name" checked>
                         <span id="overrideThisRunText" data-i18n="regression.overrideThisRun">這一次改用指定值</span>
                     </label>
+                    {# 模型目錄與 5-2／manage-tenant-modal 是同一份（§6 不得各烤一份，那三處都源自
+                         `gufo.list_models()`）。示範沿用 5-2 的 `llmModels` 那一組值，多加一顆
+                         **供應商不在 PROVIDER_PREFIXES 裡**的（`google:gemini-2-flash`）——
+                         下面那兩條紅字才有觸發者：`llm.py:93` 的 `PROVIDER_PREFIXES = ("openai:", "anthropic:")`
+                         決定第一條，`:99` 的 `REASONING_EFFORT_PREFIXES = ("openai:",)` 決定第二條。
+                         原本三顆全落在 openai/anthropic 裡，第一條紅字沒有任何一顆演得出來（§5）。 #}
+                    {% set runLlmModels = ["openai:gpt-4o", "openai:gpt-4o-mini", "openai:gpt-4.1", "anthropic:claude-3-5-sonnet", "google:gemini-2-flash"] %}
                     <select id="runLlmSelect" class="form-control js-llm-select" aria-describedby="runLlmSelectHint">
-                        <option value="openai:gpt-4o-mini" selected>OpenAI gpt-4o-mini</option>
-                        <option value="openai:gpt-5-mini">OpenAI gpt-5-mini</option>
-                        <option value="anthropic:claude-opus-4-8">Anthropic claude-opus-4-8</option>
+                        {% for m in runLlmModels %}
+                        <option value="{{ m }}"{% if m == "openai:gpt-4o-mini" %} selected{% endif %}>{{ m }}</option>
+                        {% endfor %}
                     </select>
                     <p id="runLlmSelectHint" class="text-gray" data-i18n="regression.llmFromCatalog">可以選的就是這個租戶被允許使用的那幾顆模型；這一欄不接受自己打字——打錯的話要按下開始執行才會被擋掉，而那一次的等待已經花掉了。</p>
                     <p class="text-red hidden" data-i18n="regression.llmProviderUnsupported">這顆模型的供應商不在本產品建得起來的範圍內：設定檔的判定分組沒有另外指定模型時，評審會繼承這一輪的模型而建不起來——這一輪每一則主觀分斷言都會是「評審未完成」。答案本身仍由問答引擎產生。</p>

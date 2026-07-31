@@ -803,6 +803,7 @@
   "regression.suiteDesc": "Description",
   "regression.suiteList": "Suites",
   "regression.suiteName": "Suite name",
+  "regression.suiteNameHint": "Up to 200 characters",
   "regression.summary": "Execution summary",
   "regression.summaryContextTurns": "Preceding turns sent: ",
   "regression.summaryFailed": "Failed: ",

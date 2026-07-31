@@ -136,15 +136,20 @@
 
                         <div class="flex-row column gap-8">
                             <div id="tenantModelEnableLabel" class="text-bold" data-i18n="settings.modelEnablement">模型開通</div>
+                            {# 模型目錄與 5-2 是**同一份**（兩邊都源自 `gufo.list_models()`；平台端在
+                                 platform.py:755-760 拿它當白名單的值域，`unknown models: […]` ⇒ 400）。
+                                 §6 逐字點名「可用模型」不得各烤一份——原本這裡硬寫兩顆 checkbox、
+                                 而且**沒有 `value`**，比對的正是 `m["value"]`（`openai:gpt-4o` 這種帶前綴的識別字）。
+                                 目錄本身在 5-2 那一頁 set 成 `llmModels`；這裡的示範沿用同一組值，
+                                 顯示字就是識別字（業務資料、不翻）。 #}
+                            {% set tenantModels = ["openai:gpt-4o", "openai:gpt-4o-mini", "openai:gpt-4.1", "anthropic:claude-3-5-sonnet"] %}
                             <div class="flex-row flex-wrap gap-20" role="group" aria-labelledby="tenantModelEnableLabel">
+                                {% for m in tenantModels %}
                                 <label class="form-checkbox">
-                                    <input type="checkbox" name="tenant_model_gpt4o_mini" checked>
-                                    <span>OpenAI gpt-4o-mini</span>
+                                    <input type="checkbox" name="tenant_models" value="{{ m }}"{% if m == "openai:gpt-4o-mini" %} checked{% endif %}>
+                                    <span>{{ m }}</span>
                                 </label>
-                                <label class="form-checkbox">
-                                    <input type="checkbox" name="tenant_model_gpt4o">
-                                    <span>OpenAI gpt-4o</span>
-                                </label>
+                                {% endfor %}
                             </div>
                         </div>
 

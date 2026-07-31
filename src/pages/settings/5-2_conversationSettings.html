@@ -18,6 +18,9 @@ permalink: 5-2_conversationSettings.html
      settings-hub-design.md。 #}
 {# 可用模型目錄：主回答與分組 LLM 填的是同一份 available models（React 端來自
      GET /api/config/models ∩ 租戶 available_models），故本頁只留一份陣列、兩處都從它渲染（§6）。 #}
+{# 可用模型目錄：`GET /api/config/models` ∩ 租戶 `available_models`。**同一份目錄的另外兩個消費點**：
+     components/manage-tenant-modal 的「模型開通」（平台端設白名單，值域同樣是 `gufo.list_models()`
+     的 `m["value"]`）與 2-2-4 的執行覆寫下拉——三處都用這一組值（§6：同一份業務目錄不得各烤一份）。 #}
 {% set llmModels = ["openai:gpt-4o", "openai:gpt-4o-mini", "openai:gpt-4.1", "anthropic:claude-3-5-sonnet"] %}
 {% set breadcrumbItems = [
   { label: "首頁", href: "2-1_qaRecord.html", i18nKey: "nav.home" },
