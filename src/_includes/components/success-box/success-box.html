@@ -11,9 +11,9 @@
     </div>
     <div class="success-desc">
         {% if not successHideDesc %}
-        <p><span data-i18n="comp.fileNameLabel">檔案名稱：</span>20251119105623_FAQ測試用.xlsx</p>
-        <p><span data-i18n="comp.fileSizeLabel">檔案大小：</span>1KB</p>
-        <p><span data-i18n="comp.dataTotalLabel">資料總量：</span>90<span data-i18n="comp.recordsUnit">筆</span></p>
+        <p><span data-i18n="comp.fileNameLabel">檔案名稱：</span>{{ successFileName or "20251119105623_FAQ測試用.xlsx" }}</p>
+        <p><span data-i18n="comp.fileSizeLabel">檔案大小：</span>{{ successFileSize or "1KB" }}</p>
+        <p><span data-i18n="comp.dataTotalLabel">資料總量：</span>{{ successDataCount or "90" }}<span data-i18n="comp.recordsUnit">筆</span></p>
         {% endif %}
     </div>
     <div class="btn-row">

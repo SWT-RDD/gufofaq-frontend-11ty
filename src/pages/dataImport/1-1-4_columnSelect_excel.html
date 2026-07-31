@@ -8,8 +8,9 @@ permalink: 1-1-4_columnSelect_excel.html
 {# 欄位對應資料（多選/預覽兩欄共用）——依 §3-2/§6 由頁面提供，components/multi-select-box 只負責 for 渲染。
    固定槽 schema（title/content/source/date/category/number/flag/tags/privilege/note1..note10/date2/date3，
    出處：gufofaq-saas services/product/app/field_schema.py 的 `SLOTS`——順序與 default_label 逐字對齊）；
-   note6..note10 是 TEXT 篩選槽、date2/date3 是 DATE 篩選槽（`FILTERABLE_TEXT_SLOTS`／`FILTERABLE_DATE_SLOTS`，
-   對得到 DSL 的 $note6／$date2）。少列一個槽的後果是那個篩選欄在 UI 上根本指派不到，
+   **note1..note10 全部**是 TEXT 篩選槽、date2/date3 是 DATE 篩選槽（field_schema.py:62-63 的
+   `FILTERABLE_TEXT_SLOTS = tuple(f"note{i}" for i in range(1, 11))`／`FILTERABLE_DATE_SLOTS = ("date2","date3")`，
+   對得到 DSL 的 $note1／$date2）。抄「note6..note10」會讓下一個人以為 note1..note5 指派不到篩選欄。少列一個槽的後果是那個篩選欄在 UI 上根本指派不到，
    而後端早就收得下——使用者只會覺得「文件裡寫的篩選欄不存在」。
    使用者把 Excel 欄位對應到這些槽；label 用各槽預設顯示名。
    §6 示範要是真實可能的狀態：真 app（columnSelect_excel.js）給**每個槽同一份選項清單＝上傳 excel 的欄位**，

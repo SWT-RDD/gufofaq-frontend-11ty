@@ -65,7 +65,9 @@ permalink: 1-1-3_preview_excel.html
     <div class="field">
         <input type="number" min="1" max="10" step="1" id="excelHeaderRows" class="form-control js-excel-header-rows" value="1"
             placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" aria-describedby="excelHeaderRowsHint">
-        <span class="text-gray" id="excelHeaderRowsHint" data-i18n="dataImport.headerRowsHint">1 – 10；表頭佔前幾列，多列會串接成單一欄名。改了要重新預覽，欄位對應也會重來。</span>
+        {# 上下界是**資料**不是譯文（§3-2）：`MAX_HEADER_ROWS` 改了，繁中在這裡會被順手改到，
+             英譯留在 en.json 不會，`npm run check` 也看不到。故數字獨立成不翻的節點。 #}
+        <span class="text-gray" id="excelHeaderRowsHint"><span>1 – 10</span><span data-i18n="dataImport.headerRowsHint">；表頭佔前幾列，多列會串接成單一欄名。改了要重新預覽，欄位對應也會重來。</span></span>
     </div>
 </div>
 
@@ -106,12 +108,15 @@ permalink: 1-1-3_preview_excel.html
      四個結果路徑，**前兩個要分開**——它們是不同的事：
      ①成功；②欄位值本身不合法（表頭列數不在 1–10、或交叉表開著卻沒填合法的列標題欄）——這條**根本沒送出
        請求**，故不能沿用 product 400 的那句話；③product 讀不出這組設定（`excel.ExcelFormatError`／
-       `ExcelReadError`，例如指定的表頭列數讀出重複或空白欄名、unpivot 左側欄超出範圍）；④連線失敗。
+       `ExcelReadError`，例如指定的表頭列數讀出重複或空白欄名、unpivot 左側欄超出範圍）；
+     ④儲存空間不足：`preview_excel` 第一件事就是 `assert_storage_quota(db, tenant_id, len(data))`
+       （datasets.py:1414 → dataset_ops.py:110-119 的 413 `storage_exceeded`）。**這顆鈕正是它防的那條路**——
+       每按一次重新預覽就再落地一份暫存檔，而額度的現用量含暫存區的孤兒檔；⑤連線失敗。
      驗證結果只走這顆 toast 的 warning 段、欄位本身加 `.error`（§4：全站一種回報方式，不做逐欄內嵌訊息）。 #}
 <div class="flex-row mb-16">
     <button type="button" class="button button-primary js-excel-repreview"
-        data-toast="已依新設定重新預覽|表頭列數要在 1 到 10 之間；交叉表開啟時列標題欄至少要有一個 1 以上的整數（一行一個）|這份檔案讀不出指定的表頭列數或交叉表欄位，請確認設定|重新預覽失敗"
-        data-i18n-data-toast="toast.rePreviewExcel" data-toast-type="success|warning|warning|error"
+        data-toast="已依新設定重新預覽|表頭列數要在 1 到 10 之間；交叉表開啟時列標題欄至少要有一個 1 以上的整數（一行一個）|這份檔案讀不出指定的表頭列數或交叉表欄位，請確認設定|儲存空間不足，請先清理資料集再重新預覽|重新預覽失敗"
+        data-i18n-data-toast="toast.rePreviewExcel" data-toast-type="success|warning|warning|warning|error"
         data-i18n="dataImport.rePreview">重新預覽</button>
 </div>
 
@@ -175,7 +180,10 @@ permalink: 1-1-3_preview_excel.html
 </div>
 
 {# 分頁：真實頁 pagination 由 js/previewExcel.js 依資料筆數動態產生（data-total="0"）；
-     ui/pagination 現在也是同一套 data-total 驅動的 js render，total 挑大一點的假數字讓省略號露出來 #}
+     ui/pagination 也是同一套 data-total 驅動的 js render。
+     115 / 20 ＝ 6 頁：桌機 `--pagination-visible: 5`、門檻 `visible + 2` ⇒ 要 ≥8 頁才有省略號，
+     所以**這一頁在桌機是全部頁碼直接列出**；≤768px 時 visible 收成 3、門檻 5，6 頁就會出現省略號。
+     省略號那條分支的完整示範在元件庫頁（component.html 只 set total、perPage 走預設 ⇒ 12 頁）。 #}
 {% set total = 115 %}
 {# 每頁筆數與頁碼列吃同一個 perPage（§6 同源：選擇器顯示 20、頁碼卻按 10 算總頁數就是自打架）。 #}
 {% set perPage = 20 %}
