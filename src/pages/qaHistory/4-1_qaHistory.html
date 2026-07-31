@@ -80,11 +80,20 @@ permalink: 4-1_qaHistory.html
                     <label for="ratingSelect" class="control-label" data-i18n="qa.rating">滿意度</label>
                 </div>
                 <div class="field">
+                    {# `<option value>` 帶的是**送出去的值**，不是畫面文字：product `GET /history` 的
+                         `rating_type` 只收 `positive`／`negative`（history.py:68 的註解逐字寫著
+                         「positive / negative」，`_RATING_LABEL` 也只有這兩個），chatbot 端是
+                         `query.filter(ChatLogModel.rating_type == rating_type)`（chat.py:1708-1709）
+                         ——一條等值過濾，沒有任何 NULL 分支。
+                         **「無意見」拿掉**：那是 `rating_type IS NULL`，現行契約送不出去（送什麼字串都比不中），
+                         選了只會靜默回零筆。它在 product 只以統計表頭的計數存在（`_HeaderStats.rows`），
+                         沒有可查詢的請求值。**待 saas 回流**：要支援就得補一個 `rating_type=none` 之類的
+                         哨兵值，那是 saas 端的決定；在那之前不放一顆按了等於壞掉的旋鈕。
+                         （凍結的 jQuery 前端有這一顆，但那是舊 .NET API，README 已宣告不再回頭對齊。） #}
                     <select id="ratingSelect" class="form-control singleSelect rating-select">
                         <option value="" data-i18n="common.pleaseSelect">請選擇</option>
-                        <option value="讚" data-i18n="qa.ratingLike">讚</option>
-                        <option value="倒讚" data-i18n="qa.ratingDislike">倒讚</option>
-                        <option value="無意見" data-i18n="qa.ratingNoOpinion">無意見</option>
+                        <option value="positive" data-i18n="qa.ratingLike">讚</option>
+                        <option value="negative" data-i18n="qa.ratingDislike">倒讚</option>
                     </select>
                 </div>
             </div>
@@ -102,9 +111,13 @@ permalink: 4-1_qaHistory.html
                  下游既有的解析會全部錯位。值載體 checkbox → 只掛 hook class（§5 矩陣②），
                  成敗由旁邊的下載鈕演。 #}
             <label class="form-checkbox">
-                <input type="checkbox" class="js-export-with-header">
+                <input type="checkbox" class="js-export-with-header" aria-describedby="exportWithHeaderHint">
                 <span data-i18n="qa.exportWithHeader">含統計表頭</span>
             </label>
+            {# 代價寫在做決定的那顆控制項旁邊（§3-2）：正本 history.py:278-280 的 docstring 逐字寫著
+                 「預設關閉，因為多一段前置區塊會讓『第一列就是欄名』的既有下游解析當場壞掉」——
+                 那句話原本只寫在上面的 nunjucks 註解裡，build 時就被移除，使用者永遠讀不到。 #}
+            <span class="text-gray" id="exportWithHeaderHint" data-i18n="qa.exportWithHeaderHint">開啟後 CSV 第一列不再是欄名，既有的下游解析會錯位</span>
             {# `GET /history/export` 開跑前有三道使用者自己修得掉的 400，全部並列不可互相取代：
                  · 範圍長度 > 31 天（history.py:120-121）
                  · 起點比現在早超過 366 天（history.py:122-123）——與上一條是不同條件：
@@ -207,9 +220,11 @@ permalink: 4-1_qaHistory.html
                 <td>{{ row.date }}</td>
             </tr>
             {% else %}
-            {# 真實頁初始即空（查詢後才有資料）：空狀態列鏡射真 app 的「無資料」渲染 #}
+            {# 真實頁初始即空（查詢後才有資料）。**這裡不是鏡射真 app**：真 app 那一列是行內 style
+                 ＋「無符合條件的資料」（qaHistory.js:169-176），切版統一走 §5 的 SaaS 正典
+                 `text-center text-gray` ＋ `common.noData`——刻意不沿用，記在這裡（§5）。 #}
             <tr>
-                <td colspan="7" class="text-center" data-i18n="common.noData">無資料</td>
+                <td colspan="7" class="text-center text-gray" data-i18n="common.noData">無資料</td>
             </tr>
             {% endfor %}
         </tbody>
