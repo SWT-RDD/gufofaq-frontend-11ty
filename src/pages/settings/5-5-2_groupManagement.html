@@ -17,7 +17,10 @@ permalink: 5-5-2_groupManagement.html
 {# 租戶群組（分組）＋群組權限管理（僅租戶管理者）。SaaS 新需求，逆向自 product app/routers/groups.py：
      群組＝權限群組，能力（細粒度 token）定在群組上，使用者屬於群組即繼承其能力（多群組聯集）。
      真正把關在 product（require_admin），本頁僅提供管理介面。
-     能力 token 集合對齊 product app/authz.py CAPABILITY_TOKENS（data/settings 拆讀寫；ask/history/audit 單一）。 #}
+     能力 token 集合對齊 product app/authz.py CAPABILITY_TOKENS（data/settings 拆讀寫；ask/history/audit 單一）。
+     **memberCount 要與 5-5-1 的成員指派對得起來**（§6 跨頁自洽，兩頁是同一個示範租戶——
+     群組名稱與能力聯集逐字相同、5-5-1 檔頭也明寫「群組本身在本頁維護」）：
+     那一頁三位成員的 groupIds 是 []／[3]／[2] ⇒ 管理 0、業務 1、研發 1。 #}
 {% set capabilities = [
   { key: "data:read", label: "資料集檢視", i18nKey: "settings.capDataRead" },
   { key: "data:write", label: "資料匯入／資料集管理", i18nKey: "settings.capData" },
@@ -28,9 +31,9 @@ permalink: 5-5-2_groupManagement.html
   { key: "audit", label: "稽核日誌檢視", i18nKey: "settings.capAudit" }
 ] %}
 {% set groups = [
-  { name: "管理群組", capabilities: ["data:read", "data:write", "settings:read", "settings:write", "ask", "history", "audit"], memberCount: 2 },
-  { name: "業務群組", capabilities: ["data:read", "ask", "history"], memberCount: 5 },
-  { name: "研發群組", capabilities: ["data:read", "data:write", "settings:read"], memberCount: 3 }
+  { name: "管理群組", capabilities: ["data:read", "data:write", "settings:read", "settings:write", "ask", "history", "audit"], memberCount: 0 },
+  { name: "業務群組", capabilities: ["data:read", "ask", "history"], memberCount: 1 },
+  { name: "研發群組", capabilities: ["data:read", "data:write", "settings:read"], memberCount: 1 }
 ] %}
 
 <p class="text-gray" data-i18n="settings.groupMgmtIntro">群組即權限群組：能力定在群組上，使用者加入群組即繼承其能力（多群組取聯集）。資料集歸屬群組，寫入權限依所屬群組而定。</p>
@@ -61,7 +64,7 @@ permalink: 5-5-2_groupManagement.html
         {% endfor %}
     </div>
     <div class="flex-row">
-        <button type="button" class="button button-primary" data-toast="群組已建立|群組名稱已存在|建立失敗，請稍後再試" data-i18n-data-toast="toast.createGroup" data-toast-type="success|warning|error">
+        <button type="button" class="button button-primary" data-toast="群組已建立|群組名稱不可為空|群組名稱已存在|建立失敗，請稍後再試" data-i18n-data-toast="toast.createGroup" data-toast-type="success|warning|warning|error">
             <img src="./images/icon_add_white.png" width="48" height="48" decoding="async" alt="" class="icon">
             <span data-i18n="settings.addGroup">新增群組</span>
         </button>
@@ -109,7 +112,7 @@ permalink: 5-5-2_groupManagement.html
                     <td class="text-center">{{ group.memberCount }}</td>
                     <td>
                         <div class="btn-group">
-                            <button type="button" class="button button-border button-sm" data-toast="群組已更新|群組名稱已存在|儲存失敗" data-i18n-data-toast="toast.saveGroup" data-toast-type="success|warning|error" data-i18n="action.save">儲存</button>
+                            <button type="button" class="button button-border button-sm" data-toast="群組已更新|群組名稱不可為空|群組名稱已存在|儲存失敗" data-i18n-data-toast="toast.saveGroup" data-toast-type="success|warning|warning|error" data-i18n="action.save">儲存</button>
                             <button type="button" class="button button-border button-sm js-manage-members" data-i18n="settings.manageMembers">管理成員</button>
                             <button type="button" class="button button-red button-sm js-delete-group" data-i18n="action.delete">刪除</button>
                         </div>

@@ -18,17 +18,31 @@ permalink: 5-5-1_userManagement.html
      逐使用者能力已改由群組繼承：不再逐使用者勾能力，改指派「所屬群組」（多選），有效能力唯讀顯示
      （由所屬群組能力聯集算出；管理者＝全部）。真正把關在 product（require_admin / group_ids）。
      群組本身（名稱＋能力）在「群組管理」頁維護（5-5-2_groupManagement.html）。 #}
+{# 能力 token 目錄與 5-5-2 是**同一份**（product `app/authz.py` 的 `CAPABILITY_TOKENS`，
+     檔頭自述「群組能力勾選的完整集合，單一真相來源」）：那是封閉枚舉的顯示標籤＝UI chrome，
+     要翻（§4-2）。原本這一頁把有效能力存成一整串繁中、零 data-i18n，英文模式整欄不會變——
+     而姊妹頁 5-5-2 對**同一批標籤**是掛 data-i18n 的，兩頁對同一組枚舉的判定相反。
+     群組的 `capabilities` 也與 5-5-2 逐字相同（§6 跨頁同一份目錄要對得起來）。 #}
+{% set capabilities = [
+  { key: "data:read", label: "資料集檢視", i18nKey: "settings.capDataRead" },
+  { key: "data:write", label: "資料匯入／資料集管理", i18nKey: "settings.capData" },
+  { key: "settings:read", label: "設定檢視", i18nKey: "settings.capSettingsRead" },
+  { key: "settings:write", label: "設定編輯（提示詞／檢索）", i18nKey: "settings.capSettingsWrite" },
+  { key: "ask", label: "問答（後台測試區）", i18nKey: "settings.capAsk" },
+  { key: "history", label: "歷史紀錄", i18nKey: "settings.capHistory" },
+  { key: "audit", label: "稽核日誌檢視", i18nKey: "settings.capAudit" }
+] %}
 {% set groups = [
-  { id: 1, name: "管理群組" },
-  { id: 2, name: "業務群組" },
-  { id: 3, name: "研發群組" }
+  { id: 1, name: "管理群組", capabilities: ["data:read", "data:write", "settings:read", "settings:write", "ask", "history", "audit"] },
+  { id: 2, name: "業務群組", capabilities: ["data:read", "ask", "history"] },
+  { id: 3, name: "研發群組", capabilities: ["data:read", "data:write", "settings:read"] }
 ] %}
 {# isActive＝product users.py 的 User.is_active（PATCH /users/{id} 收 UserUpdateIn.is_active）。
      示範第三筆為已停用：離職成員留著帳號但不能登入，那一列要一眼看得出來（§5 分支要演得到）。 #}
 {% set members = [
-  { email: "admin@example.com", isAdmin: true, isActive: true, groupIds: [], effectiveCaps: "全部能力" },
-  { email: "editor@example.com", isAdmin: false, isActive: true, groupIds: [3], effectiveCaps: "資料集檢視、資料匯入／資料集管理、設定檢視" },
-  { email: "viewer@example.com", isAdmin: false, isActive: false, groupIds: [2], effectiveCaps: "資料集檢視、問答（後台測試區）、歷史紀錄" }
+  { email: "admin@example.com", isAdmin: true, isActive: true, groupIds: [] },
+  { email: "editor@example.com", isAdmin: false, isActive: true, groupIds: [3] },
+  { email: "viewer@example.com", isAdmin: false, isActive: false, groupIds: [2] }
 ] %}
 
 {# 新增成員：電子郵件 + 初始密碼 + 所屬群組勾選（ui/checkbox）+ 租戶管理者（ui/switch）+ 新增按鈕 #}
@@ -157,7 +171,20 @@ permalink: 5-5-1_userManagement.html
                             {% endfor %}
                         </div>
                     </td>
-                    <td>{{ member.effectiveCaps }}</td>
+                    {# 有效能力＝所屬群組能力的聯集（authz.py 的 `effective_capabilities`；
+                         `is_admin` 隱含全部）。**從資料推導、不寫死一整串繁中**（§6）：寫死的話
+                         改了群組能力這一欄不會跟著動，而且整欄零 i18n。 #}
+                    <td>
+                        {% if member.isAdmin %}
+                        <span data-i18n="settings.allCapabilities">全部能力</span>
+                        {% else %}
+                        {# 分隔號放在**每一項之前**（第一項除外）：Nunjucks 的 set 會跨迴圈迭代累積，
+                             用它當「已經印過一項了」的旗標；放在後面會多出一個結尾的「、」。
+                             旗標在每一列開頭重設（set 是頁面全域，不重設會沿用上一列的值）。 #}
+                        {% set capPrinted = "" %}
+                        {% for cap in capabilities %}{% for group in groups %}{% if group.id in member.groupIds and cap.key in group.capabilities %}{% if capPrinted %}<span>、</span>{% endif %}<span data-i18n="{{ cap.i18nKey }}">{{ cap.label }}</span>{% set capPrinted = "1" %}{% endif %}{% endfor %}{% endfor %}
+                        {% endif %}
+                    </td>
                     <td>
                         <div class="btn-group">
                             {# 儲存＝把這一列的狀態／角色／群組一起送 PATCH /users/{id}。後端有兩道守衛，
