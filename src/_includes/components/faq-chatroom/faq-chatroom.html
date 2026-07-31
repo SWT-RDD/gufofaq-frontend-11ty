@@ -51,7 +51,7 @@
             <div class="suggested-questions" role="group" aria-labelledby="faqSuggestedLabel">
                 <span id="faqSuggestedLabel" class="suggested-questions-label" data-i18n="comp.suggestedQuestions">建議追問：</span>
                 {% for q in faqSuggested %}
-                <button type="button" class="button button-border button-sm js-ask-suggested">{{ q }}</button>
+                <button type="button" class="button button-border button-sm js-ask-suggested" data-toast="回答生成中...|回答生成成功|回答生成失敗" data-i18n-data-toast="toast.chatSubmit" data-toast-type="info|success|error">{{ q }}</button>
                 {% endfor %}
             </div>
         </div>
