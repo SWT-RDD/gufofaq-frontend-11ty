@@ -161,8 +161,10 @@ permalink: 2-2-5_regressionRun.html
 </div>
 
 {# ── 摘要 ───────────────────────────────────────────────────────────────────
-     示範自洽（GUIDELINE §6）：通過 9 ＋ 未通過 1 ＝ 總數 10（＝下方逐案例 2 列的比例縮影，
-     逐案例區只列前 2 則當版型示範）；有分數 8 ＋ 評審未完成 1 ＝ 有 judge 判準的 9 則。 #}
+     示範自洽（GUIDELINE §6）：通過 8 ＋ 未通過 2 ＝ 總數 10；有分數 8 ＋ 評審未完成 1
+     ＝ 有 judge 判準的 9 則，剩下 1 則沒有 judge 判準（＝逐案例區的 #34）。
+     逐案例區只列 3 則當版型示範，**不是比例縮影**——挑的是三種評審狀態各一則
+     （有分數／無主觀分／評審未完成），讓每個分支都有畫面演得出來（§5）。 #}
 <div class="block mt-16 flex-row column gap-16">
     <div class="text-md text-bold" data-i18n="regression.summary">執行摘要</div>
     <div class="flex-row gap-24 flex-wrap">
@@ -445,7 +447,7 @@ permalink: 2-2-5_regressionRun.html
   {
     caseNo: "#39", question: "臺灣輸美鋼品的關稅稅率是多少",
     verdict: "未通過", verdictKey: "regression.verdictFail", verdictClass: "is-fail",
-    judgeKind: "unavailable", judgeText: "評審未完成", judgeKey: "regression.judgeUnavailable", judgeClass: "is-warn",
+    judgeScore: "2.4",
     latency: "2,140", tokens: "1,096", turnsSent: "2",
     expectations: [
       "答案須包含：25%／鋼品",
@@ -461,7 +463,7 @@ permalink: 2-2-5_regressionRun.html
     failures: ["答案缺少：25%"]
   },
   {
-    caseNo: "#39", question: "鋁材的關稅是多少（追問）",
+    caseNo: "#34", question: "鋁材的關稅是多少（追問）",
     verdict: "通過", verdictKey: "regression.verdictPass", verdictClass: "is-pass",
     judgeKind: "none", judgeText: "無主觀分", judgeKey: "regression.judgeNone", judgeClass: "is-muted",
     latency: "1,780", tokens: "884", turnsSent: "0",
@@ -469,6 +471,21 @@ permalink: 2-2-5_regressionRun.html
     answer: "鋁材輸美目前適用 10% 的關稅。",
     hits: [
       { name: "鋁材關稅公告.pdf", source: "關稅資料集", index: "tenant7_tariff", chunk: "1", score: "0.88" }
+    ],
+    failures: []
+  },
+  {
+    caseNo: "#35", question: "鋼品輸美有哪些關稅減免條件",
+    verdict: "通過", verdictKey: "regression.verdictPass", verdictClass: "is-pass",
+    judgeKind: "unavailable", judgeText: "評審未完成", judgeKey: "regression.judgeUnavailable", judgeClass: "is-warn",
+    latency: "2,905", tokens: "1,242", turnsSent: "1",
+    expectations: [
+      "答案須包含：減免",
+      "主觀評分判準：答案有沒有講清楚適用條件"
+    ],
+    answer: "符合特定用途或原產地認定的鋼品，可申請關稅減免，需檢附產地證明與用途聲明。",
+    hits: [
+      { name: "關稅減免辦法.pdf", source: "貿易法規資料集", index: "tenant7_trade", chunk: "5", score: "0.79" }
     ],
     failures: []
   }
@@ -516,7 +533,9 @@ permalink: 2-2-5_regressionRun.html
                     <td>{{ row.caseNo }}</td>
                     <td>{{ row.question }}</td>
                     <td><span class="verdict-tag {{ row.verdictClass }}" data-i18n="{{ row.verdictKey }}">{{ row.verdict }}</span></td>
-                    <td><span class="verdict-tag {{ row.judgeClass }}" data-i18n="{{ row.judgeKey }}">{{ row.judgeText }}</span></td>
+                    {# 有分數時畫**數字**（那是資料、不翻）；評不出來／沒有判準才畫 keyed 標籤。
+                         原本無條件走標籤，於是佔 8/10 的「有分數」那一態整頁演不出來。 #}
+                    <td>{% if row.judgeScore %}{{ row.judgeScore }}{% else %}<span class="verdict-tag {{ row.judgeClass }}" data-i18n="{{ row.judgeKey }}">{{ row.judgeText }}</span>{% endif %}</td>
                     <td class="text-center">{{ row.latency }}<span data-i18n="regression.msUnit"> ms</span></td>
                     <td class="text-center">{{ row.tokens }}</td>
                     <td class="text-center">{{ row.turnsSent }}<span data-i18n="regression.turnsUnit"> 輪</span></td>
