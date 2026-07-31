@@ -18,6 +18,17 @@
 - 從現況保留的只有 **React 應用層**：權限過濾、`fetch`、路由、Next 慣例。
 - 重建到符合切版的正確路徑／命名（`ui/` 原子→`components/ui/`）：consumer 改用新元件、刪掉走樣舊檔，不留新舊兩套。
   （現況常有 undefined token 的走樣舊檔仍被 consumer import——那正是要退休的那份。）
+- **有四分之一的元件沒有 `<name>.html`**，產出契約那句話對它們不成立。這種元件的 markup 正本寫在
+  **它自己的 `_<name>.scss` 或 `<name>.js` 檔頭**，實例散在某一頁或元件庫展示頁——
+  **去哪裡找由 README 的「無 html 元件」登記段落決定**（GUIDELINE §1-2 要求每一支都登記在那裡）。
+  三種型態各自的做法：純 scss（`ui/block`、`ui/chat-message`…）→ scss-only，consumer 手寫 className；
+  js only（`ui/print`、`ui/dismiss-panel`、`ui/list-filter`…）→ 行為改寫成 hook，沒有元件檔；
+  正本寄生在別的頁（`ui/error-page` 在 `src/404.html`、`ui/login-wrapper` 在 `src/login.html`）→ 見下一條。
+- **三支不走 page-shell 的頁面各有不同結局**：
+  `src/login.html` → 真路由（`app/login/page.tsx`，`layouts/base` 的直接消費者，自帶 `<form id="loginForm">`
+  ——全站唯一一個 `<form>`，React 端換回 `type="submit"` ＋ `onSubmit(preventDefault)`）；
+  `src/404.html` → `app/not-found.tsx`；
+  `src/catalog.html` → **不轉**（那是切版部署用的頁面目錄，React 端由路由本身取代）。
 - 寄生 orphan class：某元件 `.scss` 裡出現、但它自己 tsx/markup 從不 render 的 selector，是別的 atom 寄生進來的——
   追回它切版的 `ui/` atom、抽成獨立 `components/ui/<Name>/`、退掉寄生（例：`.data-info` 曾寄生在 `Pagination.scss`）。
 - 走樣 scss 若把 hook class 選擇器寫成裸元素（如 `button:hover .tooltip` 而非 `.has-tooltip:hover .tooltip`），修回
@@ -230,6 +241,49 @@
 - 量測用臨時 DOM 節點（append 到 `document.body` 量文字寬等）加 `position:absolute`——append 目標可能是
   flex/grid 容器（節點會被 blockify 拉伸），absolute 讓它退出環境佈局。
 
+### 逐支元件 js 的落點（別只轉有名字的那幾支）
+
+`base.html` 的 `<script defer>` 清單就是盤點表，以下是容易漏掉或有陷阱的那幾支：
+
+- **`ui/tab`**：`data-target="<面板 id>"` → 受控的 `activeTab` state ＋ `{tab === k && <Panel/>}`。
+  三條綁定路徑（`.top-tabs` 切子頁籤群組、`.sub-tabs` 切面板、單層 `.tab-group` 也切面板）在 React
+  是同一顆受控元件；`aria-current="true"` 要跟著選中態走（切版初始 markup 就帶，fpdiff 零容忍欄位）。
+  **同頁只准一套**——切版的面板隱藏是 document 級全域。
+- **`ui/pagination`**：`.pagination` 上的 `data-total`／`data-per-page`／`data-current` 就是 props。
+  演算法要照抄：滑動視窗 ＋ **可點的省略號**（跳 ±3 頁且夾出視窗外，有兩條回歸測試釘住具體案例）、
+  可視頁碼數**讀 CSS 自訂屬性 `--pagination-visible`**（`getComputedStyle`，斷點只有 scss 那一份真相）、
+  `resize` 時只在跨斷點才重排。不要用 `window.innerWidth` 自己判斷斷點。
+- **`ui/checkbox`**：`.check-all` ↔ `.check-one` 雙向連動 ＋ `indeterminate`。切版程式改值後補
+  `dispatchEvent(new Event("change",{bubbles:true}))` 是 vanilla 的需要，React 受控後不需要合成事件；
+  但 `indeterminate` 是 **DOM property 不是屬性**，JSX 寫不出來，要 `ref` + `useEffect` 設。
+- **`ui/theme-toggle`**：除了 `<head>` 的 no-flash IIFE 與點擊同步 `data-theme`，還有三件不可省：
+  寫 `localStorage("theme")`；監聽 `matchMedia("(prefers-color-scheme: dark)")` 的 `change`
+  （使用者沒手動選過時跟隨系統）；點擊後把 `meta[name=theme-color]` 設成 `getComputedStyle(root)`
+  讀到的 `--surface-raised` **實際值**（不是再抄一次色碼）。
+- **`ui/scroll-lock`**：鎖本身是純 CSS（`html:has(...)`），這支 js 只做 CSS 做不到的那一件事——
+  量捲軸寬度寫進 `--scrollbar-width`（且正鎖著時要跳過不量，否則量到 0）。React 端仍然需要它。
+- **`ui/upload-box`**：`accepted()` 的副檔名比對（大小寫、多副檔名、未設 accept＝不限制）有七條邊界測試；
+  拖放樣式 class；不支援的檔案提示是 `.upload-error` live region（節點常駐、只切內容）。
+- **`ui/reveal-input`**：password↔text 切換，鈕的標籤走兩態 key（見 §③），**不是** `aria-pressed`。
+- **`ui/multi-select`**：見下方「機械對照」——`value/onChange` props，不引入第三方套件。
+- **`components/pagination-input`**：輸入頁碼 clamp 到 1..total；箭頭圖 `src` 在 blue/gray 之間切換
+  （那是 raster 資產不是 icon-mask，別當成 CSS 狀態）。
+- **`components/prompt-edit`**：展開時 `innerHTML=""` 後注入 textarea、值存回 `data-full-text`。
+  React 端 `data-full-text` 就是 state，不需要那顆屬性。
+- **`components/select-dataset-modal`**：radio 選取後回填「模擬 select」的 `.select-value`／`.select-placeholder`
+  ——那是切版沒有真 select 的替身，React 端直接用受控值。
+- **`components/editable-block`**：三個 React 特有陷阱——`compositionstart`/`compositionend` 防注音誤送
+  （→ `onCompositionStart/End`）、`setTimeout(0)` 後 `setSelectionRange` 把游標移到尾端、量寬用的暫時 span。
+- **剪貼簿**（`faq-chatroom` 前台複製、`import-report` 複製失敗清單）：`navigator.clipboard.writeText`
+  ＋ `document.execCommand("copy")` fallback，兩條都要帶。**管理端的 `.copyBtn` 相反**——真 app 本來就只彈 toast、
+  不寫剪貼簿，照抄即忠實（GUIDELINE §5）。
+- **「點外部收合」一律 `event.composedPath()`**（`ui/multi-select`、`components/qa-side-panel`）：
+  同頁別的委派可能先跑並用 `innerHTML` 重繪把 target 拔出文件，`ref.contains(e.target)` 會失效。
+  React 的 `useOnClickOutside` 也要照這個寫，不要用 `contains`。
+- **`ui/toast` 是「時長歸 CSS」那條規則的唯一例外**：顯示時長是 `showToast(msg, type, duration)` 的參數
+  （不該被 `prefers-reduced-motion` 壓成 0.01ms），所以留在 js；淡出那 300ms 則歸 CSS。
+  轉成 `useToast()` 時，佇列與時長在 hook 裡，淡出交給 CSS transition。
+
 ### 字串 → 元件（runtime token）
 
 - 元件無 `<名>.html`、markup 正本寫在別的元件示範內容裡時（`components/citation-ref` 的正本在
@@ -289,6 +343,10 @@
 - `<dialog>`／`popover`／`:has()`／`@starting-style`／`allow-discrete`／`mask`／`dvh` 保留，不改成 div + state。
 - **切版自有行為**的 `.js-*`（`js-accordion`／`js-expand-all`／`js-side-toggle`／`js-prompt-toggle`／`js-lang-toggle`…，
   行為已改寫成 state）不帶；**業務** `.js-*` hook 依 §④ 保留——兩者判準：GUIDELINE §5（hook 是否標記「React 業務 js 接手」）。
+  **判準要用跑的、不要用背的**：某支切版元件 js 查得到它 ⇒ 切版自有（不帶）；查不到 ⇒ 業務（保留）。
+  全站兩百多顆，點名幾顆當例子永遠會漏。真正需要人判的只有重疊案例：
+  `.js-tool-description`／`.js-tool-extra-prompt` 兩邊都是（元件 js 拿它算字數、值又要交給 React 送 API）
+  ——**保留**，因為漏帶業務 hook 是 fpdiff 抓不到的一類漂移，多帶一顆只是多一個 className。
   `fpdiff.mjs` element identity 排除 `.js-*`。
 
 ## ⑥ 視覺指紋驗收

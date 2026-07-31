@@ -205,11 +205,12 @@ scrollbar-thin scrollbar-thumb-scrollbar-thumb scrollbar-track-transparent
 ### 5-5. 單色 PNG 圖示＝遮罩上色（`icon-mask()`），**不是** `background-image`
 全站的單色圖示（`.button-icon::before` 系列、`.nav-toggle`、`.accordion-btn`、`.multi-select-tag-remove`、六個 `::after` 箭頭（見 §5-3）、`.modals-close`、`.feedback-vote-icon`、搜尋/時鐘）都走 `src/scss/_mixin.scss` 的 `icon-mask($url, $ink, $size)`：**PNG 的 alpha 當遮罩、顏色由語意 token 給**。因此深色模式不必反相、hover 換色只要換 token（真 app 的 `*_bluehover.png` 已因此刪除）。
 
-→ **轉 React 時應該直接改成內嵌 SVG component + `fill="currentColor"`**：那正是遮罩在模擬的東西，而且省掉一整批 PNG 請求。若要機械照搬，Tailwind 沒有 mask utility，得寫 arbitrary property：`bg-text [mask:url(/icons/x.png)_no-repeat_center/contain]`（底線代空白）。**顏色來自 `background-color`，不是 `color`** —— 這是遮罩的關鍵，別把它當成普通底色而套上填充 token（見 GUIDELINE §4「遮罩」）。
+→ **轉 Tailwind（零 CSS）路線時直接改成內嵌 SVG component + `fill="currentColor"`**：那正是遮罩在模擬的東西，而且省掉一整批 PNG 請求。
+> ⚠️ **這條只適用零 CSS 路線。** scss 路線（REACT-CONVERSION）的驗收門檻是 `scss-diff.mjs` byte-identical，換掉 `icon-mask()` 會讓那條門檻結構上不可能成立——那邊逐字照抄，改 SVG 是之後另一次獨立重構（見 GUIDELINE §7 的裁決）。若要機械照搬，Tailwind 沒有 mask utility，得寫 arbitrary property：`bg-text [mask:url(/icons/x.png)_no-repeat_center/contain]`（底線代空白）。**顏色來自 `background-color`，不是 `color`** —— 這是遮罩的關鍵，別把它當成普通底色而套上填充 token（見 GUIDELINE §4「遮罩」）。
 
 彩色/多色圖不遮罩，維持 `background-image` 或 `<img>`：`faq-chatroom` 頭像 `icon_owl.png`、`chatbot-header` 的 `Logo.png`、`_header.scss` 的 `img_logo.png`、`countdown-box` 的底紋、`.beta-icon` 徽章、檔型徽章。→ `bg-[url(...)] bg-no-repeat bg-contain`，或直接 `<img>`。
 
-`<img>` 的深色反相仍留在全域的 `src/scss/_dark-icons.scss`：**只認檔名** `img[src*="_black"]`，不認任何元件 class。轉 React 時這條可以整條丟掉——SVG component 換色即可。
+`<img>` 的深色反相仍留在全域的 `src/scss/_dark-icons.scss`：**只認檔名** `img[src*="_black"]`，不認任何元件 class。**零 CSS 路線**改用 SVG component 之後這條可以整條丟掉；**scss 路線照抄**（同上，byte-identical）。
 
 **要重寫資產路徑到 React public/，別漏。**
 - **logo 圖片替換文字技法**：`.chatbot-header .logo a`（也見 `_header.scss`）用 `text-indent:101%; white-space:nowrap; overflow:hidden` 把文字推出視野、只留 bg 圖 → `indent-[101%] whitespace-nowrap overflow-hidden`（或直接把文字改 `sr-only`）。`text-indent` 無 utility，用 arbitrary。
@@ -250,7 +251,7 @@ scrollbar-thin scrollbar-thumb-scrollbar-thumb scrollbar-track-transparent
 7. **尺標外的值用 arbitrary**：`.5625rem`→`py-[9px]`、`108px`→`w-[108px]`、`84.3%`→資料驅動 `style`。別硬湊最近的尺標值改變外觀。
 8. **逃生口別略過也別硬 utility**：捲軸走 plugin（§5-1）、markdown 走 react-markdown components（§5-2）、偽元素走 before/after 或 SVG（§5-3）。不要因為「掛不上 class」就漏掉樣式。
 9. **狀態/互動是規格**：`.active/.open/.collapsed` 等狀態 → React state；元件的 `<name>.js`（如 `qa-side-panel.js`/`prompt-edit.js`/`accordion.js`）是行為規格，翻成 `useState`/事件，別照搬 DOM 操作。
-10. **自訂 checkbox/radio 別硬 utility**（§5-4）：`appearance:none`+偽元素畫的控制項，零 CSS 就走 SVG 元件；硬用 arbitrary `before:` 會重現不出旋轉打勾。這是零 CSS 唯一真的痛點。
+10. **自訂 checkbox/radio 別硬 utility**（§5-4）：`appearance:none`+偽元素畫的控制項，零 CSS 就走 SVG 元件；硬用 arbitrary `before:` 會重現不出旋轉打勾。這是零 CSS 唯一真的痛點。（scss 路線不受此限——那邊照抄。）
 11. **單色圖示是遮罩不是背景圖**（§5-5）：`.button-icon` 系列、箭頭、搜尋/時間框…清單自己數（`grep -o 'mask:url("[^"]*")' dist/css/main.css | sort -u`）→ 建議一律改成 `fill="currentColor"` 的內嵌 SVG。若照搬遮罩，記得上色的是 `background-color`（墨色）而非 `color`；Tailwind 無 mask utility，需 arbitrary property。
 12. **顏色不全在 token**（§1 附註）：一批 token 外硬寫色需 arbitrary color，別假設都有 token。
 13. **值以 SCSS + dist 為準**：本文件是規則；遇到衝突，以實際 `_<name>.scss` 的宣告與 `dist/<page>.html` 的最終外觀為準（兩者已對齊真 app）。

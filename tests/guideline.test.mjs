@@ -1131,15 +1131,15 @@ test("GUIDELINE.md 不放會腐化的枚舉（頁數、元件數）", () => {
 
 // ─────────── 地毯式稽核抓到、但既有測試沒涵蓋的規則 ───────────
 
-test("§4 送出鈕是 type=\"button\"（登入頁除外）——切版不包 <form>，submit 是等著爆的地雷", () => {
-    // §4：「表單不包 <form>、送出鈕是 type="button"（登入頁除外）」。既有的「不得省略 type」那條
+test("§4 送出鈕是 type=\"button\"——切版不包 <form>，submit 是等著爆的地雷", () => {
+    // §4：「表單不包 <form>、送出鈕是 type="button"」。既有的「不得省略 type」那條
     // 只擋缺屬性，對 type="submit" 完全無感——round33 抓到四顆（2-2-3、chatroom、faq-chatroom、
     // faq-feedback-modal）。切版沒有 <form> owner 所以目前無害，但這正是「無害到沒人會發現」的那種：
     // 轉 React 後任何人把它包進 <form>（RHF／Server Action）就變成真提交、整頁重載。
-    const hits = scanLines(
-        srcHtml.filter((f) => !f.endsWith("login.html")),
-        (line) => (/type="submit"/.test(line) ? true : null),
-    );
+    // round34：原本替 login.html 開了一個洞（規則寫「登入頁除外」），但那一頁的登入鈕本來就是
+    // type="button"——切版沒有 submit handler，原生送出會重載頁面把剛演出來的 toast 沖掉。
+    // 洞從來沒被用過，撤掉；規則同批改寫（豁免不存在就別留在文件裡）。
+    const hits = scanLines(srcHtml, (line) => (/type="submit"/.test(line) ? true : null));
     assert.ok(srcHtml.length > 20, "srcHtml 空了 —— 這條測試在空轉");
     assert.equal(hits.length, 0, `改成 type="button"（送出行為由元件 js／React 接手）：\n${fail(hits)}`);
 });

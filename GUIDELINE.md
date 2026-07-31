@@ -79,7 +79,7 @@ src/
 | `{% for x in 清單 %}…{% else %}…{% endfor %}`（搭配 `{% if %}`） | 渲染重複結構；`{% else %}` 是清單為空時的空狀態列 | `.map()` / `list.length ? … : …` |
 | `{{ content \| safe }}`（只出現在 `layouts/`） | 頁面內容的注入點 | `{children}` |
 
-**註解**：要註解模板碼一律用 nunjucks 註解 `{# … #}`（build 時被移除、不進輸出，轉 React 時對應 `{/* */}`）。不要在 HTML 註解 `<!-- -->` 內寫 `{% %}`／`{{ }}`——即使在註解裡 nunjucks 仍會解析而出錯。`{# #}` 不算模板語法（它是註解機制、不產生任何 markup），故不在上表的 5 個之列。
+**註解**：模板檔一律用 nunjucks 註解 `{# … #}`，**零 `<!-- -->`**（有測試把關）——HTML 註解會原樣進輸出，而且裡面的 `{% %}`／`{{ }}` 仍會被 nunjucks 解析而出錯。`{# #}` 不算模板語法（它是註解機制、不產生任何 markup），故不在上表之列；轉 React 時對應 `{/* */}`。**`{# #}` 不可以出現在 `{% set %}` 的運算式裡面**（`{% set xs = [ {# 說明 #} … ] %}` 會 build 失敗），要註解就寫在 `{% set %}` 之前。
 
 `{% set %}` 的變數在 include 後**不會消失**（整頁共用）：同頁第二次使用同元件必須重新 set 全部參數；不同元件的參數名不可相同。
 
@@ -153,7 +153,7 @@ bodyClass: chatbot-page                # 選填：base.html 用它產生 <body c
 - 禁止依頁面覆寫元件（`.guideline-page .button {...}` 這種 body-class 範圍選擇器只准出現在該頁自己的 chrome 檔，見 §9）；頁面專屬的一次性樣式也要歸戶成**純樣式元件**（無 html/js 只有 scss，如 `ui/ab-test-block`），不放全域樣式表
 - **兩個以上元件必須同值的斷點／尺寸，抽成全域層的 mixin 或 token**（斷點見 `_mixin.scss` 的 `nav-collapsed`，尺寸見 `_size.scss`）。判準是「**一邊改了、另一邊沒跟就會壞掉**」——`header` 的高度與 `mobile-nav` 浮層的起點是耦合；`992px`／`768px` 這種各元件各自收版的系統性斷點只是共用約定，不是耦合。各寫一份遲早走鐘。**共用的字型堆疊同理**：monospace code 字型跨元件共用（如 code-block／chat-message 的行內碼），抽成 `--fontFamilyMono` token（`_var.scss`），元件的 `font-family` 只掛 `var(--fontFamily*)`——各抄一份 `'Monaco',…` 一改就漏（有測試以白名單把關）
 - **間距一律用工具 class**：水平間距交給 `flex-row` 的 `gap-*`（尺標 2, 4, 8, 10, 12, 16, 20, 24, 32, 40；斷點內覆寫用 `sm-gap-*`／`xs-gap-*`，尺標 4~32）；垂直（區塊與區塊之間）用 `mt-*`／`mb-*`／`my-*`（尺標少了最細的 2：4, 8, 10, 12, 16, 20, 24, 32, 40），歸零用 `m-0`。**不要寫行內 `style="margin-..."`**；間距值不在尺標上時優先靠齊尺標（±2px 屬可接受誤差），真的必須保留才允許行內 style 並註記原因
-- **目標是轉出的 React／Tailwind 零行內 style。** 切版因無 utility 系統，欄寬用 `<col style="width:...">`、JS 切換顯示用 `display` 行內先當替身——轉換時這兩者一律變成 class（欄寬 → `w-[N]`；display → conditional `className` 的 `hidden`/`block`，見 TAILWIND-CONVERSION）。**唯一無法消除、會留在行內的是「資料驅動的執行期尺寸」**（如 storage-bar `width: 84.3%` 來自真實資料 → `style={{width}}`；runtime 值沒有對應的 build-time class）。**顏色、字級、間距一律不寫行內。**
+- **目標是轉出的 React 零行內 style 字串。** 切版因無 utility 系統，欄寬用 `<col style="width:...">`、JS 切換顯示用 `display` 行內先當替身。**兩條轉換路線的出口不同，別互抄**：Tailwind 路線把欄寬變成 `w-[N]`、display 變成 `hidden`/`block`（見 TAILWIND-CONVERSION）；**scss 路線沒有 utility**，欄寬轉成 JSX 的 style **物件**（`style={{width:283, minWidth:283}}`）——那是「這一頁這張表」的資料，不得搬進元件 scss（會讓 scss byte-identical 比對出現一份切版沒有的規則）。display 兩條路線都是條件渲染／conditional className，屬性整個不帶。**唯一無法消除、會留在行內的是「資料驅動的執行期尺寸」**（如 storage-bar `width: 84.3%` 來自真實資料 → `style={{width}}`；runtime 值沒有對應的 build-time class）。**顏色、字級、間距一律不寫行內。**
 - 工具 class 是「最後一手」的覆寫層：取代行內 style 的單屬性版面工具——間距（`mt/mb/my/m-0`）、顯示（`hidden`）、對齊（`text-left/center/right`）、方向（`column`／`mobile-column(-xs)`／`xs-column-reverse`）——帶 `!important`（等同其所取代的行內 style 的優先權），元件樣式不可依賴蓋過它們；**情境限定的工具只在其情境生效**（`mobile-column` 家族只對 `.flex-row` 有規則，掛在別的元素上是死 class，不掛）；文字大小/顏色工具不帶 `!important`（允許元件情境覆寫，零例外）。**要壓過元件的字色，改由 owning 層提供變體**（如 `.page-title.plain`），不要讓工具 class 帶 `!important` 硬壓——工具層在 `main.scss` 早於元件層載入，硬壓是把層疊順序當成規則在用
 - 欄位系統：`.col-N-*` 欄寬以 calc() 自動扣除該列 gap 分攤，同列 span 總和 = 12 時恰好填滿一行（搭配 `.flex-wrap` 不會提早掉行）；直向排列（`.column`／斷點下的 `.mobile-column(-xs)`）時不扣，`.col-12-*` 恆為整寬。**一列 col span 總和不得超過 12**——nowrap 的 `flex-row` 裡 span 爆表時，欄位被 `flex-shrink` 一起擠扁（連沒動的鄰欄也縮）；要放更多欄位就給容器加 `.flex-wrap`，讓超出的欄位換到下一列（有測試逐 `flex-row` 加總直接子欄位把關）。用法見元件總覽頁的「04 欄位」節
 - **HTML 巢狀必須合法**：`span`／`p`／`button` 內不可放區塊元素（`div`、`ul`、`table`…；`button` 只吃 phrasing content，把 div 假扮的控制項換成真 button 時，內容也要一起換成 `span`）——瀏覽器會容錯，但轉 React 時 SSR/hydration 會報錯。長文/富文字容器（如 chatroom 的 `.robot-msg`）一律用 `div`。（`<a>` 是 HTML5 transparent content model，**可以**包區塊元素，如 `upload-card` 的 `<a>` 包整張卡。）**`<table>` 直下不放 `<tr>`**：一律包 `<thead>`／`<tbody>`——瀏覽器解析會自動補 tbody，SSR/hydration 兩邊的樹就長不一樣（有測試把關）
@@ -167,7 +167,7 @@ bodyClass: chatbot-page                # 選填：base.html 用它產生 <body c
   - **「還沒挑」要有一顆 `<option value="">` 承載得住，而且它要有可讀標籤**（`common.pleaseSelect`／`filter.all*`）。少了空值那一顆，瀏覽器一定會顯示第一顆並回報成 selected——畫面因此宣告「已經挑好了」，而依賴這個選擇的動作其實還沒有輸入。空的 `<option></option>` 同樣不行：報讀器只念得出一顆空白選項
   - **值交給 React 讀去送 API 的數字欄，三件套一起給**：`type="number"` ＋ 後端的 `min`／`max`／`step`，加一段可見的區間提示（`id` ＋控制項 `aria-describedby`），常數出處寫檔頭。`type="text"` ＋ `Number()` 打錯一個字就是 NaN、序列化成 JSON 是 null；區間只寫在後端，使用者要按下送出才知道打錯。真 app 鏡射頁沿用原 markup 是唯一豁免，且要在檔頭寫明
   - **`control-label required` 與控制項的 `required` 成對**：星號是視覺，`required` 是報讀器與 React 表單庫讀的那一份，兩份必須說同一件事
-  - **表單不包 `<form>`、送出鈕是 `type="button"`**（登入頁除外）：靜態原型裡真的送出會整頁重載、把剛演出來的狀態沖掉，而表單驗證本來就不在切版範圍（§5「不在切版範圍的互動」）。`required`／`type="email"` 照樣要寫——它們是**可及性語意**（報讀器會念「必填」）與 React 表單庫的輸入，不是為了觸發原生驗證
+  - **表單不包 `<form>`、送出鈕是 `type="button"`**（全站零 `type="submit"`，有測試把關；`src/login.html` 是唯一包 `<form>` 的頁，那顆登入鈕同樣是 `type="button"`——React 端才換回 `type="submit"` ＋ `onSubmit(preventDefault)`）：靜態原型裡真的送出會整頁重載、把剛演出來的狀態沖掉，而表單驗證本來就不在切版範圍（§5「不在切版範圍的互動」）。`required`／`type="email"` 照樣要寫——它們是**可及性語意**（報讀器會念「必填」）與 React 表單庫的輸入，不是為了觸發原生驗證
   - **`role="group"` 的容器只能框「那一組」**：不可連同旁邊不屬於這組的控制項（送出鈕、無關的 switch）一起框，否則報讀器會把它們也念成這組的成員。旁邊的控制項要放在 group 容器**外**的 sibling（必要時把 group 收進一層只含 label＋該組的內層容器）
   - **id 在一頁裡必須唯一**（有測試在 dist 上把關）。同一元件在頁面出現多次時：**有迴圈變數就拿它組唯一 id**（`id="ms-{{ field.key }}"`、`id="applySample-{{ loop.index }}"`）；**沒有的**（如 `header-controls` 被 `header` 與 `mobile-nav` 各 include 一次）**一律不寫死 id**——改用 class + `querySelectorAll` 綁定、可及名稱用 `aria-label` 而非 `for`/`id`
 - **不要用 div 假扮控制項**：可點的東西一律用真 `<button type="button">`／`<a>`。`div[role="button"][tabindex="0"]` 少了 Enter/Space（WCAG 2.1.1），原生按鈕免費具備。模擬 select 也用 `<button class="form-control">`。`role` 換成 `tab`／`checkbox`／`switch` 也一樣不行
@@ -269,7 +269,7 @@ ui/pagination/
 
 ### tag 多選（`ui/multi-select`）
 
-tag 式多選由本範本提供（切版需要展示互動）：在原生 `<select multiple class="multiSelect">` 上加 `ui/multi-select/multi-select.js`，增強成標籤（可 `×` 移除）＋下拉複選（不關閉）＋搜尋過濾＋placeholder。**原生 `<select>` 仍是唯一資料來源**——操作都寫回它的 `option.selected` 並觸發 `change`。轉 React 時對應 `react-select`（isMulti），value 陣列＝原生 select 的選取。
+tag 式多選由本範本提供（切版需要展示互動）：在原生 `<select multiple class="multiSelect">` 上加 `ui/multi-select/multi-select.js`，增強成標籤（可 `×` 移除）＋下拉複選（不關閉）＋搜尋過濾＋placeholder。**原生 `<select>` 仍是唯一資料來源**——操作都寫回它的 `option.selected` 並觸發 `change`。**轉 React 時不引入第三方套件**：切版的隱藏原生 `<select>` 是 vanilla 的替身，React 端直接做成 `options / value / onChange` 的受控元件（行為規格就是這支 js：標籤可 `×` 移除、下拉複選不關閉、搜尋過濾、placeholder、`role=combobox/listbox/option` 與 ↑↓/Enter/Esc/Home/End 鍵盤操作）。
 
 **選項標籤要「資料＋可翻的狀態後綴」時**（如 `舊版文件搜尋（停用中）`）：`<option>` 內放不進第二個節點，故走 §4-2 的資料槽慣例——markup 給 `data-suffix`（繁中原文）＋ `data-suffix-key`（i18n key），由元件組出顯示字並在 `gufo:langchange` 重畫；原生 option 的文字維持**純資料**（不翻的業務識別字）。**不得把後綴烤進 option 的文字**（英文模式會露出繁中），也不得在 option 上掛 `data-i18n`（那會把整串連名字一起換掉）。**狀態不可只靠顏色或位置表達**：不可用的選項要有字面標示，否則螢幕報讀器與色弱使用者讀不出差別。
 
@@ -336,7 +336,7 @@ tag 式多選由本範本提供（切版需要展示互動）：在原生 `<sele
 | 前後綴 i18n key 夾資料槽（`pagination.totalPrefix`＋`.page-info-count`＋`totalSuffix`） | i18n library 的插值：`t("key", { total })`——單一插值 key 取代前後綴一對 key |
 | `<a data-i18n="key">文字</a>` | `{t("key")}`（next-intl 等）；`src/i18n/en.json` 直接當英文 message catalog，繁中原文由 markup 抽出成 zh catalog |
 | `GufoI18n.t(key, "繁中")` / `gufo:langchange` / `lang-toggle.js` | **不帶過去**：runtime 就地切換是切版專用；React 用 i18n library 的 `t()` 與語言 context |
-| `ui/multi-select`（增強原生 `<select multiple>`） | `react-select`（isMulti）；value 陣列＝原生 select 的選取，行為（標籤／搜尋／複選）即規格 |
+| `ui/multi-select`（增強原生 `<select multiple>`） | 自寫受控元件（`options`/`value`/`onChange`），不引第三方；隱藏的原生 select 不轉，行為（標籤／搜尋／複選／鍵盤）即規格 |
 | `_var.scss` 顏色變數 | 全域引入一次，元件照用 `var(--...)` |
 | 答案文字裡的 token（`[[N]]` → `components/citation-ref`） | renderer 層**字串 → 元件**：在 text 節點切 token 換成 `<CitationRef no={N}/>`（不碰 `code`／`pre` 內的樣本）。元件無 `<名>.html` 時，markup 正本在它 scss 檔頭指名的示範處 |
 | 元件匯出給別的元件呼叫的函式（`GufoSources.show/reveal`、`GufoAccordion.setOpen`、`openFeedback`） | 共同祖先持有**意圖 state**、被呼叫的元件受控接收；捲動／聚焦／暫時高亮這類不可宣告的副作用留在它自己的 `useEffect`。不用 ref 戳子元件、不用 context 開全域單例（同頁兩顆會一起反應）。意圖 state 要能重放同一個值（連點同一顆 `[[N]]`）：用 `{no, seq}` 或 effect 尾端 reset |
