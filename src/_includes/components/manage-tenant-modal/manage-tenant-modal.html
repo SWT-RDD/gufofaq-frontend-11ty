@@ -160,7 +160,8 @@
                                         <span class="text-bold">{{ member.email }}</span>
                                         <span class="text-gray"><span data-i18n="{% if member.isAdmin %}role.admin{% else %}role.member{% endif %}">{% if member.isAdmin %}管理者{% else %}成員{% endif %}</span>{% if not member.isActive %} · <span data-i18n="settings.disabled">已停用</span>{% endif %}</span>
                                     </div>
-                                    <div class="btn-group">
+                                    {# 這一列不在 .default-table 裡，`.btn-group` 的規則帶著那個祖先（§4 祖先錯位）。 #}
+                                    <div class="flex-row gap-10 align-items-center flex-wrap">
                                         {# 已停用的帳號代理不了：`platform.py:725-726` `if not target.is_active:
                                              raise HTTPException(403, "cannot impersonate a disabled account")`。
                                              無條件渲染會在停用列上留一顆**按了必定失敗**的鈕，而它掛的 warning

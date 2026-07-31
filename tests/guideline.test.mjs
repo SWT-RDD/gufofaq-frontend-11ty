@@ -329,6 +329,37 @@ test("§5 每顆 .tab 都要接得上東西（data-target 面板／業務 data-*
         `死頁籤（點了不會有任何事）：\n${fail(bad)}\n切同頁面板請補 data-target 並建 .tab-content；切業務資料請補 data-* 契約。`);
 });
 
+test("§4 .btn-group 只在 .default-table 裡有規則，表格外掛它等於零樣式（祖先錯位）", () => {
+    // §4 無主 class 的第三種死法：那個詞彙在某個元件的 scss 裡有規則，但規則帶著祖先，
+    // 複製到別的地方就沒有效果了。`.btn-group` 的唯一正本是
+    // `ui/default-table/_default-table.scss` 的 `.default-table .btn-group`，元件契約也寫明
+    // 「功能欄按鈕用 div.btn-group 包覆」。round34 抓到 9 處在表格外（gap 與 padding 全部不生效）。
+    // 「每個 class 都要有主人」那條測試的白名單自述「含祖先限定的規則——祖先錯位那型由人審」，
+    // 所以它看不到這一型；這條把「.btn-group」這個具體案例釘死。
+    const css = read("dist/css/main.css");
+    const rules = [...css.matchAll(/([^{}]*\.btn-group[^{}]*)\{/g)].map((m) => m[1].trim());
+    assert.ok(rules.length > 0, ".btn-group 在編譯後的 css 找不到任何規則 —— 這條測試在空轉");
+    assert.ok(
+        rules.every((r) => r.includes(".default-table")),
+        `.btn-group 出現了不帶 .default-table 祖先的規則，這條測試的前提變了：\n${rules.join("\n")}`,
+    );
+    let seen = 0;
+    const hits = [];
+    for (const f of distHtml) {
+        const t = read(`dist/${f}`);
+        let i = -1;
+        while ((i = t.indexOf('class="btn-group"', i + 1)) >= 0) {
+            seen++;
+            const before = t.slice(0, i);
+            const open = (before.match(/<table\b/g) || []).length;
+            const close = (before.match(/<\/table>/g) || []).length;
+            if (open <= close) hits.push(`dist/${f}:${before.split("\n").length}  .btn-group 在 <table> 之外`);
+        }
+    }
+    assert.ok(seen >= 5, `只掃到 ${seen} 個 .btn-group —— 這條測試在空轉`);
+    assert.equal(hits.length, 0, fail(hits));
+});
+
 test("§4 markup 上的每個 class 都要有主人（反向網：css 規則／元件 js／js-／具名 hook）", () => {
     // §4「markup 上的每個 class 都要有主人」一直只有**反方向**的網（scss 根 class 要打得到 markup，
     // test「§5/§8 元件 scss 的頂層根 class…」）。正方向完全沒有——`.bold` 因此活了好幾輪：

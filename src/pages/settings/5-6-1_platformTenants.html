@@ -160,7 +160,9 @@ permalink: 5-6-1_platformTenants.html
 {# 帳號治理工具列：匯出租戶／使用者 CSV（帳號列表，稽核用）。直接下載動作 → data-toast 演出成敗（走 BFF 檔案透傳）。 #}
 <div class="block mb-16 flex-row flex-wrap gap-16 align-items-center" data-platform-role="auditor">
     <div class="text-md text-bold" data-i18n="platform.accountGovernance">帳號治理</div>
-    <div class="btn-group">
+    {# `.btn-group` 的唯一 scss 規則帶著 `.default-table` 祖先（ui/default-table/_default-table.scss），
+         表格外掛它一條規則都吃不到（§4 無主 class 的第三種死法：祖先錯位）。改用工具 class。 #}
+    <div class="flex-row gap-10 align-items-center">
         <button type="button" class="button button-border" data-toast="開始下載|下載失敗，請稍後再試" data-i18n-data-toast="toast.exportCsv" data-toast-type="success|error" data-i18n="platform.exportTenants">匯出租戶 CSV</button>
         <button type="button" class="button button-border" data-toast="開始下載|下載失敗，請稍後再試" data-i18n-data-toast="toast.exportCsv" data-toast-type="success|error" data-i18n="platform.exportUsers">匯出使用者 CSV</button>
     </div>
@@ -252,7 +254,9 @@ permalink: 5-6-1_platformTenants.html
 {# 名單與門檻是 auditor 讀得到的（GET /platform/review/overdue ＝ require_platform_auditor，
      platform.py:1387；docstring 自述「這一步不動任何資料，管理員截圖存證用」）——整區標 admin
      等於唯讀稽核員連那張截圖都看不到，正是 §5 要防的「把整塊 gate 在是不是管理員」。
-     區塊標 auditor，只有真的會寫入的那三顆動作鈕（POST /review/apply ＝ require_platform_admin，:1440）標 admin。 #}
+     區塊標 auditor，只有真的會寫入的那一顆（步驟三的「確認執行」＝ POST /review/apply
+     ＝ require_platform_admin，platform.py:1437-1440）標 admin。步驟一那三顆是「選動作＋拉名單」，
+     打的是同一支 GET，auditor 要按得到才截得到圖。 #}
 <div class="block mt-16 flex-row column gap-16" data-platform-role="auditor">
     <div class="text-md text-bold" data-i18n="platform.reviewTitle">ISO 季度審核</div>
     <p class="text-gray m-0" data-i18n="platform.reviewDesc">設定逾時門檻並一鍵列出所有符合的帳號；確認後批次處置。全手動，名單與結果畫面皆保留供稽核截圖。</p>
@@ -278,7 +282,11 @@ permalink: 5-6-1_platformTenants.html
                 </div>
             </div>
         </div>
-        <div class="btn-group" data-platform-role="admin">
+        {# 這三顆只是**選動作＋拉名單**：打的是 `GET /platform/review/overdue`
+             （platform.py:1386-1388 `require_platform_auditor`，docstring 自述「這一步不動任何資料，
+             管理員截圖存證用」）。原本標 admin ⇒ 稽核員整區沒有任何入口拉得到名單，
+             正是註解自己說要避免的事。真正寫入的是下面步驟三那顆確認鈕。 #}
+        <div class="flex-row gap-10 align-items-center">
             <button type="button" class="button button-red js-review-purge" data-i18n="platform.reviewActionPurge">刪除逾時資料</button>
             <button type="button" class="button button-red js-review-delete" data-i18n="platform.reviewActionDelete">刪除逾時帳號</button>
             <button type="button" class="button button-border js-review-freeze" data-i18n="platform.reviewActionFreeze">凍結逾時帳號</button>
@@ -334,8 +342,12 @@ permalink: 5-6-1_platformTenants.html
                 <input type="text" id="reviewConfirmInput" placeholder="刪除" data-i18n-placeholder="platform.confirmDeletePhrase" class="form-control">
             </div>
         </div>
-        <div class="btn-group">
-            <button type="button" class="button button-red js-review-confirm" data-i18n="platform.confirmExecute">確認執行（不可逆）</button>
+        {# `POST /platform/review/apply` ＝ `require_platform_admin`（platform.py:1437-1440），
+             所以標 admin 的是**這一顆**。低於該級時動作鈕不渲染（§5）——原本反過來標，
+             稽核員反而看得到一顆「確認執行（不可逆）」，按了必定 403。
+             「取消」是純前端互動（收掉步驟三），不標。 #}
+        <div class="flex-row gap-10 align-items-center">
+            <button type="button" class="button button-red js-review-confirm" data-platform-role="admin" data-i18n="platform.confirmExecute">確認執行（不可逆）</button>
             <button type="button" class="button button-border js-review-cancel" data-i18n="action.cancel">取消</button>
         </div>
     </div>
