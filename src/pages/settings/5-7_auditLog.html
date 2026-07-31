@@ -16,7 +16,7 @@ permalink: 5-7_auditLog.html
 
 {# 查詢區：操作類型篩選（singleSelect，對照後端 GET /audit?action= 精確比對）；此靜態頁列代表性選項，
      React 端列完整操作類型清單。真實頁 tbody 由 React 依查詢結果渲染，此處以 set+for 資料化示範 3 筆。
-     租戶（全部租戶 switch，送 scope=all）與操作者（送 operator=<id>）兩個篩選欄位要**平台角色**才看得到，
+     租戶（指定 tenant_id／全部租戶 switch 送 scope=all）與操作者（送 operator=<id>）三個篩選欄位要**平台角色**才看得到，
      而那是 auditor 亦有的能力：product app/routers/audit.py 的 list_audit 以 is_platform_auditor
      （platform_role ∈ {auditor, admin}）判斷 scope=all／tenant_id／operator，該檔自註「用 is_platform_admin
      判斷會把唯讀稽核員一起排除掉」。故兩欄掛 data-platform-role="auditor"（§5 兩級可見性），
@@ -43,6 +43,18 @@ permalink: 5-7_auditLog.html
                         <option value="prompt.activate" data-i18n="audit.actPromptActivate">套用提示詞版本</option>
                         <option value="user.create" data-i18n="audit.actUserCreate">建立使用者</option>
                     </select>
+                </div>
+            </div>
+            <div class="form-group col-2-md col-12-sm" data-platform-role="auditor">
+                <div class="label">
+                    {# `tenant_id`（audit.py:33，docstring「平台管理員可查指定租戶」）原本沒有任何控制項，
+                         畫面因此只做得到「全部租戶或自己那一個」，指定單一租戶做不到（§3-2 request
+                         收得下的每個參數都要有落點）。值載體 → 只掛 hook class（§5 矩陣②）。 #}
+                    <label for="auditTenantInput" class="control-label" data-i18n="settings.tenant">租戶</label>
+                </div>
+                <div class="field">
+                    <input type="number" min="1" step="1" id="auditTenantInput" class="form-control js-audit-tenant" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" aria-describedby="auditTenantHint">
+                    <span class="text-gray" id="auditTenantHint" data-i18n="audit.tenantHint">填租戶 id（正整數）；留空＝依「全部租戶」開關決定</span>
                 </div>
             </div>
             <div class="form-group col-2-md col-12-sm" data-platform-role="auditor">
@@ -109,7 +121,8 @@ permalink: 5-7_auditLog.html
         action: "建立資料集",
         target: "dataset #12",
         detail: "{ name: 移民署 測試 }",
-        ip: "203.0.113.5"
+        ip: "203.0.113.5",
+        userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0"
     },
     {
         time: "2026/07/13 13:10:44",
@@ -129,7 +142,8 @@ permalink: 5-7_auditLog.html
         action: "登入失敗",
         target: "—",
         detail: "{ email: bad@initech.io }",
-        ip: "198.51.100.2"
+        ip: "198.51.100.2",
+        userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) Safari/17.5"
     }
 ] %}
 <div class="data-info"><span data-i18n="qa.totalOf">共</span> {{ total }} <span data-i18n="qa.records">筆資料</span></div>
@@ -144,6 +158,7 @@ permalink: 5-7_auditLog.html
             <col style="width:160px; min-width:160px;">
             <col style="min-width:240px;">
             <col style="width:140px; min-width:140px;">
+            <col style="min-width:220px;">
         </colgroup>
         <thead>
             <tr>
@@ -155,6 +170,9 @@ permalink: 5-7_auditLog.html
                 <th data-i18n="audit.target">對象</th>
                 <th data-i18n="audit.detail">詳情</th>
                 <th data-i18n="audit.sourceIp">來源 IP</th>
+                {# `user_agent`（audit.py:105）原本沒有欄位也沒有理由。稽核軌跡的 UA 是
+                     「從哪個用戶端做的」，屬於 ISO 要查的事實（§3-2 response 落點）。 #}
+                <th data-i18n="audit.userAgent">來源用戶端</th>
             </tr>
         </thead>
         <tbody>
@@ -168,6 +186,7 @@ permalink: 5-7_auditLog.html
                 <td>{{ row.target }}</td>
                 <td>{{ row.detail }}</td>
                 <td>{{ row.ip }}</td>
+                <td><div class="ellipsis-2">{{ row.userAgent }}</div></td>
             </tr>
             {% endfor %}
         </tbody>
