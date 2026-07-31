@@ -53,7 +53,8 @@ permalink: 5-10_tagDimensions.html
 {% set tagDimensions = [
   { id: 1, slotKey: "note1", name: "業務範疇", description: "這份文件講的是哪些業務面（可複選）", kind: "multi", role: "", vocabularyCount: 6, tagged: 118, total: 132, coveragePct: 89.4 },
   { id: 2, slotKey: "note2", name: "業務方向", description: "進口向／出口向／雙向，三選一", kind: "single", role: "", vocabularyCount: 3, tagged: 132, total: 132, coveragePct: 100 },
-  { id: 3, slotKey: "date2", name: "有效期", description: "這份規定到哪一天為止仍然有效；永遠有效請留白", kind: "date", role: "valid_until", vocabularyCount: 0, tagged: 130, total: 132, coveragePct: 98.5 }
+  { id: 3, slotKey: "date2", name: "有效期", description: "這份規定到哪一天為止仍然有效；永遠有效請留白", kind: "date", role: "valid_until", vocabularyCount: 0, tagged: 130, total: 132, coveragePct: 98.5 },
+  { id: 4, slotKey: "note3", name: "文件密級", description: "這份文件的閱讀範圍（新建，還沒量過覆蓋率）", kind: "single", role: "", vocabularyCount: 2, tagged: 0, total: 0 }
 ] %}
 {# 字典編輯區當下選中的維度（React 由「編輯字典」那顆鈕決定；切版演 single 這一份）。
      **kind=date 時整個區塊不渲染**——日期維度沒有代碼可言，product `create_vocabulary` 對它
@@ -237,12 +238,18 @@ permalink: 5-10_tagDimensions.html
                         {# 條寬 style="width: N%" 是資料驅動的執行期尺寸（GUIDELINE §4 合法行內 style）。
                              文字同時給「已標註／讀到的份數」與百分比——只有百分比的話，89% 是 118/132
                              還是 8/9 分不出來，而那決定了要補幾筆。 #}
+                        {# coverage 為 null（一份文件都沒讀到）時 product 回的是 null 不是 0，
+                             「沒量到」不等於「量到零」——畫成 0% 會讓人以為一筆都沒標。 #}
+                        {% if dim.coveragePct == null %}
+                        <span class="text-gray" data-i18n="settings.tagCoverageNotMeasured">尚未量測</span>
+                        {% else %}
                         <div class="storage-bar">
                             <div class="bar">
                                 <div class="bar-fill" style="width: {{ dim.coveragePct }}%;"></div>
                             </div>
                             <div class="text">{{ dim.tagged }} / {{ dim.total }}（{{ dim.coveragePct }}%）</div>
                         </div>
+                        {% endif %}
                     </td>
                     <td>
                         <div class="btn-group">

@@ -1208,6 +1208,7 @@
   "settings.tagCodeHint": "Codes go verbatim into the retrieval condition, so they must not contain , ' \" \\ * ? (those get rewritten or cut somewhere along \"import matching → DSL string → upstream matching\"). Two codes differing only in case or full/half width cannot coexist either — the matcher cannot tell them apart, while retrieval can only send one of the two spellings.",
   "settings.tagCodeLabel": "Code name",
   "settings.tagCoverage": "Tagging coverage",
+  "settings.tagCoverageNotMeasured": "Not measured yet",
   "settings.tagCoverageScan": "Tagging coverage measurement scope",
   "settings.tagCoverageScanHint": "\"No content found\" and \"files that cannot be enumerated\" do not mean \"not tagged\" — they mean \"not known yet\". While they are not 0 there is no proof of zero untagged documents: counting them as tagged is exactly how coverage gets over-reported, and high coverage is precisely the signal that says \"filtering can be turned on\".",
   "settings.tagDateNoVocabulary": "—",
