@@ -116,7 +116,9 @@ permalink: 2-2-3_abTest.html
                     <label for="abSampleSelected-{{ ab.side }}" class="control-label" data-i18n="settings.searchSelectedNumber">選用資料筆數</label>
                 </div>
                 <div class="field">
-                    <input type="number" min="1" max="100" step="1" id="abSampleSelected-{{ ab.side }}" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control sample-count w100 js-sample-selected" value="8">
+                    {# 三件套的第三件（§4）：可見區間 ＋ aria-describedby；數字獨立成不翻的節點（§3-2）。id 帶側別。 #}
+                    <input type="number" min="1" max="100" step="1" id="abSampleSelected-{{ ab.side }}" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control sample-count w100 js-sample-selected" value="8" aria-describedby="abSampleSelectedRange-{{ ab.side }}">
+                    <span class="text-gray" id="abSampleSelectedRange-{{ ab.side }}">1 – 100</span>
                 </div>
             </div>
             {# 取用資料筆數（search_total_number）：僅傳統搜尋模式生效（modeMatrix traditional）；
@@ -127,7 +129,8 @@ permalink: 2-2-3_abTest.html
                     <label for="abSampleTotal-{{ ab.side }}" class="control-label" data-i18n="settings.searchTotalNumber">取用資料筆數</label>
                 </div>
                 <div class="field">
-                    <input type="number" min="1" max="100" step="1" id="abSampleTotal-{{ ab.side }}" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control sample-count w100 js-sample-total" value="16">
+                    <input type="number" min="1" max="100" step="1" id="abSampleTotal-{{ ab.side }}" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control sample-count w100 js-sample-total" value="16" aria-describedby="abSampleTotalRange-{{ ab.side }}">
+                    <span class="text-gray" id="abSampleTotalRange-{{ ab.side }}">1 – 100</span>
                 </div>
             </div>
             {# Agent 最大迭代次數（agent_max_iterations）：僅 Agent 模式生效（modeMatrix agent）；預設 5。
@@ -137,7 +140,8 @@ permalink: 2-2-3_abTest.html
                     <label for="abAgentMaxIter-{{ ab.side }}" class="control-label" data-i18n="qaTest.agentMaxIter">Agent 最大迭代次數</label>
                 </div>
                 <div class="field">
-                    <input type="number" min="1" max="20" step="1" id="abAgentMaxIter-{{ ab.side }}" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control js-agent-max-iter" value="5">
+                    <input type="number" min="1" max="20" step="1" id="abAgentMaxIter-{{ ab.side }}" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control js-agent-max-iter" value="5" aria-describedby="abAgentMaxIterRange-{{ ab.side }}">
+                    <span class="text-gray" id="abAgentMaxIterRange-{{ ab.side }}">1 – 20</span>
                 </div>
             </div>
         </div>
@@ -271,7 +275,11 @@ permalink: 2-2-3_abTest.html
                             <textarea class="form-control chat-input-control" placeholder="輸入問題" data-i18n-placeholder="comp.enterQuestion" aria-label="輸入問題" data-i18n-aria-label="comp.enterQuestion"></textarea>
                         </div>
                     </div>
-                    <button type="button" class="button button-primary chat-input-submit" data-toast="回答生成中...|回答生成成功|回答生成失敗" data-i18n-data-toast="toast.chatSubmit" data-toast-type="info|success|error" data-i18n="action.submit">送出</button>
+                    {# 與 components/chatroom 是同一顆送出鈕、同一個旁邊的自由輸入 textarea，所以同一組分支：
+                         多一條「沒填問題」（apps/web ab-test 那一頁的 `handleSubmit` 第一行也是
+                         `if (!query || loading) return`）。共用 `toast.chatSubmit` 會讓那顆 key 同時代表
+                         「固定問句的 chip，不可能空」與「自由輸入，可能空」兩種行為契約（§4-2）。 #}
+                    <button type="button" class="button button-primary chat-input-submit" data-toast="回答生成中...|請先輸入問題|回答生成成功|回答生成失敗" data-i18n-data-toast="toast.chatSend" data-toast-type="info|warning|success|error" data-i18n="action.submit">送出</button>
                 </div>
             </div>
         </div>

@@ -435,6 +435,10 @@ permalink: 5-6-1_platformTenants.html
 {% set deleteToastType = "success|warning|warning|warning|error" %}
 {% set deleteToastKey = "toast.deleteUser" %}
 {% include "components/delete-modal/delete-modal.html" %}
+{# 平台端只有 404（platform.py:1137-1146），沒有租戶端那道 403——三段。 #}
+{% set resetToast = "密碼已重設|兩次新密碼不一致|重設失敗，請稍後再試" %}
+{% set resetToastKey = "toast.resetPasswordPlatform" %}
+{% set resetToastType = "success|warning|error" %}
 {% include "components/reset-password-modal/reset-password-modal.html" %}
 
 {# 免責聲明設定（平台全域，系統管理員設定一份全租戶共用）：SaaS 新需求，逆向自 apps/web app/(app)/platform；

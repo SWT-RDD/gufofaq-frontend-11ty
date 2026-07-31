@@ -851,6 +851,11 @@ bodyClass: guideline-page
 {% include "components/apply-settings-modal/apply-settings-modal.html" %}
 {% include "components/apply-settings-compare-modal/apply-settings-compare-modal.html" %}
 {% include "components/knowledge-retrieval-modal/knowledge-retrieval-modal.html" %}
+{# 元件庫展示：這顆彈窗的 toast 由使用頁提供（兩頁的守衛集合不同，見元件檔頭），
+     展示頁沿用平台端那組三段。 #}
+{% set resetToast = "密碼已重設|兩次新密碼不一致|重設失敗，請稍後再試" %}
+{% set resetToastKey = "toast.resetPasswordPlatform" %}
+{% set resetToastType = "success|warning|error" %}
 {% include "components/reset-password-modal/reset-password-modal.html" %}
 {# 本頁把「取不到租戶用量」那一態打開：它在 5-6-1 是 React 依 error state 條件渲染的分支，
      沒有真實頁演得出來（§5）。 #}

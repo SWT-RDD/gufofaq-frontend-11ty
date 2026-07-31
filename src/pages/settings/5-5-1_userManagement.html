@@ -205,4 +205,9 @@ permalink: 5-5-1_userManagement.html
     </div>
 </div>
 
+{# 租戶端的重設密碼多一道 403：`users.py:360` 的 `_assert_tenant_manageable`
+     （那道守衛的存在理由正是「租戶管理者不得重設平台管理員的密碼再拿去登入」）。 #}
+{% set resetToast = "密碼已重設|兩次新密碼不一致|平台角色持有者不可在租戶端變更，請由平台管理端處理|重設失敗，請稍後再試" %}
+{% set resetToastKey = "toast.resetPassword" %}
+{% set resetToastType = "success|warning|warning|error" %}
 {% include "components/reset-password-modal/reset-password-modal.html" %}

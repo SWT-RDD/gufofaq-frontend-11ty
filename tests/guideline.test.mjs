@@ -2661,6 +2661,28 @@ test("§4/§6 表格列的狀態底色不可寫在 <tr> 上（cell 的不透明�
     assert.equal(hits.length, 0, `§4：<tr> 上的狀態底色被 cell 底色蓋掉（死樣式）：\n${fail(hits)}`);
 });
 
+test("§4 送 API 的數字欄三件套：type=number ＋ min/max/step ＋ 可見區間（aria-describedby 接得上）", () => {
+    // §4 那條規則寫了「三件套一起給」，但寫下來的當天全站 28 顆數字欄只有 16 顆有第三件——
+    // 一條在自己寫下來當天就被違反一半的規則，教會下一個讀的人忽略它。這條把第三件釘死。
+    // 第一、二件（type/min/step）已由 5-2 那條專屬測試守著它自己那六顆；這裡守全站的第三件。
+    let seen = 0;
+    const hits = [];
+    for (const f of srcHtml) {
+        const t = stripNjk(read(f));
+        for (const m of t.matchAll(/<input\b((?:"[^"]*"|[^>"])*)>/g)) {
+            const a = m[1];
+            if (!/type="number"/.test(a)) continue;
+            seen++;
+            if (/aria-describedby=/.test(a)) continue;
+            const id = (a.match(/\bid="([^"]*)"/) || [, ""])[1];
+            const line = t.slice(0, m.index).split(/\r?\n/).length;
+            hits.push(`${f}:${line}  ${id || "(無 id)"} 缺可見區間提示（aria-describedby）`);
+        }
+    }
+    assert.ok(seen >= 20, `只掃到 ${seen} 顆數字欄 —— 這條測試在空轉`);
+    assert.equal(hits.length, 0, fail(hits));
+});
+
 test("§4 control-label required 與控制項的 required 成對（星號是視覺，required 是報讀器與 React 表單庫讀的那一份）", () => {
     // 為什麼要釘死：星號畫了、控制項沒 required，兩份就在說不同的話——報讀器不會念「必填」，
     // React 表單庫（RHF/zod）從 markup 推不出這一欄是必填，於是必填只剩後端 400 那一道。

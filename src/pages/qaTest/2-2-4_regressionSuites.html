@@ -391,7 +391,9 @@ permalink: 2-2-4_regressionSuites.html
                         <label for="assertionNumber-{{ loop.index }}" class="control-label" data-i18n="regression.assertionNumber">上限值</label>
                     </div>
                     <div class="field">
-                        <input type="number" id="assertionNumber-{{ loop.index }}" class="form-control js-assertion-number" min="0" step="1" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" value="{{ a.value }}">
+                        <input type="number" id="assertionNumber-{{ loop.index }}" class="form-control js-assertion-number" min="0" step="1" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" value="{{ a.value }}" aria-describedby="assertionNumberRange-{{ loop.index }}">
+                        {# 三件套的第三件（§4）：可見區間 ＋ aria-describedby；數字獨立成不翻的節點（§3-2）。 #}
+                        <span class="text-gray" id="assertionNumberRange-{{ loop.index }}">≥ 0</span>
                     </div>
                 </div>
                 {% endif %}

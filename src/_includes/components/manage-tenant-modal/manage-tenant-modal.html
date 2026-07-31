@@ -54,7 +54,10 @@
                                         <label for="tenantQaLimitInput" class="control-label" data-i18n="platform.qaLimit">問答額度</label>
                                     </div>
                                     <div class="field">
-                                        <input type="number" min="0" step="1" id="tenantQaLimitInput" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control" value="3000">
+                                        {# 三件套的第三件（§4）：三顆額度欄的下界出處＝`set_tenant_quota`（platform.py:398-401
+                                             的 `{field} must be >= 0`）；數字獨立成不翻的節點（§3-2）。 #}
+                                        <input type="number" min="0" step="1" id="tenantQaLimitInput" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control" value="3000" aria-describedby="tenantQaLimitRange">
+                                        <span class="text-gray" id="tenantQaLimitRange">≥ 0</span>
                                     </div>
                                 </div>
                             </div>
@@ -64,7 +67,8 @@
                                         <label for="tenantExtractionLimitInput" class="control-label" data-i18n="platform.extractionLimit">萃取額度</label>
                                     </div>
                                     <div class="field">
-                                        <input type="number" min="0" step="1" id="tenantExtractionLimitInput" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control" value="1000">
+                                        <input type="number" min="0" step="1" aria-describedby="tenantExtractionLimitRange" id="tenantExtractionLimitInput" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control" value="1000">
+                                        <span class="text-gray" id="tenantExtractionLimitRange">≥ 0</span>
                                     </div>
                                 </div>
                             </div>
@@ -74,7 +78,8 @@
                                         <label for="tenantStorageLimitInput" class="control-label" data-i18n="platform.storageLimitMb">儲存上限（MB）</label>
                                     </div>
                                     <div class="field">
-                                        <input type="number" min="0" step="1" id="tenantStorageLimitInput" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control" value="1000">
+                                        <input type="number" min="0" step="1" aria-describedby="tenantStorageLimitRange" id="tenantStorageLimitInput" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control" value="1000">
+                                        <span class="text-gray" id="tenantStorageLimitRange">≥ 0</span>
                                     </div>
                                 </div>
                             </div>
@@ -109,7 +114,10 @@
                                             <label for="tenantTrialDaysInput" class="control-label" data-i18n="settings.extendDays">延展天數</label>
                                         </div>
                                         <div class="field">
-                                            <input type="number" step="1" id="tenantTrialDaysInput" placeholder="正數延展、負數縮短" data-i18n-placeholder="platform.extendDaysHint" class="form-control">
+                                            {# 「正數延展、負數縮短」原本只在 placeholder 裡——一打字就消失，也接不上輔具。
+                                                 改成常駐說明 ＋ aria-describedby；不可為 0 的出處是 platform.py:566。 #}
+                                            <input type="number" step="1" id="tenantTrialDaysInput" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control" aria-describedby="tenantTrialDaysHint">
+                                            <span class="text-gray" id="tenantTrialDaysHint" data-i18n="platform.extendDaysHint">正數延展、負數縮短，不可為 0</span>
                                         </div>
                                     </div>
                                 </div>
