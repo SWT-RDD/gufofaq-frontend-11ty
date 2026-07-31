@@ -19,7 +19,10 @@ permalink: 5-3_statsModule.html
      單一真相（product `app/routers/settings_hub.py`），值域一變前端才不會跟著漂。
      `label` 是各槽的**預設**顯示名——真實環境顯示的是租戶為該槽取的名字（per-profile `field_labels`，
      如「承辦組室」），屬業務資料故不掛 data-i18n（同 5-2 的 MCP server 名）。
-     示範裡這個租戶把 note1／note2 取名為「承辦組室」「業務範疇」（與 4-2 來源區塊的歸因列同一個租戶），
+     示範裡這個租戶把 note1／note2 取名為「承辦組室」「業務範疇」（與 4-2 來源區塊的歸因列同一個租戶）。
+     **這與 5-10 的「標籤維度名」是兩件事**（product 兩張表：`TenantSetting.field_labels` ↔
+     `TagDimension.name`），所以 5-10 的示範維度刻意掛在 note3 之後的槽上——同一個槽同時有兩個
+     不同的中文名會讓讀的人推不出哪一份才算數（§6 跨頁自洽）。
      其餘槽維持預設名。 #}
 {% set attributionSlots = [
   { key: "title", label: "標題" },

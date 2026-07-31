@@ -43,7 +43,11 @@ permalink: 5-10_tagDimensions.html
   { label: "設定", href: "", i18nKey: "nav.settings" },
   { label: "標籤維度與檢索過濾", i18nKey: "nav.tagDimensions" }
 ] %}
-{# 示範資料要自洽（GUIDELINE §6）：掃描讀到 132 份 ⇒ 每個維度的 total 都是 132；
+{# **槽的顯示名與掛在它上面的標籤維度是兩件事**（product 兩張表：`TenantSetting.field_labels`
+     ↔ `TagDimension.name`）。示範租戶把 note1／note2 取名為「承辦組室」「業務範疇」（見 5-3 與 4-2），
+     所以這一頁的維度**刻意避開那兩個槽**、掛在 note3/note4/note5 上——同一個槽同時掛著兩個不同的
+     中文名，讀的人與 React 端都推不出哪一份才算數（§6 跨頁自洽）。
+     示範資料要自洽（GUIDELINE §6）：掃描讀到 132 份 ⇒ 每個維度的 total 都是 132；
      `業務範疇` 118/132＝89.4%（未標註 14 筆）、`有效期` 130/132＝98.5%（未標註 2 筆），
      兩者都是「未標註表達不出來」的維度，所以兩列都出現在下面的「還差幾筆」表上；
      `業務範疇` 的逐資料集明細加總也是 14（0 ＋ 14）——各處數字互相推導得出來。
@@ -56,15 +60,15 @@ permalink: 5-10_tagDimensions.html
      `coveragePct` 是給條寬用的執行期尺寸（React 由 tagged / total 算出來，切版沒有算術可用
      故列成資料）。 #}
 {% set tagDimensions = [
-  { id: 1, slotKey: "note1", name: "業務範疇", description: "這份文件講的是哪些業務面（可複選）", kind: "multi", role: "", vocabularyCount: 6, tagged: 118, total: 132, coveragePct: 89.4 },
-  { id: 2, slotKey: "note2", name: "業務方向", description: "進口向／出口向／雙向，三選一", kind: "single", role: "", vocabularyCount: 3, tagged: 132, total: 132, coveragePct: 100 },
+  { id: 1, slotKey: "note3", name: "業務範疇", description: "這份文件講的是哪些業務面（可複選）", kind: "multi", role: "", vocabularyCount: 6, tagged: 118, total: 132, coveragePct: 89.4 },
+  { id: 2, slotKey: "note4", name: "業務方向", description: "進口向／出口向／雙向，三選一", kind: "single", role: "", vocabularyCount: 3, tagged: 132, total: 132, coveragePct: 100 },
   { id: 3, slotKey: "date2", name: "有效期", description: "這份規定到哪一天為止仍然有效；永遠有效請留白", kind: "date", role: "valid_until", vocabularyCount: 0, tagged: 130, total: 132, coveragePct: 98.5 },
-  { id: 4, slotKey: "note3", name: "文件密級", description: "這份文件的閱讀範圍（剛建好，還沒有人標）", kind: "single", role: "", vocabularyCount: 2, tagged: 0, total: 132, coveragePct: 0 }
+  { id: 4, slotKey: "note5", name: "文件密級", description: "這份文件的閱讀範圍（剛建好，還沒有人標）", kind: "single", role: "", vocabularyCount: 2, tagged: 0, total: 132, coveragePct: 0 }
 ] %}
 {# 字典編輯區當下選中的維度（React 由「編輯字典」那顆鈕決定；切版演 single 這一份）。
      **kind=date 時整個區塊不渲染**——日期維度沒有代碼可言，product `create_vocabulary` 對它
      一律 400（`app/routers/tags.py`：「是日期維度，沒有代碼可言」）。 #}
-{% set vocabDimension = { id: 2, slotKey: "note2", name: "業務方向", kind: "single" } %}
+{% set vocabDimension = { id: 2, slotKey: "note4", name: "業務方向", kind: "single" } %}
 {% set vocabRows = [
   { code: "import", label: "進口向", description: "輸入我國的貨品、人員或資金" },
   { code: "export", label: "出口向", description: "自我國輸出" },
@@ -75,12 +79,12 @@ permalink: 5-10_tagDimensions.html
      另外兩套關著；開著那一套的 `tag_untagged_counts` 是開啟當下量到的證明（**只有 0 算證明**）。
      那份快照涵蓋的是 `slots_requiring_full_coverage(dims)`（retrieval_filter.py:202-222）
      ＝**所有 `kind=="multi"`** ∪ **所有 `kind=="date" and role=="valid_until"`**，
-     對上面的 tagDimensions 就是 note1（multi）與 date2（valid_until）兩個——
+     對上面的 tagDimensions 就是 note3（multi）與 date2（valid_until）兩個——
      少列 date2 不只是少畫一格：`valid_until` 的零未標註檢查是**每一輪查詢無條件**做的
      （retrieval_filter.py:393），而「沒量過」那一態直接 raise，於是旋鈕顯示「開啟」
      卻每一次問答都炸（§6 示範資料演的必須是一個真實可能的狀態）。 #}
 {% set tagFilterProfiles = [
-  { no: 1, name: "設置一", i18nKey: "settings.config1", mode: "on", recentWindowDays: 7, proof: "note1=0、date2=0" },
+  { no: 1, name: "設置一", i18nKey: "settings.config1", mode: "on", recentWindowDays: 7, proof: "note3=0、date2=0" },
   { no: 2, name: "設置二", i18nKey: "settings.config2", mode: "off", recentWindowDays: 7, proof: "" },
   { no: 3, name: "設置三", i18nKey: "settings.config3", mode: "off", recentWindowDays: 14, proof: "" }
 ] %}
@@ -96,7 +100,7 @@ permalink: 5-10_tagDimensions.html
 ] %}
 {% set blockedDimensions = [
   {
-    slotKey: "note1", name: "業務範疇", whyKey: "settings.tagWhyMulti", why: "多值（kind=multi）",
+    slotKey: "note3", name: "業務範疇", whyKey: "settings.tagWhyMulti", why: "多值（kind=multi）",
     coveragePct: 89.4, untagged: 14, located: true,
     datasets: [
       { id: 3, name: "法規彙編", tagged: 96, untagged: 0 },
@@ -131,12 +135,13 @@ permalink: 5-10_tagDimensions.html
                     {# 值域是 12 個，不是這一頁湊得出來的四個：`TAG_SLOT_KEYS = tag_dimension_slots(SLOTS)`
                          ＝角色為 `custom_field_mapping` 的槽（tags.py:50-63 → field_schema.py:37-48），
                          也就是 note1..note10 ＋ date2/date3。本頁自己的 hint 就是這樣寫的，示範資料裡
-                         還有一筆掛在 note3 的維度——只列四個等於 note3..note10 永遠建不出維度。
+                         示範資料裡的維度就掛在 note3／note4／note5 上——只列四個（note1/note2/date2/date3）
+                         等於那三個槽根本建不出維度。
                          **不硬編**：`GET /settings/tag-dimension-contract` 的 `slots` 是這份值域的單一真相
                          （tag_dimension_contract.py:40-42 明寫「一個都不能留在前端硬編」），
                          切版以 set 陣列表達那份回應（§6），React 端改讀端點。
-                         第一顆是空值「請選擇」：開頁就宣告已挑好 note1，而 note1 在示範資料裡已被佔用
-                         ⇒ 第一次送出必撞「這個槽已經有維度了」（§4「還沒挑」沒有任何一顆 option 承載得住）。 #}
+                         第一顆是空值「請選擇」：必填欄不得預設幫使用者挑一個
+                         （§4「還沒挑」要有一顆 option 承載得住）。 #}
                     {% set tagSlotKeys = ["note1", "note2", "note3", "note4", "note5", "note6", "note7", "note8", "note9", "note10", "date2", "date3"] %}
                     <select id="newTagSlotSelect" class="form-control js-tag-slot" aria-describedby="tagSlotHint" required>
                         <option value="" data-i18n="common.pleaseSelect">請選擇</option>
