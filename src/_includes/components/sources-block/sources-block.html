@@ -4,8 +4,17 @@
      （見 _sources-block.scss；class 的主人是本元件，因為被套用的元素是本元件的 <tr>）。
      展開/收合互動的根改用 accordion 自有的 .js-accordion（見 ui/accordion，§1 原子解耦）。
      參數（頁面 include 前 set，見 §3-2/§6）：
-       sources：來源列陣列（每筆欄位：no/file/dataset/title/time/content/note1/note2/reference
+       sources：來源列陣列（每筆欄位：sourceNo/file/dataset/title/time/content/note1/note2/reference
                 ＋選填 attribution）
+       source.sourceNo：「序號」欄的值＝這一筆命中的**引用編號**（product `GET /history/{id}` 的
+                `search_results[].source_no`），**不是列的位置**。答案內文的引用標記
+                （components/citation-ref 的 [[N]]）比對的就是它，所以兩者必須是同一個號碼——
+                寫成「對話編號-列序」那種另一套編號的話，使用者看到 [[7]] 卻在表上找不到 7，
+                核對不起來。號碼**本來就會不連續也不等於列序**：agent 模式的號碼是跨工具呼叫的
+                連續計數器（三次呼叫各回 5 筆就有 15 個號），而對外投影又會把模型沒看過的候選池
+                收掉。故本元件的定位（sources-block.js 的 reveal）也是**比對這一欄的值**，
+                不是拿 rows[no-1]。沒有號碼的那一筆（上游沒配號＝模型沒看過它）畫成「—」：
+                它不會被任何 [[N]] 指到，留白會讓人以為是資料掉了。
        source.attribution：這一筆命中的**歸因欄位值**，`[{ label, value }]`，追加在詳細列的最後。
                 「歸因欄位」是租戶自己指定的分群欄（承辦組室、業務範疇…），不是固定欄位——
                 值域與順序都是租戶設定，故 label 是資料值（不掛 data-i18n），順序照給的順序
@@ -67,7 +76,7 @@
                             <span class="sr-only" data-i18n="common.expandRow">展開表格</span>
                         </button>
                     </td>
-                    <td>{{ source.no }}</td>
+                    <td>{{ source.sourceNo or '—' }}</td>
                     <td>
                         <a href="#" class="link-file">{{ source.file }}</a>
                     </td>

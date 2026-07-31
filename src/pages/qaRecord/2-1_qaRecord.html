@@ -38,10 +38,12 @@ permalink: 2-1_qaRecord.html
 
 {# 參考來源表格區塊：真實頁此區塊預設 hidden（點擊訊息列的「查看來源」才顯示）。使用者滿意度與「檢視詳細內容」連結
      （連往 4-2_qaHistory_detail.html）由 components/sources-block 的 sourcesRating / sourcesDetailHref 參數帶入；
-     來源列資料 set sources（示範 2 筆）交給該元件內嵌 for 渲染 #}
+     來源列資料 set sources（示範 2 筆）交給該元件內嵌 for 渲染。
+     **sourceNo 就是上面那則答案裡的兩個 [[N]]**（2 與 5，見 components/chatroom 的示範答案）：
+     「序號」欄與引用標記是同一組號碼，使用者才核對得起來（見 components/sources-block 檔頭）。 #}
 {% set sources = [
     {
-        no: "12173-1",
+        sourceNo: 2,
         file: "vector8_chunk718_20240829024537_111-1021-5-_入出國及法令彙編1671頁.xlsx",
         dataset: "移民署 測試",
         title: "標題名稱ＡＡＡＡＡＡ",
@@ -52,7 +54,7 @@ permalink: 2-1_qaRecord.html
         reference: "來源名稱"
     },
     {
-        no: "12173-2",
+        sourceNo: 5,
         file: "vector8_chunk719_20240829024538_111-1022-6-_入出國及法令彙編1672頁.xlsx",
         dataset: "移民署 測試",
         title: "標題名稱ＡＡＡＡＡＡ",

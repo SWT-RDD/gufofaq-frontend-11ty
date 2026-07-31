@@ -15,9 +15,13 @@ permalink: 4-2_qaHistory_detail.html
     intent: "-",
     userMessage: "新住民結婚注意事項"
 } %}
+{# 來源列。**sourceNo 就是上面 AI 回答裡的兩個 [[N]]**（3 與 7，見 components/qa-detail-info 的
+     示範答案）：「序號」欄與引用標記是同一組號碼，否則使用者看到 [[7]] 在表上找不到 7。
+     這兩個號碼**刻意不連續、也不等於列序**——agent 模式的 source_no 是跨工具呼叫的連續計數器，
+     對外投影又會收掉模型沒看過的候選池（見 components/sources-block 檔頭）。 #}
 {% set sources = [
     {
-        no: "12173-1",
+        sourceNo: 3,
         file: "vector8_chunk718_20240829024537_111-1021-5-_入出國及法令彙編1671頁.xlsx",
         dataset: "移民署 測試",
         title: "標題名稱ＡＡＡＡＡＡ",
@@ -32,7 +36,7 @@ permalink: 4-2_qaHistory_detail.html
         ]
     },
     {
-        no: "12173-2",
+        sourceNo: 7,
         file: "vector8_chunk719_20240829024538_111-1022-6-_入出國及法令彙編1672頁.xlsx",
         dataset: "移民署 測試",
         title: "標題名稱ＡＡＡＡＡＡ",

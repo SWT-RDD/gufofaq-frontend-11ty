@@ -188,7 +188,12 @@ permalink: 2-2-3_abTest.html
      再藏著就是「後端查得到、前端有實作、只差版面」的死功能。故 qa-side-panel 的 sidePanelHidden 參數
      一併移除（已無消費者）。這是 README「與真 app 的刻意差異」的一條。
      刻意不含 chatroom 的串流狀態列與建議追問 chip：雙欄各自串流沒有單一狀態文案，
-     suggest_questions 也只在單一問答流回傳（ask.py 的 chat_room chunk 允許清單）——非漏植 #}
+     suggest_questions 也只在單一問答流回傳（ask.py 的 chat_room chunk 允許清單）——非漏植。
+     **兩側的答案各自帶引用標記（components/citation-ref），而且是兩組不同的號碼**（A：1、4；
+     B：2、6）：AB 兩側各是一筆獨立的 chat_log，`source_no` 各自從 1 起算，**兩側的 [[1]] 指的
+     不是同一份文件**。所以徽章必須綁到自己那一側的來源集合——共用一組集合的話，點 A 的 [[2]]
+     會跳到 B 的來源，而畫面上看起來一切正常。下面那張參考來源表一次只呈現一側（標頭的
+     .js-sources-side 寫著現在看的是哪一側），點某一側的徽章＝先把表切到那一側再定位 #}
 <div class="mt-24">
     <div class="flex-row gap-10 mobile-column-xs xs-column-reverse">
         <div class="chatroom-wrap">
@@ -218,10 +223,10 @@ permalink: 2-2-3_abTest.html
                                                     <div class="item-content">
                                                         <p>您好！以下是 UH3240 USB-C 多埠集線器的規格整理：</p>
                                                         <ul class="list-style-disc">
-                                                            <li>視訊輸出：支援 4K（3840×2160）@ 60Hz HDMI 輸出，適合高解析度顯示器。</li>
+                                                            <li>視訊輸出：支援 4K（3840×2160）@ 60Hz HDMI 輸出，適合高解析度顯示器。<button type="button" class="citation-ref js-citation" data-citation-no="1"><span class="sr-only" data-i18n="qa.citationSourcePrefix">來源</span>1</button></li>
                                                             <li>電力傳輸：最高可提供 92W USB-C PD 3.0，支援規格 5V / 9V / 15V / 20V。</li>
                                                             <li>傳輸埠：USB 3.2 Gen 1 介面，傳輸速率最高 5 Gbps。</li>
-                                                            <li>擴充埠：2× USB Type-A、1× HDMI、1× USB-C DC-in。</li>
+                                                            <li>擴充埠：2× USB Type-A、1× HDMI、1× USB-C DC-in。<button type="button" class="citation-ref js-citation" data-citation-no="4"><span class="sr-only" data-i18n="qa.citationSourcePrefix">來源</span>4</button></li>
                                                         </ul>
                                                     </div>
                                                 </div>
@@ -262,10 +267,10 @@ permalink: 2-2-3_abTest.html
                                                     <div class="item-content">
                                                         <p>UH3240 主要規格摘要如下：</p>
                                                         <ul class="list-style-disc">
-                                                            <li>視訊：4K 60Hz HDMI 2.0 輸出</li>
+                                                            <li>視訊：4K 60Hz HDMI 2.0 輸出<button type="button" class="citation-ref js-citation" data-citation-no="2"><span class="sr-only" data-i18n="qa.citationSourcePrefix">來源</span>2</button></li>
                                                             <li>充電：92W PD 3.0，支援 5V～20V</li>
                                                             <li>埠：USB 3.2 Gen 1（5 Gbps）</li>
-                                                            <li>連接：USB-C + HDMI + USB-A ×2</li>
+                                                            <li>連接：USB-C + HDMI + USB-A ×2<button type="button" class="citation-ref js-citation" data-citation-no="6"><span class="sr-only" data-i18n="qa.citationSourcePrefix">來源</span>6</button></li>
                                                         </ul>
                                                     </div>
                                                 </div>
@@ -352,7 +357,7 @@ permalink: 2-2-3_abTest.html
      來源主題與本頁對話/agent 軌跡自洽（§6）：問的是 UH3240 規格，引用的就是產品規格書片段。 #}
 {% set sources = [
     {
-        no: "13520-1",
+        sourceNo: 1,
         file: "spec_uh3240_chunk12_20240829024537_UH3240_USB-C多埠集線器規格書12頁.xlsx",
         dataset: "產品規格 測試",
         title: "UH3240 輸出與供電規格",
@@ -363,7 +368,7 @@ permalink: 2-2-3_abTest.html
         reference: "來源名稱"
     },
     {
-        no: "13520-2",
+        sourceNo: 4,
         file: "spec_uh3240_chunk13_20240829024538_UH3240_USB-C多埠集線器規格書13頁.xlsx",
         dataset: "產品規格 測試",
         title: "UH3240 連接埠配置",

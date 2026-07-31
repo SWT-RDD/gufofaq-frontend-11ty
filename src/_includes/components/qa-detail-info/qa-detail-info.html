@@ -6,6 +6,12 @@
      「提示詞」欄用 ui/collapse-text 收合元件呈現（.collapse-text/.collapse-body/.collapse-toggle）：真 app 的 scss 源碼漏了這組 class，
      但編譯後的 css/component.css:3482 有；展開/收合是純 UI（js/main.js:880），由 collapse-text.js 接手，逐字保留內容以維持完整欄位清單。 #}
 {# conversation 短欄位由頁面提供（include 前 set conversation，見 §3-2/§6）；AI 回答與提示詞為長文，仍依 §3-2 寫死在下方 markup #}
+{# AI 回答內文的引用標記（components/citation-ref）：**這一頁也要畫**。它是一則過去問答的唯讀
+     詳情，而佐證那則答案的「參考來源」表就在同一頁的正下方——答案裡標著 [[7]]、下面那張表就有
+     序號 7 的那一列，點下去展開並高亮（citation-ref.js → GufoSources.reveal）。少了徽章，
+     使用者看得到答案也看得到來源，卻對不起來哪一句出自哪一份文件。
+     號碼＝該筆來源的 source_no（見 components/sources-block 檔頭），故**必須與使用頁 sources 的
+     sourceNo 是同一組**：本元件目前只被 4-2 include，那一頁演的是 3 與 7。 #}
 
 <div class="block block-sm mt-16">
     <div class="form-table-wrap">
@@ -60,13 +66,13 @@
                             您好！關於新住民結婚的注意事項，以下是一些重要的要點：
                             <h3>1. 申請結婚登記</h3>
                             <ul class="list-style-disc">
-                                <li><strong>雙方當事人</strong>需親自到戶政事務所提出結婚登記申請。</li>
+                                <li><strong>雙方當事人</strong>需親自到戶政事務所提出結婚登記申請。<button type="button" class="citation-ref js-citation" data-citation-no="3"><span class="sr-only" data-i18n="qa.citationSourcePrefix">來源</span>3</button></li>
                                 <li>需提供有效的身份證明文件，如國民身分證或護照。</li>
                             </ul>
                             <h3>2. 文件準備</h3>
                             <ul class="list-style-disc">
                                 <li><strong>結婚證明文件</strong>：需提供與依親對象結婚登記的證明文件。</li>
-                                <li><strong>其他相關證明文件</strong>：如有需要，可能還需提供其他文件以證明雙方的身份及婚姻狀況。</li>
+                                <li><strong>其他相關證明文件</strong>：如有需要，可能還需提供其他文件以證明雙方的身份及婚姻狀況。<button type="button" class="citation-ref js-citation" data-citation-no="7"><span class="sr-only" data-i18n="qa.citationSourcePrefix">來源</span>7</button></li>
                             </ul>
                             <h3>3. 健康檢查</h3>
                             <ul class="list-style-disc">

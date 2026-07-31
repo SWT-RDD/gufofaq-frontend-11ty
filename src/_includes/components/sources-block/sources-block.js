@@ -14,10 +14,10 @@ document.addEventListener("DOMContentLoaded", function () {
             });
         },
 
-        // 顯示來源區塊並定位到第 no 筆（1-based，對齊答案內文 [[N]] 的語意）：
+        // 顯示來源區塊並定位到「序號」欄等於 no 的那一筆（對齊答案內文 [[N]] 的語意）：
         // 展開該列、捲到畫面中央、短暫高亮。
-        // 找不到該筆就只顯示區塊：切版的 no 是寫死的示範值、來源表也一定有那幾筆，
-        // 這條分支在版型稿裡不可達。「編號超出筆數」是真值才會發生的缺陷，該大聲報的地方
+        // 找不到該筆就只顯示區塊：切版的號碼是寫死的示範值、來源表也一定有那幾筆，
+        // 這條分支在版型稿裡不可達。「編號指不到任何一列」是真值才會發生的缺陷，該大聲報的地方
         // 在消費端（apps/web 的 SourcesBlock，那裡的 N 來自 LLM 實際輸出）。
         reveal: function (no) {
             this.show();
@@ -25,7 +25,18 @@ document.addEventListener("DOMContentLoaded", function () {
             if (!block) return;
             // 摘要列與 detail 列成對出現，故資料列＝tbody 內非 .detail-row 的那些。
             var rows = block.querySelectorAll(".sources-tbody > tr:not(.detail-row)");
-            var row = rows[no - 1];
+            // **比對「序號」欄的值，不是拿 rows[no-1]**：那一欄是該筆來源的引用編號
+            // （source_no，見 sources-block.html 檔頭），agent 模式跨工具呼叫累加、對外投影又會
+            // 收掉候選池，兩件事都讓「第 N 號＝第 N 列」不成立——用位置定位會高亮到別筆，
+            // 而畫面上看起來一樣「有反應」。序號是第二欄（第一欄是展開鈕）。
+            var row = null;
+            for (var i = 0; i < rows.length; i++) {
+                var cell = rows[i].children[1];
+                if (cell && cell.textContent.trim() === String(no)) {
+                    row = rows[i];
+                    break;
+                }
+            }
             if (!row) return;
             // 展開那一列走 ui/accordion 匯出的 API（§5：要操作別的元件就呼叫它匯出的函式）。
             // 不用 btn.click()：合成點擊會重新進入全站每一支 document 委派（祖先上的 data-toast
