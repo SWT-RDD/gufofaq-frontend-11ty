@@ -34,13 +34,22 @@ function showToast(message, type = 'success', duration = 3000) {
     raiseContainer(container);
     container.appendChild(toast);
 
-    setTimeout(function () { toast.classList.add('show'); }, 10);
+    // 進場：先強制重排再加 class（同 sources-block.js 的重播寫法），不用 setTimeout 猜一個延遲。
+    void toast.offsetWidth;
+    toast.classList.add('show');
+
+    // 顯示時長留在 js —— 它是 showToast 的參數，而且不該被 prefers-reduced-motion 壓成 0.01ms。
+    // **淡出那 300ms 歸 CSS**（§5：有時長的視覺狀態，時長歸 CSS）：原本內層再包一顆
+    // setTimeout(…, 300)，那個數字是 _toast.scss `transition: opacity 0.3s` 的第二份真相，
+    // 而且在 reduced-motion 下（_base 把 transition-duration 壓成 0.01ms）淡出瞬間完成、
+    // 節點卻還多留 300ms 在 #toastContainer 裡，popover 也跟著多佔 top layer 300ms。
     setTimeout(function () {
-        toast.classList.remove('show');
-        setTimeout(function () {
+        toast.addEventListener('transitionend', function (e) {
+            if (e.target !== toast || e.propertyName !== 'opacity') return;
             toast.remove();
             lowerIfEmpty(container);
-        }, 300);
+        }, { once: true });
+        toast.classList.remove('show');
     }, duration);
 
     return toast;

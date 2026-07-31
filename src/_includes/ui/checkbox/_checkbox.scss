@@ -51,9 +51,29 @@
 
     &:checked {
         &::before {
+            content: "";
+            width: 4px;
+            height: 8px;
             border-right: 2.5px solid var(--brand-ink);
             border-bottom: 2.5px solid var(--brand-ink);
+            border-radius: 0;
+            top: 1px;
             transform: translateX(-50%) rotate(45deg) scale(1);
+        }
+    }
+
+    // 部分勾選（全選框在「勾了幾個、但不是全部」時）：橫槓，不是勾記。
+    // 沒有這一段，勾一個檔案時表頭的全選框與「一個都沒勾」長得一模一樣——
+    // 而 checkbox.js 那一半（`checkAllBox.indeterminate = …`）與這一段是同一批交付的兩半。
+    &:indeterminate {
+        &::before {
+            width: 8px;
+            height: 0;
+            border-right: 0;
+            border-bottom: 2.5px solid var(--brand-ink);
+            border-radius: 1px;
+            top: 50%;
+            transform: translate(-50%, -50%) rotate(0deg) scale(1);
         }
     }
 

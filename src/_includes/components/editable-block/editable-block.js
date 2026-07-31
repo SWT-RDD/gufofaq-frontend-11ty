@@ -29,6 +29,12 @@ document.addEventListener("DOMContentLoaded", function () {
         // input 自動計算寬度（沿用真實 app 行為，讓單行 input 貼合文字寬度）
         function resizeInput(input) {
             var span = document.createElement("span");
+            // absolute：append 目標可能是 flex/grid 容器（節點會被 blockify 拉伸，量到的寬就不是文字寬），
+            // 而且量測節點不該在主流程裡生出一個行框。REACT-CONVERSION §④ 對這一族有明文規則，
+            // 而這是全站唯一的實例——不照做的話，轉過去的人會抄到一份不符規則的範本。
+            span.style.position = "absolute";
+            span.style.top = "0";
+            span.style.left = "-9999px";
             span.style.visibility = "hidden";
             span.style.whiteSpace = "pre";
             span.style.font = window.getComputedStyle(input).font;

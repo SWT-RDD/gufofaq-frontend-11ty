@@ -23,7 +23,10 @@ document.addEventListener("DOMContentLoaded", function () {
         fields.querySelectorAll("select").forEach(function (el) {
             el.selectedIndex = 0; // 回到 placeholder 那個空 option
             el.classList.remove("error");
-            el.dispatchEvent(new Event("change", { bubbles: true })); // 讓自訂下拉跟著重畫
+            // 這裡原本 dispatch 一顆合成 change「讓自訂下拉跟著重畫」——**全站沒有任何元件 js
+            // 監聽表單控制項的 change**（ui/multi-select 對原生 select 只綁 focus，它是 change 的
+            // 發送端、從不接收），那顆事件零聽眾。§5 也明訂不得用合成事件跨元件驅動。
+            // 日後篩選列真的放進多選欄時，正解是 ui/multi-select 匯出一支重繪函式由這裡呼叫。
         });
     });
 });

@@ -103,7 +103,15 @@
             .then(function (d) { enDict = d; cb(); })
             .catch(function () {
                 // fetch 失敗（file:// 直開被 CORS 擋、或網路錯誤）就不切換：
-                // 沒字典還把 <html lang> 與按鈕扳成英文，會變成「介面說是英文、內容全是繁中」的假狀態
+                // 沒字典還把 <html lang> 與按鈕扳成英文，會變成「介面說是英文、內容全是繁中」的假狀態。
+                //
+                // **而且要把那個狀態清乾淨**：base.html 的 no-flash 腳本是**無條件**照
+                // localStorage 設 `<html lang>` 的，只要 localStorage 裡留著 "en"，
+                // 下一次載入就會再宣告一次英文、字典還是載不到、apply 還是不跑——
+                // 假狀態會黏著，每次重整都重現。而 `<html lang>` 正是報讀器挑語音的依據，
+                // 也正是視覺指紋抓不到的那一類屬性級失真。
+                try { localStorage.removeItem("lang"); } catch (e) { }
+                document.documentElement.setAttribute("lang", "zh-Hant");
             });
     }
 
@@ -118,9 +126,18 @@
             btn.addEventListener("click", function (e) {
                 e.preventDefault();
                 var next = current() === "en" ? DEFAULT : "en";
-                try { localStorage.setItem("lang", next); } catch (e2) { }
-                if (next === "en") withEn(function () { apply("en"); });
-                else apply(DEFAULT);
+                // 切英文：**字典載到了才記住**。先寫再載的話，載失敗時本次看起來「按了沒反應」，
+                // 但 localStorage 已經是 "en"，下一次載入就進入上面說的那個黏著假狀態。
+                // 切回繁中不必等（繁中原文一直都在 DOM 上），立即寫。
+                if (next === "en") {
+                    withEn(function () {
+                        try { localStorage.setItem("lang", "en"); } catch (e2) { }
+                        apply("en");
+                    });
+                } else {
+                    try { localStorage.setItem("lang", DEFAULT); } catch (e2) { }
+                    apply(DEFAULT);
+                }
             });
         });
     });

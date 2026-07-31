@@ -33,8 +33,13 @@
     width: 100%;
     position: relative;
 
-    // 日期分隔列：markup 由業務 js 在執行期產生（真 app 的 qaRecord.js / singleTest.js），
-    // 故本專案沒有靜態 markup —— 這不是死 CSS，別刪。
+    // 日期分隔列。markup 契約（無 html 元件，逐字寫在這裡；§1-2）：
+    //   <div class="chat-message-container">
+    //     <div class="date-wrap"><div class="date">2024/12/02</div></div>
+    //     …訊息…
+    // 真 app 由業務 js 在執行期插入（qaRecord.js:133／singleTest.js:444）；切版在
+    // components/chatroom 畫出一份靜態示範——沒有任何 markup 的話這段就是出貨死 CSS，
+    // 沒有人看過它的長相（§5）。日期是資料、不翻。
     .date-wrap {
         display: flex;
         justify-content: center;

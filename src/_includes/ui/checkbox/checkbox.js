@@ -24,6 +24,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 if (checkAllBox) {
                     var nextAll = checkedCount === checkOnes.length;
+                    // 「部分勾選」要畫得出來：沒有它，勾了 1 個檔案時表頭全選框與「一個都沒勾」
+                    // 長得一模一樣。indeterminate 是 DOM property、不是屬性，只能用 js 設
+                    // （scss 那一半是 `:indeterminate` 的橫槓，兩半同一批交付）。
+                    checkAllBox.indeterminate = checkedCount > 0 && checkedCount < checkOnes.length;
                     if (checkAllBox.checked !== nextAll) {
                         checkAllBox.checked = nextAll;
                         // 程式改值不會自己發 change：與上面連動 .check-one 時的 dispatch 對稱，監聽全選態的一方才收得到

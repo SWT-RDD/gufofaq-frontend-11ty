@@ -28,8 +28,12 @@
         <input type="checkbox" name="custom_dataset" class="check-all">
         <span class="text-md text-bold">自訂資料集</span>
     </label>
-    <div class="dataset-list-wrap">
-        <div class="dataset-list">
+    {# 這兩層原本掛 `.dataset-list-wrap` / `.dataset-list`——那兩個詞彙的唯一 scss 正本帶著
+         `.modals-wrap .modals-body` 祖先（ui/modals/_modals.scss），而這份展示片段不在任何
+         `.modals-body` 底下，一條規則都吃不到（§4 無主 class 的第三種死法：祖先錯位）。
+         示範重點是 `.check-all` ↔ `.check-one` 的連動，那兩層殼是從 modal 複製過來的。 #}
+    <div class="flex-row column gap-8">
+        <div class="flex-row column gap-8">
             <label class="form-checkbox">
                 <input type="checkbox" name="dataset_A_A" class="check-one">
                 <span>資料集A A</span>

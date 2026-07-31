@@ -169,7 +169,8 @@
         @include icon-mask("../images/icon_delete.png", var(--brand-text), 24px 24px);
     }
 
-    // 下載鈕：markup 由業務 js 在執行期產生（真 app 的 previewDataset.js），本專案沒有靜態 markup —— 不是死 CSS
+    // 下載鈕：生產 markup 在 3-1-3 的檔案列（逐列一顆 `.download-file-btn`，業務掛點、切版只給圖示樣式）；
+    // 真 app 該處是 previewDataset.js:170 執行期產生的。
     &.download::before {
         @include icon-mask("../images/icon_download.png", var(--brand-text), 24px 24px);
     }
