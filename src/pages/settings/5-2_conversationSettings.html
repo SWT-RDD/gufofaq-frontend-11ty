@@ -1013,7 +1013,7 @@ permalink: 5-2_conversationSettings.html
                                 <div class="label"><label for="oruleValue{{ loop.index }}" class="control-label" data-i18n="settings.outputRuleValue">上限</label></div>
                                 <div class="field">
                                     <input type="number" id="oruleValue{{ loop.index }}" class="form-control js-orule-value" value="5" min="1" max="20" step="1" aria-describedby="oruleValueHint{{ loop.index }}">
-                                    <span id="oruleValueHint{{ loop.index }}" class="text-gray" data-i18n="settings.outputRuleLinkMaxRange">1 至 20 個連結。</span>
+                                    <span id="oruleValueHint{{ loop.index }}" class="text-gray">1 – 20</span>
                                 </div>
                             </div>
                             {% elif rule.kind == "max_bullets" %}
@@ -1021,7 +1021,7 @@ permalink: 5-2_conversationSettings.html
                                 <div class="label"><label for="oruleValue{{ loop.index }}" class="control-label" data-i18n="settings.outputRuleValue">上限</label></div>
                                 <div class="field">
                                     <input type="number" id="oruleValue{{ loop.index }}" class="form-control js-orule-value" value="12" min="1" max="1000" step="1" aria-describedby="oruleValueHint{{ loop.index }}">
-                                    <span id="oruleValueHint{{ loop.index }}" class="text-gray" data-i18n="settings.outputRuleMaxBulletsRange">1 至 1000 個項目。</span>
+                                    <span id="oruleValueHint{{ loop.index }}" class="text-gray">1 – 1000</span>
                                 </div>
                             </div>
                             {% elif rule.kind == "max_chars" %}
@@ -1030,7 +1030,7 @@ permalink: 5-2_conversationSettings.html
                                     <div class="label"><label for="oruleValue{{ loop.index }}" class="control-label" data-i18n="settings.outputRuleValue">上限</label></div>
                                     <div class="field">
                                         <input type="number" id="oruleValue{{ loop.index }}" class="form-control js-orule-value" value="1200" min="1" max="100000" step="1" aria-describedby="oruleValueHint{{ loop.index }}">
-                                        <span id="oruleValueHint{{ loop.index }}" class="text-gray" data-i18n="settings.outputRuleMaxCharsRange">1 至 100000 字。</span>
+                                        <span id="oruleValueHint{{ loop.index }}" class="text-gray">1 – 100000</span>
                                     </div>
                                 </div>
                                 <div class="form-group">
