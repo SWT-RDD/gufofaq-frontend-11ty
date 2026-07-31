@@ -206,8 +206,8 @@ permalink: 5-10_tagDimensions.html
             <thead>
                 <tr>
                     <th data-i18n="settings.tagSlot">篩選槽</th>
-                    <th data-i18n="settings.tagDimensionName">維度名稱</th>
-                    <th data-i18n="settings.descOptional">說明（選填）</th>
+                    <th id="tagDimNameHead" data-i18n="settings.tagDimensionName">維度名稱</th>
+                    <th id="tagDimDescHead" data-i18n="settings.descOptional">說明（選填）</th>
                     <th data-i18n="settings.tagDimensionKind">型別</th>
                     <th data-i18n="settings.tagDimensionRole">角色（選填）</th>
                     <th data-i18n="settings.tagVocabularyCount">代碼數</th>
@@ -217,10 +217,13 @@ permalink: 5-10_tagDimensions.html
             </thead>
             <tbody>
                 {% for dim in tagDimensions %}
+                {# 列內欄位不掛靜態 aria-label（§4）：三列的「維度名稱」「說明」會全部同名，
+                     還會跟上方兩張新增表單的同名欄位一起撞。改成併讀「這一列是哪個槽 ＋ 這一欄是什麼」，
+                     正典就在本頁下方的篩選設定檔表（:422 一帶）。 #}
                 <tr data-tag-dimension-id="{{ dim.id }}">
-                    <td>{{ dim.slotKey }}</td>
-                    <td><input type="text" class="form-control" value="{{ dim.name }}" aria-label="維度名稱" data-i18n-aria-label="settings.tagDimensionName"></td>
-                    <td><input type="text" class="form-control" value="{{ dim.description }}" aria-label="說明（選填）" data-i18n-aria-label="settings.descOptional"></td>
+                    <td id="tagDimSlot-{{ loop.index }}">{{ dim.slotKey }}</td>
+                    <td><input type="text" class="form-control" value="{{ dim.name }}" aria-labelledby="tagDimSlot-{{ loop.index }} tagDimNameHead"></td>
+                    <td><input type="text" class="form-control" value="{{ dim.description }}" aria-labelledby="tagDimSlot-{{ loop.index }} tagDimDescHead"></td>
                     <td>{{ dim.kind }}</td>
                     <td>{% if dim.role %}{{ dim.role }}{% else %}<span class="text-gray" data-i18n="settings.tagRoleNone">不指定</span>{% endif %}</td>
                     <td class="text-center">{% if dim.kind == "date" %}<span class="text-gray" data-i18n="settings.tagDateNoVocabulary">—</span>{% else %}{{ dim.vocabularyCount }}{% endif %}</td>
@@ -290,7 +293,7 @@ permalink: 5-10_tagDimensions.html
         <div class="col-6-md col-12-sm">
             <div class="form-group">
                 <div class="label">
-                    <label for="newTagCodeDescInput" class="control-label" data-i18n="settings.descOptional">說明（選填）</label>
+                    <label for="newTagCodeDescInput" class="control-label" data-i18n="settings.tagCodeDescOptional">代碼說明（選填）</label>
                 </div>
                 <div class="field">
                     <input type="text" id="newTagCodeDescInput" class="form-control" placeholder="什麼樣的提問算這一類；這句話會進意圖分類的提示詞" data-i18n-placeholder="settings.pleaseEnterTagCodeDesc">

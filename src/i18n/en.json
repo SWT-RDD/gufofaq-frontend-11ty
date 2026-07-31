@@ -1203,6 +1203,7 @@
   "settings.storageLimit": "Storage limit",
   "settings.systemPrompt": "System prompt",
   "settings.tagCode": "Tag code",
+  "settings.tagCodeDescOptional": "Code description (optional)",
   "settings.tagCodeHint": "Codes go verbatim into the retrieval condition, so they must not contain , ' \" \\ * ? (those get rewritten or cut somewhere along \"import matching → DSL string → upstream matching\"). Two codes differing only in case or full/half width cannot coexist either — the matcher cannot tell them apart, while retrieval can only send one of the two spellings.",
   "settings.tagCodeLabel": "Code name",
   "settings.tagCoverage": "Tagging coverage",
