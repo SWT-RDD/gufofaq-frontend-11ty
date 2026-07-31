@@ -481,9 +481,20 @@ test("§7 所有 modal 的外殼逐字相同（只差尺寸 class）——React 
             hits.push(`${d.f}：.modals-dialog 上除了尺寸之外還有別的 class（${size.join(" ") || "沒有尺寸"}）`);
             continue;
         }
-        if (!/<div class="modals-wrap">/.test(d.body)) hits.push(`${d.f}：缺 <div class="modals-wrap">`);
-        if (!/include "ui\/modal-close\/modal-close\.html"/.test(d.body)) hits.push(`${d.f}：關閉鈕沒有走 ui/modal-close`);
-        if (!/<div class="modals-content">/.test(d.body)) hits.push(`${d.f}：缺 <div class="modals-content">`);
+        // 只驗「有出現」抓不到殼歪掉——把 modal-close 再包一層 div 照樣綠，而那正是
+        // 「這一顆的殼跟別人不一樣所以共用不了」的長相。改成驗**巢狀順序**：
+        // .modals-dialog 的第一個子元素是 .modals-wrap，而 .modals-wrap 的開頭依序是
+        // ui/modal-close 的 include ＋ .modals-content。
+        const inner = d.body.slice(d.body.indexOf(dlg[0]) + dlg[0].length);
+        const wrap = inner.match(/^\s*<div class="modals-wrap">/);
+        if (!wrap) { hits.push(`${d.f}：.modals-dialog 的第一個子元素不是 <div class="modals-wrap">`); continue; }
+        const afterWrap = inner.slice(wrap[0].length);
+        if (!/^\s*\{%\s*include\s+"ui\/modal-close\/modal-close\.html"\s*%\}/.test(afterWrap)) {
+            hits.push(`${d.f}：.modals-wrap 的第一個子元素不是 ui/modal-close 的 include`);
+            continue;
+        }
+        const afterClose = afterWrap.replace(/^\s*\{%\s*include\s+"ui\/modal-close\/modal-close\.html"\s*%\}/, "");
+        if (!/^\s*<div class="modals-content">/.test(afterClose)) hits.push(`${d.f}：ui/modal-close 之後不是 <div class="modals-content">`);
     }
     assert.equal(hits.length, 0, fail(hits));
 });
@@ -1252,8 +1263,11 @@ test("§4-2 data-toast 相同的繁中子句必須有相同英譯（一致性的
     // 其中「建立失敗，請稍後再試」一句長出六種英譯。字典是逐字搬去 React 的，這批會原封不動繼承。
     const EN = JSON.parse(read("src/i18n/en.json"));
     const zhOf = new Map(); // 繁中子句 -> Map(英譯 -> [key…])
-    for (const f of srcHtml) {
-        const t = stripNjk(read(f));
+    // **掃 dist 不掃 src**：參數化元件的 toast 在 src 是 `data-toast="{{ deleteToast }}"`，
+    // key 也是 `{{ deleteToastKey }}`——掃 src 會把 delete-modal 那 18 個呼叫點整批漏掉，
+    // 而那正是分岔藏身的地方（round34 的突變證明：漏掉的那批裡有三種「刪除失敗，請稍後再試」）。
+    for (const f of distHtml) {
+        const t = read(`dist/${f}`);
         for (const m of t.matchAll(/<[a-z]+\b((?:"[^"]*"|[^>"])*)>/g)) {
             const attrs = m[1];
             const zh = attrs.match(/\bdata-toast="([^"]*)"/);
@@ -2670,7 +2684,30 @@ test("§4 control-label required 與控制項的 required 成對（星號是視�
             else hits.push(`${f}  <${ctl[1]} id="${fo[1]}"> 少了 required（label 上的星號在說謊）`);
         }
     }
+    // **反向也要驗**：控制項有 required、label 卻沒有星號，同樣是「兩份說不同的話」——
+    // 報讀器會念「必填」而畫面沒有任何標示。round34 的突變證明原本只驗一個方向：
+    // 拿掉 label 的 required class（控制項照舊 required）測試照樣綠，而 login.html 兩顆就是那樣。
+    let reverse = 0;
+    for (const f of srcHtml) {
+        const t = stripNjk(read(f));
+        const labels = [...t.matchAll(/<label\b((?:"[^"]*"|[^>"])*)>/g)]
+            .map((m) => m[1])
+            .filter((a) => /\bfor="/.test(a));
+        for (const m of t.matchAll(/<(input|select|textarea)\b((?:"[^"]*"|[^>"])*)>/g)) {
+            const attrs = m[2];
+            if (!/\brequired\b/.test(attrs)) continue;
+            const id = attrs.match(/\bid="([^"]+)"/);
+            if (!id) continue; // 沒有 id 的必填欄由 aria-label 供名，沒有 label 可配對
+            const lab = labels.find((a) => new RegExp("\\bfor=\"" + esc(id[1]) + "\"").test(a));
+            if (!lab) continue; // label 指不到＝另一條測試的事
+            if (!/class="[^"]*\bcontrol-label\b[^"]*"/.test(lab)) continue; // 不是 control-label 版位
+            reverse++;
+            if (!/class="[^"]*\brequired\b[^"]*"/.test(lab))
+                hits.push(`${f}  <${m[1]} id="${id[1]}"> 有 required，但它的 label 沒有 required 星號`);
+        }
+    }
     assert.ok(pairs >= 30, `只掃到 ${pairs} 組成對的必填欄 —— label/控制項掃描壞了？整條在空轉`);
+    assert.ok(reverse >= 30, `反向只掃到 ${reverse} 顆必填控制項 —— 反向掃描壞了？半條在空轉`);
     assert.equal(hits.length, 0, fail(hits));
 });
 

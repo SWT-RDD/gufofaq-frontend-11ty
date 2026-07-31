@@ -426,21 +426,9 @@ permalink: 5-2_conversationSettings.html
                 <div class="label"><label for="genTimezone" class="control-label" data-i18n="settings.timezone">時區</label></div>
                 <div class="field">
                     <select class="form-control singleSelect js-timezone" id="genTimezone">
-                        <option value="Asia/Taipei" selected>Asia/Taipei</option>
-                        <option value="Asia/Shanghai">Asia/Shanghai</option>
-                        <option value="Asia/Hong_Kong">Asia/Hong_Kong</option>
-                        <option value="Asia/Tokyo">Asia/Tokyo</option>
-                        <option value="Asia/Singapore">Asia/Singapore</option>
-                        <option value="Asia/Seoul">Asia/Seoul</option>
-                        <option value="Asia/Kuala_Lumpur">Asia/Kuala_Lumpur</option>
-                        <option value="Asia/Bangkok">Asia/Bangkok</option>
-                        <option value="UTC">UTC</option>
-                        <option value="America/New_York">America/New_York</option>
-                        <option value="America/Los_Angeles">America/Los_Angeles</option>
-                        <option value="America/Chicago">America/Chicago</option>
-                        <option value="Europe/London">Europe/London</option>
-                        <option value="Europe/Paris">Europe/Paris</option>
-                        <option value="Australia/Sydney">Australia/Sydney</option>
+                        {# 與 5-6-1 平台預設同一份目錄（§6）→ ui/timezone-options。 #}
+                        {% set timezoneSelected = "Asia/Taipei" %}
+                        {% include "ui/timezone-options/timezone-options.html" %}
                     </select>
                 </div>
             </div>
@@ -1046,7 +1034,11 @@ permalink: 5-2_conversationSettings.html
                                     <div class="label"><label for="oruleCategorySlot{{ loop.index }}" class="control-label" data-i18n="settings.outputRuleCategorySlot">意圖維度槽</label></div>
                                     <div class="field">
                                         <input type="text" id="oruleCategorySlot{{ loop.index }}" class="form-control js-orule-category-slot" value="topic" aria-describedby="oruleCategoryHint{{ loop.index }}">
-                                        <span id="oruleCategoryHint{{ loop.index }}" class="text-gray" data-i18n="settings.outputRuleCategoryHint">維度槽與逐代碼上限要一起設；只設一邊，逐代碼上限不會生效。最多 50 個代碼、每個代碼上限 1 至 100000 字。</span>
+                                        {# 上下界是資料不是譯文（§3-2）：同一組界線就寫在下面 `js-orule-category-limit` 的
+                                             `min="1" max="100000"` 上（正本 output_rules.py:100-102 的 `by_category`）。
+                                             414eecc 已經對本頁另外三處做過同一個修正，這是第四處漏網。
+                                             「最多 50 個代碼」在 markup 沒有第二份抄本，維持譯文。 #}
+                                        <span id="oruleCategoryHint{{ loop.index }}" class="text-gray"><span data-i18n="settings.outputRuleCategoryHintPrefix">維度槽與逐代碼上限要一起設；只設一邊，逐代碼上限不會生效。最多 50 個代碼、每個代碼上限 </span><span>1 – 100000</span><span data-i18n="settings.outputRuleCategoryHintSuffix"> 字。</span></span>
                                     </div>
                                 </div>
                                 <div class="text-bold" id="oruleCategoryOverridesLabel{{ loop.index }}" data-i18n="settings.outputRuleCategoryOverrides">逐代碼覆寫上限</div>

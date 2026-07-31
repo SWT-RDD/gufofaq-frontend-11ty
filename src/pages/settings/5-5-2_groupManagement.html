@@ -87,7 +87,7 @@ permalink: 5-5-2_groupManagement.html
             </colgroup>
             <thead>
                 <tr>
-                    <th data-i18n="settings.groupName">群組名稱</th>
+                    <th id="groupNameHead" data-i18n="settings.groupName">群組名稱</th>
                     <th data-i18n="settings.capabilities">能力</th>
                     <th data-i18n="settings.memberCount">成員數</th>
                     <th data-i18n="common.actions">操作</th>
@@ -97,7 +97,11 @@ permalink: 5-5-2_groupManagement.html
                 {% for group in groups %}
                 <tr>
                     <td>
-                        <input type="text" class="form-control" value="{{ group.name }}" aria-label="群組名稱" data-i18n-aria-label="settings.groupName">
+                        {# 可及名稱＝「<這一列的群組名> 群組名稱」（§4：迴圈內掛靜態 aria-label 會蓋掉列脈絡，
+                             三列全叫「群組名稱」，還會跟上面新增區那顆同名）。名稱格本身就是可編輯輸入，
+                             沒有現成的靜態辨識欄，故補一顆 sr-only 的列名當錨點。 #}
+                        <span id="groupRowName-{{ loop.index }}" class="sr-only">{{ group.name }}</span>
+                        <input type="text" class="form-control" value="{{ group.name }}" aria-labelledby="groupRowName-{{ loop.index }} groupNameHead">
                     </td>
                     <td>
                         <div class="flex-row flex-wrap gap-16 align-items-center">

@@ -222,17 +222,22 @@ permalink: 5-6-3_platformServiceKeys.html
     <p class="text-gray" data-i18n="serviceKey.rotateHint">零停機輪替：先核發新的一把（同一個範圍可以同時有多把有效憑證），把新的貼進 Secret Manager 並讓消費者取到，接著盯「最後使用時間」——舊那把不再前進就代表沒有人在用它了，這時候才撤銷。強制「一個範圍只准一把」會讓每一次輪替中間都有一段憑證真空，那段時間排程是啞的，而且沒有人會注意到。</p>
     <div class="table-container scrollTable">
         <table class="default-table">
+            {# 欄寬要與**表頭順序**對齊：加欄位時把新的 <col> 插在對應位置，不是接在尾巴。
+                 上一版把「核發者」「撤銷者」兩欄插在第 6／第 9 個表頭，兩個 <col> 卻附加在第 9／第 10——
+                 第 6 欄之後全部錯位（核發者這種個位數 id 拿到 170px，而「撤銷時間」那格裝的是
+                 `2024/11/03 11:27`、與 160px 的「核發時間」同格式，卻被擠到 110px）。
+                 數量仍然 10/10/10，所以每一條測試都是綠的——這一型只有逐欄對照看得出來。 #}
             <colgroup>
                 <col style="width:70px; min-width:70px;">
                 <col style="min-width:220px;">
                 <col style="width:150px; min-width:150px;">
                 <col style="width:130px; min-width:130px;">
                 <col style="width:160px; min-width:160px;">
+                <col style="width:110px; min-width:110px;">
                 <col style="width:170px; min-width:170px;">
+                <col style="width:160px; min-width:160px;">
+                <col style="width:110px; min-width:110px;">
                 <col style="width:200px; min-width:200px;">
-                <col style="width:110px; min-width:110px;">
-                <col style="width:110px; min-width:110px;">
-                <col style="width:110px; min-width:110px;">
             </colgroup>
             <thead>
                 <tr>

@@ -47,16 +47,19 @@ permalink: 5-6-1_platformTenants.html
                 <tr>
                     <th data-i18n="common.email">電子郵件</th>
                     <th data-i18n="settings.tenant">租戶</th>
-                    <th data-i18n="platform.platformRole">平台角色</th>
+                    <th id="platformRoleHead" data-i18n="platform.platformRole">平台角色</th>
                 </tr>
             </thead>
             <tbody>
                 {% for row in platformAdminRows %}
                 <tr>
-                    <td>{{ row.email }}</td>
+                    <td id="platformRoleUser-{{ loop.index }}">{{ row.email }}</td>
                     <td>{{ row.tenant }}</td>
                     <td data-platform-role="admin">
-                        <select class="form-control singleSelect js-set-platform-role" aria-label="設定平台角色" data-i18n-aria-label="platform.platformRoleAriaLabel">
+                        {# 可及名稱＝「<這一列的 email> 平台角色」（§4：迴圈內的控制項掛靜態 aria-label
+                             會蓋掉列脈絡，三列全叫「設定平台角色」，報讀器聽不出正在改誰的角色）。
+                             同一頁下面的租戶功能開關早就是這個寫法。 #}
+                        <select class="form-control singleSelect js-set-platform-role" aria-labelledby="platformRoleUser-{{ loop.index }} platformRoleHead">
                             <option value="none" data-i18n="platform.roleNone"{% if row.role == "none" %} selected{% endif %}>無</option>
                             <option value="auditor" data-i18n="platform.roleAuditor"{% if row.role == "auditor" %} selected{% endif %}>稽核員</option>
                             <option value="admin" data-i18n="platform.roleAdmin"{% if row.role == "admin" %} selected{% endif %}>系統管理員</option>
@@ -80,12 +83,10 @@ permalink: 5-6-1_platformTenants.html
                 <label for="platformTimezoneSelect" class="control-label" data-i18n="platform.timezoneTitle">平台時區</label>
             </div>
             <div class="field">
+                {# 時區清單與 5-2 是同一份目錄（§6 不得各烤一份）→ ui/timezone-options。 #}
+                {% set timezoneSelected = "Asia/Taipei" %}
                 <select id="platformTimezoneSelect" class="form-control singleSelect" data-platform-role="admin">
-                    <option value="Asia/Taipei" selected>Asia/Taipei</option>
-                    <option value="Asia/Tokyo">Asia/Tokyo</option>
-                    <option value="Asia/Shanghai">Asia/Shanghai</option>
-                    <option value="UTC">UTC</option>
-                    <option value="America/Los_Angeles">America/Los_Angeles</option>
+                    {% include "ui/timezone-options/timezone-options.html" %}
                 </select>
             </div>
         </div>

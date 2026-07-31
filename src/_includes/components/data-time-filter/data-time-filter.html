@@ -7,13 +7,16 @@
        timeFilterChecked —— 預設選中哪一顆：last24h / lastWeek / lastMonth / range（不給＝一顆都不選）
      起訖欄是 flatpickr 的掛點（真 app js/main.js 綁 .start-date/.end-date），切版不引 vendor、
      只保留 class 與 disabled 初始態；`.time` 是 form-control 的日曆圖示變體（`.field:has(> .form-control.time)::after`），
-     4-1 的同型欄位有、這兩頁原本漏掉。 #}
+     4-1 的同型欄位有、這兩頁原本漏掉。
+     `.field-with-input-group` / `.field-with-input` / `.with-input` 是**真 app 的掛點**
+     （js/main.js:429-453：選了哪顆 radio 就解除它附屬輸入框的 disabled），不是無主 class——
+     那個 `disabled` 初始態的意義就是「還沒選時間區間」。行為由 `ui/field-with-input` 當場做（§5 ④）。 #}
 <div class="form-group row flex-row mobile-column-xs gap-16">
     <div class="label mobile-align">
         <label id="{{ timeFilterLabelId }}" class="control-label" data-i18n="settings.dataTimeFilter">資料時間篩選</label>
     </div>
     <div class="field w100" role="radiogroup" aria-labelledby="{{ timeFilterLabelId }}">
-        <div class="flex-row gap-16 mobile-column flex-wrap">
+        <div class="flex-row gap-16 mobile-column flex-wrap field-with-input-group">
             <div class="flex-row gap-16 mobile-column-xs col-12-xs">
                 <div class="function">
                     <label class="form-radio border-wrap w100">
@@ -34,7 +37,7 @@
                     </label>
                 </div>
             </div>
-            <div class="flex-row gap-16 mobile-column-xs">
+            <div class="flex-row gap-16 mobile-column-xs field-with-input">
                 <div class="function">
                     <label class="form-radio">
                         <input type="radio" name="{{ timeFilterName }}"{% if timeFilterChecked == "range" %} checked{% endif %}>
@@ -44,12 +47,12 @@
                 <div class="function">
                     <div class="flex-row align-items-center gap-16 mobile-column-xs col-12-xs">
                         <div class="field">
-                            <input type="text" class="form-control time start-date" placeholder="請選擇開始時間"
+                            <input type="text" class="form-control time start-date with-input" placeholder="請選擇開始時間"
                                 data-i18n-placeholder="settings.pleaseSelectStartTime" aria-label="開始時間" data-i18n-aria-label="settings.startTime" disabled>
                         </div>
                         <span data-i18n="settings.to">至</span>
                         <div class="field">
-                            <input type="text" class="form-control time end-date" placeholder="請選擇結束時間"
+                            <input type="text" class="form-control time end-date with-input" placeholder="請選擇結束時間"
                                 data-i18n-placeholder="settings.pleaseSelectEndTime" aria-label="結束時間" data-i18n-aria-label="settings.endTime" disabled>
                         </div>
                     </div>
