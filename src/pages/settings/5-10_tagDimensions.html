@@ -435,8 +435,10 @@ permalink: 5-10_tagDimensions.html
          「覆蓋率 X%，還有 N 筆未標註」，這一區把它拆成可操作的清單：一列一維度，展開後逐資料集
          列出未標註筆數並連到那個資料集（能定位到的最小單位——上游沒有「列出未標註文件」的端點）。
          role="alert"：它是動態出現的錯誤訊息（GUIDELINE §4）。 #}
-    <div class="flex-row column gap-8" role="alert">
-        <div class="text-bold text-red" data-i18n="settings.tagFilterBlockedTitle">下列維度的「未標註」在檢索條件裡表達不出來，覆蓋率必須是 100% 才能開啟</div>
+    {# role="alert" 只框訊息本體：live region 內含整張表、逐列連結與「逐資料集查看」鈕的話，
+         那一區任何一次重繪都會讓報讀器把整張表重念一遍（全站其他 live region 一律只框一句）。 #}
+    <div class="flex-row column gap-8">
+        <div class="text-bold text-red" role="alert" data-i18n="settings.tagFilterBlockedTitle">下列維度的「未標註」在檢索條件裡表達不出來，覆蓋率必須是 100% 才能開啟</div>
         <div class="table-container scrollTable">
             <table class="default-table">
                 <colgroup>

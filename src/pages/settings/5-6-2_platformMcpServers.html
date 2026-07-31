@@ -37,9 +37,13 @@ permalink: 5-6-2_platformMcpServers.html
 <p class="text-gray" data-i18n="settings.mcpServersIntro">MCP Server 讓 Agent 連上外部工具。註冊即在 Agent 主機執行指定指令，屬高權限操作，僅平台管理者可管理；租戶只能在對話設定勾選已註冊的 Server。</p>
 
 {# 新增 MCP Server：名稱＋執行指令（必填）＋參數＋環境變數＋描述＋啟用＋新增鈕（三態 toast：
-     成功／名稱已存在／失敗——chatbot routes/mcp.py 的 create 只查名稱重複（400），連線測試是獨立的
-     /servers/{id}/test 端點、不在建立路徑上。product catalog 的 toast.createMcpServer 仍含
-     「或連線測試失敗」死分支，此處為修正後值，待回流 product）#}
+     成功／名稱已存在／執行指令不在允許清單／失敗。連線測試是獨立的 /servers/{id}/test 端點、
+     不在建立路徑上。**擋兩件事不是一件**：GufoRAG `chatbot/app/routes/mcp.py` 的 create（:193）
+     與 update（:330）都先查名稱重複、再跑 `assert_command_allowed`，後者的白名單是
+     `app/services/mcp_client.py:151` 的 {python, python3, node, npx, uvx, uv}——該檔還特別交代
+     「不要把 shell（bash/sh）加進去，那等於放棄整道閘」。而執行指令是自由文字欄，
+     打 bash／docker 是使用者自己改得掉的事，折進「建立失敗，請稍後再試」等於叫人重試。
+     product catalog 的 toast.createMcpServer 仍含「或連線測試失敗」死分支，此處為修正後值，待回流 product）#}
 <div class="block mb-16 flex-row column gap-16" data-platform-role="admin">
     <div class="text-md text-bold" data-i18n="settings.addMcpServer">新增 MCP Server</div>
     <div class="flex-row flex-wrap gap-16 mobile-column sm-gap-16">
@@ -99,7 +103,7 @@ permalink: 5-6-2_platformMcpServers.html
             <input type="checkbox" checked>
             <span data-i18n="widget.active">啟用</span>
         </label>
-        <button type="button" class="button button-primary" data-toast="MCP Server 已建立|名稱已存在|建立失敗，請稍後再試" data-i18n-data-toast="toast.createMcpServer" data-toast-type="success|warning|error">
+        <button type="button" class="button button-primary" data-toast="MCP Server 已建立|名稱已存在|執行指令不在允許清單（僅 python／python3／node／npx／uvx／uv）|建立失敗，請稍後再試" data-i18n-data-toast="toast.createMcpServer" data-toast-type="success|warning|warning|error">
             <img src="./images/icon_add_white.png" width="48" height="48" decoding="async" alt="" class="icon">
             <span data-i18n="settings.addMcpServer">新增 MCP Server</span>
         </button>
@@ -157,7 +161,7 @@ permalink: 5-6-2_platformMcpServers.html
                     </td>
                     <td>
                         <div class="btn-group">
-                            <button type="button" class="button button-border button-sm" data-toast="MCP Server 已更新|儲存失敗" data-i18n-data-toast="toast.saveMcpServer" data-toast-type="success|error" data-i18n="action.save">儲存</button>
+                            <button type="button" class="button button-border button-sm" data-toast="MCP Server 已更新|名稱已存在|執行指令不在允許清單（僅 python／python3／node／npx／uvx／uv）|儲存失敗" data-i18n-data-toast="toast.saveMcpServer" data-toast-type="success|warning|warning|error" data-i18n="action.save">儲存</button>
                             <button type="button" class="button button-border button-sm" data-toast="連線成功，已取得工具清單|連線測試失敗" data-i18n-data-toast="toast.testMcpServer" data-toast-type="success|error" data-i18n="settings.testConnection">測試連線</button>
                             <button type="button" class="button button-red button-sm js-delete-mcp" data-i18n="action.delete">刪除</button>
                         </div>

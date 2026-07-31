@@ -64,7 +64,7 @@ permalink: 2-2-4_regressionSuites.html
         <div class="col-7-md col-12-sm">
             <div class="form-group">
                 <div class="label">
-                    <label for="newSuiteDesc" class="control-label" data-i18n="regression.suiteDesc">說明</label>
+                    <label for="newSuiteDesc" id="newSuiteDescLabel" class="control-label" data-i18n="regression.suiteDesc">說明</label>
                 </div>
                 <div class="field">
                     <input type="text" id="newSuiteDesc" class="form-control" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter">
@@ -476,7 +476,7 @@ permalink: 2-2-4_regressionSuites.html
 
     <div class="form-group">
         <div class="label">
-            <label for="newCaseNote" class="control-label" data-i18n="regression.caseNote">備註</label>
+            <label for="newCaseNote" id="newCaseNoteLabel" class="control-label" data-i18n="regression.caseNote">備註</label>
         </div>
         <div class="field">
             <input type="text" id="newCaseNote" class="form-control" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter">
@@ -550,7 +550,7 @@ permalink: 2-2-4_regressionSuites.html
         <div class="col-4-md col-12-sm">
             <div class="form-group">
                 <div class="label">
-                    <label for="runProfileSelect" class="control-label" data-i18n="qaTest.knowledgeRetrieval">知識檢索</label>
+                    <label for="runProfileSelect" id="runProfileSelectLabel" class="control-label" data-i18n="qaTest.knowledgeRetrieval">知識檢索</label>
                 </div>
                 <div class="field">
                     <select id="runProfileSelect" class="form-control js-knowledge-select">
@@ -566,13 +566,13 @@ permalink: 2-2-4_regressionSuites.html
         <div class="col-4-md col-12-sm">
             <div class="form-group">
                 <div class="label">
-                    <label for="runLlmSelect" class="control-label" data-i18n="qaTest.llmModel">LLM模型</label>
+                    <label for="runLlmSelect" id="runLlmSelectLabel" class="control-label" data-i18n="qaTest.llmModel">LLM模型</label>
                     <span class="verdict-tag is-warn" data-i18n="regression.overrideSet">這一次指定</span>
                 </div>
                 <div class="field flex-row column gap-8">
                     <label class="form-checkbox">
-                        <input type="checkbox" class="js-override-model-name" checked>
-                        <span data-i18n="regression.overrideThisRun">這一次改用指定值</span>
+                        <input type="checkbox" aria-labelledby="runLlmSelectLabel overrideThisRunText" class="js-override-model-name" checked>
+                        <span id="overrideThisRunText" data-i18n="regression.overrideThisRun">這一次改用指定值</span>
                     </label>
                     <select id="runLlmSelect" class="form-control singleSelect js-llm-select" aria-describedby="runLlmSelectHint">
                         <option value="openai:gpt-4o-mini" selected>OpenAI gpt-4o-mini</option>
@@ -590,12 +590,12 @@ permalink: 2-2-4_regressionSuites.html
         <div class="col-4-md col-12-sm">
             <div class="form-group">
                 <div class="label">
-                    <span class="control-label" data-i18n="settings.reasoningEffort">思考深度</span>
+                    <span class="control-label" id="runReasoningEffortLabel" data-i18n="settings.reasoningEffort">思考深度</span>
                     <span class="verdict-tag is-muted" data-i18n="regression.overrideInherit">沿用設定檔</span>
                 </div>
                 <div class="field flex-row column gap-8">
                     <label class="form-checkbox">
-                        <input type="checkbox" class="js-override-reasoning-effort">
+                        <input type="checkbox" aria-labelledby="runReasoningEffortLabel overrideThisRunText" class="js-override-reasoning-effort">
                         <span data-i18n="regression.overrideThisRun">這一次改用指定值</span>
                     </label>
                     <p class="text-gray" data-i18n="regression.overrideInheritHint">這一欄不隨這次執行送出，跑的是被測設定檔當下的值。</p>
@@ -606,12 +606,12 @@ permalink: 2-2-4_regressionSuites.html
         <div class="col-4-md col-12-sm">
             <div class="form-group">
                 <div class="label">
-                    <label for="runChatModeSelect" class="control-label" data-i18n="qaTest.chatMode">對話模式</label>
+                    <label for="runChatModeSelect" id="runChatModeSelectLabel" class="control-label" data-i18n="qaTest.chatMode">對話模式</label>
                     <span class="verdict-tag is-warn" data-i18n="regression.overrideSet">這一次指定</span>
                 </div>
                 <div class="field flex-row column gap-8">
                     <label class="form-checkbox">
-                        <input type="checkbox" class="js-override-search-mode" checked>
+                        <input type="checkbox" aria-labelledby="runChatModeSelectLabel overrideThisRunText" class="js-override-search-mode" checked>
                         <span data-i18n="regression.overrideThisRun">這一次改用指定值</span>
                     </label>
                     <select id="runChatModeSelect" class="form-control js-chat-mode">
@@ -625,12 +625,12 @@ permalink: 2-2-4_regressionSuites.html
         <div class="col-4-md col-12-sm">
             <div class="form-group">
                 <div class="label">
-                    <span class="control-label" data-i18n="settings.searchSelectedNumber">選用資料筆數</span>
+                    <span class="control-label" id="runSearchSelectedLabel" data-i18n="settings.searchSelectedNumber">選用資料筆數</span>
                     <span class="verdict-tag is-muted" data-i18n="regression.overrideInherit">沿用設定檔</span>
                 </div>
                 <div class="field flex-row column gap-8">
                     <label class="form-checkbox">
-                        <input type="checkbox" class="js-override-search-selected-number">
+                        <input type="checkbox" aria-labelledby="runSearchSelectedLabel overrideThisRunText" class="js-override-search-selected-number">
                         <span data-i18n="regression.overrideThisRun">這一次改用指定值</span>
                     </label>
                     <p class="text-gray" data-i18n="regression.overrideInheritHint">這一欄不隨這次執行送出，跑的是被測設定檔當下的值。</p>
@@ -644,12 +644,12 @@ permalink: 2-2-4_regressionSuites.html
         <div class="col-4-md col-12-sm">
             <div class="form-group">
                 <div class="label">
-                    <label for="runSampleTotal" class="control-label" data-i18n="settings.searchTotalNumber">取用資料筆數</label>
+                    <label for="runSampleTotal" id="runSampleTotalLabel" class="control-label" data-i18n="settings.searchTotalNumber">取用資料筆數</label>
                     <span class="verdict-tag is-warn" data-i18n="regression.overrideSet">這一次指定</span>
                 </div>
                 <div class="field flex-row column gap-8">
                     <label class="form-checkbox">
-                        <input type="checkbox" class="js-override-search-total-number" checked>
+                        <input type="checkbox" aria-labelledby="runSampleTotalLabel overrideThisRunText" class="js-override-search-total-number" checked>
                         <span data-i18n="regression.overrideThisRun">這一次改用指定值</span>
                     </label>
                     <input type="number" min="1" max="100" step="1" id="runSampleTotal" class="form-control js-sample-total" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" aria-describedby="runSampleTotalHint" value="24">
@@ -662,11 +662,11 @@ permalink: 2-2-4_regressionSuites.html
     {# 提示詞（prompt）——覆寫態（整列寬）。這一欄是「改了提示詞之後那幾十題還答得對嗎」的主角。 #}
     <div class="flex-row column gap-8">
         <div class="flex-row align-items-center gap-10 flex-wrap">
-            <label for="runPromptInput" class="control-label" data-i18n="comp.prompt">提示詞</label>
+            <label for="runPromptInput" id="runPromptInputLabel" class="control-label" data-i18n="comp.prompt">提示詞</label>
             <span class="verdict-tag is-warn" data-i18n="regression.overrideSet">這一次指定</span>
         </div>
         <label class="form-checkbox">
-            <input type="checkbox" class="js-override-prompt" checked>
+            <input type="checkbox" aria-labelledby="runPromptInputLabel overrideThisRunText" class="js-override-prompt" checked>
             <span data-i18n="regression.overrideThisRun">這一次改用指定值</span>
         </label>
         <textarea id="runPromptInput" class="form-control size-lg js-prompt-input">你是一位專業的知識庫問答助手，回答必須僅依據檢索到的資料片段。資料不足時明確說明「無法從現有資料判斷」。</textarea>
