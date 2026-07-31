@@ -1314,7 +1314,7 @@
   "toast.createSkill": "Skill created|Name and description cannot be empty|Name format is invalid or already in use|Failed to create. Please try again later.",
   "toast.createSuite": "Suite created|The suite name cannot be blank|Failed to create the suite. Please try again later.",
   "toast.createTagCode": "Code added|This code cannot be told apart from an existing one|Failed to add. Please try again later.",
-  "toast.createTagDimension": "Tag dimension created|That slot or role already has a dimension|Creation failed. Please try again later.",
+  "toast.createTagDimension": "Tag dimension created|That slot or role already has a dimension|That type or role does not go with this slot — pick another|Creation failed. Please try again later.",
   "toast.createTenant": "Tenant created|Please fill in tenant name, admin email and a password of at least 8 characters|Creation failed (name or email may already be in use). Please try again later.",
   "toast.createUser": "Member added|Please fill in email and a password of at least 8 characters|Creation failed (email may already be in use). Please try again later.",
   "toast.createWidgetToken": "Key created|Invalid domain format (must be https://domain)|Failed to create key. Please try again later.",
