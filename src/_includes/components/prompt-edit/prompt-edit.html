@@ -26,29 +26,19 @@
         {# 按鈕文字隨 .open 切換（見 prompt-edit.js）：data-text-* 是繁中原文，data-key-* 是對應的 i18n key #}
         <button type="button" class="button button-border js-prompt-toggle" data-text-open="完成編輯"
             data-text-close="展開編輯" data-key-open="action.finishEdit" data-key-close="action.expandEdit"
-            data-i18n="action.expandEdit" aria-expanded="false">
-            展開編輯
-        </button>
+            data-i18n="action.expandEdit" aria-expanded="false">展開編輯</button>
     </div>
 
     <div class="prompt-edit-content"></div>
 
     <div class="prompt-edit-tools flex-row justify-content-center flex-wrap gap-16">
-        <button type="button" class="button button-border js-prompt-cancel" data-i18n="action.cancel">
-            取消
-        </button>
+        <button type="button" class="button button-border js-prompt-cancel" data-i18n="action.cancel">取消</button>
 
-        <button type="button" class="button button-primary js-prompt-save" data-i18n="action.save">
-            儲存
-        </button>
+        <button type="button" class="button button-primary js-prompt-save" data-i18n="action.save">儲存</button>
 
         {# 送 API 的直接動作鈕（真 app singleTest.js .js-prompt-reset：取目前正式提示詞、成敗各一種 toast）→ data-toast 列全結果（§5） #}
-        <button type="button" class="button button-green js-prompt-reset" data-toast="已回復至目前正式提示詞|無法取得正式提示詞" data-i18n-data-toast="toast.resetPrompt" data-toast-type="success|error" data-i18n="action.resetDefault">
-            回復至預設
-        </button>
+        <button type="button" class="button button-green js-prompt-reset" data-toast="已回復至目前正式提示詞|無法取得正式提示詞" data-i18n-data-toast="toast.resetPrompt" data-toast-type="success|error" data-i18n="action.resetDefault">回復至預設</button>
 
-        <button type="button" class="button button-primary js-prompt-new-version" data-toast="已儲存為新版本|內容欄位不可為空|新增提示詞失敗，請稍後再試" data-i18n-data-toast="toast.savePrompt" data-toast-type="success|warning|error" data-i18n="action.saveNewVersion">
-            儲存為新版本
-        </button>
+        <button type="button" class="button button-primary js-prompt-new-version" data-toast="已儲存為新版本|內容欄位不可為空|新增提示詞失敗，請稍後再試" data-i18n-data-toast="toast.savePrompt" data-toast-type="success|warning|error" data-i18n="action.saveNewVersion">儲存為新版本</button>
     </div>
 </div>

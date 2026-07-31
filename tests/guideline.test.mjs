@@ -1118,6 +1118,81 @@ test("§2 模板檔一律用 {# #} 註解，不得出現 <!-- 或 -->", () => {
     assert.equal(bad.length, 0, `改用 {# #}：\n${fail(bad)}`);
 });
 
+test("§2 dist：data-i18n 節點的文字不得帶縮排換行（JSX 會把那段空白整段吃掉）", () => {
+    // §2 那條掃 src 的縮排規則抓不到「屬性寫成多行、文字獨占一行」的形狀（prompt-edit 的
+    // `js-prompt-toggle` 就是那樣）。dist 是渲染後的真相：文字節點含換行＝React 那邊會少一段空白，
+    // 而 lang-toggle 以 `el.textContent` 為索引擷取預設繁中，同一顆 key 的兩種寫法會互相覆蓋。
+    let seen = 0;
+    const hits = [];
+    for (const f of distHtml) {
+        const t = read(`dist/${f}`);
+        for (const m of t.matchAll(/<([a-z0-9]+)\b((?:"[^"]*"|[^>"])*)>([^<]*)<\/\1>/g)) {
+            if (!/\bdata-i18n="/.test(m[2])) continue;
+            if (!m[3].trim()) continue;
+            seen++;
+            if (!/[\r\n]/.test(m[3])) continue;
+            const key = (m[2].match(/\bdata-i18n="([^"]*)"/) || [, "?"])[1];
+            hits.push(`dist/${f}  <${m[1]} data-i18n="${key}"> 的文字帶縮排換行：${JSON.stringify(m[3].slice(0, 30))}`);
+        }
+    }
+    assert.ok(seen >= 300, `只掃到 ${seen} 個 data-i18n 文字節點 —— 這條測試在空轉`);
+    assert.equal(hits.length, 0, fail(hits));
+});
+
+test("§2 {{ content | safe }} 只准出現在 layouts/（那是子頁內容注進 layout 的洞，不是通用逃生口）", () => {
+    const hits = [];
+    let seen = 0;
+    for (const f of srcHtml) {
+        for (const m of stripNjk(read(f)).matchAll(/\{\{-?\s*content\s*\|\s*safe/g)) {
+            seen++;
+            if (!/layouts/.test(f)) hits.push(`${f}:${countLines(read(f), m.index)}  content | safe 出現在 layouts 之外`);
+        }
+    }
+    assert.ok(seen >= 3, `只掃到 ${seen} 處 content | safe —— 這條測試在空轉（三支 layout 各一）`);
+    assert.equal(hits.length, 0, fail(hits));
+});
+
+test("§5 值載體 <select>／<input> 不得掛 data-toast（document 上的 click 委派抓不到 change）", () => {
+    // §5 的 hook × data-toast 矩陣②：值載體只掛 hook class。`data-toast` 是 click 委派——
+    // 掛在 select 上，點開下拉就彈 toast、選完反而不彈，語意完全相反。
+    let seen = 0;
+    const hits = [];
+    for (const f of srcHtml) {
+        const t = stripNjk(read(f));
+        for (const m of t.matchAll(/<(select|input|textarea)\b((?:"[^"]*"|[^>"])*)>/g)) {
+            seen++;
+            if (/\bdata-toast=/.test(m[2])) hits.push(`${f}:${countLines(t, m.index)}  <${m[1]}> 掛了 data-toast`);
+        }
+    }
+    assert.ok(seen >= 100, `只掃到 ${seen} 顆表單控制項 —— 這條測試在空轉`);
+    // 負控自我檢查：零命中型測試要證明比對式真的認得違規的形狀
+    assert.ok(/\bdata-toast=/.test(' class="x" data-toast="a|b"'), "比對式認不出 data-toast —— 這條測試永遠會綠");
+    assert.equal(hits.length, 0, fail(hits));
+});
+
+test("§4 <dialog aria-labelledby> 必須指向**自己的** .modals-title（指到別的元素照樣是錯的名字）", () => {
+    let seen = 0;
+    const hits = [];
+    for (const f of distHtml) {
+        const t = read(`dist/${f}`);
+        for (const m of t.matchAll(/<dialog\b((?:"[^"]*"|[^>"])*)>([\s\S]*?)<\/dialog>/g)) {
+            const id = m[1].match(/\baria-labelledby="([^"]*)"/);
+            if (!id) continue; // 「每個 dialog 都要有 aria-labelledby」是另一條測試的事
+            seen++;
+            const safeId = id[1].replace(/[^A-Za-z0-9_-]/g, "");
+            // 那顆 title 的 tag 上要同時有 .modals-title 與這個 id（兩種屬性順序都算）
+            const tagWithBoth = (a, b) => new RegExp(String.raw`<[a-z0-9]+[^>]*\s` + a + String.raw`[^>]*\s` + b);
+            const CLS = String.raw`class="[^"]*\bmodals-title\b[^"]*"`;
+            const hasTitle =
+                tagWithBoth(CLS, `id="${safeId}"`).test(m[2]) || tagWithBoth(`id="${safeId}"`, CLS).test(m[2]);
+            if (!hasTitle)
+                hits.push(`dist/${f}  <dialog aria-labelledby="${id[1]}"> 指到的不是自己內部的 .modals-title`);
+        }
+    }
+    assert.ok(seen >= 20, `只掃到 ${seen} 顆帶 aria-labelledby 的 dialog —— 這條測試在空轉`);
+    assert.equal(hits.length, 0, fail(hits));
+});
+
 test("§2 畫得出內容的那一行要與收尾標籤同一行（縮排會併進值的文字節點）", () => {
     // `{{ 值 }}` 後面接換行縮排時，那串空白併進同一個文字節點：輸出的是 "1␣␣␣…" 而不是 "1"。
     // JSX 會把含換行的前後空白整段丟掉，兩邊的可見文字序列因此對不起來（a6924ff 就是修這個）。
