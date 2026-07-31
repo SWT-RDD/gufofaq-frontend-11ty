@@ -833,6 +833,8 @@ function topLevelTags(inner) {
     return out;
 }
 
+const NL = String.fromCharCode(10);
+
 function stripNjk(str) {
     return str.replace(/\{#[\s\S]*?#\}/g, (m) => m.replace(/[^\n]/g, ""));
 }
@@ -1306,6 +1308,40 @@ test("§4 可點的東西一律用真 button，且不得省略 type", () => {
         for (const { tag, attrs, raw } of tagsOf(stripNjk(read(f))))
             if (tag === "button" && !/\btype=/.test(attrs)) hits.push(`${f}  ${raw.slice(0, 90)}`);
     assert.equal(hits.length, 0, `<button> 缺 type（預設是 submit，會誤送表單）：\n${fail(hits)}`);
+});
+
+test("§4-2 data-toast 反向：同一句英譯不得對到多個不同的繁中子句（英譯要保留原文之間的區別）", () => {
+    // 正向那條（同繁中 → 同英譯）只擋一半。反向的失真同樣真實：兩句意思相同但字面不同的繁中
+    // 共用一句英文，英文使用者就分不出那兩顆 key 的差別；而且它同時暴露繁中側的同義分岔
+    // （「已更新」vs「更新成功」、「刪除成功」vs「已刪除」——正向那條看不到，因為繁中字面不同）。
+    // round35 突變證明：把 `toast.deleteFile` 中段英譯改成與末段相同，148 條照樣全綠。
+    const EN = JSON.parse(read("src/i18n/en.json"));
+    const enOf = new Map(); // 英譯 -> Map(繁中 -> Set(key))
+    for (const f of distHtml) {
+        for (const m of read(`dist/${f}`).matchAll(/<[a-z]+\b((?:"[^"]*"|[^>"])*)>/g)) {
+            const attrs = m[1];
+            const zh = attrs.match(/\bdata-toast="([^"]*)"/);
+            const key = attrs.match(/\bdata-i18n-data-toast="([^"]*)"/);
+            if (!zh || !key || !EN[key[1]]) continue;
+            const zs = zh[1].split("|").map((x) => x.trim());
+            const es = String(EN[key[1]]).split("|").map((x) => x.trim());
+            if (zs.length !== es.length) continue; // 段數不符另有一條測試在管
+            es.forEach((e, i2) => {
+                if (!enOf.has(e)) enOf.set(e, new Map());
+                const per = enOf.get(e);
+                if (!per.has(zs[i2])) per.set(zs[i2], new Set());
+                per.get(zs[i2]).add(key[1]);
+            });
+        }
+    }
+    assert.ok(enOf.size >= 100, `只收集到 ${enOf.size} 條英譯子句 —— 這條測試在空轉`);
+    const hits = [];
+    for (const [e, per] of enOf) {
+        if (per.size < 2) continue;
+        const detail = [...per].map(([zh, ks]) => `    「${zh}」  ← ${[...ks].join("、")}`).join(NL);
+        hits.push(`${JSON.stringify(e)} 對到 ${per.size} 種繁中：` + NL + detail);
+    }
+    assert.equal(hits.length, 0, fail(hits));
 });
 
 test("§4-2 data-toast 相同的繁中子句必須有相同英譯（一致性的單位是 | 切開的子句，不是整顆 key）", () => {

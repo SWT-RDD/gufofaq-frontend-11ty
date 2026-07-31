@@ -176,7 +176,7 @@ permalink: 3-1-3_previewDataset.html
      另一條 409 `file_not_linkable`（同檔 :634-638）沒有復原路徑，與 502／404／403 同屬 error。
      不與 1-2-1 共用 key：那一頁的「刪除」是送出前把檔從清單移掉（uploadFilePdf.js:480-486
      只做 `fileList.splice`），根本不會失敗。 #}
-{% set deleteToast = "刪除成功|這個檔案沒有留下擷取管道記錄，請先用「檔案上傳」重新匯入一次以補記|刪除失敗，請稍後再試" %}
+{% set deleteToast = "已刪除|這個檔案沒有留下擷取管道記錄，請先用「檔案上傳」重新匯入一次以補記|刪除失敗，請稍後再試" %}
 {% set deleteToastKey = "toast.deleteFile" %}
 {% set deleteToastType = "success|warning|error" %}
 {% include "components/delete-modal/delete-modal.html" %}

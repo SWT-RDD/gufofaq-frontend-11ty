@@ -101,7 +101,7 @@
                         </div>
                         {# 重置當期用量：直接動作（歸零 qa_used/extraction_used、重設週期起點），不經共用 footer 鈕。 #}
                         <div class="flex-row">
-                            <button type="button" class="button button-border button-sm" data-toast="已重置當期用量|重置失敗，請稍後再試" data-i18n-data-toast="toast.resetUsage" data-toast-type="success|error" data-i18n="platform.resetUsage">重置當期用量</button>
+                            <button type="button" class="button button-border button-sm" data-toast="已重置當期用量|重設失敗，請稍後再試" data-i18n-data-toast="toast.resetUsage" data-toast-type="success|error" data-i18n="platform.resetUsage">重置當期用量</button>
                         </div>
 
                         {# 使用期：延展／縮短天數 或 指定到期日（exactly-one——product 兩者都給回 400，React 送出前擇一；日期選擇沿用 .calendar hook 交由 React 套件實作）。 #}

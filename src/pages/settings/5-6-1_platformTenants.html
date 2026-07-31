@@ -185,8 +185,8 @@ permalink: 5-6-1_platformTenants.html
     {# `.btn-group` 的唯一 scss 規則帶著 `.default-table` 祖先（ui/default-table/_default-table.scss），
          表格外掛它一條規則都吃不到（§4 無主 class 的第三種死法：祖先錯位）。改用工具 class。 #}
     <div class="flex-row gap-10 align-items-center">
-        <button type="button" class="button button-border" data-toast="開始下載|下載失敗，請稍後再試" data-i18n-data-toast="toast.exportCsv" data-toast-type="success|error" data-i18n="platform.exportTenants">匯出租戶 CSV</button>
-        <button type="button" class="button button-border" data-toast="開始下載|下載失敗，請稍後再試" data-i18n-data-toast="toast.exportCsv" data-toast-type="success|error" data-i18n="platform.exportUsers">匯出使用者 CSV</button>
+        <button type="button" class="button button-border" data-toast="下載已開始|下載失敗，請稍後再試" data-i18n-data-toast="toast.exportCsv" data-toast-type="success|error" data-i18n="platform.exportTenants">匯出租戶 CSV</button>
+        <button type="button" class="button button-border" data-toast="下載已開始|下載失敗，請稍後再試" data-i18n-data-toast="toast.exportCsv" data-toast-type="success|error" data-i18n="platform.exportUsers">匯出使用者 CSV</button>
     </div>
 </div>
 
@@ -253,7 +253,7 @@ permalink: 5-6-1_platformTenants.html
                     {% endfor %}
                     <td data-platform-role="admin">
                         <div class="btn-group">
-                            <button type="button" class="button button-border button-sm" data-toast="更新成功|儲存失敗" data-i18n-data-toast="toast.saveTenant" data-toast-type="success|error" data-i18n="action.save">儲存</button>
+                            <button type="button" class="button button-border button-sm" data-toast="已更新|儲存失敗" data-i18n-data-toast="toast.saveTenant" data-toast-type="success|error" data-i18n="action.save">儲存</button>
                             {# 管理：開窗需先選定「管理哪個租戶」＝業務條件開窗，用 hook class（.js-manage-tenant），
                                  不掛 data-open-modal（§5）。彈窗本體見 components/manage-tenant-modal（include 於本頁底部）。 #}
                             <button type="button" class="button button-border button-sm js-manage-tenant" data-i18n="settings.manage">管理</button>
