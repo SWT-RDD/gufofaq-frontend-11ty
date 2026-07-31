@@ -1,0 +1,15 @@
+{# 圖表底下的三個數據槽（資料時間／對話次數／取用資料數）。三處逐字相同：`components/chart-box` 自己一份、
+     5-3 的排行榜與折線圖各一份（那兩個的**中段**與 chart-box 不同，但**下段**一模一樣）——
+     §3-3「同樣的東西出現兩次以上就抽出來」，抽的單位是重複的那一段、不是整張卡。
+     參數（呼叫端 include 前 set）：
+       chartDescId —— id 前綴。三顆 span 的 id 由它衍生（`<前綴>-time` / `-qa` / `-retrieved`），
+                      業務 js 靠 getElementById 填值，所以同頁多張圖必須各給一個前綴。
+       chartDescRow —— true 時根元素多帶 `.row`（chart-box 的版位需要，5-3 那兩張不需要）。
+     值是佔位字面（`-` / `0`）：真實值由業務 js 寫入，切版不假裝算得出來。 #}
+<div class="chart-desc{% if chartDescRow %} row{% endif %}">
+    <p><span class="text-bold" data-i18n="settings.dataTimeLabel">資料時間：</span><span id="{{ chartDescId }}-time">-</span></p>
+    <div class="flex-row gap-10 flex-wrap">
+        <p><span class="text-bold" data-i18n="settings.conversationCount">對話次數：</span><span id="{{ chartDescId }}-qa">0</span></p>
+        <p><span class="text-bold" data-i18n="settings.retrievedCount">取用資料數：</span><span id="{{ chartDescId }}-retrieved">0</span></p>
+    </div>
+</div>

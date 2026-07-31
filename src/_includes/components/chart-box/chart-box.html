@@ -3,7 +3,8 @@
    參數（頁面 include 前 set）：
      chartBoxId：id 前綴。業務 JS 靠它 getElementById 取 canvas 與數據槽（預設 "chart1"）。
                  §4：沒有迴圈變數的元件不寫死 id——改由呼叫端給前綴，同頁才能 include 多次。
-     chartBoxTitleText / chartBoxTitleKey：標題（預設「資料夾使用貢獻度」／comp.folderContribution） #}
+     chartBoxTitleText / chartBoxTitleKey：標題（預設「資料夾使用貢獻度」／comp.folderContribution）
+   下段的三個數據槽走 `ui/chart-desc`（5-3 另外兩張圖的中段不同、下段一模一樣，§3-3）。 #}
 {% set cbId = chartBoxId or "chart1" %}
 <div class="chart-box">
     <div class="chart-title" data-i18n="{{ chartBoxTitleKey or 'comp.folderContribution' }}">{{ chartBoxTitleText or '資料夾使用貢獻度' }}</div>
@@ -11,11 +12,8 @@
         <div class="chart"><canvas id="{{ cbId }}-doughnut"></canvas></div>
         <div class="chart"><canvas id="{{ cbId }}-bar"></canvas></div>
     </div>
-    <div class="chart-desc row">
-        <p><span class="text-bold" data-i18n="settings.dataTimeLabel">資料時間：</span><span id="{{ cbId }}-time">-</span></p>
-        <div class="flex-row gap-10 flex-wrap">
-            <p><span class="text-bold" data-i18n="settings.conversationCount">對話次數：</span><span id="{{ cbId }}-qa">0</span></p>
-            <p><span class="text-bold" data-i18n="settings.retrievedCount">取用資料數：</span><span id="{{ cbId }}-retrieved">0</span></p>
-        </div>
-    </div>
+    {# 元件內部的參數名一律用元件專屬前綴（§6：與頁面層變數同名會靜默互相覆蓋）。 #}
+    {% set chartDescId = cbId %}
+    {% set chartDescRow = true %}
+    {% include "ui/chart-desc/chart-desc.html" %}
 </div>

@@ -130,38 +130,31 @@ permalink: 5-3_statsModule.html
     <p><span class="text-bold" data-i18n="settings.groupCount">群組數：</span><span id="stats-total-groups">0</span></p>
 </div>
 
-{# 圖表區塊：沿用 ui/chart-box，.chart 內僅放 <canvas> 佔位，不掛 Chart.js（業務 JS 不轉）。
+{# 圖表區塊：沿用 components/chart-box，.chart 內僅放 <canvas> 佔位，不掛 Chart.js（業務 JS 不轉）。
      id 前綴由本頁給，元件不寫死（§4） #}
 <div class="mt-24">
     {% set chartBoxId = "chart1" %}
-    {% include "ui/chart-box/chart-box.html" %}
+    {% include "components/chart-box/chart-box.html" %}
 </div>
 
-{# 下方兩個區塊的中段結構與 chart-box 不同（一個是排行榜表格容器、一個是單一折線圖），
-     模板語法沒有 slot 可傳「不同的中段」（§2 白名單無 block），故依 §3-3 一次性版面直接寫在頁面，
-     沿用同一組 .chart-box/.chart-title/.chart/.chart-desc class 與同一套 id 命名 #}
+{# 下方兩個區塊的**中段**與 chart-box 不同（一個是排行榜表格容器、一個是單一折線圖），
+     模板語法沒有 slot 可傳「不同的中段」（§2 白名單無 block），故外殼直接寫在頁面，
+     沿用同一組 .chart-box/.chart-title/.chart class 與同一套 id 命名。
+     但**下段的三個數據槽三處一模一樣**，那一段抽成 ui/chart-desc（§3-3 抽的單位是重複的那一段）。 #}
 <div class="flex-row gap-24 mobile-column mt-16">
     <div class="chart-box">
         <div class="chart-title" data-i18n="settings.contributionRanking">貢獻度排行與優先續建議</div>
         <div class="chart chart-auto" id="chart2-ranking"></div>
-        <div class="chart-desc">
-            <p><span class="text-bold" data-i18n="settings.dataTimeLabel">資料時間：</span><span id="chart2-time">-</span></p>
-            <div class="flex-row gap-10 flex-wrap">
-                <p><span class="text-bold" data-i18n="settings.conversationCount">對話次數：</span><span id="chart2-qa">0</span></p>
-                <p><span class="text-bold" data-i18n="settings.retrievedCount">取用資料數：</span><span id="chart2-retrieved">0</span></p>
-            </div>
-        </div>
+        {% set chartDescId = "chart2" %}
+        {% set chartDescRow = false %}
+        {% include "ui/chart-desc/chart-desc.html" %}
     </div>
     <div class="chart-box">
         <div class="chart-title" data-i18n="settings.weeklyRetrievalTrend">近4周取用次數變化</div>
         <div class="chart"><canvas id="chart3-line"></canvas></div>
-        <div class="chart-desc">
-            <p><span class="text-bold" data-i18n="settings.dataTimeLabel">資料時間：</span><span id="chart3-time">-</span></p>
-            <div class="flex-row gap-10 flex-wrap">
-                <p><span class="text-bold" data-i18n="settings.conversationCount">對話次數：</span><span id="chart3-qa">0</span></p>
-                <p><span class="text-bold" data-i18n="settings.retrievedCount">取用資料數：</span><span id="chart3-retrieved">0</span></p>
-            </div>
-        </div>
+        {% set chartDescId = "chart3" %}
+        {% set chartDescRow = false %}
+        {% include "ui/chart-desc/chart-desc.html" %}
     </div>
 </div>
 

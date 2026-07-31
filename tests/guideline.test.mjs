@@ -2298,13 +2298,26 @@ test("§6 元件內部 {% set %} 示範變數名：跨元件唯一、且不與�
             pageVars.get(m[1]).push(f);
         }
     }
+    // round34：第三種形狀——**元件把參數傳給它自己 include 的子元件**（components/chart-box 對
+    // ui/chart-desc），而同一顆子元件也被頁面直接 include。那不是撞名，是組合：外層與頁面各自
+    // 在 include 前把子元件的參數設齊即可（§2 那條「第二次用到要先重設」已經在管頁面那一半）。
+    // 判準用讀的、不用列舉：這個名字被外層 set，且**它 include 的某個子元件真的讀了這個名字**。
+    const readsVar = (file, name) => new RegExp("\\{[{%][^}]*\\b" + name + "\\b").test(stripNjk(read(file)));
+    const passesThrough = (ownerFile, name) => {
+        for (const m of stripNjk(read(ownerFile)).matchAll(/\{%\s*include\s+"([^"]+)"/g)) {
+            const child = `src/_includes/${m[1]}`;
+            if (existsSync(child) && readsVar(child, name)) return true;
+        }
+        return false;
+    };
     const hits = [];
     for (const [name, files] of compVars) {
         const uniq = [...new Set(files)];
         if (uniq.length > 1) hits.push(`{% set ${name} %} 由多個元件宣告：${uniq.join("、")}`);
         // 頁面 set 元件的「參數」是合法的（include 前傳值）；危險的是元件「內部示範」變數撞頁面自用變數。
         // 參數與內部變數的機器判準：參數只在頁面 set、內部變數只在元件 set —— 兩邊都 set 同一個名字就是撞名。
-        if (pageVars.has(name)) hits.push(`{% set ${name} %} 元件內部（${uniq.join("、")}）與頁面（${[...new Set(pageVars.get(name))].join("、")}）同名`);
+        if (pageVars.has(name) && !uniq.every((f) => passesThrough(f, name)))
+            hits.push(`{% set ${name} %} 元件內部（${uniq.join("、")}）與頁面（${[...new Set(pageVars.get(name))].join("、")}）同名`);
     }
     assert.ok(compVars.size >= 5 && pageVars.size >= 5, "set 收集異常 —— 空轉");
     assert.equal(hits.length, 0, fail(hits));
