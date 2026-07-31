@@ -42,12 +42,17 @@ permalink: 2-2-3_abTest.html
     {% for ab in abSides %}
     <div class="ab-side" data-ab-side="{{ ab.side }}">
         <div class="flex-row align-items-center gap-10 mb-10">
-            <span class="text-lg text-bold text-blue"><span data-i18n="qaTest.setting">設定</span> {{ ab.side }}</span>
+            <span class="text-lg text-bold text-blue" id="abSideLabel-{{ ab.side }}"><span data-i18n="qaTest.setting">設定</span> {{ ab.side }}</span>
         </div>
 
         {# 真 app 此層有 .select-row class，但其樣式已依 §4 改寫為 .ab-field-label slot（見 _ab-test-block.scss），
              js 也不查它（abTest.js 全檔 grep 零命中）——無主 class 不掛（§4） #}
-        <div class="flex-row column gap-16">
+        {# 兩側的 7 組欄位 label 逐字相同、同頁同時可見，`id` 唯一救不了**可及名稱**——
+             報讀器只念得出「知識檢索」兩次，聽不出在設 A 還是 B。§4：「同一頁同時可見、語意不同的
+             兩個以上控制項不得共用同一個可及名稱，要嘛落在不同的 group」，而逐列脈絡的豁免明文
+             排除「兩個獨立表單之間」。正典見 5-2 的 reasoningGroup。
+             group 只框那一組欄位——下面的動作鈕列在容器外（§4：group 不得框到不屬於那一組的東西）。 #}
+        <div class="flex-row column gap-16" role="group" aria-labelledby="abSideLabel-{{ ab.side }}">
             <div class="form-group row mobile-col">
                 <div class="label ab-field-label flex-row">
                     <label for="abKnowledgeSelect-{{ ab.side }}" class="control-label" data-i18n="qaTest.knowledgeRetrieval">知識檢索</label>
@@ -140,9 +145,11 @@ permalink: 2-2-3_abTest.html
         {# 提示詞（測試用，常駐展開輸入框）：每側的臨時提示詞。值載體 textarea 掛 js-prompt-input（React
            受控）。不用 components/prompt-edit（版本管理型系統提示詞編輯器，仍用於對話設定頁）——測試頁
            只要常駐展開輸入框，動作鈕在下方動作列。示範文案領域中性。 #}
+        {# 提示詞區在 role="group" 之外（那個 group 只框設定欄位），所以 textarea 的可及名稱要自帶
+             區分——兩側都叫「提示詞」的話報讀器聽不出在編哪一側。用 aria-labelledby 串上側別。 #}
         <div class="flex-row column gap-8 mt-16">
-            <span class="control-label" data-i18n="comp.prompt">提示詞</span>
-            <textarea class="form-control size-lg js-prompt-input" aria-label="提示詞" data-i18n-aria-label="comp.prompt">角色定位：
+            <span class="control-label" id="abPromptLabel-{{ ab.side }}" data-i18n="comp.prompt">提示詞</span>
+            <textarea class="form-control size-lg js-prompt-input" aria-labelledby="abSideLabel-{{ ab.side }} abPromptLabel-{{ ab.side }}">角色定位：
 你是一位專業的知識庫問答助手，負責依據已上傳的資料回應使用者詢問。
 知識來源限制：
 你的回答必須僅依據以下資料來源：
@@ -200,7 +207,10 @@ permalink: 2-2-3_abTest.html
                                         <div class="ab-compare-item">
                                             <div class="message-content in-compare">
                                                 <div class="robot-msg">
-                                                    <p class="item-title">設定A（{{ abSides[0].configLabel }}，{{ abSides[0].promptVersion }}）</p>
+                                                    {# 「設定」與「設置一/二」在本頁其他地方都是 chrome（:45 的 qaTest.setting、比較彈窗的
+                                                         settings.config1）——只有這裡是裸繁中，英文模式會同頁出現 Setting A 與「設定A（設置一」。
+                                                         `configKey` 原本 set 了零消費者，接上去它就有主人了。 #}
+                                                    <p class="item-title"><span data-i18n="qaTest.setting">設定</span>{{ abSides[0].side }}（<span data-i18n="{{ abSides[0].configKey }}">{{ abSides[0].configLabel }}</span>，{{ abSides[0].promptVersion }}）</p>
                                                     <div class="item-content">
                                                         <p>您好！以下是 UH3240 USB-C 多埠集線器的規格整理：</p>
                                                         <ul class="list-style-disc">
@@ -224,7 +234,7 @@ permalink: 2-2-3_abTest.html
                                         <div class="ab-compare-item">
                                             <div class="message-content in-compare">
                                                 <div class="robot-msg">
-                                                    <p class="item-title">設定B（{{ abSides[1].configLabel }}，{{ abSides[1].promptVersion }}）</p>
+                                                    <p class="item-title"><span data-i18n="qaTest.setting">設定</span>{{ abSides[1].side }}（<span data-i18n="{{ abSides[1].configKey }}">{{ abSides[1].configLabel }}</span>，{{ abSides[1].promptVersion }}）</p>
                                                     <div class="item-content">
                                                         <p>UH3240 主要規格摘要如下：</p>
                                                         <ul class="list-style-disc">
