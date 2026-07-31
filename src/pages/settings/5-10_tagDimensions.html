@@ -237,7 +237,7 @@ permalink: 5-10_tagDimensions.html
                     </td>
                     <td>
                         <div class="btn-group">
-                            <button type="button" class="button button-border button-sm" data-toast="標籤維度已更新|儲存失敗，請稍後再試" data-i18n-data-toast="toast.saveTagDimension" data-toast-type="success|error" data-i18n="action.save">儲存</button>
+                            <button type="button" class="button button-border button-sm" data-toast="標籤維度已更新|維度名稱不可為空|儲存失敗，請稍後再試" data-i18n-data-toast="toast.saveTagDimension" data-toast-type="success|warning|error" data-i18n="action.save">儲存</button>
                             {# 日期維度沒有字典可編——product 對它的 vocabulary 寫入一律 400，
                                  給一顆點了只會失敗的鈕就是說謊。 #}
                             {% if dim.kind != "date" %}

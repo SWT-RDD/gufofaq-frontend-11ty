@@ -385,7 +385,8 @@ permalink: 5-6-1_platformTenants.html
      deleteTargetId 模式，非本頁其他地方使用的靜態 deleteTargetName）。 #}
 {% set deleteTargetId = "deleteUserName" %}
 {% set deleteConfirmBinding = true %}
-{% set deleteToast = "使用者已刪除|刪除失敗，請稍後再試" %}
+{% set deleteToast = "使用者已刪除|不可刪除自己|不可刪除租戶最後一位在職管理者|不可刪除最後一位平台系統管理員|刪除失敗，請稍後再試" %}
+{% set deleteToastType = "success|warning|warning|warning|error" %}
 {% set deleteToastKey = "toast.deleteUser" %}
 {% include "components/delete-modal/delete-modal.html" %}
 {% include "components/reset-password-modal/reset-password-modal.html" %}
