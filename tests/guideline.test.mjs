@@ -294,6 +294,72 @@ test("§4 不得用 div 假扮控制項（要用真 <button>）", () => {
     assert.equal(hits.length, 0, `Enter/Space 不會觸發（WCAG 2.1.1）：\n${fail(hits)}`);
 });
 
+test("§4 markup 上的每個 class 都要有主人（反向網：css 規則／元件 js／js-／具名 hook）", () => {
+    // §4「markup 上的每個 class 都要有主人」一直只有**反方向**的網（scss 根 class 要打得到 markup，
+    // test「§5/§8 元件 scss 的頂層根 class…」）。正方向完全沒有——`.bold` 因此活了好幾輪：
+    // 它在 scss 裡找得到（`.chart-box .chart-desc p .bold`）、在 markup 也找得到，只是兩者搭不上。
+    // round33 的假綠獵人另以突變證實：把 `.text-bold` 換成 §4 親自點名的 `.badge badge-success`
+    // （全站 scss 零命中）之後，135 條測試照樣全綠。
+    //
+    // 白名單制。四種合法主人：
+    //   ① 編譯後 css 有規則（含祖先限定的規則——祖先錯位那型由「§4 無主 class 第三種死法」靠人審）
+    //   ② 元件 js 查得到（行為掛點）
+    //   ③ `js-` 命名（§5 自創 hook；另有一條測試擋它被 scss 樣式）
+    //   ④ 具名真 app hook：逐個在凍結前端 GufoFAQ_Frontend_New／GufoFAQ_Standard_Frontend 驗過存在，
+    //      本 repo 無樣式但 React 端要靠它認出「這顆該接什麼」（§5 轉換契約）
+    //   ⑤ §7 轉換契約的結構／狀態 class：modal 殼與樣板拼出來的 `is-<state>`（主人＝契約本身）
+    const NAMED_HOOKS = new Set([
+        // 凍結真 app 的業務掛點（js/main.js、previewDataset.js、qaRecord.js、accountInfo.js…）
+        "copyBtn", "watchBtn", "shareBtn", "btn-prev", "btn-next", "btn-delete-file", "btn-edit-file",
+        "btn-preview-file", "calendar", "singleSelect", "multiSelect", "range-date", "priority-switch",
+        "priority-box", "prompt-card-list", "table-container",
+        "account-company", "account-email", "account-spec", "account-storage-limit", "add-file-btn",
+        "aside-link", "chat-box", "chat-log-sn", "chat-room-sn", "confirm-delete-btn", "date-error",
+        "delete-selected-btn", "delete-single-btn", "download-file-btn", "edit-cell", "end-date",
+        "file-name", "file-name-title", "first-chat", "folder-name-link", "keyword-input",
+        "message-container", "pager-text", "priority-select", "rating-select", "sample-count",
+        "sources-detail-link", "sources-info", "sources-rating", "start-date", "user-type-select",
+        "with-input", "field-with-input", "field-with-input-group",
+        // 前台 Standard 前端的掛點（faq-chatroom 檔頭記載）
+        "chat-input-txt",
+        // §7 轉換契約：modal 殼的結構 class（GUIDELINE §4 明文「視同有主，主人＝契約本身」）
+        "modals-content",
+        // 重複列的列標記（無樣式、版位由工具 class 供）：React 端 params.map() 的列身分，
+        // 本檔另一條測試也靠它數參數列。同 `is-<state>`，主人＝轉換契約。
+        "builtin-tool-param",
+    ]);
+    // 由資料插值拼出來的 class 家族（元件檔頭是契約正本）：
+    //   multi-select-box 的 `.field-{key}` / `.preview-{key}`（key＝欄位槽）
+    //   樣板算出來的 `is-<state>`（§7 明列的轉換契約，React 端由 state 推導 className）
+    const FAMILY = /^(field|preview)-[a-z0-9]+$|^is-[a-z0-9-]+$/;
+
+    const css = read("dist/css/main.css");
+    const cssClasses = new Set([...css.matchAll(/\.(-?[_a-zA-Z][\w-]*)/g)].map((m) => m[1]));
+    const jsBlob = srcJs.map((f) => read(f)).join("\n");
+    assert.ok(cssClasses.size > 300, `編譯後 css 只解析到 ${cssClasses.size} 個 class —— 這條測試在空轉`);
+
+    const seen = new Map();
+    for (const f of distHtml) {
+        const html = distDoc(f);
+        for (const m of html.matchAll(/\sclass="([^"]*)"/g))
+            for (const c of m[1].split(/\s+/).filter(Boolean)) {
+                if (!seen.has(c)) seen.set(c, new Set());
+                seen.get(c).add(f);
+            }
+    }
+    assert.ok(seen.size > 200, `dist 只掃到 ${seen.size} 種 class —— 這條測試在空轉`);
+
+    const bad = [];
+    for (const [c, files] of seen) {
+        if (cssClasses.has(c) || c.startsWith("js-") || NAMED_HOOKS.has(c) || FAMILY.test(c)) continue;
+        if (jsBlob.includes(`"${c}"`) || jsBlob.includes(`'${c}'`) || jsBlob.includes(`.${c}`)) continue;
+        bad.push(`.${c}  （出現在 ${files.size} 頁，例：${[...files][0]}）`);
+    }
+    assert.equal(bad.length, 0,
+        `這些 class 沒有主人——既無 css 規則、非 js- 命名、元件 js 也不查它：\n${fail(bad)}\n` +
+        `真 app 掛點請驗過出處後加進 NAMED_HOOKS 並在使用頁檔頭寫出處（§4）；否則改 js- 命名或拿掉。`);
+});
+
 test("§4 a11y 綁定屬性：指到的 id 都要存在、aria-label 不得是空字串", () => {
     // round33 以突變證實的三個網洞（當時三種突變都全綠）：
     //   ① `label for="xInputTYPO"` —— 既有測試只看 for 屬性存不存在，不看指到誰。點了不聚焦，
