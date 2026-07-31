@@ -1035,11 +1035,15 @@ permalink: 5-2_conversationSettings.html
                                         <span id="oruleCategoryHint{{ loop.index }}" class="text-gray" data-i18n="settings.outputRuleCategoryHint">維度槽與逐代碼上限要一起設；只設一邊，逐代碼上限不會生效。最多 50 個代碼、每個代碼上限 1 至 100000 字。</span>
                                     </div>
                                 </div>
-                                <div class="text-bold" data-i18n="settings.outputRuleCategoryOverrides">逐代碼覆寫上限</div>
+                                <div class="text-bold" id="oruleCategoryOverridesLabel{{ loop.index }}" data-i18n="settings.outputRuleCategoryOverrides">逐代碼覆寫上限</div>
                                 {# 代碼重複時只有最後一列會生效（送出去是 JSON 物件，同鍵只留一個）——這是本區
                                      唯一會**靜默**吃掉租戶輸入的地方，所以在那組欄位旁邊講出來，不是只寫進 console。
                                      示範資料沒有重複（§6 示範要自洽），故這句掛 .hidden。 #}
                                 <p class="text-red hidden" data-i18n="settings.outputRuleCategoryDuplicate">代碼重複，只有最後一列會生效——請把重複的那列刪掉。</p>
+                                {# 這一組的兩顆欄位與同一個 <td> 內 rule 層的「上限」同名（三顆都叫「上限」）。
+                                     用 role="group"＋aria-labelledby 指向浮空標題，讓報讀器先報出
+                                     「逐代碼覆寫上限」這組在問什麼，再念組內的代碼／上限（§4）。 #}
+                                <div role="group" aria-labelledby="oruleCategoryOverridesLabel{{ loop.index }}" class="flex-row column gap-8">
                                 {% for cat in [{ code: "tariff", limit: "2000" }, { code: "procedure", limit: "800" }] %}
                                 <div class="flex-row flex-wrap gap-8">
                                     <input type="text" class="form-control js-orule-category-code" value="{{ cat.code }}" aria-label="代碼" data-i18n-aria-label="settings.outputRuleCategoryCode">
@@ -1047,6 +1051,7 @@ permalink: 5-2_conversationSettings.html
                                     <button type="button" class="button button-border button-sm js-remove-orule-category" data-i18n="action.delete">刪除</button>
                                 </div>
                                 {% endfor %}
+                                </div>
                                 <div class="flex-row">
                                     <button type="button" class="button button-border button-sm js-add-orule-category" data-i18n="settings.addOutputRuleCategory">新增代碼上限</button>
                                 </div>
@@ -1067,8 +1072,12 @@ permalink: 5-2_conversationSettings.html
                                         <span id="oruleConstDefaultHint{{ loop.index }}" class="text-gray" data-i18n="settings.outputRuleConstDefaultHint">必填：判不出情境的那幾輪用這個值，不可留空。</span>
                                     </div>
                                 </div>
-                                <div class="text-bold" data-i18n="settings.outputRuleCases">情境條件</div>
+                                <div class="text-bold" id="oruleCasesLabel{{ loop.index }}" data-i18n="settings.outputRuleCases">情境條件</div>
                                 <div class="text-gray" data-i18n="settings.outputRuleCasesHint">由上而下依序比對，第一個成立的出線；都不成立就用預設值。最多 20 條。</div>
+                                {# 同上：case 列的四顆欄位（意圖維度槽／述詞／比對代碼／填入值）在同一顆
+                                     規則卡裡會重複多列，且「意圖維度槽」與上面 rule 層那顆同名。
+                                     用 role="group" 指向「情境條件」這個浮空標題（§4）。 #}
+                                <div role="group" aria-labelledby="oruleCasesLabel{{ loop.index }}" class="flex-row column gap-8">
                                 {% for case in rule.cases %}
                                 <div class="flex-row flex-wrap gap-8">
                                     <input type="text" class="form-control js-orule-case-slot" value="{{ case.slot }}" aria-label="意圖維度槽" data-i18n-aria-label="settings.outputRuleCategorySlot">
@@ -1085,6 +1094,7 @@ permalink: 5-2_conversationSettings.html
                                     <button type="button" class="button button-border button-sm js-remove-orule-case" data-i18n="action.delete">刪除</button>
                                 </div>
                                 {% endfor %}
+                                </div>
                                 <div class="text-gray" data-i18n="settings.outputRuleCaseOperandHint">述詞選「等於代碼」時填一個代碼；選「屬於代碼清單」時用逗號分隔，最多 20 個。「已判定」「未判定」不吃代碼。</div>
                                 <div class="flex-row">
                                     <button type="button" class="button button-border button-sm js-add-orule-case" data-i18n="settings.addOutputRuleCase">新增條件</button>
