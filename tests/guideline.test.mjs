@@ -244,7 +244,9 @@ test("§4 文字色不可用填充 token（清單由 COLOR_ROLES 衍生、掃編
 test("§1-2 頁面不得手寫與既有 modal 元件同 id 的 <dialog>（元件只有一份正本）", () => {
     // 一個 <dialog id> 是一個完整單位。頁面複製一份會得到兩份會分岔的正本
     // （曾經：5-2-1 的 intentionModal、1-2-1 的 deleteModal 各自與元件的 i18n key 走鐘）。
-    const dialogIds = (html) => [...html.matchAll(/<dialog[^>]*\sid=["']([^"']+)["']/g)].map((m) => m[1]);
+    // 掃的是 src（未渲染），所以要先挖掉 {# #}：元件檔頭引用自己的 `<dialog id="…">` 講轉換契約時
+    // （rating-modal 就是），那段散文會被算成「第二份正本」而誤報。註解不是宣告。
+    const dialogIds = (html) => [...stripNjk(html).matchAll(/<dialog[^>]*\sid=["']([^"']+)["']/g)].map((m) => m[1]);
     const owned = new Map(); // dialog id -> [元件…]
     for (const { bucket, name, path } of componentDirs) {
         const html = `${path}/${name}.html`;
@@ -264,6 +266,9 @@ test("§1-2 頁面不得手寫與既有 modal 元件同 id 的 <dialog>（元件
         for (const id of dialogIds(read(p)))
             if (owned.has(id)) hits.push(`${p}  <dialog id="${id}"> 已有元件 ${owned.get(id).join("、")} —— 要用就 {% include %}`);
     assert.ok(owned.size > 0, "元件裡一個 <dialog> 都掃不到 —— 這條測試在空轉");
+    probe("§1-2 dialog id 收集", dialogIds,
+        ['<dialog class="modals" id="likeModal">'],
+        ['{# `<dialog id="likeModal">` 的 id 是真 app 的契約 #}', "<div id=\"likeModal\">"]);
     assert.equal(hits.length, 0, fail(hits));
 });
 
@@ -1551,7 +1556,7 @@ test("GUIDELINE.md 不放會腐化的枚舉（頁數、元件數）", () => {
 test("§4 送出鈕是 type=\"button\"——切版不包 <form>，submit 是等著爆的地雷", () => {
     // §4：「表單不包 <form>、送出鈕是 type="button"」。既有的「不得省略 type」那條
     // 只擋缺屬性，對 type="submit" 完全無感——round33 抓到四顆（2-2-3、chatroom、faq-chatroom、
-    // faq-feedback-modal）。切版沒有 <form> owner 所以目前無害，但這正是「無害到沒人會發現」的那種：
+    // rating-modal）。切版沒有 <form> owner 所以目前無害，但這正是「無害到沒人會發現」的那種：
     // 轉 React 後任何人把它包進 <form>（RHF／Server Action）就變成真提交、整頁重載。
     // round34：原本替 login.html 開了一個洞（規則寫「登入頁除外」），但那一頁的登入鈕本來就是
     // type="button"——切版沒有 submit handler，原生送出會重載頁面把剛演出來的 toast 沖掉。
@@ -2381,13 +2386,13 @@ test("§1-1 桶歸屬：components/ 要用到其他元件（或是專屬子片�
             // GufoSlide / GufoI18n / scroll-lock / print 是共享行為工具，等同 DOM API，刻意不列。
             for (const [fn, o] of [
                 ["openModal", "ui/modals"], ["closeModal", "ui/modals"], ["showToast", "ui/toast"],
-                ["openFeedback", "components/faq-feedback-modal"], ["GufoSources", "components/sources-block"],
+                ["openRating", "components/rating-modal"], ["GufoSources", "components/sources-block"],
                 ["GufoAccordion", "ui/accordion"],
             ]) {
                 // 成員呼叫也算（`GufoSources.reveal(…)`／`GufoAccordion.setOpen(…)`）。原本只認 `fn(`，
                 // 而命名空間物件的呼叫形狀永遠是 `fn.method(` —— 那兩條探針從加進來就沒命中過任何檔案，
                 // 是讀起來像覆蓋、實際放行的死分支（`ui/citation-ref` 呼叫 GufoSources 因此逃過整輪）。
-                // 先剝 `//` 註解：modals.js 的檔頭只是「提到」openFeedback，不是呼叫。
+                // 先剝 `//` 註解：modals.js 的檔頭只是「提到」openRating，不是呼叫。
                 const code = read(jsPath).split(/\r?\n/).map((l) => l.replace(/\/\/.*$/, "")).join("\n");
                 if (new RegExp(String.raw`\b${fn}\s*(?:\.\w+\s*)?\(`).test(code)) add(o);
             }

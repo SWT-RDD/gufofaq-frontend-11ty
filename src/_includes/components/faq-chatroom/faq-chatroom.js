@@ -1,6 +1,6 @@
 // 前台 FAQ 聊天：捲到最底按鈕、訊息的讚／倒讚、訊息複製。
 // 改寫自真實 app main.js（原生 DOM）。串流送問答等屬業務邏輯不在此。
-// 讚/倒讚要先預選 like/dislike 再開窗，只能命令式呼叫 faq-feedback-modal 匯出的 openFeedback()（§5）。
+// 讚/倒讚要先預選 like/dislike 再開窗，只能命令式呼叫 rating-modal 匯出的 openRating()（§5）。
 // 分享是「點了就開窗」，掛 data-open-modal 交給 ui/modals 的委派，這裡不寫 js。
 // 訊息複製：前台 Standard 真 app 的聊天訊息 copyBtn 是真剪貼簿（main.js 訊息渲染內
 // copyBtn.onclick → copyToClipboard(content)，clipboard API + execCommand fallback），
@@ -25,7 +25,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         room.querySelectorAll(".js-vote").forEach(function (vote) {
             vote.addEventListener("click", function () {
-                if (window.openFeedback) window.openFeedback(vote.getAttribute("data-vote"));
+                if (window.openRating) window.openRating(vote.getAttribute("data-vote"));
             });
         });
 

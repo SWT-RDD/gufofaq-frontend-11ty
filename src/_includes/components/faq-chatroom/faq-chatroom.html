@@ -1,6 +1,6 @@
 {# 前台 FAQ 聊天：容器/輸入為 faq-chatroom 自有；訊息泡泡沿用共用 ui/chat-message；動作鈕沿用 ui/button 的 .button-icon。
      初始問候＋一組示範問答（含 讚/倒讚/複製/分享 動作鈕）為靜態示範；串流送問答屬業務邏輯（見真實 main.js）不在切版範圍。
-     include 的子元件：components/faq-feedback-modal、components/faq-share-modal（本元件的按鈕開的彈窗，§1-2）。 #}
+     include 的子元件：components/rating-modal、components/faq-share-modal（本元件的按鈕開的彈窗，§1-2）。 #}
 <div class="faq-chatroom">
     <div class="faq-chat-scroll">
         <div class="message-wrap">
@@ -80,5 +80,5 @@
 </div>
 
 {# 讚/倒讚與分享的彈窗由本元件的按鈕開啟，故 include 在這裡（§1-2：誰的按鈕開的彈窗，彈窗就 include 在誰裡面） #}
-{% include "components/faq-feedback-modal/faq-feedback-modal.html" %}
+{% include "components/rating-modal/rating-modal.html" %}
 {% include "components/faq-share-modal/faq-share-modal.html" %}

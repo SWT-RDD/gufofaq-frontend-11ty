@@ -1,0 +1,65 @@
+{# 問答評分 modal（讚/倒讚二選一 ＋ 選填理由）。沿用 ui/modals 結構；二選一由 rating-modal.js 控制。
+     三處共用：前台 FAQ 訊息的讚/倒讚（components/faq-chatroom）、後台 4-2 對話詳細、後台 2-2-3 AB 測試兩側。
+
+     **一筆問答只有一份評分**：GufoRAG 的 `POST /api/chat/chatlogs/{id}/rating` 一次寫三欄
+     （`rating_type`／`rating_feedback`／`rating_time`，chatbot `app/routes/chat.py` 逐行無條件覆寫），
+     而 product 的 `POST /history/{log_id}/rating`（登入態）與前台那支打的是**同一個欄位**
+     ——沒有「管理者另外的一份評分」這種東西。因此：
+       · 意見回饋欄要**預填目前存著的那段話**（`ratingModalFeedback`）：product 的 client 一律送出
+         `feedback`（`json={"rating_type": …, "feedback": feedback}`，None 就是 null），
+         留空送出＝把對方寫的理由清掉。
+       · 用在會覆寫既有評分的地方（4-2）時，用 `ratingModalNote` 把這件事寫在畫面上。
+
+     `<dialog id="likeModal">` 的 id 是真 app 的契約（凍結前端 GufoFAQ_Standard_Frontend `index.html`
+     的 `#likeModal`，那份是 1~5 星、且因「API 不支援」整個 hidden）——本專案按真實 API 的
+     `rating_type`（positive／negative）改寫成讚/倒讚二選一，但 id 不改名（§4 轉換契約）。
+
+     參數（使用頁／使用元件在 include 前 set，見 §3-2/§6）：
+       ratingModalTitle / ratingModalTitleKey       —— 標題（不給＝前台的「幫助我們改進」）
+       ratingModalQuestion / ratingModalQuestionKey —— 問句（不給＝前台的「這個回答對你有幫助嗎？」）
+       ratingModalNote / ratingModalNoteKey         —— 問句下的說明句（不給＝不渲染）
+       ratingModalFeedback                          —— 意見回饋欄的預填值（不給＝空）
+       ratingModalToast / ...Key / ...Type          —— 送出鈕的結果（不給＝前台的三段）
+     一個參數都不給＝前台現況逐字不變。 #}
+<dialog class="modals" id="likeModal" aria-labelledby="likeModal-title">
+    <div class="modals-dialog modals-md">
+        <div class="modals-wrap">
+            {% include "ui/modal-close/modal-close.html" %}
+            <div class="modals-content">
+                <div class="modals-header">
+                    <h3 class="modals-title" id="likeModal-title" data-i18n="{{ ratingModalTitleKey or 'modals.helpUsImprove' }}">{{ ratingModalTitle or '幫助我們改進' }}</h3>
+                </div>
+                <div class="modals-body">
+                    {# §4：浮空 label 給 id、group 掛 aria-labelledby（同 faq-chatroom 的 chip 區做法）——
+                         不用 aria-label 複製字面（可及名稱會自動含 (必填)、切語言也不必另掛屬性翻譯） #}
+                    <span id="feedbackVoteLabel"><span data-i18n="{{ ratingModalQuestionKey or 'modals.feedbackHelpful' }}">{{ ratingModalQuestion or '這個回答對你有幫助嗎？' }}</span><span class="text-red" data-i18n="common.required">(必填)</span></span>
+                    <div class="feedback-vote" role="group" aria-labelledby="feedbackVoteLabel">
+                        <button type="button" class="feedback-vote-btn like" data-vote="like" aria-pressed="false" data-i18n="modals.like">
+                            <span class="feedback-vote-icon"></span>讚
+                        </button>
+                        <button type="button" class="feedback-vote-btn dislike" data-vote="dislike" aria-pressed="false" data-i18n="modals.dislike">
+                            <span class="feedback-vote-icon"></span>倒讚
+                        </button>
+                    </div>
+                    {% if ratingModalNoteKey %}
+                    <p class="text-gray m-0" data-i18n="{{ ratingModalNoteKey }}">{{ ratingModalNote }}</p>
+                    {% endif %}
+                    <div class="form-group mt-12">
+                        <div class="label">
+                            <label for="feedbackText" class="control-label" data-i18n="modals.feedback">意見回饋</label>
+                        </div>
+                        <div class="field">
+                            <textarea class="form-control" id="feedbackText" rows="3" placeholder="請告訴我們原因（選填）" data-i18n-placeholder="modals.feedbackReasonPlaceholder">{{ ratingModalFeedback }}</textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modals-footer">
+                    <div class="button-row center">
+                        <button type="button" class="button button-border btn-close-modals" data-i18n="action.cancel">取消</button>
+                        <button type="button" class="button button-primary" data-toast="{{ ratingModalToast or '已送出回饋，感謝您！|請先選擇這個回答有沒有幫助|送出失敗，請稍後再試' }}" data-i18n-data-toast="{{ ratingModalToastKey or 'toast.feedback' }}" data-toast-type="{{ ratingModalToastType or 'success|warning|error' }}" data-i18n="action.submit">送出</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</dialog>

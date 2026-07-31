@@ -1,6 +1,6 @@
 // 跳窗開關：標準 <dialog> API（showModal / close），改寫自真實 app 的 js/main.js openModal/closeModal
 // 拿掉 flatpickr 初始化（日期選擇不在切版範圍）；曝露 window.openModal 供其他元件呼叫
-// （例：faq-feedback-modal.js 的 openFeedback 要先預選讚/倒讚再開窗，無法用宣告式屬性表達）。
+// （例：rating-modal.js 的 openRating 要先預選讚/倒讚再開窗，無法用宣告式屬性表達）。
 // 只是「點了就開窗」的按鈕不要寫 js —— 掛 data-open-modal="<dialog id>"，由下面的事件委派接手（§5）。
 //
 // **進出場動畫全部在 CSS**（_modals.scss 的 `@starting-style` + `display/overlay` 的 allow-discrete 過渡）。
@@ -34,7 +34,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (trigger) openModal(trigger.getAttribute("data-open-modal"));
     });
 
-    // 供「需要先做別的事再開窗」的元件呼叫（例：faq-feedback-modal.js）
+    // 供「需要先做別的事再開窗」的元件呼叫（例：rating-modal.js）
     window.openModal = openModal;
     window.closeModal = closeModal;
 });

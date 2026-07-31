@@ -310,12 +310,12 @@
 
 ### 跨元件命令（元件匯出的函式）
 
-- `GufoSources.show/reveal`、`GufoAccordion.setOpen`、`openFeedback` 這類「A 元件叫 B 元件做事」
+- `GufoSources.show/reveal`、`GufoAccordion.setOpen`、`openRating` 這類「A 元件叫 B 元件做事」
   （§1-1 判為會產出可見 UI 的匯出，不是 `GufoSlide`／`GufoI18n` 那種共享工具）：轉成**共同祖先持有的
   意圖 state**，被呼叫的元件受控接收。不用 `useRef` + imperative handle 去戳它，也不用 context 開全域
   單例（同頁兩顆會一起反應）。
 - 命令的參數就是那顆 state 的值：`show()`→`sourcesOpen`、`reveal(no)`→`citedNo`、
-  `openFeedback(vote)`→`feedback`。被呼叫元件的內部結構（`.sources-tbody`、摘要列與 detail 列的配對）
+  `openRating(vote)`→`rating`。被呼叫元件的內部結構（`.sources-tbody`、摘要列與 detail 列的配對）
   不外露——切版的 `document.querySelector` 只是沒有 props 時的替身。
 - 不可宣告的副作用（捲動、聚焦、暫時高亮）留在**被呼叫元件自己**的 `useEffect([意圖 state])`。
   JS 捲動照 GUIDELINE §5 讀 `prefers-reduced-motion` 退 `auto`；跳轉後焦點要跟著移到目標列。

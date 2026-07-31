@@ -114,6 +114,7 @@ dist/                       build 輸出（勿手改）
 | `components/chatroom` | `chatInputHidden`（true 時不渲染輸入區；`2-1` 是唯讀的問答紀錄預覽，真實頁沒有輸入框，單測頁 `2-2-1` 需要）。 |
 | `components/priority-table` | 頁面 set `rows = [{ category, description, prompt, priority }]`；渲染 5 欄意圖判斷表（`.default-table.priority-table`）。`rows` 空陣列＝空狀態。用於 5-2（檢索與欄位子頁籤依優先級分組，每組 set 後 include）。 |
 | `components/delete-modal` | `deleteTargetId`（設了就渲染空 `<span id>`，由業務 js 填入待刪除項目名稱）／`deleteTargetName`（靜態示範名稱）／`deleteConfirmBinding`（true＝確認鈕交給業務 js 綁定、不自動關窗）／`deleteConfirmClass`・`deleteToast`・`deleteToastKey`（確認鈕的 hook class 與成敗 toast，見元件檔頭）。 |
+| `components/rating-modal` | 問答評分窗（讚/倒讚二選一＋選填理由），前台 FAQ／4-2／2-2-3 共用一份。`ratingModalTitle`・`ratingModalTitleKey`／`ratingModalQuestion`・`ratingModalQuestionKey`／`ratingModalNote`・`ratingModalNoteKey`（問句下的說明句，不給＝不渲染）／`ratingModalFeedback`（意見回饋欄的預填值）／`ratingModalToast`・`...Key`・`...Type`。**一個參數都不給＝前台現況逐字不變**。意見回饋一定要預填目前存著的那段話：一筆問答只有一份評分，`feedback` 一律隨評分送出，空著送出就是把對方寫的理由清掉（見元件檔頭）。 |
 | `components/step-flow` | 後台測試區（單測 2-2-1／AB 2-2-3）詳細觀測：把整條正典管線畫成類 mermaid 直式流程圖，點亮當前 node，每節點可展開看工具/參數/結果/grounding 判定/agent 推理，頂端整體執行摘要。選填 `stepFlowNodes = [{ label, state, time, depth, skill, version, iterations, error, tools, params, result, verdict, thinking }]`（`state`＝completed/running/skipped/failed/pending；`depth`＝子樹縮排階 1-3，見元件檔頭：那是顯示樹深、不是後端同名欄）＋**必須成對覆寫**的 `stepFlowSummary = { tokens, latency, ttft, results, model }`——使用頁不同對話主題時兩個一起覆寫（有測試把關）；未設＝主動採用內建示範（移民主題，配 2-2-1），那份示範必須與使用頁自洽。收合復用 `ui/accordion`（表格結構＋`.js-accordion`），本元件不自帶 js。取代原 `ui/step-timeline`＋`components/agent-activity`。 |
 | `components/success-box` | 上傳完成卡：`successRetryHref/Label/Key`、`successViewHref/Label/Key`、`successHideDesc`（true 只留空 `.success-desc` 由業務 js 填）——完整語意見元件檔頭。 |
 | `ui/upload-box` | `uploadNextHref`（連結版）/`uploadAccept`/`uploadMultiple`/`uploadHint*`——按鈕版開原生檔案窗、拖曳換樣式（upload-box.js）。 |
@@ -139,7 +140,7 @@ dist/                       build 輸出（勿手改）
 ### 自動引入
 
 `header` 與 `footer` 由 `page-shell` 自動提供；`chatbot-header` 與 `footer` 由 `chatbot-shell` 自動提供。頁面都不需 include。
-含子元件的元件：`header`（含 `mobile-nav`、`header-controls`）、`mobile-nav`（含 `header-controls`）、`chatbot-header`（含 `header-controls`）、`header-controls`（含 `theme-toggle`）、`footer`（含 `disclaimer-modal`）、`faq-chatroom`（含 `faq-feedback-modal`、`faq-share-modal`）、`step-btn-wrap`（含 `step-nodes`）、`qa-side-panel`（含 `qa-record-tabs`）、`qa-import-modal`（含 `upload-box`）、`case-from-log-modal`（含 `modal-close`）。
+含子元件的元件：`header`（含 `mobile-nav`、`header-controls`）、`mobile-nav`（含 `header-controls`）、`chatbot-header`（含 `header-controls`）、`header-controls`（含 `theme-toggle`）、`footer`（含 `disclaimer-modal`）、`faq-chatroom`（含 `rating-modal`、`faq-share-modal`）、`step-btn-wrap`（含 `step-nodes`）、`qa-side-panel`（含 `qa-record-tabs`）、`qa-import-modal`（含 `upload-box`）、`case-from-log-modal`（含 `modal-close`）。
 
 **無條件開窗**才掛 `data-open-modal="<dialog id>"`（`ui/modals` 事件委派），彈提示掛 `data-toast`。
 **有條件開窗**（先設定要刪哪一列、依權限決定開哪一份、驗證失敗才跳）是業務邏輯：觸發鈕保留真 app 的 hook class（`.js-apply-production`、`.btn-delete-file`…），切版不掛 `data-open-modal`——掛了就變成無條件開窗，說了謊。這種彈窗的「看得見」由元件庫頁的示範觸發器保證。`ui/default-table` 的展示片段也 include 了 `ui/accordion`，但展示用途不算依賴（GUIDELINE §1-1），故它留在 `ui/`。
@@ -194,6 +195,8 @@ dist/                       build 輸出（勿手改）
 | `4-1_qaHistory` 底部的 `ui/pagination` 頁碼列 | 真 app 的 4-1 只有 `.data-info`（「共 N 筆資料」）。它的 `.pagination` 只出現在 component / 1-1-3 / 3-1-1 / 3-1-3 / 3-1-6 |
 | `2-1_qaRecord` 的 `.qa-count` | 真 app 的 2-1 沒有（它來自 2-2-1）。輸入框則以 `chatInputHidden` 關掉——那個真 app 的 2-1 也沒有 |
 | 前台訊息動作列的讚／倒讚／分享 | `scss/faq.scss` 有 `.button-icon.like/.dislike/.share` 的樣式，但 `js/main.js` 產生的 `.message-icon` 只放得出複製鈕 |
+| 後台也按得動讚／倒讚（`4-2` 的「設定滿意度」、`2-2-3` 兩側的讚/倒讚） | 真 app 後台只把滿意度**印出來**，而 product `POST /history/{log_id}/rating`（登入態、`require_capability("history")`）一直都在。一筆問答只有一份評分（GufoRAG 一次寫 `rating_type`／`rating_feedback`／`rating_time`），所以 4-2 那顆會覆寫使用者的評分與回饋——窗內明說，且意見回饋預填現值 |
+| `2-2-3` 兩側答案的分享 | 真 app 沒有分享。AB 兩側各自是一筆真的 `chat_log`（`qatest.py` 的 `/compare` 從 SSE 取 `latest_chat_log_id` 配成 `a_log_id`／`b_log_id`），而 `POST /share` 吃 `log_id`——與 `4-2` 同一顆 `share-manage-modal`、同一組撤銷二次確認 |
 | `2-2-3_abTest` 的問答紀錄側欄 | 真 app 在 AB 頁把它整個 `hidden`（當時不支援）。SaaS 已有 `GET /qatest/ab-history`（product `qatest.py`，每筆＝一次比較、含 A/B 兩側 log_id），故切版交付它——藏著就是「後端查得到、前端有實作、只差版面」的死功能 |
 | 登入後每頁右下角的浮動前台入口（`ui/faq-launcher`，貓頭鷹鈕） | 真 app 管理端沒有這顆鈕（`icon_owl.png` 只出現在前台 Standard 前端的機器人頭像）。掛在 `layouts/page-shell` 上＝「登入態」這個出現條件本身，不逐頁 include；`target="_blank"` 另開 `faq.html`，開新分頁與轉焦點都是瀏覽器的預設行為，零 js |
 | 深色模式（`data-theme`）、中英切換（`data-i18n`） | 兩份真 app 都完全沒有 |

@@ -67,6 +67,13 @@ permalink: 4-2_qaHistory_detail.html
 {# 列印按鈕：真實頁與下方表格同包在一個 .block.block-sm 內，但 components/qa-detail-info 已把該 .block.block-sm 連同表格一起封裝，
      為避免重複／新建一個不存在於真實系統的空 block，改置於表格正上方、靠右（flex justify-content-end）＋ margin 呈現 #}
 <div class="mt-16 flex-row justify-content-end gap-8">
+    {# 設定滿意度：product `POST /history/{log_id}/rating`（登入態，require_capability("history")）。
+         真 app 後台只把滿意度印出來、按不動——而那支端點一直都在。
+         **無條件開窗**：這一頁只有一筆問答、開的永遠是同一份內容，沒有「先選要評哪一筆」可言，
+         故掛 data-open-modal 而不是 hook class（§5；隔壁的分享鈕相反，它要先讀那筆的既有連結清單）。
+         窗內二選一（讚/倒讚）＋預填目前的意見回饋，覆寫語意寫在窗內的說明句上——
+         一筆問答只有一份評分，這顆鈕改的就是下面表格顯示的那兩格（見 components/rating-modal 檔頭）。 #}
+    <button type="button" class="button button-border" data-open-modal="likeModal" data-i18n="qa.setSatisfaction">設定滿意度</button>
     {# 分享：登入態把本筆問答建成唯讀分享連結（product POST /share）。業務條件開窗＝hook class js-share-log，
          彈窗本體見 components/share-manage-modal（可建立新連結 + 列出生效連結逐一複製/撤銷，include 於本頁底部）。 #}
     <button type="button" class="button button-primary js-share-log" data-i18n="comp.share">分享</button>
@@ -78,6 +85,22 @@ permalink: 4-2_qaHistory_detail.html
 
 {# 參考來源表格區塊：與 components/sources-block 完全一致（同一份真實頁抽出），直接 include #}
 {% include "components/sources-block/sources-block.html" %}
+
+{# 評分窗（上方「設定滿意度」開的那一份）。意見回饋預填目前存著的那段話：product 的 client 一律
+   送出 feedback（None 就是 null），空著送出＝把使用者寫的理由清掉（見 components/rating-modal 檔頭）。
+   toast 三段對回後端：成功／沒選讚或倒讚（RatingIn.rating 是 Literal["up","down"]）／其餘失敗
+   （_own_log_or_404 的 404 併進「更新失敗」，同 share-manage-modal 建立鈕對 404 的處理）。 #}
+{% set ratingModalTitleKey = "modals.setRatingTitle" %}
+{% set ratingModalTitle = "設定這筆問答的滿意度" %}
+{% set ratingModalQuestionKey = "modals.ratingLabel" %}
+{% set ratingModalQuestion = "這個回答的滿意度" %}
+{% set ratingModalNoteKey = "modals.ratingOverwriteNote" %}
+{% set ratingModalNote = "送出會取代下面表格裡的使用者滿意度與意見回饋——一筆問答只有一份評分，沒有「管理者另外的一份」。" %}
+{% set ratingModalFeedback = conversation.feedback %}
+{% set ratingModalToastKey = "toast.saveRating" %}
+{% set ratingModalToast = "滿意度已更新|請先選擇讚或倒讚|更新失敗，請稍後再試" %}
+{% set ratingModalToastType = "success|warning|error" %}
+{% include "components/rating-modal/rating-modal.html" %}
 
 {% include "components/share-manage-modal/share-manage-modal.html" %}
 

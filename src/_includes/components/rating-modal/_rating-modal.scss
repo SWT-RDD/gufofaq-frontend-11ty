@@ -1,4 +1,4 @@
-// 前台 FAQ 回饋 modal：讚/倒讚二選一（取代原星等評分）＋填理由。只用於本 modal。
+// 問答評分 modal：讚/倒讚二選一（取代真 app 那份 1~5 星）＋填理由。只用於本 modal。
 // 圖示沿用 images/icon_good.png、icon_not_good.png（同訊息動作鈕，但這裡是可選取的切換鈕，故自有樣式）。
 @use "../../../scss/mixin" as *;
 .feedback-vote {
@@ -36,7 +36,7 @@
             border-color: var(--brand);
         }
 
-        // 選中（.active，由 faq-feedback-modal.js 加）
+        // 選中（.active，由 rating-modal.js 加）
         // 選中態的底是 --surface-sunken，--brand-text 疊上去淺色只有 4.49:1（差 0.01）。
         // 前景墨色疊 sunken 是 10.57（淺）/ 7.10（深），且它本來就是「選中的前景」該用的角色（§4）——
         // 數字由 pairs 測試逐色實算把關（--brand-ink × --surface-sunken），本註解只是導覽。

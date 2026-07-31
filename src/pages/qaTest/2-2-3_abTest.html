@@ -214,7 +214,7 @@ permalink: 2-2-3_abTest.html
                                                     {# 「設定」與「設置一/二」在本頁其他地方都是 chrome（:45 的 qaTest.setting、比較彈窗的
                                                          settings.config1）——只有這裡是裸繁中，英文模式會同頁出現 Setting A 與「設定A（設置一」。
                                                          `configKey` 原本 set 了零消費者，接上去它就有主人了。 #}
-                                                    <p class="item-title"><span data-i18n="qaTest.setting">設定</span>{{ abSides[0].side }}（<span data-i18n="{{ abSides[0].configKey }}">{{ abSides[0].configLabel }}</span>，{{ abSides[0].promptVersion }}）</p>
+                                                    <p class="item-title" id="abAnswerTitle-{{ abSides[0].side }}"><span data-i18n="qaTest.setting">設定</span>{{ abSides[0].side }}（<span data-i18n="{{ abSides[0].configKey }}">{{ abSides[0].configLabel }}</span>，{{ abSides[0].promptVersion }}）</p>
                                                     <div class="item-content">
                                                         <p>您好！以下是 UH3240 USB-C 多埠集線器的規格整理：</p>
                                                         <ul class="list-style-disc">
@@ -226,19 +226,39 @@ permalink: 2-2-3_abTest.html
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div class="message-icon">
+                                            {# 兩側的動作鈕字面完全相同、又同頁同時可見：整列收進 group、
+                                                 aria-labelledby 指這一側的答案標題，報讀器才唸得出「設定A…讚」而不是四顆同名鈕
+                                                 （§4；同頁設定區那七組欄位用的是同一招，見 abSideLabel-*）。 #}
+                                            <div class="message-icon" role="group" aria-labelledby="abAnswerTitle-{{ abSides[0].side }}">
                                                 <button type="button" class="button-icon copy copyBtn has-tooltip" data-toast="文字已複製!" data-i18n-data-toast="common.copied">
                                                     <span class="tooltip" data-i18n="action.copy">複製</span>
                                                 </button>
                                                 <button type="button" class="button-icon watch watchBtn has-tooltip">
                                                     <span class="tooltip" data-i18n="comp.viewSource">查看來源</span>
                                                 </button>
+                                                {# 讚/倒讚：AB 兩側各自是一筆真的 chat_log（qatest.py 的 /compare 從 SSE 取
+                                                     latest_chat_log_id，配成 ab_round 的 a_log_id／b_log_id），所以評分走的是
+                                                     跟前台同一支 product `POST /history/{log_id}/rating`——評完在 4-1 用
+                                                     「AB測試」那個 tag 篩得出來。沿用前台的契約（.js-vote ＋ data-vote）；
+                                                     **條件開窗**（要先認出這是哪一側的 log）故只掛 hook、不掛 data-open-modal（§5 ①），
+                                                     成敗由窗內的送出鈕演（見本頁底部的 rating-modal 參數）。 #}
+                                                <button type="button" class="button-icon like js-vote has-tooltip" data-vote="like">
+                                                    <span class="tooltip" data-i18n="comp.like">讚</span>
+                                                </button>
+                                                <button type="button" class="button-icon dislike js-vote has-tooltip" data-vote="dislike">
+                                                    <span class="tooltip" data-i18n="comp.dislike">倒讚</span>
+                                                </button>
+                                                {# 分享：把這一側的答案建成唯讀分享連結（product POST /share 吃 log_id）。
+                                                     同 4-2 的分享鈕：要先讀那筆既有的連結清單＝條件開窗，保留 hook class。 #}
+                                                <button type="button" class="button-icon share js-share-log has-tooltip">
+                                                    <span class="tooltip" data-i18n="comp.share">分享</span>
+                                                </button>
                                             </div>
                                         </div>
                                         <div class="ab-compare-item">
                                             <div class="message-content in-compare">
                                                 <div class="robot-msg">
-                                                    <p class="item-title"><span data-i18n="qaTest.setting">設定</span>{{ abSides[1].side }}（<span data-i18n="{{ abSides[1].configKey }}">{{ abSides[1].configLabel }}</span>，{{ abSides[1].promptVersion }}）</p>
+                                                    <p class="item-title" id="abAnswerTitle-{{ abSides[1].side }}"><span data-i18n="qaTest.setting">設定</span>{{ abSides[1].side }}（<span data-i18n="{{ abSides[1].configKey }}">{{ abSides[1].configLabel }}</span>，{{ abSides[1].promptVersion }}）</p>
                                                     <div class="item-content">
                                                         <p>UH3240 主要規格摘要如下：</p>
                                                         <ul class="list-style-disc">
@@ -250,12 +270,32 @@ permalink: 2-2-3_abTest.html
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div class="message-icon">
+                                            {# 兩側的動作鈕字面完全相同、又同頁同時可見：整列收進 group、
+                                                 aria-labelledby 指這一側的答案標題，報讀器才唸得出「設定A…讚」而不是四顆同名鈕
+                                                 （§4；同頁設定區那七組欄位用的是同一招，見 abSideLabel-*）。 #}
+                                            <div class="message-icon" role="group" aria-labelledby="abAnswerTitle-{{ abSides[1].side }}">
                                                 <button type="button" class="button-icon copy copyBtn has-tooltip" data-toast="文字已複製!" data-i18n-data-toast="common.copied">
                                                     <span class="tooltip" data-i18n="action.copy">複製</span>
                                                 </button>
                                                 <button type="button" class="button-icon watch watchBtn has-tooltip">
                                                     <span class="tooltip" data-i18n="comp.viewSource">查看來源</span>
+                                                </button>
+                                                {# 讚/倒讚：AB 兩側各自是一筆真的 chat_log（qatest.py 的 /compare 從 SSE 取
+                                                     latest_chat_log_id，配成 ab_round 的 a_log_id／b_log_id），所以評分走的是
+                                                     跟前台同一支 product `POST /history/{log_id}/rating`——評完在 4-1 用
+                                                     「AB測試」那個 tag 篩得出來。沿用前台的契約（.js-vote ＋ data-vote）；
+                                                     **條件開窗**（要先認出這是哪一側的 log）故只掛 hook、不掛 data-open-modal（§5 ①），
+                                                     成敗由窗內的送出鈕演（見本頁底部的 rating-modal 參數）。 #}
+                                                <button type="button" class="button-icon like js-vote has-tooltip" data-vote="like">
+                                                    <span class="tooltip" data-i18n="comp.like">讚</span>
+                                                </button>
+                                                <button type="button" class="button-icon dislike js-vote has-tooltip" data-vote="dislike">
+                                                    <span class="tooltip" data-i18n="comp.dislike">倒讚</span>
+                                                </button>
+                                                {# 分享：把這一側的答案建成唯讀分享連結（product POST /share 吃 log_id）。
+                                                     同 4-2 的分享鈕：要先讀那筆既有的連結清單＝條件開窗，保留 hook class。 #}
+                                                <button type="button" class="button-icon share js-share-log has-tooltip">
+                                                    <span class="tooltip" data-i18n="comp.share">分享</span>
                                                 </button>
                                             </div>
                                         </div>
@@ -344,3 +384,36 @@ permalink: 2-2-3_abTest.html
 {% include "components/apply-settings-no-permission-modal/apply-settings-no-permission-modal.html" %}
 {% include "components/apply-settings-compare-modal/apply-settings-compare-modal.html" %}
 {% include "components/knowledge-retrieval-modal/knowledge-retrieval-modal.html" %}
+
+{# 評分窗（兩側動作列的讚/倒讚開的那一份，由業務 js 帶著「哪一側的 log」開）。
+   這一頁的答案是這次測試剛產生的，沒有既有評分可覆寫，故不給 ratingModalNote 的覆寫警語，
+   改用 ratingModalNote 講清楚「這不是畫面上的一個小記號、是寫進問答紀錄」——
+   評完在 4-1 用 tag=ab_test 篩得出來（product history.py 的 tag 參數）。
+   toast 三段同 4-2（成功／沒選讚或倒讚／其餘失敗），故沿用同一顆 key。 #}
+{% set ratingModalTitleKey = "modals.rateAnswerTitle" %}
+{% set ratingModalTitle = "為這一側的答案評分" %}
+{% set ratingModalQuestionKey = "modals.ratingLabel" %}
+{% set ratingModalQuestion = "這個回答的滿意度" %}
+{% set ratingModalNoteKey = "modals.ratingAbNote" %}
+{% set ratingModalNote = "評分會寫進這一側的問答紀錄，之後在歷史紀錄裡篩「AB測試」就找得到。" %}
+{% set ratingModalToastKey = "toast.saveRating" %}
+{% set ratingModalToast = "滿意度已更新|請先選擇讚或倒讚|更新失敗，請稍後再試" %}
+{% set ratingModalToastType = "success|warning|error" %}
+{% include "components/rating-modal/rating-modal.html" %}
+
+{# 分享連結管理（兩側動作列的分享鈕開的那一份）：與 4-2 同一顆彈窗、同一組撤銷二次確認參數。 #}
+{% include "components/share-manage-modal/share-manage-modal.html" %}
+
+{# 撤銷分享連結的二次確認：撤銷是軟刪且不可逆（該連結永久失效），故走與刪除同一顆確認彈窗
+   （components/delete-modal 的泛用版：標題／內文換成「撤銷」）。逐字同 4-2——同一顆彈窗、
+   同一支端點（DELETE /share/{id}），文案分岔就是兩頁對同一個動作說了兩種話。 #}
+{% set deleteTitleKey = "action.revoke" %}
+{% set deleteTitleZh = "撤銷" %}
+{% set deleteMessageKey = "common.confirmRevoke" %}
+{% set deleteMessageZh = "確定要撤銷" %}
+{% set deleteTargetId = "revokeShareTarget" %}
+{% set deleteConfirmBinding = true %}
+{% set deleteConfirmClass = "js-revoke-share-confirm" %}
+{% set deleteToast = "連結已撤銷|撤銷失敗，請稍後再試" %}
+{% set deleteToastKey = "toast.revokeShare" %}
+{% include "components/delete-modal/delete-modal.html" %}

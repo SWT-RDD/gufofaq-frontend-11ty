@@ -29,7 +29,7 @@ module.exports = function (eleventyConfig) {
         "src/_includes/components/faq-chatroom/faq-chatroom.js": "js/faq-chatroom.js",
         "src/_includes/components/select-dataset-modal/select-dataset-modal.js": "js/select-dataset-modal.js",
         "src/_includes/ui/list-filter/list-filter.js": "js/list-filter.js",
-        "src/_includes/components/faq-feedback-modal/faq-feedback-modal.js": "js/faq-feedback-modal.js",
+        "src/_includes/components/rating-modal/rating-modal.js": "js/rating-modal.js",
         "src/_includes/ui/toast/toast.js": "js/toast.js",
         "src/_includes/ui/collapse-text/collapse-text.js": "js/collapse-text.js",
         "src/_includes/ui/dismiss-panel/dismiss-panel.js": "js/dismiss-panel.js",

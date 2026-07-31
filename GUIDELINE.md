@@ -228,7 +228,7 @@ ui/pagination/
 
 - **只用標準 DOM API**（`querySelectorAll`、`addEventListener`、`classList`、`closest`…，MDN 查得到的才能用）；禁止 jQuery 與任何第三方套件
 - **行為會被別的元件驅動的元件，必須匯出可呼叫的函式**（`ui/accordion` 的 `GufoAccordion.setOpen`）——沒有 API 時 §5 對呼叫方就是一條做不到的規則，而做不到的規則一定會被繞開。**不得用合成事件跨元件驅動**（`btn.click()`）：它會重新進入全站每一支 `document` 委派（祖先上的 `data-toast` 計數器會被多推一格），且對方尚未綁定時靜默失敗、呼叫端偵測不到。對原生控制項的 `.click()`（開檔案選擇器）不在此限
-- 只操作**自己元件**的 class；要操作別的元件，呼叫該元件 js 提供的函式（例：`faq-chatroom.js` 的讚/倒讚要先預選再開窗，故呼叫 `faq-feedback-modal.js` 匯出的 `openFeedback(vote)`；`chatroom.js` 的「查看來源」呼叫 `sources-block.js` 匯出的 `GufoSources.show()`，而不是自己去 `removeClass`）
+- 只操作**自己元件**的 class；要操作別的元件，呼叫該元件 js 提供的函式（例：`faq-chatroom.js` 的讚/倒讚要先預選再開窗，故呼叫 `rating-modal.js` 匯出的 `openRating(vote)`；`chatroom.js` 的「查看來源」呼叫 `sources-block.js` 匯出的 `GufoSources.show()`，而不是自己去 `removeClass`）
 - **元件 js 查詢的每個 class 選擇器，在 `src/` 的生產 markup 都要打得到至少一個元素**（有測試把關）。頁面改版讓選擇器全數落空時，該支行為 js 連同三方登記一併撤下
 - 會去 DOM 找元素的，包在 `DOMContentLoaded` 裡綁定（載入時不碰 DOM 的純函式工具如 `ui/scroll-lock` 不必）；同元件可能出現多次時用 `querySelectorAll().forEach()`
 - **開合的高度動畫走 `ui/slide-toggle`**（`window.GufoSlide.down/up/toggle/set`，300ms，對應真 app 的 jQuery `slideDown/slideUp(300)`）。不要各自寫一份高度動畫，也不要退化成 `display` 一次切掉——那是「啪」一下，跟真 app 手感不同。它自己會處理重入（等同 `.stop(true,true)`）與 `prefers-reduced-motion`
@@ -340,7 +340,7 @@ tag 式多選由本範本提供（切版需要展示互動）：在原生 `<sele
 | `ui/multi-select`（增強原生 `<select multiple>`） | 自寫受控元件（`options`/`value`/`onChange`），不引第三方；隱藏的原生 select 不轉，行為（標籤／搜尋／複選／鍵盤）即規格 |
 | `_var.scss` 顏色變數 | 全域引入一次，元件照用 `var(--...)` |
 | 答案文字裡的 token（`[[N]]` → `components/citation-ref`） | renderer 層**字串 → 元件**：在 text 節點切 token 換成 `<CitationRef no={N}/>`（不碰 `code`／`pre` 內的樣本）。元件無 `<名>.html` 時，markup 正本在它 scss 檔頭指名的示範處 |
-| 元件匯出給別的元件呼叫的函式（`GufoSources.show/reveal`、`GufoAccordion.setOpen`、`openFeedback`） | 共同祖先持有**意圖 state**、被呼叫的元件受控接收；捲動／聚焦／暫時高亮這類不可宣告的副作用留在它自己的 `useEffect`。不用 ref 戳子元件、不用 context 開全域單例（同頁兩顆會一起反應）。意圖 state 要能重放同一個值（連點同一顆 `[[N]]`）：用 `{no, seq}` 或 effect 尾端 reset |
+| 元件匯出給別的元件呼叫的函式（`GufoSources.show/reveal`、`GufoAccordion.setOpen`、`openRating`） | 共同祖先持有**意圖 state**、被呼叫的元件受控接收；捲動／聚焦／暫時高亮這類不可宣告的副作用留在它自己的 `useEffect`。不用 ref 戳子元件、不用 context 開全域單例（同頁兩顆會一起反應）。意圖 state 要能重放同一個值（連點同一顆 `[[N]]`）：用 `{no, seq}` 或 effect 尾端 reset |
 | 樣板算出來的 class 名（`is-depth-{{ node.depth }}`、`is-{{ node.state }}`） | scss 原樣複製路徑照抄成模板字串即可；**Tailwind 路徑必須靜態列舉**（JIT 掃不到拼出來的 class），見 TAILWIND-CONVERSION |
 | 前後綴 i18n key 夾**控制項**（`perPagePrefix` ＋ `<select>` ＋ `perPageSuffix`） | **不可併成單一插值 key**（插值槽塞不進互動元素）：用 `<Trans>` 的元件插值，或維持兩顆 key 各自 `t()`。判準：槽裡是**資料**→併成一顆；是**元件**→不併 |
 
