@@ -30,9 +30,12 @@ permalink: 2-2-3_abTest.html
      最大迭代次數僅 Agent，modeMatrix 見 gufofaq-saas docs/mode-matrix.md）；設定為臨時，底部「回復儲存的
      設定」隨時回復已儲存值。提示詞用 components/prompt-edit（常駐展開、無切換），套用/回復/儲存版本三鈕
      移到每側底部同排（使用者定案）。 #}
+{# 兩側的**差異**要放進資料：控制項全部渲染成同一組預設值、下面兩則回覆卻標著不同的設置與
+     提示詞版本，那不是一個真實可能的狀態（§6），AB 測試的用途也演不出來。
+     `promptVersion` 只是回覆標題上的版本註記（提示詞本文由使用者當場編，兩側各一份）。 #}
 {% set abSides = [
-    { side: "A" },
-    { side: "B" }
+    { side: "A", knowledge: "配置一", llm: "OpenAI gpt-4o-mini", configKey: "settings.config1", configLabel: "設置一", promptVersion: "V3-角色定位型" },
+    { side: "B", knowledge: "配置二", llm: "OpenAI gpt-4o", configKey: "settings.config2", configLabel: "設置二", promptVersion: "V2-任務導向型" }
 ] %}
 <div class="block ab-test-block flex-row gap-24 mobile-column">
     {% for ab in abSides %}
@@ -55,9 +58,9 @@ permalink: 2-2-3_abTest.html
                 <div class="field">
                     <select id="abKnowledgeSelect-{{ ab.side }}" class="form-control singleSelect js-knowledge-select">
                         <option value="" data-i18n="common.pleaseSelect">請選擇</option>
-                        <option value="配置一" selected>配置一</option>
-                        <option value="配置二">配置二</option>
-                        <option value="配置三">配置三</option>
+                        <option value="配置一"{% if ab.knowledge == "配置一" %} selected{% endif %}>配置一</option>
+                        <option value="配置二"{% if ab.knowledge == "配置二" %} selected{% endif %}>配置二</option>
+                        <option value="配置三"{% if ab.knowledge == "配置三" %} selected{% endif %}>配置三</option>
                     </select>
                 </div>
             </div>
@@ -68,8 +71,8 @@ permalink: 2-2-3_abTest.html
                 <div class="field">
                     <select id="abLlmSelect-{{ ab.side }}" class="form-control singleSelect js-llm-select">
                         <option value="" data-i18n="common.pleaseSelect">請選擇</option>
-                        <option value="OpenAI gpt-4o-mini" selected>OpenAI gpt-4o-mini</option>
-                        <option value="OpenAI gpt-4o">OpenAI gpt-4o</option>
+                        <option value="OpenAI gpt-4o-mini"{% if ab.llm == "OpenAI gpt-4o-mini" %} selected{% endif %}>OpenAI gpt-4o-mini</option>
+                        <option value="OpenAI gpt-4o"{% if ab.llm == "OpenAI gpt-4o" %} selected{% endif %}>OpenAI gpt-4o</option>
                     </select>
                 </div>
             </div>
@@ -196,7 +199,7 @@ permalink: 2-2-3_abTest.html
                                         <div class="ab-compare-item">
                                             <div class="message-content in-compare">
                                                 <div class="robot-msg">
-                                                    <p class="item-title">設定A（設置一，V3-角色定位型）</p>
+                                                    <p class="item-title">設定A（{{ abSides[0].configLabel }}，{{ abSides[0].promptVersion }}）</p>
                                                     <div class="item-content">
                                                         <p>您好！以下是 UH3240 USB-C 多埠集線器的規格整理：</p>
                                                         <ul class="list-style-disc">
@@ -220,7 +223,7 @@ permalink: 2-2-3_abTest.html
                                         <div class="ab-compare-item">
                                             <div class="message-content in-compare">
                                                 <div class="robot-msg">
-                                                    <p class="item-title">設定B（設置二，V2-任務導向型）</p>
+                                                    <p class="item-title">設定B（{{ abSides[1].configLabel }}，{{ abSides[1].promptVersion }}）</p>
                                                     <div class="item-content">
                                                         <p>UH3240 主要規格摘要如下：</p>
                                                         <ul class="list-style-disc">
