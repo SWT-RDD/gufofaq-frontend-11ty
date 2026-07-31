@@ -245,6 +245,7 @@
   "error.backHome": "Back to page directory",
   "error.notFound": "We couldn’t find that page",
   "error.notFoundTitle": "Page not found",
+  "extractKey.confirmRegenerate": "Regenerating invalidates the old key immediately, and the new one is shown only once. Regenerate?",
   "extractKey.currentKey": "Current key",
   "extractKey.hide": "Hide",
   "extractKey.howToDesc": "Call with the X-API-Key header; mode 1=country, 2=time, 3=both; text length 2–5000; returns 429 when quota is exhausted.",

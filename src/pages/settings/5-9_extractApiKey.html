@@ -50,10 +50,25 @@ permalink: 5-9_extractApiKey.html
             <span class="tooltip" data-i18n="action.copy">複製</span>
         </button>
     </div>
+    {# 不可逆：product `extract.py` 的 generate_api_key 直接覆寫 tenant.api_key_hash，舊金鑰在回應那一刻
+         起全部 401，而明碼只回這一次。全站其他破壞性動作（4-2／5-8／5-6-3 的撤銷）都走 delete-modal
+         的二次確認，這顆原本是按下去就執行——故改成條件開窗（hook class），toast 移到確認鈕上。 #}
     <div class="flex-row">
-        <button type="button" class="button button-primary js-generate-key" data-toast="已產生新金鑰|產生失敗" data-i18n-data-toast="toast.generateKey" data-toast-type="success|error" data-i18n="extractKey.regenerate">重新產生金鑰</button>
+        <button type="button" class="button button-primary js-regenerate-key" data-i18n="extractKey.regenerate">重新產生金鑰</button>
     </div>
 </div>
+
+{# 重新產生的二次確認（.js-regenerate-key 條件開窗的彈窗本體）。文案講的是「重新產生」不是「刪除」，
+     且把「舊金鑰立即失效」放進確認內文——那句話原本只在頁首、離觸發鈕 30 行。 #}
+{% set deleteTitleKey = "extractKey.regenerate" %}
+{% set deleteTitleZh = "重新產生金鑰" %}
+{% set deleteMessageKey = "extractKey.confirmRegenerate" %}
+{% set deleteMessageZh = "重新產生後，舊金鑰會立即失效，且明碼只會顯示這一次。確定要重新產生嗎？" %}
+{% set deleteConfirmBinding = true %}
+{% set deleteConfirmClass = "js-regenerate-key-confirm" %}
+{% set deleteToast = "已產生新金鑰|產生失敗" %}
+{% set deleteToastKey = "toast.generateKey" %}
+{% include "components/delete-modal/delete-modal.html" %}
 
 {# 如何呼叫：說明 + 可複製 curl 範例 #}
 <div class="block flex-row column gap-16">
