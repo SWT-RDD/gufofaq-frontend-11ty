@@ -91,7 +91,12 @@ permalink: 4-1_qaHistory.html
         </div>
         <div class="flex-row align-items-center justify-content-center gap-16 flex-wrap">
             <button type="button" class="button button-border js-filter-clear" data-i18n="action.clear">清除</button>
-            <button type="button" class="button button-primary" data-toast="正在查詢資料...|查詢成功|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.query" data-toast-type="info|success|error" data-i18n="action.query">查詢</button>
+            {# 本頁三個篩選欄都是 required（起訖時間、使用者類型），而 `.js-filter-clear` 會把
+                 使用者類型清回 `<option value="">請選擇`（filter-fields.js 的 `selectedIndex = 0`）
+                 ——清完再按查詢就是必填未填。真 app qaHistory.js:426 第一件事就是
+                 `showToast('請填寫開始時間、結束時間和使用者類型')`。共用的 `toast.query` 不能加這一段
+                 （其餘六頁沒有任何 required 欄，加了就是演不可能的結果），故本頁另立 key。 #}
+            <button type="button" class="button button-primary" data-toast="正在查詢資料...|請填寫開始時間、結束時間與使用者類型|查詢成功|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.queryHistory" data-toast-type="info|warning|success|error" data-i18n="action.query">查詢</button>
             {# 統計表頭（product `GET /history/export?with_header=true`）：在 CSV 最前面加一段統計區間／
                  製表時間／使用人次／使用人數／滿意度計數。**預設關閉**——開著會改變檔案首列，
                  下游既有的解析會全部錯位。值載體 checkbox → 只掛 hook class（§5 矩陣②），
@@ -100,7 +105,13 @@ permalink: 4-1_qaHistory.html
                 <input type="checkbox" class="js-export-with-header">
                 <span data-i18n="qa.exportWithHeader">含統計表頭</span>
             </label>
-            <button type="button" class="button button-green" data-toast="下載已開始|只提供31日間的問答記錄下載|下載失敗" data-i18n-data-toast="toast.downloadRecords" data-toast-type="success|warning|error" data-i18n="action.download">下載</button>
+            {# `GET /history/export` 開跑前有三道使用者自己修得掉的 400，全部並列不可互相取代：
+                 · 範圍長度 > 31 天（history.py:120-121）
+                 · 起點比現在早超過 366 天（history.py:122-123）——與上一條是不同條件：
+                   選 2024/01/01～01/20 過得了 31 天那關，照樣被一年那關擋掉
+                 · `total > MAX_EXPORT_LOGS`（history.py:313-317，串流開始前就先探一頁擋掉）
+                 原本只列第一條，另外兩條落進紅色的「下載失敗」。 #}
+            <button type="button" class="button button-green" data-toast="下載已開始|只提供31日間的問答記錄下載|只提供一年內的問答記錄下載|這段範圍的資料量過大，請縮小時間範圍|下載失敗" data-i18n-data-toast="toast.downloadRecords" data-toast-type="success|warning|warning|warning|error" data-i18n="action.download">下載</button>
         </div>
     </div>
 </div>

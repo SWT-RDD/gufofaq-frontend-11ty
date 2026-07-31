@@ -90,7 +90,11 @@ permalink: 5-1-1_accountInfo.html
         </div>
     </div>
     <div class="flex-row align-items-center justify-content-center gap-16">
-        <button type="button" class="button button-border" data-i18n="action.cancel">取消</button>
+        {# 真 app 這顆是「返回問答紀錄頁」（accountInfo.js:208-210 `window.location.href = …2-1_qaRecord`），
+             不是清空表單。切版沿用「簡化版靜態跳轉」慣例改成真 `<a>`（§4：可點的東西一律是真元素；
+             REACT-CONVERSION §④：demo 跳轉的 `<a>` 在 React 端保留標籤、改掛 onClick）。
+             原本寫成沒有任何 js 選得到的 `<button>`，點下去什麼都不會發生（§5 ④）。 #}
+        <a href="2-1_qaRecord.html" class="button button-border" data-i18n="action.cancel">取消</a>
         {# PUT /account 掛的是 `require_capability("settings", "write")`（account.py:137），
              該 dep 在 authz.py:185 raise 403「missing capability」——同一道守衛在 5-3 的歸因儲存鈕
              是自成一段的 warning（那顆端點的 dep 逐字相同），這裡不能折進 error（§5 分支集合一致）。 #}

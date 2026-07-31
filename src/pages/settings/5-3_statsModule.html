@@ -159,9 +159,16 @@ permalink: 5-3_statsModule.html
             </div>
         </div>
     </div>
+    {# 這一頁的查詢打的是 `GET /stats`，`_fetch_logs` 對 `total > MAX_STATS_LOGS`（5000，stats.py:41）
+         回 400「此時間範圍資料量過大…請縮小範圍」（stats.py:209-213）。時間篩選最長給到 365 天，
+         這是按幾下就撞得到、而且使用者自己縮小範圍就修得掉的結果——折進「載入資料失敗，請重新整理頁面」
+         等於叫人重整一個永遠不會成功的請求，故另立 key 加一段 warning（§5）。
+         左邊那顆換成全站篩選列正典的 `.js-filter-clear`「清除」（ui/filter-fields 提供行為，
+         沒有 .filter-fields 就清整個 .block）——原本的「取消」全站沒有任何 js 選得到它，
+         是一顆按了什麼都不會發生的鈕（§5 ④）。 #}
     <div class="flex-row align-items-center justify-content-center gap-16">
-        <button type="button" class="button button-border" data-i18n="action.cancel">取消</button>
-        <button type="button" class="button button-primary" data-toast="正在查詢資料...|查詢成功|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.query" data-toast-type="info|success|error" data-i18n="action.query">查詢</button>
+        <button type="button" class="button button-border js-filter-clear" data-i18n="action.clear">清除</button>
+        <button type="button" class="button button-primary" data-toast="正在查詢資料...|查詢成功|這段期間的資料量超過單次上限，請縮小時間範圍|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.queryStats" data-toast-type="info|success|warning|error" data-i18n="action.query">查詢</button>
     </div>
 </div>
 

@@ -230,9 +230,13 @@ permalink: 5-4_coverageGaps.html
             </div>
         </div>
     </div>
+    {# 同 5-3：`GET /stats/coverage-gaps` 也走 `_fetch_logs`，`total > MAX_STATS_LOGS`（5000）
+         即 400「此時間範圍資料量過大…請縮小範圍」（stats.py:209-213）。下面兩顆排除/取消排除
+         也重新查同一支端點，故三顆共用同一顆 key、同一組分支（§5 同一道守衛分支集合一致）。
+         左邊那顆「取消」全站沒有任何 js 選得到，換成篩選列正典的 `.js-filter-clear`。 #}
     <div class="flex-row align-items-center justify-content-center gap-16">
-        <button type="button" class="button button-border" data-i18n="action.cancel">取消</button>
-        <button type="button" class="button button-primary" data-toast="正在查詢資料...|查詢成功|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.query" data-toast-type="info|success|error" data-i18n="action.query">查詢</button>
+        <button type="button" class="button button-border js-filter-clear" data-i18n="action.clear">清除</button>
+        <button type="button" class="button button-primary" data-toast="正在查詢資料...|查詢成功|這段期間的資料量超過單次上限，請縮小時間範圍|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.queryStats" data-toast-type="info|success|warning|error" data-i18n="action.query">查詢</button>
     </div>
 </div>
 
@@ -266,7 +270,7 @@ permalink: 5-4_coverageGaps.html
             {# data-question＝React 動作目標：product 的排除清單與提問原文用同一套正規化（修剪空白後
                  全字比對），所以鈕要帶得走那句原文，而不是去讀兄弟節點的 textContent。 #}
             <button type="button" class="button button-border button-sm js-undo-exclude-question" data-question="{{ q }}"
-                data-toast="正在查詢資料...|查詢成功|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.query" data-toast-type="info|success|error"
+                data-toast="正在查詢資料...|查詢成功|這段期間的資料量超過單次上限，請縮小時間範圍|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.queryStats" data-toast-type="info|success|warning|error"
                 data-i18n="action.undoExclude">取消排除</button>
         </div>
         {% else %}
@@ -321,7 +325,7 @@ permalink: 5-4_coverageGaps.html
                     <td>{{ sample.count }}</td>
                     <td>
                         <button type="button" class="button button-border button-sm js-exclude-question" data-question="{{ sample.question }}"
-                            data-toast="正在查詢資料...|查詢成功|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.query" data-toast-type="info|success|error"
+                            data-toast="正在查詢資料...|查詢成功|這段期間的資料量超過單次上限，請縮小時間範圍|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.queryStats" data-toast-type="info|success|warning|error"
                             data-i18n="action.exclude">排除</button>
                     </td>
                 </tr>
