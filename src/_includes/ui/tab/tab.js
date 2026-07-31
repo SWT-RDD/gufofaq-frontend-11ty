@@ -32,21 +32,26 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 
+    // 帶 data-target 的頁籤：切換對應的 .tab-content 內容面板。
+    // 面板隱藏是 document 級全域（§5：同頁只放一套 data-target 切換系統）。
+    // **雙層與單層共用同一支**——原本只有 .sub-tabs 那條路徑做面板切換，於是單層 tab-group
+    // 掛了 data-target 的頁籤（3-1-6 的比對／原始資料）點下去只換 .active 與 aria-current、
+    // 面板不動：頁面沒反應，報讀器卻被告知「這是目前頁籤」，比純粹沒反應更糟。
+    function showPanel(tab) {
+        var target = tab.getAttribute("data-target");
+        if (!target) return;   // 元件庫雙層示範的子頁籤沒有 data-target，維持原行為、不碰內容面板
+        document.querySelectorAll(".tab-content").forEach(function (panel) {
+            panel.style.display = "none";
+        });
+        var activePanel = document.getElementById(target);
+        if (activePanel) activePanel.style.display = "";
+    }
+
     // 第二層頁籤切換（真 app 行為：清掉所有 .sub-tabs 裡的選中，跨群組全域）
     document.querySelectorAll(".sub-tabs .tab").forEach(function (tab) {
         tab.addEventListener("click", function () {
             setCurrent(tab, Array.prototype.slice.call(document.querySelectorAll(".sub-tabs .tab")));
-
-            // 帶 data-target 的子頁籤：切換對應的 .tab-content 內容面板（對話設定 hub 的主題子頁籤）。
-            // 元件庫雙層示範的子頁籤沒有 data-target，維持原行為、不碰內容面板。
-            var target = tab.getAttribute("data-target");
-            if (target) {
-                document.querySelectorAll(".tab-content").forEach(function (panel) {
-                    panel.style.display = "none";
-                });
-                var activePanel = document.getElementById(target);
-                if (activePanel) activePanel.style.display = "";
-            }
+            showPanel(tab);
         });
     });
 
@@ -59,6 +64,7 @@ document.addEventListener("DOMContentLoaded", function () {
                         return el !== tab;
                     });
                     setCurrent(tab, siblings);
+                    showPanel(tab);
                 });
             });
         }

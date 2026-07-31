@@ -2779,7 +2779,7 @@ test("§5 內建工具卡：只有 customized 的那張預設展開（markup 就
 function runStubDom(jsSrc, build) {
     // 只需要「單一 compound（.class 或 tag）」與逗號並列（builtin-tool-card.js 用
     // ".js-tool-description, .js-tool-extra-prompt" 一次抓兩欄）
-    const matchOne = (n, sel) => (sel.startsWith(".") ? n.classes.has(sel.slice(1)) : n.tag === sel);
+    const matchOne = (n, sel) => (sel === "*" ? true : sel.startsWith(".") ? n.classes.has(sel.slice(1)) : n.tag === sel);
     const matches = (n, sel) => sel.split(",").map((s) => s.trim()).filter(Boolean).some((s) => matchOne(n, s));
     const descendants = (n) => n.children.flatMap((c) => [c, ...descendants(c)]);
     function node(tag, cls) {
@@ -2797,6 +2797,7 @@ function runStubDom(jsSrc, build) {
         };
         n.setAttribute = (k, v) => n.attrs.set(k, String(v));
         n.getAttribute = (k) => (n.attrs.has(k) ? n.attrs.get(k) : null);
+        n.removeAttribute = (k) => n.attrs.delete(k);
         n.append = (...kids) => { for (const k of kids) { k.parent = n; n.children.push(k); } return n; };
         n.addEventListener = (type, fn) => n.handlers.set(type, [...(n.handlers.get(type) || []), fn]);
         n.dispatch = (type, event) => (n.handlers.get(type) || []).forEach((fn) => fn(event));
@@ -2804,6 +2805,7 @@ function runStubDom(jsSrc, build) {
         n.closest = (sel) => { for (let p = n; p; p = p.parent) if (matches(p, sel)) return p; return null; };
         n.querySelectorAll = (sel) => descendants(n).filter((d) => matches(d, sel));
         n.querySelector = (sel) => n.querySelectorAll(sel)[0] || null;
+        Object.defineProperty(n, "parentElement", { get: () => n.parent });
         Object.defineProperty(n, "nextElementSibling", {
             get: () => { const s = n.parent ? n.parent.children : []; return s[s.indexOf(n) + 1] || null; },
         });
@@ -2815,6 +2817,7 @@ function runStubDom(jsSrc, build) {
         addEventListener: (type, fn) => docHandlers.set(type, [...(docHandlers.get(type) || []), fn]),
         querySelectorAll: (sel) => root.querySelectorAll(sel),
         querySelector: (sel) => root.querySelector(sel),
+        getElementById: (id) => root.querySelectorAll("*").find((d) => d.getAttribute("id") === id) || null,
     };
     // GufoSlide 是共享行為工具（§1-1），這裡只需要它「把 display 扳到位」那一面
     const window = {
@@ -2901,6 +2904,59 @@ test("§5 ui/accordion 初始態讀 markup 的 .open（已自訂的工具卡預�
     assert.equal(preopen.btn.getAttribute("aria-expanded"), "true");
     assert.equal(a.content.style.display, "none");
     assert.equal(b.content.style.display, "none");
+});
+
+// 單層 tab-group ＋ data-target：面板要真的換。原本只有 .sub-tabs 那條路徑會切面板，
+// 於是 3-1-6 的「比對資料／原始資料」點下去只換 .active 與 aria-current，面板不動——
+// 頁面沒反應，報讀器卻被告知「這是目前頁籤」。既有的 data-target 測試只驗值命中同頁 id，
+// 驗不到「tab.js 會不會接手」，所以那個 bug 活了下來。
+const singleLayerTabTree = (node, root) => {
+    const row = node("div", "tab-row");
+    const group = node("div", "tab-group");           // 刻意不加 top-tabs / sub-tabs
+    const t1 = node("button", "tab active");
+    t1.setAttribute("data-target", "panelA");
+    t1.setAttribute("aria-current", "true");
+    const t2 = node("button", "tab");
+    t2.setAttribute("data-target", "panelB");
+    group.append(t1, t2);
+    row.append(group);
+    const panelA = node("div", "tab-content");
+    panelA.setAttribute("id", "panelA");
+    const panelB = node("div", "tab-content");
+    panelB.setAttribute("id", "panelB");
+    panelB.style.display = "none";
+    root.append(row, panelA, panelB);
+    return { t1, t2, panelA, panelB };
+};
+
+test("§5 ui/tab 單層 tab-group 的 data-target 也要真的切面板（不是只換 .active）", () => {
+    const src = read("src/_includes/ui/tab/tab.js");
+    const { fixture } = runStubDom(src, singleLayerTabTree);
+    const { t1, t2, panelA, panelB } = fixture;
+
+    t2.dispatch("click", { target: t2 });
+    assert.equal(panelB.style.display, "", "點第二顆頁籤要顯示 panelB");
+    assert.equal(panelA.style.display, "none", "同時要收掉 panelA");
+    assert.equal(t2.getAttribute("aria-current"), "true");
+    assert.equal(t1.getAttribute("aria-current"), null, "舊的選中態要拿掉，否則報讀器聽到兩個 current");
+
+    t1.dispatch("click", { target: t1 });
+    assert.equal(panelA.style.display, "", "切回第一顆要顯示 panelA");
+    assert.equal(panelB.style.display, "none");
+});
+
+test("§5 ui/tab 沒有 data-target 的單層頁籤不得去動任何 .tab-content（元件庫雙層示範就是這種）", () => {
+    const src = read("src/_includes/ui/tab/tab.js");
+    const { fixture } = runStubDom(src, (node, root) => {
+        const f = singleLayerTabTree(node, root);
+        f.t2.removeAttribute("data-target");   // 只有這一顆沒有 target
+        return f;
+    });
+    const { t2, panelA, panelB } = fixture;
+    t2.dispatch("click", { target: t2 });
+    assert.equal(panelA.style.display, undefined, "沒有 data-target 時不該碰面板（panelA 原本沒設過 display）");
+    assert.equal(panelB.style.display, "none", "也不該把別的面板打開");
+    assert.equal(t2.getAttribute("aria-current"), "true", "但選中態照樣要換");
 });
 
 test("§5 ui/accordion 表格模式不受卡片模式影響（擴充而非改寫：tr 路徑先判、命中就返回）", () => {
