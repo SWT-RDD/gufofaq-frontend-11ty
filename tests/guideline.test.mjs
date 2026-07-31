@@ -1302,6 +1302,16 @@ test("§4-2 同一個 i18n key 的繁中原文全站必須一致", () => {
             for (const m of code.matchAll(/\bt\(\s*"([\w.]+)"\s*,\s*"([^"]+)"/g)) record(m[1], m[2].trim(), f);
         });
     }
+    // round34：front matter 的 `titleKey` ＋ `pageHeading` 也是一對「key ↔ 繁中」，但它們是 layout
+    // 渲染時才組起來的（page-shell 的 sr-only h1），掃 src 完全看不到——5-9 的 `pageHeading: API 金鑰`
+    // 因此與 header／麵包屑的「萃取 API 金鑰」共用同一顆 key 卻不同字，而那會在切語言時互相覆蓋
+    // （lang-toggle 以 key 為索引就地擷取，文件序後者勝）。這一族只有 dist 驗得到。
+    for (const f of distHtml) {
+        for (const m of read(`dist/${f}`).matchAll(/<([a-z0-9]+)\b((?:"[^"]*"|[^>"])*)>([^<]*)<\/\1>/g)) {
+            const k = m[2].match(/\bdata-i18n="([\w.]+)"/);
+            if (k) record(k[1], m[3].trim(), `dist/${f}`);
+        }
+    }
     assert.ok(seen.size > 100, `只收集到 ${seen.size} 個 key —— 屬性 regex 腐掉了？這條測試在空轉`);
     const bad = [];
     for (const [key, variants] of seen)
