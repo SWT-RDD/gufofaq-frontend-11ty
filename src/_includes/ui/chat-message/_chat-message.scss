@@ -86,6 +86,18 @@
         ol {
             margin: 0.5rem 0;
             padding-left: 1.5rem;
+            // _base.scss 對 ul/ol 下了 `list-style: none`（全站 reset），而 markdown renderer 產出的
+            // 裸 <ul>/<ol> 掛不上 ui/list-style 的 class——這裡要把項目符號補回來，否則答案裡的
+            // 條列會變成沒有點的段落。值以 ui/list-style 為正本（disc / decimal，outside）。
+            list-style-position: outside;
+        }
+
+        ul {
+            list-style-type: disc;
+        }
+
+        ol {
+            list-style-type: decimal;
 
             li {
                 margin: 0.25rem 0;
