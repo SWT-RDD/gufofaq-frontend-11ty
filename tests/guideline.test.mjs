@@ -2325,7 +2325,10 @@ test("§5/§6 逐列可刪/撤銷的管理表要帶 {% else %} 無資料列（Sa
         "3-1-3_previewDataset.html::fileRows", // 真 app dataset 檔案列鏡射：空狀態隨真 app
     ]);
     const forSrc = /\{%-?\s*for\s+\w+\s+in\s+([\s\S]+?)-?%\}/;
-    const rowAction = /data-i18n="action\.(delete|revoke)"|js-delete-|js-revoke-|js-remove-/;
+    // round33：`js-remove-` 拿掉——那是**表單 repeater**的「移除這一列」（5-2 的逐代碼上限／情境條件、
+    // 2-2-4 的新增斷言），列是使用者當場加出來的本地編輯列，不是伺服器資料，空集合由表單自己的
+    // 「新增一列」承擔，不需要「無資料」列。留下的三種都是「刪掉伺服器上那一筆」的語意。
+    const rowAction = /data-i18n="action\.(delete|revoke)"|js-delete-|js-revoke-/;
     let total = 0;
     const missing = [];
     const seenExempt = new Set();
@@ -2347,7 +2350,18 @@ test("§5/§6 逐列可刪/撤銷的管理表要帶 {% else %} 無資料列（Sa
                 const fr = stack.pop();
                 if (!fr || fr.type !== "for") continue;
                 const body = src.slice(fr.bodyStart, m.index);
-                if (!/<tr\b/.test(body) || !rowAction.test(body)) continue;
+                // round33：判準原本綁死 `<tr>`，於是 div 排版的可撤銷清單（share-manage-modal 的分享連結列）
+                // 整類隱形——那張表的列上就有 .js-revoke-share，而 GET /share 只回未撤銷的列，
+                // 真實初始態就是空的。判準改成「這個 for 的列上有逐列刪除/撤銷動作」，不看它用什麼標籤。
+                if (!rowAction.test(body)) continue;
+                // for 的來源是**行內字面陣列**（`{% for cat in [{...}] %}`）＝表單 repeater 的示範列，
+                // 不是伺服器集合；它的「刪除」是移除本地那一列，空集合由「新增一列」承擔。
+                const forSource = (fr.decl.match(forSrc) || [, ""])[1].trim();
+                if (forSource.startsWith("[")) continue;
+                // 列上的刪除鈕掛 `js-remove-*`＝本 repo 對「表單 repeater 移除本地那一列」的既有命名
+                // （5-2 檔頭寫明：新增/刪除列動的是業務輸入，值最後隨整份設定一起 PUT）。
+                // 它的可見文字也是「刪除」，所以不能只看 action.delete。伺服器資料列用的是 js-delete-／js-revoke-。
+                if (/js-remove-/.test(body)) continue;
                 total++;
                 const key = `${basename(f)}::${(fr.decl.match(forSrc) || [, ""])[1].trim()}`;
                 if (EXEMPT.has(key)) { seenExempt.add(key); continue; }

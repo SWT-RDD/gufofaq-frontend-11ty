@@ -168,6 +168,8 @@
                                         <button type="button" class="button button-red button-sm js-delete-user" data-i18n="action.delete">刪除</button>
                                     </div>
                                 </div>
+                                {% else %}
+                                <div class="text-center text-gray" data-i18n="common.noData">無資料</div>
                                 {% endfor %}
                             </div>
                         </div>
