@@ -76,13 +76,19 @@ permalink: 5-10_tagDimensions.html
      一列一維度，並讓「還差幾筆」點得到：逐資料集列出未標註筆數 ＋ 連到那個資料集。
      （product 沒有「列出未標註文件」的端點，能定位到的最小單位就是資料集——見 `GET /tags/coverage`
      的 `dataset_id` 參數；再往下要逐列看值得進 3-1-6 比對資料頁。） #}
+{# 這一頁的資料集目錄只有一份：blockedDimensions 的逐維度清單與「量測範圍」下拉吃同一個陣列
+     （§6：同一份業務目錄不得各烤一份）。連結由 id 組出，不另存 href。 #}
+{% set coverageDatasets = [
+  { id: 3, name: "法規彙編" },
+  { id: 7, name: "2026 新制問答" }
+] %}
 {% set blockedDimensions = [
   {
     slotKey: "note1", name: "業務範疇", whyKey: "settings.tagWhyMulti", why: "多值（kind=multi）",
     coveragePct: 89.4, untagged: 14, located: true,
     datasets: [
-      { id: 3, name: "法規彙編", href: "3-1-3_previewDataset.html", tagged: 96, untagged: 0 },
-      { id: 7, name: "2026 新制問答", href: "3-1-3_previewDataset.html", tagged: 22, untagged: 14 }
+      { id: 3, name: "法規彙編", tagged: 96, untagged: 0 },
+      { id: 7, name: "2026 新制問答", tagged: 22, untagged: 14 }
     ]
   },
   {
@@ -366,8 +372,10 @@ permalink: 5-10_tagDimensions.html
         <div class="field flex-row gap-16 mobile-column-xs align-items-center flex-wrap">
             <select id="coverageDatasetSelect" class="form-control js-coverage-dataset">
                 <option value="" data-i18n="settings.scanScopeAll">全部資料集</option>
-                <option value="3">法規彙編</option>
-                <option value="7">2026 新制問答</option>
+                {# 同一份資料集目錄不烤兩份（§6）：這裡與上面 blockedDimensions 的 datasets 吃同一個陣列。 #}
+                {% for ds in coverageDatasets %}
+                <option value="{{ ds.id }}">{{ ds.name }}</option>
+                {% endfor %}
             </select>
             <button type="button" class="button button-border" data-toast="正在量測標註覆蓋率...|量測完成|文件數超過單次掃描上限，請改用單一資料集範圍|量測失敗，請稍後再試" data-i18n-data-toast="toast.measureCoverage" data-toast-type="info|success|warning|error" data-i18n="settings.remeasureCoverage">重新量測</button>
         </div>
@@ -475,7 +483,7 @@ permalink: 5-10_tagDimensions.html
                                 {% if blocked.located %}
                                 {% for ds in blocked.datasets %}
                                 <div class="flex-row align-items-center gap-8 flex-wrap">
-                                    <a href="{{ ds.href }}" class="link-file">{{ ds.name }}</a>
+                                    <a href="3-1-3_previewDataset.html?sn={{ ds.id }}" class="link-file">{{ ds.name }}</a>
                                     <span class="text-gray"><span data-i18n="settings.untaggedInDataset">未標註 </span>{{ ds.untagged }}</span>
                                 </div>
                                 {% else %}
