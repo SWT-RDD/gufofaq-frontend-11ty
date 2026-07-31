@@ -858,8 +858,10 @@ permalink: 5-2_conversationSettings.html
 {# ═══ 子頁籤 6：輸出規則（NET-NEW，Spec 丁）═══
      生成答案之後、送進合規閘門之前，對**整段**答案做的確定性後處理（不經 LLM）。契約正本＝
      gufofaq-saas services/product/app/output_rules.py 的 OUTPUT_RULE_CONTRACT（鏡射自 GufoRAG
-     chatbot app/services/output_rules.py，指紋 acb0ace9…a9fc54）：11 種 kind、規則數上限 30、
-     逐 kind 的參數型別與上下界。本頁的選單值域、參數欄與區間都照它演出。
+     chatbot app/services/output_rules.py，兩側以 `OUTPUT_RULE_CONTRACT_FINGERPRINT` 釘同一個字串）：
+     kind 值域、規則數上限 30、逐 kind 的參數型別與上下界。本頁的選單值域、參數欄與區間都照它演出。
+     **指紋的值不抄在這裡**——抄了就會在對面改表時靜默過期（它從 11 種擴到 13 種時這裡就過期了一輪），
+     而本 repo 沒有測試比得到它；要對帳請直接讀那個符號。
 
      本區有三件事是**規格要求外顯**、不是版面裝飾：
      ① **順序**：出口替換 →輸出規則 →合規閘門，由平台固定（GufoRAG app/routes/_chat_stream.py
@@ -873,7 +875,7 @@ permalink: 5-2_conversationSettings.html
      ③ **上限 30 在消費點看得見**：規則數畫成「N / 30」，30 是**資料**不是譯文——寫進句子裡的話，
         上限改了譯文會靜默過期（本 repo 有「匯出缺 total 靜默截斷」的前例）。
      逐欄值載體掛 hook class js-orule-*（全站 scss 不引用），隨底部「儲存對話設定」直送
-     PUT /settings/profiles/{no} 的 output_rules。示範 12 筆＝11 種 kind 各一 ＋ 情境常數第二筆
+     PUT /settings/profiles/{no} 的 output_rules。示範＝每種 kind 各一 ＋ 情境常數第二筆
      （同一種 kind 可以有多條：每個常數各要一條規則）。
 
      刻意不做的事：**不演出「違規紀錄」區塊**。C 類（字數／條列數）只回報不改文字，但那份

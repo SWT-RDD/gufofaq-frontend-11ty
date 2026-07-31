@@ -129,7 +129,7 @@ permalink: 1-2-1_uploadFile_pdf.html
 {# 檔案預覽 modal：id/class 與 components/file-preview-modal 一致，整包 include #}
 {% include "components/file-preview-modal/file-preview-modal.html" %}
 
-{# 編輯 modal：整包 include components/file-edit-modal（14 固定槽自填；content 自 PDF 抽取為 disabled，其餘可填） #}
+{# 編輯 modal：整包 include components/file-edit-modal（固定槽自填；content 自 PDF 抽取為 disabled，其餘可填） #}
 {# 儲存交給業務 js（uploadFilePdf.js 的 saveEdit）——與真實頁一致，不自動關窗 #}
 {% set editConfirmBinding = true %}
 {% include "components/file-edit-modal/file-edit-modal.html" %}

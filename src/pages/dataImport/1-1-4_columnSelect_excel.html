@@ -13,7 +13,7 @@ permalink: 1-1-4_columnSelect_excel.html
    而後端早就收得下——使用者只會覺得「文件裡寫的篩選欄不存在」。
    使用者把 Excel 欄位對應到這些槽；label 用各槽預設顯示名。
    §6 示範要是真實可能的狀態：真 app（columnSelect_excel.js）給**每個槽同一份選項清單＝上傳 excel 的欄位**，
-   故 14 個槽共用同一份 4 欄樣本（客服問題/客服回覆/建立時間/圖片連結，同 1-1-3 的預覽樣本）；
+   故每個槽共用同一份 4 欄樣本（客服問題/客服回覆/建立時間/圖片連結，同 1-1-3 的預覽樣本）；
    已對應的槽 selected + 預覽該欄第一列值，未對應的槽空選（multi-select 顯示 placeholder）、預覽空。
    date 槽示範格式警告：預覽值故意用中文日期（validateDate 只收 YYYY/MM/DD 或 YYYY-MM-DD，這個值真的會 fail）。 #}
 {% set fields = [
