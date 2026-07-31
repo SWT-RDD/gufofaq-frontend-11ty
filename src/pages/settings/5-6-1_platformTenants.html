@@ -173,10 +173,10 @@ permalink: 5-6-1_platformTenants.html
   { key: "extract", label: "萃取 API（程式化）", i18nKey: "settings.capExtract" }
 ] %}
 {% set tenants = [
-  { name: "示範租戶 A", userCount: 8, features: ["data", "ask", "history", "settings", "audit", "extract"], frozen: false, reviewDue: false },
-  { name: "示範租戶 B", userCount: 3, features: ["data", "ask"], frozen: true, reviewDue: false },
-  { name: "示範租戶 C", userCount: 1, features: ["ask"], frozen: false, reviewDue: true },
-  { name: "示範租戶 D", userCount: 4, features: ["data", "ask"], frozen: false, reviewDue: true }
+  { name: "示範租戶 A", userCount: 8, features: ["data", "ask", "history", "settings", "audit", "extract"], frozen: false, reviewDue: false, status: "ACTIVE", statusKey: "platform.statusActive", statusLabel: "使用期內", trialEnd: "2027-01-31" },
+  { name: "示範租戶 B", userCount: 3, features: ["data", "ask"], frozen: true, reviewDue: false, status: "EXPIRED", statusKey: "platform.statusExpired", statusLabel: "已到期", trialEnd: "2026-06-30" },
+  { name: "示範租戶 C", userCount: 1, features: ["ask"], frozen: false, reviewDue: true, status: "EXPIRED", statusKey: "platform.statusExpired", statusLabel: "已到期", trialEnd: "2026-03-01" },
+  { name: "示範租戶 D", userCount: 4, features: ["data", "ask"], frozen: false, reviewDue: true, status: "PENDING", statusKey: "platform.statusPending", statusLabel: "待啟用", trialEnd: "" }
 ] %}
 
 {# 帳號治理工具列：匯出租戶／使用者 CSV（帳號列表，稽核用）。直接下載動作 → data-toast 演出成敗（走 BFF 檔案透傳）。 #}
@@ -198,6 +198,8 @@ permalink: 5-6-1_platformTenants.html
         <table class="default-table">
             <colgroup>
                 <col style="min-width:200px;">
+                <col style="min-width:110px;">
+                <col style="min-width:120px;">
                 <col style="min-width:120px;">
                 {% for feature in features %}
                 <col style="min-width:140px;">
@@ -207,6 +209,12 @@ permalink: 5-6-1_platformTenants.html
             <thead>
                 <tr>
                     <th data-i18n="settings.tenant">租戶</th>
+                    {# `TenantOut` 回得出 `subscription_status` 與 `trial_end`（platform.py:111-112），
+                         原本一格都沒畫——PENDING／ACTIVE／未滿 90 天的 EXPIRED 在畫面上長得一模一樣，
+                         而整套 ISO 審核流程正是以 status 為前提（§3-2 response 的每個欄位都要有落點）。
+                         到期日是資料（不翻）；PENDING 還沒起算，故留白。 #}
+                    <th data-i18n="platform.subscriptionStatus">使用期狀態</th>
+                    <th data-i18n="platform.trialEnd">到期日</th>
                     <th data-i18n="settings.userCount">使用者數</th>
                     {% for feature in features %}
                     <th class="text-center" id="tenantFeatureHead-{{ feature.key }}" data-i18n="{{ feature.i18nKey }}">{{ feature.label }}</th>
@@ -229,6 +237,8 @@ permalink: 5-6-1_platformTenants.html
                             {% if tenant.frozen %}<span class="text-gray" data-i18n="platform.statusFrozen">已凍結</span>{% endif %}
                         </div>
                     </td>
+                    <td><span data-i18n="{{ tenant.statusKey }}">{{ tenant.statusLabel }}</span></td>
+                    <td>{{ tenant.trialEnd }}</td>
                     <td class="text-center">{{ tenant.userCount }}</td>
                     {% for feature in features %}
                     {# 開關是值控制項：auditor 看得到目前開通狀態（渲染成 disabled），只有 admin 改得動 #}
@@ -262,8 +272,8 @@ permalink: 5-6-1_platformTenants.html
      破壞性動作鈕用 button-red。切版靜態把三畫面全數展示（示範各步長相），React 依步驟狀態一次顯示一個。
      名單／結果列為純示範假資料（§6b），正式環境由 React 走 GET /platform/review/overdue 與 POST /platform/review/apply。 #}
 {% set reviewCandidates = [
-  { name: "示範租戶 C", email: "c-admin@example.com", trialEnd: "2026-03-01", daysOverdue: 135, userCount: 1, storage: 12.4 },
-  { name: "示範租戶 D", email: "d-admin@example.com", trialEnd: "2026-02-14", daysOverdue: 150, userCount: 4, storage: 88.0 }
+  { name: "示範租戶 C", email: "c-admin@example.com", trialEnd: "2026-03-01", daysOverdue: 135, userCount: 1, storage: 12.4, frozen: false },
+  { name: "示範租戶 D", email: "d-admin@example.com", trialEnd: "2026-02-14", daysOverdue: 150, userCount: 4, storage: 88.0, frozen: false }
 ] %}
 {# 結果拆成功/失敗兩個陣列：step-3 的「共 N 筆，成功 X，失敗 Y」全部從陣列長度推導（§6 可推導的值不烤死），
      表格先渲染成功列再渲染失敗列 #}
@@ -325,6 +335,9 @@ permalink: 5-6-1_platformTenants.html
             <span><span data-i18n="platform.reviewMatched">符合筆數：</span>{{ reviewCandidates.length }}</span>
             <span><span data-i18n="platform.reviewThreshold">門檻：</span><span data-i18n="platform.overdueDaysPrefix">逾期滿</span> 90 <span data-i18n="platform.overdueDaysSuffix">天</span></span>
             <span><span data-i18n="platform.reviewAsOf">查詢時間：</span>2026-07-14 09:00 UTC</span>
+            {# `ReviewOverdueOut.cutoff`（platform.py:1381）：後端註解說這兩欄「是 ISO 稽核截圖存證要用的」。
+                 只畫門檻天數不夠——步驟一的兩種門檻（天數／截止日期）擇一時，真正決定名單的是 cutoff。 #}
+            <span><span data-i18n="platform.reviewCutoff">截止時刻：</span>2026-04-15 09:00 UTC</span>
         </div>
         <div class="table-container scrollTable">
             <table class="default-table">
@@ -335,6 +348,7 @@ permalink: 5-6-1_platformTenants.html
                     <col style="min-width:100px;">
                     <col style="min-width:100px;">
                     <col style="min-width:120px;">
+                    <col style="min-width:110px;">
                 </colgroup>
                 <thead>
                     <tr>
@@ -344,6 +358,10 @@ permalink: 5-6-1_platformTenants.html
                         <th data-i18n="platform.daysOverdue">逾期天數</th>
                         <th data-i18n="settings.userCount">使用者數</th>
                         <th data-i18n="platform.storageUsedMb">儲存量(MB)</th>
+                        {# `ReviewTenantOut.frozen`（platform.py:1374）的後端註解逐字寫著
+                             「此旗標讓管理員一眼分辨『這季新逾期的』與『上季已凍結、還在等後續處置的』」
+                             ——那正是這張截圖要回答的問題，原本沒有欄位（§3-2 response 落點）。 #}
+                        <th data-i18n="platform.statusFrozen">已凍結</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -355,6 +373,7 @@ permalink: 5-6-1_platformTenants.html
                         <td class="text-center">{{ c.daysOverdue }}</td>
                         <td class="text-center">{{ c.userCount }}</td>
                         <td class="text-center">{{ c.storage }}</td>
+                        <td>{% if c.frozen %}<span class="text-gray" data-i18n="platform.statusFrozen">已凍結</span>{% else %}—{% endif %}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
