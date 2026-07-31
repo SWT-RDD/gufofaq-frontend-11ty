@@ -185,7 +185,7 @@ permalink: 5-10_tagDimensions.html
         <p class="text-red" data-i18n="settings.filterableDateRangeHint">日期維度的值必須落在 1677-09-21 到 2262-04-11 之間：檢索引擎把日期存成 64 位元奈秒數，超出去會溢位成另一端的時間。出界的值存得進去、精確比對也找得到，但任何用到日期範圍的過濾都會漏掉那份資料，查詢時它只是不見了、不會有錯誤訊息。若本來就是想表示「永遠有效」，請把該格留白，系統會自己補上不會過期的值。</p>
     </div>
     <div class="flex-row">
-        <button type="button" class="button button-primary" data-toast="標籤維度已建立|這個槽或角色已經有維度了|型別或角色與這個槽配不起來，請改選|建立失敗，請稍後再試" data-i18n-data-toast="toast.createTagDimension" data-toast-type="success|warning|warning|error">
+        <button type="button" class="button button-primary" data-toast="標籤維度已建立|維度名稱不可為空|這個槽或角色已經有維度了|型別或角色與這個槽配不起來，請改選|建立失敗，請稍後再試" data-i18n-data-toast="toast.createTagDimension" data-toast-type="success|warning|warning|warning|error">
             <img src="./images/icon_add_white.png" width="48" height="48" decoding="async" alt="" class="icon">
             <span data-i18n="settings.addTagDimension">新增標籤維度</span>
         </button>
@@ -316,7 +316,7 @@ permalink: 5-10_tagDimensions.html
     </div>
     <p id="tagCodeHint" class="text-gray" data-i18n="settings.tagCodeHint">代碼會逐字送進檢索條件，所以不可含 , ' " \ * ? 這些字元（它們在「匯入比對 → DSL 字串 → 上游比對」這趟往返上會被改寫或切斷）。兩個只差在大小寫或全半形的代碼也不能並存——比對端分不開，而檢索只送得出其中一個字面。</p>
     <div class="flex-row">
-        <button type="button" class="button button-primary" data-toast="代碼已新增|這個代碼與既有代碼在比對端分不開|新增失敗，請稍後再試" data-i18n-data-toast="toast.createTagCode" data-toast-type="success|warning|error">
+        <button type="button" class="button button-primary" data-toast="代碼已新增|代碼與代碼名稱不可為空|代碼含不可用的字元，請改用不含逗號、引號、反斜線與萬用字元的寫法|這個代碼與既有代碼在比對端分不開|新增失敗，請稍後再試" data-i18n-data-toast="toast.createTagCode" data-toast-type="success|warning|warning|warning|error">
             <img src="./images/icon_add_white.png" width="48" height="48" decoding="async" alt="" class="icon">
             <span data-i18n="settings.addTagCode">新增代碼</span>
         </button>

@@ -70,7 +70,10 @@
                 <div class="modals-footer">
                     <div class="button-row center">
                         <button type="button" class="button button-border btn-close-modals" data-i18n="action.cancel">取消</button>
-                        <button type="button" class="button button-primary js-config-copy-apply" data-toast="設定已複製|複製失敗，請稍後再試" data-i18n-data-toast="toast.copyConfig" data-toast-type="success|error" data-i18n="action.copy">複製</button>
+                        {# 六顆複製項目 checkbox 是「至少要勾一個」的必選群組：全部取消時端點會以 `groups=[]`
+                             回 200 而什麼都沒做，再配一顆成功 toast 就是 fail-silent。這一態要演成 warning，
+                             不可以改用 disabled 讓它不可達（REACT-CONVERSION §⑥：只有「進行中」能 disable）。 #}
+                        <button type="button" class="button button-primary js-config-copy-apply" data-toast="設定已複製|請至少勾選一個複製項目|複製失敗，請稍後再試" data-i18n-data-toast="toast.copyConfig" data-toast-type="success|warning|error" data-i18n="action.copy">複製</button>
                     </div>
                 </div>
             </div>

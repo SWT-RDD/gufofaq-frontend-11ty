@@ -19,6 +19,12 @@ permalink: 3-1-3_previewDataset.html
     {% set editLabel = "資料集名稱" %}
     {% set editLabelKey = "dataset.datasetName" %}
     {% set editValue = "客服問答知識庫" %}
+    {# 這顆確認鈕送 `PATCH /datasets/{id}`：409「資料集名稱已存在」（datasets.py:2463）是
+         換個名字就修得掉的 warning——姊妹頁 5-5-2 對同型 409 就是這樣列的。
+         400「資料集名稱不可為空」（:2454）與它並列。 #}
+    {% set editSaveToast = "資料集名稱已更新|資料集名稱不可為空|資料集名稱已存在，請換一個|儲存失敗，請稍後再試" %}
+    {% set editSaveToastKey = "toast.saveDatasetName" %}
+    {% set editSaveToastType = "success|warning|warning|error" %}
     {% include "components/editable-block/editable-block.html" %}
     {# 所屬群組（唯讀顯示）：資料集歸屬的群組（SaaS 群組權限需求，見 product datasets.py DatasetDetailOut.group_id）。 #}
     <p class="text-gray m-0"><span data-i18n="dataset.group">所屬群組</span>：管理群組</p>
@@ -34,6 +40,10 @@ permalink: 3-1-3_previewDataset.html
         {% set editPlaceholder = "請輸入任務描述" %}
         {% set editPlaceholderKey = "comp.enterTaskDesc" %}
         {% set editValue = "回答客服常見問題，內容涵蓋帳號、訂單與退換貨相關問題。" %}
+        {# 同一支 `PATCH /datasets/{id}`，但這兩欄沒有重名守衛（409 只驗 name），故三段。 #}
+        {% set editSaveToast = "已更新|沒有要更新的欄位|儲存失敗，請稍後再試" %}
+        {% set editSaveToastKey = "toast.saveDatasetField" %}
+        {% set editSaveToastType = "success|warning|error" %}
         {% include "components/editable-block/editable-block.html" %}
     </div>
     <div class="flex-1">
@@ -44,6 +54,9 @@ permalink: 3-1-3_previewDataset.html
         {% set editPlaceholder = "請輸入任務對應提示詞" %}
         {% set editPlaceholderKey = "comp.enterTaskPrompt" %}
         {% set editValue = "你是客服助理，請根據提供的資料集內容，以親切、精簡的語氣回答使用者的問題。" %}
+        {% set editSaveToast = "已更新|沒有要更新的欄位|儲存失敗，請稍後再試" %}
+        {% set editSaveToastKey = "toast.saveDatasetField" %}
+        {% set editSaveToastType = "success|warning|error" %}
         {% include "components/editable-block/editable-block.html" %}
     </div>
 </div>
