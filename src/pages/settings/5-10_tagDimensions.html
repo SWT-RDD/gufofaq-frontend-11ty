@@ -117,11 +117,21 @@ permalink: 5-10_tagDimensions.html
                     <label for="newTagSlotSelect" class="control-label required" data-i18n="settings.tagSlot">篩選槽</label>
                 </div>
                 <div class="field">
+                    {# 值域是 12 個，不是這一頁湊得出來的四個：`TAG_SLOT_KEYS = tag_dimension_slots(SLOTS)`
+                         ＝角色為 `custom_field_mapping` 的槽（tags.py:50-63 → field_schema.py:37-48），
+                         也就是 note1..note10 ＋ date2/date3。本頁自己的 hint 就是這樣寫的，示範資料裡
+                         還有一筆掛在 note3 的維度——只列四個等於 note3..note10 永遠建不出維度。
+                         **不硬編**：`GET /settings/tag-dimension-contract` 的 `slots` 是這份值域的單一真相
+                         （tag_dimension_contract.py:40-42 明寫「一個都不能留在前端硬編」），
+                         切版以 set 陣列表達那份回應（§6），React 端改讀端點。
+                         第一顆是空值「請選擇」：開頁就宣告已挑好 note1，而 note1 在示範資料裡已被佔用
+                         ⇒ 第一次送出必撞「這個槽已經有維度了」（§4「還沒挑」沒有任何一顆 option 承載得住）。 #}
+                    {% set tagSlotKeys = ["note1", "note2", "note3", "note4", "note5", "note6", "note7", "note8", "note9", "note10", "date2", "date3"] %}
                     <select id="newTagSlotSelect" class="form-control js-tag-slot" aria-describedby="tagSlotHint" required>
-                        <option value="note1">note1</option>
-                        <option value="note2">note2</option>
-                        <option value="date2">date2</option>
-                        <option value="date3">date3</option>
+                        <option value="" data-i18n="common.pleaseSelect">請選擇</option>
+                        {% for slot in tagSlotKeys %}
+                        <option value="{{ slot }}">{{ slot }}</option>
+                        {% endfor %}
                     </select>
                 </div>
             </div>
@@ -143,6 +153,8 @@ permalink: 5-10_tagDimensions.html
                 </div>
                 <div class="field">
                     <select id="newTagKindSelect" class="form-control js-tag-kind" aria-describedby="tagKindHint" required>
+                        {# 同上：必填欄不得預設幫使用者挑一個（§4）——「還沒挑」要有一顆 option 承載得住。 #}
+                        <option value="" data-i18n="common.pleaseSelect">請選擇</option>
                         <option value="single" data-i18n="settings.tagKindSingle">單值（single）</option>
                         <option value="multi" data-i18n="settings.tagKindMulti">多值（multi）</option>
                         <option value="date" data-i18n="settings.tagKindDate">日期（date）</option>
@@ -181,8 +193,14 @@ permalink: 5-10_tagDimensions.html
         <p id="tagSlotHint" class="text-gray" data-i18n="settings.tagSlotHint">只有 product 宣告給檢索引擎當自訂篩選欄位的那些槽（note1–note10、date2、date3）承載得了維度；內建槽的 DSL 引用會被上游拒絕。一個槽只能有一個維度，一個角色也只能指派給一個維度。</p>
         <p id="tagKindHint" class="text-gray" data-i18n="settings.tagKindHint">單值＝三選一；多值＝可複選；日期＝做大小比較。日期槽（date2／date3）只能是日期型別，其餘槽不能是日期型別——配錯的組合每一次檢索都會被上游擋下。</p>
         <p id="tagRoleHint" class="text-gray" data-i18n="settings.tagRoleHint">角色是給引擎內建機制認的：valid_until／as_of 只能掛在日期維度、fact_topic／superseded_by 只能掛在單值維度。配錯不會報錯，只會讓該機制完全跳過這個維度——設定頁看起來一切正常，而它從頭到尾沒有作用過。</p>
-        {# ④ 日期上下界：講在**填之前**。這一段對 kind=date 常駐顯示（React 依所選型別擇一渲染）。 #}
-        <p class="text-red" data-i18n="settings.filterableDateRangeHint">日期維度的值必須落在 1677-09-21 到 2262-04-11 之間：檢索引擎把日期存成 64 位元奈秒數，超出去會溢位成另一端的時間。出界的值存得進去、精確比對也找得到，但任何用到日期範圍的過濾都會漏掉那份資料，查詢時它只是不見了、不會有錯誤訊息。若本來就是想表示「永遠有效」，請把該格留白，系統會自己補上不會過期的值。</p>
+        {# ④ 日期上下界：講在**填之前**。這一段對 kind=date 常駐顯示（React 依所選型別擇一渲染）。
+             **兩個日期是資料不是譯文**（§3-2）：它們在契約裡有欄位——`GET /settings/tag-dimension-contract`
+             的 `filterable_date_range.min_date`／`max_date`（tag_dimension_contract.py:115-116），
+             而那支端點的檔頭點名的失敗樣態正是「區間改了而畫面照舊寫著舊日期」。
+             故拆成資料槽 ＋ 前中後三段可翻的文字（同 414eecc 對 5-2 三個上下界做過的修正）。 #}
+        {% set filterableDateMin = "1677-09-21" %}
+        {% set filterableDateMax = "2262-04-11" %}
+        <p class="text-red"><span data-i18n="settings.filterableDateRangePrefix">日期維度的值必須落在 </span><span>{{ filterableDateMin }}</span><span data-i18n="settings.filterableDateRangeMid"> 到 </span><span>{{ filterableDateMax }}</span><span data-i18n="settings.filterableDateRangeSuffix"> 之間：檢索引擎把日期存成 64 位元奈秒數，超出去會溢位成另一端的時間。出界的值存得進去、精確比對也找得到，但任何用到日期範圍的過濾都會漏掉那份資料，查詢時它只是不見了、不會有錯誤訊息。若本來就是想表示「永遠有效」，請把該格留白，系統會自己補上不會過期的值。</span></p>
     </div>
     <div class="flex-row">
         <button type="button" class="button button-primary" data-toast="標籤維度已建立|維度名稱不可為空|這個槽或角色已經有維度了|型別或角色與這個槽配不起來，請改選|建立失敗，請稍後再試" data-i18n-data-toast="toast.createTagDimension" data-toast-type="success|warning|warning|warning|error">
