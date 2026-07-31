@@ -11,7 +11,10 @@
       成敗分支由 React 演；切版不假造它的執行。
   答案輸出槽 `.skill-try-answer`：試跑的產出就是答案，沒有它這塊面板演不完整（saas 端已有對應節點但
     兩邊都沒有樣式——切版是正本，故在此補上並給它樣式主人）。切版填示範答案當長相示範（§3-2 長文寫死）。
-  參數：trySkillName（選填，示範用的 skill 名，預設 refund-flow）。
+  參數：trySkillName（選填，示範用的 skill 名，預設 refund-flow）、
+       trySkillAnswer（選填，答案輸出槽的內容）。**答案是節點的衍生值**：使用頁覆寫了 stepFlowNodes
+       （試跑走到哪一步、成功還失敗）卻沿用元件內建的成功答案，畫面會同時演「答案還沒生成」與
+       「答案在這」——§6 的「只開放一半」。要覆寫過程就要一起覆寫產出。
   執行流程 include components/step-flow，**節點與摘要由使用頁成對覆寫**（§6）——本元件不自帶那份資料，
     因為它會因「試跑哪一個 skill」而異。
 #}
@@ -38,7 +41,7 @@
     <div class="form-group">
         <div class="label"><span class="control-label" id="skillTryAnswerLabel" data-i18n="settings.trySkillAnswer">試跑回答</span></div>
         <div class="field">
-            <p class="skill-try-answer m-0" role="status" aria-live="polite" aria-labelledby="skillTryAnswerLabel">依訂單 A20260725-001 的金額 1,280 元與「七日內未拆封可全額退」政策，本次可退金額為 1,280 元（運費不退）。計算依據：refund-flow 呼叫 lookup-order 取得訂單金額後，以 calculate 套用政策折算。</p>
+            <p class="skill-try-answer m-0" role="status" aria-live="polite" aria-labelledby="skillTryAnswerLabel">{{ trySkillAnswer or "依訂單 A20260725-001 的金額 1,280 元與「七日內未拆封可全額退」政策，本次可退金額為 1,280 元（運費不退）。計算依據：refund-flow 呼叫 lookup-order 取得訂單金額後，以 calculate 套用政策折算。" }}</p>
         </div>
     </div>
     {% include "components/step-flow/step-flow.html" %}

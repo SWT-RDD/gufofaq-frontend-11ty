@@ -156,6 +156,10 @@ permalink: 3-4_skillManagement.html
 {% set stepFlowSummary = {
     tokens: "612", latency: "2.8s", ttft: "—", results: "0", model: "openai:gpt-4o-mini"
 } %}
+{# 這一輪演的是 refund-flow **失敗**（生成答案 skipped、誠實查無 running、ttft「—」），
+     所以答案槽不能沿用元件內建那段「本次可退金額為 1,280 元」的成功答案——過程與產出
+     必須是同一輪（§6：覆寫了過程就要一起覆寫產出）。 #}
+{% set trySkillAnswer = "很抱歉，這一題我無法從現有資料判斷：退貨政策表這次讀取逾時，沒有取得可以計算的依據。請稍後再試，或改用人工客服協助。" %}
 {% include "components/skill-try-sandbox/skill-try-sandbox.html" %}
 
 {% include "components/skill-editor-modal/skill-editor-modal.html" %}
