@@ -1,6 +1,11 @@
 {# 意圖判斷表格（5 欄 .default-table.priority-table，class 沿用既有系統）。
      資料由使用頁面在 include 前 set（見 §3-2/§6）：
-       rows = [{ category, description, prompt, priority }]
+       rows = [{ sn, category, description, prompt, priority }]
+       sn＝資料集（UploadedFolder）主鍵，落在 `<tr data-folder-sn>`：真 app 兩支業務行為都靠它認列——
+         `.js-edit-btn` 的 `$row.data('folder-sn')`（knowledgeRetrieval.js:559）與 `.priority-select` 的
+         `$this.closest('tr').data('folder-sn')`（同檔 646）。jQuery `.data()` 讀得到 DOM 屬性，
+         真 app 的列也確實是 `<tr data-folder-sn="…">` 印出來的（同檔 266）——少了它，這兩顆掛點
+         有名字卻認不出自己在操作哪一列。
        priority 對應「變更優先級」下拉的選中值（"高優先級"/"中優先級"/"低優先級"/"不使用"，空字串＝未選）；rows 空陣列＝空狀態表。
        tierless（選填，預設 false）＝**取消三層、只分使用/不使用**的變體，供 Agent 對話模式用。
          依實測矩陣（gufofaq-saas docs/mode-matrix.md 列 25），`index_tiers` 只有傳統搜尋吃；
@@ -36,7 +41,7 @@
         </thead>
         <tbody>
             {% for row in rows %}
-            <tr>
+            <tr data-folder-sn="{{ row.sn }}">
                 <td>{{ row.category }}</td>
                 <td class="edit-cell description">
                     <div class="ellipsis-2">{{ row.description }}</div>

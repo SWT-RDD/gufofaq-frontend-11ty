@@ -143,11 +143,18 @@ permalink: 5-2_conversationSettings.html
     {# ── 版面 A：傳統搜尋模式（三層 + 逐層意圖）────────────────────────────── #}
     <div class="block flex-row column gap-10 relative">
         <div class="tablelist-title" data-i18n="settings.tiersTraditional">分層檢索（傳統搜尋模式）</div>
-        {# 全部啟用/停用意圖：真 app（main.js #openPrioritySwitch/#closePrioritySwitch）本地勾/取消全部 switch、
-             不送 API，啟用先驗「任務描述不得為空」失敗才開 intentionModal——條件開窗業務判斷（§5），id 即掛點。 #}
+        {# 全部啟用/停用意圖：這兩顆 id 各被真 app **兩支** js 綁住，兩邊都會跑——
+             main.js:266/284 本地勾/取消全部 switch，且啟用先驗「任務描述不得為空」，失敗就開 intentionModal
+               並 return（條件開窗業務判斷 §5，故不掛 data-open-modal，id 即 React 綁定記號）；
+             knowledgeRetrieval.js:459/487 另外把 PrioritySettings 寫回並 await saveSettingProfile，
+               成功 `已啟用/停用設置N的全部意圖判斷`、catch `操作失敗`。
+             ——**它們送 API**（③ → data-toast 列全結果 §5）。只讀 main.js 那半支會把它們誤判成純前端鈕。
+             toast 只列這兩條：PUT /settings/profiles/{no} 的 400 只在 output_rules／builtin_tool_overrides／
+             policy_topics 進 changed 時才 raise（settings_hub.py:355-372），這兩顆只寫意圖開關、踩不到，
+             列上去就是演一個不可能的結果。設置編號無法在切版插值，故略去（§6）。 #}
         <div class="switch-control-row">
-            <button type="button" id="openPrioritySwitch" class="button button-border" data-i18n="settings.enableAllIntent">啟用全部意圖判斷</button>
-            <button type="button" id="closePrioritySwitch" class="button button-border" data-i18n="settings.disableAllIntent">停用全部意圖判斷</button>
+            <button type="button" id="openPrioritySwitch" class="button button-border" data-toast="已啟用全部意圖判斷|操作失敗" data-i18n-data-toast="toast.enableAllIntent" data-toast-type="success|error" data-i18n="settings.enableAllIntent">啟用全部意圖判斷</button>
+            <button type="button" id="closePrioritySwitch" class="button button-border" data-toast="已停用全部意圖判斷|操作失敗" data-i18n-data-toast="toast.disableAllIntent" data-toast-type="success|error" data-i18n="settings.disableAllIntent">停用全部意圖判斷</button>
         </div>
 
         {% set priorityLevels = [
@@ -155,22 +162,22 @@ permalink: 5-2_conversationSettings.html
             title: "高優先級",
             i18nKey: "comp.highPriority",
             rows: [
-              { category: "入出國與法規", description: "處理入境、出境、簽證、停留等問題", prompt: "我是移民署的智能客服，專門處理與入出境、居留、停留、簽證有關的問題。請使用條列、清楚的說明回應民眾，並根據法規給出指引。", priority: "高優先級" },
-              { category: "證件與資料申請", description: "協助查詢入出國紀錄、統一證號等申辦方式", prompt: "我是移民署的智能客服，擅長協助民眾查詢入出國紀錄、統一證號申請等行政流程。請清楚說明所需文件、申請條件與流程。", priority: "高優先級" }
+              { sn: 31, category: "入出國與法規", description: "處理入境、出境、簽證、停留等問題", prompt: "我是移民署的智能客服，專門處理與入出境、居留、停留、簽證有關的問題。請使用條列、清楚的說明回應民眾，並根據法規給出指引。", priority: "高優先級" },
+              { sn: 32, category: "證件與資料申請", description: "協助查詢入出國紀錄、統一證號等申辦方式", prompt: "我是移民署的智能客服，擅長協助民眾查詢入出國紀錄、統一證號申請等行政流程。請清楚說明所需文件、申請條件與流程。", priority: "高優先級" }
             ]
           },
           {
             title: "中優先級",
             i18nKey: "comp.mediumPriority",
             rows: [
-              { category: "婚姻與家庭", description: "涉外婚姻登記、外籍配偶居留等問題", prompt: "我是移民署的智能客服，協助說明涉外婚姻登記、外籍配偶居留申請相關規定。", priority: "中優先級" }
+              { sn: 33, category: "婚姻與家庭", description: "涉外婚姻登記、外籍配偶居留等問題", prompt: "我是移民署的智能客服，協助說明涉外婚姻登記、外籍配偶居留申請相關規定。", priority: "中優先級" }
             ]
           },
           {
             title: "低優先級",
             i18nKey: "comp.lowPriority",
             rows: [
-              { category: "權益與申訴服務類", description: "", prompt: "", priority: "低優先級" }
+              { sn: 34, category: "權益與申訴服務類", description: "", prompt: "", priority: "低優先級" }
             ]
           }
         ] %}
@@ -209,8 +216,10 @@ permalink: 5-2_conversationSettings.html
     </div>
 
     {# ── 版面 B：Agent 對話模式（只分使用/不使用，無逐層意圖）──────────────────
-         示範資料＝把版面 A 的三層攤平成一組，演的是同一批資料集在 agent 模式下的樣子
-         （§6 示範資料要自洽）。`tierless` 讓 priority-table 把下拉收成「使用中/不使用」。 #}
+         示範資料＝版面 A 的同一批分類，演的是同一個資料集在 agent 模式下的樣子（§6 示範資料要自洽）。
+         `tierless` 讓 priority-table 把下拉收成「使用中/不使用」。**priority 值刻意保留原本的高/中/低**：
+         agent 模式不分層，但底層資料沒有被抹平——切回版面 A 時三層要原封不動還在（見元件檔頭）。
+         若這裡把三層都改寫成「高優先級」，示範的就變成一個切版自己都不相信的資料模型。 #}
     <div class="block flex-row column gap-10 relative">
         <div class="tablelist-title" data-i18n="settings.tiersAgent">檢索範圍（Agent 對話模式）</div>
         <div class="flex-row column gap-16">
@@ -219,10 +228,10 @@ permalink: 5-2_conversationSettings.html
             </div>
             {% set tierless = true %}
             {% set rows = [
-              { category: "入出國與法規", description: "處理入境、出境、簽證、停留等問題", prompt: "我是移民署的智能客服，專門處理與入出境、居留、停留、簽證有關的問題。請使用條列、清楚的說明回應民眾，並根據法規給出指引。", priority: "高優先級" },
-              { category: "證件與資料申請", description: "協助查詢入出國紀錄、統一證號等申辦方式", prompt: "我是移民署的智能客服，擅長協助民眾查詢入出國紀錄、統一證號申請等行政流程。請清楚說明所需文件、申請條件與流程。", priority: "高優先級" },
-              { category: "婚姻與家庭", description: "涉外婚姻登記、外籍配偶居留等問題", prompt: "我是移民署的智能客服，協助說明涉外婚姻登記、外籍配偶居留申請相關規定。", priority: "高優先級" },
-              { category: "權益與申訴服務類", description: "", prompt: "", priority: "高優先級" }
+              { sn: 31, category: "入出國與法規", description: "處理入境、出境、簽證、停留等問題", prompt: "我是移民署的智能客服，專門處理與入出境、居留、停留、簽證有關的問題。請使用條列、清楚的說明回應民眾，並根據法規給出指引。", priority: "高優先級" },
+              { sn: 32, category: "證件與資料申請", description: "協助查詢入出國紀錄、統一證號等申辦方式", prompt: "我是移民署的智能客服，擅長協助民眾查詢入出國紀錄、統一證號申請等行政流程。請清楚說明所需文件、申請條件與流程。", priority: "高優先級" },
+              { sn: 33, category: "婚姻與家庭", description: "涉外婚姻登記、外籍配偶居留等問題", prompt: "我是移民署的智能客服，協助說明涉外婚姻登記、外籍配偶居留申請相關規定。", priority: "中優先級" },
+              { sn: 34, category: "權益與申訴服務類", description: "", prompt: "", priority: "低優先級" }
             ] %}
             {% include "components/priority-table/priority-table.html" %}
         </div>

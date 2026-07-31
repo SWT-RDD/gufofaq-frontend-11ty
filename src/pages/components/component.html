@@ -385,9 +385,9 @@ bodyClass: guideline-page
                 </ul>
             </div>
             {% set rows = [
-                { category: "入出國與法規", description: "處理入境、出境、簽證、停留等問題", prompt: "我是移民署的智能客服，專門處理與入出境、居留、停留、簽證有關的問題。請使用條列、清楚的說明回應民眾，並根據法規給出指引。", priority: "高優先級" },
-                { category: "證件與資料申請", description: "協助查詢入出國紀錄、統一證號等申辦方式", prompt: "我是移民署的智能客服，擅長協助民眾查詢入出國紀錄、統一證號申請等行政流程。請清楚說明所需文件、申請條件與流程。", priority: "高優先級" },
-                { category: "權益與申訴服務類", description: "", prompt: "", priority: "高優先級" }
+                { sn: 31, category: "入出國與法規", description: "處理入境、出境、簽證、停留等問題", prompt: "我是移民署的智能客服，專門處理與入出境、居留、停留、簽證有關的問題。請使用條列、清楚的說明回應民眾，並根據法規給出指引。", priority: "高優先級" },
+                { sn: 32, category: "證件與資料申請", description: "協助查詢入出國紀錄、統一證號等申辦方式", prompt: "我是移民署的智能客服，擅長協助民眾查詢入出國紀錄、統一證號申請等行政流程。請清楚說明所需文件、申請條件與流程。", priority: "高優先級" },
+                { sn: 34, category: "權益與申訴服務類", description: "", prompt: "", priority: "高優先級" }
             ] %}
             {% include "components/priority-table/priority-table.html" %}
             <div class="caption description mt-16">
