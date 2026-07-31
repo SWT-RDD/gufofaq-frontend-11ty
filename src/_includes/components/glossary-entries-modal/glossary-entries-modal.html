@@ -5,7 +5,12 @@
      忠實度基準（§5）：i18n key 值以 product catalog 為準（新增一列／詞條已更新｜更新失敗／別名（逗號分隔））。
      增刪列＝React local state 操作（onClick 元件作用域直綁、product 無 hook），儲存時才整批 PUT
      gufofaq-saas product app/routers/glossary.py（「編輯一張表→整批 PUT /glossary/{id}/entries」，
-     不做逐筆 diff）——故增刪鈕不掛 hook、不掛 data-toast；aliases 以逗號分隔字串編輯。
+     不做逐筆 diff）——故增刪鈕**不掛 data-toast**（它們不送 API）；但**要掛 hook class**：
+     §5「切版新頁的業務觸發鈕自創 hook class，命名 `js-<動詞>-<名詞>`」，而同型的表單 repeater
+     全站都是這樣掛的（2-2-4 的 `js-add-assertion`／`js-remove-assertion`、5-2 的
+     `js-add-policy-topic`／`js-remove-policy-topic`，同樣沒有切版行為、同樣由 React 接）。
+     原本兩顆什麼都沒掛＝轉換時認不出它們該接誰，而畫面上是兩顆按了沒反應的鈕。
+     aliases 以逗號分隔字串編輯。
      詞條／定義的 maxlength 是契約欄位（§6），出處＝GufoRAG chatbot app/services/glossary.py 的
      `MAX_TERM_LEN = 200`（:41）／`MAX_DEFINITION_LEN = 2000`（:42），逐筆檢查在 :129/:133、
      經 product glossary.py 的 `_as_bad_request` 映成 400。別名沒有單獨的長度上限、故不掛。
@@ -49,7 +54,7 @@
                                         <td><input type="text" class="form-control" maxlength="200" value="{{ entry.term }}" aria-label="詞條" data-i18n-aria-label="settings.term"></td>
                                         <td><input type="text" class="form-control" maxlength="2000" value="{{ entry.definition }}" aria-label="定義" data-i18n-aria-label="settings.definition"></td>
                                         <td><input type="text" class="form-control" value="{{ entry.aliases }}" aria-label="別名（逗號分隔）" data-i18n-aria-label="settings.aliases"></td>
-                                        <td><button type="button" class="button button-border button-sm" data-i18n="action.delete">刪除</button></td>
+                                        <td><button type="button" class="button button-border button-sm js-remove-glossary-entry" data-i18n="action.delete">刪除</button></td>
                                     </tr>
                                     {% else %}
                                     <tr><td colspan="4" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
@@ -58,7 +63,7 @@
                             </table>
                         </div>
                         <div class="flex-row">
-                            <button type="button" class="button button-border button-sm" data-i18n="settings.addEntry">新增一列</button>
+                            <button type="button" class="button button-border button-sm js-add-glossary-entry" data-i18n="settings.addEntry">新增一列</button>
                         </div>
                     </div>
                 </div>

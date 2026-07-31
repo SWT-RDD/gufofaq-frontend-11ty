@@ -783,6 +783,8 @@ test("§4 不得依頁面覆寫元件（body-class 範圍選擇器只准出現�
 // （反向的「這個字面 key 有沒有英文」用不到前綴，也不該用，那條要的是精確的字面 key）。
 // 剝掉 nunjucks 註解、以換行等長替換（行號不位移）：註解掉的 include／data-i18n／{% set %} 不算
 // 「在服役」，否則死元件、孤兒 key、撞名變數靠一段 {# #} 就能永遠活著（round17）。
+const countLines = (text, idx) => text.slice(0, idx).split(String.fromCharCode(10)).length;
+
 function stripNjk(str) {
     return str.replace(/\{#[\s\S]*?#\}/g, (m) => m.replace(/[^\n]/g, ""));
 }
@@ -2659,6 +2661,46 @@ test("§4/§6 表格列的狀態底色不可寫在 <tr> 上（cell 的不透明�
         }
     }
     assert.equal(hits.length, 0, `§4：<tr> 上的狀態底色被 cell 底色蓋掉（死樣式）：\n${fail(hits)}`);
+});
+
+test("§5 每顆按鈕都要有主人：行為屬性／js- hook／具名真 app 掛點，三者至少一（否則是點了沒反應的鈕）", () => {
+    // §5 ④「純前端互動…行為要當場動得起來」＋矩陣「①②③ 都要有 React 綁定記號」。
+    // 反過來說：一顆鈕若既沒有宣告式行為屬性、又沒有任何掛點，它在切版點了沒反應、
+    // 在 React 端也認不出該接誰。round34 抓到 glossary-entries-modal 的增刪列兩顆——
+    // 而全站同型的表單 repeater（2-2-4／5-2）都掛著 `js-add-*`／`js-remove-*`。
+    const BEHAV = /\bdata-(toast|open-modal|print|dismiss-target|reveal-target|target|scroll-lock|vote|theme|lang)\b/;
+    const HOOK = /class="[^"]*\bjs-[a-z]/;
+    // 具名真 app 掛點（與 NAMED_HOOKS 同一套來源，逐個在凍結前端或元件 js 查得到）
+    const NAMED = /class="[^"]*\b(copyBtn|watchBtn|shareBtn|btn-prev|btn-next|btn-delete-file|btn-edit-file|btn-preview-file|delete-single-btn|download-file-btn|delete-selected-btn|confirm-delete-btn|accordion-btn|btn-close-modals|modals-close|sort|edit-icon|save-icon|cancel-icon|nav-toggle|check-all|tab|collapse-toggle|feedback-vote-btn|btn_gotop|priority-select|info-btn|link-modal|upload-box)\b/;
+    // 元件庫展示頁與純展示片段：那裡的鈕就是「長這樣」的樣本，沒有行為是刻意的
+    const SHOWCASE = new Set(["src/pages/components/component.html", "src/_includes/ui/button/button.html", "src/_includes/ui/tooltip/tooltip.html"]);
+    // 逐筆豁免＋理由（新增前要先去真 app 確認它在那邊也沒有掛點）
+    const EXEMPT = new Map([
+        ["src/pages/dataset/3-1-1_datasetList.html::刪除",
+         "真 app 是 $deleteBtn.data('folder-sn', …)（datasetList.js:223-224）——jQuery 的 .data() 寫記憶體、不落 DOM 屬性，markup 上本來就查不到；React 端從 map 的 row 閉包取值"],
+    ]);
+    let seen = 0;
+    const hits = [];
+    const usedExempt = new Set();
+    for (const f of srcHtml) {
+        const key = f.split(String.fromCharCode(92)).join("/");
+        if (SHOWCASE.has(key)) continue;
+        const t = stripNjk(read(f));
+        for (const m of t.matchAll(/<button\b((?:"[^"]*"|[^>"])*)>([\s\S]*?)<\/button>/g)) {
+            seen++;
+            const a = m[1];
+            if (BEHAV.test(a) || HOOK.test(a) || NAMED.test(a)) continue;
+            const txt = m[2].replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim().slice(0, 24);
+            if (!txt) continue; // 純圖示鈕的可及名稱由另一條測試管
+            const ex = `${key}::${txt}`;
+            if (EXEMPT.has(ex)) { usedExempt.add(ex); continue; }
+            hits.push(`${f}:${countLines(t, m.index)}  「${txt}」既沒有行為屬性也沒有掛點`);
+        }
+    }
+    assert.ok(seen >= 200, `只掃到 ${seen} 顆按鈕 —— 這條測試在空轉`);
+    const stale = [...EXEMPT.keys()].filter((k) => !usedExempt.has(k));
+    assert.equal(stale.length, 0, `EXEMPT 有過期項（鈕已改名或已掛上掛點）：${stale.join("、")}`);
+    assert.equal(hits.length, 0, fail(hits));
 });
 
 test("§4 送 API 的數字欄三件套：type=number ＋ min/max/step ＋ 可見區間（aria-describedby 接得上）", () => {

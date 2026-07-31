@@ -1,6 +1,10 @@
 {# 「資料時間篩選」整列（近24小時／上週／上個月／時間區間＋起訖欄）。
      5-3 統計模組與 5-4 覆蓋缺口逐字相同（約 45 行），§3-3「同一段版面出現在 2 頁以上就抽成元件」。
-     抄本已經開始分岔：同樣是純 radio 的兄弟列，一頁寫 role="group"、另一頁寫 role="radiogroup"。
+     抄本已經開始分岔：兄弟列（查詢資料類型）一頁寫 role="group"、另一頁寫 role="radiogroup"——
+     那一列是純 radio，`radiogroup` 才對（見 data-type-filter）。
+     **但這一列不是** `radiogroup`：`field-with-input-group` 的構造讓它必然含兩個文字欄
+     （起訖時間），`radiogroup` 的 owned element 只能是 radio，報讀器會把那兩格念成單選成員。
+     故這一列維持 `role="group"`。
      參數（使用頁在 include 前 set，見 §3-2/§6）：
        timeFilterName    —— radio 的 name（同頁多組要不同：5-3 是 data-time、5-4 是 gap-time）
        timeFilterLabelId —— 群組標題的 id（供 aria-labelledby 指到；同頁唯一）
@@ -15,7 +19,7 @@
     <div class="label mobile-align">
         <label id="{{ timeFilterLabelId }}" class="control-label" data-i18n="settings.dataTimeFilter">資料時間篩選</label>
     </div>
-    <div class="field w100" role="radiogroup" aria-labelledby="{{ timeFilterLabelId }}">
+    <div class="field w100" role="group" aria-labelledby="{{ timeFilterLabelId }}">
         <div class="flex-row gap-16 mobile-column flex-wrap field-with-input-group">
             <div class="flex-row gap-16 mobile-column-xs col-12-xs">
                 <div class="function">
