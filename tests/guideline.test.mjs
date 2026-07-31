@@ -38,19 +38,37 @@ assert.ok(distHtml.length > 20, `dist 只掃到 ${distHtml.length} 個 html —�
         throw new Error("dist 比 src 舊 —— 請先 npm run build，否則跑在 dist 上的結構檢查驗的是上一版");
 }
 
-// 逐檔逐行掃描的小工具：回傳 ["檔案:行號  內容"] 的違規清單
+// 逐行掃描一段文字：回傳 ["檔案:行號  內容"] 的違規清單。
+// 抽出 scanText 是為了 probe()——合成樣本要走跟真掃描「同一條規則函式」，
+// 各寫一份判斷式的自我檢查只是裝飾品（規則改壞時裝飾品還是綠的）。
+function scanText(text, fn, f = "<probe>") {
+    const hits = [];
+    const lines = text.split(/\r?\n/);
+    lines.forEach((line, i) => {
+        const msg = fn(line, f, i, lines);
+        if (msg) hits.push(`${f}:${i + 1}  ${typeof msg === "string" ? msg : line.trim()}`);
+    });
+    return hits;
+}
+// 逐檔逐行掃描的小工具
 function scanLines(files, fn) {
     const hits = [];
-    for (const f of files) {
-        const lines = read(f).split(/\r?\n/);
-        lines.forEach((line, i) => {
-            const msg = fn(line, f, i, lines);
-            if (msg) hits.push(`${f}:${i + 1}  ${typeof msg === "string" ? msg : line.trim()}`);
-        });
-    }
+    for (const f of files) hits.push(...scanText(read(f), fn, f));
     return hits;
 }
 const fail = (hits) => hits.join("\n");
+
+// 零命中型測試的空轉守門。
+// 集合層級的空轉由檔頭那四行擋掉；剩下的假綠是「規則自己認不出違規」——
+// 正則被改壞、排除條件被寫寬、共用 helper 回傳空陣列，測試都會靜靜地全綠。
+// probe 拿合成樣本走同一條規則：抓不到刻意寫壞的樣本就當場失敗；
+// good 樣本則擋住反方向的腐化（把規則寫寬到會誤報，通常伴隨著有人去放寬排除清單）。
+const probe = (label, run, bad, good = []) => {
+    for (const s of bad)
+        assert.ok(run(s).length > 0, `${label}：規則認不出合成違規樣本，這條測試永遠會綠 →\n${s}`);
+    for (const s of good)
+        assert.equal(run(s).length, 0, `${label}：規則誤報了合法寫法 →\n${s}\n${run(s).join("\n")}`);
+};
 
 // dist 的標籤掃描一律先剝掉「看起來像標籤、其實不是」的東西：
 // HTML 註解裡的範例 <div role="button">、inline script 裡的模板字串 `<li>${x}</li>`，
@@ -66,6 +84,15 @@ function* tagsOf(html) {
         yield { tag: m[1].toLowerCase(), attrs: m[2] || "", raw: m[0] };
     }
 }
+// tagsOf 的規則版（同 scanText 的用意：讓 probe 走同一條規則函式）。fn 吃 {tag,attrs,raw}
+const scanTags = (html, fn, f = "<probe>") => {
+    const hits = [];
+    for (const t of tagsOf(html)) {
+        const msg = fn(t);
+        if (msg) hits.push(`${f}  ${typeof msg === "string" ? msg : t.raw.slice(0, 70)}`);
+    }
+    return hits;
+};
 
 // ─────────────────────────── §2 模板語法白名單 ───────────────────────────
 
@@ -73,7 +100,7 @@ test("§2 只准 `| safe`，模板標籤只准白名單那幾個", () => {
     // 用白名單而不是黑名單：黑名單漏了 {% from "x" import y %}（行首關鍵字是 from）、
     // 漏了空白控制的 {%- macro %}、也漏了 block-set 的 {% endset %}。列出准的，其餘一律擋。
     const ALLOWED = new Set(["set", "for", "endfor", "if", "elif", "else", "endif", "include"]);
-    const hits = scanLines(srcHtml, (line) => {
+    const rule = (line) => {
         // 先剝掉表達式裡的字串常值，否則 {{ "a|b" | safe }} 會在字串內的 | 誤命中，
         // 而 {{ "}" | upper }} 會讓舊的 [^}] 提早停手、漏掉後面真正的 filter。
         for (const m of line.matchAll(/\{\{([\s\S]*?)\}\}/g)) {
@@ -83,7 +110,14 @@ test("§2 只准 `| safe`，模板標籤只准白名單那幾個", () => {
         for (const m of line.matchAll(/\{%[-+]?\s*(\w+)/g))
             if (!ALLOWED.has(m[1])) return `白名單外的標籤: {% ${m[1]} %}`;
         return null;
-    });
+    };
+    const hits = scanLines(srcHtml, rule);
+    probe(
+        "§2 模板白名單",
+        (s) => scanText(s, rule),
+        ["{{ title | upper }}", "{% macro card(x) %}", '{% from "a.html" import b %}', "{%- filter trim %}"],
+        ['{{ content | safe }}', '{%- set a = 1 %}', '{% if a %}{% include "x.html" %}{% endif %}', '{{ "a|b" }}'],
+    );
     assert.equal(hits.length, 0, `§2 白名單外的語法：\n${fail(hits)}`);
 });
 
@@ -234,16 +268,24 @@ test("§1-2 頁面不得手寫與既有 modal 元件同 id 的 <dialog>（元件
 });
 
 test("§4-1 不得裸寫 outline: none（要蓋掉必須註記替代焦點環）", () => {
-    const hits = scanLines(srcScss, (line) => (/outline:\s*none/.test(line) && !line.includes("//") ? "裸 outline:none" : null));
+    const rule = (line) => (/outline:\s*none/.test(line) && !line.includes("//") ? "裸 outline:none" : null);
+    const hits = scanLines(srcScss, rule);
+    probe("§4-1 outline:none", (s) => scanText(s, rule),
+        ["    outline: none;", "    outline:none;"],
+        ["    outline: none; // 替代焦點環：下面的 box-shadow", "    outline: 2px solid var(--focus);"]);
     assert.equal(hits.length, 0, `會蓋掉全域 :focus-visible 焦點環：\n${fail(hits)}`);
 });
 
 test("§4-1 元件不得重寫 box-sizing: border-box（_base.scss 已全域給）", () => {
     const files = srcScss.filter((f) => !/scss\/_(base|normalize)\.scss$/.test(f));
     // 含 vendor prefix：-webkit-box-sizing 一樣是重寫（曾經放行，讓 ui/switch 漏了兩年）
-    const hits = scanLines(files, (line) =>
-        /(?:-webkit-|-moz-|-ms-)?box-sizing:\s*border-box/.test(line) ? "重複宣告" : null
-    );
+    // 不加行首錨點：加了就漏掉 `-webkit-box-sizing`（那個 prefix 群組其實是註解性質的，
+    // 真正讓 vendor prefix 命中的是「不錨定」）。負控樣本把這件事釘住。
+    const rule = (line) => (/(?:-webkit-|-moz-|-ms-)?box-sizing:\s*border-box/.test(line) ? "重複宣告" : null);
+    const hits = scanLines(files, rule);
+    probe("§4-1 box-sizing", (s) => scanText(s, rule),
+        ["    box-sizing: border-box;", "-webkit-box-sizing: border-box;"],
+        ["    box-sizing: content-box;"]);
     assert.equal(hits.length, 0, `多餘宣告：\n${fail(hits)}`);
 });
 
@@ -300,11 +342,14 @@ test("§4 no-flash 腳本裡的 theme-color 色碼要等於 --surface-raised", (
 // ─────────────────────────── §4 HTML 規則（跑在渲染後的 dist）───────────────────────────
 
 test("§4 不得用 div 假扮控制項（要用真 <button>）", () => {
+    // 只查 role="button" 是只擋一半：div[role=tab/checkbox/switch/radio/…] 一樣沒有鍵盤行為
+    const rule = (t) =>
+        t.tag === "div" && /\brole=["'](button|tab|checkbox|switch|radio|menuitem|link|option)["']/.test(t.attrs) ? true : null;
     const hits = [];
-    for (const f of distHtml) for (const t of tagsOf(distDoc(f)))
-        // 只查 role="button" 是只擋一半：div[role=tab/checkbox/switch/radio/…] 一樣沒有鍵盤行為
-        if (t.tag === "div" && /\brole=["'](button|tab|checkbox|switch|radio|menuitem|link|option)["']/.test(t.attrs))
-            hits.push(`dist/${f}  ${t.raw.slice(0, 70)}`);
+    for (const f of distHtml) hits.push(...scanTags(distDoc(f), rule, `dist/${f}`));
+    probe("§4 div 假扮控制項", (s) => scanTags(s, rule),
+        ['<div role="button" tabindex="0">送出</div>', "<div role='tab'>頁籤</div>"],
+        ['<button type="button" role="tab">頁籤</button>', '<div role="group" aria-labelledby="x">']);
     assert.equal(hits.length, 0, `Enter/Space 不會觸發（WCAG 2.1.1）：\n${fail(hits)}`);
 });
 
@@ -693,24 +738,35 @@ test("§5 data-toast 的結果數，必須等於 en.json 裡同一個 key 的結
 });
 
 test("§4 行內 style 只准三種：<col> 欄寬、JS 切換的 display、資料驅動的執行期尺寸", () => {
-    const hits = [];
-    for (const f of distHtml) for (const t of tagsOf(distDoc(f))) {
+    const rule = (t) => {
         const m = t.attrs.match(/\bstyle="([^"]*)"/);
-        if (!m) continue;
+        if (!m) return null;
         const v = m[1].trim();
         const ok =
             (t.tag === "col" && /^(width|min-width)\s*:/.test(v)) ||   // 欄寬
             /^display:\s*(none|block)\s*;?$/.test(v) ||                // JS 切換
             /^width:\s*[\d.]+%\s*;?$/.test(v);                         // 資料驅動（storage-bar）
-        if (!ok) hits.push(`dist/${f}  <${t.tag} style="${v.slice(0, 50)}">`);
-    }
+        return ok ? null : `<${t.tag} style="${v.slice(0, 50)}">`;
+    };
+    const hits = [];
+    for (const f of distHtml) hits.push(...scanTags(distDoc(f), rule, `dist/${f}`));
+    probe("§4 行內 style 白名單", (s) => scanTags(s, rule),
+        ['<div style="margin-top: 8px">', '<span style="color: #333">', '<div style="width: 84.3px">'],
+        ['<col style="width: 12%">', '<div style="display: none">', '<div class="bar" style="width: 84.3%;">']);
     assert.equal(hits.length, 0, `顏色/字級/間距不得寫行內：\n${fail(hits)}`);
 });
 
 test("§4 不得輸出空屬性（for=\"\" / id=\"\" / name=\"\" / href=\"\"）", () => {
+    const rule = (t) => {
+        for (const a of ["for", "id", "name", "href"])
+            if (new RegExp(`\\b${a}=""`).test(t.attrs)) return `<${t.tag} ${a}="">`;
+        return null;
+    };
     const hits = [];
-    for (const f of distHtml) for (const t of tagsOf(distDoc(f)))
-        for (const a of ["for", "id", "name", "href"]) if (new RegExp(`\\b${a}=""`).test(t.attrs)) hits.push(`dist/${f}  <${t.tag} ${a}="">`);
+    for (const f of distHtml) hits.push(...scanTags(distDoc(f), rule, `dist/${f}`));
+    probe("§4 空屬性", (s) => scanTags(s, rule),
+        ['<label for="">名稱</label>', '<a href="">連結</a>', '<input id="" name="">'],
+        ['<label for="x">名稱</label>', "<a>連結</a>", '<input id="x" name="y" value="">']);
     assert.equal(hits.length, 0, fail(hits));
 });
 
@@ -727,10 +783,9 @@ test("§4 phrasing 元素（span / p / button）內不得放區塊元素（轉 R
         "h1", "h2", "h3", "h4", "h5", "h6",
         "li", "dt", "dd", "figcaption", "legend", "address", "hgroup",
         "thead", "tbody", "tfoot", "tr", "td", "th", "colgroup", "caption"]);
-    const hits = [];
-    for (const f of distHtml) {
-        // 必須先剝掉 HTML 註解與 script/style：裡面若寫了 <p> 之類的範例，會被當成真標籤而一路誤判
-        const html = stripNonMarkup(read(`dist/${f}`));
+    // 掃描主體抽成函式：合成樣本走同一支解析器，堆疊邏輯被改壞時當場失敗（見 probe）
+    const scan = (html, f = "<probe>") => {
+        const hits = [];
         const stack = [];
         for (const m of html.matchAll(/<\/?([a-zA-Z][\w-]*)((?:"[^"]*"|'[^']*'|[^>"'])*)>/g)) {
             const tag = m[1].toLowerCase();
@@ -741,11 +796,18 @@ test("§4 phrasing 元素（span / p / button）內不得放區塊元素（轉 R
                 const outer = stack.filter((t) => PHRASING_ONLY.has(t)).at(-1);
                 // 同標籤（<p><p>、<h2><h2>）一樣是非法巢狀（瀏覽器會自動關前一個、SSR 樹就分岔了）——
                 // round17 前身豁免了 outer === tag，等於只擋一半
-                if (outer) hits.push(`dist/${f}  <${outer}> 內含 <${tag}>`);
+                if (outer) hits.push(`${f}  <${outer}> 內含 <${tag}>`);
             }
             stack.push(tag);
         }
-    }
+        return hits;
+    };
+    const hits = [];
+    // 必須先剝掉 HTML 註解與 script/style：裡面若寫了 <p> 之類的範例，會被當成真標籤而一路誤判
+    for (const f of distHtml) hits.push(...scan(stripNonMarkup(read(`dist/${f}`)), `dist/${f}`));
+    probe("§4 phrasing 巢狀", scan,
+        ["<span><div>x</div></span>", "<p>a<p>b</p></p>", "<h2><div>x</div></h2>", "<button><ul><li>x</li></ul></button>"],
+        ["<span><b>x</b></span>", "<a><div>整張卡</div></a>", "<button><span>x</span><img></button>", "<div><p>x</p></div>"]);
     assert.equal(hits.length, 0, fail(hits));
 });
 
@@ -941,7 +1003,7 @@ test("§4-2 en.json 的 key 依字母序排列（全域嚴格字母序，插入�
 });
 
 test("§4-2 / §5 JS 不得寫死顯示字串（繁中只能當 GufoI18n.t 的 fallback）", () => {
-    const hits = scanLines(srcJs, (line, f) => {
+    const rule = (line, f) => {
         // 只豁免語言鈕自己的面板標籤（「中」/「EN」是語言自指、不進字典），不是整支 lang-toggle.js
         if (/lang-toggle\.js$/.test(f) && /js-lang-toggle|b\.textContent\s*=/.test(line)) return null;
         const code = line.replace(/\/\/.*$/, "");
@@ -949,17 +1011,26 @@ test("§4-2 / §5 JS 不得寫死顯示字串（繁中只能當 GufoI18n.t 的 f
         if (/^\s*var\s+(ZH_[A-Z_]+|zh[A-Z]\w*)\s*=/.test(code)) return null; // 供 t() 用的繁中常數
         const strs = code.match(/"[^"]*"|'[^']*'/g) || [];
         return strs.some((s) => CJK.test(s)) ? "寫死繁中，未走 i18n" : null;
-    });
+    };
+    const hits = scanLines(srcJs, rule);
+    probe("§4-2 JS 寫死繁中", (s) => scanText(s, rule, "src/_includes/ui/x/x.js"),
+        ['    el.textContent = "上傳失敗";', "    box.title = '請選擇檔案';"],
+        ['    el.textContent = t("upload.failed", "上傳失敗");', '    var ZH_FAILED = "上傳失敗";',
+            "    el.textContent = zhFailed;", "    // 失敗時顯示「上傳失敗」"]);
     assert.equal(hits.length, 0, `英文模式一互動就冒繁中：\n${fail(hits)}`);
 });
 
 // ─────────────────────────── §5 JS 規則 ───────────────────────────
 
 test("§5 不得有 jQuery 或任何第三方套件", () => {
-    const hits = scanLines(srcJs, (line) => {
+    const rule = (line) => {
         const code = line.replace(/\/\/.*$/, "");
         return /\$\(|require\(|^\s*import\s/.test(code) ? "第三方/模組載入" : null;
-    });
+    };
+    const hits = scanLines(srcJs, rule);
+    probe("§5 第三方套件", (s) => scanText(s, rule),
+        ['    $(".tab").on("click", fn);', '    var x = require("flatpickr");', '    import { a } from "./b.js";'],
+        ["    document.querySelectorAll('.tab').forEach(fn);", "    // 真 app 用 $(document).on"]);
     assert.equal(hits.length, 0, fail(hits));
 });
 
@@ -969,10 +1040,14 @@ test("§5 元件 js 不得用 .isConnected 判斷「點外部」（零合法用�
     // 註解：別的 document 委派可能先重繪把 target 拔掉重建）。isConnected 在那個情境下永遠是
     // true（重建後的新節點一樣連著文件），完全掩蓋不了問題，等於白寫。黑名單而非白名單，因為
     // 這是「零合法用途」的 API，不是「大多數情況不該用」。
-    const hits = scanLines(srcJs, (line) => {
+    const rule = (line) => {
         const code = line.replace(/\/\/.*$/, "");
         return /\.isConnected\b/.test(code) ? "禁用 .isConnected（改用 composedPath()）" : null;
-    });
+    };
+    const hits = scanLines(srcJs, rule);
+    probe("§5 .isConnected", (s) => scanText(s, rule),
+        ["    if (!e.target.isConnected) return;"],
+        ["    if (e.composedPath().indexOf(root) === -1) close();", "    // 別用 .isConnected 判斷點外部"]);
     assert.equal(hits.length, 0, fail(hits));
 });
 
@@ -1107,14 +1182,16 @@ test("§2 模板檔一律用 {# #} 註解，不得出現 <!-- 或 -->", () => {
     // ②內文若含 {% %} / {{ }} 仍會被 nunjucks 解析而出錯 ③少一個 `-->` 就把註解內文漏成可見文字
     //   （upload-box 就這樣把兩行說明印到正式頁面上過）。
     // {# #} 三者皆免：build 時移除、內部不解析、少關就 build 失敗。孤兒的 `-->` 一併擋。
+    // 先把內嵌 <script> 挖空：JS 字串裡可能出現字面的 "-->"
+    const scan = (text, f = "<probe>") => {
+        const src = text.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, (m) => m.replace(/[<>!-]/g, " "));
+        return scanText(src, (line) => (/<!--|-->/.test(line) ? line.trim().slice(0, 70) : null), f);
+    };
     const bad = [];
-    for (const f of srcHtml) {
-        // 先把內嵌 <script> 挖空：JS 字串裡可能出現字面的 "-->"
-        const src = read(f).replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, (m) => m.replace(/[<>!-]/g, " "));
-        src.split(/\r?\n/).forEach((line, i) => {
-            if (/<!--|-->/.test(line)) bad.push(`${f}:${i + 1}  ${line.trim().slice(0, 70)}`);
-        });
-    }
+    for (const f of srcHtml) bad.push(...scan(read(f), f));
+    probe("§2 HTML 註解", scan,
+        ["<!-- 開發說明 -->", "  --> 孤兒收尾"],
+        ["{# 開發說明 #}", '<script>var s = "-->";</script>']);
     assert.equal(bad.length, 0, `改用 {# #}：\n${fail(bad)}`);
 });
 
@@ -1226,21 +1303,29 @@ test("§4 元件 scss 不得出現別的元件 class（祖先位或後裔位都�
     // 只查祖先位是不夠的：`.header .header-controls { display: none }` 的祖先是自己、
     // 後裔才是別人的元件——照樣是「改別人的樣式」。兩個位置都要裁決。
     const names = new Set(componentDirs.map((c) => c.name));
+    const rule = (name) => (line) => {
+        // 只認空白後代組合子的話，`.header > .header-controls` 這種直接子代選擇器整條漏掉。
+        // 也不要只看前兩段：`.self .self2 .foreign` 的第三段一樣是別人的 class。
+        const sel = line.split("{")[0];
+        if (!/^\s*\./.test(sel) || !/[\s>+~]/.test(sel.trim())) return null;
+        const parts = [...sel.matchAll(/\.([\w-]+)/g)].map((x) => x[1]);
+        if (parts.length < 2) return null;
+        const foreign = parts.filter((c) => names.has(c) && c !== name);
+        return foreign.length ? `${line.trim()}  → ${foreign.join("、")}` : null;
+    };
     const bad = [];
     for (const { name, path } of componentDirs) {
         const f = `${path}/_${name}.scss`;
-        if (!existsSync(f)) continue;
-        read(f).split(/\r?\n/).forEach((line, i) => {
-            // 只認空白後代組合子的話，`.header > .header-controls` 這種直接子代選擇器整條漏掉。
-            // 也不要只看前兩段：`.self .self2 .foreign` 的第三段一樣是別人的 class。
-            const sel = line.split("{")[0];
-            if (!/^\s*\./.test(sel) || !/[\s>+~]/.test(sel.trim())) return;
-            const parts = [...sel.matchAll(/\.([\w-]+)/g)].map((x) => x[1]);
-            if (parts.length < 2) return;
-            const foreign = parts.filter((c) => names.has(c) && c !== name);
-            if (foreign.length) bad.push(`${f}:${i + 1}  ${line.trim()}  → ${foreign.join("、")}`);
-        });
+        if (existsSync(f)) bad.push(...scanText(read(f), rule(name), f));
     }
+    // 合成樣本用真的元件名（header / header-controls 都是元件），否則 names 這張表壞掉時測試照樣綠
+    assert.ok(names.has("header") && names.has("header-controls"), "合成樣本用的元件名已不存在，請改用現有的兩個元件名");
+    probe("§4 跨元件覆寫", (s) => scanText(s, rule("header")),
+        // 第二個樣本刻意不留空白：`>` 兩側有空白時，就算組合子集合被縮成只認空白也照樣命中
+        // （＝那個變異不會讓測試變紅，等於沒被釘住）。`.header>.header-controls` 才釘得住 [\s>+~]。
+        [".header .header-controls { display: none }", ".header>.header-controls { gap: 0 }",
+            ".header .foo .header-controls { gap: 0 }"],
+        [".header .header-title { gap: 0 }", ".header-controls { gap: 0 }", ".header { gap: 0 }"]);
     assert.equal(bad.length, 0, `改別人的樣式要用 owning 元件的 variant/slot class：\n${fail(bad)}`);
 });
 
@@ -1345,11 +1430,47 @@ test("md 的 §N 引用都指向 GUIDELINE 存在的章節，README 的引用要
     assert.equal(bad.length, 0, fail(bad));
 });
 
+// 掃描對象＝版控裡的每一支 md（清單寫死會漏：REACT-CONVERSION.md 是主產出，
+// 卻曾經同時漏在這條與下面那條 §N 之外，整份主交付的連結與章節引用都沒人驗）
+const mdDocs = gitFiles('"*.md"');
+
 test("md 的相對連結都指向存在的檔案", () => {
+    const LINKS = /\]\((?!https?:)([^)#]+)/g;
     const bad = [];
-    for (const doc of ["README.md", "GUIDELINE.md", "TAILWIND-CONVERSION.md"])
-        for (const m of read(doc).matchAll(/\]\((?!https?:)([^)#]+)/g))
+    let seen = 0;
+    for (const doc of mdDocs)
+        for (const m of read(doc).matchAll(LINKS)) {
+            seen++;
             if (!existsSync(m[1])) bad.push(`${doc}  → ${m[1]}`);
+        }
+    assert.ok(mdDocs.length >= 4, `只掃到 ${mdDocs.length} 支 md —— 掃描集合空了`);
+    assert.ok(seen >= 10, `只抓到 ${seen} 條相對連結 —— 正則壞了，這條在空轉`);
+    probe("md 相對連結", (s) => [...s.matchAll(LINKS)].filter((m) => !existsSync(m[1])),
+        ["見 [規範](GUIDELINE-不存在.md)"], ["見 [規範](GUIDELINE.md)", "見 [官網](https://example.com/x)"]);
+    assert.equal(bad.length, 0, fail(bad));
+});
+
+test("md 的 §N 引用都指向存在的章節（GUIDELINE 的，或該文件自己編號的小節）", () => {
+    // 上面那條只管 GUIDELINE 與 README。兩支轉換配方也滿是 §N：
+    // REACT-CONVERSION 的 § 一律指 GUIDELINE（它自己的章節是 ⓪①② 圈號）；
+    // TAILWIND-CONVERSION 另有自己的 `### 5-1.` 小節，§5-1 指的是它自己——兩種都要放行，
+    // 只擋「兩邊都找不到」的死引用（GUIDELINE 改編號時，主交付會靜默指向不存在的章節）。
+    const secOf = (t) => new Set([...t.matchAll(/^#{2,4} (\d+)(?:-(\d+))?\./gm)].map((m) => (m[2] ? `${m[1]}-${m[2]}` : m[1])));
+    const guideline = secOf(read("GUIDELINE.md"));
+    assert.ok(guideline.size >= 10, `GUIDELINE 只解析出 ${guideline.size} 個章節 —— 標題正則壞了`);
+    const bad = [];
+    let seen = 0;
+    for (const doc of mdDocs.filter((d) => /CONVERSION\.md$/.test(d))) {
+        const text = read(doc);
+        const own = secOf(text);
+        text.split(/\r?\n/).forEach((line, i) => {
+            for (const m of line.matchAll(/§\s?(\d+(?:-\d+)?)/g)) {
+                seen++;
+                if (!guideline.has(m[1]) && !own.has(m[1])) bad.push(`${doc}:${i + 1}  §${m[1]} 不存在`);
+            }
+        });
+    }
+    assert.ok(seen >= 20, `只抓到 ${seen} 個 §N 引用 —— 正則壞了，這條在空轉`);
     assert.equal(bad.length, 0, fail(bad));
 });
 
@@ -1647,13 +1768,17 @@ test("§5 markup 零 inline 事件處理器 / javascript: href（行為住在元
     // 要在 markup 宣告行為就掛資料屬性（data-open-modal / data-toast），由 owning 元件的 js 事件委派。
     // `javascript:` href 同樣是把 js 塞進 markup（`javascript:void(0)` 更是一顆死連結）。
     const stripNjk = (s) => s.replace(/\{#[\s\S]*?#\}/g, "");
+    const rule = ({ tag, attrs, raw }) => {
+        // HTML 屬性大小寫不敏感：onClick= 是合法的 inline handler，沒有 i flag 就抓不到
+        if (/\son[a-z]+\s*=/i.test(" " + attrs)) return `inline handler: <${tag} ${raw.slice(0, 60)}`;
+        if (/=\s*["']javascript:/i.test(attrs)) return `javascript: href: <${tag} ${raw.slice(0, 60)}`;
+        return null;
+    };
     const hits = [];
-    for (const f of srcHtml)
-        for (const { tag, attrs, raw } of tagsOf(stripNjk(read(f)))) {
-            // HTML 屬性大小寫不敏感：onClick= 是合法的 inline handler，沒有 i flag 就抓不到
-            if (/\son[a-z]+\s*=/i.test(" " + attrs)) hits.push(`${f}  inline handler: <${tag} ${raw.slice(0, 60)}`);
-            if (/=\s*["']javascript:/i.test(attrs)) hits.push(`${f}  javascript: href: <${tag} ${raw.slice(0, 60)}`);
-        }
+    for (const f of srcHtml) hits.push(...scanTags(stripNjk(read(f)), rule, f));
+    probe("§5 inline handler", (s) => scanTags(s, rule),
+        ['<button onclick="save()">存</button>', '<button onClick="save()">存</button>', '<a href="javascript:void(0)">x</a>'],
+        ['<button type="button" data-open-modal="x">存</button>', '<a href="#main" class="skip-link">跳過</a>']);
     assert.equal(hits.length, 0, `改掛 data-open-modal / data-toast，或綁在元件 js 裡：\n${fail(hits)}`);
 });
 
@@ -1667,13 +1792,25 @@ test("i18n 字典的快取失效真的有生效（dist 的 fetch 帶 ?v=）", ()
 test("§4 同一頁的 id 不得重複（label[for] / aria-labelledby / getElementById 會指錯）", () => {
     // 共用元件會在同一頁 include 兩次（header-controls 同時住在 header 與 mobile-nav 展開的選單裡）。
     // 只要有人替它加一顆靜態 id，就會靜默產生重複 id。這條在 dist 上驗，才看得到渲染後的實況。
-    const bad = [];
-    for (const f of distHtml) {
+    const scan = (html, f = "<probe>") => {
+        const out = [];
         const seen = new Map();
-        for (const m of read(`dist/${f}`).matchAll(/\sid="([^"]+)"/g))
-            seen.set(m[1], (seen.get(m[1]) || 0) + 1);
-        for (const [id, n] of seen) if (n > 1) bad.push(`dist/${f}  id="${id}" × ${n}`);
+        for (const m of html.matchAll(/\sid="([^"]+)"/g)) seen.set(m[1], (seen.get(m[1]) || 0) + 1);
+        for (const [id, n] of seen) if (n > 1) out.push(`${f}  id="${id}" × ${n}`);
+        return out;
+    };
+    const bad = [];
+    let ids = 0;
+    for (const f of distHtml) {
+        const html = read(`dist/${f}`);
+        ids += (html.match(/\sid="[^"]+"/g) || []).length;
+        bad.push(...scan(html, `dist/${f}`));
     }
+    // 空轉守門：正則若被改壞（例如漏了前導空白、換成 id='…' 單引號），一顆 id 都收不到卻照樣全綠
+    assert.ok(ids > 500, `全站只收到 ${ids} 個 id —— 收集器壞了，這條在空轉`);
+    probe("§4 同頁重複 id", scan,
+        ['<div id="a"></div><span id="a"></span>'],
+        ['<div id="a"></div><span id="b"></span>']);
     assert.equal(bad.length, 0, `同頁重複的 id：\n${fail(bad)}`);
 });
 
@@ -1693,9 +1830,12 @@ test("§9 裸元素選擇器只准出現在 _normalize / _base", () => {
         .replace(/'(?:[^'\\]|\\.)*'/g, "''")
         .replace(/#\{[^}]*\}/g, "V");                // scss 插值 #{$i}
 
+    // round35：這條是全檔最複雜的手寫解析器，而它是零命中型——收集器壞掉（或排除規則被寫寬）
+    // 時完全無聲（實測：把排除規則從 `_(normalize|base)` 寫寬成所有 partial，真違規照樣全綠）。
+    // 掃描主體抽成 scanOne，最後用合成樣本自我檢查：認不出違規的形狀就當場失敗。
     const hits = [];
-    for (const f of srcScss.filter((p) => !/scss\/_(normalize|base)\.scss$/.test(p))) {
-        const src = strip(read(f));
+    const scanOne = (f, srcText, out) => {
+        const src = strip(srcText);
         // @media / @supports / @each 之類會「就地展開」，不算一層巢狀；
         // @mixin / @keyframes / @function 的內容不在原地輸出（@include 到哪就在哪），視為一層。
         const OPAQUE = /^@(mixin|keyframes|function)\b/;
@@ -1720,7 +1860,7 @@ test("§9 裸元素選擇器只准出現在 _normalize / _base", () => {
                         const bare = compound.replace(/\[[^\]]*\]/g, "");
                         const elem = bare.split(/[.#:]/)[0];
                         if (/^[a-z][a-z0-9]*$/.test(elem) && ELEMENTS.has(elem) && !/[.#]/.test(bare))
-                            hits.push(`${f}:${selLine}  ${group.trim()}`);
+                            out.push(`${f}:${selLine}  ${group.trim()}`);
                     }
                 }
                 stack.push(!isAtRule || OPAQUE.test(sel) ? "rule" : "@");
@@ -1729,7 +1869,15 @@ test("§9 裸元素選擇器只准出現在 _normalize / _base", () => {
             else if (ch === ";") buf = "";
             else { if (!buf.trim()) selLine = line; buf += ch; }   // 選擇器起始行，錯誤訊息才指得準
         }
-    }
+    };
+    for (const f of srcScss.filter((x) => !/scss\/_(normalize|base)\.scss$/.test(x))) scanOne(f, read(f), hits);
+    // 負控自我檢查：合成樣本必須被認出來（零命中型測試唯一的空轉守門）
+    const probe = [];
+    scanOne("<probe>", "section { color: red; }\n@media screen { p { margin: 0 } }\n", probe);
+    assert.equal(probe.length, 2, `掃描器認不出裸元素選擇器（合成樣本只抓到 ${probe.length}／2）—— 這條測試永遠會綠`);
+    const probeOk = [];
+    scanOne("<probe>", ".card { section { color: red } }\nbody.guideline-page { margin: 0 }\n", probeOk);
+    assert.equal(probeOk.length, 0, `掃描器誤報了合法寫法：${probeOk.join("、")}`);
     assert.equal(hits.length, 0, `打包進單一 main.css 會洩漏到全站：\n${fail(hits)}`);
 });
 
@@ -1809,9 +1957,11 @@ test("§4 元件 scss 不得寫 [data-theme=dark] 分支（零例外）", () => 
     // 只有全域層可以讀主題旗標：_var / _guideline-var（色源）、_base（color-scheme）、
     // _dark-icons（光柵 PNG 反相）。元件一律靠 token 換膚。
     const ALLOW = /src\/scss\/_(var|guideline-var|base|dark-icons)\.scss$/;
-    const hits = scanLines(srcScss.filter((f) => !ALLOW.test(f)), (line) =>
-        /\[data-theme/.test(line.split("//")[0]) ? "深色分支" : null
-    );
+    const rule = (line) => (/\[data-theme/.test(line.split("//")[0]) ? "深色分支" : null);
+    const hits = scanLines(srcScss.filter((f) => !ALLOW.test(f)), rule);
+    probe("§4 元件 [data-theme]", (s) => scanText(s, rule),
+        ['    [data-theme="dark"] & { background: #222; }', "    [data-theme=dark] .card { color: #fff }"],
+        ["    background: var(--surface-raised);", "    // 深色由 [data-theme] 在 _var 換 token"]);
     assert.equal(hits.length, 0, `元件只用 token，換膚交給 _var.scss：\n${fail(hits)}`);
 });
 
@@ -2025,25 +2175,37 @@ test("§4 遮罩圖示的墨色只能來自文字族／前景墨色（填充族�
 });
 
 test("§4 工具層：文字大小/顏色工具不帶 !important（零例外）", () => {
-    let cur = null;
-    const hits = [];
-    read("src/scss/_utilities.scss").split(/\r?\n/).forEach((raw, i) => {
-        const line = raw.split("//")[0];
-        const sel = line.match(/^\.([\w-]+)[\s,{]/);
-        if (sel) cur = sel[1];
-        // -webkit-text-fill-color 也是文字顏色；錨點用 (^|[\s;{]) 才不會被 background-color 蒙混
-        if (/(?:^|[\s;{])(-webkit-text-fill-color|color|font-size|font-weight)\s*:[^;]*!important/.test(line))
-            hits.push(`_utilities.scss:${i + 1}  .${cur}  ${line.trim()}`);
-    });
+    const scan = (text, f = "<probe>") => {
+        let cur = null;
+        const out = [];
+        text.split(/\r?\n/).forEach((raw, i) => {
+            const line = raw.split("//")[0];
+            const sel = line.match(/^\.([\w-]+)[\s,{]/);
+            if (sel) cur = sel[1];
+            // -webkit-text-fill-color 也是文字顏色；錨點用 (^|[\s;{]) 才不會被 background-color 蒙混
+            if (/(?:^|[\s;{])(-webkit-text-fill-color|color|font-size|font-weight)\s*:[^;]*!important/.test(line))
+                out.push(`${f}:${i + 1}  .${cur}  ${line.trim()}`);
+        });
+        return out;
+    };
+    const hits = scan(read("src/scss/_utilities.scss"), "_utilities.scss");
+    probe("§4 工具層 !important", scan,
+        [".text-bold {\n    font-weight: 600 !important;\n}", ".text-muted { color: var(--text-muted) !important; }",
+            ".text-hero { -webkit-text-fill-color: transparent !important; }"],
+        [".text-bold {\n    font-weight: 600;\n}", ".bg-card { background-color: var(--surface) !important; }"]);
     assert.equal(hits.length, 0, `要壓過元件色，改由 owning 層提供變體（如 .page-title.plain）：\n${fail(hits)}`);
 });
 
 test("§4 元件 scss 不得用 #id 選擇器（那是比 class 更緊的跨元件耦合）", () => {
     const files = srcScss.filter((f) => !/scss\/_(normalize|base)\.scss$/.test(f));
-    const hits = scanLines(files, (line) => {
+    const rule = (line) => {
         const code = line.split("//")[0];
         return /^\s*#[a-zA-Z][\w-]*/.test(code) ? "id 選擇器" : null;
-    });
+    };
+    const hits = scanLines(files, rule);
+    probe("§4 元件 #id 選擇器", (s) => scanText(s, rule),
+        ["#uploadModal {", "    #main .card {"],
+        ["    color: var(--text);", "    // #id 選擇器一律不用", "    background: url(a.png#x);"]);
     assert.equal(hits.length, 0, `改用元件自有的 slot class：\n${fail(hits)}`);
 });
 
