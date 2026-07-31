@@ -3084,19 +3084,31 @@ test("§5/§6 5-5-1 每位成員都要看得到啟用狀態、切得動，且停
     assert.equal(hits.length, 0, fail(hits));
 });
 
-test("§5 5-5-1 儲存鈕要演出後端的兩道守衛（最後一位管理者 400／平台角色 403），不能只有成敗兩態", () => {
-    // 只列「成功|失敗」的話，那兩句可行動的訊息無處可放，使用者只看到「儲存失敗」而不知道要先指派另一位管理者。
+test("§5 5-5-1 儲存鈕要演出後端每一道守衛（降級 400／停用 400／平台角色 403），不能只有成敗兩態", () => {
+    // 只列「成功|失敗」的話，那幾句可行動的訊息無處可放，使用者只看到「儲存失敗」而不知道要先指派另一位管理者。
+    // round33：原本這裡寫死 `toast.length === 4` ＋ types 陣列逐項比對，等於斷言「現在剛好有幾道守衛」。
+    // 那顆魔數把漏掉的第三道釘住了——product `users.py` 的降級（:310 cannot remove the last tenant admin）
+    // 與停用（:317 cannot deactivate the last active tenant admin）是兩條不同訊息，而這顆儲存鈕同時送
+    // is_admin 與 is_active，兩條都打得到。補齊守衛的人會被這條測試擋下來，於是不補。
+    // 判準改成「形狀」而不是「幾段」：首段 success、末段 error、中間全是使用者修得掉的 warning 且 ≥2 段。
     const html = distDoc("5-5-1_userManagement.html");
     const btn = html.match(/<button[^>]*data-i18n-data-toast="toast\.saveMember"[^>]*>/);
     assert.ok(btn, "5-5-1 找不到成員列的儲存鈕");
     const toast = btn[0].match(/data-toast="([^"]*)"/)[1].split("|");
     const types = btn[0].match(/data-toast-type="([^"]*)"/)[1].split("|");
-    assert.equal(toast.length, 4, `儲存鈕應演出 4 種結果（成功／最後一位管理者／平台角色／失敗），實際 ${toast.length}`);
-    assert.deepEqual(types, ["success", "warning", "warning", "error"], "兩道守衛是使用者修得掉的，語意應為 warning");
+    assert.equal(types.length, toast.length, "data-toast 與 data-toast-type 段數要對位");
+    assert.equal(types[0], "success", "首段是成功");
+    assert.equal(types.at(-1), "error", "末段是不可就地修正的失敗");
+    const mids = types.slice(1, -1);
+    assert.ok(mids.length >= 3, `中間至少要有三段守衛（降級／停用／平台角色），實際 ${mids.length}`);
+    assert.deepEqual([...new Set(mids)], ["warning"], "中間那幾道守衛都是使用者修得掉的，語意應為 warning");
     const en = JSON.parse(read("src/i18n/en.json"))["toast.saveMember"].split("|");
-    assert.equal(en.length, 4, "en.json 的 toast.saveMember 段數要跟 markup 一致");
-    assert.match(en[1], /last active tenant admin/i, "400 那段英文要講得出是「最後一位在職管理者」");
-    assert.match(en[2], /platform role/i, "403 那段英文要講得出是「平台角色持有者」");
+    assert.equal(en.length, toast.length, "en.json 的 toast.saveMember 段數要跟 markup 一致");
+    // 逐條語意（不綁索引，補新守衛時不會位移）
+    const body = en.slice(1, -1).join(" | ");
+    assert.match(body, /remove the last tenant admin/i, "降級那道（users.py:310）要講得出「最後一位管理者」");
+    assert.match(body, /last active tenant admin/i, "停用那道（users.py:317）要講得出「最後一位在職管理者」");
+    assert.match(body, /platform role/i, "403 那道要講得出是「平台角色持有者」");
 });
 
 // ───────── 平台兩級可見性（auditor／admin）─────────

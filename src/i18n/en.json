@@ -1377,7 +1377,7 @@
   "toast.saveGlossaryTable": "Glossary table updated|Table name cannot be empty, or the normalisation regex is invalid (no quantifiers, no more than one alternation)|Save failed",
   "toast.saveGroup": "Group updated|Group name already exists|Save failed",
   "toast.saveMcpServer": "MCP Server updated|Save failed",
-  "toast.saveMember": "Updated|Cannot deactivate the last active tenant admin — assign another one first|Users holding a platform role cannot be changed here; use the platform console|Save failed",
+  "toast.saveMember": "Updated|Cannot remove the last tenant admin — assign another one first|Cannot deactivate the last active tenant admin — assign another one first|Users holding a platform role cannot be changed here; use the platform console|Save failed",
   "toast.saveMembers": "Members updated|Save failed",
   "toast.saveProfile": "Profile saved|Save failed",
   "toast.saveProfileConfig": "Conversation settings saved|Some fields failed validation|Save failed. Please try again later.",
