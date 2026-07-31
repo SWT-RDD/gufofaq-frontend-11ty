@@ -1040,6 +1040,19 @@ test("GUIDELINE.md 不放會腐化的枚舉（頁數、元件數）", () => {
 
 // ─────────── 地毯式稽核抓到、但既有測試沒涵蓋的規則 ───────────
 
+test("§4 送出鈕是 type=\"button\"（登入頁除外）——切版不包 <form>，submit 是等著爆的地雷", () => {
+    // §4：「表單不包 <form>、送出鈕是 type="button"（登入頁除外）」。既有的「不得省略 type」那條
+    // 只擋缺屬性，對 type="submit" 完全無感——round33 抓到四顆（2-2-3、chatroom、faq-chatroom、
+    // faq-feedback-modal）。切版沒有 <form> owner 所以目前無害，但這正是「無害到沒人會發現」的那種：
+    // 轉 React 後任何人把它包進 <form>（RHF／Server Action）就變成真提交、整頁重載。
+    const hits = scanLines(
+        srcHtml.filter((f) => !f.endsWith("login.html")),
+        (line) => (/type="submit"/.test(line) ? true : null),
+    );
+    assert.ok(srcHtml.length > 20, "srcHtml 空了 —— 這條測試在空轉");
+    assert.equal(hits.length, 0, `改成 type="button"（送出行為由元件 js／React 接手）：\n${fail(hits)}`);
+});
+
 test("§4 可點的東西一律用真 button，且不得省略 type", () => {
     // 掃的是原始碼（`{% if %}` 兩個分支都要驗），所以要先把 {# #} 註解挖掉——
     // 檔頭註解裡寫「一律用真 `<button>`」會被 tagsOf 當成一顆沒有 type 的按鈕。
