@@ -34,9 +34,9 @@ permalink: 5-6-2_platformMcpServers.html
      1/2/3 這三個號碼另有出處：5-2 對話設定的 MCP 勾選清單 `<option value>` 就是它們
      （跨頁同一份目錄，測試 §6「5-2 的 MCP Server 勾選清單與 5-6-2 註冊表跨頁自洽」把關）。 #}
 {% set mcpServers = [
-  { id: 1, name: "時間工具", command: "uvx", args: ["mcp-server-time", "--local-timezone=Asia/Taipei"], env: [], description: "提供目前時間與時區換算。", active: true },
-  { id: 2, name: "內部文件搜尋", command: "npx", args: ["-y", "@acme/doc-mcp"], env: ["ACME_API_KEY=***", "ACME_REGION=ap-northeast-1"], description: "查詢內部知識庫文件。", active: true },
-  { id: 3, name: "舊版文件搜尋", command: "npx", args: ["-y", "@acme/doc-mcp-legacy"], env: ["ACME_API_KEY=***"], description: "舊版內部文件查詢，已停用。", active: false }
+  { id: 1, name: "時間工具", command: "uvx", args: ["mcp-server-time", "--local-timezone=Asia/Taipei"], env: [], description: "提供目前時間與時區換算。", active: true, lastTest: { ok: true, toolsCount: 3, tools: "get_current_time, convert_time, list_timezones", error: "" } },
+  { id: 2, name: "內部文件搜尋", command: "npx", args: ["-y", "@acme/doc-mcp"], env: ["ACME_API_KEY=***", "ACME_REGION=ap-northeast-1"], description: "查詢內部知識庫文件。", active: true, lastTest: { ok: false, toolsCount: 0, tools: "", error: "連線逾時（30 秒）：程序啟動後沒有回應 initialize" } },
+  { id: 3, name: "舊版文件搜尋", command: "npx", args: ["-y", "@acme/doc-mcp-legacy"], env: ["ACME_API_KEY=***"], description: "舊版內部文件查詢，已停用。", active: false, lastTest: { ok: false, toolsCount: 0, tools: "", error: "" } }
 ] %}
 
 <p class="text-gray" data-i18n="settings.mcpServersIntro">MCP Server 讓 Agent 連上外部工具。註冊即在 Agent 主機執行指定指令，屬高權限操作，僅平台管理者可管理；租戶只能在對話設定勾選已註冊的 Server。</p>
@@ -118,7 +118,14 @@ permalink: 5-6-2_platformMcpServers.html
 
 {# Server 清單：default-table。名稱／執行指令／描述（逐列可就地編輯）＋狀態＋操作
      （儲存｜測試連線｜刪除）。測試連線是送 API 的動作鈕（列全結果 toast），儲存同理。
-     刪除需先選定「哪一個 Server」＝業務條件開窗 → hook class（.js-delete-mcp）。示範 3 筆（見上）。 #}
+     刪除需先選定「哪一個 Server」＝業務條件開窗 → hook class（.js-delete-mcp）。示範 3 筆（見上）。
+
+     **`_model_to_dict` 回的 `created_at`／`updated_at`（GufoRAG mcp.py:113-120）刻意不畫**：
+     這張表是「現在的組態長什麼樣」，不是變更史；要追誰在什麼時候改的，稽核日誌（5-7）才是
+     那件事的正本（`settings.mcp.*` 的事件），在這裡再畫一份時間戳會變成第二個真相。
+     **`test_mcp_server` 回的 `tools` / `tools_count` / `error` 則有落點**——見下方逐列的
+     「最近一次測試」欄（GufoRAG mcp.py:567-620 明訂 `error` 是「連線測試的結果本身就是要顯示的資料」，
+     原樣回給呼叫端，所以失敗時要看得到那句話，不能只彈一顆紅色 toast）。 #}
 <div class="block flex-row column gap-16" data-platform-role="admin">
     <div class="text-md text-bold" data-i18n="settings.mcpServerList">MCP Server 清單</div>
     <div class="table-container scrollTable">
@@ -130,6 +137,7 @@ permalink: 5-6-2_platformMcpServers.html
                 <col style="width:240px; min-width:240px;">
                 <col style="min-width:220px;">
                 <col style="width:90px; min-width:90px;">
+                <col style="min-width:260px;">
                 <col style="width:320px; min-width:320px;">
             </colgroup>
             <thead>
@@ -140,6 +148,7 @@ permalink: 5-6-2_platformMcpServers.html
                     <th data-i18n="settings.mcpEnv">環境變數</th>
                     <th data-i18n="settings.mcpDescription">描述</th>
                     <th data-i18n="widget.active">啟用</th>
+                    <th data-i18n="settings.mcpLastTest">最近一次測試</th>
                     <th data-i18n="common.actions">操作</th>
                 </tr>
             </thead>
@@ -165,10 +174,24 @@ permalink: 5-6-2_platformMcpServers.html
                             <span class="sr-only" data-i18n="widget.active">啟用</span>
                         </label>
                     </td>
+                    {# 測試結果三種狀態：成功（幾顆工具＋清單）／失敗（原樣顯示 error，那是 product 明訂
+                         「要顯示的資料」）／從未測過（—）。三種都要演得到（§5 每個分支都要看得到）。 #}
+                    <td>
+                        {% if server.lastTest.ok %}
+                        <div class="flex-row column gap-4">
+                            <span class="text-bold">{{ server.lastTest.toolsCount }}<span data-i18n="settings.mcpToolsUnit"> 個工具</span></span>
+                            <div class="text-gray ellipsis-2">{{ server.lastTest.tools }}</div>
+                        </div>
+                        {% elif server.lastTest.error %}
+                        <div class="text-red ellipsis-2">{{ server.lastTest.error }}</div>
+                        {% else %}
+                        <span class="text-gray" data-i18n="settings.mcpNeverTested">尚未測試</span>
+                        {% endif %}
+                    </td>
                     <td>
                         <div class="btn-group">
                             <button type="button" class="button button-border button-sm" data-toast="MCP Server 已更新|名稱已存在|執行指令不在允許清單（僅 python／python3／node／npx／uvx／uv）|新增的環境變數鍵不可以填「***」（那是讀取時的遮罩），請填入真正的值|儲存失敗" data-i18n-data-toast="toast.saveMcpServer" data-toast-type="success|warning|warning|warning|error" data-i18n="action.save">儲存</button>
-                            <button type="button" class="button button-border button-sm" data-toast="連線成功，已取得工具清單|連線測試失敗" data-i18n-data-toast="toast.testMcpServer" data-toast-type="success|error" data-i18n="settings.testConnection">測試連線</button>
+                            <button type="button" class="button button-border button-sm" data-toast="連線成功，工具清單已更新到右欄|連線測試失敗，失敗原因見右欄" data-i18n-data-toast="toast.testMcpServer" data-toast-type="success|error" data-i18n="settings.testConnection">測試連線</button>
                             <button type="button" class="button button-red button-sm js-delete-mcp" data-i18n="action.delete">刪除</button>
                         </div>
                     </td>
