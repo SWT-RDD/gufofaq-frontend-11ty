@@ -158,7 +158,7 @@ permalink: 5-5-1_userManagement.html
                             {# 儲存＝把這一列的狀態／角色／群組一起送 PATCH /users/{id}。後端有兩道守衛，
                                  訊息不能被吞掉（否則使用者只看到「儲存失敗」，不知道要先指派另一位管理者）：
                                  400「cannot deactivate the last active tenant admin」（product users.py）、
-                                 403「平台角色持有者不得在租戶端變更」（同檔 _assert_not_platform_role：
+                                 403「平台角色持有者不得在租戶端變更」（同檔 _assert_tenant_manageable（users.py:87）：
                                  平台管理員／稽核員寄生在一般租戶裡，停用他會讓平台治理端點沒人打得動）。 #}
                             <button type="button" class="button button-border button-sm" data-toast="更新成功|不可移除租戶最後一位管理者，請先指派另一位|不可停用最後一位在職的租戶管理者，請先指派另一位|平台角色持有者不可在租戶端變更，請由平台管理端處理|儲存失敗" data-i18n-data-toast="toast.saveMember" data-toast-type="success|warning|warning|warning|error" data-i18n="action.save">儲存</button>
                             {# 重設密碼：開窗需先選定「重設哪一位成員」＝業務條件開窗，故用 hook class（.js-reset-password），

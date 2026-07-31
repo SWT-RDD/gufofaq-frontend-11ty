@@ -249,7 +249,11 @@ permalink: 5-6-1_platformTenants.html
 {% set reviewFailResults = [
   { name: "示範租戶 D", error: "從 GufoRAG 刪租戶索引失敗（tenant=42）" }
 ] %}
-<div class="block mt-16 flex-row column gap-16" data-platform-role="admin">
+{# 名單與門檻是 auditor 讀得到的（GET /platform/review/overdue ＝ require_platform_auditor，
+     platform.py:1387；docstring 自述「這一步不動任何資料，管理員截圖存證用」）——整區標 admin
+     等於唯讀稽核員連那張截圖都看不到，正是 §5 要防的「把整塊 gate 在是不是管理員」。
+     區塊標 auditor，只有真的會寫入的那三顆動作鈕（POST /review/apply ＝ require_platform_admin，:1440）標 admin。 #}
+<div class="block mt-16 flex-row column gap-16" data-platform-role="auditor">
     <div class="text-md text-bold" data-i18n="platform.reviewTitle">ISO 季度審核</div>
     <p class="text-gray m-0" data-i18n="platform.reviewDesc">設定逾時門檻並一鍵列出所有符合的帳號；確認後批次處置。全手動，名單與結果畫面皆保留供稽核截圖。</p>
 
@@ -274,7 +278,7 @@ permalink: 5-6-1_platformTenants.html
                 </div>
             </div>
         </div>
-        <div class="btn-group">
+        <div class="btn-group" data-platform-role="admin">
             <button type="button" class="button button-red js-review-purge" data-i18n="platform.reviewActionPurge">刪除逾時資料</button>
             <button type="button" class="button button-red js-review-delete" data-i18n="platform.reviewActionDelete">刪除逾時帳號</button>
             <button type="button" class="button button-border js-review-freeze" data-i18n="platform.reviewActionFreeze">凍結逾時帳號</button>
@@ -399,9 +403,11 @@ permalink: 5-6-1_platformTenants.html
      真正把關在 product（PUT /platform/disclaimer，require_platform_admin）。免責聲明「本文」為法律文字、
      單一語言逐字顯示、不翻譯 → textarea 本文不掛 data-i18n；區塊標題與儲存鈕文案（chrome）才走 i18n。 #}
 {# 編輯與還原都是 require_platform_admin（PUT /platform/disclaimer、POST /disclaimer/versions/{n}/activate）；
-     版本史本身是 auditor 讀得到的（GET /platform/disclaimer/versions），但這一區的每顆控制項都是寫入動作，
-     故整區標 admin —— auditor 要看免責內容有 app-shell 的閘門那份（ui/subscription-gate）。 #}
-<div class="block mt-16 flex-row column gap-16" data-platform-role="admin">
+     但**版本史與目前生效的本文是 auditor 讀得到的**（GET /platform/disclaimer/versions ＝
+     require_platform_auditor，platform.py:268），而 ISO 要查的正是「這份聲明改過幾次、什麼時候改的」。
+     故區塊標 auditor：本文 textarea 是值控制項（低於 admin 照渲染但 disabled，§5），
+     儲存與還原鈕才標 admin。原本整區 admin ＝ 稽核員連版本史都看不到。 #}
+<div class="block mt-16 flex-row column gap-16" data-platform-role="auditor">
     <div class="text-md text-bold" data-i18n="platform.disclaimerTitle">免責聲明設定</div>
     <div class="form-group">
         <div class="field">
@@ -411,7 +417,7 @@ AI內容生成的性質
 本平台基於RAG（Retrieval-Augmented Generation）技術，提供專注於文字生成的人工智慧服務，包括對話或報告等文字形式的內容創作，主要透過由使用者上傳的資料作為參考進行。</textarea>
         </div>
     </div>
-    <div class="flex-row">
+    <div class="flex-row" data-platform-role="admin">
         <button type="button" class="button button-primary" data-toast="免責聲明已儲存|儲存失敗" data-i18n-data-toast="toast.saveDisclaimer" data-toast-type="success|error" data-i18n="action.save">儲存</button>
     </div>
     {# 免責聲明版本史：每次儲存 append 一版；可還原歷史版本（product 端 append 複本為當前，非覆寫）。示範 2 版。 #}
@@ -427,7 +433,7 @@ AI內容生成的性質
             {% if v.current %}
             <span class="text-bold" data-i18n="platform.currentVersion">目前版本</span>
             {% else %}
-            <button type="button" class="button button-border button-sm js-disclaimer-restore" data-toast="已還原此版本|還原失敗，請稍後再試" data-i18n-data-toast="toast.restoreDisclaimer" data-toast-type="success|error" data-i18n="action.restore">還原此版本</button>
+            <button type="button" class="button button-border button-sm js-disclaimer-restore" data-platform-role="admin" data-toast="已還原此版本|還原失敗，請稍後再試" data-i18n-data-toast="toast.restoreDisclaimer" data-toast-type="success|error" data-i18n="action.restore">還原此版本</button>
             {% endif %}
         </div>
         {% endfor %}
