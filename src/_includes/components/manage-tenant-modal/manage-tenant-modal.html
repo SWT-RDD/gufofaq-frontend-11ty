@@ -54,7 +54,7 @@
                                         <label for="tenantQaLimitInput" class="control-label" data-i18n="platform.qaLimit">問答額度</label>
                                     </div>
                                     <div class="field">
-                                        <input type="number" id="tenantQaLimitInput" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control" value="3000">
+                                        <input type="number" min="0" step="1" id="tenantQaLimitInput" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control" value="3000">
                                     </div>
                                 </div>
                             </div>
@@ -64,7 +64,7 @@
                                         <label for="tenantExtractionLimitInput" class="control-label" data-i18n="platform.extractionLimit">萃取額度</label>
                                     </div>
                                     <div class="field">
-                                        <input type="number" id="tenantExtractionLimitInput" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control" value="1000">
+                                        <input type="number" min="0" step="1" id="tenantExtractionLimitInput" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control" value="1000">
                                     </div>
                                 </div>
                             </div>
@@ -74,7 +74,7 @@
                                         <label for="tenantStorageLimitInput" class="control-label" data-i18n="platform.storageLimitMb">儲存上限（MB）</label>
                                     </div>
                                     <div class="field">
-                                        <input type="number" id="tenantStorageLimitInput" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control" value="1000">
+                                        <input type="number" min="0" step="1" id="tenantStorageLimitInput" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control" value="1000">
                                     </div>
                                 </div>
                             </div>
@@ -109,7 +109,7 @@
                                             <label for="tenantTrialDaysInput" class="control-label" data-i18n="settings.extendDays">延展天數</label>
                                         </div>
                                         <div class="field">
-                                            <input type="number" id="tenantTrialDaysInput" placeholder="正數延展、負數縮短" data-i18n-placeholder="platform.extendDaysHint" class="form-control">
+                                            <input type="number" step="1" id="tenantTrialDaysInput" placeholder="正數延展、負數縮短" data-i18n-placeholder="platform.extendDaysHint" class="form-control">
                                         </div>
                                     </div>
                                 </div>

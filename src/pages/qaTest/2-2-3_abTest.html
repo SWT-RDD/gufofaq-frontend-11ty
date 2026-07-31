@@ -8,6 +8,9 @@ permalink: 2-2-3_abTest.html
 {# 真 app 掛點沿用（§4：非 js- 形狀的無樣式 class 要在檔頭寫出出處）：
      `.sample-count` ＝ 凍結前端 GufoFAQ_Frontend_New 的 `js/abTest.js`（`$col.find('input.sample-count')`，
      兩側取樣欄的讀值掛點）。本 repo 的 scss 與 js 都不碰它，寬度來自同掛的 `.w100`。 #}
+{# **刻意不沿用真 app 的一處**（§5 要記載）：三個數值欄真 app 是 `type="text"`，切版改成
+     `type="number"` ＋後端區間（1–100／1–20，出處同 2-2-1 檔頭）——值要交給 React 送 API，
+     `Number()` 打錯一個字就是 NaN→null。真 app 的 id／hook 契約原樣保留。 #}
 {% set qaRecordTabs = [
     { label: "問答紀錄1" },
     { label: "問答紀錄2" },
@@ -104,7 +107,7 @@ permalink: 2-2-3_abTest.html
                     <label for="abSampleSelected-{{ ab.side }}" class="control-label" data-i18n="settings.searchSelectedNumber">選用資料筆數</label>
                 </div>
                 <div class="field">
-                    <input type="text" id="abSampleSelected-{{ ab.side }}" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control sample-count w100 js-sample-selected" value="8">
+                    <input type="number" min="1" max="100" step="1" id="abSampleSelected-{{ ab.side }}" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control sample-count w100 js-sample-selected" value="8">
                 </div>
             </div>
             {# 取用資料筆數（search_total_number）：僅傳統搜尋模式生效（modeMatrix traditional）；
@@ -115,7 +118,7 @@ permalink: 2-2-3_abTest.html
                     <label for="abSampleTotal-{{ ab.side }}" class="control-label" data-i18n="settings.searchTotalNumber">取用資料筆數</label>
                 </div>
                 <div class="field">
-                    <input type="text" id="abSampleTotal-{{ ab.side }}" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control sample-count w100 js-sample-total" value="16">
+                    <input type="number" min="1" max="100" step="1" id="abSampleTotal-{{ ab.side }}" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control sample-count w100 js-sample-total" value="16">
                 </div>
             </div>
             {# Agent 最大迭代次數（agent_max_iterations）：僅 Agent 模式生效（modeMatrix agent）；預設 5。
@@ -125,7 +128,7 @@ permalink: 2-2-3_abTest.html
                     <label for="abAgentMaxIter-{{ ab.side }}" class="control-label" data-i18n="qaTest.agentMaxIter">Agent 最大迭代次數</label>
                 </div>
                 <div class="field">
-                    <input type="text" id="abAgentMaxIter-{{ ab.side }}" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control js-agent-max-iter" value="5">
+                    <input type="number" min="1" max="20" step="1" id="abAgentMaxIter-{{ ab.side }}" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control js-agent-max-iter" value="5">
                 </div>
             </div>
         </div>

@@ -652,7 +652,7 @@ permalink: 2-2-4_regressionSuites.html
                         <input type="checkbox" class="js-override-search-total-number" checked>
                         <span data-i18n="regression.overrideThisRun">這一次改用指定值</span>
                     </label>
-                    <input type="text" id="runSampleTotal" class="form-control js-sample-total" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" aria-describedby="runSampleTotalHint" value="24">
+                    <input type="number" min="1" max="100" step="1" id="runSampleTotal" class="form-control js-sample-total" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" aria-describedby="runSampleTotalHint" value="24">
                     <p id="runSampleTotalHint" class="text-gray" data-i18n="regression.sampleTotalOnlyTraditional">只在傳統搜尋模式生效。對話模式沿用設定檔時，這一欄會不會被用到取決於設定檔目前是哪個模式——跑完看報表的「這一輪實際用的設定」。</p>
                 </div>
             </div>
