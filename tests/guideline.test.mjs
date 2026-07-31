@@ -3471,7 +3471,9 @@ test("§4 欄位級錯誤槽不得是通用佔位：.error-prompt 要嘛訊息�
     for (const f of srcHtml) {
         if (f.replace(/\\/g, "/") === SHOWCASE_DEMO) continue;
         stripNjk(read(f)).split(/\r?\n/).forEach((line, i) => {
-            const m = line.match(/<span class="error-prompt[^"]*"[^>]*>([^<]*)<\/span>/);
+            // round33：判準原本綁死 `<span class="error-prompt…">` 且逐行比對——換個標籤（<p>）
+            // 或把內文換行就整條繞過（以突變證實）。改成不看標籤、也不要求 class 在最前面。
+            const m = line.match(/<[a-z]+\b[^>]*class="[^"]*\berror-prompt\b[^"]*"[^>]*>([^<]*)<\/[a-z]+>/);
             if (!m) return;
             checked++;
             const text = m[1].trim();
