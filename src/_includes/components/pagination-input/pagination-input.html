@@ -3,8 +3,11 @@
 
    參數：paginationTotal（總筆數，預設 12）。真實頁的 data-total 由業務 js 依查詢結果填入
    （真 app 的 qaHistoryDetail.js），切版給靜態值當示範；`.total` 的內容也會被 js 覆寫。 #}
-{% if not paginationTotal %}{% set paginationTotal = 12 %}{% endif %}
-<div class="pagination-input" data-total="{{ paginationTotal }}">
+{# 預設值收進元件專屬的區域名（同 ui/chart-box 的 cbId 做法）：`{% set %}` 是**頁面全域**，
+     直接 set 回參數名的話，這顆 12 會外洩給同頁後續的 include，而且與使用頁自己的
+     `{% set paginationTotal %}` 撞名（§2／§6）。 #}
+{% set pagerTotal = paginationTotal or 12 %}
+<div class="pagination-input" data-total="{{ pagerTotal }}">
     <button type="button" class="pager-btn prev" disabled>
         <img src="./images/icon_arrow_left_gray.png" width="48" height="48" decoding="async" alt="上一頁" data-i18n-alt="action.prevPage" class="icon">
     </button>
@@ -13,7 +16,7 @@
 
     <input class="pager-input form-control" type="text" value="1" aria-label="頁碼" data-i18n-aria-label="qa.pageNumber">
 
-    <span class="pager-text"><span data-i18n="qa.detailConvOf">個對話，共</span> <span class="total">{{ paginationTotal }}</span> <span data-i18n="qa.detailConvItems">個</span></span>
+    <span class="pager-text"><span data-i18n="qa.detailConvOf">個對話，共</span> <span class="total">{{ pagerTotal }}</span> <span data-i18n="qa.detailConvItems">個</span></span>
 
     <button type="button" class="pager-btn next">
         <img src="./images/icon_arrow_right_blue.png" width="48" height="48" decoding="async" alt="下一頁" data-i18n-alt="action.nextPage" class="icon">

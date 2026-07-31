@@ -144,6 +144,10 @@ permalink: 3-1-3_previewDataset.html
 
 {# 刪除確認鈕交給業務 js：真 app 的 previewDataset.js 綁 .confirm-delete-btn，
    API 刪完 (:498) 才 closeModal。寫死 btn-close-modals ＝ 按了確認、窗關了、什麼都沒刪。 #}
+{# 逐列刪除的檔名由業務 js 填進這顆空槽（同 1-2-1／3-2 的做法）。不設的話 delete-modal 會落回
+     內建預設「檔案名稱2.pdf」，而本頁清單是常見問題.pdf／商品清單.xlsx／客服應對規範.docx——
+     彈窗會問「確定要刪除一個不存在的檔」（§6 示範自洽；3-1-1 已經修過同一件事）。 #}
+{% set deleteTargetId = "deleteFileName" %}
 {% set deleteConfirmBinding = true %}
 {% set deleteConfirmClass = "confirm-delete-btn" %}
 {% set deleteToast = "刪除成功|刪除檔案失敗" %}

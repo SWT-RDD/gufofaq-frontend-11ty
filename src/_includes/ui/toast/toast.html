@@ -1,6 +1,6 @@
 {# 觸發方式：任何元素掛 data-toast（＋選填 data-toast-type）即可，由 toast.js 的事件委派接手（§5 不寫 inline onclick）。
      type：success（預設）/ error / warning / info。需搭配 layouts/base/base.html 裡的 #toastContainer。
-     元件 js 若要在別的時機彈，呼叫全域 showToast(message, type, duration, host)。
+     元件 js 若要在別的時機彈，呼叫全域 showToast(message, type, duration)。
 
      **什麼時候在 markup 掛 data-toast**（現行規則見 GUIDELINE §5）：送 API 的直接動作鈕以 `|` 列出**所有**
      可能結果（data-toast-type 同序對位、每點一次輪播下一個）——設計師才看得到成功/失敗/警告各長什麼樣；

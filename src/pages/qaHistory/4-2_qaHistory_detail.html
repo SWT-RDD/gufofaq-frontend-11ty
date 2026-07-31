@@ -57,6 +57,9 @@ permalink: 4-2_qaHistory_detail.html
 
     {# 可輸入頁碼切換：真實頁由 js/qaHistoryDetail.js 依上一頁查詢結果總數渲染 data-total 與 pager 行為 #}
     <div class="page-title-wrap">
+        {# 總數＝上一頁（4-1）那次查詢的結果總數（§6 跨頁同源）。不 set 的話落回元件內建的 12，
+             畫面會寫「第 1 個對話，共 12 個」而上一頁寫「共 115 筆資料」。 #}
+        {% set paginationTotal = 115 %}
         {% include "components/pagination-input/pagination-input.html" %}
     </div>
 </div>
