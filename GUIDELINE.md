@@ -200,12 +200,12 @@ bodyClass: chatbot-page                # 選填：base.html 用它產生 <body c
 - 分頁標題：front matter 的 `titleKey`（見 §3-1）→ `base.html` 輸出成 `<html data-page-title-key>`，切語言時 `lang-toggle.js` 靠它重譯 `<title>`
 - **同一個 key 的繁中原文必須一致**：切回繁中時的預設值是**從 DOM 就地擷取、以 key 為索引**，同 key 不同繁中會互相覆蓋。頁名與既有 key 的繁中相同才沿用，不同就另立 key
 - **一個 key 的語意由它背後的行為契約決定：行為不同就分 key，即使繁中字面相同。** 主回答的思考深度留空＝「沿用模型預設」，分組 LLM 留空＝「最低思考」（product `_PROFILE_FIELD_DEFAULTS` 的 `reasoning_effort_*`）——共用一顆 key 會讓中英兩邊同時說謊。這條與下一條互補：同文異 key 不准，同 key 異義也不准
-- **前綴／後綴 key 自帶分隔空白**（`"Total "`／`" pages"`／`"Source "`），不靠 CSS 也不靠 markup 縮排：`.sr-only` 的 `position:absolute` 恰好讓可及名稱多一個空白，那是排版的副作用、不是契約
+- **前綴／後綴 key 自帶分隔空白**（`"Total "`／`" pages"`／`"Source "`），不靠 CSS 也不靠 markup 縮排：`.sr-only` 的 `position:absolute` 恰好讓可及名稱多一個空白，那是排版的副作用、不是契約（有測試把關）
 - **`data-toast` 各分支的相同繁中子句必須有相同英譯**：一致性的單位是 `|` 切開的子句，不是整顆 key（「刪除失敗，請稍後再試」全站五處，別在第六處變成另一種說法）
 - **反向也成立：繁中原文相同的 UI chrome 沿用既有 key、不另立**（新 key 前先以原文全文檢索 en.json）；僅語意確實不同、英譯必須區別（「所屬群組」的單/複數欄位）才分 key——同文異 key 遲早讓英譯自己分岔。**英文語法不需要的字段允許空字串譯文**（`"comp.copyright": ""`、量詞後綴），空值＝刻意省略、不是漏翻
 - **只翻 UI chrome，不翻假資料**：聊天訊息、提示詞、免責聲明內文、示範檔名／資料集名、表格 cell 值、示範 Excel 欄位一律不翻。**showcase／說明性質的整頁**（內容是寫給切版者看的，不是 app chrome）整頁不翻
 - **翻譯字串不內嵌會隨資料變動的數字/名稱**：chrome 拆成前後綴 key、變動值放獨立節點或資料槽（正典：`pagination.totalPrefix`／`totalSuffix` 夾著 js 填數的 `.page-info-count`）
-- **標點（冒號等）折進它所標示的翻譯 key，不要留成 span 外的字面量**：`<span data-i18n>門檻</span>：值` 在英文模式會露出全形 `：`；改成 `<span data-i18n>門檻：</span>值`、key 值含對應標點（如 `"Threshold: "`）。例外：同一 key 也用在無標點情境（表頭、表單 label）時不折——那裡的標點屬於版面而非 label，且折了會污染那些用途
+- **標點（冒號等）折進它所標示的翻譯 key，不要留成 span 外的字面量**：`<span data-i18n>門檻</span>：值` 在英文模式會露出全形 `：`；改成 `<span data-i18n>門檻：</span>值`、key 值含對應標點**並自帶分隔空白**（`"Threshold: "`——全形 `：` 自帶字距，半形 `:` 沒有，少了空白英文會黏成 `Threshold:12`；有測試把關，緊接的值中間有空白時不必也不該再加）。例外：同一 key 也用在無標點情境（表頭、表單 label）時不折——那裡的標點屬於版面而非 label，且折了會污染那些用途
 - **英譯要保留原文之間的區別**：繁中原文不同的 key，英文譯文也要區別得開——會在同一畫面並列的欄位標題尤其（「成員」／「成員數」→ `Members`／`Member count`）。**反向也成立：同一領域名詞與站內術語的英譯拼寫要一致**（同 modal 裡 Term／Add term 不混用 entry；新增譯文前先全文檢索既有用法——frontend vs front-end 這種分岔就是沒檢索）
 - 新增 key 就要在 `en.json` 補英文。**漏了不會壞，只會在英文模式默默顯示繁中**——所以驗收一定要 runtime 逐頁看（見 §8）
 - `en.json` 的 key **依字母序插入**；每個 key 都要有 markup 引用（加了翻譯就要接上對應的 `data-i18n*`，反之亦然——有測試把關孤兒 key）
