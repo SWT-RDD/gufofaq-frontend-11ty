@@ -480,6 +480,31 @@ test("§4 markup 上的每個 class 都要有主人（反向網：css 規則／�
     assert.equal(bad.length, 0,
         `這些 class 沒有主人——既無 css 規則、非 js- 命名、元件 js 也不查它：\n${fail(bad)}\n` +
         `真 app 掛點請驗過出處後加進 NAMED_HOOKS 並在使用頁檔頭寫出處（§4）；否則改 js- 命名或拿掉。`);
+
+    // ── 白名單自己的衛生（豁免清單不受監督時，會慢慢變成「什麼都放行」的那張表）──
+    // ① 死豁免：清單裡的名字已經不在任何 markup 上。它不再豁免任何東西，卻會在
+    //    下一次有人新造同名 class 時默默放行它。
+    const stale = [...NAMED_HOOKS].filter((h) => !seen.has(h));
+    assert.deepEqual(stale, [], `NAMED_HOOKS 有死豁免（markup 已經不用了）：${stale.join("、")}`);
+    // ② 已經有別的主人的：不再是「豁免」。這種**不刪**——它記載的是「這個名字是真 app 的
+    //    掛點，React 端不可改名」；行為哪天從 vanilla js 搬去 React，這些 class 會當場
+    //    回到無主狀態，白名單先在才不會被當死碼刪掉（with-input 三兄弟就被誤刪過一次）。
+    //    但要逐筆寫出理由，並由這條測試釘住「哪幾筆是這種」——名單漂移時當場報出來，
+    //    而不是讓一張看起來很長的豁免表把真正的豁免面積藏起來。
+    const REDUNDANT_BUT_KEPT = new Map([
+        ["copyBtn", "ui/clipboard 查它；真 app 的複製鈕名"],
+        ["watchBtn", "ui/clipboard 查它（同一支的第二顆鈕）"],
+        ["multiSelect", "ui/multi-select 查它；真 app 的多選容器名"],
+        ["with-input", "ui/field-with-input 查它；真 app 用它解除附屬輸入框的 disabled"],
+        ["field-with-input", "同上（radio 與它附屬輸入框的那一格）"],
+        ["field-with-input-group", "同上（整列的容器）"],
+    ]);
+    const ownedElsewhere = [...NAMED_HOOKS].filter(
+        (h) => cssClasses.has(h) || jsBlob.includes(`"${h}"`) || jsBlob.includes(`'${h}'`) || jsBlob.includes(`.${h}`),
+    );
+    assert.deepEqual(ownedElsewhere.sort(), [...REDUNDANT_BUT_KEPT.keys()].sort(),
+        "NAMED_HOOKS 裡「已經有別的主人」的名單變了。新增的請寫進 REDUNDANT_BUT_KEPT 並附理由；" +
+        "若某筆已不再被 js/css 認領，請從 REDUNDANT_BUT_KEPT 移除（它回到真正的豁免了）。");
 });
 
 test("§4 a11y 綁定屬性：指到的 id 都要存在、aria-label 不得是空字串", () => {
@@ -1490,8 +1515,11 @@ test("§4 送出鈕是 type=\"button\"——切版不包 <form>，submit 是等�
     // round34：原本替 login.html 開了一個洞（規則寫「登入頁除外」），但那一頁的登入鈕本來就是
     // type="button"——切版沒有 submit handler，原生送出會重載頁面把剛演出來的 toast 沖掉。
     // 洞從來沒被用過，撤掉；規則同批改寫（豁免不存在就別留在文件裡）。
-    const hits = scanLines(srcHtml, (line) => (/type="submit"/.test(line) ? true : null));
-    assert.ok(srcHtml.length > 20, "srcHtml 空了 —— 這條測試在空轉");
+    const rule = (line) => (/type="submit"/.test(line) ? true : null);
+    const hits = scanLines(srcHtml, rule);
+    probe("§4 type=submit", (s) => scanText(s, rule),
+        ['<button type="submit" class="button">送出</button>', '<input type="submit" value="送出">'],
+        ['<button type="button" class="button">送出</button>']);
     assert.equal(hits.length, 0, `改成 type="button"（送出行為由元件 js／React 接手）：\n${fail(hits)}`);
 });
 
@@ -1499,10 +1527,23 @@ test("§4 可點的東西一律用真 button，且不得省略 type", () => {
     // 掃的是原始碼（`{% if %}` 兩個分支都要驗），所以要先把 {# #} 註解挖掉——
     // 檔頭註解裡寫「一律用真 `<button>`」會被 tagsOf 當成一顆沒有 type 的按鈕。
     const stripNjk = (s) => s.replace(/\{#[\s\S]*?#\}/g, "");
+    // 錨點必須是 `(^|\s)type=` 而不是 `\btype=`：`-` 是非字元，所以 `\b` 在
+    // `data-toast-type="success"` 的 `-type=` 前面也成立——全站 data-toast 幾乎都掛在按鈕上，
+    // 只要有一顆忘了寫 type，那個寬鬆的錨點就會默默放行它（目前 0 顆，但差一步）。
+    const rule = ({ tag, attrs, raw }) => (tag === "button" && !/(^|\s)type=/.test(attrs) ? raw.slice(0, 90) : null);
     const hits = [];
-    for (const f of srcHtml)
-        for (const { tag, attrs, raw } of tagsOf(stripNjk(read(f))))
-            if (tag === "button" && !/\btype=/.test(attrs)) hits.push(`${f}  ${raw.slice(0, 90)}`);
+    let buttons = 0;
+    for (const f of srcHtml) {
+        const src = stripNjk(read(f));
+        buttons += [...tagsOf(src)].filter((t) => t.tag === "button").length;
+        hits.push(...scanTags(src, rule, f));
+    }
+    // 空轉守門：tagsOf 的正則被改壞時，一顆 button 都收不到卻照樣全綠
+    assert.ok(buttons > 200, `src 只收到 ${buttons} 顆 <button> —— 收集器壞了，這條在空轉`);
+    probe("§4 button 缺 type", (s) => scanTags(s, rule),
+        ['<button class="button">送出</button>', "<button>送出</button>",
+            '<button data-toast="已送出" data-toast-type="success">送出</button>'],
+        ['<button type="button">送出</button>', '<input type="text">', "<a>連結</a>"]);
     assert.equal(hits.length, 0, `<button> 缺 type（預設是 submit，會誤送表單）：\n${fail(hits)}`);
 });
 
@@ -3204,6 +3245,49 @@ test("§4-2 sr-only 前綴 ＋ 緊接的英數值：譯文必須自帶分隔空�
     }
     assert.ok(seen >= 2, `只掃到 ${seen} 處 sr-only 前綴＋英數值 —— 這條測試在空轉`);
     assert.equal(hits.length, 0, `§4-2：前綴 key 要自帶尾隨空白（同 pagination.totalPrefix 的正典）：\n${fail([...new Set(hits)])}`);
+});
+
+test("§4-2 全形標點收尾的標籤＋緊接的值：譯文必須自帶分隔空白（半形 `:` 不像 `：` 自帶字距）", () => {
+    // 上面那條只管 `.sr-only`，可見標籤同樣中招：繁中「檔案名稱：」不需要空格——全形 `：`
+    // 本身就佔一個字寬；英譯換成半形 `:` 就沒有了，緊接著的值會黏成 `File name:2.10`。
+    // 這型失真兩張網都抓不到：fpdiff 比的是繁中版的幾何（繁中完全正確），
+    // 而「同一句繁中必須同一句英譯」那條只比一致性、不比排版。
+    //
+    // population 自動收窄，不需要豁免清單：
+    //   ① 繁中以全形標點（：，、）收尾 —— 半形標點自己就帶空格，不在此列
+    //   ② dist 上緊接著的下一個字元不是空白也不是 `<` —— 中間有空白的（footer 的
+    //      `版號：</span> 2.10`）由 markup 提供分隔，譯文不必也不該再加一個。
+    const en = JSON.parse(read("src/i18n/en.json"));
+    const LABEL = /data-i18n="([^"]+)"[^>]*>([^<]*[：，、])<\/[a-z0-9]+>([^\s<])/g;
+    const scan = (html, dict, f = "<probe>") => {
+        const out = [];
+        for (const m of html.matchAll(LABEL)) {
+            const val = dict[m[1]];
+            if (typeof val === "string" && val && !/\s$/.test(val))
+                out.push(`${f}  ${m[1]} = "${val}" ＋緊接 "${m[3]}" → 英文模式黏成一個字`);
+        }
+        return out;
+    };
+    const hits = [];
+    let seen = 0;
+    for (const f of distHtml) {
+        const html = distDoc(f);
+        seen += [...html.matchAll(LABEL)].length;
+        hits.push(...scan(html, en, basename(f)));
+    }
+    assert.ok(seen >= 30, `只掃到 ${seen} 處「全形標點標籤＋緊接的值」—— 這條測試在空轉`);
+    probe("§4-2 標點標籤分隔空白",
+        (s) => scan(s, { "x.label": "File name:", "x.ok": "File name: " }),
+        // 三個全形標點各一個樣本：只寫 `：` 的話，把 population 縮成 `[：]` 照樣全綠（實測過），
+        // 等於 `，、` 從來沒被釘住
+        ['<span data-i18n="x.label">檔案名稱：</span>2.10',
+            '<span data-i18n="x.label">共 3 筆，</span>2 筆有效',
+            '<span data-i18n="x.label">支援格式、</span>3 種'],
+        ['<span data-i18n="x.ok">檔案名稱：</span>2.10',      // 譯文自帶空白
+            '<span data-i18n="x.label">檔案名稱：</span> 2.10',  // markup 提供空白
+            '<span data-i18n="x.label">檔案名稱:</span>2.10',    // 半形標點本來就要自己帶空格，不在此規則
+            '<span data-i18n="x.label">檔案名稱</span>2.10']);   // 沒有標點＝不是這型
+    assert.equal(hits.length, 0, `§4-2：標點折進 key 時，譯文要自帶分隔空白：\n${fail([...new Set(hits)])}`);
 });
 
 test("§3-1 每個 page-shell 頁都要有 header 導覽入口（或在檔頭註明無入口頁的理由）", () => {
