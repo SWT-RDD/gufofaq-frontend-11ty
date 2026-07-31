@@ -227,6 +227,8 @@ permalink: 5-6-3_platformServiceKeys.html
                 <col style="width:170px; min-width:170px;">
                 <col style="width:200px; min-width:200px;">
                 <col style="width:110px; min-width:110px;">
+                <col style="width:110px; min-width:110px;">
+                <col style="width:110px; min-width:110px;">
             </colgroup>
             <thead>
                 <tr>
@@ -235,8 +237,10 @@ permalink: 5-6-3_platformServiceKeys.html
                     <th data-i18n="serviceKey.scope">授權範圍</th>
                     <th data-i18n="serviceKey.hint">末四碼</th>
                     <th data-i18n="serviceKey.createdAt">核發時間</th>
+                    <th data-i18n="serviceKey.createdBy">核發者</th>
                     <th data-i18n="serviceKey.lastUsedAt">最後使用時間</th>
                     <th data-i18n="serviceKey.revokedAt">撤銷時間</th>
+                    <th data-i18n="serviceKey.revokedBy">撤銷者</th>
                     <th data-i18n="common.actions">操作</th>
                 </tr>
             </thead>
@@ -248,10 +252,15 @@ permalink: 5-6-3_platformServiceKeys.html
                     <td><code class="inline-code">{{ k.scope }}</code></td>
                     <td><code class="inline-code">{{ k.keyHint }}</code></td>
                     <td>{{ k.createdAt }}</td>
+                    {# 核發者／撤銷者：`ServiceKeyOut` 的 created_by／revoked_by。頁尾那句
+                         「這把曾經存在、**誰**在什麼時候撤了它」是稽核要查得到的事實，
+                         少了這兩欄畫面只回答得出「什麼時候」（§3-2：response 回得出的欄位要有落點）。 #}
+                    <td>{{ k.createdBy }}</td>
                     {# 沒被用過的那一把要說出「從來沒有」，不是一格空白——空白讀起來像「這一欄
                          沒資料」，而它其實是輪替判準的起點（剛核發、還沒有人取到）。 #}
                     <td>{% if k.lastUsedAt %}{{ k.lastUsedAt }}{% else %}<span class="text-gray" data-i18n="serviceKey.neverUsed">從來沒有被用過</span>{% endif %}</td>
                     <td>{% if k.revokedAt %}{{ k.revokedAt }}{% else %}<span class="text-gray" data-i18n="serviceKey.active">有效</span>{% endif %}</td>
+                    <td>{% if k.revokedBy %}{{ k.revokedBy }}{% else %}<span class="text-gray">—</span>{% endif %}</td>
                     <td>
                         {% if k.revokedAt %}
                         <span class="text-gray" data-i18n="widget.revoked">已撤銷</span>
