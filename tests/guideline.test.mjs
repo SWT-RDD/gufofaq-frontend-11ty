@@ -294,6 +294,37 @@ test("§4 不得用 div 假扮控制項（要用真 <button>）", () => {
     assert.equal(hits.length, 0, `Enter/Space 不會觸發（WCAG 2.1.1）：\n${fail(hits)}`);
 });
 
+test("§4 a11y 綁定屬性：指到的 id 都要存在、aria-label 不得是空字串", () => {
+    // round33 以突變證實的三個網洞（當時三種突變都全綠）：
+    //   ① `label for="xInputTYPO"` —— 既有測試只看 for 屬性存不存在，不看指到誰。點了不聚焦，
+    //      而 eslint-plugin-jsx-a11y 的 label-has-associated-control 在 Next.js 是 build 阻斷。
+    //   ② `.nav-toggle` 的 aria-label="" —— 可及名稱測試只判屬性存在、空屬性測試的清單只有
+    //      for/id/name/href。結果是全站唯一那顆漢堡鈕變成無名按鈕。
+    //   ③ builtin-tool-card 的 aria-describedby 尾巴打錯 —— 全站沒有任何通用的 id 指向檢查。
+    // 三者都是屬性級失真：fpdiff 比幾何看不到，而 §7 把「被 aria-*by 引用的 id」列為零容忍，
+    // 指到空氣的話兩邊會一起錯得很一致。dialog 的 aria-labelledby 另有一條專屬測試，這條是通用網。
+    const MULTI = new Set(["aria-labelledby", "aria-describedby", "aria-controls"]);
+    const ATTRS = ["for", "aria-labelledby", "aria-describedby", "aria-controls"];
+    const bad = [];
+    let refs = 0;
+    for (const f of distHtml) {
+        const html = distDoc(f);
+        const ids = new Set([...html.matchAll(/\sid="([^"]+)"/g)].map((m) => m[1]));
+        for (const attr of ATTRS)
+            for (const m of html.matchAll(new RegExp(String.raw`\s${attr}="([^"]*)"`, "g"))) {
+                const toks = MULTI.has(attr) ? m[1].split(/\s+/).filter(Boolean) : [m[1]];
+                for (const t of toks) {
+                    refs++;
+                    if (!ids.has(t)) bad.push(`dist/${f}  ${attr}="${t}" —— 同頁沒有這個 id`);
+                }
+            }
+        for (const m of html.matchAll(/\saria-label="([^"]*)"/g))
+            if (!m[1].trim()) bad.push(`dist/${f}  aria-label="" —— 空的可及名稱等於沒有名稱`);
+    }
+    assert.ok(refs > 200, `只掃到 ${refs} 個 id 參照 —— 這條測試在空轉`);
+    assert.equal(bad.length, 0, `a11y 綁定指到不存在的 id／空的可及名稱：\n${fail(bad)}`);
+});
+
 test("§4 每個 <dialog> 的 aria-labelledby 都要指向存在的 id", () => {
     const hits = [];
     let dialogCount = 0;
