@@ -2375,11 +2375,11 @@ test("§5/§6 逐列可刪/撤銷的管理表要帶 {% else %} 無資料列（Sa
     // 只掃 src（{% else %} 在 dist 已被 njk 渲染掉）。
     // 豁免：真 app 有對應頁可鏡射的既有表（dataImport/dataset），其空狀態以真 app 為準、不套 SaaS 正典（§5）——
     //   逐筆列出＋出處；新增豁免前要在真 app 確認其空狀態表現，別拿豁免蓋掉 SaaS 新頁的漏網。
-    const EXEMPT = new Set([
-        "1-2-1_uploadFile_pdf.html::fileRows", // 真 app dataImport 鏡射：暫存待上傳檔列，空狀態隨真 app
-        "3-1-1_datasetList.html::rows",        // 真 app dataset 列表鏡射：空狀態隨真 app
-        "3-1-3_previewDataset.html::fileRows", // 真 app dataset 檔案列鏡射：空狀態隨真 app
-    ]);
+    // round34：原本三筆豁免的理由都寫「空狀態隨真 app」，但去真 app 讀了才發現**三頁都畫得出空狀態**
+    //（datasetList.js:137-139「無資料」、previewDataset.js:123-125「無檔案資料」、
+    //  uploadFilePdf.js:274-276「尚未上傳檔案」）。「隨真 app」的結論應該是鏡射那三句，不是一句都不畫；
+    //  豁免因此全數撤銷。真的要新增豁免時，先在真 app 讀出它的空狀態長什麼樣再決定。
+    const EXEMPT = new Set([]);
     const forSrc = /\{%-?\s*for\s+\w+\s+in\s+([\s\S]+?)-?%\}/;
     // round33：`js-remove-` 拿掉——那是**表單 repeater**的「移除這一列」（5-2 的逐代碼上限／情境條件、
     // 2-2-4 的新增斷言），列是使用者當場加出來的本地編輯列，不是伺服器資料，空集合由表單自己的

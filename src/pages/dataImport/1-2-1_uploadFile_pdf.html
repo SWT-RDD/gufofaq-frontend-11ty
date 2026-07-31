@@ -108,6 +108,12 @@ permalink: 1-2-1_uploadFile_pdf.html
                     </div>
                 </td>
             </tr>
+            {% else %}
+            {# 空狀態鏡射真 app：uploadFilePdf.js:274-276 檔案清單為空時 append 一列「尚未上傳檔案」。
+                 真 app 寫 colspan="100%"（HTML 的 colspan 只吃整數，瀏覽器會當成 1），這裡照欄數給 5。 #}
+            <tr>
+                <td colspan="5" class="text-center text-gray" data-i18n="dataImport.noUploadedFiles">尚未上傳檔案</td>
+            </tr>
             {% endfor %}
         </tbody>
     </table>
@@ -143,8 +149,13 @@ permalink: 1-2-1_uploadFile_pdf.html
    markup 只有一份正本，見 components/delete-modal（§1-2／§6） #}
 {% set deleteTargetId = "deleteFileName" %}
 {% set deleteConfirmBinding = true %}
-{% set deleteToast = "刪除成功|刪除檔案失敗" %}
-{% set deleteToastKey = "toast.deleteFile" %}
+{# 只有一段：這一頁的「刪除」是**送出前**把檔案從待上傳清單移掉，真 app 就是
+     `fileList.splice(index, 1)` ＋ `showToast('刪除成功')`（uploadFilePdf.js:480-486），
+     沒有 API、沒有失敗路徑。原本沿用 3-1-3 的「刪除檔案失敗」是抄版型抄來的——
+     演一個不可能發生的結果，與只演成功一樣是說謊（§5）。 #}
+{% set deleteToast = "移除成功" %}
+{% set deleteToastKey = "toast.removePendingFile" %}
+{% set deleteToastType = "success" %}
 {% include "components/delete-modal/delete-modal.html" %}
 
 {# 批次匯入結果：逐檔各自 metadata 暫存後一次送出（product /datasets/{id}/documents/batch-import 逐檔各自成敗），

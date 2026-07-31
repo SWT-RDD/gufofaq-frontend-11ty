@@ -130,6 +130,12 @@ permalink: 3-1-3_previewDataset.html
                     </div>
                 </td>
             </tr>
+            {% else %}
+            {# 空狀態鏡射真 app：previewDataset.js:123-125 `if (displayFiles.length === 0)` append
+                 一列 colspan=6 的「無檔案資料」——不是通用的「無資料」，那是這一頁自己的文案。 #}
+            <tr>
+                <td colspan="6" class="text-center text-gray" data-i18n="dataset.noFiles">無檔案資料</td>
+            </tr>
             {% endfor %}
         </tbody>
     </table>
@@ -150,6 +156,14 @@ permalink: 3-1-3_previewDataset.html
 {% set deleteTargetId = "deleteFileName" %}
 {% set deleteConfirmBinding = true %}
 {% set deleteConfirmClass = "confirm-delete-btn" %}
-{% set deleteToast = "刪除成功|刪除檔案失敗" %}
+{# 刪除檔案的三段：product `delete_file` → `_remove_file_and_purge` 的出口不只成敗。
+     409 `folder_pipeline_not_recorded`（datasets.py:665-688）的訊息**本身就是修復步驟**
+     （「請用『檔案上傳』再匯入一次任一檔案，會自動接回原本的管道並補記，之後即可正常刪除」）——
+     使用者自己修得掉，折進紅色的「刪除失敗」就是把可修復畫成終局（§5）。
+     另一條 409 `file_not_linkable`（同檔 :634-638）沒有復原路徑，與 502／404／403 同屬 error。
+     不與 1-2-1 共用 key：那一頁的「刪除」是送出前把檔從清單移掉（uploadFilePdf.js:480-486
+     只做 `fileList.splice`），根本不會失敗。 #}
+{% set deleteToast = "刪除成功|這個檔案沒有留下擷取管道記錄，請先用「檔案上傳」重新匯入一次以補記|刪除失敗，請稍後再試" %}
 {% set deleteToastKey = "toast.deleteFile" %}
+{% set deleteToastType = "success|warning|error" %}
 {% include "components/delete-modal/delete-modal.html" %}

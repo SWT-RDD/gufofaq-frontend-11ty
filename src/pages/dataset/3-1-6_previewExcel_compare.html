@@ -43,19 +43,24 @@ permalink: 3-1-6_previewExcel_compare.html
 {# 「原始資料」面板的表頭＝活頁簿自己的欄名（product 的 annotated_titles），值＝同一批儲存格
      （col_contents）。它與「比對資料」的差別只在表頭：一邊是欄位對照後的顯示名、一邊是原始欄名
      ＋括號註記它被對到哪一欄——使用者要靠這一頁確認「對照表有沒有接錯欄」。
+     `label`＝那一欄被對到哪個槽的顯示名，逐字對回 product 的 `_annotate()`：
+     `datasets.py:1262-1267` 對到槽者回 `f"{t} ({label})"`、**沒對到槽的原樣回傳不加括號**。
+     故最後一欄「條碼」刻意不給 label——那是活頁簿裡沒被對照表接走的欄，兩個分支各演一次；
+     它也因此只出現在原始面板、不出現在比對面板（比對面板畫的是槽，不是活頁簿的欄）。
      原始欄名是活頁簿的資料，不翻（§4-2）；括號裡的顯示名沿用 columns 的 label。 #}
 {% set rawTitles = [
-    { key: "title", raw: "商品名稱" },
-    { key: "time", raw: "建立日期" },
-    { key: "content", raw: "商品說明" },
-    { key: "image", raw: "圖片連結" },
-    { key: "supplier", raw: "供應商名稱" },
-    { key: "price", raw: "單價" }
+    { key: "title", raw: "商品名稱", label: "標題" },
+    { key: "time", raw: "建立日期", label: "時間" },
+    { key: "content", raw: "商品說明", label: "內容" },
+    { key: "image", raw: "圖片連結", label: "圖片網址" },
+    { key: "supplier", raw: "供應商名稱", label: "供應商" },
+    { key: "price", raw: "單價", label: "價格" },
+    { key: "barcode", raw: "條碼" }
 ] %}
 {% set rows = [
-    { title: "商品編號 A001", time: "2025/12/10 15:44", content: "無線藍牙耳機，續航 24 小時", image: "https://example.com/img/a001.jpg", supplier: "宏興電子", price: "990" },
-    { title: "商品編號 A002", time: "2025/12/10 15:44", content: "保溫瓶 500ml，316 不鏽鋼內膽", image: "https://example.com/img/a002.jpg", supplier: "日商生活", price: "450" },
-    { title: "商品編號 A003", time: "2025/12/10 15:44", content: "USB-C 充電線 1.5M", image: "https://example.com/img/a003.jpg", supplier: "宏興電子", price: "199" }
+    { title: "商品編號 A001", time: "2025/12/10 15:44", content: "無線藍牙耳機，續航 24 小時", image: "https://example.com/img/a001.jpg", supplier: "宏興電子", price: "990", barcode: "4710012340015" },
+    { title: "商品編號 A002", time: "2025/12/10 15:44", content: "保溫瓶 500ml，316 不鏽鋼內膽", image: "https://example.com/img/a002.jpg", supplier: "日商生活", price: "450", barcode: "4710012340022" },
+    { title: "商品編號 A003", time: "2025/12/10 15:44", content: "USB-C 充電線 1.5M", image: "https://example.com/img/a003.jpg", supplier: "宏興電子", price: "199", barcode: "4710012340039" }
 ] %}
 <div class="tab-content" id="panelCompare">
 <div class="table-container scrollTable mt-10">
@@ -99,8 +104,13 @@ permalink: 3-1-6_previewExcel_compare.html
                     {% for col in rawTitles %}
                     <th>
                         <div class="th-sort">
-                            {{ col.raw }}
-                            <button type="button" class="sort" data-column="{{ col.key }}">
+                            {# data-column 在這個面板是**活頁簿原始欄名**，不是槽 key：真 app 的
+                                 `sortOriginalData()` 第一行就是 `originalData.ColTitles.indexOf(column)`
+                                 （previewExcelCompare.js:426），傳槽 key 進去恆為 -1、下一行直接 return，
+                                 排序靜默失效。比對面板才是 `data-column="${col.key}"`（同檔 :243）——
+                                 同一個 class、兩個鍵空間，是真 app 本來就有的分別。 #}
+                            {{ col.raw }}{% if col.label %} ({{ col.label }}){% endif %}
+                            <button type="button" class="sort" data-column="{{ col.raw }}">
                                 <img src="./images/icon_ascending_order_black.png" width="20" height="37" decoding="async" alt="">
                                 <span class="sr-only" data-i18n="common.sort">排序</span>
                             </button>
@@ -124,9 +134,12 @@ permalink: 3-1-6_previewExcel_compare.html
     </div>
 </div>
 
-{# 分頁：真實頁 .pagination data-total="20" 由 pagination.js 動態產生；
-     ui/pagination 現在也是同一套 data-total 驅動的 js render，total 挑大一點的假數字讓省略號露出來 #}
-{% set total = 115 %}
+{# 分頁：真實頁 .pagination data-total="20" 由 pagination.js 動態產生；ui/pagination 也是同一套
+     data-total 驅動的 js render。total＝**這一個檔的資料筆數**（product `RecordsOut.total`，
+     datasets.py:1285-1288，註解就寫「＝data_count（供前端分頁）」），故取 3-1-3 檔案列裡
+     商品清單.xlsx 那一筆的 980（§6 跨頁自洽）。原本寫 115 是把「資料集的檔案總數」搬過來用，
+     那是 3-1-1／3-1-3 那一層的量，跟這一頁畫的東西不是同一件事。 #}
+{% set total = 980 %}
 {# 每頁筆數與頁碼列吃同一個 perPage（§6 同源：選擇器顯示 20、頁碼卻按 10 算總頁數就是自打架）。 #}
 {% set perPage = 20 %}
 {% include "components/pager-row/pager-row.html" %}

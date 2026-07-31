@@ -9,6 +9,9 @@
      deleteTargetName     —— 靜態示範用的項目名稱（預設「檔案名稱2.pdf」）
      deleteConfirmBinding —— true＝確認鈕交給業務 js 綁定（不掛 btn-close-modals 自動關窗）
      deleteConfirmClass   —— 選填，加在確認鈕上的業務 hook class（如 confirm-delete-btn）
+     deleteConfirmId      —— 選填，加在確認鈕上的 **id 契約**（如 confirmDeleteBtn）。§5 矩陣：React 綁定記號
+                             class 或 id 擇一即可，真 app 靠哪一種綁就保留哪一種（3-1-3 是 class、3-1-1 是 id）；
+                             兩種都不給＝那顆確認鈕在 markup 上沒有任何記號，React 認不出它該接誰
      deleteToast / deleteToastKey —— 選填，確認鈕的多結果 toast（「成功|失敗」）與它的 i18n key
      deleteToastType      —— 選填，對位 deleteToast 的語意（預設 success|error）。訊息多於兩段時**必須**一起給，
                              否則第三段會沿用 error、演不出「使用者自己修得掉」的 warning（如 3-4 的
@@ -27,7 +30,7 @@
                 <div class="modals-footer">
                     <div class="button-row center">
                         <button type="button" class="button button-border btn-close-modals" data-i18n="action.cancel">取消</button>
-                        <button type="button" class="button button-primary{% if deleteConfirmClass %} {{ deleteConfirmClass }}{% endif %}{% if not deleteConfirmBinding %} btn-close-modals{% endif %}"{% if deleteToast %} data-toast="{{ deleteToast }}" data-i18n-data-toast="{{ deleteToastKey }}" data-toast-type="{{ deleteToastType or "success|error" }}"{% endif %} data-i18n="action.confirm">確認</button>
+                        <button type="button"{% if deleteConfirmId %} id="{{ deleteConfirmId }}"{% endif %} class="button button-primary{% if deleteConfirmClass %} {{ deleteConfirmClass }}{% endif %}{% if not deleteConfirmBinding %} btn-close-modals{% endif %}"{% if deleteToast %} data-toast="{{ deleteToast }}" data-i18n-data-toast="{{ deleteToastKey }}" data-toast-type="{{ deleteToastType or "success|error" }}"{% endif %} data-i18n="action.confirm">確認</button>
                     </div>
                 </div>
             </div>
