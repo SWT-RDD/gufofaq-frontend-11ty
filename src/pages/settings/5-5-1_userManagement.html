@@ -107,8 +107,8 @@ permalink: 5-5-1_userManagement.html
             <thead>
                 <tr>
                     <th data-i18n="common.email">電子郵件</th>
-                    <th data-i18n="dataImport.colStatus">狀態</th>
-                    <th data-i18n="settings.role">角色</th>
+                    <th id="memberStatusHead" data-i18n="dataImport.colStatus">狀態</th>
+                    <th id="memberRoleHead" data-i18n="settings.role">角色</th>
                     <th data-i18n="settings.groups">所屬群組</th>
                     <th data-i18n="settings.effectiveCapabilities">有效能力</th>
                     <th data-i18n="common.actions">操作</th>
@@ -116,14 +116,16 @@ permalink: 5-5-1_userManagement.html
             </thead>
             <tbody>
                 {% for member in members %}
+                {# 列內的 switch 不掛靜態 aria-label（§4）：那會蓋掉列脈絡，三列的可及名稱會全都一樣。
+                     改成併讀「這一列是誰 ＋ 這一欄是什麼」，正典是 5-10 的篩選設定檔表。 #}
                 <tr{% if not member.isActive %} class="is-inactive"{% endif %}>
-                    <td>{{ member.email }}</td>
+                    <td id="memberEmail-{{ loop.index }}">{{ member.email }}</td>
                     <td>
                         {# 狀態：switch ＋ 目前狀態文字（同角色欄的寫法）。文字沿用 3-4 skill 清單的
                              settings.enabled／settings.disabled 兩顆 key（§4-2：同繁中不另立 key）。 #}
                         <div class="flex-row align-items-center gap-8">
                             <label class="switch">
-                                <input type="checkbox" class="switch-checkbox js-member-active" role="switch" aria-label="啟用切換" data-i18n-aria-label="settings.enableToggle"{% if member.isActive %} checked{% endif %}>
+                                <input type="checkbox" class="switch-checkbox js-member-active" role="switch" aria-labelledby="memberEmail-{{ loop.index }} memberStatusHead"{% if member.isActive %} checked{% endif %}>
                                 <span class="switch-box">
                                     <span class="switch-btn"></span>
                                 </span>
@@ -134,7 +136,7 @@ permalink: 5-5-1_userManagement.html
                     <td>
                         <div class="flex-row align-items-center gap-8">
                             <label class="switch">
-                                <input type="checkbox" class="switch-checkbox" role="switch" aria-label="租戶管理者切換" data-i18n-aria-label="settings.tenantAdminToggle"{% if member.isAdmin %} checked{% endif %}>
+                                <input type="checkbox" class="switch-checkbox" role="switch" aria-labelledby="memberEmail-{{ loop.index }} memberRoleHead"{% if member.isAdmin %} checked{% endif %}>
                                 <span class="switch-box">
                                     <span class="switch-btn"></span>
                                 </span>
