@@ -257,7 +257,7 @@ permalink: 5-10_tagDimensions.html
                             {# 日期維度沒有字典可編——product 對它的 vocabulary 寫入一律 400，
                                  給一顆點了只會失敗的鈕就是說謊。 #}
                             {% if dim.kind != "date" %}
-                            <button type="button" class="button button-border button-sm js-edit-vocabulary" data-i18n="settings.editVocabulary">編輯字典</button>
+                            <button type="button" class="button button-border button-sm js-edit-vocabulary" data-toast="正在查詢資料...|查詢成功|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.query" data-toast-type="info|success|error" data-i18n="settings.editVocabulary">編輯字典</button>
                             {% endif %}
                             <button type="button" class="button button-red button-sm js-delete-tag-dimension" data-i18n="action.delete">刪除</button>
                         </div>

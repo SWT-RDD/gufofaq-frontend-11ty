@@ -32,6 +32,7 @@ module.exports = function (eleventyConfig) {
         "src/_includes/components/faq-feedback-modal/faq-feedback-modal.js": "js/faq-feedback-modal.js",
         "src/_includes/ui/toast/toast.js": "js/toast.js",
         "src/_includes/ui/collapse-text/collapse-text.js": "js/collapse-text.js",
+        "src/_includes/ui/dismiss-panel/dismiss-panel.js": "js/dismiss-panel.js",
         "src/_includes/ui/reveal-input/reveal-input.js": "js/reveal-input.js",
         "src/_includes/ui/theme-toggle/theme-toggle.js": "js/theme-toggle.js",
         "src/_includes/ui/lang-toggle/lang-toggle.js": "js/lang-toggle.js",

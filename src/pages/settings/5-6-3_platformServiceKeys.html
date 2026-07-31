@@ -142,7 +142,7 @@ permalink: 5-6-3_platformServiceKeys.html
      沒有明碼就整塊不畫（不是畫一個空欄位——空欄位讀起來像「還沒產生」，而實際上是
      「產生過了，只是拿不回來」）。切版以「剛核發」那一態示範。
      欄位是 readonly、預設遮蔽；顯示/隱藏由 ui/reveal-input 委派切 type（純前端互動，無業務）。 #}
-<div class="block mb-16 flex-row column gap-16 js-service-key-issued" data-platform-role="admin">
+<div class="block mb-16 flex-row column gap-16 js-service-key-issued" id="serviceKeyIssued" data-platform-role="admin">
     <div class="text-md text-bold" data-i18n="serviceKey.plainTitle">剛核發的明碼</div>
     <p class="text-red" data-i18n="serviceKey.plainOnce">這是這把憑證唯一一次顯示明碼。離開或重新整理這一頁之後，畫面上就只剩下末四碼；系統本身也只有雜湊，沒有任何人能把它讀回來。</p>
     <div class="flex-row align-items-center gap-8 flex-wrap">
@@ -161,7 +161,7 @@ permalink: 5-6-3_platformServiceKeys.html
         </button>
     </div>
     <div class="flex-row">
-        <button type="button" class="button button-border js-dismiss-service-key" data-i18n="serviceKey.savedDismiss">我已經保存好，關閉</button>
+        <button type="button" class="button button-border js-dismiss-service-key" data-dismiss-target="serviceKeyIssued" data-i18n="serviceKey.savedDismiss">我已經保存好，關閉</button>
     </div>
 </div>
 
