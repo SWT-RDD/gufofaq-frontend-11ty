@@ -167,13 +167,13 @@ permalink: 2-2-5_regressionRun.html
     <div class="text-md text-bold" data-i18n="regression.summary">執行摘要</div>
     <div class="flex-row gap-24 flex-wrap">
         <p><span class="text-bold" data-i18n="regression.summaryTotal">跑完的案例：</span><span>10</span></p>
-        <p><span class="text-bold" data-i18n="regression.summaryPassed">通過：</span><span>9</span></p>
-        <p><span class="text-bold" data-i18n="regression.summaryFailed">未通過：</span><span>1</span></p>
+        <p><span class="text-bold" data-i18n="regression.summaryPassed">通過：</span><span>8</span></p>
+        <p><span class="text-bold" data-i18n="regression.summaryFailed">未通過：</span><span>2</span></p>
         <p><span class="text-bold" data-i18n="regression.summaryJudgeAvg">主觀分平均：</span><span>4.1</span></p>
         <p><span class="text-bold" data-i18n="regression.summaryContextTurns">送出的前置對話：</span><span>6</span><span data-i18n="regression.turnsUnit"> 輪</span></p>
     </div>
     {# judge_avg 的分母要講出來，否則「4.1」讀起來像是全部案例的平均。 #}
-    <p class="text-gray"><span data-i18n="regression.judgeAvgBasePrefix">主觀分平均只算有分數的 </span><span>8</span><span data-i18n="regression.judgeAvgBaseMid"> 則；另有 </span><span>1</span><span data-i18n="regression.judgeAvgBaseSuffix"> 則評審未完成，沒有被當成 0 分拉低平均。評審未完成的案例：</span><span>#41</span></p>
+    <p class="text-gray"><span data-i18n="regression.judgeAvgBasePrefix">主觀分平均只算有分數的 </span><span>8</span><span data-i18n="regression.judgeAvgBaseMid"> 則；另有 </span><span>1</span><span data-i18n="regression.judgeAvgBaseSuffix"> 則評審未完成，沒有被當成 0 分拉低平均。評審未完成的案例：</span><span>#35</span></p>
 </div>
 
 {# ── 上限與截斷 ─────────────────────────────────────────────────────────────
@@ -228,7 +228,6 @@ permalink: 2-2-5_regressionRun.html
                     <select id="baselineSelect" class="form-control js-baseline-select">
                         <option value="" data-i18n="common.pleaseSelect">請選擇</option>
                         <option value="310" selected>#310（2026/07/27 11:02）</option>
-                        <option value="309">#309（2026/07/26 09:30）</option>
                     </select>
                 </div>
             </div>
@@ -248,11 +247,15 @@ permalink: 2-2-5_regressionRun.html
      故資料化成 compareBuckets 由 for 渲染（§3-2）；「沒得比」與「評審漂移」的欄位不同，
      各自成塊。每一塊是一個有名字的 region，這樣輔具可以直接跳到「退步」那一塊。
 
-     示範自洽（§6）：退步 1、修好了 1、無變化 8＝比得成的 10 則（＝基準與這一次都有結果的
-     那幾則）；另有 2 則沒得比（這一次中斷前沒跑到），與上面「跑完 10 則、基準 10 則」相符
-     ——案例集共 12 則，這一次跑到第 10 則就中斷。 #}
+     示範自洽（§6）：令 c＝兩邊都有結果、a＝只有這一次有、b＝只有基準有。
+     這一次跑完 10 ＝ c ＋ a、基準跑完 10 ＝ c ＋ b、沒得比 2 ＝ a ＋ b ⇒ **c ＝ 9**。
+     故三個桶子只能加到 9：退步 1 ＋ 修好 1 ＋ 無變化 7。
+     a＝#36（案例在基準之後才建立），b＝#42（在中斷點之後，這一次沒跑到）。
+     **切點一致性**：中斷在「案例 41 的第 1 輪」，而 product 扣額度失敗就 `_abort` ＋ `db.rollback()`、
+     跑完一則才 commit ⇒ **id ≥ 41 的案例這一次一則結果都沒有**。所以退步／評審未完成／逐案例結果
+     一律用 id < 41 的案例，#42／#43 這種切點之後的只能落在「這一次沒跑到」。 #}
 {# 「引用的文件」兩欄的示範刻意演四種狀態（GUIDELINE §6）：
-     #41 兩側引到不同文件（＝「以前引 A、現在引 B」，退步的核心線索）、
+     #39 兩側引到不同文件（＝「以前引 A、現在引 B」，退步的核心線索）、
      #38 基準零命中、#37 兩側相同、#40 這一次被夾掉（格子裡明說列了幾筆／實際幾筆）。
      ⚠️ 被夾掉那一格的兩個數字要與**真的列出來的檔名數**自洽：列了 2 個檔名就是「只列了前 2 筆」
      （真實資料的上界是幾十筆，切版列不完，所以示範用小數字；那個數字是資料不是規則）。 #}
@@ -262,7 +265,7 @@ permalink: 2-2-5_regressionRun.html
     tagClass: "is-fail", count: "1",
     whyKey: "regression.bucketRegressedWhy", why: "這一份是整份報表的價值所在：基準那一次通過、這一次沒過，也就是這次改動弄壞的東西。",
     rows: [
-      { caseNo: "#41", question: "臺灣輸美鋼品的關稅稅率是多少", before: "通過", beforeKey: "regression.verdictPass", beforeClass: "is-pass", after: "未通過", afterKey: "regression.verdictFail", afterClass: "is-fail", beforeHits: "鋼品關稅表_2025.pdf／稅則號列對照.xlsx", afterHits: "一般貿易須知.pdf", detail: "答案缺少：25%" }
+      { caseNo: "#39", question: "臺灣輸美鋼品的關稅稅率是多少", before: "通過", beforeKey: "regression.verdictPass", beforeClass: "is-pass", after: "未通過", afterKey: "regression.verdictFail", afterClass: "is-fail", beforeHits: "鋼品關稅表_2025.pdf／稅則號列對照.xlsx", afterHits: "一般貿易須知.pdf", detail: "答案缺少：25%" }
     ]
   },
   {
@@ -275,7 +278,7 @@ permalink: 2-2-5_regressionRun.html
   },
   {
     key: "unchanged", titleKey: "regression.bucketUnchanged", title: "無變化",
-    tagClass: "is-muted", count: "8",
+    tagClass: "is-muted", count: "7",
     whyKey: "regression.bucketUnchangedWhy", why: "兩次的確定性判定相同（含兩次都沒過）。這一塊不含「沒得比」與「評審整批壞掉」——那兩件事各自在上面。",
     rows: [
       { caseNo: "#37", question: "鋼品的稅則號列怎麼查", before: "通過", beforeKey: "regression.verdictPass", beforeClass: "is-pass", after: "通過", afterKey: "regression.verdictPass", afterClass: "is-pass", beforeHits: "稅則號列對照.xlsx", afterHits: "稅則號列對照.xlsx", detail: "" },
@@ -285,10 +288,10 @@ permalink: 2-2-5_regressionRun.html
 ] %}
 {% set notComparedRows = [
   { caseNo: "#42", question: "鋁材的反傾銷稅率", reasonKey: "regression.reasonAbsentInThisRun", reason: "這一次沒跑到", detail: "這一次沒有跑到這則案例（執行中斷）——它有沒有回歸，這一次量不到" },
-  { caseNo: "#43", question: "鋼品出口的檢驗規定", reasonKey: "regression.reasonAbsentInBaseline", reason: "基準沒有它", detail: "基準那一次沒有這則案例的結果（案例在基準之後才建立，或基準中斷前沒跑到）——沒有可以比較的對象，不是「沒有變化」" }
+  { caseNo: "#36", question: "鋼品出口的檢驗規定", reasonKey: "regression.reasonAbsentInBaseline", reason: "基準沒有它", detail: "基準那一次沒有這則案例的結果（案例在基準之後才建立，或基準中斷前沒跑到）——沒有可以比較的對象，不是「沒有變化」" }
 ] %}
 {% set judgeDriftGroups = [
-  { key: "unavailableNow", titleKey: "regression.driftUnavailableNow", title: "上次評得出來、這次評不出來", tagClass: "is-warn", cases: "#41", count: "1" },
+  { key: "unavailableNow", titleKey: "regression.driftUnavailableNow", title: "上次評得出來、這次評不出來", tagClass: "is-warn", cases: "#35", count: "1" },
   { key: "availableNow", titleKey: "regression.driftAvailableNow", title: "上次評不出來、這次評得出來", tagClass: "is-muted", cases: "—", count: "0" }
 ] %}
 
@@ -345,7 +348,7 @@ permalink: 2-2-5_regressionRun.html
 <section class="block mt-16 flex-row column gap-16" aria-labelledby="bucket-notCompared-title">
     <div class="flex-row align-items-center gap-10 flex-wrap">
         <h2 id="bucket-notCompared-title" class="text-md text-bold m-0" data-i18n="regression.bucketNotCompared">沒得比（只有一邊有結果）</h2>
-        <span class="verdict-tag is-warn">2</span>
+        <span class="verdict-tag is-warn">{{ notComparedRows.length }}</span>
     </div>
     <p class="text-red" data-i18n="regression.bucketNotComparedWhy">這些案例只有一邊有結果，所以它們有沒有回歸「這一次量不到」——不是「沒有變化」。把它們算進無變化，一次跑到一半就中斷的執行會比出「0 退步」。</p>
     <div class="table-container scrollTable">
@@ -440,7 +443,7 @@ permalink: 2-2-5_regressionRun.html
      （#38 的基準零命中、#40 的這一次被夾掉）——三種用的是同一組 key。 #}
 {% set runResultRows = [
   {
-    caseNo: "#41", question: "臺灣輸美鋼品的關稅稅率是多少",
+    caseNo: "#39", question: "臺灣輸美鋼品的關稅稅率是多少",
     verdict: "未通過", verdictKey: "regression.verdictFail", verdictClass: "is-fail",
     judgeKind: "unavailable", judgeText: "評審未完成", judgeKey: "regression.judgeUnavailable", judgeClass: "is-warn",
     latency: "2,140", tokens: "1,096", turnsSent: "2",
