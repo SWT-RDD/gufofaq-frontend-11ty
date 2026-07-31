@@ -55,7 +55,11 @@ permalink: 5-4_coverageGaps.html
      並在下面用一句話交代它們為什麼不在。 #}
 {% set gapDimensions = [
     { slotKey: "note3", name: "業務範疇" },
-    { slotKey: "note4", name: "業務方向" }
+    { slotKey: "note4", name: "業務方向" },
+    {# 5-10 的第四個維度：single ＋ 有兩個代碼 ⇒ 分得了群（`intent_classify.CLASSIFIABLE_KINDS`
+         只排除 date，`stats.py` 只擋空字典）。本頁的排除理由是「日期維度與字典是空的維度」，
+         文件密級兩者皆非，卻一直不在清單上（§6 跨頁自洽）。 #}
+    { slotKey: "note5", name: "文件密級" }
 ] %}
 {# ★ 四種 `kind` 是**四種不同的事實**，畫面上絕不可以併成一列（product `app/routers/stats.py`
      的 `(kind, key)` 才是分群鍵）：
@@ -173,7 +177,7 @@ permalink: 5-4_coverageGaps.html
          左邊那顆「取消」全站沒有任何 js 選得到，換成篩選列正典的 `.js-filter-clear`。 #}
     <div class="flex-row align-items-center justify-content-center gap-16">
         <button type="button" class="button button-border js-filter-clear" data-i18n="action.clear">清除</button>
-        <button type="button" class="button button-primary" data-toast="正在查詢資料...|查詢成功|這段期間的資料量超過單次上限，請縮小時間範圍|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.queryStats" data-toast-type="info|success|warning|error" data-i18n="action.query">查詢</button>
+        <button type="button" class="button button-primary" data-toast="正在查詢資料...|查詢成功|時間區間不正確（起訖需成對、開始須早於結束與現在、且在一年內、範圍不超過 365 天）|這段期間的資料量超過單次上限，請縮小時間範圍|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.queryStats" data-toast-type="info|success|warning|warning|error" data-i18n="action.query">查詢</button>
     </div>
 </div>
 
@@ -207,7 +211,7 @@ permalink: 5-4_coverageGaps.html
             {# data-question＝React 動作目標：product 的排除清單與提問原文用同一套正規化（修剪空白後
                  全字比對），所以鈕要帶得走那句原文，而不是去讀兄弟節點的 textContent。 #}
             <button type="button" class="button button-border button-sm js-undo-exclude-question" data-question="{{ q }}"
-                data-toast="正在查詢資料...|查詢成功|這段期間的資料量超過單次上限，請縮小時間範圍|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.queryStats" data-toast-type="info|success|warning|error"
+                data-toast="正在查詢資料...|查詢成功|時間區間不正確（起訖需成對、開始須早於結束與現在、且在一年內、範圍不超過 365 天）|這段期間的資料量超過單次上限，請縮小時間範圍|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.queryStats" data-toast-type="info|success|warning|warning|error"
                 data-i18n="action.undoExclude">取消排除</button>
         </div>
         {% else %}
@@ -262,7 +266,7 @@ permalink: 5-4_coverageGaps.html
                     <td>{{ sample.count }}</td>
                     <td>
                         <button type="button" class="button button-border button-sm js-exclude-question" data-question="{{ sample.question }}"
-                            data-toast="正在查詢資料...|查詢成功|這段期間的資料量超過單次上限，請縮小時間範圍|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.queryStats" data-toast-type="info|success|warning|error"
+                            data-toast="正在查詢資料...|查詢成功|時間區間不正確（起訖需成對、開始須早於結束與現在、且在一年內、範圍不超過 365 天）|這段期間的資料量超過單次上限，請縮小時間範圍|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.queryStats" data-toast-type="info|success|warning|warning|error"
                             data-i18n="action.exclude">排除</button>
                     </td>
                 </tr>

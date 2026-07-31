@@ -43,8 +43,9 @@ permalink: 5-10_tagDimensions.html
   { label: "設定", href: "", i18nKey: "nav.settings" },
   { label: "標籤維度與檢索過濾", i18nKey: "nav.tagDimensions" }
 ] %}
-{# **槽的顯示名與掛在它上面的標籤維度是兩件事**（product 兩張表：`TenantSetting.field_labels`
-     ↔ `TagDimension.name`）。示範租戶把 note1／note2 取名為「承辦組室」「業務範疇」（見 5-3 與 4-2），
+{# **槽的顯示名與掛在它上面的標籤維度是兩件事**（product 兩張表：`RetrievalProfile.field_labels`
+     ↔ `TagDimension.name`——`TenantSetting` 只存 `attribution_slots`，models.py:304 逐字寫著
+     「顯示名沿用 per-profile 的 RetrievalProfile.field_labels，本欄不另存標籤」）。示範租戶把 note1／note2 取名為「承辦組室」「業務範疇」（見 5-3 與 4-2），
      所以這一頁的維度**刻意避開那兩個槽**、掛在 note3/note4/note5 上——同一個槽同時掛著兩個不同的
      中文名，讀的人與 React 端都推不出哪一份才算數（§6 跨頁自洽）。
      示範資料要自洽（GUIDELINE §6）：掃描讀到 132 份 ⇒ 每個維度的 total 都是 132；
@@ -134,9 +135,9 @@ permalink: 5-10_tagDimensions.html
                 <div class="field">
                     {# 值域是 12 個，不是這一頁湊得出來的四個：`TAG_SLOT_KEYS = tag_dimension_slots(SLOTS)`
                          ＝角色為 `custom_field_mapping` 的槽（tags.py:50-63 → field_schema.py:37-48），
-                         也就是 note1..note10 ＋ date2/date3。本頁自己的 hint 就是這樣寫的，示範資料裡
-                         示範資料裡的維度就掛在 note3／note4／note5 上——只列四個（note1/note2/date2/date3）
-                         等於那三個槽根本建不出維度。
+                         也就是 note1..note10 ＋ date2/date3。本頁自己的 hint 就是這樣寫的，而示範資料的
+                         維度掛在 note3／note4／note5 上——只列 note1/note2/date2/date3 四個的話，
+                         那三個槽根本建不出維度。
                          **不硬編**：`GET /settings/tag-dimension-contract` 的 `slots` 是這份值域的單一真相
                          （tag_dimension_contract.py:40-42 明寫「一個都不能留在前端硬編」），
                          切版以 set 陣列表達那份回應（§6），React 端改讀端點。
@@ -481,7 +482,7 @@ permalink: 5-10_tagDimensions.html
                     </td>
                     <td>{% if profile.proof %}{{ profile.proof }}{% else %}<span class="text-gray" data-i18n="settings.tagFilterNoProof">（過濾關閉，沒有量測快照）</span>{% endif %}</td>
                     <td>
-                        <button type="button" class="button button-border button-sm" data-toast="檢索過濾設定已儲存|覆蓋率不足，還有文件沒有標註，過濾維持關閉|標註覆蓋率量得不完整（有文件查無內容或列舉不出來），請等同步完成再開啟|文件數超過單次掃描上限，請改用單一資料集範圍|維度在量測途中被改動，請再存一次|儲存失敗，請稍後再試" data-i18n-data-toast="toast.saveTagFilter" data-toast-type="success|warning|warning|warning|warning|error" data-i18n="action.save">儲存</button>
+                        <button type="button" class="button button-border button-sm" data-toast="檢索過濾設定已儲存|目前一份文件都讀不到，量不出覆蓋率，過濾維持關閉|覆蓋率不足，還有文件沒有標註，過濾維持關閉|標註覆蓋率量得不完整（有文件查無內容或列舉不出來），請等同步完成再開啟|文件數超過單次掃描上限，請改用單一資料集範圍|維度在量測途中被改動，請再存一次|儲存失敗，請稍後再試" data-i18n-data-toast="toast.saveTagFilter" data-toast-type="success|warning|warning|warning|warning|warning|error" data-i18n="action.save">儲存</button>
                     </td>
                 </tr>
                 {% endfor %}
