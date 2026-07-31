@@ -56,6 +56,18 @@
 ## ② markup（html → tsx）
 
 - `class`→`className`、`for`→`htmlFor`、`{# #}`→`{/* */}`、自閉合。
+- **表單初值不是機械替換的，是 JSX 會擋下來的一族**（切版全站現況：textarea 帶 children 17、`<option selected>` 61、
+  `<input checked>` 38、`<input value>` 76）。逐條對應：
+  - `<textarea>值</textarea>` → `defaultValue={值}`。**這條是 React 直接丟錯、不是警告**（"Use the `defaultValue`
+    or `value` props instead of setting children on `<textarea>`"），照抄 markup 會在第一次 render 就炸。
+  - `<option selected>` → 初值上移到 `<select defaultValue={…}>`（受控就是 `value` + `onChange`）；`selected` 留在
+    option 上是 React 警告，且多顆 option 的 `selected` 在受控 select 下會被靜默忽略。
+  - `<input checked>` → `defaultChecked`；`<input value="…">`（切版沒有 onChange）→ `defaultValue`。
+  判準：切版是靜態原型，這些屬性表達的是**資料初值**不是使用者互動結果——**要受控就把初值搬進 `useState` 的初始值**
+  （同 §④「初始 `open` 來自資料，不是『點過』」），**不受控就用 `default*` 家族**。兩者都不可以把 `selected`／`checked`／
+  `value` 原樣留在子元素上。
+- **業務值載體的初值一律走「受控 + 初值來自 props/資料」**：這些欄位的值 React 要讀去送 API（GUIDELINE §5 的②），
+  非受控的 `default*` 讀不回來。`default*` 只留給純展示的凍結示範（如 5-6-1 的免責聲明全文 textarea）。
 - `{% include "x.html" %}`→`<X/>`、`{% for a in xs %}`→`{xs.map(a=>…)}`、`{% if c %}`→`{c && …}`／三元、`{% set %}`→props。
 - markup 完整照切版：wrapper、`aria-*`、`title` 全數帶到。
 - a11y 綁定屬性成對帶：`aria-labelledby`／`aria-describedby` 連同它指到的 `id` 一起轉，兩端缺一不可

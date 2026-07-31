@@ -347,7 +347,8 @@ accordion 的行為規格（`ui/accordion/accordion.js`）：各列**獨立開�
 
 單色圖示（`icon-mask()`）的行為規格：**alpha 是字形、顏色是語意 token**。轉 React 時直接改成內嵌 SVG component + `fill="currentColor"` —— 那正是遮罩在模擬的東西。`_dark-icons.scss` 的 `img[src*="_black"]` 反相規則屆時可整條刪掉。
 
-HTML → JSX 為機械式替換：`class`→`className`、標籤自閉合、`{# #}`→`{/* */}`。
+HTML → JSX 多數是機械式替換：`class`→`className`、`for`→`htmlFor`、標籤自閉合、`{# #}`→`{/* */}`。
+**唯一不能照抄的是表單初值**：`<textarea>值</textarea>`、`<option selected>`、`<input checked>`、`<input value>` 在切版表達的是**資料初值**，JSX 要改成 `defaultValue`／`defaultChecked`／`<select defaultValue>`（或搬進受控元件的 state 初值）——textarea 那條是 React 直接丟錯，不是警告。配方見 [REACT-CONVERSION](REACT-CONVERSION.md) §②。
 CSS 不需任何翻譯：交付的樣式即正式環境的最終樣式。
 
 > 預設走「scss 原樣複製」如上。**若 React 團隊改選 Tailwind**，本專案的 token/尺標/utility 層已刻意做成好轉——轉換配方（theme 映射、max-width 斷點、哪些逃生口須保留成 CSS）見 [`TAILWIND-CONVERSION.md`](TAILWIND-CONVERSION.md)。

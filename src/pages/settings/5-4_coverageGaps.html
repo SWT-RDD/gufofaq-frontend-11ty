@@ -34,17 +34,19 @@ permalink: 5-4_coverageGaps.html
 ] %}
 {# 示範資料要自洽（GUIDELINE §6）：88 ＋ 24 ＋ 14 ＋ 7 ＋ 4（五組）＋ 3（已排除）＝ 140（查無則數）；
      第一組樣本 10 筆（＝product 每組上限 `MAX_GAP_SAMPLES`）、相異提問 80 種＝被截到剩 10 筆，
-     兩個數擺在一起才看得出「不是只有 10 種」；樣本次數遞減且總和 ≤ 本組則數。
-     已分類提問數 80 ＋ 9 ＋ 6 ＋ 5 ＝ 100 ＝ 分類上限 ⇒ 剩下 4 種相異提問**根本沒送去分類**，
-     落在 `unclassified` 那一組——這正是「上限也要在消費點看得見」的那一格。 #}
+     兩個數擺在一起才看得出「不是只有 10 種」；**`MAX_GAP_SAMPLES` 是 10**，所以相異數 ≤10 的組
+     一定是全部列出（樣本數＝相異數），只有 B06 那種大組才會被截到剩 10 筆。
+     可行性下界：`count ≥ Σ樣本次數 ＋ (相異數 − 樣本數)`——其餘每一種提問至少出現一次。
+     已分類提問數 192 ＋ 3 ＋ 3 ＋ 2 ＝ 200 ＝ 分類上限（product `MAX_GAP_CLASSIFY`）⇒ 剩下 2 種
+     相異提問**根本沒送去分類**，落在 `unclassified` 那一組——這正是「上限也要在消費點看得見」的那一格。 #}
 {% set gapSummary = {
     range: "2024/12/01 00:00 ~ 2024/12/02 00:00",
     totalLogs: 1200,
-    totalNoAnswer: 140,
+    totalNoAnswer: 333,
     excludedCount: 3,
     dimensionName: "業務範疇",
-    classifiedQuestions: 100,
-    classifyLimit: 100
+    classifiedQuestions: 200,
+    classifyLimit: 200
 } %}
 {% set gapExcluded = ["你好"] %}
 {# 分群維度：值域是**標籤維度的 slot_key**（不是 5-3 統計模組那個 `dataset`／`attribution:<slot>`），
@@ -68,8 +70,8 @@ permalink: 5-4_coverageGaps.html
     {
         kind: "code", kindHint: "", kindHintKey: "",
         key: "B06", label: "關稅與稅則",
-        count: 88,
-        distinctQuestions: 80,
+        count: 300,
+        distinctQuestions: 192,
         samples: [
             { question: "臺灣輸美關稅多少", count: 12 },
             { question: "外籍配偶申請定居要準備哪些文件", count: 9 },
@@ -86,8 +88,8 @@ permalink: 5-4_coverageGaps.html
     {
         kind: "code", kindHint: "", kindHintKey: "",
         key: "B02", label: "居留與簽證",
-        count: 24,
-        distinctQuestions: 9,
+        count: 15,
+        distinctQuestions: 3,
         samples: [
             { question: "投資移民要準備多少錢", count: 6 },
             { question: "居留證可以線上換發嗎", count: 5 },
@@ -99,8 +101,8 @@ permalink: 5-4_coverageGaps.html
         kindHint: "分類器有把握地判定這些提問不落在任何一個代碼上（招呼、閒聊居多）。要擴字典，或用每列的「排除」把它們拿掉。",
         kindHintKey: "settings.gapKindOutOfScopeHint",
         key: "out_of_scope", label: "不屬於任何代碼",
-        count: 14,
-        distinctQuestions: 6,
+        count: 9,
+        distinctQuestions: 3,
         samples: [
             { question: "早安", count: 4 },
             { question: "你是誰做的", count: 3 },
@@ -112,8 +114,8 @@ permalink: 5-4_coverageGaps.html
         kindHint: "分類器跑了，但沒有結論——含「模型自己說不確定」與「分類器整批失效」兩種，型別上分不開，所以這份報表也不假裝分得開。這一列異常大時請去看後端的錯誤日誌，那不是「這些提問都是閒聊」。",
         kindHintKey: "settings.gapKindUndeterminedHint",
         key: "undetermined", label: "判不準",
-        count: 7,
-        distinctQuestions: 5,
+        count: 4,
+        distinctQuestions: 2,
         samples: [
             { question: "那個表格要怎麼填", count: 2 },
             { question: "上次講的那個", count: 2 }
@@ -124,8 +126,8 @@ permalink: 5-4_coverageGaps.html
         kindHint: "這些提問根本沒送去分類：沒有帶分群維度，或超出單次請求的分類上限（預算花在問得最多的那些題目上）。這是報表的界線，不是資料的性質。",
         kindHintKey: "settings.gapKindUnclassifiedHint",
         key: "unclassified", label: "未分類",
-        count: 4,
-        distinctQuestions: 4,
+        count: 2,
+        distinctQuestions: 2,
         samples: [
             { question: "外國人可以買農地嗎", count: 1 },
             { question: "戶籍謄本英文版要去哪裡申請", count: 1 }
@@ -221,7 +223,7 @@ permalink: 5-4_coverageGaps.html
                 <select id="gapDimensionSelect" class="form-control js-gap-dimension" aria-describedby="gapDimensionHint">
                     <option value="" data-i18n="settings.gapNoGrouping">不分群</option>
                     {% for dim in gapDimensions %}
-                    <option value="{{ dim.slotKey }}">{{ dim.name }}（{{ dim.slotKey }}）</option>
+                    <option value="{{ dim.slotKey }}"{% if dim.name == gapSummary.dimensionName %} selected{% endif %}>{{ dim.name }}（{{ dim.slotKey }}）</option>
                     {% endfor %}
                 </select>
                 <p id="gapDimensionHint" class="text-gray" data-i18n="settings.gapDimensionHint">選了維度才會把每一則提問送去分類（一題一次、結果會快取）。日期維度與字典是空的維度不在清單上——它們沒有受控詞彙可挑，分不出群。不分群時完全不打模型，所有提問落在「沒送去分類」一組。</p>

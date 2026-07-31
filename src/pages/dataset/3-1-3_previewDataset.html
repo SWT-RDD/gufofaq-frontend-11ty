@@ -70,9 +70,9 @@ permalink: 3-1-3_previewDataset.html
 {# 檔案表格：真實頁 tbody 為 js 動態渲染（載入中...），欄位取自 thead 固定欄位，
      用 set+for 資料化示範 3 筆；檔名連結分別指向已轉換的 3-1-5（一般檔案預覽）與 3-1-6（excel 比對預覽），串起頁面關聯 #}
 {% set fileRows = [
-    { name: "常見問題.pdf", href: "3-1-5_previewFile_detail.html?sn=1001", createdAt: "2025/11/02 10:20", sizeMB: "12.30", count: "312" },
-    { name: "商品清單.xlsx", href: "3-1-6_previewExcel_compare.html?sn=1002", createdAt: "2025/12/10 15:44", sizeMB: "3.05", count: "980" },
-    { name: "客服應對規範.docx", href: "3-1-5_previewFile_detail.html?sn=1003", createdAt: "2026/01/22 11:08", sizeMB: "0.85", count: "1,912" }
+    { sn: "1001", type: ".pdf", name: "常見問題.pdf", href: "3-1-5_previewFile_detail.html?sn=1001", createdAt: "2025/11/02 10:20", sizeMB: "12.30", count: "312" },
+    { sn: "1002", type: ".xlsx", name: "商品清單.xlsx", href: "3-1-6_previewExcel_compare.html?sn=1002", createdAt: "2025/12/10 15:44", sizeMB: "3.05", count: "980" },
+    { sn: "1003", type: ".docx", name: "客服應對規範.docx", href: "3-1-5_previewFile_detail.html?sn=1003", createdAt: "2026/01/22 11:08", sizeMB: "0.85", count: "1,912" }
 ] %}
 <div class="table-container scrollTable checkbox-container">
     <table class="default-table">
@@ -103,11 +103,11 @@ permalink: 3-1-3_previewDataset.html
             <tr>
                 <td class="check-cell">
                     <label class="form-checkbox in-cell">
-                        <input type="checkbox" class="check-one" aria-label="選取此列" data-i18n-aria-label="dataset.selectRow">
+                        <input type="checkbox" class="check-one" data-filesn="{{ file.sn }}" aria-label="選取此列" data-i18n-aria-label="dataset.selectRow">
                     </label>
                 </td>
                 <td>
-                    <a href="{{ file.href }}" title="{{ file.name }}" class="link-file">{{ file.name }}</a>
+                    <a href="{{ file.href }}" title="{{ file.name }}" class="link-file" data-filesn="{{ file.sn }}" data-filetype="{{ file.type }}">{{ file.name }}</a>
                 </td>
                 <td>{{ file.createdAt }}</td>
                 <td class="text-center">{{ file.sizeMB }} MB</td>
@@ -115,12 +115,16 @@ permalink: 3-1-3_previewDataset.html
                 <td>
                     {# 兩顆列動作，逐字對上真 app 的 previewDataset.js:167/170：
                        .delete-single-btn（單筆刪除，$(document).on('click','.delete-single-btn')）
-                       .download-file-btn（下載，:515）—— 都是業務 js 的掛點，切版不掛行為，但按鈕要在 #}
+                       .download-file-btn（下載，:515）—— 都是業務 js 的掛點，切版不掛行為，但按鈕要在。
+                       **列鍵一起帶**：真 app 那兩行（與 :140 的 .check-one、:150 的 .link-file）都掛
+                       data-filesn／data-filename／data-filetype，業務 js 靠它認出這一列是哪個檔——
+                       下載那顆的「此來源無法下載」正是依 data-filetype 判的（:515 起）。
+                       少了它們，React 端只剩陣列 index，改到隔壁列不會有任何徵兆（§5 轉換契約）。 #}
                     <div class="btn-group">
-                        <button type="button" class="button-icon no-bg size-sm delete delete-single-btn" title="刪除" data-i18n-title="action.delete">
+                        <button type="button" class="button-icon no-bg size-sm delete delete-single-btn" data-filesn="{{ file.sn }}" data-filename="{{ file.name }}" title="刪除" data-i18n-title="action.delete">
                             <span class="sr-only" data-i18n="action.delete">刪除</span>
                         </button>
-                        <button type="button" class="button-icon no-bg size-sm download download-file-btn" data-toast="準備下載檔案...|此來源無法下載|下載失敗" data-i18n-data-toast="toast.downloadFile" data-toast-type="info|warning|error" title="下載" data-i18n-title="action.download">
+                        <button type="button" class="button-icon no-bg size-sm download download-file-btn" data-filesn="{{ file.sn }}" data-filename="{{ file.name }}" data-filetype="{{ file.type }}" data-toast="準備下載檔案...|此來源無法下載|下載失敗" data-i18n-data-toast="toast.downloadFile" data-toast-type="info|warning|error" title="下載" data-i18n-title="action.download">
                             <span class="sr-only" data-i18n="action.download">下載</span>
                         </button>
                     </div>

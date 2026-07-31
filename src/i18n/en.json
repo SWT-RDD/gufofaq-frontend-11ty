@@ -333,6 +333,7 @@
   "health.checkType": "Check",
   "health.checkZeroValue": "No knowledge value",
   "health.crossDataset": "Spans datasets, or belongs to none",
+  "health.disableReason": "Reason for disabling",
   "health.disableReasonPlaceholder": "Why these records should be disabled",
   "health.disableRecords": "Which records to disable",
   "health.dismissReasonPlaceholder": "Why this is not a problem",

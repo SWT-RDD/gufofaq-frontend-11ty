@@ -208,15 +208,15 @@ permalink: 3-5_dataHealth.html
      `expired` 那兩筆被命中 312 次。照發現數量排的話這兩組的位置會恰好對調，而那正是 spec 明文說
      不要的排序。命中同為 0 的三組再照未處置數遞減、最後照 `check_type` 字典序定序
      （`tag_gap` 24 → `never_hit` 1 → `no_answer_topic` 1）。
-     `totalOpen` 36 ＝ 2 ＋ 5 ＋ 1 ＋ 2 ＋ 24 ＋ 1 ＋ 1（七組未處置數加總）；每組的 `top` 逐筆
+     `totalOpen` 35 ＝ 2 ＋ 4 ＋ 1 ＋ 2 ＋ 24 ＋ 1 ＋ 1（七組未處置數加總）；每組的 `top` 逐筆
      `hitSum` 遞減、加總 ≤ 該組的 `hitSum`（`near_duplicate` 96 ＞ 前五筆的 96 恰好相等，
-     因為那一組只有 5 筆；`tag_gap` 24 筆只列得下 5 筆，那正是 `topN` 要外顯的截斷）。
+     因為那一組未處置的只有 4 筆；`tag_gap` 24 筆只列得下 5 筆，那正是 `topN` 要外顯的截斷）。
      `never_hit` 的 `hitSum` 恆為 0 是它的定義（「從未被命中」），不是資料湊巧；`no_answer_topic`
      的記錄鍵不是 document_id，命中統計上沒有它，所以也是 0。 #}
 {% set healthOverview = {
     windowDays: 7,
     windowRange: "2024/11/25 03:15 ~ 2024/12/02 03:15",
-    totalOpen: 36,
+    totalOpen: 35,
     totalHits: 4820,
     topN: 5
 } %}
@@ -231,11 +231,10 @@ permalink: 3-5_dataHealth.html
   },
   {
     checkType: "near_duplicate", label: "近似重複", labelKey: "health.checkNearDuplicate",
-    openCount: 5, hitSum: 96,
+    openCount: 4, hitSum: 87,
     top: [
       { id: 901, severityLabel: "候選", severityKey: "health.severityCandidate", hitSum: 61, records: 3 },
       { id: 903, severityLabel: "候選", severityKey: "health.severityCandidate", hitSum: 18, records: 2 },
-      { id: 907, severityLabel: "候選", severityKey: "health.severityCandidate", hitSum: 9, records: 3 },
       { id: 911, severityLabel: "候選", severityKey: "health.severityCandidate", hitSum: 5, records: 2 },
       { id: 915, severityLabel: "候選", severityKey: "health.severityCandidate", hitSum: 3, records: 2 }
     ]
@@ -313,7 +312,7 @@ permalink: 3-5_dataHealth.html
        · 960 那一筆是 `filename`：**整份文件的身分是原始檔名**，沒有列號
        · 970 那一筆是 `no_answer_question`：標題是它代表的**問法**（取自該發現自己的
          `evidence.question`），沒有資料集、沒有檔、沒有列號
-       · 918 那一筆的標題**被截斷**（`titleChars` 214 ＞ 顯示出來的字數）
+       · 907 的第二筆標題**被截斷**（顯示 200 字＝product `RECORD_TITLE_MAX_CHARS`，`titleChars` 231）
        · 907 的第三筆 `unavailableReason` 是 `record_not_found`（合併之後有人把那一列刪了）；
          那一筆的 `filename`／`row` 也是空的——product 對這一種原因回的就是三格 null（找不到那
          一列，自然也說不出它在哪個檔的第幾列）
@@ -321,7 +320,10 @@ permalink: 3-5_dataHealth.html
      `source_unreadable` 重新掃描一百次也沒有用要去看那個檔、`topic_question_missing` 它本來就
      不是一筆記錄），而**說得出這件事的只有後端**：畫面上是「原因代碼＋product 那一整段話」，
      與上面 `uncovered` 那張表同一個做法，前端不另立映射表。 #}
-{% set healthFindingsPage = { total: 36, perPage: 10, currentPage: 1 } %}
+{# 示範演的是「全部」那一態（要看得到已處置列與「還原」動作），故上面的狀態下拉標 selected；
+     total 因此是全部發現數（35 未處置 ＋ 已處置若干），不等於總覽的 totalOpen。
+     product 端 `list_findings` 的**預設**仍是 open（那是 API 契約，不是這張示範演的那一態）。 #}
+{% set healthFindingsPage = { total: 41, perPage: 10, currentPage: 1 } %}
 {% set healthFindings = [
   {
     id: 901, checkLabel: "近似重複", checkLabelKey: "health.checkNearDuplicate", checkType: "near_duplicate",
@@ -423,7 +425,7 @@ permalink: 3-5_dataHealth.html
       { key: "missing_slots", value: "note1" }
     ],
     records: [
-      { key: "0d7c34fb85a9", title: "2026 新制什麼時候上路", titleChars: 12, titleSource: "title_slot", filename: "2026新制問答_v3.xlsx", row: 3 }
+      { key: "0d7c34fb85a9", title: "2026 新制什麼時候上路", titleChars: 13, titleSource: "title_slot", filename: "2026新制問答_v3.xlsx", row: 3 }
     ],
     noteLines: [], resolvedAt: "", resolvedBy: "",
     actions: ["dismiss"]
@@ -439,7 +441,7 @@ permalink: 3-5_dataHealth.html
       { key: "window_days", value: "7" }
     ],
     records: [
-      { key: "c4a70f18d59e", title: "犬貓入境檢疫作業手冊.pdf", titleChars: 13, titleSource: "filename", filename: "犬貓入境檢疫作業手冊.pdf", row: "" }
+      { key: "c4a70f18d59e", title: "犬貓入境檢疫作業手冊.pdf", titleChars: 14, titleSource: "filename", filename: "犬貓入境檢疫作業手冊.pdf", row: "" }
     ],
     noteLines: [], resolvedAt: "", resolvedBy: "",
     actions: ["dismiss"]
@@ -708,7 +710,7 @@ permalink: 3-5_dataHealth.html
                 <option value="open" data-i18n="health.statusOpen">未處置</option>
                 <option value="resolved" data-i18n="health.statusResolved">已處置</option>
                 <option value="dismissed" data-i18n="health.statusDismissed">已判定為非問題</option>
-                <option value="all" data-i18n="common.all">全部</option>
+                <option value="all" selected data-i18n="common.all">全部</option>
             </select>
             <select id="healthCheckTypeSelect" class="form-control js-health-check-type" aria-label="檢查項目" data-i18n-aria-label="health.checkType">
                 <option value="" data-i18n="health.allCheckTypes">全部檢查項目</option>
@@ -920,10 +922,10 @@ permalink: 3-5_dataHealth.html
                                     </div>
                                     <div class="form-group">
                                         <div class="label">
-                                            <label for="healthDisableReason-{{ f.id }}" class="control-label required" data-i18n="health.disposalReason">判定理由</label>
+                                            <label for="healthDisableReason-{{ f.id }}" class="control-label required" data-i18n="health.disableReason">停用理由</label>
                                         </div>
                                         <div class="field">
-                                            <textarea id="healthDisableReason-{{ f.id }}" class="form-control js-health-reason" rows="2" placeholder="為什麼要停用這幾筆" data-i18n-placeholder="health.disableReasonPlaceholder" required></textarea>
+                                            <textarea id="healthDisableReason-{{ f.id }}" class="form-control js-health-disable-reason" rows="2" placeholder="為什麼要停用這幾筆" data-i18n-placeholder="health.disableReasonPlaceholder" required></textarea>
                                         </div>
                                     </div>
                                     <div class="flex-row">

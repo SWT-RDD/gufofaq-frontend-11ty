@@ -10,8 +10,10 @@ permalink: 5-3_statsModule.html
   { label: "設定", href: "", i18nKey: "nav.settings" },
   { label: "統計模組", i18nKey: "nav.statsModule" }
 ] %}
-{# 歸因槽值域：product `app/field_schema.py` 的 `ATTRIBUTION_SLOT_KEYS`＝`SLOT_KEYS` 減 `tags`（清單槽，
-     整串會變成一個維度值）與 `content`（答案本體，逐列唯一＝分群等於沒分），故是 21 減 2＝19 個。
+{# 歸因槽值域：product `app/field_schema.py` 的 `ATTRIBUTION_SLOT_KEYS`＝`attribution_slot_keys(SLOTS)`。
+     它**排掉的是四類角色**、不是兩個槽名：`privileges`／`containsAny`／`filterBool`／`search`
+     （對應 `privilege`／`tags`／`flag`／`content` 四個槽），故是 21 減 4＝17 個。
+     照槽名列名單會無聲落後（product 該函式的 docstring 就是這樣寫的）——這裡照角色判準，不自己列。
      同一份目錄本頁用兩次（統計維度 select ＋ 歸因維度多選），故 set 成一個陣列共用（GUIDELINE §6）。
      **React 端不得把這 19 個硬編**：`GET /settings/attribution` 回的 `available_slots` 就是這份值域的
      單一真相（product `app/routers/settings_hub.py`），值域一變前端才不會跟著漂。
@@ -25,8 +27,6 @@ permalink: 5-3_statsModule.html
   { key: "date", label: "日期" },
   { key: "category", label: "分類" },
   { key: "number", label: "數值" },
-  { key: "flag", label: "標記" },
-  { key: "privilege", label: "權限" },
   { key: "note1", label: "承辦組室" },
   { key: "note2", label: "業務範疇" },
   { key: "note3", label: "備註3" },

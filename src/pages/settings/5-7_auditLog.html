@@ -57,7 +57,12 @@ permalink: 5-7_auditLog.html
             </div>
             <div class="form-group col-3-md col-12-sm" data-platform-role="auditor">
                 <div class="label">
-                    <label for="auditOperatorInput" class="control-label" data-i18n="audit.operator">操作者</label>
+                    {# 這一欄篩的是**代理者**：product `audit.py` 的 `operator` query 參數打的是
+                         `AuditLog.impersonated_by`（`q.where(models.AuditLog.impersonated_by == operator)`），
+                         也就是本表「代理者」那一欄。product 自己把 `impersonated_by` 叫「真正操作者」
+                         （`operator_email` 由它衍生），與本頁的欄名相反——**篩選的標籤跟著本頁欄名走**，
+                         否則使用者填了「操作者」卻篩到另一欄。填的是使用者 id，不是 email。 #}
+                    <label for="auditOperatorInput" class="control-label" data-i18n="audit.impersonator">代理者</label>
                 </div>
                 <div class="field">
                     <input type="number" id="auditOperatorInput" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control">
@@ -83,8 +88,9 @@ permalink: 5-7_auditLog.html
      顯示成本頁列數的話，「共 500 筆」看起來就像全部只有 500 筆，而稽核日誌是 ISO 證跡，
      「看不到更舊的」與「總數是錯的」都不能接受。
      total／perPage 先於列表宣告，計數列與 pager-row 吃同一個值（§6 同源）。
-     ⚠️ product 待跟上：GET /audit 目前回的是裸 list，沒有總筆數——要能顯示總數與最後一頁，
-     回應需附總數（envelope 或 X-Total-Count），否則前端只能做「上一頁／下一頁」。 #}
+     product 已經回得出來：`services/product/app/routers/audit.py` 的 `list_audit` 結尾是
+     `return {"audit_logs": items, "total_count": total}`（與 /history 同形）。同檔也已裁決過
+     **標頭不行**——BFF 的 `PASSTHROUGH_RESPONSE_HEADERS` 只放行三個標頭，`X-Total-Count` 會被靜默剝掉。 #}
 {% set total = 115 %}
 {% set perPage = 20 %}
 {% set rows = [

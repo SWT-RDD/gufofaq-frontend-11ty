@@ -12,8 +12,8 @@ permalink: 5-10_tagDimensions.html
        · `app/routers/retrieval.py`（`PUT /retrieval/profiles/{no}/tag-filter`，回應形狀 `ProfileOut` 的
          `retrieval_filter_mode` / `recent_window_days` / `tag_untagged_counts` 三欄）
        · `app/retrieval_filter.py`（`slots_requiring_full_coverage`：哪些槽的「未標註」在 DSL 裡表達不出來）
-       · `app/field_schema.py`（`tag_dimension_slots` 的值域＝`custom_field_mapping` 那批槽；
-         `MIN_FILTERABLE_DATE` / `MAX_FILTERABLE_DATE` 的可篩選日期區間）
+       · `app/routers/tags.py`（`tag_dimension_slots`：維度可掛的槽值域＝`custom_field_mapping` 那批）
+       · `app/field_schema.py`（`MIN_FILTERABLE_DATE` / `MAX_FILTERABLE_DATE` 的可篩選日期區間）
 
      這一頁要外顯四件「不寫出來就會靜默出事」的事，逐一：
 
@@ -27,7 +27,7 @@ permalink: 5-10_tagDimensions.html
 
      ③ **時間窗不能獨立於維度存在**。意圖分類判不準時整組條件一起丟棄、`recency` 一併歸零
         （product `app/intent_classify.py`），理由是時間窗是唯一沒有「未標註」分支的述詞
-        （`app/retrieval_filter.py` 的 `test_recency_excludes_undated_by_design`），留著會連沒有
+        （`tests/test_retrieval_filter.py` 的 `test_recency_excludes_undated_documents_by_design`），留著會連沒有
         發布日的文件一起濾掉。UI 講「時間窗」時不可以讓人以為它是一顆可以單獨生效的開關。
 
      ④ **日期維度的值有上下界**，而且是**填之前**就要知道的規則：檢索引擎的日期索引是 int64 奈秒
