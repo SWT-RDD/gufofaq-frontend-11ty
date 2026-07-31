@@ -8,7 +8,6 @@
             </div>
             <div class="field">
                 <input type="text" id="demoInputDefault" placeholder="請輸入" class="form-control">
-                <span class="error-prompt" role="alert">錯誤訊息文字</span>
             </div>
         </div>
         <div class="subtitle">描述：輸入框default狀態</div>
@@ -20,7 +19,6 @@
             </div>
             <div class="field">
                 <input type="text" id="demoInputDisabled" placeholder="請輸入" class="form-control disabled" disabled>
-                <span class="error-prompt" role="alert">錯誤訊息文字</span>
             </div>
         </div>
         <div class="subtitle">描述：輸入框disabled狀態，加上「.disabled」的class及「disabled」屬性</div>
@@ -34,10 +32,9 @@
             </div>
             <div class="field">
                 <input type="text" id="demoInputError" placeholder="請輸入" class="form-control error">
-                <span class="error-prompt" role="alert">錯誤訊息文字</span>
             </div>
         </div>
-        <div class="subtitle">描述：輸入框錯誤狀態，在input上加上.error，下方的錯誤訊息.error-prompt就會顯示</div>
+        <div class="subtitle">描述：輸入框錯誤狀態，在 input 上加 .error 標紅。訊息不在欄位下方——§4 全站一種回報方式：驗證結果走送出鈕 data-toast 的 warning 段。.error-prompt 只留給「訊息具體」或「真 app 業務 js 會填」的少數幾處（1-1-4、login、3-1-2）</div>
     </div>
     <div class="col-6-md">
         <div class="form-group">
@@ -46,7 +43,6 @@
             </div>
             <div class="field">
                 <input type="text" id="demoInputRequired" placeholder="請輸入" class="form-control" required>
-                <span class="error-prompt" role="alert">錯誤訊息文字</span>
             </div>
         </div>
         <div class="subtitle">描述：輸入框必填，在label.control-label上加.required的class，input上加上required屬性，就會出現紅色星號</div>
@@ -60,7 +56,6 @@
             </div>
             <div class="field">
                 <input type="text" id="demoInputSearch" placeholder="搜尋..." class="form-control search">
-                <span class="error-prompt" role="alert">錯誤訊息文字</span>
             </div>
         </div>
         <div class="subtitle">描述：搜尋框，請在input.form-control上加上「.search」，即出現放大鏡圖標</div>

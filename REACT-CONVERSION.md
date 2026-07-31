@@ -58,9 +58,22 @@
 
 ## ② markup（html → tsx）
 
-- `class`→`className`、`for`→`htmlFor`、`{# #}`→`{/* */}`、自閉合。
-- **表單初值不是機械替換的，是 JSX 會擋下來的一族**（切版全站現況：textarea 帶 children 17、`<option selected>` 61、
-  `<input checked>` 38、`<input value>` 76）。逐條對應：
+- **機械替換的完整清單**（少一項就是一個 build error 或一顆靜默失效的屬性）：
+  `class`→`className`、`for`→`htmlFor`、`colspan`→`colSpan`、`rowspan`→`rowSpan`、`tabindex`→`tabIndex`、
+  `maxlength`→`maxLength`、`minlength`→`minLength`、`autocomplete`→`autoComplete`、`readonly`→`readOnly`、
+  `srcset`→`srcSet`、`{# #}`→`{/* */}`、自閉合補 `/>`。
+  **內嵌 SVG 的屬性也在這一族**：`stroke-width`→`strokeWidth`、`stroke-linecap`→`strokeLinecap`
+  （全站唯一一支內嵌 SVG 是 `ui/theme-toggle`——只出現一次的構造最容易漏）。
+  `data-*` 與 `aria-*` **維持 kebab 原樣**，不要一起駝峰化。
+- **行內 `style` 字串 → 物件**。JSX 的 `style` 只吃物件，字串會丟
+  `The 'style' prop expects a mapping from style properties to values, not a string`。切版只有三種合法行內
+  style（GUIDELINE §4），三種的出口不同：
+  - `<col style="width:283px; min-width:283px;">`（最大宗）→ `style={{ width: 283, minWidth: 283 }}`。
+    **不要搬進元件 scss**：欄寬是「這一頁這張表」的資料、不是元件樣式，搬進去會讓 §① 的 byte-identical
+    比對出現一份切版沒有的規則；也不要改成 utility class（那是 TAILWIND-CONVERSION 的路線，scss 路線沒有 `w-[N]`）。
+  - JS 切換的 `display:none|block` → 條件渲染或 conditional className，**屬性整個不要帶**（見 §④）。
+  - 資料驅動的執行期尺寸（storage-bar 的條寬）→ `style={{ width: \`${pct}%\` }}`，值來自 props。
+- **表單初值不是機械替換的，是 JSX 會擋下來的一族**（切版全站都有實例；**數量以實際檔案為準，別抄快照**）。逐條對應：
   - `<textarea>值</textarea>` → `defaultValue={值}`。**這條是 React 直接丟錯、不是警告**（"Use the `defaultValue`
     or `value` props instead of setting children on `<textarea>`"），照抄 markup 會在第一次 render 就炸。
   - `<option selected>` → 初值上移到 `<select defaultValue={…}>`（受控就是 `value` + `onChange`）；`selected` 留在
@@ -72,6 +85,19 @@
 - **業務值載體的初值一律走「受控 + 初值來自 props/資料」**：這些欄位的值 React 要讀去送 API（GUIDELINE §5 的②），
   非受控的 `default*` 讀不回來。`default*` 只留給純展示的凍結示範（如 5-6-1 的免責聲明全文 textarea）。
 - `{% include "x.html" %}`→`<X/>`、`{% for a in xs %}`→`{xs.map(a=>…)}`、`{% if c %}`→`{c && …}`／三元、`{% set %}`→props。
+- **`{% for %}…{% else %}…{% endfor %}` 是「空狀態列」，不是 for 的一部分**（切版有幾十處）：
+  → `{xs.length ? xs.map(…) : <EmptyRow/>}`。這條分支是 GUIDELINE §5「無資料列正典」＋一整條 CI 測試守著的規格，
+  照 `{xs.map()}` 直翻會把它整個吃掉，而畫面上什麼都看不出來——空清單就是一張沒有任何列的表。
+  空狀態列的 `colspan` 要等於該表的欄數（切版側已有測試把關，轉換時別改）。
+- **`{% elif %}` 鏈 → 靜態查表，不是巢狀三元**：切版用 if/elif 鏈表達的是**枚舉**
+  （`components/record-identity` 的 `titleSource` 種類標記，README 明寫「i18n key 逐條寫成字面」）。
+  React 端做成 `const LABEL = { title_slot: "…", filename: "…" } as const` 再查表；翻成三元鏈之後，
+  新增一個種類不會有任何地方報錯，只會靜默落到最後那個 else。
+- **`{% for %}` 內的 `{% set X = item %}` ＋ `{% include %}`（切版的逐列元件用法）** →
+  `{rows.map(r => <RecordIdentity key={r.id} {...r}/>)}`。這是切版在沒有 props 的語言裡傳參數的唯一辦法，
+  不是狀態；轉過去之後那個中介變數就消失了。
+- **`{{ content | safe }}`（三支 layout 各一）→ `{children}`**。切版的頁面內容就是從這個洞注進 layout 的；
+  它不是 `dangerouslySetInnerHTML`。
 - markup 完整照切版：wrapper、`aria-*`、`title` 全數帶到。
 - a11y 綁定屬性成對帶：`aria-labelledby`／`aria-describedby` 連同它指到的 `id` 一起轉，兩端缺一不可
   （如 `<dialog aria-labelledby="x-title">` 配 `<h3 id="x-title">`），id 隨呼叫端 prop 衍生時兩處同一份運算式。
@@ -126,6 +152,15 @@
 - `data-i18n="k">文<`→`{t("k")}`；`data-i18n-title="k"`→`title={t("k")}`（`data-i18n-aria-label`/`data-i18n-alt`/
   `data-i18n-placeholder` 對到對應屬性）：帶 `data-i18n-<attr>` 的屬性一律用 `t()` 譯值，不是原文 label／資料值——
   同一顆節點的文字走 `t()`、屬性卻留原文 label 是常見漏網（沒有 `data-i18n-*` 標記的屬性才維持原文）。
+- **`data-i18n-data-toast` 是這條機械規則的例外**（而且是全站第二多的 i18n 屬性）：照上面那條做會產出
+  `data-toast={t(k)}`，但 §④ 又要求 `data-toast` 這顆屬性整個移除。正解是
+  `t(k).split("|")` 餵進 `useToast()` 的結果陣列——`|` 的**段數與順序是索引契約**，與 `data-toast-type`
+  同序對位（見 §⑥）。切版側已有 CI 釘住「繁中段數＝英譯段數＝type 段數」，React 端的 split 索引跟著那份走。
+- **兩態文字槽 `data-key-<態>` ＋ `data-text-<態>`**（`ui/reveal-input` 的顯示／隱藏、`components/prompt-edit`
+  的展開／收合）→ `t(open ? keyOpen : keyClose)`，兩顆 key 都要進字典。切版把兩態都寫在 markup 上，是因為
+  vanilla js 不能寫死字串（GUIDELINE §5）；React 端那兩顆 key 變成元件內的常數對，**不要退化成一顆 key**。
+- **資料槽 `data-<槽>` ＋ `data-<槽>-key`**（`multi-select` 的 placeholder、`<option>` 的狀態後綴）→
+  `t(key, { defaultValue: 原文 })`。槽裡的**資料**（選項名稱、業務識別字）不翻，只翻後綴／placeholder。
 - markup 不掛 `data-i18n`／`.js-lang-toggle`。
 - **一顆 key 不得承載兩種行為語意**：行為契約不同就是兩顆 key，即使繁中字面相同。正典：思考深度的空值——
   主回答空＝`settings.reasoningEffortDefault`（該模型預設），分組 LLM 空＝`settings.reasoningEffortMinimal`

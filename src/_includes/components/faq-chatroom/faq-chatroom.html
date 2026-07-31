@@ -68,7 +68,10 @@
             <div class="faq-chat-field form-group">
                 {# id/class chat-input-txt＝真 app 業務掛點（Standard main.js getElementById('chat-input-txt') 讀值送問答），值載體原樣保留（§5） #}
                 <input type="text" id="chat-input-txt" placeholder="請輸入問題..." data-i18n-placeholder="comp.pleaseEnterQuestion" class="chat-input-txt form-control" aria-label="輸入問題" data-i18n-aria-label="comp.enterQuestion">
-                <span class="error-prompt" role="alert" data-i18n="comp.inputError">輸入錯誤！</span>
+                {# 空的 live region：訊息由真 app 業務 js 填（Standard main.js:485-492 的 `showError()`
+                     對 `.form-group` 內的 `.error-prompt` 寫 textContent）。烤一句通用的「輸入錯誤！」
+                     等於同一件事有兩套回報（§4）：那一套永遠不會被觸發，而真正的訊息會把它蓋掉。 #}
+                <span class="error-prompt" role="alert"></span>
             </div>
             {# 同 components/chatroom：送出鈕多一條「沒填問題」，建議追問的 chip 沒有那一態。 #}
             <button type="button" class="button button-primary flex-shrink-0" data-toast="回答生成中...|請先輸入問題|回答生成成功|回答生成失敗" data-i18n-data-toast="toast.chatSend" data-toast-type="info|warning|success|error" data-i18n="action.submit">送出</button>
