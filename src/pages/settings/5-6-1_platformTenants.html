@@ -94,8 +94,12 @@ permalink: 5-6-1_platformTenants.html
 </div>
 
 {# 建立租戶：平台管理員新增租戶（同時建立首位管理員帳號 + 預設額度）。逆向自 product POST /platform/tenants
-     （body：name / admin_email / admin_password，密碼至少 8 碼；201）。沿用同頁 5-8 widget「產生 Token」的
-     inline 建立區塊模式（非彈窗，無條件動作），data-toast 直接掛按鈕。 #}
+     （`TenantCreate` 收五欄：name／company／features／admin_email／admin_password，密碼至少 8 碼；201）。
+     五欄的落點：name／admin_email／admin_password 在下面三格；`features` 在下方的租戶功能開通表
+     （PATCH /features）；**`company` 補在這裡**——原本沒有任何平台端入口，於是平台建出來的租戶
+     公司欄一定是空的，只有租戶自己在 5-1-1 改得到（§3-2：request 收得下的每個參數都要有落點）。
+     沿用同頁 5-8 widget「產生 Token」的 inline 建立區塊模式（非彈窗，無條件動作），
+     data-toast 直接掛按鈕。 #}
 <div class="block mb-16 flex-row column gap-16" data-platform-role="admin">
     <div class="text-md text-bold" data-i18n="settings.createTenant">建立租戶</div>
     <div class="flex-row flex-wrap gap-16 mobile-column sm-gap-16">
@@ -106,6 +110,18 @@ permalink: 5-6-1_platformTenants.html
                 </div>
                 <div class="field">
                     <input type="text" id="tenantNameInput" placeholder="例如：宇宙股份有限公司" data-i18n-placeholder="settings.tenantNamePlaceholder" class="form-control" required>
+                </div>
+            </div>
+        </div>
+        <div class="col-4-md col-12-sm">
+            <div class="form-group">
+                <div class="label">
+                    {# `TenantCreate.company` 是選填（`str | None`），故 label 不掛 required、
+                         控制項也不掛（§4 兩份必須說同一件事）。key 沿用 5-1-1 既有的那顆（§4-2 反向規則）。 #}
+                    <label for="tenantCompanyInput" class="control-label" data-i18n="settings.companyUnit">公司/單位</label>
+                </div>
+                <div class="field">
+                    <input type="text" id="tenantCompanyInput" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control">
                 </div>
             </div>
         </div>
@@ -140,18 +156,23 @@ permalink: 5-6-1_platformTenants.html
 
 {# 平台管理（僅平台系統管理員，跨租戶）：控制各租戶能使用哪些功能。SaaS 新需求，逆向自 apps/web app/(app)/platform；
      真正把關在 product（require_platform_admin），本頁僅提供管理介面。
-     功能鍵集合對齊 product app/authz.py CAPABILITIES 全部 5 鍵（data/ask/history/settings/audit——
-     平台開通維持粗粒度整項開關，authz.py 自註「維持 5 key 不變」）。
+     功能鍵集合對齊 product `app/authz.py` 的 `CAPABILITIES`（**指名符號、不抄數量**：抄了數字就會
+     像上一版那樣落後——那時寫「全部 5 鍵」並引一句「維持 5 key 不變」，而正本現在是六鍵、
+     那句話也已經不在檔案裡了。`extract` 是後加的，理由逐字寫在 authz.py 該鍵上方：
+     「先前兩者共用 `data` 這把鑰匙，於是關掉某租戶的資料匯入會連帶把萃取 API 也關掉，
+     而畫面上看不出這件事」——少一欄開關，平台管理員就沒有地方替租戶開通萃取 API，
+     而 5-9 那一頁靠的就是它）。平台開通維持粗粒度整項開關，不拆讀寫。
      示範租戶 D 同時出現在下方 ISO 審核精靈的名單/結果（§6 跨區自洽：逾期 150 天者列表要掛 ISO 待審徽章）。 #}
 {% set features = [
   { key: "data", label: "資料匯入／資料集管理", i18nKey: "settings.capData" },
   { key: "ask", label: "問答（後台測試區）", i18nKey: "settings.capAsk" },
   { key: "history", label: "歷史紀錄", i18nKey: "settings.capHistory" },
   { key: "settings", label: "設定類（提示詞／檢索設定）", i18nKey: "settings.capSettings" },
-  { key: "audit", label: "稽核日誌檢視", i18nKey: "settings.capAudit" }
+  { key: "audit", label: "稽核日誌檢視", i18nKey: "settings.capAudit" },
+  { key: "extract", label: "萃取 API（程式化）", i18nKey: "settings.capExtract" }
 ] %}
 {% set tenants = [
-  { name: "示範租戶 A", userCount: 8, features: ["data", "ask", "history", "settings", "audit"], frozen: false, reviewDue: false },
+  { name: "示範租戶 A", userCount: 8, features: ["data", "ask", "history", "settings", "audit", "extract"], frozen: false, reviewDue: false },
   { name: "示範租戶 B", userCount: 3, features: ["data", "ask"], frozen: true, reviewDue: false },
   { name: "示範租戶 C", userCount: 1, features: ["ask"], frozen: false, reviewDue: true },
   { name: "示範租戶 D", userCount: 4, features: ["data", "ask"], frozen: false, reviewDue: true }
@@ -269,7 +290,11 @@ permalink: 5-6-1_platformTenants.html
                     <label for="reviewOverdueDaysInput" class="control-label" data-i18n="platform.overdueDaysLabel">逾期滿（天）</label>
                 </div>
                 <div class="field">
-                    <input type="number" min="0" step="1" id="reviewOverdueDaysInput" value="90" class="form-control">
+                    <input type="number" min="0" step="1" id="reviewOverdueDaysInput" value="90" class="form-control" aria-describedby="reviewOverdueDaysRange">
+                    {# 三件套的第三件（§4）：可見區間 ＋ aria-describedby。下界出處＝
+                         `GET /platform/review/overdue` 的 `overdue_days: int = Query(ge=0)`（platform.py:1390）。
+                         數字獨立成不翻的節點（§3-2：那是資料不是譯文）。 #}
+                    <span class="text-gray" id="reviewOverdueDaysRange">≥ 0</span>
                 </div>
             </div>
             <span class="text-gray" data-i18n="platform.thresholdOr">或</span>
@@ -422,8 +447,16 @@ permalink: 5-6-1_platformTenants.html
 <div class="block mt-16 flex-row column gap-16" data-platform-role="auditor">
     <div class="text-md text-bold" data-i18n="platform.disclaimerTitle">免責聲明設定</div>
     <div class="form-group">
+        <div class="label">
+            <label for="platformDisclaimerInput" class="control-label" data-i18n="platform.disclaimerBody">聲明本文</label>
+        </div>
         <div class="field">
-            <textarea class="form-control" rows="12">致使用者：
+            {# 這顆原本既沒有 id／label 也沒有 aria-label，全頁唯一一顆沒有可及名稱的控制項（§4）。
+                 同時補上 `data-platform-role="admin"`——同一區的檔頭早就寫著「本文 textarea 是值控制項
+                 （低於 admin 照渲染但 disabled）」，但 markup 上一個字都沒有，只繼承了區塊的 auditor（§5：
+                 權限分級是契約，寫成宣告、不只寫在註解裡）。寫入端是 PUT /platform/disclaimer
+                 ＝ require_platform_admin。 #}
+            <textarea id="platformDisclaimerInput" class="form-control" rows="12" data-platform-role="admin">致使用者：
 歡迎使用本平台！在使用我們的服務之前，請您仔細閱讀並同意以下免責聲明，閱讀後即視為使用者同意此聲明。
 AI內容生成的性質
 本平台基於RAG（Retrieval-Augmented Generation）技術，提供專注於文字生成的人工智慧服務，包括對話或報告等文字形式的內容創作，主要透過由使用者上傳的資料作為參考進行。</textarea>
