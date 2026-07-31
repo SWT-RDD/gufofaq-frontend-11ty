@@ -102,7 +102,7 @@ permalink: 5-6-3_platformServiceKeys.html
                     <label for="newServiceKeyName" class="control-label required" data-i18n="serviceKey.name">用途名稱</label>
                 </div>
                 <div class="field">
-                    <input type="text" id="newServiceKeyName" class="form-control js-new-service-key-name" placeholder="這一把是誰在用" data-i18n-placeholder="serviceKey.namePlaceholder" aria-describedby="newServiceKeyNameHint" required>
+                    <input type="text" id="newServiceKeyName" class="form-control js-new-service-key-name" maxlength="200" placeholder="這一把是誰在用" data-i18n-placeholder="serviceKey.namePlaceholder" aria-describedby="newServiceKeyNameHint" required>
                     <span id="newServiceKeyNameHint" class="text-gray" data-i18n="serviceKey.nameHint">輪替時要分得出「這一列是誰在用」，所以請寫得出消費者是什麼（例如「每日健檢 CronJob」）。名稱不影響權限，只影響你之後看不看得懂這張表。</span>
                 </div>
             </div>

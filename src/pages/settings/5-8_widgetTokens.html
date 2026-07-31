@@ -42,7 +42,11 @@ permalink: 5-8_widgetTokens.html
                     <label for="widgetOriginsInput" class="control-label required" data-i18n="widget.allowedOrigins">允許網域</label>
                 </div>
                 <div class="field">
-                    <textarea id="widgetOriginsInput" rows="3" placeholder="一行一個，例如 https://example.com" data-i18n-placeholder="widget.originsPlaceholder" class="form-control" required></textarea>
+                    <textarea id="widgetOriginsInput" rows="3" placeholder="一行一個，例如 https://example.com" data-i18n-placeholder="widget.originsPlaceholder" class="form-control" aria-describedby="widgetOriginsHint" required></textarea>
+                    {# 格式是後端硬守的（widget_tokens.py 的 _normalize_origins：非 http/https、
+                         沒有 netloc、帶 path 一律 400），所以講在填之前、而且要接得上輔具——
+                         寫在 placeholder 一打字就消失（§4 帶約束的輔助文字要掛 id ＋ aria-describedby）。 #}
+                    <span id="widgetOriginsHint" class="text-gray" data-i18n="widget.originsHint">一行一個，須為 https://網域 或 http://網域，不含路徑與結尾斜線。</span>
                 </div>
             </div>
         </div>

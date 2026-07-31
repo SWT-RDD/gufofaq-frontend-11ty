@@ -922,7 +922,12 @@ permalink: 5-2_conversationSettings.html
   { kind: "state_as_of", enabled: true, descKey: "settings.outputRuleStateAsOfDesc", desc: "答案引用到的資料若帶基準日，就在句末補上「（本資訊以 2024-11-30 為準）」這樣一句註記。引用到多筆時取最舊的那一個——一段話只要引用了一份較舊的資料，它就只保證到那一天為止，寫最新的那一天等於替已經過期的那部分背書。註記接在最後一個散文行的句末；那一行如果是表格、清單、引言、標題或程式碼圍欄就另起一段，不會被那一行吃掉。" },
   { kind: "flag_conflict", enabled: false, descKey: "settings.outputRuleFlagConflictDesc", desc: "同一個主題有多筆並列最新的資料時，在答案後面另起一段，逐份列出它們的基準日與來源名稱，並說明這幾份的說法可能不同——不是挑一份講。這一段講不出各份「說了什麼」：出口處理不經 AI，手上只有日期與來源名稱，替租戶總結那幾份資料的內容會是一句沒有依據的話。同一份文件被切成好幾段只算一份；能列出日期與來源的不到兩份時就不加這一段。" }
 ] %}
-{% set outputRulesAnyEnabled = true %}
+{# 啟用條數與「有沒有任一條啟用」都從陣列推導：原本一個烤成字面量 9、一個手設 true，
+     改一筆 enabled 就開始說謊（§6：能從示範陣列推導的數字就從陣列渲染）。
+     nunjucks 的 {% set %} 在迴圈內會累加（與 Jinja2 不同），故數得出來。 #}
+{% set outputRulesEnabledCount = 0 %}
+{% for r in outputRules %}{% if r.enabled %}{% set outputRulesEnabledCount = outputRulesEnabledCount + 1 %}{% endif %}{% endfor %}
+{% set outputRulesAnyEnabled = outputRulesEnabledCount > 0 %}
 <div class="tab-content" id="panelOutputRules" style="display: none;">
     <p class="text-gray" data-i18n="settings.outputRulesIntro">生成答案之後、送進合規閘門之前，對整段答案做確定性的後處理（不經 AI）。三段出口處理的順序由平台固定，不可調整。</p>
 
@@ -946,7 +951,7 @@ permalink: 5-2_conversationSettings.html
 
         <div class="data-info flex-row flex-wrap gap-24">
             <span><span data-i18n="settings.outputRulesCountLabel">規則數：</span> {{ outputRules.length }} / 30</span>
-            <span><span data-i18n="settings.outputRulesEnabledLabel">啟用中：</span> 9</span>
+            <span><span data-i18n="settings.outputRulesEnabledLabel">啟用中：</span> {{ outputRulesEnabledCount }}</span>
         </div>
 
         <div class="table-container scrollTable">
@@ -1402,7 +1407,7 @@ permalink: 5-2_conversationSettings.html
                 <label for="qaDirectCriteria" class="control-label" data-i18n="settings.qaDirectCriteria">judge 判準</label>
             </div>
             <div class="field col-12-sm">
-                <textarea id="qaDirectCriteria" class="form-control size-sm js-qa-direct-criteria" placeholder="補充判準（僅 judge 模式生效）..." data-i18n-placeholder="settings.qaDirectCriteriaPlaceholder"></textarea>
+                <textarea id="qaDirectCriteria" class="form-control size-sm js-qa-direct-criteria" placeholder="補充判準..." data-i18n-placeholder="settings.qaDirectCriteriaPlaceholder"></textarea>
             </div>
         </div>
     </div>
