@@ -543,7 +543,7 @@ permalink: 5-2_conversationSettings.html
                     </div>
                     <div class="field">
                         <select id="promptVersionSelect" class="form-control singleSelect js-prompt-version">
-                            <option></option>
+                            <option value="" data-i18n="common.pleaseSelect">請選擇</option>
                             {% for v in versions %}
                             <option value="{{ v.label }}">{{ v.label }}</option>
                             {% endfor %}
@@ -683,7 +683,7 @@ permalink: 5-2_conversationSettings.html
                     </div>
                     <div class="field">
                         <select id="welcomeVersionSelect" class="form-control singleSelect js-welcome-version">
-                            <option></option>
+                            <option value="" data-i18n="common.pleaseSelect">請選擇</option>
                             {% for v in welcomeVersions %}
                             <option value="{{ v.label }}">{{ v.label }}</option>
                             {% endfor %}

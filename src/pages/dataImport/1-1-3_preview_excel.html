@@ -150,10 +150,13 @@ permalink: 1-1-3_preview_excel.html
         </colgroup>
         <thead>
             <tr>
-                <th data-i18n="dataImport.csQuestion">客服問題</th>
-                <th data-i18n="dataImport.csAnswer">客服回覆</th>
-                <th data-i18n="common.createdAt">建立時間</th>
-                <th data-i18n="dataImport.imageUrl">圖片連結</th>
+                {# 這一列是**上傳的活頁簿自己的欄名**（真實頁由 previewExcel.js 依檔案動態產生），
+                     屬 §4-2「示範 Excel 欄位一律不翻」的假資料，故不掛 data-i18n——
+                     同一組四個字串在 1-1-4 的槽位選單裡就是純資料（無 key）。 #}
+                <th>客服問題</th>
+                <th>客服回覆</th>
+                <th>建立時間</th>
+                <th>圖片連結</th>
             </tr>
         </thead>
         <tbody>

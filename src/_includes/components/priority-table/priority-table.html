@@ -56,14 +56,14 @@
                             {# .priority-select 是真 app 的 change 掛點（knowledgeRetrieval.js:643 的 $(document).on('change','.priority-select')）#}
                             {% if tierless %}
                             <select class="form-control select-sm singleSelect priority-select" aria-label="變更使用狀態" data-i18n-aria-label="comp.changeUsage">
-                                <option></option>
+                                <option value="" data-i18n="common.pleaseSelect">請選擇</option>
                                 {# 值沿用「高優先級」＝使用中：agent 模式不分層，但切回傳統時分層資料要還在（見檔頭）。 #}
                                 <option value="高優先級" data-i18n="comp.inUse"{% if row.priority != "不使用" and row.priority %} selected{% endif %}>使用中</option>
                                 <option value="不使用" data-i18n="comp.doNotUse"{% if row.priority == "不使用" %} selected{% endif %}>不使用</option>
                             </select>
                             {% else %}
                             <select class="form-control select-sm singleSelect priority-select" aria-label="變更優先級" data-i18n-aria-label="comp.changePriority">
-                                <option></option>
+                                <option value="" data-i18n="common.pleaseSelect">請選擇</option>
                                 <option value="高優先級" data-i18n="comp.highPriority"{% if row.priority == "高優先級" %} selected{% endif %}>高優先級</option>
                                 <option value="中優先級" data-i18n="comp.mediumPriority"{% if row.priority == "中優先級" %} selected{% endif %}>中優先級</option>
                                 <option value="低優先級" data-i18n="comp.lowPriority"{% if row.priority == "低優先級" %} selected{% endif %}>低優先級</option>
