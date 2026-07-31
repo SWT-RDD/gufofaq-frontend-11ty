@@ -48,7 +48,8 @@ permalink: 5-6-2_platformMcpServers.html
      `app/services/mcp_client.py:151` 的 {python, python3, node, npx, uvx, uv}——該檔還特別交代
      「不要把 shell（bash/sh）加進去，那等於放棄整道閘」。而執行指令是自由文字欄，
      打 bash／docker 是使用者自己改得掉的事，折進「建立失敗，請稍後再試」等於叫人重試。
-     product catalog 的 toast.createMcpServer 仍含「或連線測試失敗」死分支，此處為修正後值，待回流 product）#}
+     與 product catalog 的差異：那邊的 `toast.createMcpServer` 是三段（已建立｜名稱已存在｜建立失敗），
+     這裡多兩段 warning（執行指令不在允許清單、環境變數不可填遮罩），待回流 product）#}
 <div class="block mb-16 flex-row column gap-16" data-platform-role="admin">
     <div class="text-md text-bold" data-i18n="settings.addMcpServer">新增 MCP Server</div>
     <div class="flex-row flex-wrap gap-16 mobile-column sm-gap-16">

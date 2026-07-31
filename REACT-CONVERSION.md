@@ -21,14 +21,20 @@
 - **有四分之一的元件沒有 `<name>.html`**，產出契約那句話對它們不成立。這種元件的 markup 正本寫在
   **它自己的 `_<name>.scss` 或 `<name>.js` 檔頭**，實例散在某一頁或元件庫展示頁——
   **去哪裡找由 README 的「無 html 元件」登記段落決定**（GUIDELINE §1-2 要求每一支都登記在那裡）。
-  三種型態各自的做法：純 scss（`ui/block`、`ui/chat-message`…）→ scss-only，consumer 手寫 className；
+  三種型態各自的做法：純 scss（`ui/chat-message`、`ui/ab-compare`…）→ scss-only，consumer 手寫 className；
   js only（`ui/print`、`ui/dismiss-panel`、`ui/list-filter`…）→ 行為改寫成 hook，沒有元件檔；
-  正本寄生在別的頁（`ui/error-page` 在 `src/404.html`、`ui/login-wrapper` 在 `src/login.html`）→ 見下一條。
-- **三支不走 page-shell 的頁面各有不同結局**：
+  正本寄生在別的頁（`ui/login-wrapper` 在 `src/login.html`）→ 見下一條。
+  （反例提醒：`ui/block`、`ui/error-page` **有** `<name>.html`，只是那份只被元件庫頁 include 當展示片段——
+  「有沒有 html」用 `git ls-files` 查，別憑印象分類。）
+- **四支不走 page-shell 的頁面各有不同結局**（`git grep -l "layout: layouts/base/base.html" -- src` 是唯一的名單）：
   `src/login.html` → 真路由（`app/login/page.tsx`，`layouts/base` 的直接消費者，自帶 `<form id="loginForm">`
   ——全站唯一一個 `<form>`，React 端換回 `type="submit"` ＋ `onSubmit(preventDefault)`）；
   `src/404.html` → `app/not-found.tsx`；
-  `src/catalog.html` → **不轉**（那是切版部署用的頁面目錄，React 端由路由本身取代）。
+  `src/catalog.html` → **不轉**（那是切版部署用的頁面目錄，React 端由路由本身取代）；
+  `src/pages/components/component.html`（元件庫展示頁）→ **要轉**，而且是 §⑥ 幾個「唯一看得到的地方」
+  （`ui/subscription-gate`、`platform.usageError`、`share.rateLimited`、prompt-edit 的預設展開態…）
+  的宿主：做成一條開發用路由（不進正式導覽），把每個展示片段照抄成該路由的 section。
+  它不轉的話，那幾個分支在 React 端就再也沒有人看得到了。
 - 寄生 orphan class：某元件 `.scss` 裡出現、但它自己 tsx/markup 從不 render 的 selector，是別的 atom 寄生進來的——
   追回它切版的 `ui/` atom、抽成獨立 `components/ui/<Name>/`、退掉寄生（例：`.data-info` 曾寄生在 `Pagination.scss`）。
 - 走樣 scss 若把 hook class 選擇器寫成裸元素（如 `button:hover .tooltip` 而非 `.has-tooltip:hover .tooltip`），修回
@@ -99,7 +105,8 @@
 - **`{% for %}…{% else %}…{% endfor %}` 是「空狀態列」，不是 for 的一部分**（切版有幾十處）：
   → `{xs.length ? xs.map(…) : <EmptyRow/>}`。這條分支是 GUIDELINE §5「無資料列正典」＋一整條 CI 測試守著的規格，
   照 `{xs.map()}` 直翻會把它整個吃掉，而畫面上什麼都看不出來——空清單就是一張沒有任何列的表。
-  空狀態列的 `colspan` 要等於該表的欄數（切版側已有測試把關，轉換時別改）。
+  空狀態列的 `colspan` 要等於該表的欄數（切版側**沒有**測試把關這一項——既有的那條只驗 `{% else %}`
+  分支在不在，所以轉換時要自己數一遍；順帶一提 `<col>` 的順序也要與 `<th>` 一一對齊）。
 - **`{% elif %}` 鏈 → 靜態查表，不是巢狀三元**：切版用 if/elif 鏈表達的是**枚舉**
   （`components/record-identity` 的 `titleSource` 種類標記，README 明寫「i18n key 逐條寫成字面」）。
   React 端做成 `const LABEL = { title_slot: "…", filename: "…" } as const` 再查表；翻成三元鏈之後，
@@ -154,9 +161,13 @@
 - **`layouts/page-shell`** → 管理端 route layout（`app/(app)/layout.tsx`）。提供：`.skip-link`（`href="#main"`，鍵盤第一個 Tab 的落點）、`components/header`、`<main class="main" id="main" tabindex="-1">`、**每頁唯一的 `<h1 class="sr-only">`**（內容來自 front matter 的 `pageHeading`／`titleKey`）、`components/footer`。
   - `pageHeading`／`titleKey` 是 front matter＝**props**：React 端由各 route 傳給 layout（或 `generateMetadata` ＋ 一顆 `<h1 class="sr-only">`），**不可以讓各頁自己再長一顆 h1**（§3-1：每頁恰好一個）。
   - `#main` 的 `tabindex="-1"` 是 skip-link 的落點，少了它跳過去不會真的移動焦點。
-- **`layouts/chatbot-shell`** → 前台 FAQ route layout。與 page-shell 平行但**沒有** Manager 導航：`components/chatbot-header` ＋自帶 sr-only h1。使用頁 front matter 的 `bodyClass: chatbot-page` 讓 body 不整頁捲動（`_chatbot-shell.scss`）——React 端要在該 route 的 `<body>`／根容器加同一個 class，否則前台聊天會變成雙捲軸。
+- **`layouts/chatbot-shell`** → 前台 FAQ route layout。與 page-shell 平行但**沒有** Manager 導航。
+  它提供的東西逐項都要有落點：`.skip-link`（`href="#main"`，§4 強制）、`components/chatbot-header`、
+  `<main class="chatbot-main" id="main" tabindex="-1">`（`tabindex="-1"` 是 skip-link 的落點）、
+  自帶 sr-only h1、`components/footer`。少帶 skip-link 與 footer 是照這一條的舊版直翻最容易掉的兩樣。使用頁 front matter 的 `bodyClass: chatbot-page` 讓 body 不整頁捲動（`_chatbot-shell.scss`）——React 端要在該 route 的 `<body>`／根容器加同一個 class，否則前台聊天會變成雙捲軸。
 
-三支的 `_<名>.scss` 與元件同樣走 §① byte-identical，放進 `styles/layouts/`。
+三支 layout 只有 `chatbot-shell` 有 `_chatbot-shell.scss`（base 與 page-shell 沒有自己的 scss）；
+它與元件同樣走 §① byte-identical，放進 `styles/layouts/`。
 
 ## ③ i18n（react-i18next）
 

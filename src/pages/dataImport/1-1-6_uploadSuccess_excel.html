@@ -29,8 +29,12 @@ permalink: 1-1-6_uploadSuccess_excel.html
 {# 簡化版靜態跳轉：再次上傳→資料匯入首頁、查看資料→資料集列表 #}
 {# 檔名／大小／筆數不覆寫就是採用元件的內建示範，而那份示範講的是別的檔——
      下面 import-report 的逐檔清單寫著「客服問答集.xlsx」，同一次匯入不會有兩個檔名（§6）。
-     這裡帶的是 product 的 `stored_name`（`{ts}_{idx}_{原檔名}`），與逐檔清單的原檔名是同一個檔。 #}
-{% set successFileName = "20251119105623_0_客服問答集.xlsx" %}
+     這裡帶的是 product 的 `stored_name`：格式是 `{14位時間戳}_{6位hex}_{序號}_{原始檔名}`
+     （dataset_ops.py:165-174 的 `stored_filename`，時間戳與亂數是為了「每次匯入都是新檔名」——
+     GufoRAG folder connector 以檔名認文件，同名就是覆蓋）。product 自己也把這個形狀釘成 regex：
+     `history.py:165` 的 `_STORED_PREFIX = re.compile(r"^\d{14}_[a-f0-9]{6}_\d+_")`，
+     下載時靠它把前綴剝掉——少了那段 hex 的字串它認不出來，示範值就成了 product 產不出來的東西。 #}
+{% set successFileName = "20251119105623_a3f19c_0_客服問答集.xlsx" %}
 {% set successFileSize = "42KB" %}
 {% set successDataCount = "980" %}
 {% set successRetryHref = "1-1-1_dataImport.html" %}

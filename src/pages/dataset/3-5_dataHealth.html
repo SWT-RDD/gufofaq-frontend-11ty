@@ -145,11 +145,14 @@ permalink: 3-5_dataHealth.html
      「上一次檢查是 20 分鐘前」在「有人剛按過」與「排程跑的」之間不是同一件事。
      `hitChecks` 演的是 **unavailable** 那一態：三態裡唯一會讓人「以為乾淨」的一種——沒有這一格，
      「沒有陳舊高頻」與「這一次根本沒算」在畫面上長得一模一樣。
-     ⑦ 的兩個數字也自洽：`files` 9 裡有 7 個是資料夾匯入的整份文件（一檔一筆記錄，`_folder_record`
-     產出恰好一筆 `slotted=False`）⇒ `slotlessRecords` 7；另外 2 個是逐列匯入的 .xlsx，
-     那 1173 筆逐列記錄（`slotted=True`）就是它們貢獻的——**逐列匯入的檔也算進 `files`**，
-     所以「掃到的檔都是資料夾檔」那句推導不成立，`records` 才會是 1180 而不是 7。那 7 筆裡有 5 筆內容
-     超過兩兩比對上限 ⇒ `exactMatchOnlyRecords` 5。兩者都 ≦ `records`，後者 ≦ 前者不是規則
+     ⑦ 的兩個數字也自洽：`files` 9 ＝ 掃到的 7 ＋ 沒掃到的 2（`uncoveredTotal`），而**沒掃到的那 2 個
+     一筆記錄都不產**（`_collect_records` 對它們 `continue`，`healthUncovered` 的 detail 也逐字寫著
+     「它不會出現在任何一項檢查裡」）。掃到的 7 個裡：5 個是資料夾匯入的整份文件
+     （`_folder_record` 一檔恰好產出一筆 `slotted=False`）⇒ `slotlessRecords` **5**；
+     另外 2 個是逐列匯入的 .xlsx，1175 筆逐列記錄（`slotted=True`）由它們貢獻 ⇒ `records` 1180。
+     （上一版寫 `slotlessRecords` 7 並說「掃到的 7 個都是資料夾檔」，那個推導會逼出 `records` ＝ 7；
+     再上一版說「另外 2 個是逐列匯入的」，那把沒掃到的那 2 個算成有記錄——兩版都推不出 1180。）
+     那 5 筆裡有 3 筆內容超過兩兩比對上限 ⇒ `exactMatchOnlyRecords` 3。兩者都 ≦ `records`，後者 ≦ 前者不是規則
      （逐列匯入的答案也可能過長），這一份示範剛好如此。
      `uncoveredTotal` 2 ＝ 下面 `healthUncovered` 的兩筆（這一份示範沒有被截斷；截斷時它會大於
      列出來的筆數，而畫面上那一對數字正是唯一看得出來的地方）。 #}
@@ -164,8 +167,8 @@ permalink: 3-5_dataHealth.html
     new: 6,
     reopened: 1,
     touched: 26,
-    slotlessRecords: 7,
-    exactMatchOnlyRecords: 5,
+    slotlessRecords: 5,
+    exactMatchOnlyRecords: 3,
     uncoveredTotal: 2,
     hitChecks: "unavailable",
     hitChecksDetail: "取不到問答紀錄，這一次沒有重算「陳舊高頻／從未被命中／高頻查無」：這段期間的問答筆數超過單次彙總上限（5000 則），請縮短時間窗再試。"
