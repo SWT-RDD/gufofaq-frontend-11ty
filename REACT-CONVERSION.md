@@ -38,6 +38,9 @@
 - 顏色走 `_var.scss` 語意 token，零裸 hex／裸色。填充用 `--brand`、文字用 `--brand-text`、遮罩墨色取文字族。
 - 逃生口（捲軸、偽元素、`icon-mask`、`@starting-style`、`border-image` 漸層、`writing-mode`）隨 scss 照抄。
 - 全域層 `src/scss/{_var,_base,_mixin,_utilities,_normalize,_form-check,_dark-icons,_size}` → `styles/`；
+  **showcase 頁那三支也要搬**（`_guideline-var`／`_guideline`／`_catalog`）——漏掉的話元件庫頁整片無色，
+  而那頁是 `ui/subscription-gate`、`platform.usageError`、`share.rateLimited` 等「只由 React 條件渲染」
+  的分支**唯一看得到的地方**（§5）。`--gl-*` 是 showcase 專用色盤，不進 app 的 `_var`。
   `main.scss` 只放全域層 `@use`，元件 scss 由各自 tsx `import "./X.scss"`。
 - `@use`／`url()`／`icon-mask(...)` 的路徑在原行就地替換，不插入額外說明行（scss-diff 逐行比對）。
 - `scss-diff.mjs` exit 0。
@@ -100,6 +103,23 @@
   轉給子元件（`components/pager-row`）——不得在每個使用頁展開成 inline markup（展開後 N 份各自分岔，
   而版位約束沒有守門人）。這類元件的 scss 常帶**負向約束**（「刻意不在這層開 flex」），tsx 檔頭要把它
   **複述成禁令**，並用一條「根元素 className 恰等於切版那串」的白名單斷言釘住（黑名單列舉 utility 名抓不到新的）。
+
+### layouts → route layout
+
+切版有三支 layout，配方原本只在 §③ 順帶提過 base 的 no-flash 腳本，其餘零覆蓋。對照如下：
+
+- **`layouts/base`** → root layout（`app/layout.tsx`）。它提供的東西**逐項都要有落點**，不是包一層 div 就好：
+  - `<html lang>` ＋ `data-page-title-key`：前者由語言 state 同步（§③），後者是切版給 `lang-toggle` 重譯 `<title>` 用的，**不帶過去**——React 用 metadata / `useTranslation` 直接產生 title。
+  - `<head>` 的 no-flash 主題 IIFE ＋ `<meta name="theme-color">`：照抄（§③ 已有），`<html suppressHydrationWarning>`。
+  - `.full-wrap`：全站最外層版位容器，**是 scss 的定位基準**（`ui/subscription-gate` 的遮罩、fpdiff 的 full-width 元件容器算式都靠它），不可省略或改名。
+  - `#toastContainer`：`popover="manual"` ＋ `role="status" aria-live="polite" aria-atomic="true"`，**掛在 layout 層**。契約是「每次彈 toast 前重新 `showPopover()` 一次」（top layer 疊放＝進入順序），少了這句，跳窗裡彈的 toast 會被 `<dialog>` 蓋住。
+  - 元件 js 的 `<script defer>` 清單：全部不帶（行為已改寫成 hooks），但那份清單是**元件盤點的檢查表**——轉換時逐支對過去，漏一支就是漏一個元件。
+- **`layouts/page-shell`** → 管理端 route layout（`app/(app)/layout.tsx`）。提供：`.skip-link`（`href="#main"`，鍵盤第一個 Tab 的落點）、`components/header`、`<main class="main" id="main" tabindex="-1">`、**每頁唯一的 `<h1 class="sr-only">`**（內容來自 front matter 的 `pageHeading`／`titleKey`）、`components/footer`。
+  - `pageHeading`／`titleKey` 是 front matter＝**props**：React 端由各 route 傳給 layout（或 `generateMetadata` ＋ 一顆 `<h1 class="sr-only">`），**不可以讓各頁自己再長一顆 h1**（§3-1：每頁恰好一個）。
+  - `#main` 的 `tabindex="-1"` 是 skip-link 的落點，少了它跳過去不會真的移動焦點。
+- **`layouts/chatbot-shell`** → 前台 FAQ route layout。與 page-shell 平行但**沒有** Manager 導航：`components/chatbot-header` ＋自帶 sr-only h1。使用頁 front matter 的 `bodyClass: chatbot-page` 讓 body 不整頁捲動（`_chatbot-shell.scss`）——React 端要在該 route 的 `<body>`／根容器加同一個 class，否則前台聊天會變成雙捲軸。
+
+三支的 `_<名>.scss` 與元件同樣走 §① byte-identical，放進 `styles/layouts/`。
 
 ## ③ i18n（react-i18next）
 
