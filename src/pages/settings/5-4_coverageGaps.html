@@ -53,12 +53,12 @@ permalink: 5-4_coverageGaps.html
      同名不同值域，打錯的值 product 一律 400 並指名原因、**不退回「不分群」**（退回的話畫面看起來
      一切正常，只是每一題都落在未分類）。日期維度與字典是空的維度沒有受控詞彙可挑，故不列進選項，
      並在下面用一句話交代它們為什麼不在。 #}
+{# 第三筆是 5-10 的「文件密級」：single ＋ 有兩個代碼 ⇒ 分得了群（`intent_classify.CLASSIFIABLE_KINDS`
+     只排除 date，`stats.py` 只擋空字典）。本頁的排除理由是「日期維度與字典是空的維度」，
+     文件密級兩者皆非，卻一直不在清單上（§6 跨頁自洽）。 #}
 {% set gapDimensions = [
     { slotKey: "note3", name: "業務範疇" },
     { slotKey: "note4", name: "業務方向" },
-    {# 5-10 的第四個維度：single ＋ 有兩個代碼 ⇒ 分得了群（`intent_classify.CLASSIFIABLE_KINDS`
-         只排除 date，`stats.py` 只擋空字典）。本頁的排除理由是「日期維度與字典是空的維度」，
-         文件密級兩者皆非，卻一直不在清單上（§6 跨頁自洽）。 #}
     { slotKey: "note5", name: "文件密級" }
 ] %}
 {# ★ 四種 `kind` 是**四種不同的事實**，畫面上絕不可以併成一列（product `app/routers/stats.py`

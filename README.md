@@ -120,6 +120,8 @@ dist/                       build 輸出（勿手改）
 | `components/data-time-filter` | `timeFilterName`（radio name，同頁多組要不同）/`timeFilterLabelId`（群組標題 id，同頁唯一）/`timeFilterChecked`（`last24h`\|`lastWeek`\|`lastMonth`\|`range`）；用於 5-3／5-4。 |
 | `components/data-type-filter` | `dataTypeName`（radio name，同頁多組要不同）/`dataTypeLabelId`（群組標題 id，同頁唯一）；用於 5-3／5-4。 |
 | `components/chart-box` | `chartBoxId`（圖表容器 id 前綴）/`chartBoxTitleText`/`chartBoxTitleKey`；用於 5-3。下段的數據槽走 `ui/chart-desc`（故住 `components/`）。 |
+| `ui/timezone-options` | `timezoneSelected`（預設選中的 IANA 識別字）；只輸出 `<option>`，外層 `<select>` 由使用頁給。用於 5-2／5-6-1。 |
+| `ui/storage-bar` | `storageBarPct`（條寬百分比，**0 是合法值**）/`storageBarText`（條下說明，未給時走內建的儲存空間文案）。用於 3-1-1／5-10。 |
 | `ui/chart-desc` | `chartDescId`（三顆 span 的 id 前綴）/`chartDescRow`（版位是否帶 `.row`）；由 `components/chart-box` 與 5-3 另外兩張圖各自 include。 |
 | `components/page-size-select` | 每頁筆數選擇器（pager 旁）。吃頁面的 `perPage`（**與同頁 `ui/pagination` 同源**：一邊寫死、另一邊落回預設 10 就會出現「每頁 20 筆／共 12 頁」）；未設沿用 pagination 的預設 10。值載體 hook `js-page-size`。用於 1-1-3、3-1-1、3-1-3、3-1-6、4-1、5-7。 |
 | `components/reasoning-effort-select` | 思考深度 select。`reasoningEffortId`（必填，同頁唯一）/`reasoningEffortHook`/`reasoningEffortGroup`（分組的 `data-group`）/`reasoningEffortEmptyKey`・`reasoningEffortEmptyZh`（空值語意：主回答＝沿用模型預設、分組＝最低思考，行為不同故不共用 key）。用於 5-2（主回答＋4 組）、2-2-1、2-2-3。 |

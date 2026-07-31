@@ -1,13 +1,17 @@
 {# 進度條（條寬 ＋ 一行說明）。生產 markup 由使用頁 include：3-1-1 的儲存空間、5-10 的標註覆蓋率。
      條寬 `style="width: N%"` 是**資料驅動的執行期尺寸**（§4 三種合法行內 style 之一）。
      參數（使用頁在 include 前 set）：
-       storageBarPct  —— 條寬百分比（數字，不含 %）。預設 84.3。
+       storageBarPct  —— 條寬百分比（數字，不含 %）。**0 是合法值**（剛建好、還沒有人標的維度就是 0%），
+                         所以判空用 `!= null` 而不是 `or`——`{{ 0 or 84.3 }}` 在 nunjucks 求值為 84.3，
+                         5-10 那一列會渲染成「條寬 84.3%、文字 0 / 132（0%）」，一條說謊的進度條。
        storageBarText —— 條下那行說明。**未給時走內建的儲存空間文案**（chrome 走 i18n、數字是資料）；
                          給了就整行由使用頁提供（5-10 那一行是「118 / 132（89.4%）」，純資料不翻）。
      原本這份 markup 被 5-10 手抄了一份（§1-2：同一個元件絕不複製貼上，要用就 include）。 #}
+{% set barPct = 84.3 %}
+{% if storageBarPct != null %}{% set barPct = storageBarPct %}{% endif %}
 <div class="storage-bar">
     <div class="bar">
-        <div class="bar-fill" style="width: {{ storageBarPct or 84.3 }}%;"></div>
+        <div class="bar-fill" style="width: {{ barPct }}%;"></div>
     </div>
-    <div class="text">{% if storageBarText %}{{ storageBarText }}{% else %}<span data-i18n="storage.used">已使用</span> 843.38MB <span data-i18n="storage.of">（共</span> 1000MB<span data-i18n="storage.close">）</span>{% endif %}</div>
+    <div class="text">{% if storageBarText != null and storageBarText != "" %}{{ storageBarText }}{% else %}<span data-i18n="storage.used">已使用</span> 843.38MB <span data-i18n="storage.of">（共</span> 1000MB<span data-i18n="storage.close">）</span>{% endif %}</div>
 </div>
