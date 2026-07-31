@@ -35,8 +35,12 @@ permalink: 5-2_conversationSettings.html
      「儲存失敗」等於要人逐欄猜；輸出規則的驗證訊息本來就會指名第幾條、哪個參數、界線是多少
      （product app/output_rules.py），丟掉它就是把那份指名浪費掉。role="alert" 讓它是 live region
      ——存檔是使用者按了鈕才發生的，訊息出現時焦點不在這裡，不報讀就等於沒說。
-     示範內容取自輸出規則的 400 訊息；空字串時整條掛 .hidden（同 1-1-3 的 excelHeaderWarning）。 #}
-{% set saveConfigError = "output_rules 第 0 條（link_max）的 value 必須介於 1 與 20 之間（收到 -1）" %}
+     示範內容取自輸出規則的 400 訊息；空字串時整條掛 .hidden（同 1-1-3 的 excelHeaderWarning）。
+     「第 N 條」是 **0-based**（`for idx, rule in enumerate(rules)`，output_rules.py:323-324），
+     而下面 `outputRules` 陣列的 index 7 正是 `link_max`——指名要指得對，否則這條紅字的價值
+     （告訴人是哪一條、哪個參數）就沒了。上一版寫「第 0 條」，那是 `list_marker`，
+     而它連參數欄都沒有，不可能產生這則訊息（§6 示範資料演的必須是一個真實可能的狀態）。 #}
+{% set saveConfigError = "output_rules 第 7 條（link_max）的 value 必須介於 1 與 20 之間（收到 -1）" %}
 <p class="text-red mb-16{% if not saveConfigError %} hidden{% endif %}" role="alert">{{ saveConfigError }}</p>
 
 <p class="text-gray" data-i18n="settings.conversationSettingsIntro">一頁設定三套設定檔（設置一／二／三）的全部對話行為。每個旋鈕各設置一份，於上方切換設置；前台問答預設使用哪一套為跨設置共用設定。</p>
@@ -814,8 +818,8 @@ permalink: 5-2_conversationSettings.html
         <div class="form-group">
             <div class="label"><label for="policyWordFilters" class="control-label" data-i18n="settings.policyWordFilters">詞彙過濾</label></div>
             <div class="field">
-                <textarea id="policyWordFilters" class="form-control js-policy-word-filters"></textarea>
-                <span class="text-gray" data-i18n="settings.policyWordFiltersHint">每行一個詞彙，或以逗號分隔。</span>
+                <textarea id="policyWordFilters" class="form-control js-policy-word-filters" aria-describedby="policyWordFiltersHint"></textarea>
+                <span class="text-gray" id="policyWordFiltersHint" data-i18n="settings.policyWordFiltersHint">每行一個詞彙，或以逗號分隔。</span>
             </div>
         </div>
         <div class="flex-row flex-wrap gap-16">
@@ -991,6 +995,10 @@ permalink: 5-2_conversationSettings.html
                 </thead>
                 <tbody>
                     {% for rule in outputRules %}
+                    {# 外層索引存一份給整個列身用：內層的 `{% for cat %}`／`{% for case %}` 會遮蔽
+                         `loop.index`，而 id 必須用外層那顆才會同頁唯一（把它 set 在內層旁邊的話，
+                         沒有內層迴圈的那幾個分支會沿用上一列留下的舊值——同頁重複 id，有測試抓到）。 #}
+                    {% set oruleIdx = loop.index %}
                     <tr>
                         <td class="text-center">
                             <label class="form-checkbox in-cell">
@@ -1014,7 +1022,7 @@ permalink: 5-2_conversationSettings.html
                                     <textarea id="oruleValues{{ loop.index }}" class="form-control size-sm js-orule-values" aria-describedby="oruleValuesHint{{ loop.index }}">（結論）
 （補充）
 （提醒）</textarea>
-                                    <span id="oruleValuesHint{{ loop.index }}" class="text-gray" data-i18n="settings.outputRuleValuesHint">一行一個，最多 50 項、每項 200 字；前後空白會被去掉。</span>
+                                    <span id="oruleValuesHint{{ loop.index }}" class="text-gray"><span data-i18n="settings.outputRuleValuesHintPrefix">一行一個，最多 </span><span>50</span><span data-i18n="settings.outputRuleValuesHintMid"> 項、每項 </span><span>200</span><span data-i18n="settings.outputRuleValuesHintSuffix"> 字；前後空白會被去掉。</span></span>
                                 </div>
                             </div>
                             {% elif rule.kind == "strip_lead_phrase" %}
@@ -1024,7 +1032,7 @@ permalink: 5-2_conversationSettings.html
                                     <textarea id="oruleValues{{ loop.index }}" class="form-control size-sm js-orule-values" aria-describedby="oruleValuesHint{{ loop.index }}">答案：
 說明如下：
 以下為說明：</textarea>
-                                    <span id="oruleValuesHint{{ loop.index }}" class="text-gray" data-i18n="settings.outputRuleValuesHint">一行一個，最多 50 項、每項 200 字；前後空白會被去掉。</span>
+                                    <span id="oruleValuesHint{{ loop.index }}" class="text-gray"><span data-i18n="settings.outputRuleValuesHintPrefix">一行一個，最多 </span><span>50</span><span data-i18n="settings.outputRuleValuesHintMid"> 項、每項 </span><span>200</span><span data-i18n="settings.outputRuleValuesHintSuffix"> 字；前後空白會被去掉。</span></span>
                                 </div>
                             </div>
                             {% elif rule.kind == "link_max" %}
@@ -1060,7 +1068,7 @@ permalink: 5-2_conversationSettings.html
                                              `min="1" max="100000"` 上（正本 output_rules.py:100-102 的 `by_category`）。
                                              414eecc 已經對本頁另外三處做過同一個修正，這是第四處漏網。
                                              「最多 50 個代碼」在 markup 沒有第二份抄本，維持譯文。 #}
-                                        <span id="oruleCategoryHint{{ loop.index }}" class="text-gray"><span data-i18n="settings.outputRuleCategoryHintPrefix">維度槽與逐代碼上限要一起設；只設一邊，逐代碼上限不會生效。最多 50 個代碼、每個代碼上限 </span><span>1 – 100000</span><span data-i18n="settings.outputRuleCategoryHintSuffix"> 字。</span></span>
+                                        <span id="oruleCategoryHint{{ loop.index }}" class="text-gray"><span data-i18n="settings.outputRuleCategoryHintPrefix">維度槽與逐代碼上限要一起設；只設一邊，逐代碼上限不會生效。最多 </span><span>50</span><span data-i18n="settings.outputRuleCategoryHintMid"> 個代碼、每個代碼上限 </span><span>1 – 100000</span><span data-i18n="settings.outputRuleCategoryHintSuffix"> 字。</span></span>
                                     </div>
                                 </div>
                                 <div class="text-bold" id="oruleCategoryOverridesLabel{{ loop.index }}" data-i18n="settings.outputRuleCategoryOverrides">逐代碼覆寫上限</div>
@@ -1072,10 +1080,6 @@ permalink: 5-2_conversationSettings.html
                                      用 role="group"＋aria-labelledby 指向浮空標題，讓報讀器先報出
                                      「逐代碼覆寫上限」這組在問什麼，再念組內的代碼／上限（§4）。 #}
                                 <div role="group" aria-labelledby="oruleCategoryOverridesLabel{{ loop.index }}" class="flex-row column gap-8">
-                                {# 內層 for 的 loop.index 會遮蔽外層那顆，所以先把外層的存起來——
-                                     不存的話 `aria-describedby` 會指到 oruleCategoryHint1／2，
-                                     而那顆 id 是用外層索引產的（有 a11y 測試當場抓到）。 #}
-                                {% set oruleIdx = loop.index %}
                                 {% for cat in [{ code: "tariff", limit: "2000" }, { code: "procedure", limit: "800" }] %}
                                 <div class="flex-row flex-wrap gap-8">
                                     <input type="text" class="form-control js-orule-category-code" value="{{ cat.code }}" aria-label="代碼" data-i18n-aria-label="settings.outputRuleCategoryCode">
@@ -1105,7 +1109,7 @@ permalink: 5-2_conversationSettings.html
                                     </div>
                                 </div>
                                 <div class="text-bold" id="oruleCasesLabel{{ loop.index }}" data-i18n="settings.outputRuleCases">情境條件</div>
-                                <div class="text-gray" data-i18n="settings.outputRuleCasesHint">由上而下依序比對，第一個成立的出線；都不成立就用預設值。最多 20 條。</div>
+                                <div class="text-gray"><span data-i18n="settings.outputRuleCasesHintPrefix">由上而下依序比對，第一個成立的出線；都不成立就用預設值。最多 </span><span>20</span><span data-i18n="settings.outputRuleCasesHintSuffix"> 條。</span></div>
                                 {# 同上：case 列的四顆欄位（意圖維度槽／述詞／比對代碼／填入值）在同一顆
                                      規則卡裡會重複多列，且「意圖維度槽」與上面 rule 層那顆同名。
                                      用 role="group" 指向「情境條件」這個浮空標題（§4）。 #}
@@ -1120,14 +1124,14 @@ permalink: 5-2_conversationSettings.html
                                         <option value="in" data-i18n="settings.outputRuleOpIn"{% if case.op == "in" %} selected{% endif %}>屬於代碼清單</option>
                                     </select>
                                     {% if case.op == "eq" or case.op == "in" %}
-                                    <input type="text" class="form-control js-orule-case-operand" value="{{ case.operand }}" aria-label="比對代碼" data-i18n-aria-label="settings.outputRuleCaseOperand">
+                                    <input type="text" class="form-control js-orule-case-operand" value="{{ case.operand }}" aria-label="比對代碼" data-i18n-aria-label="settings.outputRuleCaseOperand" aria-describedby="oruleCaseOperandHint{{ oruleIdx }}">
                                     {% endif %}
                                     <input type="text" class="form-control js-orule-case-value" value="{{ case.value }}" aria-label="填入值" data-i18n-aria-label="settings.outputRuleCaseValue">
                                     <button type="button" class="button button-border button-sm js-remove-orule-case" data-i18n="action.delete">刪除</button>
                                 </div>
                                 {% endfor %}
                                 </div>
-                                <div class="text-gray" data-i18n="settings.outputRuleCaseOperandHint">述詞選「等於代碼」時填一個代碼；選「屬於代碼清單」時用逗號分隔，最多 20 個。「已判定」「未判定」不吃代碼。</div>
+                                <div class="text-gray" id="oruleCaseOperandHint{{ oruleIdx }}"><span data-i18n="settings.outputRuleCaseOperandHintPrefix">述詞選「等於代碼」時填一個代碼；選「屬於代碼清單」時用逗號分隔，最多 </span><span>20</span><span data-i18n="settings.outputRuleCaseOperandHintSuffix"> 個。「已判定」「未判定」不吃代碼。</span></div>
                                 <div class="flex-row">
                                     <button type="button" class="button button-border button-sm js-add-orule-case" data-i18n="settings.addOutputRuleCase">新增條件</button>
                                 </div>
