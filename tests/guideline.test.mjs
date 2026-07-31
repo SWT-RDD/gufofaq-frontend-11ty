@@ -247,11 +247,21 @@ test("§4-1 元件不得重寫 box-sizing: border-box（_base.scss 已全域給�
     assert.equal(hits.length, 0, `多餘宣告：\n${fail(hits)}`);
 });
 
-test("§4-1 每個 100vh 都要緊接一行 100dvh fallback", () => {
+test("§4-1 每個 <N>vh 都要緊接一行同值 <N>dvh fallback（不只 100vh）", () => {
+    // §4-1 的規則寫的是「vh 佔比尺寸一律配同值 dvh（**不只 100vh**：`max-height: 88vh` 同理）」，
+    // 但這條測試原本寫死 /100vh/，非 100 的那些完全不設防——scss 是 byte-identical 搬進 React 的，
+    // 這種缺陷會原封不動繼承。改成逐個數值比對。
+    let seen = 0;
     const hits = scanLines(srcScss, (line, f, i, lines) => {
-        if (!/100vh/.test(line) || /dvh/.test(line) || /^\s*\/\//.test(line)) return null;
-        return lines[i + 1] && /100dvh/.test(lines[i + 1]) ? null : "缺 100dvh fallback";
+        if (/^\s*\/\//.test(line) || /dvh/.test(line)) return null;
+        const nums = [...line.matchAll(/(\d+(?:\.\d+)?)vh\b/g)].map((m) => m[1]);
+        if (!nums.length) return null;
+        seen += nums.length;
+        const next = lines[i + 1] || "";
+        const missing = nums.filter((n) => !new RegExp(n + "dvh\\b").test(next));
+        return missing.length ? `缺 ${missing.map((n) => n + "dvh").join("、")} fallback` : null;
     });
+    assert.ok(seen >= 5, `只掃到 ${seen} 個 vh 值 —— 這條測試在空轉`);
     assert.equal(hits.length, 0, `行動瀏覽器網址列會裁掉內容：\n${fail(hits)}`);
 });
 
@@ -414,6 +424,57 @@ test("§4 a11y 綁定屬性：指到的 id 都要存在、aria-label 不得是�
     }
     assert.ok(refs > 200, `只掃到 ${refs} 個 id 參照 —— 這條測試在空轉`);
     assert.equal(bad.length, 0, `a11y 綁定指到不存在的 id／空的可及名稱：\n${fail(bad)}`);
+});
+
+test("§7 所有 modal 的外殼逐字相同（只差尺寸 class）——React 端才抽得出一顆 <Modal size>", () => {
+    // §7 明訂殼是 `.modals > .modals-dialog.modals-<尺寸> > .modals-wrap > ui/modal-close + .modals-content`，
+    // 而 fpdiff 只比幾何、看不出「這一顆的殼跟別人不一樣所以共用不了」。歪掉的那一刻沒有任何網子會響，
+    // 要等 React 抽 <Modal> 的時候才會發現，那時已經 25 顆各長各的。
+    const SIZES = new Set(["modals-sm", "modals-md", "modals-lg"]);
+    const dialogs = [];
+    for (const f of srcHtml) {
+        const t = stripNjk(read(f));
+        for (const m of t.matchAll(/<dialog\b((?:"[^"]*"|[^>"])*)>([\s\S]*?)<\/dialog>/g)) {
+            dialogs.push({ f, attrs: m[1], body: m[2] });
+        }
+    }
+    assert.ok(dialogs.length >= 20, `只掃到 ${dialogs.length} 顆 <dialog> —— 這條測試在空轉`);
+    const hits = [];
+    for (const d of dialogs) {
+        if (!/class="[^"]*\bmodals\b[^"]*"/.test(d.attrs)) { hits.push(`${d.f} 的 <dialog> 沒有 .modals`); continue; }
+        const dlg = d.body.match(/<div\b((?:"[^"]*"|[^>"])*)>/);
+        const cls = dlg && (dlg[1].match(/class="([^"]*)"/) || [, ""])[1].trim().split(/\s+/);
+        if (!cls || cls[0] !== "modals-dialog") { hits.push(`${d.f}：<dialog> 的第一個子元素不是 .modals-dialog`); continue; }
+        const size = cls.filter((c) => c !== "modals-dialog");
+        if (size.length !== 1 || !SIZES.has(size[0])) {
+            hits.push(`${d.f}：.modals-dialog 上除了尺寸之外還有別的 class（${size.join(" ") || "沒有尺寸"}）`);
+            continue;
+        }
+        if (!/<div class="modals-wrap">/.test(d.body)) hits.push(`${d.f}：缺 <div class="modals-wrap">`);
+        if (!/include "ui\/modal-close\/modal-close\.html"/.test(d.body)) hits.push(`${d.f}：關閉鈕沒有走 ui/modal-close`);
+        if (!/<div class="modals-content">/.test(d.body)) hits.push(`${d.f}：缺 <div class="modals-content">`);
+    }
+    assert.equal(hits.length, 0, fail(hits));
+});
+
+test("§4 頁籤的選中態要同時掛 .active 與 aria-current=\"true\"（.active 只是視覺，報讀器聽不到）", () => {
+    // §4 要求「初始 markup 也帶」，但既有測試對 aria-current 一次命中都沒有。React 端 .active 會變 state，
+    // aria-current 沒被帶過去的話沒有任何網子接得到——而它是 fpdiff 的零容忍欄位。
+    let seen = 0;
+    const hits = [];
+    for (const f of distHtml) {
+        for (const m of read(`dist/${f}`).matchAll(/<button\b((?:"[^"]*"|[^>"])*)>/g)) {
+            const attrs = m[1];
+            if (!/class="[^"]*\btab\b[^"]*"/.test(attrs)) continue;
+            const active = /class="[^"]*\bactive\b[^"]*"/.test(attrs);
+            const current = /\baria-current="true"/.test(attrs);
+            if (active) seen++;
+            if (active && !current) hits.push(`dist/${f}  .tab.active 少了 aria-current="true"`);
+            if (!active && current) hits.push(`dist/${f}  .tab 有 aria-current 卻沒有 .active`);
+        }
+    }
+    assert.ok(seen >= 8, `只掃到 ${seen} 顆選中的頁籤 —— 這條測試在空轉`);
+    assert.equal(hits.length, 0, fail(hits));
 });
 
 test("§4 每個 <dialog> 的 aria-labelledby 都要指向存在的 id", () => {
@@ -1153,6 +1214,39 @@ test("§4 可點的東西一律用真 button，且不得省略 type", () => {
         for (const { tag, attrs, raw } of tagsOf(stripNjk(read(f))))
             if (tag === "button" && !/\btype=/.test(attrs)) hits.push(`${f}  ${raw.slice(0, 90)}`);
     assert.equal(hits.length, 0, `<button> 缺 type（預設是 submit，會誤送表單）：\n${fail(hits)}`);
+});
+
+test("§4-2 data-toast 相同的繁中子句必須有相同英譯（一致性的單位是 | 切開的子句，不是整顆 key）", () => {
+    // 既有的測試只比「同一顆 key 的段數」，跨 key 的子句分岔完全看不到——round34 抓到 7 組，
+    // 其中「建立失敗，請稍後再試」一句長出六種英譯。字典是逐字搬去 React 的，這批會原封不動繼承。
+    const EN = JSON.parse(read("src/i18n/en.json"));
+    const zhOf = new Map(); // 繁中子句 -> Map(英譯 -> [key…])
+    for (const f of srcHtml) {
+        const t = stripNjk(read(f));
+        for (const m of t.matchAll(/<[a-z]+\b((?:"[^"]*"|[^>"])*)>/g)) {
+            const attrs = m[1];
+            const zh = attrs.match(/\bdata-toast="([^"]*)"/);
+            const key = attrs.match(/\bdata-i18n-data-toast="([^"]*)"/);
+            if (!zh || !key || !EN[key[1]]) continue;
+            const zs = zh[1].split("|").map((x) => x.trim());
+            const es = String(EN[key[1]]).split("|").map((x) => x.trim());
+            if (zs.length !== es.length) continue; // 段數不符另有一條測試在管
+            zs.forEach((z, i) => {
+                if (!zhOf.has(z)) zhOf.set(z, new Map());
+                const per = zhOf.get(z);
+                if (!per.has(es[i])) per.set(es[i], new Set());
+                per.get(es[i]).add(key[1]);
+            });
+        }
+    }
+    assert.ok(zhOf.size >= 100, `只收集到 ${zhOf.size} 條 toast 子句 —— 這條測試在空轉`);
+    const hits = [];
+    for (const [z, per] of zhOf) {
+        if (per.size < 2) continue;
+        const detail = [...per].map(([e, ks]) => `    ${JSON.stringify(e)}  ← ${[...ks].join("、")}`).join("\n");
+        hits.push(`「${z}」有 ${per.size} 種英譯：\n${detail}`);
+    }
+    assert.equal(hits.length, 0, fail(hits));
 });
 
 test("§4-2 同一個 i18n key 的繁中原文全站必須一致", () => {
