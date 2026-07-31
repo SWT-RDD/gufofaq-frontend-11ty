@@ -28,7 +28,9 @@
                     <div class="tab-row fit-content mb-16">
                         <div class="tab-group">
                             {% for tab in kmSettingTabs %}
-                            <button type="button" class="tab{% if tab.active %} active{% endif %}"{% if tab.active %} aria-current="true"{% endif %} title="{{ tab.label }}" data-i18n-title="{{ tab.labelKey }}" data-i18n="{{ tab.labelKey }}">{{ tab.label }}</button>
+                            {# data-setting-sn＝React 選中契約（與 5-2 主頁籤同名）：切的是「哪一份設定檔」
+                                 這個業務選擇，不是同頁面板，故不掛 data-target。 #}
+                            <button type="button" class="tab{% if tab.active %} active{% endif %}"{% if tab.active %} aria-current="true"{% endif %} data-setting-sn="{{ loop.index }}" title="{{ tab.label }}" data-i18n-title="{{ tab.labelKey }}" data-i18n="{{ tab.labelKey }}">{{ tab.label }}</button>
                             {% endfor %}
                         </div>
                     </div>

@@ -294,6 +294,31 @@ test("§4 不得用 div 假扮控制項（要用真 <button>）", () => {
     assert.equal(hits.length, 0, `Enter/Space 不會觸發（WCAG 2.1.1）：\n${fail(hits)}`);
 });
 
+test("§5 每顆 .tab 都要接得上東西（data-target 面板／業務 data-* 契約），否則是死頁籤", () => {
+    // 既有的「data-target 值要命中同頁 id」那條，母體是**有 data-target 的頁籤**——沒有那個屬性的
+    // 整條跳過。3-1-6 的「原始資料」就是這樣：既沒 data-target、頁上也只有一張表，
+    // tab.js 的單層分支只切 .active/aria-current，點下去畫面完全不變（round33 以突變證實測試看不到）。
+    // 三擇一：①切同頁面板→ data-target；②切業務資料（哪一筆紀錄／哪一份設定檔）→ 帶 data-* 契約，
+    // React 才認得出點的是哪一個；③本身是 <a> 連到別頁（不在這條掃描範圍內，它不是 button.tab）。
+    // 白名單：元件庫展示頁的靜態示範（那頁的頁籤只是外觀樣本，沒有行為）。
+    const SHOWCASE = new Set(["component.html"]);
+    const bad = [];
+    let seenTabs = 0;
+    for (const f of distHtml) {
+        if (SHOWCASE.has(f)) continue;
+        for (const m of distDoc(f).matchAll(/<button[^>]*class="[^"]*\btab\b[^"]*"[^>]*>/g)) {
+            seenTabs++;
+            const tag = m[0];
+            if (/\sdata-target="/.test(tag)) continue;
+            if (/\sdata-(?!i18n)[\w-]+=/.test(tag)) continue; // 業務 data-* 契約（data-setting-sn／data-record-index…）
+            bad.push(`dist/${f}  ${tag.slice(0, 100)}`);
+        }
+    }
+    assert.ok(seenTabs >= 20, `只掃到 ${seenTabs} 顆 .tab —— 這條測試在空轉`);
+    assert.equal(bad.length, 0,
+        `死頁籤（點了不會有任何事）：\n${fail(bad)}\n切同頁面板請補 data-target 並建 .tab-content；切業務資料請補 data-* 契約。`);
+});
+
 test("§4 markup 上的每個 class 都要有主人（反向網：css 規則／元件 js／js-／具名 hook）", () => {
     // §4「markup 上的每個 class 都要有主人」一直只有**反方向**的網（scss 根 class 要打得到 markup，
     // test「§5/§8 元件 scss 的頂層根 class…」）。正方向完全沒有——`.bold` 因此活了好幾輪：

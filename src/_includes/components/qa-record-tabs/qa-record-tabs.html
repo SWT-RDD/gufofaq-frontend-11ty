@@ -5,7 +5,10 @@
      div/span 不一統一為 div）。 #}
 <div class="tab-group">
     {% for tab in qaRecordTabs %}
-    <button type="button" class="tab on-record{% if tab.active %} active{% endif %}"{% if tab.active %} aria-current="true"{% endif %} title="{{ tab.label }}">{{ tab.label }}</button>
+    {# data-record-index＝React 選中契約（同 5-2 頁籤的 data-setting-sn）：這幾顆是「切換到哪一筆
+         問答紀錄」的選擇器，切的是業務資料不是同頁面板，所以不掛 data-target。沒有這顆的話
+         React 只認得出「有人點了頁籤」，認不出點的是哪一筆。示範以 loop.index 代紀錄 id。 #}
+    <button type="button" class="tab on-record{% if tab.active %} active{% endif %}"{% if tab.active %} aria-current="true"{% endif %} data-record-index="{{ loop.index }}" title="{{ tab.label }}">{{ tab.label }}</button>
     {% else %}
     <div class="text-gray no-records" data-i18n="qa.noRecords">尚無問答紀錄</div>
     {% endfor %}

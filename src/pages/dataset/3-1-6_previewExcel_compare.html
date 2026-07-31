@@ -23,8 +23,8 @@ permalink: 3-1-6_previewExcel_compare.html
 {# 頁籤：ui/tab 水平單層頁籤（.tab-row.fit-content > .tab-group > .tab.tab-md），行為沿用已全域註冊的 tab.js #}
 <div class="tab-row fit-content mt-16">
     <div class="tab-group">
-        <button type="button" class="tab tab-md active" aria-current="true" title="比對資料" data-i18n-title="dataset.compareData" data-i18n="dataset.compareData">比對資料</button>
-        <button type="button" class="tab tab-md" title="原始資料" data-i18n-title="dataset.rawData" data-i18n="dataset.rawData">原始資料</button>
+        <button type="button" class="tab tab-md active" aria-current="true" data-target="panelCompare" title="比對資料" data-i18n-title="dataset.compareData" data-i18n="dataset.compareData">比對資料</button>
+        <button type="button" class="tab tab-md" data-target="panelRaw" title="原始資料" data-i18n-title="dataset.rawData" data-i18n="dataset.rawData">原始資料</button>
     </div>
 </div>
 
@@ -40,11 +40,24 @@ permalink: 3-1-6_previewExcel_compare.html
     { key: "supplier", label: "供應商" },
     { key: "price", label: "價格" }
 ] %}
+{# 「原始資料」面板的表頭＝活頁簿自己的欄名（product 的 annotated_titles），值＝同一批儲存格
+     （col_contents）。它與「比對資料」的差別只在表頭：一邊是欄位對照後的顯示名、一邊是原始欄名
+     ＋括號註記它被對到哪一欄——使用者要靠這一頁確認「對照表有沒有接錯欄」。
+     原始欄名是活頁簿的資料，不翻（§4-2）；括號裡的顯示名沿用 columns 的 label。 #}
+{% set rawTitles = [
+    { key: "title", raw: "商品名稱" },
+    { key: "time", raw: "建立日期" },
+    { key: "content", raw: "商品說明" },
+    { key: "image", raw: "圖片連結" },
+    { key: "supplier", raw: "供應商名稱" },
+    { key: "price", raw: "單價" }
+] %}
 {% set rows = [
     { title: "商品編號 A001", time: "2025/12/10 15:44", content: "無線藍牙耳機，續航 24 小時", image: "https://example.com/img/a001.jpg", supplier: "宏興電子", price: "990" },
     { title: "商品編號 A002", time: "2025/12/10 15:44", content: "保溫瓶 500ml，316 不鏽鋼內膽", image: "https://example.com/img/a002.jpg", supplier: "日商生活", price: "450" },
     { title: "商品編號 A003", time: "2025/12/10 15:44", content: "USB-C 充電線 1.5M", image: "https://example.com/img/a003.jpg", supplier: "宏興電子", price: "199" }
 ] %}
+<div class="tab-content" id="panelCompare">
 <div class="table-container scrollTable mt-10">
     <table class="default-table fixed-layout">
         <thead>
@@ -75,6 +88,40 @@ permalink: 3-1-6_previewExcel_compare.html
             {% endfor %}
         </tbody>
     </table>
+</div>
+</div>
+
+<div class="tab-content" id="panelRaw" style="display: none;">
+    <div class="table-container scrollTable mt-10">
+        <table class="default-table fixed-layout">
+            <thead>
+                <tr>
+                    {% for col in rawTitles %}
+                    <th>
+                        <div class="th-sort">
+                            {{ col.raw }}
+                            <button type="button" class="sort" data-column="{{ col.key }}">
+                                <img src="./images/icon_ascending_order_black.png" width="20" height="37" decoding="async" alt="">
+                                <span class="sr-only" data-i18n="common.sort">排序</span>
+                            </button>
+                        </div>
+                    </th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                <tr>
+                    {% for col in rawTitles %}
+                    <td>
+                        <div class="ellipsis-2">{{ row[col.key] }}</div>
+                    </td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 
 {# 分頁：真實頁 .pagination data-total="20" 由 pagination.js 動態產生；
