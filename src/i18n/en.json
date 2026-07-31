@@ -1397,7 +1397,7 @@
   "toast.savePrompt": "Saved as a new version|Content cannot be empty|Failed to add prompt. Please try again later.",
   "toast.saveSkill": "Skill updated|Some fields failed validation (name format or duplicate, description required, iterations 1-20, nesting must not form a cycle)|Update failed",
   "toast.saveTagDimension": "Tag dimension updated|Dimension name cannot be empty|Save failed. Please try again later.",
-  "toast.saveTagFilter": "Retrieval filter settings saved|Coverage is insufficient — some documents are untagged, so filtering stays off|Save failed. Please try again later.",
+  "toast.saveTagFilter": "Retrieval filter settings saved|Coverage is insufficient — some documents are untagged, so filtering stays off|Tag coverage could not be measured completely (some documents have no readable content or could not be enumerated) — wait for sync to finish before turning this on|Too many documents for one scan. Please measure a single dataset instead|The dimensions changed while measuring — please save again|Save failed. Please try again later.",
   "toast.saveTenant": "Updated|Save failed",
   "toast.saveTimezone": "Platform timezone saved|Save failed",
   "toast.saveWelcome": "Saved as a new version|Content cannot be empty|Failed to save the welcome message. Please try again later.",
