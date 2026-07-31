@@ -841,6 +841,35 @@ test("§2 模板檔一律用 {# #} 註解，不得出現 <!-- 或 -->", () => {
     assert.equal(bad.length, 0, `改用 {# #}：\n${fail(bad)}`);
 });
 
+test("§2 畫得出內容的那一行要與收尾標籤同一行（縮排會併進值的文字節點）", () => {
+    // `{{ 值 }}` 後面接換行縮排時，那串空白併進同一個文字節點：輸出的是 "1␣␣␣…" 而不是 "1"。
+    // JSX 會把含換行的前後空白整段丟掉，兩邊的可見文字序列因此對不起來（a6924ff 就是修這個）。
+    // **行內兄弟「之間」的換行不算**：那渲染成一個有意的字間空格，轉換時補 {" "}（REACT-CONVERSION §②）。
+    // 死的只有「跑進收尾標籤」的那一段，判準因此是「這一行的結尾是不是一個沒有被標籤收起來的值」：
+    //   ✗ 紅：`…{{ tf.records }}` ↵ `</li>`        值直接貼著換行
+    //   ✗ 紅：`…{{ row.expires }}{% else %}…{% endif %}` ↵ `</span>`   其中一條分支結尾是裸值
+    //   ✓ 綠：`…{{ r.detail }}</p>{% endif %}` ↵ `</li>`   值被 </p> 收起來了，尾巴是純空白節點
+    //   ✓ 綠：`<span …>{{ group.label }}</span>` ↵ `</label>`         同上
+    const INLINE = /^<\/(span|td|th|li|a|button|label|p|code|small|strong|em|b|i|h[1-6])>/;
+    const bad = [];
+    let seen = 0;
+    for (const f of srcHtml) {
+        const lines = read(f).replace(/\{#[\s\S]*?#\}/g, (m) => m.replace(/[^\n]/g, " ")).split(/\r?\n/);
+        lines.forEach((line, i) => {
+            const cur = line.trim();
+            const next = (lines[i + 1] || "").trim();
+            if (!cur.includes("{{") || !INLINE.test(next)) return;
+            if (/\{\{\s*content\s*\|\s*safe\s*\}\}/.test(cur)) return; // layout 的區塊注入點＝{children}
+            seen++;
+            // 結尾是裸值，或某條 {% if %} 分支以裸值收尾（值後面緊接著 else/elif/endif）
+            if (/\}\}\s*$/.test(cur) || /\}\}\s*\{%-?\s*(else|elif|endif)/.test(cur))
+                bad.push(`${f}:${i + 1}  ${cur.slice(0, 80)}\n      ↵ ${next}`);
+        });
+    }
+    assert.ok(seen >= 20, `只掃到 ${seen} 個「插值行 + 行內收尾標籤」的組合 —— 這條測試在空轉`);
+    assert.equal(bad.length, 0, `把值與收尾標籤收成一行（縮排會變成輸出文字節點裡的字元）：\n${fail(bad)}`);
+});
+
 test("§4 元件 scss 不得出現別的元件 class（祖先位或後裔位都算跨元件覆寫）", () => {
     // 只查祖先位是不夠的：`.header .header-controls { display: none }` 的祖先是自己、
     // 後裔才是別人的元件——照樣是「改別人的樣式」。兩個位置都要裁決。
