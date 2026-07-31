@@ -2270,6 +2270,9 @@ test("§4-2 繁中原文相同的 chrome 沿用既有 key、不另立（同文�
         "登入", "至少 8 碼", "刪除", "設定",                               // 管理端 vs 前台 chrome／type-to-confirm／nav vs 通稱
         "知識檢索", "套用為正式設定", "欄位對應", "歷史紀錄", "資料匯入",   // nav vs 功能標題 vs audit 動作詞彙
         "Token",                                                          // step-flow 執行摘要的 LLM 用量計數（英譯 Tokens）vs widget.token 前台嵌入憑證字串（英譯 Token）＝語意確實不同
+        // round33 補 dist 掃描後才看得到的兩組（英譯本來就不同，屬 §4-2「語意確實不同才分 key」）：
+        "來源",                                                            // qa.citationSourcePrefix="Source "（引用徽章前綴，§4-2 前綴 key 自帶尾空白）vs field.source="Source"（欄位槽名）
+        "成員",                                                            // role.member="Member"（角色，單數）vs settings.members="Members"（欄名/計數，複數）
     ]);
     const keyZh = new Map(); // key -> zh（第一個看到的原文；同 key 同繁中另有測試把關）
     const recordKZ = (key, zh) => {
@@ -2286,8 +2289,27 @@ test("§4-2 繁中原文相同的 chrome 沿用既有 key、不另立（同文�
                 const v = attrs.match(new RegExp(String.raw`(?:^|\s)${target}="([^"]*)"`));
                 if (k && v) recordKZ(k[1], v[1]);
             }
-        for (const m of html.matchAll(/(?:label|title):\s*"([^"]*)"[^{}]*?i18nKey:\s*"([\w.]+)"/g)) recordKZ(m[2], m[1]);
-        for (const m of html.matchAll(/i18nKey:\s*"([\w.]+)"[^{}]*?(?:label|title):\s*"([^"]*)"/g)) recordKZ(m[1], m[2]);
+        // round33：這裡原本只認 `label`/`title` ＋ `i18nKey` 兩個欄位名——round32 已經把另一條
+        // 測試（同 key 繁中一致）改成看形狀，這條沒跟上，於是 descKey↔desc、labelKey↔label…
+        // 那一整族都不在視野裡（upload-card 的 descKey 就是這樣漏掉的）。改用同一套 stem 配對。
+        for (const obj of html.matchAll(/\{([^{}]*)\}/g)) {
+            const fields = new Map();
+            for (const fm of obj[1].matchAll(/(\w+):\s*"([^"]*)"/g)) fields.set(fm[1], fm[2]);
+            for (const [name, val] of fields) {
+                if (!name.endsWith("Key") || !/^[\w.]+$/.test(val) || !val.includes(".")) continue;
+                const stem = name.slice(0, -3);
+                const zh = stem === "i18n" ? fields.get("label") ?? fields.get("title") : fields.get(`${stem}Label`) ?? fields.get(stem);
+                if (zh) recordKZ(val, zh);
+            }
+        }
+    }
+    // round33：src 端的 `data-i18n="{{ uploadDescKey or 'comp.uploadDescXlsx' }}"` 這種**插值 key**
+    // 會被 recordKZ 的 `{{` 守衛擋掉，於是元件預設值那一族的 key↔繁中從來沒進過視野
+    // （upload-box 的預設說明就是這樣，害 upload-card 另立一顆同義 key 也沒人發現）。
+    // dist 是渲染後的真相，key 與繁中都已經定下來——補一輪 dist 掃描把它們收進來。
+    for (const f of distHtml) {
+        const html = distDoc(f);
+        for (const m of html.matchAll(/data-i18n="([\w.]+)"[^>]*>([^<]*)/g)) recordKZ(m[1], m[2]);
     }
     // js 的 t("key", "繁中") fallback 也算一份原文（round18：pagination.js 的「上一頁」曾在視野外）
     for (const f of srcJs.filter((x) => !x.includes("lang-toggle"))) {
@@ -2297,15 +2319,24 @@ test("§4-2 繁中原文相同的 chrome 沿用既有 key、不另立（同文�
         });
     }
     assert.ok(keyZh.size > 200, `只收到 ${keyZh.size} 組 key↔繁中 —— 收集壞了？空轉`);
-    const byZh = new Map(); // zh -> Set(key)
+    // round33：比較鍵只 trim，於是「支援上傳 xlsx 檔案…」與「支援上傳xlsx檔案…」被當成兩句話，
+    // 兩顆 key 的英譯明明逐字相同也照樣過關（以突變證實過）。中文句子裡拉丁字前後要不要空白純屬排版，
+    // 不是語意——比較前把所有空白拿掉。
+    const norm = (zh) => zh.replace(/\s+/g, "");
+    const byZh = new Map(); // 正規化後的 zh -> Set(key)
     for (const [k, zh] of keyZh) {
-        if (!byZh.has(zh)) byZh.set(zh, new Set());
-        byZh.get(zh).add(k);
+        const n = norm(zh);
+        if (!byZh.has(n)) byZh.set(n, new Set());
+        byZh.get(n).add(k);
     }
     const hits = [];
     for (const [zh, keys] of byZh) {
         if (keys.size < 2 || DELIBERATE.has(zh)) continue;
         if ([...keys].every((k) => k.startsWith("toast."))) continue;
+        // `tool.<工具名>.param.<參數名>` 鏡射 product 的內建工具目錄，key 空間**刻意**逐工具一份
+        // （13 張卡各自對回自己那支工具的參數說明）。兩支工具的參數描述剛好同字是正常的，
+        // 收成一顆就破壞了與 product 目錄的一對一對應。同 toast. 那條的理由。
+        if ([...keys].every((k) => /^tool\./.test(k))) continue;
         hits.push(`「${zh}」 掛了 ${keys.size} 個 key：${[...keys].join("、")}`);
     }
     assert.equal(hits.length, 0, `同繁中另立 key（§4-2：沿用既有 key；語意確實不同才進 DELIBERATE 白名單）：\n${fail(hits)}`);
