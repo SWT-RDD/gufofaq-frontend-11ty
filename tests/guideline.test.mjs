@@ -3246,6 +3246,11 @@ test("§4 送 API 的數字欄三件套：type=number ＋ min/max/step ＋ 可�
     // 兩邊都沒有界線的欄位：逐筆列出＋理由（新增前先去正本確認它真的兩邊都不設限）
     const NO_BOUND = new Map([
         ["tenantTrialDaysInput", "延展天數：正數延展、負數縮短，兩邊都沒有界線（platform.py:566 只擋 0）"],
+        // 分數門檻兩顆：尺由重排序器／檢索後端決定（llm 1–5、bge 未正規化 logits 可為負、jina 0–1、
+        // gufonet BM25 數百～數千的整數），寫死界線就會讓某一種部署填不進合法值。上游對這兩欄
+        // 刻意不綁 [0,1]（chatbot ChatConfig 的註解逐字寫了），前端跟著不綁。
+        ["qaDirectScoreFloor", "分數尺依重排序器／檢索後端而異，上游刻意不綁 [0,1]"],
+        ["groundingScoreFloor", "同上（與 qa_direct_score_floor 同一套語意與理由）"],
     ]);
     const seenNoBound = new Set();
     let seen = 0;

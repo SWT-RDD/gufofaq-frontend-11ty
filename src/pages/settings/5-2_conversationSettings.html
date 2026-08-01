@@ -22,6 +22,40 @@ permalink: 5-2_conversationSettings.html
      components/manage-tenant-modal 的「模型開通」（平台端設白名單，值域同樣是 `gufo.list_models()`
      的 `m["value"]`）與 2-2-4 的執行覆寫下拉——三處都用這一組值（§6：同一份業務目錄不得各烤一份）。 #}
 {% set llmModels = ["openai:gpt-4o", "openai:gpt-4o-mini", "openai:gpt-4.1", "anthropic:claude-3-5-sonnet"] %}
+{# 重排序器與檢索後端的**分數尺目錄**：`GET /settings/rerankers`（product `settings_hub.py` 原樣轉出
+     chatbot 的 `GET /api/config/rerankers`）。形狀逐欄照端點：rerankers[] 與 retrieval_backends[]
+     各帶 `name`／`label`／`score_scale{kind,min,max,note}`，外加一段 `mixed_scale_warning`。
+     **這一份不是切版自己維護的清單**——上游的 module docstring 逐字寫著硬編下拉的後果，還舉了實例：
+     同一份清單在 `manager_frontend/search.html` 有三個 option，而它的建置產物只有一個。所以第四顆
+     重排序器出現時，這裡不必改（React 端照端點渲染，切版這一份只是版型示範）。
+     `label`／`note` 是**端點給的字串**，故不掛 data-i18n：上游自己走 Accept-Language，切版再包一層
+     就是同一句話有兩份譯文，兩份分家的那天畫面說的與存檔被擋時說的不一樣。欄位標題
+     （`settings.rerankerName` 之類）仍然是切版自己的 chrome，照舊掛 i18n。
+     `min`／`max` 端點保證一定在（unbounded 時是 null），所以消費端不必為兩種形狀各寫一條分支。 #}
+{% set rerankerCatalog = [
+  { name: "llm_reranker", label: "LLM Reranker",
+    scale: { kind: "bounded", min: 1, max: 5, note: "LLM 逐筆評分，1–5 整數（manager 的重排序提示詞原文「評分範圍為1-5」）" } },
+  { name: "bge_reranker", label: "BGE Reranker",
+    scale: { kind: "unbounded", min: null, max: null, note: "bge-reranker-v2-m3 的未正規化 logits：可為負、無上下界，門檻要看實際資料分佈才校準得出來" } },
+  { name: "jina_reranker", label: "Jina Reranker",
+    scale: { kind: "bounded", min: 0, max: 1, note: "Jina 的 relevance_score，0–1" } }
+] %}
+{# 未啟用重排序時分數的來源，挑哪一個由 `data_source_ratio` 決定。weaviate 那段的實測數字**原文照抄**
+     ——那是使用者判斷門檻該填多少的唯一依據，縮寫掉就等於把「0.5 在這個後端上永遠擋不下任何東西」
+     這件事藏起來。 #}
+{% set retrievalBackends = [
+  { name: "weaviate", label: "Weaviate（向量）", appliesWhen: "data_source_ratio < 1",
+    scale: { kind: "bounded", min: 0, max: 1, note: "metadata.certainty ＝ (cos+1)/2。⚠️ 文字嵌入的 cosine 幾乎不為負：實測 12 句刻意不相關的問句最低仍有 0.5206，0.5 在這個後端上是一個永遠擋不下任何東西的死條件" } },
+  { name: "gufonet", label: "GufoNet（關鍵字）", appliesWhen: "data_source_ratio > 0",
+    scale: { kind: "unbounded", min: null, max: null, note: "BM25 型整數分（實測 752～10095），隨查詢長度漂；無命中直接回空清單" } }
+] %}
+{% set mixedScaleWarning = "0 < data_source_ratio < 1 時 weaviate 與 gufonet 的結果會混在同一批裡，兩把尺並存；此時單一分數門檻無法同時對兩者成立，建議改開 enable_rerank（分數會由重排序器逐筆覆寫成同一把尺）。" %}
+{# 目前生效的那把尺（判斷順序是端點契約的一部分，見 `GET /settings/rerankers` 的 docstring）：
+       enable_rerank ⇒ rerankers[] 裡 reranker_name 那一筆
+       否則 ratio == 0 ⇒ weaviate ／ ratio == 1 ⇒ gufonet ／ 0 < ratio < 1 ⇒ 兩把尺並存，顯示 mixed 警語
+     示範狀態：重排序開著 ＋ llm_reranker（bounded 1–5）。切版沒有算術可以做那個分派，故把結果列成
+     資料；React 端照上面那三份目錄現算。 #}
+{% set activeScale = rerankerCatalog[0] %}
 {% set breadcrumbItems = [
   { label: "首頁", href: "2-1_qaRecord.html", i18nKey: "nav.home" },
   { label: "設定", href: "", i18nKey: "nav.settings" },
@@ -397,8 +431,10 @@ permalink: 5-2_conversationSettings.html
             <div class="form-group col-6-md col-12-sm">
                 <div class="label"><span class="control-label" data-i18n="settings.enableRerank">啟用重排序</span></div>
                 <div class="field">
+                    {# 示範開著：分數尺的示範狀態是「重排序開著 ＋ llm_reranker」，而且 QA 直答那一格的
+                         門檻要填得進去（judge 關著又沒開重排序時上游 400，見該處註解）。 #}
                     <label class="switch">
-                        <input type="checkbox" class="switch-checkbox js-enable-rerank" role="switch" aria-label="啟用重排序" data-i18n-aria-label="settings.enableRerank">
+                        <input type="checkbox" class="switch-checkbox js-enable-rerank" role="switch" checked aria-label="啟用重排序" data-i18n-aria-label="settings.enableRerank">
                         <span class="switch-box"><span class="switch-btn"></span></span>
                     </label>
                 </div>
@@ -406,10 +442,21 @@ permalink: 5-2_conversationSettings.html
             <div class="form-group col-6-md col-12-sm">
                 <div class="label"><label for="genReranker" class="control-label" data-i18n="settings.rerankerName">重排序模型</label></div>
                 <div class="field">
-                    <select class="form-control singleSelect js-reranker-name" id="genReranker">
-                        <option value="llm_reranker" selected>llm_reranker</option>
-                        <option value="bge_reranker">bge_reranker</option>
+                    {# 值域與顯示名都來自 rerankerCatalog（宣告在本頁頂端）——沒有任何寫死的 option：
+                         少一個就是那顆重排序器選不到，而畫面上完全看不出來。上游對 `reranker_name` 有
+                         白名單驗證（`VALID_RERANKER_NAMES`，由同一份目錄導出），未知名 400；以前打錯字
+                         存得進去、manager 靜默跳過整段重排序，而分數門檻照舊比對。
+                         option 的文字是端點給的 `label`，不掛 data-i18n（見頂端目錄註解）。 #}
+                    <select class="form-control singleSelect js-reranker-name" id="genReranker" aria-describedby="genRerankerScale">
+                        {% for r in rerankerCatalog %}
+                        <option value="{{ r.name }}"{% if r.name == activeScale.name %} selected{% endif %}>{{ r.label }}</option>
+                        {% endfor %}
                     </select>
+                    {# 常駐提示（不是兩態、不是 toast）：三顆的分數尺完全不同，換一顆就要重新校準
+                         QA 直答與可回答性那兩個門檻——而使用者改這一格的當下，那兩個門檻在另一個子頁籤上、
+                         他看不到。上游的 400 訊息裡逐字寫著「而 qa_direct_score_floor 是照重排序器的
+                         分數尺校準的」，所以這句話兩邊都要有（門檻那一側另有「目前這把尺」）。 #}
+                    <span class="text-gray" id="genRerankerScale"><span data-i18n="settings.rerankerScaleNote">每一顆重排序器的分數尺不同，換一顆就要重新校準「QA 直答」子頁籤的分數門檻與「可回答性閘」的門檻。目前這把尺：</span>{{ activeScale.scale.note }}</span>
                 </div>
             </div>
             <div class="form-group col-6-md col-12-sm">
@@ -1449,6 +1496,39 @@ permalink: 5-2_conversationSettings.html
                 </div>
             </div>
         </div>
+        {# QA 直答 ②層的分數門檻（chatbot `ChatConfig.qa_direct_score_floor`）。
+             **留白＝未校準**，那是一個有語意的合法狀態、不是「還沒填」：③層（LLM 裁判）開著時未設＝
+             不預篩、全部交給裁判；③層關著時未設＝只有①層（正規化完全命中，也就是舊的 exact），
+             那是完全安全且有用的組態。所以這一格**不是必填、也不給預設數字**——上游的註解逐字寫著
+             為什麼不能用預設值假裝已設定：舊版恆有 0.5，而 0.5 在 weaviate 上是死條件（實測 12 句
+             刻意不相關的問句最低仍有 0.5206），用一個永遠不觸發的數字假裝已校準比留白糟得多。
+             **不綁 min／max**：三顆重排序器的尺不同，還有 gufonet 的 BM25 是數百～數千的整數，
+             寫死 [0, 1] 會讓 BM25 部署填不進合法值（`step="any"` 才收得下小數）。
+             ⚠️ **跨子頁籤的相依**（這一格最重要的一句）：上游在寫入層擋下
+             「直答模式＝完全命中（judge 關）且 `enable_rerank` 關（在「生成」子頁籤）且門檻非空」
+             → 400、什麼都不存，理由是那個組合下②層會拿原始檢索分數當逐字直出的唯一依據，而原始分數
+             不是可校準的尺。使用者站在這一格看不到那顆重排序開關，故旁邊要有常駐說明並指出兩條出路。
+             殘留限制（上游誠實記載）：`exclude_unset` 讓三欄不同時出現時驗證看不到另外兩個值，那時
+             靠執行期 WARNING，而執行期的處置方向是**收窄**（把不可信的門檻當成未設 ⇒ 退回①-only）。
+             ⚠️ leave-to-saas：**product 尚未宣告這一欄**（`services/product` 全樹 `score_floor` 零命中，
+             `PROFILE_FIELD_DEFAULTS` 與 `ProfileConfigIn` 都沒有它，而 `ProfileConfigIn` 是
+             `extra="forbid"`）⇒ React 端接線之前 product 要先補，否則按下儲存是 422（那正是
+             `ProfileConfigIn` docstring 記載的失效史：分組 LLM／思考深度／時區曾經就是）。 #}
+        <div class="form-group row mobile-col">
+            <div class="label label-md">
+                <label for="qaDirectScoreFloor" class="control-label" data-i18n="settings.scoreFloor">分數門檻</label>
+            </div>
+            <div class="field col-12-sm">
+                <input type="number" step="any" id="qaDirectScoreFloor" class="form-control js-qa-direct-score-floor"
+                    placeholder="留白＝未校準" data-i18n-placeholder="settings.scoreFloorUncalibrated"
+                    value="3" aria-describedby="qaDirectScoreFloorScale qaDirectScoreFloorDep">
+                {% set scaleNoteId = "qaDirectScoreFloorScale" %}
+                {% set scaleNoteText = activeScale.scale.note %}
+                {% set scaleNoteMixed = mixedScaleWarning %}
+                {% include "ui/score-scale-note/score-scale-note.html" %}
+                <span class="text-gray" id="qaDirectScoreFloorDep" data-i18n="settings.qaDirectScoreFloorDep">留白＝未校準：裁決開著時代表不預篩、全部交給裁判；裁決關著時代表只用「正規化完全命中」那一層，那是安全的組態。但「完全命中」＋「生成」子頁籤的重排序關閉時不得設門檻——那時只剩原始檢索分數，它不是可校準的尺，存檔會被擋下。兩條出路：開啟重排序（分數就會是重排序器的尺），或把這一格留白。</span>
+            </div>
+        </div>
         <div class="form-group row mobile-col">
             <div class="label label-md">
                 <label for="qaDirectCriteria" class="control-label" data-i18n="settings.qaDirectCriteria">judge 判準</label>
@@ -1488,6 +1568,29 @@ permalink: 5-2_conversationSettings.html
             </div>
             <div class="field col-12-sm">
                 <textarea id="answerabilityCriteria" class="form-control size-sm js-answerability-criteria" placeholder="補充判準（附加在內建 grounding 判準之後）..." data-i18n-placeholder="settings.answerabilityCriteriaPlaceholder"></textarea>
+            </div>
+        </div>
+        {# grounding 判定前的分數粗篩門檻（chatbot `ChatConfig.grounding_score_floor`，預設 0.5）。
+             **與 QA 直答那一格刻意不對稱**，理由上游逐字寫了：grounding 的門檻永遠只是門票（閘開著時
+             LLM 判定一定會跑），擋不到東西的後果只是多付一次判定、不會產生錯答案 ⇒ 非空、沿用 0.5。
+             QA 直答的門檻在關掉裁判時是**唯一判定** ⇒ 那一格才可以為空。兩格的說明不共用一句話：
+             寫成「都可留白」或「都必填」的話，錯的那一邊症狀是無聲的（這一格留白 ⇒ 上游 400；
+             那一格必填 ⇒ 既有 exact 租戶遷移後直接失去直答）。
+             同樣**不綁 min／max**（尺不同，見下方那段目前生效的尺）。
+             ⚠️ leave-to-saas：同 `qa_direct_score_floor`，product 尚未宣告這一欄。 #}
+        <div class="form-group row mobile-col">
+            <div class="label label-md">
+                <label for="groundingScoreFloor" class="control-label" data-i18n="settings.scoreFloor">分數門檻</label>
+            </div>
+            <div class="field col-12-sm">
+                <input type="number" step="any" id="groundingScoreFloor" class="form-control js-grounding-score-floor"
+                    value="0.5" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter"
+                    aria-describedby="groundingScoreFloorScale groundingScoreFloorNote">
+                {% set scaleNoteId = "groundingScoreFloorScale" %}
+                {% set scaleNoteText = activeScale.scale.note %}
+                {% set scaleNoteMixed = mixedScaleWarning %}
+                {% include "ui/score-scale-note/score-scale-note.html" %}
+                <span class="text-gray" id="groundingScoreFloorNote" data-i18n="settings.groundingScoreFloorNote">這一格不可留白（預設 0.5）：它永遠只是判定前的門票，閘開著時 LLM 判定一定會跑，所以擋不到東西的後果只是多付一次判定，不會生出錯答案。與「QA 直答」那一格的可留白刻意不同。</span>
             </div>
         </div>
     </div>
