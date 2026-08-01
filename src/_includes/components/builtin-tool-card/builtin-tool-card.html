@@ -69,9 +69,20 @@
         {% if tool.customized %}
         <span class="builtin-tool-flag" data-i18n="settings.toolCustomized">已自訂</span>
         {% endif %}
+        {# 條件式工具的前提沒滿足時：**「已勾選，但本輪不會生效」**，不是「已停用」。
+             chatbot 是根本不建那顆工具（`_create_builtin_tools` 的兩道條件式建構），勾了也不會出現在
+             agent 的工具集裡——寫成「已停用」會讓使用者去找一個不存在的開關。
+             判準是 `GET /settings/builtin-tools` 逐筆的 `requires`（config 欄位名清單；上游由
+             `BUILTIN_TOOL_PREREQUISITES` 導出，並有測試逐條把該欄位清空、斷言那顆工具真的消失，
+             所以那份宣稱被釘成事實）。requires 裡的欄位就在同一頁的「QA 直答」子頁籤上，
+             所以這個狀態即時算得出來：任一欄為空／false 就標。
+             `tool.requiresUnmet` 是使用頁算完的結果（切版沒有那個算術），值是 config 欄位名、不翻。 #}
+        {% if tool.requiresUnmet %}
+        <span class="builtin-tool-flag is-inert"><span data-i18n="settings.toolRequiresUnmet">已勾選，但本輪不會生效——缺少前提：</span>{{ tool.requiresUnmet }}</span>
+        {% endif %}
         <label class="switch builtin-tool-switch">
             {# 值載體：只掛 hook class，成敗由 React 送 API 後演（§5 組合矩陣②）。
-                 可及名稱指向卡頭的中文標題——同頁 13 顆開關若共用「啟用」一個名稱，報讀器聽不出在開哪一顆（§4）。 #}
+                 可及名稱指向卡頭的中文標題——同頁 14 顆開關若共用「啟用」一個名稱，報讀器聽不出在開哪一顆（§4）。 #}
             <input type="checkbox" class="switch-checkbox js-builtin-tool" role="switch" value="{{ tool.name }}"
                 aria-labelledby="tool-{{ tool.name }}-title"{% if tool.enabled %} checked{% endif %}>
             <span class="switch-box">
@@ -80,8 +91,8 @@
         </label>
     </div>
 
-    {# 展開區。role=group 把這一張卡的欄位框成一組（aria-labelledby 指卡頭標題）：同頁 13 張卡各有一顆
-         「工具描述（使用時機）」，不分組的話 13 個 textarea 的可及名稱一模一樣（§4）。
+    {# 展開區。role=group 把這一張卡的欄位框成一組（aria-labelledby 指卡頭標題）：同頁 14 張卡各有一顆
+         「工具描述（使用時機）」，不分組的話 14 個 textarea 的可及名稱一模一樣（§4）。
          .accordion-content 是 ui/accordion 的契約 class（只沿用、不在本元件 scss 動它的樣式）；
          預設隱藏與 flex 版型畫在自有 slot class .builtin-tool-body 與內層 wrapper 上
          （GufoSlide 重開時會退回 display:block，故 flex 不放在被隱藏的這一層）。 #}

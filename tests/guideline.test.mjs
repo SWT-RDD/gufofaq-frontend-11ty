@@ -3051,7 +3051,7 @@ test("§4-2 繁中原文相同的 chrome 沿用既有 key、不另立（同文�
         if (keys.size < 2 || DELIBERATE.has(zh)) continue;
         if ([...keys].every((k) => k.startsWith("toast."))) continue;
         // `tool.<工具名>.param.<參數名>` 鏡射 product 的內建工具目錄，key 空間**刻意**逐工具一份
-        // （13 張卡各自對回自己那支工具的參數說明）。兩支工具的參數描述剛好同字是正常的，
+        // （14 張卡各自對回自己那支工具的參數說明）。兩支工具的參數描述剛好同字是正常的，
         // 收成一顆就破壞了與 product 目錄的一對一對應。同 toast. 那條的理由。
         if ([...keys].every((k) => /^tool\./.test(k))) continue;
         hits.push(`「${zh}」 掛了 ${keys.size} 個 key：${[...keys].join("、")}`);
@@ -3656,22 +3656,50 @@ function innerBlock(html, cls) {
     return html.slice(m.index, end);
 }
 
-test("§6 5-2 內建工具：13 張卡包在同一個 .js-accordion 根裡，並有全部展開／收合", () => {
+test("§6 5-2 內建工具：14 張卡包在同一個 .js-accordion 根裡，並有全部展開／收合", () => {
     const html = distDoc("5-2_conversationSettings.html");
     // 掃描根＝accordion 原子自有的 .js-accordion（同 sources-block／step-flow）；
     // 兩顆批次鈕必須在同一個根內，否則 accordion.js 的 block.querySelector 找不到它們＝點了沒反應。
     const root = innerBlock(html, "js-accordion");
     assert.ok(root, "5-2 找不到 .js-accordion 根 —— 工具卡的開合會整組失效");
-    assert.equal(builtinToolCards(root).length, 13, "13 顆內建工具＝13 張卡（chatbot BUILTIN_TOOL_NAMES 全集）");
+    assert.equal(builtinToolCards(root).length, 14, "14 顆內建工具＝14 張卡（chatbot BUILTIN_TOOL_NAMES 全集；answer_from_qa 曾經漏掉一張）");
     assert.match(root, /class="[^"]*\bjs-expand-all\b/, ".js-expand-all 不在 accordion 根內");
     assert.match(root, /class="[^"]*\bjs-collapse-all\b/, ".js-collapse-all 不在 accordion 根內");
     // 三態說明：改成逐工具開關後，「未勾選任何工具＝全部啟用」那句敘述已經不成立
     assert.ok(!/未勾選任何工具/.test(html), "settings.builtinToolsHint 還在描述舊的勾選框行為（§3-2：行為改了要順手改出貨文案）");
 });
 
+test("§5/§6 skill 的內建工具白名單：不可用於 skill 的那幾顆要灰掉並附理由（照欄位、不照名字）", () => {
+    // `allowed_in_skill === false` 的工具**灰掉、不拿掉**：拿掉會讓使用者以為那顆工具不存在，
+    // 而它在 5-2「內建工具啟用」面板上看得到。理由（`skill_restriction_reason`）與存檔被擋時的
+    // 400 訊息是同一句（product `app/tool_refs.py` 直接把它塞進 400），所以顯示它不會出現
+    // 「設定頁說一套、存檔說另一套」；也因此**不掛 data-i18n**（端點給的字串）。
+    //
+    // 這條釘三件事：①至少演得出一顆被禁的（不然那一態等於沒切）②disabled 的那一顆一定要附理由
+    // ③理由那一段不得掛 data-i18n。判準都是 markup 的形狀，不是工具名字——名字會變（上游是一張
+    // 表，`SKILL_FORBIDDEN_BUILTIN_TOOLS`，名字集合由它導出），下一顆被禁的工具出現時不必改這裡。
+    const html = distDoc("3-4_skillManagement.html");
+    // 一列一顆工具，列內沒有巢狀 <div>（label ＋ 選填的理由 span），故收到第一個 </div> 為止即可。
+    // 要求「兩個連續 </div>」的話只有最後一列配得上（那次實測只掃到 1 顆）。
+    const rows = [...html.matchAll(/<div class="flex-row flex-wrap align-items-center gap-8">([\s\S]*?)<\/div>/g)]
+        .map((m) => m[1])
+        .filter((r) => /js-skill-builtin/.test(r));
+    assert.ok(rows.length >= 4, `skill 編輯窗只掃到 ${rows.length} 顆內建工具 —— 這條測試在空轉（曾經整個群組是空的：那個變數全站沒有人 set）`);
+    const disabled = rows.filter((r) => /\bdisabled\b/.test(r));
+    assert.ok(disabled.length >= 1, "沒有任何一顆演出「不可用於 skill」的灰掉態（allowed_in_skill=false）");
+    const hits = [];
+    for (const r of disabled) {
+        const name = (r.match(/value="([^"]*)"/) || [, "?"])[1];
+        const reason = r.match(/<span class="text-gray">([^<]*)<\/span>/);
+        if (!reason || reason[1].trim().length < 20) hits.push(`${name}：灰掉了卻沒有附理由（skill_restriction_reason）`);
+        if (/<span class="text-gray"[^>]*data-i18n/.test(r)) hits.push(`${name}：理由掛了 data-i18n（端點給的字串不再包一層 i18n）`);
+    }
+    assert.equal(hits.length, 0, fail(hits));
+});
+
 test("§6/§4 內建工具卡：卡頭有中文標題＋英文識別字＋啟用開關（識別字不翻、開關可及名稱各卡不同）", () => {
     const cards = builtinToolCards(distDoc("5-2_conversationSettings.html"));
-    assert.equal(cards.length, 13, "空轉守門：切不出 13 張卡");
+    assert.equal(cards.length, 14, "空轉守門：切不出 14 張卡");
     const hits = [];
     for (const { name, html } of cards) {
         const head = innerBlock(html, "builtin-tool-head");
@@ -3688,16 +3716,16 @@ test("§6/§4 內建工具卡：卡頭有中文標題＋英文識別字＋啟用
         if (!sw) { hits.push(`${name}：卡頭缺 .js-builtin-tool 開關`); continue; }
         if (!sw[0].includes(`value="${name}"`)) hits.push(`${name}：開關的 value 不是工具名`);
         if (!sw[0].includes(`role="switch"`)) hits.push(`${name}：開關缺 role="switch"`);
-        // 同頁 13 顆開關不得共用同一個可及名稱（§4）：各自指向自己那張卡的標題
+        // 同頁 14 顆開關不得共用同一個可及名稱（§4）：各自指向自己那張卡的標題
         if (!sw[0].includes(`aria-labelledby="tool-${name}-title"`))
-            hits.push(`${name}：開關的 aria-labelledby 沒有指向本卡標題（13 顆會同名）`);
+            hits.push(`${name}：開關的 aria-labelledby 沒有指向本卡標題（14 顆會同名）`);
     }
     assert.equal(hits.length, 0, `內建工具卡卡頭不完整：\n${fail(hits)}`);
 });
 
 test("§5/§6 內建工具卡：參數清單唯讀、兩個 textarea 帶 hook class 與 1024 上限、還原預設鈕在位", () => {
     const cards = builtinToolCards(distDoc("5-2_conversationSettings.html"));
-    assert.equal(cards.length, 13, "空轉守門：切不出 13 張卡");
+    assert.equal(cards.length, 14, "空轉守門：切不出 14 張卡");
     const hits = [];
     let withParams = 0, noParams = 0;
     for (const { name, html } of cards) {
@@ -3739,7 +3767,7 @@ test("§5/§6 內建工具卡：參數清單唯讀、兩個 textarea 帶 hook cl
 
 test("§5 內建工具卡：只有 customized 的那張預設展開（markup 就帶 .open + aria-expanded=true）", () => {
     const cards = builtinToolCards(distDoc("5-2_conversationSettings.html"));
-    assert.equal(cards.length, 13, "空轉守門：切不出 13 張卡");
+    assert.equal(cards.length, 14, "空轉守門：切不出 14 張卡");
     const open = [], hits = [];
     for (const { name, html } of cards) {
         const btn = html.match(/<button[^>]*\baccordion-btn\b[^>]*>/);

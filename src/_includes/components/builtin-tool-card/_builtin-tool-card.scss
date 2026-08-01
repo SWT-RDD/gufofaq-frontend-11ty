@@ -28,6 +28,15 @@
         color: var(--brand-ink);
         font-size: 0.875rem;
         white-space: nowrap;
+
+        // 「已勾選，但本輪不會生效」（requires 的前提沒滿足）。與「已自訂」那個中性標記不同性質，
+        // 故換一組色：底用 --surface-sunken、前景用 --danger-ink（那顆 token 的註解逐字寫著
+        // 「疊 sunken 面也要 ≥4.5」，就是為這種組合登記的）。句子會換行，故不 nowrap。
+        &.is-inert {
+            background-color: var(--surface-sunken);
+            color: var(--danger-ink);
+            white-space: normal;
+        }
     }
 
     .builtin-tool-body {

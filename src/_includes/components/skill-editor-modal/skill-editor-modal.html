@@ -75,12 +75,38 @@
                                 <label class="control-label" id="skillBuiltinToolsLabel" data-i18n="settings.builtinTools">內建工具</label>
                             </div>
                             <div class="field col-12-sm">
-                                <div class="flex-row flex-wrap gap-16" role="group" aria-labelledby="skillBuiltinToolsLabel" aria-describedby="skillAllowedToolsHint">
+                                {# 清單來自 `GET /settings/builtin-tools`（product 原樣轉出 chatbot 的目錄）。
+                                     本元件自己帶示範資料：這份是**目錄投影**、不是頁面資料，而 3-4 並沒有
+                                     （也不該）替它烤一份——原本這個變數全站沒有人 set，於是這個勾選群組
+                                     渲染出來是空的（一個 checkbox 都沒有）。
+                                     `allowed_in_skill === false` 的那幾顆**灰掉、不拿掉**：拿掉會讓使用者
+                                     以為那顆工具不存在，而它在 5-2「內建工具啟用」面板上看得到——同一顆
+                                     工具在兩頁一個在一個不在，比灰掉難懂。
+                                     判準是**欄位**不是名字：目前只有 answer_from_qa 是 false，寫死名字的話
+                                     下一顆被禁的工具出現時清單會漏（上游那份 `SKILL_FORBIDDEN_BUILTIN_TOOLS`
+                                     是一張表，名字集合由它導出）。
+                                     `skillRestrictionReason` 是端點給的字串，**與存檔被擋時的 400 訊息是
+                                     同一句**（product `app/tool_refs.py` 直接把它塞進 400），所以不掛
+                                     data-i18n——掛了就是同一句話有兩份譯文，設定頁說一套、存檔說另一套。 #}
+                                {% set skillEditorBuiltinTools = [
+                                  { name: "search_knowledge_base", allowedInSkill: true, checked: true },
+                                  { name: "search_qa", allowedInSkill: true, checked: true },
+                                  { name: "get_document", allowedInSkill: true, checked: false },
+                                  { name: "summarize_document", allowedInSkill: true, checked: false },
+                                  { name: "answer_from_qa", allowedInSkill: false,
+                                    reason: "這顆工具的契約是「以這份 QA 的原文作為本次對話的最終回答」，而 skill 的產物是回饋父 agent 的工具結果（父層一定會再重組一次），兩者互斥。請改用 search_qa／search_knowledge_base 取得內容後由 instructions 指示怎麼組織。" }
+                                ] %}
+                                <div class="flex-row column gap-8" role="group" aria-labelledby="skillBuiltinToolsLabel" aria-describedby="skillAllowedToolsHint">
                                     {% for tool in skillEditorBuiltinTools %}
-                                    <label class="form-checkbox">
-                                        <input type="checkbox" class="js-skill-builtin" value="{{ tool.name }}"{% if tool.checked %} checked{% endif %}>
-                                        <span>{{ tool.name }}</span>
-                                    </label>
+                                    <div class="flex-row flex-wrap align-items-center gap-8">
+                                        <label class="form-checkbox">
+                                            <input type="checkbox" class="js-skill-builtin" value="{{ tool.name }}"{% if tool.checked %} checked{% endif %}{% if not tool.allowedInSkill %} disabled{% endif %}>
+                                            <span>{{ tool.name }}</span>
+                                        </label>
+                                        {% if not tool.allowedInSkill %}
+                                        <span class="text-gray">{{ tool.reason }}</span>
+                                        {% endif %}
+                                    </div>
                                     {% endfor %}
                                 </div>
                             </div>

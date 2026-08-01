@@ -1253,6 +1253,11 @@ permalink: 5-2_conversationSettings.html
          示範狀態：13 顆皆 enabled（＝全部啟用那一態）；customized 只給 ask_clarifying_question
          ——那張卡同時演「已自訂」標記、預設展開、以及兩欄已填值的樣子（§6 示範資料要自洽：
          標記說已自訂，欄位就不能是空的）。 #}
+    {# 條件式工具（answer_from_qa 是第二顆）：requires 兩欄都要成立才會被建出來。示範狀態下
+         「直答模式」停用 ⇒ qa_direct_enabled 為 false ⇒ 前提不成立，故它的 requiresUnmet 有值、
+         卡頭標出「已勾選，但本輪不會生效」。同一頁的 search_qa 只 requires qa_direct_indexes
+         （QA 集有選）⇒ 前提成立、不標，兩者剛好演出對比（§6 示範資料要自洽）。
+         順序照 chatbot BUILTIN_TOOL_NAMES（answer_from_qa 緊接在 search_qa 之後）。 #}
     {% set builtinTools = [
       {
         name: "get_current_datetime", title: "目前日期時間", enabled: true,
@@ -1336,6 +1341,17 @@ permalink: 5-2_conversationSettings.html
         ],
         exampleDescription: "常見問題優先查 QA 集，查不到再搜尋知識庫文件。",
         exampleExtraPrompt: "命中的 QA 答案照原文引用，不要改寫用詞。"
+      },
+      {
+        name: "answer_from_qa", title: "以 QA 原文直接回答", enabled: true,
+        requiresUnmet: "qa_direct_enabled",
+        desc: "找到一份完整回答問題的 QA 之後，直接用它的答案原文結束這一輪，不再由 AI 重組。系統會覆核那份 QA 是否真的完整回答，未通過時退回一般流程。",
+        defaultDescription: "以某一份 QA 的原文直接回答使用者，並結束本次回答。何時用：你剛用 search_qa 找到一份 QA，且它的答案已經完整回答使用者的問題、不需要你再補充或改寫。何時不要用：QA 只回答到問題的一部分、主體/品項/對象不同、或需要合併多份資料才能回答。",
+        params: [
+          { name: "document_id", required: true, desc: "要直接引用的 QA 文件編號（必須是本輪 search_qa 回傳過的真實值，不可自行編造）" }
+        ],
+        exampleDescription: "只有在 QA 的答案已經完整回答問題時才呼叫，否則照常自己組織答案。",
+        exampleExtraPrompt: "引用後不要再補一段自己的說明。"
       },
       {
         name: "get_document", title: "取得文件全文", enabled: true,
