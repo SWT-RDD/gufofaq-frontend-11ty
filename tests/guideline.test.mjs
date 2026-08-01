@@ -2748,6 +2748,15 @@ test("§4 資料列的 colspan 必須等於該表的表頭欄數（空狀態那�
         for (const { body, start } of tablesOf(html)) {
             const cols = headCols(body);
             if (cols === null) continue;                              // 無 thead（版型表）
+            // `<colgroup>` 的 <col> 數也要等於表頭欄數：欄寬是逐欄對位的，少一個 <col> 之後每一欄
+            // 的寬度都往前錯一格（而畫面「看起來只是有點怪」，不會壞掉）。加欄時最容易只加 <th>。
+            const cg = body.match(/<colgroup[\s\S]*?<\/colgroup>/);
+            if (cg && cols !== "loop") {
+                const nCol = [...cg[0].matchAll(/<col(?=[\s>/])[^>]*>/g)]
+                    .reduce((n, m) => n + Number((m[0].match(/\bspan="(\d+)"/) || [, 1])[1]), 0);
+                if (!cols.includes(nCol))
+                    out.push(`${f}:${countLines(html, start)}  <colgroup> 有 ${nCol} 個 <col> 但表頭 ${cols.join("／")} 欄`);
+            }
             // 表頭自己的 colspan（跨欄表頭）不是資料列跨欄。用「落在 thead 區間內就跳過」而不是
             // 先 replace 掉——replace 會讓後面每個 match 的 index 位移，錯誤訊息的行號就指不準了。
             const th = body.match(/<thead[\s\S]*?<\/thead>/);
@@ -2783,12 +2792,16 @@ test("§4 資料列的 colspan 必須等於該表的表頭欄數（空狀態那�
             // 裸 <th> 也要算：只認帶屬性的 th 會把這張表當成 2 欄而放行 colspan=2
             "<table><thead><tr><th data-i18n=\"a\">a</th><th>b</th><th>c</th></tr></thead><tbody><tr><td colspan=\"2\">無資料</td></tr></tbody></table>",
             // 巢狀：內層表自己 3 欄、colspan=2 ⇒ 要抓到（slice(1) 沒寫對時整批跳過）
-            "<table><thead><tr><th>x</th></tr></thead><tbody><tr><td><table><thead><tr><th>a</th><th>b</th><th>c</th></tr></thead><tbody><tr><td colspan=\"2\">無</td></tr></tbody></table></td></tr></tbody></table>"],
+            "<table><thead><tr><th>x</th></tr></thead><tbody><tr><td><table><thead><tr><th>a</th><th>b</th><th>c</th></tr></thead><tbody><tr><td colspan=\"2\">無</td></tr></tbody></table></td></tr></tbody></table>",
+            // colgroup 少一個 <col>：欄寬會整排往前錯一格
+            "<table><colgroup><col><col></colgroup><thead><tr><th>a</th><th>b</th><th>c</th></tr></thead><tbody><tr><td colspan=\"3\">無</td></tr></tbody></table>"],
         ["<table><thead><tr><th>a</th><th>b</th><th>c</th></tr></thead><tbody><tr><td colspan=\"3\">無資料</td></tr></tbody></table>",
             // 表頭帶 if/else 分支：兩條路都是 2 欄，colspan=2 正確
             "<table><thead><tr><th>a</th>{% if x %}<th>b</th>{% else %}<th>c</th>{% endif %}</tr></thead><tbody><tr><td colspan=\"2\">無資料</td></tr></tbody></table>",
-            // 表頭自己的跨欄（<th colspan>）不是資料列跨欄，不該被當成違規
-            "<table><thead><tr><th colspan=\"2\">a</th><th>b</th></tr></thead><tbody><tr><td colspan=\"3\">無資料</td></tr></tbody></table>"]);
+            // 表頭自己的跨欄（<th colspan>）不是資料列跨欄，不該被當成違規；colgroup 數也照跨欄後的欄數算
+            "<table><colgroup><col><col><col></colgroup><thead><tr><th colspan=\"2\">a</th><th>b</th></tr></thead><tbody><tr><td colspan=\"3\">無資料</td></tr></tbody></table>",
+            // <col span="2"> 也要算成兩欄
+            "<table><colgroup><col span=\"2\"><col></colgroup><thead><tr><th>a</th><th>b</th><th>c</th></tr></thead><tbody><tr><td colspan=\"3\">無</td></tr></tbody></table>"]);
     assert.equal(hits.length, 0, `空狀態那一列會少跨一欄（表格右側缺一格）：\n${fail(hits)}`);
 });
 
@@ -3342,6 +3355,41 @@ test("§4 <label> 必須有 for、或包住控制項、或有 id 被 aria-labell
     }
     assert.ok(seen >= 60, `只掃到 ${seen} 個 <label> —— 這條測試在空轉`);
     assert.equal(hits.length, 0, `§4：懸空 <label>（純標題文字請改 <span class="control-label">／.text-md.text-bold）：\n${fail(hits)}`);
+});
+
+test("§4-2 反向：緊接在英數值**後面**的後綴 key，譯文必須自帶前導空白", () => {
+    // 既有兩條只管「前綴 ＋ 緊接的值」（sr-only、全形標點）。反方向同樣真實：
+    // `…共 </span>{{ n }}<span data-i18n=後綴> 個檔</span>` 的後綴少了前導空白，英文就黏成
+    // `…8files in total`。繁中不需要那個空白，所以繁中版看起來永遠是對的——只有英文模式會現形，
+    // 而 fpdiff 比的是繁中版的幾何。正典：`pagination.totalSuffix`（「 頁」／" pages"）。
+    // population：dist 上「英數字元緊接著一個 data-i18n 元素的開頭」。標點開頭的譯文放行
+    //（`, Summary count: ` 那種本來就自帶邊界）。
+    const en = JSON.parse(read("src/i18n/en.json"));
+    const AFTER_VALUE = /([A-Za-z0-9%])<[a-z0-9]+\b[^>]*\bdata-i18n="([^"]+)"[^>]*>/g;
+    const OK_START = /^[\s(:,.;)、，。）]/;
+    const scan = (html, dict, f = "<probe>") => {
+        const out = [];
+        for (const m of html.matchAll(AFTER_VALUE)) {
+            const val = dict[m[2]];
+            if (typeof val === "string" && val && !OK_START.test(val))
+                out.push(`${f}  「${m[1]}」緊接 ${m[2]} = "${val.slice(0, 40)}" → 英文模式黏成一個字`);
+        }
+        return out;
+    };
+    const hits = [];
+    let seen = 0;
+    for (const f of distHtml) {
+        const html = distDoc(f);
+        seen += [...html.matchAll(AFTER_VALUE)].length;
+        hits.push(...scan(html, en, basename(f)));
+    }
+    assert.ok(seen >= 15, `只掃到 ${seen} 處「英數值＋緊接的後綴 key」—— 這條測試在空轉`);
+    probe("§4-2 後綴前導空白",
+        (s) => scan(s, { "x.bad": "files in total", "x.ok": " files in total", "x.punct": ", and more" }),
+        ['共 <span data-i18n="x.bad"> 個檔</span>'.replace("共 ", "8")],
+        ['8<span data-i18n="x.ok"> 個檔</span>', '8<span data-i18n="x.punct">，還有</span>',
+            '共 <span data-i18n="x.bad">個檔</span>']);   // 前面是中文字、不是英數值 ⇒ 不在此規則
+    assert.equal(hits.length, 0, `§4-2：後綴 key 要自帶前導空白（同 pagination.totalSuffix 的正典）：\n${fail([...new Set(hits)])}`);
 });
 
 test("§4-2 i18n 的文字槽不得寫 markdown 強調（`**…**` 會原樣印在畫面上）", () => {
