@@ -197,7 +197,9 @@ permalink: 5-6-2_platformMcpServers.html
                     </td>
                 </tr>
                 {% else %}
-                <tr><td colspan="7" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
+                {# colspan＝表頭欄數 8（名稱／執行指令／參數／環境變數／描述／啟用／最近一次測試／操作）。
+                     「最近一次測試」那一欄是後來補的，這裡曾經停在 7、空狀態時表格右側缺一格。 #}
+                <tr><td colspan="8" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
                 {% endfor %}
             </tbody>
         </table>

@@ -2703,6 +2703,95 @@ test("§4 <table> 直下不放 <tr>（一律包 thead/tbody，否則 SSR/hydrati
     assert.equal(hits.length, 0, fail(hits));
 });
 
+test("§4 資料列的 colspan 必須等於該表的表頭欄數（空狀態那一列最容易漏）", () => {
+    // 為什麼掃 src 而不是 dist：`{% else %}` 的「無資料」列只有在資料為空時才渲染，而每一頁的示範
+    // 資料都是非空的 ⇒ dist 上全站只剩 2 個資料列 colspan，掃 dist 等於沒掃。5-6-2 的表加了
+    // 「最近一次測試」欄之後 colspan 沒跟著加（8 欄 vs colspan=7），就是這樣躲過所有既有測試的。
+    //
+    // 三個一定要做對的地方（否則就是假綠燈）：
+    //  1. 巢狀表用堆疊配對，而 body 的第 0 字元就是自己那顆 `<table` ——判斷巢狀要從第 1 字元起。
+    //     少了那個 slice(1)，每張表都被判成「有巢狀」而整批跳過：掃到 0 張表，然後全綠。
+    //     （這個坑是實際踩過的：round36 之前的掃描工具就是這樣，所以 5-6-2 那筆沒被抓到。）
+    //  2. 裸 `<th>`（沒有屬性）也要算，而且 `<th` 後面必須接空白或 `>`，否則 `<thead>` 會被算成一欄。
+    //  3. 表頭欄數＝最後一列 `<tr>` 的 `<th>` 的 colspan 總和（多層表頭時最後一層才是資料欄）；
+    //     表頭本身帶 `{% if %}/{% else %}` 分支時（priority-table：分層／不分層各一欄）要逐分支算，
+    //     colspan 命中任一分支即可——不逐分支算就會對著「兩個分支的 th 都算進去」的假欄數誤報。
+    const tablesOf = (html) => {
+        const out = [];
+        const stack = [];
+        for (const m of html.matchAll(/<table\b|<\/table>/g)) {
+            if (m[0] === "</table>") {
+                const start = stack.pop();
+                if (start === undefined) continue;
+                const body = html.slice(start, m.index);
+                if (/<table\b/.test(body.slice(1))) continue;   // 真的有巢狀 → 交給內層那一輪
+                out.push({ body, start });
+            } else stack.push(m.index);
+        }
+        return out;
+    };
+    const thSum = (s) => [...s.matchAll(/<th(?=[\s>])[^>]*>/g)]
+        .reduce((n, m) => n + Number((m[0].match(/colspan="(\d+)"/) || [, 1])[1]), 0);
+    // 回傳可接受的欄數清單；"loop"＝表頭由 {% for %} 產生，欄數由資料決定、算不出來
+    const headCols = (body) => {
+        const thead = body.match(/<thead[\s\S]*?<\/thead>/);
+        if (!thead) return null;
+        const rows = [...thead[0].matchAll(/<tr[\s\S]*?<\/tr>/g)].map((m) => m[0]);
+        const last = rows.length ? rows[rows.length - 1] : thead[0];
+        if (/\{%-?\s*for\b/.test(last)) return "loop";
+        const ifBranch = last.replace(/\{%-?\s*else\s*-?%\}[\s\S]*?\{%-?\s*endif\s*-?%\}/g, "");
+        const elseBranch = last.replace(/\{%-?\s*if\b[\s\S]*?\{%-?\s*else\s*-?%\}/g, "");
+        return [...new Set([thSum(ifBranch), thSum(elseBranch)])].filter((n) => n > 0);
+    };
+    const scan = (html, f = "<probe>") => {
+        const out = [];
+        for (const { body, start } of tablesOf(html)) {
+            const cols = headCols(body);
+            if (cols === null) continue;                              // 無 thead（版型表）
+            // 表頭自己的 colspan（跨欄表頭）不是資料列跨欄。用「落在 thead 區間內就跳過」而不是
+            // 先 replace 掉——replace 會讓後面每個 match 的 index 位移，錯誤訊息的行號就指不準了。
+            const th = body.match(/<thead[\s\S]*?<\/thead>/);
+            const thRange = th ? [th.index, th.index + th[0].length] : [-1, -1];
+            const spans = [...body.matchAll(/colspan="(\d+)"/g)].filter((m) => m.index < thRange[0] || m.index >= thRange[1]);
+            if (cols === "loop") {
+                if (spans.length) out.push(`${f}:${countLines(html, start)}  表頭由 {% for %} 產生、欄數算不出來，但這張表有 colspan —— 請改成可數的表頭`);
+                continue;
+            }
+            for (const c of spans)
+                if (!cols.includes(Number(c[1])))
+                    out.push(`${f}:${countLines(html, start + c.index)}  colspan=${c[1]} 但表頭 ${cols.join("／")} 欄`);
+        }
+        return out;
+    };
+    const hits = [];
+    let tableN = 0, spanN = 0;
+    for (const f of srcHtml) {
+        const html = stripNjk(read(f));
+        for (const { body } of tablesOf(html)) {
+            tableN++;
+            const th = body.match(/<thead[\s\S]*?<\/thead>/);
+            spanN += [...body.matchAll(/colspan="(\d+)"/g)]
+                .filter((m) => !th || m.index < th.index || m.index >= th.index + th[0].length).length;
+        }
+        hits.push(...scan(html, f));
+    }
+    // 空轉守門：上面那三個坑任一個踩到，這兩個數字就會塌下來（實測踩坑時 tableN 直接變 0）
+    assert.ok(tableN >= 30, `只掃到 ${tableN} 張表 —— 巢狀配對壞了，這條測試在空轉`);
+    assert.ok(spanN >= 15, `只掃到 ${spanN} 個資料列 colspan —— 這條測試在空轉`);
+    probe("§4 colspan vs 表頭欄數", scan,
+        ["<table><thead><tr><th>a</th><th>b</th><th>c</th></tr></thead><tbody><tr><td colspan=\"2\">無資料</td></tr></tbody></table>",
+            // 裸 <th> 也要算：只認帶屬性的 th 會把這張表當成 2 欄而放行 colspan=2
+            "<table><thead><tr><th data-i18n=\"a\">a</th><th>b</th><th>c</th></tr></thead><tbody><tr><td colspan=\"2\">無資料</td></tr></tbody></table>",
+            // 巢狀：內層表自己 3 欄、colspan=2 ⇒ 要抓到（slice(1) 沒寫對時整批跳過）
+            "<table><thead><tr><th>x</th></tr></thead><tbody><tr><td><table><thead><tr><th>a</th><th>b</th><th>c</th></tr></thead><tbody><tr><td colspan=\"2\">無</td></tr></tbody></table></td></tr></tbody></table>"],
+        ["<table><thead><tr><th>a</th><th>b</th><th>c</th></tr></thead><tbody><tr><td colspan=\"3\">無資料</td></tr></tbody></table>",
+            // 表頭帶 if/else 分支：兩條路都是 2 欄，colspan=2 正確
+            "<table><thead><tr><th>a</th>{% if x %}<th>b</th>{% else %}<th>c</th>{% endif %}</tr></thead><tbody><tr><td colspan=\"2\">無資料</td></tr></tbody></table>",
+            // 表頭自己的跨欄（<th colspan>）不是資料列跨欄，不該被當成違規
+            "<table><thead><tr><th colspan=\"2\">a</th><th>b</th></tr></thead><tbody><tr><td colspan=\"3\">無資料</td></tr></tbody></table>"]);
+    assert.equal(hits.length, 0, `空狀態那一列會少跨一欄（表格右側缺一格）：\n${fail(hits)}`);
+});
+
 test("§4 dist 不得有空 <th>（控制欄表頭要有 sr-only 名稱）", () => {
     const hits = [];
     for (const f of distHtml)
