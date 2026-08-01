@@ -1407,7 +1407,7 @@
   "toast.runTrySkill": "Generating answer…|Enter a question first|Trial run failed",
   "toast.saveAccount": "Account information saved|You do not have permission to save|Save failed",
   "toast.saveAttribution": "Attribution dimensions saved|You do not have permission to save|Save failed. Please try again later.",
-  "toast.saveDatasetField": "Updated|Nothing to update|Save failed. Please try again later.",
+  "toast.saveDatasetField": "Updated|You do not have permission to save|Save failed. Please try again later.",
   "toast.saveDatasetName": "Dataset name updated|Dataset name cannot be empty|That dataset name already exists — please pick another|Save failed. Please try again later.",
   "toast.saveDisclaimer": "Disclaimer saved|Save failed",
   "toast.saveGlossaryEntries": "Entries updated|The entries did not pass write-layer validation (a term cannot be empty; term length, alias count and table size all have limits). Fix them and save again|Update failed",
