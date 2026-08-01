@@ -1180,6 +1180,8 @@
   "settings.reasoningGroupIntentDesc": "Analyzes the language, keywords, time range, and filename intent of the user's input (the intent-detection stage of traditional search mode).",
   "settings.reasoningGroupJudge": "Judgments (answerability / QA / policy)",
   "settings.reasoningGroupJudgeDesc": "Judges whether retrieved material is sufficient to answer (the answerability grounding gate and tiered-retrieval IsAnswerable), QA direct-answer adjudication, and content-policy topic adjudication.",
+  "settings.reasoningGroupRecommend": "Suggested questions / chat-room title",
+  "settings.reasoningGroupRecommendDesc": "The follow-up question suggestions and the chat-room title produced after each answer. This group runs every round (suggested questions are on by default), making it the only one of the five that costs money on every turn — pointing it at a smaller model has the most impact.",
   "settings.reasoningGroupSkill": "Skill subgraph",
   "settings.reasoningGroupSkillDesc": "The tool loop and reply inside a tenant's custom skill (a skill's output is a tool result fed back to the main agent).",
   "settings.reasoningGroupTools": "Tool loop",

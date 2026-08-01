@@ -464,7 +464,20 @@ permalink: 5-2_conversationSettings.html
          值載體，隨底部「儲存對話設定」直送 product settings_hub（model_name_*/reasoning_effort_*）
          → chatbot init_llm_group。React 端各組模型選單填 available models（含「繼承主模型」）、
          思考深度選單依該組**生效模型**的 reasoning_options 動態；切版此處為靜態代表性選項。
-         每組明列「對應哪些功能」，讓設定者清楚各旋鈕作用範圍。 #}
+         每組明列「對應哪些功能」，讓設定者清楚各旋鈕作用範圍。
+         `key` 逐字對回後端欄位 `model_name_<key>`／`reasoning_effort_<key>`（product
+         `app/profile_config.py` 的 `PROFILE_FIELD_DEFAULTS`、`routers/settings_hub.py` 的
+         `_MODEL_FIELDS`／`ProfileConfigIn`；上游 GufoRAG chatbot `app/models/config.py` 同名欄位）
+         ——拼錯的話兩顆 select 照樣渲染得出來、存下去卻對不到任何欄位，畫面上完全看不出來，
+         故白名單另有測試把關。
+         第五組（recommend）與其他四組有一個差別：它管的是 `generate_recommendations`，而
+         `enable_suggest_questions` 預設 True ⇒ **每一輪問答都會跑**，是五組裡唯一每輪都付錢的
+         （其餘四組只在各自階段跑）。兩個例外是「答案本身不成立」的那兩種：agent 反問澄清
+         （`clarify_pending`）與誠實查無（`grounding_no_answer`）會 early-return、不呼叫 LLM
+         （chatbot `app/services/chat.py` 的 `generate_recommendations`）——成本結論不變，
+         所以畫面上的說明維持「每輪都會跑」這個強說法，精確的契約寫在這裡。
+         它同時產生**聊天室主題**（同一支 `generate_recommendations`：docstring 逐字寫「生成推薦問題
+         和聊天室主題」），故標籤不只寫「推薦問題」——導到小模型會連聊天室標題一起換。 #}
     <div class="block flex-row column gap-24">
         {# 區塊標題用 .text-md.text-bold（同本頁 Agent 工具區的做法）：它不 label 任何控制項，
              寫成 <label> 會是一顆點了不會聚焦、對輔具也沒有語意的空殼（§4）。 #}
@@ -478,12 +491,15 @@ permalink: 5-2_conversationSettings.html
             { key: "tools", label: "工具迴圈", labelKey: "settings.reasoningGroupTools",
               desc: "Agent 對話模式下，每一輪選擇與呼叫工具的推理（不含最終答案生成）。", descKey: "settings.reasoningGroupToolsDesc" },
             { key: "skill", label: "技能子圖", labelKey: "settings.reasoningGroupSkill",
-              desc: "租戶自訂技能（skill）內部的工具迴圈與回覆（技能產物是回饋主 Agent 的工具結果）。", descKey: "settings.reasoningGroupSkillDesc" }
+              desc: "租戶自訂技能（skill）內部的工具迴圈與回覆（技能產物是回饋主 Agent 的工具結果）。", descKey: "settings.reasoningGroupSkillDesc" },
+            { key: "recommend", label: "推薦問題／聊天室主題", labelKey: "settings.reasoningGroupRecommend",
+              desc: "每一輪回答後產生的後續追問建議與聊天室主題。這一組每輪都會跑（推薦問題預設開啟），是五組裡唯一每輪都付費的，導到小模型最有感。", descKey: "settings.reasoningGroupRecommendDesc" }
         ] %}
         {% for g in reasoningGroups %}
         <div class="flex-row column gap-16">
             {# 組標題是這兩顆 select 的群組名：掛 id ＋容器 role=group／aria-labelledby，否則同頁
-                 5 顆「模型」與 5 顆「思考深度」的可及名稱一模一樣，報讀器聽不出這是哪一組（§4）。 #}
+                 6 顆「模型」與 6 顆「思考深度」的可及名稱一模一樣，報讀器聽不出這是哪一組（§4）。
+                 6＝5 個分組 ＋ 主回答那一組（本頁上方的 genModel／genReasoningEffort）。 #}
             <span class="control-label" id="reasoningGroup-{{ g.key }}-label" data-i18n="{{ g.labelKey }}">{{ g.label }}</span>
             <p class="text-gray m-0" data-i18n="{{ g.descKey }}">{{ g.desc }}</p>
             <div class="flex-row flex-wrap gap-16" role="group" aria-labelledby="reasoningGroup-{{ g.key }}-label">

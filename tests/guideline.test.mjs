@@ -3344,6 +3344,82 @@ test("§4 <label> 必須有 for、或包住控制項、或有 id 被 aria-labell
     assert.equal(hits.length, 0, `§4：懸空 <label>（純標題文字請改 <span class="control-label">／.text-md.text-bold）：\n${fail(hits)}`);
 });
 
+test("§4-2 i18n 的文字槽不得寫 markdown 強調（`**…**` 會原樣印在畫面上）", () => {
+    // 需求單常以 markdown 寫文案（「這一組**每輪都會跑**」），而 data-i18n 的槽是純文字輸出
+    // ——nunjucks 不處理 markdown，星號會照樣顯示。答案內文是 markdown，但那是假資料、不進字典。
+    // 兩邊都掃：en.json 的值（英譯）與 dist 渲染出來的繁中文字節點（原文）。
+    // `「***」`（MCP 環境變數的讀取遮罩）不會誤判——`\*\*[^*]+\*\*` 要求兩組星號之間有非星號字元。
+    const EMPHASIS = /\*\*[^*]+\*\*/;
+    const en = JSON.parse(read("src/i18n/en.json"));
+    const hits = [];
+    for (const [k, v] of Object.entries(en))
+        if (typeof v === "string" && EMPHASIS.test(v)) hits.push(`en.json  ${k} = "${v.slice(0, 60)}…"`);
+    let nodes = 0;
+    for (const f of distHtml)
+        for (const m of distDoc(f).matchAll(/<[a-z0-9]+\b[^>]*\bdata-i18n="[^"]+"[^>]*>([^<]*)</g)) {
+            nodes++;
+            if (EMPHASIS.test(m[1])) hits.push(`${basename(f)}  「${m[1].trim().slice(0, 40)}…」`);
+        }
+    assert.ok(Object.keys(en).length > 400 && nodes > 500, `只掃到 ${Object.keys(en).length} 個 key／${nodes} 個文字節點 —— 這條測試在空轉`);
+    probe("§4-2 markdown 強調", (s) => (EMPHASIS.test(s) ? [s] : []),
+        ["這一組**每輪都會跑**（推薦問題預設開啟）", "This group **runs every round**"],
+        ["這一組每輪都會跑（推薦問題預設開啟）", "環境變數值不可以是「***」（那是讀取時的遮罩）", "a * b * c"]);
+    assert.equal(hits.length, 0, `星號會原樣印在畫面上，強調請改用字面或另拆節點：\n${fail(hits)}`);
+});
+
+test("§6 分組 LLM 的 data-group 只能是後端認得的那幾組，且模型與思考深度兩顆成對", () => {
+    // `data-group` 是 React 端對回後端欄位的唯一線索：`model_name_<group>`／`reasoning_effort_<group>`
+    //（gufofaq-saas product `app/profile_config.py` 的 `PROFILE_FIELD_DEFAULTS`、
+    //  `routers/settings_hub.py` 的 `_MODEL_FIELDS`／`ProfileConfigIn`；上游 GufoRAG chatbot
+    //  `app/models/config.py` 同名欄位）。**拼錯不會有任何症狀**：兩顆 select 照樣渲染得出來，
+    // 存下去對不到任何欄位，畫面上完全看不出來 —— 只有白名單擋得住，所以這裡寫死那五組。
+    // 新增一組時：先確認後端收得下該欄位，再改這份清單（清單本身就是「有人確認過」的憑證）。
+    const GROUPS = ["intent", "judge", "recommend", "skill", "tools"];
+    // 兩顆 select 各自有自己的 hook：模型是 5-2 自己的 markup、思考深度來自
+    // components/reasoning-effort-select 的 reasoningEffortGroup 參數 —— 兩邊各漏一半都只掉一顆選單，
+    // 故兩個集合都要驗，而且要驗「成對」（只有模型沒有思考深度＝那一組只設得動一半）。
+    const HOOKS = [["js-group-model", "模型"], ["js-group-reasoning", "思考深度"]];
+    const collect = (html, hook) => [...html.matchAll(/<select\b([^>]*)>/g)]
+        .filter((m) => new RegExp(`class="[^"]*\\b${hook}\\b`).test(m[1]))
+        .map((m) => (m[1].match(/\bdata-group="([^"]*)"/) || [, ""])[1]);
+    const scan = (html, f = "<probe>") => {
+        const out = [];
+        for (const [hook, what] of HOOKS) {
+            const found = collect(html, hook);
+            if (!found.length) continue;
+            for (const g of found)
+                if (!GROUPS.includes(g)) out.push(`${f}  ${what}選單的 data-group="${g}" 不在白名單（${GROUPS.join("／")}）`);
+            const dup = found.filter((g, i) => found.indexOf(g) !== i);
+            if (dup.length) out.push(`${f}  ${what}選單有重複的 data-group：${[...new Set(dup)].join("、")}`);
+        }
+        const [models, reasonings] = HOOKS.map(([hook]) => collect(html, hook));
+        if (models.length || reasonings.length)
+            for (const g of new Set([...models, ...reasonings]))
+                if (!(models.includes(g) && reasonings.includes(g)))
+                    out.push(`${f}  data-group="${g}" 只有${models.includes(g) ? "模型" : "思考深度"}那一顆，另一顆漏了`);
+        return out;
+    };
+    const hits = [];
+    let pages = 0, groups = 0;
+    for (const f of distHtml) {
+        const html = distDoc(f);
+        const found = collect(html, "js-group-model");
+        if (found.length) { pages++; groups += found.length; }
+        hits.push(...scan(html, basename(f)));
+    }
+    assert.ok(pages >= 1 && groups >= 5, `只掃到 ${pages} 頁／${groups} 組分組 LLM —— 這條測試在空轉`);
+    probe("§6 data-group 白名單", scan,
+        ['<select class="form-control js-group-model" data-group="recomend" id="x"></select><select class="form-control js-group-reasoning" data-group="recomend"></select>',
+            // 只有模型、沒有思考深度：那一組只設得動一半
+            '<select class="form-control js-group-model" data-group="skill"></select>',
+            // 漏掉 data-group（React 端不知道這顆是哪一組）
+            '<select class="form-control js-group-model"></select><select class="form-control js-group-reasoning"></select>'],
+        ['<select class="form-control js-group-model" data-group="skill"></select><select class="form-control js-group-reasoning" data-group="skill"></select>',
+            // 主回答那兩顆不掛 data-group、也不是 group hook，不該被掃到
+            '<select class="form-control js-model-name" id="genModel"></select>']);
+    assert.equal(hits.length, 0, `分組 LLM 的旋鈕對不回後端欄位：\n${fail(hits)}`);
+});
+
 test("§6 同頁的 page-size 選中值必須等於 pagination 生效的 perPage（兩者同源）", () => {
     // 曾經：元件寫死 selected=20、六個使用頁都沒 set perPage → pagination 落回預設 10，
     // 於是同一列同時顯示「每頁 20 筆」與「共 12 頁」（115÷20＝6）。
