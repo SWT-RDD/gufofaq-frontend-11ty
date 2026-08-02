@@ -10,30 +10,14 @@
      editConfirmBinding —— true＝儲存鈕交給業務 js 綁定（不掛 btn-close-modals 自動關窗）。
      真 app 的功能頁（1-2-1）儲存鈕沒有 btn-close-modals，由 uploadFilePdf.js:81 的 saveEdit() 決定何時關；
      只有元件庫的展示版會自動關窗。寫死自動關窗＝「按了儲存，窗關了，但什麼都沒存」。 #}
-{% set editFields = [
-    { key: "title", label: "標題", value: "檔案名稱.pdf" },
-    { key: "content", label: "內容", type: "textarea", disabled: true },
-    { key: "source", label: "來源" },
-    { key: "date", label: "日期" },
-    { key: "category", label: "分類" },
-    { key: "number", label: "數值" },
-    { key: "flag", label: "標記" },
-    { key: "tags", label: "標籤" },
-    { key: "privilege", label: "權限" },
-    { key: "note1", label: "備註1" },
-    { key: "note2", label: "備註2" },
-    { key: "note3", label: "備註3" },
-    { key: "note4", label: "備註4" },
-    { key: "note5", label: "備註5" },
-    { key: "note6", label: "備註6" },
-    { key: "note7", label: "備註7" },
-    { key: "note8", label: "備註8" },
-    { key: "note9", label: "備註9" },
-    { key: "note10", label: "備註10" },
-    { key: "date2", label: "日期2" },
-    { key: "date3", label: "日期3" },
-    { key: "internal_note", label: "內部註記（不進問答）", productOnly: true }
-] %}
+{# 槽目錄走唯一正本 ui/field-slot-catalog（22 槽，§2 的 {% from … import %}）。
+   本元件自己的附加資料只有兩件事：哪一槽是長文 textarea（內容，PDF 自動擷取故 disabled）、
+   哪一槽帶示範值。以 key 查一張小 map——附加欄位塞進正本目錄的話，那份目錄就變成下一個要對齊的東西。 #}
+{% from "ui/field-slot-catalog/field-slot-catalog.html" import fieldSlotCatalog %}
+{% set editFieldExtras = {
+    title: { value: "檔案名稱.pdf" },
+    content: { type: "textarea", disabled: true }
+} %}
 <dialog class="modals" id="editModal" aria-labelledby="editModal-title">
     <div class="modals-dialog modals-md">
         <div class="modals-wrap">
@@ -44,13 +28,13 @@
                 </div>
                 <div class="modals-body">
                     <div class="flex-row column gap-8">
-                        {% for field in editFields %}{% if not field.productOnly %}
+                        {% for field in fieldSlotCatalog %}{% set extra = editFieldExtras[field.key] %}{% if not field.productOnly %}
                         <div class="form-group col-12-md">
                             <div class="label">
-                                <label for="fileEdit-{{ field.key }}" class="control-label" data-i18n="field.{{ field.key }}">{{ field.label }}</label>
+                                <label for="fileEdit-{{ field.key }}" class="control-label" data-i18n="field.{{ field.key }}">{{ field.defaultLabel }}</label>
                             </div>
                             <div class="field">
-                                {% if field.type == "textarea" %}
+                                {% if extra and extra.type == "textarea" %}
                                 <textarea id="fileEdit-{{ field.key }}" rows="10" class="form-control disabled"
                                     placeholder="自 PDF 自動擷取，無需填寫" data-i18n-placeholder="dataImport.pdfAutoExtract" disabled>Andreas Gal∗+, Brendan Eich∗, Mike Shaver∗, David Anderson∗, David Mandelin∗,
 Mohammad R. Haghighat$, Blake Kaplan∗, Graydon Hoare∗, Boris Zbarsky∗, Jason Orendorff∗,
@@ -61,7 +45,7 @@ is available, traditional compilers need to emit generic code that can handle al
 that identifies frequently executed loop traces at run-time and then generates machine code on the fly that is specialized for the actual dynamic types occurring on each path through the loop.</textarea>
                                 {% else %}
                                 <input type="text" id="fileEdit-{{ field.key }}" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter"
-                                    class="form-control"{% if field.value %} value="{{ field.value }}"{% endif %}>
+                                    class="form-control"{% if extra and extra.value %} value="{{ extra.value }}"{% endif %}>
                                 {% endif %}
                             </div>
                         </div>
@@ -73,10 +57,10 @@ that identifies frequently executed loop traces at run-time and then generates m
                             <div class="tablelist-title" data-i18n="settings.productOnlyFields">產品內部欄位</div>
                             <div class="text-gray" data-i18n="settings.internalNoteHint">這一欄純粹是產品內的紀錄：不會被搜到、不會進 AI 的參考資料、也不能當統計或篩選的維度。匯入時原文照存，連 HTML 轉 Markdown 都不做。</div>
                         </div>
-                        {% for field in editFields %}{% if field.productOnly %}
+                        {% for field in fieldSlotCatalog %}{% set extra = editFieldExtras[field.key] %}{% if field.productOnly %}
                         <div class="form-group col-12-md">
                             <div class="label">
-                                <label for="fileEdit-{{ field.key }}" class="control-label" data-i18n="field.{{ field.key }}">{{ field.label }}</label>
+                                <label for="fileEdit-{{ field.key }}" class="control-label" data-i18n="field.{{ field.key }}">{{ field.defaultLabel }}</label>
                             </div>
                             <div class="field">
                                 <input type="text" id="fileEdit-{{ field.key }}" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control">

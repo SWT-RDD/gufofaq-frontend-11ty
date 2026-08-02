@@ -3,7 +3,9 @@
      此處依其產生的 markup 結構以 njk set fields + for 靜態化。
      左欄「select.multiSelect」重用 ui/multi-select 既有 class 命名（由已登記的 ui/multi-select/multi-select.js 於 DOMContentLoaded 增強成 tag 多選 UI）；
      左右兩欄的 form-group/label/field 結構沿用 ui/form-control 既有寫法。
-     欄位資料由頁面提供（include 前 set fields，見 §3-2/§6），本元件不自帶。 #}
+     槽目錄走唯一正本 ui/field-slot-catalog（§2 的 {% from … import %}）；使用頁另外提供
+     `columnOptions`（來源欄位選項，全槽共用一份）與 `fieldExtras`（以 key 查的差異：預選值／
+     提示文字／預覽值／格式警告／額外選項），見 §3-2/§6。本元件不自帶任何槽清單。 #}
 <div class="flex-row gap-40 mobile-column multi-select-box">
     {# 左欄：欄位對應 #}
     <div class="block block-lg corner-md">
@@ -13,16 +15,17 @@
                 <div class="text-gray text-center" data-i18n="dataImport.selectSourceHint">請選擇欲對應的來源內容</div>
             </div>
             <div class="flex-row column gap-16">
-                {% for field in fields %}{% if not field.productOnly %}
+                {% for field in fieldSlotCatalog %}{% set x = fieldExtras[field.key] %}{% if not field.productOnly %}
                 <div class="form-group row mobile-col">
                     <div class="label label-md">
-                        <label for="ms-{{ field.key }}" class="control-label" data-i18n="field.{{ field.key }}">{{ field.label }}</label>
+                        <label for="ms-{{ field.key }}" class="control-label" data-i18n="field.{{ field.key }}">{{ field.defaultLabel }}</label>
                     </div>
                     <div class="field col-12-sm">
-                        <select id="ms-{{ field.key }}" class="form-control multiSelect ms-control field-{{ field.key }}" multiple="multiple" data-placeholder="{{ field.placeholder }}"{% if field.placeholderKey %} data-placeholder-key="{{ field.placeholderKey }}"{% endif %}>
-                            {% for option in field.options %}
-                            <option value="{{ option.value }}"{% if option.selected %} selected{% endif %}>{{ option.label }}</option>
+                        <select id="ms-{{ field.key }}" class="form-control multiSelect ms-control field-{{ field.key }}" multiple="multiple" data-placeholder="{{ x.placeholder }}"{% if x.placeholderKey %} data-placeholder-key="{{ x.placeholderKey }}"{% endif %}>
+                            {% for option in columnOptions %}
+                            <option value="{{ option.value }}"{% if x.selected == option.value %} selected{% endif %}>{{ option.label }}</option>
                             {% endfor %}
+                            {% if x.extraOption %}<option value="4">{{ x.extraOption }}</option>{% endif %}
                         </select>
                     </div>
                 </div>
@@ -32,23 +35,24 @@
                      ——租戶可以把它改名成「維護人」，改掉的當下括號裡那句就沒了（同 5-2 欄位命名區的處置）。
                      productOnly 是選填：沒有那一筆的使用頁（目前只有 1-1-4 有）整段不渲染。 #}
                 {% set hasProductOnly = false %}
-                {% for field in fields %}{% if field.productOnly %}{% set hasProductOnly = true %}{% endif %}{% endfor %}
+                {% for field in fieldSlotCatalog %}{% set x = fieldExtras[field.key] %}{% if field.productOnly %}{% set hasProductOnly = true %}{% endif %}{% endfor %}
                 {% if hasProductOnly %}
                 <div class="flex-row column gap-8">
                     <div class="tablelist-title" data-i18n="settings.productOnlyFields">產品內部欄位</div>
                     <div class="text-gray" id="msProductOnlyHint" data-i18n="settings.internalNoteHint">這一欄純粹是產品內的紀錄：不會被搜到、不會進 AI 的參考資料、也不能當統計或篩選的維度。匯入時原文照存，連 HTML 轉 Markdown 都不做。</div>
                 </div>
                 {% endif %}
-                {% for field in fields %}{% if field.productOnly %}
+                {% for field in fieldSlotCatalog %}{% set x = fieldExtras[field.key] %}{% if field.productOnly %}
                 <div class="form-group row mobile-col">
                     <div class="label label-md">
-                        <label for="ms-{{ field.key }}" class="control-label" data-i18n="field.{{ field.key }}">{{ field.label }}</label>
+                        <label for="ms-{{ field.key }}" class="control-label" data-i18n="field.{{ field.key }}">{{ field.defaultLabel }}</label>
                     </div>
                     <div class="field col-12-sm">
-                        <select id="ms-{{ field.key }}" class="form-control multiSelect ms-control field-{{ field.key }}" multiple="multiple" data-placeholder="{{ field.placeholder }}"{% if field.placeholderKey %} data-placeholder-key="{{ field.placeholderKey }}"{% endif %} aria-describedby="msProductOnlyHint">
-                            {% for option in field.options %}
-                            <option value="{{ option.value }}"{% if option.selected %} selected{% endif %}>{{ option.label }}</option>
+                        <select id="ms-{{ field.key }}" class="form-control multiSelect ms-control field-{{ field.key }}" multiple="multiple" data-placeholder="{{ x.placeholder }}"{% if x.placeholderKey %} data-placeholder-key="{{ x.placeholderKey }}"{% endif %} aria-describedby="msProductOnlyHint">
+                            {% for option in columnOptions %}
+                            <option value="{{ option.value }}"{% if x.selected == option.value %} selected{% endif %}>{{ option.label }}</option>
                             {% endfor %}
+                            {% if x.extraOption %}<option value="4">{{ x.extraOption }}</option>{% endif %}
                         </select>
                     </div>
                 </div>
@@ -65,14 +69,14 @@
                 <div class="text-gray text-center" data-i18n="dataImport.previewHint">預覽已對應之結果</div>
             </div>
             <div class="flex-row column gap-16">
-                {% for field in fields %}{% if not field.productOnly %}
+                {% for field in fieldSlotCatalog %}{% set x = fieldExtras[field.key] %}{% if not field.productOnly %}
                 <div class="form-group row mobile-col">
                     <div class="label label-md">
-                        <label for="ms-preview-{{ field.key }}" class="control-label" data-i18n="field.{{ field.key }}">{{ field.label }}</label>
+                        <label for="ms-preview-{{ field.key }}" class="control-label" data-i18n="field.{{ field.key }}">{{ field.defaultLabel }}</label>
                     </div>
                     <div class="field col-12-sm">
-                        <input type="text" id="ms-preview-{{ field.key }}" class="form-control disabled ms-control preview-{{ field.key }}{% if field.error %} error{% endif %}" value="{{ field.preview }}" disabled>
-                        {% if field.error %}
+                        <input type="text" id="ms-preview-{{ field.key }}" class="form-control disabled ms-control preview-{{ field.key }}{% if x.error %} error{% endif %}" value="{{ x.preview }}" disabled>
+                        {% if x.error %}
                         {# .error-prompt 預設就 display:none，靠父層 .form-group:has(.error) 揭示（見 _form-control.scss）。
                            原本這裡寫死行內 display:none，等於把揭示機制永久壓死——error: true 的示範欄從來沒顯示過警告。 #}
                         <span class="error-prompt date-error" role="alert" data-i18n="dataImport.formatWarning">此格式可能無法被正確讀取</span>
@@ -85,20 +89,20 @@
                      ——租戶可以把它改名成「維護人」，改掉的當下括號裡那句就沒了（同 5-2 欄位命名區的處置）。
                      productOnly 是選填：沒有那一筆的使用頁（目前只有 1-1-4 有）整段不渲染。 #}
                 {% set hasProductOnly = false %}
-                {% for field in fields %}{% if field.productOnly %}{% set hasProductOnly = true %}{% endif %}{% endfor %}
+                {% for field in fieldSlotCatalog %}{% set x = fieldExtras[field.key] %}{% if field.productOnly %}{% set hasProductOnly = true %}{% endif %}{% endfor %}
                 {% if hasProductOnly %}
                 <div class="flex-row column gap-8">
                     <div class="tablelist-title" data-i18n="settings.productOnlyFields">產品內部欄位</div>
                     <div class="text-gray" id="msProductOnlyHintPreview" data-i18n="settings.internalNoteHint">這一欄純粹是產品內的紀錄：不會被搜到、不會進 AI 的參考資料、也不能當統計或篩選的維度。匯入時原文照存，連 HTML 轉 Markdown 都不做。</div>
                 </div>
                 {% endif %}
-                {% for field in fields %}{% if field.productOnly %}
+                {% for field in fieldSlotCatalog %}{% set x = fieldExtras[field.key] %}{% if field.productOnly %}
                 <div class="form-group row mobile-col">
                     <div class="label label-md">
-                        <label for="ms-preview-{{ field.key }}" class="control-label" data-i18n="field.{{ field.key }}">{{ field.label }}</label>
+                        <label for="ms-preview-{{ field.key }}" class="control-label" data-i18n="field.{{ field.key }}">{{ field.defaultLabel }}</label>
                     </div>
                     <div class="field col-12-sm">
-                        <input type="text" id="ms-preview-{{ field.key }}" class="form-control disabled ms-control preview-{{ field.key }}" value="{{ field.preview }}" disabled aria-describedby="msProductOnlyHintPreview">
+                        <input type="text" id="ms-preview-{{ field.key }}" class="form-control disabled ms-control preview-{{ field.key }}" value="{{ x.preview }}" disabled aria-describedby="msProductOnlyHintPreview">
                     </div>
                 </div>
                 {% endif %}{% endfor %}

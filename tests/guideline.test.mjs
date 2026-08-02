@@ -3514,42 +3514,42 @@ test("§6 分組 LLM 的 data-group 只能是後端認得的那幾組，且模�
     assert.equal(hits.length, 0, `分組 LLM 的旋鈕對不回後端欄位：\n${fail(hits)}`);
 });
 
-test("§6 固定欄位槽目錄的三份抄本必須是同一組 key（收不成一份，就得有東西守著）", () => {
-    // product `app/field_schema.py::SLOTS` 那 22 槽在切版被抄了三份：1-1-4 的欄位對應、
-    // components/file-edit-modal 的逐欄編輯、5-2 的欄位命名。三處的附加資料不同（options／
-    // placeholder／preview ｜ type／value ｜ 租戶已設的 label），但 **key 集合必須一模一樣**。
-    //
-    // 為什麼不收成一份（試過、退回來了）：nunjucks 的 `{% include %}` 是**獨立 scope**，子檔
-    // `{% set %}` 的變數不會回到父頁——本 repo 的既有慣例一律是「父頁 set、子元件讀」，反方向
-    // 行不通（實測：改成 include 一份共用目錄之後，那一區渲染出 0 個欄位而 162 條測試全綠）。
-    // 另一條路 `{% from … import %}` 不在 §2 的標籤白名單裡，`_data/` 資料檔也被 §2 明文禁止。
-    // round62：§2 的白名單已放寬收 {% from … import %}（僅限 *-catalog 檔），5-2 因此改成吃正本
-    // ui/field-slot-catalog。剩下兩份抄本的附加資料形狀不同（1-1-4 要 options／placeholder／preview、
-    // file-edit-modal 要 type／value），改成「跑正本 ＋ 以 key 查自己的 map」是機械但量大的工，
-    // 留下一輪。在那之前這條守門比對「正本 vs 兩份抄本」——product 加第 23 槽時只補一處就會變紅。
-    const SOURCES = [
-        // 正本（5-2 已經改成 {% from … import %} 吃這一份）
-        ["src/_includes/ui/field-slot-catalog/field-slot-catalog.html", /\{% set fieldSlotCatalog = \[([\s\S]*?)\n\] %\}/],
-        // 還沒收進正本的兩份抄本（附加資料形狀不同，要各自改成查 map，下一輪）
-        ["src/pages/dataImport/1-1-4_columnSelect_excel.html", /\{% set fields = \[([\s\S]*?)\n\] %\}/],
-        ["src/_includes/components/file-edit-modal/file-edit-modal.html", /\{% set editFields = \[([\s\S]*?)\n\] %\}/],
-    ];
-    const sets = SOURCES.map(([f, re]) => {
-        const m = stripNjk(read(f)).match(re);
-        assert.ok(m, `${f}：找不到槽陣列（形狀變了？這條測試會就此空轉）`);
-        const keys = [...m[1].matchAll(/\bkey:\s*"(\w+)"/g)].map((x) => x[1]);
-        assert.ok(keys.length >= 20, `${f} 只解析到 ${keys.length} 個 key —— 這條測試在空轉`);
-        return { f, keys };
-    });
-    const base = sets[0];
+test("§6 固定欄位槽目錄只有一份正本，附加資料的 key 都要在正本裡", () => {
+    // product `app/field_schema.py::SLOTS` 那 22 槽原本被抄了三份（1-1-4 的欄位對應、
+    // components/file-edit-modal 的逐欄編輯、5-2 的欄位命名）——product 加第 22 槽那次要改三個地方，
+    // 就是那份重複的代價。§2 的白名單放寬收 {% from … import %} 之後三處都改吃正本
+    // `ui/field-slot-catalog`，這條測試守住兩件事：
+    //   ① **沒有第二份槽清單**：任何檔案再宣告一個「≥20 個 key 的槽陣列」就是抄本復辟。
+    //   ② 各消費點的**附加資料 map 的 key 必須都在正本裡**：打錯一個字（interal_note）不會壞掉、
+    //      只會那一格永遠拿不到 placeholder／預選值，而畫面上完全看不出來。
+    const catalogFile = "src/_includes/ui/field-slot-catalog/field-slot-catalog.html";
+    const cm = stripNjk(read(catalogFile)).match(/\{% set fieldSlotCatalog = \[([\s\S]*?)\n\] %\}/);
+    assert.ok(cm, "找不到正本目錄的陣列（形狀變了？這條測試會就此空轉）");
+    const keys = [...cm[1].matchAll(/\bkey:\s*"(\w+)"/g)].map((x) => x[1]);
+    assert.ok(keys.length >= 20, `正本只解析到 ${keys.length} 個槽 —— 這條測試在空轉`);
     const hits = [];
-    for (const s of sets.slice(1)) {
-        const missing = base.keys.filter((k) => !s.keys.includes(k));
-        const extra = s.keys.filter((k) => !base.keys.includes(k));
-        if (missing.length) hits.push(`${s.f} 少了：${missing.join("、")}`);
-        if (extra.length) hits.push(`${s.f} 多了：${extra.join("、")}`);
+    // ① 沒有第二份
+    for (const f of srcHtml) {
+        if (f.includes("field-slot-catalog")) continue;
+        for (const m of stripNjk(read(f)).matchAll(/\{% set (\w+) = \[([\s\S]*?)\n\s*\] %\}/g)) {
+            // 判準是「與正本的 key 重疊多少」，不是「有幾個 key」——後者會誤抓別的資料陣列
+            // （3-5 的 healthFindings 有 34 筆各帶一個 key，那不是槽清單）。
+            const own = [...m[2].matchAll(/\bkey:\s*"(\w+)"/g)].map((x) => x[1]);
+            const overlap = own.filter((k) => keys.includes(k)).length;
+            if (overlap >= 10) hits.push(`${f}  {% set ${m[1]} %} 與正本重疊 ${overlap} 個槽 —— 槽目錄只能有一份（ui/field-slot-catalog）`);
+        }
     }
-    assert.equal(hits.length, 0, `三份槽目錄抄本不同步（product 加槽時漏改了其中一處）：\n${fail(hits)}`);
+    // ② 附加資料 map 的 key 都要在正本裡
+    let maps = 0;
+    for (const f of srcHtml) {
+        for (const m of stripNjk(read(f)).matchAll(/\{% set (\w*(?:Extras|Labels)) = \{([\s\S]*?)\n\s*\} %\}/g)) {
+            maps++;
+            for (const k of m[2].matchAll(/^\s*(\w+):/gm))
+                if (!keys.includes(k[1])) hits.push(`${f}  ${m[1]} 的 "${k[1]}" 不是正本裡的槽（打錯字＝那一格永遠拿不到值，畫面上看不出來）`);
+        }
+    }
+    assert.ok(maps >= 3, `只掃到 ${maps} 張附加資料 map —— 這條測試在空轉`);
+    assert.equal(hits.length, 0, fail(hits));
 });
 
 test("§6 同頁的 page-size 選中值必須等於 pagination 生效的 perPage（兩者同源）", () => {

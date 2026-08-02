@@ -25,25 +25,16 @@ permalink: 5-3_statsModule.html
      不同的中文名會讓讀的人推不出哪一份才算數（§6 跨頁自洽）。
      其餘槽維持預設名。這一份 `field_labels` 的**唯一編輯畫面**是 5-2 的「欄位命名」區
      （那一頁的 note1／note2 也是這兩個名字，§6 跨頁自洽）。 #}
-{% set attributionSlots = [
-  { key: "title", label: "標題" },
-  { key: "source", label: "來源" },
-  { key: "date", label: "日期" },
-  { key: "category", label: "分類" },
-  { key: "number", label: "數值" },
-  { key: "note1", label: "承辦組室" },
-  { key: "note2", label: "業務範疇" },
-  { key: "note3", label: "備註3" },
-  { key: "note4", label: "備註4" },
-  { key: "note5", label: "備註5" },
-  { key: "note6", label: "備註6" },
-  { key: "note7", label: "備註7" },
-  { key: "note8", label: "備註8" },
-  { key: "note9", label: "備註9" },
-  { key: "note10", label: "備註10" },
-  { key: "date2", label: "日期2" },
-  { key: "date3", label: "日期3" }
-] %}
+{# 歸因維度的槽清單＝**正本目錄的子集**（ui/field-slot-catalog，§2 的 {% from … import %}）：
+     content／flag／tags／privilege 不是可歸因的欄位，internal_note 更是結構上不進索引
+     （product field_schema 的 role="product_only"），故以一張排除清單表達，不再抄一份槽清單。
+     顯示名同 5-2 的欄位命名（那是 field_labels 的唯一編輯畫面）：改過名的以 key 查，其餘走預設名。 #}
+{% from "ui/field-slot-catalog/field-slot-catalog.html" import fieldSlotCatalog %}
+{% set attributionExcluded = ["content", "flag", "tags", "privilege"] %}
+{% set attributionLabels = {
+  note1: "承辦組室",
+  note2: "業務範疇"
+} %}
 <div class="flex-row column gap-16">
     {% include "ui/breadcrumb/breadcrumb.html" %}
 </div>
@@ -68,9 +59,9 @@ permalink: 5-3_statsModule.html
             <div class="field col-12-sm">
                 <select id="statsDimension" class="form-control js-stats-dimension">
                     <option value="dataset" selected data-i18n="common.dataset">資料集</option>
-                    {% for slot in attributionSlots %}
-                    <option value="attribution:{{ slot.key }}">{{ slot.label }}</option>
-                    {% endfor %}
+                    {% for slot in fieldSlotCatalog %}{% if not slot.productOnly and slot.key not in attributionExcluded %}
+                    <option value="attribution:{{ slot.key }}">{{ attributionLabels[slot.key] or slot.defaultLabel }}</option>
+                    {% endif %}{% endfor %}
                 </select>
             </div>
         </div>
@@ -182,9 +173,9 @@ permalink: 5-3_statsModule.html
         </div>
         <div class="field col-12-sm">
             <select id="attributionSlots" class="form-control multiSelect" multiple="multiple" data-placeholder="請選擇" data-placeholder-key="common.pleaseSelect">
-                {% for slot in attributionSlots %}
-                <option value="{{ slot.key }}"{% if slot.key == "note1" or slot.key == "note2" %} selected{% endif %}>{{ slot.label }}</option>
-                {% endfor %}
+                {% for slot in fieldSlotCatalog %}{% if not slot.productOnly and slot.key not in attributionExcluded %}
+                <option value="{{ slot.key }}"{% if slot.key == "note1" or slot.key == "note2" %} selected{% endif %}>{{ attributionLabels[slot.key] or slot.defaultLabel }}</option>
+                {% endif %}{% endfor %}
             </select>
         </div>
     </div>
