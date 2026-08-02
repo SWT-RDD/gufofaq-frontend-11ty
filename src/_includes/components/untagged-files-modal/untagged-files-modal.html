@@ -36,7 +36,10 @@
             {% include "ui/modal-close/modal-close.html" %}
             <div class="modals-content">
                 <div class="modals-header">
-                    <h3 class="modals-title" id="untaggedFilesModal-title" data-i18n="settings.untaggedFiles">未標註文件</h3>
+                    {# 標題帶維度名稱：這個窗一次只講一個維度，而使用者是從表格某一列點進來的——不寫的話，
+                         同時開過兩三個維度之後回頭看，畫面上沒有任何東西說得出這是哪一個。名稱是**資料槽**
+                         （由 React 填），示範值＝`業務範疇`，與下面那 14 筆同一個維度（§6 自洽）。 #}
+                    <h3 class="modals-title" id="untaggedFilesModal-title"><span data-i18n="settings.untaggedFiles">未標註文件</span><span class="js-untagged-dimension-name"> — 業務範疇</span></h3>
                 </div>
                 <div class="modals-body">
                     <div class="untagged-files-list">
