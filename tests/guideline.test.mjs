@@ -454,7 +454,9 @@ test("§4 markup 上的每個 class 都要有主人（反向網：css 規則／�
     // 由資料插值拼出來的 class 家族（元件檔頭是契約正本）：
     //   multi-select-box 的 `.field-{key}` / `.preview-{key}`（key＝欄位槽）
     //   樣板算出來的 `is-<state>`（§7 明列的轉換契約，React 端由 state 推導 className）
-    const FAMILY = /^(field|preview)-[a-z0-9]+$|^is-[a-z0-9-]+$/;
+    // 槽鍵可以有底線（`field_schema` 的 internal_note）——原本的 [a-z0-9] 把它排除掉，
+    // 於是 .field-internal_note／.preview-internal_note 被判成無主 class。
+    const FAMILY = /^(field|preview)-[a-z0-9_]+$|^is-[a-z0-9-]+$/;
 
     const css = read("dist/css/main.css");
     const cssClasses = new Set([...css.matchAll(/\.(-?[_a-zA-Z][\w-]*)/g)].map((m) => m[1]));

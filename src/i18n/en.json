@@ -295,6 +295,7 @@
   "fieldHint.category": "Suggested column for Category",
   "fieldHint.content": "Suggested column for Content",
   "fieldHint.flag": "Suggested column for Flag",
+  "fieldHint.internal_note": "Pick the column to store verbatim (excluded from Q&A)",
   "fieldHint.note1": "Suggested column for Note 1",
   "fieldHint.note10": "Suggested column for Note 10",
   "fieldHint.note2": "Suggested column for Note 2",
