@@ -99,7 +99,11 @@ const scanTags = (html, fn, f = "<probe>") => {
 test("§2 只准 `| safe`，模板標籤只准白名單那幾個", () => {
     // 用白名單而不是黑名單：黑名單漏了 {% from "x" import y %}（行首關鍵字是 from）、
     // 漏了空白控制的 {%- macro %}、也漏了 block-set 的 {% endset %}。列出准的，其餘一律擋。
-    const ALLOWED = new Set(["set", "for", "endfor", "if", "elif", "else", "endif", "include"]);
+    // round62 放寬：收 from／import。理由是「共用一份業務目錄」在原本的語彙下表達不出來——
+    // include 是獨立 scope（子檔 set 的變數回不到父頁，實測會渲染出 0 筆而全站測試照樣綠），
+    // 而 _data/ 資料檔被 §2 明文禁止。放寬的範圍刻意最小：**只准從 *-catalog 檔匯入**，
+    // 由下面那條額外檢查釘住——否則這個逃生口會變成「什麼模板都可以互相 import」。
+    const ALLOWED = new Set(["set", "for", "endfor", "if", "elif", "else", "endif", "include", "from", "import"]);
     const rule = (line) => {
         // 先剝掉表達式裡的字串常值，否則 {{ "a|b" | safe }} 會在字串內的 | 誤命中，
         // 而 {{ "}" | upper }} 會讓舊的 [^}] 提早停手、漏掉後面真正的 filter。
@@ -109,14 +113,22 @@ test("§2 只准 `| safe`，模板標籤只准白名單那幾個", () => {
         }
         for (const m of line.matchAll(/\{%[-+]?\s*(\w+)/g))
             if (!ALLOWED.has(m[1])) return `白名單外的標籤: {% ${m[1]} %}`;
+        // from 的來源限定 *-catalog（共用業務目錄），且必須是 import 形式：
+        // 那是這個逃生口存在的唯一理由，別的模板互相 import 會讓「誰定義了什麼」無處可查。
+        for (const m of line.matchAll(/\{%[-+]?\s*from\s+"([^"]+)"([^%]*)%\}/g)) {
+            if (!/-catalog\/[\w-]+\.html$/.test(m[1])) return `from 只准匯入 *-catalog 檔：${m[1]}`;
+            if (!/\bimport\b/.test(m[2])) return "from 必須接 import";
+        }
         return null;
     };
     const hits = scanLines(srcHtml, rule);
     probe(
         "§2 模板白名單",
         (s) => scanText(s, rule),
-        ["{{ title | upper }}", "{% macro card(x) %}", '{% from "a.html" import b %}', "{%- filter trim %}"],
-        ['{{ content | safe }}', '{%- set a = 1 %}', '{% if a %}{% include "x.html" %}{% endif %}', '{{ "a|b" }}'],
+        ["{{ title | upper }}", "{% macro card(x) %}", '{% from "ui/x/x.html" import b %}', "{%- filter trim %}",
+            '{% from "ui/field-slot-catalog/field-slot-catalog.html" %}'],
+        ['{{ content | safe }}', '{%- set a = 1 %}', '{% if a %}{% include "x.html" %}{% endif %}', '{{ "a|b" }}',
+            '{% from "ui/field-slot-catalog/field-slot-catalog.html" import fieldSlotCatalog %}'],
     );
     assert.equal(hits.length, 0, `§2 白名單外的語法：\n${fail(hits)}`);
 });
@@ -1740,7 +1752,10 @@ test("元件的 html 都必須被 include（不得有孤兒死碼）", () => {
     const allMarkup = srcHtml.map((f) => stripNjk(read(f))).join("\n");
     const orphans = componentDirs
         .filter(({ name, path }) => existsSync(`${path}/${name}.html`))
-        .filter(({ bucket, name }) => !allMarkup.includes(`include "${bucket}/${name}/${name}.html"`))
+        // 兩種消費形式都算「被用到」：`include`（渲染 markup）與 `from … import`（匯入共用業務目錄，
+        // §2 白名單為 *-catalog 放寬的那一條）。只認 include 的話，正本目錄檔會被判成孤兒死碼。
+        .filter(({ bucket, name }) => !allMarkup.includes(`include "${bucket}/${name}/${name}.html"`)
+            && !allMarkup.includes(`from "${bucket}/${name}/${name}.html"`))
         .map(({ bucket, name }) => `${bucket}/${name}/${name}.html`);
     assert.equal(orphans.length, 0, `沒有任何頁面/元件 include 它們（展示片段請在 component.html include）：\n${orphans.join("\n")}`);
 });
@@ -3508,12 +3523,16 @@ test("§6 固定欄位槽目錄的三份抄本必須是同一組 key（收不成
     // `{% set %}` 的變數不會回到父頁——本 repo 的既有慣例一律是「父頁 set、子元件讀」，反方向
     // 行不通（實測：改成 include 一份共用目錄之後，那一區渲染出 0 個欄位而 162 條測試全綠）。
     // 另一條路 `{% from … import %}` 不在 §2 的標籤白名單裡，`_data/` 資料檔也被 §2 明文禁止。
-    // ⇒ 在現行模板語彙下，三份抄本是唯一表達得出來的形狀，所以改用這條測試守住它們同步。
-    // product 加第 23 槽時，只補兩處就會在這裡變紅。
+    // round62：§2 的白名單已放寬收 {% from … import %}（僅限 *-catalog 檔），5-2 因此改成吃正本
+    // ui/field-slot-catalog。剩下兩份抄本的附加資料形狀不同（1-1-4 要 options／placeholder／preview、
+    // file-edit-modal 要 type／value），改成「跑正本 ＋ 以 key 查自己的 map」是機械但量大的工，
+    // 留下一輪。在那之前這條守門比對「正本 vs 兩份抄本」——product 加第 23 槽時只補一處就會變紅。
     const SOURCES = [
+        // 正本（5-2 已經改成 {% from … import %} 吃這一份）
+        ["src/_includes/ui/field-slot-catalog/field-slot-catalog.html", /\{% set fieldSlotCatalog = \[([\s\S]*?)\n\] %\}/],
+        // 還沒收進正本的兩份抄本（附加資料形狀不同，要各自改成查 map，下一輪）
         ["src/pages/dataImport/1-1-4_columnSelect_excel.html", /\{% set fields = \[([\s\S]*?)\n\] %\}/],
         ["src/_includes/components/file-edit-modal/file-edit-modal.html", /\{% set editFields = \[([\s\S]*?)\n\] %\}/],
-        ["src/pages/settings/5-2_conversationSettings.html", /\{% set fieldSlots = \[([\s\S]*?)\n    \] %\}/],
     ];
     const sets = SOURCES.map(([f, re]) => {
         const m = stripNjk(read(f)).match(re);

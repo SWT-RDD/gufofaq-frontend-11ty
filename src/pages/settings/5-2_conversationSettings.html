@@ -301,30 +301,20 @@ permalink: 5-2_conversationSettings.html
     {# 本頁後續若再 include priority-table，須自行重設 tierless（§2：set 是頁面全域）。 #}
     {% set tierless = false %}
 
-    {% set fieldSlots = [
-      { key: "title", defaultLabel: "標題", label: "問題標題" },
-      { key: "content", defaultLabel: "內容", label: "回覆內容" },
-      { key: "source", defaultLabel: "來源", label: "來源" },
-      { key: "date", defaultLabel: "日期", label: "建立日期" },
-      { key: "category", defaultLabel: "分類", label: "分類" },
-      { key: "number", defaultLabel: "數值", label: "數值" },
-      { key: "flag", defaultLabel: "標記", label: "標記" },
-      { key: "tags", defaultLabel: "標籤", label: "標籤" },
-      { key: "privilege", defaultLabel: "權限", label: "權限" },
-      { key: "note1", defaultLabel: "備註1", label: "承辦組室" },
-      { key: "note2", defaultLabel: "備註2", label: "業務範疇" },
-      { key: "note3", defaultLabel: "備註3", label: "備註3" },
-      { key: "note4", defaultLabel: "備註4", label: "備註4" },
-      { key: "note5", defaultLabel: "備註5", label: "備註5" },
-      { key: "note6", defaultLabel: "備註6", label: "備註6" },
-      { key: "note7", defaultLabel: "備註7", label: "備註7" },
-      { key: "note8", defaultLabel: "備註8", label: "備註8" },
-      { key: "note9", defaultLabel: "備註9", label: "備註9" },
-      { key: "note10", defaultLabel: "備註10", label: "備註10" },
-      { key: "date2", defaultLabel: "日期2", label: "日期2" },
-      { key: "date3", defaultLabel: "日期3", label: "日期3" },
-      { key: "internal_note", defaultLabel: "內部註記（不進問答）", label: "內部註記（不進問答）", productOnly: true }
-    ] %}
+    {# 槽目錄走**唯一正本** ui/field-slot-catalog（22 槽）。用 {% from … import %} 而不是 include：
+     include 是獨立 scope，子檔 set 的變數回不到父頁（實測那樣寫會渲染出 0 個欄位，而全站測試照樣綠）。
+     §2 的標籤白名單為此放寬，僅限 *-catalog 這種共用目錄檔（見 GUIDELINE §2）。
+     這一頁自己的附加資料只有「租戶已設的顯示名」——那是 per-設定檔的值
+     （`RetrievalProfile.field_labels`），因設定檔而異，故留在本頁、以 key 查；
+     沒出現在這張 map 裡的槽＝還沒改過名，顯示名就是預設名。 #}
+{% from "ui/field-slot-catalog/field-slot-catalog.html" import fieldSlotCatalog %}
+    {% set fieldSlotLabels = {
+      title: "問題標題",
+      content: "回覆內容",
+      date: "建立日期",
+      note1: "承辦組室",
+      note2: "業務範疇"
+    } %}
     <div class="block flex-row column gap-16 mt-16">
         <div class="flex-row column gap-8">
             <div class="tablelist-title" data-i18n="settings.fieldNaming">欄位命名</div>
@@ -335,17 +325,17 @@ permalink: 5-2_conversationSettings.html
                  **唯一編輯畫面**，不一致的話讀的人推不出哪一份算數（§6 跨頁自洽）——原本只列到 note5，
                  於是 note6..note10／date2／date3 這七個槽**裝得下資料卻永遠命不了名**：
                  5-3 的歸因維度渲染得出它們的顯示名、5-10 也讓維度掛得上去。 #}
-            <div class="text-gray"><span data-i18n="settings.fieldNamingDescPrefix">為此設定的 </span><span>{{ fieldSlots.length }}</span><span data-i18n="settings.fieldNamingDescSuffix"> 個欄位槽命名「此設定的顯示名」</span></div>
+            <div class="text-gray"><span data-i18n="settings.fieldNamingDescPrefix">為此設定的 </span><span>{{ fieldSlotCatalog.length }}</span><span data-i18n="settings.fieldNamingDescSuffix"> 個欄位槽命名「此設定的顯示名」</span></div>
         </div>
         <div class="flex-row flex-wrap gap-16">
-            {% for slot in fieldSlots %}{% if not slot.productOnly %}
+            {% for slot in fieldSlotCatalog %}{% if not slot.productOnly %}
             <div class="form-group col-6-md col-12-sm">
                 <div class="label label-md">
                     <label for="fieldName-{{ slot.key }}" class="control-label" data-i18n="field.{{ slot.key }}">{{ slot.defaultLabel }}</label>
                 </div>
                 <div class="field">
                     <input type="text" id="fieldName-{{ slot.key }}" placeholder="此設定的顯示名" data-i18n-placeholder="settings.displayNamePlaceholder"
-                        class="form-control" value="{{ slot.label }}">
+                        class="form-control" value="{{ fieldSlotLabels[slot.key] or slot.defaultLabel }}">
                 </div>
             </div>
             {% endif %}{% endfor %}
@@ -360,14 +350,14 @@ permalink: 5-2_conversationSettings.html
             <div class="text-gray" data-i18n="settings.internalNoteHint">這一欄純粹是產品內的紀錄：不會被搜到、不會進 AI 的參考資料、也不能當統計或篩選的維度。匯入時原文照存，連 HTML 轉 Markdown 都不做。</div>
         </div>
         <div class="flex-row flex-wrap gap-16">
-            {% for slot in fieldSlots %}{% if slot.productOnly %}
+            {% for slot in fieldSlotCatalog %}{% if slot.productOnly %}
             <div class="form-group col-6-md col-12-sm">
                 <div class="label label-md">
                     <label for="fieldName-{{ slot.key }}" class="control-label" data-i18n="field.{{ slot.key }}">{{ slot.defaultLabel }}</label>
                 </div>
                 <div class="field">
                     <input type="text" id="fieldName-{{ slot.key }}" placeholder="此設定的顯示名" data-i18n-placeholder="settings.displayNamePlaceholder"
-                        class="form-control" value="{{ slot.label }}">
+                        class="form-control" value="{{ fieldSlotLabels[slot.key] or slot.defaultLabel }}">
                 </div>
             </div>
             {% endif %}{% endfor %}
