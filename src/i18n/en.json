@@ -616,6 +616,7 @@
   "qa.rating": "Satisfaction",
   "qa.ratingDislike": "Dislike",
   "qa.ratingLike": "Like",
+  "qa.ratingNoOpinion": "Not rated",
   "qa.recentOnlyPrefix": "Showing only the most recent ",
   "qa.recentOnlySuffix": " conversations",
   "qa.records": "records",

@@ -80,20 +80,21 @@ permalink: 4-1_qaHistory.html
                     <label for="ratingSelect" class="control-label" data-i18n="qa.rating">滿意度</label>
                 </div>
                 <div class="field">
-                    {# `<option value>` 帶的是**送出去的值**，不是畫面文字：product `GET /history` 的
-                         `rating_type` 只收 `positive`／`negative`（history.py:68 的註解逐字寫著
-                         「positive / negative」，`_RATING_LABEL` 也只有這兩個），chatbot 端是
-                         `query.filter(ChatLogModel.rating_type == rating_type)`（chat.py:1708-1709）
-                         ——一條等值過濾，沒有任何 NULL 分支。
-                         **「無意見」拿掉**：那是 `rating_type IS NULL`，現行契約送不出去（送什麼字串都比不中），
-                         選了只會靜默回零筆。它在 product 只以統計表頭的計數存在（`_HeaderStats.rows`），
-                         沒有可查詢的請求值。**待 saas 回流**：要支援就得補一個 `rating_type=none` 之類的
-                         哨兵值，那是 saas 端的決定；在那之前不放一顆按了等於壞掉的旋鈕。
-                         （凍結的 jQuery 前端有這一顆，但那是舊 .NET API，README 已宣告不再回頭對齊。） #}
+                    {# `<option value>` 帶的是**送出去的值**，不是畫面文字。三顆值兩兩不交集、
+                         聯集＝不帶參數：product `GET /history` 與 `/history/export` 兩支都收
+                         `Literal["positive", "negative", "unrated"]`（history.py:83／:308）。
+                         `unrated` 是上游 2026-08-02 起支援的**只能查、寫不進去**的 token：
+                         `GET /api/chat/chatlogs?rating_type=unrated` → `rating_type IS NULL`，
+                         而它**刻意不在 RatingType 枚舉裡**——進了枚舉就等於讓「未評分」變成一個寫得進 DB
+                         的第三種值，那是另一件事。所以這一顆只出現在查詢下拉，不會出現在任何評分的寫入面。
+                         過濾套用在 `count()` 之前 ⇒ 「共 N 筆資料」與頁碼列跟著這個篩選一起變
+                         （§6：那兩個數字必須同源，見本頁 data-info 與 pagination 的 total）。
+                         （凍結的 jQuery 前端也有這一顆，但那是舊 .NET API；這裡對齊的是現行契約。） #}
                     <select id="ratingSelect" class="form-control singleSelect rating-select">
                         <option value="" data-i18n="common.pleaseSelect">請選擇</option>
                         <option value="positive" data-i18n="qa.ratingLike">讚</option>
                         <option value="negative" data-i18n="qa.ratingDislike">倒讚</option>
+                        <option value="unrated" data-i18n="qa.ratingNoOpinion">無意見</option>
                     </select>
                 </div>
             </div>
