@@ -31,7 +31,8 @@
     { key: "note9", label: "備註9" },
     { key: "note10", label: "備註10" },
     { key: "date2", label: "日期2" },
-    { key: "date3", label: "日期3" }
+    { key: "date3", label: "日期3" },
+    { key: "internal_note", label: "內部註記（不進問答）", productOnly: true }
 ] %}
 <dialog class="modals" id="editModal" aria-labelledby="editModal-title">
     <div class="modals-dialog modals-md">
@@ -43,7 +44,7 @@
                 </div>
                 <div class="modals-body">
                     <div class="flex-row column gap-8">
-                        {% for field in editFields %}
+                        {% for field in editFields %}{% if not field.productOnly %}
                         <div class="form-group col-12-md">
                             <div class="label">
                                 <label for="fileEdit-{{ field.key }}" class="control-label" data-i18n="field.{{ field.key }}">{{ field.label }}</label>
@@ -64,7 +65,24 @@ that identifies frequently executed loop traces at run-time and then generates m
                                 {% endif %}
                             </div>
                         </div>
-                        {% endfor %}
+                        {% endif %}{% endfor %}
+                        {# product 專用槽與其餘 21 槽分群（同 5-2 的欄位命名區）：混在備註 1–10 中間時，
+                             它看起來就只是第 11 個備註欄。說明掛在小標下、不塞進欄位名裡——租戶可以把它
+                             改名成「維護人」，改掉的當下括號裡那句就沒了。 #}
+                        <div class="flex-row column gap-8">
+                            <div class="tablelist-title" data-i18n="settings.productOnlyFields">產品內部欄位</div>
+                            <div class="text-gray" data-i18n="settings.internalNoteHint">這一欄純粹是產品內的紀錄：不會被搜到、不會進 AI 的參考資料、也不能當統計或篩選的維度。匯入時原文照存，連 HTML 轉 Markdown 都不做。</div>
+                        </div>
+                        {% for field in editFields %}{% if field.productOnly %}
+                        <div class="form-group col-12-md">
+                            <div class="label">
+                                <label for="fileEdit-{{ field.key }}" class="control-label" data-i18n="field.{{ field.key }}">{{ field.label }}</label>
+                            </div>
+                            <div class="field">
+                                <input type="text" id="fileEdit-{{ field.key }}" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control">
+                            </div>
+                        </div>
+                        {% endif %}{% endfor %}
                         <div class="form-group col-12-md">
                             <div class="label">
                                 <label for="fileEdit-externalKey" class="control-label" data-i18n="dataImport.externalKey">外部主鍵</label>

@@ -322,7 +322,8 @@ permalink: 5-2_conversationSettings.html
       { key: "note9", defaultLabel: "備註9", label: "備註9" },
       { key: "note10", defaultLabel: "備註10", label: "備註10" },
       { key: "date2", defaultLabel: "日期2", label: "日期2" },
-      { key: "date3", defaultLabel: "日期3", label: "日期3" }
+      { key: "date3", defaultLabel: "日期3", label: "日期3" },
+      { key: "internal_note", defaultLabel: "內部註記（不進問答）", label: "內部註記（不進問答）", productOnly: true }
     ] %}
     <div class="block flex-row column gap-16 mt-16">
         <div class="flex-row column gap-8">
@@ -337,7 +338,7 @@ permalink: 5-2_conversationSettings.html
             <div class="text-gray"><span data-i18n="settings.fieldNamingDescPrefix">為此設定的 </span><span>{{ fieldSlots.length }}</span><span data-i18n="settings.fieldNamingDescSuffix"> 個欄位槽命名「此設定的顯示名」</span></div>
         </div>
         <div class="flex-row flex-wrap gap-16">
-            {% for slot in fieldSlots %}
+            {% for slot in fieldSlots %}{% if not slot.productOnly %}
             <div class="form-group col-6-md col-12-sm">
                 <div class="label label-md">
                     <label for="fieldName-{{ slot.key }}" class="control-label" data-i18n="field.{{ slot.key }}">{{ slot.defaultLabel }}</label>
@@ -347,7 +348,29 @@ permalink: 5-2_conversationSettings.html
                         class="form-control" value="{{ slot.label }}">
                 </div>
             </div>
-            {% endfor %}
+            {% endif %}{% endfor %}
+        </div>
+        {# product 專用槽與其餘 21 槽分群：混在備註 1–10 中間時，它看起來就只是第 11 個備註欄。
+             用小標而不是單一條分隔線——這一區是 col-6-md 的兩欄 flex-wrap 版位，線會斷在奇怪的位置，
+             而小標自己是整寬區塊，語意與版位都穩。
+             那句說明掛在**這裡**而不是塞進預設名裡：欄位命名頁允許租戶把它改成「維護人」，
+             改掉的當下括號裡那句就沒了，而那正是最需要它的時候。 #}
+        <div class="flex-row column gap-8">
+            <div class="tablelist-title" data-i18n="settings.productOnlyFields">產品內部欄位</div>
+            <div class="text-gray" data-i18n="settings.internalNoteHint">這一欄純粹是產品內的紀錄：不會被搜到、不會進 AI 的參考資料、也不能當統計或篩選的維度。匯入時原文照存，連 HTML 轉 Markdown 都不做。</div>
+        </div>
+        <div class="flex-row flex-wrap gap-16">
+            {% for slot in fieldSlots %}{% if slot.productOnly %}
+            <div class="form-group col-6-md col-12-sm">
+                <div class="label label-md">
+                    <label for="fieldName-{{ slot.key }}" class="control-label" data-i18n="field.{{ slot.key }}">{{ slot.defaultLabel }}</label>
+                </div>
+                <div class="field">
+                    <input type="text" id="fieldName-{{ slot.key }}" placeholder="此設定的顯示名" data-i18n-placeholder="settings.displayNamePlaceholder"
+                        class="form-control" value="{{ slot.label }}">
+                </div>
+            </div>
+            {% endif %}{% endfor %}
         </div>
     </div>
 </div>
