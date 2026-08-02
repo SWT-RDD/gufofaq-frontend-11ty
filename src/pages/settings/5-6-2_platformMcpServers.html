@@ -78,8 +78,14 @@ permalink: 5-6-2_platformMcpServers.html
                 <div class="label">
                     <label for="newMcpArgsInput" class="control-label" data-i18n="agent.params">參數</label>
                 </div>
+                {# 界線提示：`maxlength` 只夾得住「整段字數」，夾不住「幾行」與「每一行多長」，
+                     而這兩欄的規則正是後兩者。兩個數字是**資料槽**（由 React 填 `GET
+                     /platform/mcp/limits` 的值），不是寫死的字面——形狀照既有正典
+                     （`ui/pagination` 的 totalPrefix／totalSuffix）：前綴 key ＋ 槽 ＋ 中綴 key
+                     ＋ 槽 ＋ 後綴 key，**不是插值 key**。切版這裡的 8／200 是示範值。 #}
                 <div class="field">
-                    <textarea id="newMcpArgsInput" class="form-control size-sm" placeholder="一行一個參數" data-i18n-placeholder="settings.pleaseEnterMcpArgs"></textarea>
+                    <textarea id="newMcpArgsInput" class="form-control size-sm" placeholder="一行一個參數" data-i18n-placeholder="settings.pleaseEnterMcpArgs" aria-describedby="newMcpArgsHint"></textarea>
+                    <span id="newMcpArgsHint" class="text-gray"><span data-i18n="settings.mcpLimitAtMost">最多</span><span class="js-mcp-args-max-items">8</span><span data-i18n="settings.mcpArgsLimitMid">個參數，每個最多</span><span class="js-mcp-args-max-len">200</span><span data-i18n="regression.charsUnit">字</span></span>
                 </div>
             </div>
         </div>
@@ -89,7 +95,8 @@ permalink: 5-6-2_platformMcpServers.html
                     <label for="newMcpEnvInput" class="control-label" data-i18n="settings.mcpEnv">環境變數</label>
                 </div>
                 <div class="field">
-                    <textarea id="newMcpEnvInput" class="form-control size-sm" placeholder="一行一個 KEY=value" data-i18n-placeholder="settings.pleaseEnterMcpEnv"></textarea>
+                    <textarea id="newMcpEnvInput" class="form-control size-sm" placeholder="一行一個 KEY=value" data-i18n-placeholder="settings.pleaseEnterMcpEnv" aria-describedby="newMcpEnvHint"></textarea>
+                    <span id="newMcpEnvHint" class="text-gray"><span data-i18n="settings.mcpLimitAtMost">最多</span><span class="js-mcp-env-max-items">32</span><span data-i18n="settings.mcpEnvLimitMid">組，鍵最多</span><span class="js-mcp-env-max-key-len">100</span><span data-i18n="settings.mcpEnvLimitMid2">字、值最多</span><span class="js-mcp-env-max-value-len">2000</span><span data-i18n="regression.charsUnit">字</span></span>
                 </div>
             </div>
         </div>

@@ -313,6 +313,15 @@ permalink: 5-10_tagDimensions.html
                         {% set storageBarPct = dim.coveragePct %}
                         {% set storageBarText = dim.tagged ~ " / " ~ dim.total ~ "（" ~ dim.coveragePct ~ "%）" %}
                         {% include "ui/storage-bar/storage-bar.html" %}
+                        {# 「還差幾筆」點得進「是哪幾份」。量到 100%（tagged == total）時不給鈕——
+                             點進去必定是空清單，那顆鈕就是說謊。日期維度同樣有這一格（它也有
+                             未標註哨兵 `NEVER_EXPIRES`），與「編輯字典」那顆的 kind 條件無關。 #}
+                        {% if dim.tagged < dim.total %}
+                        <button type="button" class="button button-border button-sm js-view-untagged"
+                            data-dimension-id="{{ dim.id }}"
+                            data-toast="正在查詢資料...|查詢成功|文件數超過單次掃描上限，請改用單一資料集範圍|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.queryUntagged" data-toast-type="info|success|warning|error"
+                            data-i18n="settings.viewUntagged">查看未標註</button>
+                        {% endif %}
                         {% endif %}
                     </td>
                     <td>
@@ -601,3 +610,11 @@ permalink: 5-10_tagDimensions.html
 {% set deleteToast = "標籤維度已刪除|刪除失敗，請稍後再試" %}
 {% set deleteToastKey = "toast.deleteTagDimension" %}
 {% include "components/delete-modal/delete-modal.html" %}
+
+{# 未標註文件：覆蓋率欄的「還差幾筆」點得進「是哪幾份」。條件開窗（要先選定看哪一個維度）＝
+   hook class .js-view-untagged，不掛 data-open-modal（GUIDELINE §5）。
+   頁碼列三參數由使用頁提供（同 pager-row）；14 ＝上面 `業務範疇` 未標註的筆數（§6 自洽）。 #}
+{% set total = 14 %}
+{% set perPage = 10 %}
+{% set currentPage = 1 %}
+{% include "components/untagged-files-modal/untagged-files-modal.html" %}

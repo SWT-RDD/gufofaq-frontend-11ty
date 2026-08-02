@@ -1,0 +1,92 @@
+{# 未標註文件燈箱，取自 5-10_tagDimensions 覆蓋率欄的「查看未標註」鈕（.js-view-untagged）：
+     開窗需先選定「看哪一個維度」＝業務條件開窗，故該鈕保留 hook class、不掛 data-open-modal
+     （GUIDELINE §5）。
+
+     **這一塊回答的是「哪幾份」，覆蓋率欄回答的是「還差幾筆」。** 先前只有後者，`dataset_id` 是能
+     收斂到的最小範圍：使用者知道「這個資料集還差 37 筆」卻點不到那 37 份是誰，只能整個資料集重匯；
+     要自己找出來就得逐資料集查一次覆蓋率（O(資料集數) 次請求、每次各自 O(文件數) 次上游往返），
+     而且結果仍然只是數字。上游端點 `GET /tags/coverage/untagged?dimension_id=&dataset_id=&limit=&offset=`
+     （gufofaq-saas product `app/routers/tags.py::untagged_documents`）。
+
+     **掃描範圍與覆蓋率完全相同**（同一支列舉、同一個上限、同一套 `scan` 欄位）：兩邊對同一批文件說的
+     話必須一致，否則使用者會看到「覆蓋率說差 37 筆、清單只列得出 30 份」而無從解釋。分頁只切
+     **輸出**，`total_count` 是未標註的**總份數**——所以頁碼列的 total 吃 `total_count`，不是這一頁的
+     長度。**`not_indexed` 的那幾份不在清單裡**：查無 chunk＝沒讀到，不是沒標註（同覆蓋率的分母規則），
+     列進來會讓使用者去補一份其實標好、只是還沒同步完的文件。那個數字在覆蓋率量測範圍那一區已經
+     單獨列著（`settings.scanNotIndexed`），這裡不重印。
+
+     資料集下拉與覆蓋率量測範圍那一顆是**同一份目錄**（§6 一份正本）：頁面上的 `coverageDatasets`，
+     這裡不另烤一份。預設「全部資料集」＝不送 `dataset_id`（不是送空字串——product 對空字串會 422）。
+
+     標題的維度名稱是執行期資料，由 React 填。 #}
+{# 示範資料變數用元件專屬名 untaggedFileRows（不用泛用名）：{% set %} 是頁面全域（§2/§6）。
+     與 5-10 的示範資料自洽（GUIDELINE §6）：`業務範疇` 未標註 14 筆，故 total=14、
+     每頁 10 筆 ⇒ 共 2 頁，這一頁列 2 筆代表性資料（切版只演形狀，不列滿 10 列）。 #}
+{% set untaggedFileRows = [
+    { docName: "2024關稅公告.pdf", datasetName: "法規文件" },
+    { docName: "費率表_v3.xlsx", datasetName: "產品資料" }
+] %}
+{# 頁碼列的三個參數由**使用頁**提供（同 components/pager-row 的慣例）：`{% set %}` 是頁面全域，
+     在元件內設的話，「同一頁第二次用到 pagination 前必須重設」那道守門看不到它——元件庫頁在本
+     元件之前已經用過一次 pagination，於是那一次的 total/currentPage 會沿用過來，而兩邊看起來
+     都很合理。`total` 吃的是 `total_count`（未標註**總份數**）不是這一頁的長度：分頁只切輸出。 #}
+<dialog class="modals" id="untaggedFilesModal" aria-labelledby="untaggedFilesModal-title">
+    <div class="modals-dialog modals-lg">
+        <div class="modals-wrap">
+            {% include "ui/modal-close/modal-close.html" %}
+            <div class="modals-content">
+                <div class="modals-header">
+                    <h3 class="modals-title" id="untaggedFilesModal-title" data-i18n="settings.untaggedFiles">未標註文件</h3>
+                </div>
+                <div class="modals-body">
+                    <div class="untagged-files-list">
+                        <div class="form-group row flex-row mobile-column-xs gap-16">
+                            <div class="label mobile-align">
+                                <label for="untaggedDatasetSelect" class="control-label" data-i18n="settings.scanScope">量測範圍</label>
+                            </div>
+                            <div class="field">
+                                <select id="untaggedDatasetSelect" class="form-control js-untagged-dataset">
+                                    <option value="" data-i18n="settings.scanScopeAll">全部資料集</option>
+                                    {% for ds in coverageDatasets %}
+                                    <option value="{{ ds.id }}">{{ ds.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <p class="text-gray" data-i18n="settings.untaggedFilesHint">這份清單與覆蓋率是同一次掃描的兩種呈現：覆蓋率說還差幾筆，這裡說是哪幾份。「查無內容」的檔不算未標註（那是還沒同步完，不是沒標），所以它們不在下面，數字在上一區單獨列著。</p>
+                        <div class="table-container scrollTable">
+                            <table class="default-table">
+                                <colgroup>
+                                    <col style="min-width:280px;">
+                                    <col style="min-width:200px;">
+                                </colgroup>
+                                <thead>
+                                    <tr>
+                                        <th data-i18n="settings.docName">文件名稱</th>
+                                        <th data-i18n="settings.belongsToDataset">所屬資料集</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for row in untaggedFileRows %}
+                                    <tr>
+                                        <td>{{ row.docName }}</td>
+                                        <td>{{ row.datasetName }}</td>
+                                    </tr>
+                                    {% else %}
+                                    <tr><td colspan="2" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% include "ui/pagination/pagination.html" %}
+                    </div>
+                </div>
+                <div class="modals-footer">
+                    <div class="button-row center">
+                        <button type="button" class="button button-border btn-close-modals" data-i18n="action.close">關閉</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</dialog>

@@ -1,0 +1,10 @@
+// 未標註文件燈箱的清單容器：可捲動（未標註可能數十份，分頁上限之內仍會超出一屏）；
+// gap 是「範圍下拉 ↔ 說明 ↔ 表格 ↔ 頁碼列」四塊之間的區塊留白（表格列間留白由
+// default-table 的 cell padding 提供，不在此檔）。比照 glossary-entries-modal 的簡潔留白慣例。
+.untagged-files-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-height: 420px;
+    overflow-y: auto;
+}

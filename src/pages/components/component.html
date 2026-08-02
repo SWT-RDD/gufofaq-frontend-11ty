@@ -524,6 +524,7 @@ bodyClass: guideline-page
                     <button type="button" class="button button-dark" data-open-modal="configCopyModal">開啟跨設定檔複製modal</button>
                     <button type="button" class="button button-dark" data-open-modal="qaImportModal">開啟 QA 匯入 modal</button>
                     <button type="button" class="button button-dark" data-open-modal="caseFromLogModal">開啟從問答紀錄建案例 modal</button>
+                    <button type="button" class="button button-dark" data-open-modal="untaggedFilesModal">開啟未標註文件modal</button>
                 </div>
                 <div class="caption description mt-16">
                     <ul>
@@ -891,6 +892,18 @@ bodyClass: guideline-page
 {% set qaImportShowError = true %}
 {% include "components/qa-import-modal/qa-import-modal.html" %}
 {% include "components/case-from-log-modal/case-from-log-modal.html" %}
+{# untagged-files 的資料集下拉吃頁面上的 coverageDatasets（5-10 有 set，元件庫沒有）：
+   元件庫這一份是示範資料，與 5-10 那一份同形狀即可（§6 的一份正本講的是同一頁內不重複，
+   不是跨頁共用執行期資料）。 #}
+{% set coverageDatasets = [
+    { id: 1, name: "法規文件" },
+    { id: 2, name: "產品資料" }
+] %}
+{# 頁碼列三參數由使用頁提供（同 pager-row）；本頁在此之前已用過一次 pagination，故要重設。 #}
+{% set total = 14 %}
+{% set perPage = 10 %}
+{% set currentPage = 1 %}
+{% include "components/untagged-files-modal/untagged-files-modal.html" %}
 
 <button type="button" class="button btn_gotop">
     TOP
