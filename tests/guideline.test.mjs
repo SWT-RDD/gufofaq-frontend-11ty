@@ -3499,6 +3499,40 @@ test("§6 分組 LLM 的 data-group 只能是後端認得的那幾組，且模�
     assert.equal(hits.length, 0, `分組 LLM 的旋鈕對不回後端欄位：\n${fail(hits)}`);
 });
 
+test("§6 固定欄位槽目錄的三份抄本必須是同一組 key（收不成一份，就得有東西守著）", () => {
+    // product `app/field_schema.py::SLOTS` 那 22 槽在切版被抄了三份：1-1-4 的欄位對應、
+    // components/file-edit-modal 的逐欄編輯、5-2 的欄位命名。三處的附加資料不同（options／
+    // placeholder／preview ｜ type／value ｜ 租戶已設的 label），但 **key 集合必須一模一樣**。
+    //
+    // 為什麼不收成一份（試過、退回來了）：nunjucks 的 `{% include %}` 是**獨立 scope**，子檔
+    // `{% set %}` 的變數不會回到父頁——本 repo 的既有慣例一律是「父頁 set、子元件讀」，反方向
+    // 行不通（實測：改成 include 一份共用目錄之後，那一區渲染出 0 個欄位而 162 條測試全綠）。
+    // 另一條路 `{% from … import %}` 不在 §2 的標籤白名單裡，`_data/` 資料檔也被 §2 明文禁止。
+    // ⇒ 在現行模板語彙下，三份抄本是唯一表達得出來的形狀，所以改用這條測試守住它們同步。
+    // product 加第 23 槽時，只補兩處就會在這裡變紅。
+    const SOURCES = [
+        ["src/pages/dataImport/1-1-4_columnSelect_excel.html", /\{% set fields = \[([\s\S]*?)\n\] %\}/],
+        ["src/_includes/components/file-edit-modal/file-edit-modal.html", /\{% set editFields = \[([\s\S]*?)\n\] %\}/],
+        ["src/pages/settings/5-2_conversationSettings.html", /\{% set fieldSlots = \[([\s\S]*?)\n    \] %\}/],
+    ];
+    const sets = SOURCES.map(([f, re]) => {
+        const m = stripNjk(read(f)).match(re);
+        assert.ok(m, `${f}：找不到槽陣列（形狀變了？這條測試會就此空轉）`);
+        const keys = [...m[1].matchAll(/\bkey:\s*"(\w+)"/g)].map((x) => x[1]);
+        assert.ok(keys.length >= 20, `${f} 只解析到 ${keys.length} 個 key —— 這條測試在空轉`);
+        return { f, keys };
+    });
+    const base = sets[0];
+    const hits = [];
+    for (const s of sets.slice(1)) {
+        const missing = base.keys.filter((k) => !s.keys.includes(k));
+        const extra = s.keys.filter((k) => !base.keys.includes(k));
+        if (missing.length) hits.push(`${s.f} 少了：${missing.join("、")}`);
+        if (extra.length) hits.push(`${s.f} 多了：${extra.join("、")}`);
+    }
+    assert.equal(hits.length, 0, `三份槽目錄抄本不同步（product 加槽時漏改了其中一處）：\n${fail(hits)}`);
+});
+
 test("§6 同頁的 page-size 選中值必須等於 pagination 生效的 perPage（兩者同源）", () => {
     // 曾經：元件寫死 selected=20、六個使用頁都沒 set perPage → pagination 落回預設 10，
     // 於是同一列同時顯示「每頁 20 筆」與「共 12 頁」（115÷20＝6）。
