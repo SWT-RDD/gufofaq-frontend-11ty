@@ -142,7 +142,8 @@ permalink: 5-6-1_platformTenants.html
                     <label for="tenantAdminPasswordInput" class="control-label required" data-i18n="settings.adminPassword">管理員密碼</label>
                 </div>
                 <div class="field">
-                    <input type="password" id="tenantAdminPasswordInput" minlength="8" placeholder="至少 8 碼" data-i18n-placeholder="settings.pleaseEnterNewPassword" class="form-control" required>
+                    <input type="password" id="tenantAdminPasswordInput" minlength="8" placeholder="至少 8 碼" data-i18n-placeholder="settings.pleaseEnterNewPassword" aria-describedby="tenantAdminPasswordInputError" class="form-control" required>
+                    <span class="error-prompt" id="tenantAdminPasswordInputError" data-i18n="settings.passwordTooShort">密碼至少 8 碼</span>
                 </div>
             </div>
         </div>

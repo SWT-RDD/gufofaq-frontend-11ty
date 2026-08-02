@@ -39,7 +39,13 @@ permalink: login.html
                 {# type=button：真 app 由業務 js fetch 登入（不走原生 form 送出）；原型若留 type=submit，
                      無 handler 的 form 會原生 GET 重載、toast 演出瞬間被殺掉（§5 每個結果都要演得出來）。
                      React 端換回 type=submit + onSubmit(preventDefault)。 #}
-                <button type="button" class="button button-primary login-btn" data-toast="登入成功！|帳號已停用，請聯絡管理者|嘗試次數過多，請稍後再試|登入時發生錯誤，請稍後再試" data-i18n-data-toast="toast.login" data-toast-type="success|warning|warning|error" data-i18n="faq.login">登入</button>
+                {# 節流秒數：BFF 透傳 `Retry-After`。**不塞進 toast 那一段**——`data-toast` 的 `|`
+                     是索引契約（繁中段數＝英譯段數＝type 段數），一段裡放不下「前綴＋數字＋後綴」。
+                     故第 3 段維持不帶秒數的句子，秒數走這個 live region（業務 js 填數字、加 .is-shown）。
+                     空的 live region ＋ role="alert"：訊息由業務 js 填（§4 那條「要嘛具體、要嘛空 live region」）。
+                     數字是資料，夾在前後綴 key 中間（同 ② 的理由：t() 不做插值）。 #}
+                <span class="error-prompt" role="alert" id="loginRetryHint"><span data-i18n="auth.retryAfterPrefix">請於 </span><span class="js-login-retry-seconds"></span><span data-i18n="auth.retryAfterSuffix"> 秒後再試</span></span>
+                <button type="button" class="button button-primary login-btn" aria-describedby="loginRetryHint" data-toast="登入成功！|帳號已停用，請聯絡管理者|嘗試次數過多，請稍後再試|登入時發生錯誤，請稍後再試" data-i18n-data-toast="toast.login" data-toast-type="success|warning|warning|error" data-i18n="faq.login">登入</button>
             </form>
         </div>
 

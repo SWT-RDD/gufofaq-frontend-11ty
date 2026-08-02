@@ -148,7 +148,8 @@ permalink: 5-10_tagDimensions.html
      四道寫入當下就判得出來的限制由 product 擋（`_validate_slot_and_kind`／`_validate_role`／
      `_assert_slot_and_role_free`），故送出鈕的 toast 列得出「槽已經有維度了／角色已指派」這一態。
      前端不再寫一份界線判斷（那是第二個真相）。 #}
-<div class="block mb-16 flex-row column gap-16">
+{# 租戶能力標記（同 5-2 的理由：唯讀閘要從 markup 讀得出來，不是 React 應用層各自判斷）：新增維度。 #}
+<div data-capability="settings:write" class="block mb-16 flex-row column gap-16">
     <div class="text-md text-bold" data-i18n="settings.addTagDimension">新增標籤維度</div>
     <div class="flex-row flex-wrap gap-16 mobile-column sm-gap-16">
         <div class="col-4-md col-12-sm">
@@ -260,7 +261,8 @@ permalink: 5-10_tagDimensions.html
      `coverage=(tagged/examined) if examined else None` 共用同一個 `examined`，
      所以 `examined == 0` 時**每一列**都是尚未量測。這個分支是給 React 的規格
      （切版的示範資料演的是已量測那一態），要整表示範就得整表換一組資料。 #}
-<div class="block mb-16 flex-row column gap-16">
+{# 租戶能力標記（同 5-2 的理由：唯讀閘要從 markup 讀得出來，不是 React 應用層各自判斷）：維度清單的改名／刪除。 #}
+<div data-capability="settings:write" class="block mb-16 flex-row column gap-16">
     <div class="text-md text-bold" data-i18n="settings.tagDimensionList">標籤維度清單</div>
     <div class="table-container scrollTable">
         <table class="default-table">
@@ -338,7 +340,8 @@ permalink: 5-10_tagDimensions.html
      逐位元組比對），所以 product 擋掉了含 , ' " \ * ? 的代碼與「在比對端分不開」的代碼
      （B06／b06／Ｂ０６ 大小寫與全半形都會被折疊）——那兩態各是送出鈕的一段 toast。 #}
 {% if vocabDimension.kind != "date" %}
-<div class="block mb-16 flex-row column gap-16">
+{# 租戶能力標記（同 5-2 的理由：唯讀閘要從 markup 讀得出來，不是 React 應用層各自判斷）：受控詞彙（字典）的 CRUD。 #}
+<div data-capability="settings:write" class="block mb-16 flex-row column gap-16">
     <div class="flex-row align-items-center gap-8 flex-wrap">
         <div class="text-md text-bold" data-i18n="settings.tagVocabulary">受控詞彙（字典）</div>
         <div class="text-gray">{{ vocabDimension.name }}（{{ vocabDimension.slotKey }}）</div>
@@ -424,7 +427,8 @@ permalink: 5-10_tagDimensions.html
      標題／內容兩槽、標籤槽恆為空，算進分母就是每個用 QA 集的租戶覆蓋率被系統性拉低。
      掃描是逐份讀文件（上游沒有彙總端點），超過單次上限 product 回 409 並要求縮小範圍
      ——**不回一個截斷後的比率**，故「文件數超過上限」是量測鈕的一段 toast。 #}
-<div class="block mb-16 flex-row column gap-16">
+{# 租戶能力標記（同 5-2 的理由：唯讀閘要從 markup 讀得出來，不是 React 應用層各自判斷）：覆蓋率量測：GET /tags/coverage 的 require_coverage_scope＝settings:read ＋ data:read（回的數字是文件內容的投影）。 #}
+<div data-capability="data:read" class="block mb-16 flex-row column gap-16">
     <div class="text-md text-bold" data-i18n="settings.tagCoverageScan">標註覆蓋率量測範圍</div>
     <div class="data-info flex-row flex-wrap gap-24">
         <span><span data-i18n="settings.scanDocuments">列舉得到的文件：</span>{{ coverageScan.documents }}</span>
@@ -458,7 +462,8 @@ permalink: 5-10_tagDimensions.html
      那一段 warning——只演成功等於把整道閘門演掉了。
      這道驗證是一次 DB 查詢（O(檔數)），不再是逐份讀文件的覆蓋率掃描（O(文件數) 次上游往返、有上限、
      而且存下來的是會過期的快照），所以也不再有「超過掃描上限」「量測途中被改動」那些分支。 #}
-<div class="block flex-row column gap-16">
+{# 租戶能力標記（同 5-2 的理由：唯讀閘要從 markup 讀得出來，不是 React 應用層各自判斷）：檢索過濾旋鈕：PUT …/tag-filter 掛 settings:write，另外要 data:read（開啟要逐檔驗結構）。 #}
+<div data-capability="settings:write data:read" class="block flex-row column gap-16">
     <div class="text-md text-bold" data-i18n="settings.tagFilter">標籤檢索過濾</div>
     <p class="text-gray" data-i18n="settings.tagFilterIntro">開啟之後，問答會先判斷這一題屬於哪些業務維度，再把判斷結果編成檢索過濾條件送給引擎。判不準時整組條件一起丟棄（連時間窗一起），不會退成一條寬鬆的條件。</p>
 

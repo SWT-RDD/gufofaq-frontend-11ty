@@ -30,6 +30,12 @@ permalink: 2-1_qaRecord.html
     <div>
         <div class="tab-wrap">
             <div class="tabs-title" data-i18n="qa.qaRecords">問答紀錄</div>
+            {# 清單有筆數上限：product `GET /history` 的 `limit` 預設 100（`Query(100, ge=1, le=1000)`），
+                 所以畫面上看到的不是全部。數字是資料（不翻）夾在前後綴 key 中間——**不是插值 key**：
+                 本專案的 `GufoI18n.t` 只查表、不做 `{{count}}` 取代，寫成插值會在英文模式原樣印出來。
+                 React 端照既有轉換規則把這一對收成 `t(key, { count })`（見 README 的對照表）。
+                 前後綴各自帶分隔空白（§4-2），少了英文會黏成 Showing100most recent。 #}
+            <div class="text-gray"><span data-i18n="qa.recentOnlyPrefix">只顯示最近 </span>100<span data-i18n="qa.recentOnlySuffix"> 則對話</span></div>
 
             {% include "components/qa-record-tabs/qa-record-tabs.html" %}
         </div>

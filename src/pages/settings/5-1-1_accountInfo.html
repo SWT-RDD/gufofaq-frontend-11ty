@@ -152,7 +152,8 @@ permalink: 5-1-1_accountInfo.html
                     <label for="newPasswordInput" class="control-label required" data-i18n="settings.newPassword">新密碼</label>
                 </div>
                 <div class="field">
-                    <input type="password" id="newPasswordInput" minlength="8" placeholder="至少 8 碼" data-i18n-placeholder="settings.pleaseEnterNewPassword" class="form-control" required>
+                    <input type="password" id="newPasswordInput" minlength="8" placeholder="至少 8 碼" data-i18n-placeholder="settings.pleaseEnterNewPassword" aria-describedby="newPasswordInputError" class="form-control" required>
+                    <span class="error-prompt" id="newPasswordInputError" data-i18n="settings.passwordTooShort">密碼至少 8 碼</span>
                 </div>
             </div>
         </div>
