@@ -1,5 +1,7 @@
 // 嵌入式問答小工具的外殼。markup 見 widget-shell.html。
 //
+@use "../../../scss/mixin" as *;
+
 // 它跑在**別人的網站上**（widget.js 建 shadow root、把樣式一起注進去），所以這一份的角色是
 // 「視覺定案」而不是站內版面：widget.js 照抄這裡的值與結構。因此刻意只用語意 token
 // （--brand-gradient／--surface-raised／--border…），換膚與深色一併帶過去。
@@ -52,12 +54,16 @@
         font-weight: 600;
     }
 
+    // 叉叉用遮罩上色（同 ui/modal-close）：白色叉叉不必另存一張圖，深色模式也免反相。
+    // 墨色是 --on-accent（它疊在品牌漸層的頭列上）。
     .widget-panel-close {
+        width: 20px;
+        height: 20px;
         padding: 0;
         border: 0;
         background: none;
         cursor: pointer;
-        line-height: 1;
+        @include icon-mask("../images/icon_close_blue.png", var(--on-accent), 20px 20px);
     }
 
     .widget-panel-log {

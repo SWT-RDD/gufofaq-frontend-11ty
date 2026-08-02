@@ -25,11 +25,16 @@
     用得到的元件」掃 markup class，而這一顆只出現在元件庫頁，所以掃不到。記在這裡免得下一個人以為
     它真的零依賴而去改那兩顆的 class。
 
+  ⚠️ **widget 端有一處刻意不逐字**（saas 回報）：遮罩圖與 <img> 不同，跨網域取用要
+    `Access-Control-Allow-Origin`，而 `/images/*` 是純靜態 ⇒ widget 跑在別人網站上時遮罩圖被 CORS 擋掉。
+    那邊改用**內嵌 data URI 的遮罩**（同一個字形、同一種上色，但不發請求）。切版這一側維持檔案路徑
+    （站內同源，沒有那個問題），兩邊的差異僅此一處。
+
   參數（使用頁在 include 前 set）：
     widgetTitle    —— 面板標題（租戶設定值；不給＝示範文字）
     widgetDemoStatic —— true 時加 `.demo-static`（元件庫頁用：把 fixed 浮層退回文流內） #}
 <div class="widget-shell{% if widgetDemoStatic %} demo-static{% endif %}">
-    <button type="button" class="faq-launcher widget-launcher" aria-expanded="false" aria-controls="widgetPanel"
+    <button type="button" class="faq-launcher widget-launcher js-widget-toggle" aria-expanded="false" aria-controls="widgetPanel"
         aria-label="開啟客服小幫手" data-i18n-aria-label="a11y.openWidget">
         <img src="./images/icon_owl.png" width="40" height="40" decoding="async" alt="">
     </button>
@@ -37,8 +42,11 @@
         <div class="widget-panel-head">
             {# 標題是租戶設定值（資料，不翻）；它同時是面板的可及名稱，故給 id 讓 dialog 指過來。 #}
             <span id="widgetPanelTitle">{{ widgetTitle or "客服小幫手" }}</span>
-            <button type="button" class="widget-panel-close" aria-label="關閉" data-i18n-aria-label="action.close">
-                <img src="./images/icon_close.png" width="48" height="48" decoding="async" alt="" class="icon">
+            {# 叉叉字形由 CSS 遮罩畫（同 ui/modal-close 的做法），所以這裡沒有 <img>：深色模式免反相，
+                 也不必為了白色叉叉另存一張圖。不直接沿用 .modals-close——那顆是 position:absolute、
+                 基準是 .modals-wrap，放進這一列 flex 會跑掉。 #}
+            <button type="button" class="widget-panel-close js-widget-close">
+                <span class="sr-only" data-i18n="action.close">關閉</span>
             </button>
         </div>
         {# role="log" ＋ aria-live="polite"：新回答是非同步長出來的，報讀器要唸得到（同 widget.js 現況）。 #}

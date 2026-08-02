@@ -2226,7 +2226,11 @@ test("§4 遮罩圖示的墨色只能來自文字族／前景墨色（填充族�
     //   --success 是為了襯白字而壓深的填充，當前景在深色下只有 3.41:1；
     //   --border 是邊框色，當箭頭是 1.3:1 —— 兩者都通過了全部 60 條測試。
     // 遮罩把 background 裁成字形 → 那顆顏色是**前景**，門檻與內文相同（§4：一顆 token 只能有一個角色）。
-    const allowed = new Set([...COLOR_ROLES.textOnSurface, ...COLOR_ROLES.inkOnSurface]);
+    // 另收 --on-accent：它在 COLOR_ROLES 裡歸在 chrome 桶，但角色不是邊框線色而是**疊在有色填充上的
+    // 前景墨色**（白字／白圖示）。遮罩畫在品牌漸層上時（ui/widget-shell 的關閉叉叉）那正是它的用途，
+    // 而它對每一顆填充的 ≥4.5 早已由本檔的對比度測試逐色實算（見「白字疊 ${f}」那一行）。
+    // 刻意只加這一顆，不放整個 chrome 桶——那條規則要擋的是 --border 這種線色當墨色（實測 1.3:1）。
+    const allowed = new Set([...COLOR_ROLES.textOnSurface, ...COLOR_ROLES.inkOnSurface, "--on-accent"]);
     const css = read("dist/css/main.css");
 
     const compound = (sel) => {
@@ -2294,6 +2298,26 @@ test("§4 元件 scss 不得用 #id 選擇器（那是比 class 更緊的跨元�
         ["#uploadModal {", "    #main .card {"],
         ["    color: var(--text);", "    // #id 選擇器一律不用", "    background: url(a.png#x);"]);
     assert.equal(hits.length, 0, `改用元件自有的 slot class：\n${fail(hits)}`);
+});
+
+test("反向：markup／scss 引用到的圖片都要真的存在（壞掉的 src 不會讓任何一關變紅）", () => {
+    // 正向那條（每張圖都要被引用）擋的是死資產；這條擋的是**指向不存在的檔**。
+    // 實際踩到：`ui/widget-shell` 寫了 `./images/icon_close.png`，而全站只有 `icon_close_black/blue.png`
+    // ——build 不會失敗、lint 不管、161 條測試全綠，只有真的開瀏覽器才看到破圖。
+    // 收兩種引用：markup 的 `src="./images/x"` 與 scss 的 `url(../images/x)`（含 icon-mask 的第一個參數）。
+    const have = new Set(readdirSync("src/images"));
+    const hits = [];
+    let seen = 0;
+    const note = (file, name) => {
+        seen++;
+        if (!have.has(name)) hits.push(`${file}  → images/${name}（不存在）`);
+    };
+    for (const f of srcHtml)
+        for (const m of stripNjk(read(f)).matchAll(/["'(]\.\/images\/([\w.-]+)/g)) note(f, m[1]);
+    for (const f of srcScss)
+        for (const m of read(f).matchAll(/["'(]\.\.\/images\/([\w.-]+)/g)) note(f, m[1]);
+    assert.ok(seen >= 40, `只掃到 ${seen} 處圖片引用 —— 這條測試在空轉`);
+    assert.equal(hits.length, 0, `引用到不存在的圖片（瀏覽器上是破圖，build 與 lint 都不會抱怨）：\n${fail(hits)}`);
 });
 
 test("src/images 每張圖都必須被引用", () => {
