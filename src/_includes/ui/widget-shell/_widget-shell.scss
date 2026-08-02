@@ -1,0 +1,96 @@
+// 嵌入式問答小工具的外殼。markup 見 widget-shell.html。
+//
+// 它跑在**別人的網站上**（widget.js 建 shadow root、把樣式一起注進去），所以這一份的角色是
+// 「視覺定案」而不是站內版面：widget.js 照抄這裡的值與結構。因此刻意只用語意 token
+// （--brand-gradient／--surface-raised／--border…），換膚與深色一併帶過去。
+.widget-shell {
+    // launcher 的圓與位置沿用 ui/faq-launcher 的 .faq-launcher（markup 兩個 class 一起掛），
+    // 這裡只補「它是 <button> 而不是 <a>」少掉的那幾條，以及開合狀態。
+    .widget-launcher {
+        border: 0;
+        padding: 0;
+        cursor: pointer;
+
+        // 面板開著時 launcher 轉成關閉的手勢（widget.js 現況是換 emoji；這裡不換圖，
+        // 因為那顆貓頭鷹就是產品識別，換掉會讓人以為按到別的東西）。
+        &[aria-expanded="true"] {
+            transform: rotate(90deg);
+        }
+    }
+
+    .widget-panel {
+        position: fixed;
+        right: 24px;
+        // launcher 是 56px、離底 24px ⇒ 面板底邊落在它上方 8px。
+        bottom: 88px;
+        z-index: 900; // 與 .faq-launcher 同層（modal 1000／toast 2000 之下）
+        display: none; // 初始態；開合由 widget.js 切
+        flex-direction: column;
+        width: 360px;
+        max-width: calc(100vw - 48px);
+        height: 520px;
+        max-height: calc(100vh - 120px);
+        max-height: calc(100dvh - 120px);
+        overflow: hidden;
+        border-radius: 12px;
+        background-color: var(--surface-raised);
+        box-shadow: 0 8px 32px 0 var(--shadow-strong);
+
+        &[data-open] {
+            display: flex;
+        }
+    }
+
+    .widget-panel-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+        padding: 0.75rem 1rem;
+        background-image: var(--brand-gradient);
+        color: var(--on-accent);
+        font-weight: 600;
+    }
+
+    .widget-panel-close {
+        padding: 0;
+        border: 0;
+        background: none;
+        cursor: pointer;
+        line-height: 1;
+    }
+
+    .widget-panel-log {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 0.625rem;
+        overflow-y: auto;
+        padding: 0.75rem 1rem;
+    }
+
+    .widget-panel-bar {
+        display: flex;
+        gap: 0.5rem;
+        padding: 0.625rem 0.75rem;
+        border-top: 1px solid var(--border);
+    }
+
+    // 展示變體：正式版是 position:fixed 的浮層，元件庫頁要看得到它就得退回文流內
+    // （同 ui/subscription-gate 的 .demo-static）。只動定位與尺寸，結構與正式版相同。
+    &.demo-static {
+        display: flex;
+        align-items: flex-end;
+        gap: 1rem;
+
+        .widget-launcher,
+        .widget-panel {
+            position: static;
+        }
+
+        .widget-panel {
+            display: flex;
+            height: 360px;
+        }
+    }
+}

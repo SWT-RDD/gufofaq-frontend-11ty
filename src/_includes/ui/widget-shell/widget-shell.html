@@ -1,0 +1,71 @@
+{# 嵌入式問答小工具的外殼（launcher 鈕 ＋ 面板）。**這是 widget 的視覺定案**：
+     gufofaq-saas `apps/web/public/widget.js` 目前自己畫一份暫定的（`.launcher` 56px 圓 ＋ emoji 💬、
+     `.panel` 360×520 ＋ `[data-open]`），等這一份出來就照抄。
+
+  它與站內的頁面不一樣：**跑在別人的網站上**（widget.js 建一個 shadow root、自帶 CSS）。所以這一份
+    定的是「長什麼樣、結構是什麼」，不是 build 出來會被誰 include 的版面——唯一看得到它的地方是元件庫頁
+    （同 `ui/subscription-gate` 的處置：正式版是 position:fixed 浮層，展示版加 `.demo-static` 退回文流內）。
+
+  **launcher 不另畫一顆**：沿用 `ui/faq-launcher` 的 `.faq-launcher`（`--brand-gradient` 圓 ＋
+    `icon_owl.png` ＋ 56px ＋ 右下角），本元件只補按鈕該有的 reset 與開合狀態。理由：那顆鈕是登入後
+    每一頁右下角的前台入口，widget 的 launcher 是**同一個東西在別人網站上的版本**——各畫一顆的話，
+    同一個產品會有兩顆長得不一樣的貓頭鷹。差別只在它開的是面板、不是新分頁，故：
+      · `<button>` 不是 `<a>`（它是動作、不是導覽）
+      · `aria-expanded` ＋ `aria-controls` 指向面板（開合狀態要報得出來）
+
+  面板內容沿用既有原子：訊息泡泡走 `ui/chat-message`（`.message-wrap` / `.message-row.by-robot|.by-user`
+    / `.message-content`），輸入列走 `ui/chatroom-shell` 的 `.chat-input-container`——widget 的訊息與
+    前台 FAQ 的訊息是同一種東西，另寫一套就是第二份會分岔的正本（§3-3）。
+
+  chrome 與資料的分界：**面板標題是租戶設定的**（widget.js 的 `title` 來自嵌入設定）⇒ 資料、不翻；
+    關閉／送出／輸入框可及名稱是 chrome ⇒ 走既有 key（`action.close`／`action.submit`／`comp.enterQuestion`）。
+
+  桶歸屬：放 `ui/` 是因為它**不 include 任何其他元件**（§1-1 的機器判準）。它的 markup 確實寫了
+    `ui/faq-launcher` 與 `ui/chat-message` 的 class，那是真的依賴——但桶歸屬那條測試只對「生產頁
+    用得到的元件」掃 markup class，而這一顆只出現在元件庫頁，所以掃不到。記在這裡免得下一個人以為
+    它真的零依賴而去改那兩顆的 class。
+
+  參數（使用頁在 include 前 set）：
+    widgetTitle    —— 面板標題（租戶設定值；不給＝示範文字）
+    widgetDemoStatic —— true 時加 `.demo-static`（元件庫頁用：把 fixed 浮層退回文流內） #}
+<div class="widget-shell{% if widgetDemoStatic %} demo-static{% endif %}">
+    <button type="button" class="faq-launcher widget-launcher" aria-expanded="false" aria-controls="widgetPanel"
+        aria-label="開啟客服小幫手" data-i18n-aria-label="a11y.openWidget">
+        <img src="./images/icon_owl.png" width="40" height="40" decoding="async" alt="">
+    </button>
+    <div class="widget-panel" id="widgetPanel" role="dialog" aria-labelledby="widgetPanelTitle">
+        <div class="widget-panel-head">
+            {# 標題是租戶設定值（資料，不翻）；它同時是面板的可及名稱，故給 id 讓 dialog 指過來。 #}
+            <span id="widgetPanelTitle">{{ widgetTitle or "客服小幫手" }}</span>
+            <button type="button" class="widget-panel-close" aria-label="關閉" data-i18n-aria-label="action.close">
+                <img src="./images/icon_close.png" width="48" height="48" decoding="async" alt="" class="icon">
+            </button>
+        </div>
+        {# role="log" ＋ aria-live="polite"：新回答是非同步長出來的，報讀器要唸得到（同 widget.js 現況）。 #}
+        <div class="widget-panel-log" role="log" aria-live="polite">
+            <div class="message-wrap">
+                <div class="message-row by-robot">
+                    <div class="message-content">
+                        <div class="robot-msg">您好，我是客服小幫手，請問有什麼可以協助您的嗎？</div>
+                    </div>
+                </div>
+            </div>
+            <div class="message-wrap">
+                <div class="message-row by-user">
+                    <div class="message-content">
+                        <span>請問營業時間是幾點到幾點？</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="widget-panel-bar">
+            <input type="text" class="form-control js-widget-input" placeholder="輸入問題"
+                data-i18n-placeholder="comp.enterQuestion" aria-label="輸入問題" data-i18n-aria-label="comp.enterQuestion">
+            {# 送出是直接送 API 的動作鈕 ⇒ data-toast 列全結果（§5 矩陣③）。節流那一段對回 widget token
+                 的每分鐘上限（product `widget_tokens.py`），不是泛用的「失敗」。 #}
+            <button type="button" class="button button-primary js-widget-send"
+                data-toast="回答生成中...|回答生成失敗，請稍後再試|詢問太頻繁，請稍後再試" data-i18n-data-toast="toast.widgetAsk"
+                data-toast-type="info|error|warning" data-i18n="action.submit">送出</button>
+        </div>
+    </div>
+</div>

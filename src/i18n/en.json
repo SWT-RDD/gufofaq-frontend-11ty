@@ -1,5 +1,6 @@
 {
   "a11y.openFaqChatbot": "Open the FAQ chatbot (opens in a new window)",
+  "a11y.openWidget": "Open the support assistant",
   "a11y.skipToContent": "Skip to main content",
   "action.addDataset": "Add dataset",
   "action.cancel": "Cancel",
@@ -1444,6 +1445,7 @@
   "toast.saveWelcome": "Saved as a new version|Content cannot be empty|Failed to save the welcome message. Please try again later.",
   "toast.setUserActive": "User status updated|Cannot disable the last active administrator|Cannot disable the last platform system administrator|Update failed. Please try again later.",
   "toast.testMcpServer": "Connected — the tool list in the right-hand column is updated|Connection test failed — see the reason in the right-hand column",
+  "toast.widgetAsk": "Generating answer…|Failed to generate an answer. Please try again later.|Too many questions. Please try again later.",
   "tool.analyze_user_intent.desc": "Breaks the user question down into structured information such as language, full question and keywords. Not needed in ordinary conversations.",
   "tool.analyze_user_intent.example.description": "Call this when the user asks several things at once and they have to be split apart before being handled one by one.",
   "tool.analyze_user_intent.example.extraPrompt": "Answer each item in order after splitting them apart; do not skip any of them.",

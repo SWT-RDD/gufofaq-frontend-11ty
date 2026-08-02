@@ -1,5 +1,9 @@
 // 登入後每一頁右下角的浮動前台入口（貓頭鷹鈕）。markup 見 faq-launcher.html。
 //
+// **這顆鈕還有第二個消費點**：`ui/widget-shell`（嵌入別人網站的小工具）的 launcher 逐字沿用
+// 本 class，只在它自己的 scss 補按鈕的 reset 與開合狀態——同一個產品不該有兩顆長得不一樣的貓頭鷹。
+// 改這裡的尺寸／位置／陰影時，widget 那一顆會一起變，那是刻意的。
+//
 // 視覺語言刻意與前台 `components/faq-chatroom` 的機器人頭像同一套（`--brand-gradient` 的圓形
 // ＋ `icon_owl.png`）：使用者在後台看到的這顆鈕，跟他點進去之後看到的那個機器人是同一個東西。
 //
