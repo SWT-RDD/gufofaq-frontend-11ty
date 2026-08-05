@@ -751,6 +751,16 @@ bodyClass: guideline-page
                 <p class="text-red m-0" data-i18n="regression.llmEffortUnsupported">本產品送不出思考深度給這顆模型：設定檔的判定分組若設了思考深度，評審一樣會建不起來（同樣只影響主觀分，不影響答案）。</p>
                 <p class="text-red m-0" data-i18n="regression.effectiveBaselineMissing">基準那一輪沒有留下實際使用的設定，所以「兩輪的設定差在哪」這一次答不出來——不要把下面這張表讀成「兩輪設定相同」。</p>
                 <p class="text-red m-0" data-i18n="settings.outputRuleCategoryDuplicate">代碼重複，只有最後一列會生效——請把重複的那列刪掉。</p>
+                {# 4-2 的合規兩欄：未被擋的那一輪 blocked_by／policy_detections 都是 NULL，
+                     所以那一頁**整塊不渲染**（不畫空白）——被擋那一輪長什麼樣只有這裡看得到。 #}
+                <div class="flex-row align-items-center gap-8">
+                    <span data-i18n="qa.blockedBy">被什麼擋下</span>
+                    <span class="verdict-tag is-fail">output_policy</span>
+                </div>
+                <div class="flex-row align-items-center gap-8">
+                    <span data-i18n="qa.policyDetections">合規命中</span>
+                    <span class="verdict-tag is-warn">個資：身分證字號（record，未阻擋）</span>
+                </div>
                 <p class="text-gray m-0" data-i18n="settings.tagFilterCoverageWarnOk">目前每一份資料都帶得到這一欄，可以開啟。沒填的格子在匯入時就已經寫成「未標註」，過濾條件會連它們一起比對，所以標了幾成不影響會不會漏文件。之後要注意的只有一件事：資料夾匯入的檔永遠沒有欄位槽，那樣匯入一批新資料就會又缺這一欄，要改成逐列匯入才接得回來。</p>
                 <p class="text-gray m-0"><span data-i18n="regression.hitsTruncatedPrefix">（這一格只列了前 </span><span>3</span><span data-i18n="regression.hitsTruncatedMid"> 筆，實際命中 </span><span>63</span><span data-i18n="regression.hitsTruncatedSuffix"> 筆）</span></p>
             </div>

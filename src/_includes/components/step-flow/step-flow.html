@@ -23,7 +23,8 @@
      刻意**不**收工具參數與結果原文（後端也不送，那是洩漏面）。
    參數：stepFlowNodes（選填，[{ label, state, time, depth, skill, version, iterations, error,
      tools, params, result, verdict, thinking }]）＋
-     stepFlowSummary（選填，{ tokens, latency, ttft, results, model }）——使用頁換對話主題時「兩個一起覆寫」，
+     stepFlowSummary（選填，{ tokens, latency, ttft, results, model ＋選填成對的 tokensIn／tokensOut }）
+     ——使用頁換對話主題時「兩個一起覆寫」，
      否則摘要（檢索筆數/模型）會與節點對不上（§6 自洽）；內部變數用元件專屬名 stepFlowNodeRows／stepFlowSummaryData。
      stepFlowTraceShown ＋ stepFlowTraceTotal（選填，成對）＝**原始事件軌跡被引擎夾掉**那一態的兩個數字；
      兩個都沒給＝未截斷（整段不渲染，見下方 S3 那段註解）。它們與節點數不同源、不互相推導：
@@ -91,6 +92,13 @@
         <button type="button" class="button button-border button-sm js-load-full-trace" data-i18n="agent.loadFullTrace">載入完整軌跡</button>
         {% endif %}
         <span class="step-flow-metric"><span data-i18n="agent.summaryTokens">Token</span> {{ stepFlowSummaryData.tokens }}</span>
+        {# 拆 input／output（`chat_logs.input_tokens`／`output_tokens`，總數是 `total_tokens`）：
+             成本與延遲的成因不同——輸出 token 貴且拖 TTFT，輸入 token 多半是脈絡塞太多。
+             只給總數看不出該往哪邊調。**成對選填**：兩個都沒給就只畫總數（單測／AB 的示範沒有這兩欄）。 #}
+        {% if stepFlowSummaryData.tokensIn %}
+        <span class="step-flow-metric"><span data-i18n="agent.summaryTokensIn">輸入</span> {{ stepFlowSummaryData.tokensIn }}</span>
+        <span class="step-flow-metric"><span data-i18n="agent.summaryTokensOut">輸出</span> {{ stepFlowSummaryData.tokensOut }}</span>
+        {% endif %}
         <span class="step-flow-metric"><span data-i18n="agent.summaryLatency">延遲</span> {{ stepFlowSummaryData.latency }}</span>
         <span class="step-flow-metric"><span data-i18n="agent.summaryTtft">首字</span> {{ stepFlowSummaryData.ttft }}</span>
         <span class="step-flow-metric"><span data-i18n="agent.summaryResults">檢索</span> {{ stepFlowSummaryData.results }}</span>

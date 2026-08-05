@@ -98,6 +98,30 @@ permalink: 4-1_qaHistory.html
                     </select>
                 </div>
             </div>
+            <div class="form-group col-12-sm w-200">
+                <div class="label">
+                    <label for="answerSourceSelect" class="control-label" data-i18n="qa.answerSource">答案來源</label>
+                </div>
+                <div class="field">
+                    {# **切版對後端提的要求**（§4：主張需求、不等後端）。上游 `chat_logs.answer_source`
+                         現在只寫得出兩種狀態：`qa_direct`（QA 完美命中／judge 通過，逐字直出）與
+                         **NULL**（正常生成）——也就是說「模型生成」目前沒有字面可送。
+                         這一顆下拉要求 `GET /history` 收一個 `answer_source` 參數，並讓 `generated`
+                         對到「該欄為 NULL」那一側；在那之前它送出去不會生效（相依：A1）。
+                         為什麼不送空字串或 `null`：那與「全部（不帶參數）」在 query string 上分不開，
+                         而這兩件事問的不是同一個問題。
+                         值載體 select ⇒ 只掛 hook class、不掛 data-toast（§5 矩陣②：document 上的 click
+                         委派抓不到 change，成敗也要看後端）。唯讀查詢 ⇒ 不掛任何授權軸。
+                         「全部」就是那顆 `<option value="">`（§4：「還沒挑」要有一顆承載得住、且有可讀標籤）。
+                         key：「全部」與「QA 直答」的繁中在站內已經有主人（`common.all`／`settings.qaDirect`），
+                         §4-2 同文沿用既有 key、不另立——只有「模型生成」是新的。 #}
+                    <select id="answerSourceSelect" class="form-control singleSelect js-answer-source">
+                        <option value="" data-i18n="common.all">全部</option>
+                        <option value="qa_direct" data-i18n="settings.qaDirect">QA 直答</option>
+                        <option value="generated" data-i18n="qa.answerSourceGenerated">模型生成</option>
+                    </select>
+                </div>
+            </div>
         </div>
         <div class="flex-row align-items-center justify-content-center gap-16 flex-wrap">
             <button type="button" class="button button-border js-filter-clear" data-i18n="action.clear">清除</button>
@@ -123,7 +147,7 @@ permalink: 4-1_qaHistory.html
                  · 範圍長度 > 31 天（history.py 的 `history.range_over_31_days`）
                  · 起點比現在早超過 366 天（history.py 的 `history.range_over_a_year`）——與上一條是不同條件：
                    選 2024/01/01～01/20 過得了 31 天那關，照樣被一年那關擋掉
-                 · `total > MAX_EXPORT_LOGS`（history.py，串流開始前就先探一頁擋掉）
+                 · `total > MAclass="form-control singleSelect js-answer-source"_EXPORT_LOGS`（history.py，串流開始前就先探一頁擋掉）
                  原本只列第一條，另外兩條落進紅色的「下載失敗」。 #}
             <button type="button" class="button button-green" data-toast="下載已開始|只提供31日間的問答記錄下載|只提供一年內的問答記錄下載|這段範圍的資料量過大，請縮小時間範圍|下載失敗" data-i18n-data-toast="toast.downloadRecords" data-toast-type="success|warning|warning|warning|error" data-i18n="action.download">下載</button>
         </div>
@@ -143,6 +167,7 @@ permalink: 4-1_qaHistory.html
 {% set rows = [
     {
         id: "12173",
+        answerSource: "qa_direct",
         roomId: "6537",
         userMsg: "新住民結婚注意事項",
         aiMsg: "您好！關於新住民結婚的注意事項，以下是一些重要的要點：申請結婚登記需雙方親自到戶政事務所辦理，並準備有效身分證明與結婚證明文件；部分情況需健康檢查合格證明。",
@@ -153,6 +178,7 @@ permalink: 4-1_qaHistory.html
     },
     {
         id: "12174",
+        answerSource: "generated",
         roomId: "6538",
         userMsg: "護照效期不足可以出國嗎",
         aiMsg: "護照效期建議至少保留6個月以上，若不足可能影響入境；各國規定不同，行前請先確認目的地國的效期要求與簽證條件。",
@@ -163,6 +189,7 @@ permalink: 4-1_qaHistory.html
     },
     {
         id: "12175",
+        answerSource: "generated",
         roomId: "6539",
         userMsg: "欠稅被限制出國要如何解除",
         aiMsg: "欠稅限制出國的解除方式，需先向稅捐機關繳清欠稅或提供相當擔保，經核准後由財政部函請移民署解除限制。",
@@ -218,7 +245,10 @@ permalink: 4-1_qaHistory.html
                 <td>
                     <div class="collapse-text"><div class="collapse-body">{{ row.aiMsg }}</div><button type="button" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>
                 </td>
-                <td>{{ row.userType }}</td>
+                {# 直答那幾筆要在清單上看得出來（否則篩了才知道哪一筆是）。**只有直答掛徽章**：
+                     生成是常態，每一列都掛一顆「模型生成」等於掛了一顆沒有資訊量的標籤。
+                     `is-muted` 是中性事實標記（同 2-2-4 用它標「確定性」），不是判定好壞。 #}
+                <td>{{ row.userType }}{% if row.answerSource == "qa_direct" %} <span class="verdict-tag is-muted" data-i18n="settings.qaDirect">QA 直答</span>{% endif %}</td>
                 <td>{{ row.rating }}</td>
                 <td>{{ row.date }}</td>
             </tr>

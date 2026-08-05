@@ -3695,6 +3695,55 @@ test("§1-2 無 html 元件的 markup 契約要逐字寫在自己的 scss／js �
     assert.equal(hits.length, 0, `§1-2 無 html 元件的 markup 契約：\n${fail(hits)}`);
 });
 
+test("§5/§6 4-1 答案來源篩選：三顆值、只掛 hook、清單只有直答掛徽章", () => {
+    const src = read("src/pages/qaHistory/4-1_qaHistory.html");
+    const sel = src.match(/<select[^>]*id="answerSourceSelect"[\s\S]*?<\/select>/);
+    assert.ok(sel, "4-1 缺「答案來源」篩選");
+    // 值＝上游的字面；「全部」是那顆 value=""（§4：「還沒挑」要有一顆承載得住）
+    assert.deepEqual([...sel[0].matchAll(/<option value="([^"]*)"/g)].map((m) => m[1]), ["", "qa_direct", "generated"],
+        "選項的值要是 ''／qa_direct／generated（值＝上游字面，不另發明詞彙）");
+    // §5 矩陣②：值載體 select 只掛 hook class、不掛 data-toast（click 委派抓不到 change）
+    assert.match(sel[0], /class="[^"]*\bjs-answer-source\b/, "值載體要有 hook class 讓 React 認得出它");
+    assert.ok(!/data-toast/.test(sel[0]), "值載體不得掛 data-toast");
+    // 唯讀查詢：不掛任何授權軸
+    assert.ok(!/data-(capability|tenant-feature|tenant-role|platform-role)=/.test(sel[0]), "唯讀篩選不該宣告授權軸");
+    // 清單：只有 qa_direct 掛徽章——生成是常態，每列都掛等於掛了一顆沒有資訊量的標籤
+    const cell = src.match(/<td>\{\{ row\.userType \}\}[^\n]*<\/td>/);
+    assert.ok(cell, "找不到「使用者類型」那一格");
+    assert.match(cell[0], /\{%\s*if row\.answerSource == "qa_direct"\s*%\}/, "徽章要以 qa_direct 為條件");
+    assert.ok(!/{% else %}/.test(cell[0]), "生成的那幾筆不該掛徽章（沒有 else 分支）");
+    // dist：示範資料兩種都要有，否則「掛與不掛」只演得到一邊
+    const dist = distDoc("4-1_qaHistory.html");
+    const badges = (dist.match(/verdict-tag[^"]*"[^>]*data-i18n="settings\.qaDirect"/g) || []).length;
+    const rows = (dist.match(/<tr[^>]*>\s*<td>1217\d<\/td>/g) || []).length;
+    assert.ok(badges >= 1 && badges < rows, `示範要同時有直答與生成兩種列（徽章 ${badges} / 列 ${rows}）`);
+});
+
+test("§4/§6 4-2 詳情：設定欄是「有值 vs 整格不存在」，合規兩欄有值才出現", () => {
+    // 正本 history.py 的 _SETTINGS_SCOPED_LOG_FIELDS 在無 settings:read 時是把鍵**整個拿掉**，
+    // 所以這五欄不能切成「顯示空白」——空白會被讀成「這一輪沒設提示詞」而不是「你沒有權限看」。
+    const comp = read("src/_includes/components/qa-detail-info/qa-detail-info.html");
+    const gate = comp.match(/\{%\s*if conversation\.canReadSettings\s*%\}([\s\S]*?)\{%\s*endif\s*%\}/);
+    assert.ok(gate, "qa-detail-info 少了 canReadSettings 那道閘門");
+    for (const [key, what] of [["settings.modelName", "模型"], ["settings.searchTotalNumber", "取用資料筆數"],
+        ["settings.searchSelectedNumber", "選用資料筆數"], ["comp.prompt", "提示詞"]]) {
+        assert.match(gate[1], new RegExp(`data-i18n="${key.replace(".", "\\.")}"`), `${what} 那一格要收在 canReadSettings 內`);
+        // 反向：閘門外不得再有一份（在外面就等於沒分級）
+        assert.equal(comp.split(`data-i18n="${key}"`).length - 1, 1, `${what} 只能有一處，且在閘門內`);
+    }
+    const page = read("src/pages/qaHistory/4-2_qaHistory_detail.html");
+    for (const v of ["detailBlockedBy", "detailPolicyDetections"])
+        assert.match(page, new RegExp(String.raw`\{%\s*if ${v}(\.length)?\s*%\}`), `${v} 要「有值才畫」，不留空白區塊`);
+    // 那兩態沒有真實頁演得出來 ⇒ 元件庫要有一份可見的（§5，同上一條 .hidden 的處置）
+    const gallery = distDoc("component.html");
+    for (const k of ["qa.blockedBy", "qa.policyDetections"])
+        assert.match(gallery, new RegExp(`data-i18n="${k.replace(".", "\\.")}"`), `元件庫缺 ${k} 的可見示範`);
+    // 執行流程：本頁的軌跡截斷兩態成對給，且「載入完整軌跡」真的渲染得出來
+    const dist = distDoc("4-2_qaHistory_detail.html");
+    assert.match(dist, /data-i18n="agent\.loadFullTrace"/, "4-2 缺「載入完整軌跡」（product GET /history/{id}/trace 已經在了）");
+    assert.match(dist, /data-i18n="agent\.summaryTokensIn"/, "執行摘要要把 token 拆成 input／output");
+});
+
 test("§5 寫死 .hidden 的分支文案，至少要有一處看得見（否則全站沒有人看過它的長相）", () => {
     // `.hidden` 是 display:none !important。寫死（非 {% if %} 產出）又沒有可見的另一態時，
     // 那塊 markup 連同它的 i18n key 在每一頁都看不到——而它同時逃過「孤兒 key」（key 有被引用）、

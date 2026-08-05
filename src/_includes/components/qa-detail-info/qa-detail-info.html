@@ -5,7 +5,16 @@
      AI 對話內容維持真實頁面原始寫法：直接在 .td 內以純文字＋多個 <p> 呈現（未加 .long-text，真實 markup 本來就沒有），逐字保留（inline，非收合摘要）。
      「提示詞」欄用 ui/collapse-text 收合元件呈現（.collapse-text/.collapse-body/.collapse-toggle）：真 app 的 scss 源碼漏了這組 class，
      但編譯後的 css/component.css:3482 有；展開/收合是純 UI（js/main.js:880），由 collapse-text.js 接手，逐字保留內容以維持完整欄位清單。 #}
-{# conversation 短欄位由頁面提供（include 前 set conversation，見 §3-2/§6）；AI 回答與提示詞為長文，仍依 §3-2 寫死在下方 markup #}
+{# conversation 的欄位（頁面在 include 前 set，§3-2/§6）：
+     satisfaction / feedback / chatroomId / id / time / intent / userMessage —— 既有的基本欄
+     answerSource —— `chat_logs.answer_source`：`qa_direct` ＝逐字直答（掛徽章），其餘＝模型生成
+     chatMode / tag / language —— 對話模式（傳統／Agent）／標籤（前台／後台／AB 測試）／語言；
+       未給一律畫「—」，不留白（留白會被讀成「這一欄沒有東西」而不是「這一輪沒有值」）
+     canReadSettings —— **能力分級開關**：true 才渲染模型／取用筆數／選用筆數／提示詞四格。
+       正本 `history.py` 的 `_SETTINGS_SCOPED_LOG_FIELDS` 在沒有 `settings:read` 時是**把鍵整個拿掉**，
+       所以這裡切「有值 vs 整格不存在」兩態，不切「顯示空白」——詳見那四格旁邊的註解
+     modelName / searchTotalNumber / searchSelectedNumber —— 上面那四格的值（canReadSettings 為真時才有）
+   AI 回答與提示詞為長文，仍依 §3-2 寫死在下方 markup #}
 {# AI 回答內文的引用標記（components/citation-ref）：**這一頁也要畫**。它是一則過去問答的唯讀
      詳情，而佐證那則答案的「參考來源」表就在同一頁的正下方——答案裡標著 [[7]]、下面那張表就有
      序號 7 的那一列，點下去展開並高亮（citation-ref.js → GufoSources.reveal）。少了徽章，
@@ -56,6 +65,30 @@
                         <div class="th" data-i18n="qa.hasIntentDetection">有無進行意圖判斷</div>
                         <div class="td">{{ conversation.intent }}</div>
                     </div>
+                    {# 「這一輪是怎麼回答的」四欄。前三欄的值是**上游的字面**、不另發明詞彙：
+                         · 答案來源＝`chat_logs.answer_source`（`qa_direct` ／ NULL＝正常生成）。
+                           ⚠️ **NULL 那一側目前沒有字面**，「模型生成」是切版對後端提的要求（同 4-1 的篩選）。
+                         · 對話模式（傳統／Agent）**上游沒有這一欄**：`chat_logs` 查不到 chat_mode 之類的欄位，
+                           而使用者要判斷「為什麼這一輪有工具軌跡、那一輪沒有」就得知道它。這一格是切版
+                           對後端提的要求（§4：不等資料齊了才畫）——落庫之前 React 端不渲染它。
+                         · 標籤＝`chat_logs.tag`（前台／後台／AB 測試），與 4-1 清單的「使用者類型」同一欄。
+                         · 語言＝`chat_logs.language`（NULL＝本輪未偵測，故畫「—」而不是留白）。 #}
+                    <div class="col col-3-md col-12-sm">
+                        <div class="th" data-i18n="qa.answerSource">答案來源</div>
+                        <div class="td">{% if conversation.answerSource == "qa_direct" %}<span class="verdict-tag is-muted" data-i18n="settings.qaDirect">QA 直答</span>{% else %}<span data-i18n="qa.answerSourceGenerated">模型生成</span>{% endif %}</div>
+                    </div>
+                    <div class="col col-3-md col-12-sm">
+                        <div class="th" data-i18n="qaTest.chatMode">對話模式</div>
+                        <div class="td">{{ conversation.chatMode or "—" }}</div>
+                    </div>
+                    <div class="col col-3-md col-12-sm">
+                        <div class="th" data-i18n="field.tags">標籤</div>
+                        <div class="td">{{ conversation.tag or "—" }}</div>
+                    </div>
+                    <div class="col col-3-md col-12-sm">
+                        <div class="th" data-i18n="settings.language">語言</div>
+                        <div class="td">{{ conversation.language or "—" }}</div>
+                    </div>
                     <div class="col col-12-md">
                         <div class="th" data-i18n="qa.userMessage">使用者對話內容</div>
                         <div class="td">{{ conversation.userMessage }}</div>
@@ -93,6 +126,28 @@
                             <p>如需更詳細的資訊或具體的法律條文，建議您參考相關的法律文件或諮詢專業的法律顧問。希望這些資訊對您有所幫助！如有其他問題，隨時歡迎詢問。
                             </p>
                         </div>
+                    </div>
+                    {# ── 租戶調校設定欄（能力分級）────────────────────────────────────────
+                         `system_prompt`／`single_prompt`／`model_name`／`search_total_number`／
+                         `search_selected_number` 這五欄只有具 `settings:read` 的人拿得到：正本
+                         `history.py` 的 `_SETTINGS_SCOPED_LOG_FIELDS`，投影時是
+                         `{k: v for k, v in marked.items() if k not in …}` ——**整個鍵不存在**，不是回空值。
+                         所以這裡切的兩態是「有值」與「整格不渲染」，**不是「顯示空白」**：
+                         空白會被讀成「這一輪沒設提示詞／沒指定模型」，而事實是「你沒有權限看」。
+                         由使用頁傳 conversation.canReadSettings 決定（React 端依 /api/me 的能力）。 #}
+                    
+                    {% if conversation.canReadSettings %}
+                    <div class="col col-4-md col-12-sm">
+                        <div class="th" data-i18n="settings.modelName">模型</div>
+                        <div class="td">{{ conversation.modelName }}</div>
+                    </div>
+                    <div class="col col-4-md col-12-sm">
+                        <div class="th" data-i18n="settings.searchTotalNumber">取用資料筆數</div>
+                        <div class="td">{{ conversation.searchTotalNumber }}</div>
+                    </div>
+                    <div class="col col-4-md col-12-sm">
+                        <div class="th" data-i18n="settings.searchSelectedNumber">選用資料筆數</div>
+                        <div class="td">{{ conversation.searchSelectedNumber }}</div>
                     </div>
                     <div class="col col-12-md">
                         <div class="th" data-i18n="comp.prompt">提示詞</div>
@@ -137,6 +192,7 @@
                             </div>
                         </div>
                     </div>
+                    {% endif %}
                 </div>
             </div>
         </div>

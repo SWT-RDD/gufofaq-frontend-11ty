@@ -6,6 +6,11 @@ pageHeading: 對話詳細內容
 permalink: 4-2_qaHistory_detail.html
 ---
 {# 對話詳細資訊 + 參考來源資料——依 §3-2/§6 由頁面提供，元件只負責渲染 #}
+{# 示範狀態＝一則 **Agent 模式、模型生成** 的後台問答，看得到執行流程與工具軌跡；
+     canReadSettings 給 true（示範「有 settings:read」那一態；沒有那一態是四格整個不渲染，
+     不是留白——見 components/qa-detail-info 那一段註解）。
+     這一筆刻意不是 QA 直答：直答那一態在 4-1 清單的徽章上演得到，而直答沒有工具軌跡可看，
+     詳情頁演它就等於整個執行流程區塊都是空的。 #}
 {% set conversation = {
     satisfaction: { label: "讚", icon: "./images/icon_good.png" },
     feedback: "回答很快也很清楚，謝謝！",
@@ -13,7 +18,15 @@ permalink: 4-2_qaHistory_detail.html
     id: "12173",
     time: "2024/12/01 13:29:24",
     intent: "-",
-    userMessage: "新住民結婚注意事項"
+    userMessage: "新住民結婚注意事項",
+    answerSource: "generated",
+    chatMode: "Agent",
+    tag: "前台問答",
+    language: "繁體中文",
+    canReadSettings: true,
+    modelName: "openai:gpt-4o-mini",
+    searchTotalNumber: "16",
+    searchSelectedNumber: "8"
 } %}
 {# 來源列。**sourceNo 就是上面 AI 回答裡的兩個 [[N]]**（3 與 7，見 components/qa-detail-info 的
      示範答案）：「序號」欄與引用標記是同一組號碼，否則使用者看到 [[7]] 在表上找不到 7。
@@ -86,6 +99,111 @@ permalink: 4-2_qaHistory_detail.html
 
 {# 對話詳細內容：真實頁「滿意度回饋」+「基本對話資訊」表格，與 components/qa-detail-info 完全一致（同一份真實頁抽出），直接 include #}
 {% include "components/qa-detail-info/qa-detail-info.html" %}
+
+{# ── 執行流程 ＋ 執行摘要 ───────────────────────────────────────────────────────
+     沿用 components/step-flow（2-2-1／2-2-3 已在用，不另做一份）。頂端那一列摘要同時承載
+     token（總數＋拆 input／output）、TTFT、延遲與模型，故第 3 塊「執行摘要」與這一塊共用版位。
+     · 節點來源＝`chat_logs.step_events`；工具軌跡＝`tool_activity`；推理＝`thinking_by_node`。
+       **三欄都是 nullable**：傳統模式沒有工具軌跡、走不到 CHAT_ROOM chunk 的那兩條路（ERROR 收尾、
+       使用者中途關分頁）三欄皆 NULL。所以這一整塊是「有值才畫」——沒有軌跡的那一輪不該多一塊空白
+       （§5「不放按了沒反應的鈕」在版面上的對應）。示範這一筆是 Agent 模式且有軌跡。
+     · 延遲＝`request_ended_at − request_started_at`（兩欄都是觀測性欄位，切版直接畫算好的差）。
+     · 「載入完整軌跡」這一次是**真的接得上**：product `GET /history/{log_id}/trace` 已經在了
+       （回 step_events／tool_activity／thinking_by_node 的完整版），詳情頁帶回來的是前 N 筆 ＋
+       尾端 `{truncated, total}` 標記的檢視。故本頁把成對參數設起來，那顆鈕與截斷提示都渲染得出來。 #}
+{% if conversation.chatMode == "Agent" %}
+{% set stepFlowNodes = [
+    { label: "初始化對話", state: "completed", time: "12ms" },
+    { label: "Agent 推理", state: "completed", time: "340ms", thinking: "問題涉及具體法規與應備文件，決定先查知識庫再生成。" },
+    { label: "檢索知識庫", state: "completed", time: "1.2s", tools: "search_knowledge_base", params: "{ query: '新住民 結婚 應備文件' }", result: "命中 8 筆片段（相似度 0.79–0.92），注入後續生成脈絡。" },
+    { label: "可回答性判定", state: "completed", time: "210ms", verdict: "generate（素材足以回答）" },
+    { label: "生成答案", state: "completed", time: "2.1s" },
+    { label: "生成推薦問題", state: "completed", time: "180ms" },
+    { label: "完成對話", state: "completed", time: "8ms" },
+    { label: "輸出合規檢查", state: "completed", time: "24ms" }
+] %}
+{% set stepFlowSummary = {
+    tokens: "1,284", tokensIn: "980", tokensOut: "304",
+    latency: "2.4s", ttft: "480ms", results: "8", model: "openai:gpt-4o-mini"
+} %}
+{% set stepFlowTraceShown = 200 %}
+{% set stepFlowTraceTotal = 231 %}
+{% include "components/step-flow/step-flow.html" %}
+{% endif %}
+
+{# ── 合規與其他 ────────────────────────────────────────────────────────────────
+     `blocked_by`／`policy_detections` 未被擋的那一輪是 NULL ⇒ **有值才出現整塊**，不畫空白。
+     其餘四欄（keywords／filenames／suggest_questions／chat_room_title）是常態欄，沒有就畫「—」。
+     `previous_chat_log_id`：多輪時可點回上一則（同一個聊天室的前一筆）；首輪為 NULL ⇒ 不渲染連結。 #}
+{% set detailBlockedBy = "" %}
+{% set detailPolicyDetections = [] %}
+{% set detailKeywords = "新住民, 結婚登記, 戶政事務所" %}
+{% set detailFilenames = "新住民結婚登記須知.pdf, 跨國婚姻健康檢查與居留.docx" %}
+{% set detailSuggestQuestions = [
+  "外籍配偶的單身證明要去哪裡驗證？",
+  "結婚登記後多久可以申請居留？"
+] %}
+{% set detailChatRoomTitle = "新住民結婚相關詢問" %}
+{% set detailPreviousLogId = "12170" %}
+<div class="block block-sm mt-16">
+    <div class="form-table-wrap">
+        <div class="form-table-group">
+            <div class="subtitle" data-i18n="qa.otherDetail">其他資訊</div>
+            <div class="form-table">
+                {% if detailBlockedBy %}
+                <div class="row">
+                    <div class="col col-12-md">
+                        <div class="th" data-i18n="qa.blockedBy">被什麼擋下</div>
+                        <div class="td"><span class="verdict-tag is-fail">{{ detailBlockedBy }}</span></div>
+                    </div>
+                </div>
+                {% endif %}
+                {% if detailPolicyDetections.length %}
+                <div class="row">
+                    <div class="col col-12-md">
+                        <div class="th" data-i18n="qa.policyDetections">合規命中</div>
+                        <div class="td">
+                            <ul class="list-style-disc">
+                                {% for d in detailPolicyDetections %}
+                                <li>{{ d }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                <div class="row">
+                    <div class="col col-6-md col-12-sm">
+                        <div class="th" data-i18n="qa.chatRoomTitle">聊天室標題</div>
+                        <div class="td">{{ detailChatRoomTitle or "—" }}</div>
+                    </div>
+                    <div class="col col-6-md col-12-sm">
+                        <div class="th" data-i18n="qa.previousLog">上一則</div>
+                        <div class="td">{% if detailPreviousLogId %}<a href="4-2_qaHistory_detail.html?logSn={{ detailPreviousLogId }}" class="link-file">#{{ detailPreviousLogId }}</a>{% else %}—{% endif %}</div>
+                    </div>
+                    <div class="col col-6-md col-12-sm">
+                        <div class="th" data-i18n="qa.keyword">關鍵字</div>
+                        <div class="td">{{ detailKeywords or "—" }}</div>
+                    </div>
+                    <div class="col col-6-md col-12-sm">
+                        <div class="th" data-i18n="qa.filenames">命中檔名</div>
+                        <div class="td">{{ detailFilenames or "—" }}</div>
+                    </div>
+                    <div class="col col-12-md">
+                        <div class="th" data-i18n="qa.suggestQuestions">推薦問題</div>
+                        <div class="td">
+                            {% for q in detailSuggestQuestions %}
+                            <div>{{ q }}</div>
+                            {% else %}
+                            —
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 {# 參考來源表格區塊：與 components/sources-block 完全一致（同一份真實頁抽出），直接 include #}
 {% include "components/sources-block/sources-block.html" %}
