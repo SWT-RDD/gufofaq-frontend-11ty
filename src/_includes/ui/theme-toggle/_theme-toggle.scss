@@ -17,7 +17,10 @@
 
     &:hover {
         background-color: var(--surface-hover);
-        color: var(--brand-text);
+        // hover 面比卡片深，--brand-text 疊上去淺色只有 4.33:1（< AA 4.5）；文字的 hover 色本來就該
+        // 壓深一階（--brand-text-hover 疊同一面是 5.01:1）。隔壁 .lang-toggle 踩過同一個坑，見
+        // components/header-controls/_header-controls.scss。
+        color: var(--brand-text-hover);
     }
 
     // 淺色顯示月亮（點了轉深）、深色顯示太陽（點了轉淺）。

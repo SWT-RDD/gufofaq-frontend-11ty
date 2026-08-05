@@ -1,4 +1,22 @@
 // 逐字複製自真實 app 的 scss/component.scss「login page」區段（.login-wrapper，第 3190-3271 行，verbatim，只搬移位置）
+//
+// markup 契約（無 html 元件，§1-2；整段照抄）—— 生產 markup 手寫在 src/login.html：
+//   <div class="login-wrapper">
+//     <div class="login-controls">{% include "components/header-controls/header-controls.html" %}</div>
+//     <div class="login-left"><div class="login-box">
+//       <img class="logo" …>
+//       <form class="form-group-wrap" id="loginForm">
+//         <div class="form-group input">…帳號…</div>      ← .input 掛在 form-group 上，不是 <input> 上
+//         <div class="form-group input">…密碼…</div>
+//         <button type="button" class="forgot-btn" …>…忘記密碼…</button>
+//         <span class="error-prompt" role="alert" id="loginRetryHint">…節流秒數…</span>
+//         <button type="button" class="button button-primary login-btn" …>…登入…</button>
+//       </form>
+//     </div></div>
+//     <div class="login-right"><img class="side-img" …></div>
+//   </div>
+// .input 掛在 .form-group 上是這份契約的重點：兩顆 <input> 各住在自己的 .field 裡，都是該父層
+// 唯一的 input ⇒ 掛在 <input> 上時兩顆都命中 :last-of-type，基準的 24px 永遠不生效。
 .login-wrapper {
     display: flex;
     height: 100vh;

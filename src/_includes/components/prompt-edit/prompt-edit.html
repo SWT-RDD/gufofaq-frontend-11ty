@@ -39,6 +39,6 @@
         {# 送 API 的直接動作鈕（真 app singleTest.js .js-prompt-reset：取目前正式提示詞、成敗各一種 toast）→ data-toast 列全結果（§5） #}
         <button type="button" class="button button-green js-prompt-reset" data-toast="已回復至目前正式提示詞|無法取得正式提示詞" data-i18n-data-toast="toast.resetPrompt" data-toast-type="success|error" data-i18n="action.resetDefault">回復至預設</button>
 
-        <button type="button" class="button button-primary js-prompt-new-version" data-toast="已儲存為新版本|內容欄位不可為空|新增提示詞失敗，請稍後再試" data-i18n-data-toast="toast.savePrompt" data-toast-type="success|warning|error" data-i18n="action.saveNewVersion">儲存為新版本</button>
+        <button data-capability="settings:write" type="button" class="button button-primary js-prompt-new-version" data-toast="已儲存為新版本|內容欄位不可為空|新增提示詞失敗，請稍後再試" data-i18n-data-toast="toast.savePrompt" data-toast-type="success|warning|error" data-i18n="action.saveNewVersion">儲存為新版本</button>
     </div>
 </div>

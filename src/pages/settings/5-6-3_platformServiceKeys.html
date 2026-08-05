@@ -168,7 +168,7 @@ permalink: 5-6-3_platformServiceKeys.html
 {# ── 授權範圍值域 ─────────────────────────────────────────────────────────────
      `GET /platform/service-keys/scopes`。列出來的理由：核發前要選一個，而「有哪些可選、各自
      涵蓋哪幾支端點」不該靠翻程式碼。說明文字是 API 回的資料（不翻）。 #}
-{# 這一區是唯讀值域，端點 `list_service_key_scopes` 是 require_platform_auditor（platform.py:1510）——
+{# 這一區是唯讀值域，端點 `list_service_key_scopes` 是 require_platform_auditor（platform.py）——
      稽核員讀得到，故標 auditor 而不是跟著整頁最嚴的那一級走。 #}
 <div class="block mb-16 flex-row column gap-16" data-platform-role="auditor">
     <div class="text-md text-bold" data-i18n="serviceKey.scopesTitle">可核發的授權範圍</div>
@@ -211,7 +211,7 @@ permalink: 5-6-3_platformServiceKeys.html
         <div class="text-md text-bold" data-i18n="serviceKey.listTitle">現有憑證</div>
         {# **預設勾起來**：篩選控制項的預設值就是示範資料的前提（§6）。下面三列裡第 3 列是
              已撤銷的，而 `list_service_keys` 在 `include_revoked` 為 false 時
-             `q.where(PlatformServiceKey.revoked_at.is_(None))`（platform.py:1563-1574）
+             `q.where(PlatformServiceKey.revoked_at.is_(None))`（platform.py）
              ——沒勾的話那一列不可能回得來，畫面卻同時說著兩件事。 #}
         <label class="form-checkbox">
             <input type="checkbox" class="js-service-key-include-revoked" checked>
@@ -301,6 +301,7 @@ permalink: 5-6-3_platformServiceKeys.html
 {% set deleteTargetId = "revokeServiceKeyTarget" %}
 {% set deleteConfirmBinding = true %}
 {% set deleteConfirmClass = "js-revoke-service-key-confirm" %}
+{% set deletePlatformRole = "admin" %}
 {% set deleteToast = "已撤銷，這一把當場失效|這一把已經撤銷過了|撤銷失敗，請稍後再試" %}
 {% set deleteToastKey = "toast.revokeServiceKey" %}
 {% set deleteToastType = "success|warning|error" %}

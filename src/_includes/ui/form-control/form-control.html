@@ -34,7 +34,7 @@
                 <input type="text" id="demoInputError" placeholder="請輸入" class="form-control error">
             </div>
         </div>
-        <div class="subtitle">描述：輸入框錯誤狀態，在 input 上加 .error 標紅。訊息不在欄位下方——§4 全站一種回報方式：驗證結果走送出鈕 data-toast 的 warning 段。.error-prompt 只留給「訊息具體」或「真 app 業務 js 會填」的少數幾處（1-1-4、login、3-1-2）</div>
+        <div class="subtitle">描述：輸入框錯誤狀態，在 input 上加 .error 標紅。訊息不在欄位下方——§4 全站一種回報方式：驗證結果走送出鈕 data-toast 的 warning 段。.error-prompt 只留給「訊息具體」或「真 app 業務 js 會填」的那幾處（不列頁名：寫死枚舉註定過期）</div>
     </div>
     <div class="col-6-md">
         <div class="form-group">
@@ -46,6 +46,17 @@
             </div>
         </div>
         <div class="subtitle">描述：輸入框必填，在label.control-label上加.required的class，input上加上required屬性，就會出現紅色星號</div>
+    </div>
+</div>
+<div class="flex-row gap-20">
+    <div class="col-6-md">
+        <div class="form-group">
+            <div class="label">
+                <span class="control-label">表單層級訊息</span>
+            </div>
+            <span class="error-prompt is-shown" role="alert">請於 30 秒後再試</span>
+        </div>
+        <div class="subtitle">描述：.error-prompt 平時 display:none，由 .form-group:has(.error) 揭示。**不屬於任何一顆欄位**的表單層級訊息（登入的節流秒數）沒有那個祖先可以靠，改由業務 js 掛 .is-shown 顯示——這一格是全站唯一看得到它的地方（GUIDELINE §5：沒有頁面演得出的狀態＝出貨死 CSS）</div>
     </div>
 </div>
 <div class="flex-row gap-20">

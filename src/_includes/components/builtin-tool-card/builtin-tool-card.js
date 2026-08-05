@@ -7,7 +7,7 @@
 //      （product settings_hub.py 的 ProfileConfigIn.builtin_tool_overrides），所以這裡不彈 toast。
 //
 // 開合／aria-expanded／「全部展開收合」全部由 ui/accordion 供給（卡片模式，見 accordion.js），本檔不重寫。
-// 委派掛在 document 上：13 張卡都吃得到，React 端則各自轉成受控欄位的 onChange / onClick。
+// 委派掛在 document 上：每一張卡都吃得到，React 端則各自轉成受控欄位的 onChange / onClick。
 document.addEventListener("DOMContentLoaded", function () {
     // 字數提示與它的欄位同住在 .field 裡（form-control 的結構 class，只當唯讀的範圍邊界，
     // 不改寫也不樣式它——同 filter-fields.js 用 .block 定範圍的做法，§4 的「用」而非「改」）。

@@ -16,23 +16,30 @@ document.addEventListener("DOMContentLoaded", function () {
         // input 是 box 的「兄弟」，input.click() 的事件不會冒泡經過 box——
         // 舊版在這裡多掛一個 stopPropagation 防「無限迴圈」，但那個迴圈結構上不存在，已移除（§3-2 註解要與事實相符）。
 
-        // 拖曳進入
-        ["dragenter", "dragover"].forEach(function (evtName) {
-            box.addEventListener(evtName, function (e) {
-                e.preventDefault();
-                e.stopPropagation();
-                box.classList.add("drag-over");
+        // 拖放**只在有 <input type="file"> 的那一版**宣告自己是放置目標。
+        // 連結版（uploadNextHref）整顆是一個 <a>、沒有 input 也沒有 .upload-error：
+        // 在它身上 preventDefault 會讓瀏覽器把它認定成合法放置目標、邊框還亮成「可以放這裡」，
+        // 放下去之後卻沒有任何人接得住那些檔案——檔案被靜默吞掉，不跳頁、不報錯、不彈 toast。
+        // 那正是本檔下面那段「不支援的副檔名要說出來」要消滅的行為。
+        if (input) {
+            // 拖曳進入
+            ["dragenter", "dragover"].forEach(function (evtName) {
+                box.addEventListener(evtName, function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    box.classList.add("drag-over");
+                });
             });
-        });
 
-        // 拖曳離開
-        ["dragleave", "dragend", "drop"].forEach(function (evtName) {
-            box.addEventListener(evtName, function (e) {
-                e.preventDefault();
-                e.stopPropagation();
-                box.classList.remove("drag-over");
+            // 拖曳離開
+            ["dragleave", "dragend", "drop"].forEach(function (evtName) {
+                box.addEventListener(evtName, function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    box.classList.remove("drag-over");
+                });
             });
-        });
+        }
 
         // 不支援的副檔名：拖進來的檔案不在 accept 清單內時，列出被略過的檔名。
         // 為什麼切版就要做：這是純前端互動（比對副檔名、報出結果），沒有業務主人（§5 ④）；

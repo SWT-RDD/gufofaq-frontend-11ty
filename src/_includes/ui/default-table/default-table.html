@@ -1,7 +1,7 @@
 {# 展示片段，取自真實 app pages/components/component.html 11 Table表格 section（主要表格，class 沿用真實系統）。
    內含 {% include ui/accordion %} 示範可展開列——展示片段的依賴不算數（§1-1），故本元件留在 ui/。 #}
 {# 父層用「div.table-container」包覆，需左右滾動時加「.scrollTable」；主要表格用「table.default-table」；
-     欄位排序在 th 內加 div.th-sort + img.sort；內容較多欄位用 div.ellipsis-2 包覆；
+     欄位排序在 th 內加 div.th-sort + img.sort；內容較多的欄位用 ui/collapse-text 包覆（純 clamp 的 .ellipsis-* 只給控制項標籤用）；
      功能欄按鈕用 div.btn-group 包覆；固定欄寬加 .fixed-layout；無外框加 .no-border（見下方 accordion 表格範例） #}
 {% set demoTableRows = [
     {

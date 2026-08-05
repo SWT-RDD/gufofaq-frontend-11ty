@@ -3552,7 +3552,7 @@ test("§6 固定欄位槽目錄只有一份正本，附加資料的 key 都要�
     assert.equal(hits.length, 0, fail(hits));
 });
 
-test("§5 每一顆會改狀態的鈕都要宣告它需要哪一道閘門（三條授權軸，值＝上游閘門自己的名字）", () => {
+test("§4 每一顆會改狀態的鈕都要宣告它需要哪一道閘門（四條授權軸，值＝上游閘門自己的名字）", () => {
     // 為什麼要有：唯讀使用者看到一顆按不動的鈕，是本專案反覆在修的那種「畫面說得出、後端不同意」。
     // 而「這一塊誰動得了」如果只存在 React 的應用層，切版與 React 就各有一份答案。
     //
@@ -3564,33 +3564,175 @@ test("§5 每一顆會改狀態的鈕都要宣告它需要哪一道閘門（三�
     // 平台頁例外，而且是有理由的例外：那一軸的單位是「整塊唯讀」——auditor 進得來、看得到、按不動，
     // 所以宣告掛在區塊上（見 5-6-1／5-6-2／5-6-3）。故本測試對「宣告了 data-platform-role 的頁」放行。
     //
-    // 判準是「這顆鈕的 toast 說了狀態改了」——純讀取的鈕（量測、複製、列印、查看）不在此列。
-    const WRITE = /(已儲存|已建立|已刪除|已更新|已撤銷|已停用|已啟用|已送出|已核發|已套用|已合併|已補寫|已取代|已排除|已還原|已新增)/;
-    const hits = [];
-    let seen = 0;
-    for (const f of srcHtml.filter((p) => p.includes("pages/"))) {
-        const src = stripNjk(read(f));
-        // 平台頁：授權故事整塊由 data-platform-role 講（那一軸的單位是區塊，見上）
-        if (/\bdata-platform-role=/.test(src)) continue;
+    // 判準**反轉成唯讀白名單**：原本是「寫入動詞黑名單」，而黑名單漏一個動詞，那顆鈕就整個免檢——
+    // 「已產生」「已匯入」「已判定」「已設」不在舊表裡，於是 5-8／5-9 兩整頁與 3-5 的三顆處置鈕
+    // 全部從那個縫隙掉出去。現在：有 data-toast 且 type 含 success ＝ 這顆鈕會成功做完某件事，
+    // 一律要宣告，除非它做的是唯讀動作。
+    const READONLY = /(查詢|下載|載入|複製|列印|預覽|取得|重新整理|移除成功|登入成功|回答生成|已回復至目前正式提示詞|已回復儲存的設定|正在量測|正在比較)/;
+    // 查證過**確定不需要**閘門的（上游只吃登入態）：列在這裡＋理由。空白不等於查證過（§4）。
+    const NO_GATE = new Map([
+        ["src/pages/settings/5-1-1_accountInfo.html", "/me/profile 與 /me/change-password 是自助端點，product 只掛 get_current_user——標上能力軸反而會把「改自己的資料」擋在一顆它不需要的能力後面"],
+        ["src/_includes/components/file-edit-modal/file-edit-modal.html", "送出前的本地編輯（凍結正本 uploadFilePdf.js 的 saveEdit 只改本地陣列），沒有端點"],
+    ]);
+    const gateScan = (src, f = "<probe>") => {
+        const out = [];
+        // 平台頁／平台彈窗：授權故事整塊由 data-platform-role 講（那一軸的單位是區塊，見上）。
+        // **只認字面值**——delete-modal 這種輸出 `data-platform-role="{{ deletePlatformRole }}"` 的
+        // 共用彈窗不算宣告過（它自己不知道要哪一級，是使用頁給的），否則整檔免檢。
+        if (/\bdata-platform-role="(admin|auditor)"/.test(src)) return out;
+        if (NO_GATE.has(f)) return out;
         for (const m of src.matchAll(/<button\b((?:"[^"]*"|[^>"])*)>/g)) {
             const attrs = m[1];
             const toast = (attrs.match(/\bdata-toast="([^"]*)"/) || [, ""])[1];
-            if (!toast || !WRITE.test(toast)) continue;
-            seen++;
-            if (!/\bdata-(capability|tenant-role|platform-role)=/.test(attrs))
-                hits.push(`${f}:${countLines(src, m.index)}  toast="${toast.slice(0, 24)}…" 沒宣告閘門`);
+            if (!toast) continue;
+            if (!/success/.test((attrs.match(/\bdata-toast-type="([^"]*)"/) || [, ""])[1])) continue;
+            if (READONLY.test(toast.split("|")[0])) continue;
+            if (!/\bdata-(capability|tenant-feature|tenant-role|platform-role)=/.test(attrs))
+                out.push(`${f}:${countLines(src, m.index)}  toast="${toast.slice(0, 24)}…" 沒宣告閘門`);
         }
+        return out;
+    };
+    const hits = [];
+    let seen = 0;
+    for (const f of srcHtml) {
+        const src = stripNjk(read(f));
+        for (const m of src.matchAll(/<button\b((?:"[^"]*"|[^>"])*)>/g))
+            if (/\bdata-toast="/.test(m[1])) seen++;
+        hits.push(...gateScan(src, f));
     }
-    assert.ok(seen >= 25, `只掃到 ${seen} 顆會改狀態的鈕 —— 這條測試在空轉`);
-    // 值域也要釘住：發明新詞彙就等於讓「誰動得了」又有第二份答案
-    const VALID = { "data-capability": ["data:read", "data:write", "settings:read", "settings:write", "history", "ask"], "data-tenant-role": ["admin"], "data-platform-role": ["admin", "auditor"] };
+    assert.ok(seen >= 60, `只掃到 ${seen} 顆帶 data-toast 的鈕 —— 這條測試在空轉`);
+    probe("授權閘門", (s) => gateScan(s),
+        [`<button type="button" data-toast="已凍結租戶|失敗" data-toast-type="success|error">凍結</button>`,
+         `<button type="button" data-toast="已產生金鑰|失敗" data-toast-type="success|error">產生</button>`],
+        [`<button type="button" data-capability="data:write" data-toast="已凍結租戶|失敗" data-toast-type="success|error">凍結</button>`,
+         `<button type="button" data-toast="正在查詢資料...|查詢成功|失敗" data-toast-type="info|success|error">查詢</button>`]);
+    // 值域也要釘住：發明新詞彙就等於讓「誰動得了」又有第二份答案。
+    // 兩組鍵來自 product authz.py 的 CAPABILITY_TOKENS（群組能力）與 CAPABILITIES（租戶功能開通）——
+    // 名字會重疊（ask／history／audit 兩邊都有），但失敗方式不同，故各佔一條軸（§4）。
+    const VALID = {
+        "data-capability": ["data:read", "data:write", "settings:read", "settings:write", "ask", "history", "audit"],
+        "data-tenant-feature": ["data", "ask", "history", "settings", "audit", "extract"],
+        "data-tenant-role": ["admin"],
+        "data-platform-role": ["admin", "auditor"],
+    };
     for (const f of srcHtml)
-        for (const [, a, v] of stripNjk(read(f)).matchAll(/\b(data-capability|data-tenant-role|data-platform-role)="([^"]*)"/g))
+        for (const [, a, v] of stripNjk(read(f)).matchAll(/\b(data-capability|data-tenant-feature|data-tenant-role|data-platform-role)="([^"]*)"/g))
             // 樣板插值的值跳過（`data-platform-role="{{ item.platformRole }}"`）——那一份的值域由供
             // 資料的頁面負責，這裡看得到的只是 mustache 字面。
             for (const one of (v.includes("{{") ? [] : v.split(/\s+/).filter(Boolean)))
                 if (!VALID[a].includes(one)) hits.push(`${f}  ${a}="${one}" 不是上游閘門的名字（值域：${VALID[a].join("／")}）`);
     assert.equal(hits.length, 0, `唯讀使用者會看到按不動的鈕，而畫面上沒有任何東西說得出為什麼：\n${fail(hits)}`);
+});
+
+test("§4 共用元件把 data-toast 開成參數時，閘門也要開成參數，且每個使用頁都要 set", () => {
+    // 真正送 API 的是彈窗裡那顆確認鈕，而它的 toast 由使用頁灌進來 —— 上一條測試只看得到
+    // `data-toast="{{ deleteToast }}"` 這個字面，看不到「哪一頁灌了什麼、那一頁有沒有一起灌閘門」。
+    // 沒有這一條，全站每一顆刪除／撤銷確認鈕都可以合法地零宣告（round35 實際就是這樣）。
+    const PAIRS = [                       // [toast 參數, 閘門參數們, 免宣告的使用頁與理由]
+        ["deleteToast", ["deleteCapability", "deleteTenantRole", "deletePlatformRole"],
+            new Map([["src/pages/dataImport/1-2-1_uploadFile_pdf.html", "送出前把檔案從本地清單移除，沒有端點"]])],
+        ["editSaveToast", ["editCapability", "editTenantRole"], new Map()],
+        ["ratingModalToast", ["ratingCapability"], new Map()],
+        ["resetToast", ["resetTenantRole", "resetPlatformRole"], new Map()],
+    ];
+    const hits = [];
+    let seen = 0;
+    for (const [toastParam, gateParams, exempt] of PAIRS) {
+        // ① 元件那一側：吃了 toast 參數，就要吐得出閘門屬性
+        const owners = srcHtml.filter((f) => f.includes("_includes/") && read(f).includes(`data-toast="{{ ${toastParam} `));
+        assert.ok(owners.length > 0, `找不到吃 ${toastParam} 的元件 —— 參數改名了？這條測試在空轉`);
+        for (const f of owners)
+            if (!gateParams.some((g) => read(f).includes(`{{ ${g} }}`)))
+                hits.push(`${f}  吃了 ${toastParam} 卻沒有任何閘門參數（${gateParams.join("／")}）`);
+        // ② 使用頁那一側：set 了 toast，就要 set 閘門
+        for (const f of srcHtml.filter((p) => p.includes("pages/"))) {
+            const src = stripNjk(read(f));
+            if (!new RegExp(String.raw`\{%\s*set\s+${toastParam}\s*=`).test(src)) continue;
+            seen++;
+            if (exempt.has(f)) continue;
+            if (f.endsWith("component.html")) continue;   // 元件庫展示頁：演的是長相，不是某一支端點
+            if (!gateParams.some((g) => new RegExp(String.raw`\{%\s*set\s+${g}\s*=`).test(src)))
+                hits.push(`${f}  set 了 ${toastParam} 卻沒 set 閘門（${gateParams.join("／")}）`);
+        }
+    }
+    assert.ok(seen >= 15, `只掃到 ${seen} 個使用頁 —— 這條測試在空轉`);
+    assert.equal(hits.length, 0, `§4 toast 與閘門是同一個交付單位：\n${fail(hits)}`);
+});
+
+test("§1-2 無 html 元件的 markup 契約要逐字寫在自己的 scss／js 檔頭（不是散文列 class 名）", () => {
+    // 為什麼非有不可：沒有 <名>.html 的元件，它的 markup 必然被複製到各個使用頁（collapse-text
+    // 一輪之內從 1 份長到 13 份）。少一個 aria-expanded／data-i18n，視覺指紋看不出來、i18n 掃描
+    // 也掃不到（那顆節點根本不存在）。契約寫在一個地方，抄的人才有東西可對。
+    // 判準是「可以整段照抄」＝檔頭註解裡有帶 `<` 的真標籤，且它提到的 class 在 src markup 打得到。
+    const noHtml = componentDirs.filter(({ name, path }) => !existsSync(`${path}/${name}.html`));
+    assert.ok(noHtml.length >= 20, `只找到 ${noHtml.length} 個無 html 元件 —— 這條測試在空轉`);
+    const srcMarkup = srcHtml.map((f) => read(f)).join("\n");
+    const hits = [];
+    for (const { bucket, name, path } of noHtml) {
+        const heads = [`${path}/_${name}.scss`, `${path}/${name}.js`].filter(existsSync).map((f) => {
+            const t = read(f);
+            // 檔頭＝第一條非註解程式碼之前的那一段
+            const end = t.search(/^\s*(?:[.&@:#a-zA-Z\[]|document\.|\(function|window\.|var |const |let )/m);
+            return end > 0 ? t.slice(0, end) : t;
+        }).join("\n");
+        const tags = [...heads.matchAll(/<([a-z][\w-]*)[^>]*class="([^"]+)"/g)];
+        // 有些無 html 元件的契約是**宣告式屬性**而不是 class（`data-print`／`data-scroll-lock`／
+        // `data-dismiss-target`／`data-reveal-target`…），純行為工具（GufoSlide）則連 markup 都沒有、
+        // 契約是匯出的函式。這兩型只要檔頭寫得出那個屬性名或函式名即可。
+        const declarative = /`data-[\w-]+`|data-[\w-]+=|window\.Gufo\w+|`--[\w-]+`/.test(heads);
+        if (!tags.length && !declarative) { hits.push(`${bucket}/${name}  檔頭沒有可照抄的 markup 契約（要有帶 < 的真標籤，或寫出 data-* 宣告式契約）`); continue; }
+        // 契約裡指名的 class 要真的在 src markup 打得到——寫了一份沒人用的契約同樣沒有對帳價值。
+        // 樣板插值出來的狀態 class（`{{ run.statusClass }}` → `.is-pass`）在 markup 上找不到字面，
+        // 由該元件自己的 scss 宣告過即算數（那條 &.is-* 另有「每一階都要演得出來」的測試把關）。
+        const ownScss = existsSync(`${path}/_${name}.scss`) ? read(`${path}/_${name}.scss`) : "";
+        for (const cls of new Set(tags.flatMap((m) => m[2].split(/\s+/)).filter((c) => c && !c.includes("{")))) {
+            const esc = cls.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+            if (new RegExp(`class="[^"]*\\b${esc}\\b`).test(srcMarkup)) continue;
+            if (new RegExp(`&\\.${esc}\\b`).test(ownScss)) continue;
+            hits.push(`${bucket}/${name}  契約寫了 .${cls}，但 src 的 markup 裡打不到它`);
+        }
+    }
+    assert.equal(hits.length, 0, `§1-2 無 html 元件的 markup 契約：\n${fail(hits)}`);
+});
+
+test("§3-2 跨 repo 活正本的出處不得引行號（行號會漂到語意相反的那一支）", () => {
+    // 只准「檔名 ＋ 符號名」。凍結前端才准引行號（README 列出的那幾份）。
+    // 為什麼是硬規則：漂移之後最貴的不是指不到，是指到隔壁那一支——本輪實測有一條
+    // 引「require_platform_admin 的 review_apply」，行號落在 require_platform_auditor 的唯讀端點上。
+    const LIVE = /\b([a-z_][a-z0-9_]*\.py):\d+/i;              // saas／GufoRAG 都是 python 正本
+    const FROZEN = /(GufoFAQ_Standard_Frontend|GufoFAQ_Frontend_New|js\/main\.js|accountInfo\.js|uploadFilePdf\.js|knowledgeRetrieval\.js|singleTest\.js|qaHistory\.js|promptManagement\.js)/;
+    const scan = (text, f = "<probe>") => {
+        const out = [];
+        for (const m of text.matchAll(/\{#[\s\S]*?#\}/g))       // 只看模板註解
+            for (const line of m[0].split(/\r?\n/)) {
+                if (!LIVE.test(line) || FROZEN.test(line)) continue;
+                out.push(`${f}  ${line.trim().slice(0, 96)}`);
+            }
+        return out;
+    };
+    const hits = [];
+    for (const f of srcHtml) hits.push(...scan(read(f), f));
+    for (const f of [...srcJs, ...srcScss])                     // js/scss 檔頭的 // 註解同理
+        for (const line of read(f).split(/\r?\n/)) {
+            const c = line.match(/\/\/(.*)$/);
+            if (c && LIVE.test(c[1]) && !FROZEN.test(c[1])) hits.push(`${f}  ${line.trim().slice(0, 96)}`);
+        }
+    probe("跨 repo 行號", (s) => scan(s),
+        ["{# 見 platform.py:1437-1440 的 require_platform_admin #}"],
+        ["{# 見 platform.py 的 review_apply #}", "{# 凍結正本 js/main.js:880-884 #}"]);
+    assert.equal(hits.length, 0, `§3-2 活正本只准引「檔＋符號名」：\n${fail(hits)}`);
+});
+
+test("§4-2 英譯字串不得含全形標點（那是繁中的字身，混在英文句子裡會露出來）", () => {
+    const FULLWIDTH = /[　-〿＀-￯]/;
+    // 例外：在講「一個字面上就是全形的東西」時，那個符號是被引用的樣本
+    const SAMPLE = new Set(["settings.outputRuleListMarkerDesc"]);
+    const en = JSON.parse(read("src/i18n/en.json"));
+    const hits = Object.entries(en).filter(([k, v]) => !SAMPLE.has(k) && FULLWIDTH.test(v))
+        .map(([k, v]) => `${k}  ${v.slice(0, 60)}`);
+    assert.ok(Object.keys(en).length > 500, `en.json 只讀到 ${Object.keys(en).length} 顆 key —— 這條測試在空轉`);
+    assert.ok(FULLWIDTH.test("「x」") && !FULLWIDTH.test("“x”"), "全形偵測式壞了，這條測試永遠會綠");
+    assert.equal(hits.length, 0, `§4-2 英譯裡的全形標點：\n${fail(hits)}`);
 });
 
 test("§6 同頁的 page-size 選中值必須等於 pagination 生效的 perPage（兩者同源）", () => {

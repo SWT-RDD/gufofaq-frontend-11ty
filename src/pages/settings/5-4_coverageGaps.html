@@ -189,7 +189,7 @@ permalink: 5-4_coverageGaps.html
         </div>
     </div>
     {# 同 5-3：`GET /stats/coverage-gaps` 也走 `_fetch_logs`，`total > MAX_STATS_LOGS`（5000）
-         即 400「此時間範圍資料量過大…請縮小範圍」（stats.py:209-213）。下面兩顆排除/取消排除
+         即 400「此時間範圍資料量過大…請縮小範圍」（stats.py 的 `_fetch_logs`／`stats.too_many_logs`）。下面兩顆排除/取消排除
          也重新查同一支端點，故三顆共用同一顆 key、同一組分支（§5 同一道守衛分支集合一致）。
          左邊那顆「取消」全站沒有任何 js 選得到，換成篩選列正典的 `.js-filter-clear`。 #}
     <div class="flex-row align-items-center justify-content-center gap-16">

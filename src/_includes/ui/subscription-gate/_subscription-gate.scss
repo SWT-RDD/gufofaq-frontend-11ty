@@ -3,6 +3,20 @@
 // 純樣式元件（無 html/js）：app-shell 行為（依 /me 的
 // subscription_status 疊在全站之上、四種狀態條件渲染）由 React 實作，此處只定義視覺 token 組版；
 // 可見樣貌由元件庫頁的靜態示範（.demo-static）演出（§5：整個元件僅由 React 條件渲染時，元件庫頁是唯一看得到它的地方）。
+//
+// markup 契約（無 html 元件，§1-2；整段照抄）—— 兩型，對到四種 subscription_status：
+//   ① 遮罩（首登免責 first_login／強制改密 must_change_password／凍結 frozen）
+//      <div class="subscription-overlay">        ← 元件庫展示版另加 .demo-static（fixed 浮層退回文流內）
+//        <div class="subscription-panel">
+//          <div class="panel-header">…標題…</div>
+//          <div class="panel-body">…內文…</div>
+//          <div class="panel-footer">…動作鈕…</div>
+//        </div>
+//      </div>
+//   ② 到期提示（expired）
+//      <div class="subscription-expired-box"><div class="title">…</div><div class="desc">…</div></div>
+// 正式環境由 React app-shell 依 /me 的 subscription_status 條件渲染，**沒有任何生產頁 markup**
+// ⇒ 元件庫頁的靜態示範是全站唯一看得到它的地方（§5）。
 .subscription-overlay {
     position: fixed;
     inset: 0;

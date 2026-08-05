@@ -210,7 +210,7 @@ permalink: 5-6-1_platformTenants.html
             <thead>
                 <tr>
                     <th data-i18n="settings.tenant">租戶</th>
-                    {# `TenantOut` 回得出 `subscription_status` 與 `trial_end`（platform.py:111-112），
+                    {# `TenantOut` 回得出 `subscription_status` 與 `trial_end`（platform.py），
                          原本一格都沒畫——PENDING／ACTIVE／未滿 90 天的 EXPIRED 在畫面上長得一模一樣，
                          而整套 ISO 審核流程正是以 status 為前提（§3-2 response 的每個欄位都要有落點）。
                          到期日是資料（不翻）；PENDING 還沒起算，故留白。 #}
@@ -285,10 +285,10 @@ permalink: 5-6-1_platformTenants.html
   { name: "示範租戶 D", error: "從 GufoRAG 刪租戶索引失敗（tenant=42）" }
 ] %}
 {# 名單與門檻是 auditor 讀得到的（GET /platform/review/overdue ＝ require_platform_auditor，
-     platform.py:1387；docstring 自述「這一步不動任何資料，管理員截圖存證用」）——整區標 admin
+     platform.py 的 `review_overdue`；docstring 自述「這一步不動任何資料，管理員截圖存證用」）——整區標 admin
      等於唯讀稽核員連那張截圖都看不到，正是 §5 要防的「把整塊 gate 在是不是管理員」。
      區塊標 auditor，只有真的會寫入的那一顆（步驟三的「確認執行」＝ POST /review/apply
-     ＝ require_platform_admin，platform.py:1437-1440）標 admin。步驟一那三顆是「選動作＋拉名單」，
+     ＝ require_platform_admin，platform.py 的 `review_apply`）標 admin。步驟一那三顆是「選動作＋拉名單」，
      打的是同一支 GET，auditor 要按得到才截得到圖。 #}
 <div class="block mt-16 flex-row column gap-16" data-platform-role="auditor">
     <div class="text-md text-bold" data-i18n="platform.reviewTitle">ISO 季度審核</div>
@@ -304,7 +304,7 @@ permalink: 5-6-1_platformTenants.html
                 <div class="field">
                     <input type="number" min="0" step="1" id="reviewOverdueDaysInput" value="90" class="form-control" aria-describedby="reviewOverdueDaysRange">
                     {# 三件套的第三件（§4）：可見區間 ＋ aria-describedby。下界出處＝
-                         `GET /platform/review/overdue` 的 `overdue_days: int = Query(ge=0)`（platform.py:1390）。
+                         `GET /platform/review/overdue` 的 `overdue_days: int = Query(ge=0)`（platform.py）。
                          數字獨立成不翻的節點（§3-2：那是資料不是譯文）。 #}
                     <span class="text-gray" id="reviewOverdueDaysRange">≥ 0</span>
                 </div>
@@ -320,7 +320,7 @@ permalink: 5-6-1_platformTenants.html
             </div>
         </div>
         {# 這三顆只是**選動作＋拉名單**：打的是 `GET /platform/review/overdue`
-             （platform.py:1386-1388 `require_platform_auditor`，docstring 自述「這一步不動任何資料，
+             （platform.py `require_platform_auditor`，docstring 自述「這一步不動任何資料，
              管理員截圖存證用」）。原本標 admin ⇒ 稽核員整區沒有任何入口拉得到名單，
              正是註解自己說要避免的事。真正寫入的是下面步驟三那顆確認鈕。 #}
         <div class="flex-row gap-10 align-items-center">
@@ -336,7 +336,7 @@ permalink: 5-6-1_platformTenants.html
             <span><span data-i18n="platform.reviewMatched">符合筆數：</span>{{ reviewCandidates.length }}</span>
             <span><span data-i18n="platform.reviewThreshold">門檻：</span><span data-i18n="platform.overdueDaysPrefix">逾期滿</span> 90 <span data-i18n="platform.overdueDaysSuffix">天</span></span>
             <span><span data-i18n="platform.reviewAsOf">查詢時間：</span>2026-07-14 09:00 UTC</span>
-            {# `ReviewOverdueOut.cutoff`（platform.py:1381）：後端註解說這兩欄「是 ISO 稽核截圖存證要用的」。
+            {# `ReviewOverdueOut.cutoff`（platform.py）：後端註解說這兩欄「是 ISO 稽核截圖存證要用的」。
                  只畫門檻天數不夠——步驟一的兩種門檻（天數／截止日期）擇一時，真正決定名單的是 cutoff。 #}
             <span><span data-i18n="platform.reviewCutoff">截止時刻：</span>2026-04-15 09:00 UTC</span>
         </div>
@@ -359,7 +359,7 @@ permalink: 5-6-1_platformTenants.html
                         <th data-i18n="platform.daysOverdue">逾期天數</th>
                         <th data-i18n="settings.userCount">使用者數</th>
                         <th data-i18n="platform.storageUsedMb">儲存量(MB)</th>
-                        {# `ReviewTenantOut.frozen`（platform.py:1374）的後端註解逐字寫著
+                        {# `ReviewTenantOut.frozen`（platform.py）的後端註解逐字寫著
                              「此旗標讓管理員一眼分辨『這季新逾期的』與『上季已凍結、還在等後續處置的』」
                              ——那正是這張截圖要回答的問題，原本沒有欄位（§3-2 response 落點）。 #}
                         <th data-i18n="platform.statusFrozen">已凍結</th>
@@ -385,10 +385,10 @@ permalink: 5-6-1_platformTenants.html
                 <label for="reviewConfirmInput" class="control-label" data-i18n="platform.confirmTypePhrase">請輸入「刪除」以確認執行</label>
             </div>
             <div class="field">
-                <input type="text" id="reviewConfirmInput" placeholder="刪除" data-i18n-placeholder="platform.confirmDeletePhrase" class="form-control">
+                <input data-platform-role="admin" type="text" id="reviewConfirmInput" placeholder="刪除" data-i18n-placeholder="platform.confirmDeletePhrase" class="form-control">
             </div>
         </div>
-        {# `POST /platform/review/apply` ＝ `require_platform_admin`（platform.py:1437-1440），
+        {# `POST /platform/review/apply` ＝ `require_platform_admin`（platform.py），
              所以標 admin 的是**這一顆**。低於該級時動作鈕不渲染（§5）——原本反過來標，
              稽核員反而看得到一顆「確認執行（不可逆）」，按了必定 403。
              「取消」是純前端互動（收掉步驟三），不標。 #}
@@ -451,11 +451,13 @@ permalink: 5-6-1_platformTenants.html
      deleteTargetId 模式，非本頁其他地方使用的靜態 deleteTargetName）。 #}
 {% set deleteTargetId = "deleteUserName" %}
 {% set deleteConfirmBinding = true %}
+{% set deletePlatformRole = "admin" %}
 {% set deleteToast = "使用者已刪除|不可刪除自己|不可刪除租戶最後一位在職管理者|不可刪除最後一位平台系統管理員|刪除失敗，請稍後再試" %}
 {% set deleteToastType = "success|warning|warning|warning|error" %}
 {% set deleteToastKey = "toast.deleteUser" %}
 {% include "components/delete-modal/delete-modal.html" %}
-{# 平台端只有 404（platform.py:1137-1146），沒有租戶端那道 403——三段。 #}
+{# 平台端只有 404（platform.py 的 `platform_reset_password`），沒有租戶端那道 403——三段。 #}
+{% set resetPlatformRole = "admin" %}
 {% set resetToast = "密碼已重設|兩次新密碼不一致|重設失敗，請稍後再試" %}
 {% set resetToastKey = "toast.resetPasswordPlatform" %}
 {% set resetToastType = "success|warning|error" %}
@@ -466,7 +468,7 @@ permalink: 5-6-1_platformTenants.html
      單一語言逐字顯示、不翻譯 → textarea 本文不掛 data-i18n；區塊標題與儲存鈕文案（chrome）才走 i18n。 #}
 {# 編輯與還原都是 require_platform_admin（PUT /platform/disclaimer、POST /disclaimer/versions/{n}/activate）；
      但**版本史與目前生效的本文是 auditor 讀得到的**（GET /platform/disclaimer/versions ＝
-     require_platform_auditor，platform.py:268），而 ISO 要查的正是「這份聲明改過幾次、什麼時候改的」。
+     require_platform_auditor，platform.py），而 ISO 要查的正是「這份聲明改過幾次、什麼時候改的」。
      故區塊標 auditor：本文 textarea 是值控制項（低於 admin 照渲染但 disabled，§5），
      儲存與還原鈕才標 admin。原本整區 admin ＝ 稽核員連版本史都看不到。 #}
 <div class="block mt-16 flex-row column gap-16" data-platform-role="auditor">

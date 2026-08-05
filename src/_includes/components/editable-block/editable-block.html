@@ -22,7 +22,7 @@
             <button type="button" class="button-icon no-bg size-sm edit edit-icon" title="編輯" data-i18n-title="action.edit"><span
                     class="sr-only" data-i18n="action.edit">編輯</span></button>
             <div class="flex-row gap-4">
-                <button type="button" class="button-icon no-bg size-sm save save-icon"{% if editSaveToast %} data-toast="{{ editSaveToast }}" data-i18n-data-toast="{{ editSaveToastKey }}" data-toast-type="{{ editSaveToastType or 'success|error' }}"{% endif %} title="確認" data-i18n-title="action.confirm"
+                <button type="button"{% if editCapability %} data-capability="{{ editCapability }}"{% endif %}{% if editTenantRole %} data-tenant-role="{{ editTenantRole }}"{% endif %} class="button-icon no-bg size-sm save save-icon"{% if editSaveToast %} data-toast="{{ editSaveToast }}" data-i18n-data-toast="{{ editSaveToastKey }}" data-toast-type="{{ editSaveToastType or 'success|error' }}"{% endif %} title="確認" data-i18n-title="action.confirm"
                     style="display: none;"><span class="sr-only" data-i18n="action.confirm">確認</span></button>
                 <button type="button" class="button-icon no-bg size-sm cancel cancel-icon" title="取消" data-i18n-title="action.cancel"
                     style="display: none;"><span class="sr-only" data-i18n="action.cancel">取消</span></button>
@@ -41,7 +41,7 @@
         aria-label="{{ editLabel }}"{% if editLabelKey %} data-i18n-aria-label="{{ editLabelKey }}"{% endif %}>
     <button type="button" class="button-icon no-bg size-sm edit edit-icon" title="編輯" data-i18n-title="action.edit"><span
             class="sr-only" data-i18n="action.edit">編輯</span></button>
-    <button type="button" class="button-icon no-bg size-sm save save-icon"{% if editSaveToast %} data-toast="{{ editSaveToast }}" data-i18n-data-toast="{{ editSaveToastKey }}" data-toast-type="{{ editSaveToastType or 'success|error' }}"{% endif %} title="確認" data-i18n-title="action.confirm" style="display: none;"><span
+    <button type="button"{% if editCapability %} data-capability="{{ editCapability }}"{% endif %}{% if editTenantRole %} data-tenant-role="{{ editTenantRole }}"{% endif %} class="button-icon no-bg size-sm save save-icon"{% if editSaveToast %} data-toast="{{ editSaveToast }}" data-i18n-data-toast="{{ editSaveToastKey }}" data-toast-type="{{ editSaveToastType or 'success|error' }}"{% endif %} title="確認" data-i18n-title="action.confirm" style="display: none;"><span
             class="sr-only" data-i18n="action.confirm">確認</span></button>
     <button type="button" class="button-icon no-bg size-sm cancel cancel-icon" title="取消" data-i18n-title="action.cancel" style="display: none;"><span
             class="sr-only" data-i18n="action.cancel">取消</span></button>

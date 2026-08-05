@@ -115,7 +115,15 @@ document.addEventListener("DOMContentLoaded", function () {
             t("action.nextPage", "下一頁"), t("pagination.nextDisabled", "下一頁不可用"),
             "./images/icon_arrow_right_blue.png", "./images/icon_arrow_right_gray.png");
 
+        // 整份重繪會讓「剛被按下的那顆 <a>」當場離開文件，焦點掉回 <body>——鍵盤使用者換一頁
+        // 就得從頁首重新 Tab 回來。重繪前記住焦點在不在這一塊裡，重繪後還給等價的節點
+        // （優先同一個頁碼；那一顆若變成目前頁而不再是連結，就給新的 .active）。
+        var refocus = el.contains(document.activeElement) ? document.activeElement.getAttribute("data-page") : null;
         ul.innerHTML = html;
+        if (refocus !== null) {
+            var back = ul.querySelector('[data-page="' + refocus + '"]') || ul.querySelector(".active a") || ul.querySelector(".active");
+            if (back && back.focus) back.focus();
+        }
 
         var count = el.querySelector(".page-info-count");
         if (count) count.textContent = totalPages;

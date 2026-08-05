@@ -100,7 +100,7 @@ permalink: 3-5_dataHealth.html
      **記錄的可讀身分**：`FindingOut.records[]` 與 `record_keys` 同序等長，逐筆帶得出標題
      （`RecordOut`）。「保留哪一筆」「哪一筆是現行版」「補寫在哪一筆」三個選項是使用者據此做出
      的、**會改資料的決定**——只有 `document_id` 雜湊時那幾支處置在畫面上沒有辦法用。
-     渲染走 `ui/record-identity`（同一頁五處共用）：**標題永遠帶著「這是哪一種身分」**
+     渲染走 `components/record-identity`（同一頁五處共用）：**標題永遠帶著「這是哪一種身分」**
      （逐列匯入的一列／資料夾匯入的整份文件／查無主題的問法，三種東西長得都像標題但意思不同）、
      同名時靠檔案與列號分辨、標題欄空白與標題讀不出來分成兩句話講、截斷說得出原文有多長。
      處置端點吃的仍是 `record_keys`（畫面上讀的是 `records[]`，兩者不得分家），所以「涉及的
@@ -286,7 +286,7 @@ permalink: 3-5_dataHealth.html
   }
 ] %}
 {# 逐項清單（`FindingsOut`）。**列序照端點的 `.order_by(check_type, id)`**
-     （health_findings.py:1182，本頁 `health.listOrder` 那句話也是這樣寫給使用者看的）——
+     （health_findings.py，本頁 `health.listOrder` 那句話也是這樣寫給使用者看的）——
      示範資料的順序若不是這個，畫面上那句話就沒有對應的證據。`total` 41 ＞ 本頁列數 ⇒ 分頁列演得到「這一頁不是全部」（35 未處置 ＋ 6 已處置）。
      **這裡沒有命中次數欄**：`GET /health/findings` 不回它（命中數在上游的問答紀錄裡，那一支
      是分頁的、不去碰上游），畫一個欄位出來就得自己算一份，而那會是第二個真相。
@@ -513,7 +513,7 @@ permalink: 3-5_dataHealth.html
     </label>
     <p id="healthHitChecksHint" class="text-gray" data-i18n="health.includeHitChecksHint">那三項要向上游取回整個時間窗的問答紀錄才算得出來，所以預設不重算：處置完立刻複驗時改的是資料，命中統計一秒之內不會變，開著跑只是每按一次多付一次上游取回，還會把「能不能複驗」綁在「統計上游活著」上。每日全量重掃一定會算它們。</p>
     <div class="flex-row">
-        <button type="button" class="button button-primary js-health-scan"
+        <button data-capability="data:write" type="button" class="button button-primary js-health-scan"
             data-toast="正在重新檢查…|檢查完成|資料筆數超過單次健檢上限，這一次一筆都沒有檢查|檢查失敗，請稍後再試"
             data-i18n-data-toast="toast.healthScan" data-toast-type="info|success|warning|error"
             data-i18n="health.rescan">重新檢查</button>
@@ -880,7 +880,7 @@ permalink: 3-5_dataHealth.html
                                         </div>
                                     </div>
                                     <div class="flex-row">
-                                        <button type="button" class="button button-primary button-sm js-health-dismiss"
+                                        <button data-capability="data:write" type="button" class="button button-primary button-sm js-health-dismiss"
                                             data-toast="已判定為非問題（資料一個字都沒動）|請填寫判定理由|這個發現已經處置過了，下一次檢查會依前提是否改變決定要不要把它推回清單|操作失敗，請稍後再試"
                                             data-i18n-data-toast="toast.healthDismiss" data-toast-type="success|warning|warning|error"
                                             data-i18n="health.actionDismiss">判定為非問題</button>
@@ -964,7 +964,7 @@ permalink: 3-5_dataHealth.html
                                     </div>
                                     <p class="text-gray" data-i18n="health.supersedeRestHint">沒有被選成現行版的那幾筆，就是被它取代的那幾筆。</p>
                                     <div class="flex-row">
-                                        <button type="button" class="button button-primary button-sm js-health-supersede"
+                                        <button data-capability="data:write" type="button" class="button button-primary button-sm js-health-supersede"
                                             data-toast="已設取代參照|請選擇哪一筆是現行版|現行版所在的檔案沒有外部主鍵，指不到東西的取代參照是一個斷掉的指標|這幾筆與現行版在同一個檔案裡，取代參照的粒度是檔案，同檔案請改用合併或停用|這個租戶還沒有宣告「取代參照」維度|這個發現已經處置過了，下一次檢查會依前提是否改變決定要不要把它推回清單|操作失敗，請稍後再試"
                                             data-i18n-data-toast="toast.healthSupersede" data-toast-type="success|warning|warning|warning|warning|warning|error"
                                             data-i18n="health.actionSupersede">設取代參照</button>

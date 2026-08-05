@@ -14,7 +14,7 @@
          給三個沒有差別的選項＝讓使用者以為自己在調一個實際不存在的旋鈕，故此變體把下拉收成
          「使用中/不使用」兩項、表頭改「變更使用狀態」。**選項值仍用同一組業務詞**（"高優先級"
          代表使用中）：切回傳統模式時原本的分層要還在，值域換掉就等於一切模式資料就被抹平。
-     可編輯欄位：任務描述 td.edit-cell.description、任務對應提示詞 td.edit-cell.prompt，內容用 div.ellipsis-2 包覆；
+     可編輯欄位：任務描述 td.edit-cell.description、任務對應提示詞 td.edit-cell.prompt，內容用 ui/collapse-text 包覆（夾住而且打得開）；
      編輯/設定按鈕、textarea 切換屬 main.js 業務邏輯，不在此列。
      用法：component.html（單張示範）、5-2_conversationSettings.html（檢索與欄位子頁籤依高/中/低優先級分組，每組 set rows 後 include）。 #}
 <div class="table-container scrollTable">

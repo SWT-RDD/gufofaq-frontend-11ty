@@ -10,8 +10,9 @@ permalink: 5-10_tagDimensions.html
        · `app/routers/tags.py`（`GET|POST /tags/dimensions`、`PATCH|DELETE /tags/dimensions/{id}`、
          `GET|POST /tags/dimensions/{id}/vocabulary`、`DELETE /tags/vocabulary/{id}`、`GET /tags/coverage`）
        · `app/routers/retrieval.py`（`PUT /retrieval/profiles/{no}/tag-filter`，回應形狀 `ProfileOut` 的
-         `retrieval_filter_mode` / `recent_window_days`；另有一欄 `tag_untagged_counts` **已退休、恆為 `{}`**，
-         models.py 逐字寫著「待前端跟上後連欄一起拿掉」，故本頁不再顯示它）
+         `retrieval_filter_mode` / `recent_window_days`；另有一欄 `tag_untagged_counts` **已隨 migration
+         `e5c3a90f7b12` 從 `retrieval_profiles` 移除**（`ProfileOut` 不再回它，見 `retrieval.py` 那段退休說明），
+         故本頁不再顯示它）
        · `app/tag_values.py`（`UNSET_TAG_VALUE`／`NEVER_EXPIRES` 哨兵、`slots_missing_from_files`：
          哪些維度槽不是每一個檔都寫進索引了——開啟過濾的唯一硬閘門）
        · `app/routers/tags.py`（`tag_dimension_slots`：維度可掛的槽值域＝`custom_field_mapping` 那批）
@@ -23,8 +24,9 @@ permalink: 5-10_tagDimensions.html
         「未標註」現在是**寫入端的哨兵值**（`tag_values.UNSET_TAG_VALUE`／`NEVER_EXPIRES`）：沒填的
         格子在匯入時就寫成一個真實的值，於是述詞只要「這一欄等於某個代碼**或**等於未標註」，
         三種 kind 都表達得出來 ⇒ **「哪些維度必須先標滿才准開過濾」這個概念不存在了**
-        （`tag_dimension_contract.requires_full_pre_tagging` 現在一律回 False，而且是走得到真相的
-        判準而不是寫死的 return False）。覆蓋率也不再是證明。
+        （`GET /settings/tag-dimension-contract` 的投影裡已經沒有這一項——見 `tag_dimension_contract.py`
+        的 `project_tag_dimension_contract`，它只投影 slots／kinds／roles／filterable_date_range）。
+        覆蓋率也不再是證明。
         取而代之的是一道**結構**閘門：**每一個檔都要把這一槽寫進索引**
         （`tag_values.slots_missing_from_files`，一次 DB 查詢、當下的事實，不是會過期的快照）。
         哨兵的代價只有一個：它不命中 property **缺席**的文件，而缺席只有兩個來源——宣告這個維度
@@ -58,7 +60,7 @@ permalink: 5-10_tagDimensions.html
   { label: "標籤維度與檢索過濾", i18nKey: "nav.tagDimensions" }
 ] %}
 {# **槽的顯示名與掛在它上面的標籤維度是兩件事**（product 兩張表：`RetrievalProfile.field_labels`
-     ↔ `TagDimension.name`——`TenantSetting` 只存 `attribution_slots`，models.py:304 逐字寫著
+     ↔ `TagDimension.name`——`TenantSetting` 只存 `attribution_slots`，models.py 逐字寫著
      「顯示名沿用 per-profile 的 RetrievalProfile.field_labels，本欄不另存標籤」）。示範租戶把 note1／note2 取名為「承辦組室」「業務範疇」（見 5-3 與 4-2），
      所以這一頁的維度**刻意避開那兩個槽**、掛在 note3/note4/note5 上——同一個槽同時掛著兩個不同的
      中文名，讀的人與 React 端都推不出哪一份才算數（§6 跨頁自洽）。
@@ -69,7 +71,7 @@ permalink: 5-10_tagDimensions.html
      而那是結構事實、與標了幾成無關（見檔頭 ①）。所以覆蓋率高的維度照樣可能上那張表，
      覆蓋率低的維度也可能不在上面——兩者不互相印證，示範資料刻意演出這件事。
      `文件密級` 是剛建好、還沒有人標的維度：0/132＝0%。**不能給它 `total: 0`**——
-     `CoverageDimensionOut.total` 的註解逐字是「＝scan.examined」（tags.py:194），
+     `CoverageDimensionOut.total` 的註解逐字是「＝scan.examined」（tags.py），
      `coverage=(tagged/examined) if examined else None`（:788-792）是**整份回應共用同一個
      `examined`**，所以「沒量到」是整份回應的狀態（examined==0 ⇒ 每一列都 null），
      不可能一列 0、其餘三列 132。混一列進來演的是端點產不出來的回應。
@@ -159,12 +161,12 @@ permalink: 5-10_tagDimensions.html
                 </div>
                 <div class="field">
                     {# 值域是 12 個，不是這一頁湊得出來的四個：`TAG_SLOT_KEYS = tag_dimension_slots(SLOTS)`
-                         ＝角色為 `custom_field_mapping` 的槽（tags.py:50-63 → field_schema.py:37-48），
+                         ＝角色為 `custom_field_mapping` 的槽（tags.py → field_schema.py），
                          也就是 note1..note10 ＋ date2/date3。本頁自己的 hint 就是這樣寫的，而示範資料的
                          維度掛在 note3／note4／note5 上——只列 note1/note2/date2/date3 四個的話，
                          那三個槽根本建不出維度。
                          **不硬編**：`GET /settings/tag-dimension-contract` 的 `slots` 是這份值域的單一真相
-                         （tag_dimension_contract.py:40-42 明寫「一個都不能留在前端硬編」），
+                         （tag_dimension_contract.py 的 `project_tag_dimension_contract` 明寫「一個都不能留在前端硬編」），
                          切版以 set 陣列表達那份回應（§6），React 端改讀端點。
                          第一顆是空值「請選擇」：必填欄不得預設幫使用者挑一個
                          （§4「還沒挑」要有一顆 option 承載得住）。 #}
@@ -237,7 +239,7 @@ permalink: 5-10_tagDimensions.html
         <p id="tagRoleHint" class="text-gray" data-i18n="settings.tagRoleHint">角色是給引擎內建機制認的：valid_until／as_of 只能掛在日期維度、fact_topic／superseded_by 只能掛在單值維度。配錯不會報錯，只會讓該機制完全跳過這個維度——設定頁看起來一切正常，而它從頭到尾沒有作用過。</p>
         {# ④ 日期上下界：講在**填之前**。這一段對 kind=date 常駐顯示（React 依所選型別擇一渲染）。
              **兩個日期是資料不是譯文**（§3-2）：它們在契約裡有欄位——`GET /settings/tag-dimension-contract`
-             的 `filterable_date_range.min_date`／`max_date`（tag_dimension_contract.py:115-116），
+             的 `filterable_date_range.min_date`／`max_date`（tag_dimension_contract.py），
              而那支端點的檔頭點名的失敗樣態正是「區間改了而畫面照舊寫著舊日期」。
              故拆成資料槽 ＋ 前中後三段可翻的文字（同 414eecc 對 5-2 三個上下界做過的修正）。 #}
         {% set filterableDateMin = "1677-09-21" %}
@@ -437,7 +439,7 @@ permalink: 5-10_tagDimensions.html
      掃描是逐份讀文件（上游沒有彙總端點），超過單次上限 product 回 409 並要求縮小範圍
      ——**不回一個截斷後的比率**，故「文件數超過上限」是量測鈕的一段 toast。 #}
 {# 租戶能力標記（同 5-2 的理由：唯讀閘要從 markup 讀得出來，不是 React 應用層各自判斷）：覆蓋率量測：GET /tags/coverage 的 require_coverage_scope＝settings:read ＋ data:read（回的數字是文件內容的投影）。 #}
-<div data-capability="data:read" class="block mb-16 flex-row column gap-16">
+<div data-capability="settings:read data:read" class="block mb-16 flex-row column gap-16">
     <div class="text-md text-bold" data-i18n="settings.tagCoverageScan">標註覆蓋率量測範圍</div>
     <div class="data-info flex-row flex-wrap gap-24">
         <span><span data-i18n="settings.scanDocuments">列舉得到的文件：</span>{{ coverageScan.documents }}</span>
@@ -486,8 +488,8 @@ permalink: 5-10_tagDimensions.html
 
     <div class="table-container scrollTable">
         <table class="default-table">
-            {# 「開啟當下量到的未標註筆數」那一欄已經拿掉：product 的 `tag_untagged_counts` 已退休、
-                 恆為 `{}`（models.py 逐字寫「不要拿它當判準——它永遠是空的」），留著就是畫一格永遠
+            {# 「開啟當下量到的未標註筆數」那一欄已經拿掉：product 的 `tag_untagged_counts` 已隨 migration
+                 `e5c3a90f7b12` 移除（`retrieval.py` 的退休說明），留著就是畫一格永遠
                  空白的證明欄，而它曾經是「這個設定檔憑什麼可以過濾」的答案。現在那個答案是結構
                  閘門，沒有 per-profile 的快照可顯示。 #}
             <colgroup>
@@ -518,8 +520,8 @@ permalink: 5-10_tagDimensions.html
                     </td>
                     <td>
                         {# 三件套的第三件（§4）：可見區間 ＋ aria-describedby。上下界出處＝
-                             product `app/profile_config.py:121-122` 的 `MIN_RECENT_WINDOW_DAYS = 1`／
-                             `MAX_RECENT_WINDOW_DAYS = 3650`（retrieval.py:344-346 以 ge/le 收）。
+                             product `app/profile_config.py` 的 `MIN_RECENT_WINDOW_DAYS = 1`／
+                             `MAX_RECENT_WINDOW_DAYS = 3650`（retrieval.py 以 ge/le 收）。
                              數字獨立成不翻的節點（§3-2：那是資料不是譯文）；id 帶 loop.index（同頁唯一）。 #}
                         <input type="number" class="form-control js-recent-window-days" min="1" max="3650" step="1" value="{{ profile.recentWindowDays }}" aria-labelledby="tagFilterProfileName-{{ loop.index }} tagFilterDaysHead" aria-describedby="tagFilterDaysRange-{{ loop.index }}">
                         <span class="text-gray" id="tagFilterDaysRange-{{ loop.index }}">1 – 3650</span>
@@ -607,6 +609,7 @@ permalink: 5-10_tagDimensions.html
 {% set deleteConfirmBinding = true %}
 {% set deleteMessageKey = "settings.confirmDeleteTagDimension" %}
 {% set deleteMessageZh = "刪除後這個維度的整份字典也會一起消失，已經標註在文件上的值會變成字典外的值。確定要刪除" %}
+{% set deleteCapability = "settings:write" %}
 {% set deleteToast = "標籤維度已刪除|刪除失敗，請稍後再試" %}
 {% set deleteToastKey = "toast.deleteTagDimension" %}
 {% include "components/delete-modal/delete-modal.html" %}

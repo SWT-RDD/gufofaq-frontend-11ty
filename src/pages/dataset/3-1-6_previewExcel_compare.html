@@ -44,7 +44,7 @@ permalink: 3-1-6_previewExcel_compare.html
      （col_contents）。它與「比對資料」的差別只在表頭：一邊是欄位對照後的顯示名、一邊是原始欄名
      ＋括號註記它被對到哪一欄——使用者要靠這一頁確認「對照表有沒有接錯欄」。
      `label`＝那一欄被對到哪個槽的顯示名，逐字對回 product 的 `_annotate()`：
-     `datasets.py:1262-1267` 對到槽者回 `f"{t} ({label})"`、**沒對到槽的原樣回傳不加括號**。
+     `datasets.py` 對到槽者回 `f"{t} ({label})"`、**沒對到槽的原樣回傳不加括號**。
      故最後一欄「條碼」刻意不給 label——那是活頁簿裡沒被對照表接走的欄，兩個分支各演一次；
      它也因此只出現在原始面板、不出現在比對面板（比對面板畫的是槽，不是活頁簿的欄）。
      原始欄名是活頁簿的資料，不翻（§4-2）；括號裡的顯示名沿用 columns 的 label。 #}
@@ -136,7 +136,7 @@ permalink: 3-1-6_previewExcel_compare.html
 
 {# 分頁：真實頁 .pagination data-total="20" 由 pagination.js 動態產生；ui/pagination 也是同一套
      data-total 驅動的 js render。total＝**這一個檔的資料筆數**（product `RecordsOut.total`，
-     datasets.py:1285-1288，註解就寫「＝data_count（供前端分頁）」），故取 3-1-3 檔案列裡
+     datasets.py 的 `total` 欄，註解就寫「＝data_count（供前端分頁）」），故取 3-1-3 檔案列裡
      商品清單.xlsx 那一筆的 980（§6 跨頁自洽）。原本寫 115 是把「資料集的檔案總數」搬過來用，
      那是 3-1-1／3-1-3 那一層的量，跟這一頁畫的東西不是同一件事。 #}
 {% set total = 980 %}

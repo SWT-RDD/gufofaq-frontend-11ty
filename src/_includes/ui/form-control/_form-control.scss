@@ -235,6 +235,14 @@ textarea.form-control {
     }
 }
 
+// 表單層級的訊息（不屬於任何一顆欄位，如登入的節流秒數）沒有 .form-group 祖先可以靠，
+// 上面那條揭示不到它 —— 少了這條，login.html 的 #loginRetryHint 連同它的兩顆 i18n span
+// 永遠 display:none，而登入鈕的 aria-describedby 會指向一個不在無障礙樹上的節點。
+// 這是宣告式的第二條路：業務 js 填完數字後掛 .is-shown（元件庫的表單區有靜態示範）。
+.error-prompt.is-shown {
+    display: block;
+}
+
 
 // 模擬 select 選框 (2-1)
 .select-wrap {

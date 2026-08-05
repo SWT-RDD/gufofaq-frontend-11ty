@@ -25,6 +25,14 @@
 // :focus-visible 併列：tooltip 常是圖示鈕唯一的可見標籤，只掛 hover 的話鍵盤使用者永遠看不到（§4 a11y）；
 // 真 app 只有 hover——這是申報過的 a11y 增補，非失真。
 // 轉 Tailwind：.has-tooltip → group、兩條顯示規則 → group-hover:opacity-100 group-focus-visible:opacity-100。
+// `.tooltip` 是 position:absolute，定位基準必須由 host 自己提供——否則它會飛到最近的 positioned
+// 祖先。現況的 host 恰好都同時掛著 `.button-icon`（ui/button 給了 position:relative），但那是
+// **別的元件**的規則：把 .has-tooltip 掛到非 .button-icon 的 host 上就會錯位，而這是 §4 列的
+// 第三種死法（scss 找得到、markup 也找得到，只是兩者搭不上）。原子要自足，基準寫在自己家。
+.has-tooltip {
+    position: relative;
+}
+
 .has-tooltip:hover .tooltip,
 .has-tooltip:focus-visible .tooltip {
     opacity: 1;

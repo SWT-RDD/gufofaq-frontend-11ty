@@ -3,6 +3,16 @@
 // （原始規則來自真實 app css/style.css「提示詞管理 (5-4-1)」段；textarea 依 GUIDELINE §4
 //  「slot class」原則改指本元件自己的 .prompt-input，不指名 ui/form-control 的 class；
 //  卡片內的列表行距改用 ui/list-style 的 .line-loose variant，本檔不觸碰它的 class。）
+//
+// markup 契約（無 html 元件，§1-2；整段照抄）—— 5-2 提示詞／歡迎語子頁籤的版本卡：
+//   <div class="prompt-card-list flex-row column gap-10 mb-10">   ← 容器是頁面自有的真 app hook
+//     <div class="block prompt-card">                            ← 已發布的版本
+//       <div class="prompt-content">…正文…</div>                  ← 內含清單時配 ui/list-style 的 .line-loose
+//       <div class="prompt-text">…後設資訊…</div>
+//     </div>
+//     <div class="block prompt-card draft">…草稿版…</div>
+//     <textarea class="form-control prompt-input">…</textarea>    ← 編輯器（本元件的 slot class）
+//   </div>
 .prompt-card {
     &.draft {
         .prompt-text {

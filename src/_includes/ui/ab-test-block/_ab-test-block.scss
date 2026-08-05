@@ -4,6 +4,17 @@
 // （原始規則來自真實 app css/style.css「AB測試 (2-2-3)」段的 .ab-test-block > div 與
 //  .ab-test-block .select-row .form-group .label，依 GUIDELINE §4「slot class」原則
 //  改為自己命名的 class，不指名 ui/form-control 的 .form-group/.label。）
+//
+// markup 契約（無 html 元件，§1-2；整段照抄）—— 2-2-3 的 A/B 兩側設定欄：
+//   <div class="ab-side" data-ab-side="A">                ← data-ab-side 是列鍵，A/B 各一份
+//     <div class="flex-row align-items-center gap-10 mb-10">
+//       <span class="text-lg text-bold text-blue" id="abSideLabel-A">…設定 A…</span>
+//     </div>
+//     <div class="form-group"><div class="label">
+//       <label class="control-label ab-field-label" for="…">…欄名…</label>
+//     </div>…</div>
+//   </div>
+// 兩側的可及名稱靠 id="abSideLabel-<側>" 區分（§4：同頁同時可見、語意不同的控制項不得同名）。
 .ab-test-block {
     .ab-side {
         flex: 1 1 0;

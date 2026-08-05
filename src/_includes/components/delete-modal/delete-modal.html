@@ -19,7 +19,13 @@
      deleteToast / deleteToastKey —— 選填，確認鈕的多結果 toast（「成功|失敗」）與它的 i18n key
      deleteToastType      —— 選填，對位 deleteToast 的語意（預設 success|error）。訊息多於兩段時**必須**一起給，
                              否則第三段會沿用 error、演不出「使用者自己修得掉」的 warning（如 3-4 的
-                             「仍被參照，無法刪除」）。 #}
+                             「仍被參照，無法刪除」）。
+     deleteCapability / deleteTenantRole / deletePlatformRole
+                          —— 選填，確認鈕的授權閘門（§4 授權軸，值＝上游閘門自己的名字）。
+                             **與 deleteToast 同一個交付單位**：真正送 DELETE 的是這顆確認鈕，不是列上那顆
+                             條件開窗的觸發鈕（觸發鈕只負責「先選定要刪哪一筆」），所以閘門宣告的家在這裡。
+                             不給＝該動作查證過不需要閘門（如 1-2-1 的送出前本地移除、元件庫頁的示範），
+                             那種情況要在使用頁寫明理由——空白不等於「還沒查」。 #}
 <dialog class="modals" id="deleteModal" aria-labelledby="deleteModal-title">
     <div class="modals-dialog modals-sm">
         <div class="modals-wrap">
@@ -34,7 +40,7 @@
                 <div class="modals-footer">
                     <div class="button-row center">
                         <button type="button" class="button button-border btn-close-modals" data-i18n="action.cancel">取消</button>
-                        <button type="button"{% if deleteConfirmId %} id="{{ deleteConfirmId }}"{% endif %} class="button button-primary{% if deleteConfirmClass %} {{ deleteConfirmClass }}{% endif %}{% if not deleteConfirmBinding %} btn-close-modals{% endif %}"{% if deleteToast %} data-toast="{{ deleteToast }}" data-i18n-data-toast="{{ deleteToastKey }}" data-toast-type="{{ deleteToastType or "success|error" }}"{% endif %} data-i18n="action.confirm">確認</button>
+                        <button type="button"{% if deleteConfirmId %} id="{{ deleteConfirmId }}"{% endif %}{% if deleteCapability %} data-capability="{{ deleteCapability }}"{% endif %}{% if deleteTenantRole %} data-tenant-role="{{ deleteTenantRole }}"{% endif %}{% if deletePlatformRole %} data-platform-role="{{ deletePlatformRole }}"{% endif %} class="button button-primary{% if deleteConfirmClass %} {{ deleteConfirmClass }}{% endif %}{% if not deleteConfirmBinding %} btn-close-modals{% endif %}"{% if deleteToast %} data-toast="{{ deleteToast }}" data-i18n-data-toast="{{ deleteToastKey }}" data-toast-type="{{ deleteToastType or "success|error" }}"{% endif %} data-i18n="action.confirm">確認</button>
                     </div>
                 </div>
             </div>

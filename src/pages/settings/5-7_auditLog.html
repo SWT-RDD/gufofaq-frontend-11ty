@@ -47,7 +47,7 @@ permalink: 5-7_auditLog.html
             </div>
             <div class="form-group col-2-md col-12-sm" data-platform-role="auditor">
                 <div class="label">
-                    {# `tenant_id`（audit.py:33，docstring「平台管理員可查指定租戶」）原本沒有任何控制項，
+                    {# `tenant_id`（audit.py，docstring「平台管理員可查指定租戶」）原本沒有任何控制項，
                          畫面因此只做得到「全部租戶或自己那一個」，指定單一租戶做不到（§3-2 request
                          收得下的每個參數都要有落點）。值載體 → 只掛 hook class（§5 矩陣②）。 #}
                     <label for="auditTenantInput" class="control-label" data-i18n="settings.tenant">租戶</label>
@@ -83,7 +83,7 @@ permalink: 5-7_auditLog.html
                     <input type="number" id="auditOperatorInput" min="1" step="1" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control" aria-describedby="auditOperatorHint">
                     {# 數字欄的三件套（§4）：type=number ＋ 區間 ＋ **可見的**說明。「填的是使用者 id
                          不是 email」原本只寫在上面的 nunjucks 註解裡——那段 build 時就被移除，
-                         使用者永遠讀不到。值域是正整數（`operator=<使用者 id>`，audit.py:37-39）。 #}
+                         使用者永遠讀不到。值域是正整數（`operator=<使用者 id>`，audit.py）。 #}
                     <span class="text-gray" id="auditOperatorHint" data-i18n="audit.impersonatorHint">填使用者 id（正整數），不是 email</span>
                 </div>
             </div>
@@ -170,7 +170,7 @@ permalink: 5-7_auditLog.html
                 <th data-i18n="audit.target">對象</th>
                 <th data-i18n="audit.detail">詳情</th>
                 <th data-i18n="audit.sourceIp">來源 IP</th>
-                {# `user_agent`（audit.py:105）原本沒有欄位也沒有理由。稽核軌跡的 UA 是
+                {# `user_agent`（audit.py）原本沒有欄位也沒有理由。稽核軌跡的 UA 是
                      「從哪個用戶端做的」，屬於 ISO 要查的事實（§3-2 response 落點）。 #}
                 <th data-i18n="audit.userAgent">來源用戶端</th>
             </tr>

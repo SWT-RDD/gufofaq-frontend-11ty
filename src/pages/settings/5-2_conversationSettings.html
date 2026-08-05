@@ -70,7 +70,7 @@ permalink: 5-2_conversationSettings.html
      （product app/output_rules.py），丟掉它就是把那份指名浪費掉。role="alert" 讓它是 live region
      ——存檔是使用者按了鈕才發生的，訊息出現時焦點不在這裡，不報讀就等於沒說。
      示範內容取自輸出規則的 400 訊息；空字串時整條掛 .hidden（同 1-1-3 的 excelHeaderWarning）。
-     「第 N 條」是 **0-based**（`for idx, rule in enumerate(rules)`，output_rules.py:323-324），
+     「第 N 條」是 **0-based**（`for idx, rule in enumerate(rules)`，output_rules.py），
      而下面 `outputRules` 陣列的 index 7 正是 `link_max`——指名要指得對，否則這條紅字的價值
      （告訴人是哪一條、哪個參數）就沒了。上一版寫「第 0 條」，那是 `list_marker`，
      而它連參數欄都沒有，不可能產生這則訊息（§6 示範資料演的必須是一個真實可能的狀態）。 #}
@@ -319,7 +319,7 @@ permalink: 5-2_conversationSettings.html
         <div class="flex-row column gap-8">
             <div class="tablelist-title" data-i18n="settings.fieldNaming">欄位命名</div>
             {# 槽數從陣列推導、不烤進譯文（§6 能推導的數字不寫死；§4-2 那個數字是資料不是譯文）。
-                 值域是 `field_schema.SLOTS` 全部 21 個（field_schema.py:26-47）。
+                 值域是 `field_schema.SLOTS` 全部 22 個（21 個進索引的 ＋ internal_note；正本 field_schema.py 的 SLOTS）。
                  note1／note2 的顯示名與 5-3 的歸因維度、4-2 的來源歸因列一致（「承辦組室」「業務範疇」）
                  ——那三頁演的是同一個示範租戶，而這一頁是那份 `RetrievalProfile.field_labels` 的
                  **唯一編輯畫面**，不一致的話讀的人推不出哪一份算數（§6 跨頁自洽）——原本只列到 note5，
@@ -340,7 +340,7 @@ permalink: 5-2_conversationSettings.html
             </div>
             {% endif %}{% endfor %}
         </div>
-        {# product 專用槽與其餘 21 槽分群：混在備註 1–10 中間時，它看起來就只是第 11 個備註欄。
+        {# product 專用槽與其餘進索引的槽分群：混在備註 1–10 中間時，它看起來就只是第 11 個備註欄。
              用小標而不是單一條分隔線——這一區是 col-6-md 的兩欄 flex-wrap 版位，線會斷在奇怪的位置，
              而小標自己是整寬區塊，語意與版位都穩。
              那句說明掛在**這裡**而不是塞進預設名裡：欄位命名頁允許租戶把它改成「維護人」，
@@ -1148,7 +1148,7 @@ permalink: 5-2_conversationSettings.html
                                     <div class="field">
                                         <input type="text" id="oruleCategorySlot{{ loop.index }}" class="form-control js-orule-category-slot" value="topic" aria-describedby="oruleCategoryHint{{ loop.index }}">
                                         {# 上下界是資料不是譯文（§3-2）：同一組界線就寫在下面 `js-orule-category-limit` 的
-                                             `min="1" max="100000"` 上（正本 output_rules.py:100-102 的 `by_category`）。
+                                             `min="1" max="100000"` 上（正本 output_rules.py 的 `by_category`）。
                                              414eecc 已經對本頁另外三處做過同一個修正，這是第四處漏網。
                                              「最多 50 個代碼」在 markup 沒有第二份抄本，維持譯文。 #}
                                         <span id="oruleCategoryHint{{ loop.index }}" class="text-gray"><span data-i18n="settings.outputRuleCategoryHintPrefix">維度槽與逐代碼上限要一起設；只設一邊，逐代碼上限不會生效。最多 </span><span>50</span><span data-i18n="settings.outputRuleCategoryHintMid"> 個代碼、每個代碼上限 </span><span>1 – 100000</span><span data-i18n="settings.outputRuleCategoryHintSuffix"> 字。</span></span>
@@ -1266,11 +1266,11 @@ permalink: 5-2_conversationSettings.html
         範例是切版寫給租戶看的 chrome（走 i18n），defaultDescription 是引擎原文（API 資料，不翻）。 #}
 <div class="tab-content" data-capability="settings:write" id="panelAgentTools" style="display: none;">
     <p class="text-gray" data-i18n="settings.agentToolsIntro">Agent 模式下可呼叫的工具：內建工具、綁定的術語表、以及平台註冊的 MCP Server。</p>
-    {# 內建工具目錄＋切版寫的中文說明與範例（13 筆，順序＝chatbot BUILTIN_TOOL_NAMES 的工具生成順序）。
+    {# 內建工具目錄＋切版寫的中文說明與範例（順序＝chatbot BUILTIN_TOOL_NAMES 的工具生成順序）。
          defaultDescription 逐字取自 GufoRAG chatbot app/services/agent_service.py `_create_builtin_tools`
          各工具 docstring 的首段（那就是目錄回傳的 description 原文）；params 的名稱與必填取自同處的函式簽章
          （`_params()` 讀 args_schema：無預設值＝required）。
-         示範狀態：13 顆皆 enabled（＝全部啟用那一態）；customized 只給 ask_clarifying_question
+         示範狀態：每一顆皆 enabled（＝全部啟用那一態）；customized 只給 ask_clarifying_question
          ——那張卡同時演「已自訂」標記、預設展開、以及兩欄已填值的樣子（§6 示範資料要自洽：
          標記說已自訂，欄位就不能是空的）。 #}
     {# 條件式工具（answer_from_qa 是第二顆）：requires 兩欄都要成立才會被建出來。示範狀態下
@@ -1425,7 +1425,7 @@ permalink: 5-2_conversationSettings.html
         exampleExtraPrompt: "拆解後依序回答每一項，不要漏掉其中任何一個。"
       }
     ] %}
-    {# 13 張卡包在 accordion 自有的 .js-accordion 掃描根裡（卡片模式），「全部展開／收合」沿用原子的
+    {# 每張卡都包在 accordion 自有的 .js-accordion 掃描根裡（卡片模式），「全部展開／收合」沿用原子的
          .js-expand-all／.js-collapse-all（同 sources-block／step-flow 的用法）。
          這一層刻意不是 .block：每張卡自己就是一個 .block，再套一層會變成卡中卡。 #}
     <div class="js-accordion mb-16 flex-row column gap-8">

@@ -2,6 +2,18 @@
 // 本檔只寫 ab-compare 自有的 class（.ab-compare/.ab-compare-item/.item-title/.item-content）；
 // 對 .message-content/.message-time 的情境覆寫改由 ui/chat-message 自帶的
 // .message-content.in-compare / .message-time.after-compare 變體提供（§4：不指名他人元件的 class）。
+//
+// markup 契約（無 html 元件，§1-2；整段照抄）—— 2-2-3 兩側答案並排：
+//   <div class="ab-compare flex-row gap-4 mobile-column">
+//     <div class="ab-compare-item">                       ← A/B 各一份
+//       <div class="message-content in-compare"><div class="robot-msg">
+//         <p class="item-title">…小標…</p><div class="item-content">…答案…</div>
+//       </div></div>
+//     </div>
+//   </div>
+// 「.message-content.in-compare」是成對契約（ui/chat-message 為本元件加的變體：max-width:100%、
+// flex:1 1 0、padding:0）。少了它兩欄不會等寬；而本檔靠 .robot-msg 這一層墊特異度才蓋得過
+// 「.message-content .robot-msg p」——兩件事都不是「多包一層 div」而已，照少層數的版本抄會走樣。
 .ab-compare {
     flex: 1;
 

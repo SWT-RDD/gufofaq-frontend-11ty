@@ -1,4 +1,4 @@
-// 手機版選單：切換開關、鎖定/解鎖 body 捲動、子選單展開收合
+// 手機版選單：切換開關（切 .active；捲動鎖是 CSS 靠 nav-toggle 的 data-scroll-lock 做，本檔不碰）、子選單展開收合、resize 自我收合
 // 行為改寫自真實 app 的 js/main.js（原用 jQuery + slideDown/slideUp），改為標準 DOM API
 document.addEventListener("DOMContentLoaded", function () {
     var navToggle = document.querySelector(".nav-toggle");

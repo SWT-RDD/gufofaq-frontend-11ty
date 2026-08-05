@@ -92,8 +92,8 @@ permalink: 5-3_statsModule.html
         {% set dataTypeLabelId = "queryDataTypeLabel" %}
         {% include "components/data-type-filter/data-type-filter.html" %}
     </div>
-    {# 這一頁的查詢打的是 `GET /stats`，`_fetch_logs` 對 `total > MAX_STATS_LOGS`（5000，stats.py:41）
-         回 400「此時間範圍資料量過大…請縮小範圍」（stats.py:209-213）。時間篩選最長給到 365 天，
+    {# 這一頁的查詢打的是 `GET /stats`，`_fetch_logs` 對 `total > MAX_STATS_LOGS`（5000，stats.py）
+         回 400「此時間範圍資料量過大…請縮小範圍」（stats.py 的 `_fetch_logs`／`stats.too_many_logs`）。時間篩選最長給到 365 天，
          這是按幾下就撞得到、而且使用者自己縮小範圍就修得掉的結果——折進「載入資料失敗，請重新整理頁面」
          等於叫人重整一個永遠不會成功的請求，故另立 key 加一段 warning（§5）。
          左邊那顆換成全站篩選列正典的 `.js-filter-clear`「清除」（ui/filter-fields 提供行為，

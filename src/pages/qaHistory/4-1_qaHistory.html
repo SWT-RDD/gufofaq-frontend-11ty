@@ -82,7 +82,7 @@ permalink: 4-1_qaHistory.html
                 <div class="field">
                     {# `<option value>` 帶的是**送出去的值**，不是畫面文字。三顆值兩兩不交集、
                          聯集＝不帶參數：product `GET /history` 與 `/history/export` 兩支都收
-                         `Literal["positive", "negative", "unrated"]`（history.py:83／:308）。
+                         `Literal["positive", "negative", "unrated"]`（history.py／:308）。
                          `unrated` 是上游 2026-08-02 起支援的**只能查、寫不進去**的 token：
                          `GET /api/chat/chatlogs?rating_type=unrated` → `rating_type IS NULL`，
                          而它**刻意不在 RatingType 枚舉裡**——進了枚舉就等於讓「未評分」變成一個寫得進 DB
@@ -115,15 +115,15 @@ permalink: 4-1_qaHistory.html
                 <input type="checkbox" class="js-export-with-header" aria-describedby="exportWithHeaderHint">
                 <span data-i18n="qa.exportWithHeader">含統計表頭</span>
             </label>
-            {# 代價寫在做決定的那顆控制項旁邊（§3-2）：正本 history.py:278-280 的 docstring 逐字寫著
+            {# 代價寫在做決定的那顆控制項旁邊（§3-2）：正本 history.py 的 `_parse_range` docstring 逐字寫著
                  「預設關閉，因為多一段前置區塊會讓『第一列就是欄名』的既有下游解析當場壞掉」——
                  那句話原本只寫在上面的 nunjucks 註解裡，build 時就被移除，使用者永遠讀不到。 #}
             <span class="text-gray" id="exportWithHeaderHint" data-i18n="qa.exportWithHeaderHint">開啟後 CSV 第一列不再是欄名，既有的下游解析會錯位</span>
             {# `GET /history/export` 開跑前有三道使用者自己修得掉的 400，全部並列不可互相取代：
-                 · 範圍長度 > 31 天（history.py:146-147）
-                 · 起點比現在早超過 366 天（history.py:148-149）——與上一條是不同條件：
+                 · 範圍長度 > 31 天（history.py 的 `history.range_over_31_days`）
+                 · 起點比現在早超過 366 天（history.py 的 `history.range_over_a_year`）——與上一條是不同條件：
                    選 2024/01/01～01/20 過得了 31 天那關，照樣被一年那關擋掉
-                 · `total > MAX_EXPORT_LOGS`（history.py:340-343，串流開始前就先探一頁擋掉）
+                 · `total > MAX_EXPORT_LOGS`（history.py，串流開始前就先探一頁擋掉）
                  原本只列第一條，另外兩條落進紅色的「下載失敗」。 #}
             <button type="button" class="button button-green" data-toast="下載已開始|只提供31日間的問答記錄下載|只提供一年內的問答記錄下載|這段範圍的資料量過大，請縮小時間範圍|下載失敗" data-i18n-data-toast="toast.downloadRecords" data-toast-type="success|warning|warning|warning|error" data-i18n="action.download">下載</button>
         </div>
@@ -132,7 +132,9 @@ permalink: 4-1_qaHistory.html
 
 {# 資料表格：真實頁 tbody 為 js/qaHistory.js 依查詢結果動態渲染（初始「共0筆資料」），
      此處以 set+for 資料化示範 3 筆已載入狀態。cell 級結構鏡射真 app 的列模板（qaHistory.js createRow：
-     編號純文字、link-file 連結掛在「使用者對話內容」、AI 內容包 div.ellipsis-2 截斷、query 參數為 ?logSn=）。 #}
+     編號純文字、link-file 連結掛在「使用者對話內容」、query 參數為 ?logSn=）。
+     **一處刻意不沿用真 app**：AI 內容真 app 是 div.ellipsis-2 純截斷，切版改用 ui/collapse-text——
+     夾掉的那幾行在觸控裝置與鍵盤上都拿不到（§5 刻意不沿用要記載什麼取代了什麼）。 #}
 {# 「共 N 筆資料」是**伺服器總筆數**（total，與下方頁碼列同源），不是本頁渲染的列數——
      示範列只有 3 筆，寫成 rows.length 會出現「共 3 筆資料」配「共 6 頁」的自打架（§6）。
      total／perPage 在這裡宣告一次，計數列與頁尾的 pager-row 共用同一份。 #}

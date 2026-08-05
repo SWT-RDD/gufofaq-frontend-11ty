@@ -9,6 +9,17 @@
 // 「還沒選『時間區間』那顆 radio」。少了這支行為，那兩格永遠解不開——畫面上是一個
 // 點了沒反應的旋鈕。（本 repo 曾經把這三個 class 當成無主 class 拿掉，那是把真 app 的
 // 掛點誤判成死碼；§5：找死碼要先去讀真 app。）
+//
+// markup 契約（無 html 元件，§1-2；整段照抄）—— 選了哪顆 radio 就解除它附屬輸入框的 disabled
+// （5-3／5-4 的時間區間）：
+//   <div class="field-with-input-group">
+//     <label class="field-with-input">
+//       <input type="radio" name="…">…選項…
+//       <input type="text" class="form-control with-input" disabled>   ← 附屬輸入框，初始 disabled
+//     </label>
+//   </div>
+// 三個 class 是真 app js/main.js 的掛點（行為改寫成切版自有）：group 定範圍、.field-with-input
+// 是一組、.with-input 是被解鎖的那一顆。初始化用直呼 sync()、不用合成事件（§5）。
 document.addEventListener("DOMContentLoaded", function () {
     document.querySelectorAll(".field-with-input-group").forEach(function (group) {
         var boxes = group.querySelectorAll(".field-with-input");

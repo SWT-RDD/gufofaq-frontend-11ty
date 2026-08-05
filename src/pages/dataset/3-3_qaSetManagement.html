@@ -123,6 +123,7 @@ permalink: 3-3_qaSetManagement.html
    （deleteConfirmBinding，不自動關窗）；QA 集名由業務 js 填入 #deleteQaSetName。 #}
 {% set deleteTargetId = "deleteQaSetName" %}
 {% set deleteConfirmBinding = true %}
+{% set deleteCapability = "data:write" %}
 {% set deleteToast = "QA 集已刪除|刪除失敗，請稍後再試" %}
 {% set deleteToastKey = "toast.deleteQaSet" %}
 {% include "components/delete-modal/delete-modal.html" %}

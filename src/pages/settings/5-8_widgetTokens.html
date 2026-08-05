@@ -52,7 +52,7 @@ permalink: 5-8_widgetTokens.html
         </div>
     </div>
     <div class="flex-row">
-        <button type="button" class="button button-primary" data-toast="已產生金鑰|網域格式錯誤，請確認格式為 https://網域|產生失敗，請稍後再試" data-i18n-data-toast="toast.createWidgetToken" data-toast-type="success|warning|error">
+        <button data-tenant-role="admin" type="button" class="button button-primary" data-toast="已產生金鑰|網域格式錯誤，請確認格式為 https://網域|產生失敗，請稍後再試" data-i18n-data-toast="toast.createWidgetToken" data-toast-type="success|warning|error">
             <img src="./images/icon_add_white.png" width="48" height="48" decoding="async" alt="" class="icon">
             <span data-i18n="widget.createToken">產生金鑰</span>
         </button>
@@ -130,7 +130,7 @@ permalink: 5-8_widgetTokens.html
                             {# 撤銷改走二次確認（彈窗本體見頁尾）：不可逆，而且撤銷後前台所有掛這把金鑰的
                                  嵌入頁當場失效。開窗需先選定「撤銷哪一把」＝業務條件開窗，故只留 hook class、
                                  不掛 data-open-modal；成敗 toast 移到確認鈕上（§5）。 #}
-                            <button type="button" class="button button-red button-sm js-revoke-token" data-i18n="action.revoke">撤銷</button>
+                            <button data-tenant-role="admin" type="button" class="button button-red button-sm js-revoke-token" data-i18n="action.revoke">撤銷</button>
                             {% endif %}
                         </div>
                     </td>
@@ -151,6 +151,7 @@ permalink: 5-8_widgetTokens.html
 {% set deleteTargetId = "revokeTokenTarget" %}
 {% set deleteConfirmBinding = true %}
 {% set deleteConfirmClass = "js-revoke-token-confirm" %}
+{% set deleteTenantRole = "admin" %}
 {% set deleteToast = "已撤銷|撤銷失敗，請稍後再試" %}
 {% set deleteToastKey = "toast.revokeWidgetToken" %}
 {% include "components/delete-modal/delete-modal.html" %}

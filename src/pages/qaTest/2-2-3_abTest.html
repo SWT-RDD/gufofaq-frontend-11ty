@@ -402,6 +402,7 @@ permalink: 2-2-3_abTest.html
 {% set ratingModalNoteKey = "modals.ratingAbNote" %}
 {% set ratingModalNote = "評分會寫進這一側的問答紀錄，之後在歷史紀錄裡篩「AB測試」就找得到。" %}
 {% set ratingModalToastKey = "toast.saveRating" %}
+{% set ratingCapability = "history" %}
 {% set ratingModalToast = "滿意度已更新|請先選擇讚或倒讚|更新失敗，請稍後再試" %}
 {% set ratingModalToastType = "success|warning|error" %}
 {% include "components/rating-modal/rating-modal.html" %}
@@ -419,6 +420,7 @@ permalink: 2-2-3_abTest.html
 {% set deleteTargetId = "revokeShareTarget" %}
 {% set deleteConfirmBinding = true %}
 {% set deleteConfirmClass = "js-revoke-share-confirm" %}
+{% set deleteCapability = "history" %}
 {% set deleteToast = "連結已撤銷|撤銷失敗，請稍後再試" %}
 {% set deleteToastKey = "toast.revokeShare" %}
 {% include "components/delete-modal/delete-modal.html" %}

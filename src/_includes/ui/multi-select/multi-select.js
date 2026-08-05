@@ -274,8 +274,16 @@ document.addEventListener("DOMContentLoaded", function () {
                     }
                     break;
                 case "Escape":
-                    setOpen(false);
-                    search.blur();
+                    // 下拉開著時這顆 Esc 是**我們的**：不吃掉的話 keydown 會冒到祖先 <dialog>，
+                    // 觸發原生 close request，一顆 Esc 同時關掉下拉「和整個彈窗」——使用者在
+                    // skill 編輯器裡按 Esc 收下拉，整份還沒存的編輯就跟著沒了。
+                    // 被取代的原生 <select> 展開時也是只關 popup、不關窗。
+                    // 焦點留在 combobox（不 blur）：ARIA combobox 的 Esc 只收 popup。
+                    if (isOpen()) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        setOpen(false);
+                    }
                     break;
                 case "Backspace":
                     if (search.value === "") {

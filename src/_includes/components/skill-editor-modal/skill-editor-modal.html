@@ -20,14 +20,10 @@
    欄位對齊正本：name／description／instructions／allowed_tools 四桶／input_schema／max_iterations
      （chatbot SkillCreate、product SkillIn）；enabled 不在本窗，走清單列的啟用／停用直送鈕
      （product SkillUpdateIn.enabled，見 3-4）。 #}
-{% set skillEditorBuiltinTools = [
-    { name: "calculate", checked: true },
-    { name: "convert_units", checked: false },
-    { name: "date_calculate", checked: false },
-    { name: "search_knowledge_base", checked: false },
-    { name: "search_qa", checked: false },
-    { name: "get_document", checked: false }
-] %}
+{# 勾選群組的示範資料**只有一份**，就在下面那個群組旁邊（帶 allowedInSkill／reason 欄）。
+     這裡原本還有一份較早的同名 {% set %}，但 `{% set %}` 是頁面全域、後者整份覆蓋前者，
+     而唯一的 `{% for %}` 在後者之後 ⇒ 前面那一份一個字都渲染不出來，卻看起來像是正本
+     （它列的 calculate／convert_units／date_calculate 在畫面上根本不存在）。 #}
 <dialog class="modals" id="skillEditorModal" aria-labelledby="skillEditorModal-title">
     <div class="modals-dialog modals-lg">
         <div class="modals-wrap">
@@ -175,7 +171,7 @@
                         {# 不掛 btn-close-modals：驗證 warning 是「留在窗內就能改」的（名稱格式/重名、用途說明必填、
                              迭代 1-20、巢狀成環或超深——全部是窗內欄位，chatbot validate_skill_definition
                              回 400），每點必關窗會把剛編好的內容一起關掉（§5）。 #}
-                        <button type="button" class="button button-primary js-save-skill" data-toast="Skill 已更新|欄位未通過驗證（名稱格式或重複、用途說明必填、迭代 1-20、巢狀不可成環）|更新失敗" data-i18n-data-toast="toast.saveSkill" data-toast-type="success|warning|error" data-i18n="action.save">儲存</button>
+                        <button data-capability="settings:write" type="button" class="button button-primary js-save-skill" data-toast="Skill 已更新|欄位未通過驗證（名稱格式或重複、用途說明必填、迭代 1-20、巢狀不可成環）|更新失敗" data-i18n-data-toast="toast.saveSkill" data-toast-type="success|warning|error" data-i18n="action.save">儲存</button>
                     </div>
                 </div>
             </div>

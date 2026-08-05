@@ -1,6 +1,12 @@
 // 「共 N 筆資料」的筆數標籤。純樣式元件（只有 scss，class 直接寫在頁面／展示片段上，同 ui/ab-test-block）。
 // 曾經住在 ui/pagination 的 scss 裡 —— 但 pagination.html 一次都沒用過它，用它的是 4-1／5-7 頁與 ui/block 的展示片段。
 // 一個沒人擁有、寄生在無關元件裡的 class，改壞了沒人知道是誰的責任（§4：元件的 scss 只寫自己的 class）。
+//
+// markup 契約（無 html 元件，§1-2；整段照抄）—— 兩種形狀，class 相同、內容不同：
+//   ① 計數列（4-1／5-7）：數字前後**是兩顆 i18n span**，抄的時候別漏（只留數字＝英文模式少一半字）
+//      <div class="data-info"><span data-i18n="qa.totalOf">共</span> {{ total }} <span data-i18n="qa.records">筆資料</span></div>
+//   ② 統計列（5-2／5-10）：同一顆 class 另掛 flex 工具，內含多組「標籤＋值」
+//      <div class="data-info flex-row flex-wrap gap-24">…<span data-i18n="…">…</span> {{ 值 }}…</div>
 
 .data-info {
     padding: 1rem 0;

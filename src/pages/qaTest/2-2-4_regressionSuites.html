@@ -59,7 +59,7 @@ permalink: 2-2-4_regressionSuites.html
                 <div class="field">
                     <input type="text" id="newSuiteName" class="form-control" maxlength="200" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" required aria-describedby="newSuiteNameHint">
                     {# 長度上限是契約欄位（§6）：`_clean_text(body.name, what="案例集名稱", max_len=200)`
-                         （regression.py:510 → :237 的 400）。同一頁的 `#newCaseQuestion`（2000）與
+                         （regression.py  的 400）。同一頁的 `#newCaseQuestion`（2000）與
                          `#assertionCriteria`（1024）早就落地了，就這一格沒接——打了 250 字會拿到
                          紅色的「建立失敗，請稍後再試」，而重試永遠不會成功。 #}
                     <span class="text-gray" id="newSuiteNameHint" data-i18n="regression.suiteNameHint">最多 200 字</span>
@@ -90,9 +90,9 @@ permalink: 2-2-4_regressionSuites.html
      `summary.total` 是跑完當下寫死的數字，連帶刪掉會讓那些歷史對不起來。所以刪除是
      條件開窗（先選定要刪哪一列）＝ hook class、不掛 data-open-modal（GUIDELINE §5）。
      示範 2 筆：一筆跑過（4 次執行）、一筆沒跑過——兩種列都要看得到。
-     列序照 `list_suites` 的 `.order_by(TestSuite.id.desc())`（regression.py:529-533，docstring
+     列序照 `list_suites` 的 `.order_by(TestSuite.id.desc())`（regression.py，docstring
      寫明「新到舊」）：id 大的在前，否則這張表是端點產不出來的順序（§6）。 #}
-{# id＝案例集主鍵（product 的 TestSuite.id，整數；regression.py:201 `_owned_suite(db, tenant_id, suite_id)`）。
+{# id＝案例集主鍵（product 的 TestSuite.id，整數；regression.py `_owned_suite(db, tenant_id, suite_id)`）。
      **不可拿 loop.index 當列鍵**：這張表刪得掉列，位置不是身分——刪掉第一列之後第二列就頂上
      原本的 `data-suite-id="1"`，React 端的 key 與動作目標會一起指錯人（§6 列鍵）。 #}
 {% set regressionSuites = [
@@ -148,7 +148,7 @@ permalink: 2-2-4_regressionSuites.html
      展開列（ui/accordion 的表格結構）放這一則案例的完整內容：逐條斷言講成人話、逐輪前置
      對話、備註（一鍵建立時自動寫入的出處）。
      示範 2 筆刻意演兩種形狀：一筆多輪＋多型斷言，一筆單輪＋`no_answer`（無參數斷言）。 #}
-{# id＝案例主鍵（product 的 TestCase.id，整數；regression.py:208 `_owned_case(db, tenant_id, suite_id, case_id)`），
+{# id＝案例主鍵（product 的 TestCase.id，整數；regression.py `_owned_case(db, tenant_id, suite_id, case_id)`），
      與畫面上的「序號」欄不是同一件事——序號是這一頁的排序位置，id 才是身分。
      號碼要與 2-2-5（#311 的報表，跑的正是這一套案例集）對得起來：那一頁把
      「臺灣輸美鋼品的關稅稅率是多少」記成 **#39**，而 #41 是中斷點那一則、#42 是「鋁材的反傾銷稅率」。
@@ -186,7 +186,9 @@ permalink: 2-2-4_regressionSuites.html
         <div class="flex-row gap-10 align-items-center">
             <button type="button" class="button button-border button-sm js-expand-all" data-i18n="common.expandAll">全部展開</button>
             <button type="button" class="button button-border button-sm js-collapse-all" data-i18n="common.collapseAll">全部收合</button>
-            <button type="button" class="button button-primary button-sm js-case-from-log" data-i18n="regression.fromLog">從問答紀錄建立案例</button>
+            <button data-capability="settings:write history" type="button" class="button button-primary button-sm js-case-from-log" data-i18n="regression.fromLog">從問答紀錄建立案例</button>
+            {# 兩顆能力 token 並列＝AND（兩顆都要有）：建案例是 settings:write，而它讀的提問與答案原文
+                 要 history。多值一律 AND，見 §4。 #}
         </div>
     </div>
     <div class="table-container scrollTable">
@@ -522,7 +524,7 @@ permalink: 2-2-4_regressionSuites.html
 
      **`_OVERRIDE_FIELDS` 有 9 個，這一頁只做 6 個**（§3-2：request 收得下的每個參數都要有落點，
      不做的在檔頭寫明理由）。`_OVERRIDE_FIELDS = frozenset(TestConfig.model_fields) - {"profile_no"}`
-     （regression.py:346）。做了的：model_name／reasoning_effort／search_mode／
+     （regression.py 的 `_inherit_from_profile`）。做了的：model_name／reasoning_effort／search_mode／
      search_selected_number／search_total_number／prompt。沒做的三個與理由：
        · `data_source_ratio` —— 全前端只有 5-2 有輸入（那是設定檔層的旋鈕），這一頁沒有對應控制項
          的話它一定沿用設定檔，正是預期行為；
@@ -614,7 +616,7 @@ permalink: 2-2-4_regressionSuites.html
                     {# 模型目錄與 5-2／manage-tenant-modal 是同一份（§6 不得各烤一份，那三處都源自
                          `gufo.list_models()`）。示範沿用 5-2 的 `llmModels` 那一組值，多加一顆
                          **供應商不在 PROVIDER_PREFIXES 裡**的（`google:gemini-2-flash`）——
-                         下面那兩條紅字才有觸發者：`llm.py:93` 的 `PROVIDER_PREFIXES = ("openai:", "anthropic:")`
+                         下面那兩條紅字才有觸發者：`llm.py` 的 `PROVIDER_PREFIXES = ("openai:", "anthropic:")`
                          決定第一條，`:99` 的 `REASONING_EFFORT_PREFIXES = ("openai:",)` 決定第二條。
                          原本三顆全落在 openai/anthropic 裡，第一條紅字沒有任何一顆演得出來（§5）。 #}
                     {% set runLlmModels = ["openai:gpt-4o", "openai:gpt-4o-mini", "openai:gpt-4.1", "anthropic:claude-3-5-sonnet", "google:gemini-2-flash"] %}
@@ -740,18 +742,25 @@ permalink: 2-2-4_regressionSuites.html
              否則要等報表出來才發現這一輪的主觀分整批是假的。
          示範值演「正在跑」那一態，與執行紀錄第一列（#313，status: running）是同一次執行（§6 自洽）。 #}
     <div class="flex-row column gap-4" aria-live="polite">
-        <p class="m-0"><span data-i18n="regression.runProgressPrefix">這一輪已完成 </span><span>47 / 200</span><span data-i18n="regression.runProgressSuffix"> 則案例</span></p>
-        <p class="m-0"><span data-i18n="regression.runProgressPassedPrefix">其中通過 </span><span>45</span><span data-i18n="regression.runProgressFailedInfix"> 則、未通過 </span><span class="text-red text-bold">2</span><span data-i18n="regression.runProgressSuffix"> 則案例</span></p>
+        {# 分母是**這一套案例集的案例數**（關稅問答基準集 caseCount: 12），不是 regressionLimits 的
+             單次執行上限 200——§6：「已列出 M / 共 N」的 N 要從這一份資料推導，抄後端的上限常數會
+             讓進度列說出一個比整套案例還多的數字。通過＋未通過＝已完成（5+2=7）。 #}
+        <p class="m-0"><span data-i18n="regression.runProgressPrefix">這一輪已完成 </span><span>7 / 12</span><span data-i18n="regression.runProgressSuffix"> 則案例</span></p>
+        <p class="m-0"><span data-i18n="regression.runProgressPassedPrefix">其中通過 </span><span>5</span><span data-i18n="regression.runProgressFailedInfix"> 則、未通過 </span><span class="text-red text-bold">2</span><span data-i18n="regression.runProgressSuffix"> 則案例</span></p>
         <p class="m-0 text-gray"><span data-i18n="regression.runProgressUnscoredPrefix">評審沒評出來 </span><span>0</span><span data-i18n="regression.runProgressUnscoredSuffix"> 則（有 judge 斷言卻沒評出分數＝故障，不是「這題沒有主觀分」）</span></p>
     </div>
     <div class="flex-row">
-        <button type="button" class="button button-primary" data-toast="開始執行回歸…|回歸執行完成|這個案例集還沒有任何案例，沒有東西可以跑|案例數超過單次執行上限，請拆成多個案例集|執行中斷，已完成的結果保留" data-i18n-data-toast="toast.runRegression" data-toast-type="info|success|warning|warning|error" data-i18n="regression.startRun">開始執行</button>
+        {# 閘門：這顆過**兩道不同種類**的關（§4 授權軸）——`run_suite` 先吃群組能力
+             `require_capability("settings","write")`，函式體內再吃租戶功能開通
+             `require_tenant_feature(db, tenant_id, "ask")`。兩者失敗的方式不同：前者換一個群組就過得了，
+             後者是整個租戶被平台關掉（連租戶管理員也擋），所以不能折進同一個屬性。 #}
+        <button data-capability="settings:write" data-tenant-feature="ask" type="button" class="button button-primary" data-toast="開始執行回歸…|回歸執行完成|這個案例集還沒有任何案例，沒有東西可以跑|案例數超過單次執行上限，請拆成多個案例集|執行中斷，已完成的結果保留" data-i18n-data-toast="toast.runRegression" data-toast-type="info|success|warning|warning|error" data-i18n="regression.startRun">開始執行</button>
     </div>
 </div>
 
 {# ── 執行紀錄 ───────────────────────────────────────────────────────────────
      示範 4 筆刻意演三種終態：完整跑完（兩筆）、中斷（要看得出原因與實際跑到幾則）、還在跑。
-     列序照 `get_suite` 的 `.order_by(RegressionRun.started_at.desc())`（regression.py:566-570）：
+     列序照 `get_suite` 的 `.order_by(RegressionRun.started_at.desc())`（regression.py）：
      最新的 #313（也正是「進行中」那一筆）必須在第一列。
      「看報表」連到 2-2-5；匯出是送 API 的鈕，中斷過的執行匯出時列數會少，故該列旁邊
      當場講出來（後端也會在 CSV 最後一列附註，見 `_partial_notice`）。 #}
@@ -817,6 +826,7 @@ permalink: 2-2-4_regressionSuites.html
    #deleteRegressionTarget，確認鈕歸業務 js（不自動關窗）。 #}
 {% set deleteTargetId = "deleteRegressionTarget" %}
 {% set deleteConfirmBinding = true %}
+{% set deleteCapability = "settings:write" %}
 {% set deleteToast = "已刪除|已經有執行紀錄引用它，請先刪除執行紀錄|刪除失敗，請稍後再試" %}
 {% set deleteToastKey = "toast.deleteRegression" %}
 {% set deleteToastType = "success|warning|error" %}

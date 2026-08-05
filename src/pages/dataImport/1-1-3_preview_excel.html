@@ -110,7 +110,7 @@ permalink: 1-1-3_preview_excel.html
        請求**，故不能沿用 product 400 的那句話；③product 讀不出這組設定（`excel.ExcelFormatError`／
        `ExcelReadError`，例如指定的表頭列數讀出重複或空白欄名、unpivot 左側欄超出範圍）；
      ④儲存空間不足：`preview_excel` 第一件事就是 `assert_storage_quota(db, tenant_id, len(data))`
-       （datasets.py:1414 → dataset_ops.py:110-119 的 413 `storage_exceeded`）。**這顆鈕正是它防的那條路**——
+       （datasets.py → dataset_ops.py 的 413 `storage_exceeded`）。**這顆鈕正是它防的那條路**——
        每按一次重新預覽就再落地一份暫存檔，而額度的現用量含暫存區的孤兒檔；⑤連線失敗。
      驗證結果只走這顆 toast 的 warning 段、欄位本身加 `.error`（§4：全站一種回報方式，不做逐欄內嵌訊息）。 #}
 <div class="flex-row mb-16">

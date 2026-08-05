@@ -56,7 +56,7 @@
                 <div class="modals-footer">
                     <div class="button-row center">
                         <button type="button" class="button button-border btn-close-modals" data-i18n="action.cancel">取消</button>
-                        <button type="button" class="button button-primary" data-toast="{{ ratingModalToast or '已送出回饋，感謝您！|請先選擇這個回答有沒有幫助|送出失敗，請稍後再試' }}" data-i18n-data-toast="{{ ratingModalToastKey or 'toast.feedback' }}" data-toast-type="{{ ratingModalToastType or 'success|warning|error' }}" data-i18n="action.submit">送出</button>
+                        <button type="button"{% if ratingCapability %} data-capability="{{ ratingCapability }}"{% endif %} class="button button-primary" data-toast="{{ ratingModalToast or '已送出回饋，感謝您！|請先選擇這個回答有沒有幫助|送出失敗，請稍後再試' }}" data-i18n-data-toast="{{ ratingModalToastKey or 'toast.feedback' }}" data-toast-type="{{ ratingModalToastType or 'success|warning|error' }}" data-i18n="action.submit">送出</button>
                     </div>
                 </div>
             </div>

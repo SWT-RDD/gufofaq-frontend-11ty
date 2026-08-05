@@ -1,4 +1,4 @@
-// 引用標記（答案內文中的 [[N]]）：把來源編號變成可點的上標小徽章，點了跳到「參考來源」的第 N 筆。
+// 引用標記（答案內文中的 [[N]]）：把來源編號變成可點的上標小徽章，點了跳到「參考來源」表上**序號欄等於 N** 的那一筆。
 // markup（互動見同資料夾 citation-ref.js）：
 //   <button type="button" class="citation-ref js-citation" data-citation-no="1">
 //     <span class="sr-only" data-i18n="qa.citationSourcePrefix">來源</span>1</button>
@@ -7,7 +7,10 @@
 // 用非互動標籤等於鍵盤使用者按不到。上標視覺由 vertical-align/font-size 做，不靠 <sup>。
 //
 // 真值來源：chatbot 生成的答案內文帶 [[N]]（agent 與傳統兩模式同一慣例），
-// N ＝「參考來源」表的第 N 筆（1-based）。React 端把文字節點裡的 [[N]] 換成本元件的 markup。
+// N ＝該筆來源的 `source_no`（＝表上「序號」欄的值），**不是第 N 列**：agent 模式跨工具呼叫累加、
+// 對外投影又會收掉候選池，兩件事都讓「第 N 號＝第 N 列」不成立——照 `rows[no-1]` 實作會高亮到別筆，
+// 而畫面上看起來一樣「有反應」（定位邏輯的正本見 components/sources-block 的 sources-block.js）。
+// React 端把文字節點裡的 [[N]] 換成本元件的 markup。
 .citation-ref {
     display: inline-flex;
     align-items: center;

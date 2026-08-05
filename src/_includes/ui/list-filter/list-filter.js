@@ -4,6 +4,17 @@
 // 這顆 widget 由兩個 modal 共用（select-dataset-modal 的 radio 清單、manage-members-modal 的
 // checkbox 清單）——過濾行為依 §4「兩個以上元件必須同值」升格成共用行為原子，兩邊都吃得到。
 // document 級 input 委派：動態插入的清單也吃得到；載入時不碰 DOM。
+//
+// markup 契約（無 html 元件，§1-2；整段照抄）—— 可捲動清單的關鍵字過濾
+// （select-dataset-modal 的 radio 清單、manage-members-modal 的 checkbox 清單共用）：
+//   <div class="dataset-list-wrap">
+//     <input type="text" class="form-control search" placeholder="…">   ← 過濾輸入框
+//     <div class="dataset-list">
+//       <label>…每一筆…</label>            ← 不符的 label 由本元件加 .hidden
+//     </div>
+//   </div>
+// 三顆 class 缺一不可：.dataset-list-wrap 是 closest() 的範圍根（同頁兩個 modal 各過濾各的），
+// .form-control.search 是輸入框、.dataset-list 是被過濾的容器。
 document.addEventListener("input", function (e) {
     var search = e.target.closest(".dataset-list-wrap .form-control.search");
     if (!search) return;

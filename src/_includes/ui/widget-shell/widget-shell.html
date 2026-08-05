@@ -14,8 +14,10 @@
       · `aria-expanded` ＋ `aria-controls` 指向面板（開合狀態要報得出來）
 
   面板內容沿用既有原子：訊息泡泡走 `ui/chat-message`（`.message-wrap` / `.message-row.by-robot|.by-user`
-    / `.message-content`），輸入列走 `ui/chatroom-shell` 的 `.chat-input-container`——widget 的訊息與
-    前台 FAQ 的訊息是同一種東西，另寫一套就是第二份會分岔的正本（§3-3）。
+    / `.message-content`）——widget 的訊息與前台 FAQ 的訊息是同一種東西，另寫一套就是第二份會分岔的
+    正本（§3-3）。**輸入列則不沿用 `ui/chatroom-shell` 的 `.chat-input-container`**：那顆是站內全寬版位
+    （固定在聊天室底部、跟著 `.chatroom-shell` 的內距走），widget 面板只有 360px 寬且自帶邊框，
+    故用自有 slot class `.widget-panel-bar`（§4：要覆寫別人的排版就改用自己的 slot class）。
 
   chrome 與資料的分界：**面板標題是租戶設定的**（widget.js 的 `title` 來自嵌入設定）⇒ 資料、不翻；
     關閉／送出／輸入框可及名稱是 chrome ⇒ 走既有 key（`action.close`／`action.submit`／`comp.enterQuestion`）。
@@ -32,13 +34,19 @@
 
   參數（使用頁在 include 前 set）：
     widgetTitle    —— 面板標題（租戶設定值；不給＝示範文字）
-    widgetDemoStatic —— true 時加 `.demo-static`（元件庫頁用：把 fixed 浮層退回文流內） #}
+    widgetDemoStatic —— true 時加 `.demo-static`（元件庫頁用：把 fixed 浮層退回文流內）
+
+  **展示態要自洽（§6）**：`.demo-static` 把面板顯示出來，那就是「面板開著」那一態——所以同一份
+    markup 的 launcher 要跟著報 `aria-expanded="true"`、面板要帶 widget.js 的 `[data-open]`。
+    寫死 `aria-expanded="false"` 配一個看得見的面板，是同一個畫面同時說兩件事；而且 scss 的
+    `&[aria-expanded="true"]`（launcher 轉向）與 `&[data-open]` 兩條規則會變成全站沒人看過的死 CSS（§5）。
+    正式態（widget.js 建 shadow root 時）初始就是收合的，故非展示態維持 false／不帶 data-open。 #}
 <div class="widget-shell{% if widgetDemoStatic %} demo-static{% endif %}">
-    <button type="button" class="faq-launcher widget-launcher js-widget-toggle" aria-expanded="false" aria-controls="widgetPanel"
+    <button type="button" class="faq-launcher widget-launcher js-widget-toggle" aria-expanded="{% if widgetDemoStatic %}true{% else %}false{% endif %}" aria-controls="widgetPanel"
         aria-label="開啟客服小幫手" data-i18n-aria-label="a11y.openWidget">
         <img src="./images/icon_owl.png" width="40" height="40" decoding="async" alt="">
     </button>
-    <div class="widget-panel" id="widgetPanel" role="dialog" aria-labelledby="widgetPanelTitle">
+    <div class="widget-panel" id="widgetPanel"{% if widgetDemoStatic %} data-open{% endif %} role="dialog" aria-labelledby="widgetPanelTitle">
         <div class="widget-panel-head">
             {# 標題是租戶設定值（資料，不翻）；它同時是面板的可及名稱，故給 id 讓 dialog 指過來。 #}
             <span id="widgetPanelTitle">{{ widgetTitle or "客服小幫手" }}</span>

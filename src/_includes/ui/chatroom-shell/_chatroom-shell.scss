@@ -3,6 +3,25 @@
 // （同 ui/chat-message 的訊息泡泡共用模式）——2-2-3 需要 .ab-compare 雙欄內容，無法直接 include chatroom，
 // 故外殼樣式升格為 ui/ 共用正本，不留在 components/chatroom 私有（§4：跨頁沿用要升格、不外借）。
 // 訊息泡泡本身在 ui/chat-message。值以真 app 編譯 css 為準。
+//
+// markup 契約（無 html 元件，§1-2；整段照抄）——外殼本體與輸入列：
+//   <div class="chatroom-wrap">
+//     <div class="chatroom-block">
+//       <div class="chat-message-container">…訊息（ui/chat-message）…</div>
+//     </div>
+//     <div class="chat-input-container">
+//       <div class="input-wrap">
+//         <div class="form-group chat-input-field">      ← slot class 與 ui/form-control 的 class 同時掛
+//           <div class="field"><textarea class="form-control chat-input-control"></textarea></div>
+//         </div>
+//         <button type="button" class="button button-primary chat-input-submit">…送出…</button>
+//       </div>
+//     </div>
+//   </div>
+// 三顆 slot class（.chat-input-field／-control／-submit）是本元件覆寫排版的落點：**不直接寫
+// ui/form-control 與 ui/button 的 class 選擇器**（§4）。前台 FAQ 不用這一套（走 components/faq-chatroom
+// 的 .faq-chatroom／.faq-chat-scroll，它的 .input-wrap 已依「一名一主」改名，不與本檔相撞）。
+// 日期分隔列的契約另寫在下方 .date-wrap 那一段旁邊。
 @use "../../../scss/mixin" as *;
 
 .chatroom-wrap {

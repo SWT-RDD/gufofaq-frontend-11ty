@@ -54,7 +54,7 @@
                                         <label for="tenantQaLimitInput" class="control-label" data-i18n="platform.qaLimit">問答額度</label>
                                     </div>
                                     <div class="field">
-                                        {# 三件套的第三件（§4）：三顆額度欄的下界出處＝`set_tenant_quota`（platform.py:398-401
+                                        {# 三件套的第三件（§4）：三顆額度欄的下界出處＝`set_tenant_quota`（platform.py
                                              的 `{field} must be >= 0`）；數字獨立成不翻的節點（§3-2）。 #}
                                         <input type="number" min="0" step="1" id="tenantQaLimitInput" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control" value="3000" aria-describedby="tenantQaLimitRange">
                                         <span class="text-gray" id="tenantQaLimitRange">≥ 0</span>
@@ -115,7 +115,7 @@
                                         </div>
                                         <div class="field">
                                             {# 「正數延展、負數縮短」原本只在 placeholder 裡——一打字就消失，也接不上輔具。
-                                                 改成常駐說明 ＋ aria-describedby；不可為 0 的出處是 platform.py:566。 #}
+                                                 改成常駐說明 ＋ aria-describedby；不可為 0 的出處是 platform.py 的 `extend_tenant_trial`。 #}
                                             <input type="number" step="1" id="tenantTrialDaysInput" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control" aria-describedby="tenantTrialDaysHint">
                                             <span class="text-gray" id="tenantTrialDaysHint" data-i18n="platform.extendDaysHint">正數延展、負數縮短，不可為 0</span>
                                         </div>
@@ -137,7 +137,7 @@
                         <div class="flex-row column gap-8">
                             <div id="tenantModelEnableLabel" class="text-bold" data-i18n="settings.modelEnablement">模型開通</div>
                             {# 模型目錄與 5-2 是**同一份**（兩邊都源自 `gufo.list_models()`；平台端在
-                                 platform.py:755-760 拿它當白名單的值域，`unknown models: […]` ⇒ 400）。
+                                 platform.py 拿它當白名單的值域，`unknown models: […]` ⇒ 400）。
                                  §6 逐字點名「可用模型」不得各烤一份——原本這裡硬寫兩顆 checkbox、
                                  而且**沒有 `value`**，比對的正是 `m["value"]`（`openai:gpt-4o` 這種帶前綴的識別字）。
                                  目錄本身在 5-2 那一頁 set 成 `llmModels`；這裡的示範沿用同一組值，
@@ -175,13 +175,13 @@
                                     </div>
                                     {# 這一列不在 .default-table 裡，`.btn-group` 的規則帶著那個祖先（§4 祖先錯位）。 #}
                                     <div class="flex-row gap-10 align-items-center flex-wrap">
-                                        {# 已停用的帳號代理不了：`platform.py:725-726` `if not target.is_active:
+                                        {# 已停用的帳號代理不了：`platform.py` `if not target.is_active:
                                              raise HTTPException(403, "cannot impersonate a disabled account")`。
                                              無條件渲染會在停用列上留一顆**按了必定失敗**的鈕，而它掛的 warning
                                              講的又是另一件事（權限不足）。比照 share-manage-modal 的做法改成
                                              disabled——那一列已經沒有東西可代理（§5「按了什麼都不會發生」）。 #}
                                         <button type="button" class="button button-border button-sm"{% if not member.isActive %} disabled{% endif %} data-toast="已代理登入該成員|權限不足，無法代理登入|代理登入失敗，請稍後再試" data-i18n-data-toast="toast.impersonateTenant" data-toast-type="success|warning|error" data-i18n="action.impersonate">代理登入</button>
-                                        {# 停用路徑上有**兩道**具名 409（platform.py:1117-1120 的 `last_tenant_admin`
+                                        {# 停用路徑上有**兩道**具名 409（platform.py 的 `last_tenant_admin`
                                              與 :1121 呼叫的 `_assert_not_last_platform_admin`，後者回
                                              `last_platform_admin`「不可停用/刪除/降級最後一位平台系統管理員」）。
                                              同一頁的刪除鈕早就把這兩道分開列了（5-6-1 的 deleteToast），

@@ -54,7 +54,7 @@ permalink: 5-9_extractApiKey.html
          起全部 401，而明碼只回這一次。全站其他破壞性動作（4-2／5-8／5-6-3 的撤銷）都走 delete-modal
          的二次確認，這顆原本是按下去就執行——故改成條件開窗（hook class），toast 移到確認鈕上。 #}
     <div class="flex-row">
-        <button type="button" class="button button-primary js-regenerate-key" data-i18n="extractKey.regenerate">重新產生金鑰</button>
+        <button data-tenant-role="admin" type="button" class="button button-primary js-regenerate-key" data-i18n="extractKey.regenerate">重新產生金鑰</button>
     </div>
 </div>
 
@@ -67,6 +67,7 @@ permalink: 5-9_extractApiKey.html
 {% set deleteHideTarget = true %}
 {% set deleteConfirmBinding = true %}
 {% set deleteConfirmClass = "js-regenerate-key-confirm" %}
+{% set deleteTenantRole = "admin" %}
 {% set deleteToast = "已產生新金鑰|產生失敗" %}
 {% set deleteToastKey = "toast.generateKey" %}
 {% include "components/delete-modal/delete-modal.html" %}

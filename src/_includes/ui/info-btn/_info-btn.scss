@@ -2,6 +2,14 @@
 // （scss 源碼漏了這條、只存在編譯輸出——同 divider-vertical/footer/ab-compare 的情況）。
 // 原本我們專案完全沒有 .info-btn 樣式，導致它呈現瀏覽器預設方框按鈕；此處補回＝透明背景的圖示鈕。
 // 純樣式元件（無 html/js，markup 就地寫在頁面：2-2-1、2-2-3、component.html）。
+//
+// markup 契約（無 html 元件，§1-2；整段照抄）—— 欄位標題旁的說明鈕，**六件組缺一不可**：
+//   <button type="button" class="info-btn" title="配置說明" data-i18n-title="qaTest.configInfo" data-open-modal="knowledgeModal">
+//     <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+//     <span class="sr-only" data-i18n="qaTest.configInfo">配置說明</span>
+//   </button>
+// 少掉 .sr-only 那顆，可及名稱就只剩 title —— §4 明文「單掛 title 不算」（輔具不保證會念、
+// 觸控與鍵盤焦點也看不到它）。這正是無 html 元件最容易在複製時掉的那一個節點。
 .info-btn {
     background-color: transparent;
     border: none;

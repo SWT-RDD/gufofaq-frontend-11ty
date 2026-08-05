@@ -6,6 +6,17 @@
 // 即使頁面只有單一欄位，也必須包在 .filter-fields 裡：漏了外層，.filter-field 這個巢狀選擇器
 // 就不會命中（規則直接不生效），該欄位的 .col-N-* 也會從錯誤的祖先（外層 .gap-24 而非本元件的
 // .gap-16）繼承 --flex-gap，欄寬計算跟著跑掉。
+//
+// markup 契約（無 html 元件，§1-2；整段照抄）—— 篩選列（5-2、2-2-1；.js-filter-clear 另供 4-1、5-7）：
+//   <div class="filter-fields flex-row flex-wrap gap-16 mobile-column">
+//     <div class="form-group filter-field row mobile-col col-4-md col-12-sm">  ← .filter-field 是本元件的 slot class
+//       <div class="label flex-row"><label class="control-label" for="…">…欄名…</label></div>
+//       <div class="field">…控制項…</div>
+//     </div>
+//     <button type="button" class="button button-border js-filter-clear">…清除…</button>
+//   </div>
+// 清除鈕以 closest(".block") 定範圍（filter-fields.js）：同頁兩條篩選列各清各的，故沿用同一個
+// hook 名而不改名（§5：改了名就脫離既有委派，變成沒人綁的死鈕）。
 .filter-fields {
     flex: 1 1 auto;
     min-width: 0;

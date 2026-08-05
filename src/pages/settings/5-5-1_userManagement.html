@@ -91,7 +91,7 @@ permalink: 5-5-1_userManagement.html
         </label>
         <span class="text-bold" data-i18n="settings.tenantAdmin">租戶管理者</span>
         {# 直接送 API 的建立動作 → data-toast 列全結果（§5）。409「email already exists」
-             （users.py:246-247）是**換一個 Email 就修得掉**的 warning，自成一段——
+             （users.py 的 `account.email_exists` 409）是**換一個 Email 就修得掉**的 warning，自成一段——
              折進「新增失敗，請稍後再試」再用「可能」對沖，等於叫使用者重試一個永遠不會成功的動作。
              全站同型的 create 409 都自成 warning（5-5-2 群組名稱、3-3 QA 集、5-6-2 MCP 名稱）。 #}
         <button data-tenant-role="admin" type="button" class="button button-primary" data-toast="成員已新增|請填寫 Email 與至少 8 碼密碼|Email 已被使用，請換一個|新增失敗，請稍後再試" data-i18n-data-toast="toast.createUser" data-toast-type="success|warning|warning|error">
@@ -191,7 +191,7 @@ permalink: 5-5-1_userManagement.html
                             {# 儲存＝把這一列的狀態／角色／群組一起送 PATCH /users/{id}。後端有兩道守衛，
                                  訊息不能被吞掉（否則使用者只看到「儲存失敗」，不知道要先指派另一位管理者）：
                                  400「cannot deactivate the last active tenant admin」（product users.py）、
-                                 403「平台角色持有者不得在租戶端變更」（同檔 _assert_tenant_manageable（users.py:87）：
+                                 403「平台角色持有者不得在租戶端變更」（同檔 _assert_tenant_manageable（users.py）：
                                  平台管理員／稽核員寄生在一般租戶裡，停用他會讓平台治理端點沒人打得動）。 #}
                             <button data-tenant-role="admin" type="button" class="button button-border button-sm" data-toast="已更新|不可移除租戶最後一位管理者，請先指派另一位|不可停用最後一位在職的租戶管理者，請先指派另一位|平台角色持有者不可在租戶端變更，請由平台管理端處理|儲存失敗" data-i18n-data-toast="toast.saveMember" data-toast-type="success|warning|warning|warning|error" data-i18n="action.save">儲存</button>
                             {# 重設密碼：開窗需先選定「重設哪一位成員」＝業務條件開窗，故用 hook class（.js-reset-password），
@@ -206,8 +206,9 @@ permalink: 5-5-1_userManagement.html
     </div>
 </div>
 
-{# 租戶端的重設密碼多一道 403：`users.py:360` 的 `_assert_tenant_manageable`
+{# 租戶端的重設密碼多一道 403：`users.py` 的 `_assert_tenant_manageable`
      （那道守衛的存在理由正是「租戶管理者不得重設平台管理員的密碼再拿去登入」）。 #}
+{% set resetTenantRole = "admin" %}
 {% set resetToast = "密碼已重設|兩次新密碼不一致|平台角色持有者不可在租戶端變更，請由平台管理端處理|重設失敗，請稍後再試" %}
 {% set resetToastKey = "toast.resetPassword" %}
 {% set resetToastType = "success|warning|warning|error" %}

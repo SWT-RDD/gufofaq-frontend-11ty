@@ -33,13 +33,14 @@
         justify-content: center;
         align-items: center;
 
+        // 單色 PNG ⇒ 走遮罩上色（§4）：alpha 是字形、顏色交給語意 token。這顆疊在
+        // --brand-gradient 的圓上，故墨色是 --on-accent（渲染值與原本的純白資產相同）。
+        // 換膚／深色模式因此免反相、也不必為了別的底色另存一張圖。
+        // 同一張圖在 ui/faq-launcher 是 <img>——那是 §4 明列的例外（CSS 選不到 url() 裡的顏色）。
         .pic {
             width: 20px;
             height: 20px;
-            background-image: url(../images/icon_owl.png);
-            background-repeat: no-repeat;
-            background-size: contain;
-            background-position: center;
+            @include icon-mask("../images/icon_owl.png", var(--on-accent), contain);
         }
     }
 

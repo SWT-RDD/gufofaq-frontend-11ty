@@ -102,6 +102,7 @@ permalink: 4-2_qaHistory_detail.html
 {% set ratingModalNote = "送出會取代下面表格裡的使用者滿意度與意見回饋——一筆問答只有一份評分，沒有「管理者另外的一份」。" %}
 {% set ratingModalFeedback = conversation.feedback %}
 {% set ratingModalToastKey = "toast.saveRating" %}
+{% set ratingCapability = "history" %}
 {% set ratingModalToast = "滿意度已更新|請先選擇讚或倒讚|更新失敗，請稍後再試" %}
 {% set ratingModalToastType = "success|warning|error" %}
 {% include "components/rating-modal/rating-modal.html" %}
@@ -119,6 +120,7 @@ permalink: 4-2_qaHistory_detail.html
 {% set deleteTargetId = "revokeShareTarget" %}
 {% set deleteConfirmBinding = true %}
 {% set deleteConfirmClass = "js-revoke-share-confirm" %}
+{% set deleteCapability = "history" %}
 {% set deleteToast = "連結已撤銷|撤銷失敗，請稍後再試" %}
 {% set deleteToastKey = "toast.revokeShare" %}
 {% include "components/delete-modal/delete-modal.html" %}

@@ -19,10 +19,11 @@ permalink: 3-1-3_previewDataset.html
     {% set editLabel = "資料集名稱" %}
     {% set editLabelKey = "dataset.datasetName" %}
     {% set editValue = "客服問答知識庫" %}
-    {# 這顆確認鈕送 `PATCH /datasets/{id}`：409「資料集名稱已存在」（datasets.py:2463）是
+    {# 這顆確認鈕送 `PATCH /datasets/{id}`：409「資料集名稱已存在」（datasets.py）是
          換個名字就修得掉的 warning——姊妹頁 5-5-2 對同型 409 就是這樣列的。
          400「資料集名稱不可為空」（:2454）與它並列。 #}
-    {% set editSaveToast = "資料集名稱已更新|資料集名稱不可為空|資料集名稱已存在，請換一個|儲存失敗，請稍後再試" %}
+    {% set editCapability = "data:write" %}
+{% set editSaveToast = "資料集名稱已更新|資料集名稱不可為空|資料集名稱已存在，請換一個|儲存失敗，請稍後再試" %}
     {% set editSaveToastKey = "toast.saveDatasetName" %}
     {% set editSaveToastType = "success|warning|warning|error" %}
     {% include "components/editable-block/editable-block.html" %}
@@ -43,9 +44,10 @@ permalink: 3-1-3_previewDataset.html
         {# 這兩欄走的是**另一支**端點 `PATCH /retrieval/datasets/{id}`（retrieval.py::edit_dataset，
              同步進 GufoRAG 索引供意圖排序），不是名稱那顆的 `PATCH /datasets/{id}`。
              它逐 raise 只有三種：403（`require_capability("settings","write")` 未開通，
-             或 `can_write_dataset` 判跨群組，retrieval.py:557）、404「dataset not found」、
+             或 `can_write_dataset` 判跨群組，retrieval.py）、404「dataset not found」、
              502（同步 GufoRAG 失敗、整筆回滾）。403 是使用者自己找得到人開通／換群組的 warning，
              措辭同 5-1-1 的 `toast.saveAccount`；404／502 併進末段 error。 #}
+        {% set editCapability = "data:write" %}
         {% set editSaveToast = "已更新|權限不足，無法儲存|儲存失敗，請稍後再試" %}
         {% set editSaveToastKey = "toast.saveDatasetField" %}
         {% set editSaveToastType = "success|warning|error" %}
@@ -60,6 +62,7 @@ permalink: 3-1-3_previewDataset.html
         {% set editPlaceholderKey = "comp.enterTaskPrompt" %}
         {% set editValue = "你是客服助理，請根據提供的資料集內容，以親切、精簡的語氣回答使用者的問題。" %}
         {# 與任務描述同一顆端點、同一組 raise（見上），故分支集合逐字相同。 #}
+        {% set editCapability = "data:write" %}
         {% set editSaveToast = "已更新|權限不足，無法儲存|儲存失敗，請稍後再試" %}
         {% set editSaveToastKey = "toast.saveDatasetField" %}
         {% set editSaveToastType = "success|warning|error" %}
@@ -176,12 +179,13 @@ permalink: 3-1-3_previewDataset.html
 {% set deleteConfirmBinding = true %}
 {% set deleteConfirmClass = "confirm-delete-btn" %}
 {# 刪除檔案的三段：product `delete_file` → `_remove_file_and_purge` 的出口不只成敗。
-     409 `folder_pipeline_not_recorded`（datasets.py:665-688）的訊息**本身就是修復步驟**
+     409 `folder_pipeline_not_recorded`（datasets.py）的訊息**本身就是修復步驟**
      （「請用『檔案上傳』再匯入一次任一檔案，會自動接回原本的管道並補記，之後即可正常刪除」）——
      使用者自己修得掉，折進紅色的「刪除失敗」就是把可修復畫成終局（§5）。
      另一條 409 `file_not_linkable`（同檔 :634-638）沒有復原路徑，與 502／404／403 同屬 error。
      不與 1-2-1 共用 key：那一頁的「刪除」是送出前把檔從清單移掉（uploadFilePdf.js:480-486
      只做 `fileList.splice`），根本不會失敗。 #}
+{% set deleteCapability = "data:write" %}
 {% set deleteToast = "已刪除|這個檔案沒有留下擷取管道記錄，請先用「檔案上傳」重新匯入一次以補記|刪除失敗，請稍後再試" %}
 {% set deleteToastKey = "toast.deleteFile" %}
 {% set deleteToastType = "success|warning|error" %}

@@ -1,5 +1,18 @@
-// 長文收合（qa-detail-info 的「提示詞」收合欄）。取自真 app 已編譯 css/component.css（scss 源碼漏了）。
-// 預設夾 3 行、.open 展開全文；收合鈕箭頭於 .open 時轉向。開合行為見 collapse-text.js。
+// 長文收合：內容一律夾住（3 行）而且**打得開**。取自真 app 已編譯 css/component.css（scss 源碼漏了）。
+//
+// 無 html 元件 ⇒ markup 契約逐字寫在這裡（GUIDELINE §1-2）。**整段照抄，一個屬性都不要少**：
+//
+//   <div class="collapse-text"><div class="collapse-body">…內容…</div><button type="button" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>
+//
+//   · `.collapse-body` 是 clamp 的落點，內容一定要包在它裡面（直接放進 .collapse-text 不會被夾）
+//   · 鈕一定要 `type="button"`（§4 不得省略 type）、`aria-expanded="false"`（初始態）
+//     ＋ `data-i18n="common.expand"` ＋ 字面「展開」——展開↔收合的字與 aria 由 collapse-text.js
+//     在點擊與 `gufo:langchange` 時一手改寫，markup 只負責初始態
+//   · `.open` 由 js 掛在 `.collapse-text` 上（不是 body）；外層可再掛 `.text-gray`／`.text-red` 變色
+//
+// 為什麼要逐字寫下來：這組 markup 全站被複製十幾份（表格儲存格、彈窗、元件內），少一個
+// `aria-expanded` 或 `data-i18n` 視覺指紋完全看不出來，只有把契約放在一個地方才對得起來。
+// 用在「內容」而不是「控制項標籤」：頁籤那種寬度固定的標籤仍用 `.ellipsis-1` ＋ title（見 ui/tab）。
 @use "../../../scss/mixin" as *;
 .collapse-text {
     .collapse-body {

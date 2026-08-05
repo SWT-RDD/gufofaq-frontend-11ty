@@ -1,6 +1,25 @@
 // 共用「訊息泡泡」：後台 chatroom 與前台 faq-chatroom 都用這一套（message-wrap/row/content/time/icon）。
 // 由 components/chatroom（Manager 卡片容器）與 components/faq-chatroom（FAQ 全高容器）各自的容器包住。
 // 值以真 app 編譯 css 為準（原在 _chatroom.scss，抽出共用，宣告不變）。
+//
+// markup 契約（無 html 元件，§1-2；整段照抄）—— 訊息泡泡，後台 components/chatroom 與前台
+// components/faq-chatroom 共用同一套（2-2-3 另手寫一份）：
+//   <div class="message-wrap">
+//     <div class="message-row by-robot">          ← 使用者側是 .by-user（無 .avatar）
+//       <div class="avatar"><div class="pic"></div></div>
+//       <div class="message-content">
+//         <div class="robot-msg">…答案本文…</div>   ← 長文/富文字一律 div（§4：p 內不可放區塊元素）
+//       </div>
+//     </div>
+//     <div class="message-time">…時間…</div>
+//   </div>
+// 「.robot-msg」底下那一整套 markdown 排版（標題／清單／表格／行內碼）是本檔最大的一塊樣式，
+// 沿用時整個容器都要是它，不要只掛 .message-content。
+// 推薦問題那一組是**一整組控制項**，group 語意不可省（§4）：
+//   <div class="suggested-questions" role="group" aria-labelledby="suggestedQuestionsLabel">
+//     <div class="suggested-questions-label" id="suggestedQuestionsLabel">…你可能想問…</div>
+//     <button type="button" class="js-ask-suggested">…問句…</button>
+//   </div>
 .message-wrap {
     margin-bottom: 1rem;
 }
