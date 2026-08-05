@@ -187,10 +187,10 @@ permalink: 5-6-2_platformMcpServers.html
                         {% if server.lastTest.ok %}
                         <div class="flex-row column gap-4">
                             <span class="text-bold">{{ server.lastTest.toolsCount }}<span data-i18n="settings.mcpToolsUnit"> 個工具</span></span>
-                            <div class="text-gray ellipsis-2" title="{{ server.lastTest.tools }}">{{ server.lastTest.tools }}</div>
+                            <div class="collapse-text text-gray"><div class="collapse-body">{{ server.lastTest.tools }}</div><button type="button" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>
                         </div>
                         {% elif server.lastTest.error %}
-                        <div class="text-red ellipsis-2" title="{{ server.lastTest.error }}">{{ server.lastTest.error }}</div>
+                        <div class="collapse-text text-red"><div class="collapse-body">{{ server.lastTest.error }}</div><button type="button" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>
                         {% else %}
                         <span class="text-gray" data-i18n="settings.mcpNeverTested">尚未測試</span>
                         {% endif %}

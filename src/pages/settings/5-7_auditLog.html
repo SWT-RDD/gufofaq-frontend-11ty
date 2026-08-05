@@ -186,7 +186,7 @@ permalink: 5-7_auditLog.html
                 <td>{{ row.target }}</td>
                 <td>{{ row.detail }}</td>
                 <td>{{ row.ip }}</td>
-                <td><div class="ellipsis-2" title="{{ row.userAgent }}">{{ row.userAgent }}</div></td>
+                <td><div class="collapse-text"><div class="collapse-body">{{ row.userAgent }}</div><button type="button" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div></td>
             </tr>
             {% endfor %}
         </tbody>

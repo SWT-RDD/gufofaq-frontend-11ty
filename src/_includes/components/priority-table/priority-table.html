@@ -44,10 +44,10 @@
             <tr data-folder-sn="{{ row.sn }}">
                 <td>{{ row.category }}</td>
                 <td class="edit-cell description">
-                    <div class="ellipsis-2">{{ row.description }}</div>
+                    <div class="collapse-text"><div class="collapse-body">{{ row.description }}</div><button type="button" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>
                 </td>
                 <td class="edit-cell prompt">
-                    <div class="ellipsis-2">{{ row.prompt }}</div>
+                    <div class="collapse-text"><div class="collapse-body">{{ row.prompt }}</div><button type="button" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>
                 </td>
                 <td class="text-center">
                     <button type="button" class="button button-edit-save js-edit-btn" title="編輯" data-i18n-title="action.edit">

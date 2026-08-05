@@ -19,6 +19,8 @@
             <button type="button" class="tab" title="外籍配偶準備文件">外籍配偶準備文件</button>
             <button type="button" class="tab" title="護照效期影響出國">護照效期影響出國</button>
             <button type="button" class="tab" title="入出國日期證明書">入出國日期證明書</button>
+            {# 這裡的 .ellipsis-1 是**控制項標籤**、不是內容：頁籤寬度固定，展開它會把整條頁籤列撐爛。
+                 內容型的 clamp 一律改用 ui/collapse-text（可展開），控制項標籤則保留單行夾斷 ＋ title 全文。 #}
             <button type="button" class="tab ellipsis-1" title="欠稅或官司被禁止出國要如何解除">欠稅或官司被禁止出國要如何解除</button>
             <button type="button" class="tab" title="查詢過去的出國紀錄">查詢過去的出國紀錄</button>
         </div>

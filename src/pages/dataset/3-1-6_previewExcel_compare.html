@@ -86,7 +86,7 @@ permalink: 3-1-6_previewExcel_compare.html
             <tr>
                 {% for col in columns %}
                 <td>
-                    <div class="ellipsis-2" title="{{ row[col.key] }}">{{ row[col.key] }}</div>
+                    <div class="collapse-text"><div class="collapse-body">{{ row[col.key] }}</div><button type="button" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>
                 </td>
                 {% endfor %}
             </tr>
@@ -124,7 +124,7 @@ permalink: 3-1-6_previewExcel_compare.html
                 <tr>
                     {% for col in rawTitles %}
                     <td>
-                        <div class="ellipsis-2" title="{{ row[col.key] }}">{{ row[col.key] }}</div>
+                        <div class="collapse-text"><div class="collapse-body">{{ row[col.key] }}</div><button type="button" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>
                     </td>
                     {% endfor %}
                 </tr>

@@ -93,7 +93,7 @@ permalink: 1-2-1_uploadFile_pdf.html
                     <button type="button" class="link-modal btn-preview-file" data-index="{{ loop.index0 }}">{{ file.name }}</button>
                 </td>
                 <td>
-                    <span class="ellipsis-2" title="{{ file.title }}">{{ file.title }}</span>
+                    <div class="collapse-text"><div class="collapse-body">{{ file.title }}</div><button type="button" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>
                 </td>
                 <td>{{ file.time }}</td>
                 <td>{{ file.sizeMB }}MB</td>

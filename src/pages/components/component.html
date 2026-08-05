@@ -373,7 +373,7 @@ bodyClass: guideline-page
                     <li>表格請給予.default-table設定主要表格樣式</li>
                     <li>表格父層用「.table-container」包覆，如需要讓表格可以左右滾動，請加上「.scrollTable」的class</li>
                     <li>如表格欄位需排序，請在th子層加上&lt;button type="button" class="sort"&gt;（內含排序圖示 img 與 sr-only 名稱），並使用「div.th-sort」包住欄位標題文字及排序鈕</li>
-                    <li>表格欄位中內容較多時，請使用「div.ellipsis-2」包覆</li>
+                    <li>表格欄位中內容較多時，請使用 <strong>ui/collapse-text</strong>（「div.collapse-text &gt; div.collapse-body + button.collapse-toggle」）——夾住並且<strong>打得開</strong>。純 clamp 的「.ellipsis-2」不要再用在內容上：夾掉的那幾行連 hover 都看不到</li>
                     <li>表格不需要左右邊框和標題欄位邊框時，請在table加上「.no-border」這個class</li>
                     <li>表格欄位中的按鈕請用「.btn-group」包覆</li>
                     <li>表格要固定欄寬，請在table加上「.fixed-layout」這個class</li>
@@ -394,7 +394,7 @@ bodyClass: guideline-page
             <div class="caption description mt-16">
                 <ul>
                     <li>意圖判斷表格使用「.default-table.priority-table」這個class</li>
-                    <li>表格內可編輯的欄位：「任務描述」請在td加上「.edit-cell.description」、「任務對應提示詞」請在td加上「.edit-cell.prompt」。內容皆使用「div.ellipsis-2」包覆
+                    <li>表格內可編輯的欄位：「任務描述」請在td加上「.edit-cell.description」、「任務對應提示詞」請在td加上「.edit-cell.prompt」。內容皆使用 ui/collapse-text 包覆（可展開）
                     </li>
                 </ul>
             </div>
