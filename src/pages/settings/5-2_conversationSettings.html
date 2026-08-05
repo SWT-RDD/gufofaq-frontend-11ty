@@ -49,7 +49,6 @@ permalink: 5-2_conversationSettings.html
   { name: "gufonet", label: "GufoNet（關鍵字）", appliesWhen: "data_source_ratio > 0",
     scale: { kind: "unbounded", min: null, max: null, note: "BM25 型整數分（實測 752～10095），隨查詢長度漂；無命中直接回空清單" } }
 ] %}
-{% set mixedScaleWarning = "0 < data_source_ratio < 1 時 weaviate 與 gufonet 的結果會混在同一批裡，兩把尺並存；此時單一分數門檻無法同時對兩者成立，建議改開 enable_rerank（分數會由重排序器逐筆覆寫成同一把尺）。" %}
 {# 目前生效的那把尺（判斷順序是端點契約的一部分，見 `GET /settings/rerankers` 的 docstring）：
        enable_rerank ⇒ rerankers[] 裡 reranker_name 那一筆
        否則 ratio == 0 ⇒ weaviate ／ ratio == 1 ⇒ gufonet ／ 0 < ratio < 1 ⇒ 兩把尺並存，顯示 mixed 警語
@@ -214,6 +213,7 @@ permalink: 5-2_conversationSettings.html
           {
             title: "高優先級",
             i18nKey: "comp.highPriority",
+            intentOn: true,
             rows: [
               { sn: 31, category: "入出國與法規", description: "處理入境、出境、簽證、停留等問題", prompt: "我是移民署的智能客服，專門處理與入出境、居留、停留、簽證有關的問題。請使用條列、清楚的說明回應民眾，並根據法規給出指引。", priority: "高優先級" },
               { sn: 32, category: "證件與資料申請", description: "協助查詢入出國紀錄、統一證號等申辦方式", prompt: "我是移民署的智能客服，擅長協助民眾查詢入出國紀錄、統一證號申請等行政流程。請清楚說明所需文件、申請條件與流程。", priority: "高優先級" }
@@ -222,6 +222,7 @@ permalink: 5-2_conversationSettings.html
           {
             title: "中優先級",
             i18nKey: "comp.mediumPriority",
+            intentOn: true,
             rows: [
               { sn: 33, category: "婚姻與家庭", description: "涉外婚姻登記、外籍配偶居留等問題", prompt: "我是移民署的智能客服，協助說明涉外婚姻登記、外籍配偶居留申請相關規定。", priority: "中優先級" }
             ]
@@ -229,6 +230,7 @@ permalink: 5-2_conversationSettings.html
           {
             title: "低優先級",
             i18nKey: "comp.lowPriority",
+            intentOn: false,
             rows: [
               { sn: 34, category: "權益與申訴服務類", description: "", prompt: "", priority: "低優先級" }
             ]
@@ -245,7 +247,7 @@ permalink: 5-2_conversationSettings.html
                 <div class="flex-row align-items-center gap-8">
                     <span id="intentEnableLabel-{{ loop.index }}" data-i18n="settings.intentEnable">意圖判斷啟用</span>
                     <label class="switch priority-switch">
-                        <input type="checkbox" class="switch-checkbox" role="switch" aria-labelledby="intentLevelTitle-{{ loop.index }} intentEnableLabel-{{ loop.index }}">
+                        <input type="checkbox" class="switch-checkbox" role="switch" aria-labelledby="intentLevelTitle-{{ loop.index }} intentEnableLabel-{{ loop.index }}"{% if level.intentOn %} checked{% endif %}>
                         <span class="switch-box">
                             <span class="switch-btn"></span>
                         </span>
@@ -254,6 +256,8 @@ permalink: 5-2_conversationSettings.html
             </div>
             {% set tierless = false %}
             {% set rows = level.rows %}
+            {# 這一份在 priorityLevels 迴圈內跑三輪 ⇒ 實例鍵要帶 loop.index，否則三張表的表頭撞同一個 id #}
+            {% set priorityTableInstance = "lv" + loop.index %}
             {% include "components/priority-table/priority-table.html" %}
         </div>
         {% endfor %}
@@ -264,6 +268,7 @@ permalink: 5-2_conversationSettings.html
             </div>
             {% set tierless = false %}
             {% set rows = [] %}
+            {% set priorityTableInstance = "unused" %}
             {% include "components/priority-table/priority-table.html" %}
         </div>
     </div>
@@ -286,6 +291,7 @@ permalink: 5-2_conversationSettings.html
               { sn: 33, category: "婚姻與家庭", description: "涉外婚姻登記、外籍配偶居留等問題", prompt: "我是移民署的智能客服，協助說明涉外婚姻登記、外籍配偶居留申請相關規定。", priority: "中優先級" },
               { sn: 34, category: "權益與申訴服務類", description: "", prompt: "", priority: "低優先級" }
             ] %}
+            {% set priorityTableInstance = "agentInUse" %}
             {% include "components/priority-table/priority-table.html" %}
         </div>
 
@@ -295,6 +301,7 @@ permalink: 5-2_conversationSettings.html
             </div>
             {% set tierless = true %}
             {% set rows = [] %}
+            {% set priorityTableInstance = "agentUnused" %}
             {% include "components/priority-table/priority-table.html" %}
         </div>
     </div>
@@ -1560,7 +1567,12 @@ permalink: 5-2_conversationSettings.html
                     value="3" aria-describedby="qaDirectScoreFloorScale qaDirectScoreFloorDep">
                 {% set scaleNoteId = "qaDirectScoreFloorScale" %}
                 {% set scaleNoteText = activeScale.scale.note %}
-                {% set scaleNoteMixed = mixedScaleWarning %}
+                {# **示範狀態是「重排序開著」**（activeScale ＝ llm_reranker），依端點契約的判斷順序，
+                     混合尺那一態只在 enable_rerank == false 且 0 < ratio < 1 時成立——兩件事不可能同時發生，
+                     所以這裡不傳 scaleNoteMixed（§6 示範資料演的必須是一個真實可能的狀態）。
+                     原本無條件傳進去、再靠元件裡的 .hidden 蓋住，等於用看不見掩蓋一個矛盾的狀態；
+                     那一態的長相改由元件庫展示頁演（§5）。 #}
+                {% set scaleNoteMixed = "" %}
                 {% include "ui/score-scale-note/score-scale-note.html" %}
                 <span class="text-gray" id="qaDirectScoreFloorDep" data-i18n="settings.qaDirectScoreFloorDep">留白＝未校準：裁決開著時代表不預篩、全部交給裁判；裁決關著時代表只用「正規化完全命中」那一層，那是安全的組態。但「完全命中」＋「生成」子頁籤的重排序關閉時不得設門檻——那時只剩原始檢索分數，它不是可校準的尺，存檔會被擋下。兩條出路：開啟重排序（分數就會是重排序器的尺），或把這一格留白。</span>
             </div>
@@ -1624,7 +1636,12 @@ permalink: 5-2_conversationSettings.html
                     aria-describedby="groundingScoreFloorScale groundingScoreFloorNote">
                 {% set scaleNoteId = "groundingScoreFloorScale" %}
                 {% set scaleNoteText = activeScale.scale.note %}
-                {% set scaleNoteMixed = mixedScaleWarning %}
+                {# **示範狀態是「重排序開著」**（activeScale ＝ llm_reranker），依端點契約的判斷順序，
+                     混合尺那一態只在 enable_rerank == false 且 0 < ratio < 1 時成立——兩件事不可能同時發生，
+                     所以這裡不傳 scaleNoteMixed（§6 示範資料演的必須是一個真實可能的狀態）。
+                     原本無條件傳進去、再靠元件裡的 .hidden 蓋住，等於用看不見掩蓋一個矛盾的狀態；
+                     那一態的長相改由元件庫展示頁演（§5）。 #}
+                {% set scaleNoteMixed = "" %}
                 {% include "ui/score-scale-note/score-scale-note.html" %}
                 <span class="text-gray" id="groundingScoreFloorNote" data-i18n="settings.groundingScoreFloorNote">這一格不可留白（預設 0.5）：它永遠只是判定前的門票，閘開著時 LLM 判定一定會跑，所以擋不到東西的後果只是多付一次判定，不會生出錯答案。與「QA 直答」那一格的可留白刻意不同。</span>
             </div>

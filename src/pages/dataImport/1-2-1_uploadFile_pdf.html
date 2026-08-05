@@ -133,7 +133,7 @@ permalink: 1-2-1_uploadFile_pdf.html
             <input type="checkbox" class="switch-checkbox js-doc-convert-html" role="switch" aria-label="HTML 轉 Markdown" data-i18n-aria-label="dataImport.convertHtml" aria-describedby="pdfConvertHtmlHint" checked>
             <span class="switch-box"><span class="switch-btn"></span></span>
         </label>
-        <span class="text-gray" id="pdfConvertHtmlHint" data-i18n="dataImport.convertHtmlHint">文字欄若含 HTML 標籤就轉成 Markdown，連結網址會被移除並列在匯入結果裡。純文字資料原樣通過。</span>
+        <span class="text-gray" id="pdfConvertHtmlHint" data-i18n="dataImport.convertHtmlHint">文字欄若含 HTML 標籤就轉成 Markdown：絕對位址的 http(s)／mailto／tel 連結會原樣轉成 Markdown 連結保留下來，表示不出來的那些（相對路徑、javascript:、片段錨點）才會被移除並列在匯入結果裡。純文字資料原樣通過。</span>
     </div>
 </div>
 
@@ -233,7 +233,7 @@ permalink: 1-2-1_uploadFile_pdf.html
         ],
         droppedLinks: {
             count: 1,
-            urls: ["https://www.immigration.gov.tw/download/application-form.pdf"]
+            urls: ["/download/application-form.pdf"]
         },
         unprocessableTables: [
             "第 2 個表格第 7 列有 5 欄，表頭只有 4 欄"

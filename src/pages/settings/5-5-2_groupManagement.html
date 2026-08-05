@@ -33,7 +33,7 @@ permalink: 5-5-2_groupManagement.html
 {% set groups = [
   { name: "管理群組", capabilities: ["data:read", "data:write", "settings:read", "settings:write", "ask", "history", "audit"], memberCount: 0 },
   { name: "業務群組", capabilities: ["data:read", "ask", "history"], memberCount: 1 },
-  { name: "研發群組", capabilities: ["data:read", "data:write", "settings:read"], memberCount: 1 }
+  { name: "研發群組", capabilities: ["data:read", "data:write", "settings:read"], memberCount: 2 }
 ] %}
 
 <p class="text-gray" data-i18n="settings.groupMgmtIntro">群組即權限群組：能力定在群組上，使用者加入群組即繼承其能力（多群組取聯集）。資料集歸屬群組，寫入權限依所屬群組而定。</p>

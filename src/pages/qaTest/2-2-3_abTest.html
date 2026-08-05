@@ -64,9 +64,9 @@ permalink: 2-2-3_abTest.html
                 <div class="field">
                     <select id="abKnowledgeSelect-{{ ab.side }}" class="form-control singleSelect js-knowledge-select">
                         <option value="" data-i18n="common.pleaseSelect">請選擇</option>
-                        <option value="配置一"{% if ab.knowledge == "配置一" %} selected{% endif %}>配置一</option>
-                        <option value="配置二"{% if ab.knowledge == "配置二" %} selected{% endif %}>配置二</option>
-                        <option value="配置三"{% if ab.knowledge == "配置三" %} selected{% endif %}>配置三</option>
+                        <option value="配置一" data-i18n="settings.config1"{% if ab.knowledge == "配置一" %} selected{% endif %}>設置一</option>
+                        <option value="配置二" data-i18n="settings.config2"{% if ab.knowledge == "配置二" %} selected{% endif %}>設置二</option>
+                        <option value="配置三" data-i18n="settings.config3"{% if ab.knowledge == "配置三" %} selected{% endif %}>設置三</option>
                     </select>
                 </div>
             </div>
@@ -337,8 +337,11 @@ permalink: 2-2-3_abTest.html
      元件專屬名）——摘要的檢索筆數要對上節點的「命中 6 筆」、模型對上選取的設定，否則同頁自打架。
      元件內建預設節點是移民主題（配 2-2-1），見該元件檔頭註解。11ty 此處單處 demo 元件結構；React 端
      AB 兩側各自即時渲染一份 StepFlow（每側獨立串流步驟，屬業務層——見 ab-test/page.tsx）。 #}
+{# QA 直答的判定層在本頁演「完全命中」那一層（內建示範是 floor、元件庫頁是 judge——三層各有一頁
+     演得出來，§5 每個分支都要看得到）。註解只能放在 {% set %} 之前：寫進運算式裡會 build 失敗（§2）。 #}
 {% set stepFlowNodes = [
     { label: "初始化對話", state: "completed", time: "10ms" },
+    { label: "QA 直答", state: "completed", time: "12ms", hits: "產品問答集 / UH3240 的介面規格", decidedBy: "exact" },
     { label: "Agent 推理", state: "completed", time: "300ms", thinking: "問題要規格全表，決定先搜尋知識庫、必要時取回規格書全文。" },
     { label: "檢索知識庫", state: "completed", time: "1.1s", tools: "search_knowledge_base", params: "{ query: 'UH3240 USB-C 規格 特色' }", result: "命中 6 筆片段（相似度 0.81–0.93），注入後續生成脈絡。" },
     { label: "可回答性判定", state: "completed", time: "180ms", verdict: "generate（素材足以回答）" },

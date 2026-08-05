@@ -42,7 +42,7 @@ permalink: 5-5-1_userManagement.html
 {% set members = [
   { email: "admin@example.com", isAdmin: true, isActive: true, groupIds: [] },
   { email: "editor@example.com", isAdmin: false, isActive: true, groupIds: [3] },
-  { email: "viewer@example.com", isAdmin: false, isActive: false, groupIds: [2] }
+  { email: "viewer@example.com", isAdmin: false, isActive: false, groupIds: [2, 3] }
 ] %}
 
 {# 新增成員：電子郵件 + 初始密碼 + 所屬群組勾選（ui/checkbox）+ 租戶管理者（ui/switch）+ 新增按鈕 #}
@@ -182,8 +182,13 @@ permalink: 5-5-1_userManagement.html
                         {# 分隔號放在**每一項之前**（第一項除外）：Nunjucks 的 set 會跨迴圈迭代累積，
                              用它當「已經印過一項了」的旗標；放在後面會多出一個結尾的「、」。
                              旗標在每一列開頭重設（set 是頁面全域，不重設會沿用上一列的值）。 #}
+                        {# **先算聯集再印**：外層跑能力、內層只負責判斷「有沒有任何一個所屬群組含這顆」。
+                             逐 group 印的話，成員同時屬於兩個都有 data:read 的群組時會印出兩次
+                             「資料集檢視」——而「多群組取聯集」正是 5-5-2 對使用者宣告的行為（§6）。
+                             capHas 要在內層迴圈之前先宣告：nunjucks 的 for 會 push 新 frame，
+                             set 只寫得回已存在的名字。 #}
                         {% set capPrinted = "" %}
-                        {% for cap in capabilities %}{% for group in groups %}{% if group.id in member.groupIds and cap.key in group.capabilities %}{% if capPrinted %}<span>、</span>{% endif %}<span data-i18n="{{ cap.i18nKey }}">{{ cap.label }}</span>{% set capPrinted = "1" %}{% endif %}{% endfor %}{% endfor %}
+                        {% for cap in capabilities %}{% set capHas = false %}{% for group in groups %}{% if group.id in member.groupIds and cap.key in group.capabilities %}{% set capHas = true %}{% endif %}{% endfor %}{% if capHas %}{% if capPrinted %}<span>、</span>{% endif %}<span data-i18n="{{ cap.i18nKey }}">{{ cap.label }}</span>{% set capPrinted = "1" %}{% endif %}{% endfor %}
                         {% endif %}
                     </td>
                     <td>

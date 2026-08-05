@@ -8,9 +8,31 @@
      故不列（§5：分支要對得上真實結果的**機制**）。單一測試頁的 apply-settings-modal 才把權限不足演成 inline warning。
      `.sample-count` 同樣是凍結前端的掛點（`js/abTest.js` 的 `$col.find('input.sample-count')`），
      本 repo scss/js 零引用，寬度來自同掛的 `.w100`（§4：無樣式 class 要寫出真 app 出處）。 #}
+{# 比對窗要看得到**差異**（§6 示範資料要自洽）：兩欄逐欄相同時，這顆彈窗演的是一個
+     「套用了也不會有任何改變」的狀態，而它存在的理由正是讓人在套用前看出差在哪。
+     「設定B」欄必須等於使用頁 2-2-3 的 B 側（abSides[1]：配置二／gpt-4o，取樣 8／16）——
+     同一份資料在頁面與彈窗兩處說兩套，是跨區不自洽。
+     提示詞也是逐欄不同的資料（真 app 的 column 就有這一欄：正式版 saved.content vs 該側 prompt），
+     故從迴圈內的寫死文字改成資料欄，否則兩欄結構上不可能不同。 #}
 {% set settingColumns = [
-    { title: "原設定", titleKey: "modals.originalSettings", retrieval: "配置一", llm: "OpenAI gpt-4o-mini", sampleMin: "4", sampleMax: "6" },
-    { title: "設定B", titleKey: "modals.settingB", retrieval: "配置一", llm: "OpenAI gpt-4o-mini", sampleMin: "4", sampleMax: "6", jsApplyTitle: true }
+    { title: "原設定", titleKey: "modals.originalSettings", retrieval: "設置一", llm: "OpenAI gpt-4o-mini", sampleMin: "4", sampleMax: "6",
+      prompt: "角色定位：
+你是一位專業的產品客服助手，負責回應使用者的產品相關詢問。
+知識來源限制：
+你的回答必須僅依據《產品規格資料庫》（PDF規格書）與《使用手冊》（操作說明）。
+回應原則：
+優先使用條列式呈現資訊；語氣清楚、專業且易懂；不可臆測或補充未出現在資料中的內容；若資料不足，需明確說明「無法從現有資料判斷」。
+輸出格式：
+使用條列式（• 或 -），必要時分段（例如：規格 / 使用方式 / 注意事項）。" },
+    { title: "設定B", titleKey: "modals.settingB", retrieval: "設置二", llm: "OpenAI gpt-4o", sampleMin: "8", sampleMax: "16", jsApplyTitle: true,
+      prompt: "任務導向：
+依使用者的問題直接給出可執行的步驟，不重述題目。
+知識來源限制：
+只用《產品規格資料庫》與《使用手冊》；兩者衝突時以規格書為準並標明出處。
+回應原則：
+先給結論，再給步驟；每一步一行；規格數值一律附單位；查無資料時直接說「手冊未涵蓋」並建議聯絡窗口。
+輸出格式：
+結論一句 ＋ 編號步驟 ＋（必要時）注意事項。" }
 ] %}
 <dialog class="modals" id="ProductionSettingsCompareModal" aria-labelledby="ProductionSettingsCompareModal-title">
     <div class="modals-dialog modals-md">
@@ -65,20 +87,7 @@
                                     </div>
                                     <div class="field">
                                         <textarea id="applyPrompt-{{ loop.index }}" rows="10" class="form-control disabled"
-                                            placeholder="請輸入您的提示詞" data-i18n-placeholder="settings.pleaseEnterPrompt" disabled>角色定位：
- 你是一位專業的產品客服助手，負責回應使用者的產品相關詢問。
-知識來源限制：
- 你的回答必須僅依據以下資料來源：
- 《產品規格資料庫》（PDF規格書）
- 《使用手冊》（操作說明）
-回應原則：
- 優先使用「條列式」呈現資訊
- 語氣清楚、專業且易懂
- 不可臆測或補充未出現在資料中的內容
- 若資料不足，需明確說明「無法從現有資料判斷」
-輸出格式：
- 使用條列式（• 或 -）
- 必要時分段（例如：規格 / 使用方式 / 注意事項）</textarea>
+                                            placeholder="請輸入您的提示詞" data-i18n-placeholder="settings.pleaseEnterPrompt" disabled>{{ column.prompt }}</textarea>
                                     </div>
                                 </div>
                             </div>

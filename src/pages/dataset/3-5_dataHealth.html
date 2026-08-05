@@ -646,7 +646,7 @@ permalink: 3-5_dataHealth.html
         <p><span class="text-bold" data-i18n="health.overviewTotalHits">這個窗內的總命中次數：</span><span>{{ healthOverview.totalHits }}</span></p>
     </div>
     <p class="text-gray" data-i18n="health.overviewSortHint">這張表不是照發現數量排的，是照「這一組涉及的記錄在這個時間窗內被檢索命中幾次」的總和排——一筆從沒被命中過的重複，遠不如一筆每天被命中 50 次的過期答案重要。命中次數已經扣掉批次回歸的重放，所以跑一次回歸不會把被重放的那幾筆推上頂端。</p>
-    <p class="text-gray" data-i18n="health.overviewWindowHint">時間窗預設 7 天而不是 30 天：上游一次最多彙總 5000 則問答，30 天的窗對稍微忙一點的租戶必然跨過那條線，總覽會變成永遠打不開。窗拉長之後打不開時，回應會說得出是這個原因。</p>
+    <p class="text-gray"><span data-i18n="health.overviewWindowHintPrefix">時間窗預設 </span><span>{{ healthOverview.windowDays }}</span><span data-i18n="health.overviewWindowHintSuffix"> 天而不是 30 天：上游一次最多彙總 5000 則問答，30 天的窗對稍微忙一點的租戶必然跨過那條線，總覽會變成永遠打不開。窗拉長之後打不開時，回應會說得出是這個原因。</span></p>
     <div class="table-container scrollTable">
         <table class="default-table">
             <colgroup>
@@ -898,7 +898,7 @@ permalink: 3-5_dataHealth.html
                                             {% for r in f.records %}
                                             {% set recordIdentity = r %}
                                             <label class="form-radio">
-                                                <input type="radio" name="healthKeep-{{ f.id }}" class="js-health-keep" value="{{ r.key }}">
+                                                <input type="radio" name="healthKeep-{{ f.id }}" class="js-health-keep" value="{{ r.key }}" required>
                                                 <span>{% include "components/record-identity/record-identity.html" %}</span>
                                             </label>
                                             {% endfor %}
@@ -956,7 +956,7 @@ permalink: 3-5_dataHealth.html
                                             {% for r in f.records %}
                                             {% set recordIdentity = r %}
                                             <label class="form-radio">
-                                                <input type="radio" name="healthCurrent-{{ f.id }}" class="js-health-current" value="{{ r.key }}">
+                                                <input type="radio" name="healthCurrent-{{ f.id }}" class="js-health-current" value="{{ r.key }}" required>
                                                 <span>{% include "components/record-identity/record-identity.html" %}</span>
                                             </label>
                                             {% endfor %}
@@ -982,7 +982,7 @@ permalink: 3-5_dataHealth.html
                                             {% for r in f.records %}
                                             {% set recordIdentity = r %}
                                             <label class="form-radio">
-                                                <input type="radio" name="healthPhrasingRecord-{{ f.id }}" class="js-health-phrasing-record" value="{{ r.key }}">
+                                                <input type="radio" name="healthPhrasingRecord-{{ f.id }}" class="js-health-phrasing-record" value="{{ r.key }}" required>
                                                 <span>{% include "components/record-identity/record-identity.html" %}</span>
                                             </label>
                                             {% endfor %}
@@ -998,8 +998,8 @@ permalink: 3-5_dataHealth.html
                                     </div>
                                     <div class="flex-row">
                                         <button data-capability="data:write" type="button" class="button button-primary button-sm js-health-add-phrasing"
-                                            data-toast="已補寫問法（新增為一列，原標題保留）|請填寫要補寫的問法|補寫的問法與原標題逐字相同，新增一列只會多出一筆完全重複的記錄|這個發現已經處置過了，下一次檢查會依前提是否改變決定要不要把它推回清單|操作失敗，請稍後再試"
-                                            data-i18n-data-toast="toast.healthAddPhrasing" data-toast-type="success|warning|warning|warning|error"
+                                            data-toast="已補寫問法（新增為一列，原標題保留）|請選擇要補寫在哪一筆|請填寫要補寫的問法|補寫的問法與原標題逐字相同，新增一列只會多出一筆完全重複的記錄|這個發現已經處置過了，下一次檢查會依前提是否改變決定要不要把它推回清單|操作失敗，請稍後再試"
+                                            data-i18n-data-toast="toast.healthAddPhrasing" data-toast-type="success|warning|warning|warning|warning|error"
                                             data-i18n="health.actionAddPhrasing">補寫問法</button>
                                     </div>
                                 </div>

@@ -65,14 +65,19 @@ permalink: 5-8_widgetTokens.html
      撤銷鈕的演出：本輪 components/delete-modal 已參數化標題/內文（deleteTitleKey／deleteMessageKey），
      故撤銷改走與刪除同一顆二次確認彈窗（本頁底部 include），不再是「按下去就撤銷」的直接動作——
      撤銷不可逆，而且撤下去前台所有掛這把金鑰的嵌入頁當場失效。toast.revokeWidgetToken 移到確認鈕上。 #}
+{# id＝WidgetToken 主鍵（product WidgetTokenOut.id），撤銷打的是 DELETE /widget-tokens/{token_id}。
+     **不可拿 loop.index 當列鍵**：這張表撤銷得掉列，位置不是身分——撤掉前一列之後，後面每一列的
+     列鍵都會往前頂一格，React 的 key 與逐列動作的目標會一起指錯人（§6 列鍵，同 5-6-2／5-6-3）。 #}
 {% set tokens = [
     {
+        id: 41,
         name: "官網客服",
         token: "wgt_aB3xYz9Qle8sample0000keyvalue00",
         origins: ["https://acme.com", "https://www.acme.com"],
         disabled: false
     },
     {
+        id: 38,
         name: "測試站",
         token: "wgt_9zK1sample00revoked00keyvalue00",
         origins: ["https://staging.acme.com"],
@@ -101,7 +106,7 @@ permalink: 5-8_widgetTokens.html
             </thead>
             <tbody>
                 {% for row in tokens %}
-                <tr>
+                <tr data-widget-token-id="{{ row.id }}">
                     <td>{{ row.name }}</td>
                     <td>
                         <div class="flex-row align-items-center gap-8">

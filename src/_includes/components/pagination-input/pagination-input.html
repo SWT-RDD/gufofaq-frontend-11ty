@@ -14,9 +14,12 @@
 
     <span class="pager-text" data-i18n="qa.detailConvNo">第</span>
 
-    <input class="pager-input form-control" type="text" value="1" aria-label="頁碼" data-i18n-aria-label="qa.pageNumber">
+    {# 值交給 React 讀去換頁 ⇒ 數字欄三件套（§4）：type=number ＋ 區間 ＋ 可見提示接 aria-describedby。
+         type="text" ＋ Number() 打錯一個字就是 NaN，序列化成 JSON 是 null；區間只寫在 js 的 clamp 裡，
+         使用者要按下去才知道打錯。上限由使用頁的 pagerTotal 供給（同一份資料，不另烤一個常數）。 #}
+    <input class="pager-input form-control" type="number" min="1" max="{{ pagerTotal }}" step="1" value="1" aria-label="頁碼" data-i18n-aria-label="qa.pageNumber" aria-describedby="pagerInputHint">
 
-    <span class="pager-text"><span data-i18n="qa.detailConvOf">個對話，共</span> <span class="total">{{ pagerTotal }}</span> <span data-i18n="qa.detailConvItems">個</span></span>
+    <span class="pager-text" id="pagerInputHint"><span data-i18n="qa.detailConvOf">個對話，共</span> <span class="total">{{ pagerTotal }}</span> <span data-i18n="qa.detailConvItems">個</span></span>
 
     <button type="button" class="pager-btn next">
         <img src="./images/icon_arrow_right_blue.png" width="48" height="48" decoding="async" alt="下一頁" data-i18n-alt="action.nextPage" class="icon">

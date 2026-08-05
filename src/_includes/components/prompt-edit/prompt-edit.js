@@ -32,7 +32,10 @@ document.addEventListener("DOMContentLoaded", function () {
             content.innerHTML = "";
             if (open) {
                 var ta = document.createElement("textarea");
-                ta.className = "form-control size-lg";
+                // `.js-prompt-input` 是值載體的綁定記號（§5 矩陣②）：本元件已經沿用了那一對
+                // 契約的另一半（工具列的 `.js-prompt-save`），只留一半會讓 React 認得出「儲存」
+                // 卻認不出「要存的是哪一格」。2-2-1／2-2-3／2-2-4 的靜態 textarea 也都掛它。
+                ta.className = "form-control size-lg js-prompt-input";
                 ta.setAttribute("aria-label", t("comp.prompt", "提示詞"));
                 ta.setAttribute("data-i18n-aria-label", "comp.prompt");
                 ta.value = fullText();

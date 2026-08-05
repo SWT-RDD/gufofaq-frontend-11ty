@@ -288,9 +288,14 @@ permalink: 2-2-5_regressionRun.html
     ]
   }
 ] %}
+{# 「基準沒有它」那一筆的號碼**必須大於基準跑過的所有案例**：TestCase.id 是自增主鍵，本頁整段
+     推論（含「id ≥ 41 的案例這一次一則結果都沒有」）都建立在 id＝建立順序上。挑一個比 #37～#40
+     小的號碼，等於同時宣告「它比那幾則早建立」又「它在基準之後才建立」——兩件事不可能同時成立
+     （§6 示範資料演的必須是一個真實可能的狀態）。基準 #310 跑完 10 則、案例集現在 12 則，
+     故基準之後新增的就是最後那兩則（#41／#42）。 #}
 {% set notComparedRows = [
   { caseNo: "#42", question: "鋁材的反傾銷稅率", reasonKey: "regression.reasonAbsentInThisRun", reason: "這一次沒跑到", detail: "這一次沒有跑到這則案例（執行中斷）——它有沒有回歸，這一次量不到" },
-  { caseNo: "#36", question: "鋼品出口的檢驗規定", reasonKey: "regression.reasonAbsentInBaseline", reason: "基準沒有它", detail: "基準那一次沒有這則案例的結果（案例在基準之後才建立，或基準中斷前沒跑到）——沒有可以比較的對象，不是「沒有變化」" }
+  { caseNo: "#41", question: "鋼品出口的檢驗規定（基準跑完之後才新增的案例）", reasonKey: "regression.reasonAbsentInBaseline", reason: "基準沒有它", detail: "基準那一次沒有這則案例的結果（案例在基準之後才建立，或基準中斷前沒跑到）——沒有可以比較的對象，不是「沒有變化」" }
 ] %}
 {% set judgeDriftGroups = [
   { key: "unavailableNow", titleKey: "regression.driftUnavailableNow", title: "上次評得出來、這次評不出來", tagClass: "is-warn", cases: "#35", count: "1" },

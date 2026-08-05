@@ -149,12 +149,12 @@ permalink: 5-6-2_platformMcpServers.html
             </colgroup>
             <thead>
                 <tr>
-                    <th data-i18n="widget.tokenName">名稱</th>
-                    <th data-i18n="settings.mcpCommand">執行指令</th>
-                    <th data-i18n="agent.params">參數</th>
-                    <th data-i18n="settings.mcpEnv">環境變數</th>
-                    <th data-i18n="settings.mcpDescription">描述</th>
-                    <th data-i18n="widget.active">啟用</th>
+                    <th id="mcpHeadName" data-i18n="widget.tokenName">名稱</th>
+                    <th id="mcpHeadCommand" data-i18n="settings.mcpCommand">執行指令</th>
+                    <th id="mcpHeadArgs" data-i18n="agent.params">參數</th>
+                    <th id="mcpHeadEnv" data-i18n="settings.mcpEnv">環境變數</th>
+                    <th id="mcpHeadDesc" data-i18n="settings.mcpDescription">描述</th>
+                    <th id="mcpHeadActive" data-i18n="widget.active">啟用</th>
                     <th data-i18n="settings.mcpLastTest">最近一次測試</th>
                     <th data-i18n="common.actions">操作</th>
                 </tr>
@@ -163,22 +163,21 @@ permalink: 5-6-2_platformMcpServers.html
                 {% for server in mcpServers %}
                 {# data-mcp-id＝React 列鍵契約（saas 端 <tr data-mcp-id={server.id}>），示範以 loop.index 代 id（同 3-3 data-qa-set-id）#}
                 <tr data-mcp-id="{{ server.id }}">
-                    <td><input type="text" class="form-control" value="{{ server.name }}" aria-label="名稱" data-i18n-aria-label="widget.tokenName"></td>
-                    <td><input type="text" class="form-control" value="{{ server.command }}" aria-label="執行指令" data-i18n-aria-label="settings.mcpCommand"></td>
+                    <td><span id="mcpRowName-{{ server.id }}" class="sr-only">{{ server.name }}</span><input type="text" class="form-control" value="{{ server.name }}" aria-labelledby="mcpRowName-{{ server.id }} mcpHeadName"></td>
+                    <td><input type="text" class="form-control" value="{{ server.command }}" aria-labelledby="mcpRowName-{{ server.id }} mcpHeadCommand"></td>
                     {# 參數一行一個、env 一行一個 KEY=value：原本 args 以空白切、env 以逗號切，
                          含空白或逗號的值表達不出來，切壞了也不會有任何提示。 #}
-                    <td><textarea class="form-control size-sm" aria-label="參數" data-i18n-aria-label="agent.params">{% for arg in server.args %}{{ arg }}
+                    <td><textarea class="form-control size-sm" aria-labelledby="mcpRowName-{{ server.id }} mcpHeadArgs">{% for arg in server.args %}{{ arg }}
 {% endfor %}</textarea></td>
                     {# 環境變數＝該 server 的憑證。值在讀取路徑已被遮成 "***"（chatbot _mask_env），
                          原樣送回等於沿用原值（_merge_env）；要輪替就把該行的值改掉。
                          沒有這一欄的時候，輪替金鑰只能把整台 server 刪掉重建。 #}
-                    <td><textarea class="form-control size-sm" aria-label="環境變數" data-i18n-aria-label="settings.mcpEnv" placeholder="一行一個 KEY=value" data-i18n-placeholder="settings.pleaseEnterMcpEnv">{% for pair in server.env %}{{ pair }}
+                    <td><textarea class="form-control size-sm" aria-labelledby="mcpRowName-{{ server.id }} mcpHeadEnv" placeholder="一行一個 KEY=value" data-i18n-placeholder="settings.pleaseEnterMcpEnv">{% for pair in server.env %}{{ pair }}
 {% endfor %}</textarea></td>
-                    <td><input type="text" class="form-control" value="{{ server.description }}" aria-label="描述" data-i18n-aria-label="settings.mcpDescription"></td>
+                    <td><input type="text" class="form-control" value="{{ server.description }}" aria-labelledby="mcpRowName-{{ server.id }} mcpHeadDesc"></td>
                     <td class="text-center">
                         <label class="form-checkbox in-cell">
-                            <input type="checkbox"{% if server.active %} checked{% endif %}>
-                            <span class="sr-only" data-i18n="widget.active">啟用</span>
+                            <input type="checkbox" aria-labelledby="mcpRowName-{{ server.id }} mcpHeadActive"{% if server.active %} checked{% endif %}>
                         </label>
                     </td>
                     {# 測試結果三種狀態：成功（幾顆工具＋清單）／失敗（原樣顯示 error，那是 product 明訂

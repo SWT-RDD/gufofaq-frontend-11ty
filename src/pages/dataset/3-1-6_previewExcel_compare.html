@@ -63,6 +63,8 @@ permalink: 3-1-6_previewExcel_compare.html
     { title: "商品編號 A003", time: "2025/12/10 15:44", content: "USB-C 充電線 1.5M", image: "https://example.com/img/a003.jpg", supplier: "宏興電子", price: "199", barcode: "4710012340039" }
 ] %}
 <div class="tab-content" id="panelCompare">
+{# 所有排序鈕共用的「排序」字樣（可及名稱組成「<欄名> 排序」）；一頁一份，不逐鈕複製 #}
+<span id="cmpSortWord" class="sr-only" data-i18n="common.sort">排序</span>
 <div class="table-container scrollTable mt-10">
     <table class="default-table fixed-layout">
         <thead>
@@ -70,11 +72,13 @@ permalink: 3-1-6_previewExcel_compare.html
                 {% for col in columns %}
                 <th>
                     <div class="th-sort">
-                        {{ col.label }}
-                        {# 排序觸發器用真 button（§4）；.sort＝真 app 掛點（previewExcelCompare.js .sort click），掛 button 照樣命中 #}
-                        <button type="button" class="sort" data-column="{{ col.key }}">
+                        <span id="cmpColName-{{ col.key }}">{{ col.label }}</span>
+                        {# 排序觸發器用真 button（§4）；.sort＝真 app 掛點（previewExcelCompare.js .sort click），掛 button 照樣命中。
+                             可及名稱要帶欄名（§4：同頁同時可見、語意不同的控制項不得同名）——欄名文字是
+                             .th-sort 裡的**兄弟節點**、不會進按鈕的可及名稱，只掛 .sr-only「排序」的話，
+                             這一列每一顆鈕在報讀器裡都叫「排序」，聽不出正在排哪一欄。 #}
+                        <button type="button" class="sort" data-column="{{ col.key }}" aria-labelledby="cmpColName-{{ col.key }} cmpSortWord">
                             <img src="./images/icon_ascending_order_black.png" width="20" height="37" decoding="async" alt="">
-                            <span class="sr-only" data-i18n="common.sort">排序</span>
                         </button>
                     </div>
                 </th>
@@ -109,10 +113,9 @@ permalink: 3-1-6_previewExcel_compare.html
                                  （previewExcelCompare.js:426），傳槽 key 進去恆為 -1、下一行直接 return，
                                  排序靜默失效。比對面板才是 `data-column="${col.key}"`（同檔 :243）——
                                  同一個 class、兩個鍵空間，是真 app 本來就有的分別。 #}
-                            {{ col.raw }}{% if col.label %} ({{ col.label }}){% endif %}
-                            <button type="button" class="sort" data-column="{{ col.raw }}">
+                            <span id="rawColName-{{ loop.index }}">{{ col.raw }}{% if col.label %} ({{ col.label }}){% endif %}</span>
+                            <button type="button" class="sort" data-column="{{ col.raw }}" aria-labelledby="rawColName-{{ loop.index }} cmpSortWord">
                                 <img src="./images/icon_ascending_order_black.png" width="20" height="37" decoding="async" alt="">
-                                <span class="sr-only" data-i18n="common.sort">排序</span>
                             </button>
                         </div>
                     </th>

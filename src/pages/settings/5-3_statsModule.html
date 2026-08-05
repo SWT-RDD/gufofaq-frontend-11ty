@@ -31,7 +31,13 @@ permalink: 5-3_statsModule.html
      顯示名同 5-2 的欄位命名（那是 field_labels 的唯一編輯畫面）：改過名的以 key 查，其餘走預設名。 #}
 {% from "ui/field-slot-catalog/field-slot-catalog.html" import fieldSlotCatalog %}
 {% set attributionExcluded = ["content", "flag", "tags", "privilege"] %}
+{# 這一份要與 5-2「欄位命名」區的 fieldSlotLabels **逐槽相同**：同一個租戶的同一份 field_labels，
+     唯一的編輯畫面在 5-2，這裡只是讀它。少抄一個改過名的槽，同一顆槽在兩頁就會有兩個中文名
+     （5-3 的下拉會回退成 slot.defaultLabel「標題」，而 5-2 說它叫「問題標題」）。
+     content 被 attributionExcluded 濾掉、其餘槽在 5-2 也沒改名，故補齊 title/date 即完全對齊。 #}
 {% set attributionLabels = {
+  title: "問題標題",
+  date: "建立日期",
   note1: "承辦組室",
   note2: "業務範疇"
 } %}

@@ -6,7 +6,8 @@ pageHeading: 資料匯入
 permalink: 1-1-4_columnSelect_excel.html
 ---
 {# 欄位對應資料（多選/預覽兩欄共用）——依 §3-2/§6 由頁面提供，components/multi-select-box 只負責 for 渲染。
-   固定槽 schema（title/content/source/date/category/number/flag/tags/privilege/note1..note10/date2/date3，
+   固定槽 schema（title/content/source/date/category/number/flag/tags/privilege/note1..note10/date2/date3
+   ＋不進索引的 internal_note，共 22 槽，
    出處：gufofaq-saas services/product/app/field_schema.py 的 `SLOTS`——順序與 default_label 逐字對齊）；
    **note1..note10 全部**是 TEXT 篩選槽、date2/date3 是 DATE 篩選槽（field_schema.py 的
    `FILTERABLE_TEXT_SLOTS = tuple(f"note{i}" for i in range(1, 11))`／`FILTERABLE_DATE_SLOTS = ("date2","date3")`，
@@ -94,7 +95,7 @@ permalink: 1-1-4_columnSelect_excel.html
                 <input type="checkbox" class="switch-checkbox js-excel-convert-html" role="switch" aria-label="HTML 轉 Markdown" data-i18n-aria-label="dataImport.convertHtml" aria-describedby="excelConvertHtmlHint" checked>
                 <span class="switch-box"><span class="switch-btn"></span></span>
             </label>
-            <span class="text-gray" id="excelConvertHtmlHint" data-i18n="dataImport.convertHtmlHint">文字欄若含 HTML 標籤就轉成 Markdown，連結網址會被移除並列在匯入結果裡。純文字資料原樣通過。</span>
+            <span class="text-gray" id="excelConvertHtmlHint" data-i18n="dataImport.convertHtmlHint">文字欄若含 HTML 標籤就轉成 Markdown：絕對位址的 http(s)／mailto／tel 連結會原樣轉成 Markdown 連結保留下來，表示不出來的那些（相對路徑、javascript:、片段錨點）才會被移除並列在匯入結果裡。純文字資料原樣通過。</span>
         </div>
     </div>
     <div class="form-group row mobile-col">

@@ -173,11 +173,16 @@ permalink: 5-6-1_platformTenants.html
   { key: "audit", label: "稽核日誌檢視", i18nKey: "settings.capAudit" },
   { key: "extract", label: "萃取 API（程式化）", i18nKey: "settings.capExtract" }
 ] %}
+{# ⚠️ reviewDue（ISO 待審徽章）與下方 reviewCandidates 名單是同一個判準推導出來的：正本
+     platform.py 的 _is_review_due 是「status ∈ {EXPIRED, FROZEN} **且** trial_end 不是 None」，
+     review_overdue 也逐字跳過 trial_end is None 的租戶。所以待審租戶不可能是 PENDING、也不可能
+     沒有到期日——示範租戶 D 兩邊要說同一件事（§6 跨區自洽），改了一邊就要回頭對另一邊。 #}
 {% set tenants = [
   { name: "示範租戶 A", userCount: 8, features: ["data", "ask", "history", "settings", "audit", "extract"], frozen: false, reviewDue: false, status: "ACTIVE", statusKey: "platform.statusActive", statusLabel: "使用期內", trialEnd: "2027-01-31" },
   { name: "示範租戶 B", userCount: 3, features: ["data", "ask"], frozen: true, reviewDue: false, status: "EXPIRED", statusKey: "platform.statusExpired", statusLabel: "已到期", trialEnd: "2026-06-30" },
   { name: "示範租戶 C", userCount: 1, features: ["ask"], frozen: false, reviewDue: true, status: "EXPIRED", statusKey: "platform.statusExpired", statusLabel: "已到期", trialEnd: "2026-03-01" },
-  { name: "示範租戶 D", userCount: 4, features: ["data", "ask"], frozen: false, reviewDue: true, status: "PENDING", statusKey: "platform.statusPending", statusLabel: "待啟用", trialEnd: "" }
+  { name: "示範租戶 D", userCount: 4, features: ["data", "ask"], frozen: false, reviewDue: true, status: "EXPIRED", statusKey: "platform.statusExpired", statusLabel: "已到期", trialEnd: "2026-02-14" },
+  { name: "示範租戶 E", userCount: 0, features: ["data", "ask"], frozen: false, reviewDue: false, status: "PENDING", statusKey: "platform.statusPending", statusLabel: "待啟用", trialEnd: "" }
 ] %}
 
 {# 帳號治理工具列：匯出租戶／使用者 CSV（帳號列表，稽核用）。直接下載動作 → data-toast 演出成敗（走 BFF 檔案透傳）。 #}

@@ -112,12 +112,17 @@ permalink: 5-7_auditLog.html
      **標頭不行**——BFF 的 `PASSTHROUGH_RESPONSE_HEADERS` 只放行三個標頭，`X-Total-Count` 會被靜默剝掉。 #}
 {% set total = 115 %}
 {% set perPage = 20 %}
+{# 租戶欄畫的是 **tenant_id（整數）**，不是名字：正本 audit.py 的 list_audit 回的 items 只有
+     tenant_id，沒有 tenant_name（§6：正本給不出來的欄位不得為了讀起來順而編一個）。編一個名字出來，
+     React 接上真 API 只畫得出識別碼，而使用者正是據此做決定的；上面的租戶篩選要填的也正是這個 id。
+     同理，操作者／代理者兩欄的 email 後面補 **user_id**：那兩個篩選收的是 id（`operator=<使用者 id>`），
+     欄位裡只給 email 的話，要填的 id 全頁沒有出處。要顯示租戶名稱是交辦（需後端補 tenant_name）。 #}
 {% set rows = [
     {
         time: "2026/07/13 14:22:05",
-        tenant: "acme",
-        operator: "admin@acme.tw",
-        impersonator: "staff@sys.tw",
+        tenantId: 12,
+        operator: "admin@acme.tw", operatorId: 7,
+        impersonator: "staff@sys.tw", impersonatorId: 3,
         action: "建立資料集",
         target: "dataset #12",
         detail: "{ name: 移民署 測試 }",
@@ -126,9 +131,9 @@ permalink: 5-7_auditLog.html
     },
     {
         time: "2026/07/13 13:10:44",
-        tenant: "globex",
-        operator: "user@globex.io",
-        impersonator: "",
+        tenantId: 27,
+        operator: "user@globex.io", operatorId: 41,
+        impersonator: "", impersonatorId: "",
         action: "問答",
         target: "chat_log #4821",
         detail: "{ tag: frontend }",
@@ -136,9 +141,9 @@ permalink: 5-7_auditLog.html
     },
     {
         time: "2026/07/13 09:02:11",
-        tenant: "initech",
-        operator: "—",
-        impersonator: "",
+        tenantId: 31,
+        operator: "—", operatorId: "",
+        impersonator: "", impersonatorId: "",
         action: "登入失敗",
         target: "—",
         detail: "{ email: bad@initech.io }",
@@ -179,9 +184,9 @@ permalink: 5-7_auditLog.html
             {% for row in rows %}
             <tr>
                 <td>{{ row.time }}</td>
-                <td>{{ row.tenant }}</td>
-                <td>{{ row.operator }}</td>
-                <td>{{ row.impersonator }}</td>
+                <td>{{ row.tenantId }}</td>
+                <td>{{ row.operator }}{% if row.operatorId %} <span class="text-gray">#{{ row.operatorId }}</span>{% endif %}</td>
+                <td>{{ row.impersonator }}{% if row.impersonatorId %} <span class="text-gray">#{{ row.impersonatorId }}</span>{% endif %}</td>
                 <td>{{ row.action }}</td>
                 <td>{{ row.target }}</td>
                 <td>{{ row.detail }}</td>

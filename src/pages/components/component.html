@@ -48,6 +48,7 @@ bodyClass: guideline-page
             <li><a class="aside-link" href="#tooltipSection">Tooltip提示</a></li>
             <li><a class="aside-link" href="#subscriptionGateSection">使用期閘門遮罩</a></li>
             <li><a class="aside-link" href="#stepFlowSection">執行流程觀測</a></li>
+            <li><a class="aside-link" href="#conditionalTextSection">React 條件文案</a></li>
             <li><a class="aside-link" href="#errorPageSection">整頁錯誤狀態</a></li>
             <li><a class="aside-link" href="#widgetShellSection">嵌入式小工具外殼</a></li>
         </ul>
@@ -328,6 +329,18 @@ bodyClass: guideline-page
                 </ul>
             </div>
             {% include "ui/form-control/form-control.html" %}
+
+            {# ui/score-scale-note 的兩個附帶狀態（混合尺警語／分數尺剛變過要重新校準）：
+                 5-2 那兩處是 React 依端點回應與「剛剛改了什麼」條件渲染的，真實頁不會常駐，
+                 所以這裡是全站唯一看得到它們長相的地方（§5，同 platform.usageError 的處置）。 #}
+            <div class="flex-row column gap-8 mt-16">
+                {% set scaleNoteId = "demoScoreScaleNote" %}
+                {% set scaleNoteText = "llm_reranker：1–5（分數越高越相關）" %}
+                {% set scaleNoteMixed = "目前同時使用兩種檢索來源，兩批結果的分數尺不同，單一門檻無法同時對兩者成立。" %}
+                {% set scaleNoteRecalibrated = true %}
+                {% include "ui/score-scale-note/score-scale-note.html" %}
+            </div>
+            <div class="subtitle">描述：分數門檻旁的「目前這把尺」。三段都由使用頁的參數決定：尺的原文（端點字串，不翻）、混合尺警語（不給＝不渲染）、重新校準紅字（不給＝不渲染）。本區把後兩態一起打開，5-2 的真實頁只會在條件成立時各自出現一段</div>
             <div class="caption">
                 <ul>
                     <li>多選框（tag 多選 + 搜尋過濾，原生 JavaScript 實作，見 ui/multi-select）</li>
@@ -390,6 +403,7 @@ bodyClass: guideline-page
                 { sn: 32, category: "證件與資料申請", description: "協助查詢入出國紀錄、統一證號等申辦方式", prompt: "我是移民署的智能客服，擅長協助民眾查詢入出國紀錄、統一證號申請等行政流程。請清楚說明所需文件、申請條件與流程。", priority: "高優先級" },
                 { sn: 34, category: "權益與申訴服務類", description: "", prompt: "", priority: "高優先級" }
             ] %}
+            {% set priorityTableInstance = "demo" %}
             {% include "components/priority-table/priority-table.html" %}
             <div class="caption description mt-16">
                 <ul>
@@ -699,8 +713,10 @@ bodyClass: guideline-page
             </div>
             {# 失敗流程示範：生成到一半被合規攔截而中止，下游未走／未到——一次演到 failed（唯一無真實頁的態）
                ＋completed／skipped／pending，且是一個真實可能的狀態（§6）。節點與摘要一起給，檢索筆數對上「命中 3 筆」。 #}
+            {# QA 直答的判定層在本頁演「LLM 裁判」那一層（另兩層見元件內建示範與 2-2-3） #}
             {% set stepFlowNodes = [
                 { label: "初始化對話", state: "completed", time: "11ms" },
+                { label: "QA 直答", state: "completed", time: "260ms", hits: "客服問答集 / 這個型號保固多久", score: "4.1", decidedBy: "judge" },
                 { label: "Agent 推理", state: "completed", time: "320ms", thinking: "先判斷是否需要檢索工具，再決定生成策略。" },
                 { label: "檢索知識庫", state: "completed", time: "1.4s", tools: "search_knowledge_base", params: "{ query: '示範查詢' }", result: "命中 3 筆片段（相似度 0.74–0.88），注入後續生成脈絡。" },
                 { label: "可回答性判定", state: "completed", time: "160ms", verdict: "generate（素材足以回答）" },
@@ -719,6 +735,26 @@ bodyClass: guideline-page
             {% set stepFlowTraceShown = 200 %}
             {% set stepFlowTraceTotal = 231 %}
             {% include "components/step-flow/step-flow.html" %}
+        </section>
+
+        <section id="conditionalTextSection">
+            <h2 class="section-title"><span>25</span><span>React 條件文案</span></h2>
+            <div class="caption">
+                <ul>
+                    <li>下面這幾句在真實頁是 React 依 state 條件渲染的分支，它們的「另一態」是**什麼都不渲染**——所以在那些頁上永遠看不到（GUIDELINE §5：沒有頁面演得出來的分支等於沒驗收過）</li>
+                    <li>真實頁保留 <strong>.hidden</strong> 的那份 markup 當**位置與樣式的規格**（React 要知道它長在哪一格、用哪個字色），這一區則是它們**長相**的唯一可見處</li>
+                    <li>示範資料刻意不觸發它們：把預設態畫成錯誤態，等於讓每個打開頁面的人都以為出事了</li>
+                </ul>
+            </div>
+            <div class="block flex-row column gap-8">
+                <p class="text-red m-0" data-i18n="regression.llmProviderUnsupported">這顆模型的供應商不在本產品建得起來的範圍內：設定檔的判定分組沒有另外指定模型時，評審會繼承這一輪的模型而建不起來——這一輪每一則主觀分斷言都會是「評審未完成」。答案本身仍由問答引擎產生。</p>
+                <p class="text-red m-0" data-i18n="regression.llmEffortUnsupported">本產品送不出思考深度給這顆模型：設定檔的判定分組若設了思考深度，評審一樣會建不起來（同樣只影響主觀分，不影響答案）。</p>
+                <p class="text-red m-0" data-i18n="regression.effectiveBaselineMissing">基準那一輪沒有留下實際使用的設定，所以「兩輪的設定差在哪」這一次答不出來——不要把下面這張表讀成「兩輪設定相同」。</p>
+                <p class="text-red m-0" data-i18n="settings.outputRuleCategoryDuplicate">代碼重複，只有最後一列會生效——請把重複的那列刪掉。</p>
+                <p class="text-gray m-0" data-i18n="settings.tagFilterCoverageWarnOk">目前每一份資料都帶得到這一欄，可以開啟。沒填的格子在匯入時就已經寫成「未標註」，過濾條件會連它們一起比對，所以標了幾成不影響會不會漏文件。之後要注意的只有一件事：資料夾匯入的檔永遠沒有欄位槽，那樣匯入一批新資料就會又缺這一欄，要改成逐列匯入才接得回來。</p>
+                <p class="text-gray m-0"><span data-i18n="regression.hitsTruncatedPrefix">（這一格只列了前 </span><span>3</span><span data-i18n="regression.hitsTruncatedMid"> 筆，實際命中 </span><span>63</span><span data-i18n="regression.hitsTruncatedSuffix"> 筆）</span></p>
+            </div>
+            <div class="subtitle">出處：2-2-4 的模型相容性兩句、2-2-5 的基準設定缺漏與命中清單截斷、5-2 的逐代碼覆寫重複。它們在各自的頁面上都掛著 .hidden</div>
         </section>
 
         <section id="errorPageSection">

@@ -7,6 +7,10 @@
          真 app 的列也確實是 `<tr data-folder-sn="…">` 印出來的（同檔 266）——少了它，這兩顆掛點
          有名字卻認不出自己在操作哪一列。
        priority 對應「變更優先級」下拉的選中值（"高優先級"/"中優先級"/"低優先級"/"不使用"，空字串＝未選）；rows 空陣列＝空狀態表。
+       priorityTableInstance（**必填**）＝同頁多實例的消歧鍵。5-2 一頁 include 本元件 4 次，
+         而每一列的「變更優先級」下拉都需要「本列辨識欄 id ＋ 欄表頭 id」當可及名稱（§4：迴圈內
+         的值控制項不得掛靜態 aria-label，否則同頁七顆 select 全叫「變更優先級」，報讀器聽不出
+         正在設哪一筆）。表頭 id 因此要帶實例鍵，否則四張表的 th 會撞 id。
        tierless（選填，預設 false）＝**取消三層、只分使用/不使用**的變體，供 Agent 對話模式用。
          依實測矩陣（gufofaq-saas docs/mode-matrix.md 列 25），`index_tiers` 只有傳統搜尋吃；
          agent 的 search_knowledge_base 只看 selected_index，而 selected_index 是由「有沒有被分到
@@ -33,16 +37,16 @@
                 <th data-i18n="comp.taskPrompt">任務對應提示詞</th>
                 <th class="text-center" data-i18n="common.functions">功能</th>
                 {% if tierless %}
-                <th data-i18n="comp.changeUsage">變更使用狀態</th>
+                <th id="priorityHead-{{ priorityTableInstance }}" data-i18n="comp.changeUsage">變更使用狀態</th>
                 {% else %}
-                <th data-i18n="comp.changePriority">變更優先級</th>
+                <th id="priorityHead-{{ priorityTableInstance }}" data-i18n="comp.changePriority">變更優先級</th>
                 {% endif %}
             </tr>
         </thead>
         <tbody>
             {% for row in rows %}
             <tr data-folder-sn="{{ row.sn }}">
-                <td>{{ row.category }}</td>
+                <td id="priorityCat-{{ priorityTableInstance }}-{{ row.sn }}">{{ row.category }}</td>
                 <td class="edit-cell description">
                     <div class="collapse-text"><div class="collapse-body">{{ row.description }}</div><button type="button" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>
                 </td>
@@ -60,14 +64,14 @@
                         <div class="field">
                             {# .priority-select 是真 app 的 change 掛點（knowledgeRetrieval.js:643 的 $(document).on('change','.priority-select')）#}
                             {% if tierless %}
-                            <select class="form-control select-sm singleSelect priority-select" aria-label="變更使用狀態" data-i18n-aria-label="comp.changeUsage">
+                            <select class="form-control select-sm singleSelect priority-select" aria-labelledby="priorityCat-{{ priorityTableInstance }}-{{ row.sn }} priorityHead-{{ priorityTableInstance }}">
                                 <option value="" data-i18n="common.pleaseSelect">請選擇</option>
                                 {# 值沿用「高優先級」＝使用中：agent 模式不分層，但切回傳統時分層資料要還在（見檔頭）。 #}
                                 <option value="高優先級" data-i18n="comp.inUse"{% if row.priority != "不使用" and row.priority %} selected{% endif %}>使用中</option>
                                 <option value="不使用" data-i18n="comp.doNotUse"{% if row.priority == "不使用" %} selected{% endif %}>不使用</option>
                             </select>
                             {% else %}
-                            <select class="form-control select-sm singleSelect priority-select" aria-label="變更優先級" data-i18n-aria-label="comp.changePriority">
+                            <select class="form-control select-sm singleSelect priority-select" aria-labelledby="priorityCat-{{ priorityTableInstance }}-{{ row.sn }} priorityHead-{{ priorityTableInstance }}">
                                 <option value="" data-i18n="common.pleaseSelect">請選擇</option>
                                 <option value="高優先級" data-i18n="comp.highPriority"{% if row.priority == "高優先級" %} selected{% endif %}>高優先級</option>
                                 <option value="中優先級" data-i18n="comp.mediumPriority"{% if row.priority == "中優先級" %} selected{% endif %}>中優先級</option>

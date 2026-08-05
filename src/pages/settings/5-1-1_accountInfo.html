@@ -102,7 +102,11 @@ permalink: 5-1-1_accountInfo.html
     </div>
 </div>
 
-{# 個人資料（登入者自身，非租戶層）：顯示名稱 + 聯絡資訊，可編輯後儲存（product /me/profile）。 #}
+{# 個人資料（登入者自身，非租戶層）：顯示名稱 + 聯絡資訊，可編輯後儲存（product /me/profile）。
+     **這一塊與下面的變更密碼刻意不掛任何授權軸**（§4「查證過不需要閘門的要留下痕跡」）：
+     `/me/profile` 與 `/me/change-password` 是自助端點，正本只吃 `get_current_user`
+     ＋`require_active_subscription`，沒有 `require_capability`。標上能力軸反而會讓 React 把
+     「改自己的顯示名」擋在一顆它根本不需要的能力後面——上面那顆 `PUT /account` 才是 settings:write。 #}
 <div class="block mt-16 flex-row column gap-16">
     <div class="text-md text-bold" data-i18n="settings.myProfile">個人資料</div>
     <div class="flex-row gap-40 mobile-column sm-gap-16">

@@ -3695,6 +3695,30 @@ test("§1-2 無 html 元件的 markup 契約要逐字寫在自己的 scss／js �
     assert.equal(hits.length, 0, `§1-2 無 html 元件的 markup 契約：\n${fail(hits)}`);
 });
 
+test("§5 寫死 .hidden 的分支文案，至少要有一處看得見（否則全站沒有人看過它的長相）", () => {
+    // `.hidden` 是 display:none !important。寫死（非 {% if %} 產出）又沒有可見的另一態時，
+    // 那塊 markup 連同它的 i18n key 在每一頁都看不到——而它同時逃過「孤兒 key」（key 有被引用）、
+    // 「狀態 class 有主人」（.hidden 是工具 class）、「dialog 可達性」三張網。
+    const hiddenKeys = new Set();
+    for (const f of srcHtml)
+        for (const line of stripNjk(read(f)).split(/\r?\n/)) {
+            // 只看寫死的（含 {% if %} 插值的那種是參數驅動，兩態本來就切得出來）
+            if (!/class="[^"]*\bhidden\b[^"]*"/.test(line) || line.includes("{%")) continue;
+            for (const m of line.matchAll(/data-i18n="([\w.]+)"/g)) hiddenKeys.add(m[1]);
+        }
+    assert.ok(hiddenKeys.size >= 3, `只掃到 ${hiddenKeys.size} 顆藏起來的分支 key —— 這條測試在空轉`);
+    // 可見＝dist 上存在同一顆 key 的節點，而它那一行沒有 hidden
+    const visible = new Set();
+    for (const f of distHtml)
+        for (const line of distDoc(f).split(/\r?\n/)) {
+            if (/class="[^"]*\bhidden\b/.test(line)) continue;
+            for (const m of line.matchAll(/data-i18n="([\w.]+)"/g)) visible.add(m[1]);
+        }
+    const hits = [...hiddenKeys].filter((k) => !visible.has(k))
+        .map((k) => `${k}  ← 只出現在 .hidden 的節點上，全站沒有一頁演得出它的長相（元件庫的「React 條件文案」節補一份可見的）`);
+    assert.equal(hits.length, 0, `§5 藏起來就沒有人驗收得到：\n${fail(hits)}`);
+});
+
 test("§3-2 跨 repo 活正本的出處不得引行號（行號會漂到語意相反的那一支）", () => {
     // 只准「檔名 ＋ 符號名」。凍結前端才准引行號（README 列出的那幾份）。
     // 為什麼是硬規則：漂移之後最貴的不是指不到，是指到隔壁那一支——本輪實測有一條
@@ -4781,10 +4805,10 @@ test("§5/§6 5-6-2 列編輯要能改 env（輪替憑證），且 args／env �
     const rows = [...html.matchAll(/<tr data-mcp-id="\d+">([\s\S]*?)<\/tr>/g)].map((m) => m[1]);
     assert.ok(rows.length >= 3, `只掃到 ${rows.length} 列 server —— 這條測試在空轉`);
     for (const row of rows) {
-        assert.match(row, /<textarea[^>]*aria-label="參數"/, "參數要是一行一個的 textarea");
-        assert.match(row, /<textarea[^>]*aria-label="環境變數"/, "列編輯缺環境變數欄（輪替憑證用）");
+        assert.match(row, /<textarea[^>]*aria-labelledby="mcpRowName-\d+ mcpHeadArgs"/, "參數要是一行一個的 textarea，且可及名稱＝列名＋欄表頭（§4）");
+        assert.match(row, /<textarea[^>]*aria-labelledby="mcpRowName-\d+ mcpHeadEnv"/, "列編輯缺環境變數欄（輪替憑證用）");
         // 執行指令與參數要分開（原本擠在同一格，看不出界線）
-        const cmd = row.match(/<input[^>]*aria-label="執行指令"[^>]*>/);
+        const cmd = row.match(/<input[^>]*aria-labelledby="mcpRowName-\d+ mcpHeadCommand"[^>]*>/);
         assert.ok(cmd, "缺執行指令欄");
         const value = (cmd[0].match(/value="([^"]*)"/) || ["", ""])[1];
         assert.ok(!value.includes(" "), `執行指令欄不該再把 args 併進來：${value}`);
@@ -4793,7 +4817,7 @@ test("§5/§6 5-6-2 列編輯要能改 env（輪替憑證），且 args／env �
     for (const id of ["newMcpArgsInput", "newMcpEnvInput"])
         assert.match(html, new RegExp(`<textarea[^>]*id="${id}"`), `建立表單的 #${id} 應為 textarea`);
     // env 的值在讀取路徑是遮罩字面（chatbot _mask_env）：示範資料要照實演，不要演成明文憑證
-    const envCells = (html.match(/<textarea[^>]*aria-label="環境變數"[^>]*>([\s\S]*?)<\/textarea>/g) || [])
+    const envCells = (html.match(/<textarea[^>]*aria-labelledby="mcpRowName-\d+ mcpHeadEnv"[^>]*>([\s\S]*?)<\/textarea>/g) || [])
         .map((s) => s.replace(/<[^>]*>/g, "")).filter((s) => s.trim());
     assert.ok(envCells.length >= 1, "示範資料裡沒有任何一台 server 帶 env —— 那一欄等於沒演到");
     assert.ok(envCells.some((s) => s.includes("***")), "env 值要演成遮罩字面 ***（讀取路徑本來就只回鍵名）");

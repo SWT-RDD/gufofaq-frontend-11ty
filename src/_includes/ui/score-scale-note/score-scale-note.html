@@ -15,16 +15,23 @@
      參數（使用頁在 include 前 set，見 §3-2/§6）：
        scaleNoteId    —— 這一段的 id（必填，同頁唯一）；門檻輸入框用 aria-describedby 指過來
        scaleNoteText  —— 目前生效那一把尺的 note 原文
-       scaleNoteMixed —— mixed_scale_warning 原文（不給＝不渲染那一態） #}
+       scaleNoteMixed —— mixed_scale_warning 原文（不給＝不渲染那一態）
+       scaleNoteRecalibrated —— true＝演「分數尺剛才變了、門檻要重新校準」那一態（不給＝不渲染）。
+         真實頁不會常駐它（React 依「重排序模型／開關／資料來源比例有沒有變」決定），
+         故元件庫展示頁把它設起來當唯一可見處（§5，同 platform.usageError 的處置）。
+         原本這一句寫死 `.hidden`：參數收得下、畫面卻永遠不顯示，全站沒有人看過它的長相。 #}
 <div class="flex-row column gap-4">
     <span class="text-gray" id="{{ scaleNoteId }}"><span data-i18n="settings.currentScoreScale">目前這把尺：</span>{{ scaleNoteText }}</span>
     {% if scaleNoteMixed %}
     {# 第二態：混合檢索（0 < ratio < 1）時兩把尺同時出現在同一批結果裡，單一門檻無法同時對兩者成立。
-         照本頁既有的兩態慣例掛 .hidden（同 5-10 的 tagFilterCoverageWarnOk）。 #}
-    <span class="text-gray hidden">{{ scaleNoteMixed }}</span>
+         **開關是上面那個 if，不是 .hidden**：兩個一起掛的話，使用頁給了 scaleNoteMixed 也還是
+         看不到——那就變成「參數收得下、畫面永遠不顯示」（§5 每個分支都要看得到）。 #}
+    <span class="text-gray">{{ scaleNoteMixed }}</span>
     {% endif %}
     {# 動態出現的訊息 ⇒ role="alert"，而且**只框這一句**：把整個門檻區塊包進 live region 的話，
          那一區任何一次重繪都會讓報讀器重念一遍（同 5-10 的既有處置）。
          不做成 toast——toast 三秒就消失，而這是他要照著改一個數字的依據。 #}
-    <span class="text-red hidden" role="alert" data-i18n="settings.scoreScaleRecalibrate">分數尺剛才變了（改了重排序模型、重排序開關或資料來源比例）。這個門檻是照舊的尺定的，請重新校準：把 1–5 那把尺上的數字搬到 0–1 的尺上，就是一個永遠擋不下任何東西的死條件。</span>
+    {% if scaleNoteRecalibrated %}
+    <span class="text-red" role="alert" data-i18n="settings.scoreScaleRecalibrate">分數尺剛才變了（改了重排序模型、重排序開關或資料來源比例）。這個門檻是照舊的尺定的，請重新校準：把 1–5 那把尺上的數字搬到 0–1 的尺上，就是一個永遠擋不下任何東西的死條件。</span>
+    {% endif %}
 </div>
