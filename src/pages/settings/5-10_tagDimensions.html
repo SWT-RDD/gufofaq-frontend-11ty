@@ -245,7 +245,7 @@ permalink: 5-10_tagDimensions.html
         <p class="text-red"><span data-i18n="settings.filterableDateRangePrefix">日期維度的值必須落在 </span><span>{{ filterableDateMin }}</span><span data-i18n="settings.filterableDateRangeMid"> 到 </span><span>{{ filterableDateMax }}</span><span data-i18n="settings.filterableDateRangeSuffix"> 之間：檢索引擎把日期存成 64 位元奈秒數，超出去會溢位成另一端的時間。出界的值存得進去、精確比對也找得到，但任何用到日期範圍的過濾都會漏掉那份資料，查詢時它只是不見了、不會有錯誤訊息。若本來就是想表示「永遠有效」，請把該格留白，系統會自己補上不會過期的值。</span></p>
     </div>
     <div class="flex-row">
-        <button type="button" class="button button-primary" data-toast="標籤維度已建立|維度名稱不可為空|這個槽或角色已經有維度了|型別或角色與這個槽配不起來，請改選|建立失敗，請稍後再試" data-i18n-data-toast="toast.createTagDimension" data-toast-type="success|warning|warning|warning|error">
+        <button data-capability="settings:write" type="button" class="button button-primary" data-toast="標籤維度已建立|維度名稱不可為空|這個槽或角色已經有維度了|型別或角色與這個槽配不起來，請改選|建立失敗，請稍後再試" data-i18n-data-toast="toast.createTagDimension" data-toast-type="success|warning|warning|warning|error">
             <img src="./images/icon_add_white.png" width="48" height="48" decoding="async" alt="" class="icon">
             <span data-i18n="settings.addTagDimension">新增標籤維度</span>
         </button>
@@ -326,7 +326,7 @@ permalink: 5-10_tagDimensions.html
                     </td>
                     <td>
                         <div class="btn-group">
-                            <button type="button" class="button button-border button-sm" data-toast="標籤維度已更新|維度名稱不可為空|儲存失敗，請稍後再試" data-i18n-data-toast="toast.saveTagDimension" data-toast-type="success|warning|error" data-i18n="action.save">儲存</button>
+                            <button data-capability="settings:write" type="button" class="button button-border button-sm" data-toast="標籤維度已更新|維度名稱不可為空|儲存失敗，請稍後再試" data-i18n-data-toast="toast.saveTagDimension" data-toast-type="success|warning|error" data-i18n="action.save">儲存</button>
                             {# 日期維度沒有字典可編——product 對它的 vocabulary 寫入一律 400，
                                  給一顆點了只會失敗的鈕就是說謊。 #}
                             {% if dim.kind != "date" %}
@@ -390,7 +390,7 @@ permalink: 5-10_tagDimensions.html
     </div>
     <p id="tagCodeHint" class="text-gray" data-i18n="settings.tagCodeHint">代碼會逐字送進檢索條件，所以不可含 , ' " \ * ? 這些字元（它們在「匯入比對 → DSL 字串 → 上游比對」這趟往返上會被改寫或切斷）。兩個只差在大小寫或全半形的代碼也不能並存——比對端分不開，而檢索只送得出其中一個字面。</p>
     <div class="flex-row">
-        <button type="button" class="button button-primary" data-toast="代碼已新增|代碼與代碼名稱不可為空|代碼含不可用的字元，請改用不含逗號、引號、反斜線與萬用字元的寫法|這個代碼與既有代碼在比對端分不開|新增失敗，請稍後再試" data-i18n-data-toast="toast.createTagCode" data-toast-type="success|warning|warning|warning|error">
+        <button data-capability="settings:write" type="button" class="button button-primary" data-toast="代碼已新增|代碼與代碼名稱不可為空|代碼含不可用的字元，請改用不含逗號、引號、反斜線與萬用字元的寫法|這個代碼與既有代碼在比對端分不開|新增失敗，請稍後再試" data-i18n-data-toast="toast.createTagCode" data-toast-type="success|warning|warning|warning|error">
             <img src="./images/icon_add_white.png" width="48" height="48" decoding="async" alt="" class="icon">
             <span data-i18n="settings.addTagCode">新增代碼</span>
         </button>
@@ -418,7 +418,7 @@ permalink: 5-10_tagDimensions.html
                     <td>{{ row.label }}</td>
                     <td>{{ row.description }}</td>
                     <td>
-                        <button type="button" class="button button-red button-sm" data-toast="代碼已刪除|刪除失敗，請稍後再試" data-i18n-data-toast="toast.deleteTagCode" data-toast-type="success|error" data-i18n="action.delete">刪除</button>
+                        <button data-capability="settings:write" type="button" class="button button-red button-sm" data-toast="代碼已刪除|刪除失敗，請稍後再試" data-i18n-data-toast="toast.deleteTagCode" data-toast-type="success|error" data-i18n="action.delete">刪除</button>
                     </td>
                 </tr>
                 {% else %}
@@ -529,7 +529,7 @@ permalink: 5-10_tagDimensions.html
                              或存不進去。原本那六段覆蓋率相關的 warning（量不出來／量得不完整／超過掃描
                              上限／量測途中維度被改動）在 product 已經沒有對應的路徑了——留著就是演一個
                              回不出來的錯誤。 #}
-                        <button type="button" class="button button-border button-sm" data-toast="檢索過濾設定已儲存|還有檔沒有把這一欄寫進索引，過濾維持關閉|儲存失敗，請稍後再試" data-i18n-data-toast="toast.saveTagFilter" data-toast-type="success|warning|error" data-i18n="action.save">儲存</button>
+                        <button data-capability="settings:write" type="button" class="button button-border button-sm" data-toast="檢索過濾設定已儲存|還有檔沒有把這一欄寫進索引，過濾維持關閉|儲存失敗，請稍後再試" data-i18n-data-toast="toast.saveTagFilter" data-toast-type="success|warning|error" data-i18n="action.save">儲存</button>
                     </td>
                 </tr>
                 {% endfor %}

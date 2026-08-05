@@ -3552,6 +3552,47 @@ test("§6 固定欄位槽目錄只有一份正本，附加資料的 key 都要�
     assert.equal(hits.length, 0, fail(hits));
 });
 
+test("§5 每一顆會改狀態的鈕都要宣告它需要哪一道閘門（三條授權軸，值＝上游閘門自己的名字）", () => {
+    // 為什麼要有：唯讀使用者看到一顆按不動的鈕，是本專案反覆在修的那種「畫面說得出、後端不同意」。
+    // 而「這一塊誰動得了」如果只存在 React 的應用層，切版與 React 就各有一份答案。
+    //
+    // 三條軸各一個屬性，值一律是**上游閘門自己的名字**（不另發明詞彙）：
+    //   data-capability="data:write" / "settings:write"  ← require_capability("data","write") …
+    //   data-tenant-role="admin"                          ← require_admin（租戶管理員旗標，不是一顆能力）
+    //   data-platform-role="admin" / "auditor"            ← require_platform_admin／_auditor
+    // 前兩軸標在**觸發寫入的那顆控制項**上：看一顆鈕就知道它要什麼權限，不必往上推導祖先。
+    // 平台頁例外，而且是有理由的例外：那一軸的單位是「整塊唯讀」——auditor 進得來、看得到、按不動，
+    // 所以宣告掛在區塊上（見 5-6-1／5-6-2／5-6-3）。故本測試對「宣告了 data-platform-role 的頁」放行。
+    //
+    // 判準是「這顆鈕的 toast 說了狀態改了」——純讀取的鈕（量測、複製、列印、查看）不在此列。
+    const WRITE = /(已儲存|已建立|已刪除|已更新|已撤銷|已停用|已啟用|已送出|已核發|已套用|已合併|已補寫|已取代|已排除|已還原|已新增)/;
+    const hits = [];
+    let seen = 0;
+    for (const f of srcHtml.filter((p) => p.includes("pages/"))) {
+        const src = stripNjk(read(f));
+        // 平台頁：授權故事整塊由 data-platform-role 講（那一軸的單位是區塊，見上）
+        if (/\bdata-platform-role=/.test(src)) continue;
+        for (const m of src.matchAll(/<button\b((?:"[^"]*"|[^>"])*)>/g)) {
+            const attrs = m[1];
+            const toast = (attrs.match(/\bdata-toast="([^"]*)"/) || [, ""])[1];
+            if (!toast || !WRITE.test(toast)) continue;
+            seen++;
+            if (!/\bdata-(capability|tenant-role|platform-role)=/.test(attrs))
+                hits.push(`${f}:${countLines(src, m.index)}  toast="${toast.slice(0, 24)}…" 沒宣告閘門`);
+        }
+    }
+    assert.ok(seen >= 25, `只掃到 ${seen} 顆會改狀態的鈕 —— 這條測試在空轉`);
+    // 值域也要釘住：發明新詞彙就等於讓「誰動得了」又有第二份答案
+    const VALID = { "data-capability": ["data:read", "data:write", "settings:read", "settings:write", "history", "ask"], "data-tenant-role": ["admin"], "data-platform-role": ["admin", "auditor"] };
+    for (const f of srcHtml)
+        for (const [, a, v] of stripNjk(read(f)).matchAll(/\b(data-capability|data-tenant-role|data-platform-role)="([^"]*)"/g))
+            // 樣板插值的值跳過（`data-platform-role="{{ item.platformRole }}"`）——那一份的值域由供
+            // 資料的頁面負責，這裡看得到的只是 mustache 字面。
+            for (const one of (v.includes("{{") ? [] : v.split(/\s+/).filter(Boolean)))
+                if (!VALID[a].includes(one)) hits.push(`${f}  ${a}="${one}" 不是上游閘門的名字（值域：${VALID[a].join("／")}）`);
+    assert.equal(hits.length, 0, `唯讀使用者會看到按不動的鈕，而畫面上沒有任何東西說得出為什麼：\n${fail(hits)}`);
+});
+
 test("§6 同頁的 page-size 選中值必須等於 pagination 生效的 perPage（兩者同源）", () => {
     // 曾經：元件寫死 selected=20、六個使用頁都沒 set perPage → pagination 落回預設 10，
     // 於是同一列同時顯示「每頁 20 筆」與「共 12 頁」（115÷20＝6）。

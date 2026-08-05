@@ -62,7 +62,7 @@ permalink: 3-4_skillManagement.html
         </div>
     </div>
     <div class="flex-row">
-        <button type="button" class="button button-primary" data-toast="Skill 已建立|名稱與用途說明不可為空|名稱格式不符或已存在|建立失敗，請稍後再試" data-i18n-data-toast="toast.createSkill" data-toast-type="success|warning|warning|error">
+        <button data-capability="settings:write" type="button" class="button button-primary" data-toast="Skill 已建立|名稱與用途說明不可為空|名稱格式不符或已存在|建立失敗，請稍後再試" data-i18n-data-toast="toast.createSkill" data-toast-type="success|warning|warning|error">
             <img src="./images/icon_add_white.png" width="48" height="48" decoding="async" alt="" class="icon">
             <span data-i18n="settings.addSkill">新增 Skill</span>
         </button>
@@ -117,9 +117,9 @@ permalink: 3-4_skillManagement.html
                                  依 §5 ③ 掛 data-toast 列全結果。原本狀態欄演了兩態卻沒有任何路徑到得了
                                  或離得開，等於示範一個改不動的狀態。 #}
                             {% if skill.enabled %}
-                            <button type="button" class="button button-border button-sm js-toggle-skill" data-toast="Skill 已停用|停用失敗，請稍後再試" data-i18n-data-toast="toast.disableSkill" data-toast-type="success|error" data-i18n="action.disable">停用</button>
+                            <button data-capability="settings:write" type="button" class="button button-border button-sm js-toggle-skill" data-toast="Skill 已停用|停用失敗，請稍後再試" data-i18n-data-toast="toast.disableSkill" data-toast-type="success|error" data-i18n="action.disable">停用</button>
                             {% else %}
-                            <button type="button" class="button button-border button-sm js-toggle-skill" data-toast="Skill 已啟用|啟用失敗，請稍後再試" data-i18n-data-toast="toast.enableSkill" data-toast-type="success|error" data-i18n="action.enable">啟用</button>
+                            <button data-capability="settings:write" type="button" class="button button-border button-sm js-toggle-skill" data-toast="Skill 已啟用|啟用失敗，請稍後再試" data-i18n-data-toast="toast.enableSkill" data-toast-type="success|error" data-i18n="action.enable">啟用</button>
                             {% endif %}
                             <button type="button" class="button button-red button-sm js-delete-skill" data-i18n="action.delete">刪除</button>
                         </div>

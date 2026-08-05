@@ -905,7 +905,7 @@ permalink: 3-5_dataHealth.html
                                         </div>
                                     </div>
                                     <div class="flex-row">
-                                        <button type="button" class="button button-primary button-sm js-health-merge"
+                                        <button data-capability="data:write" type="button" class="button button-primary button-sm js-health-merge"
                                             data-toast="已合併（問法併入保留的那一筆，其餘停用未刪除）|請選擇要保留哪一筆|這個租戶還沒有宣告「有效期」維度，被併的那幾筆停用不了|這個發現已經處置過了，下一次檢查會依前提是否改變決定要不要把它推回清單|操作失敗，請稍後再試"
                                             data-i18n-data-toast="toast.healthMerge" data-toast-type="success|warning|warning|warning|error"
                                             data-i18n="health.actionMerge">合併問法</button>
@@ -938,7 +938,7 @@ permalink: 3-5_dataHealth.html
                                         </div>
                                     </div>
                                     <div class="flex-row">
-                                        <button type="button" class="button button-primary button-sm js-health-disable"
+                                        <button data-capability="data:write" type="button" class="button button-primary button-sm js-health-disable"
                                             data-toast="已停用（有效期設成哨兵日期，未刪除）|請填寫停用理由|這個租戶還沒有宣告「有效期」維度，資料上沒有地方可以表達停用|這個發現已經處置過了，下一次檢查會依前提是否改變決定要不要把它推回清單|操作失敗，請稍後再試"
                                             data-i18n-data-toast="toast.healthDisable" data-toast-type="success|warning|warning|warning|error"
                                             data-i18n="health.actionDisable">停用（不刪除）</button>
@@ -997,7 +997,7 @@ permalink: 3-5_dataHealth.html
                                         </div>
                                     </div>
                                     <div class="flex-row">
-                                        <button type="button" class="button button-primary button-sm js-health-add-phrasing"
+                                        <button data-capability="data:write" type="button" class="button button-primary button-sm js-health-add-phrasing"
                                             data-toast="已補寫問法（新增為一列，原標題保留）|請填寫要補寫的問法|補寫的問法與原標題逐字相同，新增一列只會多出一筆完全重複的記錄|這個發現已經處置過了，下一次檢查會依前提是否改變決定要不要把它推回清單|操作失敗，請稍後再試"
                                             data-i18n-data-toast="toast.healthAddPhrasing" data-toast-type="success|warning|warning|warning|error"
                                             data-i18n="health.actionAddPhrasing">補寫問法</button>
@@ -1022,7 +1022,7 @@ permalink: 3-5_dataHealth.html
                                         </div>
                                     </div>
                                     <div class="flex-row">
-                                        <button type="button" class="button button-border button-sm js-health-undo"
+                                        <button data-capability="data:write" type="button" class="button button-border button-sm js-health-undo"
                                             data-toast="已還原這次處置，這一筆回到未處置|請填寫還原理由|保留的那一筆內容已經不是這次合併寫出去的那一份（多半是又被另一個發現併過一次），把舊內容寫回去會連那一次的問法一起抹掉|處置寫下去的那一格在那之後又被改過，還原的前提不成立，請直接編輯資料|查不到這個發現的處置紀錄，沒有辦法知道當初改了哪一格、把什麼值蓋掉了|操作失敗，請稍後再試"
                                             data-i18n-data-toast="toast.healthUndo" data-toast-type="success|warning|warning|warning|warning|error"
                                             data-i18n="health.actionUndo">還原這次處置</button>

@@ -64,7 +64,7 @@ permalink: 5-5-2_groupManagement.html
         {% endfor %}
     </div>
     <div class="flex-row">
-        <button type="button" class="button button-primary" data-toast="群組已建立|群組名稱不可為空|群組名稱已存在|建立失敗，請稍後再試" data-i18n-data-toast="toast.createGroup" data-toast-type="success|warning|warning|error">
+        <button data-tenant-role="admin" type="button" class="button button-primary" data-toast="群組已建立|群組名稱不可為空|群組名稱已存在|建立失敗，請稍後再試" data-i18n-data-toast="toast.createGroup" data-toast-type="success|warning|warning|error">
             <img src="./images/icon_add_white.png" width="48" height="48" decoding="async" alt="" class="icon">
             <span data-i18n="settings.addGroup">新增群組</span>
         </button>
@@ -116,7 +116,7 @@ permalink: 5-5-2_groupManagement.html
                     <td class="text-center">{{ group.memberCount }}</td>
                     <td>
                         <div class="btn-group">
-                            <button type="button" class="button button-border button-sm" data-toast="群組已更新|群組名稱不可為空|群組名稱已存在|儲存失敗" data-i18n-data-toast="toast.saveGroup" data-toast-type="success|warning|warning|error" data-i18n="action.save">儲存</button>
+                            <button data-tenant-role="admin" type="button" class="button button-border button-sm" data-toast="群組已更新|群組名稱不可為空|群組名稱已存在|儲存失敗" data-i18n-data-toast="toast.saveGroup" data-toast-type="success|warning|warning|error" data-i18n="action.save">儲存</button>
                             <button type="button" class="button button-border button-sm js-manage-members" data-i18n="settings.manageMembers">管理成員</button>
                             <button type="button" class="button button-red button-sm js-delete-group" data-i18n="action.delete">刪除</button>
                         </div>

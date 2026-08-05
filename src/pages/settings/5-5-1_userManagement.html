@@ -94,7 +94,7 @@ permalink: 5-5-1_userManagement.html
              （users.py:246-247）是**換一個 Email 就修得掉**的 warning，自成一段——
              折進「新增失敗，請稍後再試」再用「可能」對沖，等於叫使用者重試一個永遠不會成功的動作。
              全站同型的 create 409 都自成 warning（5-5-2 群組名稱、3-3 QA 集、5-6-2 MCP 名稱）。 #}
-        <button type="button" class="button button-primary" data-toast="成員已新增|請填寫 Email 與至少 8 碼密碼|Email 已被使用，請換一個|新增失敗，請稍後再試" data-i18n-data-toast="toast.createUser" data-toast-type="success|warning|warning|error">
+        <button data-tenant-role="admin" type="button" class="button button-primary" data-toast="成員已新增|請填寫 Email 與至少 8 碼密碼|Email 已被使用，請換一個|新增失敗，請稍後再試" data-i18n-data-toast="toast.createUser" data-toast-type="success|warning|warning|error">
             <img src="./images/icon_add_white.png" width="48" height="48" decoding="async" alt="" class="icon">
             <span data-i18n="settings.addMember">新增成員</span>
         </button>
@@ -193,7 +193,7 @@ permalink: 5-5-1_userManagement.html
                                  400「cannot deactivate the last active tenant admin」（product users.py）、
                                  403「平台角色持有者不得在租戶端變更」（同檔 _assert_tenant_manageable（users.py:87）：
                                  平台管理員／稽核員寄生在一般租戶裡，停用他會讓平台治理端點沒人打得動）。 #}
-                            <button type="button" class="button button-border button-sm" data-toast="已更新|不可移除租戶最後一位管理者，請先指派另一位|不可停用最後一位在職的租戶管理者，請先指派另一位|平台角色持有者不可在租戶端變更，請由平台管理端處理|儲存失敗" data-i18n-data-toast="toast.saveMember" data-toast-type="success|warning|warning|warning|error" data-i18n="action.save">儲存</button>
+                            <button data-tenant-role="admin" type="button" class="button button-border button-sm" data-toast="已更新|不可移除租戶最後一位管理者，請先指派另一位|不可停用最後一位在職的租戶管理者，請先指派另一位|平台角色持有者不可在租戶端變更，請由平台管理端處理|儲存失敗" data-i18n-data-toast="toast.saveMember" data-toast-type="success|warning|warning|warning|error" data-i18n="action.save">儲存</button>
                             {# 重設密碼：開窗需先選定「重設哪一位成員」＝業務條件開窗，故用 hook class（.js-reset-password），
                                  不掛 data-open-modal（§5）。彈窗本體見 components/reset-password-modal（include 於本頁底部）。 #}
                             <button type="button" class="button button-border button-sm js-reset-password" data-i18n="settings.resetPassword">重設密碼</button>

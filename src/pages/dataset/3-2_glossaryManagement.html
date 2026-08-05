@@ -78,7 +78,7 @@ permalink: 3-2_glossaryManagement.html
         </div>
     </div>
     <div class="flex-row">
-        <button type="button" class="button button-primary" data-toast="術語表已建立|表名稱不可為空，或正規化 regex 不合法（不可含量詞、不可兩個以上交替）|建立失敗，請稍後再試" data-i18n-data-toast="toast.createGlossaryTable" data-toast-type="success|warning|error">
+        <button data-capability="data:write" type="button" class="button button-primary" data-toast="術語表已建立|表名稱不可為空，或正規化 regex 不合法（不可含量詞、不可兩個以上交替）|建立失敗，請稍後再試" data-i18n-data-toast="toast.createGlossaryTable" data-toast-type="success|warning|error">
             <img src="./images/icon_add_white.png" width="48" height="48" decoding="async" alt="" class="icon">
             <span data-i18n="settings.addGlossaryTable">新增術語表</span>
         </button>
@@ -124,7 +124,7 @@ permalink: 3-2_glossaryManagement.html
                     <td class="text-center">{{ tbl.entryCount }}</td>
                     <td>
                         <div class="btn-group">
-                            <button type="button" class="button button-border button-sm" data-toast="術語表已更新|表名稱不可為空，或正規化 regex 不合法（不可含量詞、不可兩個以上交替）|儲存失敗" data-i18n-data-toast="toast.saveGlossaryTable" data-toast-type="success|warning|error" data-i18n="action.save">儲存</button>
+                            <button data-capability="data:write" type="button" class="button button-border button-sm" data-toast="術語表已更新|表名稱不可為空，或正規化 regex 不合法（不可含量詞、不可兩個以上交替）|儲存失敗" data-i18n-data-toast="toast.saveGlossaryTable" data-toast-type="success|warning|error" data-i18n="action.save">儲存</button>
                             <button type="button" class="button button-border button-sm js-manage-entries" data-i18n="settings.manageEntries">管理詞條</button>
                             <button type="button" class="button button-red button-sm js-delete-glossary" data-i18n="action.delete">刪除</button>
                         </div>
