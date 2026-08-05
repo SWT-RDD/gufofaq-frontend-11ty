@@ -1,12 +1,18 @@
 // 逐位元照抄自真 app scss/component.scss 2363-2399（toast彈跳訊息區塊），只搬檔案位置，宣告一字不改
 
 // toast 的容器。掛了 popover，故要把 popover 的 UA 預設樣式（置中的方框、邊框、overflow:auto）清乾淨：
-// 它只是個進 top layer 的空殼，不佔位、不吃點擊；真正定位的是裡面 position:fixed 的 .toast。
+// 它只是個進 top layer 的殼，不吃點擊（pointer-events:none）；定位與堆疊都由它負責，.toast 回到文流內。
+// **刻意不沿用真 app 的定位方式**（§5 要記載什麼取代了什麼）：真 app 每一顆 .toast 各自
+// position:fixed; top:129px ⇒ 連點兩下、或一次動作彈兩則時，兩顆完全疊在同一個位置，
+// 後面那一則把前面那一則蓋掉、看起來只是「閃了一下」。改由容器當直向 flex 堆疊，
+// .toast 回到文流內依序往下排。§5 那條「時長歸 CSS」的重入代價因此不必靠計時器守衛去補。
 .toast-container {
     position: fixed;
-    inset: auto;
-    width: 0;
-    height: 0;
+    inset: 129px 0 auto 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
     margin: 0;
     padding: 0;
     border: 0;
@@ -20,11 +26,6 @@
     white-space: nowrap;
     padding: .625rem 1rem;
     border-radius: 4px;
-    position: fixed;
-    top: 129px;
-    left: 0;
-    right: 0;
-    margin: 0 auto;
     z-index: 2000;
     opacity: 0;
     transition: opacity 0.3s ease;

@@ -139,14 +139,6 @@ a {
     color: var(--text);
 }
 
-.full-wrap {
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh; // 舊瀏覽器 fallback
-    min-height: 100dvh; // 行動瀏覽器：扣掉會伸縮的網址列
-    width: 100%;
-}
-
 .wrap {
     max-width: $wrap-max;
     width: 100%;
@@ -160,12 +152,6 @@ a {
 /*===============================
     main主要內容區
 ================================*/
-
-.main {
-    flex: 1 0 auto;
-    padding: 1rem 2.5rem 2.5rem 2.5rem;
-    background-color: var(--surface);
-}
 
 .page-title-wrap {
     display: flex;

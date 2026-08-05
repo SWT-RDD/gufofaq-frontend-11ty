@@ -1,4 +1,7 @@
-{# 圖表區塊（生產 markup：pages/settings/5-3_statsModule.html）。結構 + SCSS only ——
+{# 圖表區塊（生產 markup：pages/settings/5-3_statsModule.html）。**本元件只負責組合，沒有自己的 scss**：
+   外殼那組 class（.chart-box／.chart-title／.chart-wrap／.chart／.chart-auto）已升格成純樣式原子
+   ui/chart-shell —— 5-3 除了 include 本元件之外還手寫了兩張同型的圖，而 §4 明文「components/ 元件的
+   私有 class 不外借」。結構 + SCSS only ——
    不引入 Chart.js，`.chart` 內僅放 `<canvas>` 佔位，實際繪圖為業務邏輯、不轉。
    參數（頁面 include 前 set）：
      chartBoxId：id 前綴。業務 JS 靠它 getElementById 取 canvas 與數據槽（預設 "chart1"）。

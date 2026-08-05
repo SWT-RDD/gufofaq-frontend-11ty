@@ -1,0 +1,58 @@
+// 圖表外殼（純樣式原子，無 html）。逐字複製自真實 app 的 scss/component.scss「block / box 區塊」區段。
+//
+// markup 契約（無 html 元件，§1-2；整段照抄）：
+//   <div class="chart-box">
+//     <div class="chart-title" data-i18n="…">…標題…</div>
+//     <div class="chart-wrap">                      ← 兩張圖並排的容器（≤992px 改上下堆疊）
+//       <div class="chart"><canvas id="…"></canvas></div>
+//     </div>
+//     …下段數據槽走 ui/chart-desc…
+//   </div>
+//   內容是表格而不是固定高 canvas 時，`.chart` 另掛 `.chart-auto`（自動高 ＋ 橫向可捲）。
+//
+// 為什麼是 `ui/` 而不是留在 `components/chart-box`：5-3 除了 include 那顆元件之外，
+// 自己另外手寫了兩張圖，用的是同一組 class；而 `.chart-auto` 這個變體**元件從來不輸出**，
+// 只有 5-3 用得到——等於頁面專屬樣式住在某個 components/ 元件的 scss 裡。
+// §4：`components/` 元件的私有 class 不外借，第二個消費者出現時就升格成共用正本。
+// `components/chart-box` 因此只剩「組合」（它的 html：標題＋兩張 canvas＋chart-desc），沒有自己的樣式。
+.chart-box {
+    background-color: var(--surface-raised);
+    border-radius: 8px;
+    padding: 1rem;
+    padding-bottom: 0.5rem;
+    flex: 1 1 0%;
+
+    .chart-title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        text-align: left;
+        color: var(--text);
+        padding: 0.46875rem 0;
+    }
+
+    // .chart-wrap 讓兩張圖並排：真實 app 的 scss 源碼漏了這條，只存在於已編譯的 css/component.css，
+    // 依編譯輸出補回，否則兩張圖會上下堆疊而非並排（外觀還原）。
+    .chart-wrap {
+        display: flex;
+        gap: 56px;
+
+        @media screen and (max-width: 992px) {
+            flex-direction: column;
+            gap: 24px;
+        }
+    }
+
+    .chart {
+        width: 100%;
+        height: 300px; // 真 app 編譯 css 為 300px（scss 源碼舊值 302px）
+
+        // 內容為表格（非固定高 canvas）時：自動高、可橫向捲動（取代頁面行內 height/overflow）
+        &.chart-auto {
+            height: auto;
+            overflow-x: auto;
+        }
+    }
+
+    // .chart-desc 的樣式在 ui/chart-desc（連同它自己的 .row 變體）——留在這裡的話
+    // 那支元件在 .chart-box 之外 include 就完全沒有樣式（§4 祖先錯位）。
+}

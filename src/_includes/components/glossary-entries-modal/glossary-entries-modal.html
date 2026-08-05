@@ -53,7 +53,7 @@
                                     <tr>
                                         <td><input type="text" class="form-control" maxlength="200" value="{{ entry.term }}" aria-label="詞條" data-i18n-aria-label="settings.term"></td>
                                         <td><input type="text" class="form-control" maxlength="2000" value="{{ entry.definition }}" aria-label="定義" data-i18n-aria-label="settings.definition"></td>
-                                        <td><input type="text" class="form-control" value="{{ entry.aliases }}" aria-label="別名（逗號分隔）" data-i18n-aria-label="settings.aliases"></td>
+                                        <td><input type="text" class="form-control" value="{{ entry.aliases }}" aria-label="別名（逗號分隔）" data-i18n-aria-label="settings.aliases" aria-describedby="glossaryLimitsHint"></td>
                                         <td><button type="button" class="button button-border button-sm js-remove-glossary-entry" data-i18n="action.delete">刪除</button></td>
                                     </tr>
                                     {% else %}
@@ -62,8 +62,15 @@
                                 </tbody>
                             </table>
                         </div>
-                        <div class="flex-row">
+                        {# 上限寫在做那個決定的控制項旁邊（§3-2）：原本三道界線只在送出失敗的 toast 裡出現，
+                             而 maxlength 是靜默截斷（打不進去也不說為什麼）、別名欄連 maxlength 都夾不住
+                             （逗號分隔的多值字串，單一 maxlength 表達不了「每個別名 200 字、最多 50 個」）。
+                             數字是資料節點、不進譯文（§3-2）；正本 GufoRAG chatbot/app/services/glossary.py 的
+                             MAX_TERM_LEN／MAX_DEFINITION_LEN／MAX_ALIASES_PER_ENTRY／MAX_ENTRIES_PER_TABLE。 #}
+                        <p id="glossaryLimitsHint" class="text-gray m-0"><span data-i18n="settings.glossaryLimitTerm">詞條上限 </span><span>200</span><span data-i18n="settings.glossaryLimitDefinition"> 字、定義 </span><span>2000</span><span data-i18n="settings.glossaryLimitAliases"> 字；別名每個 </span><span>200</span><span data-i18n="settings.glossaryLimitAliasCount"> 字、最多 </span><span>50</span><span data-i18n="qa.detailConvItems">個</span></p>
+                        <div class="flex-row align-items-center gap-16">
                             <button type="button" class="button button-border button-sm js-add-glossary-entry" data-i18n="settings.addEntry">新增一列</button>
+                            <span class="text-gray"><span data-i18n="settings.glossaryEntryCountPrefix">已 </span><span>{{ glossaryEntryRows.length }}</span><span data-i18n="settings.glossaryEntryCountMid"> / </span><span>5000</span><span data-i18n="settings.glossaryEntryCountSuffix"> 筆</span></span>
                         </div>
                     </div>
                 </div>

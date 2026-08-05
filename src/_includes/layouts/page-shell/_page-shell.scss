@@ -1,0 +1,13 @@
+// layouts/page-shell 的模板專屬樣式（§1-1：模板的樣式跟模板同住，不進全域 scss/）。
+//
+// markup 契約：`page-shell.html` 的 `<main class="main" id="main" tabindex="-1">` ——
+// 一般後台頁的主要內容區。`flex: 1 0 auto` 撐開 `layouts/base` 的 `.full-wrap`（column flex），
+// 讓頁尾永遠貼在視窗底部而不是內容底部；`tabindex="-1"` 是給 `.skip-link` 跳進來的落點。
+//
+// 這條原本住在 `scss/_base.scss`：全站只有 page-shell 一個消費者（`.main-container`／`.main-menu`／
+// `.chatbot-main` 是別的 class），放在全域 reset 層會讓人以為它是共用詞彙。
+.main {
+    flex: 1 0 auto;
+    padding: 1rem 2.5rem 2.5rem 2.5rem;
+    background-color: var(--surface);
+}
