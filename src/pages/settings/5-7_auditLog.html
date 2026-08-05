@@ -186,7 +186,7 @@ permalink: 5-7_auditLog.html
                 <td>{{ row.target }}</td>
                 <td>{{ row.detail }}</td>
                 <td>{{ row.ip }}</td>
-                <td><div class="ellipsis-2">{{ row.userAgent }}</div></td>
+                <td><div class="ellipsis-2" title="{{ row.userAgent }}">{{ row.userAgent }}</div></td>
             </tr>
             {% endfor %}
         </tbody>
