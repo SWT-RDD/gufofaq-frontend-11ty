@@ -35,6 +35,8 @@
     { label: "Agent 推理", state: "completed", time: "340ms", thinking: "先判斷是否需要檢索；問題涉及具體規定，決定呼叫知識庫搜尋。" },
     { label: "檢索知識庫", state: "completed", time: "1.2s", tools: "search_knowledge_base", params: "{ query: '新住民 結婚 應備文件' }", result: "命中 8 筆片段（相似度 0.79–0.92），注入後續生成脈絡。" },
     { label: "可回答性判定", state: "completed", time: "210ms", verdict: "generate（素材足以回答）" },
+    { label: "QA 直答", state: "completed", time: "18ms", hits: "客服問答集 / 新住民結婚登記要準備什麼文件？",
+      score: "4.6", decidedBy: "floor", floor: "3（llm_reranker 的 1–5 尺）" },
     { label: "生成答案", state: "running", time: "" },
     { label: "誠實查無", state: "skipped", time: "" },
     { label: "生成推薦問題", state: "pending", time: "" },
@@ -68,6 +70,12 @@
     {# 整體執行摘要（stepFlowSummaryData，來自 chat_room chunk 的既有欄）：一眼看完本次成本/效能。
          label 走 i18n，數值為資料（不翻）。 #}
     <div class="step-flow-summary flex-row flex-wrap gap-16 mt-16">
+        {# 軌跡截斷（S3 前半）：上限 200／50 筆，引擎在陣列尾端追加 {truncated: true, total: N}。
+             **只說出來、不放「載入完整軌跡」鈕**：超出的部分目前完全沒落庫，鈕做了也拿不到資料
+             ——那會是一顆按了沒反應的鈕（§5）。等 saas 那邊的 C5 定案再補。
+             未截斷時整行不出現（常駐節點會變成「已顯示 231／共 231」那種廢話），故整段掛 .hidden
+             由 React 依 truncated 決定；數字是資料、夾在前後綴 key 中間（不是插值 key）。 #}
+        <p class="text-gray m-0 hidden"><span data-i18n="agent.traceTruncatedPrefix">已顯示 </span><span>200</span><span data-i18n="agent.traceTruncatedMid"> ／共 </span><span>231</span><span data-i18n="agent.traceTruncatedSuffix"> 筆（超出上限的部分沒有落庫）</span></p>
         <span class="step-flow-metric"><span data-i18n="agent.summaryTokens">Token</span> {{ stepFlowSummaryData.tokens }}</span>
         <span class="step-flow-metric"><span data-i18n="agent.summaryLatency">延遲</span> {{ stepFlowSummaryData.latency }}</span>
         <span class="step-flow-metric"><span data-i18n="agent.summaryTtft">首字</span> {{ stepFlowSummaryData.ttft }}</span>
@@ -97,14 +105,14 @@
                         {% if node.state == "completed" %}<span data-i18n="agent.stepCompleted">已完成</span>{% elif node.state == "running" %}<span data-i18n="agent.stepRunning">進行中</span>{% elif node.state == "skipped" %}<span data-i18n="agent.stepSkipped">略過</span>{% elif node.state == "failed" %}<span data-i18n="platform.resultFail">失敗</span>{% else %}<span data-i18n="agent.stepPending">待處理</span>{% endif %}
                     </td>
                     <td>
-                        {% if node.tools or node.params or node.result or node.verdict or node.thinking or node.skill or node.error %}
+                        {% if node.tools or node.params or node.result or node.verdict or node.thinking or node.skill or node.error or node.hits or node.score or node.decidedBy or node.floor %}
                         <button type="button" class="button accordion-btn" aria-expanded="false" title="展開表格" data-i18n-title="common.expandRow">
                             <span class="sr-only" data-i18n="common.expandRow">展開表格</span>
                         </button>
                         {% endif %}
                     </td>
                 </tr>
-                {% if node.tools or node.params or node.result or node.verdict or node.thinking or node.skill or node.error %}
+                {% if node.tools or node.params or node.result or node.verdict or node.thinking or node.skill or node.error or node.hits or node.score or node.decidedBy or node.floor %}
                 <tr class="detail-row">
                     <td colspan="5" class="detail-cell">
                         <div class="accordion-content">
@@ -153,6 +161,44 @@
                                     <tr>
                                         <th data-i18n="agent.verdict">判定</th>
                                         <td>{{ node.verdict }}</td>
+                                    </tr>
+                                    {% endif %}
+                                    {# QA 直答的命中細節（S1）。qa_direct 節點原本只有 label／state／time，
+                                         連「可展開」的條件都不成立（那個判斷看 verdict／tools／iterations，
+                                         三個都沒有）——畫面上就是一個綠盒子，說不出「憑什麼直出這一則」。
+                                         判定層有且只有三層（上游 `qa_direct`：①正規化完全命中 ②分數門檻
+                                         ③LLM 單裁），故走 {% if %} 鏈、i18n key 逐條寫成字面——投影成模板
+                                         變數的 key 在 en.json 對帳時查不到引用處（同 components/record-identity）。
+                                         門檻值與分數是同一把尺上的兩個數字，成對出現才有意義：只給分數看不出
+                                         「差多少」，只給門檻看不出「這一則過了沒有」。 #}
+                                    {% if node.hits %}
+                                    <tr>
+                                        <th data-i18n="regression.hitsRow">命中文件</th>
+                                        <td>{{ node.hits }}</td>
+                                    </tr>
+                                    {% endif %}
+                                    {% if node.score %}
+                                    <tr>
+                                        <th data-i18n="agent.qaScore">分數</th>
+                                        <td>{{ node.score }}</td>
+                                    </tr>
+                                    {% endif %}
+                                    {% if node.decidedBy %}
+                                    <tr>
+                                        <th data-i18n="agent.qaDecidedBy">判定層</th>
+                                        {% if node.decidedBy == "exact" %}
+                                        <td data-i18n="agent.qaLayerExact">完全命中（正規化後逐字相同）</td>
+                                        {% elif node.decidedBy == "floor" %}
+                                        <td data-i18n="settings.scoreFloor">分數門檻</td>
+                                        {% else %}
+                                        <td data-i18n="agent.qaLayerJudge">LLM 裁判</td>
+                                        {% endif %}
+                                    </tr>
+                                    {% endif %}
+                                    {% if node.floor %}
+                                    <tr>
+                                        <th data-i18n="agent.qaFloor">門檻值</th>
+                                        <td>{{ node.floor }}</td>
                                     </tr>
                                     {% endif %}
                                     {% if node.thinking %}
