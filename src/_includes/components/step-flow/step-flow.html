@@ -33,7 +33,7 @@
 {% set stepFlowNodeRows = stepFlowNodes or [
     { label: "初始化對話", state: "completed", time: "12ms" },
     { label: "Agent 推理", state: "completed", time: "340ms", thinking: "先判斷是否需要檢索；問題涉及具體規定，決定呼叫知識庫搜尋。" },
-    { label: "檢索知識庫", state: "completed", time: "1.2s", tools: "search_knowledge_base", params: "{ query: '新住民 結婚 應備文件' }", result: "命中 8 筆片段（相似度 0.79–0.92），注入後續生成脈絡。" },
+    { label: "檢索知識庫", state: "completed", time: "1.2s", tools: "search_knowledge_base", params: "{ query: '新住民 結婚 應備文件' }", resultLength: "19500", result: "命中 8 筆片段（相似度 0.79–0.92），注入後續生成脈絡。" },
     { label: "可回答性判定", state: "completed", time: "210ms", verdict: "generate（素材足以回答）" },
     { label: "QA 直答", state: "completed", time: "18ms", hits: "客服問答集 / 新住民結婚登記要準備什麼文件？",
       score: "4.6", decidedBy: "floor", floor: "3（llm_reranker 的 1–5 尺）" },
@@ -75,7 +75,12 @@
              ——那會是一顆按了沒反應的鈕（§5）。等 saas 那邊的 C5 定案再補。
              未截斷時整行不出現（常駐節點會變成「已顯示 231／共 231」那種廢話），故整段掛 .hidden
              由 React 依 truncated 決定；數字是資料、夾在前後綴 key 中間（不是插值 key）。 #}
-        <p class="text-gray m-0 hidden"><span data-i18n="agent.traceTruncatedPrefix">已顯示 </span><span>200</span><span data-i18n="agent.traceTruncatedMid"> ／共 </span><span>231</span><span data-i18n="agent.traceTruncatedSuffix"> 筆（超出上限的部分沒有落庫）</span></p>
+        <p class="text-gray m-0 hidden"><span data-i18n="agent.traceTruncatedPrefix">已顯示 </span><span>200</span><span data-i18n="agent.traceTruncatedMid"> ／共 </span><span>231</span><span data-i18n="agent.traceTruncatedSuffix"> 筆</span></p>
+        {# 「載入完整軌跡」是**切版對後端提的要求**：超出上限的事件目前沒有落庫，所以這顆鈕現在拿不到
+             東西——但畫面該長什麼樣不由那件事決定。鈕在這裡，後端把那段軌跡存下來、開一支取用的端點，
+             React 接上就會動。反過來（等資料齊了才畫）會讓「使用者其實需要看得到完整軌跡」這件事
+             一直沒有人在畫面上主張。條件動作（要帶這一輪的 run id 去要）⇒ 只掛 hook class。 #}
+        <button type="button" class="button button-border button-sm hidden js-load-full-trace" data-i18n="agent.loadFullTrace">載入完整軌跡</button>
         <span class="step-flow-metric"><span data-i18n="agent.summaryTokens">Token</span> {{ stepFlowSummaryData.tokens }}</span>
         <span class="step-flow-metric"><span data-i18n="agent.summaryLatency">延遲</span> {{ stepFlowSummaryData.latency }}</span>
         <span class="step-flow-metric"><span data-i18n="agent.summaryTtft">首字</span> {{ stepFlowSummaryData.ttft }}</span>
@@ -154,7 +159,23 @@
                                     {% if node.result %}
                                     <tr>
                                         <th data-i18n="agent.result">結果</th>
-                                        <td>{{ node.result }}</td>
+                                        {# 工具輸出是長文 ⇒ 走 ui/collapse-text（夾住而且打得開）。
+                                             但 `result_preview` 只有前 500 字，展開也只有那 500 字——所以**截斷這件事
+                                             本身要說出來**，並給一顆去拿全文的鈕。
+                                             `node.resultLength`（原始長度）是**切版對後端提的要求**：現在的 preview 不回長度，
+                                             於是「剛好 500 字」與「被砍掉 19500 字」在畫面上長得一模一樣。有了長度，這一列才
+                                             決定得出那顆鈕該不該出現——未截斷時不渲染（§5：不放一顆按了沒變化的鈕）。
+                                             取全文要重新向後端要一次（preview 之外的部分沒有在這份 payload 裡）⇒ 條件動作，
+                                             故只掛 hook class `js-view-full-output`、不掛 data-toast（成敗由 React 演）。 #}
+                                        <td>
+                                            <div class="collapse-text"><div class="collapse-body">{{ node.result }}</div><button type="button" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>
+                                            {% if node.resultLength %}
+                                            <div class="flex-row align-items-center flex-wrap gap-8">
+                                                <span class="text-gray"><span data-i18n="agent.outputTruncatedPrefix">已顯示前 </span>500<span data-i18n="agent.outputTruncatedMid"> 字／共 </span>{{ node.resultLength }}<span data-i18n="regression.charsUnit"> 字</span></span>
+                                                <button type="button" class="button button-border button-sm js-view-full-output" data-i18n="agent.viewFullOutput">看完整輸出</button>
+                                            </div>
+                                            {% endif %}
+                                        </td>
                                     </tr>
                                     {% endif %}
                                     {% if node.verdict %}
