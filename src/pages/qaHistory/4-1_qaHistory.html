@@ -103,13 +103,13 @@ permalink: 4-1_qaHistory.html
                     <label for="answerSourceSelect" class="control-label" data-i18n="qa.answerSource">答案來源</label>
                 </div>
                 <div class="field">
-                    {# **切版對後端提的要求**（§4：主張需求、不等後端）。上游 `chat_logs.answer_source`
-                         現在只寫得出兩種狀態：`qa_direct`（QA 完美命中／judge 通過，逐字直出）與
-                         **NULL**（正常生成）——也就是說「模型生成」目前沒有字面可送。
-                         這一顆下拉要求 `GET /history` 收一個 `answer_source` 參數，並讓 `generated`
-                         對到「該欄為 NULL」那一側；在那之前它送出去不會生效（相依：A1）。
-                         為什麼不送空字串或 `null`：那與「全部（不帶參數）」在 query string 上分不開，
-                         而這兩件事問的不是同一個問題。
+                    {# 值＝上游的字面：product 的 `list_history` 與 `export_history` 兩支都收
+                         `answer_source: Literal["qa_direct", "generated"]`（值域夾在 product 這一層，
+                         不原樣轉發——上游對打錯的值回 400）。
+                         **DB 那一側只有兩種狀態**：`chat_logs.answer_source` 是 `qa_direct` 或 **NULL**
+                         （正常生成），`generated` 是 product 替 NULL 那一側取的查詢字面。所以這裡送
+                         `generated` 是對的，不要改送空字串或 `null`——那與「全部（不帶參數）」在
+                         query string 上分不開，而這兩件事問的不是同一個問題。
                          值載體 select ⇒ 只掛 hook class、不掛 data-toast（§5 矩陣②：document 上的 click
                          委派抓不到 change，成敗也要看後端）。唯讀查詢 ⇒ 不掛任何授權軸。
                          「全部」就是那顆 `<option value="">`（§4：「還沒挑」要有一顆承載得住、且有可讀標籤）。
@@ -139,6 +139,29 @@ permalink: 4-1_qaHistory.html
                 <input type="checkbox" class="js-export-with-header" aria-describedby="exportWithHeaderHint">
                 <span data-i18n="qa.exportWithHeader">含統計表頭</span>
             </label>
+            {# 匯出格式（product `GET /history/export?format=`，`Query(alias="format")` 收
+                 `Literal["csv","xlsx","jsonl"]`、預設 csv）。**畫面只給兩顆**：csv 與 xlsx 是同一個
+                 問題的兩種答案（要不要巢狀明細），jsonl 是給程式與稽核的那一份、沒有人會在這個
+                 畫面上挑它——列出來只會讓兩個真的要選的選項變難挑。
+                 一組 radio 沒有單一 `for` 可掛 ⇒ 浮空標題給 id ＋ 容器 `role="radiogroup"`
+                 ＋ `aria-labelledby`（§4：一組控制項要報出「這組在問什麼」）。
+                 值載體 ⇒ 只掛 hook class、不掛 data-toast（§5 矩陣②）；成敗由旁邊那顆下載鈕演。
+                 唯讀匯出，不宣告授權軸。 #}
+            <span id="exportFormatLabel" class="control-label" data-i18n="qa.exportFormat">匯出格式</span>
+            <div class="flex-row align-items-center gap-16" role="radiogroup" aria-labelledby="exportFormatLabel">
+                <label class="form-radio">
+                    <input type="radio" name="exportFormat" class="js-export-format" value="csv" checked>
+                    <span data-i18n="qa.exportSummary">摘要（CSV）</span>
+                </label>
+                <label class="form-radio">
+                    <input type="radio" name="exportFormat" class="js-export-format" value="xlsx" aria-describedby="exportFormatHint">
+                    <span data-i18n="qa.exportFullDetail">完整明細（Excel）</span>
+                </label>
+            </div>
+            {# 代價寫在做決定的那顆控制項旁邊（§3-2）：多出來的是什麼要在挑之前說，不是下載完才發現。
+                 三張明細表對回正本 `export_history` 的 `format` 註解：執行步驟／工具呼叫／搜尋結果，
+                 各自一列一筆、以「對話編號」對回主表（主表本身與 CSV 同一份取值，故不算「多出來的」）。 #}
+            <span class="text-gray" id="exportFormatHint" data-i18n="qa.exportFullDetailHint">完整明細會多出三張工作表——每一步、每次工具呼叫的完整輸出、每一張來源卡的全文</span>
             {# 代價寫在做決定的那顆控制項旁邊（§3-2）：正本 history.py 的 `_parse_range` docstring 逐字寫著
                  「預設關閉，因為多一段前置區塊會讓『第一列就是欄名』的既有下游解析當場壞掉」——
                  那句話原本只寫在上面的 nunjucks 註解裡，build 時就被移除，使用者永遠讀不到。 #}
@@ -147,7 +170,7 @@ permalink: 4-1_qaHistory.html
                  · 範圍長度 > 31 天（history.py 的 `history.range_over_31_days`）
                  · 起點比現在早超過 366 天（history.py 的 `history.range_over_a_year`）——與上一條是不同條件：
                    選 2024/01/01～01/20 過得了 31 天那關，照樣被一年那關擋掉
-                 · `total > MAclass="form-control singleSelect js-answer-source"_EXPORT_LOGS`（history.py，串流開始前就先探一頁擋掉）
+                 · `total > MAX_EXPORT_LOGS`（history.py，串流開始前就先探一頁擋掉）
                  原本只列第一條，另外兩條落進紅色的「下載失敗」。 #}
             <button type="button" class="button button-green" data-toast="下載已開始|只提供31日間的問答記錄下載|只提供一年內的問答記錄下載|這段範圍的資料量過大，請縮小時間範圍|下載失敗" data-i18n-data-toast="toast.downloadRecords" data-toast-type="success|warning|warning|warning|error" data-i18n="action.download">下載</button>
         </div>

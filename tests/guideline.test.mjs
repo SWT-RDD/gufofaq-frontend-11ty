@@ -3717,6 +3717,23 @@ test("§5/§6 4-1 答案來源篩選：三顆值、只掛 hook、清單只有直
     const badges = (dist.match(/verdict-tag[^"]*"[^>]*data-i18n="settings\.qaDirect"/g) || []).length;
     const rows = (dist.match(/<tr[^>]*>\s*<td>1217\d<\/td>/g) || []).length;
     assert.ok(badges >= 1 && badges < rows, `示範要同時有直答與生成兩種列（徽章 ${badges} / 列 ${rows}）`);
+
+    // ── 匯出格式（product export_history 的 Query(alias="format")，預設 csv）──────────
+    const group = src.match(/<span id="exportFormatLabel"[\s\S]*?<\/div>/);
+    assert.ok(group, "4-1 缺匯出格式選擇");
+    const radios = [...group[0].matchAll(/<input type="radio"([^>]*)>/g)].map((m) => m[1]);
+    assert.equal(radios.length, 2, "只給兩顆：csv 與 xlsx 是同一個問題的兩種答案；jsonl 是給程式的，不放進畫面");
+    assert.deepEqual(radios.map((a) => (a.match(/value="([^"]*)"/) || [])[1]), ["csv", "xlsx"], "值＝上游 format 的字面");
+    assert.match(radios[0], /\bchecked\b/, "預設要對回 product 的 Query(default=\"csv\")");
+    assert.ok(radios.every((a) => /\bjs-export-format\b/.test(a)), "值載體要有 hook class");
+    assert.ok(!/data-toast/.test(group[0]), "值載體不得掛 data-toast（成敗由下載鈕演）");
+    assert.ok(!/data-(capability|tenant-feature|tenant-role|platform-role)=/.test(group[0]), "唯讀匯出不宣告授權軸");
+    // §4：一組 radio 沒有單一 for 可掛 ⇒ 浮空標題給 id ＋ 容器 radiogroup ＋ aria-labelledby
+    assert.match(group[0], /role="radiogroup"[^>]*aria-labelledby="exportFormatLabel"|aria-labelledby="exportFormatLabel"[^>]*role="radiogroup"/,
+        "這一組要報得出「這組在問什麼」");
+    // 代價寫在挑之前（§3-2）：多出來的三張表要接在 xlsx 那一顆上，不是只放在頁尾
+    assert.match(radios[1], /aria-describedby="exportFormatHint"/, "「完整明細」要接上那句代價提示");
+    assert.match(dist, /id="exportFormatHint"/, "代價提示要真的渲染得出來");
 });
 
 test("§4/§6 4-2 詳情：設定欄是「有值 vs 整格不存在」，合規兩欄有值才出現", () => {

@@ -66,8 +66,8 @@
                         <div class="td">{{ conversation.intent }}</div>
                     </div>
                     {# 「這一輪是怎麼回答的」四欄。前三欄的值是**上游的字面**、不另發明詞彙：
-                         · 答案來源＝`chat_logs.answer_source`（`qa_direct` ／ NULL＝正常生成）。
-                           ⚠️ **NULL 那一側目前沒有字面**，「模型生成」是切版對後端提的要求（同 4-1 的篩選）。
+                         · 答案來源＝`chat_logs.answer_source`（DB 只有 `qa_direct` 與 NULL＝正常生成；
+                           product 的 `list_history`／`export_history` 對 NULL 那一側取的查詢字面是 `generated`）。
                          · 對話模式（傳統／Agent）**上游沒有這一欄**：`chat_logs` 查不到 chat_mode 之類的欄位，
                            而使用者要判斷「為什麼這一輪有工具軌跡、那一輪沒有」就得知道它。這一格是切版
                            對後端提的要求（§4：不等資料齊了才畫）——落庫之前 React 端不渲染它。
