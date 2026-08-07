@@ -50,8 +50,11 @@
 ] %}
 
 <div class="upload-card-list">
+    {# `title` 用 `card.title`（給人看的名字：Excel／PDF／WORD／Image），不用 `card.type`——
+         後者是 React 拿去組路由參數的機器識別字，渲染成「上傳excel」與卡面的「Excel」、
+         與英譯的「Upload Excel」三邊都對不上，而且 type 一改名繁中會靜默漂走、英譯不動。 #}
     {% for card in uploadCards %}
-    <a href="{{ card.href }}" class="upload-card" data-type="{{ card.type }}" title="上傳{{ card.type }}" data-i18n-title="{{ card.titleKey }}">
+    <a href="{{ card.href }}" class="upload-card" data-type="{{ card.type }}" title="上傳{{ card.title }}" data-i18n-title="{{ card.titleKey }}">
         <div class="upload-content">
             <div class="upload-header">
                 <img src="./images/{{ card.icon }}" width="60" height="76" decoding="async" alt="{{ card.iconAlt }}" class="upload-icon" />

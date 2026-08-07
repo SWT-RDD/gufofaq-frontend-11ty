@@ -382,7 +382,11 @@ permalink: 5-2_conversationSettings.html
      不用「顯示但標示不生效」——那只是把問題描述出來，使用者照樣填得下去、存得起來，永遠不會被執行。 #}
 <div class="tab-content" data-capability="settings:write" id="panelGeneration" style="display: none;">
     <div class="block">
-        <div class="flex-row flex-wrap gap-16">
+        <span class="control-label" id="reasoningGroupMain-label" data-i18n="settings.reasoningGroupMain">主回答</span>
+        {# §4 逐字點名的那一組：本面板同時可見六組「模型＋思考深度」，五個分組都收進了
+             role="group"＋aria-labelledby，只有主回答這一組沒有——於是同頁每一顆 select 的
+             可及名稱都叫「模型」。形狀與下面五組逐字相同。 #}
+        <div class="flex-row flex-wrap gap-16" role="group" aria-labelledby="reasoningGroupMain-label">
             <div class="form-group col-6-md col-12-sm">
                 <div class="label"><label for="genModel" class="control-label" data-i18n="settings.modelName">模型</label></div>
                 <div class="field">

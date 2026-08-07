@@ -47,8 +47,11 @@
                                 <label for="fromLogId" class="control-label required" data-i18n="regression.fromLogLogId">問答紀錄編號</label>
                             </div>
                             <div class="field">
-                                <input type="text" id="fromLogId" class="form-control" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" aria-describedby="fromLogIdHint" required>
-                                <p id="fromLogIdHint" class="text-gray" data-i18n="regression.fromLogNeedsHistory">在「歷史紀錄」頁每一列的對話編號就是它。這支端點除了設定權限，另需「問答紀錄」權限——它讀的是提問、答案與來源文件名。</p>
+                                {# 值交給 React 讀去送 API 的**整數**欄（正本 regression.py 的 `CaseFromLogIn.log_id: int`）⇒
+                                     §4 三件套：type=number ＋ min/step ＋ 可見區間（下面那句 hint 已接上 aria-describedby）。
+                                     寫成 type=text 時打錯一個字就是 NaN、序列化成 JSON 是 null。上游無上限故不寫 max。 #}
+                                <input type="number" min="1" step="1" id="fromLogId" class="form-control js-from-log-id" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" aria-describedby="fromLogIdHint" required>
+                                <p id="fromLogIdHint" class="text-gray" data-i18n="regression.fromLogNeedsHistory">正整數；在「歷史紀錄」頁每一列的對話編號就是它。這支端點除了設定權限，另需「問答紀錄」權限——它讀的是提問、答案與來源文件名。</p>
                             </div>
                         </div>
                         <div class="form-group">
@@ -57,7 +60,11 @@
                             </div>
                             <div class="field" role="group" aria-labelledby="fromLogContextLabel">
                                 <label class="form-checkbox">
-                                    <input type="checkbox" aria-describedby="fromLogContextHint">
+                                    {# 值載體 ⇒ 只掛 hook class、不掛 data-toast（§5 矩陣②）；沒有 hook 的話 React 只能靠 DOM 位置認它。
+                                         **checked 是示範態的一部分**：下面結果區演的是「勾了帶入前置對話卻拿到 0 輪」，
+                                         那句紅字在上游只有 `include_context=true` 時才會出現（regression.py 的 `_context_note`
+                                         只在 `if requested:` 那一支寫它）——沒勾卻印出那句話，畫面同時說兩件互斥的事。 #}
+                                    <input type="checkbox" class="js-from-log-include-context" aria-describedby="fromLogContextHint" checked>
                                     <span data-i18n="regression.fromLogIncludeContextOn">沿著這則問答的前置鏈結，把整段對話一起帶成案例的前置輪</span>
                                 </label>
                                 <p id="fromLogContextHint" class="text-gray" data-i18n="regression.fromLogContextCost">預設不帶。每一輪前置對話在每一次執行都是一次真的問答（打一次 chatbot、扣一次問答額度）。超過上限時整筆擋下、不截成最近幾輪——截斷之後案例看起來完整，實際上少了最前面那幾輪脈絡。</p>

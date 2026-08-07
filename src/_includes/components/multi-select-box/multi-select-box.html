@@ -3,6 +3,9 @@
      此處依其產生的 markup 結構以 njk set fields + for 靜態化。
      左欄「select.multiSelect」重用 ui/multi-select 既有 class 命名（由已登記的 ui/multi-select/multi-select.js 於 DOMContentLoaded 增強成 tag 多選 UI）；
      左右兩欄的 form-group/label/field 結構沿用 ui/form-control 既有寫法。
+     `.date-error` 是**凍結前端的業務掛點**（`GufoFAQ_Frontend_New/js/columnSelect_excel.js:275/278`
+     的 `.show()`／`.hide()`），全站零樣式、零 js——切版改由 `.form-group:has(.error)` 揭示，
+     掛點原樣保留（§5 轉換契約，不是無主 class；沒有這一句它長得就像 §4 死法②）。
      槽目錄走唯一正本 ui/field-slot-catalog（§2 的 {% from … import %}）；使用頁另外提供
      `columnOptions`（來源欄位選項，全槽共用一份）與 `fieldExtras`（以 key 查的差異：預選值／
      提示文字／預覽值／格式警告／額外選項），見 §3-2/§6。本元件不自帶任何槽清單。 #}
@@ -30,7 +33,7 @@
                             {% for option in columnOptions %}
                             <option value="{{ option.value }}"{% if x.selected == option.value %} selected{% endif %}>{{ option.label }}</option>
                             {% endfor %}
-                            {% if x.extraOption %}<option value="4">{{ x.extraOption }}</option>{% endif %}
+                            {# value 從陣列推導（§6 不烤字面量）：它是「來源欄位的下一個索引」，使用頁多列一欄就會與烤死的 4 撞值，而且是靜默的。 #}{% if x.extraOption %}<option value="{{ columnOptions.length }}">{{ x.extraOption }}</option>{% endif %}
                         </select>
                     </div>
                 </div>
@@ -57,7 +60,7 @@
                             {% for option in columnOptions %}
                             <option value="{{ option.value }}"{% if x.selected == option.value %} selected{% endif %}>{{ option.label }}</option>
                             {% endfor %}
-                            {% if x.extraOption %}<option value="4">{{ x.extraOption }}</option>{% endif %}
+                            {# value 從陣列推導（§6 不烤字面量）：它是「來源欄位的下一個索引」，使用頁多列一欄就會與烤死的 4 撞值，而且是靜默的。 #}{% if x.extraOption %}<option value="{{ columnOptions.length }}">{{ x.extraOption }}</option>{% endif %}
                         </select>
                     </div>
                 </div>
