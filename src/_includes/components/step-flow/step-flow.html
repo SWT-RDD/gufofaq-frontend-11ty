@@ -21,6 +21,18 @@
      `is-depth-4` 這種未定義的 class 只會靜默不縮排，所以夾在模板裡而不是靠資料自律。
      skill 節點另有 skill/version/iterations/error 明細列——後端送什麼，這裡就要看得見；
      刻意**不**收工具參數與結果原文（後端也不送，那是洩漏面）。
+   **時間的取整規則（全站唯一一份，使用頁不要各自另發明）**：時間欄與摘要的三個時間值一律只寫
+     `formatMs` 產得出來的字串——saas `components/StepFlow/StepFlow.tsx` 的
+     `ms >= 1000 ? (ms / 1000).toFixed(1) + "s" : Math.round(ms) + "ms"`：**≥1s 是一位小數、
+     四捨五入**（4,096ms → 4.1s、3,340ms → 3.3s、1,784ms → 1.8s、2,140ms → 2.1s），<1s 是整數毫秒。
+     `1.95s` 這種兩位小數是它產不出來的形狀。示範資料的摘要要能從節點推導（§6）：**延遲**＝已跑過
+     節點的耗時和、**TTFT**＝答案節點（`respond_generate`／`respond_no_answer`）的起點＝它之前那幾站
+     的和；兩個都先加成毫秒、再套同一條規則取整，寫進使用頁註解時要把式子與母體一起寫出來。
+   ⚠️ **時間欄是切版對 React 端提的要求**：這裡的 `{{ node.time }}` 每一列都印得出來，而 React 端的
+     `durations` 只收 `status === "completed" && s.ts`、迴圈又從第二筆起算（`for (let i = 1; …)`）
+     ⇒ **failed 節點與第一個 completed 節點恆空白**。那不是「上游沒有這個數字」：GufoRAG chatbot
+     `models/chat.py` 的 `step_event_data` 對每一顆事件都寫 `timestamp`，failed 那一顆照寫。
+     要補的是 React 那一側，不是把切版示範改成「畫不出來就別寫」（切版是正本）。
    QA 直答判定（S6）：上游**每一輪都送一筆**判定，未命中那半也送，故節點另收五個鍵（值一律
      照抄 `qa_direct.py` 的常數，不另發明詞彙）：
        decision —— hit／no_exact_and_judge_rejected／below_score_floor／reconstruct_failed／
@@ -70,9 +82,12 @@
     { label: "輸出合規檢查", state: "pending", time: "" }
 ] %}
 {# 整體執行摘要：與 stepFlowNodes 同型的可覆寫資料（來自 chat_room chunk 的既有欄），使用頁換主題時
-     連同節點一起覆寫才不會自打架（§6）；未設用內建示範。缺欄由 React 端不顯示，靜態示範一律備齊。 #}
+     連同節點一起覆寫才不會自打架（§6）；未設用內建示範。缺欄由 React 端不顯示，靜態示範一律備齊。
+   內建示範的兩個時間值照上面那條取整規則推導：ttft ＝ 生成答案這一站的起點
+     ＝ 8＋18＋12＋340＋1,200＋210 ＝ 1,788ms ⇒ **1.8s**（1.788 → 1.8）；
+     延遲 2.4s 是這一輪到目前為止的經過時間（生成答案仍是 running，故只要求 > 1,788ms）。 #}
 {% set stepFlowSummaryData = stepFlowSummary or {
-    tokens: "1,284", latency: "2.4s", ttft: "1.9s", results: "8", model: "openai:gpt-4o-mini"
+    tokens: "1,284", latency: "2.4s", ttft: "1.8s", results: "8", model: "openai:gpt-4o-mini"
 } %}
 {# 進度序號與總數只數正典節點（無 depth 者），巢狀子步驟不計入（見檔頭）。
      已執行＝completed/running/failed；skipped 是未走的分支、pending 尚未到，都不算。

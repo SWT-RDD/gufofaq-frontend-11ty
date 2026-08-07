@@ -139,12 +139,13 @@ permalink: 4-2_qaHistory_detail.html
     { label: "輸出合規檢查", state: "completed", time: "24ms" }
 ] %}
 {# 摘要是節點的衍生值（§6）：延遲＝十站耗時總和 8＋14＋12＋340＋1200＋210＋2100＋180＋8＋24
-     ＝ 4,096ms ⇒ 4.2s；TTFT 從同一個起點算到第一個回答 token（chatbot `routes/chat.py` 的
-     `_ttft_ms`），生成答案的起點是前六站的和 1,784ms ⇒ 1.9s。補上前兩站（22ms）之後兩個數字
-     的位數都沒有變，故沿用。 #}
+     ＝ 4,096ms ⇒ **4.1s**；TTFT 從同一個起點算到第一個回答 token（chatbot `routes/chat.py` 的
+     `_ttft_ms`），生成答案的起點是前六站的和 8＋14＋12＋340＋1200＋210 ＝ 1,784ms ⇒ **1.8s**。
+     取整規則只有一份、寫在 step-flow 檔頭（`formatMs`：≥1s 一位小數四捨五入）：4.096 → 4.1、
+     1.784 → 1.8。前一版寫 4.2s／1.9s，兩個都是把同一個毫秒數往上多進了一格。 #}
 {% set stepFlowSummary = {
     tokens: "1,284", tokensIn: "980", tokensOut: "304",
-    latency: "4.2s", ttft: "1.9s", results: "8", model: "openai:gpt-4o-mini"
+    latency: "4.1s", ttft: "1.8s", results: "8", model: "openai:gpt-4o-mini"
 } %}
 {% set stepFlowTraceShown = 200 %}
 {% set stepFlowTraceTotal = 231 %}

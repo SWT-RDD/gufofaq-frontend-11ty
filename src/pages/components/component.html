@@ -742,10 +742,13 @@ bodyClass: guideline-page
                 { label: "輸出合規檢查", state: "skipped", time: "" }
             ] %}
             {# 摘要是節點的衍生值（§6）：延遲＝已跑過的七站總和 9＋240＋11＋320＋1400＋160＋1200
-                 ＝ 3,340ms ⇒ 3.4s（skipped 那三站不計，本輪它們沒跑）；TTFT 算到第一個回答 token，
-                 而生成從前六站之後才開始 ＝ 2,140ms ⇒ 2.2s。原本寫 1.9s／520ms，兩個都比自己的節點還早。 #}
+                 ＝ 3,340ms ⇒ **3.3s**（skipped 那三站不計，本輪它們沒跑）；TTFT 算到第一個回答 token，
+                 而生成從前六站之後才開始 ＝ 9＋240＋11＋320＋1400＋160 ＝ 2,140ms ⇒ **2.1s**。
+                 取整規則只有一份、寫在 step-flow 檔頭（`formatMs`：≥1s 一位小數四捨五入）：
+                 3.34 → 3.3、2.14 → 2.1。原本寫 1.9s／520ms，兩個都比自己的節點還早；
+                 上一輪改成 3.4s／2.2s，數字對了但取整往上多進一格。 #}
             {% set stepFlowSummary = {
-                tokens: "742", latency: "3.4s", ttft: "2.2s", results: "3", model: "openai:gpt-4o-mini"
+                tokens: "742", latency: "3.3s", ttft: "2.1s", results: "3", model: "openai:gpt-4o-mini"
             } %}
             {# 軌跡截斷態（S3）：真實頁不會常駐它（只有超過 200／50 上限的那幾輪才有），
                  所以這裡是全站唯一看得到「已顯示 N／共 M 筆」與那顆「載入完整軌跡」的地方（§5，
@@ -797,12 +800,16 @@ bodyClass: guideline-page
                   decidedBy: "llm_judge", floor: "3（llm_reranker 的 1–5 尺）" },
                 { label: "QA 直答", state: "completed", time: "15ms", decision: "some_future_decision", entry: "pre_graph", poolSize: "16" }
             ] %}
-            {# 摘要在這一份是**目錄的表頭**、不是某一輪的觀測：八筆判定不是同一輪發生的，所以
+            {# 摘要在這一份是**目錄的表頭**、不是某一輪的觀測：**九筆**判定不是同一輪發生的，所以
                  「檢索」只能是 0——這份示範一個檢索節點都沒有（原本寫 16，那是候選池大小 `poolSize`，
                  與「檢索回幾筆片段」是兩個不同的數，混用會讓人以為這一輪檢索過）。
-                 延遲 0.6s ≥ 八筆耗時總和 575ms，仍然對得上。 #}
+                 延遲 600ms ≥ 九筆耗時總和 18＋12＋240＋26＋9＋4＋31＋220＋15 ＝ 575ms，仍然對得上。
+                 **量詞與母體要對上**：上一版兩處都寫「八筆」，而 575 本來就是**九筆**的和
+                 （`some_future_decision` 是第 9 筆）——數字對、量詞錯。
+                 另：延遲寫成 `600ms` 不是 `0.6s`——取整規則見 step-flow 檔頭，`formatMs` 只在 ≥1s
+                 才換成秒，`0.6s` 是它產不出來的形狀。 #}
             {% set stepFlowSummary = {
-                tokens: "318", latency: "0.6s", ttft: "210ms", results: "0", model: "openai:gpt-4o-mini"
+                tokens: "318", latency: "600ms", ttft: "210ms", results: "0", model: "openai:gpt-4o-mini"
             } %}
             {# 這一份不演軌跡截斷（上一份演了）；成對參數要一起清掉，否則沿用上一次的值（§2） #}
             {% set stepFlowTraceShown = "" %}

@@ -1942,60 +1942,167 @@ test("§8 css / js 的每一個引用都帶 ?v=；images 刻意不帶（改圖�
     // dist/images 的 47 張圖、main.css 裡的 url(../images/…)、toast.js/pagination*.js 執行期
     // 組出的圖片路徑全都沒有版號。條文與實作分岔時，**條文縮小、規則寫成測試**（放著不管
     // 等於一條沒有任何保證的規範）。圖片不蓋章是決定不是漏做：失效窗口只有 max-age 600 秒。
+    //
+    // round41：舊規則寫成 /(?:href|src)="(\.\/(?:css|js)\/[^"]+)"/——那不是「css/js 的白名單」，
+    // 是「雙引號 ＋ ./ 前綴 ＋ css|js 目錄名」的白名單。實測四種寫法全部靜默通過：單引號、
+    // src="/js/analytics.js"（絕對路徑）、src="./sw.js"（根層的新資產族）、srcset="…?v=…"
+    // （不是 href/src 的屬性）。而 hash-assets.mjs 的 html.split(`"${asset}"`) 共用同一組形狀
+    // 假設，所以那幾種寫法連章都蓋不到——測試看不到、腳本也蓋不到，完全靜默。
+    // 現在是真的白名單：不管引號、不管屬性名、不管前綴，凡是站內資產路徑一律依**副檔名**分流，
+    // 而且沒被分類過的副檔名一律當違規——新資產族（.woff2／.wasm／.json…）必須先被決定
+    // 「要不要蓋章」，不能因為規則沒寫到它就默默溜過去。
     const V = /\?v=[a-f0-9]{8}$/;
-    // 白名單型規則：這兩類的每一個引用都必須有版號（黑名單「找沒有版號的」會漏掉新形狀）
+    const STAMPED = new Set(["css", "js", "mjs"]);                                            // 必須帶版號
+    const BARE = new Set(["png", "jpg", "jpeg", "gif", "svg", "webp", "avif", "ico", "html"]); // 一律不帶
+    // 把一份 HTML 裡「所有指向站內資產的路徑」撈出來：任何屬性、任一種引號，
+    // 值再切空白與逗號（srcset 是 "a.png 1x, b.png 2x"）。
+    const assetRefs = function* (html) {
+        for (const m of html.matchAll(/\s[a-zA-Z][\w:-]*\s*=\s*(?:"([^"]*)"|'([^']*)')/g)) {
+            const val = m[1] !== undefined ? m[1] : m[2];
+            for (const raw of val.split(/[\s,]+/)) {
+                const tok = raw.replace(/^url\(/i, "").replace(/\)$/, "").replace(/^["']|["']$/g, "");
+                if (/:\/\//.test(tok) || tok.startsWith("//")) continue;   // 外站資產不歸這條管
+                const ext = ((tok.split("?")[0].match(/\.([a-z0-9]{1,6})$/i) || [])[1] || "").toLowerCase();
+                // 沒有副檔名的一律不是資產引用（時區 "Asia/Taipei"、散文的 "3000次/日"、"image/x-icon"）
+                if (!ext) continue;
+                // 認得的副檔名一律要管（連 src="analytics.js" 這種同層寫法都算）；
+                // 不認得的只在「長得像路徑」時才管，才不會把 accept=".pdf,.doc" 與
+                // data-filename="常見問題.pdf" 這種「副檔名清單／檔名文字」誤當成引用。
+                if (!STAMPED.has(ext) && !BARE.has(ext) && !/^(?:\.{1,2}\/|\/)/.test(tok)) continue;
+                yield { tok, ext };
+            }
+        }
+    };
     const scan = (html, f = "<probe>") => {
         const out = [];
-        for (const m of html.matchAll(/(?:href|src)="(\.\/(?:css|js)\/[^"]+)"/g))
-            if (!V.test(m[1])) out.push(`${f}  ${m[1]} 沒有 ?v=`);
-        // 反方向：圖片一律不帶。半套的擴大（HTML 的 img 蓋了、CSS url() 沒蓋）比完全不蓋更糟——
-        // 看起來有做，實際上換圖之後兩條路徑各拿到一個版本。
-        for (const m of html.matchAll(/(?:href|src)="(\.\/images\/[^"]+)"/g))
-            if (/\?v=/.test(m[1])) out.push(`${f}  ${m[1]} 不該有 ?v=（§8：圖片走改圖必改檔名）`);
+        for (const { tok, ext } of assetRefs(html)) {
+            if (STAMPED.has(ext)) {
+                if (!V.test(tok)) out.push(`${f}  ${tok} 沒有 ?v=`);
+            } else if (BARE.has(ext)) {
+                // 反方向：圖片一律不帶。半套的擴大（HTML 的 img 蓋了、CSS url() 沒蓋）比完全不蓋更糟——
+                // 看起來有做，實際上換圖之後兩條路徑各拿到一個版本。
+                if (/\?v=/.test(tok)) out.push(`${f}  ${tok} 不該有 ?v=（§8：圖片走改圖必改檔名）`);
+            } else {
+                out.push(`${f}  ${tok}：副檔名 .${ext} 還沒被 §8 分類 —— 請把它放進 STAMPED 或 BARE，別讓新資產族默默溜過`);
+            }
+        }
         return out;
     };
     const hits = [];
+    const blind = [];
     let refs = 0, imgs = 0;
     for (const f of distHtml) {
         const html = read(`dist/${f}`);
-        refs += (html.match(/(?:href|src)="\.\/(?:css|js)\//g) || []).length;
-        imgs += (html.match(/(?:href|src)="\.\/images\//g) || []).length;
+        let a = 0, i = 0;
+        for (const { ext } of assetRefs(html)) {
+            if (STAMPED.has(ext)) a++;
+            else if (BARE.has(ext) && ext !== "html") i++;
+        }
+        refs += a;
+        imgs += i;
+        if (a === 0 || i === 0) blind.push(`dist/${f}  css/js ${a} 個、圖片 ${i} 個`);
         hits.push(...scan(html, `dist/${f}`));
     }
-    // 空轉守門：兩個收集器任一被改壞（改成單引號、改成絕對路徑），零命中照樣全綠
-    assert.ok(refs > 100, `全站只收到 ${refs} 個 css/js 引用 —— 收集器壞了，這條在空轉`);
-    assert.ok(imgs > 100, `全站只收到 ${imgs} 個圖片引用 —— 收集器壞了，這條在空轉`);
+    // 空轉守門（round41 實測母體 refs=1512／imgs=258，而舊門檻只寫 >100——
+    // 收集器掉 93%／61% 仍然全綠，等於沒有守門）。改成兩道綁得住的：
+    //   ① 結構：每一頁都必須各收到 ≥1 個 css/js 與 ≥1 個圖片引用（每頁都有 main.css 與 favico.ico）。
+    //      收集器的形狀假設一縮回去，42 頁會同時掉到 0，當場點名。
+    //   ② 棘輪：總數不得低於上一輪。真的變少（刪圖／刪頁）就連同常數一起調——那是一次有意識的決定。
+    const PREV = { refs: 1512, imgs: 258 };
+    assert.equal(blind.length, 0, `這幾頁一個 css/js 或圖片引用都沒收到（收集器的形狀假設又縮回去了？）：\n${fail(blind)}`);
+    assert.ok(refs >= PREV.refs, `css/js 引用 這一輪 ${refs}（上一輪 ${PREV.refs}）—— 掉了就是收集器壞了；真的刪了頁面請一併把 PREV.refs 調下來`);
+    assert.ok(imgs >= PREV.imgs, `圖片引用 這一輪 ${imgs}（上一輪 ${PREV.imgs}）—— 掉了就是收集器壞了；真的刪了圖請一併把 PREV.imgs 調下來`);
     probe("§8 資產版號", scan,
         ['<link rel="stylesheet" href="./css/main.css">',
             '<script src="./js/toast.js"></script>',
-            '<img src="./images/icon_owl.png?v=0a1b2c3d">'],
+            "<link rel='stylesheet' href='./css/main.css'>",                 // 單引號
+            '<script src="/js/analytics.js"></script>',                      // 絕對路徑
+            '<script src="./sw.js"></script>',                               // 根層的新資產族
+            '<script src="analytics.js"></script>',                          // 同層、無前綴
+            '<img srcset="./images/x.png?v=0a1b2c3d 1x">',                   // 不是 href/src 的屬性
+            '<img src="./images/icon_owl.png?v=0a1b2c3d">',
+            '<link rel="preload" href="./fonts/inter.woff2">'],              // 沒分類過的副檔名
         ['<link rel="stylesheet" href="./css/main.css?v=deadbeef">',
-            '<script src="./js/toast.js?v=0a1b2c3d"></script>',
-            '<img src="./images/icon_owl.png">']);
+            "<script src='./js/toast.js?v=0a1b2c3d'></script>",
+            '<img src="./images/icon_owl.png">',
+            '<img srcset="./images/a.png 1x, ./images/b.png 2x">',
+            '<a href="./index.html">目錄</a>',
+            '<input type="file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg">',  // 副檔名清單不是引用
+            '<span data-filename="常見問題.pdf">x</span>',                    // 檔名文字不是引用
+            '<option value="https://img.example.gov.tw/faq/entry-visa.png">x</option>',
+            '<script src="https://cdn.example.com/x.js"></script>',          // 外站資產不歸這條管
+            '<meta name="viewport" content="width=device-width, initial-scale=1.0">',
+            '<div data-tz="Asia/Taipei"></div>']);
     assert.equal(hits.length, 0, `資產版號不對：\n${fail(hits)}`);
 });
 
-test("§8 HTML 上的 ?v= 等於那支檔案**當下**的內容雜湊（蓋章順序契約）", () => {
+test("§8 dist 裡每一個 ?v= 都等於它所指檔案**當下**的內容雜湊（蓋章順序契約）", () => {
     // hash-assets.mjs 有一條隱性順序契約：**被引用者先蓋章、引用者後算 hash**——i18n 字典的
     // 版號要先寫進 lang-toggle.js，才輪得到算 lang-toggle.js 自己的 hash。順序反過來時
     // dist 仍然每一支都有 ?v=（上一條測試照樣綠），但 lang-toggle.js 的版號指的是「還沒被
     // 改寫過的那一版內容」，改語言字典就不會讓瀏覽器重抓那支 js。比對內容雜湊才抓得到。
+    //
+    // round41：這條原本只掃 dist/*.html，而 HTML 上只有 ./css/ 與 ./js/——唯一「版號住在
+    // 別支資產的內文裡」的 ./i18n/en.json?v= 住在 dist/js/lang-toggle.js，而它正是這條順序契約
+    // 唯一的當事人，卻只被另一條測試用 assert.match 驗了八位十六進位的**形狀、不比值**。
+    // 實測「順序對、來源錯」（把 en.json 的版號改成 deadbeef、再照正確順序重算 lang-toggle.js
+    // 自己的 hash）⇒ 三條測試沒有一條紅。現在射程改成 dist 的 html/js/css 全部，比的是值。
     const md5 = (p) => createHash("md5").update(readFileSync(p)).digest("hex").slice(0, 8);
-    const cmp = (asset, v) => (v === md5(`dist/${asset.slice(2)}`) ? null : `${asset}?v=${v} 對不上內容雜湊 ${md5(`dist/${asset.slice(2)}`)}`);
+    // 不綁 href/src、不綁引號、不綁 css|js 目錄：任何地方出現的 <站內路徑>?v=<8 位> 都要對得上
+    const VER = /((?:\.{1,2}\/|\/)[\w@./-]+?)\?v=([a-f0-9]{8})/g;
+    const scan = (text, f = "<probe>") => {
+        const hits = [], assets = [];
+        for (const m of text.matchAll(VER)) {
+            // 外站資產（https://cdn/x.js?v=… 與協定相對的 //cdn/x.js?v=…）不歸這條管
+            if (text[m.index - 1] === ":" || m[1].startsWith("//")) continue;
+            const asset = `./${m[1].replace(/^\.{0,2}\//, "")}`;
+            assets.push(asset);
+            const p = `dist/${asset.slice(2)}`;
+            if (!existsSync(p)) { hits.push(`${f}  ${asset}?v=${m[2]} 指向一支不存在的檔案`); continue; }
+            if (m[2] !== md5(p)) hits.push(`${f}  ${asset}?v=${m[2]} 對不上內容雜湊 ${md5(p)}`);
+        }
+        return { hits, assets };
+    };
+    const sources = [
+        ...distHtml.map((f) => `dist/${f}`),
+        ...readdirSync("dist/js").filter((f) => f.endsWith(".js")).map((f) => `dist/js/${f}`),
+        ...readdirSync("dist/css").filter((f) => f.endsWith(".css")).map((f) => `dist/css/${f}`),
+    ];
     const seen = new Set();
     const bad = [];
-    for (const f of distHtml)
-        for (const m of read(`dist/${f}`).matchAll(/(?:href|src)="(\.\/(?:css|js)\/[^"?]+)\?v=([a-f0-9]{8})"/g)) {
-            seen.add(m[1]);
-            const msg = cmp(m[1], m[2]);
-            if (msg) bad.push(`dist/${f}  ${msg}`);
-        }
-    assert.ok(seen.size > 5, `只比對到 ${seen.size} 支資產 —— 這條在空轉`);
-    for (const must of ["./css/main.css", "./js/lang-toggle.js"])
+    for (const f of sources) {
+        const { hits, assets } = scan(read(f), f);
+        assets.forEach((a) => seen.add(a));
+        bad.push(...hits);
+    }
+    // 空轉守門：不是一個「掉 30/36 支還會綠」的整數，而是「dist 裡每一支可蓋章的資產都要被比對到」。
+    // 沒有任何 ?v= 指到某支資產＝它要嘛沒被引用（死資產），要嘛收集器又縮回只看 HTML 的 href/src。
+    const PREV_SEEN = 36;   // round41 實測（1 支 css ＋ 35 支 js；i18n 那支當時整個在射程外）
+    const mustCover = [
+        ...readdirSync("dist/css").filter((f) => f.endsWith(".css")).map((f) => `./css/${f}`),
+        ...readdirSync("dist/js").filter((f) => f.endsWith(".js")).map((f) => `./js/${f}`),
+        ...readdirSync("dist/i18n").filter((f) => f.endsWith(".json")).map((f) => `./i18n/${f}`),
+    ];
+    const uncovered = mustCover.filter((a) => !seen.has(a));
+    assert.equal(uncovered.length, 0,
+        `這幾支 dist 資產沒有任何一個 ?v= 指到它（沒被引用＝死資產，或收集器又縮小了射程）：\n${fail(uncovered)}`);
+    assert.ok(seen.size >= mustCover.length,
+        `這一輪只比對到 ${seen.size} 支資產（上一輪 ${PREV_SEEN}，dist 現有 ${mustCover.length} 支）—— 這條在空轉`);
+    // 這三支各自代表一種形狀：HTML 上的 css、HTML 上的 js、以及**住在 js 內文裡**的 i18n 字典
+    // （後者是順序契約唯一的當事人；readdir 撈到空清單時 mustCover 會靜靜縮水，這裡點名釘住）。
+    for (const must of ["./css/main.css", "./js/lang-toggle.js", "./i18n/en.json"])
         assert.ok(seen.has(must), `${must} 沒有被比對到 —— 它正是這條契約要保護的那一支`);
-    // 負控：比對函式認不出錯的版號就等於這條測試永遠會綠
-    probe("§8 版號＝內容雜湊", (s) => { const m = cmp("./css/main.css", s); return m ? [m] : []; },
-        ["deadbeef", "00000000"], [md5("dist/css/main.css")]);
+    // 負控：比對函式認不出錯的版號、或射程縮回「HTML 的 href/src」，這條測試就永遠會綠
+    probe("§8 版號＝內容雜湊", (s) => scan(s).hits,
+        ['<link rel="stylesheet" href="./css/main.css?v=deadbeef">',
+            "<link rel='stylesheet' href='./css/main.css?v=00000000'>",     // 單引號
+            '<script src="/js/lang-toggle.js?v=deadbeef"></script>',        // 絕對路徑
+            'fetch("./i18n/en.json?v=deadbeef")',                           // 版號住在 js 內文裡
+            'fetch("./i18n/nope.json?v=deadbeef")'],                        // 指向不存在的檔案
+        [`<link rel="stylesheet" href="./css/main.css?v=${md5("dist/css/main.css")}">`,
+            `fetch("./i18n/en.json?v=${md5("dist/i18n/en.json")}")`,
+            '<script src="https://cdn.example.com/x.js?v=deadbeef"></script>',   // 外站資產不歸這條管
+            '<script src="//cdn.example.com/x.js?v=deadbeef"></script>']);
     assert.equal(bad.length, 0, `蓋章順序壞了（版號指向舊內容）：\n${fail(bad)}`);
 });
 
@@ -4693,8 +4800,29 @@ test("§1-2 元件庫的節號從 00 起連續不重複，且 aside 目錄與 <s
         return toc.length === dom.length && toc.every((v, i) => v === dom[i])
             ? [] : [`aside 目錄 [${toc.join(", ")}]\n≠ DOM 順序 [${dom.join(", ")}]`];
     };
+    // round41：上面兩條規則都只看「掃得到的那些節號」，沒有人把節號的**數量**跟 <section> 對起來。
+    // 實測拿掉末節的 <span>26</span> ⇒ numHits=0／tocVsDom=0，全綠；新增一整節（DOM ＋ aside 目錄
+    // 都補齊）但 <h2> 忘了寫節號 ⇒ 同樣全綠。少一個號碼在這裡是完全靜默的，而號碼正是別的檔案
+    // 用來指路的東西。這條把「每一節剛好一個節號、且沒有節號流落在 section 外面」釘死。
+    const numPerSection = (html) => {
+        const out = [];
+        const secs = [...html.matchAll(/<section id="([\w-]+)"([\s\S]*?)(?=<section id="|$)/g)];
+        for (const [, id, body] of secs) {
+            const n = (body.match(/<h2 class="section-title"><span>\d+<\/span>/g) || []).length;
+            if (n !== 1) out.push(`<section id="${id}"> 有 ${n} 個節號（每節剛好一個；沒號碼＝所有指向它的檔頭都會失準）`);
+        }
+        if (nums(html).length !== secs.length)
+            out.push(`全頁 ${nums(html).length} 個節號 ≠ ${secs.length} 個 <section>（有節號住在 section 外面？）`);
+        return out;
+    };
     const gallery = distDoc("component.html");
-    assert.ok(nums(gallery).length >= 20, `只掃到 ${nums(gallery).length} 個節號 —— 這條測試在空轉`);
+    // 空轉守門：舊的 `nums >= 20` 對母體 27 毫無約束（掉七節仍然全綠）。改成棘輪——
+    // 節只會往上長；真的刪節就連同常數一起調下來，那是一次有意識的決定。
+    // 而「節號數 = 節數」由 numPerSection 釘住，所以 nums 的正則腐掉時 27 節會同時報 0 個節號。
+    const PREV_SECTIONS = 27;   // round41 實測
+    const sectionCount = (gallery.match(/<section id="[\w-]+"/g) || []).length;
+    assert.ok(sectionCount >= PREV_SECTIONS,
+        `元件庫這一輪只掃到 ${sectionCount} 節（上一輪 ${PREV_SECTIONS}）—— 少了就是選擇器腐了；真的刪節請一併調 PREV_SECTIONS`);
     probe("元件庫節號", numHits, [
         '<h2 class="section-title"><span>00</span><span>a</span></h2><h2 class="section-title"><span>02</span><span>b</span></h2>',   // 跳號
         '<h2 class="section-title"><span>00</span><span>a</span></h2><h2 class="section-title"><span>00</span><span>b</span></h2>',   // 重複
@@ -4704,8 +4832,14 @@ test("§1-2 元件庫的節號從 00 起連續不重複，且 aside 目錄與 <s
         '<a class="aside-link" href="#a">A</a><a class="aside-link" href="#b">B</a><section id="b"></section><section id="a"></section>', // 順序不同
         '<a class="aside-link" href="#a">A</a><section id="a"></section><section id="b"></section>',                                      // DOM 多一節
     ], ['<a class="aside-link" href="#a">A</a><a class="aside-link" href="#b">B</a><section id="a"></section><section id="b"></section>']);
+    probe("元件庫每節剛好一個節號", numPerSection, [
+        '<section id="a"><h2 class="section-title"><span>00</span><span>x</span></h2></section><section id="b"><h2 class="section-title"><span>y</span></h2></section>', // 末節被拿掉節號
+        '<section id="a"><h2 class="section-title"><span>00</span><span>x</span></h2></section><section id="b"></section>',                                             // 新增的節沒有標題
+        '<h2 class="section-title"><span>00</span><span>x</span></h2><section id="a"><h2 class="section-title"><span>01</span><span>y</span></h2></section>',            // 節號流落在 section 外
+    ], ['<section id="a"><h2 class="section-title"><span>00</span><span>x</span></h2></section><section id="b"><h2 class="section-title"><span>01</span><span>y</span></h2></section>']);
     assert.equal(numHits(gallery).length, 0, `元件庫節號：\n${fail(numHits(gallery))}`);
     assert.equal(tocVsDom(gallery).length, 0, `元件庫 aside 目錄與 DOM：\n${fail(tocVsDom(gallery))}`);
+    assert.equal(numPerSection(gallery).length, 0, `元件庫節號與 <section> 對不起來：\n${fail(numPerSection(gallery))}`);
 });
 
 test("§4-2 英譯字串不得含全形標點（那是繁中的字身，混在英文句子裡會露出來）", () => {

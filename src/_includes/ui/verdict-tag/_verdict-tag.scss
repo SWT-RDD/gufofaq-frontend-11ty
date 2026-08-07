@@ -1,21 +1,31 @@
 // 判定標記：一顆語意小標。
 //
-// 純樣式元件、**無 html**，故 markup 契約逐字寫在這裡（GUIDELINE §1-2）。**三型**，抄的時候要分清楚：
+// 純樣式元件、**無 html**，故 markup 契約逐字寫在這裡（GUIDELINE §1-2）。
+// **別把它記成「N 型」**——那是兩條互相獨立的軸，數型一定會漏掉組合（前一版寫「三型」，
+// 就收不下 2-2-5 那種「class 寫死 ＋ key 插值」的寫法）：
 //
-//   ① 文字型（字面是 chrome）：class 與 key 都寫死，**一定帶 data-i18n**
+//   軸一 · 字面是什麼，決定掛不掛 `data-i18n`
+//     字面是 chrome（判定詞、狀態詞）⇒ **一定帶**；字面是值（筆數、政策代碼、上游回的判定字串）⇒ **一定不帶**。
+//   軸二 · class 與 key **各自**可以寫死或由頁面資料插值，兩者互不牽連。
+//
+// 四種組合全站都有實例，抄的時候對號入座：
+//
+//   ① class 寫死 ＋ key 寫死（字面是 chrome）
 //     <span class="verdict-tag is-pass" data-i18n="regression.verdictPass">通過</span>
 //
-//   ② 資料型（內容是值：筆數、政策代碼、上游回的判定字串）：刻意不帶 data-i18n；
-//      class 可以寫死、也可以由頁面資料給
+//   ② 無 key（字面是值）：class 可以寫死、也可以由頁面資料給
 //     <span class="verdict-tag is-warn">{{ notComparedRows.length }}</span>
 //     <span class="verdict-tag {{ bucket.tagClass }}">{{ bucket.count }}</span>
 //     <span class="verdict-tag is-fail">output_policy</span>
 //
-//   ③ 插值型（2-2-4／2-2-5 的主力寫法）：**class 與 key 成對**由頁面資料供給，兩顆都要給
+//   ③ class 插值 ＋ key 插值（2-2-4／2-2-5 的主力寫法）：**兩顆成對**由頁面資料供給
 //     <span class="verdict-tag {{ row.diffClass }}" data-i18n="{{ row.diffKey }}">{{ row.diff }}</span>
 //     <span class="verdict-tag {{ run.statusClass }}" data-i18n="{{ run.statusKey }}">{{ run.statusLabel }}</span>
 //
-//     只給 class 不給 key，英文模式那一格就是繁中——而它落在表格裡、每一列都一樣，
+//   ④ class 寫死 ＋ key 插值（顏色固定、句子由資料挑；2-2-5「沒得比」那張表的原因欄）
+//     <span class="verdict-tag is-warn" data-i18n="{{ row.reasonKey }}">{{ row.reason }}</span>
+//
+//     ③ 那一種只給 class 不給 key，英文模式那一格就是繁中——而它落在表格裡、每一列都一樣，
 //     視覺指紋完全看不出來。頁面那份 `{% set %}` 資料裡兩個欄位要**同一筆同時存在**
 //     （`diffClass`＋`diffKey`、`statusClass`＋`statusKey`、`beforeClass`＋`beforeKey`…），
 //     加一種狀態就是加一對，不是加一顆。
@@ -46,12 +56,17 @@
 // （--on-accent／--on-warning），中性態用表面色配次要文字（GUIDELINE §4 對比度硬規則）。
 //
 // 住在哪一頁（雙向；判準＝`grep -rn 'class="verdict-tag' src`）——
-//   實例寫在這些檔：2-2-4_regressionSuites（型①③）、2-2-5_regressionRun（型①②③）、
-//     4-1_qaHistory（「QA 直答」徽章，型①）、4-2_qaHistory_detail（被什麼擋下，型①）、
-//     components/qa-detail-info（「QA 直答」，型①）、components/step-flow（QA 直答判定五態，型①
-//     ＋一顆兜底的 `{{ node.decision }}` 計數型）、component.html（4-2 合規兩欄的唯一可見處，型②）。
-//   渲染後含 `.verdict-tag` 的頁（反向）：2-2-1、2-2-3、2-2-4、2-2-5、3-4、4-1、4-2、component.html
-//     （2-2-1／2-2-3／3-4 是經由 components/step-flow 進去的）。
+//   實例寫在這些檔：2-2-4_regressionSuites（①③）、2-2-5_regressionRun（①②③④——全站唯一四種都齊的一頁）、
+//     4-1_qaHistory（「QA 直答」徽章，①）、4-2_qaHistory_detail（被什麼擋下——內容是上游的
+//     `blocked_by` 代碼、刻意無 key，故是**②不是①**）、components/qa-detail-info（「QA 直答」，①）、
+//     components/step-flow（QA 直答判定五態，① ＋一顆兜底的 `{{ node.decision }}`＝②：查表查不到的
+//     結論原樣輸出，那時字面是值）、component.html（4-2 合規兩欄的唯一可見處，②）。
+//   渲染後含 `.verdict-tag` 的頁（反向；判準＝`grep -rl 'class="verdict-tag' dist/*.html`）：
+//     2-2-1、2-2-3、2-2-4、2-2-5、3-4、4-1、4-2、component.html。
+//     ⚠️ 2-2-1／2-2-3／3-4 是**經由 components/step-flow** 進去的，而那顆徽章關在 `{% if node.decision %}`
+//     裡——「這一頁 include 了 step-flow」不等於「它渲染得出徽章」，判準是那份 `stepFlowNodes`
+//     有沒有帶 `decision`（2-2-1 吃元件內建示範、2-2-3 與 3-4 各自覆寫時都帶了）。
+//     所以改動任何一頁的 `stepFlowNodes` 都要回頭對這一行。
 .verdict-tag {
     display: inline-flex;
     align-items: center;

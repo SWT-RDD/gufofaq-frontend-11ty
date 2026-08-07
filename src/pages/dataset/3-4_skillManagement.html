@@ -33,7 +33,7 @@ permalink: 3-4_skillManagement.html
 
 {# 新增 skill：名稱（必填）＋用途說明（必填）＋新增鈕。細部設定（執行指令、工具白名單、
      迭代上限）在建立後於編輯器內完成——一次要填的欄位太多會讓建立這件事變得沉重。
-     四態 toast：成功／必填未填／名稱格式或重名／失敗。**這兩欄的守衛在 chatbot**：GufoRAG
+     四態 toast：成功／必填未填／名稱格式或重名／失敗。**這兩欄的守衛在 chatbot**：GufoRAG chatbot
      `app/services/skills.py` 的 `_validate_name` 有四道出口（markup、`MAX_SKILL_NAME_LEN`、
      `SKILL_NAME_RE` 格式、同租戶重名）——**空名走的是格式那一道**（`^[a-z0-9]+(-[a-z0-9]+)*$`
      不接受空字串），不是一道獨立的空值檢查；`_validate_description` 有三道（空值、長度、markup）。
@@ -152,25 +152,45 @@ permalink: 3-4_skillManagement.html
    ⚠️ **「檢索知識庫」是 skill 子樹的宿主節點，所以它一定跑過**：saas `apps/web/lib/stepFlow.ts` 的
      `SKILL_HOST_STEP_ID = "retrieve"`（＝這一站），註解逐字寫著「skill 一定是在工具節點裡被呼叫的」，
      `attachSkillSteps` 把 parent 為空或指不到人的 skill 步驟一律掛到它底下。
-     原本這一列標 `skipped` ＋ time 空白，底下卻掛著一棵 1.9s 的子樹——「這一站本輪沒有執行」
-     與「它底下執行了 1.9 秒」不可能同時成立（§6）。
-     改成 completed ＋ `1.95s`：子樹 1.9s ⊆ 父節點 1.95s，而正典節點的和
-     6 ＋ 10 ＋ 280 ＋ 1,950 ＋ 150 ＋ 260 ＝ 2,656ms ≤ 摘要的延遲 2.8s。
+     原本這一列標 `skipped` ＋ time 空白，底下卻掛著一棵跑了 1.8 秒的子樹——「這一站本輪沒有執行」
+     與「它底下執行了 1.8 秒」不可能同時成立（§6）。改成 completed。
+     **父子的包含關係是「掛在誰底下」給的，不是畫面上兩個數字給的**：skill 子樹掛在 retrieve 之下
+     ⇒ 這一站的耗時必須含得下整棵子樹。故 refund-flow 1,800ms ＜ retrieve 1,900ms，
+     而 refund-flow 直屬子步驟的和 240 ＋ 430 ＋ 95 ＝ 765ms（再往下 lookup-order 的 180ms ⊆ 它的 430ms）
+     也在 1,800ms 之內。前一版寫 `1.95s`，那是 `formatMs` 產不出來的形狀（見 step-flow 檔頭的取整規則：
+     ≥1s 一律一位小數），改為 1.9s；ttft／延遲隨之重算，見下方摘要那則註解。
+   ⚠️ **切版對 React 端提的要求（時間欄）**：本元件的時間欄是無條件輸出的 `{{ node.time }}`，
+     每一列都印得出來；而 saas `components/StepFlow/StepFlow.tsx` 的 `durations` 只收
+     `status === "completed" && s.ts`、迴圈又從第二筆起算（`for (let i = 1; …)`），所以 React 端
+     ① failed 節點恆空白（本頁的 `skill：refund-flow`）② 第一個 completed 節點恆空白（本頁的
+     「輸入合規檢查 6ms」）。兩格都不是「上游沒有這個數字」——GufoRAG chatbot `models/chat.py` 的
+     `step_event_data` 對每一顆事件都寫 `timestamp`，failed 那一顆照寫。要補的是 React 那一側
+     （時間欄要畫得出 failed 與首站），**不是把切版示範改成「反正畫不出來就別寫」**（切版是正本）。
+     在補上之前，這兩個數字只在切版看得到——所以上面那段父子包含的論證不建立在它們身上。
    同理 `verdict`：可回答性判定的值域是 chatbot `services/grounding.py` 的 `GroundingVerdict`，
      **只有 `generate` 與 `no_answer` 兩顆**（`insufficient` 不存在）。這一輪走誠實查無
      ⇒ `no_answer（素材不足以回答）`，而下面的節點列**只畫「誠實查無」、不畫「生成答案」**：
      saas `lib/stepFlow.ts` 是 `base.splice(i, 1, "respond_no_answer")`——deleteCount=1 ＝**取代**，
-     兩顆永不並存（該檔測試名逐字「誠實查無入圖、生成答案不在」）；而且 `respond_no_answer` 只在
+     兩顆永不並存（釘住它的測試不在那一支：名字逐字「誠實查無入圖、生成答案不在」的那條住在
+     saas `components/StepFlow/StepFlow.test.tsx`）；而且 `respond_no_answer` 只在
      `completed.has()` 為真時才進 base，所以它也不可能是 running。前一版把兩顆並排、還註解說
-     「是同一件事的兩個畫面」——那是替一個上游產不出來的狀態背書。 #}
+     「是同一件事的兩個畫面」——那是替一個上游產不出來的狀態背書。
+   ⚠️ **`error` 只能是上游送得出來的形狀**：`_record` 的 error 會經 `_drain_skill_steps` → STATUS chunk
+     → SSE 直達瀏覽器（不過輸出閘門），所以 GufoRAG chatbot `services/agent_service.py` 的
+     `_call_skill` 逐字寫著「只存例外型別、不存 `{e}` 內文」——訊息可能含 DSN／路徑等內部細節。
+     它六個 failed 出口送得出來的因此只有兩種：三句**固定**中文（巢狀深度超上限／白名單指名的工具
+     一顆都建不出來／子圖未產出任何內容）與三個**裸型別名**（`LlmCallBudgetExceeded`／
+     `SkillInputError`／`type(e).__name__`）。本輪演的是跑到一半逾時 ⇒ 落在 `except Exception`
+     那一道 ⇒ **`TimeoutError`**。前一版寫 `RuntimeError: 退貨政策表讀取逾時`＝「型別 ＋ 內文」，
+     正是那條註解明文拒絕外送的形狀。 #}
 {% set stepFlowNodes = [
   { label: "輸入合規檢查", state: "completed", time: "6ms" },
   { label: "QA 直答", state: "completed", time: "14ms",
     decision: "not_attempted", entry: "pre_graph", poolSize: "0" },
   { label: "初始化對話", state: "completed", time: "10ms" },
   { label: "Agent 推理", state: "completed", time: "280ms", thinking: "使用者問「能退多少錢」，用途說明命中 refund-flow，決定呼叫它。" },
-  { label: "檢索知識庫", state: "completed", time: "1.95s" },
-  { label: "skill：refund-flow", state: "failed", time: "1.9s", depth: 1, skill: "refund-flow", version: "v2", iterations: "2", tools: "lookup-order, calculate", error: "RuntimeError: 退貨政策表讀取逾時" },
+  { label: "檢索知識庫", state: "completed", time: "1.9s" },
+  { label: "skill：refund-flow", state: "failed", time: "1.8s", depth: 1, skill: "refund-flow", version: "v2", iterations: "2", tools: "lookup-order, calculate", error: "TimeoutError" },
   { label: "Agent 推理", state: "completed", time: "240ms", depth: 2, thinking: "先用 lookup-order 取訂單金額，再依退貨政策試算。" },
   { label: "skill：lookup-order", state: "completed", time: "430ms", depth: 2, skill: "lookup-order", version: "v1", iterations: "1", tools: "search_knowledge_base" },
   { label: "呼叫工具", state: "completed", time: "180ms", depth: 3, tools: "search_knowledge_base", result: "命中 4 筆訂單紀錄片段（相似度 0.74–0.91），取得訂單金額、狀態與品項。" },
@@ -186,18 +206,24 @@ permalink: 3-4_skillManagement.html
      逐字寫著這件事）⇒ lookup-order 子迴圈裡那一次 `search_knowledge_base` 的 4 筆要算進來，
      這一輪也只有那一次搜尋 ⇒ **4**。
      原本寫 0，前提是「檢索被略過」——那個前提本身就是上面那個矛盾（見節點陣列上方的說明）。
-     延遲 3.0s ≥ 正典節點的和 6＋14＋10＋280＋1,950＋150＋260＋180＋20＋8 ＝ 2,878ms。
-     ttft 2.4s ＝ 誠實查無這一站的起點（6＋14＋10＋280＋1,950＋150 ＝ 2,410ms）：
+     延遲＝正典節點的和 6＋14＋10＋280＋1,900＋150＋260＋180＋20＋8 ＝ 2,828ms ⇒ **2.8s**
+     （取整規則見 step-flow 檔頭：`formatMs` 的一位小數四捨五入，2.828 → 2.8。前一版寫 3.0s，
+     而同一份檔頭另一處又寫 2.8s——同一個數字在同一頁講了兩個值）。
+     ttft ＝ 誠實查無這一站的起點 6＋14＋10＋280＋1,900＋150 ＝ 2,360ms ⇒ **2.4s**（2.36 → 2.4）：
      `respond_no_answer` 是**會串流給使用者**的答案節點（GufoRAG `agent_service` 的 `_answer_nodes`），
      TTFT 記在第一個 MESSAGE chunk。前一版寫 ttft「—」＋「誠實查無 running」——而同頁的
      `trySkillAnswer` 已經渲染著一整段答案，畫面上有答案、摘要卻說還沒吐出第一個字。 #}
 {% set stepFlowSummary = {
-    tokens: "612", latency: "3.0s", ttft: "2.4s", results: "4", model: "openai:gpt-4o-mini"
+    tokens: "612", latency: "2.8s", ttft: "2.4s", results: "4", model: "openai:gpt-4o-mini"
 } %}
 {# 這一輪演的是 refund-flow **失敗**（走誠實查無，答案是那段誠實查無的話），
      所以答案槽不能沿用元件內建那段「本次可退金額為 1,280 元」的成功答案——過程與產出
-     必須是同一輪（§6：覆寫了過程就要一起覆寫產出）。 #}
-{% set trySkillAnswer = "很抱歉，這一題我無法從現有資料判斷：退貨政策表這次讀取逾時，沒有取得可以計算的依據。請稍後再試，或改用人工客服協助。" %}
+     必須是同一輪（§6：覆寫了過程就要一起覆寫產出）。
+     **這段話只能講模型知道的事**：skill 失敗時父 agent 拿到的工具結果就是
+     `[skill:refund-flow 失敗] 內部錯誤（TimeoutError），詳見伺服器日誌。`（`_call_skill` 的回傳字串）
+     ——它知道「退款試算這一步逾時了」，但**不知道是哪一張表**。前一版寫「退貨政策表這次讀取逾時」，
+     是替模型編一個它拿不到的細節（與上面 `error` 只送型別名是同一條界線）。 #}
+{% set trySkillAnswer = "很抱歉，這一題我沒辦法算出可退金額：退款試算這一步執行逾時，沒有完成。請稍後再試一次，或改由人工客服協助。" %}
 {% include "components/skill-try-sandbox/skill-try-sandbox.html" %}
 
 {% include "components/skill-editor-modal/skill-editor-modal.html" %}

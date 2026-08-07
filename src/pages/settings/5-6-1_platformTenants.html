@@ -206,16 +206,25 @@ permalink: 5-6-1_platformTenants.html
      ③ **租戶 C 至少兩位**：本頁上方的平台權限盤點列著 `ops-admin@example.com`（租戶 C、平台角色
         admin），下方 ISO 名單的 `c-admin@example.com` 是它的**租戶管理員**
         （`review_overdue` 取 `User.is_admin` 裡 id 最小的那一位）——兩個不同的信箱＝兩個不同的
-        使用者 ⇒ userCount 2（兩處一起改，那是同一個 `_user_counts_by_tenant` 的數）。 #}
+        使用者 ⇒ userCount 2（兩處一起改，那是同一個 `_user_counts_by_tenant` 的數）。
+     ④ **租戶 A 的到期日是跨頁釘死的**：本頁上方的平台權限盤點把 `admin@example.com` 配給租戶 A，
+        而那個帳號就是 5-1-1_accountInfo 那顆使用期倒數的主人（product `app/routers/account.py` 的
+        `AccountOut`：`trial_end`／`days_left` 與這一欄是同一個投影）⇒ 這一列的到期日必須等於
+        那顆倒數印出來的日期。本頁的「現在」是 **2026-07-14**（下方 ISO 名單逐字寫著的查詢時間，
+        且由 C／D 的逾期天數 135／150 各自回推都得同一天），倒數演的是「剩餘 9 天」
+        ⇒ 2026-07-14 ＋ 9 ＝ **2026-07-23**，仍在使用期內、與這一列的 ACTIVE 相容。
+        原本這裡寫 2027-01-31、那顆倒數寫 2026-01-21——同一個帳號的同一個欄位差了一年多。 #}
 {# id＝租戶主鍵（product `app/routers/platform.py` 的 `tenant_id: int`；`TenantOut` 也回它）。
      **不可拿 loop.index 當列鍵**：同一頁下面的 ISO 季度審核刪得掉租戶（`review_apply` 的
-     `delete` 動作），位置不是身分——刪掉前面一列之後，後面每一列的列鍵都往前頂一格，
+     `delete_account` 動作——`ReviewApplyIn.action` 的值域逐字是
+     `purge_data`／`delete_account`／`freeze` 三顆，**沒有 `delete`**），位置不是身分——
+     刪掉前面一列之後，後面每一列的列鍵都往前頂一格，
      React 的 key 與逐列動作（PATCH /platform/tenants/{id}/features、.js-manage-tenant）
      會一起指錯人（§6 列鍵，同 5-8／5-6-2／5-6-3 已經改過的那三張表）。
      **示範租戶 D 的 id 是 42**：不是隨手挑的——下面 step-3 的失敗結果逐字寫著
      「從 GufoRAG 刪租戶索引失敗（tenant=42）」，那筆講的就是它（§6 同頁同源）。 #}
 {% set tenants = [
-  { id: 7, name: "示範租戶 A", userCount: 8, features: ["data", "ask", "history", "settings", "audit", "extract"], reviewDue: false, status: "ACTIVE", statusKey: "platform.statusActive", statusLabel: "使用期內", trialEnd: "2027-01-31" },
+  { id: 7, name: "示範租戶 A", userCount: 8, features: ["data", "ask", "history", "settings", "audit", "extract"], reviewDue: false, status: "ACTIVE", statusKey: "platform.statusActive", statusLabel: "使用期內", trialEnd: "2026-07-23" },
   { id: 15, name: "示範租戶 B", userCount: 3, features: ["data", "ask"], reviewDue: false, status: "FROZEN", statusKey: "platform.statusFrozen", statusLabel: "已凍結", trialEnd: "2026-06-30" },
   { id: 23, name: "示範租戶 C", userCount: 2, features: ["ask"], reviewDue: true, status: "EXPIRED", statusKey: "platform.statusExpired", statusLabel: "已到期", trialEnd: "2026-03-01" },
   { id: 42, name: "示範租戶 D", userCount: 4, features: ["data", "ask"], reviewDue: true, status: "EXPIRED", statusKey: "platform.statusExpired", statusLabel: "已到期", trialEnd: "2026-02-14" },

@@ -217,9 +217,16 @@ permalink: 2-2-3_abTest.html
                                             <div class="message-content in-compare">
                                                 <div class="robot-msg">
                                                     {# 「設定」與「設置一/二」在本頁其他地方都是 chrome（每側卡片標題的 qaTest.setting、
-                                                         比較彈窗的 settings.config1）——只有這裡是裸繁中，英文模式會同頁出現 Setting A 與「設定A（設置一」。
-                                                         `configKey` 原本 set 了零消費者，接上去它就有主人了。 #}
-                                                    <p class="item-title" id="abAnswerTitle-{{ abSides[0].side }}"><span data-i18n="qaTest.setting">設定</span>{{ abSides[0].side }}（<span data-i18n="{{ abSides[0].configKey }}">{{ abSides[0].configLabel }}</span>，{{ abSides[0].promptVersion }}）</p>
+                                                         比較彈窗的 settings.config1）——原本這裡是裸繁中，英文模式會同頁出現 Setting A 與「設定A（設置一」。
+                                                         `configKey` 原本 set 了零消費者，接上去它就有主人了。
+                                                       ⚠️ **分隔符改用 ` · `、不用全形括號與逗號**：`（`／`，`／`）` 是裸字面，
+                                                         掛不上 key（§4-2 標點屬版面、不折進譯文），英文模式會印成
+                                                         `Setting A（Config 1，V3-角色定位型）`——一句話裡混著兩套標點。
+                                                         `qaTest.setting` 的英譯是 `Setting`，後面直接接側別還會黏成 `SettingA`，
+                                                         故 `設定` 與側別之間也補一個空白。三段（設定側別／設定檔名／提示詞版本）
+                                                         以中點並列，繁中「設定 A · 設置一 · V3-角色定位型」與英文兩邊都讀得通。
+                                                         另一條路是替三個標點各開一顆 i18n key——那會替版面的東西建字典，不採。 #}
+                                                    <p class="item-title" id="abAnswerTitle-{{ abSides[0].side }}"><span data-i18n="qaTest.setting">設定</span> {{ abSides[0].side }} · <span data-i18n="{{ abSides[0].configKey }}">{{ abSides[0].configLabel }}</span> · {{ abSides[0].promptVersion }}</p>
                                                     <div class="item-content">
                                                         <p>您好！以下是 UH3240 USB-C 多埠集線器的規格整理：</p>
                                                         <ul class="list-style-disc">
@@ -264,7 +271,8 @@ permalink: 2-2-3_abTest.html
                                         <div class="ab-compare-item">
                                             <div class="message-content in-compare">
                                                 <div class="robot-msg">
-                                                    <p class="item-title" id="abAnswerTitle-{{ abSides[1].side }}"><span data-i18n="qaTest.setting">設定</span>{{ abSides[1].side }}（<span data-i18n="{{ abSides[1].configKey }}">{{ abSides[1].configLabel }}</span>，{{ abSides[1].promptVersion }}）</p>
+                                                    {# 分隔符與空白的理由見 A 側那則註解——兩側是同一個形狀，改一邊就要改另一邊。 #}
+                                                    <p class="item-title" id="abAnswerTitle-{{ abSides[1].side }}"><span data-i18n="qaTest.setting">設定</span> {{ abSides[1].side }} · <span data-i18n="{{ abSides[1].configKey }}">{{ abSides[1].configLabel }}</span> · {{ abSides[1].promptVersion }}</p>
                                                     <div class="item-content">
                                                         <p>UH3240 主要規格摘要如下：</p>
                                                         <ul class="list-style-disc">
@@ -373,11 +381,13 @@ permalink: 2-2-3_abTest.html
 ] %}
 {# 摘要是節點的衍生值（§6 能互相推導的要對得上）：TTFT ＝ 從 `_t0` 到第一個回答 token
      （chatbot `routes/chat.py` 的 `_ttft_ms`），而生成答案要等前六站跑完 ⇒
-     8＋240＋10＋300＋1100＋180 ＝ 1,838ms ⇒ 1.9s（原本寫 450ms，比生成的起點還早）。
-     延遲 2.1s 是本輪到目前為止的經過時間（生成中，故 > 1.838s）；檢索 6 對上檢索節點的「命中 6 筆」
+     8＋240＋10＋300＋1100＋180 ＝ 1,838ms ⇒ **1.8s**（取整規則只有一份、寫在 step-flow 檔頭：
+     `formatMs` 的 ≥1s 一位小數四捨五入，1.838 → 1.8。原本寫 450ms，比生成的起點還早；
+     上一輪改成 1.9s，數字對了但取整往上多進一格）。
+     延遲 2.1s 是本輪到目前為止的經過時間（生成中，故 > 1,838ms）；檢索 6 對上檢索節點的「命中 6 筆」
      與下面那張來源表。 #}
 {% set stepFlowSummary = {
-    tokens: "1,096", latency: "2.1s", ttft: "1.9s", results: "6", model: "openai:gpt-4o-mini"
+    tokens: "1,096", latency: "2.1s", ttft: "1.8s", results: "6", model: "openai:gpt-4o-mini"
 } %}
 {% include "components/step-flow/step-flow.html" %}
 

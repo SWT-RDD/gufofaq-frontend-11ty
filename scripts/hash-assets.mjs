@@ -35,13 +35,28 @@ for (const f of readdirSync(join(DIST, "js")).filter((f) => f.endsWith(".js"))) 
 }
 
 // 3) 改寫所有 HTML 的資產引用
+//
+// 走「掃到什麼就蓋什麼」，而不是「拿已知資產名去做字串比對」。
+// 舊寫法 html.split(`"${asset}"`) 綁死了「雙引號 ＋ ./ 前綴 ＋ 目錄在 css|js 底下」，
+// 於是 href='./css/main.css'（單引號）、src="/js/x.js"（絕對路徑）、src="./sw.js"（根層）
+// 通通靜默蓋不到——而 tests/guideline.test.mjs 那條白名單當時共用同一組形狀假設，
+// 兩邊一起瞎（round41 實測）。現在反過來：逐個屬性值掃出站內 css/js 引用再蓋章，
+// 掃到不在資產表裡的就當場中斷——沉默的漏蓋比 build 失敗貴得多。
+const norm = (t) => "./" + t.replace(/^\.\//, "").replace(/^\//, "");
+const stamp = (val, f) =>
+    val.split(/([\s,]+)/).map((tok) => {                      // 保留分隔符（srcset 是 "a.png 1x, b.png 2x"）
+        if (!/\.(?:css|m?js)$/i.test(tok)) return tok;        // §8：只蓋 css/js，圖片走「改圖必改檔名」
+        if (/:\/\//.test(tok) || tok.startsWith("//")) return tok;   // 外站資產不歸我們蓋
+        const v = versions.get(norm(tok));
+        if (!v) throw new Error(`[hash-assets] ${f} 引用了 ${tok}，但它不在資產表裡（${[...versions.keys()].join(" / ")}）——蓋不了章，請先把它登記進來`);
+        return `${tok}?v=${v}`;
+    }).join("");
+const ATTR = /(\s[a-zA-Z][\w:-]*\s*=\s*)(?:"([^"]*)"|'([^']*)')/g;
 let touched = 0;
 for (const f of readdirSync(DIST).filter((f) => f.endsWith(".html"))) {
     const p = join(DIST, f);
-    let html = stripVer(readFileSync(p, "utf8"));
-    for (const [asset, v] of versions) {
-        html = html.split(`"${asset}"`).join(`"${asset}?v=${v}"`);
-    }
+    const html = stripVer(readFileSync(p, "utf8")).replace(ATTR, (m, pre, dq, sq) =>
+        dq !== undefined ? `${pre}"${stamp(dq, f)}"` : `${pre}'${stamp(sq, f)}'`);
     writeFileSync(p, html);
     touched++;
 }
