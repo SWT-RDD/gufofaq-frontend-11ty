@@ -1065,7 +1065,9 @@ test("§4-2 markup 引用到的 key，en.json 的值不得是空字串（allowli
     // pagination.pageSuffix（"Page 3"英文不需要中文「頁」那個字尾）、
     // health.recordRowSuffix（「第 137 列」的「列」，英文 "row 137" 沒有這個字尾——同 §4-2
     // 「英文語法不需要的字段允許空字串譯文」的量詞後綴那一族）。
-    const ALLOWLIST = new Set(["comp.copyright", "qa.detailConvItems", "pagination.pageSuffix", "health.recordRowSuffix"]);
+    // 英文語法不需要的字段允許空字串譯文（§4-2）：量詞後綴、以及「共 N 筆」這種中文才需要的前綴
+    const ALLOWLIST = new Set(["comp.copyright", "qa.detailConvItems", "pagination.pageSuffix", "health.recordRowSuffix",
+        "agent.qaPoolPrefix"]);
     const en = JSON.parse(read("src/i18n/en.json"));
     const { used } = collectUsedI18nKeys();
     assert.ok(used.size > 100, `只收集到 ${used.size} 個用到的 key —— 這條測試在空轉`);
@@ -3759,6 +3761,49 @@ test("§4/§6 4-2 詳情：設定欄是「有值 vs 整格不存在」，合規�
     const dist = distDoc("4-2_qaHistory_detail.html");
     assert.match(dist, /data-i18n="agent\.loadFullTrace"/, "4-2 缺「載入完整軌跡」（product GET /history/{id}/trace 已經在了）");
     assert.match(dist, /data-i18n="agent\.summaryTokensIn"/, "執行摘要要把 token 拆成 input／output");
+});
+
+test("§6 QA 直答判定：判否／未達門檻不得畫成錯誤紅，且未命中時整段仍要渲染", () => {
+    const src = read("src/_includes/components/step-flow/step-flow.html");
+    // ① 色彩語意逐條釘死。**這一條是這個功能的重點**：判否與未達分數門檻是系統**正確運作**的結果
+    //    （這一筆 QA 沒有完整回答使用者，所以不逐字直出）。畫成紅色會讓客戶以為系統壞了，
+    //    然後來要求「把這些紅色修掉」——而那個方向是錯的。
+    const WANT = {
+        hit: "is-pass",                              // 綠：真的直出了
+        no_exact_and_judge_rejected: "is-muted",     // 中性：判過了，結論是不直出
+        below_score_floor: "is-muted",               // 中性：同上
+        reconstruct_failed: "is-warn",               // 警示：這一種是真的沒做成該做的事
+        not_attempted: "is-faint",                   // 更弱：根本沒判過，與「判否」不是同一件事
+    };
+    for (const [decision, cls] of Object.entries(WANT)) {
+        const m = src.match(new RegExp(String.raw`node\.decision == "${decision}" %\}\s*<span class="verdict-tag ([\w-]+)"`));
+        assert.ok(m, `找不到 decision=${decision} 的徽章`);
+        assert.equal(m[1], cls, `decision=${decision} 的色彩語意錯了`);
+    }
+    assert.ok(!/node\.decision[\s\S]{0,400}?verdict-tag is-fail/.test(src),
+        "判定徽章不得出現 is-fail：判否與未達門檻是系統正確運作的結果，不是錯誤");
+    // ② 未知值原樣輸出——不是防禦性寫法：上游新增第六種結論時畫面要看得到那個生字
+    assert.match(src, /\{% else %\}\s*<span class="verdict-tag is-muted">\{\{ node\.decision \}\}<\/span>/,
+        "少了 else：查表查不到的結論會靜靜消失");
+    // ③ 這一段以 decision 為條件，不是以 hits（未命中時四個舊鍵都沒值，才是原本的問題）
+    assert.match(src, /\{% if node\.decision %\}/, "判定區塊要以 decision 為條件");
+    for (const cond of [...src.matchAll(/node\.hits or node\.score or node\.decidedBy or node\.floor[^%]*%\}/g)])
+        assert.match(cond[0], /node\.decision/, "「這一列展得開」的條件要含 decision，否則未命中的節點展開是空的");
+    // ④ 判定層的比對值＝上游 qa_direct.py 的常數（曾經寫成 "floor" ⇒ 分數門檻落進 else 顯示「LLM 裁判」）
+    assert.match(src, /node\.decidedBy == "exact"/, "gate 值要與上游逐字相同");
+    assert.match(src, /node\.decidedBy == "score_floor"/, "上游是 score_floor，不是 floor");
+    assert.ok(!/node\.decidedBy == "floor"/.test(src), "「floor」是錯字：分數門檻會落到 else 顯示成 LLM 裁判");
+    // ⑤ 名次與池子成對；沒有名次時只畫池子。reused 是徽章旁的小標，不是第六種徽章
+    assert.match(src, /node\.matchedRank %\}[\s\S]{0,300}?qaRankMid[\s\S]{0,200}?\{% else %\}[\s\S]{0,200}?qaPoolPrefix/,
+        "名次要成對顯示；未命中只畫池子大小");
+    assert.ok(!/node\.reusedFrom[\s\S]{0,200}?class="verdict-tag/.test(src),
+        "reused_from 是小標不是第六種徽章：重用可能重用命中、也可能重用判否");
+    // ⑥ 五種結論＋未知值那條 else，都要有一頁演得出來（§5）
+    const gallery = distDoc("component.html");
+    for (const k of ["Hit", "Rejected", "BelowFloor", "ReconFailed", "NotAttempted"])
+        assert.match(gallery, new RegExp(`data-i18n="agent\\.qaDecision${k}"`), `元件庫缺 decision=${k} 的示範`);
+    assert.match(gallery, /verdict-tag is-muted">some_future_decision</, "else 那條也要演得出來");
+    assert.match(gallery, /data-i18n="agent\.qaReusedFrom"/, "元件庫缺「重用自」小標的示範");
 });
 
 test("§5 寫死 .hidden 的分支文案，至少要有一處看得見（否則全站沒有人看過它的長相）", () => {

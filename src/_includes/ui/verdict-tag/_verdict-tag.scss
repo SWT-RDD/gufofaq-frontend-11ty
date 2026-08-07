@@ -18,6 +18,10 @@
 //              拿分數塗黃燈等於替使用者發明一個後端刻意不做的門檻。
 //   .is-muted  中性事實：無變化、本來就沒有主觀分、斷言的「確定性」型別標記、
 //              以及**覆寫來源**是「沿用設定檔」那一態（2-2-4 的旋鈕）。
+//   .is-faint  中性但**更弱**：「這件事根本沒發生」。無填充、只有一圈邊框與次要文字色，
+//              視覺重量低於 .is-muted（那一顆是「發生了，結果是中性的」）。
+//              正典：step-flow 的 QA 直答判定 `not_attempted`（整輪未判定）——它與「判否」
+//              不是同一件事，判否是判過了、這一顆是沒判過，兩者同色會讓人以為系統做了判定。
 //
 // 第五類語意（2-2-4／2-2-5 用得到，補進契約以免下一個人照上面四條挑錯色）：
 //   **設定來源／差異標記**——「這一次指定」「不同」走 .is-warn（這一輪的值與設定檔／基準不一樣，
@@ -53,6 +57,14 @@
 
     &.is-muted {
         background-color: var(--surface-sunken);
+        color: var(--text-muted);
+        border: 1px solid var(--border);
+    }
+
+    // 無填充：它比 .is-muted 更輕，落在哪個表面就吃哪個表面的底。實算過三種可能的底
+    // （--surface-raised／--surface-sunken／--surface）在明暗兩模式下都 ≥ 4.82:1（AA 4.5）。
+    &.is-faint {
+        background-color: transparent;
         color: var(--text-muted);
         border: 1px solid var(--border);
     }

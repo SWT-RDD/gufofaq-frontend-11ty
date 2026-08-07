@@ -21,8 +21,19 @@
      `is-depth-4` 這種未定義的 class 只會靜默不縮排，所以夾在模板裡而不是靠資料自律。
      skill 節點另有 skill/version/iterations/error 明細列——後端送什麼，這裡就要看得見；
      刻意**不**收工具參數與結果原文（後端也不送，那是洩漏面）。
+   QA 直答判定（S6）：上游**每一輪都送一筆**判定，未命中那半也送，故節點另收五個鍵（值一律
+     照抄 `qa_direct.py` 的常數，不另發明詞彙）：
+       decision —— hit／no_exact_and_judge_rejected／below_score_floor／reconstruct_failed／
+         not_attempted。查表查不到的值**原樣輸出**（上游新增第六種結論時，畫面要看得到那個生字）。
+       entry —— pre_graph（建圖前閘門）／agent_tool（agent 工具）：哪一道閘門做的判定。
+       matchedRank ＋ poolSize —— 命中在候選池第幾名／候選池筆數，**一列成對顯示**（同 score／floor
+         的理由：只給名次看不出池子多深、只給池子大小看不出這一筆排在哪）。未命中時 matchedRank
+         為空 ⇒ 只畫池子大小；poolSize 為 1 要照實顯示（agent 工具那一道本來就只判 agent 挑的那一筆）。
+       reusedFrom —— 這個結論是重用前一道的。掛在徽章旁當小標、**不做成第六種徽章**：它修飾的是
+         「結論怎麼來的」，而重用可能重用命中、也可能重用判否，一個值講不清楚是哪一種。
+     **同一輪出現兩個 qa_direct 節點是正常的**（建圖前判否 → agent 又判一次），逐筆依序畫、不去重。
    參數：stepFlowNodes（選填，[{ label, state, time, depth, skill, version, iterations, error,
-     tools, params, result, verdict, thinking }]）＋
+     tools, params, result, verdict, thinking, decision, entry, matchedRank, poolSize, reusedFrom }]）＋
      stepFlowSummary（選填，{ tokens, latency, ttft, results, model ＋選填成對的 tokensIn／tokensOut }）
      ——使用頁換對話主題時「兩個一起覆寫」，
      否則摘要（檢索筆數/模型）會與節點對不上（§6 自洽）；內部變數用元件專屬名 stepFlowNodeRows／stepFlowSummaryData。
@@ -40,7 +51,8 @@
     { label: "檢索知識庫", state: "completed", time: "1.2s", tools: "search_knowledge_base", params: "{ query: '新住民 結婚 應備文件' }", resultLength: "19500", result: "命中 8 筆片段（相似度 0.79–0.92），依相似度排序後注入後續生成脈絡。前三筆來自「新住民結婚登記須知」：第一筆說明雙方當事人須親自到任一戶政事務所辦理，並備妥雙方身分證、印章、戶口名簿與三個月內之戶籍謄本；第二筆列出外籍配偶應另備經我國駐外館處驗證之單身證明與出生證明，且文件如為外文須附中文譯本並經驗證；第三筆說明部分國籍之當事人另須完成境外面談，面談未通過者不予登記。第四至第六筆來自「跨國婚姻健康檢查與居留」：包含健康檢查項目、居留簽證與外僑居留證之申請時程，以及未於期限內辦理的罰則。第七筆為各縣市新住民家庭服務中心的通譯服務申請方式與免費諮詢管道。第八筆為常見退件原因彙整，其中以譯本未經驗證與戶籍謄本逾期兩項最多。第九筆之後為相似度低於門檻的候選，未納入本次脈絡。另補充：結婚登記自登記之日起生效，未辦理登記者婚姻關係不成立；當事人如已於境外辦妥結婚，仍須持經驗證之結婚證明文件回國辦理登記，並注意譯本有效期限。戶政事務所受理後如發現文件不全，會當場開立補正通知，補正期限內未補齊者將予退件。最後，若當事人之一為未成年人，另須法定代理人同意書並一併驗證。（本段為節錄前段，餘略）" },
     { label: "可回答性判定", state: "completed", time: "210ms", verdict: "generate（素材足以回答）" },
     { label: "QA 直答", state: "completed", time: "18ms", hits: "客服問答集 / 新住民結婚登記要準備什麼文件？",
-      score: "4.6", decidedBy: "floor", floor: "3（llm_reranker 的 1–5 尺）" },
+      score: "4.6", decidedBy: "score_floor", floor: "3（llm_reranker 的 1–5 尺）",
+      decision: "hit", entry: "pre_graph", matchedRank: "3", poolSize: "16" },
     { label: "生成答案", state: "running", time: "" },
     { label: "誠實查無", state: "skipped", time: "" },
     { label: "生成推薦問題", state: "pending", time: "" },
@@ -127,14 +139,14 @@
                         {% if node.state == "completed" %}<span data-i18n="agent.stepCompleted">已完成</span>{% elif node.state == "running" %}<span data-i18n="agent.stepRunning">進行中</span>{% elif node.state == "skipped" %}<span data-i18n="agent.stepSkipped">略過</span>{% elif node.state == "failed" %}<span data-i18n="platform.resultFail">失敗</span>{% else %}<span data-i18n="agent.stepPending">待處理</span>{% endif %}
                     </td>
                     <td>
-                        {% if node.tools or node.params or node.result or node.verdict or node.thinking or node.skill or node.error or node.hits or node.score or node.decidedBy or node.floor %}
+                        {% if node.tools or node.params or node.result or node.verdict or node.thinking or node.skill or node.error or node.hits or node.score or node.decidedBy or node.floor or node.decision %}
                         <button type="button" class="button accordion-btn" aria-expanded="false" title="展開表格" data-i18n-title="common.expandRow">
                             <span class="sr-only" data-i18n="common.expandRow">展開表格</span>
                         </button>
                         {% endif %}
                     </td>
                 </tr>
-                {% if node.tools or node.params or node.result or node.verdict or node.thinking or node.skill or node.error or node.hits or node.score or node.decidedBy or node.floor %}
+                {% if node.tools or node.params or node.result or node.verdict or node.thinking or node.skill or node.error or node.hits or node.score or node.decidedBy or node.floor or node.decision %}
                 <tr class="detail-row">
                     <td colspan="5" class="detail-cell">
                         <div class="accordion-content">
@@ -204,11 +216,75 @@
                                     {# QA 直答的命中細節（S1）。qa_direct 節點原本只有 label／state／time，
                                          連「可展開」的條件都不成立（那個判斷看 verdict／tools／iterations，
                                          三個都沒有）——畫面上就是一個綠盒子，說不出「憑什麼直出這一則」。
-                                         判定層有且只有三層（上游 `qa_direct`：①正規化完全命中 ②分數門檻
-                                         ③LLM 單裁），故走 {% if %} 鏈、i18n key 逐條寫成字面——投影成模板
+                                         判定層有且只有三層，**值就是上游 `qa_direct.py` 的那三顆常數**：
+                                         `GATE_EXACT = "exact"`（正規化完全命中）／`GATE_SCORE_FLOOR = "score_floor"`
+                                         （分數門檻）／`GATE_LLM_JUDGE = "llm_judge"`（LLM 單裁，落在 else）。
+                                         ⚠️ 這裡曾經比對 `"floor"`：分數門檻命中會落進 else、顯示成「LLM 裁判」，
+                                         而畫面上完全看不出錯（React 端照抄也踩過同一次）。比對值要與上游逐字相同。
+                                         故走 {% if %} 鏈、i18n key 逐條寫成字面——投影成模板
                                          變數的 key 在 en.json 對帳時查不到引用處（同 components/record-identity）。
                                          門檻值與分數是同一把尺上的兩個數字，成對出現才有意義：只給分數看不出
                                          「差多少」，只給門檻看不出「這一則過了沒有」。 #}
+                                    {# 判定結果（S6）。**這一段以 `decision` 為條件，不是以 `hits`**：上游每一輪
+                                         都會送一筆判定，未命中那半也送，而未命中時 hits／score／decidedBy／floor
+                                         四個鍵都沒值——原本整條 {% if %} 鏈因此全數落空，「裁判判否」「未達門檻」
+                                         「整輪未判定」三種結果在畫面上長得一模一樣：節點在那裡，展開是空的。
+                                         客戶最在乎的就是 QA 直答，而改了判準文字之後沒有任何畫面能回答「有沒有變好」。
+                                       **判否與未達門檻不可以畫成錯誤紅**：它們是系統正確運作的結果——「這一筆 QA
+                                         沒有完整回答使用者，所以不逐字直出」正是這個功能該做的事。畫紅色會讓人以為
+                                         系統壞了，然後要求把紅色修掉，而那個方向是錯的。故只有「原文重組失敗」走
+                                         警示（那一種是真的沒做成該做的事），其餘走中性。
+                                       最後那條 else **不是防禦性寫法**：上游日後新增第六種結論時，畫面要看得到那個
+                                         生字，不能因為查表查不到就靜靜消失。 #}
+                                    {% if node.decision %}
+                                    <tr>
+                                        <th data-i18n="agent.qaDecision">判定結果</th>
+                                        <td>
+                                            <span class="flex-row align-items-center flex-wrap gap-8">
+                                            {% if node.decision == "hit" %}
+                                            <span class="verdict-tag is-pass" data-i18n="agent.qaDecisionHit">命中直答</span>
+                                            {% elif node.decision == "no_exact_and_judge_rejected" %}
+                                            <span class="verdict-tag is-muted" data-i18n="agent.qaDecisionRejected">裁判判否</span>
+                                            {% elif node.decision == "below_score_floor" %}
+                                            <span class="verdict-tag is-muted" data-i18n="agent.qaDecisionBelowFloor">未達分數門檻</span>
+                                            {% elif node.decision == "reconstruct_failed" %}
+                                            <span class="verdict-tag is-warn" data-i18n="agent.qaDecisionReconFailed">原文重組失敗</span>
+                                            {% elif node.decision == "not_attempted" %}
+                                            <span class="verdict-tag is-faint" data-i18n="agent.qaDecisionNotAttempted">整輪未判定</span>
+                                            {% else %}
+                                            <span class="verdict-tag is-muted">{{ node.decision }}</span>
+                                            {% endif %}
+                                            {# 重用標示掛在徽章旁、**不做成第六種徽章**：它修飾的是「這個結論怎麼來的」，
+                                                 不是另一種結論——重用可能重用命中、也可能重用判否，一個值講不清楚是哪一種
+                                                 （上游也是為了這個理由把它做成獨立欄位）。 #}
+                                            {% if node.reusedFrom %}
+                                            <span class="text-gray"><span data-i18n="agent.qaReusedFrom">重用自</span>{% if node.reusedFrom == "pre_graph" %}<span data-i18n="agent.qaEntryPreGraph">建圖前閘門</span>{% else %}<span data-i18n="agent.qaEntryAgentTool">agent 工具</span>{% endif %}</span>
+                                            {% endif %}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    {% endif %}
+                                    {% if node.entry %}
+                                    <tr>
+                                        <th data-i18n="agent.qaEntry">判定入口</th>
+                                        {% if node.entry == "pre_graph" %}
+                                        <td data-i18n="agent.qaEntryPreGraph">建圖前閘門</td>
+                                        {% else %}
+                                        <td data-i18n="agent.qaEntryAgentTool">agent 工具</td>
+                                        {% endif %}
+                                    </tr>
+                                    {% endif %}
+                                    {# 名次與候選池**一列、成對顯示**（同 score／floor 那一段的理由）：只給名次看不出
+                                         候選池多深，只給池子大小看不出這一筆排在哪。未命中時 matched_rank 是 null ⇒
+                                         只畫池子大小。`pool_size` 為 1 要照實顯示——那不是壞資料，agent 工具那一道
+                                         本來就只判 agent 挑的那一筆，照實寫才看得出「它只看了一筆」。
+                                         數字是資料、夾在前後綴 key 中間（§4-2：變動的數字不進譯文）。 #}
+                                    {% if node.poolSize %}
+                                    <tr>
+                                        <th data-i18n="agent.qaRankOfPool">命中名次</th>
+                                        <td>{% if node.matchedRank %}<span data-i18n="agent.qaRankPrefix">第 </span>{{ node.matchedRank }}<span data-i18n="agent.qaRankMid"> 名／共 </span>{{ node.poolSize }}<span data-i18n="agent.qaPoolSuffix"> 筆</span>{% else %}<span data-i18n="agent.qaPoolPrefix">共 </span>{{ node.poolSize }}<span data-i18n="agent.qaPoolSuffix"> 筆</span>{% endif %}</td>
+                                    </tr>
+                                    {% endif %}
                                     {% if node.hits %}
                                     <tr>
                                         <th data-i18n="regression.hitsRow">命中文件</th>
@@ -226,7 +302,7 @@
                                         <th data-i18n="agent.qaDecidedBy">判定層</th>
                                         {% if node.decidedBy == "exact" %}
                                         <td data-i18n="agent.qaLayerExact">完全命中（正規化後逐字相同）</td>
-                                        {% elif node.decidedBy == "floor" %}
+                                        {% elif node.decidedBy == "score_floor" %}
                                         <td data-i18n="settings.scoreFloor">分數門檻</td>
                                         {% else %}
                                         <td data-i18n="agent.qaLayerJudge">LLM 裁判</td>
