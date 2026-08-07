@@ -1,8 +1,11 @@
 // 引用標記（答案內文中的 [[N]]）：把來源編號變成可點的上標小徽章，點了跳到「參考來源」表上**序號欄等於 N** 的那一筆。
-// markup（互動見同資料夾 citation-ref.js）：
-//   <button type="button" class="citation-ref js-citation" data-citation-no="1">
-//     <span class="sr-only" data-i18n="qa.citationSourcePrefix">來源</span>1</button>
+// markup 契約（無 html 元件，§1-2；整段照抄。互動見同資料夾 citation-ref.js）——
+// 它是內文的一部分，所以**整顆寫在同一行、緊貼前一個字，前後都不留空白**（留了就多一個空格在句中）：
+//
+//   <li>視訊輸出：支援 4K（3840×2160）@ 60Hz HDMI 輸出，適合高解析度顯示器。<button type="button" class="citation-ref js-citation" data-citation-no="1"><span class="sr-only" data-i18n="qa.citationSourcePrefix">來源</span>1</button></li>
+//
 // 可及名稱＝「來源 1」：前綴是 chrome（可翻、sr-only），數字是資料（不翻、就是看得見的那個字）。
+// `.js-citation` 是行為掛點（全站 scss 不引用）、`data-citation-no` 的值必須等於畫面上那個數字。
 // 為什麼是 <button> 而不是 <sup>/<span>：它是互動元素（點擊會捲動並展開來源列），
 // 用非互動標籤等於鍵盤使用者按不到。上標視覺由 vertical-align/font-size 做，不靠 <sup>。
 //
@@ -11,6 +14,14 @@
 // 對外投影又會收掉候選池，兩件事都讓「第 N 號＝第 N 列」不成立——照 `rows[no-1]` 實作會高亮到別筆，
 // 而畫面上看起來一樣「有反應」（定位邏輯的正本見 components/sources-block 的 sources-block.js）。
 // React 端把文字節點裡的 [[N]] 換成本元件的 markup。
+//
+// 住在哪一頁（雙向；判準＝`grep -rn 'class="citation-ref' src`）——
+//   實例手寫在這三個檔的示範答案裡：components/chatroom（來源 2、5）、
+//   components/qa-detail-info（來源 3、7）、2-2-3_abTest（A 側 1、4；B 側 2、6——AB 兩側各是一筆
+//   獨立的 chat_log，`source_no` 各自從 1 起算，兩側的 [[1]] 指的不是同一份文件）。
+//   渲染後含 `.citation-ref` 的頁（反向）：2-1_qaRecord 與 2-2-1_singleTest（chatroom）、
+//   4-2_qaHistory_detail（qa-detail-info）、2-2-3_abTest。元件庫頁沒有它——`ui/widget-shell`
+//   的聊天示範只用 ui/chat-message，不帶引用標記。
 .citation-ref {
     display: inline-flex;
     align-items: center;

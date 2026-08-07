@@ -33,10 +33,17 @@ permalink: 3-4_skillManagement.html
 
 {# 新增 skill：名稱（必填）＋用途說明（必填）＋新增鈕。細部設定（執行指令、工具白名單、
      迭代上限）在建立後於編輯器內完成——一次要填的欄位太多會讓建立這件事變得沉重。
-     四態 toast：成功／必填未填／名稱格式或重名／失敗。守衛全在 chatbot——
-     `_validate_name`（GufoRAG skills.py，`SKILL_NAME_RE` 格式與同租戶重名各一道）與
-     `_validate_description`（同檔，空值），product `skills.py` 的 `_as_bad_request`
-     把 `RuntimeError` 映成 400。product 自己的 create 只做 `.strip()`，不驗空名。 #}
+     四態 toast：成功／必填未填／名稱格式或重名／失敗。**這兩欄的守衛在 chatbot**：GufoRAG
+     `app/services/skills.py` 的 `_validate_name` 有四道出口（markup、`MAX_SKILL_NAME_LEN`、
+     `SKILL_NAME_RE` 格式、同租戶重名）——**空名走的是格式那一道**（`^[a-z0-9]+(-[a-z0-9]+)*$`
+     不接受空字串），不是一道獨立的空值檢查；`_validate_description` 有三道（空值、長度、markup）。
+     兩者的 `SkillValidationError` 經 product `app/routers/skills.py` 的 `_as_bad_request`
+     映成 400。**product 這一側不是「只做 .strip()」**：`create_skill` 有 `require_capability`
+     的 403、`SkillIn` 三個文字欄 `max_length` 的 422，以及 `assert_skill_input_schema_within_limit`／
+     `assert_skill_allowed_tools_within_limits`（`app/chat_config_limits.py`）與
+     `assert_owned_allowed_tools`（`app/tool_refs.py`）的 400／502。那三道驗的是 `input_schema`
+     與工具白名單，**本表單一個都填不到**（細部設定在編輯器 modal 內完成），所以這顆鈕只列得到
+     上面四段。product 唯一沒驗的是「名稱為空」，那一道只在 chatbot。 #}
 <div class="block mb-16 flex-row column gap-16">
     <div class="text-md text-bold" data-i18n="settings.addSkill">新增 Skill</div>
     <div class="flex-row flex-wrap gap-16 mobile-column sm-gap-16">
@@ -148,11 +155,16 @@ permalink: 3-4_skillManagement.html
      原本這一列標 `skipped` ＋ time 空白，底下卻掛著一棵 1.9s 的子樹——「這一站本輪沒有執行」
      與「它底下執行了 1.9 秒」不可能同時成立（§6）。
      改成 completed ＋ `1.95s`：子樹 1.9s ⊆ 父節點 1.95s，而正典節點的和
-     10 ＋ 280 ＋ 1,950 ＋ 150 ＝ 2,390ms ≤ 摘要的延遲 2.8s（生成答案 skipped、誠實查無還在跑）。
+     6 ＋ 10 ＋ 280 ＋ 1,950 ＋ 150 ＋ 260 ＝ 2,656ms ≤ 摘要的延遲 2.8s。
    同理 `verdict`：可回答性判定的值域是 chatbot `services/grounding.py` 的 `GroundingVerdict`，
      **只有 `generate` 與 `no_answer` 兩顆**（`insufficient` 不存在）。這一輪走誠實查無
-     ⇒ `no_answer（素材不足以回答）`，與下一列「生成答案 skipped、誠實查無 running」是同一件事的兩個畫面。 #}
+     ⇒ `no_answer（素材不足以回答）`，而下面的節點列**只畫「誠實查無」、不畫「生成答案」**：
+     saas `lib/stepFlow.ts` 是 `base.splice(i, 1, "respond_no_answer")`——deleteCount=1 ＝**取代**，
+     兩顆永不並存（該檔測試名逐字「誠實查無入圖、生成答案不在」）；而且 `respond_no_answer` 只在
+     `completed.has()` 為真時才進 base，所以它也不可能是 running。前一版把兩顆並排、還註解說
+     「是同一件事的兩個畫面」——那是替一個上游產不出來的狀態背書。 #}
 {% set stepFlowNodes = [
+  { label: "輸入合規檢查", state: "completed", time: "6ms" },
   { label: "初始化對話", state: "completed", time: "10ms" },
   { label: "Agent 推理", state: "completed", time: "280ms", thinking: "使用者問「能退多少錢」，用途說明命中 refund-flow，決定呼叫它。" },
   { label: "檢索知識庫", state: "completed", time: "1.95s" },
@@ -162,8 +174,7 @@ permalink: 3-4_skillManagement.html
   { label: "呼叫工具", state: "completed", time: "180ms", depth: 3, tools: "search_knowledge_base", result: "命中 4 筆訂單紀錄片段（相似度 0.74–0.91），取得訂單金額、狀態與品項。" },
   { label: "呼叫工具", state: "completed", time: "95ms", depth: 2, tools: "calculate" },
   { label: "可回答性判定", state: "completed", time: "150ms", verdict: "no_answer（素材不足以回答）" },
-  { label: "生成答案", state: "skipped", time: "" },
-  { label: "誠實查無", state: "running", time: "" },
+  { label: "誠實查無", state: "completed", time: "260ms" },
   { label: "生成推薦問題", state: "pending", time: "" },
   { label: "完成對話", state: "pending", time: "" },
   { label: "輸出合規檢查", state: "pending", time: "" }
@@ -177,7 +188,7 @@ permalink: 3-4_skillManagement.html
 {% set stepFlowSummary = {
     tokens: "612", latency: "2.8s", ttft: "—", results: "4", model: "openai:gpt-4o-mini"
 } %}
-{# 這一輪演的是 refund-flow **失敗**（生成答案 skipped、誠實查無 running、ttft「—」），
+{# 這一輪演的是 refund-flow **失敗**（走誠實查無、ttft「—」），
      所以答案槽不能沿用元件內建那段「本次可退金額為 1,280 元」的成功答案——過程與產出
      必須是同一輪（§6：覆寫了過程就要一起覆寫產出）。 #}
 {% set trySkillAnswer = "很抱歉，這一題我無法從現有資料判斷：退貨政策表這次讀取逾時，沒有取得可以計算的依據。請稍後再試，或改用人工客服協助。" %}

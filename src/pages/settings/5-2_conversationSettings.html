@@ -6,7 +6,8 @@ pageHeading: 對話設定
 permalink: 5-2_conversationSettings.html
 ---
 {# 對話設定 hub（SaaS 新需求，21 頁真 app 無對應）。逆向自 gufofaq-saas product
-     app/routers/settings_hub.py（_PROFILE_FIELD_DEFAULTS／ProfileConfigIn）＝GufoRAG per-profile
+     `app/profile_config.py` 的 `PROFILE_FIELD_DEFAULTS`（欄位契約正本，刻意住在兩個消費者之上的一層）
+     ＋ `app/routers/settings_hub.py` 的 `ProfileConfigIn`／`ProfileConfigOut`＝GufoRAG per-profile
      ChatConfig 中「租戶該調」的旋鈕，收進單一頁。本頁已整合並取代原散落的三頁（檔案已刪、導覽已改指本頁）：
      知識檢索邏輯（5-2-1）、提示詞管理（5-4-1）、歡迎語設定（5-4-2）。取代關係（§5）：
      － 5-4-1 草稿卡編輯契約（.js-prompt-input／.js-prompt-save@promptManagement.js）由 components/prompt-edit
@@ -83,7 +84,8 @@ permalink: 5-2_conversationSettings.html
      兩者共用同一份「設置一/二/三」清單資料化（沿 5-2-1）。active＝檢視中頁籤；default＝前台預設設置，
      radio 綁 default，並帶 value=設置序號＋值載體 hook class js-front-qa-default 供 React 讀「選了哪個設置當前台預設」
      （否則 React 只能靠 DOM 索引猜，§5 值載體）。data-setting-sn 是 React 讀值（切換即重載該設置全部 config），非內容切換。
-     （label settings.frontQaDefault 英譯用 frontend 對齊站內拼寫；saas 仍作 front-end，待統一，round28 驗。） #}
+     （label `settings.frontQaDefault` 英譯用 frontend 對齊站內拼寫；saas 已跟上，
+     `apps/web/lib/i18n/messages.en.json` 的同 key 逐字相同，round40 複驗。） #}
 {% set settingTabs = [
   { label: "設置一", active: true, i18nKey: "settings.config1" },
   { label: "設置二", default: true, i18nKey: "settings.config2" },
@@ -146,7 +148,8 @@ permalink: 5-2_conversationSettings.html
         </div>
     </div>
     {# round30 起「不生效的選項不顯示」（不再標示、直接不渲染），故這句說明也不能再說「會標示」——
-         它是出貨文案不是註解，留著就是對租戶說謊（saas 端同句待回流）。 #}
+         它是出貨文案不是註解，留著就是對租戶說謊（saas 已跟上：`apps/web/lib/i18n/messages.zh.json`
+         的 `settings.modeApplicabilityHint` 與本頁逐字相同，round40 複驗）。 #}
     <div class="text-gray mt-8" data-i18n="settings.modeApplicabilityHint">對話模式決定下方哪些欄位生效，另一模式專用的欄位不會出現。</div>
 </div>
 
@@ -592,8 +595,10 @@ permalink: 5-2_conversationSettings.html
                     <div class="label"><label for="genReasoning_{{ g.key }}" class="control-label" data-i18n="settings.reasoningEffort">思考深度</label></div>
                     <div class="field">
                         {# 分組的空值語意與主回答**不同**：主回答空＝該模型預設，分組空＝最低思考
-                             （product settings_hub `_PROFILE_FIELD_DEFAULTS` 的 reasoning_effort_* 註解、
-                             chatbot chat.py 的 init_llm_group 走 reasoning=False）。故給另一顆 key，
+                             （product `app/profile_config.py` 的 `PROFILE_FIELD_DEFAULTS` 逐字寫著
+                             「`reasoning_effort_*` 空＝最低思考（維持現行預設）」、
+                             GufoRAG chatbot `app/services/chat.py` 的 `init_llm_group` 收尾是
+                             `self.init_llm(room2, reasoning=bool(eff))`）。故給另一顆 key，
                              不與主回答共用「沿用模型預設」——同字面兩種行為就是在說謊。 #}
                         {% set reasoningEffortId = "genReasoning_" + g.key %}
                         {% set reasoningEffortHook = "js-group-reasoning" %}
@@ -615,8 +620,10 @@ permalink: 5-2_conversationSettings.html
      模式適用性以 gufofaq-saas docs/mode-matrix.md 實測矩陣為準：agent/respond 僅 Agent 模式生效、
      intension 僅傳統搜尋模式生效（agent 無意圖路由階段）、role/chatroom 兩模式皆用；**不適用者不渲染**
      （見「生成設定」子頁籤檔頭註的理由）——「進階提示詞」
-     區塊即據此取代 product 的「Agent 提示詞」段（settings.agentPrompts，其整段「僅 Agent」暗示與
-     矩陣相反），待回流 product。 #}
+     區塊即據此取代 product 舊的「Agent 提示詞」整段（其「僅 Agent」暗示與矩陣相反）。**已回流**
+     （round40 複驗）：gufofaq-saas `apps/web/app/(app)/conversation-settings/page.tsx` 現在渲染
+     `settings.advancedPrompts`（「進階提示詞」）並逐欄標模式適用性，舊 key `settings.agentPrompts`
+     在 `apps/web` 全樹零命中。 #}
 <div class="tab-content" data-capability="settings:write" id="panelPrompts" style="display: none;">
     <div class="block mb-10 flex-row column gap-16">
         <div class="text-md text-bold" data-i18n="settings.systemPrompt">系統提示詞</div>
@@ -838,7 +845,8 @@ permalink: 5-2_conversationSettings.html
      政策主題表（每列 主題/定義/範例/輸入動作/輸出動作/拒絕訊息，逐列可就地編輯）＋新增/刪除列，
      結構比照 glossary-entries-modal 的詞條編輯器；新增/刪除列動業務輸入（值交給 React 去 PUT），
      故 hook class js-add-policy-topic／js-remove-policy-topic（§5）。詞彙過濾＋兩則封鎖訊息為值載體。
-     policyActionOff 英譯 Ignore 為修正後值（對齊 policyIntro 詞彙；product catalog 仍作 Off，待回流）。
+     `settings.policyActionOff` 英譯 Ignore 為修正後值（對齊 policyIntro 詞彙）；saas 已跟上，
+     `apps/web/lib/i18n/messages.en.json` 的同 key 也是 Ignore，round40 複驗。
      全部隨底部「儲存對話設定」直送（policy 分組 merge 寫回 GufoRAG ChatConfig）。示範 2 筆。 #}
 <div class="tab-content" data-capability="settings:write" id="panelPolicy" style="display: none;">
     <p class="text-gray" data-i18n="settings.policyIntro">定義敏感主題與詞彙過濾：對命中的輸入／輸出可封鎖、記錄或不處理，並設定被封鎖時回覆使用者的拒絕訊息。</p>
@@ -1263,16 +1271,18 @@ permalink: 5-2_conversationSettings.html
      皆為 Agent 模式；值載體隨底部「儲存對話設定」直送。工具名／參數名／術語表名／Server 名為業務資料
      （識別字），不翻。
      agentToolsIntro 本輪把「平台已啟用的 MCP Server」改成「平台註冊的」——停用中的現在也列得出來，
-     留著「已啟用」就是出貨文案在描述舊行為（product catalog 的同句待回流）。
+     留著「已啟用」就是出貨文案在描述舊行為（saas 已跟上：`apps/web/lib/i18n/messages.zh.json`
+     的 `settings.agentToolsIntro` 也是「平台註冊的 MCP Server」，round40 複驗）。
 
      本輪兩處行為改變（原本是一列英文識別字的勾選框）：
      ① 啟用是**三態**，逐工具一顆開關：全開＝全部啟用（enabled_builtin_tools 送全部工具名或 None，
         兩者對引擎等效）、只開部分＝白名單、**全關＝停用所有內建工具（送 []）**。後端本來就明分 None/[]（settings_hub.py 的
         ProfileConfigIn 註解與 chatbot agent_service.py `_enabled_builtin_tools is not None` 的過濾），
         原本刻意不開的「全停用」入口本輪開放，故 settings.builtinToolsHint 改成敘述三態。
-        ⚠️ saas 端待跟上：apps/web/app/(app)/conversation-settings/page.tsx 目前是
-        `setField("enabled_builtin_tools", next.length ? next : null)`——空選取被送成 null（＝全部啟用），
-        三態下必須改送 []（切版是正本，見 README「與真 app 的刻意差異」）。
+        saas 已跟上（round40 複驗）：`apps/web/app/(app)/conversation-settings/page.tsx` 現在是
+        `onEnabledToolsChange={(next) => setField("enabled_builtin_tools", next)}`（不再把空選取
+        折成 null），其 `ConfigDraft.enabled_builtin_tools` 旁逐字寫著「null＝全部啟用；[]＝全部停用；
+        非空＝白名單（三種語意不可用 truthy/falsy 混判）」。
      ② builtin_tool_overrides（逐工具自訂描述／工具內提示詞）本輪補上 UI（原註「刻意緩做」已不成立）。
         後端契約：settings_hub.py ProfileConfigIn.builtin_tool_overrides（dict[str, dict] | None）＋
         tool_refs.py assert_valid_builtin_tool_overrides（每欄上限 MAX_BUILTIN_TOOL_TEXT_LEN = 1024、
@@ -1575,8 +1585,10 @@ permalink: 5-2_conversationSettings.html
              就把它弄丟了（多選的值來自 <option>，選單沒有它＝選取狀態不存在）。
              停用期間不會被呼叫（chatbot routes/chat.py 的 _select_mcp_servers 以 id.in_() ＋ is_active
              兩道過濾，落差記 WARNING），故文案是「要等平台啟用後才會被呼叫」而不是「不能設定」。
-             ⚠️ product 待跟上：mcp.py 的 list_tenant_mcp_catalog 目前 `if … s.get("is_active")` 把停用中
-             的濾掉（投影本身已含 is_active，濾掉的是清單），要拿掉那個條件才餵得出本頁的清單。
+             product 已跟上（round40 複驗）：gufofaq-saas `services/product/app/routers/mcp.py` 的
+             `list_tenant_mcp_catalog` 不再濾 `is_active`（只留 `s.get("id") is not None`），
+             docstring 逐字寫著「**為什麼不濾掉停用中的**」並把 `tool_refs.assert_known_mcp_servers`
+             列為寫入層不驗啟用狀態的理由——本頁清單餵得出來了。
              示範 3 筆＝5-6-2 註冊表的三筆（跨頁自洽）；選取 1 筆啟用 ＋ 1 筆停用中，把「已選取卻被停用」
              那一態演出來（§5：每個分支都要有頁面演得到）。「（停用中）」是 chrome 走 i18n，Server 名是
              業務識別字不翻——<option> 裡塞不進第二個節點，故用 ui/multi-select 的 data-suffix／
@@ -1652,24 +1664,32 @@ permalink: 5-2_conversationSettings.html
              那是完全安全且有用的組態。所以這一格**不是必填、也不給預設數字**——上游的註解逐字寫著
              為什麼不能用預設值假裝已設定：舊版恆有 0.5，而 0.5 在 weaviate 上是死條件（實測 12 句
              刻意不相關的問句最低仍有 0.5206），用一個永遠不觸發的數字假裝已校準比留白糟得多。
-             **不綁 min／max**：三顆重排序器的尺不同，還有 gufonet 的 BM25 是數百～數千的整數，
-             寫死 [0, 1] 會讓 BM25 部署填不進合法值（`step="any"` 才收得下小數）。
-             ⚠️ **跨子頁籤的相依**（這一格最重要的一句）：上游在寫入層擋下
+             **不綁 max、但綁 `min="0"`**：上界綁不得——三顆重排序器的尺不同，還有 gufonet 的 BM25
+             是數百～數千的整數，寫死 [0, 1] 會讓 BM25 部署填不進合法值（`step="any"` 才收得下小數）。
+             下界則是端到端只收非負：GufoRAG chatbot `app/services/config.py` 的 `validate_score_floors`
+             對 `_SCORE_FLOOR_FIELDS` 兩欄一律拒負值（負值讓所有 score ≥ 它、粗篩永遠不觸發），
+             product `app/routers/settings_hub.py` 的 `ProfileConfigIn.qa_direct_score_floor` 因此綁
+             `Field(ge=0)`，理由逐字寫著要「讓拒絕發生在使用者還看得到那一格的時候」——表單不夾
+             等於把 400 推遲到按下儲存之後。
+             ⚠️ **跨子頁籤的相依**（這一格最重要的一句）：寫入層擋下
              「直答模式＝完全命中（judge 關）且 `enable_rerank` 關（在「生成」子頁籤）且門檻非空」
-             → 400、什麼都不存，理由是那個組合下②層會拿原始檢索分數當逐字直出的唯一依據，而原始分數
-             不是可校準的尺。使用者站在這一格看不到那顆重排序開關，故旁邊要有常駐說明並指出兩條出路。
-             殘留限制（上游誠實記載）：`exclude_unset` 讓三欄不同時出現時驗證看不到另外兩個值，那時
-             靠執行期 WARNING，而執行期的處置方向是**收窄**（把不可信的門檻當成未設 ⇒ 退回①-only）。
-             ⚠️ leave-to-saas：**product 尚未宣告這一欄**（`services/product` 全樹 `score_floor` 零命中，
-             `PROFILE_FIELD_DEFAULTS` 與 `ProfileConfigIn` 都沒有它，而 `ProfileConfigIn` 是
-             `extra="forbid"`）⇒ React 端接線之前 product 要先補，否則按下儲存是 422（那正是
-             `ProfileConfigIn` docstring 記載的失效史：分組 LLM／思考深度／時區曾經就是）。 #}
+             → 400、什麼都不存（product `settings_hub.py` 的 `_assert_qa_direct_floor_is_usable`），
+             理由是那個組合下②層會拿原始檢索分數當逐字直出的唯一依據，而原始分數不是可校準的尺。
+             使用者站在這一格看不到那顆重排序開關，故旁邊要有常駐說明並指出兩條出路。
+             GufoRAG 那一側的殘留限制（它自己誠實記載）：`exclude_unset` 讓三欄不同時出現時驗證看不到
+             另外兩個值，那時靠執行期 WARNING，處置方向是**收窄**（把不可信的門檻當成未設 ⇒ 退回①-only）；
+             product 這一側已補起來——`_assert_qa_direct_floor_is_usable` 先讀一次既有 config 再判。
+             product 已宣告這一欄（round40 複驗，原註「尚未宣告」失效）：
+             `services/product/app/profile_config.py` 的 `PROFILE_FIELD_DEFAULTS` 有
+             `"qa_direct_score_floor": None`，`routers/settings_hub.py` 的 `ProfileConfigIn` 與
+             `ProfileConfigOut` 兩邊都有它、且列在 `_NULLABLE_FIELDS`（`None` 是合法目標值＝未校準），
+             故 React 接線不會撞 `extra="forbid"` 的 422。 #}
         <div class="form-group row mobile-col">
             <div class="label label-md">
                 <label for="qaDirectScoreFloor" class="control-label" data-i18n="settings.scoreFloor">分數門檻</label>
             </div>
             <div class="field col-12-sm">
-                <input type="number" step="any" id="qaDirectScoreFloor" class="form-control js-qa-direct-score-floor"
+                <input type="number" step="any" min="0" id="qaDirectScoreFloor" class="form-control js-qa-direct-score-floor"
                     placeholder="留白＝未校準" data-i18n-placeholder="settings.scoreFloorUncalibrated"
                     value="3" aria-describedby="qaDirectScoreFloorScale qaDirectScoreFloorDep">
                 {% set scaleNoteId = "qaDirectScoreFloorScale" %}
@@ -1734,14 +1754,18 @@ permalink: 5-2_conversationSettings.html
              QA 直答的門檻在關掉裁判時是**唯一判定** ⇒ 那一格才可以為空。兩格的說明不共用一句話：
              寫成「都可留白」或「都必填」的話，錯的那一邊症狀是無聲的（這一格留白 ⇒ 上游 400；
              那一格必填 ⇒ 既有 exact 租戶遷移後直接失去直答）。
-             同樣**不綁 min／max**（尺不同，見下方那段目前生效的尺）。
-             ⚠️ leave-to-saas：同 `qa_direct_score_floor`，product 尚未宣告這一欄。 #}
+             同樣**不綁 max、綁 `min="0"`**（尺不同見下方那段目前生效的尺；非負同受 GufoRAG chatbot
+             `app/services/config.py` 的 `validate_score_floors` 管——`_SCORE_FLOOR_FIELDS` 兩欄都在裡面）。
+             product 已宣告這一欄（round40 複驗，原註「尚未宣告」失效）：
+             `services/product/app/profile_config.py` 的 `PROFILE_FIELD_DEFAULTS` 有
+             `"grounding_score_floor": 0.5`，且 `routers/settings_hub.py` 的 `ProfileConfigOut` 把它
+             宣告成不可為 null 的 `float`（`_NULLABLE_FIELDS` 只收 `qa_direct_score_floor`）。 #}
         <div class="form-group row mobile-col">
             <div class="label label-md">
                 <label for="groundingScoreFloor" class="control-label" data-i18n="settings.scoreFloor">分數門檻</label>
             </div>
             <div class="field col-12-sm">
-                <input type="number" step="any" id="groundingScoreFloor" class="form-control js-grounding-score-floor"
+                <input type="number" step="any" min="0" id="groundingScoreFloor" class="form-control js-grounding-score-floor"
                     value="0.5" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter"
                     aria-describedby="groundingScoreFloorScale groundingScoreFloorNote">
                 {% set scaleNoteId = "groundingScoreFloorScale" %}

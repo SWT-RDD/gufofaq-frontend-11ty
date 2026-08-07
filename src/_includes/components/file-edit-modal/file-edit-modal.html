@@ -2,8 +2,8 @@
      固定槽 schema（title/content/source/date/category/number/flag/tags/privilege/note1..note10/date2/date3，
      出處：gufofaq-saas services/product/app/field_schema.py 的 SLOTS——順序與 default_label 逐字對齊）：
      每槽一個輸入框供逐筆手填，label 用各槽預設顯示名。
-     槽之外另有一個**外部主鍵**欄：批次匯入是逐檔一把鍵（product `batch_import_documents` 的
-     `external_keys` 是 `{原始檔名: 鍵}`），共用一把的話同批第二個檔會 purge 掉第一個、回應卻說兩筆都成功，
+     槽之外另有一個**外部主鍵**欄：批次匯入是逐檔一把鍵（product `app/routers/datasets.py` 的
+     `batch_import_documents`，其 `external_keys` 是 `{原始檔名: 鍵}`），共用一把的話同批第二個檔會 purge 掉第一個、回應卻說兩筆都成功，
      所以它必須跟著「這一個檔」的編輯窗走，不能放在頁面層。
      內容（content）由 PDF 自動擷取，故 render 成 disabled textarea（沿用真實系統 .form-control.disabled + disabled 屬性）；
      其餘槽為可填 input。資料驅動：set editFields + for 內嵌渲染欄位列（依 §9，元件內部 for 不再巢狀 include 子元件）。

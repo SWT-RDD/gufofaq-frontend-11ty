@@ -719,10 +719,20 @@ bodyClass: guideline-page
                原本尾巴排成 skipped／pending／pending——pending 的語意是「還沒輪到、等一下會跑」，
                而這一輪已經中止了，那三個節點是同一件事，不可能一個略過、兩個還在排隊。
                pending 那一態在元件內建示範與 3-4 的試跑沙盒都看得到，不會因此沒有人演。 #}
-            {# QA 直答的判定層在本頁演「LLM 裁判」那一層（另兩層見元件內建示範與 2-2-3） #}
+            {# ⚠️ 這一份是**一次真實執行**，所以 QA 直答那一站只能是未命中：命中會結構性短路
+               （GufoRAG chatbot `services/agent_service.py` 的 `after_tools` 逐字「QA 原文本身就是回覆…
+               刻意不經 respond…grounding 同樣跳過」）——原本它掛著 `decision: "hit"`／`decidedBy: "llm_judge"`
+               卻又接著檢索、判定、生成，正是 round38d 在元件內建示範上修掉的那個組合，這一份漏網。
+               改成 agent 工具那一道判否（`entry: "agent_tool"` ⇒ `poolSize` 1，`answer_from_qa` 只判
+               agent 挑的那一筆，照實寫）。三種**判定層**（exact／score_floor／llm_judge）只在命中時才有值，
+               而命中就沒有後續生成 ⇒ 它們的示範一律放在下面那份狀態目錄，不放在真實執行流程裡。
+               節點清單與正典管線同長同序（saas `apps/web/lib/stepFlow.ts` 的 `CANONICAL_PIPELINE.agent`
+               十站，首站 `input_gate`、qa_direct 第 2 站）。判定雖然發生在 agent 迴圈**之內**，
+               節點仍畫在第 2 站——`computeFlow` 是照正典序畫、再用事件點亮，不是照事件到達順序排。 #}
             {% set stepFlowNodes = [
+                { label: "輸入合規檢查", state: "completed", time: "9ms" },
+                { label: "QA 直答", state: "completed", time: "240ms", decision: "no_exact_and_judge_rejected", entry: "agent_tool", poolSize: "1", hits: "客服問答集 / 這個型號保固多久", score: "4.1", floor: "3（llm_reranker 的 1–5 尺）" },
                 { label: "初始化對話", state: "completed", time: "11ms" },
-                { label: "QA 直答", state: "completed", time: "260ms", hits: "客服問答集 / 這個型號保固多久", score: "4.1", decidedBy: "llm_judge", decision: "hit", entry: "agent_tool", matchedRank: "1", poolSize: "1" },
                 { label: "Agent 推理", state: "completed", time: "320ms", thinking: "先判斷是否需要檢索工具，再決定生成策略。" },
                 { label: "檢索知識庫", state: "completed", time: "1.4s", tools: "search_knowledge_base", params: "{ query: '示範查詢' }", result: "命中 3 筆片段（相似度 0.74–0.88），注入後續生成脈絡。" },
                 { label: "可回答性判定", state: "completed", time: "160ms", verdict: "generate（素材足以回答）" },
@@ -731,12 +741,15 @@ bodyClass: guideline-page
                 { label: "完成對話", state: "skipped", time: "" },
                 { label: "輸出合規檢查", state: "skipped", time: "" }
             ] %}
+            {# 摘要是節點的衍生值（§6）：延遲＝已跑過的七站總和 9＋240＋11＋320＋1400＋160＋1200
+                 ＝ 3,340ms ⇒ 3.4s（skipped 那三站不計，本輪它們沒跑）；TTFT 算到第一個回答 token，
+                 而生成從前六站之後才開始 ＝ 2,140ms ⇒ 2.2s。原本寫 1.9s／520ms，兩個都比自己的節點還早。 #}
             {% set stepFlowSummary = {
-                tokens: "742", latency: "1.9s", ttft: "520ms", results: "3", model: "openai:gpt-4o-mini"
+                tokens: "742", latency: "3.4s", ttft: "2.2s", results: "3", model: "openai:gpt-4o-mini"
             } %}
             {# 軌跡截斷態（S3）：真實頁不會常駐它（只有超過 200／50 上限的那幾輪才有），
                  所以這裡是全站唯一看得到「已顯示 N／共 M 筆」與那顆「載入完整軌跡」的地方（§5，
-                 同 platform.usageError／share.rateLimited 的處置）。數字與上面 8 個節點不衝突：
+                 同 platform.usageError／share.rateLimited 的處置）。數字與上面十個節點不衝突：
                  節點是固定長度的正典管線摘要，這兩個數字算的是產生它的原始事件流。 #}
             {% set stepFlowTraceShown = 200 %}
             {% set stepFlowTraceTotal = 231 %}
@@ -746,24 +759,27 @@ bodyClass: guideline-page
                  **這一份是「狀態目錄」，不是一次真實執行**（同本頁把 verdict-tag 四個變體並排的用意）：
                  真實一輪最多兩筆 qa_direct——建圖前閘門判否、agent 又判一次——那個形狀在第 3、5
                  兩筆上就演得到。六種並列是因為審的人要一眼比較得出差異，分散在六個真實頁反而看不出來。
-                 為什麼要有：上游每一輪都送判定、未命中那半也送，而未命中時 hits／score／decidedBy／
-                 floor 四個鍵都沒值 —— 「裁判判否」「未達分數門檻」「整輪未判定」三種結果在畫面上
-                 長得一模一樣（節點在那裡、展開是空的）。客戶最在乎的就是 QA 直答，改了判準文字之後
-                 得有一個畫面回答得出「有沒有變好」。
+                 為什麼要有：上游每一輪都送判定、未命中那半也送，而未命中時 `decidedBy`（gate）與
+                 `matchedRank` 沒有值 ——「裁判判否」與「未達分數門檻」剩下的三格數字長得一模一樣，
+                 「整輪未判定」更是連 `hit` 都沒帶、展開整個是空的。客戶最在乎的就是 QA 直答，
+                 改了判準文字之後得有一個畫面回答得出「有沒有變好」。
                  **判否與未達門檻是中性灰、不是錯誤紅**：那是系統正確運作的結果（這一筆 QA 沒有完整
                  回答使用者，所以不逐字直出）；畫紅色會讓人以為系統壞了。
                  ⚠️ **`decidedBy`（判定層）只在命中那幾筆有值**：上游 `qa_direct.py` 把 `gate` 只寫進
                  `DECISION_HIT` 的那三個 `_rec`（`GATE_EXACT`／`GATE_SCORE_FLOOR`／`GATE_LLM_JUDGE`），
                  `DECISION_RECONSTRUCT_FAILED` 那兩處 `_rec` 一個 `gate=` 都沒帶。語意上也只能如此：
                  「判定層」回答的是「哪一關**放行**了這一輪」，沒有放行就沒有那一格。
-                 本輪拿掉兩筆演不出來的值——第 3 筆（裁判判否，原本掛 `llm_judge`）與第 7 筆
-                 （原文重組失敗，原本掛 `exact`）。三種判定層仍然演得到，而且每一筆都是 `hit`：
-                 分數門檻在下面第 1 筆、完全命中在第 2 筆（另見 2-2-3）、LLM 裁判在本節上一份
-                 示範的那一筆 QA 直答。
+                 ⚠️ 同理 **`matchedRank` 只有 ① 完全命中那一層寫得出來**：`decide()` 只在
+                 `_exact_layer` 的兩種收尾（`DECISION_HIT` 與 `DECISION_RECONSTRUCT_FAILED`）帶
+                 `matched_rank=`，② 分數門檻與 ③ LLM 裁判那兩處 `_rec` 都沒有。本輪因此拿掉第 1 筆
+                 （分數門檻命中）身上的名次——「第 3 名／共 16 筆」是那支 API 產不出來的組合。
+                 **三種判定層都住在這一份目錄**（第 1 筆分數門檻、第 2 筆完全命中、第 8 筆 LLM 裁判）：
+                 判定層只在命中時有值，而命中會結構性短路（不經 respond／grounding）⇒ 任何一頁的
+                 「真實執行流程」都不可能同時畫得出判定層與後面的生成節點，只有狀態目錄演得到。
                  §2：同一頁第二次用到同元件，**全部參數都要重設**（set 是頁面全域）。 #}
             {% set stepFlowNodes = [
                 { label: "QA 直答", state: "completed", time: "18ms", decision: "hit", entry: "pre_graph",
-                  matchedRank: "3", poolSize: "16", hits: "客服問答集 / 新住民結婚登記要準備什麼文件？",
+                  poolSize: "16", hits: "客服問答集 / 新住民結婚登記要準備什麼文件？",
                   score: "4.6", decidedBy: "score_floor", floor: "3（llm_reranker 的 1–5 尺）" },
                 { label: "QA 直答", state: "completed", time: "12ms", decision: "hit", entry: "agent_tool",
                   matchedRank: "1", poolSize: "1", hits: "產品問答集 / 這個型號保固多久", decidedBy: "exact" },
@@ -776,20 +792,27 @@ bodyClass: guideline-page
                 { label: "QA 直答", state: "completed", time: "4ms", decision: "not_attempted", entry: "agent_tool" },
                 { label: "QA 直答", state: "completed", time: "31ms", decision: "reconstruct_failed",
                   entry: "pre_graph", matchedRank: "1", poolSize: "16" },
+                { label: "QA 直答", state: "completed", time: "220ms", decision: "hit", entry: "pre_graph",
+                  poolSize: "16", hits: "客服問答集 / 居留證遺失要怎麼補發", score: "4.2",
+                  decidedBy: "llm_judge", floor: "3（llm_reranker 的 1–5 尺）" },
                 { label: "QA 直答", state: "completed", time: "15ms", decision: "some_future_decision", entry: "pre_graph", poolSize: "16" }
             ] %}
+            {# 摘要在這一份是**目錄的表頭**、不是某一輪的觀測：八筆判定不是同一輪發生的，所以
+                 「檢索」只能是 0——這份示範一個檢索節點都沒有（原本寫 16，那是候選池大小 `poolSize`，
+                 與「檢索回幾筆片段」是兩個不同的數，混用會讓人以為這一輪檢索過）。
+                 延遲 0.6s ≥ 八筆耗時總和 575ms，仍然對得上。 #}
             {% set stepFlowSummary = {
-                tokens: "318", latency: "0.6s", ttft: "210ms", results: "16", model: "openai:gpt-4o-mini"
+                tokens: "318", latency: "0.6s", ttft: "210ms", results: "0", model: "openai:gpt-4o-mini"
             } %}
             {# 這一份不演軌跡截斷（上一份演了）；成對參數要一起清掉，否則沿用上一次的值（§2） #}
             {% set stepFlowTraceShown = "" %}
             {% set stepFlowTraceTotal = "" %}
             {% include "components/step-flow/step-flow.html" %}
-            <div class="subtitle">描述：五種 decision 各至少一筆，＋「重用」小標一筆，＋最後一筆刻意給一個目錄裡沒有的值（<code class="inline-code">some_future_decision</code>）演那條 else：上游日後新增第六種結論時，畫面要看得到那個生字，不能因為查表查不到就靜靜消失。命中＝綠、判否／未達門檻＝中性灰、原文重組失敗＝警示、整輪未判定＝更淡的 .is-faint（那一顆是「沒判過」，與「判過了、判否」不是同一件事）。第 5 筆演 reused_from 的小標——它掛在徽章旁而不是做成第六種徽章：重用可能重用命中、也可能重用判否，一個值講不清楚是哪一種</div>
+            <div class="subtitle">描述：五種 decision 各至少一筆，＋三種判定層各一筆（第 1 筆分數門檻、第 2 筆完全命中、第 8 筆 LLM 裁判——判定層只有命中時才有值，而命中會結構性短路，所以真實執行流程演不到它們），＋「重用」小標一筆，＋最後一筆刻意給一個目錄裡沒有的值（<code class="inline-code">some_future_decision</code>）演那條 else：上游日後新增第六種結論時，畫面要看得到那個生字，不能因為查表查不到就靜靜消失。命中＝綠、判否／未達門檻＝中性灰、原文重組失敗＝警示、整輪未判定＝更淡的 .is-faint（那一顆是「沒判過」，與「判過了、判否」不是同一件事）。第 5 筆演 reused_from 的小標——它掛在徽章旁而不是做成第六種徽章：重用可能重用命中、也可能重用判否，一個值講不清楚是哪一種</div>
         </section>
 
         <section id="conditionalTextSection">
-            <h2 class="section-title"><span>25</span><span>React 條件文案</span></h2>
+            <h2 class="section-title"><span>24</span><span>React 條件文案</span></h2>
             <div class="caption">
                 <ul>
                     <li>下面這幾句在真實頁是 React 依 state 條件渲染的分支，它們的「另一態」是**什麼都不渲染**——所以在那些頁上永遠看不到（GUIDELINE §5：沒有頁面演得出來的分支等於沒驗收過）</li>
@@ -821,7 +844,7 @@ bodyClass: guideline-page
         </section>
 
         <section id="errorPageSection">
-            <h2 class="section-title"><span>24</span><span>整頁錯誤狀態</span></h2>
+            <h2 class="section-title"><span>25</span><span>整頁錯誤狀態</span></h2>
             <div class="caption">
                 <ul>
                     <li>ui/error-page：整頁置中的錯誤碼 + 說明（+ 選填的返回鈕）。生產 markup 是 src/404.html（找不到頁面）</li>
@@ -833,7 +856,7 @@ bodyClass: guideline-page
         </section>
 
         <section id="widgetShellSection">
-            <h2 class="section-title"><span>25</span><span>嵌入式小工具外殼</span></h2>
+            <h2 class="section-title"><span>26</span><span>嵌入式小工具外殼</span></h2>
             <div class="caption">
                 <ul>
                     <li>ui/widget-shell：launcher 鈕 ＋ 面板。它跑在<strong>別人的網站上</strong>（gufofaq-saas 的 public/widget.js 建一個 shadow root、把樣式一起注進去），所以這一份是<strong>視覺定案</strong>而不是站內版面——widget.js 照抄這裡的值與結構</li>

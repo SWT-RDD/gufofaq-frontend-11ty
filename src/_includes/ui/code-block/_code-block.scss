@@ -1,6 +1,21 @@
 // 程式碼區塊（5-9 萃取 API 的 curl 範例）：等寬字 + 內嵌面板底色 + 水平捲動。
-// 純樣式元件（無 html/js）：markup 直接寫 <pre class="code-block"><code>…</code></pre>。
 // 等寬字用全域 --fontFamilyMono token（同 chat-message／ui/inline-code；§4 共用字型堆疊抽全域）。顏色全用語意 token。
+//
+// markup 契約（無 html 元件，§1-2；整段照抄）——`<pre>` 掛 class、`<code>` 是必經的內層：
+//
+//   <pre class="code-block"><code>curl -X POST "https://&lt;your-host&gt;/api/extract/country-or-time" \
+//     -H "X-API-Key: YOUR_KEY" \
+//     -H "Content-Type: application/json" \
+//     -d '{"text":"我們下週三在東京開會","mode":3}'</code></pre>
+//
+//   · 內容緊貼在 `<code>` 的開／收標籤內側：`white-space: pre` 會把換行與縮排原樣畫出來，
+//     換行寫在標籤外就多一列空白（§2 同一件事的另一個面）
+//   · 尖括號一律寫 HTML 實體（`&lt;your-host&gt;`），否則瀏覽器會當成標籤吃掉
+//   · 內容是命令列樣本＝資料，**不掛 data-i18n**（同 ui/inline-code 的識別字）
+//   · 水平捲動由 `.code-block` 自己承擔，外面不要再包一層捲動容器
+//
+// 住在哪一頁（雙向；判準＝`grep -n 'class="code-block' src`）：唯一實例是 5-9_extractApiKey
+// 的 curl 範例，頁面自寫、無 include；反向也只有 5-9 渲染得出 `.code-block`。
 .code-block {
     margin: 0;
     padding: 0.75rem 1rem;

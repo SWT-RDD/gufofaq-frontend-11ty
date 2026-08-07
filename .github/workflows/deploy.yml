@@ -15,10 +15,13 @@ permissions:
   pages: write
   id-token: write
 
-# 同時只跑一個部署；新 push 進來時取消上一個未完成的
+# 同時只跑一個部署，**新 push 不砍掉進行中的那一次**（官方 Pages starter 也是 false）。
+# 這個 repo 直推 master，連兩次 push 很常見：cancel-in-progress: true 會在第二次 push 進來時
+# 把第一次殺在 deploy-pages 中途——那一步已經在對 Pages 服務寫入，砍在半途留下的是一個
+# 沒有人驗過的中間狀態，而省下的只是幾分鐘的 runner 時間。排隊即可。
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build:

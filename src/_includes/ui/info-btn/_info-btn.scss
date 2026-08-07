@@ -1,7 +1,7 @@
 // 資訊圖示鈕（表單標籤旁的 (i) 說明鈕）。樣式取自真 app 的**已編譯** css/component.css
 // （scss 源碼漏了這條、只存在編譯輸出——同 divider-vertical/footer/ab-compare 的情況）。
 // 原本我們專案完全沒有 .info-btn 樣式，導致它呈現瀏覽器預設方框按鈕；此處補回＝透明背景的圖示鈕。
-// 純樣式元件（無 html/js，markup 就地寫在頁面：2-2-1、2-2-3、component.html）。
+// 純樣式元件（無 html/js，markup 就地寫在使用頁）。
 //
 // markup 契約（無 html 元件，§1-2；整段照抄）—— 欄位標題旁的說明鈕，**六件組缺一不可**：
 //   <button type="button" class="info-btn" title="配置說明" data-i18n-title="qaTest.configInfo" data-open-modal="knowledgeModal">
@@ -10,6 +10,19 @@
 //   </button>
 // 少掉 .sr-only 那顆，可及名稱就只剩 title —— §4 明文「單掛 title 不算」（輔具不保證會念、
 // 觸控與鍵盤焦點也看不到它）。這正是無 html 元件最容易在複製時掉的那一個節點。
+// `title`／`.sr-only` 兩處**同一顆 key**、`data-open-modal` 指向同頁那顆 `<dialog id>`（無條件開窗，§5）。
+// 本元件的規則是單一顆 `.info-btn`、不帶任何祖先，所以上面那段可以原地照抄、不必連祖先一起搬。
+//
+// 生產用法是「接在欄位標題之後」，而**外層那顆 `.label` 的伴隨 class 三份實例各不相同**，別當成契約的一部分：
+//   2-2-1 是 `<div class="label flex-row">` ＋ `<label class="control-label">`；
+//   2-2-3 是 `<div class="label ab-field-label flex-row">`（ab-test-block 的定寬欄）；
+//   5-2 是 `<div class="label label-md">`（**沒有 flex-row**）＋ `<span id="aliasApplyOutputLabel" class="control-label">`。
+//
+// 住在哪一頁（雙向；判準＝`grep -n 'class="info-btn' src`）——四份實例，全部頁面自寫、無任何 include：
+//   2-2-1_singleTest 與 2-2-3_abTest 的「知識檢索」欄（`title="配置說明"` → knowledgeModal）、
+//   5-2_conversationSettings 的「出口套用說明」（`title="出口套用說明"`、key settings.aliasApplyOutputInfo
+//   → aliasOutputInfoModal）、component.html 的示範觸發器（照抄 2-2-1 那一份）。
+//   反向：渲染後含 `.info-btn` 的頁就是這四頁，沒有第五頁。
 .info-btn {
     background-color: transparent;
     border: none;

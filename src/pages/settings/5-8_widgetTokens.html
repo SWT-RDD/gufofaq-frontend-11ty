@@ -68,20 +68,26 @@ permalink: 5-8_widgetTokens.html
 {# id＝WidgetToken 主鍵（product WidgetTokenOut.id），撤銷打的是 DELETE /widget-tokens/{token_id}。
      **不可拿 loop.index 當列鍵**：這張表撤銷得掉列，位置不是身分——撤掉前一列之後，後面每一列的
      列鍵都會往前頂一格，React 的 key 與逐列動作的目標會一起指錯人（§6 列鍵，同 5-6-2／5-6-3）。 #}
+{# 列序＝**主鍵遞增**：`list_widget_tokens`（widget_tokens.py）是
+     `select(WidgetToken).where(tenant_id == …).order_by(WidgetToken.id)`，沒有第二種排法，
+     所以 38 一定排在 41 前面。原本寫成 41、38（新的在上），那是這支端點回不出來的順序（§6）。
+     金鑰字面量的長度也是推導值：`token="wgt_" + secrets.token_urlsafe(24)`（同檔的建立端點）
+     ⇒ 24 bytes 的 base64url 是 32 字元、加前綴共 36 字元。示範值原本只有 35 字元，
+     而這一欄是整串顯示、可複製的——長度不對，抄去做欄寬與換行測試的人第一眼就被誤導。 #}
 {% set tokens = [
-    {
-        id: 41,
-        name: "官網客服",
-        token: "wgt_aB3xYz9Qle8sample0000keyvalue00",
-        origins: ["https://acme.com", "https://www.acme.com"],
-        disabled: false
-    },
     {
         id: 38,
         name: "測試站",
-        token: "wgt_9zK1sample00revoked00keyvalue00",
+        token: "wgt_9zK1sample00revoked00keyvalue000",
         origins: ["https://staging.acme.com"],
         disabled: true
+    },
+    {
+        id: 41,
+        name: "官網客服",
+        token: "wgt_aB3xYz9Qle8sample0000keyvalue000",
+        origins: ["https://acme.com", "https://www.acme.com"],
+        disabled: false
     }
 ] %}
 <div class="block flex-row column gap-16">

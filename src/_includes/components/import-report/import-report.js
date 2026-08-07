@@ -3,7 +3,9 @@
 // 一行一個網址，格式 `[${0}](網址)`——`${0}` 是出口替換規則的命中文字 backref
 // （出處：GufoRAG chatbot/app/services/output_substitution.py；product 端的鏡射驗證在
 //   gufofaq-saas services/product/app/output_sub.py），別名欄由租戶自己填，
-// 因為匯入端剝連結時拿不到原本的錨文字（app/html_md.py 的 `_register_link` 只留下 href）。
+// 因為匯入端剝連結時只留得下 href、拿不到原本的錨文字：product `app/html_md.py` 的
+// `_ImportConverter._render_link` 在「表示不出來」那條分支只把 href 推進 `dropped_urls`，
+// 錨文字則留在內文裡（錨文字本身就是網址時整段丟掉），所以這份清單裡只有網址。
 document.addEventListener("DOMContentLoaded", function () {
     document.querySelectorAll(".js-file-report").forEach(function (box) {
         var btn = box.querySelector(".js-copy-dropped-links");

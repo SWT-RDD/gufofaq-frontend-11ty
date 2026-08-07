@@ -8,8 +8,10 @@
 {# conversation 的欄位（頁面在 include 前 set，§3-2/§6）：
      satisfaction / feedback / chatroomId / id / time / intent / userMessage —— 既有的基本欄
      answerSource —— `chat_logs.answer_source`：`qa_direct` ＝逐字直答（掛徽章），其餘＝模型生成
-     chatMode / tag / language —— 對話模式（傳統／Agent）／標籤（前台／後台／AB 測試）／語言；
-       未給一律畫「—」，不留白（留白會被讀成「這一欄沒有東西」而不是「這一輪沒有值」）
+     chatMode / tag / language —— **值一律給上游字面**：`chat_logs.search_mode`（`traditional`／`agent`，
+       中文由本元件的 {% if %} 鏈產生）／`chat_logs.tag`／`chat_logs.language`（LLM 的自由文字判斷，
+       如「繁體中文」「English」「日本語」，原樣輸出）；未給一律畫「—」，不留白
+       （留白會被讀成「這一欄沒有東西」而不是「這一輪沒有值」，理由詳見那四格旁邊的註解）
      canReadSettings —— **能力分級開關**：true 才渲染模型／取用筆數／選用筆數／提示詞四格。
        正本 `history.py` 的 `_SETTINGS_SCOPED_LOG_FIELDS` 在沒有 `settings:read` 時是**把鍵整個拿掉**，
        所以這裡切「有值 vs 整格不存在」兩態，不切「顯示空白」——詳見那四格旁邊的註解
@@ -65,24 +67,40 @@
                         <div class="th" data-i18n="qa.hasIntentDetection">有無進行意圖判斷</div>
                         <div class="td">{{ conversation.intent }}</div>
                     </div>
-                    {# 「這一輪是怎麼回答的」四欄。前三欄的值是**上游的字面**、不另發明詞彙：
+                    {# 「這一輪是怎麼回答的」四欄。**資料值一律是上游的字面**，要給人看的中文由這裡的
+                         `{% if %}` 鏈配 i18n key 產生——不可以把「Agent」「繁體中文」這種顯示字塞進資料再
+                         `{{ }}` 原樣輸出：React 接上真 API 只會印出 `agent`，而英文模式下那格永遠是中文。
+                         哪一欄走 `{% if %}` 鏈、哪一欄原樣輸出，取決於**上游那一欄是不是封閉目錄**：
                          · 答案來源＝`chat_logs.answer_source`（DB 只有 `qa_direct` 與 NULL＝正常生成；
-                           product 的 `list_history`／`export_history` 對 NULL 那一側取的查詢字面是 `generated`）。
-                         · 對話模式＝`chat_logs.search_mode`（`traditional`／`agent`）。**它一直都在**——
-                           前一版檔頭寫「上游沒有這一欄」是拿猜的欄名（`chat_mode`）去 grep 的結果：
-                           product 的 `_PUBLIC_LOG_FIELDS` 收了 `search_mode`，`_EXPORT_DETAIL_HEADER`
-                           那一欄的中文就叫「對話模式」，`/history/{id}` 走 `_project_log` 一定回得出來。
-                           那句負面斷言的結論是「React 端不渲染它」——照著做會把一個出貨中的欄位從畫面上拿掉，
-                           這正是 §3-2 說負面斷言舉證責任更重的理由。
+                           product 的 `list_history`／`export_history` 對 NULL 那一側取的查詢字面是 `generated`）
+                           ⇒ 封閉，走 `{% if %}` 鏈。
+                         · 對話模式＝`chat_logs.search_mode`（`traditional`／`agent`，product `qatest.py`
+                           與 `settings_hub.py` 都宣告成 `Literal["traditional", "agent"]`，chatbot 的
+                           `db/database.py` 欄位註解同字）⇒ 封閉，走 `{% if %}` 鏈，沿用測試頁那兩顆
+                           既有的 key（`qaTest.chatModeTraditional`／`qaTest.chatModeAgent`）。NULL（欄位比
+                           舊資料晚出生）落到「—」。
+                         · 語言＝`chat_logs.language`：**這一欄不是語言碼、也不是封閉目錄**，是 LLM 每一輪
+                           對「使用者最新輸入用什麼語言」的自由文字判斷（GufoRAG chatbot `models/chat.py`
+                           的 `ChatAnalysis.language`，欄位說明逐字舉例「English」「日本語」「繁體中文」，
+                           預設值就是「繁體中文」）。**不要拿 `Tenant.language`（`zh-TW`／`en`，帳號頁那顆
+                           下拉）去對它**——product `app/languages.py` 的檔頭專門寫了一段講這兩件事長得像
+                           但完全不同，`chat_logs.language` 是偵測結果、不是設定。既然值域開放，這一格就
+                           **原樣輸出**（同 §4-2：假資料／模型產出的自由文字不掛 data-i18n）。
                          · 標籤＝`chat_logs.tag`（前台／後台／AB 測試），與 4-1 清單的「使用者類型」同一欄。
-                         · 語言＝`chat_logs.language`（NULL＝本輪未偵測，故畫「—」而不是留白）。 #}
+                         `search_mode` **它一直都在**——前一版檔頭寫「上游沒有這一欄」是拿猜的欄名
+                           （`chat_mode`）去 grep 的結果：product 的 `_PUBLIC_LOG_FIELDS` 收了 `search_mode`，
+                           `_EXPORT_DETAIL_HEADER` 那一欄的中文就叫「對話模式」，`/history/{id}` 走
+                           `_project_log` 一定回得出來。那句負面斷言的結論是「React 端不渲染它」——照著做
+                           會把一個出貨中的欄位從畫面上拿掉，這正是 §3-2 說負面斷言舉證責任更重的理由。
+                         四欄一律「沒值就畫『—』」，不留白（留白會被讀成「這一欄沒有東西」而不是
+                           「這一輪沒有值」）。 #}
                     <div class="col col-3-md col-12-sm">
                         <div class="th" data-i18n="qa.answerSource">答案來源</div>
                         <div class="td">{% if conversation.answerSource == "qa_direct" %}<span class="verdict-tag is-muted" data-i18n="settings.qaDirect">QA 直答</span>{% else %}<span data-i18n="qa.answerSourceGenerated">模型生成</span>{% endif %}</div>
                     </div>
                     <div class="col col-3-md col-12-sm">
                         <div class="th" data-i18n="qaTest.chatMode">對話模式</div>
-                        <div class="td">{{ conversation.chatMode or "—" }}</div>
+                        <div class="td">{% if conversation.chatMode == "traditional" %}<span data-i18n="qaTest.chatModeTraditional">傳統搜尋</span>{% elif conversation.chatMode == "agent" %}<span data-i18n="qaTest.chatModeAgent">Agent 對話</span>{% else %}—{% endif %}</div>
                     </div>
                     <div class="col col-3-md col-12-sm">
                         <div class="th" data-i18n="field.tags">標籤</div>

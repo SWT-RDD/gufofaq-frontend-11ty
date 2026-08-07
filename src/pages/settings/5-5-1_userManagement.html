@@ -37,7 +37,7 @@ permalink: 5-5-1_userManagement.html
   { id: 2, name: "業務群組", capabilities: ["data:read", "ask", "history"] },
   { id: 3, name: "研發群組", capabilities: ["data:read", "data:write", "settings:read"] }
 ] %}
-{# isActive＝product users.py 的 User.is_active（PATCH /users/{id} 收 UserUpdateIn.is_active）。
+{# isActive＝product `app/routers/users.py` 的 `User.is_active`（PATCH /users/{id} 收 `UserUpdate.is_active`）。
      示範第三筆為已停用：離職成員留著帳號但不能登入，那一列要一眼看得出來（§5 分支要演得到）。 #}
 {% set members = [
   { email: "admin@example.com", isAdmin: true, isActive: true, groupIds: [] },
@@ -106,7 +106,7 @@ permalink: 5-5-1_userManagement.html
 
 {# 成員清單：default-table。狀態欄用 ui/switch（啟用／停用）；角色欄用 ui/switch（管理者切換）；
      所屬群組欄每一個群組一個 checkbox（多選指派）；有效能力欄唯讀顯示（由群組聯集算出，管理者＝全部）。
-     狀態（is_active）：後端早就支援（product users.py 的 PATCH /users/{id} 收 UserUpdateIn.is_active），
+     狀態（is_active）：後端早就支援（product `app/routers/users.py` 的 PATCH /users/{id} 收 `UserUpdate.is_active`），
      但這頁原本既看不到誰被停用、也停用不了任何人——離職員工的帳號留在啟用狀態，畫面上與在職的一模一樣。
      切換是值載體（隨同列「儲存」一起送，不是各自 PATCH），故只掛 hook class .js-member-active（§5 ②）；
      同列既有的管理者 switch 與群組 checkbox 維持原本的結構式綁定（既有契約，不順手改名）。

@@ -8,8 +8,14 @@
 
      種類標記走 `{% if %}` 鏈、key 逐條寫成字面，**不走「示範列上帶一組 label／key」那套投影**
      （本頁的 `severityLabel`／`severityKey` 是那一套）：投影出來的 `data-i18n="{{ … }}"` 是模板
-     變數，saas 端 `lib/i18n/parity.test.ts` 的抽取器對它是瞎的（它明文記著那一族「沒有任何網」，
-     `settings.outputRule*Desc` 就是這樣漏了一整輪）。寫成字面的三顆因此逐字受那條測試守門。
+     變數，繫結在巢狀集合裡解不開——saas `apps/web/lib/i18n/parity.test.ts` 的
+     `TEMPLATE_I18N_UNRESOLVED` 逐字列著 `3-5_dataHealth.html :: 內文 {{ tf.severityKey }}`。
+     那一族**現在有網了**（round40 複驗，原註「抽取器對它是瞎的」已失效）：後補的「形狀 5」
+     `collectStemPairs` 不看繫結、只在同一個 `{ … }` 裡配 `<stem>Key` ↔ `<stem>Label`，
+     `health.severityConfirmed`／`health.severityCandidate` 因此都不在 `ZH_UNGUARDED` 上。
+     不過那是一張後補的網、且**輸給形狀 4**（讀得到繫結者優先）；寫成字面的三顆從一開始就受
+     最直接的那條逐字對帳守門，不依賴任何補網——`settings.outputRule*Desc` 當年漏掉一整輪，
+     正是因為它只有補網、而補網那時還不存在。
 
      放 `components/` 而不是 `ui/`：它在自己的 markup 寫了 `ui/inline-code` 的 class
      （GUIDELINE §1-1 的「用到其他元件」第二種形式）。

@@ -116,10 +116,23 @@
                 <div class="modals-footer">
                     <div class="button-row center">
                         <button type="button" class="button button-border btn-close-modals" data-i18n="action.cancel">取消</button>
-                        {# 儲存＝整批 PUT（同術語表，不做逐筆 diff）。warning 段對回 `services/alias.py`
-                             寫入層那兩道使用者自己修得掉的驗證；有 warning 分支故**不掛 btn-close-modals**
-                             （每點必關窗會打斷修正，§5）。 #}
-                        <button data-capability="data:write" type="button" class="button button-primary js-save-alias-entries" data-toast="別名已更新|別名沒有通過寫入層驗證（標準詞不可為空、每列至少一個別名、長度與筆數有上限），請修正後再存|同一個別名指向不同的標準詞，或出現鏈式對映，請先攤平|更新失敗" data-i18n-data-toast="toast.saveAliasEntries" data-toast-type="success|warning|warning|error" data-i18n="action.save">儲存</button>
+                        {# 儲存＝整批 PUT（同術語表，不做逐筆 diff）。三段 warning 逐一對回 GufoRAG chatbot
+                             `app/routes/alias.py` 的 `replace_alias_entries`——它的 docstring 逐字寫著
+                             「兩道驗證，順序有意義」：
+                             ① `app/services/alias.py` 的 `validate_alias_entries`＝表內的空標準詞、長度、
+                                筆數（第 2 段）與同別名兩義／鏈式兩條衝突（第 3 段）；
+                             ② `validate_alias_apply_lists`——對**每一個把這張表套用著**的設定檔各跑一次
+                                （`_configs_applying`），以這批還沒落庫的內容取代 DB 舊值。它的
+                                `_validate_match_budget_and_conflicts` 擋跨表同名不同義（「兩張表單獨都合法，
+                                但放進同一個套用清單就互相矛盾」）與比對期 `MAX_MATCH_STAGE_ALIASES`，
+                                `_validate_output_budget` 擋出口期的 `MAX_OUTPUT_STAGE_RULES`／
+                                `MAX_OUTPUT_STAGE_ALIASES`＝**第 4 段**。這一段先前漏掉：它同樣是 400、
+                                同樣是使用者自己改詞條就修得掉的，卻沒有分支演得出來（round40 補）。
+                             product `app/routers/alias.py` 的 `replace_alias_entries` docstring 也逐字記著
+                             「失敗一律 400 並原樣帶回上游的訊息」。待回流 product catalog（saas 的
+                             `messages.zh.json` 同 key 目前仍是 4 段）。
+                             有 warning 分支故**不掛 btn-close-modals**（每點必關窗會打斷修正，§5）。 #}
+                        <button data-capability="data:write" type="button" class="button button-primary js-save-alias-entries" data-toast="別名已更新|別名沒有通過寫入層驗證（標準詞不可為空、每列至少一個別名、長度與筆數有上限），請修正後再存|同一個別名指向不同的標準詞，或出現鏈式對映，請先攤平|這張表正被某個設定檔套用著：改完之後與同一份套用清單裡的另一張表互相矛盾，或超過套用階段的別名／規則上限，請先調整再存|更新失敗" data-i18n-data-toast="toast.saveAliasEntries" data-toast-type="success|warning|warning|warning|error" data-i18n="action.save">儲存</button>
                     </div>
                 </div>
             </div>

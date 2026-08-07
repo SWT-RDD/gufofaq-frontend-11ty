@@ -35,8 +35,13 @@ permalink: 5-9_extractApiKey.html
     <div class="flex-row align-items-center gap-8 flex-wrap">
         <div class="col-6-md col-12-sm">
             <div class="form-group">
+                {# 示範值的長度是推導值，不是隨手打的：product `app/security.py` 的
+                     `new_api_key()` ＝ `_API_KEY_PREFIX + secrets.token_urlsafe(32)`
+                     ⇒ 32 bytes 的 base64url 是 43 字元、加 `sk_` 共 46 字元。
+                     這一格預設是 `type="password"`，**遮罩點數就等於字面量長度**——原本只給 35 字元，
+                     等於畫面上那排點永遠比真金鑰短十顆，欄寬與換行也就沒有被真的驗過。 #}
                 <div class="field">
-                    <input type="password" id="apiKeyInput" class="form-control" value="sk_aB3xYz9Qle8sample000apikeyvalue00" readonly aria-label="目前金鑰" data-i18n-aria-label="extractKey.currentKey">
+                    <input type="password" id="apiKeyInput" class="form-control" value="sk_aB3xYz9Qle8sample000apikeyvalue000000000000" readonly aria-label="目前金鑰" data-i18n-aria-label="extractKey.currentKey">
                 </div>
             </div>
         </div>

@@ -35,8 +35,8 @@ permalink: 2-2-3_abTest.html
      提示詞版本，那不是一個真實可能的狀態（§6），AB 測試的用途也演不出來。
      `promptVersion` 只是回覆標題上的版本註記（提示詞本文由使用者當場編，兩側各一份）。 #}
 {% set abSides = [
-    { side: "A", knowledge: "配置一", llm: "OpenAI gpt-4o-mini", configKey: "settings.config1", configLabel: "設置一", promptVersion: "V3-角色定位型" },
-    { side: "B", knowledge: "配置二", llm: "OpenAI gpt-4o", configKey: "settings.config2", configLabel: "設置二", promptVersion: "V2-任務導向型" }
+    { side: "A", knowledge: "1", llm: "OpenAI gpt-4o-mini", configKey: "settings.config1", configLabel: "設置一", promptVersion: "V3-角色定位型" },
+    { side: "B", knowledge: "2", llm: "OpenAI gpt-4o", configKey: "settings.config2", configLabel: "設置二", promptVersion: "V2-任務導向型" }
 ] %}
 <div class="block ab-test-block flex-row gap-24 mobile-column">
     {% for ab in abSides %}
@@ -64,9 +64,9 @@ permalink: 2-2-3_abTest.html
                 <div class="field">
                     <select id="abKnowledgeSelect-{{ ab.side }}" class="form-control singleSelect js-knowledge-select">
                         <option value="" data-i18n="common.pleaseSelect">請選擇</option>
-                        <option value="配置一" data-i18n="settings.config1"{% if ab.knowledge == "配置一" %} selected{% endif %}>設置一</option>
-                        <option value="配置二" data-i18n="settings.config2"{% if ab.knowledge == "配置二" %} selected{% endif %}>設置二</option>
-                        <option value="配置三" data-i18n="settings.config3"{% if ab.knowledge == "配置三" %} selected{% endif %}>設置三</option>
+                        <option value="1" data-i18n="settings.config1"{% if ab.knowledge == "1" %} selected{% endif %}>設置一</option>
+                        <option value="2" data-i18n="settings.config2"{% if ab.knowledge == "2" %} selected{% endif %}>設置二</option>
+                        <option value="3" data-i18n="settings.config3"{% if ab.knowledge == "3" %} selected{% endif %}>設置三</option>
                     </select>
                 </div>
             </div>
@@ -242,7 +242,8 @@ permalink: 2-2-3_abTest.html
                                                     <span class="tooltip" data-i18n="comp.viewSource">查看來源</span>
                                                 </button>
                                                 {# 讚/倒讚：AB 兩側各自是一筆真的 chat_log（qatest.py 的 /compare 從 SSE 取
-                                                     latest_chat_log_id，配成 ab_round 的 a_log_id／b_log_id），所以評分走的是
+                                                     latest_chat_log_id，經 `_upsert_ab_round` 配成 `models.py` 的
+                                                     `AbTestRound`（表 ab_test_rounds）的 `a_log_id`／`b_log_id`），所以評分走的是
                                                      跟前台同一支 product `POST /history/{log_id}/rating`——評完在 4-1 用
                                                      「AB測試」那個 tag 篩得出來。沿用前台的契約（.js-vote ＋ data-vote）；
                                                      **條件開窗**（要先認出這是哪一側的 log）故只掛 hook、不掛 data-open-modal（§5 ①），
@@ -286,7 +287,8 @@ permalink: 2-2-3_abTest.html
                                                     <span class="tooltip" data-i18n="comp.viewSource">查看來源</span>
                                                 </button>
                                                 {# 讚/倒讚：AB 兩側各自是一筆真的 chat_log（qatest.py 的 /compare 從 SSE 取
-                                                     latest_chat_log_id，配成 ab_round 的 a_log_id／b_log_id），所以評分走的是
+                                                     latest_chat_log_id，經 `_upsert_ab_round` 配成 `models.py` 的
+                                                     `AbTestRound`（表 ab_test_rounds）的 `a_log_id`／`b_log_id`），所以評分走的是
                                                      跟前台同一支 product `POST /history/{log_id}/rating`——評完在 4-1 用
                                                      「AB測試」那個 tag 篩得出來。沿用前台的契約（.js-vote ＋ data-vote）；
                                                      **條件開窗**（要先認出這是哪一側的 log）故只掛 hook、不掛 data-open-modal（§5 ①），
@@ -337,11 +339,30 @@ permalink: 2-2-3_abTest.html
      元件專屬名）——摘要的檢索筆數要對上節點的「命中 6 筆」、模型對上選取的設定，否則同頁自打架。
      元件內建預設節點是移民主題（配 2-2-1），見該元件檔頭註解。11ty 此處單處 demo 元件結構；React 端
      AB 兩側各自即時渲染一份 StepFlow（每側獨立串流步驟，屬業務層——見 ab-test/page.tsx）。 #}
-{# QA 直答的判定層在本頁演「完全命中」那一層（內建示範是 floor、元件庫頁是 judge——三層各有一頁
-     演得出來，§5 每個分支都要看得到）。註解只能放在 {% set %} 之前：寫進運算式裡會 build 失敗（§2）。 #}
+{# QA 直答在本頁演「建圖前閘門判否」那一態。**命中是結構性短路**：GufoRAG chatbot
+     `services/agent_service.py` 的 `after_tools` 逐字「QA 原文本身就是回覆…刻意不經 respond…
+     grounding 同樣跳過」，`routes/_chat_stream.py` 的 `_qa_direct_stream` 也寫「不進 agent／生成節點」
+     ⇒ 一旦命中，本頁下面的檢索知識庫、可回答性判定、生成答案就都不可能存在（§6：示範資料演的
+     必須是上游做得出來的狀態）。原本這一節點掛著 `decidedBy: "exact"`（＝命中才有的判定層）卻又
+     繼續生成兩則答案，正是 round38d 在內建示範上修掉的那個組合。
+     故改成未命中那半的四個鍵，值彼此自洽：
+       · `decision` ＝ `no_exact_and_judge_rejected`（① 沒有逐字命中、③ 裁判判否）
+       · `entry` ＝ `pre_graph`——正典序（saas `apps/web/lib/stepFlow.ts` 的 `CANONICAL_PIPELINE.agent`）
+         第 2 站就是 qa_direct，位置本身即建圖前閘門
+       · `poolSize` ＝ max(取用資料筆數, MIN_CANDIDATE_POOL) ＝ max(16, 2) ＝ 16；16 就是本頁上面
+         兩側「取用資料筆數」欄的值（chatbot `services/qa_direct.py` 的 `_pool_size` 沿用
+         `search_total_number`，§6 同頁同源）
+       · `score` 3.4 ≥ `floor` 3 ⇒ 過了 ② 才輪得到 ③ 判否（低於門檻在 ② 就以 `below_score_floor`
+         收掉，那一態由 step-flow 內建示範／2-2-1 演）
+       · `decidedBy` **刻意不給**：上游只在 `DECISION_HIT` 的三個 `_rec` 帶 `gate=`，判否時必為 null。
+         三種判定層（exact／score_floor／llm_judge）都在元件庫頁的「判定結果狀態目錄」演得到。
+     節點清單與正典管線同長同序（首站 `input_gate`、qa_direct 第 2 站）：React 的 `computeFlow`
+     一進畫面就把 10 站全畫出來，少畫前兩站的靜態稿是它產不出來的形狀。
+     註解只能放在 {% set %} 之前：寫進運算式裡會 build 失敗（§2）。 #}
 {% set stepFlowNodes = [
+    { label: "輸入合規檢查", state: "completed", time: "8ms" },
+    { label: "QA 直答", state: "completed", time: "240ms", decision: "no_exact_and_judge_rejected", entry: "pre_graph", poolSize: "16", hits: "產品問答集 / UH3240 的介面規格", score: "3.4", floor: "3（llm_reranker 的 1–5 尺）" },
     { label: "初始化對話", state: "completed", time: "10ms" },
-    { label: "QA 直答", state: "completed", time: "12ms", hits: "產品問答集 / UH3240 的介面規格", decidedBy: "exact" },
     { label: "Agent 推理", state: "completed", time: "300ms", thinking: "問題要規格全表，決定先搜尋知識庫、必要時取回規格書全文。" },
     { label: "檢索知識庫", state: "completed", time: "1.1s", tools: "search_knowledge_base", params: "{ query: 'UH3240 USB-C 規格 特色' }", result: "命中 6 筆片段（相似度 0.81–0.93），注入後續生成脈絡。" },
     { label: "可回答性判定", state: "completed", time: "180ms", verdict: "generate（素材足以回答）" },
@@ -350,8 +371,13 @@ permalink: 2-2-3_abTest.html
     { label: "完成對話", state: "pending", time: "" },
     { label: "輸出合規檢查", state: "pending", time: "" }
 ] %}
+{# 摘要是節點的衍生值（§6 能互相推導的要對得上）：TTFT ＝ 從 `_t0` 到第一個回答 token
+     （chatbot `routes/chat.py` 的 `_ttft_ms`），而生成答案要等前六站跑完 ⇒
+     8＋240＋10＋300＋1100＋180 ＝ 1,838ms ⇒ 1.9s（原本寫 450ms，比生成的起點還早）。
+     延遲 2.1s 是本輪到目前為止的經過時間（生成中，故 > 1.838s）；檢索 6 對上檢索節點的「命中 6 筆」
+     與下面那張來源表。 #}
 {% set stepFlowSummary = {
-    tokens: "1,096", latency: "2.1s", ttft: "450ms", results: "6", model: "openai:gpt-4o-mini"
+    tokens: "1,096", latency: "2.1s", ttft: "1.9s", results: "6", model: "openai:gpt-4o-mini"
 } %}
 {% include "components/step-flow/step-flow.html" %}
 

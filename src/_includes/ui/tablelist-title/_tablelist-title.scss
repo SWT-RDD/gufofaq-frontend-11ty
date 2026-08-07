@@ -1,8 +1,30 @@
 // 區段小標題（原真 app component.scss「優先等級表格」附帶樣式）。
-// 純樣式元件（無 html/js）：markup 直接寫 <div class="tablelist-title">。
-// 從 ui/default-table 升格：它其實是表格「外」的獨立標題（5-2 的優先級標題×4、
-// 5-2 欄位命名、knowledge-retrieval-modal 的分組標題都在表格外用它），
-// 寄生在 default-table 的 scss 裡等於一個沒有主人的 class（§4）——比照 data-info 先例獨立成原子。
+// 從 ui/default-table 升格：它其實是表格「外」的獨立標題（分層檢索標題、欄位命名、
+// modal 內的分組標題都在表格外用它），寄生在 default-table 的 scss 裡等於一個沒有主人的
+// class（§4）——比照 data-info 先例獨立成原子。
+//
+// markup 契約（無 html 元件，§1-2；整段照抄）—— 兩型，差別只在有沒有 `id`：
+//
+//   ① 固定標題：字面是 chrome ⇒ **一定帶 data-i18n**（少了它英文模式整條標題是繁中，而視覺指紋看不出來）
+//
+//      <div class="tablelist-title" data-i18n="settings.productOnlyFields">產品內部欄位</div>
+//
+//   ② 迴圈標題：class 與 key 由頁面資料成對供給；再加一個唯一 `id` 讓同表的控制項
+//      `aria-labelledby` 指得到它（§4 逐列同型控制項要靠列脈絡命名）
+//
+//      <div class="tablelist-title" id="intentLevelTitle-{{ loop.index }}" data-i18n="{{ level.i18nKey }}">{{ level.title }}</div>
+//      <div class="tablelist-title" data-i18n="{{ group.titleKey }}">{{ group.title }}</div>
+//
+//   · 它是 `<div>`、不是 `<h2>/<h3>`：全站標題層級由 page-shell 的唯一 `<h1>` 與各區塊自理，
+//     這顆只是區段小標的視覺（`--brand-text` 字色 + 上下 padding），沒有 heading 語意
+//   · 它住在表格**外面**（`.table-container`／`<table>` 之前），不要塞進 `<caption>` 或 `<thead>`
+//
+// 住在哪一頁（雙向；判準＝`grep -rn 'class="tablelist-title' src`）——
+//   實例寫在這些檔：5-2_conversationSettings（分層檢索兩種模式的標題、未使用／使用中、欄位命名、
+//     產品內部欄位；型② 的 `intentLevelTitle-` 也在這裡）、components/file-edit-modal、
+//     components/knowledge-retrieval-modal（型②）、components/multi-select-box（兩處）。
+//   渲染後含 `.tablelist-title` 的頁（反向）：1-1-4（multi-select-box）、1-2-1（file-edit-modal）、
+//     2-2-1／2-2-3（knowledge-retrieval-modal）、5-2、component.html。
 .tablelist-title {
     font-size: 1.125rem;
     text-align: left;

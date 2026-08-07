@@ -3,21 +3,25 @@
      （GUIDELINE §5）；彈窗本體回歸切版：詞條清單表（term/definition 逐列）＋新增/移除列＋儲存。
      3-2 是 SaaS 新頁（21 頁真 app 無對應）、product 先行出貨（GlossaryEntriesModal.tsx）＝NET-NEW
      忠實度基準（§5）：i18n key 值以 product catalog 為準（新增一列／詞條已更新｜更新失敗）。
-     增刪列＝React local state 操作（onClick 元件作用域直綁、product 無 hook），儲存時才整批 PUT
+     增刪列＝React local state 操作（onClick 元件作用域直綁），儲存時才整批 PUT
      gufofaq-saas product app/routers/glossary.py（「編輯一張表→整批 PUT /glossary/{id}/entries」，
      不做逐筆 diff）——故增刪鈕**不掛 data-toast**（它們不送 API）；但**要掛 hook class**：
      §5「切版新頁的業務觸發鈕自創 hook class，命名 `js-<動詞>-<名詞>`」，而同型的表單 repeater
      全站都是這樣掛的（2-2-4 的 `js-add-assertion`／`js-remove-assertion`、5-2 的
      `js-add-policy-topic`／`js-remove-policy-topic`，同樣沒有切版行為、同樣由 React 接）。
-     原本兩顆什麼都沒掛＝轉換時認不出它們該接誰，而畫面上是兩顆按了沒反應的鈕。
+     原本兩顆什麼都沒掛＝轉換時認不出它們該接誰，而畫面上是兩顆按了沒反應的鈕。**兩顆 hook 已回流**
+     （round40 複驗）：`GlossaryEntriesModal.tsx` 現在是 `className="… js-add-glossary-entry"` 與
+     `className="… js-remove-glossary-entry"`。
      詞條／定義的 maxlength 是契約欄位（§6），出處＝GufoRAG chatbot app/services/glossary.py 的
      `MAX_TERM_LEN = 200`／`MAX_DEFINITION_LEN = 2000`，兩道逐筆檢查都在同檔的 `validate_entries`（存檔即驗、
      fail-fast），經 product glossary.py 的 `_as_bad_request` 映成 400。**別名欄已於 2026-08-07 隨上游移除**：chatbot `db/database.py` 逐字寫著「別名一律住在 `alias_entries`」，
      別名改由 3-6_aliasTables 統一管理、在 5-2 決定哪個階段套用。沒有生產使用者，故不留、不 deprecate——
      留著只會有兩個地方可以填別名，而這整件事就是為了收掉那個。
-     對 product 的刻意結構差異（皆為設計系統改良，待回流 product）：table-container.scrollTable 包裹＋
-     colgroup 欄寬（product table 裸落容器）、操作欄 sr-only th（product 空 th）、空狀態 {% else %}
-     colspan 無資料列（product 為表格後的 <p>；站內無資料列正典優先）。標題的表名是執行期資料，由 React 填。 #}
+     原記的三項結構差異**已全數回流**（round40 複驗，故不再是差異）：gufofaq-saas
+     `apps/web/components/GlossaryEntriesModal/GlossaryEntriesModal.tsx` 現在同樣有
+     `<div className="table-container scrollTable">` 包裹、同一組 `<colgroup>` 欄寬（200／280／90）、
+     操作欄 `<th><span className="sr-only">`，空狀態也是 `rows.length === 0` 時的 `colSpan={3}` 無資料列
+     （不再是表格後的 `<p>`）。標題的表名是執行期資料，由 React 填。 #}
 {# 示範資料變數用元件專屬名 glossaryEntryRows（不用泛用名）：{% set %} 是頁面全域（§2/§6）。 #}
 {% set glossaryEntryRows = [
     { term: "年終獎金", definition: "依年度考核與公司獲利發放的額外獎金。" },

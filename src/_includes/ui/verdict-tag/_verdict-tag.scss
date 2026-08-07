@@ -1,13 +1,27 @@
-// 判定標記：一顆語意小標，回歸案例編輯（2-2-4）與回歸執行報表（2-2-5）共用。
+// 判定標記：一顆語意小標。
 //
-// 純樣式元件、**無 html**，故 markup 契約逐字寫在這裡（GUIDELINE §1-2）：
+// 純樣式元件、**無 html**，故 markup 契約逐字寫在這裡（GUIDELINE §1-2）。**三型**，抄的時候要分清楚：
 //
-//     <span class="verdict-tag is-pass" data-i18n="regression.verdictPass">通過</span>   ← 文字型：一定帶 data-i18n
-//     <span class="verdict-tag is-warn">{{ notComparedRows.length }}</span>              ← 計數徽章：值是資料，刻意不帶
+//   ① 文字型（字面是 chrome）：class 與 key 都寫死，**一定帶 data-i18n**
+//     <span class="verdict-tag is-pass" data-i18n="regression.verdictPass">通過</span>
 //
-// 兩種形狀都在用，抄的時候要分清楚：文字型漏掉 data-i18n 就是英文模式漏字，而視覺指紋看不出來。
+//   ② 資料型（內容是值：筆數、政策代碼、上游回的判定字串）：刻意不帶 data-i18n；
+//      class 可以寫死、也可以由頁面資料給
+//     <span class="verdict-tag is-warn">{{ notComparedRows.length }}</span>
+//     <span class="verdict-tag {{ bucket.tagClass }}">{{ bucket.count }}</span>
+//     <span class="verdict-tag is-fail">output_policy</span>
 //
-// 四個變體。**判準寫在這裡，是因為顏色本身就會說話——挑錯一顆就是在畫面上說謊**：
+//   ③ 插值型（2-2-4／2-2-5 的主力寫法）：**class 與 key 成對**由頁面資料供給，兩顆都要給
+//     <span class="verdict-tag {{ row.diffClass }}" data-i18n="{{ row.diffKey }}">{{ row.diff }}</span>
+//     <span class="verdict-tag {{ run.statusClass }}" data-i18n="{{ run.statusKey }}">{{ run.statusLabel }}</span>
+//
+//     只給 class 不給 key，英文模式那一格就是繁中——而它落在表格裡、每一列都一樣，
+//     視覺指紋完全看不出來。頁面那份 `{% set %}` 資料裡兩個欄位要**同一筆同時存在**
+//     （`diffClass`＋`diffKey`、`statusClass`＋`statusKey`、`beforeClass`＋`beforeKey`…），
+//     加一種狀態就是加一對，不是加一顆。
+//
+// 變體與它們的語意分界（清單就是全集，別在別處另記一份計數）。
+// **判準寫在這裡，是因為顏色本身就會說話——挑錯一顆就是在畫面上說謊**：
 //
 //   .is-pass   確定性斷言全過／執行完整跑完／「修好了」。綠色只給這一類。
 //   .is-fail   確定性斷言有一條沒過／執行中斷／「退步」。紅色只給這一類。
@@ -23,13 +37,21 @@
 //              正典：step-flow 的 QA 直答判定 `not_attempted`（整輪未判定）——它與「判否」
 //              不是同一件事，判否是判過了、這一顆是沒判過，兩者同色會讓人以為系統做了判定。
 //
-// 第五類語意（2-2-4／2-2-5 用得到，補進契約以免下一個人照上面四條挑錯色）：
+// 另一組語意（2-2-4／2-2-5 用得到，補進契約以免下一個人照上面那幾條挑錯色）：
 //   **設定來源／差異標記**——「這一次指定」「不同」走 .is-warn（這一輪的值與設定檔／基準不一樣，
 //   是要人多看一眼的告誡，不是壞掉）；「沿用設定檔」「相同」走 .is-muted（中性事實）。
 //   「主觀分」型別標記同樣走 .is-warn，理由與上面 `.is-warn` 那條一致：它量不到確定性判定。
 //
 // 顏色一律語意 token：填充族（--success／--danger／--warning）配成對的前景
 // （--on-accent／--on-warning），中性態用表面色配次要文字（GUIDELINE §4 對比度硬規則）。
+//
+// 住在哪一頁（雙向；判準＝`grep -rn 'class="verdict-tag' src`）——
+//   實例寫在這些檔：2-2-4_regressionSuites（型①③）、2-2-5_regressionRun（型①②③）、
+//     4-1_qaHistory（「QA 直答」徽章，型①）、4-2_qaHistory_detail（被什麼擋下，型①）、
+//     components/qa-detail-info（「QA 直答」，型①）、components/step-flow（QA 直答判定五態，型①
+//     ＋一顆兜底的 `{{ node.decision }}` 計數型）、component.html（4-2 合規兩欄的唯一可見處，型②）。
+//   渲染後含 `.verdict-tag` 的頁（反向）：2-2-1、2-2-3、2-2-4、2-2-5、3-4、4-1、4-2、component.html
+//     （2-2-1／2-2-3／3-4 是經由 components/step-flow 進去的）。
 .verdict-tag {
     display: inline-flex;
     align-items: center;

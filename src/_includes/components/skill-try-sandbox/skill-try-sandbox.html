@@ -9,8 +9,10 @@
       引用而凍結的 `.js-try-skill`（§5：hook 一經 saas 引用即凍結，不因它其實是純前端互動而改名）。
     - 「開始試跑」是送 API 的動作鈕（product qatest.py 的 SSE ask），依 §5 ③ 掛 `data-toast` 列全結果，
       成敗分支由 React 演；切版不假造它的執行。
-  答案輸出槽 `.skill-try-answer`：試跑的產出就是答案，沒有它這塊面板演不完整（saas 端已有對應節點但
-    兩邊都沒有樣式——切版是正本，故在此補上並給它樣式主人）。切版填示範答案當長相示範（§3-2 長文寫死）。
+  答案輸出槽 `.skill-try-answer`：試跑的產出就是答案，沒有它這塊面板演不完整。樣式主人在同資料夾的
+    `_skill-try-sandbox.scss`；**saas 已跟上**（round40 複驗）——`apps/web/components/SkillTrySandbox/`
+    的 `SkillTrySandbox.tsx` 有 `className="skill-try-answer m-0"`，`SkillTrySandbox.scss` 與這裡的
+    `.skill-try .skill-try-answer` 逐字相同。切版填示範答案當長相示範（§3-2 長文寫死）。
   參數：trySkillName（選填，示範用的 skill 名，預設 refund-flow）、
        trySkillAnswer（選填，答案輸出槽的內容）。**答案是節點的衍生值**：使用頁覆寫了 stepFlowNodes
        （試跑走到哪一步、成功還失敗）卻沿用元件內建的成功答案，畫面會同時演「答案還沒生成」與

@@ -8,6 +8,8 @@ permalink: 4-2_qaHistory_detail.html
 {# 對話詳細資訊 + 參考來源資料——依 §3-2/§6 由頁面提供，元件只負責渲染 #}
 {# 示範狀態＝一則 **Agent 模式、模型生成** 的前台問答（＝下面 `tag` 那一格，也＝4-1 #12173 的
      「使用者類型」欄；兩頁同一筆，欄位逐字同源），看得到執行流程與工具軌跡；
+     `chatMode` 存的是上游字面 `agent`（`chat_logs.search_mode` 的兩個值之一），中文由
+     components/qa-detail-info 的 {% if %} 鏈產生——本頁下面那道「有沒有軌跡可畫」的閘也比對同一個字面；
      canReadSettings 給 true（示範「有 settings:read」那一態；沒有那一態是四格整個不渲染，
      不是留白——見 components/qa-detail-info 那一段註解）。
      這一筆刻意不是 QA 直答：直答那一態在 4-1 清單的徽章上演得到（掛在 #12175，那一列沒有
@@ -21,7 +23,7 @@ permalink: 4-2_qaHistory_detail.html
     intent: "-",
     userMessage: "新住民結婚注意事項",
     answerSource: "generated",
-    chatMode: "Agent",
+    chatMode: "agent",
     tag: "前台問答",
     language: "繁體中文",
     canReadSettings: true,
@@ -112,8 +114,21 @@ permalink: 4-2_qaHistory_detail.html
      · 「載入完整軌跡」這一次是**真的接得上**：product `GET /history/{log_id}/trace` 已經在了
        （回 step_events／tool_activity／thinking_by_node 的完整版），詳情頁帶回來的是前 N 筆 ＋
        尾端 `{truncated, total}` 標記的檢視。故本頁把成對參數設起來，那顆鈕與截斷提示都渲染得出來。 #}
-{% if conversation.chatMode == "Agent" %}
+{% if conversation.chatMode == "agent" %}
+{# 節點清單＝正典管線的十站（saas `apps/web/lib/stepFlow.ts` 的 `CANONICAL_PIPELINE.agent`）。
+     原本從「初始化對話」起算、只有八站：`input_gate` 是串流開頭無條件發射的（chatbot
+     `routes/_chat_stream.py` 的 `_gate_step_sse`），`qa_direct` 則是每一輪都送一筆判定
+     （`services/qa_direct.py` 的 `QaDirectProbe.record`，未命中那半也送，整輪沒判到還會由
+     `routes/chat.py` 補一筆 `not_attempted`），而 React 端的 `computeFlow` 是把整條管線一次畫滿、
+     再用事件點亮——少畫前兩站是它產不出來的形狀（§6）。
+     這一筆的 QA 直答演「建圖前閘門判否」：`answerSource` 是 `generated`，而命中直答會結構性短路
+     （chatbot `services/agent_service.py` 的 `after_tools`：不經 respond、grounding 同樣跳過）
+     ⇒ 這一頁畫得出檢索與生成，就代表那一站必然是未命中。分數 2.4 < 門檻 3 ⇒ `below_score_floor`，
+     `poolSize` ＝ max(取用資料筆數, MIN_CANDIDATE_POOL) ＝ max(16, 2) ＝ 16，而 16 就是上面那格
+     「取用資料筆數」（§6 同頁同源）。 #}
 {% set stepFlowNodes = [
+    { label: "輸入合規檢查", state: "completed", time: "8ms" },
+    { label: "QA 直答", state: "completed", time: "14ms", decision: "below_score_floor", entry: "pre_graph", poolSize: "16", hits: "客服問答集 / 新住民結婚登記要準備什麼文件？", score: "2.4", floor: "3（llm_reranker 的 1–5 尺）" },
     { label: "初始化對話", state: "completed", time: "12ms" },
     { label: "Agent 推理", state: "completed", time: "340ms", thinking: "問題涉及具體法規與應備文件，決定先查知識庫再生成。" },
     { label: "檢索知識庫", state: "completed", time: "1.2s", tools: "search_knowledge_base", params: "{ query: '新住民 結婚 應備文件' }", result: "命中 8 筆片段（相似度 0.79–0.92），注入後續生成脈絡。" },
@@ -123,6 +138,10 @@ permalink: 4-2_qaHistory_detail.html
     { label: "完成對話", state: "completed", time: "8ms" },
     { label: "輸出合規檢查", state: "completed", time: "24ms" }
 ] %}
+{# 摘要是節點的衍生值（§6）：延遲＝十站耗時總和 8＋14＋12＋340＋1200＋210＋2100＋180＋8＋24
+     ＝ 4,096ms ⇒ 4.2s；TTFT 從同一個起點算到第一個回答 token（chatbot `routes/chat.py` 的
+     `_ttft_ms`），生成答案的起點是前六站的和 1,784ms ⇒ 1.9s。補上前兩站（22ms）之後兩個數字
+     的位數都沒有變，故沿用。 #}
 {% set stepFlowSummary = {
     tokens: "1,284", tokensIn: "980", tokensOut: "304",
     latency: "4.2s", ttft: "1.9s", results: "8", model: "openai:gpt-4o-mini"

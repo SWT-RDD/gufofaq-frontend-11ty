@@ -10,6 +10,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync, existsSync, statSync } from "node:fs";
 import { execSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { basename } from "node:path";
 
 const read = (f) => readFileSync(f, "utf8");
@@ -1936,6 +1937,68 @@ test("i18n 字典的快取失效真的有生效（dist 的 fetch 帶 ?v=）", ()
     assert.match(js, /fetch\("\.\/i18n\/en\.json\?v=[a-f0-9]{8}"\)/, "lang-toggle.js 的 fetch 沒有 content hash");
 });
 
+test("§8 css / js 的每一個引用都帶 ?v=；images 刻意不帶（改圖必改檔名）", () => {
+    // §8 的條文本來寫「build 產出的資產**都**帶 content hash」，而實作只蓋 css/js/i18n——
+    // dist/images 的 47 張圖、main.css 裡的 url(../images/…)、toast.js/pagination*.js 執行期
+    // 組出的圖片路徑全都沒有版號。條文與實作分岔時，**條文縮小、規則寫成測試**（放著不管
+    // 等於一條沒有任何保證的規範）。圖片不蓋章是決定不是漏做：失效窗口只有 max-age 600 秒。
+    const V = /\?v=[a-f0-9]{8}$/;
+    // 白名單型規則：這兩類的每一個引用都必須有版號（黑名單「找沒有版號的」會漏掉新形狀）
+    const scan = (html, f = "<probe>") => {
+        const out = [];
+        for (const m of html.matchAll(/(?:href|src)="(\.\/(?:css|js)\/[^"]+)"/g))
+            if (!V.test(m[1])) out.push(`${f}  ${m[1]} 沒有 ?v=`);
+        // 反方向：圖片一律不帶。半套的擴大（HTML 的 img 蓋了、CSS url() 沒蓋）比完全不蓋更糟——
+        // 看起來有做，實際上換圖之後兩條路徑各拿到一個版本。
+        for (const m of html.matchAll(/(?:href|src)="(\.\/images\/[^"]+)"/g))
+            if (/\?v=/.test(m[1])) out.push(`${f}  ${m[1]} 不該有 ?v=（§8：圖片走改圖必改檔名）`);
+        return out;
+    };
+    const hits = [];
+    let refs = 0, imgs = 0;
+    for (const f of distHtml) {
+        const html = read(`dist/${f}`);
+        refs += (html.match(/(?:href|src)="\.\/(?:css|js)\//g) || []).length;
+        imgs += (html.match(/(?:href|src)="\.\/images\//g) || []).length;
+        hits.push(...scan(html, `dist/${f}`));
+    }
+    // 空轉守門：兩個收集器任一被改壞（改成單引號、改成絕對路徑），零命中照樣全綠
+    assert.ok(refs > 100, `全站只收到 ${refs} 個 css/js 引用 —— 收集器壞了，這條在空轉`);
+    assert.ok(imgs > 100, `全站只收到 ${imgs} 個圖片引用 —— 收集器壞了，這條在空轉`);
+    probe("§8 資產版號", scan,
+        ['<link rel="stylesheet" href="./css/main.css">',
+            '<script src="./js/toast.js"></script>',
+            '<img src="./images/icon_owl.png?v=0a1b2c3d">'],
+        ['<link rel="stylesheet" href="./css/main.css?v=deadbeef">',
+            '<script src="./js/toast.js?v=0a1b2c3d"></script>',
+            '<img src="./images/icon_owl.png">']);
+    assert.equal(hits.length, 0, `資產版號不對：\n${fail(hits)}`);
+});
+
+test("§8 HTML 上的 ?v= 等於那支檔案**當下**的內容雜湊（蓋章順序契約）", () => {
+    // hash-assets.mjs 有一條隱性順序契約：**被引用者先蓋章、引用者後算 hash**——i18n 字典的
+    // 版號要先寫進 lang-toggle.js，才輪得到算 lang-toggle.js 自己的 hash。順序反過來時
+    // dist 仍然每一支都有 ?v=（上一條測試照樣綠），但 lang-toggle.js 的版號指的是「還沒被
+    // 改寫過的那一版內容」，改語言字典就不會讓瀏覽器重抓那支 js。比對內容雜湊才抓得到。
+    const md5 = (p) => createHash("md5").update(readFileSync(p)).digest("hex").slice(0, 8);
+    const cmp = (asset, v) => (v === md5(`dist/${asset.slice(2)}`) ? null : `${asset}?v=${v} 對不上內容雜湊 ${md5(`dist/${asset.slice(2)}`)}`);
+    const seen = new Set();
+    const bad = [];
+    for (const f of distHtml)
+        for (const m of read(`dist/${f}`).matchAll(/(?:href|src)="(\.\/(?:css|js)\/[^"?]+)\?v=([a-f0-9]{8})"/g)) {
+            seen.add(m[1]);
+            const msg = cmp(m[1], m[2]);
+            if (msg) bad.push(`dist/${f}  ${msg}`);
+        }
+    assert.ok(seen.size > 5, `只比對到 ${seen.size} 支資產 —— 這條在空轉`);
+    for (const must of ["./css/main.css", "./js/lang-toggle.js"])
+        assert.ok(seen.has(must), `${must} 沒有被比對到 —— 它正是這條契約要保護的那一支`);
+    // 負控：比對函式認不出錯的版號就等於這條測試永遠會綠
+    probe("§8 版號＝內容雜湊", (s) => { const m = cmp("./css/main.css", s); return m ? [m] : []; },
+        ["deadbeef", "00000000"], [md5("dist/css/main.css")]);
+    assert.equal(bad.length, 0, `蓋章順序壞了（版號指向舊內容）：\n${fail(bad)}`);
+});
+
 test("§4 同一頁的 id 不得重複（label[for] / aria-labelledby / getElementById 會指錯）", () => {
     // 共用元件會在同一頁 include 兩次（header-controls 同時住在 header 與 mobile-nav 展開的選單裡）。
     // 只要有人替它加一顆靜態 id，就會靜默產生重複 id。這條在 dist 上驗，才看得到渲染後的實況。
@@ -3370,12 +3433,14 @@ test("§4 送 API 的數字欄三件套：type=number ＋ min/max/step ＋ 可�
     // 「凍結前端原本就是 type=text，切版改成 number」，回歸的形狀就是那個。三件一起驗。
     // 兩邊都沒有界線的欄位：逐筆列出＋理由（新增前先去正本確認它真的兩邊都不設限）
     const NO_BOUND = new Map([
-        ["tenantTrialDaysInput", "延展天數：正數延展、負數縮短，兩邊都沒有界線（platform.py:566 只擋 0）"],
-        // 分數門檻兩顆：尺由重排序器／檢索後端決定（llm 1–5、bge 未正規化 logits 可為負、jina 0–1、
-        // gufonet BM25 數百～數千的整數），寫死界線就會讓某一種部署填不進合法值。上游對這兩欄
-        // 刻意不綁 [0,1]（chatbot ChatConfig 的註解逐字寫了），前端跟著不綁。
-        ["qaDirectScoreFloor", "分數尺依重排序器／檢索後端而異，上游刻意不綁 [0,1]"],
-        ["groundingScoreFloor", "同上（與 qa_direct_score_floor 同一套語意與理由）"],
+        ["tenantTrialDaysInput",
+         "延展天數：正數延展、負數縮短，兩邊都沒有界線（product platform.py 的 extend_tenant_trial 只擋 extend_days == 0）"],
+        // 分數門檻兩顆（qaDirectScoreFloor／groundingScoreFloor）**round40 起不再豁免**：
+        // 上界照舊不綁（尺由重排序器／檢索後端決定——llm 1–5、jina 0–1、gufonet BM25 數百～數千，
+        // 寫死 [0,1] 會讓 BM25 部署填不進合法值），但**下界綁 min="0"**：GufoRAG chatbot
+        // app/services/config.py 的 validate_score_floors 對 _SCORE_FLOOR_FIELDS 兩欄一律拒負值，
+        // product settings_hub.py 的 ProfileConfigIn.qa_direct_score_floor 因此綁 Field(ge=0)。
+        // 表單不夾＝把那個 400 推遲到按下儲存之後，而使用者已經離開那一格了。
     ]);
     const seenNoBound = new Set();
     let seen = 0;
@@ -3850,6 +3915,7 @@ test("§1-2 無 html 元件的 markup 契約要逐字寫在自己的 scss／js �
     assert.ok(noHtml.length >= 20, `只找到 ${noHtml.length} 個無 html 元件 —— 這條測試在空轉`);
     const srcMarkup = srcHtml.map((f) => read(f)).join("\n");
     const hits = [];
+    let checkedClasses = 0;
     for (const { bucket, name, path } of noHtml) {
         const heads = [`${path}/_${name}.scss`, `${path}/${name}.js`].filter(existsSync).map((f) => {
             const t = read(f);
@@ -3867,13 +3933,20 @@ test("§1-2 無 html 元件的 markup 契約要逐字寫在自己的 scss／js �
         // 樣板插值出來的狀態 class（`{{ run.statusClass }}` → `.is-pass`）在 markup 上找不到字面，
         // 由該元件自己的 scss 宣告過即算數（那條 &.is-* 另有「每一階都要演得出來」的測試把關）。
         const ownScss = existsSync(`${path}/_${name}.scss`) ? read(`${path}/_${name}.scss`) : "";
-        for (const cls of new Set(tags.flatMap((m) => m[2].split(/\s+/)).filter((c) => c && !c.includes("{")))) {
+        // 契約本身可以是**插值型**（`class="verdict-tag {{ row.diffClass }}"` 是 2-2-4／2-2-5 的主力寫法，
+        // class 與 data-i18n key 成對由頁面資料供給）。切詞前要先把 `{{ … }}` 整段挖掉：不挖的話尾巴那顆
+        // 孤立的 `}}` 會被當成一個 class 名去 markup 裡找（`\b}}` 永遠不成立），於是把一份**正確**的契約
+        // 判成違規——而唯一的「修法」是別把真實寫法寫進契約，正好與 §1-2 要求的方向相反。
+        for (const cls of new Set(tags.flatMap((m) => m[2].replace(/\{\{[\s\S]*?\}\}/g, " ").split(/\s+/)).filter((c) => c && !/[{}]/.test(c)))) {
+            checkedClasses++;
             const esc = cls.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
             if (new RegExp(`class="[^"]*\\b${esc}\\b`).test(srcMarkup)) continue;
             if (new RegExp(`&\\.${esc}\\b`).test(ownScss)) continue;
             hits.push(`${bucket}/${name}  契約寫了 .${cls}，但 src 的 markup 裡打不到它`);
         }
     }
+    // 空轉守門：上面那個「挖掉插值」的 replace 若寫成把整串 class 吃光，一顆 class 都不會被驗、照樣全綠
+    assert.ok(checkedClasses > 100, `契約裡只驗到 ${checkedClasses} 個 class —— 切詞壞了，這條在空轉`);
     assert.equal(hits.length, 0, `§1-2 無 html 元件的 markup 契約：\n${fail(hits)}`);
 });
 
@@ -4247,6 +4320,36 @@ test("§3-2 跨 repo 活正本的出處不得引行號（行號會漂到語意�
     assert.ok(stats.seen >= 800, `只掃到 ${stats.seen} 則註解 —— 這條測試在空轉`);
     assert.ok(stats.live >= 30, `只有 ${stats.live} 則註解認得出跨 repo 活正本 —— 分類壞了，這條測試在空轉`);
     assert.equal(hits.length, 0, `§3-2 活正本只准引「檔＋符號名」：\n${fail(hits)}`);
+});
+
+test("§1-2 元件庫的節號從 00 起連續不重複，且 aside 目錄與 <section> 的 DOM 順序逐一相同", () => {
+    // round40：節號一度排成 23 → 25 → 24 → 25——兩節共用 25、而 24 排在 25 後面。
+    // 目錄與 DOM 的**順序**其實是對的，錯的只有那三個號碼，所以「照目錄看一遍」看不出來。
+    // 而號碼是**別的檔案用來指路的東西**（ui/link-file 的檔頭寫「08 按鈕」，而 08 是輸入框、
+    // 按鈕是 07）——一個重複的號碼會讓所有指向它的檔頭同時失準，且沒有任何測試看得到。
+    const nums = (html) => [...html.matchAll(/<h2 class="section-title"><span>(\d+)<\/span>/g)].map((m) => m[1]);
+    // 規則函式（probe 走同一支）：回傳「第 i 節的號碼不是 i」的那幾條
+    const numHits = (html) => nums(html).map((v, i) => (v === String(i).padStart(2, "0") ? "" : `第 ${i + 1} 節寫著 ${v}，應為 ${String(i).padStart(2, "0")}`)).filter(Boolean);
+    // 目錄 ⇄ DOM：順序與組成都要一樣（單向清單會腐化成「目錄有、頁面沒有」，§1-2）
+    const tocVsDom = (html) => {
+        const toc = [...html.matchAll(/class="aside-link" href="#([\w-]+)"/g)].map((m) => m[1]);
+        const dom = [...html.matchAll(/<section id="([\w-]+)"/g)].map((m) => m[1]);
+        return toc.length === dom.length && toc.every((v, i) => v === dom[i])
+            ? [] : [`aside 目錄 [${toc.join(", ")}]\n≠ DOM 順序 [${dom.join(", ")}]`];
+    };
+    const gallery = distDoc("component.html");
+    assert.ok(nums(gallery).length >= 20, `只掃到 ${nums(gallery).length} 個節號 —— 這條測試在空轉`);
+    probe("元件庫節號", numHits, [
+        '<h2 class="section-title"><span>00</span><span>a</span></h2><h2 class="section-title"><span>02</span><span>b</span></h2>',   // 跳號
+        '<h2 class="section-title"><span>00</span><span>a</span></h2><h2 class="section-title"><span>00</span><span>b</span></h2>',   // 重複
+        '<h2 class="section-title"><span>00</span><span>a</span></h2><h2 class="section-title"><span>02</span><span>b</span></h2><h2 class="section-title"><span>01</span><span>c</span></h2>', // 倒退
+    ], ['<h2 class="section-title"><span>00</span><span>a</span></h2><h2 class="section-title"><span>01</span><span>b</span></h2>']);
+    probe("元件庫目錄 ⇄ DOM", tocVsDom, [
+        '<a class="aside-link" href="#a">A</a><a class="aside-link" href="#b">B</a><section id="b"></section><section id="a"></section>', // 順序不同
+        '<a class="aside-link" href="#a">A</a><section id="a"></section><section id="b"></section>',                                      // DOM 多一節
+    ], ['<a class="aside-link" href="#a">A</a><a class="aside-link" href="#b">B</a><section id="a"></section><section id="b"></section>']);
+    assert.equal(numHits(gallery).length, 0, `元件庫節號：\n${fail(numHits(gallery))}`);
+    assert.equal(tocVsDom(gallery).length, 0, `元件庫 aside 目錄與 DOM：\n${fail(tocVsDom(gallery))}`);
 });
 
 test("§4-2 英譯字串不得含全形標點（那是繁中的字身，混在英文句子裡會露出來）", () => {

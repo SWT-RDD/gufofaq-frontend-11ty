@@ -151,6 +151,12 @@ permalink: 5-3_statsModule.html
         {% include "ui/chart-desc/chart-desc.html" %}
     </div>
     <div class="chart-box">
+        {# ⚠️ 這張圖的「近4周」**不跟著上面的資料時間篩選變**，所以標題寫死 4 周不是漏做：
+             product `app/routers/stats.py` 的 `/stats` 對圖 3 是「獨立取近 28 天（自 p_end 回推），
+             分 4 個 7 天桶」（該段註解逐字），回在 `WeeklyOut.weeks`／`series` 上——篩「上週」時
+             上面的指標與圖 1／圖 2 走那個區間，這一張仍然是四個 7 天桶。
+             把標題改成跟著篩選走，才會與端點說的話對不上（曾被指為「預設上週 vs 標題寫死近4周」
+             的自打架，複驗後駁回，理由記在這裡免得下一輪再改一次）。 #}
         <div class="chart-title" data-i18n="settings.weeklyRetrievalTrend">近4周取用次數變化</div>
         <div class="chart"><canvas id="chart3-line"></canvas></div>
         {% set chartDescId = "chart3" %}

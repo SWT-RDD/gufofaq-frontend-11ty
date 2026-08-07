@@ -19,6 +19,16 @@ permalink: 5-1-1_accountInfo.html
 
 {# 帳號資訊：只留真帳號層欄位——帳號(唯讀)/公司單位(可編輯)/規格·資料儲存上限(唯讀)。per-profile 對話設定
      （系統提示詞/檢索模式/資料取用規則/選用模型）已移至對話設定頁 5-2_conversationSettings，此頁不再顯示。 #}
+{# 三個唯讀欄的示範值（§6：同一支端點回的欄位不可以一半有值一半留白——上面那顆使用期倒數印著
+     具體到期日與剩餘天數，而它與這三格同出於 product `app/routers/account.py` 的 `AccountOut`：
+     `email`／`qa_limit`／`storage_limit_mb`／`trial_end`／`days_left` 是同一個投影，
+     不可能倒數算得出來、帳號卻是空的）：
+       · 帳號＝`admin@example.com`——本站示範租戶的管理員，5-5-1 成員清單第一列就是它（§6 跨頁同源）。
+       · 規格＝`{qa_limit}次/日`（該欄位註解逐字）；3000 就是聊天室頁「問答次數：12/3000」的分母。
+       · 資料儲存上限＝`storage_limit_mb`；1000MB 就是 3-1-1 那條 ui/storage-bar 的「共 1000MB」。
+     後兩格的組字逐字沿用凍結前端 js/accountInfo.js（`${GPTTimesLimit}次/日`、`${maxAccSize}MB`）。
+     三個都是唯讀投影，故維持 disabled；值由 React 填，這裡是版型與長度的示範——**React 組字時
+     單位要走 i18n**（數字是資料、「次/日」是 chrome），value 是原子屬性、切版拆不出節點來掛 key。 #}
 <div class="block flex-row column gap-24">
     <div class="text-center text-xl" data-i18n="nav.accountInfo">帳號資訊</div>
     <div class="flex-row column gap-16">
@@ -30,7 +40,7 @@ permalink: 5-1-1_accountInfo.html
                     </div>
                     <div class="field">
                         <input type="text" id="accountEmailInput" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control disabled account-email"
-                            value="" disabled>
+                            value="admin@example.com" disabled>
                     </div>
                 </div>
             </div>
@@ -53,7 +63,7 @@ permalink: 5-1-1_accountInfo.html
                     </div>
                     <div class="field">
                         <input type="text" id="accountSpecInput" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control disabled account-spec"
-                            value="" disabled>
+                            value="3000次/日" disabled>
                     </div>
                 </div>
             </div>
@@ -64,7 +74,7 @@ permalink: 5-1-1_accountInfo.html
                     </div>
                     <div class="field">
                         <input type="text" id="accountStorageLimitInput" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control disabled account-storage-limit"
-                            value="" disabled>
+                            value="1000MB" disabled>
                     </div>
                 </div>
             </div>

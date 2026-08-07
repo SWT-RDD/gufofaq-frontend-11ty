@@ -10,16 +10,58 @@
 // 點了沒反應的旋鈕。（本 repo 曾經把這三個 class 當成無主 class 拿掉，那是把真 app 的
 // 掛點誤判成死碼；§5：找死碼要先去讀真 app。）
 //
-// markup 契約（無 html 元件，§1-2；整段照抄）—— 選了哪顆 radio 就解除它附屬輸入框的 disabled
-// （5-3／5-4 的時間區間）：
-//   <div class="field-with-input-group">
-//     <label class="field-with-input">
-//       <input type="radio" name="…">…選項…
-//       <input type="text" class="form-control with-input" disabled>   ← 附屬輸入框，初始 disabled
-//     </label>
+// markup 契約（無 html 元件，§1-2；整段照抄）—— 選了哪顆 radio 就解除它附屬輸入框的 disabled。
+// 唯一正本是 components/data-time-filter（5-3／5-4 的「資料時間篩選」），下面這段與它逐字相同：
+//
+//   <div class="flex-row gap-16 mobile-column flex-wrap field-with-input-group">
+//       <div class="flex-row gap-16 mobile-column-xs col-12-xs">
+//           <div class="function">
+//               <label class="form-radio border-wrap w100">
+//                   <input type="radio" name="{{ timeFilterName }}"{% if timeFilterChecked == "last24h" %} checked{% endif %}>
+//                   <span data-i18n="settings.last24h">近24小時</span>
+//               </label>
+//           </div>
+//           （上週、上個月兩顆同型，重複到最後一顆為止）
+//       </div>
+//       <div class="flex-row gap-16 mobile-column-xs field-with-input">
+//           <div class="function">
+//               <label class="form-radio">
+//                   <input type="radio" name="{{ timeFilterName }}"{% if timeFilterChecked == "range" %} checked{% endif %}>
+//                   <span data-i18n="settings.timeRange">時間區間</span>
+//               </label>
+//           </div>
+//           <div class="function">
+//               <div class="flex-row align-items-center gap-16 mobile-column-xs col-12-xs">
+//                   <div class="field">
+//                       <input type="text" class="form-control time start-date with-input" placeholder="請選擇開始時間"
+//                           data-i18n-placeholder="settings.pleaseSelectStartTime" aria-label="開始時間" data-i18n-aria-label="settings.startTime" disabled>
+//                   </div>
+//                   <span data-i18n="settings.to">至</span>
+//                   <div class="field">
+//                       <input type="text" class="form-control time end-date with-input" placeholder="請選擇結束時間"
+//                           data-i18n-placeholder="settings.pleaseSelectEndTime" aria-label="結束時間" data-i18n-aria-label="settings.endTime" disabled>
+//                   </div>
+//               </div>
+//           </div>
+//       </div>
 //   </div>
+//
 // 三個 class 是真 app js/main.js 的掛點（行為改寫成切版自有）：group 定範圍、.field-with-input
-// 是一組、.with-input 是被解鎖的那一顆。初始化用直呼 sync()、不用合成事件（§5）。
+// 是一組、.with-input 是被解鎖的那些。抄的時候最容易錯的四件事：
+//   · **`.field-with-input` 是 `<div>`，不是 `<label>`。** radio 有自己的 `<label class="form-radio">`、
+//     附屬輸入框有自己的 `<div class="field">`；把整組包成一顆 `<label>`＝點文字欄也會選到 radio，
+//     而且一個 label 對到兩個以上的控制項，`for`/包覆關聯當場失效（§4）。
+//   · **radio 的 `name` 一定要寫值、而且同一頁的兩組不可撞名**（5-3 是 `data-time`、5-4 是 `gap-time`）：
+//     name 相同的 radio 在 HTML 是同一組，兩列篩選會互相取消選取。值由使用頁 `{% set timeFilterName %}` 給。
+//   · **其餘的 radio 也要在同一個 `.field-with-input-group` 內**（上面那個沒有 `.field-with-input` 的
+//     兄弟 div）：本檔對整個 group 內的所有 radio 綁 change，選「近24小時」時才回頭把時間區間那兩格關掉。
+//     把它們排在 group 外面，起訖欄就再也關不回去了。
+//   · **`.with-input` 那兩顆的初始 `disabled` 不可省**——那個初始態的意義就是「還沒選時間區間」。
+// 初始化用直呼 sync()、不用合成事件（§5）。
+//
+// 住在哪一頁（雙向；判準＝`grep -rn 'field-with-input-group' src`）：唯一一份 markup 在
+// components/data-time-filter，被 5-3_statsModule 與 5-4_coverageGaps 各 include 一次；
+// 反向：渲染後含 `.field-with-input-group` 的頁就只有這兩頁。
 document.addEventListener("DOMContentLoaded", function () {
     document.querySelectorAll(".field-with-input-group").forEach(function (group) {
         var boxes = group.querySelectorAll(".field-with-input");

@@ -1,8 +1,51 @@
 // 語言切換（runtime 就地切換，不動網址、不重整）：
-// 點 .js-lang-toggle 在 繁中↔英文 間切換（鈕面永遠寫「要切去的語言」：繁中時 EN、英文時 中）—— 把所有 [data-i18n] 的文字換成該語言、
-// 需翻譯的屬性走 data-i18n-placeholder / data-i18n-title / data-i18n-aria-label、寫 localStorage、設 <html lang>。
+// 點 .js-lang-toggle 在 繁中↔英文 間切換（鈕面永遠寫「要切去的語言」：繁中時 EN、英文時 中）——
+// 把所有 [data-i18n] 的文字、下列**五個**可翻屬性、以及 <title> 換成該語言，寫 localStorage、設 <html lang>。
 // 繁中為預設，其文字＝markup 原文（就地擷取，不需 zh 字典）；英文來自 ./i18n/en.json（被 JS fetch 的資產）。
 // 轉 React：<a data-i18n="key">文字</a> → {t("key")}，同一份 key 餵 next-intl；本檔的 runtime swap 不帶過去。
+//
+// 無 html 元件 ⇒ markup 契約逐字寫在這裡（GUIDELINE §1-2）。本元件的契約有三個部分，**三部分都要抄**：
+//
+// ── ① 被翻譯的節點（全站每一頁都在寫的那一種；後綴永遠等於目標屬性名，§4-2 零例外）
+//
+//   <span data-i18n="settings.lastWeek">上週</span>
+//   <input type="text" id="promptKeywordInput" class="form-control js-prompt-keyword" placeholder="請輸入關鍵字查詢" data-i18n-placeholder="settings.pleaseEnterKeyword">
+//   <button type="button" class="info-btn" title="配置說明" data-i18n-title="qaTest.configInfo" data-open-modal="knowledgeModal">
+//   <input type="checkbox" class="switch-checkbox js-excel-unpivot" role="switch" aria-label="交叉表轉直式" data-i18n-aria-label="dataImport.unpivot" aria-describedby="excelUnpivotHint">
+//   <img src="./images/icon_arrow_left_gray.png" width="48" height="48" decoding="async" alt="上一頁" data-i18n-alt="action.prevPage" class="icon">
+//   <button type="button" class="button button-border button-sm js-view-full-output" data-toast="完整輸出已載入|這一筆已經不在了，或不屬於這個租戶|載入失敗，請稍後再試" data-i18n-data-toast="toast.viewFullOutput" data-toast-type="success|warning|error" data-i18n="agent.viewFullOutput">看完整輸出</button>
+//
+//   下面那張表就是本檔 ATTRS 的內容，**五顆，不是三顆**——漏掉 data-toast／alt 那兩顆的下場是
+//   「英文模式按下去彈出一則繁中 toast」「英文模式的圖片 alt 還是繁中」，兩者視覺指紋都看不出來：
+//     data-i18n-placeholder → placeholder
+//     data-i18n-title       → title
+//     data-i18n-aria-label  → aria-label
+//     data-i18n-data-toast  → data-toast（多結果用 `|` 分段，英譯的段數要對得上，§5）
+//     data-i18n-alt         → alt
+//
+// ── ② 分頁標題：`<title>` 不是屬性也不是節點，走 <html> 上的資料槽（由 layouts/base 依 front matter 的 titleKey 產出）
+//
+//   <html lang="zh-Hant"{% if titleKey %} data-page-title-key="{{ titleKey }}"{% endif %}>
+//
+//   命名沿用 data-<槽名>-key（同 ui/multi-select 的 data-placeholder-key）——data-i18n-<後綴> 專指「屬性」。
+//   切英文時 document.title 變成 "GufoFAQ::" + 該 key 的英文；沒有 titleKey 的頁就維持原文。
+//
+// ── ③ 切換鈕本身（**正本在 components/header-controls，不要在別處手抄**；那一份被五個地方 include）
+//
+//   <button type="button" class="lang-toggle js-lang-toggle">EN</button>
+//
+//   鈕面文字由本檔管理（繁中時 EN、英文時 中），故它**刻意不掛 data-i18n**：掛了會被 apply() 的
+//   文字迴圈與這裡的 textContent 兩邊互相覆寫。`.lang-toggle` 的樣式主人是 header-controls。
+//
+// 匯出（GUIDELINE §1-1「共享行為工具」，全體元件通用故不算依賴）：
+//   window.GufoI18n = { t(key, zhFallback), lang() }  ＋ 事件 `gufo:langchange`（detail.lang）
+//   `t()` 給「文字由 JS 產生」的元件（accordion／collapse-text／multi-select／pagination…）；
+//   `lang()` 回當下語言碼（"en" / "zh-Hant"），目前站內零消費點——`grep -rn 'GufoI18n.lang' src` 為準。
+//
+// 住在哪一頁（雙向）：`.js-lang-toggle` 與 `<html data-page-title-key>` 兩個掛點**全站每一頁都有**——
+// 前者來自 components/header-controls（被 components/header、components/mobile-nav、
+// components/chatbot-header、src/catalog.html、src/login.html 五處 include），後者來自 layouts/base。
+// 故本元件沒有「只在某幾頁」的清單，判準是 `grep -rn 'js-lang-toggle' src`。
 (function () {
     var DEFAULT = "zh-Hant";
     var root = document.documentElement;

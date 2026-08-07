@@ -181,14 +181,18 @@
   `t(k).split("|")` 餵進 `useToast()` 的結果陣列——`|` 的**段數與順序是索引契約**，與 `data-toast-type`
   同序對位（見 §⑥）。切版側已有 CI 釘住「繁中段數＝英譯段數＝type 段數」，React 端的 split 索引跟著那份走。
 - **兩態文字槽 `data-key-<態>` ＋ `data-text-<態>`**（`ui/reveal-input` 的顯示／隱藏、`components/prompt-edit`
-  的展開／收合）→ `t(open ? keyOpen : keyClose)`，兩顆 key 都要進字典。切版把兩態都寫在 markup 上，是因為
+  的展開／收合、`ui/theme-toggle` 的淺／深）→ `t(open ? keyOpen : keyClose)`，兩顆 key 都要進字典。切版把兩態都寫在 markup 上，是因為
   vanilla js 不能寫死字串（GUIDELINE §5）；React 端那兩顆 key 變成元件內的常數對，**不要退化成一顆 key**。
+  ⚠️ **後綴命名有兩種語意，別照字面推**：`reveal-input` 的 `-show`／`-hide` 命名的是**動作**
+  （`data-text-show` 用在「目前是隱藏」時），而 `prompt-edit` 的 `-open`／`-close` 與 `theme-toggle` 的
+  `-light`／`-dark` 命名的是**當下狀態**（`data-key-light="theme.toDark"` ＝「目前淺色 ⇒ 按了轉深」）。
+  轉換時看它取的是哪一個，不要假設同一套。
 - **資料槽 `data-<槽>` ＋ `data-<槽>-key`**（`multi-select` 的 placeholder、`<option>` 的狀態後綴）→
   `t(key, { defaultValue: 原文 })`。槽裡的**資料**（選項名稱、業務識別字）不翻，只翻後綴／placeholder。
 - markup 不掛 `data-i18n`／`.js-lang-toggle`。
 - **一顆 key 不得承載兩種行為語意**：行為契約不同就是兩顆 key，即使繁中字面相同。正典：思考深度的空值——
   主回答空＝`settings.reasoningEffortDefault`（該模型預設），分組 LLM 空＝`settings.reasoningEffortMinimal`
-  （最低思考，product `_PROFILE_FIELD_DEFAULTS` 的 `reasoning_effort_*`）。共用元件把空值 key 做成**呼叫端
+  （最低思考，product `profile_config.py` 的 `PROFILE_FIELD_DEFAULTS` 中 `reasoning_effort_*`）。共用元件把空值 key 做成**呼叫端
   決定的 prop**，不要在元件內寫死一顆——寫死等於用元件把謊話複製到每個呼叫點。
 - **前綴／後綴 key 自帶分隔空白**（`"Total "`／`" pages"`／`"Source "`／`"Show "`／`" per page"`），不靠 JSX 補
   `{" "}`、也不靠 CSS 的副作用。`.sr-only` 前綴 ＋ 緊接的數字（`來源 N`）同理。
@@ -269,10 +273,15 @@
 - **`ui/checkbox`**：`.check-all` ↔ `.check-one` 雙向連動 ＋ `indeterminate`。切版程式改值後補
   `dispatchEvent(new Event("change",{bubbles:true}))` 是 vanilla 的需要，React 受控後不需要合成事件；
   但 `indeterminate` 是 **DOM property 不是屬性**，JSX 寫不出來，要 `ref` + `useEffect` 設。
-- **`ui/theme-toggle`**：除了 `<head>` 的 no-flash IIFE 與點擊同步 `data-theme`，還有三件不可省：
+- **`ui/theme-toggle`**：除了 `<head>` 的 no-flash IIFE 與點擊同步 `data-theme`，還有四件不可省：
   寫 `localStorage("theme")`；監聽 `matchMedia("(prefers-color-scheme: dark)")` 的 `change`
   （使用者沒手動選過時跟隨系統）；點擊後把 `meta[name=theme-color]` 設成 `getComputedStyle(root)`
-  讀到的 `--surface-raised` **實際值**（不是再抄一次色碼）。
+  讀到的 `--surface-raised` **實際值**（不是再抄一次色碼）；
+  以及**兩態可及名稱**——標籤講「按下去會變成什麼」（淺色時「切換為深色模式」），
+  由 `data-text-<態>`／`data-key-<態>` 兩個槽供給、在 `apply()`／初始化／`gufo:langchange` 三處重寫，
+  且要同步改寫 `data-i18n-aria-label`／`data-i18n-title` 的 key。**漏掉這一件轉出來的是恆定標籤**，
+  而兩顆 svg 都 `aria-hidden` ⇒ 報讀器讀不出目前是深是淺（§4「換標籤與 `aria-pressed` 二擇一，
+  兩者皆無同樣違規」）。這是 fpdiff 抓不到的屬性級失真。
 - **`ui/scroll-lock`**：鎖本身是純 CSS（`html:has(...)`），這支 js 只做 CSS 做不到的那一件事——
   量捲軸寬度寫進 `--scrollbar-width`（且正鎖著時要跳過不量，否則量到 0）。React 端仍然需要它。
 - **`ui/upload-box`**：`accepted()` 的副檔名比對（大小寫、多副檔名、未設 accept＝不限制）有七條邊界測試；

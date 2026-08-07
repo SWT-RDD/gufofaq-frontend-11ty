@@ -162,7 +162,7 @@ permalink: 4-1_qaHistory.html
                  三張明細表對回正本 `export_history` 的 `format` 註解：執行步驟／工具呼叫／搜尋結果，
                  各自一列一筆、以「對話編號」對回主表（主表本身與 CSV 同一份取值，故不算「多出來的」）。 #}
             <span class="text-gray" id="exportFormatHint" data-i18n="qa.exportFullDetailHint">完整明細會多出三張工作表——每一步、每次工具呼叫的完整輸出、每一張來源卡的全文</span>
-            {# 代價寫在做決定的那顆控制項旁邊（§3-2）：正本 history.py 的 `_parse_range` docstring 逐字寫著
+            {# 代價寫在做決定的那顆控制項旁邊（§3-2）：正本 history.py 的 `export_history` docstring 逐字寫著
                  「預設關閉，因為多一段前置區塊會讓『第一列就是欄名』的既有下游解析當場壞掉」——
                  那句話原本只寫在上面的 nunjucks 註解裡，build 時就被移除，使用者永遠讀不到。 #}
             <span class="text-gray" id="exportWithHeaderHint" data-i18n="qa.exportWithHeaderHint">開啟後 CSV 第一列不再是欄名，既有的下游解析會錯位</span>
@@ -178,7 +178,8 @@ permalink: 4-1_qaHistory.html
 </div>
 
 {# 資料表格：真實頁 tbody 為 js/qaHistory.js 依查詢結果動態渲染（初始「共0筆資料」），
-     此處以 set+for 資料化示範 3 筆已載入狀態。cell 級結構鏡射真 app 的列模板（qaHistory.js createRow：
+     此處以 set+for 資料化示範 3 筆已載入狀態。cell 級結構鏡射真 app 的列模板（qaHistory.js 的 `renderChatLogs`
+     那一段 `chatLogs.forEach` 樣板字串：
      編號純文字、link-file 連結掛在「使用者對話內容」、query 參數為 ?logSn=）。
      **一處刻意不沿用真 app**：AI 內容真 app 是 div.ellipsis-2 純截斷，切版改用 ui/collapse-text——
      夾掉的那幾行在觸控裝置與鍵盤上都拿不到（§5 刻意不沿用要記載什麼取代了什麼）。 #}
@@ -295,6 +296,10 @@ permalink: 4-1_qaHistory.html
 </div>
 
 {# 分頁：真實頁由 js/qaHistory.js renderPagination() 動態產生；ui/pagination 現在也是同一套 data-total
-     驅動的 js render。total／perPage 在列表前就宣告過（計數列與頁碼列同源，§6），這裡不再重設——
-     total 挑大一點的假數字是為了讓省略號露得出來。 #}
+     驅動的 js render。total／perPage 在列表前就宣告過（計數列與頁碼列同源，§6），這裡不再重設。
+     115 / 20 ＝ 6 頁（上面那則註解算的也是這個數），而省略號的門檻是 `visible + 2`
+     （ui/pagination 的 pagination.js）——桌機 `--pagination-visible` 是 5 ⇒ 7 頁以上才出省略號，
+     **這一頁桌機是「頁數少到全部列出」那一態**；≤768px 的 `--pagination-visible` 是 3 ⇒ 門檻 5，
+     6 頁在手機上就看得到省略號。原本這裡寫「total 挑大一點是為了讓省略號露得出來」，
+     與同一頁「共 6 頁」那句自打架。滑動視窗那一態由 1-1-3（49 頁）與元件庫頁（12 頁）負責。 #}
 {% include "components/pager-row/pager-row.html" %}

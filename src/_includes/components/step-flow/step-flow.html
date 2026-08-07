@@ -36,8 +36,13 @@
      tools, params, result, resultShown, resultLength, verdict, thinking,
      hits, score, decidedBy, floor, decision, entry, matchedRank, poolSize, reusedFrom }]）
      ——`resultShown`／`resultLength` **必須成對**（工具輸出被截斷時才給；只給一半那一列會渲染出空格）；
-       `decidedBy` 只在 `decision == "hit"` 時有值、`matchedRank` 只在 exact 那一層有值（上游只在那兩種
-       情況寫得出來，硬給就是演一個 API 產不出的組合）＋
+       `decidedBy` 只在 `decision == "hit"` 時有值（上游只在 `DECISION_HIT` 的三個 `_rec` 帶 `gate=`）、
+       `matchedRank` 只在 **① 完全命中那一層**有值（`hit` 走 `exact` 與 `reconstruct_failed` 兩種收尾，
+       其餘 `_rec` 一個都不帶）——硬給就是演一個 API 產不出的組合。
+       反過來，`hits`／`score`／`floor` **未命中時照樣有值**：`_rec` 一律帶 `hit=top`（`doc_name`／`score`
+       由它衍生）、`score_floor` 每一筆都寫；只有 `not_attempted` 連 `hit` 都不帶 ⇒ 那一種才真的全空。
+       **命中是結構性短路**（`agent_service.py` 的 `after_tools`：不經 respond、grounding 同樣跳過），
+       所以同一份節點清單裡出現 `decision: "hit"` 之後又有生成節點＝上游做不出來的一輪。＋
      stepFlowSummary（選填，{ tokens, latency, ttft, results, model ＋選填成對的 tokensIn／tokensOut }）
      ——使用頁換對話主題時「兩個一起覆寫」，
      否則摘要（檢索筆數/模型）會與節點對不上（§6 自洽）；內部變數用元件專屬名 stepFlowNodeRows／stepFlowSummaryData。
@@ -52,6 +57,7 @@
 {% set stepFlowNodeRows = stepFlowNodes or [
     { label: "輸入合規檢查", state: "completed", time: "8ms" },
     { label: "QA 直答", state: "completed", time: "18ms",
+      hits: "客服問答集 / 新住民結婚登記要準備什麼文件？",
       score: "2.4", floor: "3（llm_reranker 的 1–5 尺）",
       decision: "below_score_floor", entry: "pre_graph", poolSize: "16" },
     { label: "初始化對話", state: "completed", time: "12ms" },
@@ -235,9 +241,11 @@
                                          門檻值與分數是同一把尺上的兩個數字，成對出現才有意義：只給分數看不出
                                          「差多少」，只給門檻看不出「這一則過了沒有」。 #}
                                     {# 判定結果（S6）。**這一段以 `decision` 為條件，不是以 `hits`**：上游每一輪
-                                         都會送一筆判定，未命中那半也送，而未命中時 hits／score／decidedBy／floor
-                                         四個鍵都沒值——原本整條 {% if %} 鏈因此全數落空，「裁判判否」「未達門檻」
-                                         「整輪未判定」三種結果在畫面上長得一模一樣：節點在那裡，展開是空的。
+                                         都會送一筆判定，未命中那半也送，而未命中時 decidedBy／matchedRank 沒有值
+                                         （`gate=` 只寫在 `DECISION_HIT` 那三個 `_rec`）、`not_attempted` 更是連
+                                         `hit` 都不帶 ⇒ 整條 {% if %} 鏈原本全數落空。剩下兩種雖然還有 hits／score／
+                                         floor 可畫，但畫面上一樣分不出「裁判判否」與「未達門檻」——同樣的三格數字，
+                                         結論卻是兩件事。
                                          客戶最在乎的就是 QA 直答，而改了判準文字之後沒有任何畫面能回答「有沒有變好」。
                                        **判否與未達門檻不可以畫成錯誤紅**：它們是系統正確運作的結果——「這一筆 QA
                                          沒有完整回答使用者，所以不逐字直出」正是這個功能該做的事。畫紅色會讓人以為

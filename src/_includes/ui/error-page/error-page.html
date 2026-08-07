@@ -5,7 +5,8 @@
 
      為什麼要分成兩顆 key 而不是共用 error.notFound：連結**還有效**，只是此刻存取太頻繁。
      寫成「找不到」會讓使用者以為連結被撤銷、回頭去要一條新的——而他其實只要等一下。
-     （React 端目前對非 2xx 一律 notFound()，那正是這條要修的行為。）
+     （React 端已照此分開：gufofaq-saas `apps/web/app/shared/[token]/page.tsx` 的
+     `SharedConversationPage` 有 `rateLimited` 與 `notFound` 兩個 state，429 才渲染本片段。）
 
      沒有「回頁面目錄」鈕：公開分享頁的訪客沒有登入態，也沒有目錄可回；能做的動作只有稍後重試。 #}
 <div class="error-page">

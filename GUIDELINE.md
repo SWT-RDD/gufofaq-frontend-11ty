@@ -223,7 +223,7 @@ bodyClass: chatbot-page                # 選填：base.html 用它產生 <body c
 - **由元件 js 讀 `data-*` 資料槽再畫出來的文字**不在上表的自動翻譯範圍，繁中原文與 i18n key 要分別給：單一值用 `data-<槽名>` + `data-<槽名>-key`（`ui/multi-select` 的 placeholder）；兩態切換用 `data-text-<態>` + `data-key-<態>`（`components/prompt-edit` 的展開↔收合）。元件 js 拿 key 走 `GufoI18n.t(key, 繁中原文)`（見 §5）
 - 分頁標題：front matter 的 `titleKey`（見 §3-1）→ `base.html` 輸出成 `<html data-page-title-key>`，切語言時 `lang-toggle.js` 靠它重譯 `<title>`
 - **同一個 key 的繁中原文必須一致**：切回繁中時的預設值是**從 DOM 就地擷取、以 key 為索引**，同 key 不同繁中會互相覆蓋。頁名與既有 key 的繁中相同才沿用，不同就另立 key
-- **一個 key 的語意由它背後的行為契約決定：行為不同就分 key，即使繁中字面相同。** 主回答的思考深度留空＝「沿用模型預設」，分組 LLM 留空＝「最低思考」（product `_PROFILE_FIELD_DEFAULTS` 的 `reasoning_effort_*`）——共用一顆 key 會讓中英兩邊同時說謊。這條與下一條互補：同文異 key 不准，同 key 異義也不准
+- **一個 key 的語意由它背後的行為契約決定：行為不同就分 key，即使繁中字面相同。** 主回答的思考深度留空＝「沿用模型預設」，分組 LLM 留空＝「最低思考」（product `profile_config.py` 的 `PROFILE_FIELD_DEFAULTS` 中 `reasoning_effort_*`）——共用一顆 key 會讓中英兩邊同時說謊。這條與下一條互補：同文異 key 不准，同 key 異義也不准
 - **前綴／後綴 key 自帶分隔空白**（`"Total "`／`" pages"`／`"Source "`），不靠 CSS 也不靠 markup 縮排：`.sr-only` 的 `position:absolute` 恰好讓可及名稱多一個空白，那是排版的副作用、不是契約（有測試把關）
 - **`data-toast` 各分支的相同繁中子句必須有相同英譯**：一致性的單位是 `|` 切開的子句，不是整顆 key（「刪除失敗，請稍後再試」全站五處，別在第六處變成另一種說法）
 - **把數個已翻譯節點串起來的分隔符，自己也要有 key**（`<span data-i18n="common.listSep">、</span>`，英譯 `", "`）：留成 span 外的字面量，英文句子中央就會露出一個繁中字身——與「英譯不得出現全形標點」是同一件事，只是它發生在 markup 而不是 `en.json`。**同理，js 不得在兩顆 key 之間、或 key 與資料之間補字面空白**（`t(a) + " " + b`）：空白一律由 key 自帶（正典 `pagination.js` 的 `pagePrefix + n + pageSuffix`）
@@ -284,7 +284,7 @@ ui/pagination/
   - **modal 確認鈕的 `btn-close-modals`**：toast 分支含「留在窗內就能修正」的驗證 warning 者不掛（每點必關窗會打斷修正，示範不出真實狀態）；純成敗、或 warning 屬不可就地修正者（權限不足）可掛
   - **無資料列正典**：SaaS 新頁無真 app 可鏡射時，空狀態列用 `{% else %}<tr><td colspan="N" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>`（3-3 的做法）。**判準：`{% for %}` 直接產出 `<tr>`、列內又有逐列刪除/撤銷動作＝使用者能把列刪到零的管理表，真實初始態即可為空、必帶 `{% else %}`**（有測試把關 SaaS 新頁；真 app 有對應頁的鏡射表其空狀態隨真 app、列入測試 EXEMPT）
   - **`class="hidden"` 只是「這一態現在不生效」，它不算把那一態切出來。** 那塊 markup 連同它的 i18n key 全站沒有一頁看得到，等於沒有人驗收過它的長相。**旁邊那一句可見不算數**——5-10 的兩句涵蓋率警語是兩段不同的文字，看得到「還不能開」不代表有人看過「可以開了」長什麼樣。
-    - **判準是 `dist` 上的事實，不是 `src` 上的字串形狀**：①「寫死的 `.hidden`」與「`{% if %}` 產出、但條件在唯一使用頁上恆為某一值」是同一種死法，後者只是把「永遠看不到」寫得更迂迴；②條件寫在元件自己的資料裡、使用頁翻不動的（header `menuItems` 的 `hidden: true`）同理；③`.hidden` 可能掛在**祖先**上而 key 在子節點，所以要走祖先鏈、不能逐行掃。三者的共同判準只有一句：**這顆 key 在 `dist` 全站有沒有任何一個不被 `.hidden` 蓋住的節點**。⚠️ 現行測試只做得到「同一行上的 `class="hidden"` 與 `data-i18n`」，上面三種形狀它都看不到（②③ 是祖先鏈、① 那一行含模板語法會被直接跳過）——這三種目前靠人審。豁免除了 markup 上宣告的開合目標（`aria-controls`／`data-reveal-target`／`data-dismiss-target`），還有一族是**元件匯出的函式揭露**（`sources-block` 由 `GufoSources.show()` 整塊揭開），寫測試時兩族都要放行。
+    - **判準是 `dist` 上的事實，不是 `src` 上的字串形狀**：①「寫死的 `.hidden`」與「`{% if %}` 產出、但條件在唯一使用頁上恆為某一值」是同一種死法，後者只是把「永遠看不到」寫得更迂迴；②條件寫在元件自己的資料裡、使用頁翻不動的（header `menuItems` 的 `hidden: true`）同理；③`.hidden` 可能掛在**祖先**上而 key 在子節點，所以要走祖先鏈、不能逐行掃。三者的共同判準只有一句：**這顆 key 在 `dist` 全站有沒有任何一個不被 `.hidden` 蓋住的節點**。⚠️ **②③ 已由測試把關**（母體換成 `dist`、走 `tagEvents()` 祖先鏈、收整個 i18n 屬性家族）；**① 的另一半仍靠人審**——「條件恆為某值 ⇒ 整段根本沒渲染」的那種，在 `dist` 上連一個 `.hidden` 節點都不存在，以 `.hidden` 根為母體的規則結構上看不到它（實例：`3-5` 的 `health.lastScanNever`、`5-10` 的 `settings.tagCoverageNotMeasured`）。豁免除了 markup 上宣告的開合目標（`aria-controls`／`data-reveal-target`／`data-dismiss-target`），還有一族是**元件匯出的函式揭露**（`sources-block` 由 `GufoSources.show()` 整塊揭開），寫測試時兩族都要放行。
     - 同理，**預設 `display:none` 的槽**（`.error-prompt` 靠祖先 `.error` 才揭示）也在這條之內：它的 markup 合規、`aria-describedby` 也接上了，但那句約束在**填之前**沒有人讀得到——帶約束的輔助文字要常駐可見，錯誤態才用 `.error-prompt`。
 
     兩條路，看它住在哪裡：
@@ -397,7 +397,8 @@ CSS 不需任何翻譯：交付的樣式即正式環境的最終樣式。
 ## 8. 交付前檢查清單
 
 - [ ] `npm run check` 綠（stylelint → build → test，測試把本規範的規則跑成斷言）；`dist/` 每一頁雙擊可開、外觀與互動正確
-- [ ] 零死碼：每個元件 html 都被 include、每張 `src/images` 的圖都被引用；build 產出的資產都帶 content hash（`?v=`）
+- [ ] 零死碼：每個元件 html 都被 include、每張 `src/images` 的圖都被引用
+- [ ] `css` / `js` / `i18n` 的每一個引用都帶 content hash（`?v=`，由 `scripts/hash-assets.mjs` 蓋章）；**圖片刻意不蓋章**——改圖就改檔名。Pages 的 `max-age` 是 600 秒，一張圖舊十分鐘與「新 HTML 配舊 CSS」不是同一量級，而蓋圖片要處理三種引用形狀（HTML 屬性、CSS `url()` 的帶引號與不帶引號、JS 執行期組出的路徑）並多一條隱性的蓋章順序契約
 - [ ] 沒有 jQuery 與任何第三方 JS 套件；js 只用標準 DOM API
 - [ ] 每個有互動的元件：js 在自己資料夾，且已在 `eleventy.config.js` 與 `base.html` 登記
 - [ ] 重複區塊都是 include；重複列／選項用 `{% for %}` + front matter 資料

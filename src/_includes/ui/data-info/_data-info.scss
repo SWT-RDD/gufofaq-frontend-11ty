@@ -1,12 +1,41 @@
 // 「共 N 筆資料」的筆數標籤。純樣式元件（只有 scss，class 直接寫在頁面／展示片段上，同 ui/ab-test-block）。
-// 曾經住在 ui/pagination 的 scss 裡 —— 但 pagination.html 一次都沒用過它，用它的是 4-1／5-7 頁與 ui/block 的展示片段。
+// 曾經住在 ui/pagination 的 scss 裡 —— 但 pagination.html 一次都沒用過它（用它的頁見下方住處清單）。
 // 一個沒人擁有、寄生在無關元件裡的 class，改壞了沒人知道是誰的責任（§4：元件的 scss 只寫自己的 class）。
 //
 // markup 契約（無 html 元件，§1-2；整段照抄）—— 兩種形狀，class 相同、內容不同：
+//
 //   ① 計數列（4-1／5-7）：數字前後**是兩顆 i18n span**，抄的時候別漏（只留數字＝英文模式少一半字）
+//
 //      <div class="data-info"><span data-i18n="qa.totalOf">共</span> {{ total }} <span data-i18n="qa.records">筆資料</span></div>
-//   ② 統計列（5-2／5-10）：同一顆 class 另掛 flex 工具，內含多組「標籤＋值」
-//      <div class="data-info flex-row flex-wrap gap-24">…<span data-i18n="…">…</span> {{ 值 }}…</div>
+//
+//   ② 統計列（5-2／5-10）：同一顆 class 另掛 flex 工具，內含多組「標籤＋值」。
+//      **每一組外面那顆無 class 的 `<span>` 不可省**——它把「標籤」與「值」綁成一個 flex item，
+//      少了它 gap-24 會落在標籤與值「之間」，把每一組拆成兩截散在整列上（視覺指紋看得到、但
+//      抄的人不會知道少了哪一層）。標點折進 i18n key 裡（§4-2），值就直接接在 span 後面。
+//
+//      <div class="data-info flex-row flex-wrap gap-24">
+//          <span><span data-i18n="settings.scanDocuments">列舉得到的文件：</span>{{ coverageScan.documents }}</span>
+//          <span><span data-i18n="settings.scanExamined">讀到內容（覆蓋率的分母）：</span>{{ coverageScan.examined }}</span>
+//          （其餘每一組同型，重複到最後一組為止）
+//      </div>
+//
+//      標籤與值之間的半形空白**只能有一份**（§4-2）：上面 5-10 那組的空白在英譯裡
+//      （`"Documents enumerated: "`），markup 就不再寫；5-2 那組的英譯是 `"Rules:"`（無尾空白），
+//      空白就寫在 markup 的 span 之後。兩邊都寫＝英文模式多一個空格，兩邊都不寫＝黏成 `Rules:12`。
+//
+//      <div class="data-info flex-row flex-wrap gap-24">
+//          <span><span data-i18n="settings.outputRulesCountLabel">規則數：</span> {{ outputRules.length }} / 30</span>
+//          <span><span data-i18n="settings.outputRulesEnabledLabel">啟用中：</span> {{ outputRulesEnabledCount }}</span>
+//      </div>
+//
+// 唯一例外：`ui/block` 的展示片段寫 `<div class="data-info">共 12 筆資料</div>`——**零 i18n span**，
+// 與型① 直接牴觸。它只被元件庫頁 include，而 showcase 整頁不翻（§4-2），故不補 key；抄它就錯了。
+//
+// 住在哪一頁（雙向；判準＝`grep -n 'class="data-info' src`）——
+//   型①：4-1_qaHistory、5-7_auditLog（各一列，頁面自寫）
+//   型②：5-2_conversationSettings（輸出規則子頁籤）、5-10_tagDimensions（掃描結果）
+//   例外：ui/block 的展示片段 → 只渲染在 component.html
+//   反向：渲染後含 `.data-info` 的頁只有 4-1、5-2、5-7、5-10、component.html
 
 .data-info {
     padding: 1rem 0;

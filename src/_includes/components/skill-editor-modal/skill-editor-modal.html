@@ -80,8 +80,9 @@
                                      以為那顆工具不存在，而它在 5-2「內建工具啟用」面板上看得到——同一顆
                                      工具在兩頁一個在一個不在，比灰掉難懂。
                                      判準是**欄位**不是名字：目前只有 answer_from_qa 是 false，寫死名字的話
-                                     下一顆被禁的工具出現時清單會漏（上游那份 `SKILL_FORBIDDEN_BUILTIN_TOOLS`
-                                     是一張表，名字集合由它導出）。
+                                     下一顆被禁的工具出現時清單會漏（GufoRAG chatbot
+                                     `app/services/agent_service.py` 的 `SKILL_FORBIDDEN_BUILTIN_TOOLS`
+                                     是一張 dict，名字集合由它導出成 `SKILL_FORBIDDEN_BUILTIN_TOOL_NAMES`）。
                                      `skillRestrictionReason` 是端點給的字串，**與存檔被擋時的 400 訊息是
                                      同一句**（product `app/tool_refs.py` 直接把它塞進 400），所以不掛
                                      data-i18n——掛了就是同一句話有兩份譯文，設定頁說一套、存檔說另一套。 #}

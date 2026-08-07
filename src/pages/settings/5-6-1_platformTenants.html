@@ -196,12 +196,19 @@ permalink: 5-6-1_platformTenants.html
         admin），下方 ISO 名單的 `c-admin@example.com` 是它的**租戶管理員**
         （`review_overdue` 取 `User.is_admin` 裡 id 最小的那一位）——兩個不同的信箱＝兩個不同的
         使用者 ⇒ userCount 2（兩處一起改，那是同一個 `_user_counts_by_tenant` 的數）。 #}
+{# id＝租戶主鍵（product `app/routers/platform.py` 的 `tenant_id: int`；`TenantOut` 也回它）。
+     **不可拿 loop.index 當列鍵**：同一頁下面的 ISO 季度審核刪得掉租戶（`review_apply` 的
+     `delete` 動作），位置不是身分——刪掉前面一列之後，後面每一列的列鍵都往前頂一格，
+     React 的 key 與逐列動作（PATCH /platform/tenants/{id}/features、.js-manage-tenant）
+     會一起指錯人（§6 列鍵，同 5-8／5-6-2／5-6-3 已經改過的那三張表）。
+     **示範租戶 D 的 id 是 42**：不是隨手挑的——下面 step-3 的失敗結果逐字寫著
+     「從 GufoRAG 刪租戶索引失敗（tenant=42）」，那筆講的就是它（§6 同頁同源）。 #}
 {% set tenants = [
-  { name: "示範租戶 A", userCount: 8, features: ["data", "ask", "history", "settings", "audit", "extract"], frozen: false, reviewDue: false, status: "ACTIVE", statusKey: "platform.statusActive", statusLabel: "使用期內", trialEnd: "2027-01-31" },
-  { name: "示範租戶 B", userCount: 3, features: ["data", "ask"], frozen: true, reviewDue: false, status: "FROZEN", statusKey: "platform.statusFrozen", statusLabel: "已凍結", trialEnd: "2026-06-30" },
-  { name: "示範租戶 C", userCount: 2, features: ["ask"], frozen: false, reviewDue: true, status: "EXPIRED", statusKey: "platform.statusExpired", statusLabel: "已到期", trialEnd: "2026-03-01" },
-  { name: "示範租戶 D", userCount: 4, features: ["data", "ask"], frozen: false, reviewDue: true, status: "EXPIRED", statusKey: "platform.statusExpired", statusLabel: "已到期", trialEnd: "2026-02-14" },
-  { name: "示範租戶 E", userCount: 1, features: ["data", "ask"], frozen: false, reviewDue: false, status: "PENDING", statusKey: "platform.statusPending", statusLabel: "待啟用", trialEnd: "" }
+  { id: 7, name: "示範租戶 A", userCount: 8, features: ["data", "ask", "history", "settings", "audit", "extract"], frozen: false, reviewDue: false, status: "ACTIVE", statusKey: "platform.statusActive", statusLabel: "使用期內", trialEnd: "2027-01-31" },
+  { id: 15, name: "示範租戶 B", userCount: 3, features: ["data", "ask"], frozen: true, reviewDue: false, status: "FROZEN", statusKey: "platform.statusFrozen", statusLabel: "已凍結", trialEnd: "2026-06-30" },
+  { id: 23, name: "示範租戶 C", userCount: 2, features: ["ask"], frozen: false, reviewDue: true, status: "EXPIRED", statusKey: "platform.statusExpired", statusLabel: "已到期", trialEnd: "2026-03-01" },
+  { id: 42, name: "示範租戶 D", userCount: 4, features: ["data", "ask"], frozen: false, reviewDue: true, status: "EXPIRED", statusKey: "platform.statusExpired", statusLabel: "已到期", trialEnd: "2026-02-14" },
+  { id: 58, name: "示範租戶 E", userCount: 1, features: ["data", "ask"], frozen: false, reviewDue: false, status: "PENDING", statusKey: "platform.statusPending", statusLabel: "待啟用", trialEnd: "" }
 ] %}
 
 {# 帳號治理工具列：匯出租戶／使用者 CSV（帳號列表，稽核用）。直接下載動作 → data-toast 演出成敗（走 BFF 檔案透傳）。 #}
@@ -251,8 +258,9 @@ permalink: 5-6-1_platformTenants.html
                 {% for tenant in tenants %}
                 {# data-tenant-id＝React 列鍵契約（同 5-6-2 的 data-mcp-id）：這一列的儲存鈕送
                      PATCH /platform/tenants/{id}/features、.js-manage-tenant 也要知道管的是哪一個租戶。
-                     示範以 loop.index 代 id。租戶名另給 id，供同列 20 顆開關併讀出「哪個租戶的哪個功能」。 #}
-{% set tenantIdx = loop.index %}
+                     值取示範資料的真 id（見上方 tenants 那則註解）。租戶名另給 id，
+                     供同列每一顆開關併讀出「哪個租戶的哪個功能」——那顆是 DOM id，跟著列鍵走才唯一。 #}
+{% set tenantIdx = tenant.id %}
                 <tr data-tenant-id="{{ tenantIdx }}">
                     <td>
                         <div class="flex-row align-items-center gap-8 flex-wrap">

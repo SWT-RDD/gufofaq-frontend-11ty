@@ -1,4 +1,4 @@
-// 篩選列欄位群（5-2、2-2-1 共用）：讓一列篩選欄位均分剩餘寬度、可被壓縮。
+// 篩選列欄位群：讓一列篩選欄位均分剩餘寬度、可被壓縮。
 // 無 html（markup 由頁面自組——外層 .filter-fields，每個欄位加本元件的 slot class .filter-field）；
 // 行為 js 見同資料夾 filter-fields.js（.js-filter-clear 清除鈕）。
 // （原始規則來自真實 app css/style.css 的 .filter-fields .form-group，依 GUIDELINE §4
@@ -7,16 +7,47 @@
 // 就不會命中（規則直接不生效），該欄位的 .col-N-* 也會從錯誤的祖先（外層 .gap-24 而非本元件的
 // .gap-16）繼承 --flex-gap，欄寬計算跟著跑掉。
 //
-// markup 契約（無 html 元件，§1-2；整段照抄）—— 篩選列（5-2、2-2-1；.js-filter-clear 另供 4-1、5-7）：
+// markup 契約（無 html 元件，§1-2；整段照抄）—— 篩選列本體：
+//
 //   <div class="filter-fields flex-row flex-wrap gap-16 mobile-column">
-//     <div class="form-group filter-field row mobile-col col-4-md col-12-sm">  ← .filter-field 是本元件的 slot class
-//       <div class="label flex-row"><label class="control-label" for="…">…欄名…</label></div>
-//       <div class="field">…控制項…</div>
-//     </div>
-//     <button type="button" class="button button-border js-filter-clear">…清除…</button>
+//       <div class="form-group filter-field row mobile-col col-4-md col-12-sm">
+//           <div class="label">
+//               <label for="llmModelSelect" class="control-label" data-i18n="qaTest.llmModel">LLM模型</label>
+//           </div>
+//           <div class="field">
+//               <select class="form-control singleSelect" id="llmModelSelect">
+//                   <option value="" data-i18n="common.pleaseSelect">請選擇</option>
+//                   <option value="OpenAI gpt-4o-mini" selected>OpenAI gpt-4o-mini</option>
+//               </select>
+//           </div>
+//       </div>
+//       （其餘欄位同型，重複到最後一欄為止；每一欄都要有 .filter-field）
 //   </div>
-// 清除鈕以 closest(".block") 定範圍（filter-fields.js）：同頁兩條篩選列各清各的，故沿用同一個
-// hook 名而不改名（§5：改了名就脫離既有委派，變成沒人綁的死鈕）。
+//
+//   · `.filter-field` 是本元件的 slot class（不去寫 ui/form-control 的 class，§4）
+//   · `<div class="label">` **不帶 flex-row**。只有那一欄的標籤旁邊要放 `ui/info-btn` 時才多掛
+//     `flex-row`（2-2-1 的「知識檢索」是全站唯一一欄），把它寫進契約＝每一欄都多一顆無用的 flex 容器
+//
+// ── 清除鈕：**它是 `.filter-fields` 的兄弟、不在裡面**（六份實例無一例外）
+//
+//   <div class="flex-row flex-wrap gap-16 align-items-center">
+//       <button type="button" class="button button-border js-filter-clear" data-i18n="action.clear">清除</button>
+//       <button type="button" class="button button-primary js-prompt-search" data-toast="查詢成功|無法載入提示詞版本列表" data-i18n-data-toast="toast.queryPrompt" data-toast-type="success|error" data-i18n="action.query">查詢</button>
+//   </div>
+//
+//   · 它與查詢鈕是一對、住在同一顆 `flex-row` 裡；畫進 `.filter-fields` 就會被排進欄位那一列
+//     跟著欄位斷行，而且與查詢鈕分家。**那顆 `flex-row` 的對齊各頁不同、不屬本契約**：
+//     5-2 兩列靠 `.filter-fields` 的 `flex:1` 把它推到列尾，4-1／5-3／5-4／5-7 用 `justify-content-center`
+//   · `data-i18n="action.clear"` 不可省——這顆鈕全站六份，漏一份就是英文模式那一頁露出繁中
+//   · 清除鈕以 closest(".block") 定範圍（filter-fields.js）：同頁兩條篩選列各清各的，故沿用同一個
+//     hook 名而不改名（§5：改了名就脫離既有委派，變成沒人綁的死鈕）。有 `.filter-fields` 就只清它，
+//     沒有就清整個 `.block`——所以**沒有 `.filter-fields` 的頁也可以單獨用這顆鈕**
+//
+// 住在哪一頁（雙向；判準＝`grep -rn 'filter-fields\|js-filter-clear' src --include=*.html`）——
+//   `.filter-fields`：2-2-1_singleTest（一列）、5-2_conversationSettings（三列：對話模式總開關、
+//     提示詞版本史、歡迎語版本史）。反向：渲染後含 `.filter-fields` 的頁只有這兩頁。
+//   `.js-filter-clear`：上面 5-2 的後兩列各一顆，另外四顆在**沒有 `.filter-fields`** 的就地篩選列上——
+//     4-1_qaHistory、5-3_statsModule、5-4_coverageGaps、5-7_auditLog。反向：這五頁就是全部。
 .filter-fields {
     flex: 1 1 auto;
     min-width: 0;
