@@ -3319,6 +3319,7 @@ test("§4-2 繁中原文相同的 chrome 沿用既有 key、不另立（同文�
         //   「知識檢索」「套用為正式設定」 modals.* 併回 qaTest.*（英譯本來就逐字相同）
         //   「欄位對應」 dataImport.columnMapping 併回 step.mapping
         // round33 補 dist 掃描後才看得到的兩組（英譯本來就不同，屬 §4-2「語意確實不同才分 key」）：
+        "移除",                                                            // action.remove="Remove"（獨立按鈕字面，2-2-4／5-4）vs action.removePrefix="Remove "（multi-select 由 js 拼 tag 名的前綴，§4-2 空白必須由 key 自帶——在前者尾巴加空白會讓那兩顆鈕多一格）
         "來源",                                                            // qa.citationSourcePrefix="Source "（引用徽章前綴，§4-2 前綴 key 自帶尾空白）vs field.source="Source"（欄位槽名）
         "成員",                                                            // role.member="Member"（角色，單數）vs settings.members="Members"（欄名/計數，複數）
     ]);

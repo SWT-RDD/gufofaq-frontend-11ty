@@ -190,7 +190,10 @@ document.addEventListener("DOMContentLoaded", function () {
                 var remove = document.createElement("button");
                 remove.type = "button";
                 remove.className = "multi-select-tag-remove";
-                remove.setAttribute("aria-label", t("action.remove", "移除") + " " + optionLabel(option));
+                // 分隔空白由 key 自帶，js 不補字面空白（§4-2；正典 pagination.js 的 pagePrefix + n + pageSuffix）。
+                // 故用前綴 key `action.removePrefix`（英譯 "Remove "）而不是獨立按鈕字面那顆 `action.remove`
+                // ——在後者尾巴加空白會讓 2-2-4／5-4 那兩顆鈕的字面多一格。
+                remove.setAttribute("aria-label", t("action.removePrefix", "移除") + optionLabel(option));
                 remove.textContent = "×";
                 remove.addEventListener("click", function (event) { removeOption(option, event); });
                 tag.appendChild(remove);

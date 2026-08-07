@@ -130,7 +130,8 @@ permalink: 1-2-1_uploadFile_pdf.html
     </div>
     <div class="field">
         <label class="switch">
-            <input type="checkbox" class="switch-checkbox js-doc-convert-html" role="switch" aria-label="HTML 轉 Markdown" data-i18n-aria-label="dataImport.convertHtml" aria-describedby="pdfConvertHtmlHint" checked>
+            {# 名稱走 `aria-labelledby` 指那顆可見的 `control-label`（§4 反向規則），不另掛 `aria-label`。 #}
+            <input type="checkbox" class="switch-checkbox js-doc-convert-html" role="switch" aria-labelledby="pdfConvertHtmlLabel" aria-describedby="pdfConvertHtmlHint" checked>
             <span class="switch-box"><span class="switch-btn"></span></span>
         </label>
         <span class="text-gray" id="pdfConvertHtmlHint" data-i18n="dataImport.convertHtmlHint">文字欄若含 HTML 標籤就轉成 Markdown：絕對位址的 http(s)／mailto／tel 連結會原樣轉成 Markdown 連結保留下來，表示不出來的那些（相對路徑、javascript:、片段錨點）才會被移除並列在匯入結果裡。純文字資料原樣通過。</span>

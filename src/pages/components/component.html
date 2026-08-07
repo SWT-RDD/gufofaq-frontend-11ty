@@ -333,7 +333,18 @@ bodyClass: guideline-page
             {# ui/score-scale-note 的兩個附帶狀態（混合尺警語／分數尺剛變過要重新校準）：
                  5-2 那兩處是 React 依端點回應與「剛剛改了什麼」條件渲染的，真實頁不會常駐，
                  所以這裡是全站唯一看得到它們長相的地方（§5，同 platform.usageError 的處置）。 #}
+            {# 這顆 `scaleNoteId` 會渲染成 `id`，所以**要有控制項指到它**（§4 反向規則：沒有人指的
+                 hint id 比完全沒有 id 更難查）。示範因此比照 5-2 附一顆分數門檻欄——那本來就是這段
+                 說明的唯一消費點，少了它示範的也不是完整的「門檻欄＋這把尺」組合。 #}
             <div class="flex-row column gap-8 mt-16">
+                <div class="form-group">
+                    <div class="label label-md">
+                        <label for="demoScoreFloor" class="control-label" data-i18n="settings.scoreFloor">分數門檻</label>
+                    </div>
+                    <div class="field">
+                        <input type="number" step="any" min="0" id="demoScoreFloor" class="form-control" value="3" aria-describedby="demoScoreScaleNote">
+                    </div>
+                </div>
                 {% set scaleNoteId = "demoScoreScaleNote" %}
                 {% set scaleNoteText = "llm_reranker：1–5（分數越高越相關）" %}
                 {% set scaleNoteMixed = "目前同時使用兩種檢索來源，兩批結果的分數尺不同，單一門檻無法同時對兩者成立。" %}
@@ -846,8 +857,14 @@ bodyClass: guideline-page
                 <p class="text-gray m-0" data-i18n="settings.tagFilterCoverageWarnOk">目前每一份資料都帶得到這一欄，可以開啟。沒填的格子在匯入時就已經寫成「未標註」，過濾條件會連它們一起比對，所以標了幾成不影響會不會漏文件。之後要注意的只有一件事：資料夾匯入的檔永遠沒有欄位槽，那樣匯入一批新資料就會又缺這一欄，要改成逐列匯入才接得回來。</p>
                 <p class="text-gray m-0"><span data-i18n="regression.hitsTruncatedPrefix">（這一格只列了前 </span><span>3</span><span data-i18n="regression.hitsTruncatedMid"> 筆，實際命中 </span><span>63</span><span data-i18n="regression.hitsTruncatedSuffix"> 筆）</span></p>
                 <p class="text-gray m-0" data-i18n="settings.outputRulesStreamingCostOff">目前沒有啟用任何輸出規則，回答維持逐字顯示。只要啟用任一條，本設定檔的回答就會改成生成完畢後一次出現、中途沒有文字（規則要看完整段答案才判得準）。</p>
+                {# 這兩句住在 `{% if %}` 的另一支，而條件在唯一使用頁上恆為固定值（3-5 的 healthScan
+                     恆非空、5-10 四筆維度的 coveragePct 都非 null），所以 dist 上連一個 .hidden 節點
+                     都不存在——以 .hidden 為母體的那條測試結構上看不到它們（GUIDELINE §5 逐字把這
+                     兩顆 key 點名為靠人審的實例）。這裡是它們唯一的可見處。 #}
+                <p class="text-gray m-0" data-i18n="health.lastScanNever">這個租戶還沒有跑過健檢。按上面那顆「重新檢查」就會跑第一次；匯入資料之後系統也會自動跑一次。在那之前，下面的總覽與清單都是空的——那代表「還沒有檢查過」，不代表「檢查過而且沒有問題」。</p>
+                <p class="text-gray m-0" data-i18n="settings.tagCoverageNotMeasured">尚未量測</p>
             </div>
-            <div class="subtitle">出處：2-2-4 的模型相容性兩句、2-2-5 的基準設定缺漏與命中清單截斷、5-2 的逐代碼覆寫重複、5-2 的別名綁定與「沒有啟用任何輸出規則」、5-10 的覆蓋率可開啟、4-2 的兩欄合規。它們在各自的頁面上都掛著 .hidden，或由一個在該頁恆為某一值的條件式產出——那一態沒有人看得到，這裡是唯一可見處</div>
+            <div class="subtitle">出處：2-2-4 的模型相容性兩句、2-2-5 的基準設定缺漏與命中清單截斷、5-2 的逐代碼覆寫重複、5-2 的別名綁定與「沒有啟用任何輸出規則」、5-10 的覆蓋率可開啟與「尚未量測」、4-2 的兩欄合規、3-5 的「還沒跑過健檢」。它們在各自的頁面上都掛著 .hidden，或由一個在該頁恆為某一值的條件式產出——那一態沒有人看得到，這裡是唯一可見處</div>
         </section>
 
         <section id="errorPageSection">

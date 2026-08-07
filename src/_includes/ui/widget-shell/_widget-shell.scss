@@ -86,6 +86,24 @@
         border-top: 1px solid var(--border);
     }
 
+    // 這一列的兩顆子元素都是**別的元件的原子**（`ui/form-control` 的 `.form-control` width:100%、
+    // `ui/button` 的 `.button` width:fit-content），而 §4 不准在這裡寫它們的 class——要改排版
+    // 就掛 parent 自有的 slot class（正典：`ui/chatroom-shell` 的 `.chat-input-control`／
+    // `.chat-input-submit`）。
+    //
+    // 為什麼非改不可：面板內寬只有 336px（360 − 左右各 12px 內距），而 `width: 100%` 讓輸入框的
+    // flex 基準就是 336px，加上送出鈕的內容寬已經超出 ⇒ 兩者按基準**等比縮**，送出鈕被壓到比
+    // 自己的文字還窄，「送」「出」斷成兩行。站內 `ui/chatroom-shell` 是全寬版位，同一組原子碰不到
+    // 這個尺度，所以這是 widget 面板獨有的。
+    .widget-panel-input {
+        flex: 1 1 auto;
+        width: auto; // 蓋掉 .form-control 的 100%：基準改回內容寬，這一列才不會一開始就超出
+    }
+
+    .widget-panel-send {
+        flex-shrink: 0; // 送出鈕不參與縮放——它縮到比文字窄就會換行
+    }
+
     // 展示變體：正式版是 position:fixed 的浮層，元件庫頁要看得到它就得退回文流內
     // （同 ui/subscription-gate 的 .demo-static）。只動定位與尺寸，結構與正式版相同。
     &.demo-static {

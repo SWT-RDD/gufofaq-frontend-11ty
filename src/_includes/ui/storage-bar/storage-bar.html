@@ -7,11 +7,11 @@
        storageBarText —— 條下那行說明。**未給時走內建的儲存空間文案**（chrome 走 i18n、數字是資料）；
                          給了就整行由使用頁提供（5-10 那一行是「118 / 132（89.4%）」，純資料不翻）。
      原本這份 markup 被 5-10 手抄了一份（§1-2：同一個元件絕不複製貼上，要用就 include）。 #}
-{% set barPct = 84.3 %}
-{% if storageBarPct != null %}{% set barPct = storageBarPct %}{% endif %}
+{% set storageBarPctResolved = 84.3 %}
+{% if storageBarPct != null %}{% set storageBarPctResolved = storageBarPct %}{% endif %}
 <div class="storage-bar">
     <div class="bar">
-        <div class="bar-fill" style="width: {{ barPct }}%;"></div>
+        <div class="bar-fill" style="width: {{ storageBarPctResolved }}%;"></div>
     </div>
     <div class="text">{% if storageBarText != null and storageBarText != "" %}{{ storageBarText }}{% else %}<span data-i18n="storage.used">已使用</span> 843.38MB <span data-i18n="storage.of">（共</span> 1000MB<span data-i18n="storage.close">）</span>{% endif %}</div>
 </div>

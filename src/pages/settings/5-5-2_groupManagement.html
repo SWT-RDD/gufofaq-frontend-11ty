@@ -20,7 +20,7 @@ permalink: 5-5-2_groupManagement.html
      能力 token 集合對齊 product app/authz.py CAPABILITY_TOKENS（data/settings 拆讀寫；ask/history/audit 單一）。
      **memberCount 要與 5-5-1 的成員指派對得起來**（§6 跨頁自洽，兩頁是同一個示範租戶——
      群組名稱與能力聯集逐字相同、5-5-1 檔頭也明寫「群組本身在本頁維護」）：
-     那一頁三位成員的 groupIds 是 []／[3]／[2] ⇒ 管理 0、業務 1、研發 1。 #}
+     那一頁三位成員的 groupIds 是 []／[3]／[2, 3] ⇒ 管理 0、業務 1、研發 2。 #}
 {% set capabilities = [
   { key: "data:read", label: "資料集檢視", i18nKey: "settings.capDataRead" },
   { key: "data:write", label: "資料匯入／資料集管理", i18nKey: "settings.capData" },

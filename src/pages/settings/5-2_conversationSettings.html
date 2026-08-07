@@ -1033,7 +1033,16 @@ permalink: 5-2_conversationSettings.html
      預設值／條件，其餘 kind 的示範參數值直接寫在該 kind 的分支裡（一種 kind 只有一列，不需要參數化）。
      啟用 9 條／共 14 條 ⇒ outputRulesAnyEnabled = true，故顯示「已失去逐字串流」那一句。
      末兩條是事實時效那一族（product `output_rules.py` 的 E 類）：兩條都沒有參數，參數欄因此
-     落在分支鏈最後那一支的「此規則沒有參數。」 #}
+     落在分支鏈最後那一支的「此規則沒有參數。」
+
+     **`slot` 與 `category_slot` 的值域是標籤維度的 `slot_key`，不是自己取的名字**：意圖判定的
+     結果形狀是 `{dimensions: {槽: 代碼}, …}`（product `output_rules.py` 的 `category_slot`
+     欄位說明；`intent_classify` 逐字寫著 `dimensions` 以 `slot_key` 為鍵、值是字典那一列的
+     `code` 逐字），而槽名的值域是 `models.TAG_DIMENSION_SLOTS`（note1…note10 ＋ date2／date3，
+     DB 有 CHECK 約束）。後端**不驗**這一格（`max_slot_len: 64` 的自由字串），所以填 `topic`／
+     `channel` 這種名字不會報錯，只會讓規則永遠不命中——是靜默失效。
+     這份示範租戶的維度正本是 5-10 的 `tagDimensions`：note3 業務範疇（代碼見 5-4 的 `B06`／`B02`）、
+     note4 業務方向（`both`／`export`／`import`）、note5 文件密級。 #}
 {% set outputRules = [
   { kind: "list_marker", enabled: true, descKey: "settings.outputRuleListMarkerDesc", desc: "把行首的 1)、(1)、一、 等寫法統一成 1.，保留原本的編號值與縮排（不重新編號）。" },
   { kind: "strip_heading", enabled: false, descKey: "settings.outputRuleStripHeadingDesc", desc: "移除 markdown 標題行與粗體小標開頭行；該行還有內容時只去掉標記，不整行刪掉。" },
@@ -1047,11 +1056,11 @@ permalink: 5-2_conversationSettings.html
   { kind: "max_bullets", enabled: false, descKey: "settings.outputRuleMaxBulletsDesc", desc: "條列項數超過上限時僅回報違規，不會刪減項目。" },
   { kind: "constant_route", enabled: true, descKey: "settings.outputRuleConstantRouteDesc", desc: "提示詞裡只寫佔位符，實際值由本規則依這一輪的意圖判定填入；判不出情境時填預設值。",
     constName: "客服專線", constDefault: "0800-000-123",
-    cases: [{ slot: "topic", op: "eq", operand: "tariff", value: "0800-000-456" }] },
+    cases: [{ slot: "note3", op: "eq", operand: "B06", value: "0800-000-456" }] },
   { kind: "constant_route", enabled: false, descKey: "settings.outputRuleConstantRouteDesc", desc: "提示詞裡只寫佔位符，實際值由本規則依這一輪的意圖判定填入；判不出情境時填預設值。",
     constName: "申辦網址", constDefault: "https://www.trade.gov.tw/",
-    cases: [{ slot: "topic", op: "is_set", operand: "", value: "https://www.trade.gov.tw/apply" },
-            { slot: "channel", op: "in", operand: "web, line", value: "https://www.trade.gov.tw/online" }] },
+    cases: [{ slot: "note3", op: "is_set", operand: "", value: "https://www.trade.gov.tw/apply" },
+            { slot: "note4", op: "in", operand: "export, import", value: "https://www.trade.gov.tw/online" }] },
   { kind: "state_as_of", enabled: true, descKey: "settings.outputRuleStateAsOfDesc", desc: "答案引用到的資料若帶基準日，就在句末補上「（本資訊以 2024-11-30 為準）」這樣一句註記。引用到多筆時取最舊的那一個——一段話只要引用了一份較舊的資料，它就只保證到那一天為止，寫最新的那一天等於替已經過期的那部分背書。註記接在最後一個散文行的句末；那一行如果是表格、清單、引言、標題或程式碼圍欄就另起一段，不會被那一行吃掉。" },
   { kind: "flag_conflict", enabled: false, descKey: "settings.outputRuleFlagConflictDesc", desc: "同一個主題有多筆並列最新的資料時，在答案後面另起一段，逐份列出它們的基準日與來源名稱，並說明這幾份的說法可能不同——不是挑一份講。這一段講不出各份「說了什麼」：出口處理不經 AI，手上只有日期與來源名稱，替租戶總結那幾份資料的內容會是一句沒有依據的話。同一份文件被切成好幾段只算一份；能列出日期與來源的不到兩份時就不加這一段。" }
 ] %}
@@ -1183,12 +1192,12 @@ permalink: 5-2_conversationSettings.html
                                 <div class="form-group">
                                     <div class="label"><label for="oruleCategorySlot{{ loop.index }}" class="control-label" data-i18n="settings.outputRuleCategorySlot">意圖維度槽</label></div>
                                     <div class="field">
-                                        <input type="text" id="oruleCategorySlot{{ loop.index }}" class="form-control js-orule-category-slot" value="topic" aria-describedby="oruleCategoryHint{{ loop.index }}">
+                                        <input type="text" id="oruleCategorySlot{{ loop.index }}" class="form-control js-orule-category-slot" value="note3" aria-describedby="oruleCategoryHint{{ loop.index }}">
                                         {# 上下界是資料不是譯文（§3-2）：同一組界線就寫在下面 `js-orule-category-limit` 的
                                              `min="1" max="100000"` 上（正本 output_rules.py 的 `by_category`）。
                                              414eecc 已經對本頁另外三處做過同一個修正，這是第四處漏網。
                                              「最多 50 個代碼」在 markup 沒有第二份抄本，維持譯文。 #}
-                                        <span id="oruleCategoryHint{{ loop.index }}" class="text-gray"><span data-i18n="settings.outputRuleCategoryHintPrefix">維度槽與逐代碼上限要一起設；只設一邊，逐代碼上限不會生效。最多 </span><span>50</span><span data-i18n="settings.outputRuleCategoryHintMid"> 個代碼、每個代碼上限 </span><span>1 – 100000</span><span data-i18n="settings.outputRuleCategoryHintSuffix"> 字。</span></span>
+                                        <span id="oruleCategoryHint{{ loop.index }}" class="text-gray"><span data-i18n="settings.outputRuleCategoryHintPrefix">填標籤維度的欄位鍵（note1…note10、date2、date3），不是維度的名稱——填別的字不會報錯，只會讓這條規則永遠不命中。維度槽與逐代碼上限要一起設；只設一邊，逐代碼上限不會生效。最多 </span><span>50</span><span data-i18n="settings.outputRuleCategoryHintMid"> 個代碼、每個代碼上限 </span><span>1 – 100000</span><span data-i18n="settings.outputRuleCategoryHintSuffix"> 字。</span></span>
                                     </div>
                                 </div>
                                 <div class="text-bold" id="oruleCategoryOverridesLabel{{ loop.index }}" data-i18n="settings.outputRuleCategoryOverrides">逐代碼覆寫上限</div>
@@ -1569,6 +1578,11 @@ permalink: 5-2_conversationSettings.html
                 </select>
             </div>
         </div>
+        {# 第一顆沒選任何表時，後三顆停用——**停用要說得出理由**，否則畫面只有三顆按不動的多選。
+             這一句是 React 依 state 條件渲染的那一支（`aliasTableIds.length === 0` 才出現），切版這裡
+             保留它的 markup 當**位置與字色的規格**、預設掛 `.hidden`；它長什麼樣在元件庫頁的
+             「React 條件文案」節（那裡是唯一可見處，GUIDELINE §5）。繁中原文兩邊逐字相同。 #}
+        <p class="text-gray m-0 hidden" data-i18n="settings.aliasApplyNeedsBind">請先綁定別名表</p>
         {# 出口套用的說明窗。**無條件開窗**（點了永遠開同一份說明）⇒ 掛 data-open-modal（§5）。
              一次性版面、只有這一頁用得到 ⇒ 不抽元件（§3-3）。 #}
         <dialog class="modals" id="aliasOutputInfoModal" aria-labelledby="aliasOutputInfoModal-title">
@@ -1696,7 +1710,11 @@ permalink: 5-2_conversationSettings.html
              故 React 接線不會撞 `extra="forbid"` 的 422。 #}
         <div class="form-group row mobile-col">
             <div class="label label-md">
-                <label for="qaDirectScoreFloor" class="control-label" data-i18n="settings.scoreFloor">分數門檻</label>
+                {# 這一頁**同時**看得到兩顆「分數門檻」（這一顆與下面可回答性閘那一顆），而兩者的
+                     契約完全不同（這顆可留白、那顆不可；尺也不同）。§4：同頁同時可見、語意不同的
+                     控制項不得共用同一個可及名稱——兩塊都沒有可及的區塊標題可以指，所以走另一條路，
+                     讓**可見字面**自帶區分。`settings.scoreFloor` 那顆通用 key 留給 step-flow 的表格。 #}
+                <label for="qaDirectScoreFloor" class="control-label" data-i18n="settings.qaDirectScoreFloorLabel">直答分數門檻</label>
             </div>
             <div class="field col-12-sm">
                 <input type="number" step="any" min="0" id="qaDirectScoreFloor" class="form-control js-qa-direct-score-floor"
@@ -1772,7 +1790,7 @@ permalink: 5-2_conversationSettings.html
              宣告成不可為 null 的 `float`（`_NULLABLE_FIELDS` 只收 `qa_direct_score_floor`）。 #}
         <div class="form-group row mobile-col">
             <div class="label label-md">
-                <label for="groundingScoreFloor" class="control-label" data-i18n="settings.scoreFloor">分數門檻</label>
+                <label for="groundingScoreFloor" class="control-label" data-i18n="settings.groundingScoreFloorLabel">可回答性分數門檻</label>
             </div>
             <div class="field col-12-sm">
                 <input type="number" step="any" min="0" id="groundingScoreFloor" class="form-control js-grounding-score-floor"

@@ -87,7 +87,9 @@ permalink: 1-1-3_preview_excel.html
     </div>
     <div class="field">
         <label class="switch">
-            <input type="checkbox" class="switch-checkbox js-excel-unpivot" role="switch" aria-label="交叉表轉直式" data-i18n-aria-label="dataImport.unpivot" aria-describedby="excelUnpivotHint">
+            {# 名稱走 `aria-labelledby` 指那顆可見的 `control-label`，不另掛 `aria-label`：
+                 §4 反向規則要求「掛了 id 的就要有人指到它」，而兩份同文的字串遲早分岔。 #}
+            <input type="checkbox" class="switch-checkbox js-excel-unpivot" role="switch" aria-labelledby="excelUnpivotLabel" aria-describedby="excelUnpivotHint">
             <span class="switch-box"><span class="switch-btn"></span></span>
         </label>
         <span class="text-gray" id="excelUnpivotHint" data-i18n="dataImport.unpivotHint">開啟後，橫向展開的年度／月份欄會轉成「列標題／欄標題／值」三欄。</span>

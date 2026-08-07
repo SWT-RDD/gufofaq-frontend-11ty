@@ -77,7 +77,7 @@ permalink: 2-2-4_regressionSuites.html
         <div class="col-7-md col-12-sm">
             <div class="form-group">
                 <div class="label">
-                    <label for="newSuiteDesc" id="newSuiteDescLabel" class="control-label" data-i18n="regression.suiteDesc">說明</label>
+                    <label for="newSuiteDesc" class="control-label" data-i18n="regression.suiteDesc">說明</label>
                 </div>
                 <div class="field">
                     <input type="text" id="newSuiteDesc" class="form-control" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter">
@@ -296,7 +296,14 @@ permalink: 2-2-4_regressionSuites.html
      regex 存進案例，之後每次執行都在 product 的事件迴圈上跑它。所以這一欄是 select 不是輸入框。
 
      `direction_is` 的 slot 值域＝受控詞彙維度掛得上的槽（`regression.tag_code_slots()`＝
-     `models.TAG_DIMENSION_SLOTS` 扣掉 DATE 槽）；選項的顯示名是租戶自己取的維度名（資料，不翻）。 #}
+     `models.TAG_DIMENSION_SLOTS` 扣掉 DATE 槽）；選項的顯示名是租戶自己取的維度名（資料，不翻）。
+     **這份租戶有哪些維度、各掛在哪個槽，正本是 5-10 的 `tagDimensions`**（§6 同一份業務目錄
+     不得各烤一份）：note3 業務範疇／note4 業務方向／note5 文件密級。note1、note2 這個示範租戶
+     拿去當 `RetrievalProfile.field_labels` 的「承辦組室」「業務範疇」了（5-10 檔頭明寫這一頁
+     刻意避開那兩個槽），掛在這裡會讓同一個槽同時有兩個中文名。
+     示範斷言的 `value` 是**維度字典裡那一列的 `code` 逐字**（`intent_classify` 的 `dimensions`
+     以 `slot_key` 為鍵、值是 code 逐字）——5-10 的業務方向字典是 `both`／`export`／`import`
+     全小寫，寫成 `EXPORT` 在比對端分不開、述詞會零命中而且完全無聲。 #}
 {% set regressionAssertionTypes = [
   { value: "contains", label: "答案須包含", i18nKey: "regression.typeContains" },
   { value: "not_contains", label: "答案不得出現", i18nKey: "regression.typeNotContains" },
@@ -318,8 +325,9 @@ permalink: 2-2-4_regressionSuites.html
   { value: "markdown_heading", label: "markdown 標題行", i18nKey: "regression.patternMarkdownHeading" }
 ] %}
 {% set regressionSlots = [
-  { value: "note1", label: "業務方向" },
-  { value: "note2", label: "法規依據" }
+  { value: "note3", label: "業務範疇" },
+  { value: "note4", label: "業務方向" },
+  { value: "note5", label: "文件密級" }
 ] %}
 {% set regressionNewAssertions = [
   { type: "contains", shape: "values", values: "25%\n鋼品" },
@@ -327,7 +335,7 @@ permalink: 2-2-4_regressionSuites.html
   { type: "max_chars", shape: "number", value: "500" },
   { type: "has_link", shape: "prefix", prefix: "https://www.trade.gov.tw/" },
   { type: "cites_document", shape: "document", idKind: "document_id", identity: "9f2c1b7e…a41" },
-  { type: "direction_is", shape: "slot", slotKey: "note1", value: "EXPORT" },
+  { type: "direction_is", shape: "slot", slotKey: "note4", value: "export" },
   { type: "judge", shape: "criteria", criteria: "答案有沒有正面回答「稅率是多少」，而不是只講申報流程" }
 ] %}
 <div class="block mt-16 flex-row column gap-16">
@@ -480,7 +488,7 @@ permalink: 2-2-4_regressionSuites.html
                             </div>
                             <div class="field">
                                 <input type="text" id="assertionCode-{{ loop.index }}" class="form-control js-assertion-code" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" aria-describedby="assertionCodeHint-{{ loop.index }}" value="{{ a.value }}">
-                                <p id="assertionCodeHint-{{ loop.index }}" class="text-gray" data-i18n="regression.assertionCodeHint">一條斷言只放一個代碼。要同時要求兩個代碼請寫兩條。</p>
+                                <p id="assertionCodeHint-{{ loop.index }}" class="text-gray" data-i18n="regression.assertionCodeHint">一條斷言只放一個代碼，而且要與該維度字典裡的代碼逐字相同（含大小寫）——比對端分不開大小寫，寫錯只會零命中、不會報錯。要同時要求兩個代碼請寫兩條。</p>
                             </div>
                         </div>
                     </div>
@@ -513,7 +521,7 @@ permalink: 2-2-4_regressionSuites.html
 
     <div class="form-group">
         <div class="label">
-            <label for="newCaseNote" id="newCaseNoteLabel" class="control-label" data-i18n="regression.caseNote">備註</label>
+            <label for="newCaseNote" class="control-label" data-i18n="regression.caseNote">備註</label>
         </div>
         <div class="field">
             <input type="text" id="newCaseNote" class="form-control" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter">
@@ -607,7 +615,10 @@ permalink: 2-2-4_regressionSuites.html
         <div class="col-4-md col-12-sm">
             <div class="form-group">
                 <div class="label">
-                    <label for="runProfileSelect" id="runProfileSelectLabel" class="control-label" data-i18n="qaTest.knowledgeRetrieval">知識檢索</label>
+                    {# 這一顆刻意沒有 id：它不是覆寫欄（知識檢索是 body 頂層的 profile_no），
+                         沒有覆寫 checkbox 要拿它當 `aria-labelledby` 的一半。同排其餘六顆有 id
+                         是因為真的被指到——沒有人指的 id 比完全沒有 id 更難查（§4）。 #}
+                    <label for="runProfileSelect" class="control-label" data-i18n="qaTest.knowledgeRetrieval">知識檢索</label>
                 </div>
                 <div class="field">
                     <select id="runProfileSelect" class="form-control js-knowledge-select">

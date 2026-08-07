@@ -147,13 +147,16 @@ permalink: 3-5_dataHealth.html
      「沒有陳舊高頻」與「這一次根本沒算」在畫面上長得一模一樣。
      ⑦ 的兩個數字也自洽：`files` 9 ＝ 掃到的 7 ＋ 沒掃到的 2（`uncoveredTotal`），而**沒掃到的那 2 個
      一筆記錄都不產**（`_collect_records` 對它們 `continue`，`healthUncovered` 的 detail 也逐字寫著
-     「它不會出現在任何一項檢查裡」）。掃到的 7 個裡：5 個是資料夾匯入的整份文件
-     （`_folder_record` 一檔恰好產出一筆 `slotted=False`）⇒ `slotlessRecords` **5**；
-     另外 2 個是逐列匯入的 .xlsx，1175 筆逐列記錄（`slotted=True`）由它們貢獻 ⇒ `records` 1180。
-     （上一版寫 `slotlessRecords` 7 並說「掃到的 7 個都是資料夾檔」，那個推導會逼出 `records` ＝ 7；
-     再上一版說「另外 2 個是逐列匯入的」，那把沒掃到的那 2 個算成有記錄——兩版都推不出 1180。）
-     那 5 筆裡有 3 筆內容超過兩兩比對上限 ⇒ `exactMatchOnlyRecords` 3。兩者都 ≦ `records`，後者 ≦ 前者不是規則
-     （逐列匯入的答案也可能過長），這一份示範剛好如此。
+     「它不會出現在任何一項檢查裡」）。掃到的那 7 個是**本頁自己指名過的檔去重**得來的：
+     6 個逐列匯入的 .xlsx ＋ 1 個資料夾匯入的 .pdf（`犬貓入境檢疫作業手冊.pdf`），沒掃到的兩個
+     則是 `healthUncovered` 那兩筆（`關稅稅則對照表.png`、`舊版問答_匯出.xlsx`）——加起來剛好
+     `files` 9，沒有第 10 個檔的空間。資料夾匯入的檔**一檔恰好一筆** `slotted=False`
+     （`record_from_document` 寫死 `slotted=False`、一檔一個 document_id）⇒ `slotlessRecords` **1**；
+     其餘 1179 筆逐列記錄（`slotted=True`）由那 6 個 .xlsx 貢獻 ⇒ `records` 1180。
+     **這個 1 不能照「幾個資料夾檔」以外的方式推**：寫成 5 或 7 都要求有那麼多個資料夾匯入的檔，
+     而本頁指名得出來的只有一個。
+     `exactMatchOnlyRecords` 3 ＝ 內容超過兩兩比對上限、只做得了完全相同比對的那幾筆。
+     它與 `slotlessRecords` 沒有包含關係（逐列匯入的答案也可能過長），只要求兩者都 ≦ `records`。
      `uncoveredTotal` 2 ＝ 下面 `healthUncovered` 的兩筆（這一份示範沒有被截斷；截斷時它會大於
      列出來的筆數，而畫面上那一對數字正是唯一看得出來的地方）。 #}
 {% set healthScan = {
@@ -286,7 +289,7 @@ permalink: 3-5_dataHealth.html
   }
 ] %}
 {# 逐項清單（`FindingsOut`）。**列序照端點的 `.order_by(check_type, id)`**
-     （health_findings.py，本頁 `health.listOrder` 那句話也是這樣寫給使用者看的）——
+     （health_findings.py，本頁 `health.findingsSortHint` 那句話也是這樣寫給使用者看的）——
      示範資料的順序若不是這個，畫面上那句話就沒有對應的證據。`total` 41 ＞ 本頁列數 ⇒ 分頁列演得到「這一頁不是全部」（35 未處置 ＋ 6 已處置）。
      **這裡沒有命中次數欄**：`GET /health/findings` 不回它（命中數在上游的問答紀錄裡，那一支
      是分頁的、不去碰上游），畫一個欄位出來就得自己算一份，而那會是第二個真相。

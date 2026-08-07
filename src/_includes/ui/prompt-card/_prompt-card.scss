@@ -9,6 +9,13 @@
 // （本檔唯一的巢狀就是 `&.draft`）——把它們畫在已發布卡或 `.prompt-card-list` 直下，class 找得到、
 // 樣式一條都不生效（§4 第三種死法：祖先錯位）。
 //
+// **`.prompt-card-list` 是無樣式的真 app 業務掛點，不是漏掉的樣式**（§5：hook 是轉換契約、不是死碼）：
+// 凍結前端 `GufoFAQ_Frontend_New/js/promptManagement.js` 以 `$('.prompt-card-list')` 取它、再
+// `$list.find('.prompt-card:not(.draft)').remove()` 清空重繪版本卡。版位全由 `flex-row column gap-10`
+// 提供，所以**全站 scss 不得為它寫規則**，也不得因為「在 scss 裡找不到它」而把它當無主 class 移除。
+//
+// 契約段裡凡是**重複同型節點**都只寫一顆並在該行標明重複次數的來源（§1-2 只准這一種省略）。
+//
 // ① 已發布的提示詞版本卡（「提示詞」子頁籤 #panelPrompts，`{% for v in versions %}` 迴圈內）：
 //
 //   <div class="prompt-card-list flex-row column gap-10 mb-10">
@@ -33,6 +40,10 @@
 //                       <li>《知識庫檢索結果》（本次問答檢索到的資料片段）</li>
 //                   </ul>
 //               </div>
+//               ↑ 上面那對 p ＋ ul 是**重複同型節點**：實例（5-2 #panelPrompts）是四顆 p、三顆 ul，
+//                 段數與項數由提示詞內容決定。清單項目內可以有 `span.text-red` 的強調字
+//                 （見該頁第二組清單的「優先使用『條列式』呈現資訊」）——那是內容自己的強調，
+//                 不是本元件的樣式，`.text-red` 的主人是全域工具層。
 //           </div>
 //       </div>
 //       {% endfor %}

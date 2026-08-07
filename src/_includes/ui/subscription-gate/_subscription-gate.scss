@@ -22,6 +22,9 @@
 //           <div class="panel-header">免責聲明</div>
 //           <div class="panel-body">
 //               <p class="m-0 mb-8">致使用者：歡迎使用本平台！在使用我們的服務之前，請您仔細閱讀並同意以下免責聲明，閱讀後即視為使用者同意此聲明。</p>
+//               ↑ 重複同型節點：免責聲明有幾段就幾顆，段數由內容決定。
+//               ↓ **最後一段不帶 `mb-8`**（帶了面板底部會多出 8px）：
+//               <p class="m-0">服務變更與可用性：本平台保留隨時修改、暫停或終止服務的權利，無需提前通知。使用者應理解服務可能因技術、法律或相關政策調整而有所變更。</p>
 //           </div>
 //           <div class="panel-footer">
 //               <button type="button" class="button button-primary">我已閱讀並同意，開始使用（30 天）</button>

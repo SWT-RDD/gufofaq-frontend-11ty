@@ -75,11 +75,14 @@
             </div>
         </div>
         <div class="widget-panel-bar">
-            <input type="text" class="form-control js-widget-input" placeholder="輸入問題"
+            {# `.widget-panel-input`／`.widget-panel-send` 是本元件自有的 slot class（§4：要覆寫
+                 別元件原子的排版就掛自己的 class，不寫 `.form-control`／`.button` 的選擇器）。
+                 沒有它們的話這一列會等比縮，送出鈕被壓到比文字窄而換行——理由寫在 scss 那兩條旁邊。 #}
+            <input type="text" class="form-control widget-panel-input js-widget-input" placeholder="輸入問題"
                 data-i18n-placeholder="comp.enterQuestion" aria-label="輸入問題" data-i18n-aria-label="comp.enterQuestion">
             {# 送出是直接送 API 的動作鈕 ⇒ data-toast 列全結果（§5 矩陣③）。節流那一段對回 widget token
                  的每分鐘上限（product `widget_tokens.py`），不是泛用的「失敗」。 #}
-            <button type="button" class="button button-primary js-widget-send"
+            <button type="button" class="button button-primary widget-panel-send js-widget-send"
                 data-toast="回答生成中...|回答生成失敗，請稍後再試|詢問太頻繁，請稍後再試" data-i18n-data-toast="toast.widgetAsk"
                 data-toast-type="info|error|warning" data-i18n="action.submit">送出</button>
         </div>
