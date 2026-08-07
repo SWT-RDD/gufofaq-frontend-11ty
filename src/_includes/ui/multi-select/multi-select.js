@@ -54,11 +54,19 @@ document.addEventListener("DOMContentLoaded", function () {
         select.setAttribute("aria-hidden", "true");
         select.setAttribute("tabindex", "-1");
 
-        // §5「把原生語意換掉就要自己補回來」：原生 select 被移出無障礙樹後，
-        // 頁面的 <label for="select id"> 到不了替身——把它接到 combobox（aria-labelledby），
-        // label 點擊被轉送到隱藏 select 的焦點也一併轉給搜尋框。
+        // §5「把原生語意換掉就要自己補回來」：原生 select 被移出無障礙樹後，它身上的名稱與描述
+        // 全部到不了替身——要**涵蓋 §4 允許的每一種來源**依序回退，最後才退 placeholder（§4）。
+        // 只認 label[for] 的話，改用 aria-labelledby 掛名的欄位會靜默退化成「請選擇」：
+        // 5-2 的「出口套用」就是這型（標題格裡還有一顆說明鈕，故是 span 不是 label），
+        // 而同頁的「比對套用」「推理套用」有 label[for]、名稱正常——三顆並排、只有一顆沒名字，
+        // 視覺指紋完全看不到。aria-describedby 同理：掛在 aria-hidden 的原生 select 上等於零。
         var pageLabel = select.id ? document.querySelector('label[for="' + select.id + '"]') : null;
+        if (!pageLabel) pageLabel = select.closest("label");
         if (pageLabel && !pageLabel.id) pageLabel.id = id + "-label";
+        var nativeLabelledBy = select.getAttribute("aria-labelledby");
+        var nativeLabel = select.getAttribute("aria-label");
+        var nativeDescribedBy = select.getAttribute("aria-describedby");
+        var hasName = !!(pageLabel || nativeLabelledBy || nativeLabel);
         select.addEventListener("focus", function () { search.focus(); });
 
         var control = document.createElement("div");
@@ -83,6 +91,9 @@ document.addEventListener("DOMContentLoaded", function () {
         search.setAttribute("aria-controls", dropdown.id);
         search.setAttribute("aria-expanded", "false");
         if (pageLabel) search.setAttribute("aria-labelledby", pageLabel.id);
+        else if (nativeLabelledBy) search.setAttribute("aria-labelledby", nativeLabelledBy);
+        else if (nativeLabel) search.setAttribute("aria-label", nativeLabel);
+        if (nativeDescribedBy) search.setAttribute("aria-describedby", nativeDescribedBy);
 
         tagList.appendChild(search);
         control.appendChild(tagList);
@@ -191,8 +202,8 @@ document.addEventListener("DOMContentLoaded", function () {
             wrapper.classList.toggle("has-tags", selected.length > 0);
             var ph = placeholder();
             search.placeholder = selected.length > 0 ? "" : ph;
-            // 有頁面 label 時名稱走 aria-labelledby（欄位名），placeholder 只是提示；沒有才退 aria-label
-            if (!pageLabel) search.setAttribute("aria-label", ph);
+            // 有任何一種名稱來源時就走它（欄位名），placeholder 只是提示；全都沒有才退 aria-label
+            if (!hasName) search.setAttribute("aria-label", ph);
             wrapper.title = ph;
         }
 
