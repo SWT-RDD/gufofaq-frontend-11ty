@@ -49,13 +49,17 @@
         justify-content: space-between;
         gap: 0.5rem;
         padding: 0.75rem 1rem;
-        background-image: var(--brand-gradient);
+        // **不用 --brand-gradient**：這條頭列承載前景（標題白字 ＋ 遮罩上色的關閉鈕），而漸層兩端
+        // 的對比差很多——`to right` 的右端 #2ebbcf 疊白只有 2.30:1，而 `justify-content: space-between`
+        // 正好把關閉鈕推到那一端（圖形記號門檻 3:1，WCAG 1.4.11）。漸層留給不承載前景的裝飾用途。
+        // 純色填充 --brand 對白字兩主題都 ≥4.5（4.89／5.30），同時滿足文字與圖形兩道門檻。
+        background-color: var(--brand);
         color: var(--on-accent);
         font-weight: 600;
     }
 
     // 叉叉用遮罩上色（同 ui/modal-close）：白色叉叉不必另存一張圖，深色模式也免反相。
-    // 墨色是 --on-accent（它疊在品牌漸層的頭列上）。
+    // 墨色是 --on-accent（它疊在頭列的 --brand 填充上）。
     .widget-panel-close {
         width: 20px;
         height: 20px;

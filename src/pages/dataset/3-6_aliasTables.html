@@ -41,7 +41,7 @@ permalink: 3-6_aliasTables.html
      分支都要看得到）。別名總數從詞條推導不出來（它是各列別名個數的總和，切版沒有算術），
      故與詞條數一樣是端點回的欄，兩個都當資料給。 #}
 {% set aliasTables = [
-  { id: 12, name: "關務通用別名", desc: "報關、稅費、單證的常見簡稱與口語說法。", entryCount: 8, aliasCount: 21 },
+  { id: 12, name: "關務通用別名", desc: "報關、稅費、單證的常見簡稱與口語說法。", entryCount: 8, aliasCount: 19 },
   { id: 9, name: "系統別名", desc: "內部系統與模組的舊稱、代號。", entryCount: 3, aliasCount: 5 },
   { id: 7, name: "待整理別名", desc: "", entryCount: 0, aliasCount: 0 }
 ] %}
@@ -50,7 +50,10 @@ permalink: 3-6_aliasTables.html
 <p class="text-gray" data-i18n="settings.aliasTablesIntro">別名表管理「哪些詞是同一件事」。哪些功能要套用哪幾張表，在「對話設定」裡各自決定——別名表本身不決定它在哪裡生效。</p>
 
 {# 新增別名表：只有名稱（必填）與說明。送出鈕的 data-toast 列全結果（§5 矩陣③），
-     warning 段對回 `services/alias.py` 的寫入層驗證（空名、名稱重複、長度上限）。 #}
+     warning 段對回 `services/alias.py` 的 `validate_alias_table_metadata`（空名、長度上限）。
+     **沒有「名稱已存在」那一段**：`routes/alias.py` 的 `create_alias_table` 只跑那一支驗證就 db.add，
+     而 `db/database.py` 的 `alias_tables.name` 是 `Column(String(200), nullable=False)`——無 unique、
+     無 UniqueConstraint、全檔零 IntegrityError 分支。列一個上游產不出來的結果，與只演成功一樣是說謊（§5）。 #}
 <div class="block mt-16 mb-16 flex-row column gap-16">
     <div class="text-md text-bold" data-i18n="settings.addAliasTable">新增別名表</div>
     <div class="flex-row flex-wrap gap-16 mobile-column sm-gap-16">
@@ -61,7 +64,7 @@ permalink: 3-6_aliasTables.html
                 </div>
                 <div class="field">
                     <input type="text" id="newAliasTableName" class="form-control" maxlength="200" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" required aria-describedby="newAliasTableNameHint">
-                    <span class="text-gray" id="newAliasTableNameHint"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span>200</span><span data-i18n="regression.charsUnit"> 字</span></span>
+                    <span class="text-gray" id="newAliasTableNameHint"><span data-i18n="settings.mcpLimitAtMost">最多</span><span>200</span><span data-i18n="regression.charsUnit"> 字</span></span>
                 </div>
             </div>
         </div>
@@ -72,13 +75,13 @@ permalink: 3-6_aliasTables.html
                 </div>
                 <div class="field">
                     <input type="text" id="newAliasTableDesc" class="form-control" maxlength="2000" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" aria-describedby="newAliasTableDescHint">
-                    <span class="text-gray" id="newAliasTableDescHint"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span>2000</span><span data-i18n="regression.charsUnit"> 字</span></span>
+                    <span class="text-gray" id="newAliasTableDescHint"><span data-i18n="settings.mcpLimitAtMost">最多</span><span>2000</span><span data-i18n="regression.charsUnit"> 字</span></span>
                 </div>
             </div>
         </div>
     </div>
     <div class="flex-row">
-        <button data-capability="data:write" type="button" class="button button-primary" data-toast="別名表已建立|表名稱不可為空|名稱已存在|建立失敗，請稍後再試" data-i18n-data-toast="toast.createAliasTable" data-toast-type="success|warning|warning|error">
+        <button data-capability="data:write" type="button" class="button button-primary" data-toast="別名表已建立|表名稱不可為空|建立失敗，請稍後再試" data-i18n-data-toast="toast.createAliasTable" data-toast-type="success|warning|error">
             <img src="./images/icon_add_white.png" width="48" height="48" decoding="async" alt="" class="icon">
             <span data-i18n="settings.addAliasTable">新增別名表</span>
         </button>
@@ -98,8 +101,8 @@ permalink: 3-6_aliasTables.html
             </colgroup>
             <thead>
                 <tr>
-                    <th data-i18n="settings.glossaryTableName">表名稱</th>
-                    <th data-i18n="regression.suiteDesc">說明</th>
+                    <th id="aliasTableHeadName" data-i18n="settings.glossaryTableName">表名稱</th>
+                    <th id="aliasTableHeadDesc" data-i18n="regression.suiteDesc">說明</th>
                     <th class="text-center" data-i18n="settings.entryCount">詞條數</th>
                     <th class="text-center" data-i18n="settings.aliasTotalCount">別名總數</th>
                     <th data-i18n="common.actions">操作</th>
@@ -108,16 +111,30 @@ permalink: 3-6_aliasTables.html
             <tbody>
                 {% for table in aliasTables %}
                 <tr data-alias-table-id="{{ table.id }}">
-                    <td>{{ table.name }}</td>
-                    <td>{{ table.desc or "—" }}</td>
+                    {# 名稱與說明是列內就地編輯 ＋ 同列「儲存」（版型比照 3-2）。上游 `PUT /alias/{table_id}`
+                         收 `AliasTableUpdate`＝name 與 description 的**局部更新**，兩欄都改得到；
+                         原本這裡是一顆「重新命名」鈕，但它要開的窗全站不存在，而且說明欄完全沒有修改路徑
+                         （§4：request 收得下的每個參數都要在畫面上有落點）。
+                       迴圈內的值控制項不掛靜態 aria-label（§4：同表 3 列會全部同名）——改吃
+                         「本列辨識欄 ＋ 欄表頭」，故另補一顆 sr-only 列名。 #}
+                    <td>
+                        <span id="aliasTableRowName-{{ table.id }}" class="sr-only">{{ table.name }}</span>
+                        <input type="text" class="form-control" maxlength="200" value="{{ table.name }}" aria-labelledby="aliasTableRowName-{{ table.id }} aliasTableHeadName" required>
+                    </td>
+                    <td><input type="text" class="form-control" maxlength="2000" value="{{ table.desc }}" aria-labelledby="aliasTableRowName-{{ table.id }} aliasTableHeadDesc"></td>
                     <td class="text-center">{{ table.entryCount }}</td>
                     <td class="text-center">{{ table.aliasCount }}</td>
                     <td>
-                        {# 三顆都要先選定「哪一張表」＝業務條件開窗 ⇒ 只掛 hook class、不掛
-                             data-open-modal（§5）。刪除沿用既有的 delete-modal（本頁底部 include）。 #}
+                        {# 「編輯詞條」與「刪除」要先選定「哪一張表」＝業務條件開窗 ⇒ 只掛 hook class、不掛
+                             data-open-modal（§5）。刪除沿用既有的 delete-modal（本頁底部 include）。
+                           「儲存」是直接送 API 的動作鈕（③）⇒ 掛 data-toast 列全結果。逐 raise 對回
+                             `routes/alias.py` 的 `update_alias_table`：validate_alias_table_metadata 的
+                             AliasValidationError → 400（使用者修得掉＝warning）、找不到表 → 404、
+                             其餘 → DATABASE_ERROR。**沒有重名檢查**（`alias_tables.name` 無 unique
+                             constraint），故不列「名稱已存在」。 #}
                         <div class="btn-group">
+                            <button data-capability="data:write" type="button" class="button button-border button-sm" data-toast="別名表已更新|表名稱不可為空，或長度超過上限|儲存失敗，請稍後再試" data-i18n-data-toast="toast.saveAliasTable" data-toast-type="success|warning|error" data-i18n="action.save">儲存</button>
                             <button type="button" class="button button-border button-sm js-manage-alias-entries" data-i18n="settings.manageAliasEntries">編輯詞條</button>
-                            <button type="button" class="button button-border button-sm js-rename-alias-table" data-i18n="action.rename">重新命名</button>
                             <button type="button" class="button button-red button-sm js-delete-alias-table" data-i18n="action.delete">刪除</button>
                         </div>
                     </td>
@@ -132,7 +149,13 @@ permalink: 3-6_aliasTables.html
 
 {% include "components/alias-entries-modal/alias-entries-modal.html" %}
 
-{# 刪除確認：沿用既有的 delete-modal。閘門與新增鈕同一道（chatbot 的別名表是租戶資料）。 #}
+{# 刪除確認：沿用既有的 delete-modal。閘門與新增鈕同一道（chatbot 的別名表是租戶資料）。
+     deleteTargetId：不設的話會落回元件內建示範名「檔案名稱2.pdf」——別名表管理頁跳出一個 PDF 檔名
+     （§6 示範自洽；3-1-1／3-1-3 已經各修過同一件事）。
+     deleteConfirmBinding：與 3-2／3-3／3-4 同——確認鈕交給業務 js（它要帶著「刪哪一張表」去送 DELETE），
+     故不自動關窗。 #}
+{% set deleteTargetId = "deleteAliasTableName" %}
+{% set deleteConfirmBinding = true %}
 {% set deleteCapability = "data:write" %}
 {% set deleteToast = "別名表已刪除|這張表還被設定檔綁著，請先在對話設定裡取消綁定|刪除失敗，請稍後再試" %}
 {% set deleteToastKey = "toast.deleteAliasTable" %}

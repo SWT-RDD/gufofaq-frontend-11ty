@@ -46,6 +46,9 @@
         <tbody>
             {% for row in rows %}
             <tr data-folder-sn="{{ row.sn }}">
+                {# `.description`／`.prompt` 是 `.edit-cell` 的修飾字，兩顆一起才定位得到那一格：
+                     凍結前端 `js/knowledgeRetrieval.js:269/272` 產出、`:578-579`／`:603-604` 以
+                     `$row.find('.edit-cell.description')` 取回（§5 轉換契約，全站 scss 不得引用）。 #}
                 <td id="priorityCat-{{ priorityTableInstance }}-{{ row.sn }}">{{ row.category }}</td>
                 <td class="edit-cell description">
                     <div class="collapse-text"><div class="collapse-body">{{ row.description }}</div><button type="button" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>

@@ -96,6 +96,8 @@ permalink: 3-1-1_datasetList.html
                 </td>
                 <td>{{ row.group }}</td>
                 <td>
+                    {# `.number` 是凍結前端的掛點（`js/datasetList.js:177/183/189/195/201` 逐檔型
+                         append 這顆計數 span），無樣式、不改名（§5 轉換契約）。 #}
                     <div class="file-number-group">
                         <div class="item">
                             <img src="./images/icon_XLSX_s.png" width="60" height="76" decoding="async" alt="XLSX" class="icon">

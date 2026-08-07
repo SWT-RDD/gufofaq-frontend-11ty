@@ -34,12 +34,29 @@ document.addEventListener("DOMContentLoaded", function () {
             toggle.setAttribute("aria-expanded", open ? "true" : "false");
         });
 
+        var rowSeq = 0;
+
+        // 這三顆 key **只**出現在 js 產生的 markup 上，所以 lang-toggle 的 collectDefaults()
+        // （只掃載入當下的 DOM）沒有它們的繁中快照 ⇒ 回繁中時 setText 直接跳過，繁中只剩本元件
+        // 救得回來。繁中原文因此存成常數：拿 el.textContent 當 fallback 等於把「當下畫面上的英文」
+        // 當成繁中原文，英→中變成 no-op，而靜態掃描與視覺指紋都看不到（§4-2）。
+        var ZH_NO_ALIAS = "這一行沒有別名";
+        var ZH_CANONICAL_TOO_LONG = "標準詞超過上限";
+        var ZH_TOO_MANY_ALIASES = "別名數超過上限";
+        var ERR_ZH = {
+            "settings.bulkPasteNoAlias": ZH_NO_ALIAS,
+            "settings.bulkPasteCanonicalTooLong": ZH_CANONICAL_TOO_LONG,
+            "settings.bulkPasteTooManyAliases": ZH_TOO_MANY_ALIASES,
+        };
+
         // 一列的 markup 與模板那份逐字同形（少一個屬性視覺指紋看不出來，見元件檔頭的契約）
         function makeRow(canonical, aliases, err) {
             var tr = document.createElement("tr");
             var bad = !!err;
-            var idx = body.querySelectorAll("tr").length + 1;
-            var nameId = "aliasRowName-new-" + idx;
+            // 序號用單調遞增的計數器，不從「目前有幾列」推：刪一列再新增就會再發一次同一個號，
+            // 兩顆 aria-labelledby 指到同一個 span（§4 同頁 id 唯一）。dist 上的唯一性測試掃的是
+            // 靜態產物，看不到這條。
+            var nameId = "aliasRowName-new-" + (++rowSeq);
             var tdC = document.createElement("td");
             var label = document.createElement("span");
             label.className = "sr-only";
@@ -97,15 +114,15 @@ document.addEventListener("DOMContentLoaded", function () {
                 if (!line.trim()) return;                      // 空行略過
                 var cells = line.split(/[\t,，]/).map(function (c) { return c.trim(); }).filter(Boolean);
                 var canonical = cells.shift() || "";
-                // key 與繁中 fallback 一起寫在 t() 的呼叫點：用變數傳的話，靜態掃描既看不到
-                // 這幾顆 key 有被引用（會被當成孤兒翻譯刪掉），也認不出繁中是 fallback 而非寫死字串。
+                // key 逐字寫在 t() 的呼叫點（靜態掃描要看得到它被引用，否則會被當成孤兒翻譯刪掉）；
+                // 繁中走上面那三顆常數，與 langchange 重畫共用同一份（兩處各寫一份就會分岔）。
                 var err = null;
                 if (!cells.length) {
-                    err = { key: "settings.bulkPasteNoAlias", text: t("settings.bulkPasteNoAlias", "這一行沒有別名") };
+                    err = { key: "settings.bulkPasteNoAlias", text: t("settings.bulkPasteNoAlias", ZH_NO_ALIAS) };
                 } else if (canonical.length > MAX_CANONICAL_LEN) {
-                    err = { key: "settings.bulkPasteCanonicalTooLong", text: t("settings.bulkPasteCanonicalTooLong", "標準詞超過上限") };
+                    err = { key: "settings.bulkPasteCanonicalTooLong", text: t("settings.bulkPasteCanonicalTooLong", ZH_CANONICAL_TOO_LONG) };
                 } else if (cells.length > MAX_ALIASES_PER_ENTRY) {
-                    err = { key: "settings.bulkPasteTooManyAliases", text: t("settings.bulkPasteTooManyAliases", "別名數超過上限") };
+                    err = { key: "settings.bulkPasteTooManyAliases", text: t("settings.bulkPasteTooManyAliases", ZH_TOO_MANY_ALIASES) };
                 }
                 // 不去重、不排序：原樣 append
                 body.appendChild(makeRow(canonical, cells.join(", "), err));
@@ -132,7 +149,8 @@ document.addEventListener("DOMContentLoaded", function () {
         // 但它只在切換當下掃一次——這裡重畫的是「切換之後才被貼出來」的那些列）
         document.addEventListener("gufo:langchange", function () {
             body.querySelectorAll("[data-i18n]").forEach(function (el) {
-                el.textContent = t(el.getAttribute("data-i18n"), el.textContent);
+                var key = el.getAttribute("data-i18n");
+                if (ERR_ZH[key]) el.textContent = t(key, ERR_ZH[key]);
             });
         });
     });

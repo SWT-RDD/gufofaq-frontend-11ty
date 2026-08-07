@@ -61,6 +61,9 @@ src/
 
 - html / scss / js 三種檔案**有才放**：純樣式元件只有 scss（`ui/ab-test-block`）、純行為元件只有 js + scss（`ui/modals`）。**無 html 的元件，它的 markup 契約逐字寫在該元件 scss（或 js）的檔頭**，並在 README 的「無 html 元件」清單登記——否則「這顆東西的 markup 長什麼樣、住在哪一頁」全站無處可查（§6 說參數正本在 html 檔頭，無 html 就無處可寫）。契約含 hook class、`data-*`、`.sr-only`＋i18n 屬性的完整組合：這種元件的實例必然被複製，而少掉一個屬性視覺指紋看不出來
   - **契約的形狀是「一段可以整段照抄的 markup」**（帶 `<` 的真標籤），不是散文列幾個 class 名。判準：下一個人照著檔頭寫出來的東西，要能與現有實例逐字相同。散文寫得再詳細，抄的人也還是得去翻某一頁的原始碼——而那正是這條規則要消滅的動作。
+    - **契約段內不准出現 `…` 省略號。** 要略的只能是「重複第 N 次的同型節點」且要標明它是重複；屬性一律不得略——被略掉的恰好都是 §4 的硬規則（`<img>` 的 `width`/`height`、可及名稱、`data-i18n*` 那一組），照抄的人於是照抄了一個違規。
+    - **樣式靠祖先才成立時，契約要從那個祖先寫起**（或明寫「本元件只能用在 X 之內」）。從中間層寫起＝把 §4 的第三種死法（祖先錯位）做進契約裡：抄的人在 scss 找得到那顆 class、在 markup 也找得到，只是兩者搭不上，而少了的那層樣式視覺指紋看不出來。
+    - **契約要與實例對得上，而不是與記憶對得上**：新增第二個消費點時回頭重寫一次，逐字比對至少一個現有實例（class 串、巢狀層數、屬性）。差一層祖先或少一顆屬性都算沒對上。
   - **檔頭／README 列的「住在哪一頁」要雙向對得上**：列出的頁面必須真的含該元件的根 class，而 markup 裡用到該根 class 的頁面也必須都被列出。單向清單會腐化成「說在前台、其實在後台」這種**看起來很具體、但指錯地方**的登記。
 - 有 scss → 在 `scss/main.scss` 對應分組加一行 `@use`
 - 有 js → 在 `eleventy.config.js` 的 passthrough 清單和 `layouts/base/base.html` 的 script 清單各加一行
@@ -129,6 +132,7 @@ bodyClass: chatbot-page                # 選填：base.html 用它產生 <body c
 - **後果、上限與代價寫在做那個決定的控制項旁邊**，不寫在結果區、頁尾或說明頁：上限寫在消費點（「N / 30」），值域寫在填之前，警語寫在開開關的地方，不可逆的那句排在觸發鈕之前。排在結果之後等於在使用者已經錯過之後才講。**而那個數字是資料不是譯文**——寫進 `data-i18n` 的句子裡，上限改了譯文會靜默過期（判準：那個數字在 API 契約或 front matter 裡有欄位，就不准出現在譯文字串裡）。
 - **逆向一支 API 時，request 收得下的每個參數都要在畫面上有落點、response 回得出的每個欄位都要有地方畫**，不做的那些在檔頭寫明理由。後端做了、前端到不了等於沒做，而那個缺口在切版看不出來——畫面自洽、測試全綠，只有把 request/response 逐欄對過才發現。
 - **規則或行為改了，要順手掃 `en.json` 有沒有「在描述舊行為」的出貨文案**：round30 把「不生效的選項」從標示改成不渲染，卻留下一句「另一模式專用的欄位會標示」——那不是註解，是使用者讀得到的字。
+- **移除一個欄位／一整欄時，以「被刪掉的那個控制項」為起點反查五樣東西**，缺一樣就會留下描述不存在之物的出貨文案：①指向它的 `aria-describedby` 與被指的 hint id（掃完不得有零引用的 hint id）②描述它的上限／格式提示子句③提到它的 `data-toast` 子句與 `en.json` 對應段④`colgroup`／`colspan`⑤註解。**以 key 為起點反查會漏**——共用 key 在別處還活著，只是在這一頁描述了一個已經不存在的欄位（round37：術語表別名欄刪乾淨了，「別名每個 200 字、最多 50 個」還印在窗裡、還在 warning 分支裡、還在英譯裡）。
 - 註解對**自家 markup** 的斷言（變數名、控制項計數、元件總數）同樣是斷言：改 markup 要同步，而且**能不寫死計數就不要寫**（「全站 14 個 modal」註定過期）。頁面或元件改版時，同步更新描述它的註解——註解與 markup 說的必須是同一件事。**跨 repo 的活正本（gufofaq-saas、GufoRAG）一律禁止行號，只准「檔名 ＋ 符號名」**（`field_schema.py 的 SLOTS`、`platform.py 的 review_apply`）——行號會漂移，而漂移之後最貴的不是「指不到」，是**指到隔壁那一支語意相反的端點**（引 `require_platform_admin` 卻落在 `require_platform_auditor` 上，照字面完全看不出來）。只有 README 列出的**凍結**前端才准引行號（有測試把關）。同理，**引文要引穩定的東西**：被抽進 i18n 的英文字面（`"cannot impersonate a disabled account"`）隨時會消失，改引它的 key。內部任務編號（Task N）不是可驗出處，不引
 
 ### 3-3. 什麼該切成元件
@@ -146,7 +150,8 @@ bodyClass: chatbot-page                # 選填：base.html 用它產生 <body c
 - 狀態 class 沿用既有慣例：`.active`、`.open`、`.done`、`.error`、`.disabled`（轉換後 = React state / props）
 - SCSS 寫法沿用既有風格（巢狀、`&` 修飾）；**顏色一律用 `_var.scss` 的語意 token（`--surface`／`--text`／`--brand`／`--border`／`--shadow`…），完全不寫裸 hex（含白色與陰影，無例外）**。token 是**單層、直接給值、無別名**（沒有 `--color-*` 原色層）；元件不碰色值、只掛語意 token。showcase 頁 `_guideline` 另有自己的 `--gl-*` 色盤（見 §9）
 - **顏色 token 的「填充」與「文字」必須分家**：同一個品牌色當**填充**要夠深（疊在上面的白字才讀得到），當**文字**在深色模式又要夠亮（黑底才讀得到）——這兩個需求互相矛盾，不能共用一個 token。故 `background-color`／`border-color` 用 `--brand`／`--danger`（hover 用 `--brand-hover`／`--danger-hover`），`color:` 一律用 `--brand-text`／`--danger-text`（hover 用 `--brand-text-hover`）。**填充族的 hover token 不可拿來當文字色**（它為了襯白字而壓深，在深色模式當文字讀不到）；**文字族反過來也不可當填充／邊框／陰影／SVG 的 `fill`・`stroke`**。**唯一的分界是遮罩**：`mask` 把整個 `background` 裁成字形，那顆顏色是墨色不是填充（它承載不了任何文字），故被遮罩的元素上 `background-color` 用文字族／墨色 token —— 這不是豁免，是「填充會襯白字」這個前提不成立。測試以層疊判定（規則的 compound 是否為某條帶遮罩 compound 的細化），不是看該條規則裡有沒有 `mask:`。
-- 第三種角色是**前景墨色**（`--brand-ink`）：**文字**（標題、行內碼、選中頁籤）與**不承載文字的圖形記號**（勾記、radio 圓點、進度條、步驟底線）共用同一顆——兩者都是前景，需求不衝突。它套文字的門檻（疊表面 ≥ 4.5:1，自然也滿足圖形的 1.4.11 ≥ 3:1），但**不得反過來承載白字**。一顆 token 只能有一個角色——測試以角色清單為單一真相源，手打豁免清單就是偷加例外。
+- 第三種角色是**前景墨色**（`--brand-ink`、`--danger-ink`…，完整成員以測試的 `COLOR_ROLES.inkOnSurface` 為準）：**文字**（標題、行內碼、選中頁籤）與**不承載文字的圖形記號**（勾記、radio 圓點、進度條、步驟底線）共用同一顆——兩者都是前景，需求不衝突。它套文字的門檻（疊表面 ≥ 4.5:1，自然也滿足圖形的 1.4.11 ≥ 3:1），但**不得反過來承載白字**。文字族疊到 `--surface-sunken` 這種更暗的面時常會掉到 4.5 以下，那時改用同族的墨色 token（`--danger-text` → `--danger-ink`）。一顆 token 只能有一個角色——測試以角色清單為單一真相源，手打豁免清單就是偷加例外。
+- **chrome 桶的前提是「不承載前景」，一旦有東西疊上去就當場退出豁免**：歸在 chrome 的填充（漸層、tint、遮罩底）只要上面放了文字、遮罩墨色或圖形記號，就要按它**實際疊到的那一段**實算。**漸層要算兩個端點，不是中點**——`justify-content: space-between` 會把標題與關閉鈕推到兩極，而 `--brand-gradient` 兩端疊白字是 6.26:1 與 2.30:1。承載前景的長條一律改用純色填充 token。
 - **對比度是硬規則**：每個有色填充都配一個成對的前景 token（白字 `--on-accent` 或深字 `--on-warning`），兩者 ≥ 4.5:1（WCAG AA 內文）。用在**需要辨識邊界的控制項**（按鈕／輸入框／開關）的填充，對底色再 ≥ 3:1（WCAG 1.4.11）；純訊息填充（如 toast）的對比由文字承載，不受這條約束。**新增或調整任何顏色都要重算——有測試逐色實算把關，`_var.scss` 的每一顆 token 都必須在測試裡歸類成填充／文字／前景記號／表面／chrome，沒歸類就紅。**
 - **深色模式（護眼）＝覆寫 token，不改元件**：深色由 `_var.scss` 的 `[data-theme="dark"]` 覆寫同一組語意 token 達成；元件只用 token 故自動換膚，**元件 scss 絕不寫 `[data-theme]` 分支（零例外）**。CSS 顏色換不動的東西有兩條路，**元件都不寫 `[data-theme]`**：①元件自己要用的（日／月圖示的顯示、插圖反相、底紋混色）在 `_var.scss` 給成**非顏色旗標**（`--theme-icon-*`、`--raster-invert`、`--pattern-blend`——值是 `block`／`none`／`invert()`／`multiply` 這類 CSS 關鍵字或函式，不是顏色），元件只掛 `var()`；②**單色 PNG 圖示一律用 `icon-mask()` 遮罩上色**（`_mixin.scss`）——PNG 的 alpha 就是字形，顏色交給語意 token，深色模式只是換值，故元件自己就換得動膚，不必反相、不必存 hover 版資產，彩色圖示也不會被翻掉色相；**只有 `<img>` 換不動**（CSS 選不到 `url()` 裡的顏色，也不能替 `<img>` 憑空生一個 mask url），故由全域的 `_dark-icons.scss` 依**檔名白名單** `img[src*="_black"]` 統一反相——這條規則不認識任何元件 class，新增黑圖示只要照命名慣例，不必回頭改它。彩色 `<img>`（徽章、檔型圖示）不反相。**只有全域層（`_var` / `_guideline-var` 的色源、`_base` 的 `color-scheme`、`_dark-icons` 的 `<img>` 檔名反相）允許讀主題旗標。**主題旗標掛 `<html data-theme>`，由 `base.html` `<head>` 的 no-flash 內聯腳本初始化（讀 localStorage → 否則跟系統），`ui/theme-toggle` 點擊切換。**那段 no-flash 腳本與 `<meta name="theme-color">` 是全站唯一允許複寫色碼的地方**（它跑在 CSS 之前，讀不到 `var()`），兩個值必須等於 `--surface-raised` 的淺／深色，有測試釘住；`theme-toggle.js` 則直接讀 computed 值，不複寫。**新增任何顏色＝在 `_var.scss` 同時給 light 與 dark 值**
 - 每個元件的 scss 只寫自己的 class；**A 元件的 scss 禁止出現 B 元件的 class**（無例外：外觀覆寫改成 owning 元件的 variant class，如 `link-modal.on-dark`、`list-style-disc.line-loose`；容器排版子元件改用 parent 自有的 slot class，如 `.chat-input-control`、`.chat-input-submit`、`.filter-field`、`.ab-side`）
@@ -164,7 +169,9 @@ bodyClass: chatbot-page                # 選填：base.html 用它產生 <body c
 - 欄位系統：`.col-N-*` 欄寬以 calc() 自動扣除該列 gap 分攤，同列 span 總和 = 12 時恰好填滿一行（搭配 `.flex-wrap` 不會提早掉行）；直向排列（`.column`／斷點下的 `.mobile-column(-xs)`）時不扣，`.col-12-*` 恆為整寬。**一列 col span 總和不得超過 12**——nowrap 的 `flex-row` 裡 span 爆表時，欄位被 `flex-shrink` 一起擠扁（連沒動的鄰欄也縮）；要放更多欄位就給容器加 `.flex-wrap`，讓超出的欄位換到下一列（有測試逐 `flex-row` 加總直接子欄位把關）。用法見元件總覽頁的「04 欄位」節
 - **HTML 巢狀必須合法**：`span`／`p`／`button` 內不可放區塊元素（`div`、`ul`、`table`…；`button` 只吃 phrasing content，把 div 假扮的控制項換成真 button 時，內容也要一起換成 `span`）——瀏覽器會容錯，但轉 React 時 SSR/hydration 會報錯。長文/富文字容器（如 chatroom 的 `.robot-msg`）一律用 `div`。（`<a>` 是 HTML5 transparent content model，**可以**包區塊元素，如 `upload-card` 的 `<a>` 包整張卡。）**`<table>` 直下不放 `<tr>`**：一律包 `<thead>`／`<tbody>`——瀏覽器解析會自動補 tbody，SSR/hydration 兩邊的樹就長不一樣（有測試把關）
 - **可及性（a11y）基本要求**：圖示按鈕要有可及名稱——`aria-label`、按鈕內的文字（`.sr-only` / `.tooltip`），或圖片的非空 `alt`。**單掛 `title` 不算**（輔具不保證會念，觸控與鍵盤焦點也看不到它），有測試把關
-- **切版主張需求，不等後端**：上游還沒回那個欄位、那段資料還沒落庫，**照樣把版位、文案與 hook class 定出來**，並在檔頭寫明「這一格是切版對後端提的要求」（欄位名 ＋ 為什麼非它不可）。等資料齊了才畫，等於讓「使用者其實需要看到這個」永遠沒有人在畫面上主張。兩態都要切（有資料／沒資料時那顆鈕不渲染，§5 不放按了沒反應的鈕）；條件動作只掛 hook class、不假造成敗。正典：`components/step-flow` 的「看完整輸出」（要求上游回 `result_length`）與「載入完整軌跡」（要求超出上限的事件落庫）。
+- **切版主張需求，不等後端**：上游還沒回那個欄位、那段資料還沒落庫，**照樣把版位、文案與 hook class 定出來**，並在檔頭寫明「這一格是切版對後端提的要求」（欄位名 ＋ 為什麼非它不可）。等資料齊了才畫，等於讓「使用者其實需要看到這個」永遠沒有人在畫面上主張。兩態都要切（有資料／沒資料時那顆鈕不渲染，§5 不放按了沒反應的鈕）。
+  - **「上游還沒有 X」是**這個專案裡最會過期的一種斷言（主張成功了，上游就補上了），所以寫它的時候要附**上游那一側的符號名**（`DEFAULT_PREVIEW_CHARS`、`MAX_STEP_EVENTS`），下一輪 grep 一次那顆符號就知道前提還在不在。只寫「目前沒有」＝下一個人查不動，只能照抄。**動到該頁時要回頭重讀那幾行**——round37 一次抓到兩條：「事件沒落庫」（上游早已分成落庫／檢視兩層上限）與「preview 不回長度」（`DEFAULT_PREVIEW_CHARS = 0`＝預設不截，截到會自述原長）。
+  - **前提一旦被滿足，那顆鈕就回到 §5 的矩陣**：拿得到資料之後它就是一顆普通的「點下去就送 API」的鈕（③），要補 `data-toast` 列全結果。「只掛 hook class、不假造成敗」是**還拿不到資料**那段期間的權宜，不是這類鈕的永久豁免。
 - **會改狀態的鈕要宣告它需要哪一道閘門**（有測試把關）。四條授權軸各一個屬性，值一律是**上游閘門自己的名字**、不另發明詞彙：`data-capability="data:write"／"settings:write"…`（對 `require_capability(...)`，值域＝product `CAPABILITY_TOKENS`）、`data-tenant-feature="ask"／"data"…`（對 `require_tenant_feature(...)`，值域＝product `CAPABILITIES`）、`data-tenant-role="admin"`（對 `require_admin`——租戶管理員旗標不是一顆能力，故另立一軸）、`data-platform-role="admin"／"auditor"`（對 `require_platform_admin／_auditor`）。
   - **能力 token 與租戶開通鍵是兩組不同的鍵，名字還會重疊**（`ask`／`history`／`audit` 兩邊都有），失敗的方式也不同：能力換一個群組就過得了，租戶開通是整租戶被平台關掉、連租戶管理員也擋。折進同一個屬性＝把兩種 403 說成同一件事。
   - **同一個屬性裡多個值＝AND**（`data-capability="settings:write history"`：兩顆都要有）。要表達 OR 就是規格沒定案，去把它定案。
@@ -178,7 +185,8 @@ bodyClass: chatbot-page                # 選填：base.html 用它產生 <body c
   - **「一組控制項」不限 radio／checkbox**：一組帶浮空標題的**欄位**（5-2 的分組 LLM＝每組「模型」＋「思考深度」兩顆 select）同等對待——否則同頁 5 顆 select 的可及名稱都叫「模型」，報讀器聽不出正在設哪一組。判準：**同一頁同時可見、語意不同的兩個以上控制項不得共用同一個可及名稱**，要嘛落在不同的 group，要嘛 `aria-label` 自帶區分
     - **例外：資料表逐列重複的同型控制項**（每列一顆展開鈕／刪除鈕）——列本身就是脈絡，沿用同一個名稱是正典。但**掛靜態 `aria-label` 會蓋掉列脈絡**：迴圈內的 switch／input 要用 `aria-labelledby="<本列辨識欄 id> <欄表頭 id>"`（正典：5-10 的篩選設定檔表），不要寫死一句「啟用切換」讓同頁 20 顆同名。**兩個獨立表單之間、或同時展開的多張動作卡之間撞名沒有列脈絡可倚靠，一律要改可見字面**（同一筆發現的「判定理由」與「停用理由」是兩件事）
   - **`<label>` 必須二擇一：有 `for`（或包住控制項），或有 `id` 且被某處 `aria-labelledby` 指到。** 兩者皆無的 `<label>` 是空殼：點了不會聚焦、對輔具沒有語意，而 `eslint-plugin-jsx-a11y` 的 `label-has-associated-control` 在 Next.js 預設 config 是 **build 阻斷**。純標題文字用 `<span class="control-label">`／`.text-md.text-bold`，不要因為「要那個字級」就寫 `<label>`
-  - **帶約束條件的欄位輔助文字（長度／格式／上限／唯一性／安全邊界）掛 `id` ＋控制項 `aria-describedby`**；純介紹段落不必。同一個元件裡 4 個接、1 個不接，就是這條沒寫下來的結果
+  - **帶約束條件的欄位輔助文字（長度／格式／上限／唯一性／安全邊界）掛 `id` ＋控制項 `aria-describedby`**；純介紹段落不必。同一個元件裡 4 個接、1 個不接，就是這條沒寫下來的結果。**反向同樣要成立：掛了 `id` 的輔助文字必須至少有一個控制項指到它**——沒有人指的 hint id 比完全沒有 id 更難查，它讓下一個人以為這條已經做過了（移除一個欄位時最容易留下這種孤兒：指向它的那顆控制項被刪了，提示與 id 都還在）
+  - **判準是「無障礙樹讀得到」，不是「markup 接上了」**：`aria-describedby` 指向預設 `display:none` 的節點、或掛在被替身元件設成 `aria-hidden` 的原生控制項上（`ui/multi-select` 的隱藏 `<select>`），兩種寫法在 markup 上都完全合規，而輔具讀到的是零。**把原生控制項移出無障礙樹的元件，其名稱／描述解析必須涵蓋 §4 允許的全部來源**（`label[for]`／包住控制項的 `<label>`／原生元素上的 `aria-labelledby`／`aria-label`／`aria-describedby`），依序回退，最後才退 placeholder——只認一種寫法，另一種就會靜默退化成 placeholder，而視覺指紋看不到
   - **驗證結果走 toast 的 warning 分支，不做逐欄的內嵌訊息**（全站一種回報方式）：送出鈕的 `data-toast` 已經列出「哪裡填錯」那一態（§5），欄位本身用 `.error` 標紅即可。`.error-prompt` **只留給訊息具體、且說得出誰會填它的位置**（真 app 業務 js 填的空 live region、或像「此格式可能無法被正確讀取」這種特定訊息）——寫成通用佔位（「錯誤訊息文字」）的欄位級槽一律不掛：它的顯示條件全站沒人會觸發、內容也沒人知道要填什麼，是「兩套都寫了、兩套都不作用」的來源。
   - **「還沒挑」要有一顆 `<option value="">` 承載得住，而且它要有可讀標籤**（`common.pleaseSelect`／`filter.all*`）。少了空值那一顆，瀏覽器一定會顯示第一顆並回報成 selected——畫面因此宣告「已經挑好了」，而依賴這個選擇的動作其實還沒有輸入。空的 `<option></option>` 同樣不行：報讀器只念得出一顆空白選項
   - **值交給 React 讀去送 API 的數字欄，三件套一起給**：`type="number"` ＋ 後端的 `min`／`max`／`step`，加一段可見的區間提示（`id` ＋控制項 `aria-describedby`），常數出處寫檔頭。`type="text"` ＋ `Number()` 打錯一個字就是 NaN、序列化成 JSON 是 null；區間只寫在後端，使用者要按下送出才知道打錯。真 app 鏡射頁沿用原 markup 是唯一豁免，且要在檔頭寫明
@@ -218,6 +226,9 @@ bodyClass: chatbot-page                # 選填：base.html 用它產生 <body c
 - **一個 key 的語意由它背後的行為契約決定：行為不同就分 key，即使繁中字面相同。** 主回答的思考深度留空＝「沿用模型預設」，分組 LLM 留空＝「最低思考」（product `_PROFILE_FIELD_DEFAULTS` 的 `reasoning_effort_*`）——共用一顆 key 會讓中英兩邊同時說謊。這條與下一條互補：同文異 key 不准，同 key 異義也不准
 - **前綴／後綴 key 自帶分隔空白**（`"Total "`／`" pages"`／`"Source "`），不靠 CSS 也不靠 markup 縮排：`.sr-only` 的 `position:absolute` 恰好讓可及名稱多一個空白，那是排版的副作用、不是契約（有測試把關）
 - **`data-toast` 各分支的相同繁中子句必須有相同英譯**：一致性的單位是 `|` 切開的子句，不是整顆 key（「刪除失敗，請稍後再試」全站五處，別在第六處變成另一種說法）
+- **把數個已翻譯節點串起來的分隔符，自己也要有 key**（`<span data-i18n="common.listSep">、</span>`，英譯 `", "`）：留成 span 外的字面量，英文句子中央就會露出一個繁中字身——與「英譯不得出現全形標點」是同一件事，只是它發生在 markup 而不是 `en.json`。**同理，js 不得在兩顆 key 之間、或 key 與資料之間補字面空白**（`t(a) + " " + b`）：空白一律由 key 自帶（正典 `pagination.js` 的 `pagePrefix + n + pageSuffix`）
+- **分隔空白的家在英譯，不在繁中原文**：前後綴 key 的繁中不帶尾隨空白、英譯自帶（`"At most "`）。兩邊各留一份的結果是同一顆 key 長出兩種繁中，而「同 key 繁中一致」的比對**逐字元、不 trim**——差一個半形空白肉眼看不出來，切回繁中時會互相覆蓋
+- **新 key 落地前要用它的「英譯」再檢索一次 `en.json`**：只檢索繁中原文擋不住「兩顆不同的繁中撞成同一句英文」（別名表管理／別名表清單同頁都渲染成 `Alias tables`）。同一組枚舉、同一層選單內的英譯還要同一種構詞與大小寫
 - **反向也成立：繁中原文相同的 UI chrome 沿用既有 key、不另立**（新 key 前先以原文全文檢索 en.json）；僅語意確實不同、英譯必須區別（「所屬群組」的單/複數欄位）才分 key——同文異 key 遲早讓英譯自己分岔。**英文語法不需要的字段允許空字串譯文**（`"comp.copyright": ""`、量詞後綴），空值＝刻意省略、不是漏翻
 - **只翻 UI chrome，不翻假資料**：聊天訊息、提示詞、免責聲明內文、示範檔名／資料集名、表格 cell 值、示範 Excel 欄位一律不翻。**showcase／說明性質的整頁**（內容是寫給切版者看的，不是 app chrome）整頁不翻
 - **翻譯字串不內嵌會隨資料變動的數字/名稱**：chrome 拆成前後綴 key、變動值放獨立節點或資料槽（正典：`pagination.totalPrefix`／`totalSuffix` 夾著 js 填數的 `.page-info-count`）
@@ -272,7 +283,11 @@ ui/pagination/
   - **每個 data-toast 分支都要對得上正本的一條真實結果路徑**（查證方式同 §3-2 註解出處）：列出不可能的結果與只演成功一樣是說謊。**版型比照他頁時，toast 分支與守衛敘述不得跟著版型抄**——逐顆鈕對回該功能自己的 API（把群組的 409「已存在」抄進無重名檢查的術語表頁即為反例）
   - **modal 確認鈕的 `btn-close-modals`**：toast 分支含「留在窗內就能修正」的驗證 warning 者不掛（每點必關窗會打斷修正，示範不出真實狀態）；純成敗、或 warning 屬不可就地修正者（權限不足）可掛
   - **無資料列正典**：SaaS 新頁無真 app 可鏡射時，空狀態列用 `{% else %}<tr><td colspan="N" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>`（3-3 的做法）。**判準：`{% for %}` 直接產出 `<tr>`、列內又有逐列刪除/撤銷動作＝使用者能把列刪到零的管理表，真實初始態即可為空、必帶 `{% else %}`**（有測試把關 SaaS 新頁；真 app 有對應頁的鏡射表其空狀態隨真 app、列入測試 EXEMPT）
-  - **`class="hidden"` 只是「這一態現在不生效」，它不算把那一態切出來。** 寫死的 `.hidden`（不是 `{% if %}` 產出的）那塊 markup 連同它的 i18n key 全站沒有一頁看得到，等於沒有人驗收過它的長相。**旁邊那一句可見不算數**——5-10 的兩句涵蓋率警語是兩段不同的文字，看得到「還不能開」不代表有人看過「可以開了」長什麼樣（有測試把關：每一顆只出現在 `.hidden` 節點上的 key 都會紅）。兩條路，看它住在哪裡：
+  - **`class="hidden"` 只是「這一態現在不生效」，它不算把那一態切出來。** 那塊 markup 連同它的 i18n key 全站沒有一頁看得到，等於沒有人驗收過它的長相。**旁邊那一句可見不算數**——5-10 的兩句涵蓋率警語是兩段不同的文字，看得到「還不能開」不代表有人看過「可以開了」長什麼樣（有測試把關：每一顆只出現在 `.hidden` 節點上的 key 都會紅）。
+    - **判準是 `dist` 上的事實，不是 `src` 上的字串形狀**：①「寫死的 `.hidden`」與「`{% if %}` 產出、但條件在唯一使用頁上恆為某一值」是同一種死法，後者只是把「永遠看不到」寫得更迂迴；②條件寫在元件自己的資料裡、使用頁翻不動的（header `menuItems` 的 `hidden: true`）同理；③`.hidden` 可能掛在**祖先**上而 key 在子節點，所以要走祖先鏈、不能逐行掃。三者的共同判準只有一句：**這顆 key 在 `dist` 全站有沒有任何一個不被 `.hidden` 蓋住的節點**。
+    - 同理，**預設 `display:none` 的槽**（`.error-prompt` 靠祖先 `.error` 才揭示）也在這條之內：它的 markup 合規、`aria-describedby` 也接上了，但那句約束在**填之前**沒有人讀得到——帶約束的輔助文字要常駐可見，錯誤態才用 `.error-prompt`。
+
+    兩條路，看它住在哪裡：
     - **元件裡** → 改成**成對參數 ＋ `{% if %}`**，由元件庫展示頁把可見那一態 set 出來（正典：`components/step-flow` 的 `stepFlowTraceShown`／`stepFlowTraceTotal`、`ui/score-scale-note` 的 `scaleNoteRecalibrated`）。**`{% if %}` 與 `.hidden` 不可並用**——參數收得下、畫面卻永遠不顯示，比兩者都沒有更難查。
     - **頁面裡**（React 依 state 條件渲染的那一句） → 真實頁保留 `.hidden` 那份 markup 當**位置與字色的規格**，另在元件庫的「React 條件文案」節把同一顆 key 渲染成可見的一份。**繁中原文逐字照抄**（同 key 兩種繁中會互相覆蓋，§4-2）。
     - 不論走哪一條：**示範資料不得為了「讓它看得到」而變成一個不可能的狀態**。`.hidden` 最常掩蓋的不是「沒人看過」，而是**一個自相矛盾的示範**——5-2 的「目前這把尺」說重排序開著，卻同時把「兩把尺並存」的警語傳進元件，兩件事依端點契約不可能同時成立，而 `.hidden` 讓它看起來沒事。

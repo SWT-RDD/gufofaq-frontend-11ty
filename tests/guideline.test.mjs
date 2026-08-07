@@ -455,6 +455,12 @@ test("§4 markup 上的每個 class 都要有主人（反向網：css 規則／�
         "message-container", "pager-text", "priority-select", "rating-select", "sample-count",
         "sources-detail-link", "sources-info", "sources-rating", "start-date", "user-type-select",
         "with-input", "field-with-input", "field-with-input-group",
+        // round37：解析器改嚴（不再子字串比對）後浮出來的兩族真掛點，出處都在凍結前端：
+        //   number      ← datasetList.js:177/183/189/195/201（每個檔型圖示旁的計數 span）
+        //   description / prompt ← knowledgeRetrieval.js:269/272 產出、:578-579/:603-604 以
+        //                          $row.find('.edit-cell.description') 取回（`.edit-cell` 的修飾字，
+        //                          兩顆一起才定位得到那一格）
+        "number", "description", "prompt",
         // 前台 Standard 前端的掛點（faq-chatroom 檔頭記載）
         "chat-input-txt",
         // §7 轉換契約：modal 殼的結構 class（GUIDELINE §4 明文「視同有主，主人＝契約本身」）
@@ -479,6 +485,32 @@ test("§4 markup 上的每個 class 都要有主人（反向網：css 規則／�
     const jsBlob = srcJs.map((f) => stripJsComments(read(f))).join("\n");
     assert.ok(cssClasses.size > 300, `編譯後 css 只解析到 ${cssClasses.size} 個 class —— 這條測試在空轉`);
 
+    // 「js 認領了這顆 class」只能用**可定址的形狀**判定，不能對整份 js 做子字串比對。
+    // round37：`jsBlob.includes(".prompt")` 被 prompt-edit.js 的 `.prompt-edit` 命中、
+    // `jsBlob.includes("'number'")` 被 toast.js 的 `typeof type === 'number'` 命中 ——
+    // 兩顆全站零規則、零查詢的無主 class 因此各自過關了好幾輪（§4 第①②種死法）。
+    // 合法的認領只有兩種：出現在**選擇器字串**裡，或出現在**建構位置**（classList/className）。
+    const jsOwned = (() => {
+        const out = new Set();
+        const addSel = (sel) => { for (const m of sel.matchAll(/\.(-?[A-Za-z_][\w-]*)/g)) out.add(m[1]); };
+        // ① 選擇器字串：querySelector / querySelectorAll / closest / matches
+        for (const m of jsBlob.matchAll(/(?:querySelectorAll|querySelector|closest|matches)\(\s*(['"`])([\s\S]*?)\1/g))
+            addSel(m[2]);
+        // ② 建構位置：classList.add/remove/toggle/contains(...)、className = "..."、setAttribute("class", "...")
+        for (const m of jsBlob.matchAll(/classList\s*\.\s*(?:add|remove|toggle|contains|replace)\(([^)]*)\)/g))
+            for (const s of m[1].matchAll(/(['"`])([^'"`]*)\1/g)) for (const t of s[2].split(/\s+/)) if (t) out.add(t);
+        for (const m of jsBlob.matchAll(/className\s*=\s*(['"`])([^'"`]*)\1/g))
+            for (const t of m[2].split(/\s+/)) if (t) out.add(t);
+        for (const m of jsBlob.matchAll(/setAttribute\(\s*(['"`])class\1\s*,\s*(['"`])([^'"`]*)\2/g))
+            for (const t of m[3].split(/\s+/)) if (t) out.add(t);
+        return out;
+    })();
+    assert.ok(jsOwned.size > 40, `js 選擇器/建構位置只解析到 ${jsOwned.size} 個 class —— 這條解析在空轉`);
+    // 負控：舊的子字串比對會把這兩顆判成「有主人」，新的解析必須判不到。
+    for (const ghost of ["prompt", "number"])
+        assert.ok(!jsOwned.has(ghost),
+            `"${ghost}" 不該被判成 js 認領（它只是某個更長 class 或字面量的子字串）—— 解析器又鬆掉了`);
+
     const seen = new Map();
     for (const f of distHtml) {
         const html = distDoc(f);
@@ -493,7 +525,7 @@ test("§4 markup 上的每個 class 都要有主人（反向網：css 規則／�
     const bad = [];
     for (const [c, files] of seen) {
         if (cssClasses.has(c) || c.startsWith("js-") || NAMED_HOOKS.has(c) || FAMILY.test(c)) continue;
-        if (jsBlob.includes(`"${c}"`) || jsBlob.includes(`'${c}'`) || jsBlob.includes(`.${c}`)) continue;
+        if (jsOwned.has(c)) continue;
         bad.push(`.${c}  （出現在 ${files.size} 頁，例：${[...files][0]}）`);
     }
     assert.equal(bad.length, 0,
@@ -517,10 +549,11 @@ test("§4 markup 上的每個 class 都要有主人（反向網：css 規則／�
         ["with-input", "ui/field-with-input 查它；真 app 用它解除附屬輸入框的 disabled"],
         ["field-with-input", "同上（radio 與它附屬輸入框的那一格）"],
         ["field-with-input-group", "同上（整列的容器）"],
+        ["description", "showcase 頁的 `.guideline-page .caption.description` 恰好同名——那條規則帶著祖先，" +
+            "打不到 priority-table 的 `td.edit-cell.description`（§4 第③種死法：祖先錯位）。" +
+            "它在這裡是凍結前端 knowledgeRetrieval.js 的掛點，不是那條規則的消費者。"],
     ]);
-    const ownedElsewhere = [...NAMED_HOOKS].filter(
-        (h) => cssClasses.has(h) || jsBlob.includes(`"${h}"`) || jsBlob.includes(`'${h}'`) || jsBlob.includes(`.${h}`),
-    );
+    const ownedElsewhere = [...NAMED_HOOKS].filter((h) => cssClasses.has(h) || jsOwned.has(h));
     assert.deepEqual(ownedElsewhere.sort(), [...REDUNDANT_BUT_KEPT.keys()].sort(),
         "NAMED_HOOKS 裡「已經有別的主人」的名單變了。新增的請寫進 REDUNDANT_BUT_KEPT 並附理由；" +
         "若某筆已不再被 js/css 認領，請從 REDUNDANT_BUT_KEPT 移除（它回到真正的豁免了）。");

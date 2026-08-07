@@ -95,13 +95,17 @@
              全站每一頁都看不到，等於沒有人驗收過它的長相（§5）；元件庫頁把它設起來當唯一可見處，
              與姊妹實作「看完整輸出」（`{% if node.resultLength %}`）同形。
              數字是資料、夾在前後綴 key 中間（不是插值 key）。
-             「載入完整軌跡」是**切版對後端提的要求**：超出上限的事件目前沒有落庫，所以這顆鈕現在拿不到
-             東西——但畫面該長什麼樣不由那件事決定。鈕在這裡，後端把那段軌跡存下來、開一支取用的端點，
-             React 接上就會動。反過來（等資料齊了才畫）會讓「使用者其實需要看得到完整軌跡」這件事
-             一直沒有人在畫面上主張。條件動作（要帶這一輪的 run id 去要）⇒ 只掛 hook class。 #}
+             「載入完整軌跡」**已經接得上了**（本輪回頭查證，前一版檔頭寫的「超出上限的事件目前沒有落庫」
+             已經過期）：GufoRAG chatbot `routes/_chat_trace.py` 把上限分成兩層——落庫 `MAX_STEP_EVENTS`
+             ／`MAX_TOOL_ACTIVITY`，檢視 `VIEW_STEP_EVENTS`／`VIEW_TOOL_ACTIVITY`，所以詳情頁帶回來的
+             是前 N 筆 ＋ 尾端 `{truncated, total}`，被截掉的那一段**存下來了**、單筆去要即可；取用端點
+             ＝product `routers/history.py` 的 `GET /history/{log_id}/trace`（租戶隔離走 `_own_log_or_404`）
+             與 chatbot `routes/chat.py` 的 `GET /chatlogs/{id}/trace`。
+             端點在了 ⇒ 它就是一顆**點下去就送 API 的動作鈕**（§5 ③，「不開任何窗的送 API 鈕不適用條件開窗
+             豁免」），故掛 data-toast 列全結果，不再只掛 hook class。 #}
         {% if stepFlowTraceTotal %}
         <p class="text-gray m-0"><span data-i18n="agent.traceTruncatedPrefix">已顯示 </span><span>{{ stepFlowTraceShown }}</span><span data-i18n="agent.traceTruncatedMid"> ／共 </span><span>{{ stepFlowTraceTotal }}</span><span data-i18n="agent.traceTruncatedSuffix"> 筆</span></p>
-        <button type="button" class="button button-border button-sm js-load-full-trace" data-i18n="agent.loadFullTrace">載入完整軌跡</button>
+        <button type="button" class="button button-border button-sm js-load-full-trace" data-toast="完整軌跡已載入|這一筆已經不在了，或不屬於這個租戶|載入失敗，請稍後再試" data-i18n-data-toast="toast.loadFullTrace" data-toast-type="success|warning|error" data-i18n="agent.loadFullTrace">載入完整軌跡</button>
         {% endif %}
         <span class="step-flow-metric"><span data-i18n="agent.summaryTokens">Token</span> {{ stepFlowSummaryData.tokens }}</span>
         {# 拆 input／output（`chat_logs.input_tokens`／`output_tokens`，總數是 `total_tokens`）：
@@ -189,19 +193,20 @@
                                     <tr>
                                         <th data-i18n="agent.result">結果</th>
                                         {# 工具輸出是長文 ⇒ 走 ui/collapse-text（夾住而且打得開）。
-                                             但 `result_preview` 只有前 500 字，展開也只有那 500 字——所以**截斷這件事
-                                             本身要說出來**，並給一顆去拿全文的鈕。
-                                             `node.resultLength`（原始長度）是**切版對後端提的要求**：現在的 preview 不回長度，
-                                             於是「剛好 500 字」與「被砍掉 19500 字」在畫面上長得一模一樣。有了長度，這一列才
-                                             決定得出那顆鈕該不該出現——未截斷時不渲染（§5：不放一顆按了沒變化的鈕）。
-                                             取全文要重新向後端要一次（preview 之外的部分沒有在這份 payload 裡）⇒ 條件動作，
-                                             故只掛 hook class `js-view-full-output`、不掛 data-toast（成敗由 React 演）。 #}
+                                             截斷**不是預設**（本輪回頭查證，前一版檔頭寫的「preview 只有前 500 字、而且不回
+                                             長度」已經過期）：GufoRAG chatbot `routes/_chat_serialization.py` 的
+                                             `DEFAULT_PREVIEW_CHARS = 0`＝不截、回完整原文，呼叫端要帶 `preview_chars` 才截，
+                                             而**被截到的欄位會自述原始長度**（`routes/chat.py` 的 query 說明逐字寫「不靜默截斷」）。
+                                             故這一段的渲染條件是「這一次真的被截到」＝上游回了長度。
+                                             `resultShown`／`resultLength` **必須成對**（同 stepFlowTraceShown／Total）：
+                                             顯示字數烤死成字面量的話，使用頁一覆寫 result 就會說「已顯示前 500 字」而本體不是 500 字。
+                                             取全文要重新向後端要一次 ⇒ 點下去就送 API（§5 ③），掛 data-toast 列全結果。 #}
                                         <td>
                                             <div class="collapse-text"><div class="collapse-body">{{ node.result }}</div><button type="button" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>
                                             {% if node.resultLength %}
                                             <div class="flex-row align-items-center flex-wrap gap-8">
-                                                <span class="text-gray"><span data-i18n="agent.outputTruncatedPrefix">已顯示前 </span>500<span data-i18n="agent.outputTruncatedMid"> 字／共 </span>{{ node.resultLength }}<span data-i18n="regression.charsUnit"> 字</span></span>
-                                                <button type="button" class="button button-border button-sm js-view-full-output" data-i18n="agent.viewFullOutput">看完整輸出</button>
+                                                <span class="text-gray"><span data-i18n="agent.outputTruncatedPrefix">已顯示前 </span>{{ node.resultShown }}<span data-i18n="agent.outputTruncatedMid"> 字／共 </span>{{ node.resultLength }}<span data-i18n="regression.charsUnit"> 字</span></span>
+                                                <button type="button" class="button button-border button-sm js-view-full-output" data-toast="完整輸出已載入|這一筆已經不在了，或不屬於這個租戶|載入失敗，請稍後再試" data-i18n-data-toast="toast.viewFullOutput" data-toast-type="success|warning|error" data-i18n="agent.viewFullOutput">看完整輸出</button>
                                             </div>
                                             {% endif %}
                                         </td>

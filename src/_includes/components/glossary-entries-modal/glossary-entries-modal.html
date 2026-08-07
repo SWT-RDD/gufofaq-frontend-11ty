@@ -42,16 +42,19 @@
                                 </colgroup>
                                 <thead>
                                     <tr>
-                                        <th data-i18n="settings.term">詞條</th>
-                                        <th data-i18n="settings.definition">定義</th>
+                                        <th id="glossaryHeadTerm" data-i18n="settings.term">詞條</th>
+                                        <th id="glossaryHeadDefinition" data-i18n="settings.definition">定義</th>
                                         <th><span class="sr-only" data-i18n="common.actions">操作</span></th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {% for entry in glossaryEntryRows %}
                                     <tr>
-                                        <td><input type="text" class="form-control" maxlength="200" value="{{ entry.term }}" aria-label="詞條" data-i18n-aria-label="settings.term"></td>
-                                        <td><input type="text" class="form-control" maxlength="2000" value="{{ entry.definition }}" aria-label="定義" data-i18n-aria-label="settings.definition"></td>
+                                        <td>
+                                            <span id="glossaryRowName-{{ loop.index }}" class="sr-only">{{ entry.term }}</span>
+                                            <input type="text" class="form-control" maxlength="200" value="{{ entry.term }}" aria-labelledby="glossaryRowName-{{ loop.index }} glossaryHeadTerm" aria-describedby="glossaryLimitsHint" required>
+                                        </td>
+                                        <td><input type="text" class="form-control" maxlength="2000" value="{{ entry.definition }}" aria-labelledby="glossaryRowName-{{ loop.index }} glossaryHeadDefinition" aria-describedby="glossaryLimitsHint"></td>
                                         <td><button type="button" class="button button-border button-sm js-remove-glossary-entry" data-i18n="action.delete">刪除</button></td>
                                     </tr>
                                     {% else %}
@@ -60,12 +63,14 @@
                                 </tbody>
                             </table>
                         </div>
-                        {# 上限寫在做那個決定的控制項旁邊（§3-2）：原本三道界線只在送出失敗的 toast 裡出現，
-                             而 maxlength 是靜默截斷（打不進去也不說為什麼）、別名欄連 maxlength 都夾不住
-                             （逗號分隔的多值字串，單一 maxlength 表達不了「每個別名 200 字、最多 50 個」）。
+                        {# 上限寫在做那個決定的控制項旁邊（§3-2）：原本兩道界線只在送出失敗的 toast 裡出現，
+                             而 maxlength 是靜默截斷（打不進去也不說為什麼）。
                              數字是資料節點、不進譯文（§3-2）；正本 GufoRAG chatbot/app/services/glossary.py 的
-                             MAX_TERM_LEN／MAX_DEFINITION_LEN／MAX_ALIASES_PER_ENTRY／MAX_ENTRIES_PER_TABLE。 #}
-                        <p id="glossaryLimitsHint" class="text-gray m-0"><span data-i18n="settings.glossaryLimitTerm">詞條上限 </span><span>200</span><span data-i18n="settings.glossaryLimitDefinition"> 字、定義 </span><span>2000</span><span data-i18n="settings.glossaryLimitAliases"> 字；別名每個 </span><span>200</span><span data-i18n="settings.glossaryLimitAliasCount"> 字、最多 </span><span>50</span><span data-i18n="qa.detailConvItems">個</span></p>
+                             MAX_TERM_LEN／MAX_DEFINITION_LEN／MAX_ENTRIES_PER_TABLE。
+                             **別名的上限不在這裡**：別名欄已於 2026-08-07 隨上游移除（`MAX_ALIASES_PER_ENTRY`
+                             也一併從 glossary.py 拿掉），現在住在 components/alias-entries-modal 的
+                             `#aliasLimitsHint`——兩顆 key 沿用同一份，這一側不得再描述它。 #}
+                        <p id="glossaryLimitsHint" class="text-gray m-0"><span data-i18n="settings.glossaryLimitTerm">詞條上限 </span><span>200</span><span data-i18n="settings.glossaryLimitDefinition"> 字、定義 </span><span>2000</span><span data-i18n="regression.charsUnit"> 字</span></p>
                         <div class="flex-row align-items-center gap-16">
                             <button type="button" class="button button-border button-sm js-add-glossary-entry" data-i18n="settings.addEntry">新增一列</button>
                             <span class="text-gray"><span data-i18n="settings.glossaryEntryCountPrefix">已 </span><span>{{ glossaryEntryRows.length }}</span><span data-i18n="settings.glossaryEntryCountMid"> / </span><span>5000</span><span data-i18n="settings.glossaryEntryCountSuffix"> 筆</span></span>
@@ -75,7 +80,7 @@
                 <div class="modals-footer">
                     <div class="button-row center">
                         <button type="button" class="button button-border btn-close-modals" data-i18n="action.cancel">取消</button>
-                        <button data-capability="data:write" type="button" class="button button-primary" data-toast="詞條已更新|詞條沒有通過寫入層驗證（詞條不可為空、單筆長度與別名數有上限、整表筆數有上限），請修正後再存|更新失敗" data-i18n-data-toast="toast.saveGlossaryEntries" data-toast-type="success|warning|error" data-i18n="action.save">儲存</button>
+                        <button data-capability="data:write" type="button" class="button button-primary" data-toast="詞條已更新|詞條沒有通過寫入層驗證（詞條不可為空、單筆長度有上限、整表筆數有上限），請修正後再存|更新失敗" data-i18n-data-toast="toast.saveGlossaryEntries" data-toast-type="success|warning|error" data-i18n="action.save">儲存</button>
                     </div>
                 </div>
             </div>
