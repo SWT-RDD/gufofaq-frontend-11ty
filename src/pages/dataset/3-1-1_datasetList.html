@@ -22,9 +22,9 @@ permalink: 3-1-1_datasetList.html
     </div>
     <div class="flex-row gap-16 justify-content-end flex-wrap">
         {% include "ui/storage-bar/storage-bar.html" %}
-        <a href="3-1-2_dataImport_input.html" class="button button-primary flex-shrink-0" data-i18n="action.addDataset">
-            <img src="./images/icon_add_white.png" width="48" height="48" decoding="async" alt="" class="icon">新增資料集
-        </a>
+        {# `data-i18n` 節點的文字要與收尾標籤同行（§2）：跑進節點的縮排換行會併進同一個文字節點，
+             而它是 `lang-toggle` 切回繁中時的比對基準（`el.textContent`，不 trim）。 #}
+        <a href="3-1-2_dataImport_input.html" class="button button-primary flex-shrink-0" data-i18n="action.addDataset"><img src="./images/icon_add_white.png" width="48" height="48" decoding="async" alt="" class="icon">新增資料集</a>
     </div>
 </div>
 

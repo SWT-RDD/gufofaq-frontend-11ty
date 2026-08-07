@@ -34,12 +34,8 @@
                          不用 aria-label 複製字面（可及名稱會自動含 (必填)、切語言也不必另掛屬性翻譯） #}
                     <span id="feedbackVoteLabel"><span data-i18n="{{ ratingModalQuestionKey or 'modals.feedbackHelpful' }}">{{ ratingModalQuestion or '這個回答對你有幫助嗎？' }}</span><span class="text-red" data-i18n="common.required">(必填)</span></span>
                     <div class="feedback-vote" role="group" aria-labelledby="feedbackVoteLabel">
-                        <button type="button" class="feedback-vote-btn like" data-vote="like" aria-pressed="false" data-i18n="modals.like">
-                            <span class="feedback-vote-icon"></span>讚
-                        </button>
-                        <button type="button" class="feedback-vote-btn dislike" data-vote="dislike" aria-pressed="false" data-i18n="modals.dislike">
-                            <span class="feedback-vote-icon"></span>倒讚
-                        </button>
+                        <button type="button" class="feedback-vote-btn like" data-vote="like" aria-pressed="false" data-i18n="modals.like"><span class="feedback-vote-icon"></span>讚</button>
+                        <button type="button" class="feedback-vote-btn dislike" data-vote="dislike" aria-pressed="false" data-i18n="modals.dislike"><span class="feedback-vote-icon"></span>倒讚</button>
                     </div>
                     {% if ratingModalNoteKey %}
                     <p class="text-gray m-0" data-i18n="{{ ratingModalNoteKey }}">{{ ratingModalNote }}</p>

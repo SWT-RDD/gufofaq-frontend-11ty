@@ -6,12 +6,8 @@
      hook 不得被 scss 樣式（§5「全站 scss 找不到它」判準），排版改掛本元件自有 slot class .step-prev/.step-next。 #}
 <div class="step-btn-wrap{% if stepNoPrev %} no-prev{% endif %}">
     {% if not stepNoPrev %}
-    <a href="{{ stepPrevHref or '#' }}" class="button button-primary step-prev btn-prev" data-i18n="action.prevStep">
-        <img src="./images/icon_back_white.png" width="48" height="48" decoding="async" alt="" class="icon">上一步
-    </a>
+    <a href="{{ stepPrevHref or '#' }}" class="button button-primary step-prev btn-prev" data-i18n="action.prevStep"><img src="./images/icon_back_white.png" width="48" height="48" decoding="async" alt="" class="icon">上一步</a>
     {% endif %}
     {% include "components/step-nodes/step-nodes.html" %}
-    <a href="{{ stepNextHref or '#' }}" class="button button-primary step-next btn-next" data-i18n="action.nextStep">
-        下一步<img src="./images/icon_next_white.png" width="48" height="48" decoding="async" alt="" class="icon">
-    </a>
+    <a href="{{ stepNextHref or '#' }}" class="button button-primary step-next btn-next" data-i18n="action.nextStep">下一步<img src="./images/icon_next_white.png" width="48" height="48" decoding="async" alt="" class="icon"></a>
 </div>

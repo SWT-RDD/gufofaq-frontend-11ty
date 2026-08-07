@@ -1328,17 +1328,17 @@ test("§2 dist：data-i18n 節點的文字不得帶縮排換行（JSX 會把那�
     // §2 那條掃 src 的縮排規則抓不到「屬性寫成多行、文字獨占一行」的形狀（prompt-edit 的
     // `js-prompt-toggle` 就是那樣）。dist 是渲染後的真相：文字節點含換行＝React 那邊會少一段空白，
     // 而 lang-toggle 以 `el.textContent` 為索引擷取預設繁中，同一顆 key 的兩種寫法會互相覆蓋。
+    // round43：改用 i18nTexts。舊的 `<tag …>text</tag>` regex **不准巢狀**，於是
+    // `<a data-i18n><img …>新增資料集</a>` 這一族（節點內含子元素）整個在視野外——
+    // 而那正是縮排最容易跑進文字節點的形狀（圖示鈕、帶圖的連結）。
     let seen = 0;
     const hits = [];
     for (const f of distHtml) {
-        const t = read(`dist/${f}`);
-        for (const m of t.matchAll(/<([a-z0-9]+)\b((?:"[^"]*"|[^>"])*)>([^<]*)<\/\1>/g)) {
-            if (!/\bdata-i18n="/.test(m[2])) continue;
-            if (!m[3].trim()) continue;
+        for (const { key, text } of i18nTexts(read(`dist/${f}`))) {
+            if (!text.trim()) continue;
             seen++;
-            if (!/[\r\n]/.test(m[3])) continue;
-            const key = (m[2].match(/\bdata-i18n="([^"]*)"/) || [, "?"])[1];
-            hits.push(`dist/${f}  <${m[1]} data-i18n="${key}"> 的文字帶縮排換行：${JSON.stringify(m[3].slice(0, 30))}`);
+            if (!/[\r\n]/.test(text)) continue;
+            hits.push(`dist/${f}  data-i18n="${key}" 的文字帶縮排換行：${JSON.stringify(text.slice(0, 30))}`);
         }
     }
     assert.ok(seen >= 300, `只掃到 ${seen} 個 data-i18n 文字節點 —— 這條測試在空轉`);
@@ -1778,12 +1778,28 @@ test("§4-2 同一個 i18n key 的繁中原文全站必須一致", () => {
     // 渲染時才組起來的（page-shell 的 sr-only h1），掃 src 完全看不到——5-9 的 `pageHeading: API 金鑰`
     // 因此與 header／麵包屑的「萃取 API 金鑰」共用同一顆 key 卻不同字，而那會在切語言時互相覆蓋
     // （lang-toggle 以 key 為索引就地擷取，文件序後者勝）。這一族只有 dist 驗得到。
-    for (const f of distHtml) {
-        for (const m of read(`dist/${f}`).matchAll(/<([a-z0-9]+)\b((?:"[^"]*"|[^>"])*)>([^<]*)<\/\1>/g)) {
-            const k = m[2].match(/\bdata-i18n="([\w.]+)"/);
-            if (k) record(k[1], m[3].trim(), `dist/${f}`);
+    // round43：改用 i18nTexts 才看得到「節點內含子元素」那一族——舊寫法 `<tag …>text</tag>`
+    // 不准巢狀，於是 `<a data-i18n><img>新增資料集</a>` 整個在視野外。
+    // 這一輪仍 trim：src 那幾輪拿到的是 `stripNjk` 後的字串、本來就量不準空白，
+    // 與 dist 混在同一個 map 裡比會把「前後綴 key 自帶的分隔空白」判成分岔（假陽性）。
+    const distRaw = new Map(); // key -> Map(未 trim 原文 -> [出處])，只在 dist 之間比
+    for (const f of distHtml)
+        for (const { key, text } of i18nTexts(read(`dist/${f}`))) {
+            record(key, text.trim(), `dist/${f}`);
+            if (!text.trim()) continue;
+            if (!distRaw.has(key)) distRaw.set(key, new Map());
+            const v = distRaw.get(key);
+            if (!v.has(text)) v.set(text, []);
+            v.get(text).push(`dist/${f}`);
         }
-    }
+    // **不 trim 的那一半**：runtime 的 `lang-toggle` 讀 `el.textContent` 且不 trim，
+    // 差一個縮排換行的兩份繁中在它眼裡就是兩個字串，切回繁中時會以文件序後者勝互相覆蓋。
+    // §4-2 原本明文寫著「這一種分岔目前沒有網」——這就是那張網。母體只有 dist（渲染後的真相）。
+    const wsBad = [];
+    for (const [key, variants] of distRaw)
+        if (variants.size > 1)
+            wsBad.push(`${key}\n` + [...variants].map(([zh, w]) => `      ${JSON.stringify(zh)} ← ${w.join(", ")}`).join("\n"));
+    assert.equal(wsBad.length, 0, `同一顆 key 的繁中只差在空白／換行上（lang-toggle 不 trim，切回繁中會互相覆蓋）：\n${fail(wsBad)}`);
     assert.ok(seen.size > 100, `只收集到 ${seen.size} 個 key —— 屬性 regex 腐掉了？這條測試在空轉`);
     const bad = [];
     for (const [key, variants] of seen)
@@ -2699,13 +2715,21 @@ test("§5 元件 js 查詢的 class 選擇器都要在 src markup 打得到（�
     // 具名豁免：展示頁互動 class（真 app 移植、互動面只在元件庫的雙層頁籤示範）——仍要求它在渲染後的
     // component.html 真的存在，否則照樣紅。round20：.sub-tabs 已進生產頁 5-2（對話設定 hub 的主題子頁籤），
     // 走 markupClasses 正路，移出豁免以維持負控張力；.top-tabs 仍僅存於元件庫示範。
-    const SHOWCASE_INTERACTION = new Set(["top-tabs"]);
+    // §5 的唯一例外：「設計系統裡有、但目前沒有頁面用到的版型變體」。逐顆登記＋寫出理由，
+    // 三件缺一不可（①同元件另有選擇器打得到生產頁 ②元件庫頁有靜態示範 ③在此登記）。
+    // 這條例外 round43 才寫進 GUIDELINE §5——在那之前是「規則說不行、測試自己開白名單」的分岔。
+    const SHOWCASE_INTERACTION = new Map([
+        // ui/tab 的雙層頁籤第一層。第二層 .sub-tabs 已在 5-2 生產頁（同一支 tab.js 服務兩者），
+        // 第一層還沒有頁面需要；撤掉它等於把設計系統既有的雙層版型從規格裡刪掉。
+        ["top-tabs", "ui/tab 雙層頁籤的第一層；.sub-tabs 已在 5-2 生產頁，示範在元件庫頁"],
+    ]);
     const markupClasses = new Set();
     const showcaseClasses = new Set();
     for (const f of distHtml)
         for (const m of distDoc(f).matchAll(/class="([^"]*)"/g))
             for (const c of m[1].split(/\s+/)) if (c) (f === "component.html" ? showcaseClasses : markupClasses).add(c);
     assert.ok(markupClasses.size > 200 && showcaseClasses.size > 100, `class 收集異常（生產 ${markupClasses.size}／showcase ${showcaseClasses.size}）—— 這條測試在空轉`);
+    const usedShowcase = new Set();
     const compJs = srcJs.filter((f) => /_includes\/(ui|components)\//.test(f));
     assert.ok(compJs.length > 15, `只掃到 ${compJs.length} 支元件 js —— 這條測試在空轉`);
     const hits = [];
@@ -2713,18 +2737,38 @@ test("§5 元件 js 查詢的 class 選擇器都要在 src markup 打得到（�
         const src = read(f);
         const owned = new Set(); // js 自己建/操作的 class（不在 markup 是正常的）
         for (const m of src.matchAll(/className\s*=\s*["']([^"']+)["']/g)) m[1].split(/\s+/).forEach((c) => owned.add(c));
-        for (const m of src.matchAll(/classList\.(?:add|remove|toggle|contains)\(\s*["']([^"']+)["']/g)) owned.add(m[1]);
+        // **`contains` 不算「自己建的」**：它是純讀取，讀一顆 markup 上不存在的 class 恆為 false，
+        // 正是這條測試要抓的死查詢。把它算進 owned 等於開了一個誰都看不見的後門——
+        // `.top-tabs` 就是從這裡溜過去的（tab.js 同時有 `querySelectorAll(".top-tabs .tab")` 與
+        // `classList.contains("top-tabs")`），而它上面那條具名豁免因此一直是裝飾品（round43 實測）。
+        for (const m of src.matchAll(/classList\.(?:add|remove|toggle)\(\s*["']([^"']+)["']/g)) owned.add(m[1]);
         for (const m of src.matchAll(/setAttribute\(\s*["']class["']\s*,\s*["']([^"']+)["']/g)) m[1].split(/\s+/).forEach((c) => owned.add(c));
         const queried = new Set();
         for (const m of src.matchAll(/(?:querySelector(?:All)?|closest|matches)\(\s*["']([^"']+)["']/g))
             for (const cm of m[1].matchAll(/\.([A-Za-z][\w-]*)/g)) queried.add(cm[1]);
-        const missing = [...queried].filter((c) => !owned.has(c) && !markupClasses.has(c))
-            .filter((c) => !(SHOWCASE_INTERACTION.has(c) && showcaseClasses.has(c)));
+        const rawMissing = [...queried].filter((c) => !owned.has(c) && !markupClasses.has(c));
+        // 例外的三個條件在這裡逐一驗，不是無條件放行：
+        //   ② 元件庫頁真的有那顆 class（showcaseClasses）
+        //   ① 同一支 js 另有選擇器打得到生產頁（否則整支就是死 js，不適用「版型變體」的說法）
+        const hasLiveSelector = [...queried].some((c) => markupClasses.has(c) || owned.has(c));
+        const missing = rawMissing.filter((c) => {
+            if (!SHOWCASE_INTERACTION.has(c) || !showcaseClasses.has(c) || !hasLiveSelector) return true;
+            usedShowcase.add(c);
+            return false;
+        });
         if (queried.size && missing.length === queried.size)
             hits.push(`${f}  查的 class 全數在 markup 落空：${missing.map((c) => "." + c).join(" ")} ⇒ 死 js（改版遺留？連同三方登記撤除，見 §5）`);
         else if (missing.length)
             hits.push(`${f}  這些查詢在 markup 打不到東西：${missing.map((c) => "." + c).join(" ")}（§5）`);
     }
+    // 白名單也會過期：那顆 class 一旦進了生產頁（或整個被撤掉），這一筆就不再放行任何東西，
+    // 留著只會靜默放行下一次的新增。過期當場報出來，逼人重新裁決（同 DELIBERATE 的做法）。
+    const staleShowcase = [...SHOWCASE_INTERACTION.keys()].filter((c) => !usedShowcase.has(c));
+    assert.equal(
+        staleShowcase.length,
+        0,
+        `SHOWCASE_INTERACTION 有過期項（該 class 已進生產頁或已撤除，白名單無作用）：${staleShowcase.join("、")}`,
+    );
     assert.equal(hits.length, 0, `元件 js 的 class 選擇器在 src markup 打不到：\n${fail(hits)}`);
 });
 
@@ -2738,6 +2782,38 @@ function* tagEvents(html) {
         if (close) { yield { type: "close", tag: t }; continue; }
         yield { type: "open", tag: t, attrs };
         if (selfClose || VOID_TAGS.has(t)) yield { type: "close", tag: t };
+    }
+}
+
+// dist 上每個 `data-i18n` 節點的**完整 textContent**（跨過子元素、不 trim）。
+//
+// 兩條 i18n 測試原本各自用 `data-i18n="…"[^>]*>([^<]*)` / `<tag …>text</tag>` 抓文字，
+// 兩者都在「節點內含子元素」時失明——`<a data-i18n><img>新增資料集</a>` 抓到的是空字串
+// （`>` 後面緊接 `<img`），於是 `action.addDataset` 的繁中**從來沒進過任何一條測試的視野**，
+// 而它正好是全站唯一一顆兩份繁中差在空白上的 key。
+//
+// **不 trim** 是重點：runtime 的 `lang-toggle` 讀的是 `el.textContent`、不 trim，
+// 差一個換行縮排的兩份繁中在它眼裡就是兩個字串，切回繁中時會互相覆蓋。
+function* i18nTexts(html) {
+    const TOKEN = /<(\/?)([a-zA-Z][\w-]*)((?:"[^"]*"|'[^']*'|[^>"'])*?)(\/?)>/g;
+    const open = [];   // 收集中的 data-i18n 節點：{ key, depth, buf }
+    let depth = 0, last = 0, m;
+    while ((m = TOKEN.exec(html)) !== null) {
+        const text = html.slice(last, m.index);
+        last = TOKEN.lastIndex;
+        for (const o of open) o.buf += text;
+        const [, close, tag, attrs, selfClose] = m;
+        const t = tag.toLowerCase();
+        if (close) {
+            depth--;
+            for (let i = open.length - 1; i >= 0; i--)
+                if (open[i].depth === depth) { const o = open.splice(i, 1)[0]; yield { key: o.key, text: o.buf }; }
+            continue;
+        }
+        if (selfClose || VOID_TAGS.has(t)) continue;   // void 不進出深度，也不會是 i18n 節點的根
+        const k = attrs.match(/\bdata-i18n="([\w.]+)"/);
+        if (k) open.push({ key: k[1], depth, buf: "" });
+        depth++;
     }
 }
 
@@ -3360,10 +3436,10 @@ test("§4-2 繁中原文相同的 chrome 沿用既有 key、不另立（同文�
     // 會被 recordKZ 的 `{{` 守衛擋掉，於是元件預設值那一族的 key↔繁中從來沒進過視野
     // （upload-box 的預設說明就是這樣，害 upload-card 另立一顆同義 key 也沒人發現）。
     // dist 是渲染後的真相，key 與繁中都已經定下來——補一輪 dist 掃描把它們收進來。
-    for (const f of distHtml) {
-        const html = distDoc(f);
-        for (const m of html.matchAll(/data-i18n="([\w.]+)"[^>]*>([^<]*)/g)) recordKZ(m[1], m[2]);
-    }
+    // round43：同上，改用 i18nTexts 才看得到「節點內含 <img>」那一族
+    // （catalog 的「新增資料集」另立 key 就是從這個縫掉出去的）。
+    for (const f of distHtml)
+        for (const { key, text } of i18nTexts(distDoc(f))) recordKZ(key, text);
     // js 的 t("key", "繁中") fallback 也算一份原文（round18：pagination.js 的「上一頁」曾在視野外）
     for (const f of srcJs.filter((x) => !x.includes("lang-toggle"))) {
         read(f).split(/\r?\n/).forEach((line) => {
