@@ -40,6 +40,7 @@ module.exports = function (eleventyConfig) {
         "src/_includes/components/citation-ref/citation-ref.js": "js/citation-ref.js",
         "src/_includes/components/skill-try-sandbox/skill-try-sandbox.js": "js/skill-try-sandbox.js",
         "src/_includes/components/builtin-tool-card/builtin-tool-card.js": "js/builtin-tool-card.js",
+        "src/_includes/components/alias-entries-modal/alias-entries-modal.js": "js/alias-entries-modal.js",
         "src/_includes/components/import-report/import-report.js": "js/import-report.js",
     });
 

@@ -1,0 +1,141 @@
+---
+layout: layouts/page-shell/page-shell.html
+title: GufoFAQ::別名表管理
+titleKey: nav.aliasTablesMgmt
+pageHeading: 別名表管理
+permalink: 3-6_aliasTables.html
+---
+{% set breadcrumbItems = [
+  { label: "首頁", href: "2-1_qaRecord.html", i18nKey: "nav.home" },
+  { label: "資料配置", href: "", i18nKey: "nav.dataConfig" },
+  { label: "別名表管理", i18nKey: "nav.aliasTablesMgmt" }
+] %}
+<div class="flex-row column gap-16">
+    {% include "ui/breadcrumb/breadcrumb.html" %}
+</div>
+
+{# 別名表管理（SaaS 新需求，真 app 無對應）。逆向自 GufoRAG chatbot `app/models/alias.py`
+     與 `app/services/alias.py`：**別名表統一管理「誰＝誰」，各功能自己決定要不要套用**。
+     在此之前別名散在兩個地方（術語表詞條的 aliases、出口替換規則的 aliases），而最需要它的
+     QA 直答逐字比對完全沒有——使用者打「推廣貿易服務費要怎麼繳」、QA 集裡是「推貿費要如何繳納？」，
+     實測 4 次只命中 1 次。術語表的 `aliases` 欄已於 2026-08-07 隨上游移除（見 chatbot
+     `db/database.py` 的那句「別名一律住在 alias_entries」），本站同輪拿掉，不留、不 deprecate。
+
+   **階段不標在每一列詞條上**：那會變成幾百列 × 三個勾選框，實務上一定被「全選」處理掉，
+     得到的是假的細緻度。三個套用開關放在設定檔（5-2），一個明確、看得見、一鍵可撤的決定。
+
+   上限是契約欄位（§6），出處＝chatbot `app/services/alias.py`：
+     `MAX_TABLE_NAME_LEN = 200`／`MAX_DESCRIPTION_LEN = 2000`／`MAX_ALIAS_ENTRIES_PER_TABLE = 5000`／
+     `MAX_ALIASES_PER_ENTRY = 50`／`MAX_CANONICAL_LEN = 200`／`MAX_ALIAS_LEN = 200`。
+     版型比照 3-2_glossaryManagement（新增區＋清單表＋條件開窗 modal）——它就是同一種東西的
+     管理頁，沒有理由長得不一樣。
+
+   **清單刻意不顯示「生效於哪些功能」**：那是設定檔的事，同一張表可以在設定檔 1 用於比對、
+     在設定檔 2 完全沒用——一欄塞不下，塞了就會說謊。
+   **不做「何時查閱／補充指示／查詢正規化 regex」**：那三個是術語表的工具屬性，別名表不生成
+     任何工具。 #}
+{# id＝別名表主鍵（chatbot `alias_tables.id`）。**不可拿 loop.index 當列鍵**：這張表刪得掉列，
+     位置不是身分——刪掉前一列之後，後面每一列的列鍵都會往前頂一格，React 端的 key 與逐列
+     動作的目標會一起指錯人（§6 列鍵）。
+   示範 3 張：一張大的、一張小的、**一張空的**——空表要看得出「詞條數 0」不是壞掉（§5 每個
+     分支都要看得到）。別名總數從詞條推導不出來（它是各列別名個數的總和，切版沒有算術），
+     故與詞條數一樣是端點回的欄，兩個都當資料給。 #}
+{% set aliasTables = [
+  { id: 12, name: "關務通用別名", desc: "報關、稅費、單證的常見簡稱與口語說法。", entryCount: 8, aliasCount: 21 },
+  { id: 9, name: "系統別名", desc: "內部系統與模組的舊稱、代號。", entryCount: 3, aliasCount: 5 },
+  { id: 7, name: "待整理別名", desc: "", entryCount: 0, aliasCount: 0 }
+] %}
+
+{# 第二句一定要有：不然使用者建完表會以為它就生效了。 #}
+<p class="text-gray" data-i18n="settings.aliasTablesIntro">別名表管理「哪些詞是同一件事」。哪些功能要套用哪幾張表，在「對話設定」裡各自決定——別名表本身不決定它在哪裡生效。</p>
+
+{# 新增別名表：只有名稱（必填）與說明。送出鈕的 data-toast 列全結果（§5 矩陣③），
+     warning 段對回 `services/alias.py` 的寫入層驗證（空名、名稱重複、長度上限）。 #}
+<div class="block mt-16 mb-16 flex-row column gap-16">
+    <div class="text-md text-bold" data-i18n="settings.addAliasTable">新增別名表</div>
+    <div class="flex-row flex-wrap gap-16 mobile-column sm-gap-16">
+        <div class="col-5-md col-12-sm">
+            <div class="form-group">
+                <div class="label">
+                    <label for="newAliasTableName" class="control-label required" data-i18n="settings.glossaryTableName">表名稱</label>
+                </div>
+                <div class="field">
+                    <input type="text" id="newAliasTableName" class="form-control" maxlength="200" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" required aria-describedby="newAliasTableNameHint">
+                    <span class="text-gray" id="newAliasTableNameHint"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span>200</span><span data-i18n="regression.charsUnit"> 字</span></span>
+                </div>
+            </div>
+        </div>
+        <div class="col-7-md col-12-sm">
+            <div class="form-group">
+                <div class="label">
+                    <label for="newAliasTableDesc" class="control-label" data-i18n="regression.suiteDesc">說明</label>
+                </div>
+                <div class="field">
+                    <input type="text" id="newAliasTableDesc" class="form-control" maxlength="2000" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" aria-describedby="newAliasTableDescHint">
+                    <span class="text-gray" id="newAliasTableDescHint"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span>2000</span><span data-i18n="regression.charsUnit"> 字</span></span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="flex-row">
+        <button data-capability="data:write" type="button" class="button button-primary" data-toast="別名表已建立|表名稱不可為空|名稱已存在|建立失敗，請稍後再試" data-i18n-data-toast="toast.createAliasTable" data-toast-type="success|warning|warning|error">
+            <img src="./images/icon_add_white.png" width="48" height="48" decoding="async" alt="" class="icon">
+            <span data-i18n="settings.addAliasTable">新增別名表</span>
+        </button>
+    </div>
+</div>
+
+<div class="block flex-row column gap-16">
+    <div class="text-md text-bold" data-i18n="settings.aliasTableList">別名表清單</div>
+    <div class="table-container scrollTable">
+        <table class="default-table">
+            <colgroup>
+                <col style="min-width:200px;">
+                <col style="min-width:280px;">
+                <col style="width:100px; min-width:100px;">
+                <col style="width:110px; min-width:110px;">
+                <col style="width:280px; min-width:280px;">
+            </colgroup>
+            <thead>
+                <tr>
+                    <th data-i18n="settings.glossaryTableName">表名稱</th>
+                    <th data-i18n="regression.suiteDesc">說明</th>
+                    <th class="text-center" data-i18n="settings.entryCount">詞條數</th>
+                    <th class="text-center" data-i18n="settings.aliasTotalCount">別名總數</th>
+                    <th data-i18n="common.actions">操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for table in aliasTables %}
+                <tr data-alias-table-id="{{ table.id }}">
+                    <td>{{ table.name }}</td>
+                    <td>{{ table.desc or "—" }}</td>
+                    <td class="text-center">{{ table.entryCount }}</td>
+                    <td class="text-center">{{ table.aliasCount }}</td>
+                    <td>
+                        {# 三顆都要先選定「哪一張表」＝業務條件開窗 ⇒ 只掛 hook class、不掛
+                             data-open-modal（§5）。刪除沿用既有的 delete-modal（本頁底部 include）。 #}
+                        <div class="btn-group">
+                            <button type="button" class="button button-border button-sm js-manage-alias-entries" data-i18n="settings.manageAliasEntries">編輯詞條</button>
+                            <button type="button" class="button button-border button-sm js-rename-alias-table" data-i18n="action.rename">重新命名</button>
+                            <button type="button" class="button button-red button-sm js-delete-alias-table" data-i18n="action.delete">刪除</button>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% include "components/alias-entries-modal/alias-entries-modal.html" %}
+
+{# 刪除確認：沿用既有的 delete-modal。閘門與新增鈕同一道（chatbot 的別名表是租戶資料）。 #}
+{% set deleteCapability = "data:write" %}
+{% set deleteToast = "別名表已刪除|這張表還被設定檔綁著，請先在對話設定裡取消綁定|刪除失敗，請稍後再試" %}
+{% set deleteToastKey = "toast.deleteAliasTable" %}
+{% set deleteToastType = "success|warning|error" %}
+{% set deleteConfirmClass = "js-confirm-delete-alias-table" %}
+{% include "components/delete-modal/delete-modal.html" %}

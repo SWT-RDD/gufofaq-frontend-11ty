@@ -1,8 +1,8 @@
 {# 術語表詞條編輯 modal，取自 3-2_glossaryManagement 頁「管理詞條」鈕（.js-manage-entries）：
      開窗需先選定「編輯哪一張術語表」＝業務條件開窗，故該鈕保留 hook class、不掛 data-open-modal
-     （GUIDELINE §5）；彈窗本體回歸切版：詞條清單表（term/definition/aliases 逐列）＋新增/移除列＋儲存。
+     （GUIDELINE §5）；彈窗本體回歸切版：詞條清單表（term/definition 逐列）＋新增/移除列＋儲存。
      3-2 是 SaaS 新頁（21 頁真 app 無對應）、product 先行出貨（GlossaryEntriesModal.tsx）＝NET-NEW
-     忠實度基準（§5）：i18n key 值以 product catalog 為準（新增一列／詞條已更新｜更新失敗／別名（逗號分隔））。
+     忠實度基準（§5）：i18n key 值以 product catalog 為準（新增一列／詞條已更新｜更新失敗）。
      增刪列＝React local state 操作（onClick 元件作用域直綁、product 無 hook），儲存時才整批 PUT
      gufofaq-saas product app/routers/glossary.py（「編輯一張表→整批 PUT /glossary/{id}/entries」，
      不做逐筆 diff）——故增刪鈕**不掛 data-toast**（它們不送 API）；但**要掛 hook class**：
@@ -10,17 +10,18 @@
      全站都是這樣掛的（2-2-4 的 `js-add-assertion`／`js-remove-assertion`、5-2 的
      `js-add-policy-topic`／`js-remove-policy-topic`，同樣沒有切版行為、同樣由 React 接）。
      原本兩顆什麼都沒掛＝轉換時認不出它們該接誰，而畫面上是兩顆按了沒反應的鈕。
-     aliases 以逗號分隔字串編輯。
      詞條／定義的 maxlength 是契約欄位（§6），出處＝GufoRAG chatbot app/services/glossary.py 的
      `MAX_TERM_LEN = 200`（:41）／`MAX_DEFINITION_LEN = 2000`（:42），逐筆檢查在 :129/:133、
-     經 product glossary.py 的 `_as_bad_request` 映成 400。別名沒有單獨的長度上限、故不掛。
+     經 product glossary.py 的 `_as_bad_request` 映成 400。**別名欄已於 2026-08-07 隨上游移除**：chatbot `db/database.py` 逐字寫著「別名一律住在 `alias_entries`」，
+     別名改由 3-6_aliasTables 統一管理、在 5-2 決定哪個階段套用。沒有生產使用者，故不留、不 deprecate——
+     留著只會有兩個地方可以填別名，而這整件事就是為了收掉那個。
      對 product 的刻意結構差異（皆為設計系統改良，待回流 product）：table-container.scrollTable 包裹＋
      colgroup 欄寬（product table 裸落容器）、操作欄 sr-only th（product 空 th）、空狀態 {% else %}
      colspan 無資料列（product 為表格後的 <p>；站內無資料列正典優先）。標題的表名是執行期資料，由 React 填。 #}
 {# 示範資料變數用元件專屬名 glossaryEntryRows（不用泛用名）：{% set %} 是頁面全域（§2/§6）。 #}
 {% set glossaryEntryRows = [
-    { term: "年終獎金", definition: "依年度考核與公司獲利發放的額外獎金。", aliases: "年終, 分紅" },
-    { term: "特別休假", definition: "年資達標後每年給予的有薪假。", aliases: "特休, 年假" }
+    { term: "年終獎金", definition: "依年度考核與公司獲利發放的額外獎金。" },
+    { term: "特別休假", definition: "年資達標後每年給予的有薪假。" }
 ] %}
 <dialog class="modals" id="glossaryEntriesModal" aria-labelledby="glossaryEntriesModal-title">
     <div class="modals-dialog modals-lg">
@@ -37,14 +38,12 @@
                                 <colgroup>
                                     <col style="width:200px; min-width:200px;">
                                     <col style="min-width:280px;">
-                                    <col style="min-width:200px;">
                                     <col style="width:90px; min-width:90px;">
                                 </colgroup>
                                 <thead>
                                     <tr>
                                         <th data-i18n="settings.term">詞條</th>
                                         <th data-i18n="settings.definition">定義</th>
-                                        <th data-i18n="settings.aliases">別名（逗號分隔）</th>
                                         <th><span class="sr-only" data-i18n="common.actions">操作</span></th>
                                     </tr>
                                 </thead>
@@ -53,11 +52,10 @@
                                     <tr>
                                         <td><input type="text" class="form-control" maxlength="200" value="{{ entry.term }}" aria-label="詞條" data-i18n-aria-label="settings.term"></td>
                                         <td><input type="text" class="form-control" maxlength="2000" value="{{ entry.definition }}" aria-label="定義" data-i18n-aria-label="settings.definition"></td>
-                                        <td><input type="text" class="form-control" value="{{ entry.aliases }}" aria-label="別名（逗號分隔）" data-i18n-aria-label="settings.aliases" aria-describedby="glossaryLimitsHint"></td>
                                         <td><button type="button" class="button button-border button-sm js-remove-glossary-entry" data-i18n="action.delete">刪除</button></td>
                                     </tr>
                                     {% else %}
-                                    <tr><td colspan="4" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
+                                    <tr><td colspan="3" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
                                     {% endfor %}
                                 </tbody>
                             </table>

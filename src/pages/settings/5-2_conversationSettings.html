@@ -1463,6 +1463,93 @@ permalink: 5-2_conversationSettings.html
                 </select>
             </div>
         </div>
+
+        {# ── 別名表：綁定 ＋ 三個階段各自套用 ────────────────────────────────────────
+             正本＝chatbot `retrieval_profiles` 的四欄（`alias_table_ids`／`alias_apply_match`／
+             `alias_apply_reasoning`／`alias_apply_output`，見 `db/database.py`）。
+             **階段開關放在設定檔、不標在每一列詞條上**：那會變成幾百列 × 三個勾選框，實務上
+             一定被「全選」處理掉，得到的是假的細緻度。這裡是一個明確、看得見、一鍵可撤的決定。
+             寫入層驗「三個 apply 清單必須 ⊆ alias_table_ids」，故後三顆的選項只能來自第一顆
+             已選的表；第一顆沒選任何表時後三顆停用（值控制項照渲染但 disabled，§5：狀態要
+             看得見才稽核得到，只是改不動）。
+             四顆都是**值載體**⇒ 只掛 hook class、不掛 data-toast（§5 矩陣②）。
+             一個設定檔最多綁 10 張（`services/alias.py` 的 `MAX_ALIAS_TABLES_PER_CONFIG`）。 #}
+        <div class="form-group row mobile-col">
+            <div class="label label-md">
+                <label for="aliasTablesSelect" class="control-label" data-i18n="settings.bindAliasTables">綁定別名表</label>
+            </div>
+            <div class="field col-12-sm">
+                <select id="aliasTablesSelect" class="form-control multiSelect js-alias-tables" multiple="multiple" data-placeholder="請選擇" data-placeholder-key="common.pleaseSelect" aria-describedby="aliasBindHint">
+                    <option value="12" selected>關務通用別名</option>
+                    <option value="9" selected>系統別名</option>
+                    <option value="7" selected>待整理別名</option>
+                </select>
+                <span class="text-gray" id="aliasBindHint"><span data-i18n="settings.aliasBindLimitPrefix">一個設定檔最多綁 </span><span>10</span><span data-i18n="qa.detailConvItems">個</span></span>
+            </div>
+        </div>
+        <div class="form-group row mobile-col">
+            <div class="label label-md">
+                <label for="aliasApplyMatchSelect" class="control-label" data-i18n="settings.aliasApplyMatch">比對套用</label>
+            </div>
+            <div class="field col-12-sm">
+                <select id="aliasApplyMatchSelect" class="form-control multiSelect js-alias-apply-match" multiple="multiple" data-placeholder="請選擇" data-placeholder-key="common.pleaseSelect">
+                    <option value="12" selected>關務通用別名</option>
+                    <option value="9" selected>系統別名</option>
+                    <option value="7" selected>待整理別名</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-group row mobile-col">
+            <div class="label label-md">
+                <label for="aliasApplyReasoningSelect" class="control-label" data-i18n="settings.aliasApplyReasoning">推理套用</label>
+            </div>
+            <div class="field col-12-sm">
+                <select id="aliasApplyReasoningSelect" class="form-control multiSelect js-alias-apply-reasoning" multiple="multiple" data-placeholder="請選擇" data-placeholder-key="common.pleaseSelect">
+                    <option value="12" selected>關務通用別名</option>
+                    <option value="9">系統別名</option>
+                    <option value="7">待整理別名</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-group row mobile-col">
+            <div class="label label-md">
+                <span id="aliasApplyOutputLabel" class="control-label" data-i18n="settings.aliasApplyOutput">出口套用</span>
+                {# 這顆警語是必要的，不是裝飾：出口是唯一會改寫使用者看到的字的階段。
+                     第二段更不能少——少了它，設定者會勾了出口、發現 QA 直答的答案沒變，
+                     然後回報「這個功能壞了」。 #}
+                <button type="button" class="info-btn" title="出口套用說明" data-i18n-title="settings.aliasApplyOutputInfo" data-open-modal="aliasOutputInfoModal">
+                    <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+                    <span class="sr-only" data-i18n="settings.aliasApplyOutputInfo">出口套用說明</span>
+                </button>
+            </div>
+            <div class="field col-12-sm">
+                {# 示範刻意留空（§6）：出口是唯一會改寫答案文字的階段，用它得是一個明確動作——
+                     示範資料先勾起來會讓人以為那是預設值。上游四欄也全部預設空。 #}
+                <select id="aliasApplyOutputSelect" class="form-control multiSelect js-alias-apply-output" multiple="multiple" aria-labelledby="aliasApplyOutputLabel" data-placeholder="請選擇" data-placeholder-key="common.pleaseSelect">
+                    <option value="12">關務通用別名</option>
+                    <option value="9">系統別名</option>
+                    <option value="7">待整理別名</option>
+                </select>
+            </div>
+        </div>
+        {# 出口套用的說明窗。**無條件開窗**（點了永遠開同一份說明）⇒ 掛 data-open-modal（§5）。
+             一次性版面、只有這一頁用得到 ⇒ 不抽元件（§3-3）。 #}
+        <dialog class="modals" id="aliasOutputInfoModal" aria-labelledby="aliasOutputInfoModal-title">
+            <div class="modals-dialog modals-md">
+                <div class="modals-wrap">
+                    {% include "ui/modal-close/modal-close.html" %}
+                    <div class="modals-content">
+                        <div class="modals-header">
+                            <h3 class="modals-title" id="aliasOutputInfoModal-title" data-i18n="settings.aliasApplyOutput">出口套用</h3>
+                        </div>
+                        <div class="modals-body flex-row column gap-16">
+                            <p class="m-0" data-i18n="settings.aliasOutputWarning">出口套用會在答案送出前，把文字裡的別名無條件替換成標準詞。請只在確定每一次出現都該被替換時使用。</p>
+                            <p class="m-0" data-i18n="settings.aliasOutputQaDirectNote">QA 直答的逐字答案不受影響——那條路刻意不經過任何改寫，這是「逐字」的定義。QA 集裡的用詞要正確，得改 QA 集本身。</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </dialog>
         {# MCP Server：列出平台**註冊**的 server（不只啟用中的），停用中的以「（停用中）」標示。
              為什麼不濾掉停用的（原本濾掉）：寫入層刻意不驗 is_active——「停用是可逆的營運狀態，不是
              這個 id 不存在；擋在寫入層會讓『先建好設定、之後再啟用』這種正常流程失敗」（GufoRAG

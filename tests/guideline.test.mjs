@@ -3806,6 +3806,51 @@ test("§6 QA 直答判定：判否／未達門檻不得畫成錯誤紅，且未�
     assert.match(gallery, /data-i18n="agent\.qaReusedFrom"/, "元件庫缺「重用自」小標的示範");
 });
 
+test("§5/§6 別名表：出口套用預設不勾、三個 apply ⊆ 綁定、術語表不得再有別名欄", () => {
+    const cfg = distDoc("5-2_conversationSettings.html");
+    const opts = (id) => {
+        const i = cfg.indexOf(id);
+        assert.ok(i > 0, `5-2 缺 ${id}`);
+        const seg = cfg.slice(i, cfg.indexOf("</select>", i));
+        return { all: [...seg.matchAll(/<option value="(\d+)"([^>]*)>/g)].map((m) => ({ v: m[1], sel: /selected/.test(m[2]) })) };
+    };
+    const bind = opts("aliasTablesSelect");
+    const bound = new Set(bind.all.filter((o) => o.sel).map((o) => o.v));
+    assert.ok(bound.size > 0, "示範要綁幾張表，否則後三顆的「⊆ 綁定」驗不到");
+    for (const id of ["aliasApplyMatchSelect", "aliasApplyReasoningSelect", "aliasApplyOutputSelect"]) {
+        // 寫入層驗「三個 apply 清單必須 ⊆ alias_table_ids」（chatbot retrieval_profiles）——
+        // 選項只能來自已綁定的那幾張，否則畫面演得出一個後端會 400 的狀態
+        for (const o of opts(id).all)
+            assert.ok(bound.has(o.v), `${id} 出現了沒被綁定的表 id=${o.v}（apply ⊆ 綁定）`);
+    }
+    // **出口示範刻意留空**：它是唯一會改寫使用者看到的字的階段，用它得是一個明確動作——
+    // 示範先勾起來會讓人以為那是預設值（上游四欄也全部預設空）。
+    assert.equal(opts("aliasApplyOutputSelect").all.filter((o) => o.sel).length, 0,
+        "出口套用的示範資料不得有值");
+    assert.ok(opts("aliasApplyMatchSelect").all.some((o) => o.sel), "比對套用要演「有套用」那一態");
+    // 出口那顆警語兩段都要在（少了第二段，設定者會勾了出口、發現 QA 直答沒變、回報功能壞了）
+    for (const k of ["settings.aliasOutputWarning", "settings.aliasOutputQaDirectNote"])
+        assert.match(cfg, new RegExp(`data-i18n="${k.replace(".", "\\.")}"`), `5-2 缺 ${k}`);
+
+    // 別名表頁：三張示範含一張空表（空表要看得出「詞條數 0」不是壞掉）
+    const page = distDoc("3-6_aliasTables.html");
+    const rows = [...page.matchAll(/<tr data-alias-table-id="\d+">([\s\S]*?)<\/tr>/g)];
+    assert.ok(rows.length >= 3, `別名表示範只有 ${rows.length} 張`);
+    assert.ok(rows.some((r) => />\s*0\s*</.test(r[1])), "示範要有一張空表（詞條數 0）");
+    // 清單刻意不顯示「生效於哪些功能」：同一張表在不同設定檔可以完全不同，一欄塞不下也會說謊
+    for (const k of ["settings.aliasApplyMatch", "settings.aliasApplyReasoning", "settings.aliasApplyOutput"])
+        assert.ok(!page.includes(`data-i18n="${k}"`), `別名表清單不該出現「${k}」——那是設定檔的事`);
+    // 三種衝突提示都要有一列演得到（§5 每個分支都要看得到）
+    for (const k of ["aliasConflictSameTable", "aliasConflictChain", "aliasConflictOutputRule"])
+        assert.match(page, new RegExp(`data-i18n="settings\\.${k}"`), `缺 ${k} 的示範列`);
+    assert.match(page, /data-i18n="settings\.aliasRedLine"/, "彈窗頂部的紅線提示不可省——那條機器判不出來");
+
+    // 術語表的別名欄整欄移除（上游 2026-08-07 已拿掉；留著就會有兩個地方可以填別名）
+    const glossary = distDoc("3-2_glossaryManagement.html");
+    assert.ok(!glossary.includes('data-i18n="settings.aliases"'), "術語表不得再有別名欄");
+    assert.match(glossary, /data-i18n="settings\.glossaryMgmtIntro"/, "術語表說明句要在");
+});
+
 test("§5 寫死 .hidden 的分支文案，至少要有一處看得見（否則全站沒有人看過它的長相）", () => {
     // `.hidden` 是 display:none !important。寫死（非 {% if %} 產出）又沒有可見的另一態時，
     // 那塊 markup 連同它的 i18n key 在每一頁都看不到——而它同時逃過「孤兒 key」（key 有被引用）、

@@ -1,0 +1,128 @@
+{# 別名表詞條編輯 modal（3-6_aliasTables 的「編輯詞條」鈕 .js-manage-alias-entries）：
+     開窗需先選定「編輯哪一張別名表」＝業務條件開窗，故該鈕保留 hook class、不掛 data-open-modal（§5）。
+     版型比照 components/glossary-entries-modal（同一種東西的管理彈窗，沒有理由長得不一樣），
+     但**只有兩欄**：標準詞 ＋ 別名。**沒有定義欄**——別名表就是等價關係，不是詞典。
+
+   上限是契約欄位（§6），出處＝GufoRAG chatbot `app/services/alias.py`：
+     `MAX_CANONICAL_LEN = 200`／`MAX_ALIAS_LEN = 200`（每個別名各自算）／
+     `MAX_ALIASES_PER_ENTRY = 50`／`MAX_ALIAS_ENTRIES_PER_TABLE = 5000`。
+     單一 maxlength 夾不住「每個別名 200 字、最多 50 個」（逗號分隔的多值字串），故那兩個數字
+     走可見提示 ＋ aria-describedby（同 glossary-entries-modal 的處置）。
+
+   衝突提示（inline，**不擋存檔**）：三種都由列資料的 `conflict` 決定，切版不做偵測——
+     前兩種存檔時後端會 400（`services/alias.py` 的寫入層驗證），inline 提示只是讓人在按下
+     存檔**之前**就看到；第三種後端不擋（那是跨功能的資訊），純提示。
+     值：sameTable（本表內另一列把同一個別名指向不同標準詞）／chain（某列的別名等於另一列的
+     標準詞）／outputRule（某條出口替換規則對這個詞有不同的替換結果）。
+
+   整批貼上是**純前端互動**（§5 矩陣④：解析、append、清空、收合，沒有業務主人）⇒ 行為當場
+     動得起來，寫在同資料夾的 alias-entries-modal.js。**不去重、不排序**：貼進來的順序就是
+     使用者的順序，動它會讓人對不上原始檔。
+
+   增刪列與 glossary-entries-modal 同型：不送 API（儲存時才整批 PUT）故不掛 data-toast，
+     但要掛 hook class 讓 React 認得出它們該接誰（§5）。 #}
+{# 示範資料變數用元件專屬名（{% set %} 是頁面全域，§2/§6）。六種列型各一，見 3-6 檔頭。 #}
+{% set aliasEntryRows = [
+    { canonical: "推廣貿易服務費", aliases: "推貿費, 推廣費, 貿服費" },
+    { canonical: "關港貿單一窗口", aliases: "單一窗口" },
+    { canonical: "進口報單", aliases: "報單, 進單", conflict: "sameTable" },
+    { canonical: "出口報單", aliases: "報單", conflict: "sameTable" },
+    { canonical: "貨物稅", aliases: "商品稅", conflict: "chain" },
+    { canonical: "商品稅", aliases: "貨物稅額", conflict: "chain" },
+    { canonical: "營業稅", aliases: "加值稅, VAT", conflict: "outputRule" },
+    { canonical: "海關進口稅則", aliases: "稅則, 進口稅則, 稅則號列, 海關稅則, HS Code, 商品分類號列, 稅則分類, 進口稅則號別" }
+] %}
+<dialog class="modals" id="aliasEntriesModal" aria-labelledby="aliasEntriesModal-title">
+    <div class="modals-dialog modals-lg">
+        <div class="modals-wrap">
+            {% include "ui/modal-close/modal-close.html" %}
+            <div class="modals-content">
+                <div class="modals-header">
+                    <h3 class="modals-title" id="aliasEntriesModal-title" data-i18n="settings.manageAliasEntries">編輯詞條</h3>
+                </div>
+                <div class="modals-body">
+                    {# 紅線提示：**機器判不出來**（分不出「推貿費＝推廣貿易服務費」與「號列 8543.70.99.90＝…80」
+                         的差別），只能靠這行字。固定在彈窗頂部、不可收合。 #}
+                    <p class="text-red m-0" data-i18n="settings.aliasRedLine">別名是「同一件事的不同講法」。不要把不同的稅則號列、品項、系統別、憑證類型或申請人身分別設成彼此的別名——那會讓系統把不同的問題誤判成同一題。</p>
+
+                    {# 整批貼上：純前端互動（§5 ④），行為見 alias-entries-modal.js。
+                         aria-expanded 每一條改變狀態的路徑都要同步（§4）——這裡只有一條，由 js 切。 #}
+                    <div class="flex-row column gap-8">
+                        <div class="flex-row">
+                            <button type="button" class="button button-border button-sm js-alias-bulk-toggle" aria-expanded="false" aria-controls="aliasBulkPanel" data-i18n="settings.bulkPaste">整批貼上</button>
+                        </div>
+                        <div class="flex-row column gap-8 hidden" id="aliasBulkPanel">
+                            <span class="text-gray" id="aliasBulkHint" data-i18n="settings.bulkPasteHint">一行一組。第一欄是標準詞，其餘是別名，用 Tab 或逗號分隔。貼上後會追加到下方清單，不會覆蓋既有的列。</span>
+                            {# 展開態要有一份範例文字（含一行故意沒有別名，用來演錯誤態）——
+                                 §5：沒有頁面演得出來的分支等於沒驗收過。 #}
+                            <textarea class="form-control size-sm js-alias-bulk-input" aria-describedby="aliasBulkHint" aria-label="整批貼上的內容" data-i18n-aria-label="settings.bulkPasteInput">加值型營業稅	加值稅	營業稅額
+免稅額
+貨物暫准通關證	ATA Carnet, 暫准通關證</textarea>
+                            <div class="flex-row">
+                                <button type="button" class="button button-primary button-sm js-alias-bulk-parse" data-i18n="settings.bulkPasteParse">解析並加入</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="table-container scrollTable mt-16">
+                        <table class="default-table">
+                            <colgroup>
+                                <col style="width:220px; min-width:220px;">
+                                <col style="min-width:320px;">
+                                <col style="width:90px; min-width:90px;">
+                            </colgroup>
+                            <thead>
+                                <tr>
+                                    <th id="aliasHeadCanonical" data-i18n="settings.canonical">標準詞</th>
+                                    <th id="aliasHeadAliases" data-i18n="settings.aliases">別名（逗號分隔）</th>
+                                    <th><span class="sr-only" data-i18n="common.actions">操作</span></th>
+                                </tr>
+                            </thead>
+                            <tbody class="js-alias-entry-body">
+                                {% for entry in aliasEntryRows %}
+                                {# 迴圈內的值控制項不掛靜態 aria-label（§4：同表 8 列會全部同名）——
+                                     改吃「本列辨識欄 ＋ 欄表頭」。標準詞格本身是輸入框，故另補一顆 sr-only 列名。 #}
+                                <tr>
+                                    <td>
+                                        <span id="aliasRowName-{{ loop.index }}" class="sr-only">{{ entry.canonical }}</span>
+                                        <input type="text" class="form-control{% if entry.conflict %} error{% endif %}" maxlength="200" value="{{ entry.canonical }}" aria-labelledby="aliasRowName-{{ loop.index }} aliasHeadCanonical" required>
+                                    </td>
+                                    <td>
+                                        <input type="text" class="form-control{% if entry.conflict %} error{% endif %}" value="{{ entry.aliases }}" aria-labelledby="aliasRowName-{{ loop.index }} aliasHeadAliases" aria-describedby="aliasLimitsHint" required>
+                                        {% if entry.conflict == "sameTable" %}
+                                        <span class="error-prompt is-shown" role="alert" data-i18n="settings.aliasConflictSameTable">本表內有另一列把這個別名指向不同的標準詞</span>
+                                        {% elif entry.conflict == "chain" %}
+                                        <span class="error-prompt is-shown" role="alert" data-i18n="settings.aliasConflictChain">鏈式對映不支援，請攤平</span>
+                                        {% elif entry.conflict == "outputRule" %}
+                                        <span class="error-prompt is-shown" role="alert" data-i18n="settings.aliasConflictOutputRule">某條出口替換規則對這個詞有不同的替換結果</span>
+                                        {% endif %}
+                                    </td>
+                                    <td><button type="button" class="button button-border button-sm js-remove-alias-entry" data-i18n="action.delete">刪除</button></td>
+                                </tr>
+                                {% else %}
+                                <tr><td colspan="3" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {# 上限寫在做決定的控制項旁邊（§3-2），不是只寫在失敗 toast 裡。
+                         數字是資料節點、不進譯文；「已 N / 5000」從陣列推導（§6）。 #}
+                    <p id="aliasLimitsHint" class="text-gray m-0 mt-16"><span data-i18n="settings.aliasLimitCanonical">標準詞上限 </span><span>200</span><span data-i18n="settings.glossaryLimitAliases"> 字；別名每個 </span><span>200</span><span data-i18n="settings.glossaryLimitAliasCount"> 字、最多 </span><span>50</span><span data-i18n="qa.detailConvItems">個</span></p>
+                    <div class="flex-row align-items-center gap-16 mt-16">
+                        <button type="button" class="button button-border button-sm js-add-alias-entry" data-i18n="settings.addEntry">新增一列</button>
+                        <span class="text-gray"><span data-i18n="settings.glossaryEntryCountPrefix">已 </span><span>{{ aliasEntryRows.length }}</span><span data-i18n="settings.glossaryEntryCountMid"> / </span><span>5000</span><span data-i18n="settings.glossaryEntryCountSuffix"> 筆</span></span>
+                    </div>
+                </div>
+                <div class="modals-footer">
+                    <div class="button-row center">
+                        <button type="button" class="button button-border btn-close-modals" data-i18n="action.cancel">取消</button>
+                        {# 儲存＝整批 PUT（同術語表，不做逐筆 diff）。warning 段對回 `services/alias.py`
+                             寫入層那兩道使用者自己修得掉的驗證；有 warning 分支故**不掛 btn-close-modals**
+                             （每點必關窗會打斷修正，§5）。 #}
+                        <button data-capability="data:write" type="button" class="button button-primary js-save-alias-entries" data-toast="別名已更新|別名沒有通過寫入層驗證（標準詞不可為空、每列至少一個別名、長度與筆數有上限），請修正後再存|同一個別名指向不同的標準詞，或出現鏈式對映，請先攤平|更新失敗" data-i18n-data-toast="toast.saveAliasEntries" data-toast-type="success|warning|warning|error" data-i18n="action.save">儲存</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</dialog>
