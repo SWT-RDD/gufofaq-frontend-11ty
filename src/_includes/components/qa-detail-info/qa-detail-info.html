@@ -68,9 +68,12 @@
                     {# 「這一輪是怎麼回答的」四欄。前三欄的值是**上游的字面**、不另發明詞彙：
                          · 答案來源＝`chat_logs.answer_source`（DB 只有 `qa_direct` 與 NULL＝正常生成；
                            product 的 `list_history`／`export_history` 對 NULL 那一側取的查詢字面是 `generated`）。
-                         · 對話模式（傳統／Agent）**上游沒有這一欄**：`chat_logs` 查不到 chat_mode 之類的欄位，
-                           而使用者要判斷「為什麼這一輪有工具軌跡、那一輪沒有」就得知道它。這一格是切版
-                           對後端提的要求（§4：不等資料齊了才畫）——落庫之前 React 端不渲染它。
+                         · 對話模式＝`chat_logs.search_mode`（`traditional`／`agent`）。**它一直都在**——
+                           前一版檔頭寫「上游沒有這一欄」是拿猜的欄名（`chat_mode`）去 grep 的結果：
+                           product 的 `_PUBLIC_LOG_FIELDS` 收了 `search_mode`，`_EXPORT_DETAIL_HEADER`
+                           那一欄的中文就叫「對話模式」，`/history/{id}` 走 `_project_log` 一定回得出來。
+                           那句負面斷言的結論是「React 端不渲染它」——照著做會把一個出貨中的欄位從畫面上拿掉，
+                           這正是 §3-2 說負面斷言舉證責任更重的理由。
                          · 標籤＝`chat_logs.tag`（前台／後台／AB 測試），與 4-1 清單的「使用者類型」同一欄。
                          · 語言＝`chat_logs.language`（NULL＝本輪未偵測，故畫「—」而不是留白）。 #}
                     <div class="col col-3-md col-12-sm">

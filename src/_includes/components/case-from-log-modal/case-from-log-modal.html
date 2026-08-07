@@ -22,8 +22,12 @@
 
      結果區是 role="status" live region 且**常駐**（GUIDELINE §4：內容到達前節點就要在 DOM 裡，
      條件渲染等於報讀器永遠不播報）。示範內容刻意演「勾了帶入前置對話卻拿到 0 輪」那一態
-     ——那是常態不是故障（product 的正式問答每一題各自成一個聊天室，`ask.py` 呼叫 chat_stream
-     時不帶 chat_room_id），但它必須被講出來，否則使用者只會以為前置對話帶進去了。
+     ——但**理由不是前一版寫的那個**：`ask.py` 的 `run_ask_stream` 會先 `resolve_room_id(room_ref, …)`
+     再把 `chat_room_id=` 傳下去，它帶得很清楚；它刻意不收的是**呼叫端直接給的裸 `chat_room_id`**
+     （那是 GufoRAG 全域遞增的整數，跨租戶猜得到），對外只收 `room_ref`。
+     真正會拿到 0 輪的是「這一筆紀錄本身就沒有前置」（單題成室、或 `room_ref` 解不出來）。
+     那一態必須被講出來，否則使用者只會以為前置對話帶進去了——這句話是使用者讀得到的紅字，
+     理由寫錯比不寫更貴（§3-2）。
      `derived.why` 與 `derived.context_note` 是後端回的整句話（執行期資料，不翻）；
      `derived.assertions` 是型別識別字（`cites_document` 這種業務識別字，不翻）。 #}
 <dialog class="modals" id="caseFromLogModal" aria-labelledby="caseFromLogModal-title">

@@ -114,8 +114,10 @@
                              此處示範資料，正式環境由回傳陣列驅動（空陣列則整塊不渲染）。
                              agent 模式的反問選項也共用這塊 chip（同為可點 chip、不另切 markup）；反問選項如何併入
                              suggest_questions 回傳陣列屬後端契約，React 端依實際 SSE 回傳實作。
-                             只在互動模式渲染：唯讀的問答紀錄預覽（chatInputHidden，2-1）沒有「送出下一題」可言，
-                             且 history API 不回傳 suggest_questions（gufofaq-saas history.py 查無此欄）。
+                             只在互動模式渲染：唯讀的問答紀錄預覽（chatInputHidden，2-1）沒有「送出下一題」可言
+                             ——**理由只有這一個**。前一版還寫了「且 history API 不回傳 suggest_questions」，
+                             那是錯的：product `history.py` 的 `_PUBLIC_LOG_FIELDS` 收了 `suggest_questions`，
+                             詳情頁拿得到。渲染條件不變，但別再拿一個不成立的理由當第二支柱（§3-2 負面斷言）。
                              變數用元件專屬名；label id 同理取元件專屬名（faq-chatroom 另有一份自己的 chip 區） #}
                         {% if not chatInputHidden %}
                         {% set chatroomSuggested = ["結婚登記要準備哪些文件？", "面談流程大約需要多久？"] %}

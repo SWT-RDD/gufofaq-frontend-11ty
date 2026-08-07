@@ -187,10 +187,17 @@ permalink: 4-1_qaHistory.html
      total／perPage 在這裡宣告一次，計數列與頁尾的 pager-row 共用同一份。 #}
 {% set total = 115 %}
 {% set perPage = 20 %}
+{# `answerSource` 哪一列給 `qa_direct`＝跨頁推導出來的，不是隨手挑（§6）：
+     rows[0]（#12173）的另外六欄與 4-2 的 `conversation` 逐字同源（聊天室 6537／同一句提問／
+     前台問答／讚／同一個時間戳），而那一列的 href 就指向 4-2 —— **兩頁演的是同一筆**。
+     4-2 是基準：它畫了完整的 Agent 執行流程與工具軌跡，而 QA 直答是結構性短路
+     （命中 QA 就直接回，那一輪產不出 `search_knowledge_base` 節點與 tool_activity）
+     ⇒ 同一筆不可能一頁 `qa_direct`、另一頁 `generated`。
+     故直答改掛在 #12175：它沒有對應的詳情頁示範，徽章分支照樣演得到。 #}
 {% set rows = [
     {
         id: "12173",
-        answerSource: "qa_direct",
+        answerSource: "generated",
         roomId: "6537",
         userMsg: "新住民結婚注意事項",
         aiMsg: "您好！關於新住民結婚的注意事項，以下是一些重要的要點：申請結婚登記需雙方親自到戶政事務所辦理，並準備有效身分證明與結婚證明文件；部分情況需健康檢查合格證明。",
@@ -212,7 +219,7 @@ permalink: 4-1_qaHistory.html
     },
     {
         id: "12175",
-        answerSource: "generated",
+        answerSource: "qa_direct",
         roomId: "6539",
         userMsg: "欠稅被限制出國要如何解除",
         aiMsg: "欠稅限制出國的解除方式，需先向稅捐機關繳清欠稅或提供相當擔保，經核准後由財政部函請移民署解除限制。",

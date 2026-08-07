@@ -12,9 +12,14 @@
          的值控制項不得掛靜態 aria-label，否則同頁七顆 select 全叫「變更優先級」，報讀器聽不出
          正在設哪一筆）。表頭 id 因此要帶實例鍵，否則四張表的 th 會撞 id。
        tierless（選填，預設 false）＝**取消三層、只分使用/不使用**的變體，供 Agent 對話模式用。
-         依實測矩陣（gufofaq-saas docs/mode-matrix.md 列 25），`index_tiers` 只有傳統搜尋吃；
-         agent 的 search_knowledge_base 只看 selected_index，而 selected_index 是由「有沒有被分到
-         任一層」決定的——也就是說 agent 模式下高/中/低毫無差別、但「使用/不使用」照樣生效。
+         ⚠️ **這個變體當初的理由已被上游撤回，待重新量測**（§3-2：出處會過期；§5：欄位×模式的
+         生效斷言以實測矩陣為準）。gufofaq-saas `docs/mode-matrix.md` 的 `index_tiers` 那一列現在
+         逐字寫著 `~~agent search_knowledge_base 只吃 selected_index~~（**此理由已不成立**）`——
+         chatbot 的 `services/scope.py::effective_scope` 上線後，`index_tiers` 攤平非空即為有效範圍
+         （agent 的 search_knowledge_base 也走它），該格標註「待以 `--only index_tiers` 重量」。
+         也就是說「agent 模式下高/中/低毫無差別」這個前提現在**沒有證據支撐**。
+         重量結果出來之前不動這個變體（拿掉它會讓已經在用的頁面當場少一種版型），但**不得再拿舊理由
+         當依據**：要嘛重量後確認仍不生效、要嘛把 tierless 收掉。
          給三個沒有差別的選項＝讓使用者以為自己在調一個實際不存在的旋鈕，故此變體把下拉收成
          「使用中/不使用」兩項、表頭改「變更使用狀態」。**選項值仍用同一組業務詞**（"高優先級"
          代表使用中）：切回傳統模式時原本的分層要還在，值域換掉就等於一切模式資料就被抹平。
