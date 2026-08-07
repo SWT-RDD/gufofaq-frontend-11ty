@@ -1,5 +1,12 @@
-// 逐字複製自真實 app scss/guideline.scss（verbatim；僅元件庫展示頁使用的版型/說明樣式，非全站樣式）
-// 唯一調整：第一行 @import "base/var" → @use "var"（本檔內文其實未使用任何 $ 變數，僅為對齊真實檔頭、維持可解析）
+// 結構與版型逐條照抄自真實 app scss/guideline.scss（僅元件庫展示頁使用的版型/說明樣式，非全站樣式）。
+// **偏離逐條列在這裡**——§9 說這支是「禁止依頁面覆寫元件」的唯一豁免檔、且「新增行不得擴大覆寫面」，
+// 而判斷「哪些是鏡像、哪些是我們加的」全靠這幾行；寫成「唯一調整」就等於下一輪沒有基準可比：
+//   ① 第一行 `@import "base/var"` → `@use "var"`（本檔內文其實未使用任何 $ 變數，僅為對齊真實檔頭、維持可解析）
+//   ② **整支收進 `.guideline-page {}`**（＋ `body.guideline-page{overflow:hidden}`）——§9 的頁面專屬
+//      樣式限定，理由見下方第 41-48 行那段註解
+//   ③ `height: 100vh` 一律補同值 `100dvh`（§4-1）
+//   ④ 全部色值換成 `var(--gl-*)`／`var(--on-accent)`／`var(--surface-raised)`／`var(--shadow)`，
+//      原檔是字面色（§9：showcase 專屬色走 `_guideline-var.scss`，不寫裸 hex）
 @use "var";
 
 @mixin scrollbar() {

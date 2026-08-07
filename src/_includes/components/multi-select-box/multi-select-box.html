@@ -7,14 +7,19 @@
      `columnOptions`（來源欄位選項，全槽共用一份）與 `fieldExtras`（以 key 查的差異：預選值／
      提示文字／預覽值／格式警告／額外選項），見 §3-2/§6。本元件不自帶任何槽清單。 #}
 <div class="flex-row gap-40 mobile-column multi-select-box">
-    {# 左欄：欄位對應 #}
+    {# 左欄：欄位對應。
+         **兩欄的欄位 label 逐字相同**（同一份 `fieldSlotCatalog` 的槽名），而且同時可見——
+         左欄問「把哪一個 Excel 欄對到這個槽」、右欄答「對完長什麼樣」，語意完全不同。
+         §4：同頁同時可見、語意不同的控制項不得共用同一個可及名稱。這裡走第一條出路：
+         兩欄各包一層 `role="group" aria-labelledby`，指向那顆本來就在的欄標題（「欄位對應」／「預覽」）
+         ——不動任何可見字面，也不必改 22 份 label。 #}
     <div class="block block-lg corner-md">
         <div class="flex-row column gap-24 justify-content-center">
             <div class="flex-row column gap-8">
-                <div class="text-lg text-bold text-center" data-i18n="step.mapping">欄位對應</div>
+                <div class="text-lg text-bold text-center" id="msMappingColLabel" data-i18n="step.mapping">欄位對應</div>
                 <div class="text-gray text-center" data-i18n="dataImport.selectSourceHint">請選擇欲對應的來源內容</div>
             </div>
-            <div class="flex-row column gap-16">
+            <div class="flex-row column gap-16" role="group" aria-labelledby="msMappingColLabel">
                 {% for field in fieldSlotCatalog %}{% set x = fieldExtras[field.key] %}{% if not field.productOnly %}
                 <div class="form-group row mobile-col">
                     <div class="label label-md">
@@ -65,10 +70,10 @@
     <div class="block block-lg corner-md">
         <div class="flex-row column gap-24 justify-content-center">
             <div class="flex-row column gap-8">
-                <div class="text-lg text-bold text-center" data-i18n="dataImport.previewTitle">預覽</div>
+                <div class="text-lg text-bold text-center" id="msPreviewColLabel" data-i18n="dataImport.previewTitle">預覽</div>
                 <div class="text-gray text-center" data-i18n="dataImport.previewHint">預覽已對應之結果</div>
             </div>
-            <div class="flex-row column gap-16">
+            <div class="flex-row column gap-16" role="group" aria-labelledby="msPreviewColLabel">
                 {% for field in fieldSlotCatalog %}{% set x = fieldExtras[field.key] %}{% if not field.productOnly %}
                 <div class="form-group row mobile-col">
                     <div class="label label-md">

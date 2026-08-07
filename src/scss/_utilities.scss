@@ -249,10 +249,10 @@ $margins: (4, 8, 10, 12, 16, 20, 24, 32, 40); // mt-*/mb-*/my-*
                     gap: map.get($spacing-scale, $n);
                 }
             }
-
-            .align-self-end {
-                align-self: flex-end;
-            }
+            // 這裡曾有一顆 `.align-self-end`：全站零消費者，而且形狀本身就是 §4 的死法③
+            // （規則巢在 `.flex-row.mobile-column` 之內又包在 media query 裡，照字面
+            // `<div class="align-self-end">` 用一定靜默無效）。真的需要時做成不吃祖先的頂層
+            // 單屬性工具，並同時給出至少一個消費點。
         }
     }
 }

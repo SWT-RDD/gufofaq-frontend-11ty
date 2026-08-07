@@ -36,8 +36,9 @@
 // 以及 `<dialog>` 上的**授權宣告**（§5 的四條授權軸，例：`components/manage-tenant-modal` 的
 // `data-platform-role="admin"`——整份不渲染給唯讀稽核員，因為窗裡每一顆動作在上游都是
 // `require_platform_admin`）。授權宣告掛在 `<dialog>` 上是「整顆彈窗的可見性」，與掛在窗內某顆鈕上的
-// 「那一顆按不按得動」是兩件事；全站目前只有那一顆彈窗整份被閘住，其餘 25 顆的 `<dialog>` 標籤上
-// 只有 `class` / `id` / `aria-labelledby` 三個屬性。
+// 「那一顆按不按得動」是兩件事；全站目前只有那一顆彈窗整份被閘住，其餘每一顆的 `<dialog>` 標籤上
+// 只有 `class` / `id` / `aria-labelledby` 三個屬性——**不寫死幾顆**（§3-2），反查指令是
+// `grep -rn '<dialog[^>]*data-' src --include=*.html`（只該命中 manage-tenant-modal 那一顆）。
 // 關閉鈕**寫那一行 `{% include %}`**，不要展開手抄：它是 `ui/modal-close` 的唯一正本，
 // 而 `.modals-wrap` 的直接子元素只准 modal-close ＋ `.modals-content` 兩個（測試會數）。
 //

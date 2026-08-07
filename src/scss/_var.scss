@@ -42,7 +42,10 @@
     --brand-text-hover: #036ca8; // 品牌色文字的 hover：對卡片 5.65:1
     --brand-ink: #13386f; // 深品牌：勾記 / radio 圓點 / 步驟條（深色下提亮）
     --brand-tint: #e7f7ff; // 品牌淡藍底（使用者泡泡 / selected / chip）
-    --brand-gradient: linear-gradient(to right, #0a62ac, #2ebbcf); // footer 底 / avatar / header 底線
+    // **只給不承載前景的裝飾**：目前的消費點是 header 與 chatbot-header 的 2px 底線（border-image）。
+    // footer 底與 faq 頭像原本也用它，已改純色 --brand——漸層兩端對比差很多（右端疊白 2.30:1），
+    // 承載文字或圖形記號時過不了 §4 的門檻。要放漸層之前先確認那一塊上面不會站東西。
+    --brand-gradient: linear-gradient(to right, #0a62ac, #2ebbcf);
 
     /* 狀態 state（皆為「填充」色，配 --on-accent 白字；warning 例外配 --on-warning 深字） */
     --success: #00881d; // 白字 4.63:1
