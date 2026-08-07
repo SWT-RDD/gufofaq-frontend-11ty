@@ -4,6 +4,13 @@
 // §9：頁面專屬樣式一律限定在該頁的 body class 底下（同 _guideline 收進 .guideline-page）。
 // 曾經這支靠 `.catalog-*` 前綴自律隔離 —— 前綴不是機制，撞名就外洩。
 body.catalog-page {
+    // **頁底要由 token 決定，不能落回 UA canvas。** 這一頁不走 page-shell（沒有 `.main` 的
+    // `background-color: var(--surface)`），全站唯一一頁沒有任何一層鋪滿的底——深色模式下
+    // canvas 由瀏覽器決定（Chromium 約 #121212、Firefox 約 #1c1b22），而卡片是
+    // --surface-raised(#1c1c1c)，在 Firefox 深色下「卡片浮在頁面之上」的高低差幾乎歸零。
+    background-color: var(--surface);
+    min-height: 100%;
+
     .catalog {
         max-width: 1040px;
         margin: 0 auto;

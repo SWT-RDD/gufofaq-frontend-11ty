@@ -92,8 +92,10 @@
             border-color: var(--border);
 
             &::before {
-                border-right-color: var(--control-knob);
-                border-bottom-color: var(--control-knob);
+                // 停用勾記走專用墨色（見 _var.scss）：白勾疊 --surface-disabled 只有 1.15:1，
+                // 淺色模式下「已勾且停用」與「未勾且停用」看起來一樣。
+                border-right-color: var(--control-ink-disabled);
+                border-bottom-color: var(--control-ink-disabled);
                 transform: translateX(-50%) rotate(45deg) scale(1);
             }
         }

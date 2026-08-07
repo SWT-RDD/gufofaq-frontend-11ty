@@ -419,7 +419,10 @@ permalink: 2-2-3_abTest.html
     }
 ] %}
 {% set sourcesHidden = true %}
-{% set sourcesInfo = "(設定A)" %}
+{# 這一格標的是「這是哪一側的來源」，不是挑選規則——故走 sourcesSideKey 那一支
+     （sources-block 檔頭）。「設定」是 chrome、走既有的 qaTest.setting；側別字母是資料。 #}
+{% set sourcesSideKey = "qaTest.settingSideA" %}
+{% set sourcesSideLabel = "（設定 A）" %}
 {% set sourcesInfoClass = "js-sources-side" %}
 {% include "components/sources-block/sources-block.html" %}
 

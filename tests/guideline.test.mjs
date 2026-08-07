@@ -2395,6 +2395,10 @@ const COLOR_ROLES = {
         // 那是「換了列底色就要重算該列所有前景」的實例（§4）——不登記的話這組疊法沒有任何測試看得到。
         ["--control-track", "--surface-sunken", "switch OFF 軌道 vs 已停用列底色"],
         ["--toggle-on", "--surface-sunken", "switch ON 軌道 vs 已停用列底色"],
+        // 停用**且已勾**的 checkbox：勾記是用兩條 border 畫出來的圖形記號，疊在停用底上。
+        // 原本沿用 --control-knob（白）疊 #efefef 只有 1.15:1，淺色模式下「已勾且停用」與
+        // 「未勾且停用」長得一模一樣，而深色是 12.83——光暗不對稱正是沒實算過的指紋。
+        ["--control-ink-disabled", "--surface-disabled", "checkbox 停用勾記 vs 停用底"],
     ],
     // chrome 零件：不承載內文，不做內文對比斷言（邊框/捲軸/tint/陰影/遮罩/漸層）。
     // --control-track-alt 是 storage-bar 填色後面的軌道：資訊由「填色 vs 軌道」承載（已在 graphicPairs），

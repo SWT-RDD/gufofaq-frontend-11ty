@@ -14,12 +14,20 @@ document.addEventListener("DOMContentLoaded", function () {
         }
         set(false);
 
-        li.addEventListener("mouseenter", function () { set(true); });
-        li.addEventListener("mouseleave", function () { set(false); });
-        li.addEventListener("focusin", function () { set(true); });
+        // CSS 的顯示條件是 `:hover` **或** `:focus-within`，所以 aria-expanded 也必須是那個 OR
+        // 的結果、不能由四個事件各自無條件覆寫：鍵盤 tab 進子選單（focus 撐開）之後滑鼠掠過該 li
+        // 再移開，`mouseleave` 會把它設成 false，而子選單還開著；反向（滑鼠停著、焦點移出）同理。
+        // hover 那一半直接問 CSS（§5：那個條件只有 CSS 那一份真相）；focus 那一半在 focusout 當下
+        // 還沒更新，故用 relatedTarget 判定焦點的去處。
+        function sync(focused) {
+            set(li.matches(":hover") || focused);
+        }
+        li.addEventListener("mouseenter", function () { sync(li.contains(document.activeElement)); });
+        li.addEventListener("mouseleave", function () { sync(li.contains(document.activeElement)); });
+        li.addEventListener("focusin", function () { sync(true); });
         li.addEventListener("focusout", function (event) {
-            // 焦點仍在本 li 內（例如移到子選單連結）就維持展開
-            if (!li.contains(event.relatedTarget)) set(false);
+            // 焦點仍在本 li 內（例如移到子選單連結）就算 focused
+            sync(li.contains(event.relatedTarget));
         });
     });
 });

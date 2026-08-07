@@ -1,8 +1,8 @@
 {# 跨設定檔複製 modal（NET-NEW 功能，非 11ty 給稿；此處補立切版正本以符轉換契約）。取自對話設定
      hub「檢索與欄位」子頁籤的「從其他設定檔複製…」鈕（.js-copy-config）：開窗需先選定「來源設定檔」
      ＝業務條件開窗，故該鈕保留 hook class、不掛 data-open-modal（GUIDELINE §5）。彈窗本體＝來源設定檔
-     選擇（排除目前檢視中的設定檔）＋六個地位平等、預設全勾的複製群組（依 GufoRAG chatbot COPY_GROUPS，
-     資料化於下方 configCopyGroups）。標題「複製到「<目標>」」的目標設定檔名是執行期資料：前後綴拆
+     選擇（排除目前檢視中的設定檔）＋**COPY_GROUPS 的每一組**（地位平等、預設全勾；依 GufoRAG chatbot
+     COPY_GROUPS，資料化於下方 configCopyGroups）。標題「複製到「<目標>」」的目標設定檔名是執行期資料：前後綴拆
      i18n key（§4-2），名字放 #configCopyTarget 資料槽由 React 填（同 delete-modal 的 deleteTargetId
      慣例），示範值＝5-2 檢視中的設置一。
      參數（示範開關；React 端為條件渲染，元件庫頁 set true 演出該分支）：
@@ -18,13 +18,21 @@
      現存唯一刻意差異：標題。product 走單一插值 key `settings.copyConfigModalTitle`（`複製到「{{target}}」`），
      切版拆成 `copyConfigModalTitlePrefix`／`Suffix` ＋ `#configCopyTarget` 資料槽——執行期資料不進譯文
      字串（§3-2/§4-2）；saas 的 `apps/web/lib/i18n/parity.test.ts` 已把這兩顆 key 登記為切版專屬。 #}
-{# 元件內部示範資料用元件專屬變數名（§6）：六個複製群組＝GufoRAG chatbot services/config.py 的 COPY_GROUPS #}
+{# 元件內部示範資料用元件專屬變數名（§6）。**這份清單是 GufoRAG chatbot `app/services/config.py` 的
+     `COPY_GROUPS` 的逐組投影**——不寫死「幾組」（§3-2 能不寫死計數就不要寫），但**每一組都要在**：
+     少一組＝那一組的設定複製時被靜默跳過，畫面上完全看不出來。上游自己也為這個失效模式立了守衛
+     （`tests/unit/test_config_copy.py::TestCopyGroupsRegistry` 要求 COPY_GROUPS ∪ COPY_EXCLUDED
+     恰等於 `ChatConfig.model_fields`）。
+     每一組的 label 是「這一組**包含什麼**」的如實列舉，所以上游往組裡加欄位時要回頭重讀——
+     round43 一次抓到三組在描述舊行為（glossary 沒提別名表那四欄、policy 少了出口替換與輸出規則、
+     retrieval 少了可回答性閘那三欄與分組 LLM／評測模型）。 #}
 {% set configCopyGroups = [
     { i18nKey: "settings.copyConfigGroupPrompts", label: "提示詞：五層系統提示詞（聊天室／產品／意圖／回答／Agent）、機器人人設、回答格式、歡迎語" },
-    { i18nKey: "settings.copyConfigGroupRetrieval", label: "檢索與生成：模型、溫度、取樣數（總數／選用數）、資料來源比例、知識模式、QA 直答模式與判準、重排序、記憶輪數、建議問題、標題自動命名（僅首次）、時區、搜尋模式與 Agent 迭代上限、引用、Langfuse 追蹤、資料集分層與逐層意圖、欄位顯示標籤" },
-    { i18nKey: "settings.copyConfigGroupPolicy", label: "合規：敏感詞、禁止主題、輸入擋下訊息、輸出擋下訊息" },
+    { i18nKey: "settings.copyConfigGroupRetrieval", label: "檢索與生成：模型與思考深度（主回答與各分組 LLM）、評測模型、溫度、取樣數（總數／選用數）、資料來源比例、知識模式、QA 直答模式與判準與門檻、可回答性閘模式與判準與門檻、重排序、記憶輪數、建議問題、標題自動命名（僅首次）、時區、搜尋模式與 Agent 迭代上限、引用、Langfuse 追蹤、資料集分層與逐層意圖、欄位顯示標籤、事實時效角色" },
+    { i18nKey: "settings.copyConfigGroupPolicy", label: "合規：敏感詞、禁止主題、輸入擋下訊息、輸出擋下訊息、出口替換規則、輸出規則" },
     { i18nKey: "settings.copyConfigGroupTools", label: "工具：內建工具啟停與客製設定、MCP 伺服器選用" },
-    { i18nKey: "settings.copyConfigGroupGlossary", label: "術語表綁定：本設定檔生效的術語表" },
+    { i18nKey: "settings.copyConfigGroupGlossary", label: "術語與別名綁定：本設定檔生效的術語表、綁定的別名表與比對／推理／出口三個套用階段" },
+    { i18nKey: "settings.copyConfigGroupSkills", label: "Skill 指派：本設定檔指派的租戶自訂 Skill" },
     { i18nKey: "settings.copyConfigGroupDatasetBinding", label: "答題索引綁定：答題索引、QA 直答索引" }
 ] %}
 <dialog class="modals" id="configCopyModal" aria-labelledby="configCopyModal-title">
