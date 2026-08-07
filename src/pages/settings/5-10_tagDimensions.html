@@ -72,7 +72,8 @@ permalink: 5-10_tagDimensions.html
      覆蓋率低的維度也可能不在上面——兩者不互相印證，示範資料刻意演出這件事。
      `文件密級` 是剛建好、還沒有人標的維度：0/132＝0%。**不能給它 `total: 0`**——
      `CoverageDimensionOut.total` 的註解逐字是「＝scan.examined」（tags.py），
-     `coverage=(tagged/examined) if examined else None`（:788-792）是**整份回應共用同一個
+     而 `coverage` 端點（同檔）逐維度算的是 `coverage=(tagged/examined) if examined else None`
+     ——**整份回應共用同一個
      `examined`**，所以「沒量到」是整份回應的狀態（examined==0 ⇒ 每一列都 null），
      不可能一列 0、其餘三列 132。混一列進來演的是端點產不出來的回應。
      `coveragePct` 是給條寬用的執行期尺寸（React 由 tagged / total 算出來，切版沒有算術可用
@@ -294,7 +295,7 @@ permalink: 5-10_tagDimensions.html
                 {% for dim in tagDimensions %}
                 {# 列內欄位不掛靜態 aria-label（§4）：三列的「維度名稱」「說明」會全部同名，
                      還會跟上方兩張新增表單的同名欄位一起撞。改成併讀「這一列是哪個槽 ＋ 這一欄是什麼」，
-                     正典就在本頁下方的篩選設定檔表（:422 一帶）。 #}
+                     正典就在本頁下方「標籤檢索過濾」那張表（`tagFilterProfileName-N` ＋ `tagFilterModeHead`）。 #}
                 <tr data-tag-dimension-id="{{ dim.id }}">
                     <td id="tagDimSlot-{{ loop.index }}">{{ dim.slotKey }}</td>
                     <td><input type="text" class="form-control" value="{{ dim.name }}" aria-labelledby="tagDimSlot-{{ loop.index }} tagDimNameHead"></td>

@@ -62,12 +62,23 @@ permalink: 5-6-3_platformServiceKeys.html
   { value: "health-scan", detail: "每日資料健檢全量重掃：POST /health/scan/daily，外加時區守門要讀的 GET /platform/timezone（僅這兩支）" }
 ] %}
 {# 盤點（`GET /platform/service-keys`）。示範三列，把三種狀態各演一次（GUIDELINE §5）：
-     · 第 1 列＝正在服役的那一把（`lastUsedAt` 有值且在前進）
-     · 第 2 列＝**同一個範圍的第二把**，剛核發、還沒有人用過（`lastUsedAt` 空）——輪替中間態，
+     · 已撤銷（`revokedAt` 有值），只有勾了「含已撤銷」才會出現＝#1
+     · 正在服役的那一把（`lastUsedAt` 有值且在前進）＝#3
+     · **同一個範圍的第二把**，剛核發、還沒有人用過（`lastUsedAt` 空）＝#8——輪替中間態，
        示範資料自己證明「一個範圍可以同時有多把有效憑證」
-     · 第 3 列＝已撤銷（`revokedAt` 有值），只有勾了「含已撤銷」才會出現
-     `keyHint` 是 product `security.platform_service_key_hint` 的形狀（前綴 ＋ … ＋ 末四碼）。 #}
+     `keyHint` 是 product `security.platform_service_key_hint` 的形狀（前綴 ＋ … ＋ 末四碼）。
+   **列序＝id 升冪**，那是端點自己的順序（`list_service_keys` 的
+     `select(PlatformServiceKey).order_by(PlatformServiceKey.id)`，platform.py）——沒有第二層排序、
+     也不是「新到舊」。原本排成 3 → 8 → 1（照「服役中→新核發→已撤銷」的敘事），那是這支端點
+     產不出來的順序（§6：演的必須是一個真實可能的畫面）。
+     id 升冪在這一頁剛好也是**核發時間升冪**（自增主鍵）：#1 2024/09/18 → #3 11/02 → #8 12/02，
+     所以輪替的故事照樣讀得出來——初版先撤銷、接手的那把在服役、最新那把剛核發還沒被用過。 #}
 {% set serviceKeys = [
+  {
+    id: 1, name: "每日健檢 CronJob（初版）", scope: "health-scan", keyHint: "psk_…10b4",
+    createdAt: "2024/09/18 16:03", createdBy: "7",
+    lastUsedAt: "2024/11/02 03:20", revokedAt: "2024/11/03 11:27", revokedBy: "7"
+  },
   {
     id: 3, name: "每日健檢 CronJob", scope: "health-scan", keyHint: "psk_…7f2a",
     createdAt: "2024/11/02 10:14", createdBy: "7",
@@ -77,11 +88,6 @@ permalink: 5-6-3_platformServiceKeys.html
     id: 8, name: "每日健檢 CronJob（輪替新把）", scope: "health-scan", keyHint: "psk_…c091",
     createdAt: "2024/12/02 09:41", createdBy: "7",
     lastUsedAt: "", revokedAt: "", revokedBy: ""
-  },
-  {
-    id: 1, name: "每日健檢 CronJob（初版）", scope: "health-scan", keyHint: "psk_…10b4",
-    createdAt: "2024/09/18 16:03", createdBy: "7",
-    lastUsedAt: "2024/11/02 03:20", revokedAt: "2024/11/03 11:27", revokedBy: "7"
   }
 ] %}
 

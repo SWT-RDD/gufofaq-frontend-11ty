@@ -5,16 +5,67 @@
 //  .ab-test-block .select-row .form-group .label，依 GUIDELINE §4「slot class」原則
 //  改為自己命名的 class，不指名 ui/form-control 的 .form-group/.label。）
 //
-// markup 契約（無 html 元件，§1-2；整段照抄）—— 2-2-3 的 A/B 兩側設定欄：
-//   <div class="ab-side" data-ab-side="A">                ← data-ab-side 是列鍵，A/B 各一份
-//     <div class="flex-row align-items-center gap-10 mb-10">
-//       <span class="text-lg text-bold text-blue" id="abSideLabel-A">…設定 A…</span>
-//     </div>
-//     <div class="form-group"><div class="label">
-//       <label class="control-label ab-field-label" for="…">…欄名…</label>
-//     </div>…</div>
+// markup 契約（無 html 元件，§1-2；整段照抄）—— 生產 markup 逐字寫在 2-2-3_abTest.html，
+// 從**承載樣式的最外層 `.block.ab-test-block` 寫起**（`.ab-side` / `.ab-field-label` 兩條規則都
+// 巢狀在 `.ab-test-block` 之內，從 `.ab-side` 抄起兩側不會等寬、標籤也不會有 108px 定寬）：
+//
+//   <div class="block ab-test-block flex-row gap-24 mobile-column">
+//       {% for ab in abSides %}
+//       <div class="ab-side" data-ab-side="{{ ab.side }}">
+//           <div class="flex-row align-items-center gap-10 mb-10">
+//               <span class="text-lg text-bold text-blue" id="abSideLabel-{{ ab.side }}"><span data-i18n="qaTest.setting">設定</span> {{ ab.side }}</span>
+//           </div>
+//           <div class="flex-row column gap-16" role="group" aria-labelledby="abSideLabel-{{ ab.side }}">
+//               <div class="form-group row mobile-col">
+//                   <div class="label ab-field-label flex-row">
+//                       <label for="abKnowledgeSelect-{{ ab.side }}" class="control-label" data-i18n="qaTest.knowledgeRetrieval">知識檢索</label>
+//                       <button type="button" class="info-btn" title="配置說明" data-i18n-title="qaTest.configInfo" data-open-modal="knowledgeModal">
+//                           <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+//                           <span class="sr-only" data-i18n="qaTest.configInfo">配置說明</span>
+//                       </button>
+//                   </div>
+//                   <div class="field">
+//                       <select id="abKnowledgeSelect-{{ ab.side }}" class="form-control singleSelect js-knowledge-select">
+//                           <option value="" data-i18n="common.pleaseSelect">請選擇</option>
+//                           <option value="配置一" data-i18n="settings.config1"{% if ab.knowledge == "配置一" %} selected{% endif %}>設置一</option>
+//                           <option value="配置二" data-i18n="settings.config2"{% if ab.knowledge == "配置二" %} selected{% endif %}>設置二</option>
+//                           <option value="配置三" data-i18n="settings.config3"{% if ab.knowledge == "配置三" %} selected{% endif %}>設置三</option>
+//                       </select>
+//                   </div>
+//               </div>
+//               <div class="form-group row mobile-col">
+//                   <div class="label ab-field-label">
+//                       <label for="abLlmSelect-{{ ab.side }}" class="control-label" data-i18n="qaTest.llmModel">LLM模型</label>
+//                   </div>
+//                   <div class="field">
+//                       <select id="abLlmSelect-{{ ab.side }}" class="form-control singleSelect js-llm-select">
+//                           <option value="" data-i18n="common.pleaseSelect">請選擇</option>
+//                           <option value="OpenAI gpt-4o-mini"{% if ab.llm == "OpenAI gpt-4o-mini" %} selected{% endif %}>OpenAI gpt-4o-mini</option>
+//                           <option value="OpenAI gpt-4o"{% if ab.llm == "OpenAI gpt-4o" %} selected{% endif %}>OpenAI gpt-4o</option>
+//                       </select>
+//                   </div>
+//               </div>
+//               （第 3～7 組欄位＝與上面第 2 組同型的重複節點：思考深度／對話模式／選用資料筆數／
+//                取用資料筆數／Agent 最大迭代次數。每一組都是同樣的
+//                `.form-group.row.mobile-col > .label.ab-field-label + .field`，只有 id、label 文字
+//                與 `.field` 內的控制項不同；第 1 組是唯一多帶 `.flex-row` 與一顆 ui/info-btn 的。）
+//           </div>
+//       </div>
+//       {% endfor %}
 //   </div>
-// 兩側的可及名稱靠 id="abSideLabel-<側>" 區分（§4：同頁同時可見、語意不同的控制項不得同名）。
+//
+// 三個容易抄錯的點：
+//   ⓐ **`.ab-field-label` 掛在外層 `<div class="label">` 上，不是 `<label class="control-label">` 上。**
+//      108px 是「欄名欄」的定寬，7 組全部靠它對齊；掛到內層的 `<label>` 會讓定寬落在文字節點上，
+//      欄位就對不齊了（而且第 1 組的 info-btn 會被擠出那 108px）。
+//   ⓑ **`role="group"` 那一層不可省。** 兩側的 7 組欄位標籤逐字相同、同頁同時可見，只靠 `id` 唯一
+//      救不了可及名稱（§4）；group 用 `aria-labelledby="abSideLabel-<側>"` 指回本側標題。
+//      group 只框那一組欄位——底下的動作鈕列在容器外（§4：group 不得框到不屬於那一組的東西）。
+//   ⓒ 兩側的可及名稱靠 id="abSideLabel-<側>" 區分（§4：同頁同時可見、語意不同的控制項不得同名）。
+//
+// 住在哪一頁（雙向）：只有 2-2-3_abTest（AB 測試）。
+// 反查：`grep -rln 'ab-test-block|ab-side|ab-field-label' src --include=*.html` 除該頁之外，
+// 只多命中元件庫頁——那是「語意變體由各自的元件提供」那一行說明文字，不是實例。
 .ab-test-block {
     .ab-side {
         flex: 1 1 0;

@@ -4,7 +4,21 @@
 // 3-4 的裸 <code> 什麼都沒有）——§4「兩個以上元件必須同值的東西抽成共用正本」，故升格成 ui 原子。
 //
 // 無 html 檔：它是「直接在 markup 寫 class」的單元素原子（同 ui/button／ui/block 的用法）。
-// markup 契約：`<code class="inline-code">refund-flow</code>`。
+//
+// markup 契約（無 html 元件，§1-2；整段照抄）—— 單一元素，沒有祖先要求、沒有子節點。
+// 迴圈內（值來自資料）與寫死字面量兩種寫法都有，逐字如下（取自 3-4 與元件庫頁）：
+//
+//   <td><code class="inline-code">{{ skill.name }}</code></td>
+//   <code class="inline-code">some_future_decision</code>
+//
+// 內文是**識別字本身**（skill 名、工具名、參數名、原因代碼、端點路徑），是資料
+// ⇒ **不掛 `data-i18n`**。
+// 它是行內元素，可以直接放進句子裡（`<p>`／`<td>`／`<li>` 內皆可），不要再包一層。
+//
+// 住在哪一頁：**清單會失控**（11 個檔案在用、每加一個識別字就多一處），故給判準句而不是清單——
+// 判準：**凡是句子裡要指名一個識別字（而不是描述一個概念）的地方就用它**；反過來，
+// 不是識別字的名詞不要包（包了會讓真正的識別字失去辨識度）。
+// 反查現況：`grep -rl 'inline-code' src --include=*.html`。
 //
 // 唯一還留在別處的一份是 chat-message 的 markdown `code`：那顆元素由 markdown renderer 產生、
 // 掛不上 class，故它只能自己寫規則——但值以本檔為準（見該檔註解），不再各自漂移。

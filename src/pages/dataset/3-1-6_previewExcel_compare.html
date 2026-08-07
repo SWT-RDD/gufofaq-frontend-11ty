@@ -31,14 +31,23 @@ permalink: 3-1-6_previewExcel_compare.html
 {# 比對資料表格：欄位為「動態」——由帳號的欄位對照（document_field_mapping）決定有哪些欄與各欄顯示名，
      非固定欄。以 set columns（key＝原始欄、label＝顯示名）+ set rows（每列以 key 取值）示範，
      渲染時 thead/tbody 皆對 columns 迴圈（→ React 直接 .map()）。每欄皆可排序（th-sort + icon）。
-     class 沿用 ui/default-table。示範資料含「供應商 / 價格」等自訂欄，凸顯欄位由對照表決定。 #}
+     class 沿用 ui/default-table。示範資料含「供應商 / 價格」等自訂顯示名，凸顯**顯示名**由對照表決定。
+     ⚠️ **`key` 不是自由字串，是固定欄位槽的槽名**（值域＝ui/field-slot-catalog，那是
+     product `app/field_schema.py` 的 `SLOTS` 22 槽在本 repo 的唯一正本）。對照表能改的是
+     `label`（租戶自己取的顯示名），不是槽名——槽名是欄位在資料層的身分。
+     本輪把四個不在值域裡的 key 換成真的槽（label 一個字都沒動，畫面完全一樣）：
+     `time`→`date`、`image`→`note1`、`supplier`→`note2`、`price`→`number`
+     （`number` 是數值槽，正好承載「價格」；圖片網址與供應商沒有專屬槽，落在通用備註槽，
+     那也是真實租戶會做的事）。
+     為什麼一定要改：槽名寫錯在 React 端是**靜默空白**——`row[col.key]` 取不到值就渲染成空字串，
+     不報錯、不警告，而這一頁的全部價值就是讓人確認「對照表有沒有接錯欄」。 #}
 {% set columns = [
     { key: "title", label: "標題" },
-    { key: "time", label: "時間" },
+    { key: "date", label: "時間" },
     { key: "content", label: "內容" },
-    { key: "image", label: "圖片網址" },
-    { key: "supplier", label: "供應商" },
-    { key: "price", label: "價格" }
+    { key: "note1", label: "圖片網址" },
+    { key: "note2", label: "供應商" },
+    { key: "number", label: "價格" }
 ] %}
 {# 「原始資料」面板的表頭＝活頁簿自己的欄名（product 的 annotated_titles），值＝同一批儲存格
      （col_contents）。它與「比對資料」的差別只在表頭：一邊是欄位對照後的顯示名、一邊是原始欄名
@@ -50,17 +59,19 @@ permalink: 3-1-6_previewExcel_compare.html
      原始欄名是活頁簿的資料，不翻（§4-2）；括號裡的顯示名沿用 columns 的 label。 #}
 {% set rawTitles = [
     { key: "title", raw: "商品名稱", label: "標題" },
-    { key: "time", raw: "建立日期", label: "時間" },
+    { key: "date", raw: "建立日期", label: "時間" },
     { key: "content", raw: "商品說明", label: "內容" },
-    { key: "image", raw: "圖片連結", label: "圖片網址" },
-    { key: "supplier", raw: "供應商名稱", label: "供應商" },
-    { key: "price", raw: "單價", label: "價格" },
+    { key: "note1", raw: "圖片連結", label: "圖片網址" },
+    { key: "note2", raw: "供應商名稱", label: "供應商" },
+    { key: "number", raw: "單價", label: "價格" },
     { key: "barcode", raw: "條碼" }
 ] %}
+{# 列物件的鍵＝上面兩張表用的槽名（`barcode` 例外：它沒被對照表接走，不是槽，只在原始面板出現）。
+     鍵與 columns/rawTitles 的 key 必須是同一組字串，否則整欄靜默空白（見 columns 那段）。 #}
 {% set rows = [
-    { title: "商品編號 A001", time: "2025/12/10 15:44", content: "無線藍牙耳機，續航 24 小時", image: "https://example.com/img/a001.jpg", supplier: "宏興電子", price: "990", barcode: "4710012340015" },
-    { title: "商品編號 A002", time: "2025/12/10 15:44", content: "保溫瓶 500ml，316 不鏽鋼內膽", image: "https://example.com/img/a002.jpg", supplier: "日商生活", price: "450", barcode: "4710012340022" },
-    { title: "商品編號 A003", time: "2025/12/10 15:44", content: "USB-C 充電線 1.5M", image: "https://example.com/img/a003.jpg", supplier: "宏興電子", price: "199", barcode: "4710012340039" }
+    { title: "商品編號 A001", date: "2025/12/10 15:44", content: "無線藍牙耳機，續航 24 小時", note1: "https://example.com/img/a001.jpg", note2: "宏興電子", number: "990", barcode: "4710012340015" },
+    { title: "商品編號 A002", date: "2025/12/10 15:44", content: "保溫瓶 500ml，316 不鏽鋼內膽", note1: "https://example.com/img/a002.jpg", note2: "日商生活", number: "450", barcode: "4710012340022" },
+    { title: "商品編號 A003", date: "2025/12/10 15:44", content: "USB-C 充電線 1.5M", note1: "https://example.com/img/a003.jpg", note2: "宏興電子", number: "199", barcode: "4710012340039" }
 ] %}
 <div class="tab-content" id="panelCompare">
 {# 所有排序鈕共用的「排序」字樣（可及名稱組成「<欄名> 排序」）；一頁一份，不逐鈕複製 #}

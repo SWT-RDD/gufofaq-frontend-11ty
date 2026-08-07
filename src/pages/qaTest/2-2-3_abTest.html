@@ -29,7 +29,7 @@ permalink: 2-2-3_abTest.html
      避免整段複製貼上。每側比照對話設定頁：可切換對話模式、逐欄模式適用性（取用資料筆數僅傳統、Agent
      最大迭代次數僅 Agent，modeMatrix 見 gufofaq-saas docs/mode-matrix.md）；設定為臨時，底部「回復儲存的
      設定」隨時回復已儲存值。提示詞是**就地寫的常駐 textarea**、不走 components/prompt-edit
-     （理由見下方 :140 的註解：那是版本管理型編輯器，測試頁只要常駐展開的輸入框），
+     （理由見下方「提示詞（測試用，常駐展開輸入框）」那則註解：那是版本管理型編輯器，測試頁只要常駐展開的輸入框），
      套用/回復/儲存版本三鈕移到每側底部同排（使用者定案）。 #}
 {# 兩側的**差異**要放進資料：控制項全部渲染成同一組預設值、下面兩則回覆卻標著不同的設置與
      提示詞版本，那不是一個真實可能的狀態（§6），AB 測試的用途也演不出來。
@@ -216,8 +216,8 @@ permalink: 2-2-3_abTest.html
                                         <div class="ab-compare-item">
                                             <div class="message-content in-compare">
                                                 <div class="robot-msg">
-                                                    {# 「設定」與「設置一/二」在本頁其他地方都是 chrome（:45 的 qaTest.setting、比較彈窗的
-                                                         settings.config1）——只有這裡是裸繁中，英文模式會同頁出現 Setting A 與「設定A（設置一」。
+                                                    {# 「設定」與「設置一/二」在本頁其他地方都是 chrome（每側卡片標題的 qaTest.setting、
+                                                         比較彈窗的 settings.config1）——只有這裡是裸繁中，英文模式會同頁出現 Setting A 與「設定A（設置一」。
                                                          `configKey` 原本 set 了零消費者，接上去它就有主人了。 #}
                                                     <p class="item-title" id="abAnswerTitle-{{ abSides[0].side }}"><span data-i18n="qaTest.setting">設定</span>{{ abSides[0].side }}（<span data-i18n="{{ abSides[0].configKey }}">{{ abSides[0].configLabel }}</span>，{{ abSides[0].promptVersion }}）</p>
                                                     <div class="item-content">

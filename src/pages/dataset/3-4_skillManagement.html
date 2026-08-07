@@ -35,7 +35,7 @@ permalink: 3-4_skillManagement.html
      迭代上限）在建立後於編輯器內完成——一次要填的欄位太多會讓建立這件事變得沉重。
      四態 toast：成功／必填未填／名稱格式或重名／失敗。守衛全在 chatbot——
      `_validate_name`（GufoRAG skills.py，`SKILL_NAME_RE` 格式與同租戶重名各一道）與
-     `_validate_description`（:159-169，空值），product `skills.py` 的 `_as_bad_request`
+     `_validate_description`（同檔，空值），product `skills.py` 的 `_as_bad_request`
      把 `RuntimeError` 映成 400。product 自己的 create 只做 `.strip()`，不驗空名。 #}
 <div class="block mb-16 flex-row column gap-16">
     <div class="text-md text-bold" data-i18n="settings.addSkill">新增 Skill</div>
@@ -140,26 +140,42 @@ permalink: 3-4_skillManagement.html
    執行流程沿用既有 components/step-flow，但**節點與摘要一起覆寫**（§6 成對規則）：元件內建示範是
      移民主題（配 2-2-1），而本頁演的是 refund-flow 的試跑——沿用預設會出現「試跑退款 skill、
      檢索卻在查新住民結婚」這種不可能的一輪。本頁示範同時演到 skill 子樹的三階縮排
-     （refund-flow → lookup-order → 它的工具呼叫）與 skill 失敗的明細列。 #}
+     （refund-flow → lookup-order → 它的工具呼叫）與 skill 失敗的明細列。
+
+   ⚠️ **「檢索知識庫」是 skill 子樹的宿主節點，所以它一定跑過**：saas `apps/web/lib/stepFlow.ts` 的
+     `SKILL_HOST_STEP_ID = "retrieve"`（＝這一站），註解逐字寫著「skill 一定是在工具節點裡被呼叫的」，
+     `attachSkillSteps` 把 parent 為空或指不到人的 skill 步驟一律掛到它底下。
+     原本這一列標 `skipped` ＋ time 空白，底下卻掛著一棵 1.9s 的子樹——「這一站本輪沒有執行」
+     與「它底下執行了 1.9 秒」不可能同時成立（§6）。
+     改成 completed ＋ `1.95s`：子樹 1.9s ⊆ 父節點 1.95s，而正典節點的和
+     10 ＋ 280 ＋ 1,950 ＋ 150 ＝ 2,390ms ≤ 摘要的延遲 2.8s（生成答案 skipped、誠實查無還在跑）。
+   同理 `verdict`：可回答性判定的值域是 chatbot `services/grounding.py` 的 `GroundingVerdict`，
+     **只有 `generate` 與 `no_answer` 兩顆**（`insufficient` 不存在）。這一輪走誠實查無
+     ⇒ `no_answer（素材不足以回答）`，與下一列「生成答案 skipped、誠實查無 running」是同一件事的兩個畫面。 #}
 {% set stepFlowNodes = [
   { label: "初始化對話", state: "completed", time: "10ms" },
   { label: "Agent 推理", state: "completed", time: "280ms", thinking: "使用者問「能退多少錢」，用途說明命中 refund-flow，決定呼叫它。" },
-  { label: "檢索知識庫", state: "skipped", time: "" },
+  { label: "檢索知識庫", state: "completed", time: "1.95s" },
   { label: "skill：refund-flow", state: "failed", time: "1.9s", depth: 1, skill: "refund-flow", version: "v2", iterations: "2", tools: "lookup-order, calculate", error: "RuntimeError: 退貨政策表讀取逾時" },
   { label: "Agent 推理", state: "completed", time: "240ms", depth: 2, thinking: "先用 lookup-order 取訂單金額，再依退貨政策試算。" },
   { label: "skill：lookup-order", state: "completed", time: "430ms", depth: 2, skill: "lookup-order", version: "v1", iterations: "1", tools: "search_knowledge_base" },
-  { label: "呼叫工具", state: "completed", time: "180ms", depth: 3, tools: "search_knowledge_base" },
+  { label: "呼叫工具", state: "completed", time: "180ms", depth: 3, tools: "search_knowledge_base", result: "命中 4 筆訂單紀錄片段（相似度 0.74–0.91），取得訂單金額、狀態與品項。" },
   { label: "呼叫工具", state: "completed", time: "95ms", depth: 2, tools: "calculate" },
-  { label: "可回答性判定", state: "completed", time: "150ms", verdict: "insufficient（skill 未完成，素材不足）" },
+  { label: "可回答性判定", state: "completed", time: "150ms", verdict: "no_answer（素材不足以回答）" },
   { label: "生成答案", state: "skipped", time: "" },
   { label: "誠實查無", state: "running", time: "" },
   { label: "生成推薦問題", state: "pending", time: "" },
   { label: "完成對話", state: "pending", time: "" },
   { label: "輸出合規檢查", state: "pending", time: "" }
 ] %}
-{# 檢索被略過，故摘要的檢索筆數是 0（§6：摘要要與節點對得上）。 #}
+{# 摘要要與節點對得上（§6）。檢索筆數＝這一輪搜尋工具真的回給模型的片段數，而搜尋收集器是
+     **父 agent 與 skill 子圖共用的同一顆**（GufoRAG chatbot `agent_service.seen_document_ids`
+     逐字寫著這件事）⇒ lookup-order 子迴圈裡那一次 `search_knowledge_base` 的 4 筆要算進來，
+     這一輪也只有那一次搜尋 ⇒ **4**。
+     原本寫 0，前提是「檢索被略過」——那個前提本身就是上面那個矛盾（見節點陣列上方的說明）。
+     延遲 2.8s ≥ 正典節點的和 2,390ms；ttft「—」＝還沒吐出第一個字（誠實查無 running）。 #}
 {% set stepFlowSummary = {
-    tokens: "612", latency: "2.8s", ttft: "—", results: "0", model: "openai:gpt-4o-mini"
+    tokens: "612", latency: "2.8s", ttft: "—", results: "4", model: "openai:gpt-4o-mini"
 } %}
 {# 這一輪演的是 refund-flow **失敗**（生成答案 skipped、誠實查無 running、ttft「—」），
      所以答案槽不能沿用元件內建那段「本次可退金額為 1,280 元」的成功答案——過程與產出

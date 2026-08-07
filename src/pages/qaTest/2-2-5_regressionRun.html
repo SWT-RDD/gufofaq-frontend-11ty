@@ -67,7 +67,9 @@ permalink: 2-2-5_regressionRun.html
     </div>
     <div class="flex-row gap-24 flex-wrap">
         <p><span class="text-bold" data-i18n="regression.suiteName">案例集名稱</span><span>：關稅問答基準集</span></p>
-        <p><span class="text-bold" data-i18n="qaTest.knowledgeRetrieval">知識檢索</span><span>：</span><span data-i18n="settings.config1">設置一</span></p>
+        {# 冒號不折進 key：qaTest.knowledgeRetrieval 同時是 2-2-1／2-2-3 的欄位標籤與 2-2-4 的表頭（§4-2 例外——
+             標點屬版面，折了會污染那幾處）。分隔符走 common.labelSep，裸的全形「：」在英文模式會原樣印出來。 #}
+        <p><span class="text-bold" data-i18n="qaTest.knowledgeRetrieval">知識檢索</span><span data-i18n="common.labelSep">：</span><span data-i18n="settings.config1">設置一</span></p>
         <p><span class="text-bold" data-i18n="regression.configVersion">設定版本</span><span>：7</span></p>
         <p><span class="text-bold" data-i18n="qa.startTime">開始時間</span><span>：2026/07/27 18:40</span></p>
         <p><span class="text-bold" data-i18n="qa.endTime">結束時間</span><span>：2026/07/27 18:52</span></p>
@@ -102,6 +104,10 @@ permalink: 2-2-5_regressionRun.html
           的版面上會直接消失；並排時它是一格「—」，看得見；
        ③ 這張表沒挑基準時就已經是逐旋鈕一列，多一欄是同一張表加寬，不是第二種版面。
 
+     ⚠️ `指派 Skill` 那一列印的是 **Skill 主鍵**，值域正本是 3-4 的管理表（11／12／13）。原本寫
+     「3、7」——那兩個號碼在那份庫裡不存在，而這一欄的用途正是「這一輪掛了哪幾顆 skill」。
+     改成 11（refund-flow），與 5-2 設置一的「指派 Skill」目前的勾選一致（這一輪跑的就是設置一，
+     而這一欄標著「沿用設定檔」）。
      示範自洽（§6）：#311 明確指定了提示詞／LLM模型／對話模式／取用資料筆數四個，其餘五個沿用
      ——對得上 2-2-4 的「這一次明確指定的旋鈕：4 個」。與基準 #310 相比有 3 個不同
      （提示詞／LLM模型／取用資料筆數），對得上下方「有 3 個旋鈕不同」那一句。 #}
@@ -114,7 +120,7 @@ permalink: 2-2-5_regressionRun.html
   { field: "search_selected_number", labelKey: "settings.searchSelectedNumber", label: "選用資料筆數", baseline: "8", value: "8", diffKey: "regression.effectiveDiffSame", diff: "相同", diffClass: "is-muted", sourceKey: "regression.overrideInherit", source: "沿用設定檔", sourceClass: "is-muted" },
   { field: "data_source_ratio", labelKey: "settings.dataSourceRatio", label: "資料來源比例（主題／向量）", baseline: "0.25", value: "0.25", diffKey: "regression.effectiveDiffSame", diff: "相同", diffClass: "is-muted", sourceKey: "regression.overrideInherit", source: "沿用設定檔", sourceClass: "is-muted" },
   { field: "agent_max_iterations", labelKey: "qaTest.agentMaxIter", label: "Agent 最大迭代次數", baseline: "5", value: "5", diffKey: "regression.effectiveDiffSame", diff: "相同", diffClass: "is-muted", sourceKey: "regression.overrideInherit", source: "沿用設定檔", sourceClass: "is-muted" },
-  { field: "skill_ids", labelKey: "settings.assignedSkills", label: "指派 Skill", baseline: "3、7", value: "3、7", diffKey: "regression.effectiveDiffSame", diff: "相同", diffClass: "is-muted", sourceKey: "regression.overrideInherit", source: "沿用設定檔", sourceClass: "is-muted" }
+  { field: "skill_ids", labelKey: "settings.assignedSkills", label: "指派 Skill", baseline: "11", value: "11", diffKey: "regression.effectiveDiffSame", diff: "相同", diffClass: "is-muted", sourceKey: "regression.overrideInherit", source: "沿用設定檔", sourceClass: "is-muted" }
 ] %}
 <div class="block mt-16 flex-row column gap-16">
     <div class="text-md text-bold" data-i18n="regression.effectiveSection">這一輪實際用的設定</div>
@@ -164,7 +170,13 @@ permalink: 2-2-5_regressionRun.html
      示範自洽（GUIDELINE §6）：通過 8 ＋ 未通過 2 ＝ 總數 10；有分數 8 ＋ 評審未完成 1
      ＝ 有 judge 判準的 9 則，剩下 1 則沒有 judge 判準（＝逐案例區的 #34）。
      逐案例區只列 3 則當版型示範，**不是比例縮影**——挑的是三種評審狀態各一則
-     （有分數／無主觀分／評審未完成），讓每個分支都有畫面演得出來（§5）。 #}
+     （有分數／無主觀分／評審未完成），讓每個分支都有畫面演得出來（§5）。
+
+     「送出的前置對話」＝`summary.context_turns_sent`＝**跑完的那幾則**逐則相加
+     （`_summary` 的 `sum(r["context_turns_sent"] for r in rows)`，而 `_replay_case` 寫進去的是
+     `len(turns) - 1`＝那一則的前置輪數）。母體與上界都在 2-2-4：這一套 12 則裡帶前置的有 4 則、
+     逐則 5（#36）＋2（#39）＋1（#35）＋1，四則的 id 都 < 41（中斷點）⇒ 這一次都跑完了
+     ⇒ 5＋2＋1＋1 ＝ **9**。原本寫 6：那是一個整套案例集湊不出來的數字（當時全套的和是 5）。 #}
 <div class="block mt-16 flex-row column gap-16">
     <div class="text-md text-bold" data-i18n="regression.summary">執行摘要</div>
     <div class="flex-row gap-24 flex-wrap">
@@ -172,7 +184,7 @@ permalink: 2-2-5_regressionRun.html
         <p><span class="text-bold" data-i18n="regression.summaryPassed">通過：</span><span>8</span></p>
         <p><span class="text-bold" data-i18n="regression.summaryFailed">未通過：</span><span>2</span></p>
         <p><span class="text-bold" data-i18n="regression.summaryJudgeAvg">主觀分平均：</span><span>4.1</span></p>
-        <p><span class="text-bold" data-i18n="regression.summaryContextTurns">送出的前置對話：</span><span>6</span><span data-i18n="regression.turnsUnit"> 輪</span></p>
+        <p><span class="text-bold" data-i18n="regression.summaryContextTurns">送出的前置對話：</span><span>9</span><span data-i18n="regression.turnsUnit"> 輪</span></p>
     </div>
     {# judge_avg 的分母要講出來，否則「4.1」讀起來像是全部案例的平均。 #}
     <p class="text-gray"><span data-i18n="regression.judgeAvgBasePrefix">主觀分平均只算有分數的 </span><span>8</span><span data-i18n="regression.judgeAvgBaseMid"> 則；另有 </span><span>1</span><span data-i18n="regression.judgeAvgBaseSuffix"> 則評審未完成，沒有被當成 0 分拉低平均。評審未完成的案例：</span><span>#35</span></p>
@@ -181,7 +193,15 @@ permalink: 2-2-5_regressionRun.html
 {# ── 上限與截斷 ─────────────────────────────────────────────────────────────
      `summary.limits` 原樣攤在消費點。`upstream_memory_count` 是**上游的截斷**：chatbot 只把
      最近 N 輪餵進提示詞，前置輪數 ＋ 本題超過它的案例，最早那幾輪不會出現在 LLM 眼前——
-     本引擎攔不住它，但逐案例點名，讓「這個追問案例好像沒有承接前文」有地方查。 #}
+     本引擎攔不住它，但逐案例點名，讓「這個追問案例好像沒有承接前文」有地方查。
+
+     被點名的是誰**推導得出來**（§3-2）：product `_limits` 收的是
+     `len(context_turns) + 1 > memory_count` 的案例，母體是這一次排進佇列的全部 12 則
+     （不是只有跑完的那 10 則）。記憶輪數 5（＝設定檔的 `memory_count`，見 5-2 的 `#genMemory`）
+     ⇒ 門檻是「前置 ≥ 5 輪」。2-2-4 那一套逐則前置輪數是 5（#36）／2（#39）／1（#35）／1，
+     故這份清單恰好只有 **#36**（5＋1＝6 > 5）。
+     原本寫 `#7、#19`：那兩個號碼不在這一套案例集的 id 範圍內，而且當時全套最大只有 2 輪
+     ——依上式那份清單只能是空的，等於這一段紅字演的是一個產不出來的狀態。 #}
 {% set runLimitRows = [
   { labelKey: "regression.limitCases", label: "單次執行案例上限：", value: "200", unitKey: "regression.casesUnit", unit: " 則" },
   { labelKey: "regression.limitContextTurns", label: "前置對話上限：", value: "10", unitKey: "regression.turnsUnit", unit: " 輪" },
@@ -196,7 +216,7 @@ permalink: 2-2-5_regressionRun.html
         <p><span class="text-bold" data-i18n="{{ limit.labelKey }}">{{ limit.label }}</span><span>{{ limit.value }}</span><span data-i18n="{{ limit.unitKey }}">{{ limit.unit }}</span></p>
         {% endfor %}
     </div>
-    <p class="text-red"><span data-i18n="regression.overMemoryPrefix">這幾則案例的「前置輪數 ＋ 本題」超過上游記憶輪數，最早那幾輪不會進到模型眼前：</span><span>#7、#19</span></p>
+    <p class="text-red"><span data-i18n="regression.overMemoryPrefix">這幾則案例的「前置輪數 ＋ 本題」超過上游記憶輪數，最早那幾輪不會進到模型眼前：</span><span>#36</span></p>
 </div>
 
 {# ── 匯出 ───────────────────────────────────────────────────────────────────
@@ -239,7 +259,7 @@ permalink: 2-2-5_regressionRun.html
         </div>
     </div>
     {# 基準那一次自己的狀態也要看得見，否則 partial 會被當成 complete。 #}
-    <p class="text-gray"><span data-i18n="regression.baselineStatePrefix">基準 </span><span>#310</span><span data-i18n="regression.baselineStateMid"> 的狀態是 </span><span data-i18n="regression.statusFinished">完成</span><span data-i18n="regression.baselineStateRan">，跑完 </span><span>10</span><span data-i18n="regression.casesUnit"> 則</span></p>
+    <p class="text-gray"><span data-i18n="regression.baselineStatePrefix">基準 </span><span>#310</span><span data-i18n="regression.baselineStateMid"> 的狀態是 </span><span data-i18n="regression.statusFinished">完成</span><span data-i18n="regression.baselineStateRan">，跑完 </span><span>12</span><span data-i18n="regression.casesUnit"> 則</span></p>
     {# 命中清單為什麼要兩側並排，以及它有上界這件事——講在比較區塊的入口，不是只寫在某一格裡。 #}
     <p class="text-gray" data-i18n="regression.hitsWhy">下面每一塊多了「基準引用」與「這一次引用」兩欄：退步最常見的原因就是「以前引 A、現在引 B」，而那只有兩側擺在一起才看得出來。逐筆命中只留文件身分與來源線索（不存全文），而且每一則有筆數上界——被夾掉時那一格會明說共幾筆，不要把它讀成「只引了這幾份」。</p>
 </div>
@@ -250,12 +270,26 @@ permalink: 2-2-5_regressionRun.html
      各自成塊。每一塊是一個有名字的 region，這樣輔具可以直接跳到「退步」那一塊。
 
      示範自洽（§6）：令 c＝兩邊都有結果、a＝只有這一次有、b＝只有基準有。
-     這一次跑完 10 ＝ c ＋ a、基準跑完 10 ＝ c ＋ b、沒得比 2 ＝ a ＋ b ⇒ **c ＝ 9**。
-     故三個桶子只能加到 9：退步 1 ＋ 修好 1 ＋ 無變化 7。
-     a＝#36（案例在基準之後才建立），b＝#42（在中斷點之後，這一次沒跑到）。
-     **切點一致性**：中斷在「案例 41 的第 1 輪」，而 product 扣額度失敗就 `_abort` ＋ `db.rollback()`、
-     跑完一則才 commit ⇒ **id ≥ 41 的案例這一次一則結果都沒有**。所以退步／評審未完成／逐案例結果
-     一律用 id < 41 的案例，#42／#43 這種切點之後的只能落在「這一次沒跑到」。 #}
+     這一次跑完 10 ＝ c ＋ a、基準 #310 跑完 12 ＝ c ＋ b、沒得比 2 ＝ a ＋ b。
+
+     **a 只能是 0，這是結構事實、不是挑的**：`run_suite` 以 `.order_by(models.TestCase.id)` 逐則跑、
+     跑完一則才 `db.commit()`、`_abort` 先 `db.rollback()` ⇒ **任何一次執行的結果集都是案例集
+     id 序的前綴**；而有結果的案例刪不掉（`delete_case` 對 `RegressionResult` 有列時回 409
+     `case_has_results`）⇒ 案例集只會往後長，前綴之間必然一個包含另一個。
+     這一次跑到 41 就中斷（前綴＝id < 41 的 10 則），基準跑完全部 12 則 ⇒ 這一次的結果集 ⊂ 基準的
+     ⇒ a＝0、b＝2 ⇒ **c ＝ 10**，三個桶子加到 10：退步 1 ＋ 修好 1 ＋ 無變化 **8**。
+     b＝#41、#42（都在中斷點之後，這一次沒跑到）。
+
+     **代價寫在這裡**：`not_compared` 的另一個方向（`absent_in_baseline`＝「基準沒有它」，見
+     `_compare_runs` 的 `"absent_in_baseline" if missing_baseline else "absent_in_this_run"`）
+     從此全站沒有頁面演得到——單一中斷點下它與本頁互斥：要演它，得讓**基準**是被截短的那一次，
+     而本頁刻意演的就是「中斷過的執行」（那是唯一會讓報表說謊的狀態）。上一版兩個方向同時出現，
+     等於同時宣告兩次執行互相不包含，前綴性質下產不出來。
+     （連帶：`regression.reasonAbsentInBaseline` 這顆 key 失去唯一的引用點，依 §4-2 孤兒 key 規則
+     從 en.json 移除；那一態要回來的話，key 與英文一起補回。）
+
+     **切點一致性**：中斷在「案例 41 的第 1 輪」⇒ id ≥ 41 的案例這一次一則結果都沒有。所以退步／
+     評審未完成／逐案例結果一律用 id < 41 的案例，#41／#42 只能落在「這一次沒跑到」。 #}
 {# 「引用的文件」兩欄的示範刻意演四種狀態（GUIDELINE §6）：
      #39 兩側引到不同文件（＝「以前引 A、現在引 B」，退步的核心線索）、
      #38 基準零命中、#37 兩側相同、#40 這一次被夾掉（格子裡明說列了幾筆／實際幾筆）。
@@ -280,7 +314,7 @@ permalink: 2-2-5_regressionRun.html
   },
   {
     key: "unchanged", titleKey: "regression.bucketUnchanged", title: "無變化",
-    tagClass: "is-muted", count: "7",
+    tagClass: "is-muted", count: "8",
     whyKey: "regression.bucketUnchangedWhy", why: "兩次的確定性判定相同（含兩次都沒過）。這一塊不含「沒得比」與「評審整批壞掉」——那兩件事各自在上面。",
     rows: [
       { caseNo: "#37", question: "鋼品的稅則號列怎麼查", before: "通過", beforeKey: "regression.verdictPass", beforeClass: "is-pass", after: "通過", afterKey: "regression.verdictPass", afterClass: "is-pass", beforeHits: "稅則號列對照.xlsx", afterHits: "稅則號列對照.xlsx", detail: "" },
@@ -288,14 +322,14 @@ permalink: 2-2-5_regressionRun.html
     ]
   }
 ] %}
-{# 「基準沒有它」那一筆的號碼**必須大於基準跑過的所有案例**：TestCase.id 是自增主鍵，本頁整段
-     推論（含「id ≥ 41 的案例這一次一則結果都沒有」）都建立在 id＝建立順序上。挑一個比 #37～#40
-     小的號碼，等於同時宣告「它比那幾則早建立」又「它在基準之後才建立」——兩件事不可能同時成立
-     （§6 示範資料演的必須是一個真實可能的狀態）。基準 #310 跑完 10 則、案例集現在 12 則，
-     故基準之後新增的就是最後那兩則（#41／#42）。 #}
+{# 這兩列**只能是同一個方向**（理由見上一段的前綴推導）：基準跑完 12 則、這一次停在 41，
+     所以缺的那一邊永遠是「這一次」。號碼也跟著推導走——中斷點在 41 ⇒ 缺的恰好是 id ≥ 41 的
+     #41 與 #42，一則不多一則不少（沒得比的計數 2 就是這樣來的，不是另外填的數字）。
+     列序照 `_compare_runs` 走訪結果的 case_id 升冪（同一份比較的其餘桶子也是），
+     故 #41 在 #42 前面。 #}
 {% set notComparedRows = [
-  { caseNo: "#42", question: "鋁材的反傾銷稅率", reasonKey: "regression.reasonAbsentInThisRun", reason: "這一次沒跑到", detail: "這一次沒有跑到這則案例（執行中斷）——它有沒有回歸，這一次量不到" },
-  { caseNo: "#41", question: "鋼品出口的檢驗規定（基準跑完之後才新增的案例）", reasonKey: "regression.reasonAbsentInBaseline", reason: "基準沒有它", detail: "基準那一次沒有這則案例的結果（案例在基準之後才建立，或基準中斷前沒跑到）——沒有可以比較的對象，不是「沒有變化」" }
+  { caseNo: "#41", question: "鋼品出口的檢驗規定", reasonKey: "regression.reasonAbsentInThisRun", reason: "這一次沒跑到", detail: "中斷就發生在這一則的第 1 輪前置對話上（額度用罄），沒跑完的半套結果被 rollback 丟掉——它有沒有回歸，這一次量不到" },
+  { caseNo: "#42", question: "鋁材的反傾銷稅率", reasonKey: "regression.reasonAbsentInThisRun", reason: "這一次沒跑到", detail: "這一次沒有跑到這則案例（執行在前一則就中斷了）——它有沒有回歸，這一次量不到" }
 ] %}
 {% set judgeDriftGroups = [
   { key: "unavailableNow", titleKey: "regression.driftUnavailableNow", title: "上次評得出來、這次評不出來", tagClass: "is-warn", cases: "#35", count: "1" },

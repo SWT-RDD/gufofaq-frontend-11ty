@@ -106,10 +106,10 @@ permalink: 3-2_glossaryManagement.html
             </colgroup>
             <thead>
                 <tr>
-                    <th data-i18n="settings.glossaryTableName">表名稱</th>
-                    <th data-i18n="settings.glossaryWhenToConsult">何時查閱（工具描述）</th>
-                    <th data-i18n="settings.glossaryToolPrompt">補充指示（選填）</th>
-                    <th data-i18n="settings.glossaryNormalizeRegex">查詢正規化 regex（選填）</th>
+                    <th id="glossaryHeadName" data-i18n="settings.glossaryTableName">表名稱</th>
+                    <th id="glossaryHeadWhenToConsult" data-i18n="settings.glossaryWhenToConsult">何時查閱（工具描述）</th>
+                    <th id="glossaryHeadToolPrompt" data-i18n="settings.glossaryToolPrompt">補充指示（選填）</th>
+                    <th id="glossaryHeadNormalizeRegex" data-i18n="settings.glossaryNormalizeRegex">查詢正規化 regex（選填）</th>
                     <th data-i18n="settings.entryCount">詞條數</th>
                     <th data-i18n="common.actions">操作</th>
                 </tr>
@@ -117,10 +117,16 @@ permalink: 3-2_glossaryManagement.html
             <tbody>
                 {% for tbl in glossaryTables %}
                 <tr data-glossary-id="{{ tbl.id }}">
-                    <td><input type="text" class="form-control" value="{{ tbl.name }}" aria-label="表名稱" data-i18n-aria-label="settings.glossaryTableName"></td>
-                    <td><input type="text" class="form-control" value="{{ tbl.whenToConsult }}" aria-label="何時查閱（工具描述）" data-i18n-aria-label="settings.glossaryWhenToConsult"></td>
-                    <td><input type="text" class="form-control" value="{{ tbl.toolPrompt }}" aria-label="補充指示（選填）" data-i18n-aria-label="settings.glossaryToolPrompt"></td>
-                    <td><input type="text" class="form-control" value="{{ tbl.normalizeRegex }}" aria-label="查詢正規化 regex（選填）" data-i18n-aria-label="settings.glossaryNormalizeRegex"></td>
+                    {# 迴圈內的值控制項不掛靜態 aria-label（§4：同表 2 列會全部同名，報讀器聽不出在改哪一張表）——
+                         改吃「本列辨識欄 ＋ 欄表頭」，故另補一顆 sr-only 列名（正典＝3-6 的 aliasTableRowName-*）。
+                         列名要另立節點：這一欄本身是 <input>，它的 value 不是可被 aria-labelledby 引用的文字。 #}
+                    <td>
+                        <span id="glossaryRowName-{{ tbl.id }}" class="sr-only">{{ tbl.name }}</span>
+                        <input type="text" class="form-control" value="{{ tbl.name }}" aria-labelledby="glossaryRowName-{{ tbl.id }} glossaryHeadName">
+                    </td>
+                    <td><input type="text" class="form-control" value="{{ tbl.whenToConsult }}" aria-labelledby="glossaryRowName-{{ tbl.id }} glossaryHeadWhenToConsult"></td>
+                    <td><input type="text" class="form-control" value="{{ tbl.toolPrompt }}" aria-labelledby="glossaryRowName-{{ tbl.id }} glossaryHeadToolPrompt"></td>
+                    <td><input type="text" class="form-control" value="{{ tbl.normalizeRegex }}" aria-labelledby="glossaryRowName-{{ tbl.id }} glossaryHeadNormalizeRegex"></td>
                     <td class="text-center">{{ tbl.entryCount }}</td>
                     <td>
                         <div class="btn-group">

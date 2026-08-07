@@ -65,8 +65,11 @@ permalink: 5-5-1_userManagement.html
                     <label for="newMemberPasswordInput" class="control-label required" data-i18n="settings.initialPassword">初始密碼</label>
                 </div>
                 <div class="field">
-                    <input type="password" id="newMemberPasswordInput" minlength="8" placeholder="至少 8 碼" data-i18n-placeholder="settings.pleaseEnterNewPassword" aria-describedby="newMemberPasswordInputError" class="form-control" required>
-                    <span class="error-prompt" id="newMemberPasswordInputError" data-i18n="settings.passwordTooShort">密碼至少 8 碼</span>
+                    <input type="password" id="newMemberPasswordInput" minlength="8" placeholder="至少 8 碼" data-i18n-placeholder="settings.pleaseEnterNewPassword" aria-describedby="newMemberPasswordInputHint" class="form-control" required>
+                    {# 「至少 8 碼」是**約束提示**、不是錯誤訊息：.error-prompt 預設 display:none
+                         （靠 .form-group:has(.error) 才揭示），aria-describedby 指過去等於輔具讀到零。
+                         約束要在填之前就講得出來，故改成常駐可見的說明字（§4）。 #}
+                    <span class="text-gray" id="newMemberPasswordInputHint" data-i18n="settings.passwordMinLength">密碼至少 8 碼</span>
                 </div>
             </div>
         </div>

@@ -1,6 +1,19 @@
 {# 深色／淺色切換鈕：切換 <html data-theme>，寫入 localStorage（行為見 theme-toggle.js）。
-     圖示用 inline SVG（currentColor 隨主題變色，無新 PNG 資產）：淺色顯示月亮（點了轉深），深色顯示太陽（點了轉淺）。 #}
-<button type="button" class="theme-toggle" aria-label="切換深色／淺色模式" title="切換深色／淺色模式" data-i18n-title="theme.toggle" data-i18n-aria-label="theme.toggle">
+     圖示用 inline SVG（currentColor 隨主題變色，無新 PNG 資產）：淺色顯示月亮（點了轉深），深色顯示太陽（點了轉淺）。
+
+   可及名稱走**換標籤**（正典＝ui/reveal-input）：兩顆 svg 都 aria-hidden，唯一的名稱來源是這顆鈕自己；
+     原本恆定的「切換深色／淺色模式」說不出**目前是深是淺**，報讀器每一次聽到的都是同一句，
+     也就是深淺這個狀態在非視覺通道上根本不存在。狀態語意不另掛 aria-pressed——ARIA APG：
+     換標籤與 pressed 二擇一，並用會念出「切換為深色模式、已按下」這種矛盾（同 reveal-input 的裁決）。
+   兩態文字與 key 由 data-text-<態>／data-key-<態> 提供（態＝**目前**主題，值即 data-theme 的值），
+     JS 不寫死字串（§4-2）；切換後由 theme-toggle.js 的 label() 一併改寫 data-i18n-title／data-i18n-aria-label，
+     lang-toggle 之後才會依「當下狀態的 key」重譯。
+   markup 寫的是淺色態（初始主題由 no-flash 腳本決定，build 期算不出來）；真正的初始態由
+     theme-toggle.js 在 DOMContentLoaded 依 <html data-theme> 校正一次。 #}
+<button type="button" class="theme-toggle" aria-label="切換為深色模式" title="切換為深色模式"
+    data-text-light="切換為深色模式" data-key-light="theme.toDark"
+    data-text-dark="切換為淺色模式" data-key-dark="theme.toLight"
+    data-i18n-title="theme.toDark" data-i18n-aria-label="theme.toDark">
     <svg class="icon-moon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
         <path fill="currentColor"
             d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.91-.11-1.35a5.39 5.39 0 0 1-7.54-7.54C12.91 3.04 12.46 3 12 3z" />

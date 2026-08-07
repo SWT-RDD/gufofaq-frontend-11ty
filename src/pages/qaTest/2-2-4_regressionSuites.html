@@ -61,8 +61,11 @@ permalink: 2-2-4_regressionSuites.html
                     {# 長度上限是契約欄位（§6）：`_clean_text(body.name, what="案例集名稱", max_len=200)`
                          （regression.py  的 400）。同一頁的 `#newCaseQuestion`（2000）與
                          `#assertionCriteria`（1024）早就落地了，就這一格沒接——打了 250 字會拿到
-                         紅色的「建立失敗，請稍後再試」，而重試永遠不會成功。 #}
-                    <span class="text-gray" id="newSuiteNameHint" data-i18n="regression.suiteNameHint">最多 200 字</span>
+                         紅色的「建立失敗，請稍後再試」，而重試永遠不會成功。
+                       數字不烤進譯文（§4-2）：拆成「前綴 key ＋數字節點＋單位 key」，同頁
+                         `#newCaseQuestionHint`（2000）與 `#assertionCriteriaHint`（1024）就是這個形狀——
+                         上限一旦改動，要改的只有 maxlength 與這一個數字節點，兩份譯文都不必動。 #}
+                    <span class="text-gray" id="newSuiteNameHint"><span data-i18n="regression.suiteNameLimit">名稱字數上限：</span><span>200</span><span data-i18n="regression.charsUnit"> 字</span></span>
                 </div>
             </div>
         </div>
@@ -153,7 +156,8 @@ permalink: 2-2-4_regressionSuites.html
      號碼要與 2-2-5（#311 的報表，跑的正是這一套案例集）對得起來：那一頁把
      「臺灣輸美鋼品的關稅稅率是多少」記成 **#39**，而 #41 是中斷點那一則、#42 是「鋁材的反傾銷稅率」。
      41 不能給這裡的任何一則——2-2-5 逐字寫著「id ≥ 41 的案例這一次一則結果都沒有」，
-     而 #39 在那一頁有完整結果（退步、2 輪前置）。這兩則只是 12 則裡的版型示範，不是全部。 #}
+     而 #39 在那一頁有完整結果（退步、2 輪前置）。這兩則只是 12 則裡的版型示範，不是全部：
+     另外三則在 2-2-5 也有名字（#34 零輪前置、#35 一輪、#36 五輪＝全套唯一超過上游記憶輪數的那一則）。 #}
 {% set regressionCases = [
   {
     id: 39,
@@ -514,10 +518,14 @@ permalink: 2-2-4_regressionSuites.html
 {# ── 開始執行 ───────────────────────────────────────────────────────────────
      示範自洽（GUIDELINE §6）：母體是**這一套案例集的全部 12 則**（`caseCount: 12`），不是上面
      列出來當版型示範的那 2 則——扣額度是逐則扣的，端點跑的也是整套。
-     12 則本題各扣一次；帶前置對話的有 4 則，逐則輪數是 2（#39，就是上面示範的第一則）＋1＋1＋1 ＝ 5。
-     故 12 ＋ 5 ＝ **17**。（上一版寫 16，是把「4 則帶前置」直接當成「4 輪」——
-     那個式子連自己的前提都推不出來：4 則裡有一則是 2 輪，下界就是 5。）
-     再往前一版寫 4，母體取的是「頁面上看得到的 2 則」，而那 2 則只是版型示範。
+     12 則本題各扣一次；帶前置對話的有 4 則，逐則輪數是 5（#36）＋2（#39，就是上面示範的第一則）
+     ＋1（#35）＋1 ＝ 9。故 12 ＋ 9 ＝ **21**。
+     **那個 5 輪的案例不是湊出來的**：2-2-5 的「上游記憶輪數」是 5（＝設定檔的 `memory_count`，
+     見 5-2 的 `#genMemory`），而 product `_limits` 的 `context_over_memory_cases` 收的是
+     `len(context_turns) + 1 > memory_count` 的案例 ⇒ 要點得出名字，這一套至少要有一則 ≥5 輪。
+     全套最大只有 2 輪的話，那一段紅字整站沒有任何資料演得出來——而它是「上游截斷」唯一的落點（§3-2）。
+     （上一版寫 17，前提是「單則最大 2 輪」；更早寫 16，是把「4 則帶前置」直接當成「4 輪」；
+     最早寫 4，母體取的是「頁面上看得到的 2 則」，而那 2 則只是版型示範。）
      React 端由案例陣列推導（Σ 前置輪數 + 1），這裡因模板無 filter 而 set。
 
      ## 調校旋鈕是兩態的：沿用設定檔 ／ 這一次改用指定值
@@ -568,7 +576,7 @@ permalink: 2-2-4_regressionSuites.html
      為什麼會壞：judge 斷言的評審模型讀的是設定檔的判定分組，**分組沒設就繼承這一輪的
      `model_name`**；繼承到 product 建不起來的 provider 時，這一輪每一則主觀分斷言都會變成
      「評審未完成」——報表看起來只是「評審漂移」，沒有人會知道是這一顆旋鈕造成的。 #}
-{% set regressionTurnTotal = 17 %}
+{% set regressionTurnTotal = 21 %}
 {% set regressionOverrideCount = 4 %}
 {% set regressionLimits = [
   { labelKey: "regression.limitCases", label: "單次執行案例上限：", value: "200", unitKey: "regression.casesUnit", unit: " 則" },
@@ -617,7 +625,7 @@ permalink: 2-2-4_regressionSuites.html
                          `gufo.list_models()`）。示範沿用 5-2 的 `llmModels` 那一組值，多加一顆
                          **供應商不在 PROVIDER_PREFIXES 裡**的（`google:gemini-2-flash`）——
                          下面那兩條紅字才有觸發者：`llm.py` 的 `PROVIDER_PREFIXES = ("openai:", "anthropic:")`
-                         決定第一條，`:99` 的 `REASONING_EFFORT_PREFIXES = ("openai:",)` 決定第二條。
+                         決定第一條，同檔的 `REASONING_EFFORT_PREFIXES = ("openai:",)` 決定第二條。
                          原本三顆全落在 openai/anthropic 裡，第一條紅字沒有任何一顆演得出來（§5）。 #}
                     {% set runLlmModels = ["openai:gpt-4o", "openai:gpt-4o-mini", "openai:gpt-4.1", "anthropic:claude-3-5-sonnet", "google:gemini-2-flash"] %}
                     <select id="runLlmSelect" class="form-control js-llm-select" aria-describedby="runLlmSelectHint">
@@ -763,12 +771,26 @@ permalink: 2-2-4_regressionSuites.html
      列序照 `get_suite` 的 `.order_by(RegressionRun.started_at.desc())`（regression.py）：
      最新的 #313（也正是「進行中」那一筆）必須在第一列。
      「看報表」連到 2-2-5；匯出是送 API 的鈕，中斷過的執行匯出時列數會少，故該列旁邊
-     當場講出來（後端也會在 CSV 最後一列附註，見 `_partial_notice`）。 #}
+     當場講出來（後端也會在 CSV 最後一列附註，見 `_partial_notice`）。
+
+     **「通過 / 總數」是推導出來的，不是隨手填**（§3-2）：`total`＝那一次真的落地幾則結果
+     （`_summary` 的 `len(rows)`），母體是這一套案例集的 12 則。
+       · #312／#310 是 finished ⇒ 12 則全跑完 ⇒ total 12。
+       · #311 中斷在「案例 41 的第 1 輪」，而 `run_suite` 以 `.order_by(models.TestCase.id)` 逐則跑、
+         跑完一則才 `db.commit()`、`_abort` 先 `db.rollback()` ⇒ **任何一次執行的結果集恆是案例集
+         id 序的前綴** ⇒ id ≥ 41 的一則結果都沒有 ⇒ total 10、passed 8（＝2-2-5 摘要的 8／2）。
+       · #310 的 passed 10 由 2-2-5 的比較反推：兩邊都有結果的那 10 則裡，基準通過的是
+         「退步的 #39（基準過）＋ 無變化裡兩次都過的 7 則」＝8（修好的 #38 基準是敗、
+         無變化的 #40 兩次都敗）；再加上 #311 沒跑到、而基準跑過且通過的 #41／#42
+         ⇒ 8 ＋ 2 ＝ **10 / 12**。（#41／#42 在基準是通過的——這兩則的基準判定沒有別的地方引用，
+         由這裡挑定；挑成未通過的話 #310 就是 8/12。）
+     原本 #310 寫 8 / 10，於是它與 #311 跑完一樣多的則數，而 2-2-5 同時演得出「基準沒有它」
+     與「這一次沒跑到」——前綴性質下那兩個方向不可能同時存在（見 2-2-5 那一段推導）。 #}
 {% set regressionRuns = [
   { no: "#313", startedAt: "2026/07/28 14:30", profile: "設置一", profileKey: "settings.config1", version: "7", status: "running", statusLabel: "進行中", statusKey: "agent.stepRunning", statusClass: "is-warn", passed: "", total: "", note: "" },
   { no: "#312", startedAt: "2026/07/28 09:12", profile: "設置一", profileKey: "settings.config1", version: "7", status: "finished", statusLabel: "完成", statusKey: "regression.statusFinished", statusClass: "is-pass", passed: "11", total: "12", note: "" },
   { no: "#311", startedAt: "2026/07/27 18:40", profile: "設置一", profileKey: "settings.config1", version: "7", status: "aborted", statusLabel: "中斷", statusKey: "regression.statusAborted", statusClass: "is-fail", passed: "8", total: "10", note: "問答額度不足（案例 41 的第 1 輪）——已完成的結果保留" },
-  { no: "#310", startedAt: "2026/07/27 11:02", profile: "設置一", profileKey: "settings.config1", version: "7", status: "finished", statusLabel: "完成", statusKey: "regression.statusFinished", statusClass: "is-pass", passed: "8", total: "10", note: "" }
+  { no: "#310", startedAt: "2026/07/27 11:02", profile: "設置一", profileKey: "settings.config1", version: "7", status: "finished", statusLabel: "完成", statusKey: "regression.statusFinished", statusClass: "is-pass", passed: "10", total: "12", note: "" }
 ] %}
 <div class="block mt-16 flex-row column gap-16">
     <div class="text-md text-bold" data-i18n="regression.runList">執行紀錄</div>

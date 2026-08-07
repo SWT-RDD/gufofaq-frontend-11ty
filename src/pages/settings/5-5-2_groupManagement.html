@@ -55,7 +55,7 @@ permalink: 5-5-2_groupManagement.html
     </div>
     <div class="flex-row flex-wrap gap-20 align-items-center" role="group" aria-labelledby="newGroupCapabilitiesLabel">
         {# 冒號不折進 key：settings.capabilities 同時是下方列表的表頭（§4-2 例外——表頭的標點屬版面，折了會污染） #}
-        <span id="newGroupCapabilitiesLabel" class="text-bold"><span data-i18n="settings.capabilities">能力</span>：</span>
+        <span id="newGroupCapabilitiesLabel" class="text-bold"><span data-i18n="settings.capabilities">能力</span><span data-i18n="common.labelSep">：</span></span>
         {% for cap in capabilities %}
         <label class="form-checkbox">
             <input type="checkbox" name="new_group_cap_{{ cap.key }}">

@@ -95,7 +95,12 @@ permalink: 5-7_auditLog.html
     </div>
 </div>
 
-{# 示範 3 筆已載入狀態；操作類型/操作者/對象/詳情/IP 為假資料（§3-2，不翻）。
+{# 示範 3 筆已載入狀態；操作者/對象/詳情/IP 為假資料（§3-2，不翻）。
+     **「操作類型」不是假資料，是同一份封閉目錄**（product `record_audit` 寫進去的那組 action 詞彙）：
+     上面的篩選下拉已經逐顆掛了 `audit.act*` 的 key，列裡卻把同一組詞當成純文字烤了第二份繁中
+     ——英文模式下同一頁會同時出現 "Create dataset" 的下拉與「建立資料集」的表格（§4-2／§6：
+     一份目錄只能有一份正本）。故每一列改帶三件事：`action`＝上游字面（＝下拉的 `<option value>`，
+     兩邊對得起來才篩得到）、`actionKey`＋`actionLabel`＝與下拉同一顆 key 與同一句繁中。
      此頁展示平台管理員的「全部租戶」檢視（上方 switch 開＝scope=all），故 3 筆刻意分屬不同租戶
      （acme / globex / initech），操作者信箱網域與各自租戶一致——§6：示範資料要演得到欄位的核心互動
      （租戶欄／全部租戶 switch 的存在意義就是跨租戶），全填同一租戶等於沒展示。
@@ -123,7 +128,7 @@ permalink: 5-7_auditLog.html
         tenantId: 12,
         operator: "admin@acme.tw", operatorId: 7,
         impersonator: "staff@sys.tw", impersonatorId: 3,
-        action: "建立資料集",
+        action: "dataset.create", actionKey: "audit.actDatasetCreate", actionLabel: "建立資料集",
         target: "dataset #12",
         detail: "{ name: 移民署 測試 }",
         ip: "203.0.113.5",
@@ -134,7 +139,7 @@ permalink: 5-7_auditLog.html
         tenantId: 27,
         operator: "user@globex.io", operatorId: 41,
         impersonator: "", impersonatorId: "",
-        action: "問答",
+        action: "ask", actionKey: "audit.actAsk", actionLabel: "問答",
         target: "chat_log #4821",
         detail: "{ tag: frontend }",
         ip: "203.0.113.8"
@@ -144,7 +149,7 @@ permalink: 5-7_auditLog.html
         tenantId: 31,
         operator: "—", operatorId: "",
         impersonator: "", impersonatorId: "",
-        action: "登入失敗",
+        action: "login.failed", actionKey: "audit.actLoginFailed", actionLabel: "登入失敗",
         target: "—",
         detail: "{ email: bad@initech.io }",
         ip: "198.51.100.2",
@@ -187,7 +192,7 @@ permalink: 5-7_auditLog.html
                 <td>{{ row.tenantId }}</td>
                 <td>{{ row.operator }}{% if row.operatorId %} <span class="text-gray">#{{ row.operatorId }}</span>{% endif %}</td>
                 <td>{{ row.impersonator }}{% if row.impersonatorId %} <span class="text-gray">#{{ row.impersonatorId }}</span>{% endif %}</td>
-                <td>{{ row.action }}</td>
+                <td data-i18n="{{ row.actionKey }}">{{ row.actionLabel }}</td>
                 <td>{{ row.target }}</td>
                 <td>{{ row.detail }}</td>
                 <td>{{ row.ip }}</td>

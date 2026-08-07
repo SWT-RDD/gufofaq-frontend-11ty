@@ -2,24 +2,80 @@
 // 由 components/chatroom（Manager 卡片容器）與 components/faq-chatroom（FAQ 全高容器）各自的容器包住。
 // 值以真 app 編譯 css 為準（原在 _chatroom.scss，抽出共用，宣告不變）。
 //
-// markup 契約（無 html 元件，§1-2；整段照抄）—— 訊息泡泡，後台 components/chatroom 與前台
-// components/faq-chatroom 共用同一套（2-2-3 另手寫一份）：
+// markup 契約（無 html 元件，§1-2；整段照抄）—— 訊息泡泡。三個消費點逐字相同（後台
+// components/chatroom、前台 components/faq-chatroom、widget 展示 ui/widget-shell），2-2-3 另手寫一份。
+//
+// ① 機器人訊息（生產 markup＝components/chatroom）：
+//
 //   <div class="message-wrap">
-//     <div class="message-row by-robot">          ← 使用者側是 .by-user（無 .avatar）
-//       <div class="avatar"><div class="pic"></div></div>
-//       <div class="message-content">
-//         <div class="robot-msg">…答案本文…</div>   ← 長文/富文字一律 div（§4：p 內不可放區塊元素）
+//       <div class="message-row by-robot">
+//           <div class="message-content">
+//               <div class="robot-msg">{{ msg.content }}</div>
+//           </div>
+//           <div class="message-time">{{ msg.time }}</div>
 //       </div>
-//     </div>
-//     <div class="message-time">…時間…</div>
 //   </div>
-// 「.robot-msg」底下那一整套 markdown 排版（標題／清單／表格／行內碼）是本檔最大的一塊樣式，
-// 沿用時整個容器都要是它，不要只掛 .message-content。
-// 推薦問題那一組是**一整組控制項**，group 語意不可省（§4）：
-//   <div class="suggested-questions" role="group" aria-labelledby="suggestedQuestionsLabel">
-//     <div class="suggested-questions-label" id="suggestedQuestionsLabel">…你可能想問…</div>
-//     <button type="button" class="js-ask-suggested">…問句…</button>
+//
+// ② 使用者訊息——與 ① 只差 `.by-user` 與內容用 `<span>`（短句，不是 markdown 容器）：
+//
+//   <div class="message-wrap">
+//       <div class="message-row by-user">
+//           <div class="message-content">
+//               <span>{{ msg.content }}</span>
+//           </div>
+//           <div class="message-time">{{ msg.time }}</div>
+//       </div>
 //   </div>
+//
+// ③ 帶動作鈕與建議追問的機器人訊息：`.message-icon` 與 `.suggested-questions` 是
+//    **`.message-row` 的兄弟**、住在 `.message-wrap` 裡（動作列要對齊整則訊息、不是對齊泡泡）：
+//
+//   <div class="message-wrap">
+//       <div class="message-row by-robot">
+//           <div class="message-content">
+//               <div class="robot-msg">{{ msg.content }}</div>
+//           </div>
+//           <div class="message-time">13:30</div>
+//       </div>
+//       <div class="message-icon">
+//           <button type="button" class="button-icon copy copyBtn has-tooltip" data-toast="文字已複製!" data-i18n-data-toast="common.copied">
+//               <span class="tooltip" data-i18n="action.copy">複製</span>
+//           </button>
+//           <button type="button" class="button-icon watch watchBtn has-tooltip">
+//               <span class="tooltip" data-i18n="comp.viewSource">查看來源</span>
+//           </button>
+//       </div>
+//       <div class="suggested-questions" role="group" aria-labelledby="chatroomSuggestedLabel">
+//           <span id="chatroomSuggestedLabel" class="suggested-questions-label" data-i18n="comp.suggestedQuestions">建議追問：</span>
+//           {% for q in chatroomSuggested %}
+//           <button data-capability="ask" type="button" class="button button-border button-sm js-ask-suggested" data-toast="回答生成中...|回答生成成功|回答生成失敗" data-i18n-data-toast="toast.chatSubmit" data-toast-type="info|success|error">{{ q }}</button>
+//           {% endfor %}
+//       </div>
+//   </div>
+//
+// 抄的時候一個都不能省：
+//   ⓐ **`.message-time` 住在 `.message-row` 之內、是 `.message-content` 的兄弟。**
+//      它的 `align-self: flex-end` 只有在 flex 容器（`.message-row`）的直接子元素上才成立；
+//      拉到 `.message-wrap` 底下就變成沒有 flex 父層的死宣告，時間戳掉到訊息下一行、
+//      使用者側也不再貼右。全站 9 個實例無一例外都在 `.message-row` 內。
+//   ⓑ **`.robot-msg` 那一層不可省。** 底下那一整套 markdown 排版（標題／清單／表格／引言／
+//      行內碼／pre）是本檔最大的一塊樣式，只掛 `.message-content` 一條都吃不到。
+//   ⓒ **建議追問是一整組控制項，group 語意不可省**（§4）：`role="group"` ＋ `aria-labelledby`
+//      指向同組的 `.suggested-questions-label`，而那顆 label 的 `id` 要**元件專屬**
+//      （chatroom 用 chatroomSuggestedLabel、faq-chatroom 用 faqSuggestedLabel）——同頁兩份會撞 id。
+//
+// **`.avatar` / `.pic` 不在本契約裡**：那是 `components/faq-chatroom` 私有的頭像（規則寫在
+// `_faq-chatroom.scss`，只有前台那一份 markup 有）。前台的機器人側是在 `.message-content`
+// **之前**多插一顆 `<div class="avatar"><div class="pic"></div></div>`；照抄到後台或 widget 上
+// 會得到一顆全站零規則的空 div。
+//
+// 兩個情境變體（成對契約，見 ui/ab-compare）：AB 雙欄比較時泡泡掛 `.message-content.in-compare`
+// （撐滿、無內距、等寬），緊接在雙欄之後的時間戳掛 `.message-time.after-compare`（加大下方間距）。
+// widget 展示（ui/widget-shell）只用 ① ② 的前半段：面板窄，不畫 `.message-time`。
+//
+// 住在哪一頁（雙向）：`components/chatroom`（2-1 問答紀錄、2-2-1 單測）、`components/faq-chatroom`
+// （前台 faq）、`ui/widget-shell`（元件庫頁）、`2-2-3_abTest`（手寫）。
+// 反查：`grep -rn 'message-wrap' src --include=*.html` 只命中這四處。
 .message-wrap {
     margin-bottom: 1rem;
 }

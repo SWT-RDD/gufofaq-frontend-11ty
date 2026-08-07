@@ -1,6 +1,61 @@
 // 照抄自真實 app 的 scss/layout/_modal.scss，另依規範做了申報過的調整：
 // 進出場動畫由 .show/.hide keyframes 改為 @starting-style + allow-discrete（§5 設計演進，見下段）、
 // 色值 token 化（§4），並新增 .share-text（分享彈窗的切版增補）。視覺宣告其餘照抄。
+//
+// ─────────────────────────────────────────────────────────────────────────────
+// markup 契約（無 html 元件，§1-2；整段照抄）—— 全站每一顆 `<dialog>` 的外殼。
+// 這是**逐字相同的殼**：§7 要靠它在 React 端抽出一顆 `<Modal size>`，有一顆長得不一樣就抽不掉
+// （`tests/guideline.test.mjs` 的「§7 所有 modal 的外殼逐字相同」逐顆比對巢狀順序）。
+// 下面這一份是 `components/apply-settings-modal` 的生產 markup，一個字都沒改：
+//
+//   <dialog class="modals" id="ProductionSettingsModal" aria-labelledby="ProductionSettingsModal-title">
+//       <div class="modals-dialog modals-md">
+//           <div class="modals-wrap">
+//               {% include "ui/modal-close/modal-close.html" %}
+//               <div class="modals-content">
+//                   <div class="modals-header">
+//                       <h3 class="modals-title" id="ProductionSettingsModal-title" data-i18n="qaTest.applyProduction">套用為正式設定</h3>
+//                   </div>
+//                   <div class="modals-body">
+//                       <p class="text-center m-0"><span data-i18n="modals.confirmApplyProduction">確定要將目前的測試設定套用為正式設定嗎？</span><br><span data-i18n="modals.applyOverwriteWarning">此動作會覆蓋現有的正式設定。</span></p>
+//                   </div>
+//                   <div class="modals-footer">
+//                       <div class="button-row center">
+//                           <button type="button" class="button button-border btn-close-modals" data-i18n="action.cancel">取消</button>
+//                           <button data-capability="settings:write" type="button" class="button button-primary btn-close-modals js-confirm-apply" data-toast="已套用為正式設定|權限不足，無法套用|套用為正式設定失敗，請稍後再試" data-i18n-data-toast="toast.applyProduction" data-toast-type="success|warning|error" data-i18n="modals.confirmApply">確認套用</button>
+//                       </div>
+//                   </div>
+//               </div>
+//           </div>
+//       </div>
+//   </dialog>
+//
+// 可變的只有四處：`<dialog>` 的 `id`（＋ `aria-labelledby` 跟著它、指向**自己**的 `.modals-title`，
+// 有測試釘住）、`.modals-dialog` 上的尺寸 class、`.modals-body` 的內容、`.modals-footer` 整段
+// （可以沒有——`components/intent-enable-modal`、`apply-settings-no-permission-modal` 只有 header + body）。
+// 關閉鈕**寫那一行 `{% include %}`**，不要展開手抄：它是 `ui/modal-close` 的唯一正本，
+// 而 `.modals-wrap` 的直接子元素只准 modal-close ＋ `.modals-content` 兩個（測試會數）。
+//
+// 兩個「漏掉也看不出來」的隱形點：
+//   ⓐ **`.modals-content` 在本檔一顆選擇器都沒有**（`.modals-header` / `.modals-body` /
+//      `.modals-footer` 全部直接巢狀在 `.modals-wrap` 下）。漏掉它 CSS 一條都不會壞、畫面
+//      一模一樣，只有那條殼比對測試會紅——但 React 端的 `<Modal>` 就少了一層 children 容器。
+//      它是 §7 的轉換契約，主人＝契約本身（`NAMED_HOOKS` 為它開的豁免就是這個意思）。
+//   ⓑ **尺寸 class 掛在 `.modals-dialog` 上，不是掛在 `<dialog>` 上。** `max-width` 是
+//      `.modals-dialog.modals-sm|md|lg` 三條；`<dialog class="modals">` 自己是 `width:100%`
+//      的全螢幕定位層，把尺寸掛上去等於什麼都沒發生（而且測試會判成「殼上有別的 class」）。
+//
+// 巢狀樣式的祖先鏈也要照抄：`.modals-header` / `.modals-body` / `.modals-footer` 的規則全部
+// 帶著 `.modals-wrap` 祖先，`.dataset-list-wrap`（ui/list-filter）更帶著 `.modals-wrap .modals-body`
+// 兩層——從中間層抄起就是 §4 的「祖先錯位」死法，class 找得到、樣式不生效。
+//
+// 開窗：無條件開窗的按鈕掛 `data-open-modal="<dialog id>"`（本元件 js 的事件委派）；
+// 有條件開窗由業務 js 呼叫 `window.openModal(id)`。關窗掛 `.btn-close-modals`。
+//
+// 住在哪一頁：**清單會失控（26 顆 `<dialog>`、散在元件與頁面兩處）**，故給判準句而不是清單——
+// 判準：凡是含 `<dialog class="modals">` 的檔案就是一份實例。現況清單見 README「Modal 清單」，
+// 實際以 `grep -rn '<dialog' src` 為準（README 那一段也是這麼寫的）。
+// ─────────────────────────────────────────────────────────────────────────────
 @use "../../../scss/mixin" as *;
 
 // 進出場動畫全部交給瀏覽器（`display` / `overlay` 的 discrete transition + `@starting-style`）。

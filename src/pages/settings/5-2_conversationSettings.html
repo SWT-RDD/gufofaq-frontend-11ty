@@ -861,36 +861,42 @@ permalink: 5-2_conversationSettings.html
                 </colgroup>
                 <thead>
                     <tr>
-                        <th data-i18n="settings.policyTopicName">主題名稱</th>
-                        <th data-i18n="settings.definition">定義</th>
-                        <th data-i18n="settings.policyExamples">範例</th>
-                        <th data-i18n="settings.policyInputAction">輸入動作</th>
-                        <th data-i18n="settings.policyOutputAction">輸出動作</th>
-                        <th data-i18n="settings.policyRefusal">拒絕訊息</th>
+                        <th id="policyHeadName" data-i18n="settings.policyTopicName">主題名稱</th>
+                        <th id="policyHeadDefinition" data-i18n="settings.definition">定義</th>
+                        <th id="policyHeadExamples" data-i18n="settings.policyExamples">範例</th>
+                        <th id="policyHeadInputAction" data-i18n="settings.policyInputAction">輸入動作</th>
+                        <th id="policyHeadOutputAction" data-i18n="settings.policyOutputAction">輸出動作</th>
+                        <th id="policyHeadRefusal" data-i18n="settings.policyRefusal">拒絕訊息</th>
                         <th><span class="sr-only" data-i18n="common.actions">操作</span></th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for topic in policyTopics %}
                     <tr>
-                        <td><input type="text" class="form-control" value="{{ topic.name }}" aria-label="主題名稱" data-i18n-aria-label="settings.policyTopicName"></td>
-                        <td><input type="text" class="form-control" value="{{ topic.definition }}" aria-label="定義" data-i18n-aria-label="settings.definition"></td>
-                        <td><input type="text" class="form-control" value="{{ topic.examples }}" aria-label="範例" data-i18n-aria-label="settings.policyExamples"></td>
+                        {# 迴圈內的值控制項不掛靜態 aria-label（§4：同表 2 列會全部同名，報讀器聽不出在改哪一個主題）——
+                             改吃「本列辨識欄 ＋ 欄表頭」，故另補一顆 sr-only 列名（正典＝3-6 的 aliasTableRowName-*）。
+                             列名要另立節點：主題名稱那一欄本身是 <input>，value 不是可被 aria-labelledby 引用的文字。 #}
                         <td>
-                            <select class="form-control select-sm singleSelect" aria-label="輸入動作" data-i18n-aria-label="settings.policyInputAction">
+                            <span id="policyTopicRowName-{{ loop.index }}" class="sr-only">{{ topic.name }}</span>
+                            <input type="text" class="form-control" value="{{ topic.name }}" aria-labelledby="policyTopicRowName-{{ loop.index }} policyHeadName">
+                        </td>
+                        <td><input type="text" class="form-control" value="{{ topic.definition }}" aria-labelledby="policyTopicRowName-{{ loop.index }} policyHeadDefinition"></td>
+                        <td><input type="text" class="form-control" value="{{ topic.examples }}" aria-labelledby="policyTopicRowName-{{ loop.index }} policyHeadExamples"></td>
+                        <td>
+                            <select class="form-control select-sm singleSelect" aria-labelledby="policyTopicRowName-{{ loop.index }} policyHeadInputAction">
                                 <option value="block" data-i18n="settings.policyActionBlock"{% if topic.inputAction == "block" %} selected{% endif %}>封鎖</option>
                                 <option value="record" data-i18n="settings.policyActionRecord"{% if topic.inputAction == "record" %} selected{% endif %}>記錄</option>
                                 <option value="off" data-i18n="settings.policyActionOff"{% if topic.inputAction == "off" %} selected{% endif %}>不處理</option>
                             </select>
                         </td>
                         <td>
-                            <select class="form-control select-sm singleSelect" aria-label="輸出動作" data-i18n-aria-label="settings.policyOutputAction">
+                            <select class="form-control select-sm singleSelect" aria-labelledby="policyTopicRowName-{{ loop.index }} policyHeadOutputAction">
                                 <option value="block" data-i18n="settings.policyActionBlock"{% if topic.outputAction == "block" %} selected{% endif %}>封鎖</option>
                                 <option value="record" data-i18n="settings.policyActionRecord"{% if topic.outputAction == "record" %} selected{% endif %}>記錄</option>
                                 <option value="off" data-i18n="settings.policyActionOff"{% if topic.outputAction == "off" %} selected{% endif %}>不處理</option>
                             </select>
                         </td>
-                        <td><input type="text" class="form-control" value="{{ topic.refusal }}" aria-label="拒絕訊息" data-i18n-aria-label="settings.policyRefusal"></td>
+                        <td><input type="text" class="form-control" value="{{ topic.refusal }}" aria-labelledby="policyTopicRowName-{{ loop.index }} policyHeadRefusal"></td>
                         <td><button type="button" class="button button-border button-sm js-remove-policy-topic" data-i18n="action.delete">刪除</button></td>
                     </tr>
                     {% else %}
@@ -942,8 +948,8 @@ permalink: 5-2_conversationSettings.html
                 </colgroup>
                 <thead>
                     <tr>
-                        <th data-i18n="settings.aliases">別名（逗號分隔）</th>
-                        <th data-i18n="settings.outputReplacementReplacement">替換內容</th>
+                        <th id="osubHeadAliases" data-i18n="settings.aliases">別名（逗號分隔）</th>
+                        <th id="osubHeadReplacement" data-i18n="settings.outputReplacementReplacement">替換內容</th>
                         <th data-i18n="settings.outputReplacementIsRegex">Regex</th>
                         <th data-i18n="common.actions">操作</th>
                     </tr>
@@ -951,8 +957,14 @@ permalink: 5-2_conversationSettings.html
                 <tbody>
                     {% for rule in [{ aliases: "推貿費, 推廣貿易費, 貿推費", replacement: "[${0}](https://www.trade.gov.tw/tpf)", isRegex: false }] %}
                     <tr>
-                        <td><input type="text" class="form-control js-osub-aliases" value="{{ rule.aliases }}" aria-label="別名（逗號分隔）" data-i18n-aria-label="settings.aliases"></td>
-                        <td><input type="text" class="form-control js-osub-replacement" value="{{ rule.replacement }}" aria-label="替換內容" data-i18n-aria-label="settings.outputReplacementReplacement"></td>
+                        {# 同政策主題表：迴圈內的值控制項改吃「本列辨識欄 ＋ 欄表頭」，不掛靜態 aria-label（§4）。
+                             這張表的辨識欄是「別名」，而它本身是 <input>，故另補一顆 sr-only 列名。
+                             「新增替換規則」加出來的列由 React 端沿用同一個形狀（列鍵改成該列的 key）。 #}
+                        <td>
+                            <span id="osubRowName-{{ loop.index }}" class="sr-only">{{ rule.aliases }}</span>
+                            <input type="text" class="form-control js-osub-aliases" value="{{ rule.aliases }}" aria-labelledby="osubRowName-{{ loop.index }} osubHeadAliases">
+                        </td>
+                        <td><input type="text" class="form-control js-osub-replacement" value="{{ rule.replacement }}" aria-labelledby="osubRowName-{{ loop.index }} osubHeadReplacement"></td>
                         <td class="text-center"><label class="form-checkbox in-cell"><input type="checkbox" class="js-osub-is-regex"{% if rule.isRegex %} checked{% endif %}><span class="sr-only" data-i18n="settings.outputReplacementIsRegex">Regex</span></label></td>
                         <td><button type="button" class="button button-border button-sm js-remove-osub" data-i18n="action.delete">刪除</button></td>
                     </tr>
@@ -1457,9 +1469,14 @@ permalink: 5-2_conversationSettings.html
                 <label for="glossaryTablesSelect" class="control-label" data-i18n="settings.glossaryTables">綁定術語表</label>
             </div>
             <div class="field col-12-sm">
+                {# `<option value>`＝術語表主鍵（`GlossaryTable.id`），值域正本是 **3-2 那張管理表**
+                     ——那一頁的檔頭逐字寫著「id＝術語表主鍵、不可拿 loop.index 當列鍵」，示範的兩張表是
+                     4（人資術語）與 5（產品術語）。這裡原本烤 1／2，同一份目錄在兩頁各有一組主鍵，
+                     而 React 端送出去的就是這個值（§6）。對照組：下面「綁定別名表」與 3-6 早就同一組
+                     （12／9／7），照那個做法。 #}
                 <select id="glossaryTablesSelect" class="form-control multiSelect js-glossary-tables" multiple="multiple" data-placeholder="請選擇" data-placeholder-key="common.pleaseSelect">
-                    <option value="1" selected>人資術語</option>
-                    <option value="2">產品術語</option>
+                    <option value="4" selected>人資術語</option>
+                    <option value="5">產品術語</option>
                 </select>
             </div>
         </div>
@@ -1585,10 +1602,13 @@ permalink: 5-2_conversationSettings.html
                 <label for="skillsSelect" class="control-label" data-i18n="settings.assignedSkills">指派 Skill</label>
             </div>
             <div class="field col-12-sm">
+                {# `<option value>`＝Skill 主鍵（product `skills.py` 的 `skill_id`），值域正本是 3-4 那張
+                     管理表：11（refund-flow）／12（lookup-order）／13（policy-lookup）。原本烤 1／2／3，
+                     同一份庫在兩頁各有一組主鍵，而送出去的 `config.skill_ids` 就是這個值（§6）。 #}
                 <select id="skillsSelect" class="form-control multiSelect js-skills" multiple="multiple" data-placeholder="請選擇" data-placeholder-key="common.pleaseSelect">
-                    <option value="1" selected>refund-flow</option>
-                    <option value="2">lookup-order</option>
-                    <option value="3">policy-lookup</option>
+                    <option value="11" selected>refund-flow</option>
+                    <option value="12">lookup-order</option>
+                    <option value="13">policy-lookup</option>
                 </select>
                 <p class="text-gray" data-i18n="settings.assignedSkillsHint">被指派的 skill 會成為 agent 可呼叫的工具，由它依「用途說明」自行決定何時使用。</p>
             </div>
@@ -1680,9 +1700,12 @@ permalink: 5-2_conversationSettings.html
                 <label for="qaDirectDatasetsSelect" class="control-label" data-i18n="settings.qaDirectDatasets">參與直答的 QA 集</label>
             </div>
             <div class="field col-12-sm">
+                {# `<option value>`＝QA 集主鍵，值域正本是 3-3 那張管理表：2（客服問答集）／3（產品 FAQ）。
+                     原本烤 1／2——不只是「號碼不一樣」，`value="2"` 在這一頁指的是產品 FAQ、在 3-3 指的是
+                     客服問答集，同一個值兩頁指到不同的東西，接上 API 之後是靜默選錯集（§6）。 #}
                 <select id="qaDirectDatasetsSelect" class="form-control multiSelect js-qa-direct-datasets" multiple="multiple" data-placeholder="請選擇" data-placeholder-key="common.pleaseSelect">
-                    <option value="1" selected>客服問答集</option>
-                    <option value="2">產品 FAQ</option>
+                    <option value="2" selected>客服問答集</option>
+                    <option value="3">產品 FAQ</option>
                 </select>
             </div>
         </div>

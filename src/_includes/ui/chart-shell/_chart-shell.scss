@@ -1,14 +1,54 @@
 // 圖表外殼（純樣式原子，無 html）。逐字複製自真實 app 的 scss/component.scss「block / box 區塊」區段。
 //
-// markup 契約（無 html 元件，§1-2；整段照抄）：
+// markup 契約（無 html 元件，§1-2；整段照抄）。全站三份實例，**`.chart-wrap` 不是必經層**——
+// 只有「兩張圖要並排」的那一份有它（三份裡的一份）。三份的共同骨架是
+// `.chart-box > .chart-title + <中段> + ui/chart-desc`，中段才是差異所在。
+//
+// ① 兩張圖並排（生產 markup＝`components/chart-box`，由 5-3 include）——這一型才有 `.chart-wrap`：
+//
 //   <div class="chart-box">
-//     <div class="chart-title" data-i18n="…">…標題…</div>
-//     <div class="chart-wrap">                      ← 兩張圖並排的容器（≤992px 改上下堆疊）
-//       <div class="chart"><canvas id="…"></canvas></div>
-//     </div>
-//     …下段數據槽走 ui/chart-desc…
+//       <div class="chart-title" data-i18n="{{ chartBoxTitleKey or 'comp.folderContribution' }}">{{ chartBoxTitleText or '資料夾使用貢獻度' }}</div>
+//       <div class="chart-wrap">
+//           <div class="chart"><canvas id="{{ cbId }}-doughnut"></canvas></div>
+//           <div class="chart"><canvas id="{{ cbId }}-bar"></canvas></div>
+//       </div>
+//       {% set chartDescId = cbId %}
+//       {% set chartDescRow = true %}
+//       {% include "ui/chart-desc/chart-desc.html" %}
 //   </div>
-//   內容是表格而不是固定高 canvas 時，`.chart` 另掛 `.chart-auto`（自動高 ＋ 橫向可捲）。
+//
+// ② 單一圖（5-3 的「近4周取用次數變化」，手寫）——`.chart` 直接掛在 `.chart-box` 下：
+//
+//   <div class="chart-box">
+//       <div class="chart-title" data-i18n="settings.weeklyRetrievalTrend">近4周取用次數變化</div>
+//       <div class="chart"><canvas id="chart3-line"></canvas></div>
+//       {% set chartDescId = "chart3" %}
+//       {% set chartDescRow = false %}
+//       {% include "ui/chart-desc/chart-desc.html" %}
+//   </div>
+//
+// ③ 中段是表格而不是固定高 canvas（5-3 的「貢獻度排行」，手寫）——`.chart` 另掛 `.chart-auto`
+//    （自動高 ＋ 橫向可捲），而且**沒有 `<canvas>`**，內容由業務 js 填：
+//
+//   <div class="chart-box">
+//       <div class="chart-title" data-i18n="settings.contributionRanking">貢獻度排行與優先續建議</div>
+//       <div class="chart chart-auto" id="chart2-ranking"></div>
+//       {% set chartDescId = "chart2" %}
+//       {% set chartDescRow = false %}
+//       {% include "ui/chart-desc/chart-desc.html" %}
+//   </div>
+//
+// 抄的時候注意：
+//   ⓐ **`.chart-wrap` 只在「兩張圖並排」時才有。** 它是 `display:flex; gap:56px`（≤992px 改上下
+//      堆疊）——單張圖包一層它會多出一個沒有意義的 flex 容器；反過來，兩張圖少了它會上下堆疊。
+//   ⓑ **下段的數據槽一律 `{% include "ui/chart-desc/chart-desc.html" %}`**，不要手抄那三個槽
+//      （三處逐字相同，正本在那支元件）。`chartDescRow` 只有 ① 是 true（版位需要 `.row`）。
+//   ⓒ id 前綴由呼叫端給（`chart1`／`chart2`／`chart3`），元件不寫死（§4）：`.chart-desc` 的槽與
+//      `<canvas>` 都靠它 getElementById。
+//
+// 住在哪一頁（雙向）：只有 5-3_statsModule（一份 include `components/chart-box`、兩份手寫）。
+// 反查：`grep -rn 'chart-box' src --include=*.html` 除該頁與 `components/chart-box` 之外，
+// 只命中 `ui/chart-desc`／`components/pagination-input` 檔頭註解裡的說明文字。
 //
 // 為什麼是 `ui/` 而不是留在 `components/chart-box`：5-3 除了 include 那顆元件之外，
 // 自己另外手寫了兩張圖，用的是同一組 class；而 `.chart-auto` 這個變體**元件從來不輸出**，

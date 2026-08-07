@@ -3,6 +3,11 @@
 // （例：rating-modal.js 的 openRating 要先預選讚/倒讚再開窗，無法用宣告式屬性表達）。
 // 只是「點了就開窗」的按鈕不要寫 js —— 掛 data-open-modal="<dialog id>"，由下面的事件委派接手（§5）。
 //
+// **markup 契約（無 html 元件，§1-2）逐字寫在 `_modals.scss` 的檔頭**：整顆 `<dialog>` 外殼
+// （`.modals > .modals-dialog.modals-<尺寸> > .modals-wrap > ui/modal-close + .modals-content`）
+// 連同兩個隱形點（`.modals-content` 在 scss 裡零選擇器、尺寸 class 不掛在 `<dialog>` 上）都在那裡。
+// 本檔只認 markup 上的兩個行為記號：開窗的 `data-open-modal="<dialog id>"`、關窗的 `.btn-close-modals`。
+//
 // **進出場動畫全部在 CSS**（_modals.scss 的 `@starting-style` + `display/overlay` 的 allow-discrete 過渡）。
 // 這裡不再有 300ms 的 setTimeout、不再有 `.show`/`.hide` class、也不再需要「關到一半又重開」的重入守衛：
 // `close()` 立刻拿掉 `[open]`，瀏覽器自己把元素撐到退場動畫跑完；中途 `showModal()` 會讓 transition 原生反向。

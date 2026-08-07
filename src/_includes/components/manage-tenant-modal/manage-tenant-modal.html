@@ -91,7 +91,7 @@
                                     </div>
                                     <div class="field">
                                         <select id="tenantUsagePeriodSelect" class="form-control singleSelect">
-                                            <option value="none" data-i18n="platform.usagePeriodNone">無</option>
+                                            <option value="none" data-i18n="platform.none">無</option>
                                             <option value="daily" data-i18n="platform.usagePeriodDaily">每日</option>
                                             <option value="monthly" data-i18n="platform.usagePeriodMonthly">每月</option>
                                         </select>
@@ -181,8 +181,8 @@
                                              講的又是另一件事（權限不足）。比照 share-manage-modal 的做法改成
                                              disabled——那一列已經沒有東西可代理（§5「按了什麼都不會發生」）。 #}
                                         <button type="button" class="button button-border button-sm"{% if not member.isActive %} disabled{% endif %} data-toast="已代理登入該成員|權限不足，無法代理登入|代理登入失敗，請稍後再試" data-i18n-data-toast="toast.impersonateTenant" data-toast-type="success|warning|error" data-i18n="action.impersonate">代理登入</button>
-                                        {# 停用路徑上有**兩道**具名 409（platform.py 的 `last_tenant_admin`
-                                             與 :1121 呼叫的 `_assert_not_last_platform_admin`，後者回
+                                        {# 停用路徑上有**兩道**具名 409（gufofaq-saas product `platform.py`：停用端點自己回
+                                             `last_tenant_admin`，同檔的 `_assert_not_last_platform_admin` 回
                                              `last_platform_admin`「不可停用/刪除/降級最後一位平台系統管理員」）。
                                              同一頁的刪除鈕早就把這兩道分開列了（5-6-1 的 deleteToast），
                                              這裡卻只列一道——抄版型而不是逐 raise 對鈕（§5）。 #}

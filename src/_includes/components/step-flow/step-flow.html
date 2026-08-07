@@ -82,7 +82,7 @@
         <div class="flex-row align-items-center gap-8 flex-wrap">
             {# 進度前後綴走 i18n、數字由陣列推導（stepFlowCurrent／stepFlowTotal），不烤字面量（§6）。
                  分母是 stepFlowTotal（只數正典節點）而不是 stepFlowNodeRows.length（含巢狀子步驟）——
-                 用 .length 會讓進度隨串流冒出子步驟而倒退，見上面第 29-31 行。 #}
+                 用 .length 會讓進度隨串流冒出子步驟而倒退，見檔頭「進度『目前 X / N』只數正典管線節點」那一段。 #}
             <span class="step-flow-progress"><span data-i18n="agent.stepProgressPrefix">目前</span> {{ stepFlowCurrent }} / {{ stepFlowTotal }}</span>
             <button type="button" class="button button-border button-sm js-expand-all" data-i18n="common.expandAll">全部展開</button>
             <button type="button" class="button button-border button-sm js-collapse-all" data-i18n="common.collapseAll">全部收合</button>

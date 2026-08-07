@@ -3,8 +3,9 @@
      為什麼是一份：§6「同一份業務目錄不得各烤一份」。原本 5-2（per-config）與 5-6-1（平台預設）
      各烤一份，一份 15 顆、一份 5 顆，連順序都不同，兩邊的檔頭誰也沒提到對方——
      於是平台管理員設不了 Asia/Seoul，而隔壁頁的租戶設得了。
-     後端對兩者都只驗「是不是合法 IANA 時區」（platform.py 的 `ZoneInfo(body.timezone)`／
-     :515 的 400；per-config 同理），**沒有任何列舉**，所以這份清單完全是切版自己挑的，
+     後端對兩者都只驗「是不是合法 IANA 時區」（gufofaq-saas product `app/routers/platform.py` 的
+     `set_platform_timezone`：`ZoneInfo(body.timezone)` 丟例外就 400；per-config 同理），
+     **沒有任何列舉**，所以這份清單完全是切版自己挑的，
      沒有「平台層只能給五顆」這種契約上的理由。
      值＝IANA 時區識別字＝資料，不翻（§4-2）。
      參數：timezoneSelected —— 預設選中的識別字（不給時一顆都不選）。 #}

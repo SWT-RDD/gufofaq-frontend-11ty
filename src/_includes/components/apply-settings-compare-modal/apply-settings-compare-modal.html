@@ -40,14 +40,18 @@
             {% include "ui/modal-close/modal-close.html" %}
             <div class="modals-content">
                 <div class="modals-header">
-                    <h3 class="modals-title" id="ProductionSettingsCompareModal-title" data-i18n="modals.applyProductionSettings">套用為正式設定</h3>
+                    <h3 class="modals-title" id="ProductionSettingsCompareModal-title" data-i18n="qaTest.applyProduction">套用為正式設定</h3>
                 </div>
                 <div class="modals-body">
                     <div class="flex-row gap-24">
                         {% for column in settingColumns %}
+                        {# 兩欄逐欄同名：「知識檢索」「LLM模型」「資料取樣數」×2「提示詞」在兩欄各一份，
+                             10 顆控制項的可及名稱兩兩一模一樣，報讀器聽不出正在讀的是原設定還是設定B。
+                             欄標題給 id、欄內欄位容器包 role="group" aria-labelledby——同功能的 2-2-3
+                             設定區用的就是這招（abSideLabel-<側>），這顆彈窗比對的正是那兩側。 #}
                         <div class="flex-1">
-                            <p class="text-bold text-blue text-lg mb-10{% if column.jsApplyTitle %} js-apply-title{% endif %}" data-i18n="{{ column.titleKey }}">{{ column.title }}</p>
-                            <div class="flex-row column gap-16">
+                            <p class="text-bold text-blue text-lg mb-10{% if column.jsApplyTitle %} js-apply-title{% endif %}" id="applyCompareCol-{{ loop.index }}" data-i18n="{{ column.titleKey }}">{{ column.title }}</p>
+                            <div class="flex-row column gap-16" role="group" aria-labelledby="applyCompareCol-{{ loop.index }}">
                                 <div class="form-group row mobile-col">
                                     <div class="label">
                                         <label for="applyKnowledge-{{ loop.index }}" class="control-label" data-i18n="qaTest.knowledgeRetrieval">知識檢索</label>
@@ -98,7 +102,7 @@
                 <div class="modals-footer">
                     <div class="button-row center">
                         <button type="button" class="button button-border btn-close-modals" data-i18n="action.cancel">取消</button>
-                        <button data-capability="settings:write" type="button" class="button button-primary btn-close-modals js-confirm-apply" data-toast="已套用為正式設定|套用為正式設定失敗，請稍後再試" data-i18n-data-toast="toast.applyProductionCompare" data-toast-type="success|error" data-i18n="modals.applyProductionSettings">套用為正式設定</button>
+                        <button data-capability="settings:write" type="button" class="button button-primary btn-close-modals js-confirm-apply" data-toast="已套用為正式設定|套用為正式設定失敗，請稍後再試" data-i18n-data-toast="toast.applyProductionCompare" data-toast-type="success|error" data-i18n="qaTest.applyProduction">套用為正式設定</button>
                     </div>
                 </div>
             </div>

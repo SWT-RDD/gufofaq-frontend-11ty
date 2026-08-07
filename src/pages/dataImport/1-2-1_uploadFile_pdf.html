@@ -35,8 +35,8 @@ permalink: 1-2-1_uploadFile_pdf.html
      見 ui/upload-card），accept 只要少列一種，那張卡就變成點得進來、卻選不到自己廣告的檔案的死路。
      說明文字同理列全三種，另立 key（不沿用 `dataImport.uploadDescPdf`）：那顆是「PDF 卡」的說明，
      那張卡講的就只有 PDF，改它的值會讓卡片說謊。
-     **待 saas 回流**：product 目前只認 `.pdf`／`.docx`（datasets.py、2381-2389 逐副檔名分派，
-     其餘一律 400「僅支援 .pdf / .docx」），沒有影像匯入端點。切版照真 app 保留 Image 卡；
+     **待 saas 回流**：product 目前只認 `.pdf`／`.docx`（datasets.py 的 `import_pdf` 就地依副檔名分派，
+     其餘一律 400 `dataset.only_pdf_docx`「僅支援 .pdf / .docx」），沒有影像匯入端點。切版照真 app 保留 Image 卡；
      要嘛 saas 補影像匯入，要嘛兩邊一起撤掉那張卡——**這是 saas 端要決定的事，切版不先自行砍掉**。 #}
 {% set uploadAccept = ".pdf,.doc,.docx,.png,.jpg,.jpeg" %}
 {% set uploadMultiple = true %}

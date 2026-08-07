@@ -35,16 +35,16 @@ permalink: 5-6-2_platformMcpServers.html
      （跨頁同一份目錄，測試 §6「5-2 的 MCP Server 勾選清單與 5-6-2 註冊表跨頁自洽」把關）。 #}
 {% set mcpServers = [
   { id: 1, name: "時間工具", command: "uvx", args: ["mcp-server-time", "--local-timezone=Asia/Taipei"], env: [], description: "提供目前時間與時區換算。", active: true, lastTest: { ok: true, toolsCount: 3, tools: "get_current_time, convert_time, list_timezones", error: "" } },
-  { id: 2, name: "內部文件搜尋", command: "npx", args: ["-y", "@acme/doc-mcp"], env: ["ACME_API_KEY=***", "ACME_REGION=ap-northeast-1"], description: "查詢內部知識庫文件。", active: true, lastTest: { ok: false, toolsCount: 0, tools: "", error: "連線逾時（30 秒）：程序啟動後沒有回應 initialize" } },
-  { id: 3, name: "舊版文件搜尋", command: "npx", args: ["-y", "@acme/doc-mcp-legacy"], env: ["ACME_API_KEY=***"], description: "舊版內部文件查詢，已停用。", active: false, lastTest: { ok: false, toolsCount: 0, tools: "", error: "" } }
+  { id: 2, name: "內部文件搜尋", command: "npx", args: ["-y", "@acme/doc-mcp"], env: ["ACME_API_KEY=***", "ACME_REGION=ap-northeast-1"], description: "查詢內部知識庫文件。", active: true, lastTest: { ok: false, toolsCount: 0, tools: "", message: "MCP Server 連線異常", error: "TimeoutError" } },
+  { id: 3, name: "舊版文件搜尋", command: "npx", args: ["-y", "@acme/doc-mcp-legacy"], env: ["ACME_API_KEY=***"], description: "舊版內部文件查詢，已停用。", active: false, lastTest: { ok: false, toolsCount: 0, tools: "", message: "", error: "" } }
 ] %}
 
 <p class="text-gray" data-i18n="settings.mcpServersIntro">MCP Server 讓 Agent 連上外部工具。註冊即在 Agent 主機執行指定指令，屬高權限操作，僅平台管理者可管理；租戶只能在對話設定勾選已註冊的 Server。</p>
 
 {# 新增 MCP Server：名稱＋執行指令（必填）＋參數＋環境變數＋描述＋啟用＋新增鈕（三態 toast：
      成功／名稱已存在／執行指令不在允許清單／失敗。連線測試是獨立的 /servers/{id}/test 端點、
-     不在建立路徑上。**擋兩件事不是一件**：GufoRAG `chatbot/app/routes/mcp.py` 的 create（:193）
-     與 update（:330）都先查名稱重複、再跑 `assert_command_allowed`，後者的白名單是
+     不在建立路徑上。**擋兩件事不是一件**：GufoRAG `chatbot/app/routes/mcp.py` 的 `create_mcp_server`
+     與 `update_mcp_server` 都先查名稱重複、再跑 `assert_command_allowed`，後者的白名單是
      `app/services/mcp_client.py` 的 {python, python3, node, npx, uvx, uv}——該檔還特別交代
      「不要把 shell（bash/sh）加進去，那等於放棄整道閘」。而執行指令是自由文字欄，
      打 bash／docker 是使用者自己改得掉的事，折進「建立失敗，請稍後再試」等於叫人重試。
@@ -180,8 +180,15 @@ permalink: 5-6-2_platformMcpServers.html
                             <input type="checkbox" aria-labelledby="mcpRowName-{{ server.id }} mcpHeadActive"{% if server.active %} checked{% endif %}>
                         </label>
                     </td>
-                    {# 測試結果三種狀態：成功（幾顆工具＋清單）／失敗（原樣顯示 error，那是 product 明訂
-                         「要顯示的資料」）／從未測過（—）。三種都要演得到（§5 每個分支都要看得到）。 #}
+                    {# 測試結果三種狀態：成功（幾顆工具＋清單）／失敗／從未測過（—）。
+                         三種都要演得到（§5 每個分支都要看得到）。
+                       **失敗那一格印的是 `message`，不是 `error`**（與 React 正本
+                         `apps/web/app/(app)/mcp-servers/page.tsx` 的 `lastTest.message || lastTest.error`
+                         同一條式子）：上游 `routes/mcp.py` 的測試端點把兩件事分得很開——
+                         `message` 是走 i18n 的**給人看的那句**，`error` 逐字「只放例外型別名，
+                         不放 `str(e)`」，理由是它會原樣回給呼叫端，而子行程啟動失敗的訊息會帶
+                         檔案路徑、環境變數、內部主機名。所以示範資料裡 `error` 是 `TimeoutError`
+                         這種型別名——原本那裡填著一整句中文，等於演出一個上游明文拒絕產生的值。 #}
                     <td>
                         {% if server.lastTest.ok %}
                         <div class="flex-row column gap-4">
@@ -189,7 +196,7 @@ permalink: 5-6-2_platformMcpServers.html
                             <div class="collapse-text text-gray"><div class="collapse-body">{{ server.lastTest.tools }}</div><button type="button" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>
                         </div>
                         {% elif server.lastTest.error %}
-                        <div class="collapse-text text-red"><div class="collapse-body">{{ server.lastTest.error }}</div><button type="button" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>
+                        <div class="collapse-text text-red"><div class="collapse-body">{{ server.lastTest.message or server.lastTest.error }}</div><button type="button" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>
                         {% else %}
                         <span class="text-gray" data-i18n="settings.mcpNeverTested">尚未測試</span>
                         {% endif %}

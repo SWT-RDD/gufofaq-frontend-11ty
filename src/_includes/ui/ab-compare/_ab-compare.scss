@@ -3,17 +3,51 @@
 // 對 .message-content/.message-time 的情境覆寫改由 ui/chat-message 自帶的
 // .message-content.in-compare / .message-time.after-compare 變體提供（§4：不指名他人元件的 class）。
 //
-// markup 契約（無 html 元件，§1-2；整段照抄）—— 2-2-3 兩側答案並排：
-//   <div class="ab-compare flex-row gap-4 mobile-column">
-//     <div class="ab-compare-item">                       ← A/B 各一份
-//       <div class="message-content in-compare"><div class="robot-msg">
-//         <p class="item-title">…小標…</p><div class="item-content">…答案…</div>
-//       </div></div>
-//     </div>
+// markup 契約（無 html 元件，§1-2；整段照抄）—— 2-2-3 兩側答案並排。
+// **從 `.message-row` 寫起**：`.ab-compare` 是 `flex: 1`，它的 flex 父層是 ui/chat-message 的
+// `.message-row`（`display:flex`）——本元件只能用在一則機器人訊息之內（§1-2）。
+// 下面是 2-2-3_abTest.html 的生產 markup（A 側；B 側是同型的重複節點，只有 `abSides[0]` 換成
+// `abSides[1]`、答案本文與引用號碼不同）：
+//
+//   <div class="message-wrap">
+//       <div class="message-row by-robot">
+//           <div class="ab-compare flex-row gap-4 mobile-column">
+//               <div class="ab-compare-item">
+//                   <div class="message-content in-compare">
+//                       <div class="robot-msg">
+//                           <p class="item-title" id="abAnswerTitle-{{ abSides[0].side }}"><span data-i18n="qaTest.setting">設定</span>{{ abSides[0].side }}（<span data-i18n="{{ abSides[0].configKey }}">{{ abSides[0].configLabel }}</span>，{{ abSides[0].promptVersion }}）</p>
+//                           <div class="item-content">
+//                               <p>您好！以下是 UH3240 USB-C 多埠集線器的規格整理：</p>
+//                           </div>
+//                       </div>
+//                   </div>
+//                   <div class="message-icon" role="group" aria-labelledby="abAnswerTitle-{{ abSides[0].side }}">
+//                       <button type="button" class="button-icon copy copyBtn has-tooltip" data-toast="文字已複製!" data-i18n-data-toast="common.copied">
+//                           <span class="tooltip" data-i18n="action.copy">複製</span>
+//                       </button>
+//                   </div>
+//               </div>
+//           </div>
+//           <div class="message-time after-compare">13:30</div>
+//       </div>
 //   </div>
-// 「.message-content.in-compare」是成對契約（ui/chat-message 為本元件加的變體：max-width:100%、
-// flex:1 1 0、padding:0）。少了它兩欄不會等寬；而本檔靠 .robot-msg 這一層墊特異度才蓋得過
-// 「.message-content .robot-msg p」——兩件事都不是「多包一層 div」而已，照少層數的版本抄會走樣。
+//
+// 抄的時候一個都不能省：
+//   ⓐ **`.item-title` 一定要帶 `id="abAnswerTitle-<側>"`**。那不是裝飾：同一層的
+//      `.message-icon` 用 `role="group" aria-labelledby` 指著它——兩側的動作鈕字面完全相同、
+//      又同頁同時可見，沒有這個 id 報讀器只唸得出四顆同名鈕（§4），而 `aria-labelledby`
+//      指到不存在的 id 會被 a11y 綁定測試當場判紅。
+//   ⓑ **`.message-content.in-compare` 是成對契約**（ui/chat-message 為本元件加的變體：
+//      max-width:100%、align-self:auto、flex:1 1 0、padding:0）。少了它兩欄不會等寬。
+//   ⓒ **`.robot-msg` 那一層是特異度墊片**：本檔的 `.ab-compare .ab-compare-item .item-title`
+//      要贏過 `.message-content .robot-msg p` (0,2,1) 才蓋得掉 margin/line-height，
+//      少一層 div 就從樣式問題變成「規則寫了卻不生效」。
+//   ⓓ 雙欄之後的時間戳掛 `.message-time.after-compare`（加大下方間距），仍住在 `.message-row` 內。
+//   ⓔ 兩側的引用標記（`components/citation-ref`）各自從 1 起算、指向各自那一側的來源集合——
+//      兩側的 [[1]] 不是同一份文件，別共用一組號碼（理由見 2-2-3 頁內註解）。
+//
+// 住在哪一頁（雙向）：只有 2-2-3_abTest。
+// 反查：`grep -rn 'ab-compare' src --include=*.html` 只命中該頁。
 .ab-compare {
     flex: 1;
 

@@ -1,22 +1,71 @@
 // 逐字複製自真實 app 的 scss/component.scss「login page」區段（.login-wrapper，第 3190-3271 行，verbatim，只搬移位置）
 //
-// markup 契約（無 html 元件，§1-2；整段照抄）—— 生產 markup 手寫在 src/login.html：
+// markup 契約（無 html 元件，§1-2；整段照抄）—— 生產 markup 手寫在 src/login.html，逐字如下：
+//
 //   <div class="login-wrapper">
-//     <div class="login-controls">{% include "components/header-controls/header-controls.html" %}</div>
-//     <div class="login-left"><div class="login-box">
-//       <img class="logo" …>
-//       <form class="form-group-wrap" id="loginForm">
-//         <div class="form-group input">…帳號…</div>      ← .input 掛在 form-group 上，不是 <input> 上
-//         <div class="form-group input">…密碼…</div>
-//         <button type="button" class="forgot-btn" …>…忘記密碼…</button>
-//         <span class="error-prompt" role="alert" id="loginRetryHint">…節流秒數…</span>
-//         <button type="button" class="button button-primary login-btn" …>…登入…</button>
-//       </form>
-//     </div></div>
-//     <div class="login-right"><img class="side-img" …></div>
+//       <h1 class="sr-only" data-i18n="auth.login">登入</h1>
+//       <div class="login-controls">
+//           {% include "components/header-controls/header-controls.html" %}
+//       </div>
+//       <div class="login-left">
+//           <div class="login-box">
+//               <img src="./images/logo_login.png" width="960" height="144" decoding="async" alt="GufoFAQ" class="logo">
+//
+//               <form class="form-group-wrap" id="loginForm">
+//                   <div class="form-group input">
+//                       <div class="label">
+//                           <label for="email" class="control-label required" data-i18n="common.account">帳號</label>
+//                       </div>
+//                       <div class="field">
+//                           <input type="email" id="email" name="email" aria-describedby="emailError" placeholder="請輸入帳號" data-i18n-placeholder="faq.enterAccount" class="form-control" required autocomplete="email">
+//                           <span class="error-prompt" role="alert" id="emailError"></span>
+//                       </div>
+//                   </div>
+//                   <div class="form-group input">
+//                       <div class="label">
+//                           <label for="password" class="control-label required" data-i18n="common.password">密碼</label>
+//                       </div>
+//                       <div class="field">
+//                           <input type="password" id="password" name="password" aria-describedby="passwordError" placeholder="請輸入密碼" data-i18n-placeholder="faq.enterPassword" class="form-control" required autocomplete="current-password">
+//                           <span class="error-prompt" role="alert" id="passwordError"></span>
+//                       </div>
+//                   </div>
+//
+//                   <button type="button" class="forgot-btn" id="forgotBtn" data-open-modal="passwordModal" data-i18n="faq.forgotPassword">忘記密碼？</button>
+//
+//                   <span class="error-prompt" role="alert" id="loginRetryHint"><span data-i18n="auth.retryAfterPrefix">請於 </span><span class="js-login-retry-seconds"></span><span data-i18n="auth.retryAfterSuffix"> 秒後再試</span></span>
+//                   <button type="button" class="button button-primary login-btn" aria-describedby="loginRetryHint" data-toast="登入成功！|帳號已停用，請聯絡管理者|嘗試次數過多，請稍後再試|登入時發生錯誤，請稍後再試" data-i18n-data-toast="toast.login" data-toast-type="success|warning|warning|error" data-i18n="auth.login">登入</button>
+//               </form>
+//           </div>
+//
+//       </div>
+//
+//       <div class="login-right">
+//           <img src="./images/img_login.png" width="1062" height="1000" decoding="async" alt="" class="side-img">
+//       </div>
 //   </div>
-// .input 掛在 .form-group 上是這份契約的重點：兩顆 <input> 各住在自己的 .field 裡，都是該父層
-// 唯一的 input ⇒ 掛在 <input> 上時兩顆都命中 :last-of-type，基準的 24px 永遠不生效。
+//
+// 抄的時候一個都不能省：
+//   ⓐ **`<h1 class="sr-only">` 是這一頁唯一的 `<h1>`**（§4：每頁恰好一個）。視覺上這一頁的主題
+//      由 logo 呈現，所以標題只給輔具；漏掉它整頁對報讀器就沒有主題，而視覺指紋看不出來。
+//   ⓑ **`.input` 掛在 `.form-group` 上，不是掛在 `<input>` 上。** 兩顆 `<input>` 各住在自己的
+//      `.field` 裡、都是該父層唯一的 input ⇒ 掛在 `<input>` 上時兩顆都命中 `:last-of-type`，
+//      基準的 24px 永遠不生效。
+//   ⓒ **兩張 `<img>` 的 `width`／`height`／`alt` 都是硬規則**（§4）：`logo_login.png` 是
+//      960×144 且 `alt="GufoFAQ"`（它是這一頁的品牌識別、有意義），`img_login.png` 是
+//      1062×1000 且 `alt=""`（純裝飾，≤992px 整塊 `display:none`）。少了 width/height 會版位跳動。
+//   ⓓ **`.forgot-btn` 的 `data-open-modal="passwordModal"`**：忘記密碼是無條件開窗，走宣告式
+//      （§5），不寫 js。那顆 `<dialog id="passwordModal">` 也寫在 src/login.html（頁面層一次性彈窗）。
+//   ⓔ **登入鈕的 toast 是四段一組**：`data-toast`（四段繁中，`|` 是索引契約）＋
+//      `data-i18n-data-toast="toast.login"` ＋ `data-toast-type="success|warning|warning|error"`
+//      ＋ `data-i18n="auth.login"`。段數三邊必須相等；另外 `aria-describedby="loginRetryHint"`
+//      把節流秒數那個 live region 接上來（秒數不塞進 toast 段落，理由見 src/login.html 的註解）。
+//   ⓕ 兩顆輸入框各自帶 `aria-describedby` 指向自己那顆空的 `.error-prompt`（`role="alert"`，
+//      訊息由業務 js 填），加上 `placeholder` ＋ `data-i18n-placeholder` 成對、`required`
+//      與 `autocomplete`（email／current-password）。
+//
+// 住在哪一頁（雙向）：只有 `src/login.html`（→ dist/login.html）。
+// 反查：`grep -rn 'login-wrapper' src --include=*.html` 只命中該頁。
 .login-wrapper {
     display: flex;
     height: 100vh;

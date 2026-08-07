@@ -25,6 +25,12 @@
                 `app/attribution.py::attribution_values`。
        sourcesHidden：true 時根加 .hidden（真實頁預設隱藏、等 JS 依載入狀態顯示）
        sourcesInfo / sourcesInfoClass：標題後的說明字與其 class（預設「(挑選規則 16取8…)」/ .sources-info；AB 測試頁用 .js-sources-side「(設定A)」）
+                ⚠️ **內建預設不是佔位字，三個使用頁都沒有覆寫它**（4-2／2-1／2-2-1），所以它就是那三頁
+                真正顯示的字。裡面的三個值都要對得上使用頁：16／8＝取用與選用資料筆數
+                （4-2 的 `conversation.searchTotalNumber`／`searchSelectedNumber`、2-2-1 的
+                `#sampleTotalInput`／`#sampleSelectedInput` 都是 16／8），模型＝那一輪真的用的那顆。
+                原本寫「GPT 4o」，而 4-2 同一頁的「使用模型」欄與執行流程摘要都是 `openai:gpt-4o-mini`
+                ——同一輪問答在同一頁出現兩顆不同的模型（§6）。
        sourcesRating：{ value, icon } 有值時顯示使用者滿意度（標籤是 chrome 走 i18n，value 是資料不翻）
        sourcesDetailHref：有值時顯示「檢視詳細內容」連結（前台問答頁用）
      每筆來源列（摘要列 + 隱藏的 accordion detail 列）以 for-source 迴圈直接內嵌渲染
@@ -33,7 +39,7 @@
     <div class="flex-row justify-content-between align-items-center flex-wrap gap-8">
         <div>
             <span class="text-lg text-bold" data-i18n="qa.referenceSources">參考來源</span>
-            <span class="text-bold text-gray {{ sourcesInfoClass or 'sources-info' }}">{{ sourcesInfo or '(挑選規則 16取8；使用模型：GPT 4o)' }}</span>
+            <span class="text-bold text-gray {{ sourcesInfoClass or 'sources-info' }}">{{ sourcesInfo or '(挑選規則 16取8；使用模型：openai:gpt-4o-mini)' }}</span>
         </div>
         <div class="flex-row align-items-center gap-8 flex-wrap">
             <button type="button" class="button button-border button-sm js-expand-all" data-i18n="common.expandAll">全部展開</button>
@@ -42,7 +48,9 @@
             <span class="divider-vertical lg"></span>
             <div class="flex-row align-items-center gap-2 sources-rating">
                 {# chrome（可翻）與資料值（滿意度本身＝假資料，不翻）分開，否則英文模式整串露出中文 #}
-                <span><span data-i18n="qa.userSatisfaction">使用者滿意度</span>：{{ sourcesRating.value }}</span>
+                {# 冒號不折進 key：qa.userSatisfaction 同時是 qa-detail-info 的欄名（§4-2 例外——標點屬版面，
+                     折了會污染那一處）。分隔符走 common.labelSep，裸的全形「：」在英文模式會原樣印出來。 #}
+                <span><span data-i18n="qa.userSatisfaction">使用者滿意度</span><span data-i18n="common.labelSep">：</span>{{ sourcesRating.value }}</span>
                 <img src="{{ sourcesRating.icon }}" width="48" height="48" decoding="async" alt="" class="icon">
             </div>
             {% endif %}

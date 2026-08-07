@@ -4,7 +4,8 @@
      參數：promptDefaultOpen（true 時加 data-default-open，開頁即展開）。
      **唯一使用者是 5-2 對話設定頁**（AB 測試頁不用這支元件，見 2-2-3 檔頭）；
      元件庫展示頁另放一份 `promptDefaultOpen: true` 的示範——沒有那一份，
-     prompt-edit.js:51-52 的「預設展開」初始態全站沒有人看得到（§5 每個分支都要演得出來）。 #}
+     prompt-edit.js 那句 `hasAttribute("data-default-open")` 的「預設展開」初始態全站沒有人看得到
+     （§5 每個分支都要演得出來）。 #}
 {# 示範提示詞取領域中性的知識庫助手文案：5-2 的示範資料橫跨好幾個主題（政策、輸出規則、
      內建工具），綁定單一領域的提示詞會與同頁其他區塊的示範對不起來（§6 示範自洽）。 #}
 <div class="prompt-edit"{% if promptDefaultOpen %} data-default-open="true"{% endif %} data-full-text="角色定位：

@@ -4,24 +4,67 @@
 // 故外殼樣式升格為 ui/ 共用正本，不留在 components/chatroom 私有（§4：跨頁沿用要升格、不外借）。
 // 訊息泡泡本身在 ui/chat-message。值以真 app 編譯 css 為準。
 //
-// markup 契約（無 html 元件，§1-2；整段照抄）——外殼本體與輸入列：
-//   <div class="chatroom-wrap">
-//     <div class="chatroom-block">
-//       <div class="chat-message-container">…訊息（ui/chat-message）…</div>
-//     </div>
-//     <div class="chat-input-container">
-//       <div class="input-wrap">
-//         <div class="form-group chat-input-field">      ← slot class 與 ui/form-control 的 class 同時掛
-//           <div class="field"><textarea class="form-control chat-input-control"></textarea></div>
-//         </div>
-//         <button type="button" class="button button-primary chat-input-submit">…送出…</button>
+// markup 契約（無 html 元件，§1-2；整段照抄）——外殼本體、次數列與輸入列。
+// **從外層那顆 flex row 寫起**：`.chatroom-wrap` 是 `flex: 1`，沒有 flex 父層它就只是一顆
+// 內容寬的方塊、右側的 `components/qa-side-panel` 也不會並排（§1-2：樣式靠祖先才成立時從祖先寫起）。
+// 三個消費點的那一層逐字相同，連 class 串都一樣：
+//
+//   <div class="flex-row gap-10 mobile-column-xs xs-column-reverse">
+//       <div class="chatroom-wrap">
+//           <div class="chatroom-block">
+//               <div class="chat-message-container">
+//                   <div class="date-wrap">
+//                       <div class="date">2024/12/02</div>
+//                   </div>
+//                   <div class="message-container">
+//                       <div class="first-chat">
+//                           （開場訊息：ui/chat-message 的 `.message-wrap`，見該元件檔頭）
+//                       </div>
+//                       <div class="chat-box">
+//                           （其餘往返訊息：同上，一則一顆 `.message-wrap`）
+//                       </div>
+//                   </div>
+//               </div>
+//           </div>
+//           <div class="qa-count"><span data-i18n="comp.qaCount">問答次數：</span>12/3000<span data-i18n="comp.summaryCount">，摘要次數：</span>3/1000</div>
+//           <div class="chat-input-container">
+//               <div class="input-wrap">
+//                   <div class="form-group chat-input-field">
+//                       <div class="field">
+//                           <textarea class="form-control chat-input-control" placeholder="輸入問題" data-i18n-placeholder="comp.enterQuestion" aria-label="輸入問題" data-i18n-aria-label="comp.enterQuestion"></textarea>
+//                       </div>
+//                   </div>
+//                   <button data-capability="ask" type="button" class="button button-primary chat-input-submit" data-toast="回答生成中...|請先輸入問題|回答生成成功|回答生成失敗" data-i18n-data-toast="toast.chatSend" data-toast-type="info|warning|success|error" data-i18n="action.submit">送出</button>
+//               </div>
+//           </div>
 //       </div>
-//     </div>
+//       {% include "components/qa-side-panel/qa-side-panel.html" %}
 //   </div>
+//
+// 抄的時候一個都不能省：
+//   ⓐ **`.chat-message-container` 底下是兩層、不是直接放訊息**：`.message-container >
+//      .first-chat`（開場那一則）與 `.message-container > .chat-box`（其餘往返）。
+//      兩顆都是凍結真 app 的具名掛點（`NAMED_HOOKS`，React 端要靠它們認出該接什麼），本 repo 無樣式，
+//      所以少抄了視覺一模一樣——只有轉換的時候才會發現訊息全被塞進同一個容器。
+//   ⓑ **`.qa-count` 是 `.chatroom-block` 與 `.chat-input-container` 之間的那一列**（本檔有規則：
+//      靠右、上下留白、左右 1rem）。兩顆數字前後各夾一顆 i18n span，數字本身是資料、不翻。
+//      唯讀的問答紀錄預覽（2-1）沒有輸入列但**仍有這一列**。
+//   ⓒ **textarea 的可及名稱是四顆一組**：`placeholder` ＋ `data-i18n-placeholder` ＋
+//      `aria-label` ＋ `data-i18n-aria-label`。它沒有 `<label for>`（輸入列上沒有可見欄名），
+//      少了 `aria-label` 就是一顆無名輸入框（§4），而視覺指紋看不出來。
+//   ⓓ **送出鈕是三件套 ＋ 閘門**：`data-toast`（四段，比建議追問的 chip 多一條「請先輸入問題」）＋
+//      `data-i18n-data-toast="toast.chatSend"` ＋ `data-toast-type`（段數必須相等）＋
+//      `data-capability="ask"`（§4：toast 與閘門是同一個交付單位）。
+//   ⓔ 沒有輸入列的頁（2-1 唯讀預覽）整顆 `.chat-input-container` 不渲染，`.qa-count` 留著。
+//
 // 三顆 slot class（.chat-input-field／-control／-submit）是本元件覆寫排版的落點：**不直接寫
 // ui/form-control 與 ui/button 的 class 選擇器**（§4）。前台 FAQ 不用這一套（走 components/faq-chatroom
 // 的 .faq-chatroom／.faq-chat-scroll，它的 .input-wrap 已依「一名一主」改名，不與本檔相撞）。
-// 日期分隔列的契約另寫在下方 .date-wrap 那一段旁邊。
+//
+// 住在哪一頁（雙向）：`components/chatroom`（2-1 問答紀錄、2-2-1 單測）與 2-2-3_abTest（手寫一份，
+// 因為它的回覆要換成 ui/ab-compare 的雙欄，include 不進去）。
+// 反查：`grep -rln 'chatroom-wrap' src --include=*.html` 除這兩處之外，只多命中 2-1_qaRecord
+// ——那是該頁 include `components/chatroom` 時的一則 `{# #}` 說明註解，不是第三份實例。
 @use "../../../scss/mixin" as *;
 
 .chatroom-wrap {
@@ -52,10 +95,9 @@
     width: 100%;
     position: relative;
 
-    // 日期分隔列。markup 契約（無 html 元件，逐字寫在這裡；§1-2）：
-    //   <div class="chat-message-container">
-    //     <div class="date-wrap"><div class="date">2024/12/02</div></div>
-    //     …訊息…
+    // 日期分隔列（`.chat-message-container` 的第一個子元素，排在 `.message-container` 之前）。
+    // markup 契約已含在本檔檔頭那一整段裡，這裡不重寫第二份：
+    //   <div class="date-wrap"><div class="date">2024/12/02</div></div>
     // 真 app 由業務 js 在執行期插入（qaRecord.js:133／singleTest.js:444）；切版在
     // components/chatroom 畫出一份靜態示範——沒有任何 markup 的話這段就是出貨死 CSS，
     // 沒有人看過它的長相（§5）。日期是資料、不翻。

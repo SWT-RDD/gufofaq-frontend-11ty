@@ -6,8 +6,9 @@
      GufoRAG chatbot app/routes/skills.py；欄位語意對齊 Agent Skills 開放標準
      （name ≤64 小寫英數與連字號、description ≤1024 且須寫「做什麼＋何時用」）。
    長度上限落地成 markup 的 maxlength（契約欄位，§6）——出處逐字：GufoRAG chatbot
-     app/services/skills.py 的 `MAX_SKILL_NAME_LEN = 64`（:60）／`MAX_SKILL_DESCRIPTION_LEN = 1024`（:61）／
-     `MAX_SKILL_INSTRUCTIONS_LEN = 20000`（:64）。`SKILL_NAME_RE` 的格式驗證不掛 `pattern`：
+     app/services/skills.py 的 `MAX_SKILL_NAME_LEN = 64`／`MAX_SKILL_DESCRIPTION_LEN = 1024`／
+     `MAX_SKILL_INSTRUCTIONS_LEN = 20000`（各由同檔的 `_validate_name`／`_validate_description`／
+     `_validate_instructions` 執法）。`SKILL_NAME_RE` 的格式驗證不掛 `pattern`：
      §4 明訂驗證結果走 toast 的 warning 分支，長度才是宣告在控制項上的契約。
    兩個欄位的輔助文字是功能的一部分、不是裝飾：
      - name 的規則若不寫出來，租戶只會反覆撞 400（後端才是權威，但不該讓人用猜的）。
@@ -22,8 +23,8 @@
      （product SkillUpdateIn.enabled，見 3-4）。 #}
 {# 勾選群組的示範資料**只有一份**，就在下面那個群組旁邊（帶 allowedInSkill／reason 欄）。
      這裡原本還有一份較早的同名 {% set %}，但 `{% set %}` 是頁面全域、後者整份覆蓋前者，
-     而唯一的 `{% for %}` 在後者之後 ⇒ 前面那一份一個字都渲染不出來，卻看起來像是正本
-     （它列的 calculate／convert_units／date_calculate 在畫面上根本不存在）。 #}
+     而唯一的 `{% for %}` 在後者之後 ⇒ 前面那一份一個字都渲染不出來，卻看起來像是正本。
+     那一份列的是 14 顆全集，留下來的那一份只列了 5 顆——本輪反過來以全集為準（見該處註解）。 #}
 <dialog class="modals" id="skillEditorModal" aria-labelledby="skillEditorModal-title">
     <div class="modals-dialog modals-lg">
         <div class="modals-wrap">
@@ -84,13 +85,33 @@
                                      `skillRestrictionReason` 是端點給的字串，**與存檔被擋時的 400 訊息是
                                      同一句**（product `app/tool_refs.py` 直接把它塞進 400），所以不掛
                                      data-i18n——掛了就是同一句話有兩份譯文，設定頁說一套、存檔說另一套。 #}
+                                {# **目錄是全集，不是摘要**：名字與順序逐字取自 chatbot
+                                     `app/services/agent_service.py` 的 `BUILTIN_TOOL_NAMES`（14 顆），
+                                     5-2 的 `builtinTools` 卡片群是同一份、同一個順序，可逐顆對照。
+                                     原本只列 5 顆——而白名單是安全邊界，少列的那幾顆等於在 UI 上宣告
+                                     「這個 skill 用不到它們」，實際上勾得到（`calculate` 就是本 skill
+                                     真的在用的那一顆，卻連目錄裡都沒有）。
+                                   **勾選狀態＝這個 skill（refund-flow）真正的白名單**，與 3-4 清單列的
+                                     「可使用的工具：lookup-order, calculate」及試跑沙盒那一輪的
+                                     `tools: "lookup-order, calculate"` 是同一組（§6 三處同源）：
+                                     內建桶只有 `calculate`，`lookup-order` 是巢狀 skill 桶（見下方），
+                                     MCP 與術語表兩桶這個 skill 沒有勾。 #}
                                 {% set skillEditorBuiltinTools = [
-                                  { name: "search_knowledge_base", allowedInSkill: true, checked: true },
-                                  { name: "search_qa", allowedInSkill: true, checked: true },
+                                  { name: "get_current_datetime", allowedInSkill: true, checked: false },
+                                  { name: "date_tool", allowedInSkill: true, checked: false },
+                                  { name: "calculate", allowedInSkill: true, checked: true },
+                                  { name: "convert_units", allowedInSkill: true, checked: false },
+                                  { name: "date_calculate", allowedInSkill: true, checked: false },
+                                  { name: "lunar", allowedInSkill: true, checked: false },
+                                  { name: "search_knowledge_base", allowedInSkill: true, checked: false },
+                                  { name: "search_qa", allowedInSkill: true, checked: false },
+                                  { name: "answer_from_qa", allowedInSkill: false,
+                                    reason: "這顆工具的契約是「以這份 QA 的原文作為本次對話的最終回答」，而 skill 的產物是回饋父 agent 的工具結果（父層一定會再重組一次），兩者互斥。請改用 search_qa／search_knowledge_base 取得內容後由 instructions 指示怎麼組織。" },
                                   { name: "get_document", allowedInSkill: true, checked: false },
                                   { name: "summarize_document", allowedInSkill: true, checked: false },
-                                  { name: "answer_from_qa", allowedInSkill: false,
-                                    reason: "這顆工具的契約是「以這份 QA 的原文作為本次對話的最終回答」，而 skill 的產物是回饋父 agent 的工具結果（父層一定會再重組一次），兩者互斥。請改用 search_qa／search_knowledge_base 取得內容後由 instructions 指示怎麼組織。" }
+                                  { name: "list_available_datasets", allowedInSkill: true, checked: false },
+                                  { name: "ask_clarifying_question", allowedInSkill: true, checked: false },
+                                  { name: "analyze_user_intent", allowedInSkill: true, checked: false }
                                 ] %}
                                 <div class="flex-row column gap-8" role="group" aria-labelledby="skillBuiltinToolsLabel" aria-describedby="skillAllowedToolsHint">
                                     {% for tool in skillEditorBuiltinTools %}
@@ -112,9 +133,18 @@
                                 <label for="skillMcpSelect" class="control-label" data-i18n="settings.mcpServers">MCP Server</label>
                             </div>
                             <div class="field col-12-sm">
+                                {# MCP 註冊表與 5-2（`#mcpServersSelect`）／5-6-2 是**同一份三台**，
+                                     值也同源（id 1／2／3）。**停用中的不可濾掉**：理由與 5-2 那一段逐字相同
+                                     ——`allowed_tools.mcp_server_ids` 的驗證吃的是註冊表全集
+                                     （chatbot `services/mcp_client.py` 的 `validate_mcp_server_ids`），
+                                     濾掉清單等於在 UI 上把一個存得進去的合法值變成不存在；而停用期間它
+                                     本來就不會被呼叫（`routes/chat.py` 的 `_select_mcp_servers` 以
+                                     `id.in_()` ＋ `is_active` 取交集）。原本這裡只有兩台，少的正是停用中那一台
+                                     ——同一份註冊表在兩頁一個在一個不在（§6）。 #}
                                 <select id="skillMcpSelect" class="form-control multiSelect js-skill-mcp" multiple="multiple" data-placeholder="請選擇" data-placeholder-key="common.pleaseSelect">
                                     <option value="1">時間工具</option>
                                     <option value="2">內部文件搜尋</option>
+                                    <option value="3" data-suffix="（停用中）" data-suffix-key="settings.mcpServerInactive">舊版文件搜尋</option>
                                 </select>
                             </div>
                         </div>
@@ -123,9 +153,11 @@
                                 <label for="skillGlossarySelect" class="control-label" data-i18n="settings.glossaryTables">綁定術語表</label>
                             </div>
                             <div class="field col-12-sm">
+                                {# 值＝術語表主鍵，值域正本是 3-2 的管理表（4 人資術語／5 產品術語），
+                                     與 5-2 的「綁定術語表」同一組（§6 一份目錄一組主鍵）。 #}
                                 <select id="skillGlossarySelect" class="form-control multiSelect js-skill-glossary" multiple="multiple" data-placeholder="請選擇" data-placeholder-key="common.pleaseSelect">
-                                    <option value="1">人資術語</option>
-                                    <option value="2">產品術語</option>
+                                    <option value="4">人資術語</option>
+                                    <option value="5">產品術語</option>
                                 </select>
                             </div>
                         </div>
@@ -134,9 +166,15 @@
                                 <label for="skillNestedSelect" class="control-label" data-i18n="settings.skillNested">巢狀 Skill</label>
                             </div>
                             <div class="field col-12-sm">
+                                {# 值＝Skill 主鍵，值域正本是 3-4 的管理表（11 refund-flow／12 lookup-order／
+                                     13 policy-lookup），與 5-2 的「指派 Skill」同一組。
+                                     **本窗編的是 refund-flow（11），所以清單裡沒有它自己**：
+                                     `allowed_tools.skill_ids` 不可成環（存檔會被 chatbot
+                                     `validate_skill_definition` 擋成 400），把自己列出來等於提供一顆
+                                     一勾就存不了的選項。 #}
                                 <select id="skillNestedSelect" class="form-control multiSelect js-skill-nested" multiple="multiple" data-placeholder="請選擇" data-placeholder-key="common.pleaseSelect" aria-describedby="skillNestedHint">
-                                    <option value="2" selected>lookup-order</option>
-                                    <option value="3">policy-lookup</option>
+                                    <option value="12" selected>lookup-order</option>
+                                    <option value="13">policy-lookup</option>
                                 </select>
                                 <p class="skill-editor-hint" id="skillNestedHint" data-i18n="settings.skillNestedHint">被引用的 skill 會成為這個 skill 可呼叫的工具。不可互相引用成環，巢狀深度上限 3 層。</p>
                             </div>

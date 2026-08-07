@@ -34,6 +34,10 @@ permalink: 1-1-6_uploadSuccess_excel.html
      GufoRAG folder connector 以檔名認文件，同名就是覆蓋）。product 自己也把這個形狀釘成 regex：
      `history.py` 的 `_STORED_PREFIX = re.compile(r"^\d{14}_[a-f0-9]{6}_\d+_")`，
      下載時靠它把前綴剝掉——少了那段 hex 的字串它認不出來，示範值就成了 product 產不出來的東西。 #}
+{# 「資料總量」＝product 的 `data_count`，與 1-1-3 預覽那一頁的分頁 total 是**同一個數字**
+     （預覽讀出幾列、匯入就寫幾列；同一次流程的第 2 步與第 4 步不可能各講一個數，§6）。
+     這裡是基準：42KB ÷ 980 ≈ 43 B/列，對得上一份純文字的問答表；1-1-3 原本寫 115（那是
+     資料集那一層的檔案總數）已改為同源。 #}
 {% set successFileName = "20251119105623_a3f19c_0_客服問答集.xlsx" %}
 {% set successFileSize = "42KB" %}
 {% set successDataCount = "980" %}

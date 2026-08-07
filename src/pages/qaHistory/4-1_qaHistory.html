@@ -82,7 +82,7 @@ permalink: 4-1_qaHistory.html
                 <div class="field">
                     {# `<option value>` 帶的是**送出去的值**，不是畫面文字。三顆值兩兩不交集、
                          聯集＝不帶參數：product `GET /history` 與 `/history/export` 兩支都收
-                         `Literal["positive", "negative", "unrated"]`（history.py／:308）。
+                         `Literal["positive", "negative", "unrated"]`（history.py 的 `list_history`／`export_history`）。
                          `unrated` 是上游 2026-08-02 起支援的**只能查、寫不進去**的 token：
                          `GET /api/chat/chatlogs?rating_type=unrated` → `rating_type IS NULL`，
                          而它**刻意不在 RatingType 枚舉裡**——進了枚舉就等於讓「未評分」變成一個寫得進 DB

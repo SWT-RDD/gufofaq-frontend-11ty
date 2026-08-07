@@ -574,8 +574,8 @@ bodyClass: guideline-page
             <br>
             <div>
                 {# prompt-edit 的「開頁即展開」那一態（`promptDefaultOpen`）在生產頁沒有人 set
-                     ——唯一使用者 5-2 走的是收合初始態。沒有這一份示範，prompt-edit.js:51-52
-                     那條分支全站沒有人看得到（§5 每個分支結果都要看得到）。 #}
+                     ——唯一使用者 5-2 走的是收合初始態。沒有這一份示範，prompt-edit.js 那句
+                     `hasAttribute("data-default-open")` 分支全站沒有人看得到（§5 每個分支結果都要看得到）。 #}
                 {% set promptDefaultOpen = true %}
                 {% include "components/prompt-edit/prompt-edit.html" %}
                 {% set promptDefaultOpen = false %}
@@ -668,7 +668,7 @@ bodyClass: guideline-page
             <h2 class="section-title"><span>22</span><span>使用期閘門遮罩</span></h2>
             <div class="caption">
                 <ul>
-                    <li>純樣式元件 ui/subscription-gate：真實環境由 React app-shell 依 /me 的 subscription_status 疊在全站之上、四種狀態（首登免責、到期、凍結、強制改密）條件渲染——本節是唯一看得到它的地方（GUIDELINE §5）</li>
+                    <li>純樣式元件 ui/subscription-gate：真實環境由 React app-shell 依 /me 的 subscription_status 疊在全站之上、四種狀態（待簽免責 pending_disclaimer／使用中 active／到期 expired／凍結 frozen）條件渲染——「強制改密」不是這一族的值，它是 /me 上另一顆布林，走別的閘門——本節是唯一看得到它的地方（GUIDELINE §5）</li>
                     <li>「.subscription-overlay」正式版是 position:fixed 全螢幕遮罩；此處掛示範變體「.demo-static」退回文流內，結構與正式版相同</li>
                     <li>面板兩型：三段式「.subscription-panel」（.panel-header/.panel-body/.panel-footer，首登免責與強制改密用）、置中訊息「.subscription-expired-box」（.title/.desc，到期與凍結用）</li>
                 </ul>
@@ -712,8 +712,13 @@ bodyClass: guideline-page
                     <li>進度「目前 X / N」與摘要「檢索」筆數全由節點資料推導、不烤字面量；收合復用 ui/accordion，本元件不自帶 js</li>
                 </ul>
             </div>
-            {# 失敗流程示範：生成到一半被合規攔截而中止，下游未走／未到——一次演到 failed（唯一無真實頁的態）
-               ＋completed／skipped／pending，且是一個真實可能的狀態（§6）。節點與摘要一起給，檢索筆數對上「命中 3 筆」。 #}
+            {# 失敗流程示範：生成到一半被合規攔截而中止，下游整段沒跑——一次演到 failed（唯一無真實頁的態）
+               ＋completed＋skipped，且是一個真實可能的狀態（§6）。節點與摘要一起給，檢索筆數對上「命中 3 筆」。
+               ⚠️ **failed 之後一律 skipped，沒有 pending**：saas `apps/web/lib/stepFlow.ts` 的 `computeFlow`
+               docstring 逐字寫著「`failed` 是終止狀態：其後的節點本輪不會再跑，一律 skipped」。
+               原本尾巴排成 skipped／pending／pending——pending 的語意是「還沒輪到、等一下會跑」，
+               而這一輪已經中止了，那三個節點是同一件事，不可能一個略過、兩個還在排隊。
+               pending 那一態在元件內建示範與 3-4 的試跑沙盒都看得到，不會因此沒有人演。 #}
             {# QA 直答的判定層在本頁演「LLM 裁判」那一層（另兩層見元件內建示範與 2-2-3） #}
             {% set stepFlowNodes = [
                 { label: "初始化對話", state: "completed", time: "11ms" },
@@ -723,8 +728,8 @@ bodyClass: guideline-page
                 { label: "可回答性判定", state: "completed", time: "160ms", verdict: "generate（素材足以回答）" },
                 { label: "生成答案", state: "failed", time: "1.2s", result: "生成時偵測到不允許的外部連結，已攔截並中止本次回答。" },
                 { label: "生成推薦問題", state: "skipped", time: "" },
-                { label: "完成對話", state: "pending", time: "" },
-                { label: "輸出合規檢查", state: "pending", time: "" }
+                { label: "完成對話", state: "skipped", time: "" },
+                { label: "輸出合規檢查", state: "skipped", time: "" }
             ] %}
             {% set stepFlowSummary = {
                 tokens: "742", latency: "1.9s", ttft: "520ms", results: "3", model: "openai:gpt-4o-mini"
@@ -747,6 +752,14 @@ bodyClass: guideline-page
                  得有一個畫面回答得出「有沒有變好」。
                  **判否與未達門檻是中性灰、不是錯誤紅**：那是系統正確運作的結果（這一筆 QA 沒有完整
                  回答使用者，所以不逐字直出）；畫紅色會讓人以為系統壞了。
+                 ⚠️ **`decidedBy`（判定層）只在命中那幾筆有值**：上游 `qa_direct.py` 把 `gate` 只寫進
+                 `DECISION_HIT` 的那三個 `_rec`（`GATE_EXACT`／`GATE_SCORE_FLOOR`／`GATE_LLM_JUDGE`），
+                 `DECISION_RECONSTRUCT_FAILED` 那兩處 `_rec` 一個 `gate=` 都沒帶。語意上也只能如此：
+                 「判定層」回答的是「哪一關**放行**了這一輪」，沒有放行就沒有那一格。
+                 本輪拿掉兩筆演不出來的值——第 3 筆（裁判判否，原本掛 `llm_judge`）與第 7 筆
+                 （原文重組失敗，原本掛 `exact`）。三種判定層仍然演得到，而且每一筆都是 `hit`：
+                 分數門檻在下面第 1 筆、完全命中在第 2 筆（另見 2-2-3）、LLM 裁判在本節上一份
+                 示範的那一筆 QA 直答。
                  §2：同一頁第二次用到同元件，**全部參數都要重設**（set 是頁面全域）。 #}
             {% set stepFlowNodes = [
                 { label: "QA 直答", state: "completed", time: "18ms", decision: "hit", entry: "pre_graph",
@@ -755,14 +768,14 @@ bodyClass: guideline-page
                 { label: "QA 直答", state: "completed", time: "12ms", decision: "hit", entry: "agent_tool",
                   matchedRank: "1", poolSize: "1", hits: "產品問答集 / 這個型號保固多久", decidedBy: "exact" },
                 { label: "QA 直答", state: "completed", time: "240ms", decision: "no_exact_and_judge_rejected",
-                  entry: "agent_tool", poolSize: "1", decidedBy: "llm_judge" },
+                  entry: "agent_tool", poolSize: "1" },
                 { label: "QA 直答", state: "completed", time: "26ms", decision: "below_score_floor",
                   entry: "pre_graph", poolSize: "16", score: "2.4", floor: "3（llm_reranker 的 1–5 尺）" },
                 { label: "QA 直答", state: "completed", time: "9ms", decision: "no_exact_and_judge_rejected",
                   entry: "agent_tool", poolSize: "1", reusedFrom: "pre_graph" },
                 { label: "QA 直答", state: "completed", time: "4ms", decision: "not_attempted", entry: "agent_tool" },
                 { label: "QA 直答", state: "completed", time: "31ms", decision: "reconstruct_failed",
-                  entry: "pre_graph", matchedRank: "1", poolSize: "16", decidedBy: "exact" },
+                  entry: "pre_graph", matchedRank: "1", poolSize: "16" },
                 { label: "QA 直答", state: "completed", time: "15ms", decision: "some_future_decision", entry: "pre_graph", poolSize: "16" }
             ] %}
             {% set stepFlowSummary = {
@@ -987,10 +1000,13 @@ bodyClass: guideline-page
 {% include "components/case-from-log-modal/case-from-log-modal.html" %}
 {# untagged-files 的資料集下拉吃頁面上的 coverageDatasets（5-10 有 set，元件庫沒有）：
    元件庫這一份是示範資料，與 5-10 那一份同形狀即可（§6 的一份正本講的是同一頁內不重複，
-   不是跨頁共用執行期資料）。 #}
+   不是跨頁共用執行期資料）。
+   **但值要與 5-10 同一組**：元件自帶的 `untaggedFileRows` 那兩列的「所屬資料集」欄是寫死在元件裡的，
+   兩個使用處共用它——這一頁的下拉若給另一組名字，同一份清單在元件庫頁就會列出兩個下拉裡沒有的
+   資料集。故沿用 5-10 的 id 與名稱（法規彙編 3／2026 新制問答 7）。 #}
 {% set coverageDatasets = [
-    { id: 1, name: "法規文件" },
-    { id: 2, name: "產品資料" }
+    { id: 3, name: "法規彙編" },
+    { id: 7, name: "2026 新制問答" }
 ] %}
 {# 頁碼列三參數由使用頁提供（同 pager-row）；本頁在此之前已用過一次 pagination，故要重設。 #}
 {% set total = 14 %}

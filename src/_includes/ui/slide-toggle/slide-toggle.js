@@ -1,5 +1,27 @@
 // 高度滑動開合：真實 app 的 jQuery slideDown/slideUp/slideToggle(300) 的原生替代品。
-// window.GufoSlide.down(el) / .up(el) / .toggle(el)
+//
+// 契約（無 html 元件，§1-2）：**這一支沒有任何 markup**——它是純行為工具，契約就是四個匯出的
+// 函式與它們的回傳值。抄不到東西可抄，所以逐字寫在這裡：
+//
+//   window.GufoSlide.down(el, ms)    展開（回傳 true）
+//   window.GufoSlide.up(el, ms)      收合（回傳 false）
+//   window.GufoSlide.toggle(el, ms)  反轉（回傳這次動作的目標態）
+//   window.GufoSlide.set(el, open)   **不帶動畫**地扳到定位（回傳 open）——初始態、
+//                                    或要把還在動的東西直接定住時用它
+//
+// `el`＝要開合的那顆元素（必填；傳 null／undefined 一律安全回傳 false，不丟例外）。
+// `ms`＝選填的毫秒數，預設 300（與真 app 的 `slideDown(300)` 一致）。
+//
+// **四支都回傳「這次動作的目標態」（true＝展開）**，這是回傳值的唯一語意：呼叫端要同步
+// `aria-expanded` 時**用回傳值**，不要自己再讀 computed display——動畫進行中 display 還是舊值
+// （`display:none` 要到動畫收尾才落地），讀了會跟實際結局脫鉤。
+//
+// 使用者（GUIDELINE §1-1 明文：呼叫 GufoSlide 不算依賴，它等同 DOM API）：
+// `components/mobile-nav`（手機選單與子選單）、`ui/accordion`（明細開合）。
+//
+// 一條對消費者的 markup 要求：**要滑動 flex / grid 的元素，別用 `display:none` 藏它**，
+// 改用一個 class 藏——本檔靠「清掉行內 display 之後問 CSS」推算「顯示時該是什麼 display」，
+// CSS 也說 none 的話只能退回 block（理由見下面 shownDisplay）。
 //
 // 為什麼要有這支：把 display 一次切掉是「啪」一下，跟真 app 的手感差很多，
 // 而手機選單、子選單、accordion 明細都要同一套動畫 —— 各寫一份就會走鐘。
