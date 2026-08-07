@@ -50,15 +50,15 @@
      固定長度，見 saas `lib/stepFlow` 的 CANONICAL_PIPELINE）。不烤字面量：使用頁改節點數，烤死的總數就會說謊（§6）。
    示範資料＝假資料（工具名/參數/結果/推理），依 GUIDELINE §4-2「只翻 UI chrome、不翻假資料」不掛 data-i18n。 #}
 {% set stepFlowNodeRows = stepFlowNodes or [
+    { label: "輸入合規檢查", state: "completed", time: "8ms" },
+    { label: "QA 直答", state: "completed", time: "18ms",
+      score: "2.4", floor: "3（llm_reranker 的 1–5 尺）",
+      decision: "below_score_floor", entry: "pre_graph", poolSize: "16" },
     { label: "初始化對話", state: "completed", time: "12ms" },
     { label: "Agent 推理", state: "completed", time: "340ms", thinking: "先判斷是否需要檢索；問題涉及具體規定，決定呼叫知識庫搜尋。" },
     { label: "檢索知識庫", state: "completed", time: "1.2s", tools: "search_knowledge_base", params: "{ query: '新住民 結婚 應備文件' }", resultShown: "500", resultLength: "19500", result: "命中 8 筆片段（相似度 0.79–0.92），依相似度排序後注入後續生成脈絡。前三筆來自「新住民結婚登記須知」：第一筆說明雙方當事人須親自到任一戶政事務所辦理，並備妥雙方身分證、印章、戶口名簿與三個月內之戶籍謄本；第二筆列出外籍配偶應另備經我國駐外館處驗證之單身證明與出生證明，且文件如為外文須附中文譯本並經驗證；第三筆說明部分國籍之當事人另須完成境外面談，面談未通過者不予登記。第四至第六筆來自「跨國婚姻健康檢查與居留」：包含健康檢查項目、居留簽證與外僑居留證之申請時程，以及未於期限內辦理的罰則。第七筆為各縣市新住民家庭服務中心的通譯服務申請方式與免費諮詢管道。第八筆為常見退件原因彙整，其中以譯本未經驗證與戶籍謄本逾期兩項最多。第九筆之後為相似度低於門檻的候選，未納入本次脈絡。另補充：結婚登記自登記之日起生效，未辦理登記者婚姻關係不成立；當事人如已於境外辦妥結婚，仍須持經驗證之結婚證明文件回國辦理登記，並注意譯本有效期限。戶政事務所受理後如發現文件不全，會當場開立補正通知，補正期限內未補齊者將予退件。最後，若當事人之一為未成年人，另須法定代理人同意書並一併驗證。（本段為節錄前段，餘略）" },
     { label: "可回答性判定", state: "completed", time: "210ms", verdict: "generate（素材足以回答）" },
-    { label: "QA 直答", state: "completed", time: "18ms", hits: "客服問答集 / 新住民結婚登記要準備什麼文件？",
-      score: "4.6", decidedBy: "score_floor", floor: "3（llm_reranker 的 1–5 尺）",
-      decision: "hit", entry: "pre_graph", matchedRank: "3", poolSize: "16" },
     { label: "生成答案", state: "running", time: "" },
-    { label: "誠實查無", state: "skipped", time: "" },
     { label: "生成推薦問題", state: "pending", time: "" },
     { label: "完成對話", state: "pending", time: "" },
     { label: "輸出合規檢查", state: "pending", time: "" }
@@ -66,7 +66,7 @@
 {# 整體執行摘要：與 stepFlowNodes 同型的可覆寫資料（來自 chat_room chunk 的既有欄），使用頁換主題時
      連同節點一起覆寫才不會自打架（§6）；未設用內建示範。缺欄由 React 端不顯示，靜態示範一律備齊。 #}
 {% set stepFlowSummaryData = stepFlowSummary or {
-    tokens: "1,284", latency: "2.4s", ttft: "480ms", results: "8", model: "openai:gpt-4o-mini"
+    tokens: "1,284", latency: "2.4s", ttft: "1.9s", results: "8", model: "openai:gpt-4o-mini"
 } %}
 {# 進度序號與總數只數正典節點（無 depth 者），巢狀子步驟不計入（見檔頭）。
      已執行＝completed/running/failed；skipped 是未走的分支、pending 尚未到，都不算。
