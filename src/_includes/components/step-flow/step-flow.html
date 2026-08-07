@@ -33,7 +33,11 @@
          「結論怎麼來的」，而重用可能重用命中、也可能重用判否，一個值講不清楚是哪一種。
      **同一輪出現兩個 qa_direct 節點是正常的**（建圖前判否 → agent 又判一次），逐筆依序畫、不去重。
    參數：stepFlowNodes（選填，[{ label, state, time, depth, skill, version, iterations, error,
-     tools, params, result, verdict, thinking, decision, entry, matchedRank, poolSize, reusedFrom }]）＋
+     tools, params, result, resultShown, resultLength, verdict, thinking,
+     hits, score, decidedBy, floor, decision, entry, matchedRank, poolSize, reusedFrom }]）
+     ——`resultShown`／`resultLength` **必須成對**（工具輸出被截斷時才給；只給一半那一列會渲染出空格）；
+       `decidedBy` 只在 `decision == "hit"` 時有值、`matchedRank` 只在 exact 那一層有值（上游只在那兩種
+       情況寫得出來，硬給就是演一個 API 產不出的組合）＋
      stepFlowSummary（選填，{ tokens, latency, ttft, results, model ＋選填成對的 tokensIn／tokensOut }）
      ——使用頁換對話主題時「兩個一起覆寫」，
      否則摘要（檢索筆數/模型）會與節點對不上（§6 自洽）；內部變數用元件專屬名 stepFlowNodeRows／stepFlowSummaryData。
@@ -48,7 +52,7 @@
 {% set stepFlowNodeRows = stepFlowNodes or [
     { label: "初始化對話", state: "completed", time: "12ms" },
     { label: "Agent 推理", state: "completed", time: "340ms", thinking: "先判斷是否需要檢索；問題涉及具體規定，決定呼叫知識庫搜尋。" },
-    { label: "檢索知識庫", state: "completed", time: "1.2s", tools: "search_knowledge_base", params: "{ query: '新住民 結婚 應備文件' }", resultLength: "19500", result: "命中 8 筆片段（相似度 0.79–0.92），依相似度排序後注入後續生成脈絡。前三筆來自「新住民結婚登記須知」：第一筆說明雙方當事人須親自到任一戶政事務所辦理，並備妥雙方身分證、印章、戶口名簿與三個月內之戶籍謄本；第二筆列出外籍配偶應另備經我國駐外館處驗證之單身證明與出生證明，且文件如為外文須附中文譯本並經驗證；第三筆說明部分國籍之當事人另須完成境外面談，面談未通過者不予登記。第四至第六筆來自「跨國婚姻健康檢查與居留」：包含健康檢查項目、居留簽證與外僑居留證之申請時程，以及未於期限內辦理的罰則。第七筆為各縣市新住民家庭服務中心的通譯服務申請方式與免費諮詢管道。第八筆為常見退件原因彙整，其中以譯本未經驗證與戶籍謄本逾期兩項最多。第九筆之後為相似度低於門檻的候選，未納入本次脈絡。另補充：結婚登記自登記之日起生效，未辦理登記者婚姻關係不成立；當事人如已於境外辦妥結婚，仍須持經驗證之結婚證明文件回國辦理登記，並注意譯本有效期限。戶政事務所受理後如發現文件不全，會當場開立補正通知，補正期限內未補齊者將予退件。最後，若當事人之一為未成年人，另須法定代理人同意書並一併驗證。（本段為節錄前段，餘略）" },
+    { label: "檢索知識庫", state: "completed", time: "1.2s", tools: "search_knowledge_base", params: "{ query: '新住民 結婚 應備文件' }", resultShown: "500", resultLength: "19500", result: "命中 8 筆片段（相似度 0.79–0.92），依相似度排序後注入後續生成脈絡。前三筆來自「新住民結婚登記須知」：第一筆說明雙方當事人須親自到任一戶政事務所辦理，並備妥雙方身分證、印章、戶口名簿與三個月內之戶籍謄本；第二筆列出外籍配偶應另備經我國駐外館處驗證之單身證明與出生證明，且文件如為外文須附中文譯本並經驗證；第三筆說明部分國籍之當事人另須完成境外面談，面談未通過者不予登記。第四至第六筆來自「跨國婚姻健康檢查與居留」：包含健康檢查項目、居留簽證與外僑居留證之申請時程，以及未於期限內辦理的罰則。第七筆為各縣市新住民家庭服務中心的通譯服務申請方式與免費諮詢管道。第八筆為常見退件原因彙整，其中以譯本未經驗證與戶籍謄本逾期兩項最多。第九筆之後為相似度低於門檻的候選，未納入本次脈絡。另補充：結婚登記自登記之日起生效，未辦理登記者婚姻關係不成立；當事人如已於境外辦妥結婚，仍須持經驗證之結婚證明文件回國辦理登記，並注意譯本有效期限。戶政事務所受理後如發現文件不全，會當場開立補正通知，補正期限內未補齊者將予退件。最後，若當事人之一為未成年人，另須法定代理人同意書並一併驗證。（本段為節錄前段，餘略）" },
     { label: "可回答性判定", state: "completed", time: "210ms", verdict: "generate（素材足以回答）" },
     { label: "QA 直答", state: "completed", time: "18ms", hits: "客服問答集 / 新住民結婚登記要準備什麼文件？",
       score: "4.6", decidedBy: "score_floor", floor: "3（llm_reranker 的 1–5 尺）",
@@ -93,7 +97,7 @@
              截斷＝把這件事說出來並給一顆去拿全文的鈕。故由 stepFlowTraceShown／stepFlowTraceTotal
              成對參數決定，**不用 .hidden**——`.hidden` 的另一態是「什麼都不渲染」時，這塊 markup
              全站每一頁都看不到，等於沒有人驗收過它的長相（§5）；元件庫頁把它設起來當唯一可見處，
-             與姊妹實作「看完整輸出」（`{% if node.resultLength %}`）同形。
+             與姊妹實作「看完整輸出」（`{% if node.resultShown and node.resultLength %}`）同形。
              數字是資料、夾在前後綴 key 中間（不是插值 key）。
              「載入完整軌跡」**已經接得上了**（本輪回頭查證，前一版檔頭寫的「超出上限的事件目前沒有落庫」
              已經過期）：GufoRAG chatbot `routes/_chat_trace.py` 把上限分成兩層——落庫 `MAX_STEP_EVENTS`

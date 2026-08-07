@@ -188,7 +188,7 @@ permalink: 5-5-1_userManagement.html
                              capHas 要在內層迴圈之前先宣告：nunjucks 的 for 會 push 新 frame，
                              set 只寫得回已存在的名字。 #}
                         {% set capPrinted = "" %}
-                        {% for cap in capabilities %}{% set capHas = false %}{% for group in groups %}{% if group.id in member.groupIds and cap.key in group.capabilities %}{% set capHas = true %}{% endif %}{% endfor %}{% if capHas %}{% if capPrinted %}<span>、</span>{% endif %}<span data-i18n="{{ cap.i18nKey }}">{{ cap.label }}</span>{% set capPrinted = "1" %}{% endif %}{% endfor %}
+                        {% for cap in capabilities %}{% set capHas = false %}{% for group in groups %}{% if group.id in member.groupIds and cap.key in group.capabilities %}{% set capHas = true %}{% endif %}{% endfor %}{% if capHas %}{% if capPrinted %}<span data-i18n="common.listSep">、</span>{% endif %}<span data-i18n="{{ cap.i18nKey }}">{{ cap.label }}</span>{% set capPrinted = "1" %}{% endif %}{% endfor %}
                         {% endif %}
                     </td>
                     <td>
