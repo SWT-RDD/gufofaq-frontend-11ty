@@ -324,7 +324,7 @@ permalink: 2-2-3_abTest.html
                          多一條「沒填問題」（apps/web ab-test 那一頁的 `handleSubmit` 第一行也是
                          `if (!query || loading) return`）。共用 `toast.chatSubmit` 會讓那顆 key 同時代表
                          「固定問句的 chip，不可能空」與「自由輸入，可能空」兩種行為契約（§4-2）。 #}
-                    <button type="button" class="button button-primary chat-input-submit" data-toast="回答生成中...|請先輸入問題|回答生成成功|回答生成失敗" data-i18n-data-toast="toast.chatSend" data-toast-type="info|warning|success|error" data-i18n="action.submit">送出</button>
+                    <button data-capability="ask" type="button" class="button button-primary chat-input-submit" data-toast="回答生成中...|請先輸入問題|回答生成成功|回答生成失敗" data-i18n-data-toast="toast.chatSend" data-toast-type="info|warning|success|error" data-i18n="action.submit">送出</button>
                 </div>
             </div>
         </div>

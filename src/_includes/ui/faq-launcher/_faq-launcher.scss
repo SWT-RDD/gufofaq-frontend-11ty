@@ -22,7 +22,10 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    background-image: var(--brand-gradient);
+    // 純色而非 --brand-gradient：28px 白色貓頭鷹置中於 56px 圓，覆蓋漸層 t=0.25~0.75，
+    // 淺色模式右緣只有 2.89（圖形記號門檻 3:1）。與 components/faq-chatroom 的頭像同步換，
+    // 兩者是刻意的視覺孿生，只改一邊會讓「後台這顆鈕＝前台那個機器人」的等式斷掉。
+    background-color: var(--brand);
     box-shadow: 0 2px 8px 0 var(--shadow-strong);
     // reduced-motion 由 _base 全域壓成 0.01ms，這裡不必再自己判一次
     transition: transform 0.2s ease, box-shadow 0.2s ease;

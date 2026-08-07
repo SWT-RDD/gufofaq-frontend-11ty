@@ -4,7 +4,7 @@
   "private": true,
   "description": "GufoFAQ react-friendly 11ty 切版交付專案",
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "scripts": {
     "dev": "run-p dev:html dev:css",

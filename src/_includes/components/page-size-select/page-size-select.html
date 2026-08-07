@@ -7,7 +7,7 @@
   一邊把 20 寫死在元件裡、另一邊落回 pagination 的預設 10，畫面就會同時出現「每頁 20 筆」與
   「共 12 頁」，而 115÷20＝6）。使用頁在 include 兩者之前 set 一次 perPage 即可；未 set 時
   沿用 pagination 的預設 10。
-  選項 10/20/50/100 是**切版自訂的級距**，不宣稱後端出處：六個使用頁的後端上限並不相同
+  選項 10/20/50/100 是**切版自訂的級距**，不宣稱後端出處：各使用頁的後端上限並不相同
   （product history.py／audit.py 的 limit 是 `Query(..., le=1000)`、datasets.py 的
   get_file_records 是 `le=100`），所以「100＝後端上限」對多數頁面是假的。
   內部變數用元件專屬名 pageSizeOptions／pageSizeValue（§6）。

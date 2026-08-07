@@ -2279,8 +2279,13 @@ test("§4 遮罩圖示的墨色只能來自文字族／前景墨色（填充族�
     //   --border 是邊框色，當箭頭是 1.3:1 —— 兩者都通過了全部 60 條測試。
     // 遮罩把 background 裁成字形 → 那顆顏色是**前景**，門檻與內文相同（§4：一顆 token 只能有一個角色）。
     // 另收 --on-accent：它在 COLOR_ROLES 裡歸在 chrome 桶，但角色不是邊框線色而是**疊在有色填充上的
-    // 前景墨色**（白字／白圖示）。遮罩畫在品牌漸層上時（ui/widget-shell 的關閉叉叉）那正是它的用途，
-    // 而它對每一顆填充的 ≥4.5 早已由本檔的對比度測試逐色實算（見「白字疊 ${f}」那一行）。
+    // 前景墨色**（白字／白圖示）。它對每一顆**純色填充 token** 的 ≥4.5 由本檔的對比度測試逐色實算
+    // （見「白字疊 ${f}」那一行）。
+    // ⚠️ **那條實算不涵蓋漸層**：`--brand-gradient` 在 chrome 桶、值不是 hex，`get()` 拿不到它，
+    //    而「白字疊」的迴圈只跑 fillOnWhiteText。所以 --on-accent 疊漸層時這裡等於無條件放行——
+    //    round38 因此在 footer（置中白字，淺色中段 3.67）、faq-chatroom 頭像與 faq-launcher
+    //    （白貓頭鷹，右緣 2.74／2.89）各留了一個破門檻的實體，三處都已改回純色 --brand。
+    //    漸層要承載前景就得逐端點實算，不能靠這一句放行。
     // 刻意只加這一顆，不放整個 chrome 桶——那條規則要擋的是 --border 這種線色當墨色（實測 1.3:1）。
     const allowed = new Set([...COLOR_ROLES.textOnSurface, ...COLOR_ROLES.inkOnSurface, "--on-accent"]);
     const css = read("dist/css/main.css");

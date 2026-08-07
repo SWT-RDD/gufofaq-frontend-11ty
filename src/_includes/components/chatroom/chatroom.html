@@ -122,7 +122,7 @@
                         <div class="suggested-questions" role="group" aria-labelledby="chatroomSuggestedLabel">
                             <span id="chatroomSuggestedLabel" class="suggested-questions-label" data-i18n="comp.suggestedQuestions">建議追問：</span>
                             {% for q in chatroomSuggested %}
-                            <button type="button" class="button button-border button-sm js-ask-suggested" data-toast="回答生成中...|回答生成成功|回答生成失敗" data-i18n-data-toast="toast.chatSubmit" data-toast-type="info|success|error">{{ q }}</button>
+                            <button data-capability="ask" type="button" class="button button-border button-sm js-ask-suggested" data-toast="回答生成中...|回答生成成功|回答生成失敗" data-i18n-data-toast="toast.chatSubmit" data-toast-type="info|success|error">{{ q }}</button>
                             {% endfor %}
                         </div>
                         {% endif %}
@@ -167,7 +167,7 @@
             {# 送出鈕另立 key：它多一條「沒填問題」（真 app singleTest.js:768-771 `if (!question)` 就地擋下）。
                  建議追問的 chip 送的是固定問句，不可能空——共用同一顆 key 會讓那四顆 chip 演一個
                  不可能的結果（§5）。 #}
-            <button type="button" class="button button-primary chat-input-submit" data-toast="回答生成中...|請先輸入問題|回答生成成功|回答生成失敗" data-i18n-data-toast="toast.chatSend" data-toast-type="info|warning|success|error" data-i18n="action.submit">送出</button>
+            <button data-capability="ask" type="button" class="button button-primary chat-input-submit" data-toast="回答生成中...|請先輸入問題|回答生成成功|回答生成失敗" data-i18n-data-toast="toast.chatSend" data-toast-type="info|warning|success|error" data-i18n="action.submit">送出</button>
         </div>
     </div>
     {% endif %}

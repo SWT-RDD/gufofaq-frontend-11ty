@@ -47,7 +47,7 @@ permalink: 3-1-3_previewDataset.html
              或 `can_write_dataset` 判跨群組，retrieval.py）、404「dataset not found」、
              502（同步 GufoRAG 失敗、整筆回滾）。403 是使用者自己找得到人開通／換群組的 warning，
              措辭同 5-1-1 的 `toast.saveAccount`；404／502 併進末段 error。 #}
-        {% set editCapability = "data:write" %}
+        {% set editCapability = "settings:write" %}
         {% set editSaveToast = "已更新|權限不足，無法儲存|儲存失敗，請稍後再試" %}
         {% set editSaveToastKey = "toast.saveDatasetField" %}
         {% set editSaveToastType = "success|warning|error" %}
@@ -62,7 +62,7 @@ permalink: 3-1-3_previewDataset.html
         {% set editPlaceholderKey = "comp.enterTaskPrompt" %}
         {% set editValue = "你是客服助理，請根據提供的資料集內容，以親切、精簡的語氣回答使用者的問題。" %}
         {# 與任務描述同一顆端點、同一組 raise（見上），故分支集合逐字相同。 #}
-        {% set editCapability = "data:write" %}
+        {% set editCapability = "settings:write" %}
         {% set editSaveToast = "已更新|權限不足，無法儲存|儲存失敗，請稍後再試" %}
         {% set editSaveToastKey = "toast.saveDatasetField" %}
         {% set editSaveToastType = "success|warning|error" %}

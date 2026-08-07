@@ -7,7 +7,12 @@
     padding: 0.8125rem 0;
     text-align: center;
     color: var(--on-accent);
-    background-image: var(--brand-gradient);
+    // **不用 --brand-gradient**：這條長條承載前景（置中的白字 ＋ 內含的 .link-modal.on-dark），
+    // 而漸層是 `to right`、文字落在中段——淺色模式實算 t=0.35~0.65 只有 4.31~3.18，破 AA 4.5；
+    // 手機換行後貼近兩端更低（尾端 2.30）。深色那組全段 10.77~4.66 才過，只有淺色壞。
+    // 純色 --brand 對白字兩主題都 ≥4.5（4.89／5.30）。漸層留給不承載前景的用途
+    // （header／chatbot-header 的 2px border-image 底線是正確用法）。
+    background-color: var(--brand);
     display: flex;
     align-items: center;
     justify-content: center;
