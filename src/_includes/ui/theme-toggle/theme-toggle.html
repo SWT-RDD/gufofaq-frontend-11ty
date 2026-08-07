@@ -1,10 +1,15 @@
 {# 深色／淺色切換鈕：切換 <html data-theme>，寫入 localStorage（行為見 theme-toggle.js）。
      圖示用 inline SVG（currentColor 隨主題變色，無新 PNG 資產）：淺色顯示月亮（點了轉深），深色顯示太陽（點了轉淺）。
 
-   可及名稱走**換標籤**（正典＝ui/reveal-input）：兩顆 svg 都 aria-hidden，唯一的名稱來源是這顆鈕自己；
+   可及名稱走**換標籤**：兩顆 svg 都 aria-hidden，唯一的名稱來源是這顆鈕自己；
      原本恆定的「切換深色／淺色模式」說不出**目前是深是淺**，報讀器每一次聽到的都是同一句，
      也就是深淺這個狀態在非視覺通道上根本不存在。狀態語意不另掛 aria-pressed——ARIA APG：
      換標籤與 pressed 二擇一，並用會念出「切換為深色模式、已按下」這種矛盾（同 reveal-input 的裁決）。
+   兩態槽的**後綴詞彙正典＝components/prompt-edit**（同為狀態式），不是 ui/reveal-input——
+     全站兩種命名並存：**狀態式**（本檔、prompt-edit）的後綴是**當下狀態**、值是那一態該顯示的**動作**，
+     所以 `data-key-light="theme.toDark"` 這種「屬性名與值指反方向」是正常的（現在是淺色 ⇒ 按了轉深，
+     同 prompt-edit 的 `data-text-open="完成編輯"`）；**動作式**（ui/reveal-input）的後綴才是按下去要做的事
+     （`data-text-show="顯示"` 用在目前是遮蔽時）。認錯種類會讓兩態整組對調，而畫面照樣有字。
    兩態文字與 key 由 data-text-<態>／data-key-<態> 提供（態＝**目前**主題，值即 data-theme 的值），
      JS 不寫死字串（§4-2）；切換後由 theme-toggle.js 的 label() 一併改寫 data-i18n-title／data-i18n-aria-label，
      lang-toggle 之後才會依「當下狀態的 key」重譯。

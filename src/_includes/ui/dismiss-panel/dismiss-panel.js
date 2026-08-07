@@ -21,7 +21,7 @@
 //           <div class="col-6-md col-12-sm">
 //               <div class="form-group">
 //                   <div class="field">
-//                       <input type="password" id="serviceKeyPlain" class="form-control" value="psk_sample000000000000000000000c091" readonly aria-label="剛核發的明碼" data-i18n-aria-label="serviceKey.plainTitle">
+//                       <input type="password" id="serviceKeyPlain" class="form-control" value="psk_sample000000000000000000000000000000000c091" readonly aria-label="剛核發的明碼" data-i18n-aria-label="serviceKey.plainTitle">
 //                   </div>
 //               </div>
 //           </div>

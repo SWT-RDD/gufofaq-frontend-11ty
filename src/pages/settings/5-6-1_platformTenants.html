@@ -145,8 +145,14 @@ permalink: 5-6-1_platformTenants.html
                     <input type="password" id="tenantAdminPasswordInput" minlength="8" placeholder="至少 8 碼" data-i18n-placeholder="settings.pleaseEnterNewPassword" aria-describedby="tenantAdminPasswordInputHint" class="form-control" required>
                     {# 「至少 8 碼」是**約束提示**、不是錯誤訊息：.error-prompt 預設 display:none
                          （靠 .form-group:has(.error) 才揭示），aria-describedby 指過去等於輔具讀到零。
-                         約束要在填之前就講得出來，故改成常駐可見的說明字（§4）。 #}
-                    <span class="text-gray" id="tenantAdminPasswordInputHint" data-i18n="settings.passwordMinLength">密碼至少 8 碼</span>
+                         約束要在填之前就講得出來，故改成常駐可見的說明字（§4）。
+                         **8 是資料節點、不是譯文的一部分**（§3-2 / §4-2）：上游六處 `Field(min_length=8)`
+                         （product `app/routers/platform.py` 的 TenantCreate.admin_password 與 AdminResetPasswordIn.new_password、
+                         `app/routers/users.py` 的三處），加上這一格的 `minlength="8"`，這個數字已經有好幾份抄本；
+                         再烤進英譯就是「改上限要改兩份譯文」。形狀沿用 2-2-4 的 200（前綴 key ＋ 數字節點 ＋ 單位 key）。
+                         同一頁的 placeholder（settings.pleaseEnterNewPassword）與送出鈕的 data-toast **維持**把 8 寫在譯文裡：
+                         屬性是原子字串，拆不成節點——那是 §4-2 明列的例外，不是漏改。 #}
+                    <span class="text-gray" id="tenantAdminPasswordInputHint"><span data-i18n="settings.passwordMinLengthPrefix">密碼至少 </span><span>8</span><span data-i18n="settings.passwordMinLengthSuffix"> 碼</span></span>
                 </div>
             </div>
         </div>
@@ -183,10 +189,15 @@ permalink: 5-6-1_platformTenants.html
 {# ⚠️ 三處推導（§6），本輪修正：
      ① **凍結優先於到期**：`subscription.status` 第一件事就是
         `if tenant.frozen_at is not None: return FROZEN`（該常數的註解逐字寫著「凍結優先：完全鎖住，
-        不論到期與否」）⇒ `frozen: true` 的租戶 B，`subscription_status` 只可能是 FROZEN，不可能是
+        不論到期與否」）⇒ 被凍結的租戶 B，`subscription_status` 只可能是 FROZEN，不可能是
         EXPIRED。原本 B 同時掛著「已凍結」標記與「已到期」狀態，那是同一支端點的兩個欄位互相打架。
         （B 仍然 reviewDue: false：`_is_review_due` 要求逾期滿 90 天，而 B 的到期日 2026-06-30
         距本頁的「現在」約 2026-07-14——由 C／D 的 daysOverdue 135／150 回推——只逾期 14 天。）
+        **本輪的收尾**：改成 FROZEN 之後，`frozen` 這個旗標在這張表上就沒有第二件事可說了
+        （`_tenant_out` 寫的是 `frozen=t.frozen_at is not None`，與 status 同一個判斷式），
+        所以列物件不再帶 `frozen` 欄、名稱欄的「已凍結」徽章也一併移除——留著就是同一列用
+        同一顆 key 印同一句話兩遍。ISO 名單那張表的 `frozen` 欄不同，見該處註解（`ReviewTenantOut`
+        用它分辨「這季新逾期的」與「上季已凍結、還在等處置的」，那張表沒有 status 欄）。
      ② **使用者數的下界是 1，不是 0**：建租戶的 `TenantCreate` 把 `admin_email`／`admin_password`
         列為必填（platform.py），也就是「建立租戶」與「建立它的第一位管理員」是同一個動作；
         而刪除／停用那一側有 `last_tenant_admin` 守衛（users.py）⇒ 任何存在的租戶至少有一位使用者。
@@ -204,11 +215,11 @@ permalink: 5-6-1_platformTenants.html
      **示範租戶 D 的 id 是 42**：不是隨手挑的——下面 step-3 的失敗結果逐字寫著
      「從 GufoRAG 刪租戶索引失敗（tenant=42）」，那筆講的就是它（§6 同頁同源）。 #}
 {% set tenants = [
-  { id: 7, name: "示範租戶 A", userCount: 8, features: ["data", "ask", "history", "settings", "audit", "extract"], frozen: false, reviewDue: false, status: "ACTIVE", statusKey: "platform.statusActive", statusLabel: "使用期內", trialEnd: "2027-01-31" },
-  { id: 15, name: "示範租戶 B", userCount: 3, features: ["data", "ask"], frozen: true, reviewDue: false, status: "FROZEN", statusKey: "platform.statusFrozen", statusLabel: "已凍結", trialEnd: "2026-06-30" },
-  { id: 23, name: "示範租戶 C", userCount: 2, features: ["ask"], frozen: false, reviewDue: true, status: "EXPIRED", statusKey: "platform.statusExpired", statusLabel: "已到期", trialEnd: "2026-03-01" },
-  { id: 42, name: "示範租戶 D", userCount: 4, features: ["data", "ask"], frozen: false, reviewDue: true, status: "EXPIRED", statusKey: "platform.statusExpired", statusLabel: "已到期", trialEnd: "2026-02-14" },
-  { id: 58, name: "示範租戶 E", userCount: 1, features: ["data", "ask"], frozen: false, reviewDue: false, status: "PENDING", statusKey: "platform.statusPending", statusLabel: "待啟用", trialEnd: "" }
+  { id: 7, name: "示範租戶 A", userCount: 8, features: ["data", "ask", "history", "settings", "audit", "extract"], reviewDue: false, status: "ACTIVE", statusKey: "platform.statusActive", statusLabel: "使用期內", trialEnd: "2027-01-31" },
+  { id: 15, name: "示範租戶 B", userCount: 3, features: ["data", "ask"], reviewDue: false, status: "FROZEN", statusKey: "platform.statusFrozen", statusLabel: "已凍結", trialEnd: "2026-06-30" },
+  { id: 23, name: "示範租戶 C", userCount: 2, features: ["ask"], reviewDue: true, status: "EXPIRED", statusKey: "platform.statusExpired", statusLabel: "已到期", trialEnd: "2026-03-01" },
+  { id: 42, name: "示範租戶 D", userCount: 4, features: ["data", "ask"], reviewDue: true, status: "EXPIRED", statusKey: "platform.statusExpired", statusLabel: "已到期", trialEnd: "2026-02-14" },
+  { id: 58, name: "示範租戶 E", userCount: 1, features: ["data", "ask"], reviewDue: false, status: "PENDING", statusKey: "platform.statusPending", statusLabel: "待啟用", trialEnd: "" }
 ] %}
 
 {# 帳號治理工具列：匯出租戶／使用者 CSV（帳號列表，稽核用）。直接下載動作 → data-toast 演出成敗（走 BFF 檔案透傳）。 #}
@@ -222,8 +233,9 @@ permalink: 5-6-1_platformTenants.html
     </div>
 </div>
 
-{# 租戶功能開通：default-table；每租戶每功能一個 ui/switch（開通/停用）。名稱欄附治理徽章：
-     reviewDue → 紅色「ISO 待審」（title 提示逾期滿 90 天）、frozen → 「已凍結」狀態。 #}
+{# 租戶功能開通：default-table；每租戶每功能一個 ui/switch（開通/停用）。名稱欄只附一顆治理徽章：
+     reviewDue → 紅色「ISO 待審」（title 提示逾期滿 90 天）。凍結不在名稱欄——它是
+     `subscription_status` 四態之一，落在右邊那一格（理由見該處註解）。 #}
 <div class="block flex-row column gap-16" data-platform-role="auditor">
     <div class="text-md text-bold" data-i18n="nav.tenantEnable">租戶功能開通</div>
     <div class="table-container scrollTable">
@@ -267,7 +279,15 @@ permalink: 5-6-1_platformTenants.html
                             <span id="tenantName-{{ tenantIdx }}">{{ tenant.name }}</span>
                             {# tooltip 不寫死天數（門檻可設定，見本頁 overdueDaysLabel 輸入框）：title 是原子屬性、無法用 §4-2 的拆節點做法，故改為不含數字的通用語 #}
                             {% if tenant.reviewDue %}<span class="text-red text-bold" title="已逾審核期限，請審核處置" data-i18n-title="platform.reviewDueTooltip" data-i18n="platform.reviewDue">ISO 待審</span>{% endif %}
-                            {% if tenant.frozen %}<span class="text-gray" data-i18n="platform.statusFrozen">已凍結</span>{% endif %}
+                            {# 名稱欄**沒有**「已凍結」徽章：`TenantOut.frozen` 是
+                                 `t.frozen_at is not None`，而 `subscription.status()` 第一件事就是
+                                 `if tenant.frozen_at is not None: return FROZEN`（app/subscription.py）
+                                 ⇒ 兩個欄位邏輯等價，畫兩次就是同一列裡用同一顆 key 印同一句話兩遍。
+                                 留的是右邊那一格（`subscription_status`），因為它是四態枚舉
+                                 （待啟用／使用期內／已到期／已凍結）的單一落點，徽章只演得出其中一態。
+                                 `platform.reviewDue` 不同：`_is_review_due` 是 status ＋ trial_end ＋
+                                 逾期天數三者算出來的**另一件事**（凍結中的租戶照樣可能待審），
+                                 所以它留在名稱欄。 #}
                         </div>
                     </td>
                     <td><span data-i18n="{{ tenant.statusKey }}">{{ tenant.statusLabel }}</span></td>

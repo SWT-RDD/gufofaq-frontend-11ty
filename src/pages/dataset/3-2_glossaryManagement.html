@@ -119,14 +119,19 @@ permalink: 3-2_glossaryManagement.html
                 <tr data-glossary-id="{{ tbl.id }}">
                     {# 迴圈內的值控制項不掛靜態 aria-label（§4：同表 2 列會全部同名，報讀器聽不出在改哪一張表）——
                          改吃「本列辨識欄 ＋ 欄表頭」，故另補一顆 sr-only 列名（正典＝3-6 的 aliasTableRowName-*）。
-                         列名要另立節點：這一欄本身是 <input>，它的 value 不是可被 aria-labelledby 引用的文字。 #}
+                         列名要另立節點：這一欄本身是 <input>，它的 value 不是可被 aria-labelledby 引用的文字。
+                         **前綴是 glossaryTableRowName-（表），不是 glossaryRowName-**：本頁底下 include 的
+                         components/glossary-entries-modal 是同一頁的另一張表（詞條），它的列名吃 loop.index。
+                         兩張表共用一個前綴時，這裡的主鍵（4、5）遲早會撞上那邊的序號——產品術語 8 筆詞條
+                         一開窗，同一份 DOM 上就會有兩顆同 id，aria-labelledby 於是指到另一張表的列名上。
+                         同 3-6／alias-entries-modal 的分法（aliasTableRowName- 對 aliasRowName-）。 #}
                     <td>
-                        <span id="glossaryRowName-{{ tbl.id }}" class="sr-only">{{ tbl.name }}</span>
-                        <input type="text" class="form-control" value="{{ tbl.name }}" aria-labelledby="glossaryRowName-{{ tbl.id }} glossaryHeadName">
+                        <span id="glossaryTableRowName-{{ tbl.id }}" class="sr-only">{{ tbl.name }}</span>
+                        <input type="text" class="form-control" value="{{ tbl.name }}" aria-labelledby="glossaryTableRowName-{{ tbl.id }} glossaryHeadName">
                     </td>
-                    <td><input type="text" class="form-control" value="{{ tbl.whenToConsult }}" aria-labelledby="glossaryRowName-{{ tbl.id }} glossaryHeadWhenToConsult"></td>
-                    <td><input type="text" class="form-control" value="{{ tbl.toolPrompt }}" aria-labelledby="glossaryRowName-{{ tbl.id }} glossaryHeadToolPrompt"></td>
-                    <td><input type="text" class="form-control" value="{{ tbl.normalizeRegex }}" aria-labelledby="glossaryRowName-{{ tbl.id }} glossaryHeadNormalizeRegex"></td>
+                    <td><input type="text" class="form-control" value="{{ tbl.whenToConsult }}" aria-labelledby="glossaryTableRowName-{{ tbl.id }} glossaryHeadWhenToConsult"></td>
+                    <td><input type="text" class="form-control" value="{{ tbl.toolPrompt }}" aria-labelledby="glossaryTableRowName-{{ tbl.id }} glossaryHeadToolPrompt"></td>
+                    <td><input type="text" class="form-control" value="{{ tbl.normalizeRegex }}" aria-labelledby="glossaryTableRowName-{{ tbl.id }} glossaryHeadNormalizeRegex"></td>
                     <td class="text-center">{{ tbl.entryCount }}</td>
                     <td>
                         <div class="btn-group">

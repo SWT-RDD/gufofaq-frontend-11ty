@@ -16,8 +16,13 @@
 //      <div class="data-info flex-row flex-wrap gap-24">
 //          <span><span data-i18n="settings.scanDocuments">列舉得到的文件：</span>{{ coverageScan.documents }}</span>
 //          <span><span data-i18n="settings.scanExamined">讀到內容（覆蓋率的分母）：</span>{{ coverageScan.examined }}</span>
-//          （其餘每一組同型，重複到最後一組為止）
+//          <span><span data-i18n="settings.scanNotIndexed">查無內容：</span>{{ coverageScan.notIndexed }}</span>
+//          <span><span data-i18n="settings.scanFilesNotEnumerable">列舉不出來的檔：</span>{{ coverageScan.filesNotEnumerable }}</span>
+//          <span><span data-i18n="settings.scanQaExcluded">不列入的 QA 集：</span>{{ coverageScan.qaDatasetsExcluded }}</span>
 //      </div>
+//
+//      五組**逐組寫出來**：外層形狀一樣，但每一組的 `data-i18n` key 與值的來源欄逐組不同，
+//      而 §1-2 只准略「重複第 N 次的同型節點」、屬性一律不得略。
 //
 //      標籤與值之間的半形空白**只能有一份**（§4-2）：上面 5-10 那組的空白在英譯裡
 //      （`"Documents enumerated: "`），markup 就不再寫；5-2 那組的英譯是 `"Rules:"`（無尾空白），

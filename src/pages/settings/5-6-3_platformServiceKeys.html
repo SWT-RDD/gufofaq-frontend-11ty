@@ -147,7 +147,13 @@ permalink: 5-6-3_platformServiceKeys.html
      `POST` 回應的 `key` 欄。**只有那一次的回應有值**，所以這一整塊在 React 端是條件渲染：
      沒有明碼就整塊不畫（不是畫一個空欄位——空欄位讀起來像「還沒產生」，而實際上是
      「產生過了，只是拿不回來」）。切版以「剛核發」那一態示範。
-     欄位是 readonly、預設遮蔽；顯示/隱藏由 ui/reveal-input 委派切 type（純前端互動，無業務）。 #}
+     欄位是 readonly、預設遮蔽；顯示/隱藏由 ui/reveal-input 委派切 type（純前端互動，無業務）。
+     **明碼長度是推導值，不是隨手打的字串**：product `app/security.py` 的
+     `new_platform_service_key()` ＝ `_PLATFORM_SERVICE_KEY_PREFIX + secrets.token_urlsafe(32)`，
+     而 32 bytes 的 base64url 恆為 43 字元 ⇒ `psk_` ＋ 43 ＝ **47 字元**（同一支推導在 5-9 的
+     `sk_` ＋ 43 ＝ 46 已經落地）。原本只有 35 字元：短了 12 個字，複製鈕與遮蔽欄的實際寬度、
+     以及「這一串長什麼樣」都跟著失真。末四碼 `c091` 對回下面盤點表 #8 的 `keyHint`（`psk_…c091`，
+     `security._key_hint` 的形狀）——那一把正是「剛核發、還沒有人用過」的那一列（§6 同頁同源）。 #}
 <div class="block mb-16 flex-row column gap-16 js-service-key-issued" id="serviceKeyIssued" data-platform-role="admin">
     <div class="text-md text-bold" data-i18n="serviceKey.plainTitle">剛核發的明碼</div>
     <p class="text-red" data-i18n="serviceKey.plainOnce">這是這把憑證唯一一次顯示明碼。離開或重新整理這一頁之後，畫面上就只剩下末四碼；系統本身也只有雜湊，沒有任何人能把它讀回來。</p>
@@ -155,7 +161,7 @@ permalink: 5-6-3_platformServiceKeys.html
         <div class="col-6-md col-12-sm">
             <div class="form-group">
                 <div class="field">
-                    <input type="password" id="serviceKeyPlain" class="form-control" value="psk_sample000000000000000000000c091" readonly aria-label="剛核發的明碼" data-i18n-aria-label="serviceKey.plainTitle">
+                    <input type="password" id="serviceKeyPlain" class="form-control" value="psk_sample000000000000000000000000000000000c091" readonly aria-label="剛核發的明碼" data-i18n-aria-label="serviceKey.plainTitle">
                 </div>
             </div>
         </div>
@@ -215,10 +221,12 @@ permalink: 5-6-3_platformServiceKeys.html
 <div class="block flex-row column gap-16" data-platform-role="auditor">
     <div class="flex-row justify-content-between align-items-center flex-wrap gap-16">
         <div class="text-md text-bold" data-i18n="serviceKey.listTitle">現有憑證</div>
-        {# **預設勾起來**：篩選控制項的預設值就是示範資料的前提（§6）。下面三列裡第 3 列是
-             已撤銷的，而 `list_service_keys` 在 `include_revoked` 為 false 時
-             `q.where(PlatformServiceKey.revoked_at.is_(None))`（platform.py）
-             ——沒勾的話那一列不可能回得來，畫面卻同時說著兩件事。 #}
+        {# **預設勾起來**：篩選控制項的預設值就是示範資料的前提（§6）。下面三列裡**第 1 列**
+             （#1，2024/11/03 撤銷的初版）是已撤銷的，而 `list_service_keys` 在 `include_revoked`
+             為 false 時 `q.where(PlatformServiceKey.revoked_at.is_(None))`（platform.py）
+             ——沒勾的話那一列不可能回得來，畫面卻同時說著兩件事。
+             （這句原本寫「第 3 列」：那是列序改成 id 升冪**之前**的位置，已撤銷的那一把 id 最小、
+             重排後跑到第一列，敘述沒跟著改。） #}
         <label class="form-checkbox">
             <input type="checkbox" class="js-service-key-include-revoked" checked>
             <span data-i18n="serviceKey.includeRevoked">含已撤銷</span>

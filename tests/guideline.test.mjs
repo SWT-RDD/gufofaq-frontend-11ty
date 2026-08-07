@@ -2835,27 +2835,51 @@ test("§5 hook class 不得被 scss 樣式（.js-* 與具名真 app hook 全站 
     // 合法地用同名 class——所以豁免是「檔 → hook 清單」的粒度，逐筆寫出為什麼那一顆同名不同物。
     const HOOK_STYLE_EXEMPT = new Map([
         ["src/scss/_guideline.scss", new Map([
-            ["description", "§9 明訂的唯一豁免檔：這支是真 app guideline.scss 的受控鏡像（元件庫展示頁 " +
-                "`.guideline-page` 自己的排版），編譯出來是 `.guideline-page .caption.description`。" +
-                "凍結前端 knowledgeRetrieval.js 的掛點是 `.edit-cell.description`（priority-table 的那一格）—— " +
-                "同名不同物，這條規則打不到那顆掛點，那顆掛點也吃不到這條樣式（§4 第③種死法：祖先錯位）。"],
+            ["description", "**這不是 §9 的豁免**——§9 給 _guideline.scss 的豁免是 §4「禁止依頁面覆寫元件」那一條，" +
+                "§9 全節一個 hook 字樣都沒有，管不到本規則；這一筆是本表自己的判斷，理由如下。" +
+                "這支是真 app guideline.scss 的受控鏡像（元件庫展示頁自己的排版），`.caption { &.description }` " +
+                "編譯出來是 `.guideline-page .caption.description`；凍結前端 knowledgeRetrieval.js 的掛點是 " +
+                "`.edit-cell.description`（priority-table 的那一格）——同名不同物。" +
+                "**隔離子是同元素上的 `.caption` 複合，不是祖先**：那顆掛點就住在 .guideline-page 之內" +
+                "（元件庫頁 body class 即 guideline-page，而 priority-table 正 include 在該頁），祖先是命中的，" +
+                "只是那顆 td 身上沒有 .caption，複合選擇器才落空。" +
+                "⚠️ 前提在 `.caption`：把 `&.description` 從 .caption 底下移出去（或那顆 td 哪天掛上 .caption），" +
+                "掛點會當場吃到這條樣式，而這段理由照字面看仍會說「安全」。"],
         ])],
     ]);
-    const re = new RegExp(String.raw`\.(js-[\w-]+|${[...NAMED_HOOKS].join("|")})(?![\w-])`);
+    // round40 洞⑨：這條規則的兩個 bug 都住在「豁免」那一側。
+    //   ⓐ 舊碼是 `line.match(re)`（**無 `/g`**）＝每行只取第一顆 hook。豁免檔裡只要那顆被豁免的
+    //      hook 排在前面，同一行後面的 hook 全部一起放行——`&.description, .js-anything {` 實測全綠。
+    //      逐行只回一顆本來就不對：一條選擇器可以並列好幾個 class。改成 `matchAll` 逐顆判。
+    //   ⓑ 舊碼的 probe 寫成 `(s) => scanText(s, rule)`，`f` 用掉預設值 `"<probe>"`，
+    //      `HOOK_STYLE_EXEMPT.get("<probe>")` 恆 undefined ⇒ **豁免那條分支從來沒被負控走到**。
+    //      下面第二組 probe 明確餵進豁免檔的路徑，讓「豁免只蓋它該蓋的那一顆」也被合成樣本驗到。
+    const HOOK_SRC = String.raw`\.(js-[\w-]+|${[...NAMED_HOOKS].join("|")})(?![\w-])`;
+    const hooksIn = (line) => [...line.matchAll(new RegExp(HOOK_SRC, "g"))].map((m) => m[1]);
     const rule = (line, f) => {
         if (line.trim().startsWith("//")) return null;
-        const m = line.match(re);
-        if (!m) return null;
-        if (HOOK_STYLE_EXEMPT.get(f)?.has(m[1])) return null;
-        return `scss 樣式了 hook .${m[1]}`;
+        const ex = HOOK_STYLE_EXEMPT.get(f);
+        const bad = hooksIn(line).filter((h) => !ex?.has(h));
+        return bad.length ? `scss 樣式了 hook ${bad.map((h) => `.${h}`).join("、")}` : null;
     };
     const hits = scanLines(srcScss, rule);
-    assert.ok(re.test(".js-anything {"), "自我檢查失敗：regex 連合成樣本都比不中（空轉）");
+    assert.ok(new RegExp(HOOK_SRC).test(".js-anything {"), "自我檢查失敗：regex 連合成樣本都比不中（空轉）");
+    assert.deepEqual(hooksIn(".a.description, .js-x, .prompt-card-list {"), ["description", "js-x", "prompt-card-list"],
+        "一行多顆 hook 要逐顆抓得出來（洞⑨ⓐ：無 /g 的話只會回第一顆）");
     // 母體真的變大了才算合併成功：短名單只有 16 筆，這裡釘住「§4 的白名單有多長，這條就管多長」。
     assert.ok(NAMED_HOOKS.size >= 50, `NAMED_HOOKS 只剩 ${NAMED_HOOKS.size} 筆 —— 母體縮水了（合併前的短名單是 16 筆）`);
     probe("hook 不得被樣式", (s) => scanText(s, rule),
         [".js-add-row { color: red; }", ".prompt-card-list { display: flex; }", "  .edit-cell { padding: 4px; }"],
         [".js-add-row 這行是註解".replace(/^/, "// "), ".prompt-edit-box { display: flex; }"]);
+    // 洞⑨ⓑ：帶著豁免檔的路徑再走一次同一條規則——豁免只蓋它逐筆寫下的那一顆
+    for (const [xf] of HOOK_STYLE_EXEMPT) {
+        const exempt = [...HOOK_STYLE_EXEMPT.get(xf).keys()];
+        probe(`hook 不得被樣式（豁免檔 ${xf}）`, (s) => scanText(s, rule, xf),
+            [`    &.${exempt[0]}, .js-mutation-probe {`,          // 同一行後面那顆不在豁免清單裡
+                "    .prompt-card-list { display: flex; }"],         // 這支檔沒有豁免它
+            [`    &.${exempt[0]} {`,                              // 這一顆才是被豁免的
+                `// &.${exempt[0]}, .js-mutation-probe {`]);         // 註解行不算
+    }
     // ── 豁免自己的衛生：死豁免（豁免了一顆其實沒被樣式的）就是一張「先放著」的通行證 ──
     for (const [f, hooks] of HOOK_STYLE_EXEMPT) {
         assert.ok(srcScss.includes(f), `HOOK_STYLE_EXEMPT 指的 ${f} 已經不在 srcScss 裡（死豁免）`);
@@ -2863,7 +2887,7 @@ test("§5 hook class 不得被 scss 樣式（.js-* 與具名真 app hook 全站 
         for (const [hook, why] of hooks) {
             assert.ok(NAMED_HOOKS.has(hook), `HOOK_STYLE_EXEMPT 的 .${hook} 不在 NAMED_HOOKS 裡——它根本不受這條規則管（死豁免）`);
             assert.ok(why.length > 20, `HOOK_STYLE_EXEMPT ${f} 的 .${hook} 沒寫理由（空白不等於查證過，§4）`);
-            assert.ok(scanText(raw, (line) => (!line.trim().startsWith("//") && line.match(re)?.[1] === hook) || null).length > 0,
+            assert.ok(scanText(raw, (line) => (!line.trim().startsWith("//") && hooksIn(line).includes(hook)) || null).length > 0,
                 `HOOK_STYLE_EXEMPT 豁免了 ${f} 的 .${hook}，但那支 scss 其實沒有樣式它 —— 死豁免，請移除`);
         }
     }
@@ -3745,31 +3769,53 @@ test("§4 每一顆會改狀態的鈕都要宣告它需要哪一道閘門（四�
         ["比較完成", "把這一次執行與基準那一次的既有結果並排算差異，兩邊都是讀"],
         ["量測完成", "5-10 檔頭引的 `GET /tags/coverage`：讀既有標註算覆蓋率，不改任何一筆標註"],
     ];
-    // 查證過**確定不需要**閘門的（上游只吃登入態、或根本不在租戶授權軸上）：列在這裡＋理由。
-    // 空白不等於查證過（§4）。這是整檔級的豁免，所以理由要寫得夠讓下一個人推翻得了。
+    // round40 洞⑧：這張豁免表原本是**整檔級**的——`5-1-1_accountInfo` 的理由只涵蓋兩顆自助端點
+    // （`/me/profile`、`/me/change-password`），整支檔案卻連 `PUT /account` 那一顆一起免檢。
+    // 改成 **(檔, success 段) 兩層**：豁免的單位＝那一顆鈕做成的那件事，理由要對得上它。
+    // 而且 `if (NO_GATE.has(f)) return out;` 原本排在 `platformScopes()` **之前**，
+    // 豁免檔裡「宣告元素配對不到收尾標籤」那種 fail loud 會一起被吞掉——順序也一起修。
     const NO_GATE = new Map([
-        ["src/pages/settings/5-1-1_accountInfo.html", "/me/profile 與 /me/change-password 是自助端點，product 只掛 get_current_user——標上能力軸反而會把「改自己的資料」擋在一顆它不需要的能力後面"],
-        ["src/_includes/components/file-edit-modal/file-edit-modal.html", "送出前的本地編輯（凍結正本 uploadFilePdf.js 的 saveEdit 只改本地陣列），沒有端點"],
-        ["src/login.html", "登入是**認證之前**的那一顆：這時還沒有主體，能力／角色都是登入之後才判得出來的東西，宣告不出任何一道閘門。它不是唯讀——round39 之前被塞在 READONLY 裡（「登入成功」），那是把「不需要閘門」誤寫成「不寫入」"],
-        ["src/_includes/components/faq-chatroom/faq-chatroom.html", "前台公開機器人（faq.html，chatbot-shell 外殼）送問答走吃 `X-Widget-Token` 的公開端點（見 5-8 檔頭：標頭 X-Widget-Token／query ?wt=），那條路徑上根本沒有租戶能力軸——硬標一顆 data-capability 等於宣告一道這裡不存在的閘門。後台 components/chatroom 的同型鈕才吃 data-capability=\"ask\""],
+        ["src/pages/settings/5-1-1_accountInfo.html", new Map([
+            ["個人資料已儲存", "`/me/profile` 是自助端點，product 只掛 get_current_user＋require_active_subscription，沒有 require_capability——標上能力軸反而會把「改自己的顯示名」擋在一顆它不需要的能力後面"],
+            ["密碼已變更", "`/me/change-password` 同上：改自己的密碼不吃租戶能力軸"],
+        ])],
+        ["src/_includes/components/file-edit-modal/file-edit-modal.html", new Map([
+            ["已更新", "送出前的本地編輯（凍結正本 uploadFilePdf.js 的 saveEdit 只改本地陣列），沒有端點"],
+        ])],
+        ["src/login.html", new Map([
+            ["登入成功！", "登入是**認證之前**的那一顆：這時還沒有主體，能力／角色都是登入之後才判得出來的東西，宣告不出任何一道閘門。它不是唯讀——round39 之前被塞在 READONLY 裡，那是把「不需要閘門」誤寫成「不寫入」"],
+        ])],
+        ["src/_includes/components/faq-chatroom/faq-chatroom.html", new Map([
+            ["回答生成成功", "前台公開機器人（faq.html，chatbot-shell 外殼）送問答走吃 `X-Widget-Token` 的公開端點（見 5-8 檔頭：標頭 X-Widget-Token／query ?wt=），那條路徑上根本沒有租戶能力軸——硬標一顆 data-capability 等於宣告一道這裡不存在的閘門。後台 components/chatroom 的同型鈕才吃 data-capability=\"ask\""],
+        ])],
     ]);
+    // 屬性值可以是**插值帶預設**（`data-toast-type="{{ editSaveToastType or 'success|error' }}"`）。
+    // round40 洞⑥：舊碼用 `types.indexOf("success")` 精確比對整段字面，於是 5 顆這種鈕
+    // （delete-modal、editable-block ×2、rating-modal、reset-password-modal）**整批**被踢出母體
+    // ——不是被放行，是根本沒被看見。取值時先把 `{{ x or '預設' }}` 收斂成那個預設字面。
+    // 屬性值裡可能有巢狀雙引號（delete-modal 就是 `"{{ deleteToastType or "success|error" }}"`），
+    // 故取值不能用 `"([^"]*)"`：`{{ … }}` 整段要當成一個可含引號的單位。
+    const attrVal = (attrs, name) => {
+        const m = attrs.match(new RegExp(String.raw`\b${name}="((?:\{\{[\s\S]*?\}\}|[^"])*)"`));
+        return m ? m[1].replace(/\{\{[^{}]*?\bor\s*(?:'([^']*)'|"([^"]*)")\s*\}\}/g, (x, a, b) => a ?? b) : "";
+    };
     // `data-toast` 的第一個 success 對位的那一段（＝這顆鈕做成了什麼）。沒有 success 段就回 null。
     const successSeg = (attrs) => {
-        const toast = (attrs.match(/\bdata-toast="([^"]*)"/) || [, ""])[1];
+        const toast = attrVal(attrs, "data-toast");
         if (!toast) return null;
-        const types = (attrs.match(/\bdata-toast-type="([^"]*)"/) || [, ""])[1].split("|");
-        const i = types.indexOf("success");
+        const i = attrVal(attrs, "data-toast-type").split("|").findIndex((t) => t.trim() === "success");
         return i < 0 ? null : (toast.split("|")[i] ?? "");
     };
-    // 宣告了 data-platform-role 的元素，各自的作用域 [start, end)。
+    // 宣告了 data-platform-role 的元素，各自的作用域 [start, end, 等級)。
     // **只認字面值**——delete-modal 這種輸出 `data-platform-role="{{ deletePlatformRole }}"` 的
     // 共用彈窗不算宣告過（它自己不知道要哪一級，是使用頁給的）。
     const platformScopes = (src, f) => {
         const scopes = [], unmatched = [];
         for (const m of src.matchAll(/<([a-zA-Z][\w-]*)((?:"[^"]*"|[^>"])*)>/g)) {
-            if (!/\bdata-platform-role="(?:admin|auditor)"/.test(m[2])) continue;
+            const role = (m[2].match(/\bdata-platform-role="(admin|auditor)"/) || [])[1];
+            if (!role) continue;
             const tag = m[1].toLowerCase();
-            if (VOID_TAGS.has(tag) || m[2].trim().endsWith("/")) { scopes.push([m.index, m.index + m[0].length]); continue; }
+            if (VOID_TAGS.has(tag) || m[2].trim().endsWith("/")) { scopes.push([m.index, m.index + m[0].length, role]); continue; }
             const re = new RegExp(String.raw`<(/?)${tag}\b((?:"[^"]*"|[^>"])*)>`, "g");
             re.lastIndex = m.index;
             let depth = 0, end = -1;
@@ -3779,21 +3825,31 @@ test("§4 每一顆會改狀態的鈕都要宣告它需要哪一道閘門（四�
             }
             if (end < 0) unmatched.push(`${f}:${countLines(src, m.index)}  <${tag} data-platform-role=…> 配對不到收尾標籤——作用域算不出來。` +
                 `不可靜靜當成「作用域到檔尾」：那就是整檔豁免復辟`);
-            else scopes.push([m.index, end]);
+            else scopes.push([m.index, end, role]);
         }
         return { scopes, unmatched };
     };
+    // round40 洞⑦：舊碼的 `scopes.some(...)` 只問「有沒有落在某句宣告裡」，不問那句宣告是哪一級。
+    // 而 GUIDELINE 明訂 **auditor 是唯讀**（5-6-1／5-6-2／5-6-3 的整頁最低角色是 auditor，
+    // 寫入區塊另外標 admin）——一顆寫入鈕落在 `data-platform-role="auditor"` 區塊內，
+    // 講的是「唯讀稽核員按得動這顆」，那是宣告錯了、不是宣告過了。授權寫入的只有 admin。
+    const WRITE_ROLE = "admin";
     const gateScan = (src, f = "<probe>") => {
         const out = [];
-        if (NO_GATE.has(f)) return out;
         const { scopes, unmatched } = platformScopes(src, f);
-        out.push(...unmatched);
+        out.push(...unmatched);                                    // 洞⑧：fail loud 不受 NO_GATE 影響
         for (const m of src.matchAll(/<button\b((?:"[^"]*"|[^>"])*)>/g)) {
             const attrs = m[1];
             const seg = successSeg(attrs);
             if (seg === null) continue;
             if (READONLY.some(([verb]) => seg.startsWith(verb))) continue;
-            if (scopes.some(([s, e]) => m.index >= s && m.index < e)) continue;   // 落在某句宣告的作用域內
+            if (NO_GATE.get(f)?.has(seg)) continue;                                                    // 洞⑧：逐顆豁免
+            if (scopes.some(([s, e, r]) => r === WRITE_ROLE && m.index >= s && m.index < e)) continue;  // 洞⑦：只有 admin 那一級授權得了寫入
+            const own = (attrs.match(/\bdata-platform-role="(admin|auditor)"/) || [])[1];
+            if (own && own !== WRITE_ROLE) {
+                out.push(`${f}:${countLines(src, m.index)}  success 段「${seg.slice(0, 24)}」宣告的是 data-platform-role="${own}"——那一級是唯讀，動作鈕在那裡根本不該渲染`);
+                continue;
+            }
             if (!/\bdata-(capability|tenant-feature|tenant-role|platform-role)=/.test(attrs))
                 out.push(`${f}:${countLines(src, m.index)}  success 段「${seg.slice(0, 24)}」沒宣告閘門`);
         }
@@ -3802,19 +3858,43 @@ test("§4 每一顆會改狀態的鈕都要宣告它需要哪一道閘門（四�
     const hits = [];
     let seen = 0, scopeCount = 0;
     const allSegs = [];
+    const scopeRoles = new Set();
+    const unresolvedTypes = [];
+    let paramToastButtons = 0;
     for (const f of srcHtml) {
         const src = stripNjk(read(f));
         for (const m of src.matchAll(/<button\b((?:"[^"]*"|[^>"])*)>/g)) {
-            if (/\bdata-toast="/.test(m[1])) seen++;
+            if (!/\bdata-toast="/.test(m[1])) continue;
+            seen++;
+            const raw = m[1].match(/\bdata-toast-type="((?:\{\{[\s\S]*?\}\}|[^"])*)"/);
+            const resolved = attrVal(m[1], "data-toast-type");
+            if (raw && resolved.includes("{{")) unresolvedTypes.push(`${f}:${countLines(src, m.index)}  ${raw[1].slice(0, 60)}`);
+            if (raw && raw[1].includes("{{")) paramToastButtons++;
             const seg = successSeg(m[1]);
             if (seg !== null) allSegs.push(seg);
         }
-        scopeCount += platformScopes(src, f).scopes.length;
+        const sc = platformScopes(src, f).scopes;
+        scopeCount += sc.length;
+        for (const [, , r] of sc) scopeRoles.add(r);
         hits.push(...gateScan(src, f));
     }
     assert.ok(seen >= 60, `只掃到 ${seen} 顆帶 data-toast 的鈕 —— 這條測試在空轉`);
-    assert.ok(allSegs.length >= 60, `只解析出 ${allSegs.length} 個 success 段 —— data-toast-type 的索引契約解析壞了？這條測試在空轉`);
+    // 洞⑥ 的守門：`>= 60` 那道對「母體從 105 掉到 100」完全無感（少掉的那 5 顆正是插值型的）。
+    // 改成**釘住上一輪實測的筆數**：母體只准往上長，掉下來就是有一族鈕從網裡漏出去了。
+    // 這個數字要跟著 markup 一起長——加了新的 data-toast 鈕就把它調高，而不是把它調低。
+    const SEG_FLOOR = 105;
+    assert.ok(allSegs.length >= SEG_FLOOR,
+        `只解析出 ${allSegs.length} 個 success 段（上一輪 ${SEG_FLOOR}）—— 母體縮水了：` +
+        `data-toast-type 若寫成插值帶預設而解析不出來，那一顆會靜靜地整個消失，不是被放行`);
+    // toast **文字**可以是純參數（`data-toast="{{ deleteToast }}"`，由使用頁灌——另一條測試在管），
+    // 但 **type** 不行：type 收斂不出字面就等於這顆鈕落在母體外。這裡釘的是後者。
+    assert.equal(unresolvedTypes.length, 0,
+        `這些鈕的 data-toast-type 收斂不出字面，會整顆從母體消失：\n${fail(unresolvedTypes)}`);
+    assert.ok(paramToastButtons >= 4,
+        `只有 ${paramToastButtons} 顆插值型 data-toast-type 的鈕被解析出 success 段 —— 洞⑥ 的修法沒有真實樣本，這條在空轉`);
     assert.ok(scopeCount >= 20, `只算出 ${scopeCount} 個 data-platform-role 作用域 —— 祖先鏈那段沒被走到，這條測試在空轉`);
+    assert.ok(scopeRoles.has("admin") && scopeRoles.has("auditor"),
+        `作用域只解析出 ${[...scopeRoles].join("／")} 一種等級 —— 洞⑦ 的層級比較沒有真實樣本，這條在空轉`);
     // 唯讀白名單自己的衛生：死豁免＝清單裡有、但沒有任何鈕的成功段以它開頭。它不再豁免任何東西，
     // 卻會在下一次有人寫出同開頭的**寫入**動作時默默放行。round39 刪掉四個這種：
     // 列印／取得／重新整理／移除成功（全站沒有任何一顆鈕的成功段長那樣，從來沒命中過）。
@@ -3822,19 +3902,26 @@ test("§4 每一顆會改狀態的鈕都要宣告它需要哪一道閘門（四�
     assert.deepEqual(deadVerbs, [], `READONLY 有死豁免（沒有任何鈕的成功段以它開頭）：${deadVerbs.join("、")}`);
     for (const [v, why] of READONLY)
         assert.ok((why || "").length > 8, `READONLY 的「${v}」沒寫「為什麼是唯讀」——空白不等於查證過（§4）`);
-    // NO_GATE 同理：整檔豁免的檔案裡，至少要真的有一顆「不豁免就會被判違規」的鈕。
-    for (const [f, why] of NO_GATE) {
-        assert.ok((why || "").length > 20, `NO_GATE 的 ${f} 沒寫理由`);
+    // NO_GATE 同理，而且粒度要對得上：**每一筆 (檔, success 段)** 都要真的有一顆「不豁免就會紅」的鈕。
+    // 逐顆之後，「理由只涵蓋兩顆、檔案裡卻有四顆」這種擴權寫不出來了——多的那顆沒有自己的理由。
+    for (const [f, segs] of NO_GATE) {
         assert.ok(srcHtml.includes(f), `NO_GATE 的 ${f} 已經不在 srcHtml 裡（死豁免）`);
         const src = stripNjk(read(f));
         const { scopes } = platformScopes(src, f);
-        const live = [...src.matchAll(/<button\b((?:"[^"]*"|[^>"])*)>/g)].some((m) => {
+        const wouldFail = new Set([...src.matchAll(/<button\b((?:"[^"]*"|[^>"])*)>/g)].filter((m) => {
             const seg = successSeg(m[1]);
             return seg !== null && !READONLY.some(([v]) => seg.startsWith(v))
-                && !scopes.some(([s, e]) => m.index >= s && m.index < e)
+                && !scopes.some(([s, e, r]) => r === WRITE_ROLE && m.index >= s && m.index < e)
                 && !/\bdata-(capability|tenant-feature|tenant-role|platform-role)=/.test(m[1]);
-        });
-        assert.ok(live, `NO_GATE 豁免了 ${f}，但那支檔案裡已經沒有任何一顆會被這條規則判違規的鈕 —— 死豁免，請移除`);
+        }).map((m) => successSeg(m[1])));
+        for (const [seg, why] of segs) {
+            assert.ok((why || "").length > 20, `NO_GATE 的 ${f}／「${seg}」沒寫理由（空白不等於查證過，§4）`);
+            assert.ok(wouldFail.has(seg),
+                `NO_GATE 豁免了 ${f} 的「${seg}」，但那支檔案裡已經沒有這樣一顆會被判違規的鈕 —— 死豁免，請移除`);
+        }
+        for (const seg of wouldFail)
+            assert.ok(segs.has(seg), `${f} 有一顆會被判違規的鈕「${seg}」不在 NO_GATE 的逐顆清單裡 —— ` +
+                `整檔豁免已經收成逐顆，新的鈕要自己寫理由（或補上閘門）`);
     }
     probe("授權閘門", (s) => gateScan(s),
         [`<button type="button" data-toast="已凍結租戶|失敗" data-toast-type="success|error">凍結</button>`,
@@ -3846,13 +3933,29 @@ test("§4 每一顆會改狀態的鈕都要宣告它需要哪一道閘門（四�
          // 洞 ③：宣告在別的區塊上，這顆鈕落在作用域外（舊的整檔豁免會放行它）
          `<div data-platform-role="admin"><span>唯讀區</span></div>\n<button type="button" data-toast="已凍結租戶|失敗" data-toast-type="success|error">凍結</button>`,
          // 洞 ③ fail loud：宣告元素配對不到收尾標籤
-         `<div data-platform-role="admin"><button type="button" data-toast="已凍結租戶|失敗" data-toast-type="success|error">凍結</button>`],
+         `<div data-platform-role="admin"><button type="button" data-toast="已凍結租戶|失敗" data-toast-type="success|error">凍結</button>`,
+         // round40 洞⑥：插值帶預設的 data-toast-type——舊碼看不見這顆鈕（不是放行，是整顆消失）
+         `<button type="button" data-toast="{{ x or '已刪除|失敗' }}" data-toast-type="{{ y or 'success|error' }}">刪除</button>`,
+         // round40 洞⑦：落在 auditor（唯讀）區塊內＝宣告錯了，不是宣告過了
+         `<div data-platform-role="auditor"><button type="button" data-toast="已凍結租戶|失敗" data-toast-type="success|error">凍結</button></div>`,
+         // 洞⑦ 的另一半：鈕自己宣告 auditor
+         `<button type="button" data-platform-role="auditor" data-toast="已凍結租戶|失敗" data-toast-type="success|error">凍結</button>`],
         [`<button type="button" data-capability="data:write" data-toast="已凍結租戶|失敗" data-toast-type="success|error">凍結</button>`,
          `<button type="button" data-toast="正在查詢資料...|查詢成功|失敗" data-toast-type="info|success|error">查詢</button>`,
          // 落在宣告祖先內：這才是平台頁那個例外允許的形狀
          `<div data-platform-role="admin"><button type="button" data-toast="已凍結租戶|失敗" data-toast-type="success|error">凍結</button></div>`,
          // void 宣告元素（單一控制項）不該被當成「配對不到收尾標籤」
-         `<input data-platform-role="admin" type="text">\n<button type="button" data-capability="data:write" data-toast="已凍結租戶|失敗" data-toast-type="success|error">凍結</button>`]);
+         `<input data-platform-role="admin" type="text">\n<button type="button" data-capability="data:write" data-toast="已凍結租戶|失敗" data-toast-type="success|error">凍結</button>`,
+         // auditor 區塊裡的**唯讀**動作（下載）本來就合法——收層級不可以把它一起收掉
+         `<div data-platform-role="auditor"><button type="button" data-toast="下載已開始|失敗" data-toast-type="success|error">匯出</button></div>`,
+         // 插值帶預設但成功段是唯讀動詞：解析得出來、而且照樣豁免
+         `<button type="button" data-toast="{{ x or '已複製|失敗' }}" data-toast-type="{{ y or 'success|error' }}">複製</button>`]);
+    // 洞⑧ 的順序那一半：NO_GATE 檔裡「宣告元素配對不到收尾標籤」的 fail loud 不可以被豁免吞掉
+    // （舊碼的 `if (NO_GATE.has(f)) return out;` 排在 platformScopes() 之前）。
+    const noGateFile = [...NO_GATE.keys()][0];
+    probe(`授權閘門（${noGateFile} 的 fail loud 不被豁免吞掉）`, (s) => gateScan(s, noGateFile),
+        [`<div data-platform-role="admin"><span>沒有收尾</span>`],
+        [`<div data-platform-role="admin"><span>有收尾</span></div>`]);
     // 值域也要釘住：發明新詞彙就等於讓「誰動得了」又有第二份答案。
     // 兩組鍵來自 product authz.py 的 CAPABILITY_TOKENS（群組能力）與 CAPABILITIES（租戶功能開通）——
     // 名字會重疊（ask／history／audit 兩邊都有），但失敗方式不同，故各佔一條軸（§4）。
@@ -3910,12 +4013,117 @@ test("§1-2 無 html 元件的 markup 契約要逐字寫在自己的 scss／js �
     // 為什麼非有不可：沒有 <名>.html 的元件，它的 markup 必然被複製到各個使用頁（collapse-text
     // 一輪之內從 1 份長到 13 份）。少一個 aria-expanded／data-i18n，視覺指紋看不出來、i18n 掃描
     // 也掃不到（那顆節點根本不存在）。契約寫在一個地方，抄的人才有東西可對。
-    // 判準是「可以整段照抄」＝檔頭註解裡有帶 `<` 的真標籤，且它提到的 class 在 src markup 打得到。
+    //
+    // round40 洞①：上一版把契約**攤平成 class 名的聯集**，逐顆去全站 markup 打字串——巢狀層數、
+    // 屬性、以及「這一份契約是誰在用」三件事全都沒驗。四種突變實測全綠：
+    //   ① 對調 `.modals-wrap`／`.modals-dialog` 的巢狀（class 名一顆沒少）
+    //   ② 把尺寸 class 從 `.modals-dialog` 搬到 `<dialog>`（兩顆 class 都還在，只是換了主人）
+    //   ③ 整層刪掉 `.modals-content`（那一層的 class 別處還有，照樣打得到）
+    //   ④ 契約寫實例沒有的 class（只要**別的元件**用過那顆 class 就過關，例如塞一顆 `mb-16`）
+    // 改成把契約 parse 成樹（相對縮排定層、標籤名 ＋ class 串 ＋ 屬性名集合定身分），要求它在
+    // **檔頭自己宣告的消費頁**裡找得到**同構子樹**：契約節點的子節點必須對到消費頁同一顆節點的
+    // **直接子節點**（順序保留、可略過消費頁多出來的兄弟——契約是節錄，不是全文）。
+    //
+    // 兩個實作上的坑，踩到就會把**正確**的寫法判成違規：
+    //   ⓐ 契約可以是**插值型**（`class="verdict-tag {{ row.diffClass }}"` 是 2-2-4／2-2-5 的主力寫法）——
+    //      比對前要把 `{{ … }}`／`{% … %}` 整段挖掉再切 class 詞，否則尾巴那顆孤立的 `}}` 會被當成
+    //      一顆 class 名。唯一的「修法」會是別把真實寫法寫進契約，正好與 §1-2 要求的方向相反。
+    //   ⓑ 消費頁那一側要先**展開 `{% include %}`**：契約常常跨元件邊界（ui/chatroom-shell 的外層
+    //      flex row 寫在頁面上、`.chatroom-wrap` 住在 components/chatroom），不展開就永遠對不上。
+    //      多行標籤（屬性斷行）也要先併回一行，否則整顆標籤在逐行掃描下直接消失。
     const noHtml = componentDirs.filter(({ name, path }) => !existsSync(`${path}/${name}.html`));
     assert.ok(noHtml.length >= 20, `只找到 ${noHtml.length} 個無 html 元件 —— 這條測試在空轉`);
-    const srcMarkup = srcHtml.map((f) => read(f)).join("\n");
+    // 消費頁真的「沒有清單」的元件：檔頭已經寫明判準句而不是清單，母體因此是全站 markup。
+    // 這是唯一能讓一份契約不綁消費頁的出口，逐筆寫理由；下面有死豁免檢查。
+    const CONTRACT_ANY_PAGE = new Map([
+        ["ui/lang-toggle", "本元件的契約是**可翻譯屬性的形狀**（data-i18n-<後綴> 五顆＋<html data-page-title-key>），" +
+            "示例刻意各取自不同頁（5-2 的關鍵字欄、1-1-3 的交叉表開關、pagination 的箭頭圖…）以涵蓋五種屬性。" +
+            "檔頭自己寫著「本元件沒有『只在某幾頁』的清單，判準是 grep -rn 'js-lang-toggle' src」——兩個掛點全站每一頁都有。"],
+    ]);
+    // ── 契約 → 樹 ───────────────────────────────────────────────────────────
+    const TAGRE = /<(\/?)([a-zA-Z][\w-]*)((?:"[^"]*"|'[^']*'|[^>"'])*?)(\/?)>/g;
+    const attrNames = (a) => [...new Set([...a.matchAll(/(?:^|\s)([a-zA-Z_:][\w:.-]*)\s*=/g)].map((m) => m[1].toLowerCase()))].sort().join(",");
+    const clsOf = (a) => {
+        const m = a.match(/\sclass=(?:"([^"]*)"|'([^']*)')/);
+        return (m ? (m[1] ?? m[2]) : "").replace(/\{[{%][\s\S]*?[%}]\}/g, " ").split(/\s+/).filter(Boolean).sort().join(" ");   // 坑ⓐ
+    };
+    const joinMultiline = (s) => s.replace(/<[a-zA-Z][\w-]*(?:"[^"]*"|'[^']*'|[^>"'])*?\/?>/g, (m) => m.replace(/\s*\r?\n\s*/g, " "));  // 坑ⓑ
+    const forestOf = (text) => {
+        const roots = [], indentStack = [], parentAt = [];
+        for (const line of joinMultiline(text).split(/\r?\n/)) {
+            const tags = [...line.matchAll(TAGRE)];
+            if (!tags.some((t) => !t[1])) continue;                 // 這一行沒有開標籤 ⇒ 不動縮排堆疊
+            const indent = line.match(/^[ \t]*/)[0].length;
+            while (indentStack.length && indentStack[indentStack.length - 1] >= indent) { indentStack.pop(); parentAt.pop(); }
+            const lineParent = parentAt.length ? parentAt[parentAt.length - 1] : null;
+            const local = [];                                        // 同一行內的巢狀（<td><code>…）
+            for (const t of tags) {
+                const tag = t[2].toLowerCase();
+                if (t[1]) { if (local.length && local[local.length - 1].tag === tag) local.pop(); continue; }
+                const node = { tag, cls: clsOf(t[3]), at: attrNames(t[3]), children: [] };
+                const p = local.length ? local[local.length - 1] : lineParent;
+                (p ? p.children : roots).push(node);
+                if (!VOID_TAGS.has(tag) && !t[4]) local.push(node);
+            }
+            indentStack.push(indent);
+            parentAt.push(local.length ? local[local.length - 1] : lineParent);
+        }
+        return roots;
+    };
+    const sameNode = (c, n) => c.tag === n.tag && c.cls === n.cls
+        && c.at.split(",").filter(Boolean).every((a) => n.at.split(",").includes(a));
+    const matchKids = (cs, ns) => {
+        let j = 0;
+        for (const c of cs) { let found = false; while (j < ns.length) if (matchNode(c, ns[j++])) { found = true; break; } if (!found) return false; }
+        return true;
+    };
+    const matchNode = (c, n) => sameNode(c, n) && matchKids(c.children, n.children);
+    const walkTree = function* (ns) { for (const n of ns) { yield n; yield* walkTree(n.children); } };
+    const findIn = (c, forest) => { for (const n of walkTree(forest)) if (matchNode(c, n)) return true; return false; };
+    // 檔頭裡「連續的純 markup 行」＝一份契約；每一顆最外層節點各自是一個要對帳的單位
+    // （verdict-tag 那種一行一例的三型契約，三個例子是三份，不是一棵樹）。
+    const contractBlocks = (head) => {
+        const raw = head.split(/\r?\n/).map((l) => { const m = l.match(/^\s*\/\/ ?(.*)$/); return m === null ? null : m[1]; });
+        const out = []; let cur = [];
+        for (const l of raw) { if (l !== null && /^\s*(?:<|\{%)/.test(l)) cur.push(l); else { if (cur.length) out.push(cur.join("\n")); cur = []; } }
+        if (cur.length) out.push(cur.join("\n"));
+        return out;
+    };
+    const expandIncludes = (text, depth = 0) => stripNjk(text).replace(/^([ \t]*)\{%-?\s*include\s+"([^"]+)"[^%]*%\}[ \t]*$/gm, (m, ind, p) => {
+        const f = `src/_includes/${p}`;
+        return depth > 3 || !existsSync(f) ? m : expandIncludes(read(f), depth + 1).split(/\r?\n/).map((l) => ind + l).join("\n");
+    });
+    const allForest = srcHtml.map((f) => ({ f, forest: forestOf(expandIncludes(read(f))) }));
+    const desc = (n) => `<${n.tag}${n.cls ? ` class="${n.cls}"` : ""}${n.at ? ` [${n.at}]` : ""}>`;
+    // 規則函式（probe 走同一支）：一份檔頭 ＋ 一個消費頁池 → 對不到同構子樹的契約根
+    let contractRoots = 0;
+    const checkContract = (head, pool) => {
+        const out = [];
+        for (const b of contractBlocks(head))
+            for (const root of forestOf(b)) {
+                contractRoots++;
+                if (!pool.some(({ forest }) => findIn(root, forest)))
+                    out.push(`契約寫的 ${desc(root)} 在消費頁裡找不到同構子樹（巢狀層數／class 串／屬性名三者要逐字對得上）`);
+            }
+        return out;
+    };
+    // 檔頭宣告的消費頁 → src 路徑（`components/x`、`5-2_conversationSettings.html`、裸頁號 `5-6-2`）
+    const byBase = new Map();
+    for (const f of srcHtml) { const b = basename(f, ".html"); (byBase.get(b) ?? byBase.set(b, []).get(b)).push(f); }
+    const declaredConsumers = (head) => {
+        const out = new Set();
+        for (const m of head.matchAll(/\b((?:ui|components)\/[\w-]+)(?![\w-])/g)) {
+            const p = `src/_includes/${m[1]}/${m[1].split("/")[1]}.html`;
+            if (existsSync(p)) out.add(p);
+        }
+        for (const m of head.matchAll(/([\w][\w.-]*)\.html\b/g)) for (const f of byBase.get(m[1]) || []) out.add(f);
+        for (const m of head.matchAll(/(?<![\w./-])(\d[\w-]*_\w+)(?![\w.-])/g)) for (const f of byBase.get(m[1]) || []) out.add(f);
+        for (const m of head.matchAll(/(?<![\w./-])(\d+(?:-\d+)+)(?![\w.-])/g))
+            for (const [b, fs] of byBase) if (b.startsWith(`${m[1]}_`)) for (const f of fs) out.add(f);
+        return [...out];
+    };
     const hits = [];
-    let checkedClasses = 0;
+    let scopedComponents = 0;
     for (const { bucket, name, path } of noHtml) {
         const heads = [`${path}/_${name}.scss`, `${path}/${name}.js`].filter(existsSync).map((f) => {
             const t = read(f);
@@ -3923,30 +4131,55 @@ test("§1-2 無 html 元件的 markup 契約要逐字寫在自己的 scss／js �
             const end = t.search(/^\s*(?:[.&@:#a-zA-Z\[]|document\.|\(function|window\.|var |const |let )/m);
             return end > 0 ? t.slice(0, end) : t;
         }).join("\n");
-        const tags = [...heads.matchAll(/<([a-z][\w-]*)[^>]*class="([^"]+)"/g)];
         // 有些無 html 元件的契約是**宣告式屬性**而不是 class（`data-print`／`data-scroll-lock`／
         // `data-dismiss-target`／`data-reveal-target`…），純行為工具（GufoSlide）則連 markup 都沒有、
         // 契約是匯出的函式。這兩型只要檔頭寫得出那個屬性名或函式名即可。
         const declarative = /`data-[\w-]+`|data-[\w-]+=|window\.Gufo\w+|`--[\w-]+`/.test(heads);
-        if (!tags.length && !declarative) { hits.push(`${bucket}/${name}  檔頭沒有可照抄的 markup 契約（要有帶 < 的真標籤，或寫出 data-* 宣告式契約）`); continue; }
-        // 契約裡指名的 class 要真的在 src markup 打得到——寫了一份沒人用的契約同樣沒有對帳價值。
-        // 樣板插值出來的狀態 class（`{{ run.statusClass }}` → `.is-pass`）在 markup 上找不到字面，
-        // 由該元件自己的 scss 宣告過即算數（那條 &.is-* 另有「每一階都要演得出來」的測試把關）。
-        const ownScss = existsSync(`${path}/_${name}.scss`) ? read(`${path}/_${name}.scss`) : "";
-        // 契約本身可以是**插值型**（`class="verdict-tag {{ row.diffClass }}"` 是 2-2-4／2-2-5 的主力寫法，
-        // class 與 data-i18n key 成對由頁面資料供給）。切詞前要先把 `{{ … }}` 整段挖掉：不挖的話尾巴那顆
-        // 孤立的 `}}` 會被當成一個 class 名去 markup 裡找（`\b}}` 永遠不成立），於是把一份**正確**的契約
-        // 判成違規——而唯一的「修法」是別把真實寫法寫進契約，正好與 §1-2 要求的方向相反。
-        for (const cls of new Set(tags.flatMap((m) => m[2].replace(/\{\{[\s\S]*?\}\}/g, " ").split(/\s+/)).filter((c) => c && !/[{}]/.test(c)))) {
-            checkedClasses++;
-            const esc = cls.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-            if (new RegExp(`class="[^"]*\\b${esc}\\b`).test(srcMarkup)) continue;
-            if (new RegExp(`&\\.${esc}\\b`).test(ownScss)) continue;
-            hits.push(`${bucket}/${name}  契約寫了 .${cls}，但 src 的 markup 裡打不到它`);
-        }
+        const blocks = contractBlocks(heads);
+        if (!blocks.length && !declarative) { hits.push(`${bucket}/${name}  檔頭沒有可照抄的 markup 契約（要有帶 < 的真標籤，或寫出 data-* 宣告式契約）`); continue; }
+        const cons = CONTRACT_ANY_PAGE.has(`${bucket}/${name}`) ? [] : declaredConsumers(heads);
+        if (cons.length) scopedComponents++;
+        const pool = cons.length ? allForest.filter(({ f }) => cons.includes(f)) : allForest;
+        hits.push(...checkContract(heads, pool).map((h) => `${bucket}/${name}  ${h}`));
     }
-    // 空轉守門：上面那個「挖掉插值」的 replace 若寫成把整串 class 吃光，一顆 class 都不會被驗、照樣全綠
-    assert.ok(checkedClasses > 100, `契約裡只驗到 ${checkedClasses} 個 class —— 切詞壞了，這條在空轉`);
+    // 空轉守門：契約 parse 壞掉（挖掉插值挖過頭、多行標籤沒併回來）會讓一顆節點都不被驗、照樣全綠
+    assert.ok(contractRoots >= 50, `只 parse 出 ${contractRoots} 顆契約根節點 —— 契約 parser 壞了，這條在空轉`);
+    assert.ok(scopedComponents >= 20, `只有 ${scopedComponents} 個元件解析得出消費頁 —— 消費頁解析壞了，母體退化成全站，這條在空轉`);
+    // 豁免衛生：宣告「沒有消費頁清單」的元件，其契約仍必須在全站 markup 裡找得到；
+    // 而且它真的要用得到這個豁免（綁得回消費頁就代表清單寫得出來，該把豁免刪掉）。
+    for (const [key, why] of CONTRACT_ANY_PAGE) {
+        assert.ok(why.length > 20, `CONTRACT_ANY_PAGE 的 ${key} 沒寫理由（空白不等於查證過，§4）`);
+        const c = noHtml.find(({ bucket, name }) => `${bucket}/${name}` === key);
+        assert.ok(c, `CONTRACT_ANY_PAGE 指的 ${key} 已經不是無 html 元件（死豁免）`);
+        const heads = [`${c.path}/_${c.name}.scss`, `${c.path}/${c.name}.js`].filter(existsSync).map(read).join("\n");
+        const cons = declaredConsumers(heads);
+        assert.ok(checkContract(heads, allForest.filter(({ f }) => cons.includes(f))).length > 0,
+            `CONTRACT_ANY_PAGE 豁免了 ${key}，但它的契約其實在自己宣告的消費頁裡就對得上 —— 死豁免，請移除`);
+    }
+    // 負控＝round40 實測全綠的那四種突變（＋屬性名那一種）。good 樣本擋反方向：
+    // 契約是節錄，消費頁多出來的兄弟節點不該被判成違規。
+    const probeRule = (s) => checkContract(s, allForest);
+    const G = (dialogCls, dlgCls, wrapCls, contentLine, headerCls, dlgAttr) => [
+        `//   <dialog class="${dialogCls}" id="ProductionSettingsModal" aria-labelledby="ProductionSettingsModal-title"${dlgAttr}>`,
+        `//       <div class="${dlgCls}">`,
+        `//           <div class="${wrapCls}">`,
+        ...(contentLine ? [`//               <div class="modals-content">`] : []),
+        `//               ${contentLine ? "    " : ""}<div class="${headerCls}">`,
+        `//               ${contentLine ? "    " : ""}</div>`,
+        ...(contentLine ? [`//               </div>`] : []),
+        `//           </div>`,
+        `//       </div>`,
+        `//   </dialog>`,
+    ].join("\n");
+    probe("§1-2 markup 契約同構", probeRule, [
+        G("modals", "modals-wrap", "modals-dialog modals-md", true, "modals-header", ""),          // ① 巢狀對調
+        G("modals modals-md", "modals-dialog", "modals-wrap", true, "modals-header", ""),          // ② 尺寸 class 換主人
+        G("modals", "modals-dialog modals-md", "modals-wrap", false, "modals-header", ""),         // ③ 少一層 .modals-content
+        G("modals", "modals-dialog modals-md", "modals-wrap", true, "modals-header mb-16", ""),    // ④ 多一顆別處才有的 class
+        G("modals", "modals-dialog modals-md", "modals-wrap", true, "modals-header", ' data-print="1"'), // ⑤ 多一個實例沒有的屬性
+    ], [
+        G("modals", "modals-dialog modals-md", "modals-wrap", true, "modals-header", ""),
+    ]);
     assert.equal(hits.length, 0, `§1-2 無 html 元件的 markup 契約：\n${fail(hits)}`);
 });
 
@@ -4131,7 +4364,11 @@ test("§5 寫死 .hidden 的分支文案，至少要有一處看得見（否則�
     ]);
     const OPENER = /\b(?:aria-controls|data-reveal-target|data-dismiss-target)="([^"]+)"/g;
     const I18N_ATTR = /\b(?:data-i18n(?:-[a-z-]+)?|data-[a-z-]+-key)="([^"]+)"/g;
-    const classesOf = (attrs) => ((attrs.match(/\sclass="([^"]*)"/) || [, ""])[1]).split(/\s+/).filter(Boolean);
+    // round40 洞⑩：`classesOf` 只認雙引號（`class='hidden'` 完全看不到），而祖先鏈的堆疊是
+    // **純計數**（`stack.pop()` 不比標籤名）且沒有平衡守門——姊妹規則 platformScopes 卻是明文 fail loud。
+    // 多一個 `</div>` 就會提早 pop、把 `cur` 清成 null，於是整棵 .hidden 子樹的 key 全部灌進
+    // **跨頁共用**的 `visible`，連別的頁面同名的 key 一起被消音。所以這裡也 fail loud。
+    const classesOf = (attrs) => { const m = attrs.match(/\sclass=(?:"([^"]*)"|'([^']*)')/); return (m ? (m[1] ?? m[2]) : "").split(/\s+/).filter(Boolean); };
     // docs: [{f, html}]。回傳 { hits, visible, hiddenNodes, roots }。
     // probe 走同一條函式（只餵一份合成文件），故豁免與判準都被合成樣本驗過。
     const hiddenScan = (docs) => {
@@ -4141,6 +4378,7 @@ test("§5 寫死 .hidden 的分支文案，至少要有一處看得見（否則�
                 for (const id of m[1].split(/\s+/).filter(Boolean)) openTargets.add(id);
         const visible = new Set();
         const roots = [];
+        const broken = [];
         let hiddenNodes = 0;
         for (const { f, html } of docs) {
             const stack = [];
@@ -4153,11 +4391,20 @@ test("§5 寫死 .hidden 的分支文案，至少要有一處看得見（否則�
                     if (isRoot) { cur = { f, attrs: ev.attrs, keys: [] }; roots.push(cur); }
                     const keys = [...ev.attrs.matchAll(I18N_ATTR)].map((m) => m[1]).filter((k) => !k.includes("{"));
                     if (cur) cur.keys.push(...keys); else for (const k of keys) visible.add(k);
-                    stack.push(isRoot ? cur : null);
-                } else if (stack.pop()) cur = null;
+                    stack.push({ tag: ev.tag, root: isRoot ? cur : null });
+                } else {
+                    const top = stack.pop();
+                    if (!top || top.tag !== ev.tag) {
+                        broken.push(`${f}  </${ev.tag}> 對不上${top ? ` <${top.tag}>` : "任何開標籤"} —— 標籤不平衡，` +
+                            `.hidden 的祖先鏈會提早 pop：整棵子樹的 key 會被算成「看得見」並灌進跨頁共用的集合，` +
+                            `連別頁同名的 key 一起消音。不可靜靜當成沒事（同 platformScopes 的 fail loud）`);
+                        break;                                 // 這份文件之後的祖先鏈都不可信，不再往下算
+                    }
+                    if (top.root) cur = null;
+                }
             }
         }
-        const hits = [];
+        const hits = [...broken];
         for (const r of roots) {
             const id = (r.attrs.match(/\bid="([^"]+)"/) || [])[1];
             if (id && openTargets.has(id)) continue;                                    // 族 (a)
@@ -4187,6 +4434,10 @@ test("§5 寫死 .hidden 的分支文案，至少要有一處看得見（否則�
         `<div class="hidden">\n  <span data-placeholder-key="probe.slot">請選擇</span>\n</div>`,
         // ④ 該行含模板語法：dist 上早就渲染掉了，舊版卻靠 `line.includes("{%")` 整行跳過
         `<div class="tip hidden" data-i18n="probe.wasNjk">參數驅動的提示</div>`,
+        // ⑤ 洞⑩：單引號的 class（舊的 classesOf 只認雙引號，這一顆整個看不見）
+        `<div class='tip hidden'><span data-i18n="probe.singleQuote">單引號</span></div>`,
+        // ⑥ 洞⑩：多一個 </div> ⇒ 祖先鏈提早 pop，後面那顆 key 被算成「看得見」（舊版靜靜 0 命中）
+        `<section class="hidden"><div></div></div><span data-i18n="probe.unbalanced">藏起來的文案</span></section>`,
     ], [
         `<div class="hidden"><span data-i18n="probe.ok">同一顆</span></div><p data-i18n="probe.ok">看得見的另一態</p>`,
         // 族 (a)：markup 上宣告得出來的開合目標
@@ -4225,20 +4476,48 @@ test("§3-2 跨 repo 活正本的出處不得引行號（行號會漂到語意�
     // `prompt-edit.js:51-52` 被引兩次，而那兩行現在是兩個 `}`，邏輯早漂到 54-55。
     // 凍結豁免因此是**以引用為單位**：同一則裡的 `uploadFilePdf.js:480-486` 救不掉
     // 「`datasets.py` … 同檔 :634-638」那一半。
+    //
+    // round40 對抗性拆解補掉的四個網洞（洞號＝該輪的編號）：
+    //   ②「行號」的形狀只認半形冒號＋一個空白。全形「（：193）」、中文「第 60 行」「行 41」、
+    //     `#L41`、`@60`、`line 88` 六種形狀 0 命中——而 repo 已經在用中文量詞寫行號
+    //     （`_step-nodes.scss` 的「，行 2563-2606」、`multi-select.html` 的「第 823-830 行」），
+    //     只是碰巧被裸範圍撿到。**收形狀時要同時收窄**：全形冒號在中文裡是句讀（「文案：5-2」），
+    //     只有夾在括號／斜線之後才是引用；「行」前面接漢字就是動詞（「放行 56 筆」）。
+    //   ③ 裸範圍（`2381-2389`）＋「整則沒有檔名 ⇒ 自我引用」的兜底會誤判 `每頁 10-20 筆`、
+    //     `768-1024`、`Node 18-22`、`2024-2026`。現況 0 紅是碰巧（31 條裸範圍全靠同則另有凍結
+    //     檔名才過關）。**裸範圍只在同則出現活正本檔名時才啟用**——它本來就只是「檔名與行號被
+    //     拆開寫」那一種的補網，沒有活正本檔名就沒有東西可補。
+    //   ④ 凍結豁免原本是「往前 20 字內有『凍結』字樣」的鄰近視窗，於是
+    //     `{# 凍結前端 main.js:880；另 datasets.py:2381-2389 #}` 整則放行。窗口改成**以引用為單位**：
+    //     只看「上一個檔名之後、本次引用之前」那一段，再截到最近的句讀。
+    //     另 `FROZEN_DIR` 只看 `^(js|scss|css|pages)/` 前綴，上游 Next.js 的 `pages/api/x.ts:120`
+    //     會被誤當凍結——凍結前端沒有 .py/.ts/.tsx/.md，故活正本副檔名一律不吃目錄前綴那條。
+    //   ⑤ 母體只有 `src/**`，`tests/`（就藏著 `users.py:310`／`:317`）與四份 root `.md` 都在網外。
+    //     兩者納入：`.md` 逐行為一則（散文沒有註解符號）、`tests/*.mjs` 除註解外連**中文字串常值**
+    //     一起收（斷言訊息就是那種散文，`assert.match(…, "…（users.py:310）…")` 一樣是出處斷言）。
     const EXT = "py|ts|tsx|js|jsx|mjs|scss|css|html|md";
     const FILE = new RegExp(`(?<![\\w.\\-/\\\\])((?:[\\w.\\-]+[/\\\\])*)([\\w][\\w.\\-]*\\.(?:${EXT}))(?![\\w\\-])`, "g");
-    // 落單的行號：`（:193）`／`／:308`／`` `:99` ``。lookbehind 同時排掉誤傷——
-    // 比例 `4.5:1`、CSS 值 `opacity:0`／`z-index: 900`、程式碼引文 `"inserted": 0`、
-    // 以及「檔名緊鄰」那一種（`main.js:322` 的冒號前是 `s`，由下面的 adjacency 另外收）。
-    const LOOSE = /(?<![\w"'.\-]):\s?\d{1,4}(?:\s*[-–~]\s*\d{1,4})?/g;
-    const BARE = /(?<![\w.\-:])\d{2,4}\s*[-–~]\s*\d{2,4}(?![\w.\-])/g;   // 裸範圍 2381-2389
+    // 落單的行號。lookbehind 同時排掉誤傷——比例 `4.5:1`、CSS 值 `opacity:0`／`z-index: 900`、
+    // 程式碼引文 `"inserted": 0`、以及「檔名緊鄰」那一種（`main.js:322` 的冒號前是 `s`，由 ADJ 另外收）。
+    const N = String.raw`\d{1,4}(?:\s*[-–~]\s*\d{1,4})?`;
+    const SHAPES = [
+        new RegExp(String.raw`(?<![\w"'.\-]):\s?${N}`, "g"),                       // （:193）／／:308
+        new RegExp(String.raw`(?<=[（(【\[／/、])\s*：\s*${N}`, "g"),               // （：193）——全形冒號只在括號／斜線後算
+        new RegExp(String.raw`第\s*${N}\s*行`, "g"),                                // 第 823-830 行
+        new RegExp(String.raw`(?<![\w㐀-鿿])行\s*${N}`, "g"),                       // ，行 2563-2606（前面接漢字的是動詞）
+        new RegExp(String.raw`#L\d{1,4}(?:\s*[-–~]\s*L?\d{1,4})?`, "g"),           // #L41（GitHub 連結體）
+        new RegExp(String.raw`(?<![\w@])@\d{1,4}(?:\s*[-–~]\s*\d{1,4})?(?![\w%])`, "g"),  // @60（不吃 `@ 60Hz`／`@ 50%`）
+        new RegExp(String.raw`(?<![\w-])lines?\s?${N}(?![\w])`, "gi"),             // line 88
+    ];
+    const BARE = /(?<![\w.\-:：])\d{2,4}\s*[-–~]\s*\d{2,4}(?![\w.\-])/g;   // 裸範圍 2381-2389（只在同則有活正本時啟用）
+    const ADJ = new RegExp(String.raw`^(?:[:：]\s?${N}|\s*#L\d{1,4}(?:\s*[-–~]\s*L?\d{1,4})?)`);
     // 凍結前端（README 列出的兩份 jQuery 切版）：basename 白名單 ＋ 它們的目錄前綴 ＋ 就近的「凍結」字樣。
     const FROZEN_BASE = /^(?:main|accountInfo|uploadFilePdf|uploadFileExcel|knowledgeRetrieval|singleTest|abTest|qaHistory|qaHistoryDetail|qaRecord|promptManagement|previewDataset|previewExcel|previewExcelCompare|datasetList|dataImport)\.js$|^(?:component\.scss|component\.css|style\.css)$/;
     const FROZEN_DIR = /(?:^|[^\w/\\])(?:js|scss|css|pages)[/\\]/;      // 本 repo 自己的路徑一律 src/…，鑽不進來
     const LIVE_EXT = /\.(?:py|ts|tsx|md)$/;                             // saas services/product・apps/web・docs ＋ GufoRAG chatbot
     const repoBase = new Set(gitFiles("").map((p) => basename(p)));
     const classify = (path, base, before) =>
-        /凍結/.test(before) || FROZEN_DIR.test(path) || FROZEN_BASE.test(base) ? "凍結"
+        /凍結/.test(before) || (FROZEN_DIR.test(path) && !LIVE_EXT.test(base)) || FROZEN_BASE.test(base) ? "凍結"
             : repoBase.has(base) ? "自我引用" : LIVE_EXT.test(base) ? "活正本" : "";
     const commentsOf = (text, mode) => {
         const at = (i) => text.slice(0, i).split(/\r?\n/).length;
@@ -4246,6 +4525,15 @@ test("§3-2 跨 repo 活正本的出處不得引行號（行號會漂到語意�
         if (mode === "njk") {
             for (const m of text.matchAll(/\{#[\s\S]*?#\}/g)) out.push({ line: at(m.index), body: m[0] });
             return out;
+        }
+        if (mode === "md") {                                     // 散文檔沒有註解符號：一行＝一則
+            text.split(/\r?\n/).forEach((l, i) => { if (l.trim()) out.push({ line: i + 1, body: l }); });
+            return out;
+        }
+        if (mode === "mjs") {                                    // 測試檔：註解 ＋ 中文字串常值（斷言訊息也是散文）
+            for (const m of text.matchAll(/"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'|`(?:[^`\\]|\\.)*`/g))
+                if (CJK.test(m[0])) out.push({ line: at(m.index), body: m[0] });
+            return [...out, ...commentsOf(text, "js")];
         }
         let cur = null;                                          // 連續的 // 行＝同一則
         text.split(/\r?\n/).forEach((l, i) => {
@@ -4265,22 +4553,30 @@ test("§3-2 跨 repo 活正本的出處不得引行號（行號會漂到語意�
             st.seen++;
             const body = c.body.replace(/\b\d{4}-\d{2}-\d{2}\b/g, (d) => "D".repeat(d.length));  // 日期不是行號
             const toks = [];
-            let hasFile = false, hasLive = false;
+            let hasFile = false, hasLive = false, prevEnd = 0;
             for (const m of body.matchAll(FILE)) {
-                const cls = classify(m[1], m[2], body.slice(Math.max(0, m.index - 20), m.index));
+                // 洞④：凍結字樣的視窗以**引用為單位**——只看上一個檔名之後、截到最近一個句讀，再取最後 20 字
+                const win = body.slice(prevEnd, m.index).split(/[；;。\n]/).pop().slice(-20);
+                prevEnd = m.index + m[0].length;
+                const cls = classify(m[1], m[2], win);
                 hasFile = true;
                 hasLive = hasLive || cls === "活正本";
                 toks.push({ i: m.index, file: cls });
-                const adj = body.slice(m.index + m[0].length).match(/^:\s?\d{1,4}(?:\s*[-–~]\s*\d{1,4})?/);
+                const adj = body.slice(m.index + m[0].length).match(ADJ);
                 if (adj) toks.push({ i: m.index + m[0].length + 0.5, num: m[2] + adj[0], own: cls });
             }
-            for (const re of [LOOSE, BARE])
+            for (const re of SHAPES)
                 for (const m of body.matchAll(re)) toks.push({ i: m.index, num: m[0].trim() });
+            if (hasLive)                                          // 洞③：裸範圍只在同則有活正本檔名時才是行號
+                for (const m of body.matchAll(BARE)) toks.push({ i: m.index, num: m[0].trim() });
             toks.sort((a, b) => a.i - b.i);
             if (hasLive) st.live++;
             let last = null;
+            const reported = new Set();                            // 同一個位置被兩種形狀同時打到只算一次
             for (const t of toks) {
                 if (t.file !== undefined) { last = t; continue; }
+                if (reported.has(Math.floor(t.i))) continue;
+                reported.add(Math.floor(t.i));
                 const cls = t.own !== undefined ? t.own
                     : last ? last.file : hasFile ? (hasLive ? "活正本" : "") : "自我引用";
                 if (cls === "活正本" || cls === "自我引用")
@@ -4289,9 +4585,29 @@ test("§3-2 跨 repo 活正本的出處不得引行號（行號會漂到語意�
         }
         return out;
     };
+    // 洞⑤：這條規則自己的測試檔會**逐字引用違規樣本**當說明與負控，那一段當然滿是行號。
+    // 豁免的單位是「這一條 test 的原始碼範圍」，不是整支檔案——別的 test 引了行號照樣要紅。
+    const SELF = "§3-2 跨 repo 活正本的出處不得引行號";
+    const cutSelfZone = (text) => {
+        const s = text.indexOf(`test("${SELF}`);
+        if (s < 0) return { body: text, zone: "" };
+        const e = text.indexOf("\ntest(", s + 1);
+        const zone = text.slice(s, e < 0 ? text.length : e);
+        return { body: text.slice(0, s) + zone.replace(/[^\n]/g, " ") + text.slice(e < 0 ? text.length : e), zone };
+    };
     const hits = [];
-    for (const f of srcHtml) hits.push(...scan(read(f), f, "njk", stats));
-    for (const f of [...srcJs, ...srcScss]) hits.push(...scan(read(f), f, "js", stats));
+    // 母體逐塊記數：只看總數的話，少掉一整塊（例如 root .md 的 1200 行）也可能還在門檻之上
+    const part = { src: { seen: 0, live: 0 }, tests: { seen: 0, live: 0 }, md: { seen: 0, live: 0 } };
+    const bump = (p) => { stats.seen += p.seen; stats.live += p.live; };
+    for (const f of srcHtml) hits.push(...scan(read(f), f, "njk", part.src));
+    for (const f of [...srcJs, ...srcScss]) hits.push(...scan(read(f), f, "js", part.src));
+    for (const f of gitFiles('"tests/*.mjs" "tests/**/*.mjs"')) hits.push(...scan(cutSelfZone(read(f)).body, f, "mjs", part.tests));
+    for (const f of gitFiles('"*.md"')) hits.push(...scan(read(f), f, "md", part.md));
+    for (const p of Object.values(part)) bump(p);
+    // 洞⑤：三塊母體各自要真的掃到東西（少接一塊，總數照樣過門檻）
+    assert.ok(part.src.seen >= 1000, `src/** 只掃到 ${part.src.seen} 則註解 —— 這條測試在空轉`);
+    assert.ok(part.tests.seen >= 500, `tests/ 只掃到 ${part.tests.seen} 則 —— 洞⑤ 的新母體沒有真的接上`);
+    assert.ok(part.md.seen >= 500, `root .md 只掃到 ${part.md.seen} 行 —— 洞⑤ 的新母體沒有真的接上`);
     // 負控用**真實世界的五種形狀**（上一版用 `platform.py:1437-1440` 這種現實中不存在的寫法，
     // 於是認證了一條永遠不會響的規則）。good 樣本擋反方向：誤報一次就會有人去放寬排除清單。
     probe("跨 repo 行號", (s) => scan(s), [
@@ -4311,14 +4627,54 @@ test("§3-2 跨 repo 活正本的出處不得引行號（行號會漂到語意�
         "{# product `datasets.py` 的單筆 Excel 端點回的是 `\"inserted\": 0 if superseded else 1` #}",
         "{# 別名欄已於 2026-08-07 隨上游移除（chatbot `app/services/alias.py` 的 MAX_ALIAS_LEN） #}",
         "{# 逐位元照抄自真 app scss/component.scss 表格區塊 1680-1685、1687-1799 #}",
+        // 洞③ 的四種：沒有活正本檔名的數字範圍不是行號（現況它們一律被判紅，只是碰巧沒人這樣寫）
+        "{# 每頁 10-20 筆 #}",
+        "{# 斷點 768-1024 之間才切成兩欄 #}",
+        "{# Node 18-22 都跑得動 #}",
+        "{# 2024-2026 這段期間的資料 #}",
+    ]);
+    // 洞②：六種上一版 0 命中的行號形狀（全部配同一句活正本出處，只有寫法不同）
+    probe("跨 repo 行號（形狀）", (s) => scan(s), [
+        "{# 見 GufoRAG chatbot app/routes/mcp.py 的 create（：193） #}",
+        "{# 見 GufoRAG chatbot app/routes/mcp.py 的 create，第 60 行 #}",
+        "{# 見 GufoRAG chatbot app/routes/mcp.py 的 create，行 41 #}",
+        "{# 見 GufoRAG chatbot app/routes/mcp.py 的 create #L41 #}",
+        "{# 見 GufoRAG chatbot app/routes/mcp.py 的 create @60 #}",
+        "{# 見 GufoRAG chatbot app/routes/mcp.py 的 create line 88 #}",
+    ], [
+        // 收形狀不可以連中文句讀一起收：全形冒號在中文裡是句讀、「行」前接漢字是動詞
+        "{# 示範提示詞取領域中性的知識庫助手文案：5-2 的示範資料橫跨好幾個主題（見 platform.py 的 review_apply） #}",
+        "{# 這張表原本有兩份，一份在 §4 當白名單（放行 56 筆），出處見 platform.py 的 review_apply #}",
+        "{# 4K（3840×2160）@ 60Hz HDMI 輸出，規格見 platform.py 的 review_apply #}",
+    ]);
+    // 洞④：凍結豁免以引用為單位；上游 Next.js 的 pages/ 不是凍結前端的 pages/
+    probe("跨 repo 行號（凍結豁免的邊界）", (s) => scan(s), [
+        "{# 凍結前端 main.js:880；另 datasets.py:2381-2389 #}",
+        "{# 上游 apps/web 的 pages/api/session.ts:120 回的是同一顆 token #}",
+    ], [
+        "{# 凍結前端 main.js:880；同檔 uploadFilePdf.js:480-486 也是純 UI #}",
+        "{# 真實 app pages/components/component.html 第 823-830 行的 .multiSelect 用法 #}",
     ]);
     probe("跨 repo 行號（js/scss 註解）", (s) => scan(s, "<probe>", "js"),
         ["// 詞條長度上限見 GufoRAG chatbot app/services/glossary.py（:41）"],
         ["// 對應真實 app 的 js/main.js:322，純 UI（顯示已在 markup 裡的區塊）",
             "        z-index: 900; // 與 .faq-launcher 同層（modal 1000／toast 2000 之下）",
             "// 逐位元照抄自真 app scss/component.scss 1935-2005（accordion 手風琴區塊）"]);
-    assert.ok(stats.seen >= 800, `只掃到 ${stats.seen} 則註解 —— 這條測試在空轉`);
-    assert.ok(stats.live >= 30, `只有 ${stats.live} 則註解認得出跨 repo 活正本 —— 分類壞了，這條測試在空轉`);
+    // 洞⑤ 的兩個新母體各自要能認出違規（母體加進來卻用錯 mode，掃到的會是 0 則）
+    probe("跨 repo 行號（測試檔的斷言訊息）", (s) => scan(s, "<probe>", "mjs"),
+        ['assert.match(body, /x/, "降級那道（users.py:310）要講得出「最後一位管理者」");'],
+        ['assert.match(body, /x/, "降級那道（product users.py 的守衛）要講得出「最後一位管理者」");',
+            "const LIMIT = 310;   // 與後端同值"]);
+    probe("跨 repo 行號（root .md 散文）", (s) => scan(s, "<probe>", "md"),
+        ["| `5-10_tagDimensions` | 逆向自 product `app/routers/tags.py`（:788-792）的覆蓋率端點 |"],
+        ["| `5-10_tagDimensions` | 逆向自 product `app/routers/tags.py` 的 `slots_missing_from_files` |"]);
+    assert.ok(stats.seen >= 3000, `只掃到 ${stats.seen} 則註解／散文 —— 母體塌了，這條測試在空轉`);
+    assert.ok(stats.live >= 100, `只有 ${stats.live} 則認得出跨 repo 活正本 —— 分類壞了，這條測試在空轉`);
+    // 自我豁免的衛生：那一段真的存在、而且真的是「不豁免就會紅」——否則就是一張放著沒人管的通行證
+    const selfZone = cutSelfZone(read("tests/guideline.test.mjs")).zone;
+    assert.ok(selfZone.includes("const FROZEN_BASE"), "切不出這條 test 自己的原始碼範圍 —— 自我豁免的切法壞了");
+    assert.ok(scan(selfZone, "<self>", "mjs").length >= 8,
+        "這條 test 自己的範圍裡已經沒有任何行號樣本 —— 那個自我豁免是死豁免，請移除");
     assert.equal(hits.length, 0, `§3-2 活正本只准引「檔＋符號名」：\n${fail(hits)}`);
 });
 
@@ -5194,8 +5550,8 @@ test("§5/§6 5-5-1 每位成員都要看得到啟用狀態、切得動，且停
 test("§5 5-5-1 儲存鈕要演出後端每一道守衛（降級 400／停用 400／平台角色 403），不能只有成敗兩態", () => {
     // 只列「成功|失敗」的話，那幾句可行動的訊息無處可放，使用者只看到「儲存失敗」而不知道要先指派另一位管理者。
     // round33：原本這裡寫死 `toast.length === 4` ＋ types 陣列逐項比對，等於斷言「現在剛好有幾道守衛」。
-    // 那顆魔數把漏掉的第三道釘住了——product `users.py` 的降級（:310 cannot remove the last tenant admin）
-    // 與停用（:317 cannot deactivate the last active tenant admin）是兩條不同訊息，而這顆儲存鈕同時送
+    // 那顆魔數把漏掉的第三道釘住了——product `users.py` 的降級（"cannot remove the last tenant admin"）
+    // 與停用（"cannot deactivate the last active tenant admin"）是兩條不同訊息，而這顆儲存鈕同時送
     // is_admin 與 is_active，兩條都打得到。補齊守衛的人會被這條測試擋下來，於是不補。
     // 判準改成「形狀」而不是「幾段」：首段 success、末段 error、中間全是使用者修得掉的 warning 且 ≥2 段。
     const html = distDoc("5-5-1_userManagement.html");
@@ -5213,8 +5569,8 @@ test("§5 5-5-1 儲存鈕要演出後端每一道守衛（降級 400／停用 40
     assert.equal(en.length, toast.length, "en.json 的 toast.saveMember 段數要跟 markup 一致");
     // 逐條語意（不綁索引，補新守衛時不會位移）
     const body = en.slice(1, -1).join(" | ");
-    assert.match(body, /remove the last tenant admin/i, "降級那道（users.py:310）要講得出「最後一位管理者」");
-    assert.match(body, /last active tenant admin/i, "停用那道（users.py:317）要講得出「最後一位在職管理者」");
+    assert.match(body, /remove the last tenant admin/i, "降級那道（product users.py 的守衛）要講得出「最後一位管理者」");
+    assert.match(body, /last active tenant admin/i, "停用那道（product users.py 的守衛）要講得出「最後一位在職管理者」");
     assert.match(body, /platform role/i, "403 那道要講得出是「平台角色持有者」");
 });
 

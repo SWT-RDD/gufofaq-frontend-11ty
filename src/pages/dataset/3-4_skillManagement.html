@@ -165,6 +165,8 @@ permalink: 3-4_skillManagement.html
      「是同一件事的兩個畫面」——那是替一個上游產不出來的狀態背書。 #}
 {% set stepFlowNodes = [
   { label: "輸入合規檢查", state: "completed", time: "6ms" },
+  { label: "QA 直答", state: "completed", time: "14ms",
+    decision: "not_attempted", entry: "pre_graph", poolSize: "0" },
   { label: "初始化對話", state: "completed", time: "10ms" },
   { label: "Agent 推理", state: "completed", time: "280ms", thinking: "使用者問「能退多少錢」，用途說明命中 refund-flow，決定呼叫它。" },
   { label: "檢索知識庫", state: "completed", time: "1.95s" },
@@ -175,20 +177,24 @@ permalink: 3-4_skillManagement.html
   { label: "呼叫工具", state: "completed", time: "95ms", depth: 2, tools: "calculate" },
   { label: "可回答性判定", state: "completed", time: "150ms", verdict: "no_answer（素材不足以回答）" },
   { label: "誠實查無", state: "completed", time: "260ms" },
-  { label: "生成推薦問題", state: "pending", time: "" },
-  { label: "完成對話", state: "pending", time: "" },
-  { label: "輸出合規檢查", state: "pending", time: "" }
+  { label: "生成推薦問題", state: "completed", time: "180ms" },
+  { label: "完成對話", state: "completed", time: "20ms" },
+  { label: "輸出合規檢查", state: "completed", time: "8ms" }
 ] %}
 {# 摘要要與節點對得上（§6）。檢索筆數＝這一輪搜尋工具真的回給模型的片段數，而搜尋收集器是
      **父 agent 與 skill 子圖共用的同一顆**（GufoRAG chatbot `agent_service.seen_document_ids`
      逐字寫著這件事）⇒ lookup-order 子迴圈裡那一次 `search_knowledge_base` 的 4 筆要算進來，
      這一輪也只有那一次搜尋 ⇒ **4**。
      原本寫 0，前提是「檢索被略過」——那個前提本身就是上面那個矛盾（見節點陣列上方的說明）。
-     延遲 2.8s ≥ 正典節點的和 2,390ms；ttft「—」＝還沒吐出第一個字（誠實查無 running）。 #}
+     延遲 3.0s ≥ 正典節點的和 6＋14＋10＋280＋1,950＋150＋260＋180＋20＋8 ＝ 2,878ms。
+     ttft 2.4s ＝ 誠實查無這一站的起點（6＋14＋10＋280＋1,950＋150 ＝ 2,410ms）：
+     `respond_no_answer` 是**會串流給使用者**的答案節點（GufoRAG `agent_service` 的 `_answer_nodes`），
+     TTFT 記在第一個 MESSAGE chunk。前一版寫 ttft「—」＋「誠實查無 running」——而同頁的
+     `trySkillAnswer` 已經渲染著一整段答案，畫面上有答案、摘要卻說還沒吐出第一個字。 #}
 {% set stepFlowSummary = {
-    tokens: "612", latency: "2.8s", ttft: "—", results: "4", model: "openai:gpt-4o-mini"
+    tokens: "612", latency: "3.0s", ttft: "2.4s", results: "4", model: "openai:gpt-4o-mini"
 } %}
-{# 這一輪演的是 refund-flow **失敗**（走誠實查無、ttft「—」），
+{# 這一輪演的是 refund-flow **失敗**（走誠實查無，答案是那段誠實查無的話），
      所以答案槽不能沿用元件內建那段「本次可退金額為 1,280 元」的成功答案——過程與產出
      必須是同一輪（§6：覆寫了過程就要一起覆寫產出）。 #}
 {% set trySkillAnswer = "很抱歉，這一題我無法從現有資料判斷：退貨政策表這次讀取逾時，沒有取得可以計算的依據。請稍後再試，或改用人工客服協助。" %}

@@ -24,7 +24,10 @@
     <div class="flex-row align-items-center gap-8">
         <span class="control-label" data-i18n="comp.prompt">提示詞</span>
 
-        {# 按鈕文字隨 .open 切換（見 prompt-edit.js）：data-text-* 是繁中原文，data-key-* 是對應的 i18n key #}
+        {# 按鈕文字隨 .open 切換（見 prompt-edit.js）：data-text-* 是繁中原文，data-key-* 是對應的 i18n key。
+             **後綴是「當下狀態」、值是那一態該顯示的「動作」**（open ⇒「完成編輯」＝按了會收合）——
+             本檔是這種狀態式命名的正典，ui/theme-toggle 的 data-*-light／-dark 指到這裡；
+             後綴是「按下去要做的事」的動作式另有一套，見 ui/reveal-input。 #}
         <button type="button" class="button button-border js-prompt-toggle" data-text-open="完成編輯"
             data-text-close="展開編輯" data-key-open="action.finishEdit" data-key-close="action.expandEdit"
             data-i18n="action.expandEdit" aria-expanded="false">展開編輯</button>

@@ -670,7 +670,7 @@ bodyClass: guideline-page
                 <ul>
                     <li>純樣式元件 ui/subscription-gate：真實環境由 React app-shell 依 /me 的 subscription_status 疊在全站之上、四種狀態（待簽免責 pending_disclaimer／使用中 active／到期 expired／凍結 frozen）條件渲染——「強制改密」不是這一族的值，它是 /me 上另一顆布林，走別的閘門——本節是唯一看得到它的地方（GUIDELINE §5）</li>
                     <li>「.subscription-overlay」正式版是 position:fixed 全螢幕遮罩；此處掛示範變體「.demo-static」退回文流內，結構與正式版相同</li>
-                    <li>面板兩型：三段式「.subscription-panel」（.panel-header/.panel-body/.panel-footer，首登免責與強制改密用）、置中訊息「.subscription-expired-box」（.title/.desc，到期與凍結用）</li>
+                    <li>面板兩型都住在同一組「.subscription-overlay &gt; .subscription-panel」之內，差別只在面板裡放哪一種內容：三段式（.panel-header/.panel-body/.panel-footer，首登免責與強制改密用）或置中訊息「.subscription-expired-box」（.title/.desc，到期與凍結用）。「.subscription-expired-box」不是根——少抄外面那兩層不會空白、只會走樣（沒有遮罩、沒有置中、沒有卡片底色與圓角），完整契約見 _subscription-gate.scss 檔頭</li>
                 </ul>
             </div>
             {# chrome（面板標題、同意鈕、到期標題/說明）逐字鏡射 gufofaq-saas SubscriptionGate 的 zh messages；

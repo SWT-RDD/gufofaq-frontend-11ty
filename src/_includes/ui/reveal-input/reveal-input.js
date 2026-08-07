@@ -4,6 +4,10 @@
 // 兩者並用會念出「隱藏、已按下」這種矛盾）。
 // 宣告式：按鈕掛 data-reveal-target="<input id>"（比照 data-open-modal / data-toast 的事件委派，見 §5），
 // 兩態文字與 i18n key 由 markup 的 data-text-* / data-key-* 提供，JS 不寫死字串（見 §4-2）。
+// **本檔的後綴是「動作式」**：`-show`／`-hide` 講的是按下去會做的事（`data-text-show="顯示"` 用在
+// 目前還是遮蔽的時候），本檔是這一種的正典。另一種是「狀態式」——後綴＝當下狀態、值＝那一態該顯示的
+// 動作（components/prompt-edit 的 `-open`／`-close` 是正典，ui/theme-toggle 的 `-light`／`-dark` 同族）。
+// 兩種命名全站並存，抄之前先認清楚是哪一種：認錯會讓兩態整組對調，而畫面照樣有字。
 //
 // markup 契約（無 html 元件，§1-2；整段照抄）—— 兩份實例逐字相同，只有 id 與可及名稱不同。
 // 下面是 5-9_extractApiKey.html 的生產 markup：

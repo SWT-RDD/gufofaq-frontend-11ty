@@ -65,14 +65,19 @@ permalink: 2-2-5_regressionRun.html
         <div class="text-md text-bold"><span data-i18n="regression.runNo">執行編號</span><span> #311</span></div>
         <span class="verdict-tag is-fail" data-i18n="regression.statusAborted">中斷</span>
     </div>
+    {# 冒號不折進 key（§4-2 例外——標點屬版面）：這一排**五個**標籤的 key 全部另有消費點，
+         折進去會連帶污染那幾處——qaTest.knowledgeRetrieval 是 2-2-1／2-2-3 的欄位標籤與 2-2-4 的表頭、
+         regression.suiteName 是 2-2-4 的必填欄標籤與表頭、qa.startTime／qa.endTime 是 4-1 的篩選欄、
+         regression.configVersion 只有這裡但同族要一致。
+         所以分隔符一律走 common.labelSep（英譯 ": "）：裸的全形「：」不在任何 data-i18n 節點**之內**，
+         切英文時沒有任何一支規則碰得到它，會原樣印成 `Suite name：關稅問答基準集`。
+         上一輪只接了知識檢索那一個，其餘四個仍是裸的。 #}
     <div class="flex-row gap-24 flex-wrap">
-        <p><span class="text-bold" data-i18n="regression.suiteName">案例集名稱</span><span>：關稅問答基準集</span></p>
-        {# 冒號不折進 key：qaTest.knowledgeRetrieval 同時是 2-2-1／2-2-3 的欄位標籤與 2-2-4 的表頭（§4-2 例外——
-             標點屬版面，折了會污染那幾處）。分隔符走 common.labelSep，裸的全形「：」在英文模式會原樣印出來。 #}
+        <p><span class="text-bold" data-i18n="regression.suiteName">案例集名稱</span><span data-i18n="common.labelSep">：</span><span>關稅問答基準集</span></p>
         <p><span class="text-bold" data-i18n="qaTest.knowledgeRetrieval">知識檢索</span><span data-i18n="common.labelSep">：</span><span data-i18n="settings.config1">設置一</span></p>
-        <p><span class="text-bold" data-i18n="regression.configVersion">設定版本</span><span>：7</span></p>
-        <p><span class="text-bold" data-i18n="qa.startTime">開始時間</span><span>：2026/07/27 18:40</span></p>
-        <p><span class="text-bold" data-i18n="qa.endTime">結束時間</span><span>：2026/07/27 18:52</span></p>
+        <p><span class="text-bold" data-i18n="regression.configVersion">設定版本</span><span data-i18n="common.labelSep">：</span><span>7</span></p>
+        <p><span class="text-bold" data-i18n="qa.startTime">開始時間</span><span data-i18n="common.labelSep">：</span><span>2026/07/27 18:40</span></p>
+        <p><span class="text-bold" data-i18n="qa.endTime">結束時間</span><span data-i18n="common.labelSep">：</span><span>2026/07/27 18:52</span></p>
     </div>
     <p class="text-red"><span class="text-bold" data-i18n="regression.abortedReason">中斷原因：</span><span>問答額度不足（案例 41 的第 1 輪）——已完成的結果保留</span></p>
     <p class="text-red" data-i18n="regression.abortedMeaning">這不是完整的一次回歸：只有下面列出的那幾則真的跑過，其餘的案例「有沒有回歸」這一次量不到。</p>
@@ -110,7 +115,14 @@ permalink: 2-2-5_regressionRun.html
      而這一欄標著「沿用設定檔」）。
      示範自洽（§6）：#311 明確指定了提示詞／LLM模型／對話模式／取用資料筆數四個，其餘五個沿用
      ——對得上 2-2-4 的「這一次明確指定的旋鈕：4 個」。與基準 #310 相比有 3 個不同
-     （提示詞／LLM模型／取用資料筆數），對得上下方「有 3 個旋鈕不同」那一句。 #}
+     （提示詞／LLM模型／取用資料筆數），對得上下方「有 3 個旋鈕不同」那一句。
+
+     ⚠️ 標「沿用設定檔」的那五列，值不是自由填的：**母體是 5-2 設置一那幾格輸入的當下值**
+     （`#genReasoningEffort`／`#genSearchSelected`／`#genRatio`／`#profileAgentMaxIter`／`#skillsSelect`），
+     逐一是 沿用模型預設／8／**0.0**／5／11——「沿用」的定義就是「跑的時候取被測設定檔當下的值」，
+     兩頁對不上等於這一欄在說謊。`資料來源比例` 原本寫 0.25，而 5-2 的 `#genRatio` 是 0.0
+     （與 product `app/profile_config.py` 的 `PROFILE_FIELD_DEFAULTS["data_source_ratio"]` 同值）
+     ——同表其餘四個「沿用」列當時都對得上，只有它自己一個號碼。 #}
 {% set effectiveConfigRows = [
   { field: "prompt", labelKey: "comp.prompt", label: "提示詞", baseline: "你是一位知識庫問答助手，請依據檢索到的資料片段回答。", value: "你是一位專業的知識庫問答助手，回答必須僅依據檢索到的資料片段。資料不足時明確說明「無法從現有資料判斷」。", diffKey: "regression.effectiveDiffDiffer", diff: "不同", diffClass: "is-warn", sourceKey: "regression.overrideSet", source: "這一次指定", sourceClass: "is-warn" },
   { field: "model_name", labelKey: "qaTest.llmModel", label: "LLM模型", baseline: "openai:gpt-5-mini", value: "openai:gpt-4o-mini", diffKey: "regression.effectiveDiffDiffer", diff: "不同", diffClass: "is-warn", sourceKey: "regression.overrideSet", source: "這一次指定", sourceClass: "is-warn" },
@@ -118,7 +130,7 @@ permalink: 2-2-5_regressionRun.html
   { field: "search_mode", labelKey: "qaTest.chatMode", label: "對話模式", baselineKey: "qaTest.chatModeTraditional", baseline: "傳統搜尋", valueKey: "qaTest.chatModeTraditional", value: "傳統搜尋", diffKey: "regression.effectiveDiffSame", diff: "相同", diffClass: "is-muted", sourceKey: "regression.overrideSet", source: "這一次指定", sourceClass: "is-warn" },
   { field: "reasoning_effort", labelKey: "settings.reasoningEffort", label: "思考深度", baselineKey: "settings.reasoningEffortDefault", baseline: "沿用模型預設", valueKey: "settings.reasoningEffortDefault", value: "沿用模型預設", diffKey: "regression.effectiveDiffSame", diff: "相同", diffClass: "is-muted", sourceKey: "regression.overrideInherit", source: "沿用設定檔", sourceClass: "is-muted" },
   { field: "search_selected_number", labelKey: "settings.searchSelectedNumber", label: "選用資料筆數", baseline: "8", value: "8", diffKey: "regression.effectiveDiffSame", diff: "相同", diffClass: "is-muted", sourceKey: "regression.overrideInherit", source: "沿用設定檔", sourceClass: "is-muted" },
-  { field: "data_source_ratio", labelKey: "settings.dataSourceRatio", label: "資料來源比例（主題／向量）", baseline: "0.25", value: "0.25", diffKey: "regression.effectiveDiffSame", diff: "相同", diffClass: "is-muted", sourceKey: "regression.overrideInherit", source: "沿用設定檔", sourceClass: "is-muted" },
+  { field: "data_source_ratio", labelKey: "settings.dataSourceRatio", label: "資料來源比例（主題／向量）", baseline: "0.0", value: "0.0", diffKey: "regression.effectiveDiffSame", diff: "相同", diffClass: "is-muted", sourceKey: "regression.overrideInherit", source: "沿用設定檔", sourceClass: "is-muted" },
   { field: "agent_max_iterations", labelKey: "qaTest.agentMaxIter", label: "Agent 最大迭代次數", baseline: "5", value: "5", diffKey: "regression.effectiveDiffSame", diff: "相同", diffClass: "is-muted", sourceKey: "regression.overrideInherit", source: "沿用設定檔", sourceClass: "is-muted" },
   { field: "skill_ids", labelKey: "settings.assignedSkills", label: "指派 Skill", baseline: "11", value: "11", diffKey: "regression.effectiveDiffSame", diff: "相同", diffClass: "is-muted", sourceKey: "regression.overrideInherit", source: "沿用設定檔", sourceClass: "is-muted" }
 ] %}
@@ -295,10 +307,21 @@ permalink: 2-2-5_regressionRun.html
      #38 基準零命中、#37 兩側相同、#40 這一次被夾掉（格子裡明說列了幾筆／實際幾筆）。
      ⚠️ 被夾掉那一格的兩個數字要與**真的列出來的檔名數**自洽：列了 2 個檔名就是「只列了前 2 筆」
      （真實資料的上界是幾十筆，切版列不完，所以示範用小數字；那個數字是資料不是規則）。 #}
+{# ## `count` 是桶子的**總則數**，不是這張表的列數——所以列數少於它時要說出來
+     `count` 對回 `_compare_runs` 那一桶陣列的長度（React 端＝`buckets.regressed.length`），
+     `rows` 是這張表**真的畫出來的**那幾列。單次執行上限 200 則（`MAX_CASES_PER_RUN`）⇒
+     「無變化」在真實資料上動輒上百列，畫面只列前幾則、其餘由「共 N 則」承載
+     ——這是版面決策，不是後端截斷（`GET /qatest/runs/{id}?baseline=` 一律回整桶）。
+     不說出來的後果就是本頁上一版的樣子：徽章 8、表格 2 列，讀者無從分辨那個 8 是桶子總數
+     還是列數；同頁「沒得比」用的是 `{{ notComparedRows.length }}`（推導），兩種寫法並存
+     等於把「React 要渲染哪一個」留給轉換的人猜。
+     推導：列出 M ＝ `rows.length`（模板數出來的，不是填的）、共 N ＝ `count`；M < N 才渲染
+     （退步 1/1、修好 1/1 兩塊因此整段不出現，示範同時演了兩態）。
+     `count` 改成**數字**不是字串：`rows.length < count` 要數值比較，字串會走隱式轉型。 #}
 {% set compareBuckets = [
   {
     key: "regressed", titleKey: "regression.bucketRegressed", title: "退步（本來對、現在錯）",
-    tagClass: "is-fail", count: "1",
+    tagClass: "is-fail", count: 1,
     whyKey: "regression.bucketRegressedWhy", why: "這一份是整份報表的價值所在：基準那一次通過、這一次沒過，也就是這次改動弄壞的東西。",
     rows: [
       { caseNo: "#39", question: "臺灣輸美鋼品的關稅稅率是多少", before: "通過", beforeKey: "regression.verdictPass", beforeClass: "is-pass", after: "未通過", afterKey: "regression.verdictFail", afterClass: "is-fail", beforeHits: "鋼品關稅表_2025.pdf／稅則號列對照.xlsx", afterHits: "一般貿易須知.pdf", detail: "答案缺少：25%" }
@@ -306,7 +329,7 @@ permalink: 2-2-5_regressionRun.html
   },
   {
     key: "fixed", titleKey: "regression.bucketFixed", title: "修好了（本來錯、現在對）",
-    tagClass: "is-pass", count: "1",
+    tagClass: "is-pass", count: 1,
     whyKey: "regression.bucketFixedWhy", why: "基準那一次沒過、這一次通過了。",
     rows: [
       { caseNo: "#38", question: "出口鋼品要準備哪些文件", before: "未通過", beforeKey: "regression.verdictFail", beforeClass: "is-fail", after: "通過", afterKey: "regression.verdictPass", afterClass: "is-pass", beforeHitsKey: "regression.hitsNone", beforeHits: "（零命中）", afterHits: "出口文件清單.pdf", detail: "" }
@@ -314,7 +337,7 @@ permalink: 2-2-5_regressionRun.html
   },
   {
     key: "unchanged", titleKey: "regression.bucketUnchanged", title: "無變化",
-    tagClass: "is-muted", count: "8",
+    tagClass: "is-muted", count: 8,
     whyKey: "regression.bucketUnchangedWhy", why: "兩次的確定性判定相同（含兩次都沒過）。這一塊不含「沒得比」與「評審整批壞掉」——那兩件事各自在上面。",
     rows: [
       { caseNo: "#37", question: "鋼品的稅則號列怎麼查", before: "通過", beforeKey: "regression.verdictPass", beforeClass: "is-pass", after: "通過", afterKey: "regression.verdictPass", afterClass: "is-pass", beforeHits: "稅則號列對照.xlsx", afterHits: "稅則號列對照.xlsx", detail: "" },
@@ -383,6 +406,10 @@ permalink: 2-2-5_regressionRun.html
             </tbody>
         </table>
     </div>
+    {# 截斷指標：列數 < 桶子總則數時才出現（推導見本區塊上方那則註解）。 #}
+    {% if bucket.rows.length < bucket.count %}
+    <p class="text-gray"><span data-i18n="regression.bucketListedPrefix">這個桶子共 </span><span>{{ bucket.count }}</span><span data-i18n="regression.bucketListedMid"> 則，這張表只列出前 </span><span>{{ bucket.rows.length }}</span><span data-i18n="regression.bucketListedSuffix"> 則——徽章上的數字是桶子的總則數，不是這張表的列數。</span></p>
+    {% endif %}
 </section>
 {% if bucket.key == "regressed" %}
 {# ── 沒得比 ── 排在「無變化」之前：它的預設歸宿就是「無變化」，那正是假綠燈。 #}
@@ -478,29 +505,17 @@ permalink: 2-2-5_regressionRun.html
      這一列與比較表那兩欄是同一份資料的兩種粒度：那兩欄回答「以前引 A、現在引 B」，這一列回答
      「為什麼是這幾份」。
 
-     線索欄位缺席時整段不渲染（存一串空值只是噪音）——示範第 2 筆刻意只有檔名與分數。
+     線索欄位缺席時整段不渲染（存一串空值只是噪音）——示範 #39 的第 2 筆命中刻意只有檔名與分數。
      **三種「不可以留白」**：零命中、命中沒有身分、清單被夾掉；空白會被讀成「這一題零命中」，
-     那是一個看起來正常的錯誤答案。示範這裡演第二種（第 3 筆），另外兩種在比較表那兩欄
-     （#38 的基準零命中、#40 的這一次被夾掉）——三種用的是同一組 key。 #}
+     那是一個看起來正常的錯誤答案。示範這裡演第二種（#39 的第 3 筆命中），另外兩種在比較表那兩欄
+     （#38 的基準零命中、#40 的這一次被夾掉）——三種用的是同一組 key。
+
+     **列序＝case_id 升冪**，與上方比較區同一條規則、同一個理由：`get_run` 的 `results` 逐列來自
+     `_result_rows` 的 `.order_by(models.RegressionResult.id)`，而結果列是 `run_suite` 依
+     `.order_by(models.TestCase.id)` 逐則跑、跑完一則才 commit 生出來的 ⇒ 結果列 id 序＝案例 id 序。
+     故 #34 → #35 → #39，不是「先放退步那一則」的敘事序（那是這支端點產不出來的順序，§6）。
+     退步那一則要先看到的需求由上方「退步」桶子承擔，不靠這張表重排。 #}
 {% set runResultRows = [
-  {
-    caseNo: "#39", question: "臺灣輸美鋼品的關稅稅率是多少",
-    verdict: "未通過", verdictKey: "regression.verdictFail", verdictClass: "is-fail",
-    judgeScore: "2.4",
-    latency: "2,140", tokens: "1,096", turnsSent: "2",
-    expectations: [
-      "答案須包含：25%／鋼品",
-      "須引用文件：9f2c1b7e…a41",
-      "主觀評分判準：答案有沒有正面回答「稅率是多少」"
-    ],
-    answer: "鋼品出口到美國需要依照 HS 稅則號列申報，實際稅率請洽海關。",
-    hits: [
-      { name: "一般貿易須知.pdf", source: "貿易法規資料集", index: "tenant7_trade", chunk: "3", score: "0.71" },
-      { name: "出口實務問答.pdf", score: "0.64" },
-      { noIdentity: "3", source: "貿易法規資料集", score: "0.2" }
-    ],
-    failures: ["答案缺少：25%"]
-  },
   {
     caseNo: "#34", question: "鋁材的關稅是多少（追問）",
     verdict: "通過", verdictKey: "regression.verdictPass", verdictClass: "is-pass",
@@ -527,6 +542,24 @@ permalink: 2-2-5_regressionRun.html
       { name: "關稅減免辦法.pdf", source: "貿易法規資料集", index: "tenant7_trade", chunk: "5", score: "0.79" }
     ],
     failures: []
+  },
+  {
+    caseNo: "#39", question: "臺灣輸美鋼品的關稅稅率是多少",
+    verdict: "未通過", verdictKey: "regression.verdictFail", verdictClass: "is-fail",
+    judgeScore: "2.4",
+    latency: "2,140", tokens: "1,096", turnsSent: "2",
+    expectations: [
+      "答案須包含：25%／鋼品",
+      "須引用文件：9f2c1b7e…a41",
+      "主觀評分判準：答案有沒有正面回答「稅率是多少」"
+    ],
+    answer: "鋼品出口到美國需要依照 HS 稅則號列申報，實際稅率請洽海關。",
+    hits: [
+      { name: "一般貿易須知.pdf", source: "貿易法規資料集", index: "tenant7_trade", chunk: "3", score: "0.71" },
+      { name: "出口實務問答.pdf", score: "0.64" },
+      { noIdentity: "3", source: "貿易法規資料集", score: "0.2" }
+    ],
+    failures: ["答案缺少：25%"]
   }
 ] %}
 <div class="block mt-16 flex-row column gap-16 js-accordion">

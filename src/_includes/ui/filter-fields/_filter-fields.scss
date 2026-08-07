@@ -18,15 +18,21 @@
 //               <select class="form-control singleSelect" id="llmModelSelect">
 //                   <option value="" data-i18n="common.pleaseSelect">請選擇</option>
 //                   <option value="OpenAI gpt-4o-mini" selected>OpenAI gpt-4o-mini</option>
+//                   <option value="OpenAI gpt-4o">OpenAI gpt-4o</option>
 //               </select>
 //           </div>
 //       </div>
-//       （其餘欄位同型，重複到最後一欄為止；每一欄都要有 .filter-field）
 //   </div>
 //
 //   · `.filter-field` 是本元件的 slot class（不去寫 ui/form-control 的 class，§4）
 //   · `<div class="label">` **不帶 flex-row**。只有那一欄的標籤旁邊要放 `ui/info-btn` 時才多掛
 //     `flex-row`（2-2-1 的「知識檢索」是全站唯一一欄），把它寫進契約＝每一欄都多一顆無用的 flex 容器
+//   · **本契約到 `.filter-field` 這一層為止，第二欄以後不寫「其餘同型」**：四份實例的欄位內容
+//     四種形狀都有（`<select>`、`<input type="number">` ＋ 可見區間 `<span id>` ＋ `aria-describedby`、
+//     標籤旁掛 ui/info-btn 的、以及整顆是 `components/reasoning-effort-select` 的 `{% include %}`），
+//     它們**不是同型的重複節點**，說成同型等同 §1-2 禁掉的 `…`。欄位本體的契約在 `ui/form-control`
+//     （數值欄三件套見 §4），本元件只規定「每一欄都是 `.form-group.filter-field` ＋ 欄寬 class，
+//     而且都住在 `.filter-fields` 裡」——連只有一欄的時候也要有外層（見上面第三段）。
 //
 // ── 清除鈕：**它是 `.filter-fields` 的兄弟、不在裡面**（六份實例無一例外）
 //

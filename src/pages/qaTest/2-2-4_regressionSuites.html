@@ -58,10 +58,15 @@ permalink: 2-2-4_regressionSuites.html
                 </div>
                 <div class="field">
                     <input type="text" id="newSuiteName" class="form-control" maxlength="200" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" required aria-describedby="newSuiteNameHint">
-                    {# 長度上限是契約欄位（§6）：`_clean_text(body.name, what="案例集名稱", max_len=200)`
-                         （regression.py  的 400）。同一頁的 `#newCaseQuestion`（2000）與
-                         `#assertionCriteria`（1024）早就落地了，就這一格沒接——打了 250 字會拿到
-                         紅色的「建立失敗，請稍後再試」，而重試永遠不會成功。
+                    {# 長度上限是契約欄位（§6）：值域正本是 gufofaq-saas services/product
+                         `app/routers/regression.py` 的 `MAX_SUITE_NAME_LEN`（＝200），由 `create_suite`
+                         以 `_clean_text(body.name, what=i18n.t("regression.what_suite_name"),
+                         max_len=MAX_SUITE_NAME_LEN)` 擋成 400；那顆常數旁的註解逐字寫著「具名而不是
+                         行內引數」，因為契約投影（`GET /qatest/contract` 的 `max_suite_name_len`）要
+                         指得到同一顆常數。原本這裡把它引成 `what="案例集名稱", max_len=200`——值 200
+                         是對的，爛掉的是指標：照那份引文回去 grep 一個字都找不到。
+                         同一頁的 `#newCaseQuestion`（2000）與 `#assertionCriteria`（1024）早就落地了，
+                         就這一格沒接——打了 250 字會拿到紅色的「建立失敗，請稍後再試」，而重試永遠不會成功。
                        數字不烤進譯文（§4-2）：拆成「前綴 key ＋數字節點＋單位 key」，同頁
                          `#newCaseQuestionHint`（2000）與 `#assertionCriteriaHint`（1024）就是這個形狀——
                          上限一旦改動，要改的只有 maxlength 與這一個數字節點，兩份譯文都不必動。 #}
@@ -157,8 +162,22 @@ permalink: 2-2-4_regressionSuites.html
      「臺灣輸美鋼品的關稅稅率是多少」記成 **#39**，而 #41 是中斷點那一則、#42 是「鋁材的反傾銷稅率」。
      41 不能給這裡的任何一則——2-2-5 逐字寫著「id ≥ 41 的案例這一次一則結果都沒有」，
      而 #39 在那一頁有完整結果（退步、2 輪前置）。這兩則只是 12 則裡的版型示範，不是全部：
-     另外三則在 2-2-5 也有名字（#34 零輪前置、#35 一輪、#36 五輪＝全套唯一超過上游記憶輪數的那一則）。 #}
+     另外三則在 2-2-5 也有名字（#34 零輪前置、#35 一輪、#36 五輪＝全套唯一超過上游記憶輪數的那一則）。
+     **列序＝case_id 升冪**（不是新到舊）：`get_suite` 的 cases 來自
+     `select(models.TestCase).where(...).order_by(models.TestCase.id)`（regression.py），
+     沒有第二層排序。上一版排成 39 → 33，那是這支端點產不出來的順序（§6）。
+     ⚠️ 別跟上面的案例集清單搞混：那一張是 `list_suites` 的 `.order_by(TestSuite.id.desc())`
+     ——**新到舊**，兩張表的排序方向刻意相反，各自照自己那支查詢。 #}
 {% set regressionCases = [
+  {
+    id: 33,
+    question: "火星的關稅稅率是多少",
+    contextTurns: [],
+    assertions: [
+      { type: "no_answer", text: "須為誠實查無" }
+    ],
+    note: "從問答紀錄 #48377 建立（這則問答是誠實查無（零命中），期望它仍然誠實查無）"
+  },
   {
     id: 39,
     question: "臺灣輸美鋼品的關稅稅率是多少",
@@ -172,15 +191,6 @@ permalink: 2-2-4_regressionSuites.html
       { type: "judge", text: "主觀評分判準：答案有沒有正面回答「稅率是多少」" }
     ],
     note: "從問答紀錄 #48213 建立（這則問答的主要來源是 document_id=「9f2c1b7e…a41」，期望它仍然引用得到）"
-  },
-  {
-    id: 33,
-    question: "火星的關稅稅率是多少",
-    contextTurns: [],
-    assertions: [
-      { type: "no_answer", text: "須為誠實查無" }
-    ],
-    note: "從問答紀錄 #48377 建立（這則問答是誠實查無（零命中），期望它仍然誠實查無）"
   }
 ] %}
 <div class="block mt-16 flex-row column gap-16 js-accordion">
@@ -518,8 +528,8 @@ permalink: 2-2-4_regressionSuites.html
 {# ── 開始執行 ───────────────────────────────────────────────────────────────
      示範自洽（GUIDELINE §6）：母體是**這一套案例集的全部 12 則**（`caseCount: 12`），不是上面
      列出來當版型示範的那 2 則——扣額度是逐則扣的，端點跑的也是整套。
-     12 則本題各扣一次；帶前置對話的有 4 則，逐則輪數是 5（#36）＋2（#39，就是上面示範的第一則）
-     ＋1（#35）＋1 ＝ 9。故 12 ＋ 9 ＝ **21**。
+     12 則本題各扣一次；帶前置對話的有 4 則，逐則輪數是 5（#36）＋2（#39，就是上面示範的那一則
+     id 較大的）＋1（#35）＋1 ＝ 9。故 12 ＋ 9 ＝ **21**。
      **那個 5 輪的案例不是湊出來的**：2-2-5 的「上游記憶輪數」是 5（＝設定檔的 `memory_count`，
      見 5-2 的 `#genMemory`），而 product `_limits` 的 `context_over_memory_cases` 收的是
      `len(context_turns) + 1 > memory_count` 的案例 ⇒ 要點得出名字，這一套至少要有一則 ≥5 輪。

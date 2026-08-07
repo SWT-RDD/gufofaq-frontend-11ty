@@ -1097,8 +1097,8 @@ permalink: 5-2_conversationSettings.html
                 </colgroup>
                 <thead>
                     <tr>
-                        <th class="text-center" data-i18n="widget.active">啟用</th>
-                        <th data-i18n="settings.outputRuleKind">規則</th>
+                        <th class="text-center" id="oruleHeadEnabled" data-i18n="widget.active">啟用</th>
+                        <th id="oruleHeadKind" data-i18n="settings.outputRuleKind">規則</th>
                         <th data-i18n="agent.params">參數</th>
                         <th data-i18n="common.actions">操作</th>
                     </tr>
@@ -1110,14 +1110,24 @@ permalink: 5-2_conversationSettings.html
                          沒有內層迴圈的那幾個分支會沿用上一列留下的舊值——同頁重複 id，有測試抓到）。 #}
                     {% set oruleIdx = loop.index %}
                     <tr>
+                        {# 迴圈內的值控制項不掛靜態 aria-label（§4）——這張表有 14 列，全掛 `aria-label="規則"`
+                             的話報讀器連著念 14 次「規則」，聽不出正在改哪一條。同頁的政策主題表與出口替換
+                             規則表已經是「本列辨識欄 ＋ 欄表頭」的寫法（正典＝3-6 的 aliasTableRowName-*）。
+                             差別在**這張表沒有辨識欄**：列的名字就是那顆 select 自己（規則種類可以改，而且
+                             `constant_route` 一種就有兩列），所以列名取**序位**——同 2-2-4 斷言列的
+                             `assertionRowLabel-N` 寫法，繁中「第 N 列」走既有的 health.recordRowPrefix／Suffix
+                             那一對（§4-2 沿用既有 key，繁中逐字相同）。
+                             序位在這裡當得起列名：這張表增得了列（js-add-orule）也刪得了列（js-remove-orule），
+                             但可及名稱是**當下畫面**的位置描述，不是 React 的列鍵（列鍵另有 data-* 契約）。 #}
                         <td class="text-center">
+                            <span id="oruleRowName-{{ oruleIdx }}" class="sr-only"><span data-i18n="health.recordRowPrefix">第 </span>{{ oruleIdx }}<span data-i18n="health.recordRowSuffix"> 列</span></span>
                             <label class="form-checkbox in-cell">
-                                <input type="checkbox" class="js-orule-enabled"{% if rule.enabled %} checked{% endif %}>
+                                <input type="checkbox" class="js-orule-enabled" aria-labelledby="oruleRowName-{{ oruleIdx }} oruleHeadEnabled"{% if rule.enabled %} checked{% endif %}>
                                 <span class="sr-only" data-i18n="widget.active">啟用</span>
                             </label>
                         </td>
                         <td>
-                            <select class="form-control select-sm singleSelect js-orule-kind" aria-label="規則" data-i18n-aria-label="settings.outputRuleKind">
+                            <select class="form-control select-sm singleSelect js-orule-kind" aria-labelledby="oruleRowName-{{ oruleIdx }} oruleHeadKind">
                                 {% for k in outputRuleKinds %}
                                 <option value="{{ k.value }}" data-i18n="{{ k.i18nKey }}"{% if rule.kind == k.value %} selected{% endif %}>{{ k.label }}</option>
                                 {% endfor %}

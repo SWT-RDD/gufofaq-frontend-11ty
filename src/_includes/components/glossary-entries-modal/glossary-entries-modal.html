@@ -52,13 +52,17 @@
                                     </tr>
                                 </thead>
                                 <tbody>
+                                    {# 列名前綴是 glossaryEntryRowName-（詞條），**不與使用頁 3-2 的
+                                         glossaryTableRowName-（術語表）共用前綴**：本 modal 被 include 在 3-2 之內，
+                                         那張表的列名吃主鍵、這裡吃 loop.index，同前綴遲早在同一份 DOM 上撞出兩顆同 id。
+                                         同 3-6／alias-entries-modal 的分法（aliasTableRowName- 對 aliasRowName-）。 #}
                                     {% for entry in glossaryEntryRows %}
                                     <tr>
                                         <td>
-                                            <span id="glossaryRowName-{{ loop.index }}" class="sr-only">{{ entry.term }}</span>
-                                            <input type="text" class="form-control" maxlength="200" value="{{ entry.term }}" aria-labelledby="glossaryRowName-{{ loop.index }} glossaryHeadTerm" aria-describedby="glossaryLimitsHint" required>
+                                            <span id="glossaryEntryRowName-{{ loop.index }}" class="sr-only">{{ entry.term }}</span>
+                                            <input type="text" class="form-control" maxlength="200" value="{{ entry.term }}" aria-labelledby="glossaryEntryRowName-{{ loop.index }} glossaryHeadTerm" aria-describedby="glossaryLimitsHint" required>
                                         </td>
-                                        <td><input type="text" class="form-control" maxlength="2000" value="{{ entry.definition }}" aria-labelledby="glossaryRowName-{{ loop.index }} glossaryHeadDefinition" aria-describedby="glossaryLimitsHint"></td>
+                                        <td><input type="text" class="form-control" maxlength="2000" value="{{ entry.definition }}" aria-labelledby="glossaryEntryRowName-{{ loop.index }} glossaryHeadDefinition" aria-describedby="glossaryLimitsHint"></td>
                                         <td><button type="button" class="button button-border button-sm js-remove-glossary-entry" data-i18n="action.delete">刪除</button></td>
                                     </tr>
                                     {% else %}

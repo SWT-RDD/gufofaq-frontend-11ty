@@ -10,12 +10,21 @@
 // **從 .modals-wrap 寫起**：`.dataset-list-wrap` / `.dataset-list` 的樣式正本是
 // `_modals.scss` 裡巢狀成 `.modals-wrap` → `.modals-body` → `.dataset-list-wrap` → `.dataset-list`
 // ——兩層祖先都是後代選擇器的一部分，從中間層抄起會得到一顆沒有高度、沒有底色、內部不捲的清單
-// （§1-2：樣式靠祖先才成立時，契約要從那個祖先寫起）。整顆 modal 外殼見 ui/modals 的檔頭。
+// （§1-2：樣式靠祖先才成立時，契約要從那個祖先寫起）。
+// **既然從 `.modals-wrap` 寫起，殼的那幾層就要一起抄**：`.modals-wrap` 的直接子元素只准
+// `ui/modal-close` 的 include ＋ `.modals-content` 兩個，`.modals-header` 則是 `.modals-body`
+// 的前一個兄弟（§7 有測試逐顆比對這串巢狀順序）。下面兩段都從 `.modals-wrap` 抄到
+// `.modals-body` 收尾為止；`.modals-footer`（兩顆 modal 各有自己的按鈕列）與外面兩層
+// `<dialog class="modals"> > .modals-dialog.modals-md` 屬 `ui/modals` 的契約，見該元件檔頭。
 //
 // ① 成員清單（checkbox，生產 markup＝components/manage-members-modal）：
 //
 //   <div class="modals-wrap">
+//       {% include "ui/modal-close/modal-close.html" %}
 //       <div class="modals-content">
+//           <div class="modals-header">
+//               <h3 class="modals-title" id="manageMembersModal-title" data-i18n="settings.manageMembers">管理成員</h3>
+//           </div>
 //           <div class="modals-body">
 //               <p id="manageMembersHint" class="text-gray" data-i18n="settings.manageMembersHint">勾選要加入此群組的成員</p>
 //               <div class="dataset-list-wrap">
@@ -34,32 +43,43 @@
 //                   </div>
 //               </div>
 //           </div>
+//           （接著是 .modals-footer：兩顆 modal 各有自己的按鈕列，屬 ui/modals 的契約）
 //       </div>
 //   </div>
 //
-// ② 資料集清單（radio，生產 markup＝components/select-dataset-modal）——與 ① 只差三處：
-//    多一層 `.dataset-box-wrap > .checkbox-container` 的並排容器、清單是 `role="radiogroup"`
+// ② 資料集清單（radio，生產 markup＝components/select-dataset-modal）——殼的三層與 ① 逐字相同
+//    （只有 `<h3>` 的 id 與 i18n key 換成自己的），差別在 `.modals-body` 裡：多一層
+//    `.dataset-box-wrap > .checkbox-container` 的並排容器、清單是 `role="radiogroup"`
 //    且由 modal 標題供名、每一筆是 `type="radio" name="dataset_radio" value`：
 //
-//   <div class="modals-body">
-//       <div class="dataset-box-wrap">
-//           <div class="checkbox-container">
-//               <div class="dataset-list-wrap">
-//                   <div class="form-group">
-//                       <div class="field">
-//                           <input type="text" placeholder="搜尋資料集..." data-i18n-placeholder="modals.searchDatasetPlaceholder" aria-label="搜尋資料集" data-i18n-aria-label="modals.searchDataset" class="form-control search">
+//   <div class="modals-wrap">
+//       {% include "ui/modal-close/modal-close.html" %}
+//       <div class="modals-content">
+//           <div class="modals-header">
+//               <h3 class="modals-title" id="datasetModal-title" data-i18n="modals.selectDataset">選擇資料集</h3>
+//           </div>
+//           <div class="modals-body">
+//               <div class="dataset-box-wrap">
+//                   <div class="checkbox-container">
+//                       <div class="dataset-list-wrap">
+//                           <div class="form-group">
+//                               <div class="field">
+//                                   <input type="text" placeholder="搜尋資料集..." data-i18n-placeholder="modals.searchDatasetPlaceholder" aria-label="搜尋資料集" data-i18n-aria-label="modals.searchDataset" class="form-control search">
+//                               </div>
+//                           </div>
+//                           <div class="dataset-list" role="radiogroup" aria-labelledby="datasetModal-title">
+//                               {% for dataset in selectDatasetRows %}
+//                               <label class="form-checkbox border-wrap">
+//                                   <input type="radio" name="dataset_radio" value="{{ dataset.label }}"{% if dataset.checked %} checked{% endif %}>
+//                                   <span>{{ dataset.label }}</span>
+//                               </label>
+//                               {% endfor %}
+//                           </div>
 //                       </div>
-//                   </div>
-//                   <div class="dataset-list" role="radiogroup" aria-labelledby="datasetModal-title">
-//                       {% for dataset in selectDatasetRows %}
-//                       <label class="form-checkbox border-wrap">
-//                           <input type="radio" name="dataset_radio" value="{{ dataset.label }}"{% if dataset.checked %} checked{% endif %}>
-//                           <span>{{ dataset.label }}</span>
-//                       </label>
-//                       {% endfor %}
 //                   </div>
 //               </div>
 //           </div>
+//           （接著是 .modals-footer：兩顆 modal 各有自己的按鈕列，屬 ui/modals 的契約）
 //       </div>
 //   </div>
 //

@@ -21,7 +21,18 @@
 //                   <span data-i18n="settings.last24h">近24小時</span>
 //               </label>
 //           </div>
-//           （上週、上個月兩顆同型，重複到最後一顆為止）
+//           <div class="function">
+//               <label class="form-radio border-wrap w100">
+//                   <input type="radio" name="{{ timeFilterName }}"{% if timeFilterChecked == "lastWeek" %} checked{% endif %}>
+//                   <span data-i18n="settings.lastWeek">上週</span>
+//               </label>
+//           </div>
+//           <div class="function">
+//               <label class="form-radio border-wrap w100">
+//                   <input type="radio" name="{{ timeFilterName }}"{% if timeFilterChecked == "lastMonth" %} checked{% endif %}>
+//                   <span data-i18n="settings.lastMonth">上個月</span>
+//               </label>
+//           </div>
 //       </div>
 //       <div class="flex-row gap-16 mobile-column-xs field-with-input">
 //           <div class="function">
@@ -45,6 +56,11 @@
 //           </div>
 //       </div>
 //   </div>
+//
+// 四顆 radio **逐顆寫出來、不寫「其餘同型」**：三顆的 `data-i18n` key 與 `timeFilterChecked`
+// 的比對值逐顆不同（`last24h`／`lastWeek`／`lastMonth`／`range`），而 §1-2 只准略「重複第 N 次的
+// 同型節點」、屬性一律不得略——省成一句散文，抄的人就得回頭翻 components/data-time-filter 才知道
+// 那四個字串怎麼寫，而那正是這份契約要消滅的動作。
 //
 // 三個 class 是真 app js/main.js 的掛點（行為改寫成切版自有）：group 定範圍、.field-with-input
 // 是一組、.with-input 是被解鎖的那些。抄的時候最容易錯的四件事：
