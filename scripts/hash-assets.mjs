@@ -43,20 +43,28 @@ for (const f of readdirSync(join(DIST, "js")).filter((f) => f.endsWith(".js"))) 
 // 兩邊一起瞎（round41 實測）。現在反過來：逐個屬性值掃出站內 css/js 引用再蓋章，
 // 掃到不在資產表裡的就當場中斷——沉默的漏蓋比 build 失敗貴得多。
 const norm = (t) => "./" + t.replace(/^\.\//, "").replace(/^\//, "");
-const stamp = (val, f) =>
+// **只有「真的會發請求的屬性」或「長得像路徑」才算資產引用。**
+// 少了這道形狀檢查，屬性值裡的**散文檔名**會被當成引用而 throw，把 build 打斷：
+// 3-1-3 的 `data-filename="{{ file.name }}"` 是活的表面（今天是 .pdf/.xlsx，換成 .js 就中斷）、
+// `accept=".js,.css"`、`title="請改 config.js 再重試"` 同理。判準與
+// tests/guideline.test.mjs 的 assetRefs **共用同一條**——兩邊一起瞎過一次，不要再分岔。
+const REQ_ATTR = /^(?:src|href|srcset|poster|data)$/i;
+const isRef = (attr, tok) => REQ_ATTR.test(attr) || /^(?:\.{1,2}\/|\/)/.test(tok);
+const stamp = (val, f, attr) =>
     val.split(/([\s,]+)/).map((tok) => {                      // 保留分隔符（srcset 是 "a.png 1x, b.png 2x"）
         if (!/\.(?:css|m?js)$/i.test(tok)) return tok;        // §8：只蓋 css/js，圖片走「改圖必改檔名」
-        if (/:\/\//.test(tok) || tok.startsWith("//")) return tok;   // 外站資產不歸我們蓋
+        if (/^[a-z][a-z0-9+.-]*:/i.test(tok) || tok.startsWith("//")) return tok;   // 外站／mailto: 不歸我們蓋
+        if (!isRef(attr, tok)) return tok;                    // 散文檔名／副檔名清單，不是引用
         const v = versions.get(norm(tok));
         if (!v) throw new Error(`[hash-assets] ${f} 引用了 ${tok}，但它不在資產表裡（${[...versions.keys()].join(" / ")}）——蓋不了章，請先把它登記進來`);
         return `${tok}?v=${v}`;
     }).join("");
-const ATTR = /(\s[a-zA-Z][\w:-]*\s*=\s*)(?:"([^"]*)"|'([^']*)')/g;
+const ATTR = /(\s([a-zA-Z][\w:-]*)\s*=\s*)(?:"([^"]*)"|'([^']*)')/g;
 let touched = 0;
 for (const f of readdirSync(DIST).filter((f) => f.endsWith(".html"))) {
     const p = join(DIST, f);
-    const html = stripVer(readFileSync(p, "utf8")).replace(ATTR, (m, pre, dq, sq) =>
-        dq !== undefined ? `${pre}"${stamp(dq, f)}"` : `${pre}'${stamp(sq, f)}'`);
+    const html = stripVer(readFileSync(p, "utf8")).replace(ATTR, (m, pre, attr, dq, sq) =>
+        dq !== undefined ? `${pre}"${stamp(dq, f, attr)}"` : `${pre}'${stamp(sq, f, attr)}'`);
     writeFileSync(p, html);
     touched++;
 }

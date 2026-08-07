@@ -1951,24 +1951,33 @@ test("§8 css / js 的每一個引用都帶 ?v=；images 刻意不帶（改圖�
     // 現在是真的白名單：不管引號、不管屬性名、不管前綴，凡是站內資產路徑一律依**副檔名**分流，
     // 而且沒被分類過的副檔名一律當違規——新資產族（.woff2／.wasm／.json…）必須先被決定
     // 「要不要蓋章」，不能因為規則沒寫到它就默默溜過去。
+    // 「是不是引用」則另外判（見下方 assetRefs）：副檔名只決定「要不要帶版號」，決定不了
+    // 「這串字是不是一個引用」——散文裡的 config.js 不會因為 .js 認得就變成資產。
     const V = /\?v=[a-f0-9]{8}$/;
     const STAMPED = new Set(["css", "js", "mjs"]);                                            // 必須帶版號
     const BARE = new Set(["png", "jpg", "jpeg", "gif", "svg", "webp", "avif", "ico", "html"]); // 一律不帶
     // 把一份 HTML 裡「所有指向站內資產的路徑」撈出來：任何屬性、任一種引號，
     // 值再切空白與逗號（srcset 是 "a.png 1x, b.png 2x"）。
+    // 判準是**「路徑形狀」或「真的會發請求的屬性」**，不是「副檔名認得」。round42 只對
+    // 沒分類過的副檔名做形狀檢查，於是屬性值裡的**散文檔名**一律當引用：
+    // `title="請改 config.js 再重試"`、`accept=".js,.css"`，以及 3-1-3 活生生的
+    // `data-filename="{{ file.name }}"`（今天是 .pdf/.xlsx，換成 .js 就中）。
+    // 後果不只這條測試紅——共用同一組假設的 hash-assets.mjs 會當場 throw 把 build 打斷。
+    // 兩邊的判準必須是同一條（round41 已經因為分岔而一起瞎過一次）。
+    const REQ_ATTR = /^(?:src|href|srcset|poster|data)$/i;   // data＝<object data>；錨定過故 data-* 不會誤中
     const assetRefs = function* (html) {
-        for (const m of html.matchAll(/\s[a-zA-Z][\w:-]*\s*=\s*(?:"([^"]*)"|'([^']*)')/g)) {
-            const val = m[1] !== undefined ? m[1] : m[2];
+        for (const m of html.matchAll(/\s([a-zA-Z][\w:-]*)\s*=\s*(?:"([^"]*)"|'([^']*)')/g)) {
+            const attr = m[1];
+            const val = m[2] !== undefined ? m[2] : m[3];
             for (const raw of val.split(/[\s,]+/)) {
                 const tok = raw.replace(/^url\(/i, "").replace(/\)$/, "").replace(/^["']|["']$/g, "");
-                if (/:\/\//.test(tok) || tok.startsWith("//")) continue;   // 外站資產不歸這條管
+                // 帶 scheme 的一律不歸這條管：外站 https://、協定相對 //cdn，以及
+                // mailto:／tel:／data: —— mailto 的網域尾巴（.tw／.com）會被當成副檔名。
+                if (/^[a-z][a-z0-9+.-]*:/i.test(tok) || tok.startsWith("//")) continue;
                 const ext = ((tok.split("?")[0].match(/\.([a-z0-9]{1,6})$/i) || [])[1] || "").toLowerCase();
                 // 沒有副檔名的一律不是資產引用（時區 "Asia/Taipei"、散文的 "3000次/日"、"image/x-icon"）
                 if (!ext) continue;
-                // 認得的副檔名一律要管（連 src="analytics.js" 這種同層寫法都算）；
-                // 不認得的只在「長得像路徑」時才管，才不會把 accept=".pdf,.doc" 與
-                // data-filename="常見問題.pdf" 這種「副檔名清單／檔名文字」誤當成引用。
-                if (!STAMPED.has(ext) && !BARE.has(ext) && !/^(?:\.{1,2}\/|\/)/.test(tok)) continue;
+                if (!REQ_ATTR.test(attr) && !/^(?:\.{1,2}\/|\/)/.test(tok)) continue;
                 yield { tok, ext };
             }
         }
@@ -2008,6 +2017,10 @@ test("§8 css / js 的每一個引用都帶 ?v=；images 刻意不帶（改圖�
     //   ① 結構：每一頁都必須各收到 ≥1 個 css/js 與 ≥1 個圖片引用（每頁都有 main.css 與 favico.ico）。
     //      收集器的形狀假設一縮回去，42 頁會同時掉到 0，當場點名。
     //   ② 棘輪：總數不得低於上一輪。真的變少（刪圖／刪頁）就連同常數一起調——那是一次有意識的決定。
+    //   兩個數字都是**新收集器**（形狀判準）在 dist 的實測值，不是沿用舊收集器的。
+    //   round42 曾把 imgs 沿用成舊值 258，而當時的收集器實測是 261（多出來的三個是
+    //   1-2-1 `accept=".png/.jpg/.jpeg"`——測試自己在下方 probe 裡列為「不是引用」的東西）：
+    //   棘輪一出生就鬆了三格。收集器一改就要重量，不能靠推論。
     const PREV = { refs: 1512, imgs: 258 };
     assert.equal(blind.length, 0, `這幾頁一個 css/js 或圖片引用都沒收到（收集器的形狀假設又縮回去了？）：\n${fail(blind)}`);
     assert.ok(refs >= PREV.refs, `css/js 引用 這一輪 ${refs}（上一輪 ${PREV.refs}）—— 掉了就是收集器壞了；真的刪了頁面請一併把 PREV.refs 調下來`);
@@ -2028,7 +2041,12 @@ test("§8 css / js 的每一個引用都帶 ?v=；images 刻意不帶（改圖�
             '<img srcset="./images/a.png 1x, ./images/b.png 2x">',
             '<a href="./index.html">目錄</a>',
             '<input type="file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg">',  // 副檔名清單不是引用
+            '<input type="file" accept=".js,.css">',                         // ——認得的副檔名也一樣不是
             '<span data-filename="常見問題.pdf">x</span>',                    // 檔名文字不是引用
+            '<span data-filename="設定檔範例.js">x</span>',                    // ——3-1-3 的活表面，檔名由資料決定
+            '<span title="請改 config.js 再重試">x</span>',                    // 散文裡的檔名
+            '<div data-tip="樣式都在 main.css"></div>',
+            '<a href="mailto:svc@example.gov.tw">聯絡我們</a>',                // scheme：.tw 不是副檔名
             '<option value="https://img.example.gov.tw/faq/entry-visa.png">x</option>',
             '<script src="https://cdn.example.com/x.js"></script>',          // 外站資產不歸這條管
             '<meta name="viewport" content="width=device-width, initial-scale=1.0">',
