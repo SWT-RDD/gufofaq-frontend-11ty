@@ -4,12 +4,10 @@
        1. 額度——三個數字欄對齊 product QuotaIn（qa_limit／extraction_limit／storage_limit_mb）+ 用量週期
           select（無/每日/每月，QuotaIn.usage_period，隨額度共用 footer「儲存」鈕一起送出）+ 重置當期用量鈕
           （直接動作，逆向自 POST /platform/tenants/{id}/reset-usage，data-toast 演出成敗，不佔用共用 footer 鈕）
-          ⚠️ **`QuotaIn` 還收得下 `qa_used` / `extraction_used`（直接設當期已用值，管理員修正用，≥0），
-          這裡沒有版位**——§3-2：request 收得下的每個參數都要在畫面上有落點，不做的要寫理由。
-          這一項**不是決定、是缺口**：旁邊那顆「重置當期用量」只能歸零、不能改成某個值，
-          而上游為這兩欄另有一條 400（`platform.used_exceeds_limit`，已用量不可大於額度），
-          那道 warning 在儲存鈕的 `data-toast` 上同樣沒有。要補就是兩個 `type="number" min="0"`
-          數字欄（＋可見區間、`aria-describedby`）加一段 warning 分支。
+          `QuotaIn` 的 `qa_used` / `extraction_used`（直接設當期已用值，管理員修正用）**已補**成兩顆
+          數字欄（`#tenantQaUsedInput` / `#tenantExtractionUsedInput`，≥ 0；上界不是常數而是同一次
+          送出的那個額度）——旁邊那顆「重置當期用量」只能歸零、改不成某個值。上游為這兩欄另有一條
+          400 `platform.used_exceeds_limit`，那道 warning 也一併列進 footer 儲存鈕的 `data-toast`。
        2. 使用期——「延展／縮短天數」數字欄 + 「指定到期日」日期欄（exactly-one：product platform.py 兩者都給
           回 400 `tenant.trial_one_of`（引 key 不引英文字面——被抽進 i18n 的句子隨時會改，§3-2；
           出處是 `platform.py` 的 `extend_tenant_trial`），React 端送出前擇一；日期選擇不在
@@ -87,6 +85,32 @@
                                     <div class="field">
                                         <input type="number" min="0" step="1" aria-describedby="tenantStorageLimitRange" id="tenantStorageLimitInput" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control" value="1000">
                                         <span class="text-gray" id="tenantStorageLimitRange">≥ 0</span>
+                                    </div>
+                                </div>
+                            </div>
+                            {# 當期已用量兩欄（`QuotaIn.qa_used` / `extraction_used`）：**直接設**當期已用值，
+                                 供管理員修正／精細調整（旁邊那顆「重置當期用量」只能歸零，改不成某個值）。
+                                 下界 0；上界不是常數而是**同一次送出的那個額度**——超過時上游回 400
+                                 `platform.used_exceeds_limit`，故那道 warning 也列在 footer 的儲存鈕上。 #}
+                            <div class="col-6-md col-12-sm">
+                                <div class="form-group">
+                                    <div class="label">
+                                        <label for="tenantQaUsedInput" class="control-label" data-i18n="platform.qaUsed">問答已用量</label>
+                                    </div>
+                                    <div class="field">
+                                        <input type="number" min="0" step="1" id="tenantQaUsedInput" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control" value="1284" aria-describedby="tenantQaUsedRange">
+                                        <span class="text-gray" id="tenantQaUsedRange"><span data-i18n="platform.usedRangeHint">≥ 0，且不可大於上面那格的額度</span></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-6-md col-12-sm">
+                                <div class="form-group">
+                                    <div class="label">
+                                        <label for="tenantExtractionUsedInput" class="control-label" data-i18n="platform.extractionUsed">萃取已用量</label>
+                                    </div>
+                                    <div class="field">
+                                        <input type="number" min="0" step="1" id="tenantExtractionUsedInput" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control" value="312" aria-describedby="tenantExtractionUsedRange">
+                                        <span class="text-gray" id="tenantExtractionUsedRange"><span data-i18n="platform.usedRangeHint">≥ 0，且不可大於上面那格的額度</span></span>
                                     </div>
                                 </div>
                             </div>
@@ -255,7 +279,7 @@
                 <div class="modals-footer">
                     <div class="button-row center">
                         <button type="button" class="button button-border btn-close-modals" data-i18n="action.close">關閉</button>
-                        <button type="button" class="button button-primary" data-toast="已更新|額度不可小於 0|延展天數與到期日請擇一填寫，且天數不可為 0|儲存失敗" data-i18n-data-toast="toast.manageTenant" data-toast-type="success|warning|warning|error" data-i18n="action.save">儲存</button>
+                        <button type="button" class="button button-primary" data-toast="已更新|額度不可小於 0|已用量不可大於額度|延展天數與到期日請擇一填寫，且天數不可為 0|儲存失敗" data-i18n-data-toast="toast.manageTenant" data-toast-type="success|warning|warning|warning|error" data-i18n="action.save">儲存</button>
                     </div>
                 </div>
             </div>

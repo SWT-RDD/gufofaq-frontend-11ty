@@ -145,7 +145,9 @@ bodyClass: guideline-page
                         <div class="example-box">.col-6-md .col-12-sm</div>
                     </div>
                 </div>
-                <div class="flex-row gap-20 mobile-column-xs">
+                {# 這一列同時示範 `xs-gap-*`：它必須與 `mobile-column-xs` 同掛才生效（§4），
+                     而先前全站沒有任何一處真的用它——style guide 廣告了一顆沒有人看過的 class。 #}
+                <div class="flex-row gap-20 mobile-column-xs xs-gap-8">
                     <div class="col-6-md col-12-xs">
                         <div class="example-box">.col-6-md .col-12-xs</div>
                     </div>

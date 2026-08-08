@@ -3,8 +3,8 @@
      QA 匯入騎現有 Excel 管道（gufofaq-saas product app/routers/datasets.py 的 import_qa：內部組
      mapping={title:[問題欄], content:[答案欄]} 走 _do_excel_mapping_import）——UI 只需選問題欄、答案欄。
      **`QaImportIn` 收得下七個參數，這裡只畫三個；缺的四個逐顆寫理由（§3-2：後端做了、前端到不了等於沒做）**：
-       `sheet_name`：不給就取第一張工作表——**這是缺口不是決定**。多工作表活頁簿在這裡選不到第二張，
-         而 1-1-3 那條路有 `#excelSheetSelect`。要補就照 1-1-3 的形狀補一顆 select。
+       `sheet_name`：**已補**（`#qaSheetSelect`，形狀比照 1-1-3 的 `#excelSheetSelect`）——不給就取
+         第一張，多工作表活頁簿會靜靜地只匯第一張，而使用者看不出來。值載體 ⇒ 掛 `js-qa-sheet`。
        `header_rows`：上游註解逐字寫著「必須與預覽時相同（question_col/answer_col 是使用者從預覽的
          欄名清單裡挑的，多列表頭時那是串接後的名字）」——而這顆 modal **根本沒有預覽步驟**，
          沒有那個「預覽時」可以對齊，故不畫；真要支援多列表頭得先有預覽，那是另一條流程。
@@ -38,6 +38,22 @@
                         {% if qaImportShowError %}
                         <p class="text-red" role="alert" data-i18n="qaSet.previewFailed">讀取 Excel 欄位失敗，請確認檔案格式</p>
                         {% endif %}
+                        {# 工作表：`QaImportIn.sheet_name`。不給就取第一張——多工作表的活頁簿在這裡就選不到
+                             第二張，而使用者完全看不出「只匯了第一張」（§3-2：request 收得下的每個參數都要有落點）。
+                             形狀比照 1-1-3 的 `#excelSheetSelect`（同一支上游端點的姊妹流程）。
+                             選項是執行期資料（讀上傳檔得來），示範兩張。 #}
+                        <div class="form-group row mobile-col">
+                            <div class="label label-md">
+                                <label for="qaSheetSelect" class="control-label" data-i18n="dataImport.sheet">工作表</label>
+                            </div>
+                            <div class="field col-12-sm">
+                                <select id="qaSheetSelect" class="form-control singleSelect js-qa-sheet" aria-describedby="qaSheetHint">
+                                    <option value="常見問答" selected>常見問答</option>
+                                    <option value="舊版問答">舊版問答</option>
+                                </select>
+                                <span class="text-gray" id="qaSheetHint" data-i18n="dataImport.sheetHint">這份活頁簿有多張工作表；只有選取的這一張會被預覽與匯入。</span>
+                            </div>
+                        </div>
                         <div class="form-group row mobile-col">
                             <div class="label label-md">
                                 <label for="qaQuestionCol" class="control-label required" data-i18n="qaSet.questionColumn">問題欄</label>
