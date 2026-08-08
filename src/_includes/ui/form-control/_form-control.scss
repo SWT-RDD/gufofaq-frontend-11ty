@@ -1,4 +1,5 @@
-// 取自真實 app 的 form-control 樣式（含只存在編譯 css 的 .select-sm/.select-md 內距與 textarea.size-lg 高度變體，
+// 取自真實 app 的 form-control 樣式（`.select-sm`／`.select-md` 的內距**在 scss 源碼就有**（929／937 行），
+// 本檔只是刪掉與 select2 耦合的 `+ .select2-container` 那半；真正只存在編譯 css 的是 textarea.size-lg 高度變體，
 // scss 源碼漏抓、依編譯輸出補回）。與 select2 vendor 耦合的 .select-*+select2-container 規則屬 §5 不做。
 @use "../../../scss/mixin" as *;
 

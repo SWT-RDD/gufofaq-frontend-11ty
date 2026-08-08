@@ -1,4 +1,9 @@
-// 逐位元照抄自真 app scss/component.scss 2363-2399（toast彈跳訊息區塊），只搬檔案位置，宣告一字不改
+// 結構與數值照抄自真 app scss/component.scss 2363-2399（toast彈跳訊息區塊），只搬檔案位置。
+// **偏離逐條列出**：
+//   ① `.toast-container` 整顆是**切版新增**（原檔沒有）——刻意不沿用真 app 的定位方式，見下方註解
+//   ② `.toast-error` / `.toast-warning` / `.toast-info` 三個色變體是切版新增（原檔只有 `.toast-success`）
+//   ③ `.toast` 移除原檔的 `position:fixed; top:129px; left:0; right:0; margin:0 auto`（改由容器定位）
+//   ④ 色值換成語意 token
 
 // toast 的容器。掛了 popover，故要把 popover 的 UA 預設樣式（置中的方框、邊框、overflow:auto）清乾淨：
 // 它只是個進 top layer 的殼，不吃點擊（pointer-events:none）；定位與堆疊都由它負責，.toast 回到文流內。

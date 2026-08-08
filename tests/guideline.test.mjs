@@ -299,11 +299,15 @@ test("§4-1 元件不得重寫 box-sizing: border-box（_base.scss 已全域給�
     // 含 vendor prefix：-webkit-box-sizing 一樣是重寫（曾經放行，讓 ui/switch 漏了兩年）
     // 不加行首錨點：加了就漏掉 `-webkit-box-sizing`（那個 prefix 群組其實是註解性質的，
     // 真正讓 vendor prefix 命中的是「不錨定」）。負控樣本把這件事釘住。
-    const rule = (line) => (/(?:-webkit-|-moz-|-ms-)?box-sizing:\s*border-box/.test(line) ? "重複宣告" : null);
+    // 註解行不算宣告：檔頭常常要**說明**「原檔有這一條、本檔依 §4-1 移除了」，那正是規則要的痕跡，
+    // 不該因為寫下來就變成違規（round43 實測：三支檔頭補上偏離清單後這條當場紅）。
+    // 下方負控樣本把「註解不算、宣告要算」兩個方向都釘住。
+    const rule = (line) =>
+        (!/^\s*\/\//.test(line) && /(?:-webkit-|-moz-|-ms-)?box-sizing:\s*border-box/.test(line) ? "重複宣告" : null);
     const hits = scanLines(files, rule);
     probe("§4-1 box-sizing", (s) => scanText(s, rule),
         ["    box-sizing: border-box;", "-webkit-box-sizing: border-box;"],
-        ["    box-sizing: content-box;"]);
+        ["    box-sizing: content-box;", "// box-sizing: border-box 已移除，交給 _base.scss"]);
     assert.equal(hits.length, 0, `多餘宣告：\n${fail(hits)}`);
 });
 

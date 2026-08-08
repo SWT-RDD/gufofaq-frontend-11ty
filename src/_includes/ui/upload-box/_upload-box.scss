@@ -1,4 +1,5 @@
-// 逐位元照抄自真實 app scss/component.scss 檔案上傳區 section（.upload-box，行 2479-2522）
+// 結構與數值照抄自真實 app scss/component.scss 檔案上傳區 section（.upload-box，行 2479-2522）。
+// **偏離**：色值換成語意 token；`.upload-error` 整段是切版新增（見下方該區塊自己的註解）。
 // 檔案上傳區
 .upload-box {
     width: 100%;

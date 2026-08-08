@@ -1,5 +1,7 @@
-// 可輸入頁碼切換（第 X 個對話，共 N 個）。逐位元照抄自真 app scss/component.scss 的
-// 「輸入版頁碼」段落，只搬檔案位置，宣告一字不改。
+// 可輸入頁碼切換（第 X 個對話，共 N 個）。結構與數值照抄自真 app scss/component.scss 的
+// 「輸入版頁碼」段落，只搬檔案位置。**偏離逐條列出**：①`.pagination-input` 多一條 `margin-left: auto`
+// （原 scss 沒有、只存在編譯後的 css，見下方旁註）②`.pager-input` 少了原檔的 `box-sizing: border-box`
+// （§4-1 全域已給）③`color`／`border`／`background-color` 三個值換成語意 token。
 // 與 ui/pagination 是兩種互不相干的頁碼互動：那邊是資料驅動的頁碼列，這邊是輸入框 + 前後鈕。
 
 .pagination-input {

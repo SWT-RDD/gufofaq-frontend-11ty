@@ -1,5 +1,10 @@
-// 逐位元照抄自真 app scss/component.scss table表格區塊，只搬檔案位置，宣告一字不改
-// .scrollTable 1680-1685、.default-table 1687-1799、.tablelist-title 1801-1808、.file-number-group 1829-1845
+// 結構與數值照抄自真 app scss/component.scss table表格區塊，只搬檔案位置。
+// **偏離逐條列出**：①色值全數換成語意 token（原檔是 `--color-border-default` / `--color-text-default`
+//   / `--color-gray-200` / `#fff` 那一組）②`box-sizing: border-box` 移除（§4-1 全域已給）
+//   ③`textarea.form-control` 依 §4 隔離改成裸 `textarea` ④`.sort` 從 `<img>` 升格成真 `<button>`
+//   ⑤`tr.is-inactive` 與 `.check-cell` 是切版新增。
+// .scrollTable 1680-1685、.default-table 1687-1799、.file-number-group 1829-1845
+// （原檔 1801-1808 的 .tablelist-title **不在本檔**——已升格成 ui/tablelist-title 純樣式原子，見下方第 158 行）
 // .priority-table 1810-1827 為 .default-table 的變體（&.priority-table，見下），供 priority-table 與 knowledge-retrieval-modal 沿用
 @use "../../../scss/mixin" as *;
 

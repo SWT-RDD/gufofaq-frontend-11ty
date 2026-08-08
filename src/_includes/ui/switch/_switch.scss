@@ -1,4 +1,7 @@
-// 逐字複製自真實 app 的 scss/component.scss「Switch」區段（verbatim，只搬移位置）
+// 結構與數值照抄自真實 app 的 scss/component.scss「Switch」區段（1312-1367），只搬移位置。
+// **偏離逐條列出**：①色值換成語意 token ②新增 `:has(.switch-checkbox:focus-visible)` 的焦點環
+// （§4-1：真正的控制項被藏起來時，焦點環畫在外框上；原檔沒有這一段）。
+// `.switch-control-row` **不是**切版新增——原檔 1369-1382 逐字相同。
 label.switch {
     --switchWidth: 2rem;
     --switchHeight: 1rem;
