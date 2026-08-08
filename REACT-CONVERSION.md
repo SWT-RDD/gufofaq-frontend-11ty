@@ -39,6 +39,13 @@
   （`ui/subscription-gate`、`platform.usageError`、`share.rateLimited`、prompt-edit 的預設展開態…）
   的宿主：做成一條開發用路由（不進正式導覽），把每個展示片段照抄成該路由的 section。
   它不轉的話，那幾個分支在 React 端就再也沒有人看得到了。
+  **這一頁的節怎麼對，先前沒有裁決，於是每一輪的人各判一次**（實測：切版 27 節 → React 47 節、
+  順序不同、無編號，結果「哪一節缺了」只能靠人工逐節比對，而本輪一次就查出六節整節沒轉）。定案三條：
+  ①**節 id 與 `NN` 編號照抄**，一節對一節——那是唯一能機械比對「缺了哪一節」的錨點；
+  ②**純說明節**（`#introSection`／`#layoutSection`／`#mainSection` 只有 caption）**照轉**：那幾段 caption
+  是 grid／utility／`_guideline.scss` 用途的規格散文，React 端沒有第二個地方寫著它；
+  ③切版**沒有** demo 的元件（`page-size-select`、`pager-row` 那一族）另開一區並標明「對照業務頁」——
+  §⑥ 已有那條規則，只是先前沒說在 gallery 裡怎麼分區。
 - 寄生 orphan class：某元件 `.scss` 裡出現、但它自己 tsx/markup 從不 render 的 selector，是別的 atom 寄生進來的——
   追回它切版的 `ui/` atom、抽成獨立 `components/ui/<Name>/`、退掉寄生（例：`.data-info` 曾寄生在 `Pagination.scss`）。
 - 走樣 scss 若把 hook class 選擇器寫成裸元素（如 `button:hover .tooltip` 而非 `.has-tooltip:hover .tooltip`），修回
@@ -121,6 +128,14 @@
     條件渲染，切版保留 markup 當位置與字色的規格、預設掛 `.hidden`」）——`hidden` 不帶、節點改成條件
     渲染，條件寫在切版註解裡。照字面把 `hidden` 抄進 `className` 得到的是一顆永遠看不見的節點，而
     `fpdiff` 比的是預設狀態、兩邊都不可見，抓不到。
+  - **「切版常駐、React 不渲染」有兩個維度，這一條先前只寫了一半。** 一個欄位在 React 端會消失，
+    可能是因為：①**對話模式**（`gufofaq-saas` `apps/web/lib/modeMatrix.ts` 的 `appliesToMode`），
+    也可能是因為②**同頁其他欄位目前的值**（5-2 的知識使用模式＝`none`、關掉重排序、關掉可回答性閘、
+    QA 直答＝停用，四處）。切版是靜態超集、兩種都常駐，所以**兩種在 markup 上長得一模一樣**——
+    只認第一種的人，會把第二種整批漏掉，而症狀是「一個永遠不生效的欄位照樣填得下去、存得起來」。
+    規則：**值相依那一份清單的正本住在該頁切版檔頭**（逐條寫出上游出處），React 端逐條做成**具名布林**
+    並與檔頭同名；兩邊逐條對得上才算轉完。**那一句給租戶看的總說明要同時涵蓋兩個維度**——
+    只講對話模式就是 GUIDELINE §3-2 說的「只講對一半也是同一種說謊」。
   - 資料驅動的執行期尺寸（storage-bar 的條寬）→ `style={{ width: \`${pct}%\` }}`，值來自 props。
 - **表單初值不是機械替換的，是 JSX 會擋下來的一族**（切版全站都有實例；**數量以實際檔案為準，別抄快照**）。逐條對應：
   - `<textarea>值</textarea>` → `defaultValue={值}`。**這條是 React 直接丟錯、不是警告**（"Use the `defaultValue`
@@ -183,6 +198,13 @@
   刻意零空白（分隔由譯文自帶，見 §③），那裡補 `{" "}` 會多出兩個空白節點，還會掩蓋「key 少了空白」這個 bug。
 - **`role="status"`／`aria-live` 的訊息槽不可條件渲染**：live region 必須在內容到達**之前**就存在於 DOM，
   `{value && <p role="status">…}` 等於報讀器永遠不播報。切內容、不切節點（切版是連 label 一起常駐）。
+  - **這條只管「槽位固定、內容會變」那一族**（`ui/upload-box` 的 `.upload-error`、登入頁的
+    `#loginRetryHint`、串流狀態列）：它們是同一個位置反覆講不同的話，節點先在、內容後到，才播報得出來。
+    **整句本身是一次獨立通知**的那一族（`ui/score-scale-note` 的「需要重新校準」）相反——切版就是用
+    `{% if %}` 把整段切掉的，React 照做**條件渲染**。判準一句話：**這一格在「沒有訊息」的時候還存不存在
+    一個位置**——存在（那格永遠在版面上佔位）就常駐切內容，不存在（整段連版位一起消失）就條件渲染。
+    先前這裡沒有分家，於是 React 端把 `score-scale-note` 兩句做成常駐 `.hidden`：兩邊都不合規——
+    `display:none` 的 live region 多數報讀器同樣播報不到，而 DOM 上又多兩顆切版沒有的節點。
 - **同頁兩個元件共吃的參數只能有一個來源**（GUIDELINE §6 同源；`perPage` 之於 `page-size-select` 與
   `ui/pagination`）：由共同祖先持有一份 state、往兩個子元件各發一份，並把該 prop 在祖先上做成**必填無預設**。
   子元件各自的 fallback 只服務「單獨使用」那條路，不得在祖先或第二個子元件再放一份預設——兩份預設＝畫面
@@ -212,7 +234,11 @@
   - `.full-wrap`：全站最外層版位容器，**是 scss 的定位基準**（`ui/subscription-gate` 的遮罩、fpdiff 的 full-width 元件容器算式都靠它），不可省略或改名。
   - `#toastContainer`：`popover="manual"` ＋ `role="status" aria-live="polite" aria-atomic="true"`，**掛在 layout 層**。契約是「每次彈 toast 前重新 `showPopover()` 一次」（top layer 疊放＝進入順序），少了這句，跳窗裡彈的 toast 會被 `<dialog>` 蓋住。
   - 元件 js 的 `<script defer>` 清單：全部不帶（行為已改寫成 hooks），但那份清單是**元件盤點的檢查表**——轉換時逐支對過去，漏一支就是漏一個元件。
-- **`layouts/page-shell`** → 管理端 route layout（`app/(app)/layout.tsx`）。提供：`.skip-link`（`href="#main"`，鍵盤第一個 Tab 的落點）、`components/header`、`<main class="main" id="main" tabindex="-1">`、**每頁唯一的 `<h1 class="sr-only">`**（內容來自 front matter 的 `pageHeading`／`titleKey`）、`components/footer`。
+- **`layouts/page-shell`** → 管理端 route layout（`app/(app)/layout.tsx`）。提供：`.skip-link`（`href="#main"`，鍵盤第一個 Tab 的落點）、`components/header`、`<main class="main" id="main" tabindex="-1">`、**每頁唯一的 `<h1 class="sr-only">`**（內容來自 front matter 的 `pageHeading`／`titleKey`）、`components/footer`、
+  以及 **`ui/faq-launcher`（在 footer 之後——那是 DOM 順序上頁面最後一顆可聚焦元素，出現條件＝登入態）**。
+  這份清單被當檢查表用（chatbot-shell 那一條逐字寫著「它提供的東西逐項都要有落點」），先前漏列 launcher
+  的代價不是漏做，是**做對的人沒有依據**：下一輪逐項核對「五項都有 ⇒ 通過」，多出來的那顆沒有出處，
+  很可能被當成 React 自創的東西刪掉。
   - `pageHeading`／`titleKey` 是 front matter＝**props**：React 端由各 route 傳給 layout（或 `generateMetadata` ＋ 一顆 `<h1 class="sr-only">`），**不可以讓各頁自己再長一顆 h1**（§3-1：每頁恰好一個）。
   - `#main` 的 `tabindex="-1"` 是 skip-link 的落點，少了它跳過去不會真的移動焦點。
 - **`layouts/chatbot-shell`** → 前台 FAQ route layout。與 page-shell 平行但**沒有** Manager 導航。
@@ -288,6 +314,13 @@
   - **使用頁演不到的成員 → 元件庫頁**（`src/pages/components/component.html` 的「React 條件文案」區）：
     那一區本來就是「在真實頁上沒有人看得到的那一態」的家，枚舉成員與 `.hidden` 分支同住。
   這條同時是 §⑥ 的驗收判準：**枚舉的每個成員都要有一個 render 得出它的地方**，否則它是出貨死碼。
+- **「送出中／載入中／載入失敗」這一族與枚舉成員同辦法。** 它們不是枚舉，是**執行期狀態**：切版是靜態
+  原型，畫得出「送出」畫不出「送出中」，於是 React 端一律就地多一顆 key（`action.saving`、
+  `dataImport.previewFailed`…）。處置與缺成員完全相同——**回切版給它一個渲染點**（會換字的那一格用
+  兩態槽、真實頁演不到的落在元件庫頁的「React 條件文案」區），`REACT_ONLY` 只當**過渡登記**、不是終局。
+  理由也一樣：那句繁中在切版沒有家，就等於在 React 端開了第二個文案正本，而字典比對、孤兒 key、
+  fpdiff 三張網一張都看不到。（`disabled={submitting}` 本身合規——§⑥「要 disable 只能 disable
+  『進行中』」；不合規的是那顆**沒有人定過**的第二態文字。）
 - 語言鈕標籤顯示要切去的語言（en→「中」、zh→「EN」，不進字典）；點擊 `i18n.changeLanguage` + `localStorage("lang")` +
   同步 `document.documentElement.lang`（`en`→`"en"`，否則`"zh-Hant"`）——不是只有 `<head>` no-flash 腳本首次載入設一次。
 - i18n init `lng="zh"`；client mount 後依 `localStorage("lang")` `changeLanguage`。
@@ -367,6 +400,15 @@
   兩者皆無同樣違規」）。這是 fpdiff 抓不到的屬性級失真。
 - **`ui/scroll-lock`**：鎖本身是純 CSS（`html:has(...)`），這支 js 只做 CSS 做不到的那一件事——
   量捲軸寬度寫進 `--scrollbar-width`（且正鎖著時要跳過不量，否則量到 0）。React 端仍然需要它。
+  **它有兩半，先前只寫了一半**：load＋resize 那一半是全域監聽；另一半是「**任何會讓 `html` 進入鎖定態
+  的動作，在切狀態之前先補量一次**」（`ui/modals` 的 `showModal()` 之前、`mobile-nav` 的加 `.active`
+  之前，**順序不能反**）。漏掉補量那一半的症狀是：每次開跳窗或手機選單，整頁往右跳一條捲軸寬——
+  而 `scss-diff` 綠（讀取端那條規則逐字照抄了）、`fpdiff` 比未互動快照、jsdom 沒有真捲軸，三張網全綠。
+- **全域基礎設施（`window.Gufo*`）的呼叫落點跟著「狀態實際切換的地方」，不跟切版的檔案邊界。**
+  `GufoSlide`／`GufoI18n`／`ui/print` 有明確落點，但 `GufoScrollLock.measure()` 這種「A 元件在 B 元件的
+  js 裡被呼叫」的，轉過去之後 B 的狀態常常搬到別的檔（`mobile-nav.js` 呼叫它，React 的開關 state 卻在
+  `components/Header`）——照檔案邊界找就會掉進兩支檔案中間沒人認領。做法：轉換時**逐條列出切版所有
+  `window.Gufo*` 呼叫點**，一條一條問「這個狀態在 React 端是誰在切」，落點就在那裡。
 - **`ui/upload-box`**：`accepted()` 的副檔名比對（大小寫、多副檔名、未設 accept＝不限制）有七條邊界測試；
   拖放樣式 class；不支援的檔案提示是 `.upload-error` live region（節點常駐、只切內容）。
 - **`ui/reveal-input`**：password↔text 切換，鈕的標籤走兩態 key（見 §③），**不是** `aria-pressed`。
@@ -453,6 +495,15 @@
   `.js-tool-description`／`.js-tool-extra-prompt` 兩邊都是（元件 js 拿它算字數、值又要交給 React 送 API）
   ——**保留**，因為漏帶業務 hook 是 fpdiff 抓不到的一類漂移，多帶一顆只是多一個 className。
   `fpdiff.mjs` element identity 排除 `.js-*`。
+  - **grep 要剝掉註解再比。** 切版 js 的檔頭常提到**別的** hook 名（`ui/dismiss-panel` 的檔頭就寫著
+    `js-service-key-issued`），照字面 grep 會把業務 hook 判成「切版自有」而刪掉它。判準是「這支 js
+    的**程式碼**選得到它」，不是「這個檔案裡出現過這個字串」。
+  - **這條規則要有網，不能只有判準。** 它先前是全篇唯一「寫成可跑的、卻沒有任何一關在跑」的規則：
+    `fpdiff` 明文排除 `.js-*`、`scss-diff` 不看 tsx、型別與 lint 都看不到。結果是同一輪同時出現兩個
+    方向的錯，而且**錯的兩處各自都有註解宣稱自己是對的**（`.js-ask-suggested` 被刪掉還配了一條
+    「必須為 null」的反向斷言；`.js-accordion` 那一族被抄過來還寫著「切版 markup 有就保留」的錯判準）。
+    React 端的落點是 `apps/web/lib/slicing/jsHooks.test.ts`：兩個方向各一條斷言 ＋ 一條負控（兩族都必須
+    非空，否則測試恆綠）。**重疊案例逐顆登記在該檔的 `OVERLAP_KEEP` 並寫理由**，清單只准短。
 
 ## ⑥ 視覺指紋驗收
 
