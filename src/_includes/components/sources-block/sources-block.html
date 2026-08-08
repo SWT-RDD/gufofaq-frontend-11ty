@@ -34,6 +34,16 @@
                 （4-2 同一頁的「使用模型」欄與執行流程摘要都是 `openai:gpt-4o-mini`，§6 同頁自洽）。
        sourcesSideKey / sourcesSideLabel：**改成標「這是哪一側的來源」**那一支（2-2-3 用）。
                 給了它就不畫上面那句挑選規則。字面是 chrome 故要 key，側別字母寫在繁中原文裡。
+                這兩顆是**目前顯示的那一態**（切版是靜態稿，只畫得出一態）。
+       sourcesSideStates：那一格的**兩態全集**（`[{ state, i18nKey, label }]`，state 是 DOM 狀態 token
+                ⇒ 一律小寫；`data-key-<態>`／`data-text-<態>`，正典見 ui/theme-toggle 與 components/prompt-edit）。
+                **這一格是執行期會換字的**——表一次只呈現一側，點另一側的引用徽章就整格切過去，
+                切換由業務 js 做（切版沒有那段 js，故本檔只負責把兩態的字備妥）。
+                只給 sourcesSideKey 的話，另一側的**繁中原文全站沒有家**（§4-2：繁中是原文、留在字串
+                出現的地方），消費端只能就地拼字串＝在切版之外開第二個文案正本；只補 en.json 一顆 key
+                也不行，那只給得出英文，而且它在切版沒有任何引用點＝孤兒 key。
+                **後綴是狀態式不是動作式**（見 ui/theme-toggle 檔頭）：`data-key-a` 講的是「現在顯示 A 側」，
+                不是「按了會切到 A」。認錯種類會讓兩態整組對調，而畫面照樣有字。
        sourcesInfoClass：那一格的 class（預設 .sources-info；AB 測試頁用 .js-sources-side 當 React 掛點）
        sourcesRating：{ value, icon } 有值時顯示使用者滿意度（標籤是 chrome 走 i18n，value 是資料不翻）
        sourcesDetailHref：有值時顯示「檢視詳細內容」連結（前台問答頁用）
@@ -50,7 +60,7 @@
                  2-2-3 那一份是另一種東西——它標的是「這是哪一側的來源」，故走 sourcesSideKey 那一支。 #}
             <span class="text-bold text-gray {{ sourcesInfoClass or 'sources-info' }}">
                 {%- if sourcesSideKey -%}
-                <span data-i18n="{{ sourcesSideKey }}">{{ sourcesSideLabel }}</span>
+                <span{% for s in sourcesSideStates %} data-text-{{ s.state }}="{{ s.label }}" data-key-{{ s.state }}="{{ s.i18nKey }}"{% endfor %} data-i18n="{{ sourcesSideKey }}">{{ sourcesSideLabel }}</span>
                 {%- else -%}
                 <span data-i18n="qa.sourcesRulePrefix">（挑選規則 </span>{{ sourcesTotal or 16 }}<span data-i18n="qa.sourcesRuleMid"> 取 </span>{{ sourcesSelected or 8 }}<span data-i18n="qa.sourcesModelMid">；使用模型：</span>{{ sourcesModel or "openai:gpt-4o-mini" }}<span data-i18n="storage.close">）</span>
                 {%- endif -%}

@@ -56,13 +56,27 @@
 - 逐字照抄 `_<name>.scss`，**含切版原有註解**。唯二差異：`@use` 路徑深度、`url(../images/…)`→`url(/images/…)`。
 - 顏色走 `_var.scss` 語意 token，零裸 hex／裸色。填充用 `--brand`、文字用 `--brand-text`、遮罩墨色取文字族。
 - 逃生口（捲軸、偽元素、`icon-mask`、`@starting-style`、`border-image` 漸層、`writing-mode`）隨 scss 照抄。
-- 全域層 `src/scss/{_var,_base,_mixin,_utilities,_normalize,_form-check,_dark-icons,_size}` → `styles/`；
-  **showcase 頁那三支也要搬**（`_guideline-var`／`_guideline`／`_catalog`）——漏掉的話元件庫頁整片無色，
-  而那頁是 `ui/subscription-gate`、`platform.usageError`、`share.rateLimited` 等「只由 React 條件渲染」
-  的分支**唯一看得到的地方**（§5）。`--gl-*` 是 showcase 專用色盤，不進 app 的 `_var`。
+- 全域層 `src/scss/{_var,_base,_mixin,_utilities,_normalize,_form-check,_dark-icons,_size}` → `styles/`。
   `main.scss` 只放全域層 `@use`，元件 scss 由各自 tsx `import "./X.scss"`。
+- **showcase 的 scss 跟著它的宿主頁走，不是「showcase 的都搬」**：判準寫在檔案自己身上——這一族每一支
+  都收在一個 body class 底下（GUIDELINE §9 要求頁面專屬樣式限定在該頁），那個 class 就是指標。
+  - `_guideline-var`／`_guideline` → `.guideline-page` ＝ `src/pages/components/component.html`（元件庫展示頁），
+    §⓪ 判定**要轉** ⇒ 這兩支跟著搬。漏掉的話元件庫頁整片無色，而那頁是 `ui/subscription-gate`、
+    `platform.usageError`、`share.rateLimited`、`regression.reasonAbsentInBaseline` 等「只由 React 條件渲染
+    或使用頁推導不到」的分支**唯一看得到的地方**（§5）。`--gl-*` 是 showcase 專用色盤，不進 app 的 `_var`。
+  - `_catalog` → `body.catalog-page` ＝ `src/catalog.html`，§⓪ 判定**不轉**（切版部署用的頁面目錄，
+    React 端由路由本身取代）⇒ 這一支**不搬**。搬了就是一份零消費者的死 CSS 進 app bundle。
+  三支一起講會踩到這個坑：它們同樣叫「showcase 樣式」、同樣不進 app 的 `_var`，但宿主頁的去留相反。
+  判斷落點時看 body class 對到 §⓪ 的哪一條裁決，不要看檔名長得像不像。
 - `@use`／`url()`／`icon-mask(...)` 的路徑在原行就地替換，不插入額外說明行（scss-diff 逐行比對）。
 - `scss-diff.mjs` exit 0。
+- **`scss-diff` 紅掉先剝掉註解再比一次**：切版有整輪只改檔頭註解、宣告一字未動（本輪 13 支就是），
+  逐行比對會整份從頭紅到尾、噴上百行位移雜訊。要分出「檔頭改寫」（整段換掉的機械操作）與
+  「宣告漂移」（要逐條判讀）——分不出來就會整批當雜訊掃過去，把夾在中間的真差異一起放行：
+  本輪 `_var.scss` 的 `--fontFamily`（字型名補引號）、新增的 `--control-ink-disabled` 與
+  `_checkbox.scss` 就混在同一批紅裡。而檔頭那段 markup 契約是**下一輪 §⓪「無 html 元件」唯一的
+  規格來源**，不是可跳過的散文：落後一輪就照舊契約轉出缺件的 markup（`ui/chatroom-shell` 這一輪
+  才寫的契約，暴露出 React 少了 `.first-chat`／`.chat-box` 兩層）。
 - **照抄 scss ≠ 抄到 token**：抄完 grep 它用到的每個 `var(--…)` 是否存在於 React `styles/_var.scss`；缺的連同
   切版 `_var.scss` 的 **light + dark 兩處宣告**一起補（值與對比註解照抄）。缺 token 時 `scss-diff` 仍 exit 0、
   `fpdiff` 幾何也不變，畫面卻靜默回退成繼承色（本輪 `--danger-ink`）。
@@ -91,6 +105,11 @@
     **不要搬進元件 scss**：欄寬是「這一頁這張表」的資料、不是元件樣式，搬進去會讓 §① 的 byte-identical
     比對出現一份切版沒有的規則；也不要改成 utility class（那是 TAILWIND-CONVERSION 的路線，scss 路線沒有 `w-[N]`）。
   - JS 切換的 `display:none|block` → 條件渲染或 conditional className，**屬性整個不要帶**（見 §④）。
+    **`.hidden` 的凍結示範是同一族**：切版也用 class 表達這件事（5-2 的
+    `<p class="text-gray m-0 hidden" data-i18n="settings.aliasApplyNeedsBind">`，註解寫明「React 依 state
+    條件渲染，切版保留 markup 當位置與字色的規格、預設掛 `.hidden`」）——`hidden` 不帶、節點改成條件
+    渲染，條件寫在切版註解裡。照字面把 `hidden` 抄進 `className` 得到的是一顆永遠看不見的節點，而
+    `fpdiff` 比的是預設狀態、兩邊都不可見，抓不到。
   - 資料驅動的執行期尺寸（storage-bar 的條寬）→ `style={{ width: \`${pct}%\` }}`，值來自 props。
 - **表單初值不是機械替換的，是 JSX 會擋下來的一族**（切版全站都有實例；**數量以實際檔案為準，別抄快照**）。逐條對應：
   - `<textarea>值</textarea>` → `defaultValue={值}`。**這條是 React 直接丟錯、不是警告**（"Use the `defaultValue`
@@ -121,8 +140,24 @@
 - markup 完整照切版：wrapper、`aria-*`、`title` 全數帶到。
 - a11y 綁定屬性成對帶：`aria-labelledby`／`aria-describedby` 連同它指到的 `id` 一起轉，兩端缺一不可
   （如 `<dialog aria-labelledby="x-title">` 配 `<h3 id="x-title">`），id 隨呼叫端 prop 衍生時兩處同一份運算式。
+- **`aria-label` → `aria-labelledby` 是有方向的遷移，不只是補一顆屬性**：切版把控制項的 `aria-label`
+  換成 `aria-labelledby` 時，React 那一端常常**早就有那顆 `id`**（本輪 `excelUnpivotLabel`／
+  `excelConvertHtmlLabel`／`pdfConvertHtmlLabel` 三顆都在，只是沒有人指到它），逐項檢查「id 兩端成不
+  成對」會判成通過，漏掉的是「該被引用的那一端還掛著舊的 `aria-label`」。判準寫成可跑的：切版該元素
+  有 `aria-labelledby` ⇒ React 同一元素上**不得同時出現 `aria-label`**，遷移時整顆刪掉。accname 的優先序
+  是 `aria-labelledby` > `aria-label` > `<label for>`，並存時舊值多半只是死字面，但那顆 id 一旦解析不到就
+  整條退回 `aria-label`＝「切版已遷移」在 React 端變成看不出來的原地不動。`aria-label` 不進 fpdiff 零容忍
+  比對（§⑥），兩張網都看不到這一類漂移。
 - 上述 `id`／`aria-*by` 對若落在 `.map()` 重複清單內：切版 demo 只渲染一顆、用靜態 id，照抄到每項會全列同 id＝違反同頁 id 唯一。
   改用**每項唯一**的 id（以該項 key／資料衍生，如 `` `sq-label-${item.id}` ``），`id` 與引用它的 `aria-*by` 共用同一運算式。
+- **原子只擁有自己的行為與樣式，不擁有可及名稱**：切版可以一個字都不改原子，卻在 consumer 那一側把
+  `aria-labelledby` 加到原子的元素上、把 `id` 加到原子內部的 sr-only span 上（本輪
+  `components/builtin-tool-card`：`ui/accordion` 的 `label()` 無條件寫同一句，5-2 同畫面 14 張卡的展開鈕
+  全叫「展開表格」）。這在 11ty 零成本——卡片自己抄了那段 markup；React 端整顆包在 `<AccordionButton>`
+  裡、consumer 碰不到子節點。做法是給原子加**選填** props（`labelId`／`contextLabelId` 或等價）：不給
+  就輸出原樣、給了才組成 `aria-labelledby="<原子自己的 label id> <呼叫端的脈絡 id>"`。**不得為單一
+  consumer 複製一份原子**（§⓪ 共用原子升格與 §④ 共用 Accordion 都禁止分岔成兩份實作），也不得改原子
+  讓所有 consumer 一起變。
 - 命名：kebab（`mobile-nav`）→ PascalCase 資料夾＋同名 tsx/scss；`ui/` 原子→`components/ui/`，大元件→`components/`。
 - 元件形態：純 CSS class 貼到任意 element（如 `.block`）→ **scss-only**（無 tsx，consumer 手寫 className）；
   固定 markup + variant（如 `span.divider-vertical`、`ul.list-style-disc`）→ **tsx wrapper**（variant→props、內容→children）。
@@ -145,6 +180,12 @@
 - **頁面層 `{% set X = v %}` → 該頁的 `useState` 初值**（互動可改者）或該頁的區域常數（不可改者），
   不是 export 給多頁共用的模組常數、更不是子元件的預設值。判準：切版**元件檔頭**的 fallback（`perPage or 10`）
   是元件預設；**使用頁** set 的值（`20`）是頁面資料。把頁面值搬進元件＝§6「元件不得寫死會因頁面而異的資料」。
+- **但 `{% set %}` 的列資料陣列不轉**：上一條只管非資料的頁面參數（`perPage`、預設頁籤那一類）。set 的
+  清單若對應後端某支端點的回應（切版註解通常直接指名，如 5-6-1 的 `{% set tenants = [...] %}` ↔ product
+  `platform.py` 的 `TenantOut`、5-8 的 `{% set tokens = [...] %}`），那是**示範資料**——React 的那幾格
+  來自 API，一個字都不搬。本輪 12 頁的 diff 有超過一半是這種陣列的修正（列序改成端點真實排序、id 換成
+  真主鍵、金鑰長度補足），逐條寫著理由但全部只對切版成立；照字面讀會把示範租戶 id（7/15/23/42/58）
+  當成頁面資料寫進 React 常數。
 - **純版位元件（layout-only wrapper）照樣建成元件**：切版有一類元件不吃自己的參數，只提供版位並把頁面變數
   轉給子元件（`components/pager-row`）——不得在每個使用頁展開成 inline markup（展開後 N 份各自分岔，
   而版位約束沒有守門人）。這類元件的 scss 常帶**負向約束**（「刻意不在這層開 flex」），tsx 檔頭要把它
@@ -180,6 +221,14 @@
   `data-toast={t(k)}`，但 §④ 又要求 `data-toast` 這顆屬性整個移除。正解是
   `t(k).split("|")` 餵進 `useToast()` 的結果陣列——`|` 的**段數與順序是索引契約**，與 `data-toast-type`
   同序對位（見 §⑥）。切版側已有 CI 釘住「繁中段數＝英譯段數＝type 段數」，React 端的 split 索引跟著那份走。
+  **索引契約的作用域是「那一顆鈕」，所以鈕的顆數也是契約**：一顆 toast key 的段集合＝那顆鈕送出去的
+  那一次請求所有可能的結果，把切版的一顆共用送出鈕在 React 拆成 N 顆（本輪 `manage-tenant-modal`：
+  切版是額度／使用期／模型開通共用 footer「儲存」鈕、`toast.manageTenant` 一顆 key 涵蓋三區的守衛，
+  React 卻拆成 `js-save-quota`／`js-apply-trial`／`js-save-models` 三顆各配一顆 key），會同時產生兩種壞：
+  切版那顆 key 在 React 變成零引用的孤兒，而三顆新 key 在切版沒有任何鈕掛得上去（掛上去就是零消費者的
+  死翻譯，11ty 的孤兒 key 測試會擋）。**處方是 React 併回一顆鈕，不是回切版要三顆 key**——
+  §⓪「切版是唯一真實來源」，鈕的顆數與它的結果集合是同一份設計，沒有登記過的分岔就是漂移。
+  反過來若真的認為該拆，先改切版、再讓 React 跟著轉。
 - **兩態文字槽 `data-key-<態>` ＋ `data-text-<態>`**（`ui/reveal-input` 的顯示／隱藏、`components/prompt-edit`
   的展開／收合、`ui/theme-toggle` 的淺／深）→ `t(open ? keyOpen : keyClose)`，兩顆 key 都要進字典。切版把兩態都寫在 markup 上，是因為
   vanilla js 不能寫死字串（GUIDELINE §5）；React 端那兩顆 key 變成元件內的常數對，**不要退化成一顆 key**。
@@ -203,8 +252,28 @@
   從切版 `dist/*.html` 抽出的繁中同 key 同值（抽取形狀含 `data-i18n`、`data-i18n-<attr>`、`data-<槽>-key`＋
   `data-<槽>`、`data-key-<態>`＋`data-text-<態>`、`data-page-title-key`＋`<title>`）。可接受的差異只有三種：
   (a) 前後綴夾**資料**槽併成單一插值 key（槽裡是**元件**則不准併）；(b) 資料槽的繁中原文住 React 資料常數當
-  `t(key, fallback)` 的 fallback；(c) 純應用層 key。**跑成 vitest**——LLM 對讀會漏（本輪漏了 46 顆 key、45 條異值）。
+  `t(key, fallback)` 的 fallback；(c) 純應用層 key。
+  **跑成 vitest**——LLM 對讀會漏（本輪漏了 46 顆 key、45 條異值）。
   孤兒 key（無 `t()` 引用）同進 CI，模板組合的 key 以前綴白名單放行。
+- **枚舉少了成員是切版的缺口，一律回切版補，而且補的是 markup 不只是字典**。靜態稿一次只畫得出一個狀態，
+  於是同一組枚舉常常只有部分成員在切版現身；React 兩種形狀都會遇到，而它們是**同一個缺口**，處方也只有一個：
+  - 使用頁**現在畫著**其中一個成員（`qaTest.settingSideA`：2-2-3 的來源表只畫 A 側，執行期點徽章會切到 B）；
+  - 使用頁的示範推導下來**畫不到**某個成員（`regression.reasonAbsentInBaseline`：2-2-5 演的是「這一次中斷過」，
+    結果集必為案例集 id 序的前綴 ⇒ 那一頁的「沒得比」兩列必然都是 `absent_in_this_run`）。
+
+  **不要用「React 保留並登記 `REACT_ONLY`」收掉它**（那是上一版的 (d)，已廢）：`REACT_ONLY` 只解決英文，
+  而 §4-2 的硬不變量是**繁中才是原文、住在字串出現的地方**——切版沒有那顆 key 的渲染點時，缺的不只是
+  `en.json` 一行，是那一段繁中在全站沒有家。React 只好就地拼字串（現況那句
+  `` `(${t("qaTest.setting")}${sourcesSide})` `` 就是），等於在 React 端開了第二個文案正本，而字典比對、
+  孤兒 key、fpdiff 三張網一張都看不到。**同理也不要去鬆綁 11ty 的孤兒 key 規則**：放行「沒有引用點的 key」
+  會讓死翻譯與缺口長得一模一樣，那條規則的價值就沒了。
+  切版該交的兩種形狀（本輪兩顆各示範一種）：
+  - **執行期會換字的那一格 → 兩態槽**：`data-text-<態>`／`data-key-<態>` 把每個成員的繁中與 key 都掛在
+    **同一個元素**上，正典 `ui/theme-toggle`、`components/prompt-edit`。React 讀槽、不自己拼。
+    後綴是狀態式還是動作式看正典檔頭，認錯會讓兩態整組對調而畫面照樣有字。
+  - **使用頁演不到的成員 → 元件庫頁**（`src/pages/components/component.html` 的「React 條件文案」區）：
+    那一區本來就是「在真實頁上沒有人看得到的那一態」的家，枚舉成員與 `.hidden` 分支同住。
+  這條同時是 §⑥ 的驗收判準：**枚舉的每個成員都要有一個 render 得出它的地方**，否則它是出貨死碼。
 - 語言鈕標籤顯示要切去的語言（en→「中」、zh→「EN」，不進字典）；點擊 `i18n.changeLanguage` + `localStorage("lang")` +
   同步 `document.documentElement.lang`（`en`→`"en"`，否則`"zh-Hant"`）——不是只有 `<head>` no-flash 腳本首次載入設一次。
 - i18n init `lng="zh"`；client mount 後依 `localStorage("lang")` `changeLanguage`。
@@ -413,6 +482,14 @@
   ——`--component` 只 normalize 根的 x/y，根自己的 width 仍在零容忍比對內。
 - **樹狀資料攤平渲染時，「目前 X / N」的母體是樹的頂層陣列**（正典管線），不是攤平後的列數；攤平列只供渲染。
   並要有一條「**有**子節點時分母不變」的測試——只測「沒有子節點」等於沒測。
+- **切版以示範列數隱含一個顯示上限時，那個上限要是具體數字**：2-2-5 的桶子截斷說明白了「後端一律回
+  整桶、畫面只列前幾則」是版面決策不是後端截斷，卻沒說「幾則」——轉換的人只能猜，而猜錯不會有任何
+  測試看得到（fpdiff 比的是切版畫出來的那幾列，React 端上限設多少都不影響那張快照）。讀到只寫
+  「前幾則」的，回去要人補，別自己填一個。**該頁現在寫死了：每桶 20 列**（`bucket.slice(0, 20)`，
+  `count` 仍是整桶長度，`rows.length < count` 才畫截斷說明）。
+  ⚠️ **上限與示範列數是兩個數字，不要拿示範列數反推上限**：同一則註解也寫明「這一輪只有 10 則案例，
+  任何一桶都到不了 20，所以無變化桶刻意只列 2 列把截斷那一態演出來」——2 是示範縮寫，20 才是規則。
+  切版註解沒有分開講的時候尤其要問，別把快照上的列數抄成常數。
 - **樣板拼接的階梯 class**（`is-depth-${n}`）在 React 也要 `Math.min(n, 上限)` 夾住（scss 沒定義的階數＝靜默
   不縮排），且 **scss 定義的每一階都要有一條測試或 gallery render 得到它**，否則是出貨死 CSS。
   陷阱：後端同名欄位（事件的 `depth`）不等於顯示樹深，縮排只能用 DFS 深度。

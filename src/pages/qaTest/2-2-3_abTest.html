@@ -33,10 +33,19 @@ permalink: 2-2-3_abTest.html
      套用/回復/儲存版本三鈕移到每側底部同排（使用者定案）。 #}
 {# 兩側的**差異**要放進資料：控制項全部渲染成同一組預設值、下面兩則回覆卻標著不同的設置與
      提示詞版本，那不是一個真實可能的狀態（§6），AB 測試的用途也演不出來。
-     `promptVersion` 只是回覆標題上的版本註記（提示詞本文由使用者當場編，兩側各一份）。 #}
+     `promptVersion` 只是回覆標題上的版本註記（提示詞本文由使用者當場編，兩側各一份）。
+     ⚠️ **版本只有號碼、沒有名字**：`V3-角色定位型` 這種示範值暗示了一個不存在的欄位——提示詞版本
+       在上游是 GufoRAG 的原生版本號（product `prompts.py` 與 `PromptOut` 只有 `version_no`；
+       `history.py` 的單則紀錄同樣只帶號碼），全站也沒有任何一處讓使用者替版本命名。
+       同一個東西在 5-2 的版本史卡與版本下拉就是純 `V3`／`V2`／`V1`（§6 跨頁自洽），這裡跟著它。
+       要有名字得先讓上游長出那一欄，那是另一件事，不能靠示範值先斬後奏。
+     `state` 是這一側的 DOM 狀態 token（小寫，見下方參考來源表的兩態槽）；`side` 是畫在畫面上、
+       也進 id 的顯示字母——兩者刻意分開，因為 HTML 屬性名一律小寫。
+     `i18nKey` / `label` 是**這一側自己的標籤**（「（設定 A）」），與卡片標題那句
+       `qaTest.setting` ＋ 字母不同：那是拆開的 chrome＋資料，這一顆是整句、給參考來源表那一格用。 #}
 {% set abSides = [
-    { side: "A", knowledge: "1", llm: "OpenAI gpt-4o-mini", configKey: "settings.config1", configLabel: "設置一", promptVersion: "V3-角色定位型" },
-    { side: "B", knowledge: "2", llm: "OpenAI gpt-4o", configKey: "settings.config2", configLabel: "設置二", promptVersion: "V2-任務導向型" }
+    { side: "A", state: "a", i18nKey: "qaTest.settingSideA", label: "（設定 A）", knowledge: "1", llm: "OpenAI gpt-4o-mini", configKey: "settings.config1", configLabel: "設置一", promptVersion: "V3" },
+    { side: "B", state: "b", i18nKey: "qaTest.settingSideB", label: "（設定 B）", knowledge: "2", llm: "OpenAI gpt-4o", configKey: "settings.config2", configLabel: "設置二", promptVersion: "V2" }
 ] %}
 <div class="block ab-test-block flex-row gap-24 mobile-column">
     {% for ab in abSides %}
@@ -419,10 +428,14 @@ permalink: 2-2-3_abTest.html
     }
 ] %}
 {% set sourcesHidden = true %}
-{# 這一格標的是「這是哪一側的來源」，不是挑選規則——故走 sourcesSideKey 那一支
-     （sources-block 檔頭）。「設定」是 chrome、走既有的 qaTest.setting；側別字母是資料。 #}
-{% set sourcesSideKey = "qaTest.settingSideA" %}
-{% set sourcesSideLabel = "（設定 A）" %}
+{# 這一格標的是「這是哪一側的來源」，不是挑選規則——故走 sourcesSideKey 那一支（sources-block 檔頭）。
+     **這一格會在執行期換字**：表一次只呈現一側，點另一側的引用徽章就整格切過去（見上面對話區那則註解）。
+     所以兩態的繁中與 key 都要在 markup 備妥（`data-text-<態>`／`data-key-<態>`，正典 ui/theme-toggle），
+     由 abSides 這一份**唯一的兩側正本**供給——只寫得出 A 側的話，B 側的繁中原文在全站沒有家，
+     消費端只能就地拼字串（§4-2）。靜態稿畫的是 A 側，故 sourcesSideKey／Label 取第一筆。 #}
+{% set sourcesSideStates = abSides %}
+{% set sourcesSideKey = abSides[0].i18nKey %}
+{% set sourcesSideLabel = abSides[0].label %}
 {% set sourcesInfoClass = "js-sources-side" %}
 {% include "components/sources-block/sources-block.html" %}
 

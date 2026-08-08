@@ -842,6 +842,7 @@ bodyClass: guideline-page
                     <li>下面這幾句在真實頁是 React 依 state 條件渲染的分支，它們的「另一態」是**什麼都不渲染**——所以在那些頁上永遠看不到（GUIDELINE §5：沒有頁面演得出來的分支等於沒驗收過）</li>
                     <li>真實頁保留 <strong>.hidden</strong> 的那份 markup 當**位置與樣式的規格**（React 要知道它長在哪一格、用哪個字色），這一區則是它們**長相**的唯一可見處</li>
                     <li>示範資料刻意不觸發它們：把預設態畫成錯誤態，等於讓每個打開頁面的人都以為出事了</li>
+                    <li>末尾那一顆是另一種缺席：<strong>枚舉的成員</strong>，不是條件式的另一支。使用頁的示範資料推導下來只演得到同一個枚舉的其中幾個成員，剩下的成員沒有被否決、只是那一頁畫不到——它們的家在這裡，不是「刪掉 key、讓 React 自己拼字串」（GUIDELINE §4-2：繁中是原文，留在字串出現的地方）</li>
                 </ul>
             </div>
             <div class="block flex-row column gap-8">
@@ -862,6 +863,17 @@ bodyClass: guideline-page
                 <p class="text-gray m-0" data-i18n="settings.aliasApplyNeedsBind">請先綁定別名表</p>
                 <p class="text-gray m-0" data-i18n="settings.tagFilterCoverageWarnOk">目前每一份資料都帶得到這一欄，可以開啟。沒填的格子在匯入時就已經寫成「未標註」，過濾條件會連它們一起比對，所以標了幾成不影響會不會漏文件。之後要注意的只有一件事：資料夾匯入的檔永遠沒有欄位槽，那樣匯入一批新資料就會又缺這一欄，要改成逐列匯入才接得回來。</p>
                 <p class="text-gray m-0"><span data-i18n="regression.hitsTruncatedPrefix">（這一格只列了前 </span><span>3</span><span data-i18n="regression.hitsTruncatedMid"> 筆，實際命中 </span><span>63</span><span data-i18n="regression.hitsTruncatedSuffix"> 筆）</span></p>
+                {# 「沒得比」的**另一個方向**：2-2-5 的示範是「這一次中斷過」，而任何一次執行的結果集
+                     都是案例集 id 序的前綴 ⇒ 那一頁的兩列必然都是「這一次沒跑到」，`absent_in_baseline`
+                     在那一頁結構上演不到（推導寫在 2-2-5 的桶子註解）。但上游真的回得出它：
+                     `_compare_runs` 的 `"absent_in_baseline" if missing_baseline else "absent_in_this_run"`，
+                     走到它的是**基準跑完之後才新增的案例**（product e2e 目錄 REG-B04），與中斷無關。
+                     枚舉少一個成員時要替它找一個渲染得出來的地方，不是刪掉 key 讓消費端自己拼字串——
+                     這裡就是它的地方。徽章樣式與 2-2-5 那一欄逐字相同（同一個 verdict-tag is-warn）。 #}
+                <div class="flex-row align-items-center gap-8">
+                    <span data-i18n="regression.notComparedReason">哪一邊缺</span>
+                    <span class="verdict-tag is-warn" data-i18n="regression.reasonAbsentInBaseline">基準沒有它</span>
+                </div>
                 <p class="text-gray m-0" data-i18n="settings.outputRulesStreamingCostOff">目前沒有啟用任何輸出規則，回答維持逐字顯示。只要啟用任一條，本設定檔的回答就會改成生成完畢後一次出現、中途沒有文字（規則要看完整段答案才判得準）。</p>
                 {# 這兩句住在 `{% if %}` 的另一支，而條件在唯一使用頁上恆為固定值（3-5 的 healthScan
                      恆非空、5-10 四筆維度的 coveragePct 都非 null），所以 dist 上連一個 .hidden 節點
@@ -870,7 +882,7 @@ bodyClass: guideline-page
                 <p class="text-gray m-0" data-i18n="health.lastScanNever">這個租戶還沒有跑過健檢。按上面那顆「重新檢查」就會跑第一次；匯入資料之後系統也會自動跑一次。在那之前，下面的總覽與清單都是空的——那代表「還沒有檢查過」，不代表「檢查過而且沒有問題」。</p>
                 <p class="text-gray m-0" data-i18n="settings.tagCoverageNotMeasured">尚未量測</p>
             </div>
-            <div class="subtitle">出處：2-2-4 的模型相容性兩句、2-2-5 的基準設定缺漏與命中清單截斷、5-2 的逐代碼覆寫重複、5-2 的別名綁定與「沒有啟用任何輸出規則」、5-10 的覆蓋率可開啟與「尚未量測」、4-2 的兩欄合規、3-5 的「還沒跑過健檢」。它們在各自的頁面上都掛著 .hidden，或由一個在該頁恆為某一值的條件式產出——那一態沒有人看得到，這裡是唯一可見處</div>
+            <div class="subtitle">出處：2-2-4 的模型相容性兩句、2-2-5 的基準設定缺漏與命中清單截斷、5-2 的逐代碼覆寫重複、5-2 的別名綁定與「沒有啟用任何輸出規則」、5-10 的覆蓋率可開啟與「尚未量測」、4-2 的兩欄合規、3-5 的「還沒跑過健檢」、2-2-5「沒得比」的另一個方向（基準沒有它）。它們在各自的頁面上都掛著 .hidden，或由一個在該頁恆為某一值的條件式產出，或是那一頁的示範推導不出來的枚舉成員——那一態沒有人看得到，這裡是唯一可見處</div>
         </section>
 
         <section id="errorPageSection">
@@ -1029,9 +1041,9 @@ bodyClass: guideline-page
 {% include "components/knowledge-retrieval-modal/knowledge-retrieval-modal.html" %}
 {# 元件庫展示：這顆彈窗的 toast 由使用頁提供（兩頁的守衛集合不同，見元件檔頭），
      展示頁沿用平台端那組三段。 #}
-{% set resetToast = "密碼已重設|兩次新密碼不一致|重設失敗，請稍後再試" %}
+{% set resetToast = "密碼已重設|新密碼至少 8 碼|兩次新密碼不一致|重設失敗，請稍後再試" %}
 {% set resetToastKey = "toast.resetPasswordPlatform" %}
-{% set resetToastType = "success|warning|error" %}
+{% set resetToastType = "success|warning|warning|error" %}
 {% include "components/reset-password-modal/reset-password-modal.html" %}
 {# 本頁把「取不到租戶用量」那一態打開：它在 5-6-1 是 React 依 error state 條件渲染的分支，
      沒有真實頁演得出來（§5）。 #}

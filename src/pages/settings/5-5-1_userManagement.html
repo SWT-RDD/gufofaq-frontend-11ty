@@ -223,7 +223,10 @@ permalink: 5-5-1_userManagement.html
 {# 租戶端的重設密碼多一道 403：`users.py` 的 `_assert_tenant_manageable`
      （那道守衛的存在理由正是「租戶管理者不得重設平台管理員的密碼再拿去登入」）。 #}
 {% set resetTenantRole = "admin" %}
-{% set resetToast = "密碼已重設|兩次新密碼不一致|平台角色持有者不可在租戶端變更，請由平台管理端處理|重設失敗，請稍後再試" %}
+{# 長度那一段與同頁「新增成員」鈕的「請填寫 Email 與至少 8 碼密碼」是同一件事：彈窗裡沒有
+     `<form>`（全站唯一一個在 src/login.html），欄位的 `minlength="8"` 永遠不會觸發原生驗證，
+     送出前的長度檢查只能由 React 做、結果一律走這顆鈕的 toast warning 段（§4 全站一種回報方式）。 #}
+{% set resetToast = "密碼已重設|新密碼至少 8 碼|兩次新密碼不一致|平台角色持有者不可在租戶端變更，請由平台管理端處理|重設失敗，請稍後再試" %}
 {% set resetToastKey = "toast.resetPassword" %}
-{% set resetToastType = "success|warning|warning|error" %}
+{% set resetToastType = "success|warning|warning|warning|error" %}
 {% include "components/reset-password-modal/reset-password-modal.html" %}

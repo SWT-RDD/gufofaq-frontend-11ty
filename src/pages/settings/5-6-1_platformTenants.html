@@ -517,11 +517,13 @@ permalink: 5-6-1_platformTenants.html
 {% set deleteToastType = "success|warning|warning|warning|error" %}
 {% set deleteToastKey = "toast.deleteUser" %}
 {% include "components/delete-modal/delete-modal.html" %}
-{# 平台端只有 404（platform.py 的 `platform_reset_password`），沒有租戶端那道 403——三段。 #}
+{# 平台端只有 404（platform.py 的 `platform_reset_password`），沒有租戶端那道 403——伺服器端只有一段。
+     另外兩段是送出前的客戶端檢查（長度、兩次一致），與租戶端逐字相同：彈窗裡沒有 `<form>`，
+     欄位的 `minlength="8"` 永遠不會觸發原生驗證（§4 全站一種回報方式 ⇒ 一律走這顆鈕的 warning 段）。 #}
 {% set resetPlatformRole = "admin" %}
-{% set resetToast = "密碼已重設|兩次新密碼不一致|重設失敗，請稍後再試" %}
+{% set resetToast = "密碼已重設|新密碼至少 8 碼|兩次新密碼不一致|重設失敗，請稍後再試" %}
 {% set resetToastKey = "toast.resetPasswordPlatform" %}
-{% set resetToastType = "success|warning|error" %}
+{% set resetToastType = "success|warning|warning|error" %}
 {% include "components/reset-password-modal/reset-password-modal.html" %}
 
 {# 免責聲明設定（平台全域，系統管理員設定一份全租戶共用）：SaaS 新需求，逆向自 apps/web app/(app)/platform；
