@@ -1,7 +1,8 @@
 {# 匯入結果回報：Excel（1-1-6）與 PDF/Word（1-2-1 送出後）共用同一塊，故切成元件（GUIDELINE §3-3 第 1 條）。
      出處：gufofaq-saas services/product/app/routers/datasets.py。`import_excel` 與
      `batch_import_documents` 兩支的回應同形，都帶 `inserted`／`updated`／`failed` 三個計數
-     （`_tally`）；`structure`（抽取統計）／`dropped_links`／`unprocessable_tables` 三者是**逐檔**的
+     （`_tally`）；`FIDELITY_REPORT_KEYS` 那一族（`structure` 抽取統計／`dropped_links`／
+     `unprocessable_tables`／`suspected_headerless_tables`）是**逐檔**的
      （批次端點放在 `results` 的每一項裡），故本元件也做成逐檔一塊、標上檔名——彙總成一份的話，
      使用者看得到「有 2 個連結被移除」卻不知道是哪一個檔，那條訊息就不可行動了。
 
@@ -10,11 +11,25 @@
 
      頁面 include 前 set（GUIDELINE §6，資料因頁面而異）：
        importCounts = { inserted, updated, failed }（必填）
+       importLabelSyncWarning（選填）＝`import_excel` 那一支 **200 態**帶回來的
+         `label_sync_warning`（product `dataset.label_sync_warning`：「匯入成功，但顯示欄位標籤
+         未能即時同步到檢索設定」）。匯入本身已經落地，所以 product 刻意不回 5xx、也不吞掉——
+         `_do_excel_mapping_import` 那一段的註解逐字寫著「而是大聲記錄（不靜默）+ 回 200 帶
+         label_sync_warning，讓呼叫端知道標籤未即時投影」。沒有這一格，使用者會看到一次乾淨的
+         「匯入成功」，而檢索設定上的欄位標籤還是舊的。訊息是 product 產的業務字串、不翻
+         （同 1-1-3 的 `header_warning`）。
+         **只有 Excel 那一支給得出來**：批次端點的 `FIDELITY_REPORT_KEYS` 只複製
+         `structure`／`dropped_links`／`unprocessable_tables`／`suspected_headerless_tables`
+         四把鍵到逐檔條目，`label_sync_warning` 不在其中，故 1-2-1 不 set。
        importFileReports = [{ filename, structure?, droppedLinks?, unprocessableTables?, suspectedHeaderlessTables? }]（選填）
+         filename＝**原始檔名**（`results[].filename` 是 `Path(f.filename).name`；Excel 那一支是
+           `import_excel` 由 `stored_name` 剝掉前綴的 `orig_filename`），不是落地檔名
          structure = [{ labelKey, label, value }]——word 與 pdf 的欄位不同（product app/docx.py 的
            DocxStats 是段落/表格/表格列數；app/pdf_tables.py 的 PdfStats 是頁數/表格/表格列數/
            沒有表頭的續表/有格線卻抽不出表格的頁數），故做成通用 label-value 列而不是寫死的句子
-         droppedLinks = { count, urls: [...] }——HTML→Markdown 剝掉的連結
+         droppedLinks = { urls: [...] }——HTML→Markdown 剝掉的連結；**筆數由陣列推導**
+           （上游兩處都是 `{"count": len(dropped_urls), "urls": dropped_urls}`，那個 `count`
+           定義上就等於陣列長度，另烤一個字面量只是多一個會說謊的地方；同下面兩個同形欄位）
          unprocessableTables = [ 描述, ... ]——無法保真轉換的表格；筆數由陣列推導，不另烤一個數字（§6）
          suspectedHeaderlessTables = [ 描述, ... ]——**轉出來了但欄名可能不對**的表格（多欄排版裡
            被切成兩段、後半段沒有表頭）。與 unprocessableTables 分開兩塊，因為兩者要使用者做的事
@@ -36,6 +51,10 @@
          `batchSummaryFailMid`——同一個「、失敗」不另立 key（§4-2）。
          轉 React 時併成單一插值 key（GUIDELINE §7 對照表：槽裡是資料就可以併）。 #}
     <div class="text-md text-bold"><span data-i18n="dataImport.countInsertedPrefix">新增</span> {{ importCounts.inserted }}<span data-i18n="dataImport.countUpdatedMid">、更新</span> {{ importCounts.updated }}<span data-i18n="dataImport.batchSummaryFailMid">、失敗</span> {{ importCounts.failed }}</div>
+
+    {# 標籤同步警語（200 態）。文字是 product 給的業務字串，不掛 data-i18n（同 1-1-3 的
+         `excelHeaderWarning`）；`role="alert"` 是因為它與整塊回報一樣是送出後才出現的訊息。 #}
+    {% if importLabelSyncWarning %}<p class="text-red m-0" role="alert">{{ importLabelSyncWarning }}</p>{% endif %}
 
     {% for report in importFileReports %}
     <div class="flex-row column gap-8 js-file-report">
@@ -67,7 +86,7 @@
         {% endif %}
 
         {% if report.droppedLinks %}
-        <div><span data-i18n="dataImport.droppedLinksPrefix">已移除</span> {{ report.droppedLinks.count }} <span data-i18n="dataImport.droppedLinksSuffix">個連結</span></div>
+        <div><span data-i18n="dataImport.droppedLinksPrefix">已移除</span> {{ report.droppedLinks.urls.length }} <span data-i18n="dataImport.droppedLinksSuffix">個連結</span></div>
         <div class="text-gray" data-i18n="dataImport.droppedLinksHint">這些網址沒辦法安全地轉成 markdown 連結（相對路徑、javascript:、片段錨點），所以只留下連結文字。要讓它們回到答案裡，請到「對話設定 → 出口替換規則」加一條規則。</div>
         <ul class="list-style-disc">
             {% for url in report.droppedLinks.urls %}

@@ -5,10 +5,15 @@ titleKey: nav.frontPreview
 pageHeading: 前台對話預覽
 permalink: 2-1_qaRecord.html
 ---
+{# 列鍵是 `id`（＝聊天室 SN，`data-chat-sn` 的值）：聊天室刪得掉，位置不是身分（§6 列鍵）。
+     `label` 是真 app 的 `ChatTitle`＝**使用者資料、不翻**；第三筆刻意不給 label，讓元件的
+     fallback 分支（可翻前綴 `qa.recordFallbackPrefix` ＋ 不翻的序號）真的有一頁演得出來
+     （§5：沒有頁面演得出來的分支等於沒驗收過）。原本三筆都寫「問答紀錄N」，那正好是真 app
+     fallback 的字面——等於把 chrome 當資料傳。 #}
 {% set qaRecordTabs = [
-    { label: "問答紀錄1" },
-    { label: "問答紀錄2" },
-    { label: "問答紀錄3", active: true }
+    { id: 4821, label: "入出國紀錄查詢方式" },
+    { id: 4830, label: "外籍配偶結婚登記要準備什麼" },
+    { id: 4842, active: true }
 ] %}
 {% set breadcrumbItems = [
   { label: "首頁", href: "2-1_qaRecord.html", i18nKey: "nav.home" },

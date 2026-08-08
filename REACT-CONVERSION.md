@@ -96,6 +96,12 @@
 
 ## ② markup（html → tsx）
 
+- ⚠️ **`{% if x %}` → `{x && …}` 不是機械替換：值域含 0 的欄兩邊壞法不同。**
+  nunjucks 的 `{% if 0 %}` 整段不渲染；JSX 的 `{0 && <span/>}` 會**把 `0` 印在畫面上**。
+  上游真的會送 `0` 的欄至少有 `pool_size`（`not_attempted` 那一筆就是 0）、`score`、`duration_ms`
+  （`stepDurations` 的註解逐字寫著「不可寫成 `if (!s.durationMs)`，那會把量到的 `0` 一起丟掉」）、
+  `storage-bar` 的 `0%`。**轉換時一律換成 `!= null`**（或 `Number.isFinite`），不要照抄 truthiness。
+  切版端的對應要求見 GUIDELINE §6「值域含 0 的參數不得用真值判斷當渲染條件」。
 - **機械替換的完整清單**（少一項就是一個 build error 或一顆靜默失效的屬性）：
   `class`→`className`、`for`→`htmlFor`、`colspan`→`colSpan`、`rowspan`→`rowSpan`、`tabindex`→`tabIndex`、
   `maxlength`→`maxLength`、`minlength`→`minLength`、`autocomplete`→`autoComplete`、`readonly`→`readOnly`、

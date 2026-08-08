@@ -29,7 +29,20 @@
      分岔）**round44 逐條複驗全部已回流**：`messages.en.json` 的 `toast.saveGlossaryEntries` 與
      `regression.charsUnit`（`" characters"`）與本站逐字相同；`GlossaryEntriesModal.tsx` 已有
      `#glossaryLimitsHint`、`glossaryEntryCountPrefix` 計數列、`aria-labelledby` 逐列脈絡、`required`
-     與兩顆 `aria-describedby`，該檔註解自述靜態 `aria-label` 已整顆刪除。 #}
+     與兩顆 `aria-describedby`，該檔註解自述靜態 `aria-label` 已整顆刪除。
+
+     **round45 新增四項待回流**（本站已改、`gufofaq-saas@02ddb25` 尚未跟；§4-2「同一領域名詞的英譯
+     拼寫要一致」——同一顆窗裡「詞條」原本同時譯成 Term 與 Entries，`toast.saveGlossaryEntries`
+     一句話內就兩種都出現，而姊妹頁 3-6 的別名表詞條已全用 entry。**繁中原文一個字都沒動**，
+     只改英譯值與一個 key 名）：
+       ① `settings.term`：`Term` → `Entry`
+       ② `settings.glossaryLimitTerm`：`Term limit ` → `Entry limit `
+       ③ `toast.saveGlossaryEntries` 的 warning 段：`a term cannot be empty; term length…`
+          → `an entry cannot be empty; entry length…`
+       ④ 本檔第三顆量詞由 `regression.charsUnit` 改名成 `common.unitChars`（同一顆「 字」被五頁
+          跨命名空間借用，§4-2 升格到 `common.*`；值不變，仍是 `" characters"`）。
+     這四項回流前，兩邊 catalog 逐字比對（§8 的 NET-NEW 程式比對）會在這四顆 key 上報差異，
+     那是預期內的，不是本檔跑掉。 #}
 {# 示範資料變數用元件專屬名 glossaryEntryRows（不用泛用名）：{% set %} 是頁面全域（§2/§6）。 #}
 {% set glossaryEntryRows = [
     { term: "年終獎金", definition: "依年度考核與公司獲利發放的額外獎金。" },
@@ -86,7 +99,7 @@
                              **別名的上限不在這裡**：別名欄已於 2026-08-07 隨上游移除（`MAX_ALIASES_PER_ENTRY`
                              也一併從 glossary.py 拿掉），現在住在 components/alias-entries-modal 的
                              `#aliasLimitsHint`——兩顆 key 沿用同一份，這一側不得再描述它。 #}
-                        <p id="glossaryLimitsHint" class="text-gray m-0"><span data-i18n="settings.glossaryLimitTerm">詞條上限 </span><span>200</span><span data-i18n="settings.glossaryLimitDefinition"> 字、定義 </span><span>2000</span><span data-i18n="regression.charsUnit"> 字</span></p>
+                        <p id="glossaryLimitsHint" class="text-gray m-0"><span data-i18n="settings.glossaryLimitTerm">詞條上限 </span><span>200</span><span data-i18n="settings.glossaryLimitDefinition"> 字、定義 </span><span>2000</span><span data-i18n="common.unitChars"> 字</span></p>
                         <div class="flex-row align-items-center gap-16">
                             <button type="button" class="button button-border button-sm js-add-glossary-entry" data-i18n="settings.addEntry">新增一列</button>
                             <span class="text-gray"><span data-i18n="settings.glossaryEntryCountPrefix">已 </span><span>{{ glossaryEntryRows.length }}</span><span data-i18n="settings.glossaryEntryCountMid"> / </span><span>5000</span><span data-i18n="settings.glossaryEntryCountSuffix"> 筆</span></span>

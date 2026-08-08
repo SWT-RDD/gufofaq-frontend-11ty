@@ -27,7 +27,7 @@ permalink: 5-5-2_groupManagement.html
   { key: "settings:read", label: "設定檢視", i18nKey: "settings.capSettingsRead" },
   { key: "settings:write", label: "設定編輯（提示詞／檢索）", i18nKey: "settings.capSettingsWrite" },
   { key: "ask", label: "問答（後台測試區）", i18nKey: "settings.capAsk" },
-  { key: "history", label: "歷史紀錄", i18nKey: "settings.capHistory" },
+  { key: "history", label: "歷史紀錄檢視", i18nKey: "settings.capHistory" },
   { key: "audit", label: "稽核日誌檢視", i18nKey: "settings.capAudit" }
 ] %}
 {% set groups = [
@@ -88,7 +88,7 @@ permalink: 5-5-2_groupManagement.html
             <thead>
                 <tr>
                     <th id="groupNameHead" data-i18n="settings.groupName">群組名稱</th>
-                    <th data-i18n="settings.capabilities">能力</th>
+                    <th id="groupCapabilitiesHead" data-i18n="settings.capabilities">能力</th>
                     <th data-i18n="settings.memberCount">成員數</th>
                     <th data-i18n="common.actions">操作</th>
                 </tr>
@@ -103,8 +103,13 @@ permalink: 5-5-2_groupManagement.html
                         <span id="groupRowName-{{ loop.index }}" class="sr-only">{{ group.name }}</span>
                         <input type="text" class="form-control" value="{{ group.name }}" aria-labelledby="groupRowName-{{ loop.index }} groupNameHead">
                     </td>
+                    {# 一格裡有 7 顆同型 checkbox（同頁三列 ⇒ 21 顆，加上上面新增區那 7 顆共 28 顆同名）：
+                         列脈絡救不了一格內的重複（§4），那一格的容器要掛
+                         `role="group" aria-labelledby="<列辨識欄 id> <欄表頭 id>"`，每顆 checkbox 保留自己的
+                         可見字面（能力標籤）。列辨識欄沿用名稱格那顆 sr-only 的 `groupRowName-N`，
+                         順序照正典「列名 → 表頭」。 #}
                     <td>
-                        <div class="flex-row flex-wrap gap-16 align-items-center">
+                        <div class="flex-row flex-wrap gap-16 align-items-center" role="group" aria-labelledby="groupRowName-{{ loop.index }} groupCapabilitiesHead">
                             {% for cap in capabilities %}
                             <label class="form-checkbox">
                                 <input type="checkbox"{% if cap.key in group.capabilities %} checked{% endif %}>

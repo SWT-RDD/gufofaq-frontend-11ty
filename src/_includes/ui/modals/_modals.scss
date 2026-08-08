@@ -30,15 +30,23 @@
 //       </div>
 //   </dialog>
 //
-// 可變的只有五處：`<dialog>` 的 `id`（＋ `aria-labelledby` 跟著它、指向**自己**的 `.modals-title`，
-// 有測試釘住）、`.modals-dialog` 上的尺寸 class、`.modals-body` 的內容、`.modals-footer` 整段
-// （可以沒有——`components/intent-enable-modal`、`apply-settings-no-permission-modal` 只有 header + body），
-// 以及 `<dialog>` 上的**授權宣告**（§5 的四條授權軸，例：`components/manage-tenant-modal` 的
-// `data-platform-role="admin"`——整份不渲染給唯讀稽核員，因為窗裡每一顆動作在上游都是
-// `require_platform_admin`）。授權宣告掛在 `<dialog>` 上是「整顆彈窗的可見性」，與掛在窗內某顆鈕上的
-// 「那一顆按不按得動」是兩件事；全站目前只有那一顆彈窗整份被閘住，其餘每一顆的 `<dialog>` 標籤上
-// 只有 `class` / `id` / `aria-labelledby` 三個屬性——**不寫死幾顆**（§3-2），反查指令是
-// `grep -rn '<dialog[^>]*data-' src --include=*.html`（只該命中 manage-tenant-modal 那一顆）。
+// 可變的只有五處：`<dialog>` 的 `id`、`aria-labelledby`、`.modals-dialog` 上的尺寸 class、
+// `.modals-body` 的內容、`.modals-footer` 整段（可以沒有——`components/intent-enable-modal`、
+// `apply-settings-no-permission-modal` 只有 header + body），以及 `<dialog>` 上的**授權宣告**。
+//
+// `aria-labelledby` **指向本窗那顆 `.modals-title` 的 id**（有測試釘住的是這件事，不是「等於
+// `<dialog id>`」）。多數彈窗的標題 id 恰好是 `<dialog id>-title`，但那只是命名慣例不是規則：
+// `components/file-preview-modal` 的 `<dialog id="previewModal">` 指的是 `previewFileName`
+// ——那顆 id 是真 app 的業務掛點（凍結前端 `GufoFAQ_Frontend_New/js/uploadFilePdf.js:335` 的
+// `$('#previewFileName').text(...)` 那一族靠它把檔名寫進標題），沿用不改名。
+// 照「跟著 `<dialog id>` 走」抄的人會寫出一個指向不存在 id 的 `aria-labelledby`。
+//
+// 授權宣告（§5 的四條授權軸）掛在 `<dialog>` 上＝**整顆彈窗的可見性**（低於該級時整份不渲染），
+// 與掛在窗內某顆控制項上的「那一顆渲不渲染／按不按得動」是兩件事——**兩者可以同時存在**：
+// 整窗標到唯讀稽核員進得來的那一級，窗內每一顆值控制項與動作鈕再各自標自己真正需要的那一級。
+// **不寫死是哪幾顆、也不寫死幾顆**（§3-2）；反查指令
+// `grep -rn '<dialog[^>]*data-' src --include=*.html`，命中的每一顆都要在自己的元件檔頭寫出
+// 那一級對應的上游守衛名（`require_platform_admin`／`require_platform_auditor`…）。
 // 關閉鈕**寫那一行 `{% include %}`**，不要展開手抄：它是 `ui/modal-close` 的唯一正本，
 // 而 `.modals-wrap` 的直接子元素只准 modal-close ＋ `.modals-content` 兩個（測試會數）。
 //
@@ -58,7 +66,8 @@
 // 開窗：無條件開窗的按鈕掛 `data-open-modal="<dialog id>"`（本元件 js 的事件委派）；
 // 有條件開窗由業務 js 呼叫 `window.openModal(id)`。關窗掛 `.btn-close-modals`。
 //
-// 住在哪一頁：**清單會失控（26 顆 `<dialog>`、散在元件與頁面兩處）**，故給判準句而不是清單——
+// 住在哪一頁：**清單會失控**（每一顆 `<dialog>` 散在元件與頁面兩處，數量每加一支彈窗就變），
+// 故給判準句而不是清單，也**不寫死幾顆**（§3-2；本段上面才剛為授權宣告援引過同一條）——
 // 判準：凡是含 `<dialog class="modals">` 的檔案就是一份實例。現況清單見 README「Modal 清單」，
 // 實際以 `grep -rn '<dialog' src` 為準（README 那一段也是這麼寫的）。
 // ─────────────────────────────────────────────────────────────────────────────

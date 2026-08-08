@@ -9,6 +9,16 @@
        timeFilterName    —— radio 的 name（同頁多組要不同：5-3 是 data-time、5-4 是 gap-time）
        timeFilterLabelId —— 群組標題的 id（供 aria-labelledby 指到；同頁唯一）
        timeFilterChecked —— 預設選中哪一顆：last24h / lastWeek / lastMonth / range（不給＝一顆都不選）
+       timeFilterRangeHintId —— 區間上限那句常駐說明的 id（同頁唯一；起訖兩欄 aria-describedby 指它）
+     **365 這個數字寫在元件裡、不開成參數**（§6 (a) 全站不變的結構性設定）：兩個消費頁打的是
+     同一支驗證——product `app/routers/stats.py` 的 `_resolve_range`，`GET /stats` 與
+     `GET /stats/coverage-gaps` 都呼叫它，裡面兩條界線都是 `timedelta(days=365)`
+     （`stats.start_over_a_year_ago`＝開始時間不得早於 365 天前、`stats.range_over_365_days`＝
+     區間不得超過 365 天）。哪一天有頁面要不同的界線，才照 §6 開成參數。
+     為什麼非有這一句不可（§4-2）：兩頁「查詢」鈕的 `data-toast` 把 365 烤進譯文，而屬性型譯文
+     那條例外**要求同頁另有一處常駐可見的節點承載同一個數字**——沒有它，改了上限只會讓譯文
+     靜默過期。故走正典寫法：前綴 key ＋ 不翻的 `<span>` 數字節點 ＋ 後綴 key，並依 §3-2
+     「值域寫在填之前」擺在起訖欄旁邊、而不是等按下查詢才由 toast 說。
      起訖欄是 flatpickr 的掛點（真 app js/main.js 綁 .start-date/.end-date），切版不引 vendor、
      只保留 class 與 disabled 初始態；`.time` 是 form-control 的日曆圖示變體（`.field:has(> .form-control.time)::after`），
      4-1 的同型欄位有、這兩頁原本漏掉。
@@ -52,16 +62,17 @@
                     <div class="flex-row align-items-center gap-16 mobile-column-xs col-12-xs">
                         <div class="field">
                             <input type="text" class="form-control time start-date with-input" placeholder="請選擇開始時間"
-                                data-i18n-placeholder="settings.pleaseSelectStartTime" aria-label="開始時間" data-i18n-aria-label="settings.startTime" disabled>
+                                data-i18n-placeholder="settings.pleaseSelectStartTime" aria-label="開始時間" data-i18n-aria-label="settings.startTime" aria-describedby="{{ timeFilterRangeHintId }}" disabled>
                         </div>
                         <span data-i18n="settings.to">至</span>
                         <div class="field">
                             <input type="text" class="form-control time end-date with-input" placeholder="請選擇結束時間"
-                                data-i18n-placeholder="settings.pleaseSelectEndTime" aria-label="結束時間" data-i18n-aria-label="settings.endTime" disabled>
+                                data-i18n-placeholder="settings.pleaseSelectEndTime" aria-label="結束時間" data-i18n-aria-label="settings.endTime" aria-describedby="{{ timeFilterRangeHintId }}" disabled>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+        <p class="text-gray m-0 mt-8" id="{{ timeFilterRangeHintId }}"><span data-i18n="settings.timeRangeLimitPrefix">時間區間最長 </span><span>365</span><span data-i18n="settings.timeRangeLimitMid"> 天，開始時間也不得早於 </span><span>365</span><span data-i18n="settings.timeRangeLimitSuffix"> 天前；超出的範圍送出會被退回。</span></p>
     </div>
 </div>

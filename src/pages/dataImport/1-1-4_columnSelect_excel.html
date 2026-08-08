@@ -18,12 +18,15 @@ permalink: 1-1-4_columnSelect_excel.html
    故每個槽共用同一份 4 欄樣本（客服問題/客服回覆/建立時間/圖片連結，同 1-1-3 的預覽樣本）；
    已對應的槽 selected + 預覽該欄第一列值，未對應的槽空選（multi-select 顯示 placeholder）、預覽空。
    date 槽示範格式警告：預覽值故意用中文日期（validateDate 只收 YYYY/MM/DD 或 YYYY-MM-DD，這個值真的會 fail）。 #}
-{# 槽目錄走**唯一正本** ui/field-slot-catalog（22 槽，§2 的 {% from … import %}）。
-     這一頁自己的附加資料以 key 查一張 map：來源欄位的預選值／提示文字／預覽值／格式警告，
-     以及 internal_note 多出來的那一個示範來源欄。
-     **來源欄位選項只列一份**：22 槽裡有 17 槽用的是同一份（示範活頁簿的 4 個欄位），
-     原本逐槽各抄一次＝抄 22 遍。有差異的只有「預選了哪一個」與 internal_note 多一個選項，
-     那兩件事在 extras 裡。 #}
+{# 槽目錄走**唯一正本** ui/field-slot-catalog（§2 的 {% from … import %}）。
+     這一頁自己的附加資料以 key 查一張 map：來源欄位的預選值／提示文字／預覽值／格式警告。
+     **來源欄位選項只列一份，而且是每一個槽都吃同一份**（示範活頁簿的 4 個欄位）——原本逐槽
+     各抄一次＝抄 22 遍。這不是為了省字：凍結前端 `GufoFAQ_Frontend_New/js/columnSelect_excel.js`
+     只算出**一份** `fieldOptions`（`colTitles.map(...)`，:68），五處 `<select>`
+     （:87 標題／:101 日期／:115 內容／:129 圖片網址／:145 自訂欄位那一圈）逐字用同一份去 render，
+     沒有任何槽拿得到別人拿不到的選項。extras 裡各槽的差異因此只有「預選了哪一個」與提示文字
+     ——**不含「多一個選項」**：那會與這一段自己的斷言互相打臉，而且那一欄在 1-1-3 的預覽表上
+     根本不存在（那張表就是這份活頁簿的欄名清單）。 #}
 {% from "ui/field-slot-catalog/field-slot-catalog.html" import fieldSlotCatalog %}
 {% set columnOptions = [
       { value: "0", label: "客服問題" },
@@ -53,7 +56,7 @@ permalink: 1-1-4_columnSelect_excel.html
       note10: { placeholder: "建議選擇「備註10」屬性欄位", placeholderKey: "fieldHint.note10" },
       date2: { placeholder: "YYYY/MM/DD HH:mm:ss || YYYY-MM-DD HH:mm:ss" },
       date3: { placeholder: "YYYY/MM/DD HH:mm:ss || YYYY-MM-DD HH:mm:ss" },
-      internal_note: { placeholder: "選擇要原文照存的欄位（不進問答）", placeholderKey: "fieldHint.internal_note", extraOption: "維護人" }
+      internal_note: { placeholder: "選擇要原文照存的欄位（不進問答）", placeholderKey: "fieldHint.internal_note" }
 } %}
 {% set breadcrumbItems = [
   { label: "首頁", href: "2-1_qaRecord.html", i18nKey: "nav.home" },

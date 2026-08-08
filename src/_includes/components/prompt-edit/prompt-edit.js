@@ -26,6 +26,11 @@ document.addEventListener("DOMContentLoaded", function () {
         var keyOpen = toggle.getAttribute("data-key-open") || "action.finishEdit";
         var keyClose = toggle.getAttribute("data-key-close") || "action.expandEdit";
 
+        // 長度上限與那句可見提示的 id 都由 markup 給（§6：一個數字只有一份真相；js 不寫死 id）
+        var maxLen = box.getAttribute("data-max-len") || "";
+        var lenHint = box.querySelector(".js-prompt-len-hint");
+        var lenHintId = (lenHint && lenHint.id) || "";
+
         function fullText() { return box.getAttribute("data-full-text") || ""; }
         function saveFromTextarea() {
             var ta = content.querySelector("textarea");
@@ -47,6 +52,9 @@ document.addEventListener("DOMContentLoaded", function () {
                 ta.className = "form-control size-lg js-prompt-input";
                 ta.setAttribute("aria-label", t("comp.prompt", "提示詞"));
                 ta.setAttribute("data-i18n-aria-label", "comp.prompt");
+                // 長度上限宣告在控制項上（§4：契約欄位落地成 maxlength），並接上那句常駐可見的提示
+                if (maxLen) ta.setAttribute("maxlength", maxLen);
+                if (lenHintId) ta.setAttribute("aria-describedby", lenHintId);
                 ta.value = fullText();
                 content.appendChild(ta);
             } else {
@@ -87,9 +95,15 @@ document.addEventListener("DOMContentLoaded", function () {
         // 先前它與取消共用「收合了事」的處理器，那既不是③也不是④，兩邊都不對。
 
         // 切換語言後依「當下開合狀態」重畫按鈕文字（展開編輯 ↔ 完成編輯）
+        // ＋**注入 textarea 的 aria-label 也要自己寫回去**：lang-toggle 切回繁中時，預設值是
+        // `DOMContentLoaded` 當下從 DOM 擷取的一次性快照，而 5-2 開頁時這顆 textarea 還不存在
+        // （那一份 include 沒有 `promptDefaultOpen`），所以它的 comp.prompt 從來沒有進過快照
+        // ⇒ 切成 EN 再切回中，屬性會卡在 "Prompt"。屬性級失真視覺指紋看不到，只有這裡補得到。
         document.addEventListener("gufo:langchange", function () {
             var open = box.classList.contains("open");
             toggle.textContent = open ? t(keyOpen, zhOpen) : t(keyClose, zhClose);
+            var ta = content.querySelector("textarea");
+            if (ta) ta.setAttribute("aria-label", t("comp.prompt", "提示詞"));
         });
     });
 });

@@ -16,6 +16,17 @@ permalink: 5-7_auditLog.html
 
 {# 查詢區：操作類型篩選（singleSelect，對照後端 GET /audit?action= 精確比對）；此靜態頁列代表性選項，
      React 端列完整操作類型清單。真實頁 tbody 由 React 依查詢結果渲染，此處以 set+for 資料化示範 3 筆。
+     **本頁的四顆篩選控制項全部是「值載體」**（§5 組合矩陣②：值交給 React 讀去送查詢參數，
+     成敗看後端，click 委派也抓不到 select 的 change）——不是只有掛了 hook 的那一顆。
+     四顆是：`#auditActionSelect`（action）／`#auditTenantInput`（tenant_id）／
+     `#auditScopeAllInput`（scope=all）／`#auditOperatorInput`（operator）。
+     **React 綁定記號擇一即可，class hook 或 id 契約都算**（§5 矩陣那一條，正典是 2-2-1 以
+     `#knowledgeConfigSelect`／`#llmModelSelect` 綁定的那兩顆 select）：這四顆各自有唯一 id，
+     其中 `#auditTenantInput` 另外掛了 `.js-audit-tenant`——那**不是本頁的規矩**，是既成事實：
+     saas 端已經引用它（`apps/web/app/(app)/audit/page.tsx` 的 `className="form-control js-audit-tenant"`），
+     §5「hook 一經 saas 端引用即凍結，改名＝跨 repo 遷移」⇒ 不為了四顆一致而補三顆，也不為了風格一致而拿掉它。
+     （原本這裡只替那一顆寫了「值載體 → 只掛 hook class」的理由，讀起來像本頁對值載體的通則，
+     而另外三顆一顆 hook 都沒有——同一頁對同一種控制項寫了兩套說法。）
      租戶（指定 tenant_id／全部租戶 switch 送 scope=all）與操作者（送 operator=<id>）三個篩選欄位要**平台角色**才看得到，
      而那是 auditor 亦有的能力：product app/routers/audit.py 的 list_audit 以 is_platform_auditor
      （platform_role ∈ {auditor, admin}）判斷 scope=all／tenant_id／operator，該檔自註「用 is_platform_admin
@@ -47,12 +58,14 @@ permalink: 5-7_auditLog.html
             </div>
             <div class="form-group col-2-md col-12-sm" data-platform-role="auditor">
                 <div class="label">
-                    {# `tenant_id`（audit.py，docstring「平台管理員可查指定租戶」）原本沒有任何控制項，
+                    {# `tenant_id`（product app/routers/audit.py，docstring「平台管理員可查指定租戶」）原本沒有任何控制項，
                          畫面因此只做得到「全部租戶或自己那一個」，指定單一租戶做不到（§3-2 request
                          收得下的每個參數都要有落點）。值載體 → 只掛 hook class（§5 矩陣②）。 #}
                     <label for="auditTenantInput" class="control-label" data-i18n="settings.tenant">租戶</label>
                 </div>
                 <div class="field">
+                    {# `.js-audit-tenant` 是**凍結**的 hook（saas 已引用，見檔頭）：不改名、也不因為
+                         同頁另外三顆走 id 契約就把它拿掉。 #}
                     <input type="number" min="1" step="1" id="auditTenantInput" class="form-control js-audit-tenant" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" aria-describedby="auditTenantHint">
                     <span class="text-gray" id="auditTenantHint" data-i18n="audit.tenantHint">填租戶 id（正整數）；留空＝依「全部租戶」開關決定</span>
                 </div>
@@ -83,7 +96,7 @@ permalink: 5-7_auditLog.html
                     <input type="number" id="auditOperatorInput" min="1" step="1" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control" aria-describedby="auditOperatorHint">
                     {# 數字欄的三件套（§4）：type=number ＋ 區間 ＋ **可見的**說明。「填的是使用者 id
                          不是 email」原本只寫在上面的 nunjucks 註解裡——那段 build 時就被移除，
-                         使用者永遠讀不到。值域是正整數（`operator=<使用者 id>`，audit.py）。 #}
+                         使用者永遠讀不到。值域是正整數（`operator=<使用者 id>`，product app/routers/audit.py）。 #}
                     <span class="text-gray" id="auditOperatorHint" data-i18n="audit.impersonatorHint">填使用者 id（正整數），不是 email</span>
                 </div>
             </div>
@@ -96,14 +109,36 @@ permalink: 5-7_auditLog.html
 </div>
 
 {# 示範 3 筆已載入狀態；操作者/對象/詳情/IP 為假資料（§3-2，不翻）。
+     ⚠️ **每一列都是逐欄對回 `list_audit` 那一顆 action 真的寫得出來的形狀**（§6：示範資料的每一欄都要
+     對得回正本回應的一個欄位），round45 逐筆修過三處：
+       ① `login.failed` 那一列原本 `tenantId: 31` 配操作者「—」。product `auth.py` 的兩處 `record_audit`
+          寫的是同一個三元式的兩半（`tenant_id=user.tenant_id if user else None`、
+          `user_id=user.id if user else None`）⇒ 兩欄同生同滅。而「—」在本表的語意逐字是
+          「登入失敗查無操作者」（見下一段），也就是 `user is None` 那一條路 ⇒ tenant_id 必然也是 None。
+          （帳號存在但被停用的那一條路 `detail` 會多一顆 `reason: "inactive"`，而且操作者查得到，
+          那是另一種列。）故租戶欄改畫「—」；本表因此剩兩個租戶，跨租戶檢視照樣示範得到。
+       ② 同一列的 `target` 原本「—」。那一支 action **無條件**帶 target：`auth.py` 兩處都寫
+          `target_type=LOGIN_TARGET_TYPE, target_id=email`，而登入節流正是靠這一欄計數
+          （`app/login_guard.py` 的 `LOGIN_TARGET_TYPE = "login"`，該處註解逐字說明「用 user_id 會讓
+          不存在的 email 永遠累積不到計數」）。`target_id` 是**正規化後的 email**（不是整數 id），
+          所以這一格畫不出「#數字」；它與 `detail` 裡的 email 重複是上游本來就這樣寫。
+       ③ `ask` 那一列原本編了 `chat_log #4821`。`ask` 的 `record_audit`（product `app/routers/ask.py`）
+          只帶 `detail={"query": query, "tag": tag}`，**沒有 target_type/target_id** ⇒ 對象欄是「—」。
+          同一列的 `detail` 也補回 `query`：`app/routers/audit.py` 的 `_project_detail` 分級投影的就是
+          這顆鍵（`_QUERY_SCOPED_DETAIL_KEYS = ("query",)`），原本那一列沒有 query，等於這條路徑上
+          最關鍵的欄位在切版裡不存在。⚠️ 這一格另有一態：沒有 `history` 能力的稽核者看到的是
+          `audit.query_hidden`（上游把內容換成字數），那句話由 product 的 i18n 產生、不是本專案的譯文。
      **「操作類型」不是假資料，是同一份封閉目錄**（product `record_audit` 寫進去的那組 action 詞彙）：
      上面的篩選下拉已經逐顆掛了 `audit.act*` 的 key，列裡卻把同一組詞當成純文字烤了第二份繁中
      ——英文模式下同一頁會同時出現 "Create dataset" 的下拉與「建立資料集」的表格（§4-2／§6：
      一份目錄只能有一份正本）。故每一列改帶三件事：`action`＝上游字面（＝下拉的 `<option value>`，
      兩邊對得起來才篩得到）、`actionKey`＋`actionLabel`＝與下拉同一顆 key 與同一句繁中。
-     此頁展示平台管理員的「全部租戶」檢視（上方 switch 開＝scope=all），故 3 筆刻意分屬不同租戶
-     （acme / globex / initech），操作者信箱網域與各自租戶一致——§6：示範資料要演得到欄位的核心互動
+     此頁展示平台管理員的「全部租戶」檢視（上方 switch 開＝scope=all），故前 2 筆刻意分屬不同租戶
+     （acme / globex），操作者信箱網域與各自租戶一致——§6：示範資料要演得到欄位的核心互動
      （租戶欄／全部租戶 switch 的存在意義就是跨租戶），全填同一租戶等於沒展示。
+     第 3 筆是「查無帳號的登入失敗」，租戶與操作者兩欄同時是「—」（見上一段①）——它也只有在
+     `scope=all` 下才看得到：`tenant_id` 是 NULL 的列不會落在任何一個 `tenant_id == X` 的過濾裡，
+     所以那顆開關關掉時它會整列消失，而那正是這一列在這張示範表上的用處。
      代理者（impersonator）：第 1 筆由平台人員代理登入該租戶操作（staff@sys.tw）；其餘兩筆無代理關係
      故留空——這裡的空白是「沒有代理者」（一種真實狀態），與操作者欄用「—」表示「登入失敗查無操作者」
      是不同語意，兩者不可混用。 #}
@@ -117,13 +152,21 @@ permalink: 5-7_auditLog.html
      **標頭不行**——BFF 的 `PASSTHROUGH_RESPONSE_HEADERS` 只放行三個標頭，`X-Total-Count` 會被靜默剝掉。 #}
 {% set total = 115 %}
 {% set perPage = 20 %}
-{# 租戶欄畫的是 **tenant_id（整數）**，不是名字：正本 audit.py 的 list_audit 回的 items 只有
+{# 租戶欄畫的是 **tenant_id（整數）**，不是名字：正本 product app/routers/audit.py 的 list_audit 回的 items 只有
      tenant_id，沒有 tenant_name（§6：正本給不出來的欄位不得為了讀起來順而編一個）。編一個名字出來，
      React 接上真 API 只畫得出識別碼，而使用者正是據此做決定的；上面的租戶篩選要填的也正是這個 id。
      同理，操作者／代理者兩欄的 email 後面補 **user_id**：那兩個篩選收的是 id（`operator=<使用者 id>`），
      欄位裡只給 email 的話，要填的 id 全頁沒有出處。要顯示租戶名稱是交辦（需後端補 tenant_name）。 #}
+{# `id`（`list_audit` 的 items 第一欄）的落點是**列鍵**，不是一欄畫出來的數字：
+     這張表是伺服器端分頁的唯讀報表，逐列沒有任何動作，一個流水號對讀報表的人不回答任何問題
+     （人是靠時間＋操作者＋動作認一筆的），畫成一欄只是多一格永遠在捲的寬度。
+     但 React 的 `.map()` 需要一把穩定的鍵，而**位置不是身分**——這張表換頁就整批換一批列，
+     以 `loop.index` 當鍵會讓上一頁的第 1 列與下一頁的第 1 列變成同一顆 key（§6 列鍵）。
+     故落在 `<tr data-audit-id>`（同 5-6-2 的 `data-mcp-id`、5-6-1 的 `data-tenant-id`）。
+     示範 id 隨時間降冪（`created_at.desc()` 是這支端點的 order_by，而 id 是自增主鍵）。 #}
 {% set rows = [
     {
+        id: 90412,
         time: "2026/07/13 14:22:05",
         tenantId: 12,
         operator: "admin@acme.tw", operatorId: 7,
@@ -135,28 +178,30 @@ permalink: 5-7_auditLog.html
         userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0"
     },
     {
+        id: 90387,
         time: "2026/07/13 13:10:44",
         tenantId: 27,
         operator: "user@globex.io", operatorId: 41,
         impersonator: "", impersonatorId: "",
         action: "ask", actionKey: "audit.actAsk", actionLabel: "問答",
-        target: "chat_log #4821",
-        detail: "{ tag: frontend }",
+        target: "",
+        detail: "{ query: 出口報關需要哪些文件？, tag: frontend }",
         ip: "203.0.113.8"
     },
     {
+        id: 90355,
         time: "2026/07/13 09:02:11",
-        tenantId: 31,
+        tenantId: "",
         operator: "—", operatorId: "",
         impersonator: "", impersonatorId: "",
         action: "login.failed", actionKey: "audit.actLoginFailed", actionLabel: "登入失敗",
-        target: "—",
+        target: "login: bad@initech.io",
         detail: "{ email: bad@initech.io }",
         ip: "198.51.100.2",
         userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) Safari/17.5"
     }
 ] %}
-<div class="data-info"><span data-i18n="common.total">共</span> {{ total }} <span data-i18n="qa.records">筆資料</span></div>
+<div class="data-info"><span data-i18n="common.total">共</span> {{ total }} <span data-i18n="common.recordsUnit">筆</span></div>
 <div class="table-container scrollTable">
     <table class="default-table">
         <colgroup>
@@ -180,20 +225,23 @@ permalink: 5-7_auditLog.html
                 <th data-i18n="audit.target">對象</th>
                 <th data-i18n="audit.detail">詳情</th>
                 <th data-i18n="audit.sourceIp">來源 IP</th>
-                {# `user_agent`（audit.py）原本沒有欄位也沒有理由。稽核軌跡的 UA 是
+                {# `user_agent`（product app/routers/audit.py）原本沒有欄位也沒有理由。稽核軌跡的 UA 是
                      「從哪個用戶端做的」，屬於 ISO 要查的事實（§3-2 response 落點）。 #}
                 <th data-i18n="audit.userAgent">來源用戶端</th>
             </tr>
         </thead>
         <tbody>
             {% for row in rows %}
-            <tr>
+            <tr data-audit-id="{{ row.id }}">
                 <td>{{ row.time }}</td>
-                <td>{{ row.tenantId }}</td>
+                {# `tenant_id` 可為 NULL（查無帳號的登入失敗，見上方示範資料註解）：畫「—」，
+                     與操作者欄的空值語意一致。 #}
+                <td>{% if row.tenantId %}{{ row.tenantId }}{% else %}—{% endif %}</td>
                 <td>{{ row.operator }}{% if row.operatorId %} <span class="text-gray">#{{ row.operatorId }}</span>{% endif %}</td>
                 <td>{{ row.impersonator }}{% if row.impersonatorId %} <span class="text-gray">#{{ row.impersonatorId }}</span>{% endif %}</td>
                 <td data-i18n="{{ row.actionKey }}">{{ row.actionLabel }}</td>
-                <td>{{ row.target }}</td>
+                {# `target_type`／`target_id` 兩者皆可為 NULL（`ask` 就是不帶 target 的那一支）：畫「—」。 #}
+                <td>{% if row.target %}{{ row.target }}{% else %}—{% endif %}</td>
                 <td>{{ row.detail }}</td>
                 <td>{{ row.ip }}</td>
                 {# `user_agent` 是 nullable（非瀏覽器來源的呼叫沒有這個標頭，示範第 2 筆即是）：

@@ -11,10 +11,20 @@ permalink: 2-2-3_abTest.html
 {# **刻意不沿用真 app 的一處**（§5 要記載）：三個數值欄真 app 是 `type="text"`，切版改成
      `type="number"` ＋後端區間（1–100／1–20，出處同 2-2-1 檔頭）——值要交給 React 送 API，
      `Number()` 打錯一個字就是 NaN→null。真 app 的 id／hook 契約原樣保留。 #}
+{# 問答紀錄側欄的三顆頁籤（經 components/qa-side-panel 傳給 components/qa-record-tabs）。
+     本頁側欄的每一筆＝一次 AB 比較（product qatest.py 的 `GET /qatest/ab-history`，每筆含 A/B 兩側 log_id）。
+     `id` 是**列鍵**（＝聊天室 SN，渲染成 `data-chat-sn` 的值）：紀錄刪得掉，位置不是身分（§6 列鍵）。
+     原本三筆都沒給 `id`，那顆屬性會渲染成 `data-chat-sn=""`——§4 明文不輸出空屬性，而真 app 的
+     委派選擇器 `.qa-side-panel .tab[data-chat-sn]` 正是靠它才點得動。
+     `label` 是真 app 的 `ChatTitle`＝**使用者資料、不翻**；第二筆刻意不給 label，讓元件的 fallback
+     分支（可翻前綴 `qa.recordFallbackPrefix` ＋ 不翻的序號）在這一頁也演得出來（§5）。原本三筆寫的
+     「問答紀錄1／2／3」正好是真 app fallback 的字面——那是寫死在 js 裡的 chrome，當成 label 傳進來
+     就是把 chrome 當資料（同 2-1 的修法）。
+     選中那一筆的標題＝本頁對話區那句使用者輸入，§6 同頁自洽。 #}
 {% set qaRecordTabs = [
-    { label: "問答紀錄1" },
-    { label: "問答紀錄2" },
-    { label: "問答紀錄3", active: true }
+    { id: 5203, label: "UH3240 支援哪些作業系統" },
+    { id: 5211 },
+    { id: 5218, label: "請整理 UH3240 USB-C 的完整規格與主要特色", active: true }
 ] %}
 {% set breadcrumbItems = [
   { label: "首頁", href: "2-1_qaRecord.html", i18nKey: "nav.home" },
@@ -42,10 +52,40 @@ permalink: 2-2-3_abTest.html
      `state` 是這一側的 DOM 狀態 token（小寫，見下方參考來源表的兩態槽）；`side` 是畫在畫面上、
        也進 id 的顯示字母——兩者刻意分開，因為 HTML 屬性名一律小寫。
      `i18nKey` / `label` 是**這一側自己的標籤**（「（設定 A）」），與卡片標題那句
-       `qaTest.setting` ＋ 字母不同：那是拆開的 chrome＋資料，這一顆是整句、給參考來源表那一格用。 #}
+       `qaTest.setting` ＋ 字母不同：那是拆開的 chrome＋資料，這一顆是整句、給參考來源表那一格用。
+     `llm` 的值＝`GET /qatest/models` 回的 `value`（product `app/routers/qatest.py` 的 `list_models`／
+       `effective_models`，形狀 `<provider>:<model>`）。原本寫成 `OpenAI gpt-4o-mini`——那個字面過不了
+       product `app/llm.py` 的 `can_build_model`（`model.startswith(PROVIDER_PREFIXES)`，前綴只有
+       `openai:`／`anthropic:`），送出去必定判否。
+     `prompt` 是**這一側的提示詞本文**，兩側必須不同：原本兩顆 textarea 各寫死同一段文字、標題卻標著
+       V3 與 V2——AB 測試比的就是這一欄，兩側逐字相同時整頁演的是一個「比了也不會有差別」的狀態（§6）。
+       **B 側逐字等於 `components/apply-settings-compare-modal` 的「設定B」欄**：那顆彈窗的檔頭自己釘死
+       「設定B 欄必須等於使用頁 2-2-3 的 B 側」，而它從這一頁的「套用為正式設定」開出來——同一份資料
+       在頁面與彈窗兩處說兩套就是跨區不自洽。改這一欄要連那一份一起改。 #}
 {% set abSides = [
-    { side: "A", state: "a", i18nKey: "qaTest.settingSideA", label: "（設定 A）", knowledge: "1", llm: "OpenAI gpt-4o-mini", configKey: "settings.config1", configLabel: "設置一", promptVersion: "V3" },
-    { side: "B", state: "b", i18nKey: "qaTest.settingSideB", label: "（設定 B）", knowledge: "2", llm: "OpenAI gpt-4o", configKey: "settings.config2", configLabel: "設置二", promptVersion: "V2" }
+    { side: "A", state: "a", i18nKey: "qaTest.settingSideA", label: "（設定 A）", knowledge: "1", llm: "openai:gpt-4o-mini", configKey: "settings.config1", configLabel: "設置一", promptVersion: "V3",
+      prompt: "角色定位：
+你是一位專業的知識庫問答助手，負責依據已上傳的資料回應使用者詢問。
+知識來源限制：
+你的回答必須僅依據以下資料來源：
+• 《知識庫檢索結果》（本次問答檢索到的資料片段）
+回應原則：
+• 優先使用條列式呈現資訊
+• 語氣清楚、專業且易懂
+• 不可臆測或補充未出現在資料中的內容
+• 若資料不足，需明確說明『無法從現有資料判斷』
+輸出格式：
+• 使用條列式（• 或 -）
+• 必要時分段（例如：說明 / 流程 / 注意事項）" },
+    { side: "B", state: "b", i18nKey: "qaTest.settingSideB", label: "（設定 B）", knowledge: "2", llm: "openai:gpt-4o", configKey: "settings.config2", configLabel: "設置二", promptVersion: "V2",
+      prompt: "任務導向：
+依使用者的問題直接給出可執行的步驟，不重述題目。
+知識來源限制：
+只用《產品規格資料庫》與《使用手冊》；兩者衝突時以規格書為準並標明出處。
+回應原則：
+先給結論，再給步驟；每一步一行；規格數值一律附單位；查無資料時直接說「手冊未涵蓋」並建議聯絡窗口。
+輸出格式：
+結論一句 ＋ 編號步驟 ＋（必要時）注意事項。" }
 ] %}
 <div class="block ab-test-block flex-row gap-24 mobile-column">
     {% for ab in abSides %}
@@ -83,11 +123,13 @@ permalink: 2-2-3_abTest.html
                 <div class="label ab-field-label">
                     <label for="abLlmSelect-{{ ab.side }}" class="control-label" data-i18n="qaTest.llmModel">LLM模型</label>
                 </div>
+                {# 只列兩顆是版型示範的**子集**，完整目錄在 5-2 的 `llmModels`（同一支 `gufo.list_models()`）；
+                     識別字格式與出處見上方 abSides 的 `llm` 那一段。值是業務識別字，不翻（§4-2）。 #}
                 <div class="field">
                     <select id="abLlmSelect-{{ ab.side }}" class="form-control singleSelect js-llm-select">
                         <option value="" data-i18n="common.pleaseSelect">請選擇</option>
-                        <option value="OpenAI gpt-4o-mini"{% if ab.llm == "OpenAI gpt-4o-mini" %} selected{% endif %}>OpenAI gpt-4o-mini</option>
-                        <option value="OpenAI gpt-4o"{% if ab.llm == "OpenAI gpt-4o" %} selected{% endif %}>OpenAI gpt-4o</option>
+                        <option value="openai:gpt-4o-mini"{% if ab.llm == "openai:gpt-4o-mini" %} selected{% endif %}>openai:gpt-4o-mini</option>
+                        <option value="openai:gpt-4o"{% if ab.llm == "openai:gpt-4o" %} selected{% endif %}>openai:gpt-4o</option>
                     </select>
                 </div>
             </div>
@@ -162,25 +204,18 @@ permalink: 2-2-3_abTest.html
              區分——兩側都叫「提示詞」的話報讀器聽不出在編哪一側。用 aria-labelledby 串上側別。 #}
         <div class="flex-row column gap-8 mt-16">
             <span class="control-label" id="abPromptLabel-{{ ab.side }}" data-i18n="comp.prompt">提示詞</span>
-            <textarea class="form-control size-lg js-prompt-input" aria-labelledby="abSideLabel-{{ ab.side }} abPromptLabel-{{ ab.side }}">角色定位：
-你是一位專業的知識庫問答助手，負責依據已上傳的資料回應使用者詢問。
-知識來源限制：
-你的回答必須僅依據以下資料來源：
-• 《知識庫檢索結果》（本次問答檢索到的資料片段）
-回應原則：
-• 優先使用條列式呈現資訊
-• 語氣清楚、專業且易懂
-• 不可臆測或補充未出現在資料中的內容
-• 若資料不足，需明確說明『無法從現有資料判斷』
-輸出格式：
-• 使用條列式（• 或 -）
-• 必要時分段（例如：說明 / 流程 / 注意事項）</textarea>
+            {# 本文吃 abSides 的 `prompt`（兩側各一份、逐字不同，理由見該陣列上方那段）。 #}
+            <textarea class="form-control size-lg js-prompt-input" aria-labelledby="abSideLabel-{{ ab.side }} abPromptLabel-{{ ab.side }}">{{ ab.prompt }}</textarea>
         </div>
 
         {# 動作列（每側三鈕同排，套用為正式設定移到此處與其他按鈕一起排列）：
              回復儲存的設定（js-restore-saved，直送重載該側已儲存設定）／儲存提示詞版本（js-prompt-new-version）／
-             套用為正式設定（js-apply-production，業務依模型權限開彈窗，見 abTest.js）。 #}
-        <div class="flex-row justify-content-center flex-wrap gap-16 mt-24">
+             套用為正式設定（js-apply-production，業務依模型權限開彈窗，見 abTest.js）。
+           **這一列自己是一個 group**：三顆鈕的可見字面兩側逐字相同、同頁同時可見（六顆），而上面
+             設定欄那個 `role="group"` 在 textarea 之前就收掉了（§4：group 不得框到不屬於那一組的東西），
+             所以列脈絡救不了這六顆——報讀器只念得出三組同名。做法與那一組相同：容器掛
+             `role="group" aria-labelledby="abSideLabel-<側>"`，鈕各自保留可見字面（§4 一格內多顆同型控制項）。 #}
+        <div class="flex-row justify-content-center flex-wrap gap-16 mt-24" role="group" aria-labelledby="abSideLabel-{{ ab.side }}">
             <button type="button" class="button button-green js-restore-saved" data-toast="已回復儲存的設定|無法載入儲存的設定" data-i18n-data-toast="toast.restoreSettings" data-toast-type="success|error" data-i18n="qaTest.restoreSaved">回復儲存的設定</button>
             <button data-capability="settings:write" type="button" class="button button-primary js-prompt-new-version" data-toast="已儲存為新版本|內容欄位不可為空|新增提示詞失敗，請稍後再試" data-i18n-data-toast="toast.savePrompt" data-toast-type="success|warning|error" data-i18n="qaTest.savePromptVersion">儲存提示詞版本</button>
             <button type="button" class="button button-dark js-apply-production" data-i18n="qaTest.applyProduction">套用為正式設定</button>

@@ -1,7 +1,7 @@
 {# 分數門檻旁邊的「目前這把尺是什麼」＋兩個附帶狀態。5-2 的兩個門檻（QA 直答 `qa_direct_score_floor`、
      可回答性 `grounding_score_floor`）逐字相同，故依 §3-3（同頁重複出現→切）抽成元件。
 
-     **尺不是由重排序器單獨決定**（這是規格最容易漏掉的一半，上游 `rerankers_catalog.py` 自己標了 ⚠️）。
+     **尺不是由重排序器單獨決定**（這是規格最容易漏掉的一半，上游 GufoRAG chatbot `app/config/rerankers_catalog.py` 自己標了 ⚠️）。
      判斷順序是 `GET /settings/rerankers` 契約的一部分：
        enable_rerank == true                        ⇒ rerankers[] 裡 reranker_name 那一筆的 score_scale
        enable_rerank == false 且 ratio == 0         ⇒ retrieval_backends[] 的 weaviate

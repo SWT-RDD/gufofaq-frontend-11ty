@@ -43,7 +43,14 @@ permalink: 3-4_skillManagement.html
      `assert_skill_allowed_tools_within_limits`（`app/chat_config_limits.py`）與
      `assert_owned_allowed_tools`（`app/tool_refs.py`）的 400／502。那三道驗的是 `input_schema`
      與工具白名單，**本表單一個都填不到**（細部設定在編輯器 modal 內完成），所以這顆鈕只列得到
-     上面四段。product 唯一沒驗的是「名稱為空」，那一道只在 chatbot。 #}
+     上面四段。product 唯一沒驗的是「名稱為空」，那一道只在 chatbot。
+   **兩欄的上限與格式落地成 markup**（契約欄位 §6；數字走資料節點、不烤進譯文 §4-2）：
+     `maxlength` 與常駐 hint 的出處逐字＝GufoRAG chatbot `app/services/skills.py` 的
+     `MAX_SKILL_NAME_LEN = 64`／`MAX_SKILL_DESCRIPTION_LEN = 1024`（由同檔 `_validate_name`／
+     `_validate_description` 執法），名稱的格式判準＝同檔的 `SKILL_NAME_RE`。
+     `SKILL_NAME_RE` 不掛 `pattern`：§4 明訂驗證結果走 toast 的 warning 分支，長度才是宣告在
+     控制項上的契約（同 skill-editor-modal 的做法；名稱那段 hint 兩處共用同一組 key，
+     不另立第二種說法）。兩欄的 `contains_markup` 也在同兩支驗證裡，故 warning 段一併講明。 #}
 <div class="block mb-16 flex-row column gap-16">
     <div class="text-md text-bold" data-i18n="settings.addSkill">新增 Skill</div>
     <div class="flex-row flex-wrap gap-16 mobile-column sm-gap-16">
@@ -53,7 +60,8 @@ permalink: 3-4_skillManagement.html
                     <label for="newSkillNameInput" class="control-label required" data-i18n="widget.tokenName">名稱</label>
                 </div>
                 <div class="field">
-                    <input type="text" id="newSkillNameInput" placeholder="如 refund-flow" data-i18n-placeholder="settings.pleaseEnterSkillName" class="form-control" required>
+                    <input type="text" id="newSkillNameInput" maxlength="64" placeholder="如 refund-flow" data-i18n-placeholder="settings.pleaseEnterSkillName" class="form-control" required aria-describedby="newSkillNameHint">
+                    <span class="text-gray" id="newSkillNameHint"><span data-i18n="settings.skillNameHintPrefix">小寫英數與連字號，長度 </span><span>1-64</span><span data-i18n="settings.skillNameHintSuffix">；不可以連字號開頭／結尾，也不可連續連字號。此名稱同時就是 agent 看到的工具名。</span></span>
                 </div>
             </div>
         </div>
@@ -63,13 +71,14 @@ permalink: 3-4_skillManagement.html
                     <label for="newSkillDescriptionInput" class="control-label required" data-i18n="settings.skillDescription">用途說明</label>
                 </div>
                 <div class="field">
-                    <input type="text" id="newSkillDescriptionInput" placeholder="做什麼＋什麼時候該用它" data-i18n-placeholder="settings.pleaseEnterSkillDescription" class="form-control" required>
+                    <input type="text" id="newSkillDescriptionInput" maxlength="1024" placeholder="做什麼＋什麼時候該用它" data-i18n-placeholder="settings.pleaseEnterSkillDescription" class="form-control" required aria-describedby="newSkillDescriptionHint">
+                    <span class="text-gray" id="newSkillDescriptionHint"><span data-i18n="settings.mcpLimitAtMost">最多</span><span>1024</span><span data-i18n="common.unitChars"> 字</span><span data-i18n="settings.noMarkupSuffix">，不可含 XML/HTML 標籤</span></span>
                 </div>
             </div>
         </div>
     </div>
     <div class="flex-row">
-        <button data-capability="settings:write" type="button" class="button button-primary" data-toast="Skill 已建立|名稱與用途說明不可為空|名稱格式不符或已存在|建立失敗，請稍後再試" data-i18n-data-toast="toast.createSkill" data-toast-type="success|warning|warning|error">
+        <button data-capability="settings:write" type="button" class="button button-primary" data-toast="Skill 已建立|名稱與用途說明不可為空|名稱格式不符或已存在，或兩欄任一超過長度上限、含 XML/HTML 標籤|建立失敗，請稍後再試" data-i18n-data-toast="toast.createSkill" data-toast-type="success|warning|warning|error">
             <img src="./images/icon_add_white.png" width="48" height="48" decoding="async" alt="" class="icon">
             <span data-i18n="settings.addSkill">新增 Skill</span>
         </button>

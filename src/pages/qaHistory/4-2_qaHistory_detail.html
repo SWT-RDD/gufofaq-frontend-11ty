@@ -13,18 +13,33 @@ permalink: 4-2_qaHistory_detail.html
      canReadSettings 給 true（示範「有 settings:read」那一態；沒有那一態是四格整個不渲染，
      不是留白——見 components/qa-detail-info 那一段註解）。
      這一筆刻意不是 QA 直答：直答那一態在 4-1 清單的徽章上演得到（掛在 #12175，那一列沒有
-     對應的詳情頁示範），而直答沒有工具軌跡可看，詳情頁演它就等於整個執行流程區塊都是空的。 #}
+     對應的詳情頁示範），而直答沒有工具軌跡可看，詳情頁演它就等於整個執行流程區塊都是空的。
+   `intent` 與 `tag` 兩欄**給上游字面、不給顯示字**（顯示中文由 components/qa-detail-info 的
+     `{% if %}` 鏈 ＋ i18n key 產生，見該元件那兩格的註解）：
+     · `intent` ＝ `chat_logs.is_intension`，**可為 null 的布林**（product `app/routers/history.py`
+       的 `_PUBLIC_LOG_FIELDS` 收了 `is_intension`，`_project_log` 原樣帶過），故給布林、不給顯示字。
+       同檔 `_detail_cells` 那句「是／否／空」是 **CSV 匯出**的顯示層（欄名見 `_EXPORT_DETAIL_HEADER`
+       的「有無意圖判斷」），不是 API 值域——拿它當值域，React 端會拿布林去比中文而恆為否。
+       **值給 `false`，不給 `true`**：本筆是 agent 模式，而 `is_intension` 在 agent 下**恆為 False**
+       （實測矩陣 gufofaq-saas `docs/mode-matrix.md` 的 `intent_enabled` 那一列逐字「agent 恆 False」）
+       ——給 `true` 就是為了「讓那一態看得到」而演一個上游做不出來的狀態（§5／§6 明文禁止）。
+       「是」那一態因此在本頁演不到（要傳統搜尋 ＋ 意圖開啟才出得來），它的可見示範落在
+       元件庫頁的「React 條件文案」節（§4-2：枚舉成員靠「有地方渲染得出來」活著）。
+     · `tag` ＝ `chat_logs.tag`，值域正本 product 同檔的 `_TAG_LABEL`＝`frontend`／`backend`／`ab_test`，
+       故給 `frontend`（＝上面說的「前台問答」那一筆，與 4-1 #12173 的「使用者類型」欄同源）。
+       原本塞的是顯示字「前台問答」，由該元件原樣輸出——React 接上真 API 只會印出 `frontend`，
+       而英文模式下那格永遠是中文。 #}
 {% set conversation = {
     satisfaction: { label: "讚", icon: "./images/icon_good.png" },
     feedback: "回答很快也很清楚，謝謝！",
     chatroomId: "6537",
     id: "12173",
     time: "2024/12/01 13:29:24",
-    intent: "-",
+    intent: false,
     userMessage: "新住民結婚注意事項",
     answerSource: "generated",
     chatMode: "agent",
-    tag: "前台問答",
+    tag: "frontend",
     language: "繁體中文",
     canReadSettings: true,
     modelName: "openai:gpt-4o-mini",
@@ -78,7 +93,7 @@ permalink: 4-2_qaHistory_detail.html
     {# 可輸入頁碼切換：真實頁由 js/qaHistoryDetail.js 依上一頁查詢結果總數渲染 data-total 與 pager 行為 #}
     <div class="page-title-wrap">
         {# 總數＝上一頁（4-1）那次查詢的結果總數（§6 跨頁同源）。不 set 的話落回元件內建的 12，
-             畫面會寫「第 1 個對話，共 12 個」而上一頁寫「共 115 筆資料」。 #}
+             畫面會寫「第 1 個對話，共 12 個」而上一頁寫「共 115 筆」。 #}
         {% set paginationTotal = 115 %}
         {% include "components/pagination-input/pagination-input.html" %}
     </div>
@@ -212,13 +227,11 @@ permalink: 4-2_qaHistory_detail.html
                     </div>
                     <div class="col col-12-md">
                         <div class="th" data-i18n="qa.suggestQuestions">推薦問題</div>
-                        <div class="td">
-                            {% for q in detailSuggestQuestions %}
-                            <div>{{ q }}</div>
-                            {% else %}
-                            —
-                            {% endfor %}
-                        </div>
+                        {# 整格收成一行（§2）：`{% else %}` 那顆「—」原本前後各有一段換行縮排，
+                             輸出的是 `"\n                            —\n                        "`——
+                             那串空白會併進**同一個文字節點**，而 JSX 對含換行的前後空白是整段丟掉，
+                             兩邊的可見文字序列因此不同。同表「上一則」那一格早就是收成一行的寫法。 #}
+                        <div class="td">{% for q in detailSuggestQuestions %}<div>{{ q }}</div>{% else %}—{% endfor %}</div>
                     </div>
                 </div>
             </div>

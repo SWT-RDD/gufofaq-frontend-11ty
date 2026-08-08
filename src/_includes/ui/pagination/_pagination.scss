@@ -1,5 +1,19 @@
-// pagination 頁碼區塊：ul/li/a 逐位元照抄自真 app scss/component.scss 1497-1637，宣告一字不改。
-// .page-info 是切版新增（真 app 從未補上這塊 markup，見 pagination.html 檔頭註解），沿用同一份 token。
+// pagination 頁碼區塊：結構與數值取自凍結前端 `GufoFAQ_Frontend_New/scss/component.scss` 的
+// `.pagination`（**1500-1585**；上一版寫 1497-1637，前面吃進了區段註解、後面多吃 52 行——1586 之後
+// 是另外兩個元件 `.data-info`（1588）與 `.pagination-input`（1598），本檔一條都沒有搬）。
+// **偏離逐條列出**（上一版寫「宣告一字不改」，實際有六處）：
+//   ①色值全數換成語意 token（原檔是 `var(--color-primary)` ＋ 兩處 `#fff`）：`li a` 的字色→
+//     `--brand-text`，`.active a` 與 `:not(.prev):not(.next) a:hover` 的白字→`--on-accent`、
+//     底色→`--brand`。
+//   ②`box-sizing: border-box` 三處全部移除（`.pagination` / `li a` / `li.ellipsis`，§4-1 全域已給）。
+//   ③`li img` 加 `max-width: none`（解除 `_base` 的 `img { max-width: 100% }`，理由寫在那條旁邊）。
+//   ④`li.ellipsis` 從「一個自帶尺寸／置中／字色／底色／內距／圓角的獨立盒子」縮成
+//     `a { font-weight: bold }`：省略號在切版改成**可點的** `<a data-page>`（真 app 是死文字，
+//     見 pagination.js），於是盒模型與 hover 直接吃上面 `li a` 那兩條，只剩字重與數字頁碼不同。
+//   ⑤`--pagination-visible` 自訂屬性 ＋ 768px 覆寫是切版新增（滑動視窗的可視頁碼數，給
+//     pagination.js `getComputedStyle` 讀——斷點只有這一份真相）。
+//   ⑥`.page-info` 整塊是切版新增（真 app 的 main.js 引用了它卻從未補上 markup，見
+//     pagination.html 檔頭註解），沿用同一份 token。
 /*===============================
     pagination頁碼
 ================================*/

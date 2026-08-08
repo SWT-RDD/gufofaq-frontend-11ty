@@ -1,4 +1,10 @@
-// 逐位元照抄自真實 app scss/component.scss 步驟 section（.step-nodes，行 2563-2606）
+// 取自凍結前端 `GufoFAQ_Frontend_New/scss/component.scss` 步驟 section（`.step-nodes`，2563-2606），
+// 另依規範調整——**偏離逐條列出**（上一版寫「逐位元照抄」，實際有三處）：
+//   ①`.step-node` 的 `box-sizing: border-box` 移除（§4-1 全域已給，元件不得重寫）。
+//   ②未完成步驟的**字色** `rgba(19, 56, 111, 0.302)` → `--text-muted`：那是 30% 的深藍，
+//     疊白底混出 #b8c3d4、對白只有 1.78:1，讀不到（§4 對比度硬規則）。用一般的次要文字色。
+//   ③未完成步驟的**底線** `rgba(19, 56, 111, 0.3)` → `--border`（理由寫在該條旁邊）。
+//   （`.done` 的 `var(--color-primary-dark)` → `--brand-ink` 是全站 token 改名的一部分，不另列。）
 .step-nodes {
     // width: 100%;
     display: flex;

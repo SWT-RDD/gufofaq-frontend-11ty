@@ -24,6 +24,20 @@
 // 住在哪一頁（雙向）：`components/header` 的漢堡鈕一份 ⇒ 凡是走 `page-shell`／含 header 的頁都有它。
 // 反查：`grep -rn 'data-scroll-lock' src --include=*.html` 只命中 `components/header/header.html`。
 //
+// **匯出 `window.GufoScrollLock.measure()`，開浮層之前要呼叫。**
+// 只在 load 與 resize 量是不夠的：「這一頁有沒有捲軸」不只隨視窗尺寸變，也隨**頁面內容高度**變
+// ——accordion 展開、頁籤切到比較長的面板、篩選讓列數變多／變少、清單載入更多，都會讓捲軸憑空
+// 出現或消失，而這幾件事都不觸發 resize。於是 `--scrollbar-width` 停在上一次量到的值：開窗時
+// 補 0（版面往左跳一條捲軸的寬）或補多（往右跳）——而「開窗時不要橫跳」正是本檔存在的唯一理由。
+//
+// 呼叫時機：**任何會讓 `html` 進入鎖定態的動作，在切狀態之前先量一次**。目前有兩個入口，各一行：
+//   ・`ui/modals` 的 `openModal()`：`showModal()` 之前
+//   ・`components/mobile-nav` 的 `setOpen(true)`：`navToggle.classList.add("active")` 之前
+// 順序不能反：`.active` / `[open]` 一旦上身，`_base.scss` 的 `overflow: hidden` 就生效，捲軸當場
+// 消失，下面那道守衛會讓這次量測直接跳過（量到的 0 會蓋掉正確值）。
+// 呼叫 `ui/scroll-lock` **不算依賴**（§1-1 明文：它與 `GufoSlide`／`GufoI18n`／`ui/print` 同屬全體
+// 元件通用的基礎設施，等同 DOM API），所以 `ui/modals` 仍然是 `ui/`。
+//
 // 純函式，載入時只讀尺寸、不改結構，故不需要 DOMContentLoaded 包裹。
 (function () {
     var root = document.documentElement;
@@ -36,4 +50,7 @@
 
     measure();
     window.addEventListener("resize", measure);
+
+    // 供開浮層的元件在鎖住之前補量一次（見檔頭「呼叫時機」）。
+    window.GufoScrollLock = { measure: measure };
 })();

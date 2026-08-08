@@ -10,6 +10,14 @@
 // "..."，不 hover 變箭頭），data-page 走跟頁碼一樣的委派與 hover 回饋。
 // i18n：per-page aria-label（第N頁）、prev/next 兩態標籤、省略號的跳頁 aria-label，由 GufoI18n.t(key, 繁中原文) 產生；
 // 監聽 gufo:langchange 依「當下 data-current」重新 render，讓切語言後的頁碼列也是對的語言。
+//
+// **`total = 0` 的定義態（規格，不是防禦性寫法）**：`<ul>` **一個 `<li>` 都不畫**、`.page-info`
+// **整塊不渲染**（js 加 `.hidden`）。零筆資料沒有「第 1 頁」可以停在——`Math.max(1, …)` 會把 0 筆
+// 硬扳成 1 頁，於是「篩到零筆」「全部處置完」那種真實可達的狀態（3-5 的健檢發現表、每一張有查詢鈕
+// 或前端篩選的表）會同時渲染出「無資料」與「共 1 頁／頁碼 1」，畫面自己說兩件事。空狀態由表格自己
+// 的 `{% for %}{% else %}` 那一列說（GUIDELINE §5 無資料列正典），分頁列這時**沒有話要說**。
+// `data-total` 缺值／空字串同樣落在這一態（`Number("") || 0` ＝ 0）——`total` 在 pagination.html
+// 是必填參數，忘了 set 就該看得出來，不該靜默演成一頁。
 document.addEventListener("DOMContentLoaded", function () {
     var lastVisible = new WeakMap();
 
@@ -57,14 +65,25 @@ document.addEventListener("DOMContentLoaded", function () {
 
         var total = Math.max(0, Number(el.getAttribute("data-total")) || 0);
         var perPage = Number(el.getAttribute("data-per-page")) || 10;
+
+        var ul = el.querySelector("ul");
+        if (!ul) return;
+        var pageInfo = el.querySelector(".page-info");
+
+        // total=0 的定義態（見檔頭）：一個 <li> 都不畫、.page-info 整塊不渲染。
+        if (total === 0) {
+            ul.innerHTML = "";
+            if (pageInfo) pageInfo.classList.add("hidden");
+            return;
+        }
+        if (pageInfo) pageInfo.classList.remove("hidden");
+
         var totalPages = Math.max(1, Math.ceil(total / perPage));
         var current = Number(el.getAttribute("data-current")) || 1;
         if (current < 1) current = 1;
         if (current > totalPages) current = totalPages;
         el.setAttribute("data-current", current);
 
-        var ul = el.querySelector("ul");
-        if (!ul) return;
         var html = "";
 
         // 上一頁

@@ -9,15 +9,26 @@
 
      觸發鈕是 2-2-4 的 `.js-case-from-log`：開窗前要先選定「加到哪一個案例集」＝業務條件開窗，
      故不掛 data-open-modal（GUIDELINE §5）；元件庫展示頁另有示範觸發器。
+     **閘門宣告的家在這裡、不在那顆觸發鈕上**（§4：真正送 API 的是窗內那顆確認鈕，觸發鈕只負責
+     「先選定要動哪一筆」）。下方確認鈕的 `data-capability="settings:write history"` **兩顆並列＝AND**：
+     端點本身掛 `require_capability("settings", "write")`，函式第一行的 `_require_history_access`
+     再要一次 `history`——它讀的是提問、答案與來源文件名，少了那一道，只有設定權限的人可以拿任何一個
+     `log_id` 從側門把該租戶的問答讀出來（那些字會原樣變成案例的問題、前置對話與斷言）。
+     2-2-4 那顆觸發鈕原本也掛著同一組屬性，於是同一道閘門在同頁被宣告兩次，而同頁另兩顆條件開窗鈕
+     （刪除案例集／刪除案例）都只宣告在 delete-modal 的確認鈕上——三顆現在一致。
 
      確認鈕**刻意不掛 btn-close-modals**：它的 toast 有一段「這一筆推導不出期望，換一筆」，
      那正是留在窗內就能修正的驗證結果（GUIDELINE §5：含可就地修正的 warning 分支者不自動關窗）。
 
-     兩種拒絕在文案上必須分得開（`_refuse_unusable_log`／`_log_hits`／`_assertions_from_log`）：
-       400 ＝ **這一筆紀錄不適合**（沒有答案、被政策擋下、前置對話超過上限、鏈結中間那一輪
-              在上游已不存在）——換一筆問答，或改用手動建立。
-       502 ＝ **系統有問題**（命中清單形狀不符、第一筆命中沒有 document_id 也沒有 doc_name、
-              前置鏈結指到別租戶）——不是使用者的操作問題，要回報。
+     兩種拒絕在文案上必須分得開（`_refuse_unusable_log`／`_log_hits`／`_assertions_from_log`／
+     `_prior_turns`）：
+       400 ＝ **這一筆紀錄不適合**（`log_has_no_answer`、`log_was_blocked`、`too_many_prior_turns`、
+              `prior_turn_gone`）——換一筆問答，或改用手動建立。
+       502 ＝ **系統有問題**，三種（可見文案要三種都列得出來，少一種就是那一態的使用者讀到一句
+              對不上自己畫面的話）：`log_hits_bad_shape`（命中清單形狀不符）、
+              `log_hit_has_no_identity`（第一筆命中沒有 document_id 也沒有 doc_name）、
+              `prior_turn_wrong_tenant`（前置鏈結指到別租戶的紀錄——聊天室屬單一租戶，那是上游
+              資料不一致，`_prior_turns` 同時記 ERROR）——不是使用者的操作問題，要回報。
      混成一句「建立失敗」的話，使用者只會一直換紀錄重試一個修不好的東西。
 
      結果區是 role="status" live region 且**常駐**（GUIDELINE §4：內容到達前節點就要在 DOM 裡，
@@ -40,14 +51,20 @@
                 </div>
                 <div class="modals-body">
                     <div class="flex-row column gap-16">
+                        {# **加到哪一個案例集**：`<dialog>` 走 `showModal()`，它在瀏覽器的 top layer，
+                             頁面上那句「案例：關稅問答基準集」被遮罩整個蓋住（§5）——窗開著的時候
+                             使用者看不到自己選的是哪一套，而這顆窗建出來的案例會永久落在那一套裡。
+                             故常駐一顆槽，由業務 js（開窗前選定的那一筆）填入名稱：全站正典是
+                             delete-modal 的 `deleteTargetId` 空槽，形狀逐字照抄那一份。 #}
+                        <p><span class="text-bold" data-i18n="regression.fromLogTargetSuite">加到這個案例集：</span><span id="caseFromLogSuiteName"></span></p>
                         <p class="text-gray" data-i18n="regression.fromLogIntro">問題、前置對話與斷言都由後端從那一筆紀錄推導：有命中就期望「仍然引用得到同一份主要來源」，零命中就期望「仍然誠實查無」。推導不出來時不會建出一則空斷言的案例。</p>
-                        <p class="text-gray" data-i18n="regression.fromLogRefuse">兩種推導不出來要分開讀：這一筆紀錄不適合（沒有答案、被政策擋下、前置對話超過上限）——換一筆問答或改用手動建立；上游資料有問題（命中清單形狀不符、第一筆命中沒有文件身分）——那不是你的操作問題，請回報。</p>
+                        <p class="text-gray" data-i18n="regression.fromLogRefuse">兩種推導不出來要分開讀：這一筆紀錄不適合（沒有答案、被政策擋下、前置對話超過上限、前置鏈結中間那一輪在上游已不存在）——換一筆問答或改用手動建立；上游資料有問題（命中清單形狀不符、第一筆命中沒有文件身分、前置鏈結指到別租戶的紀錄）——那不是你的操作問題，請回報。</p>
                         <div class="form-group">
                             <div class="label">
                                 <label for="fromLogId" class="control-label required" data-i18n="regression.fromLogLogId">問答紀錄編號</label>
                             </div>
                             <div class="field">
-                                {# 值交給 React 讀去送 API 的**整數**欄（正本 regression.py 的 `CaseFromLogIn.log_id: int`）⇒
+                                {# 值交給 React 讀去送 API 的**整數**欄（正本 product app/routers/regression.py 的 `CaseFromLogIn.log_id: int`）⇒
                                      §4 三件套：type=number ＋ min/step ＋ 可見區間（下面那句 hint 已接上 aria-describedby）。
                                      寫成 type=text 時打錯一個字就是 NaN、序列化成 JSON 是 null。上游無上限故不寫 max。 #}
                                 <input type="number" min="1" step="1" id="fromLogId" class="form-control js-from-log-id" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" aria-describedby="fromLogIdHint" required>
@@ -62,7 +79,7 @@
                                 <label class="form-checkbox">
                                     {# 值載體 ⇒ 只掛 hook class、不掛 data-toast（§5 矩陣②）；沒有 hook 的話 React 只能靠 DOM 位置認它。
                                          **checked 是示範態的一部分**：下面結果區演的是「勾了帶入前置對話卻拿到 0 輪」，
-                                         那句紅字在上游只有 `include_context=true` 時才會出現（regression.py 的 `_context_note`
+                                         那句紅字在上游只有 `include_context=true` 時才會出現（product app/routers/regression.py 的 `_context_note`
                                          只在 `if requested:` 那一支寫它）——沒勾卻印出那句話，畫面同時說兩件互斥的事。 #}
                                     <input type="checkbox" class="js-from-log-include-context" aria-describedby="fromLogContextHint" checked>
                                     <span data-i18n="regression.fromLogIncludeContextOn">沿著這則問答的前置鏈結，把整段對話一起帶成案例的前置輪</span>
@@ -83,7 +100,7 @@
                 <div class="modals-footer">
                     <div class="button-row center">
                         <button type="button" class="button button-border btn-close-modals" data-i18n="action.cancel">取消</button>
-                        <button data-capability="settings:write history" type="button" class="button button-primary js-create-case-from-log" data-toast="已從問答紀錄建立案例|這一筆問答紀錄推導不出期望，換一筆或改用手動建立|上游資料有問題（命中清單形狀不符或缺少文件身分），請回報|建立失敗，請稍後再試" data-i18n-data-toast="toast.createCaseFromLog" data-toast-type="success|warning|error|error" data-i18n="regression.createCase">建立案例</button>
+                        <button data-capability="settings:write history" type="button" class="button button-primary js-create-case-from-log" data-toast="已從問答紀錄建立案例|這一筆問答紀錄推導不出期望，換一筆或改用手動建立|上游資料有問題（命中清單形狀不符、缺少文件身分，或前置鏈結指到別租戶），請回報|建立失敗，請稍後再試" data-i18n-data-toast="toast.createCaseFromLog" data-toast-type="success|warning|error|error" data-i18n="regression.createCase">建立案例</button>
                     </div>
                 </div>
             </div>

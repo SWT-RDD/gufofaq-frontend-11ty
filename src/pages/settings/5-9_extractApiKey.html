@@ -19,32 +19,81 @@ permalink: 5-9_extractApiKey.html
      （/api/v1）；重新產生後舊金鑰立即失效。/api-key 的 GET／POST 皆僅租戶管理者可用
      （require_admin，比照 widget-tokens）。
      **明碼只在產生的那一次出現**：product 端只存雜湊，重新載入後只回得出末四碼 hint。
-     故本頁有兩種態：剛產生（顯示完整金鑰＋「唯一一次」警語，顯示/隱藏可用）與
-     已存在（只顯示 hint＋「只保存雜湊」說明，顯示/隱藏無意義）。
-     無金鑰首次態（尚未產生）由 React 依 API 呈現，切版以「剛產生」態示範。 #}
+
+     ## `ApiKeyOut` 三個欄位、三種態，逐態成對參數（§5：`{% if %}` ＋ 參數，不用 `.hidden`）
+
+     正本 `extract.py` 的 `ApiKeyOut` 只有三欄：`api_key`（明碼，**僅產生當下**）、`api_key_hint`
+     （前綴＋末四碼，`app/security.py` 的 `_key_hint` ⇒ 形狀是 `sk_…` ＋末四碼）、`has_key`。
+     `POST /api-key` 回 `(api_key, api_key_hint, has_key=True)`；`GET /api-key` 在沒有金鑰時回
+     `has_key=False`、有金鑰時回 `(api_key_hint, has_key=True)` 而**永遠不回明碼**。
+     三態逐一對回這三欄，切版參數：
+       · `extractKeyHasKey`  ＝ `has_key`。false ⇒ 這個租戶還沒有金鑰：不畫金鑰欄，鈕改成
+         「產生金鑰」而且**不走二次確認**（沒有舊金鑰會失效，那顆確認窗的內文在這一態是假的）。
+       · `extractKeyPlain`   ＝ `api_key`。有值＝**剛產生**那一次：完整明碼 ＋「唯一一次」紅字 ＋
+         顯示/隱藏 ＋ 複製。
+       · `extractKeyHint`    ＝ `api_key_hint`。恆有（has_key 為真時），是「已存在」那一態畫面上
+         唯一看得到的東西——**這一態才是使用者日常會看到的那一個**（只要重新整理過一次就是它），
+         而它原本全站零落點：`api_key_hint` 與 `has_key` 兩欄畫面上都沒有家，檔頭卻宣稱本頁有兩種態。
+     切版示範「剛產生」態；另外兩態的可見示範在元件庫頁（§5：`{% if %}` 的另一支在唯一使用頁上
+     恆為某一值，等於沒有人看過它的長相）。 #}
 <p class="text-gray" data-i18n="extractKey.intro">此金鑰供外部程式以 X-API-Key 標頭呼叫萃取 API（國家／時間）與資料 API（/api/v1），請妥善保管。重新產生後舊金鑰會立即失效。</p>
 
-{# 金鑰顯示欄：readonly，預設遮蔽（type=password）+ 顯示/隱藏切換 + 複製 + 產生/重新產生 #}
+{# 金鑰顯示欄：readonly，預設遮蔽（type=password）+ 顯示/隱藏切換 + 複製 + 產生/重新產生。
+     三態的成對參數見檔頭；示範值＝「剛產生」那一態。
+     `extractKeyHint` 是**推導值、不是另外編的**：`app/security.py` 的
+     `_key_hint` ＝ `f"{prefix}…{key[-4:]}"`，前綴 `sk_`、末四碼取自 `extractKeyPlain` 的最後四個字元
+     （`…0000`）。兩者對不起來的話，這一頁就會演出一個「hint 不是這把金鑰的 hint」的狀態。 #}
+{% set extractKeyHasKey = true %}
+{% set extractKeyPlain = "sk_aB3xYz9Qle8sample000apikeyvalue000000000000" %}
+{% set extractKeyHint = "sk_…0000" %}
 <div class="block mb-16 flex-row column gap-16">
     <div class="text-md text-bold" data-i18n="extractKey.currentKey">目前金鑰</div>
-    {# 儲存模型說明（**恆常顯示**，兩種態都成立）＋「唯一一次」警語（**只在剛產生時**出現）。
-         沒有這兩句的話，使用者會以為金鑰隨時回得來，下次進來看到末四碼才發現已經拿不回。
-         切版示範「剛產生」態（兩句都在）；React 依有無明碼決定是否渲染警語那一句。 #}
+    {% if not extractKeyHasKey %}
+    {# has_key = false：這個租戶還沒有金鑰。不畫金鑰欄（沒有東西可畫，留一格空輸入框會被讀成
+         「有一把空金鑰」），鈕改成「產生金鑰」而且**不走二次確認**——`generate_api_key` 是同一支
+         端點，但這一態沒有舊金鑰會失效，確認窗那句「舊金鑰會立即失效」在這裡是假的。
+         這一顆因此落回 §5 ③（點下去就送 API），自己掛 data-toast 列全結果——分支集合與確認鈕
+         那顆逐字相同（同一支端點、同一組守衛），故沿用同一顆 `toast.generateKey`（§5）。
+         鈕面的「產生金鑰」與 5-8 那顆的繁中逐字相同 ⇒ 沿用既有的 `widget.createToken`，
+         不另立 key（§4-2：繁中原文相同的 UI chrome 沿用既有 key，英譯也是同一個 "Create key"）。 #}
+    <p class="text-gray" data-i18n="extractKey.noKeyYet">這個租戶還沒有萃取 API 金鑰。按下面的「產生金鑰」建立第一把——明碼只會在產生的那一次顯示。</p>
+    <div class="flex-row">
+        <button data-tenant-role="admin" type="button" class="button button-primary js-generate-key" data-toast="已產生新金鑰|產生失敗" data-i18n-data-toast="toast.generateKey" data-toast-type="success|error" data-i18n="widget.createToken">產生金鑰</button>
+    </div>
+    {% else %}
+    {# 儲存模型說明（**恆常顯示**，有金鑰的兩種子態都成立）。
+         沒有這一句的話，使用者會以為金鑰隨時回得來，下次進來看到末四碼才發現已經拿不回。 #}
     <p class="text-gray" data-i18n="extractKey.storedHint">系統只保存金鑰的雜湊值，無法再顯示明碼；遺失請重新產生。</p>
+    {% if extractKeyPlain %}
+    {# 「唯一一次」警語**只在剛產生時**出現：重新整理過之後那句話已經來不及了，留著只會讓
+         使用者在一個沒有明碼可複製的畫面上找複製鈕。 #}
     <p class="text-red" data-i18n="extractKey.onceOnly">這是這把金鑰唯一一次顯示明碼——關閉或重新整理本頁後就只看得到末四碼。請現在複製並妥善保存。</p>
+    {% else %}
+    {# 已存在那一態：畫面上唯一看得到的就是 `api_key_hint`。**沒有顯示/隱藏鈕、也沒有複製鈕**
+         ——遮罩後面沒有明碼可以揭開，而複製一串末四碼對使用者沒有任何用處（複製了也不能拿去呼叫）。
+         這一句要講出這串短字面是拿來做什麼的，否則它讀起來像一把壞掉的金鑰。 #}
+    <p class="text-gray" data-i18n="extractKey.hintOnlyNote">明碼已經無法再顯示，下面只列得出前綴與末四碼——它的用途是讓你對照「現在掛在外部程式上的是不是同一把」。要換一把請按「重新產生金鑰」。</p>
+    {% endif %}
     <div class="flex-row align-items-center gap-8 flex-wrap">
         <div class="col-6-md col-12-sm">
             <div class="form-group">
                 {# 示範值的長度是推導值，不是隨手打的：product `app/security.py` 的
                      `new_api_key()` ＝ `_API_KEY_PREFIX + secrets.token_urlsafe(32)`
                      ⇒ 32 bytes 的 base64url 是 43 字元、加 `sk_` 共 46 字元。
-                     這一格預設是 `type="password"`，**遮罩點數就等於字面量長度**——原本只給 35 字元，
-                     等於畫面上那排點永遠比真金鑰短十顆，欄寬與換行也就沒有被真的驗過。 #}
+                     這一格在「剛產生」態是 `type="password"`，**遮罩點數就等於字面量長度**——原本只給
+                     35 字元，等於畫面上那排點永遠比真金鑰短十顆，欄寬與換行也就沒有被真的驗過。
+                   已存在那一態改成 `type="text"`：那串 hint 本來就不是秘密（它不足以還原金鑰），
+                     遮起來只會讓使用者找一顆不存在的「顯示」鈕。 #}
                 <div class="field">
-                    <input type="password" id="apiKeyInput" class="form-control" value="sk_aB3xYz9Qle8sample000apikeyvalue000000000000" readonly aria-label="目前金鑰" data-i18n-aria-label="extractKey.currentKey">
+                    {% if extractKeyPlain %}
+                    <input type="password" id="apiKeyInput" class="form-control" value="{{ extractKeyPlain }}" readonly aria-label="目前金鑰" data-i18n-aria-label="extractKey.currentKey">
+                    {% else %}
+                    <input type="text" id="apiKeyInput" class="form-control" value="{{ extractKeyHint }}" readonly aria-label="目前金鑰" data-i18n-aria-label="extractKey.currentKey">
+                    {% endif %}
                 </div>
             </div>
         </div>
+        {% if extractKeyPlain %}
         {# 顯示/遮蔽切換＝純前端互動（無業務、無 API），由 ui/reveal-input 以 data-reveal-target 委派切 type；
              兩態文字與 key 由 data-text-*/data-key-* 提供，JS 不寫死字串（見 §4-2/§5）。
              狀態語意走換標籤、不掛 aria-pressed（兩者並用會念出矛盾，見 reveal-input.js）。 #}
@@ -54,6 +103,7 @@ permalink: 5-9_extractApiKey.html
         <button type="button" class="button-icon copy copyBtn has-tooltip" data-toast="已複製金鑰" data-i18n-data-toast="toast.copyKey">
             <span class="tooltip" data-i18n="action.copy">複製</span>
         </button>
+        {% endif %}
     </div>
     {# 不可逆：product `extract.py` 的 generate_api_key 直接覆寫 tenant.api_key_hash，舊金鑰在回應那一刻
          起全部 401，而明碼只回這一次。全站其他破壞性動作（4-2／5-8／5-6-3 的撤銷）都走 delete-modal
@@ -61,6 +111,7 @@ permalink: 5-9_extractApiKey.html
     <div class="flex-row">
         <button data-tenant-role="admin" type="button" class="button button-primary js-regenerate-key" data-i18n="extractKey.regenerate">重新產生金鑰</button>
     </div>
+    {% endif %}
 </div>
 
 {# 重新產生的二次確認（.js-regenerate-key 條件開窗的彈窗本體）。文案講的是「重新產生」不是「刪除」，

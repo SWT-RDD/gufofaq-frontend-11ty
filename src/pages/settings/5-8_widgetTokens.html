@@ -43,16 +43,33 @@ permalink: 5-8_widgetTokens.html
                 </div>
                 <div class="field">
                     <textarea id="widgetOriginsInput" rows="3" placeholder="一行一個，例如 https://example.com" data-i18n-placeholder="widget.originsPlaceholder" class="form-control" aria-describedby="widgetOriginsHint" required></textarea>
-                    {# 格式是後端硬守的（widget_tokens.py 的 _normalize_origins：非 http/https、
+                    {# 格式是後端硬守的（product app/routers/widget_tokens.py 的 `_normalize_origins`：非 http/https、
                          沒有 netloc、帶 path 一律 400），所以講在填之前、而且要接得上輔具——
-                         寫在 placeholder 一打字就消失（§4 帶約束的輔助文字要掛 id ＋ aria-describedby）。 #}
-                    <span id="widgetOriginsHint" class="text-gray" data-i18n="widget.originsHint">一行一個，須為 https://網域 或 http://網域，不含路徑與結尾斜線。</span>
+                         寫在 placeholder 一打字就消失（§4 帶約束的輔助文字要掛 id ＋ aria-describedby）。
+                       ⚠️ **這一句原本比後端嚴**：它寫著「不含路徑與結尾斜線」，而
+                         `_normalize_origins` 的第一行是 `o = (raw or "").strip().rstrip("/").lower()`
+                         ——**先正規化再驗**，所以尾斜線與大小寫都是合法輸入，被擋的只有 path。
+                         同一格上面那則註解列的三個 400 條件裡本來就沒有尾斜線，兩句自己打架。
+                         把「會被自動整理掉」與「會被擋下」分開講：使用者照舊寫法會以為
+                         `https://example.com/` 是錯的，回頭去改一個根本不必改的東西。 #}
+                    <span id="widgetOriginsHint" class="text-gray" data-i18n="widget.originsHint">一行一個，須為 https://網域 或 http://網域，不可帶路徑；結尾斜線與大小寫會自動整理。</span>
                 </div>
             </div>
         </div>
     </div>
     <div class="flex-row">
-        <button data-tenant-role="admin" type="button" class="button button-primary" data-toast="已產生金鑰|網域格式錯誤，請確認格式為 https://網域|產生失敗，請稍後再試" data-i18n-data-toast="toast.createWidgetToken" data-toast-type="success|warning|error">
+        {# 逐 raise 對回 `create_widget_token`（product app/routers/widget_tokens.py），順序＝上游由上而下：
+             · 400 `credential.origins_required` —— 函式的**第一個 raise**（`if not body.allowed_origins`）。
+               **本頁製造得出來**：全站零 `<form>`（§4），所以 textarea 上的 `required` 不會觸發任何
+               原生驗證，什麼都不填按下去就是它。原本這一段整個不在，於是這個最容易發生的結果
+               被折進紅色的「產生失敗，請稍後再試」，而重試永遠不會成功。
+             · 400 `credential.origin_invalid` —— `_normalize_origins` 逐行驗（scheme 非 http/https、
+               沒有 netloc、帶 path）。使用者當場改得掉 ⇒ warning。
+             · 其餘（含網路失敗）⇒ error。
+           `data-tenant-role="admin"`＝端點的 `Depends(require_admin)`（§4 授權軸第三軸）。
+           ⚠️ `|` 是索引契約：本輪在第 2 段插了一段，React 端照 `split("|")` 位置取
+             `toast.createWidgetToken` 的地方要跟著位移。 #}
+        <button data-tenant-role="admin" type="button" class="button button-primary" data-toast="已產生金鑰|請至少填一個允許網域|網域格式錯誤，請確認格式為 https://網域|產生失敗，請稍後再試" data-i18n-data-toast="toast.createWidgetToken" data-toast-type="success|warning|warning|error">
             <img src="./images/icon_add_white.png" width="48" height="48" decoding="async" alt="" class="icon">
             <span data-i18n="widget.createToken">產生金鑰</span>
         </button>
@@ -68,7 +85,7 @@ permalink: 5-8_widgetTokens.html
 {# id＝WidgetToken 主鍵（product WidgetTokenOut.id），撤銷打的是 DELETE /widget-tokens/{token_id}。
      **不可拿 loop.index 當列鍵**：這張表撤銷得掉列，位置不是身分——撤掉前一列之後，後面每一列的
      列鍵都會往前頂一格，React 的 key 與逐列動作的目標會一起指錯人（§6 列鍵，同 5-6-2／5-6-3）。 #}
-{# 列序＝**主鍵遞增**：`list_widget_tokens`（widget_tokens.py）是
+{# 列序＝**主鍵遞增**：`list_widget_tokens`（product app/routers/widget_tokens.py）是
      `select(WidgetToken).where(tenant_id == …).order_by(WidgetToken.id)`，沒有第二種排法，
      所以 38 一定排在 41 前面。原本寫成 41、38（新的在上），那是這支端點回不出來的順序（§6）。
      金鑰字面量的長度也是推導值：`token="wgt_" + secrets.token_urlsafe(24)`（同檔的建立端點）

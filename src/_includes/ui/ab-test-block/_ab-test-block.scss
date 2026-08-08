@@ -7,8 +7,36 @@
 //
 // markup 契約（無 html 元件，§1-2；整段照抄）—— 生產 markup 逐字寫在 2-2-3_abTest.html，
 // 從**承載樣式的最外層 `.block.ab-test-block` 寫起**（`.ab-side` / `.ab-field-label` 兩條規則都
-// 巢狀在 `.ab-test-block` 之內，從 `.ab-side` 抄起兩側不會等寬、標籤也不會有 108px 定寬）：
+// 巢狀在 `.ab-test-block` 之內，從 `.ab-side` 抄起兩側不會等寬、標籤也不會有 108px 定寬）。
+// `abSides` 的 `{% set %}` 定義行一起抄：`set` 是頁面全域，缺這一行畫面完全正常，只有插值出來的
+// `id="abSideLabel-"` 靜默變成空字串，而那顆 id 是本頁三個 `aria-labelledby` 的定址契約（§1-2）。
+// 這份陣列**全站只有這一份**（`ui/ab-compare` 的契約也吃它，那邊指回這裡、不重抄）：
 //
+//   {% set abSides = [
+//       { side: "A", state: "a", i18nKey: "qaTest.settingSideA", label: "（設定 A）", knowledge: "1", llm: "openai:gpt-4o-mini", configKey: "settings.config1", configLabel: "設置一", promptVersion: "V3",
+//         prompt: "角色定位：
+//   你是一位專業的知識庫問答助手，負責依據已上傳的資料回應使用者詢問。
+//   知識來源限制：
+//   你的回答必須僅依據以下資料來源：
+//   • 《知識庫檢索結果》（本次問答檢索到的資料片段）
+//   回應原則：
+//   • 優先使用條列式呈現資訊
+//   • 語氣清楚、專業且易懂
+//   • 不可臆測或補充未出現在資料中的內容
+//   • 若資料不足，需明確說明『無法從現有資料判斷』
+//   輸出格式：
+//   • 使用條列式（• 或 -）
+//   • 必要時分段（例如：說明 / 流程 / 注意事項）" },
+//       { side: "B", state: "b", i18nKey: "qaTest.settingSideB", label: "（設定 B）", knowledge: "2", llm: "openai:gpt-4o", configKey: "settings.config2", configLabel: "設置二", promptVersion: "V2",
+//         prompt: "任務導向：
+//   依使用者的問題直接給出可執行的步驟，不重述題目。
+//   知識來源限制：
+//   只用《產品規格資料庫》與《使用手冊》；兩者衝突時以規格書為準並標明出處。
+//   回應原則：
+//   先給結論，再給步驟；每一步一行；規格數值一律附單位；查無資料時直接說「手冊未涵蓋」並建議聯絡窗口。
+//   輸出格式：
+//   結論一句 ＋ 編號步驟 ＋（必要時）注意事項。" }
+//   ] %}
 //   <div class="block ab-test-block flex-row gap-24 mobile-column">
 //       {% for ab in abSides %}
 //       <div class="ab-side" data-ab-side="{{ ab.side }}">
@@ -40,8 +68,8 @@
 //                   <div class="field">
 //                       <select id="abLlmSelect-{{ ab.side }}" class="form-control singleSelect js-llm-select">
 //                           <option value="" data-i18n="common.pleaseSelect">請選擇</option>
-//                           <option value="OpenAI gpt-4o-mini"{% if ab.llm == "OpenAI gpt-4o-mini" %} selected{% endif %}>OpenAI gpt-4o-mini</option>
-//                           <option value="OpenAI gpt-4o"{% if ab.llm == "OpenAI gpt-4o" %} selected{% endif %}>OpenAI gpt-4o</option>
+//                           <option value="openai:gpt-4o-mini"{% if ab.llm == "openai:gpt-4o-mini" %} selected{% endif %}>openai:gpt-4o-mini</option>
+//                           <option value="openai:gpt-4o"{% if ab.llm == "openai:gpt-4o" %} selected{% endif %}>openai:gpt-4o</option>
 //                       </select>
 //                   </div>
 //               </div>
@@ -97,11 +125,27 @@
 //                   </div>
 //               </div>
 //           </div>
-//           （`role="group"` 收掉之後，`.ab-side` 裡還有兩塊**不屬本元件契約**的東西：
-//            每側的提示詞區與三顆一排的動作鈕列，兩塊都刻意排在 group 之外，見 2-2-3 的頁面註解）
+//           <div class="flex-row column gap-8 mt-16">
+//               <span class="control-label" id="abPromptLabel-{{ ab.side }}" data-i18n="comp.prompt">提示詞</span>
+//               <textarea class="form-control size-lg js-prompt-input" aria-labelledby="abSideLabel-{{ ab.side }} abPromptLabel-{{ ab.side }}">{{ ab.prompt }}</textarea>
+//           </div>
+//           <div class="flex-row justify-content-center flex-wrap gap-16 mt-24" role="group" aria-labelledby="abSideLabel-{{ ab.side }}">
+//               <button type="button" class="button button-green js-restore-saved" data-toast="已回復儲存的設定|無法載入儲存的設定" data-i18n-data-toast="toast.restoreSettings" data-toast-type="success|error" data-i18n="qaTest.restoreSaved">回復儲存的設定</button>
+//               <button data-capability="settings:write" type="button" class="button button-primary js-prompt-new-version" data-toast="已儲存為新版本|內容欄位不可為空|新增提示詞失敗，請稍後再試" data-i18n-data-toast="toast.savePrompt" data-toast-type="success|warning|error" data-i18n="qaTest.savePromptVersion">儲存提示詞版本</button>
+//               <button type="button" class="button button-dark js-apply-production" data-i18n="qaTest.applyProduction">套用為正式設定</button>
+//           </div>
 //       </div>
 //       {% endfor %}
 //   </div>
+//
+// **`.ab-side` 裡有三塊，各自是一個獨立的 group，不是一個大 group**（上一版的契約只寫了第一塊，
+// 另外兩塊用一句中文括號帶過——那既是省略、又是把散文寫進契約段裡，整段複製會把中文貼進 HTML）：
+//   1. 七組設定欄位 —— `role="group" aria-labelledby="abSideLabel-<側>"`
+//   2. 提示詞區 —— 沒有 group（只有一顆控制項），可及名稱由 textarea 自己的
+//      `aria-labelledby="abSideLabel-<側> abPromptLabel-<側>"`（**側別在前**）串出來
+//   3. 三顆一排的動作鈕列 —— 自己也掛 `role="group" aria-labelledby="abSideLabel-<側>"`
+// 三個 group 不能合成一個：§4 明文「group 只能框那一組」，而「設定 A」這個標題涵蓋得住的是
+// 「這一側」，涵蓋不住「這一側的七個設定欄位 ＋ 提示詞 ＋ 三顆送 API 的鈕」這種由版面決定的數量。
 //
 // 七組欄位**一組都不能用「其餘同上」帶過**（§1-2：能略的只有「重複第 N 次的同型節點」）——
 // 外面那層 `.form-group.row.mobile-col > .label.ab-field-label + .field` 確實七組都一樣，
@@ -116,13 +160,15 @@
 //   ⓐ **`.ab-field-label` 掛在外層 `<div class="label">` 上，不是 `<label class="control-label">` 上。**
 //      108px 是「欄名欄」的定寬，7 組全部靠它對齊；掛到內層的 `<label>` 會讓定寬落在文字節點上，
 //      欄位就對不齊了（而且第 1 組的 info-btn 會被擠出那 108px）。
-//   ⓑ **`role="group"` 那一層不可省。** 兩側的 7 組欄位標籤逐字相同、同頁同時可見，只靠 `id` 唯一
-//      救不了可及名稱（§4）；group 用 `aria-labelledby="abSideLabel-<側>"` 指回本側標題。
-//      group 只框那一組欄位——底下的動作鈕列在容器外（§4：group 不得框到不屬於那一組的東西）。
+//   ⓑ **兩個 `role="group"` 都不可省。** 設定欄位那一組（7 顆標籤逐字相同）與動作鈕那一列
+//      （三顆字面逐字相同）都是兩側同頁同時可見，只靠 `id` 唯一救不了**可及名稱**（§4）。
+//      兩個 group 各自用 `aria-labelledby="abSideLabel-<側>"` 指回本側標題，**中間夾著的提示詞區
+//      不進任何一個 group**——它只有一顆控制項，而把它併進來就會讓 group 框到不屬於那一組的東西。
 //   ⓒ 兩側的可及名稱靠 id="abSideLabel-<側>" 區分（§4：同頁同時可見、語意不同的控制項不得同名）。
+//      同一顆 id 有三個消費者：兩個 `role="group"` ＋ textarea 的 `aria-labelledby`。
 //
 // 住在哪一頁（雙向）：只有 2-2-3_abTest（AB 測試）。
-// 反查：`grep -rln 'ab-test-block|ab-side|ab-field-label' src --include=*.html` 除該頁之外，
+// 反查：`grep -rlnE 'ab-test-block|ab-side|ab-field-label' src --include=*.html` 除該頁之外，
 // 只多命中元件庫頁——那是「語意變體由各自的元件提供」那一行說明文字，不是實例。
 .ab-test-block {
     .ab-side {

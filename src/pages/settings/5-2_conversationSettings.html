@@ -41,15 +41,13 @@ permalink: 5-2_conversationSettings.html
   { name: "jina_reranker", label: "Jina Reranker",
     scale: { kind: "bounded", min: 0, max: 1, note: "Jina 的 relevance_score，0–1" } }
 ] %}
-{# 未啟用重排序時分數的來源，挑哪一個由 `data_source_ratio` 決定。weaviate 那段的實測數字**原文照抄**
-     ——那是使用者判斷門檻該填多少的唯一依據，縮寫掉就等於把「0.5 在這個後端上永遠擋不下任何東西」
-     這件事藏起來。 #}
-{% set retrievalBackends = [
-  { name: "weaviate", label: "Weaviate（向量）", appliesWhen: "data_source_ratio < 1",
-    scale: { kind: "bounded", min: 0, max: 1, note: "metadata.certainty ＝ (cos+1)/2。⚠️ 文字嵌入的 cosine 幾乎不為負：實測 12 句刻意不相關的問句最低仍有 0.5206，0.5 在這個後端上是一個永遠擋不下任何東西的死條件" } },
-  { name: "gufonet", label: "GufoNet（關鍵字）", appliesWhen: "data_source_ratio > 0",
-    scale: { kind: "unbounded", min: null, max: null, note: "BM25 型整數分（實測 752～10095），隨查詢長度漂；無命中直接回空清單" } }
-] %}
+{# **未啟用重排序時那兩把尺（weaviate／gufonet）的示範不住在這一頁**，它在元件庫頁
+     `ui/score-scale-note` 的第二份示範裡。理由：本頁的示範狀態是「重排序開著 ＋ llm_reranker」，
+     依 `GET /settings/rerankers` 的判斷順序，`enable_rerank == false` 那三支分派在這一頁
+     **永遠走不到**——原本這裡留著一份 `retrievalBackends`，全站零消費點（沒有任何迴圈或插值讀它），
+     而它上面的註解卻宣稱那段實測數字是「使用者判斷門檻該填多少的唯一依據」。
+     §5「每個分支結果都要看得到」：沒有頁面演得出來的分支等於沒驗收過，所以那把尺要落在
+     元件庫頁那份 `scaleNoteText`（實測數字原文照抄、不縮寫），不是留一份渲染不出來的資料在這裡。 #}
 {# 目前生效的那把尺（判斷順序是端點契約的一部分，見 `GET /settings/rerankers` 的 docstring）：
        enable_rerank ⇒ rerankers[] 裡 reranker_name 那一筆
        否則 ratio == 0 ⇒ weaviate ／ ratio == 1 ⇒ gufonet ／ 0 < ratio < 1 ⇒ 兩把尺並存，顯示 mixed 警語
@@ -117,7 +115,7 @@ permalink: 5-2_conversationSettings.html
     </div>
 </div>
 
-{# ── 設置層頂端：對話模式總開關（settings_hub.py ProfileConfigIn.search_mode 傳統/agent）＋ Agent 最大迭代次數（沿 2-2-1）。
+{# ── 設置層頂端：對話模式總開關（product app/routers/settings_hub.py 的 ProfileConfigIn.search_mode 傳統/agent）＋ Agent 最大迭代次數（沿 2-2-1）。
      驅動下方各子頁籤「僅某模式生效」欄位的標示。值載體走 hook class js-chat-mode／js-agent-max-iter
      （React 接手，切版不接行為），不掛 data-toast（§5）。 #}
 <div class="block mb-10">
@@ -183,7 +181,14 @@ permalink: 5-2_conversationSettings.html
      **為什麼要有**：與平台頁的 `data-platform-role` 同一條理由——唯讀閘不該是 React 應用層各自
      判斷出來的，要從 markup 讀得出來，否則「這一塊誰動得了」在切版與 React 兩邊各有一份答案。
      形狀刻意與 `data-platform-role` 不同：那個是「最低角色」（auditor／admin 兩值的階梯），
-     這裡是「需要哪一顆能力 token」——本頁只有一種寫入能力，逐個控制項掛只是噪音，故單位是面板。 #}
+     這裡是「需要哪一顆能力 token」。
+     **面板上這一顆不取代逐鈕的宣告**，兩者是 §4 明訂的分工：「區塊上的宣告只涵蓋『整塊都要這一級』
+     那一軸；同區塊內另有更高一級要求的控制項仍要自己標」——面板這一顆表達的是**這一塊的下限**
+     （整塊寫入都要 `settings:write`），而 §4「前三軸標在觸發寫入的那顆控制項上，不必往上推導祖先」
+     照舊成立，故本頁六顆送 API 的鈕各自也標了一次（`#openPrioritySwitch`／`#closePrioritySwitch`／
+     `.js-prompt-restore`／`.js-welcome-save`／`.js-welcome-restore`／`.js-save-profile-config`）。
+     原本這裡寫「本頁只有一種寫入能力，逐個控制項掛只是噪音，故單位是面板」——那是自創的說法，
+     而且與同檔的 markup 自相矛盾（那六顆本來就各自標了）。 #}
 <div class="tab-content" data-capability="settings:write" id="panelRetrieval">
     {# 從其他設定檔複製…：target＝目前檢視中的設定檔（上方設置頁籤）。開窗需先選來源＝業務條件開窗，
          鈕保留 hook class .js-copy-config、不掛 data-open-modal（§5）；彈窗本體見頁尾 include。 #}
@@ -206,10 +211,15 @@ permalink: 5-2_conversationSettings.html
              上述每一道都踩不到（也不會送出空 changed），所以那些分支列上去就是演不可能的結果。
              （原本這句寫「400 **只在**那三欄才 raise」——負面斷言的舉證責任是列出全部出口，
              而那個範圍是錯的；結論成立，措辭不成立，§3-2。）
-             設置編號無法在切版插值，故略去（§6）。 #}
+             設置編號無法在切版插值，故略去（§6）。
+             **權限不足那一段是本輪補的**（本頁六顆 `settings:write` 鈕同辦）：`data-capability`
+             不足時 React 端**不做「不渲染」**——「低於該級不渲染」是 `data-platform-role` 的規則
+             （§5，它的單位是整塊唯讀），而 capability 是逐 token 的細粒度，做不到逐鈕過濾 ⇒
+             403 是真實可達的結果，一律列進 `data-toast`。子句與 5-1-1／5-3 的那句**逐字相同**
+             （§4-2：`|` 切開的相同繁中子句必須有相同英譯）。 #}
         <div class="switch-control-row">
-            <button data-capability="settings:write" type="button" id="openPrioritySwitch" class="button button-border" data-toast="已啟用全部意圖判斷|操作失敗" data-i18n-data-toast="toast.enableAllIntent" data-toast-type="success|error" data-i18n="settings.enableAllIntent">啟用全部意圖判斷</button>
-            <button data-capability="settings:write" type="button" id="closePrioritySwitch" class="button button-border" data-toast="已停用全部意圖判斷|操作失敗" data-i18n-data-toast="toast.disableAllIntent" data-toast-type="success|error" data-i18n="settings.disableAllIntent">停用全部意圖判斷</button>
+            <button data-capability="settings:write" type="button" id="openPrioritySwitch" class="button button-border" data-toast="已啟用全部意圖判斷|權限不足，無法儲存|操作失敗" data-i18n-data-toast="toast.enableAllIntent" data-toast-type="success|warning|error" data-i18n="settings.enableAllIntent">啟用全部意圖判斷</button>
+            <button data-capability="settings:write" type="button" id="closePrioritySwitch" class="button button-border" data-toast="已停用全部意圖判斷|權限不足，無法儲存|操作失敗" data-i18n-data-toast="toast.disableAllIntent" data-toast-type="success|warning|error" data-i18n="settings.disableAllIntent">停用全部意圖判斷</button>
         </div>
 
         {% set priorityLevels = [
@@ -329,7 +339,7 @@ permalink: 5-2_conversationSettings.html
         <div class="flex-row column gap-8">
             <div class="tablelist-title" data-i18n="settings.fieldNaming">欄位命名</div>
             {# 槽數從陣列推導、不烤進譯文（§6 能推導的數字不寫死；§4-2 那個數字是資料不是譯文）。
-                 值域是 `field_schema.SLOTS` 全部 22 個（21 個進索引的 ＋ internal_note；正本 field_schema.py 的 SLOTS）。
+                 值域是 `field_schema.SLOTS` 全部 22 個（21 個進索引的 ＋ internal_note；正本 product app/field_schema.py 的 SLOTS）。
                  note1／note2 的顯示名與 5-3 的歸因維度、4-2 的來源歸因列一致（「承辦組室」「業務範疇」）
                  ——那三頁演的是同一個示範租戶，而這一頁是那份 `RetrievalProfile.field_labels` 的
                  **唯一編輯畫面**，不一致的話讀的人推不出哪一份算數（§6 跨頁自洽）——原本只列到 note5，
@@ -385,33 +395,46 @@ permalink: 5-2_conversationSettings.html
         <span class="control-label" id="reasoningGroupMain-label" data-i18n="settings.reasoningGroupMain">主回答</span>
         {# §4 逐字點名的那一組：本面板同時可見六組「模型＋思考深度」，五個分組都收進了
              role="group"＋aria-labelledby，只有主回答這一組沒有——於是同頁每一顆 select 的
-             可及名稱都叫「模型」。形狀與下面五組逐字相同。 #}
-        <div class="flex-row flex-wrap gap-16" role="group" aria-labelledby="reasoningGroupMain-label">
-            <div class="form-group col-6-md col-12-sm">
-                <div class="label"><label for="genModel" class="control-label" data-i18n="settings.modelName">模型</label></div>
-                <div class="field">
-                    {# 可用模型目錄只有一份（llmModels，宣告在本頁頂端）：主回答與分組 LLM 填的是同一份
-                         available models，各烤一份遲早分岔（曾經：分組少了 anthropic 那一個）。 #}
-                    <select class="form-control singleSelect js-model-name" id="genModel">
-                        {% for m in llmModels %}
-                        <option value="{{ m }}"{% if loop.first %} selected{% endif %}>{{ m }}</option>
-                        {% endfor %}
-                    </select>
+             可及名稱都叫「模型」。形狀與下面五組逐字相同（group 內就是那兩顆）。
+             **group 只框那兩顆，其餘旋鈕一律是 group 外的 sibling**：先前 `role="group"` 掛在
+             這一區現成的版位容器上，於是「主回答」這個標題把整個生成面板的每一顆控制項都框了進去
+             ——含「啟用建議問題」這種決定**別組**（推薦問題／聊天室主題那一組 LLM）跑不跑的 switch。
+             §4 逐字寫著這是最常見的破法：「為了補 group 而把 role 加在現成的版位容器上……
+             group 內的控制項數，不得超過它的標題字面涵蓋得住的數量；對不上就另包一層」。
+             另包的這一層是 `col-12-md`（整寬，與原本第一列的版位相同）＋自己的
+             `flex-row flex-wrap gap-16`（`--flex-gap` 由它自己給，兩顆 col-6-md 的算式不變）
+             ⇒ 版位與先前逐像素相同，只有無障礙樹變了（這條 fpdiff 抓不到）。 #}
+        <div class="flex-row flex-wrap gap-16">
+            <div class="col-12-md flex-row flex-wrap gap-16" role="group" aria-labelledby="reasoningGroupMain-label">
+                <div class="form-group col-6-md col-12-sm">
+                    <div class="label"><label for="genModel" class="control-label" data-i18n="settings.modelName">模型</label></div>
+                    <div class="field">
+                        {# 可用模型目錄只有一份（llmModels，宣告在本頁頂端）：主回答與分組 LLM 填的是同一份
+                             available models，各烤一份遲早分岔（曾經：分組少了 anthropic 那一個）。 #}
+                        <select class="form-control singleSelect js-model-name" id="genModel">
+                            {% for m in llmModels %}
+                            <option value="{{ m }}"{% if loop.first %} selected{% endif %}>{{ m }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group col-6-md col-12-sm">
+                    <div class="label"><label for="genReasoningEffort" class="control-label" data-i18n="settings.reasoningEffort">思考深度</label></div>
+                    <div class="field">
+                        {# 主回答的空值＝該模型預設（product settings_hub 的 reasoning_effort 註解），
+                             故用元件的預設語意；分組那組的空值是「最低思考」，見下方分組區。 #}
+                        {% set reasoningEffortId = "genReasoningEffort" %}
+                        {% set reasoningEffortHook = "js-reasoning-effort" %}
+                        {% set reasoningEffortGroup = "" %}
+                        {% set reasoningEffortEmptyKey = "settings.reasoningEffortDefault" %}
+                        {% set reasoningEffortEmptyZh = "沿用模型預設" %}
+                        {% include "components/reasoning-effort-select/reasoning-effort-select.html" %}
+                    </div>
                 </div>
             </div>
-            <div class="form-group col-6-md col-12-sm">
-                <div class="label"><label for="genReasoningEffort" class="control-label" data-i18n="settings.reasoningEffort">思考深度</label></div>
-                <div class="field">
-                    {# 主回答的空值＝該模型預設（product settings_hub 的 reasoning_effort 註解），
-                         故用元件的預設語意；分組那組的空值是「最低思考」，見下方分組區。 #}
-                    {% set reasoningEffortId = "genReasoningEffort" %}
-                    {% set reasoningEffortHook = "js-reasoning-effort" %}
-                    {% set reasoningEffortGroup = "" %}
-                    {% set reasoningEffortEmptyKey = "settings.reasoningEffortDefault" %}
-                    {% set reasoningEffortEmptyZh = "沿用模型預設" %}
-                    {% include "components/reasoning-effort-select/reasoning-effort-select.html" %}
-                </div>
-            </div>
+            {# ↑ group 到這裡為止。以下每一顆都是 group **外**的 sibling：它們各自是獨立的旋鈕，
+                 「主回答」這個標題涵蓋不了它們（尤其「啟用建議問題」決定的是推薦問題／聊天室主題
+                 那一組 LLM 跑不跑，不是主回答本身）。 #}
             {# 數值欄一律 type="number" ＋ 合法區間 ＋ 欄下可見的範圍提示（aria-describedby 接起來，§4）。
                  為什麼不能是 type="text"：值交給 React 讀去送 API，text ＋ Number() 打錯一個字就是 NaN，
                  序列化成 JSON 是 null，一路寫進該租戶的正式設定；後端投影欄型別是 float，下次開這頁就 500。
@@ -697,7 +720,9 @@ permalink: 5-2_conversationSettings.html
                             <span class="tooltip" data-i18n="action.copy">複製</span>
                         </button>
                         <span class="divider-vertical"></span>
-                        <button data-capability="settings:write" type="button" class="button button-border button-sm js-prompt-restore" data-toast="已還原此版本|還原失敗，請稍後再試" data-i18n-data-toast="toast.restorePrompt" data-toast-type="success|error" data-i18n="action.restore">還原此版本</button>
+                        {# 403 那一段見「啟用全部意圖判斷」旁的註解（`POST /prompts/{version_no}/activate`
+                             掛 product `routers/prompts.py` 的 `require_capability("settings","write")`）。 #}
+                        <button data-capability="settings:write" type="button" class="button button-border button-sm js-prompt-restore" data-toast="已還原此提示詞版本|權限不足，無法儲存|還原失敗，請稍後再試" data-i18n-data-toast="toast.restorePrompt" data-toast-type="success|warning|error" data-i18n="action.restore">還原此版本</button>
                     </div>
                 </div>
                 <div class="prompt-content">
@@ -770,7 +795,9 @@ permalink: 5-2_conversationSettings.html
                 </div>
             </div>
             <div class="flex-row justify-content-center gap-16">
-                <button data-capability="settings:write" type="button" class="button button-primary js-welcome-save" data-toast="已儲存為新版本|內容欄位不可為空|儲存歡迎語失敗，請稍後再試" data-i18n-data-toast="toast.saveWelcome" data-toast-type="success|warning|error" data-i18n="action.saveNewVersion">儲存為新版本</button>
+                {# 403 那一段見「啟用全部意圖判斷」旁的註解（`POST /welcome` 掛 product
+                     `routers/welcome.py` 的 `require_capability("settings","write")`）。 #}
+                <button data-capability="settings:write" type="button" class="button button-primary js-welcome-save" data-toast="已儲存為新版本|內容欄位不可為空|權限不足，無法儲存|儲存歡迎語失敗，請稍後再試" data-i18n-data-toast="toast.saveWelcome" data-toast-type="success|warning|warning|error" data-i18n="action.saveNewVersion">儲存為新版本</button>
             </div>
         </div>
     </div>
@@ -833,7 +860,9 @@ permalink: 5-2_conversationSettings.html
                             <span class="tooltip" data-i18n="action.copy">複製</span>
                         </button>
                         <span class="divider-vertical"></span>
-                        <button data-capability="settings:write" type="button" class="button button-border button-sm js-welcome-restore" data-toast="已還原此版本|還原失敗，請稍後再試" data-i18n-data-toast="toast.restoreWelcome" data-toast-type="success|error" data-i18n="action.restore">還原此版本</button>
+                        {# 403 那一段見「啟用全部意圖判斷」旁的註解（`POST /welcome/{version_no}/activate`
+                             掛 product `routers/welcome.py` 的 `require_capability("settings","write")`）。 #}
+                        <button data-capability="settings:write" type="button" class="button button-border button-sm js-welcome-restore" data-toast="已還原此歡迎語版本|權限不足，無法儲存|還原失敗，請稍後再試" data-i18n-data-toast="toast.restoreWelcome" data-toast-type="success|warning|error" data-i18n="action.restore">還原此版本</button>
                     </div>
                 </div>
                 <div class="prompt-content">
@@ -860,6 +889,14 @@ permalink: 5-2_conversationSettings.html
     ] %}
     <div class="block mb-16 flex-row column gap-16">
         <div class="text-md text-bold" data-i18n="settings.policyTopics">政策主題</div>
+        {# 上限畫在消費點（§3-2「上限寫在消費點（『N / 30』）」）。30 ＝ product
+             `app/chat_config_limits.py` 的 `MAX_TOPICS`（`ProfileConfigIn.policy_topics` 以
+             `max_length=MAX_TOPICS` 收；上游 GufoRAG chatbot `app/services/policy.py` 的
+             `MAX_TOPICS` 同值，超過**拒絕存檔**而非靜默截斷）。形狀照同頁輸出規則那一列：
+             主題數從陣列推導（§6），30 是**資料**故留在 data-i18n 之外的獨立節點（§4-2）。 #}
+        <div class="data-info flex-row flex-wrap gap-24">
+            <span><span data-i18n="settings.policyTopicsCountLabel">主題數：</span> {{ policyTopics.length }} / 30</span>
+        </div>
         <div class="table-container scrollTable">
             <table class="default-table">
                 <colgroup>
@@ -875,7 +912,12 @@ permalink: 5-2_conversationSettings.html
                     <tr>
                         <th id="policyHeadName" data-i18n="settings.policyTopicName">主題名稱</th>
                         <th id="policyHeadDefinition" data-i18n="settings.definition">定義</th>
-                        <th id="policyHeadExamples" data-i18n="settings.policyExamples">範例</th>
+                        {# 「範例」在契約上是 **list**（product `chat_config_limits.py` 的
+                             `POLICY_TOPIC_LIMITS["examples"]` ＝ `max_items` ／`max_item_len`，由
+                             `validate_policy_topic_limits` 逐筆執法），畫成一格單行 input 就一定要
+                             說出多值怎麼切——否則整句連逗號一起會被當成一則。分隔慣例比照同頁出口替換的
+                             「別名（逗號分隔）」（`settings.aliases`）。 #}
+                        <th id="policyHeadExamples" data-i18n="settings.policyExamples">範例（逗號分隔）</th>
                         <th id="policyHeadInputAction" data-i18n="settings.policyInputAction">輸入動作</th>
                         <th id="policyHeadOutputAction" data-i18n="settings.policyOutputAction">輸出動作</th>
                         <th id="policyHeadRefusal" data-i18n="settings.policyRefusal">拒絕訊息</th>
@@ -893,7 +935,7 @@ permalink: 5-2_conversationSettings.html
                             <input type="text" class="form-control" value="{{ topic.name }}" aria-labelledby="policyTopicRowName-{{ loop.index }} policyHeadName">
                         </td>
                         <td><input type="text" class="form-control" value="{{ topic.definition }}" aria-labelledby="policyTopicRowName-{{ loop.index }} policyHeadDefinition"></td>
-                        <td><input type="text" class="form-control" value="{{ topic.examples }}" aria-labelledby="policyTopicRowName-{{ loop.index }} policyHeadExamples"></td>
+                        <td><input type="text" class="form-control" value="{{ topic.examples }}" aria-labelledby="policyTopicRowName-{{ loop.index }} policyHeadExamples" aria-describedby="policyExamplesHint"></td>
                         <td>
                             <select class="form-control select-sm singleSelect" aria-labelledby="policyTopicRowName-{{ loop.index }} policyHeadInputAction">
                                 <option value="block" data-i18n="settings.policyActionBlock"{% if topic.inputAction == "block" %} selected{% endif %}>封鎖</option>
@@ -917,6 +959,13 @@ permalink: 5-2_conversationSettings.html
                 </tbody>
             </table>
         </div>
+        {# 「範例」那一欄的界線常駐可見（§4：帶約束的輔助文字不得只活在 placeholder，也不得只在錯誤態才顯示），
+             一份 hint 給整欄用（同 alias-entries-modal 的 aliasLimitsHint）。兩個數字是**資料**故獨立成節點
+             （§4-2：在契約裡有欄位的數字不准寫進譯文）——出處 product `app/chat_config_limits.py` 的
+             `MAX_TOPIC_EXAMPLES` / `MAX_TOPIC_EXAMPLE_LEN`（`POLICY_TOPIC_LIMITS["examples"]` 的
+             `max_items` / `max_item_len`）。條數上限同時是上游 `_render_topics` 真的渲染得出的條數，
+             多設的不會生效，所以是「拒絕存檔」而不是靜默截斷。 #}
+        <p id="policyExamplesHint" class="text-gray"><span data-i18n="settings.policyExamplesHintPrefix">「範例」以逗號分隔，最多 </span><span>5</span><span data-i18n="settings.policyExamplesHintMid"> 則、每則 </span><span>200</span><span data-i18n="settings.policyExamplesHintSuffix"> 字；超過就存不起來，不會只留前幾則。</span></p>
         <div class="flex-row">
             <button type="button" class="button button-border button-sm js-add-policy-topic" data-i18n="settings.addPolicyTopic">新增主題</button>
         </div>
@@ -926,8 +975,15 @@ permalink: 5-2_conversationSettings.html
         <div class="form-group">
             <div class="label"><label for="policyWordFilters" class="control-label" data-i18n="settings.policyWordFilters">詞彙過濾</label></div>
             <div class="field">
+                {# 不掛 maxlength：一顆 maxlength 夾得住「整段字數」，夾不住「幾個詞、每個詞多長」
+                     （同 alias-entries-modal 的理由），故兩個上限走可見提示。出處＝product
+                     `app/chat_config_limits.py` 的 `MAX_WORD_FILTERS` / `MAX_WORD_FILTER_LEN`
+                     （`LIST_FIELD_LIMITS["policy_word_filters"]` 的 `max_items` / `max_item_len`，
+                     `ProfileConfigIn.policy_word_filters` 以它們夾；上游 GufoRAG chatbot
+                     `app/services/policy.py` 的 `validate_policy_word_filters` 同值執法）。
+                     兩個數字是資料不是譯文（§4-2）。 #}
                 <textarea id="policyWordFilters" class="form-control js-policy-word-filters" aria-describedby="policyWordFiltersHint"></textarea>
-                <span class="text-gray" id="policyWordFiltersHint" data-i18n="settings.policyWordFiltersHint">每行一個詞彙，或以逗號分隔。</span>
+                <span class="text-gray" id="policyWordFiltersHint"><span data-i18n="settings.policyWordFiltersHintPrefix">每行一個詞彙，或以逗號分隔；最多 </span><span>200</span><span data-i18n="settings.policyWordFiltersHintMid"> 個、每個 </span><span>200</span><span data-i18n="settings.policyWordFiltersHintSuffix"> 字；任一項超過就整份存不進去。</span></span>
             </div>
         </div>
         <div class="flex-row flex-wrap gap-16">
@@ -947,9 +1003,20 @@ permalink: 5-2_conversationSettings.html
        class js-add-osub／js-remove-osub（§5）。別名逗號分隔（比照 glossary aliases）；${0}=命中文字、
        ${name}=regex 具名群組、$$=字面$；regex 禁量詞（ReDoS，backref 靠字面 alternation 非 \w+）。
        值載體隨底部「儲存對話設定」直送（policy 分組 merge → ChatConfig output_replacements）。示範 1 筆。 #}
+    {# 示範列從內聯陣列改成具名 set：規則數要從陣列推導才不會在改示範時說謊（§6），
+         而內聯在 `{% for %}` 裡的陣列取不到 `.length`。變數名帶功能前綴避免與頁面其他 set 撞名（§6）。 #}
+    {% set outputReplacementRules = [
+      { aliases: "推貿費, 推廣貿易費, 貿推費", replacement: "[${0}](https://www.trade.gov.tw/tpf)", isRegex: false }
+    ] %}
     <div class="block flex-row column gap-16">
         <div class="text-md text-bold" data-i18n="settings.outputReplacements">出口替換規則</div>
         <div class="text-gray" data-i18n="settings.outputReplacementsHint">生成答案後，把命中的別名（任一）替換成指定內容；${0}=命中文字、regex 具名群組用 ${name}、$$ 表字面 $。regex 不可含量詞。兩種對話模式皆生效。</div>
+        {# 上限畫在消費點（§3-2）。30 ＝ product `app/output_sub.py` 的 `MAX_OUTPUT_REPLACEMENTS`
+             （`validate_output_replacements` 超過即 400 `outsub.too_many_rules`；上游 GufoRAG chatbot
+             `app/services/output_substitution.py` 的同名常數同值）。形狀照同頁輸出規則那一列。 #}
+        <div class="data-info flex-row flex-wrap gap-24">
+            <span><span data-i18n="settings.outputReplacementsCountLabel">替換規則數：</span> {{ outputReplacementRules.length }} / 30</span>
+        </div>
         <div class="table-container scrollTable">
             <table class="default-table">
                 <colgroup>
@@ -967,7 +1034,7 @@ permalink: 5-2_conversationSettings.html
                     </tr>
                 </thead>
                 <tbody>
-                    {% for rule in [{ aliases: "推貿費, 推廣貿易費, 貿推費", replacement: "[${0}](https://www.trade.gov.tw/tpf)", isRegex: false }] %}
+                    {% for rule in outputReplacementRules %}
                     <tr>
                         {# 同政策主題表：迴圈內的值控制項改吃「本列辨識欄 ＋ 欄表頭」，不掛靜態 aria-label（§4）。
                              這張表的辨識欄是「別名」，而它本身是 <input>，故另補一顆 sr-only 列名。
@@ -1148,49 +1215,57 @@ permalink: 5-2_conversationSettings.html
                             <div class="text-gray mt-8" data-i18n="{{ rule.descKey }}">{{ rule.desc }}</div>
                         </td>
                         <td>
+                            {# 參數欄的可及名稱走**列脈絡**（§4 的逐列正典「列名 → 表頭」，本表的列名是序位
+                                 `oruleRowName-N`，同一格的 checkbox 與規則 select 已經是這個寫法）：
+                                 這張表同時看得到三顆可見字面都叫「上限」的欄位（`link_max`／`max_chars`／
+                                 `max_bullets`，三者的區間分別是 1–20／1–100000／1–1000）與兩顆都叫
+                                 「清單（一行一個）」的欄位（`strip_bracket_tag` 收括號標籤、
+                                 `strip_lead_phrase` 收起首套語），語意各不相同。只靠 `label[for]` 的話
+                                 報讀器會連著念出五個一模一樣的名稱（§4：同頁同時可見、語意不同的控制項
+                                 不得共用同一個可及名稱）。`aria-describedby` 照舊指區間／上限提示。 #}
                             {% if rule.kind == "strip_bracket_tag" %}
                             <div class="form-group">
-                                <div class="label"><label for="oruleValues{{ loop.index }}" class="control-label" data-i18n="settings.outputRuleValues">清單（一行一個）</label></div>
+                                <div class="label"><label id="oruleValuesLabel{{ oruleIdx }}" for="oruleValues{{ oruleIdx }}" class="control-label" data-i18n="settings.outputRuleValues">清單（一行一個）</label></div>
                                 <div class="field">
-                                    <textarea id="oruleValues{{ loop.index }}" class="form-control size-sm js-orule-values" aria-describedby="oruleValuesHint{{ loop.index }}">（結論）
+                                    <textarea id="oruleValues{{ oruleIdx }}" class="form-control size-sm js-orule-values" aria-labelledby="oruleRowName-{{ oruleIdx }} oruleValuesLabel{{ oruleIdx }}" aria-describedby="oruleValuesHint{{ oruleIdx }}">（結論）
 （補充）
 （提醒）</textarea>
-                                    <span id="oruleValuesHint{{ loop.index }}" class="text-gray"><span data-i18n="settings.outputRuleValuesHintPrefix">一行一個，最多 </span><span>50</span><span data-i18n="settings.outputRuleValuesHintMid"> 項、每項 </span><span>200</span><span data-i18n="settings.outputRuleValuesHintSuffix"> 字；前後空白會被去掉。</span></span>
+                                    <span id="oruleValuesHint{{ oruleIdx }}" class="text-gray"><span data-i18n="settings.outputRuleValuesHintPrefix">一行一個，最多 </span><span>50</span><span data-i18n="settings.outputRuleValuesHintMid"> 項、每項 </span><span>200</span><span data-i18n="settings.outputRuleValuesHintSuffix"> 字；前後空白會被去掉。</span></span>
                                 </div>
                             </div>
                             {% elif rule.kind == "strip_lead_phrase" %}
                             <div class="form-group">
-                                <div class="label"><label for="oruleValues{{ loop.index }}" class="control-label" data-i18n="settings.outputRuleValues">清單（一行一個）</label></div>
+                                <div class="label"><label id="oruleValuesLabel{{ oruleIdx }}" for="oruleValues{{ oruleIdx }}" class="control-label" data-i18n="settings.outputRuleValues">清單（一行一個）</label></div>
                                 <div class="field">
-                                    <textarea id="oruleValues{{ loop.index }}" class="form-control size-sm js-orule-values" aria-describedby="oruleValuesHint{{ loop.index }}">答案：
+                                    <textarea id="oruleValues{{ oruleIdx }}" class="form-control size-sm js-orule-values" aria-labelledby="oruleRowName-{{ oruleIdx }} oruleValuesLabel{{ oruleIdx }}" aria-describedby="oruleValuesHint{{ oruleIdx }}">答案：
 說明如下：
 以下為說明：</textarea>
-                                    <span id="oruleValuesHint{{ loop.index }}" class="text-gray"><span data-i18n="settings.outputRuleValuesHintPrefix">一行一個，最多 </span><span>50</span><span data-i18n="settings.outputRuleValuesHintMid"> 項、每項 </span><span>200</span><span data-i18n="settings.outputRuleValuesHintSuffix"> 字；前後空白會被去掉。</span></span>
+                                    <span id="oruleValuesHint{{ oruleIdx }}" class="text-gray"><span data-i18n="settings.outputRuleValuesHintPrefix">一行一個，最多 </span><span>50</span><span data-i18n="settings.outputRuleValuesHintMid"> 項、每項 </span><span>200</span><span data-i18n="settings.outputRuleValuesHintSuffix"> 字；前後空白會被去掉。</span></span>
                                 </div>
                             </div>
                             {% elif rule.kind == "link_max" %}
                             <div class="form-group">
-                                <div class="label"><label for="oruleValue{{ loop.index }}" class="control-label" data-i18n="settings.outputRuleValue">上限</label></div>
+                                <div class="label"><label id="oruleValueLabel{{ oruleIdx }}" for="oruleValue{{ oruleIdx }}" class="control-label" data-i18n="settings.outputRuleValue">上限</label></div>
                                 <div class="field">
-                                    <input type="number" id="oruleValue{{ loop.index }}" class="form-control js-orule-value" value="5" min="1" max="20" step="1" aria-describedby="oruleValueHint{{ loop.index }}">
-                                    <span id="oruleValueHint{{ loop.index }}" class="text-gray">1 – 20</span>
+                                    <input type="number" id="oruleValue{{ oruleIdx }}" class="form-control js-orule-value" value="5" min="1" max="20" step="1" aria-labelledby="oruleRowName-{{ oruleIdx }} oruleValueLabel{{ oruleIdx }}" aria-describedby="oruleValueHint{{ oruleIdx }}">
+                                    <span id="oruleValueHint{{ oruleIdx }}" class="text-gray">1 – 20</span>
                                 </div>
                             </div>
                             {% elif rule.kind == "max_bullets" %}
                             <div class="form-group">
-                                <div class="label"><label for="oruleValue{{ loop.index }}" class="control-label" data-i18n="settings.outputRuleValue">上限</label></div>
+                                <div class="label"><label id="oruleValueLabel{{ oruleIdx }}" for="oruleValue{{ oruleIdx }}" class="control-label" data-i18n="settings.outputRuleValue">上限</label></div>
                                 <div class="field">
-                                    <input type="number" id="oruleValue{{ loop.index }}" class="form-control js-orule-value" value="12" min="1" max="1000" step="1" aria-describedby="oruleValueHint{{ loop.index }}">
-                                    <span id="oruleValueHint{{ loop.index }}" class="text-gray">1 – 1000</span>
+                                    <input type="number" id="oruleValue{{ oruleIdx }}" class="form-control js-orule-value" value="12" min="1" max="1000" step="1" aria-labelledby="oruleRowName-{{ oruleIdx }} oruleValueLabel{{ oruleIdx }}" aria-describedby="oruleValueHint{{ oruleIdx }}">
+                                    <span id="oruleValueHint{{ oruleIdx }}" class="text-gray">1 – 1000</span>
                                 </div>
                             </div>
                             {% elif rule.kind == "max_chars" %}
                             <div class="flex-row column gap-8">
                                 <div class="form-group">
-                                    <div class="label"><label for="oruleValue{{ loop.index }}" class="control-label" data-i18n="settings.outputRuleValue">上限</label></div>
+                                    <div class="label"><label id="oruleValueLabel{{ oruleIdx }}" for="oruleValue{{ oruleIdx }}" class="control-label" data-i18n="settings.outputRuleValue">上限</label></div>
                                     <div class="field">
-                                        <input type="number" id="oruleValue{{ loop.index }}" class="form-control js-orule-value" value="1200" min="1" max="100000" step="1" aria-describedby="oruleValueHint{{ loop.index }}">
-                                        <span id="oruleValueHint{{ loop.index }}" class="text-gray">1 – 100000</span>
+                                        <input type="number" id="oruleValue{{ oruleIdx }}" class="form-control js-orule-value" value="1200" min="1" max="100000" step="1" aria-labelledby="oruleRowName-{{ oruleIdx }} oruleValueLabel{{ oruleIdx }}" aria-describedby="oruleValueHint{{ oruleIdx }}">
+                                        <span id="oruleValueHint{{ oruleIdx }}" class="text-gray">1 – 100000</span>
                                     </div>
                                 </div>
                                 <div class="form-group">
@@ -1198,7 +1273,7 @@ permalink: 5-2_conversationSettings.html
                                     <div class="field">
                                         <input type="text" id="oruleCategorySlot{{ loop.index }}" class="form-control js-orule-category-slot" value="note3" aria-describedby="oruleCategoryHint{{ loop.index }}">
                                         {# 上下界是資料不是譯文（§3-2）：同一組界線就寫在下面 `js-orule-category-limit` 的
-                                             `min="1" max="100000"` 上（正本 output_rules.py 的 `by_category`）。
+                                             `min="1" max="100000"` 上（正本 product app/output_rules.py 的 `by_category`）。
                                              414eecc 已經對本頁另外三處做過同一個修正，這是第四處漏網。
                                              「最多 50 個代碼」在 markup 沒有第二份抄本，維持譯文。 #}
                                         <span id="oruleCategoryHint{{ loop.index }}" class="text-gray"><span data-i18n="settings.outputRuleCategoryHintPrefix">填標籤維度的欄位鍵（note1…note10、date2、date3），不是維度的名稱——填別的字不會報錯，只會讓這條規則永遠不命中。維度槽與逐代碼上限要一起設；只設一邊，逐代碼上限不會生效。最多 </span><span>50</span><span data-i18n="settings.outputRuleCategoryHintMid"> 個代碼、每個代碼上限 </span><span>1 – 100000</span><span data-i18n="settings.outputRuleCategoryHintSuffix"> 字。</span></span>
@@ -1213,7 +1288,13 @@ permalink: 5-2_conversationSettings.html
                                      用 role="group"＋aria-labelledby 指向浮空標題，讓報讀器先報出
                                      「逐代碼覆寫上限」這組在問什麼，再念組內的代碼／上限（§4）。 #}
                                 <div role="group" aria-labelledby="oruleCategoryOverridesLabel{{ loop.index }}" class="flex-row column gap-8">
-                                {% for cat in [{ code: "tariff", limit: "2000" }, { code: "procedure", limit: "800" }] %}
+                                {# 代碼是 **note3（業務範疇）字典裡真的有的代碼**：`B06`（關稅與稅則）／`B02`
+                                     （居留與簽證），正本是 5-10 的 `tagDimensions` note3 ＋ 5-4 的 `gapGroups`
+                                     那兩個 key。原本演的是 `tariff`／`procedure`——那正是上面那格說明字警告的
+                                     情況（後端不驗這一格，填別的字不會報錯，只會讓這條規則永遠不命中），
+                                     示範資料自己演了一個永遠不命中的設定（§6 示範要自洽、要是真實可能的狀態）。
+                                     同一顆規則的 `case` 已經用 `B06` 了，兩處先前對不起來。 #}
+                                {% for cat in [{ code: "B06", limit: "2000" }, { code: "B02", limit: "800" }] %}
                                 <div class="flex-row flex-wrap gap-8">
                                     <input type="text" class="form-control js-orule-category-code" value="{{ cat.code }}" aria-label="代碼" data-i18n-aria-label="settings.outputRuleCategoryCode">
                                     <input type="number" class="form-control js-orule-category-limit" value="{{ cat.limit }}" min="1" max="100000" step="1" aria-label="上限" data-i18n-aria-label="settings.outputRuleValue" aria-describedby="oruleCategoryHint{{ oruleIdx }}">
@@ -1546,7 +1627,7 @@ permalink: 5-2_conversationSettings.html
                 <select id="aliasTablesSelect" class="form-control multiSelect js-alias-tables" multiple="multiple" data-placeholder="請選擇" data-placeholder-key="common.pleaseSelect" aria-describedby="aliasBindHint">
                     {% for t in aliasTableCatalog %}<option value="{{ t.id }}"{% if t.id in aliasBindIds %} selected{% endif %}>{{ t.name }}</option>{% endfor %}
                 </select>
-                <span class="text-gray" id="aliasBindHint"><span data-i18n="settings.aliasBindLimitPrefix">一個設定檔最多綁 </span><span>10</span><span data-i18n="qa.detailConvItems">個</span></span>
+                <span class="text-gray" id="aliasBindHint"><span data-i18n="settings.aliasBindLimitPrefix">一個設定檔最多綁 </span><span>10</span><span data-i18n="common.unitItems">個</span></span>
             </div>
         </div>
         <div class="form-group row mobile-col">
@@ -1650,13 +1731,25 @@ permalink: 5-2_conversationSettings.html
             <div class="field col-12-sm">
                 {# `<option value>`＝Skill 主鍵（product `skills.py` 的 `skill_id`），值域正本是 3-4 那張
                      管理表：11（refund-flow）／12（lookup-order）／13（policy-lookup）。原本烤 1／2／3，
-                     同一份庫在兩頁各有一組主鍵，而送出去的 `config.skill_ids` 就是這個值（§6）。 #}
+                     同一份庫在兩頁各有一組主鍵，而送出去的 `config.skill_ids` 就是這個值（§6）。
+                     **`policy-lookup` 在 3-4 是 `enabled: false`**，故要有字面標示（§5：不可用的選項
+                     不從清單濾掉，列出來 ＋ 標示狀態；狀態不可只靠顏色或位置表達）。同 MCP 那顆走
+                     `ui/multi-select` 的 `data-suffix`／`data-suffix-key` 兩個槽（`<option>` 塞不進第二個
+                     節點，§4-2 資料槽慣例），後綴共用 `settings.mcpServerInactive`（繁中「（停用中）」
+                     相同的 chrome 沿用既有 key，§4-2）。
+                     為什麼不濾掉：寫入層只驗存在與租戶歸屬、**不驗啟用狀態**（product `app/tool_refs.py`
+                     的 `assert_owned_skills` 只做 `_reject_unknown`），所以「先指派、之後再啟用」是
+                     正常流程；而多選的選取狀態存在 `<option>` 上，選項消失＝租戶一碰這個多選就把那筆
+                     指派靜默弄丟。停用期間不會被呼叫：GufoRAG chatbot `app/services/skills.py` 的
+                     `load_active_skill` 對 `not row.enabled` 直接回 `None`，故文案是「要等啟用後才會被
+                     呼叫」而不是「不能設定」（與 MCP 那一顆逐字同一種說法）。 #}
                 <select id="skillsSelect" class="form-control multiSelect js-skills" multiple="multiple" data-placeholder="請選擇" data-placeholder-key="common.pleaseSelect">
                     <option value="11" selected>refund-flow</option>
                     <option value="12">lookup-order</option>
-                    <option value="13">policy-lookup</option>
+                    <option value="13" data-suffix="（停用中）" data-suffix-key="settings.mcpServerInactive">policy-lookup</option>
                 </select>
                 <p class="text-gray" data-i18n="settings.assignedSkillsHint">被指派的 skill 會成為 agent 可呼叫的工具，由它依「用途說明」自行決定何時使用。</p>
+                <p class="text-gray" data-i18n="settings.assignedSkillsInactiveHint">標示「停用中」的 skill 仍可先指派給這個設定檔，但要等它在「Skill 管理」啟用後才會被 agent 呼叫。</p>
             </div>
         </div>
     </div>
@@ -1822,9 +1915,11 @@ permalink: 5-2_conversationSettings.html
 </div>
 
 {# 統一儲存：直送 PUT /settings/profiles/{no}（分組 merge 寫回生成/政策/agent-提示詞/內建工具/MCP 勾選）。
-     切版新頁的直送 API 鈕→data-toast 列全結果（§5）＋自創 js-save-profile-config（React 綁定記號）。 #}
+     切版新頁的直送 API 鈕→data-toast 列全結果（§5）＋自創 js-save-profile-config（React 綁定記號）。
+     403 那一段見「啟用全部意圖判斷」旁的註解（`PUT /settings/profiles/{no}` 掛 product
+     `routers/settings_hub.py` 的 `require_capability("settings","write")`）。 #}
 <div class="flex-row justify-content-center mt-24">
-    <button data-capability="settings:write" type="button" class="button button-primary js-save-profile-config" data-toast="對話設定已儲存|部分欄位未通過驗證|儲存失敗，請稍後再試" data-i18n-data-toast="toast.saveProfileConfig" data-toast-type="success|warning|error" data-i18n="settings.saveConfig">儲存對話設定</button>
+    <button data-capability="settings:write" type="button" class="button button-primary js-save-profile-config" data-toast="對話設定已儲存|部分欄位未通過驗證|權限不足，無法儲存|儲存失敗，請稍後再試" data-i18n-data-toast="toast.saveProfileConfig" data-toast-type="success|warning|warning|error" data-i18n="settings.saveConfig">儲存對話設定</button>
 </div>
 
 {# 意圖啟用確認 modal（intentionModal）：檢索與欄位子頁籤開啟某層意圖、但仍有資料集未填任務描述時彈出

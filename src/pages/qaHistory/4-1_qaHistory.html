@@ -25,7 +25,7 @@ permalink: 4-1_qaHistory.html
                     <label for="startDateInput" class="control-label required" data-i18n="qa.startTime">開始時間</label>
                 </div>
                 <div class="field">
-                    <input type="text" id="startDateInput" class="form-control time start-date" placeholder="開始時間" data-i18n-placeholder="qa.startTime" required>
+                    <input type="text" id="startDateInput" class="form-control time start-date" placeholder="開始時間" data-i18n-placeholder="qa.startTime" aria-describedby="exportRangeHint" required>
                 </div>
             </div>
             <div class="form-group col-4-md col-12-sm">
@@ -33,23 +33,58 @@ permalink: 4-1_qaHistory.html
                     <label for="endDateInput" class="control-label required" data-i18n="qa.endTime">結束時間</label>
                 </div>
                 <div class="field">
-                    <input type="text" id="endDateInput" class="form-control time end-date" placeholder="結束時間" data-i18n-placeholder="qa.endTime" required>
+                    <input type="text" id="endDateInput" class="form-control time end-date" placeholder="結束時間" data-i18n-placeholder="qa.endTime" aria-describedby="exportRangeHint" required>
                 </div>
             </div>
             <div class="form-group col-4-md col-12-sm">
                 <div class="label">
                     <label for="userTypeSelect" class="control-label required" data-i18n="qa.userType">使用者類型</label>
                 </div>
+                {# `<option value>` 帶的是**送出去的值**，不是畫面文字（同本頁「滿意度」與「答案來源」
+                     那兩顆）。值域正本＝product `app/routers/history.py` 的 `_TAG_LABEL`
+                     （`{"frontend": "前台", "backend": "後台", "ab_test": "AB測試"}`，匯出那一欄
+                     就是拿它把 `chat_logs.tag` 翻成中文），`GET /history` 與 `/history/export`
+                     兩支的 `tag` 參數收的就是這三個字面。
+                     原本三顆的 value 是**中文顯示字**（`全部`／`前台問答`／`後台問答`）：`tag` 是
+                     `str | None = Query(default=None, max_length=MAX_CHATLOG_TAG_LEN)` 的**自由字串**，
+                     打錯**不會 400、只會回空清單**——使用者看到的是「這段時間沒有問答」，
+                     而不是「你送了一個不存在的分類」。這是這一顆最貴的失敗方式，也是它沒有被發現的原因。
+                     **`ab_test` 補上**：AB 測試兩側各是一筆真的 chat_log（2-2-3 的讚/倒讚寫的就是它，
+                     那一頁的評分窗文案逐字寫著「之後在歷史紀錄裡篩『AB測試』就找得到」），
+                     而 `_default_view_exclusions` 的 docstring 也明講 `ab_test` **不在**預設排除之列
+                     ⇒ 它會進這張清單，卻沒有任何一顆選項篩得到它。繁中「AB測試」站內已有主人
+                     （`nav.abTest`），§4-2 同文沿用既有 key、不另立。
+                     ⚠️ `all` 是**前端哨兵，不送出去**：這一欄 `required`，所以「還沒挑」必須是
+                     `<option value="">`（§4），「全部」不能共用那顆空值、否則兩件事在
+                     `.js-filter-clear` 清完之後分不開。真的送 `tag=all` 只會回空清單（同上，不會 400），
+                     所以 React 讀到 `all` 就整個不帶 `tag` 參數——這一句是給轉換的人看的契約。 #}
                 <div class="field">
                     <select id="userTypeSelect" class="form-control singleSelect user-type-select" required>
                         <option value="" data-i18n="common.pleaseSelect">請選擇</option>
-                        <option value="全部" selected data-i18n="common.all">全部</option>
-                        <option value="前台問答" data-i18n="qa.frontendQa">前台問答</option>
-                        <option value="後台問答" data-i18n="qa.backendQa">後台問答</option>
+                        <option value="all" selected data-i18n="common.all">全部</option>
+                        <option value="frontend" data-i18n="qa.frontendQa">前台問答</option>
+                        <option value="backend" data-i18n="qa.backendQa">後台問答</option>
+                        <option value="ab_test" data-i18n="nav.abTest">AB測試</option>
                     </select>
                 </div>
             </div>
         </div>
+        {# 下載那顆鈕的 `data-toast` 把 31 烤進譯文（「只提供31日間的問答記錄下載」）。屬性型譯文
+             那條例外**兩個條件缺一不可**（§4-2）：②上游符號名寫在檔頭——已經寫在下面那顆鈕的
+             逐 raise 清單上；①**同頁另有一處常駐可見的資料節點承載同一個約束**——原本一處都沒有，
+             使用者要按下下載、撞到 400 才知道有這條界線。故補這一句，並依 §3-2「值域寫在填之前」
+             擺在起訖兩欄旁邊（兩欄各自 `aria-describedby` 指它），不是擺在下載鈕那一列。
+             兩個數字都是資料節點、不進譯文：31＝`(e - s) > timedelta(days=31)`
+             （`history.range_over_31_days`）、366＝`(now - s) > timedelta(days=366)`
+             （`history.range_over_a_year`），兩條都在 product `app/routers/history.py` 的
+             `_validate_export_range` 裡。toast 那一句寫的「一年」就是 366 天這條界線的口語說法，
+             這裡照上游寫確切天數——譯文四捨五入得起來，常駐的那一份不行。
+             ⚠️ 起訖欄是**查詢與下載共用**的，而 `list_history` 沒有這道驗證（那支只有 `start_time`／
+             `end_time` 兩個查詢參數、不驗範圍），所以這一句要講清楚它只約束下載，否則就變成替
+             查詢宣告了一條上游不存在的限制。
+             中段那顆 key 沿用 `settings.timeRangeLimitMid`（5-3／5-4 的同一句繁中）：§4-2「繁中原文
+             相同的 UI chrome 沿用既有 key、不另立」——同文異 key 遲早讓英譯自己分岔。 #}
+        <p class="text-gray m-0" id="exportRangeHint"><span data-i18n="qa.exportRangeLimitPrefix">下載的起訖範圍最長 </span><span>31</span><span data-i18n="settings.timeRangeLimitMid"> 天，開始時間也不得早於 </span><span>366</span><span data-i18n="qa.exportRangeLimitSuffix"> 天前；查詢不受這兩條限制。</span></p>
         <div class="flex-row gap-8 mobile-column sm-gap-16">
             <div class="form-group col-12-sm flex-1">
                 <div class="label">
@@ -87,7 +122,7 @@ permalink: 4-1_qaHistory.html
                          `GET /api/chat/chatlogs?rating_type=unrated` → `rating_type IS NULL`，
                          而它**刻意不在 RatingType 枚舉裡**——進了枚舉就等於讓「未評分」變成一個寫得進 DB
                          的第三種值，那是另一件事。所以這一顆只出現在查詢下拉，不會出現在任何評分的寫入面。
-                         過濾套用在 `count()` 之前 ⇒ 「共 N 筆資料」與頁碼列跟著這個篩選一起變
+                         過濾套用在 `count()` 之前 ⇒ 「共 N 筆」與頁碼列跟著這個篩選一起變
                          （§6：那兩個數字必須同源，見本頁 data-info 與 pagination 的 total）。
                          （凍結的 jQuery 前端也有這一顆，但那是舊 .NET API；這裡對齊的是現行契約。） #}
                     <select id="ratingSelect" class="form-control singleSelect rating-select">
@@ -131,48 +166,90 @@ permalink: 4-1_qaHistory.html
                  `showToast('請填寫開始時間、結束時間和使用者類型')`。共用的 `toast.query` 不能加這一段
                  （其餘六頁沒有任何 required 欄，加了就是演不可能的結果），故本頁另立 key。 #}
             <button type="button" class="button button-primary" data-toast="正在查詢資料...|請填寫開始時間、結束時間與使用者類型|查詢成功|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.queryHistory" data-toast-type="info|warning|success|error" data-i18n="action.query">查詢</button>
-            {# 統計表頭（product `GET /history/export?with_header=true`）：在 CSV 最前面加一段統計區間／
-                 製表時間／使用人次／使用人數／滿意度計數。**預設關閉**——開著會改變檔案首列，
-                 下游既有的解析會全部錯位。值載體 checkbox → 只掛 hook class（§5 矩陣②），
-                 成敗由旁邊的下載鈕演。 #}
-            <label class="form-checkbox">
-                <input type="checkbox" class="js-export-with-header" aria-describedby="exportWithHeaderHint">
-                <span data-i18n="qa.exportWithHeader">含統計表頭</span>
-            </label>
             {# 匯出格式（product `GET /history/export?format=`，`Query(alias="format")` 收
                  `Literal["csv","xlsx","jsonl"]`、預設 csv）。**畫面只給兩顆**：csv 與 xlsx 是同一個
                  問題的兩種答案（要不要巢狀明細），jsonl 是給程式與稽核的那一份、沒有人會在這個
                  畫面上挑它——列出來只會讓兩個真的要選的選項變難挑。
-                 一組 radio 沒有單一 `for` 可掛 ⇒ 浮空標題給 id ＋ 容器 `role="radiogroup"`
-                 ＋ `aria-labelledby`（§4：一組控制項要報出「這組在問什麼」）。
                  值載體 ⇒ 只掛 hook class、不掛 data-toast（§5 矩陣②）；成敗由旁邊那顆下載鈕演。
-                 唯讀匯出，不宣告授權軸。 #}
+                 唯讀匯出，不宣告授權軸。
+
+               ## 「含統計表頭」是 **csv 這一顆 radio 的附屬控制項**，不是獨立的旗標
+                 `with_header` 在正本 `export_history` 裡**只有 CSV 那條路徑碰得到**：`stats.rows(...)`
+                 只在 `_stream()`（csv）的第一個 yield 出現，`_stream_jsonl()` 與 `fmt == "xlsx"`
+                 那兩段完全不讀它。所以「完整明細（Excel）＋ 含統計表頭」是一個**無效格**——
+                 勾了不會壞、也不會有任何提示，只是那一段統計不存在，而使用者要開啟檔案才知道。
+                 更貴的是它還**照付代價**：`with_header=true` 會先走一整遍分頁只為累計統計
+                 （上游請求數 ×2），xlsx 那條路等於白等一倍時間換一段不會輸出的東西。
+                 故把它收進 csv 那一格：`ui/field-with-input` 的三個 class（`.field-with-input-group`
+                 一列／`.field-with-input` 一顆 radio 與它的附屬控制項／`.with-input` 被啟用停用的那些）
+                 ——選 xlsx 的當下 checkbox 就被停用，依賴關係由 markup 表達、不靠人讀說明。
+                 這是本 repo 第二份 `.field-with-input-group`（第一份是 `components/data-time-filter`），
+                 也是第一次拿它掛 checkbox 而不是文字欄——那三個 class 對控制項型別沒有假設。
+                 初始 `checked` 的是 csv ⇒ checkbox **初始不帶 `disabled`**（data-time-filter 那份
+                 帶著，因為它預設選的不是那一顆；初始態要與 `checked` 那一顆一致，見該元件檔頭）。
+                 `role` 用 **`group` 不是 `radiogroup`**：`radiogroup` 的 owned element 只能是 radio，
+                 這一列含一顆 checkbox，報讀器會把它念成單選成員——判準與 data-time-filter 檔頭同一條。
+                 每顆控制項各包一層 `<div class="function">`（`ui/form-control` 的全域原子，
+                 `flex-shrink:0` ＋ inline flex），與 data-time-filter 那份逐字同形：少了那一層，
+                 `.field-with-input` 會直下含兩顆 `form-*` label，被讀成「一組在問什麼」而要求它自己
+                 再掛一次 `role="group"`——那顆 div 是為了「radio 與它的附屬控制項」存在的，不是一組問句。 #}
             <span id="exportFormatLabel" class="control-label" data-i18n="qa.exportFormat">匯出格式</span>
-            <div class="flex-row align-items-center gap-16" role="radiogroup" aria-labelledby="exportFormatLabel">
-                <label class="form-radio">
-                    <input type="radio" name="exportFormat" class="js-export-format" value="csv" checked>
-                    <span data-i18n="qa.exportSummary">摘要（CSV）</span>
-                </label>
-                <label class="form-radio">
-                    <input type="radio" name="exportFormat" class="js-export-format" value="xlsx" aria-describedby="exportFormatHint">
-                    <span data-i18n="qa.exportFullDetail">完整明細（Excel）</span>
-                </label>
+            <div class="flex-row align-items-center gap-16 flex-wrap field-with-input-group" role="group" aria-labelledby="exportFormatLabel">
+                <div class="flex-row align-items-center gap-16 field-with-input">
+                    <div class="function">
+                        <label class="form-radio">
+                            <input type="radio" name="exportFormat" class="js-export-format" value="csv" checked>
+                            <span data-i18n="qa.exportSummary">摘要（CSV）</span>
+                        </label>
+                    </div>
+                    {# 統計表頭（product `GET /history/export?with_header=true`）：在 CSV 最前面加一段
+                         統計區間／製表時間／使用人次／使用人數／滿意度計數。**預設關閉**——開著會
+                         改變檔案首列，下游既有的解析會全部錯位。值載體 checkbox → 只掛 hook class
+                         （§5 矩陣②），成敗由旁邊的下載鈕演。 #}
+                    <div class="function">
+                        <label class="form-checkbox">
+                            <input type="checkbox" class="js-export-with-header with-input" aria-describedby="exportWithHeaderHint">
+                            <span data-i18n="qa.exportWithHeader">含統計表頭</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="function">
+                    <label class="form-radio">
+                        <input type="radio" name="exportFormat" class="js-export-format" value="xlsx" aria-describedby="exportFormatHint">
+                        <span data-i18n="qa.exportFullDetail">完整明細（Excel）</span>
+                    </label>
+                </div>
             </div>
-            {# 代價寫在做決定的那顆控制項旁邊（§3-2）：多出來的是什麼要在挑之前說，不是下載完才發現。
-                 三張明細表對回正本 `export_history` 的 `format` 註解：執行步驟／工具呼叫／搜尋結果，
-                 各自一列一筆、以「對話編號」對回主表（主表本身與 CSV 同一份取值，故不算「多出來的」）。 #}
+            {# 兩句代價都寫在做決定的那顆控制項旁邊（§3-2）。原本「含統計表頭」那一句被整組 radio
+                 隔開，讀起來像在講匯出格式。
+                 · 完整明細的三張工作表對回正本 `export_history` 的 `format` 註解：執行步驟／工具呼叫／
+                   搜尋結果，各自一列一筆、以「對話編號」對回主表（主表本身與 CSV 同一份取值，
+                   故不算「多出來的」）。
+                 · 統計表頭那一句的後半是正本 docstring 逐字寫的「預設關閉，因為多一段前置區塊會讓
+                   『第一列就是欄名』的既有下游解析當場壞掉」；前半是**這一輪補的依賴關係**——
+                   `with_header` 只在 CSV 路徑輸出，所以「只有摘要（CSV）有」要在勾之前講得出來，
+                   不能只靠 checkbox 被停用（停用說得出「現在不能勾」，說不出「為什麼」）。 #}
+            <span class="text-gray" id="exportWithHeaderHint" data-i18n="qa.exportWithHeaderHint">統計表頭只有「摘要（CSV）」這一種格式輸出得出來，選了完整明細就沒有這一段。開啟後 CSV 第一列不再是欄名，既有的下游解析會錯位</span>
             <span class="text-gray" id="exportFormatHint" data-i18n="qa.exportFullDetailHint">完整明細會多出三張工作表——每一步、每次工具呼叫的完整輸出、每一張來源卡的全文</span>
-            {# 代價寫在做決定的那顆控制項旁邊（§3-2）：正本 history.py 的 `export_history` docstring 逐字寫著
-                 「預設關閉，因為多一段前置區塊會讓『第一列就是欄名』的既有下游解析當場壞掉」——
-                 那句話原本只寫在上面的 nunjucks 註解裡，build 時就被移除，使用者永遠讀不到。 #}
-            <span class="text-gray" id="exportWithHeaderHint" data-i18n="qa.exportWithHeaderHint">開啟後 CSV 第一列不再是欄名，既有的下游解析會錯位</span>
-            {# `GET /history/export` 開跑前有三道使用者自己修得掉的 400，全部並列不可互相取代：
-                 · 範圍長度 > 31 天（history.py 的 `history.range_over_31_days`）
-                 · 起點比現在早超過 366 天（history.py 的 `history.range_over_a_year`）——與上一條是不同條件：
+            {# `GET /history/export` 開跑前有**七道**使用者自己修得掉的 400，全部並列不可互相取代
+                 ——六道在 `_validate_export_range`（product app/routers/history.py，逐 raise 由上而下），一道在它之後：
+                 · `history.export_needs_range`  —— 起訖**沒填齊**（`if not start_time or not end_time`）。
+                   **這一條在本頁特別會咬人**：同一列的 `.js-filter-clear` 會把起訖兩格清空
+                   （filter-fields.js），清完直接按下載就是它；而它與旁邊那顆「查詢」的必填 warning
+                   是**兩支不同的端點**，兩顆鈕各自要有自己的那一段。
+                 · `history.bad_time_format` —— `datetime.fromisoformat` 吃不下（`except ValueError`）。
+                   起訖是 `type="text"` ＋ flatpickr，使用者手打得進任何字串。
+                 · `history.start_in_future` —— `s >= now`
+                 · `history.end_before_start` —— `e < s`
+                 · `history.range_over_31_days` —— `(e - s) > 31 天`
+                 · `history.range_over_a_year` —— `(now - s) > 366 天`。與上一條是**不同條件**：
                    選 2024/01/01～01/20 過得了 31 天那關，照樣被一年那關擋掉
-                 · `total > MAX_EXPORT_LOGS`（history.py，串流開始前就先探一頁擋掉）
-                 原本只列第一條，另外兩條落進紅色的「下載失敗」。 #}
-            <button type="button" class="button button-green" data-toast="下載已開始|只提供31日間的問答記錄下載|只提供一年內的問答記錄下載|這段範圍的資料量過大，請縮小時間範圍|下載失敗" data-i18n-data-toast="toast.downloadRecords" data-toast-type="success|warning|warning|warning|error" data-i18n="action.download">下載</button>
+                 · `history.export_too_many` —— `total > MAX_EXPORT_LOGS`（串流開始前先探一頁擋掉：
+                   送出 200 標頭之後就沒有辦法再回錯誤了）
+                 原本只列了後三條，前四條全部落進紅色的「下載失敗」——而那四條每一條使用者當場改得掉。
+                 ⚠️ `|` 是索引契約：本輪在中段插了四段，React 端照 `split("|")` 位置取 `toast.downloadRecords`
+                 的地方要跟著位移；分支順序＝上游 raise 的先後。 #}
+            <button type="button" class="button button-green" data-toast="下載已開始|請先填開始時間與結束時間|時間格式不正確，請重新選擇起訖時間|開始時間不能晚於現在|結束時間不能早於開始時間|只提供31日間的問答記錄下載|只提供一年內的問答記錄下載|這段範圍的資料量過大，請縮小時間範圍|下載失敗" data-i18n-data-toast="toast.downloadRecords" data-toast-type="success|warning|warning|warning|warning|warning|warning|warning|error" data-i18n="action.download">下載</button>
         </div>
     </div>
 </div>
@@ -183,8 +260,8 @@ permalink: 4-1_qaHistory.html
      編號純文字、link-file 連結掛在「使用者對話內容」、query 參數為 ?logSn=）。
      **一處刻意不沿用真 app**：AI 內容真 app 是 div.ellipsis-2 純截斷，切版改用 ui/collapse-text——
      夾掉的那幾行在觸控裝置與鍵盤上都拿不到（§5 刻意不沿用要記載什麼取代了什麼）。 #}
-{# 「共 N 筆資料」是**伺服器總筆數**（total，與下方頁碼列同源），不是本頁渲染的列數——
-     示範列只有 3 筆，寫成 rows.length 會出現「共 3 筆資料」配「共 6 頁」的自打架（§6）。
+{# 「共 N 筆」是**伺服器總筆數**（total，與下方頁碼列同源），不是本頁渲染的列數——
+     示範列只有 3 筆，寫成 rows.length 會出現「共 3 筆」配「共 6 頁」的自打架（§6）。
      total／perPage 在這裡宣告一次，計數列與頁尾的 pager-row 共用同一份。 #}
 {% set total = 115 %}
 {% set perPage = 20 %}
@@ -194,7 +271,12 @@ permalink: 4-1_qaHistory.html
      4-2 是基準：它畫了完整的 Agent 執行流程與工具軌跡，而 QA 直答是結構性短路
      （命中 QA 就直接回，那一輪產不出 `search_knowledge_base` 節點與 tool_activity）
      ⇒ 同一筆不可能一頁 `qa_direct`、另一頁 `generated`。
-     故直答改掛在 #12175：它沒有對應的詳情頁示範，徽章分支照樣演得到。 #}
+     故直答改掛在 #12175：它沒有對應的詳情頁示範，徽章分支照樣演得到。
+   `userType` **給上游字面**（`chat_logs.tag`＝`frontend`／`backend`／`ab_test`，值域正本是
+     product `app/routers/history.py` 的 `_TAG_LABEL`，與上面那顆篩選 select 同一組值）：
+     它是**封閉目錄**，中文由 cell 的 `{% if %}` 鏈配 i18n key 產生。原本這一欄塞的是顯示字
+     「前台問答」再 `{{ }}` 原樣輸出——React 接上真 API 只會印出 `frontend`，而英文模式下那一格
+     永遠是中文（同 `components/qa-detail-info` 檔頭立的規）。 #}
 {% set rows = [
     {
         id: "12173",
@@ -202,7 +284,7 @@ permalink: 4-1_qaHistory.html
         roomId: "6537",
         userMsg: "新住民結婚注意事項",
         aiMsg: "您好！關於新住民結婚的注意事項，以下是一些重要的要點：申請結婚登記需雙方親自到戶政事務所辦理，並準備有效身分證明與結婚證明文件；部分情況需健康檢查合格證明。",
-        userType: "前台問答",
+        userType: "frontend",
         rating: "讚",
         date: "2024/12/01 13:29:24",
         href: "4-2_qaHistory_detail.html?logSn=12173"
@@ -213,7 +295,7 @@ permalink: 4-1_qaHistory.html
         roomId: "6538",
         userMsg: "護照效期不足可以出國嗎",
         aiMsg: "護照效期建議至少保留6個月以上，若不足可能影響入境；各國規定不同，行前請先確認目的地國的效期要求與簽證條件。",
-        userType: "後台問答",
+        userType: "backend",
         rating: "無意見",
         date: "2024/12/02 09:12:03",
         href: "4-2_qaHistory_detail.html?logSn=12174"
@@ -224,13 +306,13 @@ permalink: 4-1_qaHistory.html
         roomId: "6539",
         userMsg: "欠稅被限制出國要如何解除",
         aiMsg: "欠稅限制出國的解除方式，需先向稅捐機關繳清欠稅或提供相當擔保，經核准後由財政部函請移民署解除限制。",
-        userType: "前台問答",
+        userType: "frontend",
         rating: "倒讚",
         date: "2024/12/03 16:45:51",
         href: "4-2_qaHistory_detail.html?logSn=12175"
     }
 ] %}
-<div class="data-info"><span data-i18n="common.total">共</span> {{ total }} <span data-i18n="qa.records">筆資料</span></div>
+<div class="data-info"><span data-i18n="common.total">共</span> {{ total }} <span data-i18n="common.recordsUnit">筆</span></div>
 <div class="table-container scrollTable">
     <table class="default-table">
         <colgroup>
@@ -276,10 +358,14 @@ permalink: 4-1_qaHistory.html
                 <td>
                     <div class="collapse-text"><div class="collapse-body">{{ row.aiMsg }}</div><button type="button" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>
                 </td>
-                {# 直答那幾筆要在清單上看得出來（否則篩了才知道哪一筆是）。**只有直答掛徽章**：
+                {# 使用者類型是**封閉目錄**（`chat_logs.tag`）⇒ 走 `{% if %}` 鏈 ＋ i18n key，
+                     顯示字不塞進資料（見上方 rows 那則註解）；沿用同頁篩選 select 的三顆 key，
+                     兩處說的必須是同一組字。上游把這一欄寫成 NULL（欄位比舊資料晚出生）時畫「—」，
+                     不留白（同 components/qa-detail-info 那四格的規矩）。
+                   直答那幾筆要在清單上看得出來（否則篩了才知道哪一筆是）。**只有直答掛徽章**：
                      生成是常態，每一列都掛一顆「模型生成」等於掛了一顆沒有資訊量的標籤。
                      `is-muted` 是中性事實標記（同 2-2-4 用它標「確定性」），不是判定好壞。 #}
-                <td>{{ row.userType }}{% if row.answerSource == "qa_direct" %} <span class="verdict-tag is-muted" data-i18n="settings.qaDirect">QA 直答</span>{% endif %}</td>
+                <td>{% if row.userType == "frontend" %}<span data-i18n="qa.frontendQa">前台問答</span>{% elif row.userType == "backend" %}<span data-i18n="qa.backendQa">後台問答</span>{% elif row.userType == "ab_test" %}<span data-i18n="nav.abTest">AB測試</span>{% else %}—{% endif %}{% if row.answerSource == "qa_direct" %} <span class="verdict-tag is-muted" data-i18n="settings.qaDirect">QA 直答</span>{% endif %}</td>
                 <td>{{ row.rating }}</td>
                 <td>{{ row.date }}</td>
             </tr>

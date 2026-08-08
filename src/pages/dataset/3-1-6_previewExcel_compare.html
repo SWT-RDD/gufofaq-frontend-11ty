@@ -17,6 +17,11 @@ permalink: 3-1-6_previewExcel_compare.html
 <div class="flex-row column gap-16">
     {% include "ui/breadcrumb/breadcrumb.html" %}
 
+    {# `.file-name-title` 全站 scss 沒有規則＝**真 app 掛點**，不是死碼也不是自創詞彙：
+         previewExcelCompare.js:167 `$('.file-name-title').text(file.FileName)`，與同檔 :165 的
+         `.folder-name-link`、:166 的 `.file-name`（兩者都在上面的麵包屑裡）是同一批填字掛點。
+         §4「新增的無樣式 class 一律走 `js-` 命名，非此形狀者必須在檔頭寫出真 app／product 出處」——
+         這一顆是沿用真 app 的既有名字，故不改名（§5：hook 是轉換契約）。 #}
     <div class="page-title plain file-name-title">商品清單.xlsx</div>
 </div>
 
@@ -27,6 +32,15 @@ permalink: 3-1-6_previewExcel_compare.html
         <button type="button" class="tab tab-md" data-target="panelRaw" title="原始資料" data-i18n-title="dataset.rawData" data-i18n="dataset.rawData">原始資料</button>
     </div>
 </div>
+
+{# 兩個面板 13 顆排序鈕共用的「排序」字樣（可及名稱組成「<欄名> 排序」）；一頁一份、不逐鈕複製。
+     **它必須住在兩個 `.tab-content` 之外**：ui/tab 的 `showPanel()` 是 document 級全域，切到
+     另一個面板時會把沒被選中的 `.tab-content` 整塊 `style.display = "none"`——原本它住在
+     `#panelCompare` 裡，於是使用者一切到「原始資料」，那 7 顆鈕的 `aria-labelledby` 就指向一個
+     display:none 的節點，可及名稱當場變成空的（§4「判準是無障礙樹讀得到，不是 markup 接上了」）。
+     `.sr-only` 是 `position:absolute` 裁切、不是 display:none，放在這裡兩個面板都讀得到。
+     id 同時拿掉 `cmp` 前綴——它從來就不專屬比對面板，帶著面板名只會誘導下一個人再放回去。 #}
+<span id="sortWord" class="sr-only" data-i18n="common.sort">排序</span>
 
 {# 比對資料表格：欄位為「動態」——由帳號的欄位對照（document_field_mapping）決定有哪些欄與各欄顯示名，
      非固定欄。以 set columns（key＝原始欄、label＝顯示名）+ set rows（每列以 key 取值）示範，
@@ -40,7 +54,14 @@ permalink: 3-1-6_previewExcel_compare.html
      （`number` 是數值槽，正好承載「價格」；圖片網址與供應商沒有專屬槽，落在通用備註槽，
      那也是真實租戶會做的事）。
      為什麼一定要改：槽名寫錯在 React 端是**靜默空白**——`row[col.key]` 取不到值就渲染成空字串，
-     不報錯、不警告，而這一頁的全部價值就是讓人確認「對照表有沒有接錯欄」。 #}
+     不報錯、不警告，而這一頁的全部價值就是讓人確認「對照表有沒有接錯欄」。
+     ⚠️ **`label` 一顆 `data-i18n` 都不掛，那是決定不是遺漏**（round45 裁決：租戶自取的顯示名是
+     「資料」不是 chrome，§4-2「只翻 UI chrome，不翻假資料」）。出處：product
+     `app/routers/datasets.py` 的 `_document_field_mapping`（讀三份設定檔的 `document_field_mapping`，
+     slot key → 租戶取的顯示標籤）與 `_product_only_labels`（讀 `RetrievalProfile.field_labels`）；
+     兩者都查不到時才退 `app/field_schema.py` 的 `DEFAULT_LABELS`（槽預設名）——**只有那份預設名
+     才是 chrome**（產品出的字，正典＝multi-select-box 的 `field.<key>`）。這一頁畫的是租戶那一份，
+     故當資料。姊妹頁 3-1-5 的六格表頭反過來是 chrome、照掛 `data-i18n`，理由寫在該頁檔頭。 #}
 {% set columns = [
     { key: "title", label: "標題" },
     { key: "date", label: "時間" },
@@ -74,8 +95,6 @@ permalink: 3-1-6_previewExcel_compare.html
     { title: "商品編號 A003", date: "2025/12/10 15:44", content: "USB-C 充電線 1.5M", note1: "https://example.com/img/a003.jpg", note2: "宏興電子", number: "199", barcode: "4710012340039" }
 ] %}
 <div class="tab-content" id="panelCompare">
-{# 所有排序鈕共用的「排序」字樣（可及名稱組成「<欄名> 排序」）；一頁一份，不逐鈕複製 #}
-<span id="cmpSortWord" class="sr-only" data-i18n="common.sort">排序</span>
 <div class="table-container scrollTable mt-10">
     <table class="default-table fixed-layout">
         <thead>
@@ -88,7 +107,7 @@ permalink: 3-1-6_previewExcel_compare.html
                              可及名稱要帶欄名（§4：同頁同時可見、語意不同的控制項不得同名）——欄名文字是
                              .th-sort 裡的**兄弟節點**、不會進按鈕的可及名稱，只掛 .sr-only「排序」的話，
                              這一列每一顆鈕在報讀器裡都叫「排序」，聽不出正在排哪一欄。 #}
-                        <button type="button" class="sort" data-column="{{ col.key }}" aria-labelledby="cmpColName-{{ col.key }} cmpSortWord">
+                        <button type="button" class="sort" data-column="{{ col.key }}" aria-labelledby="cmpColName-{{ col.key }} sortWord">
                             <img src="./images/icon_ascending_order_black.png" width="20" height="37" decoding="async" alt="">
                         </button>
                     </div>
@@ -104,6 +123,14 @@ permalink: 3-1-6_previewExcel_compare.html
                     <div class="collapse-text"><div class="collapse-body">{{ row[col.key] }}</div><button type="button" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>
                 </td>
                 {% endfor %}
+            </tr>
+            {% else %}
+            {# 空狀態鏡射真 app：previewExcelCompare.js:257 `if (displayData.length === 0)` 就 append
+                 一列 colspan 的「無資料」（原始面板在 :325 有自己的一份，兩個面板各一）。
+                 colspan 走 `{{ columns.length }}` 而不是寫死 6：這張表的欄數由對照表決定
+                 （thead 也是對同一個陣列迴圈），寫死就是烤一份會分岔的計數（§3-2／§6）。 #}
+            <tr>
+                <td colspan="{{ columns.length }}" class="text-center text-gray" data-i18n="common.noData">無資料</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -125,7 +152,7 @@ permalink: 3-1-6_previewExcel_compare.html
                                  排序靜默失效。比對面板才是 `data-column="${col.key}"`（同檔 :243）——
                                  同一個 class、兩個鍵空間，是真 app 本來就有的分別。 #}
                             <span id="rawColName-{{ loop.index }}">{{ col.raw }}{% if col.label %} ({{ col.label }}){% endif %}</span>
-                            <button type="button" class="sort" data-column="{{ col.raw }}" aria-labelledby="rawColName-{{ loop.index }} cmpSortWord">
+                            <button type="button" class="sort" data-column="{{ col.raw }}" aria-labelledby="rawColName-{{ loop.index }} sortWord">
                                 <img src="./images/icon_ascending_order_black.png" width="20" height="37" decoding="async" alt="">
                             </button>
                         </div>
@@ -141,6 +168,13 @@ permalink: 3-1-6_previewExcel_compare.html
                         <div class="collapse-text"><div class="collapse-body">{{ row[col.key] }}</div><button type="button" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>
                     </td>
                     {% endfor %}
+                </tr>
+                {% else %}
+                {# 空狀態鏡射真 app：previewExcelCompare.js:325 那一列的 colspan 就是
+                     `originalData.ColTitles.length`＝原始欄數，與比對面板各算各的（這張表多一欄
+                     「條碼」——活頁簿裡沒被對照表接走的欄只出現在這一側）。 #}
+                <tr>
+                    <td colspan="{{ rawTitles.length }}" class="text-center text-gray" data-i18n="common.noData">無資料</td>
                 </tr>
                 {% endfor %}
             </tbody>

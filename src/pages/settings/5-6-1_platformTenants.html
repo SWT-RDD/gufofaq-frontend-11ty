@@ -29,10 +29,22 @@ permalink: 5-6-1_platformTenants.html
      .js-knowledge-select／.js-llm-select 先例：業務 select 掛 hook class），不掛 data-toast——click 委派抓不到
      「選了哪個選項」，成敗訊息也得看後端回應（含 409 last_platform_admin 的專屬文案），非本頁能靜態列舉。
      示範列僅列 auditor／admin（none 不會出現在真實列表——後端只回 platform_role != "none" 的使用者）。 #}
+{# id＝`PlatformAdminOut.id`（product app/routers/platform.py），也就是 `PATCH /platform/users/{user_id}/platform-role` 的
+     路徑主鍵——這一列那顆 select 送出去要指名誰，只有它答得出來。**不可拿 loop.index 當列鍵**：
+     授撤角色會把人從這張表移出去（改成 `none` 之後 `list_platform_admins` 就不回他了），
+     位置不是身分（§6 列鍵，同本頁下方租戶表的 `data-tenant-id`）。
+   **列序＝`platform_role` 降冪、再 id 升冪**，出處是 platform.py 的 `list_platform_admins`
+     （`.order_by(User.platform_role.desc(), User.id)`）。這張表只會有 `auditor` 與 `admin` 兩種值，
+     而字串比較上 `"admin" < "auditor"` ⇒ **降冪把 auditor 排在最前面**，admin 在後、彼此照 id 升冪。
+     原本排成 admin／auditor／admin 交錯，那是這支端點產不出來的順序（§6 列序也是示範資料的一部分）。
+   `created_at`（`PlatformAdminOut` 的第五欄）補成一欄：ISO 要盤點的是「誰握有最高權限」，而「這個帳號
+     從什麼時候起就在平台上」是判斷一列該不該留下來的依據之一，原本這一欄沒有落點也沒有理由（§3-2）。
+     它是**使用者帳號的建立時間**，不是角色的授予時間——後者沒有欄位可回，要查得去稽核日誌（5-7）看
+     `platform.role.grant`／`revoke` 那兩個事件（`set_platform_role` 的 `record_audit`，detail 帶 from/to）。 #}
 {% set platformAdminRows = [
-  { email: "admin@example.com", tenant: "示範租戶 A", role: "admin" },
-  { email: "auditor@example.com", tenant: "示範租戶 B", role: "auditor" },
-  { email: "ops-admin@example.com", tenant: "示範租戶 C", role: "admin" }
+  { id: 88, email: "auditor@example.com", tenant: "示範租戶 B", role: "auditor", createdAt: "2025/09/12 14:07" },
+  { id: 12, email: "admin@example.com", tenant: "示範租戶 A", role: "admin", createdAt: "2025/03/04 09:22" },
+  { id: 205, email: "ops-admin@example.com", tenant: "示範租戶 C", role: "admin", createdAt: "2026/05/20 16:41" }
 ] %}
 <div class="block mb-16 flex-row column gap-16" data-platform-role="auditor">
     <div class="text-md text-bold" data-i18n="platform.platformRolesTitle">平台權限</div>
@@ -42,24 +54,29 @@ permalink: 5-6-1_platformTenants.html
                 <col style="min-width:220px;">
                 <col style="min-width:160px;">
                 <col style="min-width:160px;">
+                <col style="min-width:160px;">
             </colgroup>
             <thead>
                 <tr>
                     <th data-i18n="common.email">電子郵件</th>
                     <th data-i18n="settings.tenant">租戶</th>
+                    <th data-i18n="common.createdAt">建立時間</th>
                     <th id="platformRoleHead" data-i18n="platform.platformRole">平台角色</th>
                 </tr>
             </thead>
             <tbody>
                 {% for row in platformAdminRows %}
-                <tr>
-                    <td id="platformRoleUser-{{ loop.index }}">{{ row.email }}</td>
+                <tr data-user-id="{{ row.id }}">
+                    <td id="platformRoleUser-{{ row.id }}">{{ row.email }}</td>
                     <td>{{ row.tenant }}</td>
+                    <td>{{ row.createdAt }}</td>
                     <td data-platform-role="admin">
                         {# 可及名稱＝「<這一列的 email> 平台角色」（§4：迴圈內的控制項掛靜態 aria-label
                              會蓋掉列脈絡，三列全叫「設定平台角色」，報讀器聽不出正在改誰的角色）。
-                             同一頁下面的租戶功能開關早就是這個寫法。 #}
-                        <select class="form-control singleSelect js-set-platform-role" aria-labelledby="platformRoleUser-{{ loop.index }} platformRoleHead">
+                             同一頁下面的租戶功能開關早就是這個寫法。錨點的號碼跟著**列鍵**走
+                             （`row.id`，不是 `loop.index`）：改完一位的角色之後列會被移出這張表，
+                             以位置組出來的 id 會整批前頂而指到別人身上。 #}
+                        <select class="form-control singleSelect js-set-platform-role" aria-labelledby="platformRoleUser-{{ row.id }} platformRoleHead">
                             <option value="none" data-i18n="platform.none"{% if row.role == "none" %} selected{% endif %}>無</option>
                             <option value="auditor" data-i18n="platform.roleAuditor"{% if row.role == "auditor" %} selected{% endif %}>稽核員</option>
                             <option value="admin" data-i18n="platform.roleAdmin"{% if row.role == "admin" %} selected{% endif %}>系統管理員</option>
@@ -74,7 +91,11 @@ permalink: 5-6-1_platformTenants.html
 
 {# 平台時區（Spec 3）：全平台唯一一份時區設定（非per-租戶），逆向自 product GET/PUT /platform/timezone
      （GET 為 auditor 亦可讀，PUT 僅 admin）。有限選項的 select，值必為合法 IANA 時區，故直接動作 → data-toast
-     只演「成功／失敗」兩態（無「無效時區」分支——後端 400 的情境是直接呼叫 API 才會發生，本頁 select 選不出來）。 #}
+     只演「成功／失敗」兩態（無「無效時區」分支——後端 400 的情境是直接呼叫 API 才會發生，本頁 select 選不出來）。
+     **裁決（round45）：這個做法是全站正典。** 「值域由端點自己渲染成選項 ⇒ UI 選不出域外值 ⇒ 那道 400 不列」
+     ——5-6-3 的核發鈕原本對一模一樣的情境（授權範圍下拉的選項就是 `GET /platform/service-keys/scopes`
+     回的值域）列了一段「這個授權範圍不在值域內」，該頁已依本裁決把那一段拿掉，兩頁對同一種情境不再相反
+     （§5：列出不可能的結果與只演成功一樣是說謊）。 #}
 <div class="block mb-16 flex-row column gap-16" data-platform-role="auditor">
     <div class="text-md text-bold" data-i18n="platform.timezoneTitle">平台時區</div>
     <div class="flex-row gap-16 align-items-end flex-wrap mobile-column sm-gap-16">
@@ -91,6 +112,32 @@ permalink: 5-6-1_platformTenants.html
             </div>
         </div>
         <button type="button" class="button button-primary button-sm" data-platform-role="admin" data-toast="平台時區已儲存|儲存失敗" data-i18n-data-toast="toast.saveTimezone" data-toast-type="success|error" data-i18n="platform.saveTimezone">儲存平台時區</button>
+    </div>
+</div>
+
+{# GufoRAG 授權用量（`GET /platform/license-usage`，`require_platform_auditor`，platform.py 的
+     `platform_license_usage`）。**裁決（round45）：補畫，不是寫理由。**`LicenseUsageOut` 的五個欄位
+     （current_usage／max_usage／remaining_usage／is_allowed／is_unlimited）在此之前全站零落點，
+     而那支端點的 docstring 逐字寫著「這支端點的唯一用途就是讓平台管理員判斷容量」——後端做了、前端
+     到不了等於沒做（§3-2）。整塊唯讀 ⇒ 標 auditor（同上面那塊平台時區）；塊內沒有任何控制項，
+     所以不必再有 admin 的宣告。
+     **它與 manage-tenant-modal 那組額度／已用量不是同一個池**：那是逐租戶的產品額度
+     （`TenantSetting.qa_used/qa_limit`），這一支是 GufoRAG 授權賣給**整個平台**的天花板，chatbot 對整張
+     `chat_logs` 當日計數、不分租戶。混在一起看會把它誤讀成某個租戶的數字，所以自成一塊、標題寫明是平台級。
+     **「今日」的日界＝平台時區**（`usage_mod.platform_timezone`，與用量週期邊界同源），所以這一塊
+     緊接在平台時區下面：改了時區，這個面板數的「今天」跟著換一天，而數字本身看起來完全正常。
+     示範值自洽：剩餘 ＝ 上限 − 已用（5000 − 3182 ＝ 1818）；`is_allowed` 因此是「尚可問答」。
+     兩顆布林用兩態槽（§4-2 `data-text-<態>`＋`data-key-<態>`）：靜態稿一次只畫得出一態，另一態的繁中
+     與 key 沒有第二個地方可以住，落成孤兒就等於沒有人看過它的長相。 #}
+<div class="block mb-16 flex-row column gap-8" data-platform-role="auditor">
+    <div class="text-md text-bold" data-i18n="platform.licenseUsageTitle">GufoRAG 授權用量（平台級）</div>
+    <p class="text-gray m-0" data-i18n="platform.licenseUsageDesc">這是 GufoRAG 授權賣給整個平台的當日問答上限，不分租戶，也不是任何一個租戶的額度。「今日」以上面那顆平台時區為日界。</p>
+    <div class="flex-row flex-wrap gap-24">
+        <span><span data-i18n="platform.licenseCurrentUsage">今日已用：</span>3182</span>
+        <span><span data-i18n="platform.licenseMaxUsage">授權上限：</span>5000</span>
+        <span><span data-i18n="platform.licenseRemaining">剩餘：</span>1818</span>
+        <span><span data-i18n="platform.licenseAllowedLabel">目前狀態：</span><span data-text-allowed="尚可問答" data-key-allowed="platform.licenseAllowed" data-text-blocked="已達授權上限" data-key-blocked="platform.licenseBlocked" data-i18n="platform.licenseAllowed">尚可問答</span></span>
+        <span><span data-i18n="platform.licenseCapLabel">授權型態：</span><span data-text-capped="有每日上限" data-key-capped="platform.licenseCapped" data-text-unlimited="不限量" data-key-unlimited="platform.licenseUnlimited" data-i18n="platform.licenseCapped">有每日上限</span></span>
     </div>
 </div>
 
@@ -180,13 +227,13 @@ permalink: 5-6-1_platformTenants.html
 {% set features = [
   { key: "data", label: "資料匯入／資料集管理", i18nKey: "settings.capData" },
   { key: "ask", label: "問答（後台測試區）", i18nKey: "settings.capAsk" },
-  { key: "history", label: "歷史紀錄", i18nKey: "settings.capHistory" },
+  { key: "history", label: "歷史紀錄檢視", i18nKey: "settings.capHistory" },
   { key: "settings", label: "設定類（提示詞／檢索設定）", i18nKey: "settings.capSettings" },
   { key: "audit", label: "稽核日誌檢視", i18nKey: "settings.capAudit" },
   { key: "extract", label: "萃取 API（程式化）", i18nKey: "settings.capExtract" }
 ] %}
 {# ⚠️ reviewDue（ISO 待審徽章）與下方 reviewCandidates 名單是同一個判準推導出來的：正本
-     platform.py 的 _is_review_due 是「status ∈ {EXPIRED, FROZEN} **且** trial_end 不是 None」，
+     product app/routers/platform.py 的 _is_review_due 是「status ∈ {EXPIRED, FROZEN} **且** trial_end 不是 None」，
      review_overdue 也逐字跳過 trial_end is None 的租戶。所以待審租戶不可能是 PENDING、也不可能
      沒有到期日——示範租戶 D 兩邊要說同一件事（§6 跨區自洽），改了一邊就要回頭對另一邊。 #}
 {# ⚠️ 三處推導（§6），本輪修正：
@@ -265,7 +312,7 @@ permalink: 5-6-1_platformTenants.html
             <thead>
                 <tr>
                     <th data-i18n="settings.tenant">租戶</th>
-                    {# `TenantOut` 回得出 `subscription_status` 與 `trial_end`（platform.py），
+                    {# `TenantOut` 回得出 `subscription_status` 與 `trial_end`（product app/routers/platform.py），
                          原本一格都沒畫——PENDING／ACTIVE／未滿 90 天的 EXPIRED 在畫面上長得一模一樣，
                          而整套 ISO 審核流程正是以 status 為前提（§3-2 response 的每個欄位都要有落點）。
                          到期日是資料（不翻）；PENDING 還沒起算，故留白。 #}
@@ -316,12 +363,19 @@ permalink: 5-6-1_platformTenants.html
                         </label>
                     </td>
                     {% endfor %}
-                    <td data-platform-role="admin">
+                    {# 這一格**不再整格標 admin**：格子裡兩顆鈕要的不是同一級。
+                         · 儲存＝`PATCH /platform/tenants/{id}/features`（require_platform_admin）⇒ admin，低於該級不渲染。
+                         · 管理＝只是「先選定要管哪一個租戶」然後開窗，它自己不打任何端點；§5 逐字寫著
+                           「真正送 API 的是彈窗裡那顆確認鈕，不是列上那顆條件開窗的觸發鈕——閘門宣告的家在確認鈕」。
+                           而 manage-tenant-modal 窗裡有四塊是 auditor 讀得到的唯讀值（額度／用量／模型白名單／
+                           成員名冊，四支端點都是 require_platform_auditor，見該元件檔頭）⇒ 這顆觸發鈕降到 auditor，
+                           否則稽核員在切版裡沒有任何入口看得到那些值。 #}
+                    <td>
                         <div class="btn-group">
-                            <button type="button" class="button button-border button-sm" data-toast="已更新|儲存失敗" data-i18n-data-toast="toast.saveTenant" data-toast-type="success|error" data-i18n="action.save">儲存</button>
+                            <button type="button" class="button button-border button-sm" data-platform-role="admin" data-toast="已更新|儲存失敗" data-i18n-data-toast="toast.saveTenant" data-toast-type="success|error" data-i18n="action.save">儲存</button>
                             {# 管理：開窗需先選定「管理哪個租戶」＝業務條件開窗，用 hook class（.js-manage-tenant），
                                  不掛 data-open-modal（§5）。彈窗本體見 components/manage-tenant-modal（include 於本頁底部）。 #}
-                            <button type="button" class="button button-border button-sm js-manage-tenant" data-i18n="settings.manage">管理</button>
+                            <button type="button" class="button button-border button-sm js-manage-tenant" data-platform-role="auditor" data-i18n="settings.manage">管理</button>
                         </div>
                     </td>
                 </tr>
@@ -349,7 +403,7 @@ permalink: 5-6-1_platformTenants.html
   { name: "示範租戶 D", error: "從 GufoRAG 刪租戶索引失敗（tenant=42）" }
 ] %}
 {# 名單與門檻是 auditor 讀得到的（GET /platform/review/overdue ＝ require_platform_auditor，
-     platform.py 的 `review_overdue`；docstring 自述「這一步不動任何資料，管理員截圖存證用」）——整區標 admin
+     product app/routers/platform.py 的 `review_overdue`；docstring 自述「這一步不動任何資料，管理員截圖存證用」）——整區標 admin
      等於唯讀稽核員連那張截圖都看不到，正是 §5 要防的「把整塊 gate 在是不是管理員」。
      區塊標 auditor，只有真的會寫入的那一顆（步驟三的「確認執行」＝ POST /review/apply
      ＝ require_platform_admin，platform.py 的 `review_apply`）標 admin。步驟一那三顆是「選動作＋拉名單」，
@@ -368,7 +422,7 @@ permalink: 5-6-1_platformTenants.html
                 <div class="field">
                     <input type="number" min="0" step="1" id="reviewOverdueDaysInput" value="90" class="form-control" aria-describedby="reviewOverdueDaysRange">
                     {# 三件套的第三件（§4）：可見區間 ＋ aria-describedby。下界出處＝
-                         `GET /platform/review/overdue` 的 `overdue_days: int = Query(ge=0)`（platform.py）。
+                         `GET /platform/review/overdue` 的 `overdue_days: int = Query(ge=0)`（product app/routers/platform.py）。
                          數字獨立成不翻的節點（§3-2：那是資料不是譯文）。 #}
                     <span class="text-gray" id="reviewOverdueDaysRange">≥ 0</span>
                 </div>
@@ -384,7 +438,7 @@ permalink: 5-6-1_platformTenants.html
             </div>
         </div>
         {# 這三顆只是**選動作＋拉名單**：打的是 `GET /platform/review/overdue`
-             （platform.py `require_platform_auditor`，docstring 自述「這一步不動任何資料，
+             （product app/routers/platform.py `require_platform_auditor`，docstring 自述「這一步不動任何資料，
              管理員截圖存證用」）。原本標 admin ⇒ 稽核員整區沒有任何入口拉得到名單，
              正是註解自己說要避免的事。真正寫入的是下面步驟三那顆確認鈕。 #}
         <div class="flex-row gap-10 align-items-center">
@@ -400,7 +454,7 @@ permalink: 5-6-1_platformTenants.html
             <span><span data-i18n="platform.reviewMatched">符合筆數：</span>{{ reviewCandidates.length }}</span>
             <span><span data-i18n="platform.reviewThreshold">門檻：</span><span data-i18n="platform.overdueDaysPrefix">逾期滿</span> 90 <span data-i18n="platform.overdueDaysSuffix">天</span></span>
             <span><span data-i18n="platform.reviewAsOf">查詢時間：</span>2026-07-14 09:00 UTC</span>
-            {# `ReviewOverdueOut.cutoff`（platform.py）：後端註解說這兩欄「是 ISO 稽核截圖存證要用的」。
+            {# `ReviewOverdueOut.cutoff`（product app/routers/platform.py）：後端註解說這兩欄「是 ISO 稽核截圖存證要用的」。
                  只畫門檻天數不夠——步驟一的兩種門檻（天數／截止日期）擇一時，真正決定名單的是 cutoff。 #}
             <span><span data-i18n="platform.reviewCutoff">截止時刻：</span>2026-04-15 09:00 UTC</span>
         </div>
@@ -423,7 +477,7 @@ permalink: 5-6-1_platformTenants.html
                         <th data-i18n="platform.daysOverdue">逾期天數</th>
                         <th data-i18n="settings.userCount">使用者數</th>
                         <th data-i18n="platform.storageUsedMb">儲存量(MB)</th>
-                        {# `ReviewTenantOut.frozen`（platform.py）的後端註解逐字寫著
+                        {# `ReviewTenantOut.frozen`（product app/routers/platform.py）的後端註解逐字寫著
                              「此旗標讓管理員一眼分辨『這季新逾期的』與『上季已凍結、還在等後續處置的』」
                              ——那正是這張截圖要回答的問題，原本沒有欄位（§3-2 response 落點）。 #}
                         <th data-i18n="platform.statusFrozen">已凍結</th>
@@ -444,20 +498,46 @@ permalink: 5-6-1_platformTenants.html
                 </tbody>
             </table>
         </div>
+        {# ── type-to-confirm 片語（round45 裁決）────────────────────────────────────────
+             **片語是「值」，不是 chrome，所以它永遠不掛 `data-i18n`。** 原本 label 與 placeholder 各掛一顆
+             key，繁中要打「刪除」、英文要打 `DELETE`——**同一道閘在兩個語系要求不同的輸入**，而 React 端
+             比對的只會是其中一份，另一個語系的使用者照著畫面打就是解不開。
+             正典有兩處：同站 manage-tenant-modal 的 type-to-confirm 打的是**租戶名稱**（一個值，兩個語系
+             都打同一串），product 的 `declare_filter_slots` 用 `_FILTER_SLOTS_CONFIRM_PHRASE = "REBUILD-ALL"`
+             （逐字比對的固定字串，並在 400 訊息裡把片語本身回給呼叫端）。故改成語言中立的固定字串，
+             label 走「前綴 key ＋片語節點＋後綴 key」（§4-2 前後綴 key 自帶分隔空白）。
+             **片語還要跟著上面選的動作換一組**：`ReviewApplyIn.action` 的值域逐字是
+             `purge_data`／`delete_account`／`freeze`（platform.py），三顆動作鈕各對一個，
+             原本不論選哪一顆都要求打「刪除」——選了「凍結逾時帳號」卻被要求打「刪除」。
+             三組片語由 `data-phrase-<動作>` 承載，React 依選定的動作把可見那一顆換上去。
+             **刻意不用 `data-text-<態>`／`data-key-<態>` 那組資料槽**：那一族的定義是「繁中原文 ＋ 對應的
+             i18n key」，而這裡的重點正是**這串字不翻**，掛上去會讓下一個人以為少了一半。 #}
         <div class="form-group">
             <div class="label">
-                <label for="reviewConfirmInput" class="control-label" data-i18n="platform.confirmTypePhrase">請輸入「刪除」以確認執行</label>
+                {# 前綴的繁中是「請逐字輸入 」而不是「請輸入 」：後者與 `common.pleaseEnter` 逐字相同，
+                     §4-2「繁中原文相同的 chrome 沿用既有 key」會把兩顆判成同文異 key，而那顆是 placeholder
+                     專用、不帶尾空白，這裡沿用它反而會讓英文黏成 "Please enter DELETE-ACCOUNT"。 #}
+                <label for="reviewConfirmInput" class="control-label"><span data-i18n="platform.confirmTypePrefix">請逐字輸入 </span><span data-phrase-purge="PURGE-DATA" data-phrase-delete="DELETE-ACCOUNT" data-phrase-freeze="FREEZE">DELETE-ACCOUNT</span><span data-i18n="platform.confirmTypeSuffix"> 以確認執行</span></label>
             </div>
             <div class="field">
-                <input data-platform-role="admin" type="text" id="reviewConfirmInput" placeholder="刪除" data-i18n-placeholder="platform.confirmDeletePhrase" class="form-control">
+                <input data-platform-role="admin" type="text" id="reviewConfirmInput" placeholder="DELETE-ACCOUNT" class="form-control" aria-describedby="reviewConfirmHint">
+                <span class="text-gray" id="reviewConfirmHint" data-i18n="platform.confirmPhraseHint">片語要逐字相同（含大小寫與連字號），而且會隨上面選的動作換一組；它不隨語言變。</span>
             </div>
         </div>
-        {# `POST /platform/review/apply` ＝ `require_platform_admin`（platform.py），
+        {# `POST /platform/review/apply` ＝ `require_platform_admin`（product app/routers/platform.py），
              所以標 admin 的是**這一顆**。低於該級時動作鈕不渲染（§5）——原本反過來標，
              稽核員反而看得到一顆「確認執行（不可逆）」，按了必定 403。
              「取消」是純前端互動（收掉步驟三），不標。 #}
+        {# 「（不可逆）」**只對三顆動作裡的兩顆成立**：`purge_data` 與 `delete_account` 沒有回頭路，
+             而 `freeze` 有對稱的 `unfreeze_tenant`（product app/routers/platform.py，docstring 逐字「把凍結時長補回 trial_end，
+             剩餘天數原封保留」），對它說不可逆是假的警語——假警語會讓真的那兩顆一起被當成裝飾。
+             故做成隨動作切換的兩態（§4-2 `data-text-<態>`＋`data-key-<態>`：這一句是 chrome、要翻，
+             所以繁中原文與 key 都要給，與上面那顆「片語」剛好相反）。靜態稿演的是不可逆那一態。 #}
         <div class="flex-row gap-10 align-items-center">
-            <button type="button" class="button button-red js-review-confirm" data-platform-role="admin" data-i18n="platform.confirmExecute">確認執行（不可逆）</button>
+            <button type="button" class="button button-red js-review-confirm" data-platform-role="admin"
+                data-text-irreversible="確認執行（不可逆）" data-key-irreversible="platform.confirmExecute"
+                data-text-reversible="確認執行（可解凍）" data-key-reversible="platform.confirmExecuteFreeze"
+                data-i18n="platform.confirmExecute">確認執行（不可逆）</button>
             <button type="button" class="button button-border js-review-cancel" data-i18n="action.cancel">取消</button>
         </div>
     </div>
@@ -465,7 +545,7 @@ permalink: 5-6-1_platformTenants.html
     <div class="flex-row column gap-8">
         <div class="text-bold" data-i18n="platform.reviewStep3">③ 處理結果（可截圖）</div>
         <div class="flex-row flex-wrap gap-16">
-            <span><span data-i18n="common.total">共</span> {{ reviewOkResults.length + reviewFailResults.length }} <span data-i18n="platform.reviewResultOkMid">筆，成功</span> {{ reviewOkResults.length }}<span data-i18n="platform.reviewResultFailMid">，失敗</span> {{ reviewFailResults.length }}</span>
+            <span><span data-i18n="common.total">共</span> {{ reviewOkResults.length + reviewFailResults.length }} <span data-i18n="platform.reviewResultOkMid">筆，成功</span> {{ reviewOkResults.length }}<span data-i18n="dataImport.batchSummaryFailMid">、失敗</span> {{ reviewFailResults.length }}</span>
             <span><span data-i18n="platform.reviewCompletedAt">完成時間：</span>2026-07-14 09:01 UTC</span>
         </div>
         <div class="table-container scrollTable">
@@ -506,6 +586,12 @@ permalink: 5-6-1_platformTenants.html
     </div>
 </div>
 
+{# manage-tenant-modal 的凍結區是成對參數 ＋ `{% if %}`（§5：`.hidden` 不算把那一態切出來）。
+     **本頁 set `manageTenantFrozen = true`**，示範的是「從一個凍結中的租戶那一列開的窗」——本頁清單裡的
+     示範租戶 B 正是 `subscription_status: FROZEN` 那一態，所以窗裡出現的是「解凍」與它自己的說明，
+     而不是「凍結」。另一態（還沒凍結）由元件庫展示頁演：那一頁不 set 這顆參數，落回預設的 false，
+     於是兩個分支在 dist 上各有一個地方看得到。改這一行之前先確認另一邊還演得到，不要讓某一態消失。 #}
+{% set manageTenantFrozen = true %}
 {% include "components/manage-tenant-modal/manage-tenant-modal.html" %}
 
 {# manage-tenant-modal 內「成員」區塊的 .js-reset-password／.js-delete-user 彈窗本體：業務條件開窗
@@ -520,7 +606,7 @@ permalink: 5-6-1_platformTenants.html
 {% set deleteToastType = "success|warning|warning|warning|error" %}
 {% set deleteToastKey = "toast.deleteUser" %}
 {% include "components/delete-modal/delete-modal.html" %}
-{# 平台端只有 404（platform.py 的 `platform_reset_password`），沒有租戶端那道 403——伺服器端只有一段。
+{# 平台端只有 404（product app/routers/platform.py 的 `platform_reset_password`），沒有租戶端那道 403——伺服器端只有一段。
      另外兩段是送出前的客戶端檢查（長度、兩次一致），與租戶端逐字相同：彈窗裡沒有 `<form>`，
      欄位的 `minlength="8"` 永遠不會觸發原生驗證（§4 全站一種回報方式 ⇒ 一律走這顆鈕的 warning 段）。 #}
 {% set resetPlatformRole = "admin" %}
@@ -534,7 +620,7 @@ permalink: 5-6-1_platformTenants.html
      單一語言逐字顯示、不翻譯 → textarea 本文不掛 data-i18n；區塊標題與儲存鈕文案（chrome）才走 i18n。 #}
 {# 編輯與還原都是 require_platform_admin（PUT /platform/disclaimer、POST /disclaimer/versions/{n}/activate）；
      但**版本史與目前生效的本文是 auditor 讀得到的**（GET /platform/disclaimer/versions ＝
-     require_platform_auditor，platform.py），而 ISO 要查的正是「這份聲明改過幾次、什麼時候改的」。
+     require_platform_auditor，product app/routers/platform.py），而 ISO 要查的正是「這份聲明改過幾次、什麼時候改的」。
      故區塊標 auditor：本文 textarea 是值控制項（低於 admin 照渲染但 disabled，§5），
      儲存與還原鈕才標 admin。原本整區 admin ＝ 稽核員連版本史都看不到。 #}
 <div class="block mt-16 flex-row column gap-16" data-platform-role="auditor">
@@ -561,13 +647,20 @@ AI內容生成的性質
     {# 免責聲明版本史：每次儲存 append 一版；可還原歷史版本（product 端 append 複本為當前，非覆寫）。示範 2 版。 #}
     <div class="flex-row column gap-8">
         <div class="text-bold" data-i18n="platform.disclaimerVersions">版本史</div>
+        {# `DisclaimerVersionOut.created_by`（product app/routers/platform.py）也要有落點：同一區的檔頭自述理由是
+             「ISO 要查的正是**這份聲明改過幾次、什麼時候改的**」，卻漏掉「**誰**改的」——而那是同一句話
+             的第三個問題。同輪 5-6-3 為一模一樣的理由補了「核發者／撤銷者」兩欄（`ServiceKeyOut` 的
+             created_by／revoked_by），兩處不該不對稱（§3-2 response 回得出的欄位要有落點）。
+             上游回的是 user_id（`int | None`，沒有第二支端點 join 成 email），故畫識別碼、不編一個名字
+             （§6：正本給不出來的欄位不得為了讀起來順而編一個）；解不出來時畫「—」。 #}
         {% set discVersions = [
-          { no: 2, time: "2026/07/14 10:00", current: true },
-          { no: 1, time: "2026/07/01 09:00", current: false }
+          { no: 2, time: "2026/07/14 10:00", createdBy: "12", current: true },
+          { no: 1, time: "2026/07/01 09:00", createdBy: "12", current: false }
         ] %}
         {% for v in discVersions %}
         <div class="flex-row align-items-center gap-8">
             <span>V{{ v.no }}（{{ v.time }}）</span>
+            <span class="text-gray"><span data-i18n="platform.disclaimerChangedBy">修改者 </span>{% if v.createdBy %}#{{ v.createdBy }}{% else %}—{% endif %}</span>
             {% if v.current %}
             <span class="text-bold" data-i18n="platform.currentVersion">目前版本</span>
             {% else %}

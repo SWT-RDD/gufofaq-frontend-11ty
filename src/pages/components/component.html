@@ -353,6 +353,32 @@ bodyClass: guideline-page
                 {% set scaleNoteRecalibrated = true %}
                 {% include "ui/score-scale-note/score-scale-note.html" %}
             </div>
+            {# 第二把尺：`enable_rerank=false` 那一支（round45 補）。5-2 原本用 `retrievalBackends` 帶著
+                 weaviate 的實測數字，卻**全站零消費點**——那段數字被自己的註解宣告為「使用者判斷門檻
+                 該填多少的唯一依據」，而它一個像素都沒畫出來（§5：沒有頁面演得出來的分支等於沒驗收過）。
+                 那份陣列已從 5-2 移除，示範搬到這裡。
+                 ⚠️ 實測數字**原文照抄不縮寫**：`0.5` 在這個後端上永遠擋不下任何東西，縮寫掉就等於
+                 把「這個門檻是死條件」這件事藏起來。
+                 ⚠️ 四個參數要**全部重設**——`{% set %}` 是頁面全域，只設兩顆會沿用上面那一份的
+                 `scaleNoteMixed`／`scaleNoteRecalibrated`（§2／§6）。 #}
+            <div class="flex-row column gap-8 mt-16">
+                <div class="form-group">
+                    <div class="label label-md">
+                        {# 可及名稱要與上面那顆分得開（§4：同頁同時可見、語意不同的控制項不得同名）——
+                             兩顆都叫「分數門檻」的話報讀器聽不出在設哪一把尺。後綴是 showcase 自己的
+                             字，整頁不翻故不掛 data-i18n（§4-2）。 #}
+                        <span id="demoScoreFloorNoRerankLabel" class="control-label"><span data-i18n="settings.scoreFloor">分數門檻</span>（未啟用重排序）</span>
+                    </div>
+                    <div class="field">
+                        <input type="number" step="any" min="0" class="form-control" value="0.5" aria-labelledby="demoScoreFloorNoRerankLabel" aria-describedby="demoScoreScaleNoteNoRerank">
+                    </div>
+                </div>
+                {% set scaleNoteId = "demoScoreScaleNoteNoRerank" %}
+                {% set scaleNoteText = "metadata.certainty ＝ (cos+1)/2。⚠️ 文字嵌入的 cosine 幾乎不為負：實測 12 句刻意不相關的問句最低仍有 0.5206，0.5 在這個後端上是一個永遠擋不下任何東西的死條件" %}
+                {% set scaleNoteMixed = "" %}
+                {% set scaleNoteRecalibrated = false %}
+                {% include "ui/score-scale-note/score-scale-note.html" %}
+            </div>
             <div class="subtitle">描述：分數門檻旁的「目前這把尺」。三段都由使用頁的參數決定：尺的原文（端點字串，不翻）、混合尺警語（不給＝不渲染）、重新校準紅字（不給＝不渲染）。本區把後兩態一起打開，5-2 的真實頁只會在條件成立時各自出現一段</div>
             <div class="caption">
                 <ul>
@@ -505,6 +531,23 @@ bodyClass: guideline-page
             <br>
             {# 可輸入頁碼切換（另一互動變體）；實用範例見 4-2 #}
             {% include "components/pagination-input/pagination-input.html" %}
+            <br>
+            <div class="caption">
+                <ul>
+                    <li><strong>total = 0 的定義態</strong>（pagination.js）：<strong>一個 li 都不畫、「共 N 頁」整塊不渲染</strong>。零筆資料沒有「第 1 頁」可以停在——硬扳成一頁的話，「篩到零筆」那種真實可達的狀態會同時渲染出「無資料」與「共 1 頁／頁碼 1」，畫面自己說兩件事。空狀態由表格自己的無資料列說，分頁列這時沒有話要說，所以<strong>下面這一塊看起來就該是空的</strong>——那不是壞掉，是規格</li>
+                </ul>
+            </div>
+            {# §2：`total`／`perPage`／`currentPage` 是**頁面全域**，同頁第二次用同元件要重新 set 全部三個
+                 （少 set 一個就會沿用上面那一組，而畫面正常、只有數字不對）。演完立刻設回上面那一組，
+                 才不會把 0 外洩給後續的 include——`perPage` 上面沒 set（吃 pagination.js 的預設 10），
+                 這裡設回同一個值 10，兩邊算出來的頁數一樣。 #}
+            {% set total = 0 %}
+            {% set perPage = 10 %}
+            {% set currentPage = 1 %}
+            {% include "ui/pagination/pagination.html" %}
+            {% set total = 115 %}
+            {% set perPage = 10 %}
+            {% set currentPage = 6 %}
             <div class="caption description mt-16">
                 <ul>
                     <li>上一頁li.prev以及下一頁li.next加上.disabled的class就會呈現禁用狀態</li>
@@ -550,7 +593,7 @@ bodyClass: guideline-page
                     <button type="button" class="button button-dark" data-open-modal="shareManageModal">開啟分享連結管理modal</button>
                     <button type="button" class="button button-dark" data-open-modal="manageMembersModal">開啟管理成員modal</button>
                     <button type="button" class="button button-dark" data-open-modal="glossaryEntriesModal">開啟術語表詞條modal</button>
-                    <button type="button" class="button button-border" data-open-modal="aliasEntriesModal" data-i18n="settings.manageAliasEntries">編輯詞條</button>
+                    <button type="button" class="button button-dark" data-open-modal="aliasEntriesModal">開啟別名表詞條modal</button>
                     <button type="button" class="button button-dark" data-open-modal="skillEditorModal">開啟 Skill 編輯 modal</button>
                     <button type="button" class="button button-dark" data-open-modal="configCopyModal">開啟跨設定檔複製modal</button>
                     <button type="button" class="button button-dark" data-open-modal="qaImportModal">開啟 QA 匯入 modal</button>
@@ -785,7 +828,7 @@ bodyClass: guideline-page
                  改了判準文字之後得有一個畫面回答得出「有沒有變好」。
                  **判否與未達門檻是中性灰、不是錯誤紅**：那是系統正確運作的結果（這一筆 QA 沒有完整
                  回答使用者，所以不逐字直出）；畫紅色會讓人以為系統壞了。
-                 ⚠️ **`decidedBy`（判定層）只在命中那幾筆有值**：上游 `qa_direct.py` 把 `gate` 只寫進
+                 ⚠️ **`decidedBy`（判定層）只在命中那幾筆有值**：上游 GufoRAG chatbot `app/services/qa_direct.py` 把 `gate` 只寫進
                  `DECISION_HIT` 的判定紀錄（值域 `GATE_EXACT`／`GATE_SCORE_FLOOR`／`GATE_LLM_JUDGE`；
                  不寫死幾處 `_rec`——實際是四處 `_rec` 加一處 agent 工具路徑的 `probe.record`），
                  `DECISION_RECONSTRUCT_FAILED` 那兩處 `_rec` 一個 `gate=` 都沒帶。語意上也只能如此：
@@ -864,6 +907,18 @@ bodyClass: guideline-page
                 <p class="text-gray m-0" data-i18n="settings.aliasApplyNeedsBind">請先綁定別名表</p>
                 <p class="text-gray m-0" data-i18n="settings.tagFilterCoverageWarnOk">目前每一份資料都帶得到這一欄，可以開啟。沒填的格子在匯入時就已經寫成「未標註」，過濾條件會連它們一起比對，所以標了幾成不影響會不會漏文件。之後要注意的只有一件事：資料夾匯入的檔永遠沒有欄位槽，那樣匯入一批新資料就會又缺這一欄，要改成逐列匯入才接得回來。</p>
                 <p class="text-gray m-0"><span data-i18n="regression.hitsTruncatedPrefix">（這一格只列了前 </span><span>3</span><span data-i18n="regression.hitsTruncatedMid"> 筆，實際命中 </span><span>63</span><span data-i18n="regression.hitsTruncatedSuffix"> 筆）</span></p>
+                {# 桶子的截斷句。**與上面那一句不是同一件事**：上面是**後端**的命中截斷
+                     （`_stored_hits` 夾在 `MAX_STORED_HITS_PER_RESULT`），真實資料上會發生、2-2-5 演得到；
+                     這一句是**切版自己定的**每桶列 20 則上限，而 2-2-5 那一輪只有 10 則案例，
+                     任何一桶都到不了 20 ⇒ `rows.length === count` 恆成立、`{% if %}` 永遠是另一支
+                     ⇒ 那一頁**結構上**演不到它（GUIDELINE §5：條件在唯一使用頁上恆為某一值＝沒有人
+                     看過它的長相）。上一版為了「把截斷演出來」把無變化桶寫成 2 列而 count 留 8，
+                     演的是依它自己的規則不可能發生的狀態，已收。
+                   數字：20 就是 2-2-5 釘死的每桶上限（不是隨手填的——那一頁寫了三條理由：全站列表
+                     每頁 20 筆、單次執行上限 200 則、被夾掉的每一則都還在「逐案例結果」那張表裡）；
+                     36 是一個大得過得了那道上限的桶子總則數。繁中逐字照抄 2-2-5（§4-2 同 key 兩種繁中
+                     會互相覆蓋）。 #}
+                <p class="text-gray m-0"><span data-i18n="regression.bucketListedPrefix">這個桶子共 </span><span>36</span><span data-i18n="regression.bucketListedMid"> 則，這張表只列出前 </span><span>20</span><span data-i18n="regression.bucketListedSuffix"> 則——徽章上的數字是桶子的總則數，不是這張表的列數。</span></p>
                 {# 「沒得比」的**另一個方向**：2-2-5 的示範是「這一次中斷過」，而任何一次執行的結果集
                      都是案例集 id 序的前綴 ⇒ 那一頁的兩列必然都是「這一次沒跑到」，`absent_in_baseline`
                      在那一頁結構上演不到（推導寫在 2-2-5 的桶子註解）。但上游真的回得出它：
@@ -875,6 +930,15 @@ bodyClass: guideline-page
                     <span data-i18n="regression.notComparedReason">哪一邊缺</span>
                     <span class="verdict-tag is-warn" data-i18n="regression.reasonAbsentInBaseline">基準沒有它</span>
                 </div>
+                {# manage-tenant-modal 成員列的平台角色徽章，`platformRole == "admin"` 那一態。
+                     那份名冊就是 5-6-1 的示範租戶 B（那一頁給 B 的使用者數是三、狀態 FROZEN），
+                     而 5-6-1 的平台權限盤點把僅有的兩位平台系統管理員分別配給租戶 A 與租戶 C
+                     ⇒ 在那份名冊補一位會同時撞上「使用者數對不上」與「同一個人待在兩個租戶」
+                     兩條 §6 跨頁自洽，那顆 `{% if %}` 因此在唯一使用頁上恆為 false、dist 上連一個
+                     節點都不存在（§5 逐字點名的「條件恆為某值」那一族）。這裡是它唯一的可見處；
+                     繁中與 class 逐字照抄該元件那一行（同 key 兩種繁中會互相覆蓋，§4-2）。
+                     稽核員那一態由該元件的名冊本身演得到，不重複放。 #}
+                <span class="text-gray"><span data-i18n="role.member">成員</span><span data-i18n="common.midDot"> · </span><span data-i18n="platform.rolePlatformAdmin">平台系統管理員</span></span>
                 <p class="text-gray m-0" data-i18n="settings.outputRulesStreamingCostOff">目前沒有啟用任何輸出規則，回答維持逐字顯示。只要啟用任一條，本設定檔的回答就會改成生成完畢後一次出現、中途沒有文字（規則要看完整段答案才判得準）。</p>
                 {# 這兩句住在 `{% if %}` 的另一支，而條件在唯一使用頁上恆為固定值（3-5 的 healthScan
                      恆非空、5-10 四筆維度的 coveragePct 都非 null），所以 dist 上連一個 .hidden 節點
@@ -882,8 +946,39 @@ bodyClass: guideline-page
                      兩顆 key 點名為靠人審的實例）。這裡是它們唯一的可見處。 #}
                 <p class="text-gray m-0" data-i18n="health.lastScanNever">這個租戶還沒有跑過健檢。按上面那顆「重新檢查」就會跑第一次；匯入資料之後系統也會自動跑一次。在那之前，下面的總覽與清單都是空的——那代表「還沒有檢查過」，不代表「檢查過而且沒有問題」。</p>
                 <p class="text-gray m-0" data-i18n="settings.tagCoverageNotMeasured">尚未量測</p>
+                {# 5-9（萃取 API 金鑰）的另外兩態。那一頁的示範參數恆是「剛產生」那一組
+                     （`extractKeyHasKey = true` ＋ `extractKeyPlain` 有值），所以另外兩支 `{% if %}`
+                     在 dist 上連一個節點都不存在——同 3-5／5-10 那兩句，是 §5 點名靠人審的那一族。
+                     繁中逐字照抄 5-9（§4-2 同 key 兩種繁中會互相覆蓋）。 #}
+                {# ① 已存在（重新整理過之後的日常態，也是使用者實際上最常看到的那一個）：
+                     只剩前綴＋末四碼，**沒有顯示/隱藏鈕、也沒有複製鈕**——遮罩後面沒有明碼可以揭開，
+                     而複製一串末四碼拿去呼叫也沒有用。輸入框刻意不給 `id`：5-9 那顆的 `id="apiKeyInput"`
+                     是 `data-reveal-target` 的定址契約，這一態沒有那顆鈕，跟著抄只會多一顆沒人指的 id。 #}
+                <p class="text-gray m-0" data-i18n="extractKey.hintOnlyNote">明碼已經無法再顯示，下面只列得出前綴與末四碼——它的用途是讓你對照「現在掛在外部程式上的是不是同一把」。要換一把請按「重新產生金鑰」。</p>
+                <div class="form-group">
+                    <div class="field">
+                        <input type="text" class="form-control" value="sk_…0000" readonly aria-label="目前金鑰" data-i18n-aria-label="extractKey.currentKey">
+                    </div>
+                </div>
+                {# ② 尚未產生（`has_key = false`）：不畫金鑰欄（留一格空輸入框會被讀成「有一把空金鑰」），
+                     鈕改成「產生金鑰」而且**不走二次確認**——沒有舊金鑰會失效，那顆確認窗的內文在這一態
+                     是假的。它因此落回 §5 ③（點下去就送 API），自己掛 data-toast 列全結果。 #}
+                <p class="text-gray m-0" data-i18n="extractKey.noKeyYet">這個租戶還沒有萃取 API 金鑰。按下面的「產生金鑰」建立第一把——明碼只會在產生的那一次顯示。</p>
+                <div class="flex-row">
+                    <button data-tenant-role="admin" type="button" class="button button-primary js-generate-key" data-toast="已產生新金鑰|產生失敗" data-i18n-data-toast="toast.generateKey" data-toast-type="success|error" data-i18n="widget.createToken">產生金鑰</button>
+                </div>
+                {# 4-2 的「有無進行意圖判斷」那一格的**第三個枚舉成員**。`chat_logs.is_intension` 是
+                     可為 null 的布林 ⇒ 三態（是／否／—），而 4-2 那一筆是 agent 模式，`is_intension`
+                     在 agent 下**恆為 False**（實測矩陣 gufofaq-saas `docs/mode-matrix.md` 的
+                     `intent_enabled` 那一列）——「否」與「—」那一頁畫得到，「是」要傳統搜尋 ＋ 意圖
+                     開啟才出得來，改示範資料去湊就是演一個上游做不出來的狀態（§6）。故落在這裡
+                     （§4-2：枚舉成員靠「有地方渲染得出來」活著，不是刪掉 key 讓消費端自己拼字串）。 #}
+                <div class="flex-row align-items-center gap-8">
+                    <span data-i18n="qa.hasIntentDetection">有無進行意圖判斷</span>
+                    <span data-i18n="common.yes">是</span>
+                </div>
             </div>
-            <div class="subtitle">出處：2-2-4 的模型相容性兩句、2-2-5 的基準設定缺漏與命中清單截斷、5-2 的逐代碼覆寫重複、5-2 的別名綁定與「沒有啟用任何輸出規則」、5-10 的覆蓋率可開啟與「尚未量測」、4-2 的兩欄合規、3-5 的「還沒跑過健檢」、2-2-5「沒得比」的另一個方向（基準沒有它）。它們在各自的頁面上都掛著 .hidden，或由一個在該頁恆為某一值的條件式產出，或是那一頁的示範推導不出來的枚舉成員——那一態沒有人看得到，這裡是唯一可見處</div>
+            <div class="subtitle">出處：2-2-4 的模型相容性兩句、2-2-5 的基準設定缺漏與命中清單截斷、2-2-5 的桶子列數截斷（每桶 20 則上限，那一頁只有 10 則案例故恆不觸發）、5-2 的逐代碼覆寫重複、5-2 的別名綁定與「沒有啟用任何輸出規則」、5-10 的覆蓋率可開啟與「尚未量測」、4-2 的兩欄合規、3-5 的「還沒跑過健檢」、2-2-5「沒得比」的另一個方向（基準沒有它）、5-9 的金鑰兩態（已存在／尚未產生）、4-2 意圖判斷的「是」。它們在各自的頁面上都掛著 .hidden，或由一個在該頁恆為某一值的條件式產出，或是那一頁的示範推導不出來的枚舉成員——那一態沒有人看得到，這裡是唯一可見處</div>
         </section>
 
         <section id="errorPageSection">

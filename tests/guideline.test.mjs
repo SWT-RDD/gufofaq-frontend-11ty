@@ -78,6 +78,87 @@ const stripNonMarkup = (html) =>
     html.replace(/<!--[\s\S]*?-->/g, "").replace(/<script\b[\s\S]*?<\/script>/gi, "").replace(/<style\b[\s\S]*?<\/style>/gi, "");
 const distDoc = (f) => stripNonMarkup(read(`dist/${f}`));
 
+// ── distDoc() 的共用空轉守門（round45）────────────────────────────────────────
+// distDoc 是 20+ 條測試的共用母體，而它自己一直沒有守門：`stripNonMarkup` 的三個
+// `[\s\S]*?` 只要有一個被寫成貪婪版，就會從第一個 `<!--`／`<script>` 一路吃到**最後一個**
+// 收尾，把整個 body 挖空——而那幾條沒有自己 `seen` 計數的測試（空 <th>、mobile-column、
+// 死頁籤…）會一起靜靜全綠。三道一起上，因為它們各擋一種塌法：
+//   ① 負控：合成文件裡放兩則註解與兩支 script，貪婪版會連中間的真標籤一起吃掉。
+//   ② 逐頁下限：某一頁被挖空時當場點名（最小的一頁是 404.html，剝完仍有 16 個開標籤）。
+//   ③ 全站棘輪：整體塌陷（例如剝掉的規則被擴大到別的元素）時才看得出來的那一種。
+{
+    const opens = (html) => [...html.matchAll(/<[a-zA-Z][\w-]*(?:"[^"]*"|'[^']*'|[^>"'])*>/g)].length;
+    // ① 負控：非貪婪時剩 div/span/p/em 四個開標籤；任何一個 `*?` 改成 `*` 都會少於 4
+    const sample = `<div><!-- a --><span>1</span><!-- b --><script>x</script><p>2</p><script>y</script><em>3</em></div>`;
+    assert.equal(opens(stripNonMarkup(sample)), 4,
+        "stripNonMarkup 把真 markup 一起剝掉了（`[\\s\\S]*?` 被寫成貪婪版？）—— 所有吃 distDoc() 的測試會一起假綠");
+    let total = 0;
+    const thin = [];
+    for (const f of distHtml) {
+        const n = opens(distDoc(f));
+        total += n;
+        if (n < 10) thin.push(`dist/${f} 剝完只剩 ${n} 個開標籤`);
+    }
+    assert.equal(thin.length, 0, `distDoc() 把整頁挖空了：\n${thin.join("\n")}`);
+    // 棘輪：round45 實測 25467（量的當下 dist 比 src 舊了幾支頁面，故下限取整到 25000）。
+    // 真的刪頁／刪區塊就連同這個數字一起調下來——那是一次有意識的決定。
+    const PREV_DIST_TAGS = 25000;
+    assert.ok(total >= PREV_DIST_TAGS,
+        `dist 剝完只剩 ${total} 個開標籤（上一輪 ${PREV_DIST_TAGS}）—— distDoc() 的剝除規則吃掉了真 markup，` +
+        `所有以它為母體的測試都在對著空文件斷言`);
+}
+
+// ── 屬性讀取的共用正本（round45）──────────────────────────────────────────────
+// 全檔九處 class/style/屬性收集器原本只認雙引號（round42 只修了 `.hidden` 那一處）。
+// nunjucks 輸出什麼引號由 markup 決定，單引號一寫下去那些規則就整條看不見。
+// 收成一份：所有「從標籤屬性字串取值」的地方都走這裡。
+const attrValue = (attrs, name) => {
+    const m = attrs.match(new RegExp(String.raw`(?:^|\s)${name}=(?:"([^"]*)"|'([^']*)')`));
+    return m ? (m[1] ?? m[2]) : null;
+};
+// class 值可能帶樣板插值（`class="tab{% if tab.active %} active{% endif %}"` 是全站主力寫法）。
+// 掃 src 時要先把 `{{ … }}`／`{% … %}` 挖成空白再切詞，否則切出來的是 `tab{%`／`accordion-btn{%`
+// 這種假 token——舊的字面正則 `class="[^"]*\btab\b"` 是子字串比對，看得到；改成逐詞比對就必須自己剝。
+const classesOf = (attrs) =>
+    (attrValue(attrs, "class") || "").replace(/\{[{%][\s\S]*?[%}]\}/g, " ").split(/\s+/).filter(Boolean);
+// 一份 html 裡每一顆 `<tag … name="值">` 的值（兩種引號都吃）
+const attrValuesIn = function* (html, name) {
+    for (const m of html.matchAll(new RegExp(String.raw`(?:^|\s)${name}=(?:"([^"]*)"|'([^']*)')`, "g")))
+        yield { value: m[1] ?? m[2], index: m.index };
+};
+assert.deepEqual(classesOf(" class='a b'"), ["a", "b"], "classesOf 認不出單引號 —— 九處收集器又只剩雙引號了");
+assert.deepEqual(classesOf(' class="tab{% if x %} active{% endif %}"'), ["tab", "active"],
+    "classesOf 沒有剝掉樣板插值 —— 切出來的會是 `tab{%` 這種假 token，具名 class 全部比不中");
+assert.equal(attrValue(" data-x='1'", "data-x"), "1", "attrValue 認不出單引號");
+
+// ── 元件庫展示頁（showcase）的唯一正本（round45）──────────────────────────────
+// 原本五份互不相干的清單：兩處 `new Set([...])`、一處含 button.html/tooltip.html、
+// 一處 form-control.html、兩處行內 `f === "component.html"`。改名或搬檔時只會有一處跟著改，
+// 其餘幾條測試會靜靜地失去（或多出）豁免。
+const SHOWCASE = {
+    dist: "component.html",
+    src: "src/pages/components/component.html",
+    // 展示片段：只被元件庫頁 include 的樣本 markup（那裡的鈕／欄位就是「長這樣」的樣本，沒有行為是刻意的）
+    fragments: new Map([
+        ["src/_includes/ui/button/button.html", "按鈕外觀樣本（各尺寸／變體並排）"],
+        ["src/_includes/ui/tooltip/tooltip.html", "tooltip 外觀樣本"],
+        ["src/_includes/ui/form-control/form-control.html", "`.error` ＋ `.error-prompt` 長什麼樣的那張示範圖"],
+    ]),
+};
+{
+    assert.ok(distHtml.includes(SHOWCASE.dist), `dist 找不到元件庫頁 ${SHOWCASE.dist} —— 吃它當豁免的那幾條測試會全部失準`);
+    assert.ok(srcHtml.includes(SHOWCASE.src), `src 找不到元件庫頁 ${SHOWCASE.src}`);
+    // 死豁免守門：展示片段必須存在，而且真的只被元件庫頁 include（進了生產頁就不再是「樣本」）
+    const allMarkup = srcHtml.filter((f) => f !== SHOWCASE.src).map((f) => read(f)).join("\n");
+    for (const [f, why] of SHOWCASE.fragments) {
+        assert.ok(srcHtml.includes(f), `SHOWCASE.fragments 的 ${f} 已經不存在（死豁免）`);
+        assert.ok(why.length > 5, `SHOWCASE.fragments 的 ${f} 沒寫理由`);
+        const key = f.replace(/^src\/_includes\//, "").replace(/\/[\w-]+\.html$/, "");
+        assert.ok(!allMarkup.includes(`include "${key}/`),
+            `SHOWCASE.fragments 的 ${f} 已經被元件庫頁以外的頁面 include —— 它不再是展示片段，請移出豁免`);
+    }
+}
+
 // 只取「真的在標籤裡」的屬性，避免抓到散文裡引號包住的範例
 // （GUIDELINE 自己在 component.html 寫了一句「不要寫行內 style="margin-..."」）
 function* tagsOf(html) {
@@ -147,22 +228,25 @@ test("§2 同一頁第二次用到某個元件參數時，該參數必須先重�
     const RESERVED = new Set(["loop", "true", "false", "not", "and", "or"]);
 
     // 一個元件 html 直接讀了哪些外部變數（排除自己 set 的、迴圈變數、保留字）
+    // round45：全部解析器補上 `{%-`／`{%+` 的空白控制寫法。同檔的 `setName`（§6 那條）早就吃了，
+    // 這四支沒跟上——src 現有 8 處 `{%- if %}`／`{%- else %}`，哪天有人寫 `{%- set %}`／`{%- include %}`，
+    // 這條「第二次用到要先重設」會靜靜地看不見那一次消費（＝漏抓，不是誤報）。
     const directReads = (file) => {
         const t = stripNjk(read(file));
-        const local = new Set([...t.matchAll(/\{%\s*set\s+(\w+)/g)].map((m) => m[1]));
-        const loops = new Set([...t.matchAll(/\{%\s*for\s+(\w+)\s+in\s/g)].map((m) => m[1]));
+        const local = new Set([...t.matchAll(/\{%[-+]?\s*set\s+(\w+)/g)].map((m) => m[1]));
+        const loops = new Set([...t.matchAll(/\{%[-+]?\s*for\s+(\w+)\s+in\s/g)].map((m) => m[1]));
         const out = new Set();
         const add = (v) => {
             v = root(v);
             if (v && !RESERVED.has(v) && !local.has(v) && !loops.has(v)) out.add(v);
         };
-        for (const m of t.matchAll(/\{\{\s*([A-Za-z_]\w*(?:\.\w+)*)/g)) add(m[1]);
-        for (const m of t.matchAll(/\{%\s*if\s+(?:not\s+)?([A-Za-z_]\w*(?:\.\w+)*)/g)) add(m[1]);
-        for (const m of t.matchAll(/\{%\s*for\s+\w+\s+in\s+([A-Za-z_]\w*(?:\.\w+)*)/g)) add(m[1]);
+        for (const m of t.matchAll(/\{\{-?\s*([A-Za-z_]\w*(?:\.\w+)*)/g)) add(m[1]);
+        for (const m of t.matchAll(/\{%[-+]?\s*if\s+(?:not\s+)?([A-Za-z_]\w*(?:\.\w+)*)/g)) add(m[1]);
+        for (const m of t.matchAll(/\{%[-+]?\s*for\s+\w+\s+in\s+([A-Za-z_]\w*(?:\.\w+)*)/g)) add(m[1]);
         return out;
     };
     const includesIn = (text) =>
-        [...stripNjk(text).matchAll(/\{%\s*include\s+"((?:ui|components)\/[\w-]+)\/[\w-]+\.html"/g)].map((m) => m[1]);
+        [...stripNjk(text).matchAll(/\{%[-+]?\s*include\s+"((?:ui|components)\/[\w-]+)\/[\w-]+\.html"/g)].map((m) => m[1]);
 
     // 元件讀的變數 = 自己讀的 ∪ 它 include 的子元件讀的（遞移；子元件的參數由父元件轉發）
     const cache = new Map();
@@ -188,7 +272,7 @@ test("§2 同一頁第二次用到某個元件參數時，該參數必須先重�
         const setAt = new Map(); // 變數 → 被 set 的行號（1-based）
         const consume = new Map(); // 變數 → 消費它的 include 行號
         lines.forEach((line, i) => {
-            for (const m of line.matchAll(/\{%\s*set\s+(\w+)\s*=/g)) {
+            for (const m of line.matchAll(/\{%[-+]?\s*set\s+(\w+)\s*=/g)) {
                 if (!setAt.has(m[1])) setAt.set(m[1], []);
                 setAt.get(m[1]).push(i + 1);
             }
@@ -381,18 +465,19 @@ test("§5 每顆 .tab 都要接得上東西（data-target 面板／業務 data-*
     // tab.js 的單層分支只切 .active/aria-current，點下去畫面完全不變（round33 以突變證實測試看不到）。
     // 三擇一：①切同頁面板→ data-target；②切業務資料（哪一筆紀錄／哪一份設定檔）→ 帶 data-* 契約，
     // React 才認得出點的是哪一個；③本身是 <a> 連到別頁（不在這條掃描範圍內，它不是 button.tab）。
-    // 白名單：元件庫展示頁的靜態示範（那頁的頁籤只是外觀樣本，沒有行為）。
-    const SHOWCASE = new Set(["component.html"]);
+    // 白名單：元件庫展示頁的靜態示範（那頁的頁籤只是外觀樣本，沒有行為）——名字住在模組層級的 SHOWCASE。
     const bad = [];
     let seenTabs = 0;
     for (const f of distHtml) {
-        if (SHOWCASE.has(f)) continue;
-        for (const m of distDoc(f).matchAll(/<button[^>]*class="[^"]*\btab\b[^"]*"[^>]*>/g)) {
+        if (f === SHOWCASE.dist) continue;
+        // round45：原本是 `class="[^"]*\btab\b…"` 的字面正則——單引號的 class 一顆都看不到。
+        // 改走 tagsOf ＋ 共用的 classesOf（兩種引號都吃）。
+        for (const t of tagsOf(distDoc(f))) {
+            if (t.tag !== "button" || !classesOf(t.attrs).includes("tab")) continue;
             seenTabs++;
-            const tag = m[0];
-            if (/\sdata-target="/.test(tag)) continue;
-            if (/\sdata-(?!i18n)[\w-]+=/.test(tag)) continue; // 業務 data-* 契約（data-setting-sn／data-record-index…）
-            bad.push(`dist/${f}  ${tag.slice(0, 100)}`);
+            if (attrValue(t.attrs, "data-target") !== null) continue;
+            if (/(?:^|\s)data-(?!i18n)[\w-]+=/.test(t.attrs)) continue; // 業務 data-* 契約（data-setting-sn／data-chat-sn…）
+            bad.push(`dist/${f}  ${t.raw.slice(0, 100)}`);
         }
     }
     assert.ok(seenTabs >= 20, `只掃到 ${seenTabs} 顆 .tab —— 這條測試在空轉`);
@@ -420,8 +505,9 @@ test("§4 .btn-group 只在 .default-table 裡有規則，表格外掛它等於�
         const t = read(`dist/${f}`);
         // round35 突變證明：原本字面比對 `class="btn-group"`，於是 `class="btn-group align-items-center"`
         // （旁邊多一個工具 class，是常態）完全看不到。改成逐個 class 屬性掃。
-        for (const cm of t.matchAll(/\bclass="([^"]*)"/g)) {
-            if (!cm[1].split(/\s+/).includes("btn-group")) continue;
+        // round45：改吃共用的 attrValuesIn（單引號的 class 原本整批看不見）
+        for (const cm of attrValuesIn(t, "class")) {
+            if (!cm.value.split(/\s+/).includes("btn-group")) continue;
             const i = cm.index;
             seen++;
             const before = t.slice(0, i);
@@ -433,6 +519,19 @@ test("§4 .btn-group 只在 .default-table 裡有規則，表格外掛它等於�
     assert.ok(seen >= 5, `只掃到 ${seen} 個 .btn-group —— 這條測試在空轉`);
     assert.equal(hits.length, 0, fail(hits));
 });
+
+// ─── 編譯後 css 的「選擇器裡出現過的 class」唯一正本（round45）─────────────────
+// 原本兩條測試各自對整份 main.css 做 `/\.(-?[_a-zA-Z][\w-]*)/g`——**宣告值也會被吃進去**：
+// `url(../images/icon_owl.png)` 讓 `png` 變成一顆「有 css 規則」的 class，於是
+// `class="png"` 這種無主 class 會被判成有主人。只從**選擇器區段**取：`([^{}]*)\{` 抓的是
+// 每一個 `{` 前面那一段（選擇器或 at-rule 前導），宣告本體 `[^{}]*}` 永遠不會被捕捉到，
+// 而且巢狀（@media 內的選擇器）照樣收得到——用 `css.replace(/\{[^}]*\}/g,"")` 反而會把
+// @media 區塊的第一條規則連選擇器一起吃掉（實測掉 15 顆 col-12-sm／mobile-col… 那一族）。
+const cssSelectorClasses = () => {
+    const css = read("dist/css/main.css");
+    const selectors = [...css.matchAll(/([^{}]*)\{/g)].map((m) => m[1]).join(" ");
+    return new Set([...selectors.matchAll(/\.(-?[_a-zA-Z][\w-]*)/g)].map((m) => m[1]));
+};
 
 // ─── 具名真 app hook 的唯一正本 ───────────────────────────────────────────────
 // round39 合併：這張表原本有兩份。一份在「§4 每個 class 都要有主人」裡當**白名單**（放行 56 筆），
@@ -467,6 +566,18 @@ const NAMED_HOOKS = new Set([
     "builtin-tool-param",
 ]);
 
+// 具名真 app 掛點的**另一半**：這些名字同樣是「React 端要靠它認出這顆鈕該接什麼」的具名掛點，
+// 但它們**另有主人**（設計系統的樣式，或元件 js 的選擇器），所以不屬於 NAMED_HOOKS
+// （那張表的機器判準是「全站 scss 找不到它」，混進來會讓「hook 不得被樣式」那條當場全紅）。
+// round45 合併：「每顆按鈕都要有主人」那條測試原本自己抄了一份 29 筆的 `NAMED` 正則字面，
+// 其中 13 筆與 NAMED_HOOKS 逐字重複、而且整張表沒有任何 stale 守門。現在名字只住在兩個地方，
+// 兩者**互斥**，且各自的成立條件由下面那條測試逐筆驗（有樣式或被 js 查、且真的掛在某顆 <button> 上）。
+// `check-all` 已移除：它掛在 checkbox 的 <input> 上，全站沒有任何一顆 <button> 用它 ⇒ 對那條測試是死豁免。
+const NAMED_BUTTON_EXTRA = new Set([
+    "accordion-btn", "btn-close-modals", "modals-close", "sort", "edit-icon", "save-icon", "cancel-icon",
+    "nav-toggle", "tab", "collapse-toggle", "feedback-vote-btn", "btn_gotop", "info-btn", "link-modal", "upload-box",
+]);
+
 test("§4 markup 上的每個 class 都要有主人（反向網：css 規則／元件 js／js-／具名 hook）", () => {
     // §4「markup 上的每個 class 都要有主人」一直只有**反方向**的網（scss 根 class 要打得到 markup，
     // test「§5/§8 元件 scss 的頂層根 class…」）。正方向完全沒有——`.bold` 因此活了好幾輪：
@@ -489,8 +600,13 @@ test("§4 markup 上的每個 class 都要有主人（反向網：css 規則／�
     // 於是 .field-internal_note／.preview-internal_note 被判成無主 class。
     const FAMILY = /^(field|preview)-[a-z0-9_]+$|^is-[a-z0-9-]+$/;
 
-    const css = read("dist/css/main.css");
-    const cssClasses = new Set([...css.matchAll(/\.(-?[_a-zA-Z][\w-]*)/g)].map((m) => m[1]));
+    // round45：改吃 cssSelectorClasses()——舊版掃整份 css（含宣告值），`url(…icon_owl.png)`
+    // 讓 `png` 變成「有 css 規則」的 class，於是 `class="png"` 這種無主 class 會被判成有主人。
+    const cssClasses = cssSelectorClasses();
+    assert.ok(!cssClasses.has("png"),
+        "cssClasses 又把 `url(...png)` 的副檔名收成 class 了 —— `class=\"png\"` 會被判成「有 css 規則 ⇒ 有主人」");
+    assert.ok(cssClasses.has("col-12-sm"),
+        "cssClasses 掉了 @media 內的選擇器（col-12-sm）—— 收窄過頭會把一整族工具 class 判成無主");
     // round35 突變證明：原本直接吃 js 原始檔，於是「在任何一支元件 js 的**註解**裡提一次」
     // 就足以讓一個全站無主的 class 過關——而 §4 第②種死法正是「新造一個看起來像掛點的 class」。
     // 剝掉行註解與區塊註解再比對（`//` 前面是 `:` 的不剝，那是網址）。
@@ -527,8 +643,8 @@ test("§4 markup 上的每個 class 都要有主人（反向網：css 規則／�
     const seen = new Map();
     for (const f of distHtml) {
         const html = distDoc(f);
-        for (const m of html.matchAll(/\sclass="([^"]*)"/g))
-            for (const c of m[1].split(/\s+/).filter(Boolean)) {
+        for (const { value } of attrValuesIn(html, "class"))   // round45：兩種引號都吃
+            for (const c of value.split(/\s+/).filter(Boolean)) {
                 if (!seen.has(c)) seen.set(c, new Set());
                 seen.get(c).add(f);
             }
@@ -660,11 +776,12 @@ test("§4 頁籤的選中態要同時掛 .active 與 aria-current=\"true\"（.ac
     let seen = 0;
     const hits = [];
     for (const f of distHtml) {
-        for (const m of read(`dist/${f}`).matchAll(/<[a-z]+\b((?:"[^"]*"|[^>"])*)>/g)) {
-            const attrs = m[1];
-            if (!/class="[^"]*\btab\b[^"]*"/.test(attrs)) continue;
-            const active = /class="[^"]*\bactive\b[^"]*"/.test(attrs);
-            const current = /\baria-current="true"/.test(attrs);
+        // round45：改走共用的 classesOf／attrValue（原本的 `class="[^"]*…"` 看不到單引號）
+        for (const { attrs } of tagsOf(read(`dist/${f}`))) {
+            const cls = classesOf(attrs);
+            if (!cls.includes("tab")) continue;
+            const active = cls.includes("active");
+            const current = attrValue(attrs, "aria-current") === "true";
             if (active) seen++;
             if (active && !current) hits.push(`dist/${f}  .tab.active 少了 aria-current="true"`);
             if (!active && current) hits.push(`dist/${f}  .tab 有 aria-current 卻沒有 .active`);
@@ -870,9 +987,9 @@ test("§5 data-toast 的結果數，必須等於 en.json 裡同一個 key 的結
 
 test("§4 行內 style 只准三種：<col> 欄寬、JS 切換的 display、資料驅動的執行期尺寸", () => {
     const rule = (t) => {
-        const m = t.attrs.match(/\bstyle="([^"]*)"/);
-        if (!m) return null;
-        const v = m[1].trim();
+        const raw = attrValue(t.attrs, "style");   // round45：單引號的行內 style 原本整批看不見
+        if (raw === null) return null;
+        const v = raw.trim();
         const ok =
             (t.tag === "col" && /^(width|min-width)\s*:/.test(v)) ||   // 欄寬
             /^display:\s*(none|block)\s*;?$/.test(v) ||                // JS 切換
@@ -882,22 +999,27 @@ test("§4 行內 style 只准三種：<col> 欄寬、JS 切換的 display、資�
     const hits = [];
     for (const f of distHtml) hits.push(...scanTags(distDoc(f), rule, `dist/${f}`));
     probe("§4 行內 style 白名單", (s) => scanTags(s, rule),
-        ['<div style="margin-top: 8px">', '<span style="color: #333">', '<div style="width: 84.3px">'],
-        ['<col style="width: 12%">', '<div style="display: none">', '<div class="bar" style="width: 84.3%;">']);
+        ['<div style="margin-top: 8px">', '<span style="color: #333">', '<div style="width: 84.3px">',
+            "<div style='margin-top: 8px'>"],   // round45：單引號版同樣要抓得到
+        ['<col style="width: 12%">', '<div style="display: none">', '<div class="bar" style="width: 84.3%;">',
+            "<col style='width: 12%'>"]);
     assert.equal(hits.length, 0, `顏色/字級/間距不得寫行內：\n${fail(hits)}`);
 });
 
 test("§4 不得輸出空屬性（for=\"\" / id=\"\" / name=\"\" / href=\"\"）", () => {
+    // round45：改走共用的 attrValue——舊寫法 `\b${a}=""` 有兩個問題：只認雙引號（`for=''` 看不見），
+    // 而且 `\b` 在 `-` 後面也成立，`data-for=""` 會被當成 `for=""` 誤報。
     const rule = (t) => {
         for (const a of ["for", "id", "name", "href"])
-            if (new RegExp(`\\b${a}=""`).test(t.attrs)) return `<${t.tag} ${a}="">`;
+            if (attrValue(t.attrs, a) === "") return `<${t.tag} ${a}="">`;
         return null;
     };
     const hits = [];
     for (const f of distHtml) hits.push(...scanTags(distDoc(f), rule, `dist/${f}`));
     probe("§4 空屬性", (s) => scanTags(s, rule),
-        ['<label for="">名稱</label>', '<a href="">連結</a>', '<input id="" name="">'],
-        ['<label for="x">名稱</label>', "<a>連結</a>", '<input id="x" name="y" value="">']);
+        ['<label for="">名稱</label>', '<a href="">連結</a>', '<input id="" name="">', "<label for=''>名稱</label>"],
+        ['<label for="x">名稱</label>', "<a>連結</a>", '<input id="x" name="y" value="">',
+            '<span data-for="">x</span>']);   // data-for 不是 for
     assert.equal(hits.length, 0, fail(hits));
 });
 
@@ -1032,6 +1154,38 @@ function stripNjk(str) {
     return str.replace(/\{#[\s\S]*?#\}/g, (m) => m.replace(/[^\n]/g, ""));
 }
 
+// 一份檔案裡的「一則註解」（round45 提到模組層級：出處行號那條與出處 repo 名那條吃同一支解析器，
+// 兩份各自演化的話，同一句話會在一條規則裡是一則、在另一條裡是三則）。
+//   njk：`{# … #}` 一塊＝一則；js／scss：連續的 `//` 行＝一則，另收 `/* … */`；
+//   md：散文沒有註解符號，一行＝一則；mjs：註解 ＋ **中文字串常值**（斷言訊息也是散文）。
+function commentsOf(text, mode) {
+    const at = (i) => text.slice(0, i).split(/\r?\n/).length;
+    const out = [];
+    if (mode === "njk") {
+        for (const m of text.matchAll(/\{#[\s\S]*?#\}/g)) out.push({ line: at(m.index), body: m[0] });
+        return out;
+    }
+    if (mode === "md") {                                     // 散文檔沒有註解符號：一行＝一則
+        text.split(/\r?\n/).forEach((l, i) => { if (l.trim()) out.push({ line: i + 1, body: l }); });
+        return out;
+    }
+    if (mode === "mjs") {                                    // 測試檔：註解 ＋ 中文字串常值（斷言訊息也是散文）
+        for (const m of text.matchAll(/"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'|`(?:[^`\\]|\\.)*`/g))
+            if (CJK.test(m[0])) out.push({ line: at(m.index), body: m[0] });
+        return [...out, ...commentsOf(text, "js")];
+    }
+    let cur = null;                                          // 連續的 // 行＝同一則
+    text.split(/\r?\n/).forEach((l, i) => {
+        const j = l.search(/(?<!:)\/\//);                     // 別把 https:// 當註解起點
+        if (j < 0) { if (cur) out.push(cur); cur = null; return; }
+        const c = l.slice(j + 2);                             // 只留註解那半（前面的 code 不掃）
+        if (cur) cur.body += `\n${c}`; else cur = { line: i + 1, body: c };
+    });
+    if (cur) out.push(cur);
+    for (const m of text.matchAll(/\/\*[\s\S]*?\*\//g)) out.push({ line: at(m.index), body: m[0] });
+    return out;
+}
+
 function collectUsedI18nKeys() {
     const used = new Map();
     const note = (k, where) => { if (!k.includes("{{") && !k.includes("{%")) (used.get(k) ?? used.set(k, []).get(k)).push(where); };
@@ -1107,12 +1261,12 @@ test("§4-2 markup 引用到的 key，en.json 的值不得是空字串（allowli
     // 「孤兒 key」測試擋的是「en.json 有、沒人用」；這條反過來擋「有人用、卻沒有英文內容」——
     // 英文模式下會顯示一片空白，比顯示繁中更容易被誤以為是「這裡本來就沒有文字」。
     // 四顆刻意留空（見各自 en.json 旁的定義）：comp.copyright（頁尾版權，真 app 就是空字串）、
-    // qa.detailConvItems（分頁「共 N 筆」的裝飾字，英文版式不需要這個字）、
+    // common.unitItems（分頁「共 N 筆」的裝飾字，英文版式不需要這個字）、
     // pagination.pageSuffix（"Page 3"英文不需要中文「頁」那個字尾）、
     // health.recordRowSuffix（「第 137 列」的「列」，英文 "row 137" 沒有這個字尾——同 §4-2
     // 「英文語法不需要的字段允許空字串譯文」的量詞後綴那一族）。
     // 英文語法不需要的字段允許空字串譯文（§4-2）：量詞後綴、以及「共 N 筆」這種中文才需要的前綴
-    const ALLOWLIST = new Set(["comp.copyright", "qa.detailConvItems", "pagination.pageSuffix", "health.recordRowSuffix",
+    const ALLOWLIST = new Set(["comp.copyright", "common.unitItems", "pagination.pageSuffix", "health.recordRowSuffix",
         "agent.qaPoolPrefix"]);
     const en = JSON.parse(read("src/i18n/en.json"));
     const { used } = collectUsedI18nKeys();
@@ -1216,6 +1370,11 @@ test("§5 元件 js 三方對齊：實體檔 ⇄ eleventy passthrough ⇄ base.h
     const pass = [...cfg.matchAll(/"src\/_includes\/[^"]+\/([\w-]+)\.js":\s*"js\/([\w-]+)\.js"/g)].map((m) => m[2]);
     const tags = [...read("src/_includes/layouts/base/base.html").matchAll(/src="\.\/js\/([\w-]+)\.js"/g)].map((m) => m[1]);
     const compJs = srcJs.filter((f) => /_includes\/(ui|components)\//.test(f)).map((f) => basename(f, ".js"));
+    // 空轉守門（round45）：三個集合任一為空，對應的那一半就是對空陣列斷言。
+    // 尤其 compJs——路徑慣例一改（或 srcJs 的 glob 失準），「js 存在但沒登記」那半條會靜靜全綠。
+    assert.ok(compJs.length >= 30, `只掃到 ${compJs.length} 支元件 js —— 「js 存在但沒登記」那半條在空轉`);
+    assert.ok(pass.length >= 30, `eleventy.config.js 只解析到 ${pass.length} 條 passthrough —— 解析壞了，這條在空轉`);
+    assert.ok(tags.length >= 30, `base.html 只解析到 ${tags.length} 支 script —— 解析壞了，這條在空轉`);
 
     const notRegistered = compJs.filter((n) => !pass.includes(n));
     const notLoaded = pass.filter((n) => !tags.includes(n));
@@ -1228,9 +1387,13 @@ test("§5 元件 js 三方對齊：實體檔 ⇄ eleventy passthrough ⇄ base.h
 test("§5 dist/js 不得有孤兒（沒被 passthrough 的舊產物）", () => {
     const cfg = read("eleventy.config.js");
     const pass = [...cfg.matchAll(/:\s*"js\/([\w-]+)\.js"/g)].map((m) => m[1]);
-    const orphan = existsSync("dist/js")
-        ? readdirSync("dist/js").filter((f) => f.endsWith(".js")).map((f) => f.replace(/\.js$/, "")).filter((n) => !pass.includes(n))
-        : [];
+    // round45：舊寫法在 dist/js 不存在時直接 `orphan = []` ⇒ 靜靜全綠。
+    // build 失敗、passthrough 整段被拿掉、或跑錯 cwd 都長這樣，而那正是最該當場紅的時候。
+    assert.ok(existsSync("dist/js"), "dist/js 不存在 —— passthrough 沒跑（或 build 失敗），這條測試原本會靜靜全綠");
+    const built = readdirSync("dist/js").filter((f) => f.endsWith(".js")).map((f) => f.replace(/\.js$/, ""));
+    assert.ok(pass.length >= 30, `eleventy.config.js 只解析到 ${pass.length} 條 passthrough —— 解析壞了，這條在空轉`);
+    assert.ok(built.length >= 30, `dist/js 只有 ${built.length} 支 js —— 產物不完整，這條在空轉`);
+    const orphan = built.filter((n) => !pass.includes(n));
     assert.equal(orphan.length, 0, `dist 未清乾淨，殘留：${orphan}`);
 });
 
@@ -1500,12 +1663,23 @@ test("§5 body 捲動鎖是純 CSS，js 不得自己鎖", () => {
 // ─────────────────────────── 跨檔一致性 ───────────────────────────
 
 test("main.scss 有 @use 每一支元件 scss", () => {
-    const main = read("src/scss/main.scss");
-    const missing = srcScss
+    // round45：這條原本是全檔**最沒防護**的一條——沒有母體守門、沒有負控。
+    // 三種塌法都會讓它靜靜全綠：srcScss 空了、`startsWith("src/_includes/")` 的路徑慣例改了、
+    // 或路徑轉換規則寫壞（轉出來的字串誰都比不中時是 missing 變多，但轉成空字串時
+    // `main.includes("")` 恆真 ⇒ 一支都不缺）。規則抽成函式，讓負控走同一支。
+    const useMissing = (main, files) => files
         .filter((f) => f.startsWith("src/_includes/"))
         .map((f) => f.replace(/^src\//, "../").replace(/\/_([\w-]+)\.scss$/, "/$1"))
-        .filter((p) => !main.includes(p));
-    assert.equal(missing.length, 0, `樣式不會被打包進 main.css：\n${missing.join("\n")}`);
+        .filter((p) => p && !main.includes(p));
+    const compScss = srcScss.filter((f) => f.startsWith("src/_includes/"));
+    assert.ok(compScss.length >= 60, `只掃到 ${compScss.length} 支元件 scss —— 這條測試在空轉`);
+    const main = read("src/scss/main.scss");
+    assert.ok((main.match(/^@use\s/gm) || []).length >= compScss.length,
+        `main.scss 的 @use 行數少於元件 scss 支數（${(main.match(/^@use\s/gm) || []).length} < ${compScss.length}）—— 路徑比對規則可能已經比不中任何東西`);
+    probe("main.scss @use", (s) => useMissing(s, compScss),
+        ["// 一支都沒 @use 的 main.scss"],   // 負控：規則認得出「缺 @use」
+        [main]);
+    assert.equal(useMissing(main, srcScss).length, 0, `樣式不會被打包進 main.css：\n${useMissing(main, srcScss).join("\n")}`);
 });
 
 // GUIDELINE 只放規則（新增頁面/元件時它一個字都不用改）；會變動的清單住 README。
@@ -2607,7 +2781,7 @@ test("src/images 每張圖都必須被引用", () => {
 
 test("§1-1 桶歸屬：components/ 要用到其他元件（或是專屬子片段）；ui/ 要零依賴", () => {
     // 只有元件總覽頁會 include「展示片段」；catalog.html 是真實頁面（有語言/深淺鈕、在 i18n 範圍）
-    const SHOWCASE = new Set(["src/pages/components/component.html"]);
+    // round45：頁名住在模組層級的 SHOWCASE（原本全檔五份互不相干的清單）
     const selectorClasses = (src) => {
         const out = new Set();
         for (const raw of src.split(/\r?\n/)) {
@@ -2653,7 +2827,7 @@ test("§1-1 桶歸屬：components/ 要用到其他元件（或是專屬子片�
         for (const { name } of componentDirs) {
             if (production.has(name)) continue;
             const live = (includedBy.get(name) || []).some((f) =>
-                isPage(f) ? !SHOWCASE.has(f) : production.has(basename(f, ".html"))
+                isPage(f) ? f !== SHOWCASE.src : production.has(basename(f, ".html"))
             );
             if (live) { production.add(name); changed = true; }
         }
@@ -2676,8 +2850,8 @@ test("§1-1 桶歸屬：components/ 要用到其他元件（或是專屬子片�
         if (existsSync(htmlPath) && production.has(name)) {
             const html = read(htmlPath);
             for (const m of html.matchAll(/include\s+"(ui|components)\/([\w-]+)\//g)) if (m[2] !== name) add(`${m[1]}/${m[2]}`);
-            for (const m of html.matchAll(/class="([^"]*)"/g))
-                for (const cls of m[1].split(/\s+/)) {
+            for (const { value } of attrValuesIn(html, "class"))   // round45：兩種引號都吃
+                for (const cls of value.split(/\s+/)) {
                     if (!cls || cls.includes("{")) continue;
                     add(ownerOf(cls));
                 }
@@ -2732,8 +2906,8 @@ test("§5 元件 js 查詢的 class 選擇器都要在 src markup 打得到（�
     const markupClasses = new Set();
     const showcaseClasses = new Set();
     for (const f of distHtml)
-        for (const m of distDoc(f).matchAll(/class="([^"]*)"/g))
-            for (const c of m[1].split(/\s+/)) if (c) (f === "component.html" ? showcaseClasses : markupClasses).add(c);
+        for (const { value } of attrValuesIn(distDoc(f), "class"))   // round45：兩種引號都吃
+            for (const c of value.split(/\s+/)) if (c) (f === SHOWCASE.dist ? showcaseClasses : markupClasses).add(c);
     assert.ok(markupClasses.size > 200 && showcaseClasses.size > 100, `class 收集異常（生產 ${markupClasses.size}／showcase ${showcaseClasses.size}）—— 這條測試在空轉`);
     const usedShowcase = new Set();
     const compJs = srcJs.filter((f) => /_includes\/(ui|components)\//.test(f));
@@ -2834,7 +3008,7 @@ test("§4 有浮空群組標籤的 checkbox/radio 組要掛 role=group + aria-la
     let groupCount = 0;
     const hits = [];
     for (const f of distHtml) {
-        if (f === "component.html") continue;
+        if (f === SHOWCASE.dist) continue;
         const html = distDoc(f);
         const ids = new Set([...html.matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]));
         const stack = [];
@@ -2934,8 +3108,8 @@ test("§5/§8 元件 scss 的頂層根 class 要打得到 markup 或元件 js（
     // js 檢查涵蓋執行期建立的元素（toast/multi-select 等 classList/字串模板）。
     const classAttr = new Set();
     for (const f of distHtml)
-        for (const m of distDoc(f).matchAll(/class="([^"]*)"/g))
-            for (const c of m[1].split(/\s+/)) if (c) classAttr.add(c);
+        for (const { value } of attrValuesIn(distDoc(f), "class"))   // round45：兩種引號都吃
+            for (const c of value.split(/\s+/)) if (c) classAttr.add(c);
     const jsBlob = srcJs.map((f) => read(f)).join("\n");
     const SHARED = new Set(["active", "open", "show", "hidden", "collapsed", "disabled", "done", "error"]);
     const rootTokens = (scss) => {
@@ -2974,7 +3148,7 @@ test("§4 一列 col span 總和不得 > 12（nowrap flex-row 會把欄位擠扁
     // nowrap 下 5 個 col-4 各要 ~33%、共 ~165%，被 flex-shrink 擠成 ~20% 擠在一行——連原本 3 個 select 也跟著縮。
     // 這類「一列 span 爆表」靜態掃不出（每個 col-4 自己合法），要對渲染後結構逐 flex-row 加總「直接子欄位」。
     const VOID = new Set(["input", "img", "br", "hr", "col", "meta", "link", "source", "area", "base", "embed", "wbr", "track", "param", "keygen"]);
-    const classesOf = (attrs) => { const m = attrs.match(/\sclass=(?:"([^"]*)"|'([^']*)')/); return (m ? (m[1] ?? m[2]) : "").split(/\s+/).filter(Boolean); };
+    // classesOf 住在模組層級（round45 合併：原本這裡與 .hidden 那條各抄一份）
     const span = (cl, bp) => { for (const c of cl) { const m = c.match(new RegExp(`^col-(\\d+)-${bp}$`)); if (m) return +m[1]; } return 0; };
     const parse = (html) => {
         const root = { tag: "#root", classes: [], children: [] };
@@ -3390,14 +3564,13 @@ test("§4-2 繁中原文相同的 chrome 沿用既有 key、不另立（同文�
     //   1) toast.* 家族——每顆動作各自一份成敗訊息（同文屬巧合，動作語境不同）
     //   2) DELIBERATE 白名單——語意/單複數/兩套 app chrome/組字上下文確實不同（各附裁決理由）
     const DELIBERATE = new Set([
+        "問答紀錄",                                                        // qa.qaRecords="Q&A records"（側欄／區塊標題，整批）vs qa.recordFallbackPrefix="Q&A record "（單一筆沒有 ChatTitle 時的 fallback 名，後面緊接序號 ⇒ 單數＋自帶尾空白；鏡射真 app qaRecord.js 的 room.ChatTitle || 問答紀錄N）
         "時間", "標題", "內容", "檔案名稱", "資料集名稱",                  // dataImport/dataset/audit 各區段表頭語境（round15 裁決暫留的舊家族）
         "啟用", "停用",                                                    // 動作鈕（Enable/Disable，3-4 每列直送 PATCH）vs 狀態/選項（widget.active=Active、qaDirectModeOff=Off）
         "資料集", "所屬群組",                                              // 單/複數語意（Dataset/Datasets、Group/Groups）
         "開始時間", "結束時間", "狀態",                                    // qa 篩選 vs settings 統計篩選；批次匯入欄 vs widget 欄
         "結果", "共", "讚", "倒讚", "筆", "第", "頁",                       // 量詞/前綴/評價的組字上下文各異。「共」round43 已把四顆同英譯的併回 common.total，剩下的兩顆是 common.total="Total"（markup 夾資料槽）vs pagination.totalPrefix="Total "（js 串接，§4-2 空白必須由 key 自帶）
-        "刪除",                                                            // action.delete="Delete"（動作鈕）vs platform.confirmDeletePhrase="DELETE"（type-to-confirm 要照打的字面片語，不可翻成句子）
         "設定",                                                            // qaTest.setting="Setting"（2-2-3 的「設定 A／設定 B」組字前綴，單數）vs nav.settings="Settings"（選單項）
-        "歷史紀錄",                                                        // nav.history="History"（選單項＝去哪一頁）vs settings.capHistory="View history"（能力枚舉，與 View datasets／View settings／View audit log 同一族動詞開頭）
         "資料匯入",                                                        // audit.actImport（稽核日誌的動作詞彙）vs nav.dataImport（選單項，Title Case）
         // round39 移除四項（該繁中今天只剩一顆 key，白名單留著只會靜默放行下一次的另立）：
         //   「登入」 faq.login 併回 auth.login（同一頁的 sr-only h1 與送出鈕，英譯無區別必要）
@@ -3627,11 +3800,13 @@ test("§5 每顆按鈕都要有主人：行為屬性／js- hook／具名真 app 
     // 在 React 端也認不出該接誰。round34 抓到 glossary-entries-modal 的增刪列兩顆——
     // 而全站同型的表單 repeater（2-2-4／5-2）都掛著 `js-add-*`／`js-remove-*`。
     const BEHAV = /\bdata-(toast|open-modal|print|dismiss-target|reveal-target|target|scroll-lock|vote|theme|lang)\b/;
-    const HOOK = /class="[^"]*\bjs-[a-z]/;
-    // 具名真 app 掛點（與 NAMED_HOOKS 同一套來源，逐個在凍結前端或元件 js 查得到）
-    const NAMED = /class="[^"]*\b(copyBtn|watchBtn|shareBtn|btn-prev|btn-next|btn-delete-file|btn-edit-file|btn-preview-file|delete-single-btn|download-file-btn|delete-selected-btn|confirm-delete-btn|accordion-btn|btn-close-modals|modals-close|sort|edit-icon|save-icon|cancel-icon|nav-toggle|check-all|tab|collapse-toggle|feedback-vote-btn|btn_gotop|priority-select|info-btn|link-modal|upload-box)\b/;
-    // 元件庫展示頁與純展示片段：那裡的鈕就是「長這樣」的樣本，沒有行為是刻意的
-    const SHOWCASE = new Set(["src/pages/components/component.html", "src/_includes/ui/button/button.html", "src/_includes/ui/tooltip/tooltip.html"]);
+    // round45：三個判準都改成逐 class 比對（共用的 classesOf，兩種引號都吃）。
+    // 具名掛點的名字**不再抄在這裡**：吃模組層級的 NAMED_HOOKS ∪ NAMED_BUTTON_EXTRA
+    // （原本這裡自己抄了 29 筆，其中 13 筆與 NAMED_HOOKS 逐字重複、整張表零 stale 守門）。
+    const NAMED_BUTTON = new Set([...NAMED_HOOKS, ...NAMED_BUTTON_EXTRA]);
+    const hasHook = (attrs) => classesOf(attrs).some((c) => /^js-[a-z]/.test(c));
+    const hasNamed = (attrs) => classesOf(attrs).some((c) => NAMED_BUTTON.has(c));
+    // 元件庫展示頁與純展示片段：那裡的鈕就是「長這樣」的樣本，沒有行為是刻意的（名字住在模組層級的 SHOWCASE）
     // 逐筆豁免＋理由（新增前要先去真 app 確認它在那邊也沒有掛點）
     const EXEMPT = new Map([
         ["src/pages/dataset/3-1-1_datasetList.html::刪除",
@@ -3640,14 +3815,16 @@ test("§5 每顆按鈕都要有主人：行為屬性／js- hook／具名真 app 
     let seen = 0;
     const hits = [];
     const usedExempt = new Set();
+    const onButtons = new Set();   // 全站 <button> 上真的出現過的 class（給下面的 stale 守門用）
     for (const f of srcHtml) {
         const key = f.split(String.fromCharCode(92)).join("/");
-        if (SHOWCASE.has(key)) continue;
         const t = stripNjk(read(f));
-        for (const m of t.matchAll(/<button\b((?:"[^"]*"|[^>"])*)>([\s\S]*?)<\/button>/g)) {
-            seen++;
+        for (const m of t.matchAll(/<button\b((?:"[^"]*"|'[^']*'|[^>"'])*)>([\s\S]*?)<\/button>/g)) {
             const a = m[1];
-            if (BEHAV.test(a) || HOOK.test(a) || NAMED.test(a)) continue;
+            for (const c of classesOf(a)) onButtons.add(c);
+            if (key === SHOWCASE.src || SHOWCASE.fragments.has(key)) continue;
+            seen++;
+            if (BEHAV.test(a) || hasHook(a) || hasNamed(a)) continue;
             const txt = m[2].replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim().slice(0, 24);
             if (!txt) continue; // 純圖示鈕的可及名稱由另一條測試管
             const ex = `${key}::${txt}`;
@@ -3656,6 +3833,19 @@ test("§5 每顆按鈕都要有主人：行為屬性／js- hook／具名真 app 
         }
     }
     assert.ok(seen >= 200, `只掃到 ${seen} 顆按鈕 —— 這條測試在空轉`);
+    // ── NAMED_BUTTON_EXTRA 的衛生（原本整張 NAMED 表零守門）──────────────────────
+    // ① 與 NAMED_HOOKS 互斥：同一個名字兩張表都有＝又回到「同一概念兩份清單」。
+    const both = [...NAMED_BUTTON_EXTRA].filter((c) => NAMED_HOOKS.has(c));
+    assert.deepEqual(both, [], `這些名字同時在 NAMED_HOOKS 與 NAMED_BUTTON_EXTRA：${both.join("、")}`);
+    // ② 每一顆都要**另有主人**（有 css 規則或被元件 js 查）——否則它是純掛點，家在 NAMED_HOOKS。
+    const cssCls = cssSelectorClasses();
+    const jsText = srcJs.map((f) => read(f)).join("\n");
+    const noOwner = [...NAMED_BUTTON_EXTRA].filter((c) => !cssCls.has(c) && !new RegExp(String.raw`[.'"\`]${c}(?![\w-])`).test(jsText));
+    assert.deepEqual(noOwner, [], `NAMED_BUTTON_EXTRA 的這幾顆既沒有 css 規則也沒有元件 js 查它 —— 它們是純掛點，請搬去 NAMED_HOOKS：${noOwner.join("、")}`);
+    // ③ 死豁免：這張表只服務「按鈕的主人」這條規則，名字沒掛在任何一顆 <button> 上就不再豁免任何東西
+    //    （round45 因此移除了 `check-all`——它掛在 checkbox 的 <input> 上）。
+    const staleNamed = [...NAMED_BUTTON_EXTRA].filter((c) => !onButtons.has(c));
+    assert.deepEqual(staleNamed, [], `NAMED_BUTTON_EXTRA 有死豁免（全站沒有任何 <button> 掛這顆 class）：${staleNamed.join("、")}`);
     const stale = [...EXEMPT.keys()].filter((k) => !usedExempt.has(k));
     assert.equal(stale.length, 0, `EXEMPT 有過期項（鈕已改名或已掛上掛點）：${stale.join("、")}`);
     assert.equal(hits.length, 0, fail(hits));
@@ -4215,7 +4405,7 @@ test("§4 共用元件把 data-toast 開成參數時，閘門也要開成參數�
             if (!new RegExp(String.raw`\{%\s*set\s+${toastParam}\s*=`).test(src)) continue;
             seen++;
             if (exempt.has(f)) continue;
-            if (f.endsWith("component.html")) continue;   // 元件庫展示頁：演的是長相，不是某一支端點
+            if (f === SHOWCASE.src) continue;   // 元件庫展示頁：演的是長相，不是某一支端點
             if (!gateParams.some((g) => new RegExp(String.raw`\{%\s*set\s+${g}\s*=`).test(src)))
                 hits.push(`${f}  set 了 ${toastParam} 卻沒 set 閘門（${gateParams.join("／")}）`);
         }
@@ -4411,10 +4601,15 @@ test("§5/§6 4-1 答案來源篩選：三顆值、只掛 hook、清單只有直
     // 唯讀查詢：不掛任何授權軸
     assert.ok(!/data-(capability|tenant-feature|tenant-role|platform-role)=/.test(sel[0]), "唯讀篩選不該宣告授權軸");
     // 清單：只有 qa_direct 掛徽章——生成是常態，每列都掛等於掛了一顆沒有資訊量的標籤
-    const cell = src.match(/<td>\{\{ row\.userType \}\}[^\n]*<\/td>/);
+    // round45：這一格已從 `{{ row.userType }}` 改成封閉目錄的 `{% if %}` 鏈（值＝上游字面
+    // frontend／backend／ab_test），所以整格本來就有一個「else —」（那是標籤欄沒值那一支）。
+    // 判準因此收在**徽章那一段**上，而不是整格不得有 else。
+    const cell = src.match(/<td>[^\n]*row\.userType[^\n]*<\/td>/);
     assert.ok(cell, "找不到「使用者類型」那一格");
     assert.match(cell[0], /\{%\s*if row\.answerSource == "qa_direct"\s*%\}/, "徽章要以 qa_direct 為條件");
-    assert.ok(!/{% else %}/.test(cell[0]), "生成的那幾筆不該掛徽章（沒有 else 分支）");
+    const badgePart = cell[0].slice(cell[0].indexOf("row.answerSource"));
+    assert.ok(!/\{%\s*else\s*%\}/.test(badgePart), "生成的那幾筆不該掛徽章（徽章那一段沒有 else 分支）");
+    assert.equal((cell[0].match(/verdict-tag/g) || []).length, 1, "這一格只掛一顆徽章（直答那顆）");
     // dist：示範資料兩種都要有，否則「掛與不掛」只演得到一邊
     const dist = distDoc("4-1_qaHistory.html");
     const badges = (dist.match(/verdict-tag[^"]*"[^>]*data-i18n="settings\.qaDirect"/g) || []).length;
@@ -4422,8 +4617,25 @@ test("§5/§6 4-1 答案來源篩選：三顆值、只掛 hook、清單只有直
     assert.ok(badges >= 1 && badges < rows, `示範要同時有直答與生成兩種列（徽章 ${badges} / 列 ${rows}）`);
 
     // ── 匯出格式（product export_history 的 Query(alias="format")，預設 csv）──────────
-    const group = src.match(/<span id="exportFormatLabel"[\s\S]*?<\/div>/);
-    assert.ok(group, "4-1 缺匯出格式選擇");
+    // round45：這一列改成 `ui/field-with-input` 的附屬控制項結構（「含統計表頭」收成 csv 的附屬
+    // checkbox——§3-2「組合無效格要由 markup 表達」），內層因此多了幾層 <div>。原本的
+    // 非貪婪 `[\s\S]*?<\/div>` 會停在**第一顆內層** `</div>`，radios 只抓得到 1 顆而誤報。
+    // 改成數 <div>／</div> 取整段。
+    const gStart = src.indexOf('<span id="exportFormatLabel"');
+    assert.ok(gStart >= 0, "4-1 缺匯出格式選擇");
+    const group = [(() => {
+        const open = src.indexOf("<div", gStart);
+        if (open < 0) return src.slice(gStart);
+        let depth = 0, i = open;
+        while (i < src.length) {
+            const nextOpen = src.indexOf("<div", i), nextClose = src.indexOf("</div>", i);
+            if (nextClose < 0) break;
+            if (nextOpen >= 0 && nextOpen < nextClose) { depth++; i = nextOpen + 4; }
+            else { depth--; i = nextClose + 6; if (depth === 0) return src.slice(gStart, i); }
+        }
+        return src.slice(gStart, open);
+    })()];
+    assert.ok(/<\/div>\s*$/.test(group[0]), "取整段失敗——括號沒有配平，下面每一條斷言驗的都不是整組");
     const radios = [...group[0].matchAll(/<input type="radio"([^>]*)>/g)].map((m) => m[1]);
     assert.equal(radios.length, 2, "只給兩顆：csv 與 xlsx 是同一個問題的兩種答案；jsonl 是給程式的，不放進畫面");
     assert.deepEqual(radios.map((a) => (a.match(/value="([^"]*)"/) || [])[1]), ["csv", "xlsx"], "值＝上游 format 的字面");
@@ -4431,9 +4643,13 @@ test("§5/§6 4-1 答案來源篩選：三顆值、只掛 hook、清單只有直
     assert.ok(radios.every((a) => /\bjs-export-format\b/.test(a)), "值載體要有 hook class");
     assert.ok(!/data-toast/.test(group[0]), "值載體不得掛 data-toast（成敗由下載鈕演）");
     assert.ok(!/data-(capability|tenant-feature|tenant-role|platform-role)=/.test(group[0]), "唯讀匯出不宣告授權軸");
-    // §4：一組 radio 沒有單一 for 可掛 ⇒ 浮空標題給 id ＋ 容器 radiogroup ＋ aria-labelledby
-    assert.match(group[0], /role="radiogroup"[^>]*aria-labelledby="exportFormatLabel"|aria-labelledby="exportFormatLabel"[^>]*role="radiogroup"/,
+    // §4：一組控制項沒有單一 for 可掛 ⇒ 浮空標題給 id ＋ 容器 role ＋ aria-labelledby。
+    // round45：role 從 `radiogroup` 改成 `group`——`radiogroup` 的 owned element 只能是 radio，
+    // 而這一列現在含一顆附屬 checkbox（判準同 `components/data-time-filter` 檔頭）。
+    assert.match(group[0], /role="group"[^>]*aria-labelledby="exportFormatLabel"|aria-labelledby="exportFormatLabel"[^>]*role="group"/,
         "這一組要報得出「這組在問什麼」");
+    assert.match(group[0], /\bfield-with-input-group\b/,
+        "組合無效格要由 markup 表達：含統計表頭是 csv 的附屬控制項，選 xlsx 時它要 disabled（§3-2）");
     // 代價寫在挑之前（§3-2）：多出來的三張表要接在 xlsx 那一顆上，不是只放在頁尾
     assert.match(radios[1], /aria-describedby="exportFormatHint"/, "「完整明細」要接上那句代價提示");
     assert.match(dist, /id="exportFormatHint"/, "代價提示要真的渲染得出來");
@@ -4583,7 +4799,7 @@ test("§5 寫死 .hidden 的分支文案，至少要有一處看得見（否則�
     // **純計數**（`stack.pop()` 不比標籤名）且沒有平衡守門——姊妹規則 platformScopes 卻是明文 fail loud。
     // 多一個 `</div>` 就會提早 pop、把 `cur` 清成 null，於是整棵 .hidden 子樹的 key 全部灌進
     // **跨頁共用**的 `visible`，連別的頁面同名的 key 一起被消音。所以這裡也 fail loud。
-    const classesOf = (attrs) => { const m = attrs.match(/\sclass=(?:"([^"]*)"|'([^']*)')/); return (m ? (m[1] ?? m[2]) : "").split(/\s+/).filter(Boolean); };
+    // classesOf 住在模組層級（round45 合併：這一份與 col-span 那條各抄一份，而全檔另外九處只認雙引號）
     // docs: [{f, html}]。回傳 { hits, visible, hiddenNodes, roots }。
     // probe 走同一條函式（只餵一份合成文件），故豁免與判準都被合成樣本驗過。
     const hiddenScan = (docs) => {
@@ -4727,40 +4943,22 @@ test("§3-2 跨 repo 活正本的出處不得引行號（行號會漂到語意�
     const BARE = /(?<![\w.\-:：])\d{2,4}\s*[-–~]\s*\d{2,4}(?![\w.\-])/g;   // 裸範圍 2381-2389（只在同則有活正本時啟用）
     const ADJ = new RegExp(String.raw`^(?:[:：]\s?${N}|\s*#L\d{1,4}(?:\s*[-–~]\s*L?\d{1,4})?)`);
     // 凍結前端（README 列出的兩份 jQuery 切版）：basename 白名單 ＋ 它們的目錄前綴 ＋ 就近的「凍結」字樣。
-    const FROZEN_BASE = /^(?:main|accountInfo|uploadFilePdf|uploadFileExcel|knowledgeRetrieval|singleTest|abTest|qaHistory|qaHistoryDetail|qaRecord|promptManagement|previewDataset|previewExcel|previewExcelCompare|datasetList|dataImport)\.js$|^(?:component\.scss|component\.css|style\.css)$/;
+    // round45：白名單從一條正則字面改成清單 ＋ stale 守門。舊寫法沒有任何人在看「這些名字是不是還活著」，
+    // 而 `uploadFileExcel.js` 全 src 零引用＝一顆死豁免：它今天不放行任何東西，卻會在下一次有人引用
+    // 那支凍結檔（或新增一支同名檔）時默默放行它的行號。已移除。
+    const FROZEN_BASE_LIST = [
+        "main.js", "accountInfo.js", "uploadFilePdf.js", "knowledgeRetrieval.js", "singleTest.js", "abTest.js",
+        "qaHistory.js", "qaHistoryDetail.js", "qaRecord.js", "promptManagement.js", "previewDataset.js",
+        "previewExcel.js", "previewExcelCompare.js", "datasetList.js", "dataImport.js",
+        "component.scss", "component.css", "style.css",
+    ];
+    const FROZEN_BASE = new RegExp(`^(?:${FROZEN_BASE_LIST.map((b) => b.replace(/\./g, "\\.")).join("|")})$`);
     const FROZEN_DIR = /(?:^|[^\w/\\])(?:js|scss|css|pages)[/\\]/;      // 本 repo 自己的路徑一律 src/…，鑽不進來
     const LIVE_EXT = /\.(?:py|ts|tsx|md)$/;                             // saas services/product・apps/web・docs ＋ GufoRAG chatbot
     const repoBase = new Set(gitFiles("").map((p) => basename(p)));
     const classify = (path, base, before) =>
         /凍結/.test(before) || (FROZEN_DIR.test(path) && !LIVE_EXT.test(base)) || FROZEN_BASE.test(base) ? "凍結"
             : repoBase.has(base) ? "自我引用" : LIVE_EXT.test(base) ? "活正本" : "";
-    const commentsOf = (text, mode) => {
-        const at = (i) => text.slice(0, i).split(/\r?\n/).length;
-        const out = [];
-        if (mode === "njk") {
-            for (const m of text.matchAll(/\{#[\s\S]*?#\}/g)) out.push({ line: at(m.index), body: m[0] });
-            return out;
-        }
-        if (mode === "md") {                                     // 散文檔沒有註解符號：一行＝一則
-            text.split(/\r?\n/).forEach((l, i) => { if (l.trim()) out.push({ line: i + 1, body: l }); });
-            return out;
-        }
-        if (mode === "mjs") {                                    // 測試檔：註解 ＋ 中文字串常值（斷言訊息也是散文）
-            for (const m of text.matchAll(/"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'|`(?:[^`\\]|\\.)*`/g))
-                if (CJK.test(m[0])) out.push({ line: at(m.index), body: m[0] });
-            return [...out, ...commentsOf(text, "js")];
-        }
-        let cur = null;                                          // 連續的 // 行＝同一則
-        text.split(/\r?\n/).forEach((l, i) => {
-            const j = l.search(/(?<!:)\/\//);                     // 別把 https:// 當註解起點
-            if (j < 0) { if (cur) out.push(cur); cur = null; return; }
-            const c = l.slice(j + 2);                             // 只留註解那半（前面的 code 不掃）
-            if (cur) cur.body += `\n${c}`; else cur = { line: i + 1, body: c };
-        });
-        if (cur) out.push(cur);
-        for (const m of text.matchAll(/\/\*[\s\S]*?\*\//g)) out.push({ line: at(m.index), body: m[0] });
-        return out;
-    };
     const stats = { seen: 0, live: 0 };
     const scan = (text, f = "<probe>", mode = "njk", st = { seen: 0, live: 0 }) => {
         const out = [];
@@ -4885,6 +5083,18 @@ test("§3-2 跨 repo 活正本的出處不得引行號（行號會漂到語意�
         ["| `5-10_tagDimensions` | 逆向自 product `app/routers/tags.py` 的 `slots_missing_from_files` |"]);
     assert.ok(stats.seen >= 3000, `只掃到 ${stats.seen} 則註解／散文 —— 母體塌了，這條測試在空轉`);
     assert.ok(stats.live >= 100, `只有 ${stats.live} 則認得出跨 repo 活正本 —— 分類壞了，這條測試在空轉`);
+    // FROZEN_BASE 的衛生（round45 補）：這張白名單是「可以引行號」的通行證，同檔其他十個白名單
+    // 都有 stale 檢查，只有它沒有。判準＝那個 basename 在 src 的註解／散文裡真的被引用過；
+    // 零引用就是死豁免（它不再放行任何東西，卻會在下一次有人引用同名檔時默默放行）。
+    {
+        const srcCorpus = [...srcHtml, ...srcJs, ...srcScss].map((f) => read(f)).join("\n");
+        const deadFrozen = FROZEN_BASE_LIST.filter((b) => !srcCorpus.includes(b));
+        assert.deepEqual(deadFrozen, [], `FROZEN_BASE 有死豁免（全 src 零引用）：${deadFrozen.join("、")}`);
+        for (const b of FROZEN_BASE_LIST)
+            assert.ok(FROZEN_BASE.test(b), `FROZEN_BASE 的正則組不出 ${b} —— 清單與正則分家了`);
+        assert.ok(!FROZEN_BASE.test("platform.py") && !FROZEN_BASE.test("uploadFileExcel.js"),
+            "FROZEN_BASE 放行了不在清單上的檔名 —— 正則的錨點壞了");
+    }
     // 自我豁免的衛生：那一段真的存在、而且真的是「不豁免就會紅」——否則就是一張放著沒人管的通行證
     const selfZone = cutSelfZone(read("tests/guideline.test.mjs")).zone;
     assert.ok(selfZone.includes("const FROZEN_BASE"), "切不出這條 test 自己的原始碼範圍 —— 自我豁免的切法壞了");
@@ -5112,6 +5322,12 @@ test("§4 dropdown 的「翻上開」必須 js 與 scss 成對交付（只做一
 
 // ───────── 內建工具卡（components/builtin-tool-card）＋ ui/accordion 卡片模式 ─────────
 
+// 內建工具的**種類數**：正本是 GufoRAG chatbot 的 `BUILTIN_TOOL_NAMES`（跨 repo 常數，本專案的測試
+// 比對不到它，故 §3-2「比不到就只指名符號、不抄值」——這裡是那個「只好抄值」的例外，所以值只准
+// 有一處字面，四條測試都引用它。round45 之前這個 14 被抄進四條測試各一次（answer_from_qa 曾經漏掉
+// 一張卡，而要改的話得同時改四個地方，漏改一個就是一條永遠不會紅的測試）。
+const BUILTIN_TOOL_CARDS = 14;   // ＝ chatbot BUILTIN_TOOL_NAMES 的成員數
+
 // 從 dist 切出每一張工具卡的 outerHTML（div 巢狀計數；dist 標籤是平衡的，見檔頭說明）。
 function builtinToolCards(html) {
     const cards = [];
@@ -5151,7 +5367,7 @@ test("§6 5-2 內建工具：14 張卡包在同一個 .js-accordion 根裡，並
     // 兩顆批次鈕必須在同一個根內，否則 accordion.js 的 block.querySelector 找不到它們＝點了沒反應。
     const root = innerBlock(html, "js-accordion");
     assert.ok(root, "5-2 找不到 .js-accordion 根 —— 工具卡的開合會整組失效");
-    assert.equal(builtinToolCards(root).length, 14, "14 顆內建工具＝14 張卡（chatbot BUILTIN_TOOL_NAMES 全集；answer_from_qa 曾經漏掉一張）");
+    assert.equal(builtinToolCards(root).length, BUILTIN_TOOL_CARDS, `${BUILTIN_TOOL_CARDS} 顆內建工具＝同樣張數的卡（chatbot BUILTIN_TOOL_NAMES 全集；answer_from_qa 曾經漏掉一張）`);
     assert.match(root, /class="[^"]*\bjs-expand-all\b/, ".js-expand-all 不在 accordion 根內");
     assert.match(root, /class="[^"]*\bjs-collapse-all\b/, ".js-collapse-all 不在 accordion 根內");
     // 三態說明：改成逐工具開關後，「未勾選任何工具＝全部啟用」那句敘述已經不成立
@@ -5179,7 +5395,11 @@ test("§5/§6 skill 的內建工具白名單：不可用於 skill 的那幾顆�
     const hits = [];
     for (const r of disabled) {
         const name = (r.match(/value="([^"]*)"/) || [, "?"])[1];
-        const reason = r.match(/<span class="text-gray">([^<]*)<\/span>/);
+        // round45：這裡原本是 `class="text-gray">`——要求 class 之後**立刻**是 `>`。而同一輪為了
+        // §4（安全邊界輔助文字要掛 id ＋控制項 aria-describedby）在那顆 span 上加了
+        // `id="skillBuiltinReason-<tool>"`，於是理由「掛得好好的卻抓不到」，紅在正則不在 markup。
+        // 同一條測試下一行檢查 data-i18n 用的就是 `[^>]*`，這條是漏改的那一半。
+        const reason = r.match(/<span class="text-gray"[^>]*>([^<]*)<\/span>/);
         if (!reason || reason[1].trim().length < 20) hits.push(`${name}：灰掉了卻沒有附理由（skill_restriction_reason）`);
         if (/<span class="text-gray"[^>]*data-i18n/.test(r)) hits.push(`${name}：理由掛了 data-i18n（端點給的字串不再包一層 i18n）`);
     }
@@ -5188,7 +5408,7 @@ test("§5/§6 skill 的內建工具白名單：不可用於 skill 的那幾顆�
 
 test("§6/§4 內建工具卡：卡頭有中文標題＋英文識別字＋啟用開關（識別字不翻、開關可及名稱各卡不同）", () => {
     const cards = builtinToolCards(distDoc("5-2_conversationSettings.html"));
-    assert.equal(cards.length, 14, "空轉守門：切不出 14 張卡");
+    assert.equal(cards.length, BUILTIN_TOOL_CARDS, `空轉守門：切不出 ${BUILTIN_TOOL_CARDS} 張卡`);
     const hits = [];
     for (const { name, html } of cards) {
         const head = innerBlock(html, "builtin-tool-head");
@@ -5214,7 +5434,7 @@ test("§6/§4 內建工具卡：卡頭有中文標題＋英文識別字＋啟用
 
 test("§5/§6 內建工具卡：參數清單唯讀、兩個 textarea 帶 hook class 與 1024 上限、還原預設鈕在位", () => {
     const cards = builtinToolCards(distDoc("5-2_conversationSettings.html"));
-    assert.equal(cards.length, 14, "空轉守門：切不出 14 張卡");
+    assert.equal(cards.length, BUILTIN_TOOL_CARDS, `空轉守門：切不出 ${BUILTIN_TOOL_CARDS} 張卡`);
     const hits = [];
     let withParams = 0, noParams = 0;
     for (const { name, html } of cards) {
@@ -5256,7 +5476,7 @@ test("§5/§6 內建工具卡：參數清單唯讀、兩個 textarea 帶 hook cl
 
 test("§5 內建工具卡：只有 customized 的那張預設展開（markup 就帶 .open + aria-expanded=true）", () => {
     const cards = builtinToolCards(distDoc("5-2_conversationSettings.html"));
-    assert.equal(cards.length, 14, "空轉守門：切不出 14 張卡");
+    assert.equal(cards.length, BUILTIN_TOOL_CARDS, `空轉守門：切不出 ${BUILTIN_TOOL_CARDS} 張卡`);
     const open = [], hits = [];
     for (const { name, html } of cards) {
         const btn = html.match(/<button[^>]*\baccordion-btn\b[^>]*>/);
@@ -5309,6 +5529,13 @@ function runStubDom(jsSrc, build) {
         n.getAttribute = (k) => (n.attrs.has(k) ? n.attrs.get(k) : null);
         n.removeAttribute = (k) => n.attrs.delete(k);
         n.append = (...kids) => { for (const k of kids) { k.parent = n; n.children.push(k); } return n; };
+        // appendChild：DOM 語意是**搬移**（先從舊 parent 摘掉）——table-sort 靠這件事重排列，
+        // 寫成 push 的話同一顆 tr 會同時掛在兩個地方，排序結果看起來對、母體卻爆增。
+        n.appendChild = (k) => {
+            if (k.__fragment) { for (const c of [...k.children]) n.appendChild(c); k.children.length = 0; return k; }
+            if (k.parent) { const sib = k.parent.children; sib.splice(sib.indexOf(k), 1); }
+            k.parent = n; n.children.push(k); return k;
+        };
         n.addEventListener = (type, fn) => n.handlers.set(type, [...(n.handlers.get(type) || []), fn]);
         n.dispatch = (type, event) => (n.handlers.get(type) || []).forEach((fn) => fn(event));
         n.contains = (other) => { for (let p = other; p; p = p.parent) if (p === n) return true; return false; };
@@ -5328,6 +5555,7 @@ function runStubDom(jsSrc, build) {
         querySelectorAll: (sel) => root.querySelectorAll(sel),
         querySelector: (sel) => root.querySelector(sel),
         getElementById: (id) => root.querySelectorAll("*").find((d) => d.getAttribute("id") === id) || null,
+        createDocumentFragment: () => { const f = node("#fragment"); f.__fragment = true; return f; },
     };
     // GufoSlide 是共享行為工具（§1-1），這裡只需要它「把 display 扳到位」那一面
     const window = {
@@ -5834,8 +6062,15 @@ test("§5 平台入口要宣告最低角色，且值只能是 auditor／admin（
     assert.equal(bad.length, 0, `platformRole 值只能是 auditor／admin：${JSON.stringify(bad)}`);
     // 渲染到 dist 的導覽（桌機 header + 手機 mobile-nav 兩份都要帶，否則手機版少一道 gate）
     const html = distDoc("5-6-1_platformTenants.html");
+    // round45：檔名逃逸的字元類原本寫成 `[.*+?^$()|[\\]\\\\]` —— 字元類在 `[\\]` 就收掉了，
+    // 後面那串 `\\\\]` 變成「還要再跟兩個反斜線與一個 ]」的**額外要求**，於是它一次都沒命中過：
+    // `5-6-1_platformTenants.html` 的 `.` 從來沒被逃逸（照樣能比中，只是 `.` 變成「任一字元」）。
+    // 改成正確的逃逸；替換字串也一起修（`"\\\\$&"` 產出的是兩個反斜線 ＋ 字元，那在 RegExp 裡是
+    // 「一個字面反斜線」加「任一字元」，同樣不是逃逸）。
+    const esc = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    assert.equal(esc("5-6-1_a.html"), "5-6-1_a\\.html", "檔名逃逸又壞了 —— `.` 沒被逃逸時它會比中任何一個字元");
     for (const [page, role] of nav) {
-        const hits = [...html.matchAll(new RegExp(`data-platform-role="(\\w+)"[^>]*>\\s*<a href="${page.replace(/[.*+?^$()|[\\]\\\\]/g, "\\\\$&")}"`, "g"))];
+        const hits = [...html.matchAll(new RegExp(`data-platform-role="(\\w+)"[^>]*>\\s*<a href="${esc(page)}"`, "g"))];
         assert.ok(hits.length >= 2, `${page} 的導覽入口在 dist 只出現 ${hits.length} 次（桌機 + 手機共應 2 次）`);
         for (const h of hits) assert.equal(h[1], role, `${page} 的導覽入口宣告成 ${h[1]}，應為 ${role}`);
     }
@@ -5915,8 +6150,8 @@ test("§6 有分頁的清單頁：「共 N 筆資料」必須等於頁碼列的�
     let checked = 0;
     for (const f of distHtml) {
         // 元件庫頁是 showcase：`.data-info`（ui/block 的示範「共 12 筆資料」）與頁碼示範是兩個無關的展示，
-        // 本來就不同源（同其他測試的 SHOWCASE 慣例）。
-        if (f === "component.html") continue;
+        // 本來就不同源（名字住在模組層級的 SHOWCASE）。
+        if (f === SHOWCASE.dist) continue;
         const html = distDoc(f);
         const info = html.match(/<div class="data-info">[\s\S]*?<\/div>/);
         const total = html.match(/data-total="(\d+)"/);
@@ -6033,12 +6268,11 @@ test("§4 欄位級錯誤槽不得是通用佔位：.error-prompt 要嘛訊息�
     // 而沒有任何一頁會掛 .error ⇒ 兩套都寫了、兩套都不作用。驗證結果一律走送出鈕 data-toast 的 warning 段，
     // 欄位本身只加 .error 標紅；佔位式的槽全數移除，這條擋它們回來。
     // 唯一豁免：ui/form-control 的展示片段——它就是「.error + .error-prompt 長什麼樣」那張示範圖，
-    // 只被元件庫頁 include，不是任何真實表單的欄位槽（同其他測試的 SHOWCASE 慣例）。
-    const SHOWCASE_DEMO = "src/_includes/ui/form-control/form-control.html";
+    // 只被元件庫頁 include，不是任何真實表單的欄位槽（清單住在模組層級的 SHOWCASE.fragments）。
     const hits = [];
     let checked = 0;
     for (const f of srcHtml) {
-        if (f.replace(/\\/g, "/") === SHOWCASE_DEMO) continue;
+        if (SHOWCASE.fragments.has(f.replace(/\\/g, "/"))) continue;
         stripNjk(read(f)).split(/\r?\n/).forEach((line, i) => {
             // round33：判準原本綁死 `<span class="error-prompt…">` 且逐行比對——換個標籤（<p>）
             // 或把內文換行就整條繞過（以突變證實）。改成不看標籤、也不要求 class 在最前面。
@@ -6074,4 +6308,677 @@ test("§4 送出鈕的 data-toast 是驗證結果的唯一出口：需要驗證�
         if (!types.includes("warning")) hits.push(`${page} 的 ${key} 沒有 warning 段（填錯時只會顯示「失敗」）`);
     }
     assert.equal(hits.length, 0, fail(hits));
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// round45 補網：GUIDELINE 自述「沒有網／靠人審」的條文，本輪判定今天測得出來的那幾條。
+// 每一條都附負控（合成樣本走同一支規則函式）與空轉守門（母體不得為空）。
+// ══════════════════════════════════════════════════════════════════════════════
+
+test("§5 同一頁只放一套 data-target 切換系統（tab.js 的面板隱藏是 document 級全域）", () => {
+    // §5 那句「同頁只放一套 data-target 切換系統」自己標著 ⚠️「這後半句沒有網、靠人審」。
+    // tab.js 的 showPanel() 先對 **document** 上每一顆 `.tab-content` 下 display:none、再打開自己那一顆——
+    // 同頁一旦有第二套切換系統，點 A 系統的頁籤會把 B 系統正在顯示的面板一起關掉。
+    // 兩套各自看起來都對（初始態沒變，fpdiff 抓不到），只有真的點下去才看得見。
+    // 判準：一頁之內，所有 `data-target` 擁有者的「最近 `.tab-group` 祖先」集合大小 ≤ 1；
+    // 沒有 `.tab-group` 祖先的那一顆自成一套（tab.js 只綁 .tab-group／.top-tabs／.sub-tabs 內的頁籤，
+    // 掛在外面的 data-target 是另一種東西，一樣要當成第二套點名）。
+    const systemsOf = (html) => {
+        const stack = [];
+        const systems = new Map();
+        let seq = 0;
+        for (const ev of tagEvents(html)) {
+            if (ev.type !== "open") { stack.pop(); continue; }
+            const frame = { id: ++seq, isGroup: classesOf(ev.attrs).includes("tab-group") };
+            if (attrValue(ev.attrs, "data-target") !== null) {
+                const anc = [...stack].reverse().find((fr) => fr.isGroup);
+                const key = anc ? `.tab-group#${anc.id}` : "(沒有 .tab-group 祖先)";
+                systems.set(key, (systems.get(key) || 0) + 1);
+            }
+            stack.push(frame);
+        }
+        return systems;
+    };
+    const scan = (html, f = "<probe>") => {
+        const s = systemsOf(html);
+        return s.size > 1
+            ? [`${f}  同頁有 ${s.size} 套 data-target 切換系統：${[...s].map(([k, n]) => `${k}×${n}`).join("、")}` +
+               `（tab.js 的面板隱藏是 document 級全域，點其中一套會把另一套的面板一起關掉）`]
+            : [];
+    };
+    const hits = [];
+    let owners = 0, pagesWithTabs = 0;
+    for (const f of distHtml) {
+        const html = distDoc(f);
+        const s = systemsOf(html);
+        if (s.size) { pagesWithTabs++; owners += [...s.values()].reduce((a, b) => a + b, 0); }
+        hits.push(...scan(html, `dist/${f}`));
+    }
+    assert.ok(owners >= 7 && pagesWithTabs >= 2,
+        `全站只掃到 ${owners} 顆 data-target（分布在 ${pagesWithTabs} 頁）—— 祖先鏈掃描壞了，這條在空轉`);
+    probe("§5 同頁一套 data-target", scan, [
+        // 兩個 .tab-group 各帶一套：點左邊那套會把右邊的面板關掉
+        `<div class="tab-group"><button class="tab" data-target="a">A</button></div>` +
+        `<div class="tab-group"><button class="tab" data-target="b">B</button></div>`,
+        // 第二顆 data-target 掛在任何 .tab-group 之外（自成一套）
+        `<div class="tab-group"><button class="tab" data-target="a">A</button></div>` +
+        `<button class="tab" data-target="b">B</button>`,
+    ], [
+        `<div class="tab-group"><button class="tab" data-target="a">A</button>` +
+        `<button class="tab" data-target="b">B</button></div>`,
+        `<div class="tab-group"><button class="tab">沒有 data-target 的頁籤</button></div>`,
+    ]);
+    assert.equal(hits.length, 0, fail(hits));
+});
+
+test("§4-2 相鄰的兩顆 i18n 節點之間要有分隔（前綴後面接的不是英數值時，既有三條都碰不到）", () => {
+    // §4-2 自述 ⚠️「網只覆蓋一部分」：既有三條分別釘住 pagination 那四顆前後綴、`.sr-only` 前綴緊接英數值、
+    // 以及緊接在英數值後面的後綴——**前綴後面接的是中文或另一顆 key 時，三條都碰不到**。
+    // 本輪補的就是那個補集：dist 上「`</x><y data-i18n>` 中間零字元」的相鄰兩顆 i18n 節點。
+    // 繁中不需要那個空白（全形字自帶字距），所以繁中版永遠看起來是對的，只有英文模式會黏成一個字。
+    //
+    // 為什麼**不是**照「key 名以 Prefix/Suffix 結尾」當母體（那是本輪的原提案，實測後駁回）：
+    //   ① `regression.assertionPrefix` 的繁中是「連結前綴」——Prefix 是**領域名詞**，不是前綴 key；
+    //   ② 全站現行寫法是把分隔空白留在 markup 的**行內兄弟之間**（`…>目前</span> 7 / 10`），
+    //      而 §2 明文「行內兄弟之間的換行渲染成一個有意的字間空格」、既有那條「全形標點標籤＋緊接的值」
+    //      也把「markup 提供空白」列為合法樣本。照 key 名判會把那七處全部誤報，而誤報一次就會有人
+    //      去放寬整條規則。真正沒有人擋的是「兩顆節點中間**一個字元都沒有**」那一種。
+    const en = JSON.parse(read("src/i18n/en.json"));
+    const ADJACENT = /data-i18n="([\w.]+)"[^>]*>([^<]*)<\/[a-z0-9]+><[a-z0-9]+\b[^>]*\bdata-i18n="([\w.]+)"/g;
+    const OK_END = /[\s(（「“"'\-–—/]$/;
+    const OK_START = /^[\s):,.;?!）」”"'%\-–—/]/;
+    const scan = (html, dict, f = "<probe>") => {
+        const out = [];
+        for (const m of html.matchAll(ADJACENT)) {
+            const [a, b] = [dict[m[1]], dict[m[3]]];
+            if (typeof a !== "string" || typeof b !== "string" || !a || !b) continue;  // 缺英文是別條測試的事
+            if (OK_END.test(a) || OK_START.test(b)) continue;
+            out.push(`${f}  ${m[1]} = ${JSON.stringify(a.slice(-24))} 緊接 ${m[3]} = ${JSON.stringify(b.slice(0, 24))} → 英文模式黏成一個字`);
+        }
+        return out;
+    };
+    const hits = [];
+    let seen = 0;
+    for (const f of distHtml) {
+        const html = distDoc(f);
+        seen += [...html.matchAll(ADJACENT)].length;
+        hits.push(...scan(html, en, basename(f)));
+    }
+    assert.ok(seen >= 30, `只掃到 ${seen} 對「零間隔的相鄰 i18n 節點」—— 這條測試在空轉`);
+    probe("§4-2 相鄰 i18n 節點的分隔",
+        (s) => scan(s, { "x.a": "Total", "x.b": "pages", "x.pre": "Total ", "x.suf": " pages", "x.colon": "Threshold: " }),
+        ['<span data-i18n="x.a">共</span><span data-i18n="x.b">頁</span>'],
+        ['<span data-i18n="x.pre">共</span><span data-i18n="x.b">頁</span>',
+            '<span data-i18n="x.a">共</span><span data-i18n="x.suf">頁</span>',
+            '<span data-i18n="x.colon">門檻：</span><span data-i18n="x.b">頁</span>',
+            '<span data-i18n="x.a">共</span> <span data-i18n="x.b">頁</span>']);   // 中間有空白＝不在這條的母體
+    assert.equal(hits.length, 0, `§4-2 分隔空白的家在 key 的值裡：\n${fail([...new Set(hits)])}`);
+});
+
+test("§5 `.hidden` 判準①的另一半：src 引用得到、dist 卻一頁都渲染不出來的 i18n key", () => {
+    // §5 自述 ⚠️「① 的另一半仍靠人審」——「條件恆為某值 ⇒ 整段根本沒渲染」的那一種，在 dist 上連一個
+    // `.hidden` 節點都不存在，以 `.hidden` 根為母體的那條規則結構上看不到它。
+    // 這條從另一端夾：`collectUsedI18nKeys()` 收得到（src 有引用點）、dist 全站卻渲染不出那顆 key。
+    //
+    // 兩族合法，逐顆登記：
+    //  (a) `{% for %}{% else %}` 的空狀態列——示範資料恆非空，所以那一列在 dist 永遠不渲染。
+    //      **round45 裁決：這一族合法**，理由是 §5「元件內部的示範資料表…真實可能為空者帶 {% else %}
+    //      鏡射無資料列，即使示範資料恆非空——分支是給 React 的規格」。它與死文案的差別是：
+    //      那一列的 markup 是規格的一部分，不是一段沒有人看過的畫面（§6 同一句話）。
+    //  (b) js 產生的字串：`GufoI18n.t(key, "繁中")` 的 key 本來就不會出現在靜態 markup 上。
+    //      逐顆登記「哪一支 js 產生它」，並在下面實際回去那支檔案驗一次（登記不等於查證過）。
+    const FOR_ELSE_SPEC = new Map([
+        ["dataImport.noUploadedFiles", "1-2-1 上傳清單的 {% else %} 空狀態列（示範資料恆有檔案）"],
+        ["dataset.noFiles", "3-1-3 資料集檔案表的 {% else %} 空狀態列"],
+        ["health.uncoveredNone", "3-5 未覆蓋清單的 {% else %} 空狀態列"],
+        ["health.uncoveredNoReason", "3-5 未覆蓋列「沒有理由」那一格的 {% else %}"],
+        ["serviceKey.none", "5-6-3 服務金鑰表的 {% else %} 空狀態列"],
+    ]);
+    const JS_RENDERED = new Map([
+        ["settings.bulkPasteNoAlias", "components/alias-entries-modal/alias-entries-modal.js"],
+        ["settings.bulkPasteCanonicalTooLong", "components/alias-entries-modal/alias-entries-modal.js"],
+        ["settings.bulkPasteTooManyAliases", "components/alias-entries-modal/alias-entries-modal.js"],
+        ["settings.bulkPasteAliasTooLong", "components/alias-entries-modal/alias-entries-modal.js"],
+        ["comp.collapseQaRecord", "components/qa-side-panel/qa-side-panel.js"],
+        ["common.collapse", "ui/collapse-text/collapse-text.js"],
+        ["action.removePrefix", "ui/multi-select/multi-select.js"],
+        ["common.noMatchingOptions", "ui/multi-select/multi-select.js"],
+        ["pagination.pagePrefix", "ui/pagination/pagination.js"],
+        ["pagination.pageSuffix", "ui/pagination/pagination.js"],
+        ["pagination.prevDisabled", "ui/pagination/pagination.js"],
+        ["pagination.jumpPrev", "ui/pagination/pagination.js"],
+        ["pagination.jumpNext", "ui/pagination/pagination.js"],
+        ["pagination.nextDisabled", "ui/pagination/pagination.js"],
+    ]);
+    const { used } = collectUsedI18nKeys();
+    const rendered = new Set();
+    for (const f of distHtml) {
+        const html = distDoc(f);
+        for (const m of html.matchAll(/\bdata-i18n(?:-[a-z-]+)?="([^"]+)"/g)) rendered.add(m[1]);
+        for (const m of html.matchAll(/\bdata-[a-z-]+-key="([^"]+)"/g)) rendered.add(m[1]);
+        for (const m of html.matchAll(/\bdata-key-[a-z]+="([^"]+)"/g)) rendered.add(m[1]);
+    }
+    assert.ok(used.size > 100, `只收集到 ${used.size} 個用到的 key —— 這條測試在空轉`);
+    assert.ok(rendered.size > 400, `dist 只渲染出 ${rendered.size} 個 key —— 這條測試在空轉`);
+    const unrendered = [...used.keys()].filter((k) => !rendered.has(k));
+    const hits = [];
+    const usedSpec = new Set(), usedJs = new Set();
+    for (const k of unrendered) {
+        if (FOR_ELSE_SPEC.has(k)) { usedSpec.add(k); continue; }
+        if (JS_RENDERED.has(k)) { usedJs.add(k); continue; }
+        hits.push(`${k}  ← ${used.get(k)[0]}  這顆 key 在 dist 全站一頁都渲染不出來` +
+            `（`+"`{% if %}` 的條件恆為某值？）——沒有人看過它的長相");
+    }
+    // 白名單衛生：登記了卻不需要＝死豁免；而 js 那一族的「是誰產生它」要真的回去那支檔案驗到
+    const staleSpec = [...FOR_ELSE_SPEC.keys()].filter((k) => !usedSpec.has(k));
+    assert.deepEqual(staleSpec, [], `FOR_ELSE_SPEC 有死豁免（那顆 key 已經渲染得出來，或已經沒有人引用）：${staleSpec.join("、")}`);
+    const staleJs = [...JS_RENDERED.keys()].filter((k) => !usedJs.has(k));
+    assert.deepEqual(staleJs, [], `JS_RENDERED 有死豁免：${staleJs.join("、")}`);
+    for (const [k, jsFile] of JS_RENDERED) {
+        const p = `src/_includes/${jsFile}`;
+        assert.ok(existsSync(p), `JS_RENDERED 說 ${k} 由 ${jsFile} 產生，但那支檔案不存在`);
+        assert.ok(read(p).includes(`"${k}"`), `JS_RENDERED 說 ${k} 由 ${jsFile} 產生，但那支 js 裡找不到這顆 key —— 登記不等於查證過`);
+    }
+    for (const [k, why] of FOR_ELSE_SPEC) assert.ok(why.length > 8, `FOR_ELSE_SPEC 的 ${k} 沒寫理由`);
+    assert.equal(hits.length, 0, `§5：src 有引用點、dist 卻渲染不出來的 key：\n${fail(hits)}`);
+});
+
+test("§9 元件內部的 {% for %} 迴圈裡不得有 {% include %}（Eleventy 會渲染成空白，而且不報錯）", () => {
+    // §9 的 ⚠️ 陷阱：`{% include %}` 巢在**被 include 的元件內部**的 `{% for %}` 迴圈裡時，
+    // 渲染成空白且**不報錯**——畫面少一整塊，build 綠、lint 綠、fpdiff 只有在那一塊本來就該有東西時
+    // 才看得出來（而空白處常常正好是「這一列的動作鈕」）。頁面層的 for 迴圈不受此限。
+    const rule = (text, f = "<probe>") => {
+        const out = [];
+        const t = stripNjk(text);
+        let depth = 0;
+        for (const m of t.matchAll(/\{%[-+]?\s*(for|endfor|include)\b/g)) {
+            if (m[1] === "for") depth++;
+            else if (m[1] === "endfor") depth = Math.max(0, depth - 1);
+            else if (depth > 0) out.push(`${f}:${countLines(t, m.index)}  {% include %} 巢在元件自己的 {% for %} 裡（會渲染成空白）`);
+        }
+        return out;
+    };
+    const comps = srcHtml.filter((f) => f.includes("_includes/") && !f.includes("_includes/layouts/"));
+    assert.ok(comps.length >= 50, `只掃到 ${comps.length} 支元件 html —— 這條測試在空轉`);
+    const forCount = comps.reduce((n, f) => n + [...stripNjk(read(f)).matchAll(/\{%[-+]?\s*for\b/g)].length, 0);
+    assert.ok(forCount >= 20, `元件內只掃到 ${forCount} 個 {% for %} —— 這條測試在空轉`);
+    const hits = comps.flatMap((f) => rule(read(f), f));
+    probe("§9 巢狀 include", (s) => rule(s),
+        ['{% for row in rows %}\n<tr>{% include "ui/button/button.html" %}</tr>\n{% endfor %}',
+            '{%- for row in rows -%}{% include "ui/x/x.html" %}{%- endfor -%}'],
+        ['{% for row in rows %}<tr><td>{{ row.a }}</td></tr>{% endfor %}',
+            '{% include "ui/button/button.html" %}\n{% for row in rows %}<tr></tr>{% endfor %}',
+            '{# {% for x in xs %}{% include "ui/x/x.html" %}{% endfor %} #}']);
+    assert.equal(hits.length, 0, `§9 Eleventy 陷阱：\n${fail(hits)}`);
+});
+
+test("§4 漸層當填充時要算**兩個端點**：承載前景的那一條不得用 --brand-gradient", () => {
+    // §4：「漸層要算兩個端點，不是中點——`--brand-gradient` 兩端疊白字是 6.26:1 與 2.30:1。
+    // 承載前景的長條一律改用純色填充 token。」而逐色實算那條測試的迴圈只跑 `fillOnWhiteText`，
+    // `--brand-gradient` 在 chrome 桶、值不是 hex，`get()` 根本拿不到它——遮罩墨色那條測試自己
+    // 標了 ⚠️ 說這裡等於無條件放行（round38 因此在 footer／faq-chatroom／faq-launcher 各留過一個
+    // 破門檻的實體，三處都是後來才改回純色 --brand）。這條把「漸層 ＋ 前景」直接擋掉。
+    const lin = (c) => ((c /= 255) <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+    const lum = (hex) => {
+        const body = hex.slice(1);
+        const rgb = body.length <= 4 ? body.slice(0, 3).replace(/./g, (c) => c + c) : body.slice(0, 6);
+        const n = parseInt(rgb, 16);
+        return 0.2126 * lin((n >> 16) & 255) + 0.7152 * lin((n >> 8) & 255) + 0.0722 * lin(n & 255);
+    };
+    const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
+    // 兩個端點（light／dark 各一組）＋ 前景 token 的值，都從 _var.scss 讀
+    const varScss = read("src/scss/_var.scss");
+    const darkAt = varScss.search(/^\[data-theme="dark"\]/m);
+    assert.ok(darkAt > 0, '_var.scss 找不到 [data-theme="dark"] 區塊 —— 這條測試在空轉');
+    const valueOf = (block, token) => (block.match(new RegExp(String.raw`${token}:\s*([^;]+);`)) || [])[1];
+    const stopsOf = (block) => {
+        const v = valueOf(block, "--brand-gradient");
+        assert.ok(v, "_var.scss 找不到 --brand-gradient —— 這條測試在空轉");
+        const stops = [...v.matchAll(/#[0-9a-fA-F]{3,8}/g)].map((m) => m[0]);
+        assert.equal(stops.length, 2, `--brand-gradient 解析出 ${stops.length} 個端點（應為 2）：${v}`);
+        return stops;
+    };
+    const MODES = [["light", varScss.slice(0, darkAt)], ["dark", varScss.slice(darkAt)]];
+    const stops = new Map(MODES.map(([mode, block]) => [mode, stopsOf(block)]));
+    const fgValue = (mode, token) => valueOf(MODES.find(([m]) => m === mode)[1], token);
+    // 端點的實算本身也是一條斷言：`--on-accent` 疊 --brand-gradient 至少有一端 < 4.5，
+    // 那正是「承載前景就不能用漸層」這條規則存在的理由；哪天漸層改到兩端都過得了，這條要重新裁決。
+    {
+        const worst = Math.min(...MODES.map(([mode]) =>
+            Math.min(...stops.get(mode).map((s) => ratio(fgValue(mode, "--on-accent"), s)))));
+        assert.ok(worst < 4.5,
+            `--on-accent 疊 --brand-gradient 兩端最差 ${worst.toFixed(2)} ≥ 4.5 —— 漸層改過了，這條規則的前提要重新裁決`);
+    }
+    // 規則：任何把 --brand-gradient 當 background(-image) 的規則，只要同一條 compound 上有前景
+    //（color:／被遮罩的 background-color 墨色），就要逐端點實算。
+    const scan = (css, f = "<probe>") => {
+        const out = [];
+        for (const m of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+            const [, sel, body] = m;
+            if (!/(?:^|[\s;])background(?:-image)?\s*:[^;]*var\(--brand-gradient\)/.test(body)) continue;
+            const fgs = [...body.matchAll(/(?:^|[\s;])(?:color|-webkit-text-fill-color)\s*:\s*var\((--[\w-]+)\)/g)].map((x) => x[1]);
+            const masked = /(?:^|[\s;])(?:-webkit-)?mask\s*:/.test(body);
+            if (masked) for (const x of body.matchAll(/(?:^|[\s;])background-color\s*:\s*var\((--[\w-]+)\)/g)) fgs.push(x[1]);
+            if (!fgs.length) continue;
+            for (const [mode] of MODES)
+                for (const fg of new Set(fgs)) {
+                    const v = fgValue(mode, fg);
+                    if (!v || !/^#[0-9a-fA-F]{3,8}$/.test(v.trim())) continue;
+                    for (const s of stops.get(mode)) {
+                        const r = ratio(v.trim(), s);
+                        if (r < 4.5) out.push(`${f}  ${sel.trim().replace(/\s+/g, " ")} 的前景 ${fg} 疊 --brand-gradient 端點 ${s}（${mode}）＝ ${r.toFixed(2)} < 4.5`);
+                    }
+                }
+        }
+        return out;
+    };
+    const css = read("dist/css/main.css");
+    // 空轉守門：token 本身要還活著（現況只有 header／chatbot-header 的 border-image 用它）；
+    // 它整個沒人用時這條規則沒有東西可管，該連同 token 一起裁決，不是靜靜地綠。
+    const users = [...css.matchAll(/([^{}]+)\{([^{}]*var\(--brand-gradient\)[^{}]*)\}/g)];
+    assert.ok(users.length >= 1, "編譯後 css 沒有任何規則用到 --brand-gradient —— 這顆 token 已經沒有消費者了，請連同它一起裁決");
+    probe("§4 漸層兩端點", (s) => scan(s),
+        [".footer { background: var(--brand-gradient); color: var(--on-accent); }",
+            ".x { background-image: var(--brand-gradient); -webkit-mask: url(a.png); background-color: var(--on-accent); }"],
+        [".header { border-image: var(--brand-gradient) 1; }",
+            ".footer { background-color: var(--brand); color: var(--on-accent); }",
+            ".x { background: var(--brand-gradient); }"]);
+    assert.equal(scan(css, "main.css").length, 0, `§4 承載前景的填充不得用漸層：\n${fail(scan(css, "main.css"))}`);
+});
+
+test("§4-1 `:focus-within` 是黑名單（滑鼠點一下也會亮，和全域焦點環對不上）", () => {
+    // §4-1 明文：把焦點環畫在外框時要用 `:has(<那顆控制項>:focus-visible)`，**不要用 `:focus-within`**。
+    // 唯一的合法用途是「CSS 開合」——header 的子選單靠 `li:hover, li:focus-within > ul` 展開，
+    // 那不是焦點環，是鍵盤使用者唯一打得開子選單的路徑（header.js 只負責同步 aria-expanded）。
+    const ALLOW = new Map([
+        ["src/_includes/components/header/_header.scss",
+            "CSS 開合的正典：`li:hover > ul` 與 `li:focus-within > ul` 是同一組顯示條件（鍵盤 tab 到觸發鈕就展開）。" +
+            "它畫的不是焦點環，故不適用「滑鼠點一下也會亮」那條理由；aria-expanded 由 header.js 依同一個 OR 同步。"],
+    ]);
+    const rule = (line, f) => (/:focus-within/.test(line.split("//")[0]) && !ALLOW.has(f) ? "用了 :focus-within（焦點環請改 :has(<那顆控制項>:focus-visible)）" : null);
+    const hits = scanLines(srcScss, rule);
+    // 白名單衛生：豁免的檔案要真的還在用它，否則是一張放著沒人管的通行證
+    for (const [f, why] of ALLOW) {
+        assert.ok(srcScss.includes(f), `:focus-within 白名單的 ${f} 已經不在 srcScss 裡（死豁免）`);
+        assert.ok(why.length > 20, `:focus-within 白名單的 ${f} 沒寫理由`);
+        assert.ok(scanText(read(f), (line) => (/:focus-within/.test(line.split("//")[0]) ? true : null)).length > 0,
+            `:focus-within 白名單豁免了 ${f}，但那支 scss 其實已經沒有用它 —— 死豁免，請移除`);
+    }
+    probe("§4-1 :focus-within", (s) => scanText(s, rule, "src/_includes/ui/x/_x.scss"),
+        ["    .multi-select-control:focus-within { outline: 2px solid var(--brand-text); }"],
+        ["    .multi-select-control:has(.multi-select-search:focus-visible) { outline: 2px solid var(--brand-text); }",
+            "    // 用 :has(:focus-visible) 而非 :focus-within —— 後者滑鼠點一下也會亮"]);
+    assert.equal(hits.length, 0, `§4-1：\n${fail(hits)}`);
+});
+
+test("§4 全站只有 login.html 包 <form>（靜態原型真的送出會整頁重載）", () => {
+    // §4：「表單不包 `<form>`、送出鈕是 `type="button"`；`src/login.html` 是唯一包 `<form>` 的頁」。
+    // 既有測試只擋 `type="submit"`——一顆 `<button type="button">` 包在 `<form>` 裡照樣過關，
+    // 而 React 端接手時那個 `<form>` 會被原樣帶過去（Enter 鍵就是原生送出）。
+    const ALLOW = new Map([
+        ["src/login.html", "唯一包 <form> 的頁：真 app 的登入表單原樣保留（那顆登入鈕同樣是 type=\"button\"，React 端才換回 submit ＋ onSubmit(preventDefault)）"],
+    ]);
+    const rule = (line, f) => (/<form[\s>]/.test(line) && !ALLOW.has(f) ? "多了一個 <form>（切版不包 form）" : null);
+    // 掃 src 的**已剝註解**版本：檔頭常常引用 `<form>` 來說明「這裡刻意沒有 form」
+    const hits = [];
+    let forms = 0;
+    for (const f of srcHtml) {
+        const t = stripNjk(read(f));
+        forms += [...t.matchAll(/<form[\s>]/g)].length;
+        hits.push(...scanText(t, rule, f));
+    }
+    assert.ok(forms >= 1, "全站一個 <form> 都掃不到 —— 這條測試在空轉（login.html 的登入表單應該還在）");
+    for (const [f, why] of ALLOW) {
+        assert.ok(srcHtml.includes(f), `<form> 白名單的 ${f} 已經不存在（死豁免）`);
+        assert.ok(why.length > 20, `<form> 白名單的 ${f} 沒寫理由`);
+        assert.ok(/<form[\s>]/.test(stripNjk(read(f))), `<form> 白名單豁免了 ${f}，但那一頁其實已經沒有 <form> —— 死豁免，請移除`);
+    }
+    probe("§4 <form> 白名單", (s) => scanText(s, rule, "src/pages/x/y.html"),
+        ['<form class="login-form">', "<form>"],
+        ['<div class="form-group">', '<button type="button" class="button">送出</button>',
+            '<label class="control-label" for="x">名稱</label>']);
+    // 白名單那一側也要走同一條規則：login.html 的 <form> 不得被判成違規
+    assert.equal(scanText('<form class="login-form">', rule, [...ALLOW.keys()][0]).length, 0, "白名單那一支反而被誤報了");
+    assert.equal(hits.length, 0, `§4：\n${fail(hits)}`);
+});
+
+test("§5 頁級內嵌 <script> 只有兩支法定例外（base.html 的 no-flash、元件庫頁的目錄捲動）", () => {
+    // §5：「頁級內嵌 `<script>` 只有兩支法定例外」。既有的「零 inline handler」那條只擋 `onclick=`，
+    // 對「在頁面裡塞一段 <script>」完全無感——而那正是把行為從元件 js 搬回頁面的第一步。
+    const isNoFlash = (body) => /localStorage/.test(body) && /theme/.test(body);
+    const scan = (docs) => {
+        const out = [];
+        let noFlash = 0, showcase = 0;
+        for (const { f, html } of docs)
+            for (const m of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)) {
+                if (/\ssrc=/.test(m[1])) continue;                 // 外部檔（三方登記那條在管）
+                if (isNoFlash(m[2])) { noFlash++; continue; }      // 例外①：base.html 的 no-flash 主題腳本
+                if (f.endsWith(SHOWCASE.dist)) { showcase++; continue; } // 例外②：元件庫展示頁的目錄捲動 chrome
+                out.push(`${f}  多了一支頁級內嵌 <script>（行為住在元件 js 裡；§5 只有兩支法定例外）`);
+            }
+        return { out, noFlash, showcase };
+    };
+    const { out, noFlash, showcase } = scan(distHtml.map((f) => ({ f: `dist/${f}`, html: read(`dist/${f}`) })));
+    // 空轉守門：兩支例外都要真的在（no-flash 每一頁一支、目錄捲動只在元件庫頁一支）
+    assert.equal(noFlash, distHtml.length, `no-flash 腳本應該每頁一支（${distHtml.length} 頁），實際 ${noFlash} 支 —— 收集器壞了，或 base.html 那支不見了`);
+    assert.equal(showcase, 1, `元件庫頁的目錄捲動腳本應恰好一支，實際 ${showcase} 支`);
+    assert.equal(out.length, 0, `§5：\n${fail(out)}`);
+    // 負控：規則認得出「多出來的那一支」，也不會誤報兩支法定例外
+    const probeRun = (s) => scan([{ f: "dist/5-2_x.html", html: s }]).out;
+    probe("§5 頁級內嵌 script", probeRun,
+        ["<script>document.querySelector('.x').addEventListener('click', f);</script>"],
+        ['<script defer src="./js/tab.js"></script>',
+            '<script>(function(){var t=localStorage.getItem("theme");})();</script>']);
+    assert.equal(scan([{ f: `dist/${SHOWCASE.dist}`, html: "<script>window.scrollTo(0,0);</script>" }]).out.length, 0,
+        "元件庫頁的那一支例外被誤報了");
+});
+
+test("§4 sm-gap-*／xs-gap-* 必須與 mobile-column／mobile-column-xs 同掛（單掛是死 class）", () => {
+    // §4：「斷點內覆寫用 `sm-gap-*`／`xs-gap-*`…**必須與 `mobile-column`／`mobile-column-xs` 同掛**——
+    // 它們的規則巢在那兩顆方向 class 之內，單掛是死 class，而『手機上 gap 沒縮』視覺指紋看不出來」。
+    // 對位是**逐一**的：`sm-gap-*` 巢在 `.mobile-column`（≤992）之內、`xs-gap-*` 巢在 `.mobile-column-xs`
+    //（≤768）之內，掛錯另一顆同樣不生效。
+    const NEEDS = [[/^sm-gap-\d+$/, "mobile-column"], [/^xs-gap-\d+$/, "mobile-column-xs"]];
+    const scan = (html, f = "<probe>") => {
+        const out = [];
+        for (const { value } of attrValuesIn(html, "class")) {
+            const cls = value.split(/\s+/).filter(Boolean);
+            for (const c of cls)
+                for (const [re, need] of NEEDS)
+                    if (re.test(c) && !cls.includes(need))
+                        out.push(`${f}  .${c} 沒有與 .${need} 同掛（規則巢在它之內，單掛完全不生效）：class="${value.slice(0, 80)}"`);
+        }
+        return out;
+    };
+    // 前提：那兩條規則今天真的是巢在方向 class 之內的（前提變了就要重新裁決，不是靜靜地綠）
+    const css = read("dist/css/main.css").replace(/\s+/g, " ");
+    assert.ok(/\.flex-row\.mobile-column\.sm-gap-\d+/.test(css), "編譯後 css 找不到 `.flex-row.mobile-column.sm-gap-*` —— 這條規則的前提變了");
+    assert.ok(/\.flex-row\.mobile-column-xs\.xs-gap-\d+/.test(css), "編譯後 css 找不到 `.flex-row.mobile-column-xs.xs-gap-*` —— 這條規則的前提變了");
+    const hits = [];
+    let seen = 0;
+    for (const f of distHtml) {
+        const html = distDoc(f);
+        for (const { value } of attrValuesIn(html, "class"))
+            seen += value.split(/\s+/).filter((c) => /^(sm|xs)-gap-\d+$/.test(c)).length;
+        hits.push(...scan(html, `dist/${f}`));
+    }
+    assert.ok(seen >= 20, `只掃到 ${seen} 顆 sm-gap-*／xs-gap-* —— 這條測試在空轉`);
+    probe("§4 斷點 gap 同掛", (s) => scan(s),
+        ['<div class="flex-row gap-16 sm-gap-8">', '<div class="flex-row gap-16 mobile-column xs-gap-8">',
+            "<div class='flex-row gap-16 sm-gap-8'>"],
+        ['<div class="flex-row gap-16 mobile-column sm-gap-8">',
+            '<div class="flex-row gap-16 mobile-column-xs xs-gap-8">',
+            '<div class="flex-row gap-16 mobile-column mobile-column-xs sm-gap-8 xs-gap-4">']);
+    assert.equal(hits.length, 0, `§4：\n${fail(hits)}`);
+});
+
+test("§4 掛了 id 的輔助文字必須至少有一個控制項指到它（沒有人指的 hint id 比沒有 id 更難查）", () => {
+    // §4：「**反向同樣要成立**：掛了 `id` 的輔助文字必須至少有一個控制項指到它——沒有人指的 hint id
+    // 比完全沒有 id 更難查，它讓下一個人以為這條已經做過了（移除一個欄位時最容易留下這種孤兒：
+    // 指向它的那顆控制項被刪了，提示與 id 都還在）」。
+    // 母體收窄成「**不是控制項**的元素、且 id 以 Hint／Note 收尾」——控制項自己的 id 常常也長這樣
+    //（`<input id="newCaseNote">` 是欄位不是提示），連它一起掃會誤報。
+    // 「指到它」認三種：`aria-describedby`（提示的正路）、`aria-labelledby`（浮空群組標題，
+    // manage-members-modal 的 `#manageMembersHint` 即此型）、`for`。
+    const CONTROL = new Set(["input", "select", "textarea", "button", "label", "a", "option"]);
+    const scan = (html, f = "<probe>") => {
+        const out = [];
+        const pointed = new Set();
+        for (const attr of ["aria-describedby", "aria-labelledby", "for"])
+            for (const { value } of attrValuesIn(html, attr))
+                for (const t of value.split(/\s+/).filter(Boolean)) pointed.add(t);
+        for (const { tag, attrs, raw } of tagsOf(html)) {
+            if (CONTROL.has(tag)) continue;
+            const id = attrValue(attrs, "id");
+            if (!id || !/(?:Hint|hint|Note|note)$/.test(id)) continue;
+            if (pointed.has(id)) continue;
+            out.push(`${f}  #${id} 是沒有人指到的孤兒提示：${raw.slice(0, 70)}`);
+        }
+        return out;
+    };
+    const hits = [];
+    let seen = 0;
+    for (const f of distHtml) {
+        const html = distDoc(f);
+        for (const { tag, attrs } of tagsOf(html)) {
+            if (CONTROL.has(tag)) continue;
+            const id = attrValue(attrs, "id");
+            if (id && /(?:Hint|hint|Note|note)$/.test(id)) seen++;
+        }
+        hits.push(...scan(html, `dist/${f}`));
+    }
+    assert.ok(seen >= 30, `只掃到 ${seen} 顆 hint id —— 這條測試在空轉`);
+    probe("§4 孤兒 hint id", (s) => scan(s),
+        ['<span id="fooHint">最多 64 字</span>', "<p id='barNote'>說明</p>"],
+        ['<input aria-describedby="fooHint"><span id="fooHint">最多 64 字</span>',
+            '<div role="group" aria-labelledby="barHint"><p id="barHint">勾選要加入的成員</p></div>',
+            '<input id="newCaseNote" class="form-control">']);   // 控制項自己的 id 不在母體內
+    assert.equal(hits.length, 0, `§4：\n${fail(hits)}`);
+});
+
+test("§3-2 引了上游檔名的註解，同一則裡要出現 repo 名（同一個符號名配錯 repo 照字面看不出違規）", () => {
+    // §3-2：「出處要 **repo ＋ 檔 ＋ 符號名三者齊全**（同一個符號名配錯 repo 照字面看不出違規）」。
+    // 既有那條只管「不得引行號」，repo 名那一半完全沒有網。判定單位＝**一則註解**（同「不得引行號」
+    // 那條）：下一個人拿去對答案時讀的就是那一則，而 product 與 chatbot 兩側常有同名檔＋同名函式
+    //（`alias.py 的 update_alias_table` 兩邊都有，動詞與守衛集合卻不同）。
+    // 只管**上游**副檔名（.py／.ts／.tsx）——本 repo 自己的 .js／.scss／.html 不需要 repo 名。
+    const REPO = /gufofaq-saas|GufoRAG|chatbot|product|apps\/web/;
+    const UPSTREAM = /(?<![\w.\-/\\])([\w][\w.\-]*\.(?:py|ts|tsx))(?![\w-])/g;
+    const scan = (text, f = "<probe>", mode = "njk") => {
+        const out = [];
+        for (const c of commentsOf(text, mode)) {
+            const cited = [...new Set([...c.body.matchAll(UPSTREAM)].map((m) => m[1]))];
+            if (!cited.length || REPO.test(c.body)) continue;
+            out.push(`${f}:${c.line}  引了 ${cited.join("、")} 卻沒說是哪個 repo：${c.body.replace(/\s+/g, " ").trim().slice(0, 80)}`);
+        }
+        return out;
+    };
+    const hits = [];
+    let cited = 0;
+    // 母體計數用 matchAll，不用 `UPSTREAM.test()`：帶 /g 的正則 `.test()` 會沿用 lastIndex，
+    // 逐則呼叫時會跳號（母體被低估 ⇒ 空轉守門自己先失準）。
+    const citesUpstream = (body) => [...body.matchAll(UPSTREAM)].length > 0;
+    for (const f of srcHtml) {
+        for (const c of commentsOf(read(f), "njk")) if (citesUpstream(c.body)) cited++;
+        hits.push(...scan(read(f), f, "njk"));
+    }
+    for (const f of [...srcJs, ...srcScss]) {
+        for (const c of commentsOf(read(f), "js")) if (citesUpstream(c.body)) cited++;
+        hits.push(...scan(read(f), f, "js"));
+    }
+    assert.ok(cited >= 50, `只掃到 ${cited} 則引了上游檔名的註解 —— 這條測試在空轉`);
+    probe("§3-2 出處要含 repo 名", (s) => scan(s),
+        ["{# 上限見 glossary.py 的 MAX_TERM_LEN #}", "{# 逆向自 platform.py 的 review_apply #}"],
+        ["{# 上限見 GufoRAG chatbot app/services/glossary.py 的 MAX_TERM_LEN #}",
+            "{# 逆向自 product app/routers/platform.py 的 review_apply #}",
+            "{# 這一段行為改寫自真 app 的 main.js（純 UI） #}"]);
+    probe("§3-2 出處要含 repo 名（js 註解）", (s) => scan(s, "<probe>", "js"),
+        ["// 值域見 authz.py 的 CAPABILITY_TOKENS"],
+        ["// 值域見 product app/services/authz.py 的 CAPABILITY_TOKENS", "// 純 UI，沒有引任何上游檔"]);
+    assert.equal(hits.length, 0, `§3-2 出處三件（repo ＋ 檔 ＋ 符號名）缺了 repo：\n${fail(hits)}`);
+});
+
+test("§4 不得有空的 <option></option>（報讀器只念得出一顆空白選項）", () => {
+    // §4：「『還沒挑』要有一顆 `<option value="">` 承載得住，**而且它要有可讀標籤**…
+    // 空的 `<option></option>` 同樣不行：報讀器只念得出一顆空白選項」。
+    // 前半句（要有 value=""）由「還沒挑」那一族的頁面測試各自釘住，後半句一直沒有網。
+    const scan = (html, f = "<probe>") => {
+        const out = [];
+        for (const m of html.matchAll(/<option\b((?:"[^"]*"|'[^']*'|[^>"'])*)>([\s\S]*?)<\/option>/g)) {
+            const text = m[2].replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim();
+            if (text) continue;
+            // `label` 屬性也是可讀標籤（HTML 規格允許 <option label="…">）
+            if ((attrValue(m[1], "label") || "").trim()) continue;
+            out.push(`${f}  <option${m[1].slice(0, 50)}></option> 沒有可讀標籤`);
+        }
+        return out;
+    };
+    const hits = [];
+    let seen = 0;
+    for (const f of distHtml) {
+        const html = distDoc(f);
+        seen += [...html.matchAll(/<option\b/g)].length;
+        hits.push(...scan(html, `dist/${f}`));
+    }
+    assert.ok(seen >= 100, `只掃到 ${seen} 顆 <option> —— 這條測試在空轉`);
+    probe("§4 空 option", (s) => scan(s),
+        ["<option value=\"\"></option>", "<option value='x'>  </option>"],
+        ['<option value="">請選擇</option>', '<option value="x">全部</option>', '<option value="" label="請選擇"></option>']);
+    assert.equal(hits.length, 0, `§4：\n${fail(hits)}`);
+});
+
+test("§4-2 屬性型譯文把常數烤進去時，同一頁要有一處常駐可見的節點承載同一個數字", () => {
+    // §4-2 round44 新條：屬性型譯文（`data-i18n-<attr>`：placeholder／data-toast／title／aria-label）
+    // 是「常數只能留在譯文裡」的**唯一例外**，而走這條例外有兩個條件，缺一不可：
+    //   ①**同一個約束另有一處常駐可見的資料節點承載**（正典：`settings.passwordMinLengthPrefix`
+    //     ＋ `<span>8</span>` ＋ Suffix）——屬性那份才是可接受的第二抄本；
+    //   ② 該常數的上游符號名寫在檔頭（那一半靠人審，這條網只驗①）。
+    // 判準：屬性譯文（中英兩份）裡出現的每一段數字，都要在**同一頁的可見文字**裡讀得到。
+    // 可見文字＝剝掉標籤之後的文字節點（正典那顆 `<span>8</span>` 是純資料節點、沒有 data-i18n，
+    // 所以不能只收 data-i18n 節點）。
+    const en = JSON.parse(read("src/i18n/en.json"));
+    const scan = (html, dict, f = "<probe>") => {
+        const out = [];
+        const visible = new Set([...html.replace(/<[^>]*>/g, " ").matchAll(/\d+/g)].map((m) => m[0]));
+        const said = new Set();
+        for (const { attrs } of tagsOf(html))
+            for (const km of attrs.matchAll(/\bdata-i18n-([a-z-]+)="([\w.]+)"/g)) {
+                const [, target, key] = km;
+                const zh = attrValue(attrs, target) || "";
+                const enVal = typeof dict[key] === "string" ? dict[key] : "";
+                const nums = [...new Set([...`${zh} ${enVal}`.matchAll(/\d+/g)].map((m) => m[0]))];
+                const missing = nums.filter((d) => !visible.has(d));
+                if (!missing.length || said.has(key)) continue;
+                said.add(key);
+                out.push(`${f}  ${key} 的譯文裡有 ${missing.join("／")}，而同一頁沒有任何常駐可見的節點承載它` +
+                    `（§4-2 例外條件①：屬性那份只能是第二抄本）：${JSON.stringify((enVal || zh).slice(0, 60))}`);
+            }
+        return out;
+    };
+    const hits = [];
+    let seen = 0;
+    for (const f of distHtml) {
+        const html = distDoc(f);
+        for (const { attrs } of tagsOf(html))
+            for (const km of attrs.matchAll(/\bdata-i18n-([a-z-]+)="([\w.]+)"/g))
+                if (/\d/.test(`${attrValue(attrs, km[1]) || ""} ${en[km[2]] ?? ""}`)) seen++;
+        hits.push(...scan(html, en, `dist/${f}`));
+    }
+    assert.ok(seen >= 30, `只掃到 ${seen} 顆「譯文含數字」的屬性型 key —— 這條測試在空轉`);
+    probe("§4-2 屬性型譯文的常數",
+        (s) => scan(s, { "x.toast": "Only the last 31 days can be downloaded", "x.ph": "At least 8 characters" }),
+        ['<button data-toast="僅能下載近 31 日" data-i18n-data-toast="x.toast">下載</button>'],
+        ['<button data-toast="僅能下載近 31 日" data-i18n-data-toast="x.toast">下載</button><span>31</span>',
+            '<input placeholder="至少 8 碼" data-i18n-placeholder="x.ph"><span class="text-gray">至少 <span>8</span> 碼</span>']);
+    assert.equal(hits.length, 0,
+        `§4-2 屬性型譯文的例外條件①不成立（那個常數改了，譯文會靜默過期而沒有任何一處看得出來）：\n${fail(hits)}`);
+});
+
+// ── ui/table-sort：三態循環 / 缺值沉底 / 成對 detail-row / 還原原序（§5 ④、§8 邊界輸入）────────
+// round45 新增這支元件時一併交付（§8：一次性手動探索不算驗收，下一輪重跑不到就等於沒測過）。
+function tableSortFixture(node, root, rows) {
+    const table = node("table", "default-table");
+    const thead = node("thead");
+    const htr = node("tr");
+    const thName = node("th");
+    const thVal = node("th");
+    const btn = node("button", "sort");
+    thVal.append(btn);
+    htr.append(thName, thVal);
+    thead.append(htr);
+    const tbody = node("tbody");
+    const made = rows.map(([name, val, withDetail]) => {
+        const tr = node("tr");
+        const c0 = node("td"); c0.textContent = name;
+        const c1 = node("td"); c1.textContent = val;
+        tr.append(c0, c1);
+        tbody.appendChild(tr);
+        let detail = null;
+        if (withDetail) { detail = node("tr", "detail-row"); detail.textContent = "detail:" + name; tbody.appendChild(detail); }
+        return { tr, detail };
+    });
+    table.append(thead, tbody);
+    root.append(table);
+    return { btn, tbody, thVal, made };
+}
+const namesOf = (tbody) => tbody.children.filter((r) => !r.classes.has("detail-row")).map((r) => r.children[0].textContent);
+const orderOf = (tbody) => tbody.children.map((r) => (r.classes.has("detail-row") ? r.textContent : r.children[0].textContent));
+
+test("§5/§8 ui/table-sort：三態循環 asc→desc→none，none 回到 markup 原序（不是 desc 的反向）", () => {
+    const js = read("src/_includes/ui/table-sort/table-sort.js");
+    const env = runStubDom(js, (node, root) =>
+        tableSortFixture(node, root, [["c", "9"], ["a", "10"], ["b", "2"]]));
+    const { btn, tbody, thVal } = env.fixture;
+    assert.equal(thVal.getAttribute("aria-sort"), "none", "初始態也要帶 aria-sort（§4 每一條路徑都同步）");
+    assert.deepEqual(namesOf(tbody), ["c", "a", "b"], "母體守門：還沒點就該是 markup 原序");
+
+    btn.dispatch("click", {});
+    assert.equal(thVal.getAttribute("aria-sort"), "ascending");
+    assert.deepEqual(namesOf(tbody), ["b", "c", "a"], "數值比：2 < 9 < 10（不是字串比，否則 10 會排在 2 前面）");
+
+    btn.dispatch("click", {});
+    assert.equal(thVal.getAttribute("aria-sort"), "descending");
+    assert.deepEqual(namesOf(tbody), ["a", "c", "b"]);
+
+    btn.dispatch("click", {});
+    assert.equal(thVal.getAttribute("aria-sort"), "none");
+    assert.deepEqual(namesOf(tbody), ["c", "a", "b"], "第三態要還原 markup 原序");
+});
+
+test("§6/§8 ui/table-sort：缺值（空字串與「—」）一律沉底，升冪降冪都不浮上來", () => {
+    const js = read("src/_includes/ui/table-sort/table-sort.js");
+    const env = runStubDom(js, (node, root) =>
+        tableSortFixture(node, root, [["a", "—"], ["b", "3"], ["c", ""], ["d", "1"]]));
+    const { btn, tbody } = env.fixture;
+
+    btn.dispatch("click", {});
+    assert.deepEqual(namesOf(tbody).slice(0, 2), ["d", "b"], "升冪：有值的照大小排在前");
+    assert.deepEqual(namesOf(tbody).slice(2).sort(), ["a", "c"], "升冪：兩顆缺值沉底");
+
+    btn.dispatch("click", {});
+    assert.deepEqual(namesOf(tbody).slice(0, 2), ["b", "d"], "降冪：有值的反過來");
+    assert.deepEqual(namesOf(tbody).slice(2).sort(), ["a", "c"],
+        "降冪：缺值**仍然**沉底——把「—」當成最小值的話它會浮到最上面，而缺值不是 0");
+});
+
+test("§8 ui/table-sort：成對的 .detail-row 跟著它前面那一列走，不會被拆散", () => {
+    const js = read("src/_includes/ui/table-sort/table-sort.js");
+    const env = runStubDom(js, (node, root) =>
+        tableSortFixture(node, root, [["a", "3", true], ["b", "1", true], ["c", "2", true]]));
+    const { btn, tbody } = env.fixture;
+
+    btn.dispatch("click", {});
+    assert.deepEqual(orderOf(tbody), ["b", "detail:b", "c", "detail:c", "a", "detail:a"],
+        "每一列的明細列必須緊跟在它自己後面——拆散了會讓展開的內容對到別筆");
+    assert.equal(tbody.children.length, 6, "重排不得增生或吃掉列（appendChild 是搬移不是複製）");
+});
+
+test("§8 ui/table-sort：邊界輸入——0 列、1 列、全同值都不得丟例外或亂序", () => {
+    const js = read("src/_includes/ui/table-sort/table-sort.js");
+
+    const empty = runStubDom(js, (node, root) => tableSortFixture(node, root, []));
+    empty.fixture.btn.dispatch("click", {});
+    assert.equal(empty.fixture.tbody.children.length, 0, "0 列：點下去不得長出東西");
+    assert.equal(empty.fixture.thVal.getAttribute("aria-sort"), "ascending", "0 列仍要同步狀態");
+
+    const one = runStubDom(js, (node, root) => tableSortFixture(node, root, [["only", "5"]]));
+    one.fixture.btn.dispatch("click", {});
+    assert.deepEqual(namesOf(one.fixture.tbody), ["only"]);
+
+    const same = runStubDom(js, (node, root) =>
+        tableSortFixture(node, root, [["x", "7"], ["y", "7"], ["z", "7"]]));
+    same.fixture.btn.dispatch("click", {});
+    assert.deepEqual(namesOf(same.fixture.tbody), ["x", "y", "z"], "全同值要穩定排序，不得隨實作亂掉");
+});
+
+test("§5 ui/table-sort 的負控：把重排那一段從原文移除後，上面那些斷言必須失敗", () => {
+    const js = read("src/_includes/ui/table-sort/table-sort.js");
+    const CUT = "                render(sorted);";
+    assert.ok(js.includes(CUT), "負控的錨點在原文裡找不到了——測試驗的可能不是排序");
+    const mutated = js.replace(CUT, "                /* 負控：拿掉重排 */");
+    const env = runStubDom(mutated, (node, root) =>
+        tableSortFixture(node, root, [["c", "9"], ["a", "10"], ["b", "2"]]));
+    env.fixture.btn.dispatch("click", {});
+    assert.deepEqual(namesOf(env.fixture.tbody), ["c", "a", "b"],
+        "移除 render(sorted) 之後列序應該原封不動——若這裡仍被排序，代表排序來自別處，上面的斷言是假綠");
 });

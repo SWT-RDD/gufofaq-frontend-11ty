@@ -6,6 +6,11 @@
 // markup 契約（無 html 元件，§1-2；整段照抄）—— 2-2-3 兩側答案並排。
 // **從 `.message-row` 寫起**：`.ab-compare` 是 `flex: 1`，它的 flex 父層是 ui/chat-message 的
 // `.message-row`（`display:flex`）——本元件只能用在一則機器人訊息之內（§1-2）。
+// 本契約吃同頁的 `abSides` 陣列（`abSides[0].side` / `.configKey` / `.configLabel` /
+// `.promptVersion` 四欄）。**它的 `{% set %}` 定義行不在這裡重抄**：同一頁的 `ui/ab-test-block`
+// 契約段已經逐字帶著那一份（§3-2「同一份資料不得各烤一份」），少了那一行的失敗方式寫在那邊——
+// 畫面正常，只有 `id="abAnswerTitle-"` 靜默掉成空字串，而 `aria-labelledby` 就指到不存在的 id。
+//
 // 下面是 2-2-3_abTest.html 的生產 markup（A 側；B 側是同型的重複節點，只有 `abSides[0]` 換成
 // `abSides[1]`、答案本文與引用號碼不同）：
 //
@@ -16,18 +21,32 @@
 //                   <div class="message-content in-compare">
 //                       <div class="robot-msg">
 //                           <p class="item-title" id="abAnswerTitle-{{ abSides[0].side }}"><span data-i18n="qaTest.setting">設定</span> {{ abSides[0].side }} · <span data-i18n="{{ abSides[0].configKey }}">{{ abSides[0].configLabel }}</span> · {{ abSides[0].promptVersion }}</p>
-//                           ↑ 三段以**中點**並列，不用全形括號與逗號：那些標點是繁中的字身，
-//                             英文模式會印成「Setting A（Config 1，V3-角色定位型）」——一句話裡混著
-//                             兩套標點（§4-2）。2-2-3 的頁面註解逐字寫著這件事；契約先前留的
-//                             正是那個已被修掉的舊寫法，照抄就會把修好的缺陷做回去。
 //                           <div class="item-content">
 //                               <p>您好！以下是 UH3240 USB-C 多埠集線器的規格整理：</p>
+//                               <ul class="list-style-disc">
+//                                   <li>視訊輸出：支援 4K（3840×2160）@ 60Hz HDMI 輸出，適合高解析度顯示器。<button type="button" class="citation-ref js-citation" data-citation-no="1"><span class="sr-only" data-i18n="qa.citationSourcePrefix">來源</span>1</button></li>
+//                                   <li>電力傳輸：最高可提供 92W USB-C PD 3.0，支援規格 5V / 9V / 15V / 20V。</li>
+//                                   <li>傳輸埠：USB 3.2 Gen 1 介面，傳輸速率最高 5 Gbps。</li>
+//                                   <li>擴充埠：2× USB Type-A、1× HDMI、1× USB-C DC-in。<button type="button" class="citation-ref js-citation" data-citation-no="4"><span class="sr-only" data-i18n="qa.citationSourcePrefix">來源</span>4</button></li>
+//                               </ul>
 //                           </div>
 //                       </div>
 //                   </div>
 //                   <div class="message-icon" role="group" aria-labelledby="abAnswerTitle-{{ abSides[0].side }}">
 //                       <button type="button" class="button-icon copy copyBtn has-tooltip" data-toast="文字已複製!" data-i18n-data-toast="common.copied">
 //                           <span class="tooltip" data-i18n="action.copy">複製</span>
+//                       </button>
+//                       <button type="button" class="button-icon watch watchBtn has-tooltip">
+//                           <span class="tooltip" data-i18n="comp.viewSource">查看來源</span>
+//                       </button>
+//                       <button type="button" class="button-icon like js-vote has-tooltip" data-vote="like">
+//                           <span class="tooltip" data-i18n="comp.like">讚</span>
+//                       </button>
+//                       <button type="button" class="button-icon dislike js-vote has-tooltip" data-vote="dislike">
+//                           <span class="tooltip" data-i18n="comp.dislike">倒讚</span>
+//                       </button>
+//                       <button type="button" class="button-icon share js-share-log has-tooltip">
+//                           <span class="tooltip" data-i18n="comp.share">分享</span>
 //                       </button>
 //                   </div>
 //               </div>
@@ -39,7 +58,7 @@
 // 抄的時候一個都不能省：
 //   ⓐ **`.item-title` 一定要帶 `id="abAnswerTitle-<側>"`**。那不是裝飾：同一層的
 //      `.message-icon` 用 `role="group" aria-labelledby` 指著它——兩側的動作鈕字面完全相同、
-//      又同頁同時可見，沒有這個 id 報讀器只唸得出四顆同名鈕（§4），而 `aria-labelledby`
+//      又同頁同時可見，沒有這個 id 報讀器只唸得出兩側各五顆同名鈕（§4），而 `aria-labelledby`
 //      指到不存在的 id 會被 a11y 綁定測試當場判紅。
 //   ⓑ **`.message-content.in-compare` 是成對契約**（ui/chat-message 為本元件加的變體：
 //      max-width:100%、align-self:auto、flex:1 1 0、padding:0）。少了它兩欄不會等寬。
@@ -48,7 +67,22 @@
 //      少一層 div 就從樣式問題變成「規則寫了卻不生效」。
 //   ⓓ 雙欄之後的時間戳掛 `.message-time.after-compare`（加大下方間距），仍住在 `.message-row` 內。
 //   ⓔ 兩側的引用標記（`components/citation-ref`）各自從 1 起算、指向各自那一側的來源集合——
-//      兩側的 [[1]] 不是同一份文件，別共用一組號碼（理由見 2-2-3 頁內註解）。
+//      兩側的 [[1]] 不是同一份文件，別共用一組號碼（理由見 2-2-3 頁內註解）。徽章住在
+//      `.item-content` 的 `<ul class="list-style-disc">` 的 `<li>` 裡（**清單本身也是契約的一部分**：
+//      上一版的契約只留了那顆 `<p>`，照抄的人會得到一則沒有任何引用標記的答案，而
+//      「哪一句話出自哪一份文件」正是這頁要比較的東西）。
+//   ⓕ **`.message-icon` 五顆鈕一顆都不能省**（上一版砍到只剩複製那一顆，卻同時寫著
+//      「一個都不能省」）。被砍掉的四顆各自帶著不同的掛點，缺一顆就是一條斷掉的行為：
+//      `.watchBtn` 由 `components/chatroom/chatroom.js` 的 document 委派接住、呼叫
+//      `GufoSources.show()` 揭示同頁的參考來源區；`.js-vote` ＋ `data-vote` 是評分的**條件開窗**
+//      hook（要先認出這是哪一側的 log，故不掛 `data-open-modal`，§5 ①；窗本體由該頁底部
+//      include 的 `components/rating-modal` 提供）；`.js-share-log` 同型（分享連結）。
+//      這五顆與前台 `components/faq-chatroom` 的那一列**不是同一組**（那邊沒有查看來源、
+//      複製的位置也不同），別互抄——逐型的差異見 `ui/chat-message` 檔頭的 ③／③′。
+//   ⓖ **`.item-title` 的三段用中點 ` · ` 並列，不用全形括號與逗號**：`（`／`，`／`）` 是裸字面、
+//      掛不上 key（§4-2 標點屬版面、不折進譯文），英文模式會印成 `Setting A（Config 1，V3）`
+//      ——一句話裡混著兩套標點。`qaTest.setting` 的英譯是 `Setting`，後面直接接側別還會黏成
+//      `SettingA`，故 `設定` 與側別之間也要補一個空白。理由逐字寫在 2-2-3 的頁面註解。
 //
 // 住在哪一頁（雙向）：只有 2-2-3_abTest。
 // 反查：`grep -rn 'ab-compare' src --include=*.html` 除該頁之外，只多命中

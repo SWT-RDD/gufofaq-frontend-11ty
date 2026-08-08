@@ -1,9 +1,22 @@
 {# 上傳成功通知。參數由使用頁面 include 前 set（§6：會因頁面而異的資料不寫死在元件裡）：
      successRetryHref / successRetryLabel / successRetryKey：左鈕（預設 "#"／再次上傳／comp.uploadAgain）
      successViewHref / successViewLabel / successViewKey：右鈕（預設 "#"／查看資料／comp.viewData）
-     successHideDesc：true 時只留空的 .success-desc 容器（PDF 流程的檔案資訊由業務 JS 動態帶入）
+     successDescPdf：true ＝ 走 PDF／Word 那一支的資訊列——**只有兩行、而且順序與 Excel 相反**
+       （先資料總量、後檔案大小），也不畫檔案名稱。這不是「少畫」，是鏡射真 app：
+       `GufoFAQ_Frontend_New/js/uploadSuccess.js` 的 `descHtml` 有兩個分支，
+       `fileType === 'excel' && fileName` 那一支是「檔案名稱／檔案大小／資料總量」三行，
+       `else`（PDF 流程，資料從 query string 來）那一支是「資料總量／檔案大小」兩行——
+       PDF 那條路的 `fileName` 其實是**資料集名稱**，所以它不進這張卡。
+       ⚠️ 原本這裡是 `successHideDesc`（整塊拿掉、只留空的 .success-desc 容器）：那是把「隨真 app」
+       讀成「一句都不畫」，而 §5 的結論是**鏡射它那一句**。已撤除。
      successFileName / successFileSize / successDataCount：檔案名稱／大小／資料總量。
        **未給＝用元件內建的示範值**（不是「寫死的假資料」——1-1-6 三顆都覆寫了）。值是資料、不翻譯。
+       內建檔名走 product 的落地檔名形狀 `{14位時間戳}_{6位hex}_{序號}_{原始檔名}`
+       （`dataset_ops.stored_filename`；`history.py` 的
+       `_STORED_PREFIX = re.compile(r"^\d{14}_[a-f0-9]{6}_\d+_")` 靠那段 hex 剝前綴）——
+       少了 hex 與序號的字串是 product 產不出來的東西，而這一份預設在元件庫頁真的畫得出來。
+       內建的大小與筆數也要互推得出來（§6）：4KB ÷ 90 ≈ 43 B/列，與 1-1-6 的 42KB ÷ 980 同一個
+       量級（一份純文字問答表）；原本 1KB 配 90 筆 ≈ 11 B/列，一列連一個問句都放不下。
    父層 .block.block-lg.corner-md 由本元件掛上（.block 樣式由 ui/block 提供）。 #}
 <div class="block block-lg corner-md success-box">
     <div class="success-message">
@@ -11,9 +24,12 @@
         <span data-i18n="comp.uploadSuccess">上傳成功</span>
     </div>
     <div class="success-desc">
-        {% if not successHideDesc %}
-        <p><span data-i18n="comp.fileNameLabel">檔案名稱：</span>{{ successFileName or "20251119105623_FAQ測試用.xlsx" }}</p>
-        <p><span data-i18n="comp.fileSizeLabel">檔案大小：</span>{{ successFileSize or "1KB" }}</p>
+        {% if successDescPdf %}
+        <p><span data-i18n="comp.dataTotalLabel">資料總量：</span>{{ successDataCount }}<span data-i18n="comp.recordsUnit">筆</span></p>
+        <p><span data-i18n="comp.fileSizeLabel">檔案大小：</span>{{ successFileSize }}</p>
+        {% else %}
+        <p><span data-i18n="comp.fileNameLabel">檔案名稱：</span>{{ successFileName or "20251119105623_a3f19c_0_FAQ測試用.xlsx" }}</p>
+        <p><span data-i18n="comp.fileSizeLabel">檔案大小：</span>{{ successFileSize or "4KB" }}</p>
         <p><span data-i18n="comp.dataTotalLabel">資料總量：</span>{{ successDataCount or "90" }}<span data-i18n="comp.recordsUnit">筆</span></p>
         {% endif %}
     </div>

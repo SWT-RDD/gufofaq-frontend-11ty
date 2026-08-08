@@ -1,11 +1,26 @@
 // 圖表外殼（純樣式原子，無 html）。逐字複製自真實 app 的 scss/component.scss「block / box 區塊」區段。
 //
-// markup 契約（無 html 元件，§1-2；整段照抄）。全站三份實例，**`.chart-wrap` 不是必經層**——
-// 只有「兩張圖要並排」的那一份有它（三份裡的一份）。三份的共同骨架是
-// `.chart-box > .chart-title + <中段> + ui/chart-desc`，中段才是差異所在。
+// markup 契約（無 html 元件，§1-2；整段照抄）。共同骨架是
+// `.chart-box > .chart-title + <中段> + ui/chart-desc`，中段才是差異所在；**`.chart-wrap` 不是
+// 必經層**——只有「兩張圖要並排」的那一型有它。**實例數不寫死**（§3-2）：判準是「markup 裡出現
+// `class="chart-box"` 的每一處」，反查見本段最後一行。
 //
-// ① 兩張圖並排（生產 markup＝`components/chart-box`，由 5-3 include）——這一型才有 `.chart-wrap`：
+// **祖先要一起看**：`.chart-box` 自己帶著 `flex: 1 1 0%`，那條宣告只有在 flex 父層裡才成立（§1-2）。
+// 兩型的父層不同，所以連父層一起抄——抄錯了 class 找得到、樣式對不上，而視覺指紋只看得到寬度差。
 //
+// ① 兩張圖並排（生產 markup＝`components/chart-box`，由 5-3 include 進一顆**非 flex** 的區塊容器）
+//    ——這一型才有 `.chart-wrap`；`flex: 1 1 0%` 在這裡不生效（父層是 block），它獨占整列：
+//
+//   <div class="mt-24">
+//       {% set chartBoxId = "chart1" %}
+//       {% include "components/chart-box/chart-box.html" %}
+//   </div>
+//
+//    元件內部（`components/chart-box/chart-box.html` 的全文，`cbId` 的 `{% set %}` 定義行一起抄
+//    ——`set` 是頁面全域，缺這一行畫面正常、只有兩顆 `<canvas>` 的 id 靜默變成 `-doughnut`／`-bar`，
+//    而那兩顆 id 正是業務 js `getElementById` 的定址契約）：
+//
+//   {% set cbId = chartBoxId or "chart1" %}
 //   <div class="chart-box">
 //       <div class="chart-title" data-i18n="{{ chartBoxTitleKey or 'comp.folderContribution' }}">{{ chartBoxTitleText or '資料夾使用貢獻度' }}</div>
 //       <div class="chart-wrap">
@@ -17,32 +32,32 @@
 //       {% include "ui/chart-desc/chart-desc.html" %}
 //   </div>
 //
-// ② 單一圖（5-3 的「近4周取用次數變化」，手寫）——`.chart` 直接掛在 `.chart-box` 下：
+// ②③ 另外兩型是**同一列裡的兩顆兄弟**（5-3 手寫），所以從讓 `flex: 1 1 0%` 成立的 `.flex-row`
+//    祖先寫起：② 的中段是表格（`.chart.chart-auto`：自動高 ＋ 橫向可捲，**沒有 `<canvas>`**，
+//    內容由業務 js 填），③ 的中段是單一 `<canvas>`（`.chart` 直接掛在 `.chart-box` 下）：
 //
-//   <div class="chart-box">
-//       <div class="chart-title" data-i18n="settings.weeklyRetrievalTrend">近4周取用次數變化</div>
-//       <div class="chart"><canvas id="chart3-line"></canvas></div>
-//       {% set chartDescId = "chart3" %}
-//       {% set chartDescRow = false %}
-//       {% include "ui/chart-desc/chart-desc.html" %}
-//   </div>
-//
-// ③ 中段是表格而不是固定高 canvas（5-3 的「貢獻度排行」，手寫）——`.chart` 另掛 `.chart-auto`
-//    （自動高 ＋ 橫向可捲），而且**沒有 `<canvas>`**，內容由業務 js 填：
-//
-//   <div class="chart-box">
-//       <div class="chart-title" data-i18n="settings.contributionRanking">貢獻度排行與優先續建議</div>
-//       <div class="chart chart-auto" id="chart2-ranking"></div>
-//       {% set chartDescId = "chart2" %}
-//       {% set chartDescRow = false %}
-//       {% include "ui/chart-desc/chart-desc.html" %}
+//   <div class="flex-row gap-24 mobile-column mt-16">
+//       <div class="chart-box">
+//           <div class="chart-title" data-i18n="settings.contributionRanking">貢獻度排行與優先續建議</div>
+//           <div class="chart chart-auto" id="chart2-ranking"></div>
+//           {% set chartDescId = "chart2" %}
+//           {% set chartDescRow = false %}
+//           {% include "ui/chart-desc/chart-desc.html" %}
+//       </div>
+//       <div class="chart-box">
+//           <div class="chart-title" data-i18n="settings.weeklyRetrievalTrend">近4周取用次數變化</div>
+//           <div class="chart"><canvas id="chart3-line"></canvas></div>
+//           {% set chartDescId = "chart3" %}
+//           {% set chartDescRow = false %}
+//           {% include "ui/chart-desc/chart-desc.html" %}
+//       </div>
 //   </div>
 //
 // 抄的時候注意：
 //   ⓐ **`.chart-wrap` 只在「兩張圖並排」時才有。** 它是 `display:flex; gap:56px`（≤992px 改上下
 //      堆疊）——單張圖包一層它會多出一個沒有意義的 flex 容器；反過來，兩張圖少了它會上下堆疊。
 //   ⓑ **下段的數據槽一律 `{% include "ui/chart-desc/chart-desc.html" %}`**，不要手抄那三個槽
-//      （三處逐字相同，正本在那支元件）。`chartDescRow` 只有 ① 是 true（版位需要 `.row`）。
+//      （每一處逐字相同，正本在那支元件）。`chartDescRow` 只有 ① 是 true（版位需要 `.row`）。
 //   ⓒ id 前綴由呼叫端給（`chart1`／`chart2`／`chart3`），元件不寫死（§4）：`.chart-desc` 的槽與
 //      `<canvas>` 都靠它 getElementById。
 //

@@ -6,14 +6,16 @@
      「提示詞」欄用 ui/collapse-text 收合元件呈現（.collapse-text/.collapse-body/.collapse-toggle）：真 app 的 scss 源碼漏了這組 class，
      但編譯後的 css/component.css:3482 有；展開/收合是純 UI（js/main.js:880），由 collapse-text.js 接手，逐字保留內容以維持完整欄位清單。 #}
 {# conversation 的欄位（頁面在 include 前 set，§3-2/§6）：
-     satisfaction / feedback / chatroomId / id / time / intent / userMessage —— 既有的基本欄
+     satisfaction / feedback / chatroomId / id / time / userMessage —— 既有的基本欄
      answerSource —— `chat_logs.answer_source`：`qa_direct` ＝逐字直答（掛徽章），其餘＝模型生成
-     chatMode / tag / language —— **值一律給上游字面**：`chat_logs.search_mode`（`traditional`／`agent`，
-       中文由本元件的 {% if %} 鏈產生）／`chat_logs.tag`／`chat_logs.language`（LLM 的自由文字判斷，
-       如「繁體中文」「English」「日本語」，原樣輸出）；未給一律畫「—」，不留白
-       （留白會被讀成「這一欄沒有東西」而不是「這一輪沒有值」，理由詳見那四格旁邊的註解）
+     chatMode / tag / intent / language —— **值一律給上游字面**：`chat_logs.search_mode`
+       （`traditional`／`agent`）／`chat_logs.tag`（`frontend`／`backend`／`ab_test`）／
+       `chat_logs.is_intension`（**可為 null 的布林**，故傳 `true`／`false`，不是「是」「否」）——
+       這三欄是封閉目錄，中文由本元件的 {% if %} 鏈產生；／`chat_logs.language`（LLM 的自由文字
+       判斷，如「繁體中文」「English」「日本語」，值域開放故原樣輸出）；未給一律畫「—」，不留白
+       （留白會被讀成「這一欄沒有東西」而不是「這一輪沒有值」，理由詳見那幾格旁邊的註解）
      canReadSettings —— **能力分級開關**：true 才渲染模型／取用筆數／選用筆數／提示詞四格。
-       正本 `history.py` 的 `_SETTINGS_SCOPED_LOG_FIELDS` 在沒有 `settings:read` 時是**把鍵整個拿掉**，
+       正本 product `app/routers/history.py` 的 `_SETTINGS_SCOPED_LOG_FIELDS` 在沒有 `settings:read` 時是**把鍵整個拿掉**，
        所以這裡切「有值 vs 整格不存在」兩態，不切「顯示空白」——詳見那四格旁邊的註解
      modelName / searchTotalNumber / searchSelectedNumber —— 上面那四格的值（canReadSettings 為真時才有）
    AI 回答與提示詞為長文，仍依 §3-2 寫死在下方 markup #}
@@ -63,9 +65,19 @@
                         <div class="th" data-i18n="qa.conversationTime">對話時間</div>
                         <div class="td">{{ conversation.time }}</div>
                     </div>
+                    {# 意圖判斷＝`chat_logs.is_intension`，**可為 null 的布林**（gufofaq-saas product
+                         `app/routers/history.py` 的 `_PUBLIC_LOG_FIELDS` 收了 `is_intension`，而
+                         `_project_log` 是 `{k: v for k, v in marked.items() if k in allowed}`＝原樣帶過
+                         ⇒ `/history/{id}` 回給畫面的就是布林本身，不是顯示字）⇒ 封閉目錄，走 {% if %} 鏈。
+                       ⚠️ **不要抄匯出那一份的「是／否／空」**：那三個字是同檔 `_detail_cells` 為
+                         **CSV** 組的顯示層（欄名見 `_EXPORT_DETAIL_HEADER` 的「有無意圖判斷」），
+                         把它當成 API 值域，React 端就會拿一個布林去比對中文而恆為否。
+                       三態逐一對回：`true`＝有判斷、`false`＝沒判斷、null／未給＝「—」。**第三態不是
+                         第二態**：agent 模式恆為 False（有跑、結論是不需要），而舊資料的 null 是「這一欄
+                         比這筆紀錄晚出生」，兩件事畫成同一格就把「沒判斷」與「不知道」混為一談。 #}
                     <div class="col col-4-md col-12-sm">
                         <div class="th" data-i18n="qa.hasIntentDetection">有無進行意圖判斷</div>
-                        <div class="td">{{ conversation.intent }}</div>
+                        <div class="td">{% if conversation.intent == true %}<span data-i18n="common.yes">是</span>{% elif conversation.intent == false %}<span data-i18n="common.no">否</span>{% else %}—{% endif %}</div>
                     </div>
                     {# 「這一輪是怎麼回答的」四欄。**資料值一律是上游的字面**，要給人看的中文由這裡的
                          `{% if %}` 鏈配 i18n key 產生——不可以把「Agent」「繁體中文」這種顯示字塞進資料再
@@ -86,7 +98,11 @@
                            下拉）去對它**——product `app/languages.py` 的檔頭專門寫了一段講這兩件事長得像
                            但完全不同，`chat_logs.language` 是偵測結果、不是設定。既然值域開放，這一格就
                            **原樣輸出**（同 §4-2：假資料／模型產出的自由文字不掛 data-i18n）。
-                         · 標籤＝`chat_logs.tag`（前台／後台／AB 測試），與 4-1 清單的「使用者類型」同一欄。
+                         · 標籤＝`chat_logs.tag`，值域正本是 product `app/routers/history.py` 的
+                           `_TAG_LABEL`（鍵只有 `frontend`／`backend`／`ab_test`）⇒ 封閉，走 `{% if %}` 鏈。
+                           它與 4-1 清單的「使用者類型」是**同一欄**，故三顆 key 逐字沿用那一頁的
+                           （`qa.frontendQa`／`qa.backendQa`／`nav.abTest`，§4-2 同文沿用既有 key）——
+                           兩頁對同一欄各拼一份中文，就是同一個值在站內長出兩種說法。
                          `search_mode` **它一直都在**——前一版檔頭寫「上游沒有這一欄」是拿猜的欄名
                            （`chat_mode`）去 grep 的結果：product 的 `_PUBLIC_LOG_FIELDS` 收了 `search_mode`，
                            `_EXPORT_DETAIL_HEADER` 那一欄的中文就叫「對話模式」，`/history/{id}` 走
@@ -104,7 +120,7 @@
                     </div>
                     <div class="col col-3-md col-12-sm">
                         <div class="th" data-i18n="field.tags">標籤</div>
-                        <div class="td">{{ conversation.tag or "—" }}</div>
+                        <div class="td">{% if conversation.tag == "frontend" %}<span data-i18n="qa.frontendQa">前台問答</span>{% elif conversation.tag == "backend" %}<span data-i18n="qa.backendQa">後台問答</span>{% elif conversation.tag == "ab_test" %}<span data-i18n="nav.abTest">AB測試</span>{% else %}—{% endif %}</div>
                     </div>
                     <div class="col col-3-md col-12-sm">
                         <div class="th" data-i18n="settings.language">語言</div>
@@ -150,7 +166,7 @@
                     {# ── 租戶調校設定欄（能力分級）────────────────────────────────────────
                          `system_prompt`／`single_prompt`／`model_name`／`search_total_number`／
                          `search_selected_number` 這五欄只有具 `settings:read` 的人拿得到：正本
-                         `history.py` 的 `_SETTINGS_SCOPED_LOG_FIELDS`，投影時是
+                         product `app/routers/history.py` 的 `_SETTINGS_SCOPED_LOG_FIELDS`，投影時是
                          `{k: v for k, v in marked.items() if k not in …}` ——**整個鍵不存在**，不是回空值。
                          所以這裡切的兩態是「有值」與「整格不渲染」，**不是「顯示空白」**：
                          空白會被讀成「這一輪沒設提示詞／沒指定模型」，而事實是「你沒有權限看」。

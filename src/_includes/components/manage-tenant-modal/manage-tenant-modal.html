@@ -8,12 +8,15 @@
           數字欄（`#tenantQaUsedInput` / `#tenantExtractionUsedInput`，≥ 0；上界不是常數而是同一次
           送出的那個額度）——旁邊那顆「重置當期用量」只能歸零、改不成某個值。上游為這兩欄另有一條
           400 `platform.used_exceeds_limit`，那道 warning 也一併列進 footer 儲存鈕的 `data-toast`。
+          **`TenantUsageOut.storage_used_mb` 也畫在這裡**（見該欄註解）：它是 `GET /platform/usage` 回的
+          唯讀欄，不在 `QuotaIn` 裡，故只顯示、不可編輯。
        2. 使用期——「延展／縮短天數」數字欄 + 「指定到期日」日期欄（exactly-one：product platform.py 兩者都給
           回 400 `tenant.trial_one_of`（引 key 不引英文字面——被抽進 i18n 的句子隨時會改，§3-2；
           出處是 `platform.py` 的 `extend_tenant_trial`），React 端送出前擇一；日期選擇不在
           切版範圍，沿用 .calendar hook class 交由 React 套件實作）
-       3. 模型開通——checkbox 清單，欄位寫法比照 5-5-1_userManagement「能力」checkbox
-       4. 凍結／解凍——暫停使用期時鐘（直接動作，data-toast 演出成敗）
+       3. 模型開通——「不限制」開關（承載 `available_models = None`）+ checkbox 清單，欄位寫法比照
+          5-5-1_userManagement「能力」checkbox
+       4. 凍結／解凍——暫停使用期時鐘（直接動作，data-toast 演出成敗）；兩支端點對稱，故切版也切兩態
        5. 成員——逐位成員：代理登入／停用啟用（直接動作 data-toast）＋重設密碼（.js-reset-password）／刪除（.js-delete-user，button-red）＝業務條件用 hook class
        6. 危險操作——刪除資料（.js-delete-tenant-data）／刪除帳號（.js-delete-tenant-account）：破壞性 button-red，需輸入該租戶名稱字串相符才可執行（type-to-confirm），屬業務條件、用 hook class 不掛 data-toast
      額度／使用期／模型開通共用 footer「儲存」鈕（toast.manageTenant，成功/失敗）；代理登入等逐成員動作各自 data-toast。
@@ -29,16 +32,54 @@
        manageTenantShowUsageError＝**取不到該租戶目前用量**時的持久錯誤列。這一態要與一般「載入失敗」分開
          講：額度欄拿不到現值就會顯示 0，按下儲存等於把該租戶的額度歸零鎖死，所以 React 端在用量取不到時
          不開窗（改用同一顆 key 彈 toast），開了窗也不得讓額度可存——訊息因此寫成「暫時無法管理」，
-         兩種呈現共用同一句。 #}
+         兩種呈現共用同一句。
+       manageTenantFrozen＝這個租戶**目前是不是凍結中**（`TenantOut.frozen`／`FreezeOut.frozen`）。凍結區
+         兩態的鈕與說明由它決定（見該區註解）。 #}
+{# id＝`UserOut.id`（product `app/routers/users.py` 的 `UserOut` 第一欄，`platform_tenant_users` 沿用它）。
+     這一列的四顆動作全部以它定址（`POST /platform/impersonate/{user_id}`、`PATCH /platform/users/{user_id}`、
+     `POST /platform/users/{user_id}/reset-password`、`DELETE /platform/users/{user_id}`），
+     所以列鍵不可以是 loop.index——這張名冊刪得掉列，位置不是身分（§6 列鍵）。
+     platformRole＝`UserOut.platform_role`。它不是裝飾：`impersonate` 的 403 `impersonate.platform_admin`
+     判的就是 `target.is_platform_admin`（＝`platform_role == "admin"`），不畫出來的話「為什麼這一列按了會被拒」
+     在畫面上沒有任何線索。示範放的是 `auditor`——那一態**代理得動**（守衛只認 admin），正好演出
+     「有平台角色 ≠ 不能代理」，也不會在畫面上留一顆必定失敗的鈕；`admin` 那一態是 warning 段講的那件事。
+     ⚠️ 跨頁自洽（§6）：帶平台角色的那一位用 `auditor@example.com`，因為 5-6-1 的「平台權限」盤點
+     （`list_platform_admins` 回的是**全部**握有平台角色的人）就列著這個信箱、角色也是 auditor——
+     另編一個信箱等於在同一套 API 上多出一位那張盤點表沒有的平台角色持有者。同理第一位改叫
+     `owner@example.com`：5-6-1 把 `admin@example.com` 列成平台系統管理員，這裡若沿用同一個信箱
+     又標 `none`，兩頁就對同一個人說了兩件事。
+     ⚠️ **`platform.rolePlatformAdmin`（`platformRole == "admin"` 那顆徽章）在這份名冊上演不出來，
+     是查證後的決定、不是漏**：這三位就是 5-6-1 的**示範租戶 B**（那一頁的租戶列給 B 的使用者數是三、
+     狀態 FROZEN，而它 set `manageTenantFrozen = true` 的理由逐字寫著「從一個凍結中的租戶那一列開的窗」）。
+     同一頁上方的平台權限盤點把兩位平台系統管理員分別配給租戶 A（`admin@example.com`）與租戶 C
+     （`ops-admin@example.com`）——在這裡補第四位會讓 B 變成四個人（與那張表的使用者數對不上），
+     改用那兩個信箱之一則是同一個人同時待在兩個租戶；兩條都是 §6 跨頁自洽，而且那兩張表就在同一頁上
+     逐列讀得到。故走 §4-2「枚舉的成員靠『有地方渲染得出來』活著」那條的第二條路：這一段 markup 留在
+     這裡當**位置與字色的規格**，那顆 key 可見的一份放元件庫頁的「React 條件文案」節（繁中逐字照抄）。
+     要改回在這裡演，得先動 5-6-1 的盤點表讓某一個租戶同時有一位稽核員與一位系統管理員。 #}
 {% set manageMembers = [
-  { email: "admin@example.com", isAdmin: true, isActive: true },
-  { email: "editor@example.com", isAdmin: false, isActive: true },
-  { email: "viewer@example.com", isAdmin: false, isActive: false }
+  { id: 4102, email: "owner@example.com", isAdmin: true, isActive: true, platformRole: "none" },
+  { id: 4118, email: "auditor@example.com", isAdmin: false, isActive: true, platformRole: "auditor" },
+  { id: 4135, email: "viewer@example.com", isAdmin: false, isActive: false, platformRole: "none" }
 ] %}
-{# data-platform-role="admin"：本 modal 裡的每一顆動作（額度／使用期／模型開通／凍結／代理登入／刪除）
-     在 product 都是 require_platform_admin，唯讀稽核員一顆都按不動——所以整份不渲染給他，而不是渲染完
-     讓他每按一次得到一次 403（§5 兩級可見性）。 #}
-<dialog class="modals" id="manageTenantModal" data-platform-role="admin" aria-labelledby="manageTenantModal-title">
+{# ── 本窗的兩級可見性（§5 data-platform-role）────────────────────────────────────
+     本窗**整份 auditor 進得來**，改成逐顆宣告，不再整份標 admin。理由是四支唯讀端點：
+       · `platform_usage`（`GET /platform/usage`，`TenantUsageOut` 的額度／已用量／用量週期／儲存已用量）
+       · `get_tenant_models`（`GET /platform/tenants/{id}/models`，模型白名單）
+       · `platform_tenant_users`（`GET /platform/tenants/{id}/users`，成員名冊）
+       · `list_tenants`（`GET /platform/tenants`，`TenantOut.subscription_status`／`trial_end`／`frozen`）
+     四支的 `Depends` 全是 `require_platform_auditor`（product `app/routers/platform.py`），而**這份 modal 是
+     全站唯一畫得出額度／用量／模型白名單／成員名冊的地方**——整份不渲染給稽核員，等於他在切版裡看不到
+     任何一個租戶的這些值，而那正是 ISO 職責分離要他看的東西。
+     故照 §5 的兩級渲染規則逐顆標：
+       · **值控制項**（額度五顆 input、用量週期 select、使用期兩顆欄、模型開關與 checkbox 群、
+         兩顆 type-to-confirm 輸入框）標 `admin`＝照渲染但 disabled，狀態看得見、改不動。
+       · **動作鈕**（重置用量／凍結解凍／代理登入／停用啟用／重設密碼／刪除／儲存／兩顆危險操作）
+         標 `admin`＝低於該級不渲染，不給唯讀角色一排按了只會 403 的鈕。
+     「關閉」不標：它是純前端互動，不打任何端點。
+     ⚠️ `ui/modals/_modals.scss` 檔頭那段「全站只有 manage-tenant-modal 掛 admin」的登記要跟著改
+     （那支檔案不歸這一輪動，已列進交辦）。 #}
+<dialog class="modals" id="manageTenantModal" data-platform-role="auditor" aria-labelledby="manageTenantModal-title">
     <div class="modals-dialog modals-md">
         <div class="modals-wrap">
             {% include "ui/modal-close/modal-close.html" %}
@@ -59,9 +100,9 @@
                                         <label for="tenantQaLimitInput" class="control-label" data-i18n="platform.qaLimit">問答額度</label>
                                     </div>
                                     <div class="field">
-                                        {# 三件套的第三件（§4）：三顆額度欄的下界出處＝`set_tenant_quota`（platform.py
+                                        {# 三件套的第三件（§4）：三顆額度欄的下界出處＝`set_tenant_quota`（product app/routers/platform.py
                                              的 `set_tenant_quota` → 400 `platform.quota_field_negative`，引 key 不引英文字面）；數字獨立成不翻的節點（§3-2）。 #}
-                                        <input type="number" min="0" step="1" id="tenantQaLimitInput" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control" value="3000" aria-describedby="tenantQaLimitRange">
+                                        <input type="number" min="0" step="1" id="tenantQaLimitInput" data-platform-role="admin" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control" value="3000" aria-describedby="tenantQaLimitRange">
                                         <span class="text-gray" id="tenantQaLimitRange">≥ 0</span>
                                     </div>
                                 </div>
@@ -72,7 +113,7 @@
                                         <label for="tenantExtractionLimitInput" class="control-label" data-i18n="platform.extractionLimit">萃取額度</label>
                                     </div>
                                     <div class="field">
-                                        <input type="number" min="0" step="1" aria-describedby="tenantExtractionLimitRange" id="tenantExtractionLimitInput" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control" value="1000">
+                                        <input type="number" min="0" step="1" aria-describedby="tenantExtractionLimitRange" id="tenantExtractionLimitInput" data-platform-role="admin" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control" value="1000">
                                         <span class="text-gray" id="tenantExtractionLimitRange">≥ 0</span>
                                     </div>
                                 </div>
@@ -83,23 +124,35 @@
                                         <label for="tenantStorageLimitInput" class="control-label" data-i18n="platform.storageLimitMb">儲存上限（MB）</label>
                                     </div>
                                     <div class="field">
-                                        <input type="number" min="0" step="1" aria-describedby="tenantStorageLimitRange" id="tenantStorageLimitInput" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control" value="1000">
+                                        <input type="number" min="0" step="1" aria-describedby="tenantStorageLimitRange" id="tenantStorageLimitInput" data-platform-role="admin" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control" value="1000">
                                         <span class="text-gray" id="tenantStorageLimitRange">≥ 0</span>
+                                        {# `TenantUsageOut.storage_used_mb`（`GET /platform/usage`）的落點。同一支端點的另外兩顆
+                                             已用量（qa_used／extraction_used）在下面各有一顆可編輯的欄，只有這一顆沒有——而它
+                                             **不可編輯**：`QuotaIn` 沒有這一欄，儲存已用量是 `DatasetFile.size_bytes` 的總和
+                                             （product app/routers/platform.py 的 `platform_usage` 逐字 `round(used_bytes / 1024 / 1024, 2)`），
+                                             設不了、也不該設。故畫成唯讀的一句，緊貼著它所解釋的那個上限（§3-2 上限與現值寫在
+                                             做決定的控制項旁邊）。數字是資料節點、不進譯文（§4-2）。 #}
+                                        <span class="text-gray"><span data-i18n="platform.storageUsedPrefix">目前已用 </span>412.5 MB</span>
                                     </div>
                                 </div>
                             </div>
                             {# 當期已用量兩欄（`QuotaIn.qa_used` / `extraction_used`）：**直接設**當期已用值，
                                  供管理員修正／精細調整（旁邊那顆「重置當期用量」只能歸零，改不成某個值）。
                                  下界 0；上界不是常數而是**同一次送出的那個額度**——超過時上游回 400
-                                 `platform.used_exceeds_limit`，故那道 warning 也列在 footer 的儲存鈕上。 #}
+                                 `platform.used_exceeds_limit`，故那道 warning 也列在 footer 的儲存鈕上。
+                               ⚠️ 提示句**用欄位名指稱、不用位置**：這一排是 `flex-wrap` 的兩欄格，
+                                 「問答已用量」正上方那一格其實是「萃取額度」、「萃取已用量」上方是「儲存上限」，
+                                 原本兩顆共用一句「不可大於上面那格的額度」，指的都是隔壁那一欄。
+                                 兩顆因此拆成各自的 key（上游那道 400 也是逐欄比 `qa_used vs qa_limit`、
+                                 `extraction_used vs extraction_limit`，本來就不是同一件事）。 #}
                             <div class="col-6-md col-12-sm">
                                 <div class="form-group">
                                     <div class="label">
                                         <label for="tenantQaUsedInput" class="control-label" data-i18n="platform.qaUsed">問答已用量</label>
                                     </div>
                                     <div class="field">
-                                        <input type="number" min="0" step="1" id="tenantQaUsedInput" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control" value="1284" aria-describedby="tenantQaUsedRange">
-                                        <span class="text-gray" id="tenantQaUsedRange"><span data-i18n="platform.usedRangeHint">≥ 0，且不可大於上面那格的額度</span></span>
+                                        <input type="number" min="0" step="1" id="tenantQaUsedInput" data-platform-role="admin" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control" value="1284" aria-describedby="tenantQaUsedRange">
+                                        <span class="text-gray" id="tenantQaUsedRange"><span data-i18n="platform.qaUsedRangeHint">≥ 0，且不可大於「問答額度」</span></span>
                                     </div>
                                 </div>
                             </div>
@@ -109,8 +162,8 @@
                                         <label for="tenantExtractionUsedInput" class="control-label" data-i18n="platform.extractionUsed">萃取已用量</label>
                                     </div>
                                     <div class="field">
-                                        <input type="number" min="0" step="1" id="tenantExtractionUsedInput" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control" value="312" aria-describedby="tenantExtractionUsedRange">
-                                        <span class="text-gray" id="tenantExtractionUsedRange"><span data-i18n="platform.usedRangeHint">≥ 0，且不可大於上面那格的額度</span></span>
+                                        <input type="number" min="0" step="1" id="tenantExtractionUsedInput" data-platform-role="admin" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control" value="312" aria-describedby="tenantExtractionUsedRange">
+                                        <span class="text-gray" id="tenantExtractionUsedRange"><span data-i18n="platform.extractionUsedRangeHint">≥ 0，且不可大於「萃取額度」</span></span>
                                     </div>
                                 </div>
                             </div>
@@ -121,7 +174,7 @@
                                         <label for="tenantUsagePeriodSelect" class="control-label" data-i18n="platform.usagePeriod">用量週期</label>
                                     </div>
                                     <div class="field">
-                                        <select id="tenantUsagePeriodSelect" class="form-control singleSelect">
+                                        <select id="tenantUsagePeriodSelect" data-platform-role="admin" class="form-control singleSelect">
                                             <option value="none" data-i18n="platform.none">無</option>
                                             <option value="daily" data-i18n="platform.usagePeriodDaily">每日</option>
                                             <option value="monthly" data-i18n="platform.usagePeriodMonthly">每月</option>
@@ -132,12 +185,18 @@
                         </div>
                         {# 重置當期用量：直接動作（歸零 qa_used/extraction_used、重設週期起點），不經共用 footer 鈕。 #}
                         <div class="flex-row">
-                            <button type="button" class="button button-border button-sm" data-toast="已重置當期用量|重設失敗，請稍後再試" data-i18n-data-toast="toast.resetUsage" data-toast-type="success|error" data-i18n="platform.resetUsage">重置當期用量</button>
+                            <button type="button" class="button button-border button-sm" data-platform-role="admin" data-toast="已重置當期用量|重設失敗，請稍後再試" data-i18n-data-toast="toast.resetUsage" data-toast-type="success|error" data-i18n="platform.resetUsage">重置當期用量</button>
                         </div>
 
                         {# 使用期：延展／縮短天數 或 指定到期日（exactly-one——product 兩者都給回 400，React 送出前擇一；日期選擇沿用 .calendar hook 交由 React 套件實作）。 #}
                         <div class="flex-row column gap-8">
                             <div class="text-bold" data-i18n="settings.extendExpiry">使用期延展</div>
+                            {# 「二擇一」是這一區的**硬約束**，而且是 `extend_tenant_trial` 的**第一道守衛**
+                                 （`extend_days` 與 `set_trial_end` 同時給、或同時留空，都回 400 `tenant.trial_one_of`；
+                                 product app/routers/platform.py）。原本它只活在 footer 儲存鈕的 `data-toast` 裡——那是按下去之後才讀得到，
+                                 而 §3-2 說約束要寫在填之前。改成常駐可見一句，兩顆欄各自 `aria-describedby` 指過來
+                                 （`#tenantExpiryInput` 在此之前一個 describedby 都沒有）。 #}
+                            <p class="text-gray m-0" id="tenantTrialOneOfHint" data-i18n="platform.trialOneOfHint">延展天數與指定到期日只能填一個：兩個都填、或兩個都留空，送出都會被退回。</p>
                             <div class="flex-row gap-40 mobile-column sm-gap-16">
                                 <div class="col-6-md col-12-sm">
                                     <div class="form-group">
@@ -146,8 +205,8 @@
                                         </div>
                                         <div class="field">
                                             {# 「正數延展、負數縮短」原本只在 placeholder 裡——一打字就消失，也接不上輔具。
-                                                 改成常駐說明 ＋ aria-describedby；不可為 0 的出處是 platform.py 的 `extend_tenant_trial`。 #}
-                                            <input type="number" step="1" id="tenantTrialDaysInput" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control" aria-describedby="tenantTrialDaysHint">
+                                                 改成常駐說明 ＋ aria-describedby；不可為 0 的出處是 product app/routers/platform.py 的 `extend_tenant_trial`。 #}
+                                            <input type="number" step="1" id="tenantTrialDaysInput" data-platform-role="admin" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control" aria-describedby="tenantTrialDaysHint tenantTrialOneOfHint">
                                             <span class="text-gray" id="tenantTrialDaysHint" data-i18n="platform.extendDaysHint">正數延展、負數縮短，不可為 0</span>
                                         </div>
                                     </div>
@@ -158,7 +217,7 @@
                                             <label for="tenantExpiryInput" class="control-label" data-i18n="platform.setTrialEnd">指定到期日</label>
                                         </div>
                                         <div class="field">
-                                            <input type="text" id="tenantExpiryInput" placeholder="請選擇" data-i18n-placeholder="common.pleaseSelect" class="form-control calendar">
+                                            <input type="text" id="tenantExpiryInput" data-platform-role="admin" placeholder="請選擇" data-i18n-placeholder="common.pleaseSelect" class="form-control calendar" aria-describedby="tenantTrialOneOfHint">
                                         </div>
                                     </div>
                                 </div>
@@ -168,29 +227,58 @@
                         <div class="flex-row column gap-8">
                             <div id="tenantModelEnableLabel" class="text-bold" data-i18n="settings.modelEnablement">模型開通</div>
                             {# 模型目錄與 5-2 是**同一份**（兩邊都源自 `gufo.list_models()`；平台端在
-                                 platform.py 拿它當白名單的值域，`unknown models: […]` ⇒ 400）。
+                                 product app/routers/platform.py 拿它當白名單的值域，`unknown models: […]` ⇒ 400）。
                                  §6 逐字點名「可用模型」不得各烤一份——原本這裡硬寫兩顆 checkbox、
                                  而且**沒有 `value`**，比對的正是 `m["value"]`（`openai:gpt-4o` 這種帶前綴的識別字）。
                                  目錄本身在 5-2 那一頁 set 成 `llmModels`；這裡的示範沿用同一組值，
                                  顯示字就是識別字（業務資料、不翻）。 #}
+                            {# **`available_models` 有三種值，checkbox 群只表達得出其中兩種**：
+                                 `ModelsIn.available_models` 是 `list[str] | None`，而 `set_tenant_models` 逐字寫著
+                                 「None＝全部允許」——那也是新租戶的預設（`get_tenant_models` 在沒有 settings 列時
+                                 回 `None`）。純 checkbox 群裡，`None`（不限制）與 `[]`（一顆都不給）長得一模一樣，
+                                 而兩者的後果剛好相反。故補一顆「不限制」開關承載 `None`：勾起來時整組 checkbox
+                                 disabled（送 `null`），取消才輪到下面的勾選（送陣列）。
+                                 開關是**值載體**，比照本窗其他欄位以 id 當 React 綁定契約（§5 矩陣②「class 或 id 契約
+                                 擇一即可」，同 `#tenantUsagePeriodSelect`），不自創 hook class。 #}
+                            <label class="form-checkbox">
+                                <input type="checkbox" id="tenantModelsUnrestricted" data-platform-role="admin" aria-describedby="tenantModelsCostHint">
+                                <span data-i18n="platform.modelsUnrestricted">不限制（這個租戶可以用全部模型）</span>
+                            </label>
+                            {# 代價寫在做這個決定的控制項旁邊（§3-2）：全部取消勾選送出去的是一份**空白名單**，
+                                 不是「不限制」——那個租戶從此一顆模型都選不到。原本畫面上完全沒有講這件事。 #}
+                            <p class="text-gray m-0" id="tenantModelsCostHint" data-i18n="platform.modelsAllOffHint">取消「不限制」之後，這個租戶只用得到下面勾起來的模型；一顆都不勾＝這個租戶一顆模型都不能用，不等於不限制。</p>
                             {% set tenantModels = ["openai:gpt-4o", "openai:gpt-4o-mini", "openai:gpt-4.1", "anthropic:claude-3-5-sonnet"] %}
-                            <div class="flex-row flex-wrap gap-20" role="group" aria-labelledby="tenantModelEnableLabel">
+                            <div class="flex-row flex-wrap gap-20" role="group" aria-labelledby="tenantModelEnableLabel" aria-describedby="tenantModelsCostHint">
                                 {% for m in tenantModels %}
                                 <label class="form-checkbox">
-                                    <input type="checkbox" name="tenant_models" value="{{ m }}"{% if m == "openai:gpt-4o-mini" %} checked{% endif %}>
+                                    <input type="checkbox" name="tenant_models" data-platform-role="admin" value="{{ m }}"{% if m == "openai:gpt-4o-mini" %} checked{% endif %}>
                                     <span>{{ m }}</span>
                                 </label>
                                 {% endfor %}
                             </div>
                         </div>
 
-                        {# 凍結／解凍：暫停使用期時鐘、完全鎖住。凍結中顯示「解凍」＝業務狀態，靜態切版示範「凍結」；直接動作 → data-toast。 #}
+                        {# 凍結／解凍：暫停使用期時鐘、完全鎖住。
+                             **上游是兩支對稱的端點**（product app/routers/platform.py 的 `freeze_tenant`／`unfreeze_tenant`，各自
+                             `POST /platform/tenants/{id}/freeze`／`/unfreeze`，兩支都冪等），而這裡原本只切了
+                             「凍結」一態——同一區的可見文案自己寫著「可隨時解凍」，畫面上卻沒有那顆鈕。
+                             比照同檔「停用／啟用」的做法：成對參數 `manageTenantFrozen` ＋ `{% if %}` 分岔，
+                             兩態各自的 toast 與 key 也分開（解凍成功的句子不是「已凍結租戶」）。
+                             說明也跟著分岔：解凍會把凍結時長補回 `trial_end`（`unfreeze_tenant` 的 docstring
+                             逐字「剩餘天數原封保留」），那是凍結態才需要讀的一句。 #}
                         <div class="flex-row column gap-8">
                             <div class="text-bold" data-i18n="platform.freezeSection">凍結／解凍</div>
+                            {% if manageTenantFrozen %}
+                            <p class="text-gray m-0" data-i18n="platform.unfreezeHint">這個租戶目前是凍結狀態，使用期時鐘停著。解凍會把凍結這段時間補回到期日，剩餘天數原封保留。</p>
+                            <div class="flex-row">
+                                <button type="button" class="button button-border" data-platform-role="admin" data-toast="已解凍租戶|解凍失敗，請稍後再試" data-i18n-data-toast="toast.unfreeze" data-toast-type="success|error" data-i18n="platform.unfreeze">解凍</button>
+                            </div>
+                            {% else %}
                             <p class="text-gray m-0" data-i18n="platform.freezeHint">凍結將暫停使用期時鐘並完全鎖住該租戶，可隨時解凍。</p>
                             <div class="flex-row">
-                                <button type="button" class="button button-border" data-toast="已凍結租戶|凍結失敗，請稍後再試" data-i18n-data-toast="toast.freeze" data-toast-type="success|error" data-i18n="platform.freeze">凍結</button>
+                                <button type="button" class="button button-border" data-platform-role="admin" data-toast="已凍結租戶|凍結失敗，請稍後再試" data-i18n-data-toast="toast.freeze" data-toast-type="success|error" data-i18n="platform.freeze">凍結</button>
                             </div>
+                            {% endif %}
                         </div>
 
                         {# 成員治理：代理登入／停用啟用＝直接動作（data-toast）；重設密碼需輸入新密碼、刪除需二次確認＝業務條件，用 hook class（.js-*）。 #}
@@ -199,10 +287,20 @@
                             <p class="text-gray m-0" data-i18n="settings.impersonateDesc">以成員身分登入以協助排除問題，僅供支援與除錯使用。</p>
                             <div class="flex-row column gap-12">
                                 {% for member in manageMembers %}
-                                <div class="flex-row justify-content-between align-items-center gap-16 flex-wrap">
+                                {# data-user-id＝React 列鍵契約（`UserOut.id`，見檔頭）：這一列四顆動作的路徑參數都是它。
+                                     ⚠️ 這一列**不是 `<tr>`**，所以 §4「資料表逐列重複的同型控制項可以同名」那條例外
+                                     在這裡不成立（那條的判準逐字是「豁免來自 `<tr>`，不是來自長得像一列」）——
+                                     無障礙樹裡沒有列脈絡可倚靠，三列 × 四顆鈕就是 12 顆同名。故自己造辨識欄：
+                                     email 給一顆 id，四顆鈕各自 `aria-labelledby="<列辨識欄> <自己>"`
+                                     （順序照 §4 的「列名 → 動作名」；指到自己是為了保留鈕上原本那句可見字面）。 #}
+                                <div class="flex-row justify-content-between align-items-center gap-16 flex-wrap" data-user-id="{{ member.id }}">
                                     <div class="flex-row column">
-                                        <span class="text-bold">{{ member.email }}</span>
-                                        <span class="text-gray"><span data-i18n="{% if member.isAdmin %}role.admin{% else %}role.member{% endif %}">{% if member.isAdmin %}管理者{% else %}成員{% endif %}</span>{% if not member.isActive %}<span data-i18n="common.midDot"> · </span><span data-i18n="settings.disabled">已停用</span>{% endif %}</span>
+                                        <span class="text-bold" id="tenantMemberEmail-{{ member.id }}">{{ member.email }}</span>
+                                        {# 平台角色徽章另立 key（「平台系統管理員」／「平台稽核員」），不沿用 5-6-1 那顆
+                                             `platform.roleAdmin`「系統管理員」：這一行左邊剛印過租戶層的「管理者」，
+                                             接一句裸的「系統管理員」讀不出那是**平台**層的角色（§4-2：繁中不同才另立 key，
+                                             而這裡的繁中確實不同，英譯也必須區別得開）。 #}
+                                        <span class="text-gray"><span data-i18n="{% if member.isAdmin %}role.admin{% else %}role.member{% endif %}">{% if member.isAdmin %}管理者{% else %}成員{% endif %}</span>{% if member.platformRole == 'admin' %}<span data-i18n="common.midDot"> · </span><span data-i18n="platform.rolePlatformAdmin">平台系統管理員</span>{% elif member.platformRole == 'auditor' %}<span data-i18n="common.midDot"> · </span><span data-i18n="platform.rolePlatformAuditor">平台稽核員</span>{% endif %}{% if not member.isActive %}<span data-i18n="common.midDot"> · </span><span data-i18n="settings.disabled">已停用</span>{% endif %}</span>
                                     </div>
                                     {# 這一列不在 .default-table 裡，`.btn-group` 的規則帶著那個祖先（§4 祖先錯位）。 #}
                                     <div class="flex-row gap-10 align-items-center flex-wrap">
@@ -211,10 +309,11 @@
                                              無條件渲染會在停用列上留一顆**按了必定失敗**的鈕，故改成 disabled
                                              （§5「按了什麼都不會發生」）。
                                              **排掉那一道之後，這顆鈕剩下唯一走得到的 403 是 `impersonate.platform_admin`**
-                                             ——呼叫端本身是 `require_platform_admin`（整份 modal 也宣告了
+                                             ——呼叫端本身是 `require_platform_admin`（本窗的動作鈕也逐顆宣告了
                                              `data-platform-role="admin"`），所以「權限不足」在這顆鈕上永遠不會發生。
-                                             warning 段因此要講那件真的會發生的事，不是抄一句通用的權限話術。 #}
-                                        <button type="button" class="button button-border button-sm"{% if not member.isActive %} disabled{% endif %} data-toast="已代理登入該成員|對方是平台系統管理員，不可代理登入|代理登入失敗，請稍後再試" data-i18n-data-toast="toast.impersonateTenant" data-toast-type="success|warning|error" data-i18n="action.impersonate">代理登入</button>
+                                             warning 段因此要講那件真的會發生的事，不是抄一句通用的權限話術；
+                                             而「真的會發生」的判準就是左邊那顆平台角色徽章（`UserOut.platform_role`）。 #}
+                                        <button type="button" id="tenantMemberImpersonate-{{ member.id }}" data-platform-role="admin" class="button button-border button-sm"{% if not member.isActive %} disabled{% endif %} aria-labelledby="tenantMemberEmail-{{ member.id }} tenantMemberImpersonate-{{ member.id }}" data-toast="已代理登入該成員|對方是平台系統管理員，不可代理登入|代理登入失敗，請稍後再試" data-i18n-data-toast="toast.impersonateTenant" data-toast-type="success|warning|error" data-i18n="action.impersonate">代理登入</button>
                                         {# 停用路徑上有**兩道**具名 409（gufofaq-saas product `platform.py`：停用端點自己回
                                              `last_tenant_admin`，同檔的 `_assert_not_last_platform_admin` 回
                                              `last_platform_admin`「不可停用/刪除/降級最後一位平台系統管理員」）。
@@ -225,12 +324,12 @@
                                              啟用態列出來就是「列出不可能的結果」（§5 與只演成功一樣是說謊）。
                                              同一行已經在依 `member.isActive` 分岔字面，分支集合跟著分。 #}
                                         {% if member.isActive %}
-                                        <button type="button" class="button button-border button-sm" data-toast="已更新使用者狀態|無法停用最後一位在職管理者|無法停用最後一位平台系統管理員|更新失敗，請稍後再試" data-i18n-data-toast="toast.setUserActive" data-toast-type="success|warning|warning|error" data-i18n="platform.disableUser">停用</button>
+                                        <button type="button" id="tenantMemberActive-{{ member.id }}" data-platform-role="admin" class="button button-border button-sm" aria-labelledby="tenantMemberEmail-{{ member.id }} tenantMemberActive-{{ member.id }}" data-toast="已更新使用者狀態|無法停用最後一位在職管理者|無法停用最後一位平台系統管理員|更新失敗，請稍後再試" data-i18n-data-toast="toast.setUserActive" data-toast-type="success|warning|warning|error" data-i18n="platform.disableUser">停用</button>
                                         {% else %}
-                                        <button type="button" class="button button-border button-sm" data-toast="已更新使用者狀態|更新失敗，請稍後再試" data-i18n-data-toast="toast.setUserActiveEnable" data-toast-type="success|error" data-i18n="platform.enableUser">啟用</button>
+                                        <button type="button" id="tenantMemberActive-{{ member.id }}" data-platform-role="admin" class="button button-border button-sm" aria-labelledby="tenantMemberEmail-{{ member.id }} tenantMemberActive-{{ member.id }}" data-toast="已更新使用者狀態|更新失敗，請稍後再試" data-i18n-data-toast="toast.setUserActiveEnable" data-toast-type="success|error" data-i18n="platform.enableUser">啟用</button>
                                         {% endif %}
-                                        <button type="button" class="button button-border button-sm js-reset-password" data-i18n="settings.resetPassword">重設密碼</button>
-                                        <button type="button" class="button button-red button-sm js-delete-user" data-i18n="action.delete">刪除</button>
+                                        <button type="button" id="tenantMemberResetPw-{{ member.id }}" data-platform-role="admin" class="button button-border button-sm js-reset-password" aria-labelledby="tenantMemberEmail-{{ member.id }} tenantMemberResetPw-{{ member.id }}" data-i18n="settings.resetPassword">重設密碼</button>
+                                        <button type="button" id="tenantMemberDelete-{{ member.id }}" data-platform-role="admin" class="button button-red button-sm js-delete-user" aria-labelledby="tenantMemberEmail-{{ member.id }} tenantMemberDelete-{{ member.id }}" data-i18n="action.delete">刪除</button>
                                     </div>
                                 </div>
                                 {% else %}
@@ -240,7 +339,8 @@
                         </div>
 
                         {# 危險操作（不可逆）：刪除資料（保留帳號）／刪除帳號（硬刪整租戶）。破壞性 → button-red；
-                             需輸入該租戶名稱字串相符才可執行＝type-to-confirm（業務條件），故鈕用 hook class（.js-delete-tenant-*）、不掛 data-open-modal 也不掛 data-toast。 #}
+                             需輸入該租戶名稱字串相符才可執行＝type-to-confirm（業務條件），故鈕用 hook class（.js-delete-tenant-*）、不掛 data-open-modal 也不掛 data-toast。
+                             type-to-confirm 那兩顆輸入框是「只有 admin 動得了的控制項」，即使整份窗降到 auditor 也要各自標 admin（§5）。 #}
                         <div class="flex-row column gap-8">
                             <div class="text-bold text-red" data-i18n="platform.dangerZone">危險操作</div>
                             <div class="form-group">
@@ -250,13 +350,17 @@
                                 <p class="text-gray m-0" data-i18n="platform.deleteDataIrreversible">將刪除該租戶所有資料集與其 GufoRAG 索引（保留帳號本身），此操作不可復原。</p>
                                 <div class="field">
                                     {# 解鎖條件是**約束**，不能只寫在 placeholder：一打字就消失，而且輔具讀不到它（§4）。
-                                         提成常駐說明並用 aria-describedby 接上，不可逆那句也一起指。 #}
-                                    <input type="text" id="deleteDataConfirmInput" placeholder="輸入租戶名稱以確認" data-i18n-placeholder="platform.confirmTypeNamePlaceholder" aria-describedby="deleteDataConfirmHint" class="form-control">
+                                         提成常駐說明並用 aria-describedby 接上，不可逆那句也一起指。
+                                         ⚠️ 要照著打的是**租戶名稱**（一個值，不是一句 chrome），所以 placeholder 那顆
+                                         `platform.confirmTypeNamePlaceholder` 講的是「輸入租戶名稱以確認」這件事，
+                                         不是把某個片語翻成兩種語言——同一道閘不可以在中英兩邊要求不同的輸入
+                                         （5-6-1 的 ISO 審核片語就是踩到這件事，該頁已改成語言中立字串）。 #}
+                                    <input type="text" id="deleteDataConfirmInput" data-platform-role="admin" placeholder="輸入租戶名稱以確認" data-i18n-placeholder="platform.confirmTypeNamePlaceholder" aria-describedby="deleteDataConfirmHint" class="form-control">
                                     <span class="text-gray" id="deleteDataConfirmHint" data-i18n="platform.confirmTypeNameHint">要照著打的是這個租戶的名稱，逐字相同才解得開。</span>
                                 </div>
                             </div>
                             <div class="flex-row">
-                                <button type="button" class="button button-red js-delete-tenant-data" data-i18n="platform.deleteData">刪除資料</button>
+                                <button type="button" class="button button-red js-delete-tenant-data" data-platform-role="admin" data-i18n="platform.deleteData">刪除資料</button>
                             </div>
                             <div class="form-group mt-16">
                                 <div class="label">
@@ -264,14 +368,13 @@
                                 </div>
                                 <p class="text-gray m-0" data-i18n="platform.deleteAccountIrreversible">將永久刪除整個帳號：租戶、所有使用者、資料集與 GufoRAG 索引，此操作不可復原（稽核日誌保留）。</p>
                                 <div class="field">
-                                    {# 解鎖條件是**約束**，不能只寫在 placeholder：一打字就消失，而且輔具讀不到它（§4）。
-                                         提成常駐說明並用 aria-describedby 接上，不可逆那句也一起指。 #}
-                                    <input type="text" id="deleteAccountConfirmInput" placeholder="輸入租戶名稱以確認" data-i18n-placeholder="platform.confirmTypeNamePlaceholder" aria-describedby="deleteAccountConfirmHint" class="form-control">
+                                    {# 同上：解鎖條件常駐可見、aria-describedby 接上。 #}
+                                    <input type="text" id="deleteAccountConfirmInput" data-platform-role="admin" placeholder="輸入租戶名稱以確認" data-i18n-placeholder="platform.confirmTypeNamePlaceholder" aria-describedby="deleteAccountConfirmHint" class="form-control">
                                     <span class="text-gray" id="deleteAccountConfirmHint" data-i18n="platform.confirmTypeNameHint">要照著打的是這個租戶的名稱，逐字相同才解得開。</span>
                                 </div>
                             </div>
                             <div class="flex-row">
-                                <button type="button" class="button button-red js-delete-tenant-account" data-i18n="platform.deleteAccount">刪除帳號</button>
+                                <button type="button" class="button button-red js-delete-tenant-account" data-platform-role="admin" data-i18n="platform.deleteAccount">刪除帳號</button>
                             </div>
                         </div>
                     </div>
@@ -279,7 +382,7 @@
                 <div class="modals-footer">
                     <div class="button-row center">
                         <button type="button" class="button button-border btn-close-modals" data-i18n="action.close">關閉</button>
-                        <button type="button" class="button button-primary" data-toast="已更新|額度不可小於 0|已用量不可大於額度|延展天數與到期日請擇一填寫，且天數不可為 0|儲存失敗" data-i18n-data-toast="toast.manageTenant" data-toast-type="success|warning|warning|warning|error" data-i18n="action.save">儲存</button>
+                        <button type="button" class="button button-primary" data-platform-role="admin" data-toast="已更新|額度不可小於 0|已用量不可大於額度|延展天數與到期日請擇一填寫，且天數不可為 0|儲存失敗" data-i18n-data-toast="toast.manageTenant" data-toast-type="success|warning|warning|warning|error" data-i18n="action.save">儲存</button>
                     </div>
                 </div>
             </div>

@@ -18,10 +18,26 @@
      資料集下拉與覆蓋率量測範圍那一顆是**同一份目錄**（§6 一份正本）：頁面上的 `coverageDatasets`，
      這裡不另烤一份。預設「全部資料集」＝不送 `dataset_id`（不是送空字串——product 對空字串會 422）。
 
+     **`UntaggedDocumentOut` 四欄逐欄的落點**（§3-2：response 回得出的每個欄位都要有地方畫，
+     不畫的寫明理由）：
+       · `document_id`（**唯一恆有值的識別欄**）→ 自己一欄。要補標註得先找得到那一份，而
+         `doc_name` 可能是 null、`dataset_name` 一整批相同——三欄裡只有它一定指得到人。
+         同 3-5「涉及的記錄」在標題後面照樣列得出識別碼的理由。
+       · `doc_name: str | None` → 文件名稱欄。**null 是一個真實的一態**（上游 chunk 給不出原始
+         檔名時就是 null，product 那一行逐字寫著「讀不到就是 null（不編一個）」），所以那一態
+         畫一句短標記，識別碼那一欄照樣指得到人——退成一格空白等於畫面說不出「這一份是誰」。
+       · `dataset_name` → 所屬資料集欄。
+       · `dataset_id` → **不另開一欄**：它在本窗已經有落點，就是上面「量測範圍」下拉每一顆
+         `<option value>`（送出去的 `?dataset_id=` 正是那個值）。逐列再印一次同一個數字，讀的人
+         得到的是一格他不會拿去做任何事的整數，而「這一份屬於哪個資料集」由名稱那一欄回答。
+
      標題的維度名稱是執行期資料，由 React 填。 #}
 {# 示範資料變數用元件專屬名 untaggedFileRows（不用泛用名）：{% set %} 是頁面全域（§2/§6）。
      與 5-10 的示範資料自洽（GUIDELINE §6）：`業務範疇` 未標註 14 筆，故 total=14、
-     每頁 10 筆 ⇒ 共 2 頁，這一頁列 2 筆代表性資料（切版只演形狀，不列滿 10 列）。
+     每頁 10 筆 ⇒ 共 2 頁，這一頁列 3 筆代表性資料（切版只演形狀，不列滿 10 列）。
+     第三筆演的是 **`doc_name` 為 null** 那一態（見檔頭）：`docName` 這個鍵整個不給，
+     渲染出短標記，而識別碼那一欄照樣指得到人。 #}
+{# `documentId` 是上游的 `document_id`（雜湊字串），示範值只演形狀。
      **「所屬資料集」欄的值必須落在同一份目錄裡**：那一欄與上面「量測範圍」下拉是同一批資料集
      （下拉吃的就是頁面的 `coverageDatasets`，見檔頭），一份清單裡出現的資料集卻一個都不在
      可以篩的範圍內，等於畫面自己說「這兩份文件不屬於任何量得到的資料集」。
@@ -29,8 +45,9 @@
      交集是 0。檔名同樣改採 5-10 自己那批（`blockedSlots` 用的移民主題假檔名），
      不再沿用關稅主題的另一組——那是 2-2-x 的主題。 #}
 {% set untaggedFileRows = [
-    { docName: "歸化國籍作業要點.xlsx", datasetName: "法規彙編" },
-    { docName: "新住民生活須知問答.xlsx", datasetName: "2026 新制問答" }
+    { documentId: "3f9a1c7042be", docName: "歸化國籍作業要點.xlsx", datasetName: "法規彙編" },
+    { documentId: "b2d80e56a913", docName: "新住民生活須知問答.xlsx", datasetName: "2026 新制問答" },
+    { documentId: "7c410fb9d28e", datasetName: "法規彙編" }
 ] %}
 {# 頁碼列的三個參數由**使用頁**提供（同 components/pager-row 的慣例）：`{% set %}` 是頁面全域，
      在元件內設的話，「同一頁第二次用到 pagination 前必須重設」那道守門看不到它——元件庫頁在本
@@ -70,22 +87,25 @@
                             <table class="default-table">
                                 <colgroup>
                                     <col style="min-width:280px;">
+                                    <col style="min-width:180px;">
                                     <col style="min-width:200px;">
                                 </colgroup>
                                 <thead>
                                     <tr>
                                         <th data-i18n="settings.docName">文件名稱</th>
+                                        <th data-i18n="settings.docId">文件識別碼</th>
                                         <th data-i18n="settings.belongsToDataset">所屬資料集</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {% for row in untaggedFileRows %}
                                     <tr>
-                                        <td>{{ row.docName }}</td>
+                                        <td>{% if row.docName %}{{ row.docName }}{% else %}<span class="text-gray" data-i18n="settings.docNameUnavailable">（讀不到這一份的檔名）</span>{% endif %}</td>
+                                        <td><code class="inline-code">{{ row.documentId }}</code></td>
                                         <td>{{ row.datasetName }}</td>
                                     </tr>
                                     {% else %}
-                                    <tr><td colspan="2" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
+                                    <tr><td colspan="3" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
                                     {% endfor %}
                                 </tbody>
                             </table>

@@ -3,6 +3,9 @@
 // 純視覺切換（不含載入問答資料等業務邏輯）：點直立的「問答紀錄」tab 展開/收合；點面板外部收合。
 //
 // a11y：toggle 的 aria-expanded 與 title 必須跟著實際狀態走（含「點外部收合」這條路徑）。
+// **收合態的「不可聚焦」由 CSS 負責，本檔不碰**：收合是位移不是隱藏，面板滑出視窗之後內容仍在
+// tab 序裡，與這裡同步的 aria-expanded="false" 互相矛盾——_qa-side-panel.scss 用 visibility
+// （延到位移跑完才切）把它移出無障礙樹與焦點序。js 這一側只切 .collapsed 那一顆 class（§5）。
 // i18n：展開↔收合的 title 由 JS 切換，故同步改寫 data-i18n-title 的 key，切換語言時才會依當下狀態重譯。
 document.addEventListener("DOMContentLoaded", function () {
     var KEY_EXPAND = "comp.expandQaRecord";

@@ -2,7 +2,15 @@
      A/B 測試頁套用前要並列比對「原設定」與「設定B」；單一測試頁的簡易確認版本是另一個元件 apply-settings-modal。
      真 app 兩頁各有一份彼此結構完全不同的彈窗、卻共用 id ProductionSettingsModal（同一份文件內不衝突而已）。
      切版是單一站台、且一個 dialog id 就是一份正本，故這裡改名為 ProductionSettingsCompareModal。
-     id 不是轉換契約（React 不靠 getElementById）；真正要原樣保留的業務掛點是 .js-apply-title / .js-confirm-apply（§5）。
+     id 不是轉換契約（React 不靠 getElementById）；真正要原樣保留的業務掛點是
+     .js-apply-current-title / .js-apply-title / .js-confirm-apply（§5）。
+     ⚠️ **前兩顆是成對的**（上一版只枚舉了 `.js-apply-title`，左欄那顆整個漏掉）：凍結前端
+     `GufoFAQ_Frontend_New/js/abTest.js` 的 `populateApplyModal` 用
+     `$('#ProductionSettingsModal .js-apply-current-title').parent()` 定位**左欄「原設定」**、
+     再用 `$('#ProductionSettingsModal .js-apply-title').parent()` 定位**右欄「要套用的那一側」**，
+     兩欄各自 `$col.find('input')`／`find('input.sample-count')`／`find('textarea')` 填值。
+     少了左欄那顆，React 端就只認得出「要套用的是哪一欄」，認不出「拿現值來填的是哪一欄」——
+     而這顆彈窗的整個用途就是把那兩欄擺在一起比。
      確認鈕 toast 只列 success|error（key toast.applyProductionCompare、2 段）：權限不足在 React 走**獨立的**
      apply-settings-no-permission-modal（saas apps/web ab-test/page.tsx 的 setNoPermOpen），不是本鈕的 toast 分支，
      故不列（§5：分支要對得上真實結果的**機制**）。單一測試頁的 apply-settings-modal 才把權限不足演成 inline warning。
@@ -10,12 +18,20 @@
      本 repo scss/js 零引用，寬度來自同掛的 `.w100`（§4：無樣式 class 要寫出真 app 出處）。 #}
 {# 比對窗要看得到**差異**（§6 示範資料要自洽）：兩欄逐欄相同時，這顆彈窗演的是一個
      「套用了也不會有任何改變」的狀態，而它存在的理由正是讓人在套用前看出差在哪。
-     「設定B」欄必須等於使用頁 2-2-3 的 B 側（abSides[1]：配置二／gpt-4o，取樣 8／16）——
-     同一份資料在頁面與彈窗兩處說兩套，是跨區不自洽。
+     「設定B」欄必須等於使用頁 2-2-3 的 B 側（abSides[1]：設置二／openai:gpt-4o，取樣 8／16，
+     提示詞逐字相同）——同一份資料在頁面與彈窗兩處說兩套，是跨區不自洽。
+     ⚠️ 兩欄的 `llm` 值是 `GET /qatest/models` 回的 `value`（`<provider>:<model>`，gufofaq-saas
+     product `app/routers/qatest.py` 的 `list_models`／`effective_models`）。原本寫成
+     `OpenAI gpt-4o-mini`／`OpenAI gpt-4o`——那個字面過不了 product `app/llm.py` 的
+     `can_build_model`（`model.startswith(PROVIDER_PREFIXES)`，前綴只有 `openai:`／`anthropic:`），
+     而 2-2-3 的 `abSides` 也是這個形狀——兩邊沒同時是 `openai:` 就同時犯了兩件事。
      提示詞也是逐欄不同的資料（真 app 的 column 就有這一欄：正式版 saved.content vs 該側 prompt），
      故從迴圈內的寫死文字改成資料欄，否則兩欄結構上不可能不同。 #}
-{% set settingColumns = [
-    { title: "原設定", titleKey: "modals.originalSettings", retrieval: "設置一", llm: "OpenAI gpt-4o-mini", sampleMin: "4", sampleMax: "6",
+{# 變數用元件專屬名（§6：`set` 是頁面全域，泛用名如 `settingColumns` 會和使用頁自己的同名變數
+     互相覆蓋，而渲染結果的靜默覆蓋沒有測試看得到）。
+   `jsApplyCurrentTitle`／`jsApplyTitle` 是兩顆成對的凍結 hook 開關，見上方檔頭。 #}
+{% set applyCompareColumns = [
+    { title: "原設定", titleKey: "modals.originalSettings", retrieval: "設置一", llm: "openai:gpt-4o-mini", sampleMin: "4", sampleMax: "6", jsApplyCurrentTitle: true,
       prompt: "角色定位：
 你是一位專業的產品客服助手，負責回應使用者的產品相關詢問。
 知識來源限制：
@@ -24,7 +40,7 @@
 優先使用條列式呈現資訊；語氣清楚、專業且易懂；不可臆測或補充未出現在資料中的內容；若資料不足，需明確說明「無法從現有資料判斷」。
 輸出格式：
 使用條列式（• 或 -），必要時分段（例如：規格 / 使用方式 / 注意事項）。" },
-    { title: "設定B", titleKey: "modals.settingB", retrieval: "設置二", llm: "OpenAI gpt-4o", sampleMin: "8", sampleMax: "16", jsApplyTitle: true,
+    { title: "設定B", titleKey: "modals.settingB", retrieval: "設置二", llm: "openai:gpt-4o", sampleMin: "8", sampleMax: "16", jsApplyTitle: true,
       prompt: "任務導向：
 依使用者的問題直接給出可執行的步驟，不重述題目。
 知識來源限制：
@@ -44,13 +60,13 @@
                 </div>
                 <div class="modals-body">
                     <div class="flex-row gap-24">
-                        {% for column in settingColumns %}
+                        {% for column in applyCompareColumns %}
                         {# 兩欄逐欄同名：「知識檢索」「LLM模型」「資料取樣數」×2「提示詞」在兩欄各一份，
                              10 顆控制項的可及名稱兩兩一模一樣，報讀器聽不出正在讀的是原設定還是設定B。
                              欄標題給 id、欄內欄位容器包 role="group" aria-labelledby——同功能的 2-2-3
                              設定區用的就是這招（abSideLabel-<側>），這顆彈窗比對的正是那兩側。 #}
                         <div class="flex-1">
-                            <p class="text-bold text-blue text-lg mb-10{% if column.jsApplyTitle %} js-apply-title{% endif %}" id="applyCompareCol-{{ loop.index }}" data-i18n="{{ column.titleKey }}">{{ column.title }}</p>
+                            <p class="text-bold text-blue text-lg mb-10{% if column.jsApplyCurrentTitle %} js-apply-current-title{% endif %}{% if column.jsApplyTitle %} js-apply-title{% endif %}" id="applyCompareCol-{{ loop.index }}" data-i18n="{{ column.titleKey }}">{{ column.title }}</p>
                             <div class="flex-row column gap-16" role="group" aria-labelledby="applyCompareCol-{{ loop.index }}">
                                 <div class="form-group row mobile-col">
                                     <div class="label">

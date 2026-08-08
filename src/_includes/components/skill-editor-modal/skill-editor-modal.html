@@ -10,6 +10,18 @@
      `MAX_SKILL_INSTRUCTIONS_LEN = 20000`（各由同檔的 `_validate_name`／`_validate_description`／
      `_validate_instructions` 執法）。`SKILL_NAME_RE` 的格式驗證不掛 `pattern`：
      §4 明訂驗證結果走 toast 的 warning 分支，長度才是宣告在控制項上的契約。
+   同一份清單還有兩顆，它們的落地方式不同、理由要寫下來：
+     · `MAX_SKILL_INPUT_SCHEMA_LEN = 4096`（同檔，由 `_validate_input_schema` 執法；
+       gufofaq-saas product `app/chat_config_limits.py` 另有一份同名常數＋
+       `assert_skill_input_schema_within_limit` 再擋一次）——**參數格式欄刻意不掛 maxlength**：
+       上游量的是 `json.dumps(..., sort_keys=True)` 的**序列化後**字數，而編輯框裡是縮排過的
+       JSON，兩者不是同一個字串。product 那份常數的註解逐字寫著「掛上去只會在『看起來還沒滿』
+       的時候擋人，或反過來……記在這裡是為了讓『投影了卻沒人用』不被下一個人當成漏接而去補一個
+       錯的 `maxLength`」。故這一欄只給常駐可見的上限提示（說明它量的是序列化後的字數），
+       超限那一態由 toast 的 warning 段承接。
+     · `MAX_SKILL_RECURSION_DEPTH = 3`（同檔）＝巢狀 skill 的深度上限，落在 #skillNestedHint。
+     · 迭代次數的值域＝同檔 `MIN/MAX_SKILL_MAX_ITERATIONS`（1／20），落成 `min`／`max` ＋
+       #skillMaxIterationsHint 的區間提示（§4 數字欄三件套）。
    兩個欄位的輔助文字是功能的一部分、不是裝飾：
      - name 的規則若不寫出來，租戶只會反覆撞 400（後端才是權威，但不該讓人用猜的）。
      - description 是 agent 選不選這個 skill 的**唯一**依據，寫得含糊 skill 就永遠不會被觸發。
@@ -41,7 +53,10 @@
                             </div>
                             <div class="field">
                                 <input type="text" required maxlength="64" id="skillNameInput" class="form-control" value="refund-flow" aria-describedby="skillNameHint">
-                                <p class="skill-editor-hint" id="skillNameHint" data-i18n="settings.skillNameHint">小寫英數與連字號，長度 1-64；不可以連字號開頭／結尾，也不可連續連字號。此名稱同時就是 agent 看到的工具名。</p>
+                                {# 上限拆成「前綴 key ＋ 資料節點 ＋ 後綴 key」：`1-64` 就是這一行的
+                                     `maxlength`，可見節點拆得出來就一定要拆（§4-2）。
+                                     3-4 新增區那一顆名稱欄的 hint 逐字共用這同一組 key。 #}
+                                <p class="skill-editor-hint" id="skillNameHint"><span data-i18n="settings.skillNameHintPrefix">小寫英數與連字號，長度 </span><span>1-64</span><span data-i18n="settings.skillNameHintSuffix">；不可以連字號開頭／結尾，也不可連續連字號。此名稱同時就是 agent 看到的工具名。</span></p>
                             </div>
                         </div>
                         <div class="form-group">
@@ -118,13 +133,17 @@
                                 ] %}
                                 <div class="flex-row column gap-8" role="group" aria-labelledby="skillBuiltinToolsLabel" aria-describedby="skillAllowedToolsHint">
                                     {% for tool in skillEditorBuiltinTools %}
+                                    {# 被禁那一顆的理由是**安全邊界的輔助文字**（§4：帶約束條件的欄位輔助文字
+                                         掛 id ＋控制項 aria-describedby）——它就是那顆 checkbox 為什麼按不動
+                                         的唯一說明，只放在旁邊而沒有接上去，報讀器聽到的就只有一句
+                                         「answer_from_qa 核取方塊 已停用」。id 用工具名組唯一（§4 id 唯一）。 #}
                                     <div class="flex-row flex-wrap align-items-center gap-8">
                                         <label class="form-checkbox">
-                                            <input type="checkbox" class="js-skill-builtin" value="{{ tool.name }}"{% if tool.checked %} checked{% endif %}{% if not tool.allowedInSkill %} disabled{% endif %}>
+                                            <input type="checkbox" class="js-skill-builtin" value="{{ tool.name }}"{% if tool.checked %} checked{% endif %}{% if not tool.allowedInSkill %} disabled aria-describedby="skillBuiltinReason-{{ tool.name }}"{% endif %}>
                                             <span>{{ tool.name }}</span>
                                         </label>
                                         {% if not tool.allowedInSkill %}
-                                        <span class="text-gray">{{ tool.reason }}</span>
+                                        <span class="text-gray" id="skillBuiltinReason-{{ tool.name }}">{{ tool.reason }}</span>
                                         {% endif %}
                                     </div>
                                     {% endfor %}
@@ -179,7 +198,9 @@
                                     <option value="12" selected>lookup-order</option>
                                     <option value="13">policy-lookup</option>
                                 </select>
-                                <p class="skill-editor-hint" id="skillNestedHint" data-i18n="settings.skillNestedHint">被引用的 skill 會成為這個 skill 可呼叫的工具。不可互相引用成環，巢狀深度上限 3 層。</p>
+                                {# 深度上限走資料節點（§4-2）：出處＝chatbot skills.py 的
+                                     `MAX_SKILL_RECURSION_DEPTH`。 #}
+                                <p class="skill-editor-hint" id="skillNestedHint"><span data-i18n="settings.skillNestedHintPrefix">被引用的 skill 會成為這個 skill 可呼叫的工具。不可互相引用成環，巢狀深度上限 </span><span>3</span><span data-i18n="settings.skillNestedHintSuffix"> 層。</span></p>
                             </div>
                         </div>
                         <div class="form-group row mobile-col">
@@ -187,12 +208,16 @@
                                 <label for="skillInputSchemaInput" class="control-label" data-i18n="settings.skillInputSchema">參數格式</label>
                             </div>
                             <div class="field col-12-sm">
-                                <textarea id="skillInputSchemaInput" class="form-control skill-editor-instructions" aria-describedby="skillInputSchemaHint">{
+                                <textarea id="skillInputSchemaInput" class="form-control skill-editor-instructions" aria-describedby="skillInputSchemaHint skillInputSchemaLenHint">{
   "type": "object",
   "properties": { "order_id": { "type": "string" } },
   "required": ["order_id"]
 }</textarea>
                                 <p class="skill-editor-hint" id="skillInputSchemaHint" data-i18n="settings.skillInputSchemaHint">JSON Schema，決定 agent 呼叫這顆工具時要給什麼參數（頂層必須是 object；不可宣告 document_ids／indexes／dsl）。留空＝agent 用一句自然語言的 task 呼叫它。</p>
+                                {# 上限另起一段、與上面那段分開：它量的東西不一樣（見檔頭——序列化後的字數，
+                                     不是這個框裡縮排過的字數），這也正是這一欄沒有 maxlength 的理由。
+                                     數字走資料節點（§4-2）。 #}
+                                <p class="skill-editor-hint" id="skillInputSchemaLenHint"><span data-i18n="settings.skillInputSchemaLenPrefix">序列化後（去掉縮排）最多 </span><span>4096</span><span data-i18n="settings.skillInputSchemaLenSuffix"> 字：這份 schema 會原文接在用途說明後面成為工具描述，每一輪對話都進系統提示詞。因為量的不是這個框裡的字數，這一欄沒有輸入長度限制，超過時由儲存的結果告訴你。</span></p>
                             </div>
                         </div>
                         <div class="form-group row mobile-col">
@@ -201,7 +226,9 @@
                             </div>
                             <div class="field col-12-sm">
                                 <input type="number" id="skillMaxIterationsInput" class="form-control" value="5" min="1" max="20" step="1" aria-describedby="skillMaxIterationsHint">
-                                <p class="skill-editor-hint" id="skillMaxIterationsHint" data-i18n="settings.skillMaxIterationsHint">這個 skill 的子迴圈最多來回幾輪（1-20）。設太小會讓它還沒做完就被截斷。</p>
+                                {# 區間走資料節點（§4-2）：`1-20` 就是同一行的 min／max，
+                                     出處＝chatbot skills.py 的 `MIN/MAX_SKILL_MAX_ITERATIONS`。 #}
+                                <p class="skill-editor-hint" id="skillMaxIterationsHint"><span data-i18n="settings.skillMaxIterationsHintPrefix">這個 skill 的子迴圈最多來回幾輪（</span><span>1-20</span><span data-i18n="settings.skillMaxIterationsHintSuffix">）。設太小會讓它還沒做完就被截斷。</span></p>
                             </div>
                         </div>
                     </div>
@@ -210,9 +237,17 @@
                     <div class="button-row center">
                         <button type="button" class="button button-border btn-close-modals" data-i18n="action.cancel">取消</button>
                         {# 不掛 btn-close-modals：驗證 warning 是「留在窗內就能改」的（名稱格式/重名、用途說明必填、
-                             迭代 1-20、巢狀成環或超深——全部是窗內欄位，chatbot validate_skill_definition
-                             回 400），每點必關窗會把剛編好的內容一起關掉（§5）。 #}
-                        <button data-capability="settings:write" type="button" class="button button-primary js-save-skill" data-toast="Skill 已更新|欄位未通過驗證（名稱格式或重複、用途說明必填、迭代 1-20、巢狀不可成環）|更新失敗" data-i18n-data-toast="toast.saveSkill" data-toast-type="success|warning|error" data-i18n="action.save">儲存</button>
+                             迭代 1-20、巢狀成環或超深、參數格式——全部是窗內欄位，chatbot
+                             validate_skill_definition 回 400），每點必關窗會把剛編好的內容一起關掉（§5）。
+                           warning 段逐項對回 `validate_skill_definition` 依序呼叫的那幾支：
+                             `_validate_name`（markup／長度／`SKILL_NAME_RE`／同租戶重名）、
+                             `_validate_description`（空值／長度／markup）、`_validate_instructions`（長度）、
+                             `_validate_max_iterations`（1-20）、**`_validate_input_schema`**（頂層不是
+                             `type: object`／`properties` 撞上 `SCOPE_PARAM_NAMES`／序列化後超過
+                             `MAX_SKILL_INPUT_SCHEMA_LEN`）、`_validate_no_nesting_cycle`（成環）。
+                             參數格式那三顆先前一顆都沒列，而它是本窗唯一沒有 maxlength 的欄位
+                             ——擋下來時 toast 是使用者唯一的線索。 #}
+                        <button data-capability="settings:write" type="button" class="button button-primary js-save-skill" data-toast="Skill 已更新|欄位未通過驗證（名稱格式或重複、用途說明必填、迭代 1-20、巢狀不可成環、參數格式頂層須為 object 且不可宣告範圍參數、序列化後不可超過上限）|更新失敗" data-i18n-data-toast="toast.saveSkill" data-toast-type="success|warning|error" data-i18n="action.save">儲存</button>
                     </div>
                 </div>
             </div>

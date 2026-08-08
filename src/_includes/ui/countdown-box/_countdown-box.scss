@@ -1,4 +1,14 @@
-// 逐字複製自真實 app 的 scss/component.scss「main主要內容區」區段（verbatim，只搬移位置，line 3006-3057）
+// 取自凍結前端 `GufoFAQ_Frontend_New/scss/component.scss`「main主要內容區」區段的
+// `.countdown-box`（3006-3057）。**偏離逐條列出**（上一版寫 verbatim，實際有五處）：
+//   ①`max-width: 1560px` 移除——寬度由父層 `.wrap` 決定（`_base.scss`），這裡不再複製一份。
+//   ②`@media (max-width: 1560px)` 的斷點改吃 `_size.scss` 的 `$wrap-max`，段內的
+//     `max-width: 1200px` 一併移除（跟著 ① 走：那一份也是 `.wrap` 的職責）。
+//   ③新增 `background-color: var(--pattern-tint)` ＋ `background-blend-mode: var(--pattern-blend)`。
+//   ④新增 `img { filter: var(--raster-invert) }`。③④ 是同一件事：白底紋 ＋ 白底時鐘插圖在深色頁上
+//     會變成一整片刺眼的白，而 CSS 換不動 `url()` 裡的顏色與 `<img>` 的像素，故走 §4 的非顏色旗標
+//     （元件只掛 `var()`，`[data-theme]` 分支留在 `_var.scss`）。
+//   ⑤色值換語意 token：`.txt` 的 `var(--color-text-default)` → `--text`；`.day` 的
+//     `var(--color-primary)` → `--brand-ink`（為什麼是墨色不是 `--brand-text`，理由寫在該條旁邊）。
 // 倒數日期框 (5-1-1_帳號資訊)
 @use "../../../scss/size" as *;
 

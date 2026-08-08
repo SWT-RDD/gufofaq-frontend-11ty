@@ -5,10 +5,19 @@ titleKey: nav.singleTest
 pageHeading: 單測
 permalink: 2-2-1_singleTest.html
 ---
+{# 問答紀錄側欄的三顆頁籤（經 components/qa-side-panel 傳給 components/qa-record-tabs）。
+     `id` 是**列鍵**（＝聊天室 SN，渲染成 `data-chat-sn` 的值）：聊天室刪得掉，位置不是身分
+     （§6 列鍵）。原本三筆都沒給 `id`，那顆屬性會渲染成 `data-chat-sn=""`——§4 明文不輸出空屬性，
+     而真 app 的委派選擇器 `.qa-side-panel .tab[data-chat-sn]` 正是靠它才點得動。
+     `label` 是真 app 的 `ChatTitle`＝**使用者資料、不翻**；第二筆刻意不給 label，讓元件的 fallback
+     分支（可翻前綴 `qa.recordFallbackPrefix` ＋ 不翻的序號）在這一頁也演得出來（§5：沒有頁面演
+     得出來的分支等於沒驗收過）。原本三筆寫的「問答紀錄1／2／3」正好是真 app fallback 的字面
+     ——那是寫死在 js 裡的 chrome，當成 label 傳進來就是把 chrome 當資料（同 2-1 的修法）。
+     選中那一筆的標題＝本頁聊天室裡那句使用者輸入（components/chatroom 的示範訊息），§6 同頁自洽。 #}
 {% set qaRecordTabs = [
-    { label: "問答紀錄1" },
-    { label: "問答紀錄2" },
-    { label: "問答紀錄3", active: true }
+    { id: 5107, label: "居留證延期要準備哪些文件" },
+    { id: 5119 },
+    { id: 5124, label: "新住民結婚注意事項", active: true }
 ] %}
 {% set breadcrumbItems = [
   { label: "首頁", href: "2-1_qaRecord.html", i18nKey: "nav.home" },
@@ -29,8 +38,12 @@ permalink: 2-2-1_singleTest.html
      ＋後端區間（qatest.py 的 TestConfig：search_*_number 1–100、agent_max_iterations 1–20，
      常數在 chat_config_limits.py）。理由：這幾格的值 React 要讀去送 API，`Number("2o")` 是 NaN、
      序列化成 JSON 是 null，而真 app 那邊要按下送出才擋得到。id 契約（#sampleTotalInput…）原樣保留。
-   值載體走 hook class（js-chat-mode／js-agent-max-iter…，全站 scss 不引用），React 受控、change 交業務層；
-     儲存/建版本/套用等 API 動作屬業務邏輯，在下方按鈕列（見 singleTest.js）。
+   值載體走 hook class（js-chat-mode／js-agent-max-iter…，全站 scss 不引用），React 受控、change 交業務層。
+   下方按鈕列三顆**不落在同一格**（§5 矩陣）：「回復儲存的設定」與「儲存提示詞版本」是③——點下去
+     就送 API，故各自掛 data-toast 列全結果；只有「套用為正式設定」是①**條件開窗**：它先驗兩個取樣數、
+     再比對所選模型在不在租戶白名單內，兩關都過才開 ProductionSettingsModal（權限不足只彈 toast、
+     不開窗）——出處是凍結前端 `GufoFAQ_Frontend_New/js/singleTest.js:919` 的 `.js-apply-production`
+     委派與同檔 `applyProductionSetting()`，故它只留 hook class、不掛 data-open-modal。
    示範選 agent（§6 示範自洽：本頁下方展示 agent 工具軌跡與步驟時間軸，傳統搜尋模式不會有）。 #}
 <div class="block">
     <div class="filter-fields flex-row flex-wrap gap-16 mobile-column">
@@ -55,11 +68,17 @@ permalink: 2-2-1_singleTest.html
             <div class="label">
                 <label for="llmModelSelect" class="control-label" data-i18n="qaTest.llmModel">LLM模型</label>
             </div>
+            {# 識別字＝`GET /qatest/models` 回的 `value`（product `app/routers/qatest.py` 的
+                 `list_models`／`effective_models`，形狀是 `<provider>:<model>`）。原本寫成
+                 `OpenAI gpt-4o-mini`：那個字面過不了 product `app/llm.py` 的 `can_build_model`
+                 （`model.startswith(PROVIDER_PREFIXES)`，前綴只有 `openai:`／`anthropic:`），
+                 送出去必定判否。這兩顆是版型示範的**子集**，完整目錄在 5-2 的 `llmModels`
+                 （同一支 `gufo.list_models()`）；值是業務識別字，不翻（§4-2）。 #}
             <div class="field">
                 <select class="form-control singleSelect" id="llmModelSelect">
                     <option value="" data-i18n="common.pleaseSelect">請選擇</option>
-                    <option value="OpenAI gpt-4o-mini" selected>OpenAI gpt-4o-mini</option>
-                    <option value="OpenAI gpt-4o">OpenAI gpt-4o</option>
+                    <option value="openai:gpt-4o-mini" selected>openai:gpt-4o-mini</option>
+                    <option value="openai:gpt-4o">openai:gpt-4o</option>
                 </select>
             </div>
         </div>
@@ -161,8 +180,15 @@ permalink: 2-2-1_singleTest.html
     </div>
 </div>
 
-{# 對話區：聊天視窗沿用 components/chatroom（結構與真實頁一致）；右側可收合問答紀錄面板（.qa-side-panel）真實系統無對應既有元件，
-     collapsed/展開互動屬業務邏輯（見 singleTest.js），此處逐字保留樣式 class #}
+{# 對話區：聊天視窗沿用 components/chatroom（結構與真實頁一致）；右側可收合問答紀錄面板走
+     components/qa-side-panel。
+     **它在真實系統本來就有**：凍結前端 `GufoFAQ_Frontend_New/css/component.css:3556` 起就是
+     `.qa-side-panel` 那一整段規則（本 repo 的 `_qa-side-panel.scss` 從它切出來），不是切版新造的元件。
+     **展開/收合是 §5 ④純前端互動，不是業務邏輯**：凍結前端把它寫在**共用**的 `js/main.js:1024`
+     （`.js-side-toggle` 的 `toggleClass("collapsed")` ＋ 點外部收合），不在 `singleTest.js`
+     ——那支只拿 `.qa-side-panel` 當容器選頁籤與清空對話（`js/singleTest.js:952`／`:958`）。
+     本 repo 已照 §5 把開合實作在 `components/qa-side-panel/qa-side-panel.js`，當場動得起來。
+     這一頁對它**零 markup**：class 與內部結構逐字住在該元件，這裡只 include。 #}
 <div class="mt-24">
     <div class="flex-row gap-10 mobile-column-xs xs-column-reverse">
         {% include "components/chatroom/chatroom.html" %}

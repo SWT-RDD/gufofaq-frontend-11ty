@@ -43,6 +43,12 @@
      （product 那兩支回 `row: null`），查無主題連檔案都沒有，所以那兩段各自不渲染、不是印一個
      0 或一格空白。
 
+     **`title_source == "filename"` 那一型不重畫檔案**：product 的 `_record_views` 對整份文件
+     是 `title, chars = _title_view(f.filename)` ＋ `filename=f.filename`——標題與檔名由**同一個
+     值**構造，兩格逐字相同。照畫就是同一個檔名在同一行印兩次，而「檔案」那一段存在的理由是
+     「同名的兩筆靠它分得開」，對這一型完全不成立（一檔一筆，沒有同名可分）。檔名太長時原文長度
+     仍由截斷提示說出來（`_title_view` 切的就是它）。
+
      ## 空標題不是「讀不出來」
 
      `title` 是空字串＝**這一筆的標題欄留白**（一件關於資料的事實，處置是回去補標）；
@@ -62,5 +68,5 @@
 {% if recordIdentity.title %}<span class="text-bold">{{ recordIdentity.title }}</span>{% else %}<span class="text-gray" data-i18n="health.recordTitleBlank">（這一筆的標題欄是空的）</span>{% endif %}
 {% if recordIdentity.titleChars > recordIdentity.title.length %}<span class="text-gray" data-i18n="health.recordTitleCutPrefix">（只顯示開頭，原文共 </span><span class="text-gray">{{ recordIdentity.titleChars }}</span><span class="text-gray" data-i18n="health.recordTitleCutSuffix"> 字）</span>{% endif %}
 {% endif %}
-{% if recordIdentity.filename %}<span class="text-gray">{{ recordIdentity.filename }}</span>{% endif %}
+{% if recordIdentity.filename and recordIdentity.titleSource != "filename" %}<span class="text-gray">{{ recordIdentity.filename }}</span>{% endif %}
 {% if recordIdentity.row %}<span class="text-gray" data-i18n="health.recordRowPrefix">第 </span><span class="text-gray">{{ recordIdentity.row }}</span><span class="text-gray" data-i18n="health.recordRowSuffix"> 列</span>{% endif %}

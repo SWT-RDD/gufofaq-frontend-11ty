@@ -28,11 +28,33 @@ permalink: 3-2_glossaryManagement.html
 
 <p class="text-gray" data-i18n="settings.glossaryMgmtIntro">術語表供問答 agent 查詢專有名詞的定義；「何時查閱」即工具描述，供 LLM 判斷何時該查此表。別名改由「別名表」統一管理，在對話設定裡決定要不要讓術語查詢套用。</p>
 
-{# 新增術語表：名稱（必填）＋何時查閱＋工具提示（textarea）＋新增鈕（三態 toast：成功／名稱未填／失敗——
-     product glossary.py 的 create 擋兩件事：空名（400「術語表名稱不可為空」）與
-     _validate_normalize_regex（400：超長／不是合法 regex／含量詞或兩個以上交替）——本頁就渲染了
-     那個 regex 欄、placeholder 還寫著那條約束，所以它是使用者踩得到、也修得掉的結果。無重名檢查；
-     toast 值＝product catalog 的 toast.createGlossaryTable 逐字）#}
+{# 四欄的上限與格式是契約欄位（§6），**數字走資料節點、不烤進譯文**（§4-2）。出處逐字：
+     · 表名稱／何時查閱／補充指示的長度與「不可含 XML/HTML 標籤」＝GufoRAG chatbot
+       `app/services/glossary.py` 的 `MAX_TABLE_NAME_LEN = 64`／`MAX_WHEN_TO_CONSULT_LEN = 1024`／
+       `MAX_TOOL_PROMPT_LEN = 1024`，三欄同由該檔的 `validate_table_metadata` 執法（長度之外
+       還跑 `services/prompt_text.contains_markup`：三欄都會原文進工具中繼資料＝常駐系統提示詞）。
+     · 正規化 regex 的長度＝gufofaq-saas product `app/routers/glossary.py` 的
+       `_MAX_NORMALIZE_REGEX_LEN = 500`，格式判準＝同 repo `app/regex_guard.py` 的
+       `regex_has_backtracking_risk`（禁量詞、交替至多一個）。
+   **新增區與逐列就地編輯兩處都要掛**（§4）：兩處打的是同一支端點的同一組守衛，只掛新增區
+     等於那條約束在編輯路徑上不存在。逐列那四顆吃表格下方那一份共用提示（正典＝
+     glossary-entries-modal 的 `#glossaryLimitsHint`）。 #}
+{# 新增術語表：名稱（必填）＋何時查閱＋工具提示（textarea）＋新增鈕（三態 toast：成功／填錯／失敗）。
+     **逐 raise 對回 product `app/routers/glossary.py` 的 `create_glossary_table`，出口共四條**
+     （§3-2 負面斷言要列全部出口，`raise HTTPException` 只是其中一種形狀）：
+       ① `Depends(require_capability("data", "write"))` → 403（已由這顆鈕的 data-capability 宣告）
+       ② 空名 → 400 `glossary.name_required`
+       ③ `_validate_normalize_regex` → 400 三種：超長（`_MAX_NORMALIZE_REGEX_LEN`）／
+          `re.compile` 失敗／`regex_has_backtracking_risk`（含量詞或兩個以上交替）
+       ④ **`except RuntimeError: raise _as_bad_request(e)` → 400**——這一條先前整條沒列到。
+          `GufoRagClient._glossary_call` 把 chatbot 所有非成功信封（除了「不存在」）一律轉成
+          `RuntimeError`，所以 chatbot `validate_table_metadata` 的六道（三欄長度 ＋ 三欄
+          `contains_markup`）與它自己那份 `validate_normalize_regex` 全部從這裡出來，
+          使用者自己改得掉 ⇒ 併進 warning 段。同一條出口也會端出上游的 `DATABASE_ERROR`
+          （信封非成功即轉 RuntimeError），那一顆訊息說得出是伺服器端的事、落在 error 段。
+     **無重名檢查**：chatbot 的 `create_glossary_table` 只跑那兩支驗證就 `db.add`，全檔零唯一鍵
+     分支，故不列「名稱已存在」（列一個上游產不出來的結果與只演成功一樣是說謊，§5）。
+     toast 值＝product catalog 的 toast.createGlossaryTable 逐字 #}
 <div class="block mb-16 flex-row column gap-16">
     <div class="text-md text-bold" data-i18n="settings.addGlossaryTable">新增術語表</div>
     <div class="flex-row flex-wrap gap-16 mobile-column sm-gap-16">
@@ -42,7 +64,8 @@ permalink: 3-2_glossaryManagement.html
                     <label for="newGlossaryNameInput" class="control-label required" data-i18n="settings.glossaryTableName">表名稱</label>
                 </div>
                 <div class="field">
-                    <input type="text" id="newGlossaryNameInput" placeholder="請輸入術語表名稱" data-i18n-placeholder="settings.pleaseEnterGlossaryTableName" class="form-control" required>
+                    <input type="text" id="newGlossaryNameInput" maxlength="64" placeholder="請輸入術語表名稱" data-i18n-placeholder="settings.pleaseEnterGlossaryTableName" class="form-control" required aria-describedby="newGlossaryNameHint">
+                    <span class="text-gray" id="newGlossaryNameHint"><span data-i18n="settings.mcpLimitAtMost">最多</span><span>64</span><span data-i18n="common.unitChars"> 字</span><span data-i18n="settings.noMarkupSuffix">，不可含 XML/HTML 標籤</span></span>
                 </div>
             </div>
         </div>
@@ -52,7 +75,8 @@ permalink: 3-2_glossaryManagement.html
                     <label for="newGlossaryWhenInput" class="control-label" data-i18n="settings.glossaryWhenToConsult">何時查閱（工具描述）</label>
                 </div>
                 <div class="field">
-                    <input type="text" id="newGlossaryWhenInput" placeholder="請說明何時該查此表" data-i18n-placeholder="settings.pleaseEnterWhenToConsult" class="form-control">
+                    <input type="text" id="newGlossaryWhenInput" maxlength="1024" placeholder="請說明何時該查此表" data-i18n-placeholder="settings.pleaseEnterWhenToConsult" class="form-control" aria-describedby="newGlossaryWhenHint">
+                    <span class="text-gray" id="newGlossaryWhenHint"><span data-i18n="settings.mcpLimitAtMost">最多</span><span>1024</span><span data-i18n="common.unitChars"> 字</span><span data-i18n="settings.noMarkupSuffix">，不可含 XML/HTML 標籤</span></span>
                 </div>
             </div>
         </div>
@@ -61,8 +85,12 @@ permalink: 3-2_glossaryManagement.html
                 <div class="label">
                     <label for="newGlossaryNormalizeRegexInput" class="control-label" data-i18n="settings.glossaryNormalizeRegex">查詢正規化 regex（選填）</label>
                 </div>
+                {# placeholder 只留範例：格式約束在使用者開始輸入的那一刻就消失，而那正是最需要它的
+                     時候（§4「約束不得只活在 placeholder 裡」）。約束改掛常駐的 #glossaryRegexHint，
+                     新增區與逐列兩處都指它。 #}
                 <div class="field">
-                    <input type="text" id="newGlossaryNormalizeRegexInput" placeholder="如 [-.\s] 去分隔符；不可含量詞（* + ? {}）" data-i18n-placeholder="settings.glossaryNormalizeRegexPlaceholder" class="form-control">
+                    <input type="text" id="newGlossaryNormalizeRegexInput" maxlength="500" placeholder="如 [-.\s]" data-i18n-placeholder="settings.glossaryNormalizeRegexPlaceholder" class="form-control" aria-describedby="glossaryRegexHint">
+                    <span class="text-gray" id="glossaryRegexHint"><span data-i18n="settings.mcpLimitAtMost">最多</span><span>500</span><span data-i18n="common.unitChars"> 字</span><span data-i18n="settings.glossaryRegexFormatHint">；必須是合法 regex，不可含量詞（* + ? {}），交替至多一個</span></span>
                 </div>
             </div>
         </div>
@@ -72,13 +100,14 @@ permalink: 3-2_glossaryManagement.html
                     <label for="newGlossaryPromptInput" class="control-label" data-i18n="settings.glossaryToolPrompt">補充指示（選填）</label>
                 </div>
                 <div class="field">
-                    <textarea id="newGlossaryPromptInput" class="form-control"></textarea>
+                    <textarea id="newGlossaryPromptInput" maxlength="1024" class="form-control" aria-describedby="newGlossaryPromptHint"></textarea>
+                    <span class="text-gray" id="newGlossaryPromptHint"><span data-i18n="settings.mcpLimitAtMost">最多</span><span>1024</span><span data-i18n="common.unitChars"> 字</span><span data-i18n="settings.noMarkupSuffix">，不可含 XML/HTML 標籤</span></span>
                 </div>
             </div>
         </div>
     </div>
     <div class="flex-row">
-        <button data-capability="data:write" type="button" class="button button-primary" data-toast="術語表已建立|表名稱不可為空，或正規化 regex 不合法（不可含量詞、不可兩個以上交替）|建立失敗，請稍後再試" data-i18n-data-toast="toast.createGlossaryTable" data-toast-type="success|warning|error">
+        <button data-capability="data:write" type="button" class="button button-primary" data-toast="術語表已建立|表名稱不可為空、任一欄超過長度上限或含 XML/HTML 標籤，或正規化 regex 不合法（不可含量詞、不可兩個以上交替）|建立失敗，請稍後再試" data-i18n-data-toast="toast.createGlossaryTable" data-toast-type="success|warning|error">
             <img src="./images/icon_add_white.png" width="48" height="48" decoding="async" alt="" class="icon">
             <span data-i18n="settings.addGlossaryTable">新增術語表</span>
         </button>
@@ -125,17 +154,20 @@ permalink: 3-2_glossaryManagement.html
                          兩張表共用一個前綴時，這裡的主鍵（4、5）遲早會撞上那邊的序號——產品術語 8 筆詞條
                          一開窗，同一份 DOM 上就會有兩顆同 id，aria-labelledby 於是指到另一張表的列名上。
                          同 3-6／alias-entries-modal 的分法（aliasTableRowName- 對 aliasRowName-）。 #}
+                    {# 四欄的 maxlength 與 aria-describedby 與新增區同一組守衛（§4：同一個欄位在
+                         同一頁出現多次時每一處都要有）。逐列共用表格下方那一份 #glossaryTableLimitsHint，
+                         regex 那一欄另指格式提示 #glossaryRegexHint（與新增區同一份，不另寫第二套說法）。 #}
                     <td>
                         <span id="glossaryTableRowName-{{ tbl.id }}" class="sr-only">{{ tbl.name }}</span>
-                        <input type="text" class="form-control" value="{{ tbl.name }}" aria-labelledby="glossaryTableRowName-{{ tbl.id }} glossaryHeadName">
+                        <input type="text" class="form-control" maxlength="64" value="{{ tbl.name }}" aria-labelledby="glossaryTableRowName-{{ tbl.id }} glossaryHeadName" aria-describedby="glossaryTableLimitsHint" required>
                     </td>
-                    <td><input type="text" class="form-control" value="{{ tbl.whenToConsult }}" aria-labelledby="glossaryTableRowName-{{ tbl.id }} glossaryHeadWhenToConsult"></td>
-                    <td><input type="text" class="form-control" value="{{ tbl.toolPrompt }}" aria-labelledby="glossaryTableRowName-{{ tbl.id }} glossaryHeadToolPrompt"></td>
-                    <td><input type="text" class="form-control" value="{{ tbl.normalizeRegex }}" aria-labelledby="glossaryTableRowName-{{ tbl.id }} glossaryHeadNormalizeRegex"></td>
+                    <td><input type="text" class="form-control" maxlength="1024" value="{{ tbl.whenToConsult }}" aria-labelledby="glossaryTableRowName-{{ tbl.id }} glossaryHeadWhenToConsult" aria-describedby="glossaryTableLimitsHint"></td>
+                    <td><input type="text" class="form-control" maxlength="1024" value="{{ tbl.toolPrompt }}" aria-labelledby="glossaryTableRowName-{{ tbl.id }} glossaryHeadToolPrompt" aria-describedby="glossaryTableLimitsHint"></td>
+                    <td><input type="text" class="form-control" maxlength="500" value="{{ tbl.normalizeRegex }}" aria-labelledby="glossaryTableRowName-{{ tbl.id }} glossaryHeadNormalizeRegex" aria-describedby="glossaryTableLimitsHint glossaryRegexHint"></td>
                     <td class="text-center">{{ tbl.entryCount }}</td>
                     <td>
                         <div class="btn-group">
-                            <button data-capability="data:write" type="button" class="button button-border button-sm" data-toast="術語表已更新|表名稱不可為空，或正規化 regex 不合法（不可含量詞、不可兩個以上交替）|儲存失敗" data-i18n-data-toast="toast.saveGlossaryTable" data-toast-type="success|warning|error" data-i18n="action.save">儲存</button>
+                            <button data-capability="data:write" type="button" class="button button-border button-sm" data-toast="術語表已更新|表名稱不可為空、任一欄超過長度上限或含 XML/HTML 標籤，或正規化 regex 不合法（不可含量詞、不可兩個以上交替）|儲存失敗" data-i18n-data-toast="toast.saveGlossaryTable" data-toast-type="success|warning|error" data-i18n="action.save">儲存</button>
                             <button type="button" class="button button-border button-sm js-manage-entries" data-i18n="settings.manageEntries">管理詞條</button>
                             <button type="button" class="button button-red button-sm js-delete-glossary" data-i18n="action.delete">刪除</button>
                         </div>
@@ -147,6 +179,10 @@ permalink: 3-2_glossaryManagement.html
             </tbody>
         </table>
     </div>
+    {# 逐列四欄共用的常駐可見上限（正典＝glossary-entries-modal 的 #glossaryLimitsHint）。
+         **不能只掛新增區**：兩處打的是同一支端點的同一組守衛，而 maxlength 是靜默截斷
+         （打不進去也不說為什麼）。數字走資料節點、不烤進譯文（§4-2）。 #}
+    <p id="glossaryTableLimitsHint" class="text-gray m-0"><span data-i18n="settings.glossaryLimitTableName">表名稱上限 </span><span>64</span><span data-i18n="settings.glossaryLimitWhenToConsult"> 字、何時查閱 </span><span>1024</span><span data-i18n="settings.glossaryLimitToolPrompt"> 字、補充指示 </span><span>1024</span><span data-i18n="settings.glossaryLimitNormalizeRegex"> 字、正規化 regex </span><span>500</span><span data-i18n="settings.glossaryLimitsRuleSuffix"> 字。前三欄不可含 XML/HTML 標籤（它們會原文進工具描述）。</span></p>
 </div>
 
 {% include "components/glossary-entries-modal/glossary-entries-modal.html" %}

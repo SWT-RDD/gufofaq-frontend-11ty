@@ -51,6 +51,16 @@
         box-shadow: -2px 2px 3px 1px var(--shadow);
         z-index: 1;
 
+        // 收合是**位移**（`right: -269px`）不是隱藏，所以面板滑出視窗右緣之後，裡面的
+        // 「開啟新對話」鈕與整組頁籤**仍然留在 tab 序裡**——鍵盤使用者會把焦點送到一個看不見的
+        // 地方，而 toggle 上的 `aria-expanded="false"`（qa-side-panel.js 同步的）說的是「收起來了」。
+        // 兩份互相矛盾的宣告，其中一份一定是錯的。用 `visibility` 把收合態移出無障礙樹與焦點序：
+        // 展開時立刻可見（delay 0），收合時**延到位移跑完才切**（delay ＝ .qa-side-panel 那條
+        // `transition: right 0.3s` 的時長），滑出動畫因此看得完整。
+        // 過場時長歸 CSS（§5）：這裡沒有 setTimeout，js 只切 `.collapsed` 那一顆 class。
+        visibility: visible;
+        transition: visibility 0s;
+
         // 內嵌 qa-record-tabs 的 tab-wrap 高度上限。§4：不可在本元件 scss 覆寫 ui/tab 的 .tab-wrap，
         // 改用 parent 自有的 slot class .qa-side-tab-wrap（markup 同時掛 .tab-wrap 取其基礎樣式）。
         .qa-side-tab-wrap {
@@ -68,6 +78,13 @@
 
         .qa-side-panel-toggle::after {
             transform: rotate(180deg);
+        }
+
+        // 見上方 .qa-side-panel-body 的註解：位移跑完（0.3s）才真的隱藏，
+        // 內容因此不會在「已宣告收合」的狀態下還 tab 得進去。
+        .qa-side-panel-body {
+            visibility: hidden;
+            transition: visibility 0s 0.3s;
         }
     }
 }

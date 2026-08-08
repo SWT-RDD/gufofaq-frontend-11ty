@@ -1,4 +1,12 @@
-// 404 頁：置中的錯誤碼 + 說明 + 回首頁（版型只有這頁用，故獨立一支）
+// 整頁錯誤版型：置中的錯誤碼（`.error-code`）＋ 說明（`.error-message`）＋ 選填的一顆動作鈕。
+// **兩個消費點**（上一版寫「版型只有這頁用」，不成立）：
+//   ① `src/404.html`（生產 markup）——`404` ＋「找不到這個頁面」＋ 一顆
+//      `<a href="./index.html" class="button button-primary">` **回到頁面目錄**（不是「回首頁」：
+//      這個站的 `index.html` 就是全站連結目錄）。說明那一句是本頁唯一的 `<h1>`。
+//   ② `ui/error-page/error-page.html`（展示片段，只被元件庫頁 include）——`429` ＋「分享連結被節流」，
+//      **沒有動作鈕**（公開分享頁的訪客沒有登入態，也沒有目錄可回）。它的正式落點是 React 的
+//      `/shared/{token}`，切版沒有那一頁，故元件庫頁是唯一看得到它的地方（§5）。
+// 兩份在 dist 上分別是 `dist/404.html` 與 `dist/component.html`；改版型要同時看這兩頁。
 .error-page {
     flex: 1 0 auto;
     display: flex;

@@ -13,10 +13,17 @@
      無參數——單一用途的確認彈窗，同 components/reset-password-modal 的模式。 #}
 {# 示範資料變數用元件專屬名 manageMemberRows（不用泛用的 members）：{% set %} 是頁面全域，
      若叫 members 會和使用頁（如 5-5-1）自己的 members 互相覆蓋（§2）。 #}
+{# **這一窗示範的是「從 5-5-2 群組清單的『研發群組』那一列按下管理成員」開出來的樣子**（§6 跨頁自洽）。
+     名冊三筆＝5-5-1 的三位成員（那一頁的 `members`），勾選態必須等於他們的 `groupIds` 對這個群組的成員資格：
+     5-5-1 的 groupIds 是 `[]`／`[3]`／`[2, 3]`，而 5-5-2 的群組依序是管理(1)／業務(2)／研發(3)
+     ⇒ 研發群組＝editor ＋ viewer 兩位（5-5-2 那一列的成員數也正是 2）。
+     原本勾的是 {admin, editor}，那對不上任何一個群組——管理群組是 0 人、業務群組只有 viewer、
+     研發群組是 editor+viewer，三個都不是；admin 那一位的 groupIds 是空的，不可能被任何一窗勾起來。
+     要改示範的是哪一個群組，就把勾選態換成該群組的成員（勾選態是資料，不是版面）。 #}
 {% set manageMemberRows = [
-    { email: "admin@example.com", checked: true },
+    { email: "admin@example.com" },
     { email: "editor@example.com", checked: true },
-    { email: "viewer@example.com" }
+    { email: "viewer@example.com", checked: true }
 ] %}
 <dialog class="modals" id="manageMembersModal" aria-labelledby="manageMembersModal-title">
     <div class="modals-dialog modals-md">
@@ -49,7 +56,7 @@
                     <div class="button-row center">
                         <button type="button" class="button button-border btn-close-modals" data-i18n="action.cancel">取消</button>
                         {# 送的是 `PATCH /users/{id}` 的 group_ids，而該端點在 404 之後**無條件**呼叫
-                             `_assert_tenant_manageable`（users.py ），對平台角色持有者回 403。
+                             `_assert_tenant_manageable`（product app/routers/users.py），對平台角色持有者回 403。
                              平台管理員／稽核員就寄生在一般租戶裡，`GET /users` 會把他列進這張勾選清單，
                              所以這條路按得到；同一道守衛在 5-5-1 的列儲存鈕上就是具名 warning。
                              補了 warning 之後**不能再掛 btn-close-modals**：那是「取消勾選那一位就能修正」

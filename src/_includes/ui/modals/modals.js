@@ -21,6 +21,11 @@ document.addEventListener("DOMContentLoaded", function () {
     function openModal(id) {
         var modal = document.getElementById(id);
         if (!modal || modal.open) return;
+        // 開窗前補量捲軸寬度：`--scrollbar-width` 只在 load 與 resize 量得到，而「這一頁有沒有捲軸」
+        // 也隨頁面內容高度變（accordion 展開、頁籤換面板、篩選讓列數增減），那些都不觸發 resize。
+        // **一定要在 showModal() 之前**：`[open]` 一上身 `_base.scss` 的 `overflow:hidden` 就生效、
+        // 捲軸當場消失，scroll-lock 的守衛會讓那次量測整個跳過，留下上一次的舊值（見 ui/scroll-lock 檔頭）。
+        if (window.GufoScrollLock) window.GufoScrollLock.measure();
         modal.showModal();
     }
 

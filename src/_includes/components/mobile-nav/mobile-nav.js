@@ -1,4 +1,5 @@
-// 手機版選單：切換開關（切 .active；捲動鎖是 CSS 靠 nav-toggle 的 data-scroll-lock 做，本檔不碰）、子選單展開收合、resize 自我收合
+// 手機版選單：切換開關（切 .active；捲動鎖是 CSS 靠 nav-toggle 的 data-scroll-lock 做，本檔不自己鎖，
+// 只在開之前呼叫 GufoScrollLock.measure() 補量捲軸寬度）、子選單展開收合、resize 自我收合
 // 行為改寫自真實 app 的 js/main.js（原用 jQuery + slideDown/slideUp），改為標準 DOM API
 document.addEventListener("DOMContentLoaded", function () {
     var navToggle = document.querySelector(".nav-toggle");
@@ -28,6 +29,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function setOpen(open) {
         if (open === isOpen()) return;
+        // 開之前補量捲軸寬度（見 ui/scroll-lock 檔頭「呼叫時機」）：load/resize 那兩次量不到
+        // 「頁面內容高度變了、捲軸憑空出現或消失」。**順序不可反**——`.active` 一上身，
+        // `html:has([data-scroll-lock].active)` 的 `overflow:hidden` 就生效、捲軸當場不見，
+        // scroll-lock 的守衛會跳過這次量測，`--scrollbar-width` 停在舊值，開選單時版面橫跳。
+        if (open && window.GufoScrollLock) window.GufoScrollLock.measure();
         navToggle.classList.toggle("active", open);
         navToggle.setAttribute("aria-expanded", open ? "true" : "false");
         overlay.classList.toggle("active", open);

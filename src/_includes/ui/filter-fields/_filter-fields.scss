@@ -17,13 +17,17 @@
 //           <div class="field">
 //               <select class="form-control singleSelect" id="llmModelSelect">
 //                   <option value="" data-i18n="common.pleaseSelect">請選擇</option>
-//                   <option value="OpenAI gpt-4o-mini" selected>OpenAI gpt-4o-mini</option>
-//                   <option value="OpenAI gpt-4o">OpenAI gpt-4o</option>
+//                   <option value="openai:gpt-4o-mini" selected>openai:gpt-4o-mini</option>
+//                   <option value="openai:gpt-4o">openai:gpt-4o</option>
 //               </select>
 //           </div>
 //       </div>
 //   </div>
 //
+//   · 這一段逐字抄自 2-2-1 的「LLM模型」那一格。**選項的值是 `<provider>:<model>`**
+//     （`GET /qatest/models` 回的 `value`，product `app/routers/qatest.py` 的 `list_models`／
+//     `effective_models`）——抄成 `OpenAI gpt-4o` 那種字面會過不了 product `app/llm.py` 的
+//     `can_build_model`（`model.startswith(PROVIDER_PREFIXES)`，前綴只有 `openai:`／`anthropic:`）
 //   · `.filter-field` 是本元件的 slot class（不去寫 ui/form-control 的 class，§4）
 //   · `<div class="label">` **不帶 flex-row**。只有那一欄的標籤旁邊要放 `ui/info-btn` 時才多掛
 //     `flex-row`（2-2-1 的「知識檢索」是全站唯一一欄），把它寫進契約＝每一欄都多一顆無用的 flex 容器
@@ -36,7 +40,8 @@
 //
 // ── 清除鈕：**它不在 `.filter-fields` 裡面**。有 `.filter-fields` 的那兩份（5-2）它是它的兄弟；
 //    其餘四份（4-1／5-3／5-4／5-7）那一頁根本沒有 `.filter-fields`——它靠 `closest(".block")` 定範圍，
-//    所以單獨用得上（見下方第 50 行）。六份共通的只有一件事：**它與查詢鈕同住一顆 `flex-row`**。
+//    所以單獨用得上（見下面「清除鈕以 closest」那一條；§3-2 同檔自我互指不寫行號，行號漂得一樣快）。
+//    六份共通的只有一件事：**它與查詢鈕同住一顆 `flex-row`**。
 //
 //   <div class="flex-row flex-wrap gap-16 align-items-center">
 //       <button type="button" class="button button-border js-filter-clear" data-i18n="action.clear">清除</button>

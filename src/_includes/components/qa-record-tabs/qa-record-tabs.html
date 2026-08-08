@@ -1,14 +1,47 @@
-{# 問答紀錄頁籤（單測/AB測試/前台對話預覽三頁共用的 .tab-group 清單，資料化）。
+{# 問答紀錄頁籤（`.tab-group` 清單，資料化）。
      外層 .tab-wrap/.tabs-title/.qa-side-panel 等 chrome 由各頁自帶（每頁不同），本元件只負責重複的三顆頁籤本身。
-     資料 qaRecordTabs（[{ label, active }]）由頁面提供（見 §3-2/§6），本元件不自帶。
-     無紀錄時顯示空狀態（真 app qaRecord.js/singleTest.js 皆有；原 inline padding 收進 _qa-record-tabs.scss，
-     div/span 不一統一為 div）。 #}
+
+     住在哪一頁（雙向對得上，§1-2）：`2-1_qaRecord.html` 直接 include；`2-2-1_singleTest.html` 與
+     `2-2-3_abTest.html` 經 `components/qa-side-panel` include；`pages/components/component.html`
+     （元件庫頁）以 `qaRecordTabs = []` include ——**那是空狀態唯一被看得到的地方**（三個真實頁的
+     示範資料都非空），漏列它就等於這一段 `{% else %}` 沒有人驗收過（§5）。
+
+     資料 `qaRecordTabs = [{ id, label, active }]` 由頁面提供（§3-2/§6），本元件不自帶：
+       `id`（必填）＝**那一筆問答紀錄自己的識別碼**，真 app 是 `LogChatLogHistorySN`
+         （凍結 `GufoFAQ_Frontend_New/js/singleTest.js:638` 的 `data-chat-sn="${chat.LogChatLogHistorySN}"`，
+         :952 的委派選擇器 `.qa-side-panel .tab[data-chat-sn]` 靠它才點得動）。
+         **不可以用 `loop.index`**：這個清單刪得掉（側欄那顆「開啟新對話」與聊天室刪除都會改動它），
+         位置不是身分——刪一筆之後每一顆鍵整排前頂，React 的 key 與逐列動作會一起指錯人（§6 列鍵）。
+       `label`（選填）＝那一筆的標題，**是使用者資料不是 chrome**，故不翻，也只有它在時才掛
+         `title`（截斷時的完整字面；不掛空屬性，§4）。未給時走真 app 的 fallback：
+         `qaRecord.js:83` 取 `room.ChatTitle`，取不到就用「問答紀錄」接上序號（同檔 `singleTest.js:636`
+         取不到時是「無標題」）——那一半是寫死在 js 裡的 UI chrome，所以切版把它拆成
+         「可翻的前綴（qa.recordFallbackPrefix）＋ 不翻的序號」，英文模式才不會在頁籤上冒出繁中。
+         整串「問答紀錄1」當成一個 label 字面量傳進來時，chrome 與資料烤在一起，兩邊都失真。
+         ⚠️ 序號那一半用 `loop.index` 是對的（真 app 就是 `index + 1`，它是「第幾顆」不是身分）；
+         身分永遠走 `id`。
+         **`qa.recordFallbackPrefix` 與 `qa.qaRecords` 繁中同字、刻意分兩顆**（§4-2「語意確實不同、
+         英譯必須區別才分 key」，測試 DELIBERATE 白名單要成對登記同一句理由）：`qa.qaRecords` 是
+         側欄／區塊的標題，講的是**整批**紀錄（英譯複數 “Q&A records”）；這一顆是**單一一筆**沒有
+         標題時的名字，後面緊接序號，英譯必須是單數而且自帶尾空白（“Q&A record ”，否則英文模式
+         會黏成 `Q&A record1`，§4-2 前綴 key 自帶分隔空白）。共用一顆會讓兩邊同時說謊。
+       `active`（選填）＝目前選中的那一筆。
+
+     ⚠️ **列鍵屬性統一到 `data-chat-sn`，值是 id**。三件事原本都對不上：真 app 沒有任何一頁叫
+     `data-record-index`；`2-1` 的 `qaRecord.js:85` 用的是 `data-room-index`（而且值是**陣列位置**，
+     :243 直接 `chatHistories[index]`）；`2-2-1` 的 `singleTest.js` 用的是 `data-chat-sn`（值是 id）。
+     切版取後者：①它是身分不是位置，符合 §6「列鍵是資料契約的一部分」；②它是兩者中唯一被
+     **選擇器**依賴的（`.tab[data-chat-sn]`），改掉會讓那條委派整條落空；③saas 的
+     `apps/web/components/QaRecordTabs/QaRecordTabs.tsx` 兩個都不用（它走 React 的 `key={tab.key}`），
+     所以這一顆屬性是切版單方面定的契約，定成 id 形狀不會與已出貨的 React 打架。
+     `2-1` 那一頁沿用 `data-room-index`（位置）的寫法刻意不跟——同一顆頁籤在兩頁長出兩種列鍵，
+     正是這條規則要消滅的東西。
+
+     無紀錄時顯示空狀態（真 app qaRecord.js:78／singleTest.js:629 皆有；原 inline padding 收進
+     _qa-record-tabs.scss，div/span 不一統一為 div）。 #}
 <div class="tab-group">
     {% for tab in qaRecordTabs %}
-    {# data-record-index＝React 選中契約（同 5-2 頁籤的 data-setting-sn）：這幾顆是「切換到哪一筆
-         問答紀錄」的選擇器，切的是業務資料不是同頁面板，所以不掛 data-target。沒有這顆的話
-         React 只認得出「有人點了頁籤」，認不出點的是哪一筆。示範以 loop.index 代紀錄 id。 #}
-    <button type="button" class="tab on-record{% if tab.active %} active{% endif %}"{% if tab.active %} aria-current="true"{% endif %} data-record-index="{{ loop.index }}" title="{{ tab.label }}">{{ tab.label }}</button>
+    <button type="button" class="tab on-record{% if tab.active %} active{% endif %}"{% if tab.active %} aria-current="true"{% endif %} data-chat-sn="{{ tab.id }}"{% if tab.label %} title="{{ tab.label }}"{% endif %}>{% if tab.label %}{{ tab.label }}{% else %}<span data-i18n="qa.recordFallbackPrefix">問答紀錄</span>{{ loop.index }}{% endif %}</button>
     {% else %}
     <div class="text-gray no-records" data-i18n="qa.noRecords">尚無問答紀錄</div>
     {% endfor %}

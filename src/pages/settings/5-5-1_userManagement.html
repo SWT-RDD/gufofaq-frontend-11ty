@@ -29,7 +29,7 @@ permalink: 5-5-1_userManagement.html
   { key: "settings:read", label: "設定檢視", i18nKey: "settings.capSettingsRead" },
   { key: "settings:write", label: "設定編輯（提示詞／檢索）", i18nKey: "settings.capSettingsWrite" },
   { key: "ask", label: "問答（後台測試區）", i18nKey: "settings.capAsk" },
-  { key: "history", label: "歷史紀錄", i18nKey: "settings.capHistory" },
+  { key: "history", label: "歷史紀錄檢視", i18nKey: "settings.capHistory" },
   { key: "audit", label: "稽核日誌檢視", i18nKey: "settings.capAudit" }
 ] %}
 {% set groups = [
@@ -103,7 +103,7 @@ permalink: 5-5-1_userManagement.html
         </label>
         <span class="text-bold" data-i18n="settings.tenantAdmin">租戶管理者</span>
         {# 直接送 API 的建立動作 → data-toast 列全結果（§5）。409「email already exists」
-             （users.py 的 `account.email_exists` 409）是**換一個 Email 就修得掉**的 warning，自成一段——
+             （product app/routers/users.py 的 `account.email_exists` 409）是**換一個 Email 就修得掉**的 warning，自成一段——
              折進「新增失敗，請稍後再試」再用「可能」對沖，等於叫使用者重試一個永遠不會成功的動作。
              全站同型的 create 409 都自成 warning（5-5-2 群組名稱、3-3 QA 集、5-6-2 MCP 名稱）。 #}
         <button data-tenant-role="admin" type="button" class="button button-primary" data-toast="成員已新增|請填寫 Email 與至少 8 碼密碼|Email 已被使用，請換一個|新增失敗，請稍後再試" data-i18n-data-toast="toast.createUser" data-toast-type="success|warning|warning|error">
@@ -139,7 +139,7 @@ permalink: 5-5-1_userManagement.html
                     <th data-i18n="common.email">電子郵件</th>
                     <th id="memberStatusHead" data-i18n="dataImport.colStatus">狀態</th>
                     <th id="memberRoleHead" data-i18n="settings.role">角色</th>
-                    <th data-i18n="settings.groups">所屬群組</th>
+                    <th id="memberGroupsHead" data-i18n="settings.groups">所屬群組</th>
                     <th data-i18n="settings.effectiveCapabilities">有效能力</th>
                     <th data-i18n="common.actions">操作</th>
                 </tr>
@@ -174,8 +174,12 @@ permalink: 5-5-1_userManagement.html
                             <span data-i18n="{% if member.isAdmin %}role.admin{% else %}role.member{% endif %}">{% if member.isAdmin %}管理者{% else %}成員{% endif %}</span>
                         </div>
                     </td>
+                    {# 一格裡有 3 顆同型 checkbox（同頁三列 ⇒ 9 顆），列脈絡救不了：報讀器逐顆只念得出
+                         「管理群組／業務群組／研發群組」，聽不出正在改哪一位、也聽不出這一格在問什麼。
+                         §4 的做法是**那一格的容器**掛 `role="group" aria-labelledby="<列辨識欄 id> <欄表頭 id>"`，
+                         每顆 checkbox 保留自己的可見字面（群組名）。順序照正典「列名 → 表頭」。 #}
                     <td>
-                        <div class="flex-row flex-wrap gap-16 align-items-center">
+                        <div class="flex-row flex-wrap gap-16 align-items-center" role="group" aria-labelledby="memberEmail-{{ loop.index }} memberGroupsHead">
                             {% for group in groups %}
                             <label class="form-checkbox">
                                 <input type="checkbox"{% if group.id in member.groupIds %} checked{% endif %}>
@@ -184,7 +188,7 @@ permalink: 5-5-1_userManagement.html
                             {% endfor %}
                         </div>
                     </td>
-                    {# 有效能力＝所屬群組能力的聯集（authz.py 的 `effective_capabilities`；
+                    {# 有效能力＝所屬群組能力的聯集（product app/authz.py 的 `effective_capabilities`；
                          `is_admin` 隱含全部）。**從資料推導、不寫死一整串繁中**（§6）：寫死的話
                          改了群組能力這一欄不會跟著動，而且整欄零 i18n。 #}
                     <td>
@@ -223,7 +227,7 @@ permalink: 5-5-1_userManagement.html
     </div>
 </div>
 
-{# 租戶端的重設密碼多一道 403：`users.py` 的 `_assert_tenant_manageable`
+{# 租戶端的重設密碼多一道 403：product `app/routers/users.py` 的 `_assert_tenant_manageable`
      （那道守衛的存在理由正是「租戶管理者不得重設平台管理員的密碼再拿去登入」）。 #}
 {% set resetTenantRole = "admin" %}
 {# 長度那一段與同頁「新增成員」鈕的「請填寫 Email 與至少 8 碼密碼」是同一件事：彈窗裡沒有

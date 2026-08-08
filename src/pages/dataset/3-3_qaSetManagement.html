@@ -98,7 +98,7 @@ permalink: 3-3_qaSetManagement.html
                 <tr data-qa-set-id="{{ qa.id }}">
                     <td>{{ qa.name }}</td>
                     <td>{{ qa.group }}</td>
-                    <td class="text-center">{{ qa.count }} <span data-i18n="dataset.recordsUnit">筆</span></td>
+                    <td class="text-center">{{ qa.count }} <span data-i18n="common.recordsUnit">筆</span></td>
                     <td>{{ qa.createdAt }}</td>
                     <td>{{ qa.updatedAt }}</td>
                     <td>
@@ -124,6 +124,17 @@ permalink: 3-3_qaSetManagement.html
 {% set deleteTargetId = "deleteQaSetName" %}
 {% set deleteConfirmBinding = true %}
 {% set deleteCapability = "data:write" %}
-{% set deleteToast = "QA 集已刪除|刪除失敗，請稍後再試" %}
+{# QA 集刪除打的是**與 3-1-1 資料集刪除同一支端點**（product `app/routers/datasets.py` 的
+     `delete_dataset`，QA 集只是 `kind="qa"` 的 TenantIndex）⇒ §5「同一道後端守衛，不論從哪一頁、
+     哪一顆鈕觸發，分支集合與語意型別都要一致」。逐 raise 對回那一支：
+       · `_writable_dataset` → 403 `dataset.not_writable_group`（使用者找得到人開通／換群組 ⇒ warning）
+       · `except ChatConfigRejectedError: raise` → 全域 handler 統一成 400（**不是 502**：
+         product 自己的註解寫著「包成 502 會讓使用者去查跨服務故障，而真正該做的是去對話設定頁
+         改那一欄」⇒ warning）
+       · 其餘 → error
+     `list_datasets` 只以 `tenant_id` 收斂、不依群組過濾 ⇒「看得到一筆、按下去 403」是真實可達的
+     路徑（§4 資源層 scope 不是閘門、是一條結果分支）。子句與 3-1-1 **逐字相同**（§4-2）。 #}
+{% set deleteToast = "QA 集已刪除|權限不足，無法刪除|對話設定有一欄不合法，請先到對話設定頁修正|刪除失敗，請稍後再試" %}
+{% set deleteToastType = "success|warning|warning|error" %}
 {% set deleteToastKey = "toast.deleteQaSet" %}
 {% include "components/delete-modal/delete-modal.html" %}

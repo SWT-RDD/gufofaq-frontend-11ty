@@ -46,7 +46,23 @@ permalink: 2-2-5_regressionRun.html
 
      `status`／`summary.aborted_reason` 在頁首就要看得見，匯出鈕旁邊也要——那份 CSV 只有已經
      跑完的那幾則，最後一列會附註（`_partial_notice`）。「一份少了列卻長得很完整的 CSV」
-     是這支端點最糟的失敗方式。 #}
+     是這支端點最糟的失敗方式。
+
+     ## 權限：這一頁**不是「只要登入態」**
+
+     兩支端點都掛著同一把鑰匙——`get_run` 與 `export_run`（regression.py）的簽章都是
+     `user: dict[str, int] = Depends(require_capability("settings", "read"))`，`export_run` 的
+     docstring 還逐字寫明「與 `GET /qatest/runs/{id}` 完全同一組資料，故同一把鑰匙
+     （`settings:read`）」（租戶的正式問答紀錄不在裡面，那是 `/history/export` 的另一把
+     `history`）。§4：**判準是「打了掛 `require_*` 的端點」，不是「會不會改狀態」**，讀取型
+     端點同樣要標或寫明查證結論——原本這裡一個字都沒有，而空白與「忘了標」在 markup 上長得
+     一模一樣。
+     **不在控制項上掛 `data-capability`**：四軸的宣告單位是「會改狀態的控制項」，而這一頁三顆鈕
+     （比較／下載結果 CSV／看報表的入口）全是唯讀讀取，整頁是同一級要求 ⇒ 痕跡留在檔頭，
+     與 3-4／4-1 同一種寫法（3-4 檔頭「能力閘 settings:read 檢視／settings:write 編輯」、
+     4-1 匯出那一段「唯讀匯出，不宣告授權軸」）。
+     ⚠️ 這也代表**導覽路徑上的每一站都要有 `settings:read` 才走得到**：入口是 2-2-4 的「看報表」，
+     而 2-2-4 的寫入面是 `settings:write`（含 read）。 #}
 {% set breadcrumbItems = [
   { label: "首頁", href: "2-1_qaRecord.html", i18nKey: "nav.home" },
   { label: "問答測試區", href: "", i18nKey: "nav.qaTest" },
@@ -179,8 +195,11 @@ permalink: 2-2-5_regressionRun.html
 </div>
 
 {# ── 摘要 ───────────────────────────────────────────────────────────────────
-     示範自洽（GUIDELINE §6）：通過 8 ＋ 未通過 2 ＝ 總數 10；有分數 8 ＋ 評審未完成 1
-     ＝ 有 judge 判準的 9 則，剩下 1 則沒有 judge 判準（＝逐案例區的 #34）。
+     示範自洽（GUIDELINE §6）：通過 8 ＋ 未通過 2 ＝ 總數 10；有分數 7 ＋ 評審未完成 1（#35）
+     ＝ 有 judge 判準的 8 則，剩下 **2** 則沒有 judge 判準——#34（逐案例區那一列）與 **#33**
+     （2-2-4 `regressionCases` 那一則誠實查無，斷言只有一條 `no_answer`；它就在無變化那張表上）。
+     原本寫「有分數 8、只有 1 則沒有 judge 判準」，而 #33 的斷言清單在 2-2-4 就只有一條確定性
+     斷言——那個 9 是把它算成有判準才湊得出來的。
      逐案例區只列 3 則當版型示範，**不是比例縮影**——挑的是三種評審狀態各一則
      （有分數／無主觀分／評審未完成），讓每個分支都有畫面演得出來（§5）。
 
@@ -199,7 +218,7 @@ permalink: 2-2-5_regressionRun.html
         <p><span class="text-bold" data-i18n="regression.summaryContextTurns">送出的前置對話：</span><span>9</span><span data-i18n="regression.turnsUnit"> 輪</span></p>
     </div>
     {# judge_avg 的分母要講出來，否則「4.1」讀起來像是全部案例的平均。 #}
-    <p class="text-gray"><span data-i18n="regression.judgeAvgBasePrefix">主觀分平均只算有分數的 </span><span>8</span><span data-i18n="regression.judgeAvgBaseMid"> 則；另有 </span><span>1</span><span data-i18n="regression.judgeAvgBaseSuffix"> 則評審未完成，沒有被當成 0 分拉低平均。評審未完成的案例：</span><span>#35</span></p>
+    <p class="text-gray"><span data-i18n="regression.judgeAvgBasePrefix">主觀分平均只算有分數的 </span><span>7</span><span data-i18n="regression.judgeAvgBaseMid"> 則；另有 </span><span>1</span><span data-i18n="regression.judgeAvgBaseSuffix"> 則評審未完成，沒有被當成 0 分拉低平均。評審未完成的案例：</span><span>#35</span></p>
 </div>
 
 {# ── 上限與截斷 ─────────────────────────────────────────────────────────────
@@ -307,9 +326,19 @@ permalink: 2-2-5_regressionRun.html
 
      **切點一致性**：中斷在「案例 41 的第 1 輪」⇒ id ≥ 41 的案例這一次一則結果都沒有。所以退步／
      評審未完成／逐案例結果一律用 id < 41 的案例，#41／#42 只能落在「這一次沒跑到」。 #}
-{# 「引用的文件」兩欄的示範刻意演四種狀態（GUIDELINE §6）：
+{# 三個桶子的**案例 id 是推導出來的**（§6）：這一套 12 則、中斷點在 41 ⇒ 跑到的是 id 序的前 10 則
+     ⇒ #31–#40（#41／#42 落在「沒得比」）。扣掉退步的 #39 與修好的 #38，無變化就是
+     #31、#32、#33、#34、#35、#36、#37、#40 這 8 則，列序照 `_compare_runs` 的 case_id 升冪。
+     其中 5 則的問題與別處同源、不可自由改字：#33 是 2-2-4 `regressionCases` 那一則誠實查無、
+     #34／#35／#39 是下面「逐案例結果」那三列、#36 是「這一次的上限」那段點名的 5 輪追問案例
+     （所以它的問題就是一句承接前文的追問）。
+     判定分佈也是推導的：無變化的 8 則裡 7 則兩次都過、只有 #40 兩次都敗——這樣「這一次通過 8」
+     （#38 ＋ 7）與「基準通過 10」（#39 ＋ 7 ＋ #41 ＋ #42）才對得上摘要與 2-2-4 的執行紀錄。
+
+   「引用的文件」兩欄的示範刻意演五種狀態（GUIDELINE §6）：
      #39 兩側引到不同文件（＝「以前引 A、現在引 B」，退步的核心線索）、
-     #38 基準零命中、#37 兩側相同、#40 這一次被夾掉（格子裡明說列了幾筆／實際幾筆）。
+     #38 基準零命中、#33 **兩側都零命中**（它的斷言是 `no_answer`，有命中反而是它該紅的時候）、
+     #37 兩側相同、#40 這一次被夾掉（格子裡明說列了幾筆／實際幾筆）。
      ⚠️ 被夾掉那一格的兩個數字要與**真的列出來的檔名數**自洽：列了 2 個檔名就是「只列了前 2 筆」
      （真實資料的上界是幾十筆，切版列不完，所以示範用小數字；那個數字是資料不是規則）。 #}
 {# ## `count` 是桶子的**總則數**，不是這張表的列數——所以列數少於它時要說出來
@@ -317,12 +346,10 @@ permalink: 2-2-5_regressionRun.html
      `rows` 是這張表**真的畫出來的**那幾列。單次執行上限 200 則（`MAX_CASES_PER_RUN`）⇒
      「無變化」在真實資料上動輒上百列，畫面只列前幾則、其餘由「共 N 則」承載
      ——這是版面決策，不是後端截斷（`GET /qatest/runs/{id}?baseline=` 一律回整桶）。
-     不說出來的後果就是本頁上一版的樣子：徽章 8、表格 2 列，讀者無從分辨那個 8 是桶子總數
-     還是列數；同頁「沒得比」用的是 `notComparedRows.length`（推導），兩種寫法並存
-     等於把「React 要渲染哪一個」留給轉換的人猜。
-     推導：列出 M ＝ `rows.length`（模板數出來的，不是填的）、共 N ＝ `count`；M < N 才渲染
-     （退步 1/1、修好 1/1 兩塊因此整段不出現，示範同時演了兩態）。
-     `count` 改成**數字**不是字串：`rows.length < count` 要數值比較，字串會走隱式轉型。
+     推導：列出 M ＝ `rows.length`（模板數出來的，不是填的）、共 N ＝ `count`；M < N 才渲染截斷句。
+     `count` 是**數字**不是字串：`rows.length < count` 要數值比較，字串會走隱式轉型。
+     同頁「沒得比」的徽章走 `notComparedRows.length`（純推導）而不是資料欄——那一塊**不截斷**
+     （它的列數就是整桶），兩種寫法各自對得上自己那一塊的渲染規則，不是兩份分岔的正本。
 
      ## 「前幾則」＝**每桶 20 列**（三個桶子同一個數字）
      只寫「前幾則」等於把數字留給轉換的人猜，而猜錯不會有任何測試看得到（fpdiff 比的是切版畫出來
@@ -333,10 +360,18 @@ permalink: 2-2-5_regressionRun.html
      渲染規則：`rows` ＝整桶的前 20 筆（`bucket.slice(0, 20)`），`count` 仍是整桶長度，
      `rows.length < count` 時才畫下面那句截斷說明。
 
-     ⚠️ **示範資料列不到 20，那是切版的縮寫、不是上限本身**：這一輪只有 10 則案例（推導見上面那段），
-     任何一桶都到不了 20，照 20 畫的話截斷說明這一態全站就沒有頁面演得出來。故「無變化」刻意只列
-     2 列、`count` 維持推導出來的 8，把那一態演出來——**2 是示範值，不是上限**（同頁「引用的文件」
-     那一格的 2／63 是同一種寫法、同一個理由）。 #}
+     ⚠️ **釘死 20 之後，這一頁就再也演不到截斷句了——那是規則自己決定的，不是漏畫。**
+     這一輪只有 10 則案例（推導見上面那段），任何一桶都到不了 20 ⇒ `slice(0, 20)` 必然回整桶
+     ⇒ `rows.length === count` 恆成立。上一版把「無變化」硬寫成 2 列、`count` 留 8 來「把截斷
+     那一態演出來」，演的是一個**依它自己上一段規則不可能發生的狀態**（§6：示範資料演的必須是
+     一個真實可能的狀態），而且被省下的那 6 則在整份報表上就此無處可查。
+     故三個桶子一律**列滿**：退步 1 ＋ 修好 1 ＋ 無變化 8 ＝ 10，恰好是兩邊都有結果的那 10 則
+     （c ＝ 10，推導見上一段），每一顆徽章的數字都等於它下面那張表的列數。
+     截斷句那三顆 key（`regression.bucketListedPrefix`／`Mid`／`Suffix`）的 markup 留在下面當
+     **位置與字色的規格**，可見示範移到元件庫頁的「React 條件文案」節——`{% if %}` 的條件在唯一
+     使用頁上恆為某一值，等於沒有人看過它的長相（§5）。
+     （「引用的文件」那一格的 2／63 **不是**同一件事，別一起搬走：那是**後端**的截斷
+     （`_stored_hits` 夾在 `MAX_STORED_HITS_PER_RESULT`），真實資料上真的會發生，示範演得到。） #}
 {% set compareBuckets = [
   {
     key: "regressed", titleKey: "regression.bucketRegressed", title: "退步（本來對、現在錯）",
@@ -359,6 +394,12 @@ permalink: 2-2-5_regressionRun.html
     tagClass: "is-muted", count: 8,
     whyKey: "regression.bucketUnchangedWhy", why: "兩次的確定性判定相同（含兩次都沒過）。這一塊不含「沒得比」與「評審整批壞掉」——那兩件事各自在上面。",
     rows: [
+      { caseNo: "#31", question: "關稅稅率是以離岸價還是到岸價計算", before: "通過", beforeKey: "regression.verdictPass", beforeClass: "is-pass", after: "通過", afterKey: "regression.verdictPass", afterClass: "is-pass", beforeHits: "關稅估價作業要點.pdf", afterHits: "關稅估價作業要點.pdf", detail: "" },
+      { caseNo: "#32", question: "原產地證明要向哪個單位申請", before: "通過", beforeKey: "regression.verdictPass", beforeClass: "is-pass", after: "通過", afterKey: "regression.verdictPass", afterClass: "is-pass", beforeHits: "原產地證明申請須知.pdf", afterHits: "原產地證明申請須知.pdf", detail: "" },
+      { caseNo: "#33", question: "火星的關稅稅率是多少", before: "通過", beforeKey: "regression.verdictPass", beforeClass: "is-pass", after: "通過", afterKey: "regression.verdictPass", afterClass: "is-pass", beforeHitsKey: "regression.hitsNone", beforeHits: "（零命中）", afterHitsKey: "regression.hitsNone", afterHits: "（零命中）", detail: "" },
+      { caseNo: "#34", question: "鋁材的關稅是多少", before: "通過", beforeKey: "regression.verdictPass", beforeClass: "is-pass", after: "通過", afterKey: "regression.verdictPass", afterClass: "is-pass", beforeHits: "鋁材關稅公告.pdf", afterHits: "鋁材關稅公告.pdf", detail: "" },
+      { caseNo: "#35", question: "鋼品輸美有哪些關稅減免條件", before: "通過", beforeKey: "regression.verdictPass", beforeClass: "is-pass", after: "通過", afterKey: "regression.verdictPass", afterClass: "is-pass", beforeHits: "關稅減免辦法.pdf", afterHits: "關稅減免辦法.pdf", detail: "" },
+      { caseNo: "#36", question: "那我這批應該報多少稅", before: "通過", beforeKey: "regression.verdictPass", beforeClass: "is-pass", after: "通過", afterKey: "regression.verdictPass", afterClass: "is-pass", beforeHits: "鋼品關稅表_2025.pdf", afterHits: "鋼品關稅表_2025.pdf", detail: "" },
       { caseNo: "#37", question: "鋼品的稅則號列怎麼查", before: "通過", beforeKey: "regression.verdictPass", beforeClass: "is-pass", after: "通過", afterKey: "regression.verdictPass", afterClass: "is-pass", beforeHits: "稅則號列對照.xlsx", afterHits: "稅則號列對照.xlsx", detail: "" },
       { caseNo: "#40", question: "美國對鋁材的配額是多少", before: "未通過", beforeKey: "regression.verdictFail", beforeClass: "is-fail", after: "未通過", afterKey: "regression.verdictFail", afterClass: "is-fail", beforeHits: "配額公告.pdf", afterHits: "配額公告.pdf／配額問答.pdf", afterHitsTotal: "63", afterHitsShown: "2", detail: "答案缺少：配額" }
     ]
@@ -373,10 +414,19 @@ permalink: 2-2-5_regressionRun.html
   { caseNo: "#41", question: "鋼品出口的檢驗規定", reasonKey: "regression.reasonAbsentInThisRun", reason: "這一次沒跑到", detail: "中斷就發生在這一則的第 1 輪前置對話上（額度用罄），沒跑完的半套結果被 rollback 丟掉——它有沒有回歸，這一次量不到" },
   { caseNo: "#42", question: "鋁材的反傾銷稅率", reasonKey: "regression.reasonAbsentInThisRun", reason: "這一次沒跑到", detail: "這一次沒有跑到這則案例（執行在前一則就中斷了）——它有沒有回歸，這一次量不到" }
 ] %}
+{# `judge_drift` 在 `_compare_runs` 是**兩個陣列**（`{"unavailable_now": judge_lost,
+     "available_now": judge_gained}`），成員固定兩個方向、不會多也不會少，故用 `[0]`／`[1]` 定址。
+     `count` 是**數字**不是字串（同上面 `compareBuckets.count`：同一個概念同頁兩種型別，
+     React 端一邊 `Number()` 一邊直接比就是分岔的起點）。
+     區塊徽章＝兩個方向相加，**不烤字面量**：同頁另兩處一個走 `.length`、一個走資料欄，
+     這裡再寫死一顆 `1` 就是第三種寫法，而「涉及幾則案例」改了資料它不會跟著動（§6）。
+     `cases` 是**顯示字**（案例編號串；React 端是 `judge_drift.<方向>.map(...)`），沒有值時畫「—」、
+     不留白（§6）。 #}
 {% set judgeDriftGroups = [
-  { key: "unavailableNow", titleKey: "regression.driftUnavailableNow", title: "上次評得出來、這次評不出來", tagClass: "is-warn", cases: "#35", count: "1" },
-  { key: "availableNow", titleKey: "regression.driftAvailableNow", title: "上次評不出來、這次評得出來", tagClass: "is-muted", cases: "—", count: "0" }
+  { key: "unavailableNow", titleKey: "regression.driftUnavailableNow", title: "上次評得出來、這次評不出來", tagClass: "is-warn", cases: "#35", count: 1 },
+  { key: "availableNow", titleKey: "regression.driftAvailableNow", title: "上次評不出來、這次評得出來", tagClass: "is-muted", cases: "—", count: 0 }
 ] %}
+{% set judgeDriftTotal = judgeDriftGroups[0].count + judgeDriftGroups[1].count %}
 
 {% for bucket in compareBuckets %}
 {# 「退步」是第一塊：它是唯一會讓人停下來看的清單，埋在 200 則無變化後面等於沒有。 #}
@@ -474,7 +524,7 @@ permalink: 2-2-5_regressionRun.html
 <section class="block mt-16 flex-row column gap-16" aria-labelledby="bucket-judgeDrift-title">
     <div class="flex-row align-items-center gap-10 flex-wrap">
         <h2 id="bucket-judgeDrift-title" class="text-md text-bold m-0" data-i18n="regression.bucketJudgeDrift">評審漂移（主觀分量不到了）</h2>
-        <span class="verdict-tag is-warn">1</span>
+        <span class="verdict-tag is-warn">{{ judgeDriftTotal }}</span>
     </div>
     <p class="text-red" data-i18n="regression.bucketJudgeDriftWhy">這些案例的確定性判定確實沒變，所以它們真的落在「無變化」——但這一次的主觀分整批不見了。少了這一塊，報表會顯示「什麼都沒變」，而事實是這一批根本沒有主觀分。它讀的是「評得出來 ⇄ 評不出來」的轉移，不是分數高低。</p>
     <div class="table-container scrollTable">
@@ -510,9 +560,20 @@ permalink: 2-2-5_regressionRun.html
      ui/accordion 的表格結構：摘要列 ＋ 下一列 tr.detail-row。展開後放這一則的期望（逐條講成
      人話）、實際答案、失敗的斷言（含引擎量到的實測值）與實際送出的前置對話輪數。
 
-     `context_turns_sent` 一定要顯示實際輪數而不是只顯示「有沒有勾」：勾了卻拿到 0 輪是常態
-     （產品的正式問答每一題各自成一個聊天室），畫面上零訊號的話使用者會以為前置對話帶進去了。
-     示範刻意留一則 0 輪的多輪案例——那正是要被看到的那一格。
+     `context_turns_sent` ＝**這一則案例自己存著的前置輪數**，兩個產出點同一條公式：`_replay_case`
+     寫進結果的是 `len(turns) - 1`（`turns` ＝ `[t["human"] for t in context_turns] + [question]`），
+     `get_run` 的 `_result_rows` 那一支是 `len(case.context_turns or [])`——兩者恆等。所以這一格
+     **不是「重放時帶不帶得到」**：帶不到房間 id 的時候 `_replay_case` 是**整批 abort**
+     （`regrun.no_room_id`，理由逐字寫在 product app/routers/regression.py 檔頭「沒有房間 id 的『多輪』其實是幾個互不
+     相干的單輪，那正是『前置對話設了但沒作用』」），不會靜靜送 0 輪回來。0 的唯一意思是
+     **這一則案例本來就是單輪**（`context_turns` 空）。
+     「勾了帶入前置對話卻拿到 0 輪」是**另一支端點**的事——建立案例那一支（`CaseFromLogIn.include_context`
+     ＋ `_context_note` 的 `if requested:` 分支），它的落點在 `components/case-from-log-modal`
+     的結果區，不在這一頁。
+     那為什麼還要顯示實際輪數：它是「這一則到底扣了幾次額度、模型看到幾輪脈絡」的唯一去處，
+     而**上游記憶輪數的截斷**（見上面「這一次的上限」那一塊）也只能拿它來對。
+     示範的 #34 是**單輪案例**（0 輪，與 2-2-4 的「#34 零輪前置」同源），#35 一輪、#39 兩輪
+     ——三種都要看得到。
 
      「主觀分」欄三態各自不同：有分數就印分數（**不因為分數低而變黃燈**，後端刻意不設門檻）、
      沒有 judge 斷言印「無主觀分」、有判準卻沒評出來印「評審未完成」（黃燈：那是量不到）。
@@ -536,7 +597,7 @@ permalink: 2-2-5_regressionRun.html
      退步那一則要先看到的需求由上方「退步」桶子承擔，不靠這張表重排。 #}
 {% set runResultRows = [
   {
-    caseNo: "#34", question: "鋁材的關稅是多少（追問）",
+    caseNo: "#34", question: "鋁材的關稅是多少",
     verdict: "通過", verdictKey: "regression.verdictPass", verdictClass: "is-pass",
     judgeKind: "none", judgeText: "無主觀分", judgeKey: "regression.judgeNone", judgeClass: "is-muted",
     latency: "1,780", tokens: "884", turnsSent: "0",
@@ -685,7 +746,7 @@ permalink: 2-2-5_regressionRun.html
                                     </tr>
                                     <tr>
                                         <th data-i18n="regression.contextTurnsSent">送出前置對話</th>
-                                        <td colspan="3">{{ row.turnsSent }}<span data-i18n="regression.turnsUnit"> 輪</span><span data-i18n="regression.contextTurnsSentHint">（重放時只送出使用者那一半；帶不到前置對話時這裡就是 0，那是常態不是故障——產品的正式問答每一題各自成一個聊天室）</span></td>
+                                        <td colspan="3">{{ row.turnsSent }}<span data-i18n="regression.turnsUnit"> 輪</span><span data-i18n="regression.contextTurnsSentHint">（＝這一則案例自己存著的前置輪數，重放時逐輪送出使用者那一半、AI 那一半由上游重新生成；0 就是單輪案例。重放中途接不上同一個聊天室時整則會中斷，不會靜靜少送幾輪。）</span></td>
                                     </tr>
                                 </tbody>
                             </table>

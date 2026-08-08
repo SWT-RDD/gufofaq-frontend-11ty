@@ -1,10 +1,12 @@
-// 結構與數值照抄自真 app scss/component.scss table表格區塊，只搬檔案位置。
+// 結構與數值照抄自凍結前端 `GufoFAQ_Frontend_New/scss/component.scss` 的 table 表格區塊，只搬檔案位置。
 // **偏離逐條列出**：①色值全數換成語意 token（原檔是 `--color-border-default` / `--color-text-default`
 //   / `--color-gray-200` / `#fff` 那一組）②`box-sizing: border-box` 移除（§4-1 全域已給）
 //   ③`textarea.form-control` 依 §4 隔離改成裸 `textarea` ④`.sort` 從 `<img>` 升格成真 `<button>`
 //   ⑤`tr.is-inactive` 與 `.check-cell` 是切版新增。
 // .scrollTable 1680-1685、.default-table 1687-1799、.file-number-group 1829-1845
-// （原檔 1801-1808 的 .tablelist-title **不在本檔**——已升格成 ui/tablelist-title 純樣式原子，見下方第 158 行）
+// （原檔 1801-1808 的 .tablelist-title **不在本檔**——已升格成 ui/tablelist-title 純樣式原子，
+//   理由見本檔下方那則「.tablelist-title 已升格為 ui/tablelist-title…」註解。§3-2：同檔自我互指
+//   不用行號，行號會隨每一次編輯漂掉——上一版寫「見下方第 158 行」，那則註解實際在 163）
 // .priority-table 1810-1827 為 .default-table 的變體（&.priority-table，見下），供 priority-table 與 knowledge-retrieval-modal 沿用
 @use "../../../scss/mixin" as *;
 
@@ -80,6 +82,15 @@
     }
 
     // .sort 從 img 升級為真 <button>（§4 可點的東西用真控制項；圖尺寸移到內層 img）
+    //
+    // 方向指示的**狀態源是該欄 `<th>` 的 `aria-sort`**，不是狀態 class：行為住在 `ui/table-sort`
+    // （純行為元件），而 `.sort` 的樣式主人是本檔——若讓 table-sort 掛 `.is-asc`/`.is-desc`，
+    // 那兩顆 class 的主人會落在別人家（§4：A 元件的 scss 不得出現 B 元件的 class），
+    // 而 §5「元件 js 掛上的狀態 class 都要有樣式主人」也會把它判成半套交付。
+    // 用 `aria-sort` 當唯一真相源就同時解掉這兩件，而且無障礙樹與畫面必然同步（改不動其中一邊）。
+    //
+    // 只用 opacity 與 rotate、不碰顏色：那張 PNG 是雙向箭頭的單色圖，深色模式已由全域
+    // `_dark-icons.scss` 依檔名（`*_black`）統一反相，這裡再套色會與那條打架。
     .sort {
         padding: 0;
         border: 0;
@@ -90,7 +101,18 @@
             width: 10px;
             height: 20px;
             object-fit: contain;
+            opacity: 0.45;          // 未排序：兩個箭頭都淡，表示「可以排，但現在沒有」
+            transition: opacity 0.15s, transform 0.15s;
         }
+    }
+
+    th[aria-sort="ascending"] .sort img,
+    th[aria-sort="descending"] .sort img {
+        opacity: 1;
+    }
+
+    th[aria-sort="descending"] .sort img {
+        transform: rotate(180deg);
     }
 
     &.no-border {
@@ -143,7 +165,14 @@
 
     // 意圖判斷表格變體（原 components/priority-table 的 .priority-table 私有 class，改由 default-table 提供變體，
     // 供 priority-table 與 knowledge-retrieval-modal 兩處沿用；§4 用 variant 取代跨元件借用）。
-    // 逐位元照抄自真 app scss/component.scss 1810-1827，宣告一字不改。
+    // 取自凍結前端 `GufoFAQ_Frontend_New/scss/component.scss` 的 `.priority-table`（1810-1827）。
+    // **偏離逐條列出**（上一版寫「宣告一字不改」，實際有三處）：
+    //   ①`thead tr` / `tbody tr` 的邊框 `#efefef` → `--border-subtle`。
+    //   ②`thead tr th` 的底色 `#efefef` → `--surface-sunken`。⚠️ 換完之後**這一條在層疊上完全沒有
+    //     效果**：外層 `.default-table thead tr th` 已經是同一顆 token 的同一個值，特異度高一級但值
+    //     相同。留著是為了與原檔的規則集對得上（原檔的 `.priority-table` 是獨立元件、沒有那個外層），
+    //     刪掉不會有任何視覺差異——但下一個人改外層的 th 底色時，這一條就會開始生效。
+    //   ③巢狀寫法壓平（`thead { tr { … } }` → `thead tr { … }`），編譯出來的選擇器相同。
     &.priority-table {
         thead tr {
             border: 1px solid var(--border-subtle);

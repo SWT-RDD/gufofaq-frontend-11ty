@@ -12,7 +12,7 @@
         href: "1-1-2_uploadFile_excel.html",
         icon: "icon_XLSX_s.png",
         iconAlt: "Excel Icon",
-        title: "Excel",
+        name: "Excel",
         desc: "支援上傳xlsx檔案，檔案最大不超過10MB",
         descKey: "comp.uploadDescXlsx",
         titleKey: "dataImport.uploadExcel"
@@ -22,7 +22,7 @@
         href: "1-2-1_uploadFile_pdf.html",
         icon: "icon_PDF_s.png",
         iconAlt: "PDF Icon",
-        title: "PDF",
+        name: "PDF",
         desc: "支援上傳pdf檔案，檔案最大不超過30MB",
         descKey: "dataImport.uploadDescPdf",
         titleKey: "dataImport.uploadPdf"
@@ -32,7 +32,7 @@
         href: "1-2-1_uploadFile_pdf.html",
         icon: "icon_doc_s.png",
         iconAlt: "WORD Icon",
-        title: "WORD",
+        name: "WORD",
         desc: "支援上傳doc檔案，檔案最大不超過30MB",
         descKey: "dataImport.uploadDescWord",
         titleKey: "dataImport.uploadWord"
@@ -42,7 +42,7 @@
         href: "1-2-1_uploadFile_pdf.html",
         icon: "icon_img_s.png",
         iconAlt: "Image Icon",
-        title: "Image",
+        name: "Image",
         desc: "支援上傳PNG、JPG檔案，檔案最大不超過30MB",
         descKey: "dataImport.uploadDescImage",
         titleKey: "dataImport.uploadImage"
@@ -50,15 +50,19 @@
 ] %}
 
 <div class="upload-card-list">
-    {# `title` 用 `card.title`（給人看的名字：Excel／PDF／WORD／Image），不用 `card.type`——
+    {# `title` 屬性用 `card.name`（給人看的名字：Excel／PDF／WORD／Image），不用 `card.type`——
+         **欄名刻意不叫 `title`**：它與 `titleKey` 同一個物件，而 i18n 的「同 key 同繁中」收集器
+         會把 `xxxKey` 與同物件的 `xxx` 配成一對，於是這顆 key 的繁中被讀成「Excel」，
+         與 catalog 那一份「上傳 Excel」對打（屬性實際渲染出來兩邊都是「上傳 Excel」，
+         是欄名讓配對抓錯了旁邊那一顆）——
          後者是 React 拿去組路由參數的機器識別字，渲染成「上傳excel」與卡面的「Excel」、
          與英譯的「Upload Excel」三邊都對不上，而且 type 一改名繁中會靜默漂走、英譯不動。 #}
     {% for card in uploadCards %}
-    <a href="{{ card.href }}" class="upload-card" data-type="{{ card.type }}" title="上傳{{ card.title }}" data-i18n-title="{{ card.titleKey }}">
+    <a href="{{ card.href }}" class="upload-card" data-type="{{ card.type }}" title="上傳 {{ card.name }}" data-i18n-title="{{ card.titleKey }}">
         <div class="upload-content">
             <div class="upload-header">
                 <img src="./images/{{ card.icon }}" width="60" height="76" decoding="async" alt="{{ card.iconAlt }}" class="upload-icon" />
-                <p class="upload-title">{{ card.title }}</p>
+                <p class="upload-title">{{ card.name }}</p>
             </div>
             <p class="upload-desc" data-i18n="{{ card.descKey }}">{{ card.desc }}</p>
         </div>

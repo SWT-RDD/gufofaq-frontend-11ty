@@ -71,7 +71,7 @@ permalink: 5-4_coverageGaps.html
      一切正常，只是每一題都落在未分類）。日期維度與字典是空的維度沒有受控詞彙可挑，故不列進選項，
      並在下面用一句話交代它們為什麼不在。 #}
 {# 第三筆是 5-10 的「文件密級」：single ＋ 有兩個代碼 ⇒ 分得了群（`intent_classify.CLASSIFIABLE_KINDS`
-     只排除 date，`stats.py` 只擋空字典）。本頁的排除理由是「日期維度與字典是空的維度」，
+     只排除 date，product `app/routers/stats.py` 只擋空字典）。本頁的排除理由是「日期維度與字典是空的維度」，
      文件密級兩者皆非，卻一直不在清單上（§6 跨頁自洽）。 #}
 {% set gapDimensions = [
     { slotKey: "note3", name: "業務範疇" },
@@ -163,10 +163,17 @@ permalink: 5-4_coverageGaps.html
 <div class="block flex-row column gap-24 mt-10">
     <div class="flex-row column gap-16">
         <div class="text-gray" data-i18n="settings.coverageGapsIntro">列出這段期間問得最多、卻一份文件都沒撈到的提問原文。招呼與閒聊照實列出，不做關鍵字猜測；要拿掉哪一句由你逐句指定。</div>
-        {# 這兩列與 5-3 逐字相同，抽成 components/data-time-filter ＋ components/data-type-filter（§3-3）。 #}
+        {# 這兩列與 5-3 逐字相同，抽成 components/data-time-filter ＋ components/data-type-filter（§3-3）。
+             `timeFilterRangeHintId`＝本頁三顆「查詢」鈕 `data-toast` 裡 365 的**常駐可見抄本**所在的
+             節點 id（起訖兩欄 aria-describedby 指它）。屬性型譯文（`data-i18n-data-toast`）只有在
+             「同一個約束另有一處常駐可見的資料節點承載」時才准把常數烤進譯文（§4-2）——這個 id
+             就是那一處。三顆鈕共用同一顆 `toast.queryStats`、也共用這一段起訖欄，故只需要一處抄本。
+             上游是同一支 `_resolve_range`（product `app/routers/stats.py`，`GET /stats/coverage-gaps`
+             與 `GET /stats` 都呼叫它）。 #}
         {% set timeFilterName = "gap-time" %}
         {% set timeFilterLabelId = "gapTimeFilterLabel" %}
         {% set timeFilterChecked = "last24h" %}
+        {% set timeFilterRangeHintId = "gapTimeRangeHint" %}
         {% include "components/data-time-filter/data-time-filter.html" %}
         {% set dataTypeName = "gap-data-type" %}
         {% set dataTypeLabelId = "gapDataTypeLabel" %}
@@ -191,10 +198,17 @@ permalink: 5-4_coverageGaps.html
     {# 同 5-3：`GET /stats/coverage-gaps` 也走 `_fetch_logs`，`total > MAX_STATS_LOGS`（5000）
          即 400「此時間範圍資料量過大…請縮小範圍」（stats.py 的 `_fetch_logs`／`stats.too_many_logs`）。下面兩顆排除/取消排除
          也重新查同一支端點，故三顆共用同一顆 key、同一組分支（§5 同一道守衛分支集合一致）。
-         左邊那顆「取消」全站沒有任何 js 選得到，換成篩選列正典的 `.js-filter-clear`。 #}
+         左邊那顆「取消」全站沒有任何 js 選得到，換成篩選列正典的 `.js-filter-clear`。
+         **意圖分組那一段 400 是本輪補的**：帶了 `dimension` 時，`coverage_gaps` 在拉資料**之前**
+         先呼叫 `_assert_classifier_is_configured(model, effort)`（product `app/routers/stats.py`），
+         模型設定送不出去就是 400 `stats.classifier_not_configured`。本頁的示範預設就選著「業務範疇」
+         （`gapSummary.dimensionName`），所以按一下查詢就撞得到，而它是**使用者自己修得掉**的
+         ——去 5-2「生成設定」的分組 LLM 把「意圖判斷」那一組的模型設好——折進「載入資料失敗，
+         請重新整理頁面」等於叫人重整一個永遠不會成功的請求（§5：逐 raise 對回鈕，不可折進紅色終局）。
+         不分群（`dimension` 空）時這一段走不到，但同一顆鈕兩種選擇都送得出去，故照樣列。 #}
     <div class="flex-row align-items-center justify-content-center gap-16">
         <button type="button" class="button button-border js-filter-clear" data-i18n="action.clear">清除</button>
-        <button type="button" class="button button-primary" data-toast="正在查詢資料...|查詢成功|時間區間不正確（起訖需成對、開始須早於結束與現在、且在一年內、範圍不超過 365 天）|這段期間的資料量超過單次上限，請縮小時間範圍|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.queryStats" data-toast-type="info|success|warning|warning|error" data-i18n="action.query">查詢</button>
+        <button type="button" class="button button-primary" data-toast="正在查詢資料...|查詢成功|時間區間不正確（起訖需成對、開始須早於結束與現在、且在一年內、範圍不超過 365 天）|這段期間的資料量超過單次上限，請縮小時間範圍|意圖分組的模型還沒設好，這份報表分不了群——請先到對話設定的「生成設定」把「意圖判斷」那一組的模型設好|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.queryStats" data-toast-type="info|success|warning|warning|warning|error" data-i18n="action.query">查詢</button>
     </div>
 </div>
 
@@ -226,8 +240,19 @@ permalink: 5-4_coverageGaps.html
 
     {# ① 常設・全租戶。移除是 PUT 整份取代（送出「現有清單扣掉這一句」），故要 settings:write；
          沒有那顆能力時整區仍要**看得見**——看報表的人有權知道哪些題被誰藏起來了，只是動不了。 #}
+    {# 兩個上限畫在消費點（§3-2「上限寫在消費點（『N / 30』）」），形狀比照本頁上面的
+         「已分類提問數：200 / 200」——先前它們只活在兩顆鈕的 toast 裡（「清單太長或有一筆超過長度上限」），
+         也就是**撞到才知道**，而這一份清單是人一句一句加起來的。
+         出處＝product `app/routers/stats.py` 的 `MAX_GAP_EXCLUSIONS = 200`（`put_gap_exclusions` 去重後
+         超過即 400 `stats.gap_exclusions_too_many`）與 `MAX_GAP_EXCLUSION_LEN = 2000`
+         （逐筆超過即 400 `stats.gap_exclusion_too_long`，訊息指名是哪一筆）。
+         兩個數字是**資料**故獨立成節點（§4-2：契約裡有欄位的常數不准寫進譯文）。 #}
     <div class="flex-row column gap-8">
-        <div class="text-gray" data-i18n="settings.excludedPersistentTitle">常設・全租戶（所有人看到的報表都套用）</div>
+        <div class="flex-row align-items-center flex-wrap gap-16">
+            <div class="text-gray" data-i18n="settings.excludedPersistentTitle">常設・全租戶（所有人看到的報表都套用）</div>
+            <p class="m-0"><span class="text-bold" data-i18n="settings.excludedPersistentCount">常設排除筆數：</span><span>{{ gapExcludedPersistent.length }} / 200</span></p>
+        </div>
+        <p class="text-gray m-0"><span data-i18n="settings.excludedPersistentLenPrefix">每一句最多 </span><span>2000</span><span data-i18n="settings.excludedPersistentLenSuffix"> 字；筆數或長度任一超過，整份清單就存不進去（這一份是整份取代，不是逐筆增刪）。</span></p>
         <div class="flex-row gap-8 flex-wrap align-items-center">
             {% for q in gapExcludedPersistent %}
             <div class="flex-row align-items-center gap-4">
@@ -253,7 +278,7 @@ permalink: 5-4_coverageGaps.html
             <div class="flex-row align-items-center gap-4">
                 <span>{{ q }}</span>
                 <button type="button" class="button button-border button-sm js-undo-exclude-question" data-question="{{ q }}"
-                    data-toast="正在查詢資料...|查詢成功|時間區間不正確（起訖需成對、開始須早於結束與現在、且在一年內、範圍不超過 365 天）|這段期間的資料量超過單次上限，請縮小時間範圍|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.queryStats" data-toast-type="info|success|warning|warning|error"
+                    data-toast="正在查詢資料...|查詢成功|時間區間不正確（起訖需成對、開始須早於結束與現在、且在一年內、範圍不超過 365 天）|這段期間的資料量超過單次上限，請縮小時間範圍|意圖分組的模型還沒設好，這份報表分不了群——請先到對話設定的「生成設定」把「意圖判斷」那一組的模型設好|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.queryStats" data-toast-type="info|success|warning|warning|warning|error"
                     data-i18n="action.undoExclude">取消排除</button>
                 <button type="button" data-capability="settings:write" class="button button-border button-sm js-persist-exclusion" data-question="{{ q }}"
                     data-toast="正在儲存...|已存成常設排除|清單太長或有一筆超過長度上限|儲存失敗，請重新整理頁面" data-i18n-data-toast="toast.savePersistentExclusion" data-toast-type="info|success|warning|error"
@@ -312,7 +337,7 @@ permalink: 5-4_coverageGaps.html
                     <td>{{ sample.count }}</td>
                     <td>
                         <button type="button" class="button button-border button-sm js-exclude-question" data-question="{{ sample.question }}"
-                            data-toast="正在查詢資料...|查詢成功|時間區間不正確（起訖需成對、開始須早於結束與現在、且在一年內、範圍不超過 365 天）|這段期間的資料量超過單次上限，請縮小時間範圍|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.queryStats" data-toast-type="info|success|warning|warning|error"
+                            data-toast="正在查詢資料...|查詢成功|時間區間不正確（起訖需成對、開始須早於結束與現在、且在一年內、範圍不超過 365 天）|這段期間的資料量超過單次上限，請縮小時間範圍|意圖分組的模型還沒設好，這份報表分不了群——請先到對話設定的「生成設定」把「意圖判斷」那一組的模型設好|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.queryStats" data-toast-type="info|success|warning|warning|warning|error"
                             data-i18n="action.exclude">排除</button>
                     </td>
                 </tr>

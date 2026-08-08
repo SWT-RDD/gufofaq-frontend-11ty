@@ -1,4 +1,8 @@
-// 逐字複製自真實 app 的 scss/component.scss「步驟 / 容量使用條」區段（verbatim，只搬移位置，line 2645-2673）
+// 取自凍結前端 `GufoFAQ_Frontend_New/scss/component.scss`「步驟 / 容量使用條」區段（2645-2673）。
+// **排版宣告逐字不動，色值依 §4 換成語意 token**（上一版寫 verbatim，但三顆色值都換過）：
+//   ①`.bar` 底色 `#b4bfc9` → `--control-track-alt`（軌道，不承載文字）
+//   ②`.bar-fill` `var(--color-primary-dark)` → `--brand-ink`（不承載文字的圖形記號，§4 前景墨色）
+//   ③`.text` `var(--color-text-dark)` → `--text-muted`
 // 容量使用條
 .storage-bar {
     display: flex;

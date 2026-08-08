@@ -38,12 +38,26 @@ permalink: 3-6_aliasTables.html
      位置不是身分——刪掉前一列之後，後面每一列的列鍵都會往前頂一格，React 端的 key 與逐列
      動作的目標會一起指錯人（§6 列鍵）。
    示範 3 張：一張大的、一張小的、**一張空的**——空表要看得出「詞條數 0」不是壞掉（§5 每個
-     分支都要看得到）。別名總數從詞條推導不出來（它是各列別名個數的總和，切版沒有算術），
-     故與詞條數一樣是端點回的欄，兩個都當資料給。 #}
+     分支都要看得到）。
+
+   **「別名總數」這一格是切版對後端提的要求**（§4「切版主張需求，不等後端」），不是端點今天
+     回得出來的欄：GufoRAG chatbot `app/routes/alias.py` 的 `_table_to_dict` 逐欄是
+     `id`／`tenant_ref`／`name`／`description`／`version`／`entry_count`／`created_at`／`updated_at`
+     ——**沒有任何別名計數**，而 product `app/routers/alias.py` 是原樣代理、不加欄。
+     要求的內容：`GET /api/alias` 應補 `alias_count`（＝各列 `len(aliases)` 的總和）。
+     為什麼非它不可：一張表「有幾個詞條」與「總共登記了幾個別名」是兩個決定
+     （`MAX_ALIAS_ENTRIES_PER_TABLE = 5000` 與 `MAX_ALIASES_PER_ENTRY = 50` 是兩條不同的上限），
+     而它從詞條數推導不出來——切版沒有算術，前端自己去逐列加總就得先整表撈回來。
+     **上游那一側的符號名是 `_table_to_dict`**：下一輪 grep 它一次就知道這個前提還在不在（§4）。
+     **兩態都要切**：拿不到那個數字時畫「—」（saas `apps/web/app/(app)/alias/page.tsx` 已經
+     照這個規格寫成 `alias_count?: number` ＋ `{table.alias_count ?? "—"}`），拿得到就畫數字。
+     示範把「—」落在**空表**那一列——「0 個別名」與「後端沒給這個數字」正是在那一列長得最像。
+     （這不是宣稱同一次回應裡會有兩種形狀：上游補上之前三列都是「—」，補上之後三列都是數字；
+     示範同時畫兩態是為了讓兩種長相都有人驗收過。） #}
 {% set aliasTables = [
   { id: 12, name: "關務通用別名", desc: "報關、稅費、單證的常見簡稱與口語說法。", entryCount: 8, aliasCount: 19 },
   { id: 9, name: "系統別名", desc: "內部系統與模組的舊稱、代號。", entryCount: 3, aliasCount: 5 },
-  { id: 7, name: "待整理別名", desc: "", entryCount: 0, aliasCount: 0 }
+  { id: 7, name: "待整理別名", desc: "", entryCount: 0 }
 ] %}
 
 {# 第二句一定要有：不然使用者建完表會以為它就生效了。 #}
@@ -64,7 +78,7 @@ permalink: 3-6_aliasTables.html
                 </div>
                 <div class="field">
                     <input type="text" id="newAliasTableName" class="form-control" maxlength="200" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" required aria-describedby="newAliasTableNameHint">
-                    <span class="text-gray" id="newAliasTableNameHint"><span data-i18n="settings.mcpLimitAtMost">最多</span><span>200</span><span data-i18n="regression.charsUnit"> 字</span></span>
+                    <span class="text-gray" id="newAliasTableNameHint"><span data-i18n="settings.mcpLimitAtMost">最多</span><span>200</span><span data-i18n="common.unitChars"> 字</span></span>
                 </div>
             </div>
         </div>
@@ -75,7 +89,7 @@ permalink: 3-6_aliasTables.html
                 </div>
                 <div class="field">
                     <input type="text" id="newAliasTableDesc" class="form-control" maxlength="2000" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" aria-describedby="newAliasTableDescHint">
-                    <span class="text-gray" id="newAliasTableDescHint"><span data-i18n="settings.mcpLimitAtMost">最多</span><span>2000</span><span data-i18n="regression.charsUnit"> 字</span></span>
+                    <span class="text-gray" id="newAliasTableDescHint"><span data-i18n="settings.mcpLimitAtMost">最多</span><span>2000</span><span data-i18n="common.unitChars"> 字</span></span>
                 </div>
             </div>
         </div>
@@ -111,27 +125,40 @@ permalink: 3-6_aliasTables.html
             <tbody>
                 {% for table in aliasTables %}
                 <tr data-alias-table-id="{{ table.id }}">
-                    {# 名稱與說明是列內就地編輯 ＋ 同列「儲存」（版型比照 3-2）。上游 `PUT /alias/{table_id}`
-                         收 `AliasTableUpdate`＝name 與 description 的**局部更新**，兩欄都改得到；
+                    {# 名稱與說明是列內就地編輯 ＋ 同列「儲存」（版型比照 3-2）。**前端打的是 product 的
+                         `PATCH /alias/{table_id}`、收 `AliasTableUpdateIn`**（gufofaq-saas
+                         `app/routers/alias.py`）＝name 與 description 的**局部更新**，兩欄都改得到；
+                         product 再代理到 chatbot 的 `PUT /api/alias/{table_id}`（收 `AliasTableUpdate`）
+                         ——兩層同名檔＋同名函式而**動詞不同**，只寫「alias.py 的 update_alias_table」
+                         照字面看不出指錯了哪一層（§3-2 跨 repo 代理要指名前端真正打的那一層＋動詞）。
                          原本這裡是一顆「重新命名」鈕，但它要開的窗全站不存在，而且說明欄完全沒有修改路徑
                          （§4：request 收得下的每個參數都要在畫面上有落點）。
                        迴圈內的值控制項不掛靜態 aria-label（§4：同表 3 列會全部同名）——改吃
-                         「本列辨識欄 ＋ 欄表頭」，故另補一顆 sr-only 列名。 #}
+                         「本列辨識欄 ＋ 欄表頭」，故另補一顆 sr-only 列名。
+                       兩欄的 aria-describedby 指表格下方那一份共用上限（§4：同一個欄位在同一頁出現
+                         多次時每一處都要有；新增區有、逐列沒有＝那條約束在編輯路徑上不存在，而
+                         maxlength 是靜默截斷，打不進去也不說為什麼）。 #}
                     <td>
                         <span id="aliasTableRowName-{{ table.id }}" class="sr-only">{{ table.name }}</span>
-                        <input type="text" class="form-control" maxlength="200" value="{{ table.name }}" aria-labelledby="aliasTableRowName-{{ table.id }} aliasTableHeadName" required>
+                        <input type="text" class="form-control" maxlength="200" value="{{ table.name }}" aria-labelledby="aliasTableRowName-{{ table.id }} aliasTableHeadName" aria-describedby="aliasTableLimitsHint" required>
                     </td>
-                    <td><input type="text" class="form-control" maxlength="2000" value="{{ table.desc }}" aria-labelledby="aliasTableRowName-{{ table.id }} aliasTableHeadDesc"></td>
+                    <td><input type="text" class="form-control" maxlength="2000" value="{{ table.desc }}" aria-labelledby="aliasTableRowName-{{ table.id }} aliasTableHeadDesc" aria-describedby="aliasTableLimitsHint"></td>
                     <td class="text-center">{{ table.entryCount }}</td>
-                    <td class="text-center">{{ table.aliasCount }}</td>
+                    {# 「解不出來時畫什麼」那一態（見檔頭）：上游今天不回 `alias_count`，React 端是
+                         `alias_count ?? "—"`。破折號不掛 data-i18n——它兩種語言逐字相同（同
+                         5-6-3 撤銷者那一格的做法）。 #}
+                    <td class="text-center">{% if table.aliasCount == null %}<span class="text-gray">—</span>{% else %}{{ table.aliasCount }}{% endif %}</td>
                     <td>
                         {# 「編輯詞條」與「刪除」要先選定「哪一張表」＝業務條件開窗 ⇒ 只掛 hook class、不掛
                              data-open-modal（§5）。刪除沿用既有的 delete-modal（本頁底部 include）。
-                           「儲存」是直接送 API 的動作鈕（③）⇒ 掛 data-toast 列全結果。逐 raise 對回
-                             `routes/alias.py` 的 `update_alias_table`：validate_alias_table_metadata 的
-                             AliasValidationError → 400（使用者修得掉＝warning）、找不到表 → 404、
-                             其餘 → DATABASE_ERROR。**沒有重名檢查**（`alias_tables.name` 無 unique
-                             constraint），故不列「名稱已存在」。 #}
+                           「儲存」是直接送 API 的動作鈕（③）⇒ 掛 data-toast 列全結果。**前端打的是
+                             product `app/routers/alias.py` 的 `PATCH /alias/{table_id}`（`AliasTableUpdateIn`）**，
+                             它再代理到 chatbot `app/routes/alias.py` 的 `PUT /api/alias/{table_id}`
+                             （`AliasTableUpdate`）——守衛住在 chatbot 那一層：
+                             `validate_alias_table_metadata` 的 AliasValidationError → 400
+                             （使用者修得掉＝warning）、找不到表 → 404、其餘 → DATABASE_ERROR。
+                             **沒有重名檢查**（`alias_tables.name` 無 unique constraint），故不列
+                             「名稱已存在」。 #}
                         <div class="btn-group">
                             <button data-capability="data:write" type="button" class="button button-border button-sm" data-toast="別名表已更新|表名稱不可為空，或長度超過上限|儲存失敗，請稍後再試" data-i18n-data-toast="toast.saveAliasTable" data-toast-type="success|warning|error" data-i18n="action.save">儲存</button>
                             <button type="button" class="button button-border button-sm js-manage-alias-entries" data-i18n="settings.manageAliasEntries">編輯詞條</button>
@@ -145,6 +172,10 @@ permalink: 3-6_aliasTables.html
             </tbody>
         </table>
     </div>
+    {# 逐列兩欄共用的常駐可見上限（正典＝glossary-entries-modal 的 #glossaryLimitsHint）。
+         數字走資料節點、不烤進譯文（§4-2）；出處＝chatbot `app/services/alias.py` 的
+         `MAX_TABLE_NAME_LEN`／`MAX_DESCRIPTION_LEN`（見檔頭那份上限清單）。 #}
+    <p id="aliasTableLimitsHint" class="text-gray m-0"><span data-i18n="settings.glossaryLimitTableName">表名稱上限 </span><span>200</span><span data-i18n="settings.aliasLimitDesc"> 字、說明 </span><span>2000</span><span data-i18n="common.unitChars"> 字</span></p>
 </div>
 
 {% include "components/alias-entries-modal/alias-entries-modal.html" %}

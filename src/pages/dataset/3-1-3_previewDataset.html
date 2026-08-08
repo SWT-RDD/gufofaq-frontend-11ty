@@ -21,12 +21,19 @@ permalink: 3-1-3_previewDataset.html
     {% set editLabelKey = "dataset.datasetName" %}
     {% set editValue = "客服問答知識庫" %}
     {# 這顆確認鈕送 `PATCH /datasets/{id}`：409 `dataset.name_exists`「資料集名稱已存在」
-         （datasets.py 的 `update_dataset`）是換個名字就修得掉的 warning——姊妹頁 5-5-2 對同型 409
-         就是這樣列的。同一支的 400 `dataset.name_required`「資料集名稱不可為空」與它並列。 #}
+         （product `app/routers/datasets.py` 的 `update_dataset`）是換個名字就修得掉的 warning——
+         姊妹頁 5-5-2 對同型 409 就是這樣列的。同一支的 400 `dataset.name_required`
+         「資料集名稱不可為空」與它並列。
+         **403 `dataset.not_writable_group` 本輪補上**：`update_dataset` 第一行就是
+         `_writable_dataset`（同檔）——它驗的是「這個資料集的群組在不在我授予 data:write 的群組裡」，
+         而 `get_dataset`（同檔）走的是 `_owned_dataset`、只驗租戶，所以「進得來這一頁、按下去 403」
+         是真實可達的一條路。它是使用者找得到人開通／換群組的 warning（§4 資源層 scope），
+         而同一道守衛在本頁下面兩顆 editable-block 早就列成 warning 了——同一道守衛同頁兩種語意型別
+         是 §5 明文禁止的。子句沿用那兩顆的「權限不足，無法儲存」（§4-2 同子句同英譯）。 #}
     {% set editCapability = "data:write" %}
-{% set editSaveToast = "資料集名稱已更新|資料集名稱不可為空|資料集名稱已存在，請換一個|儲存失敗，請稍後再試" %}
+{% set editSaveToast = "資料集名稱已更新|資料集名稱不可為空|資料集名稱已存在，請換一個|權限不足，無法儲存|儲存失敗，請稍後再試" %}
     {% set editSaveToastKey = "toast.saveDatasetName" %}
-    {% set editSaveToastType = "success|warning|warning|error" %}
+    {% set editSaveToastType = "success|warning|warning|warning|error" %}
     {% include "components/editable-block/editable-block.html" %}
     {# 所屬群組（唯讀顯示）：資料集歸屬的群組（SaaS 群組權限需求，見 product datasets.py DatasetDetailOut.group_id）。 #}
     {# 冒號不折進 key：dataset.group 同時是 3-1-1／3-3 的表頭與 3-1-2／3-3 的欄位標籤（§4-2 例外——
@@ -73,6 +80,70 @@ permalink: 3-1-3_previewDataset.html
     </div>
 </div>
 
+{# 切塊設定：`PATCH /datasets/{id}` 的 `DatasetPatchIn` 三欄——`chunk_size`／`chunk_overlap`／
+     `prepend_title_each_chunk`（product `app/routers/datasets.py`），現值由
+     `DatasetDetailOut`（同檔 `get_dataset`）的同名三欄回。3-1-2 建立頁有同一組欄位（走
+     `DatasetIn`），兩處是同一份設定的兩個消費點，所以約束提示兩邊都要有（§4：同一個欄位在同一頁
+     ／同一支端點的多個入口，每一處都要有）。
+   **為什麼補畫**：這三個參數在切版與 apps/web 兩邊原本零落點（§3-2），而它們決定之後匯入的檔案
+     怎麼被切。
+   **值域出處**（§4 數字欄三件套的常數來源，同檔）：`_CHUNK_SIZE_MIN` = 100／`_CHUNK_SIZE_MAX` = 8000
+     （`Field(ge=…, le=…)`），`chunk_overlap` 是 `Field(ge=0)` ⇒ **沒有上界常數**，真正的上界是
+     跨欄約束 `_assert_overlap_below_size`（overlap 必須小於 size），所以 max 不寫死、那句話由可見
+     提示承載；三欄都是整數／布林 ⇒ step="1"。示範值＝`DatasetIn` 的預設（1000／200／false）。
+   **為什麼欄位照樣渲染成可編輯的**：`_assert_chunk_params_still_settable`（同檔）是一道 409 硬閘門
+     （這個資料集只要有 folder 管道就擋），但 `DatasetDetailOut` **沒有任何欄位講得出這個資料集是不是
+     已經被鎖住**——前端拿不到那個事實，就不可能在使用者打字之前把欄位 disabled 掉；能誠實做的只有
+     「照常給改，改不動時由 409 那一段 warning 說清楚」（§5：分支結果由 data-toast 演）。
+   📌 交辦：請 product 在 `DatasetDetailOut` 補一個布林（例如 `chunk_params_locked`，判準就是
+     `_assert_chunk_params_still_settable` 那兩條證據的聯集），這一區才能在進頁的當下就說「這個資料集
+     已經鎖住了」，而不是等使用者填完按下去才知道（§4 切版主張需求）。
+   儲存鈕是③直接送 API 的鈕 → `data-toast` 列全結果；hook 用 `js-save-chunk-params`（全站 scss 不引用）。 #}
+<div class="block flex-row column gap-16" role="group" aria-labelledby="chunkSettingsTitle">
+    <div class="flex-row column gap-8">
+        <div class="text-md text-bold" id="chunkSettingsTitle" data-i18n="dataset.chunkSettings">切塊設定</div>
+        {# 代價寫在做這個決定的控制項旁邊、排在儲存鈕之前（§3-2）。 #}
+        <p class="text-gray m-0" data-i18n="dataset.chunkAffectsFutureOnly">切塊參數只在建立擷取管道時送給上游，所以只影響之後匯入的檔案；已經匯入的內容不會重新切塊。</p>
+        <p class="text-gray m-0" data-i18n="dataset.chunkLockedAfterUpload">而且這個資料集只要做過一次「檔案上傳」匯入，這三個值就再也改不動，之後不論從哪一條路匯入都只能沿用現值——請在這裡決定好。</p>
+    </div>
+    <div class="form-group row">
+        <div class="label">
+            <label for="chunkSize" class="control-label" data-i18n="dataset.chunkSize">切塊大小</label>
+        </div>
+        <div class="field">
+            <input type="number" id="chunkSize" class="form-control" min="100" max="8000" step="1" value="1000" aria-describedby="chunkSizeRange">
+            {# 區間是資料不是譯文（§3-2），數字獨立成不翻的節點。 #}
+            <span class="text-gray" id="chunkSizeRange">100 – 8000</span>
+        </div>
+    </div>
+    <div class="form-group row">
+        <div class="label">
+            <label for="chunkOverlap" class="control-label" data-i18n="dataset.chunkOverlap">切塊重疊</label>
+        </div>
+        <div class="field">
+            <input type="number" id="chunkOverlap" class="form-control" min="0" step="1" value="200" aria-describedby="chunkOverlapRange">
+            <span class="text-gray" id="chunkOverlapRange">≥ 0<span data-i18n="dataset.chunkOverlapBelowSize">，且必須小於切塊大小</span></span>
+        </div>
+    </div>
+    <label class="form-checkbox">
+        <input type="checkbox" id="prependTitleEachChunk" aria-describedby="prependTitleHint">
+        <span data-i18n="dataset.prependTitleEachChunk">每一塊都帶上文件標題</span>
+    </label>
+    <p id="prependTitleHint" class="text-gray m-0" data-i18n="dataset.prependTitleHint">開啟後每一塊的開頭都會補上這份文件的標題，檢索時比較不會斷章取義；代價是每一塊少一點放正文的長度。</p>
+    <div class="flex-row justify-content-end">
+        {# 逐 raise 對回這顆鈕（同檔 `update_dataset`）：403 `dataset.not_writable_group`
+             （`_writable_dataset`，與本頁名稱那顆同一道守衛）／422（`_assert_overlap_below_size`，
+             端點拿**合併後**的值複驗，只送一欄時另一半在 DB 裡）／409 `dataset.chunk_params_locked`
+             （`_assert_chunk_params_still_settable`；訊息要講清楚三欄是共用的一份值、這一次一個都沒
+             存下來）——三段都是使用者自己處理得掉的 warning。404／500 併進末段 error。
+             400 `common.no_fields_to_update` 不列：這張表單一定會送出三欄，走不到那條路。 #}
+        <button data-capability="data:write" type="button" class="button button-primary js-save-chunk-params"
+            data-toast="切塊設定已更新|權限不足，無法儲存|切塊重疊必須小於切塊大小|這個資料集已經做過「檔案上傳」匯入，切塊參數不能再改；這一次三個值一個都沒有存下來|儲存失敗，請稍後再試"
+            data-i18n-data-toast="toast.saveChunkParams" data-toast-type="success|warning|warning|warning|error"
+            data-i18n="action.save">儲存</button>
+    </div>
+</div>
+
 {# 搜尋 + 檔案總大小 + 刪除/新增檔案：真實頁 delete-selected-btn / add-file-btn 預設 display:none（等待 js 依選取/載入狀態切換），
      此處呈現「已載入且可操作」的靜態最終態，故移除 inline display:none #}
 <div class="flex-row justify-content-between flex-wrap gap-16 mobile-column my-16">
@@ -91,11 +162,21 @@ permalink: 3-1-3_previewDataset.html
 </div>
 
 {# 檔案表格：真實頁 tbody 為 js 動態渲染（載入中...），欄位取自 thead 固定欄位，
-     用 set+for 資料化示範 3 筆；檔名連結分別指向已轉換的 3-1-5（一般檔案預覽）與 3-1-6（excel 比對預覽），串起頁面關聯 #}
+     用 set+for 資料化示範 3 筆；檔名連結分別指向已轉換的 3-1-5（一般檔案預覽）與 3-1-6（excel 比對預覽），串起頁面關聯。
+   **列序也是示範資料的一部分**（§6）：product `app/routers/datasets.py` 的 `get_dataset` 對
+     `ds.files` 做 `sorted(key=…f.uploaded_at, reverse=True)`＝最後上傳的排最前面，故示範列照
+     建立時間**遞減**排（2026/01/22 → 2025/12/10 → 2025/11/02）。原本照時間遞增寫，演的是一個
+     這支端點產不出來的畫面。
+   **`count` 可為 null**：`FileOut.record_count` 的型別就是 `int | None`（同檔，欄位註解明寫
+     「取不到（舊列/GufoRAG 錯）＝None（前端顯示「—」）」），值由同檔 `_file_record_count` 算——
+     excel 檔取 product 自己簿記的 `data_count`，folder 檔要重算 document_id 再向 GufoRAG 數
+     chunk，那一步失敗就 `logger.error` 後回 None。示範挑 1003 演這一態（folder 檔、取數失敗）；
+     **刻意不用「舊列無擷取連結」那條路**——那種檔連 3-1-5 預覽都會 409 `file_not_linkable`
+     （同檔 `get_file_chunks`），這一列的檔名連結會變成一個點進去只有錯誤訊息的謊。 #}
 {% set fileRows = [
-    { sn: "1001", type: ".pdf", name: "常見問題.pdf", href: "3-1-5_previewFile_detail.html?sn=1001", createdAt: "2025/11/02 10:20", sizeMB: "12.30", count: "312" },
+    { sn: "1003", type: ".docx", name: "客服應對規範.docx", href: "3-1-5_previewFile_detail.html?sn=1003", createdAt: "2026/01/22 11:08", sizeMB: "0.85", count: null },
     { sn: "1002", type: ".xlsx", name: "商品清單.xlsx", href: "3-1-6_previewExcel_compare.html?sn=1002", createdAt: "2025/12/10 15:44", sizeMB: "3.05", count: "980" },
-    { sn: "1003", type: ".docx", name: "客服應對規範.docx", href: "3-1-5_previewFile_detail.html?sn=1003", createdAt: "2026/01/22 11:08", sizeMB: "0.85", count: "1,012" }
+    { sn: "1001", type: ".pdf", name: "常見問題.pdf", href: "3-1-5_previewFile_detail.html?sn=1001", createdAt: "2025/11/02 10:20", sizeMB: "12.30", count: "312" }
 ] %}
 <div class="table-container scrollTable checkbox-container">
     <table class="default-table">
@@ -128,11 +209,12 @@ permalink: 3-1-3_previewDataset.html
             {% for file in fileRows %}
             <tr>
                 {# 迴圈內的控制項不掛靜態 aria-label（§4：3 列會全部叫「選取此列」，報讀器聽不出勾的是哪一個檔）——
-                     改吃「欄表頭 ＋ 本列辨識欄」（正典＝3-6 的 aliasTableRowName-*）。這一頁的列名是真的文字
+                     改吃「**本列辨識欄 → 欄表頭**」（§4 明訂的順序，正典＝3-6 的 aliasTableRowName-*；
+                     反過來會先念「選取此列」才念檔名，把辨識資訊推到後面）。這一頁的列名是真的文字
                      （檔名連結），故直接給它 id、不必再補 sr-only 列名。 #}
                 <td class="check-cell">
                     <label class="form-checkbox in-cell">
-                        <input type="checkbox" class="check-one" data-filesn="{{ file.sn }}" aria-labelledby="previewFileHeadSelect previewFileRowName-{{ file.sn }}">
+                        <input type="checkbox" class="check-one" data-filesn="{{ file.sn }}" aria-labelledby="previewFileRowName-{{ file.sn }} previewFileHeadSelect">
                     </label>
                 </td>
                 <td>
@@ -140,7 +222,8 @@ permalink: 3-1-3_previewDataset.html
                 </td>
                 <td>{{ file.createdAt }}</td>
                 <td class="text-center">{{ file.sizeMB }} MB</td>
-                <td class="text-center">{{ file.count }} <span data-i18n="dataset.recordsUnit">筆</span></td>
+                {# 整格內容都在 {% if %} 裡 ⇒ 收成一行（§2：跑進收尾標籤的換行縮排會併進同一個文字節點）。 #}
+                <td class="text-center">{% if file.count %}{{ file.count }} <span data-i18n="common.recordsUnit">筆</span>{% else %}—{% endif %}</td>
                 <td>
                     {# 兩顆列動作，逐字對上真 app 的 previewDataset.js:167/170：
                        .delete-single-btn（單筆刪除，$(document).on('click','.delete-single-btn')）
@@ -192,16 +275,23 @@ permalink: 3-1-3_previewDataset.html
 {% set deleteTargetId = "deleteFileName" %}
 {% set deleteConfirmBinding = true %}
 {% set deleteConfirmClass = "confirm-delete-btn" %}
-{# 刪除檔案的三段：product `delete_file` → `_remove_file_and_purge` 的出口不只成敗。
-     409 `folder_pipeline_not_recorded`（datasets.py）的訊息**本身就是修復步驟**
+{# 刪除檔案的四段：product `app/routers/datasets.py` 的 `delete_file` →`_remove_file_and_purge`
+     的出口不只成敗。
+     403 `dataset.not_writable_group`（`delete_file` 本體第一行的 `_writable_dataset`，同檔）
+     **本輪從 error 段拆出來**：那道守衛驗的是「這個資料集的群組在不在我授予 data:write 的群組裡」，
+     而把人帶進這一頁的 `get_dataset`（同檔）只驗租戶（`_owned_dataset`），所以「看得到檔案列、
+     按下去 403」是真實可達的一條路；它是使用者找得到人開通／換群組的 warning（§4 資源層 scope），
+     折進紅色的「刪除失敗」＝把可修復畫成終局。子句與本頁三顆 editable-block 的
+     「權限不足，無法儲存」同一族（§4-2 同子句同英譯，動詞按動作換成「刪除」）。
+     409 `folder_pipeline_not_recorded`（同檔）的訊息**本身就是修復步驟**
      （「請用『檔案上傳』再匯入一次任一檔案，會自動接回原本的管道並補記，之後即可正常刪除」）——
-     使用者自己修得掉，折進紅色的「刪除失敗」就是把可修復畫成終局（§5）。
+     使用者自己修得掉，同樣不折進「刪除失敗」。
      另一條 409 `file_not_linkable`（同一支 `_remove_file_and_purge` 的另一個出口）沒有復原路徑，
-     與 502／404／403 同屬 error。
+     與 502／404 同屬 error。
      不與 1-2-1 共用 key：那一頁的「刪除」是送出前把檔從清單移掉（uploadFilePdf.js:480-486
      只做 `fileList.splice`），根本不會失敗。 #}
 {% set deleteCapability = "data:write" %}
-{% set deleteToast = "已刪除|這個檔案沒有留下擷取管道記錄，請先用「檔案上傳」重新匯入一次以補記|刪除失敗，請稍後再試" %}
+{% set deleteToast = "已刪除|權限不足，無法刪除|這個檔案沒有留下擷取管道記錄，請先用「檔案上傳」重新匯入一次以補記|刪除失敗，請稍後再試" %}
 {% set deleteToastKey = "toast.deleteFile" %}
-{% set deleteToastType = "success|warning|error" %}
+{% set deleteToastType = "success|warning|warning|error" %}
 {% include "components/delete-modal/delete-modal.html" %}

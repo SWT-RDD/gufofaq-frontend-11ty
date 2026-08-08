@@ -2,6 +2,18 @@
    語言＋夜間切換抽到共用 components/header-controls；桌機放這裡（nav 之後、漢堡之前），
    窄視窗改由 mobile-nav 放進展開的選單裡（header 只留 logo + 漢堡）。此選單只剩導覽與登出。
 
+   **「X 管理」的英譯構詞**（§4-2：同一組枚舉、同一層選單內要同一種構詞與大小寫）：submenu 裡
+   每一顆「X 管理」一律 `X Management`（QA Set／Glossary／Alias Table／Skill／User／Group／
+   MCP Server／Embed Key）。`nav.widgetTokens` 原本是 `Embed Keys`，而它與 `User Management`、
+   `Group Management` **同在「設定」這一張下拉卡裡**，一張卡裡兩種構詞＝兩份清單黏在一起，
+   round45 改成 `Embed Key Management`。
+   **唯一的例外是頂層的 `nav.platformMgmt`＝`Platform Admin`**，理由：它與上面那一族**不同層**
+   （頂層項，不與任何 `X Management` 並列），而且它指的不是「管理某一種資源」而是「平台管理員的
+   工作區」——這一層的下轄項各自才是資源（租戶功能開通／MCP Server 管理／平台機器憑證）。
+   翻成 `Platform Management` 會讓它讀起來像「管理平台」這個資源，與 `data-platform-role`
+   兩級角色（auditor／admin）的語意也對不上。**新增頂層項時不沿用這個例外**：submenu 裡的
+   「X 管理」照樣 `X Management`。
+
    platformRole（選填）＝這個入口需要的**最低平台角色**，渲染成 `data-platform-role`（§5 的兩級可見性契約）。
    平台層有兩種角色而不是一種：`auditor`（唯讀稽核，ISO 情境刻意設計的職責分離）與 `admin`（全權）。
    把整塊「平台管理」gate 在 is_platform_admin，等於讓稽核員在 UI 上不存在（只能手動打 URL）。

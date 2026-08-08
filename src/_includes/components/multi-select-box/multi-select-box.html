@@ -6,16 +6,38 @@
      `.date-error` 是**凍結前端的業務掛點**（`GufoFAQ_Frontend_New/js/columnSelect_excel.js:275/278`
      的 `.show()`／`.hide()`），全站零樣式、零 js——切版改由 `.form-group:has(.error)` 揭示，
      掛點原樣保留（§5 轉換契約，不是無主 class；沒有這一句它長得就像 §4 死法②）。
-     槽目錄走唯一正本 ui/field-slot-catalog（§2 的 {% from … import %}）；使用頁另外提供
-     `columnOptions`（來源欄位選項，全槽共用一份）與 `fieldExtras`（以 key 查的差異：預選值／
-     提示文字／預覽值／格式警告／額外選項），見 §3-2/§6。本元件不自帶任何槽清單。 #}
+     本元件不自帶任何槽清單，三個變數全部由使用頁供給（§3-2/§6）——**其中一個不是 `{% set %}`，
+     是 `import`**，而缺了那一行的失敗方式與缺一個 `set` 完全相同：不報錯、只是整個迴圈跑 0 次，
+     兩欄一起變成空白。使用頁 include 之前必須有這三行（§1-2：契約要含它自己需要的定義行）：
+
+       {% from "ui/field-slot-catalog/field-slot-catalog.html" import fieldSlotCatalog %}
+       {% set columnOptions = [
+             { value: "0", label: "客服問題" },
+             { value: "1", label: "客服回覆" }
+       ] %}
+       {% set fieldExtras = {
+             title: { selected: "0", placeholder: "建議選擇「標題」屬性欄位", placeholderKey: "fieldHint.title", preview: "如何申請入出國許可證" },
+             date: { placeholder: "YYYY/MM/DD HH:mm:ss || YYYY-MM-DD HH:mm:ss", preview: "2024年12月1日 下午1時", error: true }
+       } %}
+
+     （`columnOptions` 是每個來源欄一筆、`fieldExtras` 是每個要覆寫的槽一筆；上面各列兩筆同型節點示意，
+     實際筆數看使用頁。）
+
+     · `fieldSlotCatalog`（來自 ui/field-slot-catalog 的唯一正本）：逐槽的 `key`／`defaultLabel`／
+       `productOnly`。本元件對它跑三圈：非 productOnly 的欄位、`msHasProductOnly` 的偵測、
+       productOnly 的欄位。
+     · `columnOptions = [{ value, label }]`：來源欄位選項，**全部的槽共用同一份**（凍結
+       `GufoFAQ_Frontend_New/js/columnSelect_excel.js` 只算一份 `fieldOptions` 餵給每一顆 select）。
+     · `fieldExtras`：以槽 key 查的差異——`selected`（預選的 option value）／`placeholder` ＋
+       `placeholderKey`（ui/multi-select 的資料槽，§4-2）／`preview`（右欄預覽值）／
+       `error`（true 時右欄那格標紅並揭示格式警告）。查不到的 key 就是「沒有差異」，不是錯誤。 #}
 <div class="flex-row gap-40 mobile-column multi-select-box">
     {# 左欄：欄位對應。
          **兩欄的欄位 label 逐字相同**（同一份 `fieldSlotCatalog` 的槽名），而且同時可見——
          左欄問「把哪一個 Excel 欄對到這個槽」、右欄答「對完長什麼樣」，語意完全不同。
          §4：同頁同時可見、語意不同的控制項不得共用同一個可及名稱。這裡走第一條出路：
          兩欄各包一層 `role="group" aria-labelledby`，指向那顆本來就在的欄標題（「欄位對應」／「預覽」）
-         ——不動任何可見字面，也不必改 22 份 label。 #}
+         ——不動任何可見字面，也不必逐槽去改 label。 #}
     <div class="block block-lg corner-md">
         <div class="flex-row column gap-24 justify-content-center">
             <div class="flex-row column gap-8">
@@ -33,12 +55,11 @@
                             {% for option in columnOptions %}
                             <option value="{{ option.value }}"{% if msExtra.selected == option.value %} selected{% endif %}>{{ option.label }}</option>
                             {% endfor %}
-                            {# value 從陣列推導（§6 不烤字面量）：它是「來源欄位的下一個索引」，使用頁多列一欄就會與烤死的 4 撞值，而且是靜默的。 #}{% if msExtra.extraOption %}<option value="{{ columnOptions.length }}">{{ msExtra.extraOption }}</option>{% endif %}
                         </select>
                     </div>
                 </div>
                 {% endif %}{% endfor %}
-                {# product 專用槽（`field_schema` 的 role="product_only"）與其餘 21 槽分群：
+                {# product 專用槽（`field_schema` 的 role="product_only"）與其餘的槽分群：
                      混在備註 1–10 中間時，它看起來就只是第 11 個備註欄。說明掛在小標下、不塞進欄位名裡
                      ——租戶可以把它改名成「維護人」，改掉的當下括號裡那句就沒了（同 5-2 欄位命名區的處置）。
                      productOnly 是選填：沒有那一筆的使用頁（目前只有 1-1-4 有）整段不渲染。 #}
@@ -60,7 +81,6 @@
                             {% for option in columnOptions %}
                             <option value="{{ option.value }}"{% if msExtra.selected == option.value %} selected{% endif %}>{{ option.label }}</option>
                             {% endfor %}
-                            {# value 從陣列推導（§6 不烤字面量）：它是「來源欄位的下一個索引」，使用頁多列一欄就會與烤死的 4 撞值，而且是靜默的。 #}{% if msExtra.extraOption %}<option value="{{ columnOptions.length }}">{{ msExtra.extraOption }}</option>{% endif %}
                         </select>
                     </div>
                 </div>
@@ -92,7 +112,7 @@
                     </div>
                 </div>
                 {% endif %}{% endfor %}
-                {# product 專用槽（`field_schema` 的 role="product_only"）與其餘 21 槽分群：
+                {# product 專用槽（`field_schema` 的 role="product_only"）與其餘的槽分群：
                      混在備註 1–10 中間時，它看起來就只是第 11 個備註欄。說明掛在小標下、不塞進欄位名裡
                      ——租戶可以把它改名成「維護人」，改掉的當下括號裡那句就沒了（同 5-2 欄位命名區的處置）。
                      productOnly 是選填：沒有那一筆的使用頁（目前只有 1-1-4 有）整段不渲染。 #}

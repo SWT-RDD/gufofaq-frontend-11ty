@@ -51,13 +51,26 @@ permalink: 1-1-6_uploadSuccess_excel.html
      **三計數的單位是「檔」不是「列」，而且 inserted／updated 互斥**：product `datasets.py` 的單筆
      Excel 端點回的是 `"inserted": 0 if superseded else 1`、`"updated": 1 if superseded else 0`，
      兩者相加恆為 1；failed 恆為 0（失敗＝HTTP 錯誤碼，見 `import_excel` 的回應）。
-     示範走「直接新增」那一態：1-1-4 的外部主鍵欄留白＝不取代（superseded is None）⇒ inserted=1。 #}
+     示範走「直接新增」那一態：1-1-4 的外部主鍵欄留白＝不取代（superseded is None）⇒ inserted=1。
+     **`health_scan` 這一格刻意不畫在本頁**（`import_excel` 回應的頂層欄位，
+     `_post_import_health_scan` → `health_findings.scan_after_import` 的 `PostImportScanOut`：
+     `ok`／`detail`／`scan`）：那是匯入**之後**才跑的健檢，成敗兩態都由 3-5 資料健檢承接——
+     成功那一次 `_record_scan_run(trigger=SCAN_TRIGGER_IMPORT)`，由 3-5 的「上一次掃描」
+     （`GET /health/scan/last` 的 `scan`）畫；失敗那一次 `_record_scan_failure(trigger=
+     SCAN_TRIGGER_IMPORT)` 留一列，由 3-5 的 `healthScanFailure`（同一支端點的 `failure`）畫。
+     `scan_after_import` 自己的註解就是這個決定的理由：「匯入回應裡那句 `ok=false` 只有這一次
+     看得到（重新整理就沒了），而這一支的呼叫端是匯入畫面、不是健檢頁——所以失敗要留一列，
+     健檢頁才說得出『最近一次嘗試失敗了』」。 #}
 {% set importCounts = { inserted: 1, updated: 0, failed: 0 } %}
+{# `label_sync_warning`＝匯入成功（200）但設定檔標籤沒同步成的那一態。示範把它演出來：
+     這是 `import_excel` 回應裡唯一一個「成功了、但有話要說」的欄位，全站原本沒有任何落點
+     （§3-2：response 回得出的每個欄位都要有地方畫）。文字逐字取自 product
+     `i18n.py` 的 `dataset.label_sync_warning`。 #}
+{% set importLabelSyncWarning = "匯入成功，但顯示欄位標籤未能即時同步到檢索設定" %}
 {% set importFileReports = [
     {
         filename: "客服問答集.xlsx",
         droppedLinks: {
-            count: 2,
             urls: [
                 "/download/application-form.pdf",
                 "#section-3"

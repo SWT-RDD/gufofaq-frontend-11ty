@@ -25,12 +25,20 @@ permalink: 1-2-6_uploadSuccess_pdf.html
 </div>
 
 {# 上傳成功通知：PDF 流程的按鈕文字/去向與 excel 流程不同，由本頁 set 覆寫元件預設值。
-   success-desc 留空：真實頁由 js/uploadSuccess.js 動態帶入資料總量與檔案大小（業務邏輯，不轉切版）。 #}
+   資訊列走 `successDescPdf`＝**兩行、順序與 Excel 相反**（先資料總量、後檔案大小），鏡射
+   `GufoFAQ_Frontend_New/js/uploadSuccess.js` 的 `else` 分支（PDF 那條路的資料從 query string
+   來，`fileName` 其實是資料集名稱，故不畫檔名）。原本這裡 set `successHideDesc = true` 把整塊
+   拿掉——那是把「隨真 app」讀成「一句都不畫」，而 §5 的結論是**鏡射它那一句**：真 app 那一支
+   有兩行，不是零行。`successHideDesc` 全站只有這一頁用，隨之撤除。
+   示範值與 1-2-1 自洽（§6）：那一頁批次匯入 2 成功 1 失敗，成功的是 1.20MB 的 `公文範本.pdf`
+   與 0.32MB 的 `作業要點.docx`——結構化匯入一檔一份文件，故資料總量 2 筆、檔案大小 1.52MB。 #}
 {% set successRetryHref = "1-2-1_uploadFile_pdf.html" %}
 {% set successRetryLabel = "重新上傳" %}
 {% set successRetryKey = "dataImport.uploadAgain" %}
 {% set successViewHref = "3-1-1_datasetList.html" %}
 {% set successViewLabel = "開啟資料集" %}
 {% set successViewKey = "dataImport.openDataset" %}
-{% set successHideDesc = true %}
+{% set successDescPdf = true %}
+{% set successDataCount = "2" %}
+{% set successFileSize = "1.52MB" %}
 {% include "components/success-box/success-box.html" %}

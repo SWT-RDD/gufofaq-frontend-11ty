@@ -8,7 +8,18 @@
      **沒有任何列舉**，所以這份清單完全是切版自己挑的，
      沒有「平台層只能給五顆」這種契約上的理由。
      值＝IANA 時區識別字＝資料，不翻（§4-2）。
-     參數：timezoneSelected —— 預設選中的識別字（不給時一顆都不選）。 #}
+     參數：timezoneSelected（**必填**）—— 預設選中的識別字。**使用頁一律要 set**，同頁第二次
+       include 之前要重新 set（§2：set 是頁面全域，上一次的值會留著）。
+     ⚠️ 上一版寫「不給時一顆都不選」——那句做不到，而且是一句會誤導人的規格：非 `multiple` 的
+       `<select>` 沒有任何 `selected` 時，瀏覽器**必定**選第一顆並回報成 selected，於是畫面靜默宣告
+       「已經挑好 Asia/Taipei 了」，而使用者其實一次都沒挑。
+     **為什麼不加一顆 `<option value="" data-i18n="common.pleaseSelect">`**（§4「還沒挑要有一顆空值
+       承載得住」那條的兩種解法之一）：時區欄沒有「還沒挑」這一態。兩個消費點都是**設定的現值**
+       ——平台時區在 gufofaq-saas product `app/routers/platform.py` 的 `set_platform_timezone` 只驗
+       `ZoneInfo(body.timezone)` 是不是合法 IANA、沒有「未設定」的表示法；per-config 同理。空值那顆
+       送出去必定 400，等於在清單裡放一顆一定失敗的選項。而做成「要不要畫空值」的開關參數更不行：
+       兩個使用頁都不會打開它，一個零消費者的開關正是 §5 明文禁止的那一種（「留著就是下一個人的入口」）。
+       真的出現「還沒挑」的第三個消費點時，那一頁自己在 `<select>` 裡先寫一顆空值 option 再 include。 #}
 {% set timezoneOptions = [
   "Asia/Taipei", "Asia/Shanghai", "Asia/Hong_Kong", "Asia/Tokyo", "Asia/Singapore",
   "Asia/Seoul", "Asia/Kuala_Lumpur", "Asia/Bangkok", "UTC",

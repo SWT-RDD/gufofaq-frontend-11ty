@@ -49,10 +49,16 @@ permalink: 5-3_statsModule.html
      僅保留原生 class 與 disabled 預設狀態）+ 查詢資料類型單選 #}
 <div class="block flex-row column gap-24 mt-10">
     <div class="flex-row column gap-16">
-        {# 這一列與 5-4 逐字相同，抽成 components/data-time-filter（§3-3）。 #}
+        {# 這一列與 5-4 逐字相同，抽成 components/data-time-filter（§3-3）。
+             `timeFilterRangeHintId`＝下面那顆「查詢」鈕 `data-toast` 裡 365 的**常駐可見抄本**所在的
+             節點 id（起訖兩欄 aria-describedby 指它）。屬性型譯文（`data-i18n-data-toast`）只有在
+             「同一個約束另有一處常駐可見的資料節點承載」時才准把常數烤進譯文（§4-2）——這個 id
+             就是那一處；沒有它，365 改了譯文會靜默過期。上游符號名見該元件檔頭與本頁查詢鈕註解
+             （product `app/routers/stats.py` 的 `_resolve_range`）。 #}
         {% set timeFilterName = "data-time" %}
         {% set timeFilterLabelId = "dataTimeFilterLabel" %}
         {% set timeFilterChecked = "lastWeek" %}
+        {% set timeFilterRangeHintId = "dataTimeRangeHint" %}
         {% include "components/data-time-filter/data-time-filter.html" %}
         {# 統計維度：`dataset`（依資料集）或 `attribution:<slot>`（依租戶指定的歸因欄位分群）。
              值域＝上面的 attributionSlots（product `field_schema.ATTRIBUTION_SLOT_KEYS`），選項文字是
@@ -98,8 +104,8 @@ permalink: 5-3_statsModule.html
         {% set dataTypeLabelId = "queryDataTypeLabel" %}
         {% include "components/data-type-filter/data-type-filter.html" %}
     </div>
-    {# 這一頁的查詢打的是 `GET /stats`，`_fetch_logs` 對 `total > MAX_STATS_LOGS`（5000，stats.py）
-         回 400「此時間範圍資料量過大…請縮小範圍」（stats.py 的 `_fetch_logs`／`stats.too_many_logs`）。時間篩選最長給到 365 天，
+    {# 這一頁的查詢打的是 `GET /stats`，`_fetch_logs` 對 `total > MAX_STATS_LOGS`（5000，product app/routers/stats.py）
+         回 400「此時間範圍資料量過大…請縮小範圍」（product app/routers/stats.py 的 `_fetch_logs`／`stats.too_many_logs`）。時間篩選最長給到 365 天，
          這是按幾下就撞得到、而且使用者自己縮小範圍就修得掉的結果——折進「載入資料失敗，請重新整理頁面」
          等於叫人重整一個永遠不會成功的請求，故另立 key 加一段 warning（§5）。
          左邊那顆換成全站篩選列正典的 `.js-filter-clear`「清除」（ui/filter-fields 提供行為，

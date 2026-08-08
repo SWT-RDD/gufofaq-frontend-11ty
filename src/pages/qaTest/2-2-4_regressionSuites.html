@@ -70,7 +70,7 @@ permalink: 2-2-4_regressionSuites.html
                        數字不烤進譯文（§4-2）：拆成「前綴 key ＋數字節點＋單位 key」，同頁
                          `#newCaseQuestionHint`（2000）與 `#assertionCriteriaHint`（1024）就是這個形狀——
                          上限一旦改動，要改的只有 maxlength 與這一個數字節點，兩份譯文都不必動。 #}
-                    <span class="text-gray" id="newSuiteNameHint"><span data-i18n="regression.suiteNameLimit">名稱字數上限：</span><span>200</span><span data-i18n="regression.charsUnit"> 字</span></span>
+                    <span class="text-gray" id="newSuiteNameHint"><span data-i18n="regression.suiteNameLimit">名稱字數上限：</span><span>200</span><span data-i18n="common.unitChars"> 字</span></span>
                 </div>
             </div>
         </div>
@@ -98,7 +98,7 @@ permalink: 2-2-4_regressionSuites.html
      `summary.total` 是跑完當下寫死的數字，連帶刪掉會讓那些歷史對不起來。所以刪除是
      條件開窗（先選定要刪哪一列）＝ hook class、不掛 data-open-modal（GUIDELINE §5）。
      示範 2 筆：一筆跑過（4 次執行）、一筆沒跑過——兩種列都要看得到。
-     列序照 `list_suites` 的 `.order_by(TestSuite.id.desc())`（regression.py，docstring
+     列序照 `list_suites` 的 `.order_by(TestSuite.id.desc())`（product app/routers/regression.py，docstring
      寫明「新到舊」）：id 大的在前，否則這張表是端點產不出來的順序（§6）。 #}
 {# id＝案例集主鍵（product 的 TestSuite.id，整數；regression.py `_owned_suite(db, tenant_id, suite_id)`）。
      **不可拿 loop.index 當列鍵**：這張表刪得掉列，位置不是身分——刪掉第一列之後第二列就頂上
@@ -107,8 +107,30 @@ permalink: 2-2-4_regressionSuites.html
   { id: 8, name: "追問情境集（多輪）", desc: "承接前一輪主題的追問題目", caseCount: 6, runCount: 0, createdAt: "2026/07/02 14:41" },
   { id: 7, name: "關稅問答基準集", desc: "上線前必跑的 12 題", caseCount: 12, runCount: 4, createdAt: "2026/06/12 10:05" }
 ] %}
+{# 分頁：`list_suites`（product app/routers/regression.py）收 `limit`／`offset` 兩個查詢參數並回
+     `{suites, total_count}`，docstring 逐字寫著「**分頁沒有總數等於沒有分頁**——呼叫端算不出
+     還有幾頁，只能拿『這一頁滿了嗎』去猜，而剛好整除的那一次就會少一頁」。這三樣原本在整個
+     切版零落點：既沒有總數、也沒有頁碼列、也沒有改每頁筆數的地方，等於那段 docstring 講的事
+     在前端整個不存在（§3-2：request 收得下的每個查詢參數都要有落點、response 回得出的每個
+     欄位都要有地方畫）。版型照 4-1（`ui/data-info` 型① ＋ `components/pager-row`）。
+     `total`／`perPage` 在這裡宣告一次，計數列與頁尾的 pager-row 共用同一份（§6 同源）。
+     · `total` ＝ `total_count`。**它不能為了讓頁碼列好看而挑大**：這張表照
+       `.order_by(TestSuite.id.desc())` 排（新到舊），第一列是 id 8 ⇒ 這個租戶的案例集 id
+       最大就是 8 ⇒ 總數不可能超過 8。示範租戶正好有 8 套（8、7 是最新的兩套，其餘六套 id 更小、
+       同樣落在第一頁）。
+     · `perPage` ＝ 20：全站列表的節奏（3-1-1／3-1-3／3-1-6／4-1／1-1-3 同值），也必須是
+       `components/page-size-select` 那四個級距（10/20/50/100）之一——不在級距上的話那顆下拉
+       一個 `selected` 都沒有，畫面會顯示 10 而頁碼按 20 算。React 端把它送成 `limit`、
+       把頁碼送成 `offset`（端點的 `DEFAULT_SUITES_PAGE`＝200、`MAX_SUITES_PAGE`＝1000，
+       20 在 `ge=1, le=1000` 的值域內）。
+     · 8 ÷ 20 ＝ 1 頁 ⇒ **這一頁演的是「頁數少到全部列出」那一態**（同 4-1 桌機那一態）；
+       滑動視窗與省略號由 1-1-3（49 頁）與元件庫頁（12 頁）負責，不必為了演它把總數編成一個
+       這張表的列序產不出來的數字。 #}
+{% set total = 8 %}
+{% set perPage = 20 %}
 <div class="block mt-16 flex-row column gap-16">
     <div class="text-md text-bold" data-i18n="regression.suiteList">案例集清單</div>
+    <div class="data-info"><span data-i18n="common.total">共</span> {{ total }} <span data-i18n="common.recordsUnit">筆</span></div>
     <div class="table-container scrollTable">
         <table class="default-table">
             <colgroup>
@@ -150,6 +172,8 @@ permalink: 2-2-4_regressionSuites.html
             </tbody>
         </table>
     </div>
+    {# 頁碼列 ＋ 每頁筆數（`limit`／`offset` 的落點）。參數在上面那則註解的 set 一次，不再重設。 #}
+    {% include "components/pager-row/pager-row.html" %}
 </div>
 
 {# ── 檢視中的案例集：案例清單 ───────────────────────────────────────────────
@@ -200,9 +224,13 @@ permalink: 2-2-4_regressionSuites.html
         <div class="flex-row gap-10 align-items-center">
             <button type="button" class="button button-border button-sm js-expand-all" data-i18n="common.expandAll">全部展開</button>
             <button type="button" class="button button-border button-sm js-collapse-all" data-i18n="common.collapseAll">全部收合</button>
-            <button data-capability="settings:write history" type="button" class="button button-primary button-sm js-case-from-log" data-i18n="regression.fromLog">從問答紀錄建立案例</button>
-            {# 兩顆能力 token 並列＝AND（兩顆都要有）：建案例是 settings:write，而它讀的提問與答案原文
-                 要 history。多值一律 AND，見 §4。 #}
+            {# **條件開窗**（開窗前要先選定「加到哪一個案例集」）⇒ 只留 hook class、不掛 data-open-modal（§5 ①）。
+                 **閘門宣告不在這顆鈕上**：真正送 `POST /qatest/suites/{id}/cases/from-log` 的是窗內那顆
+                 「建立案例」，所以 `data-capability="settings:write history"`（兩顆並列＝AND）的家在
+                 `components/case-from-log-modal` 的確認鈕上，那裡也寫著為什麼是這兩顆（§4：觸發鈕只負責
+                 「先選定要動哪一筆」）。同頁另兩顆條件開窗鈕（刪除案例集／刪除案例）本來就是這個形狀
+                 ——閘門開在 delete-modal 的 `deleteCapability` 參數上，三顆因此一致。 #}
+            <button type="button" class="button button-primary button-sm js-case-from-log" data-i18n="regression.fromLog">從問答紀錄建立案例</button>
         </div>
     </div>
     <div class="table-container scrollTable">
@@ -348,7 +376,7 @@ permalink: 2-2-4_regressionSuites.html
         </div>
         <div class="field">
             <textarea id="newCaseQuestion" class="form-control" maxlength="2000" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" aria-describedby="newCaseQuestionHint" required>臺灣輸美鋼品的關稅稅率是多少</textarea>
-            <p id="newCaseQuestionHint" class="text-gray"><span data-i18n="regression.caseQuestionLimit">問題字數上限：</span><span>2000</span><span data-i18n="regression.charsUnit"> 字</span><span data-i18n="regression.caseQuestionBlank">。只有空白（含全形空白）會被擋下，不會存成一則每次重放都拿到錯誤的案例。</span></p>
+            <p id="newCaseQuestionHint" class="text-gray"><span data-i18n="regression.caseQuestionLimit">問題字數上限：</span><span>2000</span><span data-i18n="common.unitChars"> 字</span><span data-i18n="regression.caseQuestionBlank">。只有空白（含全形空白）會被擋下，不會存成一則每次重放都拿到錯誤的案例。</span></p>
         </div>
     </div>
 
@@ -501,7 +529,7 @@ permalink: 2-2-4_regressionSuites.html
                     </div>
                     <div class="field">
                         <textarea id="assertionCriteria-{{ loop.index }}" class="form-control js-assertion-criteria" maxlength="1024" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" aria-describedby="assertionCriteriaHint-{{ loop.index }}">{{ a.criteria }}</textarea>
-                        <p id="assertionCriteriaHint-{{ loop.index }}" class="text-gray"><span data-i18n="regression.assertionCriteriaHint">判準原文每評一次就進一次提示詞（一次回歸是幾十則答案 × 每則好幾條判準）。判準字數上限：</span><span>1024</span><span data-i18n="regression.charsUnit"> 字</span></p>
+                        <p id="assertionCriteriaHint-{{ loop.index }}" class="text-gray"><span data-i18n="regression.assertionCriteriaHint">判準原文每評一次就進一次提示詞（一次回歸是幾十則答案 × 每則好幾條判準）。判準字數上限：</span><span>1024</span><span data-i18n="common.unitChars"> 字</span></p>
                     </div>
                 </div>
                 {% endif %}
@@ -584,8 +612,10 @@ permalink: 2-2-4_regressionSuites.html
 
      ## LLM模型是 select，不是輸入框
 
-     可選的模型＝這個租戶被允許使用的那幾顆（`GET /qatest/models`＝GufoRAG 模型目錄 ∩ 平台開通
-     給該租戶的清單，同 2-2-1／2-2-3）。**自由輸入的失敗方式是「要按下開始執行才知道打錯」**
+     可選的模型＝這個租戶被允許使用的那幾顆：`GET /qatest/models`（product `app/routers/qatest.py`
+     的 `list_models`，回的是 GufoRAG 模型目錄經同檔 `effective_models` 與租戶白名單取交集之後的
+     那幾筆，識別字是每一筆的 `value`、形狀 `<provider>:<model>`）。
+     **自由輸入的失敗方式是「要按下開始執行才知道打錯」**
      ——後端回 403「無權限使用模型」，而那一次已經耗掉了使用者的等待。
 
      兩句紅字是**選了目錄裡 product 自己驅動不了的那種模型**時才出現的（切版用 `hidden` 演兩態）。
@@ -645,7 +675,7 @@ permalink: 2-2-4_regressionSuites.html
                     {# 模型目錄與 5-2／manage-tenant-modal 是同一份（§6 不得各烤一份，那三處都源自
                          `gufo.list_models()`）。示範沿用 5-2 的 `llmModels` 那一組值，多加一顆
                          **供應商不在 PROVIDER_PREFIXES 裡**的（`google:gemini-2-flash`）——
-                         下面那兩條紅字才有觸發者：`llm.py` 的 `PROVIDER_PREFIXES = ("openai:", "anthropic:")`
+                         下面那兩條紅字才有觸發者：product `app/llm.py` 的 `PROVIDER_PREFIXES = ("openai:", "anthropic:")`
                          決定第一條，同檔的 `REASONING_EFFORT_PREFIXES = ("openai:",)` 決定第二條。
                          原本三顆全落在 openai/anthropic 裡，第一條紅字沒有任何一顆演得出來（§5）。 #}
                     {% set runLlmModels = ["openai:gpt-4o", "openai:gpt-4o-mini", "openai:gpt-4.1", "anthropic:claude-3-5-sonnet", "google:gemini-2-flash"] %}
@@ -727,7 +757,13 @@ permalink: 2-2-4_regressionSuites.html
                         <input type="checkbox" aria-labelledby="runSampleTotalLabel overrideThisRunText" class="js-override-search-total-number" checked>
                         <span data-i18n="regression.overrideThisRun">這一次改用指定值</span>
                     </label>
-                    <input type="number" min="1" max="100" step="1" id="runSampleTotal" class="form-control js-sample-total" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" aria-describedby="runSampleTotalHint" value="24">
+                    <input type="number" min="1" max="100" step="1" id="runSampleTotal" class="form-control js-sample-total" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" aria-describedby="runSampleTotalRange runSampleTotalHint" value="24">
+                    {# 三件套的**第三件是「區間本身」**（§4）：原本 `aria-describedby` 只指到下面那句
+                         模式適用性——被指到的節點裡讀不到 1 與 100，等於沒給。區間出處＝product
+                         `app/chat_config_limits.py` 的 `MIN_SEARCH_NUMBER`／`MAX_SEARCH_NUMBER`
+                         （1／100，`qatest.py` 的 `TestConfig.search_total_number` 以 ge/le 夾住），
+                         與 2-2-1／2-2-3 同欄同源。數字獨立成不翻的節點（§3-2）。 #}
+                    <span class="text-gray" id="runSampleTotalRange">1 – 100</span>
                     <p id="runSampleTotalHint" class="text-gray" data-i18n="regression.sampleTotalOnlyTraditional">只在傳統搜尋模式生效。對話模式沿用設定檔時，這一欄會不會被用到取決於設定檔目前是哪個模式——跑完看報表的「這一輪實際用的設定」。</p>
                 </div>
             </div>
@@ -744,7 +780,17 @@ permalink: 2-2-4_regressionSuites.html
             <input type="checkbox" aria-labelledby="runPromptInputLabel overrideThisRunText" class="js-override-prompt" checked>
             <span data-i18n="regression.overrideThisRun">這一次改用指定值</span>
         </label>
-        <textarea id="runPromptInput" class="form-control size-lg js-prompt-input">你是一位專業的知識庫問答助手，回答必須僅依據檢索到的資料片段。資料不足時明確說明「無法從現有資料判斷」。</textarea>
+        {# 長度上限是契約欄位（§3-2 上限寫在消費點）：正本是 product `app/chat_config_limits.py` 的
+             `MAX_SINGLE_PROMPT_LEN`（＝20000），由 `app/routers/qatest.py` 的
+             `TestConfig.prompt: str | None = Field(default=None, max_length=MAX_SINGLE_PROMPT_LEN)`
+             夾住——這一欄的值原樣進 `overrides`，超長是 `_build_override_config` 的
+             `regression.bad_override_values` 400（見上方開始執行鈕的 warning 段）。
+             同頁另三格（`#newSuiteName` 200／`#newCaseQuestion` 2000／`#assertionCriteria` 1024）
+             早就是這個形狀，就這一格沒接：貼一份兩萬字以上的提示詞進來，按下去只會拿到一句
+             紅色的失敗，而重試永遠不會成功。
+           數字不烤進譯文（§4-2）：拆成「前綴 key ＋數字節點＋單位 key」。 #}
+        <textarea id="runPromptInput" class="form-control size-lg js-prompt-input" maxlength="20000" aria-describedby="runPromptInputHint">你是一位專業的知識庫問答助手，回答必須僅依據檢索到的資料片段。資料不足時明確說明「無法從現有資料判斷」。</textarea>
+        <p id="runPromptInputHint" class="text-gray"><span data-i18n="regression.runPromptLimit">提示詞字數上限：</span><span>20000</span><span data-i18n="common.unitChars"> 字</span></p>
     </div>
 
     <div class="flex-row gap-24 flex-wrap">
@@ -782,14 +828,32 @@ permalink: 2-2-4_regressionSuites.html
         {# 閘門：這顆過**兩道不同種類**的關（§4 授權軸）——`run_suite` 先吃群組能力
              `require_capability("settings","write")`，函式體內再吃租戶功能開通
              `require_tenant_feature(db, tenant_id, "ask")`。兩者失敗的方式不同：前者換一個群組就過得了，
-             後者是整個租戶被平台關掉（連租戶管理員也擋），所以不能折進同一個屬性。 #}
-        <button data-capability="settings:write" data-tenant-feature="ask" type="button" class="button button-primary" data-toast="開始執行回歸…|回歸執行完成|這個案例集還沒有任何案例，沒有東西可以跑|案例數超過單次執行上限，請拆成多個案例集|執行中斷，已完成的結果保留" data-i18n-data-toast="toast.runRegression" data-toast-type="info|success|warning|warning|error" data-i18n="regression.startRun">開始執行</button>
+             後者是整個租戶被平台關掉（連租戶管理員也擋），所以不能折進同一個屬性。
+           ⚠️ **`|` 是索引契約**：本輪在中間插了一段、尾端加了一段，React 端凡是照 `split("|")` 的
+             位置取用 `toast.runRegression` 的地方都要跟著位移（分支順序＝上游 raise 的先後）。
+             逐段對回 product `app/routers/regression.py` 的 `run_suite`：
+               ① info    ＝送出的當下（SSE `started`）
+               ② success ＝SSE `finished` 且 `status == "finished"`
+               ③ warning ＝400 `regression.suite_has_no_cases`（`if not case_rows`）
+               ④ warning ＝400 `regression.too_many_cases`（`len(case_rows) > MAX_CASES_PER_RUN`）
+               ⑤ warning ＝400 `regression.bad_override_values`（`_build_override_config` 的
+                            `except ValidationError`）。**本頁自己製造得出來**：全站零 `<form>`，
+                            `min`／`max`／`maxlength` 不會觸發原生驗證，取用資料筆數打 0 或 500、
+                            提示詞貼超過 20000 字，按下去就是這一段。使用者當場改得掉 ⇒ warning。
+               ⑥ error   ＝502 `regression.profile_out_of_overridable_range`（`_inherit_from_profile`
+                            的 `except ValidationError`：被測設定檔存著一個超出可覆寫值域的值）。
+                            **這是開跑前就失敗**，一則結果都沒有，所以不能與下面那段共用文案。
+               ⑦ error   ＝SSE `finished` 且 `status == "aborted"`（跑到一半 `RegressionAborted`，
+                            已 commit 的那幾則保留——與 ⑥ 的差別就在這裡）。
+             `unknown_override_fields` 那道 400 刻意不列：那是「前端送了 `_OVERRIDE_FIELDS` 以外的鍵」，
+             畫面上沒有任何控制項製造得出來（六顆覆寫欄的鍵是寫死的），列了就是演一個不可能的結果。 #}
+        <button data-capability="settings:write" data-tenant-feature="ask" type="button" class="button button-primary" data-toast="開始執行回歸…|回歸執行完成|這個案例集還沒有任何案例，沒有東西可以跑|案例數超過單次執行上限，請拆成多個案例集|這一次指定的覆寫值超出可用範圍，請改回範圍內再跑|被測設定檔存著一個超出可覆寫範圍的值，這一輪一則都沒有跑到，請回報|執行中斷，已完成的結果保留" data-i18n-data-toast="toast.runRegression" data-toast-type="info|success|warning|warning|warning|error|error" data-i18n="regression.startRun">開始執行</button>
     </div>
 </div>
 
 {# ── 執行紀錄 ───────────────────────────────────────────────────────────────
      示範 4 筆刻意演三種終態：完整跑完（兩筆）、中斷（要看得出原因與實際跑到幾則）、還在跑。
-     列序照 `get_suite` 的 `.order_by(RegressionRun.started_at.desc())`（regression.py）：
+     列序照 `get_suite` 的 `.order_by(RegressionRun.started_at.desc())`（product app/routers/regression.py）：
      最新的 #313（也正是「進行中」那一筆）必須在第一列。
      「看報表」連到 2-2-5；匯出是送 API 的鈕，中斷過的執行匯出時列數會少，故該列旁邊
      當場講出來（後端也會在 CSV 最後一列附註，見 `_partial_notice`）。

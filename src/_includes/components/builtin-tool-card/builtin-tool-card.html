@@ -21,6 +21,9 @@
     tool.title / tool.desc＝中文標題／中文解釋（chrome，走 i18n）
     tool.params＝參數陣列 [{ name, required, desc }]（唯讀清單；空陣列＝顯示「無參數」）
     tool.enabled＝啟用開關初始狀態
+    tool.requiresUnmet（選填）＝這顆工具的建構前提**沒滿足**時，那個前提的 config 欄位名（如
+      `qa_direct_enabled`）。有值時卡頭多一顆「已勾選，但本輪不會生效——缺少前提：<欄位名>」的標記；
+      值是**識別字**（config 欄位名，不翻，走 ui/inline-code），由使用頁算出來（判準見下方該處註解）
     tool.customized＝true 時卡頭顯示「已自訂」標記，且該卡預設展開（.open + aria-expanded=true）
     tool.defaultDescription＝「工具描述」欄的 placeholder（＝內建預設描述原文）
     tool.description / tool.extraPrompt（選填）＝兩欄的現有自訂值（customized 的卡要填，否則
@@ -58,8 +61,10 @@
 
   與交辦規格的三處刻意差異：①識別字用 ui/inline-code 原子（識別字＝墨色 chip 是全站既有正本，
     §4 不另造第二種識別字視覺），非另寫一份灰字樣式；②「範例」的 i18n 值含冒號（settings.toolExample
-    ＝「範例：」），因為 §4-2 要求標點折進 key、且全站已有一顆繁中「範例」的 key（settings.policyExamples）；
-    ③「參數」用既有的 agent.params，不新立 settings.toolParams（§4-2 同繁中沿用既有 key）。
+    ＝「範例：」），因為 §4-2 要求標點折進 key——這顆的用途是句首標籤（後面接一段範例文字），與 5-2
+    政策主題那一欄的表頭（settings.policyExamples，現值「範例（逗號分隔）」）不是同一個繁中原文，
+    故兩顆並存不違反「同繁中沿用既有 key」；③「參數」用既有的 agent.params，不新立 settings.toolParams
+    （§4-2 同繁中沿用既有 key）。
   上限 1024 是後端寫入層硬限制（product app/tool_refs.py 的 MAX_BUILTIN_TOOL_TEXT_LEN = 1024，
     與 chatbot app/services/config.py 同名常數逐字相同），故 maxlength 與字數提示共用本元件的
     builtinToolMaxLen（§6：一個數字只有一份真相）。 #}
@@ -85,9 +90,11 @@
              `BUILTIN_TOOL_PREREQUISITES` 導出，並有測試逐條把該欄位清空、斷言那顆工具真的消失，
              所以那份宣稱被釘成事實）。requires 裡的欄位就在同一頁的「QA 直答」子頁籤上，
              所以這個狀態即時算得出來：任一欄為空／false 就標。
-             `tool.requiresUnmet` 是使用頁算完的結果（切版沒有那個算術），值是 config 欄位名、不翻。 #}
+             `tool.requiresUnmet` 是使用頁算完的結果（切版沒有那個算術），值是 config 欄位名、不翻
+             ——它是**識別字**，故走 ui/inline-code（同卡的工具名與參數名同辦；原本是裸文字，
+             §4「識別字＝墨色 chip 是全站既有正本，不另造第二種識別字視覺」）。 #}
         {% if tool.requiresUnmet %}
-        <span class="builtin-tool-flag is-inert"><span data-i18n="settings.toolRequiresUnmet">已勾選，但本輪不會生效——缺少前提：</span>{{ tool.requiresUnmet }}</span>
+        <span class="builtin-tool-flag is-inert"><span data-i18n="settings.toolRequiresUnmet">已勾選，但本輪不會生效——缺少前提：</span><code class="inline-code">{{ tool.requiresUnmet }}</code></span>
         {% endif %}
         <label class="switch builtin-tool-switch">
             {# 值載體：只掛 hook class，成敗由 React 送 API 後演（§5 組合矩陣②）。
@@ -126,6 +133,16 @@
                 {% endfor %}
             </div>
 
+            {# 兩欄共用的**格式約束**（§4：帶約束條件的輔助文字掛 id ＋控制項 aria-describedby，
+                 且要常駐可見——不可只活在 placeholder 或錯誤態）。長度上限由 maxlength 宣告在控制項上、
+                 字數提示即時顯示；「不得含標籤」這一道 maxlength 表達不了，先前畫面上一個字都沒有，
+                 撞到只會得到一則 400。兩邊逐字同一道守衛：product `app/tool_refs.py` 的 `_XML_TAG_RE`
+                 （`assert_valid_builtin_tool_overrides` 命中即 400 `builtin.override_has_tags`）、
+                 GufoRAG chatbot `app/services/config.py` 走 `app/services/prompt_text.py` 的
+                 `contains_markup`（同一顆 `XML_TAG_RE`）。它判的是「任何 `<…>` 形狀」，不辨識真假標籤
+                 ——上游的註解逐字寫著「看起來不像標籤所以放行正是繞過的起點」，所以文案講的是角括號。 #}
+            <p class="builtin-tool-example m-0" id="tool-{{ tool.name }}-markup-hint" data-i18n="settings.toolNoMarkupHint">下面兩欄都會原文寫進工具描述（＝常駐系統提示詞的一部分），所以不可以出現角括號，任何 XML／HTML 標籤形狀都會被擋下。</p>
+
             <div class="form-group">
                 <div class="label">
                     <label for="tool-{{ tool.name }}-description" class="control-label" data-i18n="settings.toolDescription">工具描述（使用時機）</label>
@@ -135,7 +152,7 @@
                          aria-describedby 接範例與字數上限（§4：帶約束條件的輔助文字要接得起來）。 #}
                     <textarea id="tool-{{ tool.name }}-description" class="form-control size-sm js-tool-description"
                         maxlength="{{ builtinToolMaxLen }}" placeholder="{{ tool.defaultDescription }}"
-                        aria-describedby="tool-{{ tool.name }}-description-example tool-{{ tool.name }}-description-count">{{ tool.description }}</textarea>
+                        aria-describedby="tool-{{ tool.name }}-markup-hint tool-{{ tool.name }}-description-example tool-{{ tool.name }}-description-count">{{ tool.description }}</textarea>
                     <div class="flex-row justify-content-between flex-wrap gap-8">
                         <span class="builtin-tool-example" id="tool-{{ tool.name }}-description-example"><span data-i18n="settings.toolExample">範例：</span><span data-i18n="tool.{{ tool.name }}.example.description">{{ tool.exampleDescription }}</span></span>
                         <span class="builtin-tool-count" id="tool-{{ tool.name }}-description-count">{{ tool.description.length or 0 }} / {{ builtinToolMaxLen }}</span>
@@ -150,7 +167,7 @@
                 <div class="field">
                     <textarea id="tool-{{ tool.name }}-extra-prompt" class="form-control size-sm js-tool-extra-prompt"
                         maxlength="{{ builtinToolMaxLen }}"
-                        aria-describedby="tool-{{ tool.name }}-extra-prompt-example tool-{{ tool.name }}-extra-prompt-count">{{ tool.extraPrompt }}</textarea>
+                        aria-describedby="tool-{{ tool.name }}-markup-hint tool-{{ tool.name }}-extra-prompt-example tool-{{ tool.name }}-extra-prompt-count">{{ tool.extraPrompt }}</textarea>
                     <div class="flex-row justify-content-between flex-wrap gap-8">
                         <span class="builtin-tool-example" id="tool-{{ tool.name }}-extra-prompt-example"><span data-i18n="settings.toolExample">範例：</span><span data-i18n="tool.{{ tool.name }}.example.extraPrompt">{{ tool.exampleExtraPrompt }}</span></span>
                         <span class="builtin-tool-count" id="tool-{{ tool.name }}-extra-prompt-count">{{ tool.extraPrompt.length or 0 }} / {{ builtinToolMaxLen }}</span>

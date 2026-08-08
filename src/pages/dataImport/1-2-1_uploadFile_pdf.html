@@ -29,8 +29,9 @@ permalink: 1-2-1_uploadFile_pdf.html
 {# 上傳區：這一條是**非結構化文件**流程，可多選、上限 30MB，與元件預設（.xlsx、單檔、10MB）不同，
      由本頁 set 覆寫（§6）。
      **本頁是三個執行期變體的靜態合體**：真 app 由 1-1-1 的卡片帶 `?type=pdf|word|image` 進來，
-     uploadFilePdf.js:98 的 getFileTypeConfig 依 type 查表，:130 才把 accept 寫上去、:133 一併改寫
-     說明文字（pdf→`.pdf`／word→`.doc,.docx`／image→`.png,.jpg,.jpeg`）。切版沒有查詢字串，
+     uploadFilePdf.js:98 的 getFileTypeConfig 依 type 查表，:130 才把 accept 寫上去、:134 一併改寫
+     說明文字（`$('.upload-desc').text(...)`；:133 是它上面那行算 maxSize 的
+     `uploadedFolderVM?.MaxPDFSize || 30`）（pdf→`.pdf`／word→`.doc,.docx`／image→`.png,.jpg,.jpeg`）。切版沒有查詢字串，
      一頁只有一組 accept，故取三者的**聯集**——上傳選單那四張卡有三張指向本頁（PDF／WORD／Image，
      見 ui/upload-card），accept 只要少列一種，那張卡就變成點得進來、卻選不到自己廣告的檔案的死路。
      說明文字同理列全三種，另立 key（不沿用 `dataImport.uploadDescPdf`）：那顆是「PDF 卡」的說明，
@@ -47,22 +48,29 @@ permalink: 1-2-1_uploadFile_pdf.html
 {# 檔案列表表格：真實頁 thead/tbody 皆為 js/uploadFilePdf.js 動態渲染（renderTableHeaders()/renderFileList()），
      欄位取其固定欄（檔案名稱、標題、時間、檔案大小、功能，略過依租戶而異的自訂欄位），
      用 set+for 資料化示範 3 筆，father/table class 沿用 ui/default-table 同一組真實系統 class #}
-{# PDF 與 Word 同一條流程，故示範兩種副檔名各一（另加一筆演匯入失敗）。 #}
+{# PDF 與 Word 同一條流程，故示範兩種副檔名各一（另加一筆演匯入失敗）。
+     **檔名是使用者本機挑的那個原始檔名，不是落地檔名**：這張表畫的是**還沒送出**的待上傳清單
+     （真 app `uploadFilePdf.js` 的 renderFileList 印的是 `file.UploadPDFFile.name`＝File 物件的
+     `name`），落地檔名要等 product 寫檔時才生成。順帶：product 的落地檔名是
+     `{14位時間戳}_{6位hex}_{序號}_{原始檔名}`（`dataset_ops.stored_filename`），
+     原本這裡寫的 `{14位時間戳}_{原始檔名}` 是 product 產不出來的形狀——
+     `history.py` 的 `_STORED_PREFIX = re.compile(r"^\d{14}_[a-f0-9]{6}_\d+_")` 靠那段 hex
+     剝前綴，少了它連下載都認不出來。 #}
 {% set fileRows = [
     {
-        name: "20251119105623_公文範本.pdf",
+        name: "公文範本.pdf",
         title: "公文範本",
         time: "2025/11/19 10:56",
         sizeMB: "1.20"
     },
     {
-        name: "20251119112044_作業要點.docx",
+        name: "作業要點.docx",
         title: "作業要點",
         time: "2025/11/19 11:20",
         sizeMB: "0.32"
     },
     {
-        name: "20251120091503_服務條款.pdf",
+        name: "服務條款.pdf",
         title: "服務條款",
         time: "2025/11/20 09:15",
         sizeMB: "0.85"
@@ -163,14 +171,33 @@ permalink: 1-2-1_uploadFile_pdf.html
    回傳後在此以 default-table 逐檔如實顯示（混合成敗都要顯示，不可只報成功＝fail-loud）。
    成功列狀態＝匯入成功（text-bold，只有字重、沒有顏色——工具層沒有綠色文字 class，
    而「成功」不靠顏色表達也讀得出來），失敗列＝匯入失敗（text-red 紅字）+ 錯誤訊息。
-   示範 2 成功 1 失敗共三列；真實頁筆數由送出結果動態渲染。 #}
-{# 成功/失敗拆兩陣列（§6：數字能推導就從陣列渲染、不烤字面量；正典＝5-6-1 審核結果拆 ok/fail 兩陣列）。 #}
+   示範 2 成功 1 失敗共三列；真實頁筆數由送出結果動態渲染。
+   **`health_scan` 這一格刻意不畫在本頁**（`batch_import_documents` 回應的第三個頂層欄位，
+   `_post_import_health_scan` → `health_findings.scan_after_import` 的 `PostImportScanOut`：
+   `ok`／`detail`／`scan`）：那是匯入**之後**才跑的健檢，成敗兩態都由 3-5 資料健檢承接——
+   成功那一次寫進 `_record_scan_run(trigger=SCAN_TRIGGER_IMPORT)`，由 3-5 的「上一次掃描」
+   （`GET /health/scan/last` 的 `scan`）畫；失敗那一次由 `_record_scan_failure(trigger=
+   SCAN_TRIGGER_IMPORT)` 留一列，由 3-5 的 `healthScanFailure`（同一支端點的 `failure`）畫。
+   那支的註解自己寫著理由：「匯入回應裡那句 `ok=false` 只有這一次看得到（重新整理就沒了），
+   而這一支的呼叫端是匯入畫面、不是健檢頁——所以失敗要留一列，健檢頁才說得出『最近一次嘗試
+   失敗了』」。在這裡再畫一份＝同一件事兩個正本，而且重新整理就消失的那一份會先過期。 #}
+{# 成功/失敗拆兩陣列（§6：數字能推導就從陣列渲染、不烤字面量；正典＝5-6-1 審核結果拆 ok/fail 兩陣列）。
+     **`results[].filename` 是原始檔名**：`batch_import_documents` 逐檔條目寫的是
+     `orig = Path(f.filename or "unnamed").name`，不是落地檔名（那個要等 `_import_one_document`
+     寫檔才生成，而且失敗的那一檔根本沒有落地檔名）。
+     **訊息取 `dataset.storage_exceeded`（「儲存空間不足」）**：`results[].error` 的值域是
+     `dataset.only_pdf_docx`／`slots.unknown`／`dataset.storage_exceeded`（`assert_storage_quota`
+     的 413，經 `_result_error` 攤成 `error` 字串）／`PdfReadError`／`DocxReadError`／
+     `dataset.structured_pipeline_failed`。其中只有儲存額度是「前兩檔寫進去了、第三檔才撞上」的
+     那一種——額度是逐檔在 `_import_one_document` 裡現算的，而副檔名／讀檔失敗與檔案順序無關。
+     原本寫的「萃取額度已用罄」是**另一支端點**的話（`quota.extraction_exceeded` 全 product 只在
+     `routers/extract.py` 丟、而且是 429），這條批次匯入的路完全不碰萃取額度。 #}
 {% set batchOkRows = [
-    { filename: "20251119105623_公文範本.pdf", message: "" },
-    { filename: "20251119112044_作業要點.docx", message: "" }
+    { filename: "公文範本.pdf", message: "" },
+    { filename: "作業要點.docx", message: "" }
 ] %}
 {% set batchFailRows = [
-    { filename: "20251120091503_服務條款.pdf", message: "萃取額度已用罄" }
+    { filename: "服務條款.pdf", message: "儲存空間不足" }
 ] %}
 <div class="block mt-24 flex-row column gap-16">
     <div class="text-md text-bold"><span data-i18n="common.total">共</span> {{ batchOkRows.length + batchFailRows.length }} <span data-i18n="dataImport.batchSummaryOkMid">個檔案，成功</span> {{ batchOkRows.length }}<span data-i18n="dataImport.batchSummaryFailMid">、失敗</span> {{ batchFailRows.length }}</div>
@@ -219,32 +246,41 @@ permalink: 1-2-1_uploadFile_pdf.html
      word 是段落／表格／表格列數。只演一種的話，另一種的那幾個標籤全站沒有任何頁面看得到。 #}
 {% set importCounts = { inserted: 2, updated: 0, failed: 1 } %}
 {# `structTables` 是**偵測到的表格總數**：pdf_tables 的 `stats["tables"] += 1` 在判定
-     「這張處理不了」之前就無條件加一，所以無法處理的那幾張也算在內。下面 unprocessableTables
-     指名了「第 2 個表格」、suspectedHeaderlessTables 指名「第 3 個表格」，故總數至少是 3
-     ——寫 1 的話那兩筆指的是不存在的表格（§6：計數與具名清單要互推得出來）。 #}
+     「這張處理不了」之前就無條件加一，所以無法處理的那幾張也算在內，總數必須 ≥ 兩份具名清單
+     指名過的最大表格序號（§6：計數與具名清單要互推得出來）。
+     **續表計數與具名清單是同一件事的兩個投影**：`extract` 迴圈裡判為續表的那一支，
+     `stats["continuation_tables"] += 1` 之後把 `reason` 設成「疑似…的續表（沒有表頭），不套用
+     前一張表格的欄名」，而 `reason is not None` 就必然 append 進 `unprocessable_tables`——
+     故「續表 1」而 unprocessableTables 裡沒有那一筆，是 product 產不出來的組合。
+     **兩份清單的字面要逐字照 product 的形狀**：`〔表格 N〕無法處理：{reason}` 與
+     `〔表格 N〕疑似無表頭的續表：…`。那個 `〔表格 N〕` 是 product 用來把訊息定位到某一張表的
+     記號（`render_table_rows` 產出的逐列描述也用同一個序號），改寫成「第 N 個表格…」就等於
+     把定位記號拆掉。續表的原因字串（`第 {prev.page_no} 頁表格`／`同頁前一張表格`）也是逐字的。
+     這一份示範：表格 1 正常、表格 2 欄數對不上、表格 3 是第 4 頁那張的續表（＝續表計數 1）、
+     表格 4 是疑似無表頭的兄弟表（續表那一支會 `continue` 掉這個判定，故兩者不可能是同一張）。 #}
 {% set importFileReports = [
     {
-        filename: "20251119105623_公文範本.pdf",
+        filename: "公文範本.pdf",
         structure: [
             { labelKey: "dataImport.structPages", label: "頁數", value: 12 },
-            { labelKey: "dataImport.structTables", label: "表格", value: 3 },
+            { labelKey: "dataImport.structTables", label: "表格", value: 4 },
             { labelKey: "dataImport.structTableRows", label: "表格列數", value: 43 },
             { labelKey: "dataImport.structContinuationTables", label: "沒有表頭的續表", value: 1 },
             { labelKey: "dataImport.structSuspectedTablePages", label: "有格線卻抽不出表格的頁數", value: 2 }
         ],
         droppedLinks: {
-            count: 1,
             urls: ["/download/application-form.pdf"]
         },
         unprocessableTables: [
-            "第 2 個表格第 7 列有 5 欄，表頭只有 4 欄"
+            "〔表格 2〕無法處理：第 7 列有 5 欄，第 1 列（表頭）有 4 欄",
+            "〔表格 3〕無法處理：疑似第 4 頁表格的續表（沒有表頭），不套用前一張表格的欄名"
         ],
         suspectedHeaderlessTables: [
-            "第 3 個表格疑似無表頭的續表：欄寬與前一張表相同但欄界不同（多欄排版）"
+            "〔表格 4〕疑似無表頭的續表：欄寬與前一張表相同但欄界不同（多欄排版），第 1 列可能是資料而不是表頭，欄名請人工確認"
         ]
     },
     {
-        filename: "20251119112044_作業要點.docx",
+        filename: "作業要點.docx",
         structure: [
             { labelKey: "dataImport.structParagraphs", label: "段落", value: 229 },
             { labelKey: "dataImport.structTables", label: "表格", value: 1 },

@@ -31,9 +31,14 @@ permalink: 1-1-3_preview_excel.html
      欄名做的。所以它們是**同一組值**：改完要重新預覽，送出匯入時也必須原封不動帶著同一組。
      出處：gufofaq-saas services/product/app/routers/datasets.py 的 `preview_excel`（Form 參數
      `sheet_name`／`header_rows`／`unpivot`／`unpivot_row_label_cols`）與 `ExcelImportIn`（同名欄位）。
-     ⚠️ 兩邊不一致的後果不對稱：`unpivot` 漏帶會被來源欄存在性檢查擋成 400（看得見），
-     `header_rows` 漏帶則一路 200——`field_schema.combine_row_to_slots` 找不到來源欄是直接略過、
-     不報錯，於是內容欄整批空字串而畫面上寫著「匯入成功」。三個都是值載體，掛 hook class 交 React。 #}
+     ⚠️ 三項不論漏帶哪一個，後果都一樣、而且**看得見**：`_do_excel_mapping_import` 在
+     `combine_row_to_slots` 的**前一行**無條件呼叫 `_assert_assignment_columns_exist`——
+     mapping 的來源欄名只要對不上這一次讀出來的欄名就 400 `unknown_column`（訊息還會列出
+     本檔實際有哪些欄）。`import_excel` 的 docstring 逐字寫著「不一致時來源欄存在性檢查會 400
+     （`unknown_column`），不會靜默併出空 content」。
+     `field_schema.combine_row_to_slots` 找不到來源欄確實是直接略過、不報錯，但那道守門排在它
+     前面，這條路走不到那一步——所以這裡**不可以**寫成「漏帶 `header_rows` 會一路 200、內容欄
+     整批空字串而畫面上寫著匯入成功」。三個都是值載體，掛 hook class 交 React。 #}
 
 {# 工作表選擇：多工作表的活頁簿原本只會匯入第一張，其餘**靜默消失**——使用者上傳三張表，看到「匯入成功」，
      另外兩張連提示都沒有。選了哪一張要跟著預覽與匯入走（值載體 → hook class .js-excel-sheet，不掛 data-toast，§5）。
@@ -107,7 +112,8 @@ permalink: 1-1-3_preview_excel.html
 </div>
 
 {# 重新預覽：改了上面任一項就要重讀這份檔案（送 API，故照 §5 用 data-toast 列出所有可能結果）。
-     四個結果路徑，**前兩個要分開**——它們是不同的事：
+     結果路徑逐條列在下面（§3-2：能不寫死計數就不要寫——分支一增減，寫死的那個數字就靜默過期，
+     而它正是下一個人拿來核對 data-toast 有幾段的東西）。**前兩個要分開**——它們是不同的事：
      ①成功；②欄位值本身不合法（表頭列數不在 1–10、或交叉表開著卻沒填合法的列標題欄）——這條**根本沒送出
        請求**，故不能沿用 product 400 的那句話；③product 讀不出這組設定（`excel.ExcelFormatError`／
        `ExcelReadError`，例如指定的表頭列數讀出重複或空白欄名、unpivot 左側欄超出範圍）；

@@ -28,16 +28,22 @@
      `1.95s` 這種兩位小數是它產不出來的形狀。示範資料的摘要要能從節點推導（§6）：**延遲**＝已跑過
      節點的耗時和、**TTFT**＝答案節點（`respond_generate`／`respond_no_answer`）的起點＝它之前那幾站
      的和；兩個都先加成毫秒、再套同一條規則取整，寫進使用頁註解時要把式子與母體一起寫出來。
-   ⚠️ **時間欄是切版對 React 端提的要求**：這裡的 `{{ node.time }}` 每一列都印得出來，而 React 端的
-     `durations` 只收 `status === "completed" && s.ts`、迴圈又從第二筆起算（`for (let i = 1; …)`）
-     ⇒ **failed 節點與第一個 completed 節點恆空白**。那不是「上游沒有這個數字」：GufoRAG chatbot
-     `models/chat.py` 的 `step_event_data` 對每一顆事件都寫 `timestamp`，failed 那一顆照寫。
-     要補的是 React 那一側，不是把切版示範改成「畫不出來就別寫」（切版是正本）。
+   **時間欄的來源**（⚠️ 上一版寫「這是切版對 React 端提的要求：React 的 durations 只收 completed
+     且從第二筆起算」——**那個主張已經被滿足，本輪複驗改寫**，§4「上游還沒有 X 是最會過期的斷言」）：
+     上游現在**逐步量**耗時，GufoRAG chatbot `models/chat.py` 的 `step_event_data` 收 `duration_ms`
+     （由發射端量，`StepClock`），failed 那一顆照寫。React 端主路徑因此是 gufofaq-saas
+     `apps/web/lib/stepFlow.ts` 的 `stepDurations`：逐 `step_id` **加總** `duration_ms`、
+     **不做 status 過濾**（agent↔tools 每輪都會再發一次同一個 step_id，取最後一輪等於把前面幾輪
+     的時間抹掉）⇒ 每一列都印得出來，與這裡每一列都給時間對得上。
+     只有 `duration_ms` 上線前落庫的**舊紀錄**（整筆一顆都沒有這個鍵）會退到 `legacyDurations`
+     的相鄰相減，那條**連 `failed` 也收**，唯一留白的是第一站（沒有前驅可減）——三個已知死角逐條
+     寫在 `stepDurations` 的 docstring 裡，不必在這裡再抄一份。
    QA 直答判定（S6）：上游**每一輪都送一筆**判定，未命中那半也送，故節點另收五個鍵（值一律
-     照抄 `qa_direct.py` 的常數，不另發明詞彙）：
+     照抄 GufoRAG chatbot `app/services/qa_direct.py` 的常數，不另發明詞彙）：
        decision —— hit／no_exact_and_judge_rejected／below_score_floor／reconstruct_failed／
          not_attempted。查表查不到的值**原樣輸出**（上游新增第六種結論時，畫面要看得到那個生字）。
        entry —— pre_graph（建圖前閘門）／agent_tool（agent 工具）：哪一道閘門做的判定。
+         值域＝`ENTRY_PRE_GRAPH`／`ENTRY_AGENT_TOOL` 兩顆常數；同 decision，**查表查不到的值原樣輸出**。
        matchedRank ＋ poolSize —— 命中在候選池第幾名／候選池筆數，**一列成對顯示**（同 score／floor
          的理由：只給名次看不出池子多深、只給池子大小看不出這一筆排在哪）。未命中時 matchedRank
          為空 ⇒ 只畫池子大小；poolSize 為 1 要照實顯示（agent 工具那一道本來就只判 agent 挑的那一筆）。
@@ -47,13 +53,31 @@
    參數：stepFlowNodes（選填，[{ label, state, time, depth, skill, version, iterations, error,
      tools, params, result, resultShown, resultLength, verdict, thinking,
      hits, score, decidedBy, floor, decision, entry, matchedRank, poolSize, reusedFrom }]）
+     ——**值域含 0 的欄一律以「字串」傳入**（`poolSize: "0"`、`score: "0"`、`matchedRank: "1"`、
+       `iterations: "0"`、`resultShown: "0"`）：這些欄的渲染條件是 `{% if node.X %}` 真值判斷，而
+       nunjucks 把數字 `0` 判成 false ⇒ 上游真的送 0 那一列會**靜默整列消失**（`pool_size=0` 正是
+       建圖前閘門 `not_attempted` 的實際值，`score=0` 同理是真實可達的分數）。轉 React 之後**壞法
+       還不一樣**：`{n && <tr/>}` 不會消失，它會把那顆 `0` 印在畫面上。兩邊都錯、而且錯得不一樣，
+       所以在**資料這一層**收斂成字串——`"0"` 在 nunjucks 是 true、在 JSX 也照樣渲染。
+       （不改成 `is defined` 的理由：那會讓「上游沒送這個鍵」與「送了但為空字串」變成兩種寫法，
+       而元件現在對兩者的處置相同。）
      ——`resultShown`／`resultLength` **必須成對**（工具輸出被截斷時才給；只給一半那一列會渲染出空格）；
        `decidedBy` 只在 `decision == "hit"` 時有值（上游只在 `DECISION_HIT` 的判定紀錄帶 `gate=`；值域是 `GATE_EXACT`／`GATE_SCORE_FLOOR`／`GATE_LLM_JUDGE`——不寫死幾處 `_rec`，§3-2）、
        `matchedRank` 只在 **① 完全命中那一層**有值（`hit` 走 `exact` 與 `reconstruct_failed` 兩種收尾，
        其餘 `_rec` 一個都不帶）——硬給就是演一個 API 產不出的組合。
-       反過來，`hits`／`score`／`floor` **未命中時照樣有值**：`_rec` 一律帶 `hit=top`（`doc_name`／`score`
-       由它衍生）、`score_floor` 每一筆都寫；`not_attempted` 沒有 `hit` ⇒ `hits`／`score` 全空，**但 `floor` 與 `poolSize` 照樣有值**
-       （`QaDirectProbe.record()` 每一筆都無條件寫 `score_floor`，而 `not_attempted` 那一筆帶 `pool_size=0`）。
+       反過來，`hits`／`score` **未命中時照樣有值**：`decide()` 裡的 `_rec` 一律帶 `hit=top`
+       （`doc_name`／`score` 由它衍生）；`not_attempted` 沒有 `hit` ⇒ `hits`／`score` 全空。
+       ⚠️ **`floor` 與 `poolSize` 不是「照樣有值」**（上一版這麼寫，兩顆都過度概化，本輪逐條複驗）：
+         ・`floor`：`QaDirectProbe.record()` 每一筆都無條件**寫這個鍵**沒錯，但寫進去的值是
+           `_effective_floor(chat_room)`，而它**可以回 None**（房間沒設門檻；或「關 LLM 裁判又沒開
+           全域 enable_rerank」那個組合——那時 ② 層不生效，刻意當作未設）。None 原樣送 null，那是
+           「未校準」這個真實狀態、不用 0 充數，畫面上就是這一列不渲染。
+         ・`poolSize`：只有**建圖前閘門**那一筆 `not_attempted` 帶 `pool_size=0`（GufoRAG chatbot
+           `app/services/qa_direct.py` 的 `resolve`：一筆 QA 都檢索不到）。**agent 工具那一支不傳
+           這個引數**——收尾補的那筆在 GufoRAG chatbot `app/routes/chat.py` 的
+           `stream_agent_chat`，`record(DECISION_NOT_ATTEMPTED, entry=ENTRY_AGENT_TOOL, …)`
+           沒有 `pool_size`，預設 None ⇒ `entry` 是 `agent_tool` 的 `not_attempted` 那一列**沒有
+           候選池可畫**，硬給就是演一個 API 產不出來的組合。
        **命中是結構性短路**（`agent_service.py` 的 `after_tools`：不經 respond、grounding 同樣跳過），
        所以同一份節點清單裡出現 `decision: "hit"` 之後又有生成節點＝上游做不出來的一輪。＋
      stepFlowSummary（選填，{ tokens, latency, ttft, results, model ＋選填成對的 tokensIn／tokensOut }）
@@ -114,7 +138,10 @@
     {# 整體執行摘要（stepFlowSummaryData，來自 chat_room chunk 的既有欄）：一眼看完本次成本/效能。
          label 走 i18n，數值為資料（不翻）。 #}
     <div class="step-flow-summary flex-row flex-wrap gap-16 mt-16">
-        {# 軌跡截斷（S3 前半）：上限 200／50 筆，引擎在陣列尾端追加 {truncated: true, total: N}。
+        {# 軌跡截斷（S3 前半）：**檢視**上限＝GufoRAG chatbot `routes/_chat_trace.py` 的
+             `VIEW_STEP_EVENTS`／`VIEW_TOOL_ACTIVITY`（跨 repo 常數**只指名符號、不抄值**，§3-2：
+             抄了值就要能被機器比對，而本專案的測試比不到隔壁 repo 的 Python 常數；同段下面本來
+             就已經指名這兩顆），引擎在陣列尾端追加 {truncated: true, total: N}。
              **兩態都要切（§4）**：未截斷＝整段不渲染（常駐會變成「已顯示 231／共 231」那種廢話），
              截斷＝把這件事說出來並給一顆去拿全文的鈕。故由 stepFlowTraceShown／stepFlowTraceTotal
              成對參數決定，**不用 .hidden**——`.hidden` 的另一態是「什麼都不渲染」時，這塊 markup
@@ -235,7 +262,7 @@
                                             <div class="collapse-text"><div class="collapse-body">{{ node.result }}</div><button type="button" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>
                                             {% if node.resultLength %}
                                             <div class="flex-row align-items-center flex-wrap gap-8">
-                                                <span class="text-gray"><span data-i18n="agent.outputTruncatedPrefix">已顯示前 </span>{{ node.resultShown }}<span data-i18n="agent.outputTruncatedMid"> 字／共 </span>{{ node.resultLength }}<span data-i18n="regression.charsUnit"> 字</span></span>
+                                                <span class="text-gray"><span data-i18n="agent.outputTruncatedPrefix">已顯示前 </span>{{ node.resultShown }}<span data-i18n="agent.outputTruncatedMid"> 字／共 </span>{{ node.resultLength }}<span data-i18n="common.unitChars"> 字</span></span>
                                                 <button type="button" class="button button-border button-sm js-view-full-output" data-toast="完整輸出已載入|這一筆已經不在了，或不屬於這個租戶|載入失敗，請稍後再試" data-i18n-data-toast="toast.viewFullOutput" data-toast-type="success|warning|error" data-i18n="agent.viewFullOutput">看完整輸出</button>
                                             </div>
                                             {% endif %}
@@ -251,11 +278,13 @@
                                     {# QA 直答的命中細節（S1）。qa_direct 節點原本只有 label／state／time，
                                          連「可展開」的條件都不成立（那個判斷看 verdict／tools／iterations，
                                          三個都沒有）——畫面上就是一個綠盒子，說不出「憑什麼直出這一則」。
-                                         判定層有且只有三層，**值就是上游 `qa_direct.py` 的那三顆常數**：
+                                         判定層有且只有三層，**值就是上游 GufoRAG chatbot `app/services/qa_direct.py` 的那三顆常數**：
                                          `GATE_EXACT = "exact"`（正規化完全命中）／`GATE_SCORE_FLOOR = "score_floor"`
-                                         （分數門檻）／`GATE_LLM_JUDGE = "llm_judge"`（LLM 單裁，落在 else）。
-                                         ⚠️ 這裡曾經比對 `"floor"`：分數門檻命中會落進 else、顯示成「LLM 裁判」，
-                                         而畫面上完全看不出錯（React 端照抄也踩過同一次）。比對值要與上游逐字相同。
+                                         （分數門檻）／`GATE_LLM_JUDGE = "llm_judge"`（LLM 單裁）。**三顆各自比對、
+                                         收尾的 else 原樣輸出**（同 decision 那條）：上游多一層時要看得到生字。
+                                         ⚠️ 這裡曾經比對 `"floor"`，而當時 `llm_judge` 是靠 else 接住的——於是分數門檻
+                                         命中會掉進 else、顯示成「LLM 裁判」，畫面上完全看不出錯（React 端照抄也踩過
+                                         同一次）。比對值要與上游逐字相同，而且**不可以拿 else 當某個已知值的家**。
                                          故走 {% if %} 鏈、i18n key 逐條寫成字面——投影成模板
                                          變數的 key 在 en.json 對帳時查不到引用處（同 components/record-identity）。
                                          門檻值與分數是同一把尺上的兩個數字，成對出現才有意義：只給分數看不出
@@ -294,20 +323,28 @@
                                             {# 重用標示掛在徽章旁、**不做成第六種徽章**：它修飾的是「這個結論怎麼來的」，
                                                  不是另一種結論——重用可能重用命中、也可能重用判否，一個值講不清楚是哪一種
                                                  （上游也是為了這個理由把它做成獨立欄位）。 #}
+                                            {# 收尾的 else **原樣輸出**，與 decision 那條同一個規矩（見檔頭）：
+                                                 上游日後多一個入口時，畫面要看得到那個生字。原本的 else 是
+                                                 「agent 工具」——查表查不到就被靜靜畫成一個既有的詞，而那是本檔
+                                                 最難查的一種錯（畫面自洽、看不出少了什麼）。 #}
                                             {% if node.reusedFrom %}
-                                            <span class="text-gray"><span data-i18n="agent.qaReusedFrom">重用自</span>{% if node.reusedFrom == "pre_graph" %}<span data-i18n="agent.qaEntryPreGraph">建圖前閘門</span>{% else %}<span data-i18n="agent.qaEntryAgentTool">agent 工具</span>{% endif %}</span>
+                                            <span class="text-gray"><span data-i18n="agent.qaReusedFrom">重用自</span>{% if node.reusedFrom == "pre_graph" %}<span data-i18n="agent.qaEntryPreGraph">建圖前閘門</span>{% elif node.reusedFrom == "agent_tool" %}<span data-i18n="agent.qaEntryAgentTool">agent 工具</span>{% else %}<span>{{ node.reusedFrom }}</span>{% endif %}</span>
                                             {% endif %}
                                             </span>
                                         </td>
                                     </tr>
                                     {% endif %}
+                                    {# 值域＝GufoRAG chatbot `app/services/qa_direct.py` 的 `ENTRY_PRE_GRAPH`／`ENTRY_AGENT_TOOL` 兩顆常數。
+                                         收尾的 else **原樣輸出**（同 decision）：上游多一個判定入口時要看得到生字。 #}
                                     {% if node.entry %}
                                     <tr>
                                         <th data-i18n="agent.qaEntry">判定入口</th>
                                         {% if node.entry == "pre_graph" %}
                                         <td data-i18n="agent.qaEntryPreGraph">建圖前閘門</td>
-                                        {% else %}
+                                        {% elif node.entry == "agent_tool" %}
                                         <td data-i18n="agent.qaEntryAgentTool">agent 工具</td>
+                                        {% else %}
+                                        <td>{{ node.entry }}</td>
                                         {% endif %}
                                     </tr>
                                     {% endif %}
@@ -341,8 +378,10 @@
                                         <td data-i18n="agent.qaLayerExact">完全命中（正規化後逐字相同）</td>
                                         {% elif node.decidedBy == "score_floor" %}
                                         <td data-i18n="settings.scoreFloor">分數門檻</td>
-                                        {% else %}
+                                        {% elif node.decidedBy == "llm_judge" %}
                                         <td data-i18n="agent.qaLayerJudge">LLM 裁判</td>
+                                        {% else %}
+                                        <td>{{ node.decidedBy }}</td>
                                         {% endif %}
                                     </tr>
                                     {% endif %}

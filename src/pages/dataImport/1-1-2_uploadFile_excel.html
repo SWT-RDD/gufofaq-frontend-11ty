@@ -24,6 +24,11 @@ permalink: 1-1-2_uploadFile_excel.html
     {% include "components/step-nodes/step-nodes.html" %}
 </div>
 
-{# 簡化版靜態跳轉：點上傳區前進到預覽頁（真實 app 為上傳完自動跳） #}
+{# 簡化版靜態跳轉：點上傳區前進到預覽頁（真實 app 為上傳完自動跳）。
+     `uploadNextHref` 一設，upload-box 就渲染成**連結版**，主提示也跟著換成只講點選的那一句
+     （`comp.uploadClickHint`，元件預設）——連結版沒有 `<input type=file>`，`upload-box.js` 的
+     拖放監聽整組包在 `if (input)` 裡故一顆都沒掛，把檔案放到那顆 `<a>` 上是瀏覽器預設的
+     「導航到該檔案」，這一頁會當場不見。理由完整寫在 ui/upload-box 檔頭。
+     這是原型專用的變體：React 端的本頁是真的上傳框（按鈕版），拖放與 `comp.uploadDropHint` 照舊。 #}
 {% set uploadNextHref = "1-1-3_preview_excel.html" %}
 {% include "ui/upload-box/upload-box.html" %}

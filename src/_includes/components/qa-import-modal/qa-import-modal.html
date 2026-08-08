@@ -2,25 +2,51 @@
      「匯入到哪個 QA 集」＝業務條件開窗，故該鈕保留 hook class、不掛 data-open-modal（GUIDELINE §5）。
      QA 匯入騎現有 Excel 管道（gufofaq-saas product app/routers/datasets.py 的 import_qa：內部組
      mapping={title:[問題欄], content:[答案欄]} 走 _do_excel_mapping_import）——UI 只需選問題欄、答案欄。
-     **`QaImportIn` 收得下七個參數，這裡只畫三個；缺的四個逐顆寫理由（§3-2：後端做了、前端到不了等於沒做）**：
-       `sheet_name`：**已補**（`#qaSheetSelect`，形狀比照 1-1-3 的 `#excelSheetSelect`）——不給就取
-         第一張，多工作表活頁簿會靜靜地只匯第一張，而使用者看不出來。值載體 ⇒ 掛 `js-qa-sheet`。
-       `header_rows`：上游註解逐字寫著「必須與預覽時相同（question_col/answer_col 是使用者從預覽的
-         欄名清單裡挑的，多列表頭時那是串接後的名字）」——而這顆 modal **根本沒有預覽步驟**，
-         沒有那個「預覽時」可以對齊，故不畫；真要支援多列表頭得先有預覽，那是另一條流程。
+     **`QaImportIn` 的每一個參數逐顆交代**（§3-2：request 收得下的都要有落點，不做的寫理由；
+     這裡不寫「幾個畫了、幾個沒畫」——那是推導值，補一顆就靜默過期，§3-2）：
+       `stored_name`：上傳那一步的產物（ui/upload-box → 預覽端點回的 `stored_name`），沒有獨立控制項。
+       `sheet_name`：`#qaSheetSelect`（形狀比照 1-1-3 的 `#excelSheetSelect`）——不給就取第一張，
+         多工作表活頁簿會靜靜地只匯第一張，而使用者看不出來。值載體 ⇒ 掛 `js-qa-sheet`。
+       `question_col`／`answer_col`：`#qaQuestionCol`／`#qaAnswerCol`，值載體 ⇒ 掛 hook class。
+       `header_rows`：**兩邊同時落在預設 1，所以現況一致，不必畫**。它的約束是「必須與預覽時相同」
+         （`QaImportIn.header_rows` 的註解：question_col/answer_col 是使用者從預覽的欄名清單裡挑的，
+         多列表頭時那是串接後的名字）——而這顆 modal 的預覽是 `POST /datasets/excel/preview`
+         （saas `apps/web/components/QaImportModal/QaImportModal.tsx` 的 `runPreview()`），那一支的
+         `header_rows` 同樣預設 1。要支援多列表頭就得**兩支一起給**（預覽帶了、匯入沒帶＝
+         `_assert_assignment_columns_exist` 400 `unknown_column`），還要在窗裡多一顆數值欄與
+         「改了要重新預覽」的連動——那是另一條交辦，不是這一顆的缺口。
+         ⚠️ 不可以寫成「這顆 modal 根本沒有預覽步驟」：同一份 markup 裡就有 `dataImport.parsing`
+         （解析中）、`qaSet.previewFailed`（讀取 Excel 欄位失敗）與工作表那句「只有選取的這一張會被
+         預覽與匯入」，理由會被自己的 markup 推翻（§3-2）。
        `convert_html`：QA 集是問答對、不是文件內文，沒有 HTML 來源；1-2-1 那條路才有那顆開關。
        `external_key`：**每個檔各一把**（共用一把的話同批第二個檔會蓋掉第一個），而這裡是單檔匯入、
          沒有逐檔編輯的入口（1-2-1 是放在每一列的 file-edit-modal 裡）。
-     上傳 Excel（ui/upload-box，button 版點開原生檔案窗；本元件依賴 upload-box 全預設值——使用頁
-     include 本元件前不得殘留 upload* 參數（§2），現況兩使用頁皆從未 set）→ 選問題欄/答案欄（值載體
-     hook class js-qa-question-col／js-qa-answer-col）→ 匯入（切版新頁的直送 API 鈕：data-toast 列全結果＋
-     自創 js-qa-import-submit；warning 分支「未選欄」屬留在窗內就能修正的驗證，故不掛 btn-close-modals、
-     關窗交 React 成功才關）。欄位選項為執行期資料（上傳檔的欄）、option value＝欄標題字串
+     上傳 Excel（ui/upload-box，button 版點開原生檔案窗）→ 選工作表／問題欄／答案欄 → 匯入
+     （切版新頁的直送 API 鈕：data-toast 列全結果＋自創 js-qa-import-submit；warning 分支「未選欄」屬
+     留在窗內就能修正的驗證，故不掛 btn-close-modals、關窗交 React 成功才關）。
+     欄位選項為執行期資料（上傳檔的欄）、option value＝欄標題字串
      （datasets.py QaImportIn.question_col/answer_col），React 讀檔填入；此處示範 2 欄。
+
+     ⚠️ **本元件依賴 upload-box 的全部預設值，這是使用頁的前置條件**（§2：set 是頁面全域，§6：
+     元件內 include 帶參數的子元件時要申明）。兩個使用頁的現況不是「從未 set」：
+     `pages/components/component.html` **有** set 過 `uploadErrorFiles`（第 17 節那顆 upload-box 示範，
+     為了讓「不支援的副檔名」那一列看得見），靠的是它緊接著那一行 `{% set uploadErrorFiles = "" %}`
+     重設回空——沒有那一行，本元件裡的 upload-box 會在窗內長出一列別人的錯誤檔名。
+     `pages/dataset/3-3_qaSetManagement.html` 則是整頁沒有任何 `upload*` 的 set。
+
      參數（示範開關；product QaImportModal 已出貨的兩個 React 條件渲染狀態，元件庫頁 set true 演出）：
        qaImportShowParsing＝上傳後解析中（React 依 uploading 渲染）；
        qaImportShowError＝解析失敗的持久錯誤列（React 依 error 渲染；文案為執行期值——excelOnly／
          previewFailed／API detail，示範取 previewFailed）。 #}
+{# 工作表：`QaImportIn.sheet_name`。**只有一張時整個欄位不渲染**（React 正本
+     gufofaq-saas `apps/web/components/QaImportModal/QaImportModal.tsx` 是 `(preview?.sheet_names ?? []).length > 1 &&`，註解還寫著「同 1-1-3 的
+     #excelSheetSelect」），故這裡也走 `{% set %}` ＋ `{% if %}` ＋ `{% for %}`，不是寫死兩顆 option。
+     選項是執行期資料（讀上傳檔得來），示範兩張。 #}
+{% set qaImportSheets = ["常見問答", "舊版問答"] %}
+{# 問題欄／答案欄共用同一份欄名清單：它們讀的是**同一個檔的同一組欄**，兩邊各抄一份的話，
+     改一處就會漏（§3-3：同頁兩個以上 select 的 option value 集合相同 ⇒ 必須 set 成一個陣列共用）。
+     React 正本也是同一個 `columns` 陣列 map 兩次。 #}
+{% set qaImportColumns = ["客服問題", "客服回覆"] %}
 <dialog class="modals" id="qaImportModal" aria-labelledby="qaImportModal-title">
     <div class="modals-dialog modals-md">
         <div class="modals-wrap">
@@ -38,22 +64,21 @@
                         {% if qaImportShowError %}
                         <p class="text-red" role="alert" data-i18n="qaSet.previewFailed">讀取 Excel 欄位失敗，請確認檔案格式</p>
                         {% endif %}
-                        {# 工作表：`QaImportIn.sheet_name`。不給就取第一張——多工作表的活頁簿在這裡就選不到
-                             第二張，而使用者完全看不出「只匯了第一張」（§3-2：request 收得下的每個參數都要有落點）。
-                             形狀比照 1-1-3 的 `#excelSheetSelect`（同一支上游端點的姊妹流程）。
-                             選項是執行期資料（讀上傳檔得來），示範兩張。 #}
+                        {% if qaImportSheets.length > 1 %}
                         <div class="form-group row mobile-col">
                             <div class="label label-md">
                                 <label for="qaSheetSelect" class="control-label" data-i18n="dataImport.sheet">工作表</label>
                             </div>
                             <div class="field col-12-sm">
                                 <select id="qaSheetSelect" class="form-control singleSelect js-qa-sheet" aria-describedby="qaSheetHint">
-                                    <option value="常見問答" selected>常見問答</option>
-                                    <option value="舊版問答">舊版問答</option>
+                                    {% for sheet in qaImportSheets %}
+                                    <option value="{{ sheet }}"{% if loop.first %} selected{% endif %}>{{ sheet }}</option>
+                                    {% endfor %}
                                 </select>
                                 <span class="text-gray" id="qaSheetHint" data-i18n="dataImport.sheetHint">這份活頁簿有多張工作表；只有選取的這一張會被預覽與匯入。</span>
                             </div>
                         </div>
+                        {% endif %}
                         <div class="form-group row mobile-col">
                             <div class="label label-md">
                                 <label for="qaQuestionCol" class="control-label required" data-i18n="qaSet.questionColumn">問題欄</label>
@@ -61,8 +86,9 @@
                             <div class="field col-12-sm">
                                 <select required id="qaQuestionCol" class="form-control js-qa-question-col">
                                     <option value="" data-i18n="qaSet.selectColumn">請選擇欄位</option>
-                                    <option value="客服問題">客服問題</option>
-                                    <option value="客服回覆">客服回覆</option>
+                                    {% for col in qaImportColumns %}
+                                    <option value="{{ col }}">{{ col }}</option>
+                                    {% endfor %}
                                 </select>
                             </div>
                         </div>
@@ -73,8 +99,9 @@
                             <div class="field col-12-sm">
                                 <select required id="qaAnswerCol" class="form-control js-qa-answer-col">
                                     <option value="" data-i18n="qaSet.selectColumn">請選擇欄位</option>
-                                    <option value="客服問題">客服問題</option>
-                                    <option value="客服回覆">客服回覆</option>
+                                    {% for col in qaImportColumns %}
+                                    <option value="{{ col }}">{{ col }}</option>
+                                    {% endfor %}
                                 </select>
                             </div>
                         </div>

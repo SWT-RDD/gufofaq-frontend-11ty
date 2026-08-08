@@ -3,7 +3,7 @@
                      未設則是按鈕，點了開原生檔案選擇窗
      uploadAccept：accept 屬性（預設 ".xlsx"）
      uploadMultiple：true 時可多選
-     uploadHintText / uploadHintKey：放置區主提示（預設「點選或拖曳檔案至該區域上傳」／comp.uploadDropHint）
+     uploadHintText / uploadHintKey：放置區主提示。**兩個版本的預設不同**，見下面那段
      uploadDescText / uploadDescKey：格式與大小說明（預設 xlsx／10MB／comp.uploadDescXlsx）
      uploadErrorFiles：**僅示範用**——先填好檔名並讓「不支援的副檔名」那一列可見，
                        讓這個分支在元件庫頁看得到（§5：沒有頁面演得出來的分支等於沒驗收過）；
@@ -12,11 +12,22 @@
    放置區是可點的東西，故一律用真 `<a>`／`<button>`，不用 div 假扮（§4）。內容用 `<span>` 不用 `<div>`：
    `<button>` 只吃 phrasing content，包 `<div>` 是非法巢狀（§4）；排版由 class 決定，與標籤無關。
    `<input type=file>` 只在按鈕版渲染（連結版不開檔案窗），放在放置區外面（`<a>`／`<button>` 都不能包互動內容），
-   且不寫死 id —— 由 upload-box.js 以 `.upload-input` class 綁定（§4：沒有迴圈變數的元件不寫死 id）。 #}
+   且不寫死 id —— 由 upload-box.js 以 `.upload-input` class 綁定（§4：沒有迴圈變數的元件不寫死 id）。
+
+   ⚠️ **連結版的主提示不可以講「拖曳」**，故兩版的預設 key 不同（連結版 comp.uploadClickHint、
+   按鈕版 comp.uploadDropHint）。理由是這一版**結構上收不了拖放**：`upload-box.js` 的
+   `dragenter/dragover/dragleave/dragend/drop` 五個監聽整組包在 `if (input)` 裡，而 input 只在按鈕版
+   渲染——連結版一顆都沒掛。沒有掛就沒有 `preventDefault()`，把檔案放到這顆 `<a>` 上是**瀏覽器的
+   預設行為：導航到那個檔案**，原型頁當場消失（而使用者以為自己剛剛上傳了東西）。
+   那段 js 的註解自己也寫著另一半：在連結版 `preventDefault` 會讓邊框亮成「可以放這裡」而其實
+   沒有人接得住，等同靜默吞檔。兩條路都不誠實，所以改由**可見文案**只講點選——
+   §3-2「後果寫在做那個決定的控制項旁邊」，而這裡的「決定」就是使用者要不要把檔案拖過來。
+   這是**原型專用變體**：連結版只服務切版的靜態跳轉（1-1-2 → 1-1-3），React 端的 1-1-2 是真的
+   上傳框（按鈕版），沿用 `comp.uploadDropHint` 那一句，拖放照舊。 #}
 {% if uploadNextHref %}
 <a href="{{ uploadNextHref }}" class="upload-box">
     <span class="upload-text">
-        <span class="upload-message" data-i18n="{{ uploadHintKey or 'comp.uploadDropHint' }}">{{ uploadHintText or '點選或拖曳檔案至該區域上傳' }}</span>
+        <span class="upload-message" data-i18n="{{ uploadHintKey or 'comp.uploadClickHint' }}">{{ uploadHintText or '點選該區域上傳檔案' }}</span>
         <span class="upload-desc" data-i18n="{{ uploadDescKey or 'comp.uploadDescXlsx' }}">{{ uploadDescText or '支援上傳xlsx檔案，檔案最大不超過10MB' }}</span>
     </span>
 </a>

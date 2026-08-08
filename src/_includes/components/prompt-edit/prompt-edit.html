@@ -8,7 +8,16 @@
      （§5 每個分支都要演得出來）。 #}
 {# 示範提示詞取領域中性的知識庫助手文案：5-2 的示範資料橫跨好幾個主題（政策、輸出規則、
      內建工具），綁定單一領域的提示詞會與同頁其他區塊的示範對不起來（§6 示範自洽）。 #}
-<div class="prompt-edit"{% if promptDefaultOpen %} data-default-open="true"{% endif %} data-full-text="角色定位：
+{# 編輯 textarea 的長度上限。20000 ＝ product `app/chat_config_limits.py` 的 `MAX_SINGLE_PROMPT_LEN`
+     （`routers/prompts.py` 的 `PromptIn.content` 以 `Field(max_length=MAX_SINGLE_PROMPT_LEN)` 收，
+     同一顆常數也夾住 `TEXT_FIELD_LIMITS` 裡五層系統提示詞；正典寫法見 skill-editor-modal 的
+     `skillInstructionsInput`）。**一個數字只有一份真相**（§6）：`data-max-len` 給 js 拿去掛到注入的
+     textarea 上，下面那句可見提示渲染同一顆變數——不是 js 寫死一份、markup 寫死另一份。
+     那個數字是**資料不是譯文**（§4-2：契約裡有欄位的常數不准寫進 data-i18n 的句子裡）。
+     提示常駐可見（收合態也在）：§4「帶約束的輔助文字要常駐可見」——只有展開時才出現的話，
+     使用者是在「已經打完一大段」之後才第一次讀到它。 #}
+{% set promptEditMaxLen = 20000 %}
+<div class="prompt-edit" data-max-len="{{ promptEditMaxLen }}"{% if promptDefaultOpen %} data-default-open="true"{% endif %} data-full-text="角色定位：
 你是一位專業的知識庫問答助手，負責依據已上傳的資料回應使用者詢問。
 知識來源限制：
 你的回答必須僅依據以下資料來源：
@@ -27,21 +36,38 @@
         {# 按鈕文字隨 .open 切換（見 prompt-edit.js）：data-text-* 是繁中原文，data-key-* 是對應的 i18n key。
              **後綴是「當下狀態」、值是那一態該顯示的「動作」**（open ⇒「完成編輯」＝按了會收合）——
              本檔是這種狀態式命名的正典，ui/theme-toggle 的 data-*-light／-dark 指到這裡；
-             後綴是「按下去要做的事」的動作式另有一套，見 ui/reveal-input。 #}
+             後綴是「按下去要做的事」的動作式另有一套，見 ui/reveal-input。
+           `aria-describedby` 指那句字數上限：編輯用的 textarea 是**展開時才注入**的（見
+             prompt-edit.js 的 `render()`），所以收合態下那顆 hint 的 id 沒有任何控制項指得到它
+             ——§4 反向那條逐字說「掛了 id 的輔助文字必須至少有一個控制項指到它」。這顆鈕是本元件
+             **唯一常駐的控制項**，而且它正是「進去編輯」的入口：把上限講在按下去之前，也才對得上
+             §3-2「上限寫在做那個決定的控制項旁邊」。展開後注入的 textarea 另外自己再指一次
+             （同一個 id，§4「同一個欄位在同一頁出現多次時每一處都要有」）。 #}
         <button type="button" class="button button-border js-prompt-toggle" data-text-open="完成編輯"
             data-text-close="展開編輯" data-key-open="action.finishEdit" data-key-close="action.expandEdit"
-            data-i18n="action.expandEdit" aria-expanded="false">展開編輯</button>
+            data-i18n="action.expandEdit" aria-expanded="false" aria-describedby="promptEditLenHint">展開編輯</button>
     </div>
 
     <div class="prompt-edit-content"></div>
+
+    {# `js-prompt-len-hint` 是本元件 js 的掛點（拿它的 id 去接注入 textarea 的 aria-describedby）：
+         js 走 class 找、不從自己那邊寫死 id 字面（§5：id 是頁面層的東西，正本在這行 markup）。
+         ⚠️ 這顆 id 是**字面量**，所以本元件目前一頁只能有一份（5-2 一份、元件庫頁一份）——
+         要一頁兩份就得把 id 提成參數，上面那顆鈕的 `aria-describedby` 也要跟著吃同一個參數
+         （兩處是同一個交付單位，只改一邊會留下指不到的 describedby）。 #}
+    <div class="text-gray js-prompt-len-hint" id="promptEditLenHint"><span data-i18n="settings.promptMaxLenPrefix">提示詞最多 </span><span>{{ promptEditMaxLen }}</span><span data-i18n="settings.promptMaxLenSuffix"> 字，超過的字打不進去。</span></div>
 
     <div class="prompt-edit-tools flex-row justify-content-center flex-wrap gap-16">
         <button type="button" class="button button-border js-prompt-cancel" data-i18n="action.cancel">取消</button>
 
         <button type="button" class="button button-primary js-prompt-save" data-i18n="action.save">儲存</button>
 
-        {# 送 API 的直接動作鈕（真 app singleTest.js .js-prompt-reset：取目前正式提示詞、成敗各一種 toast）→ data-toast 列全結果（§5） #}
-        <button type="button" class="button button-green js-prompt-reset" data-toast="已回復至目前正式提示詞|無法取得正式提示詞" data-i18n-data-toast="toast.resetPrompt" data-toast-type="success|error" data-i18n="action.resetDefault">回復至預設</button>
+        {# 送 API 的直接動作鈕（真 app singleTest.js .js-prompt-reset：取目前正式提示詞、成敗各一種 toast）→ data-toast 列全結果（§5）。
+             **閘門是本輪補的**：它打的是 `GET /prompts/active`，掛 product `app/routers/prompts.py` 的
+             `require_capability("settings", "read")` ⇒ §4 新條「判準是**打了掛 require_* 的端點**，
+             不是會不會改狀態」，讀取型端點同樣要標。先前這顆既沒標、也沒有「查過不需要」的痕跡，
+             而空白與「忘了標」在 markup 上長得一模一樣。 #}
+        <button data-capability="settings:read" type="button" class="button button-green js-prompt-reset" data-toast="已回復至目前正式提示詞|無法取得正式提示詞" data-i18n-data-toast="toast.resetPrompt" data-toast-type="success|error" data-i18n="action.resetDefault">回復至預設</button>
 
         <button data-capability="settings:write" type="button" class="button button-primary js-prompt-new-version" data-toast="已儲存為新版本|內容欄位不可為空|新增提示詞失敗，請稍後再試" data-i18n-data-toast="toast.savePrompt" data-toast-type="success|warning|error" data-i18n="action.saveNewVersion">儲存為新版本</button>
     </div>
