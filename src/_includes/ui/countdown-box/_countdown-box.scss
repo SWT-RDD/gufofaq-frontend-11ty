@@ -57,6 +57,10 @@
     .day {
         font-size: 2.5rem;
         font-weight: 500;
-        color: var(--brand-text);
+        // **這個數字疊的不是 token，是那張底紋 PNG**：淺色模式 `--pattern-tint` 是 transparent，
+        // 所以實際的底是圖片最亮到最暗那一段像素，逐色實算的測試看不到它（那是圖片不是 token）。
+        // 用前景墨色而不是 --brand-text——§4：文字族疊到更暗的面時改用同族的墨色，
+        // 而 --brand-ink 比 --brand-text 更深，對這張淺色底紋的最壞像素只會更好。
+        color: var(--brand-ink);
     }
 }

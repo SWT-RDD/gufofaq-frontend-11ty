@@ -145,7 +145,10 @@ a {
     margin: 0 auto;
 
     @media screen and (max-width: $wrap-max) {
-        max-width: 1200px; // 只有這裡在意「縮到多窄」，不必上升成跨元件 token
+        // **這個階梯是鏡像自凍結前端**（`scss/component.scss:95-101` 逐條相同），不是失誤：
+        // 1200~1560px 這一段的側邊留白比更大或更小的螢幕都多，那是原設計的取捨。
+        // 1200 只有這裡在意「縮到多窄」，不必上升成跨元件 token。
+        max-width: 1200px;
     }
 }
 

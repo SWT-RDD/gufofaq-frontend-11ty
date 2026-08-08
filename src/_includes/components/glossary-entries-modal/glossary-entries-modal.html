@@ -21,7 +21,18 @@
      `apps/web/components/GlossaryEntriesModal/GlossaryEntriesModal.tsx` 現在同樣有
      `<div className="table-container scrollTable">` 包裹、同一組 `<colgroup>` 欄寬（200／280／90）、
      操作欄 `<th><span className="sr-only">`，空狀態也是 `rows.length === 0` 時的 `colSpan={3}` 無資料列
-     （不再是表格後的 `<p>`）。標題的表名是執行期資料，由 React 填。 #}
+     （不再是表格後的 `<p>`）。標題的表名是執行期資料，由 React 填。
+
+     ⚠️ **但那句「i18n key 值以 product catalog 為準」今天已經不成立，逐條記在這裡（§8 要跑腳本 diff）**：
+     ① `toast.saveGlossaryEntries` —— 11ty 這一輪隨別名欄移除已改成「詞條不可為空、單筆長度與整表
+        筆數有上限」，product catalog 還在描述**已經不存在的別名欄**（`alias count`）。**待回流**。
+     ② 下列四樣是 11ty 補上、product 未跟的 §3-2／§4 修正，**待回流**：
+        上限提示 `#glossaryLimitsHint`、「已 N / 5000 筆」計數列、逐列脈絡可及名稱
+        （`<span id="glossaryEntryRowName-N" class="sr-only">` ＋ `aria-labelledby` ＋ `<th id>`；
+        tsx 是每一列寫死 `aria-label={t("settings.term")}`，正是 §4「掛靜態 aria-label 會蓋掉列脈絡」
+        的反例）、term 的 `required` 與兩顆輸入的 `aria-describedby`。
+     ③ `regression.charsUnit` 兩邊分岔（11ty `" characters"` vs product `" chars"`）——擇一對齊，
+        11ty 是切版正本故以 `" characters"` 為準。 #}
 {# 示範資料變數用元件專屬名 glossaryEntryRows（不用泛用名）：{% set %} 是頁面全域（§2/§6）。 #}
 {% set glossaryEntryRows = [
     { term: "年終獎金", definition: "依年度考核與公司獲利發放的額外獎金。" },
