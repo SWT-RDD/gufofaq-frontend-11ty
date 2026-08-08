@@ -2,8 +2,9 @@
      successRetryHref / successRetryLabel / successRetryKey：左鈕（預設 "#"／再次上傳／comp.uploadAgain）
      successViewHref / successViewLabel / successViewKey：右鈕（預設 "#"／查看資料／comp.viewData）
      successHideDesc：true 時只留空的 .success-desc 容器（PDF 流程的檔案資訊由業務 JS 動態帶入）
-   父層 .block.block-lg.corner-md 由本元件掛上（.block 樣式由 ui/block 提供）。
-   檔案名稱／大小／資料總量是純示範假資料（§3-2），不翻譯。 #}
+     successFileName / successFileSize / successDataCount：檔案名稱／大小／資料總量。
+       **未給＝用元件內建的示範值**（不是「寫死的假資料」——1-1-6 三顆都覆寫了）。值是資料、不翻譯。
+   父層 .block.block-lg.corner-md 由本元件掛上（.block 樣式由 ui/block 提供）。 #}
 <div class="block block-lg corner-md success-box">
     <div class="success-message">
         <img src="./images/icon_check_green.png" width="48" height="48" decoding="async" alt="" class="icon">

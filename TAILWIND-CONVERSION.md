@@ -43,7 +43,7 @@ Tailwind v4：把同一組名字加上 `--color-` 前綴放進 `@theme`，深色
 
 漸層 `--brand-gradient`（header 底線、footer 背景）不是顏色 token：設成一般 CSS 變數或用 `bg-[linear-gradient(...)]`。
 
-> ⚠️ **`_var.scss` 裡還有 4 顆「非顏色旗標」**，值是 `block`/`none`/`invert(.8)…`/`multiply` 之類，被元件當 `display`/`filter`/`background-blend-mode` 用：`--theme-icon-light`、`--theme-icon-dark`、`--raster-invert`、`--pattern-blend`。**不要加 `--color-` 前綴、不要放進 `@theme` 的顏色區**——改名就會讓 `var(--theme-icon-light)` 斷鏈，日/月圖示切換、插圖反相、底紋壓暗全部失效。（`--pattern-tint` 是**顏色** token（`transparent` ↔ `#333333`，當 `background-color`），照常進 `@theme`。）
+> ⚠️ **`_var.scss` 裡還有一族「非顏色旗標」**（成員以測試的 `COLOR_ROLES.nonColor` 為準，§3-2 不寫死計數），值是 `block`/`none`/`invert(.8)…`/`multiply` 之類，被元件當 `display`/`filter`/`background-blend-mode` 用：`--theme-icon-light`、`--theme-icon-dark`、`--raster-invert`、`--pattern-blend`。**不要加 `--color-` 前綴、不要放進 `@theme` 的顏色區**——改名就會讓 `var(--theme-icon-light)` 斷鏈，日/月圖示切換、插圖反相、底紋壓暗全部失效。（`--pattern-tint` 是**顏色** token（`transparent` ↔ `#333333`，當 `background-color`），照常進 `@theme`。）
 
 ### 全域基底：Tailwind preflight 沒給的三條，必須自己帶過去
 
@@ -93,7 +93,7 @@ preflight 已含 `box-sizing: border-box` 與 `img{max-width:100%; height:auto}`
 
 - 圓角（**Tailwind v4 半徑階已改名**，本專案 §1 推 v4）：4px → v4 `rounded-sm`（v3 `rounded`）、8px → `rounded-lg`、2px → v4 `rounded-xs`（v3 `rounded-sm`）、圓形/膠囊 `50%`/`100px`/`1000px`（radio/switch handle/storage-bar/switch 軌道）→ `rounded-full`、30px（date 膠囊）→ `rounded-full`、尺標外 `3px`（`_chat-message.scss` 的 `code`）→ `rounded-[3px]`。（字級 `text-*` v4 未改名，不受影響。）
 - 字級（**注意命名偏移 +1，別同名對應**）：`text-md`(18px)→`text-lg`、`text-lg`(20px)→`text-xl`、`text-xl`(24px)→`text-2xl`；base 16px→`text-base`。
-- 字型：`--fontFamily` 設進 theme 的 `--font-sans` 或 config `fontFamily.sans`。
+- 字型：`--fontFamily` 設進 theme 的 `--font-sans` 或 config `fontFamily.sans`；**`--fontFamilyMono` 設進 `--font-mono`／`fontFamily.mono`**（消費者：`ui/inline-code`、`ui/code-block`、`ui/chat-message` 的行內碼、`components/skill-editor-modal`——GUIDELINE §4 要求它是全站唯一一份等寬堆疊，零 CSS 路線非映射不可，漏了那四處會落回瀏覽器預設等寬字）。
 
 > **顏色一律走 `_var` token（`@theme` 對應），不寫 arbitrary `bg-[#hex]`（`#fff` → `bg-white`）。**
 

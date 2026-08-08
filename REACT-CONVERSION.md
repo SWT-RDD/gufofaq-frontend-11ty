@@ -28,7 +28,9 @@
   正本寄生在別的頁（`ui/login-wrapper` 在 `src/login.html`）→ 見下一條。
   （反例提醒：`ui/block`、`ui/error-page` **有** `<name>.html`，只是那份只被元件庫頁 include 當展示片段——
   「有沒有 html」用 `git ls-files` 查，別憑印象分類。）
-- **四支不走 page-shell 的頁面各有不同結局**（`git grep -l "layout: layouts/base/base.html" -- src` 是唯一的名單）：
+- **四支不走 page-shell 的頁面各有不同結局**（名單＝`git grep -l "layout: layouts/base/base.html" -- src ':!src/_includes'`——
+  **要排除 `src/_includes`**：`page-shell` 與 `chatbot-shell` 自己也 `layout: layouts/base/base.html`（layout chaining），
+  不加那段排除會撈到六筆而不是這四頁）：
   `src/login.html` → 真路由（`app/login/page.tsx`，`layouts/base` 的直接消費者，自帶 `<form id="loginForm">`
   ——全站唯一一個 `<form>`，React 端換回 `type="submit"` ＋ `onSubmit(preventDefault)`）；
   `src/404.html` → `app/not-found.tsx`；
@@ -53,7 +55,10 @@
 
 ## ① scss（byte-identical）
 
-- 逐字照抄 `_<name>.scss`，**含切版原有註解**。唯二差異：`@use` 路徑深度、`url(../images/…)`→`url(/images/…)`。
+- 逐字照抄 `_<name>.scss`，**含切版原有註解**。差異只有**三處路徑**：`@use` 路徑深度、`url(../images/…)`→`url(/images/…)`、
+  **`icon-mask("../images/…")`→`icon-mask("/images/…")`**。第三處最容易漏（它不包在 `url()` 裡，全站 28 處、遠多於
+  `url()` 的 3 處），而漏掉的失敗方式恰好三張網都看不到：`scss-diff` 因為做路徑映射仍 exit 0、`fpdiff` 幾何不變
+  （mask 只影響繪製），畫面上圖示整批消失。
 - 顏色走 `_var.scss` 語意 token，零裸 hex／裸色。填充用 `--brand`、文字用 `--brand-text`、遮罩墨色取文字族。
 - 逃生口（捲軸、偽元素、`icon-mask`、`@starting-style`、`border-image` 漸層、`writing-mode`）隨 scss 照抄。
 - 全域層 `src/scss/{_var,_base,_mixin,_utilities,_normalize,_form-check,_dark-icons,_size}` → `styles/`。
@@ -209,7 +214,10 @@
   `<main class="chatbot-main" id="main" tabindex="-1">`（`tabindex="-1"` 是 skip-link 的落點）、
   自帶 sr-only h1、`components/footer`。少帶 skip-link 與 footer 是照這一條的舊版直翻最容易掉的兩樣。使用頁 front matter 的 `bodyClass: chatbot-page` 讓 body 不整頁捲動（`_chatbot-shell.scss`）——React 端要在該 route 的 `<body>`／根容器加同一個 class，否則前台聊天會變成雙捲軸。
 
-三支 layout 只有 `chatbot-shell` 有 `_chatbot-shell.scss`（base 與 page-shell 沒有自己的 scss）；
+三支 layout **各有一支** `layouts/<模板名>/_<模板名>.scss`（`main.scss` 以 `as layout-base`／`as layout-page-shell` 消歧）——
+`layouts/base/_base.scss` 裝的正是本節說「不可省略或改名」的 `.full-wrap`，`layouts/page-shell/_page-shell.scss`
+裝的是撐開它讓頁尾貼底的 `.main { flex: 1 0 auto }`。**三支都要搬**，漏掉任何一支 `scss-diff` 都不會紅
+（它是逐對比清單，沒登記就沒有東西可比）；
 它與元件同樣走 §① byte-identical，放進 `styles/layouts/`。
 
 ## ③ i18n（react-i18next）
@@ -451,7 +459,8 @@
   排除 `.js-*`；both-empty／loadFail 守門。
 - full-width 元件：gallery 展示槽用**該元件在切版真實頁的容器環境**——對照 `component.html`（guideline shell）的
   元件用它的 `.full-container` 算式（aside 200px + main `calc(100% - 200px)` + padding 1rem + border-box）；
-  對照業務頁（如 `5-1-1_accountInfo.html`）的元件用業務頁的 `.main > .wrap`（全域 `_base.scss` 現成規則，
+  對照業務頁（如 `5-1-1_accountInfo.html`）的元件用業務頁的 `.main > .wrap`（`.wrap` 在全域 `src/scss/_base.scss`、
+  `.main` 在 `layouts/page-shell/_page-shell.scss`，兩支都是現成規則，
   不手推公式）。兩種容器寬不同，用錯邊 fpdiff width 必差。
 - 兩側資料前提不對等時（如 React 保留 `/api/me` 權限過濾、切版 `dist` 永遠無過濾）：用 `--react-route="<urlGlob>|<json>"`／
   `--legacy-route=`（`goto` 前 `page.route()` 攔截、回一致資料）對齊資料再比幾何；不放寬 (A)-(D) 判準。
