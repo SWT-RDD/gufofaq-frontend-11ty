@@ -6,7 +6,7 @@
 //
 //   ① 計數列（4-1／5-7）：數字前後**是兩顆 i18n span**，抄的時候別漏（只留數字＝英文模式少一半字）
 //
-//      <div class="data-info"><span data-i18n="qa.totalOf">共</span> {{ total }} <span data-i18n="qa.records">筆資料</span></div>
+//      <div class="data-info"><span data-i18n="common.total">共</span> {{ total }} <span data-i18n="qa.records">筆資料</span></div>
 //
 //   ② 統計列（5-2／5-10）：同一顆 class 另掛 flex 工具，內含多組「標籤＋值」。
 //      **每一組外面那顆無 class 的 `<span>` 不可省**——它把「標籤」與「值」綁成一個 flex item，

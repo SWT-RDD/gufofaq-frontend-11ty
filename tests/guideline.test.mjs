@@ -3392,7 +3392,7 @@ test("§4-2 繁中原文相同的 chrome 沿用既有 key、不另立（同文�
         "啟用", "停用",                                                    // 動作鈕（Enable/Disable，3-4 每列直送 PATCH）vs 狀態/選項（widget.active=Active、qaDirectModeOff=Off）
         "資料集", "所屬群組",                                              // 單/複數語意（Dataset/Datasets、Group/Groups）
         "開始時間", "結束時間", "狀態",                                    // qa 篩選 vs settings 統計篩選；批次匯入欄 vs widget 欄
-        "結果", "共", "讚", "倒讚", "筆", "第", "頁",                       // 量詞/前綴/評價的組字上下文各異（「第…個對話」vs「第…頁」、「共 N 頁」vs「第 N 頁」的英文形不同）
+        "結果", "共", "讚", "倒讚", "筆", "第", "頁",                       // 量詞/前綴/評價的組字上下文各異。「共」round43 已把四顆同英譯的併回 common.total，剩下的兩顆是 common.total="Total"（markup 夾資料槽）vs pagination.totalPrefix="Total "（js 串接，§4-2 空白必須由 key 自帶）
         "刪除",                                                            // action.delete="Delete"（動作鈕）vs platform.confirmDeletePhrase="DELETE"（type-to-confirm 要照打的字面片語，不可翻成句子）
         "設定",                                                            // qaTest.setting="Setting"（2-2-3 的「設定 A／設定 B」組字前綴，單數）vs nav.settings="Settings"（選單項）
         "歷史紀錄",                                                        // nav.history="History"（選單項＝去哪一頁）vs settings.capHistory="View history"（能力枚舉，與 View datasets／View settings／View audit log 同一族動詞開頭）
