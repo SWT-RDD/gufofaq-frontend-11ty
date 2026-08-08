@@ -1188,8 +1188,8 @@ bodyClass: guideline-page
 {% set ratingModalNote = "評分會寫進這一側的問答紀錄，之後在歷史紀錄裡篩「AB測試」就找得到。" %}
 {% set ratingModalToastKey = "toast.saveRating" %}
 {% set ratingCapability = "history" %}
-{% set ratingModalToast = "滿意度已更新|請先選擇讚或倒讚|更新失敗，請稍後再試" %}
-{% set ratingModalToastType = "success|warning|error" %}
+{% set ratingModalToast = "滿意度已更新|權限不足，無法送出|請先選擇讚或倒讚|更新失敗，請稍後再試" %}
+{% set ratingModalToastType = "success|warning|warning|error" %}
 {% include "components/rating-modal/rating-modal.html" %}
 
 <button type="button" class="button btn_gotop">

@@ -217,7 +217,7 @@ permalink: 2-2-3_abTest.html
              `role="group" aria-labelledby="abSideLabel-<側>"`，鈕各自保留可見字面（§4 一格內多顆同型控制項）。 #}
         <div class="flex-row justify-content-center flex-wrap gap-16 mt-24" role="group" aria-labelledby="abSideLabel-{{ ab.side }}">
             <button type="button" class="button button-green js-restore-saved" data-toast="已回復儲存的設定|無法載入儲存的設定" data-i18n-data-toast="toast.restoreSettings" data-toast-type="success|error" data-i18n="qaTest.restoreSaved">回復儲存的設定</button>
-            <button data-capability="settings:write" type="button" class="button button-primary js-prompt-new-version" data-toast="已儲存為新版本|內容欄位不可為空|新增提示詞失敗，請稍後再試" data-i18n-data-toast="toast.savePrompt" data-toast-type="success|warning|error" data-i18n="qaTest.savePromptVersion">儲存提示詞版本</button>
+            <button data-capability="settings:write" type="button" class="button button-primary js-prompt-new-version" data-toast="已儲存為新版本|權限不足，無法儲存|內容欄位不可為空|新增提示詞失敗，請稍後再試" data-i18n-data-toast="toast.savePrompt" data-toast-type="success|warning|warning|error" data-i18n="qaTest.savePromptVersion">儲存提示詞版本</button>
             <button type="button" class="button button-dark js-apply-production" data-i18n="qaTest.applyProduction">套用為正式設定</button>
         </div>
     </div>
@@ -378,7 +378,7 @@ permalink: 2-2-3_abTest.html
                          多一條「沒填問題」（apps/web ab-test 那一頁的 `handleSubmit` 第一行也是
                          `if (!query || loading) return`）。共用 `toast.chatSubmit` 會讓那顆 key 同時代表
                          「固定問句的 chip，不可能空」與「自由輸入，可能空」兩種行為契約（§4-2）。 #}
-                    <button data-capability="ask" type="button" class="button button-primary chat-input-submit" data-toast="回答生成中...|請先輸入問題|回答生成成功|回答生成失敗" data-i18n-data-toast="toast.chatSend" data-toast-type="info|warning|success|error" data-i18n="action.submit">送出</button>
+                    <button data-capability="ask" type="button" class="button button-primary chat-input-submit" data-toast="回答生成中...|權限不足，無法送出|請先輸入問題|回答生成成功|回答生成失敗" data-i18n-data-toast="toast.chatSend" data-toast-type="info|warning|warning|success|error" data-i18n="action.submit">送出</button>
                 </div>
             </div>
         </div>
@@ -484,7 +484,7 @@ permalink: 2-2-3_abTest.html
    這一頁的答案是這次測試剛產生的，沒有既有評分可覆寫，故不給 ratingModalNote 的覆寫警語，
    改用 ratingModalNote 講清楚「這不是畫面上的一個小記號、是寫進問答紀錄」——
    評完在 4-1 用 tag=ab_test 篩得出來（product history.py 的 tag 參數）。
-   toast 三段同 4-2（成功／沒選讚或倒讚／其餘失敗），故沿用同一顆 key。 #}
+   toast 四段同 4-2（成功／權限不足／沒選讚或倒讚／其餘失敗），故沿用同一顆 key。 #}
 {% set ratingModalTitleKey = "modals.rateAnswerTitle" %}
 {% set ratingModalTitle = "為這一側的答案評分" %}
 {% set ratingModalQuestionKey = "modals.ratingLabel" %}
@@ -493,8 +493,8 @@ permalink: 2-2-3_abTest.html
 {% set ratingModalNote = "評分會寫進這一側的問答紀錄，之後在歷史紀錄裡篩「AB測試」就找得到。" %}
 {% set ratingModalToastKey = "toast.saveRating" %}
 {% set ratingCapability = "history" %}
-{% set ratingModalToast = "滿意度已更新|請先選擇讚或倒讚|更新失敗，請稍後再試" %}
-{% set ratingModalToastType = "success|warning|error" %}
+{% set ratingModalToast = "滿意度已更新|權限不足，無法送出|請先選擇讚或倒讚|更新失敗，請稍後再試" %}
+{% set ratingModalToastType = "success|warning|warning|error" %}
 {% include "components/rating-modal/rating-modal.html" %}
 
 {# 分享連結管理（兩側動作列的分享鈕開的那一份）：與 4-2 同一顆彈窗、同一組撤銷二次確認參數。 #}
@@ -511,6 +511,7 @@ permalink: 2-2-3_abTest.html
 {% set deleteConfirmBinding = true %}
 {% set deleteConfirmClass = "js-revoke-share-confirm" %}
 {% set deleteCapability = "history" %}
-{% set deleteToast = "連結已撤銷|撤銷失敗，請稍後再試" %}
+{% set deleteToast = "連結已撤銷|權限不足，無法撤銷|撤銷失敗，請稍後再試" %}
 {% set deleteToastKey = "toast.revokeShare" %}
+{% set deleteToastType = "success|warning|error" %}
 {% include "components/delete-modal/delete-modal.html" %}

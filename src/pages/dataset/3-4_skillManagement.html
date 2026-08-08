@@ -33,7 +33,7 @@ permalink: 3-4_skillManagement.html
 
 {# 新增 skill：名稱（必填）＋用途說明（必填）＋新增鈕。細部設定（執行指令、工具白名單、
      迭代上限）在建立後於編輯器內完成——一次要填的欄位太多會讓建立這件事變得沉重。
-     四態 toast：成功／必填未填／名稱格式或重名／失敗。**這兩欄的守衛在 chatbot**：GufoRAG chatbot
+     五態 toast：成功／權限不足／必填未填／名稱格式或重名／失敗。**這兩欄的守衛在 chatbot**：GufoRAG chatbot
      `app/services/skills.py` 的 `_validate_name` 有四道出口（markup、`MAX_SKILL_NAME_LEN`、
      `SKILL_NAME_RE` 格式、同租戶重名）——**空名走的是格式那一道**（`^[a-z0-9]+(-[a-z0-9]+)*$`
      不接受空字串），不是一道獨立的空值檢查；`_validate_description` 有三道（空值、長度、markup）。
@@ -43,7 +43,8 @@ permalink: 3-4_skillManagement.html
      `assert_skill_allowed_tools_within_limits`（`app/chat_config_limits.py`）與
      `assert_owned_allowed_tools`（`app/tool_refs.py`）的 400／502。那三道驗的是 `input_schema`
      與工具白名單，**本表單一個都填不到**（細部設定在編輯器 modal 內完成），所以這顆鈕只列得到
-     上面四段。product 唯一沒驗的是「名稱為空」，那一道只在 chatbot。
+     上面五段（`require_capability` 的 403 ＝**第 2 段 warning**，GUIDELINE §4：能力不足照樣按得下去、
+     結果列進 data-toast）。product 唯一沒驗的是「名稱為空」，那一道只在 chatbot。
    **兩欄的上限與格式落地成 markup**（契約欄位 §6；數字走資料節點、不烤進譯文 §4-2）：
      `maxlength` 與常駐 hint 的出處逐字＝GufoRAG chatbot `app/services/skills.py` 的
      `MAX_SKILL_NAME_LEN = 64`／`MAX_SKILL_DESCRIPTION_LEN = 1024`（由同檔 `_validate_name`／
@@ -78,7 +79,7 @@ permalink: 3-4_skillManagement.html
         </div>
     </div>
     <div class="flex-row">
-        <button data-capability="settings:write" type="button" class="button button-primary" data-toast="Skill 已建立|名稱與用途說明不可為空|名稱格式不符或已存在，或兩欄任一超過長度上限、含 XML/HTML 標籤|建立失敗，請稍後再試" data-i18n-data-toast="toast.createSkill" data-toast-type="success|warning|warning|error">
+        <button data-capability="settings:write" type="button" class="button button-primary" data-toast="Skill 已建立|權限不足，無法新增|名稱與用途說明不可為空|名稱格式不符或已存在，或兩欄任一超過長度上限、含 XML/HTML 標籤|建立失敗，請稍後再試" data-i18n-data-toast="toast.createSkill" data-toast-type="success|warning|warning|warning|error">
             <img src="./images/icon_add_white.png" width="48" height="48" decoding="async" alt="" class="icon">
             <span data-i18n="settings.addSkill">新增 Skill</span>
         </button>
@@ -133,9 +134,9 @@ permalink: 3-4_skillManagement.html
                                  依 §5 ③ 掛 data-toast 列全結果。原本狀態欄演了兩態卻沒有任何路徑到得了
                                  或離得開，等於示範一個改不動的狀態。 #}
                             {% if skill.enabled %}
-                            <button data-capability="settings:write" type="button" class="button button-border button-sm js-toggle-skill" data-toast="Skill 已停用|停用失敗，請稍後再試" data-i18n-data-toast="toast.disableSkill" data-toast-type="success|error" data-i18n="action.disable">停用</button>
+                            <button data-capability="settings:write" type="button" class="button button-border button-sm js-toggle-skill" data-toast="Skill 已停用|權限不足，無法停用|停用失敗，請稍後再試" data-i18n-data-toast="toast.disableSkill" data-toast-type="success|warning|error" data-i18n="action.disable">停用</button>
                             {% else %}
-                            <button data-capability="settings:write" type="button" class="button button-border button-sm js-toggle-skill" data-toast="Skill 已啟用|啟用失敗，請稍後再試" data-i18n-data-toast="toast.enableSkill" data-toast-type="success|error" data-i18n="action.enable">啟用</button>
+                            <button data-capability="settings:write" type="button" class="button button-border button-sm js-toggle-skill" data-toast="Skill 已啟用|權限不足，無法啟用|啟用失敗，請稍後再試" data-i18n-data-toast="toast.enableSkill" data-toast-type="success|warning|error" data-i18n="action.enable">啟用</button>
                             {% endif %}
                             <button type="button" class="button button-red button-sm js-delete-skill" data-i18n="action.delete">刪除</button>
                         </div>
@@ -239,14 +240,14 @@ permalink: 3-4_skillManagement.html
 {# 刪除 modal：.js-delete-skill 條件開窗（先選定要刪哪個 skill），確認鈕歸業務 js
    （deleteConfirmBinding，不自動關窗）；skill 名由業務 js 填入 #deleteSkillName。
    刪除**有**參照守衛：被其他 skill 的 allowed_tools.skill_ids、或任何設定檔的 skill_ids 參照時
-   一律拒刪並要求先移除參照（GufoRAG chatbot routes/skills.py 的 delete_skill）——故 toast 有第三態，
-   且那一態是使用者自己修得掉的 warning，不是「請稍後再試」。執行期另有容錯（載不出的 skill 略過
+   一律拒刪並要求先移除參照（GufoRAG chatbot routes/skills.py 的 delete_skill）——故 toast 除了成敗
+   另有那一態，且那一態是使用者自己修得掉的 warning，不是「請稍後再試」。執行期另有容錯（載不出的 skill 略過
    並記 ERROR log，agent_service._create_skill_tools），但那只涵蓋已停用／版本快照缺漏，
    不代表刪除端點允許懸空。 #}
 {% set deleteTargetId = "deleteSkillName" %}
 {% set deleteConfirmBinding = true %}
 {% set deleteCapability = "settings:write" %}
-{% set deleteToast = "Skill 已刪除|此 Skill 仍被其他 Skill 或設定檔參照，請先移除參照|刪除失敗，請稍後再試" %}
-{% set deleteToastType = "success|warning|error" %}
+{% set deleteToast = "Skill 已刪除|權限不足，無法刪除|此 Skill 仍被其他 Skill 或設定檔參照，請先移除參照|刪除失敗，請稍後再試" %}
+{% set deleteToastType = "success|warning|warning|error" %}
 {% set deleteToastKey = "toast.deleteSkill" %}
 {% include "components/delete-modal/delete-modal.html" %}

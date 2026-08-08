@@ -87,7 +87,7 @@
                         {# 這一下會整份覆寫目標設定檔——「複製」是寫入動詞，不是唯讀。閘門對回 product
                  `routers/config.py` 的 `copy_config`（`require_capability("settings", "write")`）；
                  姊妹彈窗 apply-settings-modal／apply-settings-compare-modal 也是同一道。 #}
-            <button data-capability="settings:write" type="button" class="button button-primary js-config-copy-apply" data-toast="設定已複製|請至少勾選一個複製項目|複製失敗，請稍後再試" data-i18n-data-toast="toast.copyConfig" data-toast-type="success|warning|error" data-i18n="action.copy">複製</button>
+            <button data-capability="settings:write" type="button" class="button button-primary js-config-copy-apply" data-toast="設定已複製|權限不足，無法複製|請至少勾選一個複製項目|複製失敗，請稍後再試" data-i18n-data-toast="toast.copyConfig" data-toast-type="success|warning|warning|error" data-i18n="action.copy">複製</button>
                     </div>
                 </div>
             </div>

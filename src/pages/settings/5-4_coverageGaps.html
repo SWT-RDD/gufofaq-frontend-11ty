@@ -239,7 +239,9 @@ permalink: 5-4_coverageGaps.html
     <div class="text-bold" data-i18n="settings.excludedQuestions">已排除的提問</div>
 
     {# ① 常設・全租戶。移除是 PUT 整份取代（送出「現有清單扣掉這一句」），故要 settings:write；
-         沒有那顆能力時整區仍要**看得見**——看報表的人有權知道哪些題被誰藏起來了，只是動不了。 #}
+         沒有那顆能力時整區仍要**看得見**——看報表的人有權知道哪些題被誰藏起來了。鈕也照樣渲染、
+         照樣按得下去，那道 403 是這兩顆的**第 2 段 warning**（GUIDELINE §4：`data-capability`
+         不足不比照 `data-platform-role` 做「不渲染」，改把結果列進 data-toast）。 #}
     {# 兩個上限畫在消費點（§3-2「上限寫在消費點（『N / 30』）」），形狀比照本頁上面的
          「已分類提問數：200 / 200」——先前它們只活在兩顆鈕的 toast 裡（「清單太長或有一筆超過長度上限」），
          也就是**撞到才知道**，而這一份清單是人一句一句加起來的。
@@ -260,7 +262,7 @@ permalink: 5-4_coverageGaps.html
                 {# data-question＝React 動作目標：product 的排除清單與提問原文用同一套正規化（修剪空白後
                      全字比對），所以鈕要帶得走那句原文，而不是去讀兄弟節點的 textContent。 #}
                 <button type="button" data-capability="settings:write" class="button button-border button-sm js-remove-persistent-exclusion" data-question="{{ q }}"
-                    data-toast="正在儲存...|已從常設排除移除|清單太長或有一筆超過長度上限|儲存失敗，請重新整理頁面" data-i18n-data-toast="toast.removePersistentExclusion" data-toast-type="info|success|warning|error"
+                    data-toast="正在儲存...|權限不足，無法移除|已從常設排除移除|清單太長或有一筆超過長度上限|儲存失敗，請重新整理頁面" data-i18n-data-toast="toast.removePersistentExclusion" data-toast-type="info|warning|success|warning|error"
                     data-i18n="action.remove">移除</button>
             </div>
             {% else %}
@@ -281,7 +283,7 @@ permalink: 5-4_coverageGaps.html
                     data-toast="正在查詢資料...|查詢成功|時間區間不正確（起訖需成對、開始須早於結束與現在、且在一年內、範圍不超過 365 天）|這段期間的資料量超過單次上限，請縮小時間範圍|意圖分組的模型還沒設好，這份報表分不了群——請先到對話設定的「生成設定」把「意圖判斷」那一組的模型設好|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.queryStats" data-toast-type="info|success|warning|warning|warning|error"
                     data-i18n="action.undoExclude">取消排除</button>
                 <button type="button" data-capability="settings:write" class="button button-border button-sm js-persist-exclusion" data-question="{{ q }}"
-                    data-toast="正在儲存...|已存成常設排除|清單太長或有一筆超過長度上限|儲存失敗，請重新整理頁面" data-i18n-data-toast="toast.savePersistentExclusion" data-toast-type="info|success|warning|error"
+                    data-toast="正在儲存...|權限不足，無法儲存|已存成常設排除|清單太長或有一筆超過長度上限|儲存失敗，請重新整理頁面" data-i18n-data-toast="toast.savePersistentExclusion" data-toast-type="info|warning|success|warning|error"
                     data-i18n="action.persistExclusion">存成常設排除</button>
             </div>
             {% else %}

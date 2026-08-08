@@ -95,7 +95,7 @@ permalink: 3-6_aliasTables.html
         </div>
     </div>
     <div class="flex-row">
-        <button data-capability="data:write" type="button" class="button button-primary" data-toast="別名表已建立|表名稱不可為空，或長度超過上限|建立失敗，請稍後再試" data-i18n-data-toast="toast.createAliasTable" data-toast-type="success|warning|error">
+        <button data-capability="data:write" type="button" class="button button-primary" data-toast="別名表已建立|權限不足，無法新增|表名稱不可為空，或長度超過上限|建立失敗，請稍後再試" data-i18n-data-toast="toast.createAliasTable" data-toast-type="success|warning|warning|error">
             <img src="./images/icon_add_white.png" width="48" height="48" decoding="async" alt="" class="icon">
             <span data-i18n="settings.addAliasTable">新增別名表</span>
         </button>
@@ -160,7 +160,7 @@ permalink: 3-6_aliasTables.html
                              **沒有重名檢查**（`alias_tables.name` 無 unique constraint），故不列
                              「名稱已存在」。 #}
                         <div class="btn-group">
-                            <button data-capability="data:write" type="button" class="button button-border button-sm" data-toast="別名表已更新|表名稱不可為空，或長度超過上限|儲存失敗，請稍後再試" data-i18n-data-toast="toast.saveAliasTable" data-toast-type="success|warning|error" data-i18n="action.save">儲存</button>
+                            <button data-capability="data:write" type="button" class="button button-border button-sm" data-toast="別名表已更新|權限不足，無法儲存|表名稱不可為空，或長度超過上限|儲存失敗，請稍後再試" data-i18n-data-toast="toast.saveAliasTable" data-toast-type="success|warning|warning|error" data-i18n="action.save">儲存</button>
                             <button type="button" class="button button-border button-sm js-manage-alias-entries" data-i18n="settings.manageAliasEntries">編輯詞條</button>
                             <button type="button" class="button button-red button-sm js-delete-alias-table" data-i18n="action.delete">刪除</button>
                         </div>
@@ -188,8 +188,8 @@ permalink: 3-6_aliasTables.html
 {% set deleteTargetId = "deleteAliasTableName" %}
 {% set deleteConfirmBinding = true %}
 {% set deleteCapability = "data:write" %}
-{% set deleteToast = "別名表已刪除|這張表還被設定檔綁著，請先在對話設定裡取消綁定|刪除失敗，請稍後再試" %}
+{% set deleteToast = "別名表已刪除|權限不足，無法刪除|這張表還被設定檔綁著，請先在對話設定裡取消綁定|刪除失敗，請稍後再試" %}
 {% set deleteToastKey = "toast.deleteAliasTable" %}
-{% set deleteToastType = "success|warning|error" %}
+{% set deleteToastType = "success|warning|warning|error" %}
 {% set deleteConfirmClass = "js-confirm-delete-alias-table" %}
 {% include "components/delete-modal/delete-modal.html" %}

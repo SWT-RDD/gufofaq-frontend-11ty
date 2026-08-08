@@ -244,7 +244,8 @@ permalink: 4-2_qaHistory_detail.html
 
 {# 評分窗（上方「設定滿意度」開的那一份）。意見回饋預填目前存著的那段話：product 的 client 一律
    送出 feedback（None 就是 null），空著送出＝把使用者寫的理由清掉（見 components/rating-modal 檔頭）。
-   toast 三段對回後端：成功／沒選讚或倒讚（RatingIn.rating 是 Literal["up","down"]）／其餘失敗
+   toast 四段對回後端：成功／權限不足（`require_capability("history")` 的 403，GUIDELINE §4：能力不足
+   照樣按得下去、結果列進 data-toast）／沒選讚或倒讚（RatingIn.rating 是 Literal["up","down"]）／其餘失敗
    （_own_log_or_404 的 404 併進「更新失敗」，同 share-manage-modal 建立鈕對 404 的處理）。 #}
 {% set ratingModalTitleKey = "modals.setRatingTitle" %}
 {% set ratingModalTitle = "設定這筆問答的滿意度" %}
@@ -255,8 +256,8 @@ permalink: 4-2_qaHistory_detail.html
 {% set ratingModalFeedback = conversation.feedback %}
 {% set ratingModalToastKey = "toast.saveRating" %}
 {% set ratingCapability = "history" %}
-{% set ratingModalToast = "滿意度已更新|請先選擇讚或倒讚|更新失敗，請稍後再試" %}
-{% set ratingModalToastType = "success|warning|error" %}
+{% set ratingModalToast = "滿意度已更新|權限不足，無法送出|請先選擇讚或倒讚|更新失敗，請稍後再試" %}
+{% set ratingModalToastType = "success|warning|warning|error" %}
 {% include "components/rating-modal/rating-modal.html" %}
 
 {% include "components/share-manage-modal/share-manage-modal.html" %}
@@ -273,6 +274,7 @@ permalink: 4-2_qaHistory_detail.html
 {% set deleteConfirmBinding = true %}
 {% set deleteConfirmClass = "js-revoke-share-confirm" %}
 {% set deleteCapability = "history" %}
-{% set deleteToast = "連結已撤銷|撤銷失敗，請稍後再試" %}
+{% set deleteToast = "連結已撤銷|權限不足，無法撤銷|撤銷失敗，請稍後再試" %}
 {% set deleteToastKey = "toast.revokeShare" %}
+{% set deleteToastType = "success|warning|error" %}
 {% include "components/delete-modal/delete-modal.html" %}

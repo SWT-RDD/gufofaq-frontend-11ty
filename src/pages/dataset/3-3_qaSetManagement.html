@@ -31,7 +31,8 @@ permalink: 3-3_qaSetManagement.html
 
 <p class="text-gray" data-i18n="qaSet.intro">QA 集是問答對集合：使用者問句完全命中某題的問題時，直接回該題答案原文、不經 AI 重組。可在「對話設定 ▸ QA 直答」選擇哪些 QA 集參與直答。</p>
 
-{# 新增 QA 集：名稱（必填）＋所屬群組（必填，比照資料集建立）＋新增鈕（三態 toast：成功／名稱已存在／失敗）。 #}
+{# 新增 QA 集：名稱（必填）＋所屬群組（必填，比照資料集建立）＋新增鈕
+     （五態 toast：成功／權限不足／必填未填／名稱已存在／失敗）。 #}
 <div class="block mb-16 flex-row column gap-16">
     <div class="text-md text-bold" data-i18n="qaSet.addQaSet">新增 QA 集</div>
     <div class="flex-row flex-wrap gap-16 mobile-column sm-gap-16">
@@ -61,7 +62,7 @@ permalink: 3-3_qaSetManagement.html
         </div>
     </div>
     <div class="flex-row">
-        <button data-capability="data:write" type="button" class="button button-primary" data-toast="QA 集已建立|請填寫 QA 集名稱並選擇所屬群組|QA 集名稱已存在|建立失敗，請稍後再試" data-i18n-data-toast="toast.createQaSet" data-toast-type="success|warning|warning|error">
+        <button data-capability="data:write" type="button" class="button button-primary" data-toast="QA 集已建立|權限不足，無法新增|請填寫 QA 集名稱並選擇所屬群組|QA 集名稱已存在|建立失敗，請稍後再試" data-i18n-data-toast="toast.createQaSet" data-toast-type="success|warning|warning|warning|error">
             <img src="./images/icon_add_white.png" width="48" height="48" decoding="async" alt="" class="icon">
             <span data-i18n="qaSet.addQaSet">新增 QA 集</span>
         </button>

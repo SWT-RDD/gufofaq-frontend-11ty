@@ -86,7 +86,7 @@ permalink: 2-2-4_regressionSuites.html
         </div>
     </div>
     <div class="flex-row">
-        <button data-capability="settings:write" type="button" class="button button-primary" data-toast="案例集已建立|案例集名稱不可為空白|建立失敗，請稍後再試" data-i18n-data-toast="toast.createSuite" data-toast-type="success|warning|error">
+        <button data-capability="settings:write" type="button" class="button button-primary" data-toast="案例集已建立|權限不足，無法新增|案例集名稱不可為空白|建立失敗，請稍後再試" data-i18n-data-toast="toast.createSuite" data-toast-type="success|warning|warning|error">
             <img src="./images/icon_add_white.png" width="48" height="48" decoding="async" alt="" class="icon">
             <span data-i18n="regression.addSuite">新增案例集</span>
         </button>
@@ -557,7 +557,7 @@ permalink: 2-2-4_regressionSuites.html
     </div>
 
     <div class="flex-row">
-        <button data-capability="settings:write" type="button" class="button button-primary" data-toast="案例已新增|案例的問題不可為空白，長度也不能超過 2000 字|有一條斷言的參數不合法，請檢查|至少要有一條確定性斷言（主觀分不進通過與否）|新增失敗，請稍後再試" data-i18n-data-toast="toast.createCase" data-toast-type="success|warning|warning|warning|error" data-i18n="regression.addCase">手動新增案例</button>
+        <button data-capability="settings:write" type="button" class="button button-primary" data-toast="案例已新增|權限不足，無法新增|案例的問題不可為空白，長度也不能超過 2000 字|有一條斷言的參數不合法，請檢查|至少要有一條確定性斷言（主觀分不進通過與否）|新增失敗，請稍後再試" data-i18n-data-toast="toast.createCase" data-toast-type="success|warning|warning|warning|warning|error" data-i18n="regression.addCase">手動新增案例</button>
     </div>
 </div>
 
@@ -829,25 +829,27 @@ permalink: 2-2-4_regressionSuites.html
              `require_capability("settings","write")`，函式體內再吃租戶功能開通
              `require_tenant_feature(db, tenant_id, "ask")`。兩者失敗的方式不同：前者換一個群組就過得了，
              後者是整個租戶被平台關掉（連租戶管理員也擋），所以不能折進同一個屬性。
-           ⚠️ **`|` 是索引契約**：本輪在中間插了一段、尾端加了一段，React 端凡是照 `split("|")` 的
-             位置取用 `toast.runRegression` 的地方都要跟著位移（分支順序＝上游 raise 的先後）。
+           ⚠️ **`|` 是索引契約**：React 端凡是照 `split("|")` 的位置取用 `toast.runRegression` 的地方，
+             段序就是下面這一份——403 依全站慣例固定在第 2 段，其餘照上游 raise 的先後。
              逐段對回 product `app/routers/regression.py` 的 `run_suite`：
                ① info    ＝送出的當下（SSE `started`）
-               ② success ＝SSE `finished` 且 `status == "finished"`
-               ③ warning ＝400 `regression.suite_has_no_cases`（`if not case_rows`）
-               ④ warning ＝400 `regression.too_many_cases`（`len(case_rows) > MAX_CASES_PER_RUN`）
-               ⑤ warning ＝400 `regression.bad_override_values`（`_build_override_config` 的
+               ② warning ＝403 `require_capability("settings", "write")`（GUIDELINE §4：能力不足不做
+                            「不渲染／不可按」，照樣按得下去、把那道 403 列進 data-toast）
+               ③ success ＝SSE `finished` 且 `status == "finished"`
+               ④ warning ＝400 `regression.suite_has_no_cases`（`if not case_rows`）
+               ⑤ warning ＝400 `regression.too_many_cases`（`len(case_rows) > MAX_CASES_PER_RUN`）
+               ⑥ warning ＝400 `regression.bad_override_values`（`_build_override_config` 的
                             `except ValidationError`）。**本頁自己製造得出來**：全站零 `<form>`，
                             `min`／`max`／`maxlength` 不會觸發原生驗證，取用資料筆數打 0 或 500、
                             提示詞貼超過 20000 字，按下去就是這一段。使用者當場改得掉 ⇒ warning。
-               ⑥ error   ＝502 `regression.profile_out_of_overridable_range`（`_inherit_from_profile`
+               ⑦ error   ＝502 `regression.profile_out_of_overridable_range`（`_inherit_from_profile`
                             的 `except ValidationError`：被測設定檔存著一個超出可覆寫值域的值）。
                             **這是開跑前就失敗**，一則結果都沒有，所以不能與下面那段共用文案。
-               ⑦ error   ＝SSE `finished` 且 `status == "aborted"`（跑到一半 `RegressionAborted`，
-                            已 commit 的那幾則保留——與 ⑥ 的差別就在這裡）。
+               ⑧ error   ＝SSE `finished` 且 `status == "aborted"`（跑到一半 `RegressionAborted`，
+                            已 commit 的那幾則保留——與 ⑦ 的差別就在這裡）。
              `unknown_override_fields` 那道 400 刻意不列：那是「前端送了 `_OVERRIDE_FIELDS` 以外的鍵」，
              畫面上沒有任何控制項製造得出來（六顆覆寫欄的鍵是寫死的），列了就是演一個不可能的結果。 #}
-        <button data-capability="settings:write" data-tenant-feature="ask" type="button" class="button button-primary" data-toast="開始執行回歸…|回歸執行完成|這個案例集還沒有任何案例，沒有東西可以跑|案例數超過單次執行上限，請拆成多個案例集|這一次指定的覆寫值超出可用範圍，請改回範圍內再跑|被測設定檔存著一個超出可覆寫範圍的值，這一輪一則都沒有跑到，請回報|執行中斷，已完成的結果保留" data-i18n-data-toast="toast.runRegression" data-toast-type="info|success|warning|warning|warning|error|error" data-i18n="regression.startRun">開始執行</button>
+        <button data-capability="settings:write" data-tenant-feature="ask" type="button" class="button button-primary" data-toast="開始執行回歸…|權限不足，無法執行|回歸執行完成|這個案例集還沒有任何案例，沒有東西可以跑|案例數超過單次執行上限，請拆成多個案例集|這一次指定的覆寫值超出可用範圍，請改回範圍內再跑|被測設定檔存著一個超出可覆寫範圍的值，這一輪一則都沒有跑到，請回報|執行中斷，已完成的結果保留" data-i18n-data-toast="toast.runRegression" data-toast-type="info|warning|success|warning|warning|warning|error|error" data-i18n="regression.startRun">開始執行</button>
     </div>
 </div>
 
@@ -934,7 +936,7 @@ permalink: 2-2-4_regressionSuites.html
 {% set deleteTargetId = "deleteRegressionTarget" %}
 {% set deleteConfirmBinding = true %}
 {% set deleteCapability = "settings:write" %}
-{% set deleteToast = "已刪除|已經有執行紀錄引用它，請先刪除執行紀錄|刪除失敗，請稍後再試" %}
+{% set deleteToast = "已刪除|權限不足，無法刪除|已經有執行紀錄引用它，請先刪除執行紀錄|刪除失敗，請稍後再試" %}
 {% set deleteToastKey = "toast.deleteRegression" %}
-{% set deleteToastType = "success|warning|error" %}
+{% set deleteToastType = "success|warning|warning|error" %}
 {% include "components/delete-modal/delete-modal.html" %}
