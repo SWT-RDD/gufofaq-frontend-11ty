@@ -149,7 +149,11 @@ permalink: 2-2-1_singleTest.html
     {# 動作列（三鈕同排，使用者定案「套用為正式設定移到下面與其他按鈕一起排列」）：
          回復儲存的設定＝直送 API 重載已儲存設定（data-toast 列結果）＋自創 hook class js-restore-saved；
          儲存提示詞版本＝寫入提示詞管理最新版本（沿 5-4-1 三段結果 toast）；
-         套用為正式設定＝寫共用檢索參數＋設前台預設（業務依模型權限開彈窗，見 singleTest.js）。 #}
+         套用為正式設定＝寫共用檢索參數＋設前台預設。**這一頁只有一份彈窗**（ProductionSettingsModal）：
+         送出前二次確認，權限不足走確認鈕 `data-toast` 的 warning 段、不另開彈窗——與 2-2-3 的
+         雙彈窗分支（apply-settings-no-permission-modal ＋ apply-settings-compare-modal）**刻意不同**，
+         出處見 `components/apply-settings-compare-modal` 檔頭那句「單一測試頁的 apply-settings-modal
+         才把權限不足演成 inline warning」。原本這裡寫「業務依模型權限開彈窗」是把 2-2-3 的行為抄過來的。 #}
     <div class="flex-row justify-content-center flex-wrap gap-16 mt-24">
         <button type="button" class="button button-green js-restore-saved" data-toast="已回復儲存的設定|無法載入儲存的設定" data-i18n-data-toast="toast.restoreSettings" data-toast-type="success|error" data-i18n="qaTest.restoreSaved">回復儲存的設定</button>
         <button data-capability="settings:write" type="button" class="button button-primary js-prompt-new-version" data-toast="已儲存為新版本|內容欄位不可為空|新增提示詞失敗，請稍後再試" data-i18n-data-toast="toast.savePrompt" data-toast-type="success|warning|error" data-i18n="qaTest.savePromptVersion">儲存提示詞版本</button>

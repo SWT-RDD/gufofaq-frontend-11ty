@@ -1436,7 +1436,7 @@
   "share.createLink": "Create share link",
   "share.expiresAt": "Expires: ",
   "share.expiresDays": "Valid for (days)",
-  "share.expiresDaysHint": "A share link can be opened without signing in; setting a number of days makes it expire on its own.",
+  "share.expiresDaysHint": "At least 1 day; leave empty for no expiry. A share link can be opened without signing in; setting a number of days makes it expire on its own.",
   "share.expiresDaysPlaceholder": "Leave empty for no expiry",
   "share.neverExpires": "Never expires",
   "share.rateLimited": "This share link is still valid — it is just being accessed too often right now. Please try again in a moment.",
