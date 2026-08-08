@@ -104,7 +104,7 @@
     // 日期分隔列（有它的時候是 `.chat-message-container` 的第一個子元素，排在 `.message-container`
     // 之前；2-2-3 沒有這一列，見檔頭 ⓐ）。markup 契約已含在本檔檔頭那一整段裡，這裡不重寫第二份：
     //   <div class="date-wrap"><div class="date">2024/12/02</div></div>
-    // 真 app 由業務 js 在執行期插入（qaRecord.js:133／singleTest.js:444）；切版在
+    // 真 app 由業務 js 在執行期插入（qaRecord.js:133／singleTest.js:476）；切版在
     // components/chatroom 畫出一份靜態示範——沒有任何 markup 的話這段就是出貨死 CSS，
     // 沒有人看過它的長相（§5）。日期是資料、不翻。
     .date-wrap {

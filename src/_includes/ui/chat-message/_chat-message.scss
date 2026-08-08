@@ -187,12 +187,16 @@
         // markdown renderer 產生的 <code> 掛不上 class，故只有這一份必須自己寫規則；
         // 數值以共用原子 ui/inline-code 為準（那裡是正本），別再各自漂移。
         code {
+            display: inline-block;
             background-color: var(--surface-sunken);
             color: var(--brand-ink);
             padding: 0.0625rem 0.375rem;
             border-radius: 4px;
             font-family: var(--fontFamilyMono);
             font-size: 0.8125rem;
+            // `ui/inline-code` 正本有這一條，這裡先前漏抄：長識別字落在最窄的容器
+            // （訊息泡泡 `max-width: 70%`）裡時會撐破泡泡，而 markdown 產生的 code 掛不上 class。
+            word-break: break-word;
         }
 
         pre {

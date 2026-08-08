@@ -528,6 +528,7 @@ bodyClass: guideline-page
                     <button type="button" class="button-icon no-bg size-sm delete" data-open-modal="deleteModal" title="刪除">
                         <span class="sr-only">刪除</span>
                     </button>
+                    <button type="button" class="button button-primary" data-open-modal="likeModal">開啟答案評分modal（AB 那一份）</button>
                     <button type="button" class="button button-primary" data-open-modal="disclaimerModal">開啟免責聲明modal</button>
                     <button type="button" class="button button-primary" data-open-modal="intentionModal">開啟意圖判斷啟用modal</button>
                     <button type="button" class="button button-dark" data-open-modal="ProductionSettingsNoPermissionModal">套用為正式設定（無權限）</button>
@@ -1063,6 +1064,23 @@ bodyClass: guideline-page
 {% set perPage = 10 %}
 {% set currentPage = 1 %}
 {% include "components/untagged-files-modal/untagged-files-modal.html" %}
+
+{# `likeModal` 的 **AB 那一份**（2-2-3）三條路都走不到：那一頁的讚/倒讚只掛 `.js-vote`（條件開窗，
+     合規），而全站唯一綁 `.js-vote` 的 `faq-chatroom.js` 把範圍收在 `.faq-chatroom` 之內、2-2-3 沒有
+     那顆根；頁上也沒有 `data-open-modal="likeModal"`。4-2 那一份是無條件開窗、參數完全不同
+     （`modals.setRatingTitle`／`ratingOverwriteNote`），代替不了。故走 §1-2 第三條路：
+     元件庫頁補一份示範觸發器 ＋ 本體，參數用 2-2-3 那一組，讓「為這一側的答案評分」那一態被人看過。 #}
+{% set ratingModalTitleKey = "modals.rateAnswerTitle" %}
+{% set ratingModalTitle = "為這一側的答案評分" %}
+{% set ratingModalQuestionKey = "modals.ratingLabel" %}
+{% set ratingModalQuestion = "這個回答的滿意度" %}
+{% set ratingModalNoteKey = "modals.ratingAbNote" %}
+{% set ratingModalNote = "評分會寫進這一側的問答紀錄，之後在歷史紀錄裡篩「AB測試」就找得到。" %}
+{% set ratingModalToastKey = "toast.saveRating" %}
+{% set ratingCapability = "history" %}
+{% set ratingModalToast = "滿意度已更新|請先選擇讚或倒讚|更新失敗，請稍後再試" %}
+{% set ratingModalToastType = "success|warning|error" %}
+{% include "components/rating-modal/rating-modal.html" %}
 
 <button type="button" class="button btn_gotop">
     TOP

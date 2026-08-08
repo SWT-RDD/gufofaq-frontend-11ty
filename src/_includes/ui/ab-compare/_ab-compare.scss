@@ -15,7 +15,11 @@
 //               <div class="ab-compare-item">
 //                   <div class="message-content in-compare">
 //                       <div class="robot-msg">
-//                           <p class="item-title" id="abAnswerTitle-{{ abSides[0].side }}"><span data-i18n="qaTest.setting">設定</span>{{ abSides[0].side }}（<span data-i18n="{{ abSides[0].configKey }}">{{ abSides[0].configLabel }}</span>，{{ abSides[0].promptVersion }}）</p>
+//                           <p class="item-title" id="abAnswerTitle-{{ abSides[0].side }}"><span data-i18n="qaTest.setting">設定</span> {{ abSides[0].side }} · <span data-i18n="{{ abSides[0].configKey }}">{{ abSides[0].configLabel }}</span> · {{ abSides[0].promptVersion }}</p>
+//                           ↑ 三段以**中點**並列，不用全形括號與逗號：那些標點是繁中的字身，
+//                             英文模式會印成「Setting A（Config 1，V3-角色定位型）」——一句話裡混著
+//                             兩套標點（§4-2）。2-2-3 的頁面註解逐字寫著這件事；契約先前留的
+//                             正是那個已被修掉的舊寫法，照抄就會把修好的缺陷做回去。
 //                           <div class="item-content">
 //                               <p>您好！以下是 UH3240 USB-C 多埠集線器的規格整理：</p>
 //                           </div>
