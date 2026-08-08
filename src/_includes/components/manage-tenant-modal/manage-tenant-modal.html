@@ -5,7 +5,8 @@
           select（無/每日/每月，QuotaIn.usage_period，隨額度共用 footer「儲存」鈕一起送出）+ 重置當期用量鈕
           （直接動作，逆向自 POST /platform/tenants/{id}/reset-usage，data-toast 演出成敗，不佔用共用 footer 鈕）
        2. 使用期——「延展／縮短天數」數字欄 + 「指定到期日」日期欄（exactly-one：product platform.py 兩者都給
-          回 400 "provide exactly one of extend_days or set_trial_end"，React 端送出前擇一；日期選擇不在
+          回 400 `tenant.trial_one_of`（引 key 不引英文字面——被抽進 i18n 的句子隨時會改，§3-2；
+          出處是 `platform.py` 的 `extend_tenant_trial`），React 端送出前擇一；日期選擇不在
           切版範圍，沿用 .calendar hook class 交由 React 套件實作）
        3. 模型開通——checkbox 清單，欄位寫法比照 5-5-1_userManagement「能力」checkbox
        4. 凍結／解凍——暫停使用期時鐘（直接動作，data-toast 演出成敗）
@@ -55,7 +56,7 @@
                                     </div>
                                     <div class="field">
                                         {# 三件套的第三件（§4）：三顆額度欄的下界出處＝`set_tenant_quota`（platform.py
-                                             的 `{field} must be >= 0`）；數字獨立成不翻的節點（§3-2）。 #}
+                                             的 `set_tenant_quota` → 400 `platform.quota_field_negative`，引 key 不引英文字面）；數字獨立成不翻的節點（§3-2）。 #}
                                         <input type="number" min="0" step="1" id="tenantQaLimitInput" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control" value="3000" aria-describedby="tenantQaLimitRange">
                                         <span class="text-gray" id="tenantQaLimitRange">≥ 0</span>
                                     </div>
@@ -175,18 +176,29 @@
                                     </div>
                                     {# 這一列不在 .default-table 裡，`.btn-group` 的規則帶著那個祖先（§4 祖先錯位）。 #}
                                     <div class="flex-row gap-10 align-items-center flex-wrap">
-                                        {# 已停用的帳號代理不了：`platform.py` `if not target.is_active:
-                                             raise HTTPException(403, "cannot impersonate a disabled account")`。
-                                             無條件渲染會在停用列上留一顆**按了必定失敗**的鈕，而它掛的 warning
-                                             講的又是另一件事（權限不足）。比照 share-manage-modal 的做法改成
-                                             disabled——那一列已經沒有東西可代理（§5「按了什麼都不會發生」）。 #}
-                                        <button type="button" class="button button-border button-sm"{% if not member.isActive %} disabled{% endif %} data-toast="已代理登入該成員|權限不足，無法代理登入|代理登入失敗，請稍後再試" data-i18n-data-toast="toast.impersonateTenant" data-toast-type="success|warning|error" data-i18n="action.impersonate">代理登入</button>
+                                        {# 已停用的帳號代理不了：product `platform.py` 的 `impersonate` 回 403 `impersonate.disabled_account`
+                                             （引 key 不引英文字面——那句話被抽進 i18n 之後隨時會改，§3-2）。
+                                             無條件渲染會在停用列上留一顆**按了必定失敗**的鈕，故改成 disabled
+                                             （§5「按了什麼都不會發生」）。
+                                             **排掉那一道之後，這顆鈕剩下唯一走得到的 403 是 `impersonate.platform_admin`**
+                                             ——呼叫端本身是 `require_platform_admin`（整份 modal 也宣告了
+                                             `data-platform-role="admin"`），所以「權限不足」在這顆鈕上永遠不會發生。
+                                             warning 段因此要講那件真的會發生的事，不是抄一句通用的權限話術。 #}
+                                        <button type="button" class="button button-border button-sm"{% if not member.isActive %} disabled{% endif %} data-toast="已代理登入該成員|對方是平台系統管理員，不可代理登入|代理登入失敗，請稍後再試" data-i18n-data-toast="toast.impersonateTenant" data-toast-type="success|warning|error" data-i18n="action.impersonate">代理登入</button>
                                         {# 停用路徑上有**兩道**具名 409（gufofaq-saas product `platform.py`：停用端點自己回
                                              `last_tenant_admin`，同檔的 `_assert_not_last_platform_admin` 回
                                              `last_platform_admin`「不可停用/刪除/降級最後一位平台系統管理員」）。
                                              同一頁的刪除鈕早就把這兩道分開列了（5-6-1 的 deleteToast），
                                              這裡卻只列一道——抄版型而不是逐 raise 對鈕（§5）。 #}
-                                        <button type="button" class="button button-border button-sm" data-toast="已更新使用者狀態|無法停用最後一位在職管理者|無法停用最後一位平台系統管理員|更新失敗，請稍後再試" data-i18n-data-toast="toast.setUserActive" data-toast-type="success|warning|warning|error" data-i18n="{% if member.isActive %}platform.disableUser{% else %}platform.enableUser{% endif %}">{% if member.isActive %}停用{% else %}啟用{% endif %}</button>
+                                        {# **toast 分支要隨態分岔**：那兩道 409 都在上游 `platform_update_user` 的
+                                             `if u.is_active and not body.is_active:` 之內＝**只有停用路徑走得到**，
+                                             啟用態列出來就是「列出不可能的結果」（§5 與只演成功一樣是說謊）。
+                                             同一行已經在依 `member.isActive` 分岔字面，分支集合跟著分。 #}
+                                        {% if member.isActive %}
+                                        <button type="button" class="button button-border button-sm" data-toast="已更新使用者狀態|無法停用最後一位在職管理者|無法停用最後一位平台系統管理員|更新失敗，請稍後再試" data-i18n-data-toast="toast.setUserActive" data-toast-type="success|warning|warning|error" data-i18n="platform.disableUser">停用</button>
+                                        {% else %}
+                                        <button type="button" class="button button-border button-sm" data-toast="已更新使用者狀態|更新失敗，請稍後再試" data-i18n-data-toast="toast.setUserActiveEnable" data-toast-type="success|error" data-i18n="platform.enableUser">啟用</button>
+                                        {% endif %}
                                         <button type="button" class="button button-border button-sm js-reset-password" data-i18n="settings.resetPassword">重設密碼</button>
                                         <button type="button" class="button button-red button-sm js-delete-user" data-i18n="action.delete">刪除</button>
                                     </div>
