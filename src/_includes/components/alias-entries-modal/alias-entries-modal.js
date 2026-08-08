@@ -16,6 +16,11 @@
 document.addEventListener("DOMContentLoaded", function () {
     var MAX_CANONICAL_LEN = 200;
     var MAX_ALIASES_PER_ENTRY = 50;
+    // **每個別名自己的長度上限**（chatbot `app/services/alias.py` 的 `MAX_ALIAS_LEN`，
+    // `validate_alias_entries` 對每一個別名逐一驗）。三個上限裡只有這一個畫面上沒有別的機制擋得住：
+    // 標準詞欄有 `maxlength="200"`，別名欄是逗號分隔字串故沒有 `maxlength`——而彈窗自己的可見提示
+    // 對使用者承諾了「別名每個 200 字」。少了這一支，貼上一個超長別名會靜靜地存進去。
+    var MAX_ALIAS_LEN = 200;
 
     function t(key, zh) {
         return (window.GufoI18n && window.GufoI18n.t) ? window.GufoI18n.t(key, zh) : zh;
@@ -43,10 +48,12 @@ document.addEventListener("DOMContentLoaded", function () {
         var ZH_NO_ALIAS = "這一行沒有別名";
         var ZH_CANONICAL_TOO_LONG = "標準詞超過上限";
         var ZH_TOO_MANY_ALIASES = "別名數超過上限";
+        var ZH_ALIAS_TOO_LONG = "單一別名超過上限";
         var ERR_ZH = {
             "settings.bulkPasteNoAlias": ZH_NO_ALIAS,
             "settings.bulkPasteCanonicalTooLong": ZH_CANONICAL_TOO_LONG,
             "settings.bulkPasteTooManyAliases": ZH_TOO_MANY_ALIASES,
+            "settings.bulkPasteAliasTooLong": ZH_ALIAS_TOO_LONG,
         };
 
         // 一列的 markup 與模板那份逐字同形（少一個屬性視覺指紋看不出來，見元件檔頭的契約）
@@ -123,6 +130,8 @@ document.addEventListener("DOMContentLoaded", function () {
                     err = { key: "settings.bulkPasteCanonicalTooLong", text: t("settings.bulkPasteCanonicalTooLong", ZH_CANONICAL_TOO_LONG) };
                 } else if (cells.length > MAX_ALIASES_PER_ENTRY) {
                     err = { key: "settings.bulkPasteTooManyAliases", text: t("settings.bulkPasteTooManyAliases", ZH_TOO_MANY_ALIASES) };
+                } else if (cells.some(function (a) { return a.length > MAX_ALIAS_LEN; })) {
+                    err = { key: "settings.bulkPasteAliasTooLong", text: t("settings.bulkPasteAliasTooLong", ZH_ALIAS_TOO_LONG) };
                 }
                 // 不去重、不排序：原樣 append
                 body.appendChild(makeRow(canonical, cells.join(", "), err));

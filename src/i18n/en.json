@@ -987,6 +987,7 @@
   "settings.builtinTools": "Built-in tools",
   "settings.builtinToolsHint": "All on = all enabled; only some on = only the enabled tools are available; all off = every built-in tool is disabled.",
   "settings.bulkPaste": "Bulk paste",
+  "settings.bulkPasteAliasTooLong": "An alias exceeds the length limit",
   "settings.bulkPasteCanonicalTooLong": "Canonical term is over the limit",
   "settings.bulkPasteHint": "One group per line. The first column is the canonical term, the rest are aliases, separated by tabs or commas. Pasting appends to the list below; it does not overwrite existing rows.",
   "settings.bulkPasteInput": "Bulk paste content",

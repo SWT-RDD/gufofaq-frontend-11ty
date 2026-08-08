@@ -41,7 +41,12 @@
     同卡的啟用開關與展開區的 role=group 早就是這樣接的（都指 tool-<工具名>-title），三處同一招。
 
   hook class（§5）：
-    .js-accordion-item＝ui/accordion 卡片模式的範圍根（切版自有行為，React 不帶）
+    .js-accordion-item＝本卡的**內容邊界**（accordion.js 的 findContent 用它界定要開合哪一塊）。
+    ⚠️ **真正綁事件與跑初始態的掃描根是祖先上的 .js-accordion**（accordion.js 只
+    querySelectorAll 那顆 class 再對 block 內委派）——本卡必須放在那個根之內，
+    否則 _builtin-tool-card.scss 的 .builtin-tool-body { display: none } 會讓整張卡永遠打不開。
+    5-2 是自己在外層補上 .js-accordion 的；第二個消費頁照契約抄而漏了那一層就會踩到。
+    （切版自有行為，React 不帶）
     .js-builtin-tool＝啟用開關的值載體（沿用原本勾選框的 class，value=工具名；React 讀它組
       enabled_builtin_tools）
     .js-tool-description／.js-tool-extra-prompt＝兩個文字欄的值載體（React 讀它們組
