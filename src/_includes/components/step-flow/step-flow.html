@@ -48,11 +48,12 @@
      tools, params, result, resultShown, resultLength, verdict, thinking,
      hits, score, decidedBy, floor, decision, entry, matchedRank, poolSize, reusedFrom }]）
      ——`resultShown`／`resultLength` **必須成對**（工具輸出被截斷時才給；只給一半那一列會渲染出空格）；
-       `decidedBy` 只在 `decision == "hit"` 時有值（上游只在 `DECISION_HIT` 的三個 `_rec` 帶 `gate=`）、
+       `decidedBy` 只在 `decision == "hit"` 時有值（上游只在 `DECISION_HIT` 的判定紀錄帶 `gate=`；值域是 `GATE_EXACT`／`GATE_SCORE_FLOOR`／`GATE_LLM_JUDGE`——不寫死幾處 `_rec`，§3-2）、
        `matchedRank` 只在 **① 完全命中那一層**有值（`hit` 走 `exact` 與 `reconstruct_failed` 兩種收尾，
        其餘 `_rec` 一個都不帶）——硬給就是演一個 API 產不出的組合。
        反過來，`hits`／`score`／`floor` **未命中時照樣有值**：`_rec` 一律帶 `hit=top`（`doc_name`／`score`
-       由它衍生）、`score_floor` 每一筆都寫；只有 `not_attempted` 連 `hit` 都不帶 ⇒ 那一種才真的全空。
+       由它衍生）、`score_floor` 每一筆都寫；`not_attempted` 沒有 `hit` ⇒ `hits`／`score` 全空，**但 `floor` 與 `poolSize` 照樣有值**
+       （`QaDirectProbe.record()` 每一筆都無條件寫 `score_floor`，而 `not_attempted` 那一筆帶 `pool_size=0`）。
        **命中是結構性短路**（`agent_service.py` 的 `after_tools`：不經 respond、grounding 同樣跳過），
        所以同一份節點清單裡出現 `decision: "hit"` 之後又有生成節點＝上游做不出來的一輪。＋
      stepFlowSummary（選填，{ tokens, latency, ttft, results, model ＋選填成對的 tokensIn／tokensOut }）
@@ -168,14 +169,18 @@
                         {% if node.state == "completed" %}<span data-i18n="agent.stepCompleted">已完成</span>{% elif node.state == "running" %}<span data-i18n="agent.stepRunning">進行中</span>{% elif node.state == "skipped" %}<span data-i18n="agent.stepSkipped">略過</span>{% elif node.state == "failed" %}<span data-i18n="platform.resultFail">失敗</span>{% else %}<span data-i18n="agent.stepPending">待處理</span>{% endif %}
                     </td>
                     <td>
-                        {% if node.tools or node.params or node.result or node.verdict or node.thinking or node.skill or node.error or node.hits or node.score or node.decidedBy or node.floor or node.decision %}
+                        {# **這一串要涵蓋詳細表真的會畫的每一欄**：少列一欄，使用頁只給那一欄的節點時
+                             展開鈕與整個 detail-row 都不渲染，資料靜默消失。原本列了 12 項而明細列有 15 種
+                             （漏掉 iterations／entry／poolSize），只因為現行使用頁的節點都另帶 decision 或
+                             skill 才沒觸發。`resultShown`／`resultLength` 由 `result` 涵蓋。 #}
+                        {% if node.tools or node.params or node.result or node.verdict or node.thinking or node.skill or node.error or node.hits or node.score or node.decidedBy or node.floor or node.decision or node.iterations or node.entry or node.poolSize %}
                         <button type="button" class="button accordion-btn" aria-expanded="false" title="展開表格" data-i18n-title="common.expandRow">
                             <span class="sr-only" data-i18n="common.expandRow">展開表格</span>
                         </button>
                         {% endif %}
                     </td>
                 </tr>
-                {% if node.tools or node.params or node.result or node.verdict or node.thinking or node.skill or node.error or node.hits or node.score or node.decidedBy or node.floor or node.decision %}
+                {% if node.tools or node.params or node.result or node.verdict or node.thinking or node.skill or node.error or node.hits or node.score or node.decidedBy or node.floor or node.decision or node.iterations or node.entry or node.poolSize %}
                 <tr class="detail-row">
                     <td colspan="5" class="detail-cell">
                         <div class="accordion-content">
@@ -257,7 +262,7 @@
                                          「差多少」，只給門檻看不出「這一則過了沒有」。 #}
                                     {# 判定結果（S6）。**這一段以 `decision` 為條件，不是以 `hits`**：上游每一輪
                                          都會送一筆判定，未命中那半也送，而未命中時 decidedBy／matchedRank 沒有值
-                                         （`gate=` 只寫在 `DECISION_HIT` 那三個 `_rec`）、`not_attempted` 更是連
+                                         （`gate=` 只寫在 `DECISION_HIT` 的判定紀錄上）、`not_attempted` 更是連
                                          `hit` 都不帶 ⇒ 整條 {% if %} 鏈原本全數落空。剩下兩種雖然還有 hits／score／
                                          floor 可畫，但畫面上一樣分不出「裁判判否」與「未達門檻」——同樣的三格數字，
                                          結論卻是兩件事。

@@ -99,7 +99,11 @@
         <div class="header-controls-slot">
             {% include "components/header-controls/header-controls.html" %}
         </div>
-        {# data-scroll-lock：宣告「這顆開關 .active 的時候要鎖住 body 捲動」。全域規則在 _base.scss，
+        {# **漢堡鈕：markup 在本檔，樣式與開合行為由 `components/mobile-nav` 供給**
+           （`_mobile-nav.scss` 的 `.nav-toggle` ＋ `mobile-nav.js` 的 `querySelector(".nav-toggle")`）。
+           §1-1 的專屬子片段＝同一個元件邊界，跨界的 class 借用不算違規，但耦合點要在雙方檔頭互相
+           指名——改名或搬家要兩邊一起改，否則它會變成一顆沒有樣式也沒有人綁的死鈕。
+           data-scroll-lock：宣告「這顆開關 .active 的時候要鎖住 body 捲動」。全域規則在 _base.scss，
            它不認識 .nav-toggle —— 任何全螢幕浮層掛這個屬性就吃得到鎖（同 data-open-modal 的宣告式風格）。 #}
         <button type="button" class="nav-toggle" data-scroll-lock aria-label="開啟選單" data-i18n-aria-label="nav.openMenu" aria-expanded="false"></button>
     </div>

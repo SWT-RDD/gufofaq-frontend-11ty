@@ -200,7 +200,8 @@ permalink: 5-1-1_accountInfo.html
                     <label for="confirmPasswordInput" class="control-label required" data-i18n="settings.confirmPassword">確認新密碼</label>
                 </div>
                 <div class="field">
-                    <input type="password" id="confirmPasswordInput" minlength="8" placeholder="再次輸入新密碼" data-i18n-placeholder="settings.pleaseEnterConfirmPassword" class="form-control" required>
+                    {# 同上一格的 `minlength="8"` 約束 ⇒ 共指同一句說明（§4）。 #}
+                    <input type="password" id="confirmPasswordInput" minlength="8" placeholder="再次輸入新密碼" data-i18n-placeholder="settings.pleaseEnterConfirmPassword" aria-describedby="newPasswordInputHint" class="form-control" required>
                 </div>
             </div>
         </div>

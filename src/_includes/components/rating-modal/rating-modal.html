@@ -20,6 +20,10 @@
        ratingModalNote / ratingModalNoteKey         —— 問句下的說明句（不給＝不渲染）
        ratingModalFeedback                          —— 意見回饋欄的預填值（不給＝空）
        ratingModalToast / ...Key / ...Type          —— 送出鈕的結果（不給＝前台的三段）
+       ratingCapability                             —— 送出鈕的能力閘門（§4）。後台兩頁（4-2／2-2-3）都給
+                                                      "history"，對回 product `history.py` 的 `rate_history`
+                                                      ＝`require_capability("history")`；前台 faq 不給
+                                                      ＝匿名無閘門，那是對的。
      一個參數都不給＝前台現況逐字不變。 #}
 <dialog class="modals" id="likeModal" aria-labelledby="likeModal-title">
     <div class="modals-dialog modals-md">

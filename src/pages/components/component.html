@@ -782,7 +782,8 @@ bodyClass: guideline-page
                  **判否與未達門檻是中性灰、不是錯誤紅**：那是系統正確運作的結果（這一筆 QA 沒有完整
                  回答使用者，所以不逐字直出）；畫紅色會讓人以為系統壞了。
                  ⚠️ **`decidedBy`（判定層）只在命中那幾筆有值**：上游 `qa_direct.py` 把 `gate` 只寫進
-                 `DECISION_HIT` 的那三個 `_rec`（`GATE_EXACT`／`GATE_SCORE_FLOOR`／`GATE_LLM_JUDGE`），
+                 `DECISION_HIT` 的判定紀錄（值域 `GATE_EXACT`／`GATE_SCORE_FLOOR`／`GATE_LLM_JUDGE`；
+                 不寫死幾處 `_rec`——實際是四處 `_rec` 加一處 agent 工具路徑的 `probe.record`），
                  `DECISION_RECONSTRUCT_FAILED` 那兩處 `_rec` 一個 `gate=` 都沒帶。語意上也只能如此：
                  「判定層」回答的是「哪一關**放行**了這一輪」，沒有放行就沒有那一格。
                  ⚠️ 同理 **`matchedRank` 只有 ① 完全命中那一層寫得出來**：`decide()` 只在

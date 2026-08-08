@@ -83,8 +83,10 @@
                                      下一顆被禁的工具出現時清單會漏（GufoRAG chatbot
                                      `app/services/agent_service.py` 的 `SKILL_FORBIDDEN_BUILTIN_TOOLS`
                                      是一張 dict，名字集合由它導出成 `SKILL_FORBIDDEN_BUILTIN_TOOL_NAMES`）。
-                                     `skillRestrictionReason` 是端點給的字串，**與存檔被擋時的 400 訊息是
-                                     同一句**（product `app/tool_refs.py` 直接把它塞進 400），所以不掛
+                                     `allowed_in_skill=false` 時上游同時給 **`skill_restriction_reason`**
+                                     （本元件把它落在示範資料的 `reason` 欄），它**與存檔被擋時的 400 訊息是
+                                     同一句**（product `app/tool_refs.py` 的 `assert_allowed_builtin_tools`
+                                     原樣塞進 400），所以不掛
                                      data-i18n——掛了就是同一句話有兩份譯文，設定頁說一套、存檔說另一套。 #}
                                 {# **目錄是全集，不是摘要**：名字與順序逐字取自 chatbot
                                      `app/services/agent_service.py` 的 `BUILTIN_TOOL_NAMES`（14 顆），

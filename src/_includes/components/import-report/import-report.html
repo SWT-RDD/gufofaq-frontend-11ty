@@ -10,7 +10,7 @@
 
      頁面 include 前 set（GUIDELINE §6，資料因頁面而異）：
        importCounts = { inserted, updated, failed }（必填）
-       importFileReports = [{ filename, structure?, droppedLinks?, unprocessableTables? }]（選填）
+       importFileReports = [{ filename, structure?, droppedLinks?, unprocessableTables?, suspectedHeaderlessTables? }]（選填）
          structure = [{ labelKey, label, value }]——word 與 pdf 的欄位不同（product app/docx.py 的
            DocxStats 是段落/表格/表格列數；app/pdf_tables.py 的 PdfStats 是頁數/表格/表格列數/
            沒有表頭的續表/有格線卻抽不出表格的頁數），故做成通用 label-value 列而不是寫死的句子

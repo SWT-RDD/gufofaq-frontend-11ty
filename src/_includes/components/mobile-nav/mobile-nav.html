@@ -1,4 +1,7 @@
-{# menuItems 由 header.html 在 include 本元件前 {% set %}，兩者共用同一份選單資料，這裡不重新宣告 #}
+{# menuItems 由 header.html 在 include 本元件前 {% set %}，兩者共用同一份選單資料，這裡不重新宣告。
+     **漢堡鈕 `.nav-toggle` 的 markup 住在 `components/header/header.html`**，樣式（`_mobile-nav.scss`）
+     與開合行為（`mobile-nav.js`）由本元件供給——§1-1 的專屬子片段：跨這條邊界的 class 借用不算違規，
+     但耦合點要在雙方檔頭互相指名，改名要兩邊一起改。 #}
 <nav class="mobile-nav" aria-label="行動版選單" data-i18n-aria-label="nav.mobileMenu">
     <div class="overlay"></div>
     <div class="mobile-menu-wrap">

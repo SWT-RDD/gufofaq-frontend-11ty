@@ -14,7 +14,7 @@
      `className="… js-remove-glossary-entry"`。
      詞條／定義的 maxlength 是契約欄位（§6），出處＝GufoRAG chatbot app/services/glossary.py 的
      `MAX_TERM_LEN = 200`／`MAX_DEFINITION_LEN = 2000`，兩道逐筆檢查都在同檔的 `validate_entries`（存檔即驗、
-     fail-fast），經 product glossary.py 的 `_as_bad_request` 映成 400。**別名欄已於 2026-08-07 隨上游移除**：chatbot `db/database.py` 逐字寫著「別名一律住在 `alias_entries`」，
+     fail-fast），經 product glossary.py 的 `_as_bad_request` 映成 400。**別名欄已於 2026-08-07 隨上游移除**：chatbot `app/db/database.py` 逐字寫著「別名一律住在 `alias_entries`」，
      別名改由 3-6_aliasTables 統一管理、在 5-2 決定哪個階段套用。沒有生產使用者，故不留、不 deprecate——
      留著只會有兩個地方可以填別名，而這整件事就是為了收掉那個。
      原記的三項結構差異**已全數回流**（round40 複驗，故不再是差異）：gufofaq-saas
