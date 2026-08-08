@@ -634,7 +634,7 @@
   "qa.conversationTime": "Conversation time",
   "qa.detailConvItems": "",
   "qa.detailConvNo": "Conversation",
-  "qa.detailConvOf": "of",
+  "qa.detailConvOf": " of ",
   "qa.detailPageTitle": "Conversation details",
   "qa.endTime": "End time",
   "qa.exportFormat": "Export format",

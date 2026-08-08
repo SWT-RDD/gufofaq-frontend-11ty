@@ -61,12 +61,10 @@
                      `.edit-cell` 的 `.html()` 是整格覆寫、預填值取自資料物件而不是這一格的文字
                      （凍結前端 js/knowledgeRetrieval.js 的 `startEdit` 讀的是 `folder.FolderDescription`），
                      所以這個「—」不會被編輯器當成初值帶進 textarea。 #}
-                <td class="edit-cell description">
-                    {% if row.description %}<div class="collapse-text"><div class="collapse-body">{{ row.description }}</div><button type="button" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>{% else %}—{% endif %}
-                </td>
-                <td class="edit-cell prompt">
-                    {% if row.prompt %}<div class="collapse-text"><div class="collapse-body">{{ row.prompt }}</div><button type="button" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>{% else %}—{% endif %}
-                </td>
+                {# 整格內容都在 {% if %} 裡 ⇒ `<td>…</td>` 收成一行（§2）：`{% else %}—{% endif %}` 那一支
+                     會把縮排換行併進同一個文字節點，而 JSX 會把它整段丟掉。 #}
+                <td class="edit-cell description">{% if row.description %}<div class="collapse-text"><div class="collapse-body">{{ row.description }}</div><button type="button" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>{% else %}—{% endif %}</td>
+                <td class="edit-cell prompt">{% if row.prompt %}<div class="collapse-text"><div class="collapse-body">{{ row.prompt }}</div><button type="button" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>{% else %}—{% endif %}</td>
                 <td class="text-center">
                     <button type="button" class="button button-edit-save js-edit-btn" title="編輯" data-i18n-title="action.edit">
                         <img src="./images/icon_edit_blue.png" width="48" height="48" decoding="async" alt="" class="icon">

@@ -19,7 +19,9 @@
          使用者要按下去才知道打錯。上限由使用頁的 pagerTotal 供給（同一份資料，不另烤一個常數）。 #}
     <input class="pager-input form-control" type="number" min="1" max="{{ pagerTotal }}" step="1" value="1" aria-label="頁碼" data-i18n-aria-label="qa.pageNumber" aria-describedby="pagerInputHint">
 
-    <span class="pager-text" id="pagerInputHint"><span data-i18n="qa.detailConvOf">個對話，共</span> <span class="total">{{ pagerTotal }}</span> <span data-i18n="qa.detailConvItems">個</span></span>
+    {# 分隔空白住在**譯文**、不留在 markup（§4-2；正典 ui/pagination 的 totalPrefix／totalSuffix）：
+         留在 markup 會讓繁中比凍結正本多兩個半形空白，而 JSX 又不會產生這種縮排空白，兩邊長不一樣。 #}
+    <span class="pager-text" id="pagerInputHint"><span data-i18n="qa.detailConvOf">個對話，共</span><span class="total">{{ pagerTotal }}</span><span data-i18n="qa.detailConvItems">個</span></span>
 
     <button type="button" class="pager-btn next">
         <img src="./images/icon_arrow_right_blue.png" width="48" height="48" decoding="async" alt="下一頁" data-i18n-alt="action.nextPage" class="icon">
