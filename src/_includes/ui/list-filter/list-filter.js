@@ -50,6 +50,11 @@
 // ② 資料集清單（radio，生產 markup＝components/select-dataset-modal）——殼的三層與 ① 逐字相同
 //    （只有 `<h3>` 的 id 與 i18n key 換成自己的），差別在 `.modals-body` 裡：多一層
 //    `.dataset-box-wrap > .checkbox-container` 的並排容器、清單是 `role="radiogroup"`
+//    ⓓ `.checkbox-container` 是沿用真 app 1-1-1 `#datasetModal` 的 wrapper（凍結前端同款；
+//       `js/dataImport.js` 開頭就註明「Modal 確認按鈕（單選模式，不需要 check-all）」）。
+//       它全站零樣式，而 `ui/checkbox/checkbox.js` 會對它綁一個永遠不會觸發的 listener
+//       （這份清單是 radio 單選，窗內沒有任何 `.check-all`／`.check-one`）。
+//       **它不是本 widget 的必要層**——做新 modal 時不必帶；留著是忠實保留既有 markup（§5）。
 //    且由 modal 標題供名、每一筆是 `type="radio" name="dataset_radio" value`：
 //
 //   <div class="modals-wrap">

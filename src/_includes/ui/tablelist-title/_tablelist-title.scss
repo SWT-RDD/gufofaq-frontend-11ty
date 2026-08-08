@@ -3,7 +3,13 @@
 // modal 內的分組標題都在表格外用它），寄生在 default-table 的 scss 裡等於一個沒有主人的
 // class（§4）——比照 data-info 先例獨立成原子。
 //
-// markup 契約（無 html 元件，§1-2；整段照抄）—— 兩型，差別只在有沒有 `id`：
+// markup 契約（無 html 元件，§1-2；整段照抄）。**別把它記成「N 型」**——那是兩條互相獨立的軸，
+// 數型一定會漏掉組合（同 `ui/verdict-tag` 檔頭記取的那次教訓）：
+//   軸一：字面是 chrome ⇒ **一定帶 data-i18n**；key 可以寫死，也可以由頁面資料插值。
+//   軸二：同表控制項要 `aria-labelledby` 指得到它時才加唯一 `id`（正典 5-2 的 `intentLevelTitle-<n>`）。
+// 現存實例佔了三種組合：key 寫死＋無 id（5-2 ×6、file-edit-modal、multi-select-box ×2）、
+// key 插值＋有 id（5-2 的 intentLevelTitle）、key 插值＋無 id（knowledge-retrieval-modal）。
+// 下面兩段是**其中兩種組合的範例**，不是全集：
 //
 //   ① 固定標題：字面是 chrome ⇒ **一定帶 data-i18n**（少了它英文模式整條標題是繁中，而視覺指紋看不出來）
 //
