@@ -51,7 +51,8 @@
 //      兩側的 [[1]] 不是同一份文件，別共用一組號碼（理由見 2-2-3 頁內註解）。
 //
 // 住在哪一頁（雙向）：只有 2-2-3_abTest。
-// 反查：`grep -rn 'ab-compare' src --include=*.html` 只命中該頁。
+// 反查：`grep -rn 'ab-compare' src --include=*.html` 除該頁之外，只多命中
+// `components/qa-side-panel` 檔頭註解裡的說明文字（不是實例）。
 .ab-compare {
     flex: 1;
 

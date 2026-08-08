@@ -7,12 +7,12 @@
     <div class="mobile-menu-wrap">
         <ul class="mobile-menu">
             {% for item in menuItems %}
-            <li{% if item.hidden %} class="hidden"{% endif %}{% if item.platformRole %} data-platform-role="{{ item.platformRole }}"{% endif %}>
+            <li{% if item.platformRole %} data-platform-role="{{ item.platformRole }}"{% endif %}>
                 {% if item.submenu %}
                 <a href="#" class="dropdown" title="{{ item.label }}" data-i18n="{{ item.i18nKey }}" data-i18n-title="{{ item.i18nKey }}" aria-haspopup="true" aria-expanded="false">{{ item.label }}</a>
                 <ul>
                     {% for sub in item.submenu %}
-                    <li{% if sub.hidden %} class="hidden"{% endif %}{% if sub.platformRole %} data-platform-role="{{ sub.platformRole }}"{% endif %}>
+                    <li{% if sub.platformRole %} data-platform-role="{{ sub.platformRole }}"{% endif %}>
                         <a href="{{ sub.href }}" title="{{ sub.label }}" data-i18n="{{ sub.i18nKey }}" data-i18n-title="{{ sub.i18nKey }}">{{ sub.label }}{% if sub.beta %}<img src="./images/icon_beta.png" width="52" height="28" decoding="async" alt="BETA" class="beta-icon">{% endif %}</a>
                     </li>
                     {% endfor %}

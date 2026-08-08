@@ -9,7 +9,7 @@ bodyClass: catalog-page
    在 app i18n 範圍內（chrome 要翻譯）；連結清單資料化，新增頁面時在此加一筆（label 是繁中原文，i18nKey 是英文的 key）。
 
    **英譯一律 Title Case**（§4-2：同一組枚舉、同一層選單內的構詞與大小寫要一致）：這份清單把
-   `nav.*`（header 選單那一族，全部 Title Case）與 `catalog.*` 混在同一個 `<ul>` 裡並列，
+   `nav.*`（header 選單那一族，全部 Title Case）與 `catalog.*` 混在同一張 `.catalog-links` 卡裡並列，
    兩種寫法夾雜時讀起來就是兩份清單黏在一起。`catalog.sec*`／`catalog.link*` 已全部對齊。
    ⚠️ 借用其他命名空間的那幾顆（`action.addDataset`／`qa.qaHistoryTitle`／`qa.detailPageTitle`／
    `regression.runReportTitle`）**維持它們自己那一族的慣例**——它們同時是按鈕字面與分頁標題，

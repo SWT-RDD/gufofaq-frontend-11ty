@@ -76,6 +76,9 @@ document.addEventListener("DOMContentLoaded", function () {
             inC.value = canonical;
             inC.required = true;
             inC.setAttribute("aria-labelledby", nameId + " aliasHeadCanonical");
+            // aliasLimitsHint 的第一個子句講的就是標準詞上限，兩顆輸入都要指過去（§4）；
+            // 這裡與模板那一份必須逐字同形，否則貼上產生的列與示範列不再是同一個契約。
+            inC.setAttribute("aria-describedby", "aliasLimitsHint");
             tdC.appendChild(label);
             tdC.appendChild(inC);
 

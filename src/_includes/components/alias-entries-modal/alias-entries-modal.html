@@ -88,7 +88,7 @@
                                 <tr>
                                     <td>
                                         <span id="aliasRowName-{{ loop.index }}" class="sr-only">{{ entry.canonical }}</span>
-                                        <input type="text" class="form-control{% if entry.conflict %} error{% endif %}" maxlength="200" value="{{ entry.canonical }}" aria-labelledby="aliasRowName-{{ loop.index }} aliasHeadCanonical" required>
+                                        <input type="text" class="form-control{% if entry.conflict %} error{% endif %}" maxlength="200" value="{{ entry.canonical }}" aria-labelledby="aliasRowName-{{ loop.index }} aliasHeadCanonical" aria-describedby="aliasLimitsHint" required>
                                     </td>
                                     <td>
                                         <input type="text" class="form-control{% if entry.conflict %} error{% endif %}" value="{{ entry.aliases }}" aria-labelledby="aliasRowName-{{ loop.index }} aliasHeadAliases" aria-describedby="aliasLimitsHint" required>

@@ -16,11 +16,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
         // 顯示來源區塊並定位到「序號」欄等於 no 的那一筆（對齊答案內文 [[N]] 的語意）：
         // 展開該列、捲到畫面中央、短暫高亮。
-        // 找不到該筆就只顯示區塊：切版的號碼是寫死的示範值、來源表也一定有那幾筆，
-        // 這條分支在版型稿裡不可達。「編號指不到任何一列」是真值才會發生的缺陷，該大聲報的地方
-        // 在消費端（apps/web 的 SourcesBlock，那裡的 N 來自 LLM 實際輸出）。
+        // **找不到該筆就什麼都不做（連區塊都不掀）**——這條分支在版型稿裡就到得了：2-2-3 只 include
+        // 一份 sources-block（示範 sourceNo 1／4＝A 側），而 B 側答案的徽章是 [[2]]／[[6]]，兩顆必定落空。
+        // 先 show() 再找列的話，按 B 側的 [[2]] 會掀開一張標著「（設定 A）」的表、而且沒有任何列高亮——
+        // 那比什麼都不發生更容易被讀成「B 的第 2 筆就是這張表」。兩側各自的來源表是業務 js 的事。
         reveal: function (no) {
-            this.show();
             var block = document.querySelector(".sources-block");
             if (!block) return;
             // 摘要列與 detail 列成對出現，故資料列＝tbody 內非 .detail-row 的那些。
@@ -38,6 +38,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
             }
             if (!row) return;
+            // 確定指得到列，才把區塊掀開（順序見上方註解）。
+            this.show();
             // 展開那一列走 ui/accordion 匯出的 API（§5：要操作別的元件就呼叫它匯出的函式）。
             // 不用 btn.click()：合成點擊會重新進入全站每一支 document 委派（祖先上的 data-toast
             // 計數器會被多推一格），而且 accordion 尚未綁定時它靜默失敗、這裡偵測不到。

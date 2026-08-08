@@ -80,7 +80,8 @@
                 <div class="modals-footer">
                     <div class="button-row center">
                         <button type="button" class="button button-border btn-close-modals" data-i18n="action.cancel">取消</button>
-                        {# 六顆複製項目 checkbox 是「至少要勾一個」的必選群組：全部取消時端點會以 `groups=[]`
+                        {# 複製項目 checkbox 是「至少要勾一個」的必選群組（每一組來自 configCopyGroups，
+                             §3-2 能不寫死計數就不要寫）：全部取消時端點會以 `groups=[]`
                              回 200 而什麼都沒做，再配一顆成功 toast 就是 fail-silent。這一態要演成 warning，
                              不可以改用 disabled 讓它不可達（REACT-CONVERSION §⑥：只有「進行中」能 disable）。 #}
                         {# 這一下會整份覆寫目標設定檔——「複製」是寫入動詞，不是唯讀。閘門對回 product

@@ -1523,16 +1523,28 @@ permalink: 5-2_conversationSettings.html
              已選的表；第一顆沒選任何表時後三顆停用（值控制項照渲染但 disabled，§5：狀態要
              看得見才稽核得到，只是改不動）。
              四顆都是**值載體**⇒ 只掛 hook class、不掛 data-toast（§5 矩陣②）。
-             一個設定檔最多綁 10 張（`services/alias.py` 的 `MAX_ALIAS_TABLES_PER_CONFIG`）。 #}
+             一個設定檔最多綁 10 張（GufoRAG chatbot `app/services/alias.py` 的
+             `MAX_ALIAS_TABLES_PER_CONFIG`；§3-2 跨 repo 出處要 repo ＋ 檔 ＋ 符號三者齊全）。
+             **四顆共用同一份目錄**（§3-3：同頁兩個以上 select 的 option value 集合相同 ⇒ 必須 set
+             成一個陣列共用）：值域正本是 3-6 的別名表清單，選取狀態各自一份 id 清單。
+             四份抄本改一處就會漏，而這四顆正是「三個 apply 清單 ⊆ alias_table_ids」那條寫入層
+             約束的載體——漏掉一份就直接演出一個上游會 400 的組合。 #}
+        {% set aliasTableCatalog = [
+            { id: 12, name: "關務通用別名" },
+            { id: 9, name: "系統別名" },
+            { id: 7, name: "待整理別名" }
+        ] %}
+        {% set aliasBindIds = [12, 9, 7] %}
+        {% set aliasApplyMatchIds = [12, 9, 7] %}
+        {% set aliasApplyReasoningIds = [12] %}
+        {% set aliasApplyOutputIds = [] %}
         <div class="form-group row mobile-col">
             <div class="label label-md">
                 <label for="aliasTablesSelect" class="control-label" data-i18n="settings.bindAliasTables">綁定別名表</label>
             </div>
             <div class="field col-12-sm">
                 <select id="aliasTablesSelect" class="form-control multiSelect js-alias-tables" multiple="multiple" data-placeholder="請選擇" data-placeholder-key="common.pleaseSelect" aria-describedby="aliasBindHint">
-                    <option value="12" selected>關務通用別名</option>
-                    <option value="9" selected>系統別名</option>
-                    <option value="7" selected>待整理別名</option>
+                    {% for t in aliasTableCatalog %}<option value="{{ t.id }}"{% if t.id in aliasBindIds %} selected{% endif %}>{{ t.name }}</option>{% endfor %}
                 </select>
                 <span class="text-gray" id="aliasBindHint"><span data-i18n="settings.aliasBindLimitPrefix">一個設定檔最多綁 </span><span>10</span><span data-i18n="qa.detailConvItems">個</span></span>
             </div>
@@ -1543,9 +1555,7 @@ permalink: 5-2_conversationSettings.html
             </div>
             <div class="field col-12-sm">
                 <select id="aliasApplyMatchSelect" class="form-control multiSelect js-alias-apply-match" multiple="multiple" data-placeholder="請選擇" data-placeholder-key="common.pleaseSelect">
-                    <option value="12" selected>關務通用別名</option>
-                    <option value="9" selected>系統別名</option>
-                    <option value="7" selected>待整理別名</option>
+                    {% for t in aliasTableCatalog %}<option value="{{ t.id }}"{% if t.id in aliasApplyMatchIds %} selected{% endif %}>{{ t.name }}</option>{% endfor %}
                 </select>
             </div>
         </div>
@@ -1555,9 +1565,7 @@ permalink: 5-2_conversationSettings.html
             </div>
             <div class="field col-12-sm">
                 <select id="aliasApplyReasoningSelect" class="form-control multiSelect js-alias-apply-reasoning" multiple="multiple" data-placeholder="請選擇" data-placeholder-key="common.pleaseSelect">
-                    <option value="12" selected>關務通用別名</option>
-                    <option value="9">系統別名</option>
-                    <option value="7">待整理別名</option>
+                    {% for t in aliasTableCatalog %}<option value="{{ t.id }}"{% if t.id in aliasApplyReasoningIds %} selected{% endif %}>{{ t.name }}</option>{% endfor %}
                 </select>
             </div>
         </div>
@@ -1576,9 +1584,7 @@ permalink: 5-2_conversationSettings.html
                 {# 示範刻意留空（§6）：出口是唯一會改寫答案文字的階段，用它得是一個明確動作——
                      示範資料先勾起來會讓人以為那是預設值。上游四欄也全部預設空。 #}
                 <select id="aliasApplyOutputSelect" class="form-control multiSelect js-alias-apply-output" multiple="multiple" aria-labelledby="aliasApplyOutputLabel" data-placeholder="請選擇" data-placeholder-key="common.pleaseSelect">
-                    <option value="12">關務通用別名</option>
-                    <option value="9">系統別名</option>
-                    <option value="7">待整理別名</option>
+                    {% for t in aliasTableCatalog %}<option value="{{ t.id }}"{% if t.id in aliasApplyOutputIds %} selected{% endif %}>{{ t.name }}</option>{% endfor %}
                 </select>
             </div>
         </div>

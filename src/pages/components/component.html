@@ -521,7 +521,7 @@ bodyClass: guideline-page
                 <div class="flex-row gap-16 flex-wrap align-items-center">
                     <button type="button" class="button button-primary" data-open-modal="datasetModal">開啟選擇資料集modal</button>
                     {# §1-2：同一個元件絕不複製貼上，要用就 include。這一顆本來是 ui/link-modal 的
-                         markup 被逐字元抄過來的（同一頁上方第 09 節已經在 include 它）。 #}
+                         markup 被逐字元抄過來的（同一頁上方第 07 節已經在 include 它）。 #}
                     {% include "ui/link-modal/link-modal.html" %}
                     <button type="button" class="button button-primary" data-open-modal="previewModal">開啟檔案預覽modal（iframe）</button>
                     <button type="button" class="button-icon no-bg size-sm edit" data-open-modal="editModal" title="編輯">
@@ -724,12 +724,13 @@ bodyClass: guideline-page
             <div class="caption">
                 <ul>
                     <li>components/step-flow：後台測試區（單測 2-2-1／AB 2-2-3）的詳細執行觀測——把整條正典管線畫成類 mermaid 直式流程圖，頂端整體執行摘要，每節點可展開看工具/參數/結果/grounding 判定/agent 推理</li>
-                    <li>狀態點：is-completed（綠）／is-running（深墨，當前高亮）／is-skipped（空心環，未走分支）／is-failed（紅）／pending（灰）。真實頁只演到 completed/running/skipped/pending；「失敗」態只在此處看得到（GUIDELINE §5：scss 狀態 class 沒有頁面演得出＝補元件庫靜態示範）</li>
+                    <li>狀態點：is-completed（綠）／is-running（深墨，當前高亮）／is-skipped（空心環，未走分支）／is-failed（紅）／pending（灰）。真實頁演到 completed／running／pending（2-2-1／2-2-3 走元件內建示範）與 failed（3-4 的試跑沙盒）；<strong>只有 is-skipped 沒有任何生產頁演得到</strong>，靠這一節活著（GUIDELINE §5：scss 狀態 class 沒有頁面演得出＝補元件庫靜態示範）</li>
                     <li>進度「目前 X / N」與摘要「檢索」筆數全由節點資料推導、不烤字面量；收合復用 ui/accordion，本元件不自帶 js</li>
                 </ul>
             </div>
-            {# 失敗流程示範：生成到一半被合規攔截而中止，下游整段沒跑——一次演到 failed（唯一無真實頁的態）
-               ＋completed＋skipped，且是一個真實可能的狀態（§6）。節點與摘要一起給，檢索筆數對上「命中 3 筆」。
+            {# 失敗流程示範：生成到一半被合規攔截而中止，下游整段沒跑——一次演到 failed＋completed＋skipped
+               （**skipped 才是唯一無真實頁的態**：failed 在 3-4 的試跑沙盒有一個節點，running／pending 在
+               2-2-1／2-2-3 的元件內建示範裡），且是一個真實可能的狀態（§6）。節點與摘要一起給，檢索筆數對上「命中 3 筆」。
                ⚠️ **failed 之後一律 skipped，沒有 pending**：saas `apps/web/lib/stepFlow.ts` 的 `computeFlow`
                docstring 逐字寫著「`failed` 是終止狀態：其後的節點本輪不會再跑，一律 skipped」。
                原本尾巴排成 skipped／pending／pending——pending 的語意是「還沒輪到、等一下會跑」，

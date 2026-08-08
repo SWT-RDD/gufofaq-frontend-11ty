@@ -72,7 +72,7 @@
                             {% elif row.state == "expired" %}<span class="text-gray" data-i18n="share.stateExpired">已過期</span>
                             {% else %}<span class="text-bold" data-i18n="share.stateActive">生效中</span>{% endif %}
                             <button type="button" class="button button-border button-sm shareBtn" data-toast="連結已複製!" data-i18n-data-toast="modals.linkCopied" aria-labelledby="shareCopyLabel-{{ loop.index }} shareRowName-{{ loop.index }}"><span id="shareCopyLabel-{{ loop.index }}" data-i18n="action.copy">複製</span></button>
-                            <button type="button" class="button button-red button-sm js-revoke-share"{% if row.state != "active" %} disabled{% endif %} data-i18n="action.revoke">撤銷</button>
+                            <button type="button" class="button button-red button-sm js-revoke-share"{% if row.state != "active" %} disabled{% endif %} aria-labelledby="shareRevokeLabel-{{ loop.index }} shareRowName-{{ loop.index }}"><span id="shareRevokeLabel-{{ loop.index }}" data-i18n="action.revoke">撤銷</span></button>
                         </div>
                         {% else %}
                         {# GET /share 只回未撤銷的列，且一筆都還沒建過的問答初始態就是空的——

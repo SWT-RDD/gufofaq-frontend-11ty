@@ -23,17 +23,17 @@
                 <div class="text-gray text-center" data-i18n="dataImport.selectSourceHint">請選擇欲對應的來源內容</div>
             </div>
             <div class="flex-row column gap-16" role="group" aria-labelledby="msMappingColLabel">
-                {% for field in fieldSlotCatalog %}{% set x = fieldExtras[field.key] %}{% if not field.productOnly %}
+                {% for field in fieldSlotCatalog %}{% set msExtra = fieldExtras[field.key] %}{% if not field.productOnly %}
                 <div class="form-group row mobile-col">
                     <div class="label label-md">
                         <label for="ms-{{ field.key }}" class="control-label" data-i18n="field.{{ field.key }}">{{ field.defaultLabel }}</label>
                     </div>
                     <div class="field col-12-sm">
-                        <select id="ms-{{ field.key }}" class="form-control multiSelect ms-control field-{{ field.key }}" multiple="multiple" data-placeholder="{{ x.placeholder }}"{% if x.placeholderKey %} data-placeholder-key="{{ x.placeholderKey }}"{% endif %}>
+                        <select id="ms-{{ field.key }}" class="form-control multiSelect ms-control field-{{ field.key }}" multiple="multiple" data-placeholder="{{ msExtra.placeholder }}"{% if msExtra.placeholderKey %} data-placeholder-key="{{ msExtra.placeholderKey }}"{% endif %}>
                             {% for option in columnOptions %}
-                            <option value="{{ option.value }}"{% if x.selected == option.value %} selected{% endif %}>{{ option.label }}</option>
+                            <option value="{{ option.value }}"{% if msExtra.selected == option.value %} selected{% endif %}>{{ option.label }}</option>
                             {% endfor %}
-                            {# value 從陣列推導（§6 不烤字面量）：它是「來源欄位的下一個索引」，使用頁多列一欄就會與烤死的 4 撞值，而且是靜默的。 #}{% if x.extraOption %}<option value="{{ columnOptions.length }}">{{ x.extraOption }}</option>{% endif %}
+                            {# value 從陣列推導（§6 不烤字面量）：它是「來源欄位的下一個索引」，使用頁多列一欄就會與烤死的 4 撞值，而且是靜默的。 #}{% if msExtra.extraOption %}<option value="{{ columnOptions.length }}">{{ msExtra.extraOption }}</option>{% endif %}
                         </select>
                     </div>
                 </div>
@@ -42,25 +42,25 @@
                      混在備註 1–10 中間時，它看起來就只是第 11 個備註欄。說明掛在小標下、不塞進欄位名裡
                      ——租戶可以把它改名成「維護人」，改掉的當下括號裡那句就沒了（同 5-2 欄位命名區的處置）。
                      productOnly 是選填：沒有那一筆的使用頁（目前只有 1-1-4 有）整段不渲染。 #}
-                {% set hasProductOnly = false %}
-                {% for field in fieldSlotCatalog %}{% set x = fieldExtras[field.key] %}{% if field.productOnly %}{% set hasProductOnly = true %}{% endif %}{% endfor %}
-                {% if hasProductOnly %}
+                {% set msHasProductOnly = false %}
+                {% for field in fieldSlotCatalog %}{% set msExtra = fieldExtras[field.key] %}{% if field.productOnly %}{% set msHasProductOnly = true %}{% endif %}{% endfor %}
+                {% if msHasProductOnly %}
                 <div class="flex-row column gap-8">
                     <div class="tablelist-title" data-i18n="settings.productOnlyFields">產品內部欄位</div>
                     <div class="text-gray" id="msProductOnlyHint" data-i18n="settings.internalNoteHint">這一欄純粹是產品內的紀錄：不會被搜到、不會進 AI 的參考資料、也不能當統計或篩選的維度。匯入時原文照存，連 HTML 轉 Markdown 都不做。</div>
                 </div>
                 {% endif %}
-                {% for field in fieldSlotCatalog %}{% set x = fieldExtras[field.key] %}{% if field.productOnly %}
+                {% for field in fieldSlotCatalog %}{% set msExtra = fieldExtras[field.key] %}{% if field.productOnly %}
                 <div class="form-group row mobile-col">
                     <div class="label label-md">
                         <label for="ms-{{ field.key }}" class="control-label" data-i18n="field.{{ field.key }}">{{ field.defaultLabel }}</label>
                     </div>
                     <div class="field col-12-sm">
-                        <select id="ms-{{ field.key }}" class="form-control multiSelect ms-control field-{{ field.key }}" multiple="multiple" data-placeholder="{{ x.placeholder }}"{% if x.placeholderKey %} data-placeholder-key="{{ x.placeholderKey }}"{% endif %} aria-describedby="msProductOnlyHint">
+                        <select id="ms-{{ field.key }}" class="form-control multiSelect ms-control field-{{ field.key }}" multiple="multiple" data-placeholder="{{ msExtra.placeholder }}"{% if msExtra.placeholderKey %} data-placeholder-key="{{ msExtra.placeholderKey }}"{% endif %} aria-describedby="msProductOnlyHint">
                             {% for option in columnOptions %}
-                            <option value="{{ option.value }}"{% if x.selected == option.value %} selected{% endif %}>{{ option.label }}</option>
+                            <option value="{{ option.value }}"{% if msExtra.selected == option.value %} selected{% endif %}>{{ option.label }}</option>
                             {% endfor %}
-                            {# value 從陣列推導（§6 不烤字面量）：它是「來源欄位的下一個索引」，使用頁多列一欄就會與烤死的 4 撞值，而且是靜默的。 #}{% if x.extraOption %}<option value="{{ columnOptions.length }}">{{ x.extraOption }}</option>{% endif %}
+                            {# value 從陣列推導（§6 不烤字面量）：它是「來源欄位的下一個索引」，使用頁多列一欄就會與烤死的 4 撞值，而且是靜默的。 #}{% if msExtra.extraOption %}<option value="{{ columnOptions.length }}">{{ msExtra.extraOption }}</option>{% endif %}
                         </select>
                     </div>
                 </div>
@@ -77,14 +77,14 @@
                 <div class="text-gray text-center" data-i18n="dataImport.previewHint">預覽已對應之結果</div>
             </div>
             <div class="flex-row column gap-16" role="group" aria-labelledby="msPreviewColLabel">
-                {% for field in fieldSlotCatalog %}{% set x = fieldExtras[field.key] %}{% if not field.productOnly %}
+                {% for field in fieldSlotCatalog %}{% set msExtra = fieldExtras[field.key] %}{% if not field.productOnly %}
                 <div class="form-group row mobile-col">
                     <div class="label label-md">
                         <label for="ms-preview-{{ field.key }}" class="control-label" data-i18n="field.{{ field.key }}">{{ field.defaultLabel }}</label>
                     </div>
                     <div class="field col-12-sm">
-                        <input type="text" id="ms-preview-{{ field.key }}" class="form-control disabled ms-control preview-{{ field.key }}{% if x.error %} error{% endif %}" value="{{ x.preview }}" disabled>
-                        {% if x.error %}
+                        <input type="text" id="ms-preview-{{ field.key }}" class="form-control disabled ms-control preview-{{ field.key }}{% if msExtra.error %} error{% endif %}" value="{{ msExtra.preview }}" disabled>
+                        {% if msExtra.error %}
                         {# .error-prompt 預設就 display:none，靠父層 .form-group:has(.error) 揭示（見 _form-control.scss）。
                            原本這裡寫死行內 display:none，等於把揭示機制永久壓死——error: true 的示範欄從來沒顯示過警告。 #}
                         <span class="error-prompt date-error" role="alert" data-i18n="dataImport.formatWarning">此格式可能無法被正確讀取</span>
@@ -96,21 +96,21 @@
                      混在備註 1–10 中間時，它看起來就只是第 11 個備註欄。說明掛在小標下、不塞進欄位名裡
                      ——租戶可以把它改名成「維護人」，改掉的當下括號裡那句就沒了（同 5-2 欄位命名區的處置）。
                      productOnly 是選填：沒有那一筆的使用頁（目前只有 1-1-4 有）整段不渲染。 #}
-                {% set hasProductOnly = false %}
-                {% for field in fieldSlotCatalog %}{% set x = fieldExtras[field.key] %}{% if field.productOnly %}{% set hasProductOnly = true %}{% endif %}{% endfor %}
-                {% if hasProductOnly %}
+                {% set msHasProductOnly = false %}
+                {% for field in fieldSlotCatalog %}{% set msExtra = fieldExtras[field.key] %}{% if field.productOnly %}{% set msHasProductOnly = true %}{% endif %}{% endfor %}
+                {% if msHasProductOnly %}
                 <div class="flex-row column gap-8">
                     <div class="tablelist-title" data-i18n="settings.productOnlyFields">產品內部欄位</div>
                     <div class="text-gray" id="msProductOnlyHintPreview" data-i18n="settings.internalNoteHint">這一欄純粹是產品內的紀錄：不會被搜到、不會進 AI 的參考資料、也不能當統計或篩選的維度。匯入時原文照存，連 HTML 轉 Markdown 都不做。</div>
                 </div>
                 {% endif %}
-                {% for field in fieldSlotCatalog %}{% set x = fieldExtras[field.key] %}{% if field.productOnly %}
+                {% for field in fieldSlotCatalog %}{% set msExtra = fieldExtras[field.key] %}{% if field.productOnly %}
                 <div class="form-group row mobile-col">
                     <div class="label label-md">
                         <label for="ms-preview-{{ field.key }}" class="control-label" data-i18n="field.{{ field.key }}">{{ field.defaultLabel }}</label>
                     </div>
                     <div class="field col-12-sm">
-                        <input type="text" id="ms-preview-{{ field.key }}" class="form-control disabled ms-control preview-{{ field.key }}" value="{{ x.preview }}" disabled aria-describedby="msProductOnlyHintPreview">
+                        <input type="text" id="ms-preview-{{ field.key }}" class="form-control disabled ms-control preview-{{ field.key }}" value="{{ msExtra.preview }}" disabled aria-describedby="msProductOnlyHintPreview">
                     </div>
                 </div>
                 {% endif %}{% endfor %}

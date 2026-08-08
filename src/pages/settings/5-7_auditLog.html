@@ -19,8 +19,8 @@ permalink: 5-7_auditLog.html
      租戶（指定 tenant_id／全部租戶 switch 送 scope=all）與操作者（送 operator=<id>）三個篩選欄位要**平台角色**才看得到，
      而那是 auditor 亦有的能力：product app/routers/audit.py 的 list_audit 以 is_platform_auditor
      （platform_role ∈ {auditor, admin}）判斷 scope=all／tenant_id／operator，該檔自註「用 is_platform_admin
-     判斷會把唯讀稽核員一起排除掉」。故兩欄掛 data-platform-role="auditor"（§5 兩級可見性），
-     **這兩顆是值控制項（switch／number input），不是動作鈕**，所以套的是 §5 兩級可見性的另一半：
+     判斷會把唯讀稽核員一起排除掉」。故上列這幾欄一律掛 data-platform-role="auditor"（§5 兩級可見性），
+     **它們都是值控制項（switch／input），不是動作鈕**，所以套的是 §5 兩級可見性的另一半：
      低於該級時**照渲染但 disabled**，不是不渲染——狀態要看得見才稽核得到。
      （原本這裡寫「決定是否渲染」，照著做會做出規則的反面；5-6-1／5-6-3 兩頁寫的才是對的。）
      此靜態頁展示的是有平台角色、可操作時的完整版面。 #}
@@ -201,6 +201,10 @@ permalink: 5-7_auditLog.html
                      沒有的鈕（§5 不放按了沒反應的鈕）。沒值畫「—」，與本表其他欄的空值語意一致。 #}
                 <td>{% if row.userAgent %}<div class="collapse-text"><div class="collapse-body">{{ row.userAgent }}</div><button type="button" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>{% else %}—{% endif %}</td>
             </tr>
+            {# 空狀態：本頁有查詢鈕與四個篩選欄，「篩到零筆」是走得到的常態（§5 無資料列）。
+                 colspan 9 ＝本表欄數（colgroup 九個 <col>）。 #}
+            {% else %}
+            <tr><td colspan="9" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
             {% endfor %}
         </tbody>
     </table>
