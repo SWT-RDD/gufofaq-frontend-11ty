@@ -4,6 +4,12 @@
        1. 額度——三個數字欄對齊 product QuotaIn（qa_limit／extraction_limit／storage_limit_mb）+ 用量週期
           select（無/每日/每月，QuotaIn.usage_period，隨額度共用 footer「儲存」鈕一起送出）+ 重置當期用量鈕
           （直接動作，逆向自 POST /platform/tenants/{id}/reset-usage，data-toast 演出成敗，不佔用共用 footer 鈕）
+          ⚠️ **`QuotaIn` 還收得下 `qa_used` / `extraction_used`（直接設當期已用值，管理員修正用，≥0），
+          這裡沒有版位**——§3-2：request 收得下的每個參數都要在畫面上有落點，不做的要寫理由。
+          這一項**不是決定、是缺口**：旁邊那顆「重置當期用量」只能歸零、不能改成某個值，
+          而上游為這兩欄另有一條 400（`platform.used_exceeds_limit`，已用量不可大於額度），
+          那道 warning 在儲存鈕的 `data-toast` 上同樣沒有。要補就是兩個 `type="number" min="0"`
+          數字欄（＋可見區間、`aria-describedby`）加一段 warning 分支。
        2. 使用期——「延展／縮短天數」數字欄 + 「指定到期日」日期欄（exactly-one：product platform.py 兩者都給
           回 400 `tenant.trial_one_of`（引 key 不引英文字面——被抽進 i18n 的句子隨時會改，§3-2；
           出處是 `platform.py` 的 `extend_tenant_trial`），React 端送出前擇一；日期選擇不在

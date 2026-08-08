@@ -2,6 +2,15 @@
      「匯入到哪個 QA 集」＝業務條件開窗，故該鈕保留 hook class、不掛 data-open-modal（GUIDELINE §5）。
      QA 匯入騎現有 Excel 管道（gufofaq-saas product app/routers/datasets.py 的 import_qa：內部組
      mapping={title:[問題欄], content:[答案欄]} 走 _do_excel_mapping_import）——UI 只需選問題欄、答案欄。
+     **`QaImportIn` 收得下七個參數，這裡只畫三個；缺的四個逐顆寫理由（§3-2：後端做了、前端到不了等於沒做）**：
+       `sheet_name`：不給就取第一張工作表——**這是缺口不是決定**。多工作表活頁簿在這裡選不到第二張，
+         而 1-1-3 那條路有 `#excelSheetSelect`。要補就照 1-1-3 的形狀補一顆 select。
+       `header_rows`：上游註解逐字寫著「必須與預覽時相同（question_col/answer_col 是使用者從預覽的
+         欄名清單裡挑的，多列表頭時那是串接後的名字）」——而這顆 modal **根本沒有預覽步驟**，
+         沒有那個「預覽時」可以對齊，故不畫；真要支援多列表頭得先有預覽，那是另一條流程。
+       `convert_html`：QA 集是問答對、不是文件內文，沒有 HTML 來源；1-2-1 那條路才有那顆開關。
+       `external_key`：**每個檔各一把**（共用一把的話同批第二個檔會蓋掉第一個），而這裡是單檔匯入、
+         沒有逐檔編輯的入口（1-2-1 是放在每一列的 file-edit-modal 裡）。
      上傳 Excel（ui/upload-box，button 版點開原生檔案窗；本元件依賴 upload-box 全預設值——使用頁
      include 本元件前不得殘留 upload* 參數（§2），現況兩使用頁皆從未 set）→ 選問題欄/答案欄（值載體
      hook class js-qa-question-col／js-qa-answer-col）→ 匯入（切版新頁的直送 API 鈕：data-toast 列全結果＋
