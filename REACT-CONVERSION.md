@@ -75,16 +75,16 @@
   判斷落點時看 body class 對到 §⓪ 的哪一條裁決，不要看檔名長得像不像。
 - `@use`／`url()`／`icon-mask(...)` 的路徑在原行就地替換，不插入額外說明行（scss-diff 逐行比對）。
 - `scss-diff.mjs` exit 0。
-- **`scss-diff` 紅掉先剝掉註解再比一次**：切版有整輪只改檔頭註解、宣告一字未動（本輪 13 支就是），
+- **`scss-diff` 紅掉先剝掉註解再比一次**：切版常有一整批只改檔頭註解、宣告一字未動的檔，
   逐行比對會整份從頭紅到尾、噴上百行位移雜訊。要分出「檔頭改寫」（整段換掉的機械操作）與
   「宣告漂移」（要逐條判讀）——分不出來就會整批當雜訊掃過去，把夾在中間的真差異一起放行：
-  本輪 `_var.scss` 的 `--fontFamily`（字型名補引號）、新增的 `--control-ink-disabled` 與
+  反例：`_var.scss` 的 `--fontFamily`（字型名補引號）、新增的 `--control-ink-disabled` 與
   `_checkbox.scss` 就混在同一批紅裡。而檔頭那段 markup 契約是**下一輪 §⓪「無 html 元件」唯一的
-  規格來源**，不是可跳過的散文：落後一輪就照舊契約轉出缺件的 markup（`ui/chatroom-shell` 這一輪
-  才寫的契約，暴露出 React 少了 `.first-chat`／`.chat-box` 兩層）。
+  規格來源**，不是可跳過的散文：落後一輪就照舊契約轉出缺件的 markup（反例：`ui/chatroom-shell`
+  的契約補齊之後，才看得出 React 少了 `.first-chat`／`.chat-box` 兩層）。
 - **照抄 scss ≠ 抄到 token**：抄完 grep 它用到的每個 `var(--…)` 是否存在於 React `styles/_var.scss`；缺的連同
   切版 `_var.scss` 的 **light + dark 兩處宣告**一起補（值與對比註解照抄）。缺 token 時 `scss-diff` 仍 exit 0、
-  `fpdiff` 幾何也不變，畫面卻靜默回退成繼承色（本輪 `--danger-ink`）。
+  `fpdiff` 幾何也不變，畫面卻靜默回退成繼承色（反例：`--danger-ink`）。
 - **表格列的狀態底色一律下到 `> td`**：`default-table` 對 `tbody tr td` 下了不透明底，CSS 表格繪製層序 row < cell
   ——寫在 `tr.is-*` 上是 100% 看不見的死樣式。抄到 `tr.is-*{background}` 就是抄到舊版。
 - **markdown renderer 產生的元素掛不上 class，允許保留一份自寫規則**（`.message-content .robot-msg code`），
@@ -152,7 +152,7 @@
 - a11y 綁定屬性成對帶：`aria-labelledby`／`aria-describedby` 連同它指到的 `id` 一起轉，兩端缺一不可
   （如 `<dialog aria-labelledby="x-title">` 配 `<h3 id="x-title">`），id 隨呼叫端 prop 衍生時兩處同一份運算式。
 - **`aria-label` → `aria-labelledby` 是有方向的遷移，不只是補一顆屬性**：切版把控制項的 `aria-label`
-  換成 `aria-labelledby` 時，React 那一端常常**早就有那顆 `id`**（本輪 `excelUnpivotLabel`／
+  換成 `aria-labelledby` 時，React 那一端常常**早就有那顆 `id`**（反例：`excelUnpivotLabel`／
   `excelConvertHtmlLabel`／`pdfConvertHtmlLabel` 三顆都在，只是沒有人指到它），逐項檢查「id 兩端成不
   成對」會判成通過，漏掉的是「該被引用的那一端還掛著舊的 `aria-label`」。判準寫成可跑的：切版該元素
   有 `aria-labelledby` ⇒ React 同一元素上**不得同時出現 `aria-label`**，遷移時整顆刪掉。accname 的優先序
@@ -162,7 +162,7 @@
 - 上述 `id`／`aria-*by` 對若落在 `.map()` 重複清單內：切版 demo 只渲染一顆、用靜態 id，照抄到每項會全列同 id＝違反同頁 id 唯一。
   改用**每項唯一**的 id（以該項 key／資料衍生，如 `` `sq-label-${item.id}` ``），`id` 與引用它的 `aria-*by` 共用同一運算式。
 - **原子只擁有自己的行為與樣式，不擁有可及名稱**：切版可以一個字都不改原子，卻在 consumer 那一側把
-  `aria-labelledby` 加到原子的元素上、把 `id` 加到原子內部的 sr-only span 上（本輪
+  `aria-labelledby` 加到原子的元素上、把 `id` 加到原子內部的 sr-only span 上（正典反例：
   `components/builtin-tool-card`：`ui/accordion` 的 `label()` 無條件寫同一句，5-2 同畫面 14 張卡的展開鈕
   全叫「展開表格」）。這在 11ty 零成本——卡片自己抄了那段 markup；React 端整顆包在 `<AccordionButton>`
   裡、consumer 碰不到子節點。做法是給原子加**選填** props（`labelId`／`contextLabelId` 或等價）：不給
@@ -194,7 +194,7 @@
 - **但 `{% set %}` 的列資料陣列不轉**：上一條只管非資料的頁面參數（`perPage`、預設頁籤那一類）。set 的
   清單若對應後端某支端點的回應（切版註解通常直接指名，如 5-6-1 的 `{% set tenants = [...] %}` ↔ product
   `platform.py` 的 `TenantOut`、5-8 的 `{% set tokens = [...] %}`），那是**示範資料**——React 的那幾格
-  來自 API，一個字都不搬。本輪 12 頁的 diff 有超過一半是這種陣列的修正（列序改成端點真實排序、id 換成
+  來自 API，一個字都不搬。切版每一輪的頁面 diff 常有超過一半是這種陣列的修正（列序改成端點真實排序、id 換成
   真主鍵、金鑰長度補足），逐條寫著理由但全部只對切版成立；照字面讀會把示範租戶 id（7/15/23/42/58）
   當成頁面資料寫進 React 常數。
 - **純版位元件（layout-only wrapper）照樣建成元件**：切版有一類元件不吃自己的參數，只提供版位並把頁面變數
@@ -204,7 +204,7 @@
 
 ### layouts → route layout
 
-切版有三支 layout，配方原本只在 §③ 順帶提過 base 的 no-flash 腳本，其餘零覆蓋。對照如下：
+切版有三支 layout，逐支對照如下：
 
 - **`layouts/base`** → root layout（`app/layout.tsx`）。它提供的東西**逐項都要有落點**，不是包一層 div 就好：
   - `<html lang>` ＋ `data-page-title-key`：前者由語言 state 同步（§③），後者是切版給 `lang-toggle` 重譯 `<title>` 用的，**不帶過去**——React 用 metadata / `useTranslation` 直接產生 title。
@@ -236,7 +236,7 @@
   `t(k).split("|")` 餵進 `useToast()` 的結果陣列——`|` 的**段數與順序是索引契約**，與 `data-toast-type`
   同序對位（見 §⑥）。切版側已有 CI 釘住「繁中段數＝英譯段數＝type 段數」，React 端的 split 索引跟著那份走。
   **索引契約的作用域是「那一顆鈕」，所以鈕的顆數也是契約**：一顆 toast key 的段集合＝那顆鈕送出去的
-  那一次請求所有可能的結果，把切版的一顆共用送出鈕在 React 拆成 N 顆（本輪 `manage-tenant-modal`：
+  那一次請求所有可能的結果，把切版的一顆共用送出鈕在 React 拆成 N 顆（正典反例：`manage-tenant-modal`：
   切版是額度／使用期／模型開通共用 footer「儲存」鈕、`toast.manageTenant` 一顆 key 涵蓋三區的守衛，
   React 卻拆成 `js-save-quota`／`js-apply-trial`／`js-save-models` 三顆各配一顆 key），會同時產生兩種壞：
   切版那顆 key 在 React 變成零引用的孤兒，而三顆新 key 在切版沒有任何鈕掛得上去（掛上去就是零消費者的
@@ -267,7 +267,7 @@
   `data-<槽>`、`data-key-<態>`＋`data-text-<態>`、`data-page-title-key`＋`<title>`）。可接受的差異只有三種：
   (a) 前後綴夾**資料**槽併成單一插值 key（槽裡是**元件**則不准併）；(b) 資料槽的繁中原文住 React 資料常數當
   `t(key, fallback)` 的 fallback；(c) 純應用層 key。
-  **跑成 vitest**——LLM 對讀會漏（本輪漏了 46 顆 key、45 條異值）。
+  **跑成 vitest**——LLM 對讀會漏（實測一次對讀漏掉 46 顆 key、45 條異值）。
   孤兒 key（無 `t()` 引用）同進 CI，模板組合的 key 以前綴白名單放行。
 - **枚舉少了成員是切版的缺口，一律回切版補，而且補的是 markup 不只是字典**。靜態稿一次只畫得出一個狀態，
   於是同一組枚舉常常只有部分成員在切版現身；React 兩種形狀都會遇到，而它們是**同一個缺口**，處方也只有一個：
@@ -275,13 +275,13 @@
   - 使用頁的示範推導下來**畫不到**某個成員（`regression.reasonAbsentInBaseline`：2-2-5 演的是「這一次中斷過」，
     結果集必為案例集 id 序的前綴 ⇒ 那一頁的「沒得比」兩列必然都是 `absent_in_this_run`）。
 
-  **不要用「React 保留並登記 `REACT_ONLY`」收掉它**（那是上一版的 (d)，已廢）：`REACT_ONLY` 只解決英文，
+  **不要用「React 保留並登記 `REACT_ONLY`」收掉它**：`REACT_ONLY` 只解決英文，
   而 §4-2 的硬不變量是**繁中才是原文、住在字串出現的地方**——切版沒有那顆 key 的渲染點時，缺的不只是
   `en.json` 一行，是那一段繁中在全站沒有家。React 只好就地拼字串（現況那句
   `` `(${t("qaTest.setting")}${sourcesSide})` `` 就是），等於在 React 端開了第二個文案正本，而字典比對、
   孤兒 key、fpdiff 三張網一張都看不到。**同理也不要去鬆綁 11ty 的孤兒 key 規則**：放行「沒有引用點的 key」
   會讓死翻譯與缺口長得一模一樣，那條規則的價值就沒了。
-  切版該交的兩種形狀（本輪兩顆各示範一種）：
+  切版該交的兩種形狀：
   - **執行期會換字的那一格 → 兩態槽**：`data-text-<態>`／`data-key-<態>` 把每個成員的繁中與 key 都掛在
     **同一個元素**上，正典 `ui/theme-toggle`、`components/prompt-edit`。React 讀槽、不自己拼。
     後綴是狀態式還是動作式看正典檔頭，認錯會讓兩態整組對調而畫面照樣有字。
@@ -316,8 +316,8 @@
   ——那會把唯讀稽核員一起排除掉）。低於該級時：**動作鈕不渲染**、**值控制項渲染成 `disabled`**（狀態要看得見
   才稽核得到）。屬性本身不帶進 tsx（它是切版寫給轉換用的規格，不是執行期 hook）。
 - **表單驗證的回報方式只有一種**（GUIDELINE §4）：送出鈕 `data-toast` 的 warning 段就是「哪裡填錯」，
-  欄位本身加 `.error` 標紅；切版**不再有**逐欄的 `.error-prompt` 佔位（那批「錯誤訊息文字」已移除——
-  顯示條件沒人觸發、內容沒人知道要填什麼）。React 端照這個分工做：欄位級只加 class，訊息走同一顆 toast key。
+  欄位本身加 `.error` 標紅；切版**沒有**寫成通用佔位（「錯誤訊息文字」）的逐欄 `.error-prompt`——
+  那種槽的顯示條件沒人觸發、內容也沒人知道要填什麼。React 端照這個分工做：欄位級只加 class，訊息走同一顆 toast key。
   `.error-prompt` 只剩「訊息具體」或「真 app 業務 js 會填」的少數幾處，那幾處照抄。
 - 業務邏輯（抓資料／SSE／圖表／表單驗證／日期）不轉。串流狀態列（`role="status"` live region）與建議追問 chip
   （`.js-ask-suggested`）markup 照切版轉、內容改由 SSE 事件驅動（切版是凍結的一格示範）。
@@ -545,7 +545,7 @@
 
 - `vitest.config.ts` 的 `resolve.alias` 補 `tsconfig.json` `paths` 的 `@/` 映射（Vitest 底層 Vite 不自動套 tsconfig paths）。
 - **`scss-diff.mjs` 要進 CI**（`package.json` 加 `scss:check`：對一張「切版路徑 ↔ React 路徑」清單逐對跑、全綠才算過）。
-  手動跑的結果是「當時對」不是「持續對」——本輪 `_var.scss`／`_chat-message.scss`／`_multi-select.scss` 三支
+  手動跑的結果是「當時對」不是「持續對」——反例：`_var.scss`／`_chat-message.scss`／`_multi-select.scss` 三支
   同時悄悄分岔，就是缺這張網。清單本身也是覆蓋率證據（新元件忘了登記＝看得出來）。
 - 顏色角色／對比度的正確性**不在 React 重算**（11ty 的 `COLOR_ROLES` 已守），React 只需守「複本沒跟上」。
   反之 React 獨有的東西（import 順序、consumer className、i18n 字典對帳）11ty 守不到，那才是 React 要自己加測試的地方。

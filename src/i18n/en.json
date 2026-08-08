@@ -1212,7 +1212,7 @@
   "settings.memberList": "Member list",
   "settings.members": "Members",
   "settings.memoryCount": "Memory turns",
-  "settings.modeApplicabilityHint": "Conversation mode decides which fields below take effect; fields for the other mode do not appear.",
+  "settings.modeApplicabilityHint": "Which fields appear depends on the conversation mode and on the current values of other fields — anything that would not take effect under the present settings is hidden.",
   "settings.modelEnablement": "Model enablement",
   "settings.modelName": "Model",
   "settings.myProfile": "My profile",

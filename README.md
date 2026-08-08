@@ -12,7 +12,7 @@ GufoFAQ 前端的 **Eleventy (11ty) 切版專案**。由原本的 HTML + jQuery 
 ## 開始
 
 需求：**Node 22+**（`.nvmrc` 寫 22，CI 讀它；`package.json` 的 `engines` 同值——但沒有 `.npmrc`／`engine-strict`，所以它**只會警告、擋不住**。相依的實際下界是 20.19：sass 與 stylelint 都要 `>=20.19.0`）。
-套件管理器只認 **npm**：`package-lock.json` 是唯一的 lockfile（CI 跑 `npm ci`）。曾經誤入過一份 pnpm-lock，兩份版本已經開始分岔（sass 1.101.0 vs 1.101.5），已移除——不要再加第二份。
+套件管理器只認 **npm**：`package-lock.json` 是唯一的 lockfile（CI 跑 `npm ci`）。**不要加第二份 lockfile**——兩份會各自解出不同版本（實測 sass 一份 1.101.0、另一份 1.101.5），而 CI 只讀得到其中一份。
 
 ```bash
 npm install
@@ -111,7 +111,7 @@ dist/                       build 輸出（勿手改）
 | `components/qa-detail-info` | 頁面 set `conversation = { chatroomId, id, time, intent, userMessage, satisfaction: { label, icon }, feedback, answerSource, chatMode, tag, language, canReadSettings, modelName, searchTotalNumber, searchSelectedNumber }`（短欄位；`canReadSettings` 為 false 時後四欄那一塊整塊不渲染——上游 `_SETTINGS_SCOPED_LOG_FIELDS` 只有具 `settings:read` 的人拿得到）；AI 回答與「提示詞」收合欄（`.collapse-text`，展開/收合由 `ui/collapse-text` 當場做（純前端互動，GUIDELINE §5 ④））為長文，依 GUIDELINE §3-2 直接寫在元件 markup。 |
 | `components/qa-record-tabs` | 頁面 set `qaRecordTabs = [{ id, label?, active }]`；**`id` 是列鍵**（＝聊天室 SN，渲染成真 app 的 `data-chat-sn`，GUIDELINE §6：聊天室刪得掉、位置不是身分），`label` 是使用者取的標題＝資料不翻、**選填**（不給就落回可翻的 fallback「問答紀錄＋序號」）。單測/AB測試/前台對話預覽三頁共用的 `.tab-group` 頁籤清單。外層 `.tab-wrap` 等 chrome 各頁自帶。 |
 | `components/prompt-edit` | 5-2 對話設定頁的「提示詞」收合編輯區（單測／AB 測試頁**不**用這支，見 2-2-3 檔頭）；`promptDefaultOpen`（true 時加 `data-default-open`，元件庫頁用它示範預設展開態）。展開/收合（切換 `.open`、注入編輯 textarea）由 `prompt-edit.js` 提供；實際儲存/建版本 API 屬業務邏輯不在範圍。 |
-| `components/qa-side-panel` | 單測/AB測試頁的可收合問答紀錄側欄（toggle + 開啟新對話 + 頁籤）；**無參數**（兩頁都交付；原本 AB 頁用 `sidePanelHidden` 整個藏起來，SaaS 已有 `GET /qatest/ab-history` 供它，故本輪交付、參數移除）。展開/收合（切換 `.collapsed`）由 `qa-side-panel.js` 提供。內含 `qa-record-tabs`（其 `qaRecordTabs` 由頁面提供）。 |
+| `components/qa-side-panel` | 單測/AB測試頁的可收合問答紀錄側欄（toggle + 開啟新對話 + 頁籤）；**無參數**（兩頁都交付——真 app 在 AB 頁把它整個藏起來，而 SaaS 已有 `GET /qatest/ab-history` 供它，見「與真 app 的刻意差異」）。展開/收合（切換 `.collapsed`）由 `qa-side-panel.js` 提供。內含 `qa-record-tabs`（其 `qaRecordTabs` 由頁面提供）。 |
 | `components/chatroom` | `chatInputHidden`（true 時不渲染輸入區；`2-1` 是唯讀的問答紀錄預覽，真實頁沒有輸入框，單測頁 `2-2-1` 需要）。 |
 | `components/priority-table` | 頁面 set `rows = [{ sn, category, description, prompt, priority }]` ＋ **必填** `priorityTableInstance`（同頁多實例的消歧鍵，用來組 `<th id>` 與逐列 id）＋ 選填 `tierless`（true＝取消三層、只分使用／不使用）；渲染 5 欄意圖判斷表（`.default-table.priority-table`）。`rows` 空陣列＝空狀態。用於 5-2（檢索與欄位子頁籤依優先級分組，每組 set 後 include）。 |
 | `components/delete-modal` | `deleteTargetId`（設了就渲染空 `<span id>`，由業務 js 填入待刪除項目名稱）／`deleteTargetName`（靜態示範名稱）／`deleteConfirmBinding`（true＝確認鈕交給業務 js 綁定、不自動關窗）／`deleteConfirmClass`・`deleteToast`・`deleteToastKey`（確認鈕的 hook class 與成敗 toast，見元件檔頭）。 |

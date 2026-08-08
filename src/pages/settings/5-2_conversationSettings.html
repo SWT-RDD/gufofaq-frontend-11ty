@@ -145,10 +145,28 @@ permalink: 5-2_conversationSettings.html
             </div>
         </div>
     </div>
-    {# round30 起「不生效的選項不顯示」（不再標示、直接不渲染），故這句說明也不能再說「會標示」——
-         它是出貨文案不是註解，留著就是對租戶說謊（saas 已跟上：`apps/web/lib/i18n/messages.zh.json`
-         的 `settings.modeApplicabilityHint` 與本頁逐字相同，round40 複驗）。 #}
-    <div class="text-gray mt-8" data-i18n="settings.modeApplicabilityHint">對話模式決定下方哪些欄位生效，另一模式專用的欄位不會出現。</div>
+    {# 「不生效的欄位不顯示」（不標示、直接不渲染，理由見本頁「子頁籤 2：生成設定」那段檔頭註解）——
+         這是**唯一**會被租戶讀到的一句總說明，它是出貨文案不是註解，說漏一半就是對租戶說謊。
+         **隱藏有兩個維度，這句話兩個都要涵蓋**：
+         ①**對話模式**：gufofaq-saas `apps/web/lib/modeMatrix.ts` 的 `appliesToMode`（＝`isModeMismatch`
+           的反面，決定「該不該出現」的是前者）。
+         ②**同頁其他欄位目前的值**，四處：
+           - 知識使用模式＝`none` ⇒「可回答性閘」整區、「啟用引用標註」、「選用資料筆數」三處都不顯示
+             （GufoRAG chatbot `app/services/chat.py` 的 `GATE_KNOWLEDGE_MODE_NONE`：生成端整段參考資料
+             都不組，閘照判會**反向**生效——素材恆空即誠實查無，而 `none` 正是要模型用自己的知識回答；
+             `app/services/citation_guard.py` 的 `visible_card_count` 對 `none` 直接回 0）。
+             **這一條只在傳統搜尋模式成立**：agent 模式下 `use_knowledge_mode` 本來就整顆不生效
+             （`app/routes/chat.py` 的 `_warn_agent_mode_inert_knobs`），那一側的閘照常運作，
+             一起藏掉等於叫使用者去關一個正在運作的閘。
+           - 「啟用重排序」關閉 ⇒「重排序模型」與它旁邊那行「目前這把尺」不顯示（manager 只在
+             `use_reranker` 為真時採用，見 `app/services/kb_tools.py`）。
+           - 「啟用可回答性閘」關閉 ⇒ 它的判準與分數門檻不顯示（`app/services/grounding.py` 的
+             `_score_floor` 只在閘內呼叫）。
+           - 「QA 直答」＝停用 ⇒ 它的分數門檻／判定補充說明／QA 集選取不顯示
+             （`app/services/qa_direct.py` 的 `qa_direct_active`／`_enabled`）。
+         **待回流**：saas `apps/web/lib/i18n/messages.{zh,en}.json` 的 `settings.modeApplicabilityHint`
+         仍是只講對話模式的舊句（gufofaq-saas@308642f 複驗），而它的 `page.tsx` 早就照②在渲染。 #}
+    <div class="text-gray mt-8" data-i18n="settings.modeApplicabilityHint">哪些欄位會出現，取決於對話模式與其他欄位目前的值——在目前設定下不會生效的欄位一律不顯示。</div>
 </div>
 
 {# ── 主題子頁籤（two-level tab 的第二層 .sub-tabs，每個 data-target 對應一個 .tab-content 面板）。

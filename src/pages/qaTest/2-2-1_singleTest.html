@@ -30,9 +30,11 @@ permalink: 2-2-1_singleTest.html
 
 {# 測試設定區（比照對話設定頁：可切換對話模式、逐欄模式適用性）：設定為臨時，底部「回復儲存的設定」
      隨時回復到已儲存的設定值。對話模式（傳統搜尋／Agent 對話，對齊 product qatest TestConfig.search_mode）
-     驅動下方各欄「僅某模式生效」標示；取用資料筆數僅傳統模式生效、Agent 最大迭代次數僅 Agent 模式生效
-     （modeMatrix 逐欄適用性，見 gufofaq-saas docs/mode-matrix.md）——切版為超集靜態 demo，欄位常駐並標
-     模式適用性，React 端依當前模式停用不符欄位（同對話設定頁 isModeMismatch）。
+     決定下方各欄適不適用：取用資料筆數僅傳統模式生效、Agent 最大迭代次數僅 Agent 模式生效
+     （modeMatrix 逐欄適用性，見 gufofaq-saas docs/mode-matrix.md）——切版為超集靜態 demo，兩欄常駐
+     （適用性只寫在各該欄自己的註解裡，畫面上不標示），React 端依當前模式**不渲染**不符欄位
+     （gufofaq-saas `apps/web/lib/modeMatrix.ts` 的 `appliesToMode`；不用「顯示但標示不生效」，
+     理由見 5-2 檔頭「子頁籤 2：生成設定」那段註解）。
    **刻意不沿用真 app 的一處**（§5 要記載）：三個數值欄真 app 是 `type="text"`
      （凍結前端 2-2-1_singleTest.html:195 的 #sampleTotalInput 即是），切版改成 `type="number"`
      ＋後端區間（qatest.py 的 TestConfig：search_*_number 1–100、agent_max_iterations 1–20，
