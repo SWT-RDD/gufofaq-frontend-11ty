@@ -89,7 +89,7 @@ dist/                       build 輸出（勿手改）
 | layout | 自動提供 | 用它的頁面 |
 |---|---|---|
 | `layouts/page-shell/page-shell.html` | `<head>` + skip-link + `header`（導覽 + 語言/夜間）+ `<main id="main">`（含 h1）+ `footer` + `ui/faq-launcher`（右下角前台入口） | 管理端 37 頁；front matter 必填 `titleKey` / `pageHeading` |
-| `layouts/chatbot-shell/chatbot-shell.html` | `<head>` + skip-link + `chatbot-header`（logo + 語言/夜間，無導覽）+ 滿版 `<main id="main">` + `footer` | 前台 FAQ 聊天頁 |
+| `layouts/chatbot-shell/chatbot-shell.html` | `<head>` + skip-link + `chatbot-header`（logo + 語言/夜間，無導覽）+ 滿版 `<main id="main">`（含 sr-only h1 `GufoFAQ`）+ `footer` | 前台 FAQ 聊天頁 |
 | `layouts/base/base.html` | 只有 `<head>` + 空白外框 + script 清單 | 登入頁、404、頁面目錄、元件總覽（各自在內容裡放唯一的 h1） |
 
 深色模式與中英切換的旗標掛在 `<html data-theme>` / `<html lang>`，由 `base.html` `<head>` 的 no-flash 內聯腳本初始化，`ui/theme-toggle`、`ui/lang-toggle` 負責切換；三個 layout 都吃得到。

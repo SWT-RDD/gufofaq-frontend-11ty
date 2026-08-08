@@ -6,7 +6,8 @@
     定的是「長什麼樣、結構是什麼」，不是 build 出來會被誰 include 的版面——唯一看得到它的地方是元件庫頁
     （同 `ui/subscription-gate` 的處置：正式版是 position:fixed 浮層，展示版加 `.demo-static` 退回文流內）。
 
-  **launcher 不另畫一顆**：沿用 `ui/faq-launcher` 的 `.faq-launcher`（`--brand-gradient` 圓 ＋
+  **launcher 不另畫一顆**：沿用 `ui/faq-launcher` 的 `.faq-launcher`（`--brand` **純色**圓——
+  刻意不是漸層，白貓頭鷹疊 `--brand-gradient` 右緣只有 2.89、低於圖形記號的 3:1，見該檔那條 ＋
     `icon_owl.png` ＋ 56px ＋ 右下角），本元件只補按鈕該有的 reset 與開合狀態。理由：那顆鈕是登入後
     每一頁右下角的前台入口，widget 的 launcher 是**同一個東西在別人網站上的版本**——各畫一顆的話，
     同一個產品會有兩顆長得不一樣的貓頭鷹。差別只在它開的是面板、不是新分頁，故：
@@ -83,8 +84,8 @@
             {# 送出是直接送 API 的動作鈕 ⇒ data-toast 列全結果（§5 矩陣③）。節流那一段對回 widget token
                  的每分鐘上限（product `widget_tokens.py`），不是泛用的「失敗」。 #}
             <button type="button" class="button button-primary widget-panel-send js-widget-send"
-                data-toast="回答生成中...|回答生成失敗，請稍後再試|詢問太頻繁，請稍後再試" data-i18n-data-toast="toast.widgetAsk"
-                data-toast-type="info|error|warning" data-i18n="action.submit">送出</button>
+                data-toast="回答生成中...|請先輸入問題|詢問太頻繁，請稍後再試|回答生成成功|回答生成失敗" data-i18n-data-toast="toast.widgetAsk"
+                data-toast-type="info|warning|warning|success|error" data-i18n="action.submit">送出</button>
         </div>
     </div>
 </div>

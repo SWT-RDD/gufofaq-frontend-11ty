@@ -2175,9 +2175,11 @@ test("§9 裸元素選擇器只准出現在 _normalize / _base", () => {
     //  2. 數大括號前要先剝掉字串與註解，否則 `content: "{"` 會讓 depth 永久偏移。
     //  3. 選擇器可以跨行（`section,\n.foo {`），要累積到 `{` 為止，且逗號每一組都要檢查。
     //  @media 之類的 at-rule 區塊不算「巢狀」——裡面的裸元素一樣會洩漏到全站。
-    const ELEMENTS = new Set(["html", "body", "header", "footer", "aside", "main", "section", "nav",
-        "article", "ul", "ol", "li", "table", "thead", "tbody", "tr", "th", "td", "p", "a",
-        "h1", "h2", "h3", "h4", "h5", "h6", "img", "form", "div", "span", "button", "input", "select", "textarea"]);
+    // round44：原本這裡是一份 40 個標籤名的**黑名單**，於是它不認得 dialog／pre／code／label／
+    // fieldset／details／summary／blockquote／caption／col…——`_guideline.scss` 頂層寫 `pre { … }`
+    // 或 `dialog { … }` 會打包進單一 main.css 洩漏到全站每一頁，而這條測試全綠。
+    // 改成白名單規則：`elem` 已經是「純標籤名」、`bare` 已確認不含 `.`／`#`，
+    // 「頂層第一個 compound 不得是裸標籤」本身就是完整判準，不需要枚舉標籤。
     const strip = (s) => s
         .replace(/\/\*[\s\S]*?\*\//g, "")            // 區塊註解
         .replace(/\/\/[^\n]*/g, "")                  // 行註解
@@ -2214,7 +2216,7 @@ test("§9 裸元素選擇器只准出現在 _normalize / _base", () => {
                         const compound = group.trim().split(/[\s>+~]/)[0];
                         const bare = compound.replace(/\[[^\]]*\]/g, "");
                         const elem = bare.split(/[.#:]/)[0];
-                        if (/^[a-z][a-z0-9]*$/.test(elem) && ELEMENTS.has(elem) && !/[.#]/.test(bare))
+                        if (/^[a-z][a-z0-9]*$/.test(elem) && !/[.#]/.test(bare))
                             out.push(`${f}:${selLine}  ${group.trim()}`);
                     }
                 }
@@ -3997,6 +3999,9 @@ test("§4 每一顆會改狀態的鈕都要宣告它需要哪一道閘門（四�
         ])],
         ["src/_includes/components/faq-chatroom/faq-chatroom.html", new Map([
             ["回答生成成功", "前台公開機器人（faq.html，chatbot-shell 外殼）送問答走吃 `X-Widget-Token` 的公開端點（見 5-8 檔頭：標頭 X-Widget-Token／query ?wt=），那條路徑上根本沒有租戶能力軸——硬標一顆 data-capability 等於宣告一道這裡不存在的閘門。後台 components/chatroom 的同型鈕才吃 data-capability=\"ask\""],
+        ])],
+        ["src/_includes/ui/widget-shell/widget-shell.html", new Map([
+            ["回答生成成功", "嵌入式 widget 的送出鈕與 faq-chatroom 打的是同一支吃 `X-Widget-Token` 的公開端點，理由同上。round44 補上 success 段之前，它是「少一段 success ⇒ 整顆掉出本測試母體」——那一段不是可選的裝飾，它決定這顆鈕受不受這條規則管"],
         ])],
     ]);
     // 屬性值可以是**插值帶預設**（`data-toast-type="{{ editSaveToastType or 'success|error' }}"`）。

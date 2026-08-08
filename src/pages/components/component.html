@@ -903,7 +903,7 @@ bodyClass: guideline-page
             <div class="caption">
                 <ul>
                     <li>ui/widget-shell：launcher 鈕 ＋ 面板。它跑在<strong>別人的網站上</strong>（gufofaq-saas 的 public/widget.js 建一個 shadow root、把樣式一起注進去），所以這一份是<strong>視覺定案</strong>而不是站內版面——widget.js 照抄這裡的值與結構</li>
-                    <li>launcher <strong>不另畫一顆</strong>：沿用 ui/faq-launcher 的「.faq-launcher」（品牌漸層圓 ＋ icon_owl.png ＋ 56px），本元件只補按鈕該有的 reset 與開合狀態。那顆鈕是登入後每一頁右下角的前台入口，這裡是同一個東西在別人網站上的版本——各畫一顆的話同一個產品會有兩顆長得不一樣的貓頭鷹</li>
+                    <li>launcher <strong>不另畫一顆</strong>：沿用 ui/faq-launcher 的「.faq-launcher」（<strong>--brand 純色</strong>圓 ＋ icon_owl.png ＋ 56px；刻意不是漸層——白貓頭鷹疊 --brand-gradient 右緣只有 2.89，低於圖形記號的 3:1），本元件只補按鈕該有的 reset 與開合狀態。那顆鈕是登入後每一頁右下角的前台入口，這裡是同一個東西在別人網站上的版本——各畫一顆的話同一個產品會有兩顆長得不一樣的貓頭鷹</li>
                     <li>差別只在它開的是面板不是新分頁，故是「button」不是「a」，並掛 aria-expanded ＋ aria-controls</li>
                     <li>訊息泡泡沿用 ui/chat-message：widget 的訊息與前台 FAQ 的訊息是同一種東西。輸入列則是 widget 自有的 .widget-panel-bar——chatroom-shell 的 .chat-input-container 是站內全寬版位，塞不進 360px 的面板</li>
                     <li>正式版的 launcher 與面板都是 position:fixed；此處掛示範變體「.demo-static」退回文流內（同上面的使用期閘門遮罩），結構與正式版相同</li>

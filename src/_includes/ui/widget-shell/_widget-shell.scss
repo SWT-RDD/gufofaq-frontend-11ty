@@ -4,7 +4,8 @@
 
 // 它跑在**別人的網站上**（widget.js 建 shadow root、把樣式一起注進去），所以這一份的角色是
 // 「視覺定案」而不是站內版面：widget.js 照抄這裡的值與結構。因此刻意只用語意 token
-// （--brand-gradient／--surface-raised／--border…），換膚與深色一併帶過去。
+// （--brand／--surface-raised／--border…），換膚與深色一併帶過去。
+// （舉例刻意不用 --brand-gradient：那正是本檔第 52 行說明為什麼**不能**用的那一顆。）
 .widget-shell {
     // launcher 的圓與位置沿用 ui/faq-launcher 的 .faq-launcher（markup 兩個 class 一起掛），
     // 這裡只補「它是 <button> 而不是 <a>」少掉的那幾條，以及開合狀態。

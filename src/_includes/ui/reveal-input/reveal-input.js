@@ -61,7 +61,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function targetOf(btn) { return document.getElementById(btn.getAttribute("data-reveal-target")); }
 
-    // document 級委派：點外部判斷用 closest，動態插入的按鈕也吃得到
+    // document 級委派：closest 命中即處理，動態插入的按鈕也吃得到。
+    // 本檔**沒有**「點外部」判斷——那一種要用 event.composedPath()（§5），不可照抄這一行。
     document.addEventListener("click", function (e) {
         var btn = e.target.closest("[data-reveal-target]");
         if (!btn) return;

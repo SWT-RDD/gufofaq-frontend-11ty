@@ -101,8 +101,10 @@
     // down/up/toggle/set 都回傳「這次動作的目標態」（true=展開）：呼叫端要同步 aria-expanded 時
     // 用回傳值，不要自己再讀 computed display——動畫進行中 display 還是舊值，讀了會跟實際結局脫鉤。
     window.GufoSlide = {
-        down: function (el, ms) { run(el, true, ms); return true; },
-        up: function (el, ms) { run(el, false, ms); return false; },
+        // 四支一律「el 缺值 ⇒ 回傳 false、不丟例外」（檔頭契約）：down 少了這道守衛的話，
+        // 照契約拿回傳值去同步 aria-expanded 的呼叫端，會在元素根本不存在時寫下 expanded=true。
+        down: function (el, ms) { if (!el) return false; run(el, true, ms); return true; },
+        up: function (el, ms) { if (!el) return false; run(el, false, ms); return false; },
         toggle: function (el, ms) {
             // 動畫進行中 computed display 還是展開值（display:none 要到 settle 才落地），
             // 用 isHidden 判斷會把「收合中再點一次」誤判成再收一次、吞掉反轉——

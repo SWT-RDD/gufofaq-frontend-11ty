@@ -27,7 +27,7 @@
     padding: 0.0625rem 0.375rem;
     border-radius: 4px;
     background-color: var(--surface-sunken);
-    color: var(--brand-ink); // 前景墨色疊 sunken（COLOR_ROLES.pairs 已登記 5.19／4.86）
+    color: var(--brand-ink); // 前景墨色疊 sunken（COLOR_ROLES.pairs 的 ["--brand-ink","--surface-sunken"]）
     font-family: var(--fontFamilyMono);
     font-size: 0.8125rem;
     word-break: break-word;

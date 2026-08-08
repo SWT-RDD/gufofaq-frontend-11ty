@@ -11,7 +11,7 @@
     // Linux／Android 四個具名家族全數落空後就掉進瀏覽器預設（桌機 Chrome 的 Standard font 是襯線）。
     // 同檔 --fontFamilyMono 的 monospace 沒加引號，那才是對的寫法。
     --fontFamily: NotoSans, "PingFang TC", "Microsoft JhengHei", "微軟正黑體", Helvetica, sans-serif;
-    --fontFamilyMono: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace; // 行內碼／code-block／agent 工具 chip 共用（§4：多元件共用堆疊抽全域）
+    --fontFamilyMono: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace; // 跨元件共用的等寬堆疊，各抄一份一改就漏（§4）。消費點反查：grep -rn 'fontFamilyMono' src --include=*.scss
 
     /* 表面 surface（raised 比 base 亮＝用亮度表現抬升） */
     --surface: #f9f9f9; // app / 頁面底

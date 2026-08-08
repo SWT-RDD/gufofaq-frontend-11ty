@@ -7,7 +7,8 @@
 //    （原寫法 width: N/12*100% 未扣 gap，總寬超過 100% 靠 flex-shrink 硬擠，搭配 .flex-wrap 會提早掉行。）
 //    gap-* 同時寫入 --flex-gap 供 col 計算；直向排列（.column、斷點下的 .mobile-column(-xs)）時
 //    把 --flex-gap 歸零，讓 .col-12-* 恆為整寬。
-// 3) 覆寫層級：間距（mt/mb/my/m-0）、顯示（hidden）、對齊（text-left/center/right）這類「最後一手」
+// 3) 覆寫層級：間距（mt/mb/my/m-0）、顯示（hidden）、對齊（text-left/center/right）、
+//    方向（column／mobile-column(-xs)／xs-column-reverse）這類「最後一手」
 //    單屬性工具帶 !important——它們取代的是行內 style，語意上不允許被元件樣式反壓。
 //    文字大小與顏色工具不帶 !important（允許元件情境覆寫，無例外）。
 
