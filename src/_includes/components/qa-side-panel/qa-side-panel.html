@@ -8,9 +8,18 @@
         <span class="qa-side-panel-title" data-i18n="qa.qaRecords">問答紀錄</span>
     </button>
     <div class="qa-side-panel-body">
-        {# 真 app（singleTest.js）以 .qa-side-panel .button-orange 選這顆鈕清空對話並 toast「已開啟新對話」——
-             樣式 class 當掛點的契約靠自創 hook class 顯名化（§5 切版新頁命名慣例），並照直接動作規則演出結果 #}
-        <button type="button" class="button button-orange w100 js-new-conversation" data-toast="已開啟新對話" data-i18n-data-toast="toast.newConversation">
+        {# 真 app（singleTest.js）以 `.qa-side-panel .button-orange` 選這顆鈕清空對話；樣式 class 當掛點
+             的契約靠自創 hook class 顯名化（§5 切版新頁命名慣例）。
+             **它不是③、不掛 data-toast**：上游根本沒有「建立對話」這支端點（GufoRAG chatbot
+             `app/routes/chat.py` 只有 `GET /chatrooms`、`GET /chatrooms/user/{id}`、
+             `DELETE /chatrooms/{id}`、`GET /chatrooms/{id}/chatlogs`——聊天室是第一則訊息送出時
+             隱含建立的），saas 端也把它模成一顆頁面自己供的 callback（`QaSidePanel.tsx` 的
+             `onNewChat: () => void`）。原本掛著**只有成功一段**的 `data-toast`＝落不進 §5 四格矩陣的
+             任何一格：當③就是只演成功那一種，當④就不該掛 hook。
+             而它清的東西**逐頁不同**（2-2-1 是 `components/chatroom` 的訊息串、2-2-3 是 ab-compare
+             兩側），切版這一層演不出一個共通的結果——故定調成②：只留 hook 標記「React 接手」，
+             不假造一個上游給不出來的成敗。 #}
+        <button type="button" class="button button-orange w100 js-new-conversation">
             <img src="./images/icon_add_white.png" width="48" height="48" decoding="async" alt="" class="icon">
             <span data-i18n="comp.newConversation">開啟新對話</span>
         </button>
