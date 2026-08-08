@@ -549,6 +549,7 @@
   "platform.accountGovernance": "Account governance",
   "platform.confirmDeletePhrase": "DELETE",
   "platform.confirmExecute": "Confirm execution (irreversible)",
+  "platform.confirmTypeNameHint": "Type this tenant’s name exactly as shown; it must match character for character to unlock.",
   "platform.confirmTypeNamePlaceholder": "Type the tenant name to confirm",
   "platform.confirmTypePhrase": "Type “DELETE” to confirm execution",
   "platform.currentVersion": "Current version",

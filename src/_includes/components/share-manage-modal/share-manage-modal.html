@@ -61,13 +61,17 @@
                          已撤銷／已過期的列：撤銷鈕改為 disabled（那一列已經沒有東西可撤），避免「按了什麼都不會發生」。 #}
                     <div class="flex-row column gap-8">
                         {% for row in shareRows %}
+                        {# 逐列同型控制項的可及名稱要靠**列脈絡**（§4）：這裡沒有表頭也沒有辨識欄，
+                             故給每一列一顆 sr-only 的序號當辨識，input 與兩顆鈕都指它＋自己的欄意。
+                             原本四列的 input 都叫「分享連結」、複製與撤銷也各四顆同名。 #}
                         <div class="flex-row align-items-center gap-8 flex-wrap">
-                            <input class="form-control flex-1" aria-label="分享連結" data-i18n-aria-label="modals.shareLink" readonly value="{{ row.url }}">
+                            <span class="sr-only" id="shareRowName-{{ loop.index }}"><span data-i18n="modals.shareLink">分享連結</span> {{ loop.index }}</span>
+                            <input class="form-control flex-1" aria-labelledby="shareRowName-{{ loop.index }}" readonly value="{{ row.url }}">
                             <span class="text-gray">{% if row.expires %}<span data-i18n="share.expiresAt">到期：</span>{{ row.expires }}{% else %}<span data-i18n="share.neverExpires">永久有效</span>{% endif %}</span>
                             {% if row.state == "revoked" %}<span class="text-gray" data-i18n="widget.revoked">已撤銷</span>
                             {% elif row.state == "expired" %}<span class="text-gray" data-i18n="share.stateExpired">已過期</span>
                             {% else %}<span class="text-bold" data-i18n="share.stateActive">生效中</span>{% endif %}
-                            <button type="button" class="button button-border button-sm shareBtn" data-toast="連結已複製!" data-i18n-data-toast="modals.linkCopied" data-i18n="action.copy">複製</button>
+                            <button type="button" class="button button-border button-sm shareBtn" data-toast="連結已複製!" data-i18n-data-toast="modals.linkCopied" aria-labelledby="shareCopyLabel-{{ loop.index }} shareRowName-{{ loop.index }}"><span id="shareCopyLabel-{{ loop.index }}" data-i18n="action.copy">複製</span></button>
                             <button type="button" class="button button-red button-sm js-revoke-share"{% if row.state != "active" %} disabled{% endif %} data-i18n="action.revoke">撤銷</button>
                         </div>
                         {% else %}
