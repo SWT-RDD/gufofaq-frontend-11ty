@@ -3,6 +3,11 @@
 {# 父層用「div.table-container」包覆，需左右滾動時加「.scrollTable」；主要表格用「table.default-table」；
      欄位排序在 th 內加 div.th-sort + img.sort；內容較多的欄位用 ui/collapse-text 包覆（純 clamp 的 .ellipsis-* 只給控制項標籤用）；
      功能欄按鈕用 div.btn-group 包覆；固定欄寬加 .fixed-layout；無外框加 .no-border（見下方 accordion 表格範例） #}
+{# 示範列的 userType／satisfaction 是**封閉枚舉**，不可自由編（§6：正本給不出來的值不得為了讀起來順而編一個）：
+     userType 對 4-1 的 #userTypeSelect（前台問答／後台問答；正本 product 的 tag=frontend／backend），
+     satisfaction 對 #ratingSelect（讚／倒讚／無意見；正本 history.py 的 _RATING_LABEL 與 rating_type
+     的 positive/negative/unrated）。round44 之前第三列寫「後台測試」「普通」，兩個都不在枚舉裡。
+     （這段寫在 set 之前而不是列旁邊——§2：nunjucks 註解不可出現在 set 的運算式裡，會 build 失敗。） #}
 {% set demoTableRows = [
     {
         id: "12173",
@@ -27,8 +32,8 @@
         chatId: "6539",
         question: "入出國紀錄查詢方式",
         answer: "可透過內政部移民署網站以自然人憑證登入查詢，或親自攜帶身分證明文件至服務站臨櫃申請。",
-        userType: "後台測試",
-        satisfaction: "普通",
+        userType: "後台問答",
+        satisfaction: "無意見",
         date: "2024/12/03 16:42"
     }
 ] %}
