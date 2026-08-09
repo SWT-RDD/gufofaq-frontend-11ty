@@ -24,7 +24,7 @@ permalink: 3-4_skillManagement.html
      這張表刪得掉列，位置不是身分——刪掉前一列之後，後面每一列的列鍵都會往前頂一格，
      React 端的 key 與逐列動作的目標會一起指錯人（§6 列鍵）。 #}
 {% set skills = [
-  { id: 11, name: "refund-flow", description: "處理退貨與退款試算。使用者問到退貨、退款、換貨時使用。", version: "v2", tools: "lookup-order, calculate", enabled: true },
+  { id: 11, name: "refund-flow", description: "處理退貨與退款試算。使用者問到退貨、退款、換貨時使用。", version: "v2", tools: "calculate, lookup-order", enabled: true },
   { id: 12, name: "lookup-order", description: "依訂單編號查出金額、狀態與品項。使用者提供訂單號時使用。", version: "v1", tools: "search_knowledge_base", enabled: true },
   { id: 13, name: "policy-lookup", description: "查詢公司政策與法規條文。使用者問到規定、條文時使用。", version: "v3", tools: "search_knowledge_base, 人資術語", enabled: false }
 ] %}
@@ -90,7 +90,26 @@ permalink: 3-4_skillManagement.html
      編輯與刪除都需先選定「哪一個 skill」＝業務條件開窗，故用 hook class
      （.js-edit-skill／.js-delete-skill），不掛 data-open-modal（§5）。
      版本欄反映 chatbot 的 active_version：每次存檔一筆不可變快照，進行中的對話綁當下版本，
-     半路改不破在途對話——故這裡顯示版本而不是「最後修改時間」。示範 3 筆。 #}
+     半路改不破在途對話——故這裡顯示版本而不是「最後修改時間」。示範 3 筆。
+
+     ── 「可使用的工具」欄怎麼組（規格；先前只有示範字串，推不出規則）──────────────
+     這一欄＝把 `allowed_tools` 的**四個桶攤平成一行**，分隔符 `", "`。
+
+     ① 順序：**內建 → 術語表 → MCP → 巢狀 skill**。逐字對回 GufoRAG chatbot
+        `app/services/agent_service.py::_resolve_skill_tools` 逐段 `tools.extend` 的順序——
+        那才是 agent 實際拿到這些工具的順序。**不採用編輯器窗四個勾選群組的排法**：
+        那是版面，而這一欄描述的是執行期的東西（編輯器窗已同批對調成同一份順序，
+        全站只留一份桶序，見 skill-editor-modal）。
+     ② 名字來源：內建＝`allowed_tools.builtin` 的字串原樣（識別字，不翻）；
+        術語表＝`GET /glossary` 的表名；MCP＝MCP 註冊表的 server 名；巢狀 skill＝本頁清單的 name。
+     ③ **名字解析不到時畫 `—`**（那一桶的那一筆，不是整欄）。白名單指向已刪資源是上游明文會
+        發生的狀態（`_resolve_skill_tools` 對每一種都記 ERROR）。畫 id 是答非所問——這一欄說的是
+        「這顆 skill 用得到哪些工具」，印一個內部編號回答不了它；整欄消失則會讓人以為沒設定過。
+        同 3-1-1 群組欄解析不到時的做法。
+     ④ 四桶全空＝**合法狀態**（`_resolve_skill_tools` 的註解逐字寫著），那一格畫 `—`。
+        它的意思是「這顆 skill 只靠指示做事、不呼叫任何工具」，不是缺資料。
+     ⚠️ **不做 `+N` 折疊**：全站沒有任何一欄是那個形狀，而且折起來之後「用得到哪些工具」
+        這個問題就得再點一次才答得出來——而這一欄存在的唯一理由就是回答它。 #}
 <div class="block flex-row column gap-16">
     <div class="text-md text-bold" data-i18n="settings.skillList">Skill 清單</div>
     <div class="table-container scrollTable">
@@ -200,7 +219,7 @@ permalink: 3-4_skillManagement.html
   { label: "初始化對話", state: "completed", time: "10ms" },
   { label: "Agent 推理", state: "completed", time: "280ms", thinking: "使用者問「能退多少錢」，用途說明命中 refund-flow，決定呼叫它。" },
   { label: "檢索知識庫", state: "completed", time: "1.9s" },
-  { label: "skill：refund-flow", state: "failed", time: "1.8s", depth: 1, skill: "refund-flow", version: "v2", iterations: "2", tools: "lookup-order, calculate", error: "TimeoutError" },
+  { label: "skill：refund-flow", state: "failed", time: "1.8s", depth: 1, skill: "refund-flow", version: "v2", iterations: "2", tools: "calculate, lookup-order", error: "TimeoutError" },
   { label: "Agent 推理", state: "completed", time: "240ms", depth: 2, thinking: "先用 lookup-order 取訂單金額，再依退貨政策試算。" },
   { label: "skill：lookup-order", state: "completed", time: "430ms", depth: 2, skill: "lookup-order", version: "v1", iterations: "1", tools: "search_knowledge_base" },
   { label: "呼叫工具", state: "completed", time: "180ms", depth: 3, tools: "search_knowledge_base", result: "命中 4 筆訂單紀錄片段（相似度 0.74–0.91），取得訂單金額、狀態與品項。" },

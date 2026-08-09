@@ -110,8 +110,8 @@
                                      「這個 skill 用不到它們」，實際上勾得到（`calculate` 就是本 skill
                                      真的在用的那一顆，卻連目錄裡都沒有）。
                                    **勾選狀態＝這個 skill（refund-flow）真正的白名單**，與 3-4 清單列的
-                                     「可使用的工具：lookup-order, calculate」及試跑沙盒那一輪的
-                                     `tools: "lookup-order, calculate"` 是同一組（§6 三處同源）：
+                                     「可使用的工具：calculate, lookup-order」及試跑沙盒那一輪的
+                                     `tools: "calculate, lookup-order"` 是同一組（§6 三處同源）：
                                      內建桶只有 `calculate`，`lookup-order` 是巢狀 skill 桶（見下方），
                                      MCP 與術語表兩桶這個 skill 沒有勾。 #}
                                 {% set skillEditorBuiltinTools = [
@@ -150,6 +150,24 @@
                                 </div>
                             </div>
                         </div>
+                        {# 四個桶的順序＝**內建 → 術語表 → MCP → 巢狀 skill**，逐字對回 GufoRAG chatbot
+                             `app/services/agent_service.py::_resolve_skill_tools` 逐段 `tools.extend` 的順序
+                             （agent 實際拿到工具的順序）。先前這裡是「MCP → 術語表」，與那一份相反 ⇒
+                             全站有兩份桶序，而 3-4 清單的「可使用的工具」欄要照其中一份攤平時，
+                             沒有任何依據挑得出來。已對調成單一份；3-4 的規格逐字引用同一個出處。 #}
+                        <div class="form-group row mobile-col">
+                            <div class="label label-md">
+                                <label for="skillGlossarySelect" class="control-label" data-i18n="settings.glossaryTables">綁定術語表</label>
+                            </div>
+                            <div class="field col-12-sm">
+                                {# 值＝術語表主鍵，值域正本是 3-2 的管理表（4 人資術語／5 產品術語），
+                                     與 5-2 的「綁定術語表」同一組（§6 一份目錄一組主鍵）。 #}
+                                <select id="skillGlossarySelect" class="form-control multiSelect js-skill-glossary" multiple="multiple" data-placeholder="請選擇" data-placeholder-key="common.pleaseSelect">
+                                    <option value="4">人資術語</option>
+                                    <option value="5">產品術語</option>
+                                </select>
+                            </div>
+                        </div>
                         <div class="form-group row mobile-col">
                             <div class="label label-md">
                                 <label for="skillMcpSelect" class="control-label" data-i18n="settings.mcpServers">MCP Server</label>
@@ -167,19 +185,6 @@
                                     <option value="1">時間工具</option>
                                     <option value="2">內部文件搜尋</option>
                                     <option value="3" data-suffix="（停用中）" data-suffix-key="settings.mcpServerInactive">舊版文件搜尋</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="form-group row mobile-col">
-                            <div class="label label-md">
-                                <label for="skillGlossarySelect" class="control-label" data-i18n="settings.glossaryTables">綁定術語表</label>
-                            </div>
-                            <div class="field col-12-sm">
-                                {# 值＝術語表主鍵，值域正本是 3-2 的管理表（4 人資術語／5 產品術語），
-                                     與 5-2 的「綁定術語表」同一組（§6 一份目錄一組主鍵）。 #}
-                                <select id="skillGlossarySelect" class="form-control multiSelect js-skill-glossary" multiple="multiple" data-placeholder="請選擇" data-placeholder-key="common.pleaseSelect">
-                                    <option value="4">人資術語</option>
-                                    <option value="5">產品術語</option>
                                 </select>
                             </div>
                         </div>
