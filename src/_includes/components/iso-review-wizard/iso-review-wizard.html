@@ -1,0 +1,232 @@
+{# ISO 季度審核精靈——**一台三態互斥的狀態機**，不是三個並排的區塊。
+     ── 為什麼要參數化成一態一份 ────────────────────────────────────────────────────
+     正本 gufofaq-saas `apps/web/app/(app)/platform/page.tsx` 的 `ReviewWizard`：
+     `const [step, setStep] = useState<"idle" | "preview" | "result">("idle")`，三段各自
+     `{step === "…" && (…)}` 條件渲染。**任何一個時刻只畫得出其中一段。**
+     **三段不得同時畫在一頁上**（不論是為了「一次看完三步長什麼樣」還是為了省一份稿），兩個理由：
+       ① §5／§6「示範資料演的必須是一個真實可能的狀態」——三步同時在畫面上是使用者永遠看不到的一格；
+       ② 三段是連續的 `.flex-row.column.gap-8` 兄弟節點、沒有各自的選擇器可以當 fpdiff 的比對根，
+          同時畫就沒有任何一份稿逐位元對得回 React 的某一個 state。
+     故走站內既有的**逐步一份稿**正典（資料匯入精靈 `1-1-2`→`1-1-3`→`1-1-4`→`1-1-6`，
+     React 端同樣是單一路由 ＋ step state）。
+
+     參數（**必填、無預設**）：
+       isoReviewStep —— `"idle"` | `"preview"` | `"result"`，值與 `ReviewWizard` 的 `step` state 逐字相同
+                        （不另發明詞彙，React 端就是拿這顆值去對）。三個值以外（含忘了 set）整塊步驟區
+                        不渲染——空掉的區塊在畫面上看得見，比靜默落回某一態容易查（§5 fail loud）。
+     使用頁與它演的狀態（三份稿互為前後步，改一份要回頭對另外兩份）：
+       · `5-6-1_platformTenants.html`              idle    ——上一步：無（精靈入口）／下一步：preview
+       · `5-6-1-2_platformIsoReviewPreview.html`   preview ——上一步：idle（`.js-review-cancel` 取消回 idle）／下一步：result
+       · `5-6-1-3_platformIsoReviewResult.html`    result  ——上一步：preview（`.js-review-confirm` 送出後到這）／下一步：回 idle（`.js-review-done`）
+     **步驟指示器就是每一段自己的標題**（`platform.reviewStep1/2/3` 的繁中原文與英譯都自帶 ①②③），
+     所以一份稿只畫得出自己那一顆號碼——不另外 include `components/step-nodes`：那是資料匯入精靈的
+     版型決策，`ReviewWizard` 沒有它，補上去就是 React 得跟著長出一個切版從未定過的東西。
+
+     ── 狀態之間怎麼走（都是業務 js，切版不做靜態跳轉）──────────────────────────────
+     idle 的三顆動作鈕打 `GET /platform/review/overdue` 拉名單 → preview；
+     preview 的 `.js-review-confirm` 打 `POST /platform/review/apply` → result；
+     `.js-review-cancel`／`.js-review-done` 回 idle。全部是 hook class（§5 條件動作），
+     所以**三份稿之間沒有、也不該有 `<a href>`**——那會在 markup 裡寫一句 React 沒有的話。
+     三份稿在部署站台上由頁面目錄（`catalog.html`）進入，彼此在檔頭互相指名。
+
+     ── 這一整台是 auditor 進得來的 ─────────────────────────────────────────────────
+     名單與門檻是 auditor 讀得到的（GET /platform/review/overdue ＝ require_platform_auditor，
+     product app/routers/platform.py 的 `review_overdue`；docstring 自述「這一步不動任何資料，管理員截圖存證用」）——整區標 admin
+     等於唯讀稽核員連那張截圖都看不到，正是 §5 要防的「把整塊 gate 在是不是管理員」。
+     區塊標 auditor，只有真的會寫入的那一顆（preview 態的「確認執行」＝ POST /review/apply
+     ＝ require_platform_admin，platform.py 的 `review_apply`）標 admin。idle 態那三顆是「選動作＋拉名單」，
+     打的是同一支 GET，auditor 要按得到才截得到圖。
+
+     示範資料（§6(b) 純示範假資料，元件專屬名）：`isoReviewCandidates`／`isoReviewOkResults`／
+     `isoReviewFailResults`。正式環境由 React 走 GET /platform/review/overdue 與 POST /platform/review/apply。 #}
+{% set isoReviewCandidates = [
+  { name: "示範租戶 C", email: "c-admin@example.com", trialEnd: "2026-03-01", daysOverdue: 135, userCount: 2, storage: 12.4, frozen: false },
+  { name: "示範租戶 D", email: "d-admin@example.com", trialEnd: "2026-02-14", daysOverdue: 150, userCount: 4, storage: 88.0, frozen: false }
+] %}
+{# 結果拆成功/失敗兩個陣列：result 態的「共 N 筆，成功 X，失敗 Y」全部從陣列長度推導（§6 可推導的值不烤死），
+     表格先渲染成功列再渲染失敗列 #}
+{% set isoReviewOkResults = [
+  { name: "示範租戶 C", error: "" }
+] %}
+{% set isoReviewFailResults = [
+  { name: "示範租戶 D", error: "從 GufoRAG 刪租戶索引失敗（tenant=42）" }
+] %}
+<div class="block mt-16 flex-row column gap-16" data-platform-role="auditor">
+    <div class="text-md text-bold" data-i18n="platform.reviewTitle">ISO 季度審核</div>
+    <p class="text-gray m-0" data-i18n="platform.reviewDesc">設定逾時門檻並一鍵列出所有符合的帳號；確認後批次處置。全手動，名單與結果畫面皆保留供稽核截圖。</p>
+
+    {% if isoReviewStep == "idle" %}
+    <div class="flex-row column gap-8">
+        <div class="text-bold" data-i18n="platform.reviewStep1">① 設定門檻與動作</div>
+        <div class="flex-row flex-wrap gap-16 align-items-end mobile-column sm-gap-16">
+            <div class="form-group">
+                <div class="label">
+                    <label for="reviewOverdueDaysInput" class="control-label" data-i18n="platform.overdueDaysLabel">逾期滿（天）</label>
+                </div>
+                <div class="field">
+                    <input type="number" min="0" step="1" id="reviewOverdueDaysInput" value="90" class="form-control" aria-describedby="reviewOverdueDaysRange">
+                    {# 三件套的第三件（§4）：可見區間 ＋ aria-describedby。下界出處＝
+                         `GET /platform/review/overdue` 的 `overdue_days: int = Query(ge=0)`（product app/routers/platform.py）。
+                         數字獨立成不翻的節點（§3-2：那是資料不是譯文）。 #}
+                    <span class="text-gray" id="reviewOverdueDaysRange">≥ 0</span>
+                </div>
+            </div>
+            <span class="text-gray" data-i18n="platform.thresholdOr">或</span>
+            <div class="form-group">
+                <div class="label">
+                    <label for="reviewCutoffDateInput" class="control-label" data-i18n="platform.cutoffDateLabel">截止日期</label>
+                </div>
+                <div class="field">
+                    <input type="text" id="reviewCutoffDateInput" placeholder="請選擇" data-i18n-placeholder="common.pleaseSelect" class="form-control calendar">
+                </div>
+            </div>
+        </div>
+        {# 這三顆只是**選動作＋拉名單**：打的是 `GET /platform/review/overdue`
+             （product app/routers/platform.py `require_platform_auditor`，docstring 自述「這一步不動任何資料，
+             管理員截圖存證用」）。原本標 admin ⇒ 稽核員整區沒有任何入口拉得到名單，
+             正是註解自己說要避免的事。真正寫入的是 preview 態那顆確認鈕。 #}
+        <div class="flex-row gap-10 align-items-center">
+            <button type="button" class="button button-red js-review-purge" data-i18n="platform.reviewActionPurge">刪除逾時資料</button>
+            <button type="button" class="button button-red js-review-delete" data-i18n="platform.reviewActionDelete">刪除逾時帳號</button>
+            <button type="button" class="button button-border js-review-freeze" data-i18n="platform.reviewActionFreeze">凍結逾時帳號</button>
+        </div>
+    </div>
+    {% elif isoReviewStep == "preview" %}
+    <div class="flex-row column gap-8">
+        <div class="text-bold" data-i18n="platform.reviewStep2">② 預覽名單（可截圖）</div>
+        <div class="flex-row flex-wrap gap-16">
+            <span><span data-i18n="platform.reviewMatched">符合筆數：</span>{{ isoReviewCandidates.length }}</span>
+            <span><span data-i18n="platform.reviewThreshold">門檻：</span><span data-i18n="platform.overdueDaysPrefix">逾期滿</span> 90 <span data-i18n="platform.overdueDaysSuffix">天</span></span>
+            <span><span data-i18n="platform.reviewAsOf">查詢時間：</span>2026-07-14 09:00 UTC</span>
+            {# `ReviewOverdueOut.cutoff`（product app/routers/platform.py）：後端註解說這兩欄「是 ISO 稽核截圖存證要用的」。
+                 只畫門檻天數不夠——idle 態的兩種門檻（天數／截止日期）擇一時，真正決定名單的是 cutoff。 #}
+            <span><span data-i18n="platform.reviewCutoff">截止時刻：</span>2026-04-15 09:00 UTC</span>
+        </div>
+        <div class="table-container scrollTable">
+            <table class="default-table">
+                <colgroup>
+                    <col style="min-width:160px;">
+                    <col style="min-width:200px;">
+                    <col style="min-width:120px;">
+                    <col style="min-width:100px;">
+                    <col style="min-width:100px;">
+                    <col style="min-width:120px;">
+                    <col style="min-width:110px;">
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th data-i18n="settings.tenant">租戶</th>
+                        <th data-i18n="settings.adminEmail">管理員 Email</th>
+                        <th data-i18n="platform.trialEnd">到期日</th>
+                        <th data-i18n="platform.daysOverdue">逾期天數</th>
+                        <th data-i18n="settings.userCount">使用者數</th>
+                        <th data-i18n="platform.storageUsedMb">儲存量(MB)</th>
+                        {# `ReviewTenantOut.frozen`（product app/routers/platform.py）的後端註解逐字寫著
+                             「此旗標讓管理員一眼分辨『這季新逾期的』與『上季已凍結、還在等後續處置的』」
+                             ——那正是這張截圖要回答的問題，原本沒有欄位（§3-2 response 落點）。 #}
+                        <th data-i18n="platform.statusFrozen">已凍結</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in isoReviewCandidates %}
+                    <tr>
+                        <td>{{ c.name }}</td>
+                        <td>{{ c.email }}</td>
+                        <td>{{ c.trialEnd }}</td>
+                        <td class="text-center">{{ c.daysOverdue }}</td>
+                        <td class="text-center">{{ c.userCount }}</td>
+                        <td class="text-center">{{ c.storage }}</td>
+                        <td>{% if c.frozen %}<span class="text-gray" data-i18n="platform.statusFrozen">已凍結</span>{% else %}—{% endif %}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {# ── type-to-confirm 片語（round45 裁決）────────────────────────────────────────
+             **片語是「值」，不是 chrome，所以它永遠不掛 `data-i18n`。** 原本 label 與 placeholder 各掛一顆
+             key，繁中要打「刪除」、英文要打 `DELETE`——**同一道閘在兩個語系要求不同的輸入**，而 React 端
+             比對的只會是其中一份，另一個語系的使用者照著畫面打就是解不開。
+             正典有兩處：同站 manage-tenant-modal 的 type-to-confirm 打的是**租戶名稱**（一個值，兩個語系
+             都打同一串），product 的 `declare_filter_slots` 用 `_FILTER_SLOTS_CONFIRM_PHRASE = "REBUILD-ALL"`
+             （逐字比對的固定字串，並在 400 訊息裡把片語本身回給呼叫端）。故改成語言中立的固定字串，
+             label 走「前綴 key ＋片語節點＋後綴 key」（§4-2 前後綴 key 自帶分隔空白）。
+             **片語還要跟著上一步選的動作換一組**：`ReviewApplyIn.action` 的值域逐字是
+             `purge_data`／`delete_account`／`freeze`（platform.py），idle 態三顆動作鈕各對一個，
+             原本不論選哪一顆都要求打「刪除」——選了「凍結逾時帳號」卻被要求打「刪除」。
+             三組片語由 `data-phrase-<動作>` 承載，React 依選定的動作把可見那一顆換上去。
+             **刻意不用 `data-text-<態>`／`data-key-<態>` 那組資料槽**：那一族的定義是「繁中原文 ＋ 對應的
+             i18n key」，而這裡的重點正是**這串字不翻**，掛上去會讓下一個人以為少了一半。 #}
+        <div class="form-group">
+            <div class="label">
+                {# 前綴的繁中是「請逐字輸入 」而不是「請輸入 」：後者與 `common.pleaseEnter` 逐字相同，
+                     §4-2「繁中原文相同的 chrome 沿用既有 key」會把兩顆判成同文異 key，而那顆是 placeholder
+                     專用、不帶尾空白，這裡沿用它反而會讓英文黏成 "Please enter DELETE-ACCOUNT"。 #}
+                <label for="reviewConfirmInput" class="control-label"><span data-i18n="platform.confirmTypePrefix">請逐字輸入 </span><span data-phrase-purge="PURGE-DATA" data-phrase-delete="DELETE-ACCOUNT" data-phrase-freeze="FREEZE">DELETE-ACCOUNT</span><span data-i18n="platform.confirmTypeSuffix"> 以確認執行</span></label>
+            </div>
+            <div class="field">
+                <input data-platform-role="admin" type="text" id="reviewConfirmInput" placeholder="DELETE-ACCOUNT" class="form-control" aria-describedby="reviewConfirmHint">
+                <span class="text-gray" id="reviewConfirmHint" data-i18n="platform.confirmPhraseHint">片語要逐字相同（含大小寫與連字號），而且會隨上面選的動作換一組；它不隨語言變。</span>
+            </div>
+        </div>
+        {# `POST /platform/review/apply` ＝ `require_platform_admin`（product app/routers/platform.py），
+             所以標 admin 的是**這一顆**。低於該級時動作鈕不渲染（§5）——原本反過來標，
+             稽核員反而看得到一顆「確認執行（不可逆）」，按了必定 403。
+             「取消」是純前端互動（回 idle 態），不標。 #}
+        {# 「（不可逆）」**只對三顆動作裡的兩顆成立**：`purge_data` 與 `delete_account` 沒有回頭路，
+             而 `freeze` 有對稱的 `unfreeze_tenant`（product app/routers/platform.py，docstring 逐字「把凍結時長補回 trial_end，
+             剩餘天數原封保留」），對它說不可逆是假的警語——假警語會讓真的那兩顆一起被當成裝飾。
+             故做成隨動作切換的兩態（§4-2 `data-text-<態>`＋`data-key-<態>`：這一句是 chrome、要翻，
+             所以繁中原文與 key 都要給，與上面那顆「片語」剛好相反）。靜態稿演的是不可逆那一態。 #}
+        <div class="flex-row gap-10 align-items-center">
+            <button type="button" class="button button-red js-review-confirm" data-platform-role="admin"
+                data-text-irreversible="確認執行（不可逆）" data-key-irreversible="platform.confirmExecute"
+                data-text-reversible="確認執行（可解凍）" data-key-reversible="platform.confirmExecuteFreeze"
+                data-i18n="platform.confirmExecute">確認執行（不可逆）</button>
+            <button type="button" class="button button-border js-review-cancel" data-i18n="action.cancel">取消</button>
+        </div>
+    </div>
+    {% elif isoReviewStep == "result" %}
+    <div class="flex-row column gap-8">
+        <div class="text-bold" data-i18n="platform.reviewStep3">③ 處理結果（可截圖）</div>
+        <div class="flex-row flex-wrap gap-16">
+            <span><span data-i18n="common.total">共</span> {{ isoReviewOkResults.length + isoReviewFailResults.length }} <span data-i18n="platform.reviewResultOkMid">筆，成功</span> {{ isoReviewOkResults.length }}<span data-i18n="dataImport.batchSummaryFailMid">、失敗</span> {{ isoReviewFailResults.length }}</span>
+            <span><span data-i18n="platform.reviewCompletedAt">完成時間：</span>2026-07-14 09:01 UTC</span>
+        </div>
+        <div class="table-container scrollTable">
+            <table class="default-table">
+                <colgroup>
+                    <col style="min-width:160px;">
+                    <col style="min-width:100px;">
+                    <col style="min-width:280px;">
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th data-i18n="settings.tenant">租戶</th>
+                        <th data-i18n="platform.resultStatus">結果</th>
+                        <th data-i18n="platform.resultError">錯誤訊息</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in isoReviewOkResults %}
+                    <tr>
+                        <td>{{ r.name }}</td>
+                        <td class="text-bold" data-i18n="platform.resultOk">成功</td>
+                        <td>{{ r.error }}</td>
+                    </tr>
+                    {% endfor %}
+                    {% for r in isoReviewFailResults %}
+                    <tr>
+                        <td>{{ r.name }}</td>
+                        <td class="text-bold text-red" data-i18n="platform.resultFail">失敗</td>
+                        <td>{{ r.error }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="flex-row">
+            <button type="button" class="button button-primary js-review-done" data-i18n="platform.reviewDone">完成／返回</button>
+        </div>
+    </div>
+    {% endif %}
+</div>

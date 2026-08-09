@@ -111,6 +111,8 @@
   "catalog.linkExcelCompare": "Excel Comparison Preview",
   "catalog.linkFaq": "FAQ Chatbot",
   "catalog.linkFilePreview": "File Content Preview",
+  "catalog.linkIsoReviewPreview": "ISO Review: Preview List",
+  "catalog.linkIsoReviewResult": "ISO Review: Results",
   "catalog.linkLogin": "Login Page",
   "catalog.linkPreviewExcel": "Excel Data Preview",
   "catalog.linkUploadSuccessExcel": "Excel Upload Complete",

@@ -54,7 +54,7 @@ src/
 ├── _includes/
 │   ├── layouts/            整頁模板（4 支，見下表）＋ 模板專屬樣式 `_base.scss` / `_page-shell.scss` / `_chatbot-shell.scss`（⚠️ 與 `src/scss/_base.scss` 同名，`main.scss` 以 `as layout-base` 消歧；`public-shell` 沒有自己的樣式，它沿用 page-shell 的 `.main`）
 │   ├── ui/                 不依賴其他元件的元件（58 個）
-│   └── components/         會用到其他元件，或某大元件的專屬子片段（54 個）
+│   └── components/         會用到其他元件，或某大元件的專屬子片段（57 個）
 ├── scss/                   全域層（元件樣式住在元件資料夾）
 │   ├── _var.scss           設計 token：語意色 + [data-theme=dark] 覆寫（全站唯一色源，單層直值）
 │   ├── _mixin.scss         共用 mixin：scrollbar 系列、icon-mask（單色 PNG 遮罩上色）、nav-collapsed（header↔mobile-nav 的 1250px 斷點，兩者必須同值）
@@ -74,7 +74,7 @@ src/
 ├── 404.html                GitHub Pages 的 404 fallback
 ├── catalog.html            部署站台首頁＝頁面目錄（permalink → index.html；右上角有語言/深淺鈕，在 i18n 範圍內）
 └── pages/                  內頁：依 section 分資料夾，permalink 輸出扁平檔名到 dist/ 根
-    ├── dataImport/(7) dataset/(10) qaHistory/(2) qaRecord/(1) qaTest/(4) settings/(13)  ← 管理端，走 page-shell
+    ├── dataImport/(7) dataset/(10) qaHistory/(2) qaRecord/(1) qaTest/(4) settings/(15)  ← 管理端，走 page-shell
     ├── faq/(1)                                                                        ← 前台 FAQ，走 chatbot-shell
     ├── shared/(1)                                                                     ← 公開唯讀分享頁，走 public-shell
     └── components/(1)                                                                 ← 元件總覽（showcase），走 base
@@ -89,7 +89,7 @@ dist/                       build 輸出（勿手改）
 
 | layout | 自動提供 | 用它的頁面 |
 |---|---|---|
-| `layouts/page-shell/page-shell.html` | `<head>` + skip-link + `header`（導覽 + 語言/夜間）+ `<main id="main">`（含 h1）+ `footer` + `ui/faq-launcher`（右下角前台入口） | 管理端 37 頁；front matter 必填 `titleKey` / `pageHeading` |
+| `layouts/page-shell/page-shell.html` | `<head>` + skip-link + `header`（導覽 + 語言/夜間）+ `<main id="main">`（含 h1）+ `footer` + `ui/faq-launcher`（右下角前台入口） | 管理端 39 頁；front matter 必填 `titleKey` / `pageHeading` |
 | `layouts/chatbot-shell/chatbot-shell.html` | `<head>` + skip-link + `chatbot-header`（logo + 語言/夜間，無導覽）+ 滿版 `<main id="main">`（含 sr-only h1 `GufoFAQ`）+ `footer` | 前台 FAQ 聊天頁 |
 | `layouts/public-shell/public-shell.html` | `<head>` + skip-link + `chatbot-header`（同 chatbot-shell，無導覽）+ 一般文件流 `<main class="main" id="main">` > `.wrap`（含 sr-only h1）+ `footer`。**無** Manager 導覽、**無** `ui/faq-launcher`（那是登入態才有）、**不**鎖 body 捲動 | 公開唯讀分享頁 `shared.html`；front matter 必填 `titleKey` / `pageHeading`，不設 `bodyClass` |
 | `layouts/base/base.html` | 只有 `<head>` + 空白外框 + script 清單 | 登入頁、404、頁面目錄、元件總覽（各自在內容裡放唯一的 h1） |
@@ -137,6 +137,8 @@ dist/                       build 輸出（勿手改）
 | `components/import-report` | 匯入結果回報（`1-1-6` Excel／`1-2-1` PDF-Word 共用）：`importCounts = { inserted, updated, failed }`（必填，三計數同時顯示才分得出「新增」與「取代舊版」）＋選填 `importFileReports = [{ filename, structure?, droppedLinks?（＝網址陣列，筆數由它推導、不另給 count）, unprocessableTables?, suspectedHeaderlessTables? }]`（後兩者的分界見元件檔頭：`unprocessableTables` 是**轉不出來**的，`suspectedHeaderlessTables` 是**轉出來了但欄名可能不對**的）（逐檔明細——後端這三項本來就是逐檔的，彙總成一份就看不出是哪個檔）＋選填 `importLabelSyncWarning`（`import_excel` 掛在 200 上的警語：匯入成功但顯示欄位標籤沒即時同步到檢索設定；批次端點的 `FIDELITY_REPORT_KEYS` 不含它，故只有 1-1-6 set）。被剝除連結的「複製為出口替換規則」是純前端互動，見 `import-report.js`。 |
 | `components/builtin-tool-card` | 內建工具卡（5-2 Agent 工具子頁籤，一工具一張可展開的卡）。頁面在 `{% for tool in builtinTools %}` 內 include，故參數就是那筆 `tool`：`name`（英文識別字＝`data-tool` 與開關 value）／`title`・`desc`（中文標題與解釋，chrome）／`params = [{ name, required, desc }]`（唯讀清單，空陣列＝「無參數」）／`enabled`／`customized`（顯示「已自訂」標記且該卡預設展開）／`defaultDescription`（「工具描述」欄 placeholder＝內建預設描述原文，API 資料不翻）／`description`・`extraPrompt`（現有自訂值）／`exampleDescription`・`exampleExtraPrompt`（兩欄下方的範例）。開合復用 `ui/accordion` 的**卡片模式**（根掛 `.js-accordion-item`）；自帶 js 只做兩件純前端事：字數提示即時更新、「還原預設」清空本卡兩欄。 |
 | `components/record-identity` | 一筆健檢記錄的可讀身分（3-5 的「涉及的記錄」與合併／停用／取代／補寫四支處置的選項共用）。頁面在 `{% for %}` 內 `{% set recordIdentity = { title, titleChars, titleSource, filename, row, unavailableReason } %}` 後 include（`titleSource` 值域＝`title_slot`／`filename`／`no_answer_question`，種類標記走 `{% if %}` 鏈、i18n key 逐條寫成字面）；欄位逐一對回 product `health_findings.RecordOut`。**標題永遠帶著「這是哪一種身分」**（資料列／整份文件／使用者的問法——三種東西長得都像標題，而使用者是據此按下「保留這一筆」的）、同名時靠檔案與列號分辨、標題欄空白與標題讀不出來分成兩句話講、截斷說得出原文有多長。讀不出來時畫短標記 ＋ product 的原因代碼（不翻，同 `uncovered` 那張表的 `reason` 欄），完整那段話由使用頁另起一段。放 `components/` 是因為它自己的 markup 寫了 `ui/inline-code` 的 class（GUIDELINE §1-1）。 |
+| `components/platform-tenants-panel` | `5-6-1` 那一族三份稿共用的固定區塊群（ISO 審核精靈**之前**的一整組：平台權限／平台時區／GufoRAG 授權用量／建立租戶／帳號治理／租戶功能開通表，＋三個彈窗本體）。唯一參數 `timezoneSelected`（**必填**）一路轉給 `ui/timezone-options`——**由使用頁 set、不由本元件 set**：`timezone-options` 的讀法是 `{% if tz == timezoneSelected %}`（名字不在運算式開頭），[GUIDELINE §6](GUIDELINE.md) 那條「元件內部示範變數不得與頁面層變數同名」的機器判準因此認不出它是傳給子元件的參數，而 5-2 也在頁面層 set 同名變數。其餘（租戶列、功能欄、平台角色列）是元件內建的示範假資料。 |
+| `components/iso-review-wizard` | ISO 季度審核精靈，**一台三態互斥的狀態機**。頁面 set `isoReviewStep`（**必填、無預設**，值域＝`"idle"`／`"preview"`／`"result"`，與 gufofaq-saas `apps/web/app/(app)/platform/page.tsx` 的 `ReviewWizard` 那顆 `step` state 逐字相同）；三個值以外整塊步驟區不渲染。三態各由一份稿演（`5-6-1_platformTenants` idle ／ `5-6-1-2_platformIsoReviewPreview` preview ／ `5-6-1-3_platformIsoReviewResult` result），照資料匯入精靈（`1-1-2`～`1-1-6`）的逐步一份稿正典。名單／結果是元件內建的示範假資料（GUIDELINE §6(b)）。步驟指示器就是各段自己的標題（`platform.reviewStep1/2/3` 的繁中與英譯都自帶 ①②③），本族不用 `components/step-nodes`。 |
 | `ui/pagination` | `total`（總筆數，必填）／選填 `perPage`（每頁筆數，預設 10）、`currentPage`（目前頁，預設 1）。頁碼列由 `pagination.js` 依 `data-total`/`data-per-page`/`data-current` 動態 render（改寫自真 app 的 renderPagination，滑動視窗＋左右省略號＋首尾頁碼恆顯＋`.page-info` 總頁數），點頁碼／上下頁即時重畫，不吃頁面傳的靜態頁碼清單。 |
 
 > 這些元件的資料**因使用它的頁面而異**，故由頁面在 include 前 `{% set %}` 提供，元件只負責 `{% for %}` 渲染——轉 React 即 props。（全站不變的結構性設定與純示範假資料可以住在元件裡，見 [GUIDELINE §6](GUIDELINE.md)。）
@@ -144,7 +146,8 @@ dist/                       build 輸出（勿手改）
 ### 自動引入
 
 `header`、`footer` 與 `ui/faq-launcher` 由 `page-shell` 自動提供；`chatbot-header` 與 `footer` 由 `chatbot-shell` 自動提供。頁面都不需 include。
-含子元件的元件：`header`（含 `mobile-nav`、`header-controls`）、`mobile-nav`（含 `header-controls`）、`chatbot-header`（含 `header-controls`）、`header-controls`（含 `theme-toggle`）、`footer`（含 `disclaimer-modal`）、`faq-chatroom`（含 `rating-modal`、`faq-share-modal`）、`step-btn-wrap`（含 `step-nodes`）、`qa-side-panel`（含 `qa-record-tabs`）、`qa-import-modal`（含 `upload-box`）、`case-from-log-modal`（含 `modal-close`）。
+含子元件的元件：`header`（含 `mobile-nav`、`header-controls`）、`mobile-nav`（含 `header-controls`）、`chatbot-header`（含 `header-controls`）、`header-controls`（含 `theme-toggle`）、`footer`（含 `disclaimer-modal`）、`faq-chatroom`（含 `rating-modal`、`faq-share-modal`）、`step-btn-wrap`（含 `step-nodes`）、`qa-side-panel`（含 `qa-record-tabs`）、`qa-import-modal`（含 `upload-box`）、`case-from-log-modal`（含 `modal-close`）、`platform-tenants-panel`（含 `ui/timezone-options`、`manage-tenant-modal`、`delete-modal`、`reset-password-modal`）。
+`platform-tenants-panel` 與 `platform-disclaimer-panel` 是 `5-6-1` 那一族三份稿（ISO 審核精靈的 idle／preview／result 三態）**共用的固定區塊群**：精靈之前的一整組在前者、精靈之後的免責聲明設定在後者，兩者都不吃頁面參數（三份稿演同一個畫面，資料住在元件裡）。它們存在的理由就是「三頁複製貼上會分岔」，故改動一律改元件那一份。
 
 **無條件開窗**才掛 `data-open-modal="<dialog id>"`（`ui/modals` 事件委派），彈提示掛 `data-toast`。
 **有條件開窗**（先設定要刪哪一列、依權限決定開哪一份、驗證失敗才跳）是業務邏輯：觸發鈕保留真 app 的 hook class（`.js-apply-production`、`.btn-delete-file`…），切版不掛 `data-open-modal`——掛了就變成無條件開窗，說了謊。這種彈窗的「看得見」由元件庫頁的示範觸發器保證。`ui/default-table` 的展示片段也 include 了 `ui/accordion`，但展示用途不算依賴（GUIDELINE §1-1），故它留在 `ui/`。
@@ -161,7 +164,7 @@ dist/                       build 輸出（勿手改）
 
 **`<元件名>.html` 的兩種身分**：被真實頁面 include 的是生產 markup；只被元件總覽頁 `component.html` include 的是展示片段（`button`、`checkbox`、`radio`、`switch`、`tab`、`form-control`、`multi-select`、`link-file`、`link-modal`、`list-style`、`divider-vertical`、`toast`、`tooltip`、`block`、`form-table`、`default-table`、`error-page`、`widget-shell`）。展示片段為了示範情境會用到別的元件，判斷桶歸屬時不算依賴（見 GUIDELINE §1-1）。
 
-> **上列不是完整清單**（`src/_includes/` 目前有 112 個元件）。完整結構以 `src/_includes/` 與元件總覽頁 `dist/component.html` 為準。跨檔一致性由 `npm test` 把關：有 js 的元件必須三方登記（實體檔 ⇄ `eleventy.config.js` ⇄ `base.html`）、有 scss 的必須在 `main.scss` `@use`、每個元件 html 都必須被 include（無孤兒）、每張圖都必須被引用。
+> **上列不是完整清單**（`src/_includes/` 目前有 115 個元件）。完整結構以 `src/_includes/` 與元件總覽頁 `dist/component.html` 為準。跨檔一致性由 `npm test` 把關：有 js 的元件必須三方登記（實體檔 ⇄ `eleventy.config.js` ⇄ `base.html`）、有 scss 的必須在 `main.scss` `@use`、每個元件 html 都必須被 include（無孤兒）、每張圖都必須被引用。
 
 ---
 
@@ -187,7 +190,7 @@ dist/                       build 輸出（勿手改）
 
 | 位置 | 真 app 的狀況 |
 |---|---|
-| `5-5-1_userManagement`、`5-6-1_platformTenants`、`5-6-2_platformMcpServers` | 沒有這三頁（真 app 管理端 21 頁，本專案加成 37 頁；`5-6-2` MCP Server 註冊表為平台管理者專屬） |
+| `5-5-1_userManagement`、`5-6-1_platformTenants`、`5-6-1-2_platformIsoReviewPreview`、`5-6-1-3_platformIsoReviewResult`、`5-6-2_platformMcpServers` | 沒有這幾頁（真 app 管理端 21 頁，本專案加成 39 頁；`5-6-2` MCP Server 註冊表為平台管理者專屬）。`5-6-1` 那一族是**一個 React 路由（`/platform`）的三個 state 各一份稿**：ISO 季度審核精靈是 `idle`／`preview`／`result` 三態互斥的狀態機（gufofaq-saas `apps/web/app/(app)/platform/page.tsx` 的 `ReviewWizard`），照資料匯入精靈（`1-1-2`～`1-1-6`）的逐步一份稿正典拆開；精靈以外的區塊收在 `components/platform-tenants-panel`／`components/platform-disclaimer-panel` 兩份正本，三頁共用 |
 | `5-10_tagDimensions` | 沒有這頁（SaaS 新增需求：標籤維度／受控詞彙／標註覆蓋率／檢索過濾旋鈕。逆向自 product `app/routers/tags.py`、`app/routers/retrieval.py` 的 `PUT /retrieval/profiles/{no}/tag-filter`、`app/tag_values.py` 的 `UNSET_TAG_VALUE`／`slots_missing_from_files`。旋鈕預設關閉，開啟是硬閘門而不是勾一下——但判準是**結構**而不是覆蓋率：「未標註」現在是匯入時就寫進去的哨兵值，所以覆蓋率不再是證明，剩下的唯一缺口是「這個檔連這一欄都沒有」，故頁面要逐檔指得出要重新匯入哪一個，並區分「匯入時還沒有這個維度」與「資料夾匯入沒有欄位槽」兩種處置） |
 | `2-2-4_regressionSuites`、`2-2-5_regressionRun` | 沒有這兩頁（SaaS 新增需求：批次回歸 harness——案例集／案例（自帶斷言）＋一次執行的報表。逆向自 product `app/routers/regression.py`：`POST /qatest/suites/{id}/run`（SSE 逐案例回報）、`GET /qatest/runs/{id}?baseline=`（基準比較）、`GET /qatest/runs/{id}/export`（結果 CSV）、`POST /qatest/suites/{id}/cases/from-log`（從問答紀錄一鍵建案例）。比較有**五個**桶子不是三個：`not_compared`（只有一邊有結果）與 `judge_drift`（評審整批壞掉）的預設歸宿都是「無變化」＝假綠燈，故各自成塊、且排在「無變化」之前） |
 | `3-5_dataHealth` | 沒有這頁（SaaS 新增需求：資料健檢——把知識庫裡「答得出來、但答得不對」的資料撈成一張待處理清單，逐項附證據與可用的處置動作。逆向自 product `app/routers/health_findings.py`（`GET /health/findings`／`GET /health/findings/overview`／`POST /health/scan`＋五支處置＋`/undo`）與 `app/health_checks.py`（十一種檢查、兩種確定程度、重新開啟的判準）。三件不外顯就會靜默出事的事：總覽依「涉及記錄的命中次數總和」排序而清單依 `(check_type, id)` 排，兩張表照什麼排都要講明；已處置的發現只有在證據或確定程度變了才回到清單，畫面要答得出「這一筆為什麼又出現了」；掃描沒看到的檔逐檔列在回應裡，那份誠實不得被藏起來） |

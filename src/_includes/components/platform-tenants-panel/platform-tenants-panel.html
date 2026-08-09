@@ -1,0 +1,430 @@
+{# 平台管理頁的固定區塊群（ISO 審核精靈**以外**的整個 5-6-1）。
+     ── 為什麼是一個元件 ──────────────────────────────────────────────────────────────
+     ISO 季度審核精靈是一台狀態機（`components/iso-review-wizard`，三態互斥），依 §3-3 拆成
+     **逐步一份稿**：`5-6-1_platformTenants.html`（idle）／`5-6-1-2_platformIsoReviewPreview.html`
+     （preview）／`5-6-1-3_platformIsoReviewResult.html`（result）。三份稿演的是**同一個 React 路由**
+     （gufofaq-saas `apps/web/app/(app)/platform/page.tsx` 的 `PlatformPage`）的三個 state，
+     所以精靈以外的每一塊在三份稿上逐位元相同——複製貼上三份就是三份會分岔的正本（§3-3「出現在
+     2 頁以上 → 切」）。**改這裡就是三頁一起改**，這正是它存在的理由。
+     同一個做法在站內已有正典：資料匯入精靈 `1-1-2`→`1-1-3`→`1-1-4`→`1-1-6` 也是逐步一份稿，
+     React 端同樣是單一路由 ＋ `step` state。
+
+     參數：`timezoneSelected`（**必填**）—— 直接轉給 `ui/timezone-options` 的「目前選中的 IANA 時區」。
+       **它由使用頁 set，不由本元件 set**：`timezone-options` 讀它的寫法是 `{% if tz == timezoneSelected %}`
+       （名字不在運算式開頭），§6 那條「元件內部示範變數不得與頁面層變數同名」的機器判準因此認不出
+       「這是傳給子元件的參數」，而 5-2 也在頁面層 set 同一個名字 ⇒ 元件端一 set 就是撞名。三份稿各 set 一次。
+     其餘資料**無參數**：那是 §6(b) 的「純示範用的假資料」——三份稿演的是同一個畫面，沒有任何一頁需要
+       不同的值，所以住在元件裡（頁面 set 三份反而是三份會分岔的抄本）。示範變數一律元件專屬名（§6）：
+       `platformAdminRows`／`platformFeatureCols`／`platformTenantRows`。
+     內含的子元件（除 `timezoneSelected` 外，其餘參數由本元件在 include 前設齊，見各區塊上方註解）：
+       `ui/timezone-options`（`timezoneSelected` ← 使用頁）、`components/manage-tenant-modal`（`manageTenantFrozen`）、
+       `components/delete-modal`、`components/reset-password-modal`。
+     不含：麵包屑（頁面自己畫，§3-1 每頁的 breadcrumbItems 不同的那一族沿用頁面層）、
+       ISO 審核精靈（`components/iso-review-wizard`）、免責聲明（`components/platform-disclaimer-panel`）。
+
+     ── 三個彈窗為什麼住在這裡 ────────────────────────────────────────────────────────
+     §1-2「誰的按鈕開的彈窗，彈窗就 include 在誰裡面」：`.js-manage-tenant` 在下方的租戶功能開通表上，
+     而 `.js-reset-password`／`.js-delete-user` 在 manage-tenant-modal 的成員區裡（那兩顆是業務條件開窗
+     ——先選定哪一位成員才知道重設／刪除誰，故不巢狀在 manage-tenant-modal 內，見該元件檔頭）。
+     **它們在 dist 上排在 ISO 審核精靈之前**（＝跟著觸發鈕走，而不是排在頁尾）：`<dialog>` 未開啟時
+     `display:none`、不佔版位，放在哪一段之間都不影響三份稿的幾何。 #}
+
+{# ── 這一族三份稿的兩級可見性（§5 data-platform-role）──────────────────────────
+     平台層有兩種角色：`auditor`（唯讀稽核，ISO 職責分離）與 `admin`（全權）。平台管理頁**整頁 auditor 進得來**
+     （product GET /platform/tenants、/usage、/license-usage、/admins、/tenants/export 皆 require_platform_auditor），
+     但每一顆會改變狀態的東西都是 require_platform_admin。故：
+       · 區塊／唯讀清單掛 data-platform-role="auditor"
+       · 建立、開通、指派角色、時區寫入、凍結、刪除、清空這些掛 data-platform-role="admin"
+     渲染規則（React 端）：**動作鈕**低於該級就不渲染（不要給稽核員一整排按不動的鈕）；**值控制項**
+     （switch／select／input）低於該級照渲染但 `disabled`——狀態要看得見才稽核得到，只是改不動。 #}
+{# 平台權限（Spec 2 B）：盤點所有握有平台角色（auditor/admin）的使用者，逐列可改角色（none/auditor/admin）。
+     逆向自 product GET /platform/admins（auditor 亦可讀）／PATCH /platform/users/{id}/platform-role（僅 admin）。
+     改角色是「選了就送」的即時動作（無條件送出後端才知道成敗、且最後一位 admin 降級會 409），故 select 掛業務
+     hook class（.js-set-platform-role，命名依 §5「切版新頁業務觸發鈕自創 hook class」，同 ab-test 的
+     .js-knowledge-select／.js-llm-select 先例：業務 select 掛 hook class），不掛 data-toast——click 委派抓不到
+     「選了哪個選項」，成敗訊息也得看後端回應（含 409 last_platform_admin 的專屬文案），非本頁能靜態列舉。
+     示範列僅列 auditor／admin（none 不會出現在真實列表——後端只回 platform_role != "none" 的使用者）。 #}
+{# id＝`PlatformAdminOut.id`（product app/routers/platform.py），也就是 `PATCH /platform/users/{user_id}/platform-role` 的
+     路徑主鍵——這一列那顆 select 送出去要指名誰，只有它答得出來。**不可拿 loop.index 當列鍵**：
+     授撤角色會把人從這張表移出去（改成 `none` 之後 `list_platform_admins` 就不回他了），
+     位置不是身分（§6 列鍵，同本元件下方租戶表的 `data-tenant-id`）。
+   **列序＝`platform_role` 降冪、再 id 升冪**，出處是 platform.py 的 `list_platform_admins`
+     （`.order_by(User.platform_role.desc(), User.id)`）。這張表只會有 `auditor` 與 `admin` 兩種值，
+     而字串比較上 `"admin" < "auditor"` ⇒ **降冪把 auditor 排在最前面**，admin 在後、彼此照 id 升冪。
+     原本排成 admin／auditor／admin 交錯，那是這支端點產不出來的順序（§6 列序也是示範資料的一部分）。
+   `created_at`（`PlatformAdminOut` 的第五欄）補成一欄：ISO 要盤點的是「誰握有最高權限」，而「這個帳號
+     從什麼時候起就在平台上」是判斷一列該不該留下來的依據之一，原本這一欄沒有落點也沒有理由（§3-2）。
+     它是**使用者帳號的建立時間**，不是角色的授予時間——後者沒有欄位可回，要查得去稽核日誌（5-7）看
+     `platform.role.grant`／`revoke` 那兩個事件（`set_platform_role` 的 `record_audit`，detail 帶 from/to）。 #}
+{% set platformAdminRows = [
+  { id: 88, email: "auditor@example.com", tenant: "示範租戶 B", role: "auditor", createdAt: "2025/09/12 14:07" },
+  { id: 12, email: "admin@example.com", tenant: "示範租戶 A", role: "admin", createdAt: "2025/03/04 09:22" },
+  { id: 205, email: "ops-admin@example.com", tenant: "示範租戶 C", role: "admin", createdAt: "2026/05/20 16:41" }
+] %}
+<div class="block mb-16 flex-row column gap-16" data-platform-role="auditor">
+    <div class="text-md text-bold" data-i18n="platform.platformRolesTitle">平台權限</div>
+    <div class="table-container scrollTable">
+        <table class="default-table">
+            <colgroup>
+                <col style="min-width:220px;">
+                <col style="min-width:160px;">
+                <col style="min-width:160px;">
+                <col style="min-width:160px;">
+            </colgroup>
+            <thead>
+                <tr>
+                    <th data-i18n="common.email">電子郵件</th>
+                    <th data-i18n="settings.tenant">租戶</th>
+                    <th data-i18n="common.createdAt">建立時間</th>
+                    <th id="platformRoleHead" data-i18n="platform.platformRole">平台角色</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in platformAdminRows %}
+                <tr data-user-id="{{ row.id }}">
+                    <td id="platformRoleUser-{{ row.id }}">{{ row.email }}</td>
+                    <td>{{ row.tenant }}</td>
+                    <td>{{ row.createdAt }}</td>
+                    <td data-platform-role="admin">
+                        {# 可及名稱＝「<這一列的 email> 平台角色」（§4：迴圈內的控制項掛靜態 aria-label
+                             會蓋掉列脈絡，三列全叫「設定平台角色」，報讀器聽不出正在改誰的角色）。
+                             同一頁下面的租戶功能開關早就是這個寫法。錨點的號碼跟著**列鍵**走
+                             （`row.id`，不是 `loop.index`）：改完一位的角色之後列會被移出這張表，
+                             以位置組出來的 id 會整批前頂而指到別人身上。 #}
+                        <select class="form-control singleSelect js-set-platform-role" aria-labelledby="platformRoleUser-{{ row.id }} platformRoleHead">
+                            <option value="none" data-i18n="platform.none"{% if row.role == "none" %} selected{% endif %}>無</option>
+                            <option value="auditor" data-i18n="platform.roleAuditor"{% if row.role == "auditor" %} selected{% endif %}>稽核員</option>
+                            <option value="admin" data-i18n="platform.roleAdmin"{% if row.role == "admin" %} selected{% endif %}>系統管理員</option>
+                        </select>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{# 平台時區（Spec 3）：全平台唯一一份時區設定（非per-租戶），逆向自 product GET/PUT /platform/timezone
+     （GET 為 auditor 亦可讀，PUT 僅 admin）。有限選項的 select，值必為合法 IANA 時區，故直接動作 → data-toast
+     只演「成功／失敗」兩態（無「無效時區」分支——後端 400 的情境是直接呼叫 API 才會發生，本頁 select 選不出來）。
+     **裁決（round45）：這個做法是全站正典。** 「值域由端點自己渲染成選項 ⇒ UI 選不出域外值 ⇒ 那道 400 不列」
+     ——5-6-3 的核發鈕原本對一模一樣的情境（授權範圍下拉的選項就是 `GET /platform/service-keys/scopes`
+     回的值域）列了一段「這個授權範圍不在值域內」，該頁已依本裁決把那一段拿掉，兩頁對同一種情境不再相反
+     （§5：列出不可能的結果與只演成功一樣是說謊）。 #}
+<div class="block mb-16 flex-row column gap-16" data-platform-role="auditor">
+    <div class="text-md text-bold" data-i18n="platform.timezoneTitle">平台時區</div>
+    <div class="flex-row gap-16 align-items-end flex-wrap mobile-column sm-gap-16">
+        <div class="form-group">
+            <div class="label">
+                <label for="platformTimezoneSelect" class="control-label" data-i18n="platform.timezoneTitle">平台時區</label>
+            </div>
+            <div class="field">
+                {# 時區清單與 5-2 是同一份目錄（§6 不得各烤一份）→ ui/timezone-options。
+                     `timezoneSelected` 由**使用頁**在 include 本元件之前 set（理由見本檔檔頭的參數段）。 #}
+                <select id="platformTimezoneSelect" class="form-control singleSelect" data-platform-role="admin">
+                    {% include "ui/timezone-options/timezone-options.html" %}
+                </select>
+            </div>
+        </div>
+        <button type="button" class="button button-primary button-sm" data-platform-role="admin" data-toast="平台時區已儲存|儲存失敗" data-i18n-data-toast="toast.saveTimezone" data-toast-type="success|error" data-i18n="platform.saveTimezone">儲存平台時區</button>
+    </div>
+</div>
+
+{# GufoRAG 授權用量（`GET /platform/license-usage`，`require_platform_auditor`，platform.py 的
+     `platform_license_usage`）。**裁決（round45）：補畫，不是寫理由。**`LicenseUsageOut` 的五個欄位
+     （current_usage／max_usage／remaining_usage／is_allowed／is_unlimited）在此之前全站零落點，
+     而那支端點的 docstring 逐字寫著「這支端點的唯一用途就是讓平台管理員判斷容量」——後端做了、前端
+     到不了等於沒做（§3-2）。整塊唯讀 ⇒ 標 auditor（同上面那塊平台時區）；塊內沒有任何控制項，
+     所以不必再有 admin 的宣告。
+     **它與 manage-tenant-modal 那組額度／已用量不是同一個池**：那是逐租戶的產品額度
+     （`TenantSetting.qa_used/qa_limit`），這一支是 GufoRAG 授權賣給**整個平台**的天花板，chatbot 對整張
+     `chat_logs` 當日計數、不分租戶。混在一起看會把它誤讀成某個租戶的數字，所以自成一塊、標題寫明是平台級。
+     **「今日」的日界＝平台時區**（`usage_mod.platform_timezone`，與用量週期邊界同源），所以這一塊
+     緊接在平台時區下面：改了時區，這個面板數的「今天」跟著換一天，而數字本身看起來完全正常。
+     示範值自洽：剩餘 ＝ 上限 − 已用（5000 − 3182 ＝ 1818）；`is_allowed` 因此是「尚可問答」。
+     兩顆布林用兩態槽（§4-2 `data-text-<態>`＋`data-key-<態>`）：靜態稿一次只畫得出一態，另一態的繁中
+     與 key 沒有第二個地方可以住，落成孤兒就等於沒有人看過它的長相。 #}
+<div class="block mb-16 flex-row column gap-8" data-platform-role="auditor">
+    <div class="text-md text-bold" data-i18n="platform.licenseUsageTitle">GufoRAG 授權用量（平台級）</div>
+    <p class="text-gray m-0" data-i18n="platform.licenseUsageDesc">這是 GufoRAG 授權賣給整個平台的當日問答上限，不分租戶，也不是任何一個租戶的額度。「今日」以上面那顆平台時區為日界。</p>
+    <div class="flex-row flex-wrap gap-24">
+        <span><span data-i18n="platform.licenseCurrentUsage">今日已用：</span>3182</span>
+        <span><span data-i18n="platform.licenseMaxUsage">授權上限：</span>5000</span>
+        <span><span data-i18n="platform.licenseRemaining">剩餘：</span>1818</span>
+        <span><span data-i18n="platform.licenseAllowedLabel">目前狀態：</span><span data-text-allowed="尚可問答" data-key-allowed="platform.licenseAllowed" data-text-blocked="已達授權上限" data-key-blocked="platform.licenseBlocked" data-i18n="platform.licenseAllowed">尚可問答</span></span>
+        <span><span data-i18n="platform.licenseCapLabel">授權型態：</span><span data-text-capped="有每日上限" data-key-capped="platform.licenseCapped" data-text-unlimited="不限量" data-key-unlimited="platform.licenseUnlimited" data-i18n="platform.licenseCapped">有每日上限</span></span>
+    </div>
+</div>
+
+{# 建立租戶：平台管理員新增租戶（同時建立首位管理員帳號 + 預設額度）。逆向自 product POST /platform/tenants
+     （`TenantCreate` 收五欄：name／company／features／admin_email／admin_password，密碼至少 8 碼；201）。
+     五欄的落點：name／admin_email／admin_password 在下面三格；`features` 在下方的租戶功能開通表
+     （PATCH /features）；**`company` 補在這裡**——原本沒有任何平台端入口，於是平台建出來的租戶
+     公司欄一定是空的，只有租戶自己在 5-1-1 改得到（§3-2：request 收得下的每個參數都要有落點）。
+     沿用同站 5-8 widget「產生 Token」的 inline 建立區塊模式（非彈窗，無條件動作），
+     data-toast 直接掛按鈕。 #}
+<div class="block mb-16 flex-row column gap-16" data-platform-role="admin">
+    <div class="text-md text-bold" data-i18n="settings.createTenant">建立租戶</div>
+    <div class="flex-row flex-wrap gap-16 mobile-column sm-gap-16">
+        <div class="col-4-md col-12-sm">
+            <div class="form-group">
+                <div class="label">
+                    <label for="tenantNameInput" class="control-label required" data-i18n="settings.tenantName">租戶名稱</label>
+                </div>
+                <div class="field">
+                    <input type="text" id="tenantNameInput" placeholder="例如：宇宙股份有限公司" data-i18n-placeholder="settings.tenantNamePlaceholder" class="form-control" required>
+                </div>
+            </div>
+        </div>
+        <div class="col-4-md col-12-sm">
+            <div class="form-group">
+                <div class="label">
+                    {# `TenantCreate.company` 是選填（`str | None`），故 label 不掛 required、
+                         控制項也不掛（§4 兩份必須說同一件事）。key 沿用 5-1-1 既有的那顆（§4-2 反向規則）。 #}
+                    <label for="tenantCompanyInput" class="control-label" data-i18n="settings.companyUnit">公司/單位</label>
+                </div>
+                <div class="field">
+                    <input type="text" id="tenantCompanyInput" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control">
+                </div>
+            </div>
+        </div>
+        <div class="col-4-md col-12-sm">
+            <div class="form-group">
+                <div class="label">
+                    <label for="tenantAdminEmailInput" class="control-label required" data-i18n="settings.adminEmail">管理員 Email</label>
+                </div>
+                <div class="field">
+                    <input type="email" id="tenantAdminEmailInput" placeholder="admin@example.com" class="form-control" required>
+                </div>
+            </div>
+        </div>
+        <div class="col-4-md col-12-sm">
+            <div class="form-group">
+                <div class="label">
+                    <label for="tenantAdminPasswordInput" class="control-label required" data-i18n="settings.adminPassword">管理員密碼</label>
+                </div>
+                <div class="field">
+                    <input type="password" id="tenantAdminPasswordInput" minlength="8" placeholder="至少 8 碼" data-i18n-placeholder="settings.pleaseEnterNewPassword" aria-describedby="tenantAdminPasswordInputHint" class="form-control" required>
+                    {# 「至少 8 碼」是**約束提示**、不是錯誤訊息：.error-prompt 預設 display:none
+                         （靠 .form-group:has(.error) 才揭示），aria-describedby 指過去等於輔具讀到零。
+                         約束要在填之前就講得出來，故改成常駐可見的說明字（§4）。
+                         **8 是資料節點、不是譯文的一部分**（§3-2 / §4-2）：上游的 `Field(min_length=8)` 逐顆是
+                         product `app/routers/platform.py` 的 `TenantCreate.admin_password`／`PlatformResetPwIn.new_password`、
+                         `app/routers/users.py` 的 `UserCreate.password`／`ChangePwIn.new_password`／`ResetPwIn.new_password`
+                         （§3-2：跨 repo 的常數只指名符號、不抄數量——數量會變，符號 grep 得到），加上這一格的
+                         `minlength="8"`，這個數字已經有好幾份抄本；再烤進英譯就是「改上限要改兩份譯文」。
+                         形狀沿用 2-2-4 的 200（前綴 key ＋ 數字節點 ＋ 單位 key）。
+                         同一頁的 placeholder（settings.pleaseEnterNewPassword）與送出鈕的 data-toast **維持**把 8 寫在譯文裡：
+                         那是 §4-2「屬性型譯文」那條例外——屬性值是原子字串、切不出前後綴節點；例外的兩個條件這裡都
+                         成立（上面那顆常駐可見的資料節點承載同一個約束、上游符號名已寫在本段）。 #}
+                    <span class="text-gray" id="tenantAdminPasswordInputHint"><span data-i18n="settings.passwordMinLengthPrefix">密碼至少 </span><span>8</span><span data-i18n="settings.passwordMinLengthSuffix"> 碼</span></span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="flex-row">
+        <button type="button" class="button button-primary" data-toast="租戶已建立|請填寫租戶名稱、管理員 Email 與至少 8 碼密碼|租戶名稱或管理員 Email 已被使用，請換一個|建立失敗，請稍後再試" data-i18n-data-toast="toast.createTenant" data-toast-type="success|warning|warning|error">
+            <img src="./images/icon_add_white.png" width="48" height="48" decoding="async" alt="" class="icon">
+            <span data-i18n="settings.createTenant">建立租戶</span>
+        </button>
+    </div>
+</div>
+
+{# 平台管理（僅平台系統管理員，跨租戶）：控制各租戶能使用哪些功能。SaaS 新需求，逆向自 apps/web app/(app)/platform；
+     真正把關在 product（require_platform_admin），本元件僅提供管理介面。
+     功能鍵集合對齊 product `app/authz.py` 的 `CAPABILITIES`（**指名符號、不抄數量**：抄了數字就會
+     像上一版那樣落後——那時寫「全部 5 鍵」並引一句「維持 5 key 不變」，而正本現在是六鍵、
+     那句話也已經不在檔案裡了。`extract` 是後加的，理由逐字寫在 authz.py 該鍵上方：
+     「先前兩者共用 `data` 這把鑰匙，於是關掉某租戶的資料匯入會連帶把萃取 API 也關掉，
+     而畫面上看不出這件事」——少一欄開關，平台管理員就沒有地方替租戶開通萃取 API，
+     而 5-9 那一頁靠的就是它）。平台開通維持粗粒度整項開關，不拆讀寫。
+     示範租戶 D 同時出現在 `components/iso-review-wizard` 的名單/結果（§6 跨區自洽：逾期 150 天者列表要掛 ISO 待審徽章）。 #}
+{% set platformFeatureCols = [
+  { key: "data", label: "資料匯入／資料集管理", i18nKey: "settings.capData" },
+  { key: "ask", label: "問答（後台測試區）", i18nKey: "settings.capAsk" },
+  { key: "history", label: "歷史紀錄檢視", i18nKey: "settings.capHistory" },
+  { key: "settings", label: "設定類（提示詞／檢索設定）", i18nKey: "settings.capSettings" },
+  { key: "audit", label: "稽核日誌檢視", i18nKey: "settings.capAudit" },
+  { key: "extract", label: "萃取 API（程式化）", i18nKey: "settings.capExtract" }
+] %}
+{# ⚠️ reviewDue（ISO 待審徽章）與 `components/iso-review-wizard` 的 isoReviewCandidates 名單是同一個判準
+     推導出來的：正本 product app/routers/platform.py 的 _is_review_due 是「status ∈ {EXPIRED, FROZEN}
+     **且** trial_end 不是 None」，review_overdue 也逐字跳過 trial_end is None 的租戶。所以待審租戶不可能是
+     PENDING、也不可能沒有到期日——示範租戶 D 兩邊要說同一件事（§6 跨區自洽），改了一邊就要回頭對另一邊。 #}
+{# ⚠️ 三處推導（§6）：
+     ① **凍結優先於到期**：`subscription.status` 第一件事就是
+        `if tenant.frozen_at is not None: return FROZEN`（該常數的註解逐字寫著「凍結優先：完全鎖住，
+        不論到期與否」）⇒ 被凍結的租戶 B，`subscription_status` 只可能是 FROZEN，不可能是
+        EXPIRED。原本 B 同時掛著「已凍結」標記與「已到期」狀態，那是同一支端點的兩個欄位互相打架。
+        （B 仍然 reviewDue: false：`_is_review_due` 要求逾期滿 90 天，而 B 的到期日 2026-06-30
+        距本元件的「現在」約 2026-07-14——由 C／D 的 daysOverdue 135／150 回推——只逾期 14 天。）
+        改成 FROZEN 之後，`frozen` 這個旗標在這張表上就沒有第二件事可說了
+        （`_tenant_out` 寫的是 `frozen=t.frozen_at is not None`，與 status 同一個判斷式），
+        所以列物件不再帶 `frozen` 欄、名稱欄的「已凍結」徽章也一併移除——留著就是同一列用
+        同一顆 key 印同一句話兩遍。ISO 名單那張表的 `frozen` 欄不同，見 `components/iso-review-wizard`
+        的註解（`ReviewTenantOut` 用它分辨「這季新逾期的」與「上季已凍結、還在等處置的」，那張表沒有 status 欄）。
+     ② **使用者數的下界是 1，不是 0**：建租戶的 `TenantCreate` 把 `admin_email`／`admin_password`
+        列為必填（platform.py），也就是「建立租戶」與「建立它的第一位管理員」是同一個動作；
+        而刪除／停用那一側有 `last_tenant_admin` 守衛（users.py）⇒ 任何存在的租戶至少有一位使用者。
+        租戶 E 是 PENDING（還沒接受邀請、使用期還沒起算），但它的第一位管理員在建立當下就存在了
+        ⇒ userCount 1。0 是一個這套 API 產不出來的租戶。
+     ③ **租戶 C 至少兩位**：本元件上方的平台權限盤點列著 `ops-admin@example.com`（租戶 C、平台角色
+        admin），`components/iso-review-wizard` 名單的 `c-admin@example.com` 是它的**租戶管理員**
+        （`review_overdue` 取 `User.is_admin` 裡 id 最小的那一位）——兩個不同的信箱＝兩個不同的
+        使用者 ⇒ userCount 2（兩處一起改，那是同一個 `_user_counts_by_tenant` 的數）。
+     ④ **租戶 A 的到期日是跨頁釘死的**：本元件上方的平台權限盤點把 `admin@example.com` 配給租戶 A，
+        而那個帳號就是 5-1-1_accountInfo 那顆使用期倒數的主人（product `app/routers/account.py` 的
+        `AccountOut`：`trial_end`／`days_left` 與這一欄是同一個投影）⇒ 這一列的到期日必須等於
+        那顆倒數印出來的日期。本元件的「現在」是 **2026-07-14**（`components/iso-review-wizard` 的名單
+        逐字寫著的查詢時間，且由 C／D 的逾期天數 135／150 各自回推都得同一天），倒數演的是「剩餘 9 天」
+        ⇒ 2026-07-14 ＋ 9 ＝ **2026-07-23**，仍在使用期內、與這一列的 ACTIVE 相容。
+        原本這裡寫 2027-01-31、那顆倒數寫 2026-01-21——同一個帳號的同一個欄位差了一年多。 #}
+{# id＝租戶主鍵（product `app/routers/platform.py` 的 `tenant_id: int`；`TenantOut` 也回它）。
+     **不可拿 loop.index 當列鍵**：ISO 季度審核刪得掉租戶（`review_apply` 的
+     `delete_account` 動作——`ReviewApplyIn.action` 的值域逐字是
+     `purge_data`／`delete_account`／`freeze` 三顆，**沒有 `delete`**），位置不是身分——
+     刪掉前面一列之後，後面每一列的列鍵都往前頂一格，
+     React 的 key 與逐列動作（PATCH /platform/tenants/{id}/features、.js-manage-tenant）
+     會一起指錯人（§6 列鍵，同 5-8／5-6-2／5-6-3 已經改過的那三張表）。
+     **示範租戶 D 的 id 是 42**：不是隨手挑的——`components/iso-review-wizard` 的 result 態失敗結果
+     逐字寫著「從 GufoRAG 刪租戶索引失敗（tenant=42）」，那筆講的就是它（§6 同源）。 #}
+{% set platformTenantRows = [
+  { id: 7, name: "示範租戶 A", userCount: 8, features: ["data", "ask", "history", "settings", "audit", "extract"], reviewDue: false, status: "ACTIVE", statusKey: "platform.statusActive", statusLabel: "使用期內", trialEnd: "2026-07-23" },
+  { id: 15, name: "示範租戶 B", userCount: 3, features: ["data", "ask"], reviewDue: false, status: "FROZEN", statusKey: "platform.statusFrozen", statusLabel: "已凍結", trialEnd: "2026-06-30" },
+  { id: 23, name: "示範租戶 C", userCount: 2, features: ["ask"], reviewDue: true, status: "EXPIRED", statusKey: "platform.statusExpired", statusLabel: "已到期", trialEnd: "2026-03-01" },
+  { id: 42, name: "示範租戶 D", userCount: 4, features: ["data", "ask"], reviewDue: true, status: "EXPIRED", statusKey: "platform.statusExpired", statusLabel: "已到期", trialEnd: "2026-02-14" },
+  { id: 58, name: "示範租戶 E", userCount: 1, features: ["data", "ask"], reviewDue: false, status: "PENDING", statusKey: "platform.statusPending", statusLabel: "待啟用", trialEnd: "" }
+] %}
+
+{# 帳號治理工具列：匯出租戶／使用者 CSV（帳號列表，稽核用）。直接下載動作 → data-toast 演出成敗（走 BFF 檔案透傳）。 #}
+<div class="block mb-16 flex-row flex-wrap gap-16 align-items-center" data-platform-role="auditor">
+    <div class="text-md text-bold" data-i18n="platform.accountGovernance">帳號治理</div>
+    {# `.btn-group` 的唯一 scss 規則帶著 `.default-table` 祖先（ui/default-table/_default-table.scss），
+         表格外掛它一條規則都吃不到（§4 無主 class 的第三種死法：祖先錯位）。改用工具 class。 #}
+    <div class="flex-row gap-10 align-items-center">
+        <button type="button" class="button button-border" data-toast="下載已開始|下載失敗，請稍後再試" data-i18n-data-toast="toast.exportCsv" data-toast-type="success|error" data-i18n="platform.exportTenants">匯出租戶 CSV</button>
+        <button type="button" class="button button-border" data-toast="下載已開始|下載失敗，請稍後再試" data-i18n-data-toast="toast.exportCsv" data-toast-type="success|error" data-i18n="platform.exportUsers">匯出使用者 CSV</button>
+    </div>
+</div>
+
+{# 租戶功能開通：default-table；每租戶每功能一個 ui/switch（開通/停用）。名稱欄只附一顆治理徽章：
+     reviewDue → 紅色「ISO 待審」（title 提示逾期滿 90 天）。凍結不在名稱欄——它是
+     `subscription_status` 四態之一，落在右邊那一格（理由見該處註解）。 #}
+<div class="block flex-row column gap-16" data-platform-role="auditor">
+    <div class="text-md text-bold" data-i18n="nav.tenantEnable">租戶功能開通</div>
+    <div class="table-container scrollTable">
+        <table class="default-table">
+            <colgroup>
+                <col style="min-width:200px;">
+                <col style="min-width:110px;">
+                <col style="min-width:120px;">
+                <col style="min-width:120px;">
+                {% for feature in platformFeatureCols %}
+                <col style="min-width:140px;">
+                {% endfor %}
+                <col style="min-width:120px;">
+            </colgroup>
+            <thead>
+                <tr>
+                    <th data-i18n="settings.tenant">租戶</th>
+                    {# `TenantOut` 回得出 `subscription_status` 與 `trial_end`（product app/routers/platform.py），
+                         原本一格都沒畫——PENDING／ACTIVE／未滿 90 天的 EXPIRED 在畫面上長得一模一樣，
+                         而整套 ISO 審核流程正是以 status 為前提（§3-2 response 的每個欄位都要有落點）。
+                         到期日是資料（不翻）；PENDING 還沒起算，故留白。 #}
+                    <th data-i18n="platform.subscriptionStatus">使用期狀態</th>
+                    <th data-i18n="platform.trialEnd">到期日</th>
+                    <th data-i18n="settings.userCount">使用者數</th>
+                    {% for feature in platformFeatureCols %}
+                    <th class="text-center" id="tenantFeatureHead-{{ feature.key }}" data-i18n="{{ feature.i18nKey }}">{{ feature.label }}</th>
+                    {% endfor %}
+                    <th data-i18n="common.actions">操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for tenant in platformTenantRows %}
+                {# data-tenant-id＝React 列鍵契約（同 5-6-2 的 data-mcp-id）：這一列的儲存鈕送
+                     PATCH /platform/tenants/{id}/features、.js-manage-tenant 也要知道管的是哪一個租戶。
+                     值取示範資料的真 id（見上方 platformTenantRows 那則註解）。租戶名另給 id，
+                     供同列每一顆開關併讀出「哪個租戶的哪個功能」——那顆是 DOM id，跟著列鍵走才唯一。 #}
+{% set tenantIdx = tenant.id %}
+                <tr data-tenant-id="{{ tenantIdx }}">
+                    <td>
+                        <div class="flex-row align-items-center gap-8 flex-wrap">
+                            <span id="tenantName-{{ tenantIdx }}">{{ tenant.name }}</span>
+                            {# tooltip 不寫死天數（門檻可設定，見 `components/iso-review-wizard` 的 overdueDaysLabel 輸入框）：title 是原子屬性、無法用 §4-2 的拆節點做法，故改為不含數字的通用語 #}
+                            {% if tenant.reviewDue %}<span class="text-red text-bold" title="已逾審核期限，請審核處置" data-i18n-title="platform.reviewDueTooltip" data-i18n="platform.reviewDue">ISO 待審</span>{% endif %}
+                            {# 名稱欄**沒有**「已凍結」徽章：`TenantOut.frozen` 是
+                                 `t.frozen_at is not None`，而 `subscription.status()` 第一件事就是
+                                 `if tenant.frozen_at is not None: return FROZEN`（app/subscription.py）
+                                 ⇒ 兩個欄位邏輯等價，畫兩次就是同一列裡用同一顆 key 印同一句話兩遍。
+                                 留的是右邊那一格（`subscription_status`），因為它是四態枚舉
+                                 （待啟用／使用期內／已到期／已凍結）的單一落點，徽章只演得出其中一態。
+                                 `platform.reviewDue` 不同：`_is_review_due` 是 status ＋ trial_end ＋
+                                 逾期天數三者算出來的**另一件事**（凍結中的租戶照樣可能待審），
+                                 所以它留在名稱欄。 #}
+                        </div>
+                    </td>
+                    <td><span data-i18n="{{ tenant.statusKey }}">{{ tenant.statusLabel }}</span></td>
+                    <td>{{ tenant.trialEnd }}</td>
+                    <td class="text-center">{{ tenant.userCount }}</td>
+                    {% for feature in platformFeatureCols %}
+                    {# 開關是值控制項：auditor 看得到目前開通狀態（渲染成 disabled），只有 admin 改得動 #}
+                    <td class="text-center" data-platform-role="admin">
+                        <label class="switch">
+                            <input type="checkbox" class="switch-checkbox" role="switch" aria-labelledby="tenantName-{{ tenantIdx }} tenantFeatureHead-{{ feature.key }}"{% if feature.key in tenant.features %} checked{% endif %}>
+                            <span class="switch-box">
+                                <span class="switch-btn"></span>
+                            </span>
+                        </label>
+                    </td>
+                    {% endfor %}
+                    {# 這一格**不再整格標 admin**：格子裡兩顆鈕要的不是同一級。
+                         · 儲存＝`PATCH /platform/tenants/{id}/features`（require_platform_admin）⇒ admin，低於該級不渲染。
+                         · 管理＝只是「先選定要管哪一個租戶」然後開窗，它自己不打任何端點；§5 逐字寫著
+                           「真正送 API 的是彈窗裡那顆確認鈕，不是列上那顆條件開窗的觸發鈕——閘門宣告的家在確認鈕」。
+                           而 manage-tenant-modal 窗裡有四塊是 auditor 讀得到的唯讀值（額度／用量／模型白名單／
+                           成員名冊，四支端點都是 require_platform_auditor，見該元件檔頭）⇒ 這顆觸發鈕降到 auditor，
+                           否則稽核員在切版裡沒有任何入口看得到那些值。 #}
+                    <td>
+                        <div class="btn-group">
+                            <button type="button" class="button button-border button-sm" data-platform-role="admin" data-toast="已更新|儲存失敗" data-i18n-data-toast="toast.saveTenant" data-toast-type="success|error" data-i18n="action.save">儲存</button>
+                            {# 管理：開窗需先選定「管理哪個租戶」＝業務條件開窗，用 hook class（.js-manage-tenant），
+                                 不掛 data-open-modal（§5）。彈窗本體見 components/manage-tenant-modal（include 於本元件底部）。 #}
+                            <button type="button" class="button button-border button-sm js-manage-tenant" data-platform-role="auditor" data-i18n="settings.manage">管理</button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{# manage-tenant-modal 的凍結區是成對參數 ＋ `{% if %}`（§5：`.hidden` 不算把那一態切出來）。
+     **本元件 set `manageTenantFrozen = true`**，示範的是「從一個凍結中的租戶那一列開的窗」——上面清單裡的
+     示範租戶 B 正是 `subscription_status: FROZEN` 那一態，所以窗裡出現的是「解凍」與它自己的說明，
+     而不是「凍結」。另一態（還沒凍結）由元件庫展示頁演：那一頁不 set 這顆參數，落回預設的 false，
+     於是兩個分支在 dist 上各有一個地方看得到。改這一行之前先確認另一邊還演得到，不要讓某一態消失。 #}
+{% set manageTenantFrozen = true %}
+{% include "components/manage-tenant-modal/manage-tenant-modal.html" %}
+
+{# manage-tenant-modal 內「成員」區塊的 .js-reset-password／.js-delete-user 彈窗本體：業務條件開窗
+     （先選定哪一位成員才知道重設/刪除誰），故 include 在本元件而非巢狀在 manage-tenant-modal 裡
+     （見該元件檔頭註解的理由）。resetPasswordModal 比照 5-5-1_userManagement 的模式；
+     deleteModal 的目標名稱由業務 js 動態填入 #deleteUserName（比照 1-2-1_uploadFile_pdf 的
+     deleteTargetId 模式，非其他頁使用的靜態 deleteTargetName）。 #}
+{% set deleteTargetId = "deleteUserName" %}
+{% set deleteConfirmBinding = true %}
+{% set deletePlatformRole = "admin" %}
+{% set deleteToast = "使用者已刪除|不可刪除自己|不可刪除租戶最後一位在職管理者|不可刪除最後一位平台系統管理員|刪除失敗，請稍後再試" %}
+{% set deleteToastType = "success|warning|warning|warning|error" %}
+{% set deleteToastKey = "toast.deleteUser" %}
+{% include "components/delete-modal/delete-modal.html" %}
+{# 平台端只有 404（product app/routers/platform.py 的 `platform_reset_password`），沒有租戶端那道 403——伺服器端只有一段。
+     另外兩段是送出前的客戶端檢查（長度、兩次一致），與租戶端逐字相同：彈窗裡沒有 `<form>`，
+     欄位的 `minlength="8"` 永遠不會觸發原生驗證（§4 全站一種回報方式 ⇒ 一律走這顆鈕的 warning 段）。 #}
+{% set resetPlatformRole = "admin" %}
+{% set resetToast = "密碼已重設|新密碼至少 8 碼|兩次新密碼不一致|重設失敗，請稍後再試" %}
+{% set resetToastKey = "toast.resetPasswordPlatform" %}
+{% set resetToastType = "success|warning|warning|error" %}
+{% include "components/reset-password-modal/reset-password-modal.html" %}
