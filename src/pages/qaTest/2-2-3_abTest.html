@@ -19,14 +19,24 @@ permalink: 2-2-3_abTest.html
      前端產生的 uuid，形狀對不上 `data-chat-sn` 這個凍結掛點，故不畫它。
      原本三筆都沒給 `id`，那顆屬性會渲染成 `data-chat-sn=""`——§4 明文不輸出空屬性，而真 app 的
      委派選擇器 `.qa-side-panel .tab[data-chat-sn]` 正是靠它才點得動。
-     `label` 是真 app 的 `ChatTitle`＝**使用者資料、不翻**；第二筆刻意不給 label，讓元件的 fallback
-     分支（可翻前綴 `qa.recordFallbackPrefix` ＋ 不翻的序號）在這一頁也演得出來（§5）。原本三筆寫的
-     「問答紀錄1／2／3」正好是真 app fallback 的字面——那是寫死在 js 裡的 chrome，當成 label 傳進來
-     就是把 chrome 當資料（同 2-1 的修法）。
-     選中那一筆的標題＝本頁對話區那句使用者輸入，§6 同頁自洽。 #}
+     `label` ＝**這一頁的那一筆比較當初問的題目**（`ab_history` 的 `question`），不是聊天室的
+     `ChatTitle`——上一段已經說了「一列不是一個聊天室」，那兩件事必須同時成立。使用者資料、不翻。
+     原本三筆寫的「問答紀錄1／2／3」正好是真 app fallback 的字面——那是寫死在 js 裡的 chrome，
+     當成 label 傳進來就是把 chrome 當資料（同 2-1 的修法）。
+     ⚠️ **這一頁三筆都必須有 label**：`qa-record-tabs` 的無標題 fallback（可翻前綴
+     `qa.recordFallbackPrefix` ＋ 序號）在這一頁的上游**到不了**——gufofaq-saas product
+     `app/models.py` 的 `AbTestRound.question` 是 `Mapped[str]`（migration
+     `d6e7f8a9b0c1_ab_test_rounds` 建欄即 `nullable=False` 且無 server_default ⇒ 也沒有「早於本欄
+     存在」的舊列），值來自 `routers/qatest.py` 的 `_upsert_ab_round(…, body.query, …)`，而送出那條
+     路徑先 trim 再擋空字串、且只有拿到 log_id 才落庫。所以**沒有任何租戶會看到一筆沒有題目的
+     比較**，第二筆留空演的是上游產不出來的狀態（§6：示範資料要有某個真實租戶畫得出來）。
+     那條分支不會因此沒人驗收（§5）：它在 `2-1_qaRecord`（第三筆）與 `2-2-1_singleTest`（第二筆）
+     照演——那兩頁的 label 走 `routers/history.py` 的 `/history/rooms`，`title` 是
+     `x.get("human_content", "") or ""`，真的空得出來。
+     選中那一筆的標題＝本頁對話區那句使用者輸入，§6 同頁自洽；另兩筆同屬本頁的 UH3240 主題。 #}
 {% set qaRecordTabs = [
     { id: 5203, label: "UH3240 支援哪些作業系統" },
-    { id: 5211 },
+    { id: 5211, label: "UH3240 的 PD 供電最高幾瓦" },
     { id: 5218, label: "請整理 UH3240 USB-C 的完整規格與主要特色", active: true }
 ] %}
 {% set breadcrumbItems = [
@@ -62,8 +72,8 @@ permalink: 2-2-3_abTest.html
        `openai:`／`anthropic:`），送出去必定判否。
      `prompt` 是**這一側的提示詞本文**，兩側必須不同：原本兩顆 textarea 各寫死同一段文字、標題卻標著
        V3 與 V2——AB 測試比的就是這一欄，兩側逐字相同時整頁演的是一個「比了也不會有差別」的狀態（§6）。
-       **B 側逐字等於 `components/apply-settings-compare-modal` 的「設定B」欄**：那顆彈窗的檔頭自己釘死
-       「設定B 欄必須等於使用頁 2-2-3 的 B 側」，而它從這一頁的「套用為正式設定」開出來——同一份資料
+       **B 側逐字等於 `components/apply-settings-compare-modal` 的「設定 B」欄**：那顆彈窗的檔頭自己釘死
+       「設定 B 欄必須等於使用頁 2-2-3 的 B 側」，而它從這一頁的「套用為正式設定」開出來——同一份資料
        在頁面與彈窗兩處說兩套就是跨區不自洽。改這一欄要連那一份一起改。 #}
 {% set abSides = [
     { side: "A", state: "a", i18nKey: "qaTest.settingSideA", label: "（設定 A）", knowledge: "1", llm: "openai:gpt-4o-mini", configKey: "settings.config1", configLabel: "設置一", promptVersion: "V3",

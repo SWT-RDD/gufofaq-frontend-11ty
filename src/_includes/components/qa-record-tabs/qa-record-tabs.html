@@ -20,6 +20,12 @@
          整串「問答紀錄1」當成一個 label 字面量傳進來時，chrome 與資料烤在一起，兩邊都失真。
          ⚠️ 序號那一半用 `loop.index` 是對的（真 app 就是 `index + 1`，它是「第幾顆」不是身分）；
          身分永遠走 `id`。
+         **這條 fallback 由 `2-1_qaRecord`（第三筆）與 `2-2-1_singleTest`（第二筆）演，`2-2-3_abTest`
+         刻意三筆都有 label**：前兩頁的 label 走 gufofaq-saas product `routers/history.py` 的
+         `/history/rooms`（`title` ＝ `x.get("human_content", "") or ""`，空得出來）；2-2-3 的一列
+         不是聊天室而是一次 AB 比較，label 走 `ab_history` 的 `question`，那顆是
+         `AbTestRound.question: Mapped[str]`（建欄即 NOT NULL、無 server_default）且送出前先 trim
+         擋空——在那一頁留空是演一個上游產不出來的狀態（§6），理由寫在該頁檔頭。
          **`qa.recordFallbackPrefix` 與 `qa.qaRecords` 繁中同字、刻意分兩顆**（§4-2「語意確實不同、
          英譯必須區別才分 key」，測試 DELIBERATE 白名單要成對登記同一句理由）：`qa.qaRecords` 是
          側欄／區塊的標題，講的是**整批**紀錄（英譯複數 “Q&A records”）；這一顆是**單一一筆**沒有

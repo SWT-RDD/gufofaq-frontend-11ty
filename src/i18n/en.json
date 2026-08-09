@@ -513,6 +513,7 @@
   "modals.searchDatasetPlaceholder": "Search datasets...",
   "modals.selectDataset": "Select dataset",
   "modals.setRatingTitle": "Set the rating for this Q&A",
+  "modals.settingA": "Setting A",
   "modals.settingB": "Setting B",
   "modals.settingTwoDefault": "Config 2 (default)",
   "modals.shareConfirmHint": "Please confirm this link’s content before sharing",

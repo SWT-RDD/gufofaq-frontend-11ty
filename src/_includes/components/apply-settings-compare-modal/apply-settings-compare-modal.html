@@ -37,7 +37,7 @@
      它在這顆窗裡是比對脈絡、不是會被套用的東西。 #}
 {# 比對窗要看得到**差異**（§6 示範資料要自洽）：兩欄逐欄相同時，這顆彈窗演的是一個
      「套用了也不會有任何改變」的狀態，而它存在的理由正是讓人在套用前看出差在哪。
-     「設定B」欄必須等於使用頁 2-2-3 的 B 側（abSides[1]：設置二／openai:gpt-4o，取樣 8／16，
+     「設定 B」欄必須等於使用頁 2-2-3 的 B 側（abSides[1]：設置二／openai:gpt-4o，取樣 8／16，
      提示詞逐字相同）——同一份資料在頁面與彈窗兩處說兩套，是跨區不自洽。
      ⚠️ 兩欄的 `llm` 值是 `GET /qatest/models` 回的 `value`（`<provider>:<model>`，gufofaq-saas
      product `app/routers/qatest.py` 的 `list_models`／`effective_models`）。原本寫成
@@ -49,6 +49,25 @@
 {# 變數用元件專屬名（§6：`set` 是頁面全域，泛用名如 `settingColumns` 會和使用頁自己的同名變數
      互相覆蓋，而渲染結果的靜默覆蓋沒有測試看得到）。
    `jsApplyCurrentTitle`／`jsApplyTitle` 是兩顆成對的凍結 hook 開關，見上方檔頭。 #}
+{# **右欄標題是執行期會換字的那一格**，故走兩態槽（`titleStates` → `data-text-<態>`／`data-key-<態>`，
+     §4-2；正典 `ui/theme-toggle`／`components/prompt-edit`，同頁的另一處是參考來源表那一格）。
+     這顆彈窗兩欄講的不是同一種東西：**左欄是固定標籤**（「原設定」＝前台現在跑的那一套，見上方
+     檔頭），任何時候都是這四個字，故一顆 `modals.originalSettings` 就夠；**右欄標的是「這次要套用
+     的是哪一側」**，凍結前端 `js/abTest.js:587` 就是 `$('.js-apply-title').text(sideName($side))`
+     ——同一個節點在 A/B 兩態之間換字（`sideName` 回「設定A」／「設定B」）。
+   兩態的繁中原文與 key 都要在 markup 備妥：只寫得出 B 側的話，A 側的繁中在全站沒有家，消費端
+     只能就地拼 `t("qaTest.setting") ＋ 字母`＝在切版之外開第二個文案正本（§4-2「枚舉的成員…缺的
+     成員不是刪掉 key…給它一個渲染點」）。只補 `en.json` 一顆 key 也不行，那只給得出英文，而且
+     在切版沒有引用點＝孤兒 key。
+   **與卡片標題那句 `qaTest.setting` ＋ 字母不是同一種寫法，也不該收成同一種**（2-2-3 檔頭
+     `abSides` 那段已經寫過同一條判準）：那一句是逐側各畫一次（迴圈）的**拆開的 chrome＋資料**
+     （側別字母只是「設定 A · 設置一 · V3」三個資料欄之一，兩側同時看得到）；
+     這一顆是**單一節點在兩態間切換的整句**，成員是封閉的兩顆、切版當下就列得完。前者的正典是
+     `pagination.totalPrefix` 夾資料槽（值是開放的數字），後者的正典是兩態槽。
+   繁中寫「設定 A／設定 B」（拉丁字母前留半形空白）：本頁其餘三處側別標籤（`abSideLabel-<側>`、
+     兩顆答案標題、參考來源表的「（設定 A）」）都已經是這個排版，這一顆原本是凍結前端的字面
+     「設定B」——同一頁同一句話兩種字距是 §6 不自洽。`state` token 一律小寫（HTML 屬性名的限制），
+     與 2-2-3 `abSides[].state` 同一組值。 #}
 {% set applyCompareColumns = [
     { title: "原設定", titleKey: "modals.originalSettings", retrieval: "設置二", llm: "openai:gpt-4o-mini", sampleMin: "4", sampleMax: "6", jsApplyCurrentTitle: true,
       prompt: "角色定位：
@@ -59,7 +78,12 @@
 優先使用條列式呈現資訊；語氣清楚、專業且易懂；不可臆測或補充未出現在資料中的內容；若資料不足，需明確說明「無法從現有資料判斷」。
 輸出格式：
 使用條列式（• 或 -），必要時分段（例如：規格 / 使用方式 / 注意事項）。" },
-    { title: "設定B", titleKey: "modals.settingB", retrieval: "設置二", llm: "openai:gpt-4o", sampleMin: "8", sampleMax: "16", jsApplyTitle: true,
+    { title: "設定 B", titleKey: "modals.settingB",
+      titleStates: [
+        { state: "a", label: "設定 A", i18nKey: "modals.settingA" },
+        { state: "b", label: "設定 B", i18nKey: "modals.settingB" }
+      ],
+      retrieval: "設置二", llm: "openai:gpt-4o", sampleMin: "8", sampleMax: "16", jsApplyTitle: true,
       prompt: "任務導向：
 依使用者的問題直接給出可執行的步驟，不重述題目。
 知識來源限制：
@@ -81,11 +105,11 @@
                     <div class="flex-row gap-24">
                         {% for column in applyCompareColumns %}
                         {# 兩欄逐欄同名：「知識檢索」「LLM模型」「資料取樣數」×2「提示詞」在兩欄各一份，
-                             10 顆控制項的可及名稱兩兩一模一樣，報讀器聽不出正在讀的是原設定還是設定B。
+                             10 顆控制項的可及名稱兩兩一模一樣，報讀器聽不出正在讀的是原設定還是「設定 B」。
                              欄標題給 id、欄內欄位容器包 role="group" aria-labelledby——同功能的 2-2-3
                              設定區用的就是這招（abSideLabel-<側>），這顆彈窗比對的正是那兩側。 #}
                         <div class="flex-1">
-                            <p class="text-bold text-blue text-lg mb-10{% if column.jsApplyCurrentTitle %} js-apply-current-title{% endif %}{% if column.jsApplyTitle %} js-apply-title{% endif %}" id="applyCompareCol-{{ loop.index }}" data-i18n="{{ column.titleKey }}">{{ column.title }}</p>
+                            <p class="text-bold text-blue text-lg mb-10{% if column.jsApplyCurrentTitle %} js-apply-current-title{% endif %}{% if column.jsApplyTitle %} js-apply-title{% endif %}" id="applyCompareCol-{{ loop.index }}"{% for s in column.titleStates %} data-text-{{ s.state }}="{{ s.label }}" data-key-{{ s.state }}="{{ s.i18nKey }}"{% endfor %} data-i18n="{{ column.titleKey }}">{{ column.title }}</p>
                             <div class="flex-row column gap-16" role="group" aria-labelledby="applyCompareCol-{{ loop.index }}">
                                 <div class="form-group row mobile-col">
                                     <div class="label">
