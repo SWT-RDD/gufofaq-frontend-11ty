@@ -128,59 +128,117 @@ permalink: 1-1-3_preview_excel.html
         data-i18n="dataImport.rePreview">重新預覽</button>
 </div>
 
-{# 資料預覽表格：真實頁 thead/tbody 由 js/previewExcel.js 依上傳的 excel 欄位動態產生（本檔為「動態產生」註解），
-     此處欄位取用與後續 1-1-4_columnSelect_excel 欄位對應步驟一致的樣本（客服問題／客服回覆／建立時間／圖片連結），
-     用 set+for 資料化示範 3 筆，父層與 table class 沿用 ui/default-table 同一組真實系統 class #}
-{# 第 1 筆的建立時間/圖片連結＝1-1-4 對應步驟的預覽值（同一份 excel 的同一列，§6 跨頁自洽）；
-     中文日期是刻意的髒資料，1-1-4 的 date 槽格式警告示範靠它 #}
+{# ══ 資料預覽表格：**欄是動態的**，所以寬度／夾字／`<col>` 三件事都要有規則 ══════════════
+     這張表的欄名、欄數、欄序全部由**使用者上傳的那份活頁簿**決定（真實頁在真 app 是
+     `previewExcel.js` 依檔案產生 thead/tbody）。正本＝product `app/excel.py` 的 `PreviewResult`：
+       · `columns: list[dict]`，形狀逐字是 `{"index": int, "title": str, "type": str}`
+         （`index` 是 0-based 欄序，`for i in range(n_header)` 產出；`type` 的值域＝`_infer_type`
+         的 `text`／`number`／`date`／`bool`）
+       · `preview_rows: list[list[str]]`——**每一列是字串陣列、不是物件**，以 `columns[].index` 取值
+     示範資料照這個形狀給（原本是一份 `{question, answer, date, image}` 物件陣列 ＋ 手寫四顆 `<th>`：
+     那是「這一份活頁簿」的樣子，推不出「任何一份活頁簿」該怎麼畫）。
+
+     ── ① `<col>` 怎麼產：與 `<th>`、每一格 `<td>` 對**同一個陣列**迴圈 ───────────────────
+     欄數不定 ⇒ `<colgroup>` 也是 `{% for c in previewColumns %}` 產出，順序＝`index` 升冪。
+     手寫 `<col>` 的失敗方式是**加欄時只加得到 `<th>`**，於是欄寬整排往前錯一格；而表頭一旦由
+     `{% for %}` 產出，「colgroup 數＝表頭欄數」那條測試就算不出欄數、直接放行——三者共用同一個
+     陣列才是結構上不可能錯開的寫法（同 3-1-6 兩個面板）。
+
+     ── ② 每一欄的寬度：**同一檔，不逐欄手挑**（`min-width:200px`）─────────────────────
+     橫向捲動交給父層 `.scrollTable` 的 `overflow-x:auto`。
+     **為什麼不分檔**：`{index, title, type}` 裡唯一帶得動訊息的是 `type`，而它答得出「這一欄
+     **不可能**是長文」（number／date／bool），答不出「這一欄是長文還是短文」（`text` 兩者都是）
+     ——而寬度要的正是後者。`index` 是位置、`title` 是使用者取的欄名，兩者都不預測內容長度。
+     `type` 另有兩處靠不住：它是**取樣**推論（`_infer_type` 只看前 `TYPE_SAMPLE_ROWS` 列，後面
+     混進一個字串整欄就變 text），而且**開啟交叉表轉直式時恆為 `text`**（`read_preview` 的註解
+     逐字寫著「型別照樣由實際輸出推論（`unpivot_grid` 的契約是全字串 → 恆為 text）」）。
+     拿它分檔會在最常見的兩種檔案上失準，而失準的樣子是「某一欄莫名很窄」——看不出是規則錯了。
+     ⚠️ **動態欄的表全站有兩條路，這一頁走捲動、不走 3-1-6 的 `.fixed-layout`**：`table-layout: fixed`
+     ＋ `width: 100%` 是把版面寬**平均**給每一欄，欄一多就每欄都讀不到（30 欄時不到 40px），
+     而這一頁正是欄數最不可預測的那一站——使用者剛上傳一份誰也沒看過的活頁簿，`n_header` 由檔案決定。
+     3-1-6 那張是資料已經匯完之後的回看（比對面板畫的是欄位對照過的槽，product `app/field_schema.py`
+     的 `SLOTS`；原始面板才是活頁簿的欄），兩條路都在設計系統裡，差別只在「欄多的時候要犧牲寬度
+     還是讓它捲」。200 對齊全站其他表的欄寬尺標；真 app 同型表逐欄同值的做法見凍結前端
+     `GufoFAQ_Frontend_New/js/previewExcelCompare.js:301`（`min-width:170px`，逐欄一顆）。
+
+     ── ③ 哪些格要包 `.collapse-text`：**逐格都包** ───────────────────────────────────
+     理由與②同源：分不出哪一欄是長文，就一律夾三行並給得開（契約逐字見 ui/collapse-text 檔頭）。
+     兩份正本都這樣做——真 app 這一頁 `GufoFAQ_Frontend_New/js/previewExcel.js:71` 每一格都包
+     `.ellipsis-2`；切版同為動態欄的 3-1-6 兩個面板逐格都包 `.collapse-text`。
+     ⚠️ **不可以只包「看起來像長文」的那一欄**（原本只有第 2 欄「客服回覆」包）：那是拿這一份
+     示範活頁簿當規則，而下一份活頁簿的長文在別欄——少包的那一欄會把整張表撐開，而示範資料上
+     完全看不出來。
+
+     ── ④ 空狀態：帶 `{% else %}` 無資料列，colspan 走 `{{ previewColumns.length }}` ────────
+     鏡射真 app 自己那一句：`previewExcel.js:51` 在沒有列時 append 一列跨欄的「無資料」
+     （§5「『真 app 有對應頁』不是免畫的理由…結論是鏡射它那一句」）。colspan 不寫死 4：欄數由
+     活頁簿決定，寫死就是烤一份會分岔的計數（同 3-1-6）。
+
+     示範資料：欄名沿用與 1-1-4 欄位對應步驟一致的樣本（客服問題／客服回覆／建立時間／圖片連結），
+     `index` 0..3 與 1-1-4 `columnOptions` 的 `value` 逐字相同（§6 跨頁自洽）。示範 3 筆。
+     第 1 筆的建立時間／圖片連結＝1-1-4 對應步驟的預覽值（同一份 excel 的同一列）；中文日期是
+     刻意的髒資料，1-1-4 的 date 槽格式警告示範靠它——它同時是「建立時間這一欄的 `type` 是 `text`」
+     的成因（混進字串 ⇒ `_infer_type` 落到「其餘」那一支），四欄因此**全部**是 `text`，②說的
+     「分檔在這一頁一個分支都演不出來」在這份示範資料上驗得到。
+     `type` 這一欄目前**沒有畫出來的落點**（§3-2 要求寫明理由）：它在畫面上是同義反覆——使用者
+     看得到那一欄的值長什麼樣，再標一次「text」不會多回答任何問題；它真正的消費點在下一步
+     1-1-4 的欄位對應（把 text 欄指到 date 槽就是那一頁格式警告的來源）。留在示範資料裡是為了
+     讓上面②的推論對得回一個真實的回應形狀，不是為了渲染。 #}
+{% set previewColumns = [
+    { index: 0, title: "客服問題", type: "text" },
+    { index: 1, title: "客服回覆", type: "text" },
+    { index: 2, title: "建立時間", type: "text" },
+    { index: 3, title: "圖片連結", type: "text" }
+] %}
 {% set previewRows = [
-    {
-        question: "如何申請入出國許可證",
-        answer: "請攜帶護照及財力證明至服務站辦理",
-        date: "2024年12月1日 下午1時",
-        image: "https://img.example.gov.tw/faq/entry-visa.png"
-    },
-    {
-        question: "外籍配偶居留證申請流程",
-        answer: "請攜帶護照、結婚證明文件及財力證明至服務站辦理，審核通過後約7個工作天內核發",
-        date: "2024/12/02 09:15:03",
-        image: "https://example.com/image2.png"
-    },
-    {
-        question: "入出國紀錄查詢方式",
-        answer: "可透過內政部移民署網站以自然人憑證登入查詢，或親自攜帶身分證明文件至服務站臨櫃申請",
-        date: "2024/12/03 16:42:51",
-        image: "https://example.com/image3.png"
-    }
+    [
+        "如何申請入出國許可證",
+        "請攜帶護照及財力證明至服務站辦理",
+        "2024年12月1日 下午1時",
+        "https://img.example.gov.tw/faq/entry-visa.png"
+    ],
+    [
+        "外籍配偶居留證申請流程",
+        "請攜帶護照、結婚證明文件及財力證明至服務站辦理，審核通過後約7個工作天內核發",
+        "2024/12/02 09:15:03",
+        "https://example.com/image2.png"
+    ],
+    [
+        "入出國紀錄查詢方式",
+        "可透過內政部移民署網站以自然人憑證登入查詢，或親自攜帶身分證明文件至服務站臨櫃申請",
+        "2024/12/03 16:42:51",
+        "https://example.com/image3.png"
+    ]
 ] %}
 <div class="table-container scrollTable">
     <table class="default-table">
         <colgroup>
+            {% for c in previewColumns %}
             <col style="min-width:200px;">
-            <col style="min-width:280px;">
-            <col style="width:180px; min-width:180px;">
-            <col style="min-width:200px;">
+            {% endfor %}
         </colgroup>
         <thead>
             <tr>
                 {# 這一列是**上傳的活頁簿自己的欄名**（真實頁由 previewExcel.js 依檔案動態產生），
                      屬 §4-2「示範 Excel 欄位一律不翻」的假資料，故不掛 data-i18n——
                      同一組四個字串在 1-1-4 的槽位選單裡就是純資料（無 key）。 #}
-                <th>客服問題</th>
-                <th>客服回覆</th>
-                <th>建立時間</th>
-                <th>圖片連結</th>
+                {% for c in previewColumns %}
+                <th>{{ c.title }}</th>
+                {% endfor %}
             </tr>
         </thead>
         <tbody>
             {% for row in previewRows %}
             <tr>
-                <td>{{ row.question }}</td>
+                {% for c in previewColumns %}
                 <td>
-                    <div class="collapse-text"><div class="collapse-body">{{ row.answer }}</div><button type="button" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>
+                    <div class="collapse-text"><div class="collapse-body">{{ row[c.index] }}</div><button type="button" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>
                 </td>
-                <td>{{ row.date }}</td>
-                <td>{{ row.image }}</td>
+                {% endfor %}
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="{{ previewColumns.length }}" class="text-center text-gray" data-i18n="common.noData">無資料</td>
             </tr>
             {% endfor %}
         </tbody>

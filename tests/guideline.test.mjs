@@ -6432,6 +6432,7 @@ test("§5 `.hidden` 判準①的另一半：src 引用得到、dist 卻一頁都
         ["dataset.noFiles", "3-1-3 資料集檔案表的 {% else %} 空狀態列"],
         ["health.uncoveredNone", "3-5 未覆蓋清單的 {% else %} 空狀態列"],
         ["health.uncoveredNoReason", "3-5 未覆蓋列「沒有理由」那一格的 {% else %}"],
+        ["platform.reviewNoMatch", "5-6-1-2 ISO 審核 preview 名單表的 {% else %} 空狀態列（示範名單恆有兩筆逾期租戶）"],
         ["serviceKey.none", "5-6-3 服務金鑰表的 {% else %} 空狀態列"],
     ]);
     const JS_RENDERED = new Map([

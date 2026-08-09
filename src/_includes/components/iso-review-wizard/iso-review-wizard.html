@@ -38,7 +38,26 @@
      打的是同一支 GET，auditor 要按得到才截得到圖。
 
      示範資料（§6(b) 純示範假資料，元件專屬名）：`isoReviewCandidates`／`isoReviewOkResults`／
-     `isoReviewFailResults`。正式環境由 React 走 GET /platform/review/overdue 與 POST /platform/review/apply。 #}
+     `isoReviewFailResults`。正式環境由 React 走 GET /platform/review/overdue 與 POST /platform/review/apply。
+
+     ── 執行期才換字的那三格（React 讀槽、不自己拼字串）─────────────────────────────
+     切版是靜態稿，一次只畫得出一個狀態；下面三格的其餘狀態全部掛在**同一顆元素**上，
+     形狀一律是 `data-text-<態>` ＋ `data-key-<態>`（要翻）或 `data-<軸>-<態>`（不翻的值）：
+       · preview 摘要列的「動作：」 → `data-text-purge|delete|freeze`（chrome，要翻）
+       · type-to-confirm 的片語     → `data-phrase-purge|delete|freeze`（**值**，不翻，理由見該處）
+       · 確認鈕的字面               → `data-text-irreversible|reversible|busy`（chrome，要翻）
+     三處的態名都對回 `ReviewApplyIn.action` 的值域，只有確認鈕多一個與動作無關的 `busy`（送出中）。
+
+     ── 前後綴夾資料槽的兩處（REACT-CONVERSION §③(a) 允許 React 併成單一插值 key）──────────
+     切版的 `GufoI18n.t(key, zhFallback)` 沒有插值機制（ui/lang-toggle），所以這兩處一律是
+     「前綴 key ＋不翻的數字節點 ＋後綴／中綴 key」，分隔空白住在 key 的值裡（§4-2）：
+       · preview 的「門檻：」 → `overdueDaysPrefix` ＋ 天數 ＋ `overdueDaysSuffix`
+       · result 的「共 N 筆…」 → `common.total` ＋ 總數 ＋ `reviewResultOkMid` ＋ 成功數
+                                 ＋ `dataImport.batchSummaryFailMid` ＋ 失敗數
+     **併成一顆插值 key 是 React 那一側被允許的差異，值卻不是**：併出來的字串必須是這幾段的
+     **逐字串接**（含分隔空白），兩個語系各對一次。中間自己改一個連接詞（「、失敗」寫成「，失敗」、
+     "Overdue by" 寫成 "Overdue over"）就是在 React 端開了第二份文案正本，而字典比對放行含
+     `{{ }}` 的值、fpdiff 又不比文字內容，兩張網都看不到。 #}
 {% set isoReviewCandidates = [
   { name: "示範租戶 C", email: "c-admin@example.com", trialEnd: "2026-03-01", daysOverdue: 135, userCount: 2, storage: 12.4, frozen: false },
   { name: "示範租戶 D", email: "d-admin@example.com", trialEnd: "2026-02-14", daysOverdue: 150, userCount: 4, storage: 88.0, frozen: false }
@@ -95,6 +114,22 @@
     <div class="flex-row column gap-8">
         <div class="text-bold" data-i18n="platform.reviewStep2">② 預覽名單（可截圖）</div>
         <div class="flex-row flex-wrap gap-16">
+            {# 「選了哪個動作」是這一列的第一格，而且**非有不可**：動作是在上一態（idle）按三顆鈕
+                 之一選的，切過來之後這一格是畫面上唯一**用人話**講出選了哪一顆的地方。這一態的產出是
+                 稽核截圖（`review_overdue` 的 docstring：「這一步不動任何資料，管理員截圖存證用」），
+                 而一張只寫「符合 2 筆」卻不寫「要對它們做什麼」的截圖，存證存不到重點。
+                 同頁另外兩處都答不了它：確認鈕只分「不可逆／可解凍」，而 `purge_data` 與
+                 `delete_account` 同屬不可逆那一態、字面完全相同；片語欄雖然三個動作各一組，
+                 但那是**要逐字打進去的值**、而且刻意不翻（理由見下方 type-to-confirm 那一段），
+                 中文語系的稽核紀錄上只會留下一串 `DELETE-ACCOUNT`。
+                 三態槽（§4-2 `data-text-<態>`＋`data-key-<態>`：這一句是 chrome、要翻，故繁中原文與 key
+                 都給）。**態名與片語欄的 `data-phrase-<動作>` 同一組**（purge／delete／freeze，逐字對回
+                 `ReviewApplyIn.action` 的值域 `purge_data`／`delete_account`／`freeze`，product
+                 app/routers/platform.py），React 依選定的動作把同一顆值換上去——兩處若各取一套態名，
+                 同一顆 state 就要在兩個地方各對一次表。三顆 key 是 idle 態那三顆鈕的原字面，不另立新 key。
+                 靜態稿演 delete 那一態，與片語 `DELETE-ACCOUNT`、確認鈕的「不可逆」互相對得上（§6 示範資料自洽）。
+                 前綴自帶分隔空白（§4-2；en 值 "Action: "），與同列另外四顆前綴同型。 #}
+            <span><span data-i18n="platform.reviewAction">動作：</span><span data-text-purge="刪除逾時資料" data-key-purge="platform.reviewActionPurge" data-text-delete="刪除逾時帳號" data-key-delete="platform.reviewActionDelete" data-text-freeze="凍結逾時帳號" data-key-freeze="platform.reviewActionFreeze" data-i18n="platform.reviewActionDelete">刪除逾時帳號</span></span>
             <span><span data-i18n="platform.reviewMatched">符合筆數：</span>{{ isoReviewCandidates.length }}</span>
             <span><span data-i18n="platform.reviewThreshold">門檻：</span><span data-i18n="platform.overdueDaysPrefix">逾期滿</span> 90 <span data-i18n="platform.overdueDaysSuffix">天</span></span>
             <span><span data-i18n="platform.reviewAsOf">查詢時間：</span>2026-07-14 09:00 UTC</span>
@@ -138,6 +173,21 @@
                         <td class="text-center">{{ c.storage }}</td>
                         <td>{% if c.frozen %}<span class="text-gray" data-i18n="platform.statusFrozen">已凍結</span>{% else %}—{% endif %}</td>
                     </tr>
+                    {% else %}
+                    {# 名單為空是**走得到的常態**，不是錯誤：`review_overdue`（product app/routers/platform.py）
+                         零命中時照樣回 200 ＋ `tenants: []`（它只逐筆篩 `trial_end ≤ cutoff`，沒有任何
+                         「空清單就 400」的出口），而門檻是使用者自己填的——逾期天數拉大到沒有租戶符合就是這一態。
+                         §5「元件內部與頁面的示範資料表…真實可能為空者一律帶 `{% else %}` 鏡射無資料列，
+                         即使示範資料恆非空——分支是給 React 的規格」。
+                       **不可以改成「整張表換成一句 `<p>`」**：這一態的產出是稽核截圖，
+                         「查了哪七欄、結果零筆」與「查了兩筆」要是同一張表；表頭一起收掉之後，
+                         那張截圖說不出這次盤點看的是什麼。
+                       這一句刻意不用通用的 `common.noData`：它要說得出「查詢跑過了、沒有帳號符合門檻」
+                         （§5 各頁自己的空狀態句，同 `dataset.noFiles`／`health.uncoveredNone` 那一族）。
+                       colspan 7 ＝本表欄數（colgroup 七個 `<col>`）。 #}
+                    <tr>
+                        <td colspan="7" class="text-center text-gray" data-i18n="platform.reviewNoMatch">沒有符合門檻的帳號。</td>
+                    </tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -177,10 +227,22 @@
              剩餘天數原封保留」），對它說不可逆是假的警語——假警語會讓真的那兩顆一起被當成裝飾。
              故做成隨動作切換的兩態（§4-2 `data-text-<態>`＋`data-key-<態>`：這一句是 chrome、要翻，
              所以繁中原文與 key 都要給，與上面那顆「片語」剛好相反）。靜態稿演的是不可逆那一態。 #}
+        {# 第三態 `busy`＝**送出中**（`POST /platform/review/apply` 在途）。它與上面兩態不同軸：
+             前兩態由「選定的動作」決定，`busy` 在請求在途時**蓋過**那兩態，所以這一格的字在任一
+             時刻仍然只會是三者之一，槽照樣掛在同一顆元素上（React 讀槽、不自己拼字串）。
+             為什麼一定要有這一顆：切版是靜態原型，畫得出「確認執行」畫不出「處理中…」，
+             於是這句繁中在切版沒有家，React 只好就地多一顆 key ——那等於在 React 端開了第二個
+             文案正本，而字典比對、孤兒 key、fpdiff 三張網一張都看不到（REACT-CONVERSION §③
+             「送出中／載入中」那一族：回切版給它一個渲染點，`REACT_ONLY` 只是過渡登記）。
+             這一顆的家選在**這顆鈕**而不是元件庫頁：§③ 的判準是「會換字的那一格用兩態槽」，
+             而這正是那一格。同一顆 key 的另一個消費點（React 的 `SubscriptionGate` 接受免責聲明鈕）
+             共用這一份繁中與英譯，不另立第二顆。
+             `disabled` 不進 markup：那是 React 的執行期狀態（§⑥「要 disable 只能 disable 進行中」）。 #}
         <div class="flex-row gap-10 align-items-center">
             <button type="button" class="button button-red js-review-confirm" data-platform-role="admin"
                 data-text-irreversible="確認執行（不可逆）" data-key-irreversible="platform.confirmExecute"
                 data-text-reversible="確認執行（可解凍）" data-key-reversible="platform.confirmExecuteFreeze"
+                data-text-busy="處理中…" data-key-busy="platform.applying"
                 data-i18n="platform.confirmExecute">確認執行（不可逆）</button>
             <button type="button" class="button button-border js-review-cancel" data-i18n="action.cancel">取消</button>
         </div>
