@@ -9,7 +9,8 @@
      其餘槽為可填 input。資料驅動：set editFields + for 內嵌渲染欄位列（依 §9，元件內部 for 不再巢狀 include 子元件）。
      editConfirmBinding —— true＝儲存鈕交給業務 js 綁定（不掛 btn-close-modals 自動關窗）。
      真 app 的功能頁（1-2-1）儲存鈕沒有 btn-close-modals，由 uploadFilePdf.js:81 的 saveEdit() 決定何時關；
-     只有元件庫的展示版會自動關窗。寫死自動關窗＝「按了儲存，窗關了，但什麼都沒存」。 #}
+     寫死自動關窗＝「按了儲存，窗關了，但什麼都沒存」，所以**每一個** include 本元件的頁（含元件庫
+     展示頁）都設它——沒有任何一頁演那一支，這顆參數留著是為了讓「為什麼不掛」有地方寫下來。 #}
 {# 槽目錄走唯一正本 ui/field-slot-catalog（22 槽，§2 的 {% from … import %}）。
    本元件自己的附加資料只有兩件事：哪一槽是長文 textarea（內容，PDF 自動擷取故 disabled）、
    哪一槽帶示範值。以 key 查一張小 map——附加欄位塞進正本目錄的話，那份目錄就變成下一個要對齊的東西。 #}

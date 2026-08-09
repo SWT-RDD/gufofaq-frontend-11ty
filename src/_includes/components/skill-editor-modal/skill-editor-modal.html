@@ -213,10 +213,20 @@
                                 <label for="skillInputSchemaInput" class="control-label" data-i18n="settings.skillInputSchema">參數格式</label>
                             </div>
                             <div class="field col-12-sm">
+                                {# 這一格的內容是**縮排過的** JSON（見檔頭：上游量的是序列化後的字數，
+                                     編輯框裡是縮排版），而它永遠是把 input_schema 那顆 JSON 物件縮排
+                                     印出來的結果 ⇒ 示範值照 2 空格逐層展開。巢狀物件與陣列壓在同一行
+                                     是任何縮排器都產不出來的形狀，寫成那樣等於演一個這一格到不了的狀態。 #}
                                 <textarea id="skillInputSchemaInput" class="form-control skill-editor-instructions" aria-describedby="skillInputSchemaHint skillInputSchemaLenHint">{
   "type": "object",
-  "properties": { "order_id": { "type": "string" } },
-  "required": ["order_id"]
+  "properties": {
+    "order_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "order_id"
+  ]
 }</textarea>
                                 <p class="skill-editor-hint" id="skillInputSchemaHint" data-i18n="settings.skillInputSchemaHint">JSON Schema，決定 agent 呼叫這顆工具時要給什麼參數（頂層必須是 object；不可宣告 document_ids／indexes／dsl）。留空＝agent 用一句自然語言的 task 呼叫它。</p>
                                 {# 上限另起一段、與上面那段分開：它量的東西不一樣（見檔頭——序列化後的字數，

@@ -411,8 +411,8 @@
 {# manage-tenant-modal 內「成員」區塊的 .js-reset-password／.js-delete-user 彈窗本體：業務條件開窗
      （先選定哪一位成員才知道重設/刪除誰），故 include 在本元件而非巢狀在 manage-tenant-modal 裡
      （見該元件檔頭註解的理由）。resetPasswordModal 比照 5-5-1_userManagement 的模式；
-     deleteModal 的目標名稱由業務 js 動態填入 #deleteUserName（比照 1-2-1_uploadFile_pdf 的
-     deleteTargetId 模式，非其他頁使用的靜態 deleteTargetName）。 #}
+     deleteModal 的目標名稱由業務 js 動態填入 #deleteUserName（deleteTargetId 模式，同全站每一個
+     使用頁；靜態的 deleteTargetName 只有元件庫展示頁那一份落回它）。 #}
 {% set deleteTargetId = "deleteUserName" %}
 {% set deleteConfirmBinding = true %}
 {% set deletePlatformRole = "admin" %}

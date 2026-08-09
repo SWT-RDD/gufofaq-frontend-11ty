@@ -5,8 +5,12 @@
    參數（頁面在 include 前 set，見 §6）：
      deleteTitleKey / deleteTitleZh —— 選填，標題（預設 action.delete／「刪除」）
      deleteMessageKey / deleteMessageZh —— 選填，內文前綴（預設 common.confirmDelete／「確定要刪除」）
-     deleteTargetId       —— 設了就渲染空 <span id="…">，由業務 js 填入待刪除項目名稱；未設則印 deleteTargetName
-     deleteTargetName     —— 靜態示範用的項目名稱（預設「檔案名稱2.pdf」）
+     deleteTargetId       —— 待刪除項目名稱的 id 契約，由業務 js 把名字填進那顆槽
+     deleteTargetName     —— 沒給 deleteTargetId 時填進同一顆槽的靜態示範名稱（預設「檔案名稱2.pdf」）
+                             ⚠️ **項目名恆是一顆獨立的 `<span>`**，兩個參數只決定「id 掛不掛」與「裡面先寫什麼」，
+                             不分岔成兩種 markup：真實頁一律走 deleteTargetId（§5 逐字指名本元件的空 span 是
+                             條件開窗「先選定的那個目標」的正典），裸文字節點那一支於是全站沒有任何消費者，
+                             留著只會讓唯一畫得出項目名的地方（元件庫展示頁）演一個不出貨的形狀
      deleteHideTarget     —— true＝內文完全不接項目名稱。給「目標只有一個、講不出是哪一個」的動作用
                              （5-9 的 API 金鑰是每租戶一把，`generate_api_key` 直接覆寫 `tenant.api_key_hash`，
                              沒有「哪一把」可指），且那種頁的內文本身就是完整句子——接上去會變成
@@ -35,7 +39,7 @@
                     <h3 class="modals-title" id="deleteModal-title" data-i18n="{{ deleteTitleKey or 'action.delete' }}">{{ deleteTitleZh or "刪除" }}</h3>
                 </div>
                 <div class="modals-body">
-                    <p class="text-center delete-modal-text"><span data-i18n="{{ deleteMessageKey or 'common.confirmDelete' }}">{{ deleteMessageZh or "確定要刪除" }}</span>{% if not deleteHideTarget %} {% if deleteTargetId %}<span id="{{ deleteTargetId }}"></span>{% else %}{{ deleteTargetName or "檔案名稱2.pdf" }}{% endif %}{% endif %}</p>
+                    <p class="text-center delete-modal-text"><span data-i18n="{{ deleteMessageKey or 'common.confirmDelete' }}">{{ deleteMessageZh or "確定要刪除" }}</span>{% if not deleteHideTarget %} <span{% if deleteTargetId %} id="{{ deleteTargetId }}"{% endif %}>{% if not deleteTargetId %}{{ deleteTargetName or "檔案名稱2.pdf" }}{% endif %}</span>{% endif %}</p>
                 </div>
                 <div class="modals-footer">
                     <div class="button-row center">

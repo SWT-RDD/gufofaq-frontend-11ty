@@ -789,7 +789,11 @@ bodyClass: guideline-page
                而命中就沒有後續生成 ⇒ 它們的示範一律放在下面那份狀態目錄，不放在真實執行流程裡。
                節點清單與正典管線同長同序（saas `apps/web/lib/stepFlow.ts` 的 `CANONICAL_PIPELINE.agent`
                十站，首站 `input_gate`、qa_direct 第 2 站）。判定雖然發生在 agent 迴圈**之內**，
-               節點仍畫在第 2 站——`computeFlow` 是照正典序畫、再用事件點亮，不是照事件到達順序排。 #}
+               節點仍畫在第 2 站——`computeFlow` 是照正典序畫、再用事件點亮，不是照事件到達順序排。
+               ⚠️ **失敗那一站的訊息走 `error`、不走 `result`**：`result` 是**工具輸出**那一欄
+               （走 ui/collapse-text），而生成節點不是工具節點、根本拿不到它；failed 步驟身上帶的是
+               `error`（saas product `app/routers/ask.py` 的 `_STATUS_PUBLIC_KEYS` 放行的欄位之一），
+               明細列渲染成「失敗原因」＋ `td.step-node-error`。3-4 試跑沙盒那顆 failed 節點即此支。 #}
             {% set stepFlowNodes = [
                 { label: "輸入合規檢查", state: "completed", time: "9ms" },
                 { label: "QA 直答比對", state: "completed", time: "240ms", decision: "no_exact_and_judge_rejected", entry: "agent_tool", poolSize: "1", hits: "客服問答集 / 這個型號保固多久", score: "4.1", floor: "3" },
@@ -797,7 +801,7 @@ bodyClass: guideline-page
                 { label: "Agent 推理", state: "completed", time: "320ms", thinking: "先判斷是否需要檢索工具，再決定生成策略。" },
                 { label: "檢索知識庫", state: "completed", time: "1.4s", tools: "search_knowledge_base", params: "[1/1] query: string", result: "命中 3 筆片段（相似度 0.74–0.88），注入後續生成脈絡。" },
                 { label: "可回答性判定", state: "completed", time: "160ms", verdict: "generate（素材足以回答）" },
-                { label: "生成答案", state: "failed", time: "1.2s", result: "生成時偵測到不允許的外部連結，已攔截並中止本次回答。" },
+                { label: "生成答案", state: "failed", time: "1.2s", error: "生成時偵測到不允許的外部連結，已攔截並中止本次回答。" },
                 { label: "生成推薦問題", state: "skipped", time: "" },
                 { label: "完成對話", state: "skipped", time: "" },
                 { label: "輸出合規檢查", state: "skipped", time: "" }
@@ -1129,7 +1133,14 @@ bodyClass: guideline-page
 </dialog>
 
 {% include "components/file-preview-modal/file-preview-modal.html" %}
+{# 檔案編輯窗的儲存鈕與刪除確認窗的確認鈕：與**每一個**使用頁同一態——確認鈕交給業務 js 綁定、
+     不掛 btn-close-modals 自動關窗。自動關窗演的是 file-edit-modal 檔頭逐字判定為謊的那件事
+     （「按了儲存，窗關了，但什麼都沒存」）；而「業務 hook 鈕在靜態原型裡不動作」是全站常態
+     （§5 矩陣①③：成敗分支由 React 演），不是這一頁要補的缺口。窗仍關得掉——取消鈕與右上角的
+     關閉鈕都掛著 btn-close-modals。 #}
+{% set editConfirmBinding = true %}
 {% include "components/file-edit-modal/file-edit-modal.html" %}
+{% set deleteConfirmBinding = true %}
 {% include "components/delete-modal/delete-modal.html" %}
 {% include "components/disclaimer-modal/disclaimer-modal.html" %}
 {% include "components/intent-enable-modal/intent-enable-modal.html" %}
