@@ -4,7 +4,14 @@
      兩頁也各自 set 了撤銷確認的 delete-modal 參數。沿用 ui/modals 結構。
      可建立新的唯讀分享連結（可指定有效天數），並列出目前連結逐一複製/撤銷（撤銷＝軟刪，立即失效）。
      與前台 faq-share-modal（單一連結、只複製）不同：此為登入態的多連結管理。
-     建立＝零輸入零目標歧義的直接動作（比照 5-8「產生 Token」），不掛 hook class，直接 data-toast 演出成敗；
+     建立＝直接送 API 的動作鈕（§5 矩陣③）：`data-toast` 列全結果，並掛 `.js-create-share` 當 React 綁定記號。
+     ⚠️ 這顆 hook 先前不在切版上（當時的理由是「零輸入零目標歧義」，而**有效天數欄補上之後那個理由就不成立了**
+     ——它現在要讀同窗的 `#shareExpiresDaysInput`），但 saas 端一直用著它：
+     `gufofaq-saas apps/web/components/ShareManageModal/ShareManageModal.tsx` 的 `create` 鈕、
+     同資料夾的 `ShareManageModal.test.tsx`、以及 `apps/web/e2e/history-detail.spec.ts` 都以
+     `.js-create-share` 定址。§5「hook 一經 saas 端（頁面／e2e）引用即凍結」⇒ 切版補上這一份宣告，
+     不是去 saas 端改名或回收；
+
      每列複製鈕補 .shareBtn（真 app 剪貼簿 hook，同 faq-share-modal 的 .share-link-btn.shareBtn）；
      撤銷鈕每列目標需由業務 js 認列，保留 hook class（.js-revoke-share）。
 
@@ -51,7 +58,7 @@
                         </div>
                     </div>
                     <div class="flex-row mt-16 mb-16">
-                        <button data-capability="history" type="button" class="button button-primary" data-toast="連結已建立|權限不足，無法建立|有效天數必須是正整數|建立失敗，請稍後再試" data-i18n-data-toast="toast.createShare" data-toast-type="success|warning|warning|error">
+                        <button data-capability="history" type="button" class="button button-primary js-create-share" data-toast="連結已建立|權限不足，無法建立|有效天數必須是正整數|建立失敗，請稍後再試" data-i18n-data-toast="toast.createShare" data-toast-type="success|warning|warning|error">
                             <img src="./images/icon_add_white.png" width="48" height="48" decoding="async" alt="" class="icon">
                             <span data-i18n="share.createLink">建立分享連結</span>
                         </button>

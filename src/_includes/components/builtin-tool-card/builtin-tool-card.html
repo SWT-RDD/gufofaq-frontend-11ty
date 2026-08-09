@@ -21,9 +21,15 @@
     tool.title / tool.desc＝中文標題／中文解釋（chrome，走 i18n）
     tool.params＝參數陣列 [{ name, required, desc }]（唯讀清單；空陣列＝顯示「無參數」）
     tool.enabled＝啟用開關初始狀態
-    tool.requiresUnmet（選填）＝這顆工具的建構前提**沒滿足**時，那個前提的 config 欄位名（如
-      `qa_direct_enabled`）。有值時卡頭多一顆「已勾選，但本輪不會生效——缺少前提：<欄位名>」的標記；
-      值是**識別字**（config 欄位名，不翻，走 ui/inline-code），由使用頁算出來（判準見下方該處註解）
+    tool.requiresUnmet（選填）＝這顆工具的建構前提裡**沒滿足**的那些 config 欄位名，是一個**陣列**
+      （如 `["qa_direct_enabled"]`）。非空時卡頭多一顆「已勾選，但本輪不會生效——缺少前提：<欄位名>」
+      的標記，多筆以 common.listSep 串起來；值是**識別字**（config 欄位名，不翻，走 ui/inline-code），
+      由使用頁算出來（判準見下方該處註解）。
+      **形狀是陣列不是單一值**：上游 `requires` 本來就是一份清單，而且真的有一顆工具帶兩個前提
+      （GufoRAG chatbot `app/services/agent_service.py` 的 `BUILTIN_TOOL_PREREQUISITES`：
+      `answer_from_qa` 要 `qa_direct_indexes` ＋ `qa_direct_enabled` 兩個都成立才會被建出來）。
+      吃單一值的話，兩個前提同時缺（QA 集也沒選）時畫面只講得出其中一個，使用者照著去補那一項、
+      工具照樣不出現——而那正是這顆標記要消滅的「設定看得到、就是不生效」
     tool.customized＝true 時卡頭顯示「已自訂」標記，且該卡預設展開（.open + aria-expanded=true）
     tool.defaultDescription＝「工具描述」欄的 placeholder（＝內建預設描述原文）
     tool.description / tool.extraPrompt（選填）＝兩欄的現有自訂值（customized 的卡要填，否則
@@ -92,9 +98,15 @@
              所以這個狀態即時算得出來：任一欄為空／false 就標。
              `tool.requiresUnmet` 是使用頁算完的結果（切版沒有那個算術），值是 config 欄位名、不翻
              ——它是**識別字**，故走 ui/inline-code（同卡的工具名與參數名同辦；原本是裸文字，
-             §4「識別字＝墨色 chip 是全站既有正本，不另造第二種識別字視覺」）。 #}
-        {% if tool.requiresUnmet %}
-        <span class="builtin-tool-flag is-inert"><span data-i18n="settings.toolRequiresUnmet">已勾選，但本輪不會生效——缺少前提：</span><code class="inline-code">{{ tool.requiresUnmet }}</code></span>
+             §4「識別字＝墨色 chip 是全站既有正本，不另造第二種識別字視覺」）。
+             `requires` 是清單、`answer_from_qa` 就帶兩個前提，故這裡是 `{% for %}`：多筆之間的分隔符
+             自己也要有 key（§4-2，`common.listSep`），留成字面量的話英文模式會露出一個繁中字身。
+             ⚠️ 本頁的示範狀態只演得到**一筆**：兩個前提要同時缺，`qa_direct_indexes` 得是空的，
+             而那會連帶讓 search_qa 也不成立、拆掉「一顆成立／一顆不成立」那組刻意的對比
+             （見 5-2 該處註解）。多筆那一態的版型＝同一顆 `<code>` chip 重複、中間夾 listSep，
+             全站在 5-5-1 的能力欄已經演過同一種串接。 #}
+        {% if tool.requiresUnmet and tool.requiresUnmet.length %}
+        <span class="builtin-tool-flag is-inert"><span data-i18n="settings.toolRequiresUnmet">已勾選，但本輪不會生效——缺少前提：</span>{% for field in tool.requiresUnmet %}{% if not loop.first %}<span data-i18n="common.listSep">、</span>{% endif %}<code class="inline-code">{{ field }}</code>{% endfor %}</span>
         {% endif %}
         <label class="switch builtin-tool-switch">
             {# 值載體：只掛 hook class，成敗由 React 送 API 後演（§5 組合矩陣②）。

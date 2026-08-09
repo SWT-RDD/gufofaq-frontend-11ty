@@ -38,6 +38,13 @@
                                         <input type="radio" name="dataset_radio" value="{{ dataset.label }}"{% if dataset.checked %} checked{% endif %}>
                                         <span>{{ dataset.label }}</span>
                                     </label>
+                                    {% else %}
+                                    {# 這一窗有搜尋框（ui/list-filter 前端過濾），關鍵字打不到資料集時清單就是零列
+                                         ——§5 無資料列正典的共同精神是「使用者有辦法讓這張表變成零列」，含前端過濾。
+                                         資料本身也可能為空：還沒建過任何資料集時這一窗就是空的，而真 app 自己畫得出
+                                         那一句（datasetList.js 的「無資料」），所以「隨真 app」的結論是鏡射它、不是不畫。
+                                         這一列不是 `<tr>`（清單由 <label> 疊成），故用 div 版、不用 colspan。 #}
+                                    <div class="text-center text-gray" data-i18n="common.noData">無資料</div>
                                     {% endfor %}
                                 </div>
                             </div>

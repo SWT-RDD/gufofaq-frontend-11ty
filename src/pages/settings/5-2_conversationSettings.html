@@ -1428,7 +1428,13 @@ permalink: 5-2_conversationSettings.html
          「直答模式」停用 ⇒ qa_direct_enabled 為 false ⇒ 前提不成立，故它的 requiresUnmet 有值、
          卡頭標出「已勾選，但本輪不會生效」。同一頁的 search_qa 只 requires qa_direct_indexes
          （QA 集有選）⇒ 前提成立、不標，兩者剛好演出對比（§6 示範資料要自洽）。
-         順序照 chatbot BUILTIN_TOOL_NAMES（answer_from_qa 緊接在 search_qa 之後）。 #}
+         順序照 chatbot BUILTIN_TOOL_NAMES（answer_from_qa 緊接在 search_qa 之後）。
+         **requiresUnmet 是陣列**（正本是 GufoRAG chatbot `app/services/agent_service.py` 的
+         `BUILTIN_TOOL_PREREQUISITES`：`answer_from_qa` 是 `("qa_direct_indexes", "qa_direct_enabled")`
+         兩個前提），這一頁只填得出其中一筆：本頁「QA 直答」子頁籤的 `qaDirectDatasetsSelect` 選了
+         客服問答集 ⇒ `qa_direct_indexes` 成立，缺的只有 `qa_direct_enabled`。要演到兩筆就得把 QA 集
+         取消選取，而那會讓 search_qa 也不成立、上一段那組對比就消失——示範資料不為了演一個版型
+         而改成另一個較差的狀態（§6）。 #}
     {% set builtinTools = [
       {
         name: "get_current_datetime", title: "目前日期時間", enabled: true,
@@ -1515,7 +1521,7 @@ permalink: 5-2_conversationSettings.html
       },
       {
         name: "answer_from_qa", title: "以 QA 原文直接回答", enabled: true,
-        requiresUnmet: "qa_direct_enabled",
+        requiresUnmet: ["qa_direct_enabled"],
         desc: "找到一份完整回答問題的 QA 之後，直接用它的答案原文結束這一輪，不再由 AI 重組。系統會覆核那份 QA 是否真的完整回答，未通過時退回一般流程。",
         defaultDescription: "以某一份 QA 的原文直接回答使用者，並結束本次回答。何時用：你剛用 search_qa 找到一份 QA，且它的答案已經完整回答使用者的問題、不需要你再補充或改寫。何時不要用：QA 只回答到問題的一部分、主體/品項/對象不同、或需要合併多份資料才能回答。",
         params: [

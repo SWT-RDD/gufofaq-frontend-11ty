@@ -1382,6 +1382,7 @@
   "settings.rerankerName": "Reranker model",
   "settings.rerankerScaleNote": "Each reranker uses a different score scale, so switching reranker means recalibrating the score floor on the “QA direct answer” tab and the one on the answerability gate. Current scale: ",
   "settings.resetPassword": "Reset password",
+  "settings.resetPasswordTarget": "Reset the password for: ",
   "settings.respondSystemPrompt": "Response prompt",
   "settings.responseFormat": "Response format",
   "settings.retrievalAndFields": "Retrieval & fields",

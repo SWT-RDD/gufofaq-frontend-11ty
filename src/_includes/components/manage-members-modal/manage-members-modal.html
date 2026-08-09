@@ -48,6 +48,13 @@
                                 <input type="checkbox"{% if member.checked %} checked{% endif %}>
                                 <span>{{ member.email }}</span>
                             </label>
+                            {% else %}
+                            {# 這一窗有搜尋框（ui/list-filter 前端過濾），關鍵字打不到人時清單就是零列——
+                                 §5 無資料列正典的共同精神是「使用者有辦法讓這張表變成零列」，含前端過濾。
+                                 另一條路是資料本身為空：`GET /users` 只回本租戶使用者，租戶剛開通時
+                                 除了自己以外一個都沒有。這一列不是 `<tr>`（清單由 <label> 疊成），
+                                 故照 share-manage-modal／manage-tenant-modal 那一族用 div 版，不用 colspan。 #}
+                            <div class="text-center text-gray" data-i18n="common.noData">無資料</div>
                             {% endfor %}
                         </div>
                     </div>

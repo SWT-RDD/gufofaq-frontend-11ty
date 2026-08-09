@@ -66,6 +66,27 @@
                 {% endfor %}
             </div>
         </div>
+
+        {# 串流狀態列（示範）：問答送出後、回答串流生成過程中即時顯示的狀態（如「搜尋資料中…」）。
+             真值由 React 端 SSE 串流事件驅動；此處為靜態示範，形狀與位置照 components/chatroom
+             那一份（前台沒有的只是後台那些控制項，狀態列本身兩邊同一種）。
+             §4「動態出現的訊息要在 live region 裡」⇒ role="status" aria-live="polite"：串流是**持續更新
+             的進度**，不是「有東西壞了」，故不用 role="alert"（那會打斷報讀器）。
+             live region 的節點必須在內容到達**之前**就存在，React 端切內容、不切節點。
+             §6 示範資料要自洽：狀態列不可與「已答畢」並存，故補一則生成中的第二問——畫面敘事＝
+             第一問已答（含建議追問），使用者點了第二顆 chip、正在搜尋資料。
+             文案是 chrome 走 i18n，沿用後台同一顆 agent.searching（§4-2 同繁中沿用既有 key）。 #}
+        <div class="message-wrap">
+            <div class="message-row by-user">
+                <div class="message-content">
+                    <span>面談流程大約需要多久？</span>
+                </div>
+                <div class="message-time">13:32</div>
+            </div>
+        </div>
+        <div class="flex-row align-items-center gap-8 mt-10" role="status" aria-live="polite">
+            <span class="text-gray" data-i18n="agent.searching">搜尋資料中…</span>
+        </div>
     </div>
 
     <button type="button" class="message-scroll-btn js-scroll-bottom" title="捲到最新訊息" data-i18n-title="comp.scrollToLatest">
