@@ -147,7 +147,7 @@ dist/                       build 輸出（勿手改）
 
 `header`、`footer` 與 `ui/faq-launcher` 由 `page-shell` 自動提供；`chatbot-header` 與 `footer` 由 `chatbot-shell` 自動提供。頁面都不需 include。
 含子元件的元件：`header`（含 `mobile-nav`、`header-controls`）、`mobile-nav`（含 `header-controls`）、`chatbot-header`（含 `header-controls`）、`header-controls`（含 `theme-toggle`）、`footer`（含 `disclaimer-modal`）、`faq-chatroom`（含 `rating-modal`、`faq-share-modal`）、`step-btn-wrap`（含 `step-nodes`）、`qa-side-panel`（含 `qa-record-tabs`）、`qa-import-modal`（含 `upload-box`）、`case-from-log-modal`（含 `modal-close`）、`platform-tenants-panel`（含 `ui/timezone-options`、`manage-tenant-modal`、`delete-modal`、`reset-password-modal`）。
-`platform-tenants-panel` 與 `platform-disclaimer-panel` 是 `5-6-1` 那一族三份稿（ISO 審核精靈的 idle／preview／result 三態）**共用的固定區塊群**：精靈之前的一整組在前者、精靈之後的免責聲明設定在後者，兩者都不吃頁面參數（三份稿演同一個畫面，資料住在元件裡）。它們存在的理由就是「三頁複製貼上會分岔」，故改動一律改元件那一份。
+`platform-tenants-panel` 與 `platform-disclaimer-panel` 是 `5-6-1` 那一族三份稿（ISO 審核精靈的 idle／preview／result 三態）**共用的固定區塊群**：精靈之前的一整組在前者、精靈之後的免責聲明設定在後者（三份稿演同一個畫面，示範資料住在元件裡）。**只有一顆頁面參數**：`platform-tenants-panel` 的 `timezoneSelected`（必填，見上表那一列與該元件檔頭）；`platform-disclaimer-panel` 零參數。它們存在的理由就是「三頁複製貼上會分岔」，故改動一律改元件那一份。
 
 **無條件開窗**才掛 `data-open-modal="<dialog id>"`（`ui/modals` 事件委派），彈提示掛 `data-toast`。
 **有條件開窗**（先設定要刪哪一列、依權限決定開哪一份、驗證失敗才跳）是業務邏輯：觸發鈕保留真 app 的 hook class（`.js-apply-production`、`.btn-delete-file`…），切版不掛 `data-open-modal`——掛了就變成無條件開窗，說了謊。這種彈窗的「看得見」由元件庫頁的示範觸發器保證。`ui/default-table` 的展示片段也 include 了 `ui/accordion`，但展示用途不算依賴（GUIDELINE §1-1），故它留在 `ui/`。

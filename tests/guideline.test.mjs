@@ -4378,6 +4378,55 @@ test("§4 每一顆會改狀態的鈕都要宣告它需要哪一道閘門（四�
     assert.equal(hits.length, 0, `唯讀使用者會看到按不動的鈕，而畫面上沒有任何東西說得出為什麼：\n${fail(hits)}`);
 });
 
+test("§4 掛 data-capability 的鈕都要有 warning 型的「權限不足」段（403 是走得到的結果，不是 disabled）", () => {
+    // GUIDELINE §4 的裁決：能力 token 是**逐顆**的細粒度，React 端做不出逐鈕過濾 ⇒「有 settings:read
+    // 沒 settings:write」的人打得開頁面、看得到鈕，那道 403 是真實可達的結果路徑。少了這一段，
+    // React 只能拿 `disabled` 把那條路封死，而 REACT-CONVERSION §⑥ 逐字說那叫「把契約演掉了」。
+    // 型別必須是 warning：那是使用者找得到人開通就修得掉的狀況，折進 error 就變成紅色終局。
+    //
+    // **母體是 dist 的 `<button>`**：①參數化元件（delete-modal 那一族）的 toast 由使用頁灌進來，
+    // src 上只看得到 `{{ deleteToast }}`；②`data-capability` 另有 13 顆掛在 `<div>` 上（§4 的區塊級
+    // 宣告＝那一塊的下限，不是鈕），區塊沒有 toast 可言，收進來會製造一整批假紅。
+    const EXEMPT = new Map([
+        ["toast.applyProductionCompare",
+            "這一顆的權限不足走獨立的 apply-settings-no-permission-modal（鈕照樣按得下去、只是彈另一個窗），不是它自己的 toast 分支——見 components/apply-settings-compare-modal 檔頭"],
+    ]);
+    const scan = (html) => {
+        const out = [];
+        for (const [tag] of stripNonMarkup(html).matchAll(/<button\b[^>]*>/g)) {
+            if (!/\bdata-capability="/.test(tag)) continue;
+            const key = (tag.match(/\bdata-i18n-data-toast="([^"]*)"/) || [])[1] || "(無 i18n key)";
+            if (EXEMPT.has(key)) continue;
+            const zh = (tag.match(/\bdata-toast="([^"]*)"/) || [])[1];
+            if (zh === undefined) { out.push(`${key}：掛了 data-capability 卻連 data-toast 都沒有`); continue; }
+            const segs = zh.split("|");
+            const types = ((tag.match(/\bdata-toast-type="([^"]*)"/) || [])[1] || "").split("|");
+            const i = segs.findIndex((s) => s.includes("權限不足"));
+            if (i === -1) out.push(`${key}：data-toast 沒有「權限不足」那一段 → ${zh}`);
+            else if (types[i] !== "warning") out.push(`${key}：第 ${i + 1} 段是「權限不足」，type 卻是 ${types[i] || "(缺)"}`);
+        }
+        return out;
+    };
+    probe("能力閘鈕的 403 段", scan,
+        [`<button type="button" data-capability="settings:write" data-toast="已儲存|儲存失敗" data-toast-type="success|error">儲存</button>`,
+         `<button type="button" data-capability="data:write" data-toast="已刪除|權限不足，無法刪除|刪除失敗" data-toast-type="success|error|error">刪除</button>`,
+         `<button type="button" data-capability="settings:write">儲存</button>`],
+        // 合法：三段齊全且 warning 對位；沒掛能力軸的鈕不在母體；區塊級宣告掛在 div 上不算鈕。
+        [`<button type="button" data-capability="settings:write" data-toast="已儲存|權限不足，無法儲存|儲存失敗" data-toast-type="success|warning|error">儲存</button>`,
+         `<button type="button" data-toast="已複製" data-toast-type="success">複製</button>`,
+         `<div data-capability="settings:write"><button type="button" data-toast="已儲存|儲存失敗" data-toast-type="success|error">儲存</button></div>`]);
+    const hits = [];
+    let seen = 0;
+    for (const f of distHtml) {
+        seen += [...stripNonMarkup(read(`dist/${f}`)).matchAll(/<button\b[^>]*\bdata-capability="/g)].length;
+        for (const h of scan(read(`dist/${f}`))) hits.push(`${f}  ${h}`);
+    }
+    assert.ok(seen >= 80, `dist 只掃到 ${seen} 顆掛 data-capability 的鈕 —— 這條測試在空轉`);
+    const stale = [...EXEMPT.keys()].filter((k) => !distHtml.some((f) => read(`dist/${f}`).includes(`data-i18n-data-toast="${k}"`)));
+    assert.equal(stale.length, 0, `EXEMPT 有過期項（那顆鈕已不在 dist）：${stale.join("、")}`);
+    assert.equal(hits.length, 0, `§4：能力不足時 React 只剩 disabled 可用，而那是把契約演掉：\n${fail(hits)}`);
+});
+
 test("§4 共用元件把 data-toast 開成參數時，閘門也要開成參數，且每個使用頁都要 set", () => {
     // 真正送 API 的是彈窗裡那顆確認鈕，而它的 toast 由使用頁灌進來 —— 上一條測試只看得到
     // `data-toast="{{ deleteToast }}"` 這個字面，看不到「哪一頁灌了什麼、那一頁有沒有一起灌閘門」。
@@ -5253,9 +5302,14 @@ test("§4-2 全形標點收尾的標籤＋緊接的值：譯文必須自帶分�
 });
 
 test("§3-1 每個 page-shell 頁都要有 header 導覽入口（或在檔頭註明無入口頁的理由）", () => {
-    // 曾經：3-4_skillManagement 只能從頁面目錄進，麵包屑卻宣告了「資料配置」父節點——app 內導不到它。
-    // 例外＝真的沒有導覽入口且有理由的頁；目前一個都不需要（流程中間頁靠「被別頁連到」自然放行）。
-    const NO_NAV = new Map();
+    // 反例：3-4_skillManagement 只能從頁面目錄進，麵包屑卻宣告了「資料配置」父節點——app 內導不到它。
+    // 例外＝真的沒有導覽入口且有理由的頁（理由同時要寫在該頁檔頭，§3-1 第③條：痕跡要成對）。
+    const NO_NAV = new Map([
+        ["5-6-1-2_platformIsoReviewPreview.html",
+            "ISO 審核精靈 preview 態。從 idle 過去要先打 GET /platform/review/overdue，是條件動作 ⇒ §5 只掛 hook class、不做靜態跳轉，所以沒有任何一頁連得到它"],
+        ["5-6-1-3_platformIsoReviewResult.html",
+            "同上，result 態：要 POST /platform/review/apply 成功之後才到得了"],
+    ]);
     const menu = read("src/_includes/components/header/header.html");
     const hrefs = new Set([...menu.matchAll(/href:\s*"([^"?#]+)/g)].map((m) => m[1]));
     assert.ok(hrefs.size >= 10, `header menuItems 只解析到 ${hrefs.size} 個 href —— 這條測試在空轉`);
@@ -5270,7 +5324,10 @@ test("§3-1 每個 page-shell 頁都要有 header 導覽入口（或在檔頭註
         if (NO_NAV.has(permalink)) { seenExempt.add(permalink); continue; }
         // 流程中間頁：由同流程的前一頁連過去（markup 內被別頁連到即可）。
         // **catalog.html 不算**——它是部署首頁的全站連結清單，什麼都連得到；把它算進來這條測試就恆綠。
-        const linked = srcHtml.some((g) => g !== f && !g.endsWith("catalog.html") && read(g).includes(permalink));
+        // **註解不算**——`{# … #}` 裡的「下一步：X.html」是給讀的人看的指路，不是導覽入口；
+        // 認它的話，任何一頁只要別處的檔頭提到過檔名就自動放行，這條規則等於只擋「連提都沒提」。
+        const linked = srcHtml.some((g) =>
+            g !== f && !g.endsWith("catalog.html") && stripNjk(read(g)).includes(permalink));
         if (linked) continue;
         hits.push(`${basename(f)}  ← 不在 header menuItems、也沒有任何頁面連到它`);
     }

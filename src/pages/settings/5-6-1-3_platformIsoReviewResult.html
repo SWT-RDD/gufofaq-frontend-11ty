@@ -17,6 +17,10 @@ permalink: 5-6-1-3_platformIsoReviewResult.html
      **下一步**：`5-6-1_platformTenants.html`（`step === "idle"`）——`.js-review-done`（「完成／返回」）
        把整台精靈重設回入口態。**切版不做靜態跳轉**（§5 條件動作只掛 hook class）；三份稿在部署站台上
        由頁面目錄 `catalog.html` 進入、在檔頭互相指名。
+     **本頁是無導覽入口頁**（§3-1 第③條，同時登記在測試的 `NO_NAV`）：到得了這一態的唯一途徑是
+       在上一頁按下 `.js-review-confirm` 並讓 `POST /platform/review/apply` 成功，那是條件動作、
+       沒有任何一頁連得到它。**檔頭裡的「上一步／下一步」是指路，不是導覽入口**——§3-1 第②條
+       要的是真的連過去的 `href`，測試因此不看註解。
 
      **這一步獨有的區塊**：ISO 季度審核那一塊裡的「③ 處理結果（可截圖）」——「共 N 筆，成功 X、失敗 Y」
        摘要（三個數字全部從 `isoReviewOkResults`／`isoReviewFailResults` 兩個陣列長度推導，§6 不烤字面量）、

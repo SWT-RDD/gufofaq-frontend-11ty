@@ -39,13 +39,12 @@
   （`ui/subscription-gate`、`platform.usageError`、`share.rateLimited`、prompt-edit 的預設展開態…）
   的宿主：做成一條開發用路由（不進正式導覽），把每個展示片段照抄成該路由的 section。
   它不轉的話，那幾個分支在 React 端就再也沒有人看得到了。
-  **這一頁的節怎麼對，先前沒有裁決，於是每一輪的人各判一次**（實測：切版 27 節 → React 47 節、
-  順序不同、無編號，結果「哪一節缺了」只能靠人工逐節比對，而本輪一次就查出六節整節沒轉）。定案三條：
-  ①**節 id 與 `NN` 編號照抄**，一節對一節——那是唯一能機械比對「缺了哪一節」的錨點；
+  **這一頁的節要一節對一節，三條**：①**節 id 與 `NN` 編號照抄**——那是唯一能機械比對「缺了哪一節」
+  的錨點（節數與順序一旦各判各的，缺節只能靠人工逐節比對，實測會整節整節地漏）；
   ②**純說明節**（`#introSection`／`#layoutSection`／`#mainSection` 只有 caption）**照轉**：那幾段 caption
   是 grid／utility／`_guideline.scss` 用途的規格散文，React 端沒有第二個地方寫著它；
   ③切版**沒有** demo 的元件（`page-size-select`、`pager-row` 那一族）另開一區並標明「對照業務頁」——
-  §⑥ 已有那條規則，只是先前沒說在 gallery 裡怎麼分區。
+  §⑥ 有那條規則，這裡定的是它在 gallery 裡怎麼分區。
 - 寄生 orphan class：某元件 `.scss` 裡出現、但它自己 tsx/markup 從不 render 的 selector，是別的 atom 寄生進來的——
   追回它切版的 `ui/` atom、抽成獨立 `components/ui/<Name>/`、退掉寄生（例：`.data-info` 曾寄生在 `Pagination.scss`）。
 - 走樣 scss 若把 hook class 選擇器寫成裸元素（如 `button:hover .tooltip` 而非 `.has-tooltip:hover .tooltip`），修回
