@@ -1,0 +1,43 @@
+---
+layout: layouts/base/base.html
+---
+{# 公開唯讀頁的整頁外殼——**外部訪客不登入就打得開**的那一族頁面（目前只有分享連結 `shared.html`）。
+     為什麼要第三支 layout：既有兩支各自只滿足一半。
+     · `page-shell` 的版位對（一般文件流、會捲動、頁尾貼底），但它的 `components/header` 是 Manager
+       導覽——那整條選單對沒有登入態的訪客是死連結，而且等於把後台的功能表印給外部看。
+       它還在 footer 之後掛 `ui/faq-launcher`：那顆鈕的出現條件逐字就是「登入態」（見 page-shell 檔頭），
+       公開頁不該有。
+     · `chatbot-shell` 的 chrome 對（`components/chatbot-header`＝logo ＋語言/深淺，無導覽），但它的版位
+       是**固定視窗**（`body.chatbot-page { overflow: hidden }` ＋ `.chatbot-wrap` 的 `100vh/100dvh` ＋
+       `.chatbot-main` 的 `overflow: hidden`，見 `_chatbot-shell.scss`）——那是聊天視窗要「輸入列固定在
+       底部、訊息區自己捲」才這樣切的。分享頁畫的是一則可能很長的問答，套上去會被裁掉且捲不到。
+     所以本外殼＝**chatbot-shell 的 chrome ＋ page-shell 的版位**：
+       skip-link（兩支共用，全域 `.skip-link`）
+       ＋ `components/chatbot-header`（取自 chatbot-shell）
+       ＋ `<main class="main" id="main" tabindex="-1"> > .wrap`（取自 page-shell；`.main` 的
+          `flex: 1 0 auto` 靠 `layouts/base` 的 `.full-wrap` column flex 把頁尾推到視窗底部）
+       ＋ 每頁唯一的 sr-only `<h1>`（取自 page-shell 的 `pageHeading` / `titleKey` 契約）
+       ＋ `components/footer`（兩支共用）。
+     刻意**不帶**的三樣：`components/header`（Manager 導覽）、`ui/faq-launcher`（登入態才有）、
+     `bodyClass: chatbot-page`（body 要能整頁捲動，那正是與 chatbot-shell 分家的理由）。
+
+   `.main` 的樣式正本在 `layouts/page-shell/_page-shell.scss`（本外殼只**沿用**、不覆寫，故自己沒有
+     `_public-shell.scss`）——兩支 layout 是它的兩個消費者，該檔檔頭同時列著這件事。
+
+   front matter：`titleKey` 與 `pageHeading` **兩顆都必填**（本外殼是該頁唯一的 `<h1>` 來源，
+     少了就沒有 h1；`titleKey` 另供 `layouts/base` 產出 `<html data-page-title-key>` 讓 `lang-toggle`
+     重譯 `<title>`）。**不要** `bodyClass`。 #}
+<a class="skip-link" href="#main" data-i18n="a11y.skipToContent">跳到主要內容</a>
+
+{% include "components/chatbot-header/chatbot-header.html" %}
+
+<main class="main" id="main" tabindex="-1">
+    <div class="wrap">
+        {# 每頁唯一的 <h1>（頁名來自 front matter 的 pageHeading）——同 page-shell：視覺標題是資料值
+             （這一頁是那則對話本身），故 h1 走 sr-only；logo 不是 h1（它是回首頁的連結）。 #}
+        <h1 class="sr-only" data-i18n="{{ titleKey }}">{{ pageHeading }}</h1>
+        {{ content | safe }}
+    </div>
+</main>
+
+{% include "components/footer/footer.html" %}

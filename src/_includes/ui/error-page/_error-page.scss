@@ -3,9 +3,11 @@
 //   ① `src/404.html`（生產 markup）——`404` ＋「找不到這個頁面」＋ 一顆
 //      `<a href="./index.html" class="button button-primary">` **回到頁面目錄**（不是「回首頁」：
 //      這個站的 `index.html` 就是全站連結目錄）。說明那一句是本頁唯一的 `<h1>`。
-//   ② `ui/error-page/error-page.html`（展示片段，只被元件庫頁 include）——`429` ＋「分享連結被節流」，
-//      **沒有動作鈕**（公開分享頁的訪客沒有登入態，也沒有目錄可回）。它的正式落點是 React 的
-//      `/shared/{token}`，切版沒有那一頁，故元件庫頁是唯一看得到它的地方（§5）。
+//   ② `ui/error-page/error-page.html`（展示片段，只被元件庫頁 include）——公開分享頁
+//      `src/pages/shared/shared.html` 的**兩種錯誤態**：`404`（連結無效／已撤銷／過期）與
+//      `429`（連結還有效、只是此刻太頻繁），兩顆都**沒有動作鈕**（那一頁的訪客沒有登入態，
+//      也沒有目錄可回）。分享頁本身是靜態的、只演得出正常態，故元件庫頁是這兩態唯一看得到的
+//      地方（§5）；兩態為什麼不共用同一句文案，寫在該片段的檔頭。
 // 兩份在 dist 上分別是 `dist/404.html` 與 `dist/component.html`；改版型要同時看這兩頁。
 .error-page {
     flex: 1 0 auto;

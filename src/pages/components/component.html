@@ -986,8 +986,9 @@ bodyClass: guideline-page
             <div class="caption">
                 <ul>
                     <li>ui/error-page：整頁置中的錯誤碼 + 說明（+ 選填的返回鈕）。生產 markup 是 src/404.html（找不到頁面）</li>
-                    <li>下面這一態是<strong>公開分享連結被節流（HTTP 429）</strong>：正式落點是 React 的 /shared/{token}，切版沒有那一頁，故這裡是唯一看得到它的地方（GUIDELINE §5）</li>
-                    <li>刻意與「找不到」分成兩顆 key：連結還有效、只是此刻太頻繁——寫成找不到會讓使用者以為連結被撤銷而回頭要新的</li>
+                    <li>下面兩態都是<strong>公開分享頁 shared.html</strong> 的錯誤態：<strong>404</strong>（連結無效／已撤銷／過期）與 <strong>429</strong>（被節流）。那一頁是靜態的、只演得出正常態，故這裡是這兩態唯一看得到的地方（GUIDELINE §5）</li>
+                    <li>刻意分成兩顆 key、不共用一句話：429 那一條連結<strong>還有效</strong>、只是此刻太頻繁——寫成找不到會讓使用者以為連結被撤銷而回頭要新的；反過來把 404 寫成太頻繁，則會讓人一直重試一條永遠打不開的連結</li>
+                    <li>兩態都沒有動作鈕（404.html 那一份有「回頁面目錄」）：公開分享頁的訪客沒有登入態，也沒有目錄可回</li>
                 </ul>
             </div>
             {% include "ui/error-page/error-page.html" %}

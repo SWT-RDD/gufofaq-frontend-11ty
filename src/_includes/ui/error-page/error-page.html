@@ -1,14 +1,24 @@
-{# 展示片段（只被元件庫頁 include）：整頁錯誤版型 `.error-page` 的第二種狀態。
-     第一種狀態的生產 markup 在 `src/404.html`（找不到頁面 ＋ 回頁面目錄）；本片段演的是
-     **公開分享連結被節流（HTTP 429）**那一態——它的正式落點是 React 的 `/shared/{token}`，
-     切版沒有那一頁，故照 §5 慣例：唯一看得到它的地方就是元件庫頁的靜態示範。
+{# 展示片段（只被元件庫頁 include）：整頁錯誤版型 `.error-page` 的另外兩種狀態，兩顆都是
+     **公開分享頁 `shared.html`（`src/pages/shared/shared.html`）** 的錯誤態。那一頁是靜態的、一次只
+     演得出一態（它演正常態），而這兩態的版型是同一顆原子——並排放在元件庫才看得出它們的差別在文案
+     （§5：分支的單位是版型，一處演過就夠）。
 
-     為什麼要分成兩顆 key 而不是共用 error.notFound：連結**還有效**，只是此刻存取太頻繁。
-     寫成「找不到」會讓使用者以為連結被撤銷、回頭去要一條新的——而他其實只要等一下。
-     （React 端已照此分開：gufofaq-saas `apps/web/app/shared/[token]/page.tsx` 的
-     `SharedConversationPage` 有 `rateLimited` 與 `notFound` 兩個 state，429 才渲染本片段。）
+     ① HTTP 404：連結無效／已撤銷／已過期。上游把「租戶被凍結／到期」「租戶的 history 功能被平台關掉」
+        「上游查無這筆 chat log」全部收斂成同一個 404（gufofaq-saas product `app/routers/share.py` 的
+        `view_shared` 逐個 `raise` 都是 404，且註解寫明「不分辨…不洩漏租戶狀態」）——所以畫面上也只有
+        這一句，不替訪客猜是哪一種。
+     ② HTTP 429：連結**還有效**，只是此刻存取太頻繁（product `app/rate_limit.py` 的
+        `enforce_shared_link_rate_limit`，per-tenant 桶）。
 
-     沒有「回頁面目錄」鈕：公開分享頁的訪客沒有登入態，也沒有目錄可回；能做的動作只有稍後重試。 #}
+     為什麼分成兩顆 key 而不是共用一句：寫成「找不到」會讓使用者以為連結被撤銷、回頭去跟人要一條新的
+     ——而他其實只要等一下。反過來把 404 寫成「太頻繁」則會讓人一直重試一條永遠打不開的連結。
+
+     兩態都**沒有動作鈕**（404.html 那一份有「回頁面目錄」）：公開分享頁的訪客沒有登入態，也沒有目錄
+     可回；能做的動作只有稍後重試。 #}
+<div class="error-page">
+    <p class="error-code" aria-hidden="true">404</p>
+    <p class="error-message" data-i18n="shared.notFound">此分享連結無效或已過期</p>
+</div>
 <div class="error-page">
     <p class="error-code" aria-hidden="true">429</p>
     <p class="error-message" data-i18n="share.rateLimited">此分享連結仍然有效，只是目前存取太頻繁，請稍後再試。</p>

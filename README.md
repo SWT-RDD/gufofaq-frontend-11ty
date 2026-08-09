@@ -52,7 +52,7 @@ push 到 `master` 會自動觸發 [`.github/workflows/deploy.yml`](.github/workf
 ```
 src/
 ├── _includes/
-│   ├── layouts/            整頁模板（3 支，見下表）＋ 各模板專屬樣式 `_base.scss` / `_page-shell.scss` / `_chatbot-shell.scss`（⚠️ 與 `src/scss/_base.scss` 同名，`main.scss` 以 `as layout-base` 消歧）
+│   ├── layouts/            整頁模板（4 支，見下表）＋ 模板專屬樣式 `_base.scss` / `_page-shell.scss` / `_chatbot-shell.scss`（⚠️ 與 `src/scss/_base.scss` 同名，`main.scss` 以 `as layout-base` 消歧；`public-shell` 沒有自己的樣式，它沿用 page-shell 的 `.main`）
 │   ├── ui/                 不依賴其他元件的元件（58 個）
 │   └── components/         會用到其他元件，或某大元件的專屬子片段（54 個）
 ├── scss/                   全域層（元件樣式住在元件資料夾）
@@ -76,6 +76,7 @@ src/
 └── pages/                  內頁：依 section 分資料夾，permalink 輸出扁平檔名到 dist/ 根
     ├── dataImport/(7) dataset/(10) qaHistory/(2) qaRecord/(1) qaTest/(4) settings/(13)  ← 管理端，走 page-shell
     ├── faq/(1)                                                                        ← 前台 FAQ，走 chatbot-shell
+    ├── shared/(1)                                                                     ← 公開唯讀分享頁，走 public-shell
     └── components/(1)                                                                 ← 元件總覽（showcase），走 base
 tests/guideline.test.mjs    GUIDELINE 規則的可執行版本（npm test）
 scripts/                    build 前後處理：clean-dist、hash-assets
@@ -90,9 +91,10 @@ dist/                       build 輸出（勿手改）
 |---|---|---|
 | `layouts/page-shell/page-shell.html` | `<head>` + skip-link + `header`（導覽 + 語言/夜間）+ `<main id="main">`（含 h1）+ `footer` + `ui/faq-launcher`（右下角前台入口） | 管理端 37 頁；front matter 必填 `titleKey` / `pageHeading` |
 | `layouts/chatbot-shell/chatbot-shell.html` | `<head>` + skip-link + `chatbot-header`（logo + 語言/夜間，無導覽）+ 滿版 `<main id="main">`（含 sr-only h1 `GufoFAQ`）+ `footer` | 前台 FAQ 聊天頁 |
+| `layouts/public-shell/public-shell.html` | `<head>` + skip-link + `chatbot-header`（同 chatbot-shell，無導覽）+ 一般文件流 `<main class="main" id="main">` > `.wrap`（含 sr-only h1）+ `footer`。**無** Manager 導覽、**無** `ui/faq-launcher`（那是登入態才有）、**不**鎖 body 捲動 | 公開唯讀分享頁 `shared.html`；front matter 必填 `titleKey` / `pageHeading`，不設 `bodyClass` |
 | `layouts/base/base.html` | 只有 `<head>` + 空白外框 + script 清單 | 登入頁、404、頁面目錄、元件總覽（各自在內容裡放唯一的 h1） |
 
-深色模式與中英切換的旗標掛在 `<html data-theme>` / `<html lang>`，由 `base.html` `<head>` 的 no-flash 內聯腳本初始化，`ui/theme-toggle`、`ui/lang-toggle` 負責切換；三個 layout 都吃得到。
+深色模式與中英切換的旗標掛在 `<html data-theme>` / `<html lang>`，由 `base.html` `<head>` 的 no-flash 內聯腳本初始化，`ui/theme-toggle`、`ui/lang-toggle` 負責切換；每一個 layout 都吃得到（它們全部 chain 到 `base.html`）。
 
 ---
 

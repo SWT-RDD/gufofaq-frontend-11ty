@@ -1,0 +1,103 @@
+---
+layout: layouts/public-shell/public-shell.html
+title: GufoFAQ::分享的對話
+titleKey: shared.title
+pageHeading: 分享的對話
+permalink: shared.html
+---
+{# 公開唯讀分享檢視：後台把某一筆問答建成連結（4-2 的「分享」→ components/share-manage-modal）之後，
+     **外部訪客不登入**就能開的那一頁。真實網址帶 token（React 的 `/shared/{token}`），切版是靜態頁，
+     故 permalink 只留 `shared.html`（站內其他頁的 `<編號>_<名>` 是後台功能編號，這一頁不在那套編號裡，
+     同 `faq.html`）。
+
+   外殼走 layouts/public-shell（公開品牌 chrome ＋ 一般文件流），理由逐條寫在該外殼檔頭。
+
+   **本頁是無導覽入口頁**（§3-1 第③條）：真實情境的入口就是使用者手上那條含 token 的網址，站內沒有、
+   也不該有任何一頁連到它（後台那一側連得到的是「管理已建立的連結」＝4-2 的 components/share-manage-modal，
+   不是連結本身）。切版把它收在 catalog.html 的頁面目錄，否則部署後只有知道確切檔名的人開得到。
+
+   ── 畫哪些欄（逐欄對回正本回應）────────────────────────────────────────────────
+   端點：gufofaq-saas product `app/routers/share.py` 的 `view_shared`（`GET /shared/{token}`），
+   response_model 是同檔的 `SharedOut`，**只有三個欄位**：`question`／`answer`／`time`，三個都畫了：
+     · `time` → 「對話時間」。型別是 `str | None`（上游 chat log 的 `human_time` 逐字轉發），
+        故 null 那一態畫「—」，不留白（留白會被讀成「這一則沒有時間」）。
+     · `question` → 「使用者對話內容」
+     · `answer` → 「AI對話內容」
+   request 側只有路徑上的 token，沒有任何查詢參數，故畫面上沒有對應的控制項。
+   **刻意不畫**滿意度／意見回饋／系統提示詞／模型與筆數／參考來源——不是版面取捨，是上游沒有回：
+     `SharedOut` 就那三個欄位（同一筆問答的完整欄位要登入態的 `app/routers/history.py`）。
+     連帶：答案內文**不放 `components/citation-ref` 的 `[[N]]` 徽章**——那顆徽章點下去要跳到同頁的
+     參考來源表（`GufoSources.reveal`），而這一頁結構上沒有來源表，畫了就是指向不存在的東西。
+
+   ── 閘門（§4：查證過不需要的要留痕跡）────────────────────────────────────────
+   這一頁**不掛任何 `data-capability`／`data-tenant-feature`／`data-tenant-role`／`data-platform-role`**：
+   `view_shared` 是全服務唯一一支不需要任何憑證的端點（它的 docstring 逐字寫著這件事），沒有 `require_*`
+   相依可對。它的守衛全在後端、而且**每一個出口都是 404**——逐個數過：token 查無或已撤銷、已過期、
+   `subscription.status(...)` 非 ACTIVE、`tenant_has_feature(db, …, "history")` 為否、上游 chat log
+   不存在或不屬該租戶，五個 `raise HTTPException` 全是 404（同檔註解寫明「不分辨…不洩漏租戶狀態」），
+   另有一個非 404 出口是 `enforce_shared_link_rate_limit` 的 429。所以對訪客而言那些閘不是「按不動的鈕」，
+   而是下面那兩個錯誤態。頁面上也沒有任何控制項（唯讀檢視，零按鈕、零表單）。
+
+   ── 三種狀態，各自的渲染點 ──────────────────────────────────────────────────
+   ① 正常態：**本頁**。
+   ② 連結無效／已撤銷／過期（HTTP 404）與 ③ 被節流（HTTP 429）：`.error-page` 整頁錯誤版型的兩份
+      markup 住在 `ui/error-page/error-page.html`，由元件庫頁（component.html §25）渲染——靜態頁一次
+      只演得出一態，而這兩態的**版型是同一顆原子**，並排放才看得出它們刻意不共用同一句話
+      （§5：分支的單位是版型，一處演過就夠）。兩態不共用文案的理由寫在那支片段的檔頭。
+   ④ 載入中（React 的 `common.loading`）**刻意不切**：那是執行期狀態，切版沒有請求可等；
+      跨 repo 已有共識（saas `apps/web/lib/i18n/parity.test.ts` 的 `REACT_ONLY` 把「載入中」這一類
+      逐字列為 React-only）。
+
+   ── 示範資料 ───────────────────────────────────────────────────────────────
+   **刻意不是 4-2 的那一筆（#12173 新住民結婚注意事項）**：那則答案的長文正本只有一份、住在
+   `components/qa-detail-info`，逐字抄第二份必然分岔；而分享頁畫不出對話編號（`SharedOut` 沒有 id），
+   讀者推導不到它是哪一筆，故換一則問答不構成跨頁不自洽。答案是長文／格式化內容，依 §3-2 直接寫在
+   markup 當樣式示範（正式環境是 markdown 渲染的結果）——這一格落在 `.td`、沒有 `.robot-msg` 那層祖先，
+   故條列一律自己掛 `list-style-disc`（`ui/list-style`），否則項目符號整片消失。 #}
+{% set sharedTime = "2025/03/14 09:41:07" %}
+{% set sharedQuestion = "新住民申請永久居留要準備哪些文件？" %}
+<div class="block block-sm mt-16">
+    <div class="form-table-wrap">
+        <div class="form-table-group">
+            <div class="subtitle" data-i18n="shared.title">分享的對話</div>
+            <div class="form-table">
+                <div class="row">
+                    <div class="col col-12-md">
+                        <div class="th" data-i18n="qa.conversationTime">對話時間</div>
+                        <div class="td">{{ sharedTime or "—" }}</div>
+                    </div>
+                    <div class="col col-12-md">
+                        <div class="th" data-i18n="qa.userMessage">使用者對話內容</div>
+                        <div class="td">{{ sharedQuestion }}</div>
+                    </div>
+                    <div class="col col-12-md">
+                        <div class="th" data-i18n="qa.aiMessage">AI對話內容</div>
+                        <div class="td">
+                            您好！新住民申請永久居留（永久居留證）通常要備齊以下文件，實際項目仍以受理單位公告為準：
+                            <h3>1. 基本身分文件</h3>
+                            <ul class="list-style-disc">
+                                <li><strong>申請書</strong>：可於移民署各縣市服務站現場索取或線上填寫。</li>
+                                <li><strong>有效護照與居留證</strong>正本及影本。</li>
+                                <li>最近 6 個月內的彩色照片。</li>
+                            </ul>
+                            <h3>2. 居留期間與品行證明</h3>
+                            <ul class="list-style-disc">
+                                <li>入出國日期證明書（用來計算連續居留的天數）。</li>
+                                <li>國內外的刑事紀錄證明；在國外取得者需經驗證。</li>
+                            </ul>
+                            <h3>3. 財力或生活能力證明</h3>
+                            <ul class="list-style-disc">
+                                <li>最近一年的所得或財產證明，或是在職證明與薪資單。</li>
+                                <li>由臺灣國民擔任保證人時，另附保證書與保證人的身分證明。</li>
+                            </ul>
+                            <p>各項文件的份數與有效期限可能因個案而不同，建議在送件前先向居住地的移民署服務站確認一次，避免臨櫃補件。</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {# 免責提示：它是**產品自己的 chrome**（每一條分享連結都印同一句），不是租戶在後台打的免責聲明
+         內文（那一份是資料、不翻，見 components/disclaimer-modal），故照常掛 data-i18n。 #}
+    <p class="text-gray mt-16" data-i18n="shared.aiDraftNotice">本連結內容由 AI 系統初步產出，僅作為草稿或參考依據使用，尚未經人工確認或修改，若需進一步採用，請先檢閱並確認內容之正確性與完整性。</p>
+</div>

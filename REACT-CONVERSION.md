@@ -29,8 +29,8 @@
   （反例提醒：`ui/block`、`ui/error-page` **有** `<name>.html`，只是那份只被元件庫頁 include 當展示片段——
   「有沒有 html」用 `git ls-files` 查，別憑印象分類。）
 - **四支不走 page-shell 的頁面各有不同結局**（名單＝`git grep -l "layout: layouts/base/base.html" -- src ':!src/_includes'`——
-  **要排除 `src/_includes`**：`page-shell` 與 `chatbot-shell` 自己也 `layout: layouts/base/base.html`（layout chaining），
-  不加那段排除會撈到六筆而不是這四頁）：
+  **要排除 `src/_includes`**：`page-shell`／`chatbot-shell`／`public-shell` 自己也
+  `layout: layouts/base/base.html`（layout chaining），不加那段排除會撈到七筆而不是這四頁）：
   `src/login.html` → 真路由（`app/login/page.tsx`，`layouts/base` 的直接消費者，自帶 `<form id="loginForm">`
   ——全站唯一一個 `<form>`，React 端換回 `type="submit"` ＋ `onSubmit(preventDefault)`）；
   `src/404.html` → `app/not-found.tsx`；
@@ -161,7 +161,7 @@
 - **`{% for %}` 內的 `{% set X = item %}` ＋ `{% include %}`（切版的逐列元件用法）** →
   `{rows.map(r => <RecordIdentity key={r.id} {...r}/>)}`。這是切版在沒有 props 的語言裡傳參數的唯一辦法，
   不是狀態；轉過去之後那個中介變數就消失了。
-- **`{{ content | safe }}`（三支 layout 各一）→ `{children}`**。切版的頁面內容就是從這個洞注進 layout 的；
+- **`{{ content | safe }}`（每支 layout 各一）→ `{children}`**。切版的頁面內容就是從這個洞注進 layout 的；
   它不是 `dangerouslySetInnerHTML`。
 - markup 完整照切版：wrapper、`aria-*`、`title` 全數帶到。
 - a11y 綁定屬性成對帶：`aria-labelledby`／`aria-describedby` 連同它指到的 `id` 一起轉，兩端缺一不可
@@ -226,7 +226,7 @@
 
 ### layouts → route layout
 
-切版有三支 layout，逐支對照如下：
+切版有四支 layout，逐支對照如下：
 
 - **`layouts/base`** → root layout（`app/layout.tsx`）。它提供的東西**逐項都要有落點**，不是包一層 div 就好：
   - `<html lang>` ＋ `data-page-title-key`：前者由語言 state 同步（§③），後者是切版給 `lang-toggle` 重譯 `<title>` 用的，**不帶過去**——React 用 metadata / `useTranslation` 直接產生 title。
@@ -245,8 +245,19 @@
   它提供的東西逐項都要有落點：`.skip-link`（`href="#main"`，§4 強制）、`components/chatbot-header`、
   `<main class="chatbot-main" id="main" tabindex="-1">`（`tabindex="-1"` 是 skip-link 的落點）、
   自帶 sr-only h1、`components/footer`。少帶 skip-link 與 footer 是照這一條的舊版直翻最容易掉的兩樣。使用頁 front matter 的 `bodyClass: chatbot-page` 讓 body 不整頁捲動（`_chatbot-shell.scss`）——React 端要在該 route 的 `<body>`／根容器加同一個 class，否則前台聊天會變成雙捲軸。
+- **`layouts/public-shell`** → 公開唯讀分享頁的 route layout（`app/shared/layout.tsx`）。它是**混血**：
+  chrome 取自 chatbot-shell、版位取自 page-shell，所以兩邊直翻都會翻錯一半。逐項落點：
+  `.skip-link`（`href="#main"`）、`components/chatbot-header`、`<main class="main" id="main" tabindex="-1">`
+  ＞ `<div class="wrap">`、**每頁唯一的 sr-only `<h1>`**（同 page-shell，內容來自 front matter 的
+  `pageHeading`／`titleKey`——**h1 的家在 layout，不在頁面**）、`components/footer`。
+  三個「不要帶」同樣是契約：**不帶** `components/header`（Manager 導覽對未登入訪客是死連結）、
+  **不帶** `ui/faq-launcher`（它的出現條件就是登入態）、**不帶** `bodyClass: chatbot-page`
+  （公開分享頁要能整頁捲動，套上 chatbot-shell 的 `100vh + overflow:hidden` 會裁掉長對話）。
+  它自己**沒有** scss：`.main` 沿用 `layouts/page-shell/_page-shell.scss` 那一份（React 端即
+  兩個 route layout 各 import 同一支），`.wrap`／`.skip-link` 在全域層。
 
-三支 layout **各有一支** `layouts/<模板名>/_<模板名>.scss`（`main.scss` 以 `as layout-base`／`as layout-page-shell` 消歧）——
+四支 layout 中**有三支各有一支** `layouts/<模板名>/_<模板名>.scss`（`main.scss` 以 `as layout-base`／
+`as layout-page-shell` 消歧；`public-shell` 沒有自己的樣式，見上一條）——
 `layouts/base/_base.scss` 裝的正是本節說「不可省略或改名」的 `.full-wrap`，`layouts/page-shell/_page-shell.scss`
 裝的是撐開它讓頁尾貼底的 `.main { flex: 1 0 auto }`。**三支都要搬**，漏掉任何一支 `scss-diff` 都不會紅
 （它是逐對比清單，沒登記就沒有東西可比）；
