@@ -214,7 +214,7 @@ permalink: 3-4_skillManagement.html
      正是那條註解明文拒絕外送的形狀。 #}
 {% set stepFlowNodes = [
   { label: "輸入合規檢查", state: "completed", time: "6ms" },
-  { label: "QA 直答", state: "completed", time: "14ms",
+  { label: "QA 直答比對", state: "completed", time: "14ms",
     decision: "not_attempted", entry: "pre_graph", poolSize: "0" },
   { label: "初始化對話", state: "completed", time: "10ms" },
   { label: "Agent 推理", state: "completed", time: "280ms", thinking: "使用者問「能退多少錢」，用途說明命中 refund-flow，決定呼叫它。" },

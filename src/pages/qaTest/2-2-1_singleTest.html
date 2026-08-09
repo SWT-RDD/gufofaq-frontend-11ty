@@ -200,10 +200,19 @@ permalink: 2-2-1_singleTest.html
 </div>
 
 {# 執行流程（測試區詳細觀測）：類 mermaid 直式流程圖——含合規閘的完整正典管線依序畫出、即時點亮
-     當前步驟，每節點可展開看工具/參數/結果/grounding 判定/agent 推理，頂端整體執行摘要。
+     當前步驟，每節點可展開看工具/參數/結果/grounding 判定/agent 推理。
      取代原分開的 agent-activity（工具軌跡）＋ step-timeline（步驟列），統一成一處。
      真值由 React 端串流事件驅動（lib/sse steps/toolActivity/thinkingByNode/summary + lib/stepFlow）；
-     示範假資料住元件內（見該元件檔頭註解）。 #}
+     示範假資料住元件內（見該元件檔頭註解）。
+   **這一頁的單一敘事＝「這一輪還在跑」**（§6 同頁自洽，全站唯一演這一態的頁）：
+     上半聊天區已經演著串流中的第二問（`components/chatroom` 的狀態列「搜尋資料中…」，有字、沒有
+     回覆泡泡），流程圖這一半就必須是同一時刻——生成答案 running、其後 pending、**頂端沒有執行摘要**。
+     摘要五欄全部來自整輪收尾才發的 `chat_room` 塊，`model` 更是只有重播那條路拿得到
+     （product 的 `_CHAT_ROOM_PUBLIC_KEYS` 沒有 `model_name`；saas `apps/web/lib/sse.ts` 的
+     chat_room 分支逐字寫著「永遠讀不到」）⇒ 串流中的畫面報得出 Token／延遲／首字／模型是
+     上下半互斥。**故本頁不設 stepFlowSummary、也不設結果截斷那一對**（「看完整輸出」要 chat log id，
+     即時那一輪還沒有：saas `components/StepFlow` 的 `onViewFullOutput` 以 `logId === undefined`
+     為不渲染條件）。跑完並落庫那一態由 4-2 詳情頁與 2-2-3 演（那兩頁都是重播）。 #}
 {% include "components/step-flow/step-flow.html" %}
 
 {# 參考來源表格區塊：真實頁預設 hidden（點擊訊息列「查看來源」才顯示），表頭與 components/sources-block 一致，

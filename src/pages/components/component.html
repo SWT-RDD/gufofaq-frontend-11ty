@@ -766,8 +766,9 @@ bodyClass: guideline-page
             <h2 class="section-title"><span>23</span><span>執行流程觀測</span></h2>
             <div class="caption">
                 <ul>
-                    <li>components/step-flow：後台測試區（單測 2-2-1／AB 2-2-3）的詳細執行觀測——把整條正典管線畫成類 mermaid 直式流程圖，頂端整體執行摘要，每節點可展開看工具/參數/結果/grounding 判定/agent 推理</li>
-                    <li>狀態點：is-completed（綠）／is-running（深墨，當前高亮）／is-skipped（空心環，未走分支）／is-failed（紅）／pending（灰）。真實頁演到 completed／running／pending（2-2-1／2-2-3 走元件內建示範）與 failed（3-4 的試跑沙盒）；<strong>只有 is-skipped 沒有任何生產頁演得到</strong>，靠這一節活著（GUIDELINE §5：scss 狀態 class 沒有頁面演得出＝補元件庫靜態示範）</li>
+                    <li>components/step-flow：後台測試區（單測 2-2-1／AB 2-2-3 <strong>每側各一份</strong>）與問答紀錄詳情（4-2）的詳細執行觀測——把整條正典管線畫成類 mermaid 直式流程圖，每節點可展開看工具/參數/結果/grounding 判定/agent 推理</li>
+                    <li>頂端的整體執行摘要<strong>有條件</strong>：五欄全部來自整輪收尾才發的 <code class="inline-code">chat_room</code> 塊、<code class="inline-code">model</code> 更是只有重播那條路拿得到，所以還在串流的那一輪（2-2-1）整列不渲染；給得出摘要的頁＝在演一筆重播的落庫紀錄</li>
+                    <li>狀態點：is-completed（綠）／is-running（深墨，當前高亮）／is-skipped（空心環，未走分支）／is-failed（紅）／pending（灰）。真實頁演到 completed（2-2-3 兩側、4-2、3-4）、running 與 pending（<strong>只有 2-2-1</strong>——它是全站唯一演「這一輪還在跑」的頁，走元件內建示範；2-2-3 兩側與 4-2 演的是跑完並落庫的重播，全 completed）與 failed（3-4 的試跑沙盒）；<strong>只有 is-skipped 沒有任何生產頁演得到</strong>，靠這一節活著（GUIDELINE §5：scss 狀態 class 沒有頁面演得出＝補元件庫靜態示範）</li>
                     <li>進度「目前 X / N」與摘要「檢索」筆數全由節點資料推導、不烤字面量；收合復用 ui/accordion，本元件不自帶 js</li>
                 </ul>
             </div>
@@ -791,10 +792,10 @@ bodyClass: guideline-page
                節點仍畫在第 2 站——`computeFlow` 是照正典序畫、再用事件點亮，不是照事件到達順序排。 #}
             {% set stepFlowNodes = [
                 { label: "輸入合規檢查", state: "completed", time: "9ms" },
-                { label: "QA 直答", state: "completed", time: "240ms", decision: "no_exact_and_judge_rejected", entry: "agent_tool", poolSize: "1", hits: "客服問答集 / 這個型號保固多久", score: "4.1", floor: "3（llm_reranker 的 1–5 尺）" },
+                { label: "QA 直答比對", state: "completed", time: "240ms", decision: "no_exact_and_judge_rejected", entry: "agent_tool", poolSize: "1", hits: "客服問答集 / 這個型號保固多久", score: "4.1", floor: "3" },
                 { label: "初始化對話", state: "completed", time: "11ms" },
                 { label: "Agent 推理", state: "completed", time: "320ms", thinking: "先判斷是否需要檢索工具，再決定生成策略。" },
-                { label: "檢索知識庫", state: "completed", time: "1.4s", tools: "search_knowledge_base", params: "{ query: '示範查詢' }", result: "命中 3 筆片段（相似度 0.74–0.88），注入後續生成脈絡。" },
+                { label: "檢索知識庫", state: "completed", time: "1.4s", tools: "search_knowledge_base", params: "[1/1] query: string", result: "命中 3 筆片段（相似度 0.74–0.88），注入後續生成脈絡。" },
                 { label: "可回答性判定", state: "completed", time: "160ms", verdict: "generate（素材足以回答）" },
                 { label: "生成答案", state: "failed", time: "1.2s", result: "生成時偵測到不允許的外部連結，已攔截並中止本次回答。" },
                 { label: "生成推薦問題", state: "skipped", time: "" },
@@ -842,24 +843,24 @@ bodyClass: guideline-page
                  「真實執行流程」都不可能同時畫得出判定層與後面的生成節點，只有狀態目錄演得到。
                  §2：同一頁第二次用到同元件，**全部參數都要重設**（set 是頁面全域）。 #}
             {% set stepFlowNodes = [
-                { label: "QA 直答", state: "completed", time: "18ms", decision: "hit", entry: "pre_graph",
+                { label: "QA 直答比對", state: "completed", time: "18ms", decision: "hit", entry: "pre_graph",
                   poolSize: "16", hits: "客服問答集 / 新住民結婚登記要準備什麼文件？",
-                  score: "4.6", decidedBy: "score_floor", floor: "3（llm_reranker 的 1–5 尺）" },
-                { label: "QA 直答", state: "completed", time: "12ms", decision: "hit", entry: "agent_tool",
+                  score: "4.6", decidedBy: "score_floor", floor: "3" },
+                { label: "QA 直答比對", state: "completed", time: "12ms", decision: "hit", entry: "agent_tool",
                   matchedRank: "1", poolSize: "1", hits: "產品問答集 / 這個型號保固多久", decidedBy: "exact" },
-                { label: "QA 直答", state: "completed", time: "240ms", decision: "no_exact_and_judge_rejected",
+                { label: "QA 直答比對", state: "completed", time: "240ms", decision: "no_exact_and_judge_rejected",
                   entry: "agent_tool", poolSize: "1" },
-                { label: "QA 直答", state: "completed", time: "26ms", decision: "below_score_floor",
-                  entry: "pre_graph", poolSize: "16", score: "2.4", floor: "3（llm_reranker 的 1–5 尺）" },
-                { label: "QA 直答", state: "completed", time: "9ms", decision: "no_exact_and_judge_rejected",
+                { label: "QA 直答比對", state: "completed", time: "26ms", decision: "below_score_floor",
+                  entry: "pre_graph", poolSize: "16", score: "2.4", floor: "3" },
+                { label: "QA 直答比對", state: "completed", time: "9ms", decision: "no_exact_and_judge_rejected",
                   entry: "agent_tool", poolSize: "1", reusedFrom: "pre_graph" },
-                { label: "QA 直答", state: "completed", time: "4ms", decision: "not_attempted", entry: "agent_tool" },
-                { label: "QA 直答", state: "completed", time: "31ms", decision: "reconstruct_failed",
+                { label: "QA 直答比對", state: "completed", time: "4ms", decision: "not_attempted", entry: "agent_tool" },
+                { label: "QA 直答比對", state: "completed", time: "31ms", decision: "reconstruct_failed",
                   entry: "pre_graph", matchedRank: "1", poolSize: "16" },
-                { label: "QA 直答", state: "completed", time: "220ms", decision: "hit", entry: "pre_graph",
+                { label: "QA 直答比對", state: "completed", time: "220ms", decision: "hit", entry: "pre_graph",
                   poolSize: "16", hits: "客服問答集 / 居留證遺失要怎麼補發", score: "4.2",
-                  decidedBy: "llm_judge", floor: "3（llm_reranker 的 1–5 尺）" },
-                { label: "QA 直答", state: "completed", time: "15ms", decision: "some_future_decision", entry: "pre_graph", poolSize: "16" }
+                  decidedBy: "llm_judge", floor: "3" },
+                { label: "QA 直答比對", state: "completed", time: "15ms", decision: "some_future_decision", entry: "pre_graph", poolSize: "16" }
             ] %}
             {# 摘要在這一份是**目錄的表頭**、不是某一輪的觀測：**九筆**判定不是同一輪發生的，所以
                  「檢索」只能是 0——這份示範一個檢索節點都沒有（原本寫 16，那是候選池大小 `poolSize`，

@@ -311,6 +311,50 @@ permalink: 2-2-3_abTest.html
                                                     <span class="tooltip" data-i18n="comp.share">分享</span>
                                                 </button>
                                             </div>
+                                            {# ── A 側的執行流程 ────────────────────────────────────────────
+                                                 **每側各一份、內嵌在自己的 .ab-compare-item 裡**（不是頁尾單一份）：
+                                                 AB 比較的語意就是兩側各跑一輪、各是一筆獨立 chat_log（product
+                                                 `routers/qatest.py` 的 `/compare` 是**單側**端點，前端對 A/B 各開一條
+                                                 串流、各自累積步驟），所以「這一輪怎麼跑的」本來就有兩份、而且正是
+                                                 使用者要並排比的東西。頁尾放一份等於問「這張流程圖是哪一側的」而
+                                                 答不出來。saas `apps/web/app/(app)/ab-test/page.tsx` 就是這個位置
+                                                 （`(["A","B"]).map` 的 `.ab-compare-item` 內、動作鈕列之後）。
+                                               **本頁兩側都演「跑完並落庫的重播」**（§6 單一敘事）：上面兩則答案都已
+                                                 完整渲染、讚/倒讚與分享都要有該側的 log_id 才做得了事，側欄也選著一筆
+                                                 既有的 AB 紀錄（`GET /qatest/ab-history`）⇒ 節點十站全 completed，
+                                                 摘要五欄齊備。**摘要的 `model` 只有重播那條路拿得到**（product 的
+                                                 `_CHAT_ROOM_PUBLIC_KEYS` 沒有 `model_name`，即時串流永遠讀不到），
+                                                 這一頁給得起，正是因為它演的是重播；反過來 2-2-1 演串流中，就不給摘要。
+                                               兩側的值**必須不同**：同一份設定跑兩次的畫面演不出 AB 的用途（§6）。
+                                                 模型逐側對上該側設定卡的 `llm`（A：openai:gpt-4o-mini／B：openai:gpt-4o）。
+                                               QA 直答那一站兩側**判否的理由刻意不同**（A 是裁判判否、B 是未達分數門檻）：
+                                                 兩側吃的是不同設定檔，這正是要比的東西之一；而**兩側都必須是未命中**
+                                                 ——命中是結構性短路（GufoRAG chatbot `services/agent_service.py` 的
+                                                 `after_tools`：不經 respond、grounding 同樣跳過），這一頁畫得出檢索與
+                                                 生成，那一站就不可能是 hit。`poolSize` ＝ max(取用資料筆數, MIN_CANDIDATE_POOL)
+                                                 ＝ max(16, 2) ＝ 16，16 就是本頁兩側「取用資料筆數」欄的值（§6 同頁同源）。
+                                               A 側摘要的推導（取整規則只有一份、寫在 step-flow 檔頭的 `formatMs`：
+                                                 ≥1s 一位小數四捨五入）：延遲＝十站耗時和
+                                                 8＋240＋10＋300＋1,100＋180＋2,200＋160＋9＋22 ＝ 4,229ms ⇒ **4.2s**；
+                                                 首字＝生成答案那一站的起點＝前六站的和 8＋240＋10＋300＋1,100＋180
+                                                 ＝ 1,838ms ⇒ **1.8s**；檢索 6 對上節點的「命中 6 筆」，也對得上這一側
+                                                 答案裡的兩個引用號 [[1]]／[[4]]（號碼不得大於檢索筆數）。 #}
+                                            {% set stepFlowNodes = [
+                                                { label: "輸入合規檢查", state: "completed", time: "8ms" },
+                                                { label: "QA 直答比對", state: "completed", time: "240ms", decision: "no_exact_and_judge_rejected", entry: "pre_graph", poolSize: "16", hits: "產品問答集 / UH3240 的介面規格", score: "3.4", floor: "3" },
+                                                { label: "初始化對話", state: "completed", time: "10ms" },
+                                                { label: "Agent 推理", state: "completed", time: "300ms", thinking: "問題要規格全表，決定先搜尋知識庫、必要時取回規格書全文。" },
+                                                { label: "檢索知識庫", state: "completed", time: "1.1s", tools: "search_knowledge_base", params: "[1/1] query: string", result: "命中 6 筆片段（相似度 0.81–0.93），注入後續生成脈絡。" },
+                                                { label: "可回答性判定", state: "completed", time: "180ms", verdict: "generate（素材足以回答）" },
+                                                { label: "生成答案", state: "completed", time: "2.2s" },
+                                                { label: "生成推薦問題", state: "completed", time: "160ms" },
+                                                { label: "完成對話", state: "completed", time: "9ms" },
+                                                { label: "輸出合規檢查", state: "completed", time: "22ms" }
+                                            ] %}
+                                            {% set stepFlowSummary = {
+                                                tokens: "1,096", latency: "4.2s", ttft: "1.8s", results: "6", model: "openai:gpt-4o-mini"
+                                            } %}
+                                            {% include "components/step-flow/step-flow.html" %}
                                         </div>
                                         <div class="ab-compare-item">
                                             <div class="message-content in-compare">
@@ -357,6 +401,32 @@ permalink: 2-2-3_abTest.html
                                                     <span class="tooltip" data-i18n="comp.share">分享</span>
                                                 </button>
                                             </div>
+                                            {# ── B 側的執行流程 ────────────────────────────────────────────
+                                                 位置與敘事的理由見 A 側那一則（同一個形狀，改一邊就要改另一邊）。
+                                                 §2：同頁第二次用到同元件，**全部參數重新 set**（set 是頁面全域，
+                                                 不重設就會沿用 A 側那一份，兩張圖畫成一模一樣）。
+                                               B 側摘要的推導（同一條取整規則）：延遲＝十站耗時和
+                                                 8＋220＋11＋420＋1,300＋200＋3,400＋210＋9＋24 ＝ 5,802ms ⇒ **5.8s**；
+                                                 首字＝前六站的和 8＋220＋11＋420＋1,300＋200 ＝ 2,159ms ⇒ **2.2s**；
+                                                 檢索 8 對上節點的「命中 8 筆」，也蓋得住這一側答案的引用號 [[2]]／[[6]]
+                                                 ——兩側的號碼各自從 1 起算、指的不是同一份文件（見上方對話區那則註解），
+                                                 所以檢索筆數也要各自與自己那一側的號碼對得上。 #}
+                                            {% set stepFlowNodes = [
+                                                { label: "輸入合規檢查", state: "completed", time: "8ms" },
+                                                { label: "QA 直答比對", state: "completed", time: "220ms", decision: "below_score_floor", entry: "pre_graph", poolSize: "16", hits: "產品問答集 / UH3240 支援哪些作業系統", score: "2.6", floor: "3" },
+                                                { label: "初始化對話", state: "completed", time: "11ms" },
+                                                { label: "Agent 推理", state: "completed", time: "420ms", thinking: "先取回規格書全文，再依使用者要的「完整規格」逐項整理。" },
+                                                { label: "檢索知識庫", state: "completed", time: "1.3s", tools: "search_knowledge_base", params: "[1/1] query: string", result: "命中 8 筆片段（相似度 0.76–0.90），注入後續生成脈絡。" },
+                                                { label: "可回答性判定", state: "completed", time: "200ms", verdict: "generate（素材足以回答）" },
+                                                { label: "生成答案", state: "completed", time: "3.4s" },
+                                                { label: "生成推薦問題", state: "completed", time: "210ms" },
+                                                { label: "完成對話", state: "completed", time: "9ms" },
+                                                { label: "輸出合規檢查", state: "completed", time: "24ms" }
+                                            ] %}
+                                            {% set stepFlowSummary = {
+                                                tokens: "1,342", latency: "5.8s", ttft: "2.2s", results: "8", model: "openai:gpt-4o"
+                                            } %}
+                                            {% include "components/step-flow/step-flow.html" %}
                                         </div>
                                     </div>
                                     <div class="message-time after-compare">13:30</div>
@@ -385,55 +455,6 @@ permalink: 2-2-3_abTest.html
         {% include "components/qa-side-panel/qa-side-panel.html" %}
     </div>
 </div>
-
-{# 執行流程（測試區詳細觀測）：類 mermaid 直式流程圖，取代原 agent 工具活動軌跡（併入流程圖節點）。
-     本頁對話問的是 UH3240 規格，故「節點與摘要一起覆寫」與之自洽（§6，stepFlowNodes／stepFlowSummary
-     元件專屬名）——摘要的檢索筆數要對上節點的「命中 6 筆」、模型對上選取的設定，否則同頁自打架。
-     元件內建預設節點是移民主題（配 2-2-1），見該元件檔頭註解。11ty 此處單處 demo 元件結構；React 端
-     AB 兩側各自即時渲染一份 StepFlow（每側獨立串流步驟，屬業務層——見 ab-test/page.tsx）。 #}
-{# QA 直答在本頁演「建圖前閘門判否」那一態。**命中是結構性短路**：GufoRAG chatbot
-     `services/agent_service.py` 的 `after_tools` 逐字「QA 原文本身就是回覆…刻意不經 respond…
-     grounding 同樣跳過」，`routes/_chat_stream.py` 的 `_qa_direct_stream` 也寫「不進 agent／生成節點」
-     ⇒ 一旦命中，本頁下面的檢索知識庫、可回答性判定、生成答案就都不可能存在（§6：示範資料演的
-     必須是上游做得出來的狀態）。原本這一節點掛著 `decidedBy: "exact"`（＝命中才有的判定層）卻又
-     繼續生成兩則答案，正是 round38d 在內建示範上修掉的那個組合。
-     故改成未命中那半的四個鍵，值彼此自洽：
-       · `decision` ＝ `no_exact_and_judge_rejected`（① 沒有逐字命中、③ 裁判判否）
-       · `entry` ＝ `pre_graph`——正典序（saas `apps/web/lib/stepFlow.ts` 的 `CANONICAL_PIPELINE.agent`）
-         第 2 站就是 qa_direct，位置本身即建圖前閘門
-       · `poolSize` ＝ max(取用資料筆數, MIN_CANDIDATE_POOL) ＝ max(16, 2) ＝ 16；16 就是本頁上面
-         兩側「取用資料筆數」欄的值（chatbot `services/qa_direct.py` 的 `_pool_size` 沿用
-         `search_total_number`，§6 同頁同源）
-       · `score` 3.4 ≥ `floor` 3 ⇒ 過了 ② 才輪得到 ③ 判否（低於門檻在 ② 就以 `below_score_floor`
-         收掉，那一態由 step-flow 內建示範／2-2-1 演）
-       · `decidedBy` **刻意不給**：上游只在 `DECISION_HIT` 的三個 `_rec` 帶 `gate=`，判否時必為 null。
-         三種判定層（exact／score_floor／llm_judge）都在元件庫頁的「判定結果狀態目錄」演得到。
-     節點清單與正典管線同長同序（首站 `input_gate`、qa_direct 第 2 站）：React 的 `computeFlow`
-     一進畫面就把 10 站全畫出來，少畫前兩站的靜態稿是它產不出來的形狀。
-     註解只能放在 {% set %} 之前：寫進運算式裡會 build 失敗（§2）。 #}
-{% set stepFlowNodes = [
-    { label: "輸入合規檢查", state: "completed", time: "8ms" },
-    { label: "QA 直答", state: "completed", time: "240ms", decision: "no_exact_and_judge_rejected", entry: "pre_graph", poolSize: "16", hits: "產品問答集 / UH3240 的介面規格", score: "3.4", floor: "3（llm_reranker 的 1–5 尺）" },
-    { label: "初始化對話", state: "completed", time: "10ms" },
-    { label: "Agent 推理", state: "completed", time: "300ms", thinking: "問題要規格全表，決定先搜尋知識庫、必要時取回規格書全文。" },
-    { label: "檢索知識庫", state: "completed", time: "1.1s", tools: "search_knowledge_base", params: "{ query: 'UH3240 USB-C 規格 特色' }", result: "命中 6 筆片段（相似度 0.81–0.93），注入後續生成脈絡。" },
-    { label: "可回答性判定", state: "completed", time: "180ms", verdict: "generate（素材足以回答）" },
-    { label: "生成答案", state: "running", time: "" },
-    { label: "生成推薦問題", state: "pending", time: "" },
-    { label: "完成對話", state: "pending", time: "" },
-    { label: "輸出合規檢查", state: "pending", time: "" }
-] %}
-{# 摘要是節點的衍生值（§6 能互相推導的要對得上）：TTFT ＝ 從 `_t0` 到第一個回答 token
-     （chatbot `routes/chat.py` 的 `_ttft_ms`），而生成答案要等前六站跑完 ⇒
-     8＋240＋10＋300＋1100＋180 ＝ 1,838ms ⇒ **1.8s**（取整規則只有一份、寫在 step-flow 檔頭：
-     `formatMs` 的 ≥1s 一位小數四捨五入，1.838 → 1.8。原本寫 450ms，比生成的起點還早；
-     上一輪改成 1.9s，數字對了但取整往上多進一格）。
-     延遲 2.1s 是本輪到目前為止的經過時間（生成中，故 > 1,838ms）；檢索 6 對上檢索節點的「命中 6 筆」
-     與下面那張來源表。 #}
-{% set stepFlowSummary = {
-    tokens: "1,096", latency: "2.1s", ttft: "1.8s", results: "6", model: "openai:gpt-4o-mini"
-} %}
-{% include "components/step-flow/step-flow.html" %}
 
 {# 參考來源表格區塊：與 2-2-1_singleTest 版本差異僅在標頭以 .js-sources-side 標示目前檢視的是哪一側（設定A/B），
      來源列資料 set sources（示範 2 筆）同樣交給 components/sources-block 內嵌 for 渲染。

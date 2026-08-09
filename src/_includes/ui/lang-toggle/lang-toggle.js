@@ -13,7 +13,7 @@
 //   <button type="button" class="info-btn" title="配置說明" data-i18n-title="qaTest.configInfo" data-open-modal="knowledgeModal">
 //   <input type="checkbox" class="switch-checkbox js-enable-citation" role="switch" aria-label="啟用引用標註" data-i18n-aria-label="settings.enableCitation">
 //   <img src="./images/icon_arrow_left_gray.png" width="48" height="48" decoding="async" alt="上一頁" data-i18n-alt="action.prevPage" class="icon">
-//   <button type="button" class="button button-border button-sm js-view-full-output" data-toast="完整輸出已載入|這一筆已經不在了，或不屬於這個租戶|載入失敗，請稍後再試" data-i18n-data-toast="toast.viewFullOutput" data-toast-type="success|warning|error" data-i18n="agent.viewFullOutput">看完整輸出</button>
+//   <button type="button" class="button button-border button-sm js-load-full-trace" data-toast="完整軌跡已載入|這一筆已經不在了，或不屬於這個租戶|載入失敗，請稍後再試" data-i18n-data-toast="toast.loadFullTrace" data-toast-type="success|warning|error" data-i18n="agent.loadFullTrace">載入完整軌跡</button>
 //
 //   下面那張表就是本檔 ATTRS 的內容，**五顆，不是三顆**——漏掉 data-toast／alt 那兩顆的下場是
 //   「英文模式按下去彈出一則繁中 toast」「英文模式的圖片 alt 還是繁中」，兩者視覺指紋都看不出來：

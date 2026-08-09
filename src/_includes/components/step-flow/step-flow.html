@@ -50,18 +50,40 @@
        reusedFrom —— 這個結論是重用前一道的。掛在徽章旁當小標、**不做成第六種徽章**：它修飾的是
          「結論怎麼來的」，而重用可能重用命中、也可能重用判否，一個值講不清楚是哪一種。
      **同一輪出現兩個 qa_direct 節點是正常的**（建圖前判否 → agent 又判一次），逐筆依序畫、不去重。
+   **節點示範資料的三條上游形狀**（§6：演的必須是上游做得出來的狀態）。三處同源——本檔的內建示範
+     ＋每一份使用頁的 `stepFlowNodes`——改一處就要一起改：
+     ① **`params` 只印得出形狀、印不出值。** product `app/routers/ask.py` 的
+        `_project_agent_tool_call_data`／`_project_agent_tool_result_data` 把 `args` **原文不送**，
+        改送 `_args_shape` 導出的 `args_shape`（鍵名 `_ARGS_SHAPE_KEY`）：只有**鍵名 ＋ 值的 JSON
+        型別名**，值、字串長度、陣列筆數一律不出，且不遞迴巢狀。三個轉發入口共用同一支
+        `_strip_chat_room_secrets`（`/ask` 與 `/public/ask` 的 `run_ask_stream`、`routers/qatest.py`
+        的單測串流、同檔 `/compare` 的 AB 單側）⇒ **後台測試區沒有「內部所以給原文」那條路**。
+        畫面字串由 saas `components/StepFlow` 的 `formatArgsShape` 組：
+        `[已列出/實際帶了] 鍵: 型別, 鍵: 型別`（那兩個數字的差是截斷唯一的出口，且兩個都來自
+        payload、不抄後端上限）⇒ 示範值一律寫成 `[1/1] query: string` 這種形狀。
+        `{ query: '新住民 結婚 應備文件' }` 是那支 API **結構上**送不出來的東西。
+     ② **`floor` 是純數字。** 上游 `score_floor` 的型別是 `float | None`（GufoRAG chatbot
+        `app/services/qa_direct.py` 的 `_score_floor` → `relevance_judge.resolve_score_floor`），
+        沒有單位、沒有尺標註記。`3（llm_reranker 的 1–5 尺）` 是替一個不存在的欄位編字面；
+        「這是哪一把尺」要讓人知道的話，那件事**已經有家了**——`ui/score-scale-note`（5-2 對話設定頁
+        的分數尺說明，逐字「llm_reranker：1–5（分數越高越相關）」），不是塞進這一格的值裡。
+     ③ **節點 `label` 逐字照抄** GufoRAG chatbot `app/models/chat.py` 的 `STEP_LABELS`——
+        `qa_direct` 是 **「QA 直答比對」**。其餘十一顆本來就逐字相同，只有這一顆自己縮寫成
+        「QA 直答」；而 React 端顯示名是以 `step_id` 查自己的字典（`stepNode.qa_direct`），
+        字面分岔時畫面不會報錯，只會兩邊各說各話。
    參數：stepFlowNodes（選填，[{ label, state, time, depth, skill, version, iterations, error,
-     tools, params, result, resultShown, resultLength, verdict, thinking,
+     tools, params, result, verdict, thinking,
      hits, score, decidedBy, floor, decision, entry, matchedRank, poolSize, reusedFrom }]）
      ——**值域含 0 的欄一律以「字串」傳入**（`poolSize: "0"`、`score: "0"`、`matchedRank: "1"`、
-       `iterations: "0"`、`resultShown: "0"`）：這些欄的渲染條件是 `{% if node.X %}` 真值判斷，而
+       `iterations: "0"`）：這些欄的渲染條件是 `{% if node.X %}` 真值判斷，而
        nunjucks 把數字 `0` 判成 false ⇒ 上游真的送 0 那一列會**靜默整列消失**（`pool_size=0` 正是
        建圖前閘門 `not_attempted` 的實際值，`score=0` 同理是真實可達的分數）。轉 React 之後**壞法
        還不一樣**：`{n && <tr/>}` 不會消失，它會把那顆 `0` 印在畫面上。兩邊都錯、而且錯得不一樣，
        所以在**資料這一層**收斂成字串——`"0"` 在 nunjucks 是 true、在 JSX 也照樣渲染。
        （不改成 `is defined` 的理由：那會讓「上游沒送這個鍵」與「送了但為空字串」變成兩種寫法，
        而元件現在對兩者的處置相同。）
-     ——`resultShown`／`resultLength` **必須成對**（工具輸出被截斷時才給；只給一半那一列會渲染出空格）；
+     ——工具結果**只有一個 `result` 欄、沒有截斷指標**（先前那一對 `resultShown`／`resultLength`
+       已整段移除，理由逐條寫在下方「結果」那一列的註解裡：上游兩條路都沒有可讀的數字長度欄）；
        `decidedBy` 只在 `decision == "hit"` 時有值（上游只在 `DECISION_HIT` 的判定紀錄帶 `gate=`；值域是 `GATE_EXACT`／`GATE_SCORE_FLOOR`／`GATE_LLM_JUDGE`——不寫死幾處 `_rec`，§3-2）、
        `matchedRank` 只在 **① 完全命中那一層**有值（`hit` 走 `exact` 與 `reconstruct_failed` 兩種收尾，
        其餘 `_rec` 一個都不帶）——硬給就是演一個 API 產不出的組合。
@@ -83,23 +105,38 @@
      stepFlowSummary（選填，{ tokens, latency, ttft, results, model ＋選填成對的 tokensIn／tokensOut }）
      ——使用頁換對話主題時「兩個一起覆寫」，
      否則摘要（檢索筆數/模型）會與節點對不上（§6 自洽）；內部變數用元件專屬名 stepFlowNodeRows／stepFlowSummaryData。
+     ——**沒給就整列不渲染**（不是退回一份內建摘要）：五欄全部來自 `chat_room` 塊，而那一塊是 chatbot
+       在**整輪收尾**才發（GufoRAG chatbot `routes/chat.py` 的兩個發射點與 `routes/_chat_stream.py`
+       的 `_qa_direct_stream`：`latency_ms`／`ttft_ms` 都是量到 `_t_end` 才填進 payload）
+       ⇒ **還在串流的那一輪畫不出摘要**。saas `components/StepFlow` 就是這個條件——整列的渲染條件是
+       `metrics.length > 0 || truncated?.steps !== undefined`，逐欄也是「缺欄不顯示」。
+     ——**`model` 只有重播那條路拿得到**：product 的 `_CHAT_ROOM_PUBLIC_KEYS` 沒有 `model_name`
+       （連 `usage.model` 都被剝掉），saas `apps/web/lib/sse.ts` 的 chat_room 分支逐字寫著
+       「這裡讀不到 `model_name`…而且永遠讀不到」；它的正當來源是 `lib/traceReplay` 讀
+       `/api/history/{logId}`（那一支的 `_PUBLIC_LOG_FIELDS` 有它）。
+       ⇒ **給了 `model` 的使用頁＝在演一筆重播的落庫紀錄**：那一頁的節點不得有 running／pending，
+       聊天區也不得同時演「正在生成」。反過來，演串流中的那一頁不給 stepFlowSummary。
      stepFlowTraceShown ＋ stepFlowTraceTotal（選填，成對）＝**原始事件軌跡被引擎夾掉**那一態的兩個數字；
      兩個都沒給＝未截斷（整段不渲染，見下方 S3 那段註解）。它們與節點數不同源、不互相推導：
      正典管線是固定長度的**摘要**，軌跡是產生它的原始事件流（8 個節點配 231 筆事件不衝突）。
      **不覆寫＝主動採用內建示範**，那份示範必須與使用頁的其他內容自洽（內建示範是移民主題，配 2-2-1）。
+     **內建示範演的是「這一輪還在跑」**（2-2-1 單測的唯一敘事）：生成答案 running、其後 pending、
+       **沒有摘要**（`stepFlowSummary` 不設）、**沒有結果截斷那一對**。這是全站唯一演得到
+       is-running／pending 與聊天區串流狀態列的地方——4-2 詳情頁與 2-2-3 演的是跑完並落庫的重播，
+       兩態各有一頁，不重複也不留空（§5）。
    進度「目前 X / N」只數**正典管線節點**（無 depth 者）：N＝正典節點數、X＝已執行到的最後一個正典節點序號。
      巢狀子步驟不計入——它們是某一站底下的細節，算進分母會讓進度隨串流冒出子步驟而倒退（正典管線是
      固定長度，見 saas `lib/stepFlow` 的 CANONICAL_PIPELINE）。不烤字面量：使用頁改節點數，烤死的總數就會說謊（§6）。
    示範資料＝假資料（工具名/參數/結果/推理），依 GUIDELINE §4-2「只翻 UI chrome、不翻假資料」不掛 data-i18n。 #}
 {% set stepFlowNodeRows = stepFlowNodes or [
     { label: "輸入合規檢查", state: "completed", time: "8ms" },
-    { label: "QA 直答", state: "completed", time: "18ms",
+    { label: "QA 直答比對", state: "completed", time: "18ms",
       hits: "客服問答集 / 新住民結婚登記要準備什麼文件？",
-      score: "2.4", floor: "3（llm_reranker 的 1–5 尺）",
+      score: "2.4", floor: "3",
       decision: "below_score_floor", entry: "pre_graph", poolSize: "16" },
     { label: "初始化對話", state: "completed", time: "12ms" },
     { label: "Agent 推理", state: "completed", time: "340ms", thinking: "先判斷是否需要檢索；問題涉及具體規定，決定呼叫知識庫搜尋。" },
-    { label: "檢索知識庫", state: "completed", time: "1.2s", tools: "search_knowledge_base", params: "{ query: '新住民 結婚 應備文件' }", resultShown: "500", resultLength: "19500", result: "命中 8 筆片段（相似度 0.79–0.92），依相似度排序後注入後續生成脈絡。前三筆來自「新住民結婚登記須知」：第一筆說明雙方當事人須親自到任一戶政事務所辦理，並備妥雙方身分證、印章、戶口名簿與三個月內之戶籍謄本；第二筆列出外籍配偶應另備經我國駐外館處驗證之單身證明與出生證明，且文件如為外文須附中文譯本並經驗證；第三筆說明部分國籍之當事人另須完成境外面談，面談未通過者不予登記。第四至第六筆來自「跨國婚姻健康檢查與居留」：包含健康檢查項目、居留簽證與外僑居留證之申請時程，以及未於期限內辦理的罰則。第七筆為各縣市新住民家庭服務中心的通譯服務申請方式與免費諮詢管道。第八筆為常見退件原因彙整，其中以譯本未經驗證與戶籍謄本逾期兩項最多。第九筆之後為相似度低於門檻的候選，未納入本次脈絡。另補充：結婚登記自登記之日起生效，未辦理登記者婚姻關係不成立；當事人如已於境外辦妥結婚，仍須持經驗證之結婚證明文件回國辦理登記，並注意譯本有效期限。戶政事務所受理後如發現文件不全，會當場開立補正通知，補正期限內未補齊者將予退件。最後，若當事人之一為未成年人，另須法定代理人同意書並一併驗證。（本段為節錄前段，餘略）" },
+    { label: "檢索知識庫", state: "completed", time: "1.2s", tools: "search_knowledge_base", params: "[1/1] query: string", result: "命中 8 筆片段（相似度 0.79–0.92），依相似度排序後注入後續生成脈絡。前三筆來自「新住民結婚登記須知」：第一筆說明雙方當事人須親自到任一戶政事務所辦理，並備妥雙方身分證、印章、戶口名簿與三個月內之戶籍謄本；第二筆列出外籍配偶應另備經我國駐外館處驗證之單身證明與出生證明，且文件如為外文須附中文譯本並經驗證；第三筆說明部分國籍之當事人另須完成境外面談，面談未通過者不予登記。第四至第六筆來自「跨國婚姻健康檢查與居留」：包含健康檢查項目、居留簽證與外僑居留證之申請時程，以及未於期限內辦理的罰則。第七筆為各縣市新住民家庭服務中心的通譯服務申請方式與免費諮詢管道。第八筆為常見退件原因彙整，其中以譯本未經驗證與戶籍謄本逾期兩項最多。第九筆之後為相似度低於門檻的候選，未納入本次脈絡。另補充：結婚登記自登記之日起生效，未辦理登記者婚姻關係不成立；當事人如已於境外辦妥結婚，仍須持經驗證之結婚證明文件回國辦理登記，並注意譯本有效期限。戶政事務所受理後如發現文件不全，會當場開立補正通知，補正期限內未補齊者將予退件。最後，若當事人之一為未成年人，另須法定代理人同意書並一併驗證。" },
     { label: "可回答性判定", state: "completed", time: "210ms", verdict: "generate（素材足以回答）" },
     { label: "生成答案", state: "running", time: "" },
     { label: "生成推薦問題", state: "pending", time: "" },
@@ -107,13 +144,12 @@
     { label: "輸出合規檢查", state: "pending", time: "" }
 ] %}
 {# 整體執行摘要：與 stepFlowNodes 同型的可覆寫資料（來自 chat_room chunk 的既有欄），使用頁換主題時
-     連同節點一起覆寫才不會自打架（§6）；未設用內建示範。缺欄由 React 端不顯示，靜態示範一律備齊。
-   內建示範的兩個時間值照上面那條取整規則推導：ttft ＝ 生成答案這一站的起點
-     ＝ 8＋18＋12＋340＋1,200＋210 ＝ 1,788ms ⇒ **1.8s**（1.788 → 1.8）；
-     延遲 2.4s 是這一輪到目前為止的經過時間（生成答案仍是 running，故只要求 > 1,788ms）。 #}
-{% set stepFlowSummaryData = stepFlowSummary or {
-    tokens: "1,284", latency: "2.4s", ttft: "1.8s", results: "8", model: "openai:gpt-4o-mini"
-} %}
+     連同節點一起覆寫才不會自打架（§6）。缺欄由 React 端不顯示，靜態示範一律備齊五欄。
+   **內建示範刻意是空的**（沒有 `or { … }` 的那份預設）：內建那一輪還在串流，而五欄全部來自
+     整輪收尾才發的 `chat_room` 塊、`model` 更是只有重播那條路拿得到（理由逐條在檔頭）。
+     先前這裡烤了一份 `tokens/latency/ttft/results/model`，於是同一張圖上半寫著「生成答案 進行中」、
+     頂端卻已經報出整輪的 token、延遲、首字與模型——上下半互斥，而兩邊看起來都很合理。 #}
+{% set stepFlowSummaryData = stepFlowSummary or {} %}
 {# 進度序號與總數只數正典節點（無 depth 者），巢狀子步驟不計入（見檔頭）。
      已執行＝completed/running/failed；skipped 是未走的分支、pending 尚未到，都不算。
      **迴圈內的 `{% set %}` 只有在外層 frame 已宣告同名變數時才會外溢**（nunjucks 的 for 會 push
@@ -136,7 +172,12 @@
     </div>
 
     {# 整體執行摘要（stepFlowSummaryData，來自 chat_room chunk 的既有欄）：一眼看完本次成本/效能。
-         label 走 i18n，數值為資料（不翻）。 #}
+         label 走 i18n，數值為資料（不翻）。
+       **整列有條件**（對齊 saas `components/StepFlow` 的 `metrics.length > 0 ||
+         truncated?.steps !== undefined`）：`chat_room` 塊是整輪收尾才發的，串流中那一輪
+         一欄都拿不到 ⇒ 沒給 stepFlowSummary 就整列不出現，而不是渲染五格空值。
+         軌跡截斷那一對可以單獨成立（重播一筆撞上限、但摘要欄位沒回來），故條件是「或」。 #}
+    {% if stepFlowSummary or stepFlowTraceTotal %}
     <div class="step-flow-summary flex-row flex-wrap gap-16 mt-16">
         {# 軌跡截斷（S3 前半）：**檢視**上限＝GufoRAG chatbot `routes/_chat_trace.py` 的
              `VIEW_STEP_EVENTS`／`VIEW_TOOL_ACTIVITY`（跨 repo 常數**只指名符號、不抄值**，§3-2：
@@ -145,8 +186,11 @@
              **兩態都要切（§4）**：未截斷＝整段不渲染（常駐會變成「已顯示 231／共 231」那種廢話），
              截斷＝把這件事說出來並給一顆去拿全文的鈕。故由 stepFlowTraceShown／stepFlowTraceTotal
              成對參數決定，**不用 .hidden**——`.hidden` 的另一態是「什麼都不渲染」時，這塊 markup
-             全站每一頁都看不到，等於沒有人驗收過它的長相（§5）；元件庫頁把它設起來當唯一可見處，
-             與姊妹實作「看完整輸出」（`{% if node.resultShown and node.resultLength %}`）同形。
+             全站每一頁都看不到，等於沒有人驗收過它的長相（§5）；元件庫頁把它設起來當唯一可見處。
+             ⚠️ 這一對與**工具結果**的截斷指標長得很像、可得性卻不同：這一對（軌跡截斷）上游真的
+             送得出來（`capped_view` 追加的 `{truncated, total}` 一路到 `lib/traceReplay`），
+             那一對（結果截斷）沒有來源、已整段移除——理由見下方「結果」那一列的註解，別因為
+             兩者形狀相同就把它加回來。
              數字是資料、夾在前後綴 key 中間（不是插值 key）。
              「載入完整軌跡」**已經接得上了**（本輪回頭查證，前一版檔頭寫的「超出上限的事件目前沒有落庫」
              已經過期）：GufoRAG chatbot `routes/_chat_trace.py` 把上限分成兩層——落庫 `MAX_STEP_EVENTS`
@@ -160,7 +204,12 @@
         <p class="text-gray m-0"><span data-i18n="agent.traceTruncatedPrefix">已顯示 </span><span>{{ stepFlowTraceShown }}</span><span data-i18n="agent.traceTruncatedMid"> ／共 </span><span>{{ stepFlowTraceTotal }}</span><span data-i18n="agent.traceTruncatedSuffix"> 筆</span></p>
         <button type="button" class="button button-border button-sm js-load-full-trace" data-toast="完整軌跡已載入|這一筆已經不在了，或不屬於這個租戶|載入失敗，請稍後再試" data-i18n-data-toast="toast.loadFullTrace" data-toast-type="success|warning|error" data-i18n="agent.loadFullTrace">載入完整軌跡</button>
         {% endif %}
+        {# 逐欄「有值才畫」（saas `components/StepFlow` 逐欄 push metric 的那一串）：整列的條件放行了
+             「只有軌跡截斷、沒有摘要」那一態，此時五格若無條件渲染就是五個空 chip。
+             值域含 0 的欄（`results`）以字串傳入，理由與節點欄位同一條（見檔頭）。 #}
+        {% if stepFlowSummaryData.tokens %}
         <span class="step-flow-metric"><span data-i18n="agent.summaryTokens">Token</span> {{ stepFlowSummaryData.tokens }}</span>
+        {% endif %}
         {# 拆 input／output（`chat_logs.input_tokens`／`output_tokens`，總數是 `total_tokens`）：
              成本與延遲的成因不同——輸出 token 貴且拖 TTFT，輸入 token 多半是脈絡塞太多。
              只給總數看不出該往哪邊調。**成對選填**：兩個都沒給就只畫總數（單測／AB 的示範沒有這兩欄）。 #}
@@ -168,11 +217,20 @@
         <span class="step-flow-metric"><span data-i18n="agent.summaryTokensIn">輸入</span> {{ stepFlowSummaryData.tokensIn }}</span>
         <span class="step-flow-metric"><span data-i18n="agent.summaryTokensOut">輸出</span> {{ stepFlowSummaryData.tokensOut }}</span>
         {% endif %}
+        {% if stepFlowSummaryData.latency %}
         <span class="step-flow-metric"><span data-i18n="agent.summaryLatency">延遲</span> {{ stepFlowSummaryData.latency }}</span>
+        {% endif %}
+        {% if stepFlowSummaryData.ttft %}
         <span class="step-flow-metric"><span data-i18n="agent.summaryTtft">首字</span> {{ stepFlowSummaryData.ttft }}</span>
+        {% endif %}
+        {% if stepFlowSummaryData.results %}
         <span class="step-flow-metric"><span data-i18n="agent.summaryResults">檢索</span> {{ stepFlowSummaryData.results }}</span>
+        {% endif %}
+        {% if stepFlowSummaryData.model %}
         <span class="step-flow-metric"><span data-i18n="settings.modelName">模型</span> {{ stepFlowSummaryData.model }}</span>
+        {% endif %}
     </div>
+    {% endif %}
 
     <div class="table-container scrollTable mt-16">
         <table class="default-table no-border">
@@ -199,7 +257,7 @@
                         {# **這一串要涵蓋詳細表真的會畫的每一欄**：少列一欄，使用頁只給那一欄的節點時
                              展開鈕與整個 detail-row 都不渲染，資料靜默消失。原本列了 12 項而明細列有 15 種
                              （漏掉 iterations／entry／poolSize），只因為現行使用頁的節點都另帶 decision 或
-                             skill 才沒觸發。`resultShown`／`resultLength` 由 `result` 涵蓋。 #}
+                             skill 才沒觸發。 #}
                         {% if node.tools or node.params or node.result or node.verdict or node.thinking or node.skill or node.error or node.hits or node.score or node.decidedBy or node.floor or node.decision or node.iterations or node.entry or node.poolSize %}
                         <button type="button" class="button accordion-btn" aria-expanded="false" title="展開表格" data-i18n-title="common.expandRow">
                             <span class="sr-only" data-i18n="common.expandRow">展開表格</span>
@@ -249,23 +307,28 @@
                                     {% if node.result %}
                                     <tr>
                                         <th data-i18n="agent.result">結果</th>
-                                        {# 工具輸出是長文 ⇒ 走 ui/collapse-text（夾住而且打得開）。
-                                             截斷**不是預設**（本輪回頭查證，前一版檔頭寫的「preview 只有前 500 字、而且不回
-                                             長度」已經過期）：GufoRAG chatbot `routes/_chat_serialization.py` 的
-                                             `DEFAULT_PREVIEW_CHARS = 0`＝不截、回完整原文，呼叫端要帶 `preview_chars` 才截，
-                                             而**被截到的欄位會自述原始長度**（`routes/chat.py` 的 query 說明逐字寫「不靜默截斷」）。
-                                             故這一段的渲染條件是「這一次真的被截到」＝上游回了長度。
-                                             `resultShown`／`resultLength` **必須成對**（同 stepFlowTraceShown／Total）：
-                                             顯示字數烤死成字面量的話，使用頁一覆寫 result 就會說「已顯示前 500 字」而本體不是 500 字。
-                                             取全文要重新向後端要一次 ⇒ 點下去就送 API（§5 ③），掛 data-toast 列全結果。 #}
+                                        {# 工具輸出是長文 ⇒ 走 ui/collapse-text（夾住而且打得開）。**就這樣、沒有截斷指標**。
+                                             這裡曾經有一組 `resultShown`／`resultLength` 的「已顯示前 N 字／共 M 字」＋
+                                             「看完整輸出」，理由寫的是「被截到的欄位會自述原始長度 ⇒ 渲染條件是上游回了長度」。
+                                             那個機制看錯了，本輪逐條複驗後整段拿掉：
+                                             ・**即時串流**：`result_preview` 原樣送，而 product `app/routers/ask.py` 的
+                                               `_AGENT_TOOL_RESULT_PUBLIC_KEYS` 只放行 `tool`／`tool_call_id`／
+                                               `result_preview`，**沒有任何長度欄**（saas `apps/web/lib/sse.ts` 想讀的
+                                               `result_length` 因此永遠讀不到）。而且即時那一輪連 chat log id 都還沒有，
+                                               取全文的端點根本呼叫不了。
+                                             ・**重播**：GufoRAG chatbot `routes/_chat_serialization.py` 的
+                                               `DEFAULT_PREVIEW_CHARS = 0`＝不截、回完整原文；真的帶 `preview_chars` 去截時，
+                                               它的「自述原始長度」是**接在字串尾巴的一句話**（同檔 `_clip`：
+                                               `…（原始 N 字，可用 preview_chars 取完整版）`），不是一個數字欄位——
+                                               而 product 沒有任何呼叫端帶那個參數。
+                                             ⇒ 沒有任何一條路產得出「這一次被截到、原長 M」這個狀態，所以沒有任何使用頁
+                                             給得起那一對值，而§5 明文「沒有頁面演得出來的分支等於沒驗收過」（本專案的
+                                             測試會逐顆 key 抓 dist 全站渲染不出來的引用點）。要復活它得先讓上游長出一個
+                                             **數字長度欄**，那是另一件事，不能靠示範值先斬後奏。
+                                             整段軌跡被夾掉那一態（stepFlowTraceShown／Total）**不受影響**：那個
+                                             `{truncated, total}` 上游真的送得出來，形狀像但可得性不同。 #}
                                         <td>
                                             <div class="collapse-text"><div class="collapse-body">{{ node.result }}</div><button type="button" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>
-                                            {% if node.resultLength %}
-                                            <div class="flex-row align-items-center flex-wrap gap-8">
-                                                <span class="text-gray"><span data-i18n="agent.outputTruncatedPrefix">已顯示前 </span>{{ node.resultShown }}<span data-i18n="agent.outputTruncatedMid"> 字／共 </span>{{ node.resultLength }}<span data-i18n="common.unitChars"> 字</span></span>
-                                                <button type="button" class="button button-border button-sm js-view-full-output" data-toast="完整輸出已載入|這一筆已經不在了，或不屬於這個租戶|載入失敗，請稍後再試" data-i18n-data-toast="toast.viewFullOutput" data-toast-type="success|warning|error" data-i18n="agent.viewFullOutput">看完整輸出</button>
-                                            </div>
-                                            {% endif %}
                                         </td>
                                     </tr>
                                     {% endif %}
