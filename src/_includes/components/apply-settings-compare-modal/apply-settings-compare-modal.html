@@ -16,6 +16,25 @@
      故不列（§5：分支要對得上真實結果的**機制**）。單一測試頁的 apply-settings-modal 才把權限不足演成 inline warning。
      `.sample-count` 同樣是凍結前端的掛點（`js/abTest.js` 的 `$col.find('input.sample-count')`），
      本 repo scss/js 零引用，寬度來自同掛的 `.w100`（§4：無樣式 class 要寫出真 app 出處）。 #}
+{# **左欄「原設定」＝套用前的正式設定**——也就是「前台現在跑的是哪一套設定檔、它的參數長什麼樣」，
+     不是「這一側自己的設定檔」。凍結前端 `GufoFAQ_Frontend_New/js/abTest.js` 的 `populateApplyModal`
+     逐格就是這樣填的：`:578` 的知識檢索那一格取 `DefaultFrontendSettingSN`（＝前台預設那一組），
+     `:579`-`:583` 其餘四格（LLM 模型／取樣兩格／提示詞）取 `SharedParameters`。
+     （`:578` 的字面是「配置一/二/三」，本 repo 全站統一用「設置一/二/三」——引它是為了說明**那一格的值
+     從哪裡來**，不是逐字沿用它的字面。）
+   ⚠️ 這一欄與同頁那顆 `components/knowledge-retrieval-modal` 說的是**同一個值**：那顆窗標「（預設）」
+     的分頁、5-2_conversationSettings 的「前台問答預設使用」radio、與這裡的左欄知識檢索，三處都是
+     `TenantSetting.default_frontend_profile_no`（gufofaq-saas product `app/models.py`）的投影。
+     這一欄原本寫「設置一」而那顆窗標的是「設置二（預設）」⇒ 沒有任何一個租戶狀態畫得出 2-2-3 那一頁
+     （§6 同頁自洽）。三處統一成設置二。
+   本頁的示範狀態裡，B 側選的設定檔（設置二）**正好就是前台預設**，故左欄的知識檢索與右欄同值；
+     兩欄真正的差異落在其餘四格（gpt-4o-mini／4／6／已儲存的提示詞 vs 這一側臨時改成的
+     gpt-4o／8／16／編輯中的提示詞）。兩者不同時（側別設定檔 ≠ 前台預設）以「前台預設那一套」為準——
+     這顆窗回答的是「按下去之後前台會變成什麼樣」。
+   SaaS 這一側的注意事項：套用**沒有**跨設定檔的共用參數可寫，product `app/routers/qatest.py` 的
+     `apply_production` 是「把參數 merge 進**該側設定檔**的 chatbot config ＋ 把 `default_frontend_profile_no`
+     指到該設定檔」兩件事。提示詞那一列**不在** `ApplyIn` 裡（提示詞另走「儲存提示詞版本」），
+     它在這顆窗裡是比對脈絡、不是會被套用的東西。 #}
 {# 比對窗要看得到**差異**（§6 示範資料要自洽）：兩欄逐欄相同時，這顆彈窗演的是一個
      「套用了也不會有任何改變」的狀態，而它存在的理由正是讓人在套用前看出差在哪。
      「設定B」欄必須等於使用頁 2-2-3 的 B 側（abSides[1]：設置二／openai:gpt-4o，取樣 8／16，
@@ -31,7 +50,7 @@
      互相覆蓋，而渲染結果的靜默覆蓋沒有測試看得到）。
    `jsApplyCurrentTitle`／`jsApplyTitle` 是兩顆成對的凍結 hook 開關，見上方檔頭。 #}
 {% set applyCompareColumns = [
-    { title: "原設定", titleKey: "modals.originalSettings", retrieval: "設置一", llm: "openai:gpt-4o-mini", sampleMin: "4", sampleMax: "6", jsApplyCurrentTitle: true,
+    { title: "原設定", titleKey: "modals.originalSettings", retrieval: "設置二", llm: "openai:gpt-4o-mini", sampleMin: "4", sampleMax: "6", jsApplyCurrentTitle: true,
       prompt: "角色定位：
 你是一位專業的產品客服助手，負責回應使用者的產品相關詢問。
 知識來源限制：

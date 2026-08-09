@@ -27,7 +27,7 @@
 //                   </div>
 //               </div>
 //           </div>
-//           <div class="qa-count"><span data-i18n="comp.qaCount">問答次數：</span>12/3000<span data-i18n="comp.summaryCount">，摘要次數：</span>3/1000</div>
+//           <div class="qa-count"><span data-i18n="comp.qaCount">問答次數：</span>12/3000<span data-i18n="comp.extractionCount">，萃取次數：</span>3/1000</div>
 //           <div class="chat-input-container">
 //               <div class="input-wrap">
 //                   <div class="form-group chat-input-field">
@@ -35,7 +35,7 @@
 //                           <textarea class="form-control chat-input-control" placeholder="輸入問題" data-i18n-placeholder="comp.enterQuestion" aria-label="輸入問題" data-i18n-aria-label="comp.enterQuestion"></textarea>
 //                       </div>
 //                   </div>
-//                   <button data-capability="ask" type="button" class="button button-primary chat-input-submit" data-toast="回答生成中...|請先輸入問題|回答生成成功|回答生成失敗" data-i18n-data-toast="toast.chatSend" data-toast-type="info|warning|success|error" data-i18n="action.submit">送出</button>
+//                   <button data-capability="ask" type="button" class="button button-primary chat-input-submit" data-toast="回答生成中...|權限不足，無法送出|請先輸入問題|回答生成成功|回答生成失敗" data-i18n-data-toast="toast.chatSend" data-toast-type="info|warning|warning|success|error" data-i18n="action.submit">送出</button>
 //               </div>
 //           </div>
 //       </div>
@@ -45,10 +45,11 @@
 // 抄的時候一個都不能省：
 //   ⓐ **`.chat-message-container` 底下是兩層、不是直接放訊息**：訊息一律住在
 //      `.message-container` 之內，`.message-container > .chat-box` 是**每一份都有**的那一顆。
-//      `.first-chat`（開場那一則）與最上面的 `.date-wrap` 則是**有開場情境的頁才有**：
-//      `components/chatroom`（2-1／2-2-1）兩顆都有，2-2-3 兩顆都沒有——它從使用者的第一句問題
-//      直接起算，沒有機器人開場白、也沒有日期分隔列。所以規則是「**有沒有那一則決定有沒有那顆
-//      容器；有訊息就一定要有 `.chat-box`**」，不是「三顆都得畫」。
+//      `.first-chat`（開場那一則）與最上面的 `.date-wrap` **各自獨立、逐頁決定**，三份都不同：
+//      2-1 兩顆都有；2-2-1 只有 `.date-wrap`（`components/chatroom` 的 `chatWelcomeHidden`
+//      把開場那一則整顆關掉——開場招呼是前台的招呼，後台測試區不讀 `GET /welcome`，理由正本
+//      在該元件檔頭）；2-2-3 兩顆都沒有——它從使用者的第一句問題直接起算。所以規則是
+//      「**有沒有那一則決定有沒有那顆容器；有訊息就一定要有 `.chat-box`**」，不是「三顆都得畫」。
 //      `.first-chat`／`.chat-box` 都是凍結真 app 的具名掛點（`NAMED_HOOKS`，React 端要靠它們認出
 //      該接什麼），本 repo 無樣式——所以把開場那一則直接塞進 `.chat-box` 視覺一模一樣，
 //      只有轉換的時候才會發現兩種訊息全擠在同一個容器裡。
@@ -58,7 +59,7 @@
 //   ⓒ **textarea 的可及名稱是四顆一組**：`placeholder` ＋ `data-i18n-placeholder` ＋
 //      `aria-label` ＋ `data-i18n-aria-label`。它沒有 `<label for>`（輸入列上沒有可見欄名），
 //      少了 `aria-label` 就是一顆無名輸入框（§4），而視覺指紋看不出來。
-//   ⓓ **送出鈕是三件套 ＋ 閘門**：`data-toast`（四段，比建議追問的 chip 多一條「請先輸入問題」）＋
+//   ⓓ **送出鈕是三件套 ＋ 閘門**：`data-toast`（五段，比建議追問的 chip 多一條「請先輸入問題」）＋
 //      `data-i18n-data-toast="toast.chatSend"` ＋ `data-toast-type`（段數必須相等）＋
 //      `data-capability="ask"`（§4：toast 與閘門是同一個交付單位）。
 //   ⓔ 沒有輸入列的頁（2-1 唯讀預覽）整顆 `.chat-input-container` 不渲染，`.qa-count` 留著。

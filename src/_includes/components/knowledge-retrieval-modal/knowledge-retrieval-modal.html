@@ -2,9 +2,22 @@
      body 為「設置一/二/三」.tab 切換（用法同 ui/tab）+ 三組高/中/低優先級分類表（用法同 components/priority-table 已建立的 .tablelist-title + .default-table.priority-table 分組表格結構） #}
 {# 元件內部示範變數用元件專屬名（§6：set 是頁面全域——5-2_conversationSettings 頁自己也有 settingTabs，泛用名會互相覆蓋）。
      「設置一/三」沿用 settings.config1/3（同繁中不另立 key；設置二（預設）帶括號註記、繁中不同故獨立 key） #}
+{# **選中的分頁一律是帶「（預設）」的那一顆**（§6 示範資料要演一個真實可能的狀態）：這顆窗開在
+     前台預設設定檔那一組——凍結前端 `GufoFAQ_Frontend_New/js/singleTest.js:1053` 與
+     `js/abTest.js:824` 的 `.info-btn[title="配置說明"]` 委派都是拿 `DefaultFrontendSettingSN` 減一
+     當開窗的 `idx`（取不到才退回第一顆），
+     而同兩檔的 `renderKnowledgeDialog` 一邊用那個 `idx` 掛 `.active`（`singleTest.js:214`／
+     `abTest.js:149`），一邊用**同一個** `defaultSN` 決定哪一顆補「（預設）」字樣
+     （`singleTest.js:216-219`／`abTest.js:151-154`）。兩件事因此在開窗那一刻必然是同一顆。
+     使用者點別顆之後 `.active` 才會與「（預設）」分家（分頁 click 也走 `renderKnowledgeDialog`），
+     但靜態稿畫的是**開窗那一刻**，故 `active` 必須落在標「（預設）」的那一顆。
+   哪一顆是預設是**跨頁共用的同一個語意值**（§6：同一個參數只能有一個來源）：
+     5-2_conversationSettings 的 `settingTabs` 把 `default: true`（前台問答預設使用 radio）給了設置二，
+     2-2-3 的 apply-settings-compare-modal 左欄「原設定」也是同一個值 ⇒ 三處都是設置二。
+     上游那一欄是 gufofaq-saas product `app/models.py` 的 `TenantSetting.default_frontend_profile_no`。 #}
 {% set kmSettingTabs = [
-    { label: "設置一", labelKey: "settings.config1", active: true },
-    { label: "設置二（預設）", labelKey: "modals.settingTwoDefault" },
+    { label: "設置一", labelKey: "settings.config1" },
+    { label: "設置二（預設）", labelKey: "modals.settingTwoDefault", active: true },
     { label: "設置三", labelKey: "settings.config3" }
 ] %}
 {# 分類→優先級對應與設定頁 5-2_conversationSettings（檢索與欄位子頁籤）的示範資料一致（同一功能的兩個視圖，不可矛盾）：

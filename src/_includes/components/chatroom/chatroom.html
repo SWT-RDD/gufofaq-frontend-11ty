@@ -1,7 +1,22 @@
 {# 資料取自真實 app pages/qaRecord/2-1_qaRecord.html（.chatroom-wrap 結構）+ pages/qaTest/2-2-1_singleTest.html（qa-count + chat-input-container）。
      只轉結構＋樣式，串流/送出/markdown 渲染屬業務邏輯，不在此元件內（見 qaRecord.js / singleTest.js）。
      .robot-msg 是 Markdown 區塊容器（內含 p/ul/table…），依 GUIDELINE §4 用 div——原始切版的 span 包區塊元素是無效巢狀，轉 React SSR 會 hydration 錯誤。
-     參數（頁面 include 前 set，見 §6）：chatInputHidden —— true 時不渲染輸入區（2-1 唯讀預覽沒有輸入框；2-2-1 需要）。 #}
+     參數（頁面 include 前 set，見 §6）：
+       chatInputHidden —— true 時不渲染輸入區（2-1 唯讀預覽沒有輸入框；2-2-1 需要）。
+       chatWelcomeHidden —— true 時整顆 `.first-chat`（開場歡迎語）不渲染。
+         **為什麼要有這一顆**：開場招呼是**前台的招呼**，它只出現在有開場情境的頁。
+         ① 凍結前端就是分兩種：`GufoFAQ_Frontend_New/js/qaRecord.js:132-144` 每次渲染都畫
+            `.first-chat` ＋「歡迎回來，想問些什麼呢 ?」（2-1）；而 `js/singleTest.js:478-491`
+            那一則只在 `ChatLogs.length === 0`（空聊天室）那一支出現、而且畫在 `.chat-box` 裡
+            **沒有** `.first-chat`——有對話之後 `renderChatLogs` 走下面那條路，一則招呼都不畫。
+            本元件的示範演的是「已經有一輪對話」，所以後台測試區那一份不該有這一則。
+         ② SaaS 這一側同向：開場歡迎語的唯一真相是 `GET /welcome`（product `app/routers/welcome.py`
+            的 `current_welcome`，讀該設定檔 chatbot config 的 `welcome_message`），而**後台測試區
+            刻意不讀它**——測試區的對話串裡多一則不是這一輪產出的訊息，就多一個雜訊來源。
+         `.first-chat` 是凍結真 app 的具名掛點（見 ui/chatroom-shell 契約 ⓐ）：這一則被關掉時
+         **整顆容器一起不渲染**，不是留一顆空的 `<div class="first-chat">`——「有沒有那一則決定有沒有
+         那顆容器」。同理，`chatroomMessages` 裡那一則 robot 訊息在關掉時整則不出現（它不會改畫到
+         `.chat-box` 去）。 #}
 {# 示範資料用元件專屬名 chatroomMessages（§6：set 是頁面全域，泛用名會與使用頁同名變數互相覆蓋） #}
 {% set chatroomMessages = [
     {
@@ -27,6 +42,10 @@
                 <div class="date">2024/12/02</div>
             </div>
             <div class="message-container">
+                {# chatWelcomeHidden：開場歡迎語（見檔頭）。整顆 `.first-chat` 一起收掉——
+                     容器空著留在 DOM 裡等於宣告「這一頁有開場情境、只是這次沒訊息」，
+                     而 ui/chatroom-shell 契約 ⓐ 的規則是「有沒有那一則決定有沒有那顆容器」。 #}
+                {% if not chatWelcomeHidden %}
                 <div class="first-chat">
                     {% for msg in chatroomMessages %}
                     {% if msg.role == "robot" %}
@@ -41,6 +60,7 @@
                     {% endif %}
                     {% endfor %}
                 </div>
+                {% endif %}
                 <div class="chat-box">
                     {% for msg in chatroomMessages %}
                     {% if msg.role == "user" %}
@@ -154,8 +174,14 @@
             </div>
         </div>
     </div>
-    {# 次數為示範值：至少要 ≥ 同頁演出的已完成問答數（§6 自洽），真值由 React 依 API 填入 #}
-    <div class="qa-count"><span data-i18n="comp.qaCount">問答次數：</span>12/3000<span data-i18n="comp.summaryCount">，摘要次數：</span>3/1000</div>
+    {# 次數為示範值：至少要 ≥ 同頁演出的已完成問答數（§6 自洽），真值由 React 依 API 填入。
+         **第二對是「萃取次數」不是「摘要次數」**：這一列的兩對數字對回 gufofaq-saas product
+         `app/routers/ask.py` 的 `usage`（`qa_used`／`qa_limit`／`extraction_used`／`extraction_limit`），
+         整份回應裡沒有任何一顆「摘要」——新產品沒有摘要這件事，那是凍結前端留下的舊字面
+         （而且凍結的 `js/singleTest.js` 的 `refreshQaCount` 把整格覆寫成只有問答次數，
+         那第二對從來沒有真值餵過它）。留著就是在畫面上指著一個不存在的功能（§6）。
+         四個節點、不是一顆字串：chrome span ＋ 資料 ＋ chrome span ＋ 資料。 #}
+    <div class="qa-count"><span data-i18n="comp.qaCount">問答次數：</span>12/3000<span data-i18n="comp.extractionCount">，萃取次數：</span>3/1000</div>
     {# chatInputHidden：true 時不渲染輸入區（2-1 是唯讀的問答紀錄預覽，真實頁沒有輸入框；
        單測頁 2-2-1 需要它）。qa-count 兩頁都留。 #}
     {% if not chatInputHidden %}

@@ -190,7 +190,11 @@ permalink: 2-2-1_singleTest.html
      （`.js-side-toggle` 的 `toggleClass("collapsed")` ＋ 點外部收合），不在 `singleTest.js`
      ——那支只拿 `.qa-side-panel` 當容器選頁籤與清空對話（`js/singleTest.js:952`／`:958`）。
      本 repo 已照 §5 把開合實作在 `components/qa-side-panel/qa-side-panel.js`，當場動得起來。
-     這一頁對它**零 markup**：class 與內部結構逐字住在該元件，這裡只 include。 #}
+     這一頁對它**零 markup**：class 與內部結構逐字住在該元件，這裡只 include。
+   **開場歡迎語關掉**（`chatWelcomeHidden`，理由正本在該元件檔頭）：招呼是前台的招呼，
+     後台測試區不讀 `GET /welcome`；凍結前端的這一頁也只有在空聊天室那一支才畫一則招呼，
+     而本頁演的是「已經有一輪對話、第二問正在跑」。 #}
+{% set chatWelcomeHidden = true %}
 <div class="mt-24">
     <div class="flex-row gap-10 mobile-column-xs xs-column-reverse">
         {% include "components/chatroom/chatroom.html" %}

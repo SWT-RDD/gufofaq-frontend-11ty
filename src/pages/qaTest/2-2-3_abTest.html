@@ -13,7 +13,10 @@ permalink: 2-2-3_abTest.html
      `Number()` 打錯一個字就是 NaN→null。真 app 的 id／hook 契約原樣保留。 #}
 {# 問答紀錄側欄的三顆頁籤（經 components/qa-side-panel 傳給 components/qa-record-tabs）。
      本頁側欄的每一筆＝一次 AB 比較（product qatest.py 的 `GET /qatest/ab-history`，每筆含 A/B 兩側 log_id）。
-     `id` 是**列鍵**（＝聊天室 SN，渲染成 `data-chat-sn` 的值）：紀錄刪得掉，位置不是身分（§6 列鍵）。
+     `id` 是**列鍵**（渲染成 `data-chat-sn` 的值）：紀錄刪得掉，位置不是身分（§6 列鍵）。
+     **這一頁的一列不是一個聊天室**，所以那顆值不是聊天室 SN：示範值取該筆的 `a_log_id`
+     （A 側那筆 chat log 的 id，整數，`ab_history` 回得出來）。同一支端點的 `round_id` 是
+     前端產生的 uuid，形狀對不上 `data-chat-sn` 這個凍結掛點，故不畫它。
      原本三筆都沒給 `id`，那顆屬性會渲染成 `data-chat-sn=""`——§4 明文不輸出空屬性，而真 app 的
      委派選擇器 `.qa-side-panel .tab[data-chat-sn]` 正是靠它才點得動。
      `label` 是真 app 的 `ChatTitle`＝**使用者資料、不翻**；第二筆刻意不給 label，讓元件的 fallback
@@ -269,7 +272,20 @@ permalink: 2-2-3_abTest.html
                                                          `qaTest.setting` 的英譯是 `Setting`，後面直接接側別還會黏成 `SettingA`，
                                                          故 `設定` 與側別之間也補一個空白。三段（設定側別／設定檔名／提示詞版本）
                                                          以中點並列，繁中「設定 A · 設置一 · V3-角色定位型」與英文兩邊都讀得通。
-                                                         另一條路是替三個標點各開一顆 i18n key——那會替版面的東西建字典，不採。 #}
+                                                         另一條路是替三個標點各開一顆 i18n key——那會替版面的東西建字典，不採。
+                                                       ⚠️ **中間那一段（設定檔名）是切版對後端提的要求**（§4「切版主張需求，不等後端」）：
+                                                         即時比完那一輪前端自己知道兩側各送了哪一個設定檔，但**重播那條路拿不到**
+                                                         ——側欄那一筆走 gufofaq-saas product `app/routers/qatest.py` 的 `ab_history`
+                                                         （回 `round_id`／`question`／`a_log_id`／`b_log_id`／`created_at`），而兩側的
+                                                         內容再走問答紀錄，`app/routers/history.py` 的 `_PUBLIC_LOG_FIELDS` 有
+                                                         `prompt_version`（所以 `· V3` 畫得出來）、**沒有任何一顆設定檔編號**。
+                                                         要的欄位：`app/models.py` 的 `AbTestRound`（表 `ab_test_rounds`）加
+                                                         `a_profile_no`／`b_profile_no`，並在 `ab_history` 的回應裡帶出來。
+                                                         為什麼非它不可：AB 測試的整件事就是「哪一組設定產生了這個答案」，
+                                                         重播時看不到設定檔＝那一筆比較無法解讀；而拿頁面上那張卡**現在**選的設定檔
+                                                         去填，等於替一筆舊紀錄標上一個它未必用過的設定檔（§6 不得編一個正本給不出的欄）。
+                                                         **兩態都要切**：拿不到編號時整段（含它前面那顆 `·`）不畫，同 `promptVersion`
+                                                         缺席時的做法——不要退回一個猜出來的設定檔。 #}
                                                     <p class="item-title" id="abAnswerTitle-{{ abSides[0].side }}"><span data-i18n="qaTest.setting">設定</span> {{ abSides[0].side }} · <span data-i18n="{{ abSides[0].configKey }}">{{ abSides[0].configLabel }}</span> · {{ abSides[0].promptVersion }}</p>
                                                     <div class="item-content">
                                                         <p>您好！以下是 UH3240 USB-C 多埠集線器的規格整理：</p>
@@ -436,7 +452,9 @@ permalink: 2-2-3_abTest.html
                     </div>
                 </div>
             </div>
-            <div class="qa-count"><span data-i18n="comp.qaCount">問答次數：</span>12/3000<span data-i18n="comp.summaryCount">，摘要次數：</span>3/1000</div>
+            {# 兩對數字的出處與「為什麼第二對是萃取次數不是摘要次數」見 components/chatroom 那一列的註解
+                 （同一份 `ui/chatroom-shell` 契約 ⓑ，兩處必須說同一件事）。 #}
+            <div class="qa-count"><span data-i18n="comp.qaCount">問答次數：</span>12/3000<span data-i18n="comp.extractionCount">，萃取次數：</span>3/1000</div>
             <div class="chat-input-container">
                 <div class="input-wrap">
                     <div class="form-group chat-input-field">
