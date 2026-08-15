@@ -13,16 +13,22 @@
 // `title`／`.sr-only` 兩處**同一顆 key**、`data-open-modal` 指向同頁那顆 `<dialog id>`（無條件開窗，§5）。
 // 本元件的規則是單一顆 `.info-btn`、不帶任何祖先，所以上面那段可以原地照抄、不必連祖先一起搬。
 //
-// 生產用法是「接在欄位標題之後」，而**外層那顆 `.label` 的伴隨 class 三份實例各不相同**，別當成契約的一部分：
+// 生產用法是「接在欄位標題之後」，而**外層那顆 `.label` 的伴隨 class 各頁各不相同**，別當成契約的一部分：
 //   2-2-1 是 `<div class="label flex-row">` ＋ `<label class="control-label">`；
 //   2-2-3 是 `<div class="label ab-field-label flex-row">`（ab-test-block 的定寬欄）；
-//   5-2 是 `<div class="label label-md">`（**沒有 flex-row**）＋ `<span id="aliasApplyOutputLabel" class="control-label">`。
+//   5-2 是 `<div class="label label-md">`（**沒有 flex-row**）＋ `<span id="aliasApplyOutputLabel" class="control-label">`；
+//   其餘（help-modal 三塊式說明視窗的觸發鈕，見下）多半是自己另包一層 `.flex-row.align-items-center.gap-8`
+//   把標題與 ⓘ 綁成同一個 flex item，不影響外層 `.label`。
 //
-// 住在哪一頁（雙向；判準＝`grep -n 'class="info-btn' src`）——四份實例，全部頁面自寫、無任何 include：
+// 住在哪一頁（雙向；判準＝`grep -rc 'class="info-btn"' src --include=*.html`）——25 份實例，
+//   全部頁面自寫、無任何 include，橫跨 13 頁：
 //   2-2-1_singleTest 與 2-2-3_abTest 的「知識檢索」欄（`title="配置說明"` → knowledgeModal）、
 //   5-2_conversationSettings 的「出口套用說明」（`title="出口套用說明"`、key settings.aliasApplyOutputInfo
-//   → aliasOutputInfoModal）、component.html 的示範觸發器（照抄 2-2-1 那一份）。
-//   反向：渲染後含 `.info-btn` 的頁就是這四頁，沒有第五頁。
+//   → aliasOutputInfoModal）各一顆；其餘 22 顆是 help-modal 三塊式說明視窗的觸發鈕，逐頁：
+//   1-1-4_columnSelect_excel／1-2-1_uploadFile_pdf／3-1-2_dataImport_input／3-1-3_previewDataset
+//   各一顆，3-2_glossaryManagement／3-3_qaSetManagement／3-6_aliasTables 各兩顆，
+//   5-10_tagDimensions 五顆，3-5_dataHealth 六顆；component.html 的示範觸發器（照抄 2-2-1 那一份）一顆。
+//   反向：渲染後含 `.info-btn` 的頁就是這 13 頁，沒有第 14 頁。
 .info-btn {
     background-color: transparent;
     border: none;
