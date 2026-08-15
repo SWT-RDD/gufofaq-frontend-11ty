@@ -108,7 +108,19 @@ permalink: 5-6-3_platformServiceKeys.html
      ——這一塊的存在理由就是「不要讓人核發完才發現明碼拿不回來」。
      用途名稱與範圍是值載體（GUIDELINE §5 組合矩陣②）＝只掛 hook、不掛 data-toast。 #}
 <div class="block mb-16 flex-row column gap-16" data-platform-role="admin">
-    <div class="text-md text-bold" data-i18n="serviceKey.issueTitle">核發一把新憑證</div>
+    {# ⓘ 說明：markup 同既有 info-btn 六件組（GUIDELINE §1-2 無 html 元件契約）。①出處：本頁檔頭
+         「① 明碼只出現一次……② 明碼的目的地是 Secret Manager，不是終端機」兩節，與 product
+         `app/routers/platform.py` 的 `ServiceKeyIn`／`create_service_key`（明碼僅這一次回應有值，
+         範圍須在 `PLATFORM_SERVICE_KEY_SCOPES` 內才送得出去）。這是**平台層、跨租戶**的機器憑證
+         ——給「不是人」的呼叫端用，不構成任何人的登入身分；核發限平台系統管理員，稽核員看得到
+         這一頁但送不出這顆動作。與 5-8／5-9 的差異見 GUIDELINE 對這三頁的區隔（本頁檔頭同節）。 #}
+    <div class="flex-row align-items-center gap-8">
+        <div class="text-md text-bold" data-i18n="serviceKey.issueTitle">核發一把新憑證</div>
+        <button type="button" class="info-btn" title="核發一把新憑證說明" data-i18n-title="help.serviceKey.issueTitle.title" data-open-modal="issueTitleHelpModal">
+            <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+            <span class="sr-only" data-i18n="help.serviceKey.issueTitle.title">核發一把新憑證說明</span>
+        </button>
+    </div>
     <p class="text-red" data-i18n="serviceKey.issueBeforeWarn">按下核發之後，明碼只會顯示這一次。系統只保存它的 SHA-256 雜湊，關掉這一頁、重新整理、或按下「我已經保存好」之後就再也拿不回來——沒有「再看一次」這個選項，只能撤銷重發。請先準備好要把它貼到哪裡，再按核發。</p>
     <p class="text-gray" data-i18n="serviceKey.issueDestinationHint">正式環境的目的地是 Secret Manager 的 product-health-scan-key：用下面的複製鈕複製，再貼進祕密管理，不要用終端機把明碼打出來——那會把它留在 shell 歷史、留在 ps 的參數列上，也留在任何一份螢幕錄影裡。</p>
     <div class="flex-row flex-wrap gap-16 mobile-column sm-gap-16">
@@ -155,6 +167,17 @@ permalink: 5-6-3_platformServiceKeys.html
     </div>
 </div>
 
+{# 「核發一把新憑證」的說明視窗：②③留空——現在生效的條件與這一區的數字由 React 執行期算，
+     切版這一側只提供容器（同批次既有區塊的現況）。 #}
+{% set helpModalId = "issueTitleHelpModal" %}
+{% set helpModalTitleKey = "help.serviceKey.issueTitle.title" %}
+{% set helpModalTitle = "核發一把新憑證說明" %}
+{% set helpModalWhatKey = "help.serviceKey.issueTitle.what" %}
+{% set helpModalWhat = "這一區核發一把新的平台機器憑證：填入用途名稱與一個授權範圍後送出，明碼只會在核發完成的那一刻顯示這一次，之後系統只留得住雜湊。這是給「不是人」的呼叫端（例如排程）用的憑證，不構成任何人的登入身分；只有平台系統管理員能在這裡核發，稽核員看得到這一頁但送不出這個動作。" %}
+{% set helpModalStateItems = [] %}
+{% set helpModalLimitRows = [] %}
+{% include "components/help-modal/help-modal.html" %}
+
 {# ── 剛核發的明碼（show-once）───────────────────────────────────────────────────
      `POST` 回應的 `key` 欄。**只有那一次的回應有值**，所以這一整塊在 React 端是條件渲染：
      沒有明碼就整塊不畫（不是畫一個空欄位——空欄位讀起來像「還沒產生」，而實際上是
@@ -167,7 +190,18 @@ permalink: 5-6-3_platformServiceKeys.html
      以及「這一串長什麼樣」都跟著失真。末四碼 `c091` 對回下面盤點表 #8 的 `keyHint`（`psk_…c091`，
      `security._key_hint` 的形狀）——那一把正是「剛核發、還沒有人用過」的那一列（§6 同頁同源）。 #}
 <div class="block mb-16 flex-row column gap-16 js-service-key-issued" id="serviceKeyIssued" data-platform-role="admin">
-    <div class="text-md text-bold" data-i18n="serviceKey.plainTitle">剛核發的明碼</div>
+    {# ⓘ 說明：markup 同既有 info-btn 六件組。①出處：本頁檔頭「① 明碼只出現一次……② 明碼的
+         目的地是 Secret Manager」兩節，與 product `ServiceKeyOut.key`（只有核發那一次回應有值）。
+         這一塊是 show-once 行為本身的展示（區別於上面「核發」那一區的建立動作）：關閉或離開這
+         一頁之後就再也回不來，這是這一區存在的唯一理由，故 show-once 寫進 ①、末碼長度等推導值
+         留給 ③（見本頁檔頭「明碼長度是推導值」一節）。 #}
+    <div class="flex-row align-items-center gap-8">
+        <div class="text-md text-bold" data-i18n="serviceKey.plainTitle">剛核發的明碼</div>
+        <button type="button" class="info-btn" title="剛核發的明碼說明" data-i18n-title="help.serviceKey.plainTitle.title" data-open-modal="plainTitleHelpModal">
+            <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+            <span class="sr-only" data-i18n="help.serviceKey.plainTitle.title">剛核發的明碼說明</span>
+        </button>
+    </div>
     <p class="text-red" data-i18n="serviceKey.plainOnce">這是這把憑證唯一一次顯示明碼。離開或重新整理這一頁之後，畫面上就只剩下末四碼；系統本身也只有雜湊，沒有任何人能把它讀回來。</p>
     <div class="flex-row align-items-center gap-8 flex-wrap">
         <div class="col-6-md col-12-sm">
@@ -189,13 +223,33 @@ permalink: 5-6-3_platformServiceKeys.html
     </div>
 </div>
 
+{# 「剛核發的明碼」的說明視窗：②③留空，理由同本頁其他說明視窗。 #}
+{% set helpModalId = "plainTitleHelpModal" %}
+{% set helpModalTitleKey = "help.serviceKey.plainTitle.title" %}
+{% set helpModalTitle = "剛核發的明碼說明" %}
+{% set helpModalWhatKey = "help.serviceKey.plainTitle.what" %}
+{% set helpModalWhat = "這一區顯示剛核發、還沒被關閉的那把憑證明碼：這是它唯一一次以明碼出現的地方，關閉這一塊或離開這一頁之後，系統就只留得住雜湊與末碼提示，沒有人能再把完整明碼讀回來。這裡的複製鈕是要把它貼進 Secret Manager，不是留在終端機或畫面錄影裡。" %}
+{% set helpModalStateItems = [] %}
+{% set helpModalLimitRows = [] %}
+{% include "components/help-modal/help-modal.html" %}
+
 {# ── 授權範圍值域 ─────────────────────────────────────────────────────────────
      `GET /platform/service-keys/scopes`。列出來的理由：核發前要選一個，而「有哪些可選、各自
      涵蓋哪幾支端點」不該靠翻程式碼。說明文字是 API 回的資料（不翻）。 #}
 {# 這一區是唯讀值域，端點 `list_service_key_scopes` 是 require_platform_auditor（product app/routers/platform.py）——
      稽核員讀得到，故標 auditor 而不是跟著整頁最嚴的那一級走。 #}
 <div class="block mb-16 flex-row column gap-16" data-platform-role="auditor">
-    <div class="text-md text-bold" data-i18n="serviceKey.scopesTitle">可核發的授權範圍</div>
+    {# ⓘ 說明：markup 同既有 info-btn 六件組。①出處：本頁上方兩則檔頭與 product
+         `app/routers/platform.py` 的 `list_service_key_scopes`（`require_platform_auditor`，
+         回的就是 `authz.PLATFORM_SERVICE_KEY_SCOPES` 本人）與 `create_service_key` 的逐字比對。
+         這是唯讀值域，稽核員也讀得到——與下面「核發」那一區的寫入動作不同軸。 #}
+    <div class="flex-row align-items-center gap-8">
+        <div class="text-md text-bold" data-i18n="serviceKey.scopesTitle">可核發的授權範圍</div>
+        <button type="button" class="info-btn" title="可核發的授權範圍說明" data-i18n-title="help.serviceKey.scopesTitle.title" data-open-modal="scopesTitleHelpModal">
+            <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+            <span class="sr-only" data-i18n="help.serviceKey.scopesTitle.title">可核發的授權範圍說明</span>
+        </button>
+    </div>
     <p class="text-gray" data-i18n="serviceKey.scopesHint">這張表是端點回的值域本身，不是這一頁抄的一份。範圍決定一把憑證能做什麼，而不是「有沒有帶憑證」——一把 health-scan 的憑證打租戶清單、稽核、時區寫入或再核發一把，全部會被擋下。</p>
     <div class="table-container scrollTable">
         <table class="default-table">
@@ -226,13 +280,34 @@ permalink: 5-6-3_platformServiceKeys.html
     </div>
 </div>
 
+{# 「可核發的授權範圍」的說明視窗：②③留空，理由同本頁其他說明視窗。 #}
+{% set helpModalId = "scopesTitleHelpModal" %}
+{% set helpModalTitleKey = "help.serviceKey.scopesTitle.title" %}
+{% set helpModalTitle = "可核發的授權範圍說明" %}
+{% set helpModalWhatKey = "help.serviceKey.scopesTitle.what" %}
+{% set helpModalWhat = "這一區列出目前平台上可以核發的授權範圍，逐項寫出它涵蓋哪幾支端點——這份清單本身就是核發那顆下拉選單的資料來源，不是這一頁另外抄一份。範圍決定一把憑證「能做什麼」：核發與呼叫時都逐字比對，不在清單內或選中範圍以外的端點，這把憑證一律打不通。稽核員也讀得到這一區。" %}
+{% set helpModalStateItems = [] %}
+{% set helpModalLimitRows = [] %}
+{% include "components/help-modal/help-modal.html" %}
+
 {# ── 盤點 ─────────────────────────────────────────────────────────────────────
      `GET /platform/service-keys`（auditor＋，故整塊標 auditor）。「含已撤銷」是值載體 checkbox
      （值交給 React 讀去送 `include_revoked`）＝只掛 hook、不掛 data-toast。
      撤銷鈕在列上另標 `admin`：盤點讀得到不等於撤得掉。 #}
 <div class="block flex-row column gap-16" data-platform-role="auditor">
     <div class="flex-row justify-content-between align-items-center flex-wrap gap-16">
-        <div class="text-md text-bold" data-i18n="serviceKey.listTitle">現有憑證</div>
+        {# ⓘ 說明：markup 同既有 info-btn 六件組，巢狀在既有的 justify-content-between 列內
+             （比照 2-2-4 regressionSuites 的「案例：」區塊，同型版面）。①出處：本頁上方檔頭
+             「④ 撤銷是軟刪、當場生效」一節，與 product `app/routers/platform.py` 的
+             `list_service_keys`（`require_platform_auditor`，永遠不回明碼）、`revoke_service_key`
+             （`require_platform_admin`，409 已撤銷過）。稽核員讀得到整張表，撤銷限平台系統管理員。 #}
+        <div class="flex-row align-items-center gap-8">
+            <div class="text-md text-bold" data-i18n="serviceKey.listTitle">現有憑證</div>
+            <button type="button" class="info-btn" title="現有憑證說明" data-i18n-title="help.serviceKey.listTitle.title" data-open-modal="listTitleHelpModal">
+                <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+                <span class="sr-only" data-i18n="help.serviceKey.listTitle.title">現有憑證說明</span>
+            </button>
+        </div>
         {# **預設勾起來**：篩選控制項的預設值就是示範資料的前提（§6）。下面三列裡**第 1 列**
              （#1，2024/11/03 撤銷的初版）是已撤銷的，而 `list_service_keys` 在 `include_revoked`
              為 false 時 `q.where(PlatformServiceKey.revoked_at.is_(None))`（product app/routers/platform.py）
@@ -316,6 +391,16 @@ permalink: 5-6-3_platformServiceKeys.html
     </div>
     <p class="text-gray" data-i18n="serviceKey.revokeHint">撤銷是軟刪、當場生效（不像登入 session 要等到期）：這一列會留著，因為「這把曾經存在、誰在什麼時候撤了它」是稽核要查得到的事實，而列還在也讓那個明碼永遠不可能被重新啟用。撤銷過的預設不列，要看歷史請勾「含已撤銷」。</p>
 </div>
+
+{# 「現有憑證」的說明視窗：②③留空，理由同本頁其他說明視窗。 #}
+{% set helpModalId = "listTitleHelpModal" %}
+{% set helpModalTitleKey = "help.serviceKey.listTitle.title" %}
+{% set helpModalTitle = "現有憑證說明" %}
+{% set helpModalWhatKey = "help.serviceKey.listTitle.what" %}
+{% set helpModalWhat = "這一區盤點平台上所有的機器憑證：名稱、授權範圍、末碼提示、核發／最後使用／撤銷時間，這張表永遠回不出明碼——系統本身也沒有它。稽核員讀得到整張表；只有平台系統管理員能在這裡撤銷一把憑證，撤銷是立即生效的軟刪，撤銷過的憑證不會再被啟用。同一個範圍可以同時存在多把有效憑證，讓輪替期間新舊並存。" %}
+{% set helpModalStateItems = [] %}
+{% set helpModalLimitRows = [] %}
+{% include "components/help-modal/help-modal.html" %}
 
 {# 撤銷憑證的二次確認（`.js-revoke-service-key` 條件開窗的彈窗本體）：用途名稱由業務 js 填入
      `#revokeServiceKeyTarget`。三段 toast——重複撤銷是 product 的 409，那是「使用者自己看得懂

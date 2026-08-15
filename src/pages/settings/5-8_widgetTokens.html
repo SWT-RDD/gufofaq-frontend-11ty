@@ -24,7 +24,19 @@ permalink: 5-8_widgetTokens.html
 
 {# 產生金鑰：名稱（選填）+ 允許網域（必填，一行一個 https://網域）+ 產生按鈕 #}
 <div class="block mb-16 flex-row column gap-16">
-    <div class="text-md text-bold" data-i18n="widget.createToken">產生金鑰</div>
+    {# ⓘ 說明：markup 同既有 info-btn 六件組（GUIDELINE §1-2 無 html 元件契約）。①出處：本頁檔頭
+         「token 綁允許網域……供瀏覽器端前台機器人以 X-Widget-Token 呼叫公開端點」一節，與 product
+         `app/routers/widget_tokens.py` 的 `create_widget_token`（強制 `allowed_origins` 非空）
+         與 `app/routers/public.py` 的 `require_widget_token`（逐字比對 Origin／Referer）。
+         **這把金鑰的威脅模型與 5-6-3／5-9 都不同**：它天生要出現在客戶自己的公開網頁上，
+         防護不是保密而是網域白名單——①末句明寫這件事，避免套用另外兩頁「保密」的語意。 #}
+    <div class="flex-row align-items-center gap-8">
+        <div class="text-md text-bold" data-i18n="widget.createToken">產生金鑰</div>
+        <button type="button" class="info-btn" title="產生金鑰說明" data-i18n-title="help.widget.createToken.title" data-open-modal="createTokenHelpModal">
+            <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+            <span class="sr-only" data-i18n="help.widget.createToken.title">產生金鑰說明</span>
+        </button>
+    </div>
     <div class="flex-row flex-wrap gap-16 mobile-column sm-gap-16">
         <div class="col-6-md col-12-sm">
             <div class="form-group">
@@ -76,6 +88,17 @@ permalink: 5-8_widgetTokens.html
     </div>
 </div>
 
+{# 「產生金鑰」的說明視窗：②③留空——現在生效的條件與這一區的數字由 React 執行期算，
+     切版這一側只提供容器（同批次既有區塊的現況）。 #}
+{% set helpModalId = "createTokenHelpModal" %}
+{% set helpModalTitleKey = "help.widget.createToken.title" %}
+{% set helpModalTitle = "產生金鑰說明" %}
+{% set helpModalWhatKey = "help.widget.createToken.what" %}
+{% set helpModalWhat = "這一區產生一把嵌入金鑰：填入這把要綁定的允許網域後送出，就能拿去組出前台嵌入連結。這把金鑰是給客戶自己網站上的公開機器人用的，本來就會被瀏覽器載入、任何看得到那個網頁原始碼的人都看得到它——它的防護不是保密，而是每次呼叫都會核對來源網域是不是在允許清單內；網域不在清單內，拿到金鑰也打不通。" %}
+{% set helpModalStateItems = [] %}
+{% set helpModalLimitRows = [] %}
+{% include "components/help-modal/help-modal.html" %}
+
 {# 金鑰清單：default-table。名稱 / 金鑰（可複製）/ 允許網域 / 狀態 / 操作（複製嵌入連結 + 撤銷）。
      token 本就嵌在瀏覽器端、非機密，故清單直接顯示全值供複製。撤銷鈕只在啟用中的列出現（業務條件，
      用 hook class .js-revoke-token）。示範 2 筆（一啟用一已撤銷）。
@@ -108,7 +131,17 @@ permalink: 5-8_widgetTokens.html
     }
 ] %}
 <div class="block flex-row column gap-16">
-    <div class="text-md text-bold" data-i18n="widget.tokenList">金鑰清單</div>
+    {# ⓘ 說明：markup 同既有 info-btn 六件組。①出處：本頁上方檔頭「金鑰清單」一節（「token 本就
+         嵌在瀏覽器端、非機密，故清單直接顯示全值供複製」）與 product `app/routers/widget_tokens.py`
+         的 `list_widget_tokens`／`revoke_widget_token`。**全值常態顯示、不是 show-once**——這是
+         這一區與 5-6-3／5-9 兩頁最根本的不同，①末句刻意點出來，不要讓人以為這裡也該遮起來。 #}
+    <div class="flex-row align-items-center gap-8">
+        <div class="text-md text-bold" data-i18n="widget.tokenList">金鑰清單</div>
+        <button type="button" class="info-btn" title="金鑰清單說明" data-i18n-title="help.widget.tokenList.title" data-open-modal="tokenListHelpModal">
+            <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+            <span class="sr-only" data-i18n="help.widget.tokenList.title">金鑰清單說明</span>
+        </button>
+    </div>
     <div class="table-container scrollTable">
         <table class="default-table">
             <colgroup>
@@ -170,6 +203,16 @@ permalink: 5-8_widgetTokens.html
         </table>
     </div>
 </div>
+
+{# 「金鑰清單」的說明視窗：②③留空，理由同本頁其他說明視窗。 #}
+{% set helpModalId = "tokenListHelpModal" %}
+{% set helpModalTitleKey = "help.widget.tokenList.title" %}
+{% set helpModalTitle = "金鑰清單說明" %}
+{% set helpModalWhatKey = "help.widget.tokenList.what" %}
+{% set helpModalWhat = "這一區列出本租戶目前所有的嵌入金鑰：名稱、完整金鑰全值、綁定的允許網域與目前狀態，每一列可以複製完整的前台嵌入連結，或撤銷一把還在啟用中的金鑰。金鑰全值在這裡是常態顯示，不是只出現一次——它本來就會出現在客戶自己的網頁上，不是需要被藏起來的機密；撤銷則不可逆，撤銷之後前台所有掛著這把金鑰的嵌入頁會立即失效。" %}
+{% set helpModalStateItems = [] %}
+{% set helpModalLimitRows = [] %}
+{% include "components/help-modal/help-modal.html" %}
 
 {# 撤銷金鑰的二次確認（.js-revoke-token 條件開窗的彈窗本體）：金鑰名稱由業務 js 填入 #revokeTokenTarget。 #}
 {% set deleteTitleKey = "action.revoke" %}

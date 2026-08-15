@@ -14,8 +14,18 @@
 // 與關它的那顆鈕（`data-dismiss-target` 指回那個 id）。少了任一半就什麼都不會發生。
 // 下面是 5-6-3_platformServiceKeys.html 的生產 markup，逐字如下：
 //
+// （標題那一行掛了 help-modal 批次的 info-btn 六件組，故標題現在多包一層
+//  `.flex-row.align-items-center.gap-8`——那是另一顆契約〔help-modal〕的地盤，本契約只認
+//  最外層的面板／鈕這一對，中段那一層不影響 dismiss-panel 的行為。）
+//
 //   <div class="block mb-16 flex-row column gap-16 js-service-key-issued" id="serviceKeyIssued" data-platform-role="admin">
-//       <div class="text-md text-bold" data-i18n="serviceKey.plainTitle">剛核發的明碼</div>
+//       <div class="flex-row align-items-center gap-8">
+//           <div class="text-md text-bold" data-i18n="serviceKey.plainTitle">剛核發的明碼</div>
+//           <button type="button" class="info-btn" title="剛核發的明碼說明" data-i18n-title="help.serviceKey.plainTitle.title" data-open-modal="plainTitleHelpModal">
+//               <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+//               <span class="sr-only" data-i18n="help.serviceKey.plainTitle.title">剛核發的明碼說明</span>
+//           </button>
+//       </div>
 //       <p class="text-red" data-i18n="serviceKey.plainOnce">這是這把憑證唯一一次顯示明碼。離開或重新整理這一頁之後，畫面上就只剩下末四碼；系統本身也只有雜湊，沒有任何人能把它讀回來。</p>
 //       <div class="flex-row align-items-center gap-8 flex-wrap">
 //           <div class="col-6-md col-12-sm">

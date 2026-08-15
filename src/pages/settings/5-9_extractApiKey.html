@@ -47,7 +47,19 @@ permalink: 5-9_extractApiKey.html
 {% set extractKeyPlain = "sk_aB3xYz9Qle8sample000apikeyvalue000000000000" %}
 {% set extractKeyHint = "sk_…0000" %}
 <div class="block mb-16 flex-row column gap-16">
-    <div class="text-md text-bold" data-i18n="extractKey.currentKey">目前金鑰</div>
+    {# ⓘ 說明：markup 同既有 info-btn 六件組（GUIDELINE §1-2 無 html 元件契約）。①出處：本頁檔頭
+         「每租戶一把金鑰，供外部程式以 X-API-Key 標頭呼叫萃取端點……與資料 API」一節，與 product
+         `app/routers/extract.py` 的 `ApiKeyOut`／`generate_api_key`（明碼僅產生當下有值）、
+         `require_api_key_for`（`data`／`extract` 兩個 feature 各自的租戶開通閘）。**這是租戶層、
+         程式化路徑的憑證**——與 5-6-3 的平台層機器憑證、5-8 的客戶公開網站憑證都是不同軸，
+         ①末句刻意點出「不構成使用者登入身分」，避免與租戶內成員的能力模型混為一談。 #}
+    <div class="flex-row align-items-center gap-8">
+        <div class="text-md text-bold" data-i18n="extractKey.currentKey">目前金鑰</div>
+        <button type="button" class="info-btn" title="目前金鑰說明" data-i18n-title="help.extractKey.currentKey.title" data-open-modal="currentKeyHelpModal">
+            <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+            <span class="sr-only" data-i18n="help.extractKey.currentKey.title">目前金鑰說明</span>
+        </button>
+    </div>
     {% if not extractKeyHasKey %}
     {# has_key = false：這個租戶還沒有金鑰。不畫金鑰欄（沒有東西可畫，留一格空輸入框會被讀成
          「有一把空金鑰」），鈕改成「產生金鑰」而且**不走二次確認**——`generate_api_key` 是同一支
@@ -114,6 +126,17 @@ permalink: 5-9_extractApiKey.html
     {% endif %}
 </div>
 
+{# 「目前金鑰」的說明視窗：②③留空——現在生效的條件與這一區的數字由 React 執行期算，
+     切版這一側只提供容器（同批次既有區塊的現況）。 #}
+{% set helpModalId = "currentKeyHelpModal" %}
+{% set helpModalTitleKey = "help.extractKey.currentKey.title" %}
+{% set helpModalTitle = "目前金鑰說明" %}
+{% set helpModalWhatKey = "help.extractKey.currentKey.what" %}
+{% set helpModalWhat = "這一區管理本租戶的萃取 API 金鑰：目前有沒有金鑰、剛產生時的完整明碼（只會顯示這一次，之後系統只留得住雜湊與末碼提示），以及重新產生一把新金鑰。這把金鑰是給外部程式用 X-API-Key 標頭呼叫萃取 API 與資料 API 的租戶層憑證，不構成任何使用者的登入身分；重新產生會讓舊的那一把當場失效，執行前要先確認新金鑰已經佈署到會呼叫它的地方。" %}
+{% set helpModalStateItems = [] %}
+{% set helpModalLimitRows = [] %}
+{% include "components/help-modal/help-modal.html" %}
+
 {# 重新產生的二次確認（.js-regenerate-key 條件開窗的彈窗本體）。文案講的是「重新產生」不是「刪除」，
      且把「舊金鑰立即失效」放進確認內文——那句話原本只在頁首、離觸發鈕 30 行。 #}
 {% set deleteTitleKey = "extractKey.regenerate" %}
@@ -130,7 +153,17 @@ permalink: 5-9_extractApiKey.html
 
 {# 如何呼叫：說明 + 可複製 curl 範例 #}
 <div class="block flex-row column gap-16">
-    <div class="text-md text-bold" data-i18n="extractKey.howToTitle">如何呼叫萃取 API</div>
+    {# ⓘ 說明：markup 同既有 info-btn 六件組。①出處：本頁面本身（curl 範例＋標頭／欄位說明），
+         與上方「目前金鑰」①同一把憑證的呼叫方式——本區純粹是文件性質，不送出任何請求、也不是
+         另一支需要單獨管理的憑證。text 長度界線與 429 屬 ③／既有譯文範疇，不進 ①（見下方 text
+         長度那則註解：枚舉值與固定狀態碼不算「這一區的數字」要另外資料化的那一類）。 #}
+    <div class="flex-row align-items-center gap-8">
+        <div class="text-md text-bold" data-i18n="extractKey.howToTitle">如何呼叫萃取 API</div>
+        <button type="button" class="info-btn" title="如何呼叫萃取 API 說明" data-i18n-title="help.extractKey.howToTitle.title" data-open-modal="howToTitleHelpModal">
+            <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+            <span class="sr-only" data-i18n="help.extractKey.howToTitle.title">如何呼叫萃取 API 說明</span>
+        </button>
+    </div>
     {# text 長度 2 – 5000 是 product 真的會擋的界線（`app/routers/extract.py`：
          `if not (2 <= len(text) <= 5000): raise HTTPException(...)`，對齊舊系統），不是文案裡的
          舉例數字——上限改了這裡也要跟著改，故獨立成資料節點（§3-2）。
@@ -148,3 +181,13 @@ permalink: 5-9_extractApiKey.html
         <button type="button" class="button button-border button-sm copyBtn" data-toast="文字已複製!" data-i18n-data-toast="common.copied" data-i18n="action.copyExample">複製範例</button>
     </div>
 </div>
+
+{# 「如何呼叫萃取 API」的說明視窗：②③留空，理由同本頁其他說明視窗。 #}
+{% set helpModalId = "howToTitleHelpModal" %}
+{% set helpModalTitleKey = "help.extractKey.howToTitle.title" %}
+{% set helpModalTitle = "如何呼叫萃取 API 說明" %}
+{% set helpModalWhatKey = "help.extractKey.howToTitle.what" %}
+{% set helpModalWhat = "這一區示範怎麼呼叫萃取 API：要帶哪一個標頭、要送哪些欄位，以及一段可以直接複製去跑的 curl 範例。這是文件性質的說明，本身不送出任何請求——它示範的是上面那把金鑰的呼叫方式，不是另一支需要單獨管理的憑證。" %}
+{% set helpModalStateItems = [] %}
+{% set helpModalLimitRows = [] %}
+{% include "components/help-modal/help-modal.html" %}
