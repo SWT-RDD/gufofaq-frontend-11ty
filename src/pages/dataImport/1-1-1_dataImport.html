@@ -13,6 +13,11 @@ permalink: 1-1-1_dataImport.html
     {% include "ui/breadcrumb/breadcrumb.html" %}
 </div>
 
+{# 頁層說明：這一頁是整條匯入流程的起點——選資料集＋選格式，沒有自己的 API 呼叫，
+     語意分別來自下面 select-dataset-modal（單選要匯入的目標資料集）與 ui/upload-card
+     （四張卡各自連到該格式專屬的上傳頁）兩個元件的檔頭，見各自 include 處的說明。 #}
+<p class="text-gray" data-i18n="dataImport.entryIntro">這一頁是資料匯入的起點：先選定要匯入到哪一個資料集，再依你手上的檔案格式（Excel、PDF、WORD、圖片）點選對應的卡片，就會進入該格式專屬的上傳流程。</p>
+
 {# 選擇資料集：真實頁 pages/dataImport/1-1-1_dataImport.html 的「模擬select」觸發 datasetModal，
      class 沿用真實系統（同 ui/form-control 的 .field.select-wrap 寫法）。
      開窗掛 data-open-modal，由 ui/modals 的事件委派接手（§5：不寫 inline onclick） #}

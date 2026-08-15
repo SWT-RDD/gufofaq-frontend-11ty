@@ -13,6 +13,10 @@ permalink: 1-1-2_uploadFile_excel.html
     {% include "ui/breadcrumb/breadcrumb.html" %}
 </div>
 
+{# 頁層說明：這是 Excel 匯入 4 步精靈（上傳→預覽→欄位對應→送出）的第 1 步，語意見下面
+     upload-box 的檔頭與步驟條資料本身，本頁不另有 API 呼叫。 #}
+<p class="text-gray" data-i18n="dataImport.uploadExcelIntro">這一頁是 Excel 匯入精靈的第一步：選擇你要匯入的 Excel 活頁簿。選好之後會先進入預覽，讓你在真正送出前看到解析出來的欄位與內容。</p>
+
 {# 步驟條：步驟 1「上傳檔案」done，其餘未達成。狀態資料由本頁 set，交給參數化的 components/step-nodes 渲染（§6） #}
 {% set steps = [
     { label: "上傳檔案", done: true, i18nKey: "step.upload" },

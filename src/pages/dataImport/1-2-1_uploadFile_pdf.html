@@ -13,6 +13,10 @@ permalink: 1-2-1_uploadFile_pdf.html
     {% include "ui/breadcrumb/breadcrumb.html" %}
 </div>
 
+{# 頁層說明：語意出處同下面「上傳區」與「批次匯入結果」兩段檔頭——非結構化文件（PDF/WORD/
+     圖片）可多選、逐檔各自編輯、逐檔各自成敗，不是整批一次成敗。 #}
+<p class="text-gray" data-i18n="dataImport.uploadFilePdfIntro">這一頁是 PDF、WORD、圖片等非結構化文件的上傳與匯入介面：可以一次選取多個檔案、逐一編輯每個檔案的標題與內容。送出後會看到這批文件逐檔的匯入結果，包含哪些成功、哪些失敗與失敗原因。</p>
+
 {# 步驟條 + 只有「下一步」：兩步、.lg 樣式。
      stepNoPrev / stepNodesLg / stepNextHref 由本頁 set，交給參數化的 components/step-btn-wrap 渲染（§6） #}
 {% set steps = [

@@ -13,6 +13,10 @@ permalink: 1-1-6_uploadSuccess_excel.html
     {% include "ui/breadcrumb/breadcrumb.html" %}
 </div>
 
+{# 頁層說明：語意出處同下面 import-report 區塊的檔頭——product `import_excel`／
+     `_do_excel_mapping_import` 的三計數（inserted/updated/failed 互斥）與 dropped_links。 #}
+<p class="text-gray" data-i18n="dataImport.uploadSuccessExcelIntro">這一頁是 Excel 匯入完成後的結果畫面：確認這份資料已經寫入你選定的資料集，並列出這次匯入實際做了什麼（新增或取代既有版本、轉換內容時捨棄了哪些連結）。</p>
+
 {# 步驟條：4 步驟皆 done。狀態資料由本頁 set，交給參數化的 components/step-nodes 渲染（§6） #}
 {% set steps = [
     { label: "上傳檔案", done: true, i18nKey: "step.upload" },

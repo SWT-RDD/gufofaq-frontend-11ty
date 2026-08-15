@@ -13,6 +13,10 @@ permalink: 1-2-6_uploadSuccess_pdf.html
     {% include "ui/breadcrumb/breadcrumb.html" %}
 </div>
 
+{# 頁層說明：語意出處同下面 successDescPdf 那段檔頭——PDF/WORD 走的是批次匯入，這裡看到的
+     是整批彙總（資料總量＋檔案大小），不是單一檔案的細節，鏡射 uploadSuccess.js 的 else 分支。 #}
+<p class="text-gray" data-i18n="dataImport.uploadSuccessPdfIntro">這一頁是 PDF／WORD 批次匯入完成後的結果畫面：確認這一批文件已經送入你選定的資料集。這裡顯示的是整批的彙總結果，不是單一檔案的細節。</p>
+
 {# 步驟條：PDF 流程只有「上傳檔案」「送出資料」兩步、皆 done、用 .lg 樣式。
      資料與 stepNodesLg 由本頁 set，交給參數化的 components/step-nodes 渲染（§6） #}
 {% set steps = [
