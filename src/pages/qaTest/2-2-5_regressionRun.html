@@ -78,7 +78,17 @@ permalink: 2-2-5_regressionRun.html
      （狀態標記、中斷原因、摘要的分母、匯出提示、比較的「沒得比」）都要演得出來。 #}
 <div class="block mt-16 flex-row column gap-16">
     <div class="flex-row justify-content-between align-items-center flex-wrap gap-16">
-        <div class="text-md text-bold"><span data-i18n="regression.runNo">執行編號</span><span> #311</span></div>
+        {# ⓘ 說明：markup 同既有 info-btn 六件組（GUIDELINE §1-2 無 html 元件契約）。①出處：
+             本頁檔頭「示範刻意選一次中斷過的執行」一節，與 product `app/models.py` 的
+             `RegressionRun`、`app/routers/regression.py` 的 `_run_out`。標題含執行期的
+             執行編號，ⓘ 因此掛在固定文字節點旁，說明本身不提示範編號。 #}
+        <div class="flex-row align-items-center gap-8">
+            <div class="text-md text-bold"><span data-i18n="regression.runNo">執行編號</span><span> #311</span></div>
+            <button type="button" class="info-btn" title="執行身分說明" data-i18n-title="help.regression.runIdentity.title" data-open-modal="runIdentityHelpModal">
+                <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+                <span class="sr-only" data-i18n="help.regression.runIdentity.title">執行身分說明</span>
+            </button>
+        </div>
         <span class="verdict-tag is-fail" data-i18n="regression.statusAborted">中斷</span>
     </div>
     {# 冒號不折進 key（§4-2 例外——標點屬版面）：這一排**五個**標籤的 key 全部另有消費點，
@@ -98,6 +108,17 @@ permalink: 2-2-5_regressionRun.html
     <p class="text-red"><span class="text-bold" data-i18n="regression.abortedReason">中斷原因：</span><span>問答額度不足（案例 41 的第 1 輪）——已完成的結果保留</span></p>
     <p class="text-red" data-i18n="regression.abortedMeaning">這不是完整的一次回歸：只有下面列出的那幾則真的跑過，其餘的案例「有沒有回歸」這一次量不到。</p>
 </div>
+
+{# 「執行身分」的說明視窗：②③留空——現在生效的條件與這一區的數字由 React 執行期算，
+     切版這一側只提供容器（同本批次既有 38 顆區塊的現況）。 #}
+{% set helpModalId = "runIdentityHelpModal" %}
+{% set helpModalTitleKey = "help.regression.runIdentity.title" %}
+{% set helpModalTitle = "執行身分說明" %}
+{% set helpModalWhatKey = "help.regression.runIdentity.what" %}
+{% set helpModalWhat = "這一區顯示這次執行的身分與整體狀態：跑的是哪一個案例集、用哪一個知識檢索設定檔與設定版本、開始與結束時間；如果這次執行中途中斷，中斷原因會顯示在這裡，並且已經完成的那幾則結果仍然保留、但這不是一次完整的回歸。" %}
+{% set helpModalStateItems = [] %}
+{% set helpModalLimitRows = [] %}
+{% include "components/help-modal/help-modal.html" %}
 
 {# ── 這一輪實際用的設定 ─────────────────────────────────────────────────────
      `RegressionRun.effective_config`＝這一輪實際送給問答引擎的那一份 config（開跑當下落庫，
@@ -151,7 +172,16 @@ permalink: 2-2-5_regressionRun.html
   { field: "skill_ids", labelKey: "settings.assignedSkills", label: "指派 Skill", baseline: "11", value: "11", diffKey: "regression.effectiveDiffSame", diff: "相同", diffClass: "is-muted", sourceKey: "regression.overrideInherit", source: "沿用設定檔", sourceClass: "is-muted" }
 ] %}
 <div class="block mt-16 flex-row column gap-16">
-    <div class="text-md text-bold" data-i18n="regression.effectiveSection">這一輪實際用的設定</div>
+    {# ⓘ 說明：markup 同既有 info-btn 六件組。①出處：本頁檔頭「這一輪到底用了什麼設定」一節，
+         與 product `app/routers/regression.py` 的 `_inherit_from_profile`、`app/models.py` 的
+         `RegressionRun.overrides`／`effective_config`。 #}
+    <div class="flex-row align-items-center gap-8">
+        <div class="text-md text-bold" data-i18n="regression.effectiveSection">這一輪實際用的設定</div>
+        <button type="button" class="info-btn" title="這一輪實際用的設定說明" data-i18n-title="help.regression.effectiveSection.title" data-open-modal="effectiveSectionHelpModal">
+            <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+            <span class="sr-only" data-i18n="help.regression.effectiveSection.title">這一輪實際用的設定說明</span>
+        </button>
+    </div>
     <p class="text-gray" data-i18n="regression.effectiveIntro">這是這一輪實際送給問答引擎的那一份設定，開跑當下就落庫——不是現在回頭去讀設定檔（設定檔後來被改過，這裡仍然是當時真正跑的那一份）。標成「沿用設定檔」的欄位，跑的時候取的是被測設定檔當下的值；標成「這一次指定」的才是這一輪刻意換掉的。</p>
     {# 挑了基準才有這一句（與那兩欄同進同出）。單一句型把 0 那一態寫進句子裡，故切版演一態就夠。 #}
     <p><span class="text-bold" data-i18n="regression.effectiveDiffCountPrefix">與基準 </span><span>#310</span><span data-i18n="regression.effectiveDiffCountMid"> 相比，有 </span><span>3</span><span data-i18n="regression.effectiveDiffCountSuffix"> 個旋鈕不同——0 個時，兩輪跑的是同一組設定，退步就不是設定造成的。</span></p>
@@ -194,6 +224,16 @@ permalink: 2-2-5_regressionRun.html
     <p class="text-gray" data-i18n="regression.effectiveRestHint">這張表只列「執行這一套案例集」改得動的那幾個旋鈕。設定檔的其餘設定（內容政策、輸出規則、QA 直答、標籤過濾…）這一輪一律沿用，那支端點在結構上碰不到它們——把它們塞進覆寫會被擋成「未知的覆寫欄位」。</p>
 </div>
 
+{# 「這一輪實際用的設定」的說明視窗：②③留空，理由同本頁其他說明視窗。 #}
+{% set helpModalId = "effectiveSectionHelpModal" %}
+{% set helpModalTitleKey = "help.regression.effectiveSection.title" %}
+{% set helpModalTitle = "這一輪實際用的設定說明" %}
+{% set helpModalWhatKey = "help.regression.effectiveSection.what" %}
+{% set helpModalWhat = "這裡列出這一輪實際送給問答引擎的設定，開跑當下就已經落庫定案，不會因為之後改了設定檔而跟著變動；每一列同時標出這個旋鈕是這一次刻意指定、還是沿用被測設定檔當下的值，挑了基準執行之後還會並排顯示基準那一輪的值與兩者的差異。" %}
+{% set helpModalStateItems = [] %}
+{% set helpModalLimitRows = [] %}
+{% include "components/help-modal/help-modal.html" %}
+
 {# ── 摘要 ───────────────────────────────────────────────────────────────────
      示範自洽（GUIDELINE §6）：通過 8 ＋ 未通過 2 ＝ 總數 10；有分數 7 ＋ 評審未完成 1（#35）
      ＝ 有 judge 判準的 8 則，剩下 **2** 則沒有 judge 判準——#34（逐案例區那一列）與 **#33**
@@ -209,7 +249,15 @@ permalink: 2-2-5_regressionRun.html
      逐則 5（#36）＋2（#39）＋1（#35）＋1，四則的 id 都 < 41（中斷點）⇒ 這一次都跑完了
      ⇒ 5＋2＋1＋1 ＝ **9**。原本寫 6：那是一個整套案例集湊不出來的數字（當時全套的和是 5）。 #}
 <div class="block mt-16 flex-row column gap-16">
-    <div class="text-md text-bold" data-i18n="regression.summary">執行摘要</div>
+    {# ⓘ 說明：markup 同既有 info-btn 六件組。①出處：product `app/routers/regression.py` 的
+         `_summarize`（`judge_avg` 只平均有分數的那幾則，評審沒跑成功的不當 0 分拉低平均）。 #}
+    <div class="flex-row align-items-center gap-8">
+        <div class="text-md text-bold" data-i18n="regression.summary">執行摘要</div>
+        <button type="button" class="info-btn" title="執行摘要說明" data-i18n-title="help.regression.summary.title" data-open-modal="summaryHelpModal">
+            <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+            <span class="sr-only" data-i18n="help.regression.summary.title">執行摘要說明</span>
+        </button>
+    </div>
     <div class="flex-row gap-24 flex-wrap">
         <p><span class="text-bold" data-i18n="regression.summaryTotal">跑完的案例：</span><span>10</span></p>
         <p><span class="text-bold" data-i18n="regression.summaryPassed">通過：</span><span>8</span></p>
@@ -220,6 +268,16 @@ permalink: 2-2-5_regressionRun.html
     {# judge_avg 的分母要講出來，否則「4.1」讀起來像是全部案例的平均。 #}
     <p class="text-gray"><span data-i18n="regression.judgeAvgBasePrefix">主觀分平均只算有分數的 </span><span>7</span><span data-i18n="regression.judgeAvgBaseMid"> 則；另有 </span><span>1</span><span data-i18n="regression.judgeAvgBaseSuffix"> 則評審未完成，沒有被當成 0 分拉低平均。評審未完成的案例：</span><span>#35</span></p>
 </div>
+
+{# 「執行摘要」的說明視窗：②③留空，理由同本頁其他說明視窗。 #}
+{% set helpModalId = "summaryHelpModal" %}
+{% set helpModalTitleKey = "help.regression.summary.title" %}
+{% set helpModalTitle = "執行摘要說明" %}
+{% set helpModalWhatKey = "help.regression.summary.what" %}
+{% set helpModalWhat = "這裡彙總這一次執行的整體結果：跑完幾則案例、通過與未通過各幾則、主觀評分的平均，以及送出了幾輪前置對話。主觀評分平均只計入真的評出分數的案例，評審沒有跑成功的案例不會被當成 0 分拉低平均。" %}
+{% set helpModalStateItems = [] %}
+{% set helpModalLimitRows = [] %}
+{% include "components/help-modal/help-modal.html" %}
 
 {# ── 上限與截斷 ─────────────────────────────────────────────────────────────
      `summary.limits` 原樣攤在消費點。`upstream_memory_count` 是**上游的截斷**：chatbot 只把
@@ -241,7 +299,15 @@ permalink: 2-2-5_regressionRun.html
   { labelKey: "regression.limitMemoryCount", label: "上游記憶輪數：", value: "5", unitKey: "regression.turnsUnit", unit: " 輪" }
 ] %}
 <div class="block mt-16 flex-row column gap-16">
-    <div class="text-md text-bold" data-i18n="regression.limitsSection">這一次的上限</div>
+    {# ⓘ 說明：markup 同既有 info-btn 六件組。①出處：product `app/routers/regression.py` 的
+         `_limits`（`upstream_memory_count` 是上游截斷，逐案例點名受影響的那幾則）。 #}
+    <div class="flex-row align-items-center gap-8">
+        <div class="text-md text-bold" data-i18n="regression.limitsSection">這一次的上限</div>
+        <button type="button" class="info-btn" title="這一次的上限說明" data-i18n-title="help.regression.limitsSection.title" data-open-modal="limitsSectionHelpModal">
+            <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+            <span class="sr-only" data-i18n="help.regression.limitsSection.title">這一次的上限說明</span>
+        </button>
+    </div>
     <div class="flex-row gap-24 flex-wrap">
         {% for limit in runLimitRows %}
         <p><span class="text-bold" data-i18n="{{ limit.labelKey }}">{{ limit.label }}</span><span>{{ limit.value }}</span><span data-i18n="{{ limit.unitKey }}">{{ limit.unit }}</span></p>
@@ -250,10 +316,28 @@ permalink: 2-2-5_regressionRun.html
     <p class="text-red"><span data-i18n="regression.overMemoryPrefix">這幾則案例的「前置輪數 ＋ 本題」超過上游記憶輪數，最早那幾輪不會進到模型眼前：</span><span>#36</span></p>
 </div>
 
+{# 「這一次的上限」的說明視窗：②③留空，理由同本頁其他說明視窗。 #}
+{% set helpModalId = "limitsSectionHelpModal" %}
+{% set helpModalTitleKey = "help.regression.limitsSection.title" %}
+{% set helpModalTitle = "這一次的上限說明" %}
+{% set helpModalWhatKey = "help.regression.limitsSection.what" %}
+{% set helpModalWhat = "這裡列出這一次執行套用的各項上限，以及上游對話記憶輪數造成的截斷：當某則案例的「前置輪數 ＋ 本題」超過上游一次能記住的輪數，最早的那幾輪就不會被模型看到，這裡會點名是哪幾則案例受影響。" %}
+{% set helpModalStateItems = [] %}
+{% set helpModalLimitRows = [] %}
+{% include "components/help-modal/help-modal.html" %}
+
 {# ── 匯出 ───────────────────────────────────────────────────────────────────
      截斷必須在消費點看得見：中斷過／還在跑的執行，那份 CSV 只有已經跑完的那幾則。 #}
 <div class="block mt-16 flex-row column gap-16">
-    <div class="text-md text-bold" data-i18n="regression.exportSection">匯出</div>
+    {# ⓘ 說明：markup 同既有 info-btn 六件組。①出處：product `app/routers/regression.py` 的
+         `export_run`／`_partial_notice`（中斷過或還在跑的執行，匯出只有已跑完的那幾則）。 #}
+    <div class="flex-row align-items-center gap-8">
+        <div class="text-md text-bold" data-i18n="regression.exportSection">匯出</div>
+        <button type="button" class="info-btn" title="匯出說明" data-i18n-title="help.regression.exportSection.title" data-open-modal="exportSectionHelpModal">
+            <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+            <span class="sr-only" data-i18n="help.regression.exportSection.title">匯出說明</span>
+        </button>
+    </div>
     <p class="text-red"><span data-i18n="regression.exportPartialPrefix">這一次執行是中斷的，匯出的 CSV 只有 </span><span>10</span><span data-i18n="regression.exportPartialSuffix"> 則案例的結果，最後一列會明說筆數與中斷原因——不要把它讀成「整套案例都跑過」。</span></p>
     <div class="flex-row">
         <button type="button" class="button button-border js-export-run" data-toast="報表已下載|匯出失敗，請稍後再試" data-i18n-data-toast="toast.exportRun" data-toast-type="success|error" data-i18n="regression.exportCsv">下載結果 CSV</button>
@@ -261,13 +345,32 @@ permalink: 2-2-5_regressionRun.html
     <p class="text-gray" data-i18n="regression.exportColumns">七欄：案例／期望／實際答案／通過與否／命中文件／評審分數／未通過原因。「通過與否」逐字只有「通過」或「未通過」兩種，失敗細節在自己那一欄（下游做樞紐分析時，塞進狀態欄的每一句細節都會變成一個新的狀態值）；「命中文件」印的是真的引用到哪幾份，零命中的列寫「（零命中）」、被夾掉時明說共幾筆——留白會被讀成「這一題零命中」。</p>
 </div>
 
+{# 「匯出」的說明視窗：②③留空，理由同本頁其他說明視窗。 #}
+{% set helpModalId = "exportSectionHelpModal" %}
+{% set helpModalTitleKey = "help.regression.exportSection.title" %}
+{% set helpModalTitle = "匯出說明" %}
+{% set helpModalWhatKey = "help.regression.exportSection.what" %}
+{% set helpModalWhat = "這裡把這一次執行的結果匯出成 CSV，欄位是業務單位慣用的問題回報表格式；如果這次執行還在跑或中途中斷過，匯出的檔案只會包含已經跑完的那幾則，並在最後一列明說實際筆數與中斷原因，避免被誤讀成整套案例都跑過。" %}
+{% set helpModalStateItems = [] %}
+{% set helpModalLimitRows = [] %}
+{% include "components/help-modal/help-modal.html" %}
+
 {# ── 基準比較 ───────────────────────────────────────────────────────────────
      基準必須是同一個案例集的另一次執行（不同案例集的案例 id 天生對不起來，後端回 400 並
      同時列出兩個案例集；跨租戶一律 404、訊息與「不存在」相同）。
      沒有挑基準時後端**不回空的比較區塊**——空的「退步」讀起來是「比過了、沒有回歸」，
      而實際上根本沒有比。故這一塊在 React 端是「挑了基準才渲染」。 #}
 <div class="block mt-16 flex-row column gap-16">
-    <div class="text-md text-bold" data-i18n="regression.compareSection">與基準比較</div>
+    {# ⓘ 說明：markup 同既有 info-btn 六件組。①出處：本頁檔頭「比較有五個桶子，不是三個」
+         一節，與 product `app/routers/regression.py` 的 `get_run`（baseline 參數）／
+         `_compare_runs`（判定只看 `passed`，命中清單兩側並排）。 #}
+    <div class="flex-row align-items-center gap-8">
+        <div class="text-md text-bold" data-i18n="regression.compareSection">與基準比較</div>
+        <button type="button" class="info-btn" title="與基準比較說明" data-i18n-title="help.regression.compareSection.title" data-open-modal="compareSectionHelpModal">
+            <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+            <span class="sr-only" data-i18n="help.regression.compareSection.title">與基準比較說明</span>
+        </button>
+    </div>
     <div class="flex-row gap-16 align-items-end flex-wrap">
         <div class="col-5-md col-12-sm">
             <div class="form-group">
@@ -294,6 +397,16 @@ permalink: 2-2-5_regressionRun.html
     {# 命中清單為什麼要兩側並排，以及它有上界這件事——講在比較區塊的入口，不是只寫在某一格裡。 #}
     <p class="text-gray" data-i18n="regression.hitsWhy">下面每一塊多了「基準引用」與「這一次引用」兩欄：退步最常見的原因就是「以前引 A、現在引 B」，而那只有兩側擺在一起才看得出來。逐筆命中只留文件身分與來源線索（不存全文），而且每一則有筆數上界——被夾掉時那一格會明說共幾筆，不要把它讀成「只引了這幾份」。</p>
 </div>
+
+{# 「與基準比較」的說明視窗：②③留空，理由同本頁其他說明視窗。 #}
+{% set helpModalId = "compareSectionHelpModal" %}
+{% set helpModalTitleKey = "help.regression.compareSection.title" %}
+{% set helpModalTitle = "與基準比較說明" %}
+{% set helpModalWhatKey = "help.regression.compareSection.what" %}
+{% set helpModalWhat = "這裡挑選同一個案例集的另一次執行當基準，重新比較兩次的確定性判定：退步（以前通過、這次沒過）是整份報表最重要的訊號，同時也會並排列出兩次分別引用到哪些文件，方便判斷是不是檢索結果換了才造成退步。沒有挑基準之前，下面不會顯示任何比較結果。" %}
+{% set helpModalStateItems = [] %}
+{% set helpModalLimitRows = [] %}
+{% include "components/help-modal/help-modal.html" %}
 
 {# ── 五個桶子 ───────────────────────────────────────────────────────────────
      退步／修好了／無變化三塊的 markup 完全相同（差別只有標題、標記顏色與那一句說明），
@@ -432,7 +545,22 @@ permalink: 2-2-5_regressionRun.html
 {# 「退步」是第一塊：它是唯一會讓人停下來看的清單，埋在 200 則無變化後面等於沒有。 #}
 <section class="block mt-16 flex-row column gap-16" aria-labelledby="bucket-{{ bucket.key }}-title">
     <div class="flex-row align-items-center gap-10 flex-wrap">
+        {# ⓘ 只掛在「退步」這一桶：三桶共用同一份 markup（{% for %} 渲染），但只有這一桶需要
+             額外的概念說明——它是本頁檔頭「這一份是整份報表的價值所在」那一句講的桶子；
+             「修好了」與「無變化」各自已有的 `bucket.why` 一句已經完整交代自己是什麼，
+             重複掛一顆說明視窗只是同一句話再講一次。①出處：product
+             `app/routers/regression.py` 的 `_compare_runs`（判定只看 `passed`）。 #}
+        {% if bucket.key == "regressed" %}
+        <div class="flex-row align-items-center gap-8">
+            <h2 id="bucket-{{ bucket.key }}-title" class="text-md text-bold m-0" data-i18n="{{ bucket.titleKey }}">{{ bucket.title }}</h2>
+            <button type="button" class="info-btn" title="退步說明" data-i18n-title="help.regression.bucketRegressed.title" data-open-modal="bucketRegressedHelpModal">
+                <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+                <span class="sr-only" data-i18n="help.regression.bucketRegressed.title">退步說明</span>
+            </button>
+        </div>
+        {% else %}
         <h2 id="bucket-{{ bucket.key }}-title" class="text-md text-bold m-0" data-i18n="{{ bucket.titleKey }}">{{ bucket.title }}</h2>
+        {% endif %}
         <span class="verdict-tag {{ bucket.tagClass }}">{{ bucket.count }}</span>
     </div>
     <p class="text-gray" data-i18n="{{ bucket.whyKey }}">{{ bucket.why }}</p>
@@ -481,10 +609,30 @@ permalink: 2-2-5_regressionRun.html
     {% endif %}
 </section>
 {% if bucket.key == "regressed" %}
+{# 「退步」的說明視窗：②③留空，理由同本頁其他說明視窗。掛在這個 `{% if %}` 裡是為了讓它
+     跟著「退步」那一次迴圈疊代只 include 一次——頁面層的 for 迴圈裡 include 不受
+     GUIDELINE §9 那條「元件內部」限制（該測試只掃 `_includes/` 元件自己的 for 迴圈）。 #}
+{% set helpModalId = "bucketRegressedHelpModal" %}
+{% set helpModalTitleKey = "help.regression.bucketRegressed.title" %}
+{% set helpModalTitle = "退步說明" %}
+{% set helpModalWhatKey = "help.regression.bucketRegressed.what" %}
+{% set helpModalWhat = "這裡列出兩次執行都有結果、但判定從通過變成沒通過的案例——這是整份回歸報表存在的理由：抓出這次改動（換模型、調提示詞、調檢索設定）弄壞了哪些原本答得對的問題。判定只看確定性斷言，主觀評分的高低不影響這裡的分類。" %}
+{% set helpModalStateItems = [] %}
+{% set helpModalLimitRows = [] %}
+{% include "components/help-modal/help-modal.html" %}
+
 {# ── 沒得比 ── 排在「無變化」之前：它的預設歸宿就是「無變化」，那正是假綠燈。 #}
 <section class="block mt-16 flex-row column gap-16" aria-labelledby="bucket-notCompared-title">
     <div class="flex-row align-items-center gap-10 flex-wrap">
-        <h2 id="bucket-notCompared-title" class="text-md text-bold m-0" data-i18n="regression.bucketNotCompared">沒得比（只有一邊有結果）</h2>
+        {# ⓘ 說明：markup 同既有 info-btn 六件組。①出處：product `app/routers/regression.py`
+             的 `_compare_runs`（`not_compared`：只有一邊有結果，刻意不算進無變化）。 #}
+        <div class="flex-row align-items-center gap-8">
+            <h2 id="bucket-notCompared-title" class="text-md text-bold m-0" data-i18n="regression.bucketNotCompared">沒得比（只有一邊有結果）</h2>
+            <button type="button" class="info-btn" title="沒得比說明" data-i18n-title="help.regression.bucketNotCompared.title" data-open-modal="bucketNotComparedHelpModal">
+                <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+                <span class="sr-only" data-i18n="help.regression.bucketNotCompared.title">沒得比說明</span>
+            </button>
+        </div>
         <span class="verdict-tag is-warn">{{ notComparedRows.length }}</span>
     </div>
     <p class="text-red" data-i18n="regression.bucketNotComparedWhy">這些案例只有一邊有結果，所以它們有沒有回歸「這一次量不到」——不是「沒有變化」。把它們算進無變化，一次跑到一半就中斷的執行會比出「0 退步」。</p>
@@ -520,10 +668,28 @@ permalink: 2-2-5_regressionRun.html
     </div>
 </section>
 
+{# 「沒得比」的說明視窗：②③留空，理由同本頁其他說明視窗。 #}
+{% set helpModalId = "bucketNotComparedHelpModal" %}
+{% set helpModalTitleKey = "help.regression.bucketNotCompared.title" %}
+{% set helpModalTitle = "沒得比說明" %}
+{% set helpModalWhatKey = "help.regression.bucketNotCompared.what" %}
+{% set helpModalWhat = "這裡列出只有一邊執行有結果的案例：可能是案例在基準執行之後才新增，也可能是這一次或基準那一次中途中斷、沒有跑到。這些案例「有沒有退步」這一次量不到，所以刻意不算進無變化，避免中途中斷的執行被誤讀成「全部沒有變化」。" %}
+{% set helpModalStateItems = [] %}
+{% set helpModalLimitRows = [] %}
+{% include "components/help-modal/help-modal.html" %}
+
 {# ── 評審漂移 ── 同樣排在「無變化」之前，理由同上。 #}
 <section class="block mt-16 flex-row column gap-16" aria-labelledby="bucket-judgeDrift-title">
     <div class="flex-row align-items-center gap-10 flex-wrap">
-        <h2 id="bucket-judgeDrift-title" class="text-md text-bold m-0" data-i18n="regression.bucketJudgeDrift">評審漂移（主觀分量不到了）</h2>
+        {# ⓘ 說明：markup 同既有 info-btn 六件組。①出處：product `app/routers/regression.py`
+             的 `_compare_runs`（`judge_drift`：讀 `scored ⇄ unavailable` 的轉移，不是分數高低）。 #}
+        <div class="flex-row align-items-center gap-8">
+            <h2 id="bucket-judgeDrift-title" class="text-md text-bold m-0" data-i18n="regression.bucketJudgeDrift">評審漂移（主觀分量不到了）</h2>
+            <button type="button" class="info-btn" title="評審漂移說明" data-i18n-title="help.regression.bucketJudgeDrift.title" data-open-modal="bucketJudgeDriftHelpModal">
+                <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+                <span class="sr-only" data-i18n="help.regression.bucketJudgeDrift.title">評審漂移說明</span>
+            </button>
+        </div>
         <span class="verdict-tag is-warn">{{ judgeDriftTotal }}</span>
     </div>
     <p class="text-red" data-i18n="regression.bucketJudgeDriftWhy">這些案例的確定性判定確實沒變，所以它們真的落在「無變化」——但這一次的主觀分整批不見了。少了這一塊，報表會顯示「什麼都沒變」，而事實是這一批根本沒有主觀分。它讀的是「評得出來 ⇄ 評不出來」的轉移，不是分數高低。</p>
@@ -553,6 +719,16 @@ permalink: 2-2-5_regressionRun.html
         </table>
     </div>
 </section>
+
+{# 「評審漂移」的說明視窗：②③留空，理由同本頁其他說明視窗。 #}
+{% set helpModalId = "bucketJudgeDriftHelpModal" %}
+{% set helpModalTitleKey = "help.regression.bucketJudgeDrift.title" %}
+{% set helpModalTitle = "評審漂移說明" %}
+{% set helpModalWhatKey = "help.regression.bucketJudgeDrift.what" %}
+{% set helpModalWhat = "這裡列出確定性判定沒有變化、但主觀評分整批評不出來（或反過來，這次評得出來了）的案例。這些案例通過與否確實沒有改變，只是評審服務這一次故障或恢復，與答案本身有沒有退步是兩件事，所以獨立列出來，不會被藏進無變化裡讓人誤以為主觀評分照常運作。" %}
+{% set helpModalStateItems = [] %}
+{% set helpModalLimitRows = [] %}
+{% include "components/help-modal/help-modal.html" %}
 {% endif %}
 {% endfor %}
 
@@ -644,7 +820,15 @@ permalink: 2-2-5_regressionRun.html
 ] %}
 <div class="block mt-16 flex-row column gap-16 js-accordion">
     <div class="flex-row justify-content-between align-items-center flex-wrap gap-16">
-        <div class="text-md text-bold" data-i18n="regression.perCase">逐案例結果</div>
+        {# ⓘ 說明：markup 同既有 info-btn 六件組。①出處：本頁檔頭「逐案例展開」一節，與 product
+             `app/routers/regression.py` 的 `get_run`（results 逐案例展開答案／斷言／主觀分）。 #}
+        <div class="flex-row align-items-center gap-8">
+            <div class="text-md text-bold" data-i18n="regression.perCase">逐案例結果</div>
+            <button type="button" class="info-btn" title="逐案例結果說明" data-i18n-title="help.regression.perCase.title" data-open-modal="perCaseHelpModal">
+                <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+                <span class="sr-only" data-i18n="help.regression.perCase.title">逐案例結果說明</span>
+            </button>
+        </div>
         {# `.btn-group` 的規則帶著 `.default-table` 祖先（§4 祖先錯位），表格外吃不到。 #}
         <div class="flex-row gap-10 align-items-center">
             <button type="button" class="button button-border button-sm js-expand-all" data-i18n="common.expandAll">全部展開</button>
@@ -761,3 +945,13 @@ permalink: 2-2-5_regressionRun.html
     </div>
     <p class="text-gray" data-i18n="regression.judgeNoThreshold">主觀分不參與通過與否，也沒有門檻：分數低不會讓案例變紅，只有「有判準卻沒評出來」會標成評審未完成。</p>
 </div>
+
+{# 「逐案例結果」的說明視窗：②③留空，理由同本頁其他說明視窗。 #}
+{% set helpModalId = "perCaseHelpModal" %}
+{% set helpModalTitleKey = "help.regression.perCase.title" %}
+{% set helpModalTitle = "逐案例結果說明" %}
+{% set helpModalWhatKey = "help.regression.perCase.what" %}
+{% set helpModalWhat = "這裡展開這一次執行裡每一則案例的完整結果：實際答案、有沒有通過、沒通過的斷言各自量到什麼實測值、主觀評分（或為什麼沒有主觀分），以及這一則命中的文件與實際送出了幾輪前置對話。主觀評分低不會讓案例變成沒通過，只有「有評分判準卻評不出分數」才會標成評審未完成。" %}
+{% set helpModalStateItems = [] %}
+{% set helpModalLimitRows = [] %}
+{% include "components/help-modal/help-modal.html" %}
