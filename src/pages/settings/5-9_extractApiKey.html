@@ -131,13 +131,15 @@ permalink: 5-9_extractApiKey.html
 {# 如何呼叫：說明 + 可複製 curl 範例 #}
 <div class="block flex-row column gap-16">
     <div class="text-md text-bold" data-i18n="extractKey.howToTitle">如何呼叫萃取 API</div>
-    {# text 長度 2–5000 是 product 真的會擋的界線（`app/routers/extract.py`：
+    {# text 長度 2 – 5000 是 product 真的會擋的界線（`app/routers/extract.py`：
          `if not (2 <= len(text) <= 5000): raise HTTPException(...)`，對齊舊系統），不是文案裡的
          舉例數字——上限改了這裡也要跟著改，故獨立成資料節點（§3-2）。
+         排法（en dash 前後帶空白）對齊 `lib/useLimits.ts::formatBound` 既有的界線呈現慣例
+         （`1 – 10`），下一輪把這個節點接上契約時才不必連著改排法。
          `mode 1=國家、2=時間、3=兩者` 與句尾的 `429` 維持譯文：前者是**枚舉值**不是界線
          （`body.mode not in (1, 2, 3)` 判的是值域不是夾輸入），後者是固定的 HTTP 狀態碼，
          兩者都不是「改了後端常數這裡要跟著改」的那一類數字。 #}
-    <p class="text-gray"><span data-i18n="extractKey.howToDescPrefix">以 X-API-Key 標頭呼叫；mode 1=國家、2=時間、3=兩者；text 長度 </span><span>2–5000</span><span data-i18n="extractKey.howToDescSuffix"> 字；額度用罄回 429。</span></p>
+    <p class="text-gray"><span data-i18n="extractKey.howToDescPrefix">以 X-API-Key 標頭呼叫；mode 1=國家、2=時間、3=兩者；text 長度 </span><span>2 – 5000</span><span data-i18n="extractKey.howToDescSuffix"> 字；額度用罄回 429。</span></p>
     <pre class="code-block"><code>curl -X POST "https://&lt;your-host&gt;/api/extract/country-or-time" \
   -H "X-API-Key: YOUR_KEY" \
   -H "Content-Type: application/json" \
