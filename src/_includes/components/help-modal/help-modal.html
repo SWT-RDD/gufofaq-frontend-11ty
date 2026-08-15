@@ -1,0 +1,102 @@
+{# 說明視窗：一顆 ⓘ 打開的三塊式說明。三塊的來源刻意不同，這是它存在的理由——
+     ① 這一區在做什麼：**唯一手寫**的一段，i18n key 慣例 `help.<page>.<block>.what`。
+     ② 現在生效的條件：**完全導出**（模式適用性＋值相依），不手寫。手寫的那天它就會與
+        畫面分家——一邊藏著欄位、一邊說它生效。故 `helpModalStateItems` 逐條是呼叫端已經
+        算好的完整句子，不掛 `data-i18n`（GUIDELINE §4-2「只翻 UI chrome，不翻假資料」——
+        這裡每一句都是計算結果，不是站內字面，翻了反而會把「現在生效」翻成另一種語言的謊話）。
+     ③ 這一區的所有數字：全部來自 product 的 `*/limits` 端點，界線（`bound`）與譯文
+        分開成獨立節點——同 `dataImport.headerRowsHint` 既有處置（GUIDELINE §3-2：上下界
+        是資料不是譯文，烤進譯文的話繁中改了英譯不會跟、`npm run check` 也看不出來）。
+     不生效的選項在畫面上是**隱藏**的，所以 ② 不列舉「哪些欄位在別的模式不生效」——
+     把隱藏的欄位寫進說明，等於從另一個出口把它攤回畫面上。
+     整區被隱藏時，這一區的 ⓘ 連同區塊本身一起不存在：沒有一顆按鈕去解釋一個看不到的東西。
+
+     殼逐字沿用 `settings/5-2_conversationSettings.html` 的 `aliasOutputInfoModal` 那份骨架
+     （GUIDELINE §7 的「所有 modal 外殼逐字相同」）：modals-dialog modals-md → modals-wrap →
+     modal-close → modals-content → modals-header／modals-body。本元件只在 body 內放三塊。
+
+     參數（頁面在 include 前 set，見 GUIDELINE §6；同頁會有多顆說明窗——每個「區塊」各開一顆——
+     每次 include 前都要重新 set 全部參數，`set` 是頁面全域）。**全部參數統一掛 `helpModal`
+     前綴**（同 `components/delete-modal` 的 `deleteXxx`、`components/rating-modal` 的
+     `ratingModalXxx`）：這個元件比那兩個更需要它——它注定同頁出現多次（每個需要說明的
+     區塊各一份），裸名字（`title`／`what`）在一個上千行、已有數十個元件各自 set 參數的頁面
+     上撞名機率遠高於「只會出現一次」的彈窗。
+       helpModalId          —— 必填。`<dialog>` 的 id，同時是 `aria-labelledby` 目標
+                               （`{{ helpModalId }}-title`）與觸發鈕 `data-open-modal` 指到的值。
+                               命名慣例 `<blockId>HelpModal`（如 `reasoningDepthHelpModal`）——
+                               一個 `<dialog id>` 只能由一個元件宣告（GUIDELINE §5），同頁多顆
+                               說明窗要各自唯一。
+       helpModalTitleKey/
+       helpModalTitle       —— 必填。視窗標題（i18n key ＋ 繁中原文）。
+       helpModalWhatKey/
+       helpModalWhat        —— 必填。①「這一區在做什麼」，本元件裡**唯一手寫**的一段
+                               （i18n key 慣例 `help.<page>.<block>.what`）。
+       helpModalStateItems  —— 必填，字串陣列。②「現在生效的條件」逐條列出；見上方理由，
+                               不掛 `data-i18n`。示範時至少給一筆，讓這個分支被看過
+                              （GUIDELINE §5：沒有頁面演得出來的分支等於沒驗收過）。
+       helpModalLimitRows   —— 必填，物件陣列 `{labelKey, label, bound, effectKey, effect}`。
+                               ③「這一區的所有數字」，`bound` 是獨立節點、不得烤進
+                               `labelKey`／`effectKey` 的譯文字串裡。
+
+     住在哪一頁：`pages/components/component.html` 第 16 節（`Modal跳窗`）的示範觸發器＋一份
+     實例（`demoHelpModal`）。日後每個需要「說明」ⓘ 的欄位各自 include 一次、各自一組參數。 #}
+<dialog class="modals" id="{{ helpModalId }}" aria-labelledby="{{ helpModalId }}-title">
+    <div class="modals-dialog modals-md">
+        <div class="modals-wrap">
+            {% include "ui/modal-close/modal-close.html" %}
+            <div class="modals-content">
+                <div class="modals-header">
+                    <h3 class="modals-title" id="{{ helpModalId }}-title" data-i18n="{{ helpModalTitleKey }}">{{ helpModalTitle }}</h3>
+                </div>
+                <div class="modals-body flex-row column gap-16">
+                    <section class="help-modal-what">
+                        <p class="m-0" data-i18n="{{ helpModalWhatKey }}">{{ helpModalWhat }}</p>
+                    </section>
+                    {# ② 與 ③ 的容器必須先在（同一份骨架序列的一部分）：內容之後才到，
+                         而一個之後才出現的容器會讓兩側的骨架序列對不起來（GUIDELINE §2
+                         「畫得出內容的那一行」一族的同一種考量：結構要穩定於內容）。 #}
+                    <section class="help-modal-state">
+                        <h4 class="help-modal-subtitle mb-8" data-i18n="help.stateTitle">現在生效的條件</h4>
+                        <ul class="list-style-disc">
+                            {% for item in helpModalStateItems %}
+                            <li>{{ item }}</li>
+                            {% endfor %}
+                        </ul>
+                    </section>
+                    <section class="help-modal-limits">
+                        <h4 class="help-modal-subtitle mb-8" data-i18n="help.limitsTitle">這一區的所有數字</h4>
+                        {# 欄寬走 `<col style>`（GUIDELINE §4 三個合法行內 style 之一），不進 scss：
+                             這張表欄數固定，但「界線」欄要給定寬避免被平均欄寬拉得忽寬忽窄，
+                             160px 沿用 `dataset/3-1-1_datasetList.html` 既有數值欄的慣用寬度，
+                             不是新的魔術數字。 #}
+                        <div class="table-container scrollTable">
+                            <table class="default-table">
+                                <colgroup>
+                                    <col>
+                                    <col style="width:160px; min-width:160px;">
+                                    <col>
+                                </colgroup>
+                                <thead>
+                                    <tr>
+                                        <th data-i18n="help.limitItem">項目</th>
+                                        <th data-i18n="help.limitBound">界線</th>
+                                        <th data-i18n="help.limitOnExceed">超過時會怎樣</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for row in helpModalLimitRows %}
+                                    <tr>
+                                        <td data-i18n="{{ row.labelKey }}">{{ row.label }}</td>
+                                        <td><span>{{ row.bound }}</span></td>
+                                        <td data-i18n="{{ row.effectKey }}">{{ row.effect }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </div>
+    </div>
+</dialog>

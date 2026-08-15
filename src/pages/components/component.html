@@ -599,6 +599,7 @@ bodyClass: guideline-page
                     <button type="button" class="button button-dark" data-open-modal="qaImportModal">開啟 QA 匯入 modal</button>
                     <button type="button" class="button button-dark" data-open-modal="caseFromLogModal">開啟從問答紀錄建案例 modal</button>
                     <button type="button" class="button button-dark" data-open-modal="untaggedFilesModal">開啟未標註文件modal</button>
+                    <button type="button" class="button button-dark" data-open-modal="demoHelpModal">開啟說明視窗modal</button>
                 </div>
                 <div class="caption description mt-16">
                     <ul>
@@ -1204,6 +1205,25 @@ bodyClass: guideline-page
 {% set ratingModalToast = "滿意度已更新|權限不足，無法送出|請先選擇讚或倒讚|更新失敗，請稍後再試" %}
 {% set ratingModalToastType = "success|warning|warning|error" %}
 {% include "components/rating-modal/rating-modal.html" %}
+
+{# help-modal 元件庫展示：三塊「這一區在做什麼／現在生效的條件／這一區的所有數字」逐一示範，
+   情境是假設性的「回覆長度上限」設定（非任何真實頁既有欄位，純為展示三塊各自的長相）。
+   ②③兩塊各給兩筆，讓清單與表格兩種容器都被看過（GUIDELINE §5：沒有頁面演得出來的分支
+   等於沒驗收過）；helpModalId 用 `demoHelpModal`，不是真實頁的區塊 id。 #}
+{% set helpModalId = "demoHelpModal" %}
+{% set helpModalTitleKey = "help.demo.title" %}
+{% set helpModalTitle = "回覆長度上限說明" %}
+{% set helpModalWhatKey = "help.demo.what" %}
+{% set helpModalWhat = "這一區決定單次回答最多可以輸出多少字；超過上限的部分會被截斷，不會影響檢索到的來源筆數。" %}
+{% set helpModalStateItems = [
+    "目前生效：知識模式為「標準」，本組上限套用於這次對話。",
+    "知識模式為「不參考知識」時，這一組上限不適用（該模式不產生檢索式回答）。"
+] %}
+{% set helpModalLimitRows = [
+    { labelKey: "help.demo.maxAnswerChars", label: "回覆最大字數", bound: "100 – 2000", effectKey: "help.demo.maxAnswerCharsEffect", effect: "超過時從尾端截斷，並附加「內容過長，僅顯示前 N 字」" },
+    { labelKey: "help.demo.maxSources", label: "來源引用筆數上限", bound: "1 – 10", effectKey: "help.demo.maxSourcesEffect", effect: "超過時只顯示分數最高的前幾筆，其餘不列出" }
+] %}
+{% include "components/help-modal/help-modal.html" %}
 
 <button type="button" class="button btn_gotop">
     TOP

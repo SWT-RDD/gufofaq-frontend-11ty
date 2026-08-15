@@ -54,7 +54,7 @@ src/
 ├── _includes/
 │   ├── layouts/            整頁模板（4 支，見下表）＋ 模板專屬樣式 `_base.scss` / `_page-shell.scss` / `_chatbot-shell.scss`（⚠️ 與 `src/scss/_base.scss` 同名，`main.scss` 以 `as layout-base` 消歧；`public-shell` 沒有自己的樣式，它沿用 page-shell 的 `.main`）
 │   ├── ui/                 不依賴其他元件的元件（58 個）
-│   └── components/         會用到其他元件，或某大元件的專屬子片段（57 個）
+│   └── components/         會用到其他元件，或某大元件的專屬子片段（58 個）
 ├── scss/                   全域層（元件樣式住在元件資料夾）
 │   ├── _var.scss           設計 token：語意色 + [data-theme=dark] 覆寫（全站唯一色源，單層直值）
 │   ├── _mixin.scss         共用 mixin：scrollbar 系列、icon-mask（單色 PNG 遮罩上色）、nav-collapsed（header↔mobile-nav 的 1250px 斷點，兩者必須同值）
@@ -140,6 +140,7 @@ dist/                       build 輸出（勿手改）
 | `components/platform-tenants-panel` | `5-6-1` 那一族三份稿共用的固定區塊群（ISO 審核精靈**之前**的一整組：平台權限／平台時區／GufoRAG 授權用量／建立租戶／帳號治理／租戶功能開通表，＋三個彈窗本體）。唯一參數 `timezoneSelected`（**必填**）一路轉給 `ui/timezone-options`——**由使用頁 set、不由本元件 set**：`timezone-options` 的讀法是 `{% if tz == timezoneSelected %}`（名字不在運算式開頭），[GUIDELINE §6](GUIDELINE.md) 那條「元件內部示範變數不得與頁面層變數同名」的機器判準因此認不出它是傳給子元件的參數，而 5-2 也在頁面層 set 同名變數。其餘（租戶列、功能欄、平台角色列）是元件內建的示範假資料。 |
 | `components/iso-review-wizard` | ISO 季度審核精靈，**一台三態互斥的狀態機**。頁面 set `isoReviewStep`（**必填、無預設**，值域＝`"idle"`／`"preview"`／`"result"`，與 gufofaq-saas `apps/web/app/(app)/platform/page.tsx` 的 `ReviewWizard` 那顆 `step` state 逐字相同）；三個值以外整塊步驟區不渲染。三態各由一份稿演（`5-6-1_platformTenants` idle ／ `5-6-1-2_platformIsoReviewPreview` preview ／ `5-6-1-3_platformIsoReviewResult` result），照資料匯入精靈（`1-1-2`～`1-1-6`）的逐步一份稿正典。名單／結果是元件內建的示範假資料（GUIDELINE §6(b)）。步驟指示器就是各段自己的標題（`platform.reviewStep1/2/3` 的繁中與英譯都自帶 ①②③），本族不用 `components/step-nodes`。 |
 | `ui/pagination` | `total`（總筆數，必填）／選填 `perPage`（每頁筆數，預設 10）、`currentPage`（目前頁，預設 1）。頁碼列由 `pagination.js` 依 `data-total`/`data-per-page`/`data-current` 動態 render（改寫自真 app 的 renderPagination，滑動視窗＋左右省略號＋首尾頁碼恆顯＋`.page-info` 總頁數），點頁碼／上下頁即時重畫，不吃頁面傳的靜態頁碼清單。 |
+| `components/help-modal` | 三塊式說明視窗（ⓘ 開啟）：`helpModalId`（`<dialog>` id，同時是 `data-open-modal`／`aria-labelledby` 目標，命名慣例 `<blockId>HelpModal`）／`helpModalTitleKey`・`helpModalTitle`（視窗標題）／`helpModalWhatKey`・`helpModalWhat`（①**唯一手寫**的「這一區在做什麼」）／`helpModalStateItems`（②字串陣列，**完全導出**的「現在生效的條件」，不掛 `data-i18n`——理由見元件檔頭）／`helpModalLimitRows`（③物件陣列 `{labelKey, label, bound, effectKey, effect}`，`bound` 是與譯文分開的獨立節點）。全部參數皆必填，且同頁多顆說明窗要各自重新 set（GUIDELINE §6）。元件庫頁第 16 節有示範觸發器＋一份實例 `demoHelpModal`。 |
 
 > 這些元件的資料**因使用它的頁面而異**，故由頁面在 include 前 `{% set %}` 提供，元件只負責 `{% for %}` 渲染——轉 React 即 props。（全站不變的結構性設定與純示範假資料可以住在元件裡，見 [GUIDELINE §6](GUIDELINE.md)。）
 
@@ -160,11 +161,11 @@ dist/                       build 輸出（勿手改）
 
 ### Modal 清單（GUIDELINE §7 的「Modal 殼」現況）
 
-`modals-sm`：deleteModal。`modals-md`：datasetModal、disclaimerModal、intentionModal、knowledgeModal、likeModal、shareModal、shareManageModal、manageMembersModal、manageTenantModal、resetPasswordModal、editModal、passwordModal、previewTextModal（元件庫展示版）、caseFromLogModal、ProductionSettingsModal、ProductionSettingsNoPermissionModal、ProductionSettingsCompareModal、configCopyModal、qaImportModal。`modals-lg`：previewModal（iframe 檔案預覽）、glossaryEntriesModal、skillEditorModal、untaggedFilesModal、aliasEntriesModal。另有頁面層一次性的 aliasOutputInfoModal（`modals-md`，寫在 5-2 頁內，同 login 的 passwordModal 與元件庫的 previewTextModal）。實際以 `grep '<dialog' src` 為準。
+`modals-sm`：deleteModal。`modals-md`：datasetModal、disclaimerModal、intentionModal、knowledgeModal、likeModal、shareModal、shareManageModal、manageMembersModal、manageTenantModal、resetPasswordModal、editModal、passwordModal、previewTextModal（元件庫展示版）、caseFromLogModal、ProductionSettingsModal、ProductionSettingsNoPermissionModal、ProductionSettingsCompareModal、configCopyModal、qaImportModal、demoHelpModal（`components/help-modal` 的元件庫展示實例）。`modals-lg`：previewModal（iframe 檔案預覽）、glossaryEntriesModal、skillEditorModal、untaggedFilesModal、aliasEntriesModal。另有頁面層一次性的 aliasOutputInfoModal（`modals-md`，寫在 5-2 頁內，同 login 的 passwordModal 與元件庫的 previewTextModal）。實際以 `grep '<dialog' src` 為準。
 
 **`<元件名>.html` 的兩種身分**：被真實頁面 include 的是生產 markup；只被元件總覽頁 `component.html` include 的是展示片段（`button`、`checkbox`、`radio`、`switch`、`tab`、`form-control`、`multi-select`、`link-file`、`link-modal`、`list-style`、`divider-vertical`、`toast`、`tooltip`、`block`、`form-table`、`default-table`、`error-page`、`widget-shell`）。展示片段為了示範情境會用到別的元件，判斷桶歸屬時不算依賴（見 GUIDELINE §1-1）。
 
-> **上列不是完整清單**（`src/_includes/` 目前有 115 個元件）。完整結構以 `src/_includes/` 與元件總覽頁 `dist/component.html` 為準。跨檔一致性由 `npm test` 把關：有 js 的元件必須三方登記（實體檔 ⇄ `eleventy.config.js` ⇄ `base.html`）、有 scss 的必須在 `main.scss` `@use`、每個元件 html 都必須被 include（無孤兒）、每張圖都必須被引用。
+> **上列不是完整清單**（`src/_includes/` 目前有 116 個元件）。完整結構以 `src/_includes/` 與元件總覽頁 `dist/component.html` 為準。跨檔一致性由 `npm test` 把關：有 js 的元件必須三方登記（實體檔 ⇄ `eleventy.config.js` ⇄ `base.html`）、有 scss 的必須在 `main.scss` `@use`、每個元件 html 都必須被 include（無孤兒）、每張圖都必須被引用。
 
 ---
 
