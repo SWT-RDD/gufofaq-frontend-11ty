@@ -49,7 +49,17 @@ permalink: 2-2-4_regressionSuites.html
 {# ── 新增案例集 ─────────────────────────────────────────────────────────────
      名稱必填 ⇒ 送出鈕的 data-toast 要有 warning 段（GUIDELINE §4：驗證結果的唯一出口）。 #}
 <div class="block mt-16 flex-row column gap-16">
-    <div class="text-md text-bold" data-i18n="regression.addSuite">新增案例集</div>
+    {# ⓘ 說明：markup 同既有 info-btn 六件組（GUIDELINE §1-2 無 html 元件契約）。①出處：本頁
+         檔頭「案例集是一組自帶『斷言』的題目」一節，與 product `app/routers/regression.py` 的
+         `create_suite`／`SuiteIn`——這顆鈕只建立名稱與說明，之後新增的案例與每一次執行紀錄
+         都會掛在這個案例集底下。 #}
+    <div class="flex-row align-items-center gap-8">
+        <div class="text-md text-bold" data-i18n="regression.addSuite">新增案例集</div>
+        <button type="button" class="info-btn" title="新增案例集說明" data-i18n-title="help.regression.addSuite.title" data-open-modal="addSuiteHelpModal">
+            <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+            <span class="sr-only" data-i18n="help.regression.addSuite.title">新增案例集說明</span>
+        </button>
+    </div>
     <div class="flex-row flex-wrap gap-16 mobile-column sm-gap-16">
         <div class="col-5-md col-12-sm">
             <div class="form-group">
@@ -93,6 +103,17 @@ permalink: 2-2-4_regressionSuites.html
     </div>
 </div>
 
+{# 「新增案例集」的說明視窗：②③留空——現在生效的條件與這一區的數字由 React 執行期算，
+     切版這一側只提供容器（同本批次既有 32 顆區塊的現況）。 #}
+{% set helpModalId = "addSuiteHelpModal" %}
+{% set helpModalTitleKey = "help.regression.addSuite.title" %}
+{% set helpModalTitle = "新增案例集說明" %}
+{% set helpModalWhatKey = "help.regression.addSuite.what" %}
+{% set helpModalWhat = "這裡建立一個新的案例集：一個之後可以放入多則案例、重複重放來檢查回歸的容器。名稱是它唯一的識別依據，之後新增的案例與每一次執行紀錄都會掛在這個案例集底下。" %}
+{% set helpModalStateItems = [] %}
+{% set helpModalLimitRows = [] %}
+{% include "components/help-modal/help-modal.html" %}
+
 {# ── 案例集清單 ─────────────────────────────────────────────────────────────
      「跑過就凍結」：有執行紀錄的案例集刪不掉（409 `suite_has_runs`）——舊 run 的
      `summary.total` 是跑完當下寫死的數字，連帶刪掉會讓那些歷史對不起來。所以刪除是
@@ -129,7 +150,16 @@ permalink: 2-2-4_regressionSuites.html
 {% set total = 8 %}
 {% set perPage = 20 %}
 <div class="block mt-16 flex-row column gap-16">
-    <div class="text-md text-bold" data-i18n="regression.suiteList">案例集清單</div>
+    {# ⓘ 說明：markup 同既有 info-btn 六件組。①出處：本頁檔頭「跑過就凍結：有執行紀錄的案例集
+         刪不掉」一節，與 product `app/routers/regression.py` 的 `list_suites`／`delete_suite`
+         （409 `suite_has_runs`）——這一區列出案例數與執行次數，並解釋為什麼有些案例集刪不掉。 #}
+    <div class="flex-row align-items-center gap-8">
+        <div class="text-md text-bold" data-i18n="regression.suiteList">案例集清單</div>
+        <button type="button" class="info-btn" title="案例集清單說明" data-i18n-title="help.regression.suiteList.title" data-open-modal="suiteListHelpModal">
+            <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+            <span class="sr-only" data-i18n="help.regression.suiteList.title">案例集清單說明</span>
+        </button>
+    </div>
     <div class="data-info"><span data-i18n="common.total">共</span> {{ total }} <span data-i18n="common.recordsUnit">筆</span></div>
     <div class="table-container scrollTable">
         <table class="default-table">
@@ -176,6 +206,16 @@ permalink: 2-2-4_regressionSuites.html
     {% include "components/pager-row/pager-row.html" %}
 </div>
 
+{# 「案例集清單」的說明視窗：②③留空，理由同本頁其他說明視窗。 #}
+{% set helpModalId = "suiteListHelpModal" %}
+{% set helpModalTitleKey = "help.regression.suiteList.title" %}
+{% set helpModalTitle = "案例集清單說明" %}
+{% set helpModalWhatKey = "help.regression.suiteList.what" %}
+{% set helpModalWhat = "這裡列出本租戶已建立的案例集，逐列顯示案例數與執行次數；可以點進去查看案例明細，或刪除一個還沒有任何執行紀錄的案例集——已經有執行紀錄的案例集會被保留，避免舊執行紀錄裡跑完的則數對不上案例集現況。" %}
+{% set helpModalStateItems = [] %}
+{% set helpModalLimitRows = [] %}
+{% include "components/help-modal/help-modal.html" %}
+
 {# ── 檢視中的案例集：案例清單 ───────────────────────────────────────────────
      展開列（ui/accordion 的表格結構）放這一則案例的完整內容：逐條斷言講成人話、逐輪前置
      對話、備註（一鍵建立時自動寫入的出處）。
@@ -219,7 +259,18 @@ permalink: 2-2-4_regressionSuites.html
 ] %}
 <div class="block mt-16 flex-row column gap-16 js-accordion">
     <div class="flex-row justify-content-between align-items-center flex-wrap gap-16">
-        <div class="text-md text-bold"><span data-i18n="regression.casesOf">案例：</span><span>關稅問答基準集</span></div>
+        {# ⓘ 說明：markup 同既有 info-btn 六件組。①出處：本頁檔頭「檢視中的案例集：案例清單」
+             一節與「一鍵建案例是實務上唯一會被用起來的建立路徑」一節，對過 product
+             `app/routers/regression.py` 的 `get_suite`（案例照 id 升冪列出）與
+             `create_case_from_log`。標題本身含目前選定的案例集名稱（執行期資料），故 ⓘ
+             掛在固定文字節點旁，說明本身不提這個示範名稱。 #}
+        <div class="flex-row align-items-center gap-8">
+            <div class="text-md text-bold"><span data-i18n="regression.casesOf">案例：</span><span>關稅問答基準集</span></div>
+            <button type="button" class="info-btn" title="案例清單說明" data-i18n-title="help.regression.casesOf.title" data-open-modal="casesOfHelpModal">
+                <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+                <span class="sr-only" data-i18n="help.regression.casesOf.title">案例清單說明</span>
+            </button>
+        </div>
         {# `.btn-group` 的規則帶著 `.default-table` 祖先（§4 祖先錯位），表格外吃不到。 #}
         <div class="flex-row gap-10 align-items-center">
             <button type="button" class="button button-border button-sm js-expand-all" data-i18n="common.expandAll">全部展開</button>
@@ -314,6 +365,16 @@ permalink: 2-2-4_regressionSuites.html
     <p class="text-gray" data-i18n="regression.aiTurnNotSent">前置對話重放時只送出使用者那一半：AI 那一半由上游重新生成（GufoRAG 的續談只吃聊天室編號，沒有任何欄位可以注入前幾輪的 AI 回覆）。</p>
 </div>
 
+{# 「案例：」的說明視窗：②③留空，理由同本頁其他說明視窗。 #}
+{% set helpModalId = "casesOfHelpModal" %}
+{% set helpModalTitleKey = "help.regression.casesOf.title" %}
+{% set helpModalTitle = "案例清單說明" %}
+{% set helpModalWhatKey = "help.regression.casesOf.what" %}
+{% set helpModalWhat = "這裡展開目前選定的案例集，逐則列出案例的問題、前置對話輪數與斷言數；新增案例最常用的方式是「從問答紀錄建立案例」，直接把一則問答連同它推得出的期望收進來，手動輸入的方式在下方另有一區。" %}
+{% set helpModalStateItems = [] %}
+{% set helpModalLimitRows = [] %}
+{% include "components/help-modal/help-modal.html" %}
+
 {# ── 手動新增案例 ───────────────────────────────────────────────────────────
      斷言列：型別 select（11 型，值域＝引擎的 `ASSERTION_TYPES`）＋依型別而異的參數欄。
      示範 7 列刻意各演一種**參數形狀**（values／平台規則名／整數／連結前綴／文件身分／
@@ -367,7 +428,17 @@ permalink: 2-2-4_regressionSuites.html
   { type: "judge", shape: "criteria", criteria: "答案有沒有正面回答「稅率是多少」，而不是只講申報流程" }
 ] %}
 <div class="block mt-16 flex-row column gap-16">
-    <div class="text-md text-bold" data-i18n="regression.addCase">手動新增案例</div>
+    {# ⓘ 說明：markup 同既有 info-btn 六件組。①出處：本頁檔頭「斷言列：型別 select（11 型，
+         值域＝引擎的 `ASSERTION_TYPES`）」一節，與 product `app/regression.py` 的
+         `ASSERTION_TYPES`／`ASSERTION_PARAM_SHAPES`、`app/routers/regression.py` 的
+         `_validate_assertions`（至少一條、且至少一條確定性斷言）。 #}
+    <div class="flex-row align-items-center gap-8">
+        <div class="text-md text-bold" data-i18n="regression.addCase">手動新增案例</div>
+        <button type="button" class="info-btn" title="手動新增案例說明" data-i18n-title="help.regression.addCase.title" data-open-modal="addCaseHelpModal">
+            <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+            <span class="sr-only" data-i18n="help.regression.addCase.title">手動新增案例說明</span>
+        </button>
+    </div>
     <p class="text-gray" data-i18n="regression.addCaseIntro">先試「從問答紀錄建立案例」——真實紀錄推導得出的斷言比手寫的可靠。手動建立留給還沒發生過的題目。</p>
 
     <div class="form-group">
@@ -561,6 +632,16 @@ permalink: 2-2-4_regressionSuites.html
     </div>
 </div>
 
+{# 「手動新增案例」的說明視窗：②③留空，理由同本頁其他說明視窗。 #}
+{% set helpModalId = "addCaseHelpModal" %}
+{% set helpModalTitleKey = "help.regression.addCase.title" %}
+{% set helpModalTitle = "手動新增案例說明" %}
+{% set helpModalWhatKey = "help.regression.addCase.what" %}
+{% set helpModalWhat = "這裡手動輸入一則案例：問題、可選的前置對話（用來測試追問情境），以及至少一條斷言。斷言描述這一題的答案該符合什麼條件，例如須包含特定字串、須引用某份文件、或須誠實查無；至少要有一條屬於「確定性」判定，只靠主觀評分的案例每次都會判定通過，永遠檢查不出退步。" %}
+{% set helpModalStateItems = [] %}
+{% set helpModalLimitRows = [] %}
+{% include "components/help-modal/help-modal.html" %}
+
 {# ── 開始執行 ───────────────────────────────────────────────────────────────
      示範自洽（GUIDELINE §6）：母體是**這一套案例集的全部 12 則**（`caseCount: 12`），不是上面
      列出來當版型示範的那 2 則——扣額度是逐則扣的，端點跑的也是整套。
@@ -633,7 +714,16 @@ permalink: 2-2-4_regressionSuites.html
   { labelKey: "regression.limitConcurrency", label: "同時執行的案例數：", value: "1", unitKey: "regression.casesUnit", unit: " 則" }
 ] %}
 <div class="block mt-16 flex-row column gap-16">
-    <div class="text-md text-bold" data-i18n="regression.runSection">執行這一套案例集</div>
+    {# ⓘ 說明：markup 同既有 info-btn 六件組。①出處：本頁檔頭「覆寫只送這一次明確指定的那幾個」
+         一節，與 product `app/routers/regression.py` 的 `run_suite`／`_inherit_from_profile`
+         （沒帶的旋鈕沿用被測設定檔當下的值）、`_replay_case`（逐輪 `consume_qa_quota`）。 #}
+    <div class="flex-row align-items-center gap-8">
+        <div class="text-md text-bold" data-i18n="regression.runSection">執行這一套案例集</div>
+        <button type="button" class="info-btn" title="執行這一套案例集說明" data-i18n-title="help.regression.runSection.title" data-open-modal="runSectionHelpModal">
+            <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+            <span class="sr-only" data-i18n="help.regression.runSection.title">執行這一套案例集說明</span>
+        </button>
+    </div>
 
     <p class="text-red"><span data-i18n="regression.quotaWarnPrefix">跑一次會扣問答額度：這一套預計扣 </span><span>{{ regressionTurnTotal }}</span><span data-i18n="regression.quotaWarnSuffix"> 次（每一則案例的每一輪前置對話與本題各是一次真的問答）。中斷過的執行已經扣掉的不會退還。</span></p>
 
@@ -853,6 +943,16 @@ permalink: 2-2-4_regressionSuites.html
     </div>
 </div>
 
+{# 「執行這一套案例集」的說明視窗：②③留空，理由同本頁其他說明視窗。 #}
+{% set helpModalId = "runSectionHelpModal" %}
+{% set helpModalTitleKey = "help.regression.runSection.title" %}
+{% set helpModalTitle = "執行這一套案例集說明" %}
+{% set helpModalWhatKey = "help.regression.runSection.what" %}
+{% set helpModalWhat = "這裡對選定的知識檢索設定檔跑一次這套案例集：預設完全沿用被測設定檔目前的行為，只有勾選「這一次改用指定值」的旋鈕才會被覆寫，且只影響這一次執行、不會寫回上線設定；每一輪對話（含前置對話）都是一次真的問答，會扣掉問答額度。" %}
+{% set helpModalStateItems = [] %}
+{% set helpModalLimitRows = [] %}
+{% include "components/help-modal/help-modal.html" %}
+
 {# ── 執行紀錄 ───────────────────────────────────────────────────────────────
      示範 4 筆刻意演三種終態：完整跑完（兩筆）、中斷（要看得出原因與實際跑到幾則）、還在跑。
      列序照 `get_suite` 的 `.order_by(RegressionRun.started_at.desc())`（product app/routers/regression.py）：
@@ -880,7 +980,16 @@ permalink: 2-2-4_regressionSuites.html
   { no: "#310", startedAt: "2026/07/27 11:02", profile: "設置一", profileKey: "settings.config1", version: "7", status: "finished", statusLabel: "完成", statusKey: "regression.statusFinished", statusClass: "is-pass", passed: "10", total: "12", note: "" }
 ] %}
 <div class="block mt-16 flex-row column gap-16">
-    <div class="text-md text-bold" data-i18n="regression.runList">執行紀錄</div>
+    {# ⓘ 說明：markup 同既有 info-btn 六件組。①出處：本頁檔頭「示範 4 筆刻意演三種終態」一節，
+         與 product `app/routers/regression.py` 的 `get_suite`（runs 依 started_at 新到舊）、
+         `export_run`／`_partial_notice`（中斷過的執行匯出時只有已完成的那幾則）。 #}
+    <div class="flex-row align-items-center gap-8">
+        <div class="text-md text-bold" data-i18n="regression.runList">執行紀錄</div>
+        <button type="button" class="info-btn" title="執行紀錄說明" data-i18n-title="help.regression.runList.title" data-open-modal="runListHelpModal">
+            <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+            <span class="sr-only" data-i18n="help.regression.runList.title">執行紀錄說明</span>
+        </button>
+    </div>
     <div class="table-container scrollTable">
         <table class="default-table">
             <colgroup>
@@ -927,6 +1036,16 @@ permalink: 2-2-4_regressionSuites.html
     </div>
     <p class="text-gray" data-i18n="regression.exportPartialHint">中斷過或還在跑的執行也匯得出來，但那份 CSV 只會有已經跑完的那幾則——檔案最後一列會明說只有幾則、以及中斷的原因，不要把它讀成「整套案例都跑過」。</p>
 </div>
+
+{# 「執行紀錄」的說明視窗：②③留空，理由同本頁其他說明視窗。 #}
+{% set helpModalId = "runListHelpModal" %}
+{% set helpModalTitleKey = "help.regression.runList.title" %}
+{% set helpModalTitle = "執行紀錄說明" %}
+{% set helpModalWhatKey = "help.regression.runList.what" %}
+{% set helpModalWhat = "這裡列出這套案例集過去的每一次執行，包含進行中、正常跑完與中途中斷三種狀態；每一列可以連到完整報表，或直接下載這一次的結果 CSV——中斷過的執行匯出時只會有已經跑完的那幾則結果。" %}
+{% set helpModalStateItems = [] %}
+{% set helpModalLimitRows = [] %}
+{% include "components/help-modal/help-modal.html" %}
 
 {# 一鍵建案例 modal：由上方 .js-case-from-log 條件開窗（先選定加到哪一個案例集）。 #}
 {% include "components/case-from-log-modal/case-from-log-modal.html" %}
