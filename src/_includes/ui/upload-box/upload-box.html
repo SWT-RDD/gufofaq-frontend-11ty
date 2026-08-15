@@ -4,7 +4,9 @@
      uploadAccept：accept 屬性（預設 ".xlsx"）
      uploadMultiple：true 時可多選
      uploadHintText / uploadHintKey：放置區主提示。**兩個版本的預設不同**，見下面那段
-     uploadDescText / uploadDescKey：格式與大小說明（預設 xlsx／10MB／comp.uploadDescXlsx）
+     uploadDescPrefixText / uploadDescPrefixKey：格式清單那一句，**不含大小**（預設 xlsx／
+                     comp.uploadDescXlsxPrefix）；單檔上限固定 50MB，見下面 `.upload-desc` 旁的
+                     說明，本元件不開放覆寫那個數字
      uploadErrorFiles：**僅示範用**——先填好檔名並讓「不支援的副檔名」那一列可見，
                        讓這個分支在元件庫頁看得到（§5：沒有頁面演得出來的分支等於沒驗收過）；
                        真實頁不設，由 upload-box.js 在 drop 時填入被略過的檔名
@@ -24,18 +26,29 @@
    §3-2「後果寫在做那個決定的控制項旁邊」，而這裡的「決定」就是使用者要不要把檔案拖過來。
    這是**原型專用變體**：連結版只服務切版的靜態跳轉（1-1-2 → 1-1-3），React 端的 1-1-2 是真的
    上傳框（按鈕版），沿用 `comp.uploadDropHint` 那一句，拖放照舊。 #}
+{# `.upload-desc` 的大小數字（50MB）是後端真的會拒絕的界線，不是文案裡的裝飾——
+   product `app/settings.py` 的 `Settings.upload_max_bytes`（預設 50 MiB），經
+   `ops_limits.py` 的 `DATASET_LIMIT_GROUPS.upload.bytes` 投影成 `GET /datasets/limits`
+   的 `upload.bytes.max`——那支端點就是這顆數字的正本。後續批次會把這顆節點改成讀那支端點
+   的值，這裡先把它從句子裡拆成獨立節點。
+   **這顆數字全站只有一份、不開放使用頁覆寫**：`read_upload()`／`UploadBudget()` 每個呼叫點
+   （xlsx／pdf／doc／docx／png／jpg 全部上傳路徑）都沒有覆寫 `max_bytes`，也沒有任何
+   PDF/Word 專用上限——先前切版分別寫「10MB」（本元件預設）與「30MB」（1-2-1 的覆寫）都是
+   與後端不符的手抄值，已經改成同一個 50MB。使用頁仍可覆寫 `uploadDescPrefixText`／
+   `uploadDescPrefixKey`（檔案格式清單那一句因頁而異），但不再讓頁面覆寫數字本身——
+   一旦數字可覆寫，下一頁就可能又抄出第三個與後端對不上的值。 #}
 {% if uploadNextHref %}
 <a href="{{ uploadNextHref }}" class="upload-box">
     <span class="upload-text">
         <span class="upload-message" data-i18n="{{ uploadHintKey or 'comp.uploadClickHint' }}">{{ uploadHintText or '點選該區域上傳檔案' }}</span>
-        <span class="upload-desc" data-i18n="{{ uploadDescKey or 'comp.uploadDescXlsx' }}">{{ uploadDescText or '支援上傳xlsx檔案，檔案最大不超過10MB' }}</span>
+        <span class="upload-desc"><span data-i18n="{{ uploadDescPrefixKey or 'comp.uploadDescXlsxPrefix' }}">{{ uploadDescPrefixText or '支援上傳xlsx檔案，檔案最大不超過' }}</span><span>50MB</span></span>
     </span>
 </a>
 {% else %}
 <button type="button" class="upload-box">
     <span class="upload-text">
         <span class="upload-message" data-i18n="{{ uploadHintKey or 'comp.uploadDropHint' }}">{{ uploadHintText or '點選或拖曳檔案至該區域上傳' }}</span>
-        <span class="upload-desc" data-i18n="{{ uploadDescKey or 'comp.uploadDescXlsx' }}">{{ uploadDescText or '支援上傳xlsx檔案，檔案最大不超過10MB' }}</span>
+        <span class="upload-desc"><span data-i18n="{{ uploadDescPrefixKey or 'comp.uploadDescXlsxPrefix' }}">{{ uploadDescPrefixText or '支援上傳xlsx檔案，檔案最大不超過' }}</span><span>50MB</span></span>
     </span>
 </button>
 <input type="file" class="upload-input" accept="{{ uploadAccept or '.xlsx' }}"{% if uploadMultiple %} multiple{% endif %} hidden>

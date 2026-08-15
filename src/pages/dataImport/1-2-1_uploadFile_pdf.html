@@ -26,14 +26,19 @@ permalink: 1-2-1_uploadFile_pdf.html
     {% include "components/step-btn-wrap/step-btn-wrap.html" %}
 </div>
 
-{# 上傳區：這一條是**非結構化文件**流程，可多選、上限 30MB，與元件預設（.xlsx、單檔、10MB）不同，
-     由本頁 set 覆寫（§6）。
+{# 上傳區：這一條是**非結構化文件**流程，可多選、與元件共用同一個 50MB 單檔上限
+     （product 唯一的 `Settings.upload_max_bytes`，見 ui/upload-box 檔頭的出處），
+     格式清單那一句由本頁 set 覆寫（§6）。
      **本頁是三個執行期變體的靜態合體**：真 app 由 1-1-1 的卡片帶 `?type=pdf|word|image` 進來，
      uploadFilePdf.js:98 的 getFileTypeConfig 依 type 查表，:130 才把 accept 寫上去、:134 一併改寫
      說明文字（`$('.upload-desc').text(...)`；:133 是它上面那行算 maxSize 的
-     `uploadedFolderVM?.MaxPDFSize || 30`）（pdf→`.pdf`／word→`.doc,.docx`／image→`.png,.jpg,.jpeg`）。切版沒有查詢字串，
-     一頁只有一組 accept，故取三者的**聯集**——上傳選單那四張卡有三張指向本頁（PDF／WORD／Image，
-     見 ui/upload-card），accept 只要少列一種，那張卡就變成點得進來、卻選不到自己廣告的檔案的死路。
+     `uploadedFolderVM?.MaxPDFSize || 30`——**這是凍結前端自己的舊 fallback，不是 product 現在
+     真正的上限**：product 的 `upload_max_bytes` 對 xlsx／pdf／doc／docx／png／jpg 全部上傳路徑
+     一視同仁，沒有任何呼叫端覆寫、也沒有 PDF 專用上限，故這裡不比照凍結前端的 30，
+     改用 ui/upload-box 元件唯一的 50MB）（pdf→`.pdf`／word→`.doc,.docx`／image→`.png,.jpg,.jpeg`）。
+     切版沒有查詢字串，一頁只有一組 accept，故取三者的**聯集**——上傳選單那四張卡有三張指向本頁
+     （PDF／WORD／Image，見 ui/upload-card），accept 只要少列一種，那張卡就變成點得進來、卻選不到
+     自己廣告的檔案的死路。
      說明文字同理列全三種，另立 key（不沿用 `dataImport.uploadDescPdf`）：那顆是「PDF 卡」的說明，
      那張卡講的就只有 PDF，改它的值會讓卡片說謊。
      **待 saas 回流**：product 目前只認 `.pdf`／`.docx`（datasets.py 的 `import_pdf` 就地依副檔名分派，
@@ -41,8 +46,8 @@ permalink: 1-2-1_uploadFile_pdf.html
      要嘛 saas 補影像匯入，要嘛兩邊一起撤掉那張卡——**這是 saas 端要決定的事，切版不先自行砍掉**。 #}
 {% set uploadAccept = ".pdf,.doc,.docx,.png,.jpg,.jpeg" %}
 {% set uploadMultiple = true %}
-{% set uploadDescText = "支援上傳pdf、doc、docx、png、jpg檔案，檔案最大不超過30MB" %}
-{% set uploadDescKey = "dataImport.uploadDescDocs" %}
+{% set uploadDescPrefixText = "支援上傳pdf、doc、docx、png、jpg檔案，檔案最大不超過" %}
+{% set uploadDescPrefixKey = "dataImport.uploadDescDocsPrefix" %}
 {% include "ui/upload-box/upload-box.html" %}
 
 {# 檔案列表表格：真實頁 thead/tbody 皆為 js/uploadFilePdf.js 動態渲染（renderTableHeaders()/renderFileList()），
