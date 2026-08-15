@@ -564,6 +564,11 @@ const NAMED_HOOKS = new Set([
     // 重複列的列標記（無樣式、版位由工具 class 供）：React 端 params.map() 的列身分，
     // 本檔另一條測試也靠它數參數列。同 `is-<state>`，主人＝轉換契約。
     "builtin-tool-param",
+    // help-modal 的三個具名區塊（GUIDELINE §4「視同有主，主人＝契約本身」，同 modals-content）：
+    // 三塊各自沒有樣式，存在的理由是讓 React 端認得出「這一塊是哪一塊」。
+    "help-modal-what",    // ①這一區在做什麼——唯一手寫那段的定位點，不是樣式掛點
+    "help-modal-state",   // ②現在生效的條件——完全導出清單的容器定位點，不是樣式掛點
+    "help-modal-limits",  // ③這一區的所有數字——界線表格的容器定位點，不是樣式掛點
 ]);
 
 // 具名真 app 掛點的**另一半**：這些名字同樣是「React 端要靠它認出這顆鈕該接什麼」的具名掛點，
