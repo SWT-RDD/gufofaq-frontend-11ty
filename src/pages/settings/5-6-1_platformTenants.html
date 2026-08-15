@@ -40,6 +40,15 @@ permalink: 5-6-1_platformTenants.html
     {% include "ui/breadcrumb/breadcrumb.html" %}
 </div>
 
+{# 頁層說明：這一族三份稿（idle／preview／result）裡**唯一**在主選單有導覽入口的這一份，是全站
+     現存平台管理頁裡**唯一還沒有**頁層說明的一頁（5-6-2／5-6-3／5-8／5-9 都各有一段 `text-gray`
+     開場白）。內容要講的是這一頁最容易被誤會的那件事：它是平台系統管理員的**跨租戶**視角，
+     不是任何一個租戶自己的「設定」——底下每一塊（平台權限、租戶功能開通、使用期／GufoRAG
+     授權用量、ISO 季度審核、平台免責聲明）都作用在全平台範圍或你選定的某個租戶身上，不是
+     你自己登入所在的那一個。出處：`components/platform-tenants-panel` 檔頭「兩級可見性」一節
+     （`GET /platform/tenants` 等唯讀端點 `require_platform_auditor`，寫入類 `require_platform_admin`）。 #}
+<p class="text-gray" data-i18n="settings.platformTenantsIntro">這一頁是平台管理者的跨租戶視角，不是任何單一租戶自己的設定頁：底下管理的是全平台每一個租戶的權限指派、功能開通、使用期與 GufoRAG 授權用量，加上 ISO 季度審核與平台免責聲明。稽核員唯讀看得到整頁，異動仍限平台系統管理員。</p>
+
 {# platform-tenants-panel 唯一的參數：平台時區那顆 select 目前選中的 IANA 識別字，一路轉給
      ui/timezone-options。它由**使用頁**set（不由元件 set）——理由逐字寫在該元件檔頭的參數段。 #}
 {% set timezoneSelected = "Asia/Taipei" %}

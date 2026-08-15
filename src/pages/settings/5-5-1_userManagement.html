@@ -47,7 +47,19 @@ permalink: 5-5-1_userManagement.html
 
 {# 新增成員：電子郵件 + 初始密碼 + 所屬群組勾選（ui/checkbox）+ 租戶管理者（ui/switch）+ 新增按鈕 #}
 <div class="block mb-16 flex-row column gap-16">
-    <div class="text-md text-bold" data-i18n="settings.addMember">新增成員</div>
+    {# ⓘ 說明：markup 同既有 info-btn 六件組（GUIDELINE §1-2 無 html 元件契約）。①出處：本頁檔頭
+         「逐使用者能力已改由群組繼承……有效能力唯讀顯示」一節，與 product `app/routers/users.py` 的
+         `UserCreate`（email／password／is_admin／group_ids）、`app/authz.py` 的
+         `effective_capabilities`（聯集）。**能力疊加三件事只有兩件在這一區**：所屬群組帶來的能力
+         （唯讀顯示於下方成員清單，這裡只是指派）與「租戶管理者」旗標（跳過群組限制、拿到全部
+         token）——平台系統管理員的跨租戶身分是第三件事，與本頁無關，故 ①末句刻意點出兩者不同。 #}
+    <div class="flex-row align-items-center gap-8">
+        <div class="text-md text-bold" data-i18n="settings.addMember">新增成員</div>
+        <button type="button" class="info-btn" title="新增成員說明" data-i18n-title="help.settings.addMember.title" data-open-modal="addMemberHelpModal">
+            <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+            <span class="sr-only" data-i18n="help.settings.addMember.title">新增成員說明</span>
+        </button>
+    </div>
     <div class="flex-row flex-wrap gap-16 mobile-column sm-gap-16">
         <div class="col-6-md col-12-sm">
             <div class="form-group">
@@ -113,6 +125,17 @@ permalink: 5-5-1_userManagement.html
     </div>
 </div>
 
+{# 「新增成員」的說明視窗：②③留空——現在生效的條件與這一區的數字由 React 執行期算，
+     切版這一側只提供容器（同批次既有區塊的現況）。 #}
+{% set helpModalId = "addMemberHelpModal" %}
+{% set helpModalTitleKey = "help.settings.addMember.title" %}
+{% set helpModalTitle = "新增成員說明" %}
+{% set helpModalWhatKey = "help.settings.addMember.what" %}
+{% set helpModalWhat = "這一區建立一個新的租戶成員：帶著登入用的 Email、初始密碼、所屬群組（可複選）與是否為租戶管理者一起送出。這個成員之後真正能做什麼，看的是它所屬每個群組能力的聯集——不是這裡逐項勾出來的；勾了「租戶管理者」則不受群組限制，直接擁有本租戶全部能力並能管理其他成員與群組。這裡動的是租戶內部的角色，與平台系統管理員的跨租戶身分是兩件不同的事。" %}
+{% set helpModalStateItems = [] %}
+{% set helpModalLimitRows = [] %}
+{% include "components/help-modal/help-modal.html" %}
+
 {# 成員清單：default-table。狀態欄用 ui/switch（啟用／停用）；角色欄用 ui/switch（管理者切換）；
      所屬群組欄每一個群組一個 checkbox（多選指派）；有效能力欄唯讀顯示（由群組聯集算出，管理者＝全部）。
      狀態（is_active）：後端早就支援（product `app/routers/users.py` 的 PATCH /users/{id} 收 `UserUpdate.is_active`），
@@ -121,7 +144,19 @@ permalink: 5-5-1_userManagement.html
      同列既有的管理者 switch 與群組 checkbox 維持原本的結構式綁定（既有契約，不順手改名）。
      停用列整列上內嵌面底色（ui/default-table 的 tr.is-inactive；底色下在 > td，§4）。 #}
 <div class="block flex-row column gap-16">
-    <div class="text-md text-bold" data-i18n="settings.memberList">成員清單</div>
+    {# ⓘ 說明：markup 同既有 info-btn 六件組。①出處：本頁上方檔頭「成員清單」一節與 product
+         `app/routers/users.py` 的 `update_user`（PATCH，`_assert_tenant_manageable` 的 403：
+         「平台角色持有者不是租戶層的管轄對象」）、`lock_active_tenant_admins`／最後一位管理者
+         守衛（400）、`reset_member_password`。有效能力欄唯讀，出處同上方「新增成員」①——這一區
+         管的仍是租戶內部角色（群組聯集＋租戶管理者），平台系統管理員／稽核員的跨租戶身分不受
+         這裡任何一顆鈕影響。 #}
+    <div class="flex-row align-items-center gap-8">
+        <div class="text-md text-bold" data-i18n="settings.memberList">成員清單</div>
+        <button type="button" class="info-btn" title="成員清單說明" data-i18n-title="help.settings.memberList.title" data-open-modal="memberListHelpModal">
+            <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+            <span class="sr-only" data-i18n="help.settings.memberList.title">成員清單說明</span>
+        </button>
+    </div>
     <div class="table-container scrollTable">
         <table class="default-table">
             <colgroup>
@@ -226,6 +261,16 @@ permalink: 5-5-1_userManagement.html
         </table>
     </div>
 </div>
+
+{# 「成員清單」的說明視窗：②③留空，理由同本頁其他說明視窗。 #}
+{% set helpModalId = "memberListHelpModal" %}
+{% set helpModalTitleKey = "help.settings.memberList.title" %}
+{% set helpModalTitle = "成員清單說明" %}
+{% set helpModalWhatKey = "help.settings.memberList.what" %}
+{% set helpModalWhat = "這一區列出本租戶目前所有的成員：可以就地切換每一位的啟用狀態、租戶管理者身分與所屬群組（可複選），有效能力欄是唯讀顯示、由所屬群組能力聯集算出，不能在這裡直接勾選；也可以在這裡重設成員的密碼。系統會擋下讓租戶降到零位在職管理者的那個結果；寄生在本租戶底下的平台系統管理員／稽核員帳號則完全不能在這裡被改動——那些變更只到平台管理端進行。" %}
+{% set helpModalStateItems = [] %}
+{% set helpModalLimitRows = [] %}
+{% include "components/help-modal/help-modal.html" %}
 
 {# 租戶端的重設密碼多一道 403：product `app/routers/users.py` 的 `_assert_tenant_manageable`
      （那道守衛的存在理由正是「租戶管理者不得重設平台管理員的密碼再拿去登入」）。 #}

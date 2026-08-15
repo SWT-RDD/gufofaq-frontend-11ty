@@ -40,7 +40,19 @@ permalink: 5-5-2_groupManagement.html
 
 {# 新增群組：名稱 + 能力 token 勾選（ui/checkbox）+ 新增按鈕（三態 toast：成功／名稱已存在／失敗）#}
 <div class="block mb-16 flex-row column gap-16">
-    <div class="text-md text-bold" data-i18n="settings.addGroup">新增群組</div>
+    {# ⓘ 說明：markup 同既有 info-btn 六件組（GUIDELINE §1-2 無 html 元件契約）。①出處：本頁檔頭
+         「群組＝權限群組：能力定在群組上」一節，與 product `app/routers/groups.py` 的
+         `GroupIn`（name／capabilities）、`create_group`（名稱必填、能力驗證於 `CAPABILITY_TOKENS`）。
+         成員指派**不在**本區——那是 `PATCH /users/{id}` 的 `group_ids`（見 5-5-1），本區只決定
+         「這個群組帶什麼能力」，是能力疊加三件事裡的第二件（群組本身），與逐使用者的勾選、
+         平台系統管理員的跨租戶身分都無關。 #}
+    <div class="flex-row align-items-center gap-8">
+        <div class="text-md text-bold" data-i18n="settings.addGroup">新增群組</div>
+        <button type="button" class="info-btn" title="新增群組說明" data-i18n-title="help.settings.addGroup.title" data-open-modal="addGroupHelpModal">
+            <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+            <span class="sr-only" data-i18n="help.settings.addGroup.title">新增群組說明</span>
+        </button>
+    </div>
     <div class="flex-row flex-wrap gap-16 mobile-column sm-gap-16">
         <div class="col-6-md col-12-sm">
             <div class="form-group">
@@ -71,12 +83,34 @@ permalink: 5-5-2_groupManagement.html
     </div>
 </div>
 
+{# 「新增群組」的說明視窗：②③留空——現在生效的條件與這一區的數字由 React 執行期算，
+     切版這一側只提供容器（同批次既有區塊的現況）。 #}
+{% set helpModalId = "addGroupHelpModal" %}
+{% set helpModalTitleKey = "help.settings.addGroup.title" %}
+{% set helpModalTitle = "新增群組說明" %}
+{% set helpModalWhatKey = "help.settings.addGroup.what" %}
+{% set helpModalWhat = "這一區建立一個新的群組：填入群組名稱，並勾選要授予這個群組哪些細粒度能力（資料與設定各自分讀寫，問答、歷史、稽核則各自單一）。群組本身不含任何成員——建好之後要到「使用者管理」頁把成員指派進來，成員的能力就是它所屬全部群組能力的聯集。" %}
+{% set helpModalStateItems = [] %}
+{% set helpModalLimitRows = [] %}
+{% include "components/help-modal/help-modal.html" %}
+
 {# 群組清單：default-table。名稱（可就地改名）＋能力勾選（同一格內 7 個 checkbox）＋成員數＋操作
      （儲存名稱與能力｜管理成員｜刪除）。管理成員與刪除都需先選定「哪一個群組」＝業務條件開窗，
      故用 hook class（.js-manage-members / .js-delete-group），不掛 data-open-modal（§5）。
      刪除群組守衛（尚有資料集歸屬 → 409）由 product 把關，前端顯示錯誤。示範 3 筆。 #}
 <div class="block flex-row column gap-16">
-    <div class="text-md text-bold" data-i18n="settings.groupList">群組清單</div>
+    {# ⓘ 說明：markup 同既有 info-btn 六件組。①出處：本頁上方檔頭「群組清單」一節與 product
+         `app/routers/groups.py` 的 `update_group`／`delete_group`（409 `group_has_datasets`）、
+         `_member_count`。這一區仍是能力疊加三件事裡的第二件（群組本身的能力與成員數），
+         「管理成員」開的是成員↔群組的指派關係（見 5-5-1），與租戶管理者旗標、平台系統管理員
+         的跨租戶身分都是各自獨立的事。 #}
+    <div class="flex-row align-items-center gap-8">
+        <div class="text-md text-bold" data-i18n="settings.groupList">群組清單</div>
+        <button type="button" class="info-btn" title="群組清單說明" data-i18n-title="help.settings.groupList.title" data-open-modal="groupListHelpModal">
+            <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+            <span class="sr-only" data-i18n="help.settings.groupList.title">群組清單說明</span>
+        </button>
+    </div>
     <div class="table-container scrollTable">
         <table class="default-table">
             <colgroup>
@@ -134,6 +168,16 @@ permalink: 5-5-2_groupManagement.html
         </table>
     </div>
 </div>
+
+{# 「群組清單」的說明視窗：②③留空，理由同本頁其他說明視窗。 #}
+{% set helpModalId = "groupListHelpModal" %}
+{% set helpModalTitleKey = "help.settings.groupList.title" %}
+{% set helpModalTitle = "群組清單說明" %}
+{% set helpModalWhatKey = "help.settings.groupList.what" %}
+{% set helpModalWhat = "這一區列出本租戶所有群組：可以就地改群組名稱與它擁有的能力、查看目前有多少成員屬於這個群組、開啟「管理成員」把使用者加入或移出這個群組，或刪除一個群組。還有資料集歸屬在某個群組底下時，那個群組刪不掉——要先把那些資料集搬到別的群組或改歸屬。" %}
+{% set helpModalStateItems = [] %}
+{% set helpModalLimitRows = [] %}
+{% include "components/help-modal/help-modal.html" %}
 
 {% include "components/manage-members-modal/manage-members-modal.html" %}
 {# 刪除 modal：.js-delete-group 是業務條件開窗（先選定要刪哪個群組），確認鈕歸業務 js 綁定
