@@ -565,7 +565,19 @@ permalink: 3-5_dataHealth.html
      是 n² 級的計算。空值＝不送（全租戶），**不是送空字串**（product 對空字串會 422），故那一顆
      `<option value="">` 承載「還沒挑」。 #}
 <div class="block mt-16 flex-row column gap-16">
-    <div class="text-md text-bold" data-i18n="health.rescanTitle">立即重新檢查</div>
+    {# ⓘ 說明：markup 逐字照抄 `settings/5-2_conversationSettings.html` 出口套用欄那顆既有
+         info-btn 六件組。①出處：`app/routers/health_findings.py` 的 `scan_now`／`_scan_tenant`
+         （檢查本身只讀不寫——`health_checks` 模組連寫記錄的路都組不出來）與 `ScanIn.dataset_id`
+         的檔頭（「只挑把哪些發現併進清單，不挑拿哪些記錄去比對」）；不重複下面「一併重算」
+         checkbox 自己的 hint（`health.includeHitChecksHint` 已經講過那顆開關），①改講「檢查
+         範圍」這顆下拉在做什麼決定。 #}
+    <div class="flex-row align-items-center gap-8">
+        <div class="text-md text-bold" data-i18n="health.rescanTitle">立即重新檢查</div>
+        <button type="button" class="info-btn" title="立即重新檢查說明" data-i18n-title="help.health.rescan.title" data-open-modal="healthRescanHelpModal">
+            <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+            <span class="sr-only" data-i18n="help.health.rescan.title">立即重新檢查說明</span>
+        </button>
+    </div>
     <div class="form-group row flex-row mobile-column-xs gap-16">
         <div class="label mobile-align">
             <label for="healthScanDatasetSelect" class="control-label" data-i18n="health.scanScope">檢查範圍</label>
@@ -592,6 +604,17 @@ permalink: 3-5_dataHealth.html
     </div>
 </div>
 
+{# 「立即重新檢查」的說明視窗：②③留空——現在生效的條件與這一區的數字由 React 執行期算，
+     切版這一側只提供容器（help-modal.html 檔頭）。 #}
+{% set helpModalId = "healthRescanHelpModal" %}
+{% set helpModalTitleKey = "help.health.rescan.title" %}
+{% set helpModalTitle = "立即重新檢查說明" %}
+{% set helpModalWhatKey = "help.health.rescan.what" %}
+{% set helpModalWhat = "這一區觸發的是這個租戶的一次重新檢查：把目前每一份資料重新跑過全部檢查項目、把算出來的發現寫進下面的清單，檢查本身只讀不寫，不會動到任何一筆資料。「檢查範圍」只決定這一次把哪些發現併回清單（例如剛處置完某個資料集想單獨複驗），比對用的一律是全租戶的資料，不會因此漏掉跨資料集的發現。" %}
+{% set helpModalStateItems = [] %}
+{% set helpModalLimitRows = [] %}
+{% include "components/help-modal/help-modal.html" %}
+
 {# ── 上一次檢查 ───────────────────────────────────────────────────────────────
      `GET /health/scan/last`。**開頁就畫**：掃描結果落庫（一租戶一列，覆寫），所以重新整理之後
      「這一次沒有看到的檔」與「三項命中檢查跑了沒有」還在——那兩格正是「以為乾淨」的解藥，
@@ -604,7 +627,18 @@ permalink: 3-5_dataHealth.html
      記錄數與上限並列：超過上限 product 一律 400 擋下、不靜默只掃前 N 筆——掃一半與掃完在清單上
      看不出差別，而後者是「以為乾淨、其實沒掃」。**那個分母是 `ScanOut.max_records`**，由 API 給。 #}
 <div class="block mt-16 flex-row column gap-16">
-    <div class="text-md text-bold" data-i18n="health.lastScanTitle">上一次檢查</div>
+    {# ⓘ 說明：同一顆 info-btn 六件組。①出處：`GET /health/scan/last`（`last_scan`）的檔頭
+         ——這一支存在的理由是掃描結果會落庫（一租戶一列、覆寫），所以這個標題底下畫的其實是
+         **持久化讀取**，不是剛才那次操作的即時回應。這顆 ⓘ 不放進 `{% if healthScan %}` 之內：
+         標題本身在「還沒跑過健檢」那一態也會畫出來（見下面 `health.lastScanNever`），
+         按鈕與說明視窗要一起維持在畫。 #}
+    <div class="flex-row align-items-center gap-8">
+        <div class="text-md text-bold" data-i18n="health.lastScanTitle">上一次檢查</div>
+        <button type="button" class="info-btn" title="上一次檢查說明" data-i18n-title="help.health.lastScan.title" data-open-modal="healthLastScanHelpModal">
+            <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+            <span class="sr-only" data-i18n="help.health.lastScan.title">上一次檢查說明</span>
+        </button>
+    </div>
     {# 最近一次**失敗**的嘗試。排在數字之前，因為它改變下面那一排的讀法：那些數字是上一次
          **成功**那一趟的，不是最近一次。product 刻意不讓失敗覆蓋成功那一列（覆蓋會把上一次的
          `uncovered` 一起沖走），所以兩者同時出現是正常狀態，不是矛盾。 #}
@@ -647,7 +681,18 @@ permalink: 3-5_dataHealth.html
          **兩個數字是「排除的事實」的載體**，不是統計花絮：它們與上面那排計數刻意分開一塊、
          標題直接說「沒有做完的檢查」，因為混在「這一次算出來的發現」那一排裡，讀起來會變成
          「這些也檢查過了」。0 也照畫（同 `hit_checks` 三態的理由）。 #}
-    <div class="text-md text-bold" data-i18n="health.partialTitle">這一次沒有做完的檢查</div>
+    {# ⓘ 說明：同一顆 info-btn 六件組。①出處：`_collect_records` 算 `slotless`／`exact_match_only`
+         那兩段（`app/routers/health_findings.py`）＋ `ScanOut.slotless_records`／
+         `exact_match_only_records` 的欄位檔頭——這兩個數字答的是「排除」不是「查過且乾淨」，
+         與下面 uncoveredTitle「完全沒讀到內容」是不同的兩件事：這裡的記錄**有**被讀到，
+         只是某幾項檢查對它們結構上不適用。 #}
+    <div class="flex-row align-items-center gap-8">
+        <div class="text-md text-bold" data-i18n="health.partialTitle">這一次沒有做完的檢查</div>
+        <button type="button" class="info-btn" title="這一次沒有做完的檢查說明" data-i18n-title="help.health.partial.title" data-open-modal="healthPartialHelpModal">
+            <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+            <span class="sr-only" data-i18n="help.health.partial.title">這一次沒有做完的檢查說明</span>
+        </button>
+    </div>
     <p class="text-gray" data-i18n="health.partialHint">下面兩個數字說的是「哪些記錄的哪一項沒有被檢查」，不是「檢查過了而且沒問題」。這兩件事在發現清單上長得一模一樣——清單只列得出算出來的發現，列不出「這一項根本沒算」。</p>
     <div class="flex-row gap-24 flex-wrap">
         <p><span class="text-bold" data-i18n="health.scanSlotless">沒有欄位槽、標籤兩項不適用的記錄：</span><span>{{ healthScan.slotlessRecords }}</span></p>
@@ -655,11 +700,34 @@ permalink: 3-5_dataHealth.html
     </div>
     <p class="text-gray" data-i18n="health.scanSlotlessHint">資料夾匯入的整份文件沒有欄位槽——欄位對照是逐列匯入才有的東西，系統沒有任何路徑寫得進它們的標籤。所以「標籤缺口」與「缺基準日」這兩項把它們排除在外，這幾筆不會因為沒標而出現在清單上，也不代表它們標好了。要讓這些內容也受維度過濾管轄，得改用逐列匯入。</p>
     <p class="text-gray" data-i18n="health.scanExactMatchOnlyHint">內容超過長度上限的記錄，這一次的「近似重複」只對它們做逐字相同判定：同一份文件上傳兩次仍然抓得到，但「幾乎一樣的兩份」沒有被比。上限存在的理由是相似度為兩兩比對，長文件一對就要十幾秒，幾十份共用樣板的月報會讓整趟掃描跑不完——而那是全部檢查一起停擺，比單一項漏報嚴重。</p>
+
+    {# 「這一次沒有做完的檢查」的說明視窗：放在 `{% if healthScan %}` 之內——這一整段（含
+         partial／uncovered 兩顆 ⓘ）只在有過一次掃描時才畫得出來，觸發鈕與說明視窗要跟著同一個
+         條件出現／消失。②③留空，理由同上。 #}
+    {% set helpModalId = "healthPartialHelpModal" %}
+    {% set helpModalTitleKey = "help.health.partial.title" %}
+    {% set helpModalTitle = "這一次沒有做完的檢查說明" %}
+    {% set helpModalWhatKey = "help.health.partial.what" %}
+    {% set helpModalWhat = "這一區列的是這一次掃描裡「有些檢查對它們天生不適用」的記錄數，不是「檢查過了、沒有問題」：資料夾匯入的整份文件沒有欄位槽，標籤缺口與缺基準日這兩項量不到它們；內容長度超過比對上限的記錄，近似重複這一次只做得了逐字相同判定，比不到「幾乎一樣」的那一種。" %}
+    {% set helpModalStateItems = [] %}
+    {% set helpModalLimitRows = [] %}
+    {% include "components/help-modal/help-modal.html" %}
     {# ⑤ 沒掃到的檔：逐檔列出來，不是靜靜跳過。`reason` 與 `detail` 是 API 回的資料（不翻）。
          **那張表自己有筆數上限**，所以「列出幾筆／總共幾個」並列，並把逐原因的計數畫出來
          （`uncovered_by_reason` 算的是全部、不受截斷影響）——被切掉的那一族只剩那個數字看得見，
          而它往往正是最該看的那一個（例如整批裡唯一一個擷取失敗的檔）。 #}
-    <div class="text-md text-bold" data-i18n="health.uncoveredTitle">這一次沒有看到的檔</div>
+    {# ⓘ 說明：同一顆 info-btn 六件組。①出處：product `app/health_extract.py` 檔頭
+         （`REASON_NO_EXTRACTOR`／`REASON_EXTRACT_FAILED`／`REASON_SOURCE_FILE_MISSING`／
+         `REASON_NOT_LINKABLE` 四個常數）與 `_folder_record`／`_collect_records` 的
+         `not_row_imported` 分支——這裡列的是**完全沒被任何一項檢查讀過內容**的檔，與上面
+         partialTitle「讀到了、但某幾項不適用」是不同的兩件事。 #}
+    <div class="flex-row align-items-center gap-8">
+        <div class="text-md text-bold" data-i18n="health.uncoveredTitle">這一次沒有看到的檔</div>
+        <button type="button" class="info-btn" title="這一次沒有看到的檔說明" data-i18n-title="help.health.uncovered.title" data-open-modal="healthUncoveredHelpModal">
+            <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+            <span class="sr-only" data-i18n="help.health.uncovered.title">這一次沒有看到的檔說明</span>
+        </button>
+    </div>
     <p class="text-gray" data-i18n="health.uncoveredHint">這些檔不在這一次的檢查範圍裡——它們的內容不會出現在任何一項檢查上。列出來是因為漏報比誤報嚴重：一份沒被看過的檔，在清單上長得跟「乾淨」一模一樣。</p>
     <div class="flex-row gap-24 flex-wrap">
         <p><span class="text-bold" data-i18n="health.uncoveredCount">這張表列出／總共沒掃到：</span><span>{{ healthUncovered.length }} / {{ healthScan.uncoveredTotal }}</span></p>
@@ -701,16 +769,49 @@ permalink: 3-5_dataHealth.html
             </tbody>
         </table>
     </div>
+
+    {# 「這一次沒有看到的檔」的說明視窗：同樣放在 `{% if healthScan %}` 之內，理由同 partial 那顆。 #}
+    {% set helpModalId = "healthUncoveredHelpModal" %}
+    {% set helpModalTitleKey = "help.health.uncovered.title" %}
+    {% set helpModalTitle = "這一次沒有看到的檔說明" %}
+    {% set helpModalWhatKey = "help.health.uncovered.what" %}
+    {% set helpModalWhat = "這一區列的是這一次掃描完全沒有讀到內容的檔案——不是掃了才發現乾淨，而是根本沒有被任何一項檢查看過，原因可能是格式沒有本機擷取器、原始檔在磁碟上已經找不到、擷取器讀不出來，或者這個檔不是逐列匯入、算不出它逐列的文件編號。" %}
+    {% set helpModalStateItems = [] %}
+    {% set helpModalLimitRows = [] %}
+    {% include "components/help-modal/help-modal.html" %}
     {% else %}
     <p class="text-gray" data-i18n="health.lastScanNever">這個租戶還沒有跑過健檢。按上面那顆「重新檢查」就會跑第一次；匯入資料之後系統也會自動跑一次。在那之前，下面的總覽與清單都是空的——那代表「還沒有檢查過」，不代表「檢查過而且沒有問題」。</p>
     {% endif %}
 </div>
 
+{# 「上一次檢查」的說明視窗：放在 `{% if healthScan %}／{% else %}` 之外——標題與 ⓘ 在
+     「還沒跑過健檢」那一態也照樣畫出來（`health.lastScanNever`），說明視窗要跟著同樣不受那個
+     條件限制。②③留空，理由同上。 #}
+{% set helpModalId = "healthLastScanHelpModal" %}
+{% set helpModalTitleKey = "help.health.lastScan.title" %}
+{% set helpModalTitle = "上一次檢查說明" %}
+{% set helpModalWhatKey = "help.health.lastScan.what" %}
+{% set helpModalWhat = "這一區讀的是最近一次成功掃描落庫後的結果，不是這次操作的即時回應——掃描結果會存下來，所以重新整理頁面、甚至換一台裝置登入，都還看得到上一次哪些檔沒被看到、哪些檢查有沒有跑過，不必剛好守在按下重新檢查的那一刻。" %}
+{% set helpModalStateItems = [] %}
+{% set helpModalLimitRows = [] %}
+{% include "components/help-modal/help-modal.html" %}
+
 {# ── ① 健檢總覽：依影響排序 ───────────────────────────────────────────────────
      `GET /health/findings/overview`。排序鍵是「這一組所有未處置發現涉及記錄的命中次數總和」，
      同分時未處置數多者在前、再以檢查項目字典序（定序，同分的兩組不會每次重新整理換一次位置）。 #}
 <div class="block mt-16 flex-row column gap-16">
-    <div class="text-md text-bold" data-i18n="health.overviewTitle">健檢總覽（依影響排序）</div>
+    {# ⓘ 說明：同一顆 info-btn 六件組。①出處：`GET /health/findings/overview`（`findings_overview`）
+         的檔頭——這一支是「按檢查項目分組加總」的彙整層，**不重複**它自己緊接在下面那句
+         `health.overviewSortHint`（為什麼照命中次數總和排、命中次數怎麼扣掉回歸重放）：①改講
+         這一區是什麼——分組彙整用來看「整體上哪一種檢查項目最該優先處理」，逐筆處置仍要到
+         下面的逐項清單去做。 #}
+    <div class="flex-row align-items-center gap-8">
+        <div class="text-md text-bold" data-i18n="health.overviewTitle">健檢總覽（依影響排序）</div>
+        <button type="button" class="info-btn" title="健檢總覽說明" data-i18n-title="help.health.overview.title" data-open-modal="healthOverviewHelpModal">
+            <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+            <span class="sr-only" data-i18n="help.health.overview.title">健檢總覽說明</span>
+        </button>
+    </div>
     {# 這一支的兩個查詢參數（`days`／`top_n`）先前一個控制項都沒有，而下面那句可見文案叫使用者
          「把窗拉長」——講得出一個做不到的動作。兩顆都是**值載體**（值交給 React 讀去重打
          `GET /health/findings/overview`）⇒ 只掛 hook class、不掛 data-toast（§5 組合矩陣②）；
@@ -812,12 +913,36 @@ permalink: 3-5_dataHealth.html
     <p class="text-gray"><span data-i18n="health.overviewTopHintPrefix">每一組只列前 </span>{{ healthOverview.topN }}<span data-i18n="health.overviewTopHintSuffix"> 筆，那不是分頁：它的用途是把最該先看的那幾筆撈到眼前。某一組的未處置數超過這個數字時，其餘的要到下面的清單才看得到。</span></p>
 </div>
 
+{# 「健檢總覽」的說明視窗：②③留空——現在生效的條件與這一區的數字由 React 執行期算，
+     切版這一側只提供容器（help-modal.html 檔頭）。 #}
+{% set helpModalId = "healthOverviewHelpModal" %}
+{% set helpModalTitleKey = "help.health.overview.title" %}
+{% set helpModalTitle = "健檢總覽說明" %}
+{% set helpModalWhatKey = "help.health.overview.what" %}
+{% set helpModalWhat = "這一區把還沒處置的發現按檢查項目分組加總，每一組再附上最該優先處理的幾筆——它回答的是這個租戶目前哪一種檢查項目整體影響最大，不是逐筆瀏覽用的清單；要處置哪一筆，仍然要到下面的逐項清單去做。" %}
+{% set helpModalStateItems = [] %}
+{% set helpModalLimitRows = [] %}
+{% include "components/help-modal/help-modal.html" %}
+
 {# ── 逐項清單 ─────────────────────────────────────────────────────────────────
      `GET /health/findings`。`status` 預設 `open`：這是一張未處置的工作清單，預設把已處置的一起
      端出來會讓它每天變長、人看兩次就不看了。 #}
 <div class="block mt-16 flex-row column gap-16 js-accordion">
     <div class="flex-row justify-content-between align-items-center flex-wrap gap-16">
-        <div class="text-md text-bold" data-i18n="health.findingsTitle">逐項清單</div>
+        {# ⓘ 說明：同一顆 info-btn 六件組，併入既有 `justify-content-between` 那一列（與展開/收合
+             鈕同排）——多包一層 `flex-row align-items-center gap-8` 是為了把標題與 ⓘ 綁成同一個
+             flex item，不跟展開/收合鈕擠在一起（§5 組合矩陣同 3-1-2/3-1-3 的保護理由）。
+             ①出處：`list_findings`（`app/routers/health_findings.py`）的檔頭——`status` 預設
+             `open`，這是一張待處理工作清單；**不重複**下面緊接著的 `health.findingsSortHint`
+             （為什麼排序是 `(check_type, id)` 而不是依影響）：①改講這一區是什麼——唯一實際
+             按得下處置動作的清單。 #}
+        <div class="flex-row align-items-center gap-8">
+            <div class="text-md text-bold" data-i18n="health.findingsTitle">逐項清單</div>
+            <button type="button" class="info-btn" title="逐項清單說明" data-i18n-title="help.health.findings.title" data-open-modal="healthFindingsHelpModal">
+                <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+                <span class="sr-only" data-i18n="help.health.findings.title">逐項清單說明</span>
+            </button>
+        </div>
         {# `.btn-group` 的規則帶著 `.default-table` 祖先（§4 祖先錯位），表格外吃不到。 #}
         <div class="flex-row gap-10 align-items-center">
             <button type="button" class="button button-border button-sm js-expand-all" data-i18n="common.expandAll">全部展開</button>
@@ -1160,3 +1285,14 @@ permalink: 3-5_dataHealth.html
     {% set currentPage = healthFindingsPage.currentPage %}
     {% include "components/pager-row/pager-row.html" %}
 </div>
+
+{# 「逐項清單」的說明視窗：②③留空——現在生效的條件與這一區的數字由 React 執行期算，
+     切版這一側只提供容器（help-modal.html 檔頭）。 #}
+{% set helpModalId = "healthFindingsHelpModal" %}
+{% set helpModalTitleKey = "help.health.findings.title" %}
+{% set helpModalTitle = "逐項清單說明" %}
+{% set helpModalWhatKey = "help.health.findings.what" %}
+{% set helpModalWhat = "這一區是逐筆的發現清單，可以依處置狀態與檢查項目篩選，也是唯一實際按得下處置動作的地方——預設只顯示未處置的那些，這是一張待處理的工作清單，不是全部歷史紀錄；要看已經判定過的，把處置狀態切到「已處置」或「全部」。" %}
+{% set helpModalStateItems = [] %}
+{% set helpModalLimitRows = [] %}
+{% include "components/help-modal/help-modal.html" %}
