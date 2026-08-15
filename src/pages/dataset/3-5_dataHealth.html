@@ -754,7 +754,13 @@ permalink: 3-5_dataHealth.html
         <p><span class="text-bold" data-i18n="health.overviewTotalHits">這個窗內的總命中次數：</span><span>{{ healthOverview.totalHits }}</span></p>
     </div>
     <p class="text-gray" data-i18n="health.overviewSortHint">這張表不是照發現數量排的，是照「這一組涉及的記錄在這個時間窗內被檢索命中幾次」的總和排——一筆從沒被命中過的重複，遠不如一筆每天被命中 50 次的過期答案重要。命中次數已經扣掉批次回歸的重放，所以跑一次回歸不會把被重放的那幾筆推上頂端。</p>
-    <p class="text-gray"><span data-i18n="health.overviewWindowHintPrefix">時間窗預設 </span><span>{{ healthOverview.windowDays }}</span><span data-i18n="health.overviewWindowHintSuffix"> 天而不是 30 天：上游一次最多彙總 5000 則問答，30 天的窗對稍微忙一點的租戶必然跨過那條線，總覽會變成永遠打不開。窗拉長之後打不開時，回應會說得出是這個原因。</span></p>
+    {# 5000 是後端真的會夾住的界線（product app/settings.py 的 `Settings.stats_max_logs`，經
+         `ops_limits.STATS_LIMIT_GROUPS.aggregate.logs` 投影成 `GET /stats/limits` 的 `aggregate.logs.max`；
+         超過即明確報錯、不靜默截斷），改了這裡也要跟著改，故獨立成資料節點（§3-2）。
+         同句稍後的「30 天」不是同一種東西：那是「如果窗是這個天數會怎樣」的舉例情境，不對應任何
+         後端常數（`_resolve_range` 的實際上限是 90 天，見上面 `healthOverviewDaysInput` 的 `max="90"`），
+         故維持譯文。 #}
+    <p class="text-gray"><span data-i18n="health.overviewWindowHintPrefix">時間窗預設 </span><span>{{ healthOverview.windowDays }}</span><span data-i18n="health.overviewWindowHintMid"> 天而不是 30 天：上游一次最多彙總 </span><span>5000</span><span data-i18n="health.overviewWindowHintSuffix"> 則問答，30 天的窗對稍微忙一點的租戶必然跨過那條線，總覽會變成永遠打不開。窗拉長之後打不開時，回應會說得出是這個原因。</span></p>
     <div class="table-container scrollTable">
         <table class="default-table">
             <colgroup>
