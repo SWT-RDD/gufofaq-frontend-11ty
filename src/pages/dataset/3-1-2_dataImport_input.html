@@ -63,7 +63,18 @@ permalink: 3-1-2_dataImport_input.html
      /datasets 帶這三欄、再導去該類型的上傳流程），故本區塊沒有自己的送出鈕、也不掛 data-toast。 #}
 <div class="block flex-row column gap-16 mt-16" role="group" aria-labelledby="chunkSettingsTitle">
     <div class="flex-row column gap-8">
-        <div class="text-md text-bold" id="chunkSettingsTitle" data-i18n="dataset.chunkSettings">切塊設定</div>
+        {# ⓘ 說明：markup 逐字照抄 `settings/5-2_conversationSettings.html` 出口套用欄那顆既有
+             info-btn（`aliasOutputInfoModal` 觸發鈕）六件組。標題 div 本身
+             （`id="chunkSettingsTitle"`）保持原樣不塞子節點——外層
+             `role="group"` 的 `aria-labelledby` 指著它，混進按鈕的可及名稱會把整組的名字弄髒，
+             故另包一層 flex-row 放標題與按鈕。①內容出處見下方 help-modal 那段 set。 #}
+        <div class="flex-row align-items-center gap-8">
+            <div class="text-md text-bold" id="chunkSettingsTitle" data-i18n="dataset.chunkSettings">切塊設定</div>
+            <button type="button" class="info-btn" title="切塊設定說明" data-i18n-title="help.dataset.chunkSettings.title" data-open-modal="chunkSettingsHelpModal">
+                <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+                <span class="sr-only" data-i18n="help.dataset.chunkSettings.title">切塊設定說明</span>
+            </button>
+        </div>
         {# 代價寫在做這個決定的控制項旁邊、且排在觸發鈕（下面三張卡片）之前（§3-2）。 #}
         <p class="text-gray m-0" data-i18n="dataset.chunkAffectsFutureOnly">切塊參數只在建立擷取管道時送給上游，所以只影響之後匯入的檔案；已經匯入的內容不會重新切塊。</p>
         <p class="text-gray m-0" data-i18n="dataset.chunkLockedAfterUpload">而且這個資料集只要做過一次「檔案上傳」匯入，這三個值就再也改不動，之後不論從哪一條路匯入都只能沿用現值——請在這裡決定好。</p>
@@ -93,6 +104,18 @@ permalink: 3-1-2_dataImport_input.html
     </label>
     <p id="prependTitleHint" class="text-gray m-0" data-i18n="dataset.prependTitleHint">開啟後每一塊的開頭都會補上這份文件的標題，檢索時比較不會斷章取義；代價是每一塊少一點放正文的長度。</p>
 </div>
+
+{# 「切塊設定」的說明視窗：①出處同上方切塊設定那段檔頭（product `DatasetIn` 的
+     chunk_size／chunk_overlap／prepend_title_each_chunk、`_assert_chunk_params_still_settable`）。
+     ②③留空——同 excelImportOptionsHelpModal 那份的理由，容器見 help-modal.html 檔頭。 #}
+{% set helpModalId = "chunkSettingsHelpModal" %}
+{% set helpModalTitleKey = "help.dataset.chunkSettings.title" %}
+{% set helpModalTitle = "切塊設定說明" %}
+{% set helpModalWhatKey = "help.dataset.chunkSettings.what" %}
+{% set helpModalWhat = "這一區決定之後匯入這個資料集的檔案要怎麼被切成一塊一塊：每一塊多大、相鄰兩塊之間要不要保留一段重疊內容以免把一句話從中間切斷，以及要不要讓每一塊都帶著原始文件的標題，方便檢索時看出這段內容出自哪一份文件。" %}
+{% set helpModalStateItems = [] %}
+{% set helpModalLimitRows = [] %}
+{% include "components/help-modal/help-modal.html" %}
 
 {# 簡化版靜態跳轉：卡片直接連到該類型上傳頁（excel→1-1-2、pdf/word/image→1-2-1）。
      真 app／React 端這一步是「先建資料集（POST /datasets，body 含名稱＋群組＋上面那三個切塊參數）

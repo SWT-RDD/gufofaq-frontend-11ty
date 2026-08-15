@@ -88,7 +88,19 @@ permalink: 1-1-4_columnSelect_excel.html
      外部主鍵：留白＝純新增（既有行為）。填了就是「這份資料的新版」，同資料集同鍵的舊版會在同一個交易裡
      被取代——它是「重複匯入同一份檔案就多一份舊資料」的唯一解，故欄下要講清楚留白與填了的差別。 #}
 <div class="block flex-row column gap-16 mb-24">
-    <div class="text-md text-bold" data-i18n="dataImport.importOptions">匯入選項</div>
+    {# ⓘ 說明：markup 逐字照抄 `settings/5-2_conversationSettings.html` 出口套用欄那顆既有
+         info-btn（`aliasOutputInfoModal` 觸發鈕）六件組，只換 title/key/data-open-modal 三個值
+         （§1-2 無 html 元件契約）。放在新的
+         flex-row 包裹層，而不是塞進 `.text-md.text-bold` 本體：那顆 div 是本頁另一段
+         `aria-labelledby`／fpdiff 之類斷言可能指到的純標題節點，不動它比較安全。
+         ① 內容出處見下方 help-modal 那段 set。 #}
+    <div class="flex-row align-items-center gap-8">
+        <div class="text-md text-bold" data-i18n="dataImport.importOptions">匯入選項</div>
+        <button type="button" class="info-btn" title="匯入選項說明" data-i18n-title="help.dataImport.importOptions.title" data-open-modal="excelImportOptionsHelpModal">
+            <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+            <span class="sr-only" data-i18n="help.dataImport.importOptions.title">匯入選項說明</span>
+        </button>
+    </div>
     <div class="form-group row mobile-col">
         <div class="label label-md">
             <span id="excelConvertHtmlLabel" class="control-label" data-i18n="dataImport.convertHtml">HTML 轉 Markdown</span>
@@ -113,5 +125,17 @@ permalink: 1-1-4_columnSelect_excel.html
         </div>
     </div>
 </div>
+
+{# 「匯入選項」的說明視窗：①出處同上方「匯入選項」那段檔頭（product `ExcelImportIn` 的
+     convert_html／external_key）。②③留空——現在生效的條件與這一區的數字由 React 在執行期
+     依 MODE_APPLICABILITY／useLimits 算，切版這一側只提供容器（help-modal.html 檔頭）。 #}
+{% set helpModalId = "excelImportOptionsHelpModal" %}
+{% set helpModalTitleKey = "help.dataImport.importOptions.title" %}
+{% set helpModalTitle = "匯入選項說明" %}
+{% set helpModalWhatKey = "help.dataImport.importOptions.what" %}
+{% set helpModalWhat = "這一區決定的是這次匯入怎麼被寫進資料集，套用在你剛剛設定的所有欄位對應上：要不要把內容裡殘留的 HTML 轉成乾淨的 Markdown，以及要不要用同一把外部主鍵把之前匯入過的舊資料換成這一次的新版，這是避免同一份檔案重複匯入時，資料集裡卻越堆越多份舊資料的做法。" %}
+{% set helpModalStateItems = [] %}
+{% set helpModalLimitRows = [] %}
+{% include "components/help-modal/help-modal.html" %}
 
 {% include "components/multi-select-box/multi-select-box.html" %}

@@ -209,7 +209,18 @@ permalink: 1-2-1_uploadFile_pdf.html
     { filename: "服務條款.pdf", message: "儲存空間不足" }
 ] %}
 <div class="block mt-24 flex-row column gap-16">
-    <div class="text-md text-bold"><span data-i18n="common.total">共</span> {{ batchOkRows.length + batchFailRows.length }} <span data-i18n="dataImport.batchSummaryOkMid">個檔案，成功</span> {{ batchOkRows.length }}<span data-i18n="dataImport.batchSummaryFailMid">、失敗</span> {{ batchFailRows.length }}</div>
+    {# ⓘ 說明：markup 逐字照抄 `settings/5-2_conversationSettings.html` 出口套用欄那顆既有
+         info-btn（`aliasOutputInfoModal` 觸發鈕）六件組。標題 div 本身是計算出來的彙總句
+         （§6：數字能推導就從陣列渲染），不是純標題，
+         故同樣另包一層 flex-row 放它與按鈕，不動它的既有內容。①內容出處見下方 help-modal
+         那段 set（product `batch_import_documents` 的逐檔 ok/error）。 #}
+    <div class="flex-row align-items-center gap-8">
+        <div class="text-md text-bold"><span data-i18n="common.total">共</span> {{ batchOkRows.length + batchFailRows.length }} <span data-i18n="dataImport.batchSummaryOkMid">個檔案，成功</span> {{ batchOkRows.length }}<span data-i18n="dataImport.batchSummaryFailMid">、失敗</span> {{ batchFailRows.length }}</div>
+        <button type="button" class="info-btn" title="批次匯入結果說明" data-i18n-title="help.dataImport.pdfBatchImportResult.title" data-open-modal="pdfBatchImportResultHelpModal">
+            <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+            <span class="sr-only" data-i18n="help.dataImport.pdfBatchImportResult.title">批次匯入結果說明</span>
+        </button>
+    </div>
     <div class="table-container scrollTable">
         <table class="default-table">
             <colgroup>
@@ -243,6 +254,19 @@ permalink: 1-2-1_uploadFile_pdf.html
         </table>
     </div>
 </div>
+
+{# 「批次匯入結果」的說明視窗：①出處同上方「批次匯入結果：逐檔各自 metadata 暫存後一次送出」
+     那段檔頭，與 product `batch_import_documents` 的文件字串（逐檔各自成敗、fail-loud，
+     不因單檔失敗回滾整批）。②③留空——理由同 1-1-4 的 excelImportOptionsHelpModal，
+     容器見 help-modal.html 檔頭。 #}
+{% set helpModalId = "pdfBatchImportResultHelpModal" %}
+{% set helpModalTitleKey = "help.dataImport.pdfBatchImportResult.title" %}
+{% set helpModalTitle = "批次匯入結果說明" %}
+{% set helpModalWhatKey = "help.dataImport.pdfBatchImportResult.what" %}
+{% set helpModalWhat = "這一區逐檔顯示這一批 PDF／WORD 文件匯入的結果：每個檔案各自標示成功或失敗，失敗的檔案會附上原因，成功與失敗會並列顯示，不會因為部分檔案失敗就整批不顯示。" %}
+{% set helpModalStateItems = [] %}
+{% set helpModalLimitRows = [] %}
+{% include "components/help-modal/help-modal.html" %}
 
 {# 匯入結果回報：三計數（product `_tally`）＋抽取統計＋無法保真轉換的表格。
      「共 N 個檔案，成功／失敗」講的是**檔數**，三計數講的是**這批對知識庫做了什麼**——
