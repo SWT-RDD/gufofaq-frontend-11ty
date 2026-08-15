@@ -75,7 +75,15 @@ permalink: 5-2_conversationSettings.html
 {% set saveConfigError = "output_rules 第 7 條（link_max）的 value 必須介於 1 與 20 之間（收到 -1）" %}
 <p class="text-red mb-16{% if not saveConfigError %} hidden{% endif %}" role="alert">{{ saveConfigError }}</p>
 
-<p class="text-gray" data-i18n="settings.conversationSettingsIntro">一頁設定三套設定檔（設置一／二／三）的全部對話行為。每個旋鈕各設置一份，於上方切換設置；前台問答預設使用哪一套為跨設置共用設定。</p>
+{# 頁層說明：先盤點過本頁既有這一段（`settings.conversationSettingsIntro`），原文只講「三套設定檔
+     各一份、於上方切換」，沒提到模式的能力差異——本頁是全站唯一有模式適用性的頁面，不生效的控制項
+     一律隱藏（見上方 `settings.modeApplicabilityHint`），所以「切到另一個模式會多／少哪些能力」
+     只能寫在這裡：使用者看不到那些欄位，唯一能知道「換個模式才有這個能力」的地方就是這段。
+     兩份清單逐字取自 saas `apps/web/lib/modeMatrix.ts` 的 `MODE_APPLICABILITY`：傳統搜尋專屬
+     （`intension_system_prompt`／`index_tiers` 的逐層優先序與逐層意圖／`use_knowledge_mode`／
+     `search_total_number`）與 Agent 對話專屬（`agent_system_prompt`／`respond_system_prompt`／
+     `agent_max_iterations`／`enabled_builtin_tools`／`mcp_server_ids`／`glossary_table_ids`）。 #}
+<p class="text-gray" data-i18n="settings.conversationSettingsIntro">一頁設定三套設定檔（設置一／二／三）的全部對話行為。每個旋鈕各設置一份，於上方切換設置；前台問答預設使用哪一套為跨設置共用設定。傳統搜尋與 Agent 對話是兩種問答模式，各自有對方沒有的能力：傳統搜尋才有逐層優先序（高／中／低）與逐層意圖判斷、知識使用模式、取用資料筆數、意圖判斷提示詞；Agent 對話才有內建工具、MCP Server、術語表工具，以及 Agent 系統提示詞、回應提示詞、Agent 最大迭代次數。目前沒有用到的那個模式，這些欄位不會出現在畫面上，要切到該模式才看得到、才能設定。</p>
 
 {# ── 租戶層（跨三設置共用；profile 頁籤之外）──
      設置頁籤（沿用 ui/tab 的 .tab-row.fit-content > .tab-group Pattern A）+ 前台問答預設使用 radio，
@@ -602,8 +610,22 @@ permalink: 5-2_conversationSettings.html
          和聊天室主題」），故標籤不只寫「推薦問題」——導到小模型會連聊天室標題一起換。 #}
     <div class="block flex-row column gap-24">
         {# 區塊標題用 .text-md.text-bold（同本頁 Agent 工具區的做法）：它不 label 任何控制項，
-             寫成 <label> 會是一顆點了不會聚焦、對輔具也沒有語意的空殼（§4）。 #}
-        <div class="text-md text-bold" data-i18n="settings.reasoningGroupsHeading">分組 LLM（進階）</div>
+             寫成 <label> 會是一顆點了不會聚焦、對輔具也沒有語意的空殼（§4）。
+             ⓘ 說明：markup 逐字照抄 5-2 出口套用欄那顆既有 info-btn 六件組（§1-2 無 html 元件契約），
+             只換 title/key/data-open-modal 三個值。①出處：本區塊上方檔頭逐五組列出各組對應的內部
+             LLM 呼叫，與 product `app/profile_config.py` 的 `PROFILE_FIELD_DEFAULTS`（`model_name_*`／
+             `reasoning_effort_*` 空值語意）、`app/routers/settings_hub.py` 的 `_MODEL_FIELDS`／
+             `ProfileConfigOut`／`ProfileConfigIn`。五組彼此模式適用性不同（intent 僅傳統、tools／skill
+             僅 agent、judge／recommend 皆用），但本區塊本身**不**依模式隱藏（五組永遠一起渲染，見
+             本檔頭「切版此處為靜態代表性選項」），故①不提模式，避免與其他區塊「只在某模式才會被
+             使用」那類敘述混淆。 #}
+        <div class="flex-row align-items-center gap-8">
+            <div class="text-md text-bold" data-i18n="settings.reasoningGroupsHeading">分組 LLM（進階）</div>
+            <button type="button" class="info-btn" title="分組 LLM（進階）說明" data-i18n-title="help.settings.reasoningGroupsHeading.title" data-open-modal="reasoningGroupsHeadingHelpModal">
+                <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+                <span class="sr-only" data-i18n="help.settings.reasoningGroupsHeading.title">分組 LLM（進階）說明</span>
+            </button>
+        </div>
         <p class="text-gray m-0" data-i18n="settings.reasoningGroupsIntro">主回答（使用者最終看到的回覆）以外的各內部 LLM 呼叫，可各自選用不同模型與思考深度。留空＝繼承主模型／最低思考。</p>
         {% set reasoningGroups = [
             { key: "intent", label: "意圖判斷", labelKey: "settings.reasoningGroupIntent",
@@ -657,6 +679,17 @@ permalink: 5-2_conversationSettings.html
         </div>
         {% endfor %}
     </div>
+
+    {# 「分組 LLM（進階）」的說明視窗：②③留空——現在生效的條件與這一區的數字由 React 執行期算，
+         切版這一側只提供容器。 #}
+    {% set helpModalId = "reasoningGroupsHeadingHelpModal" %}
+    {% set helpModalTitleKey = "help.settings.reasoningGroupsHeading.title" %}
+    {% set helpModalTitle = "分組 LLM（進階）說明" %}
+    {% set helpModalWhatKey = "help.settings.reasoningGroupsHeading.what" %}
+    {% set helpModalWhat = "這一區讓你替「主回答」以外的五組內部 LLM 呼叫——意圖判斷、判定（可回答性／QA／政策）、工具迴圈、技能子圖、推薦問題／聊天室主題——各自指定模型與思考深度，不必整組沿用主回答的設定。某一組留空時，模型沿用主模型、思考深度採最低（維持現行預設）。" %}
+    {% set helpModalStateItems = [] %}
+    {% set helpModalLimitRows = [] %}
+    {% include "components/help-modal/help-modal.html" %}
 </div>
 
 {# ═══ 子頁籤 3：提示詞 ═══
@@ -671,9 +704,32 @@ permalink: 5-2_conversationSettings.html
      在 `apps/web` 全樹零命中。 #}
 <div class="tab-content" data-capability="settings:write" id="panelPrompts" style="display: none;">
     <div class="block mb-10 flex-row column gap-16">
-        <div class="text-md text-bold" data-i18n="settings.systemPrompt">系統提示詞</div>
+        {# ⓘ 說明：markup 同 5-2 既有的 info-btn 六件組。①出處：本子頁籤檔頭「產品系統提示詞（含版本史）
+             沿用 components/prompt-edit + 版本卡」＋ product `app/routers/prompts.py` 的模組檔頭
+             （「提示詞」＝各 profile 對應的 GufoRAG chatbot config 裡的 `product_system_prompt` 欄，
+             「提示詞版本史」＝該 config 版本歷史裡 `product_system_prompt` 有變動的版本）與 `PromptOut`
+             的 `version_no`／`is_active`。兩模式皆生效這件事出自 saas `apps/web/lib/modeMatrix.ts` 的
+             `product_system_prompt: "both"`（屬永久的架構事實，不隨頁面上任何旋鈕的目前值改變，
+             故放進①而非②）。 #}
+        <div class="flex-row align-items-center gap-8">
+            <div class="text-md text-bold" data-i18n="settings.systemPrompt">系統提示詞</div>
+            <button type="button" class="info-btn" title="系統提示詞說明" data-i18n-title="help.settings.systemPrompt.title" data-open-modal="systemPromptHelpModal">
+                <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+                <span class="sr-only" data-i18n="help.settings.systemPrompt.title">系統提示詞說明</span>
+            </button>
+        </div>
         {% include "components/prompt-edit/prompt-edit.html" %}
     </div>
+
+    {# 「系統提示詞」的說明視窗：②③留空，理由同本頁其他說明視窗。 #}
+    {% set helpModalId = "systemPromptHelpModal" %}
+    {% set helpModalTitleKey = "help.settings.systemPrompt.title" %}
+    {% set helpModalTitle = "系統提示詞說明" %}
+    {% set helpModalWhatKey = "help.settings.systemPrompt.what" %}
+    {% set helpModalWhat = "這一區編輯的是這個設定檔的系統提示詞（product_system_prompt），會併入每一輪送給模型的系統提示詞，兩種對話模式皆生效。每次儲存都會建立一個新版本、不覆蓋舊版；下方版本清單可查詢、複製或還原任一個歷史版本。" %}
+    {% set helpModalStateItems = [] %}
+    {% set helpModalLimitRows = [] %}
+    {% include "components/help-modal/help-modal.html" %}
 
     {# 版本史篩選（關鍵字／日期區間／版本）——沿用 5-4-1 提示詞管理的篩選列，設定檔改由上方設置頁籤決定，
          故此處不含設定檔選擇。值載體掛 hook class（§5，React 接 change）；查詢＝直送版本列表 API 的鈕→data-toast。
@@ -767,9 +823,21 @@ permalink: 5-2_conversationSettings.html
         {% endfor %}
     </div>
 
-    {# 各欄模式適用性見本子頁籤檔頭註（依 docs/mode-matrix.md 實測）：role/chatroom 兩模式皆用、恆顯示。 #}
+    {# 各欄模式適用性見本子頁籤檔頭註（依 docs/mode-matrix.md 實測）：role/chatroom 兩模式皆用、恆顯示。
+         ⓘ 說明：markup 同 5-2 既有的 info-btn 六件組。①出處：本子頁籤檔頭「agent/respond 僅 Agent
+         模式生效、intension 僅傳統搜尋模式生效（agent 無意圖路由階段）、role/chatroom 兩模式皆用」，
+         與 saas `apps/web/lib/modeMatrix.ts` 的 `agent_system_prompt`／`respond_system_prompt`
+         （"agent"）、`intension_system_prompt`（"traditional"）三個鍵。這五個欄位彼此模式適用性
+         不同是本區塊固定的架構事實（不隨頁面其他旋鈕的目前值變化），故寫進①；哪一層此刻在畫面上
+         看不看得到、有沒有生效，才是②的事。 #}
     <div class="block flex-row column gap-16">
-        <div class="text-md text-bold" data-i18n="settings.advancedPrompts">進階提示詞</div>
+        <div class="flex-row align-items-center gap-8">
+            <div class="text-md text-bold" data-i18n="settings.advancedPrompts">進階提示詞</div>
+            <button type="button" class="info-btn" title="進階提示詞說明" data-i18n-title="help.settings.advancedPrompts.title" data-open-modal="advancedPromptsHelpModal">
+                <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+                <span class="sr-only" data-i18n="help.settings.advancedPrompts.title">進階提示詞說明</span>
+            </button>
+        </div>
         <div class="form-group">
             <div class="label"><label for="botRoleInput" class="control-label" data-i18n="settings.botRole">機器人身分</label></div>
             <div class="field"><input type="text" id="botRoleInput" class="form-control js-role" value="智能助手" placeholder="例如：產品客服助手" data-i18n-placeholder="settings.pleaseEnterBotRole"></div>
@@ -797,6 +865,16 @@ permalink: 5-2_conversationSettings.html
             <div class="field"><textarea id="chatroomSystemPromptInput" class="form-control js-chatroom-system-prompt"></textarea></div>
         </div>
     </div>
+
+    {# 「進階提示詞」的說明視窗：②③留空，理由同本頁其他說明視窗。 #}
+    {% set helpModalId = "advancedPromptsHelpModal" %}
+    {% set helpModalTitleKey = "help.settings.advancedPrompts.title" %}
+    {% set helpModalTitle = "進階提示詞說明" %}
+    {% set helpModalWhatKey = "help.settings.advancedPrompts.what" %}
+    {% set helpModalWhat = "這一區收納機器人身分與各層系統提示詞的補充設定：機器人身分、Agent 系統提示詞、回應提示詞、意圖判斷提示詞、聊天室提示詞。每一層對應對話流程裡不同的一站，各自只在會用到那一站的對話模式下才會被送進模型。" %}
+    {% set helpModalStateItems = [] %}
+    {% set helpModalLimitRows = [] %}
+    {% include "components/help-modal/help-modal.html" %}
 </div>
 
 {# ═══ 子頁籤 4：歡迎語（沿用 5-4-2 編輯器＋版本卡，另有 /welcome 版本端點）═══ #}
@@ -906,7 +984,18 @@ permalink: 5-2_conversationSettings.html
       { name: "醫療診斷", definition: "要求提供醫療診斷、處方或用藥建議。", examples: "我這個症狀該吃什麼藥", inputAction: "record", outputAction: "record", refusal: "醫療相關問題請諮詢專業醫師，我僅能提供一般性資訊。" }
     ] %}
     <div class="block mb-16 flex-row column gap-16">
-        <div class="text-md text-bold" data-i18n="settings.policyTopics">政策主題</div>
+        {# ⓘ 說明：markup 同 5-2 既有的 info-btn 六件組。①出處：本子頁籤檔頭（政策主題表的結構）
+             與 product `app/chat_config_limits.py` 的「內容政策：結構化 denied topics」一節——
+             尤其 `MAX_BLOCKED_MSG_LEN = MAX_TOPIC_REFUSAL_LEN` 那一行的註解「這裡照抄那個推導⋯
+             （主題自帶 refusal 為空時的替代品）」，說明本表的「拒絕訊息」欄與下方「輸入／輸出
+             封鎖訊息」兩個全域欄位的 fallback 關係——這件事本頁沒有任何常駐提示講過，故寫進①。 #}
+        <div class="flex-row align-items-center gap-8">
+            <div class="text-md text-bold" data-i18n="settings.policyTopics">政策主題</div>
+            <button type="button" class="info-btn" title="政策主題說明" data-i18n-title="help.settings.policyTopics.title" data-open-modal="policyTopicsHelpModal">
+                <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+                <span class="sr-only" data-i18n="help.settings.policyTopics.title">政策主題說明</span>
+            </button>
+        </div>
         {# 上限畫在消費點（§3-2「上限寫在消費點（『N / 30』）」）。30 ＝ product
              `app/chat_config_limits.py` 的 `MAX_TOPICS`（`ProfileConfigIn.policy_topics` 以
              `max_length=MAX_TOPICS` 收；上游 GufoRAG chatbot `app/services/policy.py` 的
@@ -989,6 +1078,16 @@ permalink: 5-2_conversationSettings.html
         </div>
     </div>
 
+    {# 「政策主題」的說明視窗：②③留空，理由同本頁其他說明視窗。 #}
+    {% set helpModalId = "policyTopicsHelpModal" %}
+    {% set helpModalTitleKey = "help.settings.policyTopics.title" %}
+    {% set helpModalTitle = "政策主題說明" %}
+    {% set helpModalWhatKey = "help.settings.policyTopics.what" %}
+    {% set helpModalWhat = "這一區逐條定義敏感主題：每條主題有名稱、定義、範例，並可對「輸入」與「輸出」各自獨立設定命中時要封鎖、記錄還是不處理；封鎖時回覆這一條自己的拒絕訊息，留空則改用下方的輸入／輸出全域擋下訊息。" %}
+    {% set helpModalStateItems = [] %}
+    {% set helpModalLimitRows = [] %}
+    {% include "components/help-modal/help-modal.html" %}
+
     <div class="block flex-row column gap-16">
         <div class="form-group">
             <div class="label"><label for="policyWordFilters" class="control-label" data-i18n="settings.policyWordFilters">詞彙過濾</label></div>
@@ -1027,7 +1126,19 @@ permalink: 5-2_conversationSettings.html
       { aliases: "推貿費, 推廣貿易費, 貿推費", replacement: "[${0}](https://www.trade.gov.tw/tpf)", isRegex: false }
     ] %}
     <div class="block flex-row column gap-16">
-        <div class="text-md text-bold" data-i18n="settings.outputReplacements">出口替換規則</div>
+        {# ⓘ 說明：markup 同 5-2 既有的 info-btn 六件組。①出處：本區塊上方檔頭（Spec 乙「出口替換
+             規則」：生成後對答案做 match→replacement 直接替換、確定性後處理、與術語表僅 agent 不同）
+             ＋ product `app/output_sub.py` 模組檔頭（「本檔只是投影……product 要在邊界就把使用者
+             輸入錯誤回成 400」）。①刻意不重複下方常駐提示（`settings.outputReplacementsHint`）已經
+             講過的 ${0}／${name}／$$ 語法與「兩模式皆生效」，改講提示沒講的「這一步不經過模型、
+             作用在生成完成之後」，並指向下方「出口處理順序」看它在整條管線的位置。 #}
+        <div class="flex-row align-items-center gap-8">
+            <div class="text-md text-bold" data-i18n="settings.outputReplacements">出口替換規則</div>
+            <button type="button" class="info-btn" title="出口替換規則說明" data-i18n-title="help.settings.outputReplacements.title" data-open-modal="outputReplacementsHelpModal">
+                <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+                <span class="sr-only" data-i18n="help.settings.outputReplacements.title">出口替換規則說明</span>
+            </button>
+        </div>
         <div class="text-gray" data-i18n="settings.outputReplacementsHint">生成答案後，把命中的別名（任一）替換成指定內容；${0}=命中文字、regex 具名群組用 ${name}、$$ 表字面 $。regex 不可含量詞。兩種對話模式皆生效。</div>
         {# 上限畫在消費點（§3-2）。30 ＝ product `app/output_sub.py` 的 `MAX_OUTPUT_REPLACEMENTS`
              （`validate_output_replacements` 超過即 400 `outsub.too_many_rules`；上游 GufoRAG chatbot
@@ -1075,6 +1186,16 @@ permalink: 5-2_conversationSettings.html
             <button type="button" class="button button-border button-sm js-add-osub" data-i18n="settings.addOutputReplacement">新增替換規則</button>
         </div>
     </div>
+
+    {# 「出口替換規則」的說明視窗：②③留空，理由同本頁其他說明視窗。 #}
+    {% set helpModalId = "outputReplacementsHelpModal" %}
+    {% set helpModalTitleKey = "help.settings.outputReplacements.title" %}
+    {% set helpModalTitle = "出口替換規則說明" %}
+    {% set helpModalWhatKey = "help.settings.outputReplacements.what" %}
+    {% set helpModalWhat = "這一區設定生成答案後的確定性文字替換規則：任一別名命中就換成同一個替換內容，可用 ${0} 代入整個命中文字、或用 regex 具名群組 ${name} 組出連結、格式化文字等結果。這一步不經過模型，是純文字層的後處理，作用在模型生成完答案之後（順序見下方「出口處理順序」）。" %}
+    {% set helpModalStateItems = [] %}
+    {% set helpModalLimitRows = [] %}
+    {% include "components/help-modal/help-modal.html" %}
 </div>
 
 {# ═══ 子頁籤 6：輸出規則（NET-NEW，Spec 丁）═══
@@ -1165,7 +1286,18 @@ permalink: 5-2_conversationSettings.html
     {# 順序外顯：<ol> 的語意就是「有序」，編號由 .list-style-decimal 畫出來，不用手寫①②③
          （手寫的數字與實際順序會各自漂）。三段沒有任何拖曳／上下移動入口。 #}
     <div class="block mb-16 flex-row column gap-8">
-        <div class="text-md text-bold" data-i18n="settings.outputPipelineOrder">出口處理順序（固定）</div>
+        {# ⓘ 說明：markup 同 5-2 既有的 info-btn 六件組。①出處：本子頁籤檔頭「① 順序：出口替換 →
+             輸出規則 → 合規閘門，由平台固定（GufoRAG app/routes/_chat_stream.py 的 run_output_pipeline
+             是唯一的順序宣告）」，與 product `app/output_rules.py` 模組檔頭（本檔只是投影，真相在
+             GufoRAG chatbot）。①只講「順序固定、合規閘門恆最後」這個結構事實，不提任一條規則
+             目前是否啟用（那是②的事，本區塊也刻意不提供任何重排入口，見下方 <ol>）。 #}
+        <div class="flex-row align-items-center gap-8">
+            <div class="text-md text-bold" data-i18n="settings.outputPipelineOrder">出口處理順序（固定）</div>
+            <button type="button" class="info-btn" title="出口處理順序說明" data-i18n-title="help.settings.outputPipelineOrder.title" data-open-modal="outputPipelineOrderHelpModal">
+                <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+                <span class="sr-only" data-i18n="help.settings.outputPipelineOrder.title">出口處理順序說明</span>
+            </button>
+        </div>
         <ol class="list-style-decimal">
             <li data-i18n="settings.outputPipelineStage1">出口替換：把命中的別名換成指定內容（設定在「內容政策」分頁）。</li>
             <li data-i18n="settings.outputPipelineStage2">輸出規則：本頁的規則，作用在出口替換之後的文字。</li>
@@ -1173,6 +1305,16 @@ permalink: 5-2_conversationSettings.html
         </ol>
         <div class="text-gray" data-i18n="settings.outputPipelineOrderHint">三段的順序不可重排。合規閘門永遠是最後一段——本頁規則改寫後的文字仍要通過它，所以輸出規則不會成為繞過閘門的路徑。</div>
     </div>
+
+    {# 「出口處理順序（固定）」的說明視窗：②③留空，理由同本頁其他說明視窗。 #}
+    {% set helpModalId = "outputPipelineOrderHelpModal" %}
+    {% set helpModalTitleKey = "help.settings.outputPipelineOrder.title" %}
+    {% set helpModalTitle = "出口處理順序說明" %}
+    {% set helpModalWhatKey = "help.settings.outputPipelineOrder.what" %}
+    {% set helpModalWhat = "這一區顯示三段出口後處理固定的執行順序：出口替換 → 輸出規則 → 合規閘門，沒有任何入口可以調整這個順序。因為合規閘門永遠排在最後一段，出口替換與輸出規則改寫過的文字，仍會再經過一次合規閘門的檢查。" %}
+    {% set helpModalStateItems = [] %}
+    {% set helpModalLimitRows = [] %}
+    {% include "components/help-modal/help-modal.html" %}
 
     <div class="block flex-row column gap-16">
         {# 串流代價兩態：只會顯示一句，另一句掛 .hidden。兩句都自帶完整的代價敘述——只看到其中
@@ -1588,7 +1730,21 @@ permalink: 5-2_conversationSettings.html
     <div class="js-accordion mb-16 flex-row column gap-8">
         <div class="flex-row justify-content-between align-items-center flex-wrap gap-8">
             <div class="flex-row column gap-4">
-                <div class="text-md text-bold" data-i18n="settings.builtinTools">內建工具</div>
+                {# ⓘ 說明：markup 同 5-2 既有的 info-btn 六件組，併入既有 .flex-row.column.gap-4 包裹層
+                     （該層已經放了標題與 hint，同 5-10 受控詞彙區的併入寫法）。①出處：本子頁籤檔頭
+                     「皆為 Agent 模式」＋「①啟用是三態」段，與 product `app/profile_config.py` 的
+                     `enabled_builtin_tools`（None＝全啟用／[]＝全停用／非空＝白名單）、`app/tool_refs.py`
+                     的 `assert_valid_builtin_tool_overrides`（覆寫的兩個文字欄原文寫進工具描述，不是
+                     引擎參數）、saas `apps/web/lib/modeMatrix.ts` 的 `enabled_builtin_tools: "agent"`。
+                     ①刻意不重複下方 hint 已經講過的三態語意，改講 hint 沒講的「這一整區只在 Agent
+                     模式下才會被使用」與「覆寫欄只是寫進描述、不是執行參數」。 #}
+                <div class="flex-row align-items-center gap-8">
+                    <div class="text-md text-bold" data-i18n="settings.builtinTools">內建工具</div>
+                    <button type="button" class="info-btn" title="內建工具說明" data-i18n-title="help.settings.builtinTools.title" data-open-modal="builtinToolsHelpModal">
+                        <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+                        <span class="sr-only" data-i18n="help.settings.builtinTools.title">內建工具說明</span>
+                    </button>
+                </div>
                 <div class="text-gray" data-i18n="settings.builtinToolsHint">全部開啟＝全部啟用；只開部分＝只有開啟的工具可用；全部關閉＝停用所有內建工具。</div>
             </div>
             <div class="flex-row align-items-center gap-8 flex-wrap">
@@ -1600,6 +1756,16 @@ permalink: 5-2_conversationSettings.html
         {% include "components/builtin-tool-card/builtin-tool-card.html" %}
         {% endfor %}
     </div>
+
+    {# 「內建工具」的說明視窗：②③留空，理由同本頁其他說明視窗。 #}
+    {% set helpModalId = "builtinToolsHelpModal" %}
+    {% set helpModalTitleKey = "help.settings.builtinTools.title" %}
+    {% set helpModalTitle = "內建工具說明" %}
+    {% set helpModalWhatKey = "help.settings.builtinTools.what" %}
+    {% set helpModalWhat = "這一區逐工具用一顆三態開關控制 Agent 對話模式下可以呼叫哪些內建工具：全部開＝全部啟用、只開部分＝白名單、全部關＝停用所有內建工具。每張卡片也可以個別覆寫這顆工具顯示給模型的描述與追加的工具內提示詞，這兩者只是原文寫進工具描述，不是引擎參數。這一整區只有在 Agent 對話模式下才會被使用。" %}
+    {% set helpModalStateItems = [] %}
+    {% set helpModalLimitRows = [] %}
+    {% include "components/help-modal/help-modal.html" %}
 
     <div class="block flex-row column gap-16">
         <div class="form-group row mobile-col">
