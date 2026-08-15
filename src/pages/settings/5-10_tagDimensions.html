@@ -575,7 +575,7 @@ permalink: 5-10_tagDimensions.html
             <label for="coverageDatasetSelect" class="control-label" data-i18n="settings.scanScope">量測範圍</label>
         </div>
         <div class="field flex-row gap-16 mobile-column-xs align-items-center flex-wrap">
-            <select id="coverageDatasetSelect" class="form-control js-coverage-dataset">
+            <select id="coverageDatasetSelect" class="form-control js-coverage-dataset" aria-describedby="scanDocumentsCapHint">
                 <option value="" data-i18n="settings.scanScopeAll">全部資料集</option>
                 {# 資料集目錄只有一份（§6）：吃上面 set 的 coverageDatasets，不在這裡另烤一份選項清單。 #}
                 {% for ds in coverageDatasets %}
@@ -584,6 +584,11 @@ permalink: 5-10_tagDimensions.html
             </select>
             <button type="button" class="button button-border" data-toast="正在量測標註覆蓋率...|量測完成|文件數超過單次掃描上限，請改用單一資料集範圍|量測失敗，請稍後再試" data-i18n-data-toast="toast.measureCoverage" data-toast-type="info|success|warning|error" data-i18n="settings.remeasureCoverage">重新量測</button>
         </div>
+        {# 「查看範圍」的存在理由：量測有上限，選單是縮小範圍的出口。這一句是這顆上限**唯一**的
+             常駐可見標籤（`help.settings.tagCoverageScan.what` 提到「上限」是散文、不是標籤；
+             真正的數字只在 ③ 說明視窗由 React 執行期讀 `GET /stats/limits` 畫出，靜態稿畫不出
+             真數字，故這裡只給名字、不給值——同 `helpModalLimitRows` 恆留空同一個理由）。 #}
+        <span class="text-gray" id="scanDocumentsCapHint" data-i18n="settings.scanDocumentsCap">單次量測文件數上限</span>
     </div>
 </div>
 
@@ -749,7 +754,7 @@ permalink: 5-10_tagDimensions.html
 {% set helpModalTitleKey = "help.settings.tagFilter.title" %}
 {% set helpModalTitle = "標籤檢索過濾說明" %}
 {% set helpModalWhatKey = "help.settings.tagFilter.what" %}
-{% set helpModalWhat = "這一區是三套設定檔各自獨立的標籤檢索過濾開關與時間窗，互不相干，可以只開其中一套。開啟前系統會先檢查是否每一個檔都已經把用得到的維度槽寫進索引，卡在哪些檔、要怎麼處理，會列在下面那張表裡。" %}
+{% set helpModalWhat = "這一區是各套設定檔各自獨立的標籤檢索過濾開關與時間窗，互不相干，可以只開其中一套。開啟前系統會先檢查是否每一個檔都已經把用得到的維度槽寫進索引，卡在哪些檔、要怎麼處理，會列在下面那張表裡。" %}
 {% set helpModalStateItems = [] %}
 {% set helpModalLimitRows = [] %}
 {% include "components/help-modal/help-modal.html" %}

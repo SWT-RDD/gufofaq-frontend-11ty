@@ -610,7 +610,7 @@ permalink: 3-5_dataHealth.html
 {% set helpModalTitleKey = "help.health.rescan.title" %}
 {% set helpModalTitle = "立即重新檢查說明" %}
 {% set helpModalWhatKey = "help.health.rescan.what" %}
-{% set helpModalWhat = "這一區觸發的是這個租戶的一次重新檢查：把目前每一份資料重新跑過全部檢查項目、把算出來的發現寫進下面的清單，檢查本身只讀不寫，不會動到任何一筆資料。「檢查範圍」只決定這一次把哪些發現併回清單（例如剛處置完某個資料集想單獨複驗），比對用的一律是全租戶的資料，不會因此漏掉跨資料集的發現。" %}
+{% set helpModalWhat = "這一區觸發的是這個租戶的一次重新檢查：把目前每一份資料重新跑過這一次要跑的檢查項目（下面「一併重算」勾選與否決定要不要含那幾項需要問答紀錄的檢查，其餘一律會跑）、把算出來的發現寫進下面的清單，檢查本身只讀不寫，不會動到任何一筆資料。「檢查範圍」只決定這一次把哪些發現併回清單（例如剛處置完某個資料集想單獨複驗），比對用的一律是全租戶的資料，不會因此漏掉跨資料集的發現。" %}
 {% set helpModalStateItems = [] %}
 {% set helpModalLimitRows = [] %}
 {% include "components/help-modal/help-modal.html" %}

@@ -11,6 +11,13 @@
      把隱藏的欄位寫進說明，等於從另一個出口把它攤回畫面上。
      整區被隱藏時，這一區的 ⓘ 連同區塊本身一起不存在：沒有一顆按鈕去解釋一個看不到的東西。
 
+     ②③兩塊各自只在**有內容**時才畫（`helpModalStateItems`/`helpModalLimitRows` 非空）：
+     21 顆真實區塊裡有 15 顆 ③ 恆空、幾乎全部 ② 也恆空（見各頁檔頭「這一區的數字由 React
+     執行期算，切版這一側只提供容器」）——畫一顆只有表頭沒有列的表格、或一顆「現在生效的
+     條件」標題卻底下什麼都沒有，只是在告訴使用者「這裡本來就沒有東西」，不比不畫更有用。
+     這與「②③的容器必須先在」並不衝突：那條規則要保的是**兩側骨架序列一致**，讓兩側都
+     依內容決定要不要畫，序列本來就會一起變、一起對齊——單靠一側加條件才會讓兩側分岔。
+
      殼逐字沿用 `settings/5-2_conversationSettings.html` 的 `aliasOutputInfoModal` 那份骨架
      （GUIDELINE §7 的「所有 modal 外殼逐字相同」）：modals-dialog modals-md → modals-wrap →
      modal-close → modals-content → modals-header／modals-body。本元件只在 body 內放三塊。
@@ -52,9 +59,10 @@
                     <section class="help-modal-what">
                         <p class="m-0" data-i18n="{{ helpModalWhatKey }}">{{ helpModalWhat }}</p>
                     </section>
-                    {# ② 與 ③ 的容器必須先在（同一份骨架序列的一部分）：內容之後才到，
-                         而一個之後才出現的容器會讓兩側的骨架序列對不起來（GUIDELINE §2
-                         「畫得出內容的那一行」一族的同一種考量：結構要穩定於內容）。 #}
+                    {# ② 與 ③ 各自只在有內容時畫（見檔頭）：`length` 用陣列本身判斷，不是
+                         迴圈跑完才知道——兩份陣列本來就是呼叫端算好才 set 進來的完整資料，
+                         沒有「陣列非空但迴圈畫不出東西」這種中間態。 #}
+                    {% if helpModalStateItems.length > 0 %}
                     <section class="help-modal-state">
                         <h4 class="help-modal-subtitle mb-8" data-i18n="help.stateTitle">現在生效的條件</h4>
                         <ul class="list-style-disc">
@@ -63,6 +71,8 @@
                             {% endfor %}
                         </ul>
                     </section>
+                    {% endif %}
+                    {% if helpModalLimitRows.length > 0 %}
                     <section class="help-modal-limits">
                         <h4 class="help-modal-subtitle mb-8" data-i18n="help.limitsTitle">這一區的所有數字</h4>
                         {# 欄寬走 `<col style>`（GUIDELINE §4 三個合法行內 style 之一），不進 scss：
@@ -95,6 +105,7 @@
                             </table>
                         </div>
                     </section>
+                    {% endif %}
                 </div>
             </div>
         </div>
