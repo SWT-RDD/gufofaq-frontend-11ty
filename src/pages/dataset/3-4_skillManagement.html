@@ -53,7 +53,18 @@ permalink: 3-4_skillManagement.html
      控制項上的契約（同 skill-editor-modal 的做法；名稱那段 hint 兩處共用同一組 key，
      不另立第二種說法）。兩欄的 `contains_markup` 也在同兩支驗證裡，故 warning 段一併講明。 #}
 <div class="block mb-16 flex-row column gap-16">
-    <div class="text-md text-bold" data-i18n="settings.addSkill">新增 Skill</div>
+    {# ⓘ 說明：markup 同既有 info-btn 六件組（§1-2 無 html 元件契約）。①出處：本頁上方檔頭
+         「新增 skill：名稱（必填）＋用途說明（必填）＋新增鈕」一段，與 product
+         `app/routers/skills.py` 的 `create_skill`／`SkillIn`——這顆鈕只建立名稱與用途說明，
+         用途說明是 agent 決定何時自動呼叫這顆 skill 的依據；執行指令、工具白名單、迭代次數
+         上限留到建立後在編輯器裡設定（同檔頭「細部設定……在建立後於編輯器內完成」）。 #}
+    <div class="flex-row align-items-center gap-8">
+        <div class="text-md text-bold" data-i18n="settings.addSkill">新增 Skill</div>
+        <button type="button" class="info-btn" title="新增 Skill 說明" data-i18n-title="help.settings.addSkill.title" data-open-modal="addSkillHelpModal">
+            <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+            <span class="sr-only" data-i18n="help.settings.addSkill.title">新增 Skill 說明</span>
+        </button>
+    </div>
     <div class="flex-row flex-wrap gap-16 mobile-column sm-gap-16">
         <div class="col-4-md col-12-sm">
             <div class="form-group">
@@ -86,6 +97,17 @@ permalink: 3-4_skillManagement.html
     </div>
 </div>
 
+{# 「新增 Skill」的說明視窗：②③留空——現在生效的條件與這一區的數字由 React 執行期算，
+     切版這一側只提供容器（同批次既有 21 顆區塊的現況）。 #}
+{% set helpModalId = "addSkillHelpModal" %}
+{% set helpModalTitleKey = "help.settings.addSkill.title" %}
+{% set helpModalTitle = "新增 Skill 說明" %}
+{% set helpModalWhatKey = "help.settings.addSkill.what" %}
+{% set helpModalWhat = "這一區用來新增一顆 Skill：填入名稱與用途說明並送出，GufoRAG chatbot 就會建立一份新的指令與工具白名單定義；用途說明是 Agent 決定何時自動呼叫它的依據，實際的執行指令、工具白名單與迭代次數上限則留到建立後在編輯器裡設定。" %}
+{% set helpModalStateItems = [] %}
+{% set helpModalLimitRows = [] %}
+{% include "components/help-modal/help-modal.html" %}
+
 {# Skill 清單：default-table。名稱／用途說明／版本／可用工具／狀態＋操作（編輯｜刪除）。
      編輯與刪除都需先選定「哪一個 skill」＝業務條件開窗，故用 hook class
      （.js-edit-skill／.js-delete-skill），不掛 data-open-modal（§5）。
@@ -111,7 +133,18 @@ permalink: 3-4_skillManagement.html
      ⚠️ **不做 `+N` 折疊**：全站沒有任何一欄是那個形狀，而且折起來之後「用得到哪些工具」
         這個問題就得再點一次才答得出來——而這一欄存在的唯一理由就是回答它。 #}
 <div class="block flex-row column gap-16">
-    <div class="text-md text-bold" data-i18n="settings.skillList">Skill 清單</div>
+    {# ⓘ 說明：markup 同既有 info-btn 六件組。①出處：本頁上方檔頭「Skill 清單……版本欄反映
+         chatbot 的 active_version……可使用的工具欄怎麼組」一節，與 product
+         `app/routers/skills.py` 的 `list_skills`／`_owned_skill`（逐租戶隔離取回）。這一區
+         列出的是名稱、用途說明、目前生效版本、彙總後可使用的工具與啟用狀態，並提供編輯、
+         試跑、啟用／停用與刪除的操作入口。 #}
+    <div class="flex-row align-items-center gap-8">
+        <div class="text-md text-bold" data-i18n="settings.skillList">Skill 清單</div>
+        <button type="button" class="info-btn" title="Skill 清單說明" data-i18n-title="help.settings.skillList.title" data-open-modal="skillListHelpModal">
+            <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+            <span class="sr-only" data-i18n="help.settings.skillList.title">Skill 清單說明</span>
+        </button>
+    </div>
     <div class="table-container scrollTable">
         <table class="default-table">
             <colgroup>
@@ -168,6 +201,16 @@ permalink: 3-4_skillManagement.html
         </table>
     </div>
 </div>
+
+{# 「Skill 清單」的說明視窗：②③留空，理由同本頁其他說明視窗。 #}
+{% set helpModalId = "skillListHelpModal" %}
+{% set helpModalTitleKey = "help.settings.skillList.title" %}
+{% set helpModalTitle = "Skill 清單說明" %}
+{% set helpModalWhatKey = "help.settings.skillList.what" %}
+{% set helpModalWhat = "這一區列出這個租戶目前所有的 Skill，逐列顯示用途說明、目前生效的版本、彙總後可使用的工具與啟用狀態；每一列並提供編輯、試跑、啟用／停用與刪除的操作入口。" %}
+{% set helpModalStateItems = [] %}
+{% set helpModalLimitRows = [] %}
+{% include "components/help-modal/help-modal.html" %}
 
 {# 試跑沙盒：把選定的 skill 臨時指派給**測試** config 跑一輪 Agent 問答，作者部署前就能看到
      它實際被怎麼呼叫、選了哪些工具。正式設定檔完全不受影響（product qatest.py 只寫測試 config）。
