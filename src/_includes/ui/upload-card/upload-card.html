@@ -5,6 +5,17 @@
      （dataImport.js:193-205 的 switch、uploadFilePdf.js:98-121 的查表）；切版沒有查詢字串，
      故 1-2-1 的 accept 取三種的聯集——見該頁檔頭。`data-type` 就是 React 要讀去組路由參數的那顆。
      卡片是可點的東西，一律是真 `<a>`（§4）；不做「不跳轉的卡片」——那會退化成 javascript:void(0) 死連結。 #}
+{# 四張卡的大小數字（50MB）是後端真的會拒絕的界線，不是文案裡的裝飾——正本與 ui/upload-box
+     檔頭那份完全同一顆：product `app/settings.py` 的 `Settings.upload_max_bytes`（預設 50 MiB），
+     經 `ops_limits.py` 的 `DATASET_LIMIT_GROUPS.upload.bytes` 投影成 `GET /datasets/limits` 的
+     `upload.bytes.max`；後續批次會把這顆節點接上那支端點。
+     **四張卡以前各自手抄一個數字**（Excel 10MB、PDF／WORD／Image 各 30MB）——但
+     `read_upload()`／`UploadBudget()` 對這四種副檔名走同一段程式碼，沒有任何呼叫端覆寫
+     `max_bytes`，也沒有「PDF 專用上限」這種東西：四張卡描述的是**同一份**單檔上限，只是格式
+     清單不同，故四個 `desc` 都改成不含數字的前綴、數字統一成同一顆 `50MB`。
+     Excel 卡沿用 `comp.uploadDescXlsxPrefix`（與 ui/upload-box 元件預設同一個 key、同一句話，
+     不重複造第二份「xlsx 檔案最大不超過」的譯文）；PDF／WORD／Image 三張各自的格式清單不同，
+     維持各自獨立的 key，但都加上 `Prefix` 後綴、拿掉數字。 #}
 {# 示範資料用元件專屬名 uploadCards（§6：set 是頁面全域，泛用名會與使用頁同名變數互相覆蓋） #}
 {% set uploadCards = [
     {
@@ -13,8 +24,8 @@
         icon: "icon_XLSX_s.png",
         iconAlt: "Excel Icon",
         name: "Excel",
-        desc: "支援上傳xlsx檔案，檔案最大不超過10MB",
-        descKey: "comp.uploadDescXlsx",
+        desc: "支援上傳xlsx檔案，檔案最大不超過",
+        descKey: "comp.uploadDescXlsxPrefix",
         titleKey: "dataImport.uploadExcel"
     },
     {
@@ -23,8 +34,8 @@
         icon: "icon_PDF_s.png",
         iconAlt: "PDF Icon",
         name: "PDF",
-        desc: "支援上傳pdf檔案，檔案最大不超過30MB",
-        descKey: "dataImport.uploadDescPdf",
+        desc: "支援上傳pdf檔案，檔案最大不超過",
+        descKey: "dataImport.uploadDescPdfPrefix",
         titleKey: "dataImport.uploadPdf"
     },
     {
@@ -33,8 +44,8 @@
         icon: "icon_doc_s.png",
         iconAlt: "WORD Icon",
         name: "WORD",
-        desc: "支援上傳doc檔案，檔案最大不超過30MB",
-        descKey: "dataImport.uploadDescWord",
+        desc: "支援上傳doc檔案，檔案最大不超過",
+        descKey: "dataImport.uploadDescWordPrefix",
         titleKey: "dataImport.uploadWord"
     },
     {
@@ -43,8 +54,8 @@
         icon: "icon_img_s.png",
         iconAlt: "Image Icon",
         name: "Image",
-        desc: "支援上傳PNG、JPG檔案，檔案最大不超過30MB",
-        descKey: "dataImport.uploadDescImage",
+        desc: "支援上傳PNG、JPG檔案，檔案最大不超過",
+        descKey: "dataImport.uploadDescImagePrefix",
         titleKey: "dataImport.uploadImage"
     }
 ] %}
@@ -64,7 +75,7 @@
                 <img src="./images/{{ card.icon }}" width="60" height="76" decoding="async" alt="{{ card.iconAlt }}" class="upload-icon" />
                 <p class="upload-title">{{ card.name }}</p>
             </div>
-            <p class="upload-desc" data-i18n="{{ card.descKey }}">{{ card.desc }}</p>
+            <p class="upload-desc"><span data-i18n="{{ card.descKey }}">{{ card.desc }}</span><span>50MB</span></p>
         </div>
     </a>
     {% endfor %}
