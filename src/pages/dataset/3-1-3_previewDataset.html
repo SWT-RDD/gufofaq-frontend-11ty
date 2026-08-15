@@ -101,7 +101,23 @@ permalink: 3-1-3_previewDataset.html
    儲存鈕是③直接送 API 的鈕 → `data-toast` 列全結果；hook 用 `js-save-chunk-params`（全站 scss 不引用）。 #}
 <div class="block flex-row column gap-16" role="group" aria-labelledby="chunkSettingsTitle">
     <div class="flex-row column gap-8">
-        <div class="text-md text-bold" id="chunkSettingsTitle" data-i18n="dataset.chunkSettings">切塊設定</div>
+        {# ⓘ 說明：markup 逐字照抄 `settings/5-2_conversationSettings.html` 出口套用欄那顆既有
+             info-btn（`aliasOutputInfoModal` 觸發鈕）六件組。標題 div 本身
+             （`id="chunkSettingsTitle"`）保持原樣不塞子節點——外層 `role="group"` 的
+             `aria-labelledby` 指著它，混進按鈕的可及名稱會把整組的名字弄髒，故另包一層
+             flex-row 放標題與按鈕（同 3-1-2 的做法）。
+             **①內容與 3-1-2 的 `chunkSettingsHelpModal` 逐字共用同一個 i18n key**：本頁檔頭自己
+             寫著這三欄與 3-1-2 的 `DatasetIn` 版「是同一份設定的兩個消費點」，內容是同一件事，
+             另起一份文案只會製造第二個要對齊的正本。`helpModalId` 同理沿用同一個字串——
+             兩頁各自輸出成獨立的 dist 檔，id 不會撞（GUIDELINE §4「id 在一頁裡必須唯一」是
+             逐檔驗證，不是全站）。 #}
+        <div class="flex-row align-items-center gap-8">
+            <div class="text-md text-bold" id="chunkSettingsTitle" data-i18n="dataset.chunkSettings">切塊設定</div>
+            <button type="button" class="info-btn" title="切塊設定說明" data-i18n-title="help.dataset.chunkSettings.title" data-open-modal="chunkSettingsHelpModal">
+                <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+                <span class="sr-only" data-i18n="help.dataset.chunkSettings.title">切塊設定說明</span>
+            </button>
+        </div>
         {# 代價寫在做這個決定的控制項旁邊、排在儲存鈕之前（§3-2）。 #}
         <p class="text-gray m-0" data-i18n="dataset.chunkAffectsFutureOnly">切塊參數只在建立擷取管道時送給上游，所以只影響之後匯入的檔案；已經匯入的內容不會重新切塊。</p>
         <p class="text-gray m-0" data-i18n="dataset.chunkLockedAfterUpload">而且這個資料集只要做過一次「檔案上傳」匯入，這三個值就再也改不動，之後不論從哪一條路匯入都只能沿用現值——請在這裡決定好。</p>
@@ -143,6 +159,17 @@ permalink: 3-1-3_previewDataset.html
             data-i18n="action.save">儲存</button>
     </div>
 </div>
+
+{# 「切塊設定」的說明視窗：與 3-1-2 的 `chunkSettingsHelpModal` 共用同一份 ①（見上方檔頭）。
+     ②③留空——理由同 excelImportOptionsHelpModal 那份，容器見 help-modal.html 檔頭。 #}
+{% set helpModalId = "chunkSettingsHelpModal" %}
+{% set helpModalTitleKey = "help.dataset.chunkSettings.title" %}
+{% set helpModalTitle = "切塊設定說明" %}
+{% set helpModalWhatKey = "help.dataset.chunkSettings.what" %}
+{% set helpModalWhat = "這一區決定之後匯入這個資料集的檔案要怎麼被切成一塊一塊：每一塊多大、相鄰兩塊之間要不要保留一段重疊內容以免把一句話從中間切斷，以及要不要讓每一塊都帶著原始文件的標題，方便檢索時看出這段內容出自哪一份文件。" %}
+{% set helpModalStateItems = [] %}
+{% set helpModalLimitRows = [] %}
+{% include "components/help-modal/help-modal.html" %}
 
 {# 搜尋 + 檔案總大小 + 刪除/新增檔案：真實頁 delete-selected-btn / add-file-btn 預設 display:none（等待 js 依選取/載入狀態切換），
      此處呈現「已載入且可操作」的靜態最終態，故移除 inline display:none #}

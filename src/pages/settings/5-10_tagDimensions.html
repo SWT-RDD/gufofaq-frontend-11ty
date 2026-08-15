@@ -171,7 +171,19 @@ permalink: 5-10_tagDimensions.html
      前端不再寫一份界線判斷（那是第二個真相）。 #}
 {# 租戶能力標記（同 5-2 的理由：唯讀閘要從 markup 讀得出來，不是 React 應用層各自判斷）：新增維度。 #}
 <div data-capability="settings:write" class="block mb-16 flex-row column gap-16">
-    <div class="text-md text-bold" data-i18n="settings.addTagDimension">新增標籤維度</div>
+    {# ⓘ 說明：markup 逐字照抄 `settings/5-2_conversationSettings.html` 出口套用欄那顆既有
+         info-btn 六件組。①出處：本檔檔頭「標籤維度／受控詞彙…旋鈕」那段＋ product
+         `app/routers/tags.py` 的 `tag_dimension_slots`（哪些槽承載得了維度）。
+         **不重複 `#tagSlotHint`／`#tagKindHint`／`#tagRoleHint`**（brief 明文）：三顆已經逐條講了
+         槽／型別／角色的合法組合，①改講這一區在整個頁面工作流裡的位置——沒有在這裡登記過的槽，
+         下面的受控詞彙區與檢索過濾都構不到它。 #}
+    <div class="flex-row align-items-center gap-8">
+        <div class="text-md text-bold" data-i18n="settings.addTagDimension">新增標籤維度</div>
+        <button type="button" class="info-btn" title="新增標籤維度說明" data-i18n-title="help.settings.addTagDimension.title" data-open-modal="addTagDimensionHelpModal">
+            <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+            <span class="sr-only" data-i18n="help.settings.addTagDimension.title">新增標籤維度說明</span>
+        </button>
+    </div>
     <div class="flex-row flex-wrap gap-16 mobile-column sm-gap-16">
         <div class="col-4-md col-12-sm">
             <div class="form-group">
@@ -275,6 +287,17 @@ permalink: 5-10_tagDimensions.html
     </div>
 </div>
 
+{# 「新增標籤維度」的說明視窗：②③留空——現在生效的條件與這一區的數字由 React 執行期算，
+     切版這一側只提供容器（help-modal.html 檔頭）。 #}
+{% set helpModalId = "addTagDimensionHelpModal" %}
+{% set helpModalTitleKey = "help.settings.addTagDimension.title" %}
+{% set helpModalTitle = "新增標籤維度說明" %}
+{% set helpModalWhatKey = "help.settings.addTagDimension.what" %}
+{% set helpModalWhat = "這一區把某一個實體篩選槽宣告成一個有名字、有意義的業務維度，之後才能在下面的受控詞彙區替它定義合法值、供意圖分類辨認並組成檢索過濾條件；還沒有在這裡登記過的槽，檢索過濾完全不會認得它。" %}
+{% set helpModalStateItems = [] %}
+{% set helpModalLimitRows = [] %}
+{% include "components/help-modal/help-modal.html" %}
+
 {# ── 維度清單 ───────────────────────────────────────────────────────────────────
      覆蓋率條與維度同列：它是「這個維度標了幾成、拿來過濾篩得動多少」的報表。
      **它不再是「能不能開過濾」的依據**——那道閘門換成了結構事實（每一個檔都要把這一欄寫進索引，
@@ -286,7 +309,16 @@ permalink: 5-10_tagDimensions.html
      （切版的示範資料演的是已量測那一態），要整表示範就得整表換一組資料。 #}
 {# 租戶能力標記（同 5-2 的理由：唯讀閘要從 markup 讀得出來，不是 React 應用層各自判斷）：維度清單的改名／刪除。 #}
 <div data-capability="settings:write" class="block mb-16 flex-row column gap-16">
-    <div class="text-md text-bold" data-i18n="settings.tagDimensionList">標籤維度清單</div>
+    {# ⓘ 說明：同上一顆 info-btn 六件組。①出處：本區塊「查看未標註」鈕自己的檔頭
+         （`GET /tags/coverage/untagged`）＋ product `app/routers/tags.py` 的
+         `kind_allows_vocabulary`（日期維度沒有代碼可言，故它沒有「編輯字典」）。 #}
+    <div class="flex-row align-items-center gap-8">
+        <div class="text-md text-bold" data-i18n="settings.tagDimensionList">標籤維度清單</div>
+        <button type="button" class="info-btn" title="標籤維度清單說明" data-i18n-title="help.settings.tagDimensionList.title" data-open-modal="tagDimensionListHelpModal">
+            <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+            <span class="sr-only" data-i18n="help.settings.tagDimensionList.title">標籤維度清單說明</span>
+        </button>
+    </div>
     <div class="table-container scrollTable">
         <table class="default-table">
             <colgroup>
@@ -374,6 +406,16 @@ permalink: 5-10_tagDimensions.html
     </div>
 </div>
 
+{# 「標籤維度清單」的說明視窗：②③留空，理由同上。 #}
+{% set helpModalId = "tagDimensionListHelpModal" %}
+{% set helpModalTitleKey = "help.settings.tagDimensionList.title" %}
+{% set helpModalTitle = "標籤維度清單說明" %}
+{% set helpModalWhatKey = "help.settings.tagDimensionList.what" %}
+{% set helpModalWhat = "這一區列出目前所有標籤維度：覆蓋率條顯示這個維度在目前掃描範圍裡標了多少筆，還沒標滿的維度可以點「查看未標註」直接看是哪幾份文件還沒標，不必自己逐份資料集去找。日期型別的維度沒有代碼可言，所以這一列不會顯示代碼數，也不會有「編輯字典」可按。" %}
+{% set helpModalStateItems = [] %}
+{% set helpModalLimitRows = [] %}
+{% include "components/help-modal/help-modal.html" %}
+
 {# ── 受控詞彙（字典）─────────────────────────────────────────────────────────────
      整個區塊只在**選中的維度不是日期維度**時存在。代碼逐字送進檢索 DSL（自訂 TEXT 欄位在上游是
      逐位元組比對），所以 product 擋掉了含 , ' " \ * ? 的代碼與「在比對端分不開」的代碼
@@ -381,9 +423,18 @@ permalink: 5-10_tagDimensions.html
 {% if vocabDimension.kind != "date" %}
 {# 租戶能力標記（同 5-2 的理由：唯讀閘要從 markup 讀得出來，不是 React 應用層各自判斷）：受控詞彙（字典）的 CRUD。 #}
 <div data-capability="settings:write" class="block mb-16 flex-row column gap-16">
+    {# ⓘ 說明：既有 flex-row 已經放了標題與「目前選定哪個維度」的說明文字，ⓘ 按鈕直接加進
+         同一列，不再另包一層（與 3-1-2/3-1-3 需要保護 aria-labelledby 目標的情況不同——
+         這顆標題 div 不是任何 group 的可及名稱來源）。①出處：本區塊上方檔頭
+         （「整個區塊只在選中的維度不是日期維度時存在」）＋ product `app/routers/tags.py` 的
+         `delete_vocabulary`（`_assert_not_filtering`，刪代碼被標籤檢索過濾開著擋下）。 #}
     <div class="flex-row align-items-center gap-8 flex-wrap">
         <div class="text-md text-bold" data-i18n="settings.tagVocabulary">受控詞彙（字典）</div>
         <div class="text-gray">{{ vocabDimension.name }}（{{ vocabDimension.slotKey }}）</div>
+        <button type="button" class="info-btn" title="受控詞彙（字典）說明" data-i18n-title="help.settings.tagVocabulary.title" data-open-modal="tagVocabularyHelpModal">
+            <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+            <span class="sr-only" data-i18n="help.settings.tagVocabulary.title">受控詞彙（字典）說明</span>
+        </button>
     </div>
     <p class="text-gray" data-i18n="settings.tagVocabularyIntro">字典是這個維度的合法值域：匯入時這一欄只收得下字典裡的代碼，意圖分類也只從這份清單裡挑。字典是空的單值／多值維度，匯入端會拒絕該欄的每一個非空值。</p>
     <div class="flex-row flex-wrap gap-16 mobile-column sm-gap-16">
@@ -478,6 +529,19 @@ permalink: 5-10_tagDimensions.html
         </table>
     </div>
 </div>
+
+{# 「受控詞彙（字典）」的說明視窗：放在 `{% if %}` 之內——這個區塊本身是條件渲染
+     （日期維度不存在），觸發鈕與說明視窗要跟著同一個條件出現／消失，否則日期維度那一態會留下
+     一顆沒有觸發鈕的孤兒 `<dialog>`（GUIDELINE §1-2「每個 dialog 在它出現的每一頁上都要打得
+     開」的反面：這裡是「不出現時就真的不出現」）。②③留空，理由同上。 #}
+{% set helpModalId = "tagVocabularyHelpModal" %}
+{% set helpModalTitleKey = "help.settings.tagVocabulary.title" %}
+{% set helpModalTitle = "受控詞彙（字典）說明" %}
+{% set helpModalWhatKey = "help.settings.tagVocabulary.what" %}
+{% set helpModalWhat = "這一區編輯的是標籤維度清單裡「目前選定」那一個維度的字典；要換成別的維度，回上面清單點該列的「編輯字典」。刪除一個代碼前，只要任一套對話設定已經開啟標籤檢索過濾，系統會先擋下——那個代碼被刪除之後，原本標著它的文件會在每一輪問答的過濾條件裡都比對不到，必須先把過濾關掉才刪得動。" %}
+{% set helpModalStateItems = [] %}
+{% set helpModalLimitRows = [] %}
+{% include "components/help-modal/help-modal.html" %}
 {% endif %}
 
 {# ── 標註覆蓋率掃描 ─────────────────────────────────────────────────────────────
@@ -488,7 +552,16 @@ permalink: 5-10_tagDimensions.html
      ——**不回一個截斷後的比率**，故「文件數超過上限」是量測鈕的一段 toast。 #}
 {# 租戶能力標記（同 5-2 的理由：唯讀閘要從 markup 讀得出來，不是 React 應用層各自判斷）：覆蓋率量測：GET /tags/coverage 的 require_coverage_scope＝settings:read ＋ data:read（回的數字是文件內容的投影）。 #}
 <div data-capability="settings:read data:read" class="block mb-16 flex-row column gap-16">
-    <div class="text-md text-bold" data-i18n="settings.tagCoverageScan">標註覆蓋率量測範圍</div>
+    {# ⓘ 說明：markup 逐字照抄 `settings/5-2_conversationSettings.html` 出口套用欄那顆既有
+         info-btn 六件組。①出處：本區塊自己的檔頭（逐份讀文件、O(文件數) 次上游往返）＋
+         product `app/routers/tags.py` 的 `_coverage_scan_max_documents`／`coverage`。 #}
+    <div class="flex-row align-items-center gap-8">
+        <div class="text-md text-bold" data-i18n="settings.tagCoverageScan">標註覆蓋率量測範圍</div>
+        <button type="button" class="info-btn" title="標註覆蓋率量測範圍說明" data-i18n-title="help.settings.tagCoverageScan.title" data-open-modal="tagCoverageScanHelpModal">
+            <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+            <span class="sr-only" data-i18n="help.settings.tagCoverageScan.title">標註覆蓋率量測範圍說明</span>
+        </button>
+    </div>
     <div class="data-info flex-row flex-wrap gap-24">
         <span><span data-i18n="settings.scanDocuments">列舉得到的文件：</span>{{ coverageScan.documents }}</span>
         <span><span data-i18n="settings.scanExamined">讀到內容（覆蓋率的分母）：</span>{{ coverageScan.examined }}</span>
@@ -514,6 +587,16 @@ permalink: 5-10_tagDimensions.html
     </div>
 </div>
 
+{# 「標註覆蓋率量測範圍」的說明視窗：②③留空，理由同上。 #}
+{% set helpModalId = "tagCoverageScanHelpModal" %}
+{% set helpModalTitleKey = "help.settings.tagCoverageScan.title" %}
+{% set helpModalTitle = "標註覆蓋率量測範圍說明" %}
+{% set helpModalWhatKey = "help.settings.tagCoverageScan.what" %}
+{% set helpModalWhat = "這一區逐份讀取文件內容來計算每個維度標了多少比例，量測範圍越大、要讀的文件就越多；租戶資料量大時可能超過單次量測的上限，這時可以把「量測範圍」縮小到單一資料集再重新量測。" %}
+{% set helpModalStateItems = [] %}
+{% set helpModalLimitRows = [] %}
+{% include "components/help-modal/help-modal.html" %}
+
 {# ── 檢索過濾旋鈕（每套設定檔各一份）───────────────────────────────────────────
      product `RetrievalProfile.retrieval_filter_mode` 預設 `off`、`recent_window_days` 預設 7。
      開啟走 `PUT /retrieval/profiles/{no}/tag-filter`，它會**先驗結構再開**：只要還有檔沒把某個維度槽
@@ -523,7 +606,17 @@ permalink: 5-10_tagDimensions.html
      而且存下來的是會過期的快照），所以也不再有「超過掃描上限」「量測途中被改動」那些分支。 #}
 {# 租戶能力標記（同 5-2 的理由：唯讀閘要從 markup 讀得出來，不是 React 應用層各自判斷）：檢索過濾旋鈕：PUT …/tag-filter 掛 settings:write，另外要 data:read（開啟要逐檔驗結構）。 #}
 <div data-capability="settings:write data:read" class="block flex-row column gap-16">
-    <div class="text-md text-bold" data-i18n="settings.tagFilter">標籤檢索過濾</div>
+    {# ⓘ 說明：markup 逐字照抄 `settings/5-2_conversationSettings.html` 出口套用欄那顆既有
+         info-btn 六件組。①出處：本檔檔頭「檢索過濾旋鈕（每套設定檔各一份）」——不重複下方
+         ②③④已經逐段講過的內容（覆蓋警語兩態／時間窗歸零理由／日期上下界），①改講三套
+         設定檔彼此獨立這件事，以及下面那張表與這裡的開關是同一個閘門的兩面。 #}
+    <div class="flex-row align-items-center gap-8">
+        <div class="text-md text-bold" data-i18n="settings.tagFilter">標籤檢索過濾</div>
+        <button type="button" class="info-btn" title="標籤檢索過濾說明" data-i18n-title="help.settings.tagFilter.title" data-open-modal="tagFilterHelpModal">
+            <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+            <span class="sr-only" data-i18n="help.settings.tagFilter.title">標籤檢索過濾說明</span>
+        </button>
+    </div>
     <p class="text-gray" data-i18n="settings.tagFilterIntro">開啟之後，問答會先判斷這一題屬於哪些業務維度，再把判斷結果編成檢索過濾條件送給引擎。判不準時整組條件一起丟棄（連時間窗一起），不會退成一條寬鬆的條件。</p>
 
     {# ② 「還有檔沒帶到這一欄就開啟＝那些檔被靜默排除」的警語，就放在開開關的地方。兩態各自完整
@@ -650,6 +743,16 @@ permalink: 5-10_tagDimensions.html
         <p class="text-gray" data-i18n="settings.tagFilterBlockedHint">這張表與維度的種類無關：「未標註」現在是匯入時就寫進去的哨兵值，三種 kind 都表達得出來，所以標了幾成不影響會不會漏文件。剩下的唯一缺口是「這個檔連這一欄都沒有」——那是結構事實，只有重新匯入（或改成逐列匯入）補得起來。</p>
     </div>
 </div>
+
+{# 「標籤檢索過濾」的說明視窗：②③留空，理由同上。 #}
+{% set helpModalId = "tagFilterHelpModal" %}
+{% set helpModalTitleKey = "help.settings.tagFilter.title" %}
+{% set helpModalTitle = "標籤檢索過濾說明" %}
+{% set helpModalWhatKey = "help.settings.tagFilter.what" %}
+{% set helpModalWhat = "這一區是三套設定檔各自獨立的標籤檢索過濾開關與時間窗，互不相干，可以只開其中一套。開啟前系統會先檢查是否每一個檔都已經把用得到的維度槽寫進索引，卡在哪些檔、要怎麼處理，會列在下面那張表裡。" %}
+{% set helpModalStateItems = [] %}
+{% set helpModalLimitRows = [] %}
+{% include "components/help-modal/help-modal.html" %}
 
 {# 刪除維度：字典列會被一併帶走（DB CASCADE），故走二次確認。條件開窗（要先選定刪哪一列）＝
    hook class .js-delete-tag-dimension，不掛 data-open-modal（GUIDELINE §5）。 #}
