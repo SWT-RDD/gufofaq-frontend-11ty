@@ -2879,7 +2879,13 @@ test("§1-1 桶歸屬：components/ 要用到其他元件（或是專屬子片�
                 if (new RegExp(String.raw`\b${fn}\s*(?:\.\w+\s*)?\(`).test(code)) add(o);
             }
 
-        if (bucket === "components" && deps.size === 0 && !subFragment) bad.push(`${self} 零依賴、也不是專屬子片段 → 應搬去 ui/`);
+        // 還沒有生產消費端時**不下這個結論**：上面的 html 掃描本身就以 `production.has(name)` 為閘，
+        // 所以此時 `deps` 只由 scss ＋ js 兩半算出來，html 那一半的證據根本沒進來。拿一份被自己
+        // gate 掉一半的證據去斷言「零依賴」，正是本區塊開頭那段註解在防的事（只是方向相反）。
+        // 具體會誤判成什麼：一個 markup 裡 include 了別的元件、但還沒有真實頁在用的新元件，會被
+        // 判成「應搬去 ui/」；真照做搬過去，等第一個真實頁消費它、html 那一半的證據補齊之後，
+        // 下面那條 `ui` 的規則就會反過來說「應搬去 components/」——搬兩次，而且兩次都是照規則搬的。
+        if (bucket === "components" && deps.size === 0 && !subFragment && production.has(name)) bad.push(`${self} 零依賴、也不是專屬子片段 → 應搬去 ui/`);
         if (bucket === "ui" && deps.size > 0) bad.push(`${self} 用到 ${[...deps].join("、")} → 應搬去 components/`);
     }
     assert.equal(bad.length, 0, `桶放錯了：\n${bad.join("\n")}`);
