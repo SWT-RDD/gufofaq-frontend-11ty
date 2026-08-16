@@ -258,6 +258,20 @@
                             </div>
                         </div>
 
+                        {# Langfuse 追蹤：**這一顆的代價寫在控制項旁邊**（§3-2，同上面「不限制」那顆的判準）。
+                             它不是一般的功能開通——開了之後這個租戶每一次問答的完整提示詞、檢索原文與答案
+                             全文都會離開問答路徑、進到另一套系統存起來。看的人必須在按下去之前就知道這件事，
+                             而不是在某份稽核報告裡才發現。
+                             `data-platform-role="admin"`：租戶自己的管理者碰不到（決定資料流向哪裡的旋鈕歸平台）。 #}
+                        <div class="flex-row column gap-8">
+                            <div class="text-bold" data-i18n="platform.tracingSection">LLM 追蹤</div>
+                            <label class="form-checkbox">
+                                <input type="checkbox" id="tenantLangfuseTracing" data-platform-role="admin" aria-describedby="tenantTracingCostHint">
+                                <span data-i18n="platform.tracingEnable">為這個租戶開啟 Langfuse 追蹤</span>
+                            </label>
+                            <p class="text-gray m-0" id="tenantTracingCostHint" data-i18n="platform.tracingCostHint">開啟後，這個租戶每一次問答的問題、檢索到的原文與答案全文都會完整存進 Langfuse。既有對話不受影響，要開新對話才會開始記錄。</p>
+                        </div>
+
                         {# 凍結／解凍：暫停使用期時鐘、完全鎖住。
                              **上游是兩支對稱的端點**（product app/routers/platform.py 的 `freeze_tenant`／`unfreeze_tenant`，各自
                              `POST /platform/tenants/{id}/freeze`／`/unfreeze`，兩支都冪等），而這裡原本只切了
