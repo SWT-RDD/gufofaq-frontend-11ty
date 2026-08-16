@@ -5,7 +5,7 @@
 
    上限是契約欄位（§6），出處＝GufoRAG chatbot `app/services/alias.py`：
      `MAX_CANONICAL_LEN = 200`／`MAX_ALIAS_LEN = 200`（每個別名各自算）／
-     `MAX_ALIASES_PER_ENTRY = 50`／`MAX_ALIAS_ENTRIES_PER_TABLE = 5000`。
+     `MAX_ALIASES_PER_ENTRY = 50`／`MAX_ALIAS_ENTRIES_PER_TABLE = 20000`（2026-08-11 與術語表一起由 5000 調高）。
      單一 maxlength 夾不住「每個別名 200 字、最多 50 個」（逗號分隔的多值字串），故那兩個數字
      走可見提示 ＋ aria-describedby（同 glossary-entries-modal 的處置）。
 
@@ -109,11 +109,11 @@
                         </table>
                     </div>
                     {# 上限寫在做決定的控制項旁邊（§3-2），不是只寫在失敗 toast 裡。
-                         數字是資料節點、不進譯文；「已 N / 5000」從陣列推導（§6）。 #}
+                         數字是資料節點、不進譯文；「已 N / 20000」從陣列推導（§6）。 #}
                     <p id="aliasLimitsHint" class="text-gray m-0 mt-16"><span data-i18n="settings.aliasLimitCanonical">標準詞上限 </span><span>200</span><span data-i18n="settings.glossaryLimitAliases"> 字；別名每個 </span><span>200</span><span data-i18n="settings.glossaryLimitAliasCount"> 字、最多 </span><span>50</span><span data-i18n="common.unitItems">個</span></p>
                     <div class="flex-row align-items-center gap-16 mt-16">
                         <button type="button" class="button button-border button-sm js-add-alias-entry" data-i18n="settings.addEntry">新增一列</button>
-                        <span class="text-gray"><span data-i18n="settings.glossaryEntryCountPrefix">已 </span><span>{{ aliasEntryRows.length }}</span><span data-i18n="settings.glossaryEntryCountMid"> / </span><span>5000</span><span data-i18n="settings.glossaryEntryCountSuffix"> 筆</span></span>
+                        <span class="text-gray"><span data-i18n="settings.glossaryEntryCountPrefix">已 </span><span>{{ aliasEntryRows.length }}</span><span data-i18n="settings.glossaryEntryCountMid"> / </span><span>20000</span><span data-i18n="settings.glossaryEntryCountSuffix"> 筆</span></span>
                     </div>
                 </div>
                 <div class="modals-footer">

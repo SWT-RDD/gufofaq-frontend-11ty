@@ -99,7 +99,7 @@ permalink: 5-6-2_platformMcpServers.html
                      擋不住的那一態由送出鈕的 422 warning 段接住（見該鈕註解）。 #}
                 <div class="field">
                     <input type="text" id="newMcpNameInput" placeholder="請輸入 Server 名稱" data-i18n-placeholder="settings.pleaseEnterMcpName" class="form-control" aria-describedby="newMcpNameHint" required>
-                    <span id="newMcpNameHint" class="text-gray"><span data-i18n="settings.mcpLimitAtMost">最多</span><span class="js-mcp-name-max-len">200</span><span data-i18n="common.unitChars"> 字</span></span>
+                    <span id="newMcpNameHint" class="text-gray"><span data-i18n="settings.mcpLimitAtMost">最多</span><span class="js-mcp-name-max-len">100</span><span data-i18n="common.unitChars"> 字</span></span>
                 </div>
             </div>
         </div>
@@ -110,7 +110,7 @@ permalink: 5-6-2_platformMcpServers.html
                 </div>
                 <div class="field">
                     <input type="text" id="newMcpCommandInput" placeholder="python / npx / uvx / node" class="form-control" aria-describedby="newMcpCommandHint" required>
-                    <span id="newMcpCommandHint" class="text-gray"><span data-i18n="settings.mcpLimitAtMost">最多</span><span class="js-mcp-command-max-len">500</span><span data-i18n="common.unitChars"> 字</span></span>
+                    <span id="newMcpCommandHint" class="text-gray"><span data-i18n="settings.mcpLimitAtMost">最多</span><span class="js-mcp-command-max-len">100</span><span data-i18n="common.unitChars"> 字</span></span>
                 </div>
             </div>
         </div>
@@ -123,10 +123,10 @@ permalink: 5-6-2_platformMcpServers.html
                      而這兩欄的規則正是後兩者。兩個數字是**資料槽**（由 React 填 `GET
                      /platform/mcp/limits` 的值），不是寫死的字面——形狀照既有正典
                      （`ui/pagination` 的 totalPrefix／totalSuffix）：前綴 key ＋ 槽 ＋ 中綴 key
-                     ＋ 槽 ＋ 後綴 key，**不是插值 key**。切版這裡的 8／200 是示範值。 #}
+                     ＋ 槽 ＋ 後綴 key，**不是插值 key**。這裡的數字**取 product `chat_config_limits.MCP_FIELD_LIMITS` 的正本值**（先前是隨手填的示範值 8／200，而 React 那側的切版比對 fixture 是照它調的——於是兩邊一起停在一組沒有人在執法的數字，`slicingParity` 全綠而正式環境顯示另一組）。 #}
                 <div class="field">
                     <textarea id="newMcpArgsInput" class="form-control size-sm" placeholder="一行一個參數" data-i18n-placeholder="settings.pleaseEnterMcpArgs" aria-describedby="newMcpArgsHint"></textarea>
-                    <span id="newMcpArgsHint" class="text-gray"><span data-i18n="settings.mcpLimitAtMost">最多</span><span class="js-mcp-args-max-items">8</span><span data-i18n="settings.mcpArgsLimitMid">個參數，每個最多</span><span class="js-mcp-args-max-len">200</span><span data-i18n="common.unitChars"> 字</span></span>
+                    <span id="newMcpArgsHint" class="text-gray"><span data-i18n="settings.mcpLimitAtMost">最多</span><span class="js-mcp-args-max-items">50</span><span data-i18n="settings.mcpArgsLimitMid">個參數，每個最多</span><span class="js-mcp-args-max-len">500</span><span data-i18n="common.unitChars"> 字</span></span>
                 </div>
             </div>
         </div>
@@ -137,7 +137,7 @@ permalink: 5-6-2_platformMcpServers.html
                 </div>
                 <div class="field">
                     <textarea id="newMcpEnvInput" class="form-control size-sm" placeholder="一行一個 KEY=value" data-i18n-placeholder="settings.pleaseEnterMcpEnv" aria-describedby="newMcpEnvHint"></textarea>
-                    <span id="newMcpEnvHint" class="text-gray"><span data-i18n="settings.mcpLimitAtMost">最多</span><span class="js-mcp-env-max-items">32</span><span data-i18n="settings.mcpEnvLimitMid">組，鍵最多</span><span class="js-mcp-env-max-key-len">100</span><span data-i18n="settings.mcpEnvLimitMid2">字、值最多</span><span class="js-mcp-env-max-value-len">2000</span><span data-i18n="common.unitChars"> 字</span></span>
+                    <span id="newMcpEnvHint" class="text-gray"><span data-i18n="settings.mcpLimitAtMost">最多</span><span class="js-mcp-env-max-items">50</span><span data-i18n="settings.mcpEnvLimitMid">組，鍵最多</span><span class="js-mcp-env-max-key-len">200</span><span data-i18n="settings.mcpEnvLimitMid2">字、值最多</span><span class="js-mcp-env-max-value-len">4000</span><span data-i18n="common.unitChars"> 字</span></span>
                 </div>
             </div>
         </div>
@@ -148,7 +148,7 @@ permalink: 5-6-2_platformMcpServers.html
                 </div>
                 <div class="field">
                     <textarea id="newMcpDescInput" class="form-control" aria-describedby="newMcpDescHint"></textarea>
-                    <span id="newMcpDescHint" class="text-gray"><span data-i18n="settings.mcpLimitAtMost">最多</span><span class="js-mcp-desc-max-len">2000</span><span data-i18n="common.unitChars"> 字</span></span>
+                    <span id="newMcpDescHint" class="text-gray"><span data-i18n="settings.mcpLimitAtMost">最多</span><span class="js-mcp-desc-max-len">1024</span><span data-i18n="common.unitChars"> 字</span></span>
                 </div>
             </div>
         </div>
@@ -205,11 +205,11 @@ permalink: 5-6-2_platformMcpServers.html
          界線是全域的，故常駐一行、每一欄一顆 id，逐列的控制項各自 `aria-describedby` 指過來。
          數字全部是資料槽（React 填 `GET /platform/mcp/limits`），與新增區同一批 class。 #}
     <div class="flex-row flex-wrap gap-16 text-gray">
-        <span id="mcpNameLimitHint"><span data-i18n="widget.tokenName">名稱</span><span data-i18n="common.labelSep">：</span><span data-i18n="settings.mcpLimitAtMost">最多</span><span class="js-mcp-name-max-len">200</span><span data-i18n="common.unitChars"> 字</span></span>
-        <span id="mcpCommandLimitHint"><span data-i18n="settings.mcpCommand">執行指令</span><span data-i18n="common.labelSep">：</span><span data-i18n="settings.mcpLimitAtMost">最多</span><span class="js-mcp-command-max-len">500</span><span data-i18n="common.unitChars"> 字</span></span>
-        <span id="mcpArgsLimitHint"><span data-i18n="agent.params">參數</span><span data-i18n="common.labelSep">：</span><span data-i18n="settings.mcpLimitAtMost">最多</span><span class="js-mcp-args-max-items">8</span><span data-i18n="settings.mcpArgsLimitMid">個參數，每個最多</span><span class="js-mcp-args-max-len">200</span><span data-i18n="common.unitChars"> 字</span></span>
-        <span id="mcpEnvLimitHint"><span data-i18n="settings.mcpEnv">環境變數</span><span data-i18n="common.labelSep">：</span><span data-i18n="settings.mcpLimitAtMost">最多</span><span class="js-mcp-env-max-items">32</span><span data-i18n="settings.mcpEnvLimitMid">組，鍵最多</span><span class="js-mcp-env-max-key-len">100</span><span data-i18n="settings.mcpEnvLimitMid2">字、值最多</span><span class="js-mcp-env-max-value-len">2000</span><span data-i18n="common.unitChars"> 字</span></span>
-        <span id="mcpDescLimitHint"><span data-i18n="settings.mcpDescription">描述</span><span data-i18n="common.labelSep">：</span><span data-i18n="settings.mcpLimitAtMost">最多</span><span class="js-mcp-desc-max-len">2000</span><span data-i18n="common.unitChars"> 字</span></span>
+        <span id="mcpNameLimitHint"><span data-i18n="widget.tokenName">名稱</span><span data-i18n="common.labelSep">：</span><span data-i18n="settings.mcpLimitAtMost">最多</span><span class="js-mcp-name-max-len">100</span><span data-i18n="common.unitChars"> 字</span></span>
+        <span id="mcpCommandLimitHint"><span data-i18n="settings.mcpCommand">執行指令</span><span data-i18n="common.labelSep">：</span><span data-i18n="settings.mcpLimitAtMost">最多</span><span class="js-mcp-command-max-len">100</span><span data-i18n="common.unitChars"> 字</span></span>
+        <span id="mcpArgsLimitHint"><span data-i18n="agent.params">參數</span><span data-i18n="common.labelSep">：</span><span data-i18n="settings.mcpLimitAtMost">最多</span><span class="js-mcp-args-max-items">50</span><span data-i18n="settings.mcpArgsLimitMid">個參數，每個最多</span><span class="js-mcp-args-max-len">500</span><span data-i18n="common.unitChars"> 字</span></span>
+        <span id="mcpEnvLimitHint"><span data-i18n="settings.mcpEnv">環境變數</span><span data-i18n="common.labelSep">：</span><span data-i18n="settings.mcpLimitAtMost">最多</span><span class="js-mcp-env-max-items">50</span><span data-i18n="settings.mcpEnvLimitMid">組，鍵最多</span><span class="js-mcp-env-max-key-len">200</span><span data-i18n="settings.mcpEnvLimitMid2">字、值最多</span><span class="js-mcp-env-max-value-len">4000</span><span data-i18n="common.unitChars"> 字</span></span>
+        <span id="mcpDescLimitHint"><span data-i18n="settings.mcpDescription">描述</span><span data-i18n="common.labelSep">：</span><span data-i18n="settings.mcpLimitAtMost">最多</span><span class="js-mcp-desc-max-len">1024</span><span data-i18n="common.unitChars"> 字</span></span>
     </div>
     <div class="table-container scrollTable">
         <table class="default-table">

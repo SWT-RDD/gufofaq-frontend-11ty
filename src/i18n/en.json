@@ -1899,5 +1899,8 @@
   "widget.status": "Status",
   "widget.token": "Key",
   "widget.tokenList": "Key list",
-  "widget.tokenName": "Name"
+  "widget.tokenName": "Name",
+  "settings.quotaUnitPerDay": " times/day",
+  "settings.quotaUnitPerMonth": " times/month",
+  "settings.quotaUnitTotal": " times (cumulative)"
 }

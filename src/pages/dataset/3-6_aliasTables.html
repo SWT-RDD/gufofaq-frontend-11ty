@@ -25,7 +25,7 @@ permalink: 3-6_aliasTables.html
      得到的是假的細緻度。三個套用開關放在設定檔（5-2），一個明確、看得見、一鍵可撤的決定。
 
    上限是契約欄位（§6），出處＝chatbot `app/services/alias.py`：
-     `MAX_TABLE_NAME_LEN = 200`／`MAX_DESCRIPTION_LEN = 2000`／`MAX_ALIAS_ENTRIES_PER_TABLE = 5000`／
+     `MAX_TABLE_NAME_LEN = 200`／`MAX_DESCRIPTION_LEN = 2000`／`MAX_ALIAS_ENTRIES_PER_TABLE = 20000`／
      `MAX_ALIASES_PER_ENTRY = 50`／`MAX_CANONICAL_LEN = 200`／`MAX_ALIAS_LEN = 200`。
      版型比照 3-2_glossaryManagement（新增區＋清單表＋條件開窗 modal）——它就是同一種東西的
      管理頁，沒有理由長得不一樣。
@@ -46,7 +46,7 @@ permalink: 3-6_aliasTables.html
      ——**沒有任何別名計數**，而 product `app/routers/alias.py` 是原樣代理、不加欄。
      要求的內容：`GET /api/alias` 應補 `alias_count`（＝各列 `len(aliases)` 的總和）。
      為什麼非它不可：一張表「有幾個詞條」與「總共登記了幾個別名」是兩個決定
-     （`MAX_ALIAS_ENTRIES_PER_TABLE = 5000` 與 `MAX_ALIASES_PER_ENTRY = 50` 是兩條不同的上限），
+     （`MAX_ALIAS_ENTRIES_PER_TABLE = 20000` 與 `MAX_ALIASES_PER_ENTRY = 50` 是兩條不同的上限），
      而它從詞條數推導不出來——切版沒有算術，前端自己去逐列加總就得先整表撈回來。
      **上游那一側的符號名是 `_table_to_dict`**：下一輪 grep 它一次就知道這個前提還在不在（§4）。
      **兩態都要切**：拿不到那個數字時畫「—」（saas `apps/web/app/(app)/alias/page.tsx` 已經

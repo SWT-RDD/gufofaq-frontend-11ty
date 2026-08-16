@@ -38,9 +38,14 @@ permalink: 5-1-1_accountInfo.html
      `email`／`qa_limit`／`storage_limit_mb`／`trial_end`／`days_left` 是同一個投影，
      不可能倒數算得出來、帳號卻是空的）：
        · 帳號＝`admin@example.com`——本站示範租戶的管理員，5-5-1 成員清單第一列就是它（§6 跨頁同源）。
-       · 規格＝`{qa_limit}次/日`（該欄位註解逐字）；3000 就是聊天室頁「問答次數：12/3000」的分母。
+       · 規格＝`{qa_limit}` ＋ 單位；3000 就是聊天室頁「問答次數：12/3000」的分母。
+         **單位不是固定的「次/日」**：額度週期是 `TenantSetting.usage_period`（`none`／`daily`／
+         `monthly`，平台管理員在租戶管理視窗可改），`AccountOut` 隨 `qa_limit` 一起回它。
+         設成 monthly 的租戶印「次/日」就是說錯話。三顆單位 key：
+         `settings.quotaUnitPerDay`／`quotaUnitPerMonth`／`quotaUnitTotal`。
        · 資料儲存上限＝`storage_limit_mb`；1000MB 就是 3-1-1 那條 ui/storage-bar 的「共 1000MB」。
-     後兩格的組字逐字沿用凍結前端 js/accountInfo.js（`${GPTTimesLimit}次/日`、`${maxAccSize}MB`）。
+     儲存那一格的組字逐字沿用凍結前端 js/accountInfo.js（`${maxAccSize}MB`）；規格那一格**不沿用**
+     舊前端的 `${GPTTimesLimit}次/日`——舊系統只有一種週期，新系統有三種（見上）。
      三個都是唯讀投影，故維持 disabled；值由 React 填，這裡是版型與長度的示範——**React 組字時
      單位要走 i18n**（數字是資料、「次/日」是 chrome），value 是原子屬性、切版拆不出節點來掛 key。 #}
 <div class="block flex-row column gap-24">
