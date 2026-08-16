@@ -1195,6 +1195,7 @@
   "settings.bulkPasteHint": "One group per line. The first column is the canonical term, the rest are aliases, separated by tabs or commas. Pasting appends to the list below; it does not overwrite existing rows.",
   "settings.bulkPasteInput": "Bulk paste content",
   "settings.bulkPasteNoAlias": "This line has no alias",
+  "settings.bulkPasteNoCanonical": "This line has no canonical term",
   "settings.bulkPasteParse": "Parse and add",
   "settings.bulkPasteTooManyAliases": "Too many aliases",
   "settings.canonical": "Canonical term",
@@ -1513,6 +1514,9 @@
   "settings.qaDirectScoreFloorLabel": "Direct-answer score floor",
   "settings.queryDataType": "Query data type",
   "settings.questionText": "Question",
+  "settings.quotaUnitPerDay": " times/day",
+  "settings.quotaUnitPerMonth": " times/month",
+  "settings.quotaUnitTotal": " times (cumulative)",
   "settings.reasoningEffort": "Reasoning depth",
   "settings.reasoningEffortDefault": "Model default",
   "settings.reasoningEffortMinimal": "Minimal thinking",
@@ -1700,6 +1704,7 @@
   "toast.compareBaseline": "Comparing…|Comparison ready|This execution cannot be its own baseline|Failed to load the comparison. Please try again later.",
   "toast.copyConfig": "Configuration copied|You do not have permission to copy|Select at least one item to copy|Copy failed. Please try again later.",
   "toast.copyKey": "Key copied",
+  "toast.copyKeyFailed": "Copy failed. Please select and copy manually",
   "toast.copyOutputRules": "Copied as output replacement rules — paste into the Replacement column under Conversation Settings → Output replacements|Copy failed. Please try again later.",
   "toast.copyServiceKey": "Credential secret copied",
   "toast.createAliasTable": "Alias table created|You do not have permission to add|The table name cannot be empty, or it exceeds the length limit|Failed to create. Please try again later.",
@@ -1899,8 +1904,5 @@
   "widget.status": "Status",
   "widget.token": "Key",
   "widget.tokenList": "Key list",
-  "widget.tokenName": "Name",
-  "settings.quotaUnitPerDay": " times/day",
-  "settings.quotaUnitPerMonth": " times/month",
-  "settings.quotaUnitTotal": " times (cumulative)"
+  "widget.tokenName": "Name"
 }

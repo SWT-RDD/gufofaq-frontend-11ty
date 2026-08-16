@@ -1220,8 +1220,8 @@ bodyClass: guideline-page
     "知識模式為「不參考知識」時，這一組上限不適用（該模式不產生檢索式回答）。"
 ] %}
 {% set helpModalLimitRows = [
-    { labelKey: "help.demo.maxAnswerChars", label: "回覆最大字數", bound: "100 – 2000", effectKey: "help.demo.maxAnswerCharsEffect", effect: "超過時從尾端截斷，並附加「內容過長，僅顯示前 N 字」" },
-    { labelKey: "help.demo.maxSources", label: "來源引用筆數上限", bound: "1 – 10", effectKey: "help.demo.maxSourcesEffect", effect: "超過時只顯示分數最高的前幾筆，其餘不列出" }
+    { labelKey: "help.demo.maxAnswerChars", label: "回覆最大字數", bound: "≤ 50000", effectKey: "help.demo.maxAnswerCharsEffect", effect: "超過時從尾端截斷，並附加「內容過長，僅顯示前 N 字」" },
+    { labelKey: "help.demo.maxSources", label: "來源引用筆數上限", bound: "1 – 1000", effectKey: "help.demo.maxSourcesEffect", effect: "超過時只顯示分數最高的前幾筆，其餘不列出" }
 ] %}
 {% include "components/help-modal/help-modal.html" %}
 
