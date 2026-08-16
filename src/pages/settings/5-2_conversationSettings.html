@@ -418,6 +418,27 @@ permalink: 5-2_conversationSettings.html
      不用「顯示但標示不生效」——那只是把問題描述出來，使用者照樣填得下去、存得起來，永遠不會被執行。 #}
 <div class="tab-content" data-capability="settings:write" id="panelGeneration" style="display: none;">
     <div class="block">
+        {# 區塊標題用 .text-md.text-bold（同本頁其餘七顆）：它不 label 任何控制項，寫成 <label> 會是
+             一顆點了不會聚焦、對輔具也沒有語意的空殼（§4）。
+             **字面刻意不是「主回答」**：下一行那顆 `reasoningGroupMain-label` 只罩得住 `role="group"`
+             裡的兩顆（模型／思考深度），而這顆標題視覺上罩住整個 block 的十二欄。沿用同字面＝可見標題
+             的涵蓋範圍與 aria group 對不上，與下面那段註解花十一行在防的是同一條規則（§4「group 內的
+             控制項數，不得超過它的標題字面涵蓋得住的數量」），只是方向相反——那次是 group 撐太大，
+             沿用「主回答」則會變成標題撐太大；而且同字面連續兩行也會直接畫成兩顆一模一樣的標題。
+             ⓘ 說明：markup 逐字照抄本頁既有的 info-btn 六件組（§1-2 無 html 元件契約），只換
+             title/key/data-open-modal 三個值。①出處＝本子頁籤檔頭（全部欄位為值載體、統一由底部
+             「儲存對話設定」直送）與 product `app/routers/settings_hub.py` 的 `ProfileConfigIn`／
+             `app/profile_config.py` 的 `PROFILE_FIELD_DEFAULTS`。
+             ①**不點名**「選用資料筆數」「啟用引用標註」「重排序模型」三欄：它們會被值相依藏起來
+             （見本頁 tab 列下方那段檔頭清單的②），把藏起來的欄位寫進說明等於從另一個出口把它攤回
+             畫面上——`components/help-modal` 檔頭對②講的是同一件事，①手寫的那段同樣受它管。 #}
+        <div class="flex-row align-items-center gap-8">
+            <div class="text-md text-bold" data-i18n="settings.generationParams">生成參數</div>
+            <button type="button" class="info-btn" title="生成參數說明" data-i18n-title="help.settings.generationParams.title" data-open-modal="generationParamsHelpModal">
+                <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+                <span class="sr-only" data-i18n="help.settings.generationParams.title">生成參數說明</span>
+            </button>
+        </div>
         <span class="control-label" id="reasoningGroupMain-label" data-i18n="settings.reasoningGroupMain">主回答</span>
         {# §4 逐字點名的那一組：本面板同時可見六組「模型＋思考深度」，五個分組都收進了
              role="group"＋aria-labelledby，只有主回答這一組沒有——於是同頁每一顆 select 的
@@ -590,6 +611,20 @@ permalink: 5-2_conversationSettings.html
             </div>
         </div>
     </div>
+    {# 「生成參數」的說明視窗：②③留空——現在生效的條件與這一區的數字都由 React 執行期算（②讀
+         gufofaq-saas `apps/web/lib/valueDependencies.ts` 的 `activeStateNotes`，③讀 product 的
+         `*/limits` 端點），切版這一側只提供容器。**空陣列仍要 set**：兩者皆必填參數（§6），
+         而元件對空陣列的處置是整塊不畫（`{% if …length > 0 %}`，見元件檔頭「畫一顆只有表頭沒有
+         列的表格……不比不畫更有用」）⇒ dist 裡這顆窗只會有 `.help-modal-what`，那是預期結果。 #}
+    {% set helpModalId = "generationParamsHelpModal" %}
+    {% set helpModalTitleKey = "help.settings.generationParams.title" %}
+    {% set helpModalTitle = "生成參數說明" %}
+    {% set helpModalWhatKey = "help.settings.generationParams.what" %}
+    {% set helpModalWhat = "這一區設定主回答本身怎麼生成：用哪顆模型與思考深度、溫度、要從知識庫取用多少資料、主題與向量的來源比例、知識使用模式與要不要重排序，以及對話記憶輪數、回應格式與時區。這些值隨頁面底部的「儲存對話設定」一起送出；主回答以外各內部 LLM 呼叫要用哪顆模型，另見下方「分組 LLM（進階）」。" %}
+    {% set helpModalStateItems = [] %}
+    {% set helpModalLimitRows = [] %}
+    {% include "components/help-modal/help-modal.html" %}
+
     {# ── 分組 LLM（進階）：主回答以外各內部 LLM 呼叫可各自選模型與思考深度 ──
          值載體，隨底部「儲存對話設定」直送 product settings_hub（model_name_*/reasoning_effort_*）
          → chatbot init_llm_group。React 端各組模型選單填 available models（含「繼承主模型」）、
@@ -1954,6 +1989,25 @@ permalink: 5-2_conversationSettings.html
 <div class="tab-content" data-capability="settings:write" id="panelQaDirect" style="display: none;">
     <p class="text-gray" data-i18n="settings.qaDirectIntro">問句完全命中某 QA 集的問題時，直接回該問答的答案原文、不經 AI 重組；judge 模式再加一道 LLM 裁決。</p>
     <div class="block mb-16 flex-row column gap-16">
+        {# 區塊標題用 .text-md.text-bold ＋ ⓘ，形狀與本頁其餘七顆逐字相同（理由見「生成參數」那顆）。
+             頁層引言（上一行的 `settings.qaDirectIntro`）在 block **外**、位置不動，故這一區的順序是
+             「引言 → 標題 → 欄位」；可回答性閘那一區的引言在 block 內，順序是「標題 → 引言 → 欄位」。
+             ①出處＝本子頁籤檔頭與 GufoRAG chatbot `app/services/qa_direct.py` 的
+             `qa_direct_active`／`_enabled`（停用時 `resolve()` 第一行就 return）。
+             ①**只描述「直答模式」這顆常駐的三選一**，不點名分數門檻與 judge 判準：那兩欄在
+             `qa_direct_mode="off"` 時被值相依藏起來（本頁檔頭清單第四條），寫進說明就是把藏起來的
+             欄位從另一個出口攤回畫面上。**這顆窗自己不隱藏**——它解釋的「直答模式」開關永遠在，
+             關掉之後使用者還要靠它把功能開回來（這正是 e2e HELP-03 要演的那一幕：欄位消失、窗還在）。
+             **字面刻意不是「QA 直答」**：那是這個子頁籤的分頁鈕字面（`settings.qaDirect`，本頁 tab 列），
+             分頁鈕與面板內的區塊標題同時可見，同字面就是同頁兩處指到不同範圍的東西（§4）——分頁籤
+             涵蓋這一區＋QA 集＋可回答性閘三塊，這顆標題只涵蓋直答怎麼判定的那三欄。 #}
+        <div class="flex-row align-items-center gap-8">
+            <div class="text-md text-bold" data-i18n="settings.qaDirectDecision">直答判定</div>
+            <button type="button" class="info-btn" title="直答判定說明" data-i18n-title="help.settings.qaDirectDecision.title" data-open-modal="qaDirectDecisionHelpModal">
+                <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+                <span class="sr-only" data-i18n="help.settings.qaDirectDecision.title">直答判定說明</span>
+            </button>
+        </div>
         <div class="form-group row mobile-col">
             <div class="label label-md">
                 <span class="control-label" id="qaDirectModeLabel" data-i18n="settings.qaDirectMode">直答模式</span>
@@ -2035,6 +2089,21 @@ permalink: 5-2_conversationSettings.html
         </div>
     </div>
 
+    {# 「直答判定」的說明視窗：②③留空，理由與空陣列仍要 set 的原因同「生成參數」那顆。 #}
+    {% set helpModalId = "qaDirectDecisionHelpModal" %}
+    {% set helpModalTitleKey = "help.settings.qaDirectDecision.title" %}
+    {% set helpModalTitle = "直答判定說明" %}
+    {% set helpModalWhatKey = "help.settings.qaDirectDecision.what" %}
+    {% set helpModalWhat = "這一區決定「QA 直答」要不要啟用、以及用哪一種判定方式：停用、完全命中（問句正規化後與 QA 的問題一致才直答），或完全命中再加一道 LLM 裁決。命中時回的是該筆 QA 的答案原文、不經模型重組，所以「生成設定」子頁籤那些旋鈕不會作用在這種回覆上。" %}
+    {% set helpModalStateItems = [] %}
+    {% set helpModalLimitRows = [] %}
+    {% include "components/help-modal/help-modal.html" %}
+
+    {# 這一區**刻意不掛 ⓘ**：它只有「參與直答的 QA 集」一欄，而那一欄被 `qa_direct_mode="off"` 藏
+         （本頁檔頭清單第四條）⇒ 停用時整區消失。依 `components/help-modal` 檔頭「整區被隱藏時，
+         這一區的 ⓘ 連同區塊本身一起不存在：沒有一顆按鈕去解釋一個看不到的東西」，這裡掛了也只會
+         跟著消失；這一欄該被說明的位置是上面那顆窗（它的 block 含「直答模式」開關本身，關掉之後
+         必須留著讓人開回來）。 #}
     <div class="block flex-row column gap-16">
         <div class="form-group row mobile-col">
             <div class="label label-md">
@@ -2056,6 +2125,23 @@ permalink: 5-2_conversationSettings.html
        mode(off/on)＋criteria 是租戶旋鈕，隨底部「儲存對話設定」直送 settings PUT；掛 hook class
        js-answerability-*（全站 scss 不引用），React 接手送 API。與 QA 直答同屬「可回答性」決策、故同頁。 #}
     <div class="block flex-row column gap-16 mt-16">
+        {# 區塊標題用 .text-md.text-bold ＋ ⓘ，形狀與本頁其餘七顆逐字相同（理由見「生成參數」那顆）。
+             標題加在既有引言**之上**（「標題 → 引言 → 欄位」），引言那顆 `.text-gray` 節點不動。
+             ①出處＝本區塊上方那段檔頭與 GufoRAG chatbot `app/services/grounding.py`（`_score_floor`
+             只在閘內呼叫）。①**只描述這顆閘開／關各自會發生什麼**，不點名「補充判準」與
+             「可回答性分數門檻」：兩欄在閘關著時被值相依藏起來（本頁檔頭清單第三條），寫進說明
+             就是把藏起來的欄位攤回畫面上。
+             ⚠️ **這顆 ⓘ 必須留在這個 block 之內**：整區另外還被「知識使用模式＝none 且傳統模式」
+             藏掉（本頁檔頭清單第一條逐字寫「『可回答性閘』**整區**……不顯示」），React 端的條件
+             渲染包的就是這一層。把標題或 ⓘ 提到 block 外，就會在那個組合下留下一顆解釋不存在區塊
+             的按鈕——`components/help-modal` 檔頭逐字禁止的那件事。 #}
+        <div class="flex-row align-items-center gap-8">
+            <div class="text-md text-bold" data-i18n="settings.answerabilityHeading">可回答性閘</div>
+            <button type="button" class="info-btn" title="可回答性閘說明" data-i18n-title="help.settings.answerability.title" data-open-modal="answerabilityHelpModal">
+                <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+                <span class="sr-only" data-i18n="help.settings.answerability.title">可回答性閘說明</span>
+            </button>
+        </div>
         <div class="text-gray" data-i18n="settings.answerabilityIntro">收斂或檢索到的資料不足以回答時，誠實告知查無、不硬生成無依據的答案。</div>
         <label class="form-checkbox">
             <input type="checkbox" class="js-answerability-mode">
@@ -2102,6 +2188,18 @@ permalink: 5-2_conversationSettings.html
             </div>
         </div>
     </div>
+
+    {# 「可回答性閘」的說明視窗：②③留空，理由與空陣列仍要 set 的原因同「生成參數」那顆。
+         ③ 日後由 React 接上 `grounding_score_floor` 那一列真界線時，**閘關著就不得列它**
+         ——那一欄此刻正被值相依藏在畫面外（本頁檔頭清單第三條）。 #}
+    {% set helpModalId = "answerabilityHelpModal" %}
+    {% set helpModalTitleKey = "help.settings.answerability.title" %}
+    {% set helpModalTitle = "可回答性閘說明" %}
+    {% set helpModalWhatKey = "help.settings.answerability.what" %}
+    {% set helpModalWhat = "這一區決定收斂或檢索到的素材不足以回答時要怎麼辦：閘開著時先做一次 grounding 判定，判定素材不足就誠實告知查無，不讓模型硬生成一段沒有依據的答案。閘關著時不做這道判定，模型會照常生成回覆。" %}
+    {% set helpModalStateItems = [] %}
+    {% set helpModalLimitRows = [] %}
+    {% include "components/help-modal/help-modal.html" %}
 </div>
 
 {# 統一儲存：直送 PUT /settings/profiles/{no}（分組 merge 寫回生成/政策/agent-提示詞/內建工具/MCP 勾選）。
