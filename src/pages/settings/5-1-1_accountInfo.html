@@ -128,11 +128,26 @@ permalink: 5-1-1_accountInfo.html
 
 {# 個人資料（登入者自身，非租戶層）：顯示名稱 + 聯絡資訊，可編輯後儲存（product /me/profile）。
      **這一塊與下面的變更密碼刻意不掛任何授權軸**（§4「查證過不需要閘門的要留下痕跡」）：
-     `/me/profile` 與 `/me/change-password` 是自助端點，正本只吃 `get_current_user`
-     ＋`require_active_subscription`，沒有 `require_capability`。標上能力軸反而會讓 React 把
-     「改自己的顯示名」擋在一顆它根本不需要的能力後面——上面那顆 `PUT /account` 才是 settings:write。 #}
+     `/me/profile`／`/me/change-password` 都只吃 `get_current_user`，沒有 `require_capability`
+     ——標上能力軸反而會讓 React 把「改自己的顯示名」擋在一顆它根本不需要的能力後面，上面那顆
+     `PUT /account` 才是 settings:write。**兩者仍不是同一道閘**：`PUT /me/profile` 另外掛
+     `require_active_subscription`（凍結/到期的租戶連改自己顯示名都存不進去），`POST
+     /me/change-password` 刻意不掛（`app/routers/users.py` 該函式旁的註解：這是帳號被盜用時的
+     自救路，鎖住它反而讓人換不掉已經外流的密碼）——下方兩顆 ⓘ 分別點出這個差異。 #}
+{# ⓘ 說明：markup 同既有 info-btn 六件組（GUIDELINE §1-2 無 html 元件契約）。①出處：本頁上方
+     這段「個人資料」檔頭 ＋ product `app/routers/users.py` 的 `ProfileOut`／`ProfileIn`／
+     `update_my_profile`（`require_active_subscription`）。帳號頁的語意核心是**訂閱期／配額／
+     用量**三者——這一區跟配額、用量都無關（那兩個是上方帳號資訊區塊唯讀顯示的租戶資料），它
+     唯一沾到的是訂閱期：存檔動作要求使用期正處於有效狀態，過期或還沒生效時這兩格仍看得到、
+     但儲存會被擋下來。 #}
 <div class="block mt-16 flex-row column gap-16">
-    <div class="text-md text-bold" data-i18n="settings.myProfile">個人資料</div>
+    <div class="flex-row align-items-center gap-8">
+        <div class="text-md text-bold" data-i18n="settings.myProfile">個人資料</div>
+        <button type="button" class="info-btn" title="個人資料說明" data-i18n-title="help.settings.myProfile.title" data-open-modal="myProfileHelpModal">
+            <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+            <span class="sr-only" data-i18n="help.settings.myProfile.title">個人資料說明</span>
+        </button>
+    </div>
     <div class="flex-row gap-40 mobile-column sm-gap-16">
         <div class="col-6-md col-12-sm">
             <div class="form-group">
@@ -160,9 +175,30 @@ permalink: 5-1-1_accountInfo.html
     </div>
 </div>
 
+{# 「個人資料」的說明視窗：②③留空——現在生效的條件與這一區的數字由 React 執行期算，切版這一側
+     只提供容器（同批次既有區塊的現況）。這一區沒有租戶層數字可顯示，③ 本來就該是空的。 #}
+{% set helpModalId = "myProfileHelpModal" %}
+{% set helpModalTitleKey = "help.settings.myProfile.title" %}
+{% set helpModalTitle = "個人資料說明" %}
+{% set helpModalWhatKey = "help.settings.myProfile.what" %}
+{% set helpModalWhat = "這一區存的是登入者自己的顯示名稱與聯絡方式，屬於這個帳號本身——跟公司/單位、規格與資料儲存上限是兩件事，那些是租戶層資料，唯讀顯示在上方帳號資訊區塊。這裡的存檔動作要求租戶使用期正處於有效狀態，使用期不是有效狀態時這兩格仍看得到，但按下儲存會被擋下來。" %}
+{% set helpModalStateItems = [] %}
+{% set helpModalLimitRows = [] %}
+{% include "components/help-modal/help-modal.html" %}
+
 {# 變更密碼：舊密碼 + 新密碼（至少 8 碼）+ 確認新密碼（product /me/change-password）。 #}
+{# ⓘ 說明：markup 同既有 info-btn 六件組。①出處：上面「個人資料」檔頭已比較過兩者的閘
+     ＋ product `app/routers/users.py` 的 `change_my_password`（只吃 `get_current_user`，
+     沒有 `require_active_subscription`）。這一區與訂閱期／配額／用量三者都無關：不看使用期
+     狀態，也不顯示任何租戶層數字，純粹是這個帳號自己的登入憑證異動。 #}
 <div class="block mt-16 flex-row column gap-16">
-    <div class="text-md text-bold" data-i18n="settings.changePassword">變更密碼</div>
+    <div class="flex-row align-items-center gap-8">
+        <div class="text-md text-bold" data-i18n="settings.changePassword">變更密碼</div>
+        <button type="button" class="info-btn" title="變更密碼說明" data-i18n-title="help.settings.changePassword.title" data-open-modal="changePasswordHelpModal">
+            <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+            <span class="sr-only" data-i18n="help.settings.changePassword.title">變更密碼說明</span>
+        </button>
+    </div>
     <div class="flex-row gap-40 mobile-column sm-gap-16">
         <div class="col-4-md col-12-sm">
             <div class="form-group">
@@ -219,3 +255,13 @@ permalink: 5-1-1_accountInfo.html
         <button type="button" class="button button-primary" data-toast="密碼已變更|新密碼至少 8 碼|兩次新密碼不一致|舊密碼錯誤|變更失敗，請稍後再試" data-i18n-data-toast="toast.changePassword" data-toast-type="success|warning|warning|warning|error" data-i18n="settings.changePassword">變更密碼</button>
     </div>
 </div>
+
+{# 「變更密碼」的說明視窗：②③留空，理由同本頁其他說明視窗——這一區沒有租戶層數字可顯示。 #}
+{% set helpModalId = "changePasswordHelpModal" %}
+{% set helpModalTitleKey = "help.settings.changePassword.title" %}
+{% set helpModalTitle = "變更密碼說明" %}
+{% set helpModalWhatKey = "help.settings.changePassword.what" %}
+{% set helpModalWhat = "這一區換的是這個帳號自己的登入密碼，跟上面的個人資料是各自獨立的動作：改密碼成功後，這個帳號在其他裝置上的既有登入都會失效，得用新密碼重新登入（正在操作的這個分頁本身不會被登出）。這裡刻意不看租戶使用期是否有效——就算使用期已過期或還沒生效，密碼仍然換得了，帳號才不會被鎖死到連自救都做不到。" %}
+{% set helpModalStateItems = [] %}
+{% set helpModalLimitRows = [] %}
+{% include "components/help-modal/help-modal.html" %}

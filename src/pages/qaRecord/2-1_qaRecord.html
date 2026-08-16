@@ -24,6 +24,12 @@ permalink: 2-1_qaRecord.html
     {% include "ui/breadcrumb/breadcrumb.html" %}
 </div>
 
+{# 頁層說明：這一頁是麵包屑第一層「首頁」（`nav.home` 連的就是它自己），全站唯一沒有頁層說明的
+     後台首頁——其餘每一頁都有一段 `text-gray` 開場白。內容講的是這一頁最容易被誤會的地方：
+     它是**唯讀**預覽（真實頁沒有輸入框，見下方 chatInputHidden 註解），不是可以真的問問題的地方，
+     那個功能在前台 `faq.html` 才有。 #}
+<p class="text-gray" data-i18n="qa.qaRecordIntro">登入後預設進入這一頁：唯讀預覽前台使用者實際看到的問答對話畫面，右側「問答紀錄」頁籤可以切換檢視不同的範例對話，並在訊息的「查看來源」裡看到該則答案引用的文件與使用者當時的滿意度。這裡沒有輸入框、送不出新問題，真正的問答在前台頁面進行。</p>
+
 {# 主要內容：聊天視窗 + 問答紀錄頁籤，真實頁 .chatroom-wrap 與 components/chatroom 完全一致（同一份真實頁抽出），直接 include；
      右側頁籤區塊為單層 tab-group（非 ui/tab 展示片段的雙層 top/sub-tabs 結構），沿用 ui/tab 的 tab-wrap/tabs-title/tab-group/.tab class；
      頁籤本身掛 ui/tab 的 .on-record 變體（見 components/qa-record-tabs） #}
