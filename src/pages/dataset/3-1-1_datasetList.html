@@ -197,7 +197,13 @@ permalink: 3-1-1_datasetList.html
         折進「刪除資料集失敗」等於叫使用者去查一個不存在的跨服務故障，而重試永遠不會成功（§5）。
      ③ 其餘（`purge_dataset_assets` 真的失敗 → 502、404）併進末段 error。 #}
 {% set deleteCapability = "data:write" %}
-{% set deleteToast = "已刪除|權限不足，無法刪除|對話設定有一欄不合法，請先到對話設定頁修正|刪除資料集失敗" %}
+{# **能力 403 與資源層 scope 403 是兩段，不共用一句**（§4）：前者換一個群組也沒用（要一顆 token）、
+     後者是「這個資料集不在你可以寫入的群組裡」（找人加入群組或換一個）——兩者的修法不同。
+     資源層那一道是 product `app/routers/datasets.py` 的 `_writable_dataset` → 403
+     `dataset.not_writable_group`（`authz.can_write_dataset`）；而 `list_datasets` 只以 `tenant_id`
+     收斂、不依該 scope 過濾 ⇒「看得到一筆、按下去 403」是真實可達的路徑（§4 的判準）。
+     子句與 3-5 五顆處置鈕、3-1-3 三處就地編輯逐字共用。 #}
+{% set deleteToast = "已刪除|權限不足，無法刪除|這個資料集不在你可以寫入的群組裡，請找管理員把你加進該群組|對話設定有一欄不合法，請先到對話設定頁修正|刪除資料集失敗" %}
 {% set deleteToastKey = "toast.deleteDataset" %}
-{% set deleteToastType = "success|warning|warning|error" %}
+{% set deleteToastType = "success|warning|warning|warning|error" %}
 {% include "components/delete-modal/delete-modal.html" %}

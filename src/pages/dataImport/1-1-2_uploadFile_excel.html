@@ -14,7 +14,13 @@ permalink: 1-1-2_uploadFile_excel.html
 </div>
 
 {# 頁層說明：這是 Excel 匯入 4 步精靈（上傳→預覽→欄位對應→送出）的第 1 步，語意見下面
-     upload-box 的檔頭與步驟條資料本身，本頁不另有 API 呼叫。 #}
+     upload-box 的檔頭與步驟條資料本身。
+     **授權**：先前這裡寫「本頁不另有 API 呼叫」——與正本相反。真 app 的上傳打 gufofaq-saas
+     product `app/routers/datasets.py` 的 `preview_excel`（`POST /datasets/excel/preview`，
+     `require_capability("data", "write")` ＋ `assert_storage_quota` 的 413），該函式的 docstring
+     逐字寫著「對齊舊 1-1-2」。切版把這一步降級成靜態跳轉到 1-1-3（上傳框走連結版），所以
+     閘門與結果分支的正本在 1-1-3 的 `.js-excel-repreview` 那一顆——**降級不等於沒有那道閘**，
+     這一句就是它的痕跡（§4／§5：把送 API 的鈕降級成靜態跳轉時，要在使用頁檔頭逐條記下）。 #}
 <p class="text-gray" data-i18n="dataImport.uploadExcelIntro">這一頁是 Excel 匯入精靈的第一步：選擇你要匯入的 Excel 活頁簿。選好之後會先進入預覽，讓你在真正送出前看到解析出來的欄位與內容。</p>
 
 {# 步驟條：步驟 1「上傳檔案」done，其餘未達成。狀態資料由本頁 set，交給參數化的 components/step-nodes 渲染（§6） #}

@@ -13,9 +13,14 @@ permalink: 1-1-1_dataImport.html
     {% include "ui/breadcrumb/breadcrumb.html" %}
 </div>
 
-{# 頁層說明：這一頁是整條匯入流程的起點——選資料集＋選格式，沒有自己的 API 呼叫，
-     語意分別來自下面 select-dataset-modal（單選要匯入的目標資料集）與 ui/upload-card
-     （四張卡各自連到該格式專屬的上傳頁）兩個元件的檔頭，見各自 include 處的說明。 #}
+{# 頁層說明：這一頁是整條匯入流程的起點——選資料集＋選格式。語意分別來自下面
+     select-dataset-modal（單選要匯入的目標資料集）與 ui/upload-card（四張卡各自連到該格式
+     專屬的上傳頁）兩個元件的檔頭，見各自 include 處的說明。
+     **授權**：先前這裡寫「沒有自己的 API 呼叫」——那是錯的，而且它同時是本頁零授權宣告的
+     唯一理由（§4：空白與「忘了標」在 markup 上長得一模一樣）。資料集清單來自 gufofaq-saas
+     product `app/routers/datasets.py` 的 `list_datasets`（`GET /datasets`，
+     `require_capability("data", "read")`），由頁面載入時取得、不是任何一顆控制項觸發的動作
+     ⇒ 四軸不標在控制項上，但查證結論要留在這裡（§4：讀取型端點同樣要標或寫明查證結論）。 #}
 <p class="text-gray" data-i18n="dataImport.entryIntro">這一頁是資料匯入的起點：先選定要匯入到哪一個資料集，再依你手上的檔案格式（Excel、PDF、WORD、圖片）點選對應的卡片，就會進入該格式專屬的上傳流程。</p>
 
 {# 選擇資料集：真實頁 pages/dataImport/1-1-1_dataImport.html 的「模擬select」觸發 datasetModal，

@@ -1055,7 +1055,12 @@ permalink: 2-2-4_regressionSuites.html
 {% set deleteTargetId = "deleteRegressionTarget" %}
 {% set deleteConfirmBinding = true %}
 {% set deleteCapability = "settings:write" %}
-{% set deleteToast = "已刪除|權限不足，無法刪除|已經有執行紀錄引用它，請先刪除執行紀錄|刪除失敗，請稍後再試" %}
+{# 第 3 段**不指使一個做不到的動作**：product `app/routers/regression.py` 全境沒有刪除 run 的端點
+     （`@router.delete` 只有 `/suites/{id}` 與 `/suites/{id}/cases/{case_id}` 兩支），而
+     `delete_suite` 的 docstring 逐字寫著 `regression_runs.suite_id` **刻意不級聯**。同一段還要同時
+     說得通兩道守衛（刪案例集是 409 `suite_has_runs`、刪案例是 409 `case_has_results`），所以句子
+     講的是「跑過就凍結」這個事實，不是叫人先去刪別的東西。 #}
+{% set deleteToast = "已刪除|權限不足，無法刪除|它已經跑過，為了保住歷史紀錄不能刪除|刪除失敗，請稍後再試" %}
 {% set deleteToastKey = "toast.deleteRegression" %}
 {% set deleteToastType = "success|warning|warning|error" %}
 {% include "components/delete-modal/delete-modal.html" %}
