@@ -60,7 +60,9 @@ permalink: 3-1-2_dataImport_input.html
    **值載體不另創 hook class**：本表單既有的 `#datasetName`／`#datasetGroup` 都是純 id 契約
      （React 正本 apps/web `datasets/new/page.tsx` 直接讀自己的 state 送 body），三顆新欄位沿用
      同一種記號（§5 矩陣：class 或 id 擇一）。送出動作是下面那三張卡片（React 端＝先 POST
-     /datasets 帶這三欄、再導去該類型的上傳流程），故本區塊沒有自己的送出鈕、也不掛 data-toast。 #}
+     /datasets 帶這三欄、再導去該類型的上傳流程），故本區塊沒有自己的送出鈕。
+     ⚠️ 那三張卡因此是**送出鈕**、不是連結——見下方 uploadCardAction 那段。原本整頁零 data-toast、
+     零 data-capability，等於把一次會 400／403／409 的建立演成一條必然成功的連結。 #}
 <div class="block flex-row column gap-16 mt-16" role="group" aria-labelledby="chunkSettingsTitle">
     <div class="flex-row column gap-8">
         {# ⓘ 說明：markup 逐字照抄 `settings/5-2_conversationSettings.html` 出口套用欄那顆既有
@@ -120,4 +122,18 @@ permalink: 3-1-2_dataImport_input.html
 {# 簡化版靜態跳轉：卡片直接連到該類型上傳頁（excel→1-1-2、pdf/word/image→1-2-1）。
      真 app／React 端這一步是「先建資料集（POST /datasets，body 含名稱＋群組＋上面那三個切塊參數）
      再導到該類型的上傳流程」，切版只演跳轉那一半（§5 不在切版範圍的互動）。 #}
+{# 這一頁的卡片是那一頁**唯一的送出動作**（見 ui/upload-card 檔頭）。分支逐條對回 gufofaq-saas
+     product `app/routers/datasets.py` 的 `POST /datasets`（`create_dataset`）：
+     ・403 `require_capability("data","write")`
+     ・400 `dataset.name_required`（名稱不可為空）
+     ・400 `dataset.group_not_found`（選到的群組不存在）
+     ・403 `dataset.group_not_writable`（那個群組你沒有寫入權）
+     ・409 `dataset.name_exists`（同名資料集已存在）
+     ・502 建索引那一步（`gufo.what_create_index`）失敗
+     成功之後才導去卡片自己的 `data-href`；那顆屬性是 §5 的轉換契約，不因為換成 button 就消失。 #}
+{% set uploadCardAction = true %}
+{% set uploadCardCapability = "data:write" %}
+{% set uploadCardToast = "資料集已建立，接著上傳檔案|權限不足，無法建立資料集|資料集名稱不可為空|選到的群組不存在，請重新選一個|你在這個群組沒有寫入權限，請換一個群組或找管理者開通|同名的資料集已經存在，請換一個名稱|建立失敗，請稍後再試" %}
+{% set uploadCardToastKey = "toast.createDataset" %}
+{% set uploadCardToastType = "success|warning|warning|warning|warning|warning|error" %}
 {% include "ui/upload-card/upload-card.html" %}

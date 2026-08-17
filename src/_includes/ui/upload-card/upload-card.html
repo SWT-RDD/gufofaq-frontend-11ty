@@ -4,7 +4,16 @@
      真 app 跳頁時帶 `?type=` 讓 1-2-1 在執行期把 accept／說明文字收窄成該類型
      （dataImport.js:193-205 的 switch、uploadFilePdf.js:98-121 的查表）；切版沒有查詢字串，
      故 1-2-1 的 accept 取三種的聯集——見該頁檔頭。`data-type` 就是 React 要讀去組路由參數的那顆。
-     卡片是可點的東西，一律是真 `<a>`（§4）；不做「不跳轉的卡片」——那會退化成 javascript:void(0) 死連結。 #}
+     卡片是可點的東西，一律是真 `<a>`（§4）；不做「不跳轉的卡片」——那會退化成 javascript:void(0) 死連結。
+     **例外：3-1-2 的卡片是送出鈕，不是連結**（§5 的 hook × data-toast 矩陣）。1-1-1 的卡片只是
+     「選一種檔型然後換頁」，3-1-2 那一份卻是那一頁**唯一的送出動作**——React 端先
+     `POST /datasets`（帶名稱／群組／切塊三欄）拿到 dataset_id，成功才導去該類型的上傳流程。
+     照抄 `<a href>` 等於把一次會 400／403／409 的建立演成一條必然成功的連結，而那一頁因此
+     整頁零 data-toast、零 data-capability。
+     參數（動作模式）：uploadCardAction（true＝渲染成 button）、uploadCardToast／
+       uploadCardToastKey／uploadCardToastType（§5 三件套）、uploadCardCapability（閘門）。
+       動作模式仍保留 `data-href`：React 要靠它知道「建完之後導去哪一條上傳流程」，
+       那是 §5 的轉換契約，不因為換成 button 就消失。 #}
 {# 四張卡的大小數字（50MB）是後端真的會拒絕的界線，不是文案裡的裝飾——正本與 ui/upload-box
      檔頭那份完全同一顆：product `app/settings.py` 的 `Settings.upload_max_bytes`（預設 50 MiB），
      經 `ops_limits.py` 的 `DATASET_LIMIT_GROUPS.upload.bytes` 投影成 `GET /datasets/limits` 的
@@ -69,15 +78,21 @@
          是欄名讓配對抓錯了旁邊那一顆）——
          後者是 React 拿去組路由參數的機器識別字，渲染成「上傳excel」與卡面的「Excel」、
          與英譯的「Upload Excel」三邊都對不上，而且 type 一改名繁中會靜默漂走、英譯不動。 #}
+    {# 兩種型態只差在**外殼那一顆標籤與它的屬性**，卡面內容一個字都不變 ⇒ 標籤名走變數、
+         內容只寫一份（§1-2：同一段 markup 不複製貼上）。
+         卡面內部一律用 `<span>`：`<button>` 的內容模型不收 `<div>`／`<p>`（互動元素不得巢狀
+         流內容），而 `.upload-content`／`.upload-header` 的 `display:flex` 與
+         `.upload-title`／`.upload-desc` 的 `margin: 0` 都由 class 給，換成 span 幾何一個像素都不動。 #}
+    {% set uploadCardTag = "button" if uploadCardAction else "a" %}
     {% for card in uploadCards %}
-    <a href="{{ card.href }}" class="upload-card" data-type="{{ card.type }}" title="上傳 {{ card.name }}" data-i18n-title="{{ card.titleKey }}">
-        <div class="upload-content">
-            <div class="upload-header">
+    <{{ uploadCardTag }}{% if uploadCardAction %} type="button" data-href="{{ card.href }}"{% if uploadCardCapability %} data-capability="{{ uploadCardCapability }}"{% endif %} data-toast="{{ uploadCardToast }}" data-i18n-data-toast="{{ uploadCardToastKey }}" data-toast-type="{{ uploadCardToastType or "success|error" }}"{% else %} href="{{ card.href }}"{% endif %} class="upload-card" data-type="{{ card.type }}" title="上傳 {{ card.name }}" data-i18n-title="{{ card.titleKey }}">
+        <span class="upload-content">
+            <span class="upload-header">
                 <img src="./images/{{ card.icon }}" width="60" height="76" decoding="async" alt="" class="upload-icon" />
-                <p class="upload-title">{{ card.name }}</p>
-            </div>
-            <p class="upload-desc"><span data-i18n="{{ card.descKey }}">{{ card.desc }}</span><span>50MB</span></p>
-        </div>
-    </a>
+                <span class="upload-title">{{ card.name }}</span>
+            </span>
+            <span class="upload-desc"><span data-i18n="{{ card.descKey }}">{{ card.desc }}</span><span>50MB</span></span>
+        </span>
+    </{{ uploadCardTag }}>
     {% endfor %}
 </div>

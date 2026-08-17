@@ -41,6 +41,9 @@ permalink: 1-1-1_dataImport.html
 </div>
 
 {# 簡化版靜態跳轉：卡片直接連到該類型上傳頁（excel→1-1-2、pdf/word/image→1-2-1） #}
+{# 這一頁的卡片只是「選一種檔型然後換頁」，沒有任何 API ⇒ 維持 `<a href>`。
+     成對參數要一起清掉（§2：set 是頁面全域）。 #}
+{% set uploadCardAction = false %}
 {% include "ui/upload-card/upload-card.html" %}
 
 {% include "components/select-dataset-modal/select-dataset-modal.html" %}

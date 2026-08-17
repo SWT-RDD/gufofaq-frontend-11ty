@@ -621,6 +621,8 @@ bodyClass: guideline-page
         <section id="informSection">
             <h2 class="section-title"><span>17</span><span>檔案上傳</span></h2>
             <div>
+                {# 元件庫演的是純換頁那一態（送出鈕那一態的實例在 3-1-2）。 #}
+                {% set uploadCardAction = false %}
                 {% include "ui/upload-card/upload-card.html" %}
                 <div class="subtitle">描述：檔案上傳選項，使用「.upload-card」這個class，最外層用「div.upload-card-list」包覆</div>
             </div>
@@ -684,6 +686,8 @@ bodyClass: guideline-page
                 { label: "送出資料", done: false }
             ] %}
             {% set stepNodesLg = false %}
+            {# 元件庫演的是純換頁那一態（動作模式的實例在 1-1-4／1-2-1）。 #}
+            {% set stepNextAction = false %}
             {% include "components/step-btn-wrap/step-btn-wrap.html" %}
             <div class="caption description mt-16">
                 <ul>
