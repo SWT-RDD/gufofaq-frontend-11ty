@@ -23,7 +23,11 @@
 - **有四分之一的元件沒有 `<name>.html`**，產出契約那句話對它們不成立。這種元件的 markup 正本寫在
   **它自己的 `_<name>.scss` 或 `<name>.js` 檔頭**，實例散在某一頁或元件庫展示頁——
   **去哪裡找由 README 的「無 html 元件」登記段落決定**（GUIDELINE §1-2 要求每一支都登記在那裡）。
-  三種型態各自的做法：純 scss（`ui/chat-message`、`ui/ab-compare`…）→ scss-only，consumer 手寫 className；
+  三種型態各自的做法：純 scss（無 html／無 js）**只決定「markup 正本住在 scss 檔頭」，不決定元件形態**
+  ——形態照 §② 那條判準另判：檔頭契約是**任意 element 貼一顆 class**（`ui/chat-message` 的 `.robot-msg`、
+  `ui/ab-compare`）→ scss-only，consumer 手寫 className；檔頭契約是**固定的多節點 markup**（`ui/info-btn`
+  的六件組：button ＋ img ＋ sr-only span，三顆缺一就沒有可及名稱）→ **tsx wrapper**，把契約鎖在元件裡。
+  判準一句話：**契約寫得出「缺一不可」的節點清單，就不能交給 consumer 手抄**；
   js only（`ui/print`、`ui/dismiss-panel`、`ui/list-filter`…）→ 行為改寫成 hook，沒有元件檔；
   正本寄生在別的頁（`ui/login-wrapper` 在 `src/login.html`）→ 見下一條。
   （反例提醒：`ui/block`、`ui/error-page` **有** `<name>.html`，只是那份只被元件庫頁 include 當展示片段——
@@ -108,6 +112,25 @@
   （`stepDurations` 的註解逐字寫著「不可寫成 `if (!s.durationMs)`，那會把量到的 `0` 一起丟掉」）、
   `storage-bar` 的 `0%`。**轉換時一律換成 `!= null`**（或 `Number.isFinite`），不要照抄 truthiness。
   切版端的對應要求見 GUIDELINE §6「值域含 0 的參數不得用真值判斷當渲染條件」。
+  - **長度／筆數是同一種壞法、但處方相反：不可以用 `!= null`。** 切版有三種形狀——
+    `{% if xs.length %}`、`{% if xs.length > 0 %}`、`{% if a.length < b %}`。`{xs.length && <section/>}`
+    在空陣列時**把 `0` 印在畫面上**；而上一條的處方 `!= null` 對長度**恆真**（`[].length != null`），
+    會畫出一顆只有標題沒有內容的空區塊。**一律寫成明確的比較**（`xs.length > 0 && …`）或三元。
+    判準一句話：**上一條治的是「值本身可能是 0」，這一條治的是「運算式求值成 0」**——兩者都不能
+    照 truthiness 直翻，但只有前者能用 `!= null`。切版寫成裸 `{% if xs.length %}` 的是切版那一側的
+    §6 違規：轉換時補成 `> 0`，**並回切版一起改**，不要在 React 留一顆會印 `0` 的節點。
+- **`{% set %}` 是頁面全域，props 不是——同一顆元件在同一頁 include N 次時，逐次取「緊接在該次
+  include 之前」那一組 set。** 讀檔案最後一組會讓 N 顆實例拿到同一份參數。**某一次 include 前少
+  set 了一顆參數＝靜默沿用上一顆的值**，畫面正常、`dist` 也正常——那是切版的漏 set，回切版補；
+  React 沒有沿用這條路，複製它就得手寫一份繼承鏈。
+  - **無 html 元件的 props 清單，正本是它檔頭契約段裡的 `{% set %}` 定義行**（GUIDELINE §1-2）。
+    契約段刻意不重抄鄰居的 set 行時會註明，順著它指的那一支一起讀。契約段完全沒有 set 行的
+    （`ui/info-btn`）代表切版零參數，props 要從契約裡**寫死的那幾個值**推導，且**不得把某一個
+    consumer 的值當成預設**——那會服務少數幾份、誤導其餘全部。
+- **切版用 `loop.index` 組的列辨識 id，React 不得翻成 `.map()` 的 index。** 位置不是身分：刪一筆
+  之後每顆 id 與 React key 一起前頂，`aria-labelledby` 指到別人、展開態與焦點跟著搬家。做法：用該
+  列的身分欄（`id`／`sn`）；示範陣列沒有身分欄時**回切版補**（GUIDELINE §6 列鍵），不要在 React
+  端自己發明 id、也不要退回 index。
 - **機械替換的完整清單**（少一項就是一個 build error 或一顆靜默失效的屬性）：
   `class`→`className`、`for`→`htmlFor`、`colspan`→`colSpan`、`rowspan`→`rowSpan`、`tabindex`→`tabIndex`、
   `maxlength`→`maxLength`、`minlength`→`minLength`、`autocomplete`→`autoComplete`、`readonly`→`readOnly`、
@@ -223,6 +246,52 @@
   而版位約束沒有守門人）。這類元件的 scss 常帶**負向約束**（「刻意不在這層開 flex」），tsx 檔頭要把它
   **複述成禁令**，並用一條「根元素 className 恰等於切版那串」的白名單斷言釘住（黑名單列舉 utility 名抓不到新的）。
 
+### modal 外殼（全站每一顆 `<dialog>` 收成一顆 `<Modal>`）
+
+殼的正本是 `ui/modals/_modals.scss` 檔頭那段逐字 markup，**可變的只有它列出來的那幾處**——React 就把
+那幾處開成 props，其餘一個字不給呼叫端碰：
+
+- `id`（`<dialog id>`；**共用彈窗由使用頁持有一顆**，觸發者只交出「動哪一筆＋按下確認做什麼」）
+- `titleId`（預設 `${id}-title`；真 app 以固定 id 綁標題的沿用原 id，照「跟著 `<dialog id>` 走」抄會寫出懸空的 `aria-labelledby`）
+- `size`（`sm|md|lg`）、`children`（`.modals-body` 內容）、`footer`（可以沒有）
+- `title`：型別是 **`ReactNode` 不是 `string`**——切版有標題是「固定字 ＋ 資料槽」兩顆 span，收字串只能接成一個文字節點，骨架就少一顆 SPAN
+- 授權宣告（`<dialog>` 上的 `data-platform-role` 那一顆）：畫不出任何像素，抄漏了只有骨架比對看得到
+
+**切版某一顆窗的殼與那段契約不同時（多一顆 class、多一層 div），不得在 React 手寫第二份殼**：那是切版
+的漂移，回切版收掉；真要開口（如 `.modals-body` 的額外 utility class），把它加進殼契約與 `<Modal>` 的
+props，**一次為全部窗開**。第二份殼一旦出現，上面那幾條就只有一份會被維護。
+
+### 說明視窗族（`components/help-modal` ＋ `ui/info-btn`）
+
+切版把「每個區塊一顆說明窗」寫成**每個區塊各 include 一份 `<dialog>`**——那是 11ty 沒有 props、沒有
+portal 時的唯一辦法，**不是設計**。React 端一律收斂成**一顆受控 `<HelpModal>` ＋ 一張以 blockId 為鍵的
+說明資料表**，由 `openHelp(blockId)` 驅動。這是「同型多實例 → 一顆受控元件 ＋ 一張以列鍵為鍵的資料表」
+這條通則的第一個實例；這一類漂移 `fpdiff` 看不到（比的是未互動的預設快照，全部 dialog 都關著）。
+
+- **切版傳「呼叫端算好的結果」，React 傳的是算它的原料。** 切版沒有 hook、算不動，只能由頁面把成品
+  塞進元件（`helpModalStateItems` 是整句字串陣列、`helpModalLimitRows[].bound` 是 `"1 – 1000"` 這種字面）。
+  原樣搬成 props＝把算法留在 N 個呼叫端各一份。判準寫在切版檔頭：那一格自稱「**完全導出／不手寫**」
+  「全部來自 limits 端點」就是這一族。做法：**元件收原料、導出邏輯只做一次**。
+- **同一個物件陣列要逐欄分家**：`labelKey`／`effectKey` 是 i18n 契約，逐字帶過去；`bound` 是端點資料，
+  一個字都不搬（見上面「界線數字」那一條）；自由文字的 `effect` 若後端行為只有有限幾種，收斂成枚舉
+  ＋ key 查表，別讓每個呼叫端各造一句與後端兜不起來的話。
+- **`stateItems` 一個字都不進字典**：切版刻意不掛 `data-i18n`（每一句都是「模式適用性＋值相依」算出來
+  的結果，翻了是把「現在生效」翻成另一種語言的謊話）。這是 §③ 字典比對「可接受的差異」之外的第三種：
+  **不是 key 缺席，是這一格本來就沒有 key**。
+- **切版的 `<dialog id>` 是全名（`<blockId>HelpModal`），React 若改收字根，元件內要補回同一串**，且
+  `aria-labelledby` 與 `id` 兩處必須是同一份運算式。
+- **②③ 兩塊的 `{% if …length > 0 %}` 照抄成長度比較**（見 §② 的長度那一條）。生產頁上這兩塊恆空，
+  唯一演得出來的是元件庫頁的 `demoHelpModal`——§⓪ 判定元件庫頁要轉，這兩塊的長相就靠它。
+- **觸發鈕 `ui/info-btn` 是 tsx wrapper，不是 scss-only**：六件組缺一不可——
+  `button.info-btn[type][title][data-i18n-title][data-open-modal]` ＋ `img.icon[src][width][height][decoding][alt=""]`
+  ＋ `span.sr-only[data-i18n]`。`.sr-only` 那顆是可及名稱的唯一來源（GUIDELINE §4：單掛 `title` 不算），
+  與 `title` 用**同一顆 key**。讓 consumer 各自手抄六件組，等於把「掉一顆 `alt=""`／掉一顆 `.sr-only`」
+  複製幾十次，而那是屬性級失真、§⑥ 明文不進 fpdiff 零容忍比對。
+- **整區被隱藏時，ⓘ 與說明窗跟著區塊一起不渲染**（沒有一顆按鈕去解釋一個看不到的東西）——收斂成
+  單一實例後這是「資料表要不要有那一筆」，別退化成「鈕不見了、資料還在」。
+- **驗收**：切版檔頭的反查是 `grep -l 'HelpModal-title' dist/*.html`；React 端的等價物是「說明資料表的
+  鍵集合 ＝ 各 route 實際渲染得出 ⓘ 的區塊集合」的一條測試，不是人工對讀。
+
 ### layouts → route layout
 
 切版有四支 layout，逐支對照如下：
@@ -233,7 +302,7 @@
   - `.full-wrap`：全站最外層版位容器，**是 scss 的定位基準**（`ui/subscription-gate` 的遮罩、fpdiff 的 full-width 元件容器算式都靠它），不可省略或改名。
   - `#toastContainer`：`popover="manual"` ＋ `role="status" aria-live="polite" aria-atomic="true"`，**掛在 layout 層**。契約是「每次彈 toast 前重新 `showPopover()` 一次」（top layer 疊放＝進入順序），少了這句，跳窗裡彈的 toast 會被 `<dialog>` 蓋住。
   - 元件 js 的 `<script defer>` 清單：全部不帶（行為已改寫成 hooks），但那份清單是**元件盤點的檢查表**——轉換時逐支對過去，漏一支就是漏一個元件。
-- **`layouts/page-shell`** → 管理端 route layout（`app/(app)/layout.tsx`）。提供：`.skip-link`（`href="#main"`，鍵盤第一個 Tab 的落點）、`components/header`、`<main class="main" id="main" tabindex="-1">`、**每頁唯一的 `<h1 class="sr-only">`**（內容來自 front matter 的 `pageHeading`／`titleKey`）、`components/footer`、
+- **`layouts/page-shell`** → 管理端 route layout（`app/(app)/layout.tsx`）。提供：`.skip-link`（`href="#main"`，鍵盤第一個 Tab 的落點）、`components/header`、`<main class="main" id="main" tabindex="-1">` ＞ **`<div class="wrap">`**（全站內容容器，規則在全域 `src/scss/_base.scss`；少了它每一頁的內容都沒有寬度上限、直接貼齊視窗邊）、**每頁唯一的 `<h1 class="sr-only">`**（內容來自 front matter 的 `pageHeading`／`titleKey`）、`components/footer`、
   以及 **`ui/faq-launcher`（在 footer 之後——那是 DOM 順序上頁面最後一顆可聚焦元素，出現條件＝登入態）**。
   這份清單被當檢查表用（chatbot-shell 那一條逐字寫著「它提供的東西逐項都要有落點」），先前漏列 launcher
   的代價不是漏做，是**做對的人沒有依據**：下一輪逐項核對「五項都有 ⇒ 通過」，多出來的那顆沒有出處，
@@ -241,7 +310,9 @@
   - `pageHeading`／`titleKey` 是 front matter＝**props**：React 端由各 route 傳給 layout（或 `generateMetadata` ＋ 一顆 `<h1 class="sr-only">`），**不可以讓各頁自己再長一顆 h1**（§3-1：每頁恰好一個）。
   - `#main` 的 `tabindex="-1"` 是 skip-link 的落點，少了它跳過去不會真的移動焦點。
 - **`layouts/chatbot-shell`** → 前台 FAQ route layout。與 page-shell 平行但**沒有** Manager 導航。
-  它提供的東西逐項都要有落點：`.skip-link`（`href="#main"`，§4 強制）、`components/chatbot-header`、
+  它提供的東西逐項都要有落點：**`<div class="chatbot-wrap">`**（`_chatbot-shell.scss` 的 `100vh`／`100dvh`
+  直欄骨架——header 不縮、`.chatbot-main` 撐開、footer 自然高度，三者都掛在它下面；少了它不是
+  「少一層 div」，是滿版版型整個不成立）、`.skip-link`（`href="#main"`，§4 強制）、`components/chatbot-header`、
   `<main class="chatbot-main" id="main" tabindex="-1">`（`tabindex="-1"` 是 skip-link 的落點）、
   自帶 sr-only h1、`components/footer`。少帶 skip-link 與 footer 是照這一條的舊版直翻最容易掉的兩樣。使用頁 front matter 的 `bodyClass: chatbot-page` 讓 body 不整頁捲動（`_chatbot-shell.scss`）——React 端要在該 route 的 `<body>`／根容器加同一個 class，否則前台聊天會變成雙捲軸。
 - **`layouts/public-shell`** → 公開唯讀分享頁的 route layout（`app/shared/layout.tsx`）。它是**混血**：
@@ -295,14 +366,28 @@
   決定的 prop**，不要在元件內寫死一顆——寫死等於用元件把謊話複製到每個呼叫點。
 - **前綴／後綴 key 自帶分隔空白**（`"Total "`／`" pages"`／`"Source "`／`"Show "`／`" per page"`），不靠 JSX 補
   `{" "}`、也不靠 CSS 的副作用。`.sr-only` 前綴 ＋ 緊接的數字（`來源 N`）同理。
+- **前後綴 key 夾資料槽一律維持「一節點一 key／一節點一值」，不併成插值 key。** 三個理由缺一不可：
+  ①插值 key 在只查表的 i18n 上會把 `{{total}}` 原樣印出；②併掉就少一顆 `<span>`，而骨架序列是逐位元組
+  比對的欄位；③切版把界線拆成獨立節點之後，**節點數本身就是契約**。**槽數不限一顆**：`Prefix`＋值＋
+  `Mid`＋值＋`Suffix`（`health.overviewWindowHint*`、`settings.glossaryEntryCount*`）是既有形狀，別當成
+  「一對前後綴」的特例硬併。
+- **被拆成獨立節點的界線數字，React 端讀端點、不抄字面。** 判準是 markup 形狀：**一顆沒有 `data-i18n`
+  的裸 `<span>`／`<td>` 夾在兩顆 `data-i18n` 之間，而切版檔頭指名了它的正本**（`GET /<資源>/limits` 的
+  某個路徑，或某支 product／chatbot 常數），那就是界線資料節點、不是文案。做法：走同一支
+  `useLimits(group)` ＋ 路徑取值 ＋ 單位換算函式（`52428800 → 50MB` 集中在那一支，不在消費點各寫一份）；
+  讀不到就**整段不畫**——不畫舊數字、不畫破折號、不畫半套。
+  - **「先接成常數、之後再接端點」不算過渡**：那顆常數不會有人回來改，而它與正確答案在畫面上長得
+    一模一樣。切版的字面（`50MB`／`5000`／`20000`）與 `{% set %}` 的示範列陣列同級（§②「列資料陣列不轉」）。
+    出處在切版該行**上方的檔頭註解**，讀不到出處的就是缺口，回切版要，不要自己填。
+  - **有些槽裝的不是單一數字**（`1 – 90`、`1-64`、`7 / 12`）：那是兩顆常數組出來的字面，這一族維持
+    前後綴兩顆 key ＋ 資料節點。
 - **切版改 UI 用語時只改字典的值、不改 key 名**：key 是識別碼、已被 React／e2e 鏡射，而且常對應不隨 UI 改名的
   後端契約（`widget.*` ↔ `X-Widget-Token`／`?wt=`）。React 端的工作量＝只改 `messages.{en,zh}.json`，`t()` 一行不動；
   順手更新資料鏡射用的死 `label` 字面量（Breadcrumb items、`Header/menu.ts`），別留舊詞誤導下一個讀 code 的人。
 - **字典用程式比對，不對讀**：`messages.en.json` vs 切版 `src/i18n/en.json` 同 key 同值；`messages.zh.json` vs
   從切版 `dist/*.html` 抽出的繁中同 key 同值（抽取形狀含 `data-i18n`、`data-i18n-<attr>`、`data-<槽>-key`＋
   `data-<槽>`、`data-key-<態>`＋`data-text-<態>`、`data-page-title-key`＋`<title>`）。可接受的差異只有三種：
-  (a) 前後綴夾**資料**槽併成單一插值 key（槽裡是**元件**則不准併）；(b) 資料槽的繁中原文住 React 資料常數當
-  `t(key, fallback)` 的 fallback；(c) 純應用層 key。
+  (a) 資料槽的繁中原文住 React 資料常數當 `t(key, fallback)` 的 fallback；(b) 純應用層 key。
   **跑成 vitest**——LLM 對讀會漏（實測一次對讀漏掉 46 顆 key、45 條異值）。
   孤兒 key（無 `t()` 引用）同進 CI，模板組合的 key 以前綴白名單放行。
 - **枚舉少了成員是切版的缺口，一律回切版補，而且補的是 markup 不只是字典**。靜態稿一次只畫得出一個狀態，

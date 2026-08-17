@@ -269,6 +269,11 @@ scrollbar-thin scrollbar-thumb-scrollbar-thumb scrollbar-track-transparent
     class 在 scss 找不到樣式，但它們是 React 綁定契約（GUIDELINE §5），不是可以被 utility 取代的東西——
     utility 串**加在它旁邊**，不取代它。`page-size-select` 是極端例：除了 hook 什麼都沒有，零 CSS 路徑的
     機械轉換最容易把它整條蒸發。
+    - **反向那一半同樣是規則：切版自有行為的 `.js-*`（行為已改寫成 state 的）不帶。判準用跑的**——
+      某支切版元件 js 的**程式碼**（剝掉註解）選得到它 ⇒ 切版自有，不帶；查不到 ⇒ 業務，保留。
+      **前綴不是判準**：`.js-accordion`／`.js-expand-all`／`.js-filter-clear` 都是切版自有。切版 js 的
+      檔頭常提到**別的** hook 名，照字面 grep 會把業務 hook 誤判成切版自有而刪掉。重疊案例（元件 js
+      拿它算字數、值又要交給 React 送 API）**保留**並逐顆登記寫理由。詳見 REACT-CONVERSION §⑤。
 19. **一次性高亮需要 `@keyframes`**：`.is-cited`（`_sources-block.scss`）是全站唯一的 keyframe 動畫
     （§5-9 已同步這件事）。它可用 `animate-[…]` arbitrary animation ＋ `@theme` 裡的 keyframes
     定義承接，不需要 `tailwindcss-animate`。
