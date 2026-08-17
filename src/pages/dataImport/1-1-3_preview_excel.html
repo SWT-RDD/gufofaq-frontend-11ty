@@ -21,6 +21,10 @@ permalink: 1-1-3_preview_excel.html
     { label: "送出資料", done: false, i18nKey: "step.submit" }
 ] %}
 {% set stepPrevHref = "1-1-2_uploadFile_excel.html" %}
+{# **本頁打的端點**（§3-2：一頁多支端點時，檔頭第一段先列端點清單）：
+     POST /datasets/excel/preview   讀暫存的 Excel、回工作表與前幾列（本頁整張預覽表的來源）
+     全部在 product `app/routers/datasets.py`。「下一步」本身不打 API（見下），
+     真正把欄位對應送出去的是下一頁 1-1-4 的 `POST /datasets/{dataset_id}/excel/import`。 #}
 {# 這一頁的「下一步」是**純換頁**（凍結前端 `GufoFAQ_Frontend_New/js/previewExcel.js:202` 只寫 sessionStorage
      再 `window.location.href`，沒有任何 API）⇒ 維持 `<a href>`。成對參數要一起清掉，
      否則沿用上一次 include 留下的動作模式（§2：set 是頁面全域）。 #}

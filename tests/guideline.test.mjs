@@ -7758,3 +7758,26 @@ test("§3-2 檔頭指名凍結前端的行號範圍時，宣告集合的差集�
     assert.ok(checked >= 10 || skipped > 0, `只比對到 ${checked} 支帶行號範圍的 scss —— 這條測試在空轉`);
     assert.equal(hits.length, 0, `§3-2「偏離逐條列出」：\n${fail(hits)}`);
 });
+
+test("§3-2 有送 API 的鈕的頁面，註解裡至少要指名一條「動詞 ＋ 路徑」", () => {
+    // §3-2「**一頁多支端點時，檔頭第一段先列端點清單**（HTTP 動詞 ＋ 路徑 ＋ response_model 名）
+    // ——只交代其中一支的時候，漏掉的是『另一支存在』這件事，沒有任何判準看得出來」。
+    // 「第一段」與「逐欄表」機器判不了，但**最起碼那一條**判得了：一頁上有 data-toast／
+    // data-capability 的鈕（＝它會送 API），註解裡就要說得出打的是哪一支。
+    // 先前三頁只寫了 router 檔名（`app/routers/datasets.py`）而沒有任何一條路徑——讀的人得自己
+    // 去翻那支 router 的三十幾個裝飾器才知道是哪一個。
+    const VERB_PATH = /\b(GET|POST|PUT|PATCH|DELETE)\s+\/[\w{}/:-]+/g;
+    const hits = [];
+    let acting = 0;
+    for (const f of srcHtml.filter((p) => p.startsWith("src/pages/"))) {
+        const t = read(f);
+        if (!/data-toast=|data-capability=/.test(t)) continue;
+        acting++;
+        if (![...t.matchAll(VERB_PATH)].length) hits.push(`${f}  有送 API 的鈕，卻整頁沒有一條「動詞 ＋ 路徑」`);
+    }
+    assert.ok(acting >= 25, `只掃到 ${acting} 頁有動作鈕 —— 這條測試在空轉`);
+    assert.equal(hits.length, 0, `§3-2 端點清單：\n${fail(hits)}`);
+    probe("§3-2 端點清單", (s) => ([...s.matchAll(VERB_PATH)].length ? [] : ["缺端點"]),
+        ["{# 逆向自 product app/routers/datasets.py #}"],
+        ["{# GET /datasets 列表（list[DatasetOut]） #}", "{# DELETE /glossary/{table_id} 刪表 #}"]);
+});

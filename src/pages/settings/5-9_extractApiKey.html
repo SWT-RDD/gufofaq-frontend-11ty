@@ -164,30 +164,50 @@ permalink: 5-9_extractApiKey.html
             <span class="sr-only" data-i18n="help.extractKey.howToTitle.title">如何呼叫萃取 API 說明</span>
         </button>
     </div>
-    {# text 長度 2 – 5000 是 product 真的會擋的界線（`app/routers/extract.py`：
-         `if not (2 <= len(text) <= 5000): raise HTTPException(...)`，對齊舊系統），不是文案裡的
-         舉例數字——上限改了這裡也要跟著改，故獨立成資料節點（§3-2）。
-         排法（en dash 前後帶空白）對齊 `lib/useLimits.ts::formatBound` 既有的界線呈現慣例
-         （`1 – 10`），下一輪把這個節點接上契約時才不必連著改排法。
+    {# text 長度是 product 真的會擋的界線：`app/routers/extract.py` 的
+         `MIN_EXTRACT_TEXT_LEN`（2）／`MAX_EXTRACT_TEXT_LEN`（5000），判在
+         `if not (MIN_EXTRACT_TEXT_LEN <= len(text) <= MAX_EXTRACT_TEXT_LEN)`。
+         （先前這裡引的是 `if not (2 <= len(text) <= 5000)` ——那一行**在被引檔案裡逐字不存在**，
+         而且沒有給任何符號名：repo ＋ 檔 ＋ 疑似原文三者齊全，看起來完全合規，正是 §3-2
+         最難抓的那種假出處。）不是文案裡的舉例數字 ⇒ 獨立成資料節點（§3-2）。
+         **契約已經到了**：`app/routers/extract_limits_contract.py` 投影成 `GET /extract/limits`
+         的 `text.length`（`ops_limits.EXTRACT_LIMIT_GROUPS`），下一輪把這個節點接上它即可。
+         排法（en dash 前後帶空白）對齊 `apps/web` `lib/useLimits.ts::formatBound` 既有的界線呈現慣例（`1 – 10`）。
+       **`time_reference` 是同一個 group 的姊妹界線**（§3-2：group 的姊妹界線要一起檢查有沒有落點）：
+         `ExtractIn` 收三欄（`text`／`mode`／`time_reference`），第三欄與 `text` 一樣**原文渲進提示詞**，
+         故上游也夾了 `MAX_EXTRACT_TIME_REFERENCE_LEN`（200，`extract.time_reference_too_long` 那道 400），
+         並且**為了這件事補了投影**（`EXTRACT_LIMIT_GROUPS` 的 `text.time_reference_len`）——
+         先前這一頁對它一個字都沒有，持金鑰的整合方在那一欄打超過上界時，畫面上沒有任何地方
+         講得出上界是多少。下面那句說明與 curl 範例都補上它。
          `mode 1=國家、2=時間、3=兩者` 與句尾的 `429` 維持譯文：前者是**枚舉值**不是界線
          （`body.mode not in (1, 2, 3)` 判的是值域不是夾輸入），後者是固定的 HTTP 狀態碼，
          兩者都不是「改了後端常數這裡要跟著改」的那一類數字。 #}
-    <p class="text-gray"><span data-i18n="extractKey.howToDescPrefix">以 X-API-Key 標頭呼叫；mode 1=國家、2=時間、3=兩者；text 長度 </span><span>2 – 5000</span><span data-i18n="extractKey.howToDescSuffix"> 字；額度用罄回 429。</span></p>
+    <p class="text-gray"><span data-i18n="extractKey.howToDescPrefix">以 X-API-Key 標頭呼叫；mode 1=國家、2=時間、3=兩者；text 長度 </span><span>2 – 5000</span><span data-i18n="extractKey.howToDescMid"> 字；選填的 time_reference（發文時間基準）最多 </span><span>200</span><span data-i18n="extractKey.howToDescSuffix"> 字；額度用罄回 429。</span></p>
     <pre class="code-block"><code>curl -X POST "https://&lt;your-host&gt;/api/extract/country-or-time" \
   -H "X-API-Key: YOUR_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"text":"我們下週三在東京開會","mode":3}'</code></pre>
+  -d '{"text":"我們下週三在東京開會","mode":3,"time_reference":"2026-07-14"}'</code></pre>
     <div class="flex-row">
         <button type="button" class="button button-border button-sm copyBtn" data-toast="文字已複製!" data-i18n-data-toast="common.copied" data-i18n="action.copyExample">複製範例</button>
     </div>
 </div>
 
-{# 「如何呼叫萃取 API」的說明視窗：②③留空，理由同本頁其他說明視窗。 #}
+{# 「如何呼叫萃取 API」的說明視窗：②留空（沒有值相依的顯示條件）；**③ 有兩列**——`text` 與
+     `time_reference` 的長度界線，兩顆都投影在 `GET /extract/limits` 的
+     `text.length`／`text.time_reference_len`（product `app/ops_limits.py` 的 `EXTRACT_LIMIT_GROUPS`），
+     超界都是 400、訊息指得出是哪一欄。判準是「這顆界線有沒有被上游投影成一支拿得到的端點」
+     （見 components/help-modal 檔頭），不是「由 React 執行期算」——後者是 ③ 每一列的共同性質。
+     429 維持不進表：它是固定的 HTTP 狀態碼，不是界線。 #}
 {% set helpModalId = "howToTitleHelpModal" %}
 {% set helpModalTitleKey = "help.extractKey.howToTitle.title" %}
 {% set helpModalTitle = "如何呼叫萃取 API 說明" %}
 {% set helpModalWhatKey = "help.extractKey.howToTitle.what" %}
 {% set helpModalWhat = "這一區示範怎麼呼叫萃取 API：要帶哪一個標頭、要送哪些欄位，以及一段可以直接複製去跑的 curl 範例。這是文件性質的說明，本身不送出任何請求——它示範的是上面那把金鑰的呼叫方式，不是另一支需要單獨管理的憑證。" %}
 {% set helpModalStateItems = [] %}
-{% set helpModalLimitRows = [] %}
+{% set helpModalLimitRows = [
+  { labelKey: "extractKey.textLength", label: "text 長度", bound: "2 – 5000",
+    effectKey: "help.extractKey.howToTitle.textEffect", effect: "超界回 400 並指名是哪一欄，不會截斷後照送。" },
+  { labelKey: "extractKey.timeReferenceLength", label: "time_reference 長度", bound: "≤ 200",
+    effectKey: "help.extractKey.howToTitle.timeRefEffect", effect: "同上；這一欄與 text 一樣原文渲進提示詞，所以也要夾。" }
+] %}
 {% include "components/help-modal/help-modal.html" %}

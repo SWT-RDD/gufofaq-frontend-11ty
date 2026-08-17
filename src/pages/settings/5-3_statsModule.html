@@ -10,7 +10,20 @@ permalink: 5-3_statsModule.html
   { label: "設定", href: "", i18nKey: "nav.settings" },
   { label: "統計模組", i18nKey: "nav.statsModule" }
 ] %}
-{# 歸因槽值域：product `app/field_schema.py` 的 `ATTRIBUTION_SLOT_KEYS`＝`attribution_slot_keys(SLOTS)`。
+{# **本頁打的端點**（§3-2：一頁多支端點時，檔頭第一段先列端點清單）：
+     GET /stats                 `StatsOut`（product `app/routers/stats.py`）——巢狀七個 model：
+                                `Totals`／`RangeCount`／`DistItem`／`RankItem`／`WeeklyOut`／`WeekBucket`／`Series`。
+                                落點：`totals.*`→指標列、`period`／`weekly.window`→`ui/chart-desc` 三顆槽、
+                                `distribution`→chart1、`ranking`→chart2、`weeks`／`series`→chart3。
+     GET /settings/attribution  `AttributionOut`（`app/routers/settings_hub.py`）——`slots`／`available_slots`
+     PUT /settings/attribution  同上（`require_capability("settings","write")`）
+   **`ranking` 那張表由業務 js 產，切版只留容器**（`#chart2-ranking`）：忠實鏡射凍結前端
+     （`GufoFAQ_Frontend_New/js/statsModule.js` 的 `renderRanking()` 才吐 `<th>` 與列）。
+     `RankItem` 六欄裡的 `suggestion` **上游恆為 None**（該檔逐字：「對齊舊系統：目前恆為 None
+     （建議欄未實作）」）——標題那句「與優先續建議」因此是在承諾一個正本給不出來的欄，
+     等上游真的實作了再畫（§4「上游還沒有 X」要附符號名：`RankItem.suggestion`）。
+
+   歸因槽值域：product `app/field_schema.py` 的 `ATTRIBUTION_SLOT_KEYS`＝`attribution_slot_keys(SLOTS)`。
      它**排掉的是五類角色**、不是兩個槽名：`privileges`／`containsAny`／`filterBool`／`search`／
      `PRODUCT_ONLY_ROLE`（對應 `privilege`／`tags`／`flag`／`content`／`internal_note` 五個槽），
      母體是 `SLOTS` 全部 22 槽。（先前這裡寫「21 減 4」——母體與扣除項**兩個操作數都錯**，而結果

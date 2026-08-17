@@ -18,7 +18,14 @@ permalink: 3-3_qaSetManagement.html
      app/routers/datasets.py 以 kind 分流 CRUD／清單）。問答完全命中直答（qa_direct，chatbot
      qa_direct.py）：問題→title 槽、答案→content 槽（field_schema.py 的 SLOTS）。哪些 QA 集參與直答在
      「對話設定 ▸ QA 直答」子頁籤選。版型比照資料集列表＋術語表管理（新增區＋清單表＋條件開窗 modal）。示範 2 筆。
-     nav.qaSetMgmt 英譯 QA Set Management（站內 nav 家族一致）；product catalog 已對齊（round28 驗 saas messages.en.json）。 #}
+     nav.qaSetMgmt 英譯 QA Set Management（站內 nav 家族一致）；product catalog 已對齊（round28 驗 saas messages.en.json）。
+   **本頁打的端點**（§3-2：一頁多支端點時，檔頭第一段先列端點清單）：
+       GET    /datasets                 列表（`list[DatasetOut]`；QA 集靠 `kind='qa'` 分流）
+       POST   /datasets                 建 QA 集（`DatasetOut`，201）
+       GET    /datasets/{dataset_id}    單一 QA 集（`DatasetDetailOut`）
+       PATCH  /datasets/{dataset_id}    改名／改欄位（`DatasetOut`）
+       DELETE /datasets/{dataset_id}    刪 QA 集
+     全部在 product `app/routers/datasets.py`（同一支 router 以 `kind` 分流資料集與 QA 集）。 #}
 {# id＝`TenantIndex.id`（product `app/routers/datasets.py` 的 `dataset_id: int`）——QA 集是
      `kind='qa'` 的資料集，與資料集共用同一支 router（`list_datasets` 的 `kind` 參數註解逐字寫著
      「QA 集管理頁用 kind=qa」）。

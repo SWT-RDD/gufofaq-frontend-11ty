@@ -31,7 +31,21 @@ permalink: 5-1-1_accountInfo.html
      變成還沒到期。 #}
 {% include "ui/countdown-box/countdown-box.html" %}
 
-{# 帳號資訊：只留真帳號層欄位——帳號(唯讀)/公司單位(可編輯)/規格·資料儲存上限(唯讀)。per-profile 對話設定
+{# **本頁打的端點**（§3-2：一頁多支端點時，檔頭第一段先列端點清單）：
+     GET  /account            `AccountOut` —— 十欄：`email`／`company`／`language`／`qa_limit`／
+                              `usage_period`／`storage_limit_mb`／`can_edit`／`subscription_status`／
+                              `trial_end`／`days_left`
+     GET  /me/profile         `ProfileOut` —— `email`／`display_name`／`contact`
+     PUT  /me/profile         同上（唯一守衛是 `require_active_subscription`，見儲存鈕）
+     POST /me/change-password 回 `{"ok", "token"}`
+     全部在 product `app/routers/account.py`／`app/routers/users.py`。
+   **`AccountOut` 十欄裡兩欄刻意不吃**：
+     · `can_edit`（＝當前使用者有沒有 settings 能力）——切版**不**拿它去 disable 公司欄：
+       §4「`data-capability` 不足時不做 disabled、把 403 列進 `data-toast`」，吃了它會把契約演掉。
+     · `subscription_status`（`pending_disclaimer`／`active`／`expired`）——由 `ui/countdown-box`
+       的兩態承載（倒數中／已到期），本頁不另畫一顆狀態徽章。
+
+   帳號資訊：只留真帳號層欄位——帳號(唯讀)/公司單位(可編輯)/規格·資料儲存上限(唯讀)。per-profile 對話設定
      （系統提示詞/檢索模式/資料取用規則/選用模型）已移至對話設定頁 5-2_conversationSettings，此頁不再顯示。 #}
 {# 三個唯讀欄的示範值（§6：同一支端點回的欄位不可以一半有值一半留白——上面那顆使用期倒數印著
      具體到期日與剩餘天數，而它與這三格同出於 product `app/routers/account.py` 的 `AccountOut`：

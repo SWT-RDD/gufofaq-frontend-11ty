@@ -14,7 +14,13 @@ permalink: 5-8_widgetTokens.html
     {% include "ui/breadcrumb/breadcrumb.html" %}
 </div>
 
-{# 前台嵌入用金鑰管理（僅租戶管理者）。SaaS 新需求，逆向自 product widget_tokens.py：
+{# **本頁打的端點**（§3-2：一頁多支端點時，檔頭第一段先列端點清單）：
+     POST   /widget-tokens             `WidgetTokenOut`（201）——`allowed_origins` 為空直接 400
+     GET    /widget-tokens             `list[WidgetTokenOut]`
+     DELETE /widget-tokens/{token_id}  回 `{"ok": True}`（軟刪＝撤銷）
+     全部在 product `app/routers/widget_tokens.py`，整支 router `require_admin`。
+
+   前台嵌入用金鑰管理（僅租戶管理者）。SaaS 新需求，逆向自 product widget_tokens.py：
      UI 用語一律「嵌入金鑰」（沿用 5-9 的「金鑰」詞彙）；後端／API 的名字仍是 widget token
      （標頭 X-Widget-Token、query ?wt=、router widget_tokens.py），那是契約、不隨 UI 改名，
      故 i18n key 仍為 widget.*／toast.*WidgetToken（key 名是識別碼、非使用者可見，且已被 saas 鏡射）。
