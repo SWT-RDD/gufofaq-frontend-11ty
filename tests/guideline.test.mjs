@@ -2250,13 +2250,21 @@ test("§5 markup 零 inline 事件處理器 / javascript: href（行為住在元
         // HTML 屬性大小寫不敏感：onClick= 是合法的 inline handler，沒有 i flag 就抓不到
         if (/\son[a-z]+\s*=/i.test(" " + attrs)) return `inline handler: <${tag} ${raw.slice(0, 60)}`;
         if (/=\s*["']javascript:/i.test(attrs)) return `javascript: href: <${tag} ${raw.slice(0, 60)}`;
+        // `href="#"`（**空 fragment**）與 `javascript:void(0)` 是同一顆死連結：點下去只會捲回頁首。
+        // 錨點（`href="#main"`／`href="#xxxSection"`）不在此限——那是真的會跳到同頁某個 id。
+        // 先前只擋 `javascript:`，而 §4「不輸出空屬性」又把 `href=""` 擋掉 ⇒ `#` 成了唯一「合規」
+        // 的空目的地，於是它在 breadcrumb／header 下拉／`.link-file` 一族活了好幾輪。
+        if (/\bhref\s*=\s*["']#["']/i.test(attrs)) return `死連結 href="#": <${tag} ${raw.slice(0, 60)}`;
+        // 同一顆死連結的第二種形狀：`href="{{ xxx or '#' }}"`。它在 src 上看不到 `href="#"` 那四個字，
+        // 只有 dist 才長出來——`components/step-btn-wrap` 與 `components/success-box` 就是這樣各藏兩顆。
+        if (/\bhref\s*=\s*"[^"]*\{\{[^}]*['"]#['"]/.test(attrs)) return `死連結後備 href="{{ … or '#' }}": <${tag} ${raw.slice(0, 60)}`;
         return null;
     };
     const hits = [];
     for (const f of srcHtml) hits.push(...scanTags(stripNjk(read(f)), rule, f));
     probe("§5 inline handler", (s) => scanTags(s, rule),
-        ['<button onclick="save()">存</button>', '<button onClick="save()">存</button>', '<a href="javascript:void(0)">x</a>'],
-        ['<button type="button" data-open-modal="x">存</button>', '<a href="#main" class="skip-link">跳過</a>']);
+        ['<button onclick="save()">存</button>', '<button onClick="save()">存</button>', '<a href="javascript:void(0)">x</a>', '<a href="#" class="link-file">x.xlsx</a>', `<a href="{{ stepNextHref or '#' }}">下一步</a>`],
+        ['<button type="button" data-open-modal="x">存</button>', '<a href="#main" class="skip-link">跳過</a>', '<a href="3-1-1_datasetList.html">資料集列表</a>']);
     assert.equal(hits.length, 0, `改掛 data-open-modal / data-toast，或綁在元件 js 裡：\n${fail(hits)}`);
 });
 

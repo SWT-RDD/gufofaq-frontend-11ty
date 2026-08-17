@@ -1,4 +1,8 @@
-// 逐位元照抄自真 app scss/component.scss 746-753（link-file 區塊），只搬檔案位置，宣告一字不改
+// 結構與數值取自凍結前端 `GufoFAQ_Frontend_New/scss/component.scss` 746-753（`.link-file` 區塊）。
+// **偏離逐條列出**：①色值換語意 token（`--brand-text`）；②新增 `button.link-file` 的預設外觀重置——
+//   `.link-file` 是兩族，下載族在切版是 `<button>` 而不是 `<a>`（理由見 `ui/link-file/link-file.html`
+//   檔頭與 `components/sources-block`），瀏覽器給 button 的底色／外框／字體要清掉，才與同表的 `<a>`
+//   逐字一樣；`text-align: left` 是 button 專屬的（`<a>` 本來就靠左，button 會置中）。
 .link-file {
     color: var(--brand-text);
     word-break: break-all;
@@ -6,4 +10,13 @@
     &:hover {
         text-decoration: underline;
     }
+}
+
+button.link-file {
+    padding: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
 }

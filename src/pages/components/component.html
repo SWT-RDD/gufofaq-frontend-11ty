@@ -639,6 +639,10 @@ bodyClass: guideline-page
             </div>
             <br>
             <div>
+                {# 兩顆去向必填（元件檔頭）：元件庫給的是 1-1-6 那一頁實際用的兩條，
+                     不留 `href="#"` 死連結（§5）。 #}
+                {% set successRetryHref = "1-1-1_dataImport.html" %}
+                {% set successViewHref = "3-1-1_datasetList.html" %}
                 {% include "components/success-box/success-box.html" %}
                 <div class="subtitle">描述：上傳成功通知，使用「.success-box」這個class</div>
             </div>
@@ -689,6 +693,9 @@ bodyClass: guideline-page
             {% set stepNodesLg = false %}
             {# 元件庫演的是純換頁那一態（動作模式的實例在 1-1-4／1-2-1）。 #}
             {% set stepNextAction = false %}
+            {# 連結模式下兩條去向必填（元件檔頭）：給 1-1-3 那一頁實際用的兩條，不留 `href="#"` 死連結（§5）。 #}
+            {% set stepPrevHref = "1-1-2_uploadFile_excel.html" %}
+            {% set stepNextHref = "1-1-4_columnSelect_excel.html" %}
             {% include "components/step-btn-wrap/step-btn-wrap.html" %}
             <div class="caption description mt-16">
                 <ul>

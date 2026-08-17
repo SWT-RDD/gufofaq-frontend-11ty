@@ -74,7 +74,10 @@
                 <td id="demoTableRowId-{{ loop.index }}">{{ row.id }}</td>
                 <td>{{ row.chatId }}</td>
                 <td>
-                    <a href="#" class="link-file">{{ row.question }}</a>
+                    {# 提問連到那一則的詳情頁（真 app：`GufoFAQ_Frontend_New/js/qaHistory.js` 的
+                         `4-2_qaHistory_detail.html?logSn=${…}`）。展示片段給**簡化版靜態跳轉**、
+                         不留 `href="#"` 死連結（§5，同 3-1-3 的處置）。 #}
+                    <a href="4-2_qaHistory_detail.html" class="link-file">{{ row.question }}</a>
                 </td>
                 <td>
                     <div class="collapse-text"><div class="collapse-body">{{ row.answer }}</div><button type="button" id="demoTableAnswerToggle-{{ loop.index }}" aria-labelledby="demoTableRowId-{{ loop.index }} demoTableAnswerToggle-{{ loop.index }}" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>

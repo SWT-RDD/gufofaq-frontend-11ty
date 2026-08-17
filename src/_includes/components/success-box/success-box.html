@@ -34,7 +34,10 @@
         {% endif %}
     </div>
     <div class="btn-row">
-        <a href="{{ successRetryHref or '#' }}" class="button button-border" data-i18n="{{ successRetryKey or 'comp.uploadAgain' }}">{{ successRetryLabel or '再次上傳' }}</a>
-        <a href="{{ successViewHref or '#' }}" class="button button-primary" data-i18n="{{ successViewKey or 'comp.viewData' }}">{{ successViewLabel or '查看資料' }}</a>
+        {# 兩顆去向**必填**：先前是 `{{ … or '#' }}`，忘了傳就靜默渲染成一顆按了只會捲回頁首的死連結（§5）。
+             `or '#'` 這種 nunjucks 後備比裸寫 `href="#"` 更難抓——src 上看不到那四個字。
+             沒有去向就整顆不畫（同 `ui/breadcrumb` 對沒有 href 的分類層的處置）。 #}
+        {% if successRetryHref %}<a href="{{ successRetryHref }}" class="button button-border" data-i18n="{{ successRetryKey or 'comp.uploadAgain' }}">{{ successRetryLabel or '再次上傳' }}</a>{% endif %}
+        {% if successViewHref %}<a href="{{ successViewHref }}" class="button button-primary" data-i18n="{{ successViewKey or 'comp.viewData' }}">{{ successViewLabel or '查看資料' }}</a>{% endif %}
     </div>
 </div>

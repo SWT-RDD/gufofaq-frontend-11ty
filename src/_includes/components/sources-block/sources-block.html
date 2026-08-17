@@ -118,7 +118,22 @@
                     </td>
                     <td>{{ source.sourceNo or '—' }}</td>
                     <td>
-                        <a href="#" class="link-file" id="sourceRowFile-{{ loop.index }}">{{ source.file }}</a>
+                        {# **這一顆是動作、不是連結**（§4「判準是它打不打 API」）：真 app 點檔名是下載原稿
+                             （`GufoFAQ_Frontend_New/js/singleTest.js` 的
+                             `$(document).on('click', '.sources-block .link-file', …)` → `downloadOriginalFile(did, fileName)`，
+                             `js/abTest.js`／`js/qaRecord.js`／`js/qaHistoryDetail.js` 三支同型）。切版先前寫成
+                             `<a href="#">` 且零 `data-*` ⇒ 一顆按了只會捲回頁首的死連結（§5）。
+                           **列鍵用位置、不用 `data-did`**：活正本是 gufofaq-saas product
+                             `app/routers/history.py` 的 `download_source_file`
+                             （`GET /history/{log_id}/source/{source_index}/download`），**以索引位置定址、不吃路徑**；
+                             凍結前端的 `data-did` 不能拿來論證後端契約（§3-2）。log id 是頁層脈絡
+                             （這一則問答自己的 id），逐列只需要 index。
+                           **分支集合對回上游的 raise**：`require_capability("history")` 的 403、索引越界／
+                             無檔名候選／租戶不擁有該索引／路徑不落在索引資料夾內全部是 404（逐列匯入的
+                             來源**沒有 per-row 原稿**，那一族一律 404）——四種 404 對使用者是同一句
+                             「此來源無法下載」。子句與 key 逐字沿用 3-1-3 那顆下載鈕（§5「同一個動作在
+                             別頁已有的分支集合就是這一頁的下限」、§4-2 同繁中同英譯）。 #}
+                        <button data-capability="history" type="button" class="link-file" id="sourceRowFile-{{ loop.index }}" data-source-index="{{ loop.index0 }}" data-toast="下載已開始|權限不足，無法下載|此來源無法下載|下載失敗" data-i18n-data-toast="toast.downloadFile" data-toast-type="success|warning|warning|error">{{ source.file }}</button>
                     </td>
                     <td>{{ source.dataset }}</td>
                 </tr>
