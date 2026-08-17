@@ -26,7 +26,7 @@ bodyClass: guideline-page
         <ul>
             <li><a class="aside-link" href="#introSection">簡介</a></li>
             <li><a class="aside-link" href="#layoutSection">版型</a></li>
-            <li><a class="aside-link" href="#headerSection">Header導航</a></li>
+            <li><a class="aside-link" href="#headerSection">導航列 &amp; Nav</a></li>
             <li><a class="aside-link" href="#breadcrumbSection">麵包屑</a></li>
             <li><a class="aside-link" href="#colSection">欄位Columns</a></li>
             <li><a class="aside-link" href="#mainSection">主要內容區</a></li>
@@ -78,7 +78,7 @@ bodyClass: guideline-page
             <div class="caption">
                 <ul>
                     <li>圖片在images資料夾內</li>
-                    <li>另外scss資料夾中的_guideline.scss檔僅為元件庫本頁使用，正式頁面內不用引入</li>
+                    <li>另外scss資料夾中的_guideline.scss只服務元件庫本頁，但**它一樣被打包進全站唯一的 main.css**——所以它的規則全部限定在 body.guideline-page 底下（本專案不做分頁樣式表；裸選擇器不限定就會洩漏覆蓋每一頁）</li>
                 </ul>
             </div>
         </section>
@@ -716,7 +716,7 @@ bodyClass: guideline-page
             <div class="caption">
                 <ul>
                     <li>1. 在 host 按鈕加「.has-tooltip」，內放「span.tooltip」放提示文字</li>
-                    <li>2. 純 CSS hover 顯示，無 js</li>
+                    <li>2. 純 CSS，無 js；顯示條件是 :hover **與 :focus-visible**（tooltip 常是圖示鈕唯一的可見標籤，只掛 hover 的話鍵盤使用者永遠看不到）</li>
                 </ul>
             </div>
             {% include "ui/tooltip/tooltip.html" %}
@@ -795,7 +795,7 @@ bodyClass: guideline-page
                明細列渲染成「失敗原因」＋ `td.step-node-error`。3-4 試跑沙盒那顆 failed 節點即此支。 #}
             {% set stepFlowNodes = [
                 { label: "輸入合規檢查", state: "completed", time: "9ms" },
-                { label: "QA 直答比對", state: "completed", time: "240ms", decision: "no_exact_and_judge_rejected", entry: "agent_tool", poolSize: "1", hits: "客服問答集 / 這個型號保固多久", score: "4.1", floor: "3" },
+                { label: "QA 直答比對", state: "completed", time: "240ms", decision: "no_exact_and_judge_rejected", entry: "agent_tool", poolSize: "1", hits: "產品問答集 / 這個型號保固多久", score: "4.1", floor: "3" },
                 { label: "初始化對話", state: "completed", time: "11ms" },
                 { label: "Agent 推理", state: "completed", time: "320ms", thinking: "先判斷是否需要檢索工具，再決定生成策略。" },
                 { label: "檢索知識庫", state: "completed", time: "1.4s", tools: "search_knowledge_base", params: "[1/1] query: string", result: "命中 3 筆片段（相似度 0.74–0.88），注入後續生成脈絡。" },
@@ -823,7 +823,8 @@ bodyClass: guideline-page
             {% include "components/step-flow/step-flow.html" %}
 
             {# ── QA 直答判定結果：六種結論的狀態目錄 ─────────────────────────────────
-                 **這一份是「狀態目錄」，不是一次真實執行**（同本頁把 verdict-tag 四個變體並排的用意）：
+                 **這一份是「狀態目錄」，不是一次真實執行**（同 §5：值域的每一個成員都要有地方看得到，
+                 而靜態稿一次只畫得出一態，所以目錄型示範是那些成員唯一的家）：
                  真實一輪最多兩筆 qa_direct——建圖前閘門判否、agent 又判一次——那個形狀在第 3、5
                  兩筆上就演得到。六種並列是因為審的人要一眼比較得出差異，分散在六個真實頁反而看不出來。
                  為什麼要有：上游每一輪都送判定、未命中那半也送，而未命中時 `decidedBy`（gate）與
@@ -845,6 +846,15 @@ bodyClass: guideline-page
                  判定層只在命中時有值，而命中會結構性短路（不經 respond／grounding）⇒ 任何一頁的
                  「真實執行流程」都不可能同時畫得出判定層與後面的生成節點，只有狀態目錄演得到。
                  §2：同一頁第二次用到同元件，**全部參數都要重設**（set 是頁面全域）。 #}
+            {# **除了 `not_attempted`，每一種判定都帶得出「命中的是哪一筆」**——GufoRAG chatbot
+                 `app/services/qa_direct.py` 的 `decide()` 對 `no_exact_and_judge_rejected`／
+                 `below_score_floor`／`reconstruct_failed` 一律 `_rec(..., hit=top)`（`reconstruct_failed`
+                 在 `_exact_layer` 那一支是 `hit=hits[_rank-1]`），`hits`／`score` 由它衍生；只有
+                 `not_attempted` 沒有 `hit`。**「有分數、沒有那一筆是誰」是那支 API 產不出來的組合**，
+                 而那一格正是使用者判斷「有沒有變好」要看的東西（§6：每一欄都要對得回正本的一個欄位）。
+                 最後一筆 `some_future_decision` 是**刻意的生字**（不在 `DECISION_*` 值域）：值域外的
+                 字面走 `{% else %}` 原樣印出來，證明畫面不會靜默吞掉一個沒見過的判定。
+                 註解放在 `{% set %}` **之前**——nunjucks 註解寫進運算式裡會 build 失敗（§2）。 #}
             {% set stepFlowNodes = [
                 { label: "QA 直答比對", state: "completed", time: "18ms", decision: "hit", entry: "pre_graph",
                   poolSize: "16", hits: "客服問答集 / 新住民結婚登記要準備什麼文件？",
@@ -852,18 +862,19 @@ bodyClass: guideline-page
                 { label: "QA 直答比對", state: "completed", time: "12ms", decision: "hit", entry: "agent_tool",
                   matchedRank: "1", poolSize: "1", hits: "產品問答集 / 這個型號保固多久", decidedBy: "exact" },
                 { label: "QA 直答比對", state: "completed", time: "240ms", decision: "no_exact_and_judge_rejected",
-                  entry: "agent_tool", poolSize: "1" },
+                  entry: "agent_tool", poolSize: "1", hits: "客服問答集 / 居留證遺失要怎麼補發", score: "3.6", floor: "4" },
                 { label: "QA 直答比對", state: "completed", time: "26ms", decision: "below_score_floor",
-                  entry: "pre_graph", poolSize: "16", score: "2.4", floor: "3" },
+                  entry: "pre_graph", poolSize: "16", hits: "客服問答集 / 外籍配偶申請定居要準備哪些文件", score: "2.4", floor: "3" },
                 { label: "QA 直答比對", state: "completed", time: "9ms", decision: "no_exact_and_judge_rejected",
-                  entry: "agent_tool", poolSize: "1", reusedFrom: "pre_graph" },
+                  entry: "agent_tool", poolSize: "1", reusedFrom: "pre_graph", hits: "客服問答集 / 依親居留可以工作嗎", score: "3.1", floor: "4" },
                 { label: "QA 直答比對", state: "completed", time: "4ms", decision: "not_attempted", entry: "agent_tool" },
                 { label: "QA 直答比對", state: "completed", time: "31ms", decision: "reconstruct_failed",
-                  entry: "pre_graph", matchedRank: "1", poolSize: "16" },
+                  entry: "pre_graph", matchedRank: "1", poolSize: "16", hits: "客服問答集 / 永久居留證每年要入境幾次", score: "4.5", floor: "3" },
                 { label: "QA 直答比對", state: "completed", time: "220ms", decision: "hit", entry: "pre_graph",
                   poolSize: "16", hits: "客服問答集 / 居留證遺失要怎麼補發", score: "4.2",
                   decidedBy: "llm_judge", floor: "3" },
-                { label: "QA 直答比對", state: "completed", time: "15ms", decision: "some_future_decision", entry: "pre_graph", poolSize: "16" }
+                { label: "QA 直答比對", state: "completed", time: "15ms", decision: "some_future_decision",
+                  entry: "pre_graph", poolSize: "16", hits: "客服問答集 / 喪失國籍證明要去哪裡申請", score: "3.9", floor: "3" }
             ] %}
             {# 摘要在這一份是**目錄的表頭**、不是某一輪的觀測：**九筆**判定不是同一輪發生的，所以
                  「檢索」只能是 0——這份示範一個檢索節點都沒有（原本寫 16，那是候選池大小 `poolSize`，
@@ -890,6 +901,7 @@ bodyClass: guideline-page
                     <li>下面這幾句在真實頁是 React 依 state 條件渲染的分支，它們的「另一態」是**什麼都不渲染**——所以在那些頁上永遠看不到（GUIDELINE §5：沒有頁面演得出來的分支等於沒驗收過）</li>
                     <li>真實頁保留 <strong>.hidden</strong> 的那份 markup 當**位置與樣式的規格**（React 要知道它長在哪一格、用哪個字色），這一區則是它們**長相**的唯一可見處</li>
                     <li>示範資料刻意不觸發它們：把預設態畫成錯誤態，等於讓每個打開頁面的人都以為出事了</li>
+                    <li>本節的最後三組是**枚舉的成員**（不是條件式的另一支）：`absent_in_baseline`（2-2-5 的示範推導不到）、5-1-1 的<strong>額度週期單位三態</strong>（那一格是 input 的 value 屬性，拆不出節點掛 key，所以只畫得出示範租戶那一個）、manage-tenant-modal 的<strong>平台系統管理員徽章</strong>（那份名冊裡沒有這一級的人）——三者的繁中在全站只有這裡渲染得出來</li>
                     <li>末尾那一顆是另一種缺席：<strong>枚舉的成員</strong>，不是條件式的另一支。使用頁的示範資料推導下來只演得到同一個枚舉的其中幾個成員，剩下的成員沒有被否決、只是那一頁畫不到——它們的家在這裡，不是「刪掉 key、讓 React 自己拼字串」（GUIDELINE §4-2：繁中是原文，留在字串出現的地方）</li>
                 </ul>
             </div>
@@ -918,9 +930,11 @@ bodyClass: guideline-page
                 <div class="flex-row align-items-center gap-8">
                     <span class="text-gray" data-i18n="settings.spec">規格</span>
                     <span>3000</span><span class="text-gray" data-i18n="settings.quotaUnitPerDay">次/日</span>
-                    <span class="text-gray">／</span>
+                    {# 分隔符自己也要有 key（§4-2）：裸的全形「／」在英文模式會夾在
+                         `3000 times/day` 與 `3000 times/month` 中間露出一個繁中字身。 #}
+                    <span class="text-gray" data-i18n="common.listSep">、</span>
                     <span>3000</span><span class="text-gray" data-i18n="settings.quotaUnitPerMonth">次/月</span>
-                    <span class="text-gray">／</span>
+                    <span class="text-gray" data-i18n="common.listSep">、</span>
                     <span>3000</span><span class="text-gray" data-i18n="settings.quotaUnitTotal">次（累計）</span>
                 </div>
                 <p class="text-gray m-0" data-i18n="settings.tagFilterCoverageWarnOk">目前每一份資料都帶得到這一欄，可以開啟。沒填的格子在匯入時就已經寫成「未標註」，過濾條件會連它們一起比對，所以標了幾成不影響會不會漏文件。之後要注意的只有一件事：資料夾匯入的檔永遠沒有欄位槽，那樣匯入一批新資料就會又缺這一欄，要改成逐列匯入才接得回來。</p>
@@ -1028,7 +1042,9 @@ bodyClass: guideline-page
             {% include "ui/widget-shell/widget-shell.html" %}
         </section>
 
-        <footer class="footer">
+        {# 不掛 `.footer`（那是 `components/footer` 的私有 class，§4 不外借）：showcase 的頁尾樣式
+             住在 `_guideline.scss` 的 `footer` 鏡像規則裡，含它自己的襯底。 #}
+        <footer>
             <p>GufoFAQ ｜ 元件庫</p>
         </footer>
     </div>

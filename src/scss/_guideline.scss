@@ -314,12 +314,20 @@ section {
     border-color: transparent transparent var(--gl-gotop-ink) transparent;
 }
 
+// ⚠️ **這一條的白字先前是靠借來的底色才看得見**：markup 曾掛 `class="footer"`，而 `.footer` 的
+//   唯一主人是 `components/footer/_footer.scss`（`components/` 桶的元件根 class，§4 明文不外借），
+//   它順手給的 `background-color: var(--brand)` 才是白字的襯底。拿掉那顆 class（正確的解耦）之後
+//   白字會落在 `--gl-bg` 上——實算 **1.03:1**，整行字消失，而視覺指紋在借著的時候看不出來
+//   （§4 第三種死法「祖先錯位」的變體：scss 找得到、markup 找得到，兩者其實搭不上）。
+//   故 showcase 自己給填充：`--gl-dark` 是 `_guideline-var` 既有的「襯 --on-accent 白字」那一顆
+//   （淺 8.19:1／深 11.37:1，實算見該檔）。
 footer {
     display: flex;
     align-items: center;
     justify-content: center;
     border-top: 1px solid var(--gl-footer-border);
-    padding-top: 1rem;
+    padding: 1rem 0;
+    background-color: var(--gl-dark);
     color: var(--on-accent);
 }
 
