@@ -22,7 +22,12 @@ permalink: 5-5-1_userManagement.html
      檔頭自述「群組能力勾選的完整集合，單一真相來源」）：那是封閉枚舉的顯示標籤＝UI chrome，
      要翻（§4-2）。原本這一頁把有效能力存成一整串繁中、零 data-i18n，英文模式整欄不會變——
      而姊妹頁 5-5-2 對**同一批標籤**是掛 data-i18n 的，兩頁對同一組枚舉的判定相反。
-     群組的 `capabilities` 也與 5-5-2 逐字相同（§6 跨頁同一份目錄要對得起來）。 #}
+     群組的 `capabilities` 也與 5-5-2 逐字相同（§6 跨頁同一份目錄要對得起來）。
+   **`history` 的顯示標籤刻意寫成「歷史紀錄檢視」，與上游 `CAPABILITY_TOKENS["history"]`（「歷史紀錄」）
+     差兩個字**（§5：product 先行的 NET-NEW，每一處刻意差異在檔頭記載）：七顆標籤要同一種構詞
+     ——`data:read`「資料集檢視」、`settings:read`「設定檢視」、`audit`「稽核日誌檢視」都是
+     「＜資源＞＋檢視」，只有 `history` 上游寫成裸資源名。其餘六顆與上游逐字相同；saas 的
+     `messages.zh.json` 也已經是「歷史紀錄檢視」，三處（本頁／5-5-2／platform-tenants-panel）一致。 #}
 {% set capabilities = [
   { key: "data:read", label: "資料集檢視", i18nKey: "settings.capDataRead" },
   { key: "data:write", label: "資料匯入／資料集管理", i18nKey: "settings.capData" },
