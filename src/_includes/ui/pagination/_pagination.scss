@@ -49,7 +49,8 @@
         flex-wrap: wrap;
 
         li {
-            a {
+            a,
+            button {
                 display: block;
                 display: flex;
                 align-items: center;
@@ -60,6 +61,11 @@
                 text-align: center;
                 color: var(--brand-text);
                 background-color: transparent;
+                // `<button>` 專屬的預設外觀重置：頁碼列的每一顆都是控制項不是連結
+                // （§4 判準：它點了在同一頁重繪、不導覽），先前寫成 `<a href="#">` ＝ §5 的死連結。
+                border: 0;
+                font: inherit;
+                cursor: pointer;
                 padding: 0.625rem;
                 border-radius: 4px;
                 transition: background-color 0.3s ease;

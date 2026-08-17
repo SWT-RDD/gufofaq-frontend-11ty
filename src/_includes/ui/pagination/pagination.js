@@ -1,6 +1,6 @@
 // pagination 頁碼列：改寫自凍結前端 GufoFAQ_Frontend_New/js/main.js:499 renderPagination()（原用 jQuery + $(".pagination").data("total")），
 // 改標準 DOM。data-total（總筆數）÷ data-per-page（預設 10，對照真 app perPage）算 totalPages，
-// data-current（目前頁，預設 1）驅動要畫哪一頁；<ul> 整份由本檔動態產生，點 a[data-page] 換頁即重新 render。
+// data-current（目前頁，預設 1）驅動要畫哪一頁；<ul> 整份由本檔動態產生，點 button[data-page] 換頁即重新 render。
 // 滑動視窗演算法對照真 app：total<=visible+2 時全部顯示，否則以 current 為中心的滑動視窗；
 // 中間可視頁碼數（visible）不寫死——讀 CSS 的 --pagination-visible（_pagination.scss：預設 5、
 // ≤768px 改 3），斷點只有那一份真相，同 mobile-nav.js 的 hamburgerHidden() 哲學（問 CSS，不猜斷點）。
@@ -37,26 +37,26 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function arrowLi(cls, enabled, page, enabledLabel, disabledLabel, blueImg, grayImg) {
         if (enabled) {
-            return '<li class="' + cls + '"><a href="#" data-page="' + page + '" aria-label="' + enabledLabel + '">' +
+            return '<li class="' + cls + '"><button type="button" data-page="' + page + '" aria-label="' + enabledLabel + '">' +
                 '<img src="' + blueImg + '" width="48" height="48" decoding="async" alt="">' +
-                '</a></li>';
+                '</button></li>';
         }
-        return '<li class="' + cls + ' disabled"><a href="#" aria-label="' + disabledLabel + '" aria-disabled="true" tabindex="-1">' +
+        return '<li class="' + cls + ' disabled"><button type="button" aria-label="' + disabledLabel + '" aria-disabled="true" tabindex="-1">' +
             '<img src="' + grayImg + '" width="48" height="48" decoding="async" alt="">' +
-            '</a></li>';
+            '</button></li>';
     }
 
     function pageLi(n, current) {
         if (n === current) {
-            return '<li class="active"><a href="#" aria-label="' + pageLabel(n) + '" aria-current="page">' + n + '</a></li>';
+            return '<li class="active"><button type="button" aria-label="' + pageLabel(n) + '" aria-current="page">' + n + '</button></li>';
         }
-        return '<li><a href="#" data-page="' + n + '" aria-label="' + pageLabel(n) + '">' + n + '</a></li>';
+        return '<li><button type="button" data-page="' + n + '" aria-label="' + pageLabel(n) + '">' + n + '</button></li>';
     }
 
     // 省略號可點，固定跳 ±3 頁（clamp 在 1~totalPages）。外觀不變（仍顯示 "..."，不 hover 變箭頭符號），
     // data-page 吃到跟頁碼一樣的委派與 hover 回饋，不必另寫點擊處理。
     function ellipsisLi(target, label) {
-        return '<li class="ellipsis"><a href="#" data-page="' + target + '" aria-label="' + label + '">...</a></li>';
+        return '<li class="ellipsis"><button type="button" data-page="' + target + '" aria-label="' + label + '">...</button></li>';
     }
 
     function render(el) {
@@ -140,7 +140,7 @@ document.addEventListener("DOMContentLoaded", function () {
         var refocus = el.contains(document.activeElement) ? document.activeElement.getAttribute("data-page") : null;
         ul.innerHTML = html;
         if (refocus !== null) {
-            var back = ul.querySelector('[data-page="' + refocus + '"]') || ul.querySelector(".active a") || ul.querySelector(".active");
+            var back = ul.querySelector('[data-page="' + refocus + '"]') || ul.querySelector(".active button") || ul.querySelector(".active");
             if (back && back.focus) back.focus();
         }
 
@@ -153,11 +153,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // 事件委派：動態插入的頁碼 <a> 也吃得到
     document.addEventListener("click", function (e) {
-        var a = e.target.closest(".pagination a");
+        var a = e.target.closest(".pagination button");
         if (!a) return;
-        // 分頁裡所有 <a> 都是 href="#"（真 app 同款 markup）：一律吃掉預設導航——
-        // 沒有 data-page 的（目前頁、disabled 箭頭）放行的話，"#" 會把頁面捲到頂、網址多個 #
-        e.preventDefault();
+        // 頁碼列的每一顆都是 `<button type="button">`（§4 判準：它點了在同一頁重繪、不導覽；
+        // 先前寫成 `<a href="#">` 就是 §5 明文禁止的死連結，只是它由 js 產生、src 掃描看不到），
+        // 故不必 preventDefault——`type="button"` 本來就沒有預設動作。
         var page = a.getAttribute("data-page");
         if (!page) return;
         var el = a.closest(".pagination");

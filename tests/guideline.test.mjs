@@ -7824,3 +7824,61 @@ test("§1-2 展示片段與生產實例的硬規則屬性不一致時，生產�
     assert.ok(checked >= 5, `只掃到 ${checked} 支有漂移的展示片段 —— 這條測試在空轉`);
     assert.equal(hits.length, 0, `§1-2：展示片段不是生產形狀時，生產契約要有一份可對答案的正本：\n${fail(hits)}`);
 });
+
+test("§4/§5 pagination 由 js 產出的 markup 也要進 img／可及名稱／死連結那幾條的母體", () => {
+    // 這個元件在 dist 上只有一顆空的 <ul>——頁碼、上下頁箭頭、省略號全部由 pagination.js 在執行期產生。
+    // 於是**所有以 dist 為母體的規則對它一顆都看不到**：<img> 的 width/height/decoding、
+    // 可及名稱、`href="#"` 死連結、按鈕要有主人……全部漏。
+    // 作法同 paginationWindowCalc：把三支 builder 的**原始碼文字**切出來就地執行，跑的是真檔案的原文。
+    const src = read("src/_includes/ui/pagination/pagination.js");
+    const cut = (name) => {
+        const i = src.indexOf(`function ${name}(`);
+        assert.ok(i >= 0, `pagination.js 找不到 ${name}() —— 原始碼結構變了，這條測試要跟著改`);
+        let depth = 0, j = src.indexOf("{", i);
+        for (let k = j; k < src.length; k++) {
+            if (src[k] === "{") depth++;
+            else if (src[k] === "}" && --depth === 0) return src.slice(i, k + 1);
+        }
+        throw new Error(`${name}() 的大括號沒有配對`);
+    };
+    const build = new Function(`
+        function t(key, zh) { return zh; }
+        function pageLabel(n) { return "第 " + n + " 頁"; }
+        ${cut("arrowLi")}
+        ${cut("pageLi")}
+        ${cut("ellipsisLi")}
+        var html = "";
+        html += arrowLi("prev", false, 0, t("action.prevPage", "上一頁"), t("pagination.prevDisabled", "上一頁不可用"), "./images/icon_arrow_left_blue.png", "./images/icon_arrow_left_gray.png");
+        html += arrowLi("next", true, 2, t("action.nextPage", "下一頁"), t("pagination.nextDisabled", "下一頁不可用"), "./images/icon_arrow_right_blue.png", "./images/icon_arrow_right_gray.png");
+        html += pageLi(1, 1);
+        html += pageLi(2, 1);
+        html += ellipsisLi(5, t("pagination.jumpNext", "往後跳頁"));
+        return html;
+    `);
+    const html = build();
+    assert.ok(html.length > 200, "產出的 markup 太短 —— 這條測試在空轉");
+
+    const bad = [];
+    // ① 死連結：這一族是控制項（點了在同一頁重繪），不是導覽（§4 判準／§5 href="#"）
+    if (/<a\b/.test(html)) bad.push("頁碼列出現 <a>：它們點了在同一頁重繪、不導覽，應該是 <button type=\"button\">");
+    if (/href="#"/.test(html)) bad.push('頁碼列出現 href="#"（§5 死連結）');
+    // ② <img> 三件套（§4）
+    for (const [, attrs] of html.matchAll(/<img\b((?:"[^"]*"|[^>"])*)>/g)) {
+        for (const need of ["width=", "height=", "decoding=", "alt="])
+            if (!attrs.includes(need)) bad.push(`頁碼列的 <img> 缺 ${need}：${attrs.trim().slice(0, 60)}`);
+    }
+    // ③ 每一顆控制項都要有可及名稱（圖示鈕只有 aria-label；數字鈕自帶字面也給了 aria-label）
+    for (const btn of html.matchAll(/<button\b((?:"[^"]*"|[^>"])*)>/g)) {
+        const attrs = btn[1];
+        const name = attrs.match(/\baria-label="([^"]*)"/);
+        if (!name || !name[1].trim()) bad.push(`頁碼列有一顆沒有可及名稱的 <button>：${attrs.trim().slice(0, 60)}`);
+    }
+    // ④ type="button"（§4 不得省略）
+    for (const [, attrs] of html.matchAll(/<button\b((?:"[^"]*"|[^>"])*)>/g))
+        if (!/\btype="button"/.test(attrs)) bad.push(`頁碼列有一顆 <button> 沒寫 type="button"：${attrs.trim().slice(0, 60)}`);
+    assert.equal(bad.length, 0, `§4/§5：\n${fail(bad)}`);
+
+    // 負控：判準要真的分得出好壞
+    assert.ok(/<a\b/.test('<li><a href="#">1</a></li>'), "負控失效：<a> 判準抓不到 <a>");
+    assert.ok(!/\btype="button"/.test('<button aria-label="x">1</button>'), "負控失效：type 判準抓不到缺 type");
+});
