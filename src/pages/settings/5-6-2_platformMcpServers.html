@@ -99,7 +99,7 @@ permalink: 5-6-2_platformMcpServers.html
                      擋不住的那一態由送出鈕的 422 warning 段接住（見該鈕註解）。 #}
                 <div class="field">
                     <input type="text" id="newMcpNameInput" placeholder="請輸入 Server 名稱" data-i18n-placeholder="settings.pleaseEnterMcpName" class="form-control" aria-describedby="newMcpNameHint" required>
-                    <span id="newMcpNameHint" class="text-gray"><span data-i18n="settings.mcpLimitAtMost">最多</span><span class="js-mcp-name-max-len">100</span><span data-i18n="common.unitChars"> 字</span></span>
+                    <span id="newMcpNameHint" class="text-gray"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-mcp-name-max-len">100</span><span data-i18n="common.unitChars"> 字</span></span>
                 </div>
             </div>
         </div>
@@ -110,7 +110,7 @@ permalink: 5-6-2_platformMcpServers.html
                 </div>
                 <div class="field">
                     <input type="text" id="newMcpCommandInput" placeholder="python / npx / uvx / node" class="form-control" aria-describedby="newMcpCommandHint" required>
-                    <span id="newMcpCommandHint" class="text-gray"><span data-i18n="settings.mcpLimitAtMost">最多</span><span class="js-mcp-command-max-len">100</span><span data-i18n="common.unitChars"> 字</span></span>
+                    <span id="newMcpCommandHint" class="text-gray"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-mcp-command-max-len">100</span><span data-i18n="common.unitChars"> 字</span></span>
                 </div>
             </div>
         </div>
@@ -126,7 +126,7 @@ permalink: 5-6-2_platformMcpServers.html
                      ＋ 槽 ＋ 後綴 key，**不是插值 key**。這裡的數字**取 product `chat_config_limits.MCP_FIELD_LIMITS` 的正本值**（先前是隨手填的示範值 8／200，而 React 那側的切版比對 fixture 是照它調的——於是兩邊一起停在一組沒有人在執法的數字，`slicingParity` 全綠而正式環境顯示另一組）。 #}
                 <div class="field">
                     <textarea id="newMcpArgsInput" class="form-control size-sm" placeholder="一行一個參數" data-i18n-placeholder="settings.pleaseEnterMcpArgs" aria-describedby="newMcpArgsHint"></textarea>
-                    <span id="newMcpArgsHint" class="text-gray"><span data-i18n="settings.mcpLimitAtMost">最多</span><span class="js-mcp-args-max-items">50</span><span data-i18n="settings.mcpArgsLimitMid">個參數，每個最多</span><span class="js-mcp-args-max-len">500</span><span data-i18n="common.unitChars"> 字</span></span>
+                    <span id="newMcpArgsHint" class="text-gray"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-mcp-args-max-items">50</span><span data-i18n="settings.mcpArgsLimitMid">個參數，每個最多</span><span class="js-mcp-args-max-len">500</span><span data-i18n="common.unitChars"> 字</span></span>
                 </div>
             </div>
         </div>
@@ -137,7 +137,7 @@ permalink: 5-6-2_platformMcpServers.html
                 </div>
                 <div class="field">
                     <textarea id="newMcpEnvInput" class="form-control size-sm" placeholder="一行一個 KEY=value" data-i18n-placeholder="settings.pleaseEnterMcpEnv" aria-describedby="newMcpEnvHint"></textarea>
-                    <span id="newMcpEnvHint" class="text-gray"><span data-i18n="settings.mcpLimitAtMost">最多</span><span class="js-mcp-env-max-items">50</span><span data-i18n="settings.mcpEnvLimitMid">組，鍵最多</span><span class="js-mcp-env-max-key-len">200</span><span data-i18n="settings.mcpEnvLimitMid2">字、值最多</span><span class="js-mcp-env-max-value-len">4000</span><span data-i18n="common.unitChars"> 字</span></span>
+                    <span id="newMcpEnvHint" class="text-gray"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-mcp-env-max-items">50</span><span data-i18n="settings.mcpEnvLimitMid">組，鍵最多</span><span class="js-mcp-env-max-key-len">200</span><span data-i18n="settings.mcpEnvLimitMid2">字、值最多</span><span class="js-mcp-env-max-value-len">4000</span><span data-i18n="common.unitChars"> 字</span></span>
                 </div>
             </div>
         </div>
@@ -148,17 +148,19 @@ permalink: 5-6-2_platformMcpServers.html
                 </div>
                 <div class="field">
                     <textarea id="newMcpDescInput" class="form-control" aria-describedby="newMcpDescHint"></textarea>
-                    <span id="newMcpDescHint" class="text-gray"><span data-i18n="settings.mcpLimitAtMost">最多</span><span class="js-mcp-desc-max-len">1024</span><span data-i18n="common.unitChars"> 字</span></span>
+                    <span id="newMcpDescHint" class="text-gray"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-mcp-desc-max-len">1024</span><span data-i18n="common.unitChars"> 字</span></span>
                 </div>
             </div>
         </div>
     </div>
     <div class="flex-row align-items-center gap-16">
         <label class="form-checkbox">
-            <input type="checkbox" checked>
+            {# 值載體（`McpServerCreate.is_active`）⇒ 要有 React 綁定記號（§5 矩陣②：class 或 id 擇一）。
+                 同區其他五欄都有 id，先前只有這一顆什麼都沒有——無 id、無 class、無 name。 #}
+            <input type="checkbox" id="newMcpActiveInput" checked>
             <span data-i18n="widget.active">啟用</span>
         </label>
-        <button type="button" class="button button-primary" data-toast="MCP Server 已建立|名稱已存在|執行指令不在允許清單（僅 python／python3／node／npx／uvx／uv）|環境變數的值不可以是「***」（那是讀取時的遮罩），請填入真正的值|環境變數裡有上游一定會剔除的載入器掛鉤鍵，存得進去也不會生效，請先移除它們|有欄位超過上面標示的長度或項數上限，請縮短後再送出|建立失敗，請稍後再試" data-i18n-data-toast="toast.createMcpServer" data-toast-type="success|warning|warning|warning|warning|warning|error">
+        <button type="button" class="button button-primary" data-toast="MCP Server 已建立|名稱已存在|執行指令不在允許清單（僅 python／python3／node／npx／uvx／uv）|環境變數的值不可以是「***」（那是讀取時的遮罩），請填入真正的值|參數（args）的值同樣不可以是那個遮罩字面，而這個位置沒有舊值可以沿用，請填入真正的值|環境變數裡有上游一定會剔除的載入器掛鉤鍵，存得進去也不會生效，請先移除它們|有欄位超過上面標示的長度或項數上限，請縮短後再送出|建立失敗，請稍後再試" data-i18n-data-toast="toast.createMcpServer" data-toast-type="success|warning|warning|warning|warning|warning|warning|error">
             <img src="./images/icon_add_white.png" width="48" height="48" decoding="async" alt="" class="icon">
             <span data-i18n="settings.addMcpServer">新增 MCP Server</span>
         </button>
@@ -205,11 +207,11 @@ permalink: 5-6-2_platformMcpServers.html
          界線是全域的，故常駐一行、每一欄一顆 id，逐列的控制項各自 `aria-describedby` 指過來。
          數字全部是資料槽（React 填 `GET /platform/mcp/limits`），與新增區同一批 class。 #}
     <div class="flex-row flex-wrap gap-16 text-gray">
-        <span id="mcpNameLimitHint"><span data-i18n="widget.tokenName">名稱</span><span data-i18n="common.labelSep">：</span><span data-i18n="settings.mcpLimitAtMost">最多</span><span class="js-mcp-name-max-len">100</span><span data-i18n="common.unitChars"> 字</span></span>
-        <span id="mcpCommandLimitHint"><span data-i18n="settings.mcpCommand">執行指令</span><span data-i18n="common.labelSep">：</span><span data-i18n="settings.mcpLimitAtMost">最多</span><span class="js-mcp-command-max-len">100</span><span data-i18n="common.unitChars"> 字</span></span>
-        <span id="mcpArgsLimitHint"><span data-i18n="agent.params">參數</span><span data-i18n="common.labelSep">：</span><span data-i18n="settings.mcpLimitAtMost">最多</span><span class="js-mcp-args-max-items">50</span><span data-i18n="settings.mcpArgsLimitMid">個參數，每個最多</span><span class="js-mcp-args-max-len">500</span><span data-i18n="common.unitChars"> 字</span></span>
-        <span id="mcpEnvLimitHint"><span data-i18n="settings.mcpEnv">環境變數</span><span data-i18n="common.labelSep">：</span><span data-i18n="settings.mcpLimitAtMost">最多</span><span class="js-mcp-env-max-items">50</span><span data-i18n="settings.mcpEnvLimitMid">組，鍵最多</span><span class="js-mcp-env-max-key-len">200</span><span data-i18n="settings.mcpEnvLimitMid2">字、值最多</span><span class="js-mcp-env-max-value-len">4000</span><span data-i18n="common.unitChars"> 字</span></span>
-        <span id="mcpDescLimitHint"><span data-i18n="settings.mcpDescription">描述</span><span data-i18n="common.labelSep">：</span><span data-i18n="settings.mcpLimitAtMost">最多</span><span class="js-mcp-desc-max-len">1024</span><span data-i18n="common.unitChars"> 字</span></span>
+        <span id="mcpNameLimitHint"><span data-i18n="widget.tokenName">名稱</span><span data-i18n="common.labelSep">：</span><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-mcp-name-max-len">100</span><span data-i18n="common.unitChars"> 字</span></span>
+        <span id="mcpCommandLimitHint"><span data-i18n="settings.mcpCommand">執行指令</span><span data-i18n="common.labelSep">：</span><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-mcp-command-max-len">100</span><span data-i18n="common.unitChars"> 字</span></span>
+        <span id="mcpArgsLimitHint"><span data-i18n="agent.params">參數</span><span data-i18n="common.labelSep">：</span><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-mcp-args-max-items">50</span><span data-i18n="settings.mcpArgsLimitMid">個參數，每個最多</span><span class="js-mcp-args-max-len">500</span><span data-i18n="common.unitChars"> 字</span></span>
+        <span id="mcpEnvLimitHint"><span data-i18n="settings.mcpEnv">環境變數</span><span data-i18n="common.labelSep">：</span><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-mcp-env-max-items">50</span><span data-i18n="settings.mcpEnvLimitMid">組，鍵最多</span><span class="js-mcp-env-max-key-len">200</span><span data-i18n="settings.mcpEnvLimitMid2">字、值最多</span><span class="js-mcp-env-max-value-len">4000</span><span data-i18n="common.unitChars"> 字</span></span>
+        <span id="mcpDescLimitHint"><span data-i18n="settings.mcpDescription">描述</span><span data-i18n="common.labelSep">：</span><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-mcp-desc-max-len">1024</span><span data-i18n="common.unitChars"> 字</span></span>
     </div>
     <div class="table-container scrollTable">
         <table class="default-table">
@@ -286,7 +288,7 @@ permalink: 5-6-2_platformMcpServers.html
                                  也是比對「env 的 […] 送來遮罩字面」那句），所以被拒的是「新增的那組鍵沒有舊值
                                  可以沿用、值卻還是遮罩」。原本這裡寫「鍵不可以填 ***」——同一頁的建立鈕寫的才是對的，
                                  兩顆鈕對同一道守衛說了兩件事。 #}
-                            <button type="button" id="mcpSave-{{ server.id }}" aria-labelledby="mcpRowName-{{ server.id }} mcpSave-{{ server.id }}" class="button button-border button-sm" data-toast="MCP Server 已更新|名稱已存在|執行指令不在允許清單（僅 python／python3／node／npx／uvx／uv）|新增的環境變數，值不可以是「***」（那是讀取時的遮罩，沒有舊值可以沿用），請填入真正的值|環境變數裡有上游一定會剔除的載入器掛鉤鍵，存得進去也不會生效，請先移除它們|有欄位超過上面標示的長度或項數上限，請縮短後再送出|儲存失敗" data-i18n-data-toast="toast.saveMcpServer" data-toast-type="success|warning|warning|warning|warning|warning|error" data-i18n="action.save">儲存</button>
+                            <button type="button" id="mcpSave-{{ server.id }}" aria-labelledby="mcpRowName-{{ server.id }} mcpSave-{{ server.id }}" class="button button-border button-sm" data-toast="MCP Server 已更新|名稱已存在|執行指令不在允許清單（僅 python／python3／node／npx／uvx／uv）|新增的環境變數，值不可以是「***」（那是讀取時的遮罩，沒有舊值可以沿用），請填入真正的值|參數（args）的值同樣不可以是那個遮罩字面，而這個位置沒有舊值可以沿用，請填入真正的值|環境變數裡有上游一定會剔除的載入器掛鉤鍵，存得進去也不會生效，請先移除它們|有欄位超過上面標示的長度或項數上限，請縮短後再送出|儲存失敗" data-i18n-data-toast="toast.saveMcpServer" data-toast-type="success|warning|warning|warning|warning|warning|warning|error" data-i18n="action.save">儲存</button>
                             <button type="button" id="mcpTest-{{ server.id }}" aria-labelledby="mcpRowName-{{ server.id }} mcpTest-{{ server.id }}" class="button button-border button-sm" data-toast="連線成功，工具清單已更新到右欄|連線測試失敗，失敗原因見右欄" data-i18n-data-toast="toast.testMcpServer" data-toast-type="success|error" data-i18n="settings.testConnection">測試連線</button>
                             <button type="button" id="mcpDelete-{{ server.id }}" aria-labelledby="mcpRowName-{{ server.id }} mcpDelete-{{ server.id }}" class="button button-red button-sm js-delete-mcp" data-i18n="action.delete">刪除</button>
                         </div>

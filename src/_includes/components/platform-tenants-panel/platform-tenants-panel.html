@@ -291,12 +291,18 @@
      刪掉前面一列之後，後面每一列的列鍵都往前頂一格，
      React 的 key 與逐列動作（PATCH /platform/tenants/{id}/features、.js-manage-tenant）
      會一起指錯人（§6 列鍵，同 5-8／5-6-2／5-6-3 已經改過的那三張表）。
+     **示範租戶 C 是 `FROZEN` 不是 `EXPIRED`**：`components/iso-review-wizard` 的逾期名單把它標成
+     `frozen: true`，而上游那兩個欄位是**同一個判斷式**算出來的——`app/subscription.py` 的 `status()`
+     第一句就是 `if tenant.frozen_at is not None: return FROZEN`（凍結優先於到期），`platform.py` 的
+     `_tenant_out` 與 `review_overdue` 都寫 `frozen=t.frozen_at is not None`。先前 B 已經修過同一件事
+     （見下方那段），C 沒有跟著看——ISO 名單那一欄存在的理由正是「分辨這季新逾期的與上季已凍結的」，
+     所以要留一筆 true，那一筆就是 C。
      **示範租戶 D 的 id 是 42**：不是隨手挑的——`components/iso-review-wizard` 的 result 態失敗結果
      逐字寫著「從 GufoRAG 刪租戶索引失敗（tenant=42）」，那筆講的就是它（§6 同源）。 #}
 {% set platformTenantRows = [
   { id: 7, name: "示範租戶 A", userCount: 3, features: ["data", "ask", "history", "settings", "audit", "extract"], reviewDue: false, status: "ACTIVE", statusKey: "platform.statusActive", statusLabel: "使用期內", trialEnd: "2026-07-23" },
   { id: 15, name: "示範租戶 B", userCount: 3, features: ["data", "ask"], reviewDue: false, status: "FROZEN", statusKey: "platform.statusFrozen", statusLabel: "已凍結", trialEnd: "2026-06-30" },
-  { id: 23, name: "示範租戶 C", userCount: 2, features: ["ask"], reviewDue: true, status: "EXPIRED", statusKey: "platform.statusExpired", statusLabel: "已到期", trialEnd: "2026-03-01" },
+  { id: 23, name: "示範租戶 C", userCount: 2, features: ["ask"], reviewDue: true, status: "FROZEN", statusKey: "platform.statusFrozen", statusLabel: "已凍結", trialEnd: "2026-03-01" },
   { id: 42, name: "示範租戶 D", userCount: 4, features: ["data", "ask"], reviewDue: true, status: "EXPIRED", statusKey: "platform.statusExpired", statusLabel: "已到期", trialEnd: "2026-02-14" },
   { id: 58, name: "示範租戶 E", userCount: 1, features: ["data", "ask"], reviewDue: false, status: "PENDING", statusKey: "platform.statusPending", statusLabel: "待啟用", trialEnd: "" }
 ] %}

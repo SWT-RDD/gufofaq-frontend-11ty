@@ -60,17 +60,30 @@
      **逐字串接**（含分隔空白），兩個語系各對一次。中間自己改一個連接詞（「、失敗」寫成「，失敗」、
      "Overdue by" 寫成 "Overdue over"）就是在 React 端開了第二份文案正本，而字典比對放行含
      `{{ }}` 的值、fpdiff 又不比文字內容，兩張網都看不到。 #}
+{# **`id` 是列鍵、不可省**（§6）：`ReviewTenantOut.id` 是這張表的第一欄，而確認鈕送出的
+     `ReviewApplyIn.tenant_ids` 就是這一份清單推導出來的（gufofaq-saas product `app/routers/platform.py`）——沒有它，React 端
+     組不出 payload。判準是「這一列會不會成為某個動作的 payload 元素」，不是「列內有沒有刪除鈕」
+     （處置鈕在迴圈外面，整批打一次）。id 與 `components/platform-tenants-panel` 的租戶表同源。 #}
 {% set isoReviewCandidates = [
-  { name: "示範租戶 C", email: "c-admin@example.com", trialEnd: "2026-03-01", daysOverdue: 135, userCount: 2, storage: 12.4, frozen: true },
-  { name: "示範租戶 D", email: "d-admin@example.com", trialEnd: "2026-02-14", daysOverdue: 150, userCount: 4, storage: 88.0, frozen: false }
+  { id: 23, name: "示範租戶 C", email: "c-admin@example.com", trialEnd: "2026-03-01", daysOverdue: 135, userCount: 2, storage: 12.4, frozen: true },
+  { id: 42, name: "示範租戶 D", email: "d-admin@example.com", trialEnd: "2026-02-14", daysOverdue: 150, userCount: 4, storage: 88.0, frozen: false }
 ] %}
 {# 結果拆成功/失敗兩個陣列：result 態的「共 N 筆，成功 X，失敗 Y」全部從陣列長度推導（§6 可推導的值不烤死），
      表格先渲染成功列再渲染失敗列 #}
+{# 逐筆帶 `tenantId`：`review_apply` 回的是 `{"tenant_id": …, "name": …, "ok": …}`（＋失敗才有 `error`）。
+   **失敗訊息要是正本組得出來的字面**（§6／§3-2「插值填進去的東西也要是正本產得出來的」）：
+     product `app/i18n.py` 的 `platform.purge_tenant_failed` 逐字是「清租戶資料失敗（tenant={tenant_id}）：{error}」
+     （刪帳號那一支是姊妹句 `platform.delete_tenant_failed`），而 `review_apply` 收的是 `str(e.detail)`
+     ⇒ 畫面上那一格就是整串，含 `：{error}` 後半。先前寫的「從 GufoRAG 刪租戶索引失敗（tenant=42）」
+     在上游 grep 為零，而且後半段整段不見——那一半是這一格唯一講得出「為什麼」的部分。
+   **演的是 `purge_data` 那一支**：`_purge_tenant_data` 的 docstring 逐字寫著它**保留** Tenant／User／
+     TenantSetting／群組／widget token／API 金鑰，所以同一頁的租戶表照樣列得出 C 與 D；換成
+     `delete_account` 就會與那張表互相否定（那一支 `delete(User)` ＋ `delete(Tenant)`）。 #}
 {% set isoReviewOkResults = [
-  { name: "示範租戶 C", error: "" }
+  { tenantId: 23, name: "示範租戶 C", error: "" }
 ] %}
 {% set isoReviewFailResults = [
-  { name: "示範租戶 D", error: "從 GufoRAG 刪租戶索引失敗（tenant=42）" }
+  { tenantId: 42, name: "示範租戶 D", error: "清租戶資料失敗（tenant=42）：GufoRAG 刪索引回 502" }
 ] %}
 {# 授權：整區的下限是 `auditor`——`GET /platform/review/overdue`（gufofaq-saas product
      `app/routers/platform.py` 的 `review_overdue`）掛的就是 `require_platform_auditor`，
@@ -128,11 +141,16 @@
             {# 三顆都是**送 API 的動作鈕**（§5 ③）：讀上面那兩顆輸入、打 `GET /platform/review/overdue`
                  把名單拉回來畫成 preview。它們不開任何窗，所以不適用「有條件開窗」的豁免（§5 明文）；
                  少了 success 段還會讓三顆整個掉出 §4 閘門測試的母體。分支對回該端點的出口：
-                 `require_platform_auditor` 的 403、`overdue_days` 界外的 422（使用者自己改得掉 ⇒ warning）、
-                 其餘網路失敗（error）。姊妹鈕：5-10 的「重新量測」同樣是唯讀 GET ＋ 結果畫回頁上。 #}
-            <button type="button" class="button button-red js-review-purge" data-toast="正在載入逾時名單...|權限不足，無法載入|逾時天數超出可用範圍|名單已載入|載入失敗，請稍後再試" data-i18n-data-toast="toast.reviewOverdue" data-toast-type="info|warning|warning|success|error" data-i18n="platform.reviewActionPurge">刪除逾時資料</button>
-            <button type="button" class="button button-red js-review-delete" data-toast="正在載入逾時名單...|權限不足，無法載入|逾時天數超出可用範圍|名單已載入|載入失敗，請稍後再試" data-i18n-data-toast="toast.reviewOverdue" data-toast-type="info|warning|warning|success|error" data-i18n="platform.reviewActionDelete">刪除逾時帳號</button>
-            <button type="button" class="button button-border js-review-freeze" data-toast="正在載入逾時名單...|權限不足，無法載入|逾時天數超出可用範圍|名單已載入|載入失敗，請稍後再試" data-i18n-data-toast="toast.reviewOverdue" data-toast-type="info|warning|warning|success|error" data-i18n="platform.reviewActionFreeze">凍結逾時帳號</button>
+                 `overdue_days` 界外的 422（使用者自己改得掉 ⇒ warning）、其餘網路失敗（error）。
+                 **`require_platform_auditor` 的 403 刻意不列**：這三顆落在 `data-platform-role="auditor"`
+                 的區塊內，而平台軸的渲染規則是「低於該級時**動作鈕不渲染**」（§5），導覽入口也掛著
+                 同一級（`components/header` 的 `platformRole: "auditor"`）⇒ 那道 403 在這三顆上走不到。
+                 同 repo 對同一件事已經裁決過兩次（`components/platform-disclaimer-panel`、
+                 `components/manage-tenant-modal`），先前只有這三顆走了反方向；全站帶「權限不足」段的鈕
+                 也只有這三顆沒掛 `data-capability`——能力軸才把 403 列進 toast（§4）。姊妹鈕：5-10 的「重新量測」同樣是唯讀 GET ＋ 結果畫回頁上。 #}
+            <button type="button" class="button button-red js-review-purge" data-toast="正在載入逾時名單...|逾時天數超出可用範圍|名單已載入|載入失敗，請稍後再試" data-i18n-data-toast="toast.reviewOverdue" data-toast-type="info|warning|success|error" data-i18n="platform.reviewActionPurge">刪除逾時資料</button>
+            <button type="button" class="button button-red js-review-delete" data-toast="正在載入逾時名單...|逾時天數超出可用範圍|名單已載入|載入失敗，請稍後再試" data-i18n-data-toast="toast.reviewOverdue" data-toast-type="info|warning|success|error" data-i18n="platform.reviewActionDelete">刪除逾時帳號</button>
+            <button type="button" class="button button-border js-review-freeze" data-toast="正在載入逾時名單...|逾時天數超出可用範圍|名單已載入|載入失敗，請稍後再試" data-i18n-data-toast="toast.reviewOverdue" data-toast-type="info|warning|success|error" data-i18n="platform.reviewActionFreeze">凍結逾時帳號</button>
         </div>
     </div>
     {% elif isoReviewStep == "preview" %}
@@ -189,7 +207,7 @@
                 </thead>
                 <tbody>
                     {% for c in isoReviewCandidates %}
-                    <tr>
+                    <tr data-tenant-id="{{ c.id }}">
                         <td>{{ c.name }}</td>
                         <td>{{ c.email }}</td>
                         <td>{{ c.trialEnd }}</td>
@@ -312,10 +330,12 @@
                 </thead>
                 <tbody>
                     {% for r in isoReviewOkResults %}
-                    <tr>
+                    <tr data-tenant-id="{{ r.tenantId }}">
                         <td>{{ r.name }}</td>
                         <td class="text-bold" data-i18n="platform.resultOk">成功</td>
-                        <td>{{ r.error }}</td>
+                        {# 成功那一筆上游**根本沒有 `error` 這個鍵**（`{"tenant_id", "name", "ok"}`）⇒ 畫「—」，
+                             不是留白：同表另一欄（preview 的「已凍結」）與 5-6-3 的撤銷者欄都是這個畫法。 #}
+                        <td>{% if r.error %}{{ r.error }}{% else %}—{% endif %}</td>
                     </tr>
                     {% endfor %}
                     {% for r in isoReviewFailResults %}

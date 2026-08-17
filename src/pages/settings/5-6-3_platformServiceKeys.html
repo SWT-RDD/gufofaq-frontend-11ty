@@ -81,22 +81,31 @@ permalink: 5-6-3_platformServiceKeys.html
      `select(PlatformServiceKey).order_by(PlatformServiceKey.id)`，platform.py）——沒有第二層排序、
      也不是「新到舊」。原本排成 3 → 8 → 1（照「服役中→新核發→已撤銷」的敘事），那是這支端點
      產不出來的順序（§6：演的必須是一個真實可能的畫面）。
-     id 升冪在這一頁剛好也是**核發時間升冪**（自增主鍵）：#1 2024/09/18 → #3 11/02 → #8 12/02，
-     所以輪替的故事照樣讀得出來——初版先撤銷、接手的那把在服役、最新那把剛核發還沒被用過。 #}
+     id 升冪在這一頁剛好也是**核發時間升冪**（自增主鍵）：#1 2026/01/18 → #3 03/02 → #8 07/13，
+     所以輪替的故事照樣讀得出來——初版先撤銷、接手的那把在服役、最新那把剛核發還沒被用過。
+   **時間全部錨在站台的「現在」2026-07-14**（`components/iso-review-wizard` 名單上那個查詢時間；
+     §6「全站只有一個現在」）：先前這一叢寫在 2024 年下半，於是同一頁的兩句文案自相矛盾——
+     `serviceKey.intro` 說「今天只有每日資料健檢的排程」、`serviceKey.none` 說「沒有金鑰排程每天會失敗」，
+     而唯一在服役的 #3 已經 19 個月沒有前進、#8 被描述成「剛核發」卻建於 19 個月前。
+     #3 的 `lastUsedAt` 落在 `2026/07/14 03:20`：每日健檢排在 03:15（3-5 那一頁），今天已經跑過一輪。
+   **核發者／撤銷者是 12**：上游 `create_service_key` 寫 `created_by=admin["user_id"]`、
+     `revoke_service_key` 寫 `row.revoked_by = admin["user_id"]`，而 `admin` 來自 `require_platform_admin`
+     ⇒ 這兩個 id 必然是一位**平台 admin**。5-6-1 的平台權限盤點只有 88（auditor）／12（admin）／205（admin），
+     先前寫的 7 不在其中——7 在這一族裡是**租戶主鍵**（示範租戶 A），最容易誤讀成那個。 #}
 {% set serviceKeys = [
   {
     id: 1, name: "每日健檢 CronJob（初版）", scope: "health-scan", keyHint: "psk_…10b4",
-    createdAt: "2024/09/18 16:03", createdBy: "7",
-    lastUsedAt: "2024/11/02 03:20", revokedAt: "2024/11/03 11:27", revokedBy: "7"
+    createdAt: "2026/01/18 16:03", createdBy: "12",
+    lastUsedAt: "2026/03/02 03:20", revokedAt: "2026/03/03 11:27", revokedBy: "12"
   },
   {
     id: 3, name: "每日健檢 CronJob", scope: "health-scan", keyHint: "psk_…7f2a",
-    createdAt: "2024/11/02 10:14", createdBy: "7",
-    lastUsedAt: "2024/12/02 03:20", revokedAt: "", revokedBy: ""
+    createdAt: "2026/03/02 10:14", createdBy: "12",
+    lastUsedAt: "2026/07/14 03:20", revokedAt: "", revokedBy: ""
   },
   {
     id: 8, name: "每日健檢 CronJob（輪替新把）", scope: "health-scan", keyHint: "psk_…c091",
-    createdAt: "2024/12/02 09:41", createdBy: "7",
+    createdAt: "2026/07/13 09:41", createdBy: "12",
     lastUsedAt: "", revokedAt: "", revokedBy: ""
   }
 ] %}
@@ -131,7 +140,14 @@ permalink: 5-6-3_platformServiceKeys.html
                 </div>
                 <div class="field">
                     <input type="text" id="newServiceKeyName" class="form-control js-new-service-key-name" maxlength="200" placeholder="這一把是誰在用" data-i18n-placeholder="serviceKey.namePlaceholder" aria-describedby="newServiceKeyNameHint" required>
-                    <span id="newServiceKeyNameHint" class="text-gray"><span>200</span><span data-i18n="serviceKey.nameHint">輪替時要分得出「這一列是誰在用」，所以請寫得出消費者是什麼（例如「每日健檢 CronJob」）。名稱不影響權限，只影響你之後看不看得懂這張表。</span></span>
+                    {# 三件式（§4-2）：**前綴 key ＋ 純數字節點 ＋ 單位 key**，數字另有 class 讓執行期填得進去。
+                         先前是裸的 `<span>200</span>` 直接黏在一句完全沒提到長度的說明前面，畫面讀到的是
+                         「200輪替時要分得出…」／英文「200During rotation…」——約束等於沒有講出來。
+                         200 的正本是 product `app/routers/mcp.py` 的 `MAX_SERVICE_KEY_NAME_LEN`，
+                         已投影成 `GET /platform/mcp/limits` 的 `service_key.name.max_len`（同檔
+                         `get_platform_mcp_limits`）——那顆 class 就是 React 執行期填它的槽，
+                         同 5-6-2 的 `js-mcp-*-max-len` 一族。 #}
+                    <span id="newServiceKeyNameHint" class="text-gray"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-service-key-name-max-len">200</span><span data-i18n="common.unitChars"> 字</span><span data-i18n="common.labelSep">：</span><span data-i18n="serviceKey.nameHint">輪替時要分得出「這一列是誰在用」，所以請寫得出消費者是什麼（例如「每日健檢 CronJob」）。名稱不影響權限，只影響你之後看不看得懂這張表。</span></span>
                 </div>
             </div>
         </div>
