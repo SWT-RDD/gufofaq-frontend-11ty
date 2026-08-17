@@ -233,7 +233,9 @@ permalink: 5-7_auditLog.html
         <tbody>
             {% for row in rows %}
             <tr data-audit-id="{{ row.id }}">
-                <td>{{ row.time }}</td>
+                {# 逐列辨識欄（§4）：稽核列沒有名稱欄，時間戳就是這一列的身分（同一毫秒不會有兩筆），
+                     user-agent 那一格的收合鈕指到它。 #}
+                <td id="auditRowTime-{{ row.id }}">{{ row.time }}</td>
                 {# `tenant_id` 可為 NULL（查無帳號的登入失敗，見上方示範資料註解）：畫「—」，
                      與操作者欄的空值語意一致。 #}
                 <td>{% if row.tenantId %}{{ row.tenantId }}{% else %}—{% endif %}</td>
@@ -247,7 +249,7 @@ permalink: 5-7_auditLog.html
                 {# `user_agent` 是 nullable（非瀏覽器來源的呼叫沒有這個標頭，示範第 2 筆即是）：
                      沒值就不要包 collapse-text——那會渲染出一個空的收合區塊配一顆展得開卻什麼都
                      沒有的鈕（§5 不放按了沒反應的鈕）。沒值畫「—」，與本表其他欄的空值語意一致。 #}
-                <td>{% if row.userAgent %}<div class="collapse-text"><div class="collapse-body">{{ row.userAgent }}</div><button type="button" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>{% else %}—{% endif %}</td>
+                <td>{% if row.userAgent %}<div class="collapse-text"><div class="collapse-body">{{ row.userAgent }}</div><button type="button" id="auditUaToggle-{{ row.id }}" aria-labelledby="auditRowTime-{{ row.id }} auditUaToggle-{{ row.id }}" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>{% else %}—{% endif %}</td>
             </tr>
             {# 空狀態：本頁有查詢鈕與四個篩選欄，「篩到零筆」是走得到的常態（§5 無資料列）。
                  colspan 9 ＝本表欄數（colgroup 九個 <col>）。 #}

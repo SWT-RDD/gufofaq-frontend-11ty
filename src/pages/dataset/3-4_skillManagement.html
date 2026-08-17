@@ -168,7 +168,8 @@ permalink: 3-4_skillManagement.html
             <tbody>
                 {% for skill in skills %}
                 <tr data-skill-id="{{ skill.id }}">
-                    <td><code class="inline-code">{{ skill.name }}</code></td>
+                    {# 逐列辨識欄（§4）：四顆列動作鈕的可及名稱都指到它。 #}
+                    <td id="skillRowName-{{ skill.id }}"><code class="inline-code">{{ skill.name }}</code></td>
                     <td>{{ skill.description }}</td>
                     <td class="text-center">{{ skill.version }}</td>
                     <td>{{ skill.tools }}</td>
@@ -179,18 +180,18 @@ permalink: 3-4_skillManagement.html
                     </td>
                     <td>
                         <div class="btn-group">
-                            <button type="button" class="button button-border button-sm js-edit-skill" data-i18n="action.edit">編輯</button>
-                            <button type="button" class="button button-border button-sm js-try-skill" data-i18n="settings.trySkill">試跑</button>
+                            <button type="button" id="skillEdit-{{ skill.id }}" aria-labelledby="skillRowName-{{ skill.id }} skillEdit-{{ skill.id }}" class="button button-border button-sm js-edit-skill" data-i18n="action.edit">編輯</button>
+                            <button type="button" id="skillTry-{{ skill.id }}" aria-labelledby="skillRowName-{{ skill.id }} skillTry-{{ skill.id }}" class="button button-border button-sm js-try-skill" data-i18n="settings.trySkill">試跑</button>
                             {# 啟用／停用：不開窗、直接送 PATCH（product SkillUpdateIn.enabled → chatbot
                                  SkillUpdate.enabled；停用即不掛成工具，load_active_skill 回 None），
                                  依 §5 ③ 掛 data-toast 列全結果。原本狀態欄演了兩態卻沒有任何路徑到得了
                                  或離得開，等於示範一個改不動的狀態。 #}
                             {% if skill.enabled %}
-                            <button data-capability="settings:write" type="button" class="button button-border button-sm js-toggle-skill" data-toast="Skill 已停用|權限不足，無法停用|停用失敗，請稍後再試" data-i18n-data-toast="toast.disableSkill" data-toast-type="success|warning|error" data-i18n="action.disable">停用</button>
+                            <button data-capability="settings:write" type="button" id="skillToggle-{{ skill.id }}" aria-labelledby="skillRowName-{{ skill.id }} skillToggle-{{ skill.id }}" class="button button-border button-sm js-toggle-skill" data-toast="Skill 已停用|權限不足，無法停用|停用失敗，請稍後再試" data-i18n-data-toast="toast.disableSkill" data-toast-type="success|warning|error" data-i18n="action.disable">停用</button>
                             {% else %}
-                            <button data-capability="settings:write" type="button" class="button button-border button-sm js-toggle-skill" data-toast="Skill 已啟用|權限不足，無法啟用|啟用失敗，請稍後再試" data-i18n-data-toast="toast.enableSkill" data-toast-type="success|warning|error" data-i18n="action.enable">啟用</button>
+                            <button data-capability="settings:write" type="button" id="skillToggle-{{ skill.id }}" aria-labelledby="skillRowName-{{ skill.id }} skillToggle-{{ skill.id }}" class="button button-border button-sm js-toggle-skill" data-toast="Skill 已啟用|權限不足，無法啟用|啟用失敗，請稍後再試" data-i18n-data-toast="toast.enableSkill" data-toast-type="success|warning|error" data-i18n="action.enable">啟用</button>
                             {% endif %}
-                            <button type="button" class="button button-red button-sm js-delete-skill" data-i18n="action.delete">刪除</button>
+                            <button type="button" id="skillDelete-{{ skill.id }}" aria-labelledby="skillRowName-{{ skill.id }} skillDelete-{{ skill.id }}" class="button button-red button-sm js-delete-skill" data-i18n="action.delete">刪除</button>
                         </div>
                     </td>
                 </tr>

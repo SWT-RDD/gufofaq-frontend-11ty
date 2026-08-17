@@ -297,17 +297,21 @@ permalink: 5-2_conversationSettings.html
             {% set rows = level.rows %}
             {# 這一份在 priorityLevels 迴圈內跑三輪 ⇒ 實例鍵要帶 loop.index，否則三張表的表頭撞同一個 id #}
             {% set priorityTableInstance = "lv" + loop.index %}
+            {# 可及名稱的起頭：版面 A 三張表與版面 B 兩張表畫的是同一批分類，只有 instance 的話
+                 「入出國與法規 編輯」在同一頁會逐字出現兩次（§4）。 #}
+            {% set priorityTableOwnerId = "intentLevelTitle-" + loop.index %}
             {% include "components/priority-table/priority-table.html" %}
         </div>
         {% endfor %}
 
         <div class="flex-row column gap-16">
             <div class="flex-row align-items-center gap-12">
-                <div class="tablelist-title" data-i18n="settings.unused">未使用</div>
+                <div class="tablelist-title" id="priorityUnusedTitle" data-i18n="settings.unused">未使用</div>
             </div>
             {% set tierless = false %}
             {% set rows = [] %}
             {% set priorityTableInstance = "unused" %}
+            {% set priorityTableOwnerId = "priorityUnusedTitle" %}
             {% include "components/priority-table/priority-table.html" %}
         </div>
     </div>
@@ -321,7 +325,7 @@ permalink: 5-2_conversationSettings.html
         <div class="tablelist-title" data-i18n="settings.tiersAgent">檢索範圍（Agent 對話模式）</div>
         <div class="flex-row column gap-16">
             <div class="flex-row align-items-center gap-12">
-                <div class="tablelist-title" data-i18n="comp.inUse">使用中</div>
+                <div class="tablelist-title" id="priorityAgentInUseTitle" data-i18n="comp.inUse">使用中</div>
             </div>
             {% set tierless = true %}
             {% set rows = [
@@ -331,16 +335,18 @@ permalink: 5-2_conversationSettings.html
               { sn: 34, category: "權益與申訴服務類", description: "", prompt: "", priority: "低優先級" }
             ] %}
             {% set priorityTableInstance = "agentInUse" %}
+            {% set priorityTableOwnerId = "priorityAgentInUseTitle" %}
             {% include "components/priority-table/priority-table.html" %}
         </div>
 
         <div class="flex-row column gap-16">
             <div class="flex-row align-items-center gap-12">
-                <div class="tablelist-title" data-i18n="settings.unused">未使用</div>
+                <div class="tablelist-title" id="priorityAgentUnusedTitle" data-i18n="settings.unused">未使用</div>
             </div>
             {% set tierless = true %}
             {% set rows = [] %}
             {% set priorityTableInstance = "agentUnused" %}
+            {% set priorityTableOwnerId = "priorityAgentUnusedTitle" %}
             {% include "components/priority-table/priority-table.html" %}
         </div>
     </div>
@@ -821,17 +827,19 @@ permalink: 5-2_conversationSettings.html
         <div class="block prompt-card">
             <div class="flex-row column gap-16">
                 <div class="flex-row justify-content-between align-items-center flex-wrap gap-16">
-                    <div class="text-md text-blue">{{ v.label }}（{{ v.timeRange }}）</div>
+                    {# 這一行是本卡的辨識欄（§4）：三張版本卡的「複製」「還原此版本」逐字同名，
+                         卡片不是 <tr>、沒有列脈絡可倚靠，可及名稱要自己把版號帶進去。 #}
+                    <div class="text-md text-blue" id="promptVersionName-{{ loop.index }}">{{ v.label }}（{{ v.timeRange }}）</div>
                     <div class="flex-row align-items-center gap-8">
                         <span><span data-i18n="settings.referencedCount">被問答引用次數：</span> {{ v.refCount }} <span data-i18n="settings.timesUnit">次</span></span>
                         <span class="divider-vertical"></span>
-                        <button type="button" class="button-icon copy copyBtn has-tooltip" data-toast="提示詞已複製！" data-i18n-data-toast="prompt.copied">
+                        <button type="button" id="promptVersionCopy-{{ loop.index }}" aria-labelledby="promptVersionName-{{ loop.index }} promptVersionCopy-{{ loop.index }}" class="button-icon copy copyBtn has-tooltip" data-toast="提示詞已複製！" data-i18n-data-toast="prompt.copied">
                             <span class="tooltip" data-i18n="action.copy">複製</span>
                         </button>
                         <span class="divider-vertical"></span>
                         {# 403 那一段見「啟用全部意圖判斷」旁的註解（`POST /prompts/{version_no}/activate`
                              掛 product `routers/prompts.py` 的 `require_capability("settings","write")`）。 #}
-                        <button data-capability="settings:write" type="button" class="button button-border button-sm js-prompt-restore" data-toast="已還原此提示詞版本|權限不足，無法儲存|還原失敗，請稍後再試" data-i18n-data-toast="toast.restorePrompt" data-toast-type="success|warning|error" data-i18n="action.restore">還原此版本</button>
+                        <button data-capability="settings:write" type="button" id="promptVersionRestore-{{ loop.index }}" aria-labelledby="promptVersionName-{{ loop.index }} promptVersionRestore-{{ loop.index }}" class="button button-border button-sm js-prompt-restore" data-toast="已還原此提示詞版本|權限不足，無法儲存|還原失敗，請稍後再試" data-i18n-data-toast="toast.restorePrompt" data-toast-type="success|warning|error" data-i18n="action.restore">還原此版本</button>
                     </div>
                 </div>
                 <div class="prompt-content">
@@ -985,15 +993,16 @@ permalink: 5-2_conversationSettings.html
         <div class="block prompt-card">
             <div class="flex-row column gap-16">
                 <div class="flex-row justify-content-between align-items-center flex-wrap gap-16">
-                    <div class="text-md text-blue">{{ v.label }}（{{ v.timeRange }}）</div>
+                    {# 同提示詞版本卡：卡片辨識欄。 #}
+                    <div class="text-md text-blue" id="welcomeVersionName-{{ loop.index }}">{{ v.label }}（{{ v.timeRange }}）</div>
                     <div class="flex-row align-items-center gap-8">
-                        <button type="button" class="button-icon copy copyBtn has-tooltip" data-toast="歡迎語已複製！" data-i18n-data-toast="welcome.copied">
+                        <button type="button" id="welcomeVersionCopy-{{ loop.index }}" aria-labelledby="welcomeVersionName-{{ loop.index }} welcomeVersionCopy-{{ loop.index }}" class="button-icon copy copyBtn has-tooltip" data-toast="歡迎語已複製！" data-i18n-data-toast="welcome.copied">
                             <span class="tooltip" data-i18n="action.copy">複製</span>
                         </button>
                         <span class="divider-vertical"></span>
                         {# 403 那一段見「啟用全部意圖判斷」旁的註解（`POST /welcome/{version_no}/activate`
                              掛 product `routers/welcome.py` 的 `require_capability("settings","write")`）。 #}
-                        <button data-capability="settings:write" type="button" class="button button-border button-sm js-welcome-restore" data-toast="已還原此歡迎語版本|權限不足，無法儲存|還原失敗，請稍後再試" data-i18n-data-toast="toast.restoreWelcome" data-toast-type="success|warning|error" data-i18n="action.restore">還原此版本</button>
+                        <button data-capability="settings:write" type="button" id="welcomeVersionRestore-{{ loop.index }}" aria-labelledby="welcomeVersionName-{{ loop.index }} welcomeVersionRestore-{{ loop.index }}" class="button button-border button-sm js-welcome-restore" data-toast="已還原此歡迎語版本|權限不足，無法儲存|還原失敗，請稍後再試" data-i18n-data-toast="toast.restoreWelcome" data-toast-type="success|warning|error" data-i18n="action.restore">還原此版本</button>
                     </div>
                 </div>
                 <div class="prompt-content">
@@ -1209,7 +1218,7 @@ permalink: 5-2_conversationSettings.html
                         </td>
                         <td><input type="text" class="form-control js-osub-replacement" value="{{ rule.replacement }}" aria-labelledby="osubRowName-{{ loop.index }} osubHeadReplacement"></td>
                         <td class="text-center"><label class="form-checkbox in-cell"><input type="checkbox" class="js-osub-is-regex"{% if rule.isRegex %} checked{% endif %}><span class="sr-only" data-i18n="settings.outputReplacementIsRegex">Regex</span></label></td>
-                        <td><button type="button" class="button button-border button-sm js-remove-osub" data-i18n="action.delete">刪除</button></td>
+                        <td><button type="button" id="osubDelete-{{ loop.index }}" aria-labelledby="osubRowName-{{ loop.index }} osubDelete-{{ loop.index }}" class="button button-border button-sm js-remove-osub" data-i18n="action.delete">刪除</button></td>
                     </tr>
                     {% else %}
                     <tr><td colspan="4" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
@@ -1491,14 +1500,17 @@ permalink: 5-2_conversationSettings.html
                                      同一顆規則的 `case` 已經用 `B06` 了，兩處先前對不起來。 #}
                                 {% for cat in [{ code: "B06", limit: "2000" }, { code: "B02", limit: "800" }] %}
                                 <div class="flex-row flex-wrap gap-8">
-                                    <input type="text" class="form-control js-orule-category-code" value="{{ cat.code }}" aria-label="代碼" data-i18n-aria-label="settings.outputRuleCategoryCode">
+                                    {# 這一組裡有兩列同型欄位 ⇒ 光靠外層那顆 role="group" 只報得出「逐代碼
+                                         覆寫上限」，兩顆刪除鈕仍逐字同名。代碼欄的**值**就是這一列的身分，
+                                         故把它掛 id 併進刪除鈕的可及名稱（§4：可及名稱不在逐列豁免內）。 #}
+                                    <input type="text" id="oruleCatCode-{{ oruleIdx }}-{{ loop.index }}" class="form-control js-orule-category-code" value="{{ cat.code }}" aria-label="代碼" data-i18n-aria-label="settings.outputRuleCategoryCode">
                                     <input type="number" class="form-control js-orule-category-limit" value="{{ cat.limit }}" min="1" max="100000" step="1" aria-label="上限" data-i18n-aria-label="settings.outputRuleValue" aria-describedby="oruleCategoryHint{{ oruleIdx }}">
-                                    <button type="button" class="button button-border button-sm js-remove-orule-category" data-i18n="action.delete">刪除</button>
+                                    <button type="button" id="oruleCatDelete-{{ oruleIdx }}-{{ loop.index }}" aria-labelledby="oruleCatCode-{{ oruleIdx }}-{{ loop.index }} oruleCatDelete-{{ oruleIdx }}-{{ loop.index }}" class="button button-border button-sm js-remove-orule-category" data-i18n="action.delete">刪除</button>
                                 </div>
                                 {% endfor %}
                                 </div>
                                 <div class="flex-row">
-                                    <button type="button" class="button button-border button-sm js-add-orule-category" data-i18n="settings.addOutputRuleCategory">新增代碼上限</button>
+                                    <button type="button" id="oruleAddCat-{{ oruleIdx }}" aria-labelledby="oruleRowName-{{ oruleIdx }} oruleAddCat-{{ oruleIdx }}" class="button button-border button-sm js-add-orule-category" data-i18n="settings.addOutputRuleCategory">新增代碼上限</button>
                                 </div>
                             </div>
                             {% elif rule.kind == "constant_route" %}
@@ -1525,6 +1537,8 @@ permalink: 5-2_conversationSettings.html
                                 <div role="group" aria-labelledby="oruleCasesLabel{{ loop.index }}" class="flex-row column gap-8">
                                 {% for case in rule.cases %}
                                 <div class="flex-row flex-wrap gap-8">
+                                    {# 同上：一顆規則卡裡多列情境條件，刪除鈕逐字同名。這一列的身分是
+                                         「填入值」（述詞與槽兩列可能相同，值不會）。 #}
                                     <input type="text" class="form-control js-orule-case-slot" value="{{ case.slot }}" aria-label="意圖維度槽" data-i18n-aria-label="settings.outputRuleCategorySlot">
                                     <select class="form-control select-sm singleSelect js-orule-case-op" aria-label="述詞" data-i18n-aria-label="settings.outputRuleCaseOp">
                                         <option value="is_set" data-i18n="settings.outputRuleOpIsSet"{% if case.op == "is_set" %} selected{% endif %}>已判定</option>
@@ -1535,21 +1549,21 @@ permalink: 5-2_conversationSettings.html
                                     {% if case.op == "eq" or case.op == "in" %}
                                     <input type="text" class="form-control js-orule-case-operand" value="{{ case.operand }}" aria-label="比對代碼" data-i18n-aria-label="settings.outputRuleCaseOperand" aria-describedby="oruleCaseOperandHint{{ oruleIdx }}">
                                     {% endif %}
-                                    <input type="text" class="form-control js-orule-case-value" value="{{ case.value }}" aria-label="填入值" data-i18n-aria-label="settings.outputRuleCaseValue">
-                                    <button type="button" class="button button-border button-sm js-remove-orule-case" data-i18n="action.delete">刪除</button>
+                                    <input type="text" id="oruleCaseValue-{{ oruleIdx }}-{{ loop.index }}" class="form-control js-orule-case-value" value="{{ case.value }}" aria-label="填入值" data-i18n-aria-label="settings.outputRuleCaseValue">
+                                    <button type="button" id="oruleCaseDelete-{{ oruleIdx }}-{{ loop.index }}" aria-labelledby="oruleCaseValue-{{ oruleIdx }}-{{ loop.index }} oruleCaseDelete-{{ oruleIdx }}-{{ loop.index }}" class="button button-border button-sm js-remove-orule-case" data-i18n="action.delete">刪除</button>
                                 </div>
                                 {% endfor %}
                                 </div>
                                 <div class="text-gray" id="oruleCaseOperandHint{{ oruleIdx }}"><span data-i18n="settings.outputRuleCaseOperandHintPrefix">述詞選「等於代碼」時填一個代碼；選「屬於代碼清單」時用逗號分隔，最多 </span><span>20</span><span data-i18n="settings.outputRuleCaseOperandHintSuffix"> 個。「已判定」「未判定」不吃代碼。</span></div>
                                 <div class="flex-row">
-                                    <button type="button" class="button button-border button-sm js-add-orule-case" data-i18n="settings.addOutputRuleCase">新增條件</button>
+                                    <button type="button" id="oruleAddCase-{{ oruleIdx }}" aria-labelledby="oruleRowName-{{ oruleIdx }} oruleAddCase-{{ oruleIdx }}" class="button button-border button-sm js-add-orule-case" data-i18n="settings.addOutputRuleCase">新增條件</button>
                                 </div>
                             </div>
                             {% else %}
                             <span class="text-gray" data-i18n="settings.outputRuleNoParams">此規則沒有參數。</span>
                             {% endif %}
                         </td>
-                        <td><button type="button" class="button button-border button-sm js-remove-orule" data-i18n="action.delete">刪除</button></td>
+                        <td><button type="button" id="oruleDelete-{{ oruleIdx }}" aria-labelledby="oruleRowName-{{ oruleIdx }} oruleDelete-{{ oruleIdx }}" class="button button-border button-sm js-remove-orule" data-i18n="action.delete">刪除</button></td>
                     </tr>
                     {% else %}
                     <tr><td colspan="4" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>

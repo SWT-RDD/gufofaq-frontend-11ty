@@ -1576,23 +1576,34 @@ test("§2 畫得出內容的那一行要與收尾標籤同一行（縮排會併�
     //   ✓ 綠：`…{{ r.detail }}</p>{% endif %}` ↵ `</li>`   值被 </p> 收起來了，尾巴是純空白節點
     //   ✓ 綠：`<span …>{{ group.label }}</span>` ↵ `</label>`         同上
     const INLINE = /^<\/(span|td|th|li|a|button|label|p|code|small|strong|em|b|i|h[1-6])>/;
-    const bad = [];
+    // **屬性值先挖空**：這條規則講的是「文字節點」，而屬性裡沒有文字節點可言。
+    // `aria-labelledby="{% if owner %}{{ owner }} {% endif %}rowName-1 …"`（逐列可及名稱的可選前綴，
+    // §4）在字面上剛好命中「值後面緊接著 endif」那一支——不挖空的話它是一條永遠修不掉的假紅，
+    // 而唯一的「修法」是把正確的 markup 改壞。
+    const stripAttrs = (s) => s.replace(/=(["'])(?:(?!\1)[\s\S])*?\1/g, "=$1$1");
     let seen = 0;
-    for (const f of srcHtml) {
-        const lines = read(f).replace(/\{#[\s\S]*?#\}/g, (m) => m.replace(/[^\n]/g, " ")).split(/\r?\n/);
-        lines.forEach((line, i) => {
-            const cur = line.trim();
-            const next = (lines[i + 1] || "").trim();
-            if (!cur.includes("{{") || !INLINE.test(next)) return;
-            if (/\{\{\s*content\s*\|\s*safe\s*\}\}/.test(cur)) return; // layout 的區塊注入點＝{children}
-            seen++;
-            // 結尾是裸值，或某條 {% if %} 分支以裸值收尾（值後面緊接著 else/elif/endif）
-            if (/\}\}\s*$/.test(cur) || /\}\}\s*\{%-?\s*(else|elif|endif)/.test(cur))
-                bad.push(`${f}:${i + 1}  ${cur.slice(0, 80)}\n      ↵ ${next}`);
-        });
-    }
+    const rule = (line, _f, i, lines) => {
+        const cur = stripAttrs(line.trim());
+        const next = stripAttrs((lines[i + 1] || "").trim());
+        if (!cur.includes("{{") || !INLINE.test(next)) return null;
+        if (/\{\{\s*content\s*\|\s*safe\s*\}\}/.test(cur)) return null; // layout 的區塊注入點＝{children}
+        seen++;
+        // 結尾是裸值，或某條 {% if %} 分支以裸值收尾（值後面緊接著 else/elif/endif）
+        if (/\}\}\s*$/.test(cur) || /\}\}\s*\{%-?\s*(else|elif|endif)/.test(cur))
+            return `${line.trim().slice(0, 80)}\n      ↵ ${next}`;
+        return null;
+    };
+    const bad = [];
+    for (const f of srcHtml)
+        bad.push(...scanText(read(f).replace(/\{#[\s\S]*?#\}/g, (m) => m.replace(/[^\n]/g, " ")), rule, f));
     assert.ok(seen >= 20, `只掃到 ${seen} 個「插值行 + 行內收尾標籤」的組合 —— 這條測試在空轉`);
     assert.equal(bad.length, 0, `把值與收尾標籤收成一行（縮排會變成輸出文字節點裡的字元）：\n${fail(bad)}`);
+    // 合成樣本走同一支 rule：第二顆 good 就是上面那個假紅（屬性裡的 endif 不算），
+    // 挖空屬性那一步被拿掉時它會當場變紅。
+    probe("§2 值貼著收尾標籤", (s) => scanText(s, rule),
+        ["<li>{{ tf.records }}\n</li>", "<span>{% if a %}{{ x }}{% else %}—{% endif %}\n</span>"],
+        ["<li><p>{{ r.detail }}</p>\n</li>",
+            `<button aria-labelledby="{% if o %}{{ o }} {% endif %}rowName-1">{{ n }}</button>\n</td>`]);
 });
 
 test("§4 元件 scss 不得出現別的元件 class（祖先位或後裔位都算跨元件覆寫）", () => {
@@ -5170,7 +5181,10 @@ test("§1-2 元件庫的節號從 00 起連續不重複，且 aside 目錄與 <s
     // 目錄與 DOM 的**順序**其實是對的，錯的只有那三個號碼，所以「照目錄看一遍」看不出來。
     // 而號碼是**別的檔案用來指路的東西**（ui/link-file 的檔頭寫「08 按鈕」，而 08 是輸入框、
     // 按鈕是 07）——一個重複的號碼會讓所有指向它的檔頭同時失準，且沒有任何測試看得到。
-    const nums = (html) => [...html.matchAll(/<h2 class="section-title"><span>(\d+)<\/span>/g)].map((m) => m[1]);
+    // `[^>]*` 不能省：這顆 <h2> 掛得了別的屬性（節標題同時是幾顆示範控制項可及名稱的起頭 ⇒ 有 id），
+    // 寫死 `"section-title">` 的話，加一個屬性就讓那一節整個掃不到——而掃不到的表現是「節號少一個、
+    // 後面全部往前對」，看起來像節號排錯，不像正則失準。
+    const nums = (html) => [...html.matchAll(/<h2 class="section-title"[^>]*><span>(\d+)<\/span>/g)].map((m) => m[1]);
     // 規則函式（probe 走同一支）：回傳「第 i 節的號碼不是 i」的那幾條
     const numHits = (html) => nums(html).map((v, i) => (v === String(i).padStart(2, "0") ? "" : `第 ${i + 1} 節寫著 ${v}，應為 ${String(i).padStart(2, "0")}`)).filter(Boolean);
     // 目錄 ⇄ DOM：順序與組成都要一樣（單向清單會腐化成「目錄有、頁面沒有」，§1-2）
@@ -5188,7 +5202,7 @@ test("§1-2 元件庫的節號從 00 起連續不重複，且 aside 目錄與 <s
         const out = [];
         const secs = [...html.matchAll(/<section id="([\w-]+)"([\s\S]*?)(?=<section id="|$)/g)];
         for (const [, id, body] of secs) {
-            const n = (body.match(/<h2 class="section-title"><span>\d+<\/span>/g) || []).length;
+            const n = (body.match(/<h2 class="section-title"[^>]*><span>\d+<\/span>/g) || []).length;
             if (n !== 1) out.push(`<section id="${id}"> 有 ${n} 個節號（每節剛好一個；沒號碼＝所有指向它的檔頭都會失準）`);
         }
         if (nums(html).length !== secs.length)
@@ -7053,4 +7067,118 @@ test("§5 ui/table-sort 的負控：把重排那一段從原文移除後，上�
     env.fixture.btn.dispatch("click", {});
     assert.deepEqual(namesOf(env.fixture.tbody), ["c", "a", "b"],
         "移除 render(sorted) 之後列序應該原封不動——若這裡仍被排序，代表排序來自別處，上面的斷言是假綠");
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// §4 可及名稱不得在同一個無障礙範圍內重複
+//
+// 這條是「逐列控制項」那一段規則的機器版。它抓的東西**視覺指紋完全看不到**：畫面上二十顆
+// 「刪除」長得就該一模一樣，錯的是報讀器的元素清單上出現二十行一模一樣的「刪除」。
+// 第一次跑出來 363 筆，而全站沒有任何一條測試看得到它們。
+//
+// 「同一個無障礙範圍」不是整頁——下面四種容器把頁面切開，範圍**之間**的重名不算：
+//   ① <dialog>：關著時不在樹上，開著時是 modal、其餘 inert。
+//   ② .mobile-nav：與 header 的 .header-controls-slot 互斥（兩邊各自 display:none）。
+//   ③ .tab-content：tab.js 一次只顯示一個。
+//   ④ role="group" + aria-labelledby：§4 對「一格內／一區內多顆同型控制項」開的正是這條路，
+//      報讀器進群組時會先念群組名。
+// 巢狀要遞迴（面板裡有群組、群組裡有彈窗）：不遞迴的話，外層一被抽走，內層的切法就跑不到了。
+test("§4 同一個無障礙範圍內，button／連結型 <a> 的可及名稱不得重複（可見字面可以重複，名稱不行）", () => {
+    // 圖片的 alt 也是可及名稱的一部分（頁碼鈕就只有它）。
+    const textOf = (h) =>
+        h.replace(/<img\b((?:"[^"]*"|[^>"])*)>/gi, (_, a) => " " + ((a.match(/\balt="([^"]*)"/) || [])[1] || "") + " ")
+            .replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+    const closeAt = (html, tag, from) => {
+        let depth = 1;
+        const re = new RegExp("<" + tag + "\\b|</" + tag + "\\s*>", "gi");
+        re.lastIndex = from;
+        for (let m; (m = re.exec(html));) {
+            if (m[0][1] === "/") { if (!--depth) return m.index; } else depth++;
+        }
+        return -1;
+    };
+    const SCOPES = [
+        /<dialog\b((?:"[^"]*"|[^>"])*)>/gi,
+        /<nav\b(?=(?:"[^"]*"|[^>"])*class="[^"]*\bmobile-nav\b)((?:"[^"]*"|[^>"])*)>/gi,
+        /<div\b(?=(?:"[^"]*"|[^>"])*class="[^"]*\btab-content\b)((?:"[^"]*"|[^>"])*)>/gi,
+        /<[a-z]+\b(?=(?:"[^"]*"|[^>"])*role="group")(?=(?:"[^"]*"|[^>"])*aria-labelledby=)((?:"[^"]*"|[^>"])*)>/gi,
+    ];
+    const scopesOf = (html, depth = 0) => {
+        if (depth > 6) return [{ label: "page", html }];
+        const out = [];
+        let rest = html;
+        for (const sel of SCOPES) {
+            for (;;) {
+                sel.lastIndex = 0;
+                const m = sel.exec(rest);
+                if (!m) break;
+                const tag = m[0].slice(1).match(/^[a-zA-Z][\w-]*/)[0];
+                const end = closeAt(rest, tag, m.index + m[0].length);
+                if (end < 0) break;
+                const id = (m[1].match(/\bid="([^"]+)"/) || [])[1] || (m[1].match(/class="([^"]*)"/) || [])[1] || tag;
+                for (const s of scopesOf(rest.slice(m.index + m[0].length, end), depth + 1))
+                    out.push({ label: `<${tag} ${id}>` + (s.label === "page" ? "" : " " + s.label), html: s.html });
+                rest = rest.slice(0, m.index) + rest.slice(end + tag.length + 3);
+            }
+        }
+        out.push({ label: "page", html: rest });
+        return out;
+    };
+    let seen = 0;
+    const dupsIn = (html) => {
+        // id → 它的可讀文字（aria-labelledby 逐一解析後接起來就是可及名稱）
+        const idText = new Map();
+        for (const m of html.matchAll(/<([a-zA-Z][\w-]*)((?:"[^"]*"|[^>"])*)>/g)) {
+            const id = m[2].match(/\bid="([^"]+)"/);
+            if (!id) continue;
+            if (/^(input|img|br|hr|meta|link)$/i.test(m[1])) {
+                const v = m[2].match(/\b(?:value|placeholder|alt)="([^"]*)"/);
+                idText.set(id[1], v ? v[1] : "");
+                continue;
+            }
+            const end = closeAt(html, m[1], m.index + m[0].length);
+            idText.set(id[1], end > 0 ? textOf(html.slice(m.index + m[0].length, end)) : "");
+        }
+        const out = [];
+        for (const sc of scopesOf(html)) {
+            const names = new Map();
+            for (const m of sc.html.matchAll(/<(button|a)\b((?:"[^"]*"|[^>"])*)>/g)) {
+                const attrs = m[2];
+                // 純導覽連結不算控制項；只收長得像按鈕／目錄項的那些 <a>
+                if (m[1] === "a" && !/class="[^"]*\b(button|btn|aside-link|nav-link)/.test(attrs)) continue;
+                const lb = attrs.match(/\baria-labelledby="([^"]+)"/);
+                const al = attrs.match(/\baria-label="([^"]*)"/);
+                let name;
+                if (lb) name = lb[1].split(/\s+/).map((x) => idText.get(x) ?? `«${x} 指到空氣»`).join(" ");
+                else if (al) name = al[1];
+                else {
+                    const end = closeAt(sc.html, m[1], m.index + m[0].length);
+                    name = end > 0 ? textOf(sc.html.slice(m.index + m[0].length, end)) : "";
+                }
+                name = name.replace(/\s+/g, " ").trim() || "«無可及名稱»";
+                seen++;
+                names.set(name, (names.get(name) || 0) + 1);
+            }
+            for (const [n, c] of names) if (c > 1) out.push(`${c} 顆同名「${n.slice(0, 60)}」  範圍 ${sc.label}`);
+        }
+        return out;
+    };
+    const hits = [];
+    for (const f of distHtml) hits.push(...dupsIn(distDoc(f)).map((s) => `dist/${f}  ${s}`));
+    assert.ok(seen > 900, `只掃到 ${seen} 顆按鈕 —— 這條測試在空轉`);
+    assert.equal(hits.length, 0, `可及名稱撞名（可見字面可以逐列重複，可及名稱不在豁免之內，§4）：\n${fail(hits)}`);
+
+    // 合成樣本：四種豁免各一顆 good（豁免被寫寬／寫窄都會當場變紅），bad 兩顆。
+    probe("§4 可及名稱撞名", (s) => dupsIn(s),
+        [
+            "<table><tr><td>甲</td><td><button>刪除</button></td></tr><tr><td>乙</td><td><button>刪除</button></td></tr></table>",
+            '<div id="a">甲</div><button aria-labelledby="a">去</button><div id="b">甲</div><button aria-labelledby="b">去</button>',
+        ],
+        [
+            '<td id="r1">甲</td><button id="d1" aria-labelledby="r1 d1">刪除</button><td id="r2">乙</td><button id="d2" aria-labelledby="r2 d2">刪除</button>',
+            '<dialog id="m1"><button>關閉</button></dialog><dialog id="m2"><button>關閉</button></dialog>',
+            '<div class="tab-content"><button>查詢</button></div><div class="tab-content"><button>查詢</button></div>',
+            '<span id="g1">A 側</span><div role="group" aria-labelledby="g1"><button>讚</button></div>' +
+            '<span id="g2">B 側</span><div role="group" aria-labelledby="g2"><button>讚</button></div>',
+        ]);
 });

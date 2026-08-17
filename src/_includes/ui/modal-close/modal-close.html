@@ -1,6 +1,10 @@
 {# 跳窗右上角的關閉鈕。無參數 —— 每個 modal 逐字元相同，故不留任何客製點。
    `.btn-close-modals` 是 ui/modals 的 js hook（點了就關窗，無樣式）。
-   叉叉字形由 CSS 遮罩畫（_modal-close.scss），所以這裡沒有 <img>：深色模式免反相。 #}
-<button type="button" class="modals-close btn-close-modals" title="關閉" data-i18n-title="action.close">
-    <span class="sr-only" data-i18n="action.close">關閉</span>
+   叉叉字形由 CSS 遮罩畫（_modal-close.scss），所以這裡沒有 <img>：深色模式免反相。
+   **名稱是「關閉視窗」不是「關閉」**（§4）：四個彈窗（share-manage／untagged-files／
+   manage-tenant／share）頁尾另有一顆可見字面就是「關閉」的鈕，同一個 <dialog> 裡兩顆同名，
+   報讀器的元素清單上會出現兩行一模一樣的「關閉」。這一顆沒有可見字面（叉叉是 CSS 遮罩畫的），
+   所以改名不會撞到 WCAG 2.5.3 Label in Name；改頁尾那顆才會。 #}
+<button type="button" class="modals-close btn-close-modals" title="關閉視窗" data-i18n-title="action.closeModal">
+    <span class="sr-only" data-i18n="action.closeModal">關閉視窗</span>
 </button>

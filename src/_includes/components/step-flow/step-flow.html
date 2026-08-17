@@ -83,6 +83,16 @@
         `qa_direct` 是 **「QA 直答比對」**。其餘十一顆本來就逐字相同，只有這一顆自己縮寫成
         「QA 直答」；而 React 端顯示名是以 `step_id` 查自己的字典（`stepNode.qa_direct`），
         字面分岔時畫面不會報錯，只會兩邊各說各話。
+   參數：stepFlowInstance（**必填**）＝同頁多實例的消歧鍵（2-2-3 一頁 include 兩次、元件庫頁兩次）。
+     每一列的可及名稱要帶「哪一站」，那些 id 都以它為前綴；沒有它的話同頁十顆展開鈕全叫「展開表格」，
+     而且 id 會直接撞（§4）。正典見 components/priority-table 的 priorityTableInstance。
+   參數：stepFlowOwnerId（選填）＝**同頁另一份執行流程**時，指向「這一份是誰的」那個既有標題節點的 id。
+     instance 只解決 id 相撞，解決不了**可及名稱**相撞：2-2-3 兩側跑的是同一條正典管線，兩邊的
+     「序號 1 QA 直答比對 展開表格」逐字相同（§4：可見字面可以重複、可及名稱不行）。給了它，
+     兩側的每一顆列控制項就從「設定 A · …」起頭。同頁只有一份時不必給。
+   **列序號是可及名稱的一部分**：節點標籤本身會重複（agent 迴圈可以連呼同一顆工具兩次，3-4 的試跑
+     沙盒就演到了；元件庫的判定目錄更是十列同名），所以每一列的辨識欄前面掛一段 .sr-only 的
+     「序號 N」。它不可見、不動版面，但讓「第幾站」進得了無障礙樹。
    參數：stepFlowNodes（選填，[{ label, state, time, depth, skill, version, iterations, error,
      tools, params, result, verdict, thinking, failedServers, offPipeline,
      hits, score, decidedBy, floor, decision, entry, matchedRank, poolSize, reusedFrom }]）
@@ -177,7 +187,8 @@
 {% for node in stepFlowNodeRows %}{% if not node.depth and not node.offPipeline %}{% set stepFlowTotal = stepFlowTotal + 1 %}{% if node.state == "completed" or node.state == "running" or node.state == "failed" %}{% set stepFlowCurrent = stepFlowTotal %}{% endif %}{% endif %}{% endfor %}
 <div class="step-flow js-accordion mt-24">
     <div class="flex-row justify-content-between align-items-center flex-wrap gap-8">
-        <span class="text-lg text-bold" data-i18n="agent.execFlow">執行流程</span>
+        {# 這顆標題同時是「全部展開／全部收合」兩顆鈕的可及名稱起頭（§4）。 #}
+        <span class="text-lg text-bold" id="stepFlowTitle-{{ stepFlowInstance }}" data-i18n="agent.execFlow">執行流程</span>
         <div class="flex-row align-items-center gap-8 flex-wrap">
             {# 進度前後綴走 i18n、數字由陣列推導（stepFlowCurrent／stepFlowTotal），不烤字面量（§6）。
                  分母是 stepFlowTotal（只數正典節點）而不是 stepFlowNodeRows.length（含巢狀子步驟）——
@@ -186,8 +197,8 @@
                  「根本不在正典管線上的節點」（`MCP 工具載入` 只在工具載入失敗那一輪出現）。兩者都算進
                  分母的話，正常那一輪的 N 會比故障那一輪少一，同一條管線在畫面上長出兩種長度。 #}
             <span class="step-flow-progress"><span data-i18n="agent.stepProgressPrefix">目前</span> {{ stepFlowCurrent }} / {{ stepFlowTotal }}</span>
-            <button type="button" class="button button-border button-sm js-expand-all" data-i18n="common.expandAll">全部展開</button>
-            <button type="button" class="button button-border button-sm js-collapse-all" data-i18n="common.collapseAll">全部收合</button>
+            <button type="button" id="stepFlowExpandAll-{{ stepFlowInstance }}" aria-labelledby="{% if stepFlowOwnerId %}{{ stepFlowOwnerId }} {% endif %}stepFlowTitle-{{ stepFlowInstance }} stepFlowExpandAll-{{ stepFlowInstance }}" class="button button-border button-sm js-expand-all" data-i18n="common.expandAll">全部展開</button>
+            <button type="button" id="stepFlowCollapseAll-{{ stepFlowInstance }}" aria-labelledby="{% if stepFlowOwnerId %}{{ stepFlowOwnerId }} {% endif %}stepFlowTitle-{{ stepFlowInstance }} stepFlowCollapseAll-{{ stepFlowInstance }}" class="button button-border button-sm js-collapse-all" data-i18n="common.collapseAll">全部收合</button>
         </div>
     </div>
 
@@ -268,7 +279,8 @@
                     {# 縮排以樹深 depth 推導（無＝正典管線節點，1＋＝子樹）；階數夾在 3（scss 只定義到
                          is-depth-3，插值出未定義的 class 會靜默不縮排）。skill 呼叫本身另加標記 class
                          供樣式區分「這一站是租戶自訂能力包」而非正典管線的一站。 #}
-                    <td><span class="step-node-label{% if node.depth %} is-nested is-depth-{% if node.depth > 3 %}3{% else %}{{ node.depth }}{% endif %}{% endif %}{% if node.skill %} is-skill{% endif %}">{{ node.label }}</span></td>
+                    {# 這一格是本列的辨識欄：同列的展開鈕與結果收合鈕都 aria-labelledby 到它（§4 逐列控制項）。 #}
+                    <td id="stepNodeLabel-{{ stepFlowInstance }}-{{ loop.index }}"><span class="sr-only"><span data-i18n="common.seq">序號</span> {{ loop.index }}</span><span class="step-node-label{% if node.depth %} is-nested is-depth-{% if node.depth > 3 %}3{% else %}{{ node.depth }}{% endif %}{% endif %}{% if node.skill %} is-skill{% endif %}">{{ node.label }}</span></td>
                     <td class="step-node-time">{{ node.time }}</td>
                     <td class="step-node-state">
                         {% if node.state == "completed" %}<span data-i18n="agent.stepCompleted">已完成</span>{% elif node.state == "running" %}<span data-i18n="agent.stepRunning">進行中</span>{% elif node.state == "skipped" %}<span data-i18n="agent.stepSkipped">略過</span>{% elif node.state == "failed" %}<span data-i18n="platform.resultFail">失敗</span>{% else %}<span data-i18n="agent.stepPending">待處理</span>{% endif %}
@@ -279,7 +291,11 @@
                              （漏掉 iterations／entry／poolSize），只因為現行使用頁的節點都另帶 decision 或
                              skill 才沒觸發。 #}
                         {% if node.tools or node.params or node.result or node.verdict or node.thinking or node.skill or node.error or node.hits or node.score or node.decidedBy or node.floor or node.decision or node.iterations or node.entry or node.poolSize or node.failedServers %}
-                        <button type="button" class="button accordion-btn" aria-expanded="false" title="展開表格" data-i18n-title="common.expandRow">
+                        {# 可及名稱＝「這一站的名字 ＋ 本鈕自己的字」（§4）：自指是為了讓 WCAG 2.5.3
+                             Label in Name 成立——鈕上看得到的字是「展開表格」，可及名稱裡就必須含它，
+                             否則語音控制唸「展開表格」點不到；而 accordion.js 換 sr-only 文字時，
+                             自指的那一半會跟著變成「收合表格」，不必另外同步。 #}
+                        <button type="button" id="stepNodeToggle-{{ stepFlowInstance }}-{{ loop.index }}" aria-labelledby="{% if stepFlowOwnerId %}{{ stepFlowOwnerId }} {% endif %}stepNodeLabel-{{ stepFlowInstance }}-{{ loop.index }} stepNodeToggle-{{ stepFlowInstance }}-{{ loop.index }}" class="button accordion-btn" aria-expanded="false" title="展開表格" data-i18n-title="common.expandRow">
                             <span class="sr-only" data-i18n="common.expandRow">展開表格</span>
                         </button>
                         {% endif %}
@@ -341,7 +357,7 @@
                                     {% endif %}
                                     {% if node.result %}
                                     <tr>
-                                        <th data-i18n="agent.result">結果</th>
+                                        <th id="stepNodeResultHead-{{ stepFlowInstance }}-{{ loop.index }}" data-i18n="agent.result">結果</th>
                                         {# 工具輸出是長文 ⇒ 走 ui/collapse-text（夾住而且打得開）。**就這樣、沒有截斷指標**。
                                              這裡曾經有一組 `resultShown`／`resultLength` 的「已顯示前 N 字／共 M 字」＋
                                              「看完整輸出」，理由寫的是「被截到的欄位會自述原始長度 ⇒ 渲染條件是上游回了長度」。
@@ -363,7 +379,7 @@
                                              整段軌跡被夾掉那一態（stepFlowTraceShown／Total）**不受影響**：那個
                                              `{truncated, total}` 上游真的送得出來，形狀像但可得性不同。 #}
                                         <td>
-                                            <div class="collapse-text"><div class="collapse-body">{{ node.result }}</div><button type="button" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>
+                                            <div class="collapse-text"><div class="collapse-body">{{ node.result }}</div><button type="button" id="stepNodeResultToggle-{{ stepFlowInstance }}-{{ loop.index }}" aria-labelledby="{% if stepFlowOwnerId %}{{ stepFlowOwnerId }} {% endif %}stepNodeLabel-{{ stepFlowInstance }}-{{ loop.index }} stepNodeResultHead-{{ stepFlowInstance }}-{{ loop.index }} stepNodeResultToggle-{{ stepFlowInstance }}-{{ loop.index }}" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>
                                         </td>
                                     </tr>
                                     {% endif %}

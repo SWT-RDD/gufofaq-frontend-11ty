@@ -384,6 +384,7 @@ permalink: 5-10_tagDimensions.html
                         {% if dim.tagged < dim.total %}
                         <button data-capability="settings:read data:read" type="button" class="button button-border button-sm js-view-untagged"
                             data-dimension-id="{{ dim.id }}"
+                            id="tagDimUntagged-{{ loop.index }}" aria-labelledby="tagDimSlot-{{ loop.index }} tagDimUntagged-{{ loop.index }}"
                             data-toast="正在查詢資料...|權限不足，無法查看|查詢成功|文件數超過單次掃描上限，請改用單一資料集範圍|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.queryUntagged" data-toast-type="info|warning|success|warning|error"
                             data-i18n="settings.viewUntagged">查看未標註</button>
                         {% endif %}
@@ -391,13 +392,14 @@ permalink: 5-10_tagDimensions.html
                     </td>
                     <td>
                         <div class="btn-group">
-                            <button data-capability="settings:write" type="button" class="button button-border button-sm" data-toast="標籤維度已更新|權限不足，無法儲存|維度名稱不可為空|儲存失敗，請稍後再試" data-i18n-data-toast="toast.saveTagDimension" data-toast-type="success|warning|warning|error" data-i18n="action.save">儲存</button>
+                            {# 三顆列動作鈕的可及名稱＝「本列槽名 ＋ 本鈕自己的字」（§4 逐列控制項）。 #}
+                            <button data-capability="settings:write" type="button" id="tagDimSave-{{ loop.index }}" aria-labelledby="tagDimSlot-{{ loop.index }} tagDimSave-{{ loop.index }}" class="button button-border button-sm" data-toast="標籤維度已更新|權限不足，無法儲存|維度名稱不可為空|儲存失敗，請稍後再試" data-i18n-data-toast="toast.saveTagDimension" data-toast-type="success|warning|warning|error" data-i18n="action.save">儲存</button>
                             {# 日期維度沒有字典可編——product 對它的 vocabulary 寫入一律 400，
                                  給一顆點了只會失敗的鈕就是說謊。 #}
                             {% if dim.kind != "date" %}
-                            <button data-capability="settings:read" type="button" class="button button-border button-sm js-edit-vocabulary" data-toast="正在查詢資料...|權限不足，無法查詢|查詢成功|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.query" data-toast-type="info|warning|success|error" data-i18n="settings.editVocabulary">編輯字典</button>
+                            <button data-capability="settings:read" type="button" id="tagDimVocabulary-{{ loop.index }}" aria-labelledby="tagDimSlot-{{ loop.index }} tagDimVocabulary-{{ loop.index }}" class="button button-border button-sm js-edit-vocabulary" data-toast="正在查詢資料...|權限不足，無法查詢|查詢成功|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.query" data-toast-type="info|warning|success|error" data-i18n="settings.editVocabulary">編輯字典</button>
                             {% endif %}
-                            <button type="button" class="button button-red button-sm js-delete-tag-dimension" data-i18n="action.delete">刪除</button>
+                            <button type="button" id="tagDimDelete-{{ loop.index }}" aria-labelledby="tagDimSlot-{{ loop.index }} tagDimDelete-{{ loop.index }}" class="button button-red button-sm js-delete-tag-dimension" data-i18n="action.delete">刪除</button>
                         </div>
                     </td>
                 </tr>
@@ -511,7 +513,8 @@ permalink: 5-10_tagDimensions.html
             <tbody>
                 {% for row in vocabRows %}
                 <tr data-tag-code="{{ row.code }}">
-                    <td>{{ row.code }}</td>
+                    {# 逐列辨識欄（§4）：這一列的刪除鈕指到它。 #}
+                    <td id="tagVocabRowCode-{{ loop.index }}">{{ row.code }}</td>
                     <td>{{ row.label }}</td>
                     <td>{{ row.description }}</td>
                     <td>
@@ -522,7 +525,7 @@ permalink: 5-10_tagDimensions.html
                              ⇒ 這一顆按下去 100% 撞得到，只演成功等於把整道守衛演掉（§5）。
                              它是 warning 不是 error：使用者自己關掉標籤過濾就刪得動（那道守衛的
                              docstring 逐字寫著「不是永久禁止」）。 #}
-                        <button data-capability="settings:write" type="button" class="button button-red button-sm" data-toast="代碼已刪除|權限不足，無法刪除|標籤檢索過濾正開著，刪掉代碼會立刻改變每一輪問答的過濾條件——請先把設定檔的標籤過濾關掉|刪除失敗，請稍後再試" data-i18n-data-toast="toast.deleteTagCode" data-toast-type="success|warning|warning|error" data-i18n="action.delete">刪除</button>
+                        <button data-capability="settings:write" type="button" id="tagVocabDelete-{{ loop.index }}" aria-labelledby="tagVocabRowCode-{{ loop.index }} tagVocabDelete-{{ loop.index }}" class="button button-red button-sm" data-toast="代碼已刪除|權限不足，無法刪除|標籤檢索過濾正開著，刪掉代碼會立刻改變每一輪問答的過濾條件——請先把設定檔的標籤過濾關掉|刪除失敗，請稍後再試" data-i18n-data-toast="toast.deleteTagCode" data-toast-type="success|warning|warning|error" data-i18n="action.delete">刪除</button>
                     </td>
                 </tr>
                 {% else %}
@@ -680,7 +683,7 @@ permalink: 5-10_tagDimensions.html
                              或存不進去。原本那六段覆蓋率相關的 warning（量不出來／量得不完整／超過掃描
                              上限／量測途中維度被改動）在 product 已經沒有對應的路徑了——留著就是演一個
                              回不出來的錯誤。 #}
-                        <button data-capability="settings:write data:read" type="button" class="button button-border button-sm" data-toast="檢索過濾設定已儲存|權限不足，無法儲存|還有檔沒有把這一欄寫進索引，過濾維持關閉|儲存失敗，請稍後再試" data-i18n-data-toast="toast.saveTagFilter" data-toast-type="success|warning|warning|error" data-i18n="action.save">儲存</button>
+                        <button data-capability="settings:write data:read" type="button" id="tagFilterSave-{{ loop.index }}" aria-labelledby="tagFilterProfileName-{{ loop.index }} tagFilterSave-{{ loop.index }}" class="button button-border button-sm" data-toast="檢索過濾設定已儲存|權限不足，無法儲存|還有檔沒有把這一欄寫進索引，過濾維持關閉|儲存失敗，請稍後再試" data-i18n-data-toast="toast.saveTagFilter" data-toast-type="success|warning|warning|error" data-i18n="action.save">儲存</button>
                     </td>
                 </tr>
                 {% endfor %}

@@ -52,7 +52,9 @@
 <div class="block sources-block js-accordion mt-24{% if sourcesHidden %} hidden{% endif %}">
     <div class="flex-row justify-content-between align-items-center flex-wrap gap-8">
         <div>
-            <span class="text-lg text-bold" data-i18n="qa.referenceSources">參考來源</span>
+            {# 這顆標題同時是「全部展開／全部收合」兩顆鈕的可及名稱起頭（§4）：同一頁另有
+                 執行流程那一份，兩組四顆鈕的可見字面兩兩相同。 #}
+            <span class="text-lg text-bold" id="sourcesBlockTitle" data-i18n="qa.referenceSources">參考來源</span>
             {# 這一格是 **chrome ＋ 資料**，不是整串資料：「挑選規則」「使用模型」是介面用語，
                  16／8／模型名才是資料。原本整串寫死、零 `data-i18n`，英文模式在 2-1／2-2-1／4-2
                  三頁上原樣印出繁中（§4-2）。拆成前中後綴 key 夾資料槽（正典 pagination.totalPrefix），
@@ -67,8 +69,8 @@
             </span>
         </div>
         <div class="flex-row align-items-center gap-8 flex-wrap">
-            <button type="button" class="button button-border button-sm js-expand-all" data-i18n="common.expandAll">全部展開</button>
-            <button type="button" class="button button-border button-sm js-collapse-all" data-i18n="common.collapseAll">全部收合</button>
+            <button type="button" id="sourcesExpandAll" aria-labelledby="sourcesBlockTitle sourcesExpandAll" class="button button-border button-sm js-expand-all" data-i18n="common.expandAll">全部展開</button>
+            <button type="button" id="sourcesCollapseAll" aria-labelledby="sourcesBlockTitle sourcesCollapseAll" class="button button-border button-sm js-collapse-all" data-i18n="common.collapseAll">全部收合</button>
             {% if sourcesRating %}
             <span class="divider-vertical lg"></span>
             <div class="flex-row align-items-center gap-2 sources-rating">
@@ -105,13 +107,15 @@
                 {% for source in sources %}
                 <tr>
                     <td>
-                        <button type="button" class="button accordion-btn" aria-expanded="false" title="展開表格" data-i18n-title="common.expandRow">
+                        {# 可及名稱＝「本列的檔名 ＋ 本鈕自己的字」（§4 逐列控制項；自指是 WCAG 2.5.3
+                             Label in Name 的要求，且 accordion.js 換字時會跟著變）。 #}
+                        <button type="button" id="sourceRowToggle-{{ loop.index }}" aria-labelledby="sourceRowFile-{{ loop.index }} sourceRowToggle-{{ loop.index }}" class="button accordion-btn" aria-expanded="false" title="展開表格" data-i18n-title="common.expandRow">
                             <span class="sr-only" data-i18n="common.expandRow">展開表格</span>
                         </button>
                     </td>
                     <td>{{ source.sourceNo or '—' }}</td>
                     <td>
-                        <a href="#" class="link-file">{{ source.file }}</a>
+                        <a href="#" class="link-file" id="sourceRowFile-{{ loop.index }}">{{ source.file }}</a>
                     </td>
                     <td>{{ source.dataset }}</td>
                 </tr>

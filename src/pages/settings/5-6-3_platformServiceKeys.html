@@ -358,7 +358,8 @@ permalink: 5-6-3_platformServiceKeys.html
                 {% for k in serviceKeys %}
                 <tr data-service-key-id="{{ k.id }}">
                     <td>{{ k.id }}</td>
-                    <td>{{ k.name }}</td>
+                    {# 逐列辨識欄（§4）：撤銷鈕的可及名稱指到它——同頁三把金鑰，可見字面都是「撤銷」。 #}
+                    <td id="serviceKeyRowName-{{ k.id }}">{{ k.name }}</td>
                     <td><code class="inline-code">{{ k.scope }}</code></td>
                     <td><code class="inline-code">{{ k.keyHint }}</code></td>
                     <td>{{ k.createdAt }}</td>
@@ -379,7 +380,7 @@ permalink: 5-6-3_platformServiceKeys.html
                              拿 401——而排程的 401 只寫在 Job 日誌裡，沒有人在看。開窗需先選定「撤銷
                              哪一把」＝業務條件開窗，故只留 hook class、不掛 data-open-modal；
                              成敗 toast 移到確認鈕上（§5）。 #}
-                        <button type="button" class="button button-red button-sm js-revoke-service-key" data-platform-role="admin" data-i18n="action.revoke">撤銷</button>
+                        <button type="button" id="serviceKeyRevoke-{{ k.id }}" aria-labelledby="serviceKeyRowName-{{ k.id }} serviceKeyRevoke-{{ k.id }}" class="button button-red button-sm js-revoke-service-key" data-platform-role="admin" data-i18n="action.revoke">撤銷</button>
                         {% endif %}
                     </td>
                 </tr>

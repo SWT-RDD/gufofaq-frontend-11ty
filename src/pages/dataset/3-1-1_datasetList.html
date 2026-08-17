@@ -97,7 +97,8 @@ permalink: 3-1-1_datasetList.html
             {% for row in rows %}
             <tr>
                 <td>
-                    <a href="{{ row.href }}" title="{{ row.name }}" class="link-file">{{ row.name }}</a>
+                    {# 逐列辨識欄（§4）：這一列的刪除鈕（圖示鈕，可見字面在 .sr-only）指到它。 #}
+                    <a href="{{ row.href }}" id="datasetRowName-{{ loop.index }}" title="{{ row.name }}" class="link-file">{{ row.name }}</a>
                 </td>
                 <td>{{ row.group }}</td>
                 <td>
@@ -137,7 +138,7 @@ permalink: 3-1-1_datasetList.html
                              記憶體、不落成 DOM 屬性——markup 上本來就查不到。3-1-3 那一頁才是真的把
                              `data-filesn`／`data-filename` 印在標籤上（previewDataset.js:140/167），
                              兩頁不對稱是忠實保留、不是漏。React 端這一顆從 map 的 row 閉包取值即可。 #}
-                        <button type="button" class="button-icon no-bg size-sm delete" title="刪除" data-i18n-title="action.delete">
+                        <button type="button" id="datasetDelete-{{ loop.index }}" aria-labelledby="datasetRowName-{{ loop.index }} datasetDelete-{{ loop.index }}" class="button-icon no-bg size-sm delete" title="刪除" data-i18n-title="action.delete">
                             <span class="sr-only" data-i18n="action.delete">刪除</span>
                         </button>
                     </div>

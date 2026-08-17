@@ -271,10 +271,10 @@ permalink: 5-6-2_platformMcpServers.html
                         {% if server.lastTest.ok %}
                         <div class="flex-row column gap-4">
                             <span class="text-bold">{{ server.lastTest.toolsCount }}<span data-i18n="settings.mcpToolsUnit"> 個工具</span></span>
-                            <div class="collapse-text text-gray"><div class="collapse-body">{{ server.lastTest.tools }}</div><button type="button" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>
+                            <div class="collapse-text text-gray"><div class="collapse-body">{{ server.lastTest.tools }}</div><button type="button" id="mcpToolsToggle-{{ server.id }}" aria-labelledby="mcpRowName-{{ server.id }} mcpToolsToggle-{{ server.id }}" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>
                         </div>
                         {% elif server.lastTest.error %}
-                        <div class="collapse-text text-red"><div class="collapse-body">{{ server.lastTest.message or server.lastTest.error }}</div><button type="button" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>
+                        <div class="collapse-text text-red"><div class="collapse-body">{{ server.lastTest.message or server.lastTest.error }}</div><button type="button" id="mcpErrorToggle-{{ server.id }}" aria-labelledby="mcpRowName-{{ server.id }} mcpErrorToggle-{{ server.id }}" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>
                         {% else %}
                         <span class="text-gray" data-i18n="settings.mcpNeverTested">尚未測試</span>
                         {% endif %}
@@ -286,9 +286,9 @@ permalink: 5-6-2_platformMcpServers.html
                                  也是比對「env 的 […] 送來遮罩字面」那句），所以被拒的是「新增的那組鍵沒有舊值
                                  可以沿用、值卻還是遮罩」。原本這裡寫「鍵不可以填 ***」——同一頁的建立鈕寫的才是對的，
                                  兩顆鈕對同一道守衛說了兩件事。 #}
-                            <button type="button" class="button button-border button-sm" data-toast="MCP Server 已更新|名稱已存在|執行指令不在允許清單（僅 python／python3／node／npx／uvx／uv）|新增的環境變數，值不可以是「***」（那是讀取時的遮罩，沒有舊值可以沿用），請填入真正的值|環境變數裡有上游一定會剔除的載入器掛鉤鍵，存得進去也不會生效，請先移除它們|有欄位超過上面標示的長度或項數上限，請縮短後再送出|儲存失敗" data-i18n-data-toast="toast.saveMcpServer" data-toast-type="success|warning|warning|warning|warning|warning|error" data-i18n="action.save">儲存</button>
-                            <button type="button" class="button button-border button-sm" data-toast="連線成功，工具清單已更新到右欄|連線測試失敗，失敗原因見右欄" data-i18n-data-toast="toast.testMcpServer" data-toast-type="success|error" data-i18n="settings.testConnection">測試連線</button>
-                            <button type="button" class="button button-red button-sm js-delete-mcp" data-i18n="action.delete">刪除</button>
+                            <button type="button" id="mcpSave-{{ server.id }}" aria-labelledby="mcpRowName-{{ server.id }} mcpSave-{{ server.id }}" class="button button-border button-sm" data-toast="MCP Server 已更新|名稱已存在|執行指令不在允許清單（僅 python／python3／node／npx／uvx／uv）|新增的環境變數，值不可以是「***」（那是讀取時的遮罩，沒有舊值可以沿用），請填入真正的值|環境變數裡有上游一定會剔除的載入器掛鉤鍵，存得進去也不會生效，請先移除它們|有欄位超過上面標示的長度或項數上限，請縮短後再送出|儲存失敗" data-i18n-data-toast="toast.saveMcpServer" data-toast-type="success|warning|warning|warning|warning|warning|error" data-i18n="action.save">儲存</button>
+                            <button type="button" id="mcpTest-{{ server.id }}" aria-labelledby="mcpRowName-{{ server.id }} mcpTest-{{ server.id }}" class="button button-border button-sm" data-toast="連線成功，工具清單已更新到右欄|連線測試失敗，失敗原因見右欄" data-i18n-data-toast="toast.testMcpServer" data-toast-type="success|error" data-i18n="settings.testConnection">測試連線</button>
+                            <button type="button" id="mcpDelete-{{ server.id }}" aria-labelledby="mcpRowName-{{ server.id }} mcpDelete-{{ server.id }}" class="button button-red button-sm js-delete-mcp" data-i18n="action.delete">刪除</button>
                         </div>
                     </td>
                 </tr>

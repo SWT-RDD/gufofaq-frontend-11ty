@@ -191,9 +191,10 @@ permalink: 3-6_aliasTables.html
                              **沒有重名檢查**（`alias_tables.name` 無 unique constraint），故不列
                              「名稱已存在」。 #}
                         <div class="btn-group">
-                            <button data-capability="data:write" type="button" class="button button-border button-sm" data-toast="別名表已更新|權限不足，無法儲存|表名稱不可為空，或長度超過上限|儲存失敗，請稍後再試" data-i18n-data-toast="toast.saveAliasTable" data-toast-type="success|warning|warning|error" data-i18n="action.save">儲存</button>
-                            <button type="button" class="button button-border button-sm js-manage-alias-entries" data-i18n="settings.manageAliasEntries">編輯詞條</button>
-                            <button type="button" class="button button-red button-sm js-delete-alias-table" data-i18n="action.delete">刪除</button>
+                            {# 三顆的可及名稱＝「本列表名 ＋ 本鈕自己的字」（§4 逐列控制項）。 #}
+                            <button data-capability="data:write" type="button" id="aliasTableSave-{{ table.id }}" aria-labelledby="aliasTableRowName-{{ table.id }} aliasTableSave-{{ table.id }}" class="button button-border button-sm" data-toast="別名表已更新|權限不足，無法儲存|表名稱不可為空，或長度超過上限|儲存失敗，請稍後再試" data-i18n-data-toast="toast.saveAliasTable" data-toast-type="success|warning|warning|error" data-i18n="action.save">儲存</button>
+                            <button type="button" id="aliasTableEntries-{{ table.id }}" aria-labelledby="aliasTableRowName-{{ table.id }} aliasTableEntries-{{ table.id }}" class="button button-border button-sm js-manage-alias-entries" data-i18n="settings.manageAliasEntries">編輯詞條</button>
+                            <button type="button" id="aliasTableDelete-{{ table.id }}" aria-labelledby="aliasTableRowName-{{ table.id }} aliasTableDelete-{{ table.id }}" class="button button-red button-sm js-delete-alias-table" data-i18n="action.delete">刪除</button>
                         </div>
                     </td>
                 </tr>

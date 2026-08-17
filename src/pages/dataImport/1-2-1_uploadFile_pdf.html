@@ -107,19 +107,21 @@ permalink: 1-2-1_uploadFile_pdf.html
             {% for file in fileRows %}
             <tr>
                 <td>
-                    <button type="button" class="link-modal btn-preview-file" data-index="{{ loop.index0 }}">{{ file.name }}</button>
+                    {# 這一格（檔名）是本列的辨識欄（§4）：同列的收合鈕與兩顆圖示鈕都指到它。
+                         它自己是按鈕、字面就是檔名 ⇒ 不必再另掛 sr-only 副本。 #}
+                    <button type="button" id="pdfFileRowName-{{ loop.index }}" class="link-modal btn-preview-file" data-index="{{ loop.index0 }}">{{ file.name }}</button>
                 </td>
                 <td>
-                    <div class="collapse-text"><div class="collapse-body">{{ file.title }}</div><button type="button" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>
+                    <div class="collapse-text"><div class="collapse-body">{{ file.title }}</div><button type="button" id="pdfFileTitleToggle-{{ loop.index }}" aria-labelledby="pdfFileRowName-{{ loop.index }} pdfFileTitleToggle-{{ loop.index }}" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>
                 </td>
                 <td>{{ file.time }}</td>
                 <td>{{ file.sizeMB }}MB</td>
                 <td>
                     <div class="btn-group">
-                        <button type="button" class="button-icon no-bg size-sm edit btn-edit-file" data-index="{{ loop.index0 }}" title="編輯" data-i18n-title="action.edit">
+                        <button type="button" id="pdfFileEdit-{{ loop.index }}" aria-labelledby="pdfFileRowName-{{ loop.index }} pdfFileEdit-{{ loop.index }}" class="button-icon no-bg size-sm edit btn-edit-file" data-index="{{ loop.index0 }}" title="編輯" data-i18n-title="action.edit">
                             <span class="sr-only" data-i18n="action.edit">編輯</span>
                         </button>
-                        <button type="button" class="button-icon no-bg size-sm delete btn-delete-file" data-index="{{ loop.index0 }}" title="刪除" data-i18n-title="action.delete">
+                        <button type="button" id="pdfFileDelete-{{ loop.index }}" aria-labelledby="pdfFileRowName-{{ loop.index }} pdfFileDelete-{{ loop.index }}" class="button-icon no-bg size-sm delete btn-delete-file" data-index="{{ loop.index0 }}" title="刪除" data-i18n-title="action.delete">
                             <span class="sr-only" data-i18n="action.delete">刪除</span>
                         </button>
                     </div>

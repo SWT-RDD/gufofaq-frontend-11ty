@@ -7,6 +7,10 @@
          真 app 的列也確實是 `<tr data-folder-sn="…">` 印出來的（同檔 266）——少了它，這兩顆掛點
          有名字卻認不出自己在操作哪一列。
        priority 對應「變更優先級」下拉的選中值（"高優先級"/"中優先級"/"低優先級"/"不使用"，空字串＝未選）；rows 空陣列＝空狀態表。
+       priorityTableOwnerId（**必填**）＝指向「這一張表是誰的」那個既有標題節點的 id（5-2 的
+         `.tablelist-title`）。instance 只解決 id 相撞，解決不了**可及名稱**相撞：5-2 的版面 A（逐層）
+         與版面 B（Agent）畫的是同一批分類，兩張表的「入出國與法規 編輯」逐字相同（§4：可見字面
+         可以重複、可及名稱不行）。列控制項的可及名稱一律從它起頭。
        priorityTableInstance（**必填**）＝同頁多實例的消歧鍵。5-2 一頁 include 本元件 4 次，
          而每一列的「變更優先級」下拉都需要「本列辨識欄 id ＋ 欄表頭 id」當可及名稱（§4：迴圈內
          的值控制項不得掛靜態 aria-label，否則同頁七顆 select 全叫「變更優先級」，報讀器聽不出
@@ -38,8 +42,8 @@
         <thead>
             <tr>
                 <th data-i18n="comp.categoryName">分類名稱</th>
-                <th data-i18n="comp.taskDescription">任務描述</th>
-                <th data-i18n="comp.taskPrompt">任務對應提示詞</th>
+                <th id="priorityDescHead-{{ priorityTableInstance }}" data-i18n="comp.taskDescription">任務描述</th>
+                <th id="priorityPromptHead-{{ priorityTableInstance }}" data-i18n="comp.taskPrompt">任務對應提示詞</th>
                 <th class="text-center" data-i18n="common.functions">功能</th>
                 {% if tierless %}
                 <th id="priorityHead-{{ priorityTableInstance }}" data-i18n="comp.changeUsage">變更使用狀態</th>
@@ -63,10 +67,12 @@
                      所以這個「—」不會被編輯器當成初值帶進 textarea。 #}
                 {# 整格內容都在 {% if %} 裡 ⇒ `<td>…</td>` 收成一行（§2）：`{% else %}—{% endif %}` 那一支
                      會把縮排換行併進同一個文字節點，而 JSX 會把它整段丟掉。 #}
-                <td class="edit-cell description">{% if row.description %}<div class="collapse-text"><div class="collapse-body">{{ row.description }}</div><button type="button" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>{% else %}—{% endif %}</td>
-                <td class="edit-cell prompt">{% if row.prompt %}<div class="collapse-text"><div class="collapse-body">{{ row.prompt }}</div><button type="button" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>{% else %}—{% endif %}</td>
+                {# 兩顆收合鈕同列同字（都叫「展開」）⇒ 可及名稱要「列名 ＋ 欄表頭 ＋ 本鈕自己的字」三段（§4）：
+                     少了欄表頭分不出是描述還是提示詞，少了自指就違反 WCAG 2.5.3 Label in Name。 #}
+                <td class="edit-cell description">{% if row.description %}<div class="collapse-text"><div class="collapse-body">{{ row.description }}</div><button type="button" id="priorityDescToggle-{{ priorityTableInstance }}-{{ row.sn }}" aria-labelledby="{{ priorityTableOwnerId }} priorityCat-{{ priorityTableInstance }}-{{ row.sn }} priorityDescHead-{{ priorityTableInstance }} priorityDescToggle-{{ priorityTableInstance }}-{{ row.sn }}" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>{% else %}—{% endif %}</td>
+                <td class="edit-cell prompt">{% if row.prompt %}<div class="collapse-text"><div class="collapse-body">{{ row.prompt }}</div><button type="button" id="priorityPromptToggle-{{ priorityTableInstance }}-{{ row.sn }}" aria-labelledby="{{ priorityTableOwnerId }} priorityCat-{{ priorityTableInstance }}-{{ row.sn }} priorityPromptHead-{{ priorityTableInstance }} priorityPromptToggle-{{ priorityTableInstance }}-{{ row.sn }}" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>{% else %}—{% endif %}</td>
                 <td class="text-center">
-                    <button type="button" class="button button-edit-save js-edit-btn" title="編輯" data-i18n-title="action.edit">
+                    <button type="button" id="priorityEditBtn-{{ priorityTableInstance }}-{{ row.sn }}" aria-labelledby="{{ priorityTableOwnerId }} priorityCat-{{ priorityTableInstance }}-{{ row.sn }} priorityEditBtn-{{ priorityTableInstance }}-{{ row.sn }}" class="button button-edit-save js-edit-btn" title="編輯" data-i18n-title="action.edit">
                         <img src="./images/icon_edit_blue.png" width="48" height="48" decoding="async" alt="" class="icon">
                         <span class="sr-only" data-i18n="action.edit">編輯</span>
                     </button>
@@ -76,14 +82,14 @@
                         <div class="field">
                             {# .priority-select 是真 app 的 change 掛點（knowledgeRetrieval.js:643 的 $(document).on('change','.priority-select')）#}
                             {% if tierless %}
-                            <select class="form-control select-sm singleSelect priority-select" aria-labelledby="priorityCat-{{ priorityTableInstance }}-{{ row.sn }} priorityHead-{{ priorityTableInstance }}">
+                            <select class="form-control select-sm singleSelect priority-select" aria-labelledby="{{ priorityTableOwnerId }} priorityCat-{{ priorityTableInstance }}-{{ row.sn }} priorityHead-{{ priorityTableInstance }}">
                                 <option value="" data-i18n="common.pleaseSelect">請選擇</option>
                                 {# 值沿用「高優先級」＝使用中：agent 模式不分層，但切回傳統時分層資料要還在（見檔頭）。 #}
                                 <option value="高優先級" data-i18n="comp.inUse"{% if row.priority != "不使用" and row.priority %} selected{% endif %}>使用中</option>
                                 <option value="不使用" data-i18n="comp.doNotUse"{% if row.priority == "不使用" %} selected{% endif %}>不使用</option>
                             </select>
                             {% else %}
-                            <select class="form-control select-sm singleSelect priority-select" aria-labelledby="priorityCat-{{ priorityTableInstance }}-{{ row.sn }} priorityHead-{{ priorityTableInstance }}">
+                            <select class="form-control select-sm singleSelect priority-select" aria-labelledby="{{ priorityTableOwnerId }} priorityCat-{{ priorityTableInstance }}-{{ row.sn }} priorityHead-{{ priorityTableInstance }}">
                                 <option value="" data-i18n="common.pleaseSelect">請選擇</option>
                                 <option value="高優先級" data-i18n="comp.highPriority"{% if row.priority == "高優先級" %} selected{% endif %}>高優先級</option>
                                 <option value="中優先級" data-i18n="comp.mediumPriority"{% if row.priority == "中優先級" %} selected{% endif %}>中優先級</option>

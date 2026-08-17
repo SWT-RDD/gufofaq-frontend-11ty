@@ -71,13 +71,13 @@
         <tbody>
             {% for row in demoTableRows %}
             <tr>
-                <td>{{ row.id }}</td>
+                <td id="demoTableRowId-{{ loop.index }}">{{ row.id }}</td>
                 <td>{{ row.chatId }}</td>
                 <td>
                     <a href="#" class="link-file">{{ row.question }}</a>
                 </td>
                 <td>
-                    <div class="collapse-text"><div class="collapse-body">{{ row.answer }}</div><button type="button" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>
+                    <div class="collapse-text"><div class="collapse-body">{{ row.answer }}</div><button type="button" id="demoTableAnswerToggle-{{ loop.index }}" aria-labelledby="demoTableRowId-{{ loop.index }} demoTableAnswerToggle-{{ loop.index }}" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>
                 </td>
                 <td>{{ row.userType }}</td>
                 <td>{{ row.satisfaction }}</td>
@@ -89,5 +89,7 @@
 </div>
 
 {# 展開列（accordion）表格範例：expandable rows 直接複用 ui/accordion 既有標記與行為（accordion-btn/detail-row/accordion-content），
-     不重寫互動 js，僅載入 accordion.js（已在 base.html 登記） #}
+     不重寫互動 js，僅載入 accordion.js（已在 base.html 登記）。
+     ⚠️ 本檔夾帶了一份 ui/accordion ⇒ **使用頁要在 include 本檔之前設好 accordionInstance／
+     accordionOwnerId**（見該元件檔頭）：元件庫頁另有一份獨立的第 12 節，兩份的 id 與可及名稱會撞。 #}
 {% include "ui/accordion/accordion.html" %}

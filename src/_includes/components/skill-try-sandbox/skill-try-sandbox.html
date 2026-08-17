@@ -48,5 +48,7 @@
             <p class="skill-try-answer m-0" role="status" aria-live="polite" aria-labelledby="skillTryAnswerLabel">{{ trySkillAnswer or "依訂單 A20260725-001 的金額 1,280 元與「七日內未拆封可全額退」政策，本次可退金額為 1,280 元（運費不退）。計算依據：refund-flow 呼叫 lookup-order 取得訂單金額後，以 calculate 套用政策折算。" }}</p>
         </div>
     </div>
+    {% set stepFlowInstance = "skillTry" %}
+    {% set stepFlowOwnerId = "" %}
     {% include "components/step-flow/step-flow.html" %}
 </div>

@@ -307,6 +307,9 @@ permalink: 5-4_coverageGaps.html
      一起，讀的人才分得出「只有 10 種」與「被截到剩 10 種」。這個數字從樣本陣列推導、不烤字面量
      ——上限值只有 product 知道，前端抄一份就會在它改動時開始說謊。 #}
 {% for group in gapGroups %}
+{# 巢狀迴圈的外圈序號要另存：內圈的 {{ loop.index }} 只看得到內圈，
+     四組各 5 筆的「排除」鈕若只帶內圈序號，第 1 組第 1 筆與第 4 組第 1 筆會撞 id（§4）。 #}
+{% set gapGroupNo = loop.index %}
 <div class="block flex-row column gap-16 mt-16">
     <div class="flex-row justify-content-between align-items-center flex-wrap gap-8">
         <div class="flex-row align-items-center gap-8 flex-wrap">
@@ -343,10 +346,12 @@ permalink: 5-4_coverageGaps.html
                 {% for sample in group.samples %}
                 <tr>
                     <td>{{ loop.index }}</td>
-                    <td>{{ sample.question }}</td>
+                    {# 逐列辨識欄（§4）：四組表加起來 20 顆逐字同名的「排除」，可及名稱要帶提問原文。 #}
+                    <td id="gapSampleQ-{{ gapGroupNo }}-{{ loop.index }}">{{ sample.question }}</td>
                     <td>{{ sample.count }}</td>
                     <td>
                         <button data-capability="history" type="button" class="button button-border button-sm js-exclude-question" data-question="{{ sample.question }}"
+                            id="gapSampleExclude-{{ gapGroupNo }}-{{ loop.index }}" aria-labelledby="gapSampleQ-{{ gapGroupNo }}-{{ loop.index }} gapSampleExclude-{{ gapGroupNo }}-{{ loop.index }}"
                             data-toast="正在查詢資料...|權限不足，無法查詢|查詢成功|時間區間不正確（起訖需成對、開始須早於結束與現在、且在一年內、範圍不超過 365 天）|這段期間的資料量超過單次上限，請縮小時間範圍|意圖分組的模型還沒設好，這份報表分不了群——請先到對話設定的「生成設定」把「意圖判斷」那一組的模型設好|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.queryStats" data-toast-type="info|warning|success|warning|warning|warning|error"
                             data-i18n="action.exclude">排除</button>
                     </td>

@@ -219,6 +219,8 @@ permalink: 2-2-1_singleTest.html
      一組『已顯示前 N 字／共 M 字』＋『看完整輸出』，而那個狀態**沒有任何一條路產得出來**」——整個機制在
      React 端已經移除（別再引 `onViewFullOutput` 那顆不存在的 prop）；當時的不渲染條件是 `logId === undefined`
      為不渲染條件）。跑完並落庫那一態由 4-2 詳情頁與 2-2-3 演（那兩頁都是重播）。 #}
+{% set stepFlowInstance = "single" %}
+{% set stepFlowOwnerId = "" %}
 {% include "components/step-flow/step-flow.html" %}
 
 {# 參考來源表格區塊：真實頁預設 hidden（點擊訊息列「查看來源」才顯示），表頭與 components/sources-block 一致，

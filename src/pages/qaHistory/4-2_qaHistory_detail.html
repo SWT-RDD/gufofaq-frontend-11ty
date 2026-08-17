@@ -164,6 +164,9 @@ permalink: 4-2_qaHistory_detail.html
 } %}
 {% set stepFlowTraceShown = 200 %}
 {% set stepFlowTraceTotal = 231 %}
+{% set stepFlowInstance = "detail" %}
+{# 本頁只有一份執行流程 ⇒ 不需要 owner（成對參數要一起清，§2：set 是頁面全域）。 #}
+{% set stepFlowOwnerId = "" %}
 {% include "components/step-flow/step-flow.html" %}
 {% endif %}
 

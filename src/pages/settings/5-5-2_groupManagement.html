@@ -159,9 +159,9 @@ permalink: 5-5-2_groupManagement.html
                     <td class="text-center">{{ group.memberCount }}</td>
                     <td>
                         <div class="btn-group">
-                            <button data-tenant-role="admin" type="button" class="button button-border button-sm" data-toast="群組已更新|群組名稱不可為空|群組名稱已存在|儲存失敗" data-i18n-data-toast="toast.saveGroup" data-toast-type="success|warning|warning|error" data-i18n="action.save">儲存</button>
-                            <button type="button" class="button button-border button-sm js-manage-members" data-i18n="settings.manageMembers">管理成員</button>
-                            <button type="button" class="button button-red button-sm js-delete-group" data-i18n="action.delete">刪除</button>
+                            <button data-tenant-role="admin" type="button" id="groupSave-{{ group.id }}" aria-labelledby="groupRowName-{{ group.id }} groupSave-{{ group.id }}" class="button button-border button-sm" data-toast="群組已更新|群組名稱不可為空|群組名稱已存在|儲存失敗" data-i18n-data-toast="toast.saveGroup" data-toast-type="success|warning|warning|error" data-i18n="action.save">儲存</button>
+                            <button type="button" id="groupMembers-{{ group.id }}" aria-labelledby="groupRowName-{{ group.id }} groupMembers-{{ group.id }}" class="button button-border button-sm js-manage-members" data-i18n="settings.manageMembers">管理成員</button>
+                            <button type="button" id="groupDelete-{{ group.id }}" aria-labelledby="groupRowName-{{ group.id }} groupDelete-{{ group.id }}" class="button button-red button-sm js-delete-group" data-i18n="action.delete">刪除</button>
                         </div>
                     </td>
                 </tr>

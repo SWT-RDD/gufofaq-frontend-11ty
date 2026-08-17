@@ -128,15 +128,16 @@ permalink: 3-3_qaSetManagement.html
             <tbody>
                 {% for qa in qaSets %}
                 <tr data-qa-set-id="{{ qa.id }}">
-                    <td>{{ qa.name }}</td>
+                    {# 逐列辨識欄（§4）：兩顆列動作鈕的可及名稱都指到它。 #}
+                    <td id="qaSetRowName-{{ qa.id }}">{{ qa.name }}</td>
                     <td>{{ qa.group }}</td>
                     <td class="text-center">{{ qa.count }} <span data-i18n="common.recordsUnit">筆</span></td>
                     <td>{{ qa.createdAt }}</td>
                     <td>{{ qa.updatedAt }}</td>
                     <td>
                         <div class="btn-group">
-                            <button type="button" class="button button-border button-sm js-qa-import" data-i18n="qaSet.importQa">匯入問答</button>
-                            <button type="button" class="button button-red button-sm js-delete-qa-set" data-i18n="action.delete">刪除</button>
+                            <button type="button" id="qaSetImport-{{ qa.id }}" aria-labelledby="qaSetRowName-{{ qa.id }} qaSetImport-{{ qa.id }}" class="button button-border button-sm js-qa-import" data-i18n="qaSet.importQa">匯入問答</button>
+                            <button type="button" id="qaSetDelete-{{ qa.id }}" aria-labelledby="qaSetRowName-{{ qa.id }} qaSetDelete-{{ qa.id }}" class="button button-red button-sm js-delete-qa-set" data-i18n="action.delete">刪除</button>
                         </div>
                     </td>
                 </tr>

@@ -380,6 +380,12 @@ permalink: 2-2-3_abTest.html
                                             {% set stepFlowSummary = {
                                                 tokens: "1,096", latency: "4.2s", ttft: "1.8s", results: "6", model: "openai:gpt-4o-mini"
                                             } %}
+                                            {# 同頁兩份執行流程（A／B 兩側），消歧鍵要分得開，否則兩邊的
+                                                 id 會撞、逐列可及名稱也分不出是哪一側（§4）。 #}
+                                            {% set stepFlowInstance = "sideA" %}
+                                            {# 兩側跑同一條正典管線 ⇒ 光有 instance 只解決 id 相撞，
+                                                 可及名稱還是兩邊逐字同名；指到本側的答案標題（§4）。 #}
+                                            {% set stepFlowOwnerId = "abAnswerTitle-" + abSides[0].side %}
                                             {% include "components/step-flow/step-flow.html" %}
                                         </div>
                                         <div class="ab-compare-item">
@@ -452,6 +458,8 @@ permalink: 2-2-3_abTest.html
                                             {% set stepFlowSummary = {
                                                 tokens: "1,342", latency: "5.8s", ttft: "2.2s", results: "8", model: "openai:gpt-4o"
                                             } %}
+                                            {% set stepFlowInstance = "sideB" %}
+                                            {% set stepFlowOwnerId = "abAnswerTitle-" + abSides[1].side %}
                                             {% include "components/step-flow/step-flow.html" %}
                                         </div>
                                     </div>

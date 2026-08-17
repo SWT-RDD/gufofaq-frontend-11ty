@@ -184,15 +184,16 @@ permalink: 2-2-4_regressionSuites.html
             <tbody>
                 {% for suite in regressionSuites %}
                 <tr data-suite-id="{{ suite.id }}">
-                    <td>{{ suite.name }}</td>
+                    {# 逐列辨識欄（§4）：兩顆列動作鈕的可及名稱都指到它。 #}
+                    <td id="suiteRowName-{{ suite.id }}">{{ suite.name }}</td>
                     <td>{{ suite.desc }}</td>
                     <td class="text-center">{{ suite.caseCount }}</td>
                     <td class="text-center">{{ suite.runCount }}</td>
                     <td>{{ suite.createdAt }}</td>
                     <td>
                         <div class="btn-group">
-                            <button data-capability="settings:read" type="button" class="button button-border button-sm js-open-suite" data-toast="正在查詢資料...|權限不足，無法查詢|查詢成功|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.query" data-toast-type="info|warning|success|error" data-i18n="regression.openSuite">檢視案例</button>
-                            <button type="button" class="button button-red button-sm js-delete-suite" data-i18n="action.delete">刪除</button>
+                            <button data-capability="settings:read" type="button" id="suiteOpen-{{ suite.id }}" aria-labelledby="suiteRowName-{{ suite.id }} suiteOpen-{{ suite.id }}" class="button button-border button-sm js-open-suite" data-toast="正在查詢資料...|權限不足，無法查詢|查詢成功|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.query" data-toast-type="info|warning|success|error" data-i18n="regression.openSuite">檢視案例</button>
+                            <button type="button" id="suiteDelete-{{ suite.id }}" aria-labelledby="suiteRowName-{{ suite.id }} suiteDelete-{{ suite.id }}" class="button button-red button-sm js-delete-suite" data-i18n="action.delete">刪除</button>
                         </div>
                     </td>
                 </tr>
@@ -308,16 +309,17 @@ permalink: 2-2-4_regressionSuites.html
                 {% for case in regressionCases %}
                 <tr data-case-id="{{ case.id }}">
                     <td>
-                        <button type="button" class="button accordion-btn" aria-expanded="false" title="展開表格" data-i18n-title="common.expandRow">
+                        <button type="button" id="caseRowToggle-{{ case.id }}" aria-labelledby="caseRowName-{{ case.id }} caseRowToggle-{{ case.id }}" class="button accordion-btn" aria-expanded="false" title="展開表格" data-i18n-title="common.expandRow">
                             <span class="sr-only" data-i18n="common.expandRow">展開表格</span>
                         </button>
                     </td>
                     <td>{{ loop.index }}</td>
-                    <td>{{ case.question }}</td>
+                    {# 逐列辨識欄（§4）：展開鈕與刪除鈕都指到它。 #}
+                    <td id="caseRowName-{{ case.id }}">{{ case.question }}</td>
                     <td class="text-center">{{ case.contextTurns.length }}<span data-i18n="regression.turnsUnit"> 輪</span></td>
                     <td class="text-center">{{ case.assertions.length }}</td>
                     <td>
-                        <button type="button" class="button button-red button-sm js-delete-case" data-i18n="action.delete">刪除</button>
+                        <button type="button" id="caseDelete-{{ case.id }}" aria-labelledby="caseRowName-{{ case.id }} caseDelete-{{ case.id }}" class="button button-red button-sm js-delete-case" data-i18n="action.delete">刪除</button>
                     </td>
                 </tr>
                 <tr class="detail-row">
@@ -1015,7 +1017,8 @@ permalink: 2-2-4_regressionSuites.html
             <tbody>
                 {% for run in regressionRuns %}
                 <tr data-run-id="{{ run.no }}">
-                    <td>{{ run.no }}</td>
+                    {# 逐列辨識欄（§4）：批次編號就是這一列的身分，兩顆列動作都指到它。 #}
+                    <td id="runRowNo-{{ run.no }}">{{ run.no }}</td>
                     <td>{{ run.startedAt }}</td>
                     <td data-i18n="{{ run.profileKey }}">{{ run.profile }}</td>
                     <td class="text-center">{{ run.version }}</td>
@@ -1023,8 +1026,8 @@ permalink: 2-2-4_regressionSuites.html
                     <td class="text-center">{% if run.total %}{{ run.passed }} / {{ run.total }}{% else %}—{% endif %}{% if run.note %}<span class="text-red">（{{ run.note }}）</span>{% endif %}</td>
                     <td>
                         <div class="btn-group">
-                            <a href="2-2-5_regressionRun.html" class="button button-border button-sm" data-i18n="regression.viewReport">看報表</a>
-                            <button data-capability="settings:read" type="button" class="button button-border button-sm js-export-run" data-toast="報表已下載|權限不足，無法下載|匯出失敗，請稍後再試" data-i18n-data-toast="toast.exportRun" data-toast-type="success|warning|error" data-i18n="action.download">下載</button>
+                            <a href="2-2-5_regressionRun.html" id="runReport-{{ run.no }}" aria-labelledby="runRowNo-{{ run.no }} runReport-{{ run.no }}" class="button button-border button-sm" data-i18n="regression.viewReport">看報表</a>
+                            <button data-capability="settings:read" type="button" id="runExport-{{ run.no }}" aria-labelledby="runRowNo-{{ run.no }} runExport-{{ run.no }}" class="button button-border button-sm js-export-run" data-toast="報表已下載|權限不足，無法下載|匯出失敗，請稍後再試" data-i18n-data-toast="toast.exportRun" data-toast-type="success|warning|error" data-i18n="action.download">下載</button>
                         </div>
                     </td>
                 </tr>

@@ -2,7 +2,12 @@
 {# 手風琴表格使用「.accordion-table」class，父層用「div.accordion-content」包覆；<tr class="detail-row"> <td colspan class="detail-cell"> 包覆要開合的內容；
      button.accordion-btn 加上 .open 時切換箭頭圖示。開合行為見 accordion.js（掃描根為 accordion 自有的 .js-accordion）。
      本片段示範**表格結構**；同一份行為也吃**卡片結構**（一張 .js-accordion-item 內含自己的 .accordion-btn 與
-     .accordion-content，生產實例見 components/builtin-tool-card），且初始開合讀 markup 的 .open。 #}
+     .accordion-content，生產實例見 components/builtin-tool-card），且初始開合讀 markup 的 .open。
+     參數（兩顆都**必填**，因為本片段在元件庫頁被 include 兩次——第 11 節的表格示範夾帶一份、
+       第 12 節自己一份）：
+       accordionInstance＝id 的消歧鍵（沒有它，兩份的 accordionDemoSeq-1／-2 會直接撞 id）。
+       accordionOwnerId＝「這一份在示範什麼」的既有節點 id。instance 只解決 id 相撞，解決不了
+         **可及名稱**相撞：兩份的列名逐字都是「12173-1」（§4：可見字面可以重複、可及名稱不行）。 #}
 <div class="js-accordion">
     <div class="table-container scrollTable mt-16">
         <table class="default-table no-border">
@@ -23,11 +28,13 @@
             <tbody>
                 <tr>
                     <td>
-                        <button type="button" class="button accordion-btn" aria-expanded="false" title="展開表格">
+                        {# 可及名稱＝「本列序號 ＋ 本鈕自己的字」（§4 逐列控制項；自指讓 WCAG 2.5.3
+                             Label in Name 成立，也讓 accordion.js 換成「收合表格」時自動跟上）。 #}
+                        <button type="button" id="accordionDemoToggle-{{ accordionInstance }}-1" aria-labelledby="{{ accordionOwnerId }} accordionDemoSeq-{{ accordionInstance }}-1 accordionDemoToggle-{{ accordionInstance }}-1" class="button accordion-btn" aria-expanded="false" title="展開表格">
                             <span class="sr-only">展開表格</span>
                         </button>
                     </td>
-                    <td>12173-1</td>
+                    <td id="accordionDemoSeq-{{ accordionInstance }}-1">12173-1</td>
                     <td>
                         <a href="#" class="link-file">vector8_chunk718_20240829024537_111-1021-5-_入出國及法令彙編1671頁.xlsx</a>
                     </td>
@@ -73,11 +80,11 @@
 
                 <tr>
                     <td>
-                        <button type="button" class="button accordion-btn" aria-expanded="false" title="展開表格">
+                        <button type="button" id="accordionDemoToggle-{{ accordionInstance }}-2" aria-labelledby="{{ accordionOwnerId }} accordionDemoSeq-{{ accordionInstance }}-2 accordionDemoToggle-{{ accordionInstance }}-2" class="button accordion-btn" aria-expanded="false" title="展開表格">
                             <span class="sr-only">展開表格</span>
                         </button>
                     </td>
-                    <td>12173-2</td>
+                    <td id="accordionDemoSeq-{{ accordionInstance }}-2">12173-2</td>
                     <td>
                         <a href="#" class="link-file">vector8_chunk719_20240829024538_111-1022-6-_入出國及法令彙編1672頁.xlsx</a>
                     </td>

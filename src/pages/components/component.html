@@ -292,7 +292,7 @@ bodyClass: guideline-page
         </section>
 
         <section id="buttonSection">
-            <h2 class="section-title"><span>07</span><span>按鈕</span></h2>
+            <h2 class="section-title" id="buttonSectionTitle"><span>07</span><span>按鈕</span></h2>
             <div class="caption">
                 <ul>
                     <li>所有按鈕都需加上「.button」的class來賦予基本樣式，然後再加上別的class變化</li>
@@ -308,6 +308,7 @@ bodyClass: guideline-page
             </div>
             <div class="flex-row gap-20">
                 {% include "ui/link-file/link-file.html" %}
+                {% set linkModalOwnerId = "buttonSectionTitle" %}
                 {% include "ui/link-modal/link-modal.html" %}
             </div>
             <br>
@@ -411,12 +412,15 @@ bodyClass: guideline-page
         </section>
 
         <section id="tableSection">
-            <h2 class="section-title"><span>11</span><span>Table表格</span></h2>
+            <h2 class="section-title" id="tableSectionTitle"><span>11</span><span>Table表格</span></h2>
             <div class="caption">
                 <ul>
                     <li>主要表格</li>
                 </ul>
             </div>
+            {# default-table 的檔尾夾帶一份 ui/accordion（展開列示範）⇒ 這兩顆是給它的（見該元件檔頭）。 #}
+            {% set accordionInstance = "inTable" %}
+            {% set accordionOwnerId = "tableSectionTitle" %}
             {% include "ui/default-table/default-table.html" %}
             <div class="caption description mt-16">
                 <ul>
@@ -432,7 +436,9 @@ bodyClass: guideline-page
             <br>
             <div class="caption">
                 <ul>
-                    <li>意圖判斷表格</li>
+                    {# 這一行同時是本張示範表的**擁有者節點**（priorityTableOwnerId 指到它）：
+                         列控制項的可及名稱要從「哪一張表」起頭，見元件檔頭。 #}
+                    <li id="priorityDemoTitle">意圖判斷表格</li>
                 </ul>
             </div>
             {% set rows = [
@@ -441,6 +447,7 @@ bodyClass: guideline-page
                 { sn: 34, category: "權益與申訴服務類", description: "", prompt: "", priority: "高優先級" }
             ] %}
             {% set priorityTableInstance = "demo" %}
+            {% set priorityTableOwnerId = "priorityDemoTitle" %}
             {% include "components/priority-table/priority-table.html" %}
             <div class="caption description mt-16">
                 <ul>
@@ -468,12 +475,14 @@ bodyClass: guideline-page
         </section>
 
         <section id="accordionSection">
-            <h2 class="section-title"><span>12</span><span>Accordion手風琴</span></h2>
+            <h2 class="section-title" id="accordionSectionTitle"><span>12</span><span>Accordion手風琴</span></h2>
             <div class="caption">
                 <ul>
                     <li>Accordion表格</li>
                 </ul>
             </div>
+            {% set accordionInstance = "standalone" %}
+            {% set accordionOwnerId = "accordionSectionTitle" %}
             {% include "ui/accordion/accordion.html" %}
             <div class="caption description mt-16">
                 <ul>
@@ -557,12 +566,13 @@ bodyClass: guideline-page
         </section>
 
         <section id="modalSection">
-            <h2 class="section-title"><span>16</span><span>Modal跳窗</span></h2>
+            <h2 class="section-title" id="modalSectionTitle"><span>16</span><span>Modal跳窗</span></h2>
             <div>
                 <div class="flex-row gap-16 flex-wrap align-items-center">
                     <button type="button" class="button button-primary" data-open-modal="datasetModal">開啟選擇資料集modal</button>
                     {# §1-2：同一個元件絕不複製貼上，要用就 include。這一顆本來是 ui/link-modal 的
                          markup 被逐字元抄過來的（同一頁上方第 07 節已經在 include 它）。 #}
+                    {% set linkModalOwnerId = "modalSectionTitle" %}
                     {% include "ui/link-modal/link-modal.html" %}
                     <button type="button" class="button button-primary" data-open-modal="previewModal">開啟檔案預覽modal（iframe）</button>
                     <button type="button" class="button-icon no-bg size-sm edit" data-open-modal="editModal" title="編輯">
@@ -820,6 +830,12 @@ bodyClass: guideline-page
                  節點是固定長度的正典管線摘要，這兩個數字算的是產生它的原始事件流。 #}
             {% set stepFlowTraceShown = 200 %}
             {% set stepFlowTraceTotal = 231 %}
+            {# 本節放兩份執行流程（正典管線一份、QA 直答判定目錄一份）⇒ 各給一句短標題當
+                 可及名稱的起頭（§4：instance 只解決 id 相撞，兩份的「全部展開」「序號 2 …」
+                 逐字同名）。 #}
+            <div class="subtitle" id="stepFlowFullDemoTitle">示範一：正典管線十節點（含巢狀 skill 子樹）</div>
+            {% set stepFlowInstance = "demoFull" %}
+            {% set stepFlowOwnerId = "stepFlowFullDemoTitle" %}
             {% include "components/step-flow/step-flow.html" %}
 
             {# ── QA 直答判定結果：六種結論的狀態目錄 ─────────────────────────────────
@@ -890,6 +906,9 @@ bodyClass: guideline-page
             {# 這一份不演軌跡截斷（上一份演了）；成對參數要一起清掉，否則沿用上一次的值（§2） #}
             {% set stepFlowTraceShown = "" %}
             {% set stepFlowTraceTotal = "" %}
+            <div class="subtitle" id="stepFlowQaDirectDemoTitle">示範二：QA 直答判定結果的狀態目錄</div>
+            {% set stepFlowInstance = "demoQaDirect" %}
+            {% set stepFlowOwnerId = "stepFlowQaDirectDemoTitle" %}
             {% include "components/step-flow/step-flow.html" %}
             <div class="subtitle">描述：五種 decision 各至少一筆，＋三種判定層各一筆（第 1 筆分數門檻、第 2 筆完全命中、第 8 筆 LLM 裁判——判定層只有命中時才有值，而命中會結構性短路，所以真實執行流程演不到它們），＋「重用」小標一筆，＋最後一筆刻意給一個目錄裡沒有的值（<code class="inline-code">some_future_decision</code>）演那條 else：上游日後新增第六種結論時，畫面要看得到那個生字，不能因為查表查不到就靜靜消失。命中＝綠、判否／未達門檻＝中性灰、原文重組失敗＝警示、整輪未判定＝更淡的 .is-faint（那一顆是「沒判過」，與「判過了、判否」不是同一件事）。第 5 筆演 reused_from 的小標——它掛在徽章旁而不是做成第六種徽章：重用可能重用命中、也可能重用判否，一個值講不清楚是哪一種</div>
         </section>

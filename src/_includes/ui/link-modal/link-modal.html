@@ -1,4 +1,6 @@
 {# 展示片段，取自真實 app pages/components/component.html **07 按鈕** section 內 .link-modal 用法（節錄，class 沿用真實系統）。
      （節號逐一數過：07 是按鈕、08 是輸入框——原註寫的「08 按鈕」把兩節混成一個。） #}
 {# 連結樣式的按鈕，點擊開啟跳窗 modal；不用加上 .button。開窗掛 data-open-modal，由 ui/modals 的事件委派接手，本檔不新增 js #}
-<button type="button" class="link-modal" data-open-modal="previewTextModal">檔案名稱.pdf</button>
+{# 參數：linkModalOwnerId（選填）＝同頁 include 兩次以上時，指向「這一份在示範什麼」的既有節點 id。
+     元件庫頁第 07 節與第 16 節各放一顆，兩顆的可及名稱否則逐字相同（§4）。 #}
+<button type="button"{% if linkModalOwnerId %} id="linkModalDemo-{{ linkModalOwnerId }}" aria-labelledby="{{ linkModalOwnerId }} linkModalDemo-{{ linkModalOwnerId }}"{% endif %} class="link-modal" data-open-modal="previewTextModal">檔案名稱.pdf</button>

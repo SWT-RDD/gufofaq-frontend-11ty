@@ -1,40 +1,46 @@
 {# 展示片段，取自真實 app pages/components/component.html 07 按鈕 section（節錄，class 沿用真實系統） #}
+{# **每一顆的可及名稱要帶變體名**（§4）：這一排八顆的可見字面全是「按鈕」，只有樣式不同——
+     報讀器的元素清單上會出現八行一模一樣的「按鈕」，聽的人分不出正在看哪一種。加一段 .sr-only
+     的變體 class 名（不動版面，且「按鈕」仍完整包含在可及名稱裡 ⇒ 不違反 WCAG 2.5.3
+     Label in Name）。目錄型示範的成員本來就要彼此分得出來，這一段同時也是它的說明文字。 #}
 <div class="flex-row gap-20">
-    <button type="button" class="button button-primary">按鈕</button>
-    <button type="button" class="button button-primary disabled" disabled>按鈕</button>
-    <button type="button" class="button button-border">按鈕</button>
-    <button type="button" class="button button-border disabled" disabled>按鈕</button>
-    <button type="button" class="button button-green">按鈕</button>
-    <button type="button" class="button button-red">按鈕</button>
-    <button type="button" class="button button-dark">按鈕</button>
-    <button type="button" class="button button-border button-sm">按鈕</button>
+    <button type="button" class="button button-primary">按鈕<span class="sr-only">（.button-primary）</span></button>
+    <button type="button" class="button button-primary disabled" disabled>按鈕<span class="sr-only">（.button-primary.disabled）</span></button>
+    <button type="button" class="button button-border">按鈕<span class="sr-only">（.button-border）</span></button>
+    <button type="button" class="button button-border disabled" disabled>按鈕<span class="sr-only">（.button-border.disabled）</span></button>
+    <button type="button" class="button button-green">按鈕<span class="sr-only">（.button-green）</span></button>
+    <button type="button" class="button button-red">按鈕<span class="sr-only">（.button-red）</span></button>
+    <button type="button" class="button button-dark">按鈕<span class="sr-only">（.button-dark）</span></button>
+    <button type="button" class="button button-border button-sm">按鈕<span class="sr-only">（.button-border.button-sm）</span></button>
     <button type="button" class="button button-orange">
         <img src="./images/icon_add_white.png" width="48" height="48" decoding="async" alt="" class="icon">
         開啟新對話
     </button>
     <button type="button" class="button button-edit-save" title="編輯">
         <img src="./images/icon_edit_blue.png" width="48" height="48" decoding="async" alt="" class="icon">
-        <span class="sr-only">編輯</span>
+        <span class="sr-only">編輯（.button-edit-save）</span>
     </button>
 </div>
 
 <div class="flex-row gap-20">
+    {# 同上：圖示鈕的可見字面（tooltip／sr-only）與本頁其他區塊的真實元件示範撞名，
+         這裡是「樣式目錄」那一顆，故補上變體名。 #}
     <button type="button" class="button-icon copy has-tooltip" data-toast="文字已複製!">
-        <span class="tooltip">複製</span>
+        <span class="tooltip">複製</span><span class="sr-only">（.button-icon.copy）</span>
     </button>
     <button type="button" class="button-icon watch has-tooltip">
-        <span class="tooltip">查看來源</span>
+        <span class="tooltip">查看來源</span><span class="sr-only">（.button-icon.watch）</span>
     </button>
     <button type="button" class="button-icon no-bg size-sm delete" title="刪除">
-        <span class="sr-only">刪除</span>
+        <span class="sr-only">刪除（.button-icon.no-bg.size-sm.delete）</span>
     </button>
     {# 展示 edit/save/cancel 三顆圖示鈕的長相；用工具 class 排版，不借用 components/editable-block 的私有殼（§4） #}
     <div class="flex-row gap-4">
         <button type="button" class="button-icon no-bg size-sm edit" title="編輯"><span
-                class="sr-only">編輯</span></button>
+                class="sr-only">編輯（.button-icon.edit）</span></button>
         <button type="button" class="button-icon no-bg size-sm save" title="確認"><span
-                class="sr-only">確認</span></button>
+                class="sr-only">確認（.button-icon.save）</span></button>
         <button type="button" class="button-icon no-bg size-sm cancel" title="取消"><span
-                class="sr-only">取消</span></button>
+                class="sr-only">取消（.button-icon.cancel）</span></button>
     </div>
 </div>

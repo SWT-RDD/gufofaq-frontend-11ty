@@ -163,11 +163,12 @@ permalink: 5-8_widgetTokens.html
             <tbody>
                 {% for row in tokens %}
                 <tr data-widget-token-id="{{ row.id }}">
-                    <td>{{ row.name }}</td>
+                    {# 逐列辨識欄（§4）：三顆列動作鈕（複製金鑰／複製嵌入連結／撤銷）都指到它。 #}
+                    <td id="widgetTokenRowName-{{ row.id }}">{{ row.name }}</td>
                     <td>
                         <div class="flex-row align-items-center gap-8">
                             <span>{{ row.token }}</span>
-                            <button type="button" class="button-icon copy copyBtn has-tooltip" data-toast="已複製金鑰|複製失敗，請手動選取後複製" data-i18n-data-toast="toast.copyKey" data-toast-type="success|error">
+                            <button type="button" id="widgetTokenCopyKey-{{ row.id }}" aria-labelledby="widgetTokenRowName-{{ row.id }} widgetTokenCopyKey-{{ row.id }}" class="button-icon copy copyBtn has-tooltip" data-toast="已複製金鑰|複製失敗，請手動選取後複製" data-i18n-data-toast="toast.copyKey" data-toast-type="success|error">
                                 <span class="tooltip" data-i18n="action.copy">複製</span>
                             </button>
                         </div>
@@ -186,12 +187,12 @@ permalink: 5-8_widgetTokens.html
                     </td>
                     <td>
                         <div class="btn-group">
-                            <button type="button" class="button button-border button-sm copyBtn" data-toast="嵌入連結已複製" data-i18n-data-toast="widget.embedCopied" data-i18n="widget.copyEmbed">複製嵌入連結</button>
+                            <button type="button" id="widgetTokenCopyEmbed-{{ row.id }}" aria-labelledby="widgetTokenRowName-{{ row.id }} widgetTokenCopyEmbed-{{ row.id }}" class="button button-border button-sm copyBtn" data-toast="嵌入連結已複製" data-i18n-data-toast="widget.embedCopied" data-i18n="widget.copyEmbed">複製嵌入連結</button>
                             {% if not row.disabled %}
                             {# 撤銷改走二次確認（彈窗本體見頁尾）：不可逆，而且撤銷後前台所有掛這把金鑰的
                                  嵌入頁當場失效。開窗需先選定「撤銷哪一把」＝業務條件開窗，故只留 hook class、
                                  不掛 data-open-modal；成敗 toast 移到確認鈕上（§5）。 #}
-                            <button data-tenant-role="admin" type="button" class="button button-red button-sm js-revoke-token" data-i18n="action.revoke">撤銷</button>
+                            <button data-tenant-role="admin" type="button" id="widgetTokenRevoke-{{ row.id }}" aria-labelledby="widgetTokenRowName-{{ row.id }} widgetTokenRevoke-{{ row.id }}" class="button button-red button-sm js-revoke-token" data-i18n="action.revoke">撤銷</button>
                             {% endif %}
                         </div>
                     </td>

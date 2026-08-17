@@ -863,12 +863,13 @@ permalink: 2-2-5_regressionRun.html
                 {% for row in runResultRows %}
                 <tr data-case-no="{{ row.caseNo }}">
                     <td>
-                        <button type="button" class="button accordion-btn" aria-expanded="false" title="展開表格" data-i18n-title="common.expandRow">
+                        <button type="button" id="runRowToggle-{{ row.caseNo }}" aria-labelledby="runRowName-{{ row.caseNo }} runRowToggle-{{ row.caseNo }}" class="button accordion-btn" aria-expanded="false" title="展開表格" data-i18n-title="common.expandRow">
                             <span class="sr-only" data-i18n="common.expandRow">展開表格</span>
                         </button>
                     </td>
                     <td>{{ row.caseNo }}</td>
-                    <td>{{ row.question }}</td>
+                    {# 逐列辨識欄（§4）：展開鈕指到它。 #}
+                    <td id="runRowName-{{ row.caseNo }}">{{ row.question }}</td>
                     <td><span class="verdict-tag {{ row.verdictClass }}" data-i18n="{{ row.verdictKey }}">{{ row.verdict }}</span></td>
                     {# 有分數時畫**數字**（那是資料、不翻）；評不出來／沒有判準才畫 keyed 標籤。
                          原本無條件走標籤，於是佔 8/10 的「有分數」那一態整頁演不出來。 #}

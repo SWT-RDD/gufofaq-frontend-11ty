@@ -223,16 +223,23 @@ permalink: 1-1-3_preview_excel.html
                      屬 §4-2「示範 Excel 欄位一律不翻」的假資料，故不掛 data-i18n——
                      同一組四個字串在 1-1-4 的槽位選單裡就是純資料（無 key）。 #}
                 {% for c in previewColumns %}
-                <th>{{ c.title }}</th>
+                <th id="previewColHead-{{ loop.index }}">{{ c.title }}</th>
                 {% endfor %}
             </tr>
         </thead>
         <tbody>
             {% for row in previewRows %}
+            {# 巢狀迴圈：外圈列號要另存（內圈的 loop.index 是欄號）。
+                 這張預覽表**沒有辨識欄可用**——它畫的是活頁簿的原始儲存格。第一欄的內容就是這一列的
+                 身分（`客服問題`），故把 id 掛在第一格的 .collapse-body 上（不另補 sr-only 副本，
+                 那會讓報讀器把同一句念兩次）。12 顆收合鈕的可及名稱＝「本列第一格 ＋ 欄表頭 ＋
+                 本鈕自己的字」，三段缺一：少列名分不出第幾列、少欄名分不出第幾欄、少自指則違反
+                 WCAG 2.5.3 Label in Name（§4）。 #}
+            {% set previewRowNo = loop.index %}
             <tr>
                 {% for c in previewColumns %}
                 <td>
-                    <div class="collapse-text"><div class="collapse-body">{{ row[c.index] }}</div><button type="button" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>
+                    <div class="collapse-text"><div class="collapse-body"{% if loop.first %} id="previewRowName-{{ previewRowNo }}"{% endif %}>{{ row[c.index] }}</div><button type="button" id="previewCellToggle-{{ previewRowNo }}-{{ loop.index }}" aria-labelledby="previewRowName-{{ previewRowNo }} previewColHead-{{ loop.index }} previewCellToggle-{{ previewRowNo }}-{{ loop.index }}" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>
                 </td>
                 {% endfor %}
             </tr>

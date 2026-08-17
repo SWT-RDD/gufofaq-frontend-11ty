@@ -6,6 +6,7 @@
   "action.cancel": "Cancel",
   "action.clear": "Clear",
   "action.close": "Close",
+  "action.closeModal": "Close dialog",
   "action.confirm": "Confirm",
   "action.copy": "Copy",
   "action.copyExample": "Copy example",
