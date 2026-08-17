@@ -85,7 +85,10 @@
                         {# 逐列同型控制項的可及名稱要靠**列脈絡**（§4）：這裡沒有表頭也沒有辨識欄，
                              故給每一列一顆 sr-only 的序號當辨識，input 與兩顆鈕都指它＋自己的欄意。
                              原本四列的 input 都叫「分享連結」、複製與撤銷也各四顆同名。 #}
-                        <div class="flex-row align-items-center gap-8 flex-wrap">
+                        {# 列鍵（§6）：撤銷是**逐列**的（product `app/routers/share.py` 的
+                             `DELETE /share/{share_id}`），而 `shareRows` 本來就帶 id——不把它印在
+                             列上，React 端就只剩陣列 index，撤掉第 2 筆之後第 3 筆會打到第 2 筆。 #}
+                        <div class="flex-row align-items-center gap-8 flex-wrap" data-share-id="{{ row.id }}">
                             <span class="sr-only" id="shareRowName-{{ row.id }}"><span data-i18n="modals.shareLink">分享連結</span> {{ loop.index }}</span>
                             <input class="form-control flex-1" aria-labelledby="shareRowName-{{ row.id }}" readonly value="{{ row.url }}">
                             <span class="text-gray">{% if row.expires %}<span data-i18n="share.expiresAt">到期：</span>{{ row.expires }}{% else %}<span data-i18n="share.neverExpires">永久有效</span>{% endif %}</span>

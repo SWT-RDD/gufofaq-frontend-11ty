@@ -7334,3 +7334,87 @@ test("§4 同一個無障礙範圍內，button／連結型 <a> 的可及名稱�
             '<span id="g2">B 側</span><div role="group" aria-labelledby="g2"><button>讚</button></div>',
         ]);
 });
+
+test("§6 可刪除清單的每一列都要帶列鍵（位置不是身分：刪一筆之後每一顆鍵整排前頂）", () => {
+    // §6 逐字：「凡渲染**可刪除**清單的元件，其參數陣列必須帶身分欄位（id／sn），markup 用它組
+    // 列鍵與逐列 id；`loop.index` 只准用在成員固定的清單。」這條規則一直沒有機器在看——
+    // 而它壞掉的樣子完全看不出來：畫面一模一樣，只有「刪掉第 2 筆之後第 3 筆的動作打到第 2 筆」。
+    //
+    // 判準（放寬到「列內任何地方」而不是只看列根）：真 app 的列鍵常常掛在**動作控制項**上而不是
+    // `<tr>` 上（previewDataset.js 的 `data-filesn` 就掛在刪除／下載鈕），照抄那個位置是對的。
+    // 只要這一列的 markup 裡有任何一顆從資料插值來的身分屬性就算數。
+    const DELETABLE = /js-delete|js-remove|js-revoke|delete-single-btn|class="[^"]*\bdelete\b|data-i18n="action\.(delete|remove|revoke)"/;
+    const ROWKEY = /\bdata-[\w-]*(?:id|sn|no|key|code|index|question|filename)="\{\{/;
+
+    // 豁免：**上游的正本就是一個沒有身分欄的陣列**（整批取代／尚未落庫），位置在那裡真的就是身分。
+    // 每一筆都要寫出「為什麼上游沒有 id」，而且下面會驗它真的還在（死豁免當場報出來）。
+    const POSITIONAL = new Map([
+        ["src/_includes/components/alias-entries-modal/alias-entries-modal.html:entry in aliasEntryRows",
+            "整批取代：GufoRAG chatbot `app/routes/alias.py` 的 `replace_alias_entries`（`PUT /api/alias/{table_id}/entries`）docstring 逐字寫著「不做逐筆 diff」——編輯器送出的是整份陣列，DB 的 `alias_entries.id` 由後端重建"],
+        ["src/_includes/components/glossary-entries-modal/glossary-entries-modal.html:entry in glossaryEntryRows",
+            "同型：GufoRAG chatbot `app/routes/glossary.py` 的 `replace_glossary_entries`（`PUT /{table_id}/entries`）也是整表存檔"],
+        ["src/pages/dataset/3-1-1_datasetList.html:row in rows",
+            "忠實保留真 app：凍結前端 `js/datasetList.js` 的刪除鈕用 `$deleteBtn.data('folder-sn', …)`，jQuery 的 .data() 寫進記憶體、不落成 DOM 屬性——markup 上本來就查不到（3-1-3 才是真的印在標籤上，兩頁不對稱是保留不是漏）"],
+        ["src/pages/qaTest/2-2-4_regressionSuites.html:a in regressionNewAssertions",
+            "「新增案例」表單裡還沒送出的斷言列：這一份根本還沒落庫，沒有任何後端 id 可用"],
+        ["src/pages/settings/5-2_conversationSettings.html:topic in policyTopics",
+            "上游是 `Column(JSON, default=list)`：GufoRAG chatbot `app/db/database.py` 的 `chat_configs.policy_topics` 是 `list[dict]`，整份存整份取，成員沒有 id"],
+        ["src/pages/settings/5-2_conversationSettings.html:rule in outputReplacementRules",
+            "同上：`chat_configs.output_replacements` 是 `Column(JSON, default=list)`"],
+        ["src/pages/settings/5-2_conversationSettings.html:rule in outputRules",
+            "同上：`chat_configs.output_rules` 是 `Column(JSON, default=list)`"],
+        ["src/pages/settings/5-2_conversationSettings.html:cat in [{ code: \"B06\", limit: \"2000\" }, { code: \"B02\", limit: \"800\" }]",
+            "output_rules 那一顆規則物件裡的子陣列（逐代碼上限），同樣沒有 id；這一列的身分是代碼欄的值，可及名稱也是指它"],
+        ["src/pages/settings/5-2_conversationSettings.html:case in rule.cases",
+            "同上（情境條件是 output_rules 規則物件裡的子陣列）"],
+    ]);
+
+    const stripComments = (s) => s.replace(/\{#[\s\S]*?#\}/g, (m) => m.replace(/[^\n]/g, " "));
+    const hits = [];
+    const used = new Set();
+    let loops = 0;
+    for (const f of srcHtml) {
+        const src = stripComments(read(f));
+        const re = /\{%-?\s*for\s+([^%]+?)\s*-?%\}/g;
+        for (let m; (m = re.exec(src));) {
+            let depth = 1, end = -1;
+            const tok = /\{%-?\s*(for|endfor)\b/g;
+            tok.lastIndex = m.index + m[0].length;
+            for (let t; (t = tok.exec(src));) {
+                if (t[1] === "for") depth++;
+                else if (--depth === 0) { end = t.index; break; }
+            }
+            if (end < 0) continue;
+            const body = src.slice(m.index + m[0].length, end);
+            if (!DELETABLE.test(body)) continue;
+            loops++;
+            if (ROWKEY.test(body)) continue;
+            const key = `${f}:${m[1]}`;
+            if (POSITIONAL.has(key)) { used.add(key); continue; }
+            hits.push(`${f}:${countLines(src, m.index)}  {% for ${m[1]} %} 這一列刪得掉，卻沒有任何列鍵——位置不是身分（§6）`);
+        }
+    }
+    assert.ok(loops >= 15, `只掃到 ${loops} 個「可刪除清單」迴圈 —— 這條測試在空轉`);
+    assert.equal(hits.length, 0, fail(hits));
+    // 豁免自己的衛生：死豁免（那個迴圈已經不在了、或已經補上列鍵）要當場報出來，
+    // 否則它會替下一個真的漏了列鍵的迴圈開門。
+    const deadEx = [...POSITIONAL.keys()].filter((k) => !used.has(k));
+    assert.deepEqual(deadEx, [], `POSITIONAL 有死豁免（迴圈不在了，或已經有列鍵）：\n${deadEx.join("\n")}`);
+    for (const [k, why] of POSITIONAL)
+        assert.ok(why.length > 20, `POSITIONAL 的「${k}」沒寫「為什麼上游沒有 id」`);
+
+    probe("§6 列鍵", (s) => {
+        const out = [];
+        const re = /\{%-?\s*for\s+([^%]+?)\s*-?%\}/g;
+        for (let m; (m = re.exec(s));) {
+            const end = s.indexOf("{% endfor %}", m.index);
+            if (end < 0) continue;
+            const body = s.slice(m.index + m[0].length, end);
+            if (DELETABLE.test(body) && !ROWKEY.test(body)) out.push(m[1]);
+        }
+        return out;
+    },
+        ['{% for r in rows %}<tr><td>{{ r.name }}</td><td><button class="js-delete-x">刪除</button></td></tr>{% endfor %}'],
+        ['{% for r in rows %}<tr data-row-id="{{ r.id }}"><td><button class="js-delete-x">刪除</button></td></tr>{% endfor %}',
+            '{% for r in rows %}<tr><td>{{ r.name }}</td></tr>{% endfor %}']);
+});
