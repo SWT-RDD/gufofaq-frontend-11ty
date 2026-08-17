@@ -7321,11 +7321,11 @@ test("§4 同一個無障礙範圍內，控制項的可及名稱不得重複（�
         const out = [];
         for (const sc of scopesOf(html)) {
             const names = new Map();
+            // 同一個範圍裡，(名稱, href) 完全相同的 <a> 只算一顆——見下方 tag === "a" 那一段。
+            const aSig = new Set();
             for (const m of sc.html.matchAll(/<(button|a|input|select|textarea)\b((?:"[^"]*"|[^>"])*)>/g)) {
                 const attrs = m[2];
                 const tag = m[1];
-                // 純導覽連結不算控制項；只收長得像按鈕／目錄項的那些 <a>
-                if (tag === "a" && !/class="[^"]*\b(button|btn|aside-link|nav-link)/.test(attrs)) continue;
                 // hidden 沒有名稱可言；submit/button/image 型的 <input> 全站不用（另有測試擋 <form>）
                 if (tag === "input" && /type="(hidden|submit|button|image)"/.test(attrs)) continue;
                 const lb = attrs.match(/\baria-labelledby="([^"]+)"/);
@@ -7344,6 +7344,20 @@ test("§4 同一個無障礙範圍內，控制項的可及名稱不得重複（�
                     name = end > 0 ? textOf(sc.html.slice(m.index + m[0].length, end)) : "";
                 }
                 name = name.replace(/\s+/g, " ").trim() || "«無可及名稱»";
+                if (tag === "a") {
+                    // **母體含全部 `<a href>`**：§4 的條文逐字寫著 `<a>`，而先前這裡加了一道
+                    // `class="…(button|btn|aside-link|nav-link)"` 的篩選——導覽連結的 class 是
+                    // `dropdown` 或空 ⇒ 整族在母體外，header 那兩顆同名的「歷史紀錄」
+                    // （前台 `?source=frontend`／後台 `?source=backend`）因此活了好幾輪。
+                    // 憑 class 名放行也正是 §8-1 第 4 條禁止的「萬用前綴」。
+                    // **同名同去向不算撞名**（WCAG H2／F84：模稜兩可的前提是「同名但**去向不同**」）：
+                    // 麵包屑的「資料集列表」與選單裡那一顆都指向 3-1-1，報讀器的連結清單上是同一個
+                    // 目的地，把它判成撞名會逼人替正確的 markup 加一堆 sr-only 後綴。
+                    const hr = attrs.match(/\bhref="([^"]*)"/);
+                    const sig = name + "\u0000" + (hr ? hr[1] : "");
+                    if (aSig.has(sig)) continue;
+                    aSig.add(sig);
+                }
                 seen++;
                 names.set(name, (names.get(name) || 0) + 1);
             }
@@ -7353,7 +7367,7 @@ test("§4 同一個無障礙範圍內，控制項的可及名稱不得重複（�
     };
     const hits = [];
     for (const f of distHtml) hits.push(...dupsIn(distDoc(f)).map((s) => `dist/${f}  ${s}`));
-    assert.ok(seen > 1400, `只掃到 ${seen} 顆控制項 —— 這條測試在空轉`);
+    assert.ok(seen > 5000, `只掃到 ${seen} 顆控制項 —— 這條測試在空轉（母體含全部 <a href> 之後實測 5148）`);
     assert.equal(hits.length, 0, `可及名稱撞名（可見字面可以逐列重複，可及名稱不在豁免之內，§4）：\n${fail(hits)}`);
 
     // 合成樣本：四種豁免各一顆 good（豁免被寫寬／寫窄都會當場變紅），bad 三顆。

@@ -143,6 +143,9 @@ permalink: 5-3_statsModule.html
 <div class="block flex-row gap-24 flex-wrap mt-16">
     <p><span class="text-bold" data-i18n="settings.statsDimensionLabel">統計維度：</span><span id="stats-dimension-echo">-</span></p>
     <p><span class="text-bold" data-i18n="settings.countModeLabel">計數方式：</span><span id="stats-count-mode-echo">-</span></p>
+    {# `-` 是**載入前的佔位**（業務 js 待填，同 `ui/chart-desc` 的三顆槽），不是空值畫法：
+         期間內一則都沒有時上游回 `null`，那時 js 寫進去的是全形「—」（§6 空值一律「—」）。
+         兩者是不同的東西，先前的註解把它們寫成一件事。 #}
     <p><span class="text-bold" data-i18n="settings.noHitRate">無命中率：</span><span id="stats-no-hit-rate">-</span></p>
     <p><span class="text-bold" data-i18n="settings.conversationCount">對話次數：</span><span id="stats-total-logs">0</span></p>
     <p><span class="text-bold" data-i18n="settings.retrievedCount">取用資料數：</span><span id="stats-total-hits">0</span></p>
