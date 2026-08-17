@@ -2082,7 +2082,12 @@ permalink: 5-2_conversationSettings.html
             <div class="field col-12-sm">
                 <input type="number" step="any" min="0" id="qaDirectScoreFloor" class="form-control js-qa-direct-score-floor"
                     placeholder="留白＝未校準" data-i18n-placeholder="settings.scoreFloorUncalibrated"
-                    value="3" aria-describedby="qaDirectScoreFloorScale qaDirectScoreFloorDep">
+                    value="3" aria-describedby="qaDirectScoreFloorRange qaDirectScoreFloorScale qaDirectScoreFloorDep">
+                {# 下界要看得見（§4 三件套）：`min="0"` 只活在屬性裡，畫面與無障礙樹上全站沒有一個字
+                     說得出「不可為負」——而負值正是那個「所有 score ≥ 它、粗篩永遠不觸發」的死條件，
+                     上游拒它的理由逐字就是要「讓拒絕發生在使用者還看得到那一格的時候」。沒有上界要
+                     一起講：這一格與別的數字欄不同，空著不是漏寫。 #}
+                <span class="text-gray" id="qaDirectScoreFloorRange" data-i18n="settings.scoreFloorRange">0 以上；沒有上限（不同重排序器的尺不同）</span>
                 {% set scaleNoteId = "qaDirectScoreFloorScale" %}
                 {% set scaleNoteText = activeScale.scale.note %}
                 {# **示範狀態是「重排序開著」**（activeScale ＝ llm_reranker），依端點契約的判斷順序，
@@ -2194,7 +2199,9 @@ permalink: 5-2_conversationSettings.html
             <div class="field col-12-sm">
                 <input type="number" step="any" min="0" id="groundingScoreFloor" class="form-control js-grounding-score-floor"
                     value="0.5" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter"
-                    aria-describedby="groundingScoreFloorScale groundingScoreFloorNote">
+                    aria-describedby="groundingScoreFloorRange groundingScoreFloorScale groundingScoreFloorNote">
+                {# 同直答分數門檻那一格：下界要看得見、沒有上界也要講出來（§4 三件套）。 #}
+                <span class="text-gray" id="groundingScoreFloorRange" data-i18n="settings.scoreFloorRange">0 以上；沒有上限（不同重排序器的尺不同）</span>
                 {% set scaleNoteId = "groundingScoreFloorScale" %}
                 {% set scaleNoteText = activeScale.scale.note %}
                 {# **示範狀態是「重排序開著」**（activeScale ＝ llm_reranker），依端點契約的判斷順序，

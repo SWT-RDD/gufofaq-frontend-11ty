@@ -1558,6 +1558,7 @@
   "settings.scanScope": "Measurement scope",
   "settings.scanScopeAll": "All datasets",
   "settings.scoreFloor": "Score floor",
+  "settings.scoreFloorRange": "0 or greater; no upper bound (each reranker uses its own scale)",
   "settings.scoreFloorUncalibrated": "Leave empty = not calibrated",
   "settings.scoreScaleRecalibrate": "The score scale just changed (you changed the reranker model, the rerank switch, or the data source ratio). This floor was calibrated against the old scale — recalibrate it: a number from a 1–5 scale moved onto a 0–1 scale becomes a condition that never blocks anything.",
   "settings.searchMember": "Search members",

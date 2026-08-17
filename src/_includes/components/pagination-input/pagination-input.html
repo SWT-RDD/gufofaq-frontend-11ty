@@ -17,11 +17,16 @@
     {# 值交給 React 讀去換頁 ⇒ 數字欄三件套（§4）：type=number ＋ 區間 ＋ 可見提示接 aria-describedby。
          type="text" ＋ Number() 打錯一個字就是 NaN，序列化成 JSON 是 null；區間只寫在 js 的 clamp 裡，
          使用者要按下去才知道打錯。上限由使用頁的 pagerTotal 供給（同一份資料，不另烤一個常數）。 #}
-    <input class="pager-input form-control" type="number" min="1" max="{{ pagerTotal }}" step="1" value="1" aria-label="頁碼" data-i18n-aria-label="qa.pageNumber" aria-describedby="pagerInputHint">
+    {# describedby 指的是**區間**，不是後半句：`pagerInputHint` 的內容是「個對話，共 12 個」——
+         那是句子的下半截，報讀器會唸出「頁碼，個對話，共 12 個」這種從中間開始的殘句，而且它
+         沒有講出下界。區間另給一顆 .sr-only 節點（上下界都由 pagerTotal 推導，不另烤常數）；
+         看得見的那半句照舊留在畫面上給看得到的人（§4 三件套的「可見提示」由它負責）。 #}
+    <input class="pager-input form-control" type="number" min="1" max="{{ pagerTotal }}" step="1" value="1" aria-label="頁碼" data-i18n-aria-label="qa.pageNumber" aria-describedby="pagerInputRange">
+    <span class="sr-only" id="pagerInputRange">1 – {{ pagerTotal }}</span>
 
     {# 分隔空白住在**譯文**、不留在 markup（§4-2；正典 ui/pagination 的 totalPrefix／totalSuffix）：
          留在 markup 會讓繁中比凍結正本多兩個半形空白，而 JSX 又不會產生這種縮排空白，兩邊長不一樣。 #}
-    <span class="pager-text" id="pagerInputHint"><span data-i18n="qa.detailConvOf">個對話，共</span><span class="total">{{ pagerTotal }}</span><span data-i18n="common.unitItems">個</span></span>
+    <span class="pager-text"><span data-i18n="qa.detailConvOf">個對話，共</span><span class="total">{{ pagerTotal }}</span><span data-i18n="common.unitItems">個</span></span>
 
     <button type="button" class="pager-btn next">
         <img src="./images/icon_arrow_right_blue.png" width="48" height="48" decoding="async" alt="下一頁" data-i18n-alt="action.nextPage" class="icon">

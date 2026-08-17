@@ -78,9 +78,13 @@ permalink: 1-1-3_preview_excel.html
 
 {# 疑似多列表頭：product `read_preview` 回的 `header_warning`（偵測而非判定，預覽的欄位與資料一個位元組
      都不會因它而變）。訊息是 product 產的業務字串、不翻；live region 的節點必須先在，內容之後才到
-     （§5／REACT-CONVERSION ②）。示範填一句讓這個分支看得到（§5：沒有頁面演得出來的分支等於沒驗收過）。 #}
+     （§5／REACT-CONVERSION ②）。示範填一句讓這個分支看得到（§5：沒有頁面演得出來的分支等於沒驗收過）。
+   **`role="status"` ＋中性色，不是 `role="alert"` ＋ danger**（§4）：這一句自己就寫著「偵測而非判定」，
+     句尾是「請確認」——沒有東西壞掉、也沒有任何操作被擋下，預覽照樣是那些欄那些值。用 alert 會
+     打斷報讀器當下唸到一半的內容，用紅字則會讓使用者以為這一檔匯不進去。真正被擋下的那一種
+     （1-1-6 的標籤同步失敗、5-2 的存檔錯誤）才留給 alert ＋ 紅字。 #}
 {% set excelHeaderWarning = "第 1 列含合併儲存格，疑似多列表頭，請確認" %}
-<p class="text-red mb-16{% if not excelHeaderWarning %} hidden{% endif %}" role="alert">{{ excelHeaderWarning }}</p>
+<p class="text-gray mb-16{% if not excelHeaderWarning %} hidden{% endif %}" role="status">{{ excelHeaderWarning }}</p>
 
 {# 交叉表 unpivot：開啟時預覽回的就是轉換後的三欄（列標題／欄標題／值），使用者也是照那三欄做對應。
      列標題欄是 **1-based** 欄位序號、可多欄（真實交叉表左側常是「產品大類／產品」兩欄才定位一列），
