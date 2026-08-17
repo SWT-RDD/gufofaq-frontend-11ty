@@ -28,9 +28,15 @@
         color: var(--brand-text);
     }
 
+    // **字重要自己釘死**：這一句在 `src/404.html` 是該頁唯一的 `<h1>`（視覺標題是資料值，故走
+    // sr-only 的反面——這裡它就是可見標題），在展示片段裡是 `<p>`。全域層對 `h1` 只重設字級與
+    // margin、**沒有重設 `font-weight`**（`_normalize.scss`），於是同一顆 class 在兩個消費點
+    // 一個是 UA 預設的 700、一個是 400——而那是跨頁的樣式差，markup 測試與視覺指紋都看不到
+    // （兩個消費點分屬 404.html 與 component.html，內容還不同）。
     .error-message {
         margin: 0;
         font-size: 1.125rem;
+        font-weight: 500;
         color: var(--text-muted);
     }
 }

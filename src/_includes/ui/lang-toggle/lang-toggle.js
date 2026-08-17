@@ -42,10 +42,16 @@
 //   `t()` 給「文字由 JS 產生」的元件（accordion／collapse-text／multi-select／pagination…）；
 //   `lang()` 回當下語言碼（"en" / "zh-Hant"），目前站內零消費點——`grep -rn 'GufoI18n.lang' src` 為準。
 //
-// 住在哪一頁（雙向）：`.js-lang-toggle` 與 `<html data-page-title-key>` 兩個掛點**全站每一頁都有**——
-// 前者來自 components/header-controls（被 components/header、components/mobile-nav、
-// components/chatbot-header、src/catalog.html、src/login.html 五處 include），後者來自 layouts/base。
-// 故本元件沒有「只在某幾頁」的清單，判準是 `grep -rn 'js-lang-toggle' src`。
+// 住在哪一頁（雙向；普查母體是 **dist**，§1-2）：`.js-lang-toggle` 與 `<html data-page-title-key>`
+// 兩個掛點**幾乎每一頁都有，但不是每一頁**——
+//   · `.js-lang-toggle` 來自 components/header-controls（被 components/header、components/mobile-nav、
+//     components/chatbot-header、src/catalog.html、src/login.html 五處 include）；**`404.html` 沒有**
+//     （它走 layouts/base、沒有 header 也沒有 catalog chrome）。
+//   · `data-page-title-key` 來自 layouts/base 的 `titleKey`；**`component.html` 與 `faq.html` 沒有**
+//     （兩頁的 front matter 都沒有 `titleKey`）。
+// 判準：`grep -c 'js-lang-toggle' dist/*.html` 與 `grep -c 'data-page-title-key' dist/*.html`，
+// 例外就是上面那三頁——先前這裡寫「全站每一頁都有」，而 README 那份衍生抄本反而寫對了
+// （正本錯、抄本對，正是 §1-2「參數的唯一正本是檔頭那一份枚舉」最怕的方向）。
 (function () {
     var DEFAULT = "zh-Hant";
     var root = document.documentElement;

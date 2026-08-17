@@ -285,7 +285,15 @@ permalink: 5-10_tagDimensions.html
         </div>
     </div>
     <div class="flex-row column gap-8">
-        <p id="tagSlotHint" class="text-gray" data-i18n="settings.tagSlotHint">只有 product 宣告給檢索引擎當自訂篩選欄位的那些槽（note1–note10、date2、date3）承載得了維度；內建槽的 DSL 引用會被上游拒絕。一個槽只能有一個維度，一個角色也只能指派給一個維度。</p>
+        {# **槽清單是契約的值域、不是譯文的一部分**（§3-2：那份枚舉在 API 契約裡有欄位，就不准出現在
+             譯文字串裡）：`GET /settings/tag-dimension-contract` 的 `slots` 是這份值域的單一真相
+             （product `app/routers/tag_dimension_contract.py`，該檔 docstring 逐字：「前端渲染這一頁
+             所需的每一個值域與觸發條件都要來自這裡，一個都不能留在前端硬編……只投影兩個日期字串的話，
+             `date2`／`date3` 還是抄在前端，schema 加一個 `date4` 時那一頁就對它閉口不談」）。
+             上面那顆 `<select>` 已經由 `ui/field-slot-catalog` ＋ `tagSlotExcluded` 推導了，這一句的
+             括號卻另外烤了一份——同一份業務目錄在同一頁烤兩次（§6）。拆成前綴 key ＋ 由同一份推導
+             產生的資料節點（帶 class 給 React 執行期換成契約值）＋ 後綴 key。 #}
+        <p id="tagSlotHint" class="text-gray"><span data-i18n="settings.tagSlotHintPrefix">只有 product 宣告給檢索引擎當自訂篩選欄位的那些槽（</span><span class="js-tag-slot-domain">{% set slotSep = "" %}{% for slot in fieldSlotCatalog %}{% if not slot.productOnly and slot.key not in tagSlotExcluded %}{{ slotSep }}{{ slot.key }}{% set slotSep = "、" %}{% endif %}{% endfor %}</span><span data-i18n="settings.tagSlotHintSuffix">）承載得了維度；內建槽的 DSL 引用會被上游拒絕。一個槽只能有一個維度，一個角色也只能指派給一個維度。</span></p>
         <p id="tagKindHint" class="text-gray" data-i18n="settings.tagKindHint">單值＝三選一；多值＝可複選；日期＝做大小比較。日期槽（date2／date3）只能是日期型別，其餘槽不能是日期型別——配錯的組合每一次檢索都會被上游擋下。</p>
         <p id="tagRoleHint" class="text-gray" data-i18n="settings.tagRoleHint">角色是給引擎內建機制認的：valid_until／as_of 只能掛在日期維度、fact_topic／superseded_by 只能掛在單值維度。配錯不會報錯，只會讓該機制完全跳過這個維度——設定頁看起來一切正常，而它從頭到尾沒有作用過。</p>
         {# ④ 日期上下界：講在**填之前**。這一段對 kind=date 常駐顯示（React 依所選型別擇一渲染）。

@@ -5,9 +5,15 @@
 //   ③ 新增 `.share-text`（分享彈窗的切版增補）
 //   ④ 三處 `box-sizing: border-box`（原檔 65／110／140）移除（§4-1：`_base.scss` 已全域給）
 //   ⑤ `.file-content` 的 `span { font-size / color / text-align }`（原檔 165-169）**攤平到
-//      `.file-content` 自己身上**——射程從「只套在 `<span>` 子元素」放寬成整格；`file-preview-modal`
-//      的內容是 `<iframe>`／純文字兩型，原本那三條在非 span 的那一型上完全不生效
-//   ⑥ `.modals` 新增 `position: fixed; inset: 0; width/height/max-*`（原檔沒有——理由逐字寫在
+//      `.file-content` 自己身上**——射程從「只套在 `<span>` 子元素」放寬成整格：兩個消費點
+//      （`components/disclaimer-modal` 的免責聲明全文、元件庫頁的 `previewTextModal` 長文）
+//      內容都是 `<div>` 不是 `<span>`，原本那三條**一條都不生效**。
+//      （先前這裡指名 `file-preview-modal` 並說它「內容是 `<iframe>`／純文字兩型」——那支元件
+//      從頭到尾沒有用過 `.file-content`，它的 body 是 `.preview-frame-wrap > iframe`。）
+//   ⑥ `.modals` 新增 `position: fixed; inset: 0`（`width`／`height`／`max-width`／`max-height`
+//      **原檔本來就有**，凍結 `GufoFAQ_Frontend_New/scss/layout/_modal.scss:1-5`——先前把那四條
+//      一起列成新增，下一個人會以為它們是切版加的、可以隨便動；括號裡那句「沒有這兩行」
+//      自己也只講了兩行）——理由逐字寫在
 //      該區塊自己的註解：不支援 `overlay` 過渡的瀏覽器沒有這兩行會在退場途中跳位）
 //   ⑦ 同區塊的 `height: 100vh` 之後補同值 `100dvh`（§4-1）
 //   ⑧ `.modals-wrap .modals-close`（原檔 87-105，含 `img` 的三條）整段移出，升格成 `ui/modal-close`

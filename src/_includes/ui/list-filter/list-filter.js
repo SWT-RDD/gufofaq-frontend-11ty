@@ -101,8 +101,6 @@
 //      `aria-label` ＋ `data-i18n-aria-label`。少一顆就是英文模式漏字或無名輸入框，而視覺指紋看不出來。
 // **零命中時本元件會在 .dataset-list 內 append 一顆 .dataset-list-empty**（見檔尾）——抄契約的人
 // 不必自己寫那一顆，但要知道它會出現（§5 前端過濾的空框）。
-// **零命中時本元件會在 .dataset-list 內 append 一顆 .dataset-list-empty**（見檔尾）——抄契約的人
-// 不必自己寫那一顆，但要知道它會出現（§5 前端過濾的空框）。
 // 三顆 class 缺一不可：.dataset-list-wrap 是 closest() 的範圍根（同頁兩個 modal 各過濾各的），
 // .form-control.search 是輸入框、.dataset-list 是被過濾的容器。
 //
