@@ -112,6 +112,10 @@
                     <label for="reviewCutoffDateInput" class="control-label" data-i18n="platform.cutoffDateLabel">截止日期</label>
                 </div>
                 <div class="field">
+                    {# `.calendar` 是凍結前端 `GufoFAQ_Frontend_New/js/main.js` 的 flatpickr 掛點
+                         （本 repo 零樣式、零行為；日期選擇交由 React 端的套件實作）——同
+                         `components/manage-tenant-modal` 與 `components/data-time-filter` 的做法。
+                         這一頁是 NET-NEW 的平台頁、沒有真 app 對應，不寫這一句就查不出它為什麼在這裡。 #}
                     <input type="text" id="reviewCutoffDateInput" placeholder="請選擇" data-i18n-placeholder="common.pleaseSelect" class="form-control calendar">
                 </div>
             </div>

@@ -3,6 +3,11 @@
      此處依其產生的 markup 結構以 njk set fields + for 靜態化。
      左欄「select.multiSelect」重用 ui/multi-select 既有 class 命名（由已登記的 ui/multi-select/multi-select.js 於 DOMContentLoaded 增強成 tag 多選 UI）；
      左右兩欄的 form-group/label/field 結構沿用 ui/form-control 既有寫法。
+     `.field-<槽鍵>`／`.preview-<槽鍵>` 兩族是**凍結前端逐槽定位左右欄的掛點**
+     （`GufoFAQ_Frontend_New/js/columnSelect_excel.js`），全站零樣式、零本 repo js——槽鍵集合的
+     唯一正本是 `ui/field-slot-catalog`（22 槽，對回 product `app/field_schema.py` 的 `SLOTS`）。
+     測試那一份白名單（`tests/guideline.test.mjs` 由 catalog 推導出這兩族）逐字指著**這一段**當契約
+     正本，所以這裡不能不寫（§4「痕跡要成對：只住在測試裡的豁免，讀元件的人看不到」）。
      `.date-error` 是**凍結前端的業務掛點**（`GufoFAQ_Frontend_New/js/columnSelect_excel.js:275/278`
      的 `.show()`／`.hide()`），全站零樣式、零 js——切版改由 `.form-group:has(.error)` 揭示，
      掛點原樣保留（§5 轉換契約，不是無主 class；沒有這一句它長得就像 §4 死法②）。

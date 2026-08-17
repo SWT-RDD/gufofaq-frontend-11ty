@@ -1833,20 +1833,76 @@ permalink: 5-2_conversationSettings.html
     {% include "components/help-modal/help-modal.html" %}
 
     <div class="block flex-row column gap-16">
+        {# ── 術語表：授權 ＋ 主 agent 可直接查詢 ──────────────────────────────────
+             `<option value>`＝術語表主鍵（`GlossaryTable.id`），值域正本是 **3-2 那張管理表**
+               ——那一頁的檔頭逐字寫著「id＝術語表主鍵、不可拿 loop.index 當列鍵」，示範的兩張表是
+               4（人資術語）與 5（產品術語）。這裡原本烤 1／2，同一份目錄在兩頁各有一組主鍵，
+               而 React 端送出去的就是這個值（§6）。對照組：下面「綁定別名表」與 3-6 早就同一組
+               （12／9／7），照那個做法。
+             **「授權哪幾張」與「誰拿得到」是兩個欄位**（GufoRAG chatbot 2026-08-17 拆開，見
+               `chatbot/README.md`「術語表管理 API」）：`glossary_table_ids` ＝這份設定檔**授權**的表
+               （也是 skill 白名單的取值範圍），`glossary_apply_agent` ＝其中哪幾張讓**主 agent** 直接
+               看得到、每張掛一顆查詢工具。綁死時，一張只有 skill 會用的表也一定佔掉主 agent 的工具
+               額度，而主 agent 手上一旦有那顆工具，它就能直接查表、繞過 skill 的作業程序。
+             **兩個上限是兩把尺，畫面上不並排提**（混用同一句就等於宣告它們是同一件事）：授權張數 30
+               ＝GufoRAG chatbot `app/services/glossary.py` 的 `MAX_MOUNTED_TABLES`，寫在下面那句可見
+               提示裡；解析後主 agent 實際看得到幾張＝同檔 `MAX_ACTIVE_TABLES`（10），**這一頁不寫成
+               可見文字**——它夾的是「解析後掛幾顆工具」，而 `glossary_apply_agent` 為 `null` 時它等於
+               授權數，那個 null 怎麼解只有上游知道（product 這側也算不出來，見 gufofaq-saas
+               `services/product/app/chat_config_limits.py` 的 `glossary_table_ids` 那一段），故只指名
+               符號、不抄值（§3-2）。兩顆都由 `GET /api/config/limits` 的 `glossary.mounted_tables`／
+               `glossary.active_tables` 投影出去（`chatbot/app/config/limits_catalog.py`）。
+             **兩顆共用同一份目錄**（§3-3：同頁兩個以上 select 的 option value 集合相同 ⇒ 必須 set 成
+               一個陣列共用），比照下面別名表四顆；選取狀態各自一份 id 清單。
+             兩顆都是**值載體**⇒ 只掛 hook class、不掛 data-toast（§5 矩陣②）。 #}
+        {% set glossaryTableCatalog = [
+            { id: 4, name: "人資術語" },
+            { id: 5, name: "產品術語" }
+        ] %}
+        {% set glossaryBindIds = [4, 5] %}
+        {% set glossaryApplyAgentIds = [4] %}
         <div class="form-group row mobile-col">
             <div class="label label-md">
                 <label for="glossaryTablesSelect" class="control-label" data-i18n="settings.glossaryTables">綁定術語表</label>
             </div>
             <div class="field col-12-sm">
-                {# `<option value>`＝術語表主鍵（`GlossaryTable.id`），值域正本是 **3-2 那張管理表**
-                     ——那一頁的檔頭逐字寫著「id＝術語表主鍵、不可拿 loop.index 當列鍵」，示範的兩張表是
-                     4（人資術語）與 5（產品術語）。這裡原本烤 1／2，同一份目錄在兩頁各有一組主鍵，
-                     而 React 端送出去的就是這個值（§6）。對照組：下面「綁定別名表」與 3-6 早就同一組
-                     （12／9／7），照那個做法。 #}
-                <select id="glossaryTablesSelect" class="form-control multiSelect js-glossary-tables" multiple="multiple" data-placeholder="請選擇" data-placeholder-key="common.pleaseSelect">
-                    <option value="4" selected>人資術語</option>
-                    <option value="5">產品術語</option>
+                <select id="glossaryTablesSelect" class="form-control multiSelect js-glossary-tables" multiple="multiple" aria-describedby="glossaryBindHint" data-placeholder="請選擇" data-placeholder-key="common.pleaseSelect">
+                    {% for t in glossaryTableCatalog %}<option value="{{ t.id }}"{% if t.id in glossaryBindIds %} selected{% endif %}>{{ t.name }}</option>{% endfor %}
                 </select>
+                <span class="text-gray" id="glossaryBindHint"><span data-i18n="settings.aliasBindLimitPrefix">一個設定檔最多綁 </span><span>30</span><span data-i18n="common.unitItems">個</span></span>
+            </div>
+        </div>
+        <div class="form-group row mobile-col">
+            <div class="label label-md">
+                <label for="glossaryApplyAgentSelect" class="control-label" data-i18n="settings.glossaryApplyAgent">主 agent 可直接查詢</label>
+            </div>
+            <div class="field col-12-sm">
+                {# 選項只能來自上面**已授權**的那幾張（上游寫入層保證 `glossary_apply_agent` ⊆
+                     `glossary_table_ids`，所以歸屬不另驗）；上面一張都沒授權時這一顆停用——比照別名表
+                     三階段的做法（§5：狀態要看得見才稽核得到，只是改不動）。
+                   **三態送出**（靠 `exclude_unset` 分辨，見 gufofaq-saas
+                     `services/product/app/routers/settings_hub.py` 的 `ProfileConfigIn.glossary_apply_agent`）：
+                     全部勾選送 `null`、全部不勾送 `[]`、部分勾選送該清單。
+                     **全勾不可以送完整清單**：`null` 與「剛好列出全部」今天行為相同，但 `null` 是升級後
+                     既有租戶該保持的狀態，而且之後新增一張表時會自動可見；送完整清單則會讓新表預設看不到。
+                     同理**絕不可 coalesce 成 `[]`**——那會讓每一份既有設定檔靜默變成「主 agent 一張術語表
+                     都沒有」，工具少了不會有人報錯，只會答得比較差。
+                   示範刻意是**部分勾選**（產品術語只留給 skill）：全勾的畫面與「剛好列出全部」長得一模
+                     一樣，演不出這顆欄位存在的理由。 #}
+                <select id="glossaryApplyAgentSelect" class="form-control multiSelect js-glossary-apply-agent" multiple="multiple" aria-describedby="glossaryApplyAgentHint" data-placeholder="請選擇" data-placeholder-key="common.pleaseSelect">
+                    {% for t in glossaryTableCatalog %}{% if t.id in glossaryBindIds %}<option value="{{ t.id }}"{% if t.id in glossaryApplyAgentIds %} selected{% endif %}>{{ t.name }}</option>{% endif %}{% endfor %}
+                </select>
+                {# 這段警語是必要的、不是裝飾。第二句是這個功能唯一可能做反的地方：**拿掉工具的同時也
+                     拿掉了路由訊號**——「何時查」（GufoRAG chatbot `app/db/database.py` 的
+                     `when_to_consult`）就是那顆查詢工具的描述，主 agent 據此決定要不要查這張表；表一旦
+                     不掛工具，那句話也一起從工具清單消失，若對應 skill 的 description 沒接手，主 agent
+                     連 skill 都不會呼叫。 #}
+                <p id="glossaryApplyAgentHint" class="text-gray m-0" data-i18n="settings.glossaryApplyAgentHint">未勾選的表只有 skill 拿得到，主 agent 查不到。同時，該表的「何時查」也不再出現在主 agent 的工具清單裡 —— 那原本是路由訊號，請確認對應 skill 的說明已能接手，否則主 agent 可能連 skill 都不會呼叫。</p>
+                {# 全部不勾（送 `[]`）那一態的文案：React 依 state 條件渲染，另一態是**什麼都不渲染**。
+                     切版保留 markup 當**位置與字色的規格**、預設掛 `.hidden`；可見的一份在元件庫頁
+                     「React 條件文案」節（那裡是唯一可見處，§5）。繁中原文兩邊逐字相同。
+                     示範資料刻意不觸發它（部分勾選），把預設態畫成空手態等於讓每個打開頁面的人誤會。 #}
+                <p class="text-gray m-0 hidden" data-i18n="settings.glossaryApplyAgentNoneHint">目前沒有任何表讓主 agent 直接查詢——術語表只能經 skill 取用。</p>
             </div>
         </div>
 

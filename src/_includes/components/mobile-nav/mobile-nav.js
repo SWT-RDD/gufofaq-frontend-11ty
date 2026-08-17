@@ -7,7 +7,8 @@ document.addEventListener("DOMContentLoaded", function () {
     var overlay = document.querySelector(".mobile-nav .overlay");
     if (!navToggle || !menuWrap || !overlay) return;
 
-    var submenuLinks = document.querySelectorAll(".mobile-menu .dropdown");
+    // 觸發是 `<button type="button" class="dropdown">`（§5，理由見 components/header/header.html 檔頭）
+    var submenuToggles = document.querySelectorAll(".mobile-menu .dropdown");
 
     function isOpen() {
         return navToggle.classList.contains("active");
@@ -20,10 +21,10 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function closeAllSubmenus() {
-        submenuLinks.forEach(function (link) {
-            var submenu = link.parentElement.querySelector("ul");
+        submenuToggles.forEach(function (toggle) {
+            var submenu = toggle.parentElement.querySelector("ul");
             if (submenu) window.GufoSlide.set(submenu, false); // 不帶動畫，選單已經關了
-            link.setAttribute("aria-expanded", "false");
+            toggle.setAttribute("aria-expanded", "false");
         });
     }
 
@@ -58,15 +59,15 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     // 子選單開關（手機版點擊展開/收合）
-    submenuLinks.forEach(function (link) {
-        link.addEventListener("click", function (e) {
-            e.preventDefault();
-            var submenu = link.parentElement.querySelector("ul");
+    submenuToggles.forEach(function (toggle) {
+        toggle.addEventListener("click", function () {
+            // 不用 preventDefault：`type="button"` 本來就沒有預設動作（先前是 `<a href="#">` 才要擋）
+            var submenu = toggle.parentElement.querySelector("ul");
             if (!submenu) return;
             // aria-expanded 用 toggle 的回傳值（目標態）：收合動畫進行中再點一次會反轉成展開，
             // 自己讀 computed display 會在這條路徑跟實際結局脫鉤（§4 每條路徑同步）
             var open = window.GufoSlide.toggle(submenu); // 真 app 是 slideToggle(300)
-            link.setAttribute("aria-expanded", open ? "true" : "false");
+            toggle.setAttribute("aria-expanded", open ? "true" : "false");
         });
     });
 });

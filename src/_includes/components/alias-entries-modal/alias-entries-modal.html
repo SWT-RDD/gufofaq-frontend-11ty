@@ -12,6 +12,10 @@
    衝突提示（inline，**不擋存檔**）：三種都由列資料的 `conflict` 決定，切版不做偵測——
      前兩種存檔時後端會 400（`services/alias.py` 的寫入層驗證），inline 提示只是讓人在按下
      存檔**之前**就看到；第三種後端不擋（那是跨功能的資訊），純提示。
+     **第三種的 role 與顏色跟前兩種不同**（§4：「請確認」等級的提示掛 `role="status"` ＋中性色，
+     `role="alert"` 與 danger 色留給「有東西壞了或被擋下」）：既然存得下去、什麼都沒被擋，它就是
+     偵測不是判定——掛 alert 會打斷報讀器，配 `.error-prompt` 的紅字還會讓人以為這一列存不了。
+     連帶那顆輸入框的紅框也只吃前兩種。
      值：sameTable（本表內另一列把同一個別名指向不同標準詞）／chain（某列的別名等於另一列的
      標準詞）／outputRule（某條出口替換規則對這個詞有不同的替換結果）。
 
@@ -94,13 +98,13 @@
                                         <input type="text" class="form-control{% if entry.conflict %} error{% endif %}" maxlength="200" value="{{ entry.canonical }}" aria-labelledby="aliasRowName-{{ loop.index }} aliasHeadCanonical" aria-describedby="aliasLimitsHint" required>
                                     </td>
                                     <td>
-                                        <input type="text" class="form-control{% if entry.conflict %} error{% endif %}" value="{{ entry.aliases }}" aria-labelledby="aliasRowName-{{ loop.index }} aliasHeadAliases" aria-describedby="aliasLimitsHint" required>
+                                        <input type="text" class="form-control{% if entry.conflict == "sameTable" or entry.conflict == "chain" %} error{% endif %}" value="{{ entry.aliases }}" aria-labelledby="aliasRowName-{{ loop.index }} aliasHeadAliases" aria-describedby="aliasLimitsHint" required>
                                         {% if entry.conflict == "sameTable" %}
                                         <span class="error-prompt is-shown" role="alert" data-i18n="settings.aliasConflictSameTable">本表內有另一列把這個別名指向不同的標準詞</span>
                                         {% elif entry.conflict == "chain" %}
                                         <span class="error-prompt is-shown" role="alert" data-i18n="settings.aliasConflictChain">鏈式對映不支援，請攤平</span>
                                         {% elif entry.conflict == "outputRule" %}
-                                        <span class="error-prompt is-shown" role="alert" data-i18n="settings.aliasConflictOutputRule">某條出口替換規則對這個詞有不同的替換結果</span>
+                                        <span class="text-gray" role="status" data-i18n="settings.aliasConflictOutputRule">某條出口替換規則對這個詞有不同的替換結果</span>
                                         {% endif %}
                                     </td>
                                     <td><button type="button" id="aliasEntryDelete-{{ loop.index }}" class="button button-border button-sm js-remove-alias-entry" aria-labelledby="aliasRowName-{{ loop.index }} aliasEntryDelete-{{ loop.index }}" data-i18n="action.delete">刪除</button></td>

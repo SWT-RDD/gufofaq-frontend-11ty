@@ -67,11 +67,23 @@
     z-index: 99;
 
     li {
-        a {
+        a,
+        button.dropdown {
             display: block;
             padding: 0.75rem 1.5rem;
 
             &.dropdown {
+                // 下拉觸發是 `<button type="button">`（理由見 components/header/header.html 檔頭）。
+                // `width`/`text-align` 是 button 專屬的：`display:block` 的 `<a>` 本來就佔滿整列並靠左，
+                // button 會縮到內容寬、文字置中，不補這兩行整排選單會歪掉。
+                width: 100%;
+                text-align: left;
+                font: inherit;
+                color: var(--text);
+                background: none;
+                border: 0;
+                cursor: pointer;
+
                 &::after {
                     content: "";
                     display: inline-block;

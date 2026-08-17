@@ -75,12 +75,23 @@
                 background: transparent;
             }
 
-            a {
+            a,
+            button.dropdown {
                 position: relative;
                 padding: 1rem 0.625rem;
                 display: flex; // 真 app 編譯 css 為 flex（scss 源碼舊值 block）
 
                 &.dropdown {
+                    // 下拉觸發是 `<button type="button">` 而不是連結（理由見 header.html 檔頭）。
+                    // 這一段是把瀏覽器給 button 的預設外觀清掉，讓它與同一列的 `<a>` 逐字一樣；
+                    // 顏色寫 `--text` 不寫 `inherit`——它要跟 `_base.scss` 的 `a` 同一顆 token，
+                    // 而不是跟著父層碰巧繼承到什麼。
+                    font: inherit;
+                    color: var(--text);
+                    background: none;
+                    border: 0;
+                    cursor: pointer;
+
                     &::after {
                         content: "";
                         display: inline-block;

@@ -35,7 +35,10 @@ layout: layouts/base/base.html
     <div class="wrap">
         {# 每頁唯一的 <h1>（頁名來自 front matter 的 pageHeading）——同 page-shell：視覺標題是資料值
              （這一頁是那則對話本身），故 h1 走 sr-only；logo 不是 h1（它是回首頁的連結）。 #}
-        <h1 class="sr-only" data-i18n="{{ titleKey }}">{{ pageHeading }}</h1>
+        {# 兩顆都必填（見檔頭），但**不輸出空屬性**要由 markup 保證，不是靠使用頁自律（§4）：
+             下一頁忘了填就會靜默吐出 `data-i18n=""` ＋一顆空 `<h1>`，而「每頁恰好一個 h1」那條
+             測試仍然會綠。姊妹 layout `page-shell` 本來就是這個形狀。 #}
+        {% if pageHeading %}<h1 class="sr-only"{% if titleKey %} data-i18n="{{ titleKey }}"{% endif %}>{{ pageHeading }}</h1>{% endif %}
         {{ content | safe }}
     </div>
 </main>

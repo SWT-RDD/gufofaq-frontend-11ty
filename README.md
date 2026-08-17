@@ -104,7 +104,7 @@ dist/                       build 輸出（勿手改）
 
 | 元件 | 參數／資料 |
 |---|---|
-| `ui/breadcrumb` | 頁面 include 前 `{% set breadcrumbItems = [{ label, href, i18nKey?, class? }] %}`；**最後一項＝目前頁（純文字），其餘皆為連結**；`href` 省略時退回 `#`（不輸出空屬性）；`i18nKey` 省略＝該項是資料值不翻；`class` 供頁面標記（`.folder-name-link`…）。 |
+| `ui/breadcrumb` | 頁面 include 前 `{% set breadcrumbItems = [{ label, href, i18nKey?, class? }] %}`；**最後一項＝目前頁（純文字），其餘**有 href 的**才是連結**；`href` 省略或為空＝那一層畫成純文字（分類層沒有自己的頁），**不退回 `#`**（GUIDELINE §5 死連結，見元件檔頭）；`i18nKey` 省略＝該項是資料值不翻；`class` 供頁面標記（`.folder-name-link`…）。 |
 | `components/pagination-input` | 選填 `paginationTotal`（總筆數，預設 12）；「第 [1] 個對話，共 12 個」＋前後鈕，行為見 `pagination-input.js`。與 `ui/pagination` 是兩種互不相干的頁碼互動。 |
 | `components/step-nodes` | 頁面 set `steps = [{ label, done, i18nKey }]` + 選填 `stepNodesLg`（true 加 `.lg` 大尺寸）；`.done` = 已完成。 |
 | `components/step-btn-wrap` | 頁面 set `steps` + 選填 `stepNoPrev`（true＝只留下一步、外層加 `.no-prev`）/ `stepNodesLg` / `stepPrevHref`・`stepNextHref`（簡化版靜態跳轉，未設退 `#`）；上一步／下一步保留 `.btn-prev`／`.btn-next` JS 鉤子（排版走自有 `.step-prev`／`.step-next`）；中間進度條 include `components/step-nodes`。**「下一步」有兩種**（判準見 GUIDELINE §4「`<a>` 或 `<button>`」）：純換頁是 `<a href>`（1-1-3）；送 API 的是 `<button>`，由 `stepNextAction`（true）＋ `stepNextToast`・`stepNextToastKey`・`stepNextToastType`（GUIDELINE §5 三件套）＋ `stepNextCapability`（閘門）開啟——1-1-4 的欄位對應送出（9 段）與 1-2-1 的檔案上傳送出（6 段）。 |

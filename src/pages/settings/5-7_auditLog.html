@@ -27,13 +27,23 @@ permalink: 5-7_auditLog.html
      §5「hook 一經 saas 端引用即凍結，改名＝跨 repo 遷移」⇒ 不為了四顆一致而補三顆，也不為了風格一致而拿掉它。
      （原本這裡只替那一顆寫了「值載體 → 只掛 hook class」的理由，讀起來像本頁對值載體的通則，
      而另外三顆一顆 hook 都沒有——同一頁對同一種控制項寫了兩套說法。）
-     租戶（指定 tenant_id／全部租戶 switch 送 scope=all）與操作者（送 operator=<id>）三個篩選欄位要**平台角色**才看得到，
+     **本頁那道閘是 `require_audit_access`（product `app/authz.py`），不是 `require_capability("audit")`**：
+     它是一道 **OR** 閘——`is_platform_auditor` **或**（訂閱 active ∧ 租戶開通 audit ∧（租戶管理者 ∨ audit token））。
+     上游 docstring 逐字說明為什麼不能直接用 `require_capability`：那支只對 `is_platform_admin` bypass，
+     於是 `platform_role='auditor'` 會被當成一般租戶使用者，而稽核員典型上不是任何租戶的 admin、
+     能力 token 為空集，結果是他連自己租戶的稽核都打不開。
+     四軸擺不下 OR，故本頁的分法是：**最寬的那一條掛區塊**（下面三個欄位的 `data-platform-role="auditor"`），
+     **最窄的那一條掛控制項**（查詢鈕的 `data-capability="audit"`，＝租戶那一半）。
+     `data-capability="audit"` 這個字面對 `require_capability("audit")` 與 `require_audit_access` 長得一模一樣，
+     所以 dependency 的名字要寫在這裡——照字面看不出指錯了哪一支。
+     租戶（指定 tenant_id／全部租戶 switch 送 scope=all）與操作者（送 operator=<id>）三個篩選欄位要**平台角色**才動得了，
      而那是 auditor 亦有的能力：product app/routers/audit.py 的 list_audit 以 is_platform_auditor
      （platform_role ∈ {auditor, admin}）判斷 scope=all／tenant_id／operator，該檔自註「用 is_platform_admin
      判斷會把唯讀稽核員一起排除掉」。故上列這幾欄一律掛 data-platform-role="auditor"（§5 兩級可見性），
      **它們都是值控制項（switch／input），不是動作鈕**，所以套的是 §5 兩級可見性的另一半：
      低於該級時**照渲染但 disabled**，不是不渲染——狀態要看得見才稽核得到。
-     （原本這裡寫「決定是否渲染」，照著做會做出規則的反面；5-6-1／5-6-3 兩頁寫的才是對的。）
+     （原本這裡寫「決定是否渲染」，照著做會做出規則的反面；5-6-1／5-6-3 兩頁寫的才是對的。
+       上面那句原本也寫成「才**看得到**」——與這一句自相矛盾，一併改成「才動得了」。）
      此靜態頁展示的是有平台角色、可操作時的完整版面。 #}
 <div class="block block-sm border corner-md mt-16">
     <div class="flex-row column gap-16">
@@ -66,8 +76,16 @@ permalink: 5-7_auditLog.html
                 <div class="field">
                     {# `.js-audit-tenant` 是**凍結**的 hook（saas 已引用，見檔頭）：不改名、也不因為
                          同頁另外三顆走 id 契約就把它拿掉。 #}
-                    <input type="number" min="1" step="1" id="auditTenantInput" class="form-control js-audit-tenant" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" aria-describedby="auditTenantHint">
-                    <span class="text-gray" id="auditTenantHint" data-i18n="audit.tenantHint">填租戶 id（正整數）；留空＝依「全部租戶」開關決定</span>
+                    {# **無效格由 markup 表達**（§3-2，不能只寫在 hint 裡）：上游 `list_audit` 是
+                         `if is_platform and scope == "all": pass`（不加租戶過濾）`else:` 才看 `tenant_id`
+                         ——「全部租戶」開著時這一欄**無條件被短路掉**，那一格是死的。本頁示範的是
+                         開關 ON 的狀態，故這一欄同時渲染成 `disabled`（照渲染但改不動，狀態要看得見）。
+                       hint 講的是**誰蓋過誰**、不是「什麼時候看誰」：後者在兩個方向上都讀得通，於是它
+                         在寫錯的時候也讀得通——先前那句「留空＝依開關決定」與上游的優先序正好相反。
+                       區間本身要讀得到（§4）：`min="1"` 是切版自己加的（上游 `tenant_id: int | None` 沒有 ge/le），
+                         更要說得出來。 #}
+                    <input type="number" min="1" step="1" id="auditTenantInput" class="form-control js-audit-tenant" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" aria-describedby="auditTenantHint" disabled>
+                    <span class="text-gray" id="auditTenantHint" data-i18n="audit.tenantHint">「全部租戶」開啟時本欄不生效，填了也會被忽略；關閉後才填得動。填租戶 id（≥ 1 的正整數），留空＝只看自己租戶</span>
                 </div>
             </div>
             <div class="form-group col-2-md col-12-sm" data-platform-role="auditor">
@@ -97,7 +115,7 @@ permalink: 5-7_auditLog.html
                     {# 數字欄的三件套（§4）：type=number ＋ 區間 ＋ **可見的**說明。「填的是使用者 id
                          不是 email」原本只寫在上面的 nunjucks 註解裡——那段 build 時就被移除，
                          使用者永遠讀不到。值域是正整數（`operator=<使用者 id>`，product app/routers/audit.py）。 #}
-                    <span class="text-gray" id="auditOperatorHint" data-i18n="audit.impersonatorHint">填使用者 id（正整數），不是 email</span>
+                    <span class="text-gray" id="auditOperatorHint" data-i18n="audit.impersonatorHint">填使用者 id（≥ 1 的正整數），不是 email</span>
                 </div>
             </div>
         </div>
@@ -125,8 +143,11 @@ permalink: 5-7_auditLog.html
        ③ `ask` 那一列原本編了 `chat_log #4821`。`ask` 的 `record_audit`（product `app/routers/ask.py`）
           只帶 `detail={"query": query, "tag": tag}`，**沒有 target_type/target_id** ⇒ 對象欄是「—」。
           同一列的 `detail` 也補回 `query`：`app/routers/audit.py` 的 `_project_detail` 分級投影的就是
-          這顆鍵（`_QUERY_SCOPED_DETAIL_KEYS = ("query",)`），原本那一列沒有 query，等於這條路徑上
-          最關鍵的欄位在切版裡不存在。⚠️ 這一格另有一態：沒有 `history` 能力的稽核者看到的是
+          這一族鍵（`_QUERY_SCOPED_DETAIL_KEYS`，**不抄成員**——上游自己註明「先前這裡只有 `query` 一顆」，
+          抄一份就是抄一份會過期的舊清單，§3-2），原本那一列沒有 query，等於這條路徑上
+          最關鍵的欄位在切版裡不存在。**遮蔽是兩道判準不是一道**：那一族鍵不看長度一律遮，其餘鍵走
+          allowlist（`_VERBATIM_DETAIL_KEYS`）＋長度上限（`_MAX_VERBATIM_DETAIL_CHARS`），未登記又過長者一樣被換掉——
+          遮蔽面遠大於「一顆 query」。⚠️ 這一格另有一態：沒有 `history` 能力的稽核者看到的是
           `audit.query_hidden`（上游把內容換成字數），那句話由 product 的 i18n 產生、不是本專案的譯文。
      **「操作類型」不是假資料，是同一份封閉目錄**（product `record_audit` 寫進去的那組 action 詞彙）：
      上面的篩選下拉已經逐顆掛了 `audit.act*` 的 key，列裡卻把同一組詞當成純文字烤了第二份繁中
@@ -177,7 +198,7 @@ permalink: 5-7_auditLog.html
         impersonator: "staff@sys.tw", impersonatorId: 3,
         action: "dataset.create", actionKey: "audit.actDatasetCreate", actionLabel: "建立資料集",
         target: "dataset #4207",
-        detail: "{ name: 移民署 測試 }",
+        detail: "{ name: 移民署 測試, index_name: idx_immig_test, group_id: 3, kind: excel, chunk_size: 500, chunk_overlap: 50, prepend_title_each_chunk: true }",
         ip: "203.0.113.5",
         userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0"
     },
@@ -196,7 +217,7 @@ permalink: 5-7_auditLog.html
         id: 90355,
         time: "2026/07/13 09:02:11",
         tenantId: "",
-        operator: "—", operatorId: "",
+        operator: "", operatorId: "",
         impersonator: "", impersonatorId: "",
         action: "login.failed", actionKey: "audit.actLoginFailed", actionLabel: "登入失敗",
         target: "login: bad@initech.io",
@@ -243,8 +264,14 @@ permalink: 5-7_auditLog.html
                 {# `tenant_id` 可為 NULL（查無帳號的登入失敗，見上方示範資料註解）：畫「—」，
                      與操作者欄的空值語意一致。 #}
                 <td>{% if row.tenantId %}{{ row.tenantId }}{% else %}—{% endif %}</td>
-                <td>{{ row.operator }}{% if row.operatorId %} <span class="text-gray">#{{ row.operatorId }}</span>{% endif %}</td>
-                <td>{{ row.impersonator }}{% if row.impersonatorId %} <span class="text-gray">#{{ row.impersonatorId }}</span>{% endif %}</td>
+                {# 五個 nullable 欄（租戶／操作者／代理者／對象／來源用戶端）的空值畫法**一律相同、而且住在 markup**：
+                     把「—」寫進 `{% set %}` 的陣列等於宣稱正本回了一個字串「—」，而正本回的是 `null`
+                     （`user_email`／`operator_email` 在 product `app/routers/audit.py` 是同一種 `if … is not None else None`），
+                     React 接上真 API 會渲染出空白或 `null`。先前操作者那一欄把「—」烤進資料、代理者那一欄
+                     連 fallback 都沒有（渲染出空的 `<td>`），同一張表三種畫法。
+                     要區分「沒有代理者」與「查無操作者」是兩顆 i18n key 的事，不是「空 vs —」。 #}
+                <td>{% if row.operator %}{{ row.operator }}{% if row.operatorId %} <span class="text-gray">#{{ row.operatorId }}</span>{% endif %}{% else %}—{% endif %}</td>
+                <td>{% if row.impersonator %}{{ row.impersonator }}{% if row.impersonatorId %} <span class="text-gray">#{{ row.impersonatorId }}</span>{% endif %}{% else %}—{% endif %}</td>
                 <td data-i18n="{{ row.actionKey }}">{{ row.actionLabel }}</td>
                 {# `target_type`／`target_id` 兩者皆可為 NULL（`ask` 就是不帶 target 的那一支）：畫「—」。 #}
                 <td>{% if row.target %}{{ row.target }}{% else %}—{% endif %}</td>

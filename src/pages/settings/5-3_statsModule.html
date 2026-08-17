@@ -11,9 +11,13 @@ permalink: 5-3_statsModule.html
   { label: "統計模組", i18nKey: "nav.statsModule" }
 ] %}
 {# 歸因槽值域：product `app/field_schema.py` 的 `ATTRIBUTION_SLOT_KEYS`＝`attribution_slot_keys(SLOTS)`。
-     它**排掉的是四類角色**、不是兩個槽名：`privileges`／`containsAny`／`filterBool`／`search`
-     （對應 `privilege`／`tags`／`flag`／`content` 四個槽），故是 21 減 4＝17 個。
-     照槽名列名單會無聲落後（product 該函式的 docstring 就是這樣寫的）——這裡照角色判準，不自己列。
+     它**排掉的是五類角色**、不是兩個槽名：`privileges`／`containsAny`／`filterBool`／`search`／
+     `PRODUCT_ONLY_ROLE`（對應 `privilege`／`tags`／`flag`／`content`／`internal_note` 五個槽），
+     母體是 `SLOTS` 全部 22 槽。（先前這裡寫「21 減 4」——母體與扣除項**兩個操作數都錯**，而結果
+     17 是對的：算式對得上不代表推導對得上，下一輪拿它當判準就會把 `internal_note` 漏掉。）
+     照槽名列名單會無聲落後（product 該函式的 docstring 就是這樣寫的）；切版沒有 `role` 欄可讀
+     （`ui/field-slot-catalog` 只帶 key ＋ 預設名，§2），故下面以一張**排除清單**鏡射同一個子集，
+     上游加槽時要回頭對 `attribution_slot_keys`——措辭與 5-10 那一頁對齊。
      同一份目錄本頁用兩次（統計維度 select ＋ 歸因維度多選），故 set 成一個陣列共用（GUIDELINE §6）。
      **React 端不得把這 17 個硬編**：`GET /settings/attribution` 回的 `available_slots` 就是這份值域的
      單一真相（product `app/routers/settings_hub.py`），值域一變前端才不會跟著漂。
@@ -104,8 +108,17 @@ permalink: 5-3_statsModule.html
         {% set dataTypeLabelId = "queryDataTypeLabel" %}
         {% include "components/data-type-filter/data-type-filter.html" %}
     </div>
-    {# 這一頁的查詢打的是 `GET /stats`，`_fetch_logs` 對 `total > MAX_STATS_LOGS`（5000，product app/routers/stats.py）
-         回 400「此時間範圍資料量過大…請縮小範圍」（product app/routers/stats.py 的 `_fetch_logs`／`stats.too_many_logs`）。時間篩選最長給到 365 天，
+    {# **這顆鈕上有兩道能力 403，各一段**：主閘是 `require_capability("settings", "read")`
+         （`GET /stats` 的 dependency `authz.require_stats_scope` 的第一層），走全站統一子句
+         「權限不足，無法查詢」；`dimension=attribution:*` 時**另要** `data:read`（同一支 dependency
+         的第二層，理由是分群鍵就是文件欄位值本身），那一段自帶條件敘述、**不代替**主閘那一段。
+         先前只列了附加閘那一段——它開頭也有「權限不足」四個字，於是子字串比對看不出主閘 403 沒被列。
+         主閘走得到：導覽選單沒有 `data-capability`，沒有 `settings:read` 的人照樣進得來這一頁。 #}
+    {# 這一頁的查詢打的是 `GET /stats`，`_fetch_logs` 對「筆數超過單次上限」回 400
+         「此時間範圍資料量過大…請縮小範圍」（product `app/routers/stats.py` 的 `_fetch_logs`／`stats.too_many_logs`）。
+         **那個上限不是常數**：它是 `stats._stats_max_logs()`，每次呼叫讀 `app/settings.py` 的
+         `stats_max_logs`（預設 5000，可由 env 覆寫），所以切版任何一處都不寫死那個數字
+         （先前這裡引的 `MAX_STATS_LOGS` 在上游 grep 為零——符號名錯，而且它刻意不是常數）。時間篩選最長給到 365 天，
          這是按幾下就撞得到、而且使用者自己縮小範圍就修得掉的結果——折進「載入資料失敗，請重新整理頁面」
          等於叫人重整一個永遠不會成功的請求，故另立 key 加一段 warning（§5）。
          左邊那顆換成全站篩選列正典的 `.js-filter-clear`「清除」（ui/filter-fields 提供行為，
@@ -113,7 +126,7 @@ permalink: 5-3_statsModule.html
          是一顆按了什麼都不會發生的鈕（§5 ④）。 #}
     <div class="flex-row align-items-center justify-content-center gap-16">
         <button type="button" class="button button-border js-filter-clear" data-i18n="action.clear">清除</button>
-        <button data-capability="settings:read" type="button" class="button button-primary" data-toast="正在查詢資料...|查詢成功|時間區間不正確（起訖需成對、開始須早於結束與現在、且在一年內、範圍不超過 365 天）|這段期間的資料量超過單次上限，請縮小時間範圍|權限不足：依歸因維度分群另外需要「資料集檢視」能力|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.queryStatsAttribution" data-toast-type="info|success|warning|warning|warning|error" data-i18n="action.query">查詢</button>
+        <button data-capability="settings:read" type="button" class="button button-primary" data-toast="正在查詢資料...|權限不足，無法查詢|查詢成功|時間區間不正確（起訖需成對、開始須早於結束與現在、且在一年內、範圍不超過 365 天）|這段期間的資料量超過單次上限，請縮小時間範圍|權限不足：依歸因維度分群另外需要「資料集檢視」能力|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.queryStatsAttribution" data-toast-type="info|warning|success|warning|warning|warning|error" data-i18n="action.query">查詢</button>
     </div>
 </div>
 

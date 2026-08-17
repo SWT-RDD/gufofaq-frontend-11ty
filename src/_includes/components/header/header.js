@@ -3,9 +3,12 @@
 // 展開/收合本身是純 CSS：_header.scss 的 `li:hover > ul` 與 `li:focus-within > ul`
 // （原真實 app 用 superfish JS，切版改 CSS-hover；只有 hover 的話鍵盤使用者完全打不開子選單）。
 // CSS 改不了 ARIA，故本檔只做一件事：讓 aria-expanded 反映「子選單當下是否顯示」。
+//
+// 觸發是 `<button type="button" class="dropdown">` 而不是 `<a href="#">`（§5，理由見 header.html 檔頭）：
+// 展開條件是 CSS 的 hover/focus-within，所以本檔不掛 click，只同步 ARIA。
 document.addEventListener("DOMContentLoaded", function () {
     document.querySelectorAll(".desktop-nav .main-menu > li").forEach(function (li) {
-        var trigger = li.querySelector(":scope > a.dropdown");
+        var trigger = li.querySelector(":scope > button.dropdown");
         var submenu = li.querySelector(":scope > ul");
         if (!trigger || !submenu) return;
 

@@ -1,6 +1,9 @@
 {# 生產元件（被全站真實頁 include），參數化改寫自真實 app pages/components/component.html 03 麵包屑 section（class 沿用真實系統） #}
 {# 用法：include 前先 set breadcrumbItems（陣列，元素為 { label, href, i18nKey, class }）。
-   規則比照真實 app：最後一項＝目前頁（純文字），其餘皆為連結；href 省略時退回 "#"（不輸出空屬性，§4）。
+   規則比照真實 app：最後一項＝目前頁（純文字），其餘**有 href 的**才是連結。
+   **沒有 href 的中間層畫成純文字，不退回 `href="#"`**（§5「不放按了沒反應的鈕」——`#` 是一顆死連結，
+   點下去只會跳回頁首）：像「資料配置」「設定」這種分類層本來就沒有自己的頁。它同時解掉一條 §4：
+   `href="#"` 那顆連結的可及名稱與 header 下拉的同名項目（也是分類層）在同一頁上逐字相同。
    i18nKey 省略＝該項是資料值（檔名／資料集名），不翻譯。
    class 省略即可；有值時掛在連結上（最後一項則掛在 li 上），供頁面標記如 .folder-name-link / .file-name。 #}
 <div class="breadcrumb">
@@ -10,7 +13,7 @@
                li 內容前若有縮排換行，會在 "/" 與文字之間多留一個 whitespace text node（約 4px），讓右側間距不對稱；
                而且轉 React 時 `.map()`/JSX 不會產生這種縮排空白，兩邊會差 ~4px。寫一行讓間距純由 ::before 的 padding 決定、兩邊一致。 #}
             {% for item in breadcrumbItems %}
-            <li{% if loop.last and item.class %} class="{{ item.class }}"{% endif %}{% if loop.last and item.i18nKey %} data-i18n="{{ item.i18nKey }}"{% endif %}>{% if not loop.last %}<a href="{{ item.href or '#' }}"{% if item.class %} class="{{ item.class }}"{% endif %} title="{{ item.label }}"{% if item.i18nKey %} data-i18n="{{ item.i18nKey }}" data-i18n-title="{{ item.i18nKey }}"{% endif %}>{{ item.label }}</a>{% else %}{{ item.label }}{% endif %}</li>
+            <li{% if (loop.last or not item.href) and item.class %} class="{{ item.class }}"{% endif %}{% if (loop.last or not item.href) and item.i18nKey %} data-i18n="{{ item.i18nKey }}"{% endif %}>{% if not loop.last and item.href %}<a href="{{ item.href }}"{% if item.class %} class="{{ item.class }}"{% endif %} title="{{ item.label }}"{% if item.i18nKey %} data-i18n="{{ item.i18nKey }}" data-i18n-title="{{ item.i18nKey }}"{% endif %}>{{ item.label }}</a>{% else %}{{ item.label }}{% endif %}</li>
             {% endfor %}
         </ul>
     </div>

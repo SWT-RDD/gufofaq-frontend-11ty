@@ -14,6 +14,21 @@
    兩級角色（auditor／admin）的語意也對不上。**新增頂層項時不沿用這個例外**：submenu 裡的
    「X 管理」照樣 `X Management`。
 
+   **下拉的觸發是 `<button>`、不是連結**（§5 不放按了沒反應的鈕）：「資料配置」「服務預覽」這些分類層
+   沒有自己的頁，原本寫成 `<a href="#" class="dropdown">`。桌機的展開收合是**純 CSS**（`_header.scss` 的
+   `li:hover > ul` / `li:focus-within > ul`，見 header.js 檔頭），那顆 `#` 按下去不會展開任何東西，只會把
+   頁面捲回頁首；手機版則是 `mobile-nav.js` 攔下 click 自己 slideToggle，`href` 從頭到尾沒用過。
+   兩邊一致改成 `<button type="button" class="dropdown">`：角色對了、`#` 沒了，`:focus-within` 照樣把
+   鍵盤與觸控的焦點算進展開條件。樣式重置寫在兩支 `.scss` 的 `.dropdown` 裡。
+
+   **下拉子項的可及名稱＝「父層 子項」**（§4 可及名稱不得重複；辨識在前、動作在後）：`menuItems` 裡有
+   兩顆逐字同名的「歷史紀錄」——服務預覽→前台 `?source=frontend`、問答測試區→後台 `?source=backend`——
+   去向不同卻同名，報讀器的連結清單就會出現兩行一模一樣的字。子項一律掛
+   `aria-labelledby="navItem-<父序> navSub-<父序>-<子序>"`（mobile-nav 換 `mnav*` 前綴，同一頁兩份選單不撞 id），
+   名稱因此變成「服務預覽 歷史紀錄」「問答測試區 歷史紀錄」。**不是只補那兩顆**：靠「這一顆剛好撞名」
+   決定要不要掛 aria，沒有規則形狀、React 端也照抄不了，整族一致才是契約。可見文字仍是「歷史紀錄」
+   （WCAG 2.5.3 只要求可見文字被包含在可及名稱裡，不要求逐字相等）。
+
    platformRole（選填）＝這個入口需要的**最低平台角色**，渲染成 `data-platform-role`（§5 的兩級可見性契約）。
    平台層有兩種角色而不是一種：`auditor`（唯讀稽核，ISO 情境刻意設計的職責分離）與 `admin`（全權）。
    把整塊「平台管理」gate 在 is_platform_admin，等於讓稽核員在 UI 上不存在（只能手動打 URL）。
@@ -92,11 +107,12 @@
                 {% for item in menuItems %}
                 <li{% if item.platformRole %} data-platform-role="{{ item.platformRole }}"{% endif %}>
                     {% if item.submenu %}
-                    <a href="#" class="dropdown" title="{{ item.label }}" aria-haspopup="true" aria-expanded="false" data-i18n="{{ item.i18nKey }}" data-i18n-title="{{ item.i18nKey }}">{{ item.label }}</a>
+                    {% set navIdx = loop.index %}
+                    <button type="button" class="dropdown" id="navItem-{{ navIdx }}" title="{{ item.label }}" aria-haspopup="true" aria-expanded="false" data-i18n="{{ item.i18nKey }}" data-i18n-title="{{ item.i18nKey }}">{{ item.label }}</button>
                     <ul>
                         {% for sub in item.submenu %}
                         <li{% if sub.platformRole %} data-platform-role="{{ sub.platformRole }}"{% endif %}>
-                            <a href="{{ sub.href }}" title="{{ sub.label }}" data-i18n="{{ sub.i18nKey }}" data-i18n-title="{{ sub.i18nKey }}">{{ sub.label }}{% if sub.beta %}<img src="./images/icon_beta.png" width="52" height="28" decoding="async" alt="BETA" class="beta-icon">{% endif %}</a>
+                            <a href="{{ sub.href }}" id="navSub-{{ navIdx }}-{{ loop.index }}" aria-labelledby="navItem-{{ navIdx }} navSub-{{ navIdx }}-{{ loop.index }}" title="{{ sub.label }}" data-i18n="{{ sub.i18nKey }}" data-i18n-title="{{ sub.i18nKey }}">{{ sub.label }}{% if sub.beta %}<img src="./images/icon_beta.png" width="52" height="28" decoding="async" alt="BETA" class="beta-icon">{% endif %}</a>
                         </li>
                         {% endfor %}
                     </ul>

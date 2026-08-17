@@ -38,11 +38,17 @@ permalink: 5-5-1_userManagement.html
   { id: 3, name: "研發群組", capabilities: ["data:read", "data:write", "settings:read"] }
 ] %}
 {# isActive＝product `app/routers/users.py` 的 `User.is_active`（PATCH /users/{id} 收 `UserUpdate.is_active`）。
-     示範第三筆為已停用：離職成員留著帳號但不能登入，那一列要一眼看得出來（§5 分支要演得到）。 #}
+     示範第三筆為已停用：離職成員留著帳號但不能登入，那一列要一眼看得出來（§5 分支要演得到）。
+   **`id` 是列鍵、不可省**（§6）：兩顆列動作打的是 `PATCH /users/{user_id}` 與
+     `POST /users/{user_id}/reset-password`，沒有它 React 連要改誰都送不出去；而這張清單**不是成員固定**
+     的（本頁上方就有「新增成員」，平台端另有刪除），`loop.index` 會在刪一筆之後整排前頂、逐列動作指錯人。
+     saas 端已經自己補了（`apps/web/app/(app)/users/page.tsx` 的 `key={m.id}` 與 `memberEmail-${member.id}`）
+     ——切版是正本，不能落後於它的複製品。姊妹頁 5-5-2 的群組表一開始就做對了。
+   **列序＝`order_by(User.id)`**（product `app/routers/users.py` 的 `list_users`），示範三筆照 id 遞增。 #}
 {% set members = [
-  { email: "admin@example.com", isAdmin: true, isActive: true, groupIds: [] },
-  { email: "editor@example.com", isAdmin: false, isActive: true, groupIds: [3] },
-  { email: "viewer@example.com", isAdmin: false, isActive: false, groupIds: [2, 3] }
+  { id: 1, email: "admin@example.com", isAdmin: true, isActive: true, groupIds: [] },
+  { id: 8, email: "editor@example.com", isAdmin: false, isActive: true, groupIds: [3] },
+  { id: 15, email: "viewer@example.com", isAdmin: false, isActive: false, groupIds: [2, 3] }
 ] %}
 
 {# 新增成員：電子郵件 + 初始密碼 + 所屬群組勾選（ui/checkbox）+ 租戶管理者（ui/switch）+ 新增按鈕 #}
@@ -81,10 +87,14 @@ permalink: 5-5-1_userManagement.html
                     {# 「至少 8 碼」是**約束提示**、不是錯誤訊息：.error-prompt 預設 display:none
                          （靠 .form-group:has(.error) 才揭示），aria-describedby 指過去等於輔具讀到零。
                          約束要在填之前就講得出來，故改成常駐可見的說明字（§4）。
-                         **8 是資料節點、不是譯文的一部分**（§3-2 / §4-2）：上游的 `Field(min_length=8)` 逐顆是
-                         product `app/routers/platform.py` 的 `TenantCreate.admin_password`／`PlatformResetPwIn.new_password`、
-                         `app/routers/users.py` 的 `UserCreate.password`／`ChangePwIn.new_password`／`ResetPwIn.new_password`
-                         （§3-2：跨 repo 的常數只指名符號、不抄數量——數量會變，符號 grep 得到），加上這一格的
+                         **8 是資料節點、不是譯文的一部分**（§3-2 / §4-2）：正本是 product `app/security.py` 的
+                         `MIN_PASSWORD_LEN`，五個消費點（`app/routers/platform.py` 的 `TenantCreate.admin_password`／
+                         `PlatformResetPwIn.new_password`、`app/routers/users.py` 的 `UserCreate.password`／
+                         `ChangePwIn.new_password`／`ResetPwIn.new_password`）寫的都是
+                         `Field(min_length=security.MIN_PASSWORD_LEN)`——**先前這裡把消費點抄成 `Field(min_length=8)`，
+                         那個字面在上游 grep 為零**，而同一句話自己宣告「符號 grep 得到」。
+                         它已經投影成 `GET /users/limits`（`app/ops_limits.py` 的 `USER_LIMIT_GROUPS`）的
+                         `member.password.min`，那是下一輪 grep 得到全部抄本的鉤子。加上這一格的
                          `minlength="8"`，這個數字已經有好幾份抄本；再烤進英譯就是「改上限要改兩份譯文」。
                          形狀沿用 2-2-4 的 200（前綴 key ＋ 數字節點 ＋ 單位 key）。
                          同一頁的 placeholder（settings.pleaseEnterNewPassword）與送出鈕的 data-toast **維持**把 8 寫在譯文裡：
@@ -125,15 +135,21 @@ permalink: 5-5-1_userManagement.html
     </div>
 </div>
 
-{# 「新增成員」的說明視窗：②③留空——現在生效的條件與這一區的數字由 React 執行期算，
-     切版這一側只提供容器（同批次既有區塊的現況）。 #}
+{# 「新增成員」的說明視窗：②留空（現在生效的條件由 React 執行期算）；**③ 有一列**——密碼下限已經
+     投影進 `GET /users/limits`（product `app/ops_limits.py` 的 `USER_LIMIT_GROUPS` 的 `member.password`），
+     saas 端也已經渲染那一列（`apps/web/app/(app)/users/page.tsx` 的 `ADD_MEMBER_HELP_ROWS`）。
+     先前這裡寫「由 React 執行期算」當理由——那是 ③ 每一列的共同性質（`bound` 本來就是執行期槽），
+     它區分不出這一列該不該存在，所以它不是一個理由。 #}
 {% set helpModalId = "addMemberHelpModal" %}
 {% set helpModalTitleKey = "help.settings.addMember.title" %}
 {% set helpModalTitle = "新增成員說明" %}
 {% set helpModalWhatKey = "help.settings.addMember.what" %}
 {% set helpModalWhat = "這一區建立一個新的租戶成員：帶著登入用的 Email、初始密碼、所屬群組（可複選）與是否為租戶管理者一起送出。這個成員之後真正能做什麼，看的是它所屬每個群組能力的聯集——不是這裡逐項勾出來的；勾了「租戶管理者」則不受群組限制，直接擁有本租戶全部能力並能管理其他成員與群組。這裡動的是租戶內部的角色，與平台系統管理員的跨租戶身分是兩件不同的事。" %}
 {% set helpModalStateItems = [] %}
-{% set helpModalLimitRows = [] %}
+{% set helpModalLimitRows = [
+  { labelKey: "settings.initialPassword", label: "初始密碼", bound: "≥ 8",
+    effectKey: "help.settings.addMember.passwordEffect", effect: "少於下限時當場擋在這一格，不是送出後才被拒；上限沒有。" }
+] %}
 {% include "components/help-modal/help-modal.html" %}
 
 {# 成員清單：default-table。狀態欄用 ui/switch（啟用／停用）；角色欄用 ui/switch（管理者切換）；
@@ -141,7 +157,10 @@ permalink: 5-5-1_userManagement.html
      狀態（is_active）：後端早就支援（product `app/routers/users.py` 的 PATCH /users/{id} 收 `UserUpdate.is_active`），
      但這頁原本既看不到誰被停用、也停用不了任何人——離職員工的帳號留在啟用狀態，畫面上與在職的一模一樣。
      切換是值載體（隨同列「儲存」一起送，不是各自 PATCH），故只掛 hook class .js-member-active（§5 ②）；
-     同列既有的管理者 switch 與群組 checkbox 維持原本的結構式綁定（既有契約，不順手改名）。
+     同列的管理者 switch 與群組 checkbox **一顆記號都沒有**（無 class、無 id、無 name），它們的定址靠
+     `<tr data-user-id>` 的列鍵 ＋ 欄位序（saas 端也是這樣接的，`apps/web/app/(app)/users/page.tsx` 兩顆
+     都是純 local state）——**這不是「既有契約，不順手改名」**：沒有名字的東西改不了名，先前那句話
+     宣告了一份不存在的契約。要補記號就補 `js-member-admin`／`js-member-group`，與 `.js-member-active` 一致。
      停用列整列上內嵌面底色（ui/default-table 的 tr.is-inactive；底色下在 > td，§4）。 #}
 <div class="block flex-row column gap-16">
     {# ⓘ 說明：markup 同既有 info-btn 六件組。①出處：本頁上方檔頭「成員清單」一節與 product
@@ -183,14 +202,14 @@ permalink: 5-5-1_userManagement.html
                 {% for member in members %}
                 {# 列內的 switch 不掛靜態 aria-label（§4）：那會蓋掉列脈絡，三列的可及名稱會全都一樣。
                      改成併讀「這一列是誰 ＋ 這一欄是什麼」，正典是 5-10 的篩選設定檔表。 #}
-                <tr{% if not member.isActive %} class="is-inactive"{% endif %}>
-                    <td id="memberEmail-{{ loop.index }}">{{ member.email }}</td>
+                <tr data-user-id="{{ member.id }}"{% if not member.isActive %} class="is-inactive"{% endif %}>
+                    <td id="memberEmail-{{ member.id }}">{{ member.email }}</td>
                     <td>
                         {# 狀態：switch ＋ 目前狀態文字（同角色欄的寫法）。文字沿用 3-4 skill 清單的
                              settings.enabled／settings.disabled 兩顆 key（§4-2：同繁中不另立 key）。 #}
                         <div class="flex-row align-items-center gap-8">
                             <label class="switch">
-                                <input type="checkbox" class="switch-checkbox js-member-active" role="switch" aria-labelledby="memberEmail-{{ loop.index }} memberStatusHead"{% if member.isActive %} checked{% endif %}>
+                                <input type="checkbox" class="switch-checkbox js-member-active" role="switch" aria-labelledby="memberEmail-{{ member.id }} memberStatusHead"{% if member.isActive %} checked{% endif %}>
                                 <span class="switch-box">
                                     <span class="switch-btn"></span>
                                 </span>
@@ -201,7 +220,7 @@ permalink: 5-5-1_userManagement.html
                     <td>
                         <div class="flex-row align-items-center gap-8">
                             <label class="switch">
-                                <input type="checkbox" class="switch-checkbox" role="switch" aria-labelledby="memberEmail-{{ loop.index }} memberRoleHead"{% if member.isAdmin %} checked{% endif %}>
+                                <input type="checkbox" class="switch-checkbox" role="switch" aria-labelledby="memberEmail-{{ member.id }} memberRoleHead"{% if member.isAdmin %} checked{% endif %}>
                                 <span class="switch-box">
                                     <span class="switch-btn"></span>
                                 </span>
@@ -214,7 +233,7 @@ permalink: 5-5-1_userManagement.html
                          §4 的做法是**那一格的容器**掛 `role="group" aria-labelledby="<列辨識欄 id> <欄表頭 id>"`，
                          每顆 checkbox 保留自己的可見字面（群組名）。順序照正典「列名 → 表頭」。 #}
                     <td>
-                        <div class="flex-row flex-wrap gap-16 align-items-center" role="group" aria-labelledby="memberEmail-{{ loop.index }} memberGroupsHead">
+                        <div class="flex-row flex-wrap gap-16 align-items-center" role="group" aria-labelledby="memberEmail-{{ member.id }} memberGroupsHead">
                             {% for group in groups %}
                             <label class="form-checkbox">
                                 <input type="checkbox"{% if group.id in member.groupIds %} checked{% endif %}>
@@ -249,10 +268,10 @@ permalink: 5-5-1_userManagement.html
                                  400「cannot deactivate the last active tenant admin」（product users.py）、
                                  403「平台角色持有者不得在租戶端變更」（同檔 _assert_tenant_manageable（users.py）：
                                  平台管理員／稽核員寄生在一般租戶裡，停用他會讓平台治理端點沒人打得動）。 #}
-                            <button data-tenant-role="admin" type="button" id="memberSave-{{ loop.index }}" aria-labelledby="memberEmail-{{ loop.index }} memberSave-{{ loop.index }}" class="button button-border button-sm" data-toast="已更新|不可移除租戶最後一位管理者，請先指派另一位|不可停用最後一位在職的租戶管理者，請先指派另一位|平台角色持有者不可在租戶端變更，請由平台管理端處理|儲存失敗" data-i18n-data-toast="toast.saveMember" data-toast-type="success|warning|warning|warning|error" data-i18n="action.save">儲存</button>
+                            <button data-tenant-role="admin" type="button" id="memberSave-{{ member.id }}" aria-labelledby="memberEmail-{{ member.id }} memberSave-{{ member.id }}" class="button button-border button-sm" data-toast="已更新|不可移除租戶最後一位管理者，請先指派另一位|不可停用最後一位在職的租戶管理者，請先指派另一位|平台角色持有者不可在租戶端變更，請由平台管理端處理|儲存失敗" data-i18n-data-toast="toast.saveMember" data-toast-type="success|warning|warning|warning|error" data-i18n="action.save">儲存</button>
                             {# 重設密碼：開窗需先選定「重設哪一位成員」＝業務條件開窗，故用 hook class（.js-reset-password），
                                  不掛 data-open-modal（§5）。彈窗本體見 components/reset-password-modal（include 於本頁底部）。 #}
-                            <button type="button" id="memberResetPw-{{ loop.index }}" aria-labelledby="memberEmail-{{ loop.index }} memberResetPw-{{ loop.index }}" class="button button-border button-sm js-reset-password" data-i18n="settings.resetPassword">重設密碼</button>
+                            <button type="button" id="memberResetPw-{{ member.id }}" aria-labelledby="memberEmail-{{ member.id }} memberResetPw-{{ member.id }}" class="button button-border button-sm js-reset-password" data-i18n="settings.resetPassword">重設密碼</button>
                         </div>
                     </td>
                 </tr>

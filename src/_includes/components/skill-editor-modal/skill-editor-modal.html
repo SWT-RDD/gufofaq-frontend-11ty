@@ -66,8 +66,11 @@
                             <div class="field">
                                 <textarea required maxlength="1024" id="skillDescriptionInput" class="form-control" aria-describedby="skillDescriptionHint">處理退貨與退款試算。使用者問到退貨、退款、換貨或想知道能退多少錢時使用。</textarea>
                                 {# 約束要在**填之前**讀得到（§4）：`maxlength` 只會在撞牆那一刻靜默截斷，說不出上限是多少。
-                                     1024 是資料節點、不進譯文（§3-2），出處見本檔檔頭的 `MAX_SKILL_*_LEN`。 #}
-                                <p class="skill-editor-hint" id="skillDescriptionHint"><span>1024</span><span data-i18n="settings.skillDescriptionHint">請同時寫「這個 skill 做什麼」與「什麼時候該用它」——這是 agent 判斷要不要呼叫它的唯一依據，寫得含糊就不會被觸發。</span></p>
+                                     1024 是資料節點、不進譯文（§3-2），出處見本檔檔頭的 `MAX_SKILL_*_LEN`。
+                 **數字前後要有 chrome 前後綴 key**（同上面 `skillNameHint` 的三件式）：先前是裸的
+                 `1024` 直接黏在一句完全沒提到長度的說明前面，英文模式讀到的是一個沒有意義的數字
+                 （`settings.skillDescriptionHint` 的英譯裡一個字都沒有講長度）＝約束等於沒有講出來（§4-2）。 #}
+                                <p class="skill-editor-hint" id="skillDescriptionHint"><span data-i18n="settings.mcpLimitAtMost">最多</span><span>1024</span><span data-i18n="common.unitChars"> 字</span><span data-i18n="common.labelSep">：</span><span data-i18n="settings.skillDescriptionHint">請同時寫「這個 skill 做什麼」與「什麼時候該用它」——這是 agent 判斷要不要呼叫它的唯一依據，寫得含糊就不會被觸發。</span></p>
                             </div>
                         </div>
                         <div class="form-group">
@@ -78,7 +81,7 @@
                                 <textarea id="skillInstructionsInput" maxlength="20000" class="form-control skill-editor-instructions" aria-describedby="skillInstructionsHint">1. 先用 lookup-order 取得訂單金額。
 2. 依退貨政策用 calculate 算出應退金額。
 3. 用一句話回報金額與計算依據。</textarea>
-                                <p class="skill-editor-hint" id="skillInstructionsHint"><span>20000</span><span data-i18n="settings.skillInstructionsHint">被呼叫時才載入，當作這個 skill 的系統提示詞。要照順序執行就在這裡寫清楚步驟。</span></p>
+                                <p class="skill-editor-hint" id="skillInstructionsHint"><span data-i18n="settings.mcpLimitAtMost">最多</span><span>20000</span><span data-i18n="common.unitChars"> 字</span><span data-i18n="common.labelSep">：</span><span data-i18n="settings.skillInstructionsHint">被呼叫時才載入，當作這個 skill 的系統提示詞。要照順序執行就在這裡寫清楚步驟。</span></p>
                             </div>
                         </div>
 

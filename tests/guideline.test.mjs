@@ -682,6 +682,7 @@ const NAMED_BUTTON_EXTRA = new Map([
     ["info-btn", "ui/info-btn 的說明鈕（自有 scss）"],
     ["link-modal", "ui/link-modal 的開窗連結鈕（自有 scss）"],
     ["upload-box", "ui/upload-box 的拖放區（upload-box.js 查它）"],
+    ["dropdown", "components/header 下拉的觸發鈕：GufoFAQ_Frontend_New js/main.js:57 `$(\".mobile-menu .dropdown\").on('click', …)`；本 repo 由 header.js（`:scope > button.dropdown`）與 mobile-nav.js（`.mobile-menu .dropdown`）查它，另有 `_header.scss`／`_mobile-nav.scss` 的箭頭字形"],
 ]);
 
 test("§4 markup 上的每個 class 都要有主人（反向網：css 規則／元件 js／js-／具名 hook）", () => {
@@ -6228,8 +6229,13 @@ test("§5/§6 5-5-1 每位成員都要看得到啟用狀態、切得動，且停
     // 後端早就收 is_active（product users.py 的 PATCH /users/{id}），但這頁原本沒有顯示也沒有切換——
     // 離職員工的帳號留在啟用狀態，畫面上與在職的一模一樣，租戶管理者只能去找平台管理員。
     const html = distDoc("5-5-1_userManagement.html");
-    const table = html.match(/<table class="default-table">([\s\S]*?)<\/table>/);
-    assert.ok(table, "5-5-1 找不到成員表");
+    // 這一頁有一張以上的 `.default-table`（round46 起「新增成員」說明視窗的 ③ 界線表也是），
+    // 所以不能抓「第一張」——要抓**含成員切換的那一張**。先前抓第一張，說明視窗一長出來
+    // 整條測試就改去掃一張只有一列的表，而它的失敗訊息會說「這條測試在空轉」，
+    // 讀的人會以為是示範資料掉了。
+    const table = [...html.matchAll(/<table class="default-table">([\s\S]*?)<\/table>/g)]
+        .find((m) => m[1].includes("js-member-active"));
+    assert.ok(table, "5-5-1 找不到成員表（沒有任何一張 .default-table 含 .js-member-active）");
     const rows = [...table[1].matchAll(/<tr([^>]*)>([\s\S]*?)<\/tr>/g)].filter(([, , body]) => body.includes("<td"));
     assert.ok(rows.length >= 3, `只掃到 ${rows.length} 列成員 —— 這條測試在空轉`);
 
