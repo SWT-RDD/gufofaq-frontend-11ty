@@ -257,11 +257,15 @@ permalink: 5-4_coverageGaps.html
         <p class="text-gray m-0"><span data-i18n="settings.excludedPersistentLenPrefix">每一句最多 </span><span>2000</span><span data-i18n="settings.excludedPersistentLenSuffix"> 字；筆數或長度任一超過，整份清單就存不進去（這一份是整份取代，不是逐筆增刪）。</span></p>
         <div class="flex-row gap-8 flex-wrap align-items-center">
             {% for q in gapExcludedPersistent %}
+            {# 逐列辨識欄（§4）：這是 {% for %} 產出的 <div> 清單、不是 <tr>——無障礙樹裡沒有列脈絡
+                 可倚靠（「豁免來自 <tr>，不是來自『長得像一列』」）。常設排除上限 200 筆 ⇒ 報讀器
+                 最多聽到 200 顆逐字同名的「移除」。順序照正典：辨識在前、動作在後。 #}
             <div class="flex-row align-items-center gap-4">
-                <span>{{ q }}</span>
+                <span id="gapExclPersistName-{{ loop.index }}">{{ q }}</span>
                 {# data-question＝React 動作目標：product 的排除清單與提問原文用同一套正規化（修剪空白後
                      全字比對），所以鈕要帶得走那句原文，而不是去讀兄弟節點的 textContent。 #}
                 <button type="button" data-capability="settings:write" class="button button-border button-sm js-remove-persistent-exclusion" data-question="{{ q }}"
+                    id="gapExclPersistRemove-{{ loop.index }}" aria-labelledby="gapExclPersistName-{{ loop.index }} gapExclPersistRemove-{{ loop.index }}"
                     data-toast="正在儲存...|權限不足，無法移除|已從常設排除移除|清單太長或有一筆超過長度上限|儲存失敗，請重新整理頁面" data-i18n-data-toast="toast.removePersistentExclusion" data-toast-type="info|warning|success|warning|error"
                     data-i18n="action.remove">移除</button>
             </div>
@@ -277,9 +281,13 @@ permalink: 5-4_coverageGaps.html
         <div class="text-gray" data-i18n="settings.excludedSessionTitle">本次查詢・重新整理即失效</div>
         <div class="flex-row gap-8 flex-wrap align-items-center">
             {% for q in gapExcludedSession %}
+            {# 逐列辨識欄（§4）：這是 {% for %} 產出的 <div> 清單、不是 <tr>——無障礙樹裡沒有列脈絡
+                 可倚靠（「豁免來自 <tr>，不是來自『長得像一列』」）。常設排除上限 200 筆 ⇒ 報讀器
+                 最多聽到 200 顆逐字同名的「移除」。順序照正典：辨識在前、動作在後。 #}
             <div class="flex-row align-items-center gap-4">
-                <span>{{ q }}</span>
+                <span id="gapExclSessionName-{{ loop.index }}">{{ q }}</span>
                 <button data-capability="history" type="button" class="button button-border button-sm js-undo-exclude-question" data-question="{{ q }}"
+                    id="gapExclSessionUndo-{{ loop.index }}" aria-labelledby="gapExclSessionName-{{ loop.index }} gapExclSessionUndo-{{ loop.index }}"
                     data-toast="正在查詢資料...|權限不足，無法查詢|查詢成功|時間區間不正確（起訖需成對、開始須早於結束與現在、且在一年內、範圍不超過 365 天）|這段期間的資料量超過單次上限，請縮小時間範圍|意圖分組的模型還沒設好，這份報表分不了群——請先到對話設定的「生成設定」把「意圖判斷」那一組的模型設好|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.queryStats" data-toast-type="info|warning|success|warning|warning|warning|error"
                     data-i18n="action.undoExclude">取消排除</button>
                 <button type="button" data-capability="settings:write" class="button button-border button-sm js-persist-exclusion" data-question="{{ q }}"

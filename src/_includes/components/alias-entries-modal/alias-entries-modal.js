@@ -6,6 +6,8 @@
 // 解析規則（規格逐條，**不要自作聰明**）：
 //   · 空行略過
 //   · 第一欄＝標準詞，其餘＝別名；Tab 或逗號都算分隔（貼 Excel 一欄與貼逗號清單同一個入口）
+//   · 第一格空、後面有別名 ⇒ 該列標紅、掛「這一行沒有標準詞」（**不可以先去空再取第一格**：
+//     那會把第一個別名升格成標準詞，一個錯都不報而資料被改寫）
 //   · 只有一欄（沒有別名）⇒ 該列標紅、掛「這一行沒有別名」
 //   · 標準詞 > 200 字 或 別名 > 50 個 ⇒ 該列標紅並指出是哪一項（上限＝GufoRAG
 //     chatbot app/services/alias.py 的 MAX_CANONICAL_LEN／MAX_ALIASES_PER_ENTRY）
@@ -107,6 +109,9 @@ document.addEventListener("DOMContentLoaded", function () {
             del.type = "button";
             del.className = "button button-border button-sm js-remove-alias-entry";
             del.setAttribute("data-i18n", "action.delete");
+            // 與模板那一份逐字同形（§1-2 契約要對得上實例）：刪除鈕的可及名稱也要帶列脈絡，
+            // 否則貼上產生的列是「刪除 ×N」、示範列卻有列名——同一張表兩種無障礙樹。
+            del.setAttribute("aria-labelledby", nameId + " aliasHeadActions");
             del.textContent = t("action.delete", "刪除");
             tdOp.appendChild(del);
 

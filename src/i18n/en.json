@@ -1772,7 +1772,7 @@
   "toast.resetPasswordPlatform": "Password reset|The new password must be at least 8 characters|The two new passwords do not match|Reset failed. Please try again later.",
   "toast.resetPrompt": "Restored to the current production prompt|You do not have permission to restore|Unable to fetch the production prompt",
   "toast.resetUsage": "Current period usage reset|Reset failed. Please try again later.",
-  "toast.restoreDisclaimer": "This version has been restored|Restore failed. Please try again later.",
+  "toast.restoreDisclaimer": "This version has been restored|You do not have permission to save|Restore failed. Please try again later.",
   "toast.restorePrompt": "This prompt version has been restored|You do not have permission to save|Restore failed. Please try again later.",
   "toast.restoreSettings": "Restored to saved settings|You do not have permission to load it|Failed to load saved settings",
   "toast.restoreWelcome": "This welcome-message version has been restored|You do not have permission to save|Restore failed. Please try again later.",

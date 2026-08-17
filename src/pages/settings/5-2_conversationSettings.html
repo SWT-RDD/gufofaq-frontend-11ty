@@ -1063,7 +1063,7 @@ permalink: 5-2_conversationSettings.html
                         <th id="policyHeadInputAction" data-i18n="settings.policyInputAction">輸入動作</th>
                         <th id="policyHeadOutputAction" data-i18n="settings.policyOutputAction">輸出動作</th>
                         <th id="policyHeadRefusal" data-i18n="settings.policyRefusal">拒絕訊息</th>
-                        <th><span class="sr-only" data-i18n="common.actions">操作</span></th>
+                        <th><span class="sr-only" id="policyHeadActions" data-i18n="common.actions">操作</span></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -1093,7 +1093,7 @@ permalink: 5-2_conversationSettings.html
                             </select>
                         </td>
                         <td><input type="text" class="form-control" value="{{ topic.refusal }}" aria-labelledby="policyTopicRowName-{{ loop.index }} policyHeadRefusal"></td>
-                        <td><button type="button" class="button button-border button-sm js-remove-policy-topic" data-i18n="action.delete">刪除</button></td>
+                        <td><button type="button" class="button button-border button-sm js-remove-policy-topic" aria-labelledby="policyTopicRowName-{{ loop.index }} policyHeadActions" data-i18n="action.delete">刪除</button></td>
                     </tr>
                     {% else %}
                     <tr><td colspan="7" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>

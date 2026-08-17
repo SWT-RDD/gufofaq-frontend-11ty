@@ -51,13 +51,23 @@ AI內容生成的性質
           { no: 1, time: "2026/07/01 09:00", createdBy: "12", current: false }
         ] %}
         {% for v in platformDisclaimerVersions %}
-        <div class="flex-row align-items-center gap-8">
-            <span>V{{ v.no }}（{{ v.time }}）</span>
+        {# 逐列辨識欄（§4）：這是 `{% for %}` 產出的 `<div>` 清單、不是 `<tr>`——無障礙樹裡沒有列脈絡
+             可倚靠，豁免不成立（「豁免來自 `<tr>`，不是來自『長得像一列』」）。每存一次就 append 一版，
+             真實資料下就是 N−1 顆逐字同名的「還原此版本」；示範只有一顆非目前版本，所以 dist 上
+             看不出來——正是這條規則要抓的那種。
+           版號那顆同時是 `POST /platform/disclaimer/versions/{version_no}/activate` 的定址依據，
+             故列上也帶 `data-version-no`（§6 列鍵：位置不是身分）。
+           全形括號改半形：這一段沒有 `data-i18n`，全形標點在英文模式會原樣露出來（§4-2）。
+           403 那一段的子句沿用 5-2 兩顆「還原版本」鈕的「權限不足，無法儲存」——還原在正本是
+           append 一份複本為當前（不是覆寫），與它們是同一種寫入；§4-2 同一句繁中要有同一句英譯，
+           而「無法還原」已被 3-5 的撤銷處置占用（那顆是 undo，語意不同）。 #}
+        <div class="flex-row align-items-center gap-8" data-version-no="{{ v.no }}">
+            <span id="disclaimerVersionNo-{{ v.no }}">V{{ v.no }} ({{ v.time }})</span>
             <span class="text-gray"><span data-i18n="platform.disclaimerChangedBy">修改者 </span>{% if v.createdBy %}#{{ v.createdBy }}{% else %}—{% endif %}</span>
             {% if v.current %}
             <span class="text-bold" data-i18n="platform.currentVersion">目前版本</span>
             {% else %}
-            <button type="button" class="button button-border button-sm js-disclaimer-restore" data-platform-role="admin" data-toast="已還原此版本|還原失敗，請稍後再試" data-i18n-data-toast="toast.restoreDisclaimer" data-toast-type="success|error" data-i18n="action.restore">還原此版本</button>
+            <button type="button" class="button button-border button-sm js-disclaimer-restore" data-platform-role="admin" id="disclaimerRestore-{{ v.no }}" aria-labelledby="disclaimerVersionNo-{{ v.no }} disclaimerRestore-{{ v.no }}" data-toast="已還原此版本|權限不足，無法儲存|還原失敗，請稍後再試" data-i18n-data-toast="toast.restoreDisclaimer" data-toast-type="success|warning|error" data-i18n="action.restore">還原此版本</button>
             {% endif %}
         </div>
         {% endfor %}
