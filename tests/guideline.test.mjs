@@ -4710,8 +4710,21 @@ test("§1-2 無 html 元件的 markup 契約要逐字寫在自己的 scss／js �
         }
         return roots;
     };
-    const sameNode = (c, n) => c.tag === n.tag && c.cls === n.cls
-        && c.at.split(",").filter(Boolean).every((a) => n.at.split(",").includes(a));
+    // §1-2「**屬性一律不得略**——被略掉的恰好都是 §4 的硬規則（`<img>` 的 width/height、可及名稱、
+    // `data-i18n*` 那一組），照抄的人於是照抄了一個違規」——這句話先前**沒有任何網**：
+    // 比對是單向的（契約屬性 ⊆ 實例屬性），於是「契約寫少」永遠不會紅，只有「契約寫多」才會。
+    // 負控 probe 的五顆也全都在測「契約寫多」那一個方向。
+    // 判準補成雙向、但只對**硬規則那一族**要求相等：契約仍可略掉頁面專屬的裝飾屬性
+    // （`title`、業務 `data-*` 鍵…），而實例上有的可及名稱／i18n／授權四軸／toast 三件套／
+    // `<img>` 尺寸一旦出現，契約就必須也有。
+    const HARD_ATTR = /^(aria-|data-i18n|data-toast|data-capability$|data-tenant-feature$|data-tenant-role$|data-platform-role$|width$|height$|decoding$|type$|role$)/;
+    const sameNode = (c, n) => {
+        if (c.tag !== n.tag || c.cls !== n.cls) return false;
+        const ca = c.at.split(",").filter(Boolean);
+        const na = n.at.split(",").filter(Boolean);
+        if (!ca.every((a) => na.includes(a))) return false;
+        return na.every((a) => !HARD_ATTR.test(a) || ca.includes(a));
+    };
     const matchKids = (cs, ns) => {
         let j = 0;
         for (const c of cs) { let found = false; while (j < ns.length) if (matchNode(c, ns[j++])) { found = true; break; } if (!found) return false; }
@@ -4725,7 +4738,10 @@ test("§1-2 無 html 元件的 markup 契約要逐字寫在自己的 scss／js �
     const contractBlocks = (head) => {
         const raw = head.split(/\r?\n/).map((l) => { const m = l.match(/^\s*\/\/ ?(.*)$/); return m === null ? null : m[1]; });
         const out = []; let cur = [];
-        for (const l of raw) { if (l !== null && /^\s*(?:<|\{%)/.test(l)) cur.push(l); else { if (cur.length) out.push(cur.join("\n")); cur = []; } }
+        // `{#` 也算契約行：§1-2 允許的「重複第 N 次同型節點」標註就長這樣，而它不會被複製進 HTML。
+        // 先前的判準是「不是 markup 的行就當分隔符」——中文散文因此對這條測試**完全隱形**，
+        // 還會把一份契約切成兩截各自比對（切開之後那顆孤立的 <button> 在全站任何一處都找得到同構子樹）。
+        for (const l of raw) { if (l !== null && /^\s*(?:<|\{[%#])/.test(l)) cur.push(l); else { if (cur.length) out.push(cur.join("\n")); cur = []; } }
         if (cur.length) out.push(cur.join("\n"));
         return out;
     };
@@ -4796,8 +4812,8 @@ test("§1-2 無 html 元件的 markup 契約要逐字寫在自己的 scss／js �
         assert.ok(checkContract(heads, allForest.filter(({ f }) => cons.includes(f))).length > 0,
             `CONTRACT_ANY_PAGE 豁免了 ${key}，但它的契約其實在自己宣告的消費頁裡就對得上 —— 死豁免，請移除`);
     }
-    // 負控＝round40 實測全綠的那四種突變（＋屬性名那一種）。good 樣本擋反方向：
-    // 契約是節錄，消費頁多出來的兄弟節點不該被判成違規。
+    // 負控＝round40 實測全綠的那四種突變（＋屬性名那兩種：多寫一顆、少寫一顆硬規則）。
+    // good 樣本擋反方向：契約是節錄，消費頁多出來的兄弟節點不該被判成違規。
     const probeRule = (s) => checkContract(s, allForest);
     const G = (dialogCls, dlgCls, wrapCls, contentLine, headerCls, dlgAttr) => [
         `//   <dialog class="${dialogCls}" id="ProductionSettingsModal" aria-labelledby="ProductionSettingsModal-title"${dlgAttr}>`,
@@ -4817,6 +4833,10 @@ test("§1-2 無 html 元件的 markup 契約要逐字寫在自己的 scss／js �
         G("modals", "modals-dialog modals-md", "modals-wrap", false, "modals-header", ""),         // ③ 少一層 .modals-content
         G("modals", "modals-dialog modals-md", "modals-wrap", true, "modals-header mb-16", ""),    // ④ 多一顆別處才有的 class
         G("modals", "modals-dialog modals-md", "modals-wrap", true, "modals-header", ' data-print="1"'), // ⑤ 多一個實例沒有的屬性
+        // ⑥ **少寫一顆實例上的硬規則屬性**（可及名稱）——§1-2 逐字禁止的那個方向，
+        //    先前完全沒有網：比對是「契約屬性 ⊆ 實例屬性」，寫少永遠不會紅。
+        G("modals", "modals-dialog modals-md", "modals-wrap", true, "modals-header", "")
+            .replace(' aria-labelledby="ProductionSettingsModal-title"', ""),
     ], [
         G("modals", "modals-dialog modals-md", "modals-wrap", true, "modals-header", ""),
     ]);

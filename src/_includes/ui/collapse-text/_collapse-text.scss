@@ -1,8 +1,33 @@
 // 長文收合：內容一律夾住（3 行）而且**打得開**。取自真 app 已編譯 css/component.css（scss 源碼漏了）。
 //
-// 無 html 元件 ⇒ markup 契約逐字寫在這裡（GUIDELINE §1-2）。**整段照抄，一個屬性都不要少**：
+// 無 html 元件 ⇒ markup 契約逐字寫在這裡（GUIDELINE §1-2）。**整段照抄，一個屬性都不要少**。
+// 這組 markup 全站十幾份，**逐型各一段完整 markup**——型別＝可及名稱的來源，不是排版偏好。
+// （先前只寫了型③一段，而全站十二份實例裡只有一份是那一型；其餘十一份都多了 `id` ＋
+//   `aria-labelledby`，也就是照契約抄進任何一張 `{% for %}` 表格，那一欄每一列的可及名稱
+//   都會是「展開」——正是 §4 第一句要擋的東西。）
+//
+// ③ 基本型——**不在迴圈裡**、同頁只有這一顆，鈕的可及名稱就是它自己的字面。
+//   唯一實例：components/qa-detail-info 的「提示詞」（內容直接寫在 markup，見型③ 的長文版）：
 //
 //   <div class="collapse-text"><div class="collapse-body">{{ row.answer }}</div><button type="button" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>
+//
+// ③′ 列內型（**2 段**）——住在 `{% for %}` 裡、同一欄每一列一顆：名稱要併讀「這一列是誰 ＋ 本鈕自己」。
+//   實例：4-1、5-7、1-2-1、ui/default-table：
+//
+//   <div class="collapse-text"><div class="collapse-body">{{ row.aiMsg }}</div><button type="button" id="qaHistoryAnswerToggle-{{ row.id }}" aria-labelledby="qaHistoryRowName-{{ row.id }} qaHistoryAnswerToggle-{{ row.id }}" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>
+//
+// ③″ 列內型（**3 段**，交叉表）——同一列有多欄各一顆，還要併讀欄表頭；`.collapse-body` 的 id
+//   只掛第一欄（那一格就是列名）。實例：1-1-3、3-1-6 兩處：
+//
+//   <div class="collapse-text"><div class="collapse-body"{% if loop.first %} id="previewRowName-{{ previewRowNo }}"{% endif %}>{{ row[c.index] }}</div><button type="button" id="previewCellToggle-{{ previewRowNo }}-{{ loop.index }}" aria-labelledby="previewRowName-{{ previewRowNo }} previewColHead-{{ loop.index }} previewCellToggle-{{ previewRowNo }}-{{ loop.index }}" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>
+//
+// ③‴ 列內型（**4 段**，同頁多份同型表）——最前面再加一段 `<元件>OwnerId`：instance 鍵解決 id
+//   相撞，解決不了**可及名稱**相撞（§4）。實例：components/priority-table 兩欄、components/step-flow：
+//
+//   <div class="collapse-text"><div class="collapse-body">{{ row.description }}</div><button type="button" id="priorityDescToggle-{{ priorityTableInstance }}-{{ row.sn }}" aria-labelledby="{{ priorityTableOwnerId }} priorityCat-{{ priorityTableInstance }}-{{ row.sn }} priorityDescHead-{{ priorityTableInstance }} priorityDescToggle-{{ priorityTableInstance }}-{{ row.sn }}" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>
+//
+// **判準（抄的時候先問這一句）**：這一顆住在 `{% for %}` 裡嗎？是 ⇒ 一定要有 `id` ＋
+//   `aria-labelledby`，順序「辨識在前、動作在後」（自指那一段永遠排最後）。
 //
 //   · `.collapse-body` 是 clamp 的落點，內容一定要包在它裡面（直接放進 .collapse-text 不會被夾）
 //   · 鈕一定要 `type="button"`（§4 不得省略 type）、`aria-expanded="false"`（初始態）
@@ -11,11 +36,11 @@
 //   · 三顆節點擠在同一行不是排版偏好：`{{ }}` 後面接換行縮排會把那串空白併進同一個文字節點（§2）
 //   · `.open` 由 js 掛在 `.collapse-text` 上（不是 body）
 //
-// 變體①：外層再掛全域文字色工具（`.text-gray`／`.text-red`），內層兩顆一個字都不動——
+// 變體①：外層再掛全域文字色工具（`.text-gray`／`.text-red`），內層照**型③′**——
 // 5-6-2 的「可用工具」與「錯誤訊息」兩格：
 //
-//   <div class="collapse-text text-gray"><div class="collapse-body">{{ server.lastTest.tools }}</div><button type="button" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>
-//   <div class="collapse-text text-red"><div class="collapse-body">{{ server.lastTest.message or server.lastTest.error }}</div><button type="button" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>
+//   <div class="collapse-text text-gray"><div class="collapse-body">{{ server.lastTest.tools }}</div><button type="button" id="mcpToolsToggle-{{ server.id }}" aria-labelledby="mcpRowName-{{ server.id }} mcpToolsToggle-{{ server.id }}" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>
+//   <div class="collapse-text text-red"><div class="collapse-body">{{ server.lastTest.message or server.lastTest.error }}</div><button type="button" id="mcpErrorToggle-{{ server.id }}" aria-labelledby="mcpRowName-{{ server.id }} mcpErrorToggle-{{ server.id }}" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>
 //
 // 變體②：內容是直接寫在 markup 的長文示範（§3-2）時，只有 `.collapse-body` 跨行，
 // 它的收尾標籤照樣貼著最後一個字（§2），鈕才自己一行。唯一實例：components/qa-detail-info 的「提示詞」——
@@ -23,7 +48,7 @@
 //   <div class="collapse-text">
 //       <div class="collapse-body">你是一位熟悉台灣新住民婚姻登記流程的行政資訊助手。<br>
 //           你的回答目標是協助一般民眾快速了解結婚登記流程與相關注意事項。<br>
-//           （中間每一行都是同一型：一句文字 ＋ 一顆 <br>，重複到最後一行為止）
+//           {# 重複 N 次同型節點：一句文字 ＋ 一顆 <br> #}
 //           加上這句之後，回答就更接近真正可執行的行政指引。</div>
 //       <button type="button" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button>
 //   </div>

@@ -57,6 +57,33 @@
 //       </tbody>
 //   </table>
 //
+// **③′ 單顆排序鈕的欄頭**（同一張表只有一顆可排序的欄）——`4-1_qaHistory`：名稱不必併讀欄名，
+//   鈕內自帶一顆 `.sr-only`「排序」，故欄名那顆 `<span>` 不需要 id、鈕也不需要 `aria-labelledby`：
+//
+//   <div class="th-sort">
+//       <span data-i18n="qa.conversationDate">對話日期</span>
+//       <button type="button" class="sort" data-column="date">
+//           <img src="./images/icon_ascending_order_black.png" width="20" height="37" decoding="async" alt="">
+//           <span class="sr-only" data-i18n="common.sort">排序</span>
+//       </button>
+//   </div>
+//
+// **③″ 展示片段**（`ui/default-table`，元件庫頁）——同 ③′ 但欄名是裸文字、且 showcase 不翻，
+//   也沒有 `data-column`（那顆是業務 js 讀的欄鍵，展示片段沒有欄位資料可指）：
+//
+//   <div class="th-sort">
+//       對話日期
+//       <button type="button" class="sort">
+//           <img src="./images/icon_ascending_order_black.png" width="20" height="37" decoding="async" alt="">
+//           <span class="sr-only">排序</span>
+//       </button>
+//   </div>
+//
+// **哪一型用在哪裡的判準**：同一張表有兩顆以上排序鈕 ⇒ 一定走 ③（`aria-labelledby` 併讀
+//   「欄名 ＋ 排序」），因為 §4 禁止同頁同名；只有一顆時 ③′／③″ 的內嵌 `.sr-only` 就夠。
+//   （先前這裡只寫了 ③ 一段，而三個消費點形狀都不同——那條同構比對是 `pool.some(...)`，
+//   契約只要命中 3-1-6 一頁就通過，另外兩個宣告在同一句話裡的消費點不必對帳。）
+//
 // 抄的時候：
 //   ⓐ **那顆 `#sortWord` 必須住在任何 `.tab-content` 之外**（本例在 `.tab-row` 之後）：它是一頁一份、
 //      所有排序鈕共用的 sr-only「排序」字樣，而 `ui/tab` 切面板時會把整塊 `.tab-content` 設成
@@ -72,7 +99,9 @@
 //   ⓔ `fixed-layout` 不是本契約的一部分（那是 3-1-6 自己的欄寬決策）；4-1 與 `ui/default-table`
 //      的展示片段都沒有它，排序照樣運作。
 //
-// 住在哪一頁（雙向）：3-1-6（兩個面板共 13 顆）、4-1（1 顆）、`ui/default-table` 的展示片段（1 顆）。
+// 住在哪一頁（雙向；判準＝`grep -rn 'class="sort"' src --include=*.html`，命中四檔——
+//   其中 `pages/components/component.html` 那一筆是說明散文、不是實例）：
+//   3-1-6（兩個面板共 13 顆，型③）、4-1（1 顆，型③′）、`ui/default-table` 的展示片段（1 顆，型③″）。
 // 反查：`grep -rn 'class="sort"' src --include=*.html`。
 document.addEventListener("DOMContentLoaded", function () {
     var NONE = "none", ASC = "ascending", DESC = "descending";

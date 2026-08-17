@@ -20,7 +20,7 @@
 //               <div class="ab-compare-item">
 //                   <div class="message-content in-compare">
 //                       <div class="robot-msg">
-//                           <p class="item-title" id="abAnswerTitle-{{ abSides[0].side }}"><span data-i18n="qaTest.setting">設定</span> {{ abSides[0].side }} · <span data-i18n="{{ abSides[0].configKey }}">{{ abSides[0].configLabel }}</span> · {{ abSides[0].promptVersion }}</p>
+//                           <p class="item-title" id="abAnswerTitle-{{ abSides[0].side }}"><span data-i18n="qaTest.setting">設定</span> {{ abSides[0].side }}{% if abSides[0].configKey %}<span data-i18n="common.midDot"> · </span><span data-i18n="{{ abSides[0].configKey }}">{{ abSides[0].configLabel }}</span>{% endif %}<span data-i18n="common.midDot"> · </span>{{ abSides[0].promptVersion }}</p>
 //                           <div class="item-content">
 //                               <p>您好！以下是 UH3240 USB-C 多埠集線器的規格整理：</p>
 //                               <ul class="list-style-disc">
@@ -49,13 +49,26 @@
 //                           <span class="tooltip" data-i18n="comp.share">分享</span>
 //                       </button>
 //                   </div>
+//                   {# 每一側自己的 components/step-flow（動作鈕列之後）。四行 {% set %} 一併附上——
+//                        set 是頁面全域，缺 stepFlowInstance 兩側的逐列 id 會撞，缺 stepFlowOwnerId
+//                        兩側的逐列可及名稱會逐字同名（§4）；OwnerId 正是靠 .item-title 的 id 組出來的。 #}
+//                   {% set stepFlowNodes = … %}
+//                   {% set stepFlowSummary = … %}
+//                   {% set stepFlowInstance = "sideA" %}
+//                   {% set stepFlowOwnerId = "abAnswerTitle-" + abSides[0].side %}
+//                   {% include "components/step-flow/step-flow.html" %}
 //               </div>
+//               {# 重複 1 次同型節點：abSides[1] 那一側，instance 換成 "sideB" #}
 //           </div>
 //           <div class="message-time after-compare">13:30</div>
 //       </div>
 //   </div>
 //
 // 抄的時候一個都不能省：
+//   ⓐ′ **中點自己也要有 key**（`common.midDot`，全站已存在）：留成 span 外的字面量，英文句子
+//      中央就會露出一個繁中字身（§4-2）。設定檔那一段還要包 `{% if %}`——上游那兩欄是
+//      `Mapped[int | None]`（`AbTestRound.a_profile_no`／`b_profile_no`），拿不到編號時整段
+//      （含它前面那顆 `·`）不畫，不退回一個猜出來的設定檔（§6）。
 //   ⓐ **`.item-title` 一定要帶 `id="abAnswerTitle-<側>"`**。那不是裝飾：同一層的
 //      `.message-icon` 用 `role="group" aria-labelledby` 指著它——兩側的動作鈕字面完全相同、
 //      又同頁同時可見，沒有這個 id 報讀器只唸得出兩側各五顆同名鈕（§4），而 `aria-labelledby`

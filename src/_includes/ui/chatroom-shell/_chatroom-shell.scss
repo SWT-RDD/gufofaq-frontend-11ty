@@ -19,10 +19,10 @@
 //                   </div>
 //                   <div class="message-container">
 //                       <div class="first-chat">
-//                           （開場訊息：ui/chat-message 的 `.message-wrap`，見該元件檔頭）
+//                           {# 開場那一則：ui/chat-message 的 .message-wrap，見該元件檔頭 #}
 //                       </div>
 //                       <div class="chat-box">
-//                           （其餘往返訊息：同上，一則一顆 `.message-wrap`）
+//                           {# 其餘往返訊息：一則一顆 .message-wrap，同上 #}
 //                       </div>
 //                   </div>
 //               </div>
@@ -39,8 +39,11 @@
 //               </div>
 //           </div>
 //       </div>
-//       {% include "components/qa-side-panel/qa-side-panel.html" %}
 //   </div>
+//
+// **`.chatroom-wrap` 後面那顆兄弟不屬本契約**（逐頁不同：2-2-1／2-2-3 是 components/qa-side-panel，
+// 2-1 是問答紀錄頁籤那顆 <div>）——先前它被寫在契約段**裡面**，而同一份檔頭上面那句話正好說它
+// 「不屬本契約」：照契約整段抄到 2-1 會得到一份錯的側欄（§3-2：理由不得被同一個檔案自己的 markup 推翻）。
 //
 // 抄的時候一個都不能省：
 //   ⓐ **`.chat-message-container` 底下是兩層、不是直接放訊息**：訊息一律住在

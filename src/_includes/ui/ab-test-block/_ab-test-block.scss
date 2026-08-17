@@ -130,7 +130,7 @@
 //               <textarea class="form-control size-lg js-prompt-input" aria-labelledby="abSideLabel-{{ ab.side }} abPromptLabel-{{ ab.side }}">{{ ab.prompt }}</textarea>
 //           </div>
 //           <div class="flex-row justify-content-center flex-wrap gap-16 mt-24" role="group" aria-labelledby="abSideLabel-{{ ab.side }}">
-//               <button type="button" class="button button-green js-restore-saved" data-toast="已回復儲存的設定|無法載入儲存的設定" data-i18n-data-toast="toast.restoreSettings" data-toast-type="success|error" data-i18n="qaTest.restoreSaved">回復儲存的設定</button>
+//               <button data-capability="settings:read" type="button" class="button button-green js-restore-saved" data-toast="已回復儲存的設定|權限不足，無法載入|無法載入儲存的設定" data-i18n-data-toast="toast.restoreSettings" data-toast-type="success|warning|error" data-i18n="qaTest.restoreSaved">回復儲存的設定</button>
 //               <button data-capability="settings:write" type="button" class="button button-primary js-prompt-new-version" data-toast="已儲存為新版本|權限不足，無法儲存|內容欄位不可為空|新增提示詞失敗，請稍後再試" data-i18n-data-toast="toast.savePrompt" data-toast-type="success|warning|warning|error" data-i18n="qaTest.savePromptVersion">儲存提示詞版本</button>
 //               <button type="button" class="button button-dark js-apply-production" data-i18n="qaTest.applyProduction">套用為正式設定</button>
 //           </div>
