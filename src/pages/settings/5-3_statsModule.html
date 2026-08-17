@@ -212,7 +212,14 @@ permalink: 5-3_statsModule.html
 <div class="block flex-row column gap-16 mt-24">
     <div class="flex-row column gap-8">
         <div class="text-lg text-bold" data-i18n="settings.attributionDimensions">歸因維度</div>
-        <div class="text-gray" data-i18n="settings.attributionDimensionsIntro">選定要用來歸戶的欄位；清單順序即報表與匯出檔的欄位順序。未選＝不做歸因，問答詳情與匯出檔不會長出歸因欄。</div>
+        {# **「順序」那句話與這顆控制項表達得出來的東西要對得上**（§4：上游宣告某個維度有語意時，
+             切版要嘛給得出表達它的控制項、要嘛把「這一半刻意沒切」寫進檔頭；不可以讓出貨文案
+             替一個不存在的控制項做承諾）。上游 `put_attribution` 逐字「順序即報表欄序（照收，不排序）」，
+             而本頁用的是 `ui/multi-select` 增強的原生 `<select multiple>`——它寫回去的順序**恆等於
+             `<option>` 的 DOM 序**（＝欄位槽的宣告序），使用者不論先點哪一顆都改不動。
+             **切版刻意不做排序控制項**（拖曳列／上下移鈕），所以文案改成描述現況：欄序＝槽的宣告序。
+             哪天要開放使用者排序，那是新增一個控制項的決定，不是改一句文案。 #}
+        <div class="text-gray" data-i18n="settings.attributionDimensionsIntro">選定要用來歸戶的欄位；報表與匯出檔的欄位順序＝欄位槽的宣告順序。未選＝不做歸因，問答詳情與匯出檔不會長出歸因欄。</div>
     </div>
     <div class="form-group row mobile-col">
         <div class="label label-md">

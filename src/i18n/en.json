@@ -1191,7 +1191,7 @@
   "settings.assignedSkillsHint": "Assigned skills become tools the agent can call; it decides when to use them from their “what it does” description.",
   "settings.assignedSkillsInactiveHint": "A skill marked (inactive) can still be assigned to this profile now, but the agent will not call it until it is enabled under Skill Management.",
   "settings.attributionDimensions": "Attribution dimensions",
-  "settings.attributionDimensionsIntro": "Pick the fields used to attribute answers. The order here is the column order in reports and exports. Nothing selected means no attribution — conversation details and export files will not grow attribution columns.",
+  "settings.attributionDimensionsIntro": "Pick the fields used to attribute answers. Column order in reports and exports follows the slot declaration order. Nothing selected means no attribution — conversation details and export files will not grow attribution columns.",
   "settings.attributionSlots": "Attribution fields",
   "settings.belongsToDataset": "Belongs to dataset",
   "settings.bindAliasTables": "Bind alias tables",

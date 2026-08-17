@@ -56,11 +56,23 @@
      從什麼時候起就在平台上」是判斷一列該不該留下來的依據之一，原本這一欄沒有落點也沒有理由（§3-2）。
      它是**使用者帳號的建立時間**，不是角色的授予時間——後者沒有欄位可回，要查得去稽核日誌（5-7）看
      `platform.role.grant`／`revoke` 那兩個事件（`set_platform_role` 的 `record_audit`，detail 帶 from/to）。 #}
+{# 「租戶」那一欄是 **join 出來的值**（§3-2「欄位的形狀也要對」）：`PlatformAdminOut` 只回
+     `tenant_id`（product `app/routers/platform.py` 的 `list_platform_admins` 逐字 `tenant_id=u.tenant_id`），
+     人看得懂的名字要靠同一頁的 `GET /platform/tenants`（`TenantOut.id`／`name`）對出來。
+     **解不出名字時畫 `#<tenant_id>`**——那是這一欄的 fallback 規格；不寫的話 React 會自己發明一個
+     （它現在寫的是 `tenantNameById[a.tenant_id] ?? a.tenant_id`，切版從未定過那個形狀）。
+     對照組：本檔的 `platform-disclaimer-panel` 對 `created_by` 做對了（畫識別碼、不編一個名字）。 #}
 {% set platformAdminRows = [
   { id: 88, email: "auditor@example.com", tenant: "示範租戶 B", role: "auditor", createdAt: "2025/09/12 14:07" },
   { id: 12, email: "admin@example.com", tenant: "示範租戶 A", role: "admin", createdAt: "2025/03/04 09:22" },
   { id: 205, email: "ops-admin@example.com", tenant: "示範租戶 C", role: "admin", createdAt: "2026/05/20 16:41" }
 ] %}
+{# **頁層說明住在這裡、不住在使用頁**（§3-3：出現在 2 頁以上就切）：這一族三份稿（idle／preview／
+     result）是**同一條 React 路由**的三個 state，而這一段講的是「這一頁是什麼」——不屬於精靈的
+     任何一步。先前它只寫在 5-6-1 那一份稿上，照現況轉過去 React 只能寫成「step === "idle" 才顯示
+     頁層說明」，一句切版從未打算定義的行為；而 apps/web/ELEVENTY-SYNC.md 的逐位元組比對
+     「同一條路由的多個狀態各自登記」會把那個差異固化下來。 #}
+<p class="text-gray" data-i18n="settings.platformTenantsIntro">這一頁是平台管理者的跨租戶視角，不是任何單一租戶自己的設定頁：底下管理的是全平台每一個租戶的權限指派、功能開通、使用期與 GufoRAG 授權用量，加上 ISO 季度審核與平台免責聲明。稽核員唯讀看得到整頁，異動仍限平台系統管理員。</p>
 <div class="block mb-16 flex-row column gap-16" data-platform-role="auditor">
     <div class="text-md text-bold" data-i18n="platform.platformRolesTitle">平台權限</div>
     <div class="table-container scrollTable">

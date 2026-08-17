@@ -63,7 +63,7 @@ permalink: 5-4_coverageGaps.html
     totalLogs: 1200,
     totalNoAnswer: 333,
     excludedCount: 3,
-    dimensionName: "業務範疇",
+    dimensionName: "業務範疇", dimensionSlot: "note3",
     classifiedQuestions: 200,
     classifyLimit: 200
 } %}
@@ -231,7 +231,14 @@ permalink: 5-4_coverageGaps.html
         <p><span class="text-bold" data-i18n="settings.conversationCount">對話次數：</span><span id="gap-total-logs">{{ gapSummary.totalLogs }}</span></p>
         <p><span class="text-bold" data-i18n="settings.noAnswerTotal">查無則數：</span><span id="gap-total-no-answer">{{ gapSummary.totalNoAnswer }}</span></p>
         <p><span class="text-bold" data-i18n="settings.excludedTotal">已排除則數：</span><span id="gap-excluded-count">{{ gapSummary.excludedCount }}</span></p>
-        <p><span class="text-bold" data-i18n="settings.gapGroupedBy">分群維度：</span><span id="gap-dimension">{{ gapSummary.dimensionName }}</span></p>
+        {# **這一格畫的是 join 出來的值**（§3-2「欄位的形狀也要對」）：`CoverageGapsOut.dimension`
+             回的是 `slot_key`（例如 `note3`）**不是名字**，人看得懂的 `name` 住在另一張表
+             （`models.TagDimension.name`，要打 `GET /tags/dimensions` 才拿得到；5-10 是它的編輯畫面）。
+             故與同頁下拉同形狀「名（槽）」，**解不出名字時只畫槽鍵本身**——那是這一欄的 fallback 規格，
+             不寫的話 React 會自己發明一個切版從未定過的畫面。
+           `dimension` 的 `null` 那一態（＝下拉第一顆「不分群」，也是端點預設）同樣要切：
+             那時整格畫 `settings.gapNoGrouping`，不是留一個名字在那裡。 #}
+        <p><span class="text-bold" data-i18n="settings.gapGroupedBy">分群維度：</span><span id="gap-dimension">{% if gapSummary.dimensionSlot %}{{ gapSummary.dimensionName or gapSummary.dimensionSlot }}{% if gapSummary.dimensionName %}<span data-i18n="common.parenOpen">（</span>{{ gapSummary.dimensionSlot }}<span data-i18n="common.parenClose">）</span>{% endif %}{% else %}<span data-i18n="settings.gapNoGrouping">不分群</span>{% endif %}</span></p>
         <p><span class="text-bold" data-i18n="settings.gapClassifiedQuestions">已分類提問數：</span><span id="gap-classified">{{ gapSummary.classifiedQuestions }} / {{ gapSummary.classifyLimit }}</span></p>
     </div>
     {% if gapSummary.classifiedQuestions == gapSummary.classifyLimit %}
