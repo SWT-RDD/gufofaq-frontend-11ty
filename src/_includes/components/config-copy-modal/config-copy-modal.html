@@ -21,7 +21,7 @@
 {# 元件內部示範資料用元件專屬變數名（§6）。**這份清單是 GufoRAG chatbot `app/services/config.py` 的
      `COPY_GROUPS` 的逐組投影**——不寫死「幾組」（§3-2 能不寫死計數就不要寫），但**每一組都要在**：
      少一組＝那一組的設定複製時被靜默跳過，畫面上完全看不出來。上游自己也為這個失效模式立了守衛
-     （`tests/unit/test_config_copy.py::TestCopyGroupsRegistry` 要求 COPY_GROUPS ∪ COPY_EXCLUDED
+     （**GufoRAG** `chatbot/tests/unit/test_config_copy.py::TestCopyGroupsRegistry`——gufofaq-saas 有一個同名檔 `services/product/tests/test_config_copy.py`，裡面沒有這個 class 要求 COPY_GROUPS ∪ COPY_EXCLUDED
      恰等於 `ChatConfig.model_fields`）。
      每一組的 label 是「這一組**包含什麼**」的如實列舉，所以上游往組裡加欄位時要回頭重讀——
      round43 一次抓到三組在描述舊行為（glossary 沒提別名表那四欄、policy 少了出口替換與輸出規則、

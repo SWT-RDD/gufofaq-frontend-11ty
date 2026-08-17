@@ -249,7 +249,7 @@ permalink: 3-4_skillManagement.html
      「是同一件事的兩個畫面」——那是替一個上游產不出來的狀態背書。
    ⚠️ **`error` 只能是上游送得出來的形狀**：`_record` 的 error 會經 `_drain_skill_steps` → STATUS chunk
      → SSE 直達瀏覽器（不過輸出閘門），所以 GufoRAG chatbot `services/agent_service.py` 的
-     `_call_skill` 逐字寫著「只存例外型別、不存 `{e}` 內文」——訊息可能含 DSN／路徑等內部細節。
+     `_run_skill_subgraph` 逐字寫著「只存例外型別、不存 `{e}` 內文」——訊息可能含 DSN／路徑等內部細節。
      它六個 failed 出口送得出來的因此只有兩種：三句**固定**中文（巢狀深度超上限／白名單指名的工具
      一顆都建不出來／子圖未產出任何內容）與三個**裸型別名**（`LlmCallBudgetExceeded`／
      `SkillInputError`／`type(e).__name__`）。本輪演的是跑到一半逾時 ⇒ 落在 `except Exception`
@@ -292,7 +292,7 @@ permalink: 3-4_skillManagement.html
      所以答案槽不能沿用元件內建那段「本次可退金額為 1,280 元」的成功答案——過程與產出
      必須是同一輪（§6：覆寫了過程就要一起覆寫產出）。
      **這段話只能講模型知道的事**：skill 失敗時父 agent 拿到的工具結果就是
-     `[skill:refund-flow 失敗] 內部錯誤（TimeoutError），詳見伺服器日誌。`（`_call_skill` 的回傳字串）
+     `[skill:refund-flow 失敗] 內部錯誤（TimeoutError），詳見伺服器日誌。`（`_run_skill_subgraph` 的回傳字串）
      ——它知道「退款試算這一步逾時了」，但**不知道是哪一張表**。前一版寫「退貨政策表這次讀取逾時」，
      是替模型編一個它拿不到的細節（與上面 `error` 只送型別名是同一條界線）。 #}
 {% set trySkillAnswer = "很抱歉，這一題我沒辦法算出可退金額：退款試算這一步執行逾時，沒有完成。請稍後再試一次，或改由人工客服協助。" %}

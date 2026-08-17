@@ -186,7 +186,7 @@ permalink: 2-2-1_singleTest.html
      components/qa-side-panel。
      **它在真實系統本來就有**：凍結前端 `GufoFAQ_Frontend_New/css/component.css:3556` 起就是
      `.qa-side-panel` 那一整段規則（本 repo 的 `_qa-side-panel.scss` 從它切出來），不是切版新造的元件。
-     **展開/收合是 §5 ④純前端互動，不是業務邏輯**：凍結前端把它寫在**共用**的 `js/main.js:1024`
+     **展開/收合是 §5 ④純前端互動，不是業務邏輯**：凍結前端把它寫在**共用**的 `js/main.js:1026`
      （`.js-side-toggle` 的 `toggleClass("collapsed")` ＋ 點外部收合），不在 `singleTest.js`
      ——那支只拿 `.qa-side-panel` 當容器選頁籤與清空對話（`js/singleTest.js:952`／`:958`）。
      本 repo 已照 §5 把開合實作在 `components/qa-side-panel/qa-side-panel.js`，當場動得起來。
@@ -215,7 +215,9 @@ permalink: 2-2-1_singleTest.html
      （product 的 `_CHAT_ROOM_PUBLIC_KEYS` 沒有 `model_name`；saas `apps/web/lib/sse.ts` 的
      chat_room 分支逐字寫著「永遠讀不到」）⇒ 串流中的畫面報得出 Token／延遲／首字／模型是
      上下半互斥。**故本頁不設 stepFlowSummary、也不設結果截斷那一對**（「看完整輸出」要 chat log id，
-     即時那一輪還沒有：saas `components/StepFlow` 的 `onViewFullOutput` 以 `logId === undefined`
+     即時那一輪還沒有：saas `apps/web/components/StepFlow/StepFlow.tsx` 那一段註解逐字寫著「這一格**曾經**有
+     一組『已顯示前 N 字／共 M 字』＋『看完整輸出』，而那個狀態**沒有任何一條路產得出來**」——整個機制在
+     React 端已經移除（別再引 `onViewFullOutput` 那顆不存在的 prop）；當時的不渲染條件是 `logId === undefined`
      為不渲染條件）。跑完並落庫那一態由 4-2 詳情頁與 2-2-3 演（那兩頁都是重播）。 #}
 {% include "components/step-flow/step-flow.html" %}
 

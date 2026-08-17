@@ -19,7 +19,7 @@ permalink: 3-6_aliasTables.html
      在此之前別名散在兩個地方（術語表詞條的 aliases、出口替換規則的 aliases），而最需要它的
      QA 直答逐字比對完全沒有——使用者打「推廣貿易服務費要怎麼繳」、QA 集裡是「推貿費要如何繳納？」，
      實測 4 次只命中 1 次。術語表的 `aliases` 欄已於 2026-08-07 隨上游移除（見 chatbot
-     `db/database.py` 的那句「別名一律住在 alias_entries」），本站同輪拿掉，不留、不 deprecate。
+     `app/db/database.py` 的那句「別名一律住在 alias_entries」），本站同輪拿掉，不留、不 deprecate。
 
    **階段不標在每一列詞條上**：那會變成幾百列 × 三個勾選框，實務上一定被「全選」處理掉，
      得到的是假的細緻度。三個套用開關放在設定檔（5-2），一個明確、看得見、一鍵可撤的決定。
@@ -66,7 +66,7 @@ permalink: 3-6_aliasTables.html
 {# 新增別名表：只有名稱（必填）與說明。送出鈕的 data-toast 列全結果（§5 矩陣③），
      warning 段對回 `services/alias.py` 的 `validate_alias_table_metadata`（空名、長度上限）。
      **沒有「名稱已存在」那一段**：`routes/alias.py` 的 `create_alias_table` 只跑那一支驗證就 db.add，
-     而 `db/database.py` 的 `alias_tables.name` 是 `Column(String(200), nullable=False)`——無 unique、
+     而 `app/db/database.py` 的 `alias_tables.name` 是 `Column(String(200), nullable=False)`——無 unique、
      無 UniqueConstraint、全檔零 IntegrityError 分支。列一個上游產不出來的結果，與只演成功一樣是說謊（§5）。 #}
 <div class="block mt-16 mb-16 flex-row column gap-16">
     {# ⓘ 說明：markup 逐字照抄 `settings/5-2_conversationSettings.html` 出口套用欄那顆既有

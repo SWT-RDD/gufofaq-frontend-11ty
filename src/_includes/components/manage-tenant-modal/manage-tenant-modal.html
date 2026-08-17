@@ -35,7 +35,7 @@
          兩種呈現共用同一句。
        manageTenantFrozen＝這個租戶**目前是不是凍結中**（`TenantOut.frozen`／`FreezeOut.frozen`）。凍結區
          兩態的鈕與說明由它決定（見該區註解）。 #}
-{# id＝`UserOut.id`（product `app/routers/users.py` 的 `UserOut` 第一欄，`platform_tenant_users` 沿用它）。
+{# id＝`UserOut.id`（product `app/routers/users.py` 的 `UserOut` 第一欄，`app/routers/platform.py` 的 `platform_tenant_users` 沿用它）。
      這一列的四顆動作全部以它定址（`POST /platform/impersonate/{user_id}`、`PATCH /platform/users/{user_id}`、
      `POST /platform/users/{user_id}/reset-password`、`DELETE /platform/users/{user_id}`），
      所以列鍵不可以是 loop.index——這張名冊刪得掉列，位置不是身分（§6 列鍵）。

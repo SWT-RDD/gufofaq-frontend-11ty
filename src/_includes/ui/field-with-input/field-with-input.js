@@ -2,7 +2,7 @@
 // （附屬控制項不限文字欄：4-1 掛的是一顆 checkbox，見下面的型②。）
 //
 // 這是**純前端互動**（同頁的啟用/停用切換，無業務、無 API），§5 ④：行為要當場動得起來。
-// 真 app 把它寫在 js/main.js:429-453（`$(".field-with-input-group").each(...)`），三個 class
+// 真 app 把它寫在 js/main.js:430-455（`$(".field-with-input-group").each(...)`），三個 class
 // 名稱原樣沿用：`.field-with-input-group`（一組）→ `.field-with-input`（一顆 radio ＋ 它的附屬控制項）
 // → `.with-input`（被啟用/停用的那些控制項）。
 //
@@ -141,7 +141,7 @@
 //     「還沒選時間區間」）；型② 預設選的就是 csv，checkbox 反而不可以帶（見上面型② 的第三件）。
 // 初始化用直呼 sync()、不用合成事件（§5）。
 //
-// 住在哪一頁（雙向；判準＝`grep -rn 'field-with-input-group' src`，實跑過，命中分屬四個檔）：
+// 住在哪一頁（雙向；判準＝`grep -rn 'field-with-input-group' src`，實跑過，命中分屬三個檔）：
 //   · **markup 只有兩份**：型① `components/data-time-filter`（被 5-3_statsModule 與
 //     5-4_coverageGaps 各 include 一次）、型② `pages/qaHistory/4-1_qaHistory.html`（頁面自寫）。
 //   · 其餘命中**全是註解或本檔自己**，不是第三份實例（§1-2：反查要列出全部命中，含只是註解的

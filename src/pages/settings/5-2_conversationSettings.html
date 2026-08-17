@@ -1821,8 +1821,10 @@ permalink: 5-2_conversationSettings.html
         </div>
 
         {# ── 別名表：綁定 ＋ 三個階段各自套用 ────────────────────────────────────────
-             正本＝chatbot `retrieval_profiles` 的四欄（`alias_table_ids`／`alias_apply_match`／
-             `alias_apply_reasoning`／`alias_apply_output`，見 `db/database.py`）。
+             正本＝GufoRAG chatbot `app/db/database.py` 的 `chat_configs`／`chat_rooms` 四欄（**不是** product 的
+             `retrieval_profiles` 表，那張表沒有任何 `alias_apply*` 欄——同名符號配錯 repo 照字面看不出來，§3-2）
+             （`alias_table_ids`／`alias_apply_match`／
+             `alias_apply_reasoning`／`alias_apply_output`）。
              **階段開關放在設定檔、不標在每一列詞條上**：那會變成幾百列 × 三個勾選框，實務上
              一定被「全選」處理掉，得到的是假的細緻度。這裡是一個明確、看得見、一鍵可撤的決定。
              寫入層驗「三個 apply 清單必須 ⊆ alias_table_ids」，故後三顆的選項只能來自第一顆

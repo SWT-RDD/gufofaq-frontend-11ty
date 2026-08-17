@@ -45,7 +45,7 @@
 // 狀態語意走「換標籤」，**不掛 `aria-pressed`**（兩者並用會念出「隱藏、已按下」這種矛盾）。
 //
 // 住在哪一頁（雙向）：5-9_extractApiKey（萃取 API 金鑰）與 5-6-3_platformServiceKeys（平台服務憑證）。
-// 反查：`grep -rn 'data-reveal-target' src --include=*.html` 只命中這兩頁。
+// 反查：`grep -rn 'data-reveal-target' src --include=*.html` 命中三個檔——這兩頁的實例，加上元件庫頁一則 `{# … #}` 註解（講「這一態沒有那顆鈕」，不是實例）。
 document.addEventListener("DOMContentLoaded", function () {
     function t(key, zh) {
         return (window.GufoI18n && window.GufoI18n.t) ? window.GufoI18n.t(key, zh) : zh;

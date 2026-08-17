@@ -10,7 +10,7 @@
      內建工具），綁定單一領域的提示詞會與同頁其他區塊的示範對不起來（§6 示範自洽）。 #}
 {# 編輯 textarea 的長度上限。20000 ＝ product `app/chat_config_limits.py` 的 `MAX_SINGLE_PROMPT_LEN`
      （`routers/prompts.py` 的 `PromptIn.content` 以 `Field(max_length=MAX_SINGLE_PROMPT_LEN)` 收，
-     同一顆常數也夾住 `TEXT_FIELD_LIMITS` 裡五層系統提示詞；正典寫法見 skill-editor-modal 的
+     同一顆常數也夾住 `app/chat_config_limits.py` 的 `TEXT_FIELD_LIMITS` 裡五層系統提示詞；正典寫法見 skill-editor-modal 的
      `skillInstructionsInput`）。**一個數字只有一份真相**（§6）：`data-max-len` 給 js 拿去掛到注入的
      textarea 上，下面那句可見提示渲染同一顆變數——不是 js 寫死一份、markup 寫死另一份。
      那個數字是**資料不是譯文**（§4-2：契約裡有欄位的常數不准寫進 data-i18n 的句子裡）。

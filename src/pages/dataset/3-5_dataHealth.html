@@ -331,7 +331,8 @@ permalink: 3-5_dataHealth.html
          **它非在 QA 集不可**：`check_non_question` 的迴圈第一行就是 `if r.dataset_kind != "qa": continue`
          （product `health_checks.py`），所以這一項只可能出現在 kind 為 qa 的資料集上。
          先前這一筆掛在「常見問答」，而同一個資料集的 901 提供合併、907 已經合併過——
-         `_available_actions` 只要有任何一筆不是 `kind == "file"` 就把 MERGE 濾掉
+         product `app/routers/health_findings.py` 的 `_available_actions`（上一句指名的是
+         `health_checks.py`，這兩顆符號不在那裡）只要有任何一筆不是 `kind == "file"` 就把 MERGE 濾掉
          （`_QA_FORBIDDEN_ACTIONS`），兩件事在同一個資料集上不可能同時成立。搬到「客服直答集」
          之後兩邊各自成立：那一集是 qa（903 的合併正是因此被拿掉的），而 add-phrasing 不在
          `_QA_FORBIDDEN_ACTIONS` 裡，QA 集照樣做得到。列號另取（33），不與 903 的 4／19 相撞。
@@ -718,7 +719,9 @@ permalink: 3-5_dataHealth.html
          而它往往正是最該看的那一個（例如整批裡唯一一個擷取失敗的檔）。 #}
     {# ⓘ 說明：同一顆 info-btn 六件組。①出處：product `app/health_extract.py` 檔頭
          （`REASON_NO_EXTRACTOR`／`REASON_EXTRACT_FAILED`／`REASON_SOURCE_FILE_MISSING`／
-         `REASON_NOT_LINKABLE` 四個常數）與 `_folder_record`／`_collect_records` 的
+         `REASON_NOT_LINKABLE` 四個常數）與 product `app/routers/health_findings.py` 的
+         `_folder_record`／`_collect_records`（**那三者不在 `health_extract.py` 裡**——一段註解出現
+         第二個檔的符號時要重新指名檔案，§3-2）的
          `not_row_imported` 分支——這裡列的是**完全沒被任何一項檢查讀過內容**的檔，與上面
          partialTitle「讀到了、但某幾項不適用」是不同的兩件事。 #}
     <div class="flex-row align-items-center gap-8">

@@ -88,7 +88,7 @@
                            ⇒ 封閉，走 `{% if %}` 鏈。
                          · 對話模式＝`chat_logs.search_mode`（`traditional`／`agent`，product `qatest.py`
                            與 `settings_hub.py` 都宣告成 `Literal["traditional", "agent"]`，chatbot 的
-                           `db/database.py` 欄位註解同字）⇒ 封閉，走 `{% if %}` 鏈，沿用測試頁那兩顆
+                           `app/db/database.py` 欄位註解同字）⇒ 封閉，走 `{% if %}` 鏈，沿用測試頁那兩顆
                            既有的 key（`qaTest.chatModeTraditional`／`qaTest.chatModeAgent`）。NULL（欄位比
                            舊資料晚出生）落到「—」。
                          · 語言＝`chat_logs.language`：**這一欄不是語言碼、也不是封閉目錄**，是 LLM 每一輪

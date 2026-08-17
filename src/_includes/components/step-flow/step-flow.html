@@ -121,7 +121,9 @@
        在**整輪收尾**才發（GufoRAG chatbot `routes/chat.py` 的兩個發射點與 `routes/_chat_stream.py`
        的 `_qa_direct_stream`：`latency_ms`／`ttft_ms` 都是量到 `_t_end` 才填進 payload）
        ⇒ **還在串流的那一輪畫不出摘要**。saas `components/StepFlow` 就是這個條件——整列的渲染條件是
-       `metrics.length > 0 || truncated?.steps !== undefined`，逐欄也是「缺欄不顯示」。
+       `metrics.length > 0 || truncatedRows.length > 0`（**整條複製**：`truncatedRows` 還收
+       `truncated.tools`，寫成 `truncated?.steps !== undefined` 會讓「只有工具截斷」那一輪推導成不渲染），
+       逐欄也是「缺欄不顯示」。
      ——**`model` 只有重播那條路拿得到**：product 的 `_CHAT_ROOM_PUBLIC_KEYS` 沒有 `model_name`
        （連 `usage.model` 都被剝掉），saas `apps/web/lib/sse.ts` 的 chat_room 分支逐字寫著
        「這裡讀不到 `model_name`…而且永遠讀不到」；它的正當來源是 `lib/traceReplay` 讀
@@ -192,7 +194,7 @@
     {# 整體執行摘要（stepFlowSummaryData，來自 chat_room chunk 的既有欄）：一眼看完本次成本/效能。
          label 走 i18n，數值為資料（不翻）。
        **整列有條件**（對齊 saas `components/StepFlow` 的 `metrics.length > 0 ||
-         truncated?.steps !== undefined`）：`chat_room` 塊是整輪收尾才發的，串流中那一輪
+         truncatedRows.length > 0`）：`chat_room` 塊是整輪收尾才發的，串流中那一輪
          一欄都拿不到 ⇒ 沒給 stepFlowSummary 就整列不出現，而不是渲染五格空值。
          軌跡截斷那一對可以單獨成立（重播一筆撞上限、但摘要欄位沒回來），故條件是「或」。 #}
     {% if stepFlowSummary or stepFlowTraceTotal %}
@@ -346,8 +348,8 @@
                                              那個機制看錯了，本輪逐條複驗後整段拿掉：
                                              ・**即時串流**：`result_preview` 原樣送，而 product `app/routers/ask.py` 的
                                                `_AGENT_TOOL_RESULT_PUBLIC_KEYS` 只放行 `tool`／`tool_call_id`／
-                                               `result_preview`，**沒有任何長度欄**（saas `apps/web/lib/sse.ts` 想讀的
-                                               `result_length` 因此永遠讀不到）。而且即時那一輪連 chat log id 都還沒有，
+                                               `result_preview`，**沒有任何長度欄**（saas `apps/web/lib/sse.ts` 的 `ToolActivity` 型別註解逐字寫著「**沒有『原始長度』這一欄**，
+                                               而且不是『上游還沒回』而是產不出來」）。而且即時那一輪連 chat log id 都還沒有，
                                                取全文的端點根本呼叫不了。
                                              ・**重播**：GufoRAG chatbot `routes/_chat_serialization.py` 的
                                                `DEFAULT_PREVIEW_CHARS = 0`＝不截、回完整原文；真的帶 `preview_chars` 去截時，

@@ -23,7 +23,7 @@
      只保留 class 與 disabled 初始態；`.time` 是 form-control 的日曆圖示變體（`.field:has(> .form-control.time)::after`），
      4-1 的同型欄位有、這兩頁原本漏掉。
      `.field-with-input-group` / `.field-with-input` / `.with-input` 是**真 app 的掛點**
-     （js/main.js:429-453：選了哪顆 radio 就解除它附屬輸入框的 disabled），不是無主 class——
+     （js/main.js:430-455：選了哪顆 radio 就解除它附屬輸入框的 disabled），不是無主 class——
      那個 `disabled` 初始態的意義就是「還沒選時間區間」。行為由 `ui/field-with-input` 當場做（§5 ④）。 #}
 <div class="form-group row flex-row mobile-column-xs gap-16">
     <div class="label mobile-align">
