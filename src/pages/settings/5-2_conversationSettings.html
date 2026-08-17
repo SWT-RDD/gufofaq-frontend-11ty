@@ -172,8 +172,10 @@ permalink: 5-2_conversationSettings.html
              `_score_floor` 只在閘內呼叫）。
            - 「QA 直答」＝停用 ⇒ 它的分數門檻／判定補充說明／QA 集選取不顯示
              （`app/services/qa_direct.py` 的 `qa_direct_active`／`_enabled`）。
-         **待回流**：saas `apps/web/lib/i18n/messages.{zh,en}.json` 的 `settings.modeApplicabilityHint`
-         仍是只講對話模式的舊句（gufofaq-saas@308642f 複驗），而它的 `page.tsx` 早就照②在渲染。 #}
+         **已回流**（gufofaq-saas@648c3cc 複驗）：saas `apps/web/lib/i18n/messages.{zh,en}.json` 的
+         `settings.modeApplicabilityHint` 與本頁逐字相同，`page.tsx` 也照②在渲染。
+         （複驗是**雙向**的：這一則先前掛著 `@308642f` 的待回流，而上游早就跟上了——
+         標註留在原地會讓下一輪以為還有一個缺口要修。） #}
     <div class="text-gray mt-8" data-i18n="settings.modeApplicabilityHint">哪些欄位會出現，取決於對話模式與其他欄位目前的值——在目前設定下不會生效的欄位一律不顯示。</div>
 </div>
 
@@ -211,8 +213,10 @@ permalink: 5-2_conversationSettings.html
      **面板上這一顆不取代逐鈕的宣告**，兩者是 §4 明訂的分工：「區塊上的宣告只涵蓋『整塊都要這一級』
      那一軸；同區塊內另有更高一級要求的控制項仍要自己標」——面板這一顆表達的是**這一塊的下限**
      （整塊寫入都要 `settings:write`），而 §4「前三軸標在觸發寫入的那顆控制項上，不必往上推導祖先」
-     照舊成立，故本頁六顆送 API 的鈕各自也標了一次（`#openPrioritySwitch`／`#closePrioritySwitch`／
-     `.js-prompt-restore`／`.js-welcome-save`／`.js-welcome-restore`／`.js-save-profile-config`）。
+     照舊成立，故本頁**每一顆送 API 的鈕各自也標了一次**——寫入標 `settings:write`、兩顆查詢鈕標
+     `settings:read`；反查指令 `grep -n '<button data-capability' src/pages/settings/5-2_conversationSettings.html`。
+     （不寫顆數：先前這裡寫「六顆」並列了六個選擇器，而實際是八行、其中兩行在 `{% for %}` 裡
+     ——以 dist 為母體是十一顆，§1-2「顆數與頁數的普查母體一律是 `dist`」、§3-2「能不寫死計數就不要寫」。）
      原本這裡寫「本頁只有一種寫入能力，逐個控制項掛只是噪音，故單位是面板」——那是自創的說法，
      而且與同檔的 markup 自相矛盾（那六顆本來就各自標了）。 #}
 <div class="tab-content" data-capability="settings:write" id="panelRetrieval">
@@ -230,11 +234,16 @@ permalink: 5-2_conversationSettings.html
              knowledgeRetrieval.js:459/487 另外把 PrioritySettings 寫回並 await saveSettingProfile，
                成功 `已啟用/停用設置N的全部意圖判斷`、catch `操作失敗`。
              ——**它們送 API**（③ → data-toast 列全結果 §5）。只讀 main.js 那半支會把它們誤判成純前端鈕。
-             toast 只列這兩條：`update_profile_config` 的 400 全部是**逐欄守衛**——`timezone` 走
-             `_assert_timezone_valid`、`output_replacements` 走 `validate_output_replacements`、
-             `output_rules`／`builtin_tool_overrides`／`policy_topics` 各自先驗、MCP／skill／術語表／模型
-             各有 assert，另有「未提供任何要更新的欄位」那一條。**這兩顆只寫意圖開關**，
-             上述每一道都踩不到（也不會送出空 changed），所以那些分支列上去就是演不可能的結果。
+             **這兩顆打的是 retrieval 那一支，不是 settings_hub**：saas `apps/web/app/(app)/conversation-settings/RetrievalPanel.tsx`
+             的 `setAllIntent` → `putProfile` → `PUT /api/retrieval/profiles/{profile_no}`（body 只有
+             `dataset_tiers`／`intent_tiers`），正本是 gufofaq-saas product `app/routers/retrieval.py`
+             的 `save_profile`（`require_capability("settings","write")`）。它自己的出口是
+             `assert_profile_no`、`_own_profile`、`assert_index_list_within_limit`（逐層資料集數超限 400）、
+             `_sync_then_commit`（GufoRAG 同步失敗）——這兩顆只翻 `intent_tiers` 的開關，逐層清單不動，
+             故 400 那一族踩不到，toast 兩條就夠。
+             （先前這裡引的是 `update_profile_config` 的逐欄守衛清單——那支收的是 `ProfileConfigIn`，
+             **54 欄裡沒有 `intent_tiers`**：repo 對、檔對、符號真的存在，只是那支端點與這兩顆鈕無關。
+             那份守衛清單的家在頁尾「儲存對話設定」那一顆。）
              （原本這句寫「400 **只在**那三欄才 raise」——負面斷言的舉證責任是列出全部出口，
              而那個範圍是錯的；結論成立，措辭不成立，§3-2。）
              設置編號無法在切版插值，故略去（§6）。
@@ -380,6 +389,12 @@ permalink: 5-2_conversationSettings.html
             <div class="text-gray"><span data-i18n="settings.fieldNamingDescPrefix">為此設定的 </span><span>{{ fieldSlotCatalog.length }}</span><span data-i18n="settings.fieldNamingDescSuffix"> 個欄位槽命名「此設定的顯示名」</span></div>
         </div>
         <div class="flex-row flex-wrap gap-16">
+            {# **沒改過名的槽留空**（下面兩個迴圈的 `value` 只吃 `fieldSlotLabels`，不退回 `defaultLabel`）：
+                 上游 `put_field_labels` 是**整份取代**且 `clean = {k: v for … if v.strip()}`——照先前那樣把
+                 22 顆槽全部預填成預設名送出去，等於把每一顆都寫成顯式標籤，之後 `get_field_labels`
+                 再也分不出「沒改過名」與「改成跟預設一樣」。預填也讓 `placeholder`
+                 （`settings.displayNamePlaceholder`）在 dist 全站零可見。
+                 saas 端本來就是 `value={fieldLabels[key] ?? ""}` ＋ placeholder。 #}
             {% for slot in fieldSlotCatalog %}{% if not slot.productOnly %}
             <div class="form-group col-6-md col-12-sm">
                 <div class="label label-md">
@@ -387,7 +402,7 @@ permalink: 5-2_conversationSettings.html
                 </div>
                 <div class="field">
                     <input type="text" id="fieldName-{{ slot.key }}" placeholder="此設定的顯示名" data-i18n-placeholder="settings.displayNamePlaceholder"
-                        class="form-control" value="{{ fieldSlotLabels[slot.key] or slot.defaultLabel }}">
+                        class="form-control" value="{{ fieldSlotLabels[slot.key] }}">
                 </div>
             </div>
             {% endif %}{% endfor %}
@@ -409,10 +424,20 @@ permalink: 5-2_conversationSettings.html
                 </div>
                 <div class="field">
                     <input type="text" id="fieldName-{{ slot.key }}" placeholder="此設定的顯示名" data-i18n-placeholder="settings.displayNamePlaceholder"
-                        class="form-control" value="{{ fieldSlotLabels[slot.key] or slot.defaultLabel }}">
+                        class="form-control" value="{{ fieldSlotLabels[slot.key] }}">
                 </div>
             </div>
             {% endif %}{% endfor %}
+        </div>
+        {# **這一區有自己的送出路徑**，不隨頁尾那顆「儲存對話設定」走：欄位命名寫的是
+             `RetrievalProfile.field_labels`，端點是 `PUT /retrieval/profiles/{no}/field-labels`
+             （product `app/routers/retrieval.py` 的 `put_field_labels`，`require_capability("settings","write")`），
+             而頁尾那顆打的是 `PUT /settings/profiles/{no}`——`ProfileConfigIn` 裡**沒有** `field_labels` 這一欄。
+             先前整區 22 顆輸入框一個送出路徑都沒有：所有規則都是**從按鈕出發**的（有鈕才查它的
+             toast 與閘門），一顆不存在的按鈕不在任何母體裡，於是這個缺口結構上看不到。
+             分支對回該端點：`require_capability` 的 403、鍵不是合法 slot key 的 400、其餘 error。 #}
+        <div class="flex-row">
+            <button data-capability="settings:write" type="button" class="button button-primary js-save-field-labels" data-toast="欄位命名已儲存|權限不足，無法儲存|欄位鍵不合法|儲存失敗，請稍後再試" data-i18n-data-toast="toast.saveFieldLabels" data-toast-type="success|warning|warning|error" data-i18n="settings.saveFieldLabels">儲存欄位命名</button>
         </div>
     </div>
 </div>
@@ -815,7 +840,11 @@ permalink: 5-2_conversationSettings.html
             </div>
             <div class="flex-row flex-wrap gap-16 align-items-center">
                 <button type="button" class="button button-border js-filter-clear" data-i18n="action.clear">清除</button>
-                <button data-capability="settings:read" type="button" class="button button-primary js-prompt-search" data-toast="查詢成功|權限不足，無法查詢|無法載入提示詞版本列表" data-i18n-data-toast="toast.queryPrompt" data-toast-type="success|warning|error" data-i18n="action.query">查詢</button>
+                {# ⚠️ **待回流**（gufofaq-saas@648c3cc 複驗）：saas 的 `toast.queryPrompt`／`toast.queryWelcome`
+                     仍是兩段（`成功|失敗`），而 `PromptVersionEditor.tsx` 是**照索引取**的
+                     （`segs[1] ?? segs[0]` 當 error 用）⇒ 拿這一份字典時它會把 403 那句以 error 型別彈出。
+                     `|` 是索引契約，兩邊段數不同就是接錯位（§4-2／REACT-CONVERSION ⑥）。 #}
+                <button data-capability="settings:read" type="button" class="button button-primary js-prompt-search" data-toast="查詢成功|權限不足，無法查詢|時間區間不正確（起訖需成對）|這段期間的版本數超過單次上限，請縮小時間範圍|無法載入提示詞版本列表" data-i18n-data-toast="toast.queryPrompt" data-toast-type="success|warning|warning|warning|error" data-i18n="action.query">查詢</button>
             </div>
         </div>
     </div>
@@ -983,7 +1012,7 @@ permalink: 5-2_conversationSettings.html
             </div>
             <div class="flex-row flex-wrap gap-16 align-items-center">
                 <button type="button" class="button button-border js-filter-clear" data-i18n="action.clear">清除</button>
-                <button data-capability="settings:read" type="button" class="button button-primary js-welcome-search" data-toast="查詢成功|權限不足，無法查詢|無法載入歡迎語版本列表" data-i18n-data-toast="toast.queryWelcome" data-toast-type="success|warning|error" data-i18n="action.query">查詢</button>
+                <button data-capability="settings:read" type="button" class="button button-primary js-welcome-search" data-toast="查詢成功|權限不足，無法查詢|時間區間不正確（起訖需成對）|這段期間的版本數超過單次上限，請縮小時間範圍|無法載入歡迎語版本列表" data-i18n-data-toast="toast.queryWelcome" data-toast-type="success|warning|warning|warning|error" data-i18n="action.query">查詢</button>
             </div>
         </div>
     </div>
@@ -1072,7 +1101,10 @@ permalink: 5-2_conversationSettings.html
                         <th id="policyHeadInputAction" data-i18n="settings.policyInputAction">輸入動作</th>
                         <th id="policyHeadOutputAction" data-i18n="settings.policyOutputAction">輸出動作</th>
                         <th id="policyHeadRefusal" data-i18n="settings.policyRefusal">拒絕訊息</th>
-                        <th><span class="sr-only" id="policyHeadActions" data-i18n="common.actions">操作</span></th>
+                        {# 這一欄的 `<th>` 不掛 id：同表刪除鈕走的是「本列辨識欄 ＋ 本鈕自己」（§4 動作鈕自指），
+                             沒有人指得到它。掛了沒人指的 id 比完全沒有 id 更難查（§4 反向網）。
+                             `sr-only` 的可見字面要留著——「dist 不得有空 `<th>`」那條需要它。 #}
+                        <th><span class="sr-only" data-i18n="common.actions">操作</span></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -1202,7 +1234,7 @@ permalink: 5-2_conversationSettings.html
                     <tr>
                         <th id="osubHeadAliases" data-i18n="settings.aliases">別名（逗號分隔）</th>
                         <th id="osubHeadReplacement" data-i18n="settings.outputReplacementReplacement">替換內容</th>
-                        <th data-i18n="settings.outputReplacementIsRegex">Regex</th>
+                        <th id="osubHeadIsRegex" data-i18n="settings.outputReplacementIsRegex">Regex</th>
                         <th data-i18n="common.actions">操作</th>
                     </tr>
                 </thead>
@@ -1217,7 +1249,7 @@ permalink: 5-2_conversationSettings.html
                             <input type="text" class="form-control js-osub-aliases" value="{{ rule.aliases }}" aria-labelledby="osubRowName-{{ loop.index }} osubHeadAliases">
                         </td>
                         <td><input type="text" class="form-control js-osub-replacement" value="{{ rule.replacement }}" aria-labelledby="osubRowName-{{ loop.index }} osubHeadReplacement"></td>
-                        <td class="text-center"><label class="form-checkbox in-cell"><input type="checkbox" class="js-osub-is-regex"{% if rule.isRegex %} checked{% endif %}><span class="sr-only" data-i18n="settings.outputReplacementIsRegex">Regex</span></label></td>
+                        <td class="text-center"><label class="form-checkbox in-cell"><input type="checkbox" class="js-osub-is-regex" aria-labelledby="osubRowName-{{ loop.index }} osubHeadIsRegex"{% if rule.isRegex %} checked{% endif %}><span class="sr-only" data-i18n="settings.outputReplacementIsRegex">Regex</span></label></td>
                         <td><button type="button" id="osubDelete-{{ loop.index }}" aria-labelledby="osubRowName-{{ loop.index }} osubDelete-{{ loop.index }}" class="button button-border button-sm js-remove-osub" data-i18n="action.delete">刪除</button></td>
                     </tr>
                     {% else %}
@@ -1480,7 +1512,7 @@ permalink: 5-2_conversationSettings.html
                                              `min="1" max="100000"` 上（正本 product app/output_rules.py 的 `by_category`）。
                                              414eecc 已經對本頁另外三處做過同一個修正，這是第四處漏網。
                                              「最多 50 個代碼」在 markup 沒有第二份抄本，維持譯文。 #}
-                                        <span id="oruleCategoryHint{{ loop.index }}" class="text-gray"><span data-i18n="settings.outputRuleCategoryHintPrefix">填標籤維度的欄位鍵（note1…note10、date2、date3），不是維度的名稱——填別的字不會報錯，只會讓這條規則永遠不命中。維度槽與逐代碼上限要一起設；只設一邊，逐代碼上限不會生效。最多 </span><span>50</span><span data-i18n="settings.outputRuleCategoryHintMid"> 個代碼、每個代碼上限 </span><span>1 – 100000</span><span data-i18n="settings.outputRuleCategoryHintSuffix"> 字。</span></span>
+                                        <span id="oruleCategoryHint{{ loop.index }}" class="text-gray"><span data-i18n="settings.outputRuleCategoryHintPrefix">填標籤維度的欄位鍵（note1…note10、date2、date3），不是維度的名稱——填別的字不會報錯，只會讓這條規則永遠不命中。維度槽與逐代碼上限要一起設；只設一邊會存不起來（整份被擋下）。最多 </span><span>50</span><span data-i18n="settings.outputRuleCategoryHintMid"> 個代碼、每個代碼上限 </span><span>1 – 100000</span><span data-i18n="settings.outputRuleCategoryHintSuffix"> 字。</span></span>
                                     </div>
                                 </div>
                                 <div class="text-bold" id="oruleCategoryOverridesLabel{{ loop.index }}" data-i18n="settings.outputRuleCategoryOverrides">逐代碼覆寫上限</div>
@@ -2250,6 +2282,9 @@ permalink: 5-2_conversationSettings.html
         </div>
         {# grounding 判定前的分數粗篩門檻（chatbot `ChatConfig.grounding_score_floor`，預設 0.5）。
              **與 QA 直答那一格刻意不對稱**：這一格非空、沿用 0.5。
+           ⚠️ **待回流**（gufofaq-saas@648c3cc 複驗）：saas `apps/web/lib/i18n/messages.{zh,en}.json` 的
+             `settings.groundingScoreFloorNote` 仍是上游第 26 輪之前的舊句（「只是判定前的門票，
+             閘開著時 LLM 判定一定會跑」），而那句話上游自己已經宣告為假——11ty 這一份是修正過的。
              ⚠️ 先前這裡（與畫面上那句說明）寫著「grounding 的門檻永遠只是門票，閘開著時 LLM 判定
              一定會跑，擋不到東西只是多付一次判定」——**上游第 26 輪明文宣告那是假的**：分數粗篩
              命中時 `assess_grounding` 直接回 NO_ANSWER，**零 LLM、終局拒答**，隨後整批來源卡被清空。
