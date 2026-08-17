@@ -427,6 +427,9 @@
      deleteModal 的目標名稱由業務 js 動態填入 #deleteUserName（deleteTargetId 模式，同全站每一個
      使用頁；靜態的 deleteTargetName 只有元件庫展示頁那一份落回它）。 #}
 {% set deleteTargetId = "deleteUserName" %}
+{# 確認鈕的 React 綁定記號（與 .js-delete-user 成對）：`deleteConfirmBinding` ＝交給業務 js 綁定、不自動關窗，
+     兩顆記號都不給等於那顆鈕在 markup 上沒有任何東西可以抓（delete-modal 檔頭：二擇一必給）。 #}
+{% set deleteConfirmClass = "js-confirm-delete-user" %}
 {% set deleteConfirmBinding = true %}
 {% set deletePlatformRole = "admin" %}
 {% set deleteToast = "使用者已刪除|不可刪除自己|不可刪除租戶最後一位在職管理者|不可刪除最後一位平台系統管理員|刪除失敗，請稍後再試" %}

@@ -106,10 +106,15 @@ permalink: 5-10_tagDimensions.html
 {# 字典的列序＝**代碼字典序**（product `tags.py` 的 `list_vocabulary`：
      `select(TagVocabulary).where(dimension_id == …).order_by(TagVocabulary.code)`）
      ⇒ both／export／import，不是建立順序、也不是「進出口」讀起來順的那個順序（§6）。 #}
+{# **`id` 是列鍵、不可省**（§6）：刪除打的是 `DELETE /tags/vocabulary/{vocabulary_id}`（product
+     `app/routers/tags.py`），吃的是 `VocabularyOut.id` **不是 `code`**——`data-tag-code` 雖然是一顆
+     從資料插值來的屬性，但它不是那支端點定址用的那一顆，列鍵要來自 response_model 的主鍵欄。
+     id 刻意**不與 code 同序**（4/5/6 對 export/import/both）：那正好示範了列序是
+     `order_by(TagVocabulary.code)` 而不是主鍵序。 #}
 {% set vocabRows = [
-  { code: "both", label: "雙向", description: "同時涉及進出口" },
-  { code: "export", label: "出口向", description: "自我國輸出" },
-  { code: "import", label: "進口向", description: "輸入我國的貨品、人員或資金" }
+  { id: 6, code: "both", label: "雙向", description: "同時涉及進出口" },
+  { id: 4, code: "export", label: "出口向", description: "自我國輸出" },
+  { id: 5, code: "import", label: "進口向", description: "輸入我國的貨品、人員或資金" }
 ] %}
 {% set coverageScan = { documents: 132, examined: 132, notIndexed: 0, filesNotEnumerable: 0, qaDatasetsExcluded: 2 } %}
 {# 三套設定檔各自一個旋鈕（product `RetrievalProfile` 是 per-profile 狀態）。示範：設置一開著、
@@ -153,7 +158,16 @@ permalink: 5-10_tagDimensions.html
      `業務方向`（note4，覆蓋率 100%）與 `文件密級`（note5，覆蓋率 0%）都**不在**這張表上——
      前者標滿了、後者一筆都沒標，但兩者的每一個檔都帶得到那一欄，所以都開得起來。
      這正是「覆蓋率與這張表無關」那句話的示範（見檔頭）。 #}
+{# **列序＝維度名字串序 → 槽鍵 → 缺法**（product `app/routers/retrieval.py` 的
+     `_assert_every_file_carries_the_slots`：`sorted(grouped.items(), key=lambda kv: (kv[0][0], kv[0][1], _GAP_REASONS.index(kv[0][2])))`，
+     `_GAP_REASONS = ("not_mapped", "whole_file")`）。「有效期」U+6709 < 「業務範疇」U+696D ⇒ date2 那一筆
+     排最前面。先前照敘事順手排成 note3/note3/date2，那是這支端點產不出來的順序（§6：列序也是示範資料的一部分）。 #}
 {% set blockedSlots = [
+  {
+    slotKey: "date2", name: "有效期", reason: "notMapped", total: 8,
+    files: ["112年度移民法規彙編.xlsx", "新住民生活須知問答.xlsx", "歸化國籍作業要點.xlsx",
+      "居留證換發須知.xlsx", "面談流程說明.xlsx"]
+  },
   {
     slotKey: "note3", name: "業務範疇", reason: "notMapped", total: 2,
     files: ["112年度移民法規彙編.xlsx", "新住民生活須知問答.xlsx"]
@@ -161,11 +175,6 @@ permalink: 5-10_tagDimensions.html
   {
     slotKey: "note3", name: "業務範疇", reason: "wholeFile", total: 1,
     files: ["內政部函釋合輯.pdf"]
-  },
-  {
-    slotKey: "date2", name: "有效期", reason: "notMapped", total: 8,
-    files: ["112年度移民法規彙編.xlsx", "新住民生活須知問答.xlsx", "歸化國籍作業要點.xlsx",
-      "居留證換發須知.xlsx", "面談流程說明.xlsx"]
   }
 ] %}
 <div class="flex-row column gap-16">
@@ -358,9 +367,9 @@ permalink: 5-10_tagDimensions.html
                      還會跟上方兩張新增表單的同名欄位一起撞。改成併讀「這一列是哪個槽 ＋ 這一欄是什麼」，
                      正典就在本頁下方「標籤檢索過濾」那張表（`tagFilterProfileName-N` ＋ `tagFilterModeHead`）。 #}
                 <tr data-tag-dimension-id="{{ dim.id }}">
-                    <td id="tagDimSlot-{{ loop.index }}">{{ dim.slotKey }}</td>
-                    <td><input type="text" class="form-control" value="{{ dim.name }}" aria-labelledby="tagDimSlot-{{ loop.index }} tagDimNameHead"></td>
-                    <td><input type="text" class="form-control" value="{{ dim.description }}" aria-labelledby="tagDimSlot-{{ loop.index }} tagDimDescHead"></td>
+                    <td id="tagDimSlot-{{ dim.id }}">{{ dim.slotKey }}</td>
+                    <td><input type="text" class="form-control" value="{{ dim.name }}" aria-labelledby="tagDimSlot-{{ dim.id }} tagDimNameHead"></td>
+                    <td><input type="text" class="form-control" value="{{ dim.description }}" aria-labelledby="tagDimSlot-{{ dim.id }} tagDimDescHead"></td>
                     <td>{{ dim.kind }}</td>
                     <td>{% if dim.role %}{{ dim.role }}{% else %}<span class="text-gray" data-i18n="settings.tagRoleNone">不指定</span>{% endif %}</td>
                     <td class="text-center">{% if dim.kind == "date" %}<span class="text-gray" data-i18n="settings.tagDateNoVocabulary">—</span>{% else %}{{ dim.vocabularyCount }}{% endif %}</td>
@@ -390,7 +399,7 @@ permalink: 5-10_tagDimensions.html
                         {% if dim.tagged < dim.total %}
                         <button data-capability="settings:read data:read" type="button" class="button button-border button-sm js-view-untagged"
                             data-dimension-id="{{ dim.id }}"
-                            id="tagDimUntagged-{{ loop.index }}" aria-labelledby="tagDimSlot-{{ loop.index }} tagDimUntagged-{{ loop.index }}"
+                            id="tagDimUntagged-{{ dim.id }}" aria-labelledby="tagDimSlot-{{ dim.id }} tagDimUntagged-{{ dim.id }}"
                             data-toast="正在查詢資料...|權限不足，無法查看|查詢成功|文件數超過單次掃描上限，請改用單一資料集範圍|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.queryUntagged" data-toast-type="info|warning|success|warning|error"
                             data-i18n="settings.viewUntagged">查看未標註</button>
                         {% endif %}
@@ -399,13 +408,13 @@ permalink: 5-10_tagDimensions.html
                     <td>
                         <div class="btn-group">
                             {# 三顆列動作鈕的可及名稱＝「本列槽名 ＋ 本鈕自己的字」（§4 逐列控制項）。 #}
-                            <button data-capability="settings:write" type="button" id="tagDimSave-{{ loop.index }}" aria-labelledby="tagDimSlot-{{ loop.index }} tagDimSave-{{ loop.index }}" class="button button-border button-sm" data-toast="標籤維度已更新|權限不足，無法儲存|維度名稱不可為空|儲存失敗，請稍後再試" data-i18n-data-toast="toast.saveTagDimension" data-toast-type="success|warning|warning|error" data-i18n="action.save">儲存</button>
+                            <button data-capability="settings:write" type="button" id="tagDimSave-{{ dim.id }}" aria-labelledby="tagDimSlot-{{ dim.id }} tagDimSave-{{ dim.id }}" class="button button-border button-sm" data-toast="標籤維度已更新|權限不足，無法儲存|維度名稱不可為空|儲存失敗，請稍後再試" data-i18n-data-toast="toast.saveTagDimension" data-toast-type="success|warning|warning|error" data-i18n="action.save">儲存</button>
                             {# 日期維度沒有字典可編——product 對它的 vocabulary 寫入一律 400，
                                  給一顆點了只會失敗的鈕就是說謊。 #}
                             {% if dim.kind != "date" %}
-                            <button data-capability="settings:read" type="button" id="tagDimVocabulary-{{ loop.index }}" aria-labelledby="tagDimSlot-{{ loop.index }} tagDimVocabulary-{{ loop.index }}" class="button button-border button-sm js-edit-vocabulary" data-toast="正在查詢資料...|權限不足，無法查詢|查詢成功|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.query" data-toast-type="info|warning|success|error" data-i18n="settings.editVocabulary">編輯字典</button>
+                            <button data-capability="settings:read" type="button" id="tagDimVocabulary-{{ dim.id }}" aria-labelledby="tagDimSlot-{{ dim.id }} tagDimVocabulary-{{ dim.id }}" class="button button-border button-sm js-edit-vocabulary" data-toast="正在查詢資料...|權限不足，無法查詢|查詢成功|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.query" data-toast-type="info|warning|success|error" data-i18n="settings.editVocabulary">編輯字典</button>
                             {% endif %}
-                            <button type="button" id="tagDimDelete-{{ loop.index }}" aria-labelledby="tagDimSlot-{{ loop.index }} tagDimDelete-{{ loop.index }}" class="button button-red button-sm js-delete-tag-dimension" data-i18n="action.delete">刪除</button>
+                            <button type="button" id="tagDimDelete-{{ dim.id }}" aria-labelledby="tagDimSlot-{{ dim.id }} tagDimDelete-{{ dim.id }}" class="button button-red button-sm js-delete-tag-dimension" data-i18n="action.delete">刪除</button>
                         </div>
                     </td>
                 </tr>
@@ -518,9 +527,9 @@ permalink: 5-10_tagDimensions.html
             </thead>
             <tbody>
                 {% for row in vocabRows %}
-                <tr data-tag-code="{{ row.code }}">
+                <tr data-tag-vocabulary-id="{{ row.id }}" data-tag-code="{{ row.code }}">
                     {# 逐列辨識欄（§4）：這一列的刪除鈕指到它。 #}
-                    <td id="tagVocabRowCode-{{ loop.index }}">{{ row.code }}</td>
+                    <td id="tagVocabRowCode-{{ row.id }}">{{ row.code }}</td>
                     <td>{{ row.label }}</td>
                     <td>{{ row.description }}</td>
                     <td>
@@ -531,7 +540,7 @@ permalink: 5-10_tagDimensions.html
                              ⇒ 這一顆按下去 100% 撞得到，只演成功等於把整道守衛演掉（§5）。
                              它是 warning 不是 error：使用者自己關掉標籤過濾就刪得動（那道守衛的
                              docstring 逐字寫著「不是永久禁止」）。 #}
-                        <button data-capability="settings:write" type="button" id="tagVocabDelete-{{ loop.index }}" aria-labelledby="tagVocabRowCode-{{ loop.index }} tagVocabDelete-{{ loop.index }}" class="button button-red button-sm" data-toast="代碼已刪除|權限不足，無法刪除|標籤檢索過濾正開著，刪掉代碼會立刻改變每一輪問答的過濾條件——請先把設定檔的標籤過濾關掉|刪除失敗，請稍後再試" data-i18n-data-toast="toast.deleteTagCode" data-toast-type="success|warning|warning|error" data-i18n="action.delete">刪除</button>
+                        <button data-capability="settings:write" type="button" id="tagVocabDelete-{{ row.id }}" aria-labelledby="tagVocabRowCode-{{ row.id }} tagVocabDelete-{{ row.id }}" class="button button-red button-sm" data-toast="代碼已刪除|權限不足，無法刪除|標籤檢索過濾正開著，刪掉代碼會立刻改變每一輪問答的過濾條件——請先把設定檔的標籤過濾關掉|刪除失敗，請稍後再試" data-i18n-data-toast="toast.deleteTagCode" data-toast-type="success|warning|warning|error" data-i18n="action.delete">刪除</button>
                     </td>
                 </tr>
                 {% else %}
@@ -594,7 +603,12 @@ permalink: 5-10_tagDimensions.html
                 <option value="{{ ds.id }}">{{ ds.name }}</option>
                 {% endfor %}
             </select>
-            <button type="button" class="button button-border" data-toast="正在量測標註覆蓋率...|量測完成|文件數超過單次掃描上限，請改用單一資料集範圍|量測失敗，請稍後再試" data-i18n-data-toast="toast.measureCoverage" data-toast-type="info|success|warning|error" data-i18n="settings.remeasureCoverage">重新量測</button>
+            {# 這顆與上面「查看未標註」打的是**同一道守衛**（`GET /tags/coverage` 與 `/coverage/untagged`
+                 都是 `Depends(require_coverage_scope)`，product `app/routers/tags.py`）⇒ 分支集合要一致（§5）。
+                 先前少了那一段：它自己身上沒有 `data-capability`（吃的是區塊上那一顆），而「掛了
+                 `data-capability` 的鈕要有 warning 型的權限不足段」那條測試只看鈕**自己**的屬性，
+                 於是這顆整個掉出母體。子句與英譯逐字沿用同頁「查看未標註」那一顆（§4-2）。 #}
+            <button type="button" class="button button-border" data-toast="正在量測標註覆蓋率...|權限不足，無法量測|量測完成|文件數超過單次掃描上限，請改用單一資料集範圍|量測失敗，請稍後再試" data-i18n-data-toast="toast.measureCoverage" data-toast-type="info|warning|success|warning|error" data-i18n="settings.remeasureCoverage">重新量測</button>
         </div>
         {# 「查看範圍」的存在理由：量測有上限，選單是縮小範圍的出口。這一句是這顆上限**唯一**的
              常駐可見標籤（`help.settings.tagCoverageScan.what` 提到「上限」是散文、不是標籤；
@@ -774,6 +788,9 @@ permalink: 5-10_tagDimensions.html
 {# 刪除維度：字典列會被一併帶走（DB CASCADE），故走二次確認。條件開窗（要先選定刪哪一列）＝
    hook class .js-delete-tag-dimension，不掛 data-open-modal（GUIDELINE §5）。 #}
 {% set deleteTargetId = "deleteTagDimensionName" %}
+{# 確認鈕的 React 綁定記號（與 .js-delete-tag-dimension 成對）：`deleteConfirmBinding` ＝交給業務 js 綁定、不自動關窗，
+     兩顆記號都不給等於那顆鈕在 markup 上沒有任何東西可以抓（delete-modal 檔頭：二擇一必給）。 #}
+{% set deleteConfirmClass = "js-confirm-delete-tag-dimension" %}
 {% set deleteConfirmBinding = true %}
 {% set deleteMessageKey = "settings.confirmDeleteTagDimension" %}
 {% set deleteMessageZh = "刪除後這個維度的整份字典也會一起消失，已經標註在文件上的值會變成字典外的值。確定要刪除" %}

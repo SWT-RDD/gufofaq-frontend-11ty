@@ -171,6 +171,9 @@ permalink: 3-3_qaSetManagement.html
 {# 刪除 modal：.js-delete-qa-set 條件開窗（先選定要刪哪個 QA 集），確認鈕歸業務 js
    （deleteConfirmBinding，不自動關窗）；QA 集名由業務 js 填入 #deleteQaSetName。 #}
 {% set deleteTargetId = "deleteQaSetName" %}
+{# 確認鈕的 React 綁定記號（與 .js-delete-qa-set 成對）：`deleteConfirmBinding` ＝交給業務 js 綁定、不自動關窗，
+     兩顆記號都不給等於那顆鈕在 markup 上沒有任何東西可以抓（delete-modal 檔頭：二擇一必給）。 #}
+{% set deleteConfirmClass = "js-confirm-delete-qa-set" %}
 {% set deleteConfirmBinding = true %}
 {% set deleteCapability = "data:write" %}
 {# QA 集刪除打的是**與 3-1-1 資料集刪除同一支端點**（product `app/routers/datasets.py` 的

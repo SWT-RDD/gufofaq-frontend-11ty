@@ -195,7 +195,7 @@ bodyClass: chatbot-page                # 選填：base.html 用它產生 <body c
     - **但兩軸不是每次都要一起標**：product `authz.py` 的 `require_capability(cap, mode)` **內部就串了** `require_tenant_feature(db, tid, cap)`——對每一個 capability 都成立。所以 `data-capability="data:write"` 已經把「租戶要開通 data」講完了，再配一顆 `data-tenant-feature="data"` 只是把同一句話說兩遍（照那樣做全站兩百顆鈕都要配雙胞胎）。**只有當這顆鈕需要的租戶開通鍵與 `data-capability` 自己的領域不同時才另標一軸**——正典：2-2-4 的「執行回歸」是 `data-capability="settings:write" data-tenant-feature="ask"`（寫的是設定、跑的是問答）。
   - **同一個屬性裡多個值＝AND**（`data-capability="settings:write history"`：兩顆都要有）。要表達 OR 就是規格沒定案，去把它定案。
   - 前三軸標在**觸發寫入的那顆控制項**上：看一顆鈕就知道它要什麼權限，不必往上推導祖先。
-  - **真正送 API 的是彈窗裡那顆確認鈕，不是列上那顆條件開窗的觸發鈕**（觸發鈕只負責「先選定要動哪一筆」）——閘門宣告的家在確認鈕。共用彈窗（delete-modal 這種）把閘門**開成參數**，與 `data-toast` 同一個交付單位：開了 toast 卻沒開閘門，等於每個使用頁都得自己想辦法。
+  - **真正送 API 的是彈窗裡那顆確認鈕，不是列上那顆條件開窗的觸發鈕**（觸發鈕只負責「先選定要動哪一筆」）——閘門宣告的家在確認鈕。共用彈窗（delete-modal 這種）把閘門**開成參數**，與 `data-toast` 同一個交付單位：開了 toast 卻沒開閘門，等於每個使用頁都得自己想辦法。**確認鈕的 React 綁定記號（class 或 id）同樣是那個交付單位的一部分**：宣告了「交給業務 js 綁定、不自動關窗」（`deleteConfirmBinding`）就一定要給記號二擇一——那顆鈕因此沒有 `.btn-close-modals`，兩顆都不給等於它在 markup 上與同一個 `<dialog>` 裡的取消鈕長得一模一樣，React 認不出該接誰。
   - **平台頁是例外，而且例外有理由**：那一軸的單位是「整塊唯讀」——auditor 進得來、看得到、按不動——故宣告掛在區塊上（5-6-1／5-6-2／5-6-3）。區塊上的宣告只涵蓋「整塊都要這一級」那一軸；同區塊內另有更高一級要求的控制項（type-to-confirm 輸入框、只有 admin 動得了的那顆鈕）仍要自己標。
     - **區塊級宣告不限 `data-platform-role`**：`data-capability` 也可以掛區塊（5-2 那一整排 `.tab-content`＝整頁只有一種寫入能力，逐顆掛只是噪音）。但**區塊級宣告只表達「這一塊的下限」**——區塊內任何一顆控制項需要的能力集合與區塊**不同**時（更高、或**不同軸**）都要自己再標一次。反例：5-10 的「查看未標註」落在 `settings:write` 區塊底下，而它實際要的是 `settings:read` ＋ `data:read`（`require_coverage_scope`）——祖先推導出來的兩道都是錯的。
     - **一個區塊該標哪一級，取決於「畫出來的那些值由哪一支端點讀得到」，不是「裡面的動作要哪一級」**。動作全是 admin 不構成整塊標 admin 的理由——那等於把上面那條渲染規則（值控制項照渲染但 disabled）從結構上刪掉，唯讀角色因此看不到任何值。

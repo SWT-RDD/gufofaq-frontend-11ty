@@ -189,6 +189,9 @@ permalink: 1-2-1_uploadFile_pdf.html
 {# 刪除 modal：檔名由業務 js 填入 #deleteFileName、確認鈕由業務 js 綁定，故 set 這兩個參數；
    markup 只有一份正本，見 components/delete-modal（§1-2／§6） #}
 {% set deleteTargetId = "deleteFileName" %}
+{# 確認鈕的 React 綁定記號（與列上的 .btn-delete-file（凍結 hook）成對）：`deleteConfirmBinding` ＝交給業務 js 綁定、不自動關窗，
+     兩顆記號都不給等於那顆鈕在 markup 上沒有任何東西可以抓（delete-modal 檔頭：二擇一必給）。 #}
+{% set deleteConfirmClass = "js-confirm-remove-pending-file" %}
 {% set deleteConfirmBinding = true %}
 {# 只有一段：這一頁的「刪除」是**送出前**把檔案從待上傳清單移掉，真 app 就是
      `fileList.splice(index, 1)` ＋ `showToast('刪除成功')`（uploadFilePdf.js:480-486），

@@ -1069,6 +1069,9 @@ permalink: 2-2-4_regressionSuites.html
 {# 刪除 modal：案例集與案例共用同一份（都是「跑過就凍結」的 409）。名稱由業務 js 填入
    #deleteRegressionTarget，確認鈕歸業務 js（不自動關窗）。 #}
 {% set deleteTargetId = "deleteRegressionTarget" %}
+{# 確認鈕的 React 綁定記號（同一份 delete-modal 服務 .js-delete-suite 與 .js-delete-case 兩顆觸發鈕）：`deleteConfirmBinding` ＝交給業務 js 綁定、不自動關窗，
+     兩顆記號都不給等於那顆鈕在 markup 上沒有任何東西可以抓（delete-modal 檔頭：二擇一必給）。 #}
+{% set deleteConfirmClass = "js-confirm-delete-regression" %}
 {% set deleteConfirmBinding = true %}
 {% set deleteCapability = "settings:write" %}
 {# 第 3 段**不指使一個做不到的動作**：product `app/routers/regression.py` 全境沒有刪除 run 的端點

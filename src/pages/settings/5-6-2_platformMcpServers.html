@@ -324,6 +324,9 @@ permalink: 5-6-2_platformMcpServers.html
    那一態是使用者自己修得掉的 warning，不是「請稍後再試」——只列成敗兩段的話，這條可行動的訊息
    無處可放，會被顯示成「請稍後再試」而重試永遠不會成功。 #}
 {% set deleteTargetId = "deleteMcpName" %}
+{# 確認鈕的 React 綁定記號（與 .js-delete-mcp 成對）：`deleteConfirmBinding` ＝交給業務 js 綁定、不自動關窗，
+     兩顆記號都不給等於那顆鈕在 markup 上沒有任何東西可以抓（delete-modal 檔頭：二擇一必給）。 #}
+{% set deleteConfirmClass = "js-confirm-delete-mcp" %}
 {% set deleteConfirmBinding = true %}
 {% set deletePlatformRole = "admin" %}
 {% set deleteToast = "MCP Server 已刪除|此 MCP Server 仍被 Skill 或設定檔參照，請先移除參照|刪除失敗，請稍後再試" %}

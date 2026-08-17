@@ -239,6 +239,9 @@ permalink: 3-2_glossaryManagement.html
 {# 刪除 modal：.js-delete-glossary 條件開窗（先選定要刪哪張表），確認鈕歸業務 js
    （deleteConfirmBinding，不自動關窗）；表名由業務 js 填入 #deleteGlossaryName。 #}
 {% set deleteTargetId = "deleteGlossaryName" %}
+{# 確認鈕的 React 綁定記號（與 .js-delete-glossary 成對）：`deleteConfirmBinding` ＝交給業務 js 綁定、不自動關窗，
+     兩顆記號都不給等於那顆鈕在 markup 上沒有任何東西可以抓（delete-modal 檔頭：二擇一必給）。 #}
+{% set deleteConfirmClass = "js-confirm-delete-glossary" %}
 {% set deleteConfirmBinding = true %}
 {% set deleteCapability = "data:write" %}
 {% set deleteToast = "術語表已刪除|權限不足，無法刪除|此術語表仍被 Skill 或設定檔參照，請先移除參照|刪除失敗，請稍後再試" %}

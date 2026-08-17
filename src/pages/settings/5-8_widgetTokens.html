@@ -19,7 +19,15 @@ permalink: 5-8_widgetTokens.html
      （標頭 X-Widget-Token、query ?wt=、router widget_tokens.py），那是契約、不隨 UI 改名，
      故 i18n key 仍為 widget.*／toast.*WidgetToken（key 名是識別碼、非使用者可見，且已被 saas 鏡射）。
      token 綁允許網域（allowed_origins）、供瀏覽器端前台機器人以 X-Widget-Token 呼叫公開端點；
-     可撤銷（軟刪）。前台嵌入連結＝ /faq?wt=<token>。真正把關在 product（require_admin）。 #}
+     可撤銷（軟刪）。真正把關在 product（require_admin）。
+   **嵌入方式是一段 `<script>` 片段，不是一條連結**：
+     `<script src="{origin}/widget.js" data-widget-token="<token>" defer></script>`
+     （runtime 是 gufofaq-saas `apps/web/public/widget.js`，讀 `data-widget-token` 屬性、以
+     `X-Widget-Token` 標頭從**客戶自己的頁面**發請求）。先前這裡寫「前台嵌入連結＝ /faq?wt=<token>」，
+     那條路與本頁強制填的「允許網域」**互相矛盾**：`/faq` 不論頂層開啟還是放進 iframe，跑的都是
+     我們自己網域的文件，送出去的 `Origin` 永遠是平台 ⇒ 那份網域清單只有兩種結局——留 NULL
+     （完全不限網域）或設了就壞掉。而 `create_widget_token` 對空的 `allowed_origins` 直接 400
+     （`credential.origins_required`），也就是這一頁 mint 出來的每一把金鑰都必然非空。 #}
 <p class="text-gray" data-i18n="widget.intro">嵌入金鑰供前台公開機器人認出是哪一個租戶。每把金鑰綁定允許的網域，可隨時撤銷。</p>
 
 {# 產生金鑰：名稱（選填）+ 允許網域（必填，一行一個 https://網域）+ 產生按鈕 #}
@@ -163,7 +171,14 @@ permalink: 5-8_widgetTokens.html
             <tbody>
                 {% for row in tokens %}
                 <tr data-widget-token-id="{{ row.id }}">
-                    {# 逐列辨識欄（§4）：三顆列動作鈕（複製金鑰／複製嵌入連結／撤銷）都指到它。 #}
+                    {# 逐列辨識欄（§4）：三顆列動作鈕（複製金鑰／複製嵌入片段／撤銷）都指到它。
+                       **同一列兩顆複製鈕的分支集合要一致**（§5「同一個動作在別頁已有的分支集合就是
+                         這一頁的下限」）：兩顆都是兩段（成功／剪貼簿寫入失敗，改由使用者手動選取），
+                         先前「複製嵌入」那一顆只有一段、連 `data-toast-type` 都沒有——而缺 type 時
+                         測試會預設補成 `success`，單段照樣綠。
+                       繁中一律以「已複製」起頭：閘門測試的唯讀豁免是**以錨定字串開頭**比對的
+                         （`READONLY` 的「已複製」＝寫進剪貼簿、完全不碰後端），寫成「嵌入片段已複製」
+                         就對不上那個錨點，而它其實是同一件事。 #}
                     <td id="widgetTokenRowName-{{ row.id }}">{{ row.name }}</td>
                     <td>
                         <div class="flex-row align-items-center gap-8">
@@ -187,7 +202,7 @@ permalink: 5-8_widgetTokens.html
                     </td>
                     <td>
                         <div class="btn-group">
-                            <button type="button" id="widgetTokenCopyEmbed-{{ row.id }}" aria-labelledby="widgetTokenRowName-{{ row.id }} widgetTokenCopyEmbed-{{ row.id }}" class="button button-border button-sm copyBtn" data-toast="嵌入連結已複製" data-i18n-data-toast="widget.embedCopied" data-i18n="widget.copyEmbed">複製嵌入連結</button>
+                            <button type="button" id="widgetTokenCopyEmbed-{{ row.id }}" aria-labelledby="widgetTokenRowName-{{ row.id }} widgetTokenCopyEmbed-{{ row.id }}" class="button button-border button-sm copyBtn" data-toast="已複製嵌入片段|複製失敗，請手動選取後複製" data-i18n-data-toast="widget.embedCopied" data-toast-type="success|error" data-i18n="widget.copyEmbed">複製嵌入片段</button>
                             {% if not row.disabled %}
                             {# 撤銷改走二次確認（彈窗本體見頁尾）：不可逆，而且撤銷後前台所有掛這把金鑰的
                                  嵌入頁當場失效。開窗需先選定「撤銷哪一把」＝業務條件開窗，故只留 hook class、

@@ -308,6 +308,9 @@ permalink: 3-4_skillManagement.html
    並記 ERROR log，agent_service._create_skill_tools），但那只涵蓋已停用／版本快照缺漏，
    不代表刪除端點允許懸空。 #}
 {% set deleteTargetId = "deleteSkillName" %}
+{# 確認鈕的 React 綁定記號（與 .js-delete-skill 成對）：`deleteConfirmBinding` ＝交給業務 js 綁定、不自動關窗，
+     兩顆記號都不給等於那顆鈕在 markup 上沒有任何東西可以抓（delete-modal 檔頭：二擇一必給）。 #}
+{% set deleteConfirmClass = "js-confirm-delete-skill" %}
 {% set deleteConfirmBinding = true %}
 {% set deleteCapability = "settings:write" %}
 {% set deleteToast = "Skill 已刪除|權限不足，無法刪除|此 Skill 仍被其他 Skill 或設定檔參照，請先移除參照|刪除失敗，請稍後再試" %}

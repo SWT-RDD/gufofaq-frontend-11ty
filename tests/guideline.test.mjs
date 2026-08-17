@@ -7603,3 +7603,26 @@ test("§4 遮罩上色（icon-mask）只准用單色字形 PNG：圓底／雙色
         assert.ok(pngOpaqueRatio(bad) > MASK_OPAQUE_MAX, `負控失效：${bad} 應該過不了單色字形判準`);
     }
 });
+
+test("§5 條件開窗的確認鈕必須帶 React 綁定記號（deleteConfirmBinding ⇒ class 或 id 二擇一）", () => {
+    // `deleteConfirmBinding = true` 的語意是「確認鈕交給業務 js 綁定、不自動關窗」——那顆鈕因此
+    // **沒有 .btn-close-modals**，也就沒有任何別的東西可以認出它。兩顆記號都不給＝React 端只看得到
+    // 一顆 `class="button button-primary"`，與同一個 <dialog> 裡的取消鈕分不出來。
+    // 這條規則原本只住在 README 與元件檔頭（「二擇一必給」），零測試 ⇒ 九支頁面合法地交出零記號的確認鈕。
+    const users = srcHtml.filter((f) => /\{%\s*set\s+deleteConfirmBinding\s*=\s*true/.test(read(f)));
+    assert.ok(users.length >= 10, `只掃到 ${users.length} 個 deleteConfirmBinding 使用點 —— 這條測試在空轉`);
+    const hits = [];
+    for (const f of users) {
+        const s = read(f);
+        if (!/\{%\s*set\s+deleteConfirm(Class|Id)\s*=/.test(s)) {
+            hits.push(`${f}  set 了 deleteConfirmBinding 卻沒有 deleteConfirmClass／deleteConfirmId`);
+        }
+    }
+    assert.equal(hits.length, 0, `確認鈕要帶記號（命名照 §5 js-<動詞>-<名詞>，與同頁觸發鈕成對）：\n${fail(hits)}`);
+
+    // 負控：判準本身要真的分得出「有設」與「沒設」。
+    const good = '{% set deleteConfirmClass = "js-confirm-delete-x" %}\n{% set deleteConfirmBinding = true %}';
+    const bad = '{% set deleteConfirmBinding = true %}';
+    assert.ok(/\{%\s*set\s+deleteConfirm(Class|Id)\s*=/.test(good), "負控失效：good 樣本應該被判成有記號");
+    assert.ok(!/\{%\s*set\s+deleteConfirm(Class|Id)\s*=/.test(bad), "負控失效：bad 樣本應該被判成沒有記號");
+});
