@@ -39,6 +39,7 @@
   "agent.execFlow": "Execution flow",
   "agent.iterations": "Iterations",
   "agent.loadFullTrace": "Load the full trace",
+  "agent.mcpToolLoadFailedServers": "MCP Servers that failed to load",
   "agent.params": "Parameters",
   "agent.qaDecidedBy": "Deciding layer",
   "agent.qaDecision": "Decision",

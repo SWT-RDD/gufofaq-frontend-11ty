@@ -67,12 +67,24 @@
         沒有單位、沒有尺標註記。`3（llm_reranker 的 1–5 尺）` 是替一個不存在的欄位編字面；
         「這是哪一把尺」要讓人知道的話，那件事**已經有家了**——`ui/score-scale-note`（5-2 對話設定頁
         的分數尺說明，逐字「llm_reranker：1–5（分數越高越相關）」），不是塞進這一格的值裡。
+     ③′ **`MCP 工具載入` 不在 `STEP_LABELS` 內、也不進正典管線**（GufoRAG chatbot
+        `app/services/agent_service.py` 的 `run_agent_chat_streaming`：工具載入失敗時才發一則
+        `mcp_tool_load` 的 STATUS 步驟事件，`step_status=failed` ＋ `failed_servers`，並在
+        `_load_data["label"]` 自帶顯示名——因為 `STEP_LABELS` 那份是圖節點的正典名）。
+        於是它有三個推論，缺一就畫錯：
+          ・**只在失敗那一輪出現**：正常輪次完全沒有這個節點，不是「completed 的那一站」。
+          ・**不算進進度分母**：`X / N` 只數正典管線節點（見下方那條），把一個只在故障時
+            出現的節點算進去，會讓正常那一輪的進度永遠差一格。它與巢狀子步驟同一個理由，
+            但機制不同——子步驟靠 `depth` 排除，這一顆靠「不在 CANONICAL_PIPELINE 裡」。
+          ・**位置在 `Agent 推理` 之前**：工具是先載入才進迴圈的；畫在後面會讓人以為是
+            迴圈跑完才發現載不到。
+        狀態恆為 `failed` ⇒ 走既有的紅色樣式，不必新增任何 class。
      ③ **節點 `label` 逐字照抄** GufoRAG chatbot `app/models/chat.py` 的 `STEP_LABELS`——
         `qa_direct` 是 **「QA 直答比對」**。其餘十一顆本來就逐字相同，只有這一顆自己縮寫成
         「QA 直答」；而 React 端顯示名是以 `step_id` 查自己的字典（`stepNode.qa_direct`），
         字面分岔時畫面不會報錯，只會兩邊各說各話。
    參數：stepFlowNodes（選填，[{ label, state, time, depth, skill, version, iterations, error,
-     tools, params, result, verdict, thinking,
+     tools, params, result, verdict, thinking, failedServers, offPipeline,
      hits, score, decidedBy, floor, decision, entry, matchedRank, poolSize, reusedFrom }]）
      ——**值域含 0 的欄一律以「字串」傳入**（`poolSize: "0"`、`score: "0"`、`matchedRank: "1"`、
        `iterations: "0"`）：這些欄的渲染條件是 `{% if node.X %}` 真值判斷，而
@@ -126,7 +138,9 @@
        兩態各有一頁，不重複也不留空（§5）。
    進度「目前 X / N」只數**正典管線節點**（無 depth 者）：N＝正典節點數、X＝已執行到的最後一個正典節點序號。
      巢狀子步驟不計入——它們是某一站底下的細節，算進分母會讓進度隨串流冒出子步驟而倒退（正典管線是
-     固定長度，見 saas `lib/stepFlow` 的 CANONICAL_PIPELINE）。不烤字面量：使用頁改節點數，烤死的總數就會說謊（§6）。
+     固定長度，見 saas `lib/stepFlow` 的 CANONICAL_PIPELINE）。**`offPipeline: true` 的節點同樣不計入**
+     （目前只有 `MCP 工具載入` 這一顆）：它不在 CANONICAL_PIPELINE 裡、只在故障那一輪出現，算進分母
+     會讓正常那一輪的 N 少一格。不烤字面量：使用頁改節點數，烤死的總數就會說謊（§6）。
    示範資料＝假資料（工具名/參數/結果/推理），依 GUIDELINE §4-2「只翻 UI chrome、不翻假資料」不掛 data-i18n。 #}
 {% set stepFlowNodeRows = stepFlowNodes or [
     { label: "輸入合規檢查", state: "completed", time: "8ms" },
@@ -135,6 +149,7 @@
       score: "2.4", floor: "3",
       decision: "below_score_floor", entry: "pre_graph", poolSize: "16" },
     { label: "初始化對話", state: "completed", time: "12ms" },
+    { label: "MCP 工具載入", state: "failed", time: "420ms", offPipeline: true, failedServers: "內部工單系統, 出貨查詢" },
     { label: "Agent 推理", state: "completed", time: "340ms", thinking: "先判斷是否需要檢索；問題涉及具體規定，決定呼叫知識庫搜尋。" },
     { label: "檢索知識庫", state: "completed", time: "1.2s", tools: "search_knowledge_base", params: "[1/1] query: string", result: "命中 8 筆片段（相似度 0.79–0.92），依相似度排序後注入後續生成脈絡。前三筆來自「新住民結婚登記須知」：第一筆說明雙方當事人須親自到任一戶政事務所辦理，並備妥雙方身分證、印章、戶口名簿與三個月內之戶籍謄本；第二筆列出外籍配偶應另備經我國駐外館處驗證之單身證明與出生證明，且文件如為外文須附中文譯本並經驗證；第三筆說明部分國籍之當事人另須完成境外面談，面談未通過者不予登記。第四至第六筆來自「跨國婚姻健康檢查與居留」：包含健康檢查項目、居留簽證與外僑居留證之申請時程，以及未於期限內辦理的罰則。第七筆為各縣市新住民家庭服務中心的通譯服務申請方式與免費諮詢管道。第八筆為常見退件原因彙整，其中以譯本未經驗證與戶籍謄本逾期兩項最多。第九筆之後為相似度低於門檻的候選，未納入本次脈絡。另補充：結婚登記自登記之日起生效，未辦理登記者婚姻關係不成立；當事人如已於境外辦妥結婚，仍須持經驗證之結婚證明文件回國辦理登記，並注意譯本有效期限。戶政事務所受理後如發現文件不全，會當場開立補正通知，補正期限內未補齊者將予退件。最後，若當事人之一為未成年人，另須法定代理人同意書並一併驗證。" },
     { label: "可回答性判定", state: "completed", time: "210ms", verdict: "generate（素材足以回答）" },
@@ -157,14 +172,17 @@
      刪掉它們兩個數字會靜默渲染成空字串。 #}
 {% set stepFlowCurrent = 0 %}
 {% set stepFlowTotal = 0 %}
-{% for node in stepFlowNodeRows %}{% if not node.depth %}{% set stepFlowTotal = stepFlowTotal + 1 %}{% if node.state == "completed" or node.state == "running" or node.state == "failed" %}{% set stepFlowCurrent = stepFlowTotal %}{% endif %}{% endif %}{% endfor %}
+{% for node in stepFlowNodeRows %}{% if not node.depth and not node.offPipeline %}{% set stepFlowTotal = stepFlowTotal + 1 %}{% if node.state == "completed" or node.state == "running" or node.state == "failed" %}{% set stepFlowCurrent = stepFlowTotal %}{% endif %}{% endif %}{% endfor %}
 <div class="step-flow js-accordion mt-24">
     <div class="flex-row justify-content-between align-items-center flex-wrap gap-8">
         <span class="text-lg text-bold" data-i18n="agent.execFlow">執行流程</span>
         <div class="flex-row align-items-center gap-8 flex-wrap">
             {# 進度前後綴走 i18n、數字由陣列推導（stepFlowCurrent／stepFlowTotal），不烤字面量（§6）。
                  分母是 stepFlowTotal（只數正典節點）而不是 stepFlowNodeRows.length（含巢狀子步驟）——
-                 用 .length 會讓進度隨串流冒出子步驟而倒退，見檔頭「進度『目前 X / N』只數正典管線節點」那一段。 #}
+                 用 .length 會讓進度隨串流冒出子步驟而倒退，見檔頭「進度『目前 X / N』只數正典管線節點」那一段。
+                 **`offPipeline` 是分母的第二道排除**：`depth` 擋的是「某一站底下的細節」，這一顆擋的是
+                 「根本不在正典管線上的節點」（`MCP 工具載入` 只在工具載入失敗那一輪出現）。兩者都算進
+                 分母的話，正常那一輪的 N 會比故障那一輪少一，同一條管線在畫面上長出兩種長度。 #}
             <span class="step-flow-progress"><span data-i18n="agent.stepProgressPrefix">目前</span> {{ stepFlowCurrent }} / {{ stepFlowTotal }}</span>
             <button type="button" class="button button-border button-sm js-expand-all" data-i18n="common.expandAll">全部展開</button>
             <button type="button" class="button button-border button-sm js-collapse-all" data-i18n="common.collapseAll">全部收合</button>
@@ -258,14 +276,14 @@
                              展開鈕與整個 detail-row 都不渲染，資料靜默消失。原本列了 12 項而明細列有 15 種
                              （漏掉 iterations／entry／poolSize），只因為現行使用頁的節點都另帶 decision 或
                              skill 才沒觸發。 #}
-                        {% if node.tools or node.params or node.result or node.verdict or node.thinking or node.skill or node.error or node.hits or node.score or node.decidedBy or node.floor or node.decision or node.iterations or node.entry or node.poolSize %}
+                        {% if node.tools or node.params or node.result or node.verdict or node.thinking or node.skill or node.error or node.hits or node.score or node.decidedBy or node.floor or node.decision or node.iterations or node.entry or node.poolSize or node.failedServers %}
                         <button type="button" class="button accordion-btn" aria-expanded="false" title="展開表格" data-i18n-title="common.expandRow">
                             <span class="sr-only" data-i18n="common.expandRow">展開表格</span>
                         </button>
                         {% endif %}
                     </td>
                 </tr>
-                {% if node.tools or node.params or node.result or node.verdict or node.thinking or node.skill or node.error or node.hits or node.score or node.decidedBy or node.floor or node.decision or node.iterations or node.entry or node.poolSize %}
+                {% if node.tools or node.params or node.result or node.verdict or node.thinking or node.skill or node.error or node.hits or node.score or node.decidedBy or node.floor or node.decision or node.iterations or node.entry or node.poolSize or node.failedServers %}
                 <tr class="detail-row">
                     <td colspan="5" class="detail-cell">
                         <div class="accordion-content">
@@ -290,6 +308,21 @@
                                     <tr>
                                         <th data-i18n="agent.errorReason">失敗原因</th>
                                         <td class="step-node-error">{{ node.error }}</td>
+                                    </tr>
+                                    {% endif %}
+                                    {# 載入失敗的 MCP Server 清單（`failed_servers`）。**畫得出「哪一台」是這一則事件存在的理由**：
+                                         沒有這一格，節點只說得出「MCP 工具載入」＋紅色，而使用者看到的症狀是「模型好像不會用工具」。
+                                         上游 GufoRAG chatbot `app/services/agent_service.py` 的 `run_agent_chat_streaming` 在
+                                         `_init_tools` 之後發 `mcp_tool_load`（`step_status=failed` ＋ `failed_servers`），
+                                         而 product 已經把原始字串裡的指令路徑切掉、只留 server 名（任何問得動問答的租戶使用者
+                                         都不該從一次 MCP 故障讀到 agent 主機的檔案系統佈局）——**所以這一格只畫名稱、不畫指令**，
+                                         上游若哪天把路徑放回來，要擋的是那一側，不是在這裡截字串。
+                                       值是純名稱清單 ⇒ 逗號分隔的一段資料（不翻、不掛 `data-i18n`）；
+                                         正本給的是集合，這裡也畫成集合（§3-2 欄位的形狀要對）。 #}
+                                    {% if node.failedServers %}
+                                    <tr>
+                                        <th data-i18n="agent.mcpToolLoadFailedServers">載入失敗的 MCP Server</th>
+                                        <td class="step-node-error">{{ node.failedServers }}</td>
                                     </tr>
                                     {% endif %}
                                     {% if node.tools %}
