@@ -1,5 +1,5 @@
 // 聊天室的訊息動作鈕。目前只有「查看來源」需要行為：把頁面上的參考來源區塊顯示出來。
-// 對應真實 app 的 js/main.js:322，純 UI（顯示已在 markup 裡的區塊），不是業務邏輯。
+// 對應凍結前端 GufoFAQ_Frontend_New/js/main.js:322，純 UI（顯示已在 markup 裡的區塊），不是業務邏輯。
 //
 // 「複製」鈕走 data-toast（ui/toast 的委派）：管理後台真 app 的 `.copyBtn` handler 本來就只彈 toast、
 // 不寫剪貼簿（main.js `$('.copyBtn').on('click')` → showToast），切版比照即忠實；hook class 原樣保留（§5）。

@@ -1,5 +1,5 @@
 {# 取自真實頁 pages/qaHistory/4-2_qaHistory_detail.html「對話詳細內容」區塊（line 175-307，class 沿用真實系統）。
-     搜尋過整份真實 scss/component.scss，沒有 .qa-detail-info（或類似名稱）的專屬 class 規則 —— 這塊完全是既有原子的組合：
+     搜尋過整份真實 GufoFAQ_Frontend_New/scss/component.scss，沒有 .qa-detail-info（或類似名稱）的專屬 class 規則 —— 這塊完全是既有原子的組合：
      外層 .block（ui/block）包 .form-table-wrap（ui/form-table，已含 .form-table-group/.subtitle/.form-table/.row/.col/.th/.td），
      因此不建立 _qa-detail-info.scss、main.scss 也不需新增 @use（避免無中生有杜撰一個真實系統沒有的 class；視覺完全由已註冊的 block / form-table 提供）。
      AI 對話內容維持真實頁面原始寫法：直接在 .td 內以純文字＋多個 <p> 呈現（未加 .long-text，真實 markup 本來就沒有），逐字保留（inline，非收合摘要）。

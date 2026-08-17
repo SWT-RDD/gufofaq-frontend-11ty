@@ -1,4 +1,4 @@
-// 照抄自真實 app scss/component.scss「文字編輯區」區段（line 2678-2716），另依規範做了申報過的調整：
+// 照抄自凍結前端 GufoFAQ_Frontend_New/scss/component.scss「文字編輯區」區段（line 2678-2716），另依規範做了申報過的調整：
 // .form-group:has(textarea)→.edit-field-group（§4 隔離）、拿掉 display:none 家族（見下註）、
 // 拿掉 box-sizing（真 app 同選擇器先 content-box 後 border-box、末條勝出＝實效 border-box，
 // 與全域 _base 相同故整條不寫，§4-1；editable-block.js 的 resizeInput 寬度計算即 border-box 式）。

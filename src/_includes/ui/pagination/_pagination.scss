@@ -14,6 +14,7 @@
 //     pagination.js `getComputedStyle` 讀——斷點只有這一份真相）。
 //   ⑥`.page-info` 整塊是切版新增（真 app 的 main.js 引用了它卻從未補上 markup，見
 //     pagination.html 檔頭註解），沿用同一份 token。
+//   **宣告集合差集**（與上面那段凍結範圍逐條 diff，只比種類不比值——色值換語意 token 是 §4 要求的、不算偏離）：本檔新增 `max-width`／`--pagination-visible`／`flex`；凍結有本檔沒有 `box-sizing`／`align-self`／`border`／`background`／`line-height`。隨既有偏離條目一起來：省略號是自帶盒模型的獨立盒子、`li img` 的尺寸限制、以及頁碼列與每頁筆數同列的伸縮。
 /*===============================
     pagination頁碼
 ================================*/

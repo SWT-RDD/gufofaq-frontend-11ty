@@ -78,7 +78,7 @@ permalink: 1-1-4_columnSelect_excel.html
     {% set stepPrevHref = "1-1-3_preview_excel.html" %}
     {% set stepNextHref = "1-1-6_uploadSuccess_excel.html" %}
     {# 這一頁的「下一步」是**送出鈕**，不是連結（見 step-btn-wrap 檔頭）：凍結前端
-         `js/columnSelect_excel.js:364` 先驗必填欄、再組 `fileProcessVM` 送出，成功才換頁。
+         `GufoFAQ_Frontend_New/js/columnSelect_excel.js:364` 先驗必填欄、再組 `fileProcessVM` 送出，成功才換頁。
          結果分支逐條對回 gufofaq-saas product `app/routers/datasets.py` 的
          `POST /datasets/{id}/excel/import`（`import_excel` → `_do_excel_mapping_import`）：
          ・403 `require_capability("data","write")`（能力軸）

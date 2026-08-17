@@ -28,7 +28,7 @@ permalink: 3-1-1_datasetList.html
     </div>
 </div>
 
-{# 資料集表格：欄位與真實頁 pages/dataset/3-1-1_datasetList.html + js/datasetList.js 的 createDatasetRow() 一致，
+{# 資料集表格：欄位與真實頁 pages/dataset/3-1-1_datasetList.html + GufoFAQ_Frontend_New/js/datasetList.js 的 createDatasetRow() 一致，
      動態渲染的列改用 set+for 資料化示範 2-3 筆 #}
 {# fileTypes 五種檔型的數字加總＝該資料集的檔案總數，也就是 3-1-3 檔案列的 total（115）。
      3-1-3 只列三筆當版型示範，兩邊的帳這樣對：容量 12.30＋3.05＋0.85＝16.20 MB（＝第一列
@@ -132,7 +132,7 @@ permalink: 3-1-1_datasetList.html
                 </td>
                 <td>{{ row.group }}</td>
                 <td>
-                    {# `.number` 是凍結前端的掛點（`js/datasetList.js:177/183/189/195/201` 逐檔型
+                    {# `.number` 是凍結前端的掛點（`GufoFAQ_Frontend_New/js/datasetList.js:177/183/189/195/201` 逐檔型
                          append 這顆計數 span），無樣式、不改名（§5 轉換契約）。 #}
                     <div class="file-number-group">
                         <div class="item">
@@ -185,7 +185,7 @@ permalink: 3-1-1_datasetList.html
     </table>
 </div>
 
-{# 分頁：真實頁由 js/datasetList.js renderPagination() 動態產生（li.prev/li.active/li.next 結構）；
+{# 分頁：真實頁由 GufoFAQ_Frontend_New/js/datasetList.js renderPagination() 動態產生（li.prev/li.active/li.next 結構）；
      ui/pagination 現在也是同一套 data-total 驅動的 js render，故直接沿用。
      total＝資料集清單的**伺服器總筆數**（示範列只畫 3 筆版型，不是把總數畫完）。
      115 / 20 ＝ 6 頁，而省略號的門檻是 `visible + 2`

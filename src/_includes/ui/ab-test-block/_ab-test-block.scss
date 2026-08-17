@@ -1,7 +1,7 @@
 // AB 測試設定區塊（2-2-3）：.block 的 variant，左右兩組設定各佔一半、可被壓縮。
 // 純樣式元件（無 html/js）：markup 寫在頁面——外層 .block.ab-test-block，
 // 兩側容器加本元件的 slot class .ab-side、設定欄位的標籤加 .ab-field-label（固定 108px 對齊兩側欄位）。
-// （原始規則來自真實 app css/style.css「AB測試 (2-2-3)」段的 .ab-test-block > div 與
+// （原始規則來自凍結前端 GufoFAQ_Frontend_New/css/style.css「AB測試 (2-2-3)」段的 .ab-test-block > div 與
 //  .ab-test-block .select-row .form-group .label，依 GUIDELINE §4「slot class」原則
 //  改為自己命名的 class，不指名 ui/form-control 的 .form-group/.label。）
 //

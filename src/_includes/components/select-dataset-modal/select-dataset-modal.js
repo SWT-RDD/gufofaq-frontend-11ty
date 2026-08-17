@@ -1,5 +1,5 @@
 // 選擇資料集 modal 的確認回填（§5 純前端互動，當場要動得起來）。
-// 行為改寫自真 app js/dataImport.js：關窗鈕（.btn-close-modals——含右上角 X，真 app 綁的就是
+// 行為改寫自凍結前端 GufoFAQ_Frontend_New/js/dataImport.js：關窗鈕（.btn-close-modals——含右上角 X，真 app 綁的就是
 // 這個範圍）讀 input[name="dataset_radio"]:checked，把選到的名稱回填頁面上的模擬 select
 // （.select-placeholder 藏起來、.select-value 填字並顯示）。
 // 申報差異：切版用 <dialog>，多了真 app 沒有的原生 Esc 關窗路徑——Esc 不經 .btn-close-modals、

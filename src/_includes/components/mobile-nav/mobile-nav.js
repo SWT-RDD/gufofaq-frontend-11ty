@@ -1,6 +1,6 @@
 // 手機版選單：切換開關（切 .active；捲動鎖是 CSS 靠 nav-toggle 的 data-scroll-lock 做，本檔不自己鎖，
 // 只在開之前呼叫 GufoScrollLock.measure() 補量捲軸寬度）、子選單展開收合、resize 自我收合
-// 行為改寫自真實 app 的 js/main.js（原用 jQuery + slideDown/slideUp），改為標準 DOM API
+// 行為改寫自凍結前端 GufoFAQ_Frontend_New/js/main.js（原用 jQuery + slideDown/slideUp），改為標準 DOM API
 document.addEventListener("DOMContentLoaded", function () {
     var navToggle = document.querySelector(".nav-toggle");
     var menuWrap = document.querySelector(".mobile-menu-wrap");

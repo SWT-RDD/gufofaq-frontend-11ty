@@ -1,4 +1,4 @@
-// 跳窗開關：標準 <dialog> API（showModal / close），改寫自真實 app 的 js/main.js openModal/closeModal
+// 跳窗開關：標準 <dialog> API（showModal / close），改寫自凍結前端 GufoFAQ_Frontend_New/js/main.js openModal/closeModal
 // 拿掉 flatpickr 初始化（日期選擇不在切版範圍）；曝露 window.openModal 供其他元件呼叫
 // （唯一消費者：components/rating-modal 的 openRating）。
 // `window.closeModal(modalEl)` 同樣有匯出，但**站內零消費點**——關窗全走 `.btn-close-modals`

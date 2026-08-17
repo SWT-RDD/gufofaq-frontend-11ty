@@ -78,6 +78,7 @@
 // 只有 5-3 用得到——等於頁面專屬樣式住在某個 components/ 元件的 scss 裡。
 // §4：`components/` 元件的私有 class 不外借，第二個消費者出現時就升格成共用正本。
 // `components/chart-box` 因此只剩「組合」（它的 html：標題＋兩張 canvas＋chart-desc），沒有自己的樣式。
+//   **宣告集合差集**（與上面那段凍結範圍逐條 diff，只比種類不比值——色值換語意 token 是 §4 要求的、不算偏離）：本檔新增 `overflow-x`；凍結有本檔沒有 `box-sizing`／`margin-top`／`margin`。外距改由使用頁的工具 class 給（§4-1），捲動容器 `overflow-x` 是切版新增（窄視窗圖表要能橫捲）。
 .chart-box {
     background-color: var(--surface-raised);
     border-radius: 8px;
@@ -93,7 +94,7 @@
         padding: 0.46875rem 0;
     }
 
-    // .chart-wrap 讓兩張圖並排：真實 app 的 scss 源碼漏了這條，只存在於已編譯的 css/component.css，
+    // .chart-wrap 讓兩張圖並排：真實 app 的 scss 源碼漏了這條，只存在於已編譯的 GufoFAQ_Frontend_New/css/component.css，
     // 依編譯輸出補回，否則兩張圖會上下堆疊而非並排（外觀還原）。
     .chart-wrap {
         display: flex;

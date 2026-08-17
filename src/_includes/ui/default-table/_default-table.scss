@@ -8,6 +8,7 @@
 //   理由見本檔下方那則「.tablelist-title 已升格為 ui/tablelist-title…」註解。§3-2：同檔自我互指
 //   不用行號，行號會隨每一次編輯漂掉——上一版寫「見下方第 158 行」，那則註解實際在 163）
 // .priority-table 1810-1827 為 .default-table 的變體（&.priority-table，見下），供 priority-table 與 knowledge-retrieval-modal 沿用
+//   **宣告集合差集**（與上面那段凍結範圍逐條 diff，只比種類不比值——色值換語意 token 是 §4 要求的、不算偏離）：本檔新增 `background`／`opacity`／`transition`／`transform`；凍結有本檔沒有 `box-sizing`／`justify-content`。全部隨 ④⑤⑥ 一起來：`.sort` 從 `<img>` 升格成 `<button>`（背景/對齊）、排序方向狀態（opacity/transition/transform）。
 @use "../../../scss/mixin" as *;
 
 /*===============================

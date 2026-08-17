@@ -1,4 +1,4 @@
-// 垂直分隔線。樣式取自真 app 的**已編譯** css/component.css（scss 源碼漏抓了這些宣告，
+// 垂直分隔線。樣式取自凍結前端**已編譯的** GufoFAQ_Frontend_New/css/component.css（scss 源碼漏抓了這些宣告，
 // 編譯輸出才是最終真相——同 chart-box/footer 的情況）。原先誤判為「無樣式 class」做成空規則，
 // 導致全站分隔線不可見，此處補回。
 // 真 app 依所在區塊給不同高度（.footer 18px、.sources-block 28px），依 GUIDELINE §4

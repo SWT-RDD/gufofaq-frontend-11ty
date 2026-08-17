@@ -1,5 +1,5 @@
 // 右側「問答紀錄」側欄：切換 .collapsed 讓面板滑進（展開）/滑出（收合）。
-// 行為改寫自真實 app 的 js/main.js「右側問答紀錄面板 收合/展開」（原用 jQuery），改用標準 DOM API。
+// 行為改寫自凍結前端 GufoFAQ_Frontend_New/js/main.js「右側問答紀錄面板 收合/展開」（原用 jQuery），改用標準 DOM API。
 // 純視覺切換（不含載入問答資料等業務邏輯）：點直立的「問答紀錄」tab 展開/收合；點面板外部收合。
 //
 // a11y：toggle 的 aria-expanded 與 title 必須跟著實際狀態走（含「點外部收合」這條路徑）。

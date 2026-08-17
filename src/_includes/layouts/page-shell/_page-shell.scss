@@ -6,7 +6,7 @@
 //
 // **兩個消費者**（都是 layout，沒有任何元件用它）：`layouts/page-shell`（管理端）與
 // `layouts/public-shell`（公開唯讀頁，它沿用這一顆、不覆寫，故自己沒有 scss）。正本留在這裡而不是
-// 升上 `scss/_base.scss`：那一層是**每個元件**都要遵守的地基，而這顆 class 的消費者只有整頁模板，
+// 升上 `GufoFAQ_Frontend_New/scss/_base.scss`：那一層是**每個元件**都要遵守的地基，而這顆 class 的消費者只有整頁模板，
 // 放上去會讓人以為它是元件也能拿來套的共用詞彙（`.main-container`／`.main-menu`／`.chatbot-main`
 // 是別的 class）。改動它要同時看兩支 layout。
 .main {

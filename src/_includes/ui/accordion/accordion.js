@@ -1,4 +1,4 @@
-// accordion 手風琴：改寫自真實 app js/main.js「表格 accordion 控制」（原用 jQuery + slideDown/slideUp(300)），
+// accordion 手風琴：改寫自凍結前端 GufoFAQ_Frontend_New/js/main.js「表格 accordion 控制」（原用 jQuery + slideDown/slideUp(300)），
 // 開合的高度動畫走 ui/slide-toggle（同一套 300ms，與手機選單共用）
 // 只轉切版互動（開合本身），資料載入/API 等業務邏輯不在此列
 //

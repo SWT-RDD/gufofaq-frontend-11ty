@@ -1,4 +1,4 @@
-// 結構與版型逐條照抄自真實 app scss/guideline.scss（僅元件庫展示頁使用的版型/說明樣式，非全站樣式）。
+// 結構與版型逐條照抄自凍結前端 GufoFAQ_Frontend_New/scss/guideline.scss（僅元件庫展示頁使用的版型/說明樣式，非全站樣式）。
 // **偏離逐條列在這裡**——§9 說這支是「禁止依頁面覆寫元件」的唯一豁免檔、且「新增行不得擴大覆寫面」，
 // 而判斷「哪些是鏡像、哪些是我們加的」全靠這幾行；寫成「唯一調整」就等於下一輪沒有基準可比：
 //   ① 第一行 `@import "base/var"` → `@use "var"`（本檔內文其實未使用任何 $ 變數，僅為對齊真實檔頭、維持可解析）
@@ -18,6 +18,7 @@
 //      截圖見 `pages/components/component.html` 第 01 節的註解），而整支收在 `.guideline-page {}` 之下
 //      ⇒ 那七條的 host 在全站 markup 上一個都不存在（`.page-title` 雖有別頁在用，但那幾頁的 body
 //      沒有 `.guideline-page`，選擇器結構上永遠選不到）——出貨死 CSS（§4／§8「零死碼」）
+//   **宣告集合差集**（與上面那段凍結範圍逐條 diff，只比種類不比值——色值換語意 token 是 §4 要求的、不算偏離）：本檔新增 `width`／`height`／`border-radius`／`background-color`／`border-color`／`scrollbar-width`／`scrollbar-color`／`display`／`padding`／`position`／`overflow-y`／`flex-shrink`／`font-size`／`font-weight`／`color`／`text-decoration`／`transition`／`margin-bottom`／`z-index`／`border-right`／`padding-right`／`padding-left`／`opacity`／`top`／`left`／`transform`／`line-height`／`text-align`／`background`／`margin-top`／`justify-content`／`align-items`／`flex-direction`／`right`／`bottom`／`box-shadow`／`border-style`／`border-width`／`border-top`／`padding-top`／`margin`。本檔只服務元件庫展示頁：凍結那一段是舊版 guideline.scss 的版型，本檔另補了捲軸樣式、色票方塊、程式碼區塊與側欄目錄的定位（全部只在 `.guideline-page` 之下）。
 @use "var";
 
 @mixin scrollbar() {

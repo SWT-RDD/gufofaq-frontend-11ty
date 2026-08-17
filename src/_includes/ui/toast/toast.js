@@ -1,4 +1,4 @@
-// 全域 showToast(message, type, duration)：改寫自真實 app js/toast.js，原生 DOM API，無 jQuery/vendor。
+// 全域 showToast(message, type, duration)：改寫自凍結前端 GufoFAQ_Frontend_New/js/toast.js，原生 DOM API，無 jQuery/vendor。
 //   type：'success'（預設，綠）/ 'error'（紅）/ 'warning'（黃）/ 'info'（藍）—— 真實 app 只有 success，多色為本專案擴充。
 //   相容舊呼叫 showToast(msg, 2000)：第二參數是數字時視為 duration。
 //

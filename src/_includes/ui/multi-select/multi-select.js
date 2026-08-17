@@ -1,7 +1,7 @@
 // ui/multi-select：select2 多選（.multiSelect）的原生替代——標籤（可 × 移除）＋下拉複選（不關閉）＋搜尋過濾＋placeholder。
 // 原生 <select multiple class="multiSelect"> 仍是唯一資料來源：所有互動最終都寫回 option.selected 並 dispatch change，
 // 轉 React 時可直接對應 react-select（isMulti），value 陣列＝原生 select 目前選取的 options。
-// 行為改寫自真實 app js/main.js 的 select2({ closeOnSelect: false, placeholder }) 設定，但完全不依賴 select2/jQuery。
+// 行為改寫自凍結前端 GufoFAQ_Frontend_New/js/main.js 的 select2({ closeOnSelect: false, placeholder }) 設定，但完全不依賴 select2/jQuery。
 //
 // a11y：原生 select 被移出無障礙樹（aria-hidden + tabindex=-1），故自訂控制項必須自己補回完整語意與鍵盤操作——
 //   搜尋框 = role=combobox（aria-expanded / aria-controls / aria-activedescendant），下拉 = role=listbox（aria-multiselectable），

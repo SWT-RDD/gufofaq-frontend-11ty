@@ -1,4 +1,4 @@
-// pagination 頁碼列：改寫自真 app js/main.js:499 renderPagination()（原用 jQuery + $(".pagination").data("total")），
+// pagination 頁碼列：改寫自凍結前端 GufoFAQ_Frontend_New/js/main.js:499 renderPagination()（原用 jQuery + $(".pagination").data("total")），
 // 改標準 DOM。data-total（總筆數）÷ data-per-page（預設 10，對照真 app perPage）算 totalPages，
 // data-current（目前頁，預設 1）驅動要畫哪一頁；<ul> 整份由本檔動態產生，點 a[data-page] 換頁即重新 render。
 // 滑動視窗演算法對照真 app：total<=visible+2 時全部顯示，否則以 current 為中心的滑動視窗；

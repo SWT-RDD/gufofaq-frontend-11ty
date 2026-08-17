@@ -262,7 +262,7 @@
             list-style-type: decimal;
         }
 
-        // **`li` 的列距歸兩種清單共有**：凍結正本 `css/component.css` 是
+        // **`li` 的列距歸兩種清單共有**：凍結正本 `GufoFAQ_Frontend_New/css/component.css` 是
         // `.message-content .robot-msg ul li, .message-content .robot-msg ol li` 一起給的。
         // 補 `list-style-type` 那一輪把它收進了 `ol {}`，於是 renderer 產出的**項目符號清單**
         // （AI 答案裡最常見的那一種）整個掉了列距與行高，而編譯後只剩 `ol li` 一條看得出來。

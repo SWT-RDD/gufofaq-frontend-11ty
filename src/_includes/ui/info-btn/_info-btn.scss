@@ -1,4 +1,4 @@
-// 資訊圖示鈕（表單標籤旁的 (i) 說明鈕）。樣式取自真 app 的**已編譯** css/component.css
+// 資訊圖示鈕（表單標籤旁的 (i) 說明鈕）。樣式取自凍結前端**已編譯的** GufoFAQ_Frontend_New/css/component.css
 // （scss 源碼漏了這條、只存在編譯輸出——同 divider-vertical/footer/ab-compare 的情況）。
 // 原本我們專案完全沒有 .info-btn 樣式，導致它呈現瀏覽器預設方框按鈕；此處補回＝透明背景的圖示鈕。
 // 純樣式元件（無 html/js，markup 就地寫在使用頁）。

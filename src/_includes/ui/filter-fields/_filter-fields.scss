@@ -1,7 +1,7 @@
 // 篩選列欄位群：讓一列篩選欄位均分剩餘寬度、可被壓縮。
 // 無 html（markup 由頁面自組——外層 .filter-fields，每個欄位加本元件的 slot class .filter-field）；
 // 行為 js 見同資料夾 filter-fields.js（.js-filter-clear 清除鈕）。
-// （原始規則來自真實 app css/style.css 的 .filter-fields .form-group，依 GUIDELINE §4
+// （原始規則來自凍結前端 GufoFAQ_Frontend_New/css/style.css 的 .filter-fields .form-group，依 GUIDELINE §4
 //  「容器排版子元件改用 parent 自有的 slot class」改為 .filter-field，不指名 ui/form-control 的 class。）
 // 即使頁面只有單一欄位，也必須包在 .filter-fields 裡：漏了外層，.filter-field 這個巢狀選擇器
 // 就不會命中（規則直接不生效），該欄位的 .col-N-* 也會從錯誤的祖先（外層 .gap-24 而非本元件的

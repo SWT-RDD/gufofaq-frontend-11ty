@@ -26,7 +26,7 @@ permalink: 1-2-1_uploadFile_pdf.html
 {% set stepNoPrev = true %}
 {% set stepNodesLg = true %}
 {% set stepNextHref = "1-2-6_uploadSuccess_pdf.html" %}
-{# 同 1-1-4：這一頁的「下一步」是送出鈕（凍結前端 `js/uploadFilePdf.js:91`
+{# 同 1-1-4：這一頁的「下一步」是送出鈕（凍結前端 `GufoFAQ_Frontend_New/js/uploadFilePdf.js:91`
      `await submitFileUpload()`），不是連結。分支對回 gufofaq-saas product
      `app/routers/datasets.py` 的 `POST /datasets/{id}/documents/batch-import`
      （`batch_import_documents`）：
@@ -75,7 +75,7 @@ permalink: 1-2-1_uploadFile_pdf.html
 {% set uploadDescPrefixKey = "dataImport.uploadDescDocsPrefix" %}
 {% include "ui/upload-box/upload-box.html" %}
 
-{# 檔案列表表格：真實頁 thead/tbody 皆為 js/uploadFilePdf.js 動態渲染（renderTableHeaders()/renderFileList()），
+{# 檔案列表表格：真實頁 thead/tbody 皆為 GufoFAQ_Frontend_New/js/uploadFilePdf.js 動態渲染（renderTableHeaders()/renderFileList()），
      欄位取其固定欄（檔案名稱、標題、時間、檔案大小、功能，略過依租戶而異的自訂欄位），
      用 set+for 資料化示範 3 筆，father/table class 沿用 ui/default-table 同一組真實系統 class #}
 {# PDF 與 Word 同一條流程，故示範兩種副檔名各一（另加一筆演匯入失敗）。

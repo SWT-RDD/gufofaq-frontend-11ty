@@ -1,6 +1,6 @@
 // checkbox 與 radio 兩個 atom 共用的外框排版 base（單一正本）。
 // 兩者的 label 外框排版相同；抽成共享 partial，避免各自 scss 出現對方的 class
-// （§4：A 元件的 scss 不寫 B 元件的 class）。逐字取自真實 app scss/component.scss「checkbox & radio」區段。
+// （§4：A 元件的 scss 不寫 B 元件的 class）。逐字取自凍結前端 GufoFAQ_Frontend_New/scss/component.scss「checkbox & radio」區段。
 .form-checkbox,
 .form-radio {
     display: inline-flex;

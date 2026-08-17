@@ -1,4 +1,4 @@
-// pagination-input（輸入版頁碼）：改寫自真實 app js/main.js「pagination-input (輸入版)」（原用 jQuery），改用原生 DOM API
+// pagination-input（輸入版頁碼）：改寫自凍結前端 GufoFAQ_Frontend_New/js/main.js「pagination-input (輸入版)」（原用 jQuery），改用原生 DOM API
 // 僅切版行為：輸入框數字過濾、上一頁/下一頁按鈕 disabled 狀態、blur/Enter 確認頁碼並 clamp 在 1~total 之間
 // 資料抓取/實際換頁請求等業務邏輯不在此列（原 main.js 的 .pagination 動態產生頁碼清單 renderPagination 為資料驅動邏輯，同樣不轉）
 document.addEventListener("DOMContentLoaded", function () {

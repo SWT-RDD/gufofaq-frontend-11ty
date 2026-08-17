@@ -7660,3 +7660,101 @@ test("§5 條件開窗的確認鈕必須帶 React 綁定記號（deleteConfirmBi
     assert.ok(/\{%\s*set\s+deleteConfirm(Class|Id)\s*=/.test(good), "負控失效：good 樣本應該被判成有記號");
     assert.ok(!/\{%\s*set\s+deleteConfirm(Class|Id)\s*=/.test(bad), "負控失效：bad 樣本應該被判成沒有記號");
 });
+
+test("§3-2 引了凍結前端的 js/scss/css，同一則註解裡要出現是哪一份凍結 repo", () => {
+    // §3-2「出處要 **repo ＋ 檔 ＋ 符號名三者齊全**（同一個符號名配錯 repo 照字面看不出違規）」。
+    // 上一條（.py／.ts／.tsx）只管**活正本**那一半，而歧義其實**只發生在凍結那一級**：
+    // 兩份凍結 repo 都有 `js/main.js`，而且行號指到的東西語意完全不同——`GufoFAQ_Standard_Frontend/js/main.js`
+    // 只有 540 行，管理端那些 `:696`／`:841` 在它裡面根本不存在，照字面完全看不出來。
+    // 判準：註解裡出現 `js/…`、`scss/…`、`css/…` 這種**帶目錄前綴**的凍結檔路徑（本 repo 自己的
+    // 檔案一律以 `src/…`／`ui/<名>/…`／`components/<名>/…` 起頭，不會命中），同一則就要有 repo 名。
+    const FROZEN = /GufoFAQ_Frontend_New|GufoFAQ_Standard_Frontend/;
+    const CITE = /(?<![\w.\-/\\])((?:js|scss|css)\/[\w.\-]+\.(?:js|scss|css))(?![\w-])/g;
+    const scan = (text, f = "<probe>", mode = "njk") => {
+        const out = [];
+        for (const c of commentsOf(text, mode)) {
+            const cited = [...new Set([...c.body.matchAll(CITE)].map((m) => m[1]))];
+            if (!cited.length || FROZEN.test(c.body)) continue;
+            out.push(`${f}:${c.line}  引了 ${cited.join("、")} 卻沒說是哪一份凍結 repo：${c.body.replace(/\s+/g, " ").trim().slice(0, 80)}`);
+        }
+        return out;
+    };
+    // 空轉守門的計數用寬一點的樣式：補上 repo 前綴之後，CITE 的 lookbehind 會被前面那個 `/` 擋掉，
+    // 拿它當載重指標會在「全部修好」的那一刻歸零——那正是這條測試最沒有保護力的時候。
+    const CITE_ANY = /(?:js|scss|css)\/[\w.\-]+\.(?:js|scss|css)(?![\w-])/g;
+    const hits = [];
+    let cited = 0;
+    for (const f of srcHtml) {
+        const t = read(f);
+        cited += [...t.matchAll(CITE_ANY)].length;
+        hits.push(...scan(t, f, "njk"));
+    }
+    for (const f of [...srcScss, ...gitFiles('"src/**/*.js"')]) {
+        const t = read(f);
+        cited += [...t.matchAll(CITE_ANY)].length;
+        hits.push(...scan(t, f, "js"));
+    }
+    assert.ok(cited >= 60, `只掃到 ${cited} 處凍結出處 —— 這條測試在空轉`);
+    assert.equal(hits.length, 0, `§3-2 凍結出處也要 repo ＋ 檔（兩份凍結 repo 都有 js/main.js）：\n${fail(hits)}`);
+    probe("§3-2 凍結出處的 repo 名", (s) => scan(s, "<probe>", "js"),
+        ["// 改寫自真 app js/main.js:499 renderPagination()"],
+        ["// 改寫自凍結前端 GufoFAQ_Frontend_New/js/main.js:499 renderPagination()",
+            "// 本檔的 hook 由 ui/multi-select/multi-select.js 查它",
+            "// 對照 product app/routers/mcp.py 的 get_platform_mcp_limits"]);
+});
+
+test("§3-2 檔頭指名凍結前端的行號範圍時，宣告集合的差集要逐條出現在檔頭", () => {
+    // §3-2 逐字寫著這條「**可機器化**：檔頭指名了凍結前端的行號範圍時，把那段的宣告集合與本檔
+    // 逐條 diff，差集必須逐條出現在檔頭」——而它從來沒被實作。失敗樣態是**用 blanket 宣告蓋過去**
+    // （「只搬檔案位置」「宣告一字不改」），下一個人於是以為那幾行不能動；而最常被靜默刪掉的
+    // 那一顆（`box-sizing`）正好是全域已經給了、刪掉看不出來的那一種。
+    // 判準只比**宣告的種類**（property 名），不比值：色值換語意 token 是 §4 要求的，不算偏離。
+    const FROZEN_ROOT = process.env.FROZEN_ROOT || "D:/coding/source/repos/";
+    const propsOf = (text) => {
+        const out = new Set();
+        for (const m of text.matchAll(/(^|[;{}\n])\s*([-a-zA-Z]+)\s*:\s*([^;{}]+)[;}]/g)) {
+            const p = m[2].toLowerCase();
+            if (p !== "content") out.add(p);
+        }
+        return out;
+    };
+    // **檔頭常常指名不只一段範圍**（`ui/checkbox` 的 `.form-checkbox` 與 `input[type=checkbox]`
+    // 是兩段、`ui/default-table` 是四段）：只取第一段會把另外幾段的宣告全部算成「本檔新增」，
+    // 那種噪音會逼人把規則關掉。範圍取**聯集**；同一則檔頭裡「檔名之後接的每一組 N-M」都算。
+    const FILE = /(GufoFAQ_\w+\/(?:scss|css)\/[\w.\-]+\.(?:scss|css))/g;
+    // 範圍配對掃**整則檔頭**（不綁在檔名那一行）：`ui/checkbox` 的兩段、`ui/default-table` 的四段
+    // 常常各自寫一行。排掉後面接單位的（`1200~1560px` 是斷點不是行號）與明顯不是行號的小數字。
+    const PAIR = /(\d{2,5})\s*[-–~]\s*(\d{2,5})(?!\s*(?:px|%|rem|em))/g;
+    const hits = [];
+    let checked = 0, skipped = 0;
+    for (const f of srcScss) {
+        const t = read(f);
+        const head = [];
+        for (const ln of t.split(/\r?\n/)) { if (/^\s*\/\//.test(ln)) head.push(ln.replace(/^\s*\/\/ ?/, "")); else if (head.length) break; }
+        const h = head.join("\n");
+        FILE.lastIndex = 0; PAIR.lastIndex = 0;
+        const cited = [...new Set([...h.matchAll(FILE)].map((m) => m[1]))];
+        const pairs = [...h.matchAll(PAIR)].filter((r) => Number(r[2]) > Number(r[1]));
+        if (!cited.length || !pairs.length) continue;
+        const F = new Set();
+        const srcs = [];
+        let missing = false;
+        for (const c of cited) {
+            const fp = FROZEN_ROOT + c;
+            if (!existsSync(fp)) { missing = true; continue; }
+            const lines = readFileSync(fp, "utf8").split(/\r?\n/);
+            for (const r of pairs) {
+                for (const k of propsOf(lines.slice(Number(r[1]) - 1, Number(r[2])).join("\n"))) F.add(k);
+                srcs.push(`${c}:${r[1]}-${r[2]}`);
+            }
+        }
+        if (missing && !F.size) { skipped++; continue; }   // 凍結 repo 不在旁邊（CI 容器）⇒ 跳過，不是綠
+        checked++;
+        const M = propsOf(t);
+        const diff = [...[...F].filter((k) => !M.has(k)), ...[...M].filter((k) => !F.has(k))];
+        const undeclared = diff.filter((k) => !h.includes(k));
+        if (undeclared.length) hits.push(`${f}  差集沒有逐條寫進檔頭：${undeclared.join(", ")}（來源 ${srcs.join("、")}）`);
+    }
+    assert.ok(checked >= 10 || skipped > 0, `只比對到 ${checked} 支帶行號範圍的 scss —— 這條測試在空轉`);
+    assert.equal(hits.length, 0, `§3-2「偏離逐條列出」：\n${fail(hits)}`);
+});

@@ -1,5 +1,5 @@
 // 文字編輯區：切換 view/edit 顯示狀態（原生 DOM）
-// 行為改寫自真實 app 的 js/main.js 719-826 行左右「文字編輯切換」（原用 jQuery）。
+// 行為改寫自凍結前端 GufoFAQ_Frontend_New/js/main.js 719-826 行左右「文字編輯切換」（原用 jQuery）。
 // 僅轉「切換編輯/檢視顯示狀態」的視覺行為；exitEditMode 沿用真實 app 邏輯把值寫回 display-text（DOM 層面），
 // 不含任何存檔 API / 資料送出邏輯（真實 save() 之後若有呼叫後端 API 屬業務邏輯，此處不轉）。
 document.addEventListener("DOMContentLoaded", function () {

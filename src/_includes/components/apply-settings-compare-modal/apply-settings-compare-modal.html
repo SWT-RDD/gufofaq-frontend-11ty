@@ -53,7 +53,7 @@
      §4-2；正典 `ui/theme-toggle`／`components/prompt-edit`，同頁的另一處是參考來源表那一格）。
      這顆彈窗兩欄講的不是同一種東西：**左欄是固定標籤**（「原設定」＝前台現在跑的那一套，見上方
      檔頭），任何時候都是這四個字，故一顆 `modals.originalSettings` 就夠；**右欄標的是「這次要套用
-     的是哪一側」**，凍結前端 `js/abTest.js:587` 就是 `$('.js-apply-title').text(sideName($side))`
+     的是哪一側」**，凍結前端 `GufoFAQ_Frontend_New/js/abTest.js:587` 就是 `$('.js-apply-title').text(sideName($side))`
      ——同一個節點在 A/B 兩態之間換字（`sideName` 回「設定A」／「設定B」）。
    兩態的繁中原文與 key 都要在 markup 備妥：只寫得出 B 側的話，A 側的繁中在全站沒有家，消費端
      只能就地拼 `t("qaTest.setting") ＋ 字母`＝在切版之外開第二個文案正本（§4-2「枚舉的成員…缺的

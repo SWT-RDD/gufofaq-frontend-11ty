@@ -10,6 +10,7 @@
 //   ⑥ `&:has(.tooltip)`（原檔 706-713）整段移除——tooltip 的顯示條件改由 `ui/tooltip` 自己的
 //      `.has-tooltip` 承載（§4：外觀覆寫改成 owning 元件的變體，且它要含 `:focus-visible`）
 //   ⑦ 新增 `.like`／`.dislike`／`.share` 三個變體（原檔沒有；前台評分／分享鈕用）
+//   **宣告集合差集**（與上面那段凍結範圍逐條 diff，只比種類不比值——色值換語意 token 是 §4 要求的、不算偏離）：本檔新增 `inset`；凍結有本檔沒有 `box-sizing`／`object-fit`／`background-size`／`background-repeat`／`background-position`／`background-image`。圖示改用 `icon-mask()`（見 ⑤）故沒有 background-* 那一族；`inset` 是 `.button-icon::before` 的定位，隨 ⑤ 一起新增。
 @use "../../../scss/mixin" as *;
 
 .button {

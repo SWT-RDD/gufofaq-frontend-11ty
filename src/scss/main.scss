@@ -89,7 +89,7 @@
 @use "../_includes/components/multi-select-box/multi-select-box";
 @use "../_includes/ui/subscription-gate/subscription-gate";
 @use "../_includes/ui/widget-shell/widget-shell";
-// 原第二支樣式表（真實 app css/style.css）已依 GUIDELINE §4 解散歸戶成下列三個純樣式元件
+// 原第二支樣式表（凍結前端 GufoFAQ_Frontend_New/css/style.css）已依 GUIDELINE §4 解散歸戶成下列三個純樣式元件
 // （:root 變數與 _var.scss 重複，直接沿用 _var）：
 @use "../_includes/ui/filter-fields/filter-fields";
 @use "../_includes/ui/prompt-card/prompt-card";

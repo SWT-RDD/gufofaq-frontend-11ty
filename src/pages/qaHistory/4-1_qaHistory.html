@@ -15,7 +15,7 @@ permalink: 4-1_qaHistory.html
 
 {# 查詢區：真實頁 pages/qaHistory/4-1_qaHistory.html 的篩選表單，?source=frontend|backend 由前一頁連結帶入
      （qaHistory.js 依 query 鎖定「使用者類型」select 並隱藏該欄位），此靜態頁一律呈現同一份查詢表單；
-     開始/結束時間欄位沿用真實 class（flatpickr 由 js/main.js 掛載 .start-date/.end-date，此處僅保留樣式用 class，不掛 JS）；
+     開始/結束時間欄位沿用真實 class（flatpickr 由 GufoFAQ_Frontend_New/js/main.js 掛載 .start-date/.end-date，此處僅保留樣式用 class，不掛 JS）；
      使用者類型／滿意度為 singleSelect（非 multiSelect），保留原生 select #}
 <div class="block block-sm border corner-md mt-16">
     <div class="flex-row column gap-16">
@@ -262,7 +262,7 @@ permalink: 4-1_qaHistory.html
     </div>
 </div>
 
-{# 資料表格：真實頁 tbody 為 js/qaHistory.js 依查詢結果動態渲染（初始「共0筆資料」），
+{# 資料表格：真實頁 tbody 為 GufoFAQ_Frontend_New/js/qaHistory.js 依查詢結果動態渲染（初始「共0筆資料」），
      此處以 set+for 資料化示範 3 筆已載入狀態。cell 級結構鏡射真 app 的列模板（qaHistory.js 的 `renderChatLogs`
      那一段 `chatLogs.forEach` 樣板字串：
      編號純文字、link-file 連結掛在「使用者對話內容」、query 參數為 ?logSn=）。
@@ -401,7 +401,7 @@ permalink: 4-1_qaHistory.html
     </table>
 </div>
 
-{# 分頁：真實頁由 js/qaHistory.js renderPagination() 動態產生；ui/pagination 現在也是同一套 data-total
+{# 分頁：真實頁由 GufoFAQ_Frontend_New/js/qaHistory.js renderPagination() 動態產生；ui/pagination 現在也是同一套 data-total
      驅動的 js render。total／perPage 在列表前就宣告過（計數列與頁碼列同源，§6），這裡不再重設。
      115 / 20 ＝ 6 頁（上面那則註解算的也是這個數），而省略號的門檻是 `visible + 2`
      （ui/pagination 的 pagination.js：`totalPages <= VISIBLE + 2` 就全部顯示）——桌機

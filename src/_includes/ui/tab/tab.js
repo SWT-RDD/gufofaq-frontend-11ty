@@ -1,4 +1,4 @@
-// tab 頁籤切換：改寫自真實 app js/main.js「tab頁籤切換」（原用 jQuery），改用原生 DOM API
+// tab 頁籤切換：改寫自凍結前端 GufoFAQ_Frontend_New/js/main.js「tab頁籤切換」（原用 jQuery），改用原生 DOM API
 // 只轉切版互動（切換 .active / 顯示對應群組），資料載入/API 等業務邏輯不在此列
 // 選中態同步進 ARIA：.active 只是視覺，報讀器聽不到——每一條改變選中態的路徑都同步 aria-current
 // （§4「狀態要寫進 ARIA」；markup 的初始 active 頁籤也帶 aria-current="true"）

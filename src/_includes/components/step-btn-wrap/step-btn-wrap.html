@@ -4,7 +4,7 @@
        那是一顆按了只會捲回頁首的死連結（§5），而 `or '#'` 這種 nunjucks 後備在 src 上看不到那四個字。
        沒有去向就整顆不畫，同 `ui/breadcrumb` 對沒有 href 的分類層的處置）。
      **「下一步」有兩種，不是同一顆鈕**（§5 的 hook × data-toast 矩陣）：
-       ・**純換頁**（1-1-3 的預覽 → 欄位對應）：凍結前端 `js/previewExcel.js:202` 只做
+       ・**純換頁**（1-1-3 的預覽 → 欄位對應）：凍結前端 `GufoFAQ_Frontend_New/js/previewExcel.js:202` 只做
          `sessionStorage.setItem(...)` ＋ `window.location.href = …`，沒有任何 API。這種是 `<a href>`。
        ・**送 API 的動作鈕**（1-1-4 欄位對應送出、1-2-1 檔案上傳送出）：`js/columnSelect_excel.js:364`
          先驗必填欄再 POST `fileProcessVM`、`js/uploadFilePdf.js:91` `await submitFileUpload()`。

@@ -1,5 +1,5 @@
 // 取自真 app 的 breadcrumb 樣式。base padding 與 justify-content:flex-start 只存在真 app 的
-// 已編譯 css/component.css（scss 源碼漏了 padding、且 ul 的 justify 是舊值 flex-end；編譯輸出才是最終真相）。
+// 已編譯 GufoFAQ_Frontend_New/css/component.css（scss 源碼漏了 padding、且 ul 的 justify 是舊值 flex-end；編譯輸出才是最終真相）。
 // → 補回 .breadcrumb 外距、並改回 flex-start（麵包屑靠左，與真 app 一致）。
 /*===============================
     breadcrumb麵包屑

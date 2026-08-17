@@ -1,4 +1,4 @@
-// 照抄自真實 app scss/component.scss 步驟按鈕 section（.step-btn-wrap，行 2608-2643），
+// 照抄自凍結前端 GufoFAQ_Frontend_New/scss/component.scss 步驟按鈕 section（.step-btn-wrap，行 2608-2643），
 // 另依規範調整：排版選擇器不用 ui/button 的 .button（§4 隔離），也不用 .btn-prev/.btn-next——
 // 那兩顆是真 app JS hook（§5：hook 不得被 scss 樣式），改用本元件自有 slot class .step-prev/.step-next。
 .step-btn-wrap {

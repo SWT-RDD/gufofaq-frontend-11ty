@@ -3,6 +3,7 @@
 //   `.link-file` 是兩族，下載族在切版是 `<button>` 而不是 `<a>`（理由見 `ui/link-file/link-file.html`
 //   檔頭與 `components/sources-block`），瀏覽器給 button 的底色／外框／字體要清掉，才與同表的 `<a>`
 //   逐字一樣；`text-align: left` 是 button 專屬的（`<a>` 本來就靠左，button 會置中）。
+//   **宣告集合差集**（與上面那段凍結範圍逐條 diff，只比種類不比值——色值換語意 token 是 §4 要求的、不算偏離）：本檔新增 `padding`／`border`／`background`／`font`／`text-align`／`cursor`。隨 ② 的 `button.link-file` 外觀重置一起新增。
 .link-file {
     color: var(--brand-text);
     word-break: break-all;

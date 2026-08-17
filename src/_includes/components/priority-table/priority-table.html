@@ -56,14 +56,14 @@
             {% for row in rows %}
             <tr data-folder-sn="{{ row.sn }}">
                 {# `.description`／`.prompt` 是 `.edit-cell` 的修飾字，兩顆一起才定位得到那一格：
-                     凍結前端 `js/knowledgeRetrieval.js:269/272` 產出、`:578-579`／`:603-604` 以
+                     凍結前端 `GufoFAQ_Frontend_New/js/knowledgeRetrieval.js:269/272` 產出、`:578-579`／`:603-604` 以
                      `$row.find('.edit-cell.description')` 取回（§5 轉換契約，全站 scss 不得引用）。 #}
                 <td id="priorityCat-{{ priorityTableInstance }}-{{ row.sn }}">{{ row.category }}</td>
                 {# 兩欄都可以是空字串（還沒有人填任務描述／提示詞，5-2 與元件庫頁都有這樣一列）：
                      空值不包 collapse-text——那會渲染出空的收合區塊配一顆展得開卻什麼都沒有的鈕
                      （§5 不放按了沒反應的鈕）。畫「—」而不是留白，語意是「這一列還沒填」。
                      `.edit-cell` 的 `.html()` 是整格覆寫、預填值取自資料物件而不是這一格的文字
-                     （凍結前端 js/knowledgeRetrieval.js 的 `startEdit` 讀的是 `folder.FolderDescription`），
+                     （凍結前端 GufoFAQ_Frontend_New/js/knowledgeRetrieval.js 的 `startEdit` 讀的是 `folder.FolderDescription`），
                      所以這個「—」不會被編輯器當成初值帶進 textarea。 #}
                 {# 整格內容都在 {% if %} 裡 ⇒ `<td>…</td>` 收成一行（§2）：`{% else %}—{% endif %}` 那一支
                      會把縮排換行併進同一個文字節點，而 JSX 會把它整段丟掉。 #}

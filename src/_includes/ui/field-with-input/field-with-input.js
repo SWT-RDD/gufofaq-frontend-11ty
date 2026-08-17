@@ -2,7 +2,7 @@
 // （附屬控制項不限文字欄：4-1 掛的是一顆 checkbox，見下面的型②。）
 //
 // 這是**純前端互動**（同頁的啟用/停用切換，無業務、無 API），§5 ④：行為要當場動得起來。
-// 真 app 把它寫在 js/main.js:430-455（`$(".field-with-input-group").each(...)`），三個 class
+// 真 app 把它寫在 GufoFAQ_Frontend_New/js/main.js:430-455（`$(".field-with-input-group").each(...)`），三個 class
 // 名稱原樣沿用：`.field-with-input-group`（一組）→ `.field-with-input`（一顆 radio ＋ 它的附屬控制項）
 // → `.with-input`（被啟用/停用的那些控制項）。
 //

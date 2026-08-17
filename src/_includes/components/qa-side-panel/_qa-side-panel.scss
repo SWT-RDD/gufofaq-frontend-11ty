@@ -1,4 +1,4 @@
-// 可收合問答紀錄側欄（單測 2-2-1 / AB測 2-2-3，固定於視窗右側）。取自真 app 已編譯 css/component.css
+// 可收合問答紀錄側欄（單測 2-2-1 / AB測 2-2-3，固定於視窗右側）。取自真 app 已編譯 GufoFAQ_Frontend_New/css/component.css
 // （scss 源碼漏了、只存在編譯輸出）。原本我們專案完全沒有 .qa-side-panel 樣式，側欄整個沒定位/沒外觀。
 @use "../../../scss/mixin" as *;
 .qa-side-panel {

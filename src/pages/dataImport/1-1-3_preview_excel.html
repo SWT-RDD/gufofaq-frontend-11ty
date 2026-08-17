@@ -21,7 +21,7 @@ permalink: 1-1-3_preview_excel.html
     { label: "送出資料", done: false, i18nKey: "step.submit" }
 ] %}
 {% set stepPrevHref = "1-1-2_uploadFile_excel.html" %}
-{# 這一頁的「下一步」是**純換頁**（凍結前端 `js/previewExcel.js:202` 只寫 sessionStorage
+{# 這一頁的「下一步」是**純換頁**（凍結前端 `GufoFAQ_Frontend_New/js/previewExcel.js:202` 只寫 sessionStorage
      再 `window.location.href`，沒有任何 API）⇒ 維持 `<a href>`。成對參數要一起清掉，
      否則沿用上一次 include 留下的動作模式（§2：set 是頁面全域）。 #}
 {% set stepNextAction = false %}
@@ -260,7 +260,7 @@ permalink: 1-1-3_preview_excel.html
     </table>
 </div>
 
-{# 分頁：真實頁 pagination 由 js/previewExcel.js 依資料筆數動態產生（data-total="0"）；
+{# 分頁：真實頁 pagination 由 GufoFAQ_Frontend_New/js/previewExcel.js 依資料筆數動態產生（data-total="0"）；
      ui/pagination 也是同一套 data-total 驅動的 js render。
      total＝**這一份活頁簿（選取的那張工作表）讀出來的資料列數**，與 1-1-6「匯入成功」那一頁的
      「資料總量」是同一個數字：兩處都是 product 的 `data_count`——預覽讀出幾列，匯入就寫幾列，

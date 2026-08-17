@@ -18,6 +18,7 @@
 //   ⑦`&:indeterminate` 整段是切版新增（與 `ui/checkbox/checkbox.js` 同一批交付，見該段註解）。
 //   ⑧`.form-checkbox.in-cell` 變體是切版新增：原本是 `ui/default-table` 那邊寫
 //     `.default-table .form-checkbox` 跨元件覆寫，§4 改由 owning 元件提供變體。
+//   **宣告集合差集**（與上面那段凍結範圍逐條 diff，只比種類不比值——色值換語意 token 是 §4 要求的、不算偏離）：本檔新增 `justify-content`。`.form-checkbox` 的水平對齊改由 `_form-check.scss` 的共用 base 給（同一份正本，見檔頭第一段）。
 .form-checkbox {
     padding: 0.5625rem 0.625rem;
     border: 1px solid transparent;

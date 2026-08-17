@@ -2,8 +2,9 @@
 // 注意：select2 的 DOM（.select2-container/.select2-selection--multiple/.select2-selection__choice...）已不存在，
 // 所以本檔「無法逐位元照抄」真實 app 的 select2 規則——這是整個轉換案唯一刻意的非逐字例外。
 // 視覺數值（顏色變數、border、padding、min-height、chip 樣式、下拉箭頭圖示）取自真實 app
-// scss/component.scss 第 993-1133 行（.multiSelect / select2 多選樣式改寫區段），重新對應到本檔自訂的
+// GufoFAQ_Frontend_New/scss/component.scss 第 993-1133 行（.multiSelect / select2 多選樣式改寫區段），重新對應到本檔自訂的
 // class 名稱（.multi-select-control / .multi-select-tag / .multi-select-search / .multi-select-dropdown）。
+//   **宣告集合差集**（與上面那段凍結範圍逐條 diff，只比種類不比值——色值換語意 token 是 §4 要求的、不算偏離）：本檔新增 `opacity`／`transition`／`outline`／`outline-offset`／`appearance`／`font-family`／`left`／`z-index`／`max-height`／`overflow-y`／`box-shadow`／`bottom`；凍結有本檔沒有 `visibility`／`padding-right`／`background-size`／`box-sizing`／`background-image`／`background-repeat`。本檔是 select2 的**原生替代**，不是同一份 DOM 的搬移：凍結那一段是 select2 容器的樣式（背景箭頭圖、visibility 切換），本檔改用自繪下拉（絕對定位 + max-height 捲動 + 焦點環 + 過場）。
 @use "../../../scss/size" as *;
 
 @use "../../../scss/mixin" as *;

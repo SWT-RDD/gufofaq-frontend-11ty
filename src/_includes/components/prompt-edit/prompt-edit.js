@@ -1,6 +1,6 @@
 // 提示詞收合/展開編輯（5-2 對話設定頁；元件庫頁另有 promptDefaultOpen 的預設展開示範）：點「展開編輯」切換 .open——展開時注入編輯用 textarea、
 // 收合時顯示首行預覽，並切換按鈕文字（data-text-open/close）。工具列（取消/儲存…）由 CSS 依 .open 顯示。
-// 改寫自真實 app **js/main.js** 的 prompt-edit 行為（原 jQuery；`.prompt-edit` 初始化與
+// 改寫自真實 app **GufoFAQ_Frontend_New/js/main.js** 的 prompt-edit 行為（原 jQuery；`.prompt-edit` 初始化與
 // `.js-prompt-toggle` 委派都在那一支——`singleTest.js` 自己也寫著「提示詞的暫存/還原由 main.js
 // 的 editable-block 處理」）。純前端互動、不含儲存 API。
 //

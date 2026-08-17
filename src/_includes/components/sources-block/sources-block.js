@@ -1,5 +1,5 @@
 // 參考來源區塊：真實頁預設隱藏（sourcesHidden → .hidden），由聊天訊息的「查看來源」鈕打開。
-// 對應真實 app 的 js/main.js:322（$(".watchBtn").click → $(".sources-block").removeClass("hidden")）。
+// 對應凍結前端 GufoFAQ_Frontend_New/js/main.js:322（$(".watchBtn").click → $(".sources-block").removeClass("hidden")）。
 //
 // 開啟的觸發鈕住在 components/chatroom（那是它的 class），故這裡只匯出函式讓它呼叫，
 // 不去指名別人的 .watchBtn（§5：要操作別的元件，呼叫該元件 js 提供的函式）。

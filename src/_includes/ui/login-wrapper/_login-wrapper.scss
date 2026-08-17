@@ -73,6 +73,7 @@
 //
 // 住在哪一頁（雙向）：只有 `src/login.html`（→ dist/login.html）。
 // 反查：`grep -rn 'login-wrapper' src --include=*.html` 只命中該頁。
+//   **宣告集合差集**（與上面那段凍結範圍逐條 diff，只比種類不比值——色值換語意 token 是 §4 要求的、不算偏離）：本檔新增 `position`／`top`／`right`／`z-index`。隨既有偏離條目的語言/主題切換鈕定位一起新增。
 .login-wrapper {
     display: flex;
     height: 100vh;
