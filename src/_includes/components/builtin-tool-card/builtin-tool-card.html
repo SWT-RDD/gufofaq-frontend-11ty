@@ -46,7 +46,11 @@
     原子的 js 一手掌管（見 accordion.js 的 label()），卡片模式若另立一套 key 就會分岔成兩份實作。
     但字串不等於可及名稱：accordion.js 的 label() 是無條件寫同一句，5-2 同畫面 14 張卡的展開鈕
     因此全叫「展開表格」，報讀器聽不出在開哪一顆。故**只在 markup 補上下文**（不改 accordion.js）：
-    鈕掛 aria-labelledby="<本卡的鈕標 id> tool-<工具名>-title"，念出來是「展開表格　<工具中文標題>」。
+    鈕掛 aria-labelledby="tool-<工具名>-title <本卡的鈕標 id>"，念出來是「<工具中文標題>　展開表格」。
+    `.builtin-tool-param`＝參數列的列身分（無樣式、版位由工具 class 供；React 端 `params.map()` 的 key），
+      與 `tests/guideline.test.mjs` 的 `NAMED_HOOKS` 那一筆成對（§4「痕跡要成對」）。
+    **順序是「辨識 → 動作」**（§4）：反過來會先念「展開表格」才念是哪一顆工具，把辨識資訊推到後面——
+    十四張卡連著聽就是十四次「展開表格…」，要等第二個詞才分得出差別。
     同卡的啟用開關與展開區的 role=group 早就是這樣接的（都指 tool-<工具名>-title），三處同一招。
 
   hook class（§5）：
@@ -79,7 +83,7 @@
     <div class="builtin-tool-head flex-row align-items-center flex-wrap gap-8">
         <button type="button" class="button accordion-btn{% if tool.customized %} open{% endif %}"
             aria-expanded="{% if tool.customized %}true{% else %}false{% endif %}"
-            aria-labelledby="tool-{{ tool.name }}-toggle tool-{{ tool.name }}-title"
+            aria-labelledby="tool-{{ tool.name }}-title tool-{{ tool.name }}-toggle"
             title="{% if tool.customized %}收合表格{% else %}展開表格{% endif %}"
             data-i18n-title="{% if tool.customized %}common.collapseRow{% else %}common.expandRow{% endif %}">
             <span class="sr-only" id="tool-{{ tool.name }}-toggle" data-i18n="{% if tool.customized %}common.collapseRow{% else %}common.expandRow{% endif %}">{% if tool.customized %}收合表格{% else %}展開表格{% endif %}</span>

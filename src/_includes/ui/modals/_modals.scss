@@ -44,7 +44,8 @@
 //       </div>
 //   </dialog>
 //
-// 可變的只有五處：`<dialog>` 的 `id`、`aria-labelledby`、`.modals-dialog` 上的尺寸 class、
+// 可變的只有這幾處（不寫顆數：下面用逗號列出來的東西自己就是清單，多一顆少一顆看得出來）：
+// `<dialog>` 的 `id`、`aria-labelledby`、`.modals-dialog` 上的尺寸 class、
 // `.modals-body` 的內容、`.modals-footer` 整段（可以沒有——`components/intent-enable-modal`、
 // `apply-settings-no-permission-modal` 只有 header + body），以及 `<dialog>` 上的**授權宣告**。
 //

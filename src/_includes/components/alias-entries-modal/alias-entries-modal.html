@@ -78,7 +78,10 @@
                                 <tr>
                                     <th id="aliasHeadCanonical" data-i18n="settings.canonical">標準詞</th>
                                     <th id="aliasHeadAliases" data-i18n="settings.aliases">別名（逗號分隔）</th>
-                                    <th><span class="sr-only" id="aliasHeadActions" data-i18n="common.actions">操作</span></th>
+                                    {# 這一格的表頭**刻意不掛 id**：動作鈕的第二段要接**它自己**（動詞），
+                                         不是接欄表頭——接了會讓名稱變成「推廣貿易服務費 操作」，
+                                         動詞消失、語音控制唸「刪除」點不到（§4／WCAG 2.5.3 Label in Name）。 #}
+                                    <th><span class="sr-only" data-i18n="common.actions">操作</span></th>
                                 </tr>
                             </thead>
                             <tbody class="js-alias-entry-body">
@@ -100,7 +103,7 @@
                                         <span class="error-prompt is-shown" role="alert" data-i18n="settings.aliasConflictOutputRule">某條出口替換規則對這個詞有不同的替換結果</span>
                                         {% endif %}
                                     </td>
-                                    <td><button type="button" class="button button-border button-sm js-remove-alias-entry" aria-labelledby="aliasRowName-{{ loop.index }} aliasHeadActions" data-i18n="action.delete">刪除</button></td>
+                                    <td><button type="button" id="aliasEntryDelete-{{ loop.index }}" class="button button-border button-sm js-remove-alias-entry" aria-labelledby="aliasRowName-{{ loop.index }} aliasEntryDelete-{{ loop.index }}" data-i18n="action.delete">刪除</button></td>
                                 </tr>
                                 {% else %}
                                 <tr><td colspan="3" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>

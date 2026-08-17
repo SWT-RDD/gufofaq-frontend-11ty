@@ -30,7 +30,9 @@ permalink: 1-2-1_uploadFile_pdf.html
      `await submitFileUpload()`），不是連結。分支對回 gufofaq-saas product
      `app/routers/datasets.py` 的 `POST /datasets/{id}/documents/batch-import`
      （`batch_import_documents`）：
-     ・403 `require_capability("data","write")`
+     ・403 `require_capability("data","write")`（能力軸）
+     ・403 `_writable_file_dataset` → `_writable_dataset` 的 `dataset.not_writable_group`（資源層 scope，
+       與上一條是兩件事；理由同 1-1-4 那一段）
      ・400 `_assert_no_duplicate_external_keys`（同一批兩個檔共用一個外部主鍵；
        擋在動任何一個檔之前，否則第一個檔的文件已經被 purge）
      ・413 `UploadBudget`（`settings.upload_request_max_bytes`：單檔上限擋不住「一次送 100 個 49MB」）
@@ -42,9 +44,9 @@ permalink: 1-2-1_uploadFile_pdf.html
      送出鈕演成一條必然成功的連結。 #}
 {% set stepNextAction = true %}
 {% set stepNextCapability = "data:write" %}
-{% set stepNextToast = "匯入完成，逐檔結果見下一頁的匯入報告|權限不足，無法匯入|同一批裡有兩個檔用了同一個外部主鍵，請先改掉其中一個|這一批的總大小超過單次上限，請分批送|有檔案沒有匯進去，逐檔原因見下一頁的匯入報告|匯入失敗，請稍後再試" %}
+{% set stepNextToast = "匯入完成，逐檔結果見下一頁的匯入報告|權限不足，無法匯入|這個資料集不在你可以寫入的群組裡，請找管理員把你加進該群組|同一批裡有兩個檔用了同一個外部主鍵，請先改掉其中一個|這一批的總大小超過單次上限，請分批送|有檔案沒有匯進去，逐檔原因見下一頁的匯入報告|匯入失敗，請稍後再試" %}
 {% set stepNextToastKey = "toast.importDocuments" %}
-{% set stepNextToastType = "success|warning|warning|warning|warning|error" %}
+{% set stepNextToastType = "success|warning|warning|warning|warning|warning|error" %}
 <div class="mt-10 mb-32">
     {% include "components/step-btn-wrap/step-btn-wrap.html" %}
 </div>

@@ -1133,10 +1133,13 @@ permalink: 3-5_dataHealth.html
                                     <p class="text-gray" data-i18n="health.actionDismissHint">五支裡唯一不動資料的一支：只在這一列記下「誰在什麼時候判定它不是問題、理由是什麼」。理由必填——空白的理由等於只查得到前半段，下次換人還是要重判一次。判定之後這一筆不再出現在未處置清單上，直到證據或確定程度真的變了才會回來。</p>
                                     <div class="form-group">
                                         <div class="label">
-                                            <label for="healthDismissReason-{{ f.id }}" class="control-label required" data-i18n="health.disposalReason">判定理由</label>
+                                            {# 可及名稱要帶「哪一筆發現」（§4）：同時展開兩筆時，八張「判定為非問題」卡的
+                                                 這一格逐字都叫「判定理由」。`for`／`id` 的關聯保留（點 label 要能聚焦），
+                                                 名稱另走 aria-labelledby「辨識 → 欄位名」。 #}
+                                            <label id="healthDismissReasonLabel-{{ f.id }}" for="healthDismissReason-{{ f.id }}" class="control-label required" data-i18n="health.disposalReason">判定理由</label>
                                         </div>
                                         <div class="field">
-                                            <textarea id="healthDismissReason-{{ f.id }}" class="form-control js-health-reason" rows="2" placeholder="為什麼判定它不是問題" data-i18n-placeholder="health.dismissReasonPlaceholder" required></textarea>
+                                            <textarea id="healthDismissReason-{{ f.id }}" aria-labelledby="healthFindingId-{{ f.id }} healthDismissReasonLabel-{{ f.id }}" class="form-control js-health-reason" rows="2" placeholder="為什麼判定它不是問題" data-i18n-placeholder="health.dismissReasonPlaceholder" required></textarea>
                                         </div>
                                     </div>
                                     <div class="flex-row">
@@ -1191,10 +1194,10 @@ permalink: 3-5_dataHealth.html
                                     </div>
                                     <div class="form-group">
                                         <div class="label">
-                                            <label for="healthDisableReason-{{ f.id }}" class="control-label required" data-i18n="health.disableReason">停用理由</label>
+                                            <label id="healthDisableReasonLabel-{{ f.id }}" for="healthDisableReason-{{ f.id }}" class="control-label required" data-i18n="health.disableReason">停用理由</label>
                                         </div>
                                         <div class="field">
-                                            <textarea id="healthDisableReason-{{ f.id }}" class="form-control js-health-disable-reason" rows="2" placeholder="為什麼要停用這幾筆" data-i18n-placeholder="health.disableReasonPlaceholder" required></textarea>
+                                            <textarea id="healthDisableReason-{{ f.id }}" aria-labelledby="healthFindingId-{{ f.id }} healthDisableReasonLabel-{{ f.id }}" class="form-control js-health-disable-reason" rows="2" placeholder="為什麼要停用這幾筆" data-i18n-placeholder="health.disableReasonPlaceholder" required></textarea>
                                         </div>
                                     </div>
                                     <div class="flex-row">

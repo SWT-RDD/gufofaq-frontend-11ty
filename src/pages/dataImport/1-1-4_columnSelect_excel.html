@@ -81,7 +81,10 @@ permalink: 1-1-4_columnSelect_excel.html
          `js/columnSelect_excel.js:364` 先驗必填欄、再組 `fileProcessVM` 送出，成功才換頁。
          結果分支逐條對回 gufofaq-saas product `app/routers/datasets.py` 的
          `POST /datasets/{id}/excel/import`（`import_excel` → `_do_excel_mapping_import`）：
-         ・403 `require_capability("data","write")`
+         ・403 `require_capability("data","write")`（能力軸）
+         ・403 `_writable_file_dataset` → `_writable_dataset` 的 `dataset.not_writable_group`
+           （**資源層 scope**，與上一條是兩件事：那一條換群組也沒用，這一條是找人把你加進那個群組。
+           `list_datasets` 只依 `tenant_id` 過濾、不依寫入群組 ⇒ 看得到一筆、按下去 403 是真實可達）
          ・400 `content_required`（`slots.content_column_required`）與 `unknown_slot`
          ・400 `excel.ExcelFormatError`／`ExcelReadError`／`_assert_assignment_columns_exist`
            的 `unknown_column`——三者都是「這份檔跟預覽時看到的不是同一份」
@@ -93,9 +96,9 @@ permalink: 1-1-4_columnSelect_excel.html
          型別：能自己修得掉的一律 warning，只有 502 是 error（§5）。 #}
     {% set stepNextAction = true %}
     {% set stepNextCapability = "data:write" %}
-    {% set stepNextToast = "匯入完成|權限不足，無法匯入|內容欄位不可為空，或指定了不存在的欄位槽|這份檔案讀不出來，或它的欄名與預覽時不一致——請回上一步重新確認|有幾列的標籤代碼不在字典裡，或日期欄格式不對（錯誤訊息會逐列指名）|暫存的檔案已經不在了，請回上一步重新上傳|儲存空間不足，請先清掉一些檔案再匯入|同一份資料正在被另一次匯入寫入，請稍後再送一次|匯入失敗，請稍後再試" %}
+    {% set stepNextToast = "匯入完成|權限不足，無法匯入|這個資料集不在你可以寫入的群組裡，請找管理員把你加進該群組|內容欄位不可為空，或指定了不存在的欄位槽|這份檔案讀不出來，或它的欄名與預覽時不一致——請回上一步重新確認|有幾列的標籤代碼不在字典裡，或日期欄格式不對（錯誤訊息會逐列指名）|暫存的檔案已經不在了，請回上一步重新上傳|儲存空間不足，請先清掉一些檔案再匯入|同一份資料正在被另一次匯入寫入，請稍後再送一次|匯入失敗，請稍後再試" %}
     {% set stepNextToastKey = "toast.importExcel" %}
-    {% set stepNextToastType = "success|warning|warning|warning|warning|warning|warning|warning|error" %}
+    {% set stepNextToastType = "success|warning|warning|warning|warning|warning|warning|warning|warning|error" %}
     {% include "components/step-btn-wrap/step-btn-wrap.html" %}
 </div>
 

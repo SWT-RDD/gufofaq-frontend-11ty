@@ -262,8 +262,22 @@
              而這正是那一格。同一顆 key 的另一個消費點（React 的 `SubscriptionGate` 接受免責聲明鈕）
              共用這一份繁中與英譯，不另立第二顆。
              `disabled` 不進 markup：那是 React 的執行期狀態（§⑥「要 disable 只能 disable 進行中」）。 #}
+        {# 這是整台精靈**唯一的寫入鈕**（`POST /platform/review/apply`，product `app/routers/platform.py`
+             的 `review_apply`），先前零 `data-toast` ⇒ ①它整顆掉出 §4 閘門測試的母體（那條以
+             「`data-toast-type` 含 success」為母體）；②`toast.reviewApplied` 這顆 key 在切版根本不存在，
+             而 saas `apps/web/app/(app)/platform/page.tsx` 的 `applyReview()` **已經在跑**
+             `t("toast.reviewApplied").split("|")` 並取 `segs[0]`／`segs[1]`——React 端自己長出了一顆
+             切版從未定過的文案 key，正是本檔上方那段警告的情況（§5：文案正本在切版）。
+           分支對回 `review_apply` 的實際出口：它**逐租戶各自成敗**（`results.append({… ok: True/False,
+             error: …})`，整批不 rollback、不拋例外），所以「部分租戶失敗」是一條真實可達、而且與
+             「整批送不出去」要做的事完全不同的結果。`require_platform_admin` 的 403 不列——那一級
+             走「動作鈕不渲染」（§5 渲染規則）。
+           ⚠️ **待回流（gufofaq-saas，sha 待補）**：那一側目前把 `segs[1]` 當 error 用，補了中間這一段
+             之後要改成 `segs[2]`（`|` 分段是索引契約）。 #}
         <div class="flex-row gap-10 align-items-center">
             <button type="button" class="button button-red js-review-confirm" data-platform-role="admin"
+                data-toast="處置已送出|有幾個租戶沒有處置成功，逐筆結果見下一頁|送出失敗，請稍後再試"
+                data-i18n-data-toast="toast.reviewApplied" data-toast-type="success|warning|error"
                 data-text-irreversible="確認執行（不可逆）" data-key-irreversible="platform.confirmExecute"
                 data-text-reversible="確認執行（可解凍）" data-key-reversible="platform.confirmExecuteFreeze"
                 data-text-busy="處理中…" data-key-busy="platform.applying"

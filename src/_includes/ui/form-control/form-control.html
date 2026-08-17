@@ -1,10 +1,13 @@
 {# 展示片段，取自真實 app pages/components/component.html 08 輸入框 section（節錄，class 沿用真實系統）。
-     label 與輸入框以 for/id 關聯（無障礙示範，見 GUIDELINE §4；本片段只在元件庫頁出現一次，故可用固定 id） #}
+     label 與輸入框以 for/id 關聯（無障礙示範，見 GUIDELINE §4；本片段只在元件庫頁出現一次，故可用固定 id）。
+     **五顆 label 逐字都是「標題」**，只有樣式不同 ⇒ 報讀器的表單元素清單上是五行一模一樣的「標題」。
+     同 ui/button 的樣式目錄：label 尾巴補一段 .sr-only 的變體名（不動版面，可見字面仍完整包含在
+     可及名稱裡 ⇒ 不違反 WCAG 2.5.3 Label in Name），而那段字本來就是這個目錄要說的話。 #}
 <div class="flex-row gap-20">
     <div class="col-6-md">
         <div class="form-group">
             <div class="label">
-                <label for="demoInputDefault" class="control-label">標題</label>
+                <label for="demoInputDefault" class="control-label">標題<span class="sr-only">（一般）</span></label>
             </div>
             <div class="field">
                 <input type="text" id="demoInputDefault" placeholder="請輸入" class="form-control">
@@ -15,7 +18,7 @@
     <div class="col-6-md">
         <div class="form-group">
             <div class="label">
-                <label for="demoInputDisabled" class="control-label">標題</label>
+                <label for="demoInputDisabled" class="control-label">標題<span class="sr-only">（.disabled 禁用）</span></label>
             </div>
             <div class="field">
                 <input type="text" id="demoInputDisabled" placeholder="請輸入" class="form-control disabled" disabled>
@@ -28,7 +31,7 @@
     <div class="col-6-md">
         <div class="form-group">
             <div class="label">
-                <label for="demoInputError" class="control-label">標題</label>
+                <label for="demoInputError" class="control-label">標題<span class="sr-only">（.error 錯誤）</span></label>
             </div>
             <div class="field">
                 <input type="text" id="demoInputError" placeholder="請輸入" class="form-control error">
@@ -39,7 +42,7 @@
     <div class="col-6-md">
         <div class="form-group">
             <div class="label">
-                <label for="demoInputRequired" class="control-label required">標題</label>
+                <label for="demoInputRequired" class="control-label required">標題<span class="sr-only">（.required 必填）</span></label>
             </div>
             <div class="field">
                 <input type="text" id="demoInputRequired" placeholder="請輸入" class="form-control" required>
@@ -74,7 +77,7 @@
     <div class="col-6-md">
         <div class="form-group">
             <div class="label">
-                <label for="demoTextarea" class="control-label">標題</label>
+                <label for="demoTextarea" class="control-label">標題<span class="sr-only">（textarea 多行）</span></label>
             </div>
             <div class="field">
                 <textarea rows="10" id="demoTextarea" class="form-control" placeholder="請輸入您推薦這篇文章的原因"></textarea>

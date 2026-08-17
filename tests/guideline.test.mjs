@@ -7235,7 +7235,13 @@ test("§5 ui/table-sort 的負控：把重排那一段從原文移除後，上�
 //   ④ role="group" + aria-labelledby：§4 對「一格內／一區內多顆同型控制項」開的正是這條路，
 //      報讀器進群組時會先念群組名。
 // 巢狀要遞迴（面板裡有群組、群組裡有彈窗）：不遞迴的話，外層一被抽走，內層的切法就跑不到了。
-test("§4 同一個無障礙範圍內，button／連結型 <a> 的可及名稱不得重複（可見字面可以重複，名稱不行）", () => {
+test("§4 同一個無障礙範圍內，控制項的可及名稱不得重複（可見字面可以重複，名稱不行）", () => {
+    // round46 第二輪：母體從「button／連結型 `<a>`」擴到 **input／select／textarea**。
+    // §4 那條規則講的是「控制項」，而只看按鈕會漏掉三族真違規：
+    //   · 3-5 八張動作卡的「判定理由」textarea 逐字同名（動作卡沒有 <tr> 的列脈絡）
+    //   · 5-2 逐代碼上限／情境條件的兩列欄位在同一個 group 裡逐列同名
+    //   · manage-tenant-modal 的 `<label>刪除帳號</label>` 與同一個 dialog 裡那顆紅鈕同名
+    //     ——一個是輸入框、一個是不可逆的動作，報讀器的元素清單上兩行一模一樣。
     // 圖片的 alt 也是可及名稱的一部分（頁碼鈕就只有它）。
     const textOf = (h) =>
         h.replace(/<img\b((?:"[^"]*"|[^>"])*)>/gi, (_, a) => " " + ((a.match(/\balt="([^"]*)"/) || [])[1] || "") + " ")
@@ -7291,20 +7297,35 @@ test("§4 同一個無障礙範圍內，button／連結型 <a> 的可及名稱�
             const end = closeAt(html, m[1], m.index + m[0].length);
             idText.set(id[1], end > 0 ? textOf(html.slice(m.index + m[0].length, end)) : "");
         }
+        // label[for] → 文字（input/select/textarea 的名稱來源之一）
+        const labelFor = new Map();
+        for (const lm of html.matchAll(/<label\b((?:"[^"]*"|[^>"])*)>([\s\S]*?)<\/label>/g)) {
+            const fo = lm[1].match(/\bfor="([^"]+)"/);
+            if (fo) labelFor.set(fo[1], textOf(lm[2]));
+        }
         const out = [];
         for (const sc of scopesOf(html)) {
             const names = new Map();
-            for (const m of sc.html.matchAll(/<(button|a)\b((?:"[^"]*"|[^>"])*)>/g)) {
+            for (const m of sc.html.matchAll(/<(button|a|input|select|textarea)\b((?:"[^"]*"|[^>"])*)>/g)) {
                 const attrs = m[2];
+                const tag = m[1];
                 // 純導覽連結不算控制項；只收長得像按鈕／目錄項的那些 <a>
-                if (m[1] === "a" && !/class="[^"]*\b(button|btn|aside-link|nav-link)/.test(attrs)) continue;
+                if (tag === "a" && !/class="[^"]*\b(button|btn|aside-link|nav-link)/.test(attrs)) continue;
+                // hidden 沒有名稱可言；submit/button/image 型的 <input> 全站不用（另有測試擋 <form>）
+                if (tag === "input" && /type="(hidden|submit|button|image)"/.test(attrs)) continue;
                 const lb = attrs.match(/\baria-labelledby="([^"]+)"/);
                 const al = attrs.match(/\baria-label="([^"]*)"/);
                 let name;
                 if (lb) name = lb[1].split(/\s+/).map((x) => idText.get(x) ?? `«${x} 指到空氣»`).join(" ");
                 else if (al) name = al[1];
-                else {
-                    const end = closeAt(sc.html, m[1], m.index + m[0].length);
+                else if (/^(input|select|textarea)$/.test(tag)) {
+                    // 名稱來源只認 label[for]；**無名控制項是另一條規則在管**（§4 圖示鈕/控制項要有可及名稱），
+                    // 在這裡把它們算進來只會製造一堆「«無可及名稱» ×N」的噪音，把真的撞名蓋掉。
+                    const id = attrs.match(/\bid="([^"]+)"/);
+                    name = (id && labelFor.get(id[1])) || "";
+                    if (!name) continue;
+                } else {
+                    const end = closeAt(sc.html, tag, m.index + m[0].length);
                     name = end > 0 ? textOf(sc.html.slice(m.index + m[0].length, end)) : "";
                 }
                 name = name.replace(/\s+/g, " ").trim() || "«無可及名稱»";
@@ -7317,13 +7338,15 @@ test("§4 同一個無障礙範圍內，button／連結型 <a> 的可及名稱�
     };
     const hits = [];
     for (const f of distHtml) hits.push(...dupsIn(distDoc(f)).map((s) => `dist/${f}  ${s}`));
-    assert.ok(seen > 900, `只掃到 ${seen} 顆按鈕 —— 這條測試在空轉`);
+    assert.ok(seen > 1400, `只掃到 ${seen} 顆控制項 —— 這條測試在空轉`);
     assert.equal(hits.length, 0, `可及名稱撞名（可見字面可以逐列重複，可及名稱不在豁免之內，§4）：\n${fail(hits)}`);
 
-    // 合成樣本：四種豁免各一顆 good（豁免被寫寬／寫窄都會當場變紅），bad 兩顆。
+    // 合成樣本：四種豁免各一顆 good（豁免被寫寬／寫窄都會當場變紅），bad 三顆。
     probe("§4 可及名稱撞名", (s) => dupsIn(s),
         [
             "<table><tr><td>甲</td><td><button>刪除</button></td></tr><tr><td>乙</td><td><button>刪除</button></td></tr></table>",
+            // 表單控制項也在母體裡：label 與同名的動作鈕撞名（manage-tenant-modal 的實況）
+            '<label for="i1">刪除帳號</label><input id="i1"><button>刪除帳號</button>',
             '<div id="a">甲</div><button aria-labelledby="a">去</button><div id="b">甲</div><button aria-labelledby="b">去</button>',
         ],
         [
@@ -7332,6 +7355,8 @@ test("§4 同一個無障礙範圍內，button／連結型 <a> 的可及名稱�
             '<div class="tab-content"><button>查詢</button></div><div class="tab-content"><button>查詢</button></div>',
             '<span id="g1">A 側</span><div role="group" aria-labelledby="g1"><button>讚</button></div>' +
             '<span id="g2">B 側</span><div role="group" aria-labelledby="g2"><button>讚</button></div>',
+            // 沒有名稱的控制項不進母體（那是另一條規則在管），不可以被算成「一堆同名」
+            '<input type="text"><input type="text">',
         ]);
 });
 
@@ -7417,4 +7442,71 @@ test("§6 可刪除清單的每一列都要帶列鍵（位置不是身分：刪�
         ['{% for r in rows %}<tr><td>{{ r.name }}</td><td><button class="js-delete-x">刪除</button></td></tr>{% endfor %}'],
         ['{% for r in rows %}<tr data-row-id="{{ r.id }}"><td><button class="js-delete-x">刪除</button></td></tr>{% endfor %}',
             '{% for r in rows %}<tr><td>{{ r.name }}</td></tr>{% endfor %}']);
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// §4 `aria-labelledby` 的順序：辨識在前、動作在後
+//
+// 這條抓的是「名稱對了、順序反了」——上一條（可及名稱不得重複）看不到它，因為兩種順序組出來的
+// 字串照樣是唯一的。反了的下場：十四張工具卡連著聽是十四次「展開表格…」，要等第二個詞才分得出
+// 差別；三顆就地編輯鈕連著聽是「編輯…／確認…／取消…」，聽不出在編哪一欄。
+// §4 逐字：「順序是『列名 → 表頭』，反過來會先念『選取此列』才念檔名，把辨識資訊推到後面」。
+//
+// 機器判準：`aria-labelledby` 列了兩個以上 id 時，**指向自己子樹內節點的那一個必須排在最後**
+// （動作鈕的可見字面住在它自己的 `.sr-only` 裡，那一段就是「動作」；其餘都是外部的辨識資訊）。
+// 自指也涵蓋「id 就是自己」的寫法。
+test("§4 aria-labelledby 的順序：指向自己子樹的那一段（動作）要排在最後，辨識資訊在前", () => {
+    const closeOf = (html, tag, from) => {
+        let depth = 1;
+        const re = new RegExp("<" + tag + "\\b|</" + tag + "\\s*>", "gi");
+        re.lastIndex = from;
+        for (let m; (m = re.exec(html));) {
+            if (m[0][1] === "/") { if (!--depth) return m.index; } else depth++;
+        }
+        return -1;
+    };
+    const VOID = /^(input|img|br|hr|meta|link|source|area|col|embed|track|wbr)$/i;
+    const scan = (html, f = "<probe>") => {
+        const out = [];
+        for (const m of html.matchAll(/<([a-zA-Z][\w-]*)((?:"[^"]*"|[^>"])*)>/g)) {
+            const lb = m[2].match(/\baria-labelledby="([^"]+)"/);
+            if (!lb) continue;
+            const ids = lb[1].split(/\s+/).filter(Boolean);
+            if (ids.length < 2) continue;
+            const own = (m[2].match(/\bid="([^"]+)"/) || [])[1];
+            let inner = "";
+            if (!VOID.test(m[1]) && !m[2].trim().endsWith("/")) {
+                const end = closeOf(html, m[1], m.index + m[0].length);
+                if (end > 0) inner = html.slice(m.index + m[0].length, end);
+            }
+            const insideIds = new Set([...inner.matchAll(/\bid="([^"]+)"/g)].map((x) => x[1]));
+            if (own) insideIds.add(own);
+            const selfPos = ids.findIndex((x) => insideIds.has(x));
+            if (selfPos >= 0 && selfPos !== ids.length - 1)
+                out.push(`<${m[1]} aria-labelledby="${lb[1]}">  ← 「${ids[selfPos]}」指到自己（動作），它要排在最後`);
+        }
+        return out.map((s) => `${f}  ${s}`);
+    };
+    const hits = [];
+    let seen = 0;
+    for (const f of distHtml) {
+        const html = distDoc(f);
+        seen += [...html.matchAll(/\baria-labelledby="[^"]*\s[^"]*"/g)].length;   // 兩個以上 id 的
+        hits.push(...scan(html, `dist/${f}`));
+    }
+    assert.ok(seen > 300, `只掃到 ${seen} 個多段 aria-labelledby —— 這條測試在空轉`);
+    assert.equal(hits.length, 0, `aria-labelledby 的順序反了（§4 辨識在前、動作在後）：\n${fail(hits)}`);
+    probe("§4 labelledby 順序", (s) => scan(s),
+        [
+            // 動作鈕：自己的 .sr-only 排在辨識之前
+            '<span id="rowName">檔名</span><button aria-labelledby="btnWord rowName"><span class="sr-only" id="btnWord">刪除</span></button>',
+            // 自己的 id 排在最前面
+            '<span id="rowName">檔名</span><button id="b1" aria-labelledby="b1 rowName">刪除</button>',
+        ],
+        [
+            '<span id="rowName">檔名</span><button aria-labelledby="rowName btnWord"><span class="sr-only" id="btnWord">刪除</span></button>',
+            '<span id="rowName">檔名</span><button id="b1" aria-labelledby="rowName b1">刪除</button>',
+            // 兩段都是外部節點（列名 ＋ 欄表頭）＝這條規則不管它
+            '<span id="rowName">檔名</span><span id="head">操作</span><input aria-labelledby="rowName head">',
+        ]);
 });

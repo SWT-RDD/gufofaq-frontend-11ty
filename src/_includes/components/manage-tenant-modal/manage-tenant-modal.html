@@ -25,9 +25,12 @@
      .js-reset-password／.js-delete-user 的彈窗本體（components/reset-password-modal／components/delete-modal）
      不巢狀 include 在本檔：component.html 展示頁已各自獨立 include 過這兩顆（給其他頁的示範觸發器用），
      本檔若再巢狀 include 一次，會在 component.html 同時 include 本 modal 時產生同 id 的 <dialog> 兩份
-     （§5：一個 dialog id 只能由一個元件宣告）。故改在頁面層 include——見 5-6-1_platformTenants.html
-     底部（比照 footer 內含 disclaimer-modal 的「誰的按鈕開的彈窗、彈窗就 include 在誰裡面」，
-     只是這裡的「誰」落在頁面而非本元件，因為本元件已被 component.html 共用）。
+     （§5：一個 dialog id 只能由一個元件宣告）。故 include 在**開它的那顆鈕住的地方**——
+     `components/platform-tenants-panel`（列上的 `.js-manage-tenant` 就在那裡；比照 footer 內含
+     disclaimer-modal 的「誰的按鈕開的彈窗、彈窗就 include 在誰裡面」）。那個元件被
+     5-6-1／5-6-1-2／5-6-1-3 三份稿共用 ⇒ 這顆 `<dialog>` 在 dist 上出現在那三頁 ＋ 元件庫頁。
+     （先前這裡寫「見 5-6-1_platformTenants.html 底部」——那一頁的 include 只有 breadcrumb 與
+     三個 panel，照著去找找不到，也看不出它同時在另外兩份稿上。）
      參數（示範開關；React 端為條件渲染，元件庫頁 set true 演出該分支，同 config-copy-modal 的 configCopyShowError）：
        manageTenantShowUsageError＝**取不到該租戶目前用量**時的持久錯誤列。這一態要與一般「載入失敗」分開
          講：額度欄拿不到現值就會顯示 0，按下儲存等於把該租戶的額度歸零鎖死，所以 React 端在用量取不到時
@@ -363,7 +366,10 @@
                             <div class="text-bold text-red" data-i18n="platform.dangerZone">危險操作</div>
                             <div class="form-group">
                                 <div class="label">
-                                    <label for="deleteDataConfirmInput" class="control-label" data-i18n="platform.deleteData">刪除資料</label>
+                                    {# label 講的是**這一格要填什麼**，不是那顆鈕的名字：兩者都叫「刪除資料」時，
+                                         同一個 <dialog> 裡有兩個控制項共用同一個可及名稱（§4），而報讀器的
+                                         元素清單上那兩行一模一樣——一個是輸入框、一個是不可逆的紅鈕。 #}
+                                    <label for="deleteDataConfirmInput" class="control-label" data-i18n="platform.confirmTypeNameToDeleteData">輸入租戶名稱以刪除資料</label>
                                 </div>
                                 <p class="text-gray m-0" data-i18n="platform.deleteDataIrreversible">將刪除該租戶所有資料集與其 GufoRAG 索引（保留帳號本身），此操作不可復原。</p>
                                 <div class="field">
@@ -382,7 +388,8 @@
                             </div>
                             <div class="form-group mt-16">
                                 <div class="label">
-                                    <label for="deleteAccountConfirmInput" class="control-label" data-i18n="platform.deleteAccount">刪除帳號</label>
+                                    {# 同上：label 是欄位名、不是鈕名（§4）。 #}
+                                    <label for="deleteAccountConfirmInput" class="control-label" data-i18n="platform.confirmTypeNameToDeleteAccount">輸入租戶名稱以刪除帳號</label>
                                 </div>
                                 <p class="text-gray m-0" data-i18n="platform.deleteAccountIrreversible">將永久刪除整個帳號：租戶、所有使用者、資料集與 GufoRAG 索引，此操作不可復原（稽核日誌保留）。</p>
                                 <div class="field">

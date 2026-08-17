@@ -91,7 +91,7 @@ preflight 已含 `box-sizing: border-box` 與 `img{max-width:100%; height:auto}`
 
 ### 圓角 / 字級
 
-- 圓角（**Tailwind v4 半徑階已改名**，本專案 §1 推 v4）：4px → v4 `rounded-sm`（v3 `rounded`）、8px → `rounded-lg`、2px → v4 `rounded-xs`（v3 `rounded-sm`）、圓形/膠囊 `50%`/`100px`/`1000px`（radio/switch handle/storage-bar/switch 軌道）→ `rounded-full`、30px（date 膠囊）→ `rounded-full`、尺標外 `3px`（`_chat-message.scss` 的 `code`）→ `rounded-[3px]`。（字級 `text-*` v4 未改名，不受影響。）
+- 圓角（**Tailwind v4 半徑階已改名**，本專案 §1 推 v4）：4px → v4 `rounded-sm`（v3 `rounded`）、8px → `rounded-lg`、2px → v4 `rounded-xs`（v3 `rounded-sm`）、圓形/膠囊 `50%`/`100px`/`1000px`（radio/switch handle/storage-bar/switch 軌道）→ `rounded-full`、30px（date 膠囊）→ `rounded-full`。**其餘尺標外的值一律 `rounded-[N]`，這裡刻意不列舉**（今天至少還有 `999px`／`18px`／`12px`／`0.75rem`／`1px` 五種，抄下來的清單注定過期，§3-2「能不寫死清單就不要寫」）——轉換時以實際 SCSS 為準。（先前這裡舉的 `3px`（`_chat-message.scss` 的 `code`）已經改成 4px 並統一到 `ui/inline-code`；全 repo 僅存的 3px 在 `src/scss/_guideline.scss` 的 showcase 捲軸，不進 app bundle。）（字級 `text-*` v4 未改名，不受影響。）
 - 字級（**注意命名偏移 +1，別同名對應**）：`text-md`(18px)→`text-lg`、`text-lg`(20px)→`text-xl`、`text-xl`(24px)→`text-2xl`；base 16px→`text-base`。
 - 字型：`--fontFamily` 設進 theme 的 `--font-sans` 或 config `fontFamily.sans`；**`--fontFamilyMono` 設進 `--font-mono`／`fontFamily.mono`**（消費者：`ui/inline-code`、`ui/code-block`、`ui/chat-message` 的行內碼、`components/skill-editor-modal`——GUIDELINE §4 要求它是全站唯一一份等寬堆疊，零 CSS 路線非映射不可，漏了那四處會落回瀏覽器預設等寬字）。
 
@@ -140,7 +140,7 @@ tailwind-scrollbar        → scrollbar-thin 等，處理自訂捲軸（見 §5-
 |---|---|---|---|
 | `flex-row` | `flex` | `column`/`.flex-row.column` | `flex-col` |
 | `gap-16`（尺標） | `gap-4`（÷4） | `align-items-center` | `items-center` |
-| `justify-content-between` | `justify-between` | `align-items-start/end` | `items-start/end` |
+| `justify-content-between` | `justify-between` | `align-items-end` | `items-end` |
 | `justify-content-center/start/end` | `justify-center/start/end` | `flex-wrap` | `flex-wrap` |
 | `mt-24`/`mb-*`/`my-*` | `mt-6`… | `m-0` | `m-0` |
 | `text-center/left/right` | 同名 | `hidden` | `hidden` |
@@ -255,7 +255,7 @@ scrollbar-thin scrollbar-thumb-scrollbar-thumb scrollbar-track-transparent
 11. **單色圖示是遮罩不是背景圖**（§5-5）：`.button-icon` 系列、箭頭、搜尋/時間框…清單自己數（`grep -o 'mask:url("[^"]*")' dist/css/main.css | sort -u`）→ 建議一律改成 `fill="currentColor"` 的內嵌 SVG。若照搬遮罩，記得上色的是 `background-color`（墨色）而非 `color`；Tailwind 無 mask utility，需 arbitrary property。
 12. **顏色不全在 token**（§1 附註）：一批 token 外硬寫色需 arbitrary color，別假設都有 token。
 13. **值以 SCSS + dist 為準**：本文件是規則；遇到衝突，以實際 `_<name>.scss` 的宣告與 `dist/<page>.html` 的最終外觀為準（兩者已對齊真 app）。
-14. **z-index 值一律 arbitrary**：Tailwind 只出 `z-0..z-50`，但 code 有 `toast 2000`、`.skip-link 2000`、`header 1000`（子選單 `15`）、`modals 1000`（含 `.modals-close 1`）、`subscription-overlay 1000`、`mobile-nav 97~100`、`multi-select 20`、`switch 10`、`tooltip 10`、`qa-side-panel 10/2/1`、`chatroom-shell 5`、`login-wrapper 1` → 一律 `z-[N]`，別夾成 `z-50` 破壞疊層（小值如 `5` 也沒有對應 utility）。
+14. **z-index 值一律 arbitrary**：Tailwind 只出 `z-0..z-50`，但 code 有 `toast 2000`、`.skip-link 2000`、`header 1000`（子選單 `15`）、`modals 1000`（含 `.modals-close 1`）、`subscription-overlay 1000`、`mobile-nav 97~100`、`multi-select 20`、`switch 10`、`tooltip 10`、`qa-side-panel 10/2/1`、`chatroom-shell 5`、`faq-launcher 900`（由 `layouts/page-shell` 掛在每一頁上，夾成 `z-50` 會被 header 的 1000 蓋掉）、`login-wrapper 1` → 一律 `z-[N]`，別夾成 `z-50` 破壞疊層（小值如 `5` 也沒有對應 utility）。**這份清單會過期**：動手前先 `grep -rn 'z-index' src`，以實際 SCSS 為準（§3-2）。
 15. **事件委派的資料屬性不是樣式**：`data-open-modal="X"`（`ui/modals`）與 `data-toast="…"`（`ui/toast`）是切版期「markup 沒有 props 可傳」的替身，由掛在 `document` 的委派接手。轉 React 時**一律換成 `onClick`**（`onClick={() => openModal("X")}`），不要保留這兩個屬性、也不要保留 document-level 委派。
 16. **版面值裡的 `max()/min()/calc()`**：如 `qa-side-panel` 的 `top: max(72px, 100vh - 550px)` → arbitrary 並把算式包進 `calc()`：`top-[max(72px,calc(100vh-550px))]`（底線代空白、留意巢狀）。
 17. **模板算出來的 class 名 → 靜態列舉的查表，不是拼字串**：切版有 `is-{{ node.state }}`、

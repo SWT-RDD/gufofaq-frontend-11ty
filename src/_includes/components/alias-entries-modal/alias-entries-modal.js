@@ -111,7 +111,8 @@ document.addEventListener("DOMContentLoaded", function () {
             del.setAttribute("data-i18n", "action.delete");
             // 與模板那一份逐字同形（§1-2 契約要對得上實例）：刪除鈕的可及名稱也要帶列脈絡，
             // 否則貼上產生的列是「刪除 ×N」、示範列卻有列名——同一張表兩種無障礙樹。
-            del.setAttribute("aria-labelledby", nameId + " aliasHeadActions");
+            del.id = "aliasEntryDelete-new-" + rowSeq;
+            del.setAttribute("aria-labelledby", nameId + " " + del.id);
             del.textContent = t("action.delete", "刪除");
             tdOp.appendChild(del);
 

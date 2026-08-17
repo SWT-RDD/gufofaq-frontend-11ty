@@ -6,6 +6,9 @@
      editId（**必填**）：唯一 id。textarea 樣式的 label 以 for/id 關聯；三顆動作鈕的可及名稱也靠它組
        （見下方 aria-labelledby）。同頁三個實例的編輯／確認／取消若共用同一句「編輯」「確認」「取消」，
        報讀器聽不出正在編哪一欄——這裡沒有列脈絡可倚靠（§4）。
+       **順序是「辨識 → 動作」**（`<欄位名> <動詞>`）：先前三顆都寫成 `<動詞> <欄位名>`，於是連著聽
+       是「編輯…／確認…／取消…」，要等第二個詞才分得出在編哪一欄——§4 逐字寫著「反過來會先念
+       『選取此列』才念檔名，把辨識資訊推到後面」。
        **沒有「沒給 editId」那條 fallback**：上一版的 textarea 寫成 `{% if editId %}id{% else %}aria-label{% endif %}`，
        那是一條死分支（宣告必填、三份實例也都給了），而且**真觸發時它救不了任何東西**——同一份 markup
        裡的 `<label for="{{ editId }}">` 會吐 `for=""`、`id="-fieldLabel"`，三顆動作鈕的 `aria-labelledby`
@@ -37,12 +40,12 @@
     <div class="form-group edit-field-group">
         <div class="label flex-row align-items-center">
             <label id="{{ editId }}-fieldLabel" for="{{ editId }}" class="control-label"{% if editLabelKey %} data-i18n="{{ editLabelKey }}"{% endif %}>{{ editLabel }}</label>
-            <button type="button" class="button-icon no-bg size-sm edit edit-icon" title="編輯" data-i18n-title="action.edit" aria-labelledby="{{ editId }}-editLabel {{ editId }}-fieldLabel"><span
+            <button type="button" class="button-icon no-bg size-sm edit edit-icon" title="編輯" data-i18n-title="action.edit" aria-labelledby="{{ editId }}-fieldLabel {{ editId }}-editLabel"><span
                     class="sr-only" id="{{ editId }}-editLabel" data-i18n="action.edit">編輯</span></button>
             <div class="flex-row gap-4">
-                <button type="button"{% if editCapability %} data-capability="{{ editCapability }}"{% endif %} class="button-icon no-bg size-sm save save-icon"{% if editSaveToast %} data-toast="{{ editSaveToast }}" data-i18n-data-toast="{{ editSaveToastKey }}" data-toast-type="{{ editSaveToastType or 'success|error' }}"{% endif %} title="確認" data-i18n-title="action.confirm" aria-labelledby="{{ editId }}-saveLabel {{ editId }}-fieldLabel"
+                <button type="button"{% if editCapability %} data-capability="{{ editCapability }}"{% endif %} class="button-icon no-bg size-sm save save-icon"{% if editSaveToast %} data-toast="{{ editSaveToast }}" data-i18n-data-toast="{{ editSaveToastKey }}" data-toast-type="{{ editSaveToastType or 'success|error' }}"{% endif %} title="確認" data-i18n-title="action.confirm" aria-labelledby="{{ editId }}-fieldLabel {{ editId }}-saveLabel"
                     style="display: none;"><span class="sr-only" id="{{ editId }}-saveLabel" data-i18n="action.confirm">確認</span></button>
-                <button type="button" class="button-icon no-bg size-sm cancel cancel-icon" title="取消" data-i18n-title="action.cancel" aria-labelledby="{{ editId }}-cancelLabel {{ editId }}-fieldLabel"
+                <button type="button" class="button-icon no-bg size-sm cancel cancel-icon" title="取消" data-i18n-title="action.cancel" aria-labelledby="{{ editId }}-fieldLabel {{ editId }}-cancelLabel"
                     style="display: none;"><span class="sr-only" id="{{ editId }}-cancelLabel" data-i18n="action.cancel">取消</span></button>
             </div>
         </div>
@@ -59,11 +62,11 @@
     <span class="display-text">{{ editValue }}</span>
     <input type="text" class="form-control edit-field" value="{{ editValue }}" style="display: none;"
         aria-label="{{ editLabel }}"{% if editLabelKey %} data-i18n-aria-label="{{ editLabelKey }}"{% endif %}>
-    <button type="button" class="button-icon no-bg size-sm edit edit-icon" title="編輯" data-i18n-title="action.edit" aria-labelledby="{{ editId }}-editLabel {{ editId }}-fieldLabel"><span
+    <button type="button" class="button-icon no-bg size-sm edit edit-icon" title="編輯" data-i18n-title="action.edit" aria-labelledby="{{ editId }}-fieldLabel {{ editId }}-editLabel"><span
             class="sr-only" id="{{ editId }}-editLabel" data-i18n="action.edit">編輯</span></button>
-    <button type="button"{% if editCapability %} data-capability="{{ editCapability }}"{% endif %} class="button-icon no-bg size-sm save save-icon"{% if editSaveToast %} data-toast="{{ editSaveToast }}" data-i18n-data-toast="{{ editSaveToastKey }}" data-toast-type="{{ editSaveToastType or 'success|error' }}"{% endif %} title="確認" data-i18n-title="action.confirm" aria-labelledby="{{ editId }}-saveLabel {{ editId }}-fieldLabel" style="display: none;"><span
+    <button type="button"{% if editCapability %} data-capability="{{ editCapability }}"{% endif %} class="button-icon no-bg size-sm save save-icon"{% if editSaveToast %} data-toast="{{ editSaveToast }}" data-i18n-data-toast="{{ editSaveToastKey }}" data-toast-type="{{ editSaveToastType or 'success|error' }}"{% endif %} title="確認" data-i18n-title="action.confirm" aria-labelledby="{{ editId }}-fieldLabel {{ editId }}-saveLabel" style="display: none;"><span
             class="sr-only" id="{{ editId }}-saveLabel" data-i18n="action.confirm">確認</span></button>
-    <button type="button" class="button-icon no-bg size-sm cancel cancel-icon" title="取消" data-i18n-title="action.cancel" aria-labelledby="{{ editId }}-cancelLabel {{ editId }}-fieldLabel" style="display: none;"><span
+    <button type="button" class="button-icon no-bg size-sm cancel cancel-icon" title="取消" data-i18n-title="action.cancel" aria-labelledby="{{ editId }}-fieldLabel {{ editId }}-cancelLabel" style="display: none;"><span
             class="sr-only" id="{{ editId }}-cancelLabel" data-i18n="action.cancel">取消</span></button>
 </div>
 {% endif %}

@@ -1102,7 +1102,7 @@ permalink: 5-2_conversationSettings.html
                             </select>
                         </td>
                         <td><input type="text" class="form-control" value="{{ topic.refusal }}" aria-labelledby="policyTopicRowName-{{ loop.index }} policyHeadRefusal"></td>
-                        <td><button type="button" class="button button-border button-sm js-remove-policy-topic" aria-labelledby="policyTopicRowName-{{ loop.index }} policyHeadActions" data-i18n="action.delete">刪除</button></td>
+                        <td><button type="button" id="policyTopicDelete-{{ loop.index }}" class="button button-border button-sm js-remove-policy-topic" aria-labelledby="policyTopicRowName-{{ loop.index }} policyTopicDelete-{{ loop.index }}" data-i18n="action.delete">刪除</button></td>
                     </tr>
                     {% else %}
                     <tr><td colspan="7" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
@@ -1499,7 +1499,11 @@ permalink: 5-2_conversationSettings.html
                                      示範資料自己演了一個永遠不命中的設定（§6 示範要自洽、要是真實可能的狀態）。
                                      同一顆規則的 `case` 已經用 `B06` 了，兩處先前對不起來。 #}
                                 {% for cat in [{ code: "B06", limit: "2000" }, { code: "B02", limit: "800" }] %}
-                                <div class="flex-row flex-wrap gap-8">
+                                {# 外層那顆 role="group" 只報得出「逐代碼覆寫上限」，兩列的「代碼」「上限」
+                                     還是各兩顆同名（§4：同一頁同時可見、語意不同的控制項不得共用可及名稱）。
+                                     這一列自己再包一層 group，名字＝代碼欄的**值**（那就是這一列的身分，
+                                     同一列的刪除鈕已經在指它）。 #}
+                                <div class="flex-row flex-wrap gap-8" role="group" aria-labelledby="oruleCatCode-{{ oruleIdx }}-{{ loop.index }}">
                                     {# 這一組裡有兩列同型欄位 ⇒ 光靠外層那顆 role="group" 只報得出「逐代碼
                                          覆寫上限」，兩顆刪除鈕仍逐字同名。代碼欄的**值**就是這一列的身分，
                                          故把它掛 id 併進刪除鈕的可及名稱（§4：可及名稱不在逐列豁免內）。 #}
@@ -1516,16 +1520,19 @@ permalink: 5-2_conversationSettings.html
                             {% elif rule.kind == "constant_route" %}
                             <div class="flex-row column gap-8">
                                 <div class="form-group">
-                                    <div class="label"><label for="oruleConstName{{ loop.index }}" class="control-label" data-i18n="settings.outputRuleConstName">常數名稱</label></div>
+                                    {# 兩顆 constant_route 規則各有一組「常數名稱／預設值」，同頁同時可見 ⇒
+                                         可及名稱要帶「哪一條規則」（§4）。`for`／`id` 的關聯保留，名稱另走
+                                         aria-labelledby「辨識 → 欄位名」。 #}
+                                    <div class="label"><label id="oruleConstNameLabel{{ loop.index }}" for="oruleConstName{{ loop.index }}" class="control-label" data-i18n="settings.outputRuleConstName">常數名稱</label></div>
                                     <div class="field">
-                                        <input type="text" id="oruleConstName{{ loop.index }}" class="form-control js-orule-const-name" value="{{ rule.constName }}" aria-describedby="oruleConstNameHint{{ loop.index }}">
+                                        <input type="text" id="oruleConstName{{ loop.index }}" aria-labelledby="oruleRowName-{{ oruleIdx }} oruleConstNameLabel{{ loop.index }}" class="form-control js-orule-const-name" value="{{ rule.constName }}" aria-describedby="oruleConstNameHint{{ loop.index }}">
                                         <span id="oruleConstNameHint{{ loop.index }}" class="text-gray"><span data-i18n="settings.outputRuleConstNameHint">提示詞裡要寫成同名的佔位符（不可有前後空白、不可含大括號），例如</span> <code class="inline-code">{{ "{{客服專線}}" }}</code></span>
                                     </div>
                                 </div>
                                 <div class="form-group">
-                                    <div class="label"><label for="oruleConstDefault{{ loop.index }}" class="control-label" data-i18n="settings.outputRuleConstDefault">預設值</label></div>
+                                    <div class="label"><label id="oruleConstDefaultLabel{{ loop.index }}" for="oruleConstDefault{{ loop.index }}" class="control-label" data-i18n="settings.outputRuleConstDefault">預設值</label></div>
                                     <div class="field">
-                                        <input type="text" id="oruleConstDefault{{ loop.index }}" class="form-control js-orule-const-default" value="{{ rule.constDefault }}" aria-describedby="oruleConstDefaultHint{{ loop.index }}">
+                                        <input type="text" id="oruleConstDefault{{ loop.index }}" aria-labelledby="oruleRowName-{{ oruleIdx }} oruleConstDefaultLabel{{ loop.index }}" class="form-control js-orule-const-default" value="{{ rule.constDefault }}" aria-describedby="oruleConstDefaultHint{{ loop.index }}">
                                         <span id="oruleConstDefaultHint{{ loop.index }}" class="text-gray" data-i18n="settings.outputRuleConstDefaultHint">必填：判不出情境的那幾輪用這個值，不可留空。</span>
                                     </div>
                                 </div>
@@ -1536,7 +1543,9 @@ permalink: 5-2_conversationSettings.html
                                      用 role="group" 指向「情境條件」這個浮空標題（§4）。 #}
                                 <div role="group" aria-labelledby="oruleCasesLabel{{ loop.index }}" class="flex-row column gap-8">
                                 {% for case in rule.cases %}
-                                <div class="flex-row flex-wrap gap-8">
+                                {# 同逐代碼上限那一列：外層 group 報的是「情境條件」，列內四顆欄位仍逐列同名 ⇒
+                                     這一列再包一層 group，名字＝「填入值」欄的值（述詞與槽兩列可能相同，值不會）。 #}
+                                <div class="flex-row flex-wrap gap-8" role="group" aria-labelledby="oruleCaseValue-{{ oruleIdx }}-{{ loop.index }}">
                                     {# 同上：一顆規則卡裡多列情境條件，刪除鈕逐字同名。這一列的身分是
                                          「填入值」（述詞與槽兩列可能相同，值不會）。 #}
                                     <input type="text" class="form-control js-orule-case-slot" value="{{ case.slot }}" aria-label="意圖維度槽" data-i18n-aria-label="settings.outputRuleCategorySlot">

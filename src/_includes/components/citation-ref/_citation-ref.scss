@@ -16,7 +16,7 @@
 // React 端把文字節點裡的 [[N]] 換成本元件的 markup。
 //
 // 住在哪一頁（雙向；判準＝`grep -rn 'class="citation-ref' src`）——
-//   實例手寫在這三個檔的示範答案裡：components/chatroom（來源 2、5）、
+//   實例手寫在這三個檔的示範答案裡：components/chatroom（來源 3、7）、
 //   components/qa-detail-info（來源 3、7）、2-2-3_abTest（A 側 1、4；B 側 2、6——AB 兩側各是一筆
 //   獨立的 chat_log，`source_no` 各自從 1 起算，兩側的 [[1]] 指的不是同一份文件）。
 //   渲染後含 `.citation-ref` 的頁（反向）：2-1_qaRecord 與 2-2-1_singleTest（chatroom）、
