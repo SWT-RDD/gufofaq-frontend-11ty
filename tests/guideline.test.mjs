@@ -588,31 +588,74 @@ const cssSelectorClasses = () => {
 // 的兩面——「它是掛點，所以無主也合法」⇄「它是掛點，所以不准被樣式」——母體不同就等於同一個問題有
 // 兩份答案：另外 40 個 hook 被 scss 樣式了，也沒有任何一條測試看得到（判準「全站 scss 零命中」對它們
 // 從來沒被執行過）。名字只准住在這裡，兩條測試都吃這一份。
-const NAMED_HOOKS = new Set([
-    // 凍結真 app 的業務掛點（js/main.js、previewDataset.js、qaRecord.js、accountInfo.js…）
-    "copyBtn", "watchBtn", "shareBtn", "btn-prev", "btn-next", "btn-delete-file", "btn-edit-file",
-    "btn-preview-file", "calendar", "singleSelect", "multiSelect", "range-date", "priority-switch",
-    "priority-box", "prompt-card-list", "table-container",
-    "account-company", "account-email", "account-spec", "account-storage-limit", "add-file-btn",
-    "aside-link", "chat-box", "chat-log-sn", "chat-room-sn", "confirm-delete-btn", "date-error",
-    "delete-selected-btn", "delete-single-btn", "download-file-btn", "edit-cell", "end-date",
-    "file-name", "file-name-title", "first-chat", "folder-name-link", "keyword-input",
-    "message-container", "pager-text", "priority-select", "rating-select", "sample-count",
-    "sources-detail-link", "sources-info", "sources-rating", "start-date", "user-type-select",
-    "with-input", "field-with-input", "field-with-input-group",
-    // round37：解析器改嚴（不再子字串比對）後浮出來的兩族真掛點，出處都在凍結前端：
-    //   number      ← datasetList.js:177/183/189/195/201（每個檔型圖示旁的計數 span）
-    //   description / prompt ← knowledgeRetrieval.js:269/272 產出、:578-579/:603-604 以
-    //                          $row.find('.edit-cell.description') 取回（`.edit-cell` 的修飾字，
-    //                          兩顆一起才定位得到那一格）
-    "number", "description", "prompt",
+//
+// round46：改成 name → **出處** 的 Map。GUIDELINE §4 要求「驗過出處後加進 NAMED_HOOKS 並在使用頁
+// 檔頭寫出處」，而那句話沒有任何機器在看：實測 20 筆的出處在全站 src 註解裡一個字都找不到
+// （btn-delete-file／range-date／priority-box／account-spec／chat-room-sn／pager-text…）。
+// 「這是真 app 的掛點」是一句**可以查證的斷言**，查不到出處的豁免與憑空放行沒有分別。
+// 這一輪逐筆回凍結前端查過，檔＋行寫在值裡；下面那條測試釘住「每一筆都要有非空出處」。
+const NAMED_HOOKS = new Map([
+    // 凍結真 app 的業務掛點（GufoFAQ_Frontend_New，除非另註）
+    ["copyBtn", "js/main.js 的複製鈕委派；ui/clipboard 沿用同名"],
+    ["watchBtn", "js/main.js 同一支的第二顆鈕（查看來源）"],
+    ["shareBtn", "js/qaRecord.js 的分享鈕委派"],
+    ["btn-prev", "js/main.js 的 step 上一步鈕"],
+    ["btn-next", "js/main.js 的 step 下一步鈕"],
+    ["btn-delete-file", "js/uploadFilePdf.js:75 `$(document).on('click','.btn-delete-file')`"],
+    ["btn-edit-file", "js/uploadFilePdf.js:69 `$(document).on('click','.btn-edit-file')`"],
+    ["btn-preview-file", "js/uploadFilePdf.js:63 `$(document).on('click','.btn-preview-file')`"],
+    ["calendar", "js/main.js 的 flatpickr 掛點"],
+    ["singleSelect", "js/main.js 的 select2 單選初始化掛點"],
+    ["multiSelect", "js/main.js 的 select2 多選初始化掛點；本 repo 由 ui/multi-select 查它"],
+    ["range-date", "js/main.js:161 `$(\".range-date\").flatpickr({...})`（區間日期）"],
+    ["priority-switch", "js/knowledgeRetrieval.js:374 `$('.block > .flex-row:nth-child(2) .priority-switch input')`"],
+    ["priority-box", "js/main.js:256 `checkbox.closest(\".priority-box\").find(\".table-container table.priority-table\")`"],
+    ["prompt-card-list", "js/promptManagement.js:88 `const $list = $('.prompt-card-list')`"],
+    ["table-container", "js/main.js:256 同上那一行（`.priority-box` 底下的捲動容器）"],
+    ["account-company", "js/accountInfo.js 的帳號欄位回填掛點"],
+    ["account-email", "js/accountInfo.js 同上"],
+    ["account-spec", "js/accountInfo.js:182 `$('input.account-spec').val(spec)`"],
+    ["account-storage-limit", "js/accountInfo.js:200 `$('input.account-storage-limit').val(`${maxAccSize}MB`)`"],
+    ["add-file-btn", "js/previewDataset.js 的新增檔案鈕"],
+    ["aside-link", "pages/components/component.html:51 起的元件庫側欄目錄連結（該頁自有的捲動目錄）"],
+    ["chat-box", "js/qaRecord.js 的對話容器"],
+    ["chat-log-sn", "js/qaHistory.js:421 `$('.chat-log-sn').val()`（查詢條件的隱藏欄）"],
+    ["chat-room-sn", "js/qaHistory.js:420 `$('.chat-room-sn').val()`"],
+    ["confirm-delete-btn", "js/previewDataset.js 的刪除確認鈕"],
+    ["date-error", "js/main.js 的日期格式警告槽"],
+    ["delete-selected-btn", "js/previewDataset.js 的批次刪除鈕"],
+    ["delete-single-btn", "js/previewDataset.js:167 的單筆刪除鈕"],
+    ["download-file-btn", "js/previewDataset.js:170／:515 的下載鈕（:515 依 data-filetype 判可否下載）"],
+    ["edit-cell", "js/knowledgeRetrieval.js:269/272 產出、:578-579/:603-604 以 `$row.find('.edit-cell.description')` 取回"],
+    ["end-date", "js/main.js 的區間日期迄"],
+    ["file-name", "js/previewDataset.js 的檔名格"],
+    ["file-name-title", "js/previewDataset.js 的檔名標題"],
+    ["first-chat", "js/qaRecord.js 的首則訊息標記"],
+    ["folder-name-link", "js/datasetList.js 的資料集連結"],
+    ["keyword-input", "js/qaHistory.js:419 `$('.keyword-input').val()`"],
+    ["message-container", "js/abTest.js:399 `$('.chat-message-container').html(...)`（本 repo 的 chat-message 沿用同名後綴）"],
+    ["pager-text", "pages/components/component.html:2134/2138 的輸入版頁碼文字（`第`／`個對話，共`）"],
+    ["priority-select", "js/knowledgeRetrieval.js:643 `$(document).on('change','.priority-select')`"],
+    ["rating-select", "js/qaHistory.js:422 `$('.rating-select').val()`"],
+    ["sample-count", "js/abTest.js `$col.find('input.sample-count')`（兩側取樣欄的讀值掛點）"],
+    ["sources-detail-link", "js/qaRecord.js:170 `$block.find('.sources-detail-link').attr('href', …)`"],
+    ["sources-info", "js/qaRecord.js 的「挑選規則 N 取 M」那一格"],
+    ["sources-rating", "js/qaRecord.js:165 `const $rating = $block.find('.sources-rating')`"],
+    ["start-date", "js/main.js 的區間日期起"],
+    ["user-type-select", "js/qaHistory.js:26 `$('.user-type-select').val(lockedUserType).trigger('change')`"],
+    ["with-input", "js/main.js:430-455 的附屬輸入框解鎖；本 repo 由 ui/field-with-input 查它"],
+    ["field-with-input", "同上（radio 與它附屬輸入框的那一格）"],
+    ["field-with-input-group", "同上（整列的容器）"],
+    // round37：解析器改嚴（不再子字串比對）後浮出來的兩族真掛點
+    ["number", "js/datasetList.js:177/183/189/195/201（每個檔型圖示旁的計數 span）"],
+    ["description", "js/knowledgeRetrieval.js:578-579 的 `.edit-cell.description`（`.edit-cell` 的修飾字，兩顆一起才定位得到那一格）"],
+    ["prompt", "js/knowledgeRetrieval.js:603-604 的 `.edit-cell.prompt`（同上）"],
     // 前台 Standard 前端的掛點（faq-chatroom 檔頭記載）
-    "chat-input-txt",
+    ["chat-input-txt", "GufoFAQ_Standard_Frontend 的前台輸入框掛點（faq-chatroom 檔頭記載）"],
     // §7 轉換契約：modal 殼的結構 class（GUIDELINE §4 明文「視同有主，主人＝契約本身」）
-    "modals-content",
-    // 重複列的列標記（無樣式、版位由工具 class 供）：React 端 params.map() 的列身分，
-    // 本檔另一條測試也靠它數參數列。同 `is-<state>`，主人＝轉換契約。
-    "builtin-tool-param",
+    ["modals-content", "§7 轉換契約：modal 殼的結構 class（GUIDELINE §4 明文「視同有主，主人＝契約本身」）"],
+    // 重複列的列標記（無樣式、版位由工具 class 供）
+    ["builtin-tool-param", "§7 轉換契約：React 端 params.map() 的列身分（本檔另一條測試也靠它數參數列）。凍結前端沒有這顆——它是本專案新增的元件"],
 ]);
 
 // 具名真 app 掛點的**另一半**：這些名字同樣是「React 端要靠它認出這顆鈕該接什麼」的具名掛點，
@@ -622,9 +665,23 @@ const NAMED_HOOKS = new Set([
 // 其中 13 筆與 NAMED_HOOKS 逐字重複、而且整張表沒有任何 stale 守門。現在名字只住在兩個地方，
 // 兩者**互斥**，且各自的成立條件由下面那條測試逐筆驗（有樣式或被 js 查、且真的掛在某顆 <button> 上）。
 // `check-all` 已移除：它掛在 checkbox 的 <input> 上，全站沒有任何一顆 <button> 用它 ⇒ 對那條測試是死豁免。
-const NAMED_BUTTON_EXTRA = new Set([
-    "accordion-btn", "btn-close-modals", "modals-close", "sort", "edit-icon", "save-icon", "cancel-icon",
-    "nav-toggle", "tab", "collapse-toggle", "feedback-vote-btn", "btn_gotop", "info-btn", "link-modal", "upload-box",
+// round46：同 NAMED_HOOKS，改成 name → 出處。
+const NAMED_BUTTON_EXTRA = new Map([
+    ["accordion-btn", "ui/accordion 的開合掛點（accordion.js 查它）＋自有 scss"],
+    ["btn-close-modals", "ui/modals 的關窗事件委派掛點"],
+    ["modals-close", "ui/modal-close 的叉叉鈕（自有 scss 畫字形）"],
+    ["sort", "GufoFAQ_Frontend_New js/previewExcelCompare.js 的 `.sort` click 委派；本 repo 由 ui/table-sort 查它"],
+    ["edit-icon", "GufoFAQ_Frontend_New js/main.js:729 `const editIcon = block.find('.edit-icon')`"],
+    ["save-icon", "同上那一段（js/main.js 的就地編輯三顆鈕）"],
+    ["cancel-icon", "GufoFAQ_Frontend_New js/main.js:731 `const cancelIcon = block.find('.cancel-icon')`"],
+    ["nav-toggle", "components/mobile-nav 的漢堡鈕（markup 住在 header，樣式與行為由 mobile-nav 供）"],
+    ["tab", "ui/tab 的頁籤（tab.js 依 data-target 切面板）＋自有 scss"],
+    ["collapse-toggle", "ui/collapse-text 的長文收合鈕（collapse-text.js 查它）"],
+    ["feedback-vote-btn", "components/rating-modal 自有：rating-modal.js 的 querySelectorAll 查它、_rating-modal.scss 給樣式；與 gufofaq-saas `apps/web/components/RatingModal/RatingModal.scss` 的 `.feedback-vote-btn` 同名（React 正本）"],
+    ["btn_gotop", "GufoFAQ_Frontend_New pages/components/component.html:3011/3020 的回頂鈕（該頁自有的 inline script）"],
+    ["info-btn", "ui/info-btn 的說明鈕（自有 scss）"],
+    ["link-modal", "ui/link-modal 的開窗連結鈕（自有 scss）"],
+    ["upload-box", "ui/upload-box 的拖放區（upload-box.js 查它）"],
 ]);
 
 test("§4 markup 上的每個 class 都要有主人（反向網：css 規則／元件 js／js-／具名 hook）", () => {
@@ -647,7 +704,27 @@ test("§4 markup 上的每個 class 都要有主人（反向網：css 規則／�
     //   樣板算出來的 `is-<state>`（§7 明列的轉換契約，React 端由 state 推導 className）
     // 槽鍵可以有底線（`field_schema` 的 internal_note）——原本的 [a-z0-9] 把它排除掉，
     // 於是 .field-internal_note／.preview-internal_note 被判成無主 class。
-    const FAMILY = /^(field|preview)-[a-z0-9_]+$|^is-[a-z0-9-]+$/;
+    // round46：這裡原本是一條萬用前綴 `/^(field|preview)-[a-z0-9_]+$|^is-[a-z0-9-]+$/`——
+    // 「以 is- 開頭就算有主人」。那等於把整個前綴讓出去：`is-completd` 這種錯字、或一顆隨手
+    // 新造的 `is-whatever`，在 markup 上永遠不會被判成無主（§4 第②種死法「新造一個看起來像
+    // 掛點的 class」正是這一族）。實測 64 個 FAMILY 命中裡，只有 45 個真的靠這條放行
+    // （44 個槽鍵族 ＋ 1 個 is-pending），其餘 19 個本來就有 css 規則。
+    // 改成**白名單，而且從有出處的集合推導**：
+    //   ① 槽鍵族：22 槽的唯一正本是 ui/field-slot-catalog（對回 product `app/field_schema.py` 的 SLOTS）。
+    //      catalog 少一槽、或 markup 打錯一個槽名，這裡就會當場報無主——這正是想要的。
+    //   ② 無樣式的狀態契約：逐筆列名並寫理由（有 css 規則的 is-* 走 cssClasses 那一關，不必列）。
+    const SLOT_KEYS = [...read("src/_includes/ui/field-slot-catalog/field-slot-catalog.html")
+        .matchAll(/key:\s*"([a-z0-9_]+)"/g)].map((m) => m[1]);
+    assert.equal(SLOT_KEYS.length, 22, `槽目錄解析到 ${SLOT_KEYS.length} 槽（應為 22）——解析壞了就會把整族槽鍵判成無主`);
+    const STATE_CONTRACT_ONLY = new Map([
+        ["is-pending", "step-flow 的「待處理」態**刻意不畫任何規則**（灰邊就是 --border 預設），" +
+            "但 React 端要靠這顆 class 認出節點狀態（`is-{{ node.state }}` 是值域直接插值）——主人＝轉換契約"],
+    ]);
+    const FAMILY_OK = new Set([
+        ...SLOT_KEYS.flatMap((k) => [`field-${k}`, `preview-${k}`]),
+        ...STATE_CONTRACT_ONLY.keys(),
+    ]);
+    const FAMILY = { test: (c) => FAMILY_OK.has(c) };
 
     // round45：改吃 cssSelectorClasses()——舊版掃整份 css（含宣告值），`url(…icon_owl.png)`
     // 讓 `png` 變成「有 css 規則」的 class，於是 `class="png"` 這種無主 class 會被判成有主人。
@@ -693,8 +770,26 @@ test("§4 markup 上的每個 class 都要有主人（反向網：css 規則／�
     // ── 白名單自己的衛生（豁免清單不受監督時，會慢慢變成「什麼都放行」的那張表）──
     // ① 死豁免：清單裡的名字已經不在任何 markup 上。它不再豁免任何東西，卻會在
     //    下一次有人新造同名 class 時默默放行它。
-    const stale = [...NAMED_HOOKS].filter((h) => !seen.has(h));
+    const stale = [...NAMED_HOOKS.keys()].filter((h) => !seen.has(h));
     assert.deepEqual(stale, [], `NAMED_HOOKS 有死豁免（markup 已經不用了）：${stale.join("、")}`);
+    // ①-2（round46）：每一筆都要寫得出**出處**。「這是真 app 的掛點」是一句可以查證的斷言，
+    //    查不到出處的豁免與憑空放行沒有分別——實測改成 Map 之前有 20 筆的出處在全站 src 註解裡
+    //    一個字都找不到。長度門檻只擋空白與敷衍；內容對不對由審的人看，但至少寫得出來。
+    for (const [h, why] of NAMED_HOOKS)
+        assert.ok((why || "").length > 8, `NAMED_HOOKS 的「${h}」沒寫出處（檔＋符號名／行號，§3-2）`);
+    for (const [h, why] of NAMED_BUTTON_EXTRA)
+        assert.ok((why || "").length > 8, `NAMED_BUTTON_EXTRA 的「${h}」沒寫出處`);
+    // 同一道衛生也要套在 FAMILY 上（它現在是白名單，不是萬用前綴）：
+    // ① 狀態契約那幾筆要真的還在 markup 上，且要真的沒有 css 規則（有了就該走 cssClasses 那一關）。
+    for (const [c, why] of STATE_CONTRACT_ONLY) {
+        assert.ok(why.length > 20, `STATE_CONTRACT_ONLY 的「${c}」沒寫理由`);
+        assert.ok(seen.has(c), `STATE_CONTRACT_ONLY 的「${c}」已經不在任何 markup 上——死豁免，請移除`);
+        assert.ok(!cssClasses.has(c), `STATE_CONTRACT_ONLY 的「${c}」已經有 css 規則了——它走 cssClasses 那一關就好，請從這張表移除`);
+    }
+    // ② 槽鍵族至少要有一半真的出現在 markup 上（1-1-4 的 22 槽 × 兩個前綴）；
+    //    整族消失＝解析或 markup 改了形狀，白名單會靜靜地不再放行任何東西。
+    const slotSeen = [...FAMILY_OK].filter((c) => seen.has(c)).length;
+    assert.ok(slotSeen >= 40, `槽鍵族只在 markup 上看到 ${slotSeen} 個（應該 45 個上下）—— 這張白名單快要空轉了`);
     // ② 已經有別的主人的：不再是「豁免」。這種**不刪**——它記載的是「這個名字是真 app 的
     //    掛點，React 端不可改名」；行為哪天從 vanilla js 搬去 React，這些 class 會當場
     //    回到無主狀態，白名單先在才不會被當死碼刪掉（with-input 三兄弟就被誤刪過一次）。
@@ -711,7 +806,7 @@ test("§4 markup 上的每個 class 都要有主人（反向網：css 規則／�
             "打不到 priority-table 的 `td.edit-cell.description`（§4 第③種死法：祖先錯位）。" +
             "它在這裡是凍結前端 knowledgeRetrieval.js 的掛點，不是那條規則的消費者。"],
     ]);
-    const ownedElsewhere = [...NAMED_HOOKS].filter((h) => cssClasses.has(h) || jsOwned.has(h));
+    const ownedElsewhere = [...NAMED_HOOKS.keys()].filter((h) => cssClasses.has(h) || jsOwned.has(h));
     assert.deepEqual(ownedElsewhere.sort(), [...REDUNDANT_BUT_KEPT.keys()].sort(),
         "NAMED_HOOKS 裡「已經有別的主人」的名單變了。新增的請寫進 REDUNDANT_BUT_KEPT 並附理由；" +
         "若某筆已不再被 js/css 認領，請從 REDUNDANT_BUT_KEPT 移除（它回到真正的豁免了）。");
@@ -3290,7 +3385,7 @@ test("§5 hook class 不得被 scss 樣式（.js-* 與具名真 app hook 全站 
     //   ⓑ 舊碼的 probe 寫成 `(s) => scanText(s, rule)`，`f` 用掉預設值 `"<probe>"`，
     //      `HOOK_STYLE_EXEMPT.get("<probe>")` 恆 undefined ⇒ **豁免那條分支從來沒被負控走到**。
     //      下面第二組 probe 明確餵進豁免檔的路徑，讓「豁免只蓋它該蓋的那一顆」也被合成樣本驗到。
-    const HOOK_SRC = String.raw`\.(js-[\w-]+|${[...NAMED_HOOKS].join("|")})(?![\w-])`;
+    const HOOK_SRC = String.raw`\.(js-[\w-]+|${[...NAMED_HOOKS.keys()].join("|")})(?![\w-])`;
     const hooksIn = (line) => [...line.matchAll(new RegExp(HOOK_SRC, "g"))].map((m) => m[1]);
     const rule = (line, f) => {
         if (line.trim().startsWith("//")) return null;
@@ -3866,7 +3961,7 @@ test("§5 每顆按鈕都要有主人：行為屬性／js- hook／具名真 app 
     // round45：三個判準都改成逐 class 比對（共用的 classesOf，兩種引號都吃）。
     // 具名掛點的名字**不再抄在這裡**：吃模組層級的 NAMED_HOOKS ∪ NAMED_BUTTON_EXTRA
     // （原本這裡自己抄了 29 筆，其中 13 筆與 NAMED_HOOKS 逐字重複、整張表零 stale 守門）。
-    const NAMED_BUTTON = new Set([...NAMED_HOOKS, ...NAMED_BUTTON_EXTRA]);
+    const NAMED_BUTTON = new Set([...NAMED_HOOKS.keys(), ...NAMED_BUTTON_EXTRA.keys()]);
     const hasHook = (attrs) => classesOf(attrs).some((c) => /^js-[a-z]/.test(c));
     const hasNamed = (attrs) => classesOf(attrs).some((c) => NAMED_BUTTON.has(c));
     // 元件庫展示頁與純展示片段：那裡的鈕就是「長這樣」的樣本，沒有行為是刻意的（名字住在模組層級的 SHOWCASE）
@@ -3898,16 +3993,16 @@ test("§5 每顆按鈕都要有主人：行為屬性／js- hook／具名真 app 
     assert.ok(seen >= 200, `只掃到 ${seen} 顆按鈕 —— 這條測試在空轉`);
     // ── NAMED_BUTTON_EXTRA 的衛生（原本整張 NAMED 表零守門）──────────────────────
     // ① 與 NAMED_HOOKS 互斥：同一個名字兩張表都有＝又回到「同一概念兩份清單」。
-    const both = [...NAMED_BUTTON_EXTRA].filter((c) => NAMED_HOOKS.has(c));
+    const both = [...NAMED_BUTTON_EXTRA.keys()].filter((c) => NAMED_HOOKS.has(c));
     assert.deepEqual(both, [], `這些名字同時在 NAMED_HOOKS 與 NAMED_BUTTON_EXTRA：${both.join("、")}`);
     // ② 每一顆都要**另有主人**（有 css 規則或被元件 js 查）——否則它是純掛點，家在 NAMED_HOOKS。
     const cssCls = cssSelectorClasses();
     const jsText = srcJs.map((f) => read(f)).join("\n");
-    const noOwner = [...NAMED_BUTTON_EXTRA].filter((c) => !cssCls.has(c) && !new RegExp(String.raw`[.'"\`]${c}(?![\w-])`).test(jsText));
+    const noOwner = [...NAMED_BUTTON_EXTRA.keys()].filter((c) => !cssCls.has(c) && !new RegExp(String.raw`[.'"\`]${c}(?![\w-])`).test(jsText));
     assert.deepEqual(noOwner, [], `NAMED_BUTTON_EXTRA 的這幾顆既沒有 css 規則也沒有元件 js 查它 —— 它們是純掛點，請搬去 NAMED_HOOKS：${noOwner.join("、")}`);
     // ③ 死豁免：這張表只服務「按鈕的主人」這條規則，名字沒掛在任何一顆 <button> 上就不再豁免任何東西
     //    （round45 因此移除了 `check-all`——它掛在 checkbox 的 <input> 上）。
-    const staleNamed = [...NAMED_BUTTON_EXTRA].filter((c) => !onButtons.has(c));
+    const staleNamed = [...NAMED_BUTTON_EXTRA.keys()].filter((c) => !onButtons.has(c));
     assert.deepEqual(staleNamed, [], `NAMED_BUTTON_EXTRA 有死豁免（全站沒有任何 <button> 掛這顆 class）：${staleNamed.join("、")}`);
     const stale = [...EXEMPT.keys()].filter((k) => !usedExempt.has(k));
     assert.equal(stale.length, 0, `EXEMPT 有過期項（鈕已改名或已掛上掛點）：${stale.join("、")}`);
