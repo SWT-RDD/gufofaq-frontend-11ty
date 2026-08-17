@@ -1,9 +1,15 @@
 // 結構與數值取自凍結前端 `GufoFAQ_Frontend_New/scss/component.scss` 1935-2005（accordion 手風琴區塊）。
 // **偏離逐條列出**：
-//   ① 箭頭原本是 background-image，改成 `icon-mask`（顏色交給 token，深色模式免反相）
-//   ② 色值換語意 token
-//   ③ `th, td` 內的 `box-sizing: border-box`（原檔 1975）移除（§4-1：`_base.scss` 已全域給）
-@use "../../../scss/mixin" as *;
+//   ① 色值換語意 token
+//   ② `th, td` 內的 `box-sizing: border-box`（原檔 1975）移除（§4-1：`_base.scss` 已全域給）
+// **箭頭維持 `background-image`，刻意不用 `icon-mask()`**（§4 那條的前提是「單色 PNG」）：
+//   `icon_table_arrow_default/open.png` 是**圓底 ＋ 箭頭**的雙色圖（48×48，不透明面積 57%，
+//   圓底 `#efefef`／`#13386f` 佔 85%，箭頭 `#494949`／`#ffffff` 只有 154 px），而 `icon-mask()` 是
+//   「alpha 當字形、顏色交給 token」——遮罩後整顆圓底連同箭頭一起被塗成同一個顏色，畫面上
+//   剩下一顆 18px 實心圓點，收合與展開兩態**只差顏色、方向指示器完全消失**（兩張圖的 alpha
+//   逐像素相同）。`_mixin.scss` 檔頭那句「彩色圖遮罩後會被塗平，要留 background-image」講的
+//   就是這一族。深色模式不必反相：這兩張是自帶底色的 chip，淺灰圓配深箭頭／深藍圓配白箭頭
+//   在深淺兩種底上都讀得出來。
 /*===============================
     accordion手風琴
 ================================*/
@@ -12,13 +18,13 @@
     padding: 0;
     width: 1.5rem;
     height: 1.5rem;
-    // 收合時是次要灰、展開時轉成深墨色。
-    // 真 app 這裡是 #d7d7d7（疊白底只有 1.30:1，深色反相後 1.11:1，等於看不見）——
-    // 那是箭頭本身的顏色，不是邊框；用 --border 只是「數值剛好接近」，角色是錯的（§4：一顆 token 只有一個角色）。
-    @include icon-mask("../images/icon_table_arrow_default.png", var(--text-muted));
+    background-image: url("../images/icon_table_arrow_default.png");
+    background-repeat: no-repeat;
+    background-size: contain;
+    background-position: center;
 
     &.open {
-        @include icon-mask("../images/icon_table_arrow_open.png", var(--brand-ink));
+        background-image: url("../images/icon_table_arrow_open.png");
     }
 }
 

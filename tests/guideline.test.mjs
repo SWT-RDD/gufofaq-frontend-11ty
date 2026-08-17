@@ -11,6 +11,7 @@ import assert from "node:assert/strict";
 import { readFileSync, readdirSync, existsSync, statSync } from "node:fs";
 import { execSync } from "node:child_process";
 import { createHash } from "node:crypto";
+import { inflateSync } from "node:zlib";
 import { basename } from "node:path";
 
 const read = (f) => readFileSync(f, "utf8");
@@ -7523,4 +7524,82 @@ test("§4 aria-labelledby 的順序：指向自己子樹的那一段（動作）
             // 兩段都是外部節點（列名 ＋ 欄表頭）＝這條規則不管它
             '<span id="rowName">檔名</span><span id="head">操作</span><input aria-labelledby="rowName head">',
         ]);
+});
+
+// ───────── 遮罩用 PNG 的「單色字形」判準（§4） ─────────
+
+// PNG 解碼：只要 alpha，故只做 IHDR/IDAT ＋ 五種 filter 的逆運算（zlib 是 node 內建，零依賴）。
+// 為什麼要真的解碼：這條規則的失敗樣態是**視覺**的（圓底被塗平成一顆實心圓點），而視覺指紋
+// （fpdiff）比的是幾何盒子——實心圓與箭頭佔同一個 24×24 的盒，抓不到；stylelint 只看宣告。
+function pngOpaqueRatio(file) {
+    const b = readFileSync(file);
+    let o = 8, w = 0, h = 0, bd = 0, ct = 0;
+    const idat = [];
+    while (o < b.length) {
+        const len = b.readUInt32BE(o);
+        const type = b.toString("ascii", o + 4, o + 8);
+        if (type === "IHDR") { w = b.readUInt32BE(o + 8); h = b.readUInt32BE(o + 12); bd = b[o + 16]; ct = b[o + 17]; }
+        if (type === "IDAT") idat.push(b.subarray(o + 8, o + 8 + len));
+        o += 12 + len;
+    }
+    // 沒有 alpha 通道（灰階／索引／truecolor）⇒ 整張都不透明，必然踩線，交給斷言去報
+    if (ct !== 4 && ct !== 6) return 1;
+    const raw = inflateSync(Buffer.concat(idat));
+    const ch = ct === 6 ? 4 : 2;
+    const bpp = ch * bd / 8;
+    const stride = w * bpp;
+    const out = Buffer.alloc(h * stride);
+    let pos = 0;
+    for (let y = 0; y < h; y++) {
+        const ft = raw[pos++];
+        const line = raw.subarray(pos, pos + stride); pos += stride;
+        for (let x = 0; x < stride; x++) {
+            const a = x >= bpp ? out[y * stride + x - bpp] : 0;
+            const up = y > 0 ? out[(y - 1) * stride + x] : 0;
+            const ul = y > 0 && x >= bpp ? out[(y - 1) * stride + x - bpp] : 0;
+            let v = line[x];
+            if (ft === 1) v += a;
+            else if (ft === 2) v += up;
+            else if (ft === 3) v += (a + up) >> 1;
+            else if (ft === 4) {
+                const p = a + up - ul, pa = Math.abs(p - a), pb = Math.abs(p - up), pc = Math.abs(p - ul);
+                v += (pa <= pb && pa <= pc) ? a : (pb <= pc ? up : ul);
+            }
+            out[y * stride + x] = v & 255;
+        }
+    }
+    let opaque = 0;
+    for (let i = 0; i < w * h; i++) if (out[i * bpp + (ct === 6 ? 3 : 1)] > 10) opaque++;
+    return opaque / (w * h);
+}
+
+// 不透明面積上界。全站遮罩圖實測分佈 3%–36%（最高是 icon_share 的 36%），而被這條擋下來的
+// icon_table_arrow_default／open 是 57%——中間有 9 個百分點的空隙，45% 落在那個空隙裡。
+const MASK_OPAQUE_MAX = 0.45;
+
+test("§4 遮罩上色（icon-mask）只准用單色字形 PNG：圓底／雙色圖遮罩後會被塗平", () => {
+    // `icon-mask()` 的語意是「alpha 是字形、顏色交給語意 token」，_mixin.scss 檔頭逐字寫著
+    // 「只給單色字形用 —— 彩色圖遮罩後會被塗平，要留 background-image／<img>」。
+    // 那句警語先前沒有任何網：ui/accordion 的展開箭頭因此被塗成一顆 18px 實心圓點，
+    // 收合與展開**只差顏色**（兩張圖的 alpha 逐像素相同），方向指示器整個消失，
+    // 而六個消費點（sources-block／step-flow／default-table／3-5／2-2-4／2-2-5）全中。
+    const used = new Map();
+    for (const f of srcScss) {
+        for (const m of read(f).matchAll(/icon-mask\(\s*"(\.\.\/images\/[^"]+)"/g)) {
+            used.set("src/images/" + m[1].split("/").pop(), f);
+        }
+    }
+    assert.ok(used.size >= 15, `只掃到 ${used.size} 張遮罩圖 —— 這條測試在空轉`);
+    const hits = [];
+    for (const [png, owner] of used) {
+        if (!existsSync(png)) { hits.push(`${owner}  遮罩圖不存在：${png}`); continue; }
+        const r = pngOpaqueRatio(png);
+        if (r > MASK_OPAQUE_MAX) hits.push(`${owner}  ${png.split("/").pop()} 不透明面積 ${(r * 100).toFixed(0)}%（上界 ${MASK_OPAQUE_MAX * 100}%）—— 這不是單色字形，遮罩會把它塗平`);
+    }
+    assert.equal(hits.length, 0, `改回 background-image／<img>，或換一張只留字形的資產（§4）：\n${fail(hits)}`);
+
+    // 負控：這條判準必須真的擋得住那兩張圖，否則它只是一句沒有載重的宣告。
+    for (const bad of ["src/images/icon_table_arrow_default.png", "src/images/icon_table_arrow_open.png"]) {
+        assert.ok(pngOpaqueRatio(bad) > MASK_OPAQUE_MAX, `負控失效：${bad} 應該過不了單色字形判準`);
+    }
 });
