@@ -42,7 +42,11 @@ permalink: 3-1-1_datasetList.html
      故 sn 直接沿用那兩頁的 id（3 與 12），不另發一組；目錄正本見 3-5 的 `healthScanDatasets`。
      「一個資料集只出現在健康度頁、資料集清單上找不到它」是這一批示範資料最大的破口：使用者從
      健康度處置完點回來就沒有落點，而那正是那一頁每一顆處置鈕的下一步（§6 跨頁自洽）。
-     （註解不可以寫在 `{% set %}` 的陣列字面裡——nunjucks 會在那裡解析成 `unexpected token: #`，§2。） #}
+     （註解不可以寫在 `{% set %}` 的陣列字面裡——nunjucks 會在那裡解析成 `unexpected token: #`，§2。）
+   **「2026 新制問答」的 xlsx 是 3 不是 2**：全站指名掛在它底下的檔有三個——`2026新制問答_v3.xlsx`
+     與 `客服話術彙編.xlsx`（3-5 的 936／901）、`新住民生活須知問答.xlsx`（`components/untagged-files-modal`）。
+     這一欄的加總就是那個資料集的檔案總數（見上一段），少一個就會出現「從健檢／覆蓋率點回來，
+     清單上的檔案數對不起來」（§6 跨頁自洽）。 #}
 {% set rows = [
     {
         name: "客服問答知識庫",
@@ -88,11 +92,11 @@ permalink: 3-1-1_datasetList.html
         name: "2026 新制問答",
         href: "3-1-3_previewDataset.html?sn=12",
         group: "業務群組",
-        fileTypes: { xlsx: 2, pdf: 0, word: 0, api: 0, img: 0 },
+        fileTypes: { xlsx: 3, pdf: 0, word: 0, api: 0, img: 0 },
         createdAt: "2026/02/20 09:47",
         updatedAt: "2026/07/09 13:58",
-        sizeMB: "4.31",
-        count: "318"
+        sizeMB: "6.05",
+        count: "441"
     }
 ] %}
 <div class="table-container scrollTable">
@@ -229,7 +233,14 @@ permalink: 3-1-1_datasetList.html
      資源層那一道是 product `app/routers/datasets.py` 的 `_writable_dataset` → 403
      `dataset.not_writable_group`（`authz.can_write_dataset`）；而 `list_datasets` 只以 `tenant_id`
      收斂、不依該 scope 過濾 ⇒「看得到一筆、按下去 403」是真實可達的路徑（§4 的判準）。
-     子句與 3-5 五顆處置鈕、3-1-3 三處就地編輯逐字共用。 #}
+     這一句是全站同一道守衛的**共用子句**：3-1-3（刪檔／名稱／兩處欄位／切塊參數）、3-3（刪 QA 集、
+     匯入問答）、1-1-4／1-2-1（兩支匯入）都逐字沿用它。
+     3-5 那五顆處置鈕**措辭不同、而且是對的**：那一頁的主詞是「記錄」不是「資料集」（「這幾筆記錄
+     所在的資料集不在你可以寫入的群組裡——處置會就地改寫來源檔，需要與匯入、刪檔同一道群組寫入
+     權限」）。同一道守衛、兩種主詞，不是同一句話。
+     （先前這裡寫「與 3-5 五顆處置鈕、3-1-3 三處就地編輯**逐字共用**」：前半誇大，後半在當時根本
+     不成立——3-1-3 那幾處那時只有「權限不足，無法儲存」一句，這一輪才補上。§3-2 斷言要能被一行
+     可貼出的引文支撐。） #}
 {% set deleteToast = "已刪除|權限不足，無法刪除|這個資料集不在你可以寫入的群組裡，請找管理員把你加進該群組|對話設定有一欄不合法，請先到對話設定頁修正|刪除資料集失敗" %}
 {% set deleteToastKey = "toast.deleteDataset" %}
 {% set deleteToastType = "success|warning|warning|warning|error" %}

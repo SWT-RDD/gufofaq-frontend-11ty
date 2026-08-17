@@ -16,13 +16,17 @@ permalink: 3-1-2_dataImport_input.html
     {% include "ui/breadcrumb/breadcrumb.html" %}
 </div>
 
-{# 資料集名稱輸入：真實頁 #datasetName 純文字輸入框，class 沿用真實系統 #}
+{# 資料集名稱輸入：真實頁 #datasetName 純文字輸入框，class 沿用真實系統。
+     **必填要成對標**（§4：`control-label required` 與控制項的 `required`——星號是視覺，`required`
+     是報讀器與 React 表單庫讀的那一份）：上游 `create_dataset` 的第一道就是 400
+     `dataset.name_required`（product `app/routers/datasets.py`），而這一頁的送出鈕自己也列著
+     「資料集名稱不可為空」；同一張表單的「所屬群組」與姊妹頁 3-3／3-2／3-6 的名稱欄都標了。 #}
 <div class="form-group row mt-10">
     <div class="label">
-        <label for="datasetName" class="control-label" data-i18n="dataset.datasetName">資料集名稱</label>
+        <label for="datasetName" class="control-label required" data-i18n="dataset.datasetName">資料集名稱</label>
     </div>
     <div class="field">
-        <input type="text" id="datasetName" placeholder="請輸入資料集名稱" data-i18n-placeholder="dataset.enterDatasetName" class="form-control select-md">
+        <input type="text" id="datasetName" placeholder="請輸入資料集名稱" data-i18n-placeholder="dataset.enterDatasetName" class="form-control select-md" required>
         {# 空的 live region：錯誤文字由業務 js 填入。.error-prompt 預設就 display:none（由父層 .error 顯示），不必行內再寫一次 #}
         <span class="error-prompt" role="alert"></span>
     </div>

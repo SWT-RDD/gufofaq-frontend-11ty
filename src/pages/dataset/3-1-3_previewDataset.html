@@ -102,11 +102,11 @@ permalink: 3-1-3_previewDataset.html
      `_assert_chunk_params_still_settable` 那兩條證據的聯集），這一區才能在進頁的當下就說「這個資料集
      已經鎖住了」，而不是等使用者填完按下去才知道（§4 切版主張需求）。
    儲存鈕是③直接送 API 的鈕 → `data-toast` 列全結果；hook 用 `js-save-chunk-params`（全站 scss 不引用）。 #}
-<div class="block flex-row column gap-16" role="group" aria-labelledby="chunkSettingsTitle">
+        <div class="block flex-row column gap-16">
     <div class="flex-row column gap-8">
         {# ⓘ 說明：markup 逐字照抄 `settings/5-2_conversationSettings.html` 出口套用欄那顆既有
              info-btn（`aliasOutputInfoModal` 觸發鈕）六件組。標題 div 本身
-             （`id="chunkSettingsTitle"`）保持原樣不塞子節點——外層 `role="group"` 的
+             （`id="chunkSettingsTitle"`）保持原樣不塞子節點——下面那顆 `role="group"` 的
              `aria-labelledby` 指著它，混進按鈕的可及名稱會把整組的名字弄髒，故另包一層
              flex-row 放標題與按鈕（同 3-1-2 的做法）。
              **①內容與 3-1-2 的 `chunkSettingsHelpModal` 逐字共用同一個 i18n key**：本頁檔頭自己
@@ -125,6 +125,10 @@ permalink: 3-1-3_previewDataset.html
         <p class="text-gray m-0" data-i18n="dataset.chunkAffectsFutureOnly">切塊參數只在建立擷取管道時送給上游，所以只影響之後匯入的檔案；已經匯入的內容不會重新切塊。</p>
         <p class="text-gray m-0" data-i18n="dataset.chunkLockedAfterUpload">而且這個資料集只要做過一次「檔案上傳」匯入，這三個值就再也改不動，之後不論從哪一條路匯入都只能沿用現值——請在這裡決定好。</p>
     </div>
+    {# `role="group"` 只框那一組欄位（§4：不得連同旁邊不屬於這組的控制項一起框）——
+         下面那顆「儲存」是這一組的**送出鈕**，框進來會讓報讀器把它念成「切塊設定」的成員；
+         姊妹頁 3-1-2 的同一塊本來就是這個形狀（三張 upload-card 在 group 外）。 #}
+    <div class="flex-row column gap-16" role="group" aria-labelledby="chunkSettingsTitle">
     <div class="form-group row">
         <div class="label">
             <label for="chunkSize" class="control-label" data-i18n="dataset.chunkSize">切塊大小</label>
@@ -149,16 +153,17 @@ permalink: 3-1-3_previewDataset.html
         <span data-i18n="dataset.prependTitleEachChunk">每一塊都帶上文件標題</span>
     </label>
     <p id="prependTitleHint" class="text-gray m-0" data-i18n="dataset.prependTitleHint">開啟後每一塊的開頭都會補上這份文件的標題，檢索時比較不會斷章取義；代價是每一塊少一點放正文的長度。</p>
+    </div>
     <div class="flex-row justify-content-end">
-        {# 逐 raise 對回這顆鈕（同檔 `update_dataset`）：403 `dataset.not_writable_group`
+        {# 逐 raise 對回這顆鈕（同檔 `update_dataset`）：403 `require_capability("data","write")`（能力軸）／403 `dataset.not_writable_group`
              （`_writable_dataset`，與本頁名稱那顆同一道守衛）／422（`_assert_overlap_below_size`，
              端點拿**合併後**的值複驗，只送一欄時另一半在 DB 裡）／409 `dataset.chunk_params_locked`
              （`_assert_chunk_params_still_settable`；訊息要講清楚三欄是共用的一份值、這一次一個都沒
              存下來）——三段都是使用者自己處理得掉的 warning。404／500 併進末段 error。
              400 `common.no_fields_to_update` 不列：這張表單一定會送出三欄，走不到那條路。 #}
         <button data-capability="data:write" type="button" class="button button-primary js-save-chunk-params"
-            data-toast="切塊設定已更新|權限不足，無法儲存|切塊重疊必須小於切塊大小|這個資料集已經做過「檔案上傳」匯入，切塊參數不能再改；這一次三個值一個都沒有存下來|儲存失敗，請稍後再試"
-            data-i18n-data-toast="toast.saveChunkParams" data-toast-type="success|warning|warning|warning|error"
+            data-toast="切塊設定已更新|權限不足，無法儲存|這個資料集不在你可以寫入的群組裡，請找管理員把你加進該群組|切塊重疊必須小於切塊大小|這個資料集已經做過「檔案上傳」匯入，切塊參數不能再改；這一次三個值一個都沒有存下來|儲存失敗，請稍後再試"
+            data-i18n-data-toast="toast.saveChunkParams" data-toast-type="success|warning|warning|warning|warning|error"
             data-i18n="action.save">儲存</button>
     </div>
 </div>

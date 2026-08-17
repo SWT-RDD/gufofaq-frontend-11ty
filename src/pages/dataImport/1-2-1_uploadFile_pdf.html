@@ -300,7 +300,11 @@ permalink: 1-2-1_uploadFile_pdf.html
      示範值與上面的成功列自洽（§6）：2 檔成功、外部主鍵未填故都是純新增，failed 1 對到失敗列那一檔。
      兩種副檔名各演一份統計，因為**欄位本來就不同**：pdf 是頁數／表格／表格列數＋兩個警訊欄，
      word 是段落／表格／表格列數。只演一種的話，另一種的那幾個標籤全站沒有任何頁面看得到。 #}
-{% set importCounts = { inserted: 2, updated: 0, failed: 1 } %}
+{# 三計數**從陣列推導**，不烤字面量（§6）：上面那句彙總已經是 `batchOkRows.length` 與
+     `batchFailRows.length`，同一批檔的兩個投影不能有兩個來源——加一筆失敗列就會出現「失敗 2」
+     與「失敗 1」同時在畫面上。`updated` 保留字面 0：這一批沒有帶外部主鍵，沒有任何一筆是
+     取代舊版（`updated` ＝被 `external_key` 取代的檔數，見 import-report 檔頭）。 #}
+{% set importCounts = { inserted: batchOkRows.length, updated: 0, failed: batchFailRows.length } %}
 {# `structTables` 是**偵測到的表格總數**：pdf_tables 的 `stats["tables"] += 1` 在判定
      「這張處理不了」之前就無條件加一，所以無法處理的那幾張也算在內，總數必須 ≥ 兩份具名清單
      指名過的最大表格序號（§6：計數與具名清單要互推得出來）。

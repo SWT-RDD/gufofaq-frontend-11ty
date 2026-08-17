@@ -33,7 +33,7 @@ permalink: 3-1-6_previewExcel_compare.html
     </div>
 </div>
 
-{# 兩個面板 13 顆排序鈕共用的「排序」字樣（可及名稱組成「<欄名> 排序」）；一頁一份、不逐鈕複製。
+{# 兩個面板**每一欄一顆**排序鈕共用的「排序」字樣（可及名稱組成「<欄名> 排序」）；一頁一份、不逐鈕複製。
      **它必須住在兩個 `.tab-content` 之外**：ui/tab 的 `showPanel()` 是 document 級全域，切到
      另一個面板時會把沒被選中的 `.tab-content` 整塊 `style.display = "none"`——原本它住在
      `#panelCompare` 裡，於是使用者一切到「原始資料」，那 7 顆鈕的 `aria-labelledby` 就指向一個
@@ -119,7 +119,7 @@ permalink: 3-1-6_previewExcel_compare.html
             {% for row in rows %}
             {# 巢狀迴圈：外圈列號要另存（內圈的 loop.index 是欄號）。這張表沒有專屬辨識欄——
                  第一欄（標題／商品編號）就是這一列的身分，故 id 掛在第一格的 .collapse-body 上。
-                 18 顆收合鈕的可及名稱＝「本列第一格 ＋ 欄名 ＋ 本鈕自己的字」（§4；欄名節點
+                 每一格一顆收合鈕，可及名稱＝「本列第一格 ＋ 欄名 ＋ 本鈕自己的字」（§4；欄名節點
                  `cmpColName-*` 是排序鈕已經在用的那一顆，兩者共用同一個正本）。 #}
             {% set cmpRowNo = loop.index %}
             <tr>
