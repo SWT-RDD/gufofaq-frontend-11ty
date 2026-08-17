@@ -14,12 +14,42 @@ import { createHash } from "node:crypto";
 import { basename } from "node:path";
 
 const read = (f) => readFileSync(f, "utf8");
-const gitFiles = (glob) => execSync(`git ls-files ${glob}`, { encoding: "utf8" }).split(/\r?\n/).filter(Boolean);
+// `git ls-files` **看不見還沒 add 的新檔**。整份測試的母體都從這裡來，所以一個「剛切好、還沒進版控」
+// 的新頁面或新元件會安安靜靜地不受任何規則約束——而那正是最需要被審的狀態（`--others
+// --exclude-standard` 把未追蹤但未被 .gitignore 排除的檔一起收進來；已刪除但未 commit 的檔則要濾掉，
+// 否則 readFileSync 會炸）。**不改用純檔案系統掃描**是因為 .gitignore 的排除規則要照算
+// （node_modules／dist／暫存檔），而 git 是那份規則唯一的正本。
+const gitFiles = (glob) => {
+    const ls = (args) => execSync(`git ls-files ${args} ${glob}`, { encoding: "utf8" }).split(/\r?\n/).filter(Boolean);
+    return [...new Set([...ls(""), ...ls("--others --exclude-standard")])].filter((f) => existsSync(f)).sort();
+};
 const CJK = /[一-鿿]/;
 
 const srcHtml = gitFiles('"src/**/*.html" "src/*.html"');
 const srcScss = gitFiles('"src/**/*.scss"');
 const srcJs = gitFiles('"src/**/*.js"');
+
+// ── 「這顆 class 有沒有被 js 認領」的**唯一正本**（round37 在死 CSS 那條修過一次，
+//    另外兩條卻各自留著 `jsBlob.includes(c)` 的子字串比對）。子字串會讓
+//    `.prompt` 被 `.prompt-edit` 命中、`number` 被 `typeof x === 'number'` 命中——
+//    §4 第①②種死法（無主 class、看起來像掛點的新 class）因此各漏了好幾輪。
+//    合法的認領只有兩種形狀：出現在**選擇器字串**裡，或出現在**建構位置**（classList／className）。
+//    註解先剝掉：在任何一支 js 的註解裡提一次不算認領（round35 的突變證明）。
+const stripJsComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/.*$/gm, "$1");
+const jsOwnedClasses = (() => {
+    const blob = srcJs.map((f) => stripJsComments(readFileSync(f, "utf8"))).join("\n");
+    const out = new Set();
+    const addSel = (sel) => { for (const m of sel.matchAll(/\.(-?[A-Za-z_][\w-]*)/g)) out.add(m[1]); };
+    for (const m of blob.matchAll(/(?:querySelectorAll|querySelector|closest|matches)\(\s*(['"`])([\s\S]*?)\1/g))
+        addSel(m[2]);
+    for (const m of blob.matchAll(/classList\s*\.\s*(?:add|remove|toggle|contains|replace)\(([^)]*)\)/g))
+        for (const s of m[1].matchAll(/(['"`])([^'"`]*)\1/g)) for (const t of s[2].split(/\s+/)) if (t) out.add(t);
+    for (const m of blob.matchAll(/className\s*=\s*(['"`])([^'"`]*)\1/g))
+        for (const t of m[2].split(/\s+/)) if (t) out.add(t);
+    for (const m of blob.matchAll(/setAttribute\(\s*(['"`])class\1\s*,\s*(['"`])([^'"`]*)\2/g))
+        for (const t of m[3].split(/\s+/)) if (t) out.add(t);
+    return out;
+})();
 
 if (!existsSync("dist")) throw new Error("請先 npm run build（結構檢查跑在 dist/ 上）");
 const distHtml = readdirSync("dist").filter((f) => f.endsWith(".html"));
@@ -27,10 +57,28 @@ const distHtml = readdirSync("dist").filter((f) => f.endsWith(".html"));
 // 這份檔案有三十幾條在對這四個集合做 assert.equal(hits.length, 0)。
 // git ls-files 對零命中是回空陣列（不報錯），所以 cwd 跑錯、資料夾改名、glob 失準，
 // 都會讓所有測試在「零樣本」下集體變綠。這四行是全檔的總開關。
+// **第五道**：src 底下的 html/scss/js 一個都不准落在母體外。上面那三行只擋得住「集合空掉」，
+// 擋不住「集合少了幾個檔」——而那正是 git ls-files 舊寫法的漏法（新檔靜默缺席）。
+// 這裡用檔案系統走一遍 src/ 當獨立第二來源對帳；兩邊不一致就當場點名。
 assert.ok(srcHtml.length > 20, `srcHtml 只掃到 ${srcHtml.length} 個檔 —— 掃描集合空了，整份測試在空轉`);
 assert.ok(srcScss.length > 20, `srcScss 只掃到 ${srcScss.length} 個檔 —— 掃描集合空了，整份測試在空轉`);
 assert.ok(srcJs.length > 10, `srcJs 只掃到 ${srcJs.length} 個檔 —— 掃描集合空了，整份測試在空轉`);
 assert.ok(distHtml.length > 20, `dist 只掃到 ${distHtml.length} 個 html —— build 失敗了？整份測試在空轉`);
+{
+    const walk = (d, out = []) => {
+        for (const e of readdirSync(d, { withFileTypes: true })) {
+            const p = `${d}/${e.name}`;
+            if (e.isDirectory()) walk(p, out);
+            else out.push(p);
+        }
+        return out;
+    };
+    const onDisk = walk("src");
+    const covered = new Set([...srcHtml, ...srcScss, ...srcJs].map((f) => f.split("\\").join("/")));
+    const missing = onDisk.filter((f) => /\.(html|scss|js)$/.test(f) && !covered.has(f));
+    assert.equal(missing.length, 0,
+        `src 底下有檔案不在測試母體裡（整份規則對它們一個字都沒說）：\n${missing.join("\n")}`);
+}
 
 // dist 比 src 舊 ＝ 在驗上一版的渲染結果。單獨跑 npm test 時最容易中招（npm run check 會先 build）。
 {
@@ -100,9 +148,10 @@ const distDoc = (f) => stripNonMarkup(read(`dist/${f}`));
         if (n < 10) thin.push(`dist/${f} 剝完只剩 ${n} 個開標籤`);
     }
     assert.equal(thin.length, 0, `distDoc() 把整頁挖空了：\n${thin.join("\n")}`);
-    // 棘輪：round45 實測 25467（量的當下 dist 比 src 舊了幾支頁面，故下限取整到 25000）。
-    // 真的刪頁／刪區塊就連同這個數字一起調下來——那是一次有意識的決定。
-    const PREV_DIST_TAGS = 25000;
+    // 棘輪：round46 重量 29329（前一次寫的 25000 是 round45 的實測 25467 取整；那之後 markup 長了
+    // 三千多個標籤，門檻卻沒跟著抬，等於留了 15% 的縫——剝除規則吃掉一成的真 markup 仍會全綠）。
+    // **棘輪要跟著母體一起長**：加了頁面／區塊就重量一次；真的刪頁才把它調下來，那是一次有意識的決定。
+    const PREV_DIST_TAGS = 29300;
     assert.ok(total >= PREV_DIST_TAGS,
         `dist 剝完只剩 ${total} 個開標籤（上一輪 ${PREV_DIST_TAGS}）—— distDoc() 的剝除規則吃掉了真 markup，` +
         `所有以它為母體的測試都在對著空文件斷言`);
@@ -610,30 +659,10 @@ test("§4 markup 上的每個 class 都要有主人（反向網：css 規則／�
     // round35 突變證明：原本直接吃 js 原始檔，於是「在任何一支元件 js 的**註解**裡提一次」
     // 就足以讓一個全站無主的 class 過關——而 §4 第②種死法正是「新造一個看起來像掛點的 class」。
     // 剝掉行註解與區塊註解再比對（`//` 前面是 `:` 的不剝，那是網址）。
-    const stripJsComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/.*$/gm, "$1");
-    const jsBlob = srcJs.map((f) => stripJsComments(read(f))).join("\n");
     assert.ok(cssClasses.size > 300, `編譯後 css 只解析到 ${cssClasses.size} 個 class —— 這條測試在空轉`);
 
-    // 「js 認領了這顆 class」只能用**可定址的形狀**判定，不能對整份 js 做子字串比對。
-    // round37：`jsBlob.includes(".prompt")` 被 prompt-edit.js 的 `.prompt-edit` 命中、
-    // `jsBlob.includes("'number'")` 被 toast.js 的 `typeof type === 'number'` 命中 ——
-    // 兩顆全站零規則、零查詢的無主 class 因此各自過關了好幾輪（§4 第①②種死法）。
-    // 合法的認領只有兩種：出現在**選擇器字串**裡，或出現在**建構位置**（classList/className）。
-    const jsOwned = (() => {
-        const out = new Set();
-        const addSel = (sel) => { for (const m of sel.matchAll(/\.(-?[A-Za-z_][\w-]*)/g)) out.add(m[1]); };
-        // ① 選擇器字串：querySelector / querySelectorAll / closest / matches
-        for (const m of jsBlob.matchAll(/(?:querySelectorAll|querySelector|closest|matches)\(\s*(['"`])([\s\S]*?)\1/g))
-            addSel(m[2]);
-        // ② 建構位置：classList.add/remove/toggle/contains(...)、className = "..."、setAttribute("class", "...")
-        for (const m of jsBlob.matchAll(/classList\s*\.\s*(?:add|remove|toggle|contains|replace)\(([^)]*)\)/g))
-            for (const s of m[1].matchAll(/(['"`])([^'"`]*)\1/g)) for (const t of s[2].split(/\s+/)) if (t) out.add(t);
-        for (const m of jsBlob.matchAll(/className\s*=\s*(['"`])([^'"`]*)\1/g))
-            for (const t of m[2].split(/\s+/)) if (t) out.add(t);
-        for (const m of jsBlob.matchAll(/setAttribute\(\s*(['"`])class\1\s*,\s*(['"`])([^'"`]*)\2/g))
-            for (const t of m[3].split(/\s+/)) if (t) out.add(t);
-        return out;
-    })();
+    // 認領判準抽到檔頭當共用正本（另外兩條規則本來各自留著子字串比對，見那裡的說明）。
+    const jsOwned = jsOwnedClasses;
     assert.ok(jsOwned.size > 40, `js 選擇器/建構位置只解析到 ${jsOwned.size} 個 class —— 這條解析在空轉`);
     // 負控：舊的子字串比對會把這兩顆判成「有主人」，新的解析必須判不到。
     for (const ghost of ["prompt", "number"])
@@ -2226,7 +2255,8 @@ test("§8 css / js 的每一個引用都帶 ?v=；images 刻意不帶（改圖�
     //   round42 曾把 imgs 沿用成舊值 258，而當時的收集器實測是 261（多出來的三個是
     //   1-2-1 `accept=".png/.jpg/.jpeg"`——測試自己在下方 probe 裡列為「不是引用」的東西）：
     //   棘輪一出生就鬆了三格。收集器一改就要重量，不能靠推論。
-    const PREV = { refs: 1512, imgs: 258 };
+    //   round46 重量：refs 1665／imgs 334（舊值 1512／258 已經鬆到 9%／23%）。同上，母體長了就要重量。
+    const PREV = { refs: 1665, imgs: 334 };
     assert.equal(blind.length, 0, `這幾頁一個 css/js 或圖片引用都沒收到（收集器的形狀假設又縮回去了？）：\n${fail(blind)}`);
     assert.ok(refs >= PREV.refs, `css/js 引用 這一輪 ${refs}（上一輪 ${PREV.refs}）—— 掉了就是收集器壞了；真的刪了頁面請一併把 PREV.refs 調下來`);
     assert.ok(imgs >= PREV.imgs, `圖片引用 這一輪 ${imgs}（上一輪 ${PREV.imgs}）—— 掉了就是收集器壞了；真的刪了圖請一併把 PREV.imgs 調下來`);
@@ -3127,7 +3157,6 @@ test("§5/§8 元件 scss 的頂層根 class 要打得到 markup 或元件 js（
     for (const f of distHtml)
         for (const { value } of attrValuesIn(distDoc(f), "class"))   // round45：兩種引號都吃
             for (const c of value.split(/\s+/)) if (c) classAttr.add(c);
-    const jsBlob = srcJs.map((f) => read(f)).join("\n");
     const SHARED = new Set(["active", "open", "show", "hidden", "collapsed", "disabled", "done", "error"]);
     const rootTokens = (scss) => {
         const out = new Set();
@@ -3148,15 +3177,20 @@ test("§5/§8 元件 scss 的頂層根 class 要打得到 markup 或元件 js（
     };
     const bad = [];
     let roots = 0;
-    for (const f of srcScss.filter((x) => x.includes("_includes"))) {
+    for (const f of srcScss.filter((x) => x.includes("_includes") || x.includes("src/scss/"))) {
         for (const c of rootTokens(read(f))) {
             if (SHARED.has(c)) continue;
             roots++;
-            if (!classAttr.has(c) && !jsBlob.includes(c))
+            // round46：這裡原本是 `jsBlob.includes(c)`——同一個 round37 修過的子字串 bug 的第二份。
+            // 用共用的 jsOwnedClasses（選擇器字串／建構位置）判認領。
+            if (!classAttr.has(c) && !jsOwnedClasses.has(c))
                 bad.push(`${f}：頂層根 class .${c} 在全站 dist markup 與元件 js 都零出現——死 CSS`);
         }
     }
-    assert.ok(roots >= 60, `只掃到 ${roots} 個頂層根 class —— 收集壞了？這條測試在空轉`);
+    // round46：母體從「只有元件 scss」擴到「＋ src/scss/ 的全域 partial」——全域工具 class 原本
+    // 完全不受死 CSS 這條管（三條 scss 規則裡有兩條把 src/scss/ 濾掉了）。擴完實測 0 筆死 CSS，
+    // 但下限要跟著抬（60 → 175，實測 178），否則濾條再縮回去就靜靜地變綠。
+    assert.ok(roots >= 175, `只掃到 ${roots} 個頂層根 class —— 收集壞了？這條測試在空轉`);
     assert.equal(bad.length, 0, fail(bad));
 });
 
@@ -3551,6 +3585,10 @@ test("§4 頂層根 class 名只能有一個元件 scss 主人（兩份頂層宣
         return out;
     };
     const owner = new Map(); // root class -> Set(file)
+    // 這一條**刻意只看元件 scss**：`src/scss/` 底下的共用 base 與元件 scss 分持同一顆根 class 是
+    // §4 明文的正典（`_form-check.scss` 拿走 checkbox／radio 共用的外框排版、兩個 atom 各留自己的部分；
+    // `_guideline-var.scss` 給 token、`_guideline.scss` 給規則）。把全域 partial 一起收進來只會把那三組
+    // 判成違規，而它們正是這條規則要的結果——一份共用正本，不是兩份會分岔的正本。
     for (const f of srcScss.filter((x) => x.includes("_includes"))) {
         for (const c of rootTokens(read(f))) {
             if (SHARED.has(c)) continue;
@@ -3780,6 +3818,7 @@ test("§5/§6 元件 scss 的巢狀狀態/變體 class（&.is-*）都要有頁�
     const jsBlob = srcJs.map((f) => read(f)).join("\n");
     // 執行期以前綴串接生成的 class：由 toast 的型別常數推導，不手打（同 data-toast-type 白名單那條的來源）
     const runtimeGenerated = new Set(/toast\s+toast-/.test(jsBlob) ? TOAST_TYPES_R31.map((t) => `toast-${t}`) : []);
+    // round46：下面原本也是 `jsBlob.includes(cls)`（第三份子字串比對）。改吃共用正本。
     const hits = [];
     let seen = 0;
     for (const { bucket, name, path } of componentDirs) {
@@ -3790,7 +3829,7 @@ test("§5/§6 元件 scss 的巢狀狀態/變體 class（&.is-*）都要有頁�
             seen++;
             if (runtimeGenerated.has(cls)) continue;
             const re = new RegExp(`(?:class="[^"]*\\b${cls}\\b|\\b${cls}\\b)`);
-            if (re.test(distMarkup) || jsBlob.includes(cls)) continue;
+            if (re.test(distMarkup) || jsOwnedClasses.has(cls)) continue;
             hits.push(`${bucket}/${name}  &.${cls}  ← scss 定義了，但沒有任何 dist 頁面或元件 js 用到它`);
         }
     }
@@ -4183,15 +4222,14 @@ test("§4 每一顆會改狀態的鈕都要宣告它需要哪一道閘門（四�
     //   ② **子字串比對放行了寫入**。「已核發，請立即複製下方明碼」因為句中有「複製」而免檢，
     //      而核發服務金鑰是 require_platform_admin 才做得了的寫入。改成**以錨定字串開頭**。
     // 每一筆都要寫「為什麼是唯讀」：這張表是唯一能讓一顆會成功的鈕不宣告閘門的出口。
+    // round46：這張表原本十筆，其中六筆（查詢／報表已下載／完整軌跡已載入／已回復至目前正式提示詞／
+    // 已回復儲存的設定／比較完成）**一顆都沒有豁免到**——它們命中的鈕全都自己標了讀取軸的閘門
+    // （`data-capability="…:read"`）。零載重的豁免不是無害的：它對「下一顆同開頭的**寫入**鈕」開著門，
+    // 而那顆鈕永遠不會被這條規則看到。下方 noLoad 那道斷言把這件事釘死，六筆同時移除。
+    // 留下來的四筆各自有一顆真的沒有閘門、也標不出閘門的鈕。
     const READONLY = [
-        ["查詢", "篩選／查詢是 GET（product 的 list／search 端點），按下去只是換一份要看的資料"],
         ["下載", "把既有資料匯出成檔案，走讀取端點；產生檔案不落任何一筆新狀態"],
-        ["報表已下載", "同上（回歸執行的報表匯出）——句子以「報表」起頭，錨不到「下載」那一筆"],
-        ["完整軌跡已載入", "step-flow 檔頭引的 `GET /history/{log_id}/trace`：把被截掉的那一段取回來看"],
         ["已複製", "寫進剪貼簿，完全不碰後端"],
-        ["已回復至目前正式提示詞", "把編輯器內容換回目前正式版的文字，還沒送出（送出的是另一顆「儲存為新版本」）"],
-        ["已回復儲存的設定", "把表單換回已儲存的值，還沒送出（同上）"],
-        ["比較完成", "把這一次執行與基準那一次的既有結果並排算差異，兩邊都是讀"],
         ["量測完成", "5-10 檔頭引的 `GET /tags/coverage`：讀既有標註算覆蓋率，不改任何一筆標註"],
         ["名單已載入", "iso-review-wizard 檔頭引的 `GET /platform/review/overdue`（require_platform_auditor）：把逾時名單讀回來畫成 preview，寫入在下一態那顆 .js-review-confirm"],
     ];
@@ -4263,6 +4301,8 @@ test("§4 每一顆會改狀態的鈕都要宣告它需要哪一道閘門（四�
     // 寫入區塊另外標 admin）——一顆寫入鈕落在 `data-platform-role="auditor"` 區塊內，
     // 講的是「唯讀稽核員按得動這顆」，那是宣告錯了、不是宣告過了。授權寫入的只有 admin。
     const WRITE_ROLE = "admin";
+    // 哪幾個 READONLY 動詞真的在承載豁免（見下方 noLoad 那道斷言）。gateScan 邊掃邊填。
+    const readonlyLoad = new Set();
     const gateScan = (src, f = "<probe>") => {
         const out = [];
         const { scopes, unmatched } = platformScopes(src, f);
@@ -4271,7 +4311,15 @@ test("§4 每一顆會改狀態的鈕都要宣告它需要哪一道閘門（四�
             const attrs = m[1];
             const seg = successSeg(attrs);
             if (seg === null) continue;
-            if (READONLY.some(([verb]) => seg.startsWith(verb))) continue;
+            const ro = READONLY.find(([verb]) => seg.startsWith(verb));
+            if (ro) {
+                // 記下這一顆豁免**實際擋掉了什麼**：沒有閘門屬性、也不在 admin 作用域裡，
+                // 才是「不豁免就會紅」的那一顆。已經自己標了閘門的鈕不算載重（見下方 noLoad）。
+                if (!/\bdata-(capability|tenant-feature|tenant-role|platform-role)=/.test(attrs)
+                    && !scopes.some(([s, e, r]) => r === WRITE_ROLE && m.index >= s && m.index < e))
+                    readonlyLoad.add(ro[0]);
+                continue;
+            }
             if (NO_GATE.get(f)?.has(seg)) continue;                                                    // 洞⑧：逐顆豁免
             if (scopes.some(([s, e, r]) => r === WRITE_ROLE && m.index >= s && m.index < e)) continue;  // 洞⑦：只有 admin 那一級授權得了寫入
             const own = (attrs.match(/\bdata-platform-role="(admin|auditor)"/) || [])[1];
@@ -4311,7 +4359,8 @@ test("§4 每一顆會改狀態的鈕都要宣告它需要哪一道閘門（四�
     // 洞⑥ 的守門：`>= 60` 那道對「母體從 105 掉到 100」完全無感（少掉的那 5 顆正是插值型的）。
     // 改成**釘住上一輪實測的筆數**：母體只准往上長，掉下來就是有一族鈕從網裡漏出去了。
     // 這個數字要跟著 markup 一起長——加了新的 data-toast 鈕就把它調高，而不是把它調低。
-    const SEG_FLOOR = 105;
+    // round46 重量 117（舊值 105 是 round43 的實測；那之後多了十二顆鈕，門檻沒跟著抬）。
+    const SEG_FLOOR = 117;
     assert.ok(allSegs.length >= SEG_FLOOR,
         `只解析出 ${allSegs.length} 個 success 段（上一輪 ${SEG_FLOOR}）—— 母體縮水了：` +
         `data-toast-type 若寫成插值帶預設而解析不出來，那一顆會靜靜地整個消失，不是被放行`);
@@ -4329,6 +4378,13 @@ test("§4 每一顆會改狀態的鈕都要宣告它需要哪一道閘門（四�
     // 列印／取得／重新整理／移除成功（全站沒有任何一顆鈕的成功段長那樣，從來沒命中過）。
     const deadVerbs = READONLY.map(([v]) => v).filter((v) => !allSegs.some((s) => s.startsWith(v)));
     assert.deepEqual(deadVerbs, [], `READONLY 有死豁免（沒有任何鈕的成功段以它開頭）：${deadVerbs.join("、")}`);
+    // round46：死豁免那道只問「有沒有鈕以它開頭」，問不到**載重**。一個動詞可以命中三顆鈕、
+    // 而那三顆全都自己標了閘門——它於是一顆都沒有豁免到，卻仍然對「下一顆同開頭的寫入鈕」開著門。
+    // NO_GATE 早就有這道（wouldFail），READONLY 沒有。判準與 NO_GATE 一致：
+    // 至少要有一顆「不豁免就會紅」的鈕（沒有閘門屬性、也不在 admin 作用域內）。
+    const noLoad = READONLY.map(([v]) => v).filter((v) => !readonlyLoad.has(v));
+    assert.deepEqual(noLoad, [], `READONLY 有零載重的豁免（命中的鈕全都自己標了閘門，這一條沒有在豁免任何東西，` +
+        `卻會替下一顆同開頭的寫入鈕開門）：${noLoad.join("、")}`);
     for (const [v, why] of READONLY)
         assert.ok((why || "").length > 8, `READONLY 的「${v}」沒寫「為什麼是唯讀」——空白不等於查證過（§4）`);
     // NO_GATE 同理，而且粒度要對得上：**每一筆 (檔, success 段)** 都要真的有一顆「不豁免就會紅」的鈕。
@@ -4370,7 +4426,8 @@ test("§4 每一顆會改狀態的鈕都要宣告它需要哪一道閘門（四�
          // 洞⑦ 的另一半：鈕自己宣告 auditor
          `<button type="button" data-platform-role="auditor" data-toast="已凍結租戶|失敗" data-toast-type="success|error">凍結</button>`],
         [`<button type="button" data-capability="data:write" data-toast="已凍結租戶|失敗" data-toast-type="success|error">凍結</button>`,
-         `<button type="button" data-toast="正在查詢資料...|查詢成功|失敗" data-toast-type="info|success|error">查詢</button>`,
+         // 讀取也要宣告軸（round46 拿掉「查詢」那條零載重豁免之後，全站的查詢鈕都標讀取能力）
+         `<button type="button" data-capability="settings:read" data-toast="正在查詢資料...|查詢成功|失敗" data-toast-type="info|success|error">查詢</button>`,
          // 落在宣告祖先內：這才是平台頁那個例外允許的形狀
          `<div data-platform-role="admin"><button type="button" data-toast="已凍結租戶|失敗" data-toast-type="success|error">凍結</button></div>`,
          // void 宣告元素（單一控制項）不該被當成「配對不到收尾標籤」
