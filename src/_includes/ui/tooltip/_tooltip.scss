@@ -1,4 +1,9 @@
-// 照抄自真 app scss/component.scss 2337-2357（tooltip 區塊）；調整：色值 token 化、顯示條件增補 :focus-visible（見下註）
+// 結構與數值取自凍結前端 `GufoFAQ_Frontend_New/scss/component.scss` 2337-2357（tooltip 區塊）。
+// **偏離逐條列出**：
+//   ① 色值換語意 token
+//   ② 顯示條件增補 `:focus-visible`（見下註）——`:hover` 單掛的話鍵盤使用者看不到圖示鈕唯一的可見標籤
+//   ③ `.tooltip` 的 `box-sizing: border-box`（原檔 2347）移除（§4-1：`_base.scss` 已全域給）
+//   ④ `.has-tooltip { position: relative }` 是切版新增（原檔靠 `.button-icon` 定位，切版收成獨立的觸發 class）
 /*===============================
     tooltip
 ================================*/

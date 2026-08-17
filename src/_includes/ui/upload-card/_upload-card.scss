@@ -1,4 +1,8 @@
-// 逐位元照抄自真實 app scss/component.scss 檔案上傳 section（.upload-card-list / .upload-card，行 2404-2477）
+// 結構與數值取自凍結前端 `GufoFAQ_Frontend_New/scss/component.scss` 的檔案上傳 section
+// （.upload-card-list / .upload-card，2404-2477）。
+// **偏離逐條列出**：
+//   ① 色值換語意 token
+//   ② `.upload-card` 的 `box-sizing: border-box`（原檔 2427）移除（§4-1：`_base.scss` 已全域給）
 .upload-card-list {
     display: grid;
     grid-template-columns: repeat(3, 1fr);

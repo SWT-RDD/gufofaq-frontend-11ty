@@ -16,13 +16,17 @@
      Excel 卡沿用 `comp.uploadDescXlsxPrefix`（與 ui/upload-box 元件預設同一個 key、同一句話，
      不重複造第二份「xlsx 檔案最大不超過」的譯文）；PDF／WORD／Image 三張各自的格式清單不同，
      維持各自獨立的 key，但都加上 `Prefix` 後綴、拿掉數字。 #}
+{# 卡片圖示是**裝飾**，故 `alt=""`（§4）：格式名就寫在它下一行的 `.upload-title`（「Excel」／「PDF」…），
+     再給圖一個 `alt="Excel Icon"` 只會讓這張卡的可及名稱變成「Excel Icon Excel 支援上傳…」。
+     **刻意不沿用凍結前端那份 alt**（原檔四張卡各寫一句英文 alt）：那串字既沒有 `data-i18n-alt`、
+     英文模式與繁中模式念同一串，而全站圖示一律 `alt=""`（唯一例外是 BETA 徽章與檔型欄位值）。
+     連帶把 `uploadCards` 的 `iconAlt` 欄拿掉——留著就是一顆零消費的參數（§5）。 #}
 {# 示範資料用元件專屬名 uploadCards（§6：set 是頁面全域，泛用名會與使用頁同名變數互相覆蓋） #}
 {% set uploadCards = [
     {
         type: "excel",
         href: "1-1-2_uploadFile_excel.html",
         icon: "icon_XLSX_s.png",
-        iconAlt: "Excel Icon",
         name: "Excel",
         desc: "支援上傳xlsx檔案，檔案最大不超過",
         descKey: "comp.uploadDescXlsxPrefix",
@@ -32,7 +36,6 @@
         type: "pdf",
         href: "1-2-1_uploadFile_pdf.html",
         icon: "icon_PDF_s.png",
-        iconAlt: "PDF Icon",
         name: "PDF",
         desc: "支援上傳pdf檔案，檔案最大不超過",
         descKey: "dataImport.uploadDescPdfPrefix",
@@ -42,7 +45,6 @@
         type: "word",
         href: "1-2-1_uploadFile_pdf.html",
         icon: "icon_doc_s.png",
-        iconAlt: "WORD Icon",
         name: "WORD",
         desc: "支援上傳doc檔案，檔案最大不超過",
         descKey: "dataImport.uploadDescWordPrefix",
@@ -52,7 +54,6 @@
         type: "image",
         href: "1-2-1_uploadFile_pdf.html",
         icon: "icon_img_s.png",
-        iconAlt: "Image Icon",
         name: "Image",
         desc: "支援上傳PNG、JPG檔案，檔案最大不超過",
         descKey: "dataImport.uploadDescImagePrefix",
@@ -72,7 +73,7 @@
     <a href="{{ card.href }}" class="upload-card" data-type="{{ card.type }}" title="上傳 {{ card.name }}" data-i18n-title="{{ card.titleKey }}">
         <div class="upload-content">
             <div class="upload-header">
-                <img src="./images/{{ card.icon }}" width="60" height="76" decoding="async" alt="{{ card.iconAlt }}" class="upload-icon" />
+                <img src="./images/{{ card.icon }}" width="60" height="76" decoding="async" alt="" class="upload-icon" />
                 <p class="upload-title">{{ card.name }}</p>
             </div>
             <p class="upload-desc"><span data-i18n="{{ card.descKey }}">{{ card.desc }}</span><span>50MB</span></p>

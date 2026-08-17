@@ -3,10 +3,13 @@
 // 而判斷「哪些是鏡像、哪些是我們加的」全靠這幾行；寫成「唯一調整」就等於下一輪沒有基準可比：
 //   ① 第一行 `@import "base/var"` → `@use "var"`（本檔內文其實未使用任何 $ 變數，僅為對齊真實檔頭、維持可解析）
 //   ② **整支收進 `.guideline-page {}`**（＋ `body.guideline-page{overflow:hidden}`）——§9 的頁面專屬
-//      樣式限定，理由見下方第 41-48 行那段註解
+//      樣式限定，理由見下方「以下所有規則限定在元件庫展示頁」那段註解
 //   ③ `height: 100vh` 一律補同值 `100dvh`（§4-1）
 //   ④ 全部色值換成 `var(--gl-*)`／`var(--on-accent)`／`var(--surface-raised)`／`var(--shadow)`，
 //      原檔是字面色（§9：showcase 專屬色走 `_guideline-var.scss`，不寫裸 hex）
+//   ⑤ 五處 `box-sizing: border-box`（原檔 51／58／70／90／287）移除（§4-1：`_base.scss` 已全域給）
+//   ⑥ 原檔 39-41 的 `html { overflow: inherit !important; }` **整條刪除**——§9 禁止頁面專屬檔寫裸
+//      元素選擇器（打包進單一 main.css 會洩漏到每一頁），捲動改由 ② 的 `body.guideline-page` 承擔
 @use "var";
 
 @mixin scrollbar() {

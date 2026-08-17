@@ -1,4 +1,12 @@
-// 圖表外殼（純樣式原子，無 html）。逐字複製自真實 app 的 scss/component.scss「block / box 區塊」區段。
+// 圖表外殼（純樣式原子，無 html）。結構與數值取自凍結前端
+// `GufoFAQ_Frontend_New/scss/component.scss` 的圖表區段（3112-3147）。
+// **偏離逐條列出**：
+//   ① 色值換語意 token
+//   ② 兩處 `box-sizing: border-box`（原檔 3117、3126）移除（§4-1：`_base.scss` 已全域給）
+//   ③ `.chart-wrap` 依真 app **編譯後的 css** 補回（scss 源碼漏了它）
+//   ④ `.chart` 高度 302px → 300px（見該行行內註解）
+//   ⑤ `.chart-auto` 變體是切版新增
+//   ⑥ `.chart-desc` 整段移出，升格成 `ui/chart-desc`（§4：兩個以上元件要用的樣式抽成共用正本）
 //
 // markup 契約（無 html 元件，§1-2；整段照抄）。共同骨架是
 // `.chart-box > .chart-title + <中段> + ui/chart-desc`，中段才是差異所在；**`.chart-wrap` 不是

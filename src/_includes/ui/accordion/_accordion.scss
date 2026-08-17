@@ -1,5 +1,8 @@
-// 照抄自真 app scss/component.scss 1935-2005（accordion 手風琴區塊）。
-// 唯一的改寫：箭頭原本是 background-image，改成 icon-mask（顏色交給 token，深色模式免反相）。
+// 結構與數值取自凍結前端 `GufoFAQ_Frontend_New/scss/component.scss` 1935-2005（accordion 手風琴區塊）。
+// **偏離逐條列出**：
+//   ① 箭頭原本是 background-image，改成 `icon-mask`（顏色交給 token，深色模式免反相）
+//   ② 色值換語意 token
+//   ③ `th, td` 內的 `box-sizing: border-box`（原檔 1975）移除（§4-1：`_base.scss` 已全域給）
 @use "../../../scss/mixin" as *;
 /*===============================
     accordion手風琴

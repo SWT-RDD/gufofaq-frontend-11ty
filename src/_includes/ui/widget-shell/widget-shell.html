@@ -1,6 +1,8 @@
 {# 嵌入式問答小工具的外殼（launcher 鈕 ＋ 面板）。**這是 widget 的視覺定案**：
-     gufofaq-saas `apps/web/public/widget.js` 目前自己畫一份暫定的（`.launcher` 56px 圓 ＋ emoji 💬、
-     `.panel` 360×520 ＋ `[data-open]`），等這一份出來就照抄。
+     **已回流**——gufofaq-saas `apps/web/public/widget.js`（`gufofaq-saas@e8df966`）現在逐字採用
+     本元件的 class 與值（`faq-launcher widget-launcher js-widget-toggle`、`widget-panel-close
+     js-widget-close`、`icon_owl.png` 40×40、面板 360×520 ＋ `[data-open]`），先前那份暫定稿
+     （`.launcher` 56px 圓 ＋ emoji 💬）已不存在。改本檔＝要同步改對方那一份。
 
   它與站內的頁面不一樣：**跑在別人的網站上**（widget.js 建一個 shadow root、自帶 CSS）。所以這一份
     定的是「長什麼樣、結構是什麼」，不是 build 出來會被誰 include 的版面——唯一看得到它的地方是元件庫頁
@@ -81,8 +83,10 @@
                  沒有它們的話這一列會等比縮，送出鈕被壓到比文字窄而換行——理由寫在 scss 那兩條旁邊。 #}
             <input type="text" class="form-control widget-panel-input js-widget-input" placeholder="輸入問題"
                 data-i18n-placeholder="comp.enterQuestion" aria-label="輸入問題" data-i18n-aria-label="comp.enterQuestion">
-            {# 送出是直接送 API 的動作鈕 ⇒ data-toast 列全結果（§5 矩陣③）。節流那一段對回 widget token
-                 的每分鐘上限（product `widget_tokens.py`），不是泛用的「失敗」。 #}
+            {# 送出是直接送 API 的動作鈕 ⇒ data-toast 列全結果（§5 矩陣③）。節流那一段對回公開問答端點
+                 的每分鐘上限（gufofaq-saas product `app/routers/public.py` 的 `enforce_widget_rate_limit`，
+                 實作在 `app/rate_limit.py`，429 `ratelimit.too_many_requests`），不是泛用的「失敗」。
+                 **不在 `widget_tokens.py`**：那一支只管金鑰的建立／列出／撤銷，全檔零 429。 #}
             <button type="button" class="button button-primary widget-panel-send js-widget-send"
                 data-toast="回答生成中...|請先輸入問題|詢問太頻繁，請稍後再試|回答生成成功|回答生成失敗" data-i18n-data-toast="toast.widgetAsk"
                 data-toast-type="info|warning|warning|success|error" data-i18n="action.submit">送出</button>

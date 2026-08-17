@@ -1,4 +1,7 @@
-// header 右側控制群（語言＋深淺），主站 header 與前台 chatbot-header 共用。
+// header 右側控制群（語言＋深淺）。**五處共用**（與 html 檔頭、README 同一份清單）：
+// `components/header`、`components/mobile-nav`（同頁第二份實例——這也是本元件零寫死 id 的理由）、
+// `components/chatbot-header`、`src/catalog.html`、`src/login.html`。
+// 反查：`grep -rn 'header-controls/header-controls.html' src --include=*.html`。
 @use "../../../scss/size" as *;
 
 .header-controls {

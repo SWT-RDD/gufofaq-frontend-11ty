@@ -1,6 +1,10 @@
 // 結構與數值照抄自真實 app 的 scss/component.scss「Switch」區段（1312-1367），只搬移位置。
 // **偏離逐條列出**：①色值換成語意 token ②新增 `:has(.switch-checkbox:focus-visible)` 的焦點環
-// （§4-1：真正的控制項被藏起來時，焦點環畫在外框上；原檔沒有這一段）。
+// （§4-1：真正的控制項被藏起來時，焦點環畫在外框上；原檔沒有這一段）
+// ③`.switch-box` 的 `transition: 0.3s`（原檔 1348）收成 `background-color 0.3s`——`all` 會把
+// ② 新加的 outline 一起做動畫，切換時焦點環會慢慢浮現（行為差異，不只是寫法）
+// ④`.switch-box` 的 `box-sizing: border-box` ＋ `-webkit-box-sizing`（原檔 1349-1350）兩行移除
+// （§4-1：`_base.scss` 已全域給，含前綴版本）。
 // `.switch-control-row` **不是**切版新增——原檔 1369-1382 逐字相同。
 label.switch {
     --switchWidth: 2rem;

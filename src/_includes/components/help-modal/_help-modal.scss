@@ -5,8 +5,10 @@
 //
 // .help-modal-subtitle 的字級/字重/字色沿用 ui/form-control 的 .control-label
 //（1rem / 500 / var(--text)）——同一種「小標籤級」視覺份量，不另立新的字級刻度
-//（GUIDELINE §4：不引入新的魔術數字）。垂直間距交給 markup 上的 .mb-8 工具 class
-//（GUIDELINE §4：間距一律用工具 class，不寫進元件 scss）。
+//（GUIDELINE §4：不引入新的魔術數字）。**版面**間距交給 markup 上的 .mb-8 工具 class
+//（GUIDELINE §4：間距一律用工具 class，不寫進元件 scss）；下面那行 `margin: 0` 不是版面
+// 間距，是 `<h4>` 的 UA 預設外距重置（不歸零的話 `.mb-8` 會疊在 UA 的 1em 上，量出來的
+// 節奏不是尺標上的 8px）——重置寫在這裡、節奏寫在 markup，兩者不衝突。
 .help-modal-subtitle {
     font-size: 1rem;
     font-weight: 500;

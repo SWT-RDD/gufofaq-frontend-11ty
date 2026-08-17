@@ -41,8 +41,11 @@ permalink: 5-1-1_accountInfo.html
        · 規格＝`{qa_limit}` ＋ 單位；3000 就是聊天室頁「問答次數：12/3000」的分母。
          **單位不是固定的「次/日」**：額度週期是 `TenantSetting.usage_period`（`none`／`daily`／
          `monthly`，平台管理員在租戶管理視窗可改），`AccountOut` 隨 `qa_limit` 一起回它。
-         設成 monthly 的租戶印「次/日」就是說錯話。三顆單位 key：
-         `settings.quotaUnitPerDay`／`quotaUnitPerMonth`／`quotaUnitTotal`。
+         設成 monthly 的租戶印「次/日」就是說錯話。三顆單位 key：`settings.quotaUnitPerDay`／
+         `quotaUnitPerMonth`／`quotaUnitTotal`。**這一格演不到那三個成員**——`value` 是原子屬性、
+         切版拆不出節點來掛 `data-i18n`，而 §4-2 的屬性後綴白名單也沒有 `-value`，所以這一頁
+         結構上只畫得出示範租戶那一個（`daily`）。枚舉的成員不靠刪 key 活著、靠有地方渲染得出來
+         活著（§4-2）：三顆的渲染點在元件庫頁「React 條件文案」節，繁中原文的家在那裡。
        · 資料儲存上限＝`storage_limit_mb`；1000MB 就是 3-1-1 那條 ui/storage-bar 的「共 1000MB」。
      儲存那一格的組字逐字沿用凍結前端 js/accountInfo.js（`${maxAccSize}MB`）；規格那一格**不沿用**
      舊前端的 `${GPTTimesLimit}次/日`——舊系統只有一種週期，新系統有三種（見上）。

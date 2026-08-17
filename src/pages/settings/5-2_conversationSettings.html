@@ -809,7 +809,7 @@ permalink: 5-2_conversationSettings.html
             </div>
             <div class="flex-row flex-wrap gap-16 align-items-center">
                 <button type="button" class="button button-border js-filter-clear" data-i18n="action.clear">清除</button>
-                <button type="button" class="button button-primary js-prompt-search" data-toast="查詢成功|無法載入提示詞版本列表" data-i18n-data-toast="toast.queryPrompt" data-toast-type="success|error" data-i18n="action.query">查詢</button>
+                <button data-capability="settings:read" type="button" class="button button-primary js-prompt-search" data-toast="查詢成功|權限不足，無法查詢|無法載入提示詞版本列表" data-i18n-data-toast="toast.queryPrompt" data-toast-type="success|warning|error" data-i18n="action.query">查詢</button>
             </div>
         </div>
     </div>
@@ -975,7 +975,7 @@ permalink: 5-2_conversationSettings.html
             </div>
             <div class="flex-row flex-wrap gap-16 align-items-center">
                 <button type="button" class="button button-border js-filter-clear" data-i18n="action.clear">清除</button>
-                <button type="button" class="button button-primary js-welcome-search" data-toast="查詢成功|無法載入歡迎語版本列表" data-i18n-data-toast="toast.queryWelcome" data-toast-type="success|error" data-i18n="action.query">查詢</button>
+                <button data-capability="settings:read" type="button" class="button button-primary js-welcome-search" data-toast="查詢成功|權限不足，無法查詢|無法載入歡迎語版本列表" data-i18n-data-toast="toast.queryWelcome" data-toast-type="success|warning|error" data-i18n="action.query">查詢</button>
             </div>
         </div>
     </div>
@@ -2156,8 +2156,12 @@ permalink: 5-2_conversationSettings.html
             </div>
         </div>
         {# grounding 判定前的分數粗篩門檻（chatbot `ChatConfig.grounding_score_floor`，預設 0.5）。
-             **與 QA 直答那一格刻意不對稱**，理由上游逐字寫了：grounding 的門檻永遠只是門票（閘開著時
-             LLM 判定一定會跑），擋不到東西的後果只是多付一次判定、不會產生錯答案 ⇒ 非空、沿用 0.5。
+             **與 QA 直答那一格刻意不對稱**：這一格非空、沿用 0.5。
+             ⚠️ 先前這裡（與畫面上那句說明）寫著「grounding 的門檻永遠只是門票，閘開著時 LLM 判定
+             一定會跑，擋不到東西只是多付一次判定」——**上游第 26 輪明文宣告那是假的**：分數粗篩
+             命中時 `assess_grounding` 直接回 NO_ANSWER，**零 LLM、終局拒答**，隨後整批來源卡被清空。
+             0.5 看起來無害只是因為 weaviate certainty 幾乎恆大於 0.5；換 `bge_reranker`（未正規化
+             logits、可為負）同一個 0.5 會讓**每一題**都變成誠實查無。
              QA 直答的門檻在關掉裁判時是**唯一判定** ⇒ 那一格才可以為空。兩格的說明不共用一句話：
              寫成「都可留白」或「都必填」的話，錯的那一邊症狀是無聲的（這一格留白 ⇒ 上游 400；
              那一格必填 ⇒ 既有 exact 租戶遷移後直接失去直答）。
@@ -2184,7 +2188,7 @@ permalink: 5-2_conversationSettings.html
                      那一態的長相改由元件庫展示頁演（§5）。 #}
                 {% set scaleNoteMixed = "" %}
                 {% include "ui/score-scale-note/score-scale-note.html" %}
-                <span class="text-gray" id="groundingScoreFloorNote" data-i18n="settings.groundingScoreFloorNote">這一格不可留白（預設 0.5）：它永遠只是判定前的門票，閘開著時 LLM 判定一定會跑，所以擋不到東西的後果只是多付一次判定，不會生出錯答案。與「QA 直答」那一格的可留白刻意不同。</span>
+                <span class="text-gray" id="groundingScoreFloorNote" data-i18n="settings.groundingScoreFloorNote">這一格不可留白（預設 0.5）。它並不是判定前的門票——檢索最高分低於它時，這一輪不問 LLM 就直接判成誠實查無，來源也會一併清空。分數的尺由當次的重排序器決定（weaviate 0–1、llm_reranker 1–5、jina 0–1、bge_reranker 可為負），換一顆重排序器就要重新校準這個數字，否則同一個 0.5 可能一題都擋不到、也可能每一題都擋。與「QA 直答」那一格的可留白刻意不同。</span>
             </div>
         </div>
     </div>

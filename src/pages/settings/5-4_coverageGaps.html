@@ -208,7 +208,7 @@ permalink: 5-4_coverageGaps.html
          不分群（`dimension` 空）時這一段走不到，但同一顆鈕兩種選擇都送得出去，故照樣列。 #}
     <div class="flex-row align-items-center justify-content-center gap-16">
         <button type="button" class="button button-border js-filter-clear" data-i18n="action.clear">清除</button>
-        <button type="button" class="button button-primary" data-toast="正在查詢資料...|查詢成功|時間區間不正確（起訖需成對、開始須早於結束與現在、且在一年內、範圍不超過 365 天）|這段期間的資料量超過單次上限，請縮小時間範圍|意圖分組的模型還沒設好，這份報表分不了群——請先到對話設定的「生成設定」把「意圖判斷」那一組的模型設好|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.queryStats" data-toast-type="info|success|warning|warning|warning|error" data-i18n="action.query">查詢</button>
+        <button data-capability="history" type="button" class="button button-primary" data-toast="正在查詢資料...|權限不足，無法查詢|查詢成功|時間區間不正確（起訖需成對、開始須早於結束與現在、且在一年內、範圍不超過 365 天）|這段期間的資料量超過單次上限，請縮小時間範圍|意圖分組的模型還沒設好，這份報表分不了群——請先到對話設定的「生成設定」把「意圖判斷」那一組的模型設好|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.queryStats" data-toast-type="info|warning|success|warning|warning|warning|error" data-i18n="action.query">查詢</button>
     </div>
 </div>
 
@@ -279,8 +279,8 @@ permalink: 5-4_coverageGaps.html
             {% for q in gapExcludedSession %}
             <div class="flex-row align-items-center gap-4">
                 <span>{{ q }}</span>
-                <button type="button" class="button button-border button-sm js-undo-exclude-question" data-question="{{ q }}"
-                    data-toast="正在查詢資料...|查詢成功|時間區間不正確（起訖需成對、開始須早於結束與現在、且在一年內、範圍不超過 365 天）|這段期間的資料量超過單次上限，請縮小時間範圍|意圖分組的模型還沒設好，這份報表分不了群——請先到對話設定的「生成設定」把「意圖判斷」那一組的模型設好|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.queryStats" data-toast-type="info|success|warning|warning|warning|error"
+                <button data-capability="history" type="button" class="button button-border button-sm js-undo-exclude-question" data-question="{{ q }}"
+                    data-toast="正在查詢資料...|權限不足，無法查詢|查詢成功|時間區間不正確（起訖需成對、開始須早於結束與現在、且在一年內、範圍不超過 365 天）|這段期間的資料量超過單次上限，請縮小時間範圍|意圖分組的模型還沒設好，這份報表分不了群——請先到對話設定的「生成設定」把「意圖判斷」那一組的模型設好|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.queryStats" data-toast-type="info|warning|success|warning|warning|warning|error"
                     data-i18n="action.undoExclude">取消排除</button>
                 <button type="button" data-capability="settings:write" class="button button-border button-sm js-persist-exclusion" data-question="{{ q }}"
                     data-toast="正在儲存...|權限不足，無法儲存|已存成常設排除|清單太長或有一筆超過長度上限|儲存失敗，請重新整理頁面" data-i18n-data-toast="toast.savePersistentExclusion" data-toast-type="info|warning|success|warning|error"
@@ -338,8 +338,8 @@ permalink: 5-4_coverageGaps.html
                     <td>{{ sample.question }}</td>
                     <td>{{ sample.count }}</td>
                     <td>
-                        <button type="button" class="button button-border button-sm js-exclude-question" data-question="{{ sample.question }}"
-                            data-toast="正在查詢資料...|查詢成功|時間區間不正確（起訖需成對、開始須早於結束與現在、且在一年內、範圍不超過 365 天）|這段期間的資料量超過單次上限，請縮小時間範圍|意圖分組的模型還沒設好，這份報表分不了群——請先到對話設定的「生成設定」把「意圖判斷」那一組的模型設好|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.queryStats" data-toast-type="info|success|warning|warning|warning|error"
+                        <button data-capability="history" type="button" class="button button-border button-sm js-exclude-question" data-question="{{ sample.question }}"
+                            data-toast="正在查詢資料...|權限不足，無法查詢|查詢成功|時間區間不正確（起訖需成對、開始須早於結束與現在、且在一年內、範圍不超過 365 天）|這段期間的資料量超過單次上限，請縮小時間範圍|意圖分組的模型還沒設好，這份報表分不了群——請先到對話設定的「生成設定」把「意圖判斷」那一組的模型設好|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.queryStats" data-toast-type="info|warning|success|warning|warning|warning|error"
                             data-i18n="action.exclude">排除</button>
                     </td>
                 </tr>

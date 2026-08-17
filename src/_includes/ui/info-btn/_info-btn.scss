@@ -20,26 +20,22 @@
 //   其餘（help-modal 三塊式說明視窗的觸發鈕，見下）多半是自己另包一層 `.flex-row.align-items-center.gap-8`
 //   把標題與 ⓘ 綁成同一個 flex item，不影響外層 `.label`。
 //
-// **接在什麼後面不只一種**（別把下面那句「其餘 N 顆」誤讀成掛點——它講的是用途）：61 顆接在
-//   `<div class="text-md text-bold">` 區塊標題之後，3 顆接在 `<h2 class="text-md text-bold m-0">`
-//   之後（2-2-5 的三個 bucket 標題），3 顆接在 `<label|span class="control-label">` 欄位標籤之後
-//   （2-2-1／2-2-3 的「知識檢索」、5-2 的「出口套用說明」），1 顆接在 `<div class="text-gray">`
-//   引言之後（5-10 的「受控詞彙（字典）」），1 顆沒有掛點（元件庫頁的示範觸發器，與其他示範鈕並排）。
+// **接在什麼後面不只一種**（掛點的種類是契約要交代的，顆數不是）：`<div class="text-md text-bold">`
+//   區塊標題之後、`<h2 class="text-md text-bold m-0">` 之後（2-2-5 的 bucket 標題）、
+//   `<label|span class="control-label">` 欄位標籤之後（2-2-1／2-2-3 的「知識檢索」、5-2 的
+//   「出口套用說明」）、`<div class="text-gray">` 引言之後（5-10 的「受控詞彙（字典）」），
+//   以及完全沒有掛點的一種（元件庫頁的示範觸發器，與其他示範鈕並排）。
 //   ⇒ 沒有區塊標題的區段照樣掛得上，不必為了掛 ⓘ 生一顆標題出來。
 //
-// 住在哪一頁（雙向；判準＝`grep -rc 'class="info-btn"' src --include=*.html`）——69 份實例，
-//   全部頁面自寫、無任何 include，橫跨 23 頁：
-//   2-2-1_singleTest 與 2-2-3_abTest 的「知識檢索」欄（`title="配置說明"` → knowledgeModal）、
-//   5-2_conversationSettings 的「出口套用說明」（`title="出口套用說明"`、key settings.aliasApplyOutputInfo
-//   → aliasOutputInfoModal）各一顆；其餘 66 顆是 help-modal 三塊式說明視窗的觸發鈕，逐頁：
-//   1-1-4_columnSelect_excel／1-2-1_uploadFile_pdf／3-1-2_dataImport_input／3-1-3_previewDataset
-//   各一顆，3-2_glossaryManagement／3-3_qaSetManagement／3-6_aliasTables／3-4_skillManagement／
-//   5-6-2_platformMcpServers／5-5-1_userManagement／5-5-2_groupManagement／5-8_widgetTokens／
-//   5-9_extractApiKey／5-1-1_accountInfo（個人資料／變更密碼）各兩顆，5-6-3_platformServiceKeys
-//   四顆，5-10_tagDimensions 五顆，3-5_dataHealth 與 2-2-4_regressionSuites 各六顆，
-//   5-2_conversationSettings 與 2-2-5_regressionRun 各十顆；component.html 的示範觸發器
-//   （照抄 2-2-1 那一份）一顆。
-//   反向：渲染後含 `.info-btn` 的頁就是這 23 頁，沒有第 24 頁。
+// 住在哪一頁（雙向）。**母體是 `dist` 不是 `src`**：2-2-3 那一顆寫在 `{% for ab in abSides %}` 內，
+//   src 一行、渲染兩份（A／B 各一），拿 src 的行數當實例數會少算。
+//   判準＝`grep -l 'class="info-btn"' dist/*.html`；正向＝`grep -rl 'class="info-btn"' src --include=*.html`。
+//   兩邊的**檔案集合**必須相同（顆數不寫死，§3-2「能不寫死計數就不要寫」——每加一顆說明視窗就會變，
+//   而它已經在同一輪之內錯過一次）。全部頁面自寫、無任何 include。
+//   用途分兩族：①「知識檢索／出口套用說明」那一族開 `knowledgeModal`／`aliasOutputInfoModal`
+//   （2-2-1、2-2-3、5-2，元件庫頁另有一顆照抄 2-2-1 的示範觸發器）；②其餘全部是
+//   `components/help-modal` 三塊式說明視窗的觸發鈕（`data-open-modal="<blockId>HelpModal"`，
+//   逐頁清單見該元件檔頭的判準句，此處不重複列）。
 .info-btn {
     background-color: transparent;
     border: none;

@@ -165,7 +165,7 @@ permalink: 4-1_qaHistory.html
                  ——清完再按查詢就是必填未填。真 app qaHistory.js:426 第一件事就是
                  `showToast('請填寫開始時間、結束時間和使用者類型')`。共用的 `toast.query` 不能加這一段
                  （其餘六頁沒有任何 required 欄，加了就是演不可能的結果），故本頁另立 key。 #}
-            <button type="button" class="button button-primary" data-toast="正在查詢資料...|請填寫開始時間、結束時間與使用者類型|查詢成功|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.queryHistory" data-toast-type="info|warning|success|error" data-i18n="action.query">查詢</button>
+            <button data-capability="history" type="button" class="button button-primary" data-toast="正在查詢資料...|權限不足，無法查詢|請填寫開始時間、結束時間與使用者類型|查詢成功|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.queryHistory" data-toast-type="info|warning|warning|success|error" data-i18n="action.query">查詢</button>
             {# 匯出格式（product `GET /history/export?format=`，`Query(alias="format")` 收
                  `Literal["csv","xlsx","jsonl"]`、預設 csv）。**畫面只給兩顆**：csv 與 xlsx 是同一個
                  問題的兩種答案（要不要巢狀明細），jsonl 是給程式與稽核的那一份、沒有人會在這個
@@ -176,10 +176,13 @@ permalink: 4-1_qaHistory.html
                ## 「含統計表頭」是 **csv 這一顆 radio 的附屬控制項**，不是獨立的旗標
                  `with_header` 在正本 `export_history` 裡**只有 CSV 那條路徑碰得到**：`stats.rows(...)`
                  只在 `_stream()`（csv）的第一個 yield 出現，`_stream_jsonl()` 與 `fmt == "xlsx"`
-                 那兩段完全不讀它。所以「完整明細（Excel）＋ 含統計表頭」是一個**無效格**——
-                 勾了不會壞、也不會有任何提示，只是那一段統計不存在，而使用者要開啟檔案才知道。
-                 更貴的是它還**照付代價**：`with_header=true` 會先走一整遍分頁只為累計統計
-                 （上游請求數 ×2），xlsx 那條路等於白等一倍時間換一段不會輸出的東西。
+                 那兩段完全不讀它。所以「完整明細（Excel）＋ 含統計表頭」是一個**無效格**。
+                 **上游現在會擋**：`export_history` 的 `if with_header and fmt != "csv": raise
+                 HTTPException(400, i18n.t("history.with_header_csv_only", format=fmt))`，而且那道
+                 守衛排在 `record_audit` 與第一次探頁**之前**——不會落稽核、也不會付累計那一遍。
+                 （先前這裡寫「勾了不會壞、也不會有任何提示，而且照樣多付一趟完整掃描」，那是
+                 上游加守衛之前的現況；§3-2「出處也會過期」。）
+                 那道 400 在畫面上**走不到**，因為下面這一格用 markup 表達了無效格：
                  故把它收進 csv 那一格：`ui/field-with-input` 的三個 class（`.field-with-input-group`
                  一列／`.field-with-input` 一顆 radio 與它的附屬控制項／`.with-input` 被啟用停用的那些）
                  ——選 xlsx 的當下 checkbox 就被停用，依賴關係由 markup 表達、不靠人讀說明。
@@ -244,12 +247,17 @@ permalink: 4-1_qaHistory.html
                  · `history.range_over_31_days` —— `(e - s) > 31 天`
                  · `history.range_over_a_year` —— `(now - s) > 366 天`。與上一條是**不同條件**：
                    選 2024/01/01～01/20 過得了 31 天那關，照樣被一年那關擋掉
-                 · `history.export_too_many` —— `total > MAX_EXPORT_LOGS`（串流開始前先探一頁擋掉：
-                   送出 200 標頭之後就沒有辦法再回錯誤了）
+                 · `history.export_too_many` —— `total > _export_max_logs()`（串流開始前先探一頁擋掉：
+                   送出 200 標頭之後就沒有辦法再回錯誤了）。**沒有 `MAX_EXPORT_LOGS` 這顆常數**：
+                   值住在 `app/settings.py` 的 `export_max_logs`，`_export_max_logs()` 每次呼叫才讀
+                   `Settings`（env 可覆寫），故此處只指名符號、不抄值（§3-2）
+                 · 上面兩條的天數同理只指名符號：`EXPORT_RANGE_DAYS_MAX`／`EXPORT_LOOKBACK_DAYS_MAX`
+                   （`app/routers/history.py`）——`history.range_over_31_days` 那顆是**訊息鍵**、不是
+                   承載值的常數，上限一改鍵名還會叫 `31`
                  原本只列了後三條，前四條全部落進紅色的「下載失敗」——而那四條每一條使用者當場改得掉。
                  ⚠️ `|` 是索引契約：本輪在中段插了四段，React 端照 `split("|")` 位置取 `toast.downloadRecords`
                  的地方要跟著位移；分支順序＝上游 raise 的先後。 #}
-            <button type="button" class="button button-green" data-toast="下載已開始|請先填開始時間與結束時間|時間格式不正確，請重新選擇起訖時間|開始時間不能晚於現在|結束時間不能早於開始時間|只提供31日間的問答記錄下載|只提供一年內的問答記錄下載|這段範圍的資料量過大，請縮小時間範圍|下載失敗" data-i18n-data-toast="toast.downloadRecords" data-toast-type="success|warning|warning|warning|warning|warning|warning|warning|error" data-i18n="action.download">下載</button>
+            <button data-capability="history" type="button" class="button button-green" data-toast="下載已開始|權限不足，無法下載|請先填開始時間與結束時間|時間格式不正確，請重新選擇起訖時間|開始時間不能晚於現在|結束時間不能早於開始時間|只提供31日間的問答記錄下載|只提供一年內的問答記錄下載|這段範圍的資料量過大，請縮小時間範圍|下載失敗" data-i18n-data-toast="toast.downloadRecords" data-toast-type="success|warning|warning|warning|warning|warning|warning|warning|warning|error" data-i18n="action.download">下載</button>
         </div>
     </div>
 </div>

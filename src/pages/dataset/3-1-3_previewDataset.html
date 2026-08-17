@@ -263,7 +263,7 @@ permalink: 3-1-3_previewDataset.html
                         <button type="button" class="button-icon no-bg size-sm delete delete-single-btn" data-filesn="{{ file.sn }}" data-filename="{{ file.name }}" title="刪除" data-i18n-title="action.delete">
                             <span class="sr-only" data-i18n="action.delete">刪除</span>
                         </button>
-                        <button type="button" class="button-icon no-bg size-sm download download-file-btn" data-filesn="{{ file.sn }}" data-filename="{{ file.name }}" data-filetype="{{ file.type }}" data-toast="準備下載檔案...|此來源無法下載|下載失敗" data-i18n-data-toast="toast.downloadFile" data-toast-type="info|warning|error" title="下載" data-i18n-title="action.download">
+                        <button data-capability="data:read" type="button" class="button-icon no-bg size-sm download download-file-btn" data-filesn="{{ file.sn }}" data-filename="{{ file.name }}" data-filetype="{{ file.type }}" data-toast="下載已開始|權限不足，無法下載|此來源無法下載|下載失敗" data-i18n-data-toast="toast.downloadFile" data-toast-type="success|warning|warning|error" title="下載" data-i18n-title="action.download">
                             <span class="sr-only" data-i18n="action.download">下載</span>
                         </button>
                     </div>

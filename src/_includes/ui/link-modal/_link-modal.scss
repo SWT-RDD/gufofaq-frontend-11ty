@@ -1,4 +1,8 @@
-// 逐位元照抄自真 app scss/component.scss 755-771（link-modal 區塊，含原註解），只搬檔案位置，宣告一字不改
+// 結構與數值取自凍結前端 `GufoFAQ_Frontend_New/scss/component.scss` 755-771（link-modal 區塊，含原註解）。
+// **偏離逐條列出**：
+//   ① 色值換語意 token（`var(--color-primary)`→`--brand-text`）
+//   ② `&.on-dark` 變體是切版新增（原檔沒有）——footer 深底要不同的文字色，§4 明文
+//      「外觀覆寫改成 owning 元件的 variant class」，故由本元件提供、不由 footer 覆寫
 // 連結樣式的按鈕
 .link-modal {
     color: var(--brand-text);

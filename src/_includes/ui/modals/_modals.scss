@@ -1,6 +1,20 @@
-// 照抄自真實 app 的 scss/layout/_modal.scss，另依規範做了申報過的調整：
-// 進出場動畫由 .show/.hide keyframes 改為 @starting-style + allow-discrete（§5 設計演進，見下段）、
-// 色值 token 化（§4），並新增 .share-text（分享彈窗的切版增補）。視覺宣告其餘照抄。
+// 結構與數值取自凍結前端 `GufoFAQ_Frontend_New/scss/layout/_modal.scss`。
+// **偏離逐條列出**：
+//   ① 進出場動畫由 `.show`/`.hide` keyframes 改為 `@starting-style` + `allow-discrete`（§5 設計演進，見下段）
+//   ② 色值換語意 token
+//   ③ 新增 `.share-text`（分享彈窗的切版增補）
+//   ④ 三處 `box-sizing: border-box`（原檔 65／110／140）移除（§4-1：`_base.scss` 已全域給）
+//   ⑤ `.file-content` 的 `span { font-size / color / text-align }`（原檔 165-169）**攤平到
+//      `.file-content` 自己身上**——射程從「只套在 `<span>` 子元素」放寬成整格；`file-preview-modal`
+//      的內容是 `<iframe>`／純文字兩型，原本那三條在非 span 的那一型上完全不生效
+//   ⑥ `.modals` 新增 `position: fixed; inset: 0; width/height/max-*`（原檔沒有——理由逐字寫在
+//      該區塊自己的註解：不支援 `overlay` 過渡的瀏覽器沒有這兩行會在退場途中跳位）
+//   ⑦ 同區塊的 `height: 100vh` 之後補同值 `100dvh`（§4-1）
+//   ⑧ `.modals-wrap .modals-close`（原檔 87-105，含 `img` 的三條）整段移出，升格成 `ui/modal-close`
+//      並改用 `icon-mask()`；原檔尾巴的 `#deleteModal`（195 起）移到 `components/delete-modal`
+//      （§4：`#id` 選擇器不進元件 scss、且那是某一顆窗的專屬樣式，不屬共用殼）
+//   ⑨ `&::backdrop` 的 transition 由 `background-color 0.15s linear` 改為 `0.3s ease-out`
+//      （與 ① 的進出場時長對齊——兩者不同步時遮罩會先退場、窗還留在畫面上）
 //
 // ─────────────────────────────────────────────────────────────────────────────
 // markup 契約（無 html 元件，§1-2；整段照抄）—— 全站每一顆 `<dialog>` 的外殼。

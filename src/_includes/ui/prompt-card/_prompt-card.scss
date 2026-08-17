@@ -31,7 +31,7 @@
 //                           <span class="tooltip" data-i18n="action.copy">複製</span>
 //                       </button>
 //                       <span class="divider-vertical"></span>
-//                       <button data-capability="settings:write" type="button" class="button button-border button-sm js-prompt-restore" data-toast="已還原此版本|還原失敗，請稍後再試" data-i18n-data-toast="toast.restorePrompt" data-toast-type="success|error" data-i18n="action.restore">還原此版本</button>
+//                       <button data-capability="settings:write" type="button" class="button button-border button-sm js-prompt-restore" data-toast="已還原此提示詞版本|權限不足，無法儲存|還原失敗，請稍後再試" data-i18n-data-toast="toast.restorePrompt" data-toast-type="success|warning|error" data-i18n="action.restore">還原此版本</button>
 //                   </div>
 //               </div>
 //               <div class="prompt-content">
@@ -63,7 +63,7 @@
 //                           <span class="tooltip" data-i18n="action.copy">複製</span>
 //                       </button>
 //                       <span class="divider-vertical"></span>
-//                       <button data-capability="settings:write" type="button" class="button button-border button-sm js-welcome-restore" data-toast="已還原此版本|還原失敗，請稍後再試" data-i18n-data-toast="toast.restoreWelcome" data-toast-type="success|error" data-i18n="action.restore">還原此版本</button>
+//                       <button data-capability="settings:write" type="button" class="button button-border button-sm js-welcome-restore" data-toast="已還原此歡迎語版本|權限不足，無法儲存|還原失敗，請稍後再試" data-i18n-data-toast="toast.restoreWelcome" data-toast-type="success|warning|error" data-i18n="action.restore">還原此版本</button>
 //                   </div>
 //               </div>
 //               <div class="prompt-content">
@@ -90,7 +90,7 @@
 //               </div>
 //           </div>
 //           <div class="flex-row justify-content-center gap-16">
-//               <button data-capability="settings:write" type="button" class="button button-primary js-welcome-save" data-toast="已儲存為新版本|內容欄位不可為空|儲存歡迎語失敗，請稍後再試" data-i18n-data-toast="toast.saveWelcome" data-toast-type="success|warning|error" data-i18n="action.saveNewVersion">儲存為新版本</button>
+//               <button data-capability="settings:write" type="button" class="button button-primary js-welcome-save" data-toast="已儲存為新版本|內容欄位不可為空|權限不足，無法儲存|儲存歡迎語失敗，請稍後再試" data-i18n-data-toast="toast.saveWelcome" data-toast-type="success|warning|warning|error" data-i18n="action.saveNewVersion">儲存為新版本</button>
 //           </div>
 //       </div>
 //   </div>

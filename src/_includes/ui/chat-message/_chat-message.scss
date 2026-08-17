@@ -6,7 +6,7 @@
 // **三個消費點不是逐字相同的**（上一版的開場白寫成「逐字相同」，於是整段契約只對得上其中一個，
 // 而照抄的人不會知道自己抄的是哪一型）。逐型各一段完整 markup，差異列在這裡：
 //   ・後台 `components/chatroom`：① ② ③——動作鈕兩顆（複製／查看來源）、chip 帶
-//     `data-capability="ask"`、toast 三段（`toast.chatSubmit`）。
+//     `data-capability="ask"`、toast 四段（`toast.chatSubmit`）。
 //   ・前台 `components/faq-chatroom`：①′ ② ③′——機器人側多一顆 `.avatar`；動作鈕四顆
 //     （讚／倒讚／複製／分享）且順序與後台不同；chip **刻意不帶 `data-capability`**
 //     （公開問答走 widget token 而不是租戶能力 token，理由逐字寫在 faq-chatroom 檔頭）、
@@ -83,7 +83,7 @@
 //       <div class="suggested-questions" role="group" aria-labelledby="chatroomSuggestedLabel">
 //           <span id="chatroomSuggestedLabel" class="suggested-questions-label" data-i18n="comp.suggestedQuestions">建議追問：</span>
 //           {% for q in chatroomSuggested %}
-//           <button data-capability="ask" type="button" class="button button-border button-sm js-ask-suggested" data-toast="回答生成中...|回答生成成功|回答生成失敗" data-i18n-data-toast="toast.chatSubmit" data-toast-type="info|success|error">{{ q }}</button>
+//           <button data-capability="ask" type="button" class="button button-border button-sm js-ask-suggested" data-toast="回答生成中...|權限不足，無法送出|回答生成成功|回答生成失敗" data-i18n-data-toast="toast.chatSubmit" data-toast-type="info|warning|success|error">{{ q }}</button>
 //           {% endfor %}
 //       </div>
 //       {% endif %}

@@ -4,17 +4,24 @@
         畫面分家——一邊藏著欄位、一邊說它生效。故 `helpModalStateItems` 逐條是呼叫端已經
         算好的完整句子，不掛 `data-i18n`（GUIDELINE §4-2「只翻 UI chrome，不翻假資料」——
         這裡每一句都是計算結果，不是站內字面，翻了反而會把「現在生效」翻成另一種語言的謊話）。
-     ③ 這一區的所有數字：全部來自 product 的 `*/limits` 端點，界線（`bound`）與譯文
-        分開成獨立節點——同 `dataImport.headerRowsHint` 既有處置（GUIDELINE §3-2：上下界
-        是資料不是譯文，烤進譯文的話繁中改了英譯不會跟、`npm run check` 也看不出來）。
+     ③ 這一區的所有數字：由 React 執行期讀 product 的 limits 端點填入（gufofaq-saas
+        `services/product/app/ops_limits.py` 的 `*_LIMIT_GROUPS`——`DATASET_`／`HISTORY_`／
+        `STATS_`／`USER_`／`SELF_`／`EXTRACT_` 六族，各自投影成 `GET /<資源>/limits`；對話設定
+        那一族另走 `settings_hub.py` 的 `GET /settings/upstream-limits`。逐區塊實際打哪一支，
+        寫在各使用頁自己的檔頭）。界線（`bound`）與譯文分開成獨立節點——同
+        `dataImport.headerRowsHint` 既有處置（GUIDELINE §3-2：上下界是資料不是譯文，
+        烤進譯文的話繁中改了英譯不會跟、`npm run check` 也看不出來）。
      不生效的選項在畫面上是**隱藏**的，所以 ② 不列舉「哪些欄位在別的模式不生效」——
      把隱藏的欄位寫進說明，等於從另一個出口把它攤回畫面上。
      整區被隱藏時，這一區的 ⓘ 連同區塊本身一起不存在：沒有一顆按鈕去解釋一個看不到的東西。
 
      ②③兩塊各自只在**有內容**時才畫（`helpModalStateItems`/`helpModalLimitRows` 非空）：
-     21 顆真實區塊裡有 15 顆 ③ 恆空、幾乎全部 ② 也恆空（見各頁檔頭「這一區的數字由 React
-     執行期算，切版這一側只提供容器」）——畫一顆只有表頭沒有列的表格、或一顆「現在生效的
-     條件」標題卻底下什麼都沒有，只是在告訴使用者「這裡本來就沒有東西」，不比不畫更有用。
+     **生產頁上這兩塊恆空**——每一個生產使用點都 `set … = []`（見各頁檔頭「這一區的數字由
+     React 執行期算，切版這一側只提供容器」），兩塊的長相只在元件庫頁的 `demoHelpModal`
+     演得出來（GUIDELINE §5：一處演過就夠）。這裡不寫「N 顆裡有 M 顆恆空」：顆數每加一個
+     使用點就變，而「恆空」不會（GUIDELINE §3-2「能不寫死計數就不要寫」）——畫一顆只有表頭
+     沒有列的表格、或一顆「現在生效的條件」標題卻底下什麼都沒有，只是在告訴使用者
+     「這裡本來就沒有東西」，不比不畫更有用。
      這與「②③的容器必須先在」並不衝突：那條規則要保的是**兩側骨架序列一致**，讓兩側都
      依內容決定要不要畫，序列本來就會一起變、一起對齊——單靠一側加條件才會讓兩側分岔。
 
@@ -30,7 +37,8 @@
      上撞名機率遠高於「只會出現一次」的彈窗。
        helpModalId          —— 必填。`<dialog>` 的 id，同時是 `aria-labelledby` 目標
                                （`{{ helpModalId }}-title`）與觸發鈕 `data-open-modal` 指到的值。
-                               命名慣例 `<blockId>HelpModal`（如 `reasoningDepthHelpModal`）——
+                               命名慣例 `<blockId>HelpModal`（如 `healthRescanHelpModal`、
+                               `reasoningGroupsHeadingHelpModal`）——
                                一個 `<dialog id>` 只能由一個元件宣告（GUIDELINE §5），同頁多顆
                                說明窗要各自唯一。
        helpModalTitleKey/
@@ -45,8 +53,16 @@
                                ③「這一區的所有數字」，`bound` 是獨立節點、不得烤進
                                `labelKey`／`effectKey` 的譯文字串裡。
 
-     住在哪一頁：`pages/components/component.html` 第 16 節（`Modal跳窗`）的示範觸發器＋一份
-     實例（`demoHelpModal`）。日後每個需要「說明」ⓘ 的欄位各自 include 一次、各自一組參數。 #}
+     住在哪一頁（雙向，**判準句而非清單**——這顆元件注定被數十頁 include，逐頁列在第三頁就
+     開始腐化，而腐化的清單比沒有清單更貴）：
+       正向＝`grep -rl 'include "components/help-modal/help-modal.html"' src/pages`；
+       反向＝`grep -l 'HelpModal-title' dist/*.html`（`aria-labelledby` 的值＝`<blockId>HelpModal-title`，
+       由下面的 id 命名慣例保證；母體是 `dist`：src 的一行在 `{% for %}` 內會渲染成多份，
+       兩邊不等價）。三塊 `<section>` 刻意不掛 class——它們沒有樣式、沒有 js，
+       §4 的三族一族都不屬（GUIDELINE §4「三族皆非者不掛」）；React 端靠這支 html 的結構
+       本身分辨三塊，不需要定位用的 class。
+     兩邊命中的檔案集合必須相同。元件庫頁 `pages/components/component.html` 第 16 節
+     （`Modal跳窗`）另有示範觸發器＋一份 `demoHelpModal`——那是 ②③ 唯一演得出來的地方。 #}
 <dialog class="modals" id="{{ helpModalId }}" aria-labelledby="{{ helpModalId }}-title">
     <div class="modals-dialog modals-md">
         <div class="modals-wrap">
@@ -56,14 +72,14 @@
                     <h3 class="modals-title" id="{{ helpModalId }}-title" data-i18n="{{ helpModalTitleKey }}">{{ helpModalTitle }}</h3>
                 </div>
                 <div class="modals-body flex-row column gap-16">
-                    <section class="help-modal-what">
+                    <section>
                         <p class="m-0" data-i18n="{{ helpModalWhatKey }}">{{ helpModalWhat }}</p>
                     </section>
                     {# ② 與 ③ 各自只在有內容時畫（見檔頭）：`length` 用陣列本身判斷，不是
                          迴圈跑完才知道——兩份陣列本來就是呼叫端算好才 set 進來的完整資料，
                          沒有「陣列非空但迴圈畫不出東西」這種中間態。 #}
                     {% if helpModalStateItems.length > 0 %}
-                    <section class="help-modal-state">
+                    <section>
                         <h4 class="help-modal-subtitle mb-8" data-i18n="help.stateTitle">現在生效的條件</h4>
                         <ul class="list-style-disc">
                             {% for item in helpModalStateItems %}
@@ -73,7 +89,7 @@
                     </section>
                     {% endif %}
                     {% if helpModalLimitRows.length > 0 %}
-                    <section class="help-modal-limits">
+                    <section>
                         <h4 class="help-modal-subtitle mb-8" data-i18n="help.limitsTitle">這一區的所有數字</h4>
                         {# 欄寬走 `<col style>`（GUIDELINE §4 三個合法行內 style 之一），不進 scss：
                              這張表欄數固定，但「界線」欄要給定寬避免被平均欄寬拉得忽寬忽窄，

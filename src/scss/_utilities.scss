@@ -181,20 +181,18 @@ $margins: (4, 8, 10, 12, 16, 20, 24, 32, 40); // mt-*/mb-*/my-*
     position: relative;
     --flex-gap: 0rem; // col-N-* 欄寬計算用；由 gap-* 寫入、直向排列時歸零
 
-    &.align-items-start {
-        align-items: flex-start;
-    }
-
+    // `.align-items-start` 與 `.justify-content-start` 兩顆已移除（round47）：全站零消費者
+    //（`grep -rho 'class="[^"]*"' dist/*.html` 對兩者皆 0），而元件庫頁只有散文提到它們、
+    // 沒有任何元素演得出長相 ⇒ 不符 §5 死碼豁免的三件（①同族有生產頁選擇器 ②元件庫有靜態示範
+    // ③白名單登記）。`justify-content-start` 另有一層：`.flex-row` 與全站元件 scss 都沒有設過
+    // `justify-content`，所以它產出的是 CSS 初始值、在任何情境都覆寫不了任何東西——工具層是
+    //「最後一手的覆寫層」（§4），改變不了畫面的 class 不屬於這一層。要回來就照 §5 三件辦。
     &.align-items-center {
         align-items: center;
     }
 
     &.align-items-end {
         align-items: flex-end;
-    }
-
-    &.justify-content-start {
-        justify-content: flex-start;
     }
 
     &.justify-content-center {

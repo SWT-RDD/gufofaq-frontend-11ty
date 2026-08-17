@@ -1,4 +1,15 @@
-// 逐字複製自真實 app 的 scss/component.scss「button按鈕」區段（verbatim，只搬移位置）
+// 結構與數值取自凍結前端 `GufoFAQ_Frontend_New/scss/component.scss` 的「button按鈕」區段（521-744）。
+// **偏離逐條列出**：
+//   ① 色值換語意 token
+//   ② `.button` 的 `box-sizing: border-box`（原檔 537）移除（§4-1：`_base.scss` 已全域給）
+//   ③ `.button` 的 `line-height: 1.375` → `normal`（理由見該行行內註解：真 app 編譯後的 css 是 normal）
+//   ④ `.button .icon { width/height/object-fit }`（原檔 550-554）整段移除——**升格成全域工具**
+//      `scss/_utilities.scss` 的 `.icon`（同一份宣告全站共用，不再逐元件抄一份）
+//   ⑤ `.button-icon` 由 `background-image` 改寫成 `::before` ＋ `icon-mask()`（原檔 660-700；
+//      顏色交給語意 token，深色模式免存 hover 版資產）
+//   ⑥ `&:has(.tooltip)`（原檔 706-713）整段移除——tooltip 的顯示條件改由 `ui/tooltip` 自己的
+//      `.has-tooltip` 承載（§4：外觀覆寫改成 owning 元件的變體，且它要含 `:focus-visible`）
+//   ⑦ 新增 `.like`／`.dislike`／`.share` 三個變體（原檔沒有；前台評分／分享鈕用）
 @use "../../../scss/mixin" as *;
 
 .button {

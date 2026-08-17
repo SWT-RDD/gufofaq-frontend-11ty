@@ -30,10 +30,14 @@ permalink: 5-5-2_groupManagement.html
   { key: "history", label: "歷史紀錄檢視", i18nKey: "settings.capHistory" },
   { key: "audit", label: "稽核日誌檢視", i18nKey: "settings.capAudit" }
 ] %}
+{# 列鍵（§6）：這張表刪得掉列（逐列 `.js-delete-group`），所以每一筆要帶身分欄位、逐列 id 不用
+     `loop.index`——刪一筆之後位置整排前頂，React 的 key 與逐列動作會一起指錯人。`id` 就是
+     `PATCH /groups/{group_id}`／`DELETE /groups/{group_id}` 吃的那一顆（product `app/routers/groups.py`
+     的 `update_group`／`delete_group`）。**號碼沿用 5-5-1 的同一批群組**（跨頁同源，§6）。 #}
 {% set groups = [
-  { name: "管理群組", capabilities: ["data:read", "data:write", "settings:read", "settings:write", "ask", "history", "audit"], memberCount: 0 },
-  { name: "業務群組", capabilities: ["data:read", "ask", "history"], memberCount: 1 },
-  { name: "研發群組", capabilities: ["data:read", "data:write", "settings:read"], memberCount: 2 }
+  { id: 1, name: "管理群組", capabilities: ["data:read", "data:write", "settings:read", "settings:write", "ask", "history", "audit"], memberCount: 0 },
+  { id: 2, name: "業務群組", capabilities: ["data:read", "ask", "history"], memberCount: 1 },
+  { id: 3, name: "研發群組", capabilities: ["data:read", "data:write", "settings:read"], memberCount: 2 }
 ] %}
 
 <p class="text-gray" data-i18n="settings.groupMgmtIntro">群組即權限群組：能力定在群組上，使用者加入群組即繼承其能力（多群組取聯集）。資料集歸屬群組，寫入權限依所屬群組而定。</p>
@@ -129,13 +133,13 @@ permalink: 5-5-2_groupManagement.html
             </thead>
             <tbody>
                 {% for group in groups %}
-                <tr>
+                <tr data-group-id="{{ group.id }}">
                     <td>
                         {# 可及名稱＝「<這一列的群組名> 群組名稱」（§4：迴圈內掛靜態 aria-label 會蓋掉列脈絡，
                              三列全叫「群組名稱」，還會跟上面新增區那顆同名）。名稱格本身就是可編輯輸入，
                              沒有現成的靜態辨識欄，故補一顆 sr-only 的列名當錨點。 #}
-                        <span id="groupRowName-{{ loop.index }}" class="sr-only">{{ group.name }}</span>
-                        <input type="text" class="form-control" value="{{ group.name }}" aria-labelledby="groupRowName-{{ loop.index }} groupNameHead">
+                        <span id="groupRowName-{{ group.id }}" class="sr-only">{{ group.name }}</span>
+                        <input type="text" class="form-control" value="{{ group.name }}" aria-labelledby="groupRowName-{{ group.id }} groupNameHead">
                     </td>
                     {# 一格裡有 7 顆同型 checkbox（同頁三列 ⇒ 21 顆，加上上面新增區那 7 顆共 28 顆同名）：
                          列脈絡救不了一格內的重複（§4），那一格的容器要掛
@@ -143,7 +147,7 @@ permalink: 5-5-2_groupManagement.html
                          可見字面（能力標籤）。列辨識欄沿用名稱格那顆 sr-only 的 `groupRowName-N`，
                          順序照正典「列名 → 表頭」。 #}
                     <td>
-                        <div class="flex-row flex-wrap gap-16 align-items-center" role="group" aria-labelledby="groupRowName-{{ loop.index }} groupCapabilitiesHead">
+                        <div class="flex-row flex-wrap gap-16 align-items-center" role="group" aria-labelledby="groupRowName-{{ group.id }} groupCapabilitiesHead">
                             {% for cap in capabilities %}
                             <label class="form-checkbox">
                                 <input type="checkbox"{% if cap.key in group.capabilities %} checked{% endif %}>

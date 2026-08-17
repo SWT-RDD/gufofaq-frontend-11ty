@@ -168,13 +168,11 @@ bodyClass: guideline-page
                         </li>
                         <li><span class="text-red">.col-數字-xs</span>代表手機版時欄位數，數字可從1-12，需注意，一個.flex-row內的數個「.col-數字-xs」加起來不可超過12
                         </li>
-                        <li>1 .flex-row加上.align-items-start 交錯軸方向向上對齊</li>
-                        <li>2 .flex-row加上.align-items-center 交錯軸方向置中對齊</li>
-                        <li>3 .flex-row加上.align-items-end 交錯軸方向向下對齊</li>
-                        <li>4 .flex-row加上.justify-content-start 主軸方向靠前對齊</li>
-                        <li>5 .flex-row加上.justify-content-center 主軸方向置中對齊</li>
-                        <li>6 .flex-row加上.justify-content-end 主軸方向靠後對齊</li>
-                        <li>7 .flex-row加上.justify-content-between 主軸方向分散對齊</li>
+                        <li>1 .flex-row加上.align-items-center 交錯軸方向置中對齊</li>
+                        <li>2 .flex-row加上.align-items-end 交錯軸方向向下對齊</li>
+                        <li>3 .flex-row加上.justify-content-center 主軸方向置中對齊</li>
+                        <li>4 .flex-row加上.justify-content-end 主軸方向靠後對齊</li>
+                        <li>5 .flex-row加上.justify-content-between 主軸方向分散對齊</li>
                         <li>桌機尺寸欄位間距：目前有.gap-2, .gap-4, .gap-8, .gap-10, .gap-12, .gap-16, .gap-20, .gap-24,
                             .gap-32, .gap-40可使用，數字為間距的px數，加在.flex-row上即可</li>
                         <li>平板欄位間距：目前有.sm-gap-4, .sm-gap-8, .sm-gap-10, .sm-gap-12, .sm-gap-16, .sm-gap-20,
@@ -911,6 +909,20 @@ bodyClass: guideline-page
                     <span class="verdict-tag is-warn">個資：身分證字號（record，未阻擋）</span>
                 </div>
                 <p class="text-gray m-0" data-i18n="settings.aliasApplyNeedsBind">請先綁定別名表</p>
+                {# 5-1-1「規格」那一格的**額度週期單位**枚舉（`TenantSetting.usage_period` 的三個成員）。
+                     那一格是 `<input value="3000次/日" disabled>`，`value` 是原子屬性、切版拆不出
+                     節點來掛 `data-i18n`，而 §4-2 的屬性後綴白名單也沒有 `-value` ⇒ 那一頁**結構上**
+                     只演得到其中一個成員（示範租戶落在 `daily`）。另兩個成員沒有被否決、只是那一頁
+                     畫不到——枚舉的成員不靠刪 key 活著，這裡就是它們的家（§4-2）。
+                     繁中逐字照抄 React 端字典（同 key 兩種繁中會互相覆蓋）。 #}
+                <div class="flex-row align-items-center gap-8">
+                    <span class="text-gray" data-i18n="settings.spec">規格</span>
+                    <span>3000</span><span class="text-gray" data-i18n="settings.quotaUnitPerDay">次/日</span>
+                    <span class="text-gray">／</span>
+                    <span>3000</span><span class="text-gray" data-i18n="settings.quotaUnitPerMonth">次/月</span>
+                    <span class="text-gray">／</span>
+                    <span>3000</span><span class="text-gray" data-i18n="settings.quotaUnitTotal">次（累計）</span>
+                </div>
                 <p class="text-gray m-0" data-i18n="settings.tagFilterCoverageWarnOk">目前每一份資料都帶得到這一欄，可以開啟。沒填的格子在匯入時就已經寫成「未標註」，過濾條件會連它們一起比對，所以標了幾成不影響會不會漏文件。之後要注意的只有一件事：資料夾匯入的檔永遠沒有欄位槽，那樣匯入一批新資料就會又缺這一欄，要改成逐列匯入才接得回來。</p>
                 <p class="text-gray m-0"><span data-i18n="regression.hitsTruncatedPrefix">（這一格只列了前 </span><span>3</span><span data-i18n="regression.hitsTruncatedMid"> 筆，實際命中 </span><span>63</span><span data-i18n="regression.hitsTruncatedSuffix"> 筆）</span></p>
                 {# 桶子的截斷句。**與上面那一句不是同一件事**：上面是**後端**的命中截斷
@@ -1178,10 +1190,11 @@ bodyClass: guideline-page
    不是跨頁共用執行期資料）。
    **但值要與 5-10 同一組**：元件自帶的 `untaggedFileRows` 那兩列的「所屬資料集」欄是寫死在元件裡的，
    兩個使用處共用它——這一頁的下拉若給另一組名字，同一份清單在元件庫頁就會列出兩個下拉裡沒有的
-   資料集。故沿用 5-10 的 id 與名稱（法規彙編 3／2026 新制問答 7）。 #}
+   資料集。故沿用 5-10 的 id 與名稱（法規彙編 3／2026 新制問答 12——id 對回 3-5 的
+   `healthScanDatasets`，那是全站這份資料集目錄的正本）。 #}
 {% set coverageDatasets = [
     { id: 3, name: "法規彙編" },
-    { id: 7, name: "2026 新制問答" }
+    { id: 12, name: "2026 新制問答" }
 ] %}
 {# 頁碼列三參數由使用頁提供（同 pager-row）；本頁在此之前已用過一次 pagination，故要重設。 #}
 {% set total = 14 %}

@@ -45,11 +45,13 @@ document.addEventListener("DOMContentLoaded", function () {
         // （只掃載入當下的 DOM）沒有它們的繁中快照 ⇒ 回繁中時 setText 直接跳過，繁中只剩本元件
         // 救得回來。繁中原文因此存成常數：拿 el.textContent 當 fallback 等於把「當下畫面上的英文」
         // 當成繁中原文，英→中變成 no-op，而靜態掃描與視覺指紋都看不到（§4-2）。
+        var ZH_NO_CANONICAL = "這一行沒有標準詞";
         var ZH_NO_ALIAS = "這一行沒有別名";
         var ZH_CANONICAL_TOO_LONG = "標準詞超過上限";
         var ZH_TOO_MANY_ALIASES = "別名數超過上限";
         var ZH_ALIAS_TOO_LONG = "單一別名超過上限";
         var ERR_ZH = {
+            "settings.bulkPasteNoCanonical": ZH_NO_CANONICAL,
             "settings.bulkPasteNoAlias": ZH_NO_ALIAS,
             "settings.bulkPasteCanonicalTooLong": ZH_CANONICAL_TOO_LONG,
             "settings.bulkPasteTooManyAliases": ZH_TOO_MANY_ALIASES,
@@ -122,22 +124,31 @@ document.addEventListener("DOMContentLoaded", function () {
 
             lines.forEach(function (line) {
                 if (!line.trim()) return;                      // 空行略過
-                var cells = line.split(/[\t,，]/).map(function (c) { return c.trim(); }).filter(Boolean);
+                // **第一格就是標準詞，不可以先 filter 掉空格**：`"\t別名A,別名B"` 這一行的第一格是空的，
+                // 先去空再 shift 會把「別名A」升格成標準詞——一個錯都不報、畫面上沒有任何跡象，
+                // 使用者拿到的是一筆被改寫過的資料（比丟掉更糟）。只有標準詞之後的那些才去空。
+                var cells = line.split(/[\t,，]/).map(function (c) { return c.trim(); });
                 var canonical = cells.shift() || "";
+                var aliases = cells.filter(Boolean);
                 // key 逐字寫在 t() 的呼叫點（靜態掃描要看得到它被引用，否則會被當成孤兒翻譯刪掉）；
-                // 繁中走上面那三顆常數，與 langchange 重畫共用同一份（兩處各寫一份就會分岔）。
+                // 繁中走上面那幾顆常數，與 langchange 重畫共用同一份（兩處各寫一份就會分岔）。
+                // 兩個方向的缺格分開講（判準與 gufofaq-saas `apps/web/components/AliasEntriesModal/AliasEntriesModal.tsx`
+                // 的 `rowIssue()` 逐條同序）：
+                // 有別名沒標準詞 → NoCanonical；有標準詞沒別名 → NoAlias（後者才是上游的 400）。
                 var err = null;
-                if (!cells.length) {
+                if (!canonical && aliases.length) {
+                    err = { key: "settings.bulkPasteNoCanonical", text: t("settings.bulkPasteNoCanonical", ZH_NO_CANONICAL) };
+                } else if (!aliases.length) {
                     err = { key: "settings.bulkPasteNoAlias", text: t("settings.bulkPasteNoAlias", ZH_NO_ALIAS) };
                 } else if (canonical.length > MAX_CANONICAL_LEN) {
                     err = { key: "settings.bulkPasteCanonicalTooLong", text: t("settings.bulkPasteCanonicalTooLong", ZH_CANONICAL_TOO_LONG) };
-                } else if (cells.length > MAX_ALIASES_PER_ENTRY) {
+                } else if (aliases.length > MAX_ALIASES_PER_ENTRY) {
                     err = { key: "settings.bulkPasteTooManyAliases", text: t("settings.bulkPasteTooManyAliases", ZH_TOO_MANY_ALIASES) };
-                } else if (cells.some(function (a) { return a.length > MAX_ALIAS_LEN; })) {
+                } else if (aliases.some(function (a) { return a.length > MAX_ALIAS_LEN; })) {
                     err = { key: "settings.bulkPasteAliasTooLong", text: t("settings.bulkPasteAliasTooLong", ZH_ALIAS_TOO_LONG) };
                 }
                 // 不去重、不排序：原樣 append
-                body.appendChild(makeRow(canonical, cells.join(", "), err));
+                body.appendChild(makeRow(canonical, aliases.join(", "), err));
             });
 
             input.value = "";

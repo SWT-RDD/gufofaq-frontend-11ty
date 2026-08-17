@@ -1,4 +1,8 @@
-// 逐位元照抄自真 app scss/component.scss 1847-1929（.form-table-wrap / .form-table 表單表格區塊），只搬檔案位置，宣告一字不改
+// 結構與數值取自凍結前端 `GufoFAQ_Frontend_New/scss/component.scss` 1847-1929
+// （.form-table-wrap / .form-table 表單表格區塊）。
+// **偏離逐條列出**：
+//   ① 色值換語意 token
+//   ② 三處 `box-sizing: border-box` 移除（§4-1：`_base.scss` 已全域給）
 @use "../../../scss/mixin" as *;
 
 /*===============================

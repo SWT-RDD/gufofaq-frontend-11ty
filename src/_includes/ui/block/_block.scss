@@ -1,4 +1,8 @@
-// 逐字複製自真實 app 的 scss/component.scss「block / box 區塊」區段（verbatim，只搬移位置，line 3084-3109）
+// 結構與數值取自凍結前端 `GufoFAQ_Frontend_New/scss/component.scss` 的「block / box 區塊」（3084-3109）。
+// **偏離逐條列出**：
+//   ① 色值換語意 token
+//   ② `.block` 的 `box-sizing: border-box`（原檔 3089）移除——`_base.scss` 的 `*{box-sizing:border-box}`
+//      已給，§4-1 明文「元件不要再寫」
 /*===============================
     block / box 區塊
 ================================*/

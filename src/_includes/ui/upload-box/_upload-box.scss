@@ -1,5 +1,11 @@
 // 結構與數值照抄自真實 app scss/component.scss 檔案上傳區 section（.upload-box，行 2479-2522）。
-// **偏離**：色值換成語意 token；`.upload-error` 整段是切版新增（見下方該區塊自己的註解）。
+// **偏離逐條列出**：
+//   ① 色值換成語意 token
+//   ② `.upload-error` 整段是切版新增（見下方該區塊自己的註解）
+//   ③ `.upload-input { display: none }`（原檔 2495-2497）移除——markup 改用 `hidden` 屬性
+//      （§4：JS 切換顯示的 `display` 才是合法行內 style，靜態隱藏走屬性）
+//   ④ 新增 `padding: 0; font: inherit; color: inherit;`——放置區由 `<div>` 換成真
+//      `<button>`／`<a>`（§4「不要用 div 假扮控制項」），這三條是該換法必要的 UA reset
 // 檔案上傳區
 .upload-box {
     width: 100%;

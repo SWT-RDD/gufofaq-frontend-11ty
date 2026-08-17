@@ -564,11 +564,6 @@ const NAMED_HOOKS = new Set([
     // 重複列的列標記（無樣式、版位由工具 class 供）：React 端 params.map() 的列身分，
     // 本檔另一條測試也靠它數參數列。同 `is-<state>`，主人＝轉換契約。
     "builtin-tool-param",
-    // help-modal 的三個具名區塊（GUIDELINE §4「視同有主，主人＝契約本身」，同 modals-content）：
-    // 三塊各自沒有樣式，存在的理由是讓 React 端認得出「這一塊是哪一塊」。
-    "help-modal-what",    // ①這一區在做什麼——唯一手寫那段的定位點，不是樣式掛點
-    "help-modal-state",   // ②現在生效的條件——完全導出清單的容器定位點，不是樣式掛點
-    "help-modal-limits",  // ③這一區的所有數字——界線表格的容器定位點，不是樣式掛點
 ]);
 
 // 具名真 app 掛點的**另一半**：這些名字同樣是「React 端要靠它認出這顆鈕該接什麼」的具名掛點，
@@ -3576,7 +3571,14 @@ test("§4-2 繁中原文相同的 chrome 沿用既有 key、不另立（同文�
     //   2) DELIBERATE 白名單——語意/單複數/兩套 app chrome/組字上下文確實不同（各附裁決理由）
     const DELIBERATE = new Set([
         "問答紀錄",                                                        // qa.qaRecords="Q&A records"（側欄／區塊標題，整批）vs qa.recordFallbackPrefix="Q&A record "（單一筆沒有 ChatTitle 時的 fallback 名，後面緊接序號 ⇒ 單數＋自帶尾空白；鏡射真 app qaRecord.js 的 room.ChatTitle || 問答紀錄N）
-        "時間", "標題", "內容", "檔案名稱", "資料集名稱",                  // dataImport/dataset/audit 各區段表頭語境（round15 裁決暫留的舊家族）
+        "標題", "內容",                                                    // dataImport/dataset/audit 各區段表頭語境（round15 裁決暫留的舊家族）
+        // round47 移除三項（併掉重複的那一族之後，該繁中今天只剩一顆 key）：
+        //   「時間」 dataImport.time／dataset.time／audit.time 併回 common.time
+        //   「檔案名稱」 dataImport.fileName 併回 dataset.fileName
+        //   「資料集名稱」 dataImport.datasetName 併回 dataset.datasetName
+        //   三組的英譯本來就逐字相同（File name／Dataset name／Time），屬 §4-2「繁中原文相同的
+        //   UI chrome 沿用既有 key、不另立」；`field.title` 那一族不併，它是 product `SLOTS` 的
+        //   欄位槽預設名（`field.<key>` 整族由上游目錄產生，併掉會讓那份目錄少一顆）。
         "啟用", "停用",                                                    // 動作鈕（Enable/Disable，3-4 每列直送 PATCH）vs 狀態/選項（widget.active=Active、qaDirectModeOff=Off）
         "資料集", "所屬群組",                                              // 單/複數語意（Dataset/Datasets、Group/Groups）
         "開始時間", "結束時間", "狀態",                                    // qa 篩選 vs settings 統計篩選；批次匯入欄 vs widget 欄
@@ -6503,6 +6505,7 @@ test("§5 `.hidden` 判準①的另一半：src 引用得到、dist 卻一頁都
         ["serviceKey.none", "5-6-3 服務金鑰表的 {% else %} 空狀態列"],
     ]);
     const JS_RENDERED = new Map([
+        ["settings.bulkPasteNoCanonical", "components/alias-entries-modal/alias-entries-modal.js"],
         ["settings.bulkPasteNoAlias", "components/alias-entries-modal/alias-entries-modal.js"],
         ["settings.bulkPasteCanonicalTooLong", "components/alias-entries-modal/alias-entries-modal.js"],
         ["settings.bulkPasteTooManyAliases", "components/alias-entries-modal/alias-entries-modal.js"],

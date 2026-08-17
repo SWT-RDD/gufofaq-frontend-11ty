@@ -135,9 +135,12 @@ permalink: 5-10_tagDimensions.html
 {# 覆蓋率量測的「量測範圍」下拉吃這一份資料集目錄（`GET /tags/coverage` 的 `dataset_id` 參數）。
      它與下面那張「要重新匯入的檔」表**沒有關係**：那張表的最小單位是檔、而且 product 給的
      `SlotGap` 裡沒有資料集 id。連結由 id 組出，不另存 href。 #}
+{# **id 對回 3-5 的 `healthScanDatasets`**（同一個示範租戶的同一份資料集目錄）：法規彙編＝3、
+     2026 新制問答＝**12**（3-5 的 7 是「常見問答」）。同一個名字在兩頁配兩個 id，就是同一份
+     目錄被烤成兩份（§6 示範資料要自洽）——而這一顆 id 正是下拉送出去的值。 #}
 {% set coverageDatasets = [
   { id: 3, name: "法規彙編" },
-  { id: 7, name: "2026 新制問答" }
+  { id: 12, name: "2026 新制問答" }
 ] %}
 {# 示範資料自洽：`業務範疇`（note3）兩種缺法都有，`有效期`（date2）只有「匯入時沒有這一欄」而且
      超過 5 個檔（演截斷）。檔名沿用本站示範用的那批（同 1-1-x 與 3-1-x 的假檔名）。
@@ -392,7 +395,7 @@ permalink: 5-10_tagDimensions.html
                             {# 日期維度沒有字典可編——product 對它的 vocabulary 寫入一律 400，
                                  給一顆點了只會失敗的鈕就是說謊。 #}
                             {% if dim.kind != "date" %}
-                            <button type="button" class="button button-border button-sm js-edit-vocabulary" data-toast="正在查詢資料...|查詢成功|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.query" data-toast-type="info|success|error" data-i18n="settings.editVocabulary">編輯字典</button>
+                            <button data-capability="settings:read" type="button" class="button button-border button-sm js-edit-vocabulary" data-toast="正在查詢資料...|權限不足，無法查詢|查詢成功|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.query" data-toast-type="info|warning|success|error" data-i18n="settings.editVocabulary">編輯字典</button>
                             {% endif %}
                             <button type="button" class="button button-red button-sm js-delete-tag-dimension" data-i18n="action.delete">刪除</button>
                         </div>

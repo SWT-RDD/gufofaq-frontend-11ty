@@ -966,9 +966,9 @@ permalink: 3-5_dataHealth.html
                 <option value="{{ ct.value }}" data-i18n="{{ ct.i18nKey }}">{{ ct.label }}</option>
                 {% endfor %}
             </select>
-            <button type="button" class="button button-primary js-health-query"
-                data-toast="正在查詢資料...|查詢成功|載入資料失敗，請重新整理頁面"
-                data-i18n-data-toast="toast.query" data-toast-type="info|success|error"
+            <button data-capability="data:read" type="button" class="button button-primary js-health-query"
+                data-toast="正在查詢資料...|權限不足，無法查詢|查詢成功|載入資料失敗，請重新整理頁面"
+                data-i18n-data-toast="toast.query" data-toast-type="info|warning|success|error"
                 data-i18n="action.query">查詢</button>
         </div>
     </div>

@@ -1,4 +1,11 @@
-// 逐字複製自真實 app 的 scss/component.scss「login page」區段（.login-wrapper，第 3190-3271 行，verbatim，只搬移位置）
+// 結構與數值取自凍結前端 `GufoFAQ_Frontend_New/scss/component.scss` 的「login page」區段
+// （`.login-wrapper`，3190-3271）。
+// **偏離逐條列出**：
+//   ① 色值換語意 token（`#fafafa`→`--surface`、`#4e4e4e`→`--text-strong`、
+//      `var(--color-gray-300)`→`--surface-sunken`）
+//   ② `height: 100vh` 之後補同值 `100dvh`（§4-1：行動瀏覽器的 vh 含會伸縮的網址列）
+//   ③ `position: relative` ＋ `.login-controls` 絕對定位層是切版新增（原檔沒有）——登入前就要
+//      切得了語言／深淺，故右上角放 `components/header-controls`
 //
 // markup 契約（無 html 元件，§1-2；整段照抄）—— 生產 markup 手寫在 src/login.html，逐字如下：
 //
