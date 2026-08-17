@@ -7,8 +7,12 @@
 // 數型一定會漏掉組合（同 `ui/verdict-tag` 檔頭記取的那次教訓）：
 //   軸一：字面是 chrome ⇒ **一定帶 data-i18n**；key 可以寫死，也可以由頁面資料插值。
 //   軸二：同表控制項要 `aria-labelledby` 指得到它時才加唯一 `id`（正典 5-2 的 `intentLevelTitle-<n>`）。
-// 現存實例佔了三種組合：key 寫死＋無 id（5-2 ×6、file-edit-modal、multi-select-box ×2）、
-// key 插值＋有 id（5-2 的 intentLevelTitle）、key 插值＋無 id（knowledge-retrieval-modal）。
+// **只寫軸，不列組合**：這一段先前補了一份「現存實例佔了三種組合（5-2 ×6…）」的清單，而它
+// ①漏掉第四種組合（key 寫死＋**有** id——5-2 的 `priorityUnusedTitle`／`priorityAgentInUseTitle`／
+// `priorityAgentUnusedTitle` 三顆，各自被一份 `priorityTableOwnerId` 指著，是合法且必要的一型），
+// ②數字也錯（5-2 是 4 顆不是 6 顆；以 dist 為母體是 10 顆，因為 `intentLevelTitle` 在迴圈裡）。
+// 檔頭自己開場那句「別把它記成 N 型，數型一定會漏掉組合」正好預言了下面兩行——所以那兩行刪掉。
+// 反查指令（母體是 dist，§1-2）：`grep -c 'class="tablelist-title' dist/*.html`。
 // 下面兩段是**其中兩種組合的範例**，不是全集：
 //
 //   ① 固定標題：字面是 chrome ⇒ **一定帶 data-i18n**（少了它英文模式整條標題是繁中，而視覺指紋看不出來）

@@ -138,7 +138,7 @@ permalink: 5-8_widgetTokens.html
     },
     {
         id: 41,
-        name: "官網客服",
+        name: "",
         token: "wgt_aB3xYz9Qle8sample0000keyvalue000",
         origins: ["https://acme.com", "https://www.acme.com"],
         disabled: false
@@ -185,7 +185,12 @@ permalink: 5-8_widgetTokens.html
                        繁中一律以「已複製」起頭：閘門測試的唯讀豁免是**以錨定字串開頭**比對的
                          （`READONLY` 的「已複製」＝寫進剪貼簿、完全不碰後端），寫成「嵌入片段已複製」
                          就對不上那個錨點，而它其實是同一件事。 #}
-                    <td id="widgetTokenRowName-{{ row.id }}">{{ row.name }}</td>
+                    {# `name` 在上游是**選填**（`WidgetTokenCreate.name: str | None`，`create_widget_token`
+                         寫 `name=(body.name or None)`）⇒ 無名金鑰是正本回得出來的一態，而這一格是整列
+                         三顆鈕的可及名稱來源：空著的話三顆的名稱會塌成「複製／複製嵌入片段／撤銷」，
+                         跨列逐字相同（§4）。故給一個**可翻的 fallback**「未命名金鑰 #<id>」，
+                         示範第二筆就演那一態。 #}
+                    <td id="widgetTokenRowName-{{ row.id }}">{% if row.name %}{{ row.name }}{% else %}<span data-i18n="widget.unnamedToken">未命名金鑰</span> #{{ row.id }}{% endif %}</td>
                     <td>
                         <div class="flex-row align-items-center gap-8">
                             <span>{{ row.token }}</span>
@@ -213,7 +218,11 @@ permalink: 5-8_widgetTokens.html
                             {# 撤銷改走二次確認（彈窗本體見頁尾）：不可逆，而且撤銷後前台所有掛這把金鑰的
                                  嵌入頁當場失效。開窗需先選定「撤銷哪一把」＝業務條件開窗，故只留 hook class、
                                  不掛 data-open-modal；成敗 toast 移到確認鈕上（§5）。 #}
-                            <button data-tenant-role="admin" type="button" id="widgetTokenRevoke-{{ row.id }}" aria-labelledby="widgetTokenRowName-{{ row.id }} widgetTokenRevoke-{{ row.id }}" class="button button-red button-sm js-revoke-token" data-i18n="action.revoke">撤銷</button>
+                            {# 閘門宣告的家在**彈窗裡那顆確認鈕**（`deleteTenantRole`，見頁尾），不是這一顆
+                                 條件開窗的觸發鈕——真正送 API 的是確認鈕，觸發鈕只負責「先選定要撤哪一把」（§4）。
+                                 全站同型的三處先前不一致（5-8／5-9 兩邊都標、5-10 只標確認鈕），
+                                 統一成 5-10 那一種。 #}
+                            <button type="button" id="widgetTokenRevoke-{{ row.id }}" aria-labelledby="widgetTokenRowName-{{ row.id }} widgetTokenRevoke-{{ row.id }}" class="button button-red button-sm js-revoke-token" data-i18n="action.revoke">撤銷</button>
                             {% endif %}
                         </div>
                     </td>

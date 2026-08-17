@@ -42,9 +42,9 @@ permalink: 5-6-2_platformMcpServers.html
      ⚠️ 改的是**列序**，不是 id 集合：5-2 對話設定那張勾選清單與本表有跨頁自洽測試，它比的是
      「同一組 id 與名稱、停用那筆要標示」，不比順序。 #}
 {% set mcpServers = [
-  { id: 3, name: "舊版文件搜尋", command: "npx", args: ["-y", "@acme/doc-mcp-legacy"], env: ["ACME_API_KEY=***"], description: "舊版內部文件查詢，已停用。", active: false, lastTest: { ok: false, toolsCount: 0, tools: "", message: "", error: "" } },
-  { id: 2, name: "內部文件搜尋", command: "npx", args: ["-y", "@acme/doc-mcp"], env: ["ACME_API_KEY=***", "ACME_REGION=ap-northeast-1"], description: "查詢內部知識庫文件。", active: true, lastTest: { ok: false, toolsCount: 0, tools: "", message: "MCP Server 連線異常", error: "TimeoutError" } },
-  { id: 1, name: "時間工具", command: "uvx", args: ["mcp-server-time", "--local-timezone=Asia/Taipei"], env: [], description: "提供目前時間與時區換算。", active: true, lastTest: { ok: true, toolsCount: 3, tools: "get_current_time, convert_time, list_timezones", error: "" } }
+  { id: 3, name: "舊版文件搜尋", command: "npx", args: ["-y", "@acme/doc-mcp-legacy"], env: ["ACME_API_KEY=***"], description: "舊版內部文件查詢，已停用。", active: false, lastTest: { ok: false, toolsCount: 0, tools: [], message: "", error: "" } },
+  { id: 2, name: "內部文件搜尋", command: "npx", args: ["-y", "@acme/doc-mcp"], env: ["ACME_API_KEY=***", "ACME_REGION=ap-northeast-1"], description: "查詢內部知識庫文件。", active: true, lastTest: { ok: false, toolsCount: 0, tools: [], message: "MCP Server 連線異常", error: "TimeoutError" } },
+  { id: 1, name: "時間工具", command: "uvx", args: ["mcp-server-time", "--local-timezone=Asia/Taipei"], env: [], description: "提供目前時間與時區換算。", active: true, lastTest: { ok: true, toolsCount: 3, tools: [{ name: "get_current_time", description: "回目前時間（可指定時區）" }, { name: "convert_time", description: "在兩個時區之間換算時間" }, { name: "list_timezones", description: "列出支援的 IANA 時區識別字" }], error: "" } }
 ] %}
 
 <p class="text-gray" data-i18n="settings.mcpServersIntro">MCP Server 讓 Agent 連上外部工具。註冊即在 Agent 主機執行指定指令，屬高權限操作，僅平台管理者可管理；租戶只能在對話設定勾選已註冊的 Server。</p>
@@ -273,7 +273,15 @@ permalink: 5-6-2_platformMcpServers.html
                         {% if server.lastTest.ok %}
                         <div class="flex-row column gap-4">
                             <span class="text-bold">{{ server.lastTest.toolsCount }}<span data-i18n="settings.mcpToolsUnit"> 個工具</span></span>
-                            <div class="collapse-text text-gray"><div class="collapse-body">{{ server.lastTest.tools }}</div><button type="button" id="mcpToolsToggle-{{ server.id }}" aria-labelledby="mcpRowName-{{ server.id }} mcpToolsToggle-{{ server.id }}" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>
+                            {# **`tools` 是 `list[MCPToolInfo]`、不是一串字**（§3-2「欄位的形狀也要對」：正本給的是集合就畫成集合）：
+                                 GufoRAG chatbot `app/models/mcp.py` 的 `MCPServerTestResult.tools` 是
+                                 `List[MCPToolInfo]`，每一顆有 `name`／`description`／`server_id`／`server_name`／
+                                 `input_schema`。這一格畫 `name` ＋ `description` 兩欄——那兩顆就是平台管理員
+                                 判斷「這台掛上去會給 agent 什麼」的全部依據；另外三顆不畫：`server_id`／
+                                 `server_name` 是這一列自己（重複），`input_schema` 是給 LLM 的參數 schema、
+                                 不是給人讀的。先前把整份 list 壓成一行逗號串，同一顆鍵在這一頁長成純量。
+                              #}
+                            <div class="collapse-text text-gray"><div class="collapse-body">{% for tool in server.lastTest.tools %}{% if not loop.first %}<br>{% endif %}{{ tool.name }}<span data-i18n="common.labelSep">：</span>{{ tool.description }}{% endfor %}</div><button type="button" id="mcpToolsToggle-{{ server.id }}" aria-labelledby="mcpRowName-{{ server.id }} mcpToolsToggle-{{ server.id }}" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>
                         </div>
                         {% elif server.lastTest.error %}
                         <div class="collapse-text text-red"><div class="collapse-body">{{ server.lastTest.message or server.lastTest.error }}</div><button type="button" id="mcpErrorToggle-{{ server.id }}" aria-labelledby="mcpRowName-{{ server.id }} mcpErrorToggle-{{ server.id }}" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>
