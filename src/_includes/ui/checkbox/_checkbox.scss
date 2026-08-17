@@ -1,5 +1,45 @@
 // checkbox atom：外框排版 base 見共用的 scss/_form-check.scss（與 radio 共用，§4 不在此寫 radio 的 class）。
 // 以下只寫 checkbox 自己的 class 與其 input 控制項樣式。
+// **生產契約**（§1-2）：`checkbox.html` 是**展示片段**、逐字聲明自己不是生產形狀（那兩層殼是從
+// modal 複製過來的），而真正會被複製的「全選表格」markup 只散在使用頁上，全站沒有一份可對答案的
+// 正本——這一族少一顆屬性視覺指紋完全看不出來，正是這條規則要防的狀況。逐字取自唯一實例
+// `src/pages/dataset/3-1-3_previewDataset.html`：
+//
+//   <div class="table-container scrollTable checkbox-container">
+//       <table class="default-table">
+//           <thead>
+//               <tr>
+//                   <th class="check-cell">
+//                       <label class="form-checkbox in-cell">
+//                           <input type="checkbox" class="check-all" aria-label="全選" data-i18n-aria-label="dataset.selectAll">
+//                       </label>
+//                       <span class="sr-only" id="previewFileHeadSelect" data-i18n="dataset.selectRow">選取此列</span>
+//                   </th>
+//               </tr>
+//           </thead>
+//           <tbody>
+//               {% for file in files %}
+//               <tr data-filesn="{{ file.sn }}">
+//                   <td class="check-cell">
+//                       <label class="form-checkbox in-cell">
+//                           <input type="checkbox" class="check-one" data-filesn="{{ file.sn }}" aria-labelledby="previewFileRowName-{{ file.sn }} previewFileHeadSelect">
+//                       </label>
+//                   </td>
+//               </tr>
+//               {% endfor %}
+//           </tbody>
+//       </table>
+//   </div>
+//
+// 抄的時候一個都不能省：
+//   ⓐ **`.check-all` 要有 `aria-label` ＋ `data-i18n-aria-label`**：它是一顆沒有可見字面的控制項。
+//   ⓑ **欄表頭那顆 `.sr-only` 是逐列 checkbox 的可及名稱來源**（表頭那一格只有一顆全選框、沒有文字
+//      可以被引用），逐列則是 `aria-labelledby="<本列辨識欄> <欄表頭>"`——**順序不可反**（§4：
+//      辨識在前，反過來會先念「選取此列」）。
+//   ⓒ **列鍵 `data-filesn` 要同時掛在 `<tr>` 與 `.check-one` 上**：業務 js 靠它認出這一列是哪個檔（§5）。
+//   ⓓ `.check-cell`（欄寬）與 `.in-cell`（格內對齊）是 `ui/default-table` 的 class，不是本元件的。
+//   ⓔ 行為（全選 ↔ 逐列連動、`indeterminate`、載入即同步）由 `checkbox.js` 供給，markup 不必寫。
+//
 // 結構與數值取自凍結前端 `GufoFAQ_Frontend_New/scss/component.scss` 的 `.form-checkbox`（1159-1169）
 // 與 `input[type="checkbox"]`（1182-1242）。**偏離逐條列出**（上一版寫「逐字取自」，實際有八處）：
 //   ①原檔 `.form-checkbox, .form-radio` 那一段共用外框排版**不在本檔**——已升格成全域的

@@ -7786,3 +7786,41 @@ test("§3-2 有送 API 的鈕的頁面，註解裡至少要指名一條「動詞
         ["{# 逆向自 product app/routers/datasets.py #}"],
         ["{# GET /datasets 列表（list[DatasetOut]） #}", "{# DELETE /glossary/{table_id} 刪表 #}"]);
 });
+
+test("§1-2 展示片段與生產實例的硬規則屬性不一致時，生產契約要寫在該元件的 scss／js 檔頭", () => {
+    // §1-2 的契約義務先前只綁「**無 html** 的元件」，而 README 列了十幾支「html 只是展示片段」的
+    // 元件——它們的生產 markup 逐字散在使用頁上，全站沒有一份可對答案的正本。
+    // 這正是那條規則要防的狀況：**這種 markup 必然被複製，而少掉一個屬性視覺指紋看不出來**
+    // （`ui/switch` 的片段沒有可及名稱綁定，照它抄就會做出一排同名的無名開關）。
+    // 判準只在**真的有漂移**時要求契約：同一顆根 class 上，生產實例帶了片段沒有的 §4 硬規則屬性。
+    const HARD = /^(aria-|data-i18n|data-toast|data-capability$|data-tenant-|data-platform-role$|role$|width$|height$|decoding$|type$)/;
+    const prodPages = srcHtml.filter((f) => f.startsWith("src/pages/") && f !== "src/pages/components/component.html");
+    const attrsOn = (text, cls) => {
+        const out = new Set();
+        const re = new RegExp(`<([a-zA-Z][\\w-]*)((?:"[^"]*"|[^>"])*?class="[^"]*\\b${cls}\\b[^"]*"(?:"[^"]*"|[^>"])*)>`, "g");
+        for (const m of text.matchAll(re))
+            for (const a of m[2].matchAll(/(?:^|\s)([a-zA-Z_:][\w:.-]*)\s*=/g)) if (HARD.test(a[1])) out.add(a[1]);
+        return out;
+    };
+    const hits = [];
+    let checked = 0;
+    for (const { name, path } of componentDirs) {
+        const html = `${path}/${name}.html`;
+        if (!existsSync(html)) continue;
+        // 展示片段＝它的 html 只被元件庫頁 include
+        const inc = srcHtml.filter((f) => f !== html && read(f).includes(`include "${path.replace("src/_includes/", "")}/${name}.html"`));
+        if (!inc.length || !inc.every((f) => f === "src/pages/components/component.html")) continue;
+        const fragAttrs = attrsOn(read(html), name);
+        const prodAttrs = new Set();
+        for (const f of prodPages) for (const a of attrsOn(read(f), name)) prodAttrs.add(a);
+        const drift = [...prodAttrs].filter((a) => !fragAttrs.has(a));
+        if (!drift.length) continue;
+        checked++;
+        const heads = [`${path}/_${name}.scss`, `${path}/${name}.js`]
+            .filter((p) => existsSync(p)).map((p) => read(p)).join("\n");
+        if (!/生產契約|生產形狀/.test(heads))
+            hits.push(`${path}  展示片段少了生產實例上的 ${drift.join("、")}，而 scss／js 檔頭沒有生產契約`);
+    }
+    assert.ok(checked >= 5, `只掃到 ${checked} 支有漂移的展示片段 —— 這條測試在空轉`);
+    assert.equal(hits.length, 0, `§1-2：展示片段不是生產形狀時，生產契約要有一份可對答案的正本：\n${fail(hits)}`);
+});

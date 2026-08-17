@@ -5,6 +5,7 @@
 //   ③ `.button` 的 `line-height: 1.375` → `normal`（理由見該行行內註解：真 app 編譯後的 css 是 normal）
 //   ④ `.button .icon { width/height/object-fit }`（原檔 550-554）整段移除——**升格成全域工具**
 //      `scss/_utilities.scss` 的 `.icon`（同一份宣告全站共用，不再逐元件抄一份）
+//   （**生產契約**見檔尾「生產形狀」一節。）
 //   ⑤ `.button-icon` 由 `background-image` 改寫成 `::before` ＋ `icon-mask()`（原檔 660-700；
 //      顏色交給語意 token，深色模式免存 hover 版資產）
 //   ⑥ `&:has(.tooltip)`（原檔 706-713）整段移除——tooltip 的顯示條件改由 `ui/tooltip` 自己的
@@ -237,3 +238,21 @@
         height: 24px;
     }
 }
+
+// ───────── 生產形狀（§1-2 生產契約） ─────────
+//
+// `button.html` 是展示片段（只示範外觀變體），而生產的每一顆鈕還要帶片段上看不到的東西——
+// 照片段抄一定會漏掉整組 §4／§5 的硬規則：
+//
+//   ① 送 API 的鈕（§5 ③）：
+//     <button data-capability="settings:write" type="button" class="button button-primary js-save-x" data-toast="已儲存|權限不足，無法儲存|儲存失敗，請稍後再試" data-i18n-data-toast="toast.saveX" data-toast-type="success|warning|error" data-i18n="action.save">儲存</button>
+//
+//   ② 圖示鈕（沒有可見字面）：可及名稱另給，且住在 `{% for %}` 裡時要併讀列脈絡：
+//     <button type="button" id="xDelete-{{ row.id }}" aria-labelledby="xRowName-{{ row.id }} xDelete-{{ row.id }}" class="button-icon no-bg size-sm delete" title="刪除" data-i18n-title="action.delete">
+//         <span class="sr-only" data-i18n="action.delete">刪除</span>
+//     </button>
+//
+//   ③ 純換頁的「鈕」是 `<a href>`、不是 `<button>`（§4 判準：它打不打 API）；沒有去向就不要畫（§5）。
+//
+// 抄的時候一個都不能省：`type="button"`（§4 不得省略）、`data-i18n`（可見字面）或 `.sr-only`＋
+// `data-i18n-title`（圖示鈕）、授權四軸、`data-toast` 三件套（段數與 `data-toast-type` 逐段對齊）。

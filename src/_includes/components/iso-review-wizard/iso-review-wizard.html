@@ -99,13 +99,31 @@
     <div class="text-md text-bold" data-i18n="platform.reviewTitle">ISO 季度審核</div>
     <p class="text-gray m-0" data-i18n="platform.reviewDesc">設定逾時門檻並一鍵列出所有符合的帳號；確認後批次處置。全手動，名單與結果畫面皆保留供稽核截圖。</p>
 
-    {% if isoReviewStep == "idle" %}
+    {# **時間顯示的格式契約**（§5：NET-NEW 元件的每一處刻意差異都要記載）：
+     · `as_of`／`cutoff` 一律顯示成 `YYYY-MM-DD HH:mm UTC`——那兩欄是 ISO 稽核**截圖存證**要用的
+       （上游 `ReviewOverdueOut` 的註解逐字：沒有標記的話管理員截下來的「截止時刻」在 UTC+8
+       會被讀成早 8 小時），所以刻意不轉當地時間、也刻意帶上 `UTC` 三個字。
+     · `trial_end` 走 `YYYY-MM-DD`（同 5-6-1 租戶表的 `fmtTrialEnd`）。
+     · 這一族其他時間欄（建立時間等）走當地時間 `YYYY/MM/DD HH:mm`（saas 的 `fmtMinute`）。
+   ⚠️ **待回流**（gufofaq-saas@648c3cc 複驗）：`apps/web` 那一側對這三格**完全不格式化**
+     （`{preview.as_of}`／`{preview.cutoff}`／`{c.trial_end ?? ""}` 直接印 raw ISO）。 #}
+{% if isoReviewStep == "idle" %}
     <div class="flex-row column gap-8">
         <div class="text-bold" data-i18n="platform.reviewStep1">① 設定門檻與動作</div>
-        <div class="flex-row flex-wrap gap-16 align-items-end mobile-column sm-gap-16">
+        {# **兩個門檻是二擇一，不是「或」一個字**（§3-2：組合有無效格時要由 markup 表達，不能只寫在
+             一句 hint 裡）：上游 `review_overdue` 是
+             `cutoff = _platform_day_boundary_utc(…, before) if before is not None else now - timedelta(days=overdue_days)`
+             ——**兩顆都填時 `overdue_days` 被靜默忽略**，而它照樣被回進 `ReviewOverdueOut.overdue_days`，
+             於是 preview 上那句「門檻：逾期滿 90 天」會在名單其實是照截止日算出來時照樣顯示 90。
+             那一格是這一族最不該說錯的一格（ISO 稽核截圖存證）。
+             收成一組 radio：未選中那一邊的輸入 `disabled`（照渲染但改不動，狀態要看得見才稽核得到），
+             並給一段**常駐可見**的依賴說明（`aria-describedby`）——`disabled` 說得出「現在不能填」，
+             說不出「為什麼」。 #}
+        <div class="flex-row flex-wrap gap-16 align-items-end mobile-column sm-gap-16" role="group" aria-labelledby="reviewThresholdModeLabel" aria-describedby="reviewThresholdHint">
+            <span id="reviewThresholdModeLabel" class="sr-only" data-i18n="platform.thresholdMode">逾時門檻的算法（二擇一）</span>
             <div class="form-group">
                 <div class="label">
-                    <label for="reviewOverdueDaysInput" class="control-label" data-i18n="platform.overdueDaysLabel">逾期滿（天）</label>
+                    <label class="form-radio"><input type="radio" name="review-threshold-mode" value="days" class="js-review-threshold-mode" data-filter-reset="checked" checked><span data-i18n="platform.overdueDaysLabel">逾期滿（天）</span></label>
                 </div>
                 <div class="field">
                     <input type="number" min="0" max="36500" step="1" id="reviewOverdueDaysInput" value="90" class="form-control" aria-describedby="reviewOverdueDaysRange">
@@ -119,20 +137,20 @@
                     <span class="text-gray" id="reviewOverdueDaysRange">0 – 36500</span>
                 </div>
             </div>
-            <span class="text-gray" data-i18n="platform.thresholdOr">或</span>
             <div class="form-group">
                 <div class="label">
-                    <label for="reviewCutoffDateInput" class="control-label" data-i18n="platform.cutoffDateLabel">截止日期</label>
+                    <label class="form-radio"><input type="radio" name="review-threshold-mode" value="cutoff" class="js-review-threshold-mode" data-filter-reset="unchecked"><span data-i18n="platform.cutoffDateLabel">截止日期</span></label>
                 </div>
                 <div class="field">
                     {# `.calendar` 是凍結前端 `GufoFAQ_Frontend_New/js/main.js` 的 flatpickr 掛點
                          （本 repo 零樣式、零行為；日期選擇交由 React 端的套件實作）——同
                          `components/manage-tenant-modal` 與 `components/data-time-filter` 的做法。
                          這一頁是 NET-NEW 的平台頁、沒有真 app 對應，不寫這一句就查不出它為什麼在這裡。 #}
-                    <input type="text" id="reviewCutoffDateInput" placeholder="請選擇" data-i18n-placeholder="common.pleaseSelect" class="form-control calendar">
+                    <input type="text" id="reviewCutoffDateInput" placeholder="請選擇" data-i18n-placeholder="common.pleaseSelect" class="form-control calendar" aria-label="截止日期" data-i18n-aria-label="platform.cutoffDateLabel" disabled>
                 </div>
             </div>
         </div>
+        <p class="text-gray m-0" id="reviewThresholdHint" data-i18n="platform.thresholdHint">兩個門檻二擇一：選「截止日期」時以那一天為準，逾期天數不生效（上游只看其中一顆，不會兩顆一起算）。</p>
         {# 這三顆只是**選動作＋拉名單**：打的是 `GET /platform/review/overdue`
              （product app/routers/platform.py `require_platform_auditor`，docstring 自述「這一步不動任何資料，
              管理員截圖存證用」）。原本標 admin ⇒ 稽核員整區沒有任何入口拉得到名單，

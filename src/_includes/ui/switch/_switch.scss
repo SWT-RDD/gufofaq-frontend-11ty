@@ -1,3 +1,20 @@
+// **生產契約**（§1-2）：`switch.html` 是展示片段（兩顆孤立的開關，只示範外觀），而真正會被複製的
+// 生產 markup 散在四個檔上（`components/platform-tenants-panel`、5-2、5-5-1×2、5-7）——展示片段
+// **沒有**生產一定要有的可及名稱綁定，照它抄就會做出一排同名的無名開關。逐字取自 5-7：
+//
+//   <label class="switch">
+//       <input type="checkbox" id="auditScopeAllInput" class="switch-checkbox" role="switch" data-filter-reset="checked" checked>
+//       <span class="switch-box"><span class="switch-btn"></span></span>
+//   </label>
+//
+// 抄的時候一個都不能省：
+//   ⓐ **`role="switch"`**：它在無障礙樹上要是開關、不是核取方塊（狀態由 `checked` 反映）。
+//   ⓑ **可及名稱**：獨立一顆時給 `id` ＋ 頁面上的 `<label for>`；住在 `{% for %}` 裡（5-5-1 的
+//      狀態／角色兩欄）一律 `aria-labelledby="<本列辨識欄> <欄表頭>"`——掛靜態 `aria-label` 會蓋掉
+//      列脈絡，整欄的可及名稱會一模一樣（§4）。
+//   ⓒ 它若是**篩選值載體**要加 `data-filter-reset="checked|unchecked"`（見 `ui/filter-fields` 檔頭）。
+//   ⓓ `.switch-box` / `.switch-btn` 兩層純視覺，缺一層軌道或圓鈕就不見。
+//
 // 結構與數值照抄自凍結前端 GufoFAQ_Frontend_New/scss/component.scss「Switch」區段（1312-1367），只搬移位置。
 // **偏離逐條列出**：①色值換成語意 token ②新增 `:has(.switch-checkbox:focus-visible)` 的焦點環
 // （§4-1：真正的控制項被藏起來時，焦點環畫在外框上；原檔沒有這一段）

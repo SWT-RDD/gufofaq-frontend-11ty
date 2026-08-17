@@ -281,6 +281,12 @@ permalink: 5-4_coverageGaps.html
                      全字比對），所以鈕要帶得走那句原文，而不是去讀兄弟節點的 textContent。 #}
                 <button type="button" data-capability="settings:write" class="button button-border button-sm js-remove-persistent-exclusion" data-question="{{ q }}"
                     id="gapExclPersistRemove-{{ loop.index }}" aria-labelledby="gapExclPersistName-{{ loop.index }} gapExclPersistRemove-{{ loop.index }}"
+                    {# 「清單太長或有一筆超過長度上限」在**移除**這一條路徑上其實觸發不了（送出去的是
+                         「現有清單扣掉這一句」，逐筆長度不變、筆數只會變少），但**照樣列**——§5
+                         「同一道後端守衛，不論從哪一頁、哪一顆鈕觸發，分支集合與語意型別都要一致」：
+                         它與「存成常設排除」打的是同一支 `PUT /stats/coverage-gaps/exclusions`，
+                         而那一顆兩條 400 都走得到。分支集合以**守衛**為單位、不以呼叫端為單位，
+                         否則同一支端點在同一頁上會有兩份不一樣的結果清單。 #}
                     data-toast="正在儲存...|權限不足，無法移除|已從常設排除移除|清單太長或有一筆超過長度上限|儲存失敗，請重新整理頁面" data-i18n-data-toast="toast.removePersistentExclusion" data-toast-type="info|warning|success|warning|error"
                     data-i18n="action.remove">移除</button>
             </div>

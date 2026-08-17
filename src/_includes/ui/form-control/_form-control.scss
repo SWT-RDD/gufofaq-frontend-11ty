@@ -1,3 +1,21 @@
+// **生產契約**（§1-2）：`form-control.html` 是展示片段（只示範外觀），生產的每一顆欄位還要帶三樣
+// 片段上看不到的東西，照片段抄一定會漏：
+//
+//   <div class="form-group">
+//       <div class="label"><label for="<欄位 id>" class="control-label" data-i18n="<key>">標籤</label></div>
+//       <div class="field">
+//           <input type="text" id="<欄位 id>" class="form-control js-<業務 hook>" placeholder="…" data-i18n-placeholder="<key>" aria-describedby="<欄位 id>Hint">
+//           <span class="text-gray" id="<欄位 id>Hint"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-<欄位>-max-len">N</span><span data-i18n="common.unitChars"> 字</span></span>
+//       </div>
+//   </div>
+//
+// 抄的時候一個都不能省：
+//   ⓐ **`<label for>` ＋ 欄位 `id`**；欄位住在 `{% for %}` 裡時改吃
+//      `aria-labelledby="<本列辨識欄> <欄表頭>"`（§4：靜態 `aria-label` 會蓋掉列脈絡）。
+//   ⓑ **上游有界線的欄位要有常駐可見的界線提示 ＋ `aria-describedby`**（§4），數字獨立成帶 class
+//      的節點、不進譯文（§4-2）——`placeholder` 不算，它在填字時就消失了。
+//   ⓒ **值載體要有 React 綁定記號**（class 或 id 擇一，§5 矩陣②）。
+//
 // 取自真實 app 的 form-control 樣式（`.select-sm`／`.select-md` 的內距**在 scss 源碼就有**（929／937 行），
 // 本檔只是刪掉與 select2 耦合的 `+ .select2-container` 那半；真正只存在編譯 css 的是 textarea.size-lg 高度變體，
 // scss 源碼漏抓、依編譯輸出補回）。與 select2 vendor 耦合的 .select-*+select2-container 規則屬 §5 不做。

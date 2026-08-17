@@ -1,4 +1,19 @@
 // 結構與數值取自凍結前端 `GufoFAQ_Frontend_New/scss/component.scss` 2337-2357（tooltip 區塊）。
+//
+// **生產契約**（§1-2）：`tooltip.html` 是展示片段，而生產的 `.has-tooltip` **一定是一顆圖示鈕**，
+// 那顆鈕自己的可及名稱不能靠 tooltip 那一段文字（tooltip 是視覺提示、不是名稱）。逐字取自 5-8：
+//
+//   <button type="button" id="widgetTokenCopyKey-{{ row.id }}" aria-labelledby="widgetTokenRowName-{{ row.id }} widgetTokenCopyKey-{{ row.id }}" class="button-icon copy copyBtn has-tooltip" data-toast="已複製金鑰|複製失敗，請手動選取後複製" data-i18n-data-toast="toast.copyKey" data-toast-type="success|error">
+//       <span class="tooltip" data-i18n="action.copy">複製</span>
+//   </button>
+//
+// 抄的時候一個都不能省：
+//   ⓐ `.tooltip` 那一段**要有 `data-i18n`**——它是可見 chrome。
+//   ⓑ 鈕住在 `{% for %}` 裡時，可及名稱走 `aria-labelledby="<本列辨識欄> <本鈕自己>"`（§4）；
+//      不在迴圈裡且沒有可見字面時，`.tooltip` 之外另補一顆 `.sr-only`（正典 `ui/button` 的
+//      `.button-icon.copy`，那一份 markup 寫在 `ui/button` 的展示片段裡）。
+//   ⓒ 送 API 的那一族照 §5 ③ 掛 `data-toast` 三件套 ＋ 宣告閘門。
+//
 // **偏離逐條列出**：
 //   ① 色值換語意 token
 //   ② 顯示條件增補 `:focus-visible`（見下註）——`:hover` 單掛的話鍵盤使用者看不到圖示鈕唯一的可見標籤

@@ -283,6 +283,8 @@ permalink: 5-7_auditLog.html
                 {# `user_agent` 是 nullable（非瀏覽器來源的呼叫沒有這個標頭，示範第 2 筆即是）：
                      沒值就不要包 collapse-text——那會渲染出一個空的收合區塊配一顆展得開卻什麼都
                      沒有的鈕（§5 不放按了沒反應的鈕）。沒值畫「—」，與本表其他欄的空值語意一致。 #}
+                {# 這一格走 `ui/collapse-text` 的**變體③′**（列內 2 段：`aria-labelledby="<本列辨識欄> <本鈕自己>"`）
+                     ——型別的完整清單與判準見該元件檔頭。 #}
                 <td>{% if row.userAgent %}<div class="collapse-text"><div class="collapse-body">{{ row.userAgent }}</div><button type="button" id="auditUaToggle-{{ row.id }}" aria-labelledby="auditRowTime-{{ row.id }} auditUaToggle-{{ row.id }}" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>{% else %}—{% endif %}</td>
             </tr>
             {# 空狀態：本頁有查詢鈕與四個篩選欄，「篩到零筆」是走得到的常態（§5 無資料列）。

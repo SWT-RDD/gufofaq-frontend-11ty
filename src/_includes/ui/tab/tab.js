@@ -6,6 +6,21 @@
 // `aria-current` 說得出「目前這一項」，不多不少，且每一條改變選中的路徑都同步（見 setCurrent）。
 // 面板切換走 `style.display`，所以 §4「四道天然邊界」把 `.tab-content` 當可及名稱範圍邊界成立。
 //
+// **生產契約**（§1-2）：`tab.html` 是展示片段，示範的是第一層那一種語意，而生產頁用的全是第二種。
+// `data-target` 有兩種語意，兩種都要照抄得出來（§1-2 逐型各一段）：
+//   ③ **第一層頁籤**（`.top-tabs`）：值＝一個 `.tab-group.sub-tabs` **群組**的 id，切它等於換一整組子頁籤。
+//      唯一示範在本元件的展示片段（`tab.html`：`data-target="group1"` → `<div class="tab-group sub-tabs" id="group1">`）。
+//   ③′ **第二層／單層頁籤**：值＝一個 `.tab-content` **面板**的 id。**全站生產頁用的都是這一種**
+//      （5-2 八顆 → `#panelRetrieval`…；3-1-6 兩顆 → `#panelCompare`／`#panelRaw`）：
+//
+//        <div class="tab-group">
+//            <button type="button" class="tab active" aria-current="true" data-target="panelRetrieval" data-i18n="settings.tabRetrieval">檢索設定</button>
+//        </div>
+//        <div class="tab-content" id="panelRetrieval" data-capability="settings:write">…</div>
+//
+//      抄的時候：選中那一顆要**同時**有 `.active` 與 `aria-current="true"`（§4），面板的 id 要與
+//      `data-target` 逐字相同（打錯＝死頁籤／死面板，有測試在 dist 把關）。
+//
 // tab 頁籤切換：改寫自凍結前端 GufoFAQ_Frontend_New/js/main.js「tab頁籤切換」（原用 jQuery），改用原生 DOM API
 // 只轉切版互動（切換 .active / 顯示對應群組），資料載入/API 等業務邏輯不在此列
 // 選中態同步進 ARIA：.active 只是視覺，報讀器聽不到——每一條改變選中態的路徑都同步 aria-current
