@@ -4182,6 +4182,7 @@ test("§4 每一顆會改狀態的鈕都要宣告它需要哪一道閘門（四�
         ["已回復儲存的設定", "把表單換回已儲存的值，還沒送出（同上）"],
         ["比較完成", "把這一次執行與基準那一次的既有結果並排算差異，兩邊都是讀"],
         ["量測完成", "5-10 檔頭引的 `GET /tags/coverage`：讀既有標註算覆蓋率，不改任何一筆標註"],
+        ["名單已載入", "iso-review-wizard 檔頭引的 `GET /platform/review/overdue`（require_platform_auditor）：把逾時名單讀回來畫成 preview，寫入在下一態那顆 .js-review-confirm"],
     ];
     // round40 洞⑧：這張豁免表原本是**整檔級**的——`5-1-1_accountInfo` 的理由只涵蓋兩顆自助端點
     // （`/me/profile`、`/me/change-password`），整支檔案卻連 `PUT /account` 那一顆一起免檢。

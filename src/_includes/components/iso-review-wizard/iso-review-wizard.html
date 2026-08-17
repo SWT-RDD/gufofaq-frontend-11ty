@@ -44,13 +44,15 @@
      切版是靜態稿，一次只畫得出一個狀態；下面三格的其餘狀態全部掛在**同一顆元素**上，
      形狀一律是 `data-text-<態>` ＋ `data-key-<態>`（要翻）或 `data-<軸>-<態>`（不翻的值）：
        · preview 摘要列的「動作：」 → `data-text-purge|delete|freeze`（chrome，要翻）
-       · type-to-confirm 的片語     → `data-phrase-purge|delete|freeze`（**值**，不翻，理由見該處）
+       · type-to-confirm 的片語     → `data-phrase-purge|delete|freeze`（label 上那顆）**與同一組的
+         `data-phrase-ph-purge|delete|freeze`（輸入框的 placeholder）**——兩者要一起換，只換 label
+         會讓選「凍結」的人在欄位裡讀到 DELETE-ACCOUNT（**值**，不翻，理由見該處）
        · 確認鈕的字面               → `data-text-irreversible|reversible|busy`（chrome，要翻）
      三處的態名都對回 `ReviewApplyIn.action` 的值域，只有確認鈕多一個與動作無關的 `busy`（送出中）。
 
      ── 前後綴夾資料槽的兩處（REACT-CONVERSION §③(a) 允許 React 併成單一插值 key）──────────
      切版的 `GufoI18n.t(key, zhFallback)` 沒有插值機制（ui/lang-toggle），所以這兩處一律是
-     「前綴 key ＋不翻的數字節點 ＋後綴／中綴 key」，分隔空白住在 key 的值裡（§4-2）：
+     「前綴 key ＋不翻的數字節點 ＋後綴／中綴 key」，**分隔空白住在 markup 的標籤之間**（§4-2 的例外句：緊接的值中間已有空白時不必也不該再加；key 值本身不帶空白，React 併 key 時要自己補回那兩個空白）：
        · preview 的「門檻：」 → `overdueDaysPrefix` ＋ 天數 ＋ `overdueDaysSuffix`
        · result 的「共 N 筆…」 → `common.total` ＋ 總數 ＋ `reviewResultOkMid` ＋ 成功數
                                  ＋ `dataImport.batchSummaryFailMid` ＋ 失敗數
@@ -59,7 +61,7 @@
      "Overdue by" 寫成 "Overdue over"）就是在 React 端開了第二份文案正本，而字典比對放行含
      `{{ }}` 的值、fpdiff 又不比文字內容，兩張網都看不到。 #}
 {% set isoReviewCandidates = [
-  { name: "示範租戶 C", email: "c-admin@example.com", trialEnd: "2026-03-01", daysOverdue: 135, userCount: 2, storage: 12.4, frozen: false },
+  { name: "示範租戶 C", email: "c-admin@example.com", trialEnd: "2026-03-01", daysOverdue: 135, userCount: 2, storage: 12.4, frozen: true },
   { name: "示範租戶 D", email: "d-admin@example.com", trialEnd: "2026-02-14", daysOverdue: 150, userCount: 4, storage: 88.0, frozen: false }
 ] %}
 {# 結果拆成功/失敗兩個陣列：result 態的「共 N 筆，成功 X，失敗 Y」全部從陣列長度推導（§6 可推導的值不烤死），
@@ -70,6 +72,16 @@
 {% set isoReviewFailResults = [
   { name: "示範租戶 D", error: "從 GufoRAG 刪租戶索引失敗（tenant=42）" }
 ] %}
+{# 授權：整區的下限是 `auditor`——`GET /platform/review/overdue`（gufofaq-saas product
+     `app/routers/platform.py` 的 `review_overdue`）掛的就是 `require_platform_auditor`，
+     稽核員要拉得到名單才截得了圖。那三顆載入鈕**是唯讀的**（讀名單畫成 preview，
+     一筆狀態都不落），故不在鈕上再標一次——§4 的兩級可見性把 `auditor` 定義成「看得到、
+     按不動」，動作鈕標在那一級會被讀成「唯讀角色也渲染得出寫入鈕」。
+     真正寫入的是 preview 態那顆 `.js-review-confirm`（`POST /platform/review/apply`＝
+     `require_platform_admin`），它與 type-to-confirm 輸入框各自標了 `admin`（§4：區塊內
+     更高一級的控制項要自己標）。
+     ⚠️ 這一句與 `tests/guideline.test.mjs` 的 `READONLY`「名單已載入」那一筆是**成對**的
+     （§4：只住在測試裡的豁免，讀元件的人看不到）。 #}
 <div class="block mt-16 flex-row column gap-16" data-platform-role="auditor">
     <div class="text-md text-bold" data-i18n="platform.reviewTitle">ISO 季度審核</div>
     <p class="text-gray m-0" data-i18n="platform.reviewDesc">設定逾時門檻並一鍵列出所有符合的帳號；確認後批次處置。全手動，名單與結果畫面皆保留供稽核截圖。</p>
@@ -83,11 +95,15 @@
                     <label for="reviewOverdueDaysInput" class="control-label" data-i18n="platform.overdueDaysLabel">逾期滿（天）</label>
                 </div>
                 <div class="field">
-                    <input type="number" min="0" step="1" id="reviewOverdueDaysInput" value="90" class="form-control" aria-describedby="reviewOverdueDaysRange">
-                    {# 三件套的第三件（§4）：可見區間 ＋ aria-describedby。下界出處＝
-                         `GET /platform/review/overdue` 的 `overdue_days: int = Query(ge=0)`（product app/routers/platform.py）。
+                    <input type="number" min="0" max="36500" step="1" id="reviewOverdueDaysInput" value="90" class="form-control" aria-describedby="reviewOverdueDaysRange">
+                    {# 三件套的第三件（§4）：可見區間 ＋ aria-describedby——**被指到的節點裡要讀得到那兩個數字**，
+                         寫成開區間（「≥ 0」）等於只給了一半。出處引全那一行：`GET /platform/review/overdue` 的
+                         `overdue_days: int = Query(default=REVIEW_DUE_DAYS, ge=0, le=MAX_REVIEW_OVERDUE_DAYS)`
+                         （gufofaq-saas product `app/routers/platform.py`；`REVIEW_DUE_DAYS = 90` 就是這一格的
+                         預設值、`MAX_REVIEW_OVERDUE_DAYS = 36500` 是上界）。**上界不可省**：那顆常數自帶的
+                         註解逐字寫著界外值會讓 `now - timedelta(days=…)` 拋 OverflowError 變成裸 500。
                          數字獨立成不翻的節點（§3-2：那是資料不是譯文）。 #}
-                    <span class="text-gray" id="reviewOverdueDaysRange">≥ 0</span>
+                    <span class="text-gray" id="reviewOverdueDaysRange">0 – 36500</span>
                 </div>
             </div>
             <span class="text-gray" data-i18n="platform.thresholdOr">或</span>
@@ -105,9 +121,14 @@
              管理員截圖存證用」）。原本標 admin ⇒ 稽核員整區沒有任何入口拉得到名單，
              正是註解自己說要避免的事。真正寫入的是 preview 態那顆確認鈕。 #}
         <div class="flex-row gap-10 align-items-center">
-            <button type="button" class="button button-red js-review-purge" data-i18n="platform.reviewActionPurge">刪除逾時資料</button>
-            <button type="button" class="button button-red js-review-delete" data-i18n="platform.reviewActionDelete">刪除逾時帳號</button>
-            <button type="button" class="button button-border js-review-freeze" data-i18n="platform.reviewActionFreeze">凍結逾時帳號</button>
+            {# 三顆都是**送 API 的動作鈕**（§5 ③）：讀上面那兩顆輸入、打 `GET /platform/review/overdue`
+                 把名單拉回來畫成 preview。它們不開任何窗，所以不適用「有條件開窗」的豁免（§5 明文）；
+                 少了 success 段還會讓三顆整個掉出 §4 閘門測試的母體。分支對回該端點的出口：
+                 `require_platform_auditor` 的 403、`overdue_days` 界外的 422（使用者自己改得掉 ⇒ warning）、
+                 其餘網路失敗（error）。姊妹鈕：5-10 的「重新量測」同樣是唯讀 GET ＋ 結果畫回頁上。 #}
+            <button type="button" class="button button-red js-review-purge" data-toast="正在載入逾時名單...|權限不足，無法載入|逾時天數超出可用範圍|名單已載入|載入失敗，請稍後再試" data-i18n-data-toast="toast.reviewOverdue" data-toast-type="info|warning|warning|success|error" data-i18n="platform.reviewActionPurge">刪除逾時資料</button>
+            <button type="button" class="button button-red js-review-delete" data-toast="正在載入逾時名單...|權限不足，無法載入|逾時天數超出可用範圍|名單已載入|載入失敗，請稍後再試" data-i18n-data-toast="toast.reviewOverdue" data-toast-type="info|warning|warning|success|error" data-i18n="platform.reviewActionDelete">刪除逾時帳號</button>
+            <button type="button" class="button button-border js-review-freeze" data-toast="正在載入逾時名單...|權限不足，無法載入|逾時天數超出可用範圍|名單已載入|載入失敗，請稍後再試" data-i18n-data-toast="toast.reviewOverdue" data-toast-type="info|warning|warning|success|error" data-i18n="platform.reviewActionFreeze">凍結逾時帳號</button>
         </div>
     </div>
     {% elif isoReviewStep == "preview" %}
@@ -214,7 +235,10 @@
                 <label for="reviewConfirmInput" class="control-label"><span data-i18n="platform.confirmTypePrefix">請逐字輸入 </span><span data-phrase-purge="PURGE-DATA" data-phrase-delete="DELETE-ACCOUNT" data-phrase-freeze="FREEZE">DELETE-ACCOUNT</span><span data-i18n="platform.confirmTypeSuffix"> 以確認執行</span></label>
             </div>
             <div class="field">
-                <input data-platform-role="admin" type="text" id="reviewConfirmInput" placeholder="DELETE-ACCOUNT" class="form-control" aria-describedby="reviewConfirmHint">
+                {# placeholder 與 label 那顆片語節點是**同一組三態**：只給 label 三態槽、placeholder 寫死一個，
+                     選「凍結逾時帳號」時欄位裡仍提示 DELETE-ACCOUNT——那正是這一輪要修掉的那個 bug 的另一半。
+                     不掛 data-i18n-placeholder：片語是值、不隨語言變（§4-2 type-to-confirm）。 #}
+                <input data-platform-role="admin" type="text" id="reviewConfirmInput" data-phrase-ph-purge="PURGE-DATA" data-phrase-ph-delete="DELETE-ACCOUNT" data-phrase-ph-freeze="FREEZE" placeholder="DELETE-ACCOUNT" class="form-control" aria-describedby="reviewConfirmHint">
                 <span class="text-gray" id="reviewConfirmHint" data-i18n="platform.confirmPhraseHint">片語要逐字相同（含大小寫與連字號），而且會隨上面選的動作換一組；它不隨語言變。</span>
             </div>
         </div>

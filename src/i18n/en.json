@@ -1776,6 +1776,7 @@
   "toast.restorePrompt": "This prompt version has been restored|You do not have permission to save|Restore failed. Please try again later.",
   "toast.restoreSettings": "Restored to saved settings|You do not have permission to load it|Failed to load saved settings",
   "toast.restoreWelcome": "This welcome-message version has been restored|You do not have permission to save|Restore failed. Please try again later.",
+  "toast.reviewOverdue": "Loading the overdue list…|You do not have permission to load it|The overdue-days value is out of range|List loaded|Failed to load. Please try again later.",
   "toast.revokeServiceKey": "Revoked — this credential stopped working immediately|This credential was already revoked|Revoke failed. Please try again later.",
   "toast.revokeShare": "Link revoked|You do not have permission to revoke|Revoke failed. Please try again later.",
   "toast.revokeWidgetToken": "Revoked|Revoke failed. Please try again later.",
