@@ -28,10 +28,16 @@
          看不到——那就變成「參數收得下、畫面永遠不顯示」（§5 每個分支都要看得到）。 #}
     <span class="text-gray">{{ scaleNoteMixed }}</span>
     {% endif %}
-    {# 動態出現的訊息 ⇒ role="alert"，而且**只框這一句**：把整個門檻區塊包進 live region 的話，
+    {# 動態出現的訊息要在 live region 裡，而且**只框這一句**：把整個門檻區塊包進去的話，
          那一區任何一次重繪都會讓報讀器重念一遍（同 5-10 的既有處置）。
-         不做成 toast——toast 三秒就消失，而這是他要照著改一個數字的依據。 #}
+         不做成 toast——toast 三秒就消失，而這是他要照著改一個數字的依據。
+       **`role="status"` ＋中性色，不是 `role="alert"` ＋ danger**（§4）：這一句是**偵測**
+         （尺變了）＋「請重新校準」——存得下去、什麼都沒被擋。`alert` 與紅字留給「有東西壞了
+         或被擋下」；掛 alert 會打斷報讀器，配紅字還會讓人以為這一格存不了。
+         同型的兩處正典（1-1-3 的 excelHeaderWarning、alias-entries-modal 的第三種衝突）
+         都是這樣裁的，先前只有這一顆走反方向。
+         （這一段推導的是 live region 的**範圍**，推不出 role 的**級別**——先前把兩件事寫成一件。） #}
     {% if scaleNoteRecalibrated %}
-    <span class="text-red" role="alert" data-i18n="settings.scoreScaleRecalibrate">分數尺剛才變了（改了重排序模型、重排序開關或資料來源比例）。這個門檻是照舊的尺定的，請重新校準：把 1–5 那把尺上的數字搬到 0–1 的尺上，就是一個永遠擋不下任何東西的死條件。</span>
+    <span class="text-gray" role="status" data-i18n="settings.scoreScaleRecalibrate">分數尺剛才變了（改了重排序模型、重排序開關或資料來源比例）。這個門檻是照舊的尺定的，請重新校準：把 1–5 那把尺上的數字搬到 0–1 的尺上，就是一個永遠擋不下任何東西的死條件。</span>
     {% endif %}
 </div>

@@ -73,7 +73,7 @@ permalink: 5-3_statsModule.html
                 <label for="statsDimension" class="control-label" data-i18n="settings.statsDimension">統計維度</label>
             </div>
             <div class="field col-12-sm">
-                <select id="statsDimension" class="form-control js-stats-dimension">
+                <select id="statsDimension" class="form-control js-stats-dimension" data-filter-reset="dataset">
                     <option value="dataset" selected data-i18n="common.dataset">資料集</option>
                     {% for slot in fieldSlotCatalog %}{% if not slot.productOnly and slot.key not in attributionExcluded %}
                     <option value="attribution:{{ slot.key }}">{{ attributionLabels[slot.key] or slot.defaultLabel }}</option>
@@ -91,13 +91,13 @@ permalink: 5-3_statsModule.html
             <div class="field flex-row gap-24 col-12-sm mobile-column-xs" role="radiogroup" aria-labelledby="countModeLabel">
                 <div class="function">
                     <label class="form-radio">
-                        <input type="radio" name="count-mode" value="per_log" checked>
+                        <input type="radio" name="count-mode" value="per_log" data-filter-reset="checked" checked>
                         <span data-i18n="settings.countModePerLog">每則計一次</span>
                     </label>
                 </div>
                 <div class="function">
                     <label class="form-radio">
-                        <input type="radio" name="count-mode" value="per_hit">
+                        <input type="radio" name="count-mode" value="per_hit" data-filter-reset="unchecked">
                         <span data-i18n="settings.countModePerHit">每個命中計一次</span>
                     </label>
                 </div>

@@ -40,7 +40,11 @@
     {# toast 由 toast.js 動態塞入；role=status + aria-live 讓螢幕報讀器會念出來（error 型仍屬 polite，避免打斷輸入） #}
     {# popover：讓容器進瀏覽器的 top layer，才蓋得過 showModal() 的 <dialog>（見 ui/toast/toast.js）。
        manual＝不會被 Esc 或點擊外部關掉，由 toast.js 自己開關。 #}
-    <div id="toastContainer" class="toast-container" popover="manual" role="status" aria-live="polite" aria-atomic="true"></div>
+    {# `aria-atomic` **不掛容器**：這顆容器同時是直向堆疊器（`ui/toast` 的 `_toast.scss`），
+         掛在容器上等於宣告「任何變動都把整個 region 當一個整體重播」——第二則 toast 進場時，
+         報讀器會把第一則連同第二則整串重唸一次。播報單位要降成「一則」，故 `aria-atomic`
+         由 `toast.js` 掛在每一顆 `.toast` 上。 #}
+    <div id="toastContainer" class="toast-container" popover="manual" role="status" aria-live="polite"></div>
 
     <script defer src="./js/scroll-lock.js"></script>
     <script defer src="./js/slide-toggle.js"></script>

@@ -4,6 +4,18 @@
 //
 // toast 永遠掛在頁面層唯一的 #toastContainer。它能蓋過 showModal() 的 <dialog>，
 // 是因為容器本身掛 popover —— 見 raiseContainer()。
+//
+// **WCAG 2.2.1（可調整時間）**：自動消失的提示要給使用者一條出口，否則「3 秒」對讀得慢的人
+// 就是一條硬性時間限制——而 showToast 是全站唯一的結果回報通道，訊息長度到
+// 「權限不足，無法建立資料集|選到的群組不存在，請重新選一個|你在這個群組沒有寫入權限…」這種。
+// 兩條出口，兩條都做：
+//   ① **滑鼠移上去／焦點進來就暫停倒數**，離開才重新計時（容器不吃點擊，但每一則自己吃，
+//      見 `_toast.scss` 的 `pointer-events: auto`）。
+//   ② **每一則自帶關閉鈕**，隨時關得掉；而 `warning`／`error` 兩型**不自動消失**——
+//      那兩型是「使用者要動手修的事」，與「回執」不該共用同一個時長。
+//
+// **`aria-atomic` 掛在每一則上、不掛容器**（容器同時是直向堆疊器，見 base.html 那則註解）：
+// 掛容器等於第二則進場時把第一則連同第二則整串重唸一次。
 function showToast(message, type = 'success', duration = 3000) {
     // 舊簽名相容：showToast(msg, duration)
     if (typeof type === 'number') { duration = type; type = 'success'; }
@@ -13,6 +25,8 @@ function showToast(message, type = 'success', duration = 3000) {
 
     const toast = document.createElement('div');
     toast.className = 'toast toast-' + type;
+    // 播報單位＝這一則（見檔頭）
+    toast.setAttribute('aria-atomic', 'true');
 
     // 只有 success 有既有的白色勾勾圖示；其餘類型純色呈現（無對應白圖示）
     if (type === 'success') {
@@ -30,6 +44,22 @@ function showToast(message, type = 'success', duration = 3000) {
     toastText.textContent = message;
     toast.appendChild(toastText);
 
+    // 關閉鈕（WCAG 2.2.1 的「關掉」那一條出口）。可見字面是符號 ⇒ 對輔具隱藏，
+    // 名稱走 .sr-only 的可翻文字（§4-2：js 產生的 chrome 走 GufoI18n.t(key, 繁中原文)）。
+    const closeBtn = document.createElement('button');
+    closeBtn.type = 'button';
+    closeBtn.className = 'toast-close';
+    const closeGlyph = document.createElement('span');
+    closeGlyph.setAttribute('aria-hidden', 'true');
+    closeGlyph.textContent = '\u00D7';
+    const closeName = document.createElement('span');
+    closeName.className = 'sr-only';
+    closeName.textContent = (window.GufoI18n && window.GufoI18n.t)
+        ? window.GufoI18n.t('action.close', '關閉') : '關閉';
+    closeBtn.appendChild(closeGlyph);
+    closeBtn.appendChild(closeName);
+    toast.appendChild(closeBtn);
+
     const container = document.getElementById('toastContainer') || document.body;
     raiseContainer(container);
     container.appendChild(toast);
@@ -43,14 +73,26 @@ function showToast(message, type = 'success', duration = 3000) {
     // setTimeout(…, 300)，那個數字是 _toast.scss `transition: opacity 0.3s` 的第二份真相，
     // 而且在 reduced-motion 下（_base 把 transition-duration 壓成 0.01ms）淡出瞬間完成、
     // 節點卻還多留 300ms 在 #toastContainer 裡，popover 也跟著多佔 top layer 300ms。
-    setTimeout(function () {
+    function dismiss() {
         toast.addEventListener('transitionend', function (e) {
             if (e.target !== toast || e.propertyName !== 'opacity') return;
             toast.remove();
             lowerIfEmpty(container);
         }, { once: true });
         toast.classList.remove('show');
-    }, duration);
+    }
+    closeBtn.addEventListener('click', dismiss);
+
+    // warning／error 不自動消失（見檔頭）：那兩型是使用者要動手修的事。
+    if (type !== 'warning' && type !== 'error') {
+        let timer = setTimeout(dismiss, duration);
+        const pause = function () { clearTimeout(timer); timer = null; };
+        const resume = function () { if (timer === null) timer = setTimeout(dismiss, duration); };
+        toast.addEventListener('mouseenter', pause);
+        toast.addEventListener('focusin', pause);
+        toast.addEventListener('mouseleave', resume);
+        toast.addEventListener('focusout', resume);
+    }
 
     return toast;
 }

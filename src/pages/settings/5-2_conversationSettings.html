@@ -2192,6 +2192,10 @@ permalink: 5-2_conversationSettings.html
                      上游拒它的理由逐字就是要「讓拒絕發生在使用者還看得到那一格的時候」。沒有上界要
                      一起講：這一格與別的數字欄不同，空著不是漏寫。 #}
                 <span class="text-gray" id="qaDirectScoreFloorRange" data-i18n="settings.scoreFloorRange">0 以上；沒有上限（不同重排序器的尺不同）</span>
+                {# §6：同頁重複 include 同一元件時，**每次 include 前重設全部參數**（`set` 是頁面全域）。
+                     `scaleNoteRecalibrated` 這一頁從沒設過，所以今天是 undefined＝falsy；但只要有人
+                     為了演那一態在上面加一行 true，下面那一顆就會跟著亮一段它不該有的字。 #}
+                {% set scaleNoteRecalibrated = false %}
                 {% set scaleNoteId = "qaDirectScoreFloorScale" %}
                 {% set scaleNoteText = activeScale.scale.note %}
                 {# **示範狀態是「重排序開著」**（activeScale ＝ llm_reranker），依端點契約的判斷順序，
@@ -2309,6 +2313,7 @@ permalink: 5-2_conversationSettings.html
                     aria-describedby="groundingScoreFloorRange groundingScoreFloorScale groundingScoreFloorNote">
                 {# 同直答分數門檻那一格：下界要看得見、沒有上界也要講出來（§4 三件套）。 #}
                 <span class="text-gray" id="groundingScoreFloorRange" data-i18n="settings.scoreFloorRange">0 以上；沒有上限（不同重排序器的尺不同）</span>
+                {% set scaleNoteRecalibrated = false %}
                 {% set scaleNoteId = "groundingScoreFloorScale" %}
                 {% set scaleNoteText = activeScale.scale.note %}
                 {# **示範狀態是「重排序開著」**（activeScale ＝ llm_reranker），依端點契約的判斷順序，

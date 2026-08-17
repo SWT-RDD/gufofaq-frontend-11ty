@@ -62,9 +62,19 @@ document.addEventListener("DOMContentLoaded", function () {
         if (errorRow) box.addEventListener("drop", function (e) {
             var files = e.dataTransfer ? Array.prototype.slice.call(e.dataTransfer.files || []) : [];
             var rejected = files.filter(function (f) { return !accepted(f.name); }).map(function (f) { return f.name; });
+            // **先讓 live region 進無障礙樹，再寫內容**（§4：判準是「無障礙樹讀得到」）：
+            // 這一列預設 `.hidden`＝`display:none !important`，節點不在樹上，此時寫進去的
+            // 突變不可觀測——報讀器什麼都不會唸。先揭示、下一個 frame 才寫字，突變才落在
+            // 一個已經在樹上的 region 裡。正典是 `ui/toast/toast.js`（先 `showPopover()`
+            // 讓容器進場，再 `appendChild`）。
             // 分隔符用中性的「, 」：檔名是資料、兩種語言共用同一份 DOM（不寫語言專屬的頓號）
-            errorFiles.textContent = rejected.join(", ");
-            errorRow.classList.toggle("hidden", rejected.length === 0);
+            if (rejected.length === 0) {
+                errorRow.classList.add("hidden");
+                errorFiles.textContent = "";
+                return;
+            }
+            errorRow.classList.remove("hidden");
+            requestAnimationFrame(function () { errorFiles.textContent = rejected.join(", "); });
         });
     });
 });

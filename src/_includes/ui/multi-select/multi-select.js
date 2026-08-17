@@ -226,6 +226,9 @@ document.addEventListener("DOMContentLoaded", function () {
                 item.setAttribute("role", "option");
                 item.setAttribute("aria-selected", option.selected ? "true" : "false");
                 item.textContent = text;
+                // 鍵盤路徑要呼叫得到同一支處理函式（見下方 Enter/Space），故把 option 掛在節點上——
+                // 不用合成 click 去驅動它（§5）。
+                item.__gufoOption = option;
                 item.addEventListener("click", function () { toggleOption(option); });
                 dropdown.appendChild(item);
             });
@@ -280,7 +283,11 @@ document.addEventListener("DOMContentLoaded", function () {
                     // 空白鍵在有輸入內容時應照常打字，只有游標停在選項上才視為「選取」
                     if (isOpen() && activeIndex >= 0 && list[activeIndex] && (event.key === "Enter" || search.value === "")) {
                         event.preventDefault();
-                        list[activeIndex].click();
+                        // 不用合成 click（§5「不得用合成事件跨元件驅動」）：那顆 click 會照樣冒泡到 document，
+                // 被 ui/modals（data-open-modal）／ui/toast（data-toast）／ui/print（data-print）／
+                // ui/tab（data-target）四支委派各 closest() 一次——祖先上剛好有那些屬性時就會誤觸。
+                // 這顆 <div role="option"> 是本檔自己建的，直接呼叫同一支處理函式即可。
+                toggleOption(list[activeIndex].__gufoOption);
                     } else if (event.key === "Enter") {
                         // 游標沒停在任何選項時 Enter 也要吃掉：combobox 若被放進 <form>，
                         // 不攔會觸發原生表單送出（implicit submission）整頁重載
