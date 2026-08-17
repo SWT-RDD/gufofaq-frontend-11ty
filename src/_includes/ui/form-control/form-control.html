@@ -57,7 +57,13 @@
             <div class="label">
                 <span class="control-label">表單層級訊息</span>
             </div>
-            <span class="error-prompt is-shown" role="alert">請於 30 秒後再試</span>
+            {# **逐字照抄 `src/login.html` 的三節點形狀**（前綴 key ＋ 資料槽 ＋ 後綴 key），不是壓成
+                 一句烤死的繁中：①那兩顆 key（`auth.retryAfterPrefix`／`auth.retryAfterSuffix`）在
+                 生產頁上永遠被 CSS 蓋住（`#loginRetryHint` 是 `<form>` 的直接子元素、不在任何
+                 `.form-group` 內，`.form-group:has(.error) .error-prompt` 觸發不了），這一格是全站
+                 唯一看得到它們的地方——壓成一句就等於那兩顆 key 全站零可見渲染點（§5）。
+                 ②秒數是會變動的資料，不進譯文（§4-2）。 #}
+            <span class="error-prompt is-shown" role="alert"><span data-i18n="auth.retryAfterPrefix">請於 </span><span class="js-login-retry-seconds">30</span><span data-i18n="auth.retryAfterSuffix"> 秒後再試</span></span>
         </div>
         <div class="subtitle">描述：.error-prompt 平時 display:none，由 .form-group:has(.error) 揭示。**不屬於任何一顆欄位**的表單層級訊息（登入的節流秒數）沒有那個祖先可以靠，改由業務 js 掛 .is-shown 顯示——這一格是全站唯一看得到它的地方（GUIDELINE §5：沒有頁面演得出的狀態＝出貨死 CSS）</div>
     </div>

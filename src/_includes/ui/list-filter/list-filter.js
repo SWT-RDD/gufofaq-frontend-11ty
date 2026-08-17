@@ -114,6 +114,11 @@
 // 時使用者看到的是一塊空白，沒有任何一個字說「是打不到，不是壞了」。姊妹元件 `ui/multi-select`
 // 走的就是這一條（`common.noMatchingOptions`），兩邊共用同一顆 key。
 // 字串由 js 產生 ⇒ 走 `GufoI18n.t(key, 繁中原文)` 並掛 `data-i18n`，切語言時跟著重畫（§5）。
+// **不洩露全域識別字**（§1-1：匯出一律掛 `window.Gufo*`，其餘包進 IIFE 或 DOMContentLoaded）：
+// 所有元件 js 都是 `<script defer>`、共用同一個全域 scope，而 `t` 這種通用名字在
+// `ui/theme-toggle` 與 `ui/lang-toggle` 各自也有一個（那兩支收在閉包裡，今天剛好安全），
+// 誰後載入誰贏、而且覆蓋是靜默的。整支收進 IIFE。
+(function () {
 var EMPTY_CLASS = "dataset-list-empty";
 var EMPTY_KEY = "common.noMatchingOptions";
 var ZH_EMPTY = "無符合選項";
@@ -165,3 +170,4 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 });
+})();
