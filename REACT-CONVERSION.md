@@ -131,6 +131,35 @@
   之後每顆 id 與 React key 一起前頂，`aria-labelledby` 指到別人、展開態與焦點跟著搬家。做法：用該
   列的身分欄（`id`／`sn`）；示範陣列沒有身分欄時**回切版補**（GUIDELINE §6 列鍵），不要在 React
   端自己發明 id、也不要退回 index。
+  - **`useId()` 不是這裡的解**：它產得出唯一字串，但那串字與「這是哪一列」無關，重繪換一組就
+    對不回任何東西。列 id 必須從資料的身分欄組出來。
+- **逐列控制項的 `aria-labelledby` 是一條 id 鏈，整條都要搬過去**（切版的正典見 GUIDELINE §4）。
+  三種形狀，缺一個字都會讓報讀器唸出另一件事：
+  ```tsx
+  // 值控制項：<列名> <欄表頭>
+  <input aria-labelledby={`${rowNameId} ${headId}`} />
+  // 動作鈕：<列名> <本鈕自己的 id>（**自指**）
+  <button id={btnId} aria-labelledby={`${rowNameId} ${btnId}`}>刪除</button>
+  // 一列兩顆同型鈕：<列名> <欄表頭> <本鈕自己的 id>
+  <button id={btnId} aria-labelledby={`${rowNameId} ${headId} ${btnId}`}>展開</button>
+  ```
+  自指那一段**不是贅字**：鈕上看得見的字必須包含在可及名稱裡（WCAG 2.5.3 Label in Name，語音控制
+  唸「刪除」要點得到），而接欄表頭會讓名稱變成「檔名 操作」——動詞消失。它同時省掉一次同步：
+  展開／收合換字時，自指的那一半自動跟著變。
+- **`<元件>OwnerId`：同一頁放兩份同一個元件時，可及名稱的起頭**。`instance` 鍵只解決 id 相撞，
+  解決不了名稱相撞（2-2-3 的 A／B 兩側跑同一條正典管線，兩邊的「序號 1 QA 直答比對 展開表格」
+  逐字相同）。它的型別是**一個既有節點的 id 字串**（側別標題、區塊標題），不是要渲染的文字——
+  React 端照樣是一顆 `ownerId?: string` prop，接進同一條 `aria-labelledby` 鏈的最前面。
+  正典：`step-flow` 的 `stepFlowOwnerId`、`priority-table` 的 `priorityTableOwnerId`、
+  `ui/accordion` 的 `accordionOwnerId`、`ui/link-modal` 的 `linkModalOwnerId`。
+- **型態參數（`<a>` ⇄ `<button>`）兩支都要留**。切版用 `stepNextAction`／`uploadCardAction` 決定
+  外殼標籤：純換頁那一支是 `<a href>`，送 API 那一支是 `<button>` ＋ `data-toast` ＋ 閘門
+  （判準見 GUIDELINE §4）。**不要在 React 端「統一成 button 再自己導頁」**——那會把純換頁那幾頁的
+  中鍵開新分頁、複製連結、預先載入一起拿掉。動作模式的 `data-href` 是轉換契約：成功之後導去
+  哪裡由它決定，收成 `href` prop 即可，但別讓它變回 `<a>`。
+- **`<button>` 的內容模型不收 `<div>`／`<p>`**（互動元素不得巢狀流內容）。JSX 不會攔你，瀏覽器
+  會自己把它拆出去——卡片型的按鈕內容一律 `<span>`，幾何由 class 給（`display:flex`／`margin:0`）時
+  換標籤一個像素都不動。切版已經是這個形狀，照抄即可，不要「順手改回語意標籤」。
 - **機械替換的完整清單**（少一項就是一個 build error 或一顆靜默失效的屬性）：
   `class`→`className`、`for`→`htmlFor`、`colspan`→`colSpan`、`rowspan`→`rowSpan`、`tabindex`→`tabIndex`、
   `maxlength`→`maxLength`、`minlength`→`minLength`、`autocomplete`→`autoComplete`、`readonly`→`readOnly`、
