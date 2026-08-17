@@ -994,6 +994,12 @@ bodyClass: guideline-page
                      繁中與 class 逐字照抄該元件那一行（同 key 兩種繁中會互相覆蓋，§4-2）。
                      稽核員那一態由該元件的名冊本身演得到，不重複放。 #}
                 <span class="text-gray"><span data-i18n="role.member">成員</span><span data-i18n="common.midDot"> · </span><span data-i18n="platform.rolePlatformAdmin">平台系統管理員</span></span>
+                {# 2-2-3 兩側答案卡標題的**缺席態**：`ab_history` 的 `a_profile_no`／`b_profile_no` 是
+                     `int | None`，那一側還沒跑完（或那一列早於這兩欄存在）時照實回 `null`。
+                     2-2-3 兩側都給得出設定檔編號（即時比完那一輪的值），所以那一頁演不到這一態；
+                     這裡是它唯一的可見處——中間那一段連同它前面的中點一起不畫，**不退回一個猜出來的
+                     設定檔**。繁中與 class 逐字照抄 2-2-3 那一行（§4-2 同 key 兩種繁中會互相覆蓋）。 #}
+                <p class="item-title"><span data-i18n="qaTest.setting">設定</span> A<span data-i18n="common.midDot"> · </span>V3</p>
                 <p class="text-gray m-0" data-i18n="settings.outputRulesStreamingCostOff">目前沒有啟用任何輸出規則，回答維持逐字顯示。只要啟用任一條，本設定檔的回答就會改成生成完畢後一次出現、中途沒有文字（規則要看完整段答案才判得準）。</p>
                 {# 這兩句住在 `{% if %}` 的另一支，而條件在唯一使用頁上恆為固定值（3-5 的 healthScan
                      恆非空、5-10 四筆維度的 coveragePct 都非 null），所以 dist 上連一個 .hidden 節點

@@ -10,6 +10,14 @@
 //   ⑤ 五處 `box-sizing: border-box`（原檔 51／58／70／90／287）移除（§4-1：`_base.scss` 已全域給）
 //   ⑥ 原檔 39-41 的 `html { overflow: inherit !important; }` **整條刪除**——§9 禁止頁面專屬檔寫裸
 //      元素選擇器（打包進單一 main.css 會洩漏到每一頁），捲動改由 ② 的 `body.guideline-page` 承擔
+//   ⑦ `footer` 規則**新增** `background-color: var(--gl-dark)`（原檔沒有）——原檔的白字是靠 markup
+//      借 `.footer`（`components/footer` 的私有 class）的底色活著，解耦之後 showcase 自己給填充；
+//      實算與完整理由見該規則上方的註解
+//   ⑧ `.margin-center`／`.layout-img-1`／`.layout-img-2`／`.page-title`／`.filter .flex-row`／
+//      `.chart-control`／`.well .flex-row` 七條**整段刪除**：本頁未搬對應的版位（`layout.png` 那張
+//      截圖見 `pages/components/component.html` 第 01 節的註解），而整支收在 `.guideline-page {}` 之下
+//      ⇒ 那七條的 host 在全站 markup 上一個都不存在（`.page-title` 雖有別頁在用，但那幾頁的 body
+//      沒有 `.guideline-page`，選擇器結構上永遠選不到）——出貨死 CSS（§4／§8「零死碼」）
 @use "var";
 
 @mixin scrollbar() {
@@ -213,9 +221,6 @@ section {
     }
 }
 
-.margin-center {
-    margin: auto;
-}
 
 .subtitle {
     font-size: 1rem;
@@ -228,20 +233,8 @@ section {
     text-align: left;
 }
 
-.layout-img-1 {
-    width: 100%;
-}
 
-.layout-img-2 {
-    width: 100%;
-}
 
-.page-title {
-    display: flex;
-    align-items: center;
-    font-size: 1.25rem;
-    color: var(--gl-ink);
-}
 
 .example-box {
     width: 100%;
@@ -256,15 +249,7 @@ section {
     position: relative;
 }
 
-.filter .flex-row {
-    margin-bottom: 0;
-}
 
-.chart-control {
-    .flex-row {
-        margin-bottom: 0;
-    }
-}
 
 .field {
     .flex-row {
@@ -272,9 +257,6 @@ section {
     }
 }
 
-.well .flex-row {
-    margin-bottom: 0;
-}
 
 .btn_gotop {
     display: flex;

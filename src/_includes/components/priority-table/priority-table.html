@@ -2,9 +2,9 @@
      資料由使用頁面在 include 前 set（見 §3-2/§6）：
        rows = [{ sn, category, description, prompt, priority }]
        sn＝資料集（UploadedFolder）主鍵，落在 `<tr data-folder-sn>`：真 app 兩支業務行為都靠它認列——
-         `.js-edit-btn` 的 `$row.data('folder-sn')`（knowledgeRetrieval.js:559）與 `.priority-select` 的
+         `.js-edit-btn` 的 `$row.data('folder-sn')`（GufoFAQ_Frontend_New `js/knowledgeRetrieval.js:560`）與 `.priority-select` 的
          `$this.closest('tr').data('folder-sn')`（同檔 646）。jQuery `.data()` 讀得到 DOM 屬性，
-         真 app 的列也確實是 `<tr data-folder-sn="…">` 印出來的（同檔 266）——少了它，這兩顆掛點
+         真 app 的列也確實是 `<tr data-folder-sn="…">` 印出來的（同檔 267）——少了它，這兩顆掛點
          有名字卻認不出自己在操作哪一列。
        priority 對應「變更優先級」下拉的選中值（"高優先級"/"中優先級"/"低優先級"/"不使用"，空字串＝未選）；rows 空陣列＝空狀態表。
        priorityTableOwnerId（**必填**）＝指向「這一張表是誰的」那個既有標題節點的 id（5-2 的
@@ -102,7 +102,7 @@
                 </td>
             </tr>
             {% else %}
-            {# 空狀態：真 app 也是一列 colspan 的「無資料」（knowledgeRetrieval.js:256），不是空 tbody #}
+            {# 空狀態：真 app 也是一列 colspan 的「無資料」（GufoFAQ_Frontend_New `js/knowledgeRetrieval.js:257`），不是空 tbody #}
             <tr>
                 <td colspan="5" class="text-center" data-i18n="common.noData">無資料</td>
             </tr>

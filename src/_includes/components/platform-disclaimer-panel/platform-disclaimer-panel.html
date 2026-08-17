@@ -58,16 +58,19 @@ AI內容生成的性質
            版號那顆同時是 `POST /platform/disclaimer/versions/{version_no}/activate` 的定址依據，
              故列上也帶 `data-version-no`（§6 列鍵：位置不是身分）。
            全形括號改半形：這一段沒有 `data-i18n`，全形標點在英文模式會原樣露出來（§4-2）。
-           403 那一段的子句沿用 5-2 兩顆「還原版本」鈕的「權限不足，無法儲存」——還原在正本是
-           append 一份複本為當前（不是覆寫），與它們是同一種寫入；§4-2 同一句繁中要有同一句英譯，
-           而「無法還原」已被 3-5 的撤銷處置占用（那顆是 undo，語意不同）。 #}
+           **不列 403**：這顆鈕掛 `data-platform-role="admin"`，而 `activate_platform_disclaimer_version`
+           （product `app/routers/platform.py`）是 `require_platform_admin` ⇒ 低於該級**動作鈕不渲染**
+           （§5 渲染規則），那道 403 在這顆鈕上走不到。先前沿用 5-2 兩顆「還原版本」鈕的
+           「權限不足，無法儲存」——那兩顆走的是 `data-capability="settings:write"`，能力軸才把 403
+           列進 toast，兩軸粒度不同。同區的姊妹鈕（儲存免責聲明，同樣 require_platform_admin）
+           本來就只有兩段；manage-tenant-modal 也為同一件事寫下同一個結論。 #}
         <div class="flex-row align-items-center gap-8" data-version-no="{{ v.no }}">
             <span id="disclaimerVersionNo-{{ v.no }}">V{{ v.no }} ({{ v.time }})</span>
             <span class="text-gray"><span data-i18n="platform.disclaimerChangedBy">修改者 </span>{% if v.createdBy %}#{{ v.createdBy }}{% else %}—{% endif %}</span>
             {% if v.current %}
             <span class="text-bold" data-i18n="platform.currentVersion">目前版本</span>
             {% else %}
-            <button type="button" class="button button-border button-sm js-disclaimer-restore" data-platform-role="admin" id="disclaimerRestore-{{ v.no }}" aria-labelledby="disclaimerVersionNo-{{ v.no }} disclaimerRestore-{{ v.no }}" data-toast="已還原此版本|權限不足，無法儲存|還原失敗，請稍後再試" data-i18n-data-toast="toast.restoreDisclaimer" data-toast-type="success|warning|error" data-i18n="action.restore">還原此版本</button>
+            <button type="button" class="button button-border button-sm js-disclaimer-restore" data-platform-role="admin" id="disclaimerRestore-{{ v.no }}" aria-labelledby="disclaimerVersionNo-{{ v.no }} disclaimerRestore-{{ v.no }}" data-toast="已還原此版本|還原失敗，請稍後再試" data-i18n-data-toast="toast.restoreDisclaimer" data-toast-type="success|error" data-i18n="action.restore">還原此版本</button>
             {% endif %}
         </div>
         {% endfor %}

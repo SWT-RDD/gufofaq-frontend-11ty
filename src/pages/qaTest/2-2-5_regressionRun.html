@@ -244,7 +244,7 @@ permalink: 2-2-5_regressionRun.html
      （有分數／無主觀分／評審未完成），讓每個分支都有畫面演得出來（§5）。
 
      「送出的前置對話」＝`summary.context_turns_sent`＝**跑完的那幾則**逐則相加
-     （`_summary` 的 `sum(r["context_turns_sent"] for r in rows)`，而 `_replay_case` 寫進去的是
+     （`_summarize` 的 `sum(r["context_turns_sent"] for r in rows)`，而 `_replay_case` 寫進去的是
      `len(turns) - 1`＝那一則的前置輪數）。母體與上界都在 2-2-4：這一套 12 則裡帶前置的有 4 則、
      逐則 5（#36）＋2（#39）＋1（#35）＋1，四則的 id 都 < 41（中斷點）⇒ 這一次都跑完了
      ⇒ 5＋2＋1＋1 ＝ **9**。原本寫 6：那是一個整套案例集湊不出來的數字（當時全套的和是 5）。 #}

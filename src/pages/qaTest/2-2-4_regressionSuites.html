@@ -908,7 +908,10 @@ permalink: 2-2-4_regressionSuites.html
              （`none`）**不是同一件事**：前者是故障，而評審整批壞掉時這個數字是唯一的即時訊號，
              否則要等報表出來才發現這一輪的主觀分整批是假的。
          示範值演「正在跑」那一態，與執行紀錄第一列（#313，status: running）是同一次執行（§6 自洽）。 #}
-    <div class="flex-row column gap-4" aria-live="polite">
+    {# `role="status"` 與 `aria-live="polite"` 成對（§4：動態出現的訊息要在 live region 裡）——
+         全站另外八處都是成對的，只有這裡先前少了 role，而少了它有些報讀器不會把這一區
+         登記成 live region（`aria-live` 只設定「怎麼播報」，role 才給它角色）。 #}
+    <div class="flex-row column gap-4" role="status" aria-live="polite">
         {# 分母是**這一套案例集的案例數**（關稅問答基準集 caseCount: 12），不是 regressionLimits 的
              單次執行上限 200——§6：「已列出 M / 共 N」的 N 要從這一份資料推導，抄後端的上限常數會
              讓進度列說出一個比整套案例還多的數字。通過＋未通過＝已完成（5+2=7）。 #}
@@ -963,7 +966,7 @@ permalink: 2-2-4_regressionSuites.html
      當場講出來（後端也會在 CSV 最後一列附註，見 `_partial_notice`）。
 
      **「通過 / 總數」是推導出來的，不是隨手填**（§3-2）：`total`＝那一次真的落地幾則結果
-     （`_summary` 的 `len(rows)`），母體是這一套案例集的 12 則。
+     （`_summarize` 的 `len(rows)`），母體是這一套案例集的 12 則。
        · #312／#310 是 finished ⇒ 12 則全跑完 ⇒ total 12。
        · #311 中斷在「案例 41 的第 1 輪」，而 `run_suite` 以 `.order_by(models.TestCase.id)` 逐則跑、
          跑完一則才 `db.commit()`、`_abort` 先 `db.rollback()` ⇒ **任何一次執行的結果集恆是案例集

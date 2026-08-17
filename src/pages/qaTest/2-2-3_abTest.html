@@ -282,21 +282,23 @@ permalink: 2-2-3_abTest.html
                                                          `qaTest.setting` 的英譯是 `Setting`，後面直接接側別還會黏成 `SettingA`，
                                                          故 `設定` 與側別之間也補一個空白。三段（設定側別／設定檔名／提示詞版本）
                                                          以中點並列，繁中「設定 A · 設置一 · V3-角色定位型」與英文兩邊都讀得通。
-                                                         另一條路是替三個標點各開一顆 i18n key——那會替版面的東西建字典，不採。
-                                                       ⚠️ **中間那一段（設定檔名）是切版對後端提的要求**（§4「切版主張需求，不等後端」）：
-                                                         即時比完那一輪前端自己知道兩側各送了哪一個設定檔，但**重播那條路拿不到**
-                                                         ——側欄那一筆走 gufofaq-saas product `app/routers/qatest.py` 的 `ab_history`
-                                                         （回 `round_id`／`question`／`a_log_id`／`b_log_id`／`created_at`），而兩側的
-                                                         內容再走問答紀錄，`app/routers/history.py` 的 `_PUBLIC_LOG_FIELDS` 有
-                                                         `prompt_version`（所以 `· V3` 畫得出來）、**沒有任何一顆設定檔編號**。
-                                                         要的欄位：`app/models.py` 的 `AbTestRound`（表 `ab_test_rounds`）加
-                                                         `a_profile_no`／`b_profile_no`，並在 `ab_history` 的回應裡帶出來。
-                                                         為什麼非它不可：AB 測試的整件事就是「哪一組設定產生了這個答案」，
-                                                         重播時看不到設定檔＝那一筆比較無法解讀；而拿頁面上那張卡**現在**選的設定檔
-                                                         去填，等於替一筆舊紀錄標上一個它未必用過的設定檔（§6 不得編一個正本給不出的欄）。
-                                                         **兩態都要切**：拿不到編號時整段（含它前面那顆 `·`）不畫，同 `promptVersion`
-                                                         缺席時的做法——不要退回一個猜出來的設定檔。 #}
-                                                    <p class="item-title" id="abAnswerTitle-{{ abSides[0].side }}"><span data-i18n="qaTest.setting">設定</span> {{ abSides[0].side }} · <span data-i18n="{{ abSides[0].configKey }}">{{ abSides[0].configLabel }}</span> · {{ abSides[0].promptVersion }}</p>
+                                                         **中點自己也掛 key**（`common.midDot`，全站已存在且已在 manage-tenant-modal
+                                                         與元件庫頁用著）：§4-2「把數個已翻譯節點串起來的分隔符，自己也要有 key」。
+                                                         先前這裡寫「另一條路是替三個標點各開一顆 key——那會替版面的東西建字典，不採」，
+                                                         而那個前提（要新開 key）已經不成立，同一個分隔符不該在站上有兩種寫法。
+                                                       ✅ **中間那一段（設定檔名）原本是切版對後端提的要求，上游已回流**
+                                                         （gufofaq-saas `4d164ee`「AB 比較記下兩側各自用的設定檔編號」）：
+                                                         `app/models.py` 的 `AbTestRound` 已有 `a_profile_no`／`b_profile_no`，
+                                                         `app/routers/qatest.py` 的 `ab_history` 也把兩顆帶出來了。
+                                                         （「上游還沒有 X」是這個專案最會過期的一種斷言——主張成功了上游就補上了，
+                                                         而登記還停在原地就會讓 React 端以為沒有落點、不去讀那兩顆欄位。§4）
+                                                       ⚠️ **`null` 那一態仍然要切**：上游那兩欄是 `Mapped[int | None]`，`ab_history`
+                                                         的 docstring 逐字寫著「那一側還沒跑完，或這一列早於這兩欄存在」時**照實回
+                                                         `null`、不補值**。拿不到編號時整段（含它前面那顆 `·`）不畫，不要退回一個
+                                                         猜出來的設定檔（§6 不得編一個正本給不出的欄）。
+                                                         本頁兩側都給得出來（即時比完那一輪的值），**缺席那一態的可見示範放元件庫頁的
+                                                         「React 條件文案」節**——同 §4-2「枚舉成員靠『有地方渲染得出來』活著」。 #}
+                                                    <p class="item-title" id="abAnswerTitle-{{ abSides[0].side }}"><span data-i18n="qaTest.setting">設定</span> {{ abSides[0].side }}{% if abSides[0].configKey %}<span data-i18n="common.midDot"> · </span><span data-i18n="{{ abSides[0].configKey }}">{{ abSides[0].configLabel }}</span>{% endif %}<span data-i18n="common.midDot"> · </span>{{ abSides[0].promptVersion }}</p>
                                                     <div class="item-content">
                                                         <p>您好！以下是 UH3240 USB-C 多埠集線器的規格整理：</p>
                                                         <ul class="list-style-disc">
@@ -392,7 +394,7 @@ permalink: 2-2-3_abTest.html
                                             <div class="message-content in-compare">
                                                 <div class="robot-msg">
                                                     {# 分隔符與空白的理由見 A 側那則註解——兩側是同一個形狀，改一邊就要改另一邊。 #}
-                                                    <p class="item-title" id="abAnswerTitle-{{ abSides[1].side }}"><span data-i18n="qaTest.setting">設定</span> {{ abSides[1].side }} · <span data-i18n="{{ abSides[1].configKey }}">{{ abSides[1].configLabel }}</span> · {{ abSides[1].promptVersion }}</p>
+                                                    <p class="item-title" id="abAnswerTitle-{{ abSides[1].side }}"><span data-i18n="qaTest.setting">設定</span> {{ abSides[1].side }}{% if abSides[1].configKey %}<span data-i18n="common.midDot"> · </span><span data-i18n="{{ abSides[1].configKey }}">{{ abSides[1].configLabel }}</span>{% endif %}<span data-i18n="common.midDot"> · </span>{{ abSides[1].promptVersion }}</p>
                                                     <div class="item-content">
                                                         <p>UH3240 主要規格摘要如下：</p>
                                                         <ul class="list-style-disc">
