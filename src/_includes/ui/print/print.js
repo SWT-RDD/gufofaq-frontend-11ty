@@ -1,5 +1,8 @@
 // 列印目前頁面。
 //
+// **本契約的 class 沒有一顆是本元件的**（§1-2 指名樣式主人）：`.button`／`.button-green`＝`ui/button`。
+// 本元件只加行為（`data-print` 的委派），不擁有任何 class。
+//
 // markup 契約（無 html 元件，§1-2；整段照抄）—— 全站唯一實例，逐字寫在
 // 4-2_qaHistory_detail.html：
 //

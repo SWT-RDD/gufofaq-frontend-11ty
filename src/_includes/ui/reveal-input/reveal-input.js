@@ -9,8 +9,16 @@
 // 動作（components/prompt-edit 的 `-open`／`-close` 是正典，ui/theme-toggle 的 `-light`／`-dark` 同族）。
 // 兩種命名全站並存，抄之前先認清楚是哪一種：認錯會讓兩態整組對調，而畫面照樣有字。
 //
-// markup 契約（無 html 元件，§1-2；整段照抄）—— 兩份實例逐字相同，只有 id 與可及名稱不同。
-// 下面是 5-9_extractApiKey.html 的生產 markup：
+// **本契約的 class 沒有一顆是本元件的**（§1-2 指名樣式主人）：
+//   `.form-group`／`.field`／`.form-control`＝`ui/form-control`；`.button`／`.button-border`＝`ui/button`；
+//   `.flex-row`／`.align-items-center`／`.gap-8`／`.flex-wrap`／`.col-6-md`／`.col-12-sm`＝全域工具層；
+//   `.copyBtn`＝業務 hook（不屬本契約，見段後）。本元件只加行為（`data-reveal-target` 的委派）。
+//
+// markup 契約（無 html 元件，§1-2；整段照抄）—— **下面這一份是 5-6-3 的形狀**（`value` 是字面量）。
+// 5-9 多了兩層：`{% set extractKeyPlain = "…" %}` 那一行定義（§1-2：契約要含它自己需要的 `{% set %}`
+// 定義行——缺一行的失敗方式和缺一層祖先完全相同）與 `{% if extractKeyPlain %}…{% else %}…{% endif %}`
+// 兩態（有明碼／只剩提示），照抄這一段到 5-9 那種位置會做出一顆無條件顯示明碼的欄位。
+// 另外，那顆 flex-row 還有**第三個子節點**（`.copyBtn`），不屬本契約。
 //
 //   <div class="flex-row align-items-center gap-8 flex-wrap">
 //       <div class="col-6-md col-12-sm">

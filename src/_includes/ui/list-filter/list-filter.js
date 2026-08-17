@@ -99,8 +99,9 @@
 //      或 `role="radiogroup"` ＋ `aria-labelledby`，指向同窗內的浮空提示（①）或 modal 標題（②）。
 //   ⓒ **輸入框的 i18n 屬性是一組四顆**：`placeholder` ＋ `data-i18n-placeholder` ＋
 //      `aria-label` ＋ `data-i18n-aria-label`。少一顆就是英文模式漏字或無名輸入框，而視覺指紋看不出來。
-// **零命中時本元件會在 .dataset-list 內 append 一顆 .dataset-list-empty**（見檔尾）——抄契約的人
-// 不必自己寫那一顆，但要知道它會出現（§5 前端過濾的空框）。
+// **零命中時本元件會在 .dataset-list 的"後面"（它的兄弟）維持一顆 .dataset-list-empty**（見檔尾）
+// ——抄契約的人不必自己寫那一顆，但要知道它會出現（§5 前端過濾的空框）。它是 role="status" 的
+// live region、常駐在樹上、只改文字（理由見 syncEmpty 上方那一段）。
 // 三顆 class 缺一不可：.dataset-list-wrap 是 closest() 的範圍根（同頁兩個 modal 各過濾各的），
 // .form-control.search 是輸入框、.dataset-list 是被過濾的容器。
 //
@@ -127,22 +128,34 @@ function t(key, zh) {
     return (window.GufoI18n && window.GufoI18n.t) ? window.GufoI18n.t(key, zh) : zh;
 }
 
+// 零命中訊息**放在 `.dataset-list` 的外面**（它的兄弟），而且是 live region：
+//   ① `.dataset-list` 的其中一個消費點是 `role="radiogroup"`（`components/select-dataset-modal`），
+//      而 radiogroup 的 owned element **只能是 radio**——把一顆 `<div>` append 進去是在破壞那個角色
+//      （README 對 `ui/field-with-input` 型② 已經裁過同一件事，只是那一句只約束靜態 markup）。
+//   ② 這一句是使用者逐字輸入當下才出現的訊息 ⇒ 要在 live region 裡（§4），否則報讀器一個字都不會唸
+//      ——而那正是這顆元件存在的理由（「零命中時使用者看到的是一塊空白，沒有任何一個字說
+//      『是打不到，不是壞了』」）。
+//   ③ region 要**先在樹上、再寫內容**（§4，正典 ui/toast）：故常駐一顆空的 `role="status"` 槽，
+//      只改它的文字，不做 append／remove。
+function emptySlot(list) {
+    var host = list.parentElement || list;
+    var slot = host.querySelector(":scope > ." + EMPTY_CLASS);
+    if (slot) return slot;
+    slot = document.createElement("div");
+    slot.className = EMPTY_CLASS + " text-center text-gray";
+    slot.setAttribute("role", "status");
+    slot.setAttribute("data-i18n", EMPTY_KEY);
+    host.insertBefore(slot, list.nextSibling);
+    return slot;
+}
+
 function syncEmpty(list) {
     var labels = list.querySelectorAll("label");
     var visible = 0;
     labels.forEach(function (l) { if (!l.classList.contains("hidden")) visible++; });
-    var empty = list.querySelector("." + EMPTY_CLASS);
+    var slot = emptySlot(list);
     // 來源陣列本來就空的那一態由使用頁的 {% else %} 負責，這裡只管「有列但全被濾掉」
-    if (!labels.length || visible) {
-        if (empty) empty.remove();
-        return;
-    }
-    if (empty) return;
-    empty = document.createElement("div");
-    empty.className = EMPTY_CLASS + " text-center text-gray";
-    empty.setAttribute("data-i18n", EMPTY_KEY);
-    empty.textContent = t(EMPTY_KEY, ZH_EMPTY);
-    list.appendChild(empty);
+    slot.textContent = (!labels.length || visible) ? "" : t(EMPTY_KEY, ZH_EMPTY);
 }
 
 document.addEventListener("input", function (e) {
@@ -165,7 +178,8 @@ document.addEventListener("input", function (e) {
 // 這一段則會去文件裡撈節點（§5：會去 DOM 找元素的就要等 parse 完才綁）。
 document.addEventListener("DOMContentLoaded", function () {
     document.addEventListener("gufo:langchange", function () {
-        document.querySelectorAll(".dataset-list ." + EMPTY_CLASS).forEach(function (el) {
+        document.querySelectorAll("." + EMPTY_CLASS).forEach(function (el) {
+            if (!el.textContent) return;   // 空槽不必翻，翻了會把它從「沒有訊息」變成「有一句話」
             el.textContent = t(EMPTY_KEY, ZH_EMPTY);
         });
     });

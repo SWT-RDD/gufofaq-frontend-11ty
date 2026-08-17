@@ -9,6 +9,11 @@
 // 所以 `scrollbar-gutter: stable` 那類做法會在那 19 頁上反而製造位移。
 // 這支只做一件事：把當下的捲軸寬度寫進 `--scrollbar-width`，讓 CSS 的鎖規則自己讀。
 //
+// **本契約的 class 沒有一顆是本元件的**（§1-2 指名樣式主人）：`.nav-toggle` 的樣式主人是
+// `components/mobile-nav` 的 `_mobile-nav.scss`（markup 住在 `components/header`——那條跨檔耦合
+// 在雙方檔頭互相指名，見該兩支）。本元件只提供 `--scrollbar-width` 的量測與 `data-scroll-lock`
+// 這顆屬性契約，鎖本身是純 CSS（`_base.scss` 的 `html:has([data-scroll-lock].active)`）。
+//
 // markup 契約（無 html 元件，§1-2；整段照抄）—— 契約是**一顆無值屬性 `data-scroll-lock`**，
 // 掛在「開關本身」那顆元素上（不是掛在被打開的浮層上）：規則讀的是
 // `html:has([data-scroll-lock].active)`，也就是「這顆開關 `.active` 的時候要鎖住 body 捲動」。
