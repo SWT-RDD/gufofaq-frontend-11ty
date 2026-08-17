@@ -6,7 +6,9 @@
      「提示詞」欄用 ui/collapse-text 收合元件呈現（.collapse-text/.collapse-body/.collapse-toggle）：真 app 的 scss 源碼漏了這組 class，
      但編譯後的 css/component.css:3482 有；展開/收合是純 UI（js/main.js:880），由 collapse-text.js 接手，逐字保留內容以維持完整欄位清單。 #}
 {# conversation 的欄位（頁面在 include 前 set，§3-2/§6）：
-     satisfaction / feedback / chatroomId / id / time / userMessage —— 既有的基本欄
+     satisfaction ＝ `{ type, icon }`：`type` 是**上游字面**（`rating_type`：positive／negative／空＝未評分），
+       顯示名由本檔的 `{% if %}` 走 i18n key（值域正本＝product `app/routers/history.py` 的 `_RATING_LABEL`）
+     feedback / chatroomId / id / time / userMessage —— 既有的基本欄
      answerSource —— `chat_logs.answer_source`：`qa_direct` ＝逐字直答（掛徽章），其餘＝模型生成
      chatMode / tag / intent / language —— **值一律給上游字面**：`chat_logs.search_mode`
        （`traditional`／`agent`）／`chat_logs.tag`（`frontend`／`backend`／`ab_test`）／
@@ -35,7 +37,11 @@
                     <div class="col col-6-md col-12-sm">
                         <div class="th" data-i18n="qa.userSatisfaction">使用者滿意度</div>
                         <div class="td">
-                            <span class="text-bold">{{ conversation.satisfaction.label }}</span>
+                            {# 滿意度是**封閉枚舉**（`chat_logs.rating_type`，值域 positive／negative／NULL），
+                                 所以 `satisfaction.type` 存上游字面、顯示走 i18n key——同本檔對 `chatMode`／
+                                 `tag`／`intent` 立的規（值一律給上游字面）。塞顯示字的話 React 接真 API
+                                 只印得出 `positive`，英文模式那一格永遠是中文（§6／§4-2）。 #}
+                            <span class="text-bold">{% if conversation.satisfaction.type == "positive" %}<span data-i18n="qa.ratingLike">讚</span>{% elif conversation.satisfaction.type == "negative" %}<span data-i18n="qa.ratingDislike">倒讚</span>{% else %}<span data-i18n="qa.ratingNoOpinion">無意見</span>{% endif %}</span>
                             <img src="{{ conversation.satisfaction.icon }}" width="48" height="48" decoding="async" alt="" class="icon">
                         </div>
                     </div>

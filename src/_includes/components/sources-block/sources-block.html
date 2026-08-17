@@ -45,7 +45,10 @@
                 **後綴是狀態式不是動作式**（見 ui/theme-toggle 檔頭）：`data-key-a` 講的是「現在顯示 A 側」，
                 不是「按了會切到 A」。認錯種類會讓兩態整組對調，而畫面照樣有字。
        sourcesInfoClass：那一格的 class（預設 .sources-info；AB 測試頁用 .js-sources-side 當 React 掛點）
-       sourcesRating：{ value, icon } 有值時顯示使用者滿意度（標籤是 chrome 走 i18n，value 是資料不翻）
+       sourcesRating：`{ type, icon }` 有值時顯示使用者滿意度。`type` 是**上游字面**
+                （`chat_logs.rating_type`：positive／negative／空＝未評分），顯示名由本元件的 `{% if %}`
+                走 i18n key——滿意度是封閉枚舉、不是租戶取的名字，塞顯示字的話 React 接真 API 只印得出
+                `positive`，英文模式那一格永遠是中文（§6／§4-2；同 4-1 那一欄與 qa-detail-info 的規矩）
        sourcesDetailHref：有值時顯示「檢視詳細內容」連結（前台問答頁用）
      每筆來源列（摘要列 + 隱藏的 accordion detail 列）以 for-source 迴圈直接內嵌渲染
      （原 source-row 子元件已內嵌：Eleventy 的 include 巢狀在 for 內會渲染空白，故不再拆子元件 include）。 #}
@@ -77,7 +80,7 @@
                 {# chrome（可翻）與資料值（滿意度本身＝假資料，不翻）分開，否則英文模式整串露出中文 #}
                 {# 冒號不折進 key：qa.userSatisfaction 同時是 qa-detail-info 的欄名（§4-2 例外——標點屬版面，
                      折了會污染那一處）。分隔符走 common.labelSep，裸的全形「：」在英文模式會原樣印出來。 #}
-                <span><span data-i18n="qa.userSatisfaction">使用者滿意度</span><span data-i18n="common.labelSep">：</span>{{ sourcesRating.value }}</span>
+                <span><span data-i18n="qa.userSatisfaction">使用者滿意度</span><span data-i18n="common.labelSep">：</span>{% if sourcesRating.type == "positive" %}<span data-i18n="qa.ratingLike">讚</span>{% elif sourcesRating.type == "negative" %}<span data-i18n="qa.ratingDislike">倒讚</span>{% else %}<span data-i18n="qa.ratingNoOpinion">無意見</span>{% endif %}</span>
                 <img src="{{ sourcesRating.icon }}" width="48" height="48" decoding="async" alt="" class="icon">
             </div>
             {% endif %}

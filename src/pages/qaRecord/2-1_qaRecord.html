@@ -15,10 +15,19 @@ permalink: 2-1_qaRecord.html
      選中的那一格（本頁畫出來的那段對話）因此必須是 6537——原本三顆是 4821／4830／4842，
      與 4-1 的 6537／6538／6539 完全不相交，等於同一個租戶有兩套聊天室編號。
      另外兩顆沿用 4-1 那兩列的聊天室與提問（6538 護照效期／6539 欠稅限制出國）。 #}
+{# **這一頁的側欄只列得出 `tag=frontend` 的聊天室**（活正本：gufofaq-saas `apps/web` 的
+     qa-record 頁以 `scope=tenant&tag=frontend` 取房間，那段註解逐字寫著「不帶的話後台單測與
+     AB 測試的聊天室會一起列進來」）。所以 6538 不能放在這裡——4-1 那一列（#12174）標的是
+     `backend`。改用 4-1 另一筆前台室 6539，第三顆用一間不在 4-1 第一頁上的前台室。
+   **fallback 那一態不能掛在選中的那一顆**：選中的 6537 就是右邊畫出來的那段對話，而它的首問
+     在 4-1／4-2 兩處都釘死是「新住民結婚注意事項」；上游的 `title` 取的正是該室**首筆**
+     human_content（product `app/routers/history.py` 的 `list_history_rooms`：
+     `x.get("human_content", "") or ""`），首問非空 ⇒ 這顆頁籤不可能走 fallback。
+     把無 label 那一顆移到未選中的第三筆（作法同 2-2-1）。 #}
 {% set qaRecordTabs = [
+    { id: 6541 },
     { id: 6539, label: "欠稅被限制出國要如何解除" },
-    { id: 6538, label: "護照效期不足可以出國嗎" },
-    { id: 6537, active: true }
+    { id: 6537, label: "新住民結婚注意事項", active: true }
 ] %}
 {% set breadcrumbItems = [
   { label: "首頁", href: "2-1_qaRecord.html", i18nKey: "nav.home" },
@@ -86,7 +95,7 @@ permalink: 2-1_qaRecord.html
     }
 ] %}
 {% set sourcesHidden = true %}
-{% set sourcesRating = { value: "讚", icon: "./images/icon_good.png" } %}
+{% set sourcesRating = { type: "positive", icon: "./images/icon_good.png" } %}
 {# query 參數用真 app 的 ?logSn=（qaHistory.js 列模板同款），非自創 ?sn= #}
 {% set sourcesDetailHref = "4-2_qaHistory_detail.html?logSn=12173" %}
 {% include "components/sources-block/sources-block.html" %}

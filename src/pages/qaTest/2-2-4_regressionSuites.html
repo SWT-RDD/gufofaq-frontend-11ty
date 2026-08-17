@@ -459,8 +459,13 @@ permalink: 2-2-4_regressionSuites.html
             <span id="newCaseContextLabel" class="control-label" data-i18n="regression.contextTurns">前置對話</span>
         </div>
         <div class="field flex-row column gap-8" role="group" aria-labelledby="newCaseContextLabel">
-            <input type="text" id="newCaseContext1" class="form-control" aria-label="第 1 輪前置對話的提問" data-i18n-aria-label="regression.contextTurnAria1" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" value="我要出口鋼品到美國">
-            <input type="text" id="newCaseContext2" class="form-control" aria-label="第 2 輪前置對話的提問" data-i18n-aria-label="regression.contextTurnAria2" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" value="先看關稅">
+            {# 可及名稱走「sr-only 前綴 key ＋ 數字節點」＋ `aria-labelledby`（同本頁斷言列的
+     `assertionRowLabel-N`），**不要一輪一顆 key**：上限是 10 輪、旁邊還有一顆「新增一輪」，
+     照 `contextTurnAria1/2` 那個形狀要開到 `Aria10`，而數字本來就不該烤進譯文（§4-2）。 #}
+<span id="newCaseContextRow1" class="sr-only"><span data-i18n="regression.contextTurnRowPrefix">前置對話第 </span>1<span data-i18n="regression.contextTurnRowSuffix"> 輪的提問</span></span>
+<input type="text" id="newCaseContext1" class="form-control" aria-labelledby="newCaseContextRow1" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" value="我要出口鋼品到美國">
+            <span id="newCaseContextRow2" class="sr-only"><span data-i18n="regression.contextTurnRowPrefix">前置對話第 </span>2<span data-i18n="regression.contextTurnRowSuffix"> 輪的提問</span></span>
+<input type="text" id="newCaseContext2" class="form-control" aria-labelledby="newCaseContextRow2" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" value="先看關稅">
             <div class="flex-row gap-16 align-items-center flex-wrap">
                 <button type="button" class="button button-border button-sm js-add-context-turn" data-i18n="regression.addContextTurn">新增一輪前置對話</button>
                 <span class="text-gray"><span data-i18n="regression.limitContextTurns">前置對話上限：</span><span>10</span><span data-i18n="regression.turnsUnit"> 輪</span><span data-i18n="regression.limitContextTurnsWhy">。每一輪在每一次執行都各扣一次問答額度。</span></span>

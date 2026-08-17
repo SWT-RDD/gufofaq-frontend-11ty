@@ -39,7 +39,10 @@
                  沒有人看過它的長相，React 端也沒有可抄的結構（§5「每個分支結果都要看得到」）。
                  日期是資料、不翻。 #}
             <div class="date-wrap">
-                <div class="date">2024/12/02</div>
+                {# 日期＝這一則問答自己的日期（§6 跨頁自洽）：本元件的示範答案就是 log #12173，
+                     而 4-1 那一列與 4-2 的 `conversation.time` 都寫 2024/12/01 13:29:24——訊息時間
+                     13:29／13:30 本來就對得上，先前只有日期差了一天（12/02 是 #12174 那一列的）。 #}
+                <div class="date">2024/12/01</div>
             </div>
             <div class="message-container">
                 {# chatWelcomeHidden：開場歡迎語（見檔頭）。整顆 `.first-chat` 一起收掉——

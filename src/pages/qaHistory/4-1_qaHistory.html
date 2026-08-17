@@ -274,7 +274,7 @@ permalink: 4-1_qaHistory.html
 {% set total = 115 %}
 {% set perPage = 20 %}
 {# `answerSource` 哪一列給 `qa_direct`＝跨頁推導出來的，不是隨手挑（§6）：
-     rows[0]（#12173）的另外六欄與 4-2 的 `conversation` 逐字同源（聊天室 6537／同一句提問／
+     **#12173 那一筆**（列序降冪之後排在最後）的另外六欄與 4-2 的 `conversation` 逐字同源（聊天室 6537／同一句提問／
      前台問答／讚／同一個時間戳），而那一列的 href 就指向 4-2 —— **兩頁演的是同一筆**。
      4-2 是基準：它畫了完整的 Agent 執行流程與工具軌跡，而 QA 直答是結構性短路
      （命中 QA 就直接回，那一輪產不出 `search_knowledge_base` 節點與 tool_activity）
@@ -285,17 +285,22 @@ permalink: 4-1_qaHistory.html
      它是**封閉目錄**，中文由 cell 的 `{% if %}` 鏈配 i18n key 產生。原本這一欄塞的是顯示字
      「前台問答」再 `{{ }}` 原樣輸出——React 接上真 API 只會印出 `frontend`，而英文模式下那一格
      永遠是中文（同 `components/qa-detail-info` 檔頭立的規）。 #}
+{# **列序＝端點的 `order_by`**（§6「列序也是示範資料的一部分」）：GufoRAG chatbot
+     `app/routes/chat.py` 的 `list_chat_logs_with_filters` 是 `ChatLogModel.human_time.desc()`
+     ⇒ 最新的在最前面。先前是升冪（最舊的三筆排在第一頁），而本頁的排序鈕是三態循環、
+     `none` 那一態就是「還原 markup 原始列序」＝伺服器序——markup 序錯了，那一態演的就是一個
+     API 產不出來的畫面。（活正本禁行號，§3-2。） #}
 {% set rows = [
     {
-        id: "12173",
-        answerSource: "generated",
-        roomId: "6537",
-        userMsg: "新住民結婚注意事項",
-        aiMsg: "您好！關於新住民結婚的注意事項，以下是一些重要的要點：申請結婚登記需雙方親自到戶政事務所辦理，並準備有效身分證明與結婚證明文件；部分情況需健康檢查合格證明。",
+        id: "12175",
+        answerSource: "qa_direct",
+        roomId: "6539",
+        userMsg: "欠稅被限制出國要如何解除",
+        aiMsg: "欠稅限制出國的解除方式，需先向稅捐機關繳清欠稅或提供相當擔保，經核准後由財政部函請移民署解除限制。",
         userType: "frontend",
-        rating: "讚",
-        date: "2024/12/01 13:29:24",
-        href: "4-2_qaHistory_detail.html?logSn=12173"
+        rating: "negative",
+        date: "2024/12/03 16:45:51",
+        href: "4-2_qaHistory_detail.html?logSn=12175"
     },
     {
         id: "12174",
@@ -304,20 +309,20 @@ permalink: 4-1_qaHistory.html
         userMsg: "護照效期不足可以出國嗎",
         aiMsg: "護照效期建議至少保留6個月以上，若不足可能影響入境；各國規定不同，行前請先確認目的地國的效期要求與簽證條件。",
         userType: "backend",
-        rating: "無意見",
+        rating: "",
         date: "2024/12/02 09:12:03",
         href: "4-2_qaHistory_detail.html?logSn=12174"
     },
     {
-        id: "12175",
-        answerSource: "qa_direct",
-        roomId: "6539",
-        userMsg: "欠稅被限制出國要如何解除",
-        aiMsg: "欠稅限制出國的解除方式，需先向稅捐機關繳清欠稅或提供相當擔保，經核准後由財政部函請移民署解除限制。",
+        id: "12173",
+        answerSource: "generated",
+        roomId: "6537",
+        userMsg: "新住民結婚注意事項",
+        aiMsg: "您好！關於新住民結婚的注意事項，以下是一些重要的要點：申請結婚登記需雙方親自到戶政事務所辦理，並準備有效身分證明與結婚證明文件；部分情況需健康檢查合格證明。",
         userType: "frontend",
-        rating: "倒讚",
-        date: "2024/12/03 16:45:51",
-        href: "4-2_qaHistory_detail.html?logSn=12175"
+        rating: "positive",
+        date: "2024/12/01 13:29:24",
+        href: "4-2_qaHistory_detail.html?logSn=12173"
     }
 ] %}
 <div class="data-info"><span data-i18n="common.total">共</span> {{ total }} <span data-i18n="common.recordsUnit">筆</span></div>
@@ -375,7 +380,13 @@ permalink: 4-1_qaHistory.html
                      生成是常態，每一列都掛一顆「模型生成」等於掛了一顆沒有資訊量的標籤。
                      `is-muted` 是中性事實標記（同 2-2-4 用它標「確定性」），不是判定好壞。 #}
                 <td>{% if row.userType == "frontend" %}<span data-i18n="qa.frontendQa">前台問答</span>{% elif row.userType == "backend" %}<span data-i18n="qa.backendQa">後台問答</span>{% elif row.userType == "ab_test" %}<span data-i18n="nav.abTest">AB測試</span>{% else %}—{% endif %}{% if row.answerSource == "qa_direct" %} <span class="verdict-tag is-muted" data-i18n="settings.qaDirect">QA 直答</span>{% endif %}</td>
-                <td>{{ row.rating }}</td>
+                {# 滿意度是**封閉枚舉**（`chat_logs.rating_type`，值域 positive／negative／NULL；
+                     顯示名的正本是 product `app/routers/history.py` 的 `_RATING_LABEL`），所以資料存
+                     上游字面、顯示走 i18n key——同上一格 `userType` 的規矩。塞顯示字的話 React 接上真 API
+                     只印得出 `positive`，而英文模式那一格永遠是中文（§6／§4-2）。
+                     NULL 落「無意見」是忠實鏡射凍結前端 `GufoFAQ_Frontend_New/js/qaHistory.js` 的
+                     `getRatingText()` default 分支；三顆 key 就是同頁篩選 select 用的那三顆。 #}
+                <td>{% if row.rating == "positive" %}<span data-i18n="qa.ratingLike">讚</span>{% elif row.rating == "negative" %}<span data-i18n="qa.ratingDislike">倒讚</span>{% else %}<span data-i18n="qa.ratingNoOpinion">無意見</span>{% endif %}</td>
                 <td>{{ row.date }}</td>
             </tr>
             {% else %}
