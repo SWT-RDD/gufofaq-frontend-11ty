@@ -368,8 +368,12 @@ permalink: 5-10_tagDimensions.html
                      正典就在本頁下方「標籤檢索過濾」那張表（`tagFilterProfileName-N` ＋ `tagFilterModeHead`）。 #}
                 <tr data-tag-dimension-id="{{ dim.id }}">
                     <td id="tagDimSlot-{{ dim.id }}">{{ dim.slotKey }}</td>
-                    <td><input type="text" class="form-control" value="{{ dim.name }}" aria-labelledby="tagDimSlot-{{ dim.id }} tagDimNameHead"></td>
-                    <td><input type="text" class="form-control" value="{{ dim.description }}" aria-labelledby="tagDimSlot-{{ dim.id }} tagDimDescHead"></td>
+                    {# 兩顆就地編輯欄是**值載體**（隨同列「儲存」送 `PATCH /tags/dimensions/{id}`）⇒ 要有
+                         React 綁定記號（§5 矩陣②：class 或 id 擇一）。先前兩顆只有全域樣式 class
+                         `form-control`，是全頁唯一只能靠 DOM 順序定址的值載體——同區新增列的每一顆
+                         欄位都有 id，三顆 select 還另掛了 `js-tag-slot`／`js-tag-kind`／`js-tag-role`。 #}
+                    <td><input type="text" class="form-control js-tag-dimension-name" value="{{ dim.name }}" aria-labelledby="tagDimSlot-{{ dim.id }} tagDimNameHead"></td>
+                    <td><input type="text" class="form-control js-tag-dimension-desc" value="{{ dim.description }}" aria-labelledby="tagDimSlot-{{ dim.id }} tagDimDescHead"></td>
                     <td>{{ dim.kind }}</td>
                     <td>{% if dim.role %}{{ dim.role }}{% else %}<span class="text-gray" data-i18n="settings.tagRoleNone">不指定</span>{% endif %}</td>
                     <td class="text-center">{% if dim.kind == "date" %}<span class="text-gray" data-i18n="settings.tagDateNoVocabulary">—</span>{% else %}{{ dim.vocabularyCount }}{% endif %}</td>
@@ -450,7 +454,11 @@ permalink: 5-10_tagDimensions.html
          `delete_vocabulary`（`_assert_not_filtering`，刪代碼被標籤檢索過濾開著擋下）。 #}
     <div class="flex-row align-items-center gap-8 flex-wrap">
         <div class="text-md text-bold" data-i18n="settings.tagVocabulary">受控詞彙（字典）</div>
-        <div class="text-gray">{{ vocabDimension.name }}（{{ vocabDimension.slotKey }}）</div>
+        {# 括號是**串起兩個資料節點的分隔符**，自己也要有 key（§4-2）：留成字面量的話，英文模式會在
+             `業務方向` 與 `note4` 中間露出一對全形括號。上游同一個 composite 也有正式英譯
+             （product `app/i18n.py` 的 `retrieval.tag_gate_dimension_label`：`{name}（{slot_key}）`／
+             `{name} ({slot_key})`），也就是半形才是英文那一半的正解。 #}
+        <div class="text-gray">{{ vocabDimension.name }}<span data-i18n="common.parenOpen">（</span>{{ vocabDimension.slotKey }}<span data-i18n="common.parenClose">）</span></div>
         <button type="button" class="info-btn" title="受控詞彙（字典）說明" data-i18n-title="help.settings.tagVocabulary.title" data-open-modal="tagVocabularyHelpModal">
             <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
             <span class="sr-only" data-i18n="help.settings.tagVocabulary.title">受控詞彙（字典）說明</span>
@@ -614,7 +622,22 @@ permalink: 5-10_tagDimensions.html
              常駐可見標籤（`help.settings.tagCoverageScan.what` 提到「上限」是散文、不是標籤；
              真正的數字只在 ③ 說明視窗由 React 執行期讀 `GET /stats/limits` 畫出，靜態稿畫不出
              真數字，故這裡只給名字、不給值——同 `helpModalLimitRows` 恆留空同一個理由）。 #}
-        <span class="text-gray" id="scanDocumentsCapHint" data-i18n="settings.scanDocumentsCap">單次量測文件數上限</span>
+        {# **`PATCH /tags/dimensions/{id}` 收得下的 `kind`／`role` 這一頁刻意不開放列上改**（§3-2：
+             request 收得下的每個參數都要有落點，不做的要寫明理由）：換 kind／role 會連帶動到
+             「這個維度還能不能有字典」（`tags.date_kind_has_vocabulary` 的 400）與角色唯一性
+             （`tags.role_taken` 的 409），而那兩道要用**更新後**的兩個值一起判——列上就地改會讓
+             使用者在一顆看不出關聯的欄位上撞到兩種 409/400。要換就是刪掉重建（同上游對 `slot_key`
+             的處置：`DimensionUpdateIn` 明文不收它，理由逐字寫在該 model 的 docstring）。
+           **`GET /tags/coverage/untagged` 的 `untagged_page`（1–500，預設 100）不畫**：這一頁的
+             未標註清單沒有每頁筆數選擇器（`perPage = 10` 是切版自己的版面選擇），那顆界線因此
+             沒有消費點；它與下面那顆 `scan_documents` 是同一個 group 的姊妹界線（§3-2），一起記在這裡。 #}
+        {# 三件式（§4：被 `aria-describedby` 指到的節點裡讀不到那個數字，就等於沒給）：
+             前綴 key ＋ 帶 class 的數字節點 ＋ 單位 key。2000 的正本是 product `app/settings.py` 的
+             `coverage_scan_max_documents`，已投影成 `GET /stats/limits` 的 `coverage.scan_documents`
+             （`app/ops_limits.py` 的 `STATS_LIMIT_GROUPS`）——那顆 class 就是 React 執行期填它的槽。
+             先前這裡只給名字不給值，理由寫「真正的數字只在 ③ 說明視窗由 React 執行期讀出來」；
+             但 §4「切版主張需求」的前提是拿不到資料，而正本明明給得出來 ⇒ 版位還是要定出來。 #}
+        <span class="text-gray" id="scanDocumentsCapHint"><span data-i18n="settings.scanDocumentsCap">單次量測文件數上限</span><span data-i18n="common.labelSep">：</span><span class="js-coverage-scan-max">2000</span><span data-i18n="common.unitItems">個</span></span>
     </div>
 </div>
 
@@ -739,7 +762,7 @@ permalink: 5-10_tagDimensions.html
                 <tbody>
                     {% for blocked in blockedSlots %}
                     <tr>
-                        <td>{{ blocked.name }}（{{ blocked.slotKey }}）</td>
+                        <td>{{ blocked.name }}<span data-i18n="common.parenOpen">（</span>{{ blocked.slotKey }}<span data-i18n="common.parenClose">）</span></td>
                         {# 缺法只有兩種（product `SlotGap.reason`），i18n key 逐條寫成字面而不是投影成
                              模板變數：投影出來的 key 在 en.json 對帳時查不到引用處。 #}
                         {% if blocked.reason == "wholeFile" %}

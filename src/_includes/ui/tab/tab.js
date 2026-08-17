@@ -1,3 +1,11 @@
+// **ARIA 模式的裁決（§4）**：本元件走 `aria-current="true"`，**刻意不做 APG 的 tabs widget**
+// （`role="tablist"/"tab"/"tabpanel"` ＋ `aria-controls` ＋ `aria-selected` ＋ roving tabindex ＋ ←/→ 鍵）。
+// 理由：切版不交付鍵盤 widget——那一整套的價值在鍵盤互動，而互動在 React 端是由 headless tabs
+// 套件提供的，切版這一份如果只做 role 而不做 roving tabindex 與方向鍵，反而是**宣告了一個做不到的
+// 契約**（報讀器會告訴使用者「這是頁籤，用左右鍵切換」，而左右鍵沒有反應）。
+// `aria-current` 說得出「目前這一項」，不多不少，且每一條改變選中的路徑都同步（見 setCurrent）。
+// 面板切換走 `style.display`，所以 §4「四道天然邊界」把 `.tab-content` 當可及名稱範圍邊界成立。
+//
 // tab 頁籤切換：改寫自凍結前端 GufoFAQ_Frontend_New/js/main.js「tab頁籤切換」（原用 jQuery），改用原生 DOM API
 // 只轉切版互動（切換 .active / 顯示對應群組），資料載入/API 等業務邏輯不在此列
 // 選中態同步進 ARIA：.active 只是視覺，報讀器聽不到——每一條改變選中態的路徑都同步 aria-current

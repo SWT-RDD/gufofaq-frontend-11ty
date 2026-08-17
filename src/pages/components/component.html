@@ -525,7 +525,7 @@ bodyClass: guideline-page
         </section>
 
         <section id="paginationSection">
-            <h2 class="section-title"><span>15</span><span>Pagination頁碼</span></h2>
+            <h2 class="section-title" id="paginationSectionTitle"><span>15</span><span>Pagination頁碼</span></h2>
             <div class="caption">
                 <ul>
                     <li>一般頁碼形式 / 可輸入頁碼切換</li>
@@ -533,8 +533,13 @@ bodyClass: guideline-page
             </div>
             {# total=115 顆＋currentPage=6：totalPages=12，visible=5 的滑動視窗置中在第6頁，
                  左右省略號同時出現，一次展示完整樣式 #}
+            {# 這一頁 include 兩份：`<nav>` 是地標，兩份的可及名稱逐字都是「頁碼分頁」——報讀器的
+                 地標清單上會出現兩行一模一樣的字（§4 同名不得重複，換一種節點而已）。
+                 兩份各給一個 `paginationOwnerId`（＝節內既有節點的 id），名稱因此變成
+                 「Pagination頁碼 頁碼分頁」與「可輸入頁碼切換 頁碼分頁」。 #}
             {% set total = 115 %}
             {% set currentPage = 6 %}
+            {% set paginationOwnerId = "paginationSectionTitle" %}
             {% include "ui/pagination/pagination.html" %}
             <br>
             {# 可輸入頁碼切換（另一互動變體）；實用範例見 4-2 #}
@@ -542,7 +547,7 @@ bodyClass: guideline-page
             <br>
             <div class="caption">
                 <ul>
-                    <li><strong>total = 0 的定義態</strong>（pagination.js）：<strong>一個 li 都不畫、「共 N 頁」整塊不渲染</strong>。零筆資料沒有「第 1 頁」可以停在——硬扳成一頁的話，「篩到零筆」那種真實可達的狀態會同時渲染出「無資料」與「共 1 頁／頁碼 1」，畫面自己說兩件事。空狀態由表格自己的無資料列說，分頁列這時沒有話要說，所以<strong>下面這一塊看起來就該是空的</strong>——那不是壞掉，是規格</li>
+                    <li id="paginationEmptyCaption"><strong>total = 0 的定義態</strong>（pagination.js）：<strong>一個 li 都不畫、「共 N 頁」整塊不渲染</strong>。零筆資料沒有「第 1 頁」可以停在——硬扳成一頁的話，「篩到零筆」那種真實可達的狀態會同時渲染出「無資料」與「共 1 頁／頁碼 1」，畫面自己說兩件事。空狀態由表格自己的無資料列說，分頁列這時沒有話要說，所以<strong>下面這一塊看起來就該是空的</strong>——那不是壞掉，是規格</li>
                 </ul>
             </div>
             {# §2：`total`／`perPage`／`currentPage` 是**頁面全域**，同頁第二次用同元件要重新 set 全部三個
@@ -552,10 +557,15 @@ bodyClass: guideline-page
             {% set total = 0 %}
             {% set perPage = 10 %}
             {% set currentPage = 1 %}
+            {% set paginationOwnerId = "paginationEmptyCaption" %}
             {% include "ui/pagination/pagination.html" %}
             {% set total = 115 %}
             {% set perPage = 10 %}
             {% set currentPage = 6 %}
+            {# `paginationOwnerId` 也要設回空的（§2：set 是頁面全域）——本頁後面的
+                 `components/untagged-files-modal` 也 include 了一份 pagination，沿用這裡的值
+                 就會撞 id，而它自己在 `<dialog>` 裡、本來就不需要消歧。 #}
+            {% set paginationOwnerId = "" %}
             <div class="caption description mt-16">
                 <ul>
                     <li>上一頁li.prev以及下一頁li.next加上.disabled的class就會呈現禁用狀態</li>

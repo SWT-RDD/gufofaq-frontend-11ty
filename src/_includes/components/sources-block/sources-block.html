@@ -67,7 +67,7 @@
                 {%- if sourcesSideKey -%}
                 <span{% for s in sourcesSideStates %} data-text-{{ s.state }}="{{ s.label }}" data-key-{{ s.state }}="{{ s.i18nKey }}"{% endfor %} data-i18n="{{ sourcesSideKey }}">{{ sourcesSideLabel }}</span>
                 {%- else -%}
-                <span data-i18n="qa.sourcesRulePrefix">（挑選規則 </span>{{ sourcesTotal or 16 }}<span data-i18n="qa.sourcesRuleMid"> 取 </span>{{ sourcesSelected or 8 }}<span data-i18n="qa.sourcesModelMid">；使用模型：</span>{{ sourcesModel or "openai:gpt-4o-mini" }}<span data-i18n="storage.close">）</span>
+                <span data-i18n="qa.sourcesRulePrefix">（挑選規則 </span>{{ sourcesTotal or 16 }}<span data-i18n="qa.sourcesRuleMid"> 取 </span>{{ sourcesSelected or 8 }}<span data-i18n="qa.sourcesModelMid">；使用模型：</span>{{ sourcesModel or "openai:gpt-4o-mini" }}<span data-i18n="common.parenClose">）</span>
                 {%- endif -%}
             </span>
         </div>
