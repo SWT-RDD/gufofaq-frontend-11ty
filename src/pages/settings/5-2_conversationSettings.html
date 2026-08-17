@@ -912,29 +912,29 @@ permalink: 5-2_conversationSettings.html
         </div>
         <div class="form-group">
             <div class="label"><label for="botRoleInput" class="control-label" data-i18n="settings.botRole">機器人身分</label></div>
-            <div class="field"><input type="text" id="botRoleInput" class="form-control js-role" value="智能助手" placeholder="例如：產品客服助手" data-i18n-placeholder="settings.pleaseEnterBotRole"></div>
+            <div class="field"><input aria-describedby="botRoleInputHint" type="text" id="botRoleInput" class="form-control js-role" value="智能助手" placeholder="例如：產品客服助手" data-i18n-placeholder="settings.pleaseEnterBotRole"><span class="text-gray" id="botRoleInputHint"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-role-max-len">100</span><span data-i18n="common.unitChars"> 字</span></span></div>
         </div>
         <div class="form-group">
             <div class="label">
                 <label for="agentSystemPromptInput" class="control-label" data-i18n="settings.agentSystemPrompt">Agent 系統提示詞</label>
             </div>
-            <div class="field"><textarea id="agentSystemPromptInput" class="form-control js-agent-system-prompt"></textarea></div>
+            <div class="field"><textarea aria-describedby="agentSystemPromptInputHint" id="agentSystemPromptInput" class="form-control js-agent-system-prompt"></textarea><span class="text-gray" id="agentSystemPromptInputHint"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-agent-system-prompt-max-len">20000</span><span data-i18n="common.unitChars"> 字</span></span></div>
         </div>
         <div class="form-group">
             <div class="label">
                 <label for="respondSystemPromptInput" class="control-label" data-i18n="settings.respondSystemPrompt">回應提示詞</label>
             </div>
-            <div class="field"><textarea id="respondSystemPromptInput" class="form-control js-respond-system-prompt"></textarea></div>
+            <div class="field"><textarea aria-describedby="respondSystemPromptInputHint" id="respondSystemPromptInput" class="form-control js-respond-system-prompt"></textarea><span class="text-gray" id="respondSystemPromptInputHint"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-respond-system-prompt-max-len">20000</span><span data-i18n="common.unitChars"> 字</span></span></div>
         </div>
         <div class="form-group">
             <div class="label">
                 <label for="intensionSystemPromptInput" class="control-label" data-i18n="settings.intensionSystemPrompt">意圖判斷提示詞</label>
             </div>
-            <div class="field"><textarea id="intensionSystemPromptInput" class="form-control js-intension-system-prompt"></textarea></div>
+            <div class="field"><textarea aria-describedby="intensionSystemPromptInputHint" id="intensionSystemPromptInput" class="form-control js-intension-system-prompt"></textarea><span class="text-gray" id="intensionSystemPromptInputHint"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-intension-system-prompt-max-len">20000</span><span data-i18n="common.unitChars"> 字</span></span></div>
         </div>
         <div class="form-group">
             <div class="label"><label for="chatroomSystemPromptInput" class="control-label" data-i18n="settings.chatroomSystemPrompt">聊天室提示詞</label></div>
-            <div class="field"><textarea id="chatroomSystemPromptInput" class="form-control js-chatroom-system-prompt"></textarea></div>
+            <div class="field"><textarea aria-describedby="chatroomSystemPromptInputHint" id="chatroomSystemPromptInput" class="form-control js-chatroom-system-prompt"></textarea><span class="text-gray" id="chatroomSystemPromptInputHint"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-chatroom-system-prompt-max-len">20000</span><span data-i18n="common.unitChars"> 字</span></span></div>
         </div>
     </div>
 
@@ -958,7 +958,7 @@ permalink: 5-2_conversationSettings.html
                 <p class="prompt-text" data-i18n="settings.draftSaveHint">儲存後將自動建立新版本，不覆蓋舊有版本</p>
                 <div class="form-group">
                     <div class="field">
-                        <textarea class="form-control size-lg prompt-input js-welcome-input" placeholder="請輸入歡迎語內容" data-i18n-placeholder="settings.pleaseEnterWelcome" aria-label="歡迎語內容" data-i18n-aria-label="settings.welcomeContent">您好，我是智能客服，有什麼可以協助您的嗎？</textarea>
+                        <textarea id="welcomeInput" class="form-control size-lg prompt-input js-welcome-input" aria-describedby="welcomeInputHint" placeholder="請輸入歡迎語內容" data-i18n-placeholder="settings.pleaseEnterWelcome" aria-label="歡迎語內容" data-i18n-aria-label="settings.welcomeContent">您好，我是智能客服，有什麼可以協助您的嗎？</textarea><span class="text-gray" id="welcomeInputHint"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-welcome-message-max-len">20000</span><span data-i18n="common.unitChars"> 字</span></span>
                     </div>
                 </div>
             </div>
@@ -1115,9 +1115,9 @@ permalink: 5-2_conversationSettings.html
                              列名要另立節點：主題名稱那一欄本身是 <input>，value 不是可被 aria-labelledby 引用的文字。 #}
                         <td>
                             <span id="policyTopicRowName-{{ loop.index }}" class="sr-only">{{ topic.name }}</span>
-                            <input type="text" class="form-control" value="{{ topic.name }}" aria-labelledby="policyTopicRowName-{{ loop.index }} policyHeadName">
+                            <input type="text" class="form-control" value="{{ topic.name }}" aria-labelledby="policyTopicRowName-{{ loop.index }} policyHeadName" aria-describedby="policyTopicLimitsHint">
                         </td>
-                        <td><input type="text" class="form-control" value="{{ topic.definition }}" aria-labelledby="policyTopicRowName-{{ loop.index }} policyHeadDefinition"></td>
+                        <td><input type="text" class="form-control" value="{{ topic.definition }}" aria-labelledby="policyTopicRowName-{{ loop.index }} policyHeadDefinition" aria-describedby="policyTopicLimitsHint"></td>
                         <td><input type="text" class="form-control" value="{{ topic.examples }}" aria-labelledby="policyTopicRowName-{{ loop.index }} policyHeadExamples" aria-describedby="policyExamplesHint"></td>
                         <td>
                             <select class="form-control select-sm singleSelect" aria-labelledby="policyTopicRowName-{{ loop.index }} policyHeadInputAction">
@@ -1148,6 +1148,11 @@ permalink: 5-2_conversationSettings.html
              `MAX_TOPIC_EXAMPLES` / `MAX_TOPIC_EXAMPLE_LEN`（`POLICY_TOPIC_LIMITS["examples"]` 的
              `max_items` / `max_item_len`）。條數上限同時是上游 `_render_topics` 真的渲染得出的條數，
              多設的不會生效，所以是「拒絕存檔」而不是靜默截斷。 #}
+        {# 主題名稱／定義兩欄的界線也常駐可見，一份 hint 給整欄用（同下方「範例」那一份）。
+             出處 product `app/chat_config_limits.py` 的 `POLICY_TOPIC_LIMITS`：`name.max_len`／`definition.max_len`
+             （＝`MAX_TOPIC_NAME_LEN`／`MAX_TOPIC_DEFINITION_LEN`）。數字獨立成帶 class 的節點，
+             給 React 從 `GET /settings/chat-config-limits` 填（§4-2：契約裡有欄位的數字不進譯文）。 #}
+        <p id="policyTopicLimitsHint" class="text-gray"><span data-i18n="settings.policyTopicName">主題名稱</span><span data-i18n="common.labelSep">：</span><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-topic-name-max-len">200</span><span data-i18n="common.unitChars"> 字</span><span data-i18n="common.listSep">、</span><span data-i18n="settings.definition">定義</span><span data-i18n="common.labelSep">：</span><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-topic-definition-max-len">1024</span><span data-i18n="common.unitChars"> 字</span></p>
         <p id="policyExamplesHint" class="text-gray"><span data-i18n="settings.policyExamplesHintPrefix">「範例」以逗號分隔，最多 </span><span>5</span><span data-i18n="settings.policyExamplesHintMid"> 則、每則 </span><span>200</span><span data-i18n="settings.policyExamplesHintSuffix"> 字；超過就存不起來，不會只留前幾則。</span></p>
         <div class="flex-row">
             <button type="button" class="button button-border button-sm js-add-policy-topic" data-i18n="settings.addPolicyTopic">新增主題</button>
@@ -1182,11 +1187,11 @@ permalink: 5-2_conversationSettings.html
         <div class="flex-row flex-wrap gap-16">
             <div class="form-group col-6-md col-12-sm">
                 <div class="label"><label for="policyBlockedInput" class="control-label" data-i18n="settings.policyBlockedInputMsg">輸入封鎖訊息</label></div>
-                <div class="field"><textarea id="policyBlockedInput" class="form-control js-policy-blocked-input-msg">您的提問包含不允許的內容，請調整後再試。</textarea></div>
+                <div class="field"><textarea aria-describedby="policyBlockedInputHint" id="policyBlockedInput" class="form-control js-policy-blocked-input-msg">您的提問包含不允許的內容，請調整後再試。</textarea><span class="text-gray" id="policyBlockedInputHint"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-policy-blocked-input-msg-max-len">500</span><span data-i18n="common.unitChars"> 字</span></span></div>
             </div>
             <div class="form-group col-6-md col-12-sm">
                 <div class="label"><label for="policyBlockedOutput" class="control-label" data-i18n="settings.policyBlockedOutputMsg">輸出封鎖訊息</label></div>
-                <div class="field"><textarea id="policyBlockedOutput" class="form-control js-policy-blocked-output-msg">很抱歉，這個問題我無法回答。</textarea></div>
+                <div class="field"><textarea aria-describedby="policyBlockedOutputHint" id="policyBlockedOutput" class="form-control js-policy-blocked-output-msg">很抱歉，這個問題我無法回答。</textarea><span class="text-gray" id="policyBlockedOutputHint"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-policy-blocked-output-msg-max-len">500</span><span data-i18n="common.unitChars"> 字</span></span></div>
             </div>
         </div>
     </div>
@@ -1558,18 +1563,18 @@ permalink: 5-2_conversationSettings.html
                                     <div class="label"><label id="oruleConstNameLabel{{ loop.index }}" for="oruleConstName{{ loop.index }}" class="control-label" data-i18n="settings.outputRuleConstName">常數名稱</label></div>
                                     <div class="field">
                                         <input type="text" id="oruleConstName{{ loop.index }}" aria-labelledby="oruleRowName-{{ oruleIdx }} oruleConstNameLabel{{ loop.index }}" class="form-control js-orule-const-name" value="{{ rule.constName }}" aria-describedby="oruleConstNameHint{{ loop.index }}">
-                                        <span id="oruleConstNameHint{{ loop.index }}" class="text-gray"><span data-i18n="settings.outputRuleConstNameHint">提示詞裡要寫成同名的佔位符（不可有前後空白、不可含大括號），例如</span> <code class="inline-code">{{ "{{客服專線}}" }}</code></span>
+                                        <span id="oruleConstNameHint{{ loop.index }}" class="text-gray"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-orule-const-name-max-len">64</span><span data-i18n="common.unitChars"> 字</span><span data-i18n="common.labelSep">：</span><span data-i18n="settings.outputRuleConstNameHint">提示詞裡要寫成同名的佔位符（不可有前後空白、不可含大括號），例如</span> <code class="inline-code">{{ "{{客服專線}}" }}</code></span>
                                     </div>
                                 </div>
                                 <div class="form-group">
                                     <div class="label"><label id="oruleConstDefaultLabel{{ loop.index }}" for="oruleConstDefault{{ loop.index }}" class="control-label" data-i18n="settings.outputRuleConstDefault">預設值</label></div>
                                     <div class="field">
                                         <input type="text" id="oruleConstDefault{{ loop.index }}" aria-labelledby="oruleRowName-{{ oruleIdx }} oruleConstDefaultLabel{{ loop.index }}" class="form-control js-orule-const-default" value="{{ rule.constDefault }}" aria-describedby="oruleConstDefaultHint{{ loop.index }}">
-                                        <span id="oruleConstDefaultHint{{ loop.index }}" class="text-gray" data-i18n="settings.outputRuleConstDefaultHint">必填：判不出情境的那幾輪用這個值，不可留空。</span>
+                                        <span id="oruleConstDefaultHint{{ loop.index }}" class="text-gray"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-orule-const-default-max-len">200</span><span data-i18n="common.unitChars"> 字</span><span data-i18n="common.labelSep">：</span><span data-i18n="settings.outputRuleConstDefaultHint">必填：判不出情境的那幾輪用這個值，不可留空。</span></span>
                                     </div>
                                 </div>
                                 <div class="text-bold" id="oruleCasesLabel{{ loop.index }}" data-i18n="settings.outputRuleCases">情境條件</div>
-                                <div class="text-gray"><span data-i18n="settings.outputRuleCasesHintPrefix">由上而下依序比對，第一個成立的出線；都不成立就用預設值。最多 </span><span>20</span><span data-i18n="settings.outputRuleCasesHintSuffix"> 條。</span></div>
+                                <div class="text-gray"><span data-i18n="settings.outputRuleCasesHintPrefix">由上而下依序比對，第一個成立的出線；都不成立就用預設值。最多 </span><span>20</span><span data-i18n="settings.outputRuleCasesHintSuffix"> 條。</span><span id="oruleCaseLimitsHint{{ oruleIdx }}"><span data-i18n="settings.outputRuleCategorySlot">意圖維度槽</span><span data-i18n="common.labelSep">：</span><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-orule-case-slot-max-len">64</span><span data-i18n="common.unitChars"> 字</span><span data-i18n="common.listSep">、</span><span data-i18n="settings.outputRuleCaseValue">填入值</span><span data-i18n="common.labelSep">：</span><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-orule-case-value-max-len">200</span><span data-i18n="common.unitChars"> 字</span></span></div>
                                 {# 同上：case 列的四顆欄位（意圖維度槽／述詞／比對代碼／填入值）在同一顆
                                      規則卡裡會重複多列，且「意圖維度槽」與上面 rule 層那顆同名。
                                      用 role="group" 指向「情境條件」這個浮空標題（§4）。 #}
@@ -1580,7 +1585,7 @@ permalink: 5-2_conversationSettings.html
                                 <div class="flex-row flex-wrap gap-8" role="group" aria-labelledby="oruleCaseValue-{{ oruleIdx }}-{{ loop.index }}">
                                     {# 同上：一顆規則卡裡多列情境條件，刪除鈕逐字同名。這一列的身分是
                                          「填入值」（述詞與槽兩列可能相同，值不會）。 #}
-                                    <input type="text" class="form-control js-orule-case-slot" value="{{ case.slot }}" aria-label="意圖維度槽" data-i18n-aria-label="settings.outputRuleCategorySlot">
+                                    <input type="text" class="form-control js-orule-case-slot" value="{{ case.slot }}" aria-label="意圖維度槽" data-i18n-aria-label="settings.outputRuleCategorySlot" aria-describedby="oruleCaseLimitsHint{{ oruleIdx }}">
                                     <select class="form-control select-sm singleSelect js-orule-case-op" aria-label="述詞" data-i18n-aria-label="settings.outputRuleCaseOp">
                                         <option value="is_set" data-i18n="settings.outputRuleOpIsSet"{% if case.op == "is_set" %} selected{% endif %}>已判定</option>
                                         <option value="is_not_set" data-i18n="settings.outputRuleOpIsNotSet"{% if case.op == "is_not_set" %} selected{% endif %}>未判定</option>
@@ -1590,7 +1595,7 @@ permalink: 5-2_conversationSettings.html
                                     {% if case.op == "eq" or case.op == "in" %}
                                     <input type="text" class="form-control js-orule-case-operand" value="{{ case.operand }}" aria-label="比對代碼" data-i18n-aria-label="settings.outputRuleCaseOperand" aria-describedby="oruleCaseOperandHint{{ oruleIdx }}">
                                     {% endif %}
-                                    <input type="text" id="oruleCaseValue-{{ oruleIdx }}-{{ loop.index }}" class="form-control js-orule-case-value" value="{{ case.value }}" aria-label="填入值" data-i18n-aria-label="settings.outputRuleCaseValue">
+                                    <input type="text" id="oruleCaseValue-{{ oruleIdx }}-{{ loop.index }}" class="form-control js-orule-case-value" value="{{ case.value }}" aria-label="填入值" data-i18n-aria-label="settings.outputRuleCaseValue" aria-describedby="oruleCaseLimitsHint{{ oruleIdx }}">
                                     <button type="button" id="oruleCaseDelete-{{ oruleIdx }}-{{ loop.index }}" aria-labelledby="oruleCaseValue-{{ oruleIdx }}-{{ loop.index }} oruleCaseDelete-{{ oruleIdx }}-{{ loop.index }}" class="button button-border button-sm js-remove-orule-case" data-i18n="action.delete">刪除</button>
                                 </div>
                                 {% endfor %}
@@ -2213,7 +2218,7 @@ permalink: 5-2_conversationSettings.html
                 <label for="qaDirectCriteria" class="control-label" data-i18n="settings.qaDirectCriteria">judge 判準</label>
             </div>
             <div class="field col-12-sm">
-                <textarea id="qaDirectCriteria" class="form-control size-sm js-qa-direct-criteria" placeholder="補充判準..." data-i18n-placeholder="settings.qaDirectCriteriaPlaceholder"></textarea>
+                <textarea aria-describedby="qaDirectCriteriaHint" id="qaDirectCriteria" class="form-control size-sm js-qa-direct-criteria" placeholder="補充判準..." data-i18n-placeholder="settings.qaDirectCriteriaPlaceholder"></textarea><span class="text-gray" id="qaDirectCriteriaHint"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-qa-direct-criteria-max-len">1024</span><span data-i18n="common.unitChars"> 字</span></span>
             </div>
         </div>
     </div>
@@ -2281,7 +2286,7 @@ permalink: 5-2_conversationSettings.html
                 <label for="answerabilityCriteria" class="control-label" data-i18n="settings.answerabilityCriteria">補充判準</label>
             </div>
             <div class="field col-12-sm">
-                <textarea id="answerabilityCriteria" class="form-control size-sm js-answerability-criteria" placeholder="補充判準（附加在內建 grounding 判準之後）..." data-i18n-placeholder="settings.answerabilityCriteriaPlaceholder"></textarea>
+                <textarea aria-describedby="answerabilityCriteriaHint" id="answerabilityCriteria" class="form-control size-sm js-answerability-criteria" placeholder="補充判準（附加在內建 grounding 判準之後）..." data-i18n-placeholder="settings.answerabilityCriteriaPlaceholder"></textarea><span class="text-gray" id="answerabilityCriteriaHint"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-answerability-criteria-max-len">1024</span><span data-i18n="common.unitChars"> 字</span></span>
             </div>
         </div>
         {# grounding 判定前的分數粗篩門檻（chatbot `ChatConfig.grounding_score_floor`，預設 0.5）。
