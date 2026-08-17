@@ -24,9 +24,15 @@ permalink: 3-3_qaSetManagement.html
      「QA 集管理頁用 kind=qa」）。
      **不可拿 loop.index 當列鍵**：這張表刪得掉列，位置不是身分——刪掉前一列之後，
      後面每一列的列鍵都會往前頂一格，React 端的 key 與逐列動作的目標會一起指錯人（§6 列鍵）。 #}
+{# QA 集與檔案集在 product 是**同一張表**（`models.Dataset` 的 `kind` 欄）⇒ 同一個 id 空間。
+     目錄正本與 id 的分配見 3-5 的 `healthScanDatasets` 那一段。
+     · 產品 FAQ 的 id 由 3 改成 **5**：3 是 3-5／5-10 的「法規彙編」，同一個 id 不能是兩個資料集。
+     · 補上第三筆「檢疫問答集」（id 7）——3-5 的 907 與 936 兩筆發現就掛在它上面，而這一頁
+       是 QA 集的清單頁，列不出它就是「健康度頁在替一個不存在的 QA 集報問題」。 #}
 {% set qaSets = [
   { id: 2, name: "客服問答集", group: "管理群組", count: "512", createdAt: "2025/11/05 09:12", updatedAt: "2026/06/20 14:30" },
-  { id: 3, name: "產品 FAQ", group: "業務群組", count: "128", createdAt: "2026/01/12 10:48", updatedAt: "2026/06/28 16:05" }
+  { id: 5, name: "產品 FAQ", group: "業務群組", count: "128", createdAt: "2026/01/12 10:48", updatedAt: "2026/06/28 16:05" },
+  { id: 7, name: "檢疫問答集", group: "業務群組", count: "96", createdAt: "2026/02/03 15:26", updatedAt: "2026/07/02 10:41" }
 ] %}
 
 <p class="text-gray" data-i18n="qaSet.intro">QA 集是問答對集合：使用者問句完全命中某題的問題時，直接回該題答案原文、不經 AI 重組。可在「對話設定 ▸ QA 直答」選擇哪些 QA 集參與直答。</p>

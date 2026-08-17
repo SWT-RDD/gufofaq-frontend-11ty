@@ -54,13 +54,17 @@
      同一頁上方的平台權限盤點把兩位平台系統管理員分別配給租戶 A（`admin@example.com`）與租戶 C
      （`ops-admin@example.com`）——在這裡補第四位會讓 B 變成四個人（與那張表的使用者數對不上），
      改用那兩個信箱之一則是同一個人同時待在兩個租戶；兩條都是 §6 跨頁自洽，而且那兩張表就在同一頁上
-     逐列讀得到。故走 §4-2「枚舉的成員靠『有地方渲染得出來』活著」那條的第二條路：這一段 markup 留在
+     逐列讀得到。
+     ⚠️ 同一條理由也管住這份名冊自己：第三位原本叫 `viewer@example.com`，而**那個信箱是租戶 A 的人**
+     （5-5-1_userManagement 的第三列，同樣是「已停用」）——正是這一段自己說不可以的「同一個人
+     同時待在兩個租戶」。改成 `b-viewer@example.com`（沿用 iso-review-wizard 的 `c-admin@example.com`
+     那種以租戶字母起頭的命名）。故走 §4-2「枚舉的成員靠『有地方渲染得出來』活著」那條的第二條路：這一段 markup 留在
      這裡當**位置與字色的規格**，那顆 key 可見的一份放元件庫頁的「React 條件文案」節（繁中逐字照抄）。
      要改回在這裡演，得先動 5-6-1 的盤點表讓某一個租戶同時有一位稽核員與一位系統管理員。 #}
 {% set manageMembers = [
   { id: 4102, email: "owner@example.com", isAdmin: true, isActive: true, platformRole: "none" },
   { id: 4118, email: "auditor@example.com", isAdmin: false, isActive: true, platformRole: "auditor" },
-  { id: 4135, email: "viewer@example.com", isAdmin: false, isActive: false, platformRole: "none" }
+  { id: 4135, email: "b-viewer@example.com", isAdmin: false, isActive: false, platformRole: "none" }
 ] %}
 {# ── 本窗的兩級可見性（§5 data-platform-role）────────────────────────────────────
      本窗**整份 auditor 進得來**，改成逐顆宣告，不再整份標 admin。理由是四支唯讀端點：

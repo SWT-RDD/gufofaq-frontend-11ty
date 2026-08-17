@@ -164,6 +164,10 @@ permalink: 5-7_auditLog.html
      以 `loop.index` 當鍵會讓上一頁的第 1 列與下一頁的第 1 列變成同一顆 key（§6 列鍵）。
      故落在 `<tr data-audit-id>`（同 5-6-2 的 `data-mcp-id`、5-6-1 的 `data-tenant-id`）。
      示範 id 隨時間降冪（`created_at.desc()` 是這支端點的 order_by，而 id 是自增主鍵）。 #}
+{# 第一列的 `target` 由 `dataset #12` 改成 `#4207`：`datasets.id` 是**全域主鍵**
+     （`models.Dataset` 的 id，tenant_id 只是欄位），而 #12 已經是示範租戶的「2026 新制問答」
+     （目錄正本見 3-5 的 `healthScanDatasets`）。這一列是**別的租戶**（tenantId 12）的建立事件，
+     跨租戶檢視本來就會看到不在自己目錄裡的名字——那正是這一頁要示範的事，換一個號碼就好。 #}
 {% set rows = [
     {
         id: 90412,
@@ -172,7 +176,7 @@ permalink: 5-7_auditLog.html
         operator: "admin@acme.tw", operatorId: 7,
         impersonator: "staff@sys.tw", impersonatorId: 3,
         action: "dataset.create", actionKey: "audit.actDatasetCreate", actionLabel: "建立資料集",
-        target: "dataset #12",
+        target: "dataset #4207",
         detail: "{ name: 移民署 測試 }",
         ip: "203.0.113.5",
         userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0"

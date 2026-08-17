@@ -1612,7 +1612,14 @@ permalink: 5-2_conversationSettings.html
          defaultDescription 逐字取自 GufoRAG chatbot app/services/agent_service.py `_create_builtin_tools`
          各工具 docstring 的首段（那就是目錄回傳的 description 原文）；params 的名稱與必填取自同處的函式簽章
          （`_params()` 讀 args_schema：無預設值＝required）。
-         示範狀態：每一顆皆 enabled（＝全部啟用那一態）；customized 只給 ask_clarifying_question
+         示範狀態：**十四顆裡有一顆是關的**（`lunar`）。原本十四顆全開＝`enabled_builtin_tools`
+         的 `None` 那一態，於是開關的「關」從來沒有任何一頁渲染得出來（§5：演不到的狀態等於
+         沒驗收過，而這一顆開關正是這一區存在的理由）。關掉的那一顆刻意挑最沒有業務關聯的
+         （農曆與節氣）——關掉它不會讓同頁任何一段推導失效（`search_qa`／`answer_from_qa`
+         那組前提對比、`ask_clarifying_question` 的已自訂標記都不碰它），而它同時把
+         「白名單真的在用」這件事演出來：`enabled_builtin_tools` 是一個 13 個名字的清單，
+         不是 `None`。
+         customized 只給 ask_clarifying_question
          ——那張卡同時演「已自訂」標記、預設展開、以及兩欄已填值的樣子（§6 示範資料要自洽：
          標記說已自訂，欄位就不能是空的）。 #}
     {# 條件式工具（answer_from_qa 是第二顆）：requires 兩欄都要成立才會被建出來。示範狀態下
@@ -1680,7 +1687,7 @@ permalink: 5-2_conversationSettings.html
         exampleExtraPrompt: "回覆時把推算所用的起訖日期寫出來。"
       },
       {
-        name: "lunar", title: "農曆與節氣", enabled: true,
+        name: "lunar", title: "農曆與節氣", enabled: false,
         desc: "國曆與農曆互換，以及查詢 24 節氣。",
         defaultDescription: "國曆↔農曆 + 24 節氣工具（cnlunar）。",
         params: [

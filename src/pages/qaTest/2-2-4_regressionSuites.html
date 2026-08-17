@@ -975,11 +975,16 @@ permalink: 2-2-4_regressionSuites.html
          由這裡挑定；挑成未通過的話 #310 就是 8/12。）
      原本 #310 寫 8 / 10，於是它與 #311 跑完一樣多的則數，而 2-2-5 同時演得出「基準沒有它」
      與「這一次沒跑到」——前綴性質下那兩個方向不可能同時存在（見 2-2-5 那一段推導）。 #}
+{# **執行時間不得晚於站台的「現在」**（§6）：全站的「現在」是 **2026-07-14**（`components/iso-review-wizard`
+     的名單逐字寫著查詢時間，5-1-1 的使用期倒數與 5-6-1 的租戶到期日都由它推導）。這四筆原本是
+     07/27～07/28——**已經跑完的批次卻標在兩週後**，而最上面那一筆還是「進行中」。
+     整批往前挪 14 天：#313 就落在「今天」，#310／#311 是昨天。2-2-5 那一頁畫的是 #311，
+     它的開始／結束時間與這裡的 startedAt 是同一顆值，要一起改。 #}
 {% set regressionRuns = [
-  { no: "#313", startedAt: "2026/07/28 14:30", profile: "設置一", profileKey: "settings.config1", version: "7", status: "running", statusLabel: "進行中", statusKey: "agent.stepRunning", statusClass: "is-warn", passed: "", total: "", note: "" },
-  { no: "#312", startedAt: "2026/07/28 09:12", profile: "設置一", profileKey: "settings.config1", version: "7", status: "finished", statusLabel: "完成", statusKey: "regression.statusFinished", statusClass: "is-pass", passed: "11", total: "12", note: "" },
-  { no: "#311", startedAt: "2026/07/27 18:40", profile: "設置一", profileKey: "settings.config1", version: "7", status: "aborted", statusLabel: "中斷", statusKey: "regression.statusAborted", statusClass: "is-fail", passed: "8", total: "10", note: "問答額度不足（案例 41 的第 1 輪）——已完成的結果保留" },
-  { no: "#310", startedAt: "2026/07/27 11:02", profile: "設置一", profileKey: "settings.config1", version: "7", status: "finished", statusLabel: "完成", statusKey: "regression.statusFinished", statusClass: "is-pass", passed: "10", total: "12", note: "" }
+  { no: "#313", startedAt: "2026/07/14 14:30", profile: "設置一", profileKey: "settings.config1", version: "7", status: "running", statusLabel: "進行中", statusKey: "agent.stepRunning", statusClass: "is-warn", passed: "", total: "", note: "" },
+  { no: "#312", startedAt: "2026/07/14 09:12", profile: "設置一", profileKey: "settings.config1", version: "7", status: "finished", statusLabel: "完成", statusKey: "regression.statusFinished", statusClass: "is-pass", passed: "11", total: "12", note: "" },
+  { no: "#311", startedAt: "2026/07/13 18:40", profile: "設置一", profileKey: "settings.config1", version: "7", status: "aborted", statusLabel: "中斷", statusKey: "regression.statusAborted", statusClass: "is-fail", passed: "8", total: "10", note: "問答額度不足（案例 41 的第 1 輪）——已完成的結果保留" },
+  { no: "#310", startedAt: "2026/07/13 11:02", profile: "設置一", profileKey: "settings.config1", version: "7", status: "finished", statusLabel: "完成", statusKey: "regression.statusFinished", statusClass: "is-pass", passed: "10", total: "12", note: "" }
 ] %}
 <div class="block mt-16 flex-row column gap-16">
     {# ⓘ 說明：markup 同既有 info-btn 六件組。①出處：本頁檔頭「示範 4 筆刻意演三種終態」一節，

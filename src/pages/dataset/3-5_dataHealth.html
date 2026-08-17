@@ -128,16 +128,31 @@ permalink: 3-5_dataHealth.html
 ] %}
 {# 本租戶的資料集目錄（`ScanIn.dataset_id` 的值域）。這一份是**這一頁自己指名過的資料集去重**
      得來的，故筆數必須等於 `healthScan.datasets`（4）：法規彙編（含 `法規彙編_2026.xlsx`、
-     `稅務問答_舊版.xlsx`、`犬貓入境檢疫作業手冊.pdf`、`關稅稅則對照表.png`）、常見問答
-     （`常見問答_2026Q1.xlsx`、`舊版問答_匯出.xlsx`）、客服直答集（QA 集，`客服直答集.xlsx`）、
+     `稅務問答_舊版.xlsx`、`犬貓入境檢疫作業手冊.pdf`、`關稅稅則對照表.png`）、檢疫問答集
+     （`檢疫問答_2026Q1.xlsx`、`舊版問答_匯出.xlsx`）、客服問答集（QA 集，`客服問答集.xlsx`）、
      2026 新制問答（`2026新制問答_v3.xlsx`、`客服話術彙編.xlsx`）。
    **id 3 與 7 不是隨手編的**：`healthUncovered` 兩筆的 `datasetId` 就是這兩個（`關稅稅則對照表.png`
      在 3、`舊版問答_匯出.xlsx` 在 7），示範資料同頁互相推導得出來（§6）。 #}
+{# **這是本站示範租戶的資料集目錄正本**（§6 跨頁自洽）。QA 集與檔案集在 product 是**同一張表**
+     （`models.Dataset` 的 `kind` 欄：`file`／`qa`，「QA 集騎現有 Excel 匯入與資料集 CRUD，僅以此欄分流」）
+     ⇒ **同一個 id 空間**：3-1-1 的資料集清單（kind=file）、3-3 的 QA 集清單（kind=qa）與這裡的
+     檢查範圍下拉，三處講的是同一批 id。先前三頁各自維護一份，於是：
+       · 3-1-1 的三個資料集（101／102／103）在這裡與 5-10 一個都不在
+       · 3-3 的「產品 FAQ」寫 id 3，而這裡的 id 3 是「法規彙編」——**同一個 id 兩個資料集**
+       · 這裡的「客服直答集」與 3-3 的「客服問答集」是兩個名字、同一種東西（都是客服 QA 集）
+     現在收成一份：QA 集用 3-3 的 id（客服問答集 2／產品 FAQ 5／檢疫問答集 7），
+     檔案集用 3-1-1 與 5-10 的 id（法規彙編 3／2026 新制問答 12／101／102／103）。
+     「檢疫問答集」原名「常見問答」——它與 3-1-1 的「常見問題彙整」只差兩個字，而它的內容
+     （犬貓輸入檢疫）自己說得出更好的名字。 #}
 {% set healthScanDatasets = [
+  { id: 2, name: "客服問答集" },
   { id: 3, name: "法規彙編" },
-  { id: 7, name: "常見問答" },
-  { id: 9, name: "客服直答集" },
-  { id: 12, name: "2026 新制問答" }
+  { id: 5, name: "產品 FAQ" },
+  { id: 7, name: "檢疫問答集" },
+  { id: 12, name: "2026 新制問答" },
+  { id: 101, name: "客服問答知識庫" },
+  { id: 102, name: "產品規格文件集" },
+  { id: 103, name: "常見問題彙整" }
 ] %}
 {# 檢查項目的閉合值域＝product `models.HEALTH_CHECK_TYPES` 十一項。這是本頁的**單一目錄**：
      篩選下拉由它渲染。列上的 `checkLabel`／`checkLabelKey` 是這份目錄在示範列上的投影（切版
@@ -330,10 +345,10 @@ permalink: 3-5_dataHealth.html
        · 940 標題不是問句（**QA 集**，與 903 同一個資料集）→ dismiss ＋ add-phrasing。
          **它非在 QA 集不可**：`check_non_question` 的迴圈第一行就是 `if r.dataset_kind != "qa": continue`
          （product `health_checks.py`），所以這一項只可能出現在 kind 為 qa 的資料集上。
-         先前這一筆掛在「常見問答」，而同一個資料集的 901 提供合併、907 已經合併過——
+         先前這一筆掛在「檢疫問答集」，而同一個資料集的 901 提供合併、907 已經合併過——
          product `app/routers/health_findings.py` 的 `_available_actions`（上一句指名的是
          `health_checks.py`，這兩顆符號不在那裡）只要有任何一筆不是 `kind == "file"` 就把 MERGE 濾掉
-         （`_QA_FORBIDDEN_ACTIONS`），兩件事在同一個資料集上不可能同時成立。搬到「客服直答集」
+         （`_QA_FORBIDDEN_ACTIONS`），兩件事在同一個資料集上不可能同時成立。搬到「客服問答集」
          之後兩邊各自成立：那一集是 qa（903 的合併正是因此被拿掉的），而 add-phrasing 不在
          `_QA_FORBIDDEN_ACTIONS` 裡，QA 集照樣做得到。列號另取（33），不與 903 的 4／19 相撞。
        · 950 標籤缺口 → **只有 dismiss**：該標哪一個代碼是租戶自己才知道的業務值，系統挑一個
@@ -437,7 +452,7 @@ permalink: 3-5_dataHealth.html
       { key: "max_similarity", value: "0.9884" }
     ],
     records: [
-      { key: "b7c1e93a4d20", title: "犬貓專案怎麼申請", titleChars: 8, titleSource: "title_slot", filename: "常見問答_2026Q1.xlsx", row: 12 },
+      { key: "b7c1e93a4d20", title: "犬貓專案怎麼申請", titleChars: 8, titleSource: "title_slot", filename: "檢疫問答_2026Q1.xlsx", row: 12 },
       { key: "1f4a08d6cc51", title: "犬貓專案怎麼申請", titleChars: 8, titleSource: "title_slot", filename: "客服話術彙編.xlsx", row: 137 },
       { key: "9e2b7710af83", title: "", titleChars: 0, titleSource: "title_slot", filename: "客服話術彙編.xlsx", row: 138 }
     ],
@@ -448,7 +463,7 @@ permalink: 3-5_dataHealth.html
     id: 903, checkLabel: "近似重複", checkLabelKey: "health.checkNearDuplicate", checkType: "near_duplicate",
     severityLabel: "候選", severityKey: "health.severityCandidate",
     statusLabel: "未處置", statusKey: "health.statusOpen", disposed: false, reopened: false,
-    datasetName: "客服直答集",
+    datasetName: "客服問答集",
     firstSeenAt: "2024/11/22 04:02", lastSeenAt: "2024/12/02 03:15",
     evidence: [
       { key: "representative", value: "5a30b1cf7e64" },
@@ -456,8 +471,8 @@ permalink: 3-5_dataHealth.html
       { key: "max_similarity", value: "0.9410" }
     ],
     records: [
-      { key: "5a30b1cf7e64", title: "退貨的運費由誰負擔", titleChars: 9, titleSource: "title_slot", filename: "客服直答集.xlsx", row: 4 },
-      { key: "c81d69204b7f", title: "退貨運費誰要出", titleChars: 7, titleSource: "title_slot", filename: "客服直答集.xlsx", row: 19 }
+      { key: "5a30b1cf7e64", title: "退貨的運費由誰負擔", titleChars: 9, titleSource: "title_slot", filename: "客服問答集.xlsx", row: 4 },
+      { key: "c81d69204b7f", title: "退貨運費誰要出", titleChars: 7, titleSource: "title_slot", filename: "客服問答集.xlsx", row: 19 }
     ],
     noteLines: [], resolvedAt: "", resolvedBy: "",
     actions: ["dismiss", "disable"]
@@ -466,7 +481,7 @@ permalink: 3-5_dataHealth.html
     id: 907, checkLabel: "近似重複", checkLabelKey: "health.checkNearDuplicate", checkType: "near_duplicate",
     severityLabel: "候選", severityKey: "health.severityCandidate",
     statusLabel: "已處置", statusKey: "health.statusResolved", disposed: true, reopened: false,
-    datasetName: "常見問答",
+    datasetName: "檢疫問答集",
     firstSeenAt: "2024/11/20 04:02", lastSeenAt: "2024/12/02 03:15",
     evidence: [
       { key: "representative", value: "44e1a7c0b96d" },
@@ -474,8 +489,8 @@ permalink: 3-5_dataHealth.html
       { key: "max_similarity", value: "0.9915" }
     ],
     records: [
-      { key: "44e1a7c0b96d", title: "犬貓輸入檢疫要準備哪些文件", titleChars: 13, titleSource: "title_slot", filename: "常見問答_2026Q1.xlsx", row: 41 },
-      { key: "e903cb2517f4", title: "本公司自一一三年一月一日起受理犬貓輸入檢疫申請案件，申請人應於預定輸入日前三十日，檢附輸出國政府動物檢疫機關簽發之動物檢疫證明書、狂犬病不活化疫苗接種證明書、狂犬病抗體力價檢測報告及晶片植入紀錄，向本公司客服信箱提出申請，經審查合格後核發輸入同意文件；未依規定檢附文件或文件內容與申請書所載不符者，本公司得不予受理並以書面通知補正，補正期限自通知送達之次日起算十四日，逾期未補正者駁回其申請案件，並函", titleChars: 231, titleSource: "title_slot", filename: "常見問答_2026Q1.xlsx", row: 42 },
+      { key: "44e1a7c0b96d", title: "犬貓輸入檢疫要準備哪些文件", titleChars: 13, titleSource: "title_slot", filename: "檢疫問答_2026Q1.xlsx", row: 41 },
+      { key: "e903cb2517f4", title: "本公司自一一三年一月一日起受理犬貓輸入檢疫申請案件，申請人應於預定輸入日前三十日，檢附輸出國政府動物檢疫機關簽發之動物檢疫證明書、狂犬病不活化疫苗接種證明書、狂犬病抗體力價檢測報告及晶片植入紀錄，向本公司客服信箱提出申請，經審查合格後核發輸入同意文件；未依規定檢附文件或文件內容與申請書所載不符者，本公司得不予受理並以書面通知補正，補正期限自通知送達之次日起算十四日，逾期未補正者駁回其申請案件，並函", titleChars: 231, titleSource: "title_slot", filename: "檢疫問答_2026Q1.xlsx", row: 42 },
       { key: "82fd6b0c4ae1", title: "", titleChars: "", titleSource: "",
         filename: "", row: "",
         unavailableReason: "record_not_found",
@@ -521,14 +536,14 @@ permalink: 3-5_dataHealth.html
     id: 940, checkLabel: "標題不是問句", checkLabelKey: "health.checkNonQuestion", checkType: "non_question",
     severityLabel: "候選", severityKey: "health.severityCandidate",
     statusLabel: "未處置", statusKey: "health.statusOpen", disposed: false, reopened: false,
-    datasetName: "客服直答集",
+    datasetName: "客服問答集",
     firstSeenAt: "2024/11/30 04:02", lastSeenAt: "2024/12/02 03:15",
     evidence: [
       { key: "title", value: "退運作業" },
       { key: "kind", value: "noun_phrase" }
     ],
     records: [
-      { key: "6b02da4e9137", title: "退運作業", titleChars: 4, titleSource: "title_slot", filename: "客服直答集.xlsx", row: 33 }
+      { key: "6b02da4e9137", title: "退運作業", titleChars: 4, titleSource: "title_slot", filename: "客服問答集.xlsx", row: 33 }
     ],
     noteLines: [], resolvedAt: "", resolvedBy: "",
     actions: ["dismiss", "add-phrasing"]

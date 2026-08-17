@@ -10,10 +10,15 @@ permalink: 2-1_qaRecord.html
      fallback 分支（可翻前綴 `qa.recordFallbackPrefix` ＋ 不翻的序號）真的有一頁演得出來
      （§5：沒有頁面演得出來的分支等於沒驗收過）。原本三筆都寫「問答紀錄N」，那正好是真 app
      fallback 的字面——等於把 chrome 當資料傳。 #}
+{# **聊天室編號與 4-1／4-2 同一個宇宙**（§6 跨頁自洽）：這一頁的「檢視詳細內容」連的是
+     `4-2_qaHistory_detail.html?logSn=12173`，而那一筆在 4-1 與 4-2 兩處都寫著聊天室 6537。
+     選中的那一格（本頁畫出來的那段對話）因此必須是 6537——原本三顆是 4821／4830／4842，
+     與 4-1 的 6537／6538／6539 完全不相交，等於同一個租戶有兩套聊天室編號。
+     另外兩顆沿用 4-1 那兩列的聊天室與提問（6538 護照效期／6539 欠稅限制出國）。 #}
 {% set qaRecordTabs = [
-    { id: 4821, label: "入出國紀錄查詢方式" },
-    { id: 4830, label: "外籍配偶結婚登記要準備什麼" },
-    { id: 4842, active: true }
+    { id: 6539, label: "欠稅被限制出國要如何解除" },
+    { id: 6538, label: "護照效期不足可以出國嗎" },
+    { id: 6537, active: true }
 ] %}
 {% set breadcrumbItems = [
   { label: "首頁", href: "2-1_qaRecord.html", i18nKey: "nav.home" },
@@ -52,13 +57,15 @@ permalink: 2-1_qaRecord.html
 {# 參考來源表格區塊：真實頁此區塊預設 hidden（點擊訊息列的「查看來源」才顯示）。使用者滿意度與「檢視詳細內容」連結
      （連往 4-2_qaHistory_detail.html）由 components/sources-block 的 sourcesRating / sourcesDetailHref 參數帶入；
      來源列資料 set sources（示範 2 筆）交給該元件內嵌 for 渲染。
-     **sourceNo 就是上面那則答案裡的兩個 [[N]]**（2 與 5，見 components/chatroom 的示範答案）：
-     「序號」欄與引用標記是同一組號碼，使用者才核對得起來（見 components/sources-block 檔頭）。 #}
+     **sourceNo 就是上面那則答案裡的兩個 [[N]]**（3 與 7，見 components/chatroom 的示範答案）：
+     「序號」欄與引用標記是同一組號碼，使用者才核對得起來（見 components/sources-block 檔頭）。
+     **號碼與 4-2 同一組**：本頁的「檢視詳細內容」連的就是那一筆（logSn=12173），而 4-2 的
+     同一份來源表寫的是 3 與 7——先前這裡是 2 與 5，同一次問答在兩頁上引用編號不一樣。 #}
 {% set sources = [
     {
-        sourceNo: 2,
+        sourceNo: 3,
         file: "vector8_chunk718_20240829024537_111-1021-5-_入出國及法令彙編1671頁.xlsx",
-        dataset: "移民署 測試",
+        dataset: "法規彙編",
         title: "標題名稱ＡＡＡＡＡＡ",
         time: "2023/11/01 13:00:01",
         content: "內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字",
@@ -67,9 +74,9 @@ permalink: 2-1_qaRecord.html
         reference: "來源名稱"
     },
     {
-        sourceNo: 5,
+        sourceNo: 7,
         file: "vector8_chunk719_20240829024538_111-1022-6-_入出國及法令彙編1672頁.xlsx",
-        dataset: "移民署 測試",
+        dataset: "法規彙編",
         title: "標題名稱ＡＡＡＡＡＡ",
         time: "2023/11/01 13:00:01",
         content: "內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字",
