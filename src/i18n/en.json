@@ -1460,6 +1460,7 @@
   "settings.outputRulesStreamingCostOn": "Output rules are on: answers for this profile no longer appear word by word. A rule can only judge the answer as a whole (total links, list numbering, length), so the answer appears all at once when generation finishes, with nothing shown in between. Disable every rule to get word-by-word output back.",
   "settings.passwordMinLengthPrefix": "Password must be at least ",
   "settings.passwordMinLengthSuffix": " characters long",
+  "settings.platformRoleNotManageable": "Platform role holders are managed from the platform console",
   "settings.platformTenantsIntro": "This page is the platform administrator’s cross-tenant view, not any single tenant’s own settings page: it manages permission assignment, feature entitlements, subscription status, and GufoRAG license usage across every tenant on the platform, plus the ISO quarterly review and the platform disclaimer. Auditors can view the whole page read-only; changes still require a platform system admin.",
   "settings.pleaseEnterBotRole": "e.g. Product support assistant",
   "settings.pleaseEnterCompanyUnit": "Please enter company / unit",

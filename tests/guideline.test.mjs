@@ -7267,8 +7267,8 @@ test("§5 ui/table-sort 的負控：把重排那一段從原文移除後，上�
 //   ① <dialog>：關著時不在樹上，開著時是 modal、其餘 inert。
 //   ② .mobile-nav：與 header 的 .header-controls-slot 互斥（兩邊各自 display:none）。
 //   ③ .tab-content：tab.js 一次只顯示一個。
-//   ④ role="group" + aria-labelledby：§4 對「一格內／一區內多顆同型控制項」開的正是這條路，
-//      報讀器進群組時會先念群組名。
+//   ④ role="group|radiogroup" + aria-labelledby|aria-label：§4 對「一格內／一區內多顆同型控制項」
+//      開的正是這條路，報讀器進群組時會先念群組名（群組名從哪一顆屬性來不影響那件事）。
 // 巢狀要遞迴（面板裡有群組、群組裡有彈窗）：不遞迴的話，外層一被抽走，內層的切法就跑不到了。
 test("§4 同一個無障礙範圍內，控制項的可及名稱不得重複（可見字面可以重複，名稱不行）", () => {
     // round46 第二輪：母體從「button／連結型 `<a>`」擴到 **input／select／textarea**。
@@ -7294,7 +7294,12 @@ test("§4 同一個無障礙範圍內，控制項的可及名稱不得重複（�
         /<dialog\b((?:"[^"]*"|[^>"])*)>/gi,
         /<nav\b(?=(?:"[^"]*"|[^>"])*class="[^"]*\bmobile-nav\b)((?:"[^"]*"|[^>"])*)>/gi,
         /<div\b(?=(?:"[^"]*"|[^>"])*class="[^"]*\btab-content\b)((?:"[^"]*"|[^>"])*)>/gi,
-        /<[a-z]+\b(?=(?:"[^"]*"|[^>"])*role="group")(?=(?:"[^"]*"|[^>"])*aria-labelledby=)((?:"[^"]*"|[^>"])*)>/gi,
+        // `role="group"` 與 `role="radiogroup"` 對報讀器是同一件事（進群組先念群組名），
+        // 群組名來自 `aria-labelledby` **或** `aria-label` 也是同一件事。先前只認
+        // `role="group"` ＋ `aria-labelledby`，於是 `ui/radio` 那種完全正確的寫法
+        // （三組 `role="radiogroup" aria-label="…"`）被判成三組同名——規則寫窄了會逼人
+        // 去「修」一個沒有壞的東西。
+        /<[a-z]+\b(?=(?:"[^"]*"|[^>"])*role="(?:group|radiogroup)")(?=(?:"[^"]*"|[^>"])*aria-label(?:ledby)?=)((?:"[^"]*"|[^>"])*)>/gi,
     ];
     const scopesOf = (html, depth = 0) => {
         if (depth > 6) return [{ label: "page", html }];

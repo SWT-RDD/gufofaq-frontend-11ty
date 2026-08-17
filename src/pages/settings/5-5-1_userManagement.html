@@ -45,10 +45,17 @@ permalink: 5-5-1_userManagement.html
      saas 端已經自己補了（`apps/web/app/(app)/users/page.tsx` 的 `key={m.id}` 與 `memberEmail-${member.id}`）
      ——切版是正本，不能落後於它的複製品。姊妹頁 5-5-2 的群組表一開始就做對了。
    **列序＝`order_by(User.id)`**（product `app/routers/users.py` 的 `list_users`），示範三筆照 id 遞增。 #}
+{# **`platformRole` 不可省**（`UserOut.platform_role`，值域 `none`／`auditor`／`admin`）：
+     平台管理員／稽核員**寄生在一般租戶裡**，所以他們就在這張清單上，而 `GET /users` 原樣回這一欄
+     ——上游 `_assert_tenant_manageable` 的 docstring 逐字寫著「這裡回 403 而非 404：`platform_role`
+     本來就對同租戶管理者可見，藏存在性沒有意義」。少了它，那一列的「儲存」與「重設密碼」按下去
+     必定 403，而使用者要按下去才知道（§5 不放按了必定失敗的鈕）。
+     示範第一筆非 `none`：`admin@example.com` 的 id 是 **12**，那正是 5-6-1 平台權限盤點裡的
+     `{ id: 12, admin, 示範租戶 A }`（§6 跨頁同源）。 #}
 {% set members = [
-  { id: 1, email: "admin@example.com", isAdmin: true, isActive: true, groupIds: [] },
-  { id: 8, email: "editor@example.com", isAdmin: false, isActive: true, groupIds: [3] },
-  { id: 15, email: "viewer@example.com", isAdmin: false, isActive: false, groupIds: [2, 3] }
+  { id: 12, email: "admin@example.com", isAdmin: true, isActive: true, groupIds: [], platformRole: "admin" },
+  { id: 8, email: "editor@example.com", isAdmin: false, isActive: true, groupIds: [3], platformRole: "none" },
+  { id: 15, email: "viewer@example.com", isAdmin: false, isActive: false, groupIds: [2, 3], platformRole: "none" }
 ] %}
 
 {# 新增成員：電子郵件 + 初始密碼 + 所屬群組勾選（ui/checkbox）+ 租戶管理者（ui/switch）+ 新增按鈕 #}
@@ -203,7 +210,7 @@ permalink: 5-5-1_userManagement.html
                 {# 列內的 switch 不掛靜態 aria-label（§4）：那會蓋掉列脈絡，三列的可及名稱會全都一樣。
                      改成併讀「這一列是誰 ＋ 這一欄是什麼」，正典是 5-10 的篩選設定檔表。 #}
                 <tr data-user-id="{{ member.id }}"{% if not member.isActive %} class="is-inactive"{% endif %}>
-                    <td id="memberEmail-{{ member.id }}">{{ member.email }}</td>
+                    <td id="memberEmail-{{ member.id }}">{{ member.email }}{% if member.platformRole != "none" %} <span class="text-gray" data-i18n="{% if member.platformRole == "admin" %}platform.rolePlatformAdmin{% else %}platform.rolePlatformAuditor{% endif %}">{% if member.platformRole == "admin" %}平台系統管理員{% else %}平台稽核員{% endif %}</span>{% endif %}</td>
                     <td>
                         {# 狀態：switch ＋ 目前狀態文字（同角色欄的寫法）。文字沿用 3-4 skill 清單的
                              settings.enabled／settings.disabled 兩顆 key（§4-2：同繁中不另立 key）。 #}
@@ -262,7 +269,14 @@ permalink: 5-5-1_userManagement.html
                         {% endif %}
                     </td>
                     <td>
-                        <div class="btn-group">
+                        {# **平台角色持有者那一列不渲染這兩顆鈕**（§5 不放按了必定失敗的鈕）：
+                             `_assert_tenant_manageable` 對 `platform_role != "none"` 的目標一律 403，
+                             而那一欄本來就對同租戶管理者可見（見上方 `platformRole` 那則註解），
+                             所以「按下去才知道」是可以避免的。
+                           下面兩顆的 toast **仍然列著那道 403**：這一欄是**執行期**才確定的
+                             （平台端隨時可以把某位成員升成稽核員），畫面上的標記只是當下那一份
+                             快照——那道 403 是一個真實的競態結果，不是不可達分支（§5）。 #}
+                        <div class="btn-group">{% if member.platformRole == "none" %}
                             {# 儲存＝把這一列的狀態／角色／群組一起送 PATCH /users/{id}。後端有兩道守衛，
                                  訊息不能被吞掉（否則使用者只看到「儲存失敗」，不知道要先指派另一位管理者）：
                                  400「cannot deactivate the last active tenant admin」（product users.py）、
@@ -272,7 +286,9 @@ permalink: 5-5-1_userManagement.html
                             {# 重設密碼：開窗需先選定「重設哪一位成員」＝業務條件開窗，故用 hook class（.js-reset-password），
                                  不掛 data-open-modal（§5）。彈窗本體見 components/reset-password-modal（include 於本頁底部）。 #}
                             <button type="button" id="memberResetPw-{{ member.id }}" aria-labelledby="memberEmail-{{ member.id }} memberResetPw-{{ member.id }}" class="button button-border button-sm js-reset-password" data-i18n="settings.resetPassword">重設密碼</button>
-                        </div>
+                        {% else %}
+                        <span class="text-gray" data-i18n="settings.platformRoleNotManageable">平台角色持有者請由平台管理端處理</span>
+                        {% endif %}</div>
                     </td>
                 </tr>
                 {% endfor %}
