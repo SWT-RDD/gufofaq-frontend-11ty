@@ -260,7 +260,6 @@ permalink: 3-4_skillManagement.html
   { label: "輸入合規檢查", state: "completed", time: "6ms" },
   { label: "QA 直答比對", state: "completed", time: "14ms",
     decision: "not_attempted", entry: "pre_graph", poolSize: "0" },
-  { label: "初始化對話", state: "completed", time: "10ms" },
   { label: "Agent 推理", state: "completed", time: "280ms", thinking: "使用者問「能退多少錢」，用途說明命中 refund-flow，決定呼叫它。" },
   { label: "檢索知識庫", state: "completed", time: "1.9s" },
   { label: "skill：refund-flow", state: "failed", time: "1.8s", depth: 1, skill: "refund-flow", version: "v2", iterations: "2", tools: "calculate, lookup-order", error: "TimeoutError" },
@@ -279,10 +278,10 @@ permalink: 3-4_skillManagement.html
      逐字寫著這件事）⇒ lookup-order 子迴圈裡那一次 `search_knowledge_base` 的 4 筆要算進來，
      這一輪也只有那一次搜尋 ⇒ **4**。
      原本寫 0，前提是「檢索被略過」——那個前提本身就是上面那個矛盾（見節點陣列上方的說明）。
-     延遲＝正典節點的和 6＋14＋10＋280＋1,900＋150＋260＋180＋20＋8 ＝ 2,828ms ⇒ **2.8s**
-     （取整規則見 step-flow 檔頭：`formatMs` 的一位小數四捨五入，2.828 → 2.8。前一版寫 3.0s，
+     延遲＝正典節點的和 6＋14＋280＋1,900＋150＋260＋180＋20＋8 ＝ 2,818ms ⇒ **2.8s**
+     （取整規則見 step-flow 檔頭：`formatMs` 的一位小數四捨五入，2.818 → 2.8。前一版寫 3.0s，
      而同一份檔頭另一處又寫 2.8s——同一個數字在同一頁講了兩個值）。
-     ttft ＝ 誠實查無這一站的起點 6＋14＋10＋280＋1,900＋150 ＝ 2,360ms ⇒ **2.4s**（2.36 → 2.4）：
+     ttft ＝ 誠實查無這一站的起點 6＋14＋280＋1,900＋150 ＝ 2,350ms ⇒ **2.4s**（2.35 → 2.4）：
      `respond_no_answer` 是**會串流給使用者**的答案節點（GufoRAG `agent_service` 的 `_answer_nodes`），
      TTFT 記在第一個 MESSAGE chunk。前一版寫 ttft「—」＋「誠實查無 running」——而同頁的
      `trySkillAnswer` 已經渲染著一整段答案，畫面上有答案、摘要卻說還沒吐出第一個字。 #}
