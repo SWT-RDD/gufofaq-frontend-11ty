@@ -16,15 +16,15 @@ permalink: 5-7_auditLog.html
 
 {# 查詢區：操作類型篩選（singleSelect，對照後端 GET /audit?action= 精確比對）；此靜態頁列代表性選項，
      React 端列完整操作類型清單。真實頁 tbody 由 React 依查詢結果渲染，此處以 set+for 資料化示範 3 筆。
-     **本頁的四顆篩選控制項全部是「值載體」**（§5 組合矩陣②：值交給 React 讀去送查詢參數，
+     **本頁的三顆篩選控制項全部是「值載體」**（§5 組合矩陣②：值交給 React 讀去送查詢參數，
      成敗看後端，click 委派也抓不到 select 的 change）——不是只有掛了 hook 的那一顆。
-     四顆是：`#auditActionSelect`（action）／`#auditTenantInput`（tenant_id）／
-     `#auditScopeAllInput`（scope=all）／`#auditOperatorInput`（operator）。
+     三顆是：`#auditActionSelect`（action）／`#auditTenantInput`（tenant_id）／
+     `#auditScopeAllInput`（scope=all）。
      **React 綁定記號擇一即可，class hook 或 id 契約都算**（§5 矩陣那一條，正典是 2-2-1 以
-     `#knowledgeConfigSelect`／`#llmModelSelect` 綁定的那兩顆 select）：這四顆各自有唯一 id，
+     `#knowledgeConfigSelect`／`#llmModelSelect` 綁定的那兩顆 select）：這三顆各自有唯一 id，
      其中 `#auditTenantInput` 另外掛了 `.js-audit-tenant`——那**不是本頁的規矩**，是既成事實：
      saas 端已經引用它（`apps/web/app/(app)/audit/page.tsx` 的 `className="form-control js-audit-tenant"`），
-     §5「hook 一經 saas 端引用即凍結，改名＝跨 repo 遷移」⇒ 不為了四顆一致而補三顆，也不為了風格一致而拿掉它。
+     §5「hook 一經 saas 端引用即凍結，改名＝跨 repo 遷移」⇒ 不為了三顆一致而補兩顆，也不為了風格一致而拿掉它。
      （原本這裡只替那一顆寫了「值載體 → 只掛 hook class」的理由，讀起來像本頁對值載體的通則，
      而另外三顆一顆 hook 都沒有——同一頁對同一種控制項寫了兩套說法。）
      **本頁那道閘是 `require_audit_access`（product `app/authz.py`），不是 `require_capability("audit")`**：
@@ -36,9 +36,9 @@ permalink: 5-7_auditLog.html
      **最窄的那一條掛控制項**（查詢鈕的 `data-capability="audit"`，＝租戶那一半）。
      `data-capability="audit"` 這個字面對 `require_capability("audit")` 與 `require_audit_access` 長得一模一樣，
      所以 dependency 的名字要寫在這裡——照字面看不出指錯了哪一支。
-     租戶（指定 tenant_id／全部租戶 switch 送 scope=all）與操作者（送 operator=<id>）三個篩選欄位要**平台角色**才動得了，
+     租戶（指定 tenant_id／全部租戶 switch 送 scope=all）那兩個篩選欄位要**平台角色**才動得了，
      而那是 auditor 亦有的能力：product app/routers/audit.py 的 list_audit 以 is_platform_auditor
-     （platform_role ∈ {auditor, admin}）判斷 scope=all／tenant_id／operator，該檔自註「用 is_platform_admin
+     （platform_role ∈ {auditor, admin}）判斷 scope=all／tenant_id，該檔自註「用 is_platform_admin
      判斷會把唯讀稽核員一起排除掉」。故上列這幾欄一律掛 data-platform-role="auditor"（§5 兩級可見性），
      **它們都是值控制項（switch／input），不是動作鈕**，所以套的是 §5 兩級可見性的另一半：
      低於該級時**照渲染但 disabled**，不是不渲染——狀態要看得見才稽核得到。
@@ -104,23 +104,6 @@ permalink: 5-7_auditLog.html
                     </label>
                 </div>
             </div>
-            <div class="form-group col-3-md col-12-sm" data-platform-role="auditor">
-                <div class="label">
-                    {# 這一欄篩的是**代理者**：product `audit.py` 的 `operator` query 參數打的是
-                         `AuditLog.impersonated_by`（`q.where(models.AuditLog.impersonated_by == operator)`），
-                         也就是本表「代理者」那一欄。product 自己把 `impersonated_by` 叫「真正操作者」
-                         （`operator_email` 由它衍生），與本頁的欄名相反——**篩選的標籤跟著本頁欄名走**，
-                         否則使用者填了「操作者」卻篩到另一欄。填的是使用者 id，不是 email。 #}
-                    <label for="auditOperatorInput" class="control-label" data-i18n="audit.impersonator">代理者</label>
-                </div>
-                <div class="field">
-                    <input type="number" id="auditOperatorInput" min="1" step="1" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control" aria-describedby="auditOperatorHint">
-                    {# 數字欄的三件套（§4）：type=number ＋ 區間 ＋ **可見的**說明。「填的是使用者 id
-                         不是 email」原本只寫在上面的 nunjucks 註解裡——那段 build 時就被移除，
-                         使用者永遠讀不到。值域是正整數（`operator=<使用者 id>`，product app/routers/audit.py）。 #}
-                    <span class="text-gray" id="auditOperatorHint" data-i18n="audit.impersonatorHint">填使用者 id（≥ 1 的正整數），不是 email</span>
-                </div>
-            </div>
         </div>
         <div class="flex-row align-items-center justify-content-center gap-16">
             <button type="button" class="button button-border js-filter-clear" data-i18n="action.clear">清除</button>
@@ -163,9 +146,7 @@ permalink: 5-7_auditLog.html
      第 3 筆是「查無帳號的登入失敗」，租戶與操作者兩欄同時是「—」（見上一段①）——它也只有在
      `scope=all` 下才看得到：`tenant_id` 是 NULL 的列不會落在任何一個 `tenant_id == X` 的過濾裡，
      所以那顆開關關掉時它會整列消失，而那正是這一列在這張示範表上的用處。
-     代理者（impersonator）：第 1 筆由平台人員代理登入該租戶操作（staff@sys.tw）；其餘兩筆無代理關係
-     故留空——這裡的空白是「沒有代理者」（一種真實狀態），與操作者欄用「—」表示「登入失敗查無操作者」
-     是不同語意，兩者不可混用。 #}
+ #}
 {# 分頁是**伺服器端**的（product GET /audit 收 limit（1–1000，預設 100）與 offset）：換頁＝重新查詢，
      不是把一大包抓回來自己切。故「共 N 筆資料」必須是**伺服器總筆數**（total），不是這一頁渲染了幾列——
      顯示成本頁列數的話，「共 500 筆」看起來就像全部只有 500 筆，而稽核日誌是 ISO 證跡，
@@ -179,8 +160,8 @@ permalink: 5-7_auditLog.html
 {# 租戶欄畫的是 **tenant_id（整數）**，不是名字：正本 product app/routers/audit.py 的 list_audit 回的 items 只有
      tenant_id，沒有 tenant_name（§6：正本給不出來的欄位不得為了讀起來順而編一個）。編一個名字出來，
      React 接上真 API 只畫得出識別碼，而使用者正是據此做決定的；上面的租戶篩選要填的也正是這個 id。
-     同理，操作者／代理者兩欄的 email 後面補 **user_id**：那兩個篩選收的是 id（`operator=<使用者 id>`），
-     欄位裡只給 email 的話，要填的 id 全頁沒有出處。要顯示租戶名稱是交辦（需後端補 tenant_name）。 #}
+     同理，操作者那一欄的 email 後面補 **user_id**：稽核列以 id 認人（`user_id` 是 `list_audit` 的欄位、
+     email 只是它衍生出來的顯示值），欄位裡只給 email 的話那個識別碼全頁沒有出處。要顯示租戶名稱是交辦（需後端補 tenant_name）。 #}
 {# `id`（`list_audit` 的 items 第一欄）的落點是**列鍵**，不是一欄畫出來的數字：
      這張表是伺服器端分頁的唯讀報表，逐列沒有任何動作，一個流水號對讀報表的人不回答任何問題
      （人是靠時間＋操作者＋動作認一筆的），畫成一欄只是多一格永遠在捲的寬度。
@@ -198,7 +179,6 @@ permalink: 5-7_auditLog.html
         time: "2026/07/13 14:22:05",
         tenantId: 12,
         operator: "admin@acme.tw", operatorId: 7,
-        impersonator: "staff@sys.tw", impersonatorId: 3,
         action: "dataset.create", actionKey: "audit.actDatasetCreate", actionLabel: "建立資料集",
         target: "dataset #4207",
         detail: "{ name: 移民署 測試, index_name: idx_immig_test, group_id: 3, kind: excel, chunk_size: 500, chunk_overlap: 50, prepend_title_each_chunk: true }",
@@ -210,7 +190,6 @@ permalink: 5-7_auditLog.html
         time: "2026/07/13 13:10:44",
         tenantId: 27,
         operator: "user@globex.io", operatorId: 41,
-        impersonator: "", impersonatorId: "",
         action: "ask", actionKey: "audit.actAsk", actionLabel: "問答",
         target: "",
         detail: "{ query: 出口報關需要哪些文件？, tag: frontend }",
@@ -221,7 +200,6 @@ permalink: 5-7_auditLog.html
         time: "2026/07/13 09:02:11",
         tenantId: "",
         operator: "", operatorId: "",
-        impersonator: "", impersonatorId: "",
         action: "login.failed", actionKey: "audit.actLoginFailed", actionLabel: "登入失敗",
         target: "login: bad@initech.io",
         detail: "{ email: bad@initech.io }",
@@ -238,7 +216,6 @@ permalink: 5-7_auditLog.html
             <col style="width:200px; min-width:200px;">
             <col style="width:160px; min-width:160px;">
             <col style="width:160px; min-width:160px;">
-            <col style="width:160px; min-width:160px;">
             <col style="min-width:240px;">
             <col style="width:140px; min-width:140px;">
             <col style="min-width:220px;">
@@ -248,7 +225,6 @@ permalink: 5-7_auditLog.html
                 <th data-i18n="common.time">時間</th>
                 <th data-i18n="settings.tenant">租戶</th>
                 <th data-i18n="audit.operator">操作者</th>
-                <th data-i18n="audit.impersonator">代理者</th>
                 <th data-i18n="audit.actionType">操作類型</th>
                 <th data-i18n="audit.target">對象</th>
                 <th data-i18n="audit.detail">詳情</th>
@@ -267,14 +243,11 @@ permalink: 5-7_auditLog.html
                 {# `tenant_id` 可為 NULL（查無帳號的登入失敗，見上方示範資料註解）：畫「—」，
                      與操作者欄的空值語意一致。 #}
                 <td>{% if row.tenantId %}{{ row.tenantId }}{% else %}—{% endif %}</td>
-                {# 五個 nullable 欄（租戶／操作者／代理者／對象／來源用戶端）的空值畫法**一律相同、而且住在 markup**：
+                {# 四個 nullable 欄（租戶／操作者／對象／來源用戶端）的空值畫法**一律相同、而且住在 markup**：
                      把「—」寫進 `{% set %}` 的陣列等於宣稱正本回了一個字串「—」，而正本回的是 `null`
-                     （`user_email`／`operator_email` 在 product `app/routers/audit.py` 是同一種 `if … is not None else None`），
-                     React 接上真 API 會渲染出空白或 `null`。先前操作者那一欄把「—」烤進資料、代理者那一欄
-                     連 fallback 都沒有（渲染出空的 `<td>`），同一張表三種畫法。
-                     要區分「沒有代理者」與「查無操作者」是兩顆 i18n key 的事，不是「空 vs —」。 #}
+                     （`user_email` 在 product `app/routers/audit.py` 是 `if … is not None else None`），
+                     React 接上真 API 會渲染出空白或 `null`。 #}
                 <td>{% if row.operator %}{{ row.operator }}{% if row.operatorId %} <span class="text-gray">#{{ row.operatorId }}</span>{% endif %}{% else %}—{% endif %}</td>
-                <td>{% if row.impersonator %}{{ row.impersonator }}{% if row.impersonatorId %} <span class="text-gray">#{{ row.impersonatorId }}</span>{% endif %}{% else %}—{% endif %}</td>
                 <td data-i18n="{{ row.actionKey }}">{{ row.actionLabel }}</td>
                 {# `target_type`／`target_id` 兩者皆可為 NULL（`ask` 就是不帶 target 的那一支）：畫「—」。 #}
                 <td>{% if row.target %}{{ row.target }}{% else %}—{% endif %}</td>
@@ -287,10 +260,10 @@ permalink: 5-7_auditLog.html
                      ——型別的完整清單與判準見該元件檔頭。 #}
                 <td>{% if row.userAgent %}<div class="collapse-text"><div class="collapse-body">{{ row.userAgent }}</div><button type="button" id="auditUaToggle-{{ row.id }}" aria-labelledby="auditRowTime-{{ row.id }} auditUaToggle-{{ row.id }}" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>{% else %}—{% endif %}</td>
             </tr>
-            {# 空狀態：本頁有查詢鈕與四個篩選欄，「篩到零筆」是走得到的常態（§5 無資料列）。
-                 colspan 9 ＝本表欄數（colgroup 九個 <col>）。 #}
+            {# 空狀態：本頁有查詢鈕與三個篩選欄，「篩到零筆」是走得到的常態（§5 無資料列）。
+                 colspan 8 ＝本表欄數（colgroup 八個 <col>）。 #}
             {% else %}
-            <tr><td colspan="9" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
+            <tr><td colspan="8" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
             {% endfor %}
         </tbody>
     </table>

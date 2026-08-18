@@ -6386,10 +6386,10 @@ test("§5 整頁需要平台角色的頁面：每個控制項都要落在宣告�
 });
 
 test("§5 稽核日誌的跨租戶篩選是 auditor 的能力（標成 admin 會把唯讀稽核員排除掉）", () => {
-    // product app/routers/audit.py 的 list_audit 用 is_platform_auditor 判斷 scope=all／tenant_id／operator，
+    // product app/routers/audit.py 的 list_audit 用 is_platform_auditor 判斷 scope=all／tenant_id，
     // 該檔明寫「用 is_platform_admin 判斷會把唯讀稽核員一起排除掉」。
     const html = distDoc("5-7_auditLog.html");
-    for (const id of ["auditScopeAllInput", "auditOperatorInput"]) {
+    for (const id of ["auditScopeAllInput", "auditTenantInput"]) {
         const idx = html.indexOf(`id="${id}"`);
         assert.ok(idx > 0, `5-7 找不到 #${id}`);
         // 往前找最近的 form-group 開標籤，它就是這一欄的容器

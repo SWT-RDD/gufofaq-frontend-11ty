@@ -39,13 +39,13 @@
        manageTenantFrozen＝這個租戶**目前是不是凍結中**（`TenantOut.frozen`／`FreezeOut.frozen`）。凍結區
          兩態的鈕與說明由它決定（見該區註解）。 #}
 {# id＝`UserOut.id`（product `app/routers/users.py` 的 `UserOut` 第一欄，`app/routers/platform.py` 的 `platform_tenant_users` 沿用它）。
-     這一列的四顆動作全部以它定址（`POST /platform/impersonate/{user_id}`、`PATCH /platform/users/{user_id}`、
+     這一列的三顆動作全部以它定址（`PATCH /platform/users/{user_id}`、
      `POST /platform/users/{user_id}/reset-password`、`DELETE /platform/users/{user_id}`），
      所以列鍵不可以是 loop.index——這張名冊刪得掉列，位置不是身分（§6 列鍵）。
-     platformRole＝`UserOut.platform_role`。它不是裝飾：`impersonate` 的 403 `impersonate.platform_admin`
-     判的就是 `target.is_platform_admin`（＝`platform_role == "admin"`），不畫出來的話「為什麼這一列按了會被拒」
-     在畫面上沒有任何線索。示範放的是 `auditor`——那一態**代理得動**（守衛只認 admin），正好演出
-     「有平台角色 ≠ 不能代理」，也不會在畫面上留一顆必定失敗的鈕；`admin` 那一態是 warning 段講的那件事。
+     platformRole＝`UserOut.platform_role`。它不是裝飾：停用／刪除／降級這一列時，product `platform.py` 的
+     `_assert_not_last_platform_admin` 會對**最後一位平台系統管理員**回 409 `last_platform_admin`，
+     不畫出來的話「為什麼這一列按了會被拒」在畫面上沒有任何線索。示範放的是 `auditor`——那一態不受
+     那道守衛管（它只認 admin），不會在畫面上留一顆必定失敗的鈕；`admin` 那一態是 warning 段講的那件事。
      ⚠️ 跨頁自洽（§6）：帶平台角色的那一位用 `auditor@example.com`，因為 5-6-1 的「平台權限」盤點
      （`list_platform_admins` 回的是**全部**握有平台角色的人）就列著這個信箱、角色也是 auditor——
      另編一個信箱等於在同一套 API 上多出一位那張盤點表沒有的平台角色持有者。同理第一位改叫
@@ -302,17 +302,16 @@
                             {% endif %}
                         </div>
 
-                        {# 成員治理：代理登入／停用啟用＝直接動作（data-toast）；重設密碼需輸入新密碼、刪除需二次確認＝業務條件，用 hook class（.js-*）。 #}
+                        {# 成員治理：停用啟用＝直接動作（data-toast）；重設密碼需輸入新密碼、刪除需二次確認＝業務條件，用 hook class（.js-*）。 #}
                         <div class="flex-row column gap-8">
                             <div class="text-bold" data-i18n="settings.members">成員</div>
-                            <p class="text-gray m-0" data-i18n="settings.impersonateDesc">以成員身分登入以協助排除問題，僅供支援與除錯使用。</p>
                             <div class="flex-row column gap-12">
                                 {% for member in manageMembers %}
-                                {# data-user-id＝React 列鍵契約（`UserOut.id`，見檔頭）：這一列四顆動作的路徑參數都是它。
+                                {# data-user-id＝React 列鍵契約（`UserOut.id`，見檔頭）：這一列三顆動作的路徑參數都是它。
                                      ⚠️ 這一列**不是 `<tr>`**，所以 §4「資料表逐列重複的同型控制項可以同名」那條例外
                                      在這裡不成立（那條的判準逐字是「豁免來自 `<tr>`，不是來自長得像一列」）——
-                                     無障礙樹裡沒有列脈絡可倚靠，三列 × 四顆鈕就是 12 顆同名。故自己造辨識欄：
-                                     email 給一顆 id，四顆鈕各自 `aria-labelledby="<列辨識欄> <自己>"`
+                                     無障礙樹裡沒有列脈絡可倚靠，三列 × 三顆鈕就是 9 顆同名。故自己造辨識欄：
+                                     email 給一顆 id，三顆鈕各自 `aria-labelledby="<列辨識欄> <自己>"`
                                      （順序照 §4 的「列名 → 動作名」；指到自己是為了保留鈕上原本那句可見字面）。 #}
                                 <div class="flex-row justify-content-between align-items-center gap-16 flex-wrap" data-user-id="{{ member.id }}">
                                     <div class="flex-row column">
@@ -325,16 +324,6 @@
                                     </div>
                                     {# 這一列不在 .default-table 裡，`.btn-group` 的規則帶著那個祖先（§4 祖先錯位）。 #}
                                     <div class="flex-row gap-10 align-items-center flex-wrap">
-                                        {# 已停用的帳號代理不了：product `platform.py` 的 `impersonate` 回 403 `impersonate.disabled_account`
-                                             （引 key 不引英文字面——那句話被抽進 i18n 之後隨時會改，§3-2）。
-                                             無條件渲染會在停用列上留一顆**按了必定失敗**的鈕，故改成 disabled
-                                             （§5「按了什麼都不會發生」）。
-                                             **排掉那一道之後，這顆鈕剩下唯一走得到的 403 是 `impersonate.platform_admin`**
-                                             ——呼叫端本身是 `require_platform_admin`（本窗的動作鈕也逐顆宣告了
-                                             `data-platform-role="admin"`），所以「權限不足」在這顆鈕上永遠不會發生。
-                                             warning 段因此要講那件真的會發生的事，不是抄一句通用的權限話術；
-                                             而「真的會發生」的判準就是左邊那顆平台角色徽章（`UserOut.platform_role`）。 #}
-                                        <button type="button" id="tenantMemberImpersonate-{{ member.id }}" data-platform-role="admin" class="button button-border button-sm"{% if not member.isActive %} disabled{% endif %} aria-labelledby="tenantMemberEmail-{{ member.id }} tenantMemberImpersonate-{{ member.id }}" data-toast="已代理登入該成員|對方是平台系統管理員，不可代理登入|代理登入失敗，請稍後再試" data-i18n-data-toast="toast.impersonateTenant" data-toast-type="success|warning|error" data-i18n="action.impersonate">代理登入</button>
                                         {# 停用路徑上有**兩道**具名 409（gufofaq-saas product `platform.py`：停用端點自己回
                                              `last_tenant_admin`，同檔的 `_assert_not_last_platform_admin` 回
                                              `last_platform_admin`「不可停用/刪除/降級最後一位平台系統管理員」）。
