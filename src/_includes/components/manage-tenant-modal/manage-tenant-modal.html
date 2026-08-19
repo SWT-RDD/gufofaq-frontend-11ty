@@ -17,9 +17,9 @@
        3. 模型開通——「不限制」開關（承載 `available_models = None`）+ checkbox 清單，欄位寫法比照
           5-5-1_userManagement「能力」checkbox
        4. 凍結／解凍——暫停使用期時鐘（直接動作，data-toast 演出成敗）；兩支端點對稱，故切版也切兩態
-       5. 成員——逐位成員：代理登入／停用啟用（直接動作 data-toast）＋重設密碼（.js-reset-password）／刪除（.js-delete-user，button-red）＝業務條件用 hook class
+       5. 成員——逐位成員：停用啟用（直接動作 data-toast）＋重設密碼（.js-reset-password）／刪除（.js-delete-user，button-red）＝業務條件用 hook class
        6. 危險操作——刪除資料（.js-delete-tenant-data）／刪除帳號（.js-delete-tenant-account）：破壞性 button-red，需輸入該租戶名稱字串相符才可執行（type-to-confirm），屬業務條件、用 hook class 不掛 data-toast
-     額度／使用期／模型開通共用 footer「儲存」鈕（toast.manageTenant，成功/失敗）；代理登入等逐成員動作各自 data-toast。
+     額度／使用期／模型開通共用 footer「儲存」鈕（toast.manageTenant，成功/失敗）；停用啟用等逐成員動作各自 data-toast。
      成員清單為純示範假資料（§6b，通用名冊、不綁定使用頁的特定租戶列——本 modal 是全部列共用的一份本體，
      內容由業務 js 依「點了哪列的管理鈕」動態載入），正式環境由 React 讀 GET /platform/tenants/{id}/users 渲染。
      .js-reset-password／.js-delete-user 的彈窗本體（components/reset-password-modal／components/delete-modal）
@@ -81,7 +81,7 @@
      故照 §5 的兩級渲染規則逐顆標：
        · **值控制項**（額度五顆 input、用量週期 select、使用期兩顆欄、模型開關與 checkbox 群、
          兩顆 type-to-confirm 輸入框）標 `admin`＝照渲染但 disabled，狀態看得見、改不動。
-       · **動作鈕**（重置用量／凍結解凍／代理登入／停用啟用／重設密碼／刪除／儲存／兩顆危險操作）
+       · **動作鈕**（重置用量／凍結解凍／停用啟用／重設密碼／刪除／儲存／兩顆危險操作）
          標 `admin`＝低於該級不渲染，不給唯讀角色一排按了只會 403 的鈕。
      「關閉」不標：它是純前端互動，不打任何端點。
      ⚠️ `ui/modals/_modals.scss` 檔頭那段「全站只有 manage-tenant-modal 掛 admin」的登記要跟著改
