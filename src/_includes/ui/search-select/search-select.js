@@ -178,11 +178,17 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         // 單選：選取後**關閉**（與 ui/multi-select 的 closeOnSelect:false 相反）。
+        //
+        // **先聚焦、再關閉**，順序是這一支唯一容易寫反的地方：`search` 身上綁著
+        // `focus → setOpen(true)`（那是「點進欄位就展開」那條路）。反過來寫的話，
+        // `setOpen(false)` 之後那一顆 `focus()` 會把下拉**立刻重新打開**——使用者選了一顆，
+        // 清單卻沒有收起來。焦點本來就在欄位上時瀏覽器不會再發 focus 事件，所以那個 bug
+        // 「大部分時候看不到」，只有焦點落在別處（點選項時焦點掉到 body）的那一次會現形。
         function chooseOption(option) {
             select.value = option.value;
             select.dispatchEvent(new Event("change", { bubbles: true }));
-            setOpen(false);
             search.focus();
+            setOpen(false);
         }
 
         function renderControl() {
