@@ -23,6 +23,7 @@ module.exports = function (eleventyConfig) {
         "src/_includes/ui/pagination/pagination.js": "js/pagination.js",
         "src/_includes/components/pagination-input/pagination-input.js": "js/pagination-input.js",
         "src/_includes/ui/multi-select/multi-select.js": "js/multi-select.js",
+        "src/_includes/ui/search-select/search-select.js": "js/search-select.js",
         "src/_includes/ui/upload-box/upload-box.js": "js/upload-box.js",
         "src/_includes/components/editable-block/editable-block.js": "js/editable-block.js",
         "src/_includes/components/qa-side-panel/qa-side-panel.js": "js/qa-side-panel.js",

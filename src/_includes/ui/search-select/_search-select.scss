@@ -1,0 +1,151 @@
+// ui/search-select：**單選** select（.searchSelect）的可搜尋替代。
+// 視覺與 ui/multi-select 同源（同一個設計系統的下拉），差別只在單選沒有 tag 列：控制項是一個
+// 佔滿寬度的輸入框，關閉時顯示已選項的標籤。數值（$field-control-height、border、圓角、箭頭
+// 圖示、下拉的 max-height / box-shadow / 捲軸）逐條取自 _multi-select.scss，兩支下拉並排時
+// 差一個 px 就看得出來。
+@use "../../../scss/size" as *;
+
+@use "../../../scss/mixin" as *;
+
+.search-select {
+    position: relative;
+    width: 100%;
+}
+
+// 原生 <select> 仍是唯一資料來源，但視覺上完全隱藏（換成下面的自訂控制項）
+.search-select-native {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.search-select-control {
+    width: 100%;
+    min-height: $field-control-height;
+    padding: 7px 32px 7px 8px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background-color: var(--surface-input);
+    display: flex;
+    align-items: center;
+    position: relative;
+    cursor: text;
+    transition: border-color 0.3s;
+
+    // 複合元件慣例：內層輸入框不畫自己的 outline，焦點環畫在整個控制項外框。
+    // :has(:focus-visible) 而非 :focus-within —— 與 _base.scss 的全域焦點環同一條件。
+    &:has(.search-select-search:focus-visible) {
+        outline: 2px solid var(--brand-text);
+        outline-offset: 2px;
+    }
+
+    &::after {
+        content: "";
+        position: absolute;
+        right: 0.5rem;
+        top: 50%;
+        transform: translateY(-50%);
+        pointer-events: none;
+        width: 24px;
+        height: 24px;
+        @include icon-mask("../images/icon_arrow_down_black.png", var(--text), 24px 24px);
+    }
+}
+
+.search-select.open .search-select-control {
+    border: solid 1px var(--info);
+}
+
+// 停用態（原生 select 的 disabled 由 search-select.js 同步到 wrapper 上）：與 form-control 的
+// 停用態同一組 token——同一列上並排的原生欄位與本元件不能長得不一樣。
+.search-select.disabled .search-select-control {
+    background-color: var(--surface-disabled);
+    cursor: not-allowed;
+}
+
+.search-select-search {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: 100%;
+    border: none;
+    outline: none; // 刻意：焦點環由外層 .search-select-control:has(:focus-visible) 統一畫出
+    background: transparent;
+    font-family: inherit;
+    font-size: 1rem;
+    line-height: 1.375;
+    color: var(--text);
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+
+    &::placeholder {
+        color: var(--text-muted);
+    }
+
+    &:disabled {
+        cursor: not-allowed;
+    }
+}
+
+.search-select-dropdown {
+    display: none;
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    z-index: 20;
+    max-height: 15rem;
+    overflow-y: auto;
+    background-color: var(--surface-raised);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    box-shadow: 0 4px 8px 0 var(--shadow);
+
+    @include scrollbar_thin();
+}
+
+.search-select.open .search-select-dropdown {
+    display: block;
+}
+
+// 往上開：下方空間不足時由 search-select.js 掛 .open-up（同 ui/multi-select）。
+.search-select.open-up .search-select-dropdown {
+    top: auto;
+    bottom: calc(100% + 4px);
+}
+
+.search-select-option {
+    padding: 0.625rem 0.5rem;
+    font-size: 1rem;
+    line-height: 1.375;
+    color: var(--text);
+    cursor: pointer;
+
+    &:hover {
+        background-color: var(--surface-hover);
+    }
+
+    // 鍵盤游標（↑↓ 移動）所在的選項：焦點留在輸入框，故需自畫，見 aria-activedescendant。
+    // 這條 3px 指示線是「不承載文字的圖形記號」→ 用前景墨色 --brand-ink（§4）。
+    &.active {
+        background-color: var(--surface-hover);
+        box-shadow: inset 3px 0 0 0 var(--brand-ink);
+    }
+
+    &.selected {
+        background-color: var(--brand-tint);
+        color: var(--brand-ink);
+        font-weight: 500;
+    }
+}
+
+.search-select-option-empty {
+    padding: 0.625rem 0.5rem;
+    font-size: 0.875rem;
+    color: var(--text-muted);
+}

@@ -46,10 +46,14 @@ document.addEventListener("DOMContentLoaded", function () {
             if (wantSel !== null) el.value = wantSel;
             else el.selectedIndex = 0; // 第一顆必須是空值 placeholder，否則要自己宣告 data-filter-reset
             el.classList.remove("error");
-            // 這裡原本 dispatch 一顆合成 change「讓自訂下拉跟著重畫」——**全站沒有任何元件 js
-            // 監聽表單控制項的 change**（ui/multi-select 對原生 select 只綁 focus，它是 change 的
-            // 發送端、從不接收），那顆事件零聽眾。§5 也明訂不得用合成事件跨元件驅動。
-            // 日後篩選列真的放進多選欄時，正解是 ui/multi-select 匯出一支重繪函式由這裡呼叫。
+            // 這裡原本 dispatch 一顆合成 change「讓自訂下拉跟著重畫」——§5 明訂不得用合成事件
+            // 跨元件驅動，而且那顆事件零聽眾（ui/multi-select 對原生 select 只綁 focus，它是
+            // change 的發送端、從不接收）。正解是元件匯出一支重繪函式由這裡呼叫，見下。
         });
+        // 5-7 的三顆篩選是 `ui/search-select` 增強過的 combobox：上面那一圈把原生 select 的值
+        // 帶回預設了，但畫面上那顆輸入框顯示的是**已選項的標籤**，不重繪就會停在舊的字——
+        // 值與畫面分家，而看的人會以為篩選還在。這正是本檔原本預告的那條路（元件匯出重繪函式）。
+        // 沒有 search-select 的頁面上這一句是空轉的（那支 js 沒載入 ⇒ 全域物件不存在）。
+        if (window.GufoSearchSelect) window.GufoSearchSelect.refresh(fields);
     });
 });

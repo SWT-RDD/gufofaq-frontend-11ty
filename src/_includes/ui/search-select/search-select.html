@@ -1,0 +1,21 @@
+{# ui/search-select 範例：**單選**下拉的可搜尋替代（.searchSelect），
+     由 ui/search-select/search-select.js 在 DOMContentLoaded 時增強成 combobox。
+     消費頁：5-7 稽核日誌的三顆篩選（操作類型／使用者／群組）——操作類型有 ~120 個選項，
+     原生 select 只能一顆一顆捲。 #}
+<div class="form-group row mobile-col">
+    <div class="label label-md">
+        <label for="demoSearchSelect" class="control-label">可搜尋單選</label>
+    </div>
+    <div class="field col-12-sm">
+        {# data-placeholder + data-placeholder-key＝§4-2「資料槽」正典（同 ui/multi-select）。
+             **`selected` 要真的標在那一顆 option 上**：本元件關閉時輸入框顯示的是已選項的標籤，
+             而它讀的是原生 select 的 selectedIndex——沒有 `selected` 時瀏覽器會挑第一顆，
+             於是切版演的那一態與 React 的初值可以合法地不一樣（那是逐位元組比對抓得到的）。 #}
+        <select id="demoSearchSelect" class="form-control searchSelect" data-placeholder="請選擇" data-placeholder-key="common.pleaseSelect">
+            <option value="">全部</option>
+            <option value="a">選項一</option>
+            <option value="b" selected>選項二</option>
+            <option value="c">選項三</option>
+        </select>
+    </div>
+</div>

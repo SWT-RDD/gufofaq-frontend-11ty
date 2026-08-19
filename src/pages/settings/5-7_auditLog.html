@@ -14,25 +14,28 @@ permalink: 5-7_auditLog.html
     {% include "ui/breadcrumb/breadcrumb.html" %}
 </div>
 
-{# 查詢區：操作類型篩選（singleSelect，對照後端 GET /audit?action= 精確比對）；此靜態頁列代表性選項，
-     React 端列完整操作類型清單。真實頁 tbody 由 React 依查詢結果渲染，此處以 set+for 資料化示範 3 筆。
-     **本頁的三顆篩選控制項全部是「值載體」**（§5 組合矩陣②：值交給 React 讀去送查詢參數，
+{# 查詢區：操作類型篩選（`ui/search-select`，對照後端 GET /audit?action= 精確比對）；此靜態頁列
+     代表性選項，React 端列完整操作類型清單。真實頁 tbody 由 React 依查詢結果渲染，此處以 set+for
+     資料化示範 3 筆。
+     **本頁的七顆篩選控制項全部是「值載體」**（§5 組合矩陣②：值交給 React 讀去送查詢參數，
      成敗看後端，click 委派也抓不到 select 的 change）——不是只有掛了 hook 的那一顆。
-     三顆是：`#auditActionSelect`（action）／`#auditTenantInput`（tenant_id）／
-     `#auditScopeAllInput`（scope=all）。
+     七顆是：`#auditActionSelect`（action）／`#auditUserSelect`（user_id）／`#auditGroupSelect`
+     （group_id）／`#auditStartDateInput`（start）／`#auditEndDateInput`（end）／
+     `#auditTenantInput`（tenant_id）／`#auditScopeAllInput`（scope=all）。
      **React 綁定記號擇一即可，class hook 或 id 契約都算**（§5 矩陣那一條，正典是 2-2-1 以
-     `#knowledgeConfigSelect`／`#llmModelSelect` 綁定的那兩顆 select）：這三顆各自有唯一 id，
+     `#knowledgeConfigSelect`／`#llmModelSelect` 綁定的那兩顆 select）：這幾顆各自有唯一 id，
      其中 `#auditTenantInput` 另外掛了 `.js-audit-tenant`——那**不是本頁的規矩**，是既成事實：
      saas 端已經引用它（`apps/web/app/(app)/audit/page.tsx` 的 `className="form-control js-audit-tenant"`），
-     §5「hook 一經 saas 端引用即凍結，改名＝跨 repo 遷移」⇒ 不為了三顆一致而補兩顆，也不為了風格一致而拿掉它。
+     §5「hook 一經 saas 端引用即凍結，改名＝跨 repo 遷移」⇒ 不為了七顆一致而補其餘六顆，也不為了風格一致而拿掉它。
      （原本這裡只替那一顆寫了「值載體 → 只掛 hook class」的理由，讀起來像本頁對值載體的通則，
-     而另外三顆一顆 hook 都沒有——同一頁對同一種控制項寫了兩套說法。）
+     而其餘幾顆一顆 hook 都沒有——同一頁對同一種控制項寫了兩套說法。）
      **本頁那道閘是 `require_audit_access`（product `app/authz.py`），不是 `require_capability("audit")`**：
      它是一道 **OR** 閘——`is_platform_auditor` **或**（訂閱 active ∧ 租戶開通 audit ∧（租戶管理者 ∨ audit token））。
      上游 docstring 逐字說明為什麼不能直接用 `require_capability`：那支只對 `is_platform_admin` bypass，
      於是 `platform_role='auditor'` 會被當成一般租戶使用者，而稽核員典型上不是任何租戶的 admin、
      能力 token 為空集，結果是他連自己租戶的稽核都打不開。
-     四軸擺不下 OR，故本頁的分法是：**最寬的那一條掛區塊**（下面三個欄位的 `data-platform-role="auditor"`），
+     四軸擺不下 OR，故本頁的分法是：**最寬的那一條掛區塊**（下面**兩個**欄位的 `data-platform-role="auditor"`
+     ——租戶與「全部租戶」，數一數就是兩個；先前這裡寫「三個」，而本頁從來只有那兩顆掛著它），
      **最窄的那一條掛控制項**（查詢鈕的 `data-capability="audit"`，＝租戶那一半）。
      `data-capability="audit"` 這個字面對 `require_capability("audit")` 與 `require_audit_access` 長得一模一樣，
      所以 dependency 的名字要寫在這裡——照字面看不出指錯了哪一支。
@@ -47,13 +50,25 @@ permalink: 5-7_auditLog.html
      此靜態頁展示的是有平台角色、可操作時的完整版面。 #}
 <div class="block block-sm border corner-md mt-16">
     <div class="flex-row column gap-16">
+        {# **兩列的分法**：第一列＝「誰做了什麼」（操作類型／使用者／群組），第二列＝「什麼時候、
+             哪個租戶」。不是版面偏好——「清除」要把七顆一起帶回預設，而它們的預設態不一樣
+             （六顆清空、`#auditScopeAllInput` 回到「開」），分組讓那條規則在 markup 上讀得出來。
+           **前三顆是 `ui/search-select`（`.searchSelect`）而不是原生 `singleSelect`**：操作類型
+             有 ~120 個選項（React 端列完整清單，此靜態頁列代表性選項），原生 select 只能一顆一顆
+             捲——使用者知道自己要找「資料集」那一族，卻沒有任何方法問出來。使用者／群組兩顆在
+             成員多的租戶上是同一個問題，故三顆同款。
+           **`#auditUserSelect`／`#auditGroupSelect` 的選項是執行期由 `GET /audit/filters` 填的**
+             （product `app/routers/audit.py::audit_filter_options`，閘與稽核列同一道
+             `require_audit_access`——不是 `require_admin`，否則有 `audit` 能力的一般成員與平台
+             稽核員拿到的會是空下拉，而空下拉與「這個租戶沒有群組」在畫面上一模一樣）。
+             此靜態頁列示範選項。 #}
         <div class="flex-row gap-8 mobile-column sm-gap-16">
             <div class="form-group col-4-md col-12-sm">
                 <div class="label">
                     <label for="auditActionSelect" class="control-label" data-i18n="audit.actionType">操作類型</label>
                 </div>
                 <div class="field">
-                    <select id="auditActionSelect" class="form-control singleSelect">
+                    <select id="auditActionSelect" class="form-control searchSelect" data-placeholder="全部" data-placeholder-key="common.all">
                         <option value="" selected data-i18n="common.all">全部</option>
                         {# 動作值對齊 product 實際寫入的 action 詞彙（record_audit 只有 login.success/login.failed，沒有裸 "login"）；
                              示範列第 3 筆即 login.failed #}
@@ -66,7 +81,68 @@ permalink: 5-7_auditLog.html
                     </select>
                 </div>
             </div>
-            <div class="form-group col-2-md col-12-sm" data-platform-role="auditor">
+            <div class="form-group col-4-md col-12-sm">
+                <div class="label">
+                    <label for="auditUserSelect" class="control-label" data-i18n="audit.user">使用者</label>
+                </div>
+                <div class="field">
+                    {# **無效格由 markup 表達**（§3-2）：`scope=all` 時 `GET /audit/filters` 回空名冊
+                         （跨全部租戶時這一欄沒有值域可言），故這一欄與租戶欄同一態——本頁示範的是
+                         開關 ON 的狀態，所以渲染成 `disabled`：照渲染但改不動，狀態要看得見。 #}
+                    <select id="auditUserSelect" class="form-control searchSelect" data-placeholder="全部" data-placeholder-key="common.all" aria-describedby="auditUserHint" disabled>
+                        <option value="" selected data-i18n="common.all">全部</option>
+                        <option value="12">alice@initech.io</option>
+                        <option value="27">bob@initech.io</option>
+                    </select>
+                    <span class="text-gray" id="auditUserHint" data-i18n="audit.userHint">「全部租戶」開啟時本欄不生效；留空＝不限使用者。清單是本租戶的成員。</span>
+                </div>
+            </div>
+            <div class="form-group col-4-md col-12-sm">
+                <div class="label">
+                    <label for="auditGroupSelect" class="control-label" data-i18n="audit.group">群組</label>
+                </div>
+                <div class="field">
+                    {# hint 講的是**這個篩選到底在篩什麼**（§3-2 值域寫在填之前）：`AuditLog` 沒有存
+                         操作當下的群組歸屬，篩選是拿「目前的成員名單」去比對 `user_id`。換過群組的人，
+                         他過去的操作會跟著他現在的群組跑。那是這個篩選的語意、不是缺陷——但沒有這句話
+                         的話，看的人會把一份正確的結果讀成錯的。
+                       上游對應：product `list_audit` 的 `user_id IN (SELECT user_id FROM user_groups …)`，
+                         且 `scope=all` 時直接回 400（群組是租戶內的概念，跨租戶必然指不到東西）。 #}
+                    <select id="auditGroupSelect" class="form-control searchSelect" data-placeholder="全部" data-placeholder-key="common.all" aria-describedby="auditGroupHint" disabled>
+                        <option value="" selected data-i18n="common.all">全部</option>
+                        <option value="3">業務</option>
+                        <option value="4">研發</option>
+                    </select>
+                    <span class="text-gray" id="auditGroupHint" data-i18n="audit.groupHint">依成員目前的群組歸屬篩選——不是操作當下的歸屬，換過群組的人，他過去的操作會跟著現在的群組。「全部租戶」開啟時本欄不生效。</span>
+                </div>
+            </div>
+        </div>
+        <div class="flex-row gap-8 mobile-column sm-gap-16">
+            <div class="form-group col-3-md col-12-sm">
+                <div class="label">
+                    <label for="auditStartDateInput" class="control-label" data-i18n="settings.startTime">開始時間</label>
+                </div>
+                <div class="field">
+                    {# 起訖欄是 flatpickr 的掛點（凍結前端 GufoFAQ_Frontend_New/js/main.js 綁
+                         .start-date/.end-date），切版不引 vendor、只保留 class 與 `.time` 的日曆圖示變體；
+                         日期選擇交由 React 端的套件實作（同 components/data-time-filter 的做法）。
+                       **本頁刻意不用 components/data-time-filter**：那一支把「時間區間最長 365 天、
+                         開始時間不得早於 365 天前」烤進它的常駐說明與兩個消費頁的 toast，依據是
+                         product `app/routers/stats.py` 的 `_resolve_range`。稽核列打的是
+                         `GET /audit`，那一支**沒有**這兩條界線——調兩年前那一天的紀錄正是 ISO 證跡
+                         存在的理由。借用那個元件會在畫面上宣告一條上游根本不執行的限制。 #}
+                    <input type="text" id="auditStartDateInput" class="form-control time start-date" placeholder="請選擇開始時間" data-i18n-placeholder="settings.pleaseSelectStartTime" aria-describedby="auditTimeRangeHint">
+                </div>
+            </div>
+            <div class="form-group col-3-md col-12-sm">
+                <div class="label">
+                    <label for="auditEndDateInput" class="control-label" data-i18n="settings.endTime">結束時間</label>
+                </div>
+                <div class="field">
+                    <input type="text" id="auditEndDateInput" class="form-control time end-date" placeholder="請選擇結束時間" data-i18n-placeholder="settings.pleaseSelectEndTime" aria-describedby="auditTimeRangeHint">
+                </div>
+            </div>
+            <div class="form-group col-3-md col-12-sm" data-platform-role="auditor">
                 <div class="label">
                     {# `tenant_id`（product app/routers/audit.py，docstring「平台管理員可查指定租戶」）原本沒有任何控制項，
                          畫面因此只做得到「全部租戶或自己那一個」，指定單一租戶做不到（§3-2 request
@@ -75,7 +151,7 @@ permalink: 5-7_auditLog.html
                 </div>
                 <div class="field">
                     {# `.js-audit-tenant` 是**凍結**的 hook（saas 已引用，見檔頭）：不改名、也不因為
-                         同頁另外三顆走 id 契約就把它拿掉。 #}
+                         同頁另外幾顆走 id 契約就把它拿掉。 #}
                     {# **無效格由 markup 表達**（§3-2，不能只寫在 hint 裡）：上游 `list_audit` 是
                          `if is_platform and scope == "all": pass`（不加租戶過濾）`else:` 才看 `tenant_id`
                          ——「全部租戶」開著時這一欄**無條件被短路掉**，那一格是死的。本頁示範的是
@@ -88,7 +164,7 @@ permalink: 5-7_auditLog.html
                     <span class="text-gray" id="auditTenantHint" data-i18n="audit.tenantHint">「全部租戶」開啟時本欄不生效，填了也會被忽略；關閉後才填得動。填租戶 id（≥ 1 的正整數），留空＝只看自己租戶</span>
                 </div>
             </div>
-            <div class="form-group col-2-md col-12-sm" data-platform-role="auditor">
+            <div class="form-group col-3-md col-12-sm" data-platform-role="auditor">
                 <div class="label">
                     <label for="auditScopeAllInput" class="control-label" data-i18n="audit.allTenants">全部租戶</label>
                 </div>
@@ -96,7 +172,7 @@ permalink: 5-7_auditLog.html
                     <label class="switch">
                         {# `data-filter-reset` ＝這一顆是**篩選值載體**、且它的預設態是「開」
                              （`scope=all`）——「清除」要把它帶回這一態。少了這個宣告，清除鈕會清掉
-                             另外三個欄位、留下這一顆，而它正是唯一預設非空的那一顆（見 ui/filter-fields 檔頭）。 #}
+                             其餘欄位、留下這一顆，而它正是唯一預設非空的那一顆（見 ui/filter-fields 檔頭）。 #}
                         <input type="checkbox" id="auditScopeAllInput" class="switch-checkbox" role="switch" data-filter-reset="checked" checked>
                         <span class="switch-box">
                             <span class="switch-btn"></span>
@@ -105,6 +181,9 @@ permalink: 5-7_auditLog.html
                 </div>
             </div>
         </div>
+        {# 起訖兩欄共用的常駐說明（§3-2 值域寫在填之前）：兩端都含、留空＝不限，
+             且**沒有**任何天數上限——見上面起始欄那一段為什麼不借用 components/data-time-filter。 #}
+        <p class="text-gray m-0" id="auditTimeRangeHint" data-i18n="audit.timeRangeHint">起訖兩端都包含在內；留空＝不限。稽核軌跡不設查詢天數上限，查得到多久以前的紀錄取決於保存了多久。</p>
         <div class="flex-row align-items-center justify-content-center gap-16">
             <button type="button" class="button button-border js-filter-clear" data-i18n="action.clear">清除</button>
             <button data-capability="audit" type="button" class="button button-primary" data-toast="正在查詢資料...|權限不足，無法查詢|查詢成功|載入稽核日誌失敗，請重新整理頁面" data-i18n-data-toast="toast.queryAudit" data-toast-type="info|warning|success|error" data-i18n="action.query">查詢</button>
@@ -260,7 +339,7 @@ permalink: 5-7_auditLog.html
                      ——型別的完整清單與判準見該元件檔頭。 #}
                 <td>{% if row.userAgent %}<div class="collapse-text"><div class="collapse-body">{{ row.userAgent }}</div><button type="button" id="auditUaToggle-{{ row.id }}" aria-labelledby="auditRowTime-{{ row.id }} auditUaToggle-{{ row.id }}" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>{% else %}—{% endif %}</td>
             </tr>
-            {# 空狀態：本頁有查詢鈕與三個篩選欄，「篩到零筆」是走得到的常態（§5 無資料列）。
+            {# 空狀態：本頁有查詢鈕與七個篩選欄，「篩到零筆」是走得到的常態（§5 無資料列）。
                  colspan 8 ＝本表欄數（colgroup 八個 <col>）。 #}
             {% else %}
             <tr><td colspan="8" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
