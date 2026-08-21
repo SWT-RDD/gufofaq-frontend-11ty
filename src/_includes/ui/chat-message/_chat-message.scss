@@ -148,7 +148,7 @@
 //      （chatroom 用 chatroomSuggestedLabel、faq-chatroom 用 faqSuggestedLabel）——同頁兩份會撞 id。
 //      chip 陣列的 `{% set %}` 同理取元件專屬名（chatroomSuggested／faqSuggested，§6）。
 //   ⓓ **chip 的授權宣告是 ③ 與 ③′ 唯一看不出來的差別**：後台走 `/ask`（租戶能力 token）故帶
-//      `data-capability="ask"`，前台走 product `app/routers/public.py` 的 `require_widget_token`
+//      `data-capability="ask"`，前台走 product `app/conversation/public_ask.py` 的 `require_widget_token`
 //      故一軸都不帶——抄錯一道比不抄貴（§1-2「授權四軸屬必列」）。同一道 `require_widget_token`
 //      連帶 `enforce_widget_rate_limit`，所以 ③′ 的 toast 才多一段 429 的 warning。
 //

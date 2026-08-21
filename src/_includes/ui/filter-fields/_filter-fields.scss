@@ -26,7 +26,7 @@
 //
 //   · 這一段逐字抄自 2-2-1 的「LLM模型」那一格。**選項的值是 `<provider>:<model>`**
 //     （`GET /qatest/models` 回的 `value`，product `app/routers/qatest.py` 的 `list_models`／
-//     `effective_models`）——抄成 `OpenAI gpt-4o` 那種字面會過不了 product `app/llm.py` 的
+//     `effective_models`）——抄成 `OpenAI gpt-4o` 那種字面會過不了 product `app/integrations/llm.py` 的
 //     `can_build_model`（`model.startswith(PROVIDER_PREFIXES)`，前綴只有 `openai:`／`anthropic:`）
 //   · `.filter-field` 是本元件的 slot class（不去寫 ui/form-control 的 class，§4）
 //   · `<div class="label">` **不帶 flex-row**。只有那一欄的標籤旁邊要放 `ui/info-btn` 時才多掛
