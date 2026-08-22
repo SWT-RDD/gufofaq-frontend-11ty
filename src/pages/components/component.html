@@ -808,7 +808,7 @@ bodyClass: guideline-page
             {# 失敗流程示範：生成到一半被合規攔截而中止，下游整段沒跑——一次演到 failed＋completed＋skipped
                （**skipped 才是唯一無真實頁的態**：failed 在 3-4 的試跑沙盒有一個節點，running／pending 在
                2-2-1／2-2-3 的元件內建示範裡），且是一個真實可能的狀態（§6）。節點與摘要一起給，檢索筆數對上「命中 3 筆」。
-               ⚠️ **failed 之後一律 skipped，沒有 pending**：saas `apps/web/lib/stepFlow.ts` 的 `computeFlow`
+               ⚠️ **failed 之後一律 skipped，沒有 pending**：saas `apps/web/lib/domain/stepFlow.ts` 的 `computeFlow`
                docstring 逐字寫著「`failed` 是終止狀態：其後的節點本輪不會再跑，一律 skipped」。
                原本尾巴排成 skipped／pending／pending——pending 的語意是「還沒輪到、等一下會跑」，
                而這一輪已經中止了，那三個節點是同一件事，不可能一個略過、兩個還在排隊。
@@ -820,7 +820,7 @@ bodyClass: guideline-page
                改成 agent 工具那一道判否（`entry: "agent_tool"` ⇒ `poolSize` 1，`answer_from_qa` 只判
                agent 挑的那一筆，照實寫）。三種**判定層**（exact／score_floor／llm_judge）只在命中時才有值，
                而命中就沒有後續生成 ⇒ 它們的示範一律放在下面那份狀態目錄，不放在真實執行流程裡。
-               節點清單與正典管線同長同序（saas `apps/web/lib/stepFlow.ts` 的 `CANONICAL_PIPELINE.agent`
+               節點清單與正典管線同長同序（saas `apps/web/lib/domain/stepFlow.ts` 的 `CANONICAL_PIPELINE.agent`
                九站，首站 `input_gate`、qa_direct 第 2 站）。判定雖然發生在 agent 迴圈**之內**，
                節點仍畫在第 2 站——`computeFlow` 是照正典序畫、再用事件點亮，不是照事件到達順序排。
                ⚠️ **失敗那一站的訊息走 `error`、不走 `result`**：`result` 是**工具輸出**那一欄

@@ -222,7 +222,7 @@ permalink: 3-4_skillManagement.html
      檢索卻在查新住民結婚」這種不可能的一輪。本頁示範同時演到 skill 子樹的三階縮排
      （refund-flow → lookup-order → 它的工具呼叫）與 skill 失敗的明細列。
 
-   ⚠️ **「檢索知識庫」是 skill 子樹的宿主節點，所以它一定跑過**：saas `apps/web/lib/stepFlow.ts` 的
+   ⚠️ **「檢索知識庫」是 skill 子樹的宿主節點，所以它一定跑過**：saas `apps/web/lib/domain/stepFlow.ts` 的
      `SKILL_HOST_STEP_ID = "retrieve"`（＝這一站），註解逐字寫著「skill 一定是在工具節點裡被呼叫的」，
      `attachSkillSteps` 把 parent 為空或指不到人的 skill 步驟一律掛到它底下。
      原本這一列標 `skipped` ＋ time 空白，底下卻掛著一棵跑了 1.8 秒的子樹——「這一站本輪沒有執行」
@@ -243,7 +243,7 @@ permalink: 3-4_skillManagement.html
    同理 `verdict`：可回答性判定的值域是 chatbot `services/grounding.py` 的 `GroundingVerdict`，
      **只有 `generate` 與 `no_answer` 兩顆**（`insufficient` 不存在）。這一輪走誠實查無
      ⇒ `no_answer（素材不足以回答）`，而下面的節點列**只畫「誠實查無」、不畫「生成答案」**：
-     saas `lib/stepFlow.ts` 是 `base.splice(i, 1, "respond_no_answer")`——deleteCount=1 ＝**取代**，
+     saas `lib/domain/stepFlow.ts` 是 `base.splice(i, 1, "respond_no_answer")`——deleteCount=1 ＝**取代**，
      兩顆永不並存（釘住它的測試不在那一支：名字逐字「誠實查無入圖、生成答案不在」的那條住在
      saas `components/StepFlow/StepFlow.test.tsx`）；而且 `respond_no_answer` 只在
      `completed.has()` 為真時才進 base，所以它也不可能是 running。前一版把兩顆並排、還註解說

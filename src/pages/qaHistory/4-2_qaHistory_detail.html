@@ -130,7 +130,7 @@ permalink: 4-2_qaHistory_detail.html
        （回 step_events／tool_activity／thinking_by_node 的完整版），詳情頁帶回來的是前 N 筆 ＋
        尾端 `{truncated, total}` 標記的檢視。故本頁把成對參數設起來，那顆鈕與截斷提示都渲染得出來。 #}
 {% if conversation.chatMode == "agent" %}
-{# 節點清單＝正典管線的九站（saas `apps/web/lib/stepFlow.ts` 的 `CANONICAL_PIPELINE.agent`）。
+{# 節點清單＝正典管線的九站（saas `apps/web/lib/domain/stepFlow.ts` 的 `CANONICAL_PIPELINE.agent`）。
      首站 `input_gate` 是串流開頭無條件發射的（chatbot `routes/_chat_stream.py` 的
      `_gate_step_sse`），第二站 `qa_direct` 則是每一輪都送一筆判定（`services/qa_direct.py` 的
      `QaDirectProbe.record`，未命中那半也送，整輪沒判到還會由 `routes/chat.py` 補一筆

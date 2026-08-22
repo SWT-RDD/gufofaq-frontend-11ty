@@ -3,7 +3,7 @@
      並在頂端給整體執行摘要（token/延遲/TTFT/檢索筆數/模型）。取代原分開的 ui/step-timeline（步驟列）
      與 components/agent-activity（工具軌跡），統一成一處詳細檢視。
    正典管線各節點依序畫出（未跑到＝待處理），以 chatbot 的結構化步驟事件（step_id/step_status，
-     Part 1 completed-only 對齊）點亮；當前節點高亮＝最後一個 completed 的下一個正典節點（前端 lib/stepFlow
+     Part 1 completed-only 對齊）點亮；當前節點高亮＝最後一個 completed 的下一個正典節點（前端 lib/domain/stepFlow
      computeFlow 推斷）。狀態 class：is-completed（--success 綠點）/ is-running（--brand-ink 深墨點，當前高亮）/
      is-skipped（--text-muted 灰虛，分支/反問跳過）/ is-failed（--danger）/ 其餘 pending（--border）。
    收合機制復用 ui/accordion（根 .js-accordion + 每節點列的 .accordion-btn + 隱藏的 .detail-row >
@@ -11,11 +11,11 @@
      本元件不自帶 js；表格結構是 accordion findContent（closest("tr")+.detail-row 兄弟列）的硬需求。
    每節點（摘要列＋隱藏詳細列）以 {% for %} 內嵌渲染（GUIDELINE §9 陷阱：元件內部的 for 不可再巢狀
      include 子元件，會靜默渲染成空白）。真值由 React 端串流事件驅動（lib/sse steps/toolActivity/
-     thinkingByNode/summary + lib/stepFlow computeFlow）；此處為靜態示範。
+     thinkingByNode/summary + lib/domain/stepFlow computeFlow）；此處為靜態示範。
    巢狀（skill）：租戶自訂 skill 被 agent 呼叫時會跑一個 scoped 子 agent 迴圈，其子步驟由 chatbot
      以 parent 欄掛成子樹（`agent_service` 的 `_record`；巢狀樹由 parent 鏈組成）。
      **`depth` 是「顯示用的樹深」，不是後端那個同名欄**：後端的 depth 是 skill 遞迴層數，一個 skill
-     呼叫與它自己的子步驟同值（見 GufoRAG chatbot `agent_service._record` 與 saas `lib/stepFlow` 的
+     呼叫與它自己的子步驟同值（見 GufoRAG chatbot `agent_service._record` 與 saas `lib/domain/stepFlow` 的
      `attachSkillSteps` 測試）；縮排要的是 parent 鏈的層數，故 1＝被正典節點呼叫的 skill、2＝它的子步驟、
      3＝再一層。值域夾在 3（與 saas `components/StepFlow` 的 `Math.min(depth, 3)` 對齊）——插值出
      `is-depth-4` 這種未定義的 class 只會靜默不縮排，所以夾在模板裡而不是靠資料自律。
@@ -32,7 +32,7 @@
      且從第二筆起算」——**那個主張已經被滿足，本輪複驗改寫**，§4「上游還沒有 X 是最會過期的斷言」）：
      上游現在**逐步量**耗時，GufoRAG chatbot `models/chat.py` 的 `step_event_data` 收 `duration_ms`
      （由發射端量，`StepClock`），failed 那一顆照寫。React 端主路徑因此是 gufofaq-saas
-     `apps/web/lib/stepFlow.ts` 的 `stepDurations`：逐 `step_id` **加總** `duration_ms`、
+     `apps/web/lib/domain/stepFlow.ts` 的 `stepDurations`：逐 `step_id` **加總** `duration_ms`、
      **不做 status 過濾**（agent↔tools 每輪都會再發一次同一個 step_id，取最後一輪等於把前面幾輪
      的時間抹掉）⇒ 每一列都印得出來，與這裡每一列都給時間對得上。
      只有 `duration_ms` 上線前落庫的**舊紀錄**（整筆一顆都沒有這個鍵）會退到 `legacyDurations`
@@ -150,7 +150,7 @@
        兩態各有一頁，不重複也不留空（§5）。
    進度「目前 X / N」只數**正典管線節點**（無 depth 者）：N＝正典節點數、X＝已執行到的最後一個正典節點序號。
      巢狀子步驟不計入——它們是某一站底下的細節，算進分母會讓進度隨串流冒出子步驟而倒退（正典管線是
-     固定長度，見 saas `lib/stepFlow` 的 CANONICAL_PIPELINE）。**`offPipeline: true` 的節點同樣不計入**
+     固定長度，見 saas `lib/domain/stepFlow` 的 CANONICAL_PIPELINE）。**`offPipeline: true` 的節點同樣不計入**
      （目前只有 `MCP 工具載入` 這一顆）：它不在 CANONICAL_PIPELINE 裡、只在故障那一輪出現，算進分母
      會讓正常那一輪的 N 少一格。不烤字面量：使用頁改節點數，烤死的總數就會說謊（§6）。
    示範資料＝假資料（工具名/參數/結果/推理），依 GUIDELINE §4-2「只翻 UI chrome、不翻假資料」不掛 data-i18n。 #}

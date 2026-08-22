@@ -206,7 +206,7 @@ permalink: 2-2-1_singleTest.html
 {# 執行流程（測試區詳細觀測）：類 mermaid 直式流程圖——含合規閘的完整正典管線依序畫出、即時點亮
      當前步驟，每節點可展開看工具/參數/結果/grounding 判定/agent 推理。
      取代原分開的 agent-activity（工具軌跡）＋ step-timeline（步驟列），統一成一處。
-     真值由 React 端串流事件驅動（lib/sse steps/toolActivity/thinkingByNode/summary + lib/stepFlow）；
+     真值由 React 端串流事件驅動（lib/sse steps/toolActivity/thinkingByNode/summary + lib/domain/stepFlow）；
      示範假資料住元件內（見該元件檔頭註解）。
    **這一頁的單一敘事＝「這一輪還在跑」**（§6 同頁自洽，全站唯一演這一態的頁）：
      上半聊天區已經演著串流中的第二問（`components/chatroom` 的狀態列「搜尋資料中…」，有字、沒有
