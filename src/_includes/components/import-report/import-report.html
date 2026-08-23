@@ -9,8 +9,50 @@
      三計數必須一起顯示：`updated` 是「同 external_key 的舊版被取代」，只報「匯入 N 筆」的話，
      使用者分不出這次是新增了 N 筆，還是把 N 筆舊資料換掉了。
 
+     ── 索引同步（`sync_state`）───────────────────────────────────────────────────────
+     **這一塊在的理由是一條 CRITICAL 缺陷**：匯入回 200／`failed: 0`／筆數正確，而 GufoRAG 索引裡
+     一列都沒有——上游 celery 的 `FieldMapperError` 整檔失敗，product 這一側完全看不到。實際發生過
+     同一份檔重匯三次、三次都以為成功。後端補上 `GufoRagClient.sync_outcome()`（去問 manager 的
+     `operations/history`），六個匯入入口的回應現在都帶 `sync_state`，本元件是它的落點。
+     **它與上面那行三計數是兩個不同的層**：三計數講的是「資料進了 product 的資料集」，這一塊講的是
+     「進了 GufoRAG 的索引」。前者成功、後者失敗，就是「匯入成功但搜不到」——正是這條缺陷的形狀。
+     所以兩者相鄰、而且措辭刻意分開（一個說「新增／更新」，一個說「索引」）。
+
+     四態的視覺與文案（`state` 的值域，四種在畫面上必須長得不一樣）：
+       pending    藍（`.is-progress`）「同步中」  ——任務已派出、結果還不知道（sync 是非同步的）。
+                  **最常見**：匯入當下多半就是這個，所以兩個使用頁的示範都是它。
+                  **絕對不可以看起來像成功**：這整條缺陷的成因就是「還不知道」與「成功了」同形，
+                  所以它不是綠勾而是進行中的藍，並用一句 hint 告訴使用者可以稍後回來看。
+       succeeded  綠（`.is-pass`）「已寫入索引」——上游確認寫進索引了。沒有 hint（沒有事要做）。
+       failed     紅（`.is-fail`）「寫入索引失敗」——上游明確失敗（`failed_count` 可能 > 0，也可能
+                  整檔被拒）。正確動作＝修好資料重匯。
+       unknown    黃（`.is-warn`）「查不到結果」  ——**查結局這件事本身失敗了**，不是匯入失敗。
+                  資料已送出、管道已派工 ⇒ 正確動作＝拿關聯編號問維運，**絕對不要重匯**。
+                  **視覺不可以與 failed 一樣**：兩者的正確動作相反，搞混會製造重複資料
+                  （`.is-progress` 這一顆變體就是為了讓四態不撞色才加的，理由寫在 ui/verdict-tag）。
+       其餘值     落到 `{% else %}` 當 unknown 處理：拿到一個不認得的態，我方就是「判斷不出結局」
+                  ——這正是 unknown 的定義。不原樣印那個機器碼（狀態詞是 chrome、不是值）。
+
+     **「不要重匯」與「稍後回來看」都做成 key、不靠後端那句 `reason` 承載**：`reason` 是 product 產的
+     業務字串（我方一句話＋關聯編號），不進字典 ⇒ 英文租戶讀到的是繁中。而「不要重匯」是這一態
+     **最關鍵的一句話**（搞錯就是重複資料），不可以只活在一個不翻譯的欄位裡。`reason` 照舊直接渲染，
+     它負責的是「哪一筆、編號多少」，hint 負責「你該做什麼」。
+
+     **`indexed_count`／`failed_count` 是 `null` 時畫「—」，不畫 `0`**（§6：「沒量到」與「零筆」是兩件
+     事）。pending 與 unknown 兩態本來就量不到，示範因此是兩格「—」——這一頁同時是這條規矩的
+     可見處。實作上兩個參數**以字串傳入**（`"12"`／`"0"`），理由同 components/step-flow 檔頭那一條：
+     值域含 0 的欄用 `{% if %}` 真值判斷時，nunjucks 把數字 `0` 判成 false ⇒ 上游真的回 0 那一次會
+     靜默變成「—」，而 0 與 null 正是這一格要分開的兩件事。
+
      頁面 include 前 set（GUIDELINE §6，資料因頁面而異）：
        importCounts = { inserted, updated, failed }（必填）
+       importSyncState（必填，六個匯入入口都回得出來）＝`sync_state.state`：
+         "pending" / "succeeded" / "failed" / "unknown"。外面那圈 `{% if %}` 是「呼叫端忘了 set」
+         的守門、不是可選功能——沒有這一塊的匯入畫面就是缺陷本身。
+       importSyncIndexed／importSyncFailed（選填，**字串**）＝`sync_state.indexed_count`／
+         `failed_count`。不知道就不要 set（別 set `"0"`）：沒 set ＝ 畫「—」。
+       importSyncReason（選填）＝`sync_state.reason`。只在 failed／unknown 有值；product 產的業務
+         字串（我方一句話＋關聯編號，不是上游原文），不翻、不掛 data-i18n（同 `importLabelSyncWarning`）。
        importLabelSyncWarning（選填）＝`import_excel` 那一支 **200 態**帶回來的
          `label_sync_warning`（product `dataset.label_sync_warning`：「匯入成功，但顯示欄位標籤
          未能即時同步到檢索設定」）。匯入本身已經落地，所以 product 刻意不回 5xx、也不吞掉——
@@ -51,6 +93,46 @@
          `batchSummaryFailMid`——同一個「、失敗」不另立 key（§4-2）。
          轉 React 時併成單一插值 key（GUIDELINE §7 對照表：槽裡是資料就可以併）。 #}
     <div class="text-md text-bold"><span data-i18n="dataImport.countInsertedPrefix">新增</span> {{ importCounts.inserted }}<span data-i18n="dataImport.countUpdatedMid">、更新</span> {{ importCounts.updated }}<span data-i18n="dataImport.batchSummaryFailMid">、失敗</span> {{ importCounts.failed }}</div>
+
+    {# ── 索引同步狀態（`sync_state`）。四態的視覺／文案／判準與參數契約見檔頭。 ──────────────
+         **排在三計數的正下方、標籤同步警語的上方**：它回答的是「這次匯入到底有沒有落地」，
+         是這一整塊回報裡最要緊的一句；標籤同步警語講的是「落地了、但檢索設定的欄位標籤沒跟上」，
+         是次一級的枝節。
+         四態的 class ＋ key ＋ 繁中**三者成對地寫在同一條 if 鏈上**（同 components/step-flow 的
+         節點狀態那一行）：這一支元件就是這四態的唯一正本，`{% elif %}` 的分支雖然在使用頁上
+         渲染不到，繁中與 key 也不會變成孤兒；四態各自的**長相**另外在元件庫頁的「React 條件文案」
+         區有一份可見處（REACT-CONVERSION §⑥：枚舉的每個成員都要有一個 render 得出它的地方）。
+         **不用 `data-text-<態>`／`data-key-<態>` 那組槽**：那一族只換得了文字，而這裡**顏色也跟著
+         換**（四態的填充色不同），一顆槽表達不了 class；React 端讀的是 state → (variant, key) 的
+         對照表，那份對照表的正本就是下面這條 if 鏈。 #}
+    {% if importSyncState %}
+    <div class="flex-row column gap-8">
+        <div class="flex-row align-items-center gap-8 flex-wrap">
+            <span class="text-bold" data-i18n="dataImport.syncStateLabel">索引同步：</span>
+            {% if importSyncState == "pending" %}<span class="verdict-tag is-progress" data-i18n="dataImport.syncPending">同步中</span>{% elif importSyncState == "succeeded" %}<span class="verdict-tag is-pass" data-i18n="dataImport.syncSucceeded">已寫入索引</span>{% elif importSyncState == "failed" %}<span class="verdict-tag is-fail" data-i18n="dataImport.syncFailed">寫入索引失敗</span>{% else %}<span class="verdict-tag is-warn" data-i18n="dataImport.syncUnknown">查不到結果</span>{% endif %}
+        </div>
+        {# 兩顆計數槽：沒 set ＝ 上游回 null ＝ 畫「—」（§6），**不畫 0**。 #}
+        <div class="flex-row flex-wrap gap-24">
+            <span><span data-i18n="dataImport.syncIndexedCount">索引筆數：</span>{% if importSyncIndexed %}{{ importSyncIndexed }}{% else %}—{% endif %}</span>
+            <span><span data-i18n="dataImport.syncFailedCount">索引失敗筆數：</span>{% if importSyncFailed %}{{ importSyncFailed }}{% else %}—{% endif %}</span>
+        </div>
+        {# 「你該做什麼」。succeeded 沒有 hint（沒有事要做），所以第三支條件寫成「不是 succeeded」
+             ——它同時吃下 unknown 與任何不認得的態，與上面徽章那條 `{% else %}` 同一個歸屬。
+           **色彩刻意三種待遇**：pending 走 `.text-gray`（與本元件其餘 `*Hint` 同型，資訊性）；
+             failed 走 `.text-red`（真的失敗了，同 `importLabelSyncWarning`）；unknown **不上色**
+             ——紅色會把它讀成 failed（而兩者的正確動作相反），灰色會把「不要重匯」讀成枝節，
+             而黃色文字這一站沒有：`--warning` 是恆亮黃底、當文字疊在表面上遠低於 AA 4.5
+             （所以 _utilities 沒有 `.text-yellow`，§4 對比度硬規則）。徽章負責顏色語意，
+             這一句負責可讀的散文——這也是 failed 與 unknown 在畫面上的第二層區別。
+           `role="alert"` 只給 failed／unknown 兩句（要人動手的那兩態），理由同下面那句標籤同步
+             警語：送出後才出現的訊息。pending／succeeded 沒有要做的事，不搶播報。 #}
+        {% if importSyncState == "pending" %}<p class="text-gray m-0" data-i18n="dataImport.syncPendingHint">索引是另一條非同步管道寫的，這一刻還量不到結果，而這一頁不會自己更新。過幾分鐘回到這個資料集或〈資料健檢〉看一次就知道有沒有進去；在那之前不要重新匯入同一份檔，那會產生重複資料。</p>{% elif importSyncState == "failed" %}<p class="text-red m-0" role="alert" data-i18n="dataImport.syncFailedHint">資料已經寫進資料集，但索引沒有建起來，所以這一批（或其中幾筆）現在搜不到。依下面的原因把資料修好之後，重新匯入同一份檔即可。</p>{% elif importSyncState != "succeeded" %}<p class="m-0" role="alert" data-i18n="dataImport.syncUnknownHint">查詢同步結果這件事本身失敗了，不代表匯入失敗——資料已經送出、索引任務也已經派工。請不要重新匯入，那會產生重複資料；把下面那句話裡的關聯編號交給維運人員查。</p>{% endif %}
+        {# `reason`＝product 產的業務字串（我方一句話＋關聯編號），只在 failed／unknown 有值。
+             不翻、不掛 data-i18n（同下面的 `importLabelSyncWarning`）——它負責「哪一筆、編號多少」，
+             上面那句 hint 負責「你該做什麼」。 #}
+        {% if importSyncReason %}<p class="m-0" role="alert">{{ importSyncReason }}</p>{% endif %}
+    </div>
+    {% endif %}
 
     {# 標籤同步警語（200 態）。文字是 product 給的業務字串，不掛 data-i18n（同 1-1-3 的
          `excelHeaderWarning`）；`role="alert"` 是因為它與整塊回報一樣是送出後才出現的訊息。 #}
@@ -94,7 +176,12 @@
             {% endfor %}
         </ul>
         <div class="flex-row">
-            <button type="button" class="button button-border button-sm js-copy-dropped-links" data-toast="已複製為出口替換規則，貼到「對話設定 → 出口替換規則」的替換內容欄|複製失敗，請稍後再試" data-i18n-data-toast="toast.copyOutputRules" data-toast-type="success|error" data-i18n="dataImport.copyAsOutputRules">複製為出口替換規則</button>
+            {# 失敗段沿用複製族那一句（「請手動選取後複製」）。**先前寫的是「請稍後再試」——
+                 那是 API 失敗的措辭，用在剪貼簿上是錯的建議**：這顆鈕是純前端複製
+                 （import-report.js 的 clipboard ＋ execCommand），失敗的成因是安全脈絡／權限，
+                 再按一百次也是同一個結果，能救的動作只有手動選取。`toast.copyConfig` 的
+                 「請稍後再試」留著不動，那一顆真的是送 API（複製設定）。 #}
+            <button type="button" class="button button-border button-sm js-copy-dropped-links" data-toast="已複製為出口替換規則，貼到「對話設定 → 出口替換規則」的替換內容欄|複製失敗，請手動選取後複製" data-i18n-data-toast="toast.copyOutputRules" data-toast-type="success|error" data-i18n="dataImport.copyAsOutputRules">複製為出口替換規則</button>
         </div>
         {% endif %}
 

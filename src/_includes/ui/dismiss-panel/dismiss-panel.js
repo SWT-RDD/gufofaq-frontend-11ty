@@ -45,7 +45,7 @@
 //           <button type="button" class="button button-border" data-reveal-target="serviceKeyPlain"
 //               data-text-show="顯示" data-text-hide="隱藏" data-key-show="extractKey.show" data-key-hide="extractKey.hide"
 //               data-i18n="extractKey.show">顯示</button>
-//           <button type="button" class="button-icon copy copyBtn has-tooltip" data-toast="已複製憑證明碼" data-i18n-data-toast="toast.copyServiceKey">
+//           <button type="button" class="button-icon copy copyBtn has-tooltip" data-toast="已複製憑證明碼|複製失敗，請手動選取後複製" data-i18n-data-toast="toast.copyServiceKey" data-toast-type="success|error">
 //               <span class="tooltip" data-i18n="action.copy">複製</span>
 //           </button>
 //       </div>

@@ -35,7 +35,22 @@
 //
 //   .is-pass   確定性斷言全過／執行完整跑完／「修好了」。綠色只給這一類。
 //   .is-fail   確定性斷言有一條沒過／執行中斷／「退步」。紅色只給這一類。
-//   .is-warn   **量不到**：評審未完成、沒得比、評審漂移、還在跑。
+//   .is-progress **這件事還在進行中，結果會自己到**——不必任何人做任何事，只要晚一點回來看。
+//              藍（--info）與 ui/toast 的 `info` 型別同一顆 token、同一個語意（那一型的正典字面
+//              就是「正在處理中…」），也與 components/step-flow 的 `.is-running`（--brand-ink）
+//              是同一族視覺語彙。
+//              **與 `.is-warn` 的界線＝「會不會自己好」**，不是「量得到量不到」：兩者都量不到，
+//              但這一顆的正確動作是「等」，`.is-warn` 的正確動作是「去看／去問」。
+//              **這一顆的存在理由是四態不可以撞色**：`components/import-report` 的索引同步有
+//              pending／succeeded／failed／unknown 四態，而在它之前這支元件只有三顆填充色
+//              ⇒ pending 與 unknown 必然共用 `.is-warn`。那兩態的正確動作完全相反
+//              （pending＝等；unknown＝拿關聯編號去問維運、**絕對不要重匯**），同色就是在
+//              製造重複資料。四態同形正是這條缺陷本來的成因，不可以在修它的時候再犯一次。
+//   .is-warn   **量不到，而且不會自己變好**（要人去看或去問）：評審未完成、沒得比、評審漂移、
+//              查不到結局。
+//              （先前這一條的清單裡有「還在跑」——那一句已經移到 `.is-progress`：它會自己好，
+//              與其餘四種要人動手的情形不是同一件事。全站沒有任何實例掛在那一句上，
+//              判準＝`grep -rn 'class="verdict-tag is-warn' src`，所以這次搬動不改任何既有畫面。）
 //              **不是「分數低」**——主觀分不參與判定也不設門檻（gufofaq-saas
 //              services/product/app/routers/regression.py 的 `_compare_runs`：judge_score
 //              完全不參與分類，`_judge_status` 只回 none／scored／unavailable 三態）。
@@ -60,9 +75,13 @@
 //     4-1_qaHistory（「QA 直答」徽章，①）、4-2_qaHistory_detail（被什麼擋下——內容是上游的
 //     `blocked_by` 代碼、刻意無 key，故是**②不是①**）、components/qa-detail-info（「QA 直答」，①）、
 //     components/step-flow（QA 直答判定五態，① ＋一顆兜底的 `{{ node.decision }}`＝②：查表查不到的
-//     結論原樣輸出，那時字面是值）、component.html（4-2 合規兩欄的唯一可見處，②）。
+//     結論原樣輸出，那時字面是值）、components/import-report（索引同步四態，①——`.is-progress`
+//     的唯一實例在這裡）、component.html（4-2 合規兩欄的唯一可見處，② ＋索引同步另外三態，①）。
 //   渲染後含 `.verdict-tag` 的頁（反向；判準＝`grep -rl 'class="verdict-tag' dist/*.html`）：
-//     2-2-1、2-2-3、2-2-4、2-2-5、3-4、4-1、4-2、component.html。
+//     1-1-6、1-2-1、2-2-1、2-2-3、2-2-4、2-2-5、3-4、4-1、4-2、component.html。
+//     ⚠️ 1-1-6／1-2-1 是**經由 components/import-report** 進去的，而那顆徽章關在
+//     `{% if importSyncState %}` 裡——判準是那一頁有沒有 set `importSyncState`（兩頁都 set 了
+//     `"pending"`），同 step-flow 那條「include 了不等於渲染得出徽章」。
 //     ⚠️ 2-2-1／2-2-3／3-4 是**經由 components/step-flow** 進去的，而那顆徽章關在 `{% if node.decision %}`
 //     裡——「這一頁 include 了 step-flow」不等於「它渲染得出徽章」，判準是那份 `stepFlowNodes`
 //     有沒有帶 `decision`（2-2-1 吃元件內建示範、2-2-3 與 3-4 各自覆寫時都帶了）。
@@ -84,6 +103,14 @@
 
     &.is-fail {
         background-color: var(--danger);
+        color: var(--on-accent);
+    }
+
+    // 進行中。--info 是 ui/toast 的 `info` 填充（_var.scss 已實算白字對比：淺色 4.60:1／深色 4.81:1
+    // ≥ AA 4.5），與 --on-accent 成對——不用 --brand：那一顆是「可按的東西」的填充
+    // （button-primary／active），拿它塗一顆不可按的狀態標記會讓人以為點得下去。
+    &.is-progress {
+        background-color: var(--info);
         color: var(--on-accent);
     }
 

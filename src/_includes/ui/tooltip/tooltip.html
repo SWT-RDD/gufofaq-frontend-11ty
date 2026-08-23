@@ -1,7 +1,7 @@
 {# 展示片段，取自真實 app pages/components/component.html 07 按鈕 section 內的 tooltip 用法（節錄，class 沿用真實系統） #}
 {# .tooltip 只負責視覺（見 _tooltip.scss）；顯示由 host 按鈕掛 tooltip 自有的 .has-tooltip 觸發 class，於 hover 時由 .has-tooltip:hover .tooltip 驅動，這裡示範組合用法 #}
 <div class="flex-row gap-20">
-    <button type="button" class="button-icon copy has-tooltip" data-toast="文字已複製!">
+    <button type="button" class="button-icon copy has-tooltip" data-toast="文字已複製!|複製失敗，請手動選取後複製" data-toast-type="success|error">
         <span class="tooltip">複製</span>
     </button>
     <button type="button" class="button-icon watch has-tooltip">

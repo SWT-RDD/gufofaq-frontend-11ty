@@ -12,6 +12,10 @@
     <button class="button button-red" type="button" data-toast="發生錯誤，請稍後再試" data-toast-type="error">error</button>
     <button class="button button-border" type="button" data-toast="請先完成必填欄位" data-toast-type="warning">warning</button>
     <button class="button button-dark" type="button" data-toast="正在處理中…" data-toast-type="info">info</button>
-    {# 複製成功是「前端就確定」的結果，故為 success —— 與真的複製鈕（.copyBtn / .shareBtn）同型別 #}
-    <button class="button button-border" type="button" data-toast="文字已複製!">data-toast 觸發（複製）</button>
+    {# 複製**不是**「前端就確定」的結果，所以是成功／失敗兩段（與真的複製鈕 .copyBtn / .shareBtn 同形）：
+         `navigator.clipboard` 只在安全脈絡存在，內網 http／file://／使用者拒絕過權限時它整個是
+         undefined，`execCommand` 那條退路也會丟例外。只演成功那一段，等於在複製沒成功的那一次
+         彈一顆綠勾——而其中一顆複製鈕是 show-once 的機器憑證明碼（5-6-3，DB 只留雜湊），
+         那一次失敗就是那把金鑰永久遺失。 #}
+    <button class="button button-border" type="button" data-toast="文字已複製!|複製失敗，請手動選取後複製" data-toast-type="success|error">data-toast 觸發（複製）</button>
 </div>

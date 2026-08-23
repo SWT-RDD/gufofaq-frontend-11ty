@@ -66,6 +66,17 @@ permalink: 1-1-6_uploadSuccess_excel.html
      看得到（重新整理就沒了），而這一支的呼叫端是匯入畫面、不是健檢頁——所以失敗要留一列，
      健檢頁才說得出『最近一次嘗試失敗了』」。 #}
 {% set importCounts = { inserted: 1, updated: 0, failed: 0 } %}
+{# 索引同步（`sync_state`，本輪新增；四態的語意與參數契約見 import-report 檔頭）。
+     **示範走 `pending`**：sync 是非同步的，匯入當下多半就是這一態（交辦單逐字「最常見」），
+     而這一頁原本從頭到尾只講得出「成功」——那正是「匯入回 200、索引裡一列都沒有」那條缺陷
+     在畫面上的形狀。把示範畫成 `succeeded` 會讓每個打開這一頁的人以為索引一定進去了
+     （元件庫頁那條「示範資料刻意不觸發錯誤態」的反向：也不可以把最好的那一態畫成預設態）。
+     **`indexed_count`／`failed_count` 刻意不 set**：pending 的定義就是「還不知道」，
+     上游此時回 `null` ⇒ 兩格畫「—」而不是 `0`（§6：沒量到 ≠ 零筆）。
+     `reason` 同理不 set：它只在 failed／unknown 有值。
+     與本頁其餘示範值自洽（§6）：三計數的單位是「檔」（inserted=1），而索引筆數的單位是「則」，
+     真值會是上面 `successDataCount` 那 980 ——這也是這兩格不能亂填一個數的理由。 #}
+{% set importSyncState = "pending" %}
 {# `label_sync_warning`＝匯入成功（200）但設定檔標籤沒同步成的那一態。示範把它演出來：
      這是 `import_excel` 回應裡唯一一個「成功了、但有話要說」的欄位，全站原本沒有任何落點
      （§3-2：response 回得出的每個欄位都要有地方畫）。文字逐字取自 product

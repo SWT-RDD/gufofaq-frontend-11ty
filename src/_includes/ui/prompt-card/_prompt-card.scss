@@ -27,7 +27,7 @@
 //                   <div class="flex-row align-items-center gap-8">
 //                       <span><span data-i18n="settings.referencedCount">被問答引用次數：</span> {{ v.refCount }} <span data-i18n="settings.timesUnit">次</span></span>
 //                       <span class="divider-vertical"></span>
-//                       <button type="button" id="promptVersionCopy-{{ loop.index }}" aria-labelledby="promptVersionName-{{ loop.index }} promptVersionCopy-{{ loop.index }}" class="button-icon copy copyBtn has-tooltip" data-toast="提示詞已複製！" data-i18n-data-toast="prompt.copied">
+//                       <button type="button" id="promptVersionCopy-{{ loop.index }}" aria-labelledby="promptVersionName-{{ loop.index }} promptVersionCopy-{{ loop.index }}" class="button-icon copy copyBtn has-tooltip" data-toast="提示詞已複製！|複製失敗，請手動選取後複製" data-i18n-data-toast="prompt.copied" data-toast-type="success|error">
 //                           <span class="tooltip" data-i18n="action.copy">複製</span>
 //                       </button>
 //                       <span class="divider-vertical"></span>
@@ -56,7 +56,7 @@
 //               <div class="flex-row justify-content-between align-items-center flex-wrap gap-16">
 //                   <div class="text-md text-blue" id="welcomeVersionName-{{ loop.index }}">{{ v.label }}（{{ v.timeRange }}）</div>
 //                   <div class="flex-row align-items-center gap-8">
-//                       <button type="button" id="welcomeVersionCopy-{{ loop.index }}" aria-labelledby="welcomeVersionName-{{ loop.index }} welcomeVersionCopy-{{ loop.index }}" class="button-icon copy copyBtn has-tooltip" data-toast="歡迎語已複製！" data-i18n-data-toast="welcome.copied">
+//                       <button type="button" id="welcomeVersionCopy-{{ loop.index }}" aria-labelledby="welcomeVersionName-{{ loop.index }} welcomeVersionCopy-{{ loop.index }}" class="button-icon copy copyBtn has-tooltip" data-toast="歡迎語已複製！|複製失敗，請手動選取後複製" data-i18n-data-toast="welcome.copied" data-toast-type="success|error">
 //                           <span class="tooltip" data-i18n="action.copy">複製</span>
 //                       </button>
 //                       <span class="divider-vertical"></span>

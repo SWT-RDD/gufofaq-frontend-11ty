@@ -4,7 +4,11 @@
 // 分享是「點了就開窗」，掛 data-open-modal 交給 ui/modals 的委派，這裡不寫 js。
 // 訊息複製：前台 Standard 真 app 的聊天訊息 copyBtn 是真剪貼簿（main.js 訊息渲染內
 // copyBtn.onclick → copyToClipboard(content)，clipboard API + execCommand fallback），
-// 純前端互動、切版照做（§5）；「文字已複製!」toast 由 data-toast 委派彈出，這裡只負責寫入剪貼簿。
+// 純前端互動、切版照做（§5）；toast 由 data-toast 委派彈出，這裡只負責寫入剪貼簿。
+// `common.copied` 是**兩段**（已複製／複製失敗）：委派是「每點一次輪播下一段」的原型演出
+// （ui/toast 檔頭），不是依這裡的實際成敗分支——**React 那一側必須依實際結果挑段**
+// （`lib/hooks/useCopy` 的 catch 走第 2 段），照抄輪播就會在複製成功時彈紅字。
+// 下面那條 execCommand 的退路失敗時這裡刻意不自己彈：切版只定契約，兩段都由委派演得到。
 document.addEventListener("DOMContentLoaded", function () {
     document.querySelectorAll(".faq-chatroom").forEach(function (room) {
         var scroll = room.querySelector(".faq-chat-scroll");

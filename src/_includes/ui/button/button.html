@@ -25,7 +25,7 @@
 <div class="flex-row gap-20">
     {# 同上：圖示鈕的可見字面（tooltip／sr-only）與本頁其他區塊的真實元件示範撞名，
          這裡是「樣式目錄」那一顆，故補上變體名。 #}
-    <button type="button" class="button-icon copy has-tooltip" data-toast="文字已複製!">
+    <button type="button" class="button-icon copy has-tooltip" data-toast="文字已複製!|複製失敗，請手動選取後複製" data-toast-type="success|error">
         <span class="tooltip">複製</span><span class="sr-only">（.button-icon.copy）</span>
     </button>
     <button type="button" class="button-icon watch has-tooltip">

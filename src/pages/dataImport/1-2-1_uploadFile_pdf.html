@@ -308,6 +308,17 @@ permalink: 1-2-1_uploadFile_pdf.html
      與「失敗 1」同時在畫面上。`updated` 保留字面 0：這一批沒有帶外部主鍵，沒有任何一筆是
      取代舊版（`updated` ＝被 `external_key` 取代的檔數，見 import-report 檔頭）。 #}
 {% set importCounts = { inserted: batchOkRows.length, updated: 0, failed: batchFailRows.length } %}
+{# 索引同步（`sync_state`，本輪新增；四態的語意與參數契約見 import-report 檔頭）。
+     **示範同 1-1-6 走 `pending`**：批次端點更是非同步（celery），匯入當下就是這一態。
+     兩頁同一態不是漏做——`succeeded`／`failed`／`unknown` 三態的長相落在元件庫頁的
+     「React 條件文案」區（REACT-CONVERSION §⑥：使用頁演不到的枚舉成員在那裡有家），
+     真實頁**刻意**只演最常見而且不說謊的那一態。
+     `indexed_count`／`failed_count`／`reason` 一律不 set：pending 的定義就是還不知道
+     ⇒ 兩格畫「—」不是 `0`。
+     ⚠️ **這一塊的「索引失敗筆數」與上面那句彙總的「失敗 1」不是同一件事**（§6 同頁不得有兩個
+     講同一件事卻不同源的數字）：後者是 product 端解析／落地失敗的**檔數**（`batchFailRows`），
+     前者是 GufoRAG 索引寫入失敗的**則數**。所以它不可以從 `batchFailRows.length` 推導。 #}
+{% set importSyncState = "pending" %}
 {# `structTables` 是**偵測到的表格總數**：pdf_tables 的 `stats["tables"] += 1` 在判定
      「這張處理不了」之前就無條件加一，所以無法處理的那幾張也算在內，總數必須 ≥ 兩份具名清單
      指名過的最大表格序號（§6：計數與具名清單要互推得出來）。

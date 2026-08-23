@@ -1081,8 +1081,41 @@ bodyClass: guideline-page
                     <span class="text-gray" data-i18n="comp.folderContribution">資料夾使用貢獻度</span>
                     <span data-i18n="stats.retrievalCount">取用次數</span>
                 </div>
+                {# `components/import-report` 的**索引同步**（`sync_state`）另外三態。那一塊有四態，而它的
+                     兩個使用頁（1-1-6 Excel、1-2-1 PDF/Word）都是**剛匯入完**的畫面 ⇒ 兩頁的示範都是
+                     `pending`（sync 是非同步的，那一刻多半就是這一態；把示範畫成 `succeeded` 等於讓
+                     每個打開頁面的人以為索引一定進去了，同本節第 3 條的反向）。剩下三態在真實頁上
+                     結構性地演不到，這裡是它們長相的唯一可見處。
+                     **顏色本身就是規格**：四態的正確動作各不相同——succeeded 不必做事、failed 是修好
+                     資料重匯、unknown 是拿關聯編號問維運而且**絕對不要重匯**、pending 是等。所以四顆
+                     徽章刻意四種色：綠／紅／黃／藍（`.is-progress` 這一顆變體就是為了不讓 pending 與
+                     unknown 撞色才加的，判準寫在 ui/verdict-tag）。
+                     `reason`（product 產的業務字串＋關聯編號）不翻、不進字典，故這裡不放——這一區
+                     只收「繁中在別處沒有家」的那些。
+                     繁中與 class 逐字照抄 components/import-report 那條 if 鏈（§4-2 同 key 兩種繁中
+                     會互相覆蓋）。 #}
+                <div class="flex-row align-items-center gap-8 flex-wrap">
+                    <span class="text-bold" data-i18n="dataImport.syncStateLabel">索引同步：</span>
+                    <span class="verdict-tag is-pass" data-i18n="dataImport.syncSucceeded">已寫入索引</span>
+                    {# 這兩格是**有值**那一形（真實頁的 pending 只演得到「—」那一形）：980 與上面
+                         1-1-6 的資料總量同源，0 是真的零筆——與「沒量到」的「—」是兩件事。 #}
+                    <span><span data-i18n="dataImport.syncIndexedCount">索引筆數：</span>980</span>
+                    <span><span data-i18n="dataImport.syncFailedCount">索引失敗筆數：</span>0</span>
+                </div>
+                <div class="flex-row align-items-center gap-8 flex-wrap">
+                    <span class="text-bold" data-i18n="dataImport.syncStateLabel">索引同步：</span>
+                    <span class="verdict-tag is-fail" data-i18n="dataImport.syncFailed">寫入索引失敗</span>
+                </div>
+                <p class="text-red m-0" data-i18n="dataImport.syncFailedHint">資料已經寫進資料集，但索引沒有建起來，所以這一批（或其中幾筆）現在搜不到。依下面的原因把資料修好之後，重新匯入同一份檔即可。</p>
+                <div class="flex-row align-items-center gap-8 flex-wrap">
+                    <span class="text-bold" data-i18n="dataImport.syncStateLabel">索引同步：</span>
+                    <span class="verdict-tag is-warn" data-i18n="dataImport.syncUnknown">查不到結果</span>
+                </div>
+                {# 這一句**刻意不上色**（不是漏掛 class）：紅色會把它讀成 failed，而兩者的正確動作
+                     相反；灰色會把「不要重匯」讀成枝節。理由逐條寫在 components/import-report。 #}
+                <p class="m-0" data-i18n="dataImport.syncUnknownHint">查詢同步結果這件事本身失敗了，不代表匯入失敗——資料已經送出、索引任務也已經派工。請不要重新匯入，那會產生重複資料；把下面那句話裡的關聯編號交給維運人員查。</p>
             </div>
-            <div class="subtitle">出處：2-2-4 的模型相容性兩句、2-2-5 的基準設定缺漏與命中清單截斷、2-2-5 的桶子列數截斷（每桶 20 則上限，那一頁只有 10 則案例故恆不觸發）、5-2 的逐代碼覆寫重複、5-2 的別名綁定與「沒有啟用任何輸出規則」、5-10 的覆蓋率可開啟與「尚未量測」、4-2 的兩欄合規、3-5 的「還沒跑過健檢」、2-2-5「沒得比」的另一個方向（基準沒有它）、5-9 的金鑰兩態（已存在／尚未產生）、4-2 意圖判斷的「是」、3-1-3 多選刪除的量詞、5-3 長條圖的系列欄名。它們在各自的頁面上都掛著 .hidden，或由一個在該頁恆為某一值的條件式產出，或是那一頁的示範推導不出來的枚舉成員，或住在切版畫不出內容的容器裡（&lt;canvas&gt;、業務 js 填的空槽）——那一態沒有人看得到，這裡是唯一可見處</div>
+            <div class="subtitle">出處：2-2-4 的模型相容性兩句、2-2-5 的基準設定缺漏與命中清單截斷、2-2-5 的桶子列數截斷（每桶 20 則上限，那一頁只有 10 則案例故恆不觸發）、5-2 的逐代碼覆寫重複、5-2 的別名綁定與「沒有啟用任何輸出規則」、5-10 的覆蓋率可開啟與「尚未量測」、4-2 的兩欄合規、3-5 的「還沒跑過健檢」、2-2-5「沒得比」的另一個方向（基準沒有它）、5-9 的金鑰兩態（已存在／尚未產生）、4-2 意圖判斷的「是」、3-1-3 多選刪除的量詞、5-3 長條圖的系列欄名、import-report 索引同步的另外三態（1-1-6／1-2-1 兩頁都停在最常見的 pending）。它們在各自的頁面上都掛著 .hidden，或由一個在該頁恆為某一值的條件式產出，或是那一頁的示範推導不出來的枚舉成員，或住在切版畫不出內容的容器裡（&lt;canvas&gt;、業務 js 填的空槽）——那一態沒有人看得到，這裡是唯一可見處</div>
         </section>
 
         <section id="errorPageSection">

@@ -4359,6 +4359,17 @@ test("§4 每一顆會改狀態的鈕都要宣告它需要哪一道閘門（四�
     const READONLY = [
         ["下載", "把既有資料匯出成檔案，走讀取端點；產生檔案不落任何一筆新狀態"],
         ["已複製", "寫進剪貼簿，完全不碰後端"],
+        // round47：`common.copied` 從一段變兩段（成功／失敗）之後，那一族 `.copyBtn` 才第一次
+        // 進得了本測試的母體——先前它們**沒有 data-toast-type**，`successSeg()` 回 null ⇒ 整批
+        // 不是被放行，是根本沒被看見（同洞⑥的病）。上面那筆「已複製」是**前綴**錨定，
+        // 配不到「文字已複製!」這一句，所以要自己一筆。
+        // 這一族要**四筆**而不是一筆，是因為這張表是**前綴**錨定，而複製類的繁中是「受詞在前」
+        // （文字／連結／提示詞／歡迎語 ＋「已複製」），四句沒有共同前綴。刻意不改成子字串比對：
+        // 洞④② 就是子字串放行了「已核發，請立即複製下方明碼」那顆 require_platform_admin 的寫入。
+        ["文字已複製", "同上：`.copyBtn` 寫進剪貼簿（faq-chatroom.js 的 clipboard ＋ execCommand 退路），沒有任何端點"],
+        ["連結已複製", "同上：`.shareBtn` 把**已經產生好的**分享連結寫進剪貼簿（faq-share-modal 那一顆旁邊就是唯讀的 textarea，連結是開窗前就有的）——產生連結是 share-manage-modal 的「建立分享連結」，那一顆自己標了 data-capability=\"history\""],
+        ["提示詞已複製", "同上：5-2 提示詞版本列的 `.copyBtn` 把該版本的內容寫進剪貼簿，不落任何一筆設定（套用是另一顆鈕）"],
+        ["歡迎語已複製", "同上：5-2 歡迎語版本列的 `.copyBtn`，理由與提示詞那一顆逐字相同"],
         ["量測完成", "5-10 檔頭引的 `GET /tags/coverage`：讀既有標註算覆蓋率，不改任何一筆標註"],
         ["名單已載入", "iso-review-wizard 檔頭引的 `GET /platform/review/overdue`（require_platform_auditor）：把逾時名單讀回來畫成 preview，寫入在下一態那顆 .js-review-confirm"],
     ];
@@ -4489,7 +4500,11 @@ test("§4 每一顆會改狀態的鈕都要宣告它需要哪一道閘門（四�
     // 改成**釘住上一輪實測的筆數**：母體只准往上長，掉下來就是有一族鈕從網裡漏出去了。
     // 這個數字要跟著 markup 一起長——加了新的 data-toast 鈕就把它調高，而不是把它調低。
     // round46 重量 117（舊值 105 是 round43 的實測；那之後多了十二顆鈕，門檻沒跟著抬）。
-    const SEG_FLOOR = 117;
+    // round47 重量 134：整個複製族（`common.copied`／`toast.copyServiceKey`／`modals.linkCopied`／
+    // `prompt.copied`／`welcome.copied`）補上失敗段之後才有了 `data-toast-type`——+17 顆**全部**是
+    // 「本來就在 markup 上、但 type 收斂不出來所以整顆看不見」的鈕，不是新畫的鈕。
+    // 也就是說這 17 顆在 round46 之前從來沒有被這條規則看過一眼，正是這道門檻要抓的方向。
+    const SEG_FLOOR = 134;
     assert.ok(allSegs.length >= SEG_FLOOR,
         `只解析出 ${allSegs.length} 個 success 段（上一輪 ${SEG_FLOOR}）—— 母體縮水了：` +
         `data-toast-type 若寫成插值帶預設而解析不出來，那一顆會靜靜地整個消失，不是被放行`);
