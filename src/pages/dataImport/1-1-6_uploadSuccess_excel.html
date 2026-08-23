@@ -17,6 +17,13 @@ permalink: 1-1-6_uploadSuccess_excel.html
      `_do_excel_mapping_import` 的三計數（inserted/updated/failed 互斥）與 dropped_links。 #}
 <p class="text-gray" data-i18n="dataImport.uploadSuccessExcelIntro">這一頁是 Excel 匯入完成後的結果畫面：確認這份資料已經寫入你選定的資料集，並列出這次匯入實際做了什麼（新增或取代既有版本、轉換內容時捨棄了哪些連結）。</p>
 
+{# **本頁是無導覽入口頁**（§3-1 第③條，同時登記在測試的 `NO_NAV`）：到得了這一頁的唯一途徑是在
+     1-1-4 按下送出、product `import_excel` 那一支成功之後換頁——那是條件動作，§5 只掛 hook class、
+     不做靜態跳轉，所以沒有任何一頁的 `href` 連得到它；部署站台上由頁面目錄 `catalog.html` 進入。
+     **1-1-4 那顆 `stepNextHref` 已撤**（動作模式渲染 `<button>`，`<a href>` 那一支永遠走不到）：
+     先前這條規則之所以是綠的，靠的就是那個渲染不到的參數——一個沒有消費者的參數不能替一條真
+     規則背書。**本頁同時是 Excel 流程的匯入報告落點**（唯一定義點是測試裡的 `REPORT_HOSTS`）。 #}
+
 {# 步驟條：4 步驟皆 done。狀態資料由本頁 set，交給參數化的 components/step-nodes 渲染（§6） #}
 {% set steps = [
     { label: "上傳檔案", done: true, i18nKey: "step.upload" },
@@ -66,7 +73,7 @@ permalink: 1-1-6_uploadSuccess_excel.html
      看得到（重新整理就沒了），而這一支的呼叫端是匯入畫面、不是健檢頁——所以失敗要留一列，
      健檢頁才說得出『最近一次嘗試失敗了』」。 #}
 {% set importCounts = { inserted: 1, updated: 0, failed: 0 } %}
-{# 索引同步（`sync_state`，本輪新增；四態的語意與參數契約見 import-report 檔頭）。
+{# 索引同步（`sync_state`；四態的語意與參數契約見 import-report 檔頭）。
      **示範走 `pending`**：sync 是非同步的，匯入當下多半就是這一態（交辦單逐字「最常見」），
      而這一頁原本從頭到尾只講得出「成功」——那正是「匯入回 200、索引裡一列都沒有」那條缺陷
      在畫面上的形狀。把示範畫成 `succeeded` 會讓每個打開這一頁的人以為索引一定進去了

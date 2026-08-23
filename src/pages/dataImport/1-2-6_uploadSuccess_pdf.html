@@ -17,6 +17,14 @@ permalink: 1-2-6_uploadSuccess_pdf.html
      是整批彙總（資料總量＋檔案大小），不是單一檔案的細節，鏡射 uploadSuccess.js 的 else 分支。 #}
 <p class="text-gray" data-i18n="dataImport.uploadSuccessPdfIntro">這一頁是 PDF／WORD 批次匯入完成後的結果畫面：確認這一批文件已經送入你選定的資料集。這裡顯示的是整批的彙總結果，不是單一檔案的細節。</p>
 
+{# **本頁是無導覽入口頁**（§3-1 第③條，同時登記在測試的 `NO_NAV`）：入口同 1-1-6——1-2-1 的送出鈕
+     是動作模式（product `batch_import_documents` 成功之後才換頁），那是條件動作、切版不做靜態跳轉，
+     所以沒有任何一頁的 `href` 連得到它；部署站台上由頁面目錄 `catalog.html` 進入。1-2-1 那顆
+     渲染不到的 `stepNextHref` 已撤，理由逐字同 1-1-6 檔頭。
+     **這一頁不是逐檔結果的落點**：PDF/WORD 那條流程的匯入報告畫在 1-2-1 當頁（唯一定義點是測試裡的
+     `REPORT_HOSTS`），所以上面那句「顯示的是整批的彙總結果，不是單一檔案的細節」是準確的，
+     而 1-2-1 的送出 toast 也因此只指當頁、不指這一頁。 #}
+
 {# 步驟條：PDF 流程只有「上傳檔案」「送出資料」兩步、皆 done、用 .lg 樣式。
      資料與 stepNodesLg 由本頁 set，交給參數化的 components/step-nodes 渲染（§6） #}
 {% set steps = [

@@ -67,7 +67,9 @@ permalink: 1-1-4_columnSelect_excel.html
 </div>
 
 {# 步驟條 + 上一步/下一步：步驟 1、2、3 done，僅「送出資料」未達成。
-     步驟狀態與上下步 href 由本頁 set，交給參數化的 components/step-btn-wrap 渲染（§6） #}
+     步驟狀態與**上一步** href 由本頁 set，交給參數化的 components/step-btn-wrap 渲染（§6）。
+     **不 set `stepNextHref`**：這一頁的「下一步」是送出鈕（動作模式），那一支渲染 `<button>`、
+     根本不讀 href ⇒ set 了就是一個沒有消費者的參數（同 1-2-1，有測試把關）。 #}
 {% set steps = [
     { label: "上傳檔案", done: true, i18nKey: "step.upload" },
     { label: "預覽資料", done: true, i18nKey: "step.preview" },
@@ -76,7 +78,6 @@ permalink: 1-1-4_columnSelect_excel.html
 ] %}
 <div class="mt-10 mb-24">
     {% set stepPrevHref = "1-1-3_preview_excel.html" %}
-    {% set stepNextHref = "1-1-6_uploadSuccess_excel.html" %}
     {# 這一頁的「下一步」是**送出鈕**，不是連結（見 step-btn-wrap 檔頭）：凍結前端
          `GufoFAQ_Frontend_New/js/columnSelect_excel.js:364` 先驗必填欄、再組 `fileProcessVM` 送出，成功才換頁。
          結果分支逐條對回 gufofaq-saas product `app/routers/datasets.py` 的

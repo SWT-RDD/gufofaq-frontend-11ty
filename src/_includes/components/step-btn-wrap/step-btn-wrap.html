@@ -1,6 +1,10 @@
 {# 步驟導覽：上一步 + step-nodes + 下一步（取自真實 app 步驟 section，class 沿用真實系統）。
      頁面 include 前 set steps（[{ label, done, i18nKey }]）+ 選填 stepNoPrev（true＝只留下一步、外層加 .no-prev）/ stepNodesLg（傳給內含 step-nodes）
-     / stepPrevHref・stepNextHref（簡化版靜態跳轉；**連結模式下必填**——先前未設會退 `"#"`，
+     / stepPrevHref・stepNextHref（簡化版靜態跳轉；**連結模式下必填、動作模式下不得 set**——
+       動作模式渲染的是 `<button>`，下面那條 `<a href>` 永遠走不到 ⇒ 那時 `stepNextHref` 是一個
+       沒有消費者、也沒有任何東西驗證它的值的參數（有測試把關）。「這一步之後去哪」由那顆送出鈕
+       的實際目標講，不由一個渲染不到的參數講；`stepPrevHref` 不受影響（上一步永遠是連結）。
+       先前未設會退 `"#"`，
        那是一顆按了只會捲回頁首的死連結（§5），而 `or '#'` 這種 nunjucks 後備在 src 上看不到那四個字。
        沒有去向就整顆不畫，同 `ui/breadcrumb` 對沒有 href 的分類層的處置）。
      **「下一步」有兩種，不是同一顆鈕**（§5 的 hook × data-toast 矩陣）：

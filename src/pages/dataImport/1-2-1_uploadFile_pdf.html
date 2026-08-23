@@ -18,14 +18,16 @@ permalink: 1-2-1_uploadFile_pdf.html
 <p class="text-gray" data-i18n="dataImport.uploadFilePdfIntro">這一頁是 PDF、WORD、圖片等非結構化文件的上傳與匯入介面：可以一次選取多個檔案、逐一編輯每個檔案的標題與內容。送出後會看到這批文件逐檔的匯入結果，包含哪些成功、哪些失敗與失敗原因。</p>
 
 {# 步驟條 + 只有「下一步」：兩步、.lg 樣式。
-     stepNoPrev / stepNodesLg / stepNextHref 由本頁 set，交給參數化的 components/step-btn-wrap 渲染（§6） #}
+     stepNoPrev / stepNodesLg 由本頁 set，交給參數化的 components/step-btn-wrap 渲染（§6）。
+     **不 set `stepNextHref`**：這一頁的「下一步」是送出鈕（動作模式），那一支渲染 `<button>`、
+     根本不讀 href ⇒ set 了就是一個沒有消費者、也沒有任何東西驗證它的值的參數（有測試把關）。
+     「這一步之後去哪」由那顆鈕的實際目標講，不由一個渲染不到的參數講。 #}
 {% set steps = [
     { label: "上傳檔案", done: true, i18nKey: "step.upload" },
     { label: "送出資料", done: false, i18nKey: "step.submit" }
 ] %}
 {% set stepNoPrev = true %}
 {% set stepNodesLg = true %}
-{% set stepNextHref = "1-2-6_uploadSuccess_pdf.html" %}
 {# 同 1-1-4：這一頁的「下一步」是送出鈕（凍結前端 `GufoFAQ_Frontend_New/js/uploadFilePdf.js:91`
      `await submitFileUpload()`），不是連結。分支對回 gufofaq-saas product
      `app/routers/datasets.py` 的 `POST /datasets/{id}/documents/batch-import`
@@ -44,7 +46,7 @@ permalink: 1-2-1_uploadFile_pdf.html
      這一整套結果先前一段都沒有：整頁零 data-toast、零 data-capability，等於把一顆會失敗的
      送出鈕演成一條必然成功的連結。
      **兩段「逐檔」的 toast 指的是當頁那張表，不是別頁**（`toast.importDocuments` 的第 1、6 段）：
-     匯入報告就 include 在這一頁，而 `stepNextHref` 那一頁（1-2-6）的頁層說明逐字寫著「顯示的是
+     匯入報告就 include 在這一頁，而 1-2-6（PDF 流程的完成頁）的頁層說明逐字寫著「顯示的是
      整批的彙總結果，不是單一檔案的細節」——把人從有逐檔細節的頁送到明說沒有的那一頁，是指反
      方向。toast 是一閃即逝的訊息，指路一律指**當頁的區塊名**：頁面一搬，跨頁的指路就會靜默
      指錯，而且沒有任何視覺指紋看得出來（有測試把關）。 #}

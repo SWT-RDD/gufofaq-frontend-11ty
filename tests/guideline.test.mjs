@@ -5558,6 +5558,14 @@ test("§3-1 每個 page-shell 頁都要有 header 導覽入口（或在檔頭註
             "ISO 審核精靈 preview 態。從 idle 過去要先打 GET /platform/review/overdue，是條件動作 ⇒ §5 只掛 hook class、不做靜態跳轉，所以沒有任何一頁連得到它"],
         ["5-6-1-3_platformIsoReviewResult.html",
             "同上，result 態：要 POST /platform/review/apply 成功之後才到得了"],
+        // 這兩頁先前「有入口」是**假的**：1-1-4／1-2-1 那兩顆 `{% set stepNextHref %}` 從來沒有渲染過
+        // （動作模式走 `<button>`，`<a href>` 那一支永遠走不到），而這條測試看的是 src 字串 ⇒ 一個
+        // 沒有消費者的參數在替一條真規則背書。撤掉那兩個死參數之後，這條規則才第一次真的對它們
+        // 執行 ⇒ **補登記，不是放寬**（兩頁的理由同時寫在各自檔頭，§3-1 第③條：痕跡要成對）。
+        ["1-1-6_uploadSuccess_excel.html",
+            "Excel 匯入的完成頁，也是那條流程的匯入報告落點（見 REPORT_HOSTS）。到得了它的唯一途徑是在 1-1-4 按下送出、POST /datasets/{id}/excel/import 成功之後換頁——那是條件動作，§5 只掛 hook class、不做靜態跳轉，所以沒有任何一頁 href 連得到它"],
+        ["1-2-6_uploadSuccess_pdf.html",
+            "PDF/WORD 批次匯入的完成頁（逐檔結果畫在 1-2-1 當頁，見 REPORT_HOSTS，這一頁只有整批彙總）。入口同上：1-2-1 的送出鈕是動作模式、POST /datasets/{id}/documents/batch-import 成功之後才換頁"],
     ]);
     const menu = read("src/_includes/components/header/header.html");
     const hrefs = new Set([...menu.matchAll(/href:\s*"([^"?#]+)/g)].map((m) => m[1]));
@@ -8101,49 +8109,84 @@ test("§6 1-2-1 批次匯入：彙總的 importSyncState ＝逐檔優先序取�
         "負控失效：漏 set importSyncPerFile 抓不到");
 });
 
+// ── 匯入報告的落點：每條匯入流程「送出的那一頁」與「畫報告的那一頁」──────────────
+// 兩條流程**不對稱**，而這張表是那件事的**唯一定義點**（README 只指過來、不重述：散文沒有
+// 任何東西會讓它變紅，報告落點搬家的那一天它會安靜地變成第二個錯誤的指路牌）。
+//   Excel（1-1-x）    ：送出在 1-1-4，報告畫在**下一頁** 1-1-6
+//   PDF/WORD（1-2-x）：送出在 1-2-1，報告就畫在**當頁**（逐檔結果／訊息／索引同步同一列）
+// 這個不對稱直接決定 toast 怎麼寫：報告在當頁時說「見下一頁」，是把人送去 1-2-6——那一頁的
+// 頁層說明逐字寫著「顯示的是整批的彙總結果，不是單一檔案的細節」，等於指反方向。
+// 表的兩端都機械驗證（下面第一條測試）：report 那一頁真的 include 了 import-report，
+// submit 那一頁真的是動作模式（送出鈕），而且**沒有第三個落點漏在表外**。
+const REPORT_HOSTS = [
+    { flow: "Excel（1-1-x）", submit: "1-1-4_columnSelect_excel", report: "1-1-6_uploadSuccess_excel" },
+    { flow: "PDF/WORD（1-2-x）", submit: "1-2-1_uploadFile_pdf", report: "1-2-1_uploadFile_pdf" },
+];
+const REPORT_COMPONENT = "components/import-report";
+const includesOfPage = (html) =>
+    new Set([...stripNjk(html).matchAll(/include\s+"((?:ui|components)\/[\w-]+)\//g)].map((m) => m[1]));
+// 一頁的 toast 有兩種載體：markup 上的 data-toast，與使用頁 set 給共用元件的 *Toast 參數
+const toastsOfPage = (html) => {
+    const out = [];
+    for (const { value } of attrValuesIn(html, "data-toast")) out.push(value);
+    for (const m of stripNjk(html).matchAll(/\{%-?\s*set\s+\w*[Tt]oast\w*\s*=\s*"([^"]*)"/g)) out.push(m[1]);
+    return out;
+};
+
+test("§6 匯入報告的落點表（REPORT_HOSTS）與實況一致——正反兩向", () => {
+    const pages = srcHtml.filter((f) => !f.includes("_includes"));
+    const byBase = new Map(pages.map((f) => [basename(f, ".html"), f]));
+    assert.ok(REPORT_HOSTS.length >= 2, "REPORT_HOSTS 少於兩條流程 —— 那張表就沒有「不對稱」可記了");
+    const bad = [];
+    for (const { flow, submit, report } of REPORT_HOSTS) {
+        for (const [role, name] of [["submit", submit], ["report", report]])
+            if (!byBase.has(name)) bad.push(`${flow} 的 ${role} 頁 ${name} 不存在（幽靈列）`);
+        if (!byBase.has(submit) || !byBase.has(report)) continue;
+        // ① report 那一頁真的畫得出報告
+        if (!includesOfPage(read(byBase.get(report))).has(REPORT_COMPONENT))
+            bad.push(`${flow}：${report} 沒有 include ${REPORT_COMPONENT} —— 落點過期了`);
+        // ② submit 那一頁真的是「送出」那一步（動作模式的鈕，不是純換頁的連結）
+        if (!/\{%-?\s*set\s+stepNextAction\s*=\s*true/.test(stripNjk(read(byBase.get(submit)))))
+            bad.push(`${flow}：${submit} 不是動作模式（沒有 stepNextAction = true）—— 它不是送出那一步`);
+    }
+    // ③ 反向：沒有第三個落點漏在表外（有人加了第三條匯入流程、卻沒進表 ⇒ 下面那條 toast 規則
+    //    對它從來沒被執行過，而那正是這張表要防的靜默）
+    const actual = pages.filter((f) => includesOfPage(read(f)).has(REPORT_COMPONENT)).map((f) => basename(f, ".html"));
+    const listed = new Set(REPORT_HOSTS.map((r) => r.report));
+    for (const f of actual) if (!listed.has(f)) bad.push(`${f} include 了 ${REPORT_COMPONENT}，卻不在 REPORT_HOSTS 裡`);
+    assert.ok(actual.length >= 2, `只有 ${actual.length} 頁 include ${REPORT_COMPONENT} —— 這條測試在空轉`);
+    assert.equal(bad.length, 0, `§6 匯入報告落點表過期：\n${fail(bad)}`);
+});
+
 test("§5 toast 不得把人送去別頁看一塊**當頁自己就 include 了**的東西", () => {
-    // 裁定（round47）：1-2-1 的送出 toast 寫「逐檔結果見下一頁的匯入報告」，而匯入報告
-    // 就 include 在 1-2-1 自己身上；`stepNextHref` 那一頁（1-2-6）的頁層說明逐字寫著
-    // 「顯示的是整批的彙總結果，不是單一檔案的細節」。逐檔明細加到當頁之後，那句話從
-    // 「含糊」變成「指反方向」——把人從有細節的頁送到明說沒有細節的頁。
-    // **為什麼要有機器**：toast 是一閃即逝的訊息，指路到別頁本來就脆弱（區塊搬一次那句話
-    // 就靜默指錯），而視覺指紋、i18n 掃描、死連結那幾張網對「指錯方向」全都看不見——
-    // 文案照樣在、頁面照樣長得一樣，只有照著做的人會撞牆。
-    // 判準只取**可查證的那一半**：頁面自己 include 了那個元件（＝那塊東西就在當頁），
-    // toast 就不得說它在「下一頁」。跨頁的指路本身不禁——真的在別頁時那句話是對的。
-    const ELSEWHERE = new Map([
-        // 元件 → 「說它在別頁」的字樣（繁中原文；toast 的英譯由「同繁中同英譯」那兩條連坐）
-        ["components/import-report", /下一頁|下一步的頁|另一頁/],
-    ]);
-    const toastsOf = (html) => {
-        const out = [];
-        // 兩種載體：markup 上的 data-toast，與使用頁 set 給共用元件的 *Toast 參數
-        for (const { value } of attrValuesIn(html, "data-toast")) out.push(value);
-        for (const m of stripNjk(html).matchAll(/\{%-?\s*set\s+\w*[Tt]oast\w*\s*=\s*"([^"]*)"/g)) out.push(m[1]);
-        return out;
-    };
-    const includesOf = (html) =>
-        new Set([...stripNjk(html).matchAll(/include\s+"((?:ui|components)\/[\w-]+)\//g)].map((m) => m[1]));
+    // 裁定：1-2-1 的送出 toast 寫「逐檔結果見下一頁的匯入報告」，而匯入報告就 include 在
+    // 1-2-1 自己身上；`stepNextHref` 那一頁（1-2-6）的頁層說明逐字寫著「顯示的是整批的彙總
+    // 結果，不是單一檔案的細節」。逐檔明細加到當頁之後，那句話從「含糊」變成「指反方向」。
+    // **為什麼要有機器**：toast 是一閃即逝的訊息，指路到別頁本來就脆弱（區塊搬一次那句話就
+    // 靜默指錯），而視覺指紋、i18n 掃描、死連結那幾張網對「指錯方向」全都看不見——文案照樣
+    // 在、頁面照樣長得一樣，只有照著做的人會撞牆。
+    // 判準只取**可查證的那一半**：REPORT_HOSTS 說報告就在當頁（submit === report）時，那一頁的
+    // toast 不得說它在別頁。**跨頁指路本身不禁**——Excel 那條流程的報告真的在下一頁。
+    const ELSEWHERE = /下一頁|下一步的頁|另一頁/;
     const rule = (html, f = "<probe>") => {
         const out = [];
-        const inc = includesOf(html);
-        for (const [comp, elsewhere] of ELSEWHERE) {
-            if (!inc.has(comp)) continue;                       // 那塊東西不在當頁 ⇒ 指去別頁是對的
-            for (const t of toastsOf(html))
-                for (const seg of t.split("|"))
-                    if (elsewhere.test(seg))
-                        out.push(`${f}  toast 段落把人送去別頁，但 ${comp} 就 include 在這一頁：「${seg}」`);
-        }
+        if (!includesOfPage(html).has(REPORT_COMPONENT)) return out;   // 那塊東西不在當頁 ⇒ 指去別頁是對的
+        for (const t of toastsOfPage(html))
+            for (const seg of t.split("|"))
+                if (ELSEWHERE.test(seg))
+                    out.push(`${f}  toast 段落把人送去別頁，但 ${REPORT_COMPONENT} 就 include 在這一頁：「${seg}」`);
         return out;
     };
     const pages = srcHtml.filter((f) => !f.includes("_includes"));
-    // 空轉守門三道：母體、載體、以及「這條規則管得到的頁真的存在」
+    // 空轉守門三道：頁面母體、toast 載體、以及「報告就在當頁」那一型真的存在（規則有東西可管）
     assert.ok(pages.length > 20, `只掃到 ${pages.length} 個頁面 —— 這條測試在空轉`);
-    const segs = pages.reduce((n, f) => n + toastsOf(read(f)).reduce((k, t) => k + t.split("|").length, 0), 0);
+    const segs = pages.reduce((n, f) => n + toastsOfPage(read(f)).reduce((k, t) => k + t.split("|").length, 0), 0);
     assert.ok(segs > 100, `只解析到 ${segs} 段 toast —— 載體解析壞了，這條在空轉`);
-    for (const [comp] of ELSEWHERE) {
-        const hosts = pages.filter((f) => includesOf(read(f)).has(comp));
-        assert.ok(hosts.length > 0, `ELSEWHERE 的 ${comp} 沒有任何頁面 include 它 —— 死規則，請移除`);
+    const sameForm = REPORT_HOSTS.filter((r) => r.submit === r.report);
+    assert.ok(sameForm.length > 0, "REPORT_HOSTS 裡沒有「報告就在送出當頁」的流程 —— 這條規則沒有任何頁面可管（死規則）");
+    for (const { flow, report } of sameForm) {
+        const f = pages.find((p) => basename(p, ".html") === report);
+        assert.ok(f && toastsOfPage(read(f)).length > 0, `${flow} 的 ${report} 一段 toast 都沒有 —— 這條規則對它空轉`);
     }
     const hits = pages.flatMap((f) => rule(read(f), f));
     probe("§5 toast 指路", (s) => rule(s),
@@ -8156,4 +8199,54 @@ test("§5 toast 不得把人送去別頁看一塊**當頁自己就 include 了**
             '{% set stepNextToast = "匯入完成，逐檔結果與索引同步狀態都在下面的批次匯入結果|匯入失敗" %}',
             '{% set stepNextToast = "匯入完成，逐檔結果見下一頁的匯入報告|匯入失敗" %}']);
     assert.equal(hits.length, 0, `§5 toast 指反方向：\n${fail(hits)}`);
+});
+
+test("§6 stepNextHref 與 stepNextAction = true 不得同時 set（動作模式那一支不讀 href）", () => {
+    // 裁定：`step-btn-wrap` 在動作模式渲染 `<button>`，`{% else %}` 那條 `<a href>` 永遠走不到
+    // ⇒ 動作模式的頁面 set `stepNextHref` 是一個**沒有任何消費者、也沒有任何東西驗證它的值**
+    // 的參數。它作為「這一步之後去哪」的文件，內容已經由那顆送出鈕的實際目標講掉了。
+    // 撤掉之後那個地雷變成 fail-loud：有人關掉 stepNextAction，`<a>` 那一支就渲染出一顆沒有
+    // href 的連結——一按沒反應，立刻被發現（另有「不得留 href="#" 死連結」那條在管）。
+    // 留著才是靜默的：它會安靜地連到一個錯的目的地。
+    // **`stepNextAction = false` ＋ href 是合法的**：那是 §2 的重設（`set` 是頁面全域的），
+    // 連結模式本來就必填 href。所以判準看的是**實效模式**——每個 include 之前最後一次
+    // `stepNextAction` 的值。一頁若同時有兩種模式的 include，逐 include 判不出「這顆 href 是
+    // 給誰的」，那時就跳過並在下面點名（今天沒有這種頁，真出現了要改成逐 include 傳參）。
+    const rule = (html, f = "<probe>") => {
+        const t = stripNjk(html);
+        const marks = [];
+        for (const m of t.matchAll(/\{%-?\s*set\s+stepNextAction\s*=\s*(\w+)/g)) marks.push({ at: m.index, kind: "mode", v: m[1] === "true" });
+        for (const m of t.matchAll(/\{%-?\s*set\s+stepNextHref\s*=/g)) marks.push({ at: m.index, kind: "href" });
+        for (const m of t.matchAll(/\{%-?\s*include\s+"components\/step-btn-wrap\//g)) marks.push({ at: m.index, kind: "use" });
+        marks.sort((a, b) => a.at - b.at);
+        let mode = false, href = false;
+        const uses = [];
+        for (const mk of marks) {
+            if (mk.kind === "mode") mode = mk.v;
+            else if (mk.kind === "href") href = true;
+            else uses.push({ mode, href, line: countLines(t, mk.at) });
+        }
+        if (!uses.length) return [];
+        if (new Set(uses.map((u) => u.mode)).size > 1) return [];   // 混模式頁：見檔頭那段，今天不存在
+        const u = uses[0];
+        return u.mode && u.href
+            ? [`${f}:${u.line}  這一頁是動作模式（送出鈕），卻還 set 了 stepNextHref —— 那一支根本不讀它，是沒有消費者的參數`]
+            : [];
+    };
+    const pages = srcHtml.filter((f) => !f.includes("_includes"));
+    const modeOf = (f) => rule(read(f), f);
+    // 空轉守門：兩種模式的頁都要真的解析得出來（判準壞了會讓整條規則靜靜全綠）
+    const users = pages.filter((f) => /\{%-?\s*include\s+"components\/step-btn-wrap\//.test(stripNjk(read(f))));
+    assert.ok(users.length >= 3, `只找到 ${users.length} 頁 include step-btn-wrap —— 這條測試在空轉`);
+    const action = users.filter((f) => /\{%-?\s*set\s+stepNextAction\s*=\s*true/.test(stripNjk(read(f))));
+    assert.ok(action.length >= 2, `只找到 ${action.length} 頁動作模式 —— 這條規則沒有東西可管`);
+    assert.ok(users.length - action.length >= 2, `連結模式的頁不足（${users.length - action.length}）—— good 方向沒有樣本`);
+    const hits = users.flatMap(modeOf);
+    probe("§6 動作模式不得 set stepNextHref", (s) => rule(s),
+        ['{% set stepNextHref = "x.html" %}\n{% set stepNextAction = true %}\n{% include "components/step-btn-wrap/step-btn-wrap.html" %}',
+            '{% set stepNextAction = true %}\n{% set stepNextHref = "x.html" %}\n{% include "components/step-btn-wrap/step-btn-wrap.html" %}'],
+        ['{% set stepNextAction = false %}\n{% set stepNextHref = "x.html" %}\n{% include "components/step-btn-wrap/step-btn-wrap.html" %}',
+            '{% set stepNextAction = true %}\n{% include "components/step-btn-wrap/step-btn-wrap.html" %}',
+            '{% set stepNextHref = "x.html" %}\n{% include "components/step-btn-wrap/step-btn-wrap.html" %}']);
+    assert.equal(hits.length, 0, `§6 沒有消費者的參數：\n${fail(hits)}`);
 });
