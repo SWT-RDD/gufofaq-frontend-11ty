@@ -1060,8 +1060,29 @@ bodyClass: guideline-page
                     <span data-i18n="qa.hasIntentDetection">有無進行意圖判斷</span>
                     <span data-i18n="common.yes">是</span>
                 </div>
+                {# 3-1-3 **多選**刪除時，確認窗內文那一格的量詞。單選那一條指名檔名（`deleteTargetId`
+                     那顆空 span 由業務 js 填），多選講不出是哪一個檔、只能講數量——而 3-1-3 的靜態稿
+                     只畫得出窗關著的樣子，那一格在使用頁上結構性地畫不到（§4-2：使用頁演不到的落在這裡）。
+                     先前這一句在 React 端是寫死的繁中，英文租戶會在一個破壞性確認窗上看到
+                     「Are you sure you want to delete 3 個檔案」。
+                     **只有後綴、沒有前綴**：中英兩邊數字都排在最前面，硬湊一顆恆為空字串的前綴 key
+                     只是多一顆沒有內容的節點。**數量恆 ≥ 2**（正好一筆時走的是檔名那一條），所以英文
+                     固定複數、不做單複數分岔。
+                     繁中逐字照抄 components/delete-modal 的內文（§4-2 同 key 兩種繁中會互相覆蓋）。 #}
+                <p class="m-0"><span data-i18n="common.confirmDelete">確定要刪除</span> <span><span>3</span><span data-i18n="dataset.deleteFileCountSuffix"> 個檔案</span></span></p>
+                {# 5-3「資料夾使用貢獻度」長條圖的**系列欄名**（畫在 tooltip 與圖例那一行上）。
+                     切版的圖是 `<canvas>` 佔位、不引 Chart.js（components/chart-box 檔頭），所以這一句
+                     在使用頁上永遠畫不出來——與「送出中／載入中」那一族同辦法：回切版給它一個渲染點
+                     （REACT-CONVERSION §③；先前它在 React 端是 Recharts `<Bar name>` 的寫死繁中）。
+                     不沿用既有 key：`settings.retrievedCount`（「取用資料數：」）自帶冒號、是同頁指標列的
+                     label 不是欄名；`health.hitCountLabel`／`health.hitSum` 講的是 3-5 的「命中次數」，
+                     與這裡的「取用次數」是兩個詞（§4-2 同繁中才沿用，不同繁中不共用）。 #}
+                <div class="flex-row align-items-center gap-8">
+                    <span class="text-gray" data-i18n="comp.folderContribution">資料夾使用貢獻度</span>
+                    <span data-i18n="stats.retrievalCount">取用次數</span>
+                </div>
             </div>
-            <div class="subtitle">出處：2-2-4 的模型相容性兩句、2-2-5 的基準設定缺漏與命中清單截斷、2-2-5 的桶子列數截斷（每桶 20 則上限，那一頁只有 10 則案例故恆不觸發）、5-2 的逐代碼覆寫重複、5-2 的別名綁定與「沒有啟用任何輸出規則」、5-10 的覆蓋率可開啟與「尚未量測」、4-2 的兩欄合規、3-5 的「還沒跑過健檢」、2-2-5「沒得比」的另一個方向（基準沒有它）、5-9 的金鑰兩態（已存在／尚未產生）、4-2 意圖判斷的「是」。它們在各自的頁面上都掛著 .hidden，或由一個在該頁恆為某一值的條件式產出，或是那一頁的示範推導不出來的枚舉成員——那一態沒有人看得到，這裡是唯一可見處</div>
+            <div class="subtitle">出處：2-2-4 的模型相容性兩句、2-2-5 的基準設定缺漏與命中清單截斷、2-2-5 的桶子列數截斷（每桶 20 則上限，那一頁只有 10 則案例故恆不觸發）、5-2 的逐代碼覆寫重複、5-2 的別名綁定與「沒有啟用任何輸出規則」、5-10 的覆蓋率可開啟與「尚未量測」、4-2 的兩欄合規、3-5 的「還沒跑過健檢」、2-2-5「沒得比」的另一個方向（基準沒有它）、5-9 的金鑰兩態（已存在／尚未產生）、4-2 意圖判斷的「是」、3-1-3 多選刪除的量詞、5-3 長條圖的系列欄名。它們在各自的頁面上都掛著 .hidden，或由一個在該頁恆為某一值的條件式產出，或是那一頁的示範推導不出來的枚舉成員，或住在切版畫不出內容的容器裡（&lt;canvas&gt;、業務 js 填的空槽）——那一態沒有人看得到，這裡是唯一可見處</div>
         </section>
 
         <section id="errorPageSection">

@@ -57,12 +57,14 @@
                  meta 帶 enable_suggest_questions——引符號不引行號），渲染成一排可點 chip；
                  點擊＝把該題當下一題送出（業務行為，React 端 onAskSuggested）。
                  此處示範資料，正式環境由回傳陣列驅動（空陣列則整塊不渲染）。
-                 變數與 label id 用元件專屬名（components/chatroom 另有一份自己的 chip 區，§6／id 唯一） #}
+                 變數與 label id 用元件專屬名（components/chatroom 另有一份自己的 chip 區，§6／id 唯一）
+                 **這一稿的 chip 帶 `disabled`**：它們掛在第一問的答案下，而畫面演的是使用者點了其中一顆、
+                 第二問正在生成——chip 送的也是一題，生成中同樣不能再送（見下方串流狀態列那一段）。 #}
             {% set faqSuggested = ["結婚登記要準備哪些文件？", "面談流程大約需要多久？"] %}
             <div class="suggested-questions" role="group" aria-labelledby="faqSuggestedLabel">
                 <span id="faqSuggestedLabel" class="suggested-questions-label" data-i18n="comp.suggestedQuestions">建議追問：</span>
                 {% for q in faqSuggested %}
-                <button type="button" class="button button-border button-sm js-ask-suggested" data-toast="回答生成中...|詢問太頻繁，請稍後再試|回答生成成功|回答生成失敗" data-i18n-data-toast="toast.faqChatSubmit" data-toast-type="info|warning|success|error">{{ q }}</button>
+                <button type="button" class="button button-border button-sm js-ask-suggested" data-toast="回答生成中...|詢問太頻繁，請稍後再試|回答生成成功|回答生成失敗" data-i18n-data-toast="toast.faqChatSubmit" data-toast-type="info|warning|success|error" disabled>{{ q }}</button>
                 {% endfor %}
             </div>
         </div>
@@ -75,7 +77,17 @@
              live region 的節點必須在內容到達**之前**就存在，React 端切內容、不切節點。
              §6 示範資料要自洽：狀態列不可與「已答畢」並存，故補一則生成中的第二問——畫面敘事＝
              第一問已答（含建議追問），使用者點了第二顆 chip、正在搜尋資料。
-             文案是 chrome 走 i18n，沿用後台同一顆 agent.searching（§4-2 同繁中沿用既有 key）。 #}
+             文案是 chrome 走 i18n，沿用後台同一顆 agent.searching（§4-2 同繁中沿用既有 key）。
+             **這一態宣告的停用要由 markup 表達**：生成中就是不能再送一題（送了＝同一題問兩次、
+             扣兩次額度，本產品「問了就扣、失敗不退」），所以輸入框、送出鈕與兩顆建議追問 chip
+             都帶 `disabled`。先前只有註解說這是生成中，控制項卻按得下去——那是畫面上同時說兩件事，
+             而且 React 端照著接就會少掉那道鎖。**這是 REACT-CONVERSION §⑥ 明文允許的那一種
+             `disabled`（「進行中」）**，與「權限不足／沒選東西」那一族相反：那些有 warning 分支，
+             用 disabled 讓它不可達＝把契約演掉。
+             ⚠️ **代價要講清楚，免得下一輪把它當 bug 修回去**：這一頁因此按不出那幾串 `data-toast`。
+             `data-toast` 列的是**這顆鈕的結果集合**（契約），不是它此刻的狀態——同族的可點示範仍在
+             `2-2-3_abTest`（`toast.chatSend`）與 `ui/widget-shell`（`toast.widgetAsk`），toast 的四種
+             語意型別長相在 `ui/toast` 的展示區。要拿回可點，得先改掉這一稿演的那一態，不是拿掉鎖。 #}
         <div class="message-wrap">
             <div class="message-row by-user">
                 <div class="message-content">
@@ -99,14 +111,16 @@
         <div class="faq-input-wrap">
             <div class="faq-chat-field form-group">
                 {# id/class chat-input-txt＝真 app 業務掛點（Standard main.js getElementById('chat-input-txt') 讀值送問答），值載體原樣保留（§5） #}
-                <input type="text" id="chat-input-txt" placeholder="請輸入問題..." data-i18n-placeholder="comp.pleaseEnterQuestion" class="chat-input-txt form-control" aria-label="輸入問題" data-i18n-aria-label="comp.enterQuestion">
+                <input type="text" id="chat-input-txt" placeholder="請輸入問題..." data-i18n-placeholder="comp.pleaseEnterQuestion" class="chat-input-txt form-control" aria-label="輸入問題" data-i18n-aria-label="comp.enterQuestion" disabled>
                 {# 空的 live region：訊息由真 app 業務 js 填（Standard main.js:485-492 的 `showError()`
                      對 `.form-group` 內的 `.error-prompt` 寫 textContent）。烤一句通用的「輸入錯誤！」
                      等於同一件事有兩套回報（§4）：那一套永遠不會被觸發，而真正的訊息會把它蓋掉。 #}
                 <span class="error-prompt" role="alert"></span>
             </div>
-            {# 同 components/chatroom：送出鈕多一條「沒填問題」，建議追問的 chip 沒有那一態。 #}
-            <button type="button" class="button button-primary flex-shrink-0" data-toast="回答生成中...|請先輸入問題|詢問太頻繁，請稍後再試|回答生成成功|回答生成失敗" data-i18n-data-toast="toast.faqChatSend" data-toast-type="info|warning|warning|success|error" data-i18n="action.submit">送出</button>
+            {# 同 components/chatroom：送出鈕多一條「沒填問題」，建議追問的 chip 沒有那一態。
+                 `disabled` 與那幾段 toast 不衝突：停用的是**這一刻**（生成中），那幾段演的是
+                 「可以送的時候按下去會得到什麼」——toast 分支是這顆鈕的結果集合，不是它的現在式。 #}
+            <button type="button" class="button button-primary flex-shrink-0" data-toast="回答生成中...|請先輸入問題|詢問太頻繁，請稍後再試|回答生成成功|回答生成失敗" data-i18n-data-toast="toast.faqChatSend" data-toast-type="info|warning|warning|success|error" data-i18n="action.submit" disabled>送出</button>
         </div>
     </div>
 </div>

@@ -301,7 +301,9 @@
              這一顆的家選在**這顆鈕**而不是元件庫頁：§③ 的判準是「會換字的那一格用兩態槽」，
              而這正是那一格。同一顆 key 的另一個消費點（React 的 `SubscriptionGate` 接受免責聲明鈕）
              共用這一份繁中與英譯，不另立第二顆。
-             `disabled` 不進 markup：那是 React 的執行期狀態（§⑥「要 disable 只能 disable 進行中」）。 #}
+             **busy 那一態的 `disabled` 不進 markup**：這一稿演的不是「送出中」，靜態稿沒有那一刻。
+             （鈕上確實有一顆 `disabled`，但它是另一件事——見下一段的 type-to-confirm 鎖。
+             REACT-CONVERSION §⑥ 列的兩種合規 disable：進行中、以及窗內看得見的解鎖條件未滿足。） #}
         {# 這是整台精靈**唯一的寫入鈕**（`POST /platform/review/apply`，product `app/routers/platform.py`
              的 `review_apply`），先前零 `data-toast` ⇒ ①它整顆掉出 §4 閘門測試的母體（那條以
              「`data-toast-type` 含 success」為母體）；②`toast.reviewApplied` 這顆 key 在切版根本不存在，
@@ -314,6 +316,12 @@
              走「動作鈕不渲染」（§5 渲染規則）。
            ⚠️ **待回流（gufofaq-saas@648c3cc 複驗）**：那一側目前把 `segs[1]` 當 error 用，補了中間這一段
              之後要改成 `segs[2]`（`|` 分段是索引契約）。 #}
+        {# **`disabled`＝type-to-confirm 尚未解鎖**（同 manage-tenant-modal 危險操作區那兩顆）：
+             這一稿演的是片語欄空著的那一刻，而片語欄的全部意義就是「沒逐字打對之前按不下去」。
+             它不是把 `data-toast` 的任何一段演掉——那三段是這顆鈕**送得出去之後**的結果集合
+             （送出成功／部分租戶失敗／整批送不出去），與「現在還不能按」不同軸；解鎖條件本身
+             常駐可見（上面那顆 `reviewConfirmHint`，`aria-describedby` 接著），使用者看得到自己
+             差什麼，所以不需要也不該改成 warning toast（REACT-CONVERSION §⑥ 的第二種合規 disable）。 #}
         <div class="flex-row gap-10 align-items-center">
             <button type="button" class="button button-red js-review-confirm" data-platform-role="admin"
                 data-toast="處置已送出|有幾個租戶沒有處置成功，逐筆結果見下一頁|送出失敗，請稍後再試"
@@ -321,7 +329,7 @@
                 data-text-irreversible="確認執行（不可逆）" data-key-irreversible="platform.confirmExecute"
                 data-text-reversible="確認執行（可解凍）" data-key-reversible="platform.confirmExecuteFreeze"
                 data-text-busy="處理中…" data-key-busy="platform.applying"
-                data-i18n="platform.confirmExecute">確認執行（不可逆）</button>
+                data-i18n="platform.confirmExecute" disabled>確認執行（不可逆）</button>
             <button type="button" class="button button-border js-review-cancel" data-i18n="action.cancel">取消</button>
         </div>
     </div>

@@ -1383,26 +1383,50 @@ test("§4-2 en.json 不得有孤兒 key（每個 key 都要被 markup／js 引�
     assert.equal(orphans.length, 0, `en.json 有 key 沒有任何 markup/js 引用（死翻譯，應該刪掉）：\n${orphans.join("\n")}`);
 });
 
+// **「英文刻意留空」的唯一登記處**（§4-2「英文語法不需要的字段允許空字串譯文」）。
+// en.json 是 JSON、放不下註解，而空字串在那份檔案裡與「漏翻」長得一模一樣——所以理由住在這裡，
+// 逐顆寫。掃到空字串的人（或下一輪審查）先讀這張表，別再把同一批當漏翻報一次。
+//
+// 判準只有一句：**那個語意由同一句話的另一半承載，英文那一半不需要這個字段**。
+// 所以每一筆都要指出「另一半是誰」，指不出來的就是真漏翻、不准進表。
+const EMPTY_EN_ALLOWED = new Map([
+    ["comp.copyright", "頁尾「版權所有© 2025 All Rights Reserved」：英文那半句是 key 外的字面量，" +
+        "已經整句在畫面上（components/footer），前綴再翻一次會變成 “All rights reserved © 2025 All Rights Reserved”"],
+    ["common.unitItems", "量詞「個」：英文由前半句承載（settings.aliasBindLimitPrefix「A profile can bind at most 」" +
+        "＋數字、qa.detailConvOf「 of 」＋總數），英文語序在數字後面不接單位字"],
+    ["pagination.pageSuffix", "「第 N 頁」的「頁」：英文是 pagination.pagePrefix「Page 」＋數字，字尾無物"],
+    ["health.recordRowSuffix", "「第 N 列」的「列」：英文是 health.recordRowPrefix「row 」＋數字，字尾無物"],
+    ["agent.qaPoolPrefix", "「共 N 筆」的「共」：英文是數字＋agent.qaPoolSuffix「 candidates」，字首無物"],
+]);
+
 test("§4-2 markup 引用到的 key，en.json 的值不得是空字串（allowlist 除外）", () => {
     // 「孤兒 key」測試擋的是「en.json 有、沒人用」；這條反過來擋「有人用、卻沒有英文內容」——
     // 英文模式下會顯示一片空白，比顯示繁中更容易被誤以為是「這裡本來就沒有文字」。
-    // 四顆刻意留空（見各自 en.json 旁的定義）：comp.copyright（頁尾版權，真 app 就是空字串）、
-    // common.unitItems（分頁「共 N 筆」的裝飾字，英文版式不需要這個字）、
-    // pagination.pageSuffix（"Page 3"英文不需要中文「頁」那個字尾）、
-    // health.recordRowSuffix（「第 137 列」的「列」，英文 "row 137" 沒有這個字尾——同 §4-2
-    // 「英文語法不需要的字段允許空字串譯文」的量詞後綴那一族）。
-    // 英文語法不需要的字段允許空字串譯文（§4-2）：量詞後綴、以及「共 N 筆」這種中文才需要的前綴
-    const ALLOWLIST = new Set(["comp.copyright", "common.unitItems", "pagination.pageSuffix", "health.recordRowSuffix",
-        "agent.qaPoolPrefix"]);
     const en = JSON.parse(read("src/i18n/en.json"));
     const { used } = collectUsedI18nKeys();
     assert.ok(used.size > 100, `只收集到 ${used.size} 個用到的 key —— 這條測試在空轉`);
     const hits = [];
     for (const [k, where] of used) {
-        if (ALLOWLIST.has(k)) continue;
+        if (EMPTY_EN_ALLOWED.has(k)) continue;
         if (en[k] === "") hits.push(`${k}  ← ${where[0]}`);
     }
-    assert.equal(hits.length, 0, `英文模式下會顯示空白（如非刻意留空，請補上英文；如確實該空，請加進 allowlist）：\n${hits.join("\n")}`);
+    assert.equal(hits.length, 0, `英文模式下會顯示空白（如非刻意留空，請補上英文；如確實該空，請連同理由加進 EMPTY_EN_ALLOWED）：\n${hits.join("\n")}`);
+});
+
+test("§4-2 「英文刻意留空」的登記不得過期（補了英文、或那顆 key 沒人用了，就要從表裡移除）", () => {
+    // 上一條的負控：白名單自己也會爛。少了這一條，一顆補上英文（或整顆被刪掉）的 key 會靜靜留在
+    // 表裡，而那張表是下一輪審查唯一讀得到的理由——過期的理由比沒有理由更難查。
+    const en = JSON.parse(read("src/i18n/en.json"));
+    const { used } = collectUsedI18nKeys();
+    assert.ok(used.size > 100, `只收集到 ${used.size} 個用到的 key —— 這條測試在空轉`);
+    const stale = [];
+    for (const [k, why] of EMPTY_EN_ALLOWED) {
+        if (!(k in en)) stale.push(`${k}：en.json 裡沒有這顆 key 了`);
+        else if (en[k] !== "") stale.push(`${k}：英文已經補上「${en[k]}」，不再是刻意留空`);
+        else if (!used.has(k)) stale.push(`${k}：markup／js 已經沒有人引用它（孤兒 key 那條會另外報）`);
+        if (why.length < 10) stale.push(`${k}：理由太短，寫出「英文那一半由誰承載」`);
+    }
+    assert.equal(stale.length, 0, `EMPTY_EN_ALLOWED 有過期項：\n${stale.join("\n")}`);
 });
 
 test("§4-2 en.json 的 key 依字母序排列（全域嚴格字母序，插入新 key 別手滑塞錯位置）", () => {
@@ -6722,6 +6746,7 @@ test("§5 `.hidden` 判準①的另一半：src 引用得到、dist 卻一頁都
         ["pagination.jumpPrev", "ui/pagination/pagination.js"],
         ["pagination.jumpNext", "ui/pagination/pagination.js"],
         ["pagination.nextDisabled", "ui/pagination/pagination.js"],
+        ["toast.selectDatasetFirst", "components/select-dataset-modal/select-dataset-modal.js"],
     ]);
     const { used } = collectUsedI18nKeys();
     const rendered = new Set();

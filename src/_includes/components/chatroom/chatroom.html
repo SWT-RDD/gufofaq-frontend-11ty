@@ -144,13 +144,15 @@
                              ——**理由只有這一個**。前一版還寫了「且 history API 不回傳 suggest_questions」，
                              那是錯的：product `history.py` 的 `_PUBLIC_LOG_FIELDS` 收了 `suggest_questions`，
                              詳情頁拿得到。渲染條件不變，但別再拿一個不成立的理由當第二支柱（§3-2 負面斷言）。
-                             變數用元件專屬名；label id 同理取元件專屬名（faq-chatroom 另有一份自己的 chip 區） #}
+                             變數用元件專屬名；label id 同理取元件專屬名（faq-chatroom 另有一份自己的 chip 區）
+                             **chip 帶 `disabled`**：它們掛在第一問的答案下，而互動模式這一稿演的是
+                             第二問正在生成（見下方串流狀態列）——chip 送的也是一題，生成中同樣不能再送。 #}
                         {% if not chatInputHidden %}
                         {% set chatroomSuggested = ["結婚登記要準備哪些文件？", "面談流程大約需要多久？"] %}
                         <div class="suggested-questions" role="group" aria-labelledby="chatroomSuggestedLabel">
                             <span id="chatroomSuggestedLabel" class="suggested-questions-label" data-i18n="comp.suggestedQuestions">建議追問：</span>
                             {% for q in chatroomSuggested %}
-                            <button data-capability="ask" type="button" class="button button-border button-sm js-ask-suggested" data-toast="回答生成中...|權限不足，無法送出|回答生成成功|回答生成失敗" data-i18n-data-toast="toast.chatSubmit" data-toast-type="info|warning|success|error">{{ q }}</button>
+                            <button data-capability="ask" type="button" class="button button-border button-sm js-ask-suggested" data-toast="回答生成中...|權限不足，無法送出|回答生成成功|回答生成失敗" data-i18n-data-toast="toast.chatSubmit" data-toast-type="info|warning|success|error" disabled>{{ q }}</button>
                             {% endfor %}
                         </div>
                         {% endif %}
@@ -162,7 +164,13 @@
                          畫面敘事＝第一問已答（含建議追問），使用者又送出第二問、正在搜尋資料。
                          依 GUIDELINE §4「動態出現的訊息要在 live region 裡」必掛 role="status" aria-live="polite"，
                          輔具才會朗讀狀態變化。文字為 chrome 走 i18n。
-                         唯讀的問答紀錄預覽（chatInputHidden）沒有串流，第二問與狀態列都不渲染。 #}
+                         唯讀的問答紀錄預覽（chatInputHidden）沒有串流，第二問與狀態列都不渲染。
+                         **這一態宣告的停用要由 markup 表達**：生成中不能再送一題（送了＝同一題問兩次、
+                         扣兩次額度），故輸入框、送出鈕與兩顆 chip 都帶 `disabled`——REACT-CONVERSION §⑥
+                         明文允許的那一種（「進行中」）。與「權限不足」那一族相反：那一段是 warning 分支，
+                         用 disabled 讓它不可達＝把契約演掉（5-3 那一頁逐字寫過同一句）。
+                         ⚠️ 代價：這一頁因此按不出那幾串 `data-toast`（那是**結果集合**、不是現在式）；
+                         同族的可點示範在 `2-2-3_abTest`（同一顆 `toast.chatSend`）。 #}
                     {% if not chatInputHidden %}
                     <div class="message-wrap">
                         <div class="message-row by-user">
@@ -195,13 +203,13 @@
         <div class="input-wrap">
             <div class="form-group chat-input-field">
                 <div class="field">
-                    <textarea class="form-control chat-input-control" placeholder="輸入問題" data-i18n-placeholder="comp.enterQuestion" aria-label="輸入問題" data-i18n-aria-label="comp.enterQuestion"></textarea>
+                    <textarea class="form-control chat-input-control" placeholder="輸入問題" data-i18n-placeholder="comp.enterQuestion" aria-label="輸入問題" data-i18n-aria-label="comp.enterQuestion" disabled></textarea>
                 </div>
             </div>
             {# 送出鈕另立 key：它多一條「沒填問題」（真 app singleTest.js:795-803 `if (!question)` 就地擋下（`$error.text('請輸入問題').show()` ＋ `$textarea.addClass('error')`））。
                  建議追問的 chip 送的是固定問句，不可能空——共用同一顆 key 會讓那四顆 chip 演一個
                  不可能的結果（§5）。 #}
-            <button data-capability="ask" type="button" class="button button-primary chat-input-submit" data-toast="回答生成中...|權限不足，無法送出|請先輸入問題|回答生成成功|回答生成失敗" data-i18n-data-toast="toast.chatSend" data-toast-type="info|warning|warning|success|error" data-i18n="action.submit">送出</button>
+            <button data-capability="ask" type="button" class="button button-primary chat-input-submit" data-toast="回答生成中...|權限不足，無法送出|請先輸入問題|回答生成成功|回答生成失敗" data-i18n-data-toast="toast.chatSend" data-toast-type="info|warning|warning|success|error" data-i18n="action.submit" disabled>送出</button>
         </div>
     </div>
     {% endif %}

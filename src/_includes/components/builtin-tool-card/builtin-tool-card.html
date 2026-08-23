@@ -77,7 +77,13 @@
     （§4-2 同繁中沿用既有 key）。
   上限 1024 是後端寫入層硬限制（product app/tool_refs.py 的 MAX_BUILTIN_TOOL_TEXT_LEN = 1024，
     與 chatbot app/services/config.py 同名常數逐字相同），故 maxlength 與字數提示共用本元件的
-    builtinToolMaxLen（§6：一個數字只有一份真相）。 #}
+    builtinToolMaxLen（§6：一個數字只有一份真相）。
+    **它是界線數字、不是文案，React 端讀端點不抄這個字面**（REACT-CONVERSION §③）：
+    `GET /settings/chat-config-limits` 的 `builtin_tool_override.description.max_len` 與
+    `.extra_prompt.max_len`（product `app/limits/chat_config_limits.py` 的
+    `BUILTIN_TOOL_OVERRIDE_LIMITS` 投影上面那顆常數）。切版這一份是**靜態稿的示範值**：上游把上限
+    收到 512 的那天，這裡的 1024 會過期，而 React 端不會——這正是「切版字面 ≠ 契約」的分工，
+    不是漏做資料化（§③「先接成常數、之後再接端點」講的是 React 那一側，切版本來就只給字面）。 #}
 {% set builtinToolMaxLen = 1024 %}
 <div class="block builtin-tool-card js-accordion-item" data-tool="{{ tool.name }}">
     <div class="builtin-tool-head flex-row align-items-center flex-wrap gap-8">

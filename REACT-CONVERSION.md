@@ -443,8 +443,8 @@ portal 時的唯一辦法，**不是設計**。React 端一律收斂成**一顆�
   `dataImport.previewFailed`…）。處置與缺成員完全相同——**回切版給它一個渲染點**（會換字的那一格用
   兩態槽、真實頁演不到的落在元件庫頁的「React 條件文案」區），`REACT_ONLY` 只當**過渡登記**、不是終局。
   理由也一樣：那句繁中在切版沒有家，就等於在 React 端開了第二個文案正本，而字典比對、孤兒 key、
-  fpdiff 三張網一張都看不到。（`disabled={submitting}` 本身合規——§⑥「要 disable 只能 disable
-  『進行中』」；不合規的是那顆**沒有人定過**的第二態文字。）
+  fpdiff 三張網一張都看不到。（`disabled={submitting}` 本身合規——§⑥ 合規 disable 的第①種；
+  不合規的是那顆**沒有人定過**的第二態文字。）
 - 語言鈕標籤顯示要切去的語言（en→「中」、zh→「EN」，不進字典）；點擊 `i18n.changeLanguage` + `localStorage("lang")` +
   同步 `document.documentElement.lang`（`en`→`"en"`，否則`"zh-Hant"`）——不是只有 `<head>` no-flash 腳本首次載入設一次。
 - i18n init `lng="zh"`；client mount 後依 `localStorage("lang")` `changeLanguage`。
@@ -687,8 +687,21 @@ portal 時的唯一辦法，**不是設計**。React 端一律收斂成**一顆�
   不縮排），且 **scss 定義的每一階都要有一條測試或 gallery render 得到它**，否則是出貨死 CSS。
   陷阱：後端同名欄位（事件的 `depth`）不等於顯示樹深，縮排只能用 DFS 深度。
 - **toast 的 `|` 段數是契約**：React 端把段數硬編成 `segs[0..n]`，字典段數一改所有索引位移＝在錯的情況彈錯訊息。
-  改字典必須同批改索引，並用測試斷言段數。切版有 warning 分支、React 卻用 `disabled` 讓它不可達＝把契約演掉了
-  ——要 disable 只能 disable「進行中」。
+  改字典必須同批改索引，並用測試斷言段數。切版有 warning 分支、React 卻用 `disabled` 讓它不可達＝把契約演掉了。
+  - **第一順位的判準是「切版有沒有列那一段 warning」，不是「理由看不看得見」**：列了就不准 disable
+    （`config-copy-modal` 的「請至少勾選一個複製項目」、5-3 的「權限不足」——兩處都逐字寫著這句）。
+    切版**沒有**那一段時才輪得到下面兩種。
+  - **合規的 `disabled` 只有兩種**：①**進行中**（`disabled={submitting}`、問答生成中——那一刻不是使用者
+    改得掉的）；②**type-to-confirm 尚未解鎖**（`manage-tenant-modal` 的兩顆刪除、`iso-review-wizard` 的
+    「確認執行」）。②之所以走 disabled 而不是 warning，是因為 GUIDELINE §5 的 hook 矩陣①明文那一族
+    **不掛 `data-toast`**，而解鎖條件就在同一個窗裡、常駐可見（片語欄 ＋ `aria-describedby` 接的 hint），
+    使用者看得到自己差什麼。這兩種**切版自己就畫得出來**，所以 `disabled` 寫在切版 markup 上、React 照抄，
+    不是 React 自己加的。
+  - **其餘一律不准**：`data-capability` 不足、資源層 scope、上游 409／400、「沒選任何一筆」——理由都在畫面外，
+    使用者只會看到一顆按不下去的鈕而不知道要去找誰。那些的家是 `data-toast` 的 warning 分支；切版沒有那一段
+    就是切版的缺口，回切版補，別在 React 端用 disabled 收掉（`SelectDatasetModal` 就是這樣被收掉過一輪的）。
+  - 兩者可以同時存在於一顆鈕上，不衝突：`data-toast` 列的是**它送得出去之後的結果集合**（契約），
+    `disabled` 講的是**此刻能不能按**（狀態）。代價是那顆鈕在切版按不出 toast，要記在該處註解裡。
 - 新規則附負控 + 空轉守門；能白名單就別黑名單。
 - 一列多個示範元素只實作部分時，fpdiff 對每顆各自下 `:nth-child(N)` selector（`document.querySelector` 單 root）。
 

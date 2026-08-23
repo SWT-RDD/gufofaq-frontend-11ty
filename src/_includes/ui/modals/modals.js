@@ -1,7 +1,9 @@
 // 跳窗開關：標準 <dialog> API（showModal / close），改寫自凍結前端 GufoFAQ_Frontend_New/js/main.js openModal/closeModal
 // 拿掉 flatpickr 初始化（日期選擇不在切版範圍）；曝露 window.openModal 供其他元件呼叫
 // （唯一消費者：components/rating-modal 的 openRating）。
-// `window.closeModal(modalEl)` 同樣有匯出，但**站內零消費點**——關窗全走 `.btn-close-modals`
+// `window.closeModal(modalEl)` 的消費點是 `components/select-dataset-modal`：那一窗的確認鈕**不能**
+// 掛 `.btn-close-modals`（一筆都沒選時要留在窗裡彈 warning，§5），所以它自己判斷成立與否再呼叫這一支
+// ——「有條件才關窗」表達不成宣告式屬性，正是這個匯出存在的理由。其餘關窗一律走 `.btn-close-modals`
 // 的委派；以 `grep -rn closeModal src --include=*.js` 為準（同 lang-toggle 對 `lang()` 的處置）。
 // （例：rating-modal.js 的 openRating 要先預選讚/倒讚再開窗，無法用宣告式屬性表達）。
 // 只是「點了就開窗」的按鈕不要寫 js —— 掛 data-open-modal="<dialog id>"，由下面的事件委派接手（§5）。
