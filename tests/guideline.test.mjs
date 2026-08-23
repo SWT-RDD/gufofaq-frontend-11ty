@@ -152,7 +152,7 @@ const distDoc = (f) => stripNonMarkup(read(`dist/${f}`));
     // 棘輪：round46 重量 29329（前一次寫的 25000 是 round45 的實測 25467 取整；那之後 markup 長了
     // 三千多個標籤，門檻卻沒跟著抬，等於留了 15% 的縫——剝除規則吃掉一成的真 markup 仍會全綠）。
     // **棘輪要跟著母體一起長**：加了頁面／區塊就重量一次；真的刪頁才把它調下來，那是一次有意識的決定。
-    const PREV_DIST_TAGS = 29300;
+    const PREV_DIST_TAGS = 29600;
     assert.ok(total >= PREV_DIST_TAGS,
         `dist 剝完只剩 ${total} 個開標籤（上一輪 ${PREV_DIST_TAGS}）—— distDoc() 的剝除規則吃掉了真 markup，` +
         `所有以它為母體的測試都在對著空文件斷言`);
@@ -7921,4 +7921,182 @@ test("§4/§5 pagination 由 js 產出的 markup 也要進 img／可及名稱／
     // 負控：判準要真的分得出好壞
     assert.ok(/<a\b/.test('<li><a href="#">1</a></li>'), "負控失效：<a> 判準抓不到 <a>");
     assert.ok(!/\btype="button"/.test('<button aria-label="x">1</button>'), "負控失效：type 判準抓不到缺 type");
+});
+
+test("§6 授權用量那一列：四格都要有 is_unlimited 哨兵，而「沒有數字」的三種語意不得撞字", () => {
+    // 交辦：`is_unlimited` 為真時，這一列四格裡原本只有三格有一態槽——「今日已用」沒有，
+    // 於是那一格照樣印上游的 `0`。而那顆 0 不是「今天沒有人問」，是**沒有人去數**
+    //（不限量那條分支直接回 `current_usage: 0` 而完全不執行 COUNT）。§6：「沒量到」與「零」是兩件事。
+    // 兩件事一起釘，因為它們各擋一種壞法：
+    //   ① 漏槽——某一格沒有哨兵，不限量的平台在那一格看到一個沒有意義的數字（原本的缺陷）。
+    //   ② 撞字——三種語意共用一顆字就等於沒有分：「不適用」會被讀成「這個平台沒有用量」（錯，
+    //      有用量、只是沒被數），而值班的人正是據此判斷要不要處理。
+    // **英譯也要三種不同**：只在繁中分開的話，英文租戶讀到的是同一句話（en.json 那一半沒有網
+    // 的話，這條規則對半數使用者不成立）。
+    const F = "src/_includes/components/platform-tenants-panel/platform-tenants-panel.html";
+    // 這一列的四格，key ＝那一格的 label（值本身是資料、不掛 data-i18n）
+    const CELLS = [
+        ["platform.licenseCurrentUsage", "今日已用"],
+        ["platform.licenseMaxUsage", "授權上限"],
+        ["platform.licenseRemaining", "剩餘"],
+        ["platform.licenseUsageRate", "使用率"],
+    ];
+    const CURRENT = "platform.licenseCurrentUsage";
+    const rule = (html, en) => {
+        const out = [];
+        const lines = stripNjk(html).split(/\r?\n/);
+        const slot = new Map(); // label key → { text, key }
+        for (const [labelKey] of CELLS) {
+            const line = lines.find((l) => l.includes(`data-i18n="${labelKey}"`));
+            if (line === undefined) { out.push(`${labelKey}：這一格不見了（parse 失準或那一格被刪了）`); continue; }
+            const text = attrValue(line, "data-text-unlimited");
+            const key = attrValue(line, "data-key-unlimited");
+            if (!text || !key) { out.push(`${labelKey}：沒有 is_unlimited 哨兵（data-text-unlimited ＋ data-key-unlimited 要成對）`); continue; }
+            slot.set(labelKey, { text, key });
+        }
+        if (slot.size !== CELLS.length) return out;   // 上面已經點名，不用殘缺的集合再算撞字
+        // ① 三種語意：四格的字面剛好三種（上限自己一種、剩餘與使用率同一種、今日已用自己一種）
+        const texts = [...slot.values()].map((s) => s.text);
+        if (new Set(texts).size !== 3) out.push(`四格的哨兵字面應該剛好三種語意，實際 ${new Set(texts).size} 種：${texts.join("／")}`);
+        // ② 「今日已用」那一格的字面不得與任何別格相同（它的語意是「刻意不數」，獨一份）
+        const mine = slot.get(CURRENT);
+        for (const [k, s] of slot) if (k !== CURRENT && s.text === mine.text)
+            out.push(`「今日已用」與 ${k} 撞字（都是「${s.text}」）——「沒量到」與「算不出來」是兩件事`);
+        // ③ 英譯也要分得開
+        const enTexts = [...new Set([...slot.values()].map((s) => s.key))].map((k) => en[k]);
+        if (enTexts.some((v) => !v)) out.push(`哨兵的 key 有一顆不在 en.json：${[...slot.values()].map((s) => s.key).join("、")}`);
+        else if (new Set(enTexts).size !== enTexts.length) out.push(`英譯撞字（繁中分開了、英文沒有）：${enTexts.join("／")}`);
+        return out;
+    };
+    const en = JSON.parse(read("src/i18n/en.json"));
+    assert.equal(rule(read(F), en).length, 0, `§6 授權用量的「沒有數字」哨兵：\n${fail(rule(read(F), en))}`);
+    // 負控：三種壞法各合成一份，都要被同一條規則抓到（漏槽／繁中撞字／英譯撞字）
+    const line = (labelKey, zh, text, key) =>
+        `<span><span data-i18n="${labelKey}">${zh}：</span><span data-text-unlimited="${text}" data-key-unlimited="${key}">1</span></span>`;
+    const good = [
+        line("platform.licenseCurrentUsage", "今日已用", "未計數", "platform.licenseUsageNotCounted"),
+        line("platform.licenseMaxUsage", "授權上限", "不限量", "platform.licenseUnlimited"),
+        line("platform.licenseRemaining", "剩餘", "不適用", "platform.licenseNotApplicable"),
+        line("platform.licenseUsageRate", "使用率", "不適用", "platform.licenseNotApplicable"),
+    ];
+    const EN = { "platform.licenseUsageNotCounted": "Not counted", "platform.licenseUnlimited": "Unlimited", "platform.licenseNotApplicable": "Not applicable" };
+    assert.equal(rule(good.join("\n"), EN).length, 0, "負控失效：正確的樣本被判成違規（規則寫太緊）");
+    const noSlot = good.slice();
+    noSlot[0] = `<span><span data-i18n="platform.licenseCurrentUsage">今日已用：</span>3182</span>`;
+    assert.ok(rule(noSlot.join("\n"), EN).length > 0, "負控失效：漏掉一格哨兵抓不到（這就是原本的缺陷）");
+    const clash = good.slice();
+    clash[0] = line("platform.licenseCurrentUsage", "今日已用", "不適用", "platform.licenseNotApplicable");
+    assert.ok(rule(clash.join("\n"), EN).length > 0, "負控失效：繁中撞字抓不到");
+    const enClash = good.slice();
+    enClash[0] = line("platform.licenseCurrentUsage", "今日已用", "未計數", "platform.licenseUsageNotCounted");
+    assert.ok(rule(enClash.join("\n"), { ...EN, "platform.licenseUsageNotCounted": "Not applicable" }).length > 0,
+        "負控失效：英譯撞字抓不到");
+});
+
+test("§6 1-2-1 批次匯入：索引同步逐檔一顆徽章，匯入失敗那一列畫缺席態、不畫「寫入索引失敗」", () => {
+    // 交辦：批次端點的 `sync_state` 是**逐檔**一份（一檔一條 celery 管道、各自成敗），
+    // 壓成一顆彙總徽章之後「三檔還在同步、一檔查不到結果」會整塊變成查不到——另外那幾檔
+    // 在畫面上消失了。這條測試釘三件事：
+    //   ① 每一列都有自己的那一顆（漏一列＝那一檔的狀態又不見了）
+    //   ② `ok: false` 的那一列畫**缺席態**（`.is-faint`「沒有索引任務」）：連 `sync_state`
+    //      這個欄位都沒有（沒送出去、沒有管道可查），給它一顆「寫入索引失敗」是在講一件
+    //      沒發生過的事，而且指示相反（它會叫人去修資料重匯）。留白也不行——會被讀成版面漏畫。
+    //   ③ 匯入成功的那幾列**不得**是缺席態（反方向：把有管道的檔畫成沒有任務）。
+    const PAGE = "1-2-1_uploadFile_pdf.html";
+    const FOUR = new Set(["dataImport.syncPending", "dataImport.syncSucceeded", "dataImport.syncFailed", "dataImport.syncUnknown"]);
+    const ABSENT = "dataImport.syncNoTask";
+    // 規則吃「渲染後的 tbody 一段」：逐 <tr> 檢查
+    const rule = (tbody) => {
+        const out = [];
+        const rows = [...tbody.matchAll(/<tr\b[\s\S]*?<\/tr>/g)].map((m) => m[0]);
+        for (const row of rows) {
+            const tags = [...row.matchAll(/<span\b((?:"[^"]*"|'[^']*'|[^>"'])*)>/g)]
+                .map((m) => m[1]).filter((a) => classesOf(a).includes("verdict-tag"));
+            const ok = row.includes('data-i18n="dataImport.importOk"');
+            const failed = row.includes('data-i18n="dataImport.importFailed"');
+            const who = (row.match(/<td>([^<]*)</) || [, "?"])[1].trim();
+            if (!ok && !failed) { out.push(`${who}：這一列既不是匯入成功也不是匯入失敗（狀態欄的 key 變了？）`); continue; }
+            if (tags.length !== 1) { out.push(`${who}：索引同步格有 ${tags.length} 顆徽章，應該剛好 1 顆`); continue; }
+            const cls = classesOf(tags[0]);
+            const key = attrValue(tags[0], "data-i18n");
+            if (failed) {
+                if (key !== ABSENT) out.push(`${who}：匯入失敗那一列的同步格畫成 ${key}——它沒有 sync_state，應該是缺席態 ${ABSENT}`);
+                if (!cls.includes("is-faint")) out.push(`${who}：缺席態要用最輕的 .is-faint（實際 ${cls.join(" ")}）`);
+            } else {
+                if (key === ABSENT) out.push(`${who}：匯入成功那一列被畫成「沒有索引任務」——它有管道可查`);
+                if (!FOUR.has(key)) out.push(`${who}：同步格的 key ${key} 不在四態裡`);
+            }
+        }
+        return { out, rows: rows.length };
+    };
+    // 母體＝那張表的 tbody（用第四欄的表頭 key 認出它，不靠位置）
+    const doc = distDoc(PAGE);
+    const tables = [...doc.matchAll(/<table\b[\s\S]*?<\/table>/g)].map((m) => m[0])
+        .filter((t) => t.includes('data-i18n="dataImport.colSyncState"'));
+    assert.equal(tables.length, 1, `${PAGE} 裡帶「索引同步」欄的表格有 ${tables.length} 張，應該剛好 1 張 —— 這條測試在空轉`);
+    const tbody = (tables[0].match(/<tbody\b[\s\S]*?<\/tbody>/) || [""])[0];
+    const got = rule(tbody);
+    assert.ok(got.rows >= 3, `結果表格只解析到 ${got.rows} 列 —— 這條測試在空轉`);
+    assert.ok(tbody.includes(`data-i18n="${ABSENT}"`), `${PAGE} 一列缺席態都沒有 —— 那一態沒有可見處，等於沒做`);
+    assert.equal(got.out.length, 0, `§6 逐檔索引同步：\n${fail(got.out)}`);
+    // 彙總那一顆要講明是「這一批」：逐檔那幾顆就在同一頁上，兩邊同一個標籤會被讀成第五顆徽章
+    assert.ok(doc.includes('data-i18n="dataImport.syncStateBatchLabel"'),
+        `${PAGE} 的彙總徽章沒有用批次那顆標籤（「這一批的索引同步：」）`);
+    assert.ok(!doc.includes('data-i18n="dataImport.syncStateLabel"'),
+        `${PAGE} 同時出現單檔那顆標籤「索引同步：」—— 與逐檔那幾顆講的不是同一件事`);
+    // 逐檔畫了就不該再畫一排恆為「—」的彙總計數（會把別檔已經寫進索引的筆數藏起來）
+    const outsideTable = doc.replace(tables[0], "");
+    for (const k of ["dataImport.syncIndexedCount", "dataImport.syncFailedCount"])
+        assert.ok(!outsideTable.includes(`data-i18n="${k}"`),
+            `${PAGE} 在結果表格之外又畫了一份 ${k} —— 同一批數字兩個投影，而彙總那一份在混合態下恆是「—」`);
+    // 負控：三種壞法各合成一列，都要被同一條規則抓到
+    const row = (statusKey, tagCls, tagKey) =>
+        `<tr><td>x.pdf</td><td><span data-i18n="${statusKey}">s</span></td><td></td>` +
+        `<td><span class="verdict-tag ${tagCls}" data-i18n="${tagKey}">t</span></td></tr>`;
+    assert.equal(rule(row("dataImport.importOk", "is-progress", "dataImport.syncPending") +
+        row("dataImport.importFailed", "is-faint", ABSENT)).out.length, 0, "負控失效：正確的兩列被判成違規");
+    assert.ok(rule(row("dataImport.importFailed", "is-fail", "dataImport.syncFailed")).out.length > 0,
+        "負控失效：把匯入失敗的列畫成「寫入索引失敗」抓不到（這就是交辦點名的那件事）");
+    assert.ok(rule(`<tr><td>x.pdf</td><td><span data-i18n="dataImport.importOk">s</span></td><td></td><td></td></tr>`).out.length > 0,
+        "負控失效：整格留白（一顆徽章都沒有）抓不到");
+    assert.ok(rule(row("dataImport.importOk", "is-faint", ABSENT)).out.length > 0,
+        "負控失效：把匯入成功的列畫成缺席態抓不到");
+});
+
+test("§6 1-2-1 批次匯入：彙總的 importSyncState ＝逐檔優先序取最安全的那一邊", () => {
+    // 彙總那一顆的取值不是「最嚴重的」而是**最安全的**：`unknown` 蓋掉 `failed`，因為兩者的
+    // 指示完全相反（failed 要修好資料重匯、unknown 是絕對不要重匯），而「不要重匯」是不會
+    // 製造重複資料的那一邊。React 端由 `results[]` 現算；切版這一側因為 nunjucks 的
+    // `{% set %}` 在 `{% for %}` 裡是迴圈區域變數（出了迴圈就回到舊值），算不出來 ⇒ 是字面量。
+    // 字面量就會過期：改一列的 `syncState`、忘了改彙總，畫面上就會同時說兩件事（§6 示範自洽）。
+    const F = "src/pages/dataImport/1-2-1_uploadFile_pdf.html";
+    const ORDER = ["unknown", "failed", "pending", "succeeded"];   // 前面的蓋掉後面的
+    const rule = (src) => {
+        const t = stripNjk(src);
+        const states = [...t.matchAll(/\bsyncState:\s*"([a-z]+)"/g)].map((m) => m[1]);
+        const agg = (t.match(/\{%-?\s*set\s+importSyncState\s*=\s*"([a-z]+)"/) || [])[1];
+        const perFile = (t.match(/\{%-?\s*set\s+importSyncPerFile\s*=\s*(\w+)/) || [])[1];
+        const out = [];
+        if (!states.length) return { out: ["一列逐檔 syncState 都沒解析到"], states };
+        if (!agg) return { out: ["解析不到 {% set importSyncState %}"], states };
+        if (perFile !== "true") out.push(`逐檔的表格畫了，卻沒 set importSyncPerFile = true（彙總會多畫一排恆為「—」的計數）`);
+        const unknownState = states.find((s) => !ORDER.includes(s));
+        if (unknownState) out.push(`逐檔出現不認得的 state「${unknownState}」`);
+        const want = ORDER.find((s) => states.includes(s));
+        if (agg !== want) out.push(`彙總 importSyncState 是「${agg}」，但逐檔（${states.join("／")}）依優先序 ${ORDER.join(" > ")} 應該是「${want}」`);
+        return { out, states };
+    };
+    const got = rule(read(F));
+    assert.ok(got.states.length >= 2, `只解析到 ${got.states.length} 個逐檔 state —— 這條測試在空轉（混合態才驗得到優先序）`);
+    assert.equal(got.out.length, 0, `§6 彙總與逐檔不自洽：\n${fail(got.out)}`);
+    // 負控：優先序寫反（拿最嚴重的當彙總）要被抓到
+    const synth = (a, b, agg) =>
+        `{% set batchOkRows = [ { filename: "a", syncState: "${a}" }, { filename: "b", syncState: "${b}" } ] %}\n` +
+        `{% set importSyncPerFile = true %}\n{% set importSyncState = "${agg}" %}`;
+    assert.equal(rule(synth("pending", "unknown", "unknown")).out.length, 0, "負控失效：正確的樣本被判成違規");
+    assert.ok(rule(synth("failed", "unknown", "failed")).out.length > 0,
+        "負控失效：unknown 被 failed 蓋掉抓不到（那正是會製造重複資料的那一邊）");
+    assert.ok(rule(synth("pending", "unknown", "pending")).out.length > 0, "負控失效：彙總過期抓不到");
+    assert.ok(rule(`{% set batchOkRows = [ { syncState: "unknown" } ] %}\n{% set importSyncState = "unknown" %}`).out.length > 0,
+        "負控失效：漏 set importSyncPerFile 抓不到");
 });

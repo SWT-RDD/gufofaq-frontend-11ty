@@ -61,6 +61,9 @@
 //              視覺重量低於 .is-muted（那一顆是「發生了，結果是中性的」）。
 //              正典：step-flow 的 QA 直答判定 `not_attempted`（整輪未判定）——它與「判否」
 //              不是同一件事，判否是判過了、這一顆是沒判過，兩者同色會讓人以為系統做了判定。
+//              第二個實例（同一條判準的另一個形狀）：import-sync-tag 的**缺席態**——批次匯入
+//              失敗的那一列連 `sync_state` 這個欄位都沒有，沒有管道可查。它與 `.is-warn` 的
+//              「查不到結果」不是同一件事：那一顆是查過了查不到，這一顆是根本沒有東西可查。
 //
 // 另一組語意（2-2-4／2-2-5 用得到，補進契約以免下一個人照上面那幾條挑錯色）：
 //   **設定來源／差異標記**——「這一次指定」「不同」走 .is-warn（這一輪的值與設定檔／基準不一樣，
@@ -75,13 +78,17 @@
 //     4-1_qaHistory（「QA 直答」徽章，①）、4-2_qaHistory_detail（被什麼擋下——內容是上游的
 //     `blocked_by` 代碼、刻意無 key，故是**②不是①**）、components/qa-detail-info（「QA 直答」，①）、
 //     components/step-flow（QA 直答判定五態，① ＋一顆兜底的 `{{ node.decision }}`＝②：查表查不到的
-//     結論原樣輸出，那時字面是值）、components/import-report（索引同步四態，①——`.is-progress`
-//     的唯一實例在這裡）、component.html（4-2 合規兩欄的唯一可見處，② ＋索引同步另外三態，①）。
+//     結論原樣輸出，那時字面是值）、components/import-sync-tag（索引同步四態＋缺席態，①——
+//     `.is-progress` 的唯一實例與 `.is-faint` 的第二個實例都在這裡；components/import-report
+//     的彙總那一顆與 1-2-1 結果表格逐列那幾顆都是 include 它）、component.html（4-2 合規兩欄的
+//     唯一可見處，② ＋索引同步演不到的兩態，①）。
 //   渲染後含 `.verdict-tag` 的頁（反向；判準＝`grep -rl 'class="verdict-tag' dist/*.html`）：
 //     1-1-6、1-2-1、2-2-1、2-2-3、2-2-4、2-2-5、3-4、4-1、4-2、component.html。
-//     ⚠️ 1-1-6／1-2-1 是**經由 components/import-report** 進去的，而那顆徽章關在
-//     `{% if importSyncState %}` 裡——判準是那一頁有沒有 set `importSyncState`（兩頁都 set 了
-//     `"pending"`），同 step-flow 那條「include 了不等於渲染得出徽章」。
+//     ⚠️ 1-1-6／1-2-1 是**經由 components/import-sync-tag** 進去的：彙總那一顆關在
+//     `{% if importSyncState %}` 裡（判準是那一頁有沒有 set `importSyncState`——1-1-6 是
+//     `"pending"`、1-2-1 是逐檔優先序算出來的 `"unknown"`），1-2-1 另有逐列那幾顆直接 include，
+//     它們的判準是 `batchOkRows`／`batchFailRows` 有沒有列。同 step-flow 那條
+//     「include 了不等於渲染得出徽章」。
 //     ⚠️ 2-2-1／2-2-3／3-4 是**經由 components/step-flow** 進去的，而那顆徽章關在 `{% if node.decision %}`
 //     裡——「這一頁 include 了 step-flow」不等於「它渲染得出徽章」，判準是那份 `stepFlowNodes`
 //     有沒有帶 `decision`（2-2-1 吃元件內建示範、2-2-3 與 3-4 各自覆寫時都帶了）。

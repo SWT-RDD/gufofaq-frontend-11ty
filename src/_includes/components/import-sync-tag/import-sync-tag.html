@@ -1,0 +1,23 @@
+{# 索引同步狀態徽章：`sync_state.state` →（`verdict-tag` 變體 ＋ i18n key ＋ 繁中）對照表的**唯一正本**。
+     出處：gufofaq-saas product `app/routers/datasets.py` 六個匯入入口回應裡的 `sync_state`
+     （`GufoRagClient.sync_outcome()` 去問 GufoRAG manager 的 `operations/history`）。
+     四態的語意、顏色判準、「你該做什麼」那幾句話的分工，寫在 components/import-report 檔頭。
+
+     **為什麼是一支獨立元件**：這顆徽章有兩個消費端——彙總那一顆在 components/import-report，
+     逐檔那幾顆在 1-2-1 批次結果表格的每一列（批次端點的 `sync_state` 是**逐檔**一份，
+     見 import-report 檔頭「逐檔同步」那一段）。一邊寫 if 鏈、另一邊照抄一份，就是兩份會分岔的
+     對照表：改一顆變體色或改一句繁中只會改到一邊，而分岔的方向恰好是「四態撞色」——
+     這條缺陷本來的成因（§1-2 一份正本）。
+
+     參數（include 前 set；§2 `set` 是頁面全域的，同一頁重複用要逐次重設）：
+       syncTagState ＝ `sync_state.state`："pending"／"succeeded"／"failed"／"unknown"。
+         認不得的值落到最後那條 `{% else %}` 當 unknown——拿到一個不認得的態，我方就是
+         「判斷不出結局」，而那正是 unknown 的定義（不原樣印機器碼：狀態詞是 chrome、不是值）。
+       **不 set／空字串 ＝ 上游根本沒有給這一格**，不是「失敗」：批次 `results[]` 裡 `ok: false`
+         的那一筆**沒有** `sync_state`（檔案連送都沒送出去，沒有管道可查）。那一列給一顆
+         「寫入索引失敗」是在講一件沒發生過的事，而留白會被讀成版面漏畫 ⇒ 用 `verdict-tag`
+         最輕的那一顆 `.is-faint`（「這件事根本沒發生」，判準見 ui/verdict-tag；同族正典是
+         step-flow 的 `not_attempted`）明說「沒有索引任務」。
+         **它不是第五個 `state` 值**：`state` 的值域只有四個，這一顆畫的是「這個欄位不存在」。
+         判斷順序因此把它排在 `{% else %}` 之前——排在後面就會被 unknown 的兜底吃掉。 #}
+{% if syncTagState == "pending" %}<span class="verdict-tag is-progress" data-i18n="dataImport.syncPending">同步中</span>{% elif syncTagState == "succeeded" %}<span class="verdict-tag is-pass" data-i18n="dataImport.syncSucceeded">已寫入索引</span>{% elif syncTagState == "failed" %}<span class="verdict-tag is-fail" data-i18n="dataImport.syncFailed">寫入索引失敗</span>{% elif not syncTagState %}<span class="verdict-tag is-faint" data-i18n="dataImport.syncNoTask">沒有索引任務</span>{% else %}<span class="verdict-tag is-warn" data-i18n="dataImport.syncUnknown">查不到結果</span>{% endif %}

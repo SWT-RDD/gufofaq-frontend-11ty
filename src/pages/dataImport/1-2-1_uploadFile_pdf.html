@@ -207,6 +207,8 @@ permalink: 1-2-1_uploadFile_pdf.html
    成功列狀態＝匯入成功（text-bold，只有字重、沒有顏色——工具層沒有綠色文字 class，
    而「成功」不靠顏色表達也讀得出來），失敗列＝匯入失敗（text-red 紅字）+ 錯誤訊息。
    示範 2 成功 1 失敗共三列；真實頁筆數由送出結果動態渲染。
+   **第四欄是逐檔的索引同步**（`results[].sync_state`）：與前三欄不同層，判準與
+   缺席態見 components/import-sync-tag 與 import-report 兩支的檔頭。
    **`health_scan` 這一格刻意不畫在本頁**（`batch_import_documents` 回應的第三個頂層欄位，
    `_post_import_health_scan` → `health_findings.scan_after_import` 的 `PostImportScanOut`：
    `ok`／`detail`／`scan`）：那是匯入**之後**才跑的健檢，成敗兩態都由 3-5 資料健檢承接——
@@ -227,9 +229,32 @@ permalink: 1-2-1_uploadFile_pdf.html
      那一種——額度是逐檔在 `_import_one_document` 裡現算的，而副檔名／讀檔失敗與檔案順序無關。
      原本寫的「萃取額度已用罄」是**另一支端點**的話（`quota.extraction_exceeded` 全 product 只在
      `routers/extract.py` 丟、而且是 429），這條批次匯入的路完全不碰萃取額度。 #}
+{# 逐檔的索引同步（`results[].sync_state`）。**每個檔各自派一條 celery 管道、各自成敗**，
+     所以這是**逐檔一份**的欄位，不是整批一份——壓成一顆彙總徽章的話，「三檔還在同步、一檔查不到
+     結果」會整塊變成「查不到結果」，另外那幾檔在畫面上就消失了（判準與缺席態見
+     components/import-report 檔頭「逐檔 vs 彙總」那一段）。
+     **示範刻意是混合態**，不是三檔同一態：這一頁是這個設計唯一的可見處，三列同色的話「逐檔」
+     這件事在畫面上看不出來，而混合態正是那支端點真的會回的形狀（`sync_outcome()` 逐檔去問
+     GufoRAG manager 的 `operations/history`，每一檔各自可能問到或問不到）。
+     · 公文範本.pdf → `pending`：**匯入當下最常見的那一態**，這一頁保留一檔演它。
+     · 作業要點.docx → `unknown` ＋ `reason`：唯一帶**關聯編號**的一態，示範它就地看得見、
+       不必展開任何東西（reason 逐字取 product 產的那句「查詢同步結果失敗，資料已送出、
+       請勿重新匯入。關聯編號 …」；編號是十六進位短碼）。
+     · 服務條款.pdf → 匯入本身失敗 ⇒ **沒有 `sync_state` 這個欄位**，畫缺席態。
+     **`succeeded` 刻意不演**：這一頁是「剛按下送出」的畫面，把任何一列畫成「已寫入索引」都會讓
+     打開它的人以為索引一定進去了（同 1-1-6 那條「不可以把最好的那一態畫成預設態」）；那一態的
+     長相住在元件庫頁的「React 條件文案」區。`indexed_count`／`failed_count` 同理一律不 set——
+     pending 與 unknown 的定義就是還不知道 ⇒ 兩格畫「—」而不是 `0`（§6：沒量到 ≠ 零筆）。
+     真要 set 時**以字串傳入**（`"1204"`），理由同 components/import-report 檔頭（nunjucks 把數字
+     `0` 判成 false，而 0 與 null 正是這兩格要分開的兩件事）。 #}
 {% set batchOkRows = [
-    { filename: "公文範本.pdf", message: "" },
-    { filename: "作業要點.docx", message: "" }
+    { filename: "公文範本.pdf", message: "", syncState: "pending" },
+    {
+        filename: "作業要點.docx",
+        message: "",
+        syncState: "unknown",
+        syncReason: "查詢同步結果失敗，資料已送出、請勿重新匯入。關聯編號 a3f19c"
+    }
 ] %}
 {% set batchFailRows = [
     { filename: "服務條款.pdf", message: "儲存空間不足" }
@@ -253,12 +278,18 @@ permalink: 1-2-1_uploadFile_pdf.html
                 <col style="min-width:240px;">
                 <col style="width:120px; min-width:120px;">
                 <col style="min-width:200px;">
+                <col style="min-width:280px;">
             </colgroup>
             <thead>
                 <tr>
                     <th data-i18n="dataset.fileName">檔案名稱</th>
                     <th data-i18n="dataImport.colStatus">狀態</th>
                     <th data-i18n="dataImport.colMessage">訊息</th>
+                    {# 第四欄講的是**另一層**：前三欄是「進了 product 的資料集沒有」，這一欄是
+                         「進了 GufoRAG 的索引沒有」。兩者同一列並排是刻意的——「匯入成功、索引失敗」
+                         正是這條缺陷的形狀，分成兩張表就要靠檔名跨表對帳才看得出來
+                         （措辭刻意分開，見 components/import-report 檔頭）。 #}
+                    <th data-i18n="dataImport.colSyncState">索引同步</th>
                 </tr>
             </thead>
             <tbody>
@@ -267,6 +298,26 @@ permalink: 1-2-1_uploadFile_pdf.html
                     <td>{{ row.filename }}</td>
                     <td><span class="text-bold" data-i18n="dataImport.importOk">匯入成功</span></td>
                     <td>{{ row.message }}</td>
+                    <td>
+                        <div class="flex-row column gap-8">
+                            {% set syncTagState = row.syncState %}
+                            {% include "components/import-sync-tag/import-sync-tag.html" %}
+                            {# 兩顆計數槽逐檔一份（`sync_state.indexed_count`／`failed_count`）：
+                                 沒 set ＝ 上游回 null ＝ 畫「—」，**不畫 0**（§6）。彙總那一份已經
+                                 收掉——混合態下總數必然量不到，而那會把別檔已經寫進索引的筆數藏起來。 #}
+                            <div class="flex-row flex-wrap gap-16">
+                                <span><span data-i18n="dataImport.syncIndexedCount">索引筆數：</span>{% if row.syncIndexed %}{{ row.syncIndexed }}{% else %}—{% endif %}</span>
+                                <span><span data-i18n="dataImport.syncFailedCount">索引失敗筆數：</span>{% if row.syncFailed %}{{ row.syncFailed }}{% else %}—{% endif %}</span>
+                            </div>
+                            {# `reason`（product 產的業務字串＋維運要用的關聯編號）**就地畫在這一格**、
+                                 不收進任何要展開的細節裡：不展開就看不到有編號可拿，使用者根本不知道
+                                 要展開。不翻、不掛 data-i18n（同 components/import-report 那一份）。
+                               **不掛 `role="alert"`**：同一張表的訊息欄（匯入失敗原因）也沒掛——
+                                 整張表都是送出後才出現的，逐列各搶一次播報會把彙總那一句
+                                 「不要重匯」淹掉，而那是這一整塊最關鍵的一句話。 #}
+                            {% if row.syncReason %}<p class="m-0">{{ row.syncReason }}</p>{% endif %}
+                        </div>
+                    </td>
                 </tr>
                 {% endfor %}
                 {% for row in batchFailRows %}
@@ -274,6 +325,16 @@ permalink: 1-2-1_uploadFile_pdf.html
                     <td>{{ row.filename }}</td>
                     <td><span class="text-red" data-i18n="dataImport.importFailed">匯入失敗</span></td>
                     <td>{{ row.message }}</td>
+                    {# 匯入失敗的那一列**沒有** `sync_state`：檔案連送出去都沒成功，沒有 celery 管道
+                         可查。所以這一格不是「寫入索引失敗」（那是在講一件沒發生過的事，而且指示
+                         相反——它會叫人去修資料重匯，實際上該修的是訊息欄那一條），也不是留白
+                         （留白讀起來是版面漏畫）。`syncTagState` 給空值 ⇒ 子元件畫缺席態
+                         「沒有索引任務」（`.is-faint`，全站最輕的一顆徽章）。
+                         兩顆計數槽與 reason 一併沒有——連欄位都不存在，畫「—」會變成「量不到」。 #}
+                    <td>
+                        {% set syncTagState = "" %}
+                        {% include "components/import-sync-tag/import-sync-tag.html" %}
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -289,7 +350,7 @@ permalink: 1-2-1_uploadFile_pdf.html
 {% set helpModalTitleKey = "help.dataImport.pdfBatchImportResult.title" %}
 {% set helpModalTitle = "批次匯入結果說明" %}
 {% set helpModalWhatKey = "help.dataImport.pdfBatchImportResult.what" %}
-{% set helpModalWhat = "這一區逐檔顯示這一批 PDF／WORD 文件匯入的結果：每個檔案各自標示成功或失敗，失敗的檔案會附上原因，成功與失敗會並列顯示，不會因為部分檔案失敗就整批不顯示。" %}
+{% set helpModalWhat = "這一區逐檔顯示這一批 PDF／WORD 文件匯入的結果：每個檔案各自標示成功或失敗，失敗的檔案會附上原因，成功與失敗會並列顯示，不會因為部分檔案失敗就整批不顯示。最後一欄是另一件事——這個檔有沒有寫進搜尋索引，同樣逐檔各自標示；匯入本身失敗的檔沒有索引任務可查，那一格會標示為「沒有索引任務」。" %}
 {% set helpModalStateItems = [] %}
 {% set helpModalLimitRows = [] %}
 {% include "components/help-modal/help-modal.html" %}
@@ -308,17 +369,27 @@ permalink: 1-2-1_uploadFile_pdf.html
      與「失敗 1」同時在畫面上。`updated` 保留字面 0：這一批沒有帶外部主鍵，沒有任何一筆是
      取代舊版（`updated` ＝被 `external_key` 取代的檔數，見 import-report 檔頭）。 #}
 {% set importCounts = { inserted: batchOkRows.length, updated: 0, failed: batchFailRows.length } %}
-{# 索引同步（`sync_state`，本輪新增；四態的語意與參數契約見 import-report 檔頭）。
-     **示範同 1-1-6 走 `pending`**：批次端點更是非同步（celery），匯入當下就是這一態。
-     兩頁同一態不是漏做——`succeeded`／`failed`／`unknown` 三態的長相落在元件庫頁的
-     「React 條件文案」區（REACT-CONVERSION §⑥：使用頁演不到的枚舉成員在那裡有家），
-     真實頁**刻意**只演最常見而且不說謊的那一態。
-     `indexed_count`／`failed_count`／`reason` 一律不 set：pending 的定義就是還不知道
-     ⇒ 兩格畫「—」不是 `0`。
-     ⚠️ **這一塊的「索引失敗筆數」與上面那句彙總的「失敗 1」不是同一件事**（§6 同頁不得有兩個
+{# 索引同步的**彙總**那一顆（逐檔那幾顆在上面的結果表格；參數契約見 import-report 檔頭）。
+     `importSyncPerFile` 告訴元件「逐檔明細已經另外畫了」：標籤改講「這一批」，而元件那兩顆
+     彙總計數槽整排收掉（混合態下總數必然量不到，而那會把別檔的筆數藏起來）。
+     **彙總值 = 逐檔取最安全的那一邊**，優先序 `unknown` > `failed` > `pending` > `succeeded`：
+     這一批有一檔 unknown ⇒ 彙總 `unknown`。unknown 蓋掉 failed 是刻意的——兩者的指示完全相反
+     （failed 要修好資料重匯、unknown 是絕對不要重匯），而「不要重匯」是不會製造重複資料的那一邊。
+     **這裡是字面量而不是從 `batchOkRows` 推導**（§6 的例外，理由要寫出來）：nunjucks 的
+     `{% set %}` 在 `{% for %}` 裡是迴圈框架區域變數，出了迴圈就回到舊值 ⇒ 這條優先序在模板裡
+     算不出來。改動上面任何一列的 `syncState` 都要回頭改這一行（有測試把關）。React 端由
+     `results[]` 現算，不是後端另外給的欄位。
+     `importSyncIndexed`／`importSyncFailed`／`importSyncReason` 一律不 set：逐檔的那三格畫在
+     上面那張表裡。
+     ⚠️ **表格裡那顆「索引失敗筆數」與上面那句彙總的「失敗 1」不是同一件事**（§6 同頁不得有兩個
      講同一件事卻不同源的數字）：後者是 product 端解析／落地失敗的**檔數**（`batchFailRows`），
      前者是 GufoRAG 索引寫入失敗的**則數**。所以它不可以從 `batchFailRows.length` 推導。 #}
-{% set importSyncState = "pending" %}
+{% set importSyncPerFile = true %}
+{% set importSyncState = "unknown" %}
+{# §2 重設：`syncTagState` 是 components/import-sync-tag 的參數，上面表格的兩個迴圈各給過一次
+     （`set` 在頁面層是全域的）。往下 include import-report 之前先設成彙總態——元件內部也會
+     設一次，這一行是頁面這一側的重設，同 5-3 對 ui/chart-desc 那組參數的做法。 #}
+{% set syncTagState = importSyncState %}
 {# `structTables` 是**偵測到的表格總數**：pdf_tables 的 `stats["tables"] += 1` 在判定
      「這張處理不了」之前就無條件加一，所以無法處理的那幾張也算在內，總數必須 ≥ 兩份具名清單
      指名過的最大表格序號（§6：計數與具名清單要互推得出來）。

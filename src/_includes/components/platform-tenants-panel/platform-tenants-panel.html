@@ -158,7 +158,7 @@
      兩顆布林用兩態槽（§4-2 `data-text-<態>`＋`data-key-<態>`）：靜態稿一次只畫得出一態，另一態的繁中
      與 key 沒有第二個地方可以住，落成孤兒就等於沒有人看過它的長相。
 
-     ── 使用率（本輪新增）───────────────────────────────────────────────────────
+     ── 使用率 ─────────────────────────────────────────────────────────────────
      **獨立第六格，不併進「今日已用」的括號裡。** 這個上限是全平台不分租戶的計數，撞到時每個
      租戶同時 403、症狀看起來像「上游掛了」，所以值班的人要在撞到之前看得到水位——而水位是
      這個面板的主指標（那支端點的 docstring 逐字：「唯一用途就是讓平台管理員判斷容量」），
@@ -174,15 +174,31 @@
      兩件事分得開才有意義，同 3-5「沒量到 ≠ 零筆」那條）。
      **同一個判斷連帶「授權上限」與「剩餘」兩格**：沒有上限，那兩個數也不成立（上限 → 沿用
      既有的「不限量」`platform.licenseUnlimited`，剩餘 → 同「不適用」）。只給使用率那一格做
-     不限量態，會做出「使用率：不適用、授權上限：5000」這種自打架的一列。三格都用
-     `data-text-unlimited`＋`data-key-unlimited` 一態槽：**這一族與旁邊那兩顆布林不同，
+     不限量態，會做出「使用率：不適用、授權上限：5000」這種自打架的一列。四格（連「今日已用」，
+     理由見下一段）都用 `data-text-unlimited`＋`data-key-unlimited` 一態槽：**這一族與旁邊那兩顆布林不同，
      capped 那一態的內容是資料（數字）不是文案**，所以只掛「另一態」那一顆槽、且不掛 `data-i18n`
-     （掛了 lang-toggle 會把數字整格覆寫掉）。 #}
+     （掛了 lang-toggle 會把數字整格覆寫掉）。
+
+     ── 「今日已用」也是哨兵 ─────────────────────────────────────────────────────
+     **`is_unlimited` 為真時這一格顯示「未計數」，不是 `0`。**`daily_max == 0`（＝不限量）那條分支
+     直接回 `current_usage: 0` 而**完全不執行 COUNT**（省一次查詢；chatbot 那幾支用量 API 對齊的
+     刻意契約，不會改），所以那顆 `0` 講的不是「今天沒有人問」，是「沒有人去數」——照樣印出來
+     就是把「沒量到」演成「零」（§6，同 1-1-6 的 `indexed_count`：`null` 畫「—」不畫 `0`）。
+     這一格是這個面板裡最後一個還在說謊的：另外三格早就有哨兵，它沒有。
+     **四格三種語意，字面不可以撞**（撞了就等於沒有分）：
+       授權上限     定義上不存在（沒有「上限」這個東西）        → 「不限量」
+       剩餘／使用率 算不出來（沒有上限就沒有剩餘、沒有百分比）  → 「不適用」
+       今日已用     東西存在、但上游刻意不去量                  → 「未計數」
+     **不共用「不適用」**：那會被讀成「這個平台沒有用量」（錯，有用量，只是沒被數）。
+     **也不用「—」**：本 repo 的「—」是「沒量到／空值」，方向對，但一個破折號講不出「這是刻意
+     不數的」而不是「端點壞了」——後者會讓值班的人去追一個沒有壞掉的東西。
+     **刻意不加 hint**：「為什麼不數」是實作細節；值班的人需要知道的只有「這個數字不存在，
+     別拿它做判斷」，那一句「未計數」本身講完了。 #}
 <div class="block mb-16 flex-row column gap-8" data-platform-role="auditor">
     <div class="text-md text-bold" data-i18n="platform.licenseUsageTitle">GufoRAG 授權用量（平台級）</div>
     <p class="text-gray m-0" data-i18n="platform.licenseUsageDesc">這是 GufoRAG 授權賣給整個平台的當日問答上限，不分租戶，也不是任何一個租戶的額度。「今日」以上面那顆平台時區為日界。</p>
     <div class="flex-row flex-wrap gap-24">
-        <span><span data-i18n="platform.licenseCurrentUsage">今日已用：</span>3182</span>
+        <span><span data-i18n="platform.licenseCurrentUsage">今日已用：</span><span data-text-unlimited="未計數" data-key-unlimited="platform.licenseUsageNotCounted">3182</span></span>
         <span><span data-i18n="platform.licenseMaxUsage">授權上限：</span><span data-text-unlimited="不限量" data-key-unlimited="platform.licenseUnlimited">5000</span></span>
         <span><span data-i18n="platform.licenseRemaining">剩餘：</span><span data-text-unlimited="不適用" data-key-unlimited="platform.licenseNotApplicable">1818</span></span>
         <span><span data-i18n="platform.licenseUsageRate">使用率：</span><span data-text-unlimited="不適用" data-key-unlimited="platform.licenseNotApplicable">63.6%</span></span>
