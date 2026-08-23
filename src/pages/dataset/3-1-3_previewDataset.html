@@ -310,7 +310,7 @@ permalink: 3-1-3_previewDataset.html
 {% set deleteTargetId = "deleteFileName" %}
 {% set deleteConfirmBinding = true %}
 {% set deleteConfirmClass = "confirm-delete-btn" %}
-{# 刪除檔案的四段：product `app/routers/datasets.py` 的 `delete_file` →`_remove_file_and_purge`
+{# 刪除檔案的六段：product `app/routers/datasets.py` 的 `delete_file` →`_remove_file_and_purge`
      的出口不只成敗。
      403 `dataset.not_writable_group`（`delete_file` 本體第一行的 `_writable_dataset`，同檔）
      **本輪從 error 段拆出來**：那道守衛驗的是「這個資料集的群組在不在我授予 data:write 的群組裡」，
@@ -324,10 +324,25 @@ permalink: 3-1-3_previewDataset.html
      另一條 409 `file_not_linkable`（同一支 `_remove_file_and_purge` 的另一個出口）沒有復原路徑，
      與 502／404 同屬 error。
      不與 1-2-1 共用 key：那一頁的「刪除」是送出前把檔從清單移掉（uploadFilePdf.js:480-486
-     只做 `fileList.splice`），根本不會失敗。 #}
+     只做 `fileList.splice`），根本不會失敗。
+
+     **末段「請先勾選要刪除的檔案」的消費點不是這顆確認鈕，是清單上那顆 `.delete-selected-btn`。**
+     那顆鈕一個檔都沒勾就按下去，本來是**完全沒有訊號**（不開窗、不彈 toast），讀起來與「這顆鈕
+     壞了」逐字相同；而 §4 對「需要驗證的送出鈕」要的正是一段 warning（同 5-6-3 的
+     「請先填寫用途名稱」、rating-modal 的「請先選擇讚或倒讚」）。它與其餘五段是**同一個動作的
+     結果集合**（都是「刪這幾個檔」這件事的出口），所以留在同一顆 key，不另開第二顆。
+
+     排在**末位**而不是插在「權限不足」之後：段序是 React 端 `split("|")[n]` 的索引契約，插中間
+     會讓其後每一段的索引整批位移＝在錯的情況彈錯訊息（實際發生過：另一顆 toast 插段後
+     `segs[3]` 從「失敗」變成「試跑完成」，網路失敗時彈出綠意思的紅 toast）。代價是段序與隔壁
+     `toast.runTrySkill` 那一族（warning 排在中間）不一致，換到的是不必碰任何既有索引。
+
+     它**不會**也**不該**掛成 `.delete-selected-btn` 自己的 `data-toast`：那顆鈕在切版上是條件
+     開窗的觸發鈕（§5：真正送 API 的是彈窗裡那顆確認鈕，閘門與 toast 的家在那裡），而且一顆
+     只有一段的 `data-toast` 會讓「結果數要等於 en.json 的段數」那條測試當場紅（1 vs 6）。 #}
 {% set deleteCapability = "data:write" %}
 {# 同上：`delete_file` 也是 `_writable_dataset` 開場（product `app/routers/datasets.py`）。 #}
-{% set deleteToast = "已刪除|權限不足，無法刪除|這個資料集不在你可以寫入的群組裡，請找管理員把你加進該群組|這個檔案沒有留下擷取管道記錄，請先用「檔案上傳」重新匯入一次以補記|刪除失敗，請稍後再試" %}
+{% set deleteToast = "已刪除|權限不足，無法刪除|這個資料集不在你可以寫入的群組裡，請找管理員把你加進該群組|這個檔案沒有留下擷取管道記錄，請先用「檔案上傳」重新匯入一次以補記|刪除失敗，請稍後再試|請先勾選要刪除的檔案" %}
 {% set deleteToastKey = "toast.deleteFile" %}
-{% set deleteToastType = "success|warning|warning|warning|error" %}
+{% set deleteToastType = "success|warning|warning|warning|error|warning" %}
 {% include "components/delete-modal/delete-modal.html" %}
