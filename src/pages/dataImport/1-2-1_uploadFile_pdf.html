@@ -38,13 +38,19 @@ permalink: 1-2-1_uploadFile_pdf.html
      ・413 `UploadBudget`（`settings.upload_request_max_bytes`：單檔上限擋不住「一次送 100 個 49MB」）
      ・**部分失敗**：該端點 docstring 逐字寫著「每檔各自成敗、非整批原子」，逐檔 ok/error 進
        `results`，另回 `inserted`／`updated`／`failed` 三個計數 ⇒ 這是一條**真實可達**的結果，
-       而且它不是 error：成功的那幾檔真的進去了，逐檔原因在下一頁的匯入報告。
+       而且它不是 error：成功的那幾檔真的進去了，逐檔原因就在**本頁**下面那張批次匯入結果表格
+       （`results` 逐檔一列，狀態／訊息／索引同步）。
      ・502 上游呼叫失敗
      這一整套結果先前一段都沒有：整頁零 data-toast、零 data-capability，等於把一顆會失敗的
-     送出鈕演成一條必然成功的連結。 #}
+     送出鈕演成一條必然成功的連結。
+     **兩段「逐檔」的 toast 指的是當頁那張表，不是別頁**（`toast.importDocuments` 的第 1、6 段）：
+     匯入報告就 include 在這一頁，而 `stepNextHref` 那一頁（1-2-6）的頁層說明逐字寫著「顯示的是
+     整批的彙總結果，不是單一檔案的細節」——把人從有逐檔細節的頁送到明說沒有的那一頁，是指反
+     方向。toast 是一閃即逝的訊息，指路一律指**當頁的區塊名**：頁面一搬，跨頁的指路就會靜默
+     指錯，而且沒有任何視覺指紋看得出來（有測試把關）。 #}
 {% set stepNextAction = true %}
 {% set stepNextCapability = "data:write" %}
-{% set stepNextToast = "匯入完成，逐檔結果見下一頁的匯入報告|權限不足，無法匯入|這個資料集不在你可以寫入的群組裡，請找管理員把你加進該群組|同一批裡有兩個檔用了同一個外部主鍵，請先改掉其中一個|這一批的總大小超過單次上限，請分批送|有檔案沒有匯進去，逐檔原因見下一頁的匯入報告|匯入失敗，請稍後再試" %}
+{% set stepNextToast = "匯入完成，逐檔結果與索引同步狀態都在下面的批次匯入結果|權限不足，無法匯入|這個資料集不在你可以寫入的群組裡，請找管理員把你加進該群組|同一批裡有兩個檔用了同一個外部主鍵，請先改掉其中一個|這一批的總大小超過單次上限，請分批送|有檔案沒有匯進去，逐檔原因在下面的批次匯入結果|匯入失敗，請稍後再試" %}
 {% set stepNextToastKey = "toast.importDocuments" %}
 {% set stepNextToastType = "success|warning|warning|warning|warning|warning|error" %}
 <div class="mt-10 mb-32">

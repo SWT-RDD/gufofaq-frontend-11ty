@@ -8100,3 +8100,60 @@ test("§6 1-2-1 批次匯入：彙總的 importSyncState ＝逐檔優先序取�
     assert.ok(rule(`{% set batchOkRows = [ { syncState: "unknown" } ] %}\n{% set importSyncState = "unknown" %}`).out.length > 0,
         "負控失效：漏 set importSyncPerFile 抓不到");
 });
+
+test("§5 toast 不得把人送去別頁看一塊**當頁自己就 include 了**的東西", () => {
+    // 裁定（round47）：1-2-1 的送出 toast 寫「逐檔結果見下一頁的匯入報告」，而匯入報告
+    // 就 include 在 1-2-1 自己身上；`stepNextHref` 那一頁（1-2-6）的頁層說明逐字寫著
+    // 「顯示的是整批的彙總結果，不是單一檔案的細節」。逐檔明細加到當頁之後，那句話從
+    // 「含糊」變成「指反方向」——把人從有細節的頁送到明說沒有細節的頁。
+    // **為什麼要有機器**：toast 是一閃即逝的訊息，指路到別頁本來就脆弱（區塊搬一次那句話
+    // 就靜默指錯），而視覺指紋、i18n 掃描、死連結那幾張網對「指錯方向」全都看不見——
+    // 文案照樣在、頁面照樣長得一樣，只有照著做的人會撞牆。
+    // 判準只取**可查證的那一半**：頁面自己 include 了那個元件（＝那塊東西就在當頁），
+    // toast 就不得說它在「下一頁」。跨頁的指路本身不禁——真的在別頁時那句話是對的。
+    const ELSEWHERE = new Map([
+        // 元件 → 「說它在別頁」的字樣（繁中原文；toast 的英譯由「同繁中同英譯」那兩條連坐）
+        ["components/import-report", /下一頁|下一步的頁|另一頁/],
+    ]);
+    const toastsOf = (html) => {
+        const out = [];
+        // 兩種載體：markup 上的 data-toast，與使用頁 set 給共用元件的 *Toast 參數
+        for (const { value } of attrValuesIn(html, "data-toast")) out.push(value);
+        for (const m of stripNjk(html).matchAll(/\{%-?\s*set\s+\w*[Tt]oast\w*\s*=\s*"([^"]*)"/g)) out.push(m[1]);
+        return out;
+    };
+    const includesOf = (html) =>
+        new Set([...stripNjk(html).matchAll(/include\s+"((?:ui|components)\/[\w-]+)\//g)].map((m) => m[1]));
+    const rule = (html, f = "<probe>") => {
+        const out = [];
+        const inc = includesOf(html);
+        for (const [comp, elsewhere] of ELSEWHERE) {
+            if (!inc.has(comp)) continue;                       // 那塊東西不在當頁 ⇒ 指去別頁是對的
+            for (const t of toastsOf(html))
+                for (const seg of t.split("|"))
+                    if (elsewhere.test(seg))
+                        out.push(`${f}  toast 段落把人送去別頁，但 ${comp} 就 include 在這一頁：「${seg}」`);
+        }
+        return out;
+    };
+    const pages = srcHtml.filter((f) => !f.includes("_includes"));
+    // 空轉守門三道：母體、載體、以及「這條規則管得到的頁真的存在」
+    assert.ok(pages.length > 20, `只掃到 ${pages.length} 個頁面 —— 這條測試在空轉`);
+    const segs = pages.reduce((n, f) => n + toastsOf(read(f)).reduce((k, t) => k + t.split("|").length, 0), 0);
+    assert.ok(segs > 100, `只解析到 ${segs} 段 toast —— 載體解析壞了，這條在空轉`);
+    for (const [comp] of ELSEWHERE) {
+        const hosts = pages.filter((f) => includesOf(read(f)).has(comp));
+        assert.ok(hosts.length > 0, `ELSEWHERE 的 ${comp} 沒有任何頁面 include 它 —— 死規則，請移除`);
+    }
+    const hits = pages.flatMap((f) => rule(read(f), f));
+    probe("§5 toast 指路", (s) => rule(s),
+        ['{% include "components/import-report/import-report.html" %}\n' +
+            '{% set stepNextToast = "匯入完成，逐檔結果見下一頁的匯入報告|匯入失敗" %}',
+            '{% include "components/import-report/import-report.html" %}\n' +
+            '<button type="button" data-toast="好了|有檔案沒有匯進去，逐檔原因見下一頁的匯入報告">送出</button>'],
+        // good①：指路指當頁的區塊名 good②：那塊東西真的不在當頁（沒 include）⇒ 指去別頁是對的
+        ['{% include "components/import-report/import-report.html" %}\n' +
+            '{% set stepNextToast = "匯入完成，逐檔結果與索引同步狀態都在下面的批次匯入結果|匯入失敗" %}',
+            '{% set stepNextToast = "匯入完成，逐檔結果見下一頁的匯入報告|匯入失敗" %}']);
+    assert.equal(hits.length, 0, `§5 toast 指反方向：\n${fail(hits)}`);
+});
