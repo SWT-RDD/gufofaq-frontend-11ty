@@ -40,7 +40,10 @@ jobs:
       # 任何一關紅就擋下部署
       - run: npm run check
 
-      - uses: actions/upload-pages-artifact@v3
+      # v4 起 upload-pages-artifact 預設不收 dotfile（.nojekyll 之類的會被靜靜吃掉）。
+      # 這個站 dist/ 目前一顆 dotfile 都沒有，所以不必開 include-hidden-files；
+      # 哪天真的要發 dotfile，記得在這裡補上，否則它不會報錯、只會不見。
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: dist
 
@@ -52,4 +55,4 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
