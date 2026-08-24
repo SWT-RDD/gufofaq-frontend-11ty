@@ -1,5 +1,5 @@
 # 推上 master 時自動 build 並發布 dist/ 到 GitHub Pages，
-# 讓大家用瀏覽器開 https://shawnshen1206.github.io/gufofaq-frontend-11ty/ 看切版。
+# 讓大家用瀏覽器開 https://swt-rdd.github.io/gufofaq-frontend-11ty/ 看切版。
 # 一次性設定：GitHub repo → Settings → Pages → Build and deployment → Source 選「GitHub Actions」。
 # dist/ 在 .gitignore 內（build 產物不進版控），故由本流程現建現部署，不需 gh-pages 分支。
 name: Deploy to GitHub Pages
