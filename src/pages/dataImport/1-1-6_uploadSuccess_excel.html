@@ -54,6 +54,11 @@ permalink: 1-1-6_uploadSuccess_excel.html
 {% set successDataCount = "980" %}
 {% set successRetryHref = "1-1-1_dataImport.html" %}
 {% set successViewHref = "3-1-1_datasetList.html" %}
+{# 匯入後健檢沒跑成功那一態（`import_excel` 回應頂層 `health_scan.ok === false`）。理由與參數語意
+     見 components/success-box 檔頭；為什麼本頁改成畫它，見下方 importCounts 那一段。
+     與本頁其餘示範值自洽（§6）：匯入本身仍然成功（inserted=1）——健檢是匯入**之後**才跑的，
+     它炸掉不會回捲已經落地的資料（`scan_after_import` 逐字：「走到這裡時匯入已經落地了」）。 #}
+{% set successHealthScanFailed = true %}
 {% include "components/success-box/success-box.html" %}
 
 {# 匯入結果回報：Excel 端點回的三計數與「被剝除的連結」（product `_do_excel_mapping_import` 的
@@ -63,15 +68,24 @@ permalink: 1-1-6_uploadSuccess_excel.html
      Excel 端點回的是 `"inserted": 0 if superseded else 1`、`"updated": 1 if superseded else 0`，
      兩者相加恆為 1；failed 恆為 0（失敗＝HTTP 錯誤碼，見 `import_excel` 的回應）。
      示範走「直接新增」那一態：1-1-4 的外部主鍵欄留白＝不取代（superseded is None）⇒ inserted=1。
-     **`health_scan` 這一格刻意不畫在本頁**（`import_excel` 回應的頂層欄位，
-     `_post_import_health_scan` → `health_findings.scan_after_import` 的 `PostImportScanOut`：
-     `ok`／`detail`／`scan`）：那是匯入**之後**才跑的健檢，成敗兩態都由 3-5 資料健檢承接——
-     成功那一次 `_record_scan_run(trigger=SCAN_TRIGGER_IMPORT)`，由 3-5 的「上一次掃描」
-     （`GET /health/scan/last` 的 `scan`）畫；失敗那一次 `_record_scan_failure(trigger=
-     SCAN_TRIGGER_IMPORT)` 留一列，由 3-5 的 `healthScanFailure`（同一支端點的 `failure`）畫。
-     `scan_after_import` 自己的註解就是這個決定的理由：「匯入回應裡那句 `ok=false` 只有這一次
-     看得到（重新整理就沒了），而這一支的呼叫端是匯入畫面、不是健檢頁——所以失敗要留一列，
-     健檢頁才說得出『最近一次嘗試失敗了』」。 #}
+     **`health_scan` 的失敗態這一輪起畫在本頁**（`import_excel` 回應的頂層欄位，
+     gufofaq-saas product `app/quality/health_scan_hook.py` 的 `post_import_health_scan` →
+     `app/quality/health_findings_service.py` 的 `scan_after_import`，形狀 `PostImportScanOut`：
+     `ok`／`detail`／`scan`）。上一版寫的是「刻意不畫，成敗兩態都由 3-5 資料健檢承接」——那半句仍然
+     成立、但**推不出「本頁不畫」這個結論**，而且與上游那一支自己寫下的要求相反：
+       · 仍然成立的那一半：成功那一次 `_record_scan_run(trigger=SCAN_TRIGGER_IMPORT)` 由 3-5 的
+         「上一次掃描」（`GET /health/scan/last` 的 `scan`）畫；失敗那一次 `_record_scan_failure(
+         trigger=SCAN_TRIGGER_IMPORT)` 留一列，由 3-5 的 `healthScanFailure`（同一支端點的
+         `failure`）畫。那一列答的是「**最近一次嘗試**失敗了」。
+       · 推不出來的那一半：3-5 的那一列答不了「**你剛剛匯的這一批**有沒有被檢查過」，而剛按完送出的
+         人不會自己想到要去健檢頁——他看到的是一張只寫著「上傳成功」的卡。`scan_after_import` 的
+         docstring 把三件事逐條寫死，「**不吞掉**」那一條逐字說「只寫 log 的話，使用者看到的是一次
+         乾淨的匯入，而健檢清單上什麼都沒有，他不會知道那份剛匯進來的資料根本沒被檢查過」，並要求
+         `ok=false` **由匯入回應原樣帶給使用者**。上一版引的是同一支的另一句（「那句 `ok=false`
+         只有這一次看得到，所以失敗要留一列」）——那一句講的是**為什麼還要多留一列**，不是「所以這一次
+         不必講」。兩件事都要做，而先前只做了其中一件。
+     故本頁 set `successHealthScanFailed`（見上方那一段與 components/success-box 檔頭）；
+     成功那一態就是這一段不存在，由元件庫頁那一份不 set 的 include 演。 #}
 {% set importCounts = { inserted: 1, updated: 0, failed: 0 } %}
 {# 索引同步（`sync_state`；四態的語意與參數契約見 import-report 檔頭）。
      **示範走 `pending`**：sync 是非同步的，匯入當下多半就是這一態（交辦單逐字「最常見」），

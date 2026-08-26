@@ -620,8 +620,17 @@ permalink: 2-2-4_regressionSuites.html
             </div>
         </div>
         {% endfor %}
-        <div class="flex-row">
+        {# 條數上限：正本是 product `app/quality/regression_run.py` 的 `MAX_ASSERTIONS_PER_CASE`
+             （`_assert_assertions_ok` 的**第一道**閘，超過即 400），投影在
+             `app/routers/regression.py` 的契約端點 `limits.max_assertions_per_case`
+             ——故數字是資料槽（`js-assertion-max`），不烤進譯文。
+             形狀照同一張表單裡「新增一輪前置對話」旁邊那一句（前綴 key ＋ 值 ＋ 量詞 key）：
+             同一個畫面上兩句同型提示長成兩種寫法，讀的人會以為它們講的不是同一種東西。
+           不改的後果：加到第 21 條時那個 400 會落進送出鈕的「有一條斷言的參數不合法，請檢查」
+             那一段——使用者於是逐條去檢查參數，而真正的問題是**條數**，逐條檢查永遠檢查不出來。 #}
+        <div class="flex-row gap-8 align-items-center flex-wrap">
             <button type="button" class="button button-border button-sm js-add-assertion" data-i18n="regression.addAssertion">新增一條斷言</button>
+            <span class="text-gray"><span data-i18n="regression.limitAssertions">一則案例的斷言上限：</span><span class="js-assertion-max">20</span><span data-i18n="regression.unitAssertions"> 條</span></span>
         </div>
     </div>
 

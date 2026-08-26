@@ -1954,8 +1954,26 @@ permalink: 5-2_conversationSettings.html
              已選的表；第一顆沒選任何表時後三顆停用（值控制項照渲染但 disabled，§5：狀態要
              看得見才稽核得到，只是改不動）。
              四顆都是**值載體**⇒ 只掛 hook class、不掛 data-toast（§5 矩陣②）。
-             一個設定檔最多綁 10 張（GufoRAG chatbot `app/services/alias.py` 的
-             `MAX_ALIAS_TABLES_PER_CONFIG`；§3-2 跨 repo 出處要 repo ＋ 檔 ＋ 符號三者齊全）。
+             一個設定檔最多綁 10 張。**三層都在執行，這句提示是真的**（round46 逐檔複驗；上一版的
+             出處路徑已經過期，而過期的出處會讓下一個人 grep 不到、進而判定「沒有任何後端在擋」）：
+               ① product 自己的邊界：`app/routers/settings_hub.py` 的 `ProfileConfigIn.alias_table_ids`
+                  是 `Annotated[list[int], Field(max_length=MAX_ALIAS_TABLES_PER_CONFIG)]` ⇒ 第 11 張
+                  在 product 這一層就被擋成 422，根本到不了上游。
+               ② product 的界線目錄：`app/limits/chat_config_limits.py` 的
+                  `MAX_ALIAS_TABLES_PER_CONFIG = 10`，並以 `LIST_FIELD_LIMITS["alias_table_ids"]`
+                  的 `max_items` 經 `GET /settings/chat-config-limits` 投影給前端——**與下面那句
+                  術語表「最多 30」是同一張表相鄰的兩列**（`glossary_table_ids` 的 `max_items`），
+                  兩句提示的憑據完全相同，不存在「一真一假」。
+               ③ 上游寫入層：GufoRAG chatbot `app/knowledge/alias/service.py` 的
+                  `MAX_ALIAS_TABLES_PER_CONFIG`，由同檔 `validate_alias_table_ids` 拋
+                  `AliasValidationError`，呼叫點在 `app/configuration/service.py` 的 config 寫入路徑
+                  （該檔還有 `test_alias_set_and_order_invariants` 這支單測釘著）。
+             ⚠️ 上一版寫的是 `app/services/alias.py`——那個檔案早就搬走了，符號名對、路徑錯。
+                §3-2 要求 repo ＋ 檔 ＋ 符號三者齊全，正是為了讓這種句子查得回去；查不回去的時候，
+                下一個人得到的結論會是「這條界線不存在」，而那與「這條界線在三個地方」剛好相反。
+             這兩顆數字（10／30）今天仍是前端的抄本，而它們**其實投影得到**（同上 ② 那支端點）。
+                做成資料槽是對的方向，但那會動到兩處使用頁與 React 的接線，不夾在本輪；
+                本輪只把出處修正到查得回去的狀態。
              **四顆共用同一份目錄**（§3-3：同頁兩個以上 select 的 option value 集合相同 ⇒ 必須 set
              成一個陣列共用）：值域正本是 3-6 的別名表清單，選取狀態各自一份 id 清單。
              四份抄本改一處就會漏，而這四顆正是「三個 apply 清單 ⊆ alias_table_ids」那條寫入層

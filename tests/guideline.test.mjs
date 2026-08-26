@@ -1390,10 +1390,12 @@ test("§4-2 en.json 不得有孤兒 key（每個 key 都要被 markup／js 引�
 // 判準只有一句：**那個語意由同一句話的另一半承載，英文那一半不需要這個字段**。
 // 所以每一筆都要指出「另一半是誰」，指不出來的就是真漏翻、不准進表。
 const EMPTY_EN_ALLOWED = new Map([
-    ["comp.copyright", "頁尾「版權所有© 2025 All Rights Reserved」：英文那半句是 key 外的字面量，" +
-        "已經整句在畫面上（components/footer），前綴再翻一次會變成 “All rights reserved © 2025 All Rights Reserved”"],
-    ["common.unitItems", "量詞「個」：英文由前半句承載（settings.aliasBindLimitPrefix「A profile can bind at most 」" +
-        "＋數字、qa.detailConvOf「 of 」＋總數），英文語序在數字後面不接單位字"],
+    ["comp.copyright", "頁尾「版權所有© <年份> All Rights Reserved」：英文那半句是 key 外的字面量，" +
+        "已經整句在畫面上（components/footer；年份是 .js-copyright-year 資料槽，不寫進理由裡免得每年過期），" +
+        "前綴再翻一次會變成 “All rights reserved © … All Rights Reserved”"],
+    ["common.unitItems", "量詞「個」：英文由同一句話的另一半承載（settings.aliasBindLimitPrefix" +
+        "「A profile can bind at most 」＋數字、qa.detailConvOf「 of 」＋總數；5-6-2「工具數」那一格" +
+        "則由欄標題 settings.mcpTools「Tool count」承載），英文語序在數字後面不接單位字"],
     ["pagination.pageSuffix", "「第 N 頁」的「頁」：英文是 pagination.pagePrefix「Page 」＋數字，字尾無物"],
     ["health.recordRowSuffix", "「第 N 列」的「列」：英文是 health.recordRowPrefix「row 」＋數字，字尾無物"],
     ["agent.qaPoolPrefix", "「共 N 筆」的「共」：英文是數字＋agent.qaPoolSuffix「 candidates」，字首無物"],
@@ -5515,10 +5517,18 @@ test("§4-2 全形標點收尾的標籤＋緊接的值：譯文必須自帶分�
     //
     // population 自動收窄，不需要豁免清單：
     //   ① 繁中以全形標點（：，、）收尾 —— 半形標點自己就帶空格，不在此列
-    //   ② dist 上緊接著的下一個字元不是空白也不是 `<` —— 中間有空白的（footer 的
+    //   ② dist 上緊接著的下一個字元不是空白 —— 中間有空白的（footer 的
     //      `版號：</span> 2.10`）由 markup 提供分隔，譯文不必也不該再加一個。
+    //
+    // round46：**母體原本把「值被包進一顆元素裡」整族排除在外**（舊寫法是 `([^\s<])`，緊接著的
+    // 是 `<` 就當成不在此規則）。而那個形狀正是全站最常見的一種——`…：</span><span class="js-…">值`
+    // ——凡是值要掛 hook class／id 給 React 定址的都長這樣。實測：放寬之後母體從 84 處長到 274 處、
+    // 新命中 76 顆 key，**當下一顆都不紅**（每一顆的英譯本來就自帶尾隨空白）。也就是說這條規則
+    // 先前有三分之二的射程是空的，而它自己看起來一直是綠的——§8-1「正則不要順手釘住後面緊接著
+    // 什麼」的又一個實例。放寬只吃一層包裹（`</span><span>值`）：再巢狀下去要遞迴，而目前全站
+    // 沒有那種形狀；真的出現時它會靜靜落回射程外，所以這一句要留著當下一輪的判準。
     const en = JSON.parse(read("src/i18n/en.json"));
-    const LABEL = /data-i18n="([^"]+)"[^>]*>([^<]*[：，、])<\/[a-z0-9]+>([^\s<])/g;
+    const LABEL = /data-i18n="([^"]+)"[^>]*>([^<]*[：，、])<\/[a-z0-9]+>(?:<[a-z0-9]+\b[^>]*>)?([^\s<])/g;
     const scan = (html, dict, f = "<probe>") => {
         const out = [];
         for (const m of html.matchAll(LABEL)) {
@@ -5535,16 +5545,22 @@ test("§4-2 全形標點收尾的標籤＋緊接的值：譯文必須自帶分�
         seen += [...html.matchAll(LABEL)].length;
         hits.push(...scan(html, en, basename(f)));
     }
-    assert.ok(seen >= 30, `只掃到 ${seen} 處「全形標點標籤＋緊接的值」—— 這條測試在空轉`);
+    // 棘輪跟著母體一起長（§8-1 第 2 條）：放寬包裹那一層之後實測 274 處，門檻重量到 250。
+    assert.ok(seen >= 250, `只掃到 ${seen} 處「全形標點標籤＋緊接的值」—— 這條測試在空轉`);
     probe("§4-2 標點標籤分隔空白",
         (s) => scan(s, { "x.label": "File name:", "x.ok": "File name: " }),
         // 三個全形標點各一個樣本：只寫 `：` 的話，把 population 縮成 `[：]` 照樣全綠（實測過），
-        // 等於 `，、` 從來沒被釘住
+        // 等於 `，、` 從來沒被釘住。第四個樣本是 round46 補的**包裹形**——沒有它，把上面那顆
+        // `(?:<[a-z0-9]+\b[^>]*>)?` 拿掉這條測試照樣全綠，等於放寬從來沒有被驗過。
         ['<span data-i18n="x.label">檔案名稱：</span>2.10',
             '<span data-i18n="x.label">共 3 筆，</span>2 筆有效',
-            '<span data-i18n="x.label">支援格式、</span>3 種'],
+            '<span data-i18n="x.label">支援格式、</span>3 種',
+            '<span data-i18n="x.label">檔案名稱：</span><span class="js-v">2.10</span>'],
         ['<span data-i18n="x.ok">檔案名稱：</span>2.10',      // 譯文自帶空白
+            '<span data-i18n="x.ok">檔案名稱：</span><span class="js-v">2.10</span>', // 包裹形＋譯文自帶空白
             '<span data-i18n="x.label">檔案名稱：</span> 2.10',  // markup 提供空白
+            '<span data-i18n="x.label">檔案名稱：</span> <span class="js-v">2.10</span>', // 包裹形，空白在標籤之前
+            '<span data-i18n="x.label">檔案名稱：</span><span class="js-v"> 2.10</span>', // 包裹形，空白在包裹之內
             '<span data-i18n="x.label">檔案名稱:</span>2.10',    // 半形標點本來就要自己帶空格，不在此規則
             '<span data-i18n="x.label">檔案名稱</span>2.10']);   // 沒有標點＝不是這型
     assert.equal(hits.length, 0, `§4-2：標點折進 key 時，譯文要自帶分隔空白：\n${fail([...new Set(hits)])}`);

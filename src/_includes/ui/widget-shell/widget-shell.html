@@ -84,12 +84,25 @@
             <input type="text" class="form-control widget-panel-input js-widget-input" placeholder="輸入問題"
                 data-i18n-placeholder="comp.enterQuestion" aria-label="輸入問題" data-i18n-aria-label="comp.enterQuestion">
             {# 送出是直接送 API 的動作鈕 ⇒ data-toast 列全結果（§5 矩陣③）。節流那一段對回公開問答端點
-                 的每分鐘上限（gufofaq-saas product `app/routers/public.py` 的 `enforce_widget_rate_limit`，
-                 實作在 `app/rate_limit.py`，429 `ratelimit.too_many_requests`），不是泛用的「失敗」。
-                 **不在 `widget_tokens.py`**：那一支只管金鑰的建立／列出／撤銷，全檔零 429。 #}
+                 的每分鐘上限（gufofaq-saas product `app/tenancy/rate_limit.py` 的
+                 `enforce_widget_rate_limit`，由 `app/conversation/public_ask.py` 在兩道 gate 之前呼叫，
+                 429 `{"code": "rate_limited"}`），不是泛用的「失敗」。
+                 **不在 `widget_tokens.py`**：那一支只管金鑰的建立／列出／撤銷，全檔零 429。
+               ⚠️ **429 有兩種成因，處置相反，所以要兩段**（`|` 是索引契約，額度那一段補在**尾端**、
+                 前五段位置不動）：
+                   · `rate_limited`＝節流，等一分鐘就好 ⇒ 第 3 段「稍後再試」是對的。
+                   · `quota_exceeded`＝這個租戶**本計費期**的問答額度用罄
+                     （product `app/conversation/ask_flow.py`：`consume_qa_quota` 回 False ⇒ 429 ＋
+                     `{"error": …, "code": "quota_exceeded"}`）⇒ **重試永遠不會成功**。
+                 兩者都講成「稍後再試」的後果不是一句話不準：那是租戶網站上**每一位訪客**都照著那句話
+                 一直重試，而每一次重試再吃掉一次節流計數——一個講錯的提示自己製造了它所描述的狀態。
+                 額度那一段的收件人也不同：訪客改不了任何事，要找的是**這個網站的管理者**（不是我們），
+                 所以那一句要把人指過去，不是叫他再按一次。
+               型別是 `error` 不是 `warning`：warning 在本站的語意是「你改一下輸入就過得了」
+                 （「請先輸入問題」那一段），而這一段訪客這一側完全無能為力。 #}
             <button type="button" class="button button-primary widget-panel-send js-widget-send"
-                data-toast="回答生成中...|請先輸入問題|詢問太頻繁，請稍後再試|回答生成成功|回答生成失敗" data-i18n-data-toast="toast.widgetAsk"
-                data-toast-type="info|warning|warning|success|error" data-i18n="action.submit">送出</button>
+                data-toast="回答生成中...|請先輸入問題|詢問太頻繁，請稍後再試|回答生成成功|回答生成失敗|本站的問答額度已用罄，請聯絡本網站管理者。" data-i18n-data-toast="toast.widgetAsk"
+                data-toast-type="info|warning|warning|success|error|error" data-i18n="action.submit">送出</button>
         </div>
     </div>
 </div>

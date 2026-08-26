@@ -76,7 +76,7 @@ permalink: 2-2-3_abTest.html
        「設定 B 欄必須等於使用頁 2-2-3 的 B 側」，而它從這一頁的「套用為正式設定」開出來——同一份資料
        在頁面與彈窗兩處說兩套就是跨區不自洽。改這一欄要連那一份一起改。 #}
 {% set abSides = [
-    { side: "A", state: "a", i18nKey: "qaTest.settingSideA", label: "（設定 A）", knowledge: "1", llm: "openai:gpt-4o-mini", configKey: "settings.config1", configLabel: "設置一", promptVersion: "V3",
+    { side: "A", state: "a", i18nKey: "qaTest.settingSideA", label: "（設定 A）", knowledge: "1", llm: "openai:gpt-4o-mini", configKey: "settings.config1", configLabel: "設置一", promptVersion: "V3", reasoningEffort: "",
       prompt: "角色定位：
 你是一位專業的知識庫問答助手，負責依據已上傳的資料回應使用者詢問。
 知識來源限制：
@@ -90,7 +90,7 @@ permalink: 2-2-3_abTest.html
 輸出格式：
 • 使用條列式（• 或 -）
 • 必要時分段（例如：說明 / 流程 / 注意事項）" },
-    { side: "B", state: "b", i18nKey: "qaTest.settingSideB", label: "（設定 B）", knowledge: "2", llm: "openai:gpt-4o", configKey: "settings.config2", configLabel: "設置二", promptVersion: "V2",
+    { side: "B", state: "b", i18nKey: "qaTest.settingSideB", label: "（設定 B）", knowledge: "2", llm: "openai:gpt-4o", configKey: "settings.config2", configLabel: "設置二", promptVersion: "V2", reasoningEffort: "high",
       prompt: "任務導向：
 依使用者的問題直接給出可執行的步驟，不重述題目。
 知識來源限制：
@@ -147,7 +147,13 @@ permalink: 2-2-3_abTest.html
                 </div>
             </div>
             {# 思考深度（reasoning effort）：與模型同排的一次性測試覆寫（A/B 各一份）。選項依所選模型
-                 動態（React 端）；切版靜態列代表性枚舉。空＝沿用該模型預設（chatbot init_llm clamp）。 #}
+                 動態（React 端）；切版靜態列代表性枚舉。空＝沿用該模型預設（chatbot init_llm clamp）。
+               **兩側刻意不同**（A 空、B `high`）：①這一欄**確實會被「套用為正式設定」寫出去**
+                 （gufofaq-saas product `app/routers/qatest.py` 的 `ApplyIn.reasoning_effort`），而
+                 `components/apply-settings-compare-modal` 的「設定 B」欄必須逐欄等於這一側——
+                 兩側都停在空值的話，那顆比對窗的思考深度欄就只畫得出「沿用模型預設」，而它正是
+                 這一輪要補進去的那一欄（§6 跨區自洽）。②順帶讓枚舉的「被選中」態在 dist 上真的
+                 有一處畫得出來——`reasoning-effort-select` 先前恆定停在空值那一顆。 #}
             <div class="form-group row mobile-col">
                 <div class="label ab-field-label">
                     <label for="abReasoningEffortSelect-{{ ab.side }}" class="control-label" data-i18n="settings.reasoningEffort">思考深度</label>
@@ -158,6 +164,7 @@ permalink: 2-2-3_abTest.html
                     {% set reasoningEffortGroup = "" %}
                     {% set reasoningEffortEmptyKey = "settings.reasoningEffortDefault" %}
                     {% set reasoningEffortEmptyZh = "沿用模型預設" %}
+                    {% set reasoningEffortSelected = ab.reasoningEffort %}
                     {% include "components/reasoning-effort-select/reasoning-effort-select.html" %}
                 </div>
             </div>
@@ -215,10 +222,16 @@ permalink: 2-2-3_abTest.html
            只要常駐展開輸入框，動作鈕在下方動作列。示範文案領域中性。 #}
         {# 提示詞區在 role="group" 之外（那個 group 只框設定欄位），所以 textarea 的可及名稱要自帶
              區分——兩側都叫「提示詞」的話報讀器聽不出在編哪一側。用 aria-labelledby 串上側別。 #}
+        {# 界線提示（§4 三件套第三件）。上限的正本是 product `app/limits/chat_config_limits.py` 的
+             `MAX_SINGLE_PROMPT_LEN`，執行點是 `app/routers/qatest.py` 的 `SingleTestIn.prompt`
+             ——與 2-2-1 同一顆常數、同一段 markup（那一頁的檔頭寫了完整理由）。
+             **提示句逐側各一份**：hint 的 id 要跟著側別走，否則兩側的 `aria-describedby` 會指到
+             同一顆節點，而同頁 id 重複（§4）。 #}
         <div class="flex-row column gap-8 mt-16">
             <span class="control-label" id="abPromptLabel-{{ ab.side }}" data-i18n="comp.prompt">提示詞</span>
             {# 本文吃 abSides 的 `prompt`（兩側各一份、逐字不同，理由見該陣列上方那段）。 #}
-            <textarea class="form-control size-lg js-prompt-input" aria-labelledby="abSideLabel-{{ ab.side }} abPromptLabel-{{ ab.side }}">{{ ab.prompt }}</textarea>
+            <textarea class="form-control size-lg js-prompt-input" aria-labelledby="abSideLabel-{{ ab.side }} abPromptLabel-{{ ab.side }}" aria-describedby="abPromptHint-{{ ab.side }}">{{ ab.prompt }}</textarea>
+            <span class="text-gray" id="abPromptHint-{{ ab.side }}"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-prompt-max-len">20000</span><span data-i18n="common.unitChars"> 字</span></span>
         </div>
 
         {# 動作列（每側三鈕同排，套用為正式設定移到此處與其他按鈕一起排列）：
@@ -489,6 +502,14 @@ permalink: 2-2-3_abTest.html
                 </div>
             </div>
         </div>
+        {# 側欄總筆數（`GET /qatest/ab-history` 的 `total_count`，product `app/routers/qatest.py` 的
+             `ab_history`）。**這一格非有不可**：`AbTestRound` 是 append-only、沒有任何清理路徑，
+             而那一支端點先前硬編 `.limit(100)`、不回總數也收不了偏移量 ⇒ 租戶累積超過一頁之後，
+             更早的比較從側欄**無聲消失**，畫面上與「那些回合不存在」逐位元組相同。端點這一輪已改成
+             分頁並回總數，這一格就是那個修正在畫面上的落點。
+             128 與三顆示範頁籤刻意不相等：它演的正是「這張清單被切過」（同 pagination 的 `total`
+             是滑窗示範參數、不與示範列數對帳，§6）。值以字串傳入，理由見元件檔頭。 #}
+        {% set sidePanelTotal = "128" %}
         {% include "components/qa-side-panel/qa-side-panel.html" %}
     </div>
 </div>

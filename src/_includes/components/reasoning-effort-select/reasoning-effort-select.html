@@ -11,12 +11,21 @@
     reasoningEffortGroup（選填）＝分組 LLM 的 data-group 列鍵；
     reasoningEffortEmptyKey／reasoningEffortEmptyZh（選填，預設「沿用模型預設」）＝空值選項的語意——
       主回答空＝該模型預設，分組空＝最低思考（兩者行為不同，故不共用同一顆 i18n key，見 5-2 註解）。
+    reasoningEffortSelected（選填，預設空＝選中「沿用模型預設」那一顆）＝目前選中的枚舉成員。
+      **為什麼要開這顆**：不開的話，全站每一顆這種 select 都恆定停在空值那一顆——枚舉的另外四個成員
+      在 dist 上沒有任何一處是「被選中」的樣子，而「選中」正是它們唯一會被看到的狀態（§5：分支要有
+      頁面演得出來）。真正逼出這顆參數的是 2-2-3 ↔ apply-settings-compare-modal 的跨區自洽：那顆
+      比對窗的「設定 B」欄必須逐欄等於 2-2-3 的 B 側，而思考深度**確實會被套用**
+      （product `app/routers/qatest.py` 的 `ApplyIn` 有 `reasoning_effort` 這一欄），兩邊一個顯示
+      「沿用模型預設」、一個顯示某個值就是演一個不可能的狀態。
+      不改任何既有使用頁的渲染結果：沒 set 就落回空值那一顆，與先前逐位元相同。
   內部變數用元件專屬名 reasoningEffortOptions（§6）。
 #}
 {% set reasoningEffortOptions = ["minimal", "low", "medium", "high"] %}
 <select class="form-control singleSelect {{ reasoningEffortHook or "js-reasoning-effort" }}" id="{{ reasoningEffortId }}"{% if reasoningEffortGroup %} data-group="{{ reasoningEffortGroup }}"{% endif %}>
-    <option value="" selected data-i18n="{{ reasoningEffortEmptyKey or "settings.reasoningEffortDefault" }}">{{ reasoningEffortEmptyZh or "沿用模型預設" }}</option>
+    {# 枚舉成員是**值**、不翻（同 2-2-4 的模型清單）；只有空值那一顆是 chrome，故只有它掛 data-i18n。 #}
+    <option value=""{% if not reasoningEffortSelected %} selected{% endif %} data-i18n="{{ reasoningEffortEmptyKey or "settings.reasoningEffortDefault" }}">{{ reasoningEffortEmptyZh or "沿用模型預設" }}</option>
     {% for effort in reasoningEffortOptions %}
-    <option value="{{ effort }}">{{ effort }}</option>
+    <option value="{{ effort }}"{% if effort == reasoningEffortSelected %} selected{% endif %}>{{ effort }}</option>
     {% endfor %}
 </select>

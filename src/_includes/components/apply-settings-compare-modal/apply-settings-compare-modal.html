@@ -8,7 +8,8 @@
      `GufoFAQ_Frontend_New/js/abTest.js` 的 `populateApplyModal` 用
      `$('#ProductionSettingsModal .js-apply-current-title').parent()` 定位**左欄「原設定」**、
      再用 `$('#ProductionSettingsModal .js-apply-title').parent()` 定位**右欄「要套用的那一側」**，
-     兩欄各自 `$col.find('input')`／`find('input.sample-count')`／`find('textarea')` 填值。
+     兩欄各自 `$col.find('input')`／`find('input.sample-count')`／`find('textarea')` 填值
+     （**本 repo 這一版已經沒有 textarea**：提示詞那一欄依 round46 的判定撤掉，見下方那一段）。
      少了左欄那顆，React 端就只認得出「要套用的是哪一欄」，認不出「拿現值來填的是哪一欄」——
      而這顆彈窗的整個用途就是把那兩欄擺在一起比。
      確認鈕 toast 只列 success|error（key toast.applyProductionCompare、2 段）：權限不足在 React 走**獨立的**
@@ -33,19 +34,30 @@
      這顆窗回答的是「按下去之後前台會變成什麼樣」。
    SaaS 這一側的注意事項：套用**沒有**跨設定檔的共用參數可寫，product `app/routers/qatest.py` 的
      `apply_production` 是「把參數 merge 進**該側設定檔**的 chatbot config ＋ 把 `default_frontend_profile_no`
-     指到該設定檔」兩件事。提示詞那一列**不在** `ApplyIn` 裡（提示詞另走「儲存提示詞版本」），
-     它在這顆窗裡是比對脈絡、不是會被套用的東西。 #}
+     指到該設定檔」兩件事。
+   ⚠️ **這顆窗列的欄位＝`ApplyIn` 的欄位，一個不多一個不少**（round46 修正，兩個方向都錯過）：
+     · **拿掉「提示詞」**。它**不在** `ApplyIn` 裡（那顆 model 是 `extra="forbid"` 且沒有 `prompt` 欄；
+       提示詞另走「儲存提示詞版本」）。上一版把它留著、註解寫「它在這顆窗裡是比對脈絡、不是會被
+       套用的東西」——**那個理由撐不住這一區的用途**：這一區回答的是「按下去之後前台會變成什麼樣」，
+       而使用者看到兩欄提示詞不同、按下去拿到「已套用為正式設定」，前台的提示詞卻紋風不動。
+       端一個不會變的欄位比不端更糟：不端只是少講一件事，端了是講錯一件事。
+     · **補上「思考深度」**。`ApplyIn.reasoning_effort` 真的會被寫進去，而它在這顆窗上完全沒有落點
+       ——使用者於是在毫不知情的狀況下把正式設定檔的思考深度換掉了。
+     判準一句話：**這一欄會不會因為按下那顆鈕而改變**；會就要在窗上，不會就不准在窗上。 #}
 {# 比對窗要看得到**差異**（§6 示範資料要自洽）：兩欄逐欄相同時，這顆彈窗演的是一個
      「套用了也不會有任何改變」的狀態，而它存在的理由正是讓人在套用前看出差在哪。
      「設定 B」欄必須等於使用頁 2-2-3 的 B 側（abSides[1]：設置二／openai:gpt-4o，取樣 8／16，
-     提示詞逐字相同）——同一份資料在頁面與彈窗兩處說兩套，是跨區不自洽。
+     思考深度 `high`）——同一份資料在頁面與彈窗兩處說兩套，是跨區不自洽。
+     ⚠️ 思考深度那一欄是**這一輪連帶逼出來的**：2-2-3 的兩側原本都停在「沿用模型預設」
+     （`components/reasoning-effort-select` 恆定選中空值那一顆），這裡若照抄就只畫得出兩欄相同的
+     「沿用模型預設」，而這顆窗存在的理由正是看出差異。故該元件開了 `reasoningEffortSelected`
+     參數、2-2-3 的 B 側設 `high`，兩處才對得上（見該元件與 2-2-3 的註解）。
      ⚠️ 兩欄的 `llm` 值是 `GET /qatest/models` 回的 `value`（`<provider>:<model>`，gufofaq-saas
      product `app/routers/qatest.py` 的 `list_models`／`effective_models`）。原本寫成
      `OpenAI gpt-4o-mini`／`OpenAI gpt-4o`——那個字面過不了 product `app/llm.py` 的
      `can_build_model`（`model.startswith(PROVIDER_PREFIXES)`，前綴只有 `openai:`／`anthropic:`），
      而 2-2-3 的 `abSides` 也是這個形狀——兩邊沒同時是 `openai:` 就同時犯了兩件事。
-     提示詞也是逐欄不同的資料（真 app 的 column 就有這一欄：正式版 saved.content vs 該側 prompt），
-     故從迴圈內的寫死文字改成資料欄，否則兩欄結構上不可能不同。 #}
+     四欄逐欄都是資料（不是迴圈內的寫死文字），否則兩欄結構上不可能不同。 #}
 {# 變數用元件專屬名（§6：`set` 是頁面全域，泛用名如 `settingColumns` 會和使用頁自己的同名變數
      互相覆蓋，而渲染結果的靜默覆蓋沒有測試看得到）。
    `jsApplyCurrentTitle`／`jsApplyTitle` 是兩顆成對的凍結 hook 開關，見上方檔頭。 #}
@@ -69,29 +81,13 @@
      「設定B」——同一頁同一句話兩種字距是 §6 不自洽。`state` token 一律小寫（HTML 屬性名的限制），
      與 2-2-3 `abSides[].state` 同一組值。 #}
 {% set applyCompareColumns = [
-    { title: "原設定", titleKey: "modals.originalSettings", retrieval: "設置二", llm: "openai:gpt-4o-mini", sampleMin: "4", sampleMax: "6", jsApplyCurrentTitle: true,
-      prompt: "角色定位：
-你是一位專業的產品客服助手，負責回應使用者的產品相關詢問。
-知識來源限制：
-你的回答必須僅依據《產品規格資料庫》（PDF規格書）與《使用手冊》（操作說明）。
-回應原則：
-優先使用條列式呈現資訊；語氣清楚、專業且易懂；不可臆測或補充未出現在資料中的內容；若資料不足，需明確說明「無法從現有資料判斷」。
-輸出格式：
-使用條列式（• 或 -），必要時分段（例如：規格 / 使用方式 / 注意事項）。" },
+    { title: "原設定", titleKey: "modals.originalSettings", retrieval: "設置二", llm: "openai:gpt-4o-mini", sampleMin: "4", sampleMax: "6", reasoningEffort: "medium", jsApplyCurrentTitle: true },
     { title: "設定 B", titleKey: "modals.settingB",
       titleStates: [
         { state: "a", label: "設定 A", i18nKey: "modals.settingA" },
         { state: "b", label: "設定 B", i18nKey: "modals.settingB" }
       ],
-      retrieval: "設置二", llm: "openai:gpt-4o", sampleMin: "8", sampleMax: "16", jsApplyTitle: true,
-      prompt: "任務導向：
-依使用者的問題直接給出可執行的步驟，不重述題目。
-知識來源限制：
-只用《產品規格資料庫》與《使用手冊》；兩者衝突時以規格書為準並標明出處。
-回應原則：
-先給結論，再給步驟；每一步一行；規格數值一律附單位；查無資料時直接說「手冊未涵蓋」並建議聯絡窗口。
-輸出格式：
-結論一句 ＋ 編號步驟 ＋（必要時）注意事項。" }
+      retrieval: "設置二", llm: "openai:gpt-4o", sampleMin: "8", sampleMax: "16", reasoningEffort: "high", jsApplyTitle: true }
 ] %}
 <dialog class="modals" id="ProductionSettingsCompareModal" aria-labelledby="ProductionSettingsCompareModal-title">
     <div class="modals-dialog modals-md">
@@ -104,7 +100,7 @@
                 <div class="modals-body">
                     <div class="flex-row gap-24">
                         {% for column in applyCompareColumns %}
-                        {# 兩欄逐欄同名：「知識檢索」「LLM模型」「資料取樣數」×2「提示詞」在兩欄各一份，
+                        {# 兩欄逐欄同名：「知識檢索」「LLM模型」「資料取樣數」×2「思考深度」在兩欄各一份，
                              10 顆控制項的可及名稱兩兩一模一樣，報讀器聽不出正在讀的是原設定還是「設定 B」。
                              欄標題給 id、欄內欄位容器包 role="group" aria-labelledby——同功能的 2-2-3
                              設定區用的就是這招（abSideLabel-<側>），這顆彈窗比對的正是那兩側。 #}
@@ -144,13 +140,17 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="form-group">
+                                {# 思考深度：`ApplyIn` **有**這一欄（gufofaq-saas product
+                                     `app/routers/qatest.py`），所以它會跟著這顆鈕被寫進正式設定檔。
+                                     值是枚舉成員、不翻（同 `components/reasoning-effort-select` 的
+                                     `<option>`，那裡是這組枚舉的正本）。 #}
+                                <div class="form-group row mobile-col">
                                     <div class="label">
-                                        <label for="applyPrompt-{{ loop.index }}" class="control-label" data-i18n="comp.prompt">提示詞</label>
+                                        <label for="applyEffort-{{ loop.index }}" class="control-label" data-i18n="settings.reasoningEffort">思考深度</label>
                                     </div>
                                     <div class="field">
-                                        <textarea id="applyPrompt-{{ loop.index }}" rows="10" class="form-control disabled"
-                                            placeholder="請輸入您的提示詞" data-i18n-placeholder="settings.pleaseEnterPrompt" disabled>{{ column.prompt }}</textarea>
+                                        <input type="text" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control disabled"
+                                            id="applyEffort-{{ loop.index }}" value="{{ column.reasoningEffort }}" disabled>
                                     </div>
                                 </div>
                             </div>

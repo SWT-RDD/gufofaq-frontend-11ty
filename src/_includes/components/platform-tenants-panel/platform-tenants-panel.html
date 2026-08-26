@@ -72,7 +72,10 @@
      任何一步。先前它只寫在 5-6-1 那一份稿上，照現況轉過去 React 只能寫成「step === "idle" 才顯示
      頁層說明」，一句切版從未打算定義的行為；而 apps/web/ELEVENTY-SYNC.md 的逐位元組比對
      「同一條路由的多個狀態各自登記」會把那個差異固化下來。 #}
-<p class="text-gray" data-i18n="settings.platformTenantsIntro">這一頁是平台管理者的跨租戶視角，不是任何單一租戶自己的設定頁：底下管理的是全平台每一個租戶的權限指派、功能開通、使用期與 GufoRAG 授權用量，加上 ISO 季度審核與平台免責聲明。稽核員唯讀看得到整頁，異動仍限平台系統管理員。</p>
+{# 這一段是**頁層說明**，不是區塊清單：底下每加一塊就要回來改的句子遲早會腐化（§3-2），
+     所以維運那幾塊（聯絡窗口／每日資料健檢／宣告實體篩選槽）收成「平台層的設定與維運操作」
+     一句，不逐塊點名。 #}
+<p class="text-gray" data-i18n="settings.platformTenantsIntro">這一頁是平台管理者的跨租戶視角，不是任何單一租戶自己的設定頁：底下管理的是全平台每一個租戶的權限指派、功能開通、使用期與 GufoRAG 授權用量，加上 ISO 季度審核、平台層的設定與維運操作，以及平台免責聲明。稽核員唯讀看得到整頁，異動仍限平台系統管理員。</p>
 <div class="block mb-16 flex-row column gap-16" data-platform-role="auditor">
     <div class="text-md text-bold" data-i18n="platform.platformRolesTitle">平台權限</div>
     <div class="table-container scrollTable">
@@ -461,6 +464,136 @@
                 {% endfor %}
             </tbody>
         </table>
+    </div>
+</div>
+
+{# 平台聯絡窗口（`GET /platform/support-contact` auditor 可讀、`PUT /platform/support-contact` 僅 admin；
+     product `app/routers/platform.py` 的 `get_support_contact`／`set_support_contact`，服務層在
+     `app/tenancy/platform_admin.py` 的同名兩支）。
+   **這一格的讀者是全世界**：同一個值另有一支零憑證的公開端點 `GET /public/support-contact`
+     （product `app/routers/public.py` 的 `public_support_contact`），登入頁的忘記密碼窗就是靠它。
+     所以說明句講的不是「這欄放什麼」，是「打在這裡的字會出現在誰面前」——這是整個欄位最容易
+     被誤會的一件事，也是它為什麼有長度上限（見下一段）。
+   **它是自由文字、不是 email 欄**：服務層 docstring 逐字寫著不驗格式（要放得下 email、分機、
+     Teams 連結，或一句「請洽資訊室（分機 1234）」），「夾成 email 格式會讓一半的合理答案存不進去」。
+     故這裡不掛 `type="email"`、不掛 `pattern`——那會是把產品決定寫成正則。
+   **留空＝清掉**（服務層把空白正規化成刪列，`get_support_contact` 兩種都讀成 `null`），而 `null`
+     的意思是登入頁那一段**整段不畫**，不是畫一句空的「請聯絡 」。提示句要把這件事說出來，
+     否則使用者以為清空只是把字清掉。
+   ⚠️ 上限 200 的正本是 product `app/tenancy/field_limits.py` 的 `MAX_SUPPORT_CONTACT_LEN`，
+     **目前沒有任何端點把它投影出來**（不像 MCP 那一批有 `GET /platform/mcp/limits`、對話設定有
+     `GET /settings/chat-config-limits`）。所以這個數字今天是前端的一份抄本——故仍做成資料槽
+     （`js-support-contact-max-len`）而不是烤進譯文，並把「投影出來」列為對 product 那一側的交辦；
+     在那之前它會與正本一起腐化，而腐化的方向是畫面理直氣壯地說一個過期的數字（§4-2 界線數字）。 #}
+<div class="block mb-16 flex-row column gap-16" data-platform-role="auditor">
+    <div class="text-md text-bold" data-i18n="settings.supportContactLabel">聯絡窗口</div>
+    <div class="flex-row gap-16 align-items-end flex-wrap mobile-column sm-gap-16">
+        <div class="form-group">
+            <div class="label">
+                <label for="platformSupportContactInput" class="control-label" data-i18n="settings.supportContactLabel">聯絡窗口</label>
+            </div>
+            <div class="field">
+                {# 兩句輔助文字都掛進 `aria-describedby`（§4）：一句是「誰看得到」，一句是長度界線，
+                     兩件事都在按下儲存之前就要講得出來。 #}
+                <input type="text" id="platformSupportContactInput" data-platform-role="admin" class="form-control js-support-contact-input" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" aria-describedby="platformSupportContactHint platformSupportContactLimitHint" value="support@example.gov.tw">
+                <span class="text-gray" id="platformSupportContactHint" data-i18n="settings.supportContactHint">印在登入頁上，任何人都看得到；留空＝不顯示</span>
+                <span class="text-gray" id="platformSupportContactLimitHint"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-support-contact-max-len">200</span><span data-i18n="common.unitChars"> 字</span></span>
+            </div>
+        </div>
+        {# 兩段（同上面那塊平台時區的正典）：這一支沒有任何「使用者填錯」的分支——不驗格式、
+             留空是合法輸入（＝清掉），唯一擋得下來的是長度，而長度已經常駐在上面那句提示裡。 #}
+        <button type="button" class="button button-primary button-sm js-save-support-contact" data-platform-role="admin" data-toast="聯絡窗口已儲存|儲存失敗" data-i18n-data-toast="toast.saveSupportContact" data-toast-type="success|error" data-i18n="action.save">儲存</button>
+    </div>
+</div>
+
+{# 每日資料健檢：立刻重掃（`POST /health/scan/daily`，product `app/routers/health_findings.py` 的
+     `daily_rescan`；BFF 逐顆白名單轉發 `force`／`limit`／`after_tenant_id` 三顆查詢參數）。
+   **為什麼要有人手的入口**：叢集層的觸發者是 CronJob，而 product 那一支的 docstring 逐字把
+     「平台系統管理員的 session（人手動觸發一趟）」列為兩種合法身分之一。排程壞掉或想立刻重算時，
+     沒有這一塊就只剩下進 pod 打 product 這條路。
+   **三顆參數的預設都是「整個平台一趟掃完」**（product 對 `limit`／`after_tenant_id` 的預設刻意
+     維持既有行為），所以兩個數字欄留空就是不帶——留空不是「還沒填」，是一個有意義的值。
+   `force` 跳過到期判準；水位 20 小時的正本是 product `app/quality/health_findings_service.py` 的
+     `DAILY_RESCAN_INTERVAL_HOURS`（那個數字寫進了 chrome 的繁中，因為它是**這一顆開關在做什麼**
+     的全部內容——不是一個會隨資料變動的量）。
+   `limit` **刻意沒有上界**（product 那一段逐字：「它是呼叫端替自己選的一個上限，選大一點的語意
+     就是『不要分批』，沒有一個我們該替他決定的天花板」）⇒ 這一欄只夾得下界，可見提示句因此講的是
+     「1 以上、留空＝不分批」而不是一段區間（§4 三件套的第三件要求的是**講得出界線**，不是一定要
+     長成 `a – b`）。
+   `after_tenant_id` 是游標（只掃 id 嚴格大於它的租戶），`ge=0`。
+   **「還有沒有下一批」不必再問一次**：`DailyScanOut.tenants` 是平台租戶總數、`results` 是這一趟
+     真的處理過的那幾個 ⇒ 兩者不等就是被切過，下一個游標是 `results` 最後一筆的 `tenant_id`。 #}
+<div class="block mb-16 flex-row column gap-16" data-platform-role="auditor">
+    <div class="text-md text-bold" data-i18n="settings.healthScanDailyTitle">每日資料健檢</div>
+    <div class="flex-row gap-16 align-items-end flex-wrap mobile-column sm-gap-16">
+        <label class="form-checkbox">
+            <input type="checkbox" data-platform-role="admin" class="js-health-scan-force">
+            <span data-i18n="settings.healthScanForce">忽略 20 小時水位</span>
+        </label>
+        <div class="form-group">
+            <div class="label">
+                <label for="healthScanLimitInput" class="control-label" data-i18n="settings.healthScanLimit">這一批掃幾個租戶</label>
+            </div>
+            <div class="field">
+                <input type="number" min="1" step="1" id="healthScanLimitInput" data-platform-role="admin" class="form-control js-health-scan-limit" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" aria-describedby="healthScanLimitHint">
+                <span class="text-gray" id="healthScanLimitHint" data-i18n="settings.healthScanLimitHint">1 以上；留空＝整個平台一趟掃完</span>
+            </div>
+        </div>
+        <div class="form-group">
+            <div class="label">
+                <label for="healthScanAfterInput" class="control-label" data-i18n="settings.healthScanAfterTenant">從哪個租戶編號之後開始</label>
+            </div>
+            <div class="field">
+                <input type="number" min="0" step="1" id="healthScanAfterInput" data-platform-role="admin" class="form-control js-health-scan-after" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" aria-describedby="healthScanAfterHint">
+                <span class="text-gray" id="healthScanAfterHint" data-i18n="settings.healthScanAfterTenantHint">只掃編號比它大的租戶；留空＝從第一個開始</span>
+            </div>
+        </div>
+        {# 四段，`|` 是索引契約。分支對回 `DailyScanOut` 真的分得出來的結果：
+             ① `failed == 0` 且掃到東西 ⇒ 成功。
+             ② `failed > 0` ⇒ 逐租戶各自成敗（`_daily_scan_one` 自己 commit／rollback，整趟不 rollback），
+                所以「有幾個沒掃成」是一個真實可達、而且與整趟送不出去要做的事完全不同的結果。
+             ③ `scanned == 0` 而 `skipped > 0` ⇒ **每一個租戶都還在水位內**。這一段非有不可：不勾 force
+                時它是最常見的結果（排程剛跑過），而畫面上「掃完了」與「一個都沒掃」長得一模一樣——
+                那正是上面那顆 force 開關存在的理由，所以這一段要把人指回那顆開關。
+             ④ 送不出去（`require_platform_admin` 的 403 不列——那一級走「動作鈕不渲染」，§5）。 #}
+        <button type="button" class="button button-primary button-sm js-health-scan-daily" data-platform-role="admin" data-toast="這一趟重掃已完成|有幾個租戶沒有掃成功，逐筆結果見稽核日誌|每一個租戶都還在 20 小時水位內，這一趟一個都沒有重掃；要立刻重算請先勾選「忽略 20 小時水位」|送出失敗，請稍後再試" data-i18n-data-toast="toast.healthScanDaily" data-toast-type="success|warning|warning|error" data-i18n="settings.healthScanRunNow">立刻重掃</button>
+    </div>
+</div>
+
+{# 危險操作：宣告實體篩選槽（`POST /platform/filter-slots/declare`，product
+     `app/routers/platform.py` 的 `declare_filter_slots` → `app/tenancy/platform_admin.py` 的同名服務）。
+   **為什麼一定要有這個入口**：宣告是匯入的前置——沒有宣告過的欄位槽，之後匯入的每一列都不會有欄位，
+     而匯入本身回報的是成功（`failed: 0`）。今天這件事在畫面上完全沒有入口。
+   **形狀照 manage-tenant-modal 的危險操作區**：紅色標題 ＋ 常駐的不可逆警語 ＋ type-to-confirm ＋
+     一顆預設 `disabled` 的紅鈕（`disabled` 演的是確認欄空著的那一刻，而 type-to-confirm 的全部意義
+     就是「沒打對之前按不下去」；解鎖條件常駐可見並由 `aria-describedby` 接上，所以不需要也不該
+     改成 warning toast——REACT-CONVERSION §⑥ 的第二種合規 disable）。
+   ⚠️ **片語是「值」，永遠不掛 `data-i18n`**（§4-2 type-to-confirm；GUIDELINE 那一條點名的正典就是
+     這一支）：正本是 product `app/tenancy/platform_admin.py` 的 `_FILTER_SLOTS_CONFIRM_PHRASE`，
+     服務層逐字比對、**前後帶空白一律拒收**（該側測試的參數化清單裡就列著兩個只差首尾空白的樣本），
+     所以提示句要把「前後不可以有空白」講出來——那不是排版建議，是那道閘真的會擋的東西。
+     label 走「前綴 key ＋片語節點 ＋後綴 key」，兩顆前後綴沿用 iso-review-wizard 已有的那一組
+     （§4-2：繁中原文相同的 chrome 沿用既有 key、不另立）。
+   **只有一顆片語、不隨任何選擇改變**，所以不用 `data-phrase-<動作>` 那組三態槽（那是 ISO 審核精靈
+     三顆動作各一組片語才需要的），提示句也另立一顆——既有那顆 `platform.confirmPhraseHint` 的繁中
+     寫著「會隨上面選的動作換一組」，在這裡是假的。
+   **兩段 toast**：確認片語那道 400 **不列**（round45 裁決，同上面平台時區那一塊：解鎖條件由畫面
+     自己保證 ⇒ UI 產不出那個請求）；上游故障走 `upstream_call` ⇒ 一段 error。 #}
+<div class="block mb-16 flex-row column gap-8" data-platform-role="auditor">
+    <div class="text-md text-bold text-red" data-i18n="settings.filterSlotsDeclareTitle">宣告實體篩選槽</div>
+    <p class="text-gray m-0" data-i18n="settings.filterSlotsDeclareWarn">這會刪掉全部向量資料並重新建立索引。宣告是匯入的前置：沒有宣告的欄位槽，之後匯入的每一列都不會有欄位，而匯入本身會回報成功。</p>
+    <div class="form-group">
+        <div class="label">
+            <label for="filterSlotsConfirmInput" class="control-label"><span data-i18n="platform.confirmTypePrefix">請逐字輸入 </span><span>REBUILD-ALL</span><span data-i18n="platform.confirmTypeSuffix"> 以確認執行</span></label>
+        </div>
+        <div class="field">
+            {# placeholder 不掛 `data-i18n-placeholder`：片語是值、不隨語言變（§4-2）。 #}
+            <input type="text" id="filterSlotsConfirmInput" data-platform-role="admin" class="form-control js-filter-slots-confirm" placeholder="REBUILD-ALL" aria-describedby="filterSlotsConfirmHint">
+            <span class="text-gray" id="filterSlotsConfirmHint" data-i18n="settings.filterSlotsConfirmHint">片語要逐字相同（含大小寫與連字號），前後不可以有空白；它不隨語言變。</span>
+        </div>
+    </div>
+    <div class="flex-row">
+        <button type="button" class="button button-red js-declare-filter-slots" data-platform-role="admin" data-toast="已重新宣告篩選槽，索引開始重建|送出失敗，請稍後再試" data-i18n-data-toast="toast.declareFilterSlots" data-toast-type="success|error" data-i18n="settings.filterSlotsDeclareAction" disabled>宣告並重建</button>
     </div>
 </div>
 

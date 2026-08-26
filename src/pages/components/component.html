@@ -1108,8 +1108,27 @@ bodyClass: guideline-page
                     <span class="verdict-tag is-fail" data-i18n="dataImport.syncFailed">寫入索引失敗</span>
                 </div>
                 <p class="text-red m-0" data-i18n="dataImport.syncFailedHint">資料已經寫進資料集，但索引沒有建起來，所以這一批（或其中幾筆）現在搜不到。照該檔標示的原因把資料修好之後，只重新匯入標示為「寫入索引失敗」的檔案，不要整批重匯。</p>
+                {# 平台聯絡窗口**沒設過**（`GET /platform/support-contact` 回 `contact: null`；服務層
+                     product `app/tenancy/platform_admin.py` 的 `get_support_contact` 逐字「沒設過就是
+                     `None`，不是空字串、也不是任何預設值」）那一態的兩句話。
+                     兩個使用頁（login.html 的忘記密碼窗、components/apply-settings-no-permission-modal）
+                     的靜態稿都演「有設」那一態——那一態才畫得出值的槽位，也才是版面規格；「沒設」那一態
+                     是**整句換掉**，不是把有值那一句留著後面接一段空白（那會畫出「聯絡方式：」然後什麼
+                     都沒有）。故這兩句在真實頁上永遠看不到，這裡是它們唯一的可見處。
+                     ⚠️ 這一態**不能靠「值是空字串」湊**：服務層清掉時是刪列，兩種都讀成 `null`，
+                     消費端拿到的就是「沒有這個東西」而不是「有一個空的東西」。 #}
+                <p class="text-center m-0" data-i18n="faq.forgotPasswordNoContact">親愛的使用者您好，如忘記密碼請與平台管理者聯絡。</p>
+                <p class="text-center m-0" data-i18n="modals.noPermissionNoContact">親愛的客戶您好，因權限不足，無法套用。如需開啟此功能，請聯絡平台管理者。</p>
+                {# 3-5「內容過短、跳過近似重複比對的記錄」那一格的 **null** 態。
+                     `health_scan_runs.too_short_records` 是**可空、且沒有 `server_default`** 的欄
+                     （product `app/models.py`）：`NULL` 的意思是「那一次掃描還沒有這個概念」——
+                     這一欄存在之前寫下的那些列——與 `0`「量過、一筆都沒被排除」是兩件事，補 0 就是
+                     替一次沒有發生的量測編一個結果。3-5 的示範是一趟近期的排程掃描（欄位早就存在）
+                     ⇒ 那一頁演不到它，這裡是它唯一的可見處。
+                     繁中逐字照抄 3-5 那一格（§4-2 同 key 兩種繁中會互相覆蓋）。 #}
+                <p class="m-0"><span class="text-bold" data-i18n="health.scanTooShort">內容過短、跳過近似重複比對的記錄：</span><span class="text-gray" data-i18n="health.scanTooShortNotMeasured">上一次檢查時還沒有這一項</span></p>
             </div>
-            <div class="subtitle">出處：2-2-4 的模型相容性兩句、2-2-5 的基準設定缺漏與命中清單截斷、2-2-5 的桶子列數截斷（每桶 20 則上限，那一頁只有 10 則案例故恆不觸發）、5-2 的逐代碼覆寫重複、5-2 的別名綁定與「沒有啟用任何輸出規則」、5-10 的覆蓋率可開啟與「尚未量測」、4-2 的兩欄合規、3-5 的「還沒跑過健檢」、2-2-5「沒得比」的另一個方向（基準沒有它）、5-9 的金鑰兩態（已存在／尚未產生）、4-2 意圖判斷的「是」、3-1-3 多選刪除的量詞、5-3 長條圖的系列欄名、import-sync-tag 索引同步演不到的兩態（1-1-6 停在最常見的 pending，1-2-1 逐檔演 pending／unknown／缺席態）。它們在各自的頁面上都掛著 .hidden，或由一個在該頁恆為某一值的條件式產出，或是那一頁的示範推導不出來的枚舉成員，或住在切版畫不出內容的容器裡（&lt;canvas&gt;、業務 js 填的空槽）——那一態沒有人看得到，這裡是唯一可見處</div>
+            <div class="subtitle">出處：2-2-4 的模型相容性兩句、2-2-5 的基準設定缺漏與命中清單截斷、2-2-5 的桶子列數截斷（每桶 20 則上限，那一頁只有 10 則案例故恆不觸發）、5-2 的逐代碼覆寫重複、5-2 的別名綁定與「沒有啟用任何輸出規則」、5-10 的覆蓋率可開啟與「尚未量測」、4-2 的兩欄合規、3-5 的「還沒跑過健檢」、2-2-5「沒得比」的另一個方向（基準沒有它）、5-9 的金鑰兩態（已存在／尚未產生）、4-2 意圖判斷的「是」、3-1-3 多選刪除的量詞、5-3 長條圖的系列欄名、import-sync-tag 索引同步演不到的兩態（1-1-6 停在最常見的 pending，1-2-1 逐檔演 pending／unknown／缺席態）、平台聯絡窗口沒設過時登入頁與無權限窗各自換上的那一句、3-5「內容過短」那一格的 null 態（那一欄在它存在之前寫下的掃描列上是 NULL，與量到的 0 不是同一件事）。它們在各自的頁面上都掛著 .hidden，或由一個在該頁恆為某一值的條件式產出，或是那一頁的示範推導不出來的枚舉成員，或住在切版畫不出內容的容器裡（&lt;canvas&gt;、業務 js 填的空槽）——那一態沒有人看得到，這裡是唯一可見處</div>
         </section>
 
         <section id="errorPageSection">

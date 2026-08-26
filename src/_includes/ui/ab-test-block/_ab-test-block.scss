@@ -13,7 +13,7 @@
 // 這份陣列**全站只有這一份**（`ui/ab-compare` 的契約也吃它，那邊指回這裡、不重抄）：
 //
 //   {% set abSides = [
-//       { side: "A", state: "a", i18nKey: "qaTest.settingSideA", label: "（設定 A）", knowledge: "1", llm: "openai:gpt-4o-mini", configKey: "settings.config1", configLabel: "設置一", promptVersion: "V3",
+//       { side: "A", state: "a", i18nKey: "qaTest.settingSideA", label: "（設定 A）", knowledge: "1", llm: "openai:gpt-4o-mini", configKey: "settings.config1", configLabel: "設置一", promptVersion: "V3", reasoningEffort: "",
 //         prompt: "角色定位：
 //   你是一位專業的知識庫問答助手，負責依據已上傳的資料回應使用者詢問。
 //   知識來源限制：
@@ -27,7 +27,7 @@
 //   輸出格式：
 //   • 使用條列式（• 或 -）
 //   • 必要時分段（例如：說明 / 流程 / 注意事項）" },
-//       { side: "B", state: "b", i18nKey: "qaTest.settingSideB", label: "（設定 B）", knowledge: "2", llm: "openai:gpt-4o", configKey: "settings.config2", configLabel: "設置二", promptVersion: "V2",
+//       { side: "B", state: "b", i18nKey: "qaTest.settingSideB", label: "（設定 B）", knowledge: "2", llm: "openai:gpt-4o", configKey: "settings.config2", configLabel: "設置二", promptVersion: "V2", reasoningEffort: "high",
 //         prompt: "任務導向：
 //   依使用者的問題直接給出可執行的步驟，不重述題目。
 //   知識來源限制：
@@ -83,6 +83,7 @@
 //                       {% set reasoningEffortGroup = "" %}
 //                       {% set reasoningEffortEmptyKey = "settings.reasoningEffortDefault" %}
 //                       {% set reasoningEffortEmptyZh = "沿用模型預設" %}
+//                       {% set reasoningEffortSelected = ab.reasoningEffort %}
 //                       {% include "components/reasoning-effort-select/reasoning-effort-select.html" %}
 //                   </div>
 //               </div>
@@ -127,7 +128,8 @@
 //           </div>
 //           <div class="flex-row column gap-8 mt-16">
 //               <span class="control-label" id="abPromptLabel-{{ ab.side }}" data-i18n="comp.prompt">提示詞</span>
-//               <textarea class="form-control size-lg js-prompt-input" aria-labelledby="abSideLabel-{{ ab.side }} abPromptLabel-{{ ab.side }}">{{ ab.prompt }}</textarea>
+//               <textarea class="form-control size-lg js-prompt-input" aria-labelledby="abSideLabel-{{ ab.side }} abPromptLabel-{{ ab.side }}" aria-describedby="abPromptHint-{{ ab.side }}">{{ ab.prompt }}</textarea>
+//               <span class="text-gray" id="abPromptHint-{{ ab.side }}"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-prompt-max-len">20000</span><span data-i18n="common.unitChars"> 字</span></span>
 //           </div>
 //           <div class="flex-row justify-content-center flex-wrap gap-16 mt-24" role="group" aria-labelledby="abSideLabel-{{ ab.side }}">
 //               <button data-capability="settings:read" type="button" class="button button-green js-restore-saved" data-toast="已回復儲存的設定|權限不足，無法載入|無法載入儲存的設定" data-i18n-data-toast="toast.restoreSettings" data-toast-type="success|warning|error" data-i18n="qaTest.restoreSaved">回復儲存的設定</button>
@@ -142,7 +144,10 @@
 // 另外兩塊用一句中文括號帶過——那既是省略、又是把散文寫進契約段裡，整段複製會把中文貼進 HTML）：
 //   1. 七組設定欄位 —— `role="group" aria-labelledby="abSideLabel-<側>"`
 //   2. 提示詞區 —— 沒有 group（只有一顆控制項），可及名稱由 textarea 自己的
-//      `aria-labelledby="abSideLabel-<側> abPromptLabel-<側>"`（**側別在前**）串出來
+//      `aria-labelledby="abSideLabel-<側> abPromptLabel-<側>"`（**側別在前**）串出來；
+//      界線提示另掛 `aria-describedby="abPromptHint-<側>"`（§4 數值/長度欄三件套的第三件）。
+//      **hint 的 id 要跟著側別走**：兩側共用一顆 id 就是同頁 id 重複，而且兩側的
+//      `aria-describedby` 會一起指到先出現的那一顆
 //   3. 三顆一排的動作鈕列 —— 自己也掛 `role="group" aria-labelledby="abSideLabel-<側>"`
 // 三個 group 不能合成一個：§4 明文「group 只能框那一組」，而「設定 A」這個標題涵蓋得住的是
 // 「這一側」，涵蓋不住「這一側的七個設定欄位 ＋ 提示詞 ＋ 三顆送 API 的鈕」這種由版面決定的數量。
@@ -151,7 +156,10 @@
 // 外面那層 `.form-group.row.mobile-col > .label.ab-field-label + .field` 確實七組都一樣，
 // 但 `.field` 裡面四種形狀各不相同：第 1／2／4 組是 `<select>`（第 1 組的 `.label` 還多帶
 // `.flex-row` 與一顆 ui/info-btn）、第 3 組整顆是 `components/reasoning-effort-select` 的
-// `{% include %}` ＋ 五行 `{% set %}` 參數、第 5／6／7 組是 `<input type="number">` ＋ 一顆
+// `{% include %}` ＋ 六行 `{% set %}` 參數（最後一行 `reasoningEffortSelected` 決定選中哪一顆，
+// 兩側不同值——缺這一行畫面完全正常，只是兩側一起落回「沿用模型預設」，而
+// `components/apply-settings-compare-modal` 的思考深度欄與這一側有跨區自洽契約）、
+// 第 5／6／7 組是 `<input type="number">` ＋ 一顆
 // `<span class="text-gray" id>` 兩個子元素並靠 `aria-describedby` 串起來（§4 數值欄三件套）。
 // 寫成「與第 2 組同型」＝抄的人會把三顆數值欄畫成 select、把可見區間與 `aria-describedby` 一起漏掉，
 // 而那正是視覺指紋看不出來的那一種。

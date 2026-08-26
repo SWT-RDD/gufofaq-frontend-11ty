@@ -1,7 +1,20 @@
 {# 問答紀錄可收合側欄（單測 2-2-1 / AB測試 2-2-3 頁共用）。
      展開/收合（切換 .collapsed）為純視覺互動，由 qa-side-panel.js 提供（點 .js-side-toggle 切換、點外部收合）；
      載入問答資料等屬業務邏輯不在此。內含 qa-record-tabs，其 qaRecordTabs 資料由頁面提供。
-     無參數：單測與 AB 測試兩頁都交付這個側欄（原本 AB 頁用 sidePanelHidden 整個藏起來，見該頁註解）。 #}
+
+     參數 `sidePanelTotal`（**選填**）＝這個側欄背後那份清單的**總筆數**，由使用頁 set。
+       **它不是 `qaRecordTabs.length`**：頁籤只畫得下前面幾筆，而總數的用途正是講出「清單被切過」。
+       故不從陣列推導（§6 那條「能推導就從陣列渲染」的例外形狀同 pagination 的 `total`）。
+       **兩頁只有一頁給得出它**，所以是選填、且以 `{% if %}` 決定畫不畫：
+         · 2-2-3（AB 比較歷史）：`GET /qatest/ab-history` 回 `{rounds, total_count}`（product
+           `app/routers/qatest.py` 的 `ab_history`）⇒ 有總數。
+         · 2-2-1（聊天室清單）：`GET /history/rooms` 的 docstring 逐字寫著「**不宣告總數**」——
+           上游的 `total_count` 數的是問答**則數**而這裡列的是**聊天室**，掛上去會被讀成室數。
+           所以那一頁不 set 這顆參數，整段不畫；硬給一個數字就是編一個上游產不出來的欄位（§6）。
+     **值以字串傳入**（§6：值域含 0——一次比較都還沒跑過的租戶就是 0，而 `0` 在 nunjucks 是 false
+       ⇒ 整段靜默消失，JSX 的 `{n && …}` 又會把 `0` 印出來。正典見 components/step-flow 檔頭）。
+       `0` 那一態與 qa-record-tabs 的空狀態列（`qa.noRecords`）講的是同一件事，不會互相打架。
+     無其他參數：單測與 AB 測試兩頁都交付這個側欄（原本 AB 頁用 sidePanelHidden 整個藏起來，見該頁註解）。 #}
 <div class="qa-side-panel collapsed">
     {# 初始為 .collapsed，故 aria-expanded=false、標籤是「展開」；狀態與標籤由 qa-side-panel.js 同步 #}
     <button type="button" class="qa-side-panel-toggle js-side-toggle" aria-expanded="false" title="展開問答紀錄" data-i18n-title="comp.expandQaRecord">
@@ -23,6 +36,15 @@
             <img src="./images/icon_add_white.png" width="48" height="48" decoding="async" alt="" class="icon">
             <span data-i18n="comp.newConversation">開啟新對話</span>
         </button>
+        {# 總筆數擺在**清單正上方**、靠右——不擺在收合鈕那一列：那顆鈕的標題是
+             `writing-mode: vertical-rl` 的直立軌（見 _qa-side-panel.scss），它沒有「右側」可用，
+             而且把數字塞進那顆鈕會把它的可及名稱從「問答紀錄」變成「問答紀錄共 128 筆」。
+             這一格描述的是下面那份清單，跟著清單走。 #}
+        {% if sidePanelTotal %}
+        <div class="flex-row justify-content-end">
+            <span class="text-gray"><span data-i18n="common.total">共</span> <span class="js-ab-history-total">{{ sidePanelTotal }}</span> <span data-i18n="common.recordsUnit">筆</span></span>
+        </div>
+        {% endif %}
         <div class="tab-wrap qa-side-tab-wrap">
             {% include "components/qa-record-tabs/qa-record-tabs.html" %}
         </div>

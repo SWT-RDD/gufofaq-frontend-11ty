@@ -1,12 +1,29 @@
 {# 全站頁尾（由 page-shell 與 chatbot-shell 自動提供）。無參數。
    免責聲明鈕開的彈窗 include 在這裡（§1-2：誰的按鈕開的彈窗，彈窗就 include 在誰裡面）；
-   開窗掛 data-open-modal，由 ui/modals 的事件委派接手（§5），故本元件零 js。版號與版權文字為假資料。 #}
+   開窗掛 data-open-modal，由 ui/modals 的事件委派接手（§5），故本元件零 js。
+
+   ⚠️ **版號與年份是資料槽，不是假資料**（round46；上一版這裡逐字寫著「版號與版權文字為假資料」，
+     而 React 端把那兩串**逐字**渲染成正式 chrome——`apps/web/components/Footer/Footer.tsx` 寫的就是
+     `{t("comp.buildLabel")} 2.10` 與 `{t("comp.copyright")}© 2025 All Rights Reserved`。一句寫在
+     切版註解裡的「這是假的」攔不住任何東西：那兩串字每天出現在每一個登入後頁面的頁尾上，其中
+     年份還是錯的）。
+   · `js-build-version`＝建置版號，格式 **YYYY.MM.DD-N**（N＝該 commit 是當天的第幾個，台北時區），
+     由建置流程注入（saas 那一側走 build-arg `NEXT_PUBLIC_BUILD_REF`）。
+   · `js-copyright-year`＝年份，React 接 `new Date().getFullYear()`。**不寫死**：寫死的那一顆
+     每年一月一日開始說謊，而沒有任何測試看得到（它不是 i18n key、不是資料、也不影響版面）。
+   示範值錨在**站台的「現在」＝2026-07-14**（§6「全站只有一個現在」，正本是
+     `components/iso-review-wizard` 名單上逐字寫著的查詢時間）：版號是「已經發生」的時間戳，
+     不得晚於它——故取 2026.07.11-2（三天前的第二個 commit），年份取 2026。
+     改站台的「現在」時這兩顆要跟著看一眼。 #}
 <footer class="footer">
-    <span><span data-i18n="comp.buildLabel">版號：</span> 2.10</span>
+    {# `版號：</span>` 與值之間那個空白由 markup 提供（不是縮排，是一個刻意的字間空格）：
+         `comp.buildLabel` 的英譯是半形 `Version:`，不像全形「：」自帶字距，少了它英文模式會黏成
+         `Version:2026.07.11-2`（§4-2）。轉 JSX 時它是 `{" "}`（REACT-CONVERSION §②）。 #}
+    <span><span data-i18n="comp.buildLabel">版號：</span> <span class="js-build-version">2026.07.11-2</span></span>
     <span class="divider-vertical sm"></span>
     <button type="button" class="link-modal on-dark" data-open-modal="disclaimerModal" data-i18n="comp.disclaimer">免責聲明</button>
     <span class="divider-vertical sm"></span>
-    <span><span data-i18n="comp.copyright">版權所有</span>© 2025 All Rights Reserved</span>
+    <span><span data-i18n="comp.copyright">版權所有</span>© <span class="js-copyright-year">2026</span> All Rights Reserved</span>
 </footer>
 
 {% include "components/disclaimer-modal/disclaimer-modal.html" %}

@@ -53,4 +53,12 @@ permalink: 1-2-6_uploadSuccess_pdf.html
 {% set successDescPdf = true %}
 {% set successDataCount = "2" %}
 {% set successFileSize = "1.52MB" %}
+{# 匯入後健檢沒跑成功那一態（`batch_import_documents` 回應頂層 `health_scan.ok === false`；
+     gufofaq-saas product `app/routers/data_import.py` 與 `app/routers/datasets.py` 的每一支匯入端點
+     收尾都掛 `post_import_health_scan`）。完整理由寫在 1-1-6 檔頭與 components/success-box 檔頭。
+   **兩張卡各演一次不是重複**：Excel 那張是三行資訊列（檔名／大小／筆數）、這張是兩行而且順序相反，
+     兩邊的卡片幾何不同 ⇒ 這一段長在哪一格、換行成什麼樣，兩邊各是一份自己的版面規格。
+   與本頁其餘示範值自洽（§6）：1-2-1 那一批 2 成功 1 失敗，成功的兩份已經落地（`successDataCount` 2），
+     健檢是它們落地**之後**才跑的那一趟。 #}
+{% set successHealthScanFailed = true %}
 {% include "components/success-box/success-box.html" %}

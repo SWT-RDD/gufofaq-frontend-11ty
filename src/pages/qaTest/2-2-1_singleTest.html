@@ -150,9 +150,17 @@ permalink: 2-2-1_singleTest.html
     {# 提示詞（測試用，常駐展開輸入框）：測試頁的臨時提示詞。值載體 textarea 掛 js-prompt-input（React
        受控、change 交業務層）。不用 components/prompt-edit（那是含版本管理工具列的系統提示詞編輯器，
        仍用於對話設定頁）——測試頁只要一個常駐展開的輸入框，動作鈕在下方動作列。示範文案領域中性。 #}
+    {# 界線提示（§4 三件套的第三件：可見的界線 ＋ `aria-describedby` 接得上）。上限的正本是
+         product `app/limits/chat_config_limits.py` 的 `MAX_SINGLE_PROMPT_LEN`，這一欄的執行點是
+         `app/routers/qatest.py` 的 `SingleTestIn.prompt`（`Field(max_length=…)`）——同一顆常數，
+         5-2 的三顆系統提示詞欄用的也是它，所以畫面上的數字要一致。
+         **不寫成 `maxlength` 屬性**（同 5-6-2 那一批的理由）：值是執行期才知道的，寫死就是第二份
+         會過期的抄本；數字獨立成資料槽 `js-prompt-max-len`。
+       不改的後果：貼一段超過上限的提示詞進去，422 會被折進送出鈕最後那一段 error「請稍後再試」，
+         而重試永遠不會成功——界線是使用者自己改得掉的事，那句話等於叫他做一件沒有用的事。 #}
     <div class="flex-row column gap-8 mt-16">
         <span class="control-label" data-i18n="comp.prompt">提示詞</span>
-        <textarea class="form-control size-lg js-prompt-input" aria-label="提示詞" data-i18n-aria-label="comp.prompt">角色定位：
+        <textarea class="form-control size-lg js-prompt-input" aria-label="提示詞" data-i18n-aria-label="comp.prompt" aria-describedby="promptMaxLenHint">角色定位：
 你是一位專業的知識庫問答助手，負責依據已上傳的資料回應使用者詢問。
 知識來源限制：
 你的回答必須僅依據以下資料來源：
@@ -165,6 +173,7 @@ permalink: 2-2-1_singleTest.html
 輸出格式：
 • 使用條列式（• 或 -）
 • 必要時分段（例如：說明 / 流程 / 注意事項）</textarea>
+        <span class="text-gray" id="promptMaxLenHint"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-prompt-max-len">20000</span><span data-i18n="common.unitChars"> 字</span></span>
     </div>
 
     {# 動作列（三鈕同排，使用者定案「套用為正式設定移到下面與其他按鈕一起排列」）：

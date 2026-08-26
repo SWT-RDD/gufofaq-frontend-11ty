@@ -215,6 +215,7 @@ permalink: 3-5_dataHealth.html
     touched: 26,
     slotlessRecords: 1,
     exactMatchOnlyRecords: 3,
+    tooShortRecords: "47",
     uncoveredTotal: 2,
     hitChecks: "unavailable",
     hitChecksDetail: "取不到問答紀錄，這一次沒有重算「陳舊高頻／從未被命中／高頻查無」：這段期間的問答筆數超過單次彙總上限（5000 則），請縮短時間窗再試。"
@@ -695,10 +696,12 @@ permalink: 3-5_dataHealth.html
     {% if healthScan.hitChecksDetail %}
     <p class="text-red">{{ healthScan.hitChecksDetail }}</p>
     {% endif %}
-    {# ⑦ 這一次沒有做到的檢查（`slotless_records`／`exact_match_only_records`）。
-         **兩個數字是「排除的事實」的載體**，不是統計花絮：它們與上面那排計數刻意分開一塊、
+    {# ⑦ 這一次沒有做到的檢查（`slotless_records`／`exact_match_only_records`／`too_short_records`）。
+         **這幾個數字是「排除的事實」的載體**，不是統計花絮：它們與上面那排計數刻意分開一塊、
          標題直接說「沒有做完的檢查」，因為混在「這一次算出來的發現」那一排裡，讀起來會變成
-         「這些也檢查過了」。0 也照畫（同 `hit_checks` 三態的理由）。 #}
+         「這些也檢查過了」。0 也照畫（同 `hit_checks` 三態的理由）。
+         **不寫「兩個／三個」**（§3-2 能不寫死計數就不要寫）：這一塊本來就是逐次補齊的，
+         上一版那句「兩個數字」在補進第三格的當下就過期了。 #}
     {# ⓘ 說明：同一顆 info-btn 六件組。①出處：`_collect_records` 算 `slotless`／`exact_match_only`
          那兩段（`app/routers/health_findings.py`）＋ `ScanOut.slotless_records`／
          `exact_match_only_records` 的欄位檔頭——這兩個數字答的是「排除」不是「查過且乾淨」，
@@ -711,13 +714,44 @@ permalink: 3-5_dataHealth.html
             <span class="sr-only" data-i18n="help.health.partial.title">這一次沒有做完的檢查說明</span>
         </button>
     </div>
-    <p class="text-gray" data-i18n="health.partialHint">下面兩個數字說的是「哪些記錄的哪一項沒有被檢查」，不是「檢查過了而且沒問題」。這兩件事在發現清單上長得一模一樣——清單只列得出算出來的發現，列不出「這一項根本沒算」。</p>
+    {# 這一句刻意**不寫「下面兩個數字」**（原文如此）：§3-2「能不寫死計數就不要寫」——補進第三格的
+         那一天，那句話就開始說謊，而它是一段翻譯字串、不會有任何測試看得到。改成不帶數量的說法。 #}
+    <p class="text-gray" data-i18n="health.partialHint">下面這幾個數字說的是「哪些記錄的哪一項沒有被檢查」，不是「檢查過了而且沒問題」。這兩件事在發現清單上長得一模一樣——清單只列得出算出來的發現，列不出「這一項根本沒算」。</p>
+    {# 第三格 `too_short_records`：內容太短、**完全沒有進近似重複分群**的筆數（正本是 product
+         `app/quality/health_checks.py` 的 `NEAR_DUPLICATE_MIN_CHARS`，掃描層由 `groupable` 統一判定
+         並逐次回進 `ScanOut.too_short_records`）。它與上一格是同一段文字的兩端——一個太長只比得了
+         逐字相同、一個太短連分群都不進，**兩個都是漏報方向的偏差**，所以兩個都要有一個數字。
+         這個訊號後端算出來了、也存下來了（`health_scan_runs.too_short_records`）、端點也端出來了，
+         在此之前於畫面上沒有任何落點（§3-2：response 回得出的每個欄位都要有地方畫）。
+       ⚠️ **這一格與另外兩格不同：它可為 null，而 null 不是 0。** 另外兩欄在 product 是不可空的
+         `int`（`slotless_records`／`exact_match_only_records`），這一欄是 `int | None`——
+         `models.HealthScanRun.too_short_records` 刻意可空、**而且沒有 `server_default`**，因為
+         「這一欄存在之前寫下的那些列」是 `NULL`，而那個 `NULL` 的意思是**那一次掃描還沒有這個概念**，
+         不是「量了、是零」。補 0 會讓每一筆舊紀錄都宣稱自己量過（§6：替一次沒有發生的量測編一個結果）。
+         故 null 走自己的哨兵字，不與 `0` 撞字；`0` 照畫（同 `hit_checks` 三態的理由）。
+         示範走「有值」那一態（本頁那一趟是 `2024/12/02` 的排程掃描，欄位早就存在），null 那一態的
+         繁中家在元件庫頁的「React 條件文案」區。
+       ⚠️ **值以字串傳入**（`"47"`），另外兩格維持數字——差別是刻意的、而且非這樣不可：這一格的渲染
+         條件是真值判斷，而它的值域**含 0**（量了、一筆都沒被排除），`0` 在 nunjucks 是 false ⇒ 真的
+         回 0 的那一天整格會靜默換成「還沒有這一項」，也就是把一個量到的結果講成沒量。另外兩格不可空、
+         沒有分支，`0` 直接印出來不經過任何判斷，所以不需要這道處置（§6 值域含 0 的參數；正典見
+         `components/step-flow` 檔頭的 `poolSize`／`score`）。
+       47 與同區其餘示範值自洽（§6）：`records` 1180 筆裡有 47 筆答案短到進不了分群——QA 集裡
+         「無」「是」「不適用」「同上」這類樣板答案正是這一族（該常數旁邊逐字列著這些例子）。
+         三格彼此**沒有包含關係**（一筆可以同時太短又沒有欄位槽），只要求各自 ≦ `records`。 #}
     <div class="flex-row gap-24 flex-wrap">
         <p><span class="text-bold" data-i18n="health.scanSlotless">沒有欄位槽、標籤兩項不適用的記錄：</span><span>{{ healthScan.slotlessRecords }}</span></p>
         <p><span class="text-bold" data-i18n="health.scanExactMatchOnly">內容過長、只比了逐字相同的記錄：</span><span>{{ healthScan.exactMatchOnlyRecords }}</span></p>
+        <p><span class="text-bold" data-i18n="health.scanTooShort">內容過短、跳過近似重複比對的記錄：</span>{% if healthScan.tooShortRecords %}<span>{{ healthScan.tooShortRecords }}</span>{% else %}<span class="text-gray" data-i18n="health.scanTooShortNotMeasured">上一次檢查時還沒有這一項</span>{% endif %}</p>
     </div>
     <p class="text-gray" data-i18n="health.scanSlotlessHint">資料夾匯入的整份文件沒有欄位槽——欄位對照是逐列匯入才有的東西，系統沒有任何路徑寫得進它們的標籤。所以「標籤缺口」與「缺基準日」這兩項把它們排除在外，這幾筆不會因為沒標而出現在清單上，也不代表它們標好了。要讓這些內容也受維度過濾管轄，得改用逐列匯入。</p>
     <p class="text-gray" data-i18n="health.scanExactMatchOnlyHint">內容超過長度上限的記錄，這一次的「近似重複」只對它們做逐字相同判定：同一份文件上傳兩次仍然抓得到，但「幾乎一樣的兩份」沒有被比。上限存在的理由是相似度為兩兩比對，長文件一對就要十幾秒，幾十份共用樣板的月報會讓整趟掃描跑不完——而那是全部檢查一起停擺，比單一項漏報嚴重。</p>
+    {# 這一句與上面那一句是**同一段文字的兩端**（太長／太短），所以擺在一起、寫法也對稱。
+         下限存在的理由要講出來，否則這個數字讀起來像是系統偷懶：相似度對兩段逐字相同的文字恆為 1.0，
+         而 QA 集裡最常見的樣板答案（「無」「是」「不適用」「同上」）長度都只有兩三個字 ⇒ 不設下限
+         的話它們會全部連通成**一個**掛著上千筆的發現，把真的近似重複淹在後面，而按下「停用」就是
+         一次停掉上千筆。代價也要一起講：兩筆逐字相同的極短答案從此不報近似重複。 #}
+    <p class="text-gray" data-i18n="health.scanTooShortHint">內容太短的記錄連近似重複的分群都不進：相似度對兩段逐字相同的文字恆為滿分，而問答集裡「無」「是」「不適用」「同上」這類樣板答案只有兩三個字，不設下限的話它們會全部連成同一個掛著上千筆的發現，把真正的近似重複淹在後面。代價是這幾筆之間就算真的重複也不會被報出來——答案都是「無」本來就不算重複（重複的是問法，那是另一項檢查；答案沒有內容則是「沒有實質內容」那一項）。</p>
 
     {# 「這一次沒有做完的檢查」的說明視窗：放在 `{% if healthScan %}` 之內——這一整段（含
          partial／uncovered 兩顆 ⓘ）只在有過一次掃描時才畫得出來，觸發鈕與說明視窗要跟著同一個
@@ -726,7 +760,7 @@ permalink: 3-5_dataHealth.html
     {% set helpModalTitleKey = "help.health.partial.title" %}
     {% set helpModalTitle = "這一次沒有做完的檢查說明" %}
     {% set helpModalWhatKey = "help.health.partial.what" %}
-    {% set helpModalWhat = "這一區列的是這一次掃描裡「有些檢查對它們天生不適用」的記錄數，不是「檢查過了、沒有問題」：資料夾匯入的整份文件沒有欄位槽，標籤缺口與缺基準日這兩項量不到它們；內容長度超過比對上限的記錄，近似重複這一次只做得了逐字相同判定，比不到「幾乎一樣」的那一種。" %}
+    {% set helpModalWhat = "這一區列的是這一次掃描裡「有些檢查對它們天生不適用」的記錄數，不是「檢查過了、沒有問題」：資料夾匯入的整份文件沒有欄位槽，標籤缺口與缺基準日這兩項量不到它們；內容長度超過比對上限的記錄，近似重複這一次只做得了逐字相同判定，比不到「幾乎一樣」的那一種；內容太短的記錄則連分群都不進——那是為了不讓「無」「是」「不適用」這類樣板答案全部連成一個上千筆的假重複，代價是它們之間真的重複也不會被報出來。" %}
     {% set helpModalStateItems = [] %}
     {% set helpModalLimitRows = [] %}
     {% include "components/help-modal/help-modal.html" %}

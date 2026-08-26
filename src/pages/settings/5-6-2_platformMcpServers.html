@@ -41,10 +41,28 @@ permalink: 5-6-2_platformMcpServers.html
      產不出來的順序，而它讀起來完全合理（§6 列序也是示範資料的一部分）。
      ⚠️ 改的是**列序**，不是 id 集合：5-2 對話設定那張勾選清單與本表有跨頁自洽測試，它比的是
      「同一組 id 與名稱、停用那筆要標示」，不比順序。 #}
+{# `liveToolCount`＝**載入時**就取到的工具數，出處是 GufoRAG chatbot `app/agent/mcp/router.py` 的
+     `get_mcp_server_tools` 回應（`{server_id, server_name, tools_count, tools[]}`），product
+     `app/routers/mcp.py` 的 `get_platform_mcp_server_tools` 原樣代理。
+     **它與同一列的 `lastTest.toolsCount` 是兩個不同時刻的數字**，所以名字也要分得開：後者是
+     上一次有人按「測試連線」留下的紀錄，前者是這一次開頁去問的結果——整欄的存在理由就是這件事
+     （見下方「工具」欄的註解）。
+   **值以字串傳入**（§6：值域含 0 的參數不得用真值判斷當渲染條件——`0` 在 nunjucks 是 false ⇒
+     整格靜默消失，而 JSX 的 `{n && …}` 又會把 `0` 印在畫面上。正典：`components/step-flow`
+     的 `poolSize`／`score`／`iterations` 那一族，理由逐字寫在該元件檔頭）。
+   **不帶這個鍵＝那一次取不到**（上游 404／502，或 chatbot 起子行程失敗）——這是三態裡的第三態，
+     與 `"0"`「問到了、它一顆工具都沒有」不是同一件事（§6：「這一格沒有數字」不是一種狀態）。
+   三筆各演一態，而且與同列其餘欄位自洽（§6）：
+     · id 1 上一次測試成功、`tools` 三筆 ⇒ `liveToolCount: "3"`，兩欄對得上。
+     · id 2 上一次測試是 `TimeoutError`（連得上才問得到工具）⇒ 這一次同樣問不到 ⇒ 不帶鍵。
+     · id 3 是**停用**且從未測試過的舊版套件——`/tools` **不濾 `is_active`**（chatbot 那一支
+       拿到 server 就直接 spawn 子行程，沒有任何 `is_active` 判斷），所以停用中的 server 照樣
+       問得到；它問得到、但那個舊版套件的工具已經全數移除 ⇒ `"0"`。這一筆同時示範了
+       「工具欄有值」與「最近一次測試＝尚未測試」可以並存，也就是本欄與那一欄非分開不可的理由。 #}
 {% set mcpServers = [
-  { id: 3, name: "舊版文件搜尋", command: "npx", args: ["-y", "@acme/doc-mcp-legacy"], env: ["ACME_API_KEY=***"], description: "舊版內部文件查詢，已停用。", active: false, lastTest: { ok: false, toolsCount: 0, tools: [], message: "", error: "" } },
+  { id: 3, name: "舊版文件搜尋", command: "npx", args: ["-y", "@acme/doc-mcp-legacy"], env: ["ACME_API_KEY=***"], description: "舊版內部文件查詢，已停用。", active: false, liveToolCount: "0", lastTest: { ok: false, toolsCount: 0, tools: [], message: "", error: "" } },
   { id: 2, name: "內部文件搜尋", command: "npx", args: ["-y", "@acme/doc-mcp"], env: ["ACME_API_KEY=***", "ACME_REGION=ap-northeast-1"], description: "查詢內部知識庫文件。", active: true, lastTest: { ok: false, toolsCount: 0, tools: [], message: "MCP Server 連線異常", error: "TimeoutError" } },
-  { id: 1, name: "時間工具", command: "uvx", args: ["mcp-server-time", "--local-timezone=Asia/Taipei"], env: [], description: "提供目前時間與時區換算。", active: true, lastTest: { ok: true, toolsCount: 3, tools: [{ name: "get_current_time", description: "回目前時間（可指定時區）" }, { name: "convert_time", description: "在兩個時區之間換算時間" }, { name: "list_timezones", description: "列出支援的 IANA 時區識別字" }], error: "" } }
+  { id: 1, name: "時間工具", command: "uvx", args: ["mcp-server-time", "--local-timezone=Asia/Taipei"], env: [], description: "提供目前時間與時區換算。", active: true, liveToolCount: "3", lastTest: { ok: true, toolsCount: 3, tools: [{ name: "get_current_time", description: "回目前時間（可指定時區）" }, { name: "convert_time", description: "在兩個時區之間換算時間" }, { name: "list_timezones", description: "列出支援的 IANA 時區識別字" }], error: "" } }
 ] %}
 
 <p class="text-gray" data-i18n="settings.mcpServersIntro">MCP Server 讓 Agent 連上外部工具。註冊即在 Agent 主機執行指定指令，屬高權限操作，僅平台管理者可管理；租戶只能在對話設定勾選已註冊的 Server。</p>
@@ -222,6 +240,7 @@ permalink: 5-6-2_platformMcpServers.html
                 <col style="width:240px; min-width:240px;">
                 <col style="min-width:220px;">
                 <col style="width:90px; min-width:90px;">
+                <col style="width:110px; min-width:110px;">
                 <col style="min-width:260px;">
                 <col style="width:320px; min-width:320px;">
             </colgroup>
@@ -233,6 +252,14 @@ permalink: 5-6-2_platformMcpServers.html
                     <th id="mcpHeadEnv" data-i18n="settings.mcpEnv">環境變數</th>
                     <th id="mcpHeadDesc" data-i18n="settings.mcpDescription">描述</th>
                     <th id="mcpHeadActive" data-i18n="widget.active">啟用</th>
+                    {# 「工具數」排在「最近一次測試」**緊鄰的左邊**：整欄存在的理由就是把這兩件事分開，
+                         擺在一起才看得出它們講的不是同一個時刻（見下方儲存格註解）。
+                       欄名是「工具**數**」不是「工具」：①這一格畫的是數量，右邊那一欄畫的才是工具的
+                         名字與說明；②`agent.tool` 已經以「工具」當 `components/step-flow` 那張表的欄標題
+                         （英譯 `Tool`，一列一顆工具），同繁中另立 key 會讓兩邊的英譯自己分岔（§4-2）。
+                         英譯照 §4-2 點名的正典分法（「成員」／「成員數」→ Members／Member count）
+                         走 `Tool count`。 #}
+                    <th id="mcpHeadTools" data-i18n="settings.mcpTools">工具數</th>
                     <th data-i18n="settings.mcpLastTest">最近一次測試</th>
                     <th data-i18n="common.actions">操作</th>
                 </tr>
@@ -260,6 +287,21 @@ permalink: 5-6-2_platformMcpServers.html
                             <input type="checkbox" aria-labelledby="mcpRowName-{{ server.id }} mcpHeadActive"{% if server.active %} checked{% endif %}>
                         </label>
                     </td>
+                    {# 「工具」欄：載入這一頁時就去問的工具數（`GET /platform/mcp/{server_id}/tools`，
+                         product `app/routers/mcp.py` 的 `get_platform_mcp_server_tools` →
+                         GufoRAG chatbot `app/agent/mcp/router.py` 的 `get_mcp_server_tools`）。
+                       **為什麼不能併進右邊那一欄**：那一欄的第三態 `settings.mcpNeverTested`
+                         「尚未測試」是切版刻意演的一態（從來沒有人按過「測試連線」的 server 長這樣），
+                         載入時就把工具數填進去等於那一態全站再也渲染不出來。兩件事、兩個時刻、兩欄。
+                       **三態的字面不共用**（§6：「這一格沒有數字」不是一種狀態，是三種）：
+                         · 有工具 ⇒ 數字 ＋ 量詞（數字是資料、獨立成節點，不烤進譯文；量詞沿用
+                           既有的 `common.unitItems`「個」——同繁中不另立 key，§4-2，而它的英譯本來
+                           就是空字串，因為英文語序在數字後面不接單位字）
+                         · `"0"` ⇒ 「沒有工具」＝問到了，它一顆都沒有
+                         · 沒有值 ⇒ 「讀不到」＝這一次根本問不到（404／502／子行程起不來）
+                         中間那一態長得最像「壞掉」而其實是量到的結果，第三態長得最像 0 而其實什麼都沒量到
+                         ——共用一顆字，值班的人就分不出「這台沒工具」與「這台問不到」。 #}
+                    <td>{% if server.liveToolCount %}{% if server.liveToolCount == "0" %}<span class="text-gray" data-i18n="settings.mcpToolsNone">沒有工具</span>{% else %}{{ server.liveToolCount }}<span data-i18n="common.unitItems">個</span>{% endif %}{% else %}<span class="text-gray" data-i18n="settings.mcpToolsUnavailable">讀不到</span>{% endif %}</td>
                     {# 測試結果三種狀態：成功（幾顆工具＋清單）／失敗／從未測過（—）。
                          三種都要演得到（§5 每個分支都要看得到）。
                        **失敗那一格印的是 `message`，不是 `error`**（與 React 正本
@@ -303,9 +345,9 @@ permalink: 5-6-2_platformMcpServers.html
                     </td>
                 </tr>
                 {% else %}
-                {# colspan＝表頭欄數 8（名稱／執行指令／參數／環境變數／描述／啟用／最近一次測試／操作）。
-                     「最近一次測試」那一欄是後來補的，這裡曾經停在 7、空狀態時表格右側缺一格。 #}
-                <tr><td colspan="8" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
+                {# colspan＝表頭欄數 9（名稱／執行指令／參數／環境變數／描述／啟用／工具／最近一次測試／操作）。
+                     「最近一次測試」與「工具」兩欄都是後來補的，這裡曾經停在 7、空狀態時表格右側缺格。 #}
+                <tr><td colspan="9" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
                 {% endfor %}
             </tbody>
         </table>

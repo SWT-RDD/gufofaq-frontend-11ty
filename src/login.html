@@ -66,8 +66,27 @@ permalink: login.html
                     <h3 class="modals-title" id="passwordModal-title" data-i18n="faq.forgotPasswordTitle">忘記密碼</h3>
                 </div>
                 <div class="modals-body">
-                    {# 信箱不烤進翻譯字串（§4-2）：拆前後綴 key、信箱留在 span 外（同 apply-settings-no-permission-modal 的做法） #}
-                    <p class="text-center m-0"><span data-i18n="faq.forgotPasswordDesc">親愛的使用者您好，如忘記密碼請與平台管理者聯絡。聯絡email：</span>houl.tu@solventosoft.com.tw<span data-i18n="faq.forgotPasswordDescSuffix">，謝謝！</span></p>
+                    {# 聯絡窗口＝**平台設定**，不是寫死的字面（product `app/routers/public.py` 的
+                         `public_support_contact`，路徑 `GET /public/support-contact`——零憑證，因為
+                         這一頁的讀者還沒登入）。值不烤進翻譯字串（§4-2：它是值不是 chrome，
+                         而且要放得下 email、分機或一句「請洽資訊室」），故獨立成一顆資料槽。
+                       **兩態，而這一稿演的是「有設」那一態**：服務層
+                         （product `app/tenancy/platform_admin.py` 的 `get_support_contact`）
+                         沒設過回 `null`，此時整句換成 `faq.forgotPasswordNoContact`——**不是**把
+                         這一句留著、後面接一段空白（那會畫出一句「聯絡方式：」然後什麼都沒有）。
+                         另一態的繁中家在元件庫頁的「React 條件文案」區（§4-2：枚舉/分支的成員要有
+                         一個渲染得出來的地方，不是刪掉 key 讓消費端自己拼字串）。
+                       **`faq.forgotPasswordDescSuffix`（「，謝謝！」）連同它的英譯一併撤除**，兩個理由：
+                         ① 它只掛得上「有設」那一態——`faq.forgotPasswordNoContact` 已經以「。」收句，
+                            接不上一個逗號起頭的尾巴 ⇒ 同一頁會因為一個看不見的平台設定而時而客套、
+                            時而不客套，而那個差異沒有任何人解釋得了。
+                         ② 它把標點黏在**值**的正後面（`…gov.tw，謝謝！` / `…gov.tw. Thank you!`）——
+                            這一頁的使用者要做的事就是把那串位址複製走，而拖選很容易連標點一起帶走。
+                            §4-2 那一整套前綴／值／後綴的紀律就是為了讓值切得乾淨。
+                         客套話仍在：兩態都以「親愛的使用者您好」開場。
+                       示範值刻意用一看就知道是示範的位址（先前這裡是一位同仁的個人信箱，
+                       而這一頁登入前任何人都看得到）。 #}
+                    <p class="text-center m-0"><span data-i18n="faq.forgotPasswordDesc">親愛的使用者您好，如忘記密碼請與平台管理者聯絡。聯絡方式：</span><span class="js-support-contact">support@example.gov.tw</span></p>
                 </div>
             </div>
         </div>

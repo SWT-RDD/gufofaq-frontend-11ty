@@ -11,8 +11,16 @@
                     <h3 class="modals-title" id="ProductionSettingsNoPermissionModal-title" data-i18n="qaTest.applyProduction">套用為正式設定</h3>
                 </div>
                 <div class="modals-body">
-                    <p class="text-center m-0">
-                        <span data-i18n="modals.noPermissionDesc">親愛的客戶您好，因權限不足，無法套用。如需開啟此功能，請聯絡</span>houl.tu@solventosoft.com.tw</p>
+                    {# 聯絡窗口＝平台設定（product `app/routers/platform.py` 的 `get_support_contact`，
+                         路徑 `GET /platform/support-contact`；登入頁那一份走零憑證的
+                         `GET /public/support-contact`，同一個 getter）。值是資料、不掛 `data-i18n`
+                         （§4-2；理由與 login.html 那一處逐字相同），故獨立成一顆資料槽。
+                       **兩態，這一稿演「有設」那一態**：沒設過回 `null` 時整句換成
+                         `modals.noPermissionNoContact`（「…請聯絡平台管理者。」），不是留著這一句
+                         再接一段空白。另一態的繁中家在元件庫頁的「React 條件文案」區。
+                       示範值與 login.html 那一處**逐字相同**（§6：同一個平台設定在兩處畫出兩個值，
+                         演的是一個不可能的狀態）。 #}
+                    <p class="text-center m-0"><span data-i18n="modals.noPermissionDesc">親愛的客戶您好，因權限不足，無法套用。如需開啟此功能，請聯絡</span><span class="js-support-contact">support@example.gov.tw</span></p>
                 </div>
             </div>
         </div>
