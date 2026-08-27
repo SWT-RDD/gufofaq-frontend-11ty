@@ -12,7 +12,7 @@ import { readFileSync, readdirSync, existsSync, statSync } from "node:fs";
 import { execSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { inflateSync } from "node:zlib";
-import { basename } from "node:path";
+import { basename, dirname, join } from "node:path";
 
 const read = (f) => readFileSync(f, "utf8");
 // `git ls-files` **看不見還沒 add 的新檔**。整份測試的母體都從這裡來，所以一個「剛切好、還沒進版控」
@@ -43,6 +43,18 @@ const jsOwnedClasses = (() => {
     const addSel = (sel) => { for (const m of sel.matchAll(/\.(-?[A-Za-z_][\w-]*)/g)) out.add(m[1]); };
     for (const m of blob.matchAll(/(?:querySelectorAll|querySelector|closest|matches)\(\s*(['"`])([\s\S]*?)\1/g))
         addSel(m[2]);
+    // **選擇器抽成常數的那一族也算數**。原本只認寫死在呼叫裡的字面，於是
+    // `var ROW_SELECTOR = ":scope > label, :scope > .dataset-list-row"` ＋
+    // `querySelectorAll(ROW_SELECTOR)` 這種寫法會讓那顆 class 變成「無主」——而把同一個選擇器
+    // 抽成一份正本，正是 §8-1「共用判準只准有一份」要求的做法（`ui/list-filter` 有兩個呼叫點）。
+    // 規則不該逼人把判準複製成兩份，故這裡補上：先收「常數名 → 字串值」，再看哪些常數真的被
+    // 當成 querySelector*／closest／matches 的引數用掉。**只認被用掉的**，不是所有字串常數——
+    // 否則任何含 `.` 的字面（訊息、路徑）都會被當成 class 而讓整張反向網失效。
+    const strConsts = new Map();
+    for (const m of blob.matchAll(/\b(?:var|let|const)\s+([A-Za-z_$][\w$]*)\s*=\s*(['"`])([^'"`\n]*)\2\s*;/g))
+        strConsts.set(m[1], m[3]);
+    for (const m of blob.matchAll(/(?:querySelectorAll|querySelector|closest|matches)\(\s*([A-Za-z_$][\w$]*)\s*[),]/g))
+        if (strConsts.has(m[1])) addSel(strConsts.get(m[1]));
     for (const m of blob.matchAll(/classList\s*\.\s*(?:add|remove|toggle|contains|replace)\(([^)]*)\)/g))
         for (const s of m[1].matchAll(/(['"`])([^'"`]*)\1/g)) for (const t of s[2].split(/\s+/)) if (t) out.add(t);
     for (const m of blob.matchAll(/className\s*=\s*(['"`])([^'"`]*)\1/g))
@@ -857,7 +869,7 @@ test("§7 所有 modal 的外殼逐字相同（只差尺寸 class）——React 
             dialogs.push({ f, attrs: m[1], body: m[2] });
         }
     }
-    assert.ok(dialogs.length >= 20, `只掃到 ${dialogs.length} 顆 <dialog> —— 這條測試在空轉`);
+    assert.ok(dialogs.length >= 24, `只掃到 ${dialogs.length} 顆 <dialog> —— 這條測試在空轉`);
     const hits = [];
     for (const d of dialogs) {
         if (!/class="[^"]*\bmodals\b[^"]*"/.test(d.attrs)) { hits.push(`${d.f} 的 <dialog> 沒有 .modals`); continue; }
@@ -1397,6 +1409,8 @@ const EMPTY_EN_ALLOWED = new Map([
         "「A profile can bind at most 」＋數字、qa.detailConvOf「 of 」＋總數；5-6-2「工具數」那一格" +
         "則由欄標題 settings.mcpTools「Tool count」承載），英文語序在數字後面不接單位字"],
     ["pagination.pageSuffix", "「第 N 頁」的「頁」：英文是 pagination.pagePrefix「Page 」＋數字，字尾無物"],
+    ["search.scopeSelectedPrefix", "「已選 N 個資料集」的「已選 」：英文語序把量詞放在數字後面" +
+        "（search.scopeSelectedSuffix「 datasets selected」＝“3 datasets selected”），前綴無物可承載"],
     ["health.recordRowSuffix", "「第 N 列」的「列」：英文是 health.recordRowPrefix「row 」＋數字，字尾無物"],
     ["agent.qaPoolPrefix", "「共 N 筆」的「共」：英文是數字＋agent.qaPoolSuffix「 candidates」，字首無物"],
 ]);
@@ -1524,9 +1538,9 @@ test("§5 元件 js 三方對齊：實體檔 ⇄ eleventy passthrough ⇄ base.h
     const compJs = srcJs.filter((f) => /_includes\/(ui|components)\//.test(f)).map((f) => basename(f, ".js"));
     // 空轉守門（round45）：三個集合任一為空，對應的那一半就是對空陣列斷言。
     // 尤其 compJs——路徑慣例一改（或 srcJs 的 glob 失準），「js 存在但沒登記」那半條會靜靜全綠。
-    assert.ok(compJs.length >= 30, `只掃到 ${compJs.length} 支元件 js —— 「js 存在但沒登記」那半條在空轉`);
-    assert.ok(pass.length >= 30, `eleventy.config.js 只解析到 ${pass.length} 條 passthrough —— 解析壞了，這條在空轉`);
-    assert.ok(tags.length >= 30, `base.html 只解析到 ${tags.length} 支 script —— 解析壞了，這條在空轉`);
+    assert.ok(compJs.length >= 33, `只掃到 ${compJs.length} 支元件 js —— 「js 存在但沒登記」那半條在空轉`);
+    assert.ok(pass.length >= 33, `eleventy.config.js 只解析到 ${pass.length} 條 passthrough —— 解析壞了，這條在空轉`);
+    assert.ok(tags.length >= 33, `base.html 只解析到 ${tags.length} 支 script —— 解析壞了，這條在空轉`);
 
     const notRegistered = compJs.filter((n) => !pass.includes(n));
     const notLoaded = pass.filter((n) => !tags.includes(n));
@@ -1543,8 +1557,8 @@ test("§5 dist/js 不得有孤兒（沒被 passthrough 的舊產物）", () => {
     // build 失敗、passthrough 整段被拿掉、或跑錯 cwd 都長這樣，而那正是最該當場紅的時候。
     assert.ok(existsSync("dist/js"), "dist/js 不存在 —— passthrough 沒跑（或 build 失敗），這條測試原本會靜靜全綠");
     const built = readdirSync("dist/js").filter((f) => f.endsWith(".js")).map((f) => f.replace(/\.js$/, ""));
-    assert.ok(pass.length >= 30, `eleventy.config.js 只解析到 ${pass.length} 條 passthrough —— 解析壞了，這條在空轉`);
-    assert.ok(built.length >= 30, `dist/js 只有 ${built.length} 支 js —— 產物不完整，這條在空轉`);
+    assert.ok(pass.length >= 33, `eleventy.config.js 只解析到 ${pass.length} 條 passthrough —— 解析壞了，這條在空轉`);
+    assert.ok(built.length >= 33, `dist/js 只有 ${built.length} 支 js —— 產物不完整，這條在空轉`);
     const orphan = built.filter((n) => !pass.includes(n));
     assert.equal(orphan.length, 0, `dist 未清乾淨，殘留：${orphan}`);
 });
@@ -1835,7 +1849,7 @@ test("main.scss 有 @use 每一支元件 scss", () => {
         .map((f) => f.replace(/^src\//, "../").replace(/\/_([\w-]+)\.scss$/, "/$1"))
         .filter((p) => p && !main.includes(p));
     const compScss = srcScss.filter((f) => f.startsWith("src/_includes/"));
-    assert.ok(compScss.length >= 60, `只掃到 ${compScss.length} 支元件 scss —— 這條測試在空轉`);
+    assert.ok(compScss.length >= 66, `只掃到 ${compScss.length} 支元件 scss —— 這條測試在空轉`);
     const main = read("src/scss/main.scss");
     assert.ok((main.match(/^@use\s/gm) || []).length >= compScss.length,
         `main.scss 的 @use 行數少於元件 scss 支數（${(main.match(/^@use\s/gm) || []).length} < ${compScss.length}）—— 路徑比對規則可能已經比不中任何東西`);
@@ -1873,9 +1887,18 @@ test("README.md 的數字（page-shell 頁數、元件數）與實況一致", ()
     const biz = componentDirs.filter((c) => c.bucket === "components").length;
     assert.ok(doc.includes(`管理端 ${pages} 頁`), `README 的頁數過期，實際 ${pages} 頁`);
     assert.ok(doc.includes(`${comps} 個元件`), `README 的元件數過期，實際 ${comps} 個`);
-    // 搬桶時總數不變，兩個子數字會靜默過期
-    assert.ok(doc.includes(`（${ui} 個）`), `README 的 ui/ 數過期，實際 ${ui} 個`);
-    assert.ok(doc.includes(`（${biz} 個）`), `README 的 components/ 數過期，實際 ${biz} 個`);
+    // 搬桶時總數不變，兩個子數字會靜默過期。
+    // ⚠️ 這裡**必須把數字錨在它的標籤上**：原本兩條都是裸的 `doc.includes("（N 個）")`，
+    // 而 README 那兩行本來就同時存在兩個括號數字 ⇒ 把 ui/ 與 components/ 的數字**互換**照樣全綠，
+    // 正是這條註解自己說要擋的那件事（實測：一個元件從 ui/ 搬到 components/ 之後，
+    // README 寫成 ui 60／components 59，這條測試沒有紅）。
+    const countAfter = (label) => {
+        const line = doc.split(NL).find((l) => l.includes(`${label}/`) && /（\d+ 個）/.test(l));
+        assert.ok(line, `README 找不到 ${label}/ 那一行的元件數`);
+        return Number(line.match(/（(\d+) 個）/)[1]);
+    };
+    assert.equal(countAfter("ui"), ui, `README 的 ui/ 數過期，實際 ${ui} 個`);
+    assert.equal(countAfter("components"), biz, `README 的 components/ 數過期，實際 ${biz} 個`);
 });
 
 test("md 的 §N 引用都指向 GUIDELINE 存在的章節，README 的引用要標明 GUIDELINE", () => {
@@ -1904,6 +1927,14 @@ test("md 的 §N 引用都指向 GUIDELINE 存在的章節，README 的引用要
 // 卻曾經同時漏在這條與下面那條 §N 之外，整份主交付的連結與章節引用都沒人驗）
 const mdDocs = gitFiles('"*.md"');
 
+// 相對連結是**相對於該 md 自己的目錄**解析的，不是相對於 repo 根。原本這裡直接
+// `existsSync(m[1])`（等同從 cwd＝repo 根解析），只有在「全部的 md 都躺在根目錄」時才恰好成立——
+// 而那是當時的現況，不是規則：今天版控裡四支 md 恰好都在根目錄，哪天有人把文件收進
+// `docs/**`，正確的 `../specs/x.md` 與 `../../../GUIDELINE.md` 就會雙雙被判成死連結，
+// 而**壞的方向是誤報**：它會逼下一個人去把好連結改壞（或替這條規則開一張排除清單），比漏抓更貴。
+// 所以巢狀那一向由下面的 probe 用假住址守著——不必等真的有巢狀 md 進來才有覆蓋。
+const mdLinkTarget = (doc, link) => join(dirname(doc), link);
+
 test("md 的相對連結都指向存在的檔案", () => {
     const LINKS = /\]\((?!https?:)([^)#]+)/g;
     const bad = [];
@@ -1911,12 +1942,19 @@ test("md 的相對連結都指向存在的檔案", () => {
     for (const doc of mdDocs)
         for (const m of read(doc).matchAll(LINKS)) {
             seen++;
-            if (!existsSync(m[1])) bad.push(`${doc}  → ${m[1]}`);
+            if (!existsSync(mdLinkTarget(doc, m[1]))) bad.push(`${doc}  → ${m[1]}`);
         }
     assert.ok(mdDocs.length >= 4, `只掃到 ${mdDocs.length} 支 md —— 掃描集合空了`);
     assert.ok(seen >= 10, `只抓到 ${seen} 條相對連結 —— 正則壞了，這條在空轉`);
-    probe("md 相對連結", (s) => [...s.matchAll(LINKS)].filter((m) => !existsSync(m[1])),
+    // probe 的樣本沒有真實住址，用根目錄的 README.md 當它的家（dirname＝"."，與原本的行為等價）。
+    probe("md 相對連結", (s) => [...s.matchAll(LINKS)].filter((m) => !existsSync(mdLinkTarget("README.md", m[1]))),
         ["見 [規範](GUIDELINE-不存在.md)"], ["見 [規範](GUIDELINE.md)", "見 [官網](https://example.com/x)"]);
+    // 巢狀目錄下的 md 也要被這條看得到。版控裡目前沒有巢狀 md，故用假住址 `docs/a/b/x.md` 驗：
+    // good 樣本一路 `../../../` 指回 repo 根的真檔案，bad 樣本指同層兄弟目錄下不存在的檔。
+    probe("md 相對連結（巢狀目錄）",
+        (s) => [...s.matchAll(LINKS)].filter((m) => !existsSync(mdLinkTarget("docs/a/b/x.md", m[1]))),
+        ["見 [規範](../../../GUIDELINE-不存在.md)", "見 [設計](../c/x.md)"],
+        ["見 [規範](../../../GUIDELINE.md)", "見 [說明](../../../README.md)"]);
     assert.equal(bad.length, 0, fail(bad));
 });
 
@@ -4388,6 +4426,16 @@ test("§4 每一顆會改狀態的鈕都要宣告它需要哪一道閘門（四�
         ["src/_includes/components/file-edit-modal/file-edit-modal.html", new Map([
             ["已更新", "送出前的本地編輯（凍結正本 uploadFilePdf.js 的 saveEdit 只改本地陣列），沒有端點"],
         ])],
+        // 3-7 文件檢索：整頁的端點正本是 GufoRAG manager_backend，不是 gufofaq-saas product。
+        // 兩套鍵空間不相交，所以標不出四軸的任何一顆值——這是查證過的結論，理由與頁檔頭同一句
+        // （§4「痕跡要成對」）。⚠️ 這支功能若併進 gufofaq-saas，整頁閘門要重標。
+        // round46：此前這一族有四筆（3-7 的匯出／查詢、store-to-collection、doc-summary、
+        // search-scope 的儲存）。前三者的端點在 manager_backend 沒有對應、功能整批刪掉；
+        // search-scope 的確認鈕不再送 API（`indexes` 是查詢參數不是使用者設定）故沒有 success 段
+        // ⇒ 整個掉出本測試母體。剩下這一筆。
+        ["src/pages/dataset/3-7_documentSearch.html", new Map([
+            ["查詢成功", "POST /api/v1/search 只掛 Depends(require_license)（系統授權檔驗簽，app/dependencies.py 的 require_license()），GET /api/v1/indexes 掛的 require_user 也只確認「有登入主體」；manager_backend 的使用者模型只有 is_admin: bool ＋ roles: str，沒有 capability token 這種東西 ⇒ 四軸（CAPABILITY_TOKENS／CAPABILITIES）與它是兩套不相交的鍵空間，硬標一顆等於宣告一道這裡不存在的閘門"],
+        ])],
         ["src/login.html", new Map([
             ["登入成功！", "登入是**認證之前**的那一顆：這時還沒有主體，能力／角色都是登入之後才判得出來的東西，宣告不出任何一道閘門。它不是唯讀——round39 之前被塞在 READONLY 裡，那是把「不需要閘門」誤寫成「不寫入」"],
         ])],
@@ -5844,8 +5892,32 @@ function runStubDom(jsSrc, build) {
     function node(tag, cls) {
         const n = {
             tag, classes: new Set((cls || "").split(/\s+/).filter(Boolean)),
-            children: [], parent: null, style: {}, attrs: new Map(), handlers: new Map(), textContent: "",
+            children: [], parent: null, style: {}, attrs: new Map(), handlers: new Map(),
         };
+        // textContent 是 accessor 而不是普通欄位：DOM 的 setter **會清掉子節點**，而
+        // `list.textContent = ""` 是清空一整段動態清單的慣用寫法——寫成普通欄位的話
+        // 舊的 <li> 會留著，斷言看到的是累積的清單而不是這一次渲染的結果。
+        // getter 也要往下收子節點的字（`choose()` 讀的是 <button> 裡 <b> ＋文字節點串起來的全文）。
+        let ownText = "";
+        Object.defineProperty(n, "textContent", {
+            get: () => (n.tag === "#text" ? ownText : ownText + n.children.map((c) => c.textContent).join("")),
+            set: (v) => { n.children.length = 0; ownText = String(v); },
+        });
+        // className 要與 classes 同步：js 常寫 `el.className = "x"`（`ui/multi-select` 造控制項殼、
+        // `ui/list-filter` 造空狀態列、`components/alias-entries-modal` 造每一格時都是），
+        // 而選擇器比對讀的是 n.classes——不同步的話那顆節點對 querySelectorAll 是隱形的。
+        Object.defineProperty(n, "className", {
+            get: () => [...n.classes].join(" "),
+            set: (v) => { n.classes = new Set(String(v).split(/\s+/).filter(Boolean)); },
+        });
+        // `id` 在真 DOM 是**反射屬性**（`el.id = "x"` 等同 `setAttribute("id", "x")`，反之亦然）。
+        // 寫成兩個獨立的欄位會讓「js 用 el.id 設、測試用 getAttribute("id") 讀」靜靜對不上——
+        // 而 document.getElementById 讀的也是屬性那一份，等於整條路都斷掉。
+        Object.defineProperty(n, "id", {
+            get: () => (n.attrs.has("id") ? n.attrs.get("id") : ""),
+            set: (v) => n.attrs.set("id", String(v)),
+        });
+        n.focus = () => {};
         n.classList = {
             contains: (c) => n.classes.has(c),
             add: (c) => n.classes.add(c),
@@ -5885,6 +5957,8 @@ function runStubDom(jsSrc, build) {
         querySelector: (sel) => root.querySelector(sel),
         getElementById: (id) => root.querySelectorAll("*").find((d) => d.getAttribute("id") === id) || null,
         createDocumentFragment: () => { const f = node("#fragment"); f.__fragment = true; return f; },
+        createElement: (tag) => node(tag),
+        createTextNode: (t) => { const n = node("#text"); n.textContent = t; return n; },
     };
     // GufoSlide 是共享行為工具（§1-1），這裡只需要它「把 display 扳到位」那一面
     const window = {
@@ -5897,7 +5971,12 @@ function runStubDom(jsSrc, build) {
     const fixture = build(node, root);
     new Function("document", "window", jsSrc)(document, window);
     (docHandlers.get("DOMContentLoaded") || []).forEach((fn) => fn({}));
-    const fireDoc = (type, target) => (docHandlers.get(type) || []).forEach((fn) => fn({ target }));
+    // 舊呼叫傳的是「目標節點」；有些委派要讀完整 event（點外部關閉那一類要走
+    // `event.composedPath()`，光有 target 不夠），故也收得下一個現成的 event 物件。
+    const fireDoc = (type, arg) => {
+        const ev = arg && arg.classes ? { target: arg } : (arg || {});
+        (docHandlers.get(type) || []).forEach((fn) => fn(ev));
+    };
     return {
         fixture, root, window, fireDoc,
         // accordion 的委派掛在 .js-accordion 根上；找不到根就退回 body（table 版的 fixture 也有根）
@@ -7890,11 +7969,17 @@ test("§1-2 展示片段與生產實例的硬規則屬性不一致時，生產�
     // 判準只在**真的有漂移**時要求契約：同一顆根 class 上，生產實例帶了片段沒有的 §4 硬規則屬性。
     const HARD = /^(aria-|data-i18n|data-toast|data-capability$|data-tenant-|data-platform-role$|role$|width$|height$|decoding$|type$)/;
     const prodPages = srcHtml.filter((f) => f.startsWith("src/pages/") && f !== "src/pages/components/component.html");
+    // ⚠️ class 比對要以**整個 token** 為單位。原本是 `class="[^"]*\b${cls}\b[^"]*"`，而 `\b` 只認
+    // 「詞字元 ↔ 非詞字元」的邊界，`-` 是非詞字元 ⇒ `js-doc-search-select` 會被當成
+    // `ui/search-select` 的實例，於是那支元件被判成「生產實例帶了片段沒有的屬性」。誤報的方向
+    // 特別貴：它會逼下一個人去替一支根本沒被用到的元件補一份假的生產契約。
     const attrsOn = (text, cls) => {
         const out = new Set();
-        const re = new RegExp(`<([a-zA-Z][\\w-]*)((?:"[^"]*"|[^>"])*?class="[^"]*\\b${cls}\\b[^"]*"(?:"[^"]*"|[^>"])*)>`, "g");
-        for (const m of text.matchAll(re))
+        const re = new RegExp(`<([a-zA-Z][\\w-]*)((?:"[^"]*"|[^>"])*?class="([^"]*)"(?:"[^"]*"|[^>"])*)>`, "g");
+        for (const m of text.matchAll(re)) {
+            if (!m[3].split(/\s+/).includes(cls)) continue;
             for (const a of m[2].matchAll(/(?:^|\s)([a-zA-Z_:][\w:.-]*)\s*=/g)) if (HARD.test(a[1])) out.add(a[1]);
+        }
         return out;
     };
     const hits = [];
@@ -8296,4 +8381,35 @@ test("§6 stepNextHref 與 stepNextAction = true 不得同時 set（動作模式
             '{% set stepNextAction = true %}\n{% include "components/step-btn-wrap/step-btn-wrap.html" %}',
             '{% set stepNextHref = "x.html" %}\n{% include "components/step-btn-wrap/step-btn-wrap.html" %}']);
     assert.equal(hits.length, 0, `§6 沒有消費者的參數：\n${fail(hits)}`);
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 3-7 文件檢索（對 GufoRAG `manager_backend`）的專屬規則。
+// 設計正本＝該頁自己的檔頭（src/pages/dataset/3-7_documentSearch.html）——設計階段的
+// spec 與實作計畫不進版控，端點契約與旋鈕取捨全部落在那段檔頭裡。
+
+test("§5 ui/list-filter 的列母體沒有零消費者的分支（選擇器要打得到 dist 上的東西）", () => {
+    // round46：3-7 改對 manager_backend 後「優先度 select」被刪掉（新後端沒有那個參數），
+    // 連帶 `:scope > .dataset-list-row`（一列兩個控制項的殼）零消費者。本條因此從「兩種形狀各有實例」
+    // 改成「ROW_SELECTOR 裡每一個分支都要有實例」——同一個意圖（不准有死分支），
+    // 但不把今天的形狀數量寫死：下一次又出現一列兩個控制項時，加回來就會被這條盯著。
+    const js = read("src/_includes/ui/list-filter/list-filter.js");
+    const sel = js.match(/var ROW_SELECTOR = "([^"]+)"/);
+    assert.ok(sel, "list-filter 要把列選擇器抽成 ROW_SELECTOR 一份正本（§8-1 共用判準只准有一份）");
+    const branches = sel[1].split(",").map((b) => b.trim()).filter(Boolean);
+    assert.ok(branches.length >= 1, "ROW_SELECTOR 解不出任何分支 —— 這條測試在空轉");
+    assert.ok(branches.includes(":scope > label"), "一列只有一顆勾選框的形狀是今天三個消費點共用的那一種，不得拿掉");
+
+    const dist = distHtml.map((f) => read(`dist/${f}`)).join(NL);
+    const bad = [];
+    for (const b of branches) {
+        if (b === ":scope > label") {
+            if (!/<div class="dataset-list"[^>]*>\s*<label/.test(dist)) bad.push(b);
+            continue;
+        }
+        // 其餘分支一律以「那顆 class 有沒有出現在 dist」判定
+        const cls = b.replace(":scope > .", "");
+        if (!dist.includes(cls)) bad.push(b);
+    }
+    assert.equal(bad.length, 0, `ROW_SELECTOR 有分支在 dist 上找不到實例（死選擇器）：${bad.join("，")}`);
 });

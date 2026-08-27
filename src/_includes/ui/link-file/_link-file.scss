@@ -4,6 +4,21 @@
 //   檔頭與 `components/sources-block`），瀏覽器給 button 的底色／外框／字體要清掉，才與同表的 `<a>`
 //   逐字一樣；`text-align: left` 是 button 專屬的（`<a>` 本來就靠左，button 會置中）。
 //   **宣告集合差集**（與上面那段凍結範圍逐條 diff，只比種類不比值——色值換語意 token 是 §4 要求的、不算偏離）：本檔新增 `padding`／`border`／`background`／`font`／`text-align`／`cursor`。隨 ② 的 `button.link-file` 外觀重置一起新增。
+//
+// **生產契約**（§1-2）：`link-file.html` 是展示片段，示範的是**導覽族**（`<a href>`）；
+// 而下載族在生產頁上是 `<button>`，帶著片段沒有的那幾顆硬規則屬性（`type`／`data-toast` 三件套）。
+// 兩族逐字各一段——型別＝那顆控制項打不打 API，不是排版偏好（§4「`<a>` 或 `<button>`」）：
+//
+// ① 導覽族——有真去向的連結，見 `link-file.html` 的片段本身。
+//
+// ② 下載族——點檔名下載原稿，是**送 API 的動作**（§5 矩陣③，`data-toast` 要列全結果）。
+//    今天只剩一個生產實例，`components/sources-block`（打 GufoFAQ 自己的來源下載，故有租戶能力軸）：
+//
+//      <button data-capability="history" type="button" class="link-file" id="sourceRowFile-{{ loop.index }}" data-source-index="{{ loop.index0 }}" data-toast="下載已開始|權限不足，無法下載|此來源無法下載|下載失敗" data-i18n-data-toast="toast.downloadFile" data-toast-type="success|warning|warning|error">{{ source.file }}</button>
+//
+//    ⚠️ **第二個實例出現時不得照抄上面那一段**：3-7 文件檢索曾經有一顆（打 GufoPlayground 的
+//    `POST /DownloadOriginalFile`，分支集合與能力軸都不一樣，round46 隨整頁改對 manager_backend
+//    一起刪掉）。分支集合是跟著端點走的，兩個實例互抄就是把一份不屬於自己的結果清單掛上去。
 .link-file {
     color: var(--brand-text);
     word-break: break-all;

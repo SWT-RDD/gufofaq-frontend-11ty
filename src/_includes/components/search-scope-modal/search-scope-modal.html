@@ -1,0 +1,92 @@
+{# 檢索範圍：挑「這次要搜哪些資料集」。3-7 文件檢索的「檢索範圍」鈕開它。
+     這一顆窗是**無條件開窗**（點了就開，沒有任何前置條件），故觸發鈕掛 `data-open-modal`、
+     不是 hook class（§5）。
+
+     端點正本＝GufoRAG `manager_backend`：
+       · 清單來源：`GET /api/v1/indexes`（`api/v1/routers/index.py` 的 `list_indexes()` → `IndexListResponse`）。
+         勾起來的那幾筆的**索引名**組成 `SearchParams.indexes`，隨下一次 `POST /api/v1/search` 送出。
+       · **這一窗自己不打任何 API**：`indexes` 是查詢參數、不是使用者設定。此前對 Playground 那一輪
+         的 `PATCH /AccountInfo`（把「這個帳號要搜哪些資料集」存回帳號）在新後端沒有對應端點
+         ⇒ 確認鈕不再送出、也就沒有 `data-toast` 可列（§5 矩陣④：純前端互動）。
+
+     **本輪（改對 manager_backend）刪掉的東西**（§4：不做的要寫明理由）：
+       · **「自訂資料集」那一整欄清單**：新後端沒有 DocCollection 這種東西，只有 index 一種容器。
+         兩欄併成一份清單，`search.originalDatasets`／`search.customDatasets` 兩顆標題一起收掉。
+       · **每一列的「優先度」下拉（1／2／3）**：`SearchParams` 帶 `extra: "forbid"`，沒有 priority
+         這個欄位 ⇒ 送出即 422。連帶 `#searchScopePriorityHint` 那段依賴說明與整支
+         `_search-scope-modal.scss`（它畫的就是「一列兩個控制項」那個形狀）一起刪。
+       · hook class `.js-search-scope-folder` 改名成 `.js-search-scope-index`：值域從
+         `UploadedFolderSn`（數字）換成索引名（字串），**不是同一個東西**，沿用舊名會讓 React 端
+         以為契約沒變（§5「已存在的 hook 不回收」講的是不拿舊名去指新東西）。
+
+     **未勾選任何一筆＝檢索全部**，不是錯誤：`SearchParams.indexes` 是 `Optional`，而
+     `services/search/gufonet.py` 的 `_build_query_sentence()` 是 `if search_params.indexes:` ⇒ 空值就不加索引條件。
+     所以這一窗**沒有「一筆都沒選」的守衛**，確認鈕也就掛得起 `.btn-close-modals`
+     （此前不掛，是因為 Playground 的 `goSearch()` 第一行會擋）。這件事要在窗內說得出來，
+     故留一段常駐可見的 `#searchScopeEmptyHint`——空著送出會搜到全部，那是使用者該先知道的事。
+
+     **確認鈕同時掛 hook class 與 `.btn-close-modals`**：它不送 API，但它是**值的交付點**
+     （React 要在這一刻讀走勾起來的索引名、去更新觸發鈕上的「已選 N 個」）。兩顆鈕在 markup 上
+     必須分得出來，否則 React 認不出該接哪一顆（§5）；關窗那一半是宣告式的，不必寫 js。
+
+     列殼用 `ui/modals` 既有的 `.dataset-list-wrap > .dataset-list`（同 `manage-members-modal`），
+     一列一顆 `<label>`——那是 `ui/list-filter` 的過濾母體兩種形狀裡的第一種（見該檔 ROW_SELECTOR）。
+     零命中那一態由 `ui/list-filter` 在執行期維持一顆 `.dataset-list-empty`；下面的 `{% else %}`
+     只覆蓋「來源陣列本來就空」。
+
+     示範資料用元件專屬名 `searchScopeIndexRows`（§6：泛用名會與使用頁的同名變數互相覆蓋）。
+     `name` 既是列鍵也是送出去的值（索引名在 `manager_backend` 就是主鍵，見
+     `GET /api/v1/indexes/{index_name}`），故不另造一顆 sn。
+     勾起來的筆數要與 3-7 的 `searchScopeSelectedCount` 對得上（§6 示範資料自洽）。 #}
+{% set searchScopeIndexRows = [
+    { name: "immigration_faq", label: "移民署 測試", selected: true },
+    { name: "immigration_law", label: "入出國及移民法彙編", selected: true },
+    { name: "household_reg", label: "戶政法規（未納入本次檢索）" }
+] %}
+<dialog class="modals" id="searchScopeModal" aria-labelledby="searchScopeModal-title">
+    <div class="modals-dialog modals-lg">
+        <div class="modals-wrap">
+            {% include "ui/modal-close/modal-close.html" %}
+            <div class="modals-content">
+                <div class="modals-header">
+                    <h3 class="modals-title" id="searchScopeModal-title" data-i18n="search.searchScope">檢索範圍</h3>
+                </div>
+                <div class="modals-body">
+                    <p class="text-gray" data-i18n="search.searchScopeHint">勾選這次要納入檢索的資料集</p>
+                    <div class="checkbox-container">
+                        <div class="dataset-list-wrap">
+                            <label class="form-checkbox">
+                                <input type="checkbox" class="check-all">
+                                <span class="text-md text-bold" id="searchScopeIndexLabel" data-i18n="common.dataset">資料集</span>
+                            </label>
+                            <div class="form-group">
+                                <div class="field">
+                                    <input type="text" placeholder="搜尋資料集..." data-i18n-placeholder="modals.searchDatasetPlaceholder" aria-labelledby="searchScopeIndexLabel" class="form-control search">
+                                </div>
+                            </div>
+                            <div class="dataset-list" role="group" aria-labelledby="searchScopeIndexLabel" aria-describedby="searchScopeEmptyHint">
+                                {% for row in searchScopeIndexRows %}
+                                <label class="form-checkbox border-wrap">
+                                    <input type="checkbox" class="check-one js-search-scope-index" value="{{ row.name }}"{% if row.selected %} checked{% endif %}>
+                                    <span>{{ row.label }}</span>
+                                </label>
+                                {% else %}
+                                <div class="text-center text-gray" data-i18n="common.noData">無資料</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-gray m-0 mt-8" id="searchScopeEmptyHint" data-i18n="search.scopeEmptyHint">一筆都沒有勾選時，這次檢索會涵蓋全部資料集。</p>
+                </div>
+                <div class="modals-footer">
+                    <div class="button-row center">
+                        <button type="button" class="button button-border btn-close-modals" data-i18n="action.cancel">取消</button>
+                        {# 見檔頭：不送 API（故無 `data-toast`），但要留 hook 給 React 讀走勾選值；
+                             關窗那一半交給宣告式的 `.btn-close-modals`。 #}
+                        <button type="button" class="button button-primary js-confirm-search-scope btn-close-modals" data-i18n="action.confirm">確認</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</dialog>

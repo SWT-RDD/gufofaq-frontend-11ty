@@ -60,6 +60,34 @@ label.switch {
         }
     }
 
+    // **停用態**：`disabled` 說得出「現在不能調」，但只有在**看得出來**的時候才說得出來。
+    // 在 3-7 文件檢索之前全站沒有任何一顆停用的 switch，所以這一態一直沒有樣式——而沒有樣式的
+    // `disabled` 開關與可用的長得一模一樣，使用者會去按它、然後什麼都不會發生（§4：組合維度上的
+    // 空格要由 markup 表達，而表達的前提是它在畫面上分得出來）。
+    // 顏色走既有的停用族 token（`--surface-disabled` / `--control-ink-disabled`），不新增色。
+    // 游標比照 `_form-check.scss` 的 `&:has(:disabled) { cursor: not-allowed }`（同一個語意兩處同值）。
+    &:has(.switch-checkbox:disabled) {
+        cursor: not-allowed;
+
+        .switch-box {
+            background-color: var(--surface-disabled);
+        }
+
+        .switch-btn {
+            background-color: var(--control-ink-disabled);
+        }
+
+        // 停用但**開著**：軌道仍要看得出「目前是開的」，只是調不動——把值抹掉會讓使用者
+        // 以為這顆設定是關的（3-7 的「只搜尋第一段」在關鍵字模式下正是這一格）。
+        .switch-checkbox:checked+.switch-box {
+            background-color: var(--control-track);
+
+            .switch-btn {
+                background-color: var(--control-ink-disabled);
+            }
+        }
+    }
+
     .switch-box {
         display: inline-block;
         width: var(--switchWidth);

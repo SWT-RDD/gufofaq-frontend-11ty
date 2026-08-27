@@ -105,9 +105,19 @@
 // 三顆 class 缺一不可：.dataset-list-wrap 是 closest() 的範圍根（同頁兩個 modal 各過濾各的），
 // .form-control.search 是輸入框、.dataset-list 是被過濾的容器。
 //
-// 住在哪一頁（雙向）：兩顆 modal 元件各一份 ⇒ `components/manage-members-modal`（5-5-2 群組管理、
-// 元件庫頁）與 `components/select-dataset-modal`（1-1-1 資料匯入、元件庫頁）。
-// 反查：`grep -rln 'dataset-list-wrap' src --include=*.html` 除這兩支元件之外，
+// **一列是什麼**：`.dataset-list` 的直接子 `<label>`——今天三個消費點都是這個形狀。
+// ⚠️ 這裡曾經還認直接子 `.dataset-list-row`（一列有兩個以上控制項時的殼）。那個分支是
+// `components/search-scope-modal` 的「勾選框 ＋ 優先度 select」逼出來的：只認 `<label>` 時，
+// 被過濾掉的是 label、留在畫面上的是它旁邊那顆 select，而 `syncEmpty()` 也會把那一列算成
+// 不可見 ⇒ 明明有命中卻畫出「無符合選項」。**優先度隨 3-7 改對 manager_backend 一起刪掉之後
+// 那個分支零消費者**，故本輪收掉（§5：選擇器要打得到 dist 上的東西，留著就是死碼）。
+// 下一次出現「一列兩個控制項」的清單時，要連同 ROW_SELECTOR 一起把那個殼加回來——這一段留著
+// 就是為了讓那個人不必再踩一次。
+//
+// 住在哪一頁（雙向）：三顆 modal 元件各一份 ⇒ `components/manage-members-modal`（5-5-2 群組管理、
+// 元件庫頁）、`components/select-dataset-modal`（1-1-1 資料匯入、元件庫頁）與
+// `components/search-scope-modal`（3-7 文件檢索）。
+// 反查：`grep -rln 'dataset-list-wrap' src --include=*.html` 除這三支元件之外，
 // 只多命中 `ui/checkbox/checkbox.html`——那是一則 `{# #}` 說明註解，不是實例。
 // 零命中的空狀態（§5「無資料列正典」逐字點名這一族：「`ui/list-filter` 那一族打到零命中時的空框
 // 同理」）。使用頁的 `{% for %}…{% else %}` 只覆蓋「來源陣列本來就空」那一態——它是 nunjucks
@@ -120,6 +130,7 @@
 // `ui/theme-toggle` 與 `ui/lang-toggle` 各自也有一個（那兩支收在閉包裡，今天剛好安全），
 // 誰後載入誰贏、而且覆蓋是靜默的。整支收進 IIFE。
 (function () {
+var ROW_SELECTOR = ":scope > label";
 var EMPTY_CLASS = "dataset-list-empty";
 var EMPTY_KEY = "common.noMatchingOptions";
 var ZH_EMPTY = "無符合選項";
@@ -150,7 +161,7 @@ function emptySlot(list) {
 }
 
 function syncEmpty(list) {
-    var labels = list.querySelectorAll("label");
+    var labels = list.querySelectorAll(ROW_SELECTOR);
     var visible = 0;
     labels.forEach(function (l) { if (!l.classList.contains("hidden")) visible++; });
     var slot = emptySlot(list);
@@ -165,7 +176,7 @@ document.addEventListener("input", function (e) {
     var list = wrap && wrap.querySelector(".dataset-list");
     if (!list) return;
     var keyword = search.value.toLowerCase();
-    list.querySelectorAll("label").forEach(function (label) {
+    list.querySelectorAll(ROW_SELECTOR).forEach(function (label) {
         // trim：textContent 含 markup 縮排空白，真 app 比對的是 label 內 span 的純文字
         label.classList.toggle("hidden", label.textContent.trim().toLowerCase().indexOf(keyword) === -1);
     });
