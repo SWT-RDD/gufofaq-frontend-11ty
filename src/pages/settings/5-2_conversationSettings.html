@@ -133,10 +133,14 @@ permalink: 5-2_conversationSettings.html
                 <label for="profileChatMode" class="control-label" data-i18n="qaTest.chatMode">對話模式</label>
             </div>
             <div class="field">
-                <select class="form-control singleSelect js-chat-mode" id="profileChatMode">
+                {# 兩個模式的定義（`qaTest.chatModeHint`，四個入口共用同一顆 key，見 2-2-1 那一段）。
+                     **這一頁的那一顆最重要**：2-2-1／2-2-3／2-2-4 改的是「這一次測試」，這裡改的是
+                     這個設定檔上線之後每一題的行為。 #}
+                <select class="form-control singleSelect js-chat-mode" id="profileChatMode" aria-describedby="profileChatModeHint">
                     <option value="traditional" selected data-i18n="qaTest.chatModeTraditional">傳統搜尋</option>
                     <option value="agent" data-i18n="qaTest.chatModeAgent">Agent 對話</option>
                 </select>
+                <span class="text-gray" id="profileChatModeHint" data-i18n="qaTest.chatModeHint">傳統搜尋＝先檢索、再由模型把找到的資料整理成答案，資料集依高／中／低逐層優先序被查；Agent 對話＝模型自己決定要不要查、查幾次，還可以呼叫工具與 Skill。兩者吃的旋鈕不同，換了模式之後下面會有幾欄跟著失效或出現。</span>
             </div>
         </div>
         {# 數值欄一律 type="number" ＋ 合法區間（見本頁「生成設定」子頁籤檔頭的理由與出處）：
@@ -511,12 +515,17 @@ permalink: 5-2_conversationSettings.html
                     <div class="field">
                         {# 主回答的空值＝該模型預設（product settings_hub 的 reasoning_effort 註解），
                              故用元件的預設語意；分組那組的空值是「最低思考」，見下方分組區。 #}
+                        {# 尺度說明只畫在**主回答**這一顆（round47）：這是整頁第一次出現「思考深度」，
+                             而下面分組那五顆各畫一句會把那張表淹掉（同一句話說五遍）。
+                             參數與理由見 components/reasoning-effort-select 檔頭。 #}
                         {% set reasoningEffortId = "genReasoningEffort" %}
                         {% set reasoningEffortHook = "js-reasoning-effort" %}
                         {% set reasoningEffortGroup = "" %}
                         {% set reasoningEffortEmptyKey = "settings.reasoningEffortDefault" %}
                         {% set reasoningEffortEmptyZh = "沿用模型預設" %}
+                        {% set reasoningEffortHintId = "genReasoningEffortHint" %}
                         {% include "components/reasoning-effort-select/reasoning-effort-select.html" %}
+                        {% set reasoningEffortHintId = "" %}
                     </div>
                 </div>
             </div>

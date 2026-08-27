@@ -11,6 +11,14 @@
     reasoningEffortGroup（選填）＝分組 LLM 的 data-group 列鍵；
     reasoningEffortEmptyKey／reasoningEffortEmptyZh（選填，預設「沿用模型預設」）＝空值選項的語意——
       主回答空＝該模型預設，分組空＝最低思考（兩者行為不同，故不共用同一顆 i18n key，見 5-2 註解）。
+    reasoningEffortHintId（選填）＝畫一句「這個尺度是什麼、代價是什麼」的說明，並把 select 的
+      `aria-describedby` 接上去。值是該頁給的**唯一 id**（同頁多顆 select 各給各的，否則 id 重複）。
+      **為什麼是選填而不是固定畫**：5-2 的分組 LLM 一次出現五顆 select，五句同樣的話會把那張表淹掉；
+      而 2-2-1／2-2-3／5-2 主回答那三處各只有一顆，那裡才是使用者第一次遇到這個尺度的地方。
+      **為什麼講尺度而不逐顆翻**：枚舉是**開放的**（本檔上方那段：`reasoning_options` 依模型而異，
+      新模型用 `none` 取代 `minimal`），逐顆給譯名的話，上游哪天多一個成員，畫面就靜默露出一個
+      裸 token——而那正是這一輪要修的東西。option 的字面維持上游那幾個識別字（它們是**值**，
+      要送出去的就是它們，§4-2），語意由這一句承載。
     reasoningEffortSelected（選填，預設空＝選中「沿用模型預設」那一顆）＝目前選中的枚舉成員。
       **為什麼要開這顆**：不開的話，全站每一顆這種 select 都恆定停在空值那一顆——枚舉的另外四個成員
       在 dist 上沒有任何一處是「被選中」的樣子，而「選中」正是它們唯一會被看到的狀態（§5：分支要有
@@ -22,10 +30,14 @@
   內部變數用元件專屬名 reasoningEffortOptions（§6）。
 #}
 {% set reasoningEffortOptions = ["minimal", "low", "medium", "high"] %}
-<select class="form-control singleSelect {{ reasoningEffortHook or "js-reasoning-effort" }}" id="{{ reasoningEffortId }}"{% if reasoningEffortGroup %} data-group="{{ reasoningEffortGroup }}"{% endif %}>
+<select class="form-control singleSelect {{ reasoningEffortHook or "js-reasoning-effort" }}" id="{{ reasoningEffortId }}"{% if reasoningEffortGroup %} data-group="{{ reasoningEffortGroup }}"{% endif %}{% if reasoningEffortHintId %} aria-describedby="{{ reasoningEffortHintId }}"{% endif %}>
     {# 枚舉成員是**值**、不翻（同 2-2-4 的模型清單）；只有空值那一顆是 chrome，故只有它掛 data-i18n。 #}
     <option value=""{% if not reasoningEffortSelected %} selected{% endif %} data-i18n="{{ reasoningEffortEmptyKey or "settings.reasoningEffortDefault" }}">{{ reasoningEffortEmptyZh or "沿用模型預設" }}</option>
     {% for effort in reasoningEffortOptions %}
     <option value="{{ effort }}"{% if effort == reasoningEffortSelected %} selected{% endif %}>{{ effort }}</option>
     {% endfor %}
 </select>
+{# **這一句不講「空值是什麼意思」**：空值那一顆的語意逐頁不同（主回答＝沿用模型預設、分組＝最低思考，
+     見上方參數段），而那件事已經寫在該顆 option 自己的字面上了。這裡只講尺度與代價，
+     搬到哪一頁都成立。 #}
+{% if reasoningEffortHintId %}<span class="text-gray" id="{{ reasoningEffortHintId }}" data-i18n="settings.reasoningEffortScaleHint">由左到右越想越久：深度越高，模型會先多花時間推理再回答，通常更完整，代價是每一題更慢、也更貴。</span>{% endif %}

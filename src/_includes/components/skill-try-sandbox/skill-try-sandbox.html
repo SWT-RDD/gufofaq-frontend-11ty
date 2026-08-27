@@ -28,6 +28,12 @@
         <button type="button" class="button button-border button-sm js-skill-try-close" data-i18n="action.close">關閉</button>
     </div>
     <p class="text-gray m-0" data-i18n="settings.trySkillHint">把這個 skill 臨時指派給測試設定跑一輪 Agent 問答；正式設定檔完全不受影響。下方流程圖會顯示它實際被怎麼呼叫。</p>
+    {# 「沙盒」「試跑」這兩個詞都在暗示這是免費的預演——**它不是**（round47）：那顆鈕打的是與正式
+         問答同一支端點（`data-capability="ask"`），走同一段 `consume_qa_quota`。上一句已經說了
+         「正式設定檔完全不受影響」，很容易被讀成「什麼都不受影響」，所以額度這件事要緊接著講。
+         「失敗也不退」的出處同 components/chatroom 那一段（product `app/conversation/ask_flow.py`
+         的帳單語意：扣了卻沒答案不是缺陷，也不做補償性退款）。 #}
+    <p class="text-gray m-0" data-i18n="settings.quotaWarnSkillTry">試跑是一次真的 Agent 問答，不是預演：會扣掉一次問答額度，而且失敗也不退還。</p>
     <div class="flex-row flex-wrap gap-16 mobile-column sm-gap-16">
         <div class="col-10-md col-12-sm">
             <div class="form-group">

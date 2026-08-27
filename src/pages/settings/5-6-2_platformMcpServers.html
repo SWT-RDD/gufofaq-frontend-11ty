@@ -376,6 +376,12 @@ permalink: 5-6-2_platformMcpServers.html
 {% set deleteTargetId = "deleteMcpName" %}
 {# 確認鈕的 React 綁定記號（與 .js-delete-mcp 成對）：`deleteConfirmBinding` ＝交給業務 js 綁定、不自動關窗，
      兩顆記號都不給等於那顆鈕在 markup 上沒有任何東西可以抓（delete-modal 檔頭：二擇一必給）。 #}
+{# 連帶後果（`deleteNoteKey`）：這張註冊表是**全平台共用的一份**（本頁檔頭那段：不分租戶各自持有），
+     所以刪掉一台不是「我這邊少一台」，是**每一個引用它的租戶設定檔一起少一組工具**。
+     刪除路徑上確實有參照守衛（見上方那段：被 skill 或設定檔參照時一律拒刪並指名是誰），
+     但那道閘擋的是「還被綁著」；沒被綁著、卻仍然有人打算之後要用的那些，擋不到。 #}
+{% set deleteNoteKey = "settings.deleteMcpServerNote" %}
+{% set deleteNoteZh = "這是全平台共用的一台：每一個引用它的租戶設定檔都會少一組工具。" %}
 {% set deleteConfirmClass = "js-confirm-delete-mcp" %}
 {% set deleteConfirmBinding = true %}
 {% set deletePlatformRole = "admin" %}

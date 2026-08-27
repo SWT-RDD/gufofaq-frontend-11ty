@@ -84,6 +84,7 @@
 //                       {% set reasoningEffortEmptyKey = "settings.reasoningEffortDefault" %}
 //                       {% set reasoningEffortEmptyZh = "沿用模型預設" %}
 //                       {% set reasoningEffortSelected = ab.reasoningEffort %}
+//                       {% set reasoningEffortHintId = "abReasoningEffortHint-" + ab.side %}
 //                       {% include "components/reasoning-effort-select/reasoning-effort-select.html" %}
 //                   </div>
 //               </div>
@@ -92,10 +93,11 @@
 //                       <label for="abChatModeSelect-{{ ab.side }}" class="control-label" data-i18n="qaTest.chatMode">對話模式</label>
 //                   </div>
 //                   <div class="field">
-//                       <select id="abChatModeSelect-{{ ab.side }}" class="form-control singleSelect js-chat-mode">
+//                       <select id="abChatModeSelect-{{ ab.side }}" class="form-control singleSelect js-chat-mode" aria-describedby="abChatModeHint-{{ ab.side }}">
 //                           <option value="traditional" data-i18n="qaTest.chatModeTraditional">傳統搜尋</option>
 //                           <option value="agent" selected data-i18n="qaTest.chatModeAgent">Agent 對話</option>
 //                       </select>
+//                       <span class="text-gray" id="abChatModeHint-{{ ab.side }}" data-i18n="qaTest.chatModeHint">傳統搜尋＝先檢索、再由模型把找到的資料整理成答案，資料集依高／中／低逐層優先序被查；Agent 對話＝模型自己決定要不要查、查幾次，還可以呼叫工具與 Skill。兩者吃的旋鈕不同，換了模式之後下面會有幾欄跟著失效或出現。</span>
 //                   </div>
 //               </div>
 //               <div class="form-group row mobile-col">

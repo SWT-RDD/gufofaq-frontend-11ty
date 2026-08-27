@@ -53,9 +53,10 @@
                 </div>
                 <div class="modals-body">
                     <span data-i18n="modals.shareConfirmHint">分享前，請確認此連結內容</span>
-                    <div class="share-text">
-                        本連結內容由 AI 系統初步產出，僅作為草稿或參考依據使用，尚未經人工確認或修改，若需進一步採用，請先檢閱並確認內容之正確性與完整性。
-                    </div>
+                    {# 同 components/faq-share-modal：這一段先前是**裸字面、沒有 `data-i18n`**，
+                         英文模式會原樣露出一整段繁中，而三張 i18n 的網都掃不到它（不是 data-i18n 節點）。
+                         接上 `shared.aiDraftNotice`，不另造第二份。 #}
+                    <div class="share-text" data-i18n="shared.aiDraftNotice">本內容由 AI 系統初步產出，僅作為草稿或參考依據使用，尚未經人工確認或修改，若需進一步採用，請先檢閱並確認內容之正確性與完整性。</div>
                     {# 有效天數：值載體（React 讀去組 POST /share 的 expires_days），留空＝永久。
                          min=1 對齊後端「expires_days must be positive」（≤0 回 400）。 #}
                     <div class="form-group row mobile-col mt-16">

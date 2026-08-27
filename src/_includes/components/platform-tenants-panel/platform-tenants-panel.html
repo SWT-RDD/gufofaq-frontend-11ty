@@ -613,6 +613,12 @@
 {% set deleteTargetId = "deleteUserName" %}
 {# 確認鈕的 React 綁定記號（與 .js-delete-user 成對）：`deleteConfirmBinding` ＝交給業務 js 綁定、不自動關窗，
      兩顆記號都不給等於那顆鈕在 markup 上沒有任何東西可以抓（delete-modal 檔頭：二擇一必給）。 #}
+{# 連帶後果（`deleteNoteKey`）：刪掉一位成員，最容易被誤會的不是「他登不進來了」，而是
+     **他的東西會不會跟著消失**。答案是不會：問答紀錄與稽核軌跡都留著（同族的
+     「刪除帳號」那一顆的警語也逐字寫著「稽核日誌保留」）。不講的話，管理者會為了保留紀錄
+     而不敢刪掉一個該刪的帳號——那是安全性反過來被文案缺口拖累。 #}
+{% set deleteNoteKey = "settings.deleteUserNote" %}
+{% set deleteNoteZh = "這個帳號從此無法登入；他過去的問答紀錄與稽核軌跡會保留下來。" %}
 {% set deleteConfirmClass = "js-confirm-delete-user" %}
 {% set deleteConfirmBinding = true %}
 {% set deletePlatformRole = "admin" %}

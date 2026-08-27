@@ -213,6 +213,11 @@ permalink: 3-1-1_datasetList.html
    客服問答知識庫 嗎？」）。React 正本也是名字模型（apps/web `datasets/page.tsx` 傳 `itemName`），
    故沿用全站的名字槽命名。列上那顆觸發鈕仍沒有列鍵，理由見上面表格內的註解。 #}
 {% set deleteTargetId = "deleteDatasetName" %}
+{# 連帶後果（round47，`deleteNoteKey`）：這一顆是全站最貴的刪除之一——它不只是清掉一列，
+     而是那個資料集底下**所有檔案與它們在搜尋索引裡的內容**一起消失，而且沒有還原路徑。
+     先前這扇窗只說得出「確定要刪除 <名字>」，那句話對刪一個標籤維度也成立。 #}
+{% set deleteNoteKey = "dataset.deleteDatasetNote" %}
+{% set deleteNoteZh = "底下所有檔案與它們在搜尋索引裡的內容都會一起消失，而且無法復原。" %}
 {% set deleteConfirmBinding = true %}
 {% set deleteConfirmId = "confirmDeleteBtn" %}
 {# 刪除資料集的四段（product `app/routers/datasets.py` 的 `delete_dataset`，逐 raise 對回這顆確認鈕）：

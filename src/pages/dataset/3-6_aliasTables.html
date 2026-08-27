@@ -228,6 +228,11 @@ permalink: 3-6_aliasTables.html
      deleteConfirmBinding：與 3-2／3-3／3-4 同——確認鈕交給業務 js（它要帶著「刪哪一張表」去送 DELETE），
      故不自動關窗。 #}
 {% set deleteTargetId = "deleteAliasTableName" %}
+{# 連帶後果（`deleteNoteKey`）：與 3-2 術語表同一族——表內詞條一起消失，而綁著它的設定檔
+     會少一份別名對照。同頁 toast 的「還被設定檔綁著」那一段是上游擋得下來的那一半；
+     這一句講的是擋不下來的那一半。 #}
+{% set deleteNoteKey = "dataset.deleteAliasTableNote" %}
+{% set deleteNoteZh = "表內詞條會一併消失；還綁著它的設定檔會少一份別名對照。" %}
 {% set deleteConfirmBinding = true %}
 {% set deleteCapability = "data:write" %}
 {% set deleteToast = "別名表已刪除|權限不足，無法刪除|這張表還被設定檔綁著，請先在對話設定裡取消綁定|刪除失敗，請稍後再試" %}

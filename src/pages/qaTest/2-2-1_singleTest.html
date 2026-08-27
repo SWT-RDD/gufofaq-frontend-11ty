@@ -91,11 +91,14 @@ permalink: 2-2-1_singleTest.html
                 <label for="reasoningEffortSelect" class="control-label" data-i18n="settings.reasoningEffort">思考深度</label>
             </div>
             <div class="field">
+                {# 尺度說明（`reasoningEffortHintId`，見該元件檔頭）：這一頁只有一顆思考深度，
+                     而選它的人正在決定「這一次測試要跑多慢多貴」——代價要講在按下去之前。 #}
                 {% set reasoningEffortId = "reasoningEffortSelect" %}
                 {% set reasoningEffortHook = "js-reasoning-effort" %}
                 {% set reasoningEffortGroup = "" %}
                 {% set reasoningEffortEmptyKey = "settings.reasoningEffortDefault" %}
                 {% set reasoningEffortEmptyZh = "沿用模型預設" %}
+                {% set reasoningEffortHintId = "reasoningEffortSelectHint" %}
                 {% include "components/reasoning-effort-select/reasoning-effort-select.html" %}
             </div>
         </div>
@@ -106,10 +109,14 @@ permalink: 2-2-1_singleTest.html
                 <label for="chatModeSelect" class="control-label" data-i18n="qaTest.chatMode">對話模式</label>
             </div>
             <div class="field">
-                <select class="form-control singleSelect js-chat-mode" id="chatModeSelect">
+                {# 「傳統搜尋」與「Agent 對話」這兩個詞**全站先前沒有任何一處定義過**（round47）：
+                     它是整個問答行為的主開關，卻只有兩個選項字面。這一句在 2-2-1／2-2-3／2-2-4／5-2
+                     四處共用同一顆 key，因為那是同一個旋鈕的四個入口，四種說法遲早分岔。 #}
+                <select class="form-control singleSelect js-chat-mode" id="chatModeSelect" aria-describedby="chatModeSelectHint">
                     <option value="traditional" data-i18n="qaTest.chatModeTraditional">傳統搜尋</option>
                     <option value="agent" selected data-i18n="qaTest.chatModeAgent">Agent 對話</option>
                 </select>
+                <span class="text-gray" id="chatModeSelectHint" data-i18n="qaTest.chatModeHint">傳統搜尋＝先檢索、再由模型把找到的資料整理成答案，資料集依高／中／低逐層優先序被查；Agent 對話＝模型自己決定要不要查、查幾次，還可以呼叫工具與 Skill。兩者吃的旋鈕不同，換了模式之後下面會有幾欄跟著失效或出現。</span>
             </div>
         </div>
         {# 選用資料筆數（search_selected_number）：兩模式皆適用（modeMatrix both），不標模式。 #}

@@ -60,6 +60,11 @@
                 <span class="sr-only" data-i18n="action.close">關閉</span>
             </button>
         </div>
+        {# 「答案是 AI 產生的」——理由與擺位與 components/faq-chatroom 那一段逐字相同，同一顆
+             `shared.aiDraftNotice`。**擺在 log 之外**：那一塊是 `role="log" aria-live="polite"`，
+             把靜態說明塞進去會讓報讀器在每一次內容變動時連它一起唸。
+             嵌在客戶網站上的這一版尤其需要——訪客多半不知道自己正在跟一個模型講話。 #}
+        <p class="text-gray" data-i18n="shared.aiDraftNotice">本內容由 AI 系統初步產出，僅作為草稿或參考依據使用，尚未經人工確認或修改，若需進一步採用，請先檢閱並確認內容之正確性與完整性。</p>
         {# role="log" ＋ aria-live="polite"：新回答是非同步長出來的，報讀器要唸得到（同 widget.js 現況）。 #}
         <div class="widget-panel-log" role="log" aria-live="polite">
             <div class="message-wrap">

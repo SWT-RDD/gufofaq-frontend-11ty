@@ -192,6 +192,11 @@ permalink: 5-5-2_groupManagement.html
      （delete-modal 檔頭：`deleteConfirmClass`／`deleteConfirmId` 二擇一必給，兩種都不給＝那顆確認鈕在
      markup 上沒有任何記號，React 認不出它該接誰）。全站另外七個使用頁都給了，先前只有這一頁漏掉。
      命名照 §5 `js-<動詞>-<名詞>`，與同頁的觸發鈕 `.js-delete-group` 成對。 #}
+{# 連帶後果（`deleteNoteKey`）：能力定在群組上（本頁頁層說明第一句），所以刪掉一個群組＝**它的成員
+     當場失去這一組能力**。要講清楚的是另一半：能力是多群組取聯集，所以其他群組給的不受影響——
+     不講的話，管理者會以為刪掉群組等於把那些人整個停權。 #}
+{% set deleteNoteKey = "settings.deleteGroupNote" %}
+{% set deleteNoteZh = "群組成員會立刻失去這一組能力；其他群組給他們的能力不受影響。" %}
 {% set deleteConfirmClass = "js-confirm-delete-group" %}
 {% set deleteConfirmBinding = true %}
 {% set deleteTenantRole = "admin" %}

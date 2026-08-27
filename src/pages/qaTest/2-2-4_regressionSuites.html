@@ -825,10 +825,12 @@ permalink: 2-2-4_regressionSuites.html
                         <input type="checkbox" aria-labelledby="runChatModeSelectLabel overrideThisRunText" class="js-override-search-mode" checked>
                         <span data-i18n="regression.overrideThisRun">這一次改用指定值</span>
                     </label>
-                    <select id="runChatModeSelect" class="form-control js-chat-mode">
+                    {# 兩個模式的定義（`qaTest.chatModeHint`，四個入口共用同一顆 key，見 2-2-1 那一段）。 #}
+                    <select id="runChatModeSelect" class="form-control js-chat-mode" aria-describedby="runChatModeSelectHint">
                         <option value="traditional" selected data-i18n="qaTest.chatModeTraditional">傳統搜尋</option>
                         <option value="agent" data-i18n="qaTest.chatModeAgent">Agent 對話</option>
                     </select>
+                    <span class="text-gray" id="runChatModeSelectHint" data-i18n="qaTest.chatModeHint">傳統搜尋＝先檢索、再由模型把找到的資料整理成答案，資料集依高／中／低逐層優先序被查；Agent 對話＝模型自己決定要不要查、查幾次，還可以呼叫工具與 Skill。兩者吃的旋鈕不同，換了模式之後下面會有幾欄跟著失效或出現。</span>
                 </div>
             </div>
         </div>

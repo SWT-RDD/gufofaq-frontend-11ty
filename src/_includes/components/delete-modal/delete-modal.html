@@ -11,6 +11,16 @@
                              不分岔成兩種 markup：真實頁一律走 deleteTargetId（§5 逐字指名本元件的空 span 是
                              條件開窗「先選定的那個目標」的正典），裸文字節點那一支於是全站沒有任何消費者，
                              留著只會讓唯一畫得出項目名的地方（元件庫展示頁）演一個不出貨的形狀
+     deleteNoteKey / deleteNoteZh
+                          —— 選填，**這個刪除會連帶帶走什麼**，畫在確認句下面一行紅字。
+                             為什麼要有這一格（round47）：既有的 `deleteMessageKey` 是**前綴**，後面緊接項目名，
+                             所以它只講得出「確定要刪除 X」——那句話對每一種東西都一樣，而後果完全不一樣
+                             （刪一個資料集會連它的搜尋索引一起消失、刪一台 MCP Server 是全平台每個引用它的
+                             設定檔一起少一組工具、刪一個群組是那些人失去一整組能力）。
+                             十八個消費點裡多數走的是預設那一句，於是**全站最不可逆的一批動作，確認窗上
+                             一個字都不說它會帶走什麼**。
+                             這一格是**選填**：講不出具體後果的（例如送出前的本地移除）就不給，
+                             不要為了填滿而寫一句空話。
      deleteHideTarget     —— true＝內文完全不接項目名稱。給「目標只有一個、講不出是哪一個」的動作用
                              （5-9 的 API 金鑰是每租戶一把，`generate_api_key` 直接覆寫 `tenant.api_key_hash`，
                              沒有「哪一把」可指），且那種頁的內文本身就是完整句子——接上去會變成
@@ -40,6 +50,9 @@
                 </div>
                 <div class="modals-body">
                     <p class="text-center delete-modal-text"><span data-i18n="{{ deleteMessageKey or 'common.confirmDelete' }}">{{ deleteMessageZh or "確定要刪除" }}</span>{% if not deleteHideTarget %} <span{% if deleteTargetId %} id="{{ deleteTargetId }}"{% endif %}>{% if not deleteTargetId %}{{ deleteTargetName or "檔案名稱2.pdf" }}{% endif %}</span>{% endif %}</p>
+                    {# 連帶後果那一行（見檔頭 `deleteNoteKey`）。紅字：它講的是**按下去會失去什麼**，
+                         與上一行「確定要刪除 X」不是同一種訊息——上一行是在問，這一行是在警告。 #}
+                    {% if deleteNoteKey %}<p class="text-center text-red m-0" data-i18n="{{ deleteNoteKey }}">{{ deleteNoteZh }}</p>{% endif %}
                 </div>
                 <div class="modals-footer">
                     <div class="button-row center">

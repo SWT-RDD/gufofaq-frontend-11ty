@@ -165,6 +165,9 @@ permalink: 2-2-3_abTest.html
                     {% set reasoningEffortEmptyKey = "settings.reasoningEffortDefault" %}
                     {% set reasoningEffortEmptyZh = "沿用模型預設" %}
                     {% set reasoningEffortSelected = ab.reasoningEffort %}
+                    {# 尺度說明逐側各一份，id 跟著側別走（同頁兩顆 select 共用一顆 id 就是 id 重複，
+                         而且兩側的 `aria-describedby` 會一起指到先出現的那一顆）。 #}
+                    {% set reasoningEffortHintId = "abReasoningEffortHint-" + ab.side %}
                     {% include "components/reasoning-effort-select/reasoning-effort-select.html" %}
                 </div>
             </div>
@@ -175,10 +178,13 @@ permalink: 2-2-3_abTest.html
                     <label for="abChatModeSelect-{{ ab.side }}" class="control-label" data-i18n="qaTest.chatMode">對話模式</label>
                 </div>
                 <div class="field">
-                    <select id="abChatModeSelect-{{ ab.side }}" class="form-control singleSelect js-chat-mode">
+                    {# 兩個模式的定義（`qaTest.chatModeHint`，四個入口共用同一顆 key，見 2-2-1 那一段）。
+                         hint 的 id 跟著側別走：同頁兩顆 select 共用一顆 id 就是同頁 id 重複。 #}
+                    <select id="abChatModeSelect-{{ ab.side }}" class="form-control singleSelect js-chat-mode" aria-describedby="abChatModeHint-{{ ab.side }}">
                         <option value="traditional" data-i18n="qaTest.chatModeTraditional">傳統搜尋</option>
                         <option value="agent" selected data-i18n="qaTest.chatModeAgent">Agent 對話</option>
                     </select>
+                    <span class="text-gray" id="abChatModeHint-{{ ab.side }}" data-i18n="qaTest.chatModeHint">傳統搜尋＝先檢索、再由模型把找到的資料整理成答案，資料集依高／中／低逐層優先序被查；Agent 對話＝模型自己決定要不要查、查幾次，還可以呼叫工具與 Skill。兩者吃的旋鈕不同，換了模式之後下面會有幾欄跟著失效或出現。</span>
                 </div>
             </div>
             {# 選用資料筆數（search_selected_number）：兩模式皆適用（modeMatrix both），不標模式。 #}
@@ -485,6 +491,13 @@ permalink: 2-2-3_abTest.html
             </div>
             {# 兩對數字的出處與「為什麼第二對是萃取次數不是摘要次數」見 components/chatroom 那一列的註解
                  （同一份 `ui/chatroom-shell` 契約 ⓑ，兩處必須說同一件事）。 #}
+            {# **這一頁的額度警語與 components/chatroom 那一句刻意不同一顆 key**：AB 比較按一次送出
+                 是**兩次**真的問答——product `app/routers/qatest.py` 的 AB 端點逐字寫著「一次 AB 比較
+                 扣 2 次額度是正確的：前端對 A/B 兩側各開一條串流、各打本端點一次……這是定案的語意，
+                 不要『優化』成整回合只扣一次」。共用單測那一句會讓這一頁把兩次說成一次（§4-2：
+                 行為不同就分 key，即使句型相同）。
+                 「失敗也不退」的出處同 chatroom 那一段（`ask_flow.py` 的帳單語意）。 #}
+            <p class="text-gray" data-i18n="qaTest.quotaWarnAb">每按一次送出會同時問 A、B 兩側，也就是兩次真的問答：一次扣掉兩次問答額度，而且失敗也不退還。</p>
             <div class="qa-count"><span data-i18n="comp.qaCount">問答次數：</span>12/3000<span data-i18n="comp.extractionCount">，萃取次數：</span>3/1000</div>
             <div class="chat-input-container">
                 <div class="input-wrap">
