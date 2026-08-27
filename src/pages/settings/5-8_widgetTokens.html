@@ -228,7 +228,10 @@ permalink: 5-8_widgetTokens.html
                     </td>
                 </tr>
                 {% else %}
-                <tr><td colspan="5" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
+                {# 具名空狀態（round48）：下一步是**離開這個後台**（把嵌入片段貼到客戶自己的網頁上），
+                     那是本頁檔頭「嵌入方式是一段 `<script>` 片段」那一節的結論——不寫的話，產完第一把
+                     金鑰的人會停在這一頁等著它自己生效。 #}
+                <tr><td colspan="5" class="text-center text-gray" data-i18n="widget.noTokens">這個租戶還沒有嵌入金鑰。按上面的「產生金鑰」建第一把，再把嵌入片段貼到要放問答小工具的網頁上。</td></tr>
                 {% endfor %}
             </tbody>
         </table>

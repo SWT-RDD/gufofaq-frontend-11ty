@@ -175,10 +175,16 @@ permalink: 3-1-1_datasetList.html
                 </td>
             </tr>
             {% else %}
-            {# 空狀態鏡射真 app：datasetList.js:137-139 `if (filteredDatasets.length === 0)` 就 append
-                 一列 colspan 的「無資料」。本頁 8 欄（真 app 7 欄 ＋ SaaS 新增的「所屬群組」）。 #}
+            {# 空狀態的**版位**鏡射真 app：datasetList.js:137-139 `if (filteredDatasets.length === 0)` 就 append
+                 一列 colspan 的空狀態列。本頁 8 欄（真 app 7 欄 ＋ SaaS 新增的「所屬群組」）。
+                 **句子不鏡射**——真 app 那一句是泛用的「無資料」，切版改成具名（理由見下一則註解，
+                 §5 無資料列正典：凍結前端是來源考據、不是文案的上游）。 #}
             <tr>
-                <td colspan="8" class="text-center text-gray" data-i18n="common.noData">無資料</td>
+                {# 具名空狀態（round48，取代泛用的「無資料」）：這一列**兩種原因都走得到**——真 app 的
+                     `datasetList.js:137-139` 是 `if (filteredDatasets.length === 0)`，也就是搜尋濾到零筆與
+                     一個資料集都沒有共用同一列。只寫「無資料」的話，第一次進來的人會以為系統壞了，
+                     而搜尋濾光的人會以為資料被刪了；兩種的下一步剛好相反（清搜尋 vs 去建第一個）。 #}
+                <td colspan="8" class="text-center text-gray" data-i18n="dataset.emptyStateHint">這裡目前沒有資料集：可能一個都還沒建，也可能是上面的搜尋把它們濾掉了。先把搜尋清空看看；真的還沒有，就按「新增資料集」匯入第一批資料。</td>
             </tr>
             {% endfor %}
         </tbody>

@@ -213,7 +213,7 @@ permalink: 2-2-5_regressionRun.html
                     <td><span class="verdict-tag {{ row.sourceClass }}" data-i18n="{{ row.sourceKey }}">{{ row.source }}</span></td>
                 </tr>
                 {% else %}
-                <tr><td colspan="5" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
+                <tr><td colspan="5" class="text-center text-gray" data-i18n="regression.noEffectiveConfig">沒有東西可以逐項比：這一輪與基準那一輪都沒有留下實際使用的設定。</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -598,7 +598,7 @@ permalink: 2-2-5_regressionRun.html
                     <td>{{ row.detail }}</td>
                 </tr>
                 {% else %}
-                <tr><td colspan="7" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
+                <tr><td colspan="7" class="text-center text-gray" data-i18n="regression.bucketNoRows">這個桶子裡沒有案例。</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -661,7 +661,7 @@ permalink: 2-2-5_regressionRun.html
                     <td>{{ row.detail }}</td>
                 </tr>
                 {% else %}
-                <tr><td colspan="4" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
+                <tr><td colspan="4" class="text-center text-gray" data-i18n="regression.notComparedNone">每一則案例這一次都比對過了，沒有「沒得比」的。</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -939,7 +939,7 @@ permalink: 2-2-5_regressionRun.html
                     </td>
                 </tr>
                 {% else %}
-                <tr><td colspan="8" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
+                <tr><td colspan="8" class="text-center text-gray" data-i18n="regression.noResultRows">這一輪沒有留下任何一則案例的結果——執行在第一則跑完之前就結束了。</td></tr>
                 {% endfor %}
             </tbody>
         </table>

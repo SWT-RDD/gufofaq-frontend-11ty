@@ -291,7 +291,9 @@ permalink: 5-4_coverageGaps.html
                     data-i18n="action.remove">移除</button>
             </div>
             {% else %}
-            <span class="text-gray" data-i18n="common.noData">無資料</span>
+            {# 具名空狀態（round48）：這兩份排除清單的差別（常設 vs 只算這一次）正是它們各自空著時
+                 最需要講的事——共用一句「無資料」的話，看不出哪一份會留到下一次查詢。 #}
+            <span class="text-gray" data-i18n="settings.noPersistentExclusions">還沒有把任何一句設成常設排除。在下面每一組的樣本旁邊按「存成常設排除」，設過的就會列在這裡，之後每一次查詢都會自動排掉它。</span>
             {% endfor %}
         </div>
     </div>
@@ -320,7 +322,7 @@ permalink: 5-4_coverageGaps.html
                     data-i18n="action.persistExclusion">存成常設排除</button>
             </div>
             {% else %}
-            <span class="text-gray" data-i18n="common.noData">無資料</span>
+            <span class="text-gray" data-i18n="settings.noSessionExclusions">這一次查詢沒有排除任何一句。在下面的樣本旁邊按「排除」，被排掉的會列在這裡；換一次查詢就會清空。</span>
             {% endfor %}
         </div>
     </div>
@@ -382,7 +384,7 @@ permalink: 5-4_coverageGaps.html
                     </td>
                 </tr>
                 {% else %}
-                <tr><td colspan="4" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
+                <tr><td colspan="4" class="text-center text-gray" data-i18n="settings.gapGroupNoSamples">這一組沒有可以列出的提問樣本。</td></tr>
                 {% endfor %}
             </tbody>
         </table>

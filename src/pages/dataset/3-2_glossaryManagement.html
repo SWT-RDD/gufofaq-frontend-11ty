@@ -224,7 +224,10 @@ permalink: 3-2_glossaryManagement.html
                     </td>
                 </tr>
                 {% else %}
-                <tr><td colspan="6" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
+                {# 具名空狀態（round48）：「建了還要綁」是這一頁最容易漏掉的一步——5-2 的
+                     `settings.glossaryApplyAgentNoneHint`（「目前沒有任何表讓主 agent 直接查詢」）講的就是
+                     沒綁的後果。空狀態是使用者第一次來到這一頁的畫面，那一句話放在這裡才來得及。 #}
+                <tr><td colspan="6" class="text-center text-gray" data-i18n="dataset.noGlossaryTables">這個租戶還沒有術語表。按上面的「新增術語表」建第一張，再到「對話設定」把它綁給要用的設定檔——沒有綁定的表不會被問答用到。</td></tr>
                 {% endfor %}
             </tbody>
         </table>

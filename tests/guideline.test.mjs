@@ -6801,16 +6801,46 @@ test("§5 `.hidden` 判準①的另一半：src 引用得到、dist 卻一頁都
     //      **round45 裁決：這一族合法**，理由是 §5「元件內部的示範資料表…真實可能為空者帶 {% else %}
     //      鏡射無資料列，即使示範資料恆非空——分支是給 React 的規格」。它與死文案的差別是：
     //      那一列的 markup 是規格的一部分，不是一段沒有人看過的畫面（§6 同一句話）。
+    //      **round48：這一族從手抄名單改成從 src 推導**（§8-1 第 4 條：白名單要從有出處的集合推導）。
+    //      §5 的判準本來就是一句可跑的話——「它住在 `{% for %}…{% else %}` 裡」——那就直接跑它，
+    //      不要維護一份會腐化的抄本。手抄那一版只有 6 顆，而 round48 把 42 處泛用的「無資料」
+    //      換成具名空狀態之後，那份名單當場要長成 48 行、而且每加一張表就要有人記得回來補一行。
     //  (b) js 產生的字串：`GufoI18n.t(key, "繁中")` 的 key 本來就不會出現在靜態 markup 上。
     //      逐顆登記「哪一支 js 產生它」，並在下面實際回去那支檔案驗一次（登記不等於查證過）。
-    const FOR_ELSE_SPEC = new Map([
-        ["dataImport.noUploadedFiles", "1-2-1 上傳清單的 {% else %} 空狀態列（示範資料恆有檔案）"],
-        ["dataset.noFiles", "3-1-3 資料集檔案表的 {% else %} 空狀態列"],
-        ["health.uncoveredNone", "3-5 未覆蓋清單的 {% else %} 空狀態列"],
-        ["health.uncoveredNoReason", "3-5 未覆蓋列「沒有理由」那一格的 {% else %}"],
-        ["platform.reviewNoMatch", "5-6-1-2 ISO 審核 preview 名單表的 {% else %} 空狀態列（示範名單恆有兩筆逾期租戶）"],
-        ["serviceKey.none", "5-6-3 服務金鑰表的 {% else %} 空狀態列"],
-    ]);
+    const forElseKeys = (() => {
+        // 逐檔走 for/if 區塊堆疊（同「逐列可刪的管理表要帶 {% else %} 無資料列」那條的解析器）：
+        // 只要**堆疊上任何一層**是「已經看到 else 的 for」，這一段文字就落在 for 的空狀態分支裡。
+        // `{% else %}` 同時是 for-else 與 if-else，故必須歸給堆疊頂端那一層，不能只看有沒有 else。
+        const out = new Set();
+        const tokRe = /\{%-?\s*(for|endfor|if|elif|endif|else)\b[^%]*%\}/g;
+        const keyRe = /\bdata-i18n(?:-[a-z-]+)?="([^"{}]+)"/g;
+        for (const f of srcHtml) {
+            const src = stripNjk(read(f));
+            const stack = [];
+            let pos = 0, m;
+            const take = (seg) => {
+                if (!stack.some((fr) => fr.type === "for" && fr.hasElse)) return;
+                for (const km of seg.matchAll(keyRe)) out.add(km[1]);
+            };
+            while ((m = tokRe.exec(src))) {
+                take(src.slice(pos, m.index));
+                pos = tokRe.lastIndex;
+                const kind = m[1];
+                if (kind === "for") stack.push({ type: "for", hasElse: false });
+                else if (kind === "if") stack.push({ type: "if" });
+                else if (kind === "endif") { if (stack.length && stack[stack.length - 1].type === "if") stack.pop(); }
+                else if (kind === "elif") { /* if 的一部分 */ }
+                else if (kind === "else") { const top = stack[stack.length - 1]; if (top && top.type === "for") top.hasElse = true; }
+                else { const fr = stack.pop(); if (fr && fr.type !== "for") stack.push(fr); }
+            }
+            take(src.slice(pos));
+        }
+        return out;
+    })();
+    assert.ok(forElseKeys.size >= 20, `for-else 空狀態 key 只推導出 ${forElseKeys.size} 顆 —— 解析器壞了，這條豁免在空轉`);
+    for (const sample of ["dataset.noFiles", "serviceKey.none"])
+        assert.ok(forElseKeys.has(sample), `for-else 推導漏了 ${sample} —— 解析器認不出既有的空狀態列`);
+    assert.ok(!forElseKeys.has("action.delete"), "for-else 推導把迴圈**本體**的 key 也收進來了（豁免面被放到整個迴圈）");
     const JS_RENDERED = new Map([
         ["settings.bulkPasteNoCanonical", "components/alias-entries-modal/alias-entries-modal.js"],
         ["settings.bulkPasteNoAlias", "components/alias-entries-modal/alias-entries-modal.js"],
@@ -6843,14 +6873,13 @@ test("§5 `.hidden` 判準①的另一半：src 引用得到、dist 卻一頁都
     const hits = [];
     const usedSpec = new Set(), usedJs = new Set();
     for (const k of unrendered) {
-        if (FOR_ELSE_SPEC.has(k)) { usedSpec.add(k); continue; }
+        if (forElseKeys.has(k)) { usedSpec.add(k); continue; }
         if (JS_RENDERED.has(k)) { usedJs.add(k); continue; }
         hits.push(`${k}  ← ${used.get(k)[0]}  這顆 key 在 dist 全站一頁都渲染不出來` +
             `（`+"`{% if %}` 的條件恆為某值？）——沒有人看過它的長相");
     }
     // 白名單衛生：登記了卻不需要＝死豁免；而 js 那一族的「是誰產生它」要真的回去那支檔案驗到
-    const staleSpec = [...FOR_ELSE_SPEC.keys()].filter((k) => !usedSpec.has(k));
-    assert.deepEqual(staleSpec, [], `FOR_ELSE_SPEC 有死豁免（那顆 key 已經渲染得出來，或已經沒有人引用）：${staleSpec.join("、")}`);
+    assert.ok(usedSpec.size > 0, "推導出來的 for-else 豁免一顆都沒有派上用場 —— 這條豁免在空轉（不豁免也會綠）");
     const staleJs = [...JS_RENDERED.keys()].filter((k) => !usedJs.has(k));
     assert.deepEqual(staleJs, [], `JS_RENDERED 有死豁免：${staleJs.join("、")}`);
     for (const [k, jsFile] of JS_RENDERED) {
@@ -6858,7 +6887,6 @@ test("§5 `.hidden` 判準①的另一半：src 引用得到、dist 卻一頁都
         assert.ok(existsSync(p), `JS_RENDERED 說 ${k} 由 ${jsFile} 產生，但那支檔案不存在`);
         assert.ok(read(p).includes(`"${k}"`), `JS_RENDERED 說 ${k} 由 ${jsFile} 產生，但那支 js 裡找不到這顆 key —— 登記不等於查證過`);
     }
-    for (const [k, why] of FOR_ELSE_SPEC) assert.ok(why.length > 8, `FOR_ELSE_SPEC 的 ${k} 沒寫理由`);
     assert.equal(hits.length, 0, `§5：src 有引用點、dist 卻渲染不出來的 key：\n${fail(hits)}`);
 });
 

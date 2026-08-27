@@ -1162,7 +1162,7 @@ permalink: 5-2_conversationSettings.html
                         <td><button type="button" id="policyTopicDelete-{{ loop.index }}" class="button button-border button-sm js-remove-policy-topic" aria-labelledby="policyTopicRowName-{{ loop.index }} policyTopicDelete-{{ loop.index }}" data-i18n="action.delete">刪除</button></td>
                     </tr>
                     {% else %}
-                    <tr><td colspan="7" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
+                    <tr><td colspan="7" class="text-center text-gray" data-i18n="settings.noPolicyTopics">這個設定檔沒有設任何政策主題，所以合規檢查不會擋下、也不會標記任何回答。要開始擋就先新增一個主題。</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -1288,7 +1288,7 @@ permalink: 5-2_conversationSettings.html
                         <td><button type="button" id="osubDelete-{{ loop.index }}" aria-labelledby="osubRowName-{{ loop.index }} osubDelete-{{ loop.index }}" class="button button-border button-sm js-remove-osub" data-i18n="action.delete">刪除</button></td>
                     </tr>
                     {% else %}
-                    <tr><td colspan="4" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
+                    <tr><td colspan="4" class="text-center text-gray" data-i18n="settings.noOutputReplacementRules">這個設定檔沒有出口替換規則，回答會原樣輸出。</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -1642,7 +1642,10 @@ permalink: 5-2_conversationSettings.html
                         <td><button type="button" id="oruleDelete-{{ oruleIdx }}" aria-labelledby="oruleRowName-{{ oruleIdx }} oruleDelete-{{ oruleIdx }}" class="button button-border button-sm js-remove-orule" data-i18n="action.delete">刪除</button></td>
                     </tr>
                     {% else %}
-                    <tr><td colspan="4" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
+                    {# 具名空狀態（round48）：串流代價兩態的另一半——「沒有啟用任何輸出規則，回答維持逐字顯示」
+                         這一句在本頁另有一份（`settings.outputRulesStreamingCostOff`），這裡講的是「連一條規則
+                         都還沒有」那一態，兩者說的是同一個代價、不同的前提。 #}
+                    <tr><td colspan="4" class="text-center text-gray" data-i18n="settings.noOutputRules">這個設定檔沒有輸出規則，回答維持逐字顯示。只要啟用任何一條，回答就會改成生成完畢後一次出現。</td></tr>
                     {% endfor %}
                 </tbody>
             </table>

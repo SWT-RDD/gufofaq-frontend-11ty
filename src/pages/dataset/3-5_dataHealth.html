@@ -950,13 +950,16 @@ permalink: 3-5_dataHealth.html
                                 <span data-i18n="health.hitCountLabel">命中次數：</span>{{ tf.hitSum }}
                                 <span data-i18n="health.recordCountLabel">涉及記錄：</span>{{ tf.records }}</li>
                             {% else %}
-                            <li data-i18n="common.noData">無資料</li>
+                            <li data-i18n="health.groupTopNone">這一項檢查目前沒有未處置的發現，所以列不出「最該先看的」。</li>
                             {% endfor %}
                         </ul>
                     </td>
                 </tr>
                 {% else %}
-                <tr><td colspan="5" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
+                {# 具名空狀態（round48）：「沒跑過健檢」是**另一回事**，那一態由 `health.lastScanNever`
+                     在總覽那一區講（見元件庫頁「React 條件文案」節）。兩者共用一句「無資料」的話，
+                     值班的人分不出「檢查過而且乾淨」與「根本還沒檢查過」——而那兩件事的下一步相反。 #}
+                <tr><td colspan="5" class="text-center text-gray" data-i18n="health.groupsNone">這一次檢查沒有分出任何一組，也就是每一項檢查都沒有命中。還沒跑過健檢是另一回事，上面的總覽會另外說。</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -1095,7 +1098,7 @@ permalink: 3-5_dataHealth.html
                                 {% for line in f.noteLines %}
                                 <p>{{ line }}</p>
                                 {% else %}
-                                <p data-i18n="common.noData">無資料</p>
+                                <p data-i18n="health.disposalNoteNone">這一次處置沒有留下文字說明。</p>
                                 {% endfor %}
                             </div>
                             {% endif %}
@@ -1108,7 +1111,7 @@ permalink: 3-5_dataHealth.html
                                                 {% for e in f.evidence %}
                                                 <li><code class="inline-code">{{ e.key }}</code> {{ e.value }}</li>
                                                 {% else %}
-                                                <li data-i18n="common.noData">無資料</li>
+                                                <li data-i18n="health.evidenceNone">這一筆發現沒有附證據明細。</li>
                                                 {% endfor %}
                                             </ul>
                                         </td>
@@ -1126,7 +1129,7 @@ permalink: 3-5_dataHealth.html
                                                     {% if r.unavailableDetail %}<p class="text-gray">{{ r.unavailableDetail }}</p>{% endif %}
                                                 </li>
                                                 {% else %}
-                                                <li data-i18n="common.noData">無資料</li>
+                                                <li data-i18n="health.recordsNone">這一筆發現沒有指到任何一筆記錄，所以沒有可以逐筆處置的來源。</li>
                                                 {% endfor %}
                                             </ul>
                                         </td>
@@ -1146,7 +1149,7 @@ permalink: 3-5_dataHealth.html
                                             {% for line in f.noteLines %}
                                             <p>{{ line }}</p>
                                             {% else %}
-                                            <p data-i18n="common.noData">無資料</p>
+                                            <p data-i18n="health.disposalNoteNone">這一次處置沒有留下文字說明。</p>
                                             {% endfor %}
                                         </td>
                                     </tr>

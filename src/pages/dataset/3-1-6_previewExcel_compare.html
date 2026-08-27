@@ -130,12 +130,14 @@ permalink: 3-1-6_previewExcel_compare.html
                 {% endfor %}
             </tr>
             {% else %}
-            {# 空狀態鏡射真 app：previewExcelCompare.js:257 `if (displayData.length === 0)` 就 append
-                 一列 colspan 的「無資料」（原始面板在 :325 有自己的一份，兩個面板各一）。
+            {# 空狀態的**版位**鏡射真 app：previewExcelCompare.js:257 `if (displayData.length === 0)` 就 append
+                 一列 colspan 的空狀態列（原始面板在 :325 有自己的一份，兩個面板各一）。
+                 **句子不鏡射**：兩個面板各自具名（round48），否則左右兩欄同時印出一模一樣的
+                 「無資料」，讀的人分不出是對照表沒接到欄、還是這個檔本來就沒有列。
                  colspan 走 `{{ columns.length }}` 而不是寫死 6：這張表的欄數由對照表決定
                  （thead 也是對同一個陣列迴圈），寫死就是烤一份會分岔的計數（§3-2／§6）。 #}
             <tr>
-                <td colspan="{{ columns.length }}" class="text-center text-gray" data-i18n="common.noData">無資料</td>
+                <td colspan="{{ columns.length }}" class="text-center text-gray" data-i18n="dataset.compareNoRows">這個檔沒有資料列可以比對——活頁簿裡只有表頭，或這張工作表是空的。</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -180,7 +182,7 @@ permalink: 3-1-6_previewExcel_compare.html
                      `originalData.ColTitles.length`＝原始欄數，與比對面板各算各的（這張表多一欄
                      「條碼」——活頁簿裡沒被對照表接走的欄只出現在這一側）。 #}
                 <tr>
-                    <td colspan="{{ rawTitles.length }}" class="text-center text-gray" data-i18n="common.noData">無資料</td>
+                    <td colspan="{{ rawTitles.length }}" class="text-center text-gray" data-i18n="dataset.rawNoRows">原始檔裡沒有資料列——只有欄標題，或這張工作表是空的。</td>
                 </tr>
                 {% endfor %}
             </tbody>

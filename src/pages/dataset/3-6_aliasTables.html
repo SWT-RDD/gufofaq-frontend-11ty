@@ -199,7 +199,9 @@ permalink: 3-6_aliasTables.html
                     </td>
                 </tr>
                 {% else %}
-                <tr><td colspan="5" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
+                {# 具名空狀態（round48）：與 3-2 同一族——建了還要在對話設定綁給設定檔才生效
+                     （5-2 的 `settings.aliasApplyNeedsBind`「請先綁定別名表」講的就是這件事）。 #}
+                <tr><td colspan="5" class="text-center text-gray" data-i18n="dataset.noAliasTables">這個租戶還沒有別名表。按上面的「新增別名表」建第一張，再到「對話設定」把它綁給要用的設定檔——沒有綁定的表不會被問答用到。</td></tr>
                 {% endfor %}
             </tbody>
         </table>

@@ -295,7 +295,10 @@ permalink: 5-6-3_platformServiceKeys.html
                     <td>{{ s.detail }}</td>
                 </tr>
                 {% else %}
-                <tr><td colspan="3" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
+                {# 具名空狀態（round48）：這張表的來源是 `GET /platform/service-keys/scopes`（見上方
+                     `serviceKeyScopes`），而核發的第一道守衛就是「範圍要在值域內」——值域空的時候
+                     核發一定送不出去。只寫「無資料」看不出核發鈕為什麼點不出結果。 #}
+                <tr><td colspan="3" class="text-center text-gray" data-i18n="serviceKey.noScopes">上游沒有回報任何授權範圍。每一把憑證都必須帶一個範圍，所以這個時候核發不了憑證。</td></tr>
                 {% endfor %}
             </tbody>
         </table>

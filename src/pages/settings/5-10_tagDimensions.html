@@ -431,7 +431,9 @@ permalink: 5-10_tagDimensions.html
                     </td>
                 </tr>
                 {% else %}
-                <tr><td colspan="8" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
+                {# 具名空狀態（round48）：「宣告之後匯入的資料才帶得到那一欄」＝本頁檔頭 ① 那段的
+                     結論（哨兵值在匯入時就寫進去，所以宣告之前匯入的檔連這一欄都沒有，只能重新匯入）。 #}
+                <tr><td colspan="8" class="text-center text-gray" data-i18n="settings.noTagDimensions">這個租戶還沒有標籤維度。按上面的「新增標籤維度」宣告第一個；宣告之後匯入的資料才帶得到那一欄，之前匯入的檔要重新匯入才補得起來。</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -560,7 +562,7 @@ permalink: 5-10_tagDimensions.html
                     </td>
                 </tr>
                 {% else %}
-                <tr><td colspan="4" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
+                <tr><td colspan="4" class="text-center text-gray" data-i18n="settings.noVocabulary">這個維度還沒有字典代碼。按上面的「新增代碼」加第一個。</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -797,7 +799,7 @@ permalink: 5-10_tagDimensions.html
                         {% endif %}
                     </tr>
                     {% else %}
-                    <tr><td colspan="4" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
+                    <tr><td colspan="4" class="text-center text-gray" data-i18n="settings.tagFilterNoBlockedFiles">這裡是空的＝沒有檔卡住：每一個會產生述詞的維度，每一份檔都已經把那一欄寫進索引了。</td></tr>
                     {% endfor %}
                 </tbody>
             </table>

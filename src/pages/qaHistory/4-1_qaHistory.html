@@ -390,11 +390,13 @@ permalink: 4-1_qaHistory.html
                 <td>{{ row.date }}</td>
             </tr>
             {% else %}
-            {# 真實頁初始即空（查詢後才有資料）。**這裡不是鏡射真 app**：真 app 那一列是行內 style
-                 ＋「無符合條件的資料」（qaHistory.js:169-176），切版統一走 §5 的 SaaS 正典
-                 `text-center text-gray` ＋ `common.noData`——刻意不沿用，記在這裡（§5）。 #}
+            {# 真實頁初始即空（查詢後才有資料）。**版位不鏡射真 app**：真 app 那一列是行內 style
+                 ＋「無符合條件的資料」（qaHistory.js:169-176），切版統一走 §5 的 `text-center text-gray`。
+                 **句子也不鏡射**：真 app 那一句只講「沒有符合條件的」，講不出另一半——這一頁有查詢鈕
+                 與六個篩選欄，「這段期間真的沒有人問過」與「被篩掉了」是兩件事，而下一步（就這樣 vs
+                 放寬條件再查）剛好相反。與 5-7 稽核表的 `audit.noRows` 同一族、同一個理由。 #}
             <tr>
-                <td colspan="7" class="text-center text-gray" data-i18n="common.noData">無資料</td>
+                <td colspan="7" class="text-center text-gray" data-i18n="qa.noRowsInRange">這段條件下沒有問答紀錄。可能這段期間真的沒有人問過，也可能是上面的查詢條件把它們濾掉了——放寬條件再查一次就知道是哪一種。</td>
             </tr>
             {% endfor %}
         </tbody>

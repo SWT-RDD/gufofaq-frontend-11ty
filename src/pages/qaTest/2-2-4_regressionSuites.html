@@ -198,7 +198,7 @@ permalink: 2-2-4_regressionSuites.html
                     </td>
                 </tr>
                 {% else %}
-                <tr><td colspan="6" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
+                <tr><td colspan="6" class="text-center text-gray" data-i18n="regression.noSuites">這個租戶還沒有回歸案例集。按上面的「新增案例集」建第一個，再往裡面加案例——沒有案例集就沒有東西可以在改設定之後拿來重跑。</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -359,7 +359,7 @@ permalink: 2-2-4_regressionSuites.html
                     </td>
                 </tr>
                 {% else %}
-                <tr><td colspan="6" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
+                <tr><td colspan="6" class="text-center text-gray" data-i18n="regression.noCases">這個案例集還沒有案例。用上面的「手動新增案例」或「從問答紀錄建立案例」加第一則；沒有案例的案例集跑起來不會有任何結果。</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -1056,7 +1056,9 @@ permalink: 2-2-4_regressionSuites.html
                     </td>
                 </tr>
                 {% else %}
-                <tr><td colspan="7" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
+                {# 具名空狀態（round48）：「跑完才有報表可以比」是這一頁的因果——回歸的價值是「這次與上次比」，
+                     一次都沒跑過的案例集沒有基準可比（同 2-2-5 的 `regression.effectiveBaselineMissing`）。 #}
+                <tr><td colspan="7" class="text-center text-gray" data-i18n="regression.noRuns">這個案例集還沒有跑過。按上面的「開始執行」跑第一輪；跑完才有報表，也才有東西可以拿來比。</td></tr>
                 {% endfor %}
             </tbody>
         </table>

@@ -52,11 +52,14 @@
                                          打不到」。零命中那一態由 `ui/list-filter` 在執行期 append 一顆
                                          `.dataset-list-empty`（§5 那條括號句逐字點名這一族）。
                                          **鏡射的是這一窗自己的那一句**：凍結前端 `dataImport.js` 的清單渲染器
-                                         畫的是「目前沒有資料集」（`datasetList.js` 的「無資料」是 3-1-1 那張表、
-                                         另一個畫面）；切版收斂成全站同一顆 `common.noData`，理由是這一窗與
-                                         manage-members-modal 共用同一個 widget、兩邊各造一句會分岔。
+                                         畫的是「目前沒有資料集」（`datasetList.js` 那一句是 3-1-1 那張表、
+                                         另一個畫面）。round48 收成具名的 `dataset.noSelectableDatasets`：
+                                         先前為了「不要兩邊各造一句」而共用全站同一顆泛用 key，但這一窗與
+                                         manage-members-modal 選的**不是同一種東西**（資料集 vs 使用者），
+                                         下一步也不同（去資料集管理 vs 去使用者管理）——共用一句話省下的
+                                         是分岔的風險，付出的是兩窗都講不出下一步。
                                          這一列不是 `<tr>`（清單由 <label> 疊成），故用 div 版、不用 colspan。 #}
-                                    <div class="text-center text-gray" data-i18n="common.noData">無資料</div>
+                                    <div class="text-center text-gray" data-i18n="dataset.noSelectableDatasets">這個租戶還沒有資料集可以選。先到「資料集管理」建一個並匯入資料。</div>
                                     {% endfor %}
                                 </div>
                             </div>

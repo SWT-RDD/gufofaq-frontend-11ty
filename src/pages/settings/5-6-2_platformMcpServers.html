@@ -347,7 +347,9 @@ permalink: 5-6-2_platformMcpServers.html
                 {% else %}
                 {# colspan＝表頭欄數 9（名稱／執行指令／參數／環境變數／描述／啟用／工具／最近一次測試／操作）。
                      「最近一次測試」與「工具」兩欄都是後來補的，這裡曾經停在 7、空狀態時表格右側缺格。 #}
-                <tr><td colspan="9" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
+                {# 具名空狀態（round48）：「全平台共用的一份」逐字出自本頁檔頭（不分租戶各自持有）——
+                     第一次進來的平台管理員最容易誤以為這張表是某個租戶的。 #}
+                <tr><td colspan="9" class="text-center text-gray" data-i18n="settings.noMcpServers">這個平台還沒有註冊任何 MCP Server。按上面的「新增 MCP Server」註冊第一台——這張註冊表是全平台共用的一份，不是各租戶各自持有。</td></tr>
                 {% endfor %}
             </tbody>
         </table>

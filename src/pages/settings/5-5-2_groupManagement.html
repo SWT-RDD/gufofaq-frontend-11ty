@@ -168,7 +168,9 @@ permalink: 5-5-2_groupManagement.html
                     </td>
                 </tr>
                 {% else %}
-                <tr><td colspan="4" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
+                {# 具名空狀態（round48）：「能力定在群組上」是本頁頁層說明的第一句，而它的後果
+                     （沒有群組＝成員登得進來卻什麼都做不了）只有在這一格才來得及講。 #}
+                <tr><td colspan="4" class="text-center text-gray" data-i18n="settings.noGroups">這個租戶還沒有群組。能力定在群組上，所以在建第一個群組並把人加進去之前，成員登得進來卻什麼都做不了。按上面的「新增群組」開始。</td></tr>
                 {% endfor %}
             </tbody>
         </table>

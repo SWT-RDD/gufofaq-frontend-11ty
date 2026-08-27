@@ -102,7 +102,7 @@
                         {% else %}
                         {# GET /share 只回未撤銷的列，且一筆都還沒建過的問答初始態就是空的——
                              列上又有逐列撤銷，使用者撤得到零。空狀態是給 React 的分支規格（§5）。 #}
-                        <div class="text-center text-gray" data-i18n="common.noData">無資料</div>
+                        <div class="text-center text-gray" data-i18n="share.noLinks">這一則問答還沒有分享連結。用上面的「建立分享連結」產生第一條。</div>
                         {% endfor %}
                     </div>
                 </div>

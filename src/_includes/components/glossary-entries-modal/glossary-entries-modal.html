@@ -89,7 +89,7 @@
                                         <td><button type="button" id="glossaryEntryDelete-{{ loop.index }}" class="button button-border button-sm js-remove-glossary-entry" aria-labelledby="glossaryEntryRowName-{{ loop.index }} glossaryEntryDelete-{{ loop.index }}" data-i18n="action.delete">刪除</button></td>
                                     </tr>
                                     {% else %}
-                                    <tr><td colspan="3" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
+                                    <tr><td colspan="3" class="text-center text-gray" data-i18n="settings.noGlossaryEntries">這張術語表還沒有詞條。</td></tr>
                                     {% endfor %}
                                 </tbody>
                             </table>

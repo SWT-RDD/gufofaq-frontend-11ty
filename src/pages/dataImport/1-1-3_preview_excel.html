@@ -192,8 +192,10 @@ permalink: 1-1-3_preview_excel.html
      完全看不出來。
 
      ── ④ 空狀態：帶 `{% else %}` 無資料列，colspan 走 `{{ previewColumns.length }}` ────────
-     鏡射真 app 自己那一句：`previewExcel.js:51` 在沒有列時 append 一列跨欄的「無資料」
-     （§5「『真 app 有對應頁』不是免畫的理由…結論是鏡射它那一句」）。colspan 不寫死 4：欄數由
+     版位鏡射真 app：`previewExcel.js:51` 在沒有列時 append 一列跨欄的空狀態列
+     （§5「『真 app 有對應頁』不是免畫的理由」）。**句子改成具名**（round48）：真 app 那一句是
+     泛用的「無資料」，而使用者剛上傳完一個檔、看到的卻是一張空表——要說得出「這張工作表只有
+     表頭」與下一步（換工作表／回上一步重傳），否則讀起來像上傳壞了。colspan 不寫死 4：欄數由
      活頁簿決定，寫死就是烤一份會分岔的計數（同 3-1-6）。
 
      示範資料：欄名沿用與 1-1-4 欄位對應步驟一致的樣本（客服問題／客服回覆／建立時間／圖片連結），
@@ -267,7 +269,7 @@ permalink: 1-1-3_preview_excel.html
             </tr>
             {% else %}
             <tr>
-                <td colspan="{{ previewColumns.length }}" class="text-center text-gray" data-i18n="common.noData">無資料</td>
+                <td colspan="{{ previewColumns.length }}" class="text-center text-gray" data-i18n="dataImport.previewNoRows">這張工作表只有表頭、沒有資料列。換一張工作表，或回上一步確認檔案內容後重新上傳。</td>
             </tr>
             {% endfor %}
         </tbody>

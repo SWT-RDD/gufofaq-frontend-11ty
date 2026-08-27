@@ -196,7 +196,11 @@ permalink: 3-4_skillManagement.html
                     </td>
                 </tr>
                 {% else %}
-                <tr><td colspan="6" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
+                {# 具名空狀態（round48）：「掛給設定檔才叫得到」有出處——刪 skill 的守衛逐字在查
+                     「有沒有任何 config 的 `skill_ids` 參照它」（GufoRAG chatbot
+                     `app/knowledge/skills/router.py` 的 `delete_skill`），也就是 skill 與設定檔之間確實隔著
+                     一層綁定。只寫「無資料」的話，建完第一顆卻發現 agent 不理它的人查不到為什麼。 #}
+                <tr><td colspan="6" class="text-center text-gray" data-i18n="settings.noSkills">這個租戶還沒有 Skill。按上面的「新增 Skill」建第一個；建好之後還要在「對話設定」把它掛給設定檔，主 agent 才叫得到。</td></tr>
                 {% endfor %}
             </tbody>
         </table>
