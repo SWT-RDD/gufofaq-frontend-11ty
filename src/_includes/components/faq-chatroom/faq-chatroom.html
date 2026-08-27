@@ -185,7 +185,14 @@
                      `MAX_CASE_QUESTION_LEN`，`app/conversation/ask_flow.py` 的 `AskIn.query` 以它
                      `Field(min_length=1, max_length=…)` 在請求邊界 fail-fast。**前台這一格先前一句都沒有**，
                      而它的使用者是完全不知道這個系統有什麼規則的訪客——貼一段長文進去，得到的是
-                     一句「回答生成失敗」。數字是資料槽，不烤進譯文（§4-2）。 #}
+                     一句「回答生成失敗」。數字是資料槽，不烤進譯文（§4-2）。
+                   ⚠️ **這顆數字今天是字面值、不是讀契約來的，那是查證過的裁定**（round48）：前台這條路
+                     （`/public/*`）底下**一支界線投影端點都沒有**，而 React 端六支 `useLimits` group
+                     每一支都在登入態或 `settings:read` 之後 ⇒ 掛上去的結果是這一句在正式環境永遠不畫。
+                     所以它由 `infra/scripts/check_frontend_limits.py` 對回 product 的
+                     `MAX_CASE_QUESTION_LEN`，而不是由執行期填。
+                     **切版這一側已經準備好了**：`.js-ask-max-len` 就是那顆資料槽——哪一天 product 開了
+                     一支公開的界線投影，React 只要把值填進這顆節點，切版一個位元組都不必動。 #}
                 <input type="text" id="chat-input-txt" placeholder="請輸入問題..." data-i18n-placeholder="comp.pleaseEnterQuestion" class="chat-input-txt form-control" aria-label="輸入問題" data-i18n-aria-label="comp.enterQuestion" aria-describedby="faqAskMaxLenHint" disabled>
                 <span class="text-gray" id="faqAskMaxLenHint"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-ask-max-len">2000</span><span data-i18n="common.unitChars"> 字</span></span>
                 {# 空的 live region：訊息由真 app 業務 js 填（Standard main.js:485-492 的 `showError()`

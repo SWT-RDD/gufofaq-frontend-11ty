@@ -41,6 +41,15 @@
 //   `.sr-only` 那一段是給輔具的說明（要翻，掛 data-i18n），另有 `title` 給滑鼠懸停。
 //   說明裡那句「AI 回答的語言由提問語言決定」是這顆鈕最常見的誤解，不是裝飾。
 //
+//   ⚠️ **`.js-lang-toggle-label` 留在切版、也留在 React 的 DOM 上，這是查證過的裁定**（round48）：
+//   REACT-CONVERSION §⑤ 的「切版 js 查得到 ⇒ React 不帶」講的是**行為**不要帶過去（那支 runtime
+//   swap 是切版專用），不是要 React 從 DOM 上把這顆 class 拔掉——逐位元組比對的骨架序列含 class 串，
+//   拔掉就要為每一份帶 header 的比對案例補一筆具名改寫。
+//   **而切版這一側不可能改**：拿掉它之後本檔只剩「第一顆 span」這種位置定位，而那顆 `.sr-only`
+//   兄弟正是 round47 為了補可及名稱才加進來的——位置定位的意思是「下一次為了 a11y 調整子節點順序
+//   就靜默改錯節點」，§4 明文要求元件 js 查自己的 class、不查位置。
+//   兩邊各自都站得住，所以 saas 端把它登記在 `jsHooks.test.ts` 的 OVERLAP_KEEP、切版不動。
+//
 // 匯出（GUIDELINE §1-1「共享行為工具」，全體元件通用故不算依賴）：
 //   window.GufoI18n = { t(key, zhFallback), lang() }  ＋ 事件 `gufo:langchange`（detail.lang）
 //   `t()` 給「文字由 JS 產生」的元件（accordion／collapse-text／multi-select／pagination…）；

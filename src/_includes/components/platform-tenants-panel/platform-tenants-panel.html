@@ -527,10 +527,13 @@
      的意思是登入頁那一段**整段不畫**，不是畫一句空的「請聯絡 」。提示句要把這件事說出來，
      否則使用者以為清空只是把字清掉。
    ⚠️ 上限 200 的正本是 product `app/tenancy/field_limits.py` 的 `MAX_SUPPORT_CONTACT_LEN`，
-     **目前沒有任何端點把它投影出來**（不像 MCP 那一批有 `GET /platform/mcp/limits`、對話設定有
-     `GET /settings/chat-config-limits`）。所以這個數字今天是前端的一份抄本——故仍做成資料槽
-     （`js-support-contact-max-len`）而不是烤進譯文，並把「投影出來」列為對 product 那一側的交辦；
-     在那之前它會與正本一起腐化，而腐化的方向是畫面理直氣壯地說一個過期的數字（§4-2 界線數字）。 #}
+     **已經投影出來了**（round48 複查）：`GET /platform/limits` 的 `governance.support_contact_len`
+     ——`PLATFORM_LIMIT_GROUPS` 在 `app/routers/platform.py`，那一格旁邊逐字寫著為什麼落在這一支
+     而不是 `GET /users/limits`（它是平台欄位，併進租戶的成員管理頁等於把一條平台治理界線
+     發給每一位租戶管理者）。**先前這裡寫「目前沒有任何端點把它投影出來」，那條交辦已經失效**，
+     連同它的結論「這個數字今天是前端的一份抄本」——今天它是執行期讀得到的值。
+     資料槽（`js-support-contact-max-len`）的形狀不變，那本來就是為了這一天準備的：React 端
+     把投影值填進那顆節點即可，切版這一份是靜態稿的值（§4-2 界線數字不烤進譯文）。 #}
 <div class="block mb-16 flex-row column gap-16" data-platform-role="auditor">
     <div class="text-md text-bold" data-i18n="settings.supportContactLabel">聯絡窗口</div>
     <div class="flex-row gap-16 align-items-end flex-wrap mobile-column sm-gap-16">
