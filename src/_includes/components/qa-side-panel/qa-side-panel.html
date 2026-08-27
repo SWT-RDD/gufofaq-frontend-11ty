@@ -48,5 +48,29 @@
         <div class="tab-wrap qa-side-tab-wrap">
             {% include "components/qa-record-tabs/qa-record-tabs.html" %}
         </div>
+        {# 頁碼列（round48）：**只有給得出總數的那一頁才畫**，條件與上面那一格相同。
+             為什麼非它不可：`AbTestRound` 是 append-only、沒有任何清理路徑，而上一格只講得出
+             「共 128 筆」——**它說得出清單被切過，卻沒有任何辦法翻到第二頁**，那些更早的比較
+             在畫面上仍然到不了（先前那一格的註解把「回總數」當成修正的落點，但總數是徵狀不是出路）。
+             `perPage` ＝上游的**預設**頁大小 `DEFAULT_AB_HISTORY_PAGE`（product
+             `app/routers/qatest.py`，經 `GET /qatest/contract` 的 `paging.default_ab_history_page`
+             投影出來）：分頁器要算「總共幾頁」就得知道它，而那正是上游把預設值也投影出來的理由
+             ——同檔那段註解逐字寫著「抄一份的那天後端把預設調小而畫面仍以舊值分頁，頁碼從第 2 頁起
+             全部指錯位置，而畫面上沒有任何訊號」。
+           ⚠️ **同 group 的另外兩顆界線刻意沒有可見落點**，理由查證過（§3-2：空白與「忘了標」
+             長得一模一樣，所以寫在這裡）：
+               · `max_ab_history_page`（頁大小上界）——這一格沒有「每頁筆數」控制項，頁大小固定
+                 吃上游預設，UI 產不出域外的值。同 5-6-1 平台時區與 5-6-3 授權範圍的裁決
+                 （值域由端點自己決定 ⇒ 選不出域外值 ⇒ 那道 422 不畫）。
+               · `max_round_id_len`（round_id 長度上界）——`round_id` 由前端 `crypto.randomUUID()`
+                 產生（36 字），使用者碰不到它，畫成可見文字沒有任何人做得了決定。
+             兩顆的意義在**執行期**：React 端拿投影值當退路那一支（`r-<毫秒>-<亂數>`）的自我檢查。
+           `.pagination` 自帶 `flex-wrap: wrap`（見 ui/pagination 的 scss），在 269px 的面板裡
+             會自己折行，故不需要 parent slot class 覆寫（§4：不覆寫就不加殼）。 #}
+        {% if sidePanelTotal %}
+        {% set total = sidePanelTotal %}
+        {% set perPage = 100 %}
+        {% include "ui/pagination/pagination.html" %}
+        {% endif %}
     </div>
 </div>

@@ -286,6 +286,41 @@ permalink: 5-7_auditLog.html
         userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) Safari/17.5"
     }
 ] %}
+{# ⓘ 說明：markup 同既有 info-btn 六件組（GUIDELINE §1-2 無 html 元件契約）。
+     **這一頁先前一顆 ⓘ 都沒有**，於是 `AUDIT_LIMIT_GROUPS`（product `app/limits/ops_limits.py`）
+     投影出來的兩顆界線在畫面上一個落點都沒有——`GET /audit/limits` 回得出 `paging.limit`
+     與 `paging.offset`，而這一頁的每頁筆數走 `PagerRow` 的固定選項、頁碼是 js 算出來的，
+     兩顆數字都沒有一格可見文字對得到（§3-2「界線的正本若是一個 group，同 group 的姊妹界線
+     要一起檢查有沒有落點」）。③那張表就是它們的落點：`bound` 是獨立節點、不烤進譯文。
+     ②留空：現在生效的條件由 React 執行期算，切版只提供容器（同全站其他區塊）。 #}
+<div class="flex-row align-items-center gap-8">
+    <div class="text-md text-bold" data-i18n="audit.listTitle">稽核紀錄</div>
+    <button type="button" class="info-btn" title="稽核紀錄說明" data-i18n-title="help.audit.list.title" data-open-modal="auditListHelpModal">
+        <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+        <span class="sr-only" data-i18n="help.audit.list.title">稽核紀錄說明</span>
+    </button>
+</div>
+{% set helpModalId = "auditListHelpModal" %}
+{% set helpModalTitleKey = "help.audit.list.title" %}
+{% set helpModalTitle = "稽核紀錄說明" %}
+{% set helpModalWhatKey = "help.audit.list.what" %}
+{% set helpModalWhat = "這一區列出這個範圍內每一筆會留下軌跡的動作：誰、在什麼時候、對哪一個對象做了什麼，以及當時的來源 IP 與用戶端。它是唯讀的證跡，任何人都改不動也刪不掉；分頁是伺服器端的，換一頁就是重新查一次，所以上面那個「共 N 筆」講的是符合條件的總筆數，不是這一頁列了幾筆。稽核軌跡沒有「查不到那麼久以前」的限制——找不找得到一筆舊紀錄，取決於它被保留了多久。" %}
+{% set helpModalStateItems = [] %}
+{# ③ 這一區的所有數字：`GET /audit/limits`（product `app/limits/ops_limits.py` 的
+     `AUDIT_LIMIT_GROUPS.paging`）。`bound` 是資料節點，不進 `labelKey`／`effectKey` 的譯文。
+     兩顆常數的出處：`AUDIT_PAGE_LIMIT_MAX`（1000）與 `AUDIT_OFFSET_MAX`（2,000,000,000）。
+     `offset` 那一顆**擋的不是業務語意**（不是「翻不到那麼後面」），而是算式的值域——
+     那顆常數旁邊逐字寫著：無界的 offset 會被原樣帶進 SQL 的 OFFSET，而 bigint 之外是一句
+     使用者看不懂的資料庫錯誤。所以「超過時會怎樣」寫的是那件事，不是「看不到更舊的」。 #}
+{% set helpModalLimitRows = [
+  { labelKey: "help.audit.limitPageSize", label: "每頁最多幾筆",
+    bound: "1–1000",
+    effectKey: "help.audit.limitPageSizeEffect", effect: "超過就被退回（422），這一次查詢不會有結果。畫面上的每頁筆數選項都在範圍內，只有直接呼叫 API 才碰得到。" },
+  { labelKey: "help.audit.limitOffset", label: "跳過筆數（offset）",
+    bound: "0–2,000,000,000",
+    effectKey: "help.audit.limitOffsetEffect", effect: "超過就被退回（422）。這道界線擋的不是「翻不到那麼後面」，而是這個數字要進得了資料庫的整數值域——沒有它的話，越界會變成一句看不懂的資料庫錯誤。" }
+] %}
+{% include "components/help-modal/help-modal.html" %}
 <div class="data-info"><span data-i18n="common.total">共</span> {{ total }} <span data-i18n="common.recordsUnit">筆</span></div>
 <div class="table-container scrollTable">
     <table class="default-table">
