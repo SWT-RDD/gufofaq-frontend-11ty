@@ -97,7 +97,7 @@ permalink: 1-1-4_columnSelect_excel.html
          型別：能自己修得掉的一律 warning，只有 502 是 error（§5）。 #}
     {% set stepNextAction = true %}
     {% set stepNextCapability = "data:write" %}
-    {% set stepNextToast = "匯入完成|權限不足，無法匯入|這個資料集不在你可以寫入的群組裡，請找管理員把你加進該群組|內容欄位不可為空，或指定了不存在的欄位槽|這份檔案讀不出來，或它的欄名與預覽時不一致——請回上一步重新確認|有幾列的標籤代碼不在字典裡，或日期欄格式不對（錯誤訊息會逐列指名）|暫存的檔案已經不在了，請回上一步重新上傳|儲存空間不足，請先清掉一些檔案再匯入|同一份資料正在被另一次匯入寫入，請稍後再送一次|匯入失敗，請稍後再試" %}
+    {% set stepNextToast = "匯入完成|權限不足，無法匯入——請找貴租戶的管理者開通|這個資料集不在你可以寫入的群組裡，請找管理員把你加進該群組|內容欄位不可為空，或指定了不存在的欄位槽|這份檔案讀不出來，或它的欄名與預覽時不一致——請回上一步重新確認|有幾列的標籤代碼不在字典裡，或日期欄格式不對（錯誤訊息會逐列指名）|暫存的檔案已經不在了，請回上一步重新上傳|儲存空間不足，請先清掉一些檔案再匯入|同一份資料正在被另一次匯入寫入，請稍後再送一次|匯入失敗，請稍後再試" %}
     {% set stepNextToastKey = "toast.importExcel" %}
     {% set stepNextToastType = "success|warning|warning|warning|warning|warning|warning|warning|warning|error" %}
     {% include "components/step-btn-wrap/step-btn-wrap.html" %}

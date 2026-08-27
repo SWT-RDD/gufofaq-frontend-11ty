@@ -345,7 +345,7 @@ permalink: 2-2-5_regressionRun.html
     </div>
     <p class="text-red"><span data-i18n="regression.exportPartialPrefix">這一次執行是中斷的，匯出的 CSV 只有 </span><span>10</span><span data-i18n="regression.exportPartialSuffix"> 則案例的結果，最後一列會明說筆數與中斷原因——不要把它讀成「整套案例都跑過」。</span></p>
     <div class="flex-row">
-        <button data-capability="settings:read" type="button" class="button button-border js-export-run" data-toast="報表已下載|權限不足，無法下載|匯出失敗，請稍後再試" data-i18n-data-toast="toast.exportRun" data-toast-type="success|warning|error" data-i18n="regression.exportCsv">下載結果 CSV</button>
+        <button data-capability="settings:read" type="button" class="button button-border js-export-run" data-toast="報表已下載|權限不足，無法下載——請找貴租戶的管理者開通|匯出失敗，請稍後再試" data-i18n-data-toast="toast.exportRun" data-toast-type="success|warning|error" data-i18n="regression.exportCsv">下載結果 CSV</button>
     </div>
     <p class="text-gray" data-i18n="regression.exportColumns">七欄：案例／期望／實際答案／通過與否／命中文件／評審分數／未通過原因。「通過與否」逐字只有「通過」或「未通過」兩種，失敗細節在自己那一欄（下游做樞紐分析時，塞進狀態欄的每一句細節都會變成一個新的狀態值）；「命中文件」印的是真的引用到哪幾份，零命中的列寫「（零命中）」、被夾掉時明說共幾筆——留白會被讀成「這一題零命中」。</p>
 </div>
@@ -394,7 +394,7 @@ permalink: 2-2-5_regressionRun.html
             </div>
         </div>
         <div class="flex-row">
-            <button data-capability="settings:read" type="button" class="button button-primary js-compare-baseline" data-toast="正在比較…|權限不足，無法比較|比較完成|不能拿這一次執行自己當基準|載入比較結果失敗，請稍後再試" data-i18n-data-toast="toast.compareBaseline" data-toast-type="info|warning|success|warning|error" data-i18n="regression.compare">比較</button>
+            <button data-capability="settings:read" type="button" class="button button-primary js-compare-baseline" data-toast="正在比較…|權限不足，無法比較——請找貴租戶的管理者開通|比較完成|不能拿這一次執行自己當基準|載入比較結果失敗，請稍後再試" data-i18n-data-toast="toast.compareBaseline" data-toast-type="info|warning|success|warning|error" data-i18n="regression.compare">比較</button>
         </div>
     </div>
     {# 基準那一次自己的狀態也要看得見，否則 partial 會被當成 complete。 #}

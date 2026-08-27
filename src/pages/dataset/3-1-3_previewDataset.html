@@ -34,7 +34,7 @@ permalink: 3-1-3_previewDataset.html
 {# **資源層 scope 403 是獨立的一段**（§4／§5）：`update_dataset`（product `app/routers/datasets.py`）
      本體第一行是 `_writable_dataset` → 403 `dataset.not_writable_group`，而 `list_datasets` 不依寫入群組
      過濾 ⇒ 看得到一筆、按下去 403。子句逐字沿用 3-1-1 的刪除鈕（同繁中同英譯，§4-2）。 #}
-{% set editSaveToast = "資料集名稱已更新|資料集名稱不可為空|資料集名稱已存在，請換一個|權限不足，無法儲存|這個資料集不在你可以寫入的群組裡，請找管理員把你加進該群組|儲存失敗，請稍後再試" %}
+{% set editSaveToast = "資料集名稱已更新|資料集名稱不可為空|資料集名稱已存在，請換一個|權限不足，無法儲存——請找貴租戶的管理者開通|這個資料集不在你可以寫入的群組裡，請找管理員把你加進該群組|儲存失敗，請稍後再試" %}
     {% set editSaveToastKey = "toast.saveDatasetName" %}
     {% set editSaveToastType = "success|warning|warning|warning|warning|error" %}
     {% include "components/editable-block/editable-block.html" %}
@@ -61,7 +61,7 @@ permalink: 3-1-3_previewDataset.html
              502（同步 GufoRAG 失敗、整筆回滾）。403 是使用者自己找得到人開通／換群組的 warning，
              措辭同 5-1-1 的 `toast.saveAccount`；404／502 併進末段 error。 #}
         {% set editCapability = "settings:write" %}
-        {% set editSaveToast = "已更新|權限不足，無法儲存|這個資料集不在你可以寫入的群組裡，請找管理員把你加進該群組|儲存失敗，請稍後再試" %}
+        {% set editSaveToast = "已更新|權限不足，無法儲存——請找貴租戶的管理者開通|這個資料集不在你可以寫入的群組裡，請找管理員把你加進該群組|儲存失敗，請稍後再試" %}
         {% set editSaveToastKey = "toast.saveDatasetField" %}
         {% set editSaveToastType = "success|warning|warning|error" %}
         {% include "components/editable-block/editable-block.html" %}
@@ -76,7 +76,7 @@ permalink: 3-1-3_previewDataset.html
         {% set editValue = "你是客服助理，請根據提供的資料集內容，以親切、精簡的語氣回答使用者的問題。" %}
         {# 與任務描述同一顆端點、同一組 raise（見上），故分支集合逐字相同。 #}
         {% set editCapability = "settings:write" %}
-        {% set editSaveToast = "已更新|權限不足，無法儲存|這個資料集不在你可以寫入的群組裡，請找管理員把你加進該群組|儲存失敗，請稍後再試" %}
+        {% set editSaveToast = "已更新|權限不足，無法儲存——請找貴租戶的管理者開通|這個資料集不在你可以寫入的群組裡，請找管理員把你加進該群組|儲存失敗，請稍後再試" %}
         {% set editSaveToastKey = "toast.saveDatasetField" %}
         {% set editSaveToastType = "success|warning|warning|error" %}
         {% include "components/editable-block/editable-block.html" %}
@@ -162,7 +162,7 @@ permalink: 3-1-3_previewDataset.html
              存下來）——三段都是使用者自己處理得掉的 warning。404／500 併進末段 error。
              400 `common.no_fields_to_update` 不列：這張表單一定會送出三欄，走不到那條路。 #}
         <button data-capability="data:write" type="button" class="button button-primary js-save-chunk-params"
-            data-toast="切塊設定已更新|權限不足，無法儲存|這個資料集不在你可以寫入的群組裡，請找管理員把你加進該群組|切塊重疊必須小於切塊大小|這個資料集已經做過「檔案上傳」匯入，切塊參數不能再改；這一次三個值一個都沒有存下來|儲存失敗，請稍後再試"
+            data-toast="切塊設定已更新|權限不足，無法儲存——請找貴租戶的管理者開通|這個資料集不在你可以寫入的群組裡，請找管理員把你加進該群組|切塊重疊必須小於切塊大小|這個資料集已經做過「檔案上傳」匯入，切塊參數不能再改；這一次三個值一個都沒有存下來|儲存失敗，請稍後再試"
             data-i18n-data-toast="toast.saveChunkParams" data-toast-type="success|warning|warning|warning|warning|error"
             data-i18n="action.save">儲存</button>
     </div>
@@ -271,7 +271,7 @@ permalink: 3-1-3_previewDataset.html
                         <button type="button" id="previewFileDelete-{{ file.sn }}" aria-labelledby="previewFileRowName-{{ file.sn }} previewFileDelete-{{ file.sn }}" class="button-icon no-bg size-sm delete delete-single-btn" data-filesn="{{ file.sn }}" data-filename="{{ file.name }}" title="刪除" data-i18n-title="action.delete">
                             <span class="sr-only" data-i18n="action.delete">刪除</span>
                         </button>
-                        <button data-capability="data:read" type="button" class="button-icon no-bg size-sm download download-file-btn" data-filesn="{{ file.sn }}" data-filename="{{ file.name }}" data-filetype="{{ file.type }}" id="previewFileDownload-{{ file.sn }}" aria-labelledby="previewFileRowName-{{ file.sn }} previewFileDownload-{{ file.sn }}" data-toast="下載已開始|權限不足，無法下載|此來源無法下載|下載失敗，請稍後再試" data-i18n-data-toast="toast.downloadFile" data-toast-type="success|warning|warning|error" title="下載" data-i18n-title="action.download">
+                        <button data-capability="data:read" type="button" class="button-icon no-bg size-sm download download-file-btn" data-filesn="{{ file.sn }}" data-filename="{{ file.name }}" data-filetype="{{ file.type }}" id="previewFileDownload-{{ file.sn }}" aria-labelledby="previewFileRowName-{{ file.sn }} previewFileDownload-{{ file.sn }}" data-toast="下載已開始|權限不足，無法下載——請找貴租戶的管理者開通|此來源無法下載|下載失敗，請稍後再試" data-i18n-data-toast="toast.downloadFile" data-toast-type="success|warning|warning|error" title="下載" data-i18n-title="action.download">
                             <span class="sr-only" data-i18n="action.download">下載</span>
                         </button>
                     </div>
@@ -352,7 +352,7 @@ permalink: 3-1-3_previewDataset.html
      只有一段的 `data-toast` 會讓「結果數要等於 en.json 的段數」那條測試當場紅（1 vs 6）。 #}
 {% set deleteCapability = "data:write" %}
 {# 同上：`delete_file` 也是 `_writable_dataset` 開場（product `app/routers/datasets.py`）。 #}
-{% set deleteToast = "已刪除|權限不足，無法刪除|這個資料集不在你可以寫入的群組裡，請找管理員把你加進該群組|這個檔案沒有留下擷取管道記錄，請先用「檔案上傳」重新匯入一次以補記|刪除失敗，請稍後再試|請先勾選要刪除的檔案" %}
+{% set deleteToast = "已刪除|權限不足，無法刪除——請找貴租戶的管理者開通|這個資料集不在你可以寫入的群組裡，請找管理員把你加進該群組|這個檔案沒有留下擷取管道記錄，請先用「檔案上傳」重新匯入一次以補記|刪除失敗，請稍後再試|請先勾選要刪除的檔案" %}
 {% set deleteToastKey = "toast.deleteFile" %}
 {% set deleteToastType = "success|warning|warning|warning|error|warning" %}
 {% include "components/delete-modal/delete-modal.html" %}

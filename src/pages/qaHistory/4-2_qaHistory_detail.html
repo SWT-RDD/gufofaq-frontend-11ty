@@ -258,7 +258,7 @@ permalink: 4-2_qaHistory_detail.html
 {% set ratingModalFeedback = conversation.feedback %}
 {% set ratingModalToastKey = "toast.saveRating" %}
 {% set ratingCapability = "history" %}
-{% set ratingModalToast = "滿意度已更新|權限不足，無法送出|請先選擇讚或倒讚|更新失敗，請稍後再試" %}
+{% set ratingModalToast = "滿意度已更新|權限不足，無法送出——請找貴租戶的管理者開通|請先選擇讚或倒讚|更新失敗，請稍後再試" %}
 {% set ratingModalToastType = "success|warning|warning|error" %}
 {% include "components/rating-modal/rating-modal.html" %}
 
@@ -284,7 +284,7 @@ permalink: 4-2_qaHistory_detail.html
 {% set deleteConfirmBinding = true %}
 {% set deleteConfirmClass = "js-revoke-share-confirm" %}
 {% set deleteCapability = "history" %}
-{% set deleteToast = "連結已撤銷|權限不足，無法撤銷|撤銷失敗，請稍後再試" %}
+{% set deleteToast = "連結已撤銷|權限不足，無法撤銷——請找貴租戶的管理者開通|撤銷失敗，請稍後再試" %}
 {% set deleteToastKey = "toast.revokeShare" %}
 {% set deleteToastType = "success|warning|error" %}
 {% include "components/delete-modal/delete-modal.html" %}

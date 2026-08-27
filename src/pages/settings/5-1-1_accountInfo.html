@@ -144,7 +144,7 @@ permalink: 5-1-1_accountInfo.html
         {# PUT /account 掛的是 `require_capability("settings", "write")`（product app/routers/account.py），
              該 dep（product app/authz.py 的 `require_capability`）raise 403「missing capability」——同一道守衛在 5-3 的歸因儲存鈕
              是自成一段的 warning（那顆端點的 dep 逐字相同），這裡不能折進 error（§5 分支集合一致）。 #}
-        <button data-capability="settings:write" type="button" class="button button-primary" data-toast="帳號資訊已儲存|權限不足，無法儲存|儲存失敗，請稍後再試" data-i18n-data-toast="toast.saveAccount" data-toast-type="success|warning|error" data-i18n="settings.saveAccountInfo">儲存帳號資訊</button>
+        <button data-capability="settings:write" type="button" class="button button-primary" data-toast="帳號資訊已儲存|權限不足，無法儲存——請找貴租戶的管理者開通|儲存失敗，請稍後再試" data-i18n-data-toast="toast.saveAccount" data-toast-type="success|warning|error" data-i18n="settings.saveAccountInfo">儲存帳號資訊</button>
     </div>
 </div>
 

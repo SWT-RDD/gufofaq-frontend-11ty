@@ -174,7 +174,7 @@ permalink: 4-1_qaHistory.html
                  ——清完再按查詢就是必填未填。真 app qaHistory.js:426 第一件事就是
                  `showToast('請填寫開始時間、結束時間和使用者類型')`。共用的 `toast.query` 不能加這一段
                  （其餘六頁沒有任何 required 欄，加了就是演不可能的結果），故本頁另立 key。 #}
-            <button data-capability="history" type="button" class="button button-primary" data-toast="正在查詢資料...|權限不足，無法查詢|請填寫開始時間、結束時間與使用者類型|查詢成功|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.queryHistory" data-toast-type="info|warning|warning|success|error" data-i18n="action.query">查詢</button>
+            <button data-capability="history" type="button" class="button button-primary" data-toast="正在查詢資料...|權限不足，無法查詢——請找貴租戶的管理者開通|請填寫開始時間、結束時間與使用者類型|查詢成功|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.queryHistory" data-toast-type="info|warning|warning|success|error" data-i18n="action.query">查詢</button>
             {# 匯出格式（product `GET /history/export?format=`，`Query(alias="format")` 收
                  `Literal["csv","xlsx","jsonl"]`、預設 csv）。**畫面只給兩顆**：csv 與 xlsx 是同一個
                  問題的兩種答案（要不要巢狀明細），jsonl 是給程式與稽核的那一份、沒有人會在這個
@@ -266,7 +266,7 @@ permalink: 4-1_qaHistory.html
                  原本只列了後三條，前四條全部落進紅色的「下載失敗」——而那四條每一條使用者當場改得掉。
                  ⚠️ `|` 是索引契約：本輪在中段插了四段，React 端照 `split("|")` 位置取 `toast.downloadRecords`
                  的地方要跟著位移；分支順序＝上游 raise 的先後。 #}
-            <button data-capability="history" type="button" class="button button-green" data-toast="下載已開始|權限不足，無法下載|請先填開始時間與結束時間|時間格式不正確，請重新選擇起訖時間|開始時間不能晚於現在|結束時間不能早於開始時間|只提供31日間的問答記錄下載|只提供一年內的問答記錄下載|這段範圍的資料量過大，請縮小時間範圍|下載失敗，請稍後再試|下載用的是上一次按「查詢」時的條件，而上面的篩選欄已經改過——請先按一次「查詢」再下載" data-i18n-data-toast="toast.downloadRecords" data-toast-type="success|warning|warning|warning|warning|warning|warning|warning|warning|error|warning" data-i18n="action.download">下載</button>
+            <button data-capability="history" type="button" class="button button-green" data-toast="下載已開始|權限不足，無法下載——請找貴租戶的管理者開通|請先填開始時間與結束時間|時間格式不正確，請重新選擇起訖時間|開始時間不能晚於現在|結束時間不能早於開始時間|只提供31日間的問答記錄下載|只提供一年內的問答記錄下載|這段範圍的資料量過大，請縮小時間範圍|下載失敗，請稍後再試|下載用的是上一次按「查詢」時的條件，而上面的篩選欄已經改過——請先按一次「查詢」再下載" data-i18n-data-toast="toast.downloadRecords" data-toast-type="success|warning|warning|warning|warning|warning|warning|warning|warning|error|warning" data-i18n="action.download">下載</button>
         </div>
     </div>
 </div>

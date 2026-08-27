@@ -306,7 +306,7 @@ permalink: 5-10_tagDimensions.html
         <p class="text-red"><span data-i18n="settings.filterableDateRangePrefix">日期維度的值必須落在 </span><span>{{ filterableDateMin }}</span><span data-i18n="settings.filterableDateRangeMid"> 到 </span><span>{{ filterableDateMax }}</span><span data-i18n="settings.filterableDateRangeSuffix"> 之間：檢索引擎把日期存成 64 位元奈秒數，超出去會溢位成另一端的時間。出界的值存得進去、精確比對也找得到，但任何用到日期範圍的過濾都會漏掉那份資料，查詢時它只是不見了、不會有錯誤訊息。若本來就是想表示「永遠有效」，請把該格留白，系統會自己補上不會過期的值。</span></p>
     </div>
     <div class="flex-row">
-        <button data-capability="settings:write" type="button" class="button button-primary" data-toast="標籤維度已建立|權限不足，無法新增|維度名稱不可為空|這個槽或角色已經有維度了|型別或角色與這個槽配不起來，請改選|建立失敗，請稍後再試" data-i18n-data-toast="toast.createTagDimension" data-toast-type="success|warning|warning|warning|warning|error">
+        <button data-capability="settings:write" type="button" class="button button-primary" data-toast="標籤維度已建立|權限不足，無法新增——請找貴租戶的管理者開通|維度名稱不可為空|這個槽或角色已經有維度了|型別或角色與這個槽配不起來，請改選|建立失敗，請稍後再試" data-i18n-data-toast="toast.createTagDimension" data-toast-type="success|warning|warning|warning|warning|error">
             <img src="./images/icon_add_white.png" width="48" height="48" decoding="async" alt="" class="icon">
             <span data-i18n="settings.addTagDimension">新增標籤維度</span>
         </button>
@@ -412,7 +412,7 @@ permalink: 5-10_tagDimensions.html
                         <button data-capability="settings:read data:read" type="button" class="button button-border button-sm js-view-untagged"
                             data-dimension-id="{{ dim.id }}"
                             id="tagDimUntagged-{{ dim.id }}" aria-labelledby="tagDimSlot-{{ dim.id }} tagDimUntagged-{{ dim.id }}"
-                            data-toast="正在查詢資料...|權限不足，無法查看|查詢成功|文件數超過單次掃描上限，請改用單一資料集範圍|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.queryUntagged" data-toast-type="info|warning|success|warning|error"
+                            data-toast="正在查詢資料...|權限不足，無法查看——請找貴租戶的管理者開通|查詢成功|文件數超過單次掃描上限，請改用單一資料集範圍|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.queryUntagged" data-toast-type="info|warning|success|warning|error"
                             data-i18n="settings.viewUntagged">查看未標註</button>
                         {% endif %}
                         {% endif %}
@@ -420,11 +420,11 @@ permalink: 5-10_tagDimensions.html
                     <td>
                         <div class="btn-group">
                             {# 三顆列動作鈕的可及名稱＝「本列槽名 ＋ 本鈕自己的字」（§4 逐列控制項）。 #}
-                            <button data-capability="settings:write" type="button" id="tagDimSave-{{ dim.id }}" aria-labelledby="tagDimSlot-{{ dim.id }} tagDimSave-{{ dim.id }}" class="button button-border button-sm" data-toast="標籤維度已更新|權限不足，無法儲存|維度名稱不可為空|儲存失敗，請稍後再試" data-i18n-data-toast="toast.saveTagDimension" data-toast-type="success|warning|warning|error" data-i18n="action.save">儲存</button>
+                            <button data-capability="settings:write" type="button" id="tagDimSave-{{ dim.id }}" aria-labelledby="tagDimSlot-{{ dim.id }} tagDimSave-{{ dim.id }}" class="button button-border button-sm" data-toast="標籤維度已更新|權限不足，無法儲存——請找貴租戶的管理者開通|維度名稱不可為空|儲存失敗，請稍後再試" data-i18n-data-toast="toast.saveTagDimension" data-toast-type="success|warning|warning|error" data-i18n="action.save">儲存</button>
                             {# 日期維度沒有字典可編——product 對它的 vocabulary 寫入一律 400，
                                  給一顆點了只會失敗的鈕就是說謊。 #}
                             {% if dim.kind != "date" %}
-                            <button data-capability="settings:read" type="button" id="tagDimVocabulary-{{ dim.id }}" aria-labelledby="tagDimSlot-{{ dim.id }} tagDimVocabulary-{{ dim.id }}" class="button button-border button-sm js-edit-vocabulary" data-toast="正在查詢資料...|權限不足，無法查詢|查詢成功|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.query" data-toast-type="info|warning|success|error" data-i18n="settings.editVocabulary">編輯字典</button>
+                            <button data-capability="settings:read" type="button" id="tagDimVocabulary-{{ dim.id }}" aria-labelledby="tagDimSlot-{{ dim.id }} tagDimVocabulary-{{ dim.id }}" class="button button-border button-sm js-edit-vocabulary" data-toast="正在查詢資料...|權限不足，無法查詢——請找貴租戶的管理者開通|查詢成功|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.query" data-toast-type="info|warning|success|error" data-i18n="settings.editVocabulary">編輯字典</button>
                             {% endif %}
                             <button type="button" id="tagDimDelete-{{ dim.id }}" aria-labelledby="tagDimSlot-{{ dim.id }} tagDimDelete-{{ dim.id }}" class="button button-red button-sm js-delete-tag-dimension" data-i18n="action.delete">刪除</button>
                         </div>
@@ -522,7 +522,7 @@ permalink: 5-10_tagDimensions.html
        先前切版把它們折成「這個代碼與既有代碼在比對端分不開」一句——使用者遇到「逐字重複」時
        會照著去改大小寫，而那條路永遠修不好。 #}
     <div class="flex-row">
-        <button data-capability="settings:write" type="button" class="button button-primary" data-toast="代碼已新增|權限不足，無法新增|代碼與代碼名稱不可為空|代碼含不可用的字元，請改用不含逗號、引號、反斜線與萬用字元的寫法|__unset__ 是系統保留代碼，請改用別的代碼|這個代碼在這個維度裡已經有了，直接用既有那一列即可|這個代碼與既有代碼只差在大小寫或全半形，比對端分不開，請改一個寫法|新增失敗，請稍後再試" data-i18n-data-toast="toast.createTagCode" data-toast-type="success|warning|warning|warning|warning|warning|warning|error">
+        <button data-capability="settings:write" type="button" class="button button-primary" data-toast="代碼已新增|權限不足，無法新增——請找貴租戶的管理者開通|代碼與代碼名稱不可為空|代碼含不可用的字元，請改用不含逗號、引號、反斜線與萬用字元的寫法|__unset__ 是系統保留代碼，請改用別的代碼|這個代碼在這個維度裡已經有了，直接用既有那一列即可|這個代碼與既有代碼只差在大小寫或全半形，比對端分不開，請改一個寫法|新增失敗，請稍後再試" data-i18n-data-toast="toast.createTagCode" data-toast-type="success|warning|warning|warning|warning|warning|warning|error">
             <img src="./images/icon_add_white.png" width="48" height="48" decoding="async" alt="" class="icon">
             <span data-i18n="settings.addTagCode">新增代碼</span>
         </button>
@@ -558,7 +558,7 @@ permalink: 5-10_tagDimensions.html
                              ⇒ 這一顆按下去 100% 撞得到，只演成功等於把整道守衛演掉（§5）。
                              它是 warning 不是 error：使用者自己關掉標籤過濾就刪得動（那道守衛的
                              docstring 逐字寫著「不是永久禁止」）。 #}
-                        <button data-capability="settings:write" type="button" id="tagVocabDelete-{{ row.id }}" aria-labelledby="tagVocabRowCode-{{ row.id }} tagVocabDelete-{{ row.id }}" class="button button-red button-sm" data-toast="代碼已刪除|權限不足，無法刪除|標籤檢索過濾正開著，刪掉代碼會立刻改變每一輪問答的過濾條件——請先把設定檔的標籤過濾關掉|刪除失敗，請稍後再試" data-i18n-data-toast="toast.deleteTagCode" data-toast-type="success|warning|warning|error" data-i18n="action.delete">刪除</button>
+                        <button data-capability="settings:write" type="button" id="tagVocabDelete-{{ row.id }}" aria-labelledby="tagVocabRowCode-{{ row.id }} tagVocabDelete-{{ row.id }}" class="button button-red button-sm" data-toast="代碼已刪除|權限不足，無法刪除——請找貴租戶的管理者開通|標籤檢索過濾正開著，刪掉代碼會立刻改變每一輪問答的過濾條件——請先把設定檔的標籤過濾關掉|刪除失敗，請稍後再試" data-i18n-data-toast="toast.deleteTagCode" data-toast-type="success|warning|warning|error" data-i18n="action.delete">刪除</button>
                     </td>
                 </tr>
                 {% else %}
@@ -626,7 +626,7 @@ permalink: 5-10_tagDimensions.html
                  先前少了那一段：它自己身上沒有 `data-capability`（吃的是區塊上那一顆），而「掛了
                  `data-capability` 的鈕要有 warning 型的權限不足段」那條測試只看鈕**自己**的屬性，
                  於是這顆整個掉出母體。子句與英譯逐字沿用同頁「查看未標註」那一顆（§4-2）。 #}
-            <button type="button" class="button button-border" data-toast="正在量測標註覆蓋率...|權限不足，無法量測|量測完成|文件數超過單次掃描上限，請改用單一資料集範圍|量測失敗，請稍後再試" data-i18n-data-toast="toast.measureCoverage" data-toast-type="info|warning|success|warning|error" data-i18n="settings.remeasureCoverage">重新量測</button>
+            <button type="button" class="button button-border" data-toast="正在量測標註覆蓋率...|權限不足，無法量測——請找貴租戶的管理者開通|量測完成|文件數超過單次掃描上限，請改用單一資料集範圍|量測失敗，請稍後再試" data-i18n-data-toast="toast.measureCoverage" data-toast-type="info|warning|success|warning|error" data-i18n="settings.remeasureCoverage">重新量測</button>
         </div>
         {# 「查看範圍」的存在理由：量測有上限，選單是縮小範圍的出口。這一句是這顆上限**唯一**的
              常駐可見標籤（`help.settings.tagCoverageScan.what` 提到「上限」是散文、不是標籤；
@@ -736,7 +736,7 @@ permalink: 5-10_tagDimensions.html
                              或存不進去。原本那六段覆蓋率相關的 warning（量不出來／量得不完整／超過掃描
                              上限／量測途中維度被改動）在 product 已經沒有對應的路徑了——留著就是演一個
                              回不出來的錯誤。 #}
-                        <button data-capability="settings:write data:read" type="button" id="tagFilterSave-{{ loop.index }}" aria-labelledby="tagFilterProfileName-{{ loop.index }} tagFilterSave-{{ loop.index }}" class="button button-border button-sm" data-toast="檢索過濾設定已儲存|權限不足，無法儲存|還有檔沒有把這一欄寫進索引，過濾維持關閉|儲存失敗，請稍後再試" data-i18n-data-toast="toast.saveTagFilter" data-toast-type="success|warning|warning|error" data-i18n="action.save">儲存</button>
+                        <button data-capability="settings:write data:read" type="button" id="tagFilterSave-{{ loop.index }}" aria-labelledby="tagFilterProfileName-{{ loop.index }} tagFilterSave-{{ loop.index }}" class="button button-border button-sm" data-toast="檢索過濾設定已儲存|權限不足，無法儲存——請找貴租戶的管理者開通|還有檔沒有把這一欄寫進索引，過濾維持關閉|儲存失敗，請稍後再試" data-i18n-data-toast="toast.saveTagFilter" data-toast-type="success|warning|warning|error" data-i18n="action.save">儲存</button>
                     </td>
                 </tr>
                 {% endfor %}
@@ -834,7 +834,7 @@ permalink: 5-10_tagDimensions.html
      是 warning 不是 error（關掉標籤過濾就刪得動，那道守衛自己寫著「不是永久禁止」）。
      `deleteToastType` **必須跟著給**：delete-modal 少給就落回預設的兩段 `success|error`，
      第三段會沿用 error、演不出「使用者自己修得掉」（見該元件檔頭的參數說明）。 #}
-{% set deleteToast = "標籤維度已刪除|權限不足，無法刪除|標籤檢索過濾正開著，刪掉維度會立刻改變每一輪問答的過濾條件——請先把設定檔的標籤過濾關掉|刪除失敗，請稍後再試" %}
+{% set deleteToast = "標籤維度已刪除|權限不足，無法刪除——請找貴租戶的管理者開通|標籤檢索過濾正開著，刪掉維度會立刻改變每一輪問答的過濾條件——請先把設定檔的標籤過濾關掉|刪除失敗，請稍後再試" %}
 {% set deleteToastKey = "toast.deleteTagDimension" %}
 {% set deleteToastType = "success|warning|warning|error" %}
 {% include "components/delete-modal/delete-modal.html" %}

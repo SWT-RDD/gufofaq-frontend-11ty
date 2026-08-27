@@ -617,7 +617,7 @@ permalink: 3-5_dataHealth.html
     <p id="healthHitChecksHint" class="text-gray" data-i18n="health.includeHitChecksHint">那三項要向上游取回整個時間窗的問答紀錄才算得出來，所以預設不重算：處置完立刻複驗時改的是資料，命中統計一秒之內不會變，開著跑只是每按一次多付一次上游取回，還會把「能不能複驗」綁在「統計上游活著」上。每日全量重掃一定會算它們。</p>
     <div class="flex-row">
         <button data-capability="data:write" type="button" class="button button-primary js-health-scan"
-            data-toast="正在重新檢查…|權限不足，無法重新檢查|檢查完成|資料筆數超過單次健檢上限，這一次一筆都沒有檢查|檢查失敗，請稍後再試"
+            data-toast="正在重新檢查…|權限不足，無法重新檢查——請找貴租戶的管理者開通|檢查完成|資料筆數超過單次健檢上限，這一次一筆都沒有檢查|檢查失敗，請稍後再試"
             data-i18n-data-toast="toast.healthScan" data-toast-type="info|warning|success|warning|error"
             data-i18n="health.rescan">重新檢查</button>
     </div>
@@ -1024,7 +1024,7 @@ permalink: 3-5_dataHealth.html
                 {% endfor %}
             </select>
             <button data-capability="data:read" type="button" class="button button-primary js-health-query"
-                data-toast="正在查詢資料...|權限不足，無法查詢|查詢成功|載入資料失敗，請重新整理頁面"
+                data-toast="正在查詢資料...|權限不足，無法查詢——請找貴租戶的管理者開通|查詢成功|載入資料失敗，請重新整理頁面"
                 data-i18n-data-toast="toast.query" data-toast-type="info|warning|success|error"
                 data-i18n="action.query">查詢</button>
         </div>
@@ -1183,7 +1183,7 @@ permalink: 3-5_dataHealth.html
                                     </div>
                                     <div class="flex-row">
                                         <button data-capability="data:write" type="button" class="button button-primary button-sm js-health-dismiss" id="healthDismissBtn-{{ f.id }}" aria-labelledby="healthFindingId-{{ f.id }} healthDismissBtn-{{ f.id }}"
-                                            data-toast="已判定為非問題（資料一個字都沒動）|權限不足，無法判定|請填寫判定理由|這個發現已經處置過了，下一次檢查會依前提是否改變決定要不要把它推回清單|操作失敗，請稍後再試"
+                                            data-toast="已判定為非問題（資料一個字都沒動）|權限不足，無法判定——請找貴租戶的管理者開通|請填寫判定理由|這個發現已經處置過了，下一次檢查會依前提是否改變決定要不要把它推回清單|操作失敗，請稍後再試"
                                             data-i18n-data-toast="toast.healthDismiss" data-toast-type="success|warning|warning|warning|error"
                                             data-i18n="health.actionDismiss">判定為非問題</button>
                                     </div>
@@ -1208,7 +1208,7 @@ permalink: 3-5_dataHealth.html
                                     </div>
                                     <div class="flex-row">
                                         <button data-capability="data:write" type="button" class="button button-primary button-sm js-health-merge" id="healthMergeBtn-{{ f.id }}" aria-labelledby="healthFindingId-{{ f.id }} healthMergeBtn-{{ f.id }}"
-                                            data-toast="已合併（問法併入保留的那一筆，其餘停用未刪除）|權限不足，無法合併|請選擇要保留哪一筆|這個租戶還沒有宣告「有效期」維度，被併的那幾筆停用不了|這個發現已經處置過了，下一次檢查會依前提是否改變決定要不要把它推回清單|這幾筆記錄所在的資料集不在你可以寫入的群組裡——處置會就地改寫來源檔，需要與匯入、刪檔同一道群組寫入權限|操作失敗，請稍後再試"
+                                            data-toast="已合併（問法併入保留的那一筆，其餘停用未刪除）|權限不足，無法合併——請找貴租戶的管理者開通|請選擇要保留哪一筆|這個租戶還沒有宣告「有效期」維度，被併的那幾筆停用不了|這個發現已經處置過了，下一次檢查會依前提是否改變決定要不要把它推回清單|這幾筆記錄所在的資料集不在你可以寫入的群組裡——處置會就地改寫來源檔，需要與匯入、刪檔同一道群組寫入權限|操作失敗，請稍後再試"
                                             data-i18n-data-toast="toast.healthMerge" data-toast-type="success|warning|warning|warning|warning|warning|error"
                                             data-i18n="health.actionMerge">合併問法</button>
                                     </div>
@@ -1260,7 +1260,7 @@ permalink: 3-5_dataHealth.html
                                                  位置對齊姊妹兩顆（`toast.healthMerge`／`toast.healthSupersede` 的 index 2
                                                  都是「請選擇…」那一族），讓「這一格選錯了」在四顆處置鈕上落在同一個索引。
                                                ⚠️ `|` 是索引契約：插這一段之後「請填寫停用理由」由 2 移到 3，其後全部 +1。 #}
-                                            data-toast="已停用（有效期設成哨兵日期，未刪除）|權限不足，無法停用|請至少勾選一筆要停用的記錄|請填寫停用理由|這個租戶還沒有宣告「有效期」維度，資料上沒有地方可以表達停用|這個發現已經處置過了，下一次檢查會依前提是否改變決定要不要把它推回清單|這幾筆記錄所在的資料集不在你可以寫入的群組裡——處置會就地改寫來源檔，需要與匯入、刪檔同一道群組寫入權限|操作失敗，請稍後再試"
+                                            data-toast="已停用（有效期設成哨兵日期，未刪除）|權限不足，無法停用——請找貴租戶的管理者開通|請至少勾選一筆要停用的記錄|請填寫停用理由|這個租戶還沒有宣告「有效期」維度，資料上沒有地方可以表達停用|這個發現已經處置過了，下一次檢查會依前提是否改變決定要不要把它推回清單|這幾筆記錄所在的資料集不在你可以寫入的群組裡——處置會就地改寫來源檔，需要與匯入、刪檔同一道群組寫入權限|操作失敗，請稍後再試"
                                             data-i18n-data-toast="toast.healthDisable" data-toast-type="success|warning|warning|warning|warning|warning|warning|error"
                                             data-i18n="health.actionDisable">停用（不刪除）</button>
                                     </div>
@@ -1286,7 +1286,7 @@ permalink: 3-5_dataHealth.html
                                     <p class="text-gray" data-i18n="health.supersedeRestHint">沒有被選成現行版的那幾筆，就是被它取代的那幾筆。</p>
                                     <div class="flex-row">
                                         <button data-capability="data:write" type="button" class="button button-primary button-sm js-health-supersede" id="healthSupersedeBtn-{{ f.id }}" aria-labelledby="healthFindingId-{{ f.id }} healthSupersedeBtn-{{ f.id }}"
-                                            data-toast="已設取代參照|權限不足，無法設取代參照|請選擇哪一筆是現行版|現行版所在的檔案沒有外部主鍵，指不到東西的取代參照是一個斷掉的指標|這幾筆與現行版在同一個檔案裡，取代參照的粒度是檔案，同檔案請改用合併或停用|這個租戶還沒有宣告「取代參照」維度|這個發現已經處置過了，下一次檢查會依前提是否改變決定要不要把它推回清單|這幾筆記錄所在的資料集不在你可以寫入的群組裡——處置會就地改寫來源檔，需要與匯入、刪檔同一道群組寫入權限|操作失敗，請稍後再試"
+                                            data-toast="已設取代參照|權限不足，無法設取代參照——請找貴租戶的管理者開通|請選擇哪一筆是現行版|現行版所在的檔案沒有外部主鍵，指不到東西的取代參照是一個斷掉的指標|這幾筆與現行版在同一個檔案裡，取代參照的粒度是檔案，同檔案請改用合併或停用|這個租戶還沒有宣告「取代參照」維度|這個發現已經處置過了，下一次檢查會依前提是否改變決定要不要把它推回清單|這幾筆記錄所在的資料集不在你可以寫入的群組裡——處置會就地改寫來源檔，需要與匯入、刪檔同一道群組寫入權限|操作失敗，請稍後再試"
                                             data-i18n-data-toast="toast.healthSupersede" data-toast-type="success|warning|warning|warning|warning|warning|warning|warning|error"
                                             data-i18n="health.actionSupersede">設取代參照</button>
                                     </div>
@@ -1319,7 +1319,7 @@ permalink: 3-5_dataHealth.html
                                     </div>
                                     <div class="flex-row">
                                         <button data-capability="data:write" type="button" class="button button-primary button-sm js-health-add-phrasing" id="healthAddPhrasingBtn-{{ f.id }}" aria-labelledby="healthFindingId-{{ f.id }} healthAddPhrasingBtn-{{ f.id }}"
-                                            data-toast="已補寫問法（新增為一列，原標題保留）|權限不足，無法補寫問法|請選擇要補寫在哪一筆|請填寫要補寫的問法|補寫的問法與原標題逐字相同，新增一列只會多出一筆完全重複的記錄|這個發現已經處置過了，下一次檢查會依前提是否改變決定要不要把它推回清單|這幾筆記錄所在的資料集不在你可以寫入的群組裡——處置會就地改寫來源檔，需要與匯入、刪檔同一道群組寫入權限|操作失敗，請稍後再試"
+                                            data-toast="已補寫問法（新增為一列，原標題保留）|權限不足，無法補寫問法——請找貴租戶的管理者開通|請選擇要補寫在哪一筆|請填寫要補寫的問法|補寫的問法與原標題逐字相同，新增一列只會多出一筆完全重複的記錄|這個發現已經處置過了，下一次檢查會依前提是否改變決定要不要把它推回清單|這幾筆記錄所在的資料集不在你可以寫入的群組裡——處置會就地改寫來源檔，需要與匯入、刪檔同一道群組寫入權限|操作失敗，請稍後再試"
                                             data-i18n-data-toast="toast.healthAddPhrasing" data-toast-type="success|warning|warning|warning|warning|warning|warning|error"
                                             data-i18n="health.actionAddPhrasing">補寫問法</button>
                                     </div>
@@ -1344,7 +1344,7 @@ permalink: 3-5_dataHealth.html
                                     </div>
                                     <div class="flex-row">
                                         <button data-capability="data:write" type="button" class="button button-border button-sm js-health-undo" id="healthUndoBtn-{{ f.id }}" aria-labelledby="healthFindingId-{{ f.id }} healthUndoBtn-{{ f.id }}"
-                                            data-toast="已還原這次處置，這一筆回到未處置|權限不足，無法還原|請填寫還原理由|保留的那一筆內容已經不是這次合併寫出去的那一份（多半是又被另一個發現併過一次），把舊內容寫回去會連那一次的問法一起抹掉|處置寫下去的那一格在那之後又被改過，還原的前提不成立，請直接編輯資料|查不到這個發現的處置紀錄，沒有辦法知道當初改了哪一格、把什麼值蓋掉了|這幾筆記錄所在的資料集不在你可以寫入的群組裡——處置會就地改寫來源檔，需要與匯入、刪檔同一道群組寫入權限|操作失敗，請稍後再試"
+                                            data-toast="已還原這次處置，這一筆回到未處置|權限不足，無法還原——請找貴租戶的管理者開通|請填寫還原理由|保留的那一筆內容已經不是這次合併寫出去的那一份（多半是又被另一個發現併過一次），把舊內容寫回去會連那一次的問法一起抹掉|處置寫下去的那一格在那之後又被改過，還原的前提不成立，請直接編輯資料|查不到這個發現的處置紀錄，沒有辦法知道當初改了哪一格、把什麼值蓋掉了|這幾筆記錄所在的資料集不在你可以寫入的群組裡——處置會就地改寫來源檔，需要與匯入、刪檔同一道群組寫入權限|操作失敗，請稍後再試"
                                             data-i18n-data-toast="toast.healthUndo" data-toast-type="success|warning|warning|warning|warning|warning|warning|error"
                                             data-i18n="health.actionUndo">還原這次處置</button>
                                     </div>

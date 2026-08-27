@@ -57,7 +57,7 @@ permalink: 1-2-1_uploadFile_pdf.html
      指錯，而且沒有任何視覺指紋看得出來（有測試把關）。 #}
 {% set stepNextAction = true %}
 {% set stepNextCapability = "data:write" %}
-{% set stepNextToast = "匯入完成，逐檔結果與索引同步狀態都在下面的批次匯入結果|權限不足，無法匯入|這個資料集不在你可以寫入的群組裡，請找管理員把你加進該群組|同一批裡有兩個檔用了同一個外部主鍵，請先改掉其中一個|這一批的總大小超過單次上限，請分批送|有檔案沒有匯進去，逐檔原因在下面的批次匯入結果|匯入失敗，請稍後再試" %}
+{% set stepNextToast = "匯入完成，逐檔結果與索引同步狀態都在下面的批次匯入結果|權限不足，無法匯入——請找貴租戶的管理者開通|這個資料集不在你可以寫入的群組裡，請找管理員把你加進該群組|同一批裡有兩個檔用了同一個外部主鍵，請先改掉其中一個|這一批的總大小超過單次上限，請分批送|有檔案沒有匯進去，逐檔原因在下面的批次匯入結果|匯入失敗，請稍後再試" %}
 {% set stepNextToastKey = "toast.importDocuments" %}
 {% set stepNextToastType = "success|warning|warning|warning|warning|warning|error" %}
 <div class="mt-10 mb-32">

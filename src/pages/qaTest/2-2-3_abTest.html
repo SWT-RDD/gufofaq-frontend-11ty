@@ -248,8 +248,8 @@ permalink: 2-2-3_abTest.html
              所以列脈絡救不了這六顆——報讀器只念得出三組同名。做法與那一組相同：容器掛
              `role="group" aria-labelledby="abSideLabel-<側>"`，鈕各自保留可見字面（§4 一格內多顆同型控制項）。 #}
         <div class="flex-row justify-content-center flex-wrap gap-16 mt-24" role="group" aria-labelledby="abSideLabel-{{ ab.side }}">
-            <button data-capability="settings:read" type="button" class="button button-green js-restore-saved" data-toast="已回復儲存的設定|權限不足，無法載入|無法載入儲存的設定" data-i18n-data-toast="toast.restoreSettings" data-toast-type="success|warning|error" data-i18n="qaTest.restoreSaved">回復儲存的設定</button>
-            <button data-capability="settings:write" type="button" class="button button-primary js-prompt-new-version" data-toast="已儲存為新版本|權限不足，無法儲存|內容欄位不可為空|新增提示詞失敗，請稍後再試" data-i18n-data-toast="toast.savePrompt" data-toast-type="success|warning|warning|error" data-i18n="qaTest.savePromptVersion">儲存提示詞版本</button>
+            <button data-capability="settings:read" type="button" class="button button-green js-restore-saved" data-toast="已回復儲存的設定|權限不足，無法載入——請找貴租戶的管理者開通|無法載入儲存的設定" data-i18n-data-toast="toast.restoreSettings" data-toast-type="success|warning|error" data-i18n="qaTest.restoreSaved">回復儲存的設定</button>
+            <button data-capability="settings:write" type="button" class="button button-primary js-prompt-new-version" data-toast="已儲存為新版本|權限不足，無法儲存——請找貴租戶的管理者開通|內容欄位不可為空|新增提示詞失敗，請稍後再試" data-i18n-data-toast="toast.savePrompt" data-toast-type="success|warning|warning|error" data-i18n="qaTest.savePromptVersion">儲存提示詞版本</button>
             <button type="button" class="button button-dark js-apply-production" data-i18n="qaTest.applyProduction">套用為正式設定</button>
         </div>
     </div>
@@ -511,7 +511,7 @@ permalink: 2-2-3_abTest.html
                          空值分支是 `if (!query) { toast.show(segs[2], "warning"); return; }`——**它彈 warning、
                          不是靜默 return**；第一行擋的是 `loading`）。共用 `toast.chatSubmit` 會讓那顆 key 同時代表
                          「固定問句的 chip，不可能空」與「自由輸入，可能空」兩種行為契約（§4-2）。 #}
-                    <button data-capability="ask" type="button" class="button button-primary chat-input-submit" data-toast="回答生成中...|權限不足，無法送出|請先輸入問題|回答生成成功|回答生成失敗，請重新送出一次" data-i18n-data-toast="toast.chatSend" data-toast-type="info|warning|warning|success|error" data-i18n="action.submit">送出</button>
+                    <button data-capability="ask" type="button" class="button button-primary chat-input-submit" data-toast="回答生成中...|權限不足，無法送出——請找貴租戶的管理者開通|請先輸入問題|回答生成成功|回答生成失敗，請重新送出一次" data-i18n-data-toast="toast.chatSend" data-toast-type="info|warning|warning|success|error" data-i18n="action.submit">送出</button>
                 </div>
             </div>
         </div>
@@ -586,7 +586,7 @@ permalink: 2-2-3_abTest.html
 {% set ratingModalNote = "評分會寫進這一側的問答紀錄，之後在歷史紀錄裡篩「AB測試」就找得到。" %}
 {% set ratingModalToastKey = "toast.saveRating" %}
 {% set ratingCapability = "history" %}
-{% set ratingModalToast = "滿意度已更新|權限不足，無法送出|請先選擇讚或倒讚|更新失敗，請稍後再試" %}
+{% set ratingModalToast = "滿意度已更新|權限不足，無法送出——請找貴租戶的管理者開通|請先選擇讚或倒讚|更新失敗，請稍後再試" %}
 {% set ratingModalToastType = "success|warning|warning|error" %}
 {% include "components/rating-modal/rating-modal.html" %}
 
@@ -612,7 +612,7 @@ permalink: 2-2-3_abTest.html
 {% set deleteConfirmBinding = true %}
 {% set deleteConfirmClass = "js-revoke-share-confirm" %}
 {% set deleteCapability = "history" %}
-{% set deleteToast = "連結已撤銷|權限不足，無法撤銷|撤銷失敗，請稍後再試" %}
+{% set deleteToast = "連結已撤銷|權限不足，無法撤銷——請找貴租戶的管理者開通|撤銷失敗，請稍後再試" %}
 {% set deleteToastKey = "toast.revokeShare" %}
 {% set deleteToastType = "success|warning|error" %}
 {% include "components/delete-modal/delete-modal.html" %}

@@ -4622,6 +4622,56 @@ test("§4 每一顆會改狀態的鈕都要宣告它需要哪一道閘門（四�
     assert.equal(hits.length, 0, `唯讀使用者會看到按不動的鈕，而畫面上沒有任何東西說得出為什麼：\n${fail(hits)}`);
 });
 
+test("§4 「權限不足」那一族要說得出找誰（收件人是子句的一部分，不是可選的裝飾）", () => {
+    // §4 的子句正典是「權限不足，無法<動詞>——請找貴租戶的管理者開通」。收件人**唯一而且確定**：
+    // `require_capability`（product `app/tenancy/authz.py`）第④層那道 403 只在「這個人少了能力
+    // token」時發生——平台管理員 bypass、租戶管理者 `is_admin` 直接過——所以看得到這一句的人
+    // 一定不是管理者，而能改這件事的一定是他的租戶管理者。
+    // 少了收件人的那一版（round48 之前全站 93 處都是）讀起來像一個沒有出口的狀態：使用者
+    // 知道被擋下，卻不知道這修不修得掉、也不知道要找誰。
+    //
+    // **例外只有一種**：第③層 `require_tenant_feature`（平台把整個租戶的功能關掉，連租戶管理者
+    // 也擋）的那一段，收件人是平台管理員——它的判準是那一段自己講得出「平台」，不是開一張白名單。
+    const NEEDS = "請找貴租戶的管理者開通";
+    const PLATFORM = "平台";
+    const scan = (text, f = "<probe>") => {
+        const out = [];
+        for (const m of stripNjk(text).matchAll(/\bdata-toast="((?:\{\{[\s\S]*?\}\}|[^"])*)"/g)) {
+            for (const seg of m[1].split("|")) {
+                if (!seg.startsWith("權限不足")) continue;
+                if (seg.includes(NEEDS) || seg.includes(PLATFORM)) continue;
+                out.push(`${f}:${countLines(text, m.index)}  「${seg}」沒說得出要找誰`);
+            }
+        }
+        return out;
+    };
+    let seen = 0;
+    const hits = [];
+    for (const f of srcHtml) {
+        const t = read(f);
+        for (const m of stripNjk(t).matchAll(/\bdata-toast="((?:\{\{[\s\S]*?\}\}|[^"])*)"/g))
+            seen += m[1].split("|").filter((s) => s.startsWith("權限不足")).length;
+        hits.push(...scan(t, f));
+    }
+    // 元件把 toast 開成參數時，段落住在使用頁的 `{% set xToast = "…" %}`——同一條規則要吃得到。
+    for (const f of srcHtml) {
+        const t = stripNjk(read(f));
+        for (const m of t.matchAll(/\{%\s*set\s+\w*Toast\s*=\s*"([^"]*)"\s*%\}/g))
+            for (const seg of m[1].split("|")) {
+                if (!seg.startsWith("權限不足")) continue;
+                seen++;
+                if (seg.includes(NEEDS) || seg.includes(PLATFORM)) continue;
+                hits.push(`${f}:${countLines(t, m.index)}  「${seg}」沒說得出要找誰`);
+            }
+    }
+    assert.ok(seen >= 80, `只掃到 ${seen} 段「權限不足」 —— 這條測試在空轉`);
+    probe("§4 權限不足的收件人", (s) => scan(s),
+        ['<button data-toast="已儲存|權限不足，無法儲存|失敗" data-toast-type="success|warning|error">存</button>'],
+        ['<button data-toast="已儲存|權限不足，無法儲存——請找貴租戶的管理者開通|失敗" data-toast-type="success|warning|error">存</button>',
+         '<button data-toast="已跑完|權限不足，無法執行——請找貴租戶的管理者開通|這個租戶的問答功能已經被平台關閉，回歸跑不起來——請聯絡平台管理員" data-toast-type="success|warning|warning">跑</button>']);
+    assert.equal(hits.length, 0, `§4 子句正典：\n${fail(hits)}`);
+});
+
 test("§4 掛 data-capability 的鈕都要有 warning 型的「權限不足」段（403 是走得到的結果，不是 disabled）", () => {
     // GUIDELINE §4 的裁決：能力 token 是**逐顆**的細粒度，React 端做不出逐鈕過濾 ⇒「有 settings:read
     // 沒 settings:write」的人打得開頁面、看得到鈕，那道 403 是真實可達的結果路徑。少了這一段，

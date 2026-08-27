@@ -232,7 +232,7 @@
              豁免」），故掛 data-toast 列全結果，不再只掛 hook class。 #}
         {% if stepFlowTraceTotal %}
         <p class="text-gray m-0"><span data-i18n="agent.traceTruncatedPrefix">已顯示 </span><span>{{ stepFlowTraceShown }}</span><span data-i18n="agent.traceTruncatedMid"> ／共 </span><span>{{ stepFlowTraceTotal }}</span><span data-i18n="agent.traceTruncatedSuffix"> 筆</span></p>
-        <button data-capability="history" type="button" class="button button-border button-sm js-load-full-trace" data-toast="完整軌跡已載入|權限不足，無法載入|這一筆已經不在了，或不屬於這個租戶|載入失敗，請稍後再試" data-i18n-data-toast="toast.loadFullTrace" data-toast-type="success|warning|warning|error" data-i18n="agent.loadFullTrace">載入完整軌跡</button>
+        <button data-capability="history" type="button" class="button button-border button-sm js-load-full-trace" data-toast="完整軌跡已載入|權限不足，無法載入——請找貴租戶的管理者開通|這一筆已經不在了，或不屬於這個租戶|載入失敗，請稍後再試" data-i18n-data-toast="toast.loadFullTrace" data-toast-type="success|warning|warning|error" data-i18n="agent.loadFullTrace">載入完整軌跡</button>
         {% endif %}
         {# 逐欄「有值才畫」（saas `components/StepFlow` 逐欄 push metric 的那一串）：整列的條件放行了
              「只有軌跡截斷、沒有摘要」那一態，此時五格若無條件渲染就是五個空 chip。

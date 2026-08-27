@@ -145,7 +145,7 @@ permalink: 3-1-2_dataImport_input.html
      成功之後才導去卡片自己的 `data-href`；那顆屬性是 §5 的轉換契約，不因為換成 button 就消失。 #}
 {% set uploadCardAction = true %}
 {% set uploadCardCapability = "data:write" %}
-{% set uploadCardToast = "資料集已建立，接著上傳檔案|權限不足，無法建立資料集|資料集名稱不可為空|選到的群組不存在，請重新選一個|你在這個群組沒有寫入權限，請換一個群組或找管理者開通|同名的資料集已經存在，請換一個名稱|建立失敗，請稍後再試" %}
+{% set uploadCardToast = "資料集已建立，接著上傳檔案|權限不足，無法建立資料集——請找貴租戶的管理者開通|資料集名稱不可為空|選到的群組不存在，請重新選一個|你在這個群組沒有寫入權限，請換一個群組或找管理者開通|同名的資料集已經存在，請換一個名稱|建立失敗，請稍後再試" %}
 {% set uploadCardToastKey = "toast.createDataset" %}
 {% set uploadCardToastType = "success|warning|warning|warning|warning|warning|error" %}
 {% include "ui/upload-card/upload-card.html" %}

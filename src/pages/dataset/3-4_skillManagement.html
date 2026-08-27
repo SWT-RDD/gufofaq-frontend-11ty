@@ -90,7 +90,7 @@ permalink: 3-4_skillManagement.html
         </div>
     </div>
     <div class="flex-row">
-        <button data-capability="settings:write" type="button" class="button button-primary" data-toast="Skill 已建立|權限不足，無法新增|名稱與用途說明不可為空|名稱格式不符或已存在，或兩欄任一超過長度上限、含 XML/HTML 標籤|建立失敗，請稍後再試" data-i18n-data-toast="toast.createSkill" data-toast-type="success|warning|warning|warning|error">
+        <button data-capability="settings:write" type="button" class="button button-primary" data-toast="Skill 已建立|權限不足，無法新增——請找貴租戶的管理者開通|名稱與用途說明不可為空|名稱格式不符或已存在，或兩欄任一超過長度上限、含 XML/HTML 標籤|建立失敗，請稍後再試" data-i18n-data-toast="toast.createSkill" data-toast-type="success|warning|warning|warning|error">
             <img src="./images/icon_add_white.png" width="48" height="48" decoding="async" alt="" class="icon">
             <span data-i18n="settings.addSkill">新增 Skill</span>
         </button>
@@ -187,9 +187,9 @@ permalink: 3-4_skillManagement.html
                                  依 §5 ③ 掛 data-toast 列全結果。原本狀態欄演了兩態卻沒有任何路徑到得了
                                  或離得開，等於示範一個改不動的狀態。 #}
                             {% if skill.enabled %}
-                            <button data-capability="settings:write" type="button" id="skillToggle-{{ skill.id }}" aria-labelledby="skillRowName-{{ skill.id }} skillToggle-{{ skill.id }}" class="button button-border button-sm js-toggle-skill" data-toast="Skill 已停用|權限不足，無法停用|停用失敗，請稍後再試" data-i18n-data-toast="toast.disableSkill" data-toast-type="success|warning|error" data-i18n="action.disable">停用</button>
+                            <button data-capability="settings:write" type="button" id="skillToggle-{{ skill.id }}" aria-labelledby="skillRowName-{{ skill.id }} skillToggle-{{ skill.id }}" class="button button-border button-sm js-toggle-skill" data-toast="Skill 已停用|權限不足，無法停用——請找貴租戶的管理者開通|停用失敗，請稍後再試" data-i18n-data-toast="toast.disableSkill" data-toast-type="success|warning|error" data-i18n="action.disable">停用</button>
                             {% else %}
-                            <button data-capability="settings:write" type="button" id="skillToggle-{{ skill.id }}" aria-labelledby="skillRowName-{{ skill.id }} skillToggle-{{ skill.id }}" class="button button-border button-sm js-toggle-skill" data-toast="Skill 已啟用|權限不足，無法啟用|啟用失敗，請稍後再試" data-i18n-data-toast="toast.enableSkill" data-toast-type="success|warning|error" data-i18n="action.enable">啟用</button>
+                            <button data-capability="settings:write" type="button" id="skillToggle-{{ skill.id }}" aria-labelledby="skillRowName-{{ skill.id }} skillToggle-{{ skill.id }}" class="button button-border button-sm js-toggle-skill" data-toast="Skill 已啟用|權限不足，無法啟用——請找貴租戶的管理者開通|啟用失敗，請稍後再試" data-i18n-data-toast="toast.enableSkill" data-toast-type="success|warning|error" data-i18n="action.enable">啟用</button>
                             {% endif %}
                             <button type="button" id="skillDelete-{{ skill.id }}" aria-labelledby="skillRowName-{{ skill.id }} skillDelete-{{ skill.id }}" class="button button-red button-sm js-delete-skill" data-i18n="action.delete">刪除</button>
                         </div>
@@ -325,7 +325,7 @@ permalink: 3-4_skillManagement.html
 {% set deleteConfirmClass = "js-confirm-delete-skill" %}
 {% set deleteConfirmBinding = true %}
 {% set deleteCapability = "settings:write" %}
-{% set deleteToast = "Skill 已刪除|權限不足，無法刪除|此 Skill 仍被其他 Skill 或設定檔參照，請先移除參照|刪除失敗，請稍後再試" %}
+{% set deleteToast = "Skill 已刪除|權限不足，無法刪除——請找貴租戶的管理者開通|此 Skill 仍被其他 Skill 或設定檔參照，請先移除參照|刪除失敗，請稍後再試" %}
 {% set deleteToastType = "success|warning|warning|error" %}
 {% set deleteToastKey = "toast.deleteSkill" %}
 {% include "components/delete-modal/delete-modal.html" %}
