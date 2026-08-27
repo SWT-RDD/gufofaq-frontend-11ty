@@ -1278,6 +1278,24 @@ bodyClass: guideline-page
                      兩者都是 React 依回應條件渲染的分支，真實頁演的都是正常態 ⇒ 這裡是唯一可見處。 #}
                 <p class="text-red m-0" data-i18n="ask.noDatasetsSelected">目前生效的檢索設定檔把所有資料集都設為「不使用」，沒有可搜尋的範圍。請到「設定 › 檢索設定」調整。</p>
                 <p class="text-red m-0" data-i18n="ask.noDatasetsSelectedPublic">本站的知識庫還沒有設定完成，目前問不到東西——請聯絡本網站的管理者。</p>
+                {# 同一族的**另一個前提**（round48）：不是「設定檔把資料集都關掉」，是這個租戶根本
+                     還沒建過知識庫。後台那一句要指得出下一步（去匯入第一批資料）；**前台不另立第二顆
+                     key**——訪客分不出「還沒建」與「設定成不使用」，能做的也是同一件事（告訴管理者），
+                     兩句話在他眼裡是同一句（§4-2：繁中原文相同的 chrome 沿用既有 key，不另立）。 #}
+                <p class="text-red m-0" data-i18n="ask.noIndexes">這個租戶還沒有建立任何知識庫，所以問不到東西。先到「資料集管理」匯入第一批資料。</p>
+                {# **跨頁通用的執行期防線**：React 端拿到的回應與契約對不上時，那一區不硬畫、換上這一句。
+                     它沒有固定的家（哪一區都可能發生），所以切版這一側只定文案與字色，不定位置——
+                     這是它唯一的可見處。下一步要講得出來：重新整理通常就好，還是一樣就得有人去看
+                     那支端點，所以要附網址。 #}
+                <p class="text-red m-0" data-i18n="common.contractDrift">這一區的資料格式與預期不符，暫時顯示不出來。重新整理一次通常就好；還是一樣的話請聯絡平台管理員，並附上這一頁的網址。</p>
+                {# 五句**頁級／欄位級的失敗態**（round48），它們在各自的頁面上都掛著 `.hidden`
+                     （那一份 markup 是位置與字色的規格），真實稿演的都是成功那一態 ⇒ 這裡是唯一可見處。
+                     繁中逐字照抄各自的使用頁（§4-2 同 key 兩種繁中會互相覆蓋）。 #}
+                <p class="text-red m-0" data-i18n="dataset.fileNotLinkable">這個檔匯入時沒有留下擷取管道記錄，所以預覽不出它的內容——要看內容只能把同一份檔重新匯入一次。</p>
+                <p class="text-gray m-0" data-i18n="dataset.noExtractedContent">這個檔還沒有擷取內容：可能還在擷取中，也可能它裡面沒有解得出來的文字。過幾分鐘再回來看，一直是空的就是後者。</p>
+                <p class="text-red m-0" data-i18n="dataset.noWritableGroup">你沒有任何可以寫入的群組，所以建不了資料集。請找租戶管理者建一個群組並把你加進去。</p>
+                <p class="text-gray m-0" data-i18n="dataset.excelOriginalUnavailable">這個檔不是從 Excel 匯入的，所以沒有原始資料可以對照。</p>
+                <p class="text-red m-0" data-i18n="regression.runIdMissing">網址少了執行編號，這份報表開不起來。請回「回歸案例集」頁，從那一列的「看報表」進來。</p>
             </div>
             <div class="subtitle">出處：2-2-4 的模型相容性兩句、2-2-5 的基準設定缺漏與命中清單截斷、2-2-5 的桶子列數截斷（每桶 20 則上限，那一頁只有 10 則案例故恆不觸發）、5-2 的逐代碼覆寫重複、5-2 的別名綁定與「沒有啟用任何輸出規則」、5-10 的覆蓋率可開啟與「尚未量測」、4-2 的兩欄合規、3-5 的「還沒跑過健檢」、2-2-5「沒得比」的另一個方向（基準沒有它）、5-9 的金鑰兩態（已存在／尚未產生）、4-2 意圖判斷的「是」、3-1-3 多選刪除的量詞、5-3 長條圖的系列欄名、import-sync-tag 索引同步演不到的兩態（1-1-6 停在最常見的 pending，1-2-1 逐檔演 pending／unknown／缺席態）、平台聯絡窗口沒設過時登入頁與無權限窗各自換上的那一句、3-5「內容過短」那一格的 null 態（那一欄在它存在之前寫下的掃描列上是 NULL，與量到的 0 不是同一件事）、四句具名的空狀態（稽核表／健檢清單／未標註文件窗／覆蓋缺口——四頁的示範陣列都非空，故那四句在真實頁上渲染不出來）、前台問答的「連結沒有 widget token」與「租戶沒設歡迎語時的預設開場」（兩顆在 faq-chatroom 都掛 .hidden）。它們在各自的頁面上都掛著 .hidden，或由一個在該頁恆為某一值的條件式產出，或是那一頁的示範推導不出來的枚舉成員，或住在切版畫不出內容的容器裡（&lt;canvas&gt;、業務 js 填的空槽）——那一態沒有人看得到，這裡是唯一可見處</div>
         </section>
@@ -1538,9 +1556,17 @@ bodyClass: guideline-page
 {% set helpModalTitle = "回覆長度上限說明" %}
 {% set helpModalWhatKey = "help.demo.what" %}
 {% set helpModalWhat = "這一區決定單次回答最多可以輸出多少字；超過上限的部分會被截斷，不會影響檢索到的來源筆數。" %}
+{# ②的四條規則就是 `activeStateNotes` 回得出來的全部（正本 gufofaq-saas
+     `apps/web/lib/contracts/valueDependencies.ts` 的 `StateNote`／`RuleName`）：四顆 key 是**枚舉的成員**，
+     真實頁的 ② 由 React 執行期依當下設定挑其中幾條，所以那幾頁一條都畫不出來——這裡是它們
+     唯一的可見處（§4-2：枚舉的成員靠「有地方渲染得出來」活著，不是刪掉 key 讓消費端自己拼字串）。
+   先前這裡是兩句**就地編的展示散文**（沒有 key），於是四句真正會出現在使用者眼前的話，
+     正本落在 React 的字典裡而切版這一側零宣告。 #}
 {% set helpModalStateItems = [
-    "目前生效：知識模式為「標準」，本組上限套用於這次對話。",
-    "知識模式為「不參考知識」時，這一組上限不適用（該模式不產生檢索式回答）。"
+    { textKey: "help.state.knowledgeOff", text: "知識模式目前設為「不參考知識」：模型不會使用檢索到的參考資料，因此這一段的檢索筆數與引用設定暫不生效。" },
+    { textKey: "help.state.answerabilityOn", text: "可回答性閘目前是開啟狀態：判準與分數門檻會被用來決定「查無資料」時是否據實回覆。" },
+    { textKey: "help.state.qaDirectOn", text: "QA 直答目前是開啟狀態：分數門檻、判定補充說明與可選取的 QA 資料集都會被用到。" },
+    { textKey: "help.state.rerankOff", text: "重排序目前是關閉狀態：所選的重排序模型名稱不會被檢索端使用。" }
 ] %}
 {% set helpModalLimitRows = [
     { labelKey: "help.demo.maxAnswerChars", label: "回覆最大字數", bound: "≤ 50000", effectKey: "help.demo.maxAnswerCharsEffect", effect: "超過時從尾端截斷，並附加「內容過長，僅顯示前 N 字」" },

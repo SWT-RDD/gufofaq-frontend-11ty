@@ -1,9 +1,13 @@
 {# 說明視窗：一顆 ⓘ 打開的三塊式說明。三塊的來源刻意不同，這是它存在的理由——
      ① 這一區在做什麼：**唯一手寫**的一段，i18n key 慣例 `help.<page>.<block>.what`。
-     ② 現在生效的條件：**完全導出**（模式適用性＋值相依），不手寫。手寫的那天它就會與
-        畫面分家——一邊藏著欄位、一邊說它生效。故 `helpModalStateItems` 逐條是呼叫端已經
-        算好的完整句子，不掛 `data-i18n`（GUIDELINE §4-2「只翻 UI chrome，不翻假資料」——
-        這裡每一句都是計算結果，不是站內字面，翻了反而會把「現在生效」翻成另一種語言的謊話）。
+     ② 現在生效的條件：**規則是導出的，句子不是**。呼叫端算的是「哪幾條規則現在成立」，
+        每一條規則對應**一顆固定的 i18n key**（正本 gufofaq-saas `apps/web/lib/contracts/valueDependencies.ts`
+        的 `StateNote`，逐字是 `{ rule, i18nKey }` ——「文字住在 i18n，規則住在這裡」）。
+        ⚠️ **round48 修正**：這裡先前寫「逐條是呼叫端已經算好的完整句子，不掛 `data-i18n`」，
+        而那個設計的後果是**這一整塊在英文模式下永遠是繁中**——句子是站內字面（規則的名字），
+        不是使用者資料，§4-2「只翻 UI chrome」要翻的正是這一族。故 `helpModalStateItems`
+        逐條改成 `{ textKey, text }`：規則導出、句子照舊掛 key。手寫散文那條禁令沒有放寬——
+        不准的是「就地編一句話」，不是「這一族不翻」。
      ③ 這一區的所有數字：由 React 執行期讀 product 的 limits 端點填入（gufofaq-saas
         `services/product/app/ops_limits.py` 的 `*_LIMIT_GROUPS`——`DATASET_`／`HISTORY_`／
         `STATS_`／`USER_`／`SELF_`／`EXTRACT_` 六族，各自投影成 `GET /<資源>/limits`；對話設定
@@ -49,8 +53,9 @@
        helpModalWhatKey/
        helpModalWhat        —— 必填。①「這一區在做什麼」，本元件裡**唯一手寫**的一段
                                （i18n key 慣例 `help.<page>.<block>.what`）。
-       helpModalStateItems  —— 必填，字串陣列。②「現在生效的條件」逐條列出；見上方理由，
-                               不掛 `data-i18n`。示範時至少給一筆，讓這個分支被看過
+       helpModalStateItems  —— 必填，物件陣列 `{textKey, text}`。②「現在生效的條件」逐條列出，
+                               每一條就是一條**規則**（見上方 ②）：`textKey` 是那條規則的 i18n key、
+                               `text` 是它的繁中原文。示範時至少給一筆，讓這個分支被看過
                               （GUIDELINE §5：沒有頁面演得出來的分支等於沒驗收過）。
        helpModalLimitRows   —— 必填，物件陣列 `{labelKey, label, bound, effectKey, effect}`。
                                ③「這一區的所有數字」，`bound` 是獨立節點、不得烤進
@@ -86,7 +91,7 @@
                         <h4 class="help-modal-subtitle mb-8" data-i18n="help.stateTitle">現在生效的條件</h4>
                         <ul class="list-style-disc">
                             {% for item in helpModalStateItems %}
-                            <li>{{ item }}</li>
+                            <li data-i18n="{{ item.textKey }}">{{ item.text }}</li>
                             {% endfor %}
                         </ul>
                     </section>

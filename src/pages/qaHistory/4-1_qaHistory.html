@@ -94,12 +94,20 @@ permalink: 4-1_qaHistory.html
                     <input type="text" id="keywordInput" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control keyword-input">
                 </div>
             </div>
+            {# **兩個編號欄是二擇一，而且那件事先前一個字都沒說**（round48）：`list_history`
+                 （product `app/routers/history.py`）的第一段是 `if log_sn is not None:` ——命中就
+                 **當場 return**，`chat_room_sn` 連被讀到都沒有。所以兩個都填時聊天室編號是
+                 **靜默失效**：畫面上那一格填著值、查出來的卻是另一個條件的結果，而沒有任何
+                 訊號說得出為什麼。這不是送出後才知道的錯（後端不回 400），所以只能寫在**填之前**
+                 （§4 帶約束條件的輔助文字掛 id ＋ aria-describedby；§3-2 約束寫在做決定的控制項旁邊）。
+               一顆 hint 被兩顆控制項共指（同 components/reset-password-modal 的密碼長度那一句）：
+                 這條約束講的是**兩格之間的關係**，各寫一份就會變成兩句話講同一件事。 #}
             <div class="form-group col-12-sm w-200">
                 <div class="label">
                     <label for="chatLogSnInput" class="control-label" data-i18n="qa.conversationId">對話編號</label>
                 </div>
                 <div class="field">
-                    <input type="text" id="chatLogSnInput" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control chat-log-sn">
+                    <input type="text" id="chatLogSnInput" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" aria-describedby="chatSnPickOneHint" class="form-control chat-log-sn">
                 </div>
             </div>
             <div class="form-group col-12-sm w-200">
@@ -107,7 +115,8 @@ permalink: 4-1_qaHistory.html
                     <label for="chatRoomSnInput" class="control-label" data-i18n="qa.chatroomId">聊天室編號</label>
                 </div>
                 <div class="field">
-                    <input type="text" id="chatRoomSnInput" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control chat-room-sn">
+                    <input type="text" id="chatRoomSnInput" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" aria-describedby="chatSnPickOneHint" class="form-control chat-room-sn">
+                    <span class="text-gray" id="chatSnPickOneHint" data-i18n="qa.snPickOne">對話編號與聊天室編號請擇一填寫：兩個都填時只有對話編號生效，聊天室編號會被略過。</span>
                 </div>
             </div>
             <div class="form-group col-12-sm w-200">

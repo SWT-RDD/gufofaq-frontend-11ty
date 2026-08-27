@@ -44,6 +44,14 @@ permalink: 3-1-2_dataImport_input.html
             <option value="1">管理群組</option>
             <option value="3">研發群組</option>
         </select>
+        {# **一個可寫入的群組都沒有**那一態（round48）：這顆 select 的選項是「我有 data:write 的群組」，
+             一個都沒有時它就是空的——而一顆只有「請選擇群組」的下拉，讀起來像「還沒挑」而不是
+             「你沒得挑」，使用者會一直找那個不存在的選項。所屬群組是必填（product
+             `app/routers/datasets.py` 的 `DatasetIn.group_id`），所以這一態等於整張表單送不出去，
+             要講得出解法（找租戶管理者建群組並把你加進去）。
+             先前這一句是 React 自己造的 key；`.hidden` 那一份是位置與字色的規格，
+             可見處在元件庫頁的「React 條件文案」區（§5）。 #}
+        <p class="text-red m-0 js-no-writable-group hidden" role="alert" data-i18n="dataset.noWritableGroup">你沒有任何可以寫入的群組，所以建不了資料集。請找租戶管理者建一個群組並把你加進去。</p>
     </div>
 </div>
 

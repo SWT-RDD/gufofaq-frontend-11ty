@@ -146,6 +146,12 @@ permalink: 3-1-6_previewExcel_compare.html
 </div>
 
 <div class="tab-content" id="panelRaw" style="display: none;">
+    {# **這個檔不是從 Excel 匯入的**那一態（round48）：原始面板畫的是活頁簿自己的欄與儲存格，
+         而資料夾匯入／PDF 那一族根本沒有活頁簿 ⇒ 整張表不適用。它與下面那一列「沒有資料列」
+         是兩件事：那一列說的是「有活頁簿、但裡面沒有列」。共用一句話會讓人回頭去找一個
+         不存在的原始檔。先前這一句是 React 自己造的 key；`.hidden` 那一份是位置與字色的規格，
+         可見處在元件庫頁的「React 條件文案」區（§5）。 #}
+    <p class="text-gray mt-10 js-raw-unavailable hidden" role="status" data-i18n="dataset.excelOriginalUnavailable">這個檔不是從 Excel 匯入的，所以沒有原始資料可以對照。</p>
     <div class="table-container scrollTable mt-10">
         <table class="default-table fixed-layout">
             <thead>

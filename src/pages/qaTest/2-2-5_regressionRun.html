@@ -71,6 +71,11 @@ permalink: 2-2-5_regressionRun.html
 ] %}
 <div class="flex-row column gap-16">
     {% include "ui/breadcrumb/breadcrumb.html" %}
+    {# **網址少了執行編號**那一態（round48）：這一頁整份內容都靠 `run_id` 取，沒有它就什麼都畫不出來。
+         它不是「查不到那一份報表」（那是 404），是**連要查哪一份都不知道**——所以下一步是回案例集頁
+         用「看報表」進來，不是重試。先前這一句是 React 自己造的 key；`.hidden` 那一份是位置與字色的
+         規格，可見處在元件庫頁的「React 條件文案」區（§5）。 #}
+    <p class="text-red m-0 js-run-id-missing hidden" role="alert" data-i18n="regression.runIdMissing">網址少了執行編號，這份報表開不起來。請回「回歸案例集」頁，從那一列的「看報表」進來。</p>
 </div>
 
 {# ── 執行身分 ───────────────────────────────────────────────────────────────

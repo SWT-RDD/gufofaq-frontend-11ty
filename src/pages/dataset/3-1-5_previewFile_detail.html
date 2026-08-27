@@ -22,6 +22,17 @@ permalink: 3-1-5_previewFile_detail.html
          `len(get_document_chunks(...))`），兩頁同源（§6 跨頁自洽）。
          數字是資料、獨立成不翻的節點（§3-2：那個數字在 API 契約裡有欄位，不准進譯文字串）。 #}
     <p class="text-gray m-0"><span data-i18n="common.total">共</span> 312 <span data-i18n="dataset.chunksShowingFirst">個區塊，以下顯示第一個</span></p>
+    {# 這一頁的兩種**打不開**態（round48）。兩者都不是「這個檔是空的」，而下一步完全不同：
+         · `dataset.fileNotLinkable`——這個檔匯入時沒有留下擷取管道記錄（product
+           `app/routers/datasets.py` 的預覽端點回 409 `file_not_linkable`，同一族的另一支在
+           刪除路徑上），要看內容只能重新匯入。
+         · `dataset.noExtractedContent`——擷取還沒完成，或這個檔裡沒有解得出來的文字。等一下再來
+           與「這個檔沒有內容」是兩件事，所以兩種原因都要講。
+       兩顆先前都是 **React 自己造的 key**（靠 REACT_ONLY 白名單擋著），而切版這一頁只畫得出
+       成功那一態 ⇒ 那兩句話的正本落在 React 的字典裡。`.hidden` ＋ live region：這一份 markup 是
+       位置與字色的規格，可見處在元件庫頁的「React 條件文案」區（§5）。 #}
+    <p class="text-red m-0 js-file-not-linkable hidden" role="alert" data-i18n="dataset.fileNotLinkable">這個檔匯入時沒有留下擷取管道記錄，所以預覽不出它的內容——要看內容只能把同一份檔重新匯入一次。</p>
+    <p class="text-gray m-0 js-no-extracted-content hidden" role="status" data-i18n="dataset.noExtractedContent">這個檔還沒有擷取內容：可能還在擷取中，也可能它裡面沒有解得出來的文字。過幾分鐘再回來看，一直是空的就是後者。</p>
 </div>
 
 {# 表單內容（模擬table）：真實頁 form-table-wrap 只有單一 form-table-group（無 subtitle），
