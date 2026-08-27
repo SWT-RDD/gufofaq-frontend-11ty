@@ -3,7 +3,8 @@
      不掛 data-open-modal（GUIDELINE §5）。彈窗本體回歸切版，區塊：
        1. 額度——三個數字欄對齊 product QuotaIn（qa_limit／extraction_limit／storage_limit_mb）+ 用量週期
           select（無/每日/每月，QuotaIn.usage_period，隨額度共用 footer「儲存」鈕一起送出）+ 重置當期用量鈕
-          （直接動作，逆向自 POST /platform/tenants/{id}/reset-usage，data-toast 演出成敗，不佔用共用 footer 鈕）
+          （`.js-reset-usage` 業務條件開窗，逆向自 POST /platform/tenants/{id}/reset-usage；成敗與閘門在
+          二次確認窗那顆確認鈕上，不佔用共用 footer 鈕——見該區註解）
           `QuotaIn` 的 `qa_used` / `extraction_used`（直接設當期已用值，管理員修正用）**已補**成兩顆
           數字欄（`#tenantQaUsedInput` / `#tenantExtractionUsedInput`，≥ 0；上界不是常數而是同一次
           送出的那個額度）——旁邊那顆「重置當期用量」只能歸零、改不成某個值。上游為這兩欄另有一條
@@ -22,10 +23,13 @@
      額度／使用期／模型開通共用 footer「儲存」鈕（toast.manageTenant，成功/失敗）；停用啟用等逐成員動作各自 data-toast。
      成員清單為純示範假資料（§6b，通用名冊、不綁定使用頁的特定租戶列——本 modal 是全部列共用的一份本體，
      內容由業務 js 依「點了哪列的管理鈕」動態載入），正式環境由 React 讀 GET /platform/tenants/{id}/users 渲染。
-     .js-reset-password／.js-delete-user 的彈窗本體（components/reset-password-modal／components/delete-modal）
-     不巢狀 include 在本檔：component.html 展示頁已各自獨立 include 過這兩顆（給其他頁的示範觸發器用），
-     本檔若再巢狀 include 一次，會在 component.html 同時 include 本 modal 時產生同 id 的 <dialog> 兩份
-     （§5：一個 dialog id 只能由一個元件宣告）。故 include 在**開它的那顆鈕住的地方**——
+     .js-reset-password／.js-delete-user／.js-reset-usage 的彈窗本體（components/reset-password-modal
+     與兩份 components/delete-modal）不巢狀 include 在本檔：component.html 展示頁已各自獨立 include 過
+     那兩顆（給其他頁的示範觸發器用），本檔若再巢狀 include 一次，會在 component.html 同時 include
+     本 modal 時產生同 id 的 <dialog> 兩份（§5：一個 dialog id 只能由一個元件宣告）。**巢狀還有第二個
+     壞處**：`ui/modals` 的關窗委派是逐顆 `.modals` 監聽自己內部的 `.btn-close-modals` 點擊，第二顆窗
+     若長在第一顆的 DOM 之內，關第二顆會同時關掉第一顆——彈窗一律是**兄弟**，不是子孫。
+     故 include 在**開它的那顆鈕住的地方**——
      `components/platform-tenants-panel`（列上的 `.js-manage-tenant` 就在那裡；比照 footer 內含
      disclaimer-modal 的「誰的按鈕開的彈窗、彈窗就 include 在誰裡面」）。那個元件被
      5-6-1／5-6-1-2／5-6-1-3 三份稿共用 ⇒ 這顆 `<dialog>` 在 dist 上出現在那三頁 ＋ 元件庫頁。
@@ -84,8 +88,8 @@
        · **動作鈕**（重置用量／凍結解凍／停用啟用／重設密碼／刪除／儲存／兩顆危險操作）
          標 `admin`＝低於該級不渲染，不給唯讀角色一排按了只會 403 的鈕。
      「關閉」不標：它是純前端互動，不打任何端點。
-     ⚠️ `ui/modals/_modals.scss` 檔頭那段「全站只有 manage-tenant-modal 掛 admin」的登記要跟著改
-     （那支檔案不歸這一輪動，已列進交辦）。 #}
+     （`ui/modals/_modals.scss` 檔頭那段授權宣告的登記**已改成判準句 ＋ 反查指令**、不再列名單，
+     故這裡不必再有一條「要跟著改那份清單」的交辦。） #}
 <dialog class="modals" id="manageTenantModal" data-platform-role="auditor" aria-labelledby="manageTenantModal-title">
     <div class="modals-dialog modals-md">
         <div class="modals-wrap">
@@ -197,25 +201,39 @@
                                 </div>
                             </div>
                         </div>
-                        {# 重置當期用量：直接動作（歸零 qa_used/extraction_used、重設週期起點），不經共用 footer 鈕。
+                        {# 重置當期用量：**業務條件開窗**（round48）——歸零 qa_used/extraction_used、
+                             週期是每日／每月時另把 usage_period_start 設成現在
+                             （product `app/tenancy/platform_admin.py` 的 `reset_tenant_usage`，
+                             端點 `POST /platform/tenants/{id}/reset-usage`），不經共用 footer 鈕。
+                           ⚠️ **它先前是「按下去就送 API」的直接動作，理由是彈窗開不出來**：
+                             `components/delete-modal` 的 `<dialog id>` 當時寫死，而這扇窗出現的每一頁
+                             （5-6-1／5-6-1-2／5-6-1-3 ＋ 元件庫）都已經有一顆 `#deleteModal`
+                             （成員那一顆），第二顆同 id 是 §4／§5 明文禁止的。那道限制讓一個**不可逆、
+                             動到錢**的動作變成全站唯一沒有二次確認的破壞性動作，與 5-8 當年因為標題
+                             寫死「刪除」而放棄確認是同一種死法。本輪把 id 開成參數
+                             （`deleteModalId`），這顆鈕回到 §5 矩陣①：只掛 hook class、不掛
+                             `data-toast`；成敗與閘門的家搬到彈窗裡那顆確認鈕
+                             （彈窗本體 include 在開它的那顆鈕住的地方＝`components/platform-tenants-panel`
+                             與元件庫頁，理由同 `.js-reset-password`／`.js-delete-user`，見本檔頭）。
                            ⚠️ **這一整塊是這扇窗裡唯一直接動到「錢」的地方，先前一句說明都沒有**（round47）。
                              三件事要講，而且都是按下去之前才有用：
                                ① 額度填 0 ＝ 這個租戶下一題就被擋住（`consume_qa_quota` 的條件式 UPDATE
                                   `WHERE qa_used < qa_limit` 永遠不成立）——那是把人鎖住，不是「暫時關小」。
                                ② 把「已用量」改小 ＝ 直接把可用量還給對方，效果與加額度一樣，只是帳面上
                                   看起來像在修數字。
-                               ③ 「重置當期用量」把兩個已用量歸零**並且把週期起點設成現在**——它不是
-                                  「清一下計數器」，是重新開始一個計費週期。
-                           **這一區刻意用常駐文字、不用 ⓘ 說明視窗**：這扇窗自己就是 `<dialog showModal()>`，
-                             再從裡面開第二層 dialog 是全站沒有先例的形狀（元件層目前只有
-                             `components/knowledge-retrieval-modal` 用 info-btn，而那顆是**被** ⓘ 打開的那一份，
-                             不是在窗裡再開一顆）。要改成 ⓘ 得先讓 `components/help-modal` 的 id 可參數化
-                             ——那是另一件事，不夾在這一輪。 #}
+                               ③ 「重置當期用量」把兩個已用量歸零，**週期是每日／每月時另把週期起點設成現在**
+                                  ——它不是「清一下計數器」，是重新開始一個計費週期。週期設為「無」時
+                                  沒有起點可以重設（`reset_tenant_usage` 那一行 `if s.usage_period in
+                                  ("daily", "monthly")`），故那一句寫成有條件的，不是無條件的。
+                           **這一區刻意用常駐文字、不用 ⓘ 說明視窗**——理由**不是**「不能開第二層 dialog」
+                             （那顆二次確認就是第二層，`ui/modals` 檔頭逐字寫著巢狀由 `:has(:modal)` 免費
+                             處理）：§3-2 要的是「代價寫在做那個決定的控制項旁邊，不寫在說明頁」，而 ⓘ
+                             正是說明頁——把這三句收進 ⓘ，等於要使用者先按一顆鈕才讀得到動到錢的警語。 #}
                         <p class="text-gray m-0" data-i18n="platform.quotaMoneyHint">額度填 0 等於把這個租戶鎖住：他下一題就會被擋下來，不是「暫時關小」。把「已用量」改小則是直接把可用量還給對方，效果跟加額度一樣。</p>
                         <div class="flex-row column gap-8">
-                            <p class="text-red m-0" data-i18n="platform.resetUsageWarning">「重置當期用量」會把問答與萃取的已用量一起歸零，並把計費週期的起點設成現在——它不是清一下計數器，是替這個租戶重新開始一期。按下去立刻生效，沒有第二次確認。</p>
+                            <p class="text-red m-0" data-i18n="platform.resetUsageWarning">「重置當期用量」會把問答與萃取的已用量一起歸零；用量週期設為每日或每月時，還會把週期的起點重設成現在——它不是清一下計數器，是替這個租戶重新開始一期。</p>
                             <div class="flex-row">
-                                <button type="button" class="button button-border button-sm" data-platform-role="admin" data-toast="已重置當期用量|重設失敗，請稍後再試" data-i18n-data-toast="toast.resetUsage" data-toast-type="success|error" data-i18n="platform.resetUsage">重置當期用量</button>
+                                <button type="button" class="button button-border button-sm js-reset-usage" data-platform-role="admin" data-i18n="platform.resetUsage">重置當期用量</button>
                             </div>
                         </div>
 

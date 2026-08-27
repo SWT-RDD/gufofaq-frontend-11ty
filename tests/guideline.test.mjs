@@ -273,7 +273,10 @@ test("§2 同一頁第二次用到某個元件參數時，該參數必須先重�
     // 判準以「變數」為單位而不是以「元件」為單位 —— stepNodesLg 被 step-nodes 與
     // step-btn-wrap 兩個不同元件消費，以元件為單位會漏掉跨元件的殘留。
 
-    const stripNjk = (t) => t.replace(/\{#[\s\S]*?#\}/g, "");
+    // 註解挖掉時**保留行數**（把註解本體換成等量換行）：這條測試的訊息會報行號，而多數 `{% set %}`
+    // 前面都有一段十幾行的 `{# #}` 說明——整段刪掉之後報出來的行號與檔案裡的位置差好幾十行，
+    // 讀的人會照著去看一段不相干的 markup。
+    const stripNjk = (t) => t.replace(/\{#[\s\S]*?#\}/g, (m) => m.replace(/[^\n]/g, ""));
     const root = (v) => v.split(".")[0];
     const RESERVED = new Set(["loop", "true", "false", "not", "and", "or"]);
 
@@ -312,8 +315,16 @@ test("§2 同一頁第二次用到某個元件參數時，該參數必須先重�
         return out;
     };
 
-    const pages = srcHtml.filter((f) => !f.includes("_includes"));
-    assert.ok(pages.length > 20, `只掃到 ${pages.length} 個頁面 —— 這條測試在空轉`);
+    // round48：母體從「頁面」擴到 **src 全體 html**。`{% set %}` 是頁面全域這件事對
+    // **元件檔**一字不差地成立——一個元件把同一顆子元件 include 兩次（或 include 兩顆讀同一批
+    // 參數的子元件）時，第二次照樣會沿用第一次的殘留值。而以頁面為母體時那種情形**看不到**：
+    // 頁面只 include 那個元件一次 ⇒ 每顆參數只被消費一次 ⇒ 整段檢查直接跳過。
+    // 實例：`components/platform-tenants-panel` include 了兩份 `components/delete-modal`
+    //（刪成員 ＋ 重置當期用量的二次確認），少重設一顆 `deleteToast`／`deleteConfirmClass`，
+    // 第二扇窗就會沿用第一扇的 hook 與 toast，而 5-6-1 那一頁上沒有任何一條測試看得到。
+    const pages = srcHtml;
+    assert.ok(pages.length > 100, `只掃到 ${pages.length} 個模板 —— 這條測試在空轉`);
+    assert.ok(pages.some((f) => f.includes("_includes")), "母體裡沒有元件檔 —— 這條測試又縮回只看頁面了");
 
     let checked = 0;
     const hits = [];

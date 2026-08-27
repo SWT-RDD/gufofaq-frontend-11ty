@@ -159,8 +159,11 @@ permalink: 1-2-1_uploadFile_pdf.html
                         <button type="button" id="pdfFileEdit-{{ loop.index }}" aria-labelledby="pdfFileRowName-{{ loop.index }} pdfFileEdit-{{ loop.index }}" class="button-icon no-bg size-sm edit btn-edit-file" data-index="{{ loop.index0 }}" title="編輯" data-i18n-title="action.edit">
                             <span class="sr-only" data-i18n="action.edit">編輯</span>
                         </button>
-                        <button type="button" id="pdfFileDelete-{{ loop.index }}" aria-labelledby="pdfFileRowName-{{ loop.index }} pdfFileDelete-{{ loop.index }}" class="button-icon no-bg size-sm delete btn-delete-file" data-index="{{ loop.index0 }}" title="刪除" data-i18n-title="action.delete">
-                            <span class="sr-only" data-i18n="action.delete">刪除</span>
+                        {# 動詞是「移除」不是「刪除」：這一列的檔案還沒送出，按下去只是把它從這一批
+                             拿掉（見下方 delete-modal 的 set 區塊）。列上、確認窗、回執三處同一個動詞。
+                             `.btn-delete-file` 是凍結 hook、不因為改字面而改名（§5）。 #}
+                        <button type="button" id="pdfFileDelete-{{ loop.index }}" aria-labelledby="pdfFileRowName-{{ loop.index }} pdfFileDelete-{{ loop.index }}" class="button-icon no-bg size-sm delete btn-delete-file" data-index="{{ loop.index0 }}" title="移除" data-i18n-title="action.remove">
+                            <span class="sr-only" data-i18n="action.remove">移除</span>
                         </button>
                     </div>
                 </td>
@@ -203,14 +206,25 @@ permalink: 1-2-1_uploadFile_pdf.html
 {% set editConfirmBinding = true %}
 {% include "components/file-edit-modal/file-edit-modal.html" %}
 
-{# 刪除 modal：檔名由業務 js 填入 #deleteFileName、確認鈕由業務 js 綁定，故 set 這兩個參數；
-   markup 只有一份正本，見 components/delete-modal（§1-2／§6） #}
+{# 移除 modal：檔名由業務 js 填入 #deleteFileName、確認鈕由業務 js 綁定，故 set 這兩個參數；
+   markup 只有一份正本，見 components/delete-modal（§1-2／§6）
+   ⚠️ **標題與內文講「移除」不是「刪除」**：這一頁的動作是把檔案從**還沒送出**的待上傳清單裡拿掉
+   （真 app `GufoFAQ_Frontend_New/js/uploadFilePdf.js:480-486` 只做 `fileList.splice`），
+   而這顆鈕的回執本來就寫著「移除成功」（`toast.removePendingFile`）——確認窗卻問「確定要刪除」，
+   同一個動作在同一條路徑上用了兩個動詞，讀起來像是這一步會去刪伺服器上的東西。
+   ⚠️ **刻意不給 `deleteNoteKey`**：那一行是紅字的「按下去會失去什麼」，而這裡什麼都不會失去；
+   把「不會有東西被刪」寫成紅字警語是把安心話畫成警報（delete-modal 檔頭逐字把「送出前的本地移除」
+   列為不給這一格的例子）。要講的那件事已經由動詞本身講完了。 #}
+{% set deleteTitleKey = "action.remove" %}
+{% set deleteTitleZh = "移除" %}
+{% set deleteMessageKey = "common.confirmRemove" %}
+{% set deleteMessageZh = "確定要移除" %}
 {% set deleteTargetId = "deleteFileName" %}
 {# 確認鈕的 React 綁定記號（與列上的 .btn-delete-file（凍結 hook）成對）：`deleteConfirmBinding` ＝交給業務 js 綁定、不自動關窗，
      兩顆記號都不給等於那顆鈕在 markup 上沒有任何東西可以抓（delete-modal 檔頭：二擇一必給）。 #}
 {% set deleteConfirmClass = "js-confirm-remove-pending-file" %}
 {% set deleteConfirmBinding = true %}
-{# 只有一段：這一頁的「刪除」是**送出前**把檔案從待上傳清單移掉，真 app 就是
+{# 只有一段：這一頁的「移除」是**送出前**把檔案從待上傳清單拿掉，真 app 就是
      `fileList.splice(index, 1)` ＋ `showToast('刪除成功')`（uploadFilePdf.js:480-486），
      沒有 API、沒有失敗路徑。原本沿用 3-1-3 的「刪除檔案失敗」是抄版型抄來的——
      演一個不可能發生的結果，與只演成功一樣是說謊（§5）。 #}

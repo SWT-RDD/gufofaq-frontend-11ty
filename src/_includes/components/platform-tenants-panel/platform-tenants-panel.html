@@ -680,3 +680,35 @@
 {% set resetToastKey = "toast.resetPasswordPlatform" %}
 {% set resetToastType = "success|warning|warning|error" %}
 {% include "components/reset-password-modal/reset-password-modal.html" %}
+{# manage-tenant-modal 裡「重置當期用量」（`.js-reset-usage`）的二次確認窗（round48）。
+     ⚠️ **它是這一頁的第二顆 delete-modal**，故 `deleteModalId` 必給——`#deleteModal` 已經被上面那一顆
+     （刪成員）佔走，同頁兩顆同 id 是 §4 明文禁止的，而那正是這個動作先前沒有二次確認的唯一原因。
+     ⚠️ **本區塊把 delete-modal 的每一顆參數都重設一次**（§2：`set` 是頁面全域）：上面那一顆設過
+     `deleteTargetId`／`deleteNote*`／`deleteConfirm*`／`deletePlatformRole`／`deleteToast*`，少重設一顆，
+     這一窗就會沿用刪成員那一份的值——標題對、內文對，只有 toast 或 hook 悄悄變成別人的。
+     為什麼走 delete-modal 而不是另做一顆窗：它就是全站破壞性動作的那一顆共用確認窗
+     （見該元件檔頭：撤銷分享連結／撤銷嵌入金鑰／重新產生金鑰都沿用它，不為每個動詞各做一份）。
+     內文接租戶名（`deleteTargetId`，由業務 js 填）：這一窗蓋在 manage-tenant-modal 之上，
+     底下標題那句「租戶管理：示範租戶 B」被整個遮住，而同一份平台上有很多個租戶（§5 條件開窗的
+     「先選定的那個目標」要有一顆常駐資料槽畫出來）。 #}
+{% set deleteModalId = "resetUsageModal" %}
+{% set deleteTitleKey = "platform.resetUsage" %}
+{% set deleteTitleZh = "重置當期用量" %}
+{% set deleteMessageKey = "platform.resetUsageConfirm" %}
+{% set deleteMessageZh = "確定要重置當期用量" %}
+{% set deleteTargetId = "resetUsageTenantName" %}
+{# 連帶後果（`deleteNoteKey`）：歸零之後**原本的數字沒有地方查得回來**——`reset_tenant_usage`
+     直接把 `qa_used`／`extraction_used` 覆寫成 0，而它寫的稽核列 `detail` 只有 `{"usage_period": …}`
+     （product `app/tenancy/platform_admin.py`），舊值一個都沒帶。旁邊那顆「問答已用量」欄位改得回去，
+     前提是你還記得原本是多少——這一句就是在講那件事。 #}
+{% set deleteNoteKey = "platform.resetUsageNote" %}
+{% set deleteNoteZh = "歸零之前的數字不會留在任何地方：稽核只記得「有人做過這件事」，記不住原本用了多少。" %}
+{% set deleteConfirmBinding = true %}
+{% set deleteConfirmClass = "js-reset-usage-confirm" %}
+{% set deletePlatformRole = "admin" %}
+{# 兩段：`reset_tenant_usage` 的出口只有「租戶不存在」的 404 與成功
+     （`require_platform_admin` 那道 403 走的是 §5 的不渲染，不是 toast）。 #}
+{% set deleteToast = "已重置當期用量|重設失敗，請稍後再試" %}
+{% set deleteToastKey = "toast.resetUsage" %}
+{% set deleteToastType = "success|error" %}
+{% include "components/delete-modal/delete-modal.html" %}

@@ -2096,7 +2096,7 @@ permalink: 5-2_conversationSettings.html
              chatbot services/mcp_client.py 的 validate_mcp_server_ids），而濾掉清單等於在 UI 上把那個
              流程拿掉；更糟的是**已選取的 server 一旦被平台停用就從選單消失**，租戶只要碰一下這個多選
              就把它弄丟了（多選的值來自 <option>，選單沒有它＝選取狀態不存在）。
-             停用期間不會被呼叫（chatbot routes/chat.py 的 _select_mcp_servers 以 id.in_() ＋ is_active
+             停用期間不會被呼叫（chatbot app/conversation/router.py 的 _select_mcp_servers 以 id.in_() ＋ is_active
              兩道過濾，落差記 WARNING），故文案是「要等平台啟用後才會被呼叫」而不是「不能設定」。
              product 已跟上（round40 複驗）：gufofaq-saas `services/product/app/routers/mcp.py` 的
              `list_tenant_mcp_catalog` 不再濾 `is_active`（只留 `s.get("id") is not None`），

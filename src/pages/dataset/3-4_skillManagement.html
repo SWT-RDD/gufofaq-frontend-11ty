@@ -302,11 +302,20 @@ permalink: 3-4_skillManagement.html
 {# 刪除 modal：.js-delete-skill 條件開窗（先選定要刪哪個 skill），確認鈕歸業務 js
    （deleteConfirmBinding，不自動關窗）；skill 名由業務 js 填入 #deleteSkillName。
    刪除**有**參照守衛：被其他 skill 的 allowed_tools.skill_ids、或任何設定檔的 skill_ids 參照時
-   一律拒刪並要求先移除參照（GufoRAG chatbot routes/skills.py 的 delete_skill）——故 toast 除了成敗
+   一律拒刪並要求先移除參照（GufoRAG chatbot app/knowledge/skills/router.py 的 delete_skill）——故 toast 除了成敗
    另有那一態，且那一態是使用者自己修得掉的 warning，不是「請稍後再試」。執行期另有容錯（載不出的 skill 略過
    並記 ERROR log，agent_service._create_skill_tools），但那只涵蓋已停用／版本快照缺漏，
    不代表刪除端點允許懸空。 #}
 {% set deleteTargetId = "deleteSkillName" %}
+{# 連帶後果（`deleteNoteKey`）：`delete_skill` 的 docstring 逐字「刪 skill（版本史隨 cascade
+     一併刪除，不留孤兒列）」——所以被帶走的是**這個 skill 的每一版**，不只清單上那一列。
+     這一頁的編輯窗自己就在演版本史（`components/skill-editor-modal`），使用者按刪除時
+     很容易以為「還留著舊版可以回去」。
+     ⚠️ **這一句刻意不寫「引用它的設定檔會少一顆工具」**：那件事發生不了——同一支端點在刪之前
+     先跑 `find_references`，被其他 skill 的 `allowed_tools.skill_ids` 或任何 config 的 `skill_ids`
+     參照時一律拒刪（那是 toast 第三段講的事）。寫進來就是替一個守衛擋掉的情況編一段後果。 #}
+{% set deleteNoteKey = "settings.deleteSkillNote" %}
+{% set deleteNoteZh = "這個 Skill 的每一版歷史會跟著一起消失，救不回來——要回來只能重新寫一次。" %}
 {# 確認鈕的 React 綁定記號（與 .js-delete-skill 成對）：`deleteConfirmBinding` ＝交給業務 js 綁定、不自動關窗，
      兩顆記號都不給等於那顆鈕在 markup 上沒有任何東西可以抓（delete-modal 檔頭：二擇一必給）。 #}
 {% set deleteConfirmClass = "js-confirm-delete-skill" %}

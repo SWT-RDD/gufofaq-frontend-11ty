@@ -251,6 +251,12 @@ permalink: 5-8_widgetTokens.html
 {% set deleteMessageKey = "common.confirmRevoke" %}
 {% set deleteMessageZh = "確定要撤銷" %}
 {% set deleteTargetId = "revokeTokenTarget" %}
+{# 連帶後果（`deleteNoteKey`）：撤銷這一把的代價不在這個後台，而在**客戶自己的網站上**——
+     嵌入碼還掛在那裡，面板會當場問不出東西。這句話目前只寫在「金鑰清單」的 ⓘ 裡
+     （撤銷不可逆、前台所有掛著這把金鑰的嵌入頁會立即失效），而 ⓘ 在另一顆鈕後面，
+     不是「做這個決定的控制項旁邊」（§3-2）。上一行只問「確定要撤銷 X」，講不出這件事。 #}
+{% set deleteNoteKey = "widget.revokeTokenNote" %}
+{% set deleteNoteZh = "撤銷之後，前台所有掛著這把金鑰的嵌入頁會立即停止回答，而且救不回來——要恢復只能核發新的一把，再把網站上的嵌入碼換掉。" %}
 {% set deleteConfirmBinding = true %}
 {% set deleteConfirmClass = "js-revoke-token-confirm" %}
 {% set deleteTenantRole = "admin" %}

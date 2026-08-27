@@ -26,14 +26,15 @@
        uploadCardToastKey／uploadCardToastType（§5 三件套）、uploadCardCapability（閘門）。
        動作模式仍保留 `data-href`：React 要靠它知道「建完之後導去哪一條上傳流程」，
        那是 §5 的轉換契約，不因為換成 button 就消失。 #}
-{# 四張卡的大小數字（50MB）是後端真的會拒絕的界線，不是文案裡的裝飾——正本與 ui/upload-box
-     檔頭那份完全同一顆：product `app/settings.py` 的 `Settings.upload_max_bytes`（預設 50 MiB），
-     經 `ops_limits.py` 的 `DATASET_LIMIT_GROUPS.upload.bytes` 投影成 `GET /datasets/limits` 的
-     `upload.bytes.max`；後續批次會把這顆節點接上那支端點。
+{# 三張卡的大小數字是後端真的會拒絕的界線，不是文案裡的裝飾——**正本不在本檔**，
+     住在 `ui/upload-limit-catalog`（GUIDELINE §2 的 `{% from … import %}`；出處、單位與
+     「為什麼非目錄不可」逐條寫在那一份檔頭）。`ui/upload-box` 吃的是同一顆
+     `uploadLimitCatalog.maxMb`：兩支元件各留一份字面量，改上限時一定會漏掉其中一支，
+     而畫面上兩頁各講一個數字完全看不出來。
      **四張卡以前各自手抄一個數字**（Excel 10MB、PDF／WORD／Image 各 30MB）——但
      `read_upload()`／`UploadBudget()` 對這四種副檔名走同一段程式碼，沒有任何呼叫端覆寫
      `max_bytes`，也沒有「PDF 專用上限」這種東西：四張卡描述的是**同一份**單檔上限，只是格式
-     清單不同，故四個 `desc` 都改成不含數字的前綴、數字統一成同一顆 `50MB`。
+     清單不同，故四個 `desc` 都改成不含數字的前綴、數字統一成目錄裡那一顆。
      Excel 卡沿用 `comp.uploadDescXlsxPrefix`（與 ui/upload-box 元件預設同一個 key、同一句話，
      不重複造第二份「xlsx 檔案最大不超過」的譯文）；PDF／WORD／Image 三張各自的格式清單不同，
      維持各自獨立的 key，但都加上 `Prefix` 後綴、拿掉數字。 #}
@@ -42,6 +43,8 @@
      **刻意不沿用凍結前端那份 alt**（原檔四張卡各寫一句英文 alt）：那串字既沒有 `data-i18n-alt`、
      英文模式與繁中模式念同一串，而全站圖示一律 `alt=""`（唯一例外是 BETA 徽章與檔型欄位值）。
      連帶把 `uploadCards` 的 `iconAlt` 欄拿掉——留著就是一顆零消費的參數（§5）。 #}
+{% from "ui/upload-limit-catalog/upload-limit-catalog.html" import uploadLimitCatalog %}
+{% set uploadCardMaxMb = uploadLimitCatalog.maxMb %}
 {# 示範資料用元件專屬名 uploadCards（§6：set 是頁面全域，泛用名會與使用頁同名變數互相覆蓋） #}
 {% set uploadCards = [
     {
@@ -94,7 +97,7 @@
                 <img src="./images/{{ card.icon }}" width="60" height="76" decoding="async" alt="" class="upload-icon" />
                 <span class="upload-title">{{ card.name }}</span>
             </span>
-            <span class="upload-desc"><span data-i18n="{{ card.descKey }}">{{ card.desc }}</span><span>50MB</span></span>
+            <span class="upload-desc"><span data-i18n="{{ card.descKey }}">{{ card.desc }}</span><span>{{ uploadCardMaxMb }}MB</span></span>
         </span>
     </{{ uploadCardTag }}>
     {% endfor %}

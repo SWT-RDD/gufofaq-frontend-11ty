@@ -611,6 +611,9 @@ bodyClass: guideline-page
                          不掛 data-open-modal，見 GUIDELINE §5）。「看得見」由本頁示範觸發器保證（第三條路）。 #}
                     <button type="button" class="button button-dark" data-open-modal="resetPasswordModal">開啟重設密碼modal</button>
                     <button type="button" class="button button-dark" data-open-modal="manageTenantModal">開啟租戶管理modal</button>
+                    {# 這一顆在真實頁上是從**租戶管理窗裡面**（`.js-reset-usage`）條件開出來的第二層確認窗；
+                         這裡的示範觸發器是它「看得見」的那條路（GUIDELINE §1-2 第三條路）。 #}
+                    <button type="button" class="button button-dark" data-open-modal="resetUsageModal">開啟重置當期用量確認modal</button>
                     <button type="button" class="button button-dark" data-open-modal="shareManageModal">開啟分享連結管理modal</button>
                     <button type="button" class="button button-dark" data-open-modal="manageMembersModal">開啟管理成員modal</button>
                     <button type="button" class="button button-dark" data-open-modal="glossaryEntriesModal">開啟術語表詞條modal</button>
@@ -1355,6 +1358,24 @@ bodyClass: guideline-page
      沒有真實頁演得出來（§5）。 #}
 {% set manageTenantShowUsageError = true %}
 {% include "components/manage-tenant-modal/manage-tenant-modal.html" %}
+{# 租戶管理窗裡「重置當期用量」的二次確認窗：與 components/platform-tenants-panel 那一份逐字相同
+     （同一顆鈕、同一支端點，文案分岔就是兩處對同一個動作說了兩種話）。**每一顆參數都重設一次**——
+     本頁上面那一顆 delete-modal 設過 `deleteConfirmClass`／`deleteConfirmBinding`，而 `set` 是頁面全域（§2）。 #}
+{% set deleteModalId = "resetUsageModal" %}
+{% set deleteTitleKey = "platform.resetUsage" %}
+{% set deleteTitleZh = "重置當期用量" %}
+{% set deleteMessageKey = "platform.resetUsageConfirm" %}
+{% set deleteMessageZh = "確定要重置當期用量" %}
+{% set deleteTargetId = "resetUsageTenantName" %}
+{% set deleteNoteKey = "platform.resetUsageNote" %}
+{% set deleteNoteZh = "歸零之前的數字不會留在任何地方：稽核只記得「有人做過這件事」，記不住原本用了多少。" %}
+{% set deleteConfirmBinding = true %}
+{% set deleteConfirmClass = "js-reset-usage-confirm" %}
+{% set deletePlatformRole = "admin" %}
+{% set deleteToast = "已重置當期用量|重設失敗，請稍後再試" %}
+{% set deleteToastKey = "toast.resetUsage" %}
+{% set deleteToastType = "success|error" %}
+{% include "components/delete-modal/delete-modal.html" %}
 {% include "components/share-manage-modal/share-manage-modal.html" %}
 {% include "components/manage-members-modal/manage-members-modal.html" %}
 {% include "components/glossary-entries-modal/glossary-entries-modal.html" %}

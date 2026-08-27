@@ -3,7 +3,7 @@
      （GUIDELINE §5）。
    skill＝宣告式指令包：一段 instructions ＋ 一組工具白名單，以一顆工具暴露給問答 agent，
      被呼叫時跑一個 scoped 子迴圈。逆向自 gufofaq-saas product app/routers/skills.py 與
-     GufoRAG chatbot app/routes/skills.py；欄位語意對齊 Agent Skills 開放標準
+     GufoRAG chatbot app/knowledge/skills/router.py；欄位語意對齊 Agent Skills 開放標準
      （name ≤64 小寫英數與連字號、description ≤1024 且須寫「做什麼＋何時用」）。
    長度上限落地成 markup 的 maxlength（契約欄位，§6）——出處逐字：GufoRAG chatbot
      app/services/skills.py 的 `MAX_SKILL_NAME_LEN = 64`／`MAX_SKILL_DESCRIPTION_LEN = 1024`／

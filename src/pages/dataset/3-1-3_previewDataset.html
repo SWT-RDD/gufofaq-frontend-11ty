@@ -308,22 +308,32 @@ permalink: 3-1-3_previewDataset.html
      內建預設「檔案名稱2.pdf」，而本頁清單是常見問題.pdf／商品清單.xlsx／客服應對規範.docx——
      彈窗會問「確定要刪除一個不存在的檔」（§6 示範自洽；3-1-1 已經修過同一件事）。 #}
 {% set deleteTargetId = "deleteFileName" %}
+{# 連帶後果（`deleteNoteKey`）：這一顆刪的不只是清單上那一列。`_remove_file_and_purge`
+     （product `app/data/dataset_service.py`）先刪 DB 列、再依 connector 把**那個檔的文件從
+     GufoRAG 的索引移除**（folder 檔移暫存檔＋`sync_pipeline`，excel 檔 `purge_pipeline`），
+     兩條路都是不可逆的；產品沒有任何「還原檔案」的端點，同一份檔要回來只能重新匯入。
+     上一行只問「確定要刪除 X」——它講不出「這個檔以後問答再也搜不到」，而那正是使用者
+     真正在決定的事（§3-2 後果寫在做那個決定的控制項旁邊）。 #}
+{% set deleteNoteKey = "dataset.deleteFileNote" %}
+{% set deleteNoteZh = "這個檔的內容會一併從搜尋索引移除，之後問答再也搜不到它；救不回來，要回來只能重新匯入同一份檔。" %}
 {% set deleteConfirmBinding = true %}
 {% set deleteConfirmClass = "confirm-delete-btn" %}
-{# 刪除檔案的六段：product `app/routers/datasets.py` 的 `delete_file` →`_remove_file_and_purge`
-     的出口不只成敗。
-     403 `dataset.not_writable_group`（`delete_file` 本體第一行的 `_writable_dataset`，同檔）
+{# 刪除檔案的六段：product `app/routers/datasets.py` 的 `delete_file` → `app/data/dataset_service.py`
+     的 `_remove_file_and_purge`（**守衛與 409 都住在服務層那一支，不在 router 檔裡**）的出口不只成敗。
+     403 `dataset_not_writable_group`（`delete_file` 本體第一行的 `_writable_dataset`，
+     同在 `app/data/dataset_service.py`）
      **本輪從 error 段拆出來**：那道守衛驗的是「這個資料集的群組在不在我授予 data:write 的群組裡」，
-     而把人帶進這一頁的 `get_dataset`（同檔）只驗租戶（`_owned_dataset`），所以「看得到檔案列、
+     而把人帶進這一頁的 `get_dataset`（`app/routers/datasets.py`）只驗租戶（`_owned_dataset`，
+     同在服務層那一支），所以「看得到檔案列、
      按下去 403」是真實可達的一條路；它是使用者找得到人開通／換群組的 warning（§4 資源層 scope），
      折進紅色的「刪除失敗」＝把可修復畫成終局。子句與本頁三顆 editable-block 的
      「權限不足，無法儲存」同一族（§4-2 同子句同英譯，動詞按動作換成「刪除」）。
-     409 `folder_pipeline_not_recorded`（同檔）的訊息**本身就是修復步驟**
+     409 `folder_pipeline_not_recorded`（同一支 `_remove_file_and_purge`）的訊息**本身就是修復步驟**
      （「請用『檔案上傳』再匯入一次任一檔案，會自動接回原本的管道並補記，之後即可正常刪除」）——
      使用者自己修得掉，同樣不折進「刪除失敗」。
      另一條 409 `file_not_linkable`（同一支 `_remove_file_and_purge` 的另一個出口）沒有復原路徑，
      與 502／404 同屬 error。
-     不與 1-2-1 共用 key：那一頁的「刪除」是送出前把檔從清單移掉（uploadFilePdf.js:480-486
+     不與 1-2-1 共用 key：那一頁的動作是送出前把檔從清單「移除」（uploadFilePdf.js:480-486
      只做 `fileList.splice`），根本不會失敗。
 
      **末段「請先勾選要刪除的檔案」的消費點不是這顆確認鈕，是清單上那顆 `.delete-selected-btn`。**

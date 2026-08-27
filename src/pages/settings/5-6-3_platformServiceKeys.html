@@ -444,6 +444,13 @@ permalink: 5-6-3_platformServiceKeys.html
 {% set deleteMessageKey = "common.confirmRevoke" %}
 {% set deleteMessageZh = "確定要撤銷" %}
 {% set deleteTargetId = "revokeServiceKeyTarget" %}
+{# 連帶後果（`deleteNoteKey`）：這一頁的空狀態句自己就寫著「排程要跑得動就得有一把——沒有的話
+     它每天會失敗，而失敗只寫在 Job 的日誌裡」，也就是**撤銷的後果不會有人在畫面上看到**。
+     那句話目前只出現在「一把都沒有」的空狀態上，而按下撤銷的人此刻看到的是一張有資料的表。
+     撤銷是立即生效的軟刪、撤銷過的憑證不會再啟用（見本頁「現有憑證說明」ⓘ），故要在按下去
+     之前講一次（§3-2 後果寫在做那個決定的控制項旁邊；ⓘ 在另一顆鈕後面，不算「旁邊」）。 #}
+{% set deleteNoteKey = "serviceKey.revokeNote" %}
+{% set deleteNoteZh = "撤銷之後這一把當場失效，還在用它的排程或外部程式下一次呼叫就會失敗；撤銷過的憑證不會再啟用，要讓那些工作繼續跑只能重新核發一把。" %}
 {% set deleteConfirmBinding = true %}
 {% set deleteConfirmClass = "js-revoke-service-key-confirm" %}
 {% set deletePlatformRole = "admin" %}

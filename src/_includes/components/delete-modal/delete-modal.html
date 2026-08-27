@@ -3,6 +3,15 @@
    這種同樣不可逆的動作沿用同一顆彈窗，不必為每個動詞各做一份（原本寫死「刪除」，5-8 因此放棄二次確認、
    改成直接動作；本輪把它參數化，全站破壞性動作回到同一種確認方式）。
    參數（頁面在 include 前 set，見 §6）：
+     deleteModalId        —— 選填，`<dialog>` 的 id（預設 `deleteModal`），同時是 `aria-labelledby`
+                             目標（`{{ id }}-title`）與示範觸發器 `data-open-modal` 指到的值。
+                             為什麼要有這一格（round48）：一個 `<dialog id>` 只能由一個元件宣告、
+                             同一頁也不得重複（§4／§5），所以在 id 寫死的那段時間裡，**同一頁需要
+                             第二顆二次確認時只能放棄二次確認**——那正是 5-6-1 的「重置當期用量」
+                             先前掛著一句「按下去立刻生效，沒有第二次確認」的原因，與 5-8 當年
+                             因為標題寫死「刪除」而放棄確認是同一種死法，只是下沉了一層。
+                             命名慣例 `<動作><名詞>Modal`（`resetUsageModal`）；不給就是那一頁
+                             唯一的那一顆。
      deleteTitleKey / deleteTitleZh —— 選填，標題（預設 action.delete／「刪除」）
      deleteMessageKey / deleteMessageZh —— 選填，內文前綴（預設 common.confirmDelete／「確定要刪除」）
      deleteTargetId       —— 待刪除項目名稱的 id 契約，由業務 js 把名字填進那顆槽
@@ -40,13 +49,13 @@
                              條件開窗的觸發鈕（觸發鈕只負責「先選定要刪哪一筆」），所以閘門宣告的家在這裡。
                              不給＝該動作查證過不需要閘門（如 1-2-1 的送出前本地移除、元件庫頁的示範），
                              那種情況要在使用頁寫明理由——空白不等於「還沒查」。 #}
-<dialog class="modals" id="deleteModal" aria-labelledby="deleteModal-title">
+<dialog class="modals" id="{{ deleteModalId or 'deleteModal' }}" aria-labelledby="{{ deleteModalId or 'deleteModal' }}-title">
     <div class="modals-dialog modals-sm">
         <div class="modals-wrap">
             {% include "ui/modal-close/modal-close.html" %}
             <div class="modals-content">
                 <div class="modals-header">
-                    <h3 class="modals-title" id="deleteModal-title" data-i18n="{{ deleteTitleKey or 'action.delete' }}">{{ deleteTitleZh or "刪除" }}</h3>
+                    <h3 class="modals-title" id="{{ deleteModalId or 'deleteModal' }}-title" data-i18n="{{ deleteTitleKey or 'action.delete' }}">{{ deleteTitleZh or "刪除" }}</h3>
                 </div>
                 <div class="modals-body">
                     <p class="text-center delete-modal-text"><span data-i18n="{{ deleteMessageKey or 'common.confirmDelete' }}">{{ deleteMessageZh or "確定要刪除" }}</span>{% if not deleteHideTarget %} <span{% if deleteTargetId %} id="{{ deleteTargetId }}"{% endif %}>{% if not deleteTargetId %}{{ deleteTargetName or "檔案名稱2.pdf" }}{% endif %}</span>{% endif %}</p>

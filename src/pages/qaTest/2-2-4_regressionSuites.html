@@ -1080,6 +1080,15 @@ permalink: 2-2-4_regressionSuites.html
 {# 刪除 modal：案例集與案例共用同一份（都是「跑過就凍結」的 409）。名稱由業務 js 填入
    #deleteRegressionTarget，確認鈕歸業務 js（不自動關窗）。 #}
 {% set deleteTargetId = "deleteRegressionTarget" %}
+{# 連帶後果（`deleteNoteKey`）：這一顆同時服務兩種目標，所以這一句要對兩種都成立。
+     刪案例集＝`regression_run.delete_suite`（product `app/quality/regression_run.py`）逐字
+     「刪案例集（連帶刪它的案例）」——案例集與案例是同一條擁有鏈（DB CASCADE），底下每一則
+     案例會一起消失；刪案例只動那一則。
+     ⚠️ **這一句刻意不寫「連歷次執行紀錄一起消失」**：`regression_runs.suite_id` **刻意不級聯**
+     （同函式的 docstring 逐字如此），有 run 時是直接 409 `suite_has_runs` 擋下來、不是連帶刪除
+     ——那件事由 toast 的第三段講，不是這裡。 #}
+{% set deleteNoteKey = "regression.deleteNote" %}
+{% set deleteNoteZh = "刪的是案例集時，它底下的每一則案例會跟著一起消失；刪的是案例時，只有那一則不見。兩種都救不回來。" %}
 {# 確認鈕的 React 綁定記號（同一份 delete-modal 服務 .js-delete-suite 與 .js-delete-case 兩顆觸發鈕）：`deleteConfirmBinding` ＝交給業務 js 綁定、不自動關窗，
      兩顆記號都不給等於那顆鈕在 markup 上沒有任何東西可以抓（delete-modal 檔頭：二擇一必給）。 #}
 {% set deleteConfirmClass = "js-confirm-delete-regression" %}

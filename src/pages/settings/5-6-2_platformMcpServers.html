@@ -26,7 +26,7 @@ permalink: 5-6-2_platformMcpServers.html
      濾掉會讓「先建好設定、之後再啟用」做不到，也會讓已選取的 server 在被停用時從選單消失）。
      product 已跟上（round40 複驗）：gufofaq-saas `services/product/app/routers/mcp.py` 的
      `list_tenant_mcp_catalog` 不再濾 `is_active`，docstring 逐字寫著「**為什麼不濾掉停用中的**」。 #}
-{# env 的值在讀取路徑一律被遮成 "***"（GufoRAG chatbot routes/mcp.py 的 _mask_env：管理 API 沒有認證，
+{# env 的值在讀取路徑一律被遮成 "***"（GufoRAG chatbot app/agent/mcp/router.py 的 _mask_env：管理 API 沒有認證，
      原樣回傳等於任何連得到本服務的人都讀得到那些憑證），寫入時值仍是 "***" 的鍵沿用原值（_merge_env）。
      故示範值就是遮罩字面——這不是佔位符，是**真的會從 API 拿到的東西**。 #}
 {# id＝MCP Server 主鍵（product `app/routers/mcp.py` 的 `server_id: int`）。**不可拿 loop.index 當列鍵**：
@@ -368,7 +368,7 @@ permalink: 5-6-2_platformMcpServers.html
    （deleteConfirmBinding）；Server 名由業務 js 填入 #deleteMcpName。
    刪除**有**參照守衛（與 3-4 skill 同一道防護、同一種 toast 三態）：被任何 skill 的
    allowed_tools.mcp_server_ids 或任何設定檔的 mcp_server_ids 參照時一律拒刪，並在訊息裡指名是哪些
-   skill／config（GufoRAG chatbot routes/mcp.py 的 delete_mcp_server → error_json(INVALID_OPERATION,
+   skill／config（GufoRAG chatbot app/agent/mcp/router.py 的 delete_mcp_server → error_json(INVALID_OPERATION,
    "error_mcp_server_still_referenced", detail="skill=…; config=…")；INVALID_OPERATION=1005 <2000 故
    HTTP 400，product mcp.py 的 _PASSTHROUGH_STATUS 含 400 會原樣透傳）。
    那一態是使用者自己修得掉的 warning，不是「請稍後再試」——只列成敗兩段的話，這條可行動的訊息

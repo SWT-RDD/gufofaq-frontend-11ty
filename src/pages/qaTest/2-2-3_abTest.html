@@ -600,6 +600,14 @@ permalink: 2-2-3_abTest.html
 {% set deleteMessageKey = "common.confirmRevoke" %}
 {% set deleteMessageZh = "確定要撤銷" %}
 {% set deleteTargetId = "revokeShareTarget" %}
+{# 連帶後果（`deleteNoteKey`）：撤銷是**軟刪**（product `app/conversation/share_links.py` 的
+     `revoke_share` 只把 `ShareLink.disabled` 設成 true），而 `share.py` 全境只有四支端點
+     （`POST /share`／`GET /share`／`GET /shared/{token}`／`DELETE /share/{id}`）——**沒有任何一支
+     解得回來**。撤銷之後 `view_shared_by_token` 對那個 token 回 404，也就是已經把連結寄出去的
+     那些人當場打不開。上一行只問「確定要撤銷 X」，講不出「那條連結永遠回不來、要再分享得另建一條」。
+     逐字同 4-2（同一顆彈窗、同一支端點，文案分岔就是兩頁對同一個動作說了兩種話）。 #}
+{% set deleteNoteKey = "share.revokeNote" %}
+{% set deleteNoteZh = "撤銷之後這條連結立刻失效，已經拿到連結的人也打不開了；要再分享只能另外建一條新的。" %}
 {% set deleteConfirmBinding = true %}
 {% set deleteConfirmClass = "js-revoke-share-confirm" %}
 {% set deleteCapability = "history" %}
