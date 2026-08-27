@@ -49,7 +49,14 @@
                             <label for="feedbackText" class="control-label" data-i18n="modals.feedback">意見回饋</label>
                         </div>
                         <div class="field">
-                            <textarea class="form-control" id="feedbackText" rows="3" placeholder="請告訴我們原因（選填）" data-i18n-placeholder="modals.feedbackReasonPlaceholder">{{ ratingModalFeedback }}</textarea>
+                            {# 字數上限（round47）：正本是 product `app/limits/chat_config_limits.py` 的
+                                 `RATING_FIELD_LIMITS["feedback"]["max_len"]`，兩條寫入路徑都以它夾——
+                                 後台 `app/routers/history.py` 與前台 `app/routers/public.py` 的
+                                 `feedback: str | None = Field(max_length=…)`。四個使用點裡有一個是
+                                 **前台訪客**，而他打完一段長回饋才被擋下來時，連「哪裡不對」都不會知道。
+                                 數字是資料槽，不烤進譯文（§4-2）。 #}
+                            <textarea class="form-control" id="feedbackText" rows="3" placeholder="請告訴我們原因（選填）" data-i18n-placeholder="modals.feedbackReasonPlaceholder" aria-describedby="feedbackTextHint">{{ ratingModalFeedback }}</textarea>
+                            <span class="text-gray" id="feedbackTextHint"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-feedback-max-len">2000</span><span data-i18n="common.unitChars"> 字</span></span>
                         </div>
                     </div>
                 </div>

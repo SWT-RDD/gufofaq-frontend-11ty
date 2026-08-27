@@ -90,6 +90,13 @@
         </div>
     </div>
 
+    {# **`[[N]]` 那顆徽章全站沒有一個字在解釋**（round47）：答案內文裡的方括號數字是
+         `components/citation-ref` 畫出來的引用標記，點下去會捲到這張表對應的那一列並高亮
+         （`sources-block.js` 的 `reveal`，比對的是「序號」欄的值）。使用者看到 `[[7]]`
+         而這張表的序號**本來就不連續、也不等於列序**（見本檔上方 `source.sourceNo` 那一段），
+         所以「7 是什麼、要去哪裡找 7」不講就沒有人知道。
+       擺在表格**之上**：它解釋的是這張表怎麼讀，不是某一列的事。 #}
+    <p class="text-gray m-0 mt-16" data-i18n="qa.citationHint">答案裡的方括號數字（例如 [[3]]）對應下面「序號」欄的來源，點一下就會跳到那一列。序號不一定連續，也不等於列的順序。</p>
     <div class="table-container scrollTable mt-16">
         <table class="default-table no-border">
             <colgroup>
@@ -178,6 +185,14 @@
                         </div>
                     </td>
                 </tr>
+                {% else %}
+                {# ⚠️ **空來源先前沒有任何畫面**（round47）：這個 `{% for %}` 沒有 `{% else %}`，
+                     `sources` 為空時整張表只剩表頭——而那與「還在載入」「這一塊壞了」長得一模一樣。
+                     它是一個真實而且重要的狀態：模型沒有引用任何知識庫資料（例如閒聊、或它憑
+                     自己的知識答的）。講出來，使用者才知道這一則答案**沒有依據可以查**——
+                     那正是他最該提高警覺的一則。
+                     colspan 4 ＝本表欄數（colgroup 四個 col：展開／序號／檔案／資料集）。 #}
+                <tr><td colspan="4" class="text-center text-gray" data-i18n="qa.sourcesNone">這一則回答沒有引用任何知識庫資料——它不是從你的資料裡找出來的，請自行查證。</td></tr>
                 {% endfor %}
             </tbody>
         </table>

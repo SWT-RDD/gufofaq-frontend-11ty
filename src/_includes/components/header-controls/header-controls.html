@@ -2,7 +2,17 @@
      使用者：header、mobile-nav、chatbot-header、catalog、login 五處共用（因此本檔零寫死 id，§4）；
      兩支 JS 由 base.html 載入，故此處只放按鈕。
      語言鈕不帶 i18nKey——標籤永遠顯示「要切去的語言」，由 lang-toggle.js 管理，不進翻譯字典。 #}
+{# ⚠️ **這顆鈕先前的可及名稱只有「EN」／「中」兩個字元**（round47）：報讀器唸出來就是一個字母組合，
+     聽不出它是做什麼的；而滑鼠使用者也沒有 `title` 可以懸停確認。
+   要講的不只是「切語言」，還有**它不切什麼**：這顆鈕換的是介面語言，AI 回答用哪一種語言是由
+     提問時使用的語言決定的（product `app/conversation/public_ask.py` 的 `set_chatbot_language_for_tenant`
+     設的是租戶層的 chatbot 語言，與這顆前端切換無關）。不講的話，使用者會以為切成 English
+     之後機器人就會用英文回答——那是這顆鈕最常見的誤解。
+   `title` 與 `.sr-only` 兩份都給（§4 圖示／字母鈕的可及名稱）：鈕面那兩個字元是 lang-toggle.js
+     在管的**狀態標籤**（永遠顯示「要切去的語言」），不進字典；說明是另一件事，要翻。
+   **鈕面文字不動**：那是 lang-toggle.js 唯一在寫的節點（`b.textContent = …`），
+     而 §4-2 的「JS 不得寫死顯示字串」對它已經有一條具名豁免。 #}
 <div class="header-controls">
-    <button type="button" class="lang-toggle js-lang-toggle">EN</button>
+    <button type="button" class="lang-toggle js-lang-toggle" title="切換介面語言" data-i18n-title="comp.langToggleTitle"><span class="js-lang-toggle-label">EN</span><span class="sr-only" data-i18n="comp.langToggleHint">切換介面語言。這只影響畫面上的文字，AI 回答的語言由你提問時使用的語言決定。</span></button>
     {% include "ui/theme-toggle/theme-toggle.html" %}
 </div>

@@ -32,10 +32,14 @@
 //
 // ── ③ 切換鈕本身（**正本在 components/header-controls，不要在別處手抄**；那一份被五個地方 include）
 //
-//   <button type="button" class="lang-toggle js-lang-toggle">EN</button>
+//   <button type="button" class="lang-toggle js-lang-toggle" title="切換介面語言" data-i18n-title="comp.langToggleTitle"><span class="js-lang-toggle-label">EN</span><span class="sr-only" data-i18n="comp.langToggleHint">切換介面語言。這只影響畫面上的文字，AI 回答的語言由你提問時使用的語言決定。</span></button>
 //
-//   鈕面文字由本檔管理（繁中時 EN、英文時 中），故它**刻意不掛 data-i18n**：掛了會被 apply() 的
-//   文字迴圈與這裡的 textContent 兩邊互相覆寫。`.lang-toggle` 的樣式主人是 header-controls。
+//   鈕面文字由本檔管理（繁中時 EN、英文時 中），故**那一顆 `.js-lang-toggle-label` 刻意不掛 data-i18n**：
+//   掛了會被 apply() 的文字迴圈與這裡的 textContent 兩邊互相覆寫。`.lang-toggle` 的樣式主人是 header-controls。
+//   ⚠️ **鈕面那兩個字元不是可及名稱**（round47）：先前整顆鈕的名稱就只有「EN」／「中」，報讀器唸出來
+//   聽不出它是做什麼的。故拆成兩顆子節點——`.js-lang-toggle-label` 是本檔在改的狀態標籤，
+//   `.sr-only` 那一段是給輔具的說明（要翻，掛 data-i18n），另有 `title` 給滑鼠懸停。
+//   說明裡那句「AI 回答的語言由提問語言決定」是這顆鈕最常見的誤解，不是裝飾。
 //
 // 匯出（GUIDELINE §1-1「共享行為工具」，全體元件通用故不算依賴）：
 //   window.GufoI18n = { t(key, zhFallback), lang() }  ＋ 事件 `gufo:langchange`（detail.lang）
@@ -131,7 +135,13 @@
             document.title = tv != null ? "GufoFAQ::" + tv : defaults.title;
         }
         root.setAttribute("lang", lang === "en" ? "en" : "zh-Hant");
-        document.querySelectorAll(".js-lang-toggle").forEach(function (b) {
+        // **只改「狀態標籤」那一顆子節點，不是整顆鈕的 textContent**（round47）：那顆鈕裡還有一段
+        // `.sr-only` 的說明（它是這顆鈕唯一講得出「切的是介面語言、不是 AI 回答的語言」的地方），
+        // 而 `btn.textContent = …` 會把子節點整組換掉，那段說明會在第一次切語言時就消失
+        // ——而且是**切過去才消失**，繁中模式下永遠看不出來。
+        // 舊 markup（沒有 `.js-lang-toggle-label` 的那一種）落回鈕本身，行為與先前逐字相同。
+        document.querySelectorAll(".js-lang-toggle").forEach(function (btn) {
+            var b = btn.querySelector(".js-lang-toggle-label") || btn;
             b.textContent = lang === "en" ? "中" : "EN";
         });
         // 通知「文字由 JS 產生」的元件重畫自己的動態標籤

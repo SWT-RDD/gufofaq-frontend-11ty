@@ -45,7 +45,19 @@ permalink: login.html
                      空的 live region ＋ role="alert"：訊息由業務 js 填（§4 那條「要嘛具體、要嘛空 live region」）。
                      數字是資料，夾在前後綴 key 中間（同 ② 的理由：t() 不做插值）。 #}
                 <span class="error-prompt" role="alert" id="loginRetryHint"><span data-i18n="auth.retryAfterPrefix">請於 </span><span class="js-login-retry-seconds"></span><span data-i18n="auth.retryAfterSuffix"> 秒後再試</span></span>
-                <button type="button" class="button button-primary login-btn" aria-describedby="loginRetryHint" data-toast="登入成功！|帳號已停用，請聯絡管理者|嘗試次數過多，請稍後再試|登入時發生錯誤，請稍後再試" data-i18n-data-toast="toast.login" data-toast-type="success|warning|warning|error" data-i18n="auth.login">登入</button>
+                {# ⚠️ **第 3 段改寫（round47）：節流訊息先前讀起來像在指責使用者。**
+                     「嘗試次數過多，請稍後再試」對**帳號被別人猛試**的那個人來說是一句莫名其妙的
+                     責備——而那正是節流最該服務的情境（憑證填充攻擊打的是別人的帳號）。
+                     改成兩件事都講：這是暫時鎖定（多久由旁邊那顆 live region 填的秒數說），
+                     以及「如果不是你本人操作請聯絡管理者」——後者是這一頁唯一能給出的求救路徑。
+                     `|` 是索引契約：段數不變（4 段），只換第 3 段的字。 #}
+                <button type="button" class="button button-primary login-btn" aria-describedby="loginRetryHint" data-toast="登入成功！|帳號已停用，請聯絡管理者|這個帳號近期嘗試次數過多，已暫時鎖定；若不是你本人操作，請聯絡管理者|登入時發生錯誤，請稍後再試" data-i18n-data-toast="toast.login" data-toast-type="success|warning|warning|error" data-i18n="auth.login">登入</button>
+                {# **「我沒有帳號怎麼辦」在這一頁先前無解**（round47）：這是一個邀請制系統
+                     （product 沒有任何自助註冊端點——帳號一律由平台或租戶管理者建立），
+                     而登入頁只有「忘記密碼」一條路。沒有帳號的人在這裡會一直試「忘記密碼」，
+                     那條路對他永遠不會有結果。
+                     擺在登入鈕**下面**：它服務的是按不下去的那個人，不該擠在表單中間。 #}
+                <p class="text-gray text-center" data-i18n="auth.noAccountHint">本系統採邀請制，沒有自助註冊：還沒有帳號的話，請洽貴單位的系統管理者替你開通。</p>
             </form>
         </div>
 

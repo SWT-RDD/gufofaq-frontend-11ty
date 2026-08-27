@@ -214,7 +214,11 @@
         <div class="input-wrap">
             <div class="form-group chat-input-field">
                 <div class="field">
-                    <textarea class="form-control chat-input-control" placeholder="輸入問題" data-i18n-placeholder="comp.enterQuestion" aria-label="輸入問題" data-i18n-aria-label="comp.enterQuestion" disabled></textarea>
+                    {# 字數上限：同前台那兩處（`MAX_CASE_QUESTION_LEN`，完整出處寫在
+                         components/faq-chatroom 的同一段）。後台這一格也要有——2-2-1 的人在測提示詞，
+                         正是最會貼長文進來的那一群。 #}
+                    <textarea class="form-control chat-input-control" placeholder="輸入問題" data-i18n-placeholder="comp.enterQuestion" aria-label="輸入問題" data-i18n-aria-label="comp.enterQuestion" aria-describedby="chatAskMaxLenHint" disabled></textarea>
+                    <span class="text-gray" id="chatAskMaxLenHint"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-ask-max-len">2000</span><span data-i18n="common.unitChars"> 字</span></span>
                 </div>
             </div>
             {# 送出鈕另立 key：它多一條「沒填問題」（真 app singleTest.js:795-803 `if (!question)` 就地擋下（`$error.text('請輸入問題').show()` ＋ `$textarea.addClass('error')`））。

@@ -138,7 +138,13 @@
         <div class="faq-input-wrap">
             <div class="faq-chat-field form-group">
                 {# id/class chat-input-txt＝真 app 業務掛點（Standard main.js getElementById('chat-input-txt') 讀值送問答），值載體原樣保留（§5） #}
-                <input type="text" id="chat-input-txt" placeholder="請輸入問題..." data-i18n-placeholder="comp.pleaseEnterQuestion" class="chat-input-txt form-control" aria-label="輸入問題" data-i18n-aria-label="comp.enterQuestion" disabled>
+                {# 字數上限（round47）：正本是 gufofaq-saas product `app/models.py` 的
+                     `MAX_CASE_QUESTION_LEN`，`app/conversation/ask_flow.py` 的 `AskIn.query` 以它
+                     `Field(min_length=1, max_length=…)` 在請求邊界 fail-fast。**前台這一格先前一句都沒有**，
+                     而它的使用者是完全不知道這個系統有什麼規則的訪客——貼一段長文進去，得到的是
+                     一句「回答生成失敗」。數字是資料槽，不烤進譯文（§4-2）。 #}
+                <input type="text" id="chat-input-txt" placeholder="請輸入問題..." data-i18n-placeholder="comp.pleaseEnterQuestion" class="chat-input-txt form-control" aria-label="輸入問題" data-i18n-aria-label="comp.enterQuestion" aria-describedby="faqAskMaxLenHint" disabled>
+                <span class="text-gray" id="faqAskMaxLenHint"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-ask-max-len">2000</span><span data-i18n="common.unitChars"> 字</span></span>
                 {# 空的 live region：訊息由真 app 業務 js 填（Standard main.js:485-492 的 `showError()`
                      對 `.form-group` 內的 `.error-prompt` 寫 textContent）。烤一句通用的「輸入錯誤！」
                      等於同一件事有兩套回報（§4）：那一套永遠不會被觸發，而真正的訊息會把它蓋掉。 #}
@@ -153,5 +159,13 @@
 </div>
 
 {# 讚/倒讚與分享的彈窗由本元件的按鈕開啟，故 include 在這裡（§1-2：誰的按鈕開的彈窗，彈窗就 include 在誰裡面） #}
+{# **前台這一份先前沒有給 `ratingModalNote`**（round47）：4-2 與 2-2-3 兩處都給了，只有唯一一個
+     **匿名訪客**會看到的那一份沒有——而他正是最不知道「按這個讚會發生什麼」的那個人。
+     兩件事要講：①這不是畫面上的一個小記號，它會存進本站的問答紀錄、給管理者看；
+     ②同一則回答只留一份評分，再送一次是覆蓋，不是多留一筆
+     （product `app/routers/public.py` 的評分路徑與後台走同一支上游 `ChatRatingRequest`，
+     4-2 那一份的 `modals.ratingOverwriteNote` 講的是同一個事實的後台版）。 #}
+{% set ratingModalNoteKey = "modals.ratingPublicNote" %}
+{% set ratingModalNote = "你的評分會存進本站的問答紀錄，供這個網站的管理者改善品質。同一則回答只保留一份評分，再送一次會覆蓋掉上一次。" %}
 {% include "components/rating-modal/rating-modal.html" %}
 {% include "components/faq-share-modal/faq-share-modal.html" %}

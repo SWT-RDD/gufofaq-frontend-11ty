@@ -51,8 +51,16 @@
     </button>
     <div class="widget-panel" id="widgetPanel"{% if widgetDemoStatic %} data-open{% endif %} role="dialog" aria-labelledby="widgetPanelTitle">
         <div class="widget-panel-head">
-            {# 標題是租戶設定值（資料，不翻）；它同時是面板的可及名稱，故給 id 讓 dialog 指過來。 #}
-            <span id="widgetPanelTitle">{{ widgetTitle or "客服小幫手" }}</span>
+            {# 標題是租戶設定值（資料，不翻）；它同時是面板的可及名稱，故給 id 讓 dialog 指過來。
+               ⚠️ **但「沒設定時的那一句」是 chrome，不是資料**（round47）：先前不論有沒有租戶標題，
+                 這一格都是同一個寫死的繁中字面。這顆 widget 是**嵌在客戶自己網站上**的東西，
+                 客戶的網站可能整站英文（`data-lang="en"`），而租戶沒填標題時它就固定冒出四個中文字。
+                 故：有租戶標題＝純資料節點（不掛 data-i18n）；沒有＝落回一顆**會翻譯**的預設標題。
+                 兩者共用同一顆 id（面板的可及名稱），只差掛不掛 data-i18n。 #}
+            {# 兩支分開寫、不用 `{{ x or "字面" }}` 收成一行：`data-i18n` 節點的繁中原文是以 key 為索引
+                 就地擷取的，插值那一支會讓那顆 key 的「繁中原文」變成 `{{ widgetTitle or … }}` 這串
+                 樣板原始碼本身（同 key 兩種繁中會互相覆蓋，§4-2）。 #}
+            {% if widgetTitle %}<span id="widgetPanelTitle">{{ widgetTitle }}</span>{% else %}<span id="widgetPanelTitle" data-i18n="comp.widgetDefaultTitle">客服小幫手</span>{% endif %}
             {# 叉叉字形由 CSS 遮罩畫（同 ui/modal-close 的做法），所以這裡沒有 <img>：深色模式免反相，
                  也不必為了白色叉叉另存一張圖。不直接沿用 .modals-close——那顆是 position:absolute、
                  基準是 .modals-wrap，放進這一列 flex 會跑掉。 #}
@@ -67,6 +75,18 @@
         <p class="text-gray" data-i18n="shared.aiDraftNotice">本內容由 AI 系統初步產出，僅作為草稿或參考依據使用，尚未經人工確認或修改，若需進一步採用，請先檢閱並確認內容之正確性與完整性。</p>
         {# role="log" ＋ aria-live="polite"：新回答是非同步長出來的，報讀器要唸得到（同 widget.js 現況）。 #}
         <div class="widget-panel-log" role="log" aria-live="polite">
+            {# ⚠️ **租戶沒設歡迎語時，這一整塊先前是全白的**（round47）：面板打開來只有一個輸入框，
+                 訪客看不出這是什麼、能問什麼、甚至看不出它有沒有壞。
+                 下面那一則是**租戶的歡迎語**（資料，不翻）；這一則是它缺席時的預設開場，
+                 那是 chrome，所以要翻。`.hidden` ＋ hook class 給 React 定址；
+                 可見處在元件庫頁的「React 條件文案」區（§5）。 #}
+            <div class="message-wrap js-widget-default-greeting hidden">
+                <div class="message-row by-robot">
+                    <div class="message-content">
+                        <div class="robot-msg" data-i18n="comp.widgetDefaultGreeting">您好，這裡可以就本網站的內容提問，我會依據網站管理者提供的資料回答你。</div>
+                    </div>
+                </div>
+            </div>
             <div class="message-wrap">
                 <div class="message-row by-robot">
                     <div class="message-content">
@@ -91,8 +111,10 @@
             {# `.widget-panel-input`／`.widget-panel-send` 是本元件自有的 slot class（§4：要覆寫
                  別元件原子的排版就掛自己的 class，不寫 `.form-control`／`.button` 的選擇器）。
                  沒有它們的話這一列會等比縮，送出鈕被壓到比文字窄而換行——理由寫在 scss 那兩條旁邊。 #}
+            {# 字數上限：同 components/faq-chatroom 那一格（同一支 `/public/ask`、同一顆
+                 `MAX_CASE_QUESTION_LEN`），完整出處寫在那個元件的同一段。 #}
             <input type="text" class="form-control widget-panel-input js-widget-input" placeholder="輸入問題"
-                data-i18n-placeholder="comp.enterQuestion" aria-label="輸入問題" data-i18n-aria-label="comp.enterQuestion">
+                data-i18n-placeholder="comp.enterQuestion" aria-label="輸入問題" data-i18n-aria-label="comp.enterQuestion" aria-describedby="widgetAskMaxLenHint">
             {# 送出是直接送 API 的動作鈕 ⇒ data-toast 列全結果（§5 矩陣③）。節流那一段對回公開問答端點
                  的每分鐘上限（gufofaq-saas product `app/tenancy/rate_limit.py` 的
                  `enforce_widget_rate_limit`，由 `app/conversation/public_ask.py` 在兩道 gate 之前呼叫，
@@ -113,6 +135,7 @@
             <button type="button" class="button button-primary widget-panel-send js-widget-send"
                 data-toast="回答生成中...|請先輸入問題|詢問太頻繁，請稍後再試|回答生成成功|回答生成失敗|本站的問答額度已用罄，請聯絡本網站管理者。" data-i18n-data-toast="toast.widgetAsk"
                 data-toast-type="info|warning|warning|success|error|error" data-i18n="action.submit">送出</button>
+            <span class="text-gray" id="widgetAskMaxLenHint"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-ask-max-len">2000</span><span data-i18n="common.unitChars"> 字</span></span>
         </div>
     </div>
 </div>

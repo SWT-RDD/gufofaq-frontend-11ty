@@ -28,11 +28,13 @@
 //               </div>
 //           </div>
 //           <div class="qa-count"><span data-i18n="comp.qaCount">問答次數：</span>12/3000<span data-i18n="comp.extractionCount">，萃取次數：</span>3/1000</div>
+//           <p class="text-gray" data-i18n="qaTest.quotaWarnAsk">每按一次送出都是一次真的問答：會扣掉一次問答額度，而且失敗也不退還。</p>
 //           <div class="chat-input-container">
 //               <div class="input-wrap">
 //                   <div class="form-group chat-input-field">
 //                       <div class="field">
-//                           <textarea class="form-control chat-input-control" placeholder="輸入問題" data-i18n-placeholder="comp.enterQuestion" aria-label="輸入問題" data-i18n-aria-label="comp.enterQuestion"></textarea>
+//                           <textarea class="form-control chat-input-control" placeholder="輸入問題" data-i18n-placeholder="comp.enterQuestion" aria-label="輸入問題" data-i18n-aria-label="comp.enterQuestion" aria-describedby="chatAskMaxLenHint"></textarea>
+//                           <span class="text-gray" id="chatAskMaxLenHint"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-ask-max-len">2000</span><span data-i18n="common.unitChars"> 字</span></span>
 //                       </div>
 //                   </div>
 //                   <button data-capability="ask" type="button" class="button button-primary chat-input-submit" data-toast="回答生成中...|權限不足，無法送出|請先輸入問題|回答生成成功|回答生成失敗" data-i18n-data-toast="toast.chatSend" data-toast-type="info|warning|warning|success|error" data-i18n="action.submit">送出</button>

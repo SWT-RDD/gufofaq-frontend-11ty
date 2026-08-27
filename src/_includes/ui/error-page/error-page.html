@@ -17,7 +17,12 @@
      可回；能做的動作只有稍後重試。 #}
 <div class="error-page">
     <p class="error-code" aria-hidden="true">404</p>
-    <p class="error-message" data-i18n="shared.notFound">此分享連結無效或已過期</p>
+    {# ⚠️ **這一句先前只講狀態、不給下一步**（round47）：「此分享連結無效或已過期」講完就停在那裡，
+         而看到它的是一個**沒有登入態、沒有目錄可回**的訪客——他手上唯一的東西是那條連結，
+         和給他連結的那個人。所以下一步只有一個，就得把那一個說出來。
+       仍然**不替他猜是哪一種**（上游把撤銷／過期／租戶被凍結／功能被關掉全部收斂成同一個 404，
+         見上方 ① 那一段的理由），故用「可能已過期或被撤銷」把範圍講出來、不下斷言。 #}
+    <p class="error-message" data-i18n="shared.notFound">這條分享連結已經失效——可能已過期，也可能被撤銷了。需要看這份內容的話，請向分享給你的人索取一條新的連結。</p>
 </div>
 <div class="error-page">
     <p class="error-code" aria-hidden="true">429</p>
