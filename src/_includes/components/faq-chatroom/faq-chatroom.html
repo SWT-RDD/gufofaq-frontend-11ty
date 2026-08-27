@@ -28,13 +28,37 @@
            **不在 `.message-wrap` 之內**：它不是一則訊息，是這個房間的說明；包成泡泡會讓它看起來
              像機器人講的第一句話，而那正是它要限定的東西。 #}
         <p class="text-gray" data-i18n="shared.aiDraftNotice">本內容由 AI 系統初步產出，僅作為草稿或參考依據使用，尚未經人工確認或修改，若需進一步採用，請先檢閱並確認內容之正確性與完整性。</p>
+        {# **租戶沒設歡迎語時的預設開場**（round48，與 `ui/widget-shell` 的
+             `.js-widget-default-greeting` 是同一件事的兩個版本）。下面那一則是**租戶自己設的**
+             歡迎語（`GET /welcome` 的 `welcome_message`，資料、不翻，見 components/chatroom 檔頭）；
+             這一則是它缺席時產品自己的開場——那是 chrome，所以要翻。
+           **兩句刻意不同**：widget 跑在別人的網站上，要先講清楚「這裡可以問什麼」；這一頁是
+             產品自己的前台，訪客是循著連結來問問題的，第一句話只要邀請他開口。收件人不同 ⇒ 分 key
+             （§4-2：行為不同就分 key）。
+           ⚠️ 這一句先前是 **React 自己造的 key**（`faq.defaultWelcome`，靠 REACT_ONLY 白名單擋著），
+             而切版這一側的同文繁中只是下面那一則**示範泡泡**（沒有 key、是靜態稿的對話內容）——
+             兩者長得一模一樣，於是「產品的預設開場」在切版上看起來像已經有了，實際上一個字都沒有。
+             本輪把預設開場切成自己的一則（`.hidden` ＋ hook class 給 React 定址，可見處在元件庫頁
+             的「React 條件文案」區，§5），並把示範泡泡改成一句**明顯是租戶自己寫的**話，
+             兩者才分得開。 #}
+        <div class="message-wrap js-faq-default-greeting hidden">
+            <div class="message-row by-robot">
+                <div class="avatar">
+                    <div class="pic"></div>
+                </div>
+                <div class="message-content">
+                    <div class="robot-msg" data-i18n="faq.defaultWelcome">你好，請問有甚麼問題需要我幫你解答的?</div>
+                </div>
+                <div class="message-time">13:29</div>
+            </div>
+        </div>
         <div class="message-wrap">
             <div class="message-row by-robot">
                 <div class="avatar">
                     <div class="pic"></div>
                 </div>
                 <div class="message-content">
-                    <div class="robot-msg">你好，請問有甚麼問題需要我幫你解答的?</div>
+                    <div class="robot-msg">您好，這裡是新住民服務諮詢窗口，請問有什麼可以協助您的嗎？</div>
                 </div>
                 <div class="message-time">13:29</div>
             </div>
@@ -63,7 +87,17 @@
                 <button type="button" class="button-icon like js-vote" data-vote="like" title="讚" data-i18n-title="comp.like"><span class="sr-only" data-i18n="comp.like">讚</span></button>
                 <button type="button" class="button-icon dislike js-vote" data-vote="dislike" title="倒讚" data-i18n-title="comp.dislike"><span class="sr-only" data-i18n="comp.dislike">倒讚</span></button>
                 <button type="button" class="button-icon copy copyBtn has-tooltip" data-toast="文字已複製!|複製失敗，請手動選取後複製" data-i18n-data-toast="common.copied" data-toast-type="success|error"><span class="tooltip" data-i18n="action.copy">複製</span></button>
-                <button type="button" class="button-icon share" data-open-modal="shareModal" title="分享" data-i18n-title="comp.share"><span
+                {# **分享是有條件的開窗，不是無條件開窗**（round48）：按下去先送
+                     `POST /public/share`（product `app/conversation/public_ask.py` 的
+                     `create_public_share`，帶 `X-Widget-Token`）拿到 token，**成功才**開窗把連結畫出來。
+                     先前掛 `data-open-modal="shareModal"`，那是 §5 逐字點名的那句謊話——它把一個
+                     會失敗的動作演成一條必然開窗的路，於是整條失敗路徑在切版上不存在（那一句
+                     「建立分享連結失敗，請稍後再試」因此只活在 React 的字典裡）。
+                     形狀比照 5-10 的 `.js-edit-vocabulary`：**條件開窗的觸發鈕自己就送 API ⇒ 照 §5 ③
+                     掛 `data-toast` 列全結果**，同時保留 hook class 讓 React 認得出要接哪一顆。
+                     不掛授權軸：這條路徑上沒有租戶能力軸（同 `.js-ask-suggested`——前台公開端點
+                     吃的是 `X-Widget-Token`，能力／角色都是登入態才判得出來的東西）。 #}
+                <button type="button" class="button-icon share js-share-message" data-toast="連結已建立|建立失敗，請稍後再試" data-i18n-data-toast="toast.createPublicShare" data-toast-type="success|error" title="分享" data-i18n-title="comp.share"><span
                         class="sr-only" data-i18n="comp.share">分享</span></button>
             </div>
             {# 建議追問（A7，SaaS 新需求／真 app 無對應）：問答完成後 chatbot 於 SSE chat_room 塊回傳
@@ -133,6 +167,15 @@
          告訴網站的管理者，所以只講那一件。
        `.hidden`＋live region：這一態的可見處在元件庫頁「React 條件文案」區（§5）。 #}
     <p class="text-red js-faq-unavailable hidden" role="alert" data-i18n="faq.unavailable">本站的問答服務目前停用中，請聯絡本網站管理者。</p>
+    {# **這條連結身上沒有 widget token** 那一態（round48）。與上面那一句是兩件不同的事：上面是
+         「這個站現在不提供問答」（服務被關掉），這一句是「這條連結本身不完整」——問答服務好好的，
+         只是這個瀏覽器帶不出是哪一個租戶（前台公開端點靠 `X-Widget-Token`／`?wt=` 認租戶，
+         見 5-8 檔頭）。共用一句話會讓拿到壞連結的人去找一個沒有問題的管理者。
+       **不對訪客講「widget token」**：React 那一版的字面是「此連結缺少 widget token，暫時無法問答」，
+         而這一頁的讀者是匿名訪客——他沒有後台、也沒有那個詞彙。訪客這一側唯一做得到的事是去要
+         一次正確的網址，所以只講那一件（同 `faq.unavailable` 不寫「請稍後再試」的理由）。
+       `.hidden`＋live region：這一態的可見處在元件庫頁「React 條件文案」區（§5）。 #}
+    <p class="text-red js-faq-no-token hidden" role="alert" data-i18n="faq.noTokenHint">這條連結少了辨識網站用的參數，暫時問不了問題——請向提供這條連結的人要一次正確的網址。</p>
     <div class="faq-chat-input">
         {# .faq-input-wrap：本元件自有 class——.input-wrap 的樣式正本屬 ui/chatroom-shell，一個 class 名只能有一個 scss 主人（§4） #}
         <div class="faq-input-wrap">

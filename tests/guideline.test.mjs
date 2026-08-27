@@ -4396,6 +4396,10 @@ test("§4 每一顆會改狀態的鈕都要宣告它需要哪一道閘門（四�
             ["個人資料已儲存", "`/me/profile` 是自助端點，product 只掛 get_current_user＋require_active_subscription，沒有 require_capability——標上能力軸反而會把「改自己的顯示名」擋在一顆它不需要的能力後面"],
             ["密碼已變更", "`/me/change-password` 同上：改自己的密碼不吃租戶能力軸"],
         ])],
+        ["src/pages/components/component.html", new Map([
+            ["已開始使用", "使用期閘門遮罩那一節的「我已閱讀並同意」：`POST /account/accept-disclaimer`（product `app/routers/account.py`）的閘只有 `get_current_user`，docstring 逐字「任何登入者可呼叫（首次登入強制流程）」——首登流程按定義不可能要求任何能力，標任何一軸都是宣告一道那裡不存在的閘"],
+            ["密碼已變更", "同一節的強制改密面板：`POST /me/change-password` 是自助端點（理由與 5-1-1 那一顆逐字相同——改自己的密碼不吃租戶能力軸）"],
+        ])],
         ["src/_includes/components/file-edit-modal/file-edit-modal.html", new Map([
             ["已更新", "送出前的本地編輯（凍結正本 uploadFilePdf.js 的 saveEdit 只改本地陣列），沒有端點"],
         ])],
@@ -4404,6 +4408,7 @@ test("§4 每一顆會改狀態的鈕都要宣告它需要哪一道閘門（四�
         ])],
         ["src/_includes/components/faq-chatroom/faq-chatroom.html", new Map([
             ["回答生成成功", "前台公開機器人（faq.html，chatbot-shell 外殼）送問答走吃 `X-Widget-Token` 的公開端點（見 5-8 檔頭：標頭 X-Widget-Token／query ?wt=），那條路徑上根本沒有租戶能力軸——硬標一顆 data-capability 等於宣告一道這裡不存在的閘門。後台 components/chatroom 的同型鈕才吃 data-capability=\"ask\""],
+            ["連結已建立", "分享鈕送的是 `POST /public/share`（product `app/conversation/public_ask.py` 的 `create_public_share`），與同一支元件的送問答鈕走同一條吃 `X-Widget-Token` 的公開路徑，理由逐字相同：匿名訪客身上沒有能力或角色可以判"],
         ])],
         ["src/_includes/ui/widget-shell/widget-shell.html", new Map([
             ["回答生成成功", "嵌入式 widget 的送出鈕與 faq-chatroom 打的是同一支吃 `X-Widget-Token` 的公開端點，理由同上。round44 補上 success 段之前，它是「少一段 success ⇒ 整顆掉出本測試母體」——那一段不是可選的裝飾，它決定這顆鈕受不受這條規則管"],

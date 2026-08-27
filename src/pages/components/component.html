@@ -595,6 +595,10 @@ bodyClass: guideline-page
                         <span class="sr-only">刪除</span>
                     </button>
                     <button type="button" class="button button-primary" data-open-modal="likeModal">開啟答案評分modal（AB 那一份）</button>
+                    {# 前台分享窗：真實頁（faq.html）上的那顆分享鈕是**條件開窗**（先送
+                         `POST /public/share` 拿 token，成功才開窗），故那顆鈕不掛 data-open-modal
+                         ——這一顆示範觸發器就是它「看得見」的那條路（GUIDELINE §1-2 第三條路）。 #}
+                    <button type="button" class="button button-primary" data-open-modal="shareModal">開啟前台分享連結modal</button>
                     <button type="button" class="button button-primary" data-open-modal="disclaimerModal">開啟免責聲明modal</button>
                     <button type="button" class="button button-primary" data-open-modal="intentionModal">開啟意圖判斷啟用modal</button>
                     <button type="button" class="button button-dark" data-open-modal="ProductionSettingsNoPermissionModal">套用為正式設定（無權限）</button>
@@ -772,15 +776,25 @@ bodyClass: guideline-page
                     <li>純樣式元件 ui/subscription-gate：真實環境由 React app-shell 依 /me 的 subscription_status 疊在全站之上、四種狀態（待簽免責 pending_disclaimer／使用中 active／到期 expired／凍結 frozen）條件渲染——「強制改密」不是這一族的值，它是 /me 上另一顆布林，走別的閘門——本節是唯一看得到它的地方（GUIDELINE §5）</li>
                     <li>「.subscription-overlay」正式版是 position:fixed 全螢幕遮罩；此處掛示範變體「.demo-static」退回文流內，結構與正式版相同</li>
                     <li>面板兩型都住在同一組「.subscription-overlay &gt; .subscription-panel」之內，差別只在面板裡放哪一種內容：三段式（.panel-header/.panel-body/.panel-footer，首登免責與強制改密用）或置中訊息「.subscription-expired-box」（.title/.desc，到期與凍結用）。「.subscription-expired-box」不是根——少抄外面那兩層不會空白、只會走樣（沒有遮罩、沒有置中、沒有卡片底色與圓角），完整契約見 _subscription-gate.scss 檔頭</li>
+                    <li>下面演四份：<strong>首登免責</strong>、<strong>強制改密</strong>（三顆密碼欄——強制改密走的是 <code class="inline-code">POST /me/change-password</code>，收舊密碼，少一顆就是送不出去的表單）、<strong>到期</strong>、<strong>凍結</strong>。四份的 chrome 都掛 data-i18n：它們是使用者真的讀得到的字，只是全站只有這一節演得出來——不掛的話那幾句話的正本會掉回 React 的字典</li>
+                    <li><strong>「30 天」是資料節點、不是譯文的一部分</strong>（同意鈕與到期說明各一處，都走「前綴 key ＋ 數字 ＋ 後綴 key」）：試用天數在 API 契約裡有欄位（<code class="inline-code">trial_end</code>／<code class="inline-code">days_left</code>），烤進句子的話天數一改，繁中與英譯會各自靜默過期</li>
                 </ul>
             </div>
-            {# chrome（面板標題、同意鈕、到期標題/說明）逐字鏡射 gufofaq-saas SubscriptionGate 的 zh messages；
+            {# chrome（面板標題、同意鈕、到期／凍結標題與說明、強制改密那一面板的每一顆欄位）**掛
+               `data-i18n`**（round48）：它們是使用者真的讀得到的 app chrome，只是**只有這一頁演得出來**
+               ——§4-2 的「showcase 整頁不翻」豁免給的是「寫給切版者看的內容」（上面那幾條 caption），
+               不是碰巧住在 showcase 頁上的 app 文字。先前整段不掛 key，於是這五句話的正本落在 React 的
+               字典裡（`subscription.*`／`settings.mustChangePassword*` 那一族靠 REACT_ONLY 白名單擋著），
+               切版改了不會紅、英文那一份也沒有任何東西對帳——那正是「第二個文案正本」的定義。
                免責本文則是正式環境 GET /api/disclaimer 的長法律文字（product disclaimer.py，不走 i18n），此處取節錄
                示意其長相（§3-2）——長到足以觸發面板的 max-height 封頂＋內捲（正式版靠 88dvh，展示版靠 demo-static 的固定高）。
-               React 條件渲染的元件、非任何生產頁 markup，故照 showcase 慣例整段不掛 data-i18n #}
+               ⚠️ **「30 天」不烤進譯文**（§3-2：那個數字在 API 契約裡有欄位，就不准出現在譯文字串裡）：
+               試用天數的正本是 product `app/tenancy/subscription.py` 的 `TRIAL_DAYS`，而 `GET /account`
+               回得出 `trial_end` 與 `days_left` ⇒ 拆成「前綴 key ＋ 數字節點 ＋ 後綴 key」（§4-2 正典形狀，
+               同 pagination 那一組）。烤在句子裡的話，天數一改，繁中與英譯會各自靜默過期。 #}
             <div class="subscription-overlay demo-static">
                 <div class="subscription-panel">
-                    <div class="panel-header">免責聲明</div>
+                    <div class="panel-header" data-i18n="comp.disclaimer">免責聲明</div>
                     <div class="panel-body">
                         <p class="m-0 mb-8">致使用者：歡迎使用本平台！在使用我們的服務之前，請您仔細閱讀並同意以下免責聲明，閱讀後即視為使用者同意此聲明。</p>
                         <p class="m-0 mb-8">AI 內容生成的性質：本平台基於 RAG（Retrieval-Augmented Generation）技術，提供專注於文字生成的人工智慧服務，主要透過由使用者上傳的資料作為參考進行。生成內容仍可能因資料完整性、準確性及模型技術的限制而有成效差異，請於核實與審慎判斷後使用。</p>
@@ -790,15 +804,81 @@ bodyClass: guideline-page
                         <p class="m-0">服務變更與可用性：本平台保留隨時修改、暫停或終止服務的權利，無需提前通知。使用者應理解服務可能因技術、法律或相關政策調整而有所變更。</p>
                     </div>
                     <div class="panel-footer">
-                        <button type="button" class="button button-primary">我已閱讀並同意，開始使用（30 天）</button>
+                        {# 這一顆是**送 API 的鈕**（`POST /account/accept-disclaimer`，product
+                             `app/routers/account.py`）：照 §5 ③ 掛 `data-toast` 列全結果。
+                             **兩段就是全部**：那支端點的閘只有 `get_current_user`（docstring 逐字
+                             「任何登入者可呼叫（首次登入強制流程）」——首登流程本來就不可能要求任何能力），
+                             服務層 `account_service.accept_disclaimer` 是冪等的、沒有拒絕路徑，
+                             所以除了成功就只剩網路／伺服器那一種。
+                             **不掛任何授權軸**是查證過的結論、不是忘了標（§4：空白與「忘了標」在
+                             markup 上長得一模一樣，所以理由寫在這裡）。 #}
+                        <button type="button" class="button button-primary" data-toast="已開始使用|送出失敗，請稍後再試" data-i18n-data-toast="toast.acceptDisclaimer" data-toast-type="success|error"><span data-i18n="subscription.acceptDisclaimerPrefix">我已閱讀並同意，開始使用（</span><span>30</span><span data-i18n="subscription.acceptDisclaimerSuffix"> 天）</span></button>
+                    </div>
+                </div>
+            </div>
+            {# **強制改密那一面板**（`/me` 的 `must_change_password`，只在使用期生效中才擋）。
+                 它與上面那一面板同型（三段式），差別只在 body 放的是表單——而那份表單先前**切版從來沒有定過**：
+                 React 端自己畫了三顆欄位、把驗證結果寫成面板內的行內錯誤字。§4「全站一種回報方式」要的是
+                 送出鈕的 toast warning 段，所以這裡把版位與回報方式一起定下來。
+               **三顆欄位不是兩顆**：強制改密走的是 `POST /me/change-password`（product `app/routers/users.py`），
+                 `ChangePwIn` 收 `old_password` ＋ `new_password` ⇒ 舊密碼欄非有不可，少一顆就是送不出去的表單。
+                 欄位寫法與 toast 段落逐字比照 5-1-1 的「變更密碼」區塊（同一支端點、同一組守衛，
+                 §5「同一道後端守衛，不論從哪一頁觸發，分支集合與語意型別都要一致」）。
+               `minlength="8"` 與那句常駐提示的出處同 `components/reset-password-modal`（product
+                 `app/security.py` 的 `MIN_PASSWORD_LEN`）；React 端執行期改讀 `GET /me/limits` 的 `password.min`。 #}
+            <div class="subscription-overlay demo-static mt-16">
+                <div class="subscription-panel">
+                    <div class="panel-header" data-i18n="settings.mustChangePasswordTitle">請先變更密碼</div>
+                    <div class="panel-body">
+                        <p class="m-0 mb-8" data-i18n="settings.mustChangePasswordDesc">為了帳號安全，請先設定新密碼才能繼續使用。</p>
+                        <div class="form-group">
+                            <div class="label">
+                                <label for="gateOldPasswordInput" class="control-label required" data-i18n="settings.oldPassword">舊密碼</label>
+                            </div>
+                            <div class="field">
+                                <input type="password" id="gateOldPasswordInput" placeholder="請輸入舊密碼" data-i18n-placeholder="settings.pleaseEnterOldPassword" class="form-control" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="label">
+                                <label for="gateNewPasswordInput" class="control-label required" data-i18n="settings.newPassword">新密碼</label>
+                            </div>
+                            <div class="field">
+                                <input type="password" id="gateNewPasswordInput" minlength="8" placeholder="至少 8 碼" data-i18n-placeholder="settings.pleaseEnterNewPassword" aria-describedby="gateNewPasswordHint" class="form-control" required>
+                                <span class="text-gray" id="gateNewPasswordHint"><span data-i18n="settings.passwordMinLengthPrefix">密碼至少 </span><span>8</span><span data-i18n="settings.passwordMinLengthSuffix"> 碼</span></span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="label">
+                                <label for="gateConfirmPasswordInput" class="control-label required" data-i18n="settings.confirmPassword">確認新密碼</label>
+                            </div>
+                            <div class="field">
+                                <input type="password" id="gateConfirmPasswordInput" minlength="8" placeholder="再次輸入新密碼" data-i18n-placeholder="settings.pleaseEnterConfirmPassword" aria-describedby="gateNewPasswordHint" class="form-control" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="panel-footer">
+                        <button type="button" class="button button-primary" data-toast="密碼已變更|新密碼至少 8 碼|兩次新密碼不一致|舊密碼錯誤|變更失敗，請稍後再試" data-i18n-data-toast="toast.changePassword" data-toast-type="success|warning|warning|warning|error" data-i18n="settings.changePassword">變更密碼</button>
                     </div>
                 </div>
             </div>
             <div class="subscription-overlay demo-static mt-16">
                 <div class="subscription-panel">
                     <div class="subscription-expired-box">
-                        <div class="title">使用期已到期</div>
-                        <div class="desc">您的 30 天使用期已結束。如需繼續使用，請聯絡平台管理員。</div>
+                        <div class="title" data-i18n="subscription.expiredTitle">使用期已到期</div>
+                        <div class="desc"><span data-i18n="subscription.expiredDescPrefix">您的 </span><span>30</span><span data-i18n="subscription.expiredDescSuffix"> 天使用期已結束。如需繼續使用，請聯絡平台管理員。</span></div>
+                    </div>
+                </div>
+            </div>
+            {# **凍結**那一態：與到期同型（②置中訊息面板），只有文案不同——兩句話因此在這裡各有一份
+                 渲染點，而不是靠一顆沒有人畫的 key 活著（§4-2：枚舉的成員靠「有地方渲染得出來」活著）。
+                 凍結與到期的**下一步相同**（找平台管理員），但**原因不同**：一個是時間到了、一個是被人
+                 關掉的——共用一句話會讓被凍結的租戶以為自己只是試用期滿。 #}
+            <div class="subscription-overlay demo-static mt-16">
+                <div class="subscription-panel">
+                    <div class="subscription-expired-box">
+                        <div class="title" data-i18n="subscription.frozenTitle">帳號已凍結</div>
+                        <div class="desc" data-i18n="subscription.frozenDesc">您的帳號已被平台管理員凍結，暫時無法使用。如需恢復，請聯絡平台管理員。</div>
                     </div>
                 </div>
             </div>
@@ -1145,6 +1225,17 @@ bodyClass: guideline-page
                    ⚠️ 這一顆先前是 **React 自己造的 key**（`faq.unavailable`，靠 REACT_ONLY 白名單
                      擋著），也就是切版之外的第二個文案正本；本輪收回切版，繁中以這一份為準。 #}
                 <p class="text-red m-0" data-i18n="faq.unavailable">本站的問答服務目前停用中，請聯絡本網站管理者。</p>
+                {# 前台問答的另外兩態（round48，兩顆先前都是 **React 自己造的 key**）：
+                     ① `.js-faq-no-token`——這條連結身上沒有 widget token（前台靠 `X-Widget-Token`／
+                        `?wt=` 認租戶）。它與上一句是兩件事：上一句是服務被關掉，這一句是連結不完整，
+                        而兩者要找的人不同（網站管理者 vs 給你這條連結的人）。
+                     ② `.js-faq-default-greeting`——租戶沒設歡迎語時，產品自己的第一句話。
+                        它與 `comp.widgetDefaultGreeting` 是同一件事的兩個版本：widget 跑在別人的
+                        網站上、要先講清楚這裡能問什麼，前台是產品自己的頁面、只要邀請訪客開口。
+                     兩顆在 `components/faq-chatroom` 都掛 `.hidden`（真實頁演的是「有歡迎語、
+                     服務正常、連結完整」那一態），這裡是它們唯一的可見處。繁中逐字照抄該元件。 #}
+                <p class="text-red m-0" data-i18n="faq.noTokenHint">這條連結少了辨識網站用的參數，暫時問不了問題——請向提供這條連結的人要一次正確的網址。</p>
+                <p class="m-0" data-i18n="faq.defaultWelcome">你好，請問有甚麼問題需要我幫你解答的?</p>
                 {# **四句具名的空狀態**（round47，取代原本四處泛用的 `common.noData`）。
                      判準是「這一格為什麼是空的、怎麼才會有東西」——「無資料」三個字對每一種原因
                      都成立，等於什麼都沒講，而這四處的下一步完全不同：
@@ -1178,7 +1269,7 @@ bodyClass: guideline-page
                 <p class="text-red m-0" data-i18n="ask.noDatasetsSelected">目前生效的檢索設定檔把所有資料集都設為「不使用」，沒有可搜尋的範圍。請到「設定 › 檢索設定」調整。</p>
                 <p class="text-red m-0" data-i18n="ask.noDatasetsSelectedPublic">本站的知識庫還沒有設定完成，目前問不到東西——請聯絡本網站的管理者。</p>
             </div>
-            <div class="subtitle">出處：2-2-4 的模型相容性兩句、2-2-5 的基準設定缺漏與命中清單截斷、2-2-5 的桶子列數截斷（每桶 20 則上限，那一頁只有 10 則案例故恆不觸發）、5-2 的逐代碼覆寫重複、5-2 的別名綁定與「沒有啟用任何輸出規則」、5-10 的覆蓋率可開啟與「尚未量測」、4-2 的兩欄合規、3-5 的「還沒跑過健檢」、2-2-5「沒得比」的另一個方向（基準沒有它）、5-9 的金鑰兩態（已存在／尚未產生）、4-2 意圖判斷的「是」、3-1-3 多選刪除的量詞、5-3 長條圖的系列欄名、import-sync-tag 索引同步演不到的兩態（1-1-6 停在最常見的 pending，1-2-1 逐檔演 pending／unknown／缺席態）、平台聯絡窗口沒設過時登入頁與無權限窗各自換上的那一句、3-5「內容過短」那一格的 null 態（那一欄在它存在之前寫下的掃描列上是 NULL，與量到的 0 不是同一件事）、四句具名的空狀態（稽核表／健檢清單／未標註文件窗／覆蓋缺口——四頁的示範陣列都非空，故那四句在真實頁上渲染不出來）。它們在各自的頁面上都掛著 .hidden，或由一個在該頁恆為某一值的條件式產出，或是那一頁的示範推導不出來的枚舉成員，或住在切版畫不出內容的容器裡（&lt;canvas&gt;、業務 js 填的空槽）——那一態沒有人看得到，這裡是唯一可見處</div>
+            <div class="subtitle">出處：2-2-4 的模型相容性兩句、2-2-5 的基準設定缺漏與命中清單截斷、2-2-5 的桶子列數截斷（每桶 20 則上限，那一頁只有 10 則案例故恆不觸發）、5-2 的逐代碼覆寫重複、5-2 的別名綁定與「沒有啟用任何輸出規則」、5-10 的覆蓋率可開啟與「尚未量測」、4-2 的兩欄合規、3-5 的「還沒跑過健檢」、2-2-5「沒得比」的另一個方向（基準沒有它）、5-9 的金鑰兩態（已存在／尚未產生）、4-2 意圖判斷的「是」、3-1-3 多選刪除的量詞、5-3 長條圖的系列欄名、import-sync-tag 索引同步演不到的兩態（1-1-6 停在最常見的 pending，1-2-1 逐檔演 pending／unknown／缺席態）、平台聯絡窗口沒設過時登入頁與無權限窗各自換上的那一句、3-5「內容過短」那一格的 null 態（那一欄在它存在之前寫下的掃描列上是 NULL，與量到的 0 不是同一件事）、四句具名的空狀態（稽核表／健檢清單／未標註文件窗／覆蓋缺口——四頁的示範陣列都非空，故那四句在真實頁上渲染不出來）、前台問答的「連結沒有 widget token」與「租戶沒設歡迎語時的預設開場」（兩顆在 faq-chatroom 都掛 .hidden）。它們在各自的頁面上都掛著 .hidden，或由一個在該頁恆為某一值的條件式產出，或是那一頁的示範推導不出來的枚舉成員，或住在切版畫不出內容的容器裡（&lt;canvas&gt;、業務 js 填的空槽）——那一態沒有人看得到，這裡是唯一可見處</div>
         </section>
 
         <section id="errorPageSection">
@@ -1378,6 +1469,10 @@ bodyClass: guideline-page
 {% include "components/delete-modal/delete-modal.html" %}
 {% include "components/share-manage-modal/share-manage-modal.html" %}
 {% include "components/manage-members-modal/manage-members-modal.html" %}
+{# 前台分享窗的本體：真實頁上它由 components/faq-chatroom include（那顆分享鈕住在那裡），
+     這一份是給上面那顆示範觸發器用的——那顆鈕改成條件開窗之後，faq.html 上已經沒有任何
+     data-open-modal 指向它了（§1-2：每個 <dialog> 在它出現的每一頁上都要打得開）。 #}
+{% include "components/faq-share-modal/faq-share-modal.html" %}
 {% include "components/glossary-entries-modal/glossary-entries-modal.html" %}
 {% include "components/alias-entries-modal/alias-entries-modal.html" %}
 {% include "components/skill-editor-modal/skill-editor-modal.html" %}

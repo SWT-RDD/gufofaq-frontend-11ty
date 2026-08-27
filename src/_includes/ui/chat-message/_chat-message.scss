@@ -106,7 +106,7 @@
 //           <button type="button" class="button-icon like js-vote" data-vote="like" title="讚" data-i18n-title="comp.like"><span class="sr-only" data-i18n="comp.like">讚</span></button>
 //           <button type="button" class="button-icon dislike js-vote" data-vote="dislike" title="倒讚" data-i18n-title="comp.dislike"><span class="sr-only" data-i18n="comp.dislike">倒讚</span></button>
 //           <button type="button" class="button-icon copy copyBtn has-tooltip" data-toast="文字已複製!|複製失敗，請手動選取後複製" data-i18n-data-toast="common.copied" data-toast-type="success|error"><span class="tooltip" data-i18n="action.copy">複製</span></button>
-//           <button type="button" class="button-icon share" data-open-modal="shareModal" title="分享" data-i18n-title="comp.share"><span class="sr-only" data-i18n="comp.share">分享</span></button>
+//           <button type="button" class="button-icon share js-share-message" data-toast="連結已建立|建立失敗，請稍後再試" data-i18n-data-toast="toast.createPublicShare" data-toast-type="success|error" title="分享" data-i18n-title="comp.share"><span class="sr-only" data-i18n="comp.share">分享</span></button>
 //       </div>
 //       {% set faqSuggested = ["結婚登記要準備哪些文件？", "面談流程大約需要多久？"] %}
 //       <div class="suggested-questions" role="group" aria-labelledby="faqSuggestedLabel">

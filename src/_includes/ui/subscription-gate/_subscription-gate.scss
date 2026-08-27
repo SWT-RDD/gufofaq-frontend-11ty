@@ -13,34 +13,81 @@
 //
 // markup 契約（無 html 元件，§1-2；整段照抄）—— **兩型都住在同一組
 // `.subscription-overlay > .subscription-panel` 之內**，差別只在面板裡放哪一種內容。
-// 下面兩段是 `pages/components/component.html` 的靜態示範，逐字如此：
+// 下面三段是 `pages/components/component.html` 的靜態示範，逐字如此（①與①′同型、body 不同，
+// 故逐型各寫一段完整 markup——§1-2：差異不得只用散文交代）。
+// **每一句 chrome 都掛 `data-i18n`**（round48）：這幾句是使用者真的讀得到的 app 文字，
+// 只是全站只有元件庫頁演得出來；漏抄 key 的話那句話的正本就會掉回 React 的字典。
 //
-// ① 三段式面板（`pending_disclaimer` 首登免責、`active` + `must_change_password` 強制改密）：
+// ① 三段式面板／`pending_disclaimer` 首登免責：
 //
 //   <div class="subscription-overlay demo-static">
 //       <div class="subscription-panel">
-//           <div class="panel-header">免責聲明</div>
+//           <div class="panel-header" data-i18n="comp.disclaimer">免責聲明</div>
 //           <div class="panel-body">
 //               <p class="m-0 mb-8">致使用者：歡迎使用本平台！在使用我們的服務之前，請您仔細閱讀並同意以下免責聲明，閱讀後即視為使用者同意此聲明。</p>
 //               {# 重複 N 次同型節點：免責聲明有幾段就幾顆，段數由內容決定 #}
 //               <p class="m-0">服務變更與可用性：本平台保留隨時修改、暫停或終止服務的權利，無需提前通知。使用者應理解服務可能因技術、法律或相關政策調整而有所變更。</p>
 //           </div>
 //           <div class="panel-footer">
-//               <button type="button" class="button button-primary">我已閱讀並同意，開始使用（30 天）</button>
+//               <button type="button" class="button button-primary" data-toast="已開始使用|送出失敗，請稍後再試" data-i18n-data-toast="toast.acceptDisclaimer" data-toast-type="success|error"><span data-i18n="subscription.acceptDisclaimerPrefix">我已閱讀並同意，開始使用（</span><span>30</span><span data-i18n="subscription.acceptDisclaimerSuffix"> 天）</span></button>
 //           </div>
 //       </div>
 //   </div>
 //
-// ② 置中訊息面板（`expired` 到期、`frozen` 凍結——兩者同結構，只有文案不同）：
+// ①′ 三段式面板／`active` + `must_change_password` 強制改密（同型，body 換成三顆密碼欄）：
+//
+//   <div class="subscription-overlay demo-static mt-16">
+//       <div class="subscription-panel">
+//           <div class="panel-header" data-i18n="settings.mustChangePasswordTitle">請先變更密碼</div>
+//           <div class="panel-body">
+//               <p class="m-0 mb-8" data-i18n="settings.mustChangePasswordDesc">為了帳號安全，請先設定新密碼才能繼續使用。</p>
+//               <div class="form-group">
+//                   <div class="label">
+//                       <label for="gateOldPasswordInput" class="control-label required" data-i18n="settings.oldPassword">舊密碼</label>
+//                   </div>
+//                   <div class="field">
+//                       <input type="password" id="gateOldPasswordInput" placeholder="請輸入舊密碼" data-i18n-placeholder="settings.pleaseEnterOldPassword" class="form-control" required>
+//                   </div>
+//               </div>
+//               <div class="form-group">
+//                   <div class="label">
+//                       <label for="gateNewPasswordInput" class="control-label required" data-i18n="settings.newPassword">新密碼</label>
+//                   </div>
+//                   <div class="field">
+//                       <input type="password" id="gateNewPasswordInput" minlength="8" placeholder="至少 8 碼" data-i18n-placeholder="settings.pleaseEnterNewPassword" aria-describedby="gateNewPasswordHint" class="form-control" required>
+//                       <span class="text-gray" id="gateNewPasswordHint"><span data-i18n="settings.passwordMinLengthPrefix">密碼至少 </span><span>8</span><span data-i18n="settings.passwordMinLengthSuffix"> 碼</span></span>
+//                   </div>
+//               </div>
+//               <div class="form-group">
+//                   <div class="label">
+//                       <label for="gateConfirmPasswordInput" class="control-label required" data-i18n="settings.confirmPassword">確認新密碼</label>
+//                   </div>
+//                   <div class="field">
+//                       <input type="password" id="gateConfirmPasswordInput" minlength="8" placeholder="再次輸入新密碼" data-i18n-placeholder="settings.pleaseEnterConfirmPassword" aria-describedby="gateNewPasswordHint" class="form-control" required>
+//                   </div>
+//               </div>
+//           </div>
+//           <div class="panel-footer">
+//               <button type="button" class="button button-primary" data-toast="密碼已變更|新密碼至少 8 碼|兩次新密碼不一致|舊密碼錯誤|變更失敗，請稍後再試" data-i18n-data-toast="toast.changePassword" data-toast-type="success|warning|warning|warning|error" data-i18n="settings.changePassword">變更密碼</button>
+//           </div>
+//       </div>
+//   </div>
+//
+// ② 置中訊息面板（`expired` 到期、`frozen` 凍結——兩者同結構，只有文案不同；凍結那一份
+//    把 `.desc` 的三顆節點收成一顆，因為它的句子裡沒有數字要拆）：
 //
 //   <div class="subscription-overlay demo-static mt-16">
 //       <div class="subscription-panel">
 //           <div class="subscription-expired-box">
-//               <div class="title">使用期已到期</div>
-//               <div class="desc">您的 30 天使用期已結束。如需繼續使用，請聯絡平台管理員。</div>
+//               <div class="title" data-i18n="subscription.expiredTitle">使用期已到期</div>
+//               <div class="desc"><span data-i18n="subscription.expiredDescPrefix">您的 </span><span>30</span><span data-i18n="subscription.expiredDescSuffix"> 天使用期已結束。如需繼續使用，請聯絡平台管理員。</span></div>
 //           </div>
 //       </div>
 //   </div>
+//
+// **「30 天」永遠是獨立節點、不烤進譯文**（§3-2：那個數字在 API 契約裡有欄位就不准出現在譯文裡）：
+// 正本是 product `app/tenancy/subscription.py` 的 `TRIAL_DAYS`，`GET /account` 回得出 `trial_end`
+// 與 `days_left`。同意鈕與到期說明兩處都走「前綴 key ＋ 數字節點 ＋ 後綴 key」。
 //
 // **最後一段不帶 `mb-8`**（帶了面板底部會多出 8px）——這一句原本用 `↑`／`↓` 兩行寫在契約段
 // **中間**：形式上沒有 `…`、實質是省略，而整段複製會把兩行中文貼進 HTML（§1-2：合法的
@@ -54,7 +101,7 @@
 //   ⓑ **`.demo-static` 只給元件庫頁**：正式版的 `.subscription-overlay` 是 `position:fixed`
 //      的全螢幕遮罩，照貼會蓋掉整個元件庫頁；`.demo-static` 讓它退回文流內並給面板固定高，
 //      好讓 `.panel-body` 的內捲（正式版靠 88dvh 封頂觸發）在文流內也演得出來。結構其餘相同。
-//      第二份示範多帶的 `.mt-16` 只是兩份示範之間的間距，不是契約的一部分。
+//      第二份之後的示範多帶的 `.mt-16` 只是示範與示範之間的間距，不是契約的一部分。
 //   ⓒ React 端的 overlay 另外掛 `role="dialog" aria-modal="true" aria-label`，並對底下整棵
 //      子樹掛 `inert`（真正鎖住的是 inert，不是遮罩）——那是條件渲染層的事，切版這份靜態示範
 //      不掛（掛了會對輔具宣告一個不存在的模態）。
