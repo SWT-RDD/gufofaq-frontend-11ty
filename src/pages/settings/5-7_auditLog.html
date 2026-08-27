@@ -340,9 +340,14 @@ permalink: 5-7_auditLog.html
                 <td>{% if row.userAgent %}<div class="collapse-text"><div class="collapse-body">{{ row.userAgent }}</div><button type="button" id="auditUaToggle-{{ row.id }}" aria-labelledby="auditRowTime-{{ row.id }} auditUaToggle-{{ row.id }}" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>{% else %}—{% endif %}</td>
             </tr>
             {# 空狀態：本頁有查詢鈕與七個篩選欄，「篩到零筆」是走得到的常態（§5 無資料列）。
-                 colspan 8 ＝本表欄數（colgroup 八個 <col>）。 #}
+                 colspan 8 ＝本表欄數（colgroup 八個 <col>）。
+               ⚠️ **不用泛用的 `common.noData`**（round47）：這張表是稽核視角，而「這裡是空的」
+                 在這一頁至少是三件事——真的沒有任何紀錄／被上面那七個篩選條件濾光了／看的是
+                 另一個租戶。三者的下一步完全不同（不必處理／放寬條件／換租戶），
+                 而「無資料」三個字對三者都成立，等於什麼都沒講。
+                 判準照 §D：空狀態要回答「這一格為什麼是空的、怎麼才會有東西」。 #}
             {% else %}
-            <tr><td colspan="8" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
+            <tr><td colspan="8" class="text-center text-gray" data-i18n="audit.noRows">這段條件下沒有稽核紀錄。可能是這段期間真的沒有人做過這些動作，也可能是上面的篩選（時間、動作、租戶、操作者…）把它們濾掉了——放寬條件再查一次就知道是哪一種。</td></tr>
             {% endfor %}
         </tbody>
     </table>

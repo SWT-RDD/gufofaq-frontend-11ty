@@ -77,7 +77,29 @@
      一句，不逐塊點名。 #}
 <p class="text-gray" data-i18n="settings.platformTenantsIntro">這一頁是平台管理者的跨租戶視角，不是任何單一租戶自己的設定頁：底下管理的是全平台每一個租戶的權限指派、功能開通、使用期與 GufoRAG 授權用量，加上 ISO 季度審核、平台層的設定與維運操作，以及平台免責聲明。稽核員唯讀看得到整頁，異動仍限平台系統管理員。</p>
 <div class="block mb-16 flex-row column gap-16" data-platform-role="auditor">
-    <div class="text-md text-bold" data-i18n="platform.platformRolesTitle">平台權限</div>
+    {# ⓘ 說明：markup 同既有 info-btn 六件組（§1-2 無 html 元件契約）。
+         **這一整支元件先前 0 顆 ⓘ**（round47），而它管的是全平台的權限與計費——站內每一頁
+         都有說明視窗，唯獨最貴的這一頁沒有。
+       ①出處：product `app/routers/platform.py` 的 `list_platform_admins`／`set_platform_role`
+         （`PATCH /platform/users/{user_id}/platform-role`，`require_platform_admin`）。
+         要講的是最容易誤會的那件事：平台角色**不屬於任何租戶**——它是跨租戶的身分，
+         與那個人在自己租戶裡的管理員旗標是兩回事；而把它改成「無」不是排程性的降級，
+         是當場撤銷。 #}
+    <div class="flex-row align-items-center gap-8">
+        <div class="text-md text-bold" data-i18n="platform.platformRolesTitle">平台權限</div>
+        <button type="button" class="info-btn" title="平台權限說明" data-i18n-title="help.platform.roles.title" data-open-modal="platformRolesHelpModal">
+            <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+            <span class="sr-only" data-i18n="help.platform.roles.title">平台權限說明</span>
+        </button>
+    </div>
+    {% set helpModalId = "platformRolesHelpModal" %}
+    {% set helpModalTitleKey = "help.platform.roles.title" %}
+    {% set helpModalTitle = "平台權限說明" %}
+    {% set helpModalWhatKey = "help.platform.roles.what" %}
+    {% set helpModalWhat = "這一區盤點的是握有平台角色的人。平台角色是跨租戶的身分、不屬於任何一個租戶——它與那個人在自己租戶裡是不是管理員完全是兩回事。稽核員唯讀看得到整個平台，系統管理員則什麼都改得動。把某一列改成「無」是當場撤銷，那個人下一個請求就沒有平台權限了；這張表也只列得出還有平台角色的人，撤掉之後他就從這張表消失。" %}
+    {% set helpModalStateItems = [] %}
+    {% set helpModalLimitRows = [] %}
+    {% include "components/help-modal/help-modal.html" %}
     <div class="table-container scrollTable">
         <table class="default-table">
             <colgroup>
@@ -376,7 +398,31 @@
      reviewDue → 紅色「ISO 待審」（title 提示逾期滿 90 天）。凍結不在名稱欄——它是
      `subscription_status` 四態之一，落在右邊那一格（理由見該處註解）。 #}
 <div class="block flex-row column gap-16" data-platform-role="auditor">
-    <div class="text-md text-bold" data-i18n="nav.tenantEnable">租戶功能開通</div>
+    {# ⓘ 說明：同六件組。①出處：product `app/tenancy/authz.py` 的 `require_tenant_feature`
+         （`PATCH /platform/tenants/{id}/features` 寫入）。**要講的是那道閘涵蓋幾條路**：
+         該函式的 docstring 逐字寫著它「三條路徑共用」——登入 session、widget token、X-API-Key
+         （涵蓋萃取與 `/api/v1` 資料 API），並記著先前只掛第一條時「功能開通因此只是『UI 選單
+         少一項』，不是真的關掉」。也就是說關掉一項不只是選單少一頁：客戶已經核發出去的
+         萃取金鑰、嵌在他們網站上的 widget，全部會跟著停。那是這一格最貴、也最沒有被說出來的後果。 #}
+    <div class="flex-row align-items-center gap-8">
+        <div class="text-md text-bold" data-i18n="nav.tenantEnable">租戶功能開通</div>
+        <button type="button" class="info-btn" title="租戶功能開通說明" data-i18n-title="help.platform.features.title" data-open-modal="tenantFeaturesHelpModal">
+            <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+            <span class="sr-only" data-i18n="help.platform.features.title">租戶功能開通說明</span>
+        </button>
+    </div>
+    {% set helpModalId = "tenantFeaturesHelpModal" %}
+    {% set helpModalTitleKey = "help.platform.features.title" %}
+    {% set helpModalTitle = "租戶功能開通說明" %}
+    {% set helpModalWhatKey = "help.platform.features.what" %}
+    {% set helpModalWhat = "這張表決定每一個租戶買到了哪幾項功能。關掉一項不只是那個租戶的選單少一頁：同一道閘管的是三條路——登入後的畫面、客戶網站上嵌的問答小工具，以及他們已經拿到手的 API 金鑰。所以關掉「資料」之後，對方寫好的整合程式會開始失敗；關掉「問答」之後，他們網站上的機器人會停止回答。改完要按同一列的「儲存」才會生效。" %}
+    {% set helpModalStateItems = [] %}
+    {% set helpModalLimitRows = [] %}
+    {% include "components/help-modal/help-modal.html" %}
+    {# 草稿 vs 落地：同一族三張表共用同一顆 key，完整理由見 5-5-1 的同一段。
+         **這一張最需要它**：切一顆功能開關的開關看起來就像「已經關掉了」，而那個租戶的使用者
+         其實還在用——直到有人按下同一列的「儲存」。 #}
+    <p class="text-gray" data-i18n="settings.rowDraftHint">這張表可以就地編輯：改動只是這一頁上的草稿，要按下同一列的「儲存」才會真的寫入；沒儲存就離開，改動會全部消失。</p>
     <div class="table-container scrollTable">
         <table class="default-table">
             <colgroup>

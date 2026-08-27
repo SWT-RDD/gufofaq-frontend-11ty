@@ -1353,7 +1353,13 @@ permalink: 3-5_dataHealth.html
                     </td>
                 </tr>
                 {% else %}
-                <tr><td colspan="8" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
+                {# ⚠️ **不用泛用的 `common.noData`**（round47）：這張清單空著至少有三種意思，而只有
+                     第一種是好消息——(a) 掃過了、這一次沒有任何發現；(b) 篩選（處置狀態預設只看
+                     「未處置」、加上檢查類型）把它們濾掉了；(c) 這個租戶還沒跑過健檢。
+                     (c) 另有自己的一句（`health.lastScanNever`，在上面那一區），所以這一句要負責
+                     把 (a) 與 (b) 分開——「無資料」三個字會讓一份「其實只是被篩掉」的清單看起來像
+                     「乾淨」，而這一整頁存在的理由就是不要讓人以為乾淨。 #}
+                <tr><td colspan="8" class="text-center text-gray" data-i18n="health.noFindings">這個條件下沒有發現。預設只看「未處置」的那些，所以已經處置過的不會出現在這裡——把上面的處置狀態改成「全部」可以看到完整清單。</td></tr>
                 {% endfor %}
             </tbody>
         </table>

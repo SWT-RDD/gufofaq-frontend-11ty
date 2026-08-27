@@ -389,6 +389,9 @@ permalink: 5-4_coverageGaps.html
     </div>
 </div>
 {% else %}
-{# 全期間都答得出來時 product 回空的 groups（不列一個 count=0 的空組充數），畫面就只剩這一句。 #}
-<div class="block text-center text-gray mt-16" data-i18n="common.noData">無資料</div>
+{# 全期間都答得出來時 product 回空的 groups（不列一個 count=0 的空組充數），畫面就只剩這一句。
+   ⚠️ **不用泛用的 `common.noData`**（round47）：這一頁空著是**好消息**——這段期間每一題都答得出來，
+     沒有任何覆蓋缺口。寫成「無資料」會讓它讀起來像報表壞了或還沒查，而這一頁的整個用途就是
+     「有沒有答不出來的題目」。同時要把另一半講掉：它只涵蓋**這段時間區間**，換一段可能就有。 #}
+<div class="block text-center text-gray mt-16" data-i18n="settings.gapNoneInRange">這段期間沒有答不出來的問題——每一題都在知識庫裡找得到依據。換一段時間區間再查，結果可能不一樣。</div>
 {% endfor %}

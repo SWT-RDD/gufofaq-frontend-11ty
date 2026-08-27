@@ -105,7 +105,11 @@
                                         <td>{{ row.datasetName }}</td>
                                     </tr>
                                     {% else %}
-                                    <tr><td colspan="3" class="text-center text-gray" data-i18n="common.noData">無資料</td></tr>
+                                    {# ⚠️ **不用泛用的 `common.noData`**（round47）：這扇窗是「哪些文件還沒標到
+                                         這一個維度」的清單，空著＝**這一個維度已經全部標完了**，那是這扇窗
+                                         唯一的好結果。寫成「無資料」會讓它讀起來像「查不到東西」——同一個
+                                         畫面上最重要的一句話，被一句通用字蓋掉了。 #}
+                                    <tr><td colspan="3" class="text-center text-gray" data-i18n="settings.untaggedNone">這個維度沒有未標註的文件——目前每一份都標到了。</td></tr>
                                     {% endfor %}
                                 </tbody>
                             </table>

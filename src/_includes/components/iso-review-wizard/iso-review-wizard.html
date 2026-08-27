@@ -170,6 +170,15 @@
             <button type="button" class="button button-red js-review-delete" data-toast="正在載入逾時名單...|逾時天數超出可用範圍|名單已載入|載入失敗，請稍後再試" data-i18n-data-toast="toast.reviewOverdue" data-toast-type="info|warning|success|error" data-i18n="platform.reviewActionDelete">刪除逾時帳號</button>
             <button type="button" class="button button-border js-review-freeze" data-toast="正在載入逾時名單...|逾時天數超出可用範圍|名單已載入|載入失敗，請稍後再試" data-i18n-data-toast="toast.reviewOverdue" data-toast-type="info|warning|success|error" data-i18n="platform.reviewActionFreeze">凍結逾時帳號</button>
         </div>
+        {# **三顆動作各是什麼，先前全站沒有一個字**（round47）：三個按鈕字面差兩個字
+             （「刪除逾時資料」／「刪除逾時帳號」／「凍結逾時帳號」），而它們的破壞程度差了三個量級
+             ——一個保留帳號、一個連帳號一起刪、一個完全可逆。這三顆是同一排、同樣的紅、同樣的大小。
+           **可逆性尤其要講**：`freeze` 有對稱的 `unfreeze_tenant`（product `app/routers/platform.py`，
+             docstring 逐字「把凍結時長補回 trial_end，剩餘天數原封保留」），另外兩顆沒有回頭路。
+             下一步那顆確認鈕已經按動作切換「不可逆／可解凍」兩態，但**那是在名單拉出來之後**——
+             選錯動作的那一刻是在這裡。
+           擺在三顆鈕**下面**：擺上面會把「①設定門檻與動作」那一段的標題與鈕拆開。 #}
+        <p class="text-gray" data-i18n="platform.reviewActionsHint">三個動作的破壞程度差很多：「刪除逾時資料」清掉那些帳號的資料集與索引、帳號本身留著；「刪除逾時帳號」連帳號、使用者一起永久刪除，只留稽核日誌；「凍結逾時帳號」只是暫時停用，解凍時剩餘天數會原封補回來——三者之中只有它有回頭路。</p>
     </div>
     {% elif isoReviewStep == "preview" %}
     <div class="flex-row column gap-8">

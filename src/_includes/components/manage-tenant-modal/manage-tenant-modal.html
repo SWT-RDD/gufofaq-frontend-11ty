@@ -197,9 +197,26 @@
                                 </div>
                             </div>
                         </div>
-                        {# 重置當期用量：直接動作（歸零 qa_used/extraction_used、重設週期起點），不經共用 footer 鈕。 #}
-                        <div class="flex-row">
-                            <button type="button" class="button button-border button-sm" data-platform-role="admin" data-toast="已重置當期用量|重設失敗，請稍後再試" data-i18n-data-toast="toast.resetUsage" data-toast-type="success|error" data-i18n="platform.resetUsage">重置當期用量</button>
+                        {# 重置當期用量：直接動作（歸零 qa_used/extraction_used、重設週期起點），不經共用 footer 鈕。
+                           ⚠️ **這一整塊是這扇窗裡唯一直接動到「錢」的地方，先前一句說明都沒有**（round47）。
+                             三件事要講，而且都是按下去之前才有用：
+                               ① 額度填 0 ＝ 這個租戶下一題就被擋住（`consume_qa_quota` 的條件式 UPDATE
+                                  `WHERE qa_used < qa_limit` 永遠不成立）——那是把人鎖住，不是「暫時關小」。
+                               ② 把「已用量」改小 ＝ 直接把可用量還給對方，效果與加額度一樣，只是帳面上
+                                  看起來像在修數字。
+                               ③ 「重置當期用量」把兩個已用量歸零**並且把週期起點設成現在**——它不是
+                                  「清一下計數器」，是重新開始一個計費週期。
+                           **這一區刻意用常駐文字、不用 ⓘ 說明視窗**：這扇窗自己就是 `<dialog showModal()>`，
+                             再從裡面開第二層 dialog 是全站沒有先例的形狀（元件層目前只有
+                             `components/knowledge-retrieval-modal` 用 info-btn，而那顆是**被** ⓘ 打開的那一份，
+                             不是在窗裡再開一顆）。要改成 ⓘ 得先讓 `components/help-modal` 的 id 可參數化
+                             ——那是另一件事，不夾在這一輪。 #}
+                        <p class="text-gray m-0" data-i18n="platform.quotaMoneyHint">額度填 0 等於把這個租戶鎖住：他下一題就會被擋下來，不是「暫時關小」。把「已用量」改小則是直接把可用量還給對方，效果跟加額度一樣。</p>
+                        <div class="flex-row column gap-8">
+                            <p class="text-red m-0" data-i18n="platform.resetUsageWarning">「重置當期用量」會把問答與萃取的已用量一起歸零，並把計費週期的起點設成現在——它不是清一下計數器，是替這個租戶重新開始一期。按下去立刻生效，沒有第二次確認。</p>
+                            <div class="flex-row">
+                                <button type="button" class="button button-border button-sm" data-platform-role="admin" data-toast="已重置當期用量|重設失敗，請稍後再試" data-i18n-data-toast="toast.resetUsage" data-toast-type="success|error" data-i18n="platform.resetUsage">重置當期用量</button>
+                            </div>
                         </div>
 
                         {# 使用期：延展／縮短天數 或 指定到期日（exactly-one——product 兩者都給回 400，React 送出前擇一；日期選擇沿用 .calendar hook 交由 React 套件實作）。 #}
@@ -406,6 +423,14 @@
                     </div>
                 </div>
                 <div class="modals-footer">
+                    {# 這扇窗有**四塊**（額度／用量、模型白名單、凍結、危險操作），而 footer 只有一顆
+                         「儲存」——它送的是上面那幾塊裡**值控制項**目前的值，不是「我剛剛看的那一塊」。
+                         沒有這一句的話，改完額度就直接關窗是很自然的動作，而那等於什麼都沒做
+                         （round47，同三張表的 `settings.rowDraftHint`：草稿 vs 落地）。
+                         **兩顆自帶動作的鈕不在這一句的範圍內**：凍結／解凍與「重置當期用量」是各自
+                         直接送出的（它們有自己的 data-toast），下面危險操作那兩顆更是——所以這句話
+                         只講「上面那幾格」，不說「這扇窗的全部」。 #}
+                    <p class="text-gray text-center" data-i18n="platform.tenantModalSaveHint">上面那幾格是編輯中的草稿，按下「儲存」才會一起送出。凍結／解凍、重置當期用量與危險操作那幾顆各自獨立、按下去就直接執行，不等這一顆。</p>
                     <div class="button-row center">
                         <button type="button" class="button button-border btn-close-modals" data-i18n="action.close">關閉</button>
                         <button type="button" class="button button-primary" data-platform-role="admin" data-toast="已更新|額度不可小於 0|已用量不可大於額度|延展天數與到期日請擇一填寫，且天數不可為 0|儲存失敗" data-i18n-data-toast="toast.manageTenant" data-toast-type="success|warning|warning|warning|error" data-i18n="action.save">儲存</button>
