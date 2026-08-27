@@ -391,7 +391,17 @@
                         </div>
 
                         {# 危險操作（不可逆）：刪除資料（保留帳號）／刪除帳號（硬刪整租戶）。破壞性 → button-red；
-                             需輸入該租戶名稱字串相符才可執行＝type-to-confirm（業務條件），故鈕用 hook class（.js-delete-tenant-*）、不掛 data-open-modal 也不掛 data-toast。
+                             需輸入該租戶名稱字串相符才可執行＝type-to-confirm（業務條件），故鈕用 hook class（.js-delete-tenant-*）、不掛 data-open-modal。
+                           ⚠️ **但兩顆照樣掛 `data-toast`**（round48）：type-to-confirm 免除的是「片語沒打對」
+                             那一態（它由 `disabled` ＋ 常駐 hint 表達，見下面那一段），**不免除送出之後的成敗**
+                             ——這兩顆鈕不開任何窗，按下去就是 `DELETE /platform/tenants/{id}/data` 與
+                             `DELETE /platform/tenants/{id}`（product `app/routers/platform.py`），落在 §5
+                             「凡點下去就送 API 的鈕都是③」那一條。先前兩顆一段都不列，於是全站最不可逆的
+                             兩個動作在切版上連「成功長什麼樣」都沒有人看過。
+                             逐 raise 對回上游（`app/tenancy/platform_admin.py`）：`purge_tenant_data` 的
+                             docstring 逐字「raises 404/502」⇒ 成敗兩段；`delete_tenant` 逐字
+                             「raises 404/409/502」，而那道 409 是 `cannot_delete_own_tenant`（刪自己所屬的
+                             租戶）——那是使用者換一個目標就過得了的事，故是 warning、不折進 error。
                              type-to-confirm 那兩顆輸入框是「只有 admin 動得了的控制項」，即使整份窗降到 auditor 也要各自標 admin（§5）。
                              **兩顆鈕帶 `disabled`**：這一稿演的是確認欄空著的那一刻，而 type-to-confirm 的
                              全部意義就是「沒打對之前按不下去」——空欄配一顆按得下去的「刪除帳號」是執行期
@@ -420,7 +430,7 @@
                                 </div>
                             </div>
                             <div class="flex-row">
-                                <button type="button" class="button button-red js-delete-tenant-data" data-platform-role="admin" data-i18n="platform.deleteData" disabled>刪除資料</button>
+                                <button type="button" class="button button-red js-delete-tenant-data" data-platform-role="admin" data-toast="已刪除租戶資料|刪除失敗，請稍後再試" data-i18n-data-toast="toast.deleteData" data-toast-type="success|error" data-i18n="platform.deleteData" disabled>刪除資料</button>
                             </div>
                             <div class="form-group mt-16">
                                 <div class="label">
@@ -435,7 +445,7 @@
                                 </div>
                             </div>
                             <div class="flex-row">
-                                <button type="button" class="button button-red js-delete-tenant-account" data-platform-role="admin" data-i18n="platform.deleteAccount" disabled>刪除帳號</button>
+                                <button type="button" class="button button-red js-delete-tenant-account" data-platform-role="admin" data-toast="已刪除帳號|不可刪除自己所屬的租戶|刪除失敗，請稍後再試" data-i18n-data-toast="toast.deleteAccount" data-toast-type="success|warning|error" data-i18n="platform.deleteAccount" disabled>刪除帳號</button>
                             </div>
                         </div>
                     </div>

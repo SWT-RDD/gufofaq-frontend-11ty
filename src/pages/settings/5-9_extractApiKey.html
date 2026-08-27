@@ -70,7 +70,7 @@ permalink: 5-9_extractApiKey.html
          不另立 key（§4-2：繁中原文相同的 UI chrome 沿用既有 key，英譯也是同一個 "Create key"）。 #}
     <p class="text-gray" data-i18n="extractKey.noKeyYet">這個租戶還沒有萃取 API 金鑰。按下面的「產生金鑰」建立第一把——明碼只會在產生的那一次顯示。</p>
     <div class="flex-row">
-        <button data-tenant-role="admin" type="button" class="button button-primary js-generate-key" data-toast="已產生新金鑰|產生失敗，請稍後再試" data-i18n-data-toast="toast.generateKey" data-toast-type="success|error" data-i18n="widget.createToken">產生金鑰</button>
+        <button data-tenant-role="admin" type="button" class="button button-primary js-generate-key" data-toast="已產生新金鑰|產生失敗，請稍後再試|金鑰已產生，但這一次沒有回傳明碼——請重新產生一次（舊金鑰已失效）|可能已經產生，請重新整理確認；舊金鑰可能已失效" data-i18n-data-toast="toast.generateKey" data-toast-type="success|error|warning|warning" data-i18n="widget.createToken">產生金鑰</button>
     </div>
     {% else %}
     {# 儲存模型說明（**恆常顯示**，有金鑰的兩種子態都成立）。
@@ -148,7 +148,13 @@ permalink: 5-9_extractApiKey.html
 {% set deleteConfirmBinding = true %}
 {% set deleteConfirmClass = "js-regenerate-key-confirm" %}
 {% set deleteTenantRole = "admin" %}
-{% set deleteToast = "已產生新金鑰|產生失敗，請稍後再試" %}
+{# 兩段 warning 是**善後**那一族（round48）：`generate_api_key` 直接覆寫 `tenant.api_key_hash`，
+     所以「請求送出去了、明碼沒回來」與「連線中斷、不知道有沒有成功」兩種情況下，舊金鑰都可能
+     已經失效——而畫面若只演成敗，使用者會以為「失敗＝什麼都沒發生」而繼續用舊的那一把。
+     **兩段接在最末位、不插中間**：段序是 React 端 `split("|")[n]` 的索引契約，插中間會讓其後
+     每一段的索引整批位移（同 3-1-3 那一段的處置與理由）。 #}
+{% set deleteToast = "已產生新金鑰|產生失敗，請稍後再試|金鑰已產生，但這一次沒有回傳明碼——請重新產生一次（舊金鑰已失效）|可能已經產生，請重新整理確認；舊金鑰可能已失效" %}
+{% set deleteToastType = "success|error|warning|warning" %}
 {% set deleteToastKey = "toast.generateKey" %}
 {% include "components/delete-modal/delete-modal.html" %}
 

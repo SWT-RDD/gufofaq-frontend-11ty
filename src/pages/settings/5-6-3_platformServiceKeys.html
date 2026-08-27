@@ -64,7 +64,8 @@ permalink: 5-6-3_platformServiceKeys.html
      §5「每個 data-toast 分支都要對得上正本的一條真實結果路徑；列出不可能的結果與只演成功一樣是說謊」。
      同型情境 5-6-1 的平台時區早就是這樣裁的（那顆儲存鈕只列成敗兩段，並逐字寫著「無『無效時區』分支
      ——後端 400 的情境是直接呼叫 API 才會發生，本頁 select 選不出來」），兩頁對同一種情境不該相反。
-     ⚠️ 這一段拿掉之後 `toast.issueServiceKey` 從 5 段變 4 段——`|` 是索引契約，en.json 與 saas 端
+     ⚠️ 這一段拿掉之後 `toast.issueServiceKey` 從 5 段變 4 段；round48 又在**最末位**補了兩段
+     善後 warning（見核發鈕上方那則註解）⇒ 現在是 6 段。`|` 是索引契約，en.json 與 saas 端
      若有對位讀取要一起改。 #}
 {# 授權範圍值域（`GET /platform/service-keys/scopes`）。今天一個鍵；說明文字是 API 回的資料
      （不翻），逐字取自 product `authz.PLATFORM_SERVICE_KEY_SCOPES`。 #}
@@ -174,11 +175,16 @@ permalink: 5-6-3_platformServiceKeys.html
         <span data-i18n="serviceKey.ackOnce">我知道明碼只會顯示這一次，而且已經準備好要把它貼到哪裡。</span>
     </label>
     <div class="flex-row">
-        {# 四段（不是五段）：「授權範圍不在值域內」那一段已依檔頭的裁決拿掉——範圍下拉的選項就是端點回的
-             值域本身，這一頁選不出域外的值，那道 400 只有直接打 API 才走得到。 #}
+        {# 「授權範圍不在值域內」那一段已依檔頭的裁決拿掉——範圍下拉的選項就是端點回的
+             值域本身，這一頁選不出域外的值，那道 400 只有直接打 API 才走得到。
+           **末兩段是善後**（round48）：核發成功時 DB 裡已經多一列、而**明碼只有那一次回應帶得出來**
+             （檔頭 ① 逐字：DB 只存 SHA-256 雜湊）。所以「回應回來了但沒有 `key`」與「連線中斷、
+             不知道核發成功沒有」這兩種情況下，正確處置都不是重按核發（那會再多一把懸空的憑證），
+             而是先確認再撤銷重發——只演成敗的話，畫面上沒有任何地方講得出這件事。
+             **接在最末位、不插中間**：段序是 React 端 `split("|")[n]` 的索引契約（同 3-1-3 與 5-9）。 #}
         <button type="button" class="button button-primary js-issue-service-key"
-            data-toast="已核發，請立即複製下方明碼|請先填寫用途名稱|請先勾選「明碼只顯示一次」的確認|核發失敗，請稍後再試"
-            data-i18n-data-toast="toast.issueServiceKey" data-toast-type="success|warning|warning|error"
+            data-toast="已核發，請立即複製下方明碼|請先填寫用途名稱|請先勾選「明碼只顯示一次」的確認|核發失敗，請稍後再試|憑證已核發，但這一次沒有回傳明碼——請撤銷後重新核發|可能已經核發，請重新整理確認；明碼拿不回來，請撤銷後重發"
+            data-i18n-data-toast="toast.issueServiceKey" data-toast-type="success|warning|warning|error|warning|warning"
             data-i18n="serviceKey.issue">核發</button>
     </div>
 </div>

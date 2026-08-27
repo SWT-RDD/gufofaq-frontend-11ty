@@ -257,7 +257,7 @@ permalink: 4-1_qaHistory.html
                  原本只列了後三條，前四條全部落進紅色的「下載失敗」——而那四條每一條使用者當場改得掉。
                  ⚠️ `|` 是索引契約：本輪在中段插了四段，React 端照 `split("|")` 位置取 `toast.downloadRecords`
                  的地方要跟著位移；分支順序＝上游 raise 的先後。 #}
-            <button data-capability="history" type="button" class="button button-green" data-toast="下載已開始|權限不足，無法下載|請先填開始時間與結束時間|時間格式不正確，請重新選擇起訖時間|開始時間不能晚於現在|結束時間不能早於開始時間|只提供31日間的問答記錄下載|只提供一年內的問答記錄下載|這段範圍的資料量過大，請縮小時間範圍|下載失敗，請稍後再試" data-i18n-data-toast="toast.downloadRecords" data-toast-type="success|warning|warning|warning|warning|warning|warning|warning|warning|error" data-i18n="action.download">下載</button>
+            <button data-capability="history" type="button" class="button button-green" data-toast="下載已開始|權限不足，無法下載|請先填開始時間與結束時間|時間格式不正確，請重新選擇起訖時間|開始時間不能晚於現在|結束時間不能早於開始時間|只提供31日間的問答記錄下載|只提供一年內的問答記錄下載|這段範圍的資料量過大，請縮小時間範圍|下載失敗，請稍後再試|下載用的是上一次按「查詢」時的條件，而上面的篩選欄已經改過——請先按一次「查詢」再下載" data-i18n-data-toast="toast.downloadRecords" data-toast-type="success|warning|warning|warning|warning|warning|warning|warning|warning|error|warning" data-i18n="action.download">下載</button>
         </div>
     </div>
 </div>
@@ -290,6 +290,14 @@ permalink: 4-1_qaHistory.html
      ⇒ 最新的在最前面。先前是升冪（最舊的三筆排在第一頁），而本頁的排序鈕是三態循環、
      `none` 那一態就是「還原 markup 原始列序」＝伺服器序——markup 序錯了，那一態演的就是一個
      API 產不出來的畫面。（活正本禁行號，§3-2。） #}
+{# `maskingBudgetExceeded`＝`GET /history` 每一列都回得出的那顆旗標（product
+     `app/routers/history.py` 的允許清單裡逐字列著 `masking_budget_exceeded`，旁邊那段註解說明
+     為什麼它是「漏列比多列更糟」的少數之一）。上游整頁遮蔽的工作量到頂時，那幾列**回的是清空的
+     內容欄 ＋ 這顆旗標**，刻意不回未遮蔽的原文。少了它，畫面上「這一輪的內容被成本上限收掉了」
+     與「這一輪本來就沒有內容」長得一模一樣，而後者會被讀成「這題沒答出來」——那正是使用者
+     據以下結論的東西。正確處置是把每頁筆數調小重查，而他得先知道發生了這件事。
+   示範資料一律 `false`（§5：示範資料刻意不觸發錯誤態——把它畫成預設態，每個打開頁面的人
+     都會以為出事了）；那一態的可見處在元件庫頁的「React 條件文案」區。 #}
 {% set rows = [
     {
         id: "12175",
@@ -300,7 +308,8 @@ permalink: 4-1_qaHistory.html
         userType: "frontend",
         rating: "negative",
         date: "2024/12/03 16:45:51",
-        href: "4-2_qaHistory_detail.html?logSn=12175"
+        href: "4-2_qaHistory_detail.html?logSn=12175",
+        maskingBudgetExceeded: false
     },
     {
         id: "12174",
@@ -311,7 +320,8 @@ permalink: 4-1_qaHistory.html
         userType: "backend",
         rating: "",
         date: "2024/12/02 09:12:03",
-        href: "4-2_qaHistory_detail.html?logSn=12174"
+        href: "4-2_qaHistory_detail.html?logSn=12174",
+        maskingBudgetExceeded: false
     },
     {
         id: "12173",
@@ -322,7 +332,8 @@ permalink: 4-1_qaHistory.html
         userType: "frontend",
         rating: "positive",
         date: "2024/12/01 13:29:24",
-        href: "4-2_qaHistory_detail.html?logSn=12173"
+        href: "4-2_qaHistory_detail.html?logSn=12173",
+        maskingBudgetExceeded: false
     }
 ] %}
 <div class="data-info"><span data-i18n="common.total">共</span> {{ total }} <span data-i18n="common.recordsUnit">筆</span></div>
@@ -367,10 +378,10 @@ permalink: 4-1_qaHistory.html
                 <td>{{ row.roomId }}</td>
                 <td>
                     {# 逐列辨識欄（§4）：這一列 AI 回覆的收合鈕指到它（三列都叫「展開」）。 #}
-                    <a href="{{ row.href }}" id="qaHistoryRowName-{{ row.id }}" title="{{ row.userMsg }}" class="link-file">{{ row.userMsg }}</a>
+                    {% if row.maskingBudgetExceeded %}<span id="qaHistoryRowName-{{ row.id }}" class="text-gray" data-i18n="qa.contentNotLoaded">內容未載入</span>{% else %}<a href="{{ row.href }}" id="qaHistoryRowName-{{ row.id }}" title="{{ row.userMsg }}" class="link-file">{{ row.userMsg }}</a>{% endif %}
                 </td>
                 <td>
-                    <div class="collapse-text"><div class="collapse-body">{{ row.aiMsg }}</div><button type="button" id="qaHistoryAnswerToggle-{{ row.id }}" aria-labelledby="qaHistoryRowName-{{ row.id }} qaHistoryAnswerToggle-{{ row.id }}" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>
+                    {% if row.maskingBudgetExceeded %}<span class="text-gray" data-i18n="qa.maskingBudgetExceeded">這一列的內容因為系統一次能遮蔽的量到頂而沒有載入——不是這一輪沒有內容。把每頁筆數調小再查一次就看得到。</span>{% else %}<div class="collapse-text"><div class="collapse-body">{{ row.aiMsg }}</div><button type="button" id="qaHistoryAnswerToggle-{{ row.id }}" aria-labelledby="qaHistoryRowName-{{ row.id }} qaHistoryAnswerToggle-{{ row.id }}" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>{% endif %}
                 </td>
                 {# 使用者類型是**封閉目錄**（`chat_logs.tag`）⇒ 走 `{% if %}` 鏈 ＋ i18n key，
                      顯示字不塞進資料（見上方 rows 那則註解）；沿用同頁篩選 select 的三顆 key，

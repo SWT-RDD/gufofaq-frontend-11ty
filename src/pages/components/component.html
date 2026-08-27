@@ -1137,7 +1137,7 @@ bodyClass: guideline-page
                      是假的。它因此落回 §5 ③（點下去就送 API），自己掛 data-toast 列全結果。 #}
                 <p class="text-gray m-0" data-i18n="extractKey.noKeyYet">這個租戶還沒有萃取 API 金鑰。按下面的「產生金鑰」建立第一把——明碼只會在產生的那一次顯示。</p>
                 <div class="flex-row">
-                    <button data-tenant-role="admin" type="button" class="button button-primary js-generate-key" data-toast="已產生新金鑰|產生失敗，請稍後再試" data-i18n-data-toast="toast.generateKey" data-toast-type="success|error" data-i18n="widget.createToken">產生金鑰</button>
+                    <button data-tenant-role="admin" type="button" class="button button-primary js-generate-key" data-toast="已產生新金鑰|產生失敗，請稍後再試|金鑰已產生，但這一次沒有回傳明碼——請重新產生一次（舊金鑰已失效）|可能已經產生，請重新整理確認；舊金鑰可能已失效" data-i18n-data-toast="toast.generateKey" data-toast-type="success|error|warning|warning" data-i18n="widget.createToken">產生金鑰</button>
                 </div>
                 {# 4-2 的「有無進行意圖判斷」那一格的**第三個枚舉成員**。`chat_logs.is_intension` 是
                      可為 null 的布林 ⇒ 三態（是／否／—），而 4-2 那一筆是 agent 模式，`is_intension`
@@ -1234,6 +1234,16 @@ bodyClass: guideline-page
                         網站上、要先講清楚這裡能問什麼，前台是產品自己的頁面、只要邀請訪客開口。
                      兩顆在 `components/faq-chatroom` 都掛 `.hidden`（真實頁演的是「有歡迎語、
                      服務正常、連結完整」那一態），這裡是它們唯一的可見處。繁中逐字照抄該元件。 #}
+                {# 4-1 問答紀錄表的 **masking_budget_exceeded** 那一列（round48）：上游整頁遮蔽的
+                     工作量到頂時，那幾列回的是**清空的內容欄 ＋ 一顆旗標**（product
+                     `app/routers/history.py` 的允許清單逐字列著它）。示範資料一律 false（把錯誤態
+                     畫成預設態，每個打開頁面的人都會以為出事了），所以這兩句在真實頁上渲染不出來。
+                     兩格分開講：辨識欄那一格只說「沒載入」，說明留給比較寬的回答欄——同一列印兩次
+                     長句子讀起來像壞掉了兩次。 #}
+                <div class="flex-row align-items-center gap-8 flex-wrap">
+                    <span class="text-gray" data-i18n="qa.contentNotLoaded">內容未載入</span>
+                    <span class="text-gray" data-i18n="qa.maskingBudgetExceeded">這一列的內容因為系統一次能遮蔽的量到頂而沒有載入——不是這一輪沒有內容。把每頁筆數調小再查一次就看得到。</span>
+                </div>
                 <p class="text-red m-0" data-i18n="faq.noTokenHint">這條連結少了辨識網站用的參數，暫時問不了問題——請向提供這條連結的人要一次正確的網址。</p>
                 <p class="m-0" data-i18n="faq.defaultWelcome">你好，請問有甚麼問題需要我幫你解答的?</p>
                 {# **四句具名的空狀態**（round47，取代原本四處泛用的 `common.noData`）。
