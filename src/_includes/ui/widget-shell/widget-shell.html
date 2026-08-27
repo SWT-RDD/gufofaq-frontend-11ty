@@ -77,6 +77,11 @@
                 </div>
             </div>
         </div>
+        {# **整站停用那一態**：與 components/faq-chatroom 同一件事、同一顆 key（同一條公開端點、
+             同兩道 403 閘）——完整理由寫在那個元件的同一段。嵌在客戶網站上的這一版尤其需要它：
+             訪客連「這是哪個系統」都不知道，一顆按不動的送出鈕在這裡是純粹的死路。
+             `.hidden`＋live region；可見處在元件庫頁「React 條件文案」區（§5）。 #}
+        <p class="text-red js-faq-unavailable hidden" role="alert" data-i18n="faq.unavailable">本站的問答服務目前停用中，請聯絡本網站管理者。</p>
         <div class="widget-panel-bar">
             {# `.widget-panel-input`／`.widget-panel-send` 是本元件自有的 slot class（§4：要覆寫
                  別元件原子的排版就掛自己的 class，不寫 `.form-control`／`.button` 的選擇器）。

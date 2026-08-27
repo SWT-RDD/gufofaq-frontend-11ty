@@ -15,7 +15,12 @@ permalink: 1-2-1_uploadFile_pdf.html
 
 {# 頁層說明：語意出處同下面「上傳區」與「批次匯入結果」兩段檔頭——非結構化文件（PDF/WORD/
      圖片）可多選、逐檔各自編輯、逐檔各自成敗，不是整批一次成敗。 #}
-<p class="text-gray" data-i18n="dataImport.uploadFilePdfIntro">這一頁是 PDF、WORD、圖片等非結構化文件的上傳與匯入介面：可以一次選取多個檔案、逐一編輯每個檔案的標題與內容。送出後會看到這批文件逐檔的匯入結果，包含哪些成功、哪些失敗與失敗原因。</p>
+{# 格式清單跟著 accept 走（round47：`.pdf`／`.docx`，理由見下方 uploadAccept 那一段）——
+     這一句原本寫「圖片等」，而影像既選不到、也沒有匯入端點。 #}
+<p class="text-gray" data-i18n="dataImport.uploadFilePdfIntro">這一頁是 PDF、WORD 等非結構化文件的上傳與匯入介面：可以一次選取多個檔案、逐一編輯每個檔案的標題與內容。送出後會看到這批文件逐檔的匯入結果，包含哪些成功、哪些失敗與失敗原因。</p>
+{# 暫存檔存活時間：完整理由寫在 1-1-3 的同一段。這一頁的清單是**還沒送出**的待上傳檔，
+     同一條 TTL 管得到它們。 #}
+<p class="text-gray"><span data-i18n="dataImport.stagedTtlPrefix">剛上傳的檔案先暫存在伺服器上：</span><span class="js-staged-ttl-hours">24</span><span data-i18n="dataImport.stagedTtlSuffix"> 小時內沒有完成送出就會被清掉，屆時要重新上傳。</span></p>
 
 {# 步驟條 + 只有「下一步」：兩步、.lg 樣式。
      stepNoPrev / stepNodesLg 由本頁 set，交給參數化的 components/step-btn-wrap 渲染（§6）。
@@ -69,17 +74,21 @@ permalink: 1-2-1_uploadFile_pdf.html
      真正的上限**：product 的 `upload_max_bytes` 對 xlsx／pdf／doc／docx／png／jpg 全部上傳路徑
      一視同仁，沒有任何呼叫端覆寫、也沒有 PDF 專用上限，故這裡不比照凍結前端的 30，
      改用 ui/upload-box 元件唯一的 50MB）（pdf→`.pdf`／word→`.doc,.docx`／image→`.png,.jpg,.jpeg`）。
-     切版沒有查詢字串，一頁只有一組 accept，故取三者的**聯集**——上傳選單那四張卡有三張指向本頁
-     （PDF／WORD／Image，見 ui/upload-card），accept 只要少列一種，那張卡就變成點得進來、卻選不到
-     自己廣告的檔案的死路。
-     說明文字同理列全三種，另立 key（不沿用 `dataImport.uploadDescPdfPrefix`）：那顆是「PDF 卡」的說明，
-     那張卡講的就只有 PDF，改它的值會讓卡片說謊。
-     **待 saas 回流**：product 目前只認 `.pdf`／`.docx`（datasets.py 的 `import_pdf` 就地依副檔名分派，
-     其餘一律 400 `dataset.only_pdf_docx`「僅支援 .pdf / .docx」），沒有影像匯入端點。切版照真 app 保留 Image 卡；
-     要嘛 saas 補影像匯入，要嘛兩邊一起撤掉那張卡——**這是 saas 端要決定的事，切版不先自行砍掉**。 #}
-{% set uploadAccept = ".pdf,.doc,.docx,.png,.jpg,.jpeg" %}
+     切版沒有查詢字串，一頁只有一組 accept。
+     ⚠️ **accept 收窄成後端真的收得下的那兩種（round47）**。先前是三種類型的**聯集**
+     （`.pdf,.doc,.docx,.png,.jpg,.jpeg`），理由是「accept 少列一種，那張卡就變成點得進來、卻選不到
+     自己廣告的檔案的死路」——那個理由本身沒錯，錯的是它保護的東西：**那四種多出來的格式選得到、
+     送出去必定 400**（product `app/limits/ops_limits.py` 的
+     `DOCUMENT_UPLOAD_EXTENSIONS = (".pdf", ".docx")`，`app/routers/datasets.py` 的三個強制點都
+     `endswith(DOCUMENT_UPLOAD_EXTENSIONS)`，其餘回 `dataset.only_pdf_docx`「僅支援 .pdf / .docx」）。
+     「挑得到、必定失敗」比「挑不到」貴：後者當場就知道，前者要等整個檔案上傳完才知道。
+     **`.doc` 也一併拿掉**——只有 `.docx` 過得了，`.doc` 與影像同一族。
+     同一份清單上游已經投影成 `GET /datasets/limits` 的 `upload.extensions.document`，React 端讀契約，
+     切版這一份是它的靜態鏡射；**改後端白名單時這一行要跟著改**。
+     連帶：`ui/upload-card` 的 Image 卡已撤、WORD 卡的說明改成 docx，理由寫在該元件檔頭。 #}
+{% set uploadAccept = ".pdf,.docx" %}
 {% set uploadMultiple = true %}
-{% set uploadDescPrefixText = "支援上傳pdf、doc、docx、png、jpg檔案，檔案最大不超過" %}
+{% set uploadDescPrefixText = "支援上傳pdf、docx檔案，檔案最大不超過" %}
 {% set uploadDescPrefixKey = "dataImport.uploadDescDocsPrefix" %}
 {% include "ui/upload-box/upload-box.html" %}
 

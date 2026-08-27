@@ -387,6 +387,16 @@ permalink: 5-2_conversationSettings.html
                  於是 note6..note10／date2／date3 這七個槽**裝得下資料卻永遠命不了名**：
                  5-3 的歸因維度渲染得出它們的顯示名、5-10 也讓維度掛得上去。 #}
             <div class="text-gray"><span data-i18n="settings.fieldNamingDescPrefix">為此設定的 </span><span>{{ fieldSlotCatalog.length }}</span><span data-i18n="settings.fieldNamingDescSuffix"> 個欄位槽命名「此設定的顯示名」</span></div>
+            {# 長度界線（round47）：這一整區 22 顆輸入框先前**一句提示都沒有、也沒有任何
+                 `aria-describedby`**——它是全站唯一一組「22 個輸入框、零界線宣告」的欄位群，
+                 而每一顆都在 `maxLength` 之外靜默地被上游擋掉。
+                 出處 product `app/limits/chat_config_limits.py` 的
+                 `FIELD_LABEL_LIMITS["label"].max_len`（＝`MAX_FIELD_LABEL_LEN`），
+                 投影在 `GET /settings/chat-config-limits` 的 `field_label.label.max_len`。
+                 **一份 hint 給整組用**（同本頁 `policyTopicLimitsHint` 的做法）：那顆常數的檔頭
+                 逐字寫著「每一個槽的標籤共用同一顆上界」，逐槽各寫一句就是 22 句同樣的話。
+                 下面兩個迴圈（進索引的槽、產品內部槽）的輸入框都 `aria-describedby` 指這一顆。 #}
+            <p id="fieldNamingLimitHint" class="text-gray m-0"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-field-label-max-len">200</span><span data-i18n="common.unitChars"> 字</span><span data-i18n="settings.fieldNamingLimitWhy">；留空就是沿用左邊那個預設名，不會被寫成一顆顯式標籤。</span></p>
         </div>
         <div class="flex-row flex-wrap gap-16">
             {# **沒改過名的槽留空**（下面兩個迴圈的 `value` 只吃 `fieldSlotLabels`，不退回 `defaultLabel`）：
@@ -402,7 +412,7 @@ permalink: 5-2_conversationSettings.html
                 </div>
                 <div class="field">
                     <input type="text" id="fieldName-{{ slot.key }}" placeholder="此設定的顯示名" data-i18n-placeholder="settings.displayNamePlaceholder"
-                        class="form-control" value="{{ fieldSlotLabels[slot.key] }}">
+                        class="form-control" value="{{ fieldSlotLabels[slot.key] }}" aria-describedby="fieldNamingLimitHint">
                 </div>
             </div>
             {% endif %}{% endfor %}
@@ -424,7 +434,7 @@ permalink: 5-2_conversationSettings.html
                 </div>
                 <div class="field">
                     <input type="text" id="fieldName-{{ slot.key }}" placeholder="此設定的顯示名" data-i18n-placeholder="settings.displayNamePlaceholder"
-                        class="form-control" value="{{ fieldSlotLabels[slot.key] }}">
+                        class="form-control" value="{{ fieldSlotLabels[slot.key] }}" aria-describedby="fieldNamingLimitHint">
                 </div>
             </div>
             {% endif %}{% endfor %}
@@ -1133,7 +1143,13 @@ permalink: 5-2_conversationSettings.html
                                 <option value="off" data-i18n="settings.policyActionOff"{% if topic.outputAction == "off" %} selected{% endif %}>不處理</option>
                             </select>
                         </td>
-                        <td><input type="text" class="form-control" value="{{ topic.refusal }}" aria-labelledby="policyTopicRowName-{{ loop.index }} policyHeadRefusal"></td>
+                        {# 「拒絕訊息」也有長度界線，先前這一欄是三欄裡唯一**一句都沒有**的
+                             （round47）：`policyTopicLimitsHint` 只列了主題名稱與定義兩欄，而那份 hint
+                             正是這一欄該接上去的地方。出處 product `app/limits/chat_config_limits.py` 的
+                             `POLICY_TOPIC_LIMITS["refusal"].max_len`（＝`MAX_TOPIC_REFUSAL_LEN`，
+                             該常數旁邊逐字寫著「命中時回給使用者的那一句話（不是文件）」——所以它比
+                             定義短，不是抄漏了一個位數）。 #}
+                        <td><input type="text" class="form-control" value="{{ topic.refusal }}" aria-labelledby="policyTopicRowName-{{ loop.index }} policyHeadRefusal" aria-describedby="policyTopicLimitsHint"></td>
                         <td><button type="button" id="policyTopicDelete-{{ loop.index }}" class="button button-border button-sm js-remove-policy-topic" aria-labelledby="policyTopicRowName-{{ loop.index }} policyTopicDelete-{{ loop.index }}" data-i18n="action.delete">刪除</button></td>
                     </tr>
                     {% else %}
@@ -1148,11 +1164,16 @@ permalink: 5-2_conversationSettings.html
              `MAX_TOPIC_EXAMPLES` / `MAX_TOPIC_EXAMPLE_LEN`（`POLICY_TOPIC_LIMITS["examples"]` 的
              `max_items` / `max_item_len`）。條數上限同時是上游 `_render_topics` 真的渲染得出的條數，
              多設的不會生效，所以是「拒絕存檔」而不是靜默截斷。 #}
-        {# 主題名稱／定義兩欄的界線也常駐可見，一份 hint 給整欄用（同下方「範例」那一份）。
-             出處 product `app/chat_config_limits.py` 的 `POLICY_TOPIC_LIMITS`：`name.max_len`／`definition.max_len`
-             （＝`MAX_TOPIC_NAME_LEN`／`MAX_TOPIC_DEFINITION_LEN`）。數字獨立成帶 class 的節點，
-             給 React 從 `GET /settings/chat-config-limits` 填（§4-2：契約裡有欄位的數字不進譯文）。 #}
-        <p id="policyTopicLimitsHint" class="text-gray"><span data-i18n="settings.policyTopicName">主題名稱</span><span data-i18n="common.labelSep">：</span><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-topic-name-max-len">200</span><span data-i18n="common.unitChars"> 字</span><span data-i18n="common.listSep">、</span><span data-i18n="settings.definition">定義</span><span data-i18n="common.labelSep">：</span><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-topic-definition-max-len">1024</span><span data-i18n="common.unitChars"> 字</span></p>
+        {# 主題名稱／定義／拒絕訊息三欄的界線常駐可見，一份 hint 給整欄用（同下方「範例」那一份）。
+             出處 product `app/limits/chat_config_limits.py` 的 `POLICY_TOPIC_LIMITS`：
+             `name.max_len`／`definition.max_len`／`refusal.max_len`
+             （＝`MAX_TOPIC_NAME_LEN`／`MAX_TOPIC_DEFINITION_LEN`／`MAX_TOPIC_REFUSAL_LEN`）。
+             數字獨立成帶 class 的節點，給 React 從 `GET /settings/chat-config-limits` 填
+             （§4-2：契約裡有欄位的數字不進譯文）。
+             ⚠️ **這張表有四欄吃長度界線，這份 hint 就要列四欄**（round47 補上拒絕訊息那一欄）：
+             `POLICY_TOPIC_LIMITS` 是一張表，少列一欄不會有任何測試看得到——只有那一欄的使用者
+             會在按下儲存之後才知道自己打太長。 #}
+        <p id="policyTopicLimitsHint" class="text-gray"><span data-i18n="settings.policyTopicName">主題名稱</span><span data-i18n="common.labelSep">：</span><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-topic-name-max-len">200</span><span data-i18n="common.unitChars"> 字</span><span data-i18n="common.listSep">、</span><span data-i18n="settings.definition">定義</span><span data-i18n="common.labelSep">：</span><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-topic-definition-max-len">1024</span><span data-i18n="common.unitChars"> 字</span><span data-i18n="common.listSep">、</span><span data-i18n="settings.policyRefusal">拒絕訊息</span><span data-i18n="common.labelSep">：</span><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-topic-refusal-max-len">500</span><span data-i18n="common.unitChars"> 字</span></p>
         <p id="policyExamplesHint" class="text-gray"><span data-i18n="settings.policyExamplesHintPrefix">「範例」以逗號分隔，最多 </span><span>5</span><span data-i18n="settings.policyExamplesHintMid"> 則、每則 </span><span>200</span><span data-i18n="settings.policyExamplesHintSuffix"> 字；超過就存不起來，不會只留前幾則。</span></p>
         <div class="flex-row">
             <button type="button" class="button button-border button-sm js-add-policy-topic" data-i18n="settings.addPolicyTopic">新增主題</button>

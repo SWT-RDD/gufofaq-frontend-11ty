@@ -6269,12 +6269,27 @@ test("§5/§6 5-2 的數值旋鈕必須是 type=number 並帶後端的合法區�
 function acceptedFn() {
     const src = read("src/_includes/ui/upload-box/upload-box.js");
     const i = src.indexOf("function accepted(name) {");
-    const j = src.indexOf("if (errorRow) box.addEventListener");
+    const j = src.indexOf("// **先讓 live region 進無障礙樹");
     if (i < 0 || j <= i) throw new Error("upload-box.js 找不到 accepted() 的錨點 —— 原始碼結構變了，測試要更新錨點");
     return new Function("name", "acceptAttr", `
         var input = { getAttribute: function () { return acceptAttr; } };
         ${src.slice(i, j)}
         return accepted(name);
+    `);
+}
+
+// 同一手法切出 withinSize()：單檔大小那一半（round47 補）。`maxBytes` 是它閉包裡的外部變數，
+// 故沙盒自己算一份餵進去——換算式（MiB，1024 不是 1000）本身就是被驗的東西之一。
+function withinSizeFn() {
+    const src = read("src/_includes/ui/upload-box/upload-box.js");
+    const i = src.indexOf("function withinSize(size) {");
+    const j = src.indexOf("// accept 支援");
+    if (i < 0 || j <= i) throw new Error("upload-box.js 找不到 withinSize() 的錨點 —— 原始碼結構變了，測試要更新錨點");
+    return new Function("size", "maxMbAttr", `
+        var maxMb = parseFloat(maxMbAttr || "");
+        var maxBytes = (isFinite(maxMb) && maxMb > 0) ? maxMb * 1024 * 1024 : 0;
+        ${src.slice(i, j)}
+        return withinSize(size);
     `);
 }
 
@@ -6288,6 +6303,22 @@ test("§5 upload-box：副檔名比對（accept 清單、大小寫、多副檔�
     assert.equal(accepted("任何檔案.bin", ""), true, "沒給 accept＝不限制");
     // 邊界：檔名比副檔名還短時不得誤判成通過（slice 的負索引陷阱）
     assert.equal(accepted("x", ".xlsx"), false);
+});
+
+test("§5/§8 upload-box：單檔大小上限（MiB 換算、貼邊、量不到不擋、沒設不限制）", () => {
+    // round47：這條界線先前只畫在 `.upload-desc` 上、`file.size` 全檔零引用——200MB 的 PDF
+    // 一路走到送出才吃 413（product `app/core/uploads.py` 的 `read_upload`）。
+    const withinSize = withinSizeFn();
+    const MiB = 1024 * 1024;
+    // **單位是 MiB 不是 MB**：正本 `Settings.upload_max_bytes` 預設 50 MiB ＝ 52428800，
+    // 用 1000 換算會算成 50,000,000 ⇒ 52,428,800 那一份剛好被誤擋（差 4.8%，肉眼看不出來）。
+    assert.equal(withinSize(50 * MiB, "50"), true, "剛好貼邊要放行（<= 不是 <）");
+    assert.equal(withinSize(50 * MiB + 1, "50"), false, "多一個位元組就要擋");
+    assert.equal(withinSize(50 * 1000 * 1000, "50"), true, "50,000,000 < 52,428,800：MiB 換算下這是合法的");
+    assert.equal(withinSize(0, "50"), true, "0 位元組的檔不是「太大」（它是另一件事，不歸這一關）");
+    assert.equal(withinSize(999 * MiB, ""), true, "沒給 data-max-mb ＝ 不限制（同 accept 沒給的處置）");
+    assert.equal(withinSize(999 * MiB, "0"), true, "0 或負數視同沒設，不得變成「什麼都擋」");
+    assert.equal(withinSize(undefined, "50"), true, "量不到大小時不擋——後端那一關仍在，這裡不把人鎖在門外");
 });
 
 test("§5/§4-2 upload-box：不支援檔案的提示是 live region，且元件庫頁演得出來", () => {

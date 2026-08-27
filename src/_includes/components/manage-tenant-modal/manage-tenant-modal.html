@@ -92,7 +92,14 @@
             {% include "ui/modal-close/modal-close.html" %}
             <div class="modals-content">
                 <div class="modals-header">
-                    <h3 class="modals-title" id="manageTenantModal-title" data-i18n="settings.manageTenant">租戶管理</h3>
+                    {# 標題接租戶名（round47，與 manage-members-modal 同一件事）：這扇窗一開，遮罩就蓋住
+                         底下那張租戶表——而窗裡每一顆旋鈕（額度、模型白名單、凍結、刪除資料／帳號）都作用在
+                         **某一個特定租戶**身上，畫面上卻沒有一個字說得出是哪一個。租戶名是資料（不翻），
+                         走「chrome ＋分隔符 key ＋資料槽」；分隔符沿用 `common.labelSep`（英譯 `": "` 自帶
+                         尾隨空白，§4-2 全形「：」不像半形 `:` 自帶字距）。
+                       示範值＝**示範租戶 B**：本元件的 `manageTenantFrozen` 由 platform-tenants-panel set 成
+                         true，而那張表裡 `subscription_status: FROZEN` 的正是租戶 B（§6 跨區自洽）。 #}
+                    <h3 class="modals-title" id="manageTenantModal-title"><span data-i18n="settings.manageTenant">租戶管理</span><span data-i18n="common.labelSep">：</span><span class="js-manage-tenant-name">示範租戶 B</span></h3>
                 </div>
                 <div class="modals-body">
                     <div class="flex-row column gap-24">

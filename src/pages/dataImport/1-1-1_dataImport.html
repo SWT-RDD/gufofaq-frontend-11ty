@@ -21,7 +21,9 @@ permalink: 1-1-1_dataImport.html
      product `app/routers/datasets.py` 的 `list_datasets`（`GET /datasets`，
      `require_capability("data", "read")`），由頁面載入時取得、不是任何一顆控制項觸發的動作
      ⇒ 四軸不標在控制項上，但查證結論要留在這裡（§4：讀取型端點同樣要標或寫明查證結論）。 #}
-<p class="text-gray" data-i18n="dataImport.entryIntro">這一頁是資料匯入的起點：先選定要匯入到哪一個資料集，再依你手上的檔案格式（Excel、PDF、WORD、圖片）點選對應的卡片，就會進入該格式專屬的上傳流程。</p>
+{# 格式清單跟著卡片走（round47：Image 卡已撤，理由見 ui/upload-card 檔頭）——這一句要是留著
+     「圖片」，它就是這一頁上唯一還在廣告一個做不到的格式的地方。 #}
+<p class="text-gray" data-i18n="dataImport.entryIntro">這一頁是資料匯入的起點：先選定要匯入到哪一個資料集，再依你手上的檔案格式（Excel、PDF、WORD）點選對應的卡片，就會進入該格式專屬的上傳流程。</p>
 
 {# 選擇資料集：真實頁 pages/dataImport/1-1-1_dataImport.html 的「模擬select」觸發 datasetModal，
      class 沿用真實系統（同 ui/form-control 的 .field.select-wrap 寫法）。

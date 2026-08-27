@@ -34,6 +34,16 @@ permalink: 1-1-3_preview_excel.html
     {% include "components/step-btn-wrap/step-btn-wrap.html" %}
 </div>
 
+{# 暫存檔存活時間（round47）：這一頁與下一頁看到的東西**都是從一份暫存在伺服器上的檔案讀出來的**
+     （`POST /datasets/excel/preview` 讀的就是它），而那份檔案有存活時間——product
+     `app/limits/ops_limits.py` 把 `settings.staged_upload_ttl_hours` 投影成 `GET /datasets/limits`
+     的 `upload.staged_ttl_hours`，過期的由 `app/data/dataset_ops.py` 那段回收邏輯直接 `unlink()`。
+     **這個數字先前全站零消費點**：後端投影了、React 連格式化函式都寫好了，畫面上一個字都沒有
+     ⇒ 使用者把分頁擱著過夜、回來按下一步，拿到的是一句「找不到檔案」而完全不知道為什麼。
+     這一步與 1-1-4 是同一份暫存檔的兩個畫面，兩頁都要講（人可能直接落在任一頁）。
+     數字是資料槽（`js-staged-ttl-hours`），不烤進譯文（§4-2）。 #}
+<p class="text-gray"><span data-i18n="dataImport.stagedTtlPrefix">剛上傳的檔案先暫存在伺服器上：</span><span class="js-staged-ttl-hours">24</span><span data-i18n="dataImport.stagedTtlSuffix"> 小時內沒有完成送出就會被清掉，屆時要重新上傳。</span></p>
+
 {# ── 來源結構：工作表／表頭列數／交叉表 unpivot ────────────────────────────────────
      這三個設定決定「這份檔案讀出來的欄名長什麼樣」，而下一步（1-1-4）的欄位對應就是照這裡看到的
      欄名做的。所以它們是**同一組值**：改完要重新預覽，送出匯入時也必須原封不動帶著同一組。

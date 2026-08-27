@@ -1211,9 +1211,24 @@ permalink: 3-5_dataHealth.html
                                     </div>
                                 </div>
                                 {% elif action == "disable" %}
+                                {# ⚠️ **「一筆都不勾」這一態：畫面刻意不送出，而不是照上游語意送。**
+                                     上游的契約是「空＝全部」——product `app/routers/health_findings.py` 的
+                                     `DisableIn.records` 欄位註解逐字「空＝停用這個發現涉及的**全部**記錄」，
+                                     `app/quality/health_findings_service.py` 的 `disable_records` 也是
+                                     `keys = list(records) if records else list(finding.record_keys)`。
+                                     那個預設是給**程式化呼叫端**的便利（想要整批就不帶這一欄），不是一個
+                                     畫面上做得出來的動作：這一組 checkbox **預設全勾**，所以「空」只有一條
+                                     到得了的路——使用者逐顆取消。而逐顆取消是一個人能做出的**最明確的
+                                     「我一筆都不要停用」**，把它翻譯成「全部停用」是把使用者的意思反過來執行，
+                                     而且停用是會改寫來源檔的動作。
+                                     故切版在這裡定的規則是：**至少勾一筆才送得出去**，零選取由這顆鈕的
+                                     warning 段擋下（見下方 `|` 第 3 段）。上游那條「空＝全部」不會因此變成
+                                     死碼——它仍然是 API 呼叫端的合法用法，只是這個畫面不走它。
+                                     說明句因此也要改：先前寫「一筆都不勾＝停用全部」，那句話**對上游是真的、
+                                     對這個畫面是假的**，而使用者讀的是這個畫面。 #}
                                 <div class="block block-sm border corner-md flex-row column gap-8" data-health-action="disable">
                                     <div class="text-bold" data-i18n="health.actionDisable">停用（不刪除）</div>
-                                    <p class="text-gray" data-i18n="health.actionDisableHint">把這幾筆的有效期改寫成一個已經過去的哨兵日期，讓它們離開檢索集合。資料還在來源檔與索引裡，只是有效期已過；判斷錯了，把那一格改回去就回來了。前提是這個租戶要先在「標籤維度」宣告一個角色是 valid_until 的日期維度，資料上才有地方表達「已停用」——沒有宣告的話這一支會被擋下，並指名缺的是什麼。一筆都不勾＝停用這個發現涉及的全部記錄。</p>
+                                    <p class="text-gray" data-i18n="health.actionDisableHint">把這幾筆的有效期改寫成一個已經過去的哨兵日期，讓它們離開檢索集合。資料還在來源檔與索引裡，只是有效期已過；判斷錯了，把那一格改回去就回來了。前提是這個租戶要先在「標籤維度」宣告一個角色是 valid_until 的日期維度，資料上才有地方表達「已停用」——沒有宣告的話這一支會被擋下，並指名缺的是什麼。至少要勾一筆；全部勾起來＝停用這個發現涉及的所有記錄（預設就是全勾）。</p>
                                     <div class="form-group">
                                         <div class="label">
                                             <span id="healthDisableLabel-{{ f.id }}" class="control-label" data-i18n="health.disableRecords">要停用哪幾筆</span>
@@ -1238,8 +1253,12 @@ permalink: 3-5_dataHealth.html
                                     </div>
                                     <div class="flex-row">
                                         <button data-capability="data:write" type="button" class="button button-primary button-sm js-health-disable" id="healthDisableBtn-{{ f.id }}" aria-labelledby="healthFindingId-{{ f.id }} healthDisableBtn-{{ f.id }}"
-                                            data-toast="已停用（有效期設成哨兵日期，未刪除）|權限不足，無法停用|請填寫停用理由|這個租戶還沒有宣告「有效期」維度，資料上沒有地方可以表達停用|這個發現已經處置過了，下一次檢查會依前提是否改變決定要不要把它推回清單|這幾筆記錄所在的資料集不在你可以寫入的群組裡——處置會就地改寫來源檔，需要與匯入、刪檔同一道群組寫入權限|操作失敗，請稍後再試"
-                                            data-i18n-data-toast="toast.healthDisable" data-toast-type="success|warning|warning|warning|warning|warning|error"
+                                            {# 第 3 段（index 2）是**切版自己定的閘**，不是上游的 400——理由見本區塊上方那段。
+                                                 位置對齊姊妹兩顆（`toast.healthMerge`／`toast.healthSupersede` 的 index 2
+                                                 都是「請選擇…」那一族），讓「這一格選錯了」在四顆處置鈕上落在同一個索引。
+                                               ⚠️ `|` 是索引契約：插這一段之後「請填寫停用理由」由 2 移到 3，其後全部 +1。 #}
+                                            data-toast="已停用（有效期設成哨兵日期，未刪除）|權限不足，無法停用|請至少勾選一筆要停用的記錄|請填寫停用理由|這個租戶還沒有宣告「有效期」維度，資料上沒有地方可以表達停用|這個發現已經處置過了，下一次檢查會依前提是否改變決定要不要把它推回清單|這幾筆記錄所在的資料集不在你可以寫入的群組裡——處置會就地改寫來源檔，需要與匯入、刪檔同一道群組寫入權限|操作失敗，請稍後再試"
+                                            data-i18n-data-toast="toast.healthDisable" data-toast-type="success|warning|warning|warning|warning|warning|warning|error"
                                             data-i18n="health.actionDisable">停用（不刪除）</button>
                                     </div>
                                 </div>

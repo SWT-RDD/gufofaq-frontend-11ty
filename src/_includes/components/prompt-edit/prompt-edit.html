@@ -57,10 +57,28 @@
          （兩處是同一個交付單位，只改一邊會留下指不到的 describedby）。 #}
     <div class="text-gray js-prompt-len-hint" id="promptEditLenHint"><span data-i18n="settings.promptMaxLenPrefix">提示詞最多 </span><span>{{ promptEditMaxLen }}</span><span data-i18n="settings.promptMaxLenSuffix"> 字，超過的字打不進去。</span></div>
 
+    {# 四顆鈕裡有兩顆聽起來都像「存」，而只有一顆真的存得下去——這一句就是在分那件事（round47）。
+         **持久化只有一條路**：`POST /prompts`（product `app/routers/prompts.py` 的 `create_prompt`，
+         逐欄 MERGE 寫回設定檔、GufoRAG 端 append-if-changed），也就是「儲存為新版本」那一顆。
+         而它**當場改變線上機器人的回答**——寫的是設定檔本體，不需要再套用一次——先前畫面上一個字
+         都沒說（姊妹的 `components/apply-settings-modal` 對同一種後果有 `modals.applyOverwriteWarning`）。
+         回復的路要一起講：舊版本留在版本紀錄裡，否則這句警語只嚇人、不給出路。 #}
+    <p class="text-gray m-0" data-i18n="settings.promptToolsHint">「暫存編輯」只把目前打的內容留在這個編輯器裡，離開頁面就沒了；要真的生效必須按「儲存為新版本」——那會直接寫進這個設定檔，前台只要用的是這個設定檔，下一題就換成新的提示詞，不必再套用一次。改壞了不要緊：舊版本都留在下面的版本紀錄裡，隨時可以回復。</p>
     <div class="prompt-edit-tools flex-row justify-content-center flex-wrap gap-16">
         <button type="button" class="button button-border js-prompt-cancel" data-i18n="action.cancel">取消</button>
 
-        <button type="button" class="button button-primary js-prompt-save" data-i18n="action.save">儲存</button>
+        {# ⚠️ **這一顆不送任何 API，它的字面必須說得出這件事**（round47 訂正）。
+             它做的事逐字是 prompt-edit.js 的 `saveFromTextarea()`：把 textarea 的內容寫回
+             `data-full-text`、**不收合**——鏡射凍結前端 `GufoFAQ_Frontend_New/js/main.js` 的
+             prompt-edit 行為，`.js-prompt-save` 也是那一份的具名掛點（見 5-2 檔頭引的
+             `promptManagement.js` 草稿卡契約），所以 class 不動。
+           先前它寫著「儲存」，而這個畫面上唯一存得下去的是右邊那一顆「儲存為新版本」⇒
+             同一個畫面上兩顆鈕都說「存」、只有一顆是真的。React 端已經照字面把它接上寫入端點
+             （`PromptEdit` 的 `onSave`，其測試逐字寫著「鈕上寫著儲存，就必須真的存得下去」）——
+             那不是 React 讀錯，是這顆鈕的字面在說謊。改字面、不是替它補一道閘門：
+             **補閘門等於承認它會寫入，而那會讓它與「儲存為新版本」變成同一顆鈕**（持久化只有一條路）。
+           故：不掛 `data-capability`、不掛 `data-toast`（§5 矩陣②：純本地互動只留 hook）。 #}
+        <button type="button" class="button button-border js-prompt-save" data-i18n="action.stashEdit">暫存編輯</button>
 
         {# 送 API 的直接動作鈕（真 app singleTest.js .js-prompt-reset：取目前正式提示詞、成敗各一種 toast）→ data-toast 列全結果（§5）。
              **閘門是本輪補的**：它打的是 `GET /prompts/active`，掛 product `app/routers/prompts.py` 的

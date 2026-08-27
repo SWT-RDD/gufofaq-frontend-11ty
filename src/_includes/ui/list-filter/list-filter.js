@@ -27,7 +27,7 @@
 //               <h3 class="modals-title" id="manageMembersModal-title" data-i18n="settings.manageMembers">管理成員</h3>
 //           </div>
 //           <div class="modals-body">
-//               <p id="manageMembersHint" class="text-gray" data-i18n="settings.manageMembersHint">勾選要加入此群組的成員</p>
+//               <p id="manageMembersHint" class="text-gray"><span data-i18n="settings.manageMembersHintPrefix">勾選要加入「</span><span class="js-manage-members-group">研發群組</span><span data-i18n="settings.manageMembersHintSuffix">」的成員；取消勾選就是把他移出這個群組。</span></p>
 //               <div class="dataset-list-wrap">
 //                   <div class="form-group">
 //                       <div class="field">

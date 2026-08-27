@@ -34,8 +34,18 @@
                     <h3 class="modals-title" id="manageMembersModal-title" data-i18n="settings.manageMembers">管理成員</h3>
                 </div>
                 <div class="modals-body">
-                    {# §4：一組 checkbox 要報出「這組在問什麼」——浮空提示給 id、清單容器掛 role=group + aria-labelledby #}
-                    <p id="manageMembersHint" class="text-gray" data-i18n="settings.manageMembersHint">勾選要加入此群組的成員</p>
+                    {# §4：一組 checkbox 要報出「這組在問什麼」——浮空提示給 id、清單容器掛 role=group + aria-labelledby
+                       ⚠️ **群組名要在這一句裡（round47）**，兩個理由：
+                         ① 這扇窗是 `<dialog showModal()>`，遮罩會蓋住底下那一列——開窗之後畫面上
+                            沒有任何一個字說得出「你正在編的是哪一個群組」，而按下儲存會改變一群人的權限。
+                         ② 群組名是**資料**（租戶自己取的名字，§4-2「那個字串是誰打的？租戶打的就是資料」），
+                            所以走「前綴 key ＋資料槽 ＋後綴 key」（§7），**不是**把 `{{group}}` 插進譯文——
+                            插值槽在只查表的 i18n 上會原樣印出來，而那正是 React 端目前發生的事。
+                       後半句「取消勾選＝移出」先前完全沒說，而那是這扇窗一半的功能：這份名冊是**全租戶
+                         使用者**、預勾的是已在這個群組的人，所以取消一個勾就是把他踢出這個群組。
+                       示範值必須是**研發群組**（不是隨手一個名字）：本檔上方那段已經論證過，這一窗演的是
+                         從 5-5-2「研發群組」那一列開出來的，勾選態 editor＋viewer 也是照那個群組來的（§6）。 #}
+                    <p id="manageMembersHint" class="text-gray"><span data-i18n="settings.manageMembersHintPrefix">勾選要加入「</span><span class="js-manage-members-group">研發群組</span><span data-i18n="settings.manageMembersHintSuffix">」的成員；取消勾選就是把他移出這個群組。</span></p>
                     <div class="dataset-list-wrap">
                         <div class="form-group">
                             <div class="field">

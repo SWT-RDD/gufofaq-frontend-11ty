@@ -103,6 +103,10 @@ permalink: 1-1-4_columnSelect_excel.html
     {% include "components/step-btn-wrap/step-btn-wrap.html" %}
 </div>
 
+{# 暫存檔存活時間：完整理由寫在 1-1-3 的同一段（同一份暫存檔的兩個畫面）。這一頁尤其要講——
+     欄位對應是整個精靈裡最花時間的一步，而它正是最容易讓人擱著去做別的事的一步。 #}
+<p class="text-gray"><span data-i18n="dataImport.stagedTtlPrefix">剛上傳的檔案先暫存在伺服器上：</span><span class="js-staged-ttl-hours">24</span><span data-i18n="dataImport.stagedTtlSuffix"> 小時內沒有完成送出就會被清掉，屆時要重新上傳。</span></p>
+
 {# ── 匯入選項 ─────────────────────────────────────────────────────────────────────
      出處：gufofaq-saas services/product/app/routers/datasets.py 的 `ExcelImportIn`
      （`convert_html`、`external_key`）。兩者都是值載體，掛 hook class 交 React（§5）。

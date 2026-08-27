@@ -5,7 +5,10 @@
 // 的 editable-block 處理」）。純前端互動、不含儲存 API。
 //
 // **三顆鈕的語意逐字照真 app**（§5：切版刻意不沿用時要記載「什麼取代了什麼」——這裡沒有要不沿用）：
-//   儲存＝把 textarea 的內容暫存回 `data-full-text`，**不收合**（`$box.data("full-text", text)`）
+//   暫存編輯（`.js-prompt-save`）＝把 textarea 的內容暫存回 `data-full-text`，**不收合**
+//     （`$box.data("full-text", text)`）。**行為沒變，變的是字面**（round47）：它先前寫著「儲存」，
+//     而這個元件裡唯一存得下去的是「儲存為新版本」——React 端照字面把它接上了寫入端點。
+//     class 維持 `.js-prompt-save`（凍結前端 `promptManagement.js` 的具名掛點，見 5-2 檔頭）。
 //   取消＝把 textarea 還原成暫存值，**不收合**（`$textarea.val(savedText)`）
 //   回復至預設＝真 app 去取「目前正式提示詞」再寫回編輯器（`setPromptText(content)`）——**那是送 API 的③**，
 //     切版只列 toast、不實作（沒有那個來源，寫本地假還原就是演一個 API 給不出來的結果）

@@ -1,4 +1,16 @@
-{# 資料取自真實 app pages/dataImport/1-1-1_dataImport.html 檔案匯入類型選單（.upload-card-list 內 4 張卡片）。
+{# ⚠️ **Image 卡已撤、WORD 卡的說明由 doc 改成 docx（round47）。**
+     判準只有一句：**這張卡廣告的格式，後端收不收得下**。product `app/limits/ops_limits.py` 的
+     `DOCUMENT_UPLOAD_EXTENSIONS` 逐字是 `(".pdf", ".docx")`，`app/routers/datasets.py` 的三個上傳
+     強制點與 `app/routers/data_api.py` 的批次那一支全部 `endswith` 它，其餘一律 400
+     `dataset.only_pdf_docx`「僅支援 .pdf / .docx」——**沒有任何影像匯入端點，`.doc` 也過不了**。
+     一張寫著「支援上傳 PNG、JPG」的卡片，點進去挑得到 png、送出去必定失敗；先前 1-2-1 的
+     accept 之所以列著影像，理由正是「不列的話那張卡會變成死路」——那是拿一個假的 accept
+     去掩護一張假的卡，兩邊互相背書。這一輪把根拔掉：卡撤了，accept 也跟著收窄。
+     **要恢復影像匯入**：product 先補影像的擷取器與白名單（`DOCUMENT_UPLOAD_EXTENSIONS` 加副檔名），
+     再把這張卡連同 `dataImport.uploadImage`／`dataImport.uploadDescImagePrefix` 兩顆 key 加回來，
+     1-2-1 的 `uploadAccept` 同步放寬。`icon_img_s.png` 不必動——3-1-1 資料集清單的檔案類型欄
+     仍在用它（那一欄畫的是**已經在資料集裡**的影像檔，那些是資料夾連接器帶進來的，不是這條上傳路徑）。
+   資料取自真實 app pages/dataImport/1-1-1_dataImport.html 檔案匯入類型選單（原為 4 張卡片，現 3 張）。
      真實 app 點卡片後由業務 JS 驗證+上傳+取 sn 才跳頁（§5 不做）；此處提供「簡化版靜態跳轉」：
      卡片直接連到該類型的上傳頁（excel→1-1-2、pdf/word/image→1-2-1）。
      真 app 跳頁時帶 `?type=` 讓 1-2-1 在執行期把 accept／說明文字收窄成該類型
@@ -55,18 +67,9 @@
         href: "1-2-1_uploadFile_pdf.html",
         icon: "icon_doc_s.png",
         name: "WORD",
-        desc: "支援上傳doc檔案，檔案最大不超過",
+        desc: "支援上傳docx檔案，檔案最大不超過",
         descKey: "dataImport.uploadDescWordPrefix",
         titleKey: "dataImport.uploadWord"
-    },
-    {
-        type: "image",
-        href: "1-2-1_uploadFile_pdf.html",
-        icon: "icon_img_s.png",
-        name: "Image",
-        desc: "支援上傳PNG、JPG檔案，檔案最大不超過",
-        descKey: "dataImport.uploadDescImagePrefix",
-        titleKey: "dataImport.uploadImage"
     }
 ] %}
 

@@ -641,13 +641,19 @@ bodyClass: guideline-page
             </div>
             <br>
             <div>
-                {# uploadErrorFiles 只在本頁設：讓「拖進不支援的副檔名」那一列看得到（真實頁由 upload-box.js
-                     在 drop 時填入被略過的檔名；§5 分支要有頁面演得出來）。下一個 include（qa-import-modal
-                     內含 upload-box）之前會重設，否則 §2 的頁面全域 set 會把它帶過去。 #}
+                {# uploadErrorFiles／uploadTooLargeFiles 只在本頁設：讓兩種拒絕理由各自那一列看得到
+                     （真實頁由 upload-box.js 在 drop／change 時填入被略過的檔名；§5 分支要有頁面演得出來）。
+                     下一個 include（qa-import-modal 內含 upload-box）之前兩顆都會重設，否則 §2 的
+                     頁面全域 set 會把它們帶過去。
+                     **兩列的示範檔名刻意不重疊**：同一個檔同時出現在兩列，看起來像兩個檔（js 那一側
+                     也因此讓副檔名優先、一個檔只報一次）。太大的那一份用 .pdf——它是支援的格式，
+                     所以它落在這一列而不是上一列，示範才自洽（§6）。 #}
                 {% set uploadErrorFiles = "報價單.docx, 名單.csv" %}
+                {% set uploadTooLargeFiles = "年度彙編.pdf" %}
                 {% include "ui/upload-box/upload-box.html" %}
                 {% set uploadErrorFiles = "" %}
-                <div class="subtitle">描述：檔案上傳區，使用「.upload-box」這個class；不支援的副檔名拖進來時，下方「.upload-error」列出被略過的檔名（不靜默丟掉）</div>
+                {% set uploadTooLargeFiles = "" %}
+                <div class="subtitle">描述：檔案上傳區，使用「.upload-box」這個class；不支援的副檔名拖進來時，下方「.upload-error」列出被略過的檔名（不靜默丟掉）。超過單檔上限的檔另有一列——兩種拒絕理由分開兩句，因為使用者的下一步不同（換一份檔 vs 拆檔或壓縮）</div>
             </div>
             <br>
             <div>
@@ -1127,6 +1133,15 @@ bodyClass: guideline-page
                      ⇒ 那一頁演不到它，這裡是它唯一的可見處。
                      繁中逐字照抄 3-5 那一格（§4-2 同 key 兩種繁中會互相覆蓋）。 #}
                 <p class="m-0"><span class="text-bold" data-i18n="health.scanTooShort">內容過短、跳過近似重複比對的記錄：</span><span class="text-gray" data-i18n="health.scanTooShortNotMeasured">上一次檢查時還沒有這一項</span></p>
+                {# 前台問答「整站停用」那一態（`components/faq-chatroom` 與 `ui/widget-shell` 各一份
+                     `.js-faq-unavailable`，兩處都掛 `.hidden`）。使用期閘與功能開通閘擋下來時
+                     （product `app/conversation/public_ask.py` 的 `require_active_subscription`／
+                     `require_tenant_feature`，兩者都 403），輸入框停用、換上這一句。
+                     兩個真實頁演的都是**服務正常**那一態——把停用畫成預設態，等於讓每個打開
+                     示範站的人以為機器人壞了（同本節第 3 條）。故這裡是它唯一的可見處。
+                   ⚠️ 這一顆先前是 **React 自己造的 key**（`faq.unavailable`，靠 REACT_ONLY 白名單
+                     擋著），也就是切版之外的第二個文案正本；本輪收回切版，繁中以這一份為準。 #}
+                <p class="text-red m-0" data-i18n="faq.unavailable">本站的問答服務目前停用中，請聯絡本網站管理者。</p>
             </div>
             <div class="subtitle">出處：2-2-4 的模型相容性兩句、2-2-5 的基準設定缺漏與命中清單截斷、2-2-5 的桶子列數截斷（每桶 20 則上限，那一頁只有 10 則案例故恆不觸發）、5-2 的逐代碼覆寫重複、5-2 的別名綁定與「沒有啟用任何輸出規則」、5-10 的覆蓋率可開啟與「尚未量測」、4-2 的兩欄合規、3-5 的「還沒跑過健檢」、2-2-5「沒得比」的另一個方向（基準沒有它）、5-9 的金鑰兩態（已存在／尚未產生）、4-2 意圖判斷的「是」、3-1-3 多選刪除的量詞、5-3 長條圖的系列欄名、import-sync-tag 索引同步演不到的兩態（1-1-6 停在最常見的 pending，1-2-1 逐檔演 pending／unknown／缺席態）、平台聯絡窗口沒設過時登入頁與無權限窗各自換上的那一句、3-5「內容過短」那一格的 null 態（那一欄在它存在之前寫下的掃描列上是 NULL，與量到的 0 不是同一件事）。它們在各自的頁面上都掛著 .hidden，或由一個在該頁恆為某一值的條件式產出，或是那一頁的示範推導不出來的枚舉成員，或住在切版畫不出內容的容器裡（&lt;canvas&gt;、業務 js 填的空槽）——那一態沒有人看得到，這裡是唯一可見處</div>
         </section>

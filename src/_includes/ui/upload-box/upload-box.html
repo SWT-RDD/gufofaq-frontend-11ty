@@ -36,19 +36,31 @@
    PDF/Word 專用上限——先前切版分別寫「10MB」（本元件預設）與「30MB」（1-2-1 的覆寫）都是
    與後端不符的手抄值，已經改成同一個 50MB。使用頁仍可覆寫 `uploadDescPrefixText`／
    `uploadDescPrefixKey`（檔案格式清單那一句因頁而異），但不再讓頁面覆寫數字本身——
-   一旦數字可覆寫，下一頁就可能又抄出第三個與後端對不上的值。 #}
+   一旦數字可覆寫，下一頁就可能又抄出第三個與後端對不上的值。
+   ⚠️ **round47：那個數字先前只是畫出來，沒有任何人在擋。** `upload-box.js` 的 `accepted()` 只比
+   副檔名，`file.size` 全檔零引用 ⇒ 一份 200MB 的 PDF 照樣進清單、照樣送出，直到 413 才知道
+   （product `app/core/uploads.py` 的 `read_upload()`，回 `upload_too_large` ＋ 那句
+   `upload.too_large`）——而那時整個檔案已經傳過一次了。既然畫面講得出這條界線，就要在
+   送出之前擋下來。
+   **數字只留一顆 `uploadMaxMb`**：可見文字與 js 讀的 `data-max-mb` 是同一個變數渲染出來的
+   （§6：一個數字只有一份真相，正典是 `components/prompt-edit` 的 `data-max-len`）——不是
+   js 寫死一份、markup 寫死另一份。單位是 MiB（`52428800` ＝ 50 × 1024 × 1024，與
+   `GET /datasets/limits` 的 `upload.bytes.max` 逐位元組相同），故 js 換算用 1024 不是 1000。
+   uploadTooLargeFiles：**僅示範用**，同 `uploadErrorFiles`——讓「超過大小」那一列在元件庫頁
+   看得見（§5）。 #}
+{% set uploadMaxMb = 50 %}
 {% if uploadNextHref %}
 <a href="{{ uploadNextHref }}" class="upload-box">
     <span class="upload-text">
         <span class="upload-message" data-i18n="{{ uploadHintKey or 'comp.uploadClickHint' }}">{{ uploadHintText or '點選該區域上傳檔案' }}</span>
-        <span class="upload-desc"><span data-i18n="{{ uploadDescPrefixKey or 'comp.uploadDescXlsxPrefix' }}">{{ uploadDescPrefixText or '支援上傳xlsx檔案，檔案最大不超過' }}</span><span>50MB</span></span>
+        <span class="upload-desc"><span data-i18n="{{ uploadDescPrefixKey or 'comp.uploadDescXlsxPrefix' }}">{{ uploadDescPrefixText or '支援上傳xlsx檔案，檔案最大不超過' }}</span><span>{{ uploadMaxMb }}MB</span></span>
     </span>
 </a>
 {% else %}
-<button type="button" class="upload-box">
+<button type="button" class="upload-box" data-max-mb="{{ uploadMaxMb }}">
     <span class="upload-text">
         <span class="upload-message" data-i18n="{{ uploadHintKey or 'comp.uploadDropHint' }}">{{ uploadHintText or '點選或拖曳檔案至該區域上傳' }}</span>
-        <span class="upload-desc"><span data-i18n="{{ uploadDescPrefixKey or 'comp.uploadDescXlsxPrefix' }}">{{ uploadDescPrefixText or '支援上傳xlsx檔案，檔案最大不超過' }}</span><span>50MB</span></span>
+        <span class="upload-desc"><span data-i18n="{{ uploadDescPrefixKey or 'comp.uploadDescXlsxPrefix' }}">{{ uploadDescPrefixText or '支援上傳xlsx檔案，檔案最大不超過' }}</span><span>{{ uploadMaxMb }}MB</span></span>
     </span>
 </button>
 <input type="file" class="upload-input" accept="{{ uploadAccept or '.xlsx' }}"{% if uploadMultiple %} multiple{% endif %} hidden>
@@ -57,5 +69,11 @@
      live region（role=alert）：內容是之後才到的，節點必須先在（§5／REACT-CONVERSION ②）。 #}
 <p class="upload-error{% if not uploadErrorFiles %} hidden{% endif %}" role="alert">
     <span data-i18n="dataImport.unsupportedFile">下列檔案不是支援的格式，未加入：</span><span class="upload-error-files">{{ uploadErrorFiles }}</span>
+</p>
+{# 超過單檔上限：**與上一列分開兩句**（§6：兩種不同的拒絕理由不得共用同一個字面）。
+     使用者的下一步完全不同——格式錯要換一份檔，太大要拆檔或壓縮；混成一句「未加入」
+     等於把兩件事都講成「不知道為什麼」。數字是資料槽，與上面那句 `.upload-desc` 同一顆變數。 #}
+<p class="upload-error js-upload-too-large{% if not uploadTooLargeFiles %} hidden{% endif %}" role="alert">
+    <span data-i18n="dataImport.fileTooLargePrefix">下列檔案超過單檔上限 </span><span class="js-upload-max-mb">{{ uploadMaxMb }}</span><span data-i18n="dataImport.fileTooLargeSuffix">MB，未加入——請拆成小檔或壓縮後再上傳：</span><span class="upload-error-files">{{ uploadTooLargeFiles }}</span>
 </p>
 {% endif %}

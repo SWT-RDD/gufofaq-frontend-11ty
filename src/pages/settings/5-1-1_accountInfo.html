@@ -209,7 +209,15 @@ permalink: 5-1-1_accountInfo.html
 {% set helpModalTitleKey = "help.settings.myProfile.title" %}
 {% set helpModalTitle = "個人資料說明" %}
 {% set helpModalWhatKey = "help.settings.myProfile.what" %}
-{% set helpModalWhat = "這一區存的是登入者自己的顯示名稱與聯絡方式，屬於這個帳號本身——跟公司/單位、規格與資料儲存上限是兩件事，那些是租戶層資料，唯讀顯示在上方帳號資訊區塊。這裡的存檔動作要求租戶使用期正處於有效狀態，使用期不是有效狀態時這兩格仍看得到，但按下儲存會被擋下來。" %}
+{# ⚠️ **「公司/單位」不是唯讀**（round47 訂正）：同頁 `accountCompanyInput` 沒有 `disabled`，
+     而 product `app/routers/account.py` 的 `save_account`（`PUT /account`）掛
+     `require_capability("settings", "write")` 並真的寫入 `company`。上一版把它跟「規格／資料儲存
+     上限」寫成同一族「唯讀」——那兩顆才是真的唯讀（本檔「帳號資訊」那一段的檔頭註解一直寫著
+     「公司單位(可編輯)」，說錯話的只有這一句給使用者看的）。
+     訂正之後這一句要講的是**三件事分開**：帳號層（這一區）／租戶層可寫（公司單位）／
+     租戶層唯讀（規格與上限）——中間那一族最容易誤會，因為它長在「我的個人資料」上面，
+     卻是改了全租戶一起變的東西。 #}
+{% set helpModalWhat = "這一區存的是登入者自己的顯示名稱與聯絡方式，屬於這個帳號本身。上方帳號資訊區塊裡的東西則是租戶層的，跟這一區是兩件事：規格與資料儲存上限唯讀（只有平台管理者改得動）；公司/單位同樣是租戶層資料——改了同租戶每一個人看到的都會變——但有「設定」寫入能力的人就改得動。這裡的存檔動作要求租戶使用期正處於有效狀態，使用期不是有效狀態時這兩格仍看得到，但按下儲存會被擋下來。" %}
 {% set helpModalStateItems = [] %}
 {% set helpModalLimitRows = [] %}
 {% include "components/help-modal/help-modal.html" %}

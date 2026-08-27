@@ -106,6 +106,19 @@
         <span class="sr-only" data-i18n="comp.scrollToLatest">捲到最新訊息</span>
     </button>
 
+    {# **整站停用那一態**（round47）：使用期閘或功能開通閘擋下來時，這個前台機器人就不能問了
+         （product `app/conversation/public_ask.py` 在節流之後接連跑 `require_active_subscription`
+         與 `require_tenant_feature(db, tenant_id, "ask")`，兩者都回 403）。那不是「這一題失敗」，
+         是**這個站現在不提供問答**——輸入框與送出鈕會被停用，再問也只會拿到同一個 403。
+       ⚠️ 這一句先前是 **React 單方面造的 key**（`faq.unavailable`，只靠 REACT_ONLY 白名單擋著）——
+         也就是切版之外的第二個文案正本。這一輪把它收回切版：繁中與 en.json 都在這裡定，
+         React 端改讀這一份。
+       **不寫「請稍後再試」**（React 那一版的字面是「請稍後再試，或聯絡本網站管理者」）：
+         使用期到期／被凍結／功能被關掉，沒有一種會因為訪客等一下就好——那句話會讓每一位訪客
+         照著它一直重試（同 widget-shell 額度用罄那一段的理由）。訪客這一側唯一做得到的事是
+         告訴網站的管理者，所以只講那一件。
+       `.hidden`＋live region：這一態的可見處在元件庫頁「React 條件文案」區（§5）。 #}
+    <p class="text-red js-faq-unavailable hidden" role="alert" data-i18n="faq.unavailable">本站的問答服務目前停用中，請聯絡本網站管理者。</p>
     <div class="faq-chat-input">
         {# .faq-input-wrap：本元件自有 class——.input-wrap 的樣式正本屬 ui/chatroom-shell，一個 class 名只能有一個 scss 主人（§4） #}
         <div class="faq-input-wrap">
