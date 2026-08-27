@@ -70,7 +70,7 @@ permalink: 5-9_extractApiKey.html
          不另立 key（§4-2：繁中原文相同的 UI chrome 沿用既有 key，英譯也是同一個 "Create key"）。 #}
     <p class="text-gray" data-i18n="extractKey.noKeyYet">這個租戶還沒有萃取 API 金鑰。按下面的「產生金鑰」建立第一把——明碼只會在產生的那一次顯示。</p>
     <div class="flex-row">
-        <button data-tenant-role="admin" type="button" class="button button-primary js-generate-key" data-toast="已產生新金鑰|產生失敗" data-i18n-data-toast="toast.generateKey" data-toast-type="success|error" data-i18n="widget.createToken">產生金鑰</button>
+        <button data-tenant-role="admin" type="button" class="button button-primary js-generate-key" data-toast="已產生新金鑰|產生失敗，請稍後再試" data-i18n-data-toast="toast.generateKey" data-toast-type="success|error" data-i18n="widget.createToken">產生金鑰</button>
     </div>
     {% else %}
     {# 儲存模型說明（**恆常顯示**，有金鑰的兩種子態都成立）。
@@ -148,7 +148,7 @@ permalink: 5-9_extractApiKey.html
 {% set deleteConfirmBinding = true %}
 {% set deleteConfirmClass = "js-regenerate-key-confirm" %}
 {% set deleteTenantRole = "admin" %}
-{% set deleteToast = "已產生新金鑰|產生失敗" %}
+{% set deleteToast = "已產生新金鑰|產生失敗，請稍後再試" %}
 {% set deleteToastKey = "toast.generateKey" %}
 {% include "components/delete-modal/delete-modal.html" %}
 

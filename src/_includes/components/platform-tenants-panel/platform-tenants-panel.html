@@ -163,7 +163,7 @@
                 </select>
             </div>
         </div>
-        <button type="button" class="button button-primary button-sm" data-platform-role="admin" data-toast="平台時區已儲存|儲存失敗" data-i18n-data-toast="toast.saveTimezone" data-toast-type="success|error" data-i18n="platform.saveTimezone">儲存平台時區</button>
+        <button type="button" class="button button-primary button-sm" data-platform-role="admin" data-toast="平台時區已儲存|儲存失敗，請稍後再試" data-i18n-data-toast="toast.saveTimezone" data-toast-type="success|error" data-i18n="platform.saveTimezone">儲存平台時區</button>
     </div>
 </div>
 
@@ -500,7 +500,7 @@
                         <div class="btn-group">
                             {# 兩顆的可及名稱＝「本列租戶名 ＋ 本鈕自己的字」（§4 逐列控制項）：
                                  五列各一組，只有可見字面可以重複。 #}
-                            <button type="button" id="tenantSave-{{ tenantIdx }}" aria-labelledby="tenantName-{{ tenantIdx }} tenantSave-{{ tenantIdx }}" class="button button-border button-sm" data-platform-role="admin" data-toast="已更新|儲存失敗" data-i18n-data-toast="toast.saveTenant" data-toast-type="success|error" data-i18n="action.save">儲存</button>
+                            <button type="button" id="tenantSave-{{ tenantIdx }}" aria-labelledby="tenantName-{{ tenantIdx }} tenantSave-{{ tenantIdx }}" class="button button-border button-sm" data-platform-role="admin" data-toast="已更新|儲存失敗，請稍後再試" data-i18n-data-toast="toast.saveTenant" data-toast-type="success|error" data-i18n="action.save">儲存</button>
                             {# 管理：開窗需先選定「管理哪個租戶」＝業務條件開窗，用 hook class（.js-manage-tenant），
                                  不掛 data-open-modal（§5）。彈窗本體見 components/manage-tenant-modal（include 於本元件底部）。 #}
                             <button type="button" id="tenantManage-{{ tenantIdx }}" aria-labelledby="tenantName-{{ tenantIdx }} tenantManage-{{ tenantIdx }}" class="button button-border button-sm js-manage-tenant" data-platform-role="auditor" data-i18n="settings.manage">管理</button>
@@ -548,7 +548,7 @@
         </div>
         {# 兩段（同上面那塊平台時區的正典）：這一支沒有任何「使用者填錯」的分支——不驗格式、
              留空是合法輸入（＝清掉），唯一擋得下來的是長度，而長度已經常駐在上面那句提示裡。 #}
-        <button type="button" class="button button-primary button-sm js-save-support-contact" data-platform-role="admin" data-toast="聯絡窗口已儲存|儲存失敗" data-i18n-data-toast="toast.saveSupportContact" data-toast-type="success|error" data-i18n="action.save">儲存</button>
+        <button type="button" class="button button-primary button-sm js-save-support-contact" data-platform-role="admin" data-toast="聯絡窗口已儲存|儲存失敗，請稍後再試" data-i18n-data-toast="toast.saveSupportContact" data-toast-type="success|error" data-i18n="action.save">儲存</button>
     </div>
 </div>
 

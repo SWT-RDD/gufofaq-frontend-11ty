@@ -1054,7 +1054,7 @@ bodyClass: guideline-page
                      是假的。它因此落回 §5 ③（點下去就送 API），自己掛 data-toast 列全結果。 #}
                 <p class="text-gray m-0" data-i18n="extractKey.noKeyYet">這個租戶還沒有萃取 API 金鑰。按下面的「產生金鑰」建立第一把——明碼只會在產生的那一次顯示。</p>
                 <div class="flex-row">
-                    <button data-tenant-role="admin" type="button" class="button button-primary js-generate-key" data-toast="已產生新金鑰|產生失敗" data-i18n-data-toast="toast.generateKey" data-toast-type="success|error" data-i18n="widget.createToken">產生金鑰</button>
+                    <button data-tenant-role="admin" type="button" class="button button-primary js-generate-key" data-toast="已產生新金鑰|產生失敗，請稍後再試" data-i18n-data-toast="toast.generateKey" data-toast-type="success|error" data-i18n="widget.createToken">產生金鑰</button>
                 </div>
                 {# 4-2 的「有無進行意圖判斷」那一格的**第三個枚舉成員**。`chat_logs.is_intension` 是
                      可為 null 的布林 ⇒ 三態（是／否／—），而 4-2 那一筆是 agent 模式，`is_intension`

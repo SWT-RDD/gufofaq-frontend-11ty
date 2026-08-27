@@ -287,7 +287,7 @@ permalink: 5-5-1_userManagement.html
                                  400「cannot deactivate the last active tenant admin」（product users.py）、
                                  403「平台角色持有者不得在租戶端變更」（同檔 _assert_tenant_manageable（users.py）：
                                  平台管理員／稽核員寄生在一般租戶裡，停用他會讓平台治理端點沒人打得動）。 #}
-                            <button data-tenant-role="admin" type="button" id="memberSave-{{ member.id }}" aria-labelledby="memberEmail-{{ member.id }} memberSave-{{ member.id }}" class="button button-border button-sm" data-toast="已更新|不可移除租戶最後一位管理者，請先指派另一位|不可停用最後一位在職的租戶管理者，請先指派另一位|平台角色持有者不可在租戶端變更，請由平台管理端處理|選到的群組不存在，請重新載入頁面再選一次|儲存失敗" data-i18n-data-toast="toast.saveMember" data-toast-type="success|warning|warning|warning|warning|error" data-i18n="action.save">儲存</button>
+                            <button data-tenant-role="admin" type="button" id="memberSave-{{ member.id }}" aria-labelledby="memberEmail-{{ member.id }} memberSave-{{ member.id }}" class="button button-border button-sm" data-toast="已更新|不可移除租戶最後一位管理者，請先指派另一位|不可停用最後一位在職的租戶管理者，請先指派另一位|平台角色持有者不可在租戶端變更，請由平台管理端處理|選到的群組不存在，請重新載入頁面再選一次|儲存失敗，請稍後再試" data-i18n-data-toast="toast.saveMember" data-toast-type="success|warning|warning|warning|warning|error" data-i18n="action.save">儲存</button>
                             {# 重設密碼：開窗需先選定「重設哪一位成員」＝業務條件開窗，故用 hook class（.js-reset-password），
                                  不掛 data-open-modal（§5）。彈窗本體見 components/reset-password-modal（include 於本頁底部）。 #}
                             <button type="button" id="memberResetPw-{{ member.id }}" aria-labelledby="memberEmail-{{ member.id }} memberResetPw-{{ member.id }}" class="button button-border button-sm js-reset-password" data-i18n="settings.resetPassword">重設密碼</button>

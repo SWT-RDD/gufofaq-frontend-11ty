@@ -511,7 +511,7 @@ permalink: 2-2-3_abTest.html
                          空值分支是 `if (!query) { toast.show(segs[2], "warning"); return; }`——**它彈 warning、
                          不是靜默 return**；第一行擋的是 `loading`）。共用 `toast.chatSubmit` 會讓那顆 key 同時代表
                          「固定問句的 chip，不可能空」與「自由輸入，可能空」兩種行為契約（§4-2）。 #}
-                    <button data-capability="ask" type="button" class="button button-primary chat-input-submit" data-toast="回答生成中...|權限不足，無法送出|請先輸入問題|回答生成成功|回答生成失敗" data-i18n-data-toast="toast.chatSend" data-toast-type="info|warning|warning|success|error" data-i18n="action.submit">送出</button>
+                    <button data-capability="ask" type="button" class="button button-primary chat-input-submit" data-toast="回答生成中...|權限不足，無法送出|請先輸入問題|回答生成成功|回答生成失敗，請重新送出一次" data-i18n-data-toast="toast.chatSend" data-toast-type="info|warning|warning|success|error" data-i18n="action.submit">送出</button>
                 </div>
             </div>
         </div>
