@@ -49,6 +49,17 @@ const jsOwnedClasses = (() => {
         for (const t of m[2].split(/\s+/)) if (t) out.add(t);
     for (const m of blob.matchAll(/setAttribute\(\s*(['"`])class\1\s*,\s*(['"`])([^'"`]*)\2/g))
         for (const t of m[3].split(/\s+/)) if (t) out.add(t);
+    // **選擇器抽成常數的那一族也算數**。只認寫死在呼叫裡的字面時，
+    // `var ROW_SELECTOR = ":scope > .dataset-list-row"` ＋ `querySelectorAll(ROW_SELECTOR)`
+    // 會讓那顆 class 變成「無主」——而把同一個選擇器抽成一份正本，正是 §8-1「共用判準只准有
+    // 一份」要求的做法（`ui/list-filter` 有兩個呼叫點）。規則不該逼人把判準複製成兩份。
+    // 先收「常數名 → 字串值」，再看哪些常數真的被當成選擇器的引數用掉——**只認被用掉的**，
+    // 不是所有字串常數，否則任何含 `.` 的字面（訊息、路徑）都會被當成 class 而讓整張網失效。
+    const strConsts = new Map();
+    for (const m of blob.matchAll(/\b(?:var|let|const)\s+([A-Za-z_$][\w$]*)\s*=\s*(['"`])([^'"`\n]*)\2\s*;/g))
+        strConsts.set(m[1], m[3]);
+    for (const m of blob.matchAll(/(?:querySelectorAll|querySelector|closest|matches)\(\s*([A-Za-z_$][\w$]*)\s*[),]/g))
+        if (strConsts.has(m[1])) addSel(strConsts.get(m[1]));
     return out;
 })();
 
@@ -870,7 +881,7 @@ test("§7 所有 modal 的外殼逐字相同（只差尺寸 class）——React 
             dialogs.push({ f, attrs: m[1], body: m[2] });
         }
     }
-    assert.ok(dialogs.length >= 20, `只掃到 ${dialogs.length} 顆 <dialog> —— 這條測試在空轉`);
+    assert.ok(dialogs.length >= 24, `只掃到 ${dialogs.length} 顆 <dialog> —— 這條測試在空轉`);
     const hits = [];
     for (const d of dialogs) {
         if (!/class="[^"]*\bmodals\b[^"]*"/.test(d.attrs)) { hits.push(`${d.f} 的 <dialog> 沒有 .modals`); continue; }
@@ -1539,9 +1550,9 @@ test("§5 元件 js 三方對齊：實體檔 ⇄ eleventy passthrough ⇄ base.h
     const compJs = srcJs.filter((f) => /_includes\/(ui|components)\//.test(f)).map((f) => basename(f, ".js"));
     // 空轉守門：三個集合任一為空，對應的那一半就是對空陣列斷言。
     // 尤其 compJs——路徑慣例一改（或 srcJs 的 glob 失準），「js 存在但沒登記」那半條會靜靜全綠。
-    assert.ok(compJs.length >= 30, `只掃到 ${compJs.length} 支元件 js —— 「js 存在但沒登記」那半條在空轉`);
-    assert.ok(pass.length >= 30, `eleventy.config.js 只解析到 ${pass.length} 條 passthrough —— 解析壞了，這條在空轉`);
-    assert.ok(tags.length >= 30, `base.html 只解析到 ${tags.length} 支 script —— 解析壞了，這條在空轉`);
+    assert.ok(compJs.length >= 33, `只掃到 ${compJs.length} 支元件 js —— 「js 存在但沒登記」那半條在空轉`);
+    assert.ok(pass.length >= 33, `eleventy.config.js 只解析到 ${pass.length} 條 passthrough —— 解析壞了，這條在空轉`);
+    assert.ok(tags.length >= 33, `base.html 只解析到 ${tags.length} 支 script —— 解析壞了，這條在空轉`);
 
     const notRegistered = compJs.filter((n) => !pass.includes(n));
     const notLoaded = pass.filter((n) => !tags.includes(n));
@@ -1558,8 +1569,8 @@ test("§5 dist/js 不得有孤兒（沒被 passthrough 的舊產物）", () => {
     // build 失敗、passthrough 整段被拿掉、或跑錯 cwd 都長這樣，而那正是最該當場紅的時候。
     assert.ok(existsSync("dist/js"), "dist/js 不存在 —— passthrough 沒跑（或 build 失敗），這條測試原本會靜靜全綠");
     const built = readdirSync("dist/js").filter((f) => f.endsWith(".js")).map((f) => f.replace(/\.js$/, ""));
-    assert.ok(pass.length >= 30, `eleventy.config.js 只解析到 ${pass.length} 條 passthrough —— 解析壞了，這條在空轉`);
-    assert.ok(built.length >= 30, `dist/js 只有 ${built.length} 支 js —— 產物不完整，這條在空轉`);
+    assert.ok(pass.length >= 33, `eleventy.config.js 只解析到 ${pass.length} 條 passthrough —— 解析壞了，這條在空轉`);
+    assert.ok(built.length >= 33, `dist/js 只有 ${built.length} 支 js —— 產物不完整，這條在空轉`);
     const orphan = built.filter((n) => !pass.includes(n));
     assert.equal(orphan.length, 0, `dist 未清乾淨，殘留：${orphan}`);
 });
@@ -1850,7 +1861,7 @@ test("main.scss 有 @use 每一支元件 scss", () => {
         .map((f) => f.replace(/^src\//, "../").replace(/\/_([\w-]+)\.scss$/, "/$1"))
         .filter((p) => p && !main.includes(p));
     const compScss = srcScss.filter((f) => f.startsWith("src/_includes/"));
-    assert.ok(compScss.length >= 60, `只掃到 ${compScss.length} 支元件 scss —— 這條測試在空轉`);
+    assert.ok(compScss.length >= 66, `只掃到 ${compScss.length} 支元件 scss —— 這條測試在空轉`);
     const main = read("src/scss/main.scss");
     assert.ok((main.match(/^@use\s/gm) || []).length >= compScss.length,
         `main.scss 的 @use 行數少於元件 scss 支數（${(main.match(/^@use\s/gm) || []).length} < ${compScss.length}）—— 路徑比對規則可能已經比不中任何東西`);

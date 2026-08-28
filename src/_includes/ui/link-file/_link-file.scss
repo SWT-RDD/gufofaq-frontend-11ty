@@ -5,6 +5,21 @@
 //   檔頭與 `components/sources-block`），瀏覽器給 button 的底色／外框／字體要清掉，才與同表的 `<a>`
 //   逐字一樣；`text-align: left` 是 button 專屬的（`<a>` 本來就靠左，button 會置中）。
 //
+// **生產契約**（§1-2）：`link-file.html` 是展示片段，示範的是**導覽族**（`<a href>`）；
+// 而下載族在生產頁上是 `<button>`，帶著片段沒有的那幾顆硬規則屬性（`type`／`data-toast` 三件套）。
+// 型別＝**那顆控制項打不打 API**，不是排版偏好（§4「`<a>` 或 `<button>`」）：
+//
+// ① 導覽族——有真去向的連結，見 `link-file.html` 的片段本身。
+//
+// ② 下載族——點檔名下載原稿，是**送 API 的動作**（§5 矩陣③，`data-toast` 要列全結果）。
+//    今天只有一個生產實例，`components/sources-block`（打 GufoFAQ 自己的來源下載，故有租戶能力軸）：
+//
+//      <button data-capability="history" type="button" class="link-file" id="sourceRowFile-{{ loop.index }}" data-source-index="{{ loop.index0 }}" data-toast="下載已開始|權限不足，無法下載——請找貴租戶的管理者開通|此來源無法下載|下載失敗，請稍後再試" data-i18n-data-toast="toast.downloadFile" data-toast-type="success|warning|warning|error">{{ source.file }}</button>
+//
+//    ⚠️ **第二個實例出現時不得照抄上面那一段**：`data-toast` 的分支集合是**跟著端點走**的，
+//    能力軸也是。互抄就是把一份不屬於自己的結果清單掛上去——那顆鈕會在成功時彈別人的成功訊息、
+//    在失敗時漏掉自己真正會發生的那一種。要新增實例就回去讀那支端點的出口，逐條列自己的。
+//
 .link-file {
     color: var(--brand-text);
     word-break: break-all;
