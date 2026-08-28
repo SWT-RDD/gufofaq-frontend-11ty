@@ -5938,8 +5938,32 @@ function runStubDom(jsSrc, build) {
     function node(tag, cls) {
         const n = {
             tag, classes: new Set((cls || "").split(/\s+/).filter(Boolean)),
-            children: [], parent: null, style: {}, attrs: new Map(), handlers: new Map(), textContent: "",
+            children: [], parent: null, style: {}, attrs: new Map(), handlers: new Map(),
         };
+        // `textContent` 是 **accessor** 而不是普通欄位：DOM 的 setter **會清掉子節點**，而
+        // `list.textContent = ""` 正是清空一整段動態清單的慣用寫法——寫成普通欄位的話舊的子節點
+        // 會留著，斷言看到的是**累積**的清單而不是這一次渲染的結果（那是假綠：js 沒清、測試卻過）。
+        // getter 也要往下收子節點的字：讀一顆 <button> 的全文時，字散在 <b> 與文字節點裡。
+        let ownText = "";
+        Object.defineProperty(n, "textContent", {
+            get: () => (n.tag === "#text" ? ownText : ownText + n.children.map((c) => c.textContent).join("")),
+            set: (v) => { n.children.length = 0; ownText = String(v); },
+        });
+        // `className` 要與 `classes` 同步：元件 js 常寫 `el.className = "x"`（`ui/multi-select` 造控制項殼、
+        // `ui/list-filter` 造空狀態列、`components/alias-entries-modal` 造每一格時都是），
+        // 而選擇器比對讀的是 `n.classes`——不同步的話那顆節點對 `querySelectorAll` 是**隱形的**。
+        Object.defineProperty(n, "className", {
+            get: () => [...n.classes].join(" "),
+            set: (v) => { n.classes = new Set(String(v).split(/\s+/).filter(Boolean)); },
+        });
+        // `id` 在真 DOM 是**反射屬性**（`el.id = "x"` 等同 `setAttribute("id", "x")`，反之亦然）。
+        // 寫成兩個獨立的欄位會讓「js 用 el.id 設、測試用 getAttribute("id") 讀」靜靜對不上——
+        // 而 `document.getElementById` 讀的也是屬性那一份，等於整條路都斷掉。
+        Object.defineProperty(n, "id", {
+            get: () => (n.attrs.has("id") ? n.attrs.get("id") : ""),
+            set: (v) => n.attrs.set("id", String(v)),
+        });
+        n.focus = () => {};
         n.classList = {
             contains: (c) => n.classes.has(c),
             add: (c) => n.classes.add(c),
@@ -5979,6 +6003,8 @@ function runStubDom(jsSrc, build) {
         querySelector: (sel) => root.querySelector(sel),
         getElementById: (id) => root.querySelectorAll("*").find((d) => d.getAttribute("id") === id) || null,
         createDocumentFragment: () => { const f = node("#fragment"); f.__fragment = true; return f; },
+        createElement: (tag) => node(tag),
+        createTextNode: (t) => { const n = node("#text"); n.textContent = t; return n; },
     };
     // GufoSlide 是共享行為工具（§1-1），這裡只需要它「把 display 扳到位」那一面
     const window = {
@@ -5991,7 +6017,12 @@ function runStubDom(jsSrc, build) {
     const fixture = build(node, root);
     new Function("document", "window", jsSrc)(document, window);
     (docHandlers.get("DOMContentLoaded") || []).forEach((fn) => fn({}));
-    const fireDoc = (type, target) => (docHandlers.get(type) || []).forEach((fn) => fn({ target }));
+    // 舊呼叫傳的是「目標節點」；有些委派要讀完整 event（點外部關閉那一類要走 `composedPath()`，
+    // 光有 target 不夠），故也收得下一個現成的 event 物件。以「有沒有 classes」分辨是節點還是 event。
+    const fireDoc = (type, arg) => {
+        const ev = arg && arg.classes ? { target: arg } : (arg || {});
+        (docHandlers.get(type) || []).forEach((fn) => fn(ev));
+    };
     return {
         fixture, root, window, fireDoc,
         // accordion 的委派掛在 .js-accordion 根上；找不到根就退回 body（table 版的 fixture 也有根）
@@ -8359,6 +8390,54 @@ test("§6 stepNextHref 與 stepNextAction = true 不得同時 set（動作模式
             '{% set stepNextAction = true %}\n{% include "components/step-btn-wrap/step-btn-wrap.html" %}',
             '{% set stepNextHref = "x.html" %}\n{% include "components/step-btn-wrap/step-btn-wrap.html" %}']);
     assert.equal(hits.length, 0, `§6 沒有消費者的參數：\n${fail(hits)}`);
+});
+
+test("驗收工具自己：DOM stub 的三顆反射屬性要與真 DOM 同語意", () => {
+    // 這一條驗的不是產品，是**stub 自己**。stub 與真 DOM 有落差時，落差的方向是**假綠**：
+    // 元件 js 明明沒清掉舊節點、或設好的 class 根本選不到，斷言照樣過。
+    // 為什麼需要這一條：這三顆今天沒有任何行為測試碰得到它們的差異——實測把 `textContent`
+    // 打回普通欄位，整套一樣全綠 ⇒ 沒有人在看它有沒有退化，下一個人「簡化」回去不會有聲音。
+    const { fixture, root } = runStubDom("", (node, r) => {
+        const mk = (tag, cls) => { const n = node(tag, cls); r.appendChild(n); return n; };
+        return { node, mk };
+    });
+    const { node, mk } = fixture;
+
+    // ① setter 會清掉子節點：`list.textContent = ""` 是清空一整段動態清單的慣用寫法
+    const list = mk("div", "stub-probe-list");
+    list.appendChild(node("span"));
+    list.appendChild(node("span"));
+    assert.equal(list.children.length, 2, "前提：先掛兩顆子節點（否則這一條在空轉）");
+    list.textContent = "";
+    assert.equal(list.children.length, 0,
+        'textContent = "" 要清掉子節點 —— 寫成普通欄位的話舊節點會留著，斷言看到的是累積的清單');
+
+    // ② getter 要跨過子元素收字（一顆鈕的字常散在 <b> 與文字節點裡）
+    const btn = mk("button");
+    const b = node("b");
+    b.textContent = "已選 ";
+    btn.appendChild(b);
+    const t = node("#text");
+    t.textContent = "3 個";
+    btn.appendChild(t);
+    assert.equal(btn.textContent, "已選 3 個", "getter 要往下收子節點的字");
+
+    // ③ className 與 classes 雙向同步：不同步的話那顆節點對 querySelectorAll 是隱形的
+    const el = mk("div");
+    el.className = "stub-probe-a stub-probe-b";
+    assert.deepEqual([...el.classes].sort(), ["stub-probe-a", "stub-probe-b"],
+        "className 的 setter 要寫進 classes");
+    assert.equal(root.querySelectorAll(".stub-probe-a").length, 1,
+        "設了 className 之後選擇器要打得到它");
+    el.classes.add("stub-probe-c");
+    assert.equal(el.className, "stub-probe-a stub-probe-b stub-probe-c", "getter 要反映 classes");
+
+    // ④ id 是**反射屬性**：document.getElementById 讀的是屬性那一份
+    const idEl = mk("div");
+    idEl.id = "stubProbeId";
+    assert.equal(idEl.getAttribute("id"), "stubProbeId", 'el.id = x 要等同 setAttribute("id", x)');
+    idEl.setAttribute("id", "stubProbeOther");
+    assert.equal(idEl.id, "stubProbeOther", "setAttribute 也要反映回 el.id");
 });
 
 test("§5 ui/list-filter 的 ROW_SELECTOR 沒有零消費者的分支（選擇器要打得到 dist 上的東西）", () => {
