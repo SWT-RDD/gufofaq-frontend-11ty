@@ -5,29 +5,29 @@ titleKey: nav.tagDimensions
 pageHeading: 標籤維度與檢索過濾
 permalink: 5-10_tagDimensions.html
 ---
-{# 標籤維度／受控詞彙／標註覆蓋率／檢索過濾旋鈕（SaaS 新頁，真 app 21 頁無對應）。
+{# 標籤維度／受控詞彙／標註覆蓋率／檢索過濾旋鈕（SaaS 新頁）。
      逆向自 gufofaq-saas product：
-       · `app/routers/tags.py`（`GET|POST /tags/dimensions`、`PATCH|DELETE /tags/dimensions/{id}`、
+       · product（`GET|POST /tags/dimensions`、`PATCH|DELETE /tags/dimensions/{id}`、
          `GET|POST /tags/dimensions/{id}/vocabulary`、`DELETE /tags/vocabulary/{id}`、`GET /tags/coverage`）
-       · `app/routers/retrieval.py`（`PUT /retrieval/profiles/{no}/tag-filter`，回應形狀 `ProfileOut` 的
-         `retrieval_filter_mode` / `recent_window_days`；另有一欄 `tag_untagged_counts` **已隨 migration
-         `e5c3a90f7b12` 從 `retrieval_profiles` 移除**（`ProfileOut` 不再回它，見 `retrieval.py` 那段退休說明），
-         故本頁不再顯示它）
-       · `app/tag_values.py`（`UNSET_TAG_VALUE`／`NEVER_EXPIRES` 哨兵、`slots_missing_from_files`：
+       · product（`PUT /retrieval/profiles/{no}/tag-filter`，回應形狀 `ProfileOut` 的
+         `retrieval_filter_mode` / `recent_window_days`。⚠️ **`tag_untagged_counts` 這一欄不存在**
+         ——`retrieval_profiles` 上沒有它、`ProfileOut` 也不回它（product 有一段退休說明），
+         所以這一頁任何一格都不可以畫它：畫了就是替一個上游給不出來的東西留位子）
+       · product（`UNSET_TAG_VALUE`／`NEVER_EXPIRES` 哨兵、`slots_missing_from_files`：
          哪些維度槽不是每一個檔都寫進索引了——開啟過濾的唯一硬閘門）
-       · `app/routers/tags.py`（`tag_dimension_slots`：維度可掛的槽值域＝`custom_field_mapping` 那批）
-       · `app/field_schema.py`（`MIN_FILTERABLE_DATE` / `MAX_FILTERABLE_DATE` 的可篩選日期區間）
+       · product（`tag_dimension_slots`：維度可掛的槽值域＝`custom_field_mapping` 那批）
+       · product（`MIN_FILTERABLE_DATE` / `MAX_FILTERABLE_DATE` 的可篩選日期區間）
 
      這一頁要外顯四件「不寫出來就會靜默出事」的事，逐一：
 
-     ① **旋鈕預設關閉，開啟是一道硬閘門、不是勾一下**——但閘門的判準已經換了一種東西。
-        「未標註」現在是**寫入端的哨兵值**（`tag_values.UNSET_TAG_VALUE`／`NEVER_EXPIRES`）：沒填的
+     ① **旋鈕預設關閉，開啟是一道硬閘門、不是勾一下**——而那道閘門判的是**結構**，不是標註完成度。
+        「未標註」是**寫入端的哨兵值**（`tag_values.UNSET_TAG_VALUE`／`NEVER_EXPIRES`）：沒填的
         格子在匯入時就寫成一個真實的值，於是述詞只要「這一欄等於某個代碼**或**等於未標註」，
-        三種 kind 都表達得出來 ⇒ **「哪些維度必須先標滿才准開過濾」這個概念不存在了**
-        （`GET /settings/tag-dimension-contract` 的投影裡已經沒有這一項——見 `tag_dimension_contract.py`
-        的 `project_tag_dimension_contract`，它只投影 slots／kinds／roles／filterable_date_range）。
-        覆蓋率也不再是證明。
-        取而代之的是一道**結構**閘門：**每一個檔都要把這一槽寫進索引**
+        三種 kind 都表達得出來 ⇒ **不存在「哪些維度必須先標滿才准開過濾」這回事**
+        （`GET /settings/tag-dimension-contract` 的投影裡沒有這一項——見 product 的
+        `project_tag_dimension_contract`，它只投影 slots／kinds／roles／filterable_date_range）。
+        **覆蓋率不是開啟的證明**，別把它寫成閘門。
+        真正的閘門是：**每一個檔都要把這一槽寫進索引**
         （`tag_values.slots_missing_from_files`，一次 DB 查詢、當下的事實，不是會過期的快照）。
         哨兵的代價只有一個：它不命中 property **缺席**的文件，而缺席只有兩個來源——宣告這個維度
         之前匯入的檔（那時還沒有這一欄），以及資料夾匯入的檔（整份是一份文件，沒有欄位槽）。
@@ -42,23 +42,23 @@ permalink: 5-10_tagDimensions.html
         讀得到後果）。「可以開」那一句要順帶講出它之後會怎麼退化：資料夾匯入的檔永遠沒有欄位槽。
 
      ③ **時間窗不能獨立於維度存在**。意圖分類判不準時整組條件一起丟棄、`recency` 一併歸零
-        （product `app/intent_classify.py`），理由是時間窗是唯一沒有「未標註」分支的述詞
-        （`tests/test_retrieval_filter.py` 的 `test_recency_excludes_undated_documents_by_design`），留著會連沒有
+        （product），理由是時間窗是唯一沒有「未標註」分支的述詞
+        （product 的回歸測試 `test_recency_excludes_undated_documents_by_design`），留著會連沒有
         發布日的文件一起濾掉。UI 講「時間窗」時不可以讓人以為它是一顆可以單獨生效的開關。
 
      ④ **日期維度的值有上下界**，而且是**填之前**就要知道的規則：檢索引擎的日期索引是 int64 奈秒
         epoch，出界的值存得進去、`=` 也命中，但任何範圍過濾都漏掉它（product
-        `app/tag_values.py::_assert_dates_are_range_filterable` 回 400 `date_out_of_filterable_range`）。
+        `_assert_dates_are_range_filterable` 回 400 `date_out_of_filterable_range`）。
         「永遠有效」的正解是**留白**，系統自己補不會過期的哨兵值。
 
      權限：CRUD 掛 `settings:read`／`settings:write`；`GET /tags/coverage` 與
      `PUT …/tag-filter` **另外要 `data:read`**（回的數字是文件內容的投影，見兩支端點的
      `require_coverage_scope`／`require_tag_filter_scope`）。切版不做權限過濾（React 應用層的事）。 #}
 {# 篩選槽的值域＝**正本目錄的子集**（ui/field-slot-catalog，§2 的 {% from … import %}，同 5-3 的做法）：
-     product `app/routers/tags.py` 的 `TAG_SLOT_KEYS = tag_dimension_slots(SLOTS)` 判準是**槽的角色**
+     product 的 `TAG_SLOT_KEYS = tag_dimension_slots(SLOTS)` 判準是**槽的角色**
      （`role == "custom_field_mapping"`），不是一份槽名清單——該函式的 docstring 逐字寫著判準寫成函式的
      理由：清單只會在 schema 加槽時無聲落後（加一個 `note11`，宣告送上去了、維度卻建不出來）。
-     本頁原本另烤一份 12 個字面量，正是那種會落後的抄本。切版沒有 `role` 欄可讀（目錄只帶 key ＋
+     **本頁不另烤一份 12 個字面量**，那正是那種會落後的抄本。切版沒有 `role` 欄可讀（目錄只帶 key ＋
      預設名，§2「目錄檔只放跨消費點都相同的欄位」），故以**排除清單**表達同一個子集：
      排掉九個內建槽（title／content／source／date／category／number／flag／tags／privilege）
      與 `productOnly` 的 internal_note ⇒ 剩 note1..note10 ＋ date2／date3，與 `TAG_SLOT_KEYS` 逐字相同。 #}
@@ -70,7 +70,7 @@ permalink: 5-10_tagDimensions.html
   { label: "標籤維度與檢索過濾", i18nKey: "nav.tagDimensions" }
 ] %}
 {# **槽的顯示名與掛在它上面的標籤維度是兩件事**（product 兩張表：`RetrievalProfile.field_labels`
-     ↔ `TagDimension.name`——`TenantSetting` 只存 `attribution_slots`，models.py 逐字寫著
+     ↔ `TagDimension.name`——`TenantSetting` 只存 `attribution_slots`，product 逐字寫著
      「顯示名沿用 per-profile 的 RetrievalProfile.field_labels，本欄不另存標籤」）。示範租戶把 note1／note2 取名為「承辦組室」「業務範疇」（見 5-3 與 4-2），
      所以這一頁的維度**刻意避開那兩個槽**、掛在 note3/note4/note5 上——同一個槽同時掛著兩個不同的
      中文名，讀的人與 React 端都推不出哪一份才算數（§6 跨頁自洽）。
@@ -81,18 +81,18 @@ permalink: 5-10_tagDimensions.html
      而那是結構事實、與標了幾成無關（見檔頭 ①）。所以覆蓋率高的維度照樣可能上那張表，
      覆蓋率低的維度也可能不在上面——兩者不互相印證，示範資料刻意演出這件事。
      `文件密級` 是剛建好、還沒有人標的維度：0/132＝0%。**不能給它 `total: 0`**——
-     `CoverageDimensionOut.total` 的註解逐字是「＝scan.examined」（tags.py），
-     而 `coverage` 端點（同檔）逐維度算的是 `coverage=(tagged/examined) if examined else None`
+     `CoverageDimensionOut.total` 的註解逐字是「＝scan.examined」（product），
+     而 `coverage` 端點（同一支模組）逐維度算的是 `coverage=(tagged/examined) if examined else None`
      ——**整份回應共用同一個
      `examined`**，所以「沒量到」是整份回應的狀態（examined==0 ⇒ 每一列都 null），
      不可能一列 0、其餘三列 132。混一列進來演的是端點產不出來的回應。
      `coveragePct` 是給條寬用的執行期尺寸（React 由 tagged / total 算出來，切版沒有算術可用
      故列成資料）。 #}
-{# 列序＝**槽的宣告序**，不是 id 序也不是字典序：product `app/routers/tags.py` 的
+{# 列序＝**槽的宣告序**，不是 id 序也不是字典序：product 的
      `_ordered_dimensions` 是 `sorted(rows, key=(_SLOT_ORDER[slot_key], id))`，而 `_SLOT_ORDER`
-     來自 `app/field_schema.py` 的 `SLOT_KEYS`（note1…note10 之後才是 date2／date3）。
-     所以 note5（文件密級）排在 date2（有效期）**之前**——原本示範把 date2 擺在 note5 前面，
-     那是 `GET /tags/dimensions` 回不出來的順序（§6）。 #}
+     來自 product 的 `SLOT_KEYS`（note1…note10 之後才是 date2／date3）。
+     所以 note5（文件密級）排在 date2（有效期）**之前**——把 date2 擺到 note5 前面（例如照 id 排）
+     就是 `GET /tags/dimensions` 回不出來的順序（§6）。 #}
 {% set tagDimensions = [
   { id: 1, slotKey: "note3", name: "業務範疇", description: "這份文件講的是哪些業務面（可複選）", kind: "multi", role: "", vocabularyCount: 6, tagged: 118, total: 132, coveragePct: 89.4 },
   { id: 2, slotKey: "note4", name: "業務方向", description: "進口向／出口向／雙向，三選一", kind: "single", role: "", vocabularyCount: 3, tagged: 132, total: 132, coveragePct: 100 },
@@ -101,13 +101,13 @@ permalink: 5-10_tagDimensions.html
 ] %}
 {# 字典編輯區當下選中的維度（React 由「編輯字典」那顆鈕決定；切版演 single 這一份）。
      **kind=date 時整個區塊不渲染**——日期維度沒有代碼可言，product `create_vocabulary` 對它
-     一律 400（`app/routers/tags.py`：「是日期維度，沒有代碼可言」）。 #}
+     一律 400（product：「是日期維度，沒有代碼可言」）。 #}
 {% set vocabDimension = { id: 2, slotKey: "note4", name: "業務方向", kind: "single" } %}
-{# 字典的列序＝**代碼字典序**（product `tags.py` 的 `list_vocabulary`：
+{# 字典的列序＝**代碼字典序**（product 的 `list_vocabulary`：
      `select(TagVocabulary).where(dimension_id == …).order_by(TagVocabulary.code)`）
      ⇒ both／export／import，不是建立順序、也不是「進出口」讀起來順的那個順序（§6）。 #}
-{# **`id` 是列鍵、不可省**（§6）：刪除打的是 `DELETE /tags/vocabulary/{vocabulary_id}`（product
-     `app/routers/tags.py`），吃的是 `VocabularyOut.id` **不是 `code`**——`data-tag-code` 雖然是一顆
+{# **`id` 是列鍵、不可省**（§6）：刪除打的是 `DELETE /tags/vocabulary/{vocabulary_id}`（product），
+     吃的是 `VocabularyOut.id` **不是 `code`**——`data-tag-code` 雖然是一顆
      從資料插值來的屬性，但它不是那支端點定址用的那一顆，列鍵要來自 response_model 的主鍵欄。
      id 刻意**不與 code 同序**（4/5/6 對 export/import/both）：那正好示範了列序是
      `order_by(TagVocabulary.code)` 而不是主鍵序。 #}
@@ -123,7 +123,7 @@ permalink: 5-10_tagDimensions.html
      開著的那一套與關著的那兩套在這張表上只差開關本身。
      示範資料要演得出一個**真實可能**的狀態（§6）：設置一開著，代表它開啟的那一刻每一個檔都帶得到
      那些欄；而下面那張「要重新匯入的檔」表有列，代表之後又匯入了缺欄的檔——這正是為什麼閘門要問
-     當下的事實而不是留一份快照（product models.py 逐字寫著舊快照「量完之後又匯入一批留白的資料，
+     當下的事實而不是留一份快照（product 逐字寫著舊快照「量完之後又匯入一批留白的資料，
      快照就過期了，而畫面上看不出來」）。 #}
 {% set tagFilterProfiles = [
   { no: 1, name: "設置一", i18nKey: "settings.config1", mode: "on", recentWindowDays: 7 },
@@ -136,7 +136,8 @@ permalink: 5-10_tagDimensions.html
      兩種的處置不同，所以畫面**一列一個（維度 × 缺法）**，與 400 的結構一對一。
      product 每一組只列前 5 個檔名、超過就 `…`，所以列表要說得出「共 N 個」，示範資料把截斷演出來。
      沒有查詢端點可以先看：`slots_missing_from_files` 只在 `PUT …/tag-filter` 那條寫入路徑上被呼叫，
-     所以這一區是**被擋下之後**的狀態，不是事前的預先提示（那是它與前一版最大的差別）。 #}
+     所以這一區演的是**被擋下之後**的狀態，**不是事前的預先提示**——沒有端點可以在按下開關之前
+     先問一次，寫成預先提示就是承諾一件切版與 React 都做不到的事。 #}
 {# 覆蓋率量測的「量測範圍」下拉吃這一份資料集目錄（`GET /tags/coverage` 的 `dataset_id` 參數）。
      它與下面那張「要重新匯入的檔」表**沒有關係**：那張表的最小單位是檔、而且 product 給的
      `SlotGap` 裡沒有資料集 id。連結由 id 組出，不另存 href。 #}
@@ -144,8 +145,8 @@ permalink: 5-10_tagDimensions.html
      的理由寫在那一段）。同一個名字在兩頁配兩個 id，就是同一份目錄被烤成兩份（§6）——而這一顆
      id 正是下拉送出去的值。
      **這一份只列 kind=file 的資料集**（`GET /tags/coverage` 量的是標籤槽 note1…note10／date2／date3
-     的覆蓋率，而 QA 集只填 title／content 兩個槽，量它恆是「尚未量測」）——先前只列兩個，
-     其餘三個檔案集在這個下拉裡點不到。 #}
+     的覆蓋率，而 QA 集只填 title／content 兩個槽，量它恆是「尚未量測」）。
+     ⚠️ **kind=file 的每一個都要列**：少列一個，那個資料集在這個下拉裡就永遠點不到。 #}
 {% set coverageDatasets = [
   { id: 3, name: "法規彙編" },
   { id: 12, name: "2026 新制問答" },
@@ -158,10 +159,11 @@ permalink: 5-10_tagDimensions.html
      `業務方向`（note4，覆蓋率 100%）與 `文件密級`（note5，覆蓋率 0%）都**不在**這張表上——
      前者標滿了、後者一筆都沒標，但兩者的每一個檔都帶得到那一欄，所以都開得起來。
      這正是「覆蓋率與這張表無關」那句話的示範（見檔頭）。 #}
-{# **列序＝維度名字串序 → 槽鍵 → 缺法**（product `app/routers/retrieval.py` 的
+{# **列序＝維度名字串序 → 槽鍵 → 缺法**（product 的
      `_assert_every_file_carries_the_slots`：`sorted(grouped.items(), key=lambda kv: (kv[0][0], kv[0][1], _GAP_REASONS.index(kv[0][2])))`，
      `_GAP_REASONS = ("not_mapped", "whole_file")`）。「有效期」U+6709 < 「業務範疇」U+696D ⇒ date2 那一筆
-     排最前面。先前照敘事順手排成 note3/note3/date2，那是這支端點產不出來的順序（§6：列序也是示範資料的一部分）。 #}
+     排最前面。**不可以照敘事順手排成 note3/note3/date2**——那讀起來很順，卻是這支端點產不出來的
+     順序（§6：列序也是示範資料的一部分）。 #}
 {% set blockedSlots = [
   {
     slotKey: "date2", name: "有效期", reason: "notMapped", total: 8,
@@ -190,8 +192,8 @@ permalink: 5-10_tagDimensions.html
 {# 租戶能力標記（同 5-2 的理由：唯讀閘要從 markup 讀得出來，不是 React 應用層各自判斷）：新增維度。 #}
 <div data-capability="settings:write" class="block mb-16 flex-row column gap-16">
     {# ⓘ 說明：markup 逐字照抄 `settings/5-2_conversationSettings.html` 出口套用欄那顆既有
-         info-btn 六件組。①出處：本檔檔頭「標籤維度／受控詞彙…旋鈕」那段＋ product
-         `app/routers/tags.py` 的 `tag_dimension_slots`（哪些槽承載得了維度）。
+         info-btn 六件組。①出處：本檔檔頭「標籤維度／受控詞彙…旋鈕」那段，
+         ＋ product 的 `tag_dimension_slots`（哪些槽承載得了維度）。
          **不重複 `#tagSlotHint`／`#tagKindHint`／`#tagRoleHint`**（brief 明文）：三顆已經逐條講了
          槽／型別／角色的合法組合，①改講這一區在整個頁面工作流裡的位置——沒有在這裡登記過的槽，
          下面的受控詞彙區與檢索過濾都構不到它。 #}
@@ -210,12 +212,12 @@ permalink: 5-10_tagDimensions.html
                 </div>
                 <div class="field">
                     {# 值域是 12 個，不是這一頁湊得出來的四個：`TAG_SLOT_KEYS = tag_dimension_slots(SLOTS)`
-                         ＝角色為 `custom_field_mapping` 的槽（tags.py → field_schema.py），
+                         ＝角色為 `custom_field_mapping` 的槽（product → product），
                          也就是 note1..note10 ＋ date2/date3。本頁自己的 hint 就是這樣寫的，而示範資料的
                          維度掛在 note3／note4／note5 上——只列 note1/note2/date2/date3 四個的話，
                          那三個槽根本建不出維度。
                          **不硬編**：`GET /settings/tag-dimension-contract` 的 `slots` 是這份值域的單一真相
-                         （tag_dimension_contract.py 的 `project_tag_dimension_contract` 明寫「一個都不能留在前端硬編」），
+                         （product 的 `project_tag_dimension_contract` 明寫「一個都不能留在前端硬編」），
                          React 端改讀端點；切版這一份由**唯一正本目錄**（ui/field-slot-catalog）＋頁首那張
                          排除清單推導，不另烤一份槽名字面量（§6：同一份業務目錄不得各烤一份）。
                          option 的文字就是槽鍵本身（不是預設顯示名）：這一格挑的是「掛在哪一個實體槽上」，
@@ -287,7 +289,7 @@ permalink: 5-10_tagDimensions.html
     <div class="flex-row column gap-8">
         {# **槽清單是契約的值域、不是譯文的一部分**（§3-2：那份枚舉在 API 契約裡有欄位，就不准出現在
              譯文字串裡）：`GET /settings/tag-dimension-contract` 的 `slots` 是這份值域的單一真相
-             （product `app/routers/tag_dimension_contract.py`，該檔 docstring 逐字：「前端渲染這一頁
+             （product，該檔 docstring 逐字：「前端渲染這一頁
              所需的每一個值域與觸發條件都要來自這裡，一個都不能留在前端硬編……只投影兩個日期字串的話，
              `date2`／`date3` 還是抄在前端，schema 加一個 `date4` 時那一頁就對它閉口不談」）。
              上面那顆 `<select>` 已經由 `ui/field-slot-catalog` ＋ `tagSlotExcluded` 推導了，這一句的
@@ -298,7 +300,7 @@ permalink: 5-10_tagDimensions.html
         <p id="tagRoleHint" class="text-gray" data-i18n="settings.tagRoleHint">角色是給引擎內建機制認的：valid_until／as_of 只能掛在日期維度、fact_topic／superseded_by 只能掛在單值維度。配錯不會報錯，只會讓該機制完全跳過這個維度——設定頁看起來一切正常，而它從頭到尾沒有作用過。</p>
         {# ④ 日期上下界：講在**填之前**。這一段對 kind=date 常駐顯示（React 依所選型別擇一渲染）。
              **兩個日期是資料不是譯文**（§3-2）：它們在契約裡有欄位——`GET /settings/tag-dimension-contract`
-             的 `filterable_date_range.min_date`／`max_date`（product app/routers/tag_dimension_contract.py），
+             的 `filterable_date_range.min_date`／`max_date`（product），
              而那支端點的檔頭點名的失敗樣態正是「區間改了而畫面照舊寫著舊日期」。
              故拆成資料槽 ＋ 前中後三段可翻的文字（同 414eecc 對 5-2 三個上下界做過的修正）。 #}
         {% set filterableDateMin = "1677-09-21" %}
@@ -326,8 +328,8 @@ permalink: 5-10_tagDimensions.html
 
 {# ── 維度清單 ───────────────────────────────────────────────────────────────────
      覆蓋率條與維度同列：它是「這個維度標了幾成、拿來過濾篩得動多少」的報表。
-     **它不再是「能不能開過濾」的依據**——那道閘門換成了結構事實（每一個檔都要把這一欄寫進索引，
-     見檔頭 ①）；沒填的格子在匯入時就寫成哨兵值，過濾條件會連它們一起比對。
+     ⚠️ **它不是「能不能開過濾」的依據**——那道閘門判的是結構事實（每一個檔都要把這一欄寫進索引，
+     見檔頭 ①）；沒填的格子在匯入時就寫成哨兵值，過濾條件會連它們一起比對，標了幾成不影響漏不漏文件。
      `coverage` 為 null 時 product 回的是 null 不是 0——「沒量到」不等於「量到零」，
      故那一格顯示「尚未量測」而不是 0%。**那是整張表的狀態、不是單列的**：
      `coverage=(tagged/examined) if examined else None` 共用同一個 `examined`，
@@ -336,7 +338,7 @@ permalink: 5-10_tagDimensions.html
 {# 租戶能力標記（同 5-2 的理由：唯讀閘要從 markup 讀得出來，不是 React 應用層各自判斷）：維度清單的改名／刪除。 #}
 <div data-capability="settings:write" class="block mb-16 flex-row column gap-16">
     {# ⓘ 說明：同上一顆 info-btn 六件組。①出處：本區塊「查看未標註」鈕自己的檔頭
-         （`GET /tags/coverage/untagged`）＋ product `app/routers/tags.py` 的
+         （`GET /tags/coverage/untagged`）＋ product 的
          `kind_allows_vocabulary`（日期維度沒有代碼可言，故它沒有「編輯字典」）。 #}
     <div class="flex-row align-items-center gap-8">
         <div class="text-md text-bold" data-i18n="settings.tagDimensionList">標籤維度清單</div>
@@ -377,9 +379,10 @@ permalink: 5-10_tagDimensions.html
                 <tr data-tag-dimension-id="{{ dim.id }}">
                     <td id="tagDimSlot-{{ dim.id }}">{{ dim.slotKey }}</td>
                     {# 兩顆就地編輯欄是**值載體**（隨同列「儲存」送 `PATCH /tags/dimensions/{id}`）⇒ 要有
-                         React 綁定記號（§5 矩陣②：class 或 id 擇一）。先前兩顆只有全域樣式 class
-                         `form-control`，是全頁唯一只能靠 DOM 順序定址的值載體——同區新增列的每一顆
-                         欄位都有 id，三顆 select 還另掛了 `js-tag-slot`／`js-tag-kind`／`js-tag-role`。 #}
+                         React 綁定記號（§5 矩陣②：class 或 id 擇一）。**只掛全域樣式 class
+                         `form-control` 不算記號**——那樣這兩顆就只能靠 DOM 順序定址，是全頁唯一
+                         沒有名字的值載體；同區新增列的每一顆欄位都有 id，三顆 select 還另掛了
+                         `js-tag-slot`／`js-tag-kind`／`js-tag-role`。 #}
                     <td><input type="text" class="form-control js-tag-dimension-name" value="{{ dim.name }}" aria-labelledby="tagDimSlot-{{ dim.id }} tagDimNameHead"></td>
                     <td><input type="text" class="form-control js-tag-dimension-desc" value="{{ dim.description }}" aria-labelledby="tagDimSlot-{{ dim.id }} tagDimDescHead"></td>
                     <td>{{ dim.kind }}</td>
@@ -404,7 +407,7 @@ permalink: 5-10_tagDimensions.html
                         {# 這一顆的閘門**自己標一次**：它落在整個「標籤維度清單」區塊的
                              `data-capability="settings:write"` 底下，而它打的是
                              `GET /tags/coverage/untagged`——那一支掛的是 `require_coverage_scope`
-                             ＝`settings:read` ＋ `data:read`（product `app/routers/tags.py`），
+                             ＝`settings:read` ＋ `data:read`（product），
                              既不是寫入、也不只要 settings。§4：「宣告錯一道比沒宣告更貴」，
                              祖先那顆會讓 React 把一顆唯讀查詢擋在寫入能力後面；而區塊上的宣告
                              只表達這一塊的下限，區塊內另有不同要求的控制項仍要自己標。 #}
@@ -431,7 +434,7 @@ permalink: 5-10_tagDimensions.html
                     </td>
                 </tr>
                 {% else %}
-                {# 具名空狀態（round48）：「宣告之後匯入的資料才帶得到那一欄」＝本頁檔頭 ① 那段的
+                {# 具名空狀態：「宣告之後匯入的資料才帶得到那一欄」＝本頁檔頭 ① 那段的
                      結論（哨兵值在匯入時就寫進去，所以宣告之前匯入的檔連這一欄都沒有，只能重新匯入）。 #}
                 <tr><td colspan="8" class="text-center text-gray" data-i18n="settings.noTagDimensions">這個租戶還沒有標籤維度。按上面的「新增標籤維度」宣告第一個；宣告之後匯入的資料才帶得到那一欄，之前匯入的檔要重新匯入才補得起來。</td></tr>
                 {% endfor %}
@@ -460,13 +463,13 @@ permalink: 5-10_tagDimensions.html
     {# ⓘ 說明：既有 flex-row 已經放了標題與「目前選定哪個維度」的說明文字，ⓘ 按鈕直接加進
          同一列，不再另包一層（與 3-1-2/3-1-3 需要保護 aria-labelledby 目標的情況不同——
          這顆標題 div 不是任何 group 的可及名稱來源）。①出處：本區塊上方檔頭
-         （「整個區塊只在選中的維度不是日期維度時存在」）＋ product `app/routers/tags.py` 的
+         （「整個區塊只在選中的維度不是日期維度時存在」）＋ product 的
          `delete_vocabulary`（`_assert_not_filtering`，刪代碼被標籤檢索過濾開著擋下）。 #}
     <div class="flex-row align-items-center gap-8 flex-wrap">
         <div class="text-md text-bold" data-i18n="settings.tagVocabulary">受控詞彙（字典）</div>
         {# 括號是**串起兩個資料節點的分隔符**，自己也要有 key（§4-2）：留成字面量的話，英文模式會在
              `業務方向` 與 `note4` 中間露出一對全形括號。上游同一個 composite 也有正式英譯
-             （product `app/i18n.py` 的 `retrieval.tag_gate_dimension_label`：`{name}（{slot_key}）`／
+             （product 的 `retrieval.tag_gate_dimension_label`：`{name}（{slot_key}）`／
              `{name} ({slot_key})`），也就是半形才是英文那一半的正解。 #}
         <div class="text-gray">{{ vocabDimension.name }}<span data-i18n="common.parenOpen">（</span>{{ vocabDimension.slotKey }}<span data-i18n="common.parenClose">）</span></div>
         <button type="button" class="info-btn" title="受控詞彙（字典）說明" data-i18n-title="help.settings.tagVocabulary.title" data-open-modal="tagVocabularyHelpModal">
@@ -513,13 +516,13 @@ permalink: 5-10_tagDimensions.html
               能力不足。GUIDELINE §4：不做「不渲染／不可按」，鈕照樣按得下去、結果列進 data-toast
          · `tags.code_required`／`tags.code_forbidden_chars`（400，`_validated_code`）＝空值與字元集
          · `tags.code_is_reserved`（400，同函式：`normalize_code(code) == normalize_code(UNSET_TAG_VALUE)`，
-              哨兵字面在 product `app/tag_values.py` 的 `UNSET_TAG_VALUE = "__unset__"`）＝**保留字**，
-              修法是換一個代碼；先前這一段全站沒有落點
+              哨兵字面在 product 的 `UNSET_TAG_VALUE = "__unset__"`）＝**保留字**，
+              修法是換一個代碼——這一顆鈕是它在全站唯一的落點
          · `tags.code_exists`（409，DB 唯一鍵的 IntegrityError）＝**逐字**已經有了 → 直接用既有那一列
          · `tags.code_indistinguishable`（409，`_assert_code_is_distinguishable` 拿 `normalize_code`
               比對）＝大小寫／全半形折疊後撞在一起 → 要改寫法，不是「已經有了」
-       後兩者 product 刻意分成兩支、訊息也不同（一支指名代碼、一支同時指名既有那一個），
-       先前切版把它們折成「這個代碼與既有代碼在比對端分不開」一句——使用者遇到「逐字重複」時
+       ⚠️ 後兩者 product 刻意分成兩支、訊息也不同（一支指名代碼、一支同時指名既有那一個），
+       **切版不可以把它們折成「這個代碼與既有代碼在比對端分不開」一句**——遇到「逐字重複」的人
        會照著去改大小寫，而那條路永遠修不好。 #}
     <div class="flex-row">
         <button data-capability="settings:write" type="button" class="button button-primary" data-toast="代碼已新增|權限不足，無法新增——請找貴租戶的管理者開通|代碼與代碼名稱不可為空|代碼含不可用的字元，請改用不含逗號、引號、反斜線與萬用字元的寫法|__unset__ 是系統保留代碼，請改用別的代碼|這個代碼在這個維度裡已經有了，直接用既有那一列即可|這個代碼與既有代碼只差在大小寫或全半形，比對端分不開，請改一個寫法|新增失敗，請稍後再試" data-i18n-data-toast="toast.createTagCode" data-toast-type="success|warning|warning|warning|warning|warning|warning|error">
@@ -551,8 +554,8 @@ permalink: 5-10_tagDimensions.html
                     <td>{{ row.label }}</td>
                     <td>{{ row.description }}</td>
                     <td>
-                        {# 409 那一段是本輪補的：`DELETE /tags/vocabulary/{id}` 開頭就呼叫
-                             `_assert_not_filtering`（product `app/routers/tags.py`），任一設定檔的
+                        {# 409 那一段不可省：`DELETE /tags/vocabulary/{id}` 開頭就呼叫
+                             `_assert_not_filtering`（product），任一設定檔的
                              `retrieval_filter_mode == "on"` 就 409 `tag_filter_is_on` 並指名是哪幾套。
                              **本頁的示範資料正好在觸發態**（`tagFilterProfiles` 的設置一是 `mode: "on"`）
                              ⇒ 這一顆按下去 100% 撞得到，只演成功等於把整道守衛演掉（§5）。
@@ -593,7 +596,7 @@ permalink: 5-10_tagDimensions.html
 <div data-capability="settings:read data:read" class="block mb-16 flex-row column gap-16">
     {# ⓘ 說明：markup 逐字照抄 `settings/5-2_conversationSettings.html` 出口套用欄那顆既有
          info-btn 六件組。①出處：本區塊自己的檔頭（逐份讀文件、O(文件數) 次上游往返）＋
-         product `app/routers/tags.py` 的 `_coverage_scan_max_documents`／`coverage`。 #}
+         product 的 `_coverage_scan_max_documents`／`coverage`。 #}
     <div class="flex-row align-items-center gap-8">
         <div class="text-md text-bold" data-i18n="settings.tagCoverageScan">標註覆蓋率量測範圍</div>
         <button type="button" class="info-btn" title="標註覆蓋率量測範圍說明" data-i18n-title="help.settings.tagCoverageScan.title" data-open-modal="tagCoverageScanHelpModal">
@@ -622,10 +625,11 @@ permalink: 5-10_tagDimensions.html
                 {% endfor %}
             </select>
             {# 這顆與上面「查看未標註」打的是**同一道守衛**（`GET /tags/coverage` 與 `/coverage/untagged`
-                 都是 `Depends(require_coverage_scope)`，product `app/routers/tags.py`）⇒ 分支集合要一致（§5）。
-                 先前少了那一段：它自己身上沒有 `data-capability`（吃的是區塊上那一顆），而「掛了
-                 `data-capability` 的鈕要有 warning 型的權限不足段」那條測試只看鈕**自己**的屬性，
-                 於是這顆整個掉出母體。子句與英譯逐字沿用同頁「查看未標註」那一顆（§4-2）。 #}
+                 都是 `Depends(require_coverage_scope)`，product）⇒ 分支集合要一致（§5）。
+                 ⚠️ 這一顆的「權限不足」段**測不出來、只能靠人守**：它自己身上沒有 `data-capability`
+                 （吃的是區塊上那一顆），而「掛了 `data-capability` 的鈕要有 warning 型權限不足段」
+                 那條測試只看鈕**自己**的屬性，所以這顆整個不在母體裡，漏掉不會變紅。
+                 子句與英譯逐字沿用同頁「查看未標註」那一顆（§4-2）。 #}
             <button type="button" class="button button-border" data-toast="正在量測標註覆蓋率...|權限不足，無法量測——請找貴租戶的管理者開通|量測完成|文件數超過單次掃描上限，請改用單一資料集範圍|量測失敗，請稍後再試" data-i18n-data-toast="toast.measureCoverage" data-toast-type="info|warning|success|warning|error" data-i18n="settings.remeasureCoverage">重新量測</button>
         </div>
         {# 「查看範圍」的存在理由：量測有上限，選單是縮小範圍的出口。這一句是這顆上限**唯一**的
@@ -642,11 +646,12 @@ permalink: 5-10_tagDimensions.html
              未標註清單沒有每頁筆數選擇器（`perPage = 10` 是切版自己的版面選擇），那顆界線因此
              沒有消費點；它與下面那顆 `scan_documents` 是同一個 group 的姊妹界線（§3-2），一起記在這裡。 #}
         {# 三件式（§4：被 `aria-describedby` 指到的節點裡讀不到那個數字，就等於沒給）：
-             前綴 key ＋ 帶 class 的數字節點 ＋ 單位 key。2000 的正本是 product `app/settings.py` 的
+             前綴 key ＋ 帶 class 的數字節點 ＋ 單位 key。2000 的正本是 product 的
              `coverage_scan_max_documents`，已投影成 `GET /stats/limits` 的 `coverage.scan_documents`
-             （`app/ops_limits.py` 的 `STATS_LIMIT_GROUPS`）——那顆 class 就是 React 執行期填它的槽。
-             先前這裡只給名字不給值，理由寫「真正的數字只在 ③ 說明視窗由 React 執行期讀出來」；
-             但 §4「切版主張需求」的前提是拿不到資料，而正本明明給得出來 ⇒ 版位還是要定出來。 #}
+             （product 的 `STATS_LIMIT_GROUPS`）——那顆 class 就是 React 執行期填它的槽。
+             ⚠️ **這一格要連數字一起定出來，不能只給名字**：「真正的數字由 React 執行期讀」不是
+             留白的理由——§4「切版主張需求」的前提是拿不到資料，而這顆界線正本明明投影得出來，
+             版位就該在切版定死。 #}
         <span class="text-gray" id="scanDocumentsCapHint"><span data-i18n="settings.scanDocumentsCap">單次量測文件數上限</span><span data-i18n="common.labelSep">：</span><span class="js-coverage-scan-max">2000</span><span data-i18n="common.unitItems">個</span></span>
     </div>
 </div>
@@ -666,8 +671,9 @@ permalink: 5-10_tagDimensions.html
      開啟走 `PUT /retrieval/profiles/{no}/tag-filter`，它會**先驗結構再開**：只要還有檔沒把某個維度槽
      寫進索引就 400（`_assert_every_file_carries_the_slots`），旋鈕維持 off。故開關這顆的 toast 一定要有
      那一段 warning——只演成功等於把整道閘門演掉了。
-     這道驗證是一次 DB 查詢（O(檔數)），不再是逐份讀文件的覆蓋率掃描（O(文件數) 次上游往返、有上限、
-     而且存下來的是會過期的快照），所以也不再有「超過掃描上限」「量測途中被改動」那些分支。 #}
+     這道驗證是一次 DB 查詢（O(檔數)），**不是**逐份讀文件的覆蓋率掃描（那會是 O(文件數) 次上游
+     往返、有上限、而且存下來的是會過期的快照）——所以這顆開關**沒有**「超過掃描上限」
+     「量測途中被改動」那些分支，別替它補上。 #}
 {# 租戶能力標記（同 5-2 的理由：唯讀閘要從 markup 讀得出來，不是 React 應用層各自判斷）：檢索過濾旋鈕：PUT …/tag-filter 掛 settings:write，另外要 data:read（開啟要逐檔驗結構）。 #}
 <div data-capability="settings:write data:read" class="block flex-row column gap-16">
     {# ⓘ 說明：markup 逐字照抄 `settings/5-2_conversationSettings.html` 出口套用欄那顆既有
@@ -693,10 +699,10 @@ permalink: 5-10_tagDimensions.html
 
     <div class="table-container scrollTable">
         <table class="default-table">
-            {# 「開啟當下量到的未標註筆數」那一欄已經拿掉：product 的 `tag_untagged_counts` 已隨 migration
-                 `e5c3a90f7b12` 移除（`retrieval.py` 的退休說明），留著就是畫一格永遠
-                 空白的證明欄，而它曾經是「這個設定檔憑什麼可以過濾」的答案。現在那個答案是結構
-                 閘門，沒有 per-profile 的快照可顯示。 #}
+            {# **這張表沒有「開啟當下量到的未標註筆數」那一欄**：`tag_untagged_counts` 在 product
+                 已經不存在（見檔頭那則退休說明），畫出來就是一格永遠空白的證明欄。
+                 「這個設定檔憑什麼可以過濾」的答案現在是**結構閘門**（每一個檔都把這一槽寫進索引），
+                 那是全租戶當下的事實、不是 per-profile 的快照，所以沒有東西可以擺進這一欄。 #}
             <colgroup>
                 <col style="width:140px; min-width:140px;">
                 <col style="width:140px; min-width:140px;">
@@ -725,17 +731,17 @@ permalink: 5-10_tagDimensions.html
                     </td>
                     <td>
                         {# 三件套的第三件（§4）：可見區間 ＋ aria-describedby。上下界出處＝
-                             product `app/profile_config.py` 的 `MIN_RECENT_WINDOW_DAYS = 1`／
-                             `MAX_RECENT_WINDOW_DAYS = 3650`（retrieval.py 以 ge/le 收）。
+                             product 的 `MIN_RECENT_WINDOW_DAYS = 1`／
+                             `MAX_RECENT_WINDOW_DAYS = 3650`（product 以 ge/le 收）。
                              數字獨立成不翻的節點（§3-2：那是資料不是譯文）；id 帶 loop.index（同頁唯一）。 #}
                         <input type="number" class="form-control js-recent-window-days" min="1" max="3650" step="1" value="{{ profile.recentWindowDays }}" aria-labelledby="tagFilterProfileName-{{ loop.index }} tagFilterDaysHead" aria-describedby="tagFilterDaysRange-{{ loop.index }}">
                         <span class="text-gray" id="tagFilterDaysRange-{{ loop.index }}">1 – 3650</span>
                     </td>
                     <td>
-                        {# 閘門換成一次 DB 查詢之後，開啟只有兩種擋法可言：有檔沒把這一欄寫進索引（400），
-                             或存不進去。原本那六段覆蓋率相關的 warning（量不出來／量得不完整／超過掃描
-                             上限／量測途中維度被改動）在 product 已經沒有對應的路徑了——留著就是演一個
-                             回不出來的錯誤。 #}
+                        {# 閘門是一次 DB 查詢，所以開啟只有兩種擋法可言：有檔沒把這一欄寫進索引（400），
+                             或存不進去。**不要補覆蓋率相關的 warning**（量不出來／量得不完整／超過掃描
+                             上限／量測途中維度被改動）——product 沒有任何一條路徑會回那些，列出來
+                             就是演一個回不出來的錯誤（§5）。 #}
                         <button data-capability="settings:write data:read" type="button" id="tagFilterSave-{{ loop.index }}" aria-labelledby="tagFilterProfileName-{{ loop.index }} tagFilterSave-{{ loop.index }}" class="button button-border button-sm" data-toast="檢索過濾設定已儲存|權限不足，無法儲存——請找貴租戶的管理者開通|還有檔沒有把這一欄寫進索引，過濾維持關閉|儲存失敗，請稍後再試" data-i18n-data-toast="toast.saveTagFilter" data-toast-type="success|warning|warning|error" data-i18n="action.save">儲存</button>
                     </td>
                 </tr>
@@ -751,6 +757,25 @@ permalink: 5-10_tagDimensions.html
          role="alert"：它是動態出現的錯誤訊息（GUIDELINE §4）。 #}
     {# role="alert" 只框訊息本體：live region 內含整張表與逐列檔名的話，那一區任何一次重繪都會讓
          報讀器把整張表重念一遍（全站其他 live region 一律只框一句）。 #}
+    {# ⚠️ **整區包在 `{% if blockedSlots.length %}` 裡，而且它沒有空狀態列。**
+         `blockedSlots` 不是一支查詢端點的結果，是**那一顆「儲存」被擋下時 400 的內容**
+         （product 的 `_assert_every_file_carries_the_slots`，
+         detail 帶 `code: "tag_slots_missing"` ＋ `gaps` 逐維度逐缺法）。而那支函式的第三行逐字是
+         `gaps = tag_values.slots_missing_from_files(...)` ＋ `if not gaps: return`——
+         **沒有缺口就不 raise**，所以「拿到了 gaps、而且它是空的」這個狀態上游產不出來。
+         ⚠️ **不可以給它一個 `{% for %}…{% else %}` 空狀態列**（例如「這裡是空的＝沒有檔卡住…」）：
+         那畫的是一個走不到的態，而且它會被畫在一句 `role="alert"` 的紅字標題底下——「沒有檔卡住」
+         與「下列維度還不是每一份資料都帶得到」同時出現在畫面上。靜態稿一次只畫得出一態，
+         所以這個矛盾在切版上看不見。正解不是把那一句搬到紅字之外，是**根本不畫**
+         （§5：列一個上游產不出來的結果與只演成功一樣是說謊）。
+         **好消息那一態另有落點**：儲存成功時的第 1 段 toast「檢索過濾設定已儲存」——
+         過濾真的開起來了，就是「沒有檔卡住」最直接的說法，不需要在一張表裡再講一次。
+       §5「無資料列正典」的兩支判準這張表都不成立：列上沒有逐列刪除／撤銷動作（①），
+         它也不是同頁查詢鈕或篩選欄的結果表（②）；共同精神「使用者有辦法讓這張表變成零列」
+         在這裡答案是不能——他把檔補齊之後，得到的是**整個 400 消失**，不是一張零列的表。
+       `{% if …length %}` ＋ 無 `{% else %}` 的 `{% for %}`＝「這份清單在存在時保證非空」的既有寫法
+         （正典：`qaHistory/4-2` 的 `detailPolicyDetections`）。示範資料非空 ⇒ 這一頁畫的是被擋下那一態。 #}
+    {% if blockedSlots.length %}
     <div class="flex-row column gap-8">
         <div class="text-bold text-red" role="alert" data-i18n="settings.tagFilterBlockedTitle">下列維度還不是每一份資料都帶得到，現在開啟過濾會把那些檔靜默排除</div>
         <div class="table-container scrollTable">
@@ -798,14 +823,13 @@ permalink: 5-10_tagDimensions.html
                         <td data-i18n="settings.tagFilterFixNotMapped">重新匯入一次就會帶上這一欄，沒填的格子由系統自動補「未標註」。</td>
                         {% endif %}
                     </tr>
-                    {% else %}
-                    <tr><td colspan="4" class="text-center text-gray" data-i18n="settings.tagFilterNoBlockedFiles">這裡是空的＝沒有檔卡住：每一個會產生述詞的維度，每一份檔都已經把那一欄寫進索引了。</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
         <p class="text-gray" data-i18n="settings.tagFilterBlockedHint">這張表與維度的種類無關：「未標註」現在是匯入時就寫進去的哨兵值，三種 kind 都表達得出來，所以標了幾成不影響會不會漏文件。剩下的唯一缺口是「這個檔連這一欄都沒有」——那是結構事實，只有重新匯入（或改成逐列匯入）補得起來。</p>
     </div>
+    {% endif %}
 </div>
 
 {# 「標籤檢索過濾」的說明視窗：②③留空，理由同上。 #}
@@ -828,8 +852,8 @@ permalink: 5-10_tagDimensions.html
 {% set deleteMessageKey = "settings.confirmDeleteTagDimension" %}
 {% set deleteMessageZh = "刪除後這個維度的整份字典也會一起消失，已經標註在文件上的值會變成字典外的值。確定要刪除" %}
 {% set deleteCapability = "settings:write" %}
-{# 409 那一段是本輪補的：`DELETE /tags/dimensions/{id}` 在刪之前呼叫 `_assert_not_filtering`
-     （product `app/routers/tags.py`），任一設定檔的 `retrieval_filter_mode == "on"` 就 409
+{# 409 那一段不可省：`DELETE /tags/dimensions/{id}` 在刪之前呼叫 `_assert_not_filtering`
+     （product），任一設定檔的 `retrieval_filter_mode == "on"` 就 409
      `tag_filter_is_on`。**本頁示範的 `tagFilterProfiles` 設置一正是 `mode: "on"`** ⇒ 必觸發。
      是 warning 不是 error（關掉標籤過濾就刪得動，那道守衛自己寫著「不是永久禁止」）。
      `deleteToastType` **必須跟著給**：delete-modal 少給就落回預設的兩段 `success|error`，

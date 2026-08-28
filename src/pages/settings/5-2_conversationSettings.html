@@ -5,15 +5,15 @@ titleKey: nav.conversationSettings
 pageHeading: 對話設定
 permalink: 5-2_conversationSettings.html
 ---
-{# 對話設定 hub（SaaS 新需求，21 頁真 app 無對應）。逆向自 gufofaq-saas product
-     `app/profile_config.py` 的 `PROFILE_FIELD_DEFAULTS`（欄位契約正本，刻意住在兩個消費者之上的一層）
-     ＋ `app/routers/settings_hub.py` 的 `ProfileConfigIn`／`ProfileConfigOut`＝GufoRAG per-profile
-     ChatConfig 中「租戶該調」的旋鈕，收進單一頁。本頁已整合並取代原散落的三頁（檔案已刪、導覽已改指本頁）：
-     知識檢索邏輯（5-2-1）、提示詞管理（5-4-1）、歡迎語設定（5-4-2）。取代關係（§5）：
-     － 5-4-1 草稿卡編輯契約（.js-prompt-input／.js-prompt-save@promptManagement.js）由 components/prompt-edit
-        （singleTest.js 同名契約）＋ /prompts 版本端點取代；
-     － 真 app 5-2-1 的 #featureDisabledOverlay（knowledgeRetrieval.js toggleDisabledOverlay）由 SaaS 訂閱閘門
-        ui/subscription-gate 在 app-shell 層取代，不再屬本頁。
+{# 對話設定 hub（SaaS 新需求）。逆向自 product 的 `PROFILE_FIELD_DEFAULTS`
+     （欄位契約正本，刻意住在兩個消費者之上的一層）＋ `ProfileConfigIn`／`ProfileConfigOut`
+     ＝GufoRAG per-profile ChatConfig 中「租戶該調」的旋鈕，全部收進這一頁。
+     **這一頁是三塊設定的唯一去處**：知識檢索邏輯、提示詞管理、歡迎語設定，導覽也只指這裡。
+     兩個對外的轉換契約（§5）：
+     － 提示詞草稿卡的編輯契約是 `.js-prompt-input`／`.js-prompt-save`，
+        由 components/prompt-edit ＋ `/prompts` 版本端點承載；
+     － 「功能未開通」的遮罩不屬於這一頁：SaaS 訂閱閘門 `ui/subscription-gate` 在 app-shell 層
+        統一處理，本頁不自己畫一層 overlay。
      階層＝資料真實階層：跨三設置共用的（前台預設）在 profile 頁籤之外；每設置
      各一份的旋鈕在 profile 頁籤底下的主題子頁籤內。設計正本：spec 2026-07-22-conversation-
      settings-hub-design.md。 #}
@@ -23,7 +23,7 @@ permalink: 5-2_conversationSettings.html
      components/manage-tenant-modal 的「模型開通」（平台端設白名單，值域同樣是 `gufo.list_models()`
      的 `m["value"]`）與 2-2-4 的執行覆寫下拉——三處都用這一組值（§6：同一份業務目錄不得各烤一份）。 #}
 {% set llmModels = ["openai:gpt-4o", "openai:gpt-4o-mini", "openai:gpt-4.1", "anthropic:claude-3-5-sonnet"] %}
-{# 重排序器與檢索後端的**分數尺目錄**：`GET /settings/rerankers`（product `settings_hub.py` 原樣轉出
+{# 重排序器與檢索後端的**分數尺目錄**：`GET /settings/rerankers`（product 原樣轉出
      chatbot 的 `GET /api/config/rerankers`）。形狀逐欄照端點：rerankers[] 與 retrieval_backends[]
      各帶 `name`／`label`／`score_scale{kind,min,max,note}`，外加一段 `mixed_scale_warning`。
      **這一份不是切版自己維護的清單**——上游的 module docstring 逐字寫著硬編下拉的後果，還舉了實例：
@@ -44,10 +44,10 @@ permalink: 5-2_conversationSettings.html
 {# **未啟用重排序時那兩把尺（weaviate／gufonet）的示範不住在這一頁**，它在元件庫頁
      `ui/score-scale-note` 的第二份示範裡。理由：本頁的示範狀態是「重排序開著 ＋ llm_reranker」，
      依 `GET /settings/rerankers` 的判斷順序，`enable_rerank == false` 那三支分派在這一頁
-     **永遠走不到**——原本這裡留著一份 `retrievalBackends`，全站零消費點（沒有任何迴圈或插值讀它），
-     而它上面的註解卻宣稱那段實測數字是「使用者判斷門檻該填多少的唯一依據」。
-     §5「每個分支結果都要看得到」：沒有頁面演得出來的分支等於沒驗收過，所以那把尺要落在
-     元件庫頁那份 `scaleNoteText`（實測數字原文照抄、不縮寫），不是留一份渲染不出來的資料在這裡。 #}
+     **永遠走不到**。所以這一頁**不留 `retrievalBackends` 那份資料**：留著就是一份全站零消費點
+     的陣列（沒有任何迴圈或插值讀它），而那段實測數字自稱是「使用者判斷門檻該填多少的唯一依據」。
+     §5「每個分支結果都要看得到」：沒有頁面演得出來的分支等於沒驗收過，所以那把尺的家在
+     元件庫頁那份 `scaleNoteText`（實測數字原文照抄、不縮寫），不是一份渲染不出來的資料。 #}
 {# 目前生效的那把尺（判斷順序是端點契約的一部分，見 `GET /settings/rerankers` 的 docstring）：
        enable_rerank ⇒ rerankers[] 裡 reranker_name 那一筆
        否則 ratio == 0 ⇒ weaviate ／ ratio == 1 ⇒ gufonet ／ 0 < ratio < 1 ⇒ 兩把尺並存，顯示 mixed 警語
@@ -65,21 +65,21 @@ permalink: 5-2_conversationSettings.html
 
 {# 存檔失敗時把後端的 detail 原樣外顯（fail loud，不靜默還原成舊值）。本頁近百個欄位，制式的
      「儲存失敗」等於要人逐欄猜；輸出規則的驗證訊息本來就會指名第幾條、哪個參數、界線是多少
-     （product app/output_rules.py），丟掉它就是把那份指名浪費掉。role="alert" 讓它是 live region
+     （product），丟掉它就是把那份指名浪費掉。role="alert" 讓它是 live region
      ——存檔是使用者按了鈕才發生的，訊息出現時焦點不在這裡，不報讀就等於沒說。
      示範內容取自輸出規則的 400 訊息；空字串時整條掛 .hidden（同 1-1-3 的 excelHeaderWarning）。
-     「第 N 條」是 **0-based**（`for idx, rule in enumerate(rules)`，output_rules.py），
+     「第 N 條」是 **0-based**（`for idx, rule in enumerate(rules)`，product），
      而下面 `outputRules` 陣列的 index 7 正是 `link_max`——指名要指得對，否則這條紅字的價值
-     （告訴人是哪一條、哪個參數）就沒了。上一版寫「第 0 條」，那是 `list_marker`，
-     而它連參數欄都沒有，不可能產生這則訊息（§6 示範資料演的必須是一個真實可能的狀態）。 #}
+     （告訴人是哪一條、哪個參數）就沒了。⚠️ 別隨手寫「第 0 條」：index 0 是 `list_marker`，
+     它連參數欄都沒有，不可能產生這則訊息（§6 示範資料演的必須是一個真實可能的狀態）。 #}
 {% set saveConfigError = "output_rules 第 7 條（link_max）的 value 必須介於 1 與 20 之間（收到 -1）" %}
 <p class="text-red mb-16{% if not saveConfigError %} hidden{% endif %}" role="alert">{{ saveConfigError }}</p>
 
-{# 頁層說明：先盤點過本頁既有這一段（`settings.conversationSettingsIntro`），原文只講「三套設定檔
-     各一份、於上方切換」，沒提到模式的能力差異——本頁是全站唯一有模式適用性的頁面，不生效的控制項
-     一律隱藏（見上方 `settings.modeApplicabilityHint`），所以「切到另一個模式會多／少哪些能力」
-     只能寫在這裡：使用者看不到那些欄位，唯一能知道「換個模式才有這個能力」的地方就是這段。
-     兩份清單逐字取自 saas `apps/web/lib/modeMatrix.ts` 的 `MODE_APPLICABILITY`：傳統搜尋專屬
+{# 頁層說明（`settings.conversationSettingsIntro`）**必須講出兩種模式的能力差異**，不能只講
+     「三套設定檔各一份、於上方切換」：本頁是全站唯一有模式適用性的頁面，不生效的控制項一律隱藏
+     （見下方 `settings.modeApplicabilityHint`）——使用者根本看不到那些欄位，這一段就是他唯一
+     能知道「換個模式才有這個能力」的地方。
+     兩份清單逐字取自 gufofaq-saas `apps/web/lib/modeMatrix.ts` 的 `MODE_APPLICABILITY`：傳統搜尋專屬
      （`intension_system_prompt`／`index_tiers` 的逐層優先序與逐層意圖／`use_knowledge_mode`／
      `search_total_number`）與 Agent 對話專屬（`agent_system_prompt`／`respond_system_prompt`／
      `agent_max_iterations`／`enabled_builtin_tools`／`mcp_server_ids`／`glossary_table_ids`）。 #}
@@ -90,8 +90,8 @@ permalink: 5-2_conversationSettings.html
      兩者共用同一份「設置一/二/三」清單資料化（沿 5-2-1）。active＝檢視中頁籤；default＝前台預設設置，
      radio 綁 default，並帶 value=設置序號＋值載體 hook class js-front-qa-default 供 React 讀「選了哪個設置當前台預設」
      （否則 React 只能靠 DOM 索引猜，§5 值載體）。data-setting-sn 是 React 讀值（切換即重載該設置全部 config），非內容切換。
-     （label `settings.frontQaDefault` 英譯用 frontend 對齊站內拼寫；saas 已跟上，
-     `apps/web/lib/i18n/messages.en.json` 的同 key 逐字相同，round40 複驗。） #}
+     （label `settings.frontQaDefault` 的英譯用 frontend、對齊站內拼寫；gufofaq-saas
+     `apps/web/lib/i18n/messages.en.json` 的同一顆 key 要逐字相同。） #}
 {% set settingTabs = [
   { label: "設置一", active: true, i18nKey: "settings.config1" },
   { label: "設置二", default: true, i18nKey: "settings.config2" },
@@ -123,7 +123,7 @@ permalink: 5-2_conversationSettings.html
     </div>
 </div>
 
-{# ── 設置層頂端：對話模式總開關（product app/routers/settings_hub.py 的 ProfileConfigIn.search_mode 傳統/agent）＋ Agent 最大迭代次數（沿 2-2-1）。
+{# ── 設置層頂端：對話模式總開關（product 的 ProfileConfigIn.search_mode 傳統/agent）＋ Agent 最大迭代次數（沿 2-2-1）。
      驅動下方各子頁籤「僅某模式生效」欄位的標示。值載體走 hook class js-chat-mode／js-agent-max-iter
      （React 接手，切版不接行為），不掛 data-toast（§5）。 #}
 <div class="block mb-10">
@@ -144,8 +144,8 @@ permalink: 5-2_conversationSettings.html
             </div>
         </div>
         {# 數值欄一律 type="number" ＋ 合法區間（見本頁「生成設定」子頁籤檔頭的理由與出處）：
-             agent_max_iterations 的 1–20 來自 product app/chat_config_limits.py 的
-             MIN_AGENT_MAX_ITERATIONS／MAX_AGENT_MAX_ITERATIONS（settings_hub.py ProfileConfigIn 以它們設 ge/le）。 #}
+             agent_max_iterations 的 1–20 來自 product 的
+             MIN_AGENT_MAX_ITERATIONS／MAX_AGENT_MAX_ITERATIONS（product ProfileConfigIn 以它們設 ge/le）。 #}
         <div class="form-group filter-field row mobile-col col-4-md col-12-sm">
             <div class="label">
                 <label for="profileAgentMaxIter" class="control-label" data-i18n="qaTest.agentMaxIter">Agent 最大迭代次數</label>
@@ -164,22 +164,22 @@ permalink: 5-2_conversationSettings.html
            的反面，決定「該不該出現」的是前者）。
          ②**同頁其他欄位目前的值**，四處：
            - 知識使用模式＝`none` ⇒「可回答性閘」整區、「啟用引用標註」、「選用資料筆數」三處都不顯示
-             （GufoRAG chatbot `app/services/chat.py` 的 `GATE_KNOWLEDGE_MODE_NONE`：生成端整段參考資料
+             （GufoRAG chatbot 的 `GATE_KNOWLEDGE_MODE_NONE`：生成端整段參考資料
              都不組，閘照判會**反向**生效——素材恆空即誠實查無，而 `none` 正是要模型用自己的知識回答；
-             `app/services/citation_guard.py` 的 `visible_card_count` 對 `none` 直接回 0）。
+             GufoRAG chatbot 的 `visible_card_count` 對 `none` 直接回 0）。
              **這一條只在傳統搜尋模式成立**：agent 模式下 `use_knowledge_mode` 本來就整顆不生效
-             （`app/routes/chat.py` 的 `_warn_agent_mode_inert_knobs`），那一側的閘照常運作，
+             （GufoRAG chatbot 的 `_warn_agent_mode_inert_knobs`），那一側的閘照常運作，
              一起藏掉等於叫使用者去關一個正在運作的閘。
            - 「啟用重排序」關閉 ⇒「重排序模型」與它旁邊那行「目前這把尺」不顯示（manager 只在
-             `use_reranker` 為真時採用，見 `app/services/kb_tools.py`）。
-           - 「啟用可回答性閘」關閉 ⇒ 它的判準與分數門檻不顯示（`app/services/grounding.py` 的
+             `use_reranker` 為真時採用，見 GufoRAG chatbot）。
+           - 「啟用可回答性閘」關閉 ⇒ 它的判準與分數門檻不顯示（GufoRAG chatbot 的
              `_score_floor` 只在閘內呼叫）。
            - 「QA 直答」＝停用 ⇒ 它的分數門檻／判定補充說明／QA 集選取不顯示
-             （`app/services/qa_direct.py` 的 `qa_direct_active`／`_enabled`）。
-         **已回流**（gufofaq-saas@648c3cc 複驗）：saas `apps/web/lib/i18n/messages.{zh,en}.json` 的
+             （GufoRAG chatbot 的 `qa_direct_active`／`_enabled`）。
+         **已回流**：gufofaq-saas `apps/web/lib/i18n/messages.{zh,en}.json` 的
          `settings.modeApplicabilityHint` 與本頁逐字相同，`page.tsx` 也照②在渲染。
-         （複驗是**雙向**的：這一則先前掛著 `@308642f` 的待回流，而上游早就跟上了——
-         標註留在原地會讓下一輪以為還有一個缺口要修。） #}
+         ⚠️ 「待回流」這種標註要**雙向**複驗：只查切版這一側、不查下游有沒有跟上，就會留下一個
+         其實已經補好的缺口，害讀的人去修一件已經做完的事。 #}
     <div class="text-gray mt-8" data-i18n="settings.modeApplicabilityHint">哪些欄位會出現，取決於對話模式與其他欄位目前的值——在目前設定下不會生效的欄位一律不顯示。</div>
 </div>
 
@@ -219,10 +219,11 @@ permalink: 5-2_conversationSettings.html
      （整塊寫入都要 `settings:write`），而 §4「前三軸標在觸發寫入的那顆控制項上，不必往上推導祖先」
      照舊成立，故本頁**每一顆送 API 的鈕各自也標了一次**——寫入標 `settings:write`、兩顆查詢鈕標
      `settings:read`；反查指令 `grep -n '<button data-capability' src/pages/settings/5-2_conversationSettings.html`。
-     （不寫顆數：先前這裡寫「六顆」並列了六個選擇器，而實際是八行、其中兩行在 `{% for %}` 裡
-     ——以 dist 為母體是十一顆，§1-2「顆數與頁數的普查母體一律是 `dist`」、§3-2「能不寫死計數就不要寫」。）
-     原本這裡寫「本頁只有一種寫入能力，逐個控制項掛只是噪音，故單位是面板」——那是自創的說法，
-     而且與同檔的 markup 自相矛盾（那六顆本來就各自標了）。 #}
+     ⚠️ **這裡不寫顆數**（§3-2「能不寫死計數就不要寫」）：原始碼裡的鈕有幾行、與 dist 展開後
+     有幾顆是兩個數字（有些行在 `{% for %}` 裡），而 §1-2 規定顆數與頁數的普查母體一律是 `dist`
+     ——寫一個數字進來，兩種數法都會有人拿它當錯的。
+     ⚠️ 也**不可以**寫成「本頁只有一種寫入能力，逐個控制項掛只是噪音，故單位是面板」：那與 §4
+     的分工相反，也與同檔的 markup 自相矛盾（每一顆鈕本來就各自標了）。 #}
 <div class="tab-content" data-capability="settings:write" id="panelRetrieval">
     {# 從其他設定檔複製…：target＝目前檢視中的設定檔（上方設置頁籤）。開窗需先選來源＝業務條件開窗，
          鈕保留 hook class .js-copy-config、不掛 data-open-modal（§5）；彈窗本體見頁尾 include。 #}
@@ -232,26 +233,27 @@ permalink: 5-2_conversationSettings.html
     {# ── 版面 A：傳統搜尋模式（三層 + 逐層意圖）────────────────────────────── #}
     <div class="block flex-row column gap-10 relative">
         <div class="tablelist-title" data-i18n="settings.tiersTraditional">分層檢索（傳統搜尋模式）</div>
-        {# 全部啟用/停用意圖：這兩顆 id 各被真 app **兩支** js 綁住，兩邊都會跑——
-             main.js:266/284 本地勾/取消全部 switch，且啟用先驗「任務描述不得為空」，失敗就開 intentionModal
-               並 return（條件開窗業務判斷 §5，故不掛 data-open-modal，id 即 React 綁定記號）；
-             knowledgeRetrieval.js:459/487 另外把 PrioritySettings 寫回並 await saveSettingProfile，
-               成功 `已啟用/停用設置N的全部意圖判斷`、catch `操作失敗`。
-             ——**它們送 API**（③ → data-toast 列全結果 §5）。只讀 main.js 那半支會把它們誤判成純前端鈕。
-             **這兩顆打的是 retrieval 那一支，不是 settings_hub**：saas `apps/web/app/(app)/conversation-settings/RetrievalPanel.tsx`
-             的 `setAllIntent` → `putProfile` → `PUT /api/retrieval/profiles/{profile_no}`（body 只有
-             `dataset_tiers`／`intent_tiers`），正本是 gufofaq-saas product `app/routers/retrieval.py`
-             的 `save_profile`（`require_capability("settings","write")`）。它自己的出口是
+        {# 全部啟用/停用意圖：`#openPrioritySwitch`／`#closePrioritySwitch` 兩顆 id 是**業務掛點**
+             （轉換契約，React 端照它們接），所以 id 本身就是綁定記號、不必再加 hook class。
+             **它們送 API，不是純前端的全選鈕** ⇒ ③ → data-toast 列全結果（§5）。
+             行為有兩半：先在本地把整排 switch 勾／取消（啟用那一半要先驗「任務描述不得為空」，
+             沒過就開 `intentionModal` 並中止——那是業務條件開窗，故不掛 data-open-modal），
+             接著把逐層優先序寫回並存檔。⚠️ 只看本地那一半，會把這兩顆誤判成純前端鈕。
+             **這兩顆打的是 retrieval 那一支，不是 settings_hub**：gufofaq-saas
+             `apps/web/app/(app)/conversation-settings/RetrievalPanel.tsx` 的 `setAllIntent`
+             → `putProfile` → `PUT /api/retrieval/profiles/{profile_no}`（body 只有
+             `dataset_tiers`／`intent_tiers`），正本是 product 的 `save_profile`
+             （`require_capability("settings","write")`）。它自己的出口是
              `assert_profile_no`、`_own_profile`、`assert_index_list_within_limit`（逐層資料集數超限 400）、
              `_sync_then_commit`（GufoRAG 同步失敗）——這兩顆只翻 `intent_tiers` 的開關，逐層清單不動，
              故 400 那一族踩不到，toast 兩條就夠。
-             （先前這裡引的是 `update_profile_config` 的逐欄守衛清單——那支收的是 `ProfileConfigIn`，
-             **54 欄裡沒有 `intent_tiers`**：repo 對、檔對、符號真的存在，只是那支端點與這兩顆鈕無關。
-             那份守衛清單的家在頁尾「儲存對話設定」那一顆。）
-             （原本這句寫「400 **只在**那三欄才 raise」——負面斷言的舉證責任是列出全部出口，
-             而那個範圍是錯的；結論成立，措辭不成立，§3-2。）
+             ⚠️ **別引 `update_profile_config` 的逐欄守衛清單**：那支收的是 `ProfileConfigIn`，
+             **54 欄裡沒有 `intent_tiers`**——repo 對、符號真的存在，只是那支端點與這兩顆鈕無關。
+             那份守衛清單的家在頁尾「儲存對話設定」那一顆。
+             ⚠️ 也**別寫成「400 只在那三欄才 raise」**：負面斷言的舉證責任是列出全部出口（§3-2），
+             結論就算對，那種措辭也立不住。
              設置編號無法在切版插值，故略去（§6）。
-             **權限不足那一段是本輪補的**（本頁六顆 `settings:write` 鈕同辦）：`data-capability`
+             **權限不足那一段不可省**（本頁每一顆 `settings:write` 鈕同辦）：`data-capability`
              不足時 React 端**不做「不渲染」**——「低於該級不渲染」是 `data-platform-role` 的規則
              （§5，它的單位是整塊唯讀），而 capability 是逐 token 的細粒度，做不到逐鈕過濾 ⇒
              403 是真實可達的結果，一律列進 `data-toast`。子句與 5-1-1／5-3 的那句**逐字相同**
@@ -291,9 +293,10 @@ permalink: 5-2_conversationSettings.html
         {% for level in priorityLevels %}
         <div class="flex-row column gap-16 priority-box">
             <div class="flex-row align-items-center gap-12">
-                {# tablelist-title＝ui/tablelist-title 純樣式原子（有 scss 主人），且真 app 業務 js 會改寫其文字
-                     （abTest.js／singleTest.js 的 .text(...)）＝轉換契約，保留。（真 app 同處另有的 tablelist-asking
-                     容器兩 repo 皆無 scss／js／契約＝無主 class，§4 不掛，排版全交 flex 工具。）
+                {# `tablelist-title` ＝ ui/tablelist-title 這顆純樣式原子（有 scss 主人），而且業務端會
+                     改寫它的文字（A/B 測試與單題測試兩處都會）＝**轉換契約**，所以留著。
+                     （同一處還有一個 `tablelist-asking` 容器：它沒有 scss、沒有掛點、也不在任何契約上
+                     ＝無主 class，§4 不掛，排版全交給 flex 工具。）
                      switch 的可及名稱以 aria-labelledby 併讀「層級＋意圖判斷啟用」，三顆才分得出高/中/低（id 用迴圈變數組，§4）。 #}
                 <div class="tablelist-title" id="intentLevelTitle-{{ loop.index }}" data-i18n="{{ level.i18nKey }}">{{ level.title }}</div>
                 <div class="flex-row align-items-center gap-8">
@@ -331,7 +334,7 @@ permalink: 5-2_conversationSettings.html
 
     {# ── 版面 B：Agent 對話模式（只分使用/不使用，無逐層意圖）──────────────────
          示範資料＝版面 A 的同一批分類，演的是同一個資料集在 agent 模式下的樣子（§6 示範資料要自洽）。
-         `tierless` 讓 priority-table 把下拉收成「使用中/不使用」。**priority 值刻意保留原本的高/中/低**：
+         `tierless` 讓 priority-table 把下拉收成「使用中/不使用」。**priority 值刻意保留高/中/低**：
          agent 模式不分層，但底層資料沒有被抹平——切回版面 A 時三層要原封不動還在（見元件檔頭）。
          若這裡把三層都改寫成「高優先級」，示範的就變成一個切版自己都不相信的資料模型。 #}
     <div class="block flex-row column gap-10 relative">
@@ -384,17 +387,18 @@ permalink: 5-2_conversationSettings.html
         <div class="flex-row column gap-8">
             <div class="tablelist-title" data-i18n="settings.fieldNaming">欄位命名</div>
             {# 槽數從陣列推導、不烤進譯文（§6 能推導的數字不寫死；§4-2 那個數字是資料不是譯文）。
-                 值域是 `field_schema.SLOTS` 全部 22 個（21 個進索引的 ＋ internal_note；正本 product app/field_schema.py 的 SLOTS）。
+                 值域是 `field_schema.SLOTS` 全部 22 個（21 個進索引的 ＋ internal_note；正本 product 的 SLOTS）。
                  note1／note2 的顯示名與 5-3 的歸因維度、4-2 的來源歸因列一致（「承辦組室」「業務範疇」）
                  ——那三頁演的是同一個示範租戶，而這一頁是那份 `RetrievalProfile.field_labels` 的
-                 **唯一編輯畫面**，不一致的話讀的人推不出哪一份算數（§6 跨頁自洽）——原本只列到 note5，
-                 於是 note6..note10／date2／date3 這七個槽**裝得下資料卻永遠命不了名**：
-                 5-3 的歸因維度渲染得出它們的顯示名、5-10 也讓維度掛得上去。 #}
+                 **唯一編輯畫面**，不一致的話讀的人推不出哪一份算數（§6 跨頁自洽）。
+                 ⚠️ **22 個槽一個都不能少**：只列到 note5 的話，note6..note10／date2／date3 這七個槽
+                 就變成「裝得下資料卻永遠命不了名」——5-3 的歸因維度渲染得出它們的顯示名、
+                 5-10 也讓維度掛得上去，只有這一頁沒有它們的輸入框。 #}
             <div class="text-gray"><span data-i18n="settings.fieldNamingDescPrefix">為此設定的 </span><span>{{ fieldSlotCatalog.length }}</span><span data-i18n="settings.fieldNamingDescSuffix"> 個欄位槽命名「此設定的顯示名」</span></div>
-            {# 長度界線（round47）：這一整區 22 顆輸入框先前**一句提示都沒有、也沒有任何
-                 `aria-describedby`**——它是全站唯一一組「22 個輸入框、零界線宣告」的欄位群，
-                 而每一顆都在 `maxLength` 之外靜默地被上游擋掉。
-                 出處 product `app/limits/chat_config_limits.py` 的
+            {# 長度界線：這一整區 22 顆輸入框**必須有一句常駐提示 ＋ `aria-describedby`**——
+                 每一顆都會在超過 `maxLength` 時被上游靜默擋掉，沒有這一句就是 22 個輸入框
+                 零界線宣告，使用者只有送出被拒時才知道有上限。
+                 出處 product 的
                  `FIELD_LABEL_LIMITS["label"].max_len`（＝`MAX_FIELD_LABEL_LEN`），
                  投影在 `GET /settings/chat-config-limits` 的 `field_label.label.max_len`。
                  **一份 hint 給整組用**（同本頁 `policyTopicLimitsHint` 的做法）：那顆常數的檔頭
@@ -404,11 +408,11 @@ permalink: 5-2_conversationSettings.html
         </div>
         <div class="flex-row flex-wrap gap-16">
             {# **沒改過名的槽留空**（下面兩個迴圈的 `value` 只吃 `fieldSlotLabels`，不退回 `defaultLabel`）：
-                 上游 `put_field_labels` 是**整份取代**且 `clean = {k: v for … if v.strip()}`——照先前那樣把
-                 22 顆槽全部預填成預設名送出去，等於把每一顆都寫成顯式標籤，之後 `get_field_labels`
-                 再也分不出「沒改過名」與「改成跟預設一樣」。預填也讓 `placeholder`
+                 上游 `put_field_labels` 是**整份取代**且 `clean = {k: v for … if v.strip()}`——把
+                 22 顆槽全部預填成預設名再送出去，等於把每一顆都寫成顯式標籤，之後 `get_field_labels`
+                 再也分不出「沒改過名」與「改成跟預設一樣」。預填還會讓 `placeholder`
                  （`settings.displayNamePlaceholder`）在 dist 全站零可見。
-                 saas 端本來就是 `value={fieldLabels[key] ?? ""}` ＋ placeholder。 #}
+                 gufofaq-saas 端也是 `value={fieldLabels[key] ?? ""}` ＋ placeholder。 #}
             {% for slot in fieldSlotCatalog %}{% if not slot.productOnly %}
             <div class="form-group col-6-md col-12-sm">
                 <div class="label label-md">
@@ -445,10 +449,11 @@ permalink: 5-2_conversationSettings.html
         </div>
         {# **這一區有自己的送出路徑**，不隨頁尾那顆「儲存對話設定」走：欄位命名寫的是
              `RetrievalProfile.field_labels`，端點是 `PUT /retrieval/profiles/{no}/field-labels`
-             （product `app/routers/retrieval.py` 的 `put_field_labels`，`require_capability("settings","write")`），
+             （product 的 `put_field_labels`，`require_capability("settings","write")`），
              而頁尾那顆打的是 `PUT /settings/profiles/{no}`——`ProfileConfigIn` 裡**沒有** `field_labels` 這一欄。
-             先前整區 22 顆輸入框一個送出路徑都沒有：所有規則都是**從按鈕出發**的（有鈕才查它的
-             toast 與閘門），一顆不存在的按鈕不在任何母體裡，於是這個缺口結構上看不到。
+             ⚠️ **這顆鈕不能少**，而且少了不會被任何規則抓到：全站的檢查都是**從按鈕出發**的
+             （有鈕才查它的 toast 與閘門），一顆不存在的按鈕不在任何母體裡，所以「22 個輸入框
+             沒有送出路徑」這種缺口結構上看不見，只能靠人記得。
              分支對回該端點：`require_capability` 的 403、鍵不是合法 slot key 的 400、其餘 error。 #}
         <div class="flex-row">
             <button data-capability="settings:write" type="button" class="button button-primary js-save-field-labels" data-toast="欄位命名已儲存|權限不足，無法儲存——請找貴租戶的管理者開通|欄位鍵不合法|儲存失敗，請稍後再試" data-i18n-data-toast="toast.saveFieldLabels" data-toast-type="success|warning|warning|error" data-i18n="settings.saveFieldLabels">儲存欄位命名</button>
@@ -472,8 +477,7 @@ permalink: 5-2_conversationSettings.html
              沿用「主回答」則會變成標題撐太大；而且同字面連續兩行也會直接畫成兩顆一模一樣的標題。
              ⓘ 說明：markup 逐字照抄本頁既有的 info-btn 六件組（§1-2 無 html 元件契約），只換
              title/key/data-open-modal 三個值。①出處＝本子頁籤檔頭（全部欄位為值載體、統一由底部
-             「儲存對話設定」直送）與 product `app/routers/settings_hub.py` 的 `ProfileConfigIn`／
-             `app/profile_config.py` 的 `PROFILE_FIELD_DEFAULTS`。
+             「儲存對話設定」直送）與 product 的 `ProfileConfigIn`／`PROFILE_FIELD_DEFAULTS`。
              ①**不點名**「選用資料筆數」「啟用引用標註」「重排序模型」三欄：它們會被值相依藏起來
              （見本頁 tab 列下方那段檔頭清單的②），把藏起來的欄位寫進說明等於從另一個出口把它攤回
              畫面上——`components/help-modal` 檔頭對②講的是同一件事，①手寫的那段同樣受它管。 #}
@@ -488,21 +492,22 @@ permalink: 5-2_conversationSettings.html
         {# §4 逐字點名的那一組：本面板同時可見六組「模型＋思考深度」，五個分組都收進了
              role="group"＋aria-labelledby，只有主回答這一組沒有——於是同頁每一顆 select 的
              可及名稱都叫「模型」。形狀與下面五組逐字相同（group 內就是那兩顆）。
-             **group 只框那兩顆，其餘旋鈕一律是 group 外的 sibling**：先前 `role="group"` 掛在
-             這一區現成的版位容器上，於是「主回答」這個標題把整個生成面板的每一顆控制項都框了進去
-             ——含「啟用建議問題」這種決定**別組**（推薦問題／聊天室主題那一組 LLM）跑不跑的 switch。
-             §4 逐字寫著這是最常見的破法：「為了補 group 而把 role 加在現成的版位容器上……
+             **group 只框那兩顆，其餘旋鈕一律是 group 外的 sibling**。⚠️ 千萬別把 `role="group"`
+             直接掛在這一區現成的版位容器上：那會讓「主回答」這個標題把整個生成面板的每一顆控制項
+             都框進去——含「啟用建議問題」這種決定**別組**（推薦問題／聊天室主題那一組 LLM）跑不跑
+             的 switch。§4 逐字寫著這是最常見的破法：「為了補 group 而把 role 加在現成的版位容器上……
              group 內的控制項數，不得超過它的標題字面涵蓋得住的數量；對不上就另包一層」。
-             另包的這一層是 `col-12-md`（整寬，與原本第一列的版位相同）＋自己的
-             `flex-row flex-wrap gap-16`（`--flex-gap` 由它自己給，兩顆 col-6-md 的算式不變）
-             ⇒ 版位與先前逐像素相同，只有無障礙樹變了（這條 fpdiff 抓不到）。 #}
+             所以另包了這一層 `col-12-md`（整寬）＋自己的 `flex-row flex-wrap gap-16`
+             （`--flex-gap` 由它自己給，兩顆 col-6-md 的算式不變）⇒ 版位逐像素不變，
+             只有無障礙樹變了。這種改動 fpdiff 抓不到，只能靠讀無障礙樹驗。 #}
         <div class="flex-row flex-wrap gap-16">
             <div class="col-12-md flex-row flex-wrap gap-16" role="group" aria-labelledby="reasoningGroupMain-label">
                 <div class="form-group col-6-md col-12-sm">
                     <div class="label"><label for="genModel" class="control-label" data-i18n="settings.modelName">模型</label></div>
                     <div class="field">
                         {# 可用模型目錄只有一份（llmModels，宣告在本頁頂端）：主回答與分組 LLM 填的是同一份
-                             available models，各烤一份遲早分岔（曾經：分組少了 anthropic 那一個）。 #}
+                             available models。各烤一份遲早分岔——典型的分岔長相是分組那一份少了
+                             anthropic 那一顆，而兩張下拉擺在不同區塊，沒有人會並排比對。 #}
                         <select class="form-control singleSelect js-model-name" id="genModel">
                             {% for m in llmModels %}
                             <option value="{{ m }}"{% if loop.first %} selected{% endif %}>{{ m }}</option>
@@ -515,7 +520,7 @@ permalink: 5-2_conversationSettings.html
                     <div class="field">
                         {# 主回答的空值＝該模型預設（product settings_hub 的 reasoning_effort 註解），
                              故用元件的預設語意；分組那組的空值是「最低思考」，見下方分組區。 #}
-                        {# 尺度說明只畫在**主回答**這一顆（round47）：這是整頁第一次出現「思考深度」，
+                        {# 尺度說明只畫在**主回答**這一顆：這是整頁第一次出現「思考深度」，
                              而下面分組那五顆各畫一句會把那張表淹掉（同一句話說五遍）。
                              參數與理由見 components/reasoning-effort-select 檔頭。 #}
                         {% set reasoningEffortId = "genReasoningEffort" %}
@@ -536,8 +541,8 @@ permalink: 5-2_conversationSettings.html
                  為什麼不能是 type="text"：值交給 React 讀去送 API，text ＋ Number() 打錯一個字就是 NaN，
                  序列化成 JSON 是 null，一路寫進該租戶的正式設定；後端投影欄型別是 float，下次開這頁就 500。
                  後端現在會擋（顯式 null → 422），但體驗仍是「打錯字→存檔失敗→看不懂為什麼」，故把區間搬到
-                 輸入層：瀏覽器就地擋 + 使用者看得到範圍。區間出處＝product settings_hub.py ProfileConfigIn
-                 的 Field(ge/le) 與 app/chat_config_limits.py（MIN/MAX_SEARCH_NUMBER = 1/100）。
+                 輸入層：瀏覽器就地擋 + 使用者看得到範圍。區間出處＝product ProfileConfigIn
+                 的 Field(ge/le) 與 product（MIN/MAX_SEARCH_NUMBER = 1/100）。
                  浮點欄用 step="any"（契約只有 ge/le，沒有級距；寫死 0.1 會把 0.35 這種合法值判成無效），
                  整數欄用 step="1"。memory_count 刻意無上界（同 ProfileConfigIn 只有 ge=0）。 #}
             <div class="form-group col-6-md col-12-sm">
@@ -681,15 +686,15 @@ permalink: 5-2_conversationSettings.html
          思考深度選單依該組**生效模型**的 reasoning_options 動態；切版此處為靜態代表性選項。
          每組明列「對應哪些功能」，讓設定者清楚各旋鈕作用範圍。
          `key` 逐字對回後端欄位 `model_name_<key>`／`reasoning_effort_<key>`（product
-         `app/profile_config.py` 的 `PROFILE_FIELD_DEFAULTS`、`routers/settings_hub.py` 的
-         `_MODEL_FIELDS`／`ProfileConfigIn`；上游 GufoRAG chatbot `app/models/config.py` 同名欄位）
+         的 `PROFILE_FIELD_DEFAULTS`、product 的
+         `_MODEL_FIELDS`／`ProfileConfigIn`；上游 GufoRAG chatbot 同名欄位）
          ——拼錯的話兩顆 select 照樣渲染得出來、存下去卻對不到任何欄位，畫面上完全看不出來，
          故白名單另有測試把關。
          第五組（recommend）與其他四組有一個差別：它管的是 `generate_recommendations`，而
          `enable_suggest_questions` 預設 True ⇒ **每一輪問答都會跑**，是五組裡唯一每輪都付錢的
          （其餘四組只在各自階段跑）。兩個例外是「答案本身不成立」的那兩種：agent 反問澄清
          （`clarify_pending`）與誠實查無（`grounding_no_answer`）會 early-return、不呼叫 LLM
-         （chatbot `app/services/chat.py` 的 `generate_recommendations`）——成本結論不變，
+         （chatbot 的 `generate_recommendations`）——成本結論不變，
          所以畫面上的說明維持「每輪都會跑」這個強說法，精確的契約寫在這裡。
          它同時產生**聊天室主題**（同一支 `generate_recommendations`：docstring 逐字寫「生成推薦問題
          和聊天室主題」），故標籤不只寫「推薦問題」——導到小模型會連聊天室標題一起換。 #}
@@ -698,8 +703,8 @@ permalink: 5-2_conversationSettings.html
              寫成 <label> 會是一顆點了不會聚焦、對輔具也沒有語意的空殼（§4）。
              ⓘ 說明：markup 逐字照抄 5-2 出口套用欄那顆既有 info-btn 六件組（§1-2 無 html 元件契約），
              只換 title/key/data-open-modal 三個值。①出處：本區塊上方檔頭逐五組列出各組對應的內部
-             LLM 呼叫，與 product `app/profile_config.py` 的 `PROFILE_FIELD_DEFAULTS`（`model_name_*`／
-             `reasoning_effort_*` 空值語意）、`app/routers/settings_hub.py` 的 `_MODEL_FIELDS`／
+             LLM 呼叫，與 product 的 `PROFILE_FIELD_DEFAULTS`（`model_name_*`／
+             `reasoning_effort_*` 空值語意）、product 的 `_MODEL_FIELDS`／
              `ProfileConfigOut`／`ProfileConfigIn`。五組彼此模式適用性不同（intent 僅傳統、tools／skill
              僅 agent、judge／recommend 皆用），但本區塊本身**不**依模式隱藏（五組永遠一起渲染，見
              本檔頭「切版此處為靜態代表性選項」），故①不提模式，避免與其他區塊「只在某模式才會被
@@ -747,9 +752,9 @@ permalink: 5-2_conversationSettings.html
                     <div class="label"><label for="genReasoning_{{ g.key }}" class="control-label" data-i18n="settings.reasoningEffort">思考深度</label></div>
                     <div class="field">
                         {# 分組的空值語意與主回答**不同**：主回答空＝該模型預設，分組空＝最低思考
-                             （product `app/profile_config.py` 的 `PROFILE_FIELD_DEFAULTS` 逐字寫著
+                             （product 的 `PROFILE_FIELD_DEFAULTS` 逐字寫著
                              「`reasoning_effort_*` 空＝最低思考（維持現行預設）」、
-                             GufoRAG chatbot `app/services/chat.py` 的 `init_llm_group` 收尾是
+                             GufoRAG chatbot 的 `init_llm_group` 收尾是
                              `self.init_llm(room2, reasoning=bool(eff))`）。故給另一顆 key，
                              不與主回答共用「沿用模型預設」——同字面兩種行為就是在說謊。 #}
                         {% set reasoningEffortId = "genReasoning_" + g.key %}
@@ -783,17 +788,18 @@ permalink: 5-2_conversationSettings.html
      模式適用性以 gufofaq-saas docs/mode-matrix.md 實測矩陣為準：agent/respond 僅 Agent 模式生效、
      intension 僅傳統搜尋模式生效（agent 無意圖路由階段）、role/chatroom 兩模式皆用；**不適用者不渲染**
      （見「生成設定」子頁籤檔頭註的理由）——「進階提示詞」
-     區塊即據此取代 product 舊的「Agent 提示詞」整段（其「僅 Agent」暗示與矩陣相反）。**已回流**
-     （round40 複驗）：gufofaq-saas `apps/web/app/(app)/conversation-settings/page.tsx` 現在渲染
-     `settings.advancedPrompts`（「進階提示詞」）並逐欄標模式適用性，舊 key `settings.agentPrompts`
-     在 `apps/web` 全樹零命中。 #}
+     區塊的名字因此是**「進階提示詞」而不是「Agent 提示詞」**：後者的字面暗示「僅 Agent」，與矩陣
+     相反（這五欄裡有兩欄兩模式皆生效）。**已回流**：gufofaq-saas
+     `apps/web/app/(app)/conversation-settings/page.tsx` 渲染 `settings.advancedPrompts`
+     （「進階提示詞」）並逐欄標模式適用性；`settings.agentPrompts` 這顆 key 在 `apps/web` 全樹零命中，
+     不要把它接回來。 #}
 <div class="tab-content" data-capability="settings:write" id="panelPrompts" style="display: none;">
     <div class="block mb-10 flex-row column gap-16">
         {# ⓘ 說明：markup 同 5-2 既有的 info-btn 六件組。①出處：本子頁籤檔頭「產品系統提示詞（含版本史）
-             沿用 components/prompt-edit + 版本卡」＋ product `app/routers/prompts.py` 的模組檔頭
+             沿用 components/prompt-edit + 版本卡」＋ product 的模組檔頭
              （「提示詞」＝各 profile 對應的 GufoRAG chatbot config 裡的 `product_system_prompt` 欄，
              「提示詞版本史」＝該 config 版本歷史裡 `product_system_prompt` 有變動的版本）與 `PromptOut`
-             的 `version_no`／`is_active`。兩模式皆生效這件事出自 saas `apps/web/lib/modeMatrix.ts` 的
+             的 `version_no`／`is_active`。兩模式皆生效這件事出自 gufofaq-saas `apps/web/lib/modeMatrix.ts` 的
              `product_system_prompt: "both"`（屬永久的架構事實，不隨頁面上任何旋鈕的目前值改變，
              故放進①而非②）。 #}
         <div class="flex-row align-items-center gap-8">
@@ -859,8 +865,8 @@ permalink: 5-2_conversationSettings.html
             </div>
             <div class="flex-row flex-wrap gap-16 align-items-center">
                 <button type="button" class="button button-border js-filter-clear" data-i18n="action.clear">清除</button>
-                {# ⚠️ **待回流**（gufofaq-saas@648c3cc 複驗）：saas 的 `toast.queryPrompt`／`toast.queryWelcome`
-                     仍是兩段（`成功|失敗`），而 `PromptVersionEditor.tsx` 是**照索引取**的
+                {# ⚠️ **待回流**：gufofaq-saas 的 `toast.queryPrompt`／`toast.queryWelcome`
+                     還是兩段（`成功|失敗`），而 `PromptVersionEditor.tsx` 是**照索引取**的
                      （`segs[1] ?? segs[0]` 當 error 用）⇒ 拿這一份字典時它會把 403 那句以 error 型別彈出。
                      `|` 是索引契約，兩邊段數不同就是接錯位（§4-2／REACT-CONVERSION ⑥）。 #}
                 <button data-capability="settings:read" type="button" class="button button-primary js-prompt-search" data-toast="查詢成功|權限不足，無法查詢——請找貴租戶的管理者開通|時間區間不正確（起訖需成對）|這段期間的版本數超過單次上限，請縮小時間範圍|無法載入提示詞版本列表" data-i18n-data-toast="toast.queryPrompt" data-toast-type="success|warning|warning|warning|error" data-i18n="action.query">查詢</button>
@@ -886,7 +892,7 @@ permalink: 5-2_conversationSettings.html
                         </button>
                         <span class="divider-vertical"></span>
                         {# 403 那一段見「啟用全部意圖判斷」旁的註解（`POST /prompts/{version_no}/activate`
-                             掛 product `routers/prompts.py` 的 `require_capability("settings","write")`）。 #}
+                             掛 product 的 `require_capability("settings","write")`）。 #}
                         <button data-capability="settings:write" type="button" id="promptVersionRestore-{{ loop.index }}" aria-labelledby="promptVersionName-{{ loop.index }} promptVersionRestore-{{ loop.index }}" class="button button-border button-sm js-prompt-restore" data-toast="已還原此提示詞版本|權限不足，無法儲存——請找貴租戶的管理者開通|還原失敗，請稍後再試" data-i18n-data-toast="toast.restorePrompt" data-toast-type="success|warning|error" data-i18n="action.restore">還原此版本</button>
                     </div>
                 </div>
@@ -917,7 +923,7 @@ permalink: 5-2_conversationSettings.html
     {# 各欄模式適用性見本子頁籤檔頭註（依 docs/mode-matrix.md 實測）：role/chatroom 兩模式皆用、恆顯示。
          ⓘ 說明：markup 同 5-2 既有的 info-btn 六件組。①出處：本子頁籤檔頭「agent/respond 僅 Agent
          模式生效、intension 僅傳統搜尋模式生效（agent 無意圖路由階段）、role/chatroom 兩模式皆用」，
-         與 saas `apps/web/lib/modeMatrix.ts` 的 `agent_system_prompt`／`respond_system_prompt`
+         與 gufofaq-saas `apps/web/lib/modeMatrix.ts` 的 `agent_system_prompt`／`respond_system_prompt`
          （"agent"）、`intension_system_prompt`（"traditional"）三個鍵。這五個欄位彼此模式適用性
          不同是本區塊固定的架構事實（不隨頁面其他旋鈕的目前值變化），故寫進①；哪一層此刻在畫面上
          看不看得到、有沒有生效，才是②的事。 #}
@@ -983,7 +989,7 @@ permalink: 5-2_conversationSettings.html
             </div>
             <div class="flex-row justify-content-center gap-16">
                 {# 403 那一段見「啟用全部意圖判斷」旁的註解（`POST /welcome` 掛 product
-                     `routers/welcome.py` 的 `require_capability("settings","write")`）。 #}
+                     的 `require_capability("settings","write")`）。 #}
                 <button data-capability="settings:write" type="button" class="button button-primary js-welcome-save" data-toast="已儲存為新版本|內容欄位不可為空|權限不足，無法儲存——請找貴租戶的管理者開通|儲存歡迎語失敗，請稍後再試" data-i18n-data-toast="toast.saveWelcome" data-toast-type="success|warning|warning|error" data-i18n="action.saveNewVersion">儲存為新版本</button>
             </div>
         </div>
@@ -1049,7 +1055,7 @@ permalink: 5-2_conversationSettings.html
                         </button>
                         <span class="divider-vertical"></span>
                         {# 403 那一段見「啟用全部意圖判斷」旁的註解（`POST /welcome/{version_no}/activate`
-                             掛 product `routers/welcome.py` 的 `require_capability("settings","write")`）。 #}
+                             掛 product 的 `require_capability("settings","write")`）。 #}
                         <button data-capability="settings:write" type="button" id="welcomeVersionRestore-{{ loop.index }}" aria-labelledby="welcomeVersionName-{{ loop.index }} welcomeVersionRestore-{{ loop.index }}" class="button button-border button-sm js-welcome-restore" data-toast="已還原此歡迎語版本|權限不足，無法儲存——請找貴租戶的管理者開通|還原失敗，請稍後再試" data-i18n-data-toast="toast.restoreWelcome" data-toast-type="success|warning|error" data-i18n="action.restore">還原此版本</button>
                     </div>
                 </div>
@@ -1067,7 +1073,7 @@ permalink: 5-2_conversationSettings.html
      結構比照 glossary-entries-modal 的詞條編輯器；新增/刪除列動業務輸入（值交給 React 去 PUT），
      故 hook class js-add-policy-topic／js-remove-policy-topic（§5）。詞彙過濾＋兩則封鎖訊息為值載體。
      `settings.policyActionOff` 英譯 Ignore 為修正後值（對齊 policyIntro 詞彙）；saas 已跟上，
-     `apps/web/lib/i18n/messages.en.json` 的同 key 也是 Ignore，round40 複驗。
+     `apps/web/lib/i18n/messages.en.json` 的同 key 也是 Ignore。
      全部隨底部「儲存對話設定」直送（policy 分組 merge 寫回 GufoRAG ChatConfig）。示範 2 筆。 #}
 <div class="tab-content" data-capability="settings:write" id="panelPolicy" style="display: none;">
     <p class="text-gray" data-i18n="settings.policyIntro">定義敏感主題與詞彙過濾：對命中的輸入／輸出可封鎖、記錄或不處理，並設定被封鎖時回覆使用者的拒絕訊息。</p>
@@ -1077,7 +1083,7 @@ permalink: 5-2_conversationSettings.html
     ] %}
     <div class="block mb-16 flex-row column gap-16">
         {# ⓘ 說明：markup 同 5-2 既有的 info-btn 六件組。①出處：本子頁籤檔頭（政策主題表的結構）
-             與 product `app/chat_config_limits.py` 的「內容政策：結構化 denied topics」一節——
+             與 product 的「內容政策：結構化 denied topics」一節——
              尤其 `MAX_BLOCKED_MSG_LEN = MAX_TOPIC_REFUSAL_LEN` 那一行的註解「這裡照抄那個推導⋯
              （主題自帶 refusal 為空時的替代品）」，說明本表的「拒絕訊息」欄與下方「輸入／輸出
              封鎖訊息」兩個全域欄位的 fallback 關係——這件事本頁沒有任何常駐提示講過，故寫進①。 #}
@@ -1089,8 +1095,8 @@ permalink: 5-2_conversationSettings.html
             </button>
         </div>
         {# 上限畫在消費點（§3-2「上限寫在消費點（『N / 30』）」）。30 ＝ product
-             `app/chat_config_limits.py` 的 `MAX_TOPICS`（`ProfileConfigIn.policy_topics` 以
-             `max_length=MAX_TOPICS` 收；上游 GufoRAG chatbot `app/services/policy.py` 的
+             的 `MAX_TOPICS`（`ProfileConfigIn.policy_topics` 以
+             `max_length=MAX_TOPICS` 收；上游 GufoRAG chatbot 的
              `MAX_TOPICS` 同值，超過**拒絕存檔**而非靜默截斷）。形狀照同頁輸出規則那一列：
              主題數從陣列推導（§6），30 是**資料**故留在 data-i18n 之外的獨立節點（§4-2）。 #}
         <div class="data-info flex-row flex-wrap gap-24">
@@ -1111,7 +1117,7 @@ permalink: 5-2_conversationSettings.html
                     <tr>
                         <th id="policyHeadName" data-i18n="settings.policyTopicName">主題名稱</th>
                         <th id="policyHeadDefinition" data-i18n="settings.definition">定義</th>
-                        {# 「範例」在契約上是 **list**（product `chat_config_limits.py` 的
+                        {# 「範例」在契約上是 **list**（product 的
                              `POLICY_TOPIC_LIMITS["examples"]` ＝ `max_items` ／`max_item_len`，由
                              `validate_policy_topic_limits` 逐筆執法），畫成一格單行 input 就一定要
                              說出多值怎麼切——否則整句連逗號一起會被當成一則。分隔慣例比照同頁出口替換的
@@ -1152,9 +1158,9 @@ permalink: 5-2_conversationSettings.html
                                 <option value="off" data-i18n="settings.policyActionOff"{% if topic.outputAction == "off" %} selected{% endif %}>不處理</option>
                             </select>
                         </td>
-                        {# 「拒絕訊息」也有長度界線，先前這一欄是三欄裡唯一**一句都沒有**的
-                             （round47）：`policyTopicLimitsHint` 只列了主題名稱與定義兩欄，而那份 hint
-                             正是這一欄該接上去的地方。出處 product `app/limits/chat_config_limits.py` 的
+                        {# 「拒絕訊息」也有長度界線，所以三欄**都**要接上 `policyTopicLimitsHint`
+                             ——那份 hint 是這一區三條界線共用的家，漏掉任何一欄，那條界線在畫面上
+                             就沒有落點。出處 product 的
                              `POLICY_TOPIC_LIMITS["refusal"].max_len`（＝`MAX_TOPIC_REFUSAL_LEN`，
                              該常數旁邊逐字寫著「命中時回給使用者的那一句話（不是文件）」——所以它比
                              定義短，不是抄漏了一個位數）。 #}
@@ -1169,17 +1175,17 @@ permalink: 5-2_conversationSettings.html
         </div>
         {# 「範例」那一欄的界線常駐可見（§4：帶約束的輔助文字不得只活在 placeholder，也不得只在錯誤態才顯示），
              一份 hint 給整欄用（同 alias-entries-modal 的 aliasLimitsHint）。兩個數字是**資料**故獨立成節點
-             （§4-2：在契約裡有欄位的數字不准寫進譯文）——出處 product `app/chat_config_limits.py` 的
+             （§4-2：在契約裡有欄位的數字不准寫進譯文）——出處 product 的
              `MAX_TOPIC_EXAMPLES` / `MAX_TOPIC_EXAMPLE_LEN`（`POLICY_TOPIC_LIMITS["examples"]` 的
              `max_items` / `max_item_len`）。條數上限同時是上游 `_render_topics` 真的渲染得出的條數，
              多設的不會生效，所以是「拒絕存檔」而不是靜默截斷。 #}
         {# 主題名稱／定義／拒絕訊息三欄的界線常駐可見，一份 hint 給整欄用（同下方「範例」那一份）。
-             出處 product `app/limits/chat_config_limits.py` 的 `POLICY_TOPIC_LIMITS`：
+             出處 product 的 `POLICY_TOPIC_LIMITS`：
              `name.max_len`／`definition.max_len`／`refusal.max_len`
              （＝`MAX_TOPIC_NAME_LEN`／`MAX_TOPIC_DEFINITION_LEN`／`MAX_TOPIC_REFUSAL_LEN`）。
              數字獨立成帶 class 的節點，給 React 從 `GET /settings/chat-config-limits` 填
              （§4-2：契約裡有欄位的數字不進譯文）。
-             ⚠️ **這張表有四欄吃長度界線，這份 hint 就要列四欄**（round47 補上拒絕訊息那一欄）：
+             ⚠️ **這張表有四欄吃長度界線，這份 hint 就要列四欄**（拒絕訊息那一欄）：
              `POLICY_TOPIC_LIMITS` 是一張表，少列一欄不會有任何測試看得到——只有那一欄的使用者
              會在按下儲存之後才知道自己打太長。 #}
         <p id="policyTopicLimitsHint" class="text-gray"><span data-i18n="settings.policyTopicName">主題名稱</span><span data-i18n="common.labelSep">：</span><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-topic-name-max-len">200</span><span data-i18n="common.unitChars"> 字</span><span data-i18n="common.listSep">、</span><span data-i18n="settings.definition">定義</span><span data-i18n="common.labelSep">：</span><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-topic-definition-max-len">1024</span><span data-i18n="common.unitChars"> 字</span><span data-i18n="common.listSep">、</span><span data-i18n="settings.policyRefusal">拒絕訊息</span><span data-i18n="common.labelSep">：</span><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-topic-refusal-max-len">500</span><span data-i18n="common.unitChars"> 字</span></p>
@@ -1205,10 +1211,10 @@ permalink: 5-2_conversationSettings.html
             <div class="field">
                 {# 不掛 maxlength：一顆 maxlength 夾得住「整段字數」，夾不住「幾個詞、每個詞多長」
                      （同 alias-entries-modal 的理由），故兩個上限走可見提示。出處＝product
-                     `app/chat_config_limits.py` 的 `MAX_WORD_FILTERS` / `MAX_WORD_FILTER_LEN`
+                     的 `MAX_WORD_FILTERS` / `MAX_WORD_FILTER_LEN`
                      （`LIST_FIELD_LIMITS["policy_word_filters"]` 的 `max_items` / `max_item_len`，
                      `ProfileConfigIn.policy_word_filters` 以它們夾；上游 GufoRAG chatbot
-                     `app/services/policy.py` 的 `validate_policy_word_filters` 同值執法）。
+                     的 `validate_policy_word_filters` 同值執法）。
                      兩個數字是資料不是譯文（§4-2）。 #}
                 <textarea id="policyWordFilters" class="form-control js-policy-word-filters" aria-describedby="policyWordFiltersHint"></textarea>
                 <span class="text-gray" id="policyWordFiltersHint"><span data-i18n="settings.policyWordFiltersHintPrefix">每行一個詞彙，或以逗號分隔；最多 </span><span>200</span><span data-i18n="settings.policyWordFiltersHintMid"> 個、每個 </span><span>200</span><span data-i18n="settings.policyWordFiltersHintSuffix"> 字；任一項超過就整份存不進去。</span></span>
@@ -1231,15 +1237,15 @@ permalink: 5-2_conversationSettings.html
        class js-add-osub／js-remove-osub（§5）。別名逗號分隔（比照 glossary aliases）；${0}=命中文字、
        ${name}=regex 具名群組、$$=字面$；regex 禁量詞（ReDoS，backref 靠字面 alternation 非 \w+）。
        值載體隨底部「儲存對話設定」直送（policy 分組 merge → ChatConfig output_replacements）。示範 1 筆。 #}
-    {# 示範列從內聯陣列改成具名 set：規則數要從陣列推導才不會在改示範時說謊（§6），
-         而內聯在 `{% for %}` 裡的陣列取不到 `.length`。變數名帶功能前綴避免與頁面其他 set 撞名（§6）。 #}
+    {# 示範列存成**具名 set**、不寫成 `{% for %}` 裡的內聯陣列：規則數要從陣列推導才不會在改示範時
+         說謊（§6），而內聯的陣列取不到 `.length`。變數名帶功能前綴，避免與頁面其他 set 撞名（§6）。 #}
     {% set outputReplacementRules = [
       { aliases: "推貿費, 推廣貿易費, 貿推費", replacement: "[${0}](https://www.trade.gov.tw/tpf)", isRegex: false }
     ] %}
     <div class="block flex-row column gap-16">
         {# ⓘ 說明：markup 同 5-2 既有的 info-btn 六件組。①出處：本區塊上方檔頭（Spec 乙「出口替換
              規則」：生成後對答案做 match→replacement 直接替換、確定性後處理、與術語表僅 agent 不同）
-             ＋ product `app/output_sub.py` 模組檔頭（「本檔只是投影……product 要在邊界就把使用者
+             ＋ product 模組檔頭（「本檔只是投影……product 要在邊界就把使用者
              輸入錯誤回成 400」）。①刻意不重複下方常駐提示（`settings.outputReplacementsHint`）已經
              講過的 ${0}／${name}／$$ 語法與「兩模式皆生效」，改講提示沒講的「這一步不經過模型、
              作用在生成完成之後」，並指向下方「出口處理順序」看它在整條管線的位置。 #}
@@ -1251,9 +1257,9 @@ permalink: 5-2_conversationSettings.html
             </button>
         </div>
         <div class="text-gray" data-i18n="settings.outputReplacementsHint">生成答案後，把命中的別名（任一）替換成指定內容；${0}=命中文字、regex 具名群組用 ${name}、$$ 表字面 $。regex 不可含量詞。兩種對話模式皆生效。</div>
-        {# 上限畫在消費點（§3-2）。30 ＝ product `app/output_sub.py` 的 `MAX_OUTPUT_REPLACEMENTS`
+        {# 上限畫在消費點（§3-2）。30 ＝ product 的 `MAX_OUTPUT_REPLACEMENTS`
              （`validate_output_replacements` 超過即 400 `outsub.too_many_rules`；上游 GufoRAG chatbot
-             `app/services/output_substitution.py` 的同名常數同值）。形狀照同頁輸出規則那一列。 #}
+             的同名常數同值）。形狀照同頁輸出規則那一列。 #}
         <div class="data-info flex-row flex-wrap gap-24">
             <span><span data-i18n="settings.outputReplacementsCountLabel">替換規則數：</span> {{ outputReplacementRules.length }} / 30</span>
         </div>
@@ -1311,14 +1317,14 @@ permalink: 5-2_conversationSettings.html
 
 {# ═══ 子頁籤 6：輸出規則（NET-NEW，Spec 丁）═══
      生成答案之後、送進合規閘門之前，對**整段**答案做的確定性後處理（不經 LLM）。契約正本＝
-     gufofaq-saas services/product/app/output_rules.py 的 OUTPUT_RULE_CONTRACT（鏡射自 GufoRAG
-     chatbot app/services/output_rules.py，兩側以 `OUTPUT_RULE_CONTRACT_FINGERPRINT` 釘同一個字串）：
+     gufofaq-saas 的 OUTPUT_RULE_CONTRACT（鏡射自 GufoRAG
+     chatbot，兩側以 `OUTPUT_RULE_CONTRACT_FINGERPRINT` 釘同一個字串）：
      kind 值域、規則數上限 30、逐 kind 的參數型別與上下界。本頁的選單值域、參數欄與區間都照它演出。
      **指紋的值不抄在這裡**——抄了就會在對面改表時靜默過期（它從 11 種擴到 13 種時這裡就過期了一輪），
      而本 repo 沒有測試比得到它；要對帳請直接讀那個符號。
 
      本區有三件事是**規格要求外顯**、不是版面裝飾：
-     ① **順序**：出口替換 →輸出規則 →合規閘門，由平台固定（GufoRAG app/routes/_chat_stream.py
+     ① **順序**：出口替換 →輸出規則 →合規閘門，由平台固定（GufoRAG
         的 run_output_pipeline 是唯一的順序宣告）。故用 <ol> 把三段依序畫出來，且**不提供任何重排
         入口**——版面不得暗示三段可以換順序。合規閘門永遠最後一段，本層改寫過的文字仍要過它。
      ② **串流代價**：只要有任一條規則 enabled，chatbot 會把整輪 MESSAGE chunk 全程緩衝、到
@@ -1353,11 +1359,11 @@ permalink: 5-2_conversationSettings.html
 {# 示範規則。descKey 隨列走（不用 filter 反查——§2 只准 | safe）；情境常數兩筆各帶自己的常數名／
      預設值／條件，其餘 kind 的示範參數值直接寫在該 kind 的分支裡（一種 kind 只有一列，不需要參數化）。
      啟用 9 條／共 14 條 ⇒ outputRulesAnyEnabled = true，故顯示「已失去逐字串流」那一句。
-     末兩條是事實時效那一族（product `output_rules.py` 的 E 類）：兩條都沒有參數，參數欄因此
+     末兩條是事實時效那一族（product 的 E 類）：兩條都沒有參數，參數欄因此
      落在分支鏈最後那一支的「此規則沒有參數。」
 
      **`slot` 與 `category_slot` 的值域是標籤維度的 `slot_key`，不是自己取的名字**：意圖判定的
-     結果形狀是 `{dimensions: {槽: 代碼}, …}`（product `output_rules.py` 的 `category_slot`
+     結果形狀是 `{dimensions: {槽: 代碼},…}`（product 的 `category_slot`
      欄位說明；`intent_classify` 逐字寫著 `dimensions` 以 `slot_key` 為鍵、值是字典那一列的
      `code` 逐字），而槽名的值域是 `models.TAG_DIMENSION_SLOTS`（note1…note10 ＋ date2／date3，
      DB 有 CHECK 約束）。後端**不驗**這一格（`max_slot_len: 64` 的自由字串），所以填 `topic`／
@@ -1385,8 +1391,8 @@ permalink: 5-2_conversationSettings.html
   { kind: "state_as_of", enabled: true, descKey: "settings.outputRuleStateAsOfDesc", desc: "答案引用到的資料若帶基準日，就在句末補上「（本資訊以 2024-11-30 為準）」這樣一句註記。引用到多筆時取最舊的那一個——一段話只要引用了一份較舊的資料，它就只保證到那一天為止，寫最新的那一天等於替已經過期的那部分背書。註記接在最後一個散文行的句末；那一行如果是表格、清單、引言、標題或程式碼圍欄就另起一段，不會被那一行吃掉。" },
   { kind: "flag_conflict", enabled: false, descKey: "settings.outputRuleFlagConflictDesc", desc: "同一個主題有多筆並列最新的資料時，在答案後面另起一段，逐份列出它們的基準日與來源名稱，並說明這幾份的說法可能不同——不是挑一份講。這一段講不出各份「說了什麼」：出口處理不經 AI，手上只有日期與來源名稱，替租戶總結那幾份資料的內容會是一句沒有依據的話。同一份文件被切成好幾段只算一份；能列出日期與來源的不到兩份時就不加這一段。" }
 ] %}
-{# 啟用條數與「有沒有任一條啟用」都從陣列推導：原本一個烤成字面量 9、一個手設 true，
-     改一筆 enabled 就開始說謊（§6：能從示範陣列推導的數字就從陣列渲染）。
+{# 啟用條數與「有沒有任一條啟用」都從陣列推導，**不烤字面量、也不手設 true**：
+     烤了的話，改一筆 `enabled` 這兩個值就開始說謊（§6：能從示範陣列推導的數字就從陣列渲染）。
      nunjucks 的 {% set %} 在迴圈內會累加（與 Jinja2 不同），故數得出來。 #}
 {% set outputRulesEnabledCount = 0 %}
 {% for r in outputRules %}{% if r.enabled %}{% set outputRulesEnabledCount = outputRulesEnabledCount + 1 %}{% endif %}{% endfor %}
@@ -1398,8 +1404,8 @@ permalink: 5-2_conversationSettings.html
          （手寫的數字與實際順序會各自漂）。三段沒有任何拖曳／上下移動入口。 #}
     <div class="block mb-16 flex-row column gap-8">
         {# ⓘ 說明：markup 同 5-2 既有的 info-btn 六件組。①出處：本子頁籤檔頭「① 順序：出口替換 →
-             輸出規則 → 合規閘門，由平台固定（GufoRAG app/routes/_chat_stream.py 的 run_output_pipeline
-             是唯一的順序宣告）」，與 product `app/output_rules.py` 模組檔頭（本檔只是投影，真相在
+             輸出規則 → 合規閘門，由平台固定（GufoRAG 的 run_output_pipeline
+             是唯一的順序宣告）」，與 product 模組檔頭（本檔只是投影，真相在
              GufoRAG chatbot）。①只講「順序固定、合規閘門恆最後」這個結構事實，不提任一條規則
              目前是否啟用（那是②的事，本區塊也刻意不提供任何重排入口，見下方 <ol>）。 #}
         <div class="flex-row align-items-center gap-8">
@@ -1544,7 +1550,7 @@ permalink: 5-2_conversationSettings.html
                                     <div class="field">
                                         <input type="text" id="oruleCategorySlot{{ loop.index }}" class="form-control js-orule-category-slot" value="note3" aria-describedby="oruleCategoryHint{{ loop.index }}">
                                         {# 上下界是資料不是譯文（§3-2）：同一組界線就寫在下面 `js-orule-category-limit` 的
-                                             `min="1" max="100000"` 上（正本 product app/output_rules.py 的 `by_category`）。
+                                             `min="1" max="100000"` 上（正本 product 的 `by_category`）。
                                              414eecc 已經對本頁另外三處做過同一個修正，這是第四處漏網。
                                              「最多 50 個代碼」在 markup 沒有第二份抄本，維持譯文。 #}
                                         <span id="oruleCategoryHint{{ loop.index }}" class="text-gray"><span data-i18n="settings.outputRuleCategoryHintPrefix">填標籤維度的欄位鍵（note1…note10、date2、date3），不是維度的名稱——填別的字不會報錯，只會讓這條規則永遠不命中。維度槽與逐代碼上限要一起設；只設一邊會存不起來（整份被擋下）。最多 </span><span>50</span><span data-i18n="settings.outputRuleCategoryHintMid"> 個代碼、每個代碼上限 </span><span>1 – 100000</span><span data-i18n="settings.outputRuleCategoryHintSuffix"> 字。</span></span>
@@ -1559,12 +1565,12 @@ permalink: 5-2_conversationSettings.html
                                      用 role="group"＋aria-labelledby 指向浮空標題，讓報讀器先報出
                                      「逐代碼覆寫上限」這組在問什麼，再念組內的代碼／上限（§4）。 #}
                                 <div role="group" aria-labelledby="oruleCategoryOverridesLabel{{ loop.index }}" class="flex-row column gap-8">
-                                {# 代碼是 **note3（業務範疇）字典裡真的有的代碼**：`B06`（關稅與稅則）／`B02`
-                                     （居留與簽證），正本是 5-10 的 `tagDimensions` note3 ＋ 5-4 的 `gapGroups`
-                                     那兩個 key。原本演的是 `tariff`／`procedure`——那正是上面那格說明字警告的
-                                     情況（後端不驗這一格，填別的字不會報錯，只會讓這條規則永遠不命中），
-                                     示範資料自己演了一個永遠不命中的設定（§6 示範要自洽、要是真實可能的狀態）。
-                                     同一顆規則的 `case` 已經用 `B06` 了，兩處先前對不起來。 #}
+                                {# 代碼必須是 **note3（業務範疇）字典裡真的有的代碼**：`B06`（關稅與稅則）／
+                                     `B02`（居留與簽證），正本是 5-10 的 `tagDimensions` note3 ＋ 5-4 的
+                                     `gapGroups` 那兩個 key，而同一顆規則的 `case` 用的也是 `B06`。
+                                     ⚠️ **不可以隨手編 `tariff`／`procedure` 這種字**：那正是上面那格說明字
+                                     警告的情況——後端不驗這一格，填別的字不會報錯，只會讓這條規則永遠不命中，
+                                     等於示範資料自己演了一個永遠不生效的設定（§6 示範要自洽、要是真實可能的狀態）。 #}
                                 {% for cat in [{ code: "B06", limit: "2000" }, { code: "B02", limit: "800" }] %}
                                 {# 外層那顆 role="group" 只報得出「逐代碼覆寫上限」，兩列的「代碼」「上限」
                                      還是各兩顆同名（§4：同一頁同時可見、語意不同的控制項不得共用可及名稱）。
@@ -1642,7 +1648,7 @@ permalink: 5-2_conversationSettings.html
                         <td><button type="button" id="oruleDelete-{{ oruleIdx }}" aria-labelledby="oruleRowName-{{ oruleIdx }} oruleDelete-{{ oruleIdx }}" class="button button-border button-sm js-remove-orule" data-i18n="action.delete">刪除</button></td>
                     </tr>
                     {% else %}
-                    {# 具名空狀態（round48）：串流代價兩態的另一半——「沒有啟用任何輸出規則，回答維持逐字顯示」
+                    {# 具名空狀態：串流代價兩態的另一半——「沒有啟用任何輸出規則，回答維持逐字顯示」
                          這一句在本頁另有一份（`settings.outputRulesStreamingCostOff`），這裡講的是「連一條規則
                          都還沒有」那一態，兩者說的是同一個代價、不同的前提。 #}
                     <tr><td colspan="4" class="text-center text-gray" data-i18n="settings.noOutputRules">這個設定檔沒有輸出規則，回答維持逐字顯示。只要啟用任何一條，回答就會改成生成完畢後一次出現。</td></tr>
@@ -1662,38 +1668,40 @@ permalink: 5-2_conversationSettings.html
      （列平台**註冊**的 server、停用中的標示出來而不是濾掉，理由見該欄位的註解；示範 3 筆）。
      皆為 Agent 模式；值載體隨底部「儲存對話設定」直送。工具名／參數名／術語表名／Server 名為業務資料
      （識別字），不翻。
-     agentToolsIntro 本輪把「平台已啟用的 MCP Server」改成「平台註冊的」——停用中的現在也列得出來，
-     留著「已啟用」就是出貨文案在描述舊行為（saas 已跟上：`apps/web/lib/i18n/messages.zh.json`
-     的 `settings.agentToolsIntro` 也是「平台註冊的 MCP Server」，round40 複驗）。
+     `agentToolsIntro` 的字面是「平台**註冊**的 MCP Server」，**不是「已啟用的」**：停用中的 server
+     這一區也列得出來（理由見該欄位的註解），寫「已啟用」就是出貨文案在描述一個畫面做不到的過濾。
+     gufofaq-saas `apps/web/lib/i18n/messages.zh.json` 的同一顆 key 要逐字相同。
 
-     本輪兩處行為改變（原本是一列英文識別字的勾選框）：
-     ① 啟用是**三態**，逐工具一顆開關：全開＝全部啟用（enabled_builtin_tools 送全部工具名或 None，
-        兩者對引擎等效）、只開部分＝白名單、**全關＝停用所有內建工具（送 []）**。後端本來就明分 None/[]（settings_hub.py 的
-        ProfileConfigIn 註解與 chatbot agent_service.py `_enabled_builtin_tools is not None` 的過濾），
-        原本刻意不開的「全停用」入口本輪開放，故 settings.builtinToolsHint 改成敘述三態。
-        saas 已跟上（round40 複驗）：`apps/web/app/(app)/conversation-settings/page.tsx` 現在是
-        `onEnabledToolsChange={(next) => setField("enabled_builtin_tools", next)}`（不再把空選取
-        折成 null），其 `ConfigDraft.enabled_builtin_tools` 旁逐字寫著「null＝全部啟用；[]＝全部停用；
+     這一區有兩件事的形狀特別容易做錯：
+     ① 啟用是**三態**，逐工具一顆開關（不是一列英文識別字的勾選框）：全開＝全部啟用
+        （`enabled_builtin_tools` 送全部工具名或 None，兩者對引擎等效）、只開部分＝白名單、
+        **全關＝停用所有內建工具（送 `[]`）**。後端明分 None 與 []（product 的 `ProfileConfigIn`
+        註解與 chatbot `_enabled_builtin_tools is not None` 的過濾），所以「全停用」是一個真的
+        送得出去的狀態，`settings.builtinToolsHint` 要敘述三態。
+        gufofaq-saas `apps/web/app/(app)/conversation-settings/page.tsx` 是
+        `onEnabledToolsChange={(next) => setField("enabled_builtin_tools", next)}`（**不把空選取
+        折成 null**），其 `ConfigDraft.enabled_builtin_tools` 旁逐字寫著「null＝全部啟用；[]＝全部停用；
         非空＝白名單（三種語意不可用 truthy/falsy 混判）」。
-     ② builtin_tool_overrides（逐工具自訂描述／工具內提示詞）本輪補上 UI（原註「刻意緩做」已不成立）。
-        後端契約：settings_hub.py ProfileConfigIn.builtin_tool_overrides（dict[str, dict] | None）＋
-        tool_refs.py assert_valid_builtin_tool_overrides（每欄上限 MAX_BUILTIN_TOOL_TEXT_LEN = 1024、
+     ② builtin_tool_overrides（逐工具自訂描述／工具內提示詞）在卡片裡有 UI。
+        後端契約：product 的 `ProfileConfigIn.builtin_tool_overrides`（dict[str, dict] | None）＋
+        `assert_valid_builtin_tool_overrides`（每欄上限 `MAX_BUILTIN_TOOL_TEXT_LEN` = 1024、
         不得含 XML/HTML 標籤）。兩欄都只是「寫進工具描述」的文字、不是引擎參數（chatbot 端
         description 覆寫原描述、extra_prompt 換行附加其後），故卡片刻意不放任何執行參數旋鈕。
      工具目錄（識別字／內建預設描述／參數清單）＝ product `GET /settings/builtin-tools`
-        （settings_hub.py list_builtin_tools → chatbot builtin_tool_catalog.build_builtin_tool_catalog，
-        順序＝BUILTIN_TOOL_NAMES 的工具生成順序；saas 已有 apps/web/app/api/settings/builtin-tools/route.ts）。
+        （`list_builtin_tools` → chatbot 的 `build_builtin_tool_catalog`，
+        順序＝`BUILTIN_TOOL_NAMES` 的工具生成順序；gufofaq-saas 的
+        `apps/web/app/api/settings/builtin-tools/route.ts` 是它的 BFF 出口）。
         切版把它資料化在本頁（§6：這份業務目錄只有一份，卡片元件不烤第二份），中文標題／解釋／參數說明／
         範例是切版寫給租戶看的 chrome（走 i18n），defaultDescription 是引擎原文（API 資料，不翻）。 #}
 <div class="tab-content" data-capability="settings:write" id="panelAgentTools" style="display: none;">
     <p class="text-gray" data-i18n="settings.agentToolsIntro">Agent 模式下可呼叫的工具：內建工具、綁定的術語表、以及平台註冊的 MCP Server。</p>
     {# 內建工具目錄＋切版寫的中文說明與範例（順序＝chatbot BUILTIN_TOOL_NAMES 的工具生成順序）。
-         defaultDescription 逐字取自 GufoRAG chatbot app/services/agent_service.py `_create_builtin_tools`
+         defaultDescription 逐字取自 GufoRAG chatbot `_create_builtin_tools`
          各工具 docstring 的首段（那就是目錄回傳的 description 原文）；params 的名稱與必填取自同處的函式簽章
          （`_params()` 讀 args_schema：無預設值＝required）。
-         示範狀態：**十四顆裡有一顆是關的**（`lunar`）。原本十四顆全開＝`enabled_builtin_tools`
-         的 `None` 那一態，於是開關的「關」從來沒有任何一頁渲染得出來（§5：演不到的狀態等於
-         沒驗收過，而這一顆開關正是這一區存在的理由）。關掉的那一顆刻意挑最沒有業務關聯的
+         示範狀態：**十四顆裡有一顆是關的**（`lunar`）。⚠️ 不可以十四顆全開——那演的是
+         `enabled_builtin_tools` 的 `None` 那一態，開關的「關」就沒有任何一頁渲染得出來
+         （§5：演不到的狀態等於沒驗收過，而這一顆開關正是這一區存在的理由）。關掉的那一顆刻意挑最沒有業務關聯的
          （農曆與節氣）——關掉它不會讓同頁任何一段推導失效（`search_qa`／`answer_from_qa`
          那組前提對比、`ask_clarifying_question` 的已自訂標記都不碰它），而它同時把
          「白名單真的在用」這件事演出來：`enabled_builtin_tools` 是一個 13 個名字的清單，
@@ -1706,7 +1714,7 @@ permalink: 5-2_conversationSettings.html
          卡頭標出「已勾選，但本輪不會生效」。同一頁的 search_qa 只 requires qa_direct_indexes
          （QA 集有選）⇒ 前提成立、不標，兩者剛好演出對比（§6 示範資料要自洽）。
          順序照 chatbot BUILTIN_TOOL_NAMES（answer_from_qa 緊接在 search_qa 之後）。
-         **requiresUnmet 是陣列**（正本是 GufoRAG chatbot `app/services/agent_service.py` 的
+         **requiresUnmet 是陣列**（正本是 GufoRAG chatbot 的
          `BUILTIN_TOOL_PREREQUISITES`：`answer_from_qa` 是 `("qa_direct_indexes", "qa_direct_enabled")`
          兩個前提），這一頁只填得出其中一筆：本頁「QA 直答」子頁籤的 `qaDirectDatasetsSelect` 選了
          客服問答集 ⇒ `qa_direct_indexes` 成立，缺的只有 `qa_direct_enabled`。要演到兩筆就得把 QA 集
@@ -1867,10 +1875,10 @@ permalink: 5-2_conversationSettings.html
             <div class="flex-row column gap-4">
                 {# ⓘ 說明：markup 同 5-2 既有的 info-btn 六件組，併入既有 .flex-row.column.gap-4 包裹層
                      （該層已經放了標題與 hint，同 5-10 受控詞彙區的併入寫法）。①出處：本子頁籤檔頭
-                     「皆為 Agent 模式」＋「①啟用是三態」段，與 product `app/profile_config.py` 的
-                     `enabled_builtin_tools`（None＝全啟用／[]＝全停用／非空＝白名單）、`app/tool_refs.py`
+                     「皆為 Agent 模式」＋「①啟用是三態」段，與 product 的
+                     `enabled_builtin_tools`（None＝全啟用／[]＝全停用／非空＝白名單）、product
                      的 `assert_valid_builtin_tool_overrides`（覆寫的兩個文字欄原文寫進工具描述，不是
-                     引擎參數）、saas `apps/web/lib/modeMatrix.ts` 的 `enabled_builtin_tools: "agent"`。
+                     引擎參數）、gufofaq-saas `apps/web/lib/modeMatrix.ts` 的 `enabled_builtin_tools: "agent"`。
                      ①刻意不重複下方 hint 已經講過的三態語意，改講 hint 沒講的「這一整區只在 Agent
                      模式下才會被使用」與「覆寫欄只是寫進描述、不是執行參數」。 #}
                 <div class="flex-row align-items-center gap-8">
@@ -1906,22 +1914,22 @@ permalink: 5-2_conversationSettings.html
         {# ── 術語表：授權 ＋ 主 agent 可直接查詢 ──────────────────────────────────
              `<option value>`＝術語表主鍵（`GlossaryTable.id`），值域正本是 **3-2 那張管理表**
                ——那一頁的檔頭逐字寫著「id＝術語表主鍵、不可拿 loop.index 當列鍵」，示範的兩張表是
-               4（人資術語）與 5（產品術語）。這裡原本烤 1／2，同一份目錄在兩頁各有一組主鍵，
-               而 React 端送出去的就是這個值（§6）。對照組：下面「綁定別名表」與 3-6 早就同一組
-               （12／9／7），照那個做法。
+               4（人資術語）與 5（產品術語）。⚠️ **不可以另烤 1／2**：那會讓同一份目錄在兩頁各有
+               一組主鍵，而 React 端送出去的就是這個值（§6）。正典是下面「綁定別名表」與 3-6
+               共用的那一組（12／9／7）。
              **「授權哪幾張」與「誰拿得到」是兩個欄位**（GufoRAG chatbot 2026-08-17 拆開，見
                `chatbot/README.md`「術語表管理 API」）：`glossary_table_ids` ＝這份設定檔**授權**的表
                （也是 skill 白名單的取值範圍），`glossary_apply_agent` ＝其中哪幾張讓**主 agent** 直接
                看得到、每張掛一顆查詢工具。綁死時，一張只有 skill 會用的表也一定佔掉主 agent 的工具
                額度，而主 agent 手上一旦有那顆工具，它就能直接查表、繞過 skill 的作業程序。
              **兩個上限是兩把尺，畫面上不並排提**（混用同一句就等於宣告它們是同一件事）：授權張數 30
-               ＝GufoRAG chatbot `app/services/glossary.py` 的 `MAX_MOUNTED_TABLES`，寫在下面那句可見
-               提示裡；解析後主 agent 實際看得到幾張＝同檔 `MAX_ACTIVE_TABLES`（10），**這一頁不寫成
+               ＝GufoRAG chatbot 的 `MAX_MOUNTED_TABLES`，寫在下面那句可見
+               提示裡；解析後主 agent 實際看得到幾張＝同一支模組的 `MAX_ACTIVE_TABLES`（10），**這一頁不寫成
                可見文字**——它夾的是「解析後掛幾顆工具」，而 `glossary_apply_agent` 為 `null` 時它等於
                授權數，那個 null 怎麼解只有上游知道（product 這側也算不出來，見 gufofaq-saas
-               `services/product/app/chat_config_limits.py` 的 `glossary_table_ids` 那一段），故只指名
+               的 `glossary_table_ids` 那一段），故只指名
                符號、不抄值（§3-2）。兩顆都由 `GET /api/config/limits` 的 `glossary.mounted_tables`／
-               `glossary.active_tables` 投影出去（`chatbot/app/config/limits_catalog.py`）。
+               `glossary.active_tables` 投影出去。
              **兩顆共用同一份目錄**（§3-3：同頁兩個以上 select 的 option value 集合相同 ⇒ 必須 set 成
                一個陣列共用），比照下面別名表四顆；選取狀態各自一份 id 清單。
              兩顆都是**值載體**⇒ 只掛 hook class、不掛 data-toast（§5 矩陣②）。 #}
@@ -1951,7 +1959,7 @@ permalink: 5-2_conversationSettings.html
                      `glossary_table_ids`，所以歸屬不另驗）；上面一張都沒授權時這一顆停用——比照別名表
                      三階段的做法（§5：狀態要看得見才稽核得到，只是改不動）。
                    **三態送出**（靠 `exclude_unset` 分辨，見 gufofaq-saas
-                     `services/product/app/routers/settings_hub.py` 的 `ProfileConfigIn.glossary_apply_agent`）：
+                     的 `ProfileConfigIn.glossary_apply_agent`）：
                      全部勾選送 `null`、全部不勾送 `[]`、部分勾選送該清單。
                      **全勾不可以送完整清單**：`null` 與「剛好列出全部」今天行為相同，但 `null` 是升級後
                      既有租戶該保持的狀態，而且之後新增一張表時會自動可見；送完整清單則會讓新表預設看不到。
@@ -1963,7 +1971,7 @@ permalink: 5-2_conversationSettings.html
                     {% for t in glossaryTableCatalog %}{% if t.id in glossaryBindIds %}<option value="{{ t.id }}"{% if t.id in glossaryApplyAgentIds %} selected{% endif %}>{{ t.name }}</option>{% endif %}{% endfor %}
                 </select>
                 {# 這段警語是必要的、不是裝飾。第二句是這個功能唯一可能做反的地方：**拿掉工具的同時也
-                     拿掉了路由訊號**——「何時查」（GufoRAG chatbot `app/db/database.py` 的
+                     拿掉了路由訊號**——「何時查」（GufoRAG chatbot 的
                      `when_to_consult`）就是那顆查詢工具的描述，主 agent 據此決定要不要查這張表；表一旦
                      不掛工具，那句話也一起從工具清單消失，若對應 skill 的 description 沒接手，主 agent
                      連 skill 都不會呼叫。 #}
@@ -1977,7 +1985,7 @@ permalink: 5-2_conversationSettings.html
         </div>
 
         {# ── 別名表：綁定 ＋ 三個階段各自套用 ────────────────────────────────────────
-             正本＝GufoRAG chatbot `app/db/database.py` 的 `chat_configs`／`chat_rooms` 四欄（**不是** product 的
+             正本＝GufoRAG chatbot 的 `chat_configs`／`chat_rooms` 四欄（**不是** product 的
              `retrieval_profiles` 表，那張表沒有任何 `alias_apply*` 欄——同名符號配錯 repo 照字面看不出來，§3-2）
              （`alias_table_ids`／`alias_apply_match`／
              `alias_apply_reasoning`／`alias_apply_output`）。
@@ -1987,26 +1995,24 @@ permalink: 5-2_conversationSettings.html
              已選的表；第一顆沒選任何表時後三顆停用（值控制項照渲染但 disabled，§5：狀態要
              看得見才稽核得到，只是改不動）。
              四顆都是**值載體**⇒ 只掛 hook class、不掛 data-toast（§5 矩陣②）。
-             一個設定檔最多綁 10 張。**三層都在執行，這句提示是真的**（round46 逐檔複驗；上一版的
-             出處路徑已經過期，而過期的出處會讓下一個人 grep 不到、進而判定「沒有任何後端在擋」）：
-               ① product 自己的邊界：`app/routers/settings_hub.py` 的 `ProfileConfigIn.alias_table_ids`
+             一個設定檔最多綁 10 張。**三層都在執行，這句提示是真的**：
+               ① product 自己的邊界：`ProfileConfigIn.alias_table_ids`
                   是 `Annotated[list[int], Field(max_length=MAX_ALIAS_TABLES_PER_CONFIG)]` ⇒ 第 11 張
                   在 product 這一層就被擋成 422，根本到不了上游。
-               ② product 的界線目錄：`app/limits/chat_config_limits.py` 的
+               ② product 的界線目錄：
                   `MAX_ALIAS_TABLES_PER_CONFIG = 10`，並以 `LIST_FIELD_LIMITS["alias_table_ids"]`
                   的 `max_items` 經 `GET /settings/chat-config-limits` 投影給前端——**與下面那句
                   術語表「最多 30」是同一張表相鄰的兩列**（`glossary_table_ids` 的 `max_items`），
                   兩句提示的憑據完全相同，不存在「一真一假」。
-               ③ 上游寫入層：GufoRAG chatbot `app/knowledge/alias/service.py` 的
-                  `MAX_ALIAS_TABLES_PER_CONFIG`，由同檔 `validate_alias_table_ids` 拋
-                  `AliasValidationError`，呼叫點在 `app/configuration/service.py` 的 config 寫入路徑
+               ③ 上游寫入層：GufoRAG chatbot 的
+                  `MAX_ALIAS_TABLES_PER_CONFIG`，由同一支模組的 `validate_alias_table_ids` 拋
+                  `AliasValidationError`，呼叫點在 GufoRAG chatbot 的 config 寫入路徑
                   （該檔還有 `test_alias_set_and_order_invariants` 這支單測釘著）。
-             ⚠️ 上一版寫的是 `app/services/alias.py`——那個檔案早就搬走了，符號名對、路徑錯。
-                §3-2 要求 repo ＋ 檔 ＋ 符號三者齊全，正是為了讓這種句子查得回去；查不回去的時候，
-                下一個人得到的結論會是「這條界線不存在」，而那與「這條界線在三個地方」剛好相反。
-             這兩顆數字（10／30）今天仍是前端的抄本，而它們**其實投影得到**（同上 ② 那支端點）。
-                做成資料槽是對的方向，但那會動到兩處使用頁與 React 的接線，不夾在本輪；
-                本輪只把出處修正到查得回去的狀態。
+             ⚠️ **出處要 grep 得回去**：符號名對、位置錯（例如把 ③ 那顆算到 product 頭上）是最難發現的一種
+                ——查的人找不到，得到的結論會是「這條界線不存在」，而那與「這條界線在三個地方」剛好相反。
+                所以這裡一律只寫 repo 名 ＋ 符號名，不寫會搬家的路徑。
+             這兩顆數字（10／30）今天仍是前端的抄本，而它們**其實投影得到**（同上 ② 那支端點）：
+                做成資料槽才是終局，但那會動到兩處使用頁與 React 的接線。
              **四顆共用同一份目錄**（§3-3：同頁兩個以上 select 的 option value 集合相同 ⇒ 必須 set
              成一個陣列共用）：值域正本是 3-6 的別名表清單，選取狀態各自一份 id 清單。
              四份抄本改一處就會漏，而這四顆正是「三個 apply 清單 ⊆ alias_table_ids」那條寫入層
@@ -2094,17 +2100,17 @@ permalink: 5-2_conversationSettings.html
             </div>
         </dialog>
         {# MCP Server：列出平台**註冊**的 server（不只啟用中的），停用中的以「（停用中）」標示。
-             為什麼不濾掉停用的（原本濾掉）：寫入層刻意不驗 is_active——「停用是可逆的營運狀態，不是
+             **為什麼不濾掉停用的**：寫入層刻意不驗 is_active——「停用是可逆的營運狀態，不是
              這個 id 不存在；擋在寫入層會讓『先建好設定、之後再啟用』這種正常流程失敗」（GufoRAG
-             chatbot services/mcp_client.py 的 validate_mcp_server_ids），而濾掉清單等於在 UI 上把那個
+             chatbot 的 validate_mcp_server_ids），而濾掉清單等於在 UI 上把那個
              流程拿掉；更糟的是**已選取的 server 一旦被平台停用就從選單消失**，租戶只要碰一下這個多選
              就把它弄丟了（多選的值來自 <option>，選單沒有它＝選取狀態不存在）。
-             停用期間不會被呼叫（chatbot app/conversation/router.py 的 _select_mcp_servers 以 id.in_() ＋ is_active
+             停用期間不會被呼叫（chatbot 的 _select_mcp_servers 以 id.in_() ＋ is_active
              兩道過濾，落差記 WARNING），故文案是「要等平台啟用後才會被呼叫」而不是「不能設定」。
-             product 已跟上（round40 複驗）：gufofaq-saas `services/product/app/routers/mcp.py` 的
-             `list_tenant_mcp_catalog` 不再濾 `is_active`（只留 `s.get("id") is not None`），
-             docstring 逐字寫著「**為什麼不濾掉停用中的**」並把 `tool_refs.assert_known_mcp_servers`
-             列為寫入層不驗啟用狀態的理由——本頁清單餵得出來了。
+             上游是同一個判斷：product 的 `list_tenant_mcp_catalog` **不濾** `is_active`
+             （只留 `s.get("id") is not None`），它的 docstring 逐字寫著「為什麼不濾掉停用中的」，
+             並把 `tool_refs.assert_known_mcp_servers` 列為寫入層不驗啟用狀態的理由
+             ——所以這份清單餵得出停用中的那幾筆。
              示範 3 筆＝5-6-2 註冊表的三筆（跨頁自洽）；選取 1 筆啟用 ＋ 1 筆停用中，把「已選取卻被停用」
              那一態演出來（§5：每個分支都要有頁面演得到）。「（停用中）」是 chrome 走 i18n，Server 名是
              業務識別字不翻——<option> 裡塞不進第二個節點，故用 ui/multi-select 的 data-suffix／
@@ -2130,18 +2136,19 @@ permalink: 5-2_conversationSettings.html
                 <label for="skillsSelect" class="control-label" data-i18n="settings.assignedSkills">指派 Skill</label>
             </div>
             <div class="field col-12-sm">
-                {# `<option value>`＝Skill 主鍵（product `skills.py` 的 `skill_id`），值域正本是 3-4 那張
-                     管理表：11（refund-flow）／12（lookup-order）／13（policy-lookup）。原本烤 1／2／3，
-                     同一份庫在兩頁各有一組主鍵，而送出去的 `config.skill_ids` 就是這個值（§6）。
+                {# `<option value>`＝Skill 主鍵（product 的 `skill_id`），值域正本是 3-4 那張
+                     管理表：11（refund-flow）／12（lookup-order）／13（policy-lookup）。
+                     ⚠️ **不可以另烤 1／2／3**：那會讓同一份庫在兩頁各有一組主鍵，
+                     而送出去的 `config.skill_ids` 就是這個值（§6）。
                      **`policy-lookup` 在 3-4 是 `enabled: false`**，故要有字面標示（§5：不可用的選項
                      不從清單濾掉，列出來 ＋ 標示狀態；狀態不可只靠顏色或位置表達）。同 MCP 那顆走
                      `ui/multi-select` 的 `data-suffix`／`data-suffix-key` 兩個槽（`<option>` 塞不進第二個
                      節點，§4-2 資料槽慣例），後綴共用 `settings.mcpServerInactive`（繁中「（停用中）」
                      相同的 chrome 沿用既有 key，§4-2）。
-                     為什麼不濾掉：寫入層只驗存在與租戶歸屬、**不驗啟用狀態**（product `app/tool_refs.py`
+                     為什麼不濾掉：寫入層只驗存在與租戶歸屬、**不驗啟用狀態**（product
                      的 `assert_owned_skills` 只做 `_reject_unknown`），所以「先指派、之後再啟用」是
                      正常流程；而多選的選取狀態存在 `<option>` 上，選項消失＝租戶一碰這個多選就把那筆
-                     指派靜默弄丟。停用期間不會被呼叫：GufoRAG chatbot `app/services/skills.py` 的
+                     指派靜默弄丟。停用期間不會被呼叫：GufoRAG chatbot 的
                      `load_active_skill` 對 `not row.enabled` 直接回 `None`，故文案是「要等啟用後才會被
                      呼叫」而不是「不能設定」（與 MCP 那一顆逐字同一種說法）。 #}
                 <select id="skillsSelect" class="form-control multiSelect js-skills" multiple="multiple" data-placeholder="請選擇" data-placeholder-key="common.pleaseSelect">
@@ -2168,7 +2175,7 @@ permalink: 5-2_conversationSettings.html
         {# 區塊標題用 .text-md.text-bold ＋ ⓘ，形狀與本頁其餘七顆逐字相同（理由見「生成參數」那顆）。
              頁層引言（上一行的 `settings.qaDirectIntro`）在 block **外**、位置不動，故這一區的順序是
              「引言 → 標題 → 欄位」；可回答性閘那一區的引言在 block 內，順序是「標題 → 引言 → 欄位」。
-             ①出處＝本子頁籤檔頭與 GufoRAG chatbot `app/services/qa_direct.py` 的
+             ①出處＝本子頁籤檔頭與 GufoRAG chatbot 的
              `qa_direct_active`／`_enabled`（停用時 `resolve()` 第一行就 return）。
              ①**只描述「直答模式」這顆常駐的三選一**，不點名分數門檻與 judge 判準：那兩欄在
              `qa_direct_mode="off"` 時被值相依藏起來（本頁檔頭清單第四條），寫進說明就是把藏起來的
@@ -2213,24 +2220,23 @@ permalink: 5-2_conversationSettings.html
              刻意不相關的問句最低仍有 0.5206），用一個永遠不觸發的數字假裝已校準比留白糟得多。
              **不綁 max、但綁 `min="0"`**：上界綁不得——三顆重排序器的尺不同，還有 gufonet 的 BM25
              是數百～數千的整數，寫死 [0, 1] 會讓 BM25 部署填不進合法值（`step="any"` 才收得下小數）。
-             下界則是端到端只收非負：GufoRAG chatbot `app/services/config.py` 的 `validate_score_floors`
+             下界則是端到端只收非負：GufoRAG chatbot 的 `validate_score_floors`
              對 `_SCORE_FLOOR_FIELDS` 兩欄一律拒負值（負值讓所有 score ≥ 它、粗篩永遠不觸發），
-             product `app/routers/settings_hub.py` 的 `ProfileConfigIn.qa_direct_score_floor` 因此綁
+             product 的 `ProfileConfigIn.qa_direct_score_floor` 因此綁
              `Field(ge=0)`，理由逐字寫著要「讓拒絕發生在使用者還看得到那一格的時候」——表單不夾
              等於把 400 推遲到按下儲存之後。
              ⚠️ **跨子頁籤的相依**（這一格最重要的一句）：寫入層擋下
              「直答模式＝完全命中（judge 關）且 `enable_rerank` 關（在「生成」子頁籤）且門檻非空」
-             → 400、什麼都不存（product `settings_hub.py` 的 `_assert_qa_direct_floor_is_usable`），
+             → 400、什麼都不存（product 的 `_assert_qa_direct_floor_is_usable`），
              理由是那個組合下②層會拿原始檢索分數當逐字直出的唯一依據，而原始分數不是可校準的尺。
              使用者站在這一格看不到那顆重排序開關，故旁邊要有常駐說明並指出兩條出路。
              GufoRAG 那一側的殘留限制（它自己誠實記載）：`exclude_unset` 讓三欄不同時出現時驗證看不到
              另外兩個值，那時靠執行期 WARNING，處置方向是**收窄**（把不可信的門檻當成未設 ⇒ 退回①-only）；
              product 這一側已補起來——`_assert_qa_direct_floor_is_usable` 先讀一次既有 config 再判。
-             product 已宣告這一欄（round40 複驗，原註「尚未宣告」失效）：
-             `services/product/app/profile_config.py` 的 `PROFILE_FIELD_DEFAULTS` 有
-             `"qa_direct_score_floor": None`，`routers/settings_hub.py` 的 `ProfileConfigIn` 與
-             `ProfileConfigOut` 兩邊都有它、且列在 `_NULLABLE_FIELDS`（`None` 是合法目標值＝未校準），
-             故 React 接線不會撞 `extra="forbid"` 的 422。 #}
+             **這一欄 product 宣告得出來**：`PROFILE_FIELD_DEFAULTS` 有
+             `"qa_direct_score_floor": None`，而 `ProfileConfigIn` 與 `ProfileConfigOut` 兩邊都有它、
+             且列在 `_NULLABLE_FIELDS`（`None` 是合法目標值＝未校準）——所以這一格可以留白，
+             React 接線也不會撞 `extra="forbid"` 的 422。 #}
         <div class="form-group row mobile-col">
             <div class="label label-md">
                 {# 這一頁**同時**看得到兩顆「分數門檻」（這一顆與下面可回答性閘那一顆），而兩者的
@@ -2257,8 +2263,8 @@ permalink: 5-2_conversationSettings.html
                 {# **示範狀態是「重排序開著」**（activeScale ＝ llm_reranker），依端點契約的判斷順序，
                      混合尺那一態只在 enable_rerank == false 且 0 < ratio < 1 時成立——兩件事不可能同時發生，
                      所以這裡不傳 scaleNoteMixed（§6 示範資料演的必須是一個真實可能的狀態）。
-                     原本無條件傳進去、再靠元件裡的 .hidden 蓋住，等於用看不見掩蓋一個矛盾的狀態；
-                     那一態的長相改由元件庫展示頁演（§5）。 #}
+                     ⚠️ **不要無條件傳進去、再靠元件裡的 .hidden 蓋住**——那是用看不見掩蓋一個
+                     矛盾的狀態；那一態的長相由元件庫展示頁負責演（§5）。 #}
                 {% set scaleNoteMixed = "" %}
                 {% include "ui/score-scale-note/score-scale-note.html" %}
                 <span class="text-gray" id="qaDirectScoreFloorDep" data-i18n="settings.qaDirectScoreFloorDep">留白＝未校準：裁決開著時代表不預篩、全部交給裁判；裁決關著時代表只用「正規化完全命中」那一層，那是安全的組態。但「完全命中」＋「生成」子頁籤的重排序關閉時不得設門檻——那時只剩原始檢索分數，它不是可校準的尺，存檔會被擋下。兩條出路：開啟重排序（分數就會是重排序器的尺），或把這一格留白。</span>
@@ -2296,8 +2302,8 @@ permalink: 5-2_conversationSettings.html
             </div>
             <div class="field col-12-sm">
                 {# `<option value>`＝QA 集主鍵，值域正本是 3-3 那張管理表：2（客服問答集）／3（產品 FAQ）。
-                     原本烤 1／2——不只是「號碼不一樣」，`value="2"` 在這一頁指的是產品 FAQ、在 3-3 指的是
-                     客服問答集，同一個值兩頁指到不同的東西，接上 API 之後是靜默選錯集（§6）。 #}
+                     ⚠️ **不可以另烤 1／2**：那不只是「號碼不一樣」——`value="2"` 會在這一頁指產品 FAQ、
+                     在 3-3 指客服問答集，同一個值兩頁指到不同的東西，接上 API 之後是**靜默選錯集**（§6）。 #}
                 <select id="qaDirectDatasetsSelect" class="form-control multiSelect js-qa-direct-datasets" multiple="multiple" data-placeholder="請選擇" data-placeholder-key="common.pleaseSelect">
                     <option value="2" selected>客服問答集</option>
                     <option value="3">產品 FAQ</option>
@@ -2312,7 +2318,7 @@ permalink: 5-2_conversationSettings.html
     <div class="block flex-row column gap-16 mt-16">
         {# 區塊標題用 .text-md.text-bold ＋ ⓘ，形狀與本頁其餘七顆逐字相同（理由見「生成參數」那顆）。
              標題加在既有引言**之上**（「標題 → 引言 → 欄位」），引言那顆 `.text-gray` 節點不動。
-             ①出處＝本區塊上方那段檔頭與 GufoRAG chatbot `app/services/grounding.py`（`_score_floor`
+             ①出處＝本區塊上方那段檔頭與 GufoRAG chatbot （`_score_floor`
              只在閘內呼叫）。①**只描述這顆閘開／關各自會發生什麼**，不點名「補充判準」與
              「可回答性分數門檻」：兩欄在閘關著時被值相依藏起來（本頁檔頭清單第三條），寫進說明
              就是把藏起來的欄位攤回畫面上。
@@ -2342,23 +2348,22 @@ permalink: 5-2_conversationSettings.html
         </div>
         {# grounding 判定前的分數粗篩門檻（chatbot `ChatConfig.grounding_score_floor`，預設 0.5）。
              **與 QA 直答那一格刻意不對稱**：這一格非空、沿用 0.5。
-           ⚠️ **待回流**（gufofaq-saas@648c3cc 複驗）：saas `apps/web/lib/i18n/messages.{zh,en}.json` 的
-             `settings.groundingScoreFloorNote` 仍是上游第 26 輪之前的舊句（「只是判定前的門票，
-             閘開著時 LLM 判定一定會跑」），而那句話上游自己已經宣告為假——11ty 這一份是修正過的。
-             ⚠️ 先前這裡（與畫面上那句說明）寫著「grounding 的門檻永遠只是門票，閘開著時 LLM 判定
-             一定會跑，擋不到東西只是多付一次判定」——**上游第 26 輪明文宣告那是假的**：分數粗篩
-             命中時 `assess_grounding` 直接回 NO_ANSWER，**零 LLM、終局拒答**，隨後整批來源卡被清空。
+           ⚠️ **待回流**：gufofaq-saas `apps/web/lib/i18n/messages.{zh,en}.json` 的
+             `settings.groundingScoreFloorNote` 還是舊句（「只是判定前的門票，閘開著時 LLM 判定
+             一定會跑」），要改成與這一頁逐字相同的版本。
+             ⚠️ **那句「門票」是假的，不可以寫回來**：分數粗篩命中時 `assess_grounding` 直接回
+             NO_ANSWER，**零 LLM、終局拒答**，隨後整批來源卡被清空——它不是「多付一次判定」，
+             是這一輪的結局。
              0.5 看起來無害只是因為 weaviate certainty 幾乎恆大於 0.5；換 `bge_reranker`（未正規化
              logits、可為負）同一個 0.5 會讓**每一題**都變成誠實查無。
              QA 直答的門檻在關掉裁判時是**唯一判定** ⇒ 那一格才可以為空。兩格的說明不共用一句話：
              寫成「都可留白」或「都必填」的話，錯的那一邊症狀是無聲的（這一格留白 ⇒ 上游 400；
              那一格必填 ⇒ 既有 exact 租戶遷移後直接失去直答）。
              同樣**不綁 max、綁 `min="0"`**（尺不同見下方那段目前生效的尺；非負同受 GufoRAG chatbot
-             `app/services/config.py` 的 `validate_score_floors` 管——`_SCORE_FLOOR_FIELDS` 兩欄都在裡面）。
-             product 已宣告這一欄（round40 複驗，原註「尚未宣告」失效）：
-             `services/product/app/profile_config.py` 的 `PROFILE_FIELD_DEFAULTS` 有
-             `"grounding_score_floor": 0.5`，且 `routers/settings_hub.py` 的 `ProfileConfigOut` 把它
-             宣告成不可為 null 的 `float`（`_NULLABLE_FIELDS` 只收 `qa_direct_score_floor`）。 #}
+             的 `validate_score_floors` 管——`_SCORE_FLOOR_FIELDS` 兩欄都在裡面）。
+             **這一欄 product 宣告得出來**：`PROFILE_FIELD_DEFAULTS` 有
+             `"grounding_score_floor": 0.5`，且 `ProfileConfigOut` 把它宣告成不可為 null 的 `float`
+             （`_NULLABLE_FIELDS` 只收 `qa_direct_score_floor`）——這正是這一格不可留白的契約依據。 #}
         <div class="form-group row mobile-col">
             <div class="label label-md">
                 <label for="groundingScoreFloor" class="control-label" data-i18n="settings.groundingScoreFloorLabel">可回答性分數門檻</label>
@@ -2375,8 +2380,8 @@ permalink: 5-2_conversationSettings.html
                 {# **示範狀態是「重排序開著」**（activeScale ＝ llm_reranker），依端點契約的判斷順序，
                      混合尺那一態只在 enable_rerank == false 且 0 < ratio < 1 時成立——兩件事不可能同時發生，
                      所以這裡不傳 scaleNoteMixed（§6 示範資料演的必須是一個真實可能的狀態）。
-                     原本無條件傳進去、再靠元件裡的 .hidden 蓋住，等於用看不見掩蓋一個矛盾的狀態；
-                     那一態的長相改由元件庫展示頁演（§5）。 #}
+                     ⚠️ **不要無條件傳進去、再靠元件裡的 .hidden 蓋住**——那是用看不見掩蓋一個
+                     矛盾的狀態；那一態的長相由元件庫展示頁負責演（§5）。 #}
                 {% set scaleNoteMixed = "" %}
                 {% include "ui/score-scale-note/score-scale-note.html" %}
                 <span class="text-gray" id="groundingScoreFloorNote" data-i18n="settings.groundingScoreFloorNote">這一格不可留白（預設 0.5）。它並不是判定前的門票——檢索最高分低於它時，這一輪不問 LLM 就直接判成誠實查無，來源也會一併清空。分數的尺由當次的重排序器決定（weaviate 0–1、llm_reranker 1–5、jina 0–1、bge_reranker 可為負），換一顆重排序器就要重新校準這個數字，否則同一個 0.5 可能一題都擋不到、也可能每一題都擋。與「QA 直答」那一格的可留白刻意不同。</span>
@@ -2399,10 +2404,25 @@ permalink: 5-2_conversationSettings.html
 
 {# 統一儲存：直送 PUT /settings/profiles/{no}（分組 merge 寫回生成/政策/agent-提示詞/內建工具/MCP 勾選）。
      切版新頁的直送 API 鈕→data-toast 列全結果（§5）＋自創 js-save-profile-config（React 綁定記號）。
-     403 那一段見「啟用全部意圖判斷」旁的註解（`PUT /settings/profiles/{no}` 掛 product
-     `routers/settings_hub.py` 的 `require_capability("settings","write")`）。 #}
+     403 那一段見「啟用全部意圖判斷」旁的註解（`PUT /settings/profiles/{no}` 掛 product 的
+     `require_capability("settings","write")`）。
+   **第 5 段：同一份設定檔不可掛兩顆同名的 skill。** skill 名稱的唯一性**判在掛載面、不是資料表**
+     （不是 `UNIQUE(tenant_id, name)` 那種欄位層唯一鍵，因為 tag 當不了分組鍵）：判準是
+     GufoRAG chatbot 的 `validate_skill_ids`——「一份 config 不得掛兩顆同名 skill」，
+     訊息指名那個名字與兩個 id。
+     product 在送出去之前就先擋下並回 400（`_reject_duplicate_skill_names`，訊息 `toolref.skill_name_clash`）。
+     **為什麼非得自己一段**：它落在第 2 段「部分欄位未通過驗證」時，對一個勾了二十顆 skill 的人
+     講不出任何可行動的資訊——而這一格的下一步是很具體的兩個（改名、或只掛其中一顆）。
+     **是 warning 不是 error**：使用者自己改得掉。
+     ⚠️ 這一段刻意不寫成「請勿重複選取」：使用者選的是**兩顆不同的 skill**（不同 id、不同內容），
+     只是名字撞了；寫成重複選取會把他推去找一個不存在的重複勾選。
+     （「同一份清單塞了同一顆 id 兩次」是另一件事，由 `validate_skill_ids` 前半段的重複值檢查擋，
+     而本頁那顆多選是 `<option>` 的選取狀態、產不出重複 id ⇒ 不列，§5「列出不可能的結果與
+     只演成功一樣是說謊」。）
+     **追在末位、不插中間**：React 端讀的是 `split("|")[n]` 的索引契約，中間插一段會讓其後
+     每一段整批位移。 #}
 <div class="flex-row justify-content-center mt-24">
-    <button data-capability="settings:write" type="button" class="button button-primary js-save-profile-config" data-toast="對話設定已儲存|部分欄位未通過驗證|權限不足，無法儲存——請找貴租戶的管理者開通|儲存失敗，請稍後再試" data-i18n-data-toast="toast.saveProfileConfig" data-toast-type="success|warning|warning|error" data-i18n="settings.saveConfig">儲存對話設定</button>
+    <button data-capability="settings:write" type="button" class="button button-primary js-save-profile-config" data-toast="對話設定已儲存|部分欄位未通過驗證|權限不足，無法儲存——請找貴租戶的管理者開通|儲存失敗，請稍後再試|這份設定檔掛了兩顆同名的 skill。skill 的名稱就是送進模型的工具名，同名時只有一顆會生效——請改名，或只掛其中一顆" data-i18n-data-toast="toast.saveProfileConfig" data-toast-type="success|warning|warning|error|warning" data-i18n="settings.saveConfig">儲存對話設定</button>
 </div>
 
 {# 意圖啟用確認 modal（intentionModal）：檢索與欄位子頁籤開啟某層意圖、但仍有資料集未填任務描述時彈出

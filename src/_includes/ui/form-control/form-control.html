@@ -1,4 +1,6 @@
-{# 展示片段，取自真實 app pages/components/component.html 08 輸入框 section（節錄，class 沿用真實系統）。
+{# 展示片段（非生產 markup）：元件庫頁「08 輸入框」的樣式目錄——一般／禁用／錯誤／必填／表單層級
+     訊息／搜尋框／多行各一格，每格底下一句 `.subtitle` 說明怎麼掛。生產欄位還要帶界線提示與
+     綁定記號，形狀見 `_form-control.scss` 檔頭的生產契約。
      label 與輸入框以 for/id 關聯（無障礙示範，見 GUIDELINE §4；本片段只在元件庫頁出現一次，故可用固定 id）。
      **五顆 label 逐字都是「標題」**，只有樣式不同 ⇒ 報讀器的表單元素清單上是五行一模一樣的「標題」。
      同 ui/button 的樣式目錄：label 尾巴補一段 .sr-only 的變體名（不動版面，可見字面仍完整包含在
@@ -37,7 +39,7 @@
                 <input type="text" id="demoInputError" placeholder="請輸入" class="form-control error">
             </div>
         </div>
-        <div class="subtitle">描述：輸入框錯誤狀態，在 input 上加 .error 標紅。訊息不在欄位下方——§4 全站一種回報方式：驗證結果走送出鈕 data-toast 的 warning 段。.error-prompt 只留給「訊息具體」或「真 app 業務 js 會填」的那幾處（不列頁名：寫死枚舉註定過期）</div>
+        <div class="subtitle">描述：輸入框錯誤狀態，在 input 上加 .error 標紅。訊息不在欄位下方——§4 全站一種回報方式：驗證結果走送出鈕 data-toast 的 warning 段。.error-prompt 只留給「訊息具體」或「業務 js 會填」的那幾處（不列頁名：寫死枚舉註定過期）</div>
     </div>
     <div class="col-6-md">
         <div class="form-group">

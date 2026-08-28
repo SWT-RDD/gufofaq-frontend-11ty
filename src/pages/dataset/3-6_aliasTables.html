@@ -14,17 +14,19 @@ permalink: 3-6_aliasTables.html
     {% include "ui/breadcrumb/breadcrumb.html" %}
 </div>
 
-{# 別名表管理（SaaS 新需求，真 app 無對應）。逆向自 GufoRAG chatbot `app/models/alias.py`
-     與 `app/services/alias.py`：**別名表統一管理「誰＝誰」，各功能自己決定要不要套用**。
-     在此之前別名散在兩個地方（術語表詞條的 aliases、出口替換規則的 aliases），而最需要它的
-     QA 直答逐字比對完全沒有——使用者打「推廣貿易服務費要怎麼繳」、QA 集裡是「推貿費要如何繳納？」，
-     實測 4 次只命中 1 次。術語表的 `aliases` 欄已於 2026-08-07 隨上游移除（見 chatbot
-     `app/db/database.py` 的那句「別名一律住在 alias_entries」），本站同輪拿掉，不留、不 deprecate。
+{# 別名表管理（SaaS 新需求）。逆向自 GufoRAG chatbot 的別名表模型與服務層：
+     **別名表統一管理「誰＝誰」，各功能自己決定要不要套用**。
+     **為什麼要有這一頁**：別名散在術語表詞條與出口替換規則兩個地方時，最需要它的 QA 直答
+     （逐字比對）一個都拿不到——使用者打「推廣貿易服務費要怎麼繳」、QA 集裡寫的是
+     「推貿費要如何繳納？」，實測 4 次只命中 1 次。
+     **別名只住在一個地方**：術語表沒有 `aliases` 欄（GufoRAG chatbot 逐字寫著「別名一律住在
+     alias_entries」），這一頁也不留、不 deprecate 任何第二份別名——兩份別名一定會分岔，
+     而分岔的那一天沒有任何畫面看得出來。
 
    **階段不標在每一列詞條上**：那會變成幾百列 × 三個勾選框，實務上一定被「全選」處理掉，
      得到的是假的細緻度。三個套用開關放在設定檔（5-2），一個明確、看得見、一鍵可撤的決定。
 
-   上限是契約欄位（§6），出處＝chatbot `app/services/alias.py`：
+   上限是契約欄位（§6），出處＝GufoRAG chatbot 的這六顆常數：
      `MAX_TABLE_NAME_LEN = 200`／`MAX_DESCRIPTION_LEN = 2000`／`MAX_ALIAS_ENTRIES_PER_TABLE = 20000`／
      `MAX_ALIASES_PER_ENTRY = 50`／`MAX_CANONICAL_LEN = 200`／`MAX_ALIAS_LEN = 200`。
      版型比照 3-2_glossaryManagement（新增區＋清單表＋條件開窗 modal）——它就是同一種東西的
@@ -41,9 +43,9 @@ permalink: 3-6_aliasTables.html
      分支都要看得到）。
 
    **「別名總數」這一格是切版對後端提的要求**（§4「切版主張需求，不等後端」），不是端點今天
-     回得出來的欄：GufoRAG chatbot `app/routes/alias.py` 的 `_table_to_dict` 逐欄是
+     回得出來的欄：GufoRAG chatbot 的 `_table_to_dict` 逐欄是
      `id`／`tenant_ref`／`name`／`description`／`version`／`entry_count`／`created_at`／`updated_at`
-     ——**沒有任何別名計數**，而 product `app/routers/alias.py` 是原樣代理、不加欄。
+     ——**沒有任何別名計數**，而 product 是原樣代理、不加欄。
      要求的內容：`GET /api/alias` 應補 `alias_count`（＝各列 `len(aliases)` 的總和）。
      為什麼非它不可：一張表「有幾個詞條」與「總共登記了幾個別名」是兩個決定
      （`MAX_ALIAS_ENTRIES_PER_TABLE = 20000` 與 `MAX_ALIASES_PER_ENTRY = 50` 是兩條不同的上限），
@@ -64,14 +66,24 @@ permalink: 3-6_aliasTables.html
 <p class="text-gray" data-i18n="settings.aliasTablesIntro">別名表管理「哪些詞是同一件事」。哪些功能要套用哪幾張表，在「對話設定」裡各自決定——別名表本身不決定它在哪裡生效。</p>
 
 {# 新增別名表：只有名稱（必填）與說明。送出鈕的 data-toast 列全結果（§5 矩陣③），
-     warning 段對回 `services/alias.py` 的 `validate_alias_table_metadata`（空名、長度上限）。
-     **沒有「名稱已存在」那一段**：`routes/alias.py` 的 `create_alias_table` 只跑那一支驗證就 db.add，
-     而 `app/db/database.py` 的 `alias_tables.name` 是 `Column(String(200), nullable=False)`——無 unique、
-     無 UniqueConstraint、全檔零 IntegrityError 分支。列一個上游產不出來的結果，與只演成功一樣是說謊（§5）。 #}
+     warning 段對回 chatbot 的 `validate_alias_table_metadata`（空名、長度上限）。
+     **沒有「名稱已存在」那一段**：GufoRAG chatbot 的 `create_alias_table` 只跑那一支驗證就 db.add，
+     而 GufoRAG chatbot 的 `alias_tables.name` 是 `Column(String(200), nullable=False)`——無 unique、
+     無 UniqueConstraint、全檔零 IntegrityError 分支。列一個上游產不出來的結果，與只演成功一樣是說謊（§5）。
+   **第 5 段：到達每租戶的張數上限。** product 的 `create_alias_table` 第一行就是
+     `await _assert_table_quota(...)` → 第 31 張回 400 `table.too_many_for_tenant`。
+     **執法點在 product**（`MAX_TABLES_PER_TENANT = 30`，術語表與別名表共用同一顆常數、
+     兩族各自這麼多），不在 GufoRAG chatbot——那一側的 `tenant_id` 是呼叫端自填的 tag、
+     當不了配額鍵（換一個 tag 就再拿 30 張）。
+     **它是 warning、不是 error**：使用者刪掉用不到的表就建得起來。
+     **而且一定要有自己的一段**：併進第 4 段「建立失敗，請稍後再試」就是把一個永久的拒絕
+     演成暫時故障——使用者的下一步變成「等一下再按一次」，而那永遠不會成功。
+   ⚠️ 第 5 段刻意不帶「現在幾張／上限幾張」，理由同 3-2：`data-toast` 是屬性型譯文，數字要有
+     一處常駐可見的節點承載，那一處是下方「別名表清單」標題列的計數（`已 N / 30 張`）。 #}
 <div class="block mt-16 mb-16 flex-row column gap-16">
     {# ⓘ 說明：markup 逐字照抄 `settings/5-2_conversationSettings.html` 出口套用欄那顆既有
          info-btn 六件組。①出處：本檔檔頭「別名表統一管理『誰＝誰』」那段＋ GufoRAG chatbot
-         `app/models/alias.py`（`canonical`＋`aliases` 的表形狀）。刻意不提「哪裡套用」——
+         的別名表形狀（`canonical` ＋ `aliases`）。刻意不提「哪裡套用」——
          那句已經是上方 `settings.aliasTablesIntro` 的內容，重寫一次只是噪音。 #}
     <div class="flex-row align-items-center gap-8">
         <div class="text-md text-bold" data-i18n="settings.addAliasTable">新增別名表</div>
@@ -105,35 +117,58 @@ permalink: 3-6_aliasTables.html
         </div>
     </div>
     <div class="flex-row">
-        <button data-capability="data:write" type="button" class="button button-primary" data-toast="別名表已建立|權限不足，無法新增——請找貴租戶的管理者開通|表名稱不可為空，或長度超過上限|建立失敗，請稍後再試" data-i18n-data-toast="toast.createAliasTable" data-toast-type="success|warning|warning|error">
+        <button data-capability="data:write" type="button" class="button button-primary" data-toast="別名表已建立|權限不足，無法新增——請找貴租戶的管理者開通|表名稱不可為空，或長度超過上限|建立失敗，請稍後再試|這個租戶的別名表已經達到上限，建不了新的——每一張掛進設定檔的表都會常駐在每一輪對話的提示詞裡。請先刪掉用不到的那幾張" data-i18n-data-toast="toast.createAliasTable" data-toast-type="success|warning|warning|error|warning">
             <img src="./images/icon_add_white.png" width="48" height="48" decoding="async" alt="" class="icon">
             <span data-i18n="settings.addAliasTable">新增別名表</span>
         </button>
     </div>
 </div>
 
-{# 「新增別名表」的說明視窗：②③留空——現在生效的條件與這一區的數字由 React 執行期算，
-     切版這一側只提供容器（help-modal.html 檔頭）。 #}
+{# 「新增別名表」的說明視窗：②留空——現在生效的條件由 React 執行期算，切版這一側只提供容器
+     （help-modal.html 檔頭）。 #}
 {% set helpModalId = "addAliasTableHelpModal" %}
 {% set helpModalTitleKey = "help.settings.addAliasTable.title" %}
 {% set helpModalTitle = "新增別名表說明" %}
 {% set helpModalWhatKey = "help.settings.addAliasTable.what" %}
 {% set helpModalWhat = "這一區用來新增一張別名表，把使用者可能用不同說法（例如簡稱、口語）問到的同一件事登記成一組「正式寫法＋別名」，供比對時把使用者的說法歸到同一個詞或同一筆資料。" %}
 {% set helpModalStateItems = [] %}
-{% set helpModalLimitRows = [] %}
+{# ③ 這一區唯一的界線：**每個租戶最多幾張表**，同構於 3-2 那一列。
+     出處＝`GET /api/datasets/limits` 的 `alias.tables_per_tenant`（product 的
+      `DATASET_LIMIT_GROUPS.alias`，值取
+     `chat_config_limits.MAX_TABLES_PER_TENANT`——**與術語表共用同一顆常數**，兩族各自這麼多）。
+     **落在 `/datasets/limits` 而不是 `/settings/chat-config-limits`**：判準是閘（別名表走
+     `data:read`／`data:write`，與該端點同閘；`chat-config-limits` 是 `settings:read`），
+     見 product 那一段逐字寫著的理由。執法點＝product 的 `_assert_table_quota`。
+     名稱／說明兩欄的長度上限**不列在這裡**：它們已經是欄位旁常駐可見的 hint ＋ `maxlength`（§4）。
+     `bound` 寫法照全站慣例（半形短破折號兩側各一個空白、不加千分位；單邊界線只寫 `≤ 30`）。
+     ⚠️ 兩顆 key 與 3-2 術語表共用（理由逐字寫在該頁同一列的註解：繁中原文相同的 chrome
+     沿用既有 key，§4-2；兩族的值本來就是同一顆常數）。 #}
+{% set helpModalLimitRows = [
+  { labelKey: "help.settings.tablesPerTenant", label: "一個租戶最多幾張表",
+    bound: "≤ 30",
+    effectKey: "help.settings.tablesPerTenantEffect",
+    effect: "達到上限之後建不了新的表（400），既有的表不受影響。要再建就得先刪掉用不到的——這個上限管的是「常駐在每一輪對話提示詞裡的表有幾張」。" }
+] %}
 {% include "components/help-modal/help-modal.html" %}
 
 <div class="block flex-row column gap-16">
     {# ⓘ 說明：同上一顆 info-btn 六件組。①出處：本區塊逐列刪除鈕上方的檔頭
-         （product `app/routers/alias.py` 的 `delete_alias_table` 只代理，守衛在 GufoRAG）＋
-         GufoRAG chatbot `chatbot/app/routes/alias.py` 的 `delete_alias_table`
+         （product 的 `delete_alias_table` 只代理，守衛在 GufoRAG）＋
+         GufoRAG chatbot 的 `delete_alias_table`
          （四個欄位——`alias_table_ids`／三個 apply 清單——任一提到都算參照）。 #}
-    <div class="flex-row align-items-center gap-8">
-        <div class="text-md text-bold" data-i18n="settings.aliasTableList">別名表清單</div>
-        <button type="button" class="info-btn" title="別名表清單說明" data-i18n-title="help.settings.aliasTableList.title" data-open-modal="aliasTableListHelpModal">
-            <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
-            <span class="sr-only" data-i18n="help.settings.aliasTableList.title">別名表清單說明</span>
-        </button>
+    {# 「已經用掉幾張」畫在清單標題那一列，與 3-2 逐字同構——形狀出處（本頁自己那顆
+         `components/alias-entries-modal` 的「已 N / 20000 筆」計數列）與三顆 key 的沿用理由
+         寫在 3-2 同一處。左邊的 N 由 `aliasTables.length` 推導（§6 示範資料自洽），右邊的 30
+         是契約值，出處同上方說明窗那一列。 #}
+    <div class="flex-row align-items-center flex-wrap gap-16">
+        <div class="flex-row align-items-center gap-8">
+            <div class="text-md text-bold" data-i18n="settings.aliasTableList">別名表清單</div>
+            <button type="button" class="info-btn" title="別名表清單說明" data-i18n-title="help.settings.aliasTableList.title" data-open-modal="aliasTableListHelpModal">
+                <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+                <span class="sr-only" data-i18n="help.settings.aliasTableList.title">別名表清單說明</span>
+            </button>
+        </div>
+        <span class="text-gray"><span data-i18n="settings.glossaryEntryCountPrefix">已 </span><span>{{ aliasTables.length }}</span><span data-i18n="settings.glossaryEntryCountMid"> / </span><span>30</span><span data-i18n="settings.tableCountSuffix"> 張</span></span>
     </div>
     <div class="table-container scrollTable">
         <table class="default-table">
@@ -156,14 +191,15 @@ permalink: 3-6_aliasTables.html
             <tbody>
                 {% for table in aliasTables %}
                 <tr data-alias-table-id="{{ table.id }}">
-                    {# 名稱與說明是列內就地編輯 ＋ 同列「儲存」（版型比照 3-2）。**前端打的是 product 的
-                         `PATCH /alias/{table_id}`、收 `AliasTableUpdateIn`**（gufofaq-saas
-                         `app/routers/alias.py`）＝name 與 description 的**局部更新**，兩欄都改得到；
-                         product 再代理到 chatbot 的 `PUT /api/alias/{table_id}`（收 `AliasTableUpdate`）
-                         ——兩層同名檔＋同名函式而**動詞不同**，只寫「alias.py 的 update_alias_table」
-                         照字面看不出指錯了哪一層（§3-2 跨 repo 代理要指名前端真正打的那一層＋動詞）。
-                         原本這裡是一顆「重新命名」鈕，但它要開的窗全站不存在，而且說明欄完全沒有修改路徑
-                         （§4：request 收得下的每個參數都要在畫面上有落點）。
+                    {# 名稱與說明是列內就地編輯 ＋ 同列「儲存」（版型比照 3-2）。**前端打的是
+                         gufofaq-saas product 的 `PATCH /alias/{table_id}`、收 `AliasTableUpdateIn`**
+                         ＝name 與 description 的**局部更新**，兩欄都改得到；product 再代理到
+                         GufoRAG chatbot 的 `PUT /api/alias/{table_id}`（收 `AliasTableUpdate`）
+                         ——兩層的函式同名而**動詞不同**，只寫「`update_alias_table`」照字面看不出
+                         指的是哪一層（§3-2：跨 repo 代理要指名前端真正打的那一層＋動詞）。
+                       ⚠️ **不做「重新命名」那種鈕**：它只改得到名字，說明那一欄就再也沒有修改路徑，
+                         而 `AliasTableUpdateIn` 兩欄都收得下（§4：request 收得下的每個參數都要在
+                         畫面上有落點）；何況那顆鈕還要另開一扇全站不存在的窗。列內就地編輯兩欄一起解決。
                        迴圈內的值控制項不掛靜態 aria-label（§4：同表 3 列會全部同名）——改吃
                          「本列辨識欄 ＋ 欄表頭」，故另補一顆 sr-only 列名。
                        兩欄的 aria-describedby 指表格下方那一份共用上限（§4：同一個欄位在同一頁出現
@@ -183,8 +219,8 @@ permalink: 3-6_aliasTables.html
                         {# 「編輯詞條」與「刪除」要先選定「哪一張表」＝業務條件開窗 ⇒ 只掛 hook class、不掛
                              data-open-modal（§5）。刪除沿用既有的 delete-modal（本頁底部 include）。
                            「儲存」是直接送 API 的動作鈕（③）⇒ 掛 data-toast 列全結果。**前端打的是
-                             product `app/routers/alias.py` 的 `PATCH /alias/{table_id}`（`AliasTableUpdateIn`）**，
-                             它再代理到 chatbot `app/routes/alias.py` 的 `PUT /api/alias/{table_id}`
+                             product 的 `PATCH /alias/{table_id}`（`AliasTableUpdateIn`）**，
+                             它再代理到 chatbot 的 `PUT /api/alias/{table_id}`
                              （`AliasTableUpdate`）——守衛住在 chatbot 那一層：
                              `validate_alias_table_metadata` 的 AliasValidationError → 400
                              （使用者修得掉＝warning）、找不到表 → 404、其餘 → DATABASE_ERROR。
@@ -199,7 +235,7 @@ permalink: 3-6_aliasTables.html
                     </td>
                 </tr>
                 {% else %}
-                {# 具名空狀態（round48）：與 3-2 同一族——建了還要在對話設定綁給設定檔才生效
+                {# 具名空狀態：與 3-2 同一族——建了還要在對話設定綁給設定檔才生效
                      （5-2 的 `settings.aliasApplyNeedsBind`「請先綁定別名表」講的就是這件事）。 #}
                 <tr><td colspan="5" class="text-center text-gray" data-i18n="dataset.noAliasTables">這個租戶還沒有別名表。按上面的「新增別名表」建第一張，再到「對話設定」把它綁給要用的設定檔——沒有綁定的表不會被問答用到。</td></tr>
                 {% endfor %}
@@ -207,7 +243,7 @@ permalink: 3-6_aliasTables.html
         </table>
     </div>
     {# 逐列兩欄共用的常駐可見上限（正典＝glossary-entries-modal 的 #glossaryLimitsHint）。
-         數字走資料節點、不烤進譯文（§4-2）；出處＝chatbot `app/services/alias.py` 的
+         數字走資料節點、不烤進譯文（§4-2）；出處＝chatbot 的
          `MAX_TABLE_NAME_LEN`／`MAX_DESCRIPTION_LEN`（見檔頭那份上限清單）。 #}
     <p id="aliasTableLimitsHint" class="text-gray m-0"><span data-i18n="settings.glossaryLimitTableName">表名稱上限 </span><span>200</span><span data-i18n="settings.aliasLimitDesc"> 字、說明 </span><span>2000</span><span data-i18n="common.unitChars"> 字</span></p>
 </div>

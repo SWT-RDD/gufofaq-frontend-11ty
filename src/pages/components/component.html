@@ -11,11 +11,13 @@ bodyClass: guideline-page
   { label: "設定" },
   { label: "對話設定" }
 ] %}
-{# 元件庫展示頁（style-guide catalog），取自真實 app pages/components/component.html。
-   本頁有自己的版型（.full-container + aside 導覽 + .main-container 分節，節數見 aside 目錄），不是一般頁面 chrome，
-   故不用 layouts/page-shell（header/main/footer），改直接掛 layouts/base/base.html。
-   各節盡量 {% include %} 已建好的 ui/* 、components/* 展示檔（DRY，避免與其他頁面的元件標記漂移），
-   純版面/文字類（欄位 Columns、文字與顏色）與跳窗展示版內容（previewTextModal）等無對應元件檔的原始展示，逐字手寫。 #}
+{# 元件庫展示頁（style-guide catalog）：全站每一顆 ui/*、components/* 在同一頁上的長相與用法，
+   給設計師與轉 React 的人一頁看完。
+   本頁有自己的版型（.full-container ＋ aside 導覽 ＋ .main-container 分節，節數見 aside 目錄），
+   不是一般頁面 chrome，故不用 layouts/page-shell（header/main/footer），直接掛 layouts/base/base.html。
+   **各節一律 `{% include %}` 已建好的元件檔**，不在這裡另抄一份 markup——抄出來的第二份會與使用頁
+   無聲漂移，而這一頁的用途正是「唯一可信的長相」。只有純版面／文字類（欄位 Columns、文字與顏色）
+   與跳窗的展示版內容（previewTextModal）這些沒有對應元件檔的東西才逐字手寫。 #}
 
 <div class="full-container">
     <aside>
@@ -88,7 +90,9 @@ bodyClass: guideline-page
             <h2 class="section-title"><span>01</span><span>版型</span></h2>
             <div class="caption">
                 <ul>
-                    {# 真 app 此處另有一張標紅/綠/黃框的版型截圖（guideline_images/layout.png）；本頁未搬那張圖，文字不再指涉顏色框 #}
+                    {# 版型這一節**只用文字描述、不放示意截圖**：截圖會與實際版型各走各的，
+                         而這一頁的整個 header 與內容區就在下面幾節，看得到真的。
+                         連帶：這幾句話不指涉任何顏色框，因為畫面上沒有那種框。 #}
                     <li>版面由三個區塊構成：Header、主要內容區、頁尾</li>
                     <li>頁面向下滾動後，header 會 fixed 在最上方</li>
                 </ul>
@@ -146,8 +150,9 @@ bodyClass: guideline-page
                         <div class="example-box">.col-6-md .col-12-sm</div>
                     </div>
                 </div>
-                {# 這一列同時示範 `xs-gap-*`：它必須與 `mobile-column-xs` 同掛才生效（§4），
-                     而先前全站沒有任何一處真的用它——style guide 廣告了一顆沒有人看過的 class。 #}
+                {# 這一列同時示範 `xs-gap-*`：它必須與 `mobile-column-xs` 同掛才生效（§4）。
+                     **這一頁是它全站唯一的使用處**，所以非畫不可——style guide 廣告一顆
+                     沒有任何地方畫得出來的 class，等於在教人用一個沒有人驗過的東西。 #}
                 <div class="flex-row gap-20 mobile-column-xs xs-gap-8">
                     <div class="col-6-md col-12-xs">
                         <div class="example-box">.col-6-md .col-12-xs</div>
@@ -333,7 +338,7 @@ bodyClass: guideline-page
             {% include "ui/form-control/form-control.html" %}
 
             {# ui/score-scale-note 的兩個附帶狀態（混合尺警語／分數尺剛變過要重新校準）：
-                 5-2 那兩處是 React 依端點回應與「剛剛改了什麼」條件渲染的，真實頁不會常駐，
+                 在使用頁（5-2）上，這兩段由 React 依端點回應與「剛剛改了什麼」條件渲染，不會常駐，
                  所以這裡是全站唯一看得到它們長相的地方（§5，同 platform.usageError 的處置）。 #}
             {# 這顆 `scaleNoteId` 會渲染成 `id`，所以**要有控制項指到它**（§4 反向規則：沒有人指的
                  hint id 比完全沒有 id 更難查）。示範因此比照 5-2 附一顆分數門檻欄——那本來就是這段
@@ -353,10 +358,10 @@ bodyClass: guideline-page
                 {% set scaleNoteRecalibrated = true %}
                 {% include "ui/score-scale-note/score-scale-note.html" %}
             </div>
-            {# 第二把尺：`enable_rerank=false` 那一支（round45 補）。5-2 原本用 `retrievalBackends` 帶著
-                 weaviate 的實測數字，卻**全站零消費點**——那段數字被自己的註解宣告為「使用者判斷門檻
-                 該填多少的唯一依據」，而它一個像素都沒畫出來（§5：沒有頁面演得出來的分支等於沒驗收過）。
-                 那份陣列已從 5-2 移除，示範搬到這裡。
+            {# 第二把尺：`enable_rerank=false` 那一支，示範**住在這一頁**。
+                 weaviate 那組實測數字是「使用者判斷門檻該填多少」的唯一依據，而 5-2 上沒有任何
+                 版位畫得出它——把數字放進一個零消費點的資料陣列，等於它一個像素都沒出現過
+                 （§5：沒有頁面演得出來的分支等於沒驗收過）。所以它畫在這裡。
                  ⚠️ 實測數字**原文照抄不縮寫**：`0.5` 在這個後端上永遠擋不下任何東西，縮寫掉就等於
                  把「這個門檻是死條件」這件事藏起來。
                  ⚠️ 四個參數要**全部重設**——`{% set %}` 是頁面全域，只設兩顆會沿用上面那一份的
@@ -379,7 +384,7 @@ bodyClass: guideline-page
                 {% set scaleNoteRecalibrated = false %}
                 {% include "ui/score-scale-note/score-scale-note.html" %}
             </div>
-            <div class="subtitle">描述：分數門檻旁的「目前這把尺」。三段都由使用頁的參數決定：尺的原文（端點字串，不翻）、混合尺警語（不給＝不渲染）、重新校準紅字（不給＝不渲染）。本區把後兩態一起打開，5-2 的真實頁只會在條件成立時各自出現一段</div>
+            <div class="subtitle">描述：分數門檻旁的「目前這把尺」。三段都由使用頁的參數決定：尺的原文（端點字串，不翻）、混合尺警語（不給＝不渲染）、重新校準紅字（不給＝不渲染）。本區把後兩態一起打開，使用頁（5-2）只會在條件成立時各自出現一段</div>
             <div class="caption">
                 <ul>
                     <li>多選框（tag 多選 + 搜尋過濾，原生 JavaScript 實作，見 ui/multi-select）</li>
@@ -595,7 +600,7 @@ bodyClass: guideline-page
                         <span class="sr-only">刪除</span>
                     </button>
                     <button type="button" class="button button-primary" data-open-modal="likeModal">開啟答案評分modal（AB 那一份）</button>
-                    {# 前台分享窗：真實頁（faq.html）上的那顆分享鈕是**條件開窗**（先送
+                    {# 前台分享窗：使用頁（faq.html）上的那顆分享鈕是**條件開窗**（先送
                          `POST /public/share` 拿 token，成功才開窗），故那顆鈕不掛 data-open-modal
                          ——這一顆示範觸發器就是它「看得見」的那條路（GUIDELINE §1-2 第三條路）。 #}
                     <button type="button" class="button button-primary" data-open-modal="shareModal">開啟前台分享連結modal</button>
@@ -604,18 +609,20 @@ bodyClass: guideline-page
                     <button type="button" class="button button-dark" data-open-modal="ProductionSettingsNoPermissionModal">套用為正式設定（無權限）</button>
                     <button type="button" class="button button-dark" data-open-modal="ProductionSettingsModal">套用為正式設定（單測確認版）</button>
                     <button type="button" class="button button-dark" data-open-modal="ProductionSettingsCompareModal">套用為正式設定（A/B 比對版）</button>
-                    {# 示範觸發器照抄真實頁（2-2-1/2-2-3）的完整寫法，title 與 sr-only 的 i18n 同進退——
-                         只翻一半會在英文模式出現 title 繁中、sr-only 英文的裂縫 #}
+                    {# 示範觸發器逐字沿用使用頁（2-2-1／2-2-3）那一顆的完整寫法：這一頁是 ⓘ 鈕的
+                         長相正本，寫成簡化版就會有人照這裡抄一顆缺件的。
+                         `title` 與 `sr-only` 的 i18n **同進退**——只翻一半，英文模式下會出現
+                         title 是繁中、sr-only 是英文的裂縫。 #}
                     <button type="button" class="info-btn" title="配置說明" data-i18n-title="qaTest.configInfo" data-open-modal="knowledgeModal">
                         <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
                         <span class="sr-only" data-i18n="qaTest.configInfo">配置說明</span>
                     </button>
-                    {# 這幾個彈窗在真實頁是業務條件開窗（.js-reset-password／.js-manage-tenant／詳情頁「分享」鈕／
+                    {# 這幾個彈窗在正式環境是業務條件開窗（.js-reset-password／.js-manage-tenant／詳情頁「分享」鈕／
                          .js-manage-members／.js-manage-entries／.js-copy-config／.js-qa-import…各 hook 見對應 modal 檔頭，
                          不掛 data-open-modal，見 GUIDELINE §5）。「看得見」由本頁示範觸發器保證（第三條路）。 #}
                     <button type="button" class="button button-dark" data-open-modal="resetPasswordModal">開啟重設密碼modal</button>
                     <button type="button" class="button button-dark" data-open-modal="manageTenantModal">開啟租戶管理modal</button>
-                    {# 這一顆在真實頁上是從**租戶管理窗裡面**（`.js-reset-usage`）條件開出來的第二層確認窗；
+                    {# 這一顆在正式環境是從**租戶管理窗裡面**（`.js-reset-usage`）條件開出來的第二層確認窗；
                          這裡的示範觸發器是它「看得見」的那條路（GUIDELINE §1-2 第三條路）。 #}
                     <button type="button" class="button button-dark" data-open-modal="resetUsageModal">開啟重置當期用量確認modal</button>
                     <button type="button" class="button button-dark" data-open-modal="shareManageModal">開啟分享連結管理modal</button>
@@ -649,7 +656,8 @@ bodyClass: guideline-page
             <br>
             <div>
                 {# uploadErrorFiles／uploadTooLargeFiles 只在本頁設：讓兩種拒絕理由各自那一列看得到
-                     （真實頁由 upload-box.js 在 drop／change 時填入被略過的檔名；§5 分支要有頁面演得出來）。
+                     （使用頁上這兩列由 upload-box.js 在 drop／change 當下填入被略過的檔名，平常是空的；
+                     §5 分支要有頁面演得出來）。
                      下一個 include（qa-import-modal 內含 upload-box）之前兩顆都會重設，否則 §2 的
                      頁面全域 set 會把它們帶過去。
                      **兩列的示範檔名刻意不重疊**：同一個檔同時出現在兩列，看起來像兩個檔（js 那一側
@@ -781,15 +789,15 @@ bodyClass: guideline-page
                 </ul>
             </div>
             {# chrome（面板標題、同意鈕、到期／凍結標題與說明、強制改密那一面板的每一顆欄位）**掛
-               `data-i18n`**（round48）：它們是使用者真的讀得到的 app chrome，只是**只有這一頁演得出來**
+               `data-i18n`**：它們是使用者真的讀得到的 app chrome，只是**只有這一頁演得出來**
                ——§4-2 的「showcase 整頁不翻」豁免給的是「寫給切版者看的內容」（上面那幾條 caption），
-               不是碰巧住在 showcase 頁上的 app 文字。先前整段不掛 key，於是這五句話的正本落在 React 的
-               字典裡（`subscription.*`／`settings.mustChangePassword*` 那一族靠 REACT_ONLY 白名單擋著），
-               切版改了不會紅、英文那一份也沒有任何東西對帳——那正是「第二個文案正本」的定義。
-               免責本文則是正式環境 GET /api/disclaimer 的長法律文字（product disclaimer.py，不走 i18n），此處取節錄
+               不是碰巧住在 showcase 頁上的 app 文字。**不掛 key 的後果**：這幾句話的正本會落到 React
+               的字典裡（`subscription.*`／`settings.mustChangePassword*` 那一族靠 REACT_ONLY 白名單
+               擋著），切版改了不會紅、英文那一份也沒有任何東西對帳——那正是「第二個文案正本」的定義。
+               免責本文則是正式環境 GET /api/disclaimer 的長法律文字（product，不走 i18n），此處取節錄
                示意其長相（§3-2）——長到足以觸發面板的 max-height 封頂＋內捲（正式版靠 88dvh，展示版靠 demo-static 的固定高）。
                ⚠️ **「30 天」不烤進譯文**（§3-2：那個數字在 API 契約裡有欄位，就不准出現在譯文字串裡）：
-               試用天數的正本是 product `app/tenancy/subscription.py` 的 `TRIAL_DAYS`，而 `GET /account`
+               試用天數的正本是 product 的 `TRIAL_DAYS`，而 `GET /account`
                回得出 `trial_end` 與 `days_left` ⇒ 拆成「前綴 key ＋ 數字節點 ＋ 後綴 key」（§4-2 正典形狀，
                同 pagination 那一組）。烤在句子裡的話，天數一改，繁中與英譯會各自靜默過期。 #}
             <div class="subscription-overlay demo-static">
@@ -804,8 +812,8 @@ bodyClass: guideline-page
                         <p class="m-0">服務變更與可用性：本平台保留隨時修改、暫停或終止服務的權利，無需提前通知。使用者應理解服務可能因技術、法律或相關政策調整而有所變更。</p>
                     </div>
                     <div class="panel-footer">
-                        {# 這一顆是**送 API 的鈕**（`POST /account/accept-disclaimer`，product
-                             `app/routers/account.py`）：照 §5 ③ 掛 `data-toast` 列全結果。
+                        {# 這一顆是**送 API 的鈕**（product 的 `POST /account/accept-disclaimer`）：
+                             照 §5 ③ 掛 `data-toast` 列全結果。
                              **兩段就是全部**：那支端點的閘只有 `get_current_user`（docstring 逐字
                              「任何登入者可呼叫（首次登入強制流程）」——首登流程本來就不可能要求任何能力），
                              服務層 `account_service.accept_disclaimer` 是冪等的、沒有拒絕路徑，
@@ -817,15 +825,15 @@ bodyClass: guideline-page
                 </div>
             </div>
             {# **強制改密那一面板**（`/me` 的 `must_change_password`，只在使用期生效中才擋）。
-                 它與上面那一面板同型（三段式），差別只在 body 放的是表單——而那份表單先前**切版從來沒有定過**：
-                 React 端自己畫了三顆欄位、把驗證結果寫成面板內的行內錯誤字。§4「全站一種回報方式」要的是
-                 送出鈕的 toast warning 段，所以這裡把版位與回報方式一起定下來。
-               **三顆欄位不是兩顆**：強制改密走的是 `POST /me/change-password`（product `app/routers/users.py`），
+                 它與上面那一面板同型（三段式），差別只在 body 放的是表單——**而這一份表單的版位與
+                 回報方式正本就在這裡**：切版不定，React 端就會自己畫三顆欄位、把驗證結果寫成面板內的
+                 行內錯誤字，而 §4「全站一種回報方式」要的是送出鈕的 toast warning 段。
+               **三顆欄位不是兩顆**：強制改密走的是 `POST /me/change-password`（product），
                  `ChangePwIn` 收 `old_password` ＋ `new_password` ⇒ 舊密碼欄非有不可，少一顆就是送不出去的表單。
                  欄位寫法與 toast 段落逐字比照 5-1-1 的「變更密碼」區塊（同一支端點、同一組守衛，
                  §5「同一道後端守衛，不論從哪一頁觸發，分支集合與語意型別都要一致」）。
-               `minlength="8"` 與那句常駐提示的出處同 `components/reset-password-modal`（product
-                 `app/security.py` 的 `MIN_PASSWORD_LEN`）；React 端執行期改讀 `GET /me/limits` 的 `password.min`。 #}
+               `minlength="8"` 與那句常駐提示的出處同 `components/reset-password-modal`
+                 （product 的 `MIN_PASSWORD_LEN`）；React 端執行期改讀 `GET /me/limits` 的 `password.min`。 #}
             <div class="subscription-overlay demo-static mt-16">
                 <div class="subscription-panel">
                     <div class="panel-header" data-i18n="settings.mustChangePasswordTitle">請先變更密碼</div>
@@ -890,31 +898,34 @@ bodyClass: guideline-page
                 <ul>
                     <li>components/step-flow：後台測試區（單測 2-2-1／AB 2-2-3 <strong>每側各一份</strong>）與問答紀錄詳情（4-2）的詳細執行觀測——把整條正典管線畫成類 mermaid 直式流程圖，每節點可展開看工具/參數/結果/grounding 判定/agent 推理</li>
                     <li>頂端的整體執行摘要<strong>有條件</strong>：五欄全部來自整輪收尾才發的 <code class="inline-code">chat_room</code> 塊、<code class="inline-code">model</code> 更是只有重播那條路拿得到，所以還在串流的那一輪（2-2-1）整列不渲染；給得出摘要的頁＝在演一筆重播的落庫紀錄</li>
-                    <li>狀態點：is-completed（綠）／is-running（深墨，當前高亮）／is-skipped（空心環，未走分支）／is-failed（紅）／pending（灰）。真實頁演到 completed（2-2-3 兩側、4-2、3-4）、running 與 pending（<strong>只有 2-2-1</strong>——它是全站唯一演「這一輪還在跑」的頁，走元件內建示範；2-2-3 兩側與 4-2 演的是跑完並落庫的重播，全 completed）與 failed（3-4 的試跑沙盒）；<strong>只有 is-skipped 沒有任何生產頁演得到</strong>，靠這一節活著（GUIDELINE §5：scss 狀態 class 沒有頁面演得出＝補元件庫靜態示範）</li>
+                    <li>狀態點：is-completed（綠）／is-running（深墨，當前高亮）／is-skipped（空心環，未走分支）／is-failed（紅）／pending（灰）。正式環境演到 completed（2-2-3 兩側、4-2、3-4）、running 與 pending（<strong>只有 2-2-1</strong>——它是全站唯一演「這一輪還在跑」的頁，走元件內建示範；2-2-3 兩側與 4-2 演的是跑完並落庫的重播，全 completed）與 failed（3-4 的試跑沙盒）；<strong>只有 is-skipped 沒有任何生產頁演得到</strong>，靠這一節活著（GUIDELINE §5：scss 狀態 class 沒有頁面演得出＝補元件庫靜態示範）</li>
                     <li>進度「目前 X / N」與摘要「檢索」筆數全由節點資料推導、不烤字面量；收合復用 ui/accordion，本元件不自帶 js</li>
                 </ul>
             </div>
             {# 失敗流程示範：生成到一半被合規攔截而中止，下游整段沒跑——一次演到 failed＋completed＋skipped
-               （**skipped 才是唯一無真實頁的態**：failed 在 3-4 的試跑沙盒有一個節點，running／pending 在
+               （**skipped 才是唯一無正式環境的態**：failed 在 3-4 的試跑沙盒有一個節點，running／pending 在
                2-2-1／2-2-3 的元件內建示範裡），且是一個真實可能的狀態（§6）。節點與摘要一起給，檢索筆數對上「命中 3 筆」。
-               ⚠️ **failed 之後一律 skipped，沒有 pending**：saas `apps/web/lib/domain/stepFlow.ts` 的 `computeFlow`
-               docstring 逐字寫著「`failed` 是終止狀態：其後的節點本輪不會再跑，一律 skipped」。
-               原本尾巴排成 skipped／pending／pending——pending 的語意是「還沒輪到、等一下會跑」，
-               而這一輪已經中止了，那三個節點是同一件事，不可能一個略過、兩個還在排隊。
-               pending 那一態在元件內建示範與 3-4 的試跑沙盒都看得到，不會因此沒有人演。 #}
+               ⚠️ **failed 之後一律 skipped，沒有 pending**：gufofaq-saas 的
+               `apps/web/lib/domain/stepFlow.ts`，`computeFlow` 的 docstring 逐字寫著「`failed` 是
+               終止狀態：其後的節點本輪不會再跑，一律 skipped」。
+               所以尾巴三站**不可以排成 skipped／pending／pending**：pending 的語意是「還沒輪到、
+               等一下會跑」，而這一輪已經中止，那三個節點的處境是同一件事，不可能一個略過、
+               兩個還在排隊。pending 那一態在元件內建示範與 3-4 的試跑沙盒都看得到，
+               不會因為這裡不畫就沒有人演。 #}
             {# ⚠️ 這一份是**一次真實執行**，所以 QA 直答那一站只能是未命中：命中會結構性短路
-               （GufoRAG chatbot `services/agent_service.py` 的 `after_tools` 逐字「QA 原文本身就是回覆…
-               刻意不經 respond…grounding 同樣跳過」）——原本它掛著 `decision: "hit"`／`decidedBy: "llm_judge"`
-               卻又接著檢索、判定、生成，正是 round38d 在元件內建示範上修掉的那個組合，這一份漏網。
-               改成 agent 工具那一道判否（`entry: "agent_tool"` ⇒ `poolSize` 1，`answer_from_qa` 只判
-               agent 挑的那一筆，照實寫）。三種**判定層**（exact／score_floor／llm_judge）只在命中時才有值，
+               （GufoRAG chatbot 的 `after_tools` 逐字「QA 原文本身就是回覆…
+               刻意不經 respond…grounding 同樣跳過」）——**`decision: "hit"` 配 `decidedBy` 再接著
+               檢索、判定、生成，是一個上游產不出來的組合**，而畫面上它看起來完全正常。
+               這裡走 agent 工具那一道判否（`entry: "agent_tool"` ⇒ `poolSize` 1，`answer_from_qa`
+               只判 agent 挑的那一筆，照實寫）。三種**判定層**（exact／score_floor／llm_judge）只在命中時才有值，
                而命中就沒有後續生成 ⇒ 它們的示範一律放在下面那份狀態目錄，不放在真實執行流程裡。
-               節點清單與正典管線同長同序（saas `apps/web/lib/domain/stepFlow.ts` 的 `CANONICAL_PIPELINE.agent`
-               九站，首站 `input_gate`、qa_direct 第 2 站）。判定雖然發生在 agent 迴圈**之內**，
+               節點清單與正典管線同長同序（gufofaq-saas 的 `apps/web/lib/domain/stepFlow.ts`，
+               `CANONICAL_PIPELINE.agent` 九站，首站 `input_gate`、qa_direct 第 2 站）。
+               判定雖然發生在 agent 迴圈**之內**，
                節點仍畫在第 2 站——`computeFlow` 是照正典序畫、再用事件點亮，不是照事件到達順序排。
                ⚠️ **失敗那一站的訊息走 `error`、不走 `result`**：`result` 是**工具輸出**那一欄
                （走 ui/collapse-text），而生成節點不是工具節點、根本拿不到它；failed 步驟身上帶的是
-               `error`（saas product `app/routers/ask.py` 的 `_STATUS_PUBLIC_KEYS` 放行的欄位之一），
+               `error`（product 的 `_STATUS_PUBLIC_KEYS` 放行的欄位之一），
                明細列渲染成「失敗原因」＋ `td.step-node-error`。3-4 試跑沙盒那顆 failed 節點即此支。 #}
             {% set stepFlowNodes = [
                 { label: "輸入合規檢查", state: "completed", time: "9ms" },
@@ -928,15 +939,16 @@ bodyClass: guideline-page
                 { label: "輸出合規檢查", state: "skipped", time: "" }
             ] %}
             {# 摘要是節點的衍生值（§6）：延遲＝已跑過的六站總和 9＋240＋320＋1400＋160＋1200
-                 ＝ 3,329ms ⇒ **3.3s**（skipped 那三站不計，本輪它們沒跑）；TTFT 算到第一個回答 token，
+                 ＝ 3,329ms ⇒ **3.3s**（skipped 那三站不計，這一輪它們沒跑）；TTFT 算到第一個回答 token，
                  而生成從前五站之後才開始 ＝ 9＋240＋320＋1400＋160 ＝ 2,129ms ⇒ **2.1s**。
-                 取整規則只有一份、寫在 step-flow 檔頭（`formatMs`：≥1s 一位小數四捨五入）：
-                 3.329 → 3.3、2.129 → 2.1。原本寫 1.9s／520ms，兩個都比自己的節點還早；
-                 上一輪改成 3.4s／2.2s，數字對了但取整往上多進一格。 #}
+                 取整規則只有一份、寫在 step-flow 檔頭（`formatMs`：≥1s 一位小數**四捨五入**）：
+                 3.329 → 3.3、2.129 → 2.1。這兩個數字有兩種常見的寫錯法：填一個比自己的節點還早的
+                 時間（例如 1.9s／520ms，那比前面幾站的和還小），或是把取整寫成無條件進位
+                 （3.4s／2.2s）——節點耗時就在旁邊，讀的人加得出來。 #}
             {% set stepFlowSummary = {
                 tokens: "742", latency: "3.3s", ttft: "2.1s", results: "3", model: "openai:gpt-4o-mini"
             } %}
-            {# 軌跡截斷態（S3）：真實頁不會常駐它（只有超過 200／50 上限的那幾輪才有），
+            {# 軌跡截斷態（S3）：使用頁上它不會常駐（只有超過 200／50 上限的那幾輪才有），
                  所以這裡是全站唯一看得到「已顯示 N／共 M 筆」與那顆「載入完整軌跡」的地方（§5，
                  同 platform.usageError／share.rateLimited 的處置）。數字與上面九個節點不衝突：
                  節點是固定長度的正典管線摘要，這兩個數字算的是產生它的原始事件流。 #}
@@ -954,28 +966,28 @@ bodyClass: guideline-page
                  **這一份是「狀態目錄」，不是一次真實執行**（同 §5：值域的每一個成員都要有地方看得到，
                  而靜態稿一次只畫得出一態，所以目錄型示範是那些成員唯一的家）：
                  真實一輪最多兩筆 qa_direct——建圖前閘門判否、agent 又判一次——那個形狀在第 3、5
-                 兩筆上就演得到。六種並列是因為審的人要一眼比較得出差異，分散在六個真實頁反而看不出來。
+                 兩筆上就演得到。六種並列是因為審的人要一眼比較得出差異，拆散到六個使用頁上反而看不出來。
                  為什麼要有：上游每一輪都送判定、未命中那半也送，而未命中時 `decidedBy`（gate）與
                  `matchedRank` 沒有值 ——「裁判判否」與「未達分數門檻」剩下的三格數字長得一模一樣，
                  「整輪未判定」更是連 `hit` 都沒帶、展開整個是空的。客戶最在乎的就是 QA 直答，
                  改了判準文字之後得有一個畫面回答得出「有沒有變好」。
                  **判否與未達門檻是中性灰、不是錯誤紅**：那是系統正確運作的結果（這一筆 QA 沒有完整
                  回答使用者，所以不逐字直出）；畫紅色會讓人以為系統壞了。
-                 ⚠️ **`decidedBy`（判定層）只在命中那幾筆有值**：上游 GufoRAG chatbot `app/services/qa_direct.py` 把 `gate` 只寫進
+                 ⚠️ **`decidedBy`（判定層）只在命中那幾筆有值**：上游 GufoRAG chatbot 把 `gate` 只寫進
                  `DECISION_HIT` 的判定紀錄（值域 `GATE_EXACT`／`GATE_SCORE_FLOOR`／`GATE_LLM_JUDGE`；
                  不寫死幾處 `_rec`——實際是四處 `_rec` 加一處 agent 工具路徑的 `probe.record`），
                  `DECISION_RECONSTRUCT_FAILED` 那兩處 `_rec` 一個 `gate=` 都沒帶。語意上也只能如此：
                  「判定層」回答的是「哪一關**放行**了這一輪」，沒有放行就沒有那一格。
                  ⚠️ 同理 **`matchedRank` 只有 ① 完全命中那一層寫得出來**：`decide()` 只在
                  `_exact_layer` 的兩種收尾（`DECISION_HIT` 與 `DECISION_RECONSTRUCT_FAILED`）帶
-                 `matched_rank=`，② 分數門檻與 ③ LLM 裁判那兩處 `_rec` 都沒有。本輪因此拿掉第 1 筆
-                 （分數門檻命中）身上的名次——「第 3 名／共 16 筆」是那支 API 產不出來的組合。
+                 `matched_rank=`，② 分數門檻與 ③ LLM 裁判那兩處 `_rec` 都沒有。所以第 1 筆
+                 （分數門檻命中）**身上不得有名次**——「第 3 名／共 16 筆」是那支 API 產不出來的組合。
                  **三種判定層都住在這一份目錄**（第 1 筆分數門檻、第 2 筆完全命中、第 8 筆 LLM 裁判）：
                  判定層只在命中時有值，而命中會結構性短路（不經 respond／grounding）⇒ 任何一頁的
                  「真實執行流程」都不可能同時畫得出判定層與後面的生成節點，只有狀態目錄演得到。
                  §2：同一頁第二次用到同元件，**全部參數都要重設**（set 是頁面全域）。 #}
-            {# **除了 `not_attempted`，每一種判定都帶得出「命中的是哪一筆」**——GufoRAG chatbot
-                 `app/services/qa_direct.py` 的 `decide()` 對 `no_exact_and_judge_rejected`／
+            {# **除了 `not_attempted`，每一種判定都帶得出「命中的是哪一筆」**——
+                 GufoRAG chatbot 的 `decide()` 對 `no_exact_and_judge_rejected`／
                  `below_score_floor`／`reconstruct_failed` 一律 `_rec(..., hit=top)`（`reconstruct_failed`
                  在 `_exact_layer` 那一支是 `hit=hits[_rank-1]`），`hits`／`score` 由它衍生；只有
                  `not_attempted` 沒有 `hit`。**「有分數、沒有那一筆是誰」是那支 API 產不出來的組合**，
@@ -1005,11 +1017,11 @@ bodyClass: guideline-page
                   entry: "pre_graph", poolSize: "16", hits: "客服問答集 / 喪失國籍證明要去哪裡申請", score: "3.9", floor: "3" }
             ] %}
             {# 摘要在這一份是**目錄的表頭**、不是某一輪的觀測：**九筆**判定不是同一輪發生的，所以
-                 「檢索」只能是 0——這份示範一個檢索節點都沒有（原本寫 16，那是候選池大小 `poolSize`，
-                 與「檢索回幾筆片段」是兩個不同的數，混用會讓人以為這一輪檢索過）。
-                 延遲 600ms ≥ 九筆耗時總和 18＋12＋240＋26＋9＋4＋31＋220＋15 ＝ 575ms，仍然對得上。
-                 **量詞與母體要對上**：上一版兩處都寫「八筆」，而 575 本來就是**九筆**的和
-                 （`some_future_decision` 是第 9 筆）——數字對、量詞錯。
+                 「檢索」只能是 0——這份示範一個檢索節點都沒有。**不可以填 16**：那是候選池大小
+                 `poolSize`，與「檢索回幾筆片段」是兩個不同的數，混用會讓人以為這一輪檢索過。
+                 延遲 600ms ≥ 九筆耗時總和 18＋12＋240＋26＋9＋4＋31＋220＋15 ＝ 575ms，對得上。
+                 **量詞與母體要對上**：這裡是**九筆**（`some_future_decision` 是第 9 筆），
+                 寫成「八筆」的話 575 這個和就多出一筆來歷不明的耗時——數字對、量詞錯一樣是錯。
                  另：延遲寫成 `600ms` 不是 `0.6s`——取整規則見 step-flow 檔頭，`formatMs` 只在 ≥1s
                  才換成秒，`0.6s` 是它產不出來的形狀。 #}
             {% set stepFlowSummary = {
@@ -1029,8 +1041,8 @@ bodyClass: guideline-page
             <h2 class="section-title"><span>24</span><span>React 條件文案</span></h2>
             <div class="caption">
                 <ul>
-                    <li>下面這幾句在真實頁是 React 依 state 條件渲染的分支，它們的「另一態」是**什麼都不渲染**——所以在那些頁上永遠看不到（GUIDELINE §5：沒有頁面演得出來的分支等於沒驗收過）</li>
-                    <li>真實頁保留 <strong>.hidden</strong> 的那份 markup 當**位置與樣式的規格**（React 要知道它長在哪一格、用哪個字色），這一區則是它們**長相**的唯一可見處</li>
+                    <li>下面這幾句在正式環境是 React 依 state 條件渲染的分支，它們的「另一態」是**什麼都不渲染**——所以在那些頁上永遠看不到（GUIDELINE §5：沒有頁面演得出來的分支等於沒驗收過）</li>
+                    <li>使用頁保留 <strong>.hidden</strong> 的那份 markup 當**位置與樣式的規格**（React 要知道它長在哪一格、用哪個字色），這一區則是它們**長相**的唯一可見處</li>
                     <li>示範資料刻意不觸發它們：把預設態畫成錯誤態，等於讓每個打開頁面的人都以為出事了</li>
                     <li>本節的最後三組是**枚舉的成員**（不是條件式的另一支）：`absent_in_baseline`（2-2-5 的示範推導不到）、5-1-1 的<strong>額度週期單位三態</strong>（那一格是 input 的 value 屬性，拆不出節點掛 key，所以只畫得出示範租戶那一個）、manage-tenant-modal 的<strong>平台系統管理員徽章</strong>（那份名冊裡沒有這一級的人）——三者的繁中在全站只有這裡渲染得出來</li>
                     <li>末尾那一顆是另一種缺席：<strong>枚舉的成員</strong>，不是條件式的另一支。使用頁的示範資料推導下來只演得到同一個枚舉的其中幾個成員，剩下的成員沒有被否決、只是那一頁畫不到——它們的家在這裡，不是「刪掉 key、讓 React 自己拼字串」（GUIDELINE §4-2：繁中是原文，留在字串出現的地方）</li>
@@ -1078,8 +1090,9 @@ bodyClass: guideline-page
                      這一句是**切版自己定的**每桶列 20 則上限，而 2-2-5 那一輪只有 10 則案例，
                      任何一桶都到不了 20 ⇒ `rows.length === count` 恆成立、`{% if %}` 永遠是另一支
                      ⇒ 那一頁**結構上**演不到它（GUIDELINE §5：條件在唯一使用頁上恆為某一值＝沒有人
-                     看過它的長相）。上一版為了「把截斷演出來」把無變化桶寫成 2 列而 count 留 8，
-                     演的是依它自己的規則不可能發生的狀態，已收。
+                     看過它的長相），所以它的可見處只能在這裡。
+                     ⚠️ 反過來在 2-2-5 上「把截斷演出來」（無變化桶只寫 2 列、count 留 8）是不行的：
+                     那演的是依那一頁自己的規則不可能發生的狀態。
                    數字：20 就是 2-2-5 釘死的每桶上限（不是隨手填的——那一頁寫了三條理由：全站列表
                      每頁 20 筆、單次執行上限 200 則、被夾掉的每一則都還在「逐案例結果」那張表裡）；
                      36 是一個大得過得了那道上限的桶子總則數。繁中逐字照抄 2-2-5（§4-2 同 key 兩種繁中
@@ -1141,7 +1154,7 @@ bodyClass: guideline-page
                 </div>
                 {# 4-2 的「有無進行意圖判斷」那一格的**第三個枚舉成員**。`chat_logs.is_intension` 是
                      可為 null 的布林 ⇒ 三態（是／否／—），而 4-2 那一筆是 agent 模式，`is_intension`
-                     在 agent 下**恆為 False**（實測矩陣 gufofaq-saas `docs/mode-matrix.md` 的
+                     在 agent 下**恆為 False**（實測矩陣：gufofaq-saas 的 `docs/mode-matrix.md`，
                      `intent_enabled` 那一列）——「否」與「—」那一頁畫得到，「是」要傳統搜尋 ＋ 意圖
                      開啟才出得來，改示範資料去湊就是演一個上游做不出來的狀態（§6）。故落在這裡
                      （§4-2：枚舉成員靠「有地方渲染得出來」活著，不是刪掉 key 讓消費端自己拼字串）。 #}
@@ -1152,8 +1165,8 @@ bodyClass: guideline-page
                 {# 3-1-3 **多選**刪除時，確認窗內文那一格的量詞。單選那一條指名檔名（`deleteTargetId`
                      那顆空 span 由業務 js 填），多選講不出是哪一個檔、只能講數量——而 3-1-3 的靜態稿
                      只畫得出窗關著的樣子，那一格在使用頁上結構性地畫不到（§4-2：使用頁演不到的落在這裡）。
-                     先前這一句在 React 端是寫死的繁中，英文租戶會在一個破壞性確認窗上看到
-                     「Are you sure you want to delete 3 個檔案」。
+                     **這一句的正本必須留在切版**：讓 React 端寫死一段繁中的話，英文租戶會在一個
+                     破壞性確認窗上看到「Are you sure you want to delete 3 個檔案」。
                      **只有後綴、沒有前綴**：中英兩邊數字都排在最前面，硬湊一顆恆為空字串的前綴 key
                      只是多一顆沒有內容的節點。**數量恆 ≥ 2**（正好一筆時走的是檔名那一條），所以英文
                      固定複數、不做單複數分岔。
@@ -1161,8 +1174,9 @@ bodyClass: guideline-page
                 <p class="m-0"><span data-i18n="common.confirmDelete">確定要刪除</span> <span><span>3</span><span data-i18n="dataset.deleteFileCountSuffix"> 個檔案</span></span></p>
                 {# 5-3「資料夾使用貢獻度」長條圖的**系列欄名**（畫在 tooltip 與圖例那一行上）。
                      切版的圖是 `<canvas>` 佔位、不引 Chart.js（components/chart-box 檔頭），所以這一句
-                     在使用頁上永遠畫不出來——與「送出中／載入中」那一族同辦法：回切版給它一個渲染點
-                     （REACT-CONVERSION §③；先前它在 React 端是 Recharts `<Bar name>` 的寫死繁中）。
+                     在使用頁上永遠畫不出來——與「送出中／載入中」那一族同辦法：由切版給它一個渲染點
+                     （REACT-CONVERSION §③）。少了這個渲染點，這句繁中就只會活在 React 端的
+                     Recharts `<Bar name>` 裡，成為切版之外的第二個文案正本。
                      不沿用既有 key：`settings.retrievedCount`（「取用資料數：」）自帶冒號、是同頁指標列的
                      label 不是欄名；`health.hitCountLabel`／`health.hitSum` 講的是 3-5 的「命中次數」，
                      與這裡的「取用次數」是兩個詞（§4-2 同繁中才沿用，不同繁中不共用）。 #}
@@ -1175,7 +1189,7 @@ bodyClass: guideline-page
                      `pending`，1-2-1 逐檔演 `pending`／`unknown`／缺席態（彙總那一顆也是 `unknown`）。
                      `succeeded` 兩頁都**刻意不演**——把它畫在剛送出的畫面上等於讓每個打開頁面的人
                      以為索引一定進去了（同本節第 3 條的反向）；`failed` 則是那一刻上游還給不出的
-                     結論。這兩態在真實頁上演不到，這裡是它們長相的唯一可見處。
+                     結論。這兩態在正式環境演不到，這裡是它們長相的唯一可見處。
                      **顏色本身就是規格**：四態的正確動作各不相同——succeeded 不必做事、failed 是修好
                      資料重匯、unknown 是拿關聯編號問維運而且**絕對不要重匯**、pending 是等。所以四顆
                      徽章刻意四種色：綠／紅／黃／藍（`.is-progress` 這一顆變體就是為了不讓 pending 與
@@ -1187,7 +1201,7 @@ bodyClass: guideline-page
                 <div class="flex-row align-items-center gap-8 flex-wrap">
                     <span class="text-bold" data-i18n="dataImport.syncStateLabel">索引同步：</span>
                     <span class="verdict-tag is-pass" data-i18n="dataImport.syncSucceeded">已寫入索引</span>
-                    {# 這兩格是**有值**那一形（真實頁的 pending／unknown 只演得到「—」那一形）：980 與
+                    {# 這兩格是**有值**那一形（正式環境的 pending／unknown 只演得到「—」那一形）：980 與
                          上面 1-1-6 的資料總量同源，0 是真的零筆——與「沒量到」的「—」是兩件事。 #}
                     <span><span data-i18n="dataImport.syncIndexedCount">索引筆數：</span>980</span>
                     <span><span data-i18n="dataImport.syncFailedCount">索引失敗筆數：</span>0</span>
@@ -1198,19 +1212,19 @@ bodyClass: guideline-page
                 </div>
                 <p class="text-red m-0" data-i18n="dataImport.syncFailedHint">資料已經寫進資料集，但索引沒有建起來，所以這一批（或其中幾筆）現在搜不到。照該檔標示的原因把資料修好之後，只重新匯入標示為「寫入索引失敗」的檔案，不要整批重匯。</p>
                 {# 平台聯絡窗口**沒設過**（`GET /platform/support-contact` 回 `contact: null`；服務層
-                     product `app/tenancy/platform_admin.py` 的 `get_support_contact` 逐字「沒設過就是
+                     product 的 `get_support_contact` 逐字「沒設過就是
                      `None`，不是空字串、也不是任何預設值」）那一態的兩句話。
                      兩個使用頁（login.html 的忘記密碼窗、components/apply-settings-no-permission-modal）
                      的靜態稿都演「有設」那一態——那一態才畫得出值的槽位，也才是版面規格；「沒設」那一態
                      是**整句換掉**，不是把有值那一句留著後面接一段空白（那會畫出「聯絡方式：」然後什麼
-                     都沒有）。故這兩句在真實頁上永遠看不到，這裡是它們唯一的可見處。
+                     都沒有）。故這兩句在正式環境永遠看不到，這裡是它們唯一的可見處。
                      ⚠️ 這一態**不能靠「值是空字串」湊**：服務層清掉時是刪列，兩種都讀成 `null`，
                      消費端拿到的就是「沒有這個東西」而不是「有一個空的東西」。 #}
                 <p class="text-center m-0" data-i18n="faq.forgotPasswordNoContact">親愛的使用者您好，如忘記密碼請與平台管理者聯絡。</p>
                 <p class="text-center m-0" data-i18n="modals.noPermissionNoContact">親愛的客戶您好，因權限不足，無法套用。如需開啟此功能，請聯絡平台管理者。</p>
                 {# 3-5「內容過短、跳過近似重複比對的記錄」那一格的 **null** 態。
                      `health_scan_runs.too_short_records` 是**可空、且沒有 `server_default`** 的欄
-                     （product `app/models.py`）：`NULL` 的意思是「那一次掃描還沒有這個概念」——
+                     （product）：`NULL` 的意思是「那一次掃描還沒有這個概念」——
                      這一欄存在之前寫下的那些列——與 `0`「量過、一筆都沒被排除」是兩件事，補 0 就是
                      替一次沒有發生的量測編一個結果。3-5 的示範是一趟近期的排程掃描（欄位早就存在）
                      ⇒ 那一頁演不到它，這裡是它唯一的可見處。
@@ -1218,26 +1232,26 @@ bodyClass: guideline-page
                 <p class="m-0"><span class="text-bold" data-i18n="health.scanTooShort">內容過短、跳過近似重複比對的記錄：</span><span class="text-gray" data-i18n="health.scanTooShortNotMeasured">上一次檢查時還沒有這一項</span></p>
                 {# 前台問答「整站停用」那一態（`components/faq-chatroom` 與 `ui/widget-shell` 各一份
                      `.js-faq-unavailable`，兩處都掛 `.hidden`）。使用期閘與功能開通閘擋下來時
-                     （product `app/conversation/public_ask.py` 的 `require_active_subscription`／
+                     （product 的 `require_active_subscription`／
                      `require_tenant_feature`，兩者都 403），輸入框停用、換上這一句。
-                     兩個真實頁演的都是**服務正常**那一態——把停用畫成預設態，等於讓每個打開
+                     兩個正式環境演的都是**服務正常**那一態——把停用畫成預設態，等於讓每個打開
                      示範站的人以為機器人壞了（同本節第 3 條）。故這裡是它唯一的可見處。
-                   ⚠️ 這一顆先前是 **React 自己造的 key**（`faq.unavailable`，靠 REACT_ONLY 白名單
-                     擋著），也就是切版之外的第二個文案正本；本輪收回切版，繁中以這一份為準。 #}
+                   ⚠️ `faq.unavailable` 的**繁中正本就是這一份**：這種句子一旦只活在 React 端
+                     （靠 REACT_ONLY 白名單擋著不對帳），就是切版之外的第二個文案正本。 #}
                 <p class="text-red m-0" data-i18n="faq.unavailable">本站的問答服務目前停用中，請聯絡本網站管理者。</p>
-                {# 前台問答的另外兩態（round48，兩顆先前都是 **React 自己造的 key**）：
+                {# 前台問答的另外兩態（兩顆的繁中正本同樣**只能住在切版**，理由同上一句）：
                      ① `.js-faq-no-token`——這條連結身上沒有 widget token（前台靠 `X-Widget-Token`／
                         `?wt=` 認租戶）。它與上一句是兩件事：上一句是服務被關掉，這一句是連結不完整，
                         而兩者要找的人不同（網站管理者 vs 給你這條連結的人）。
                      ② `.js-faq-default-greeting`——租戶沒設歡迎語時，產品自己的第一句話。
                         它與 `comp.widgetDefaultGreeting` 是同一件事的兩個版本：widget 跑在別人的
                         網站上、要先講清楚這裡能問什麼，前台是產品自己的頁面、只要邀請訪客開口。
-                     兩顆在 `components/faq-chatroom` 都掛 `.hidden`（真實頁演的是「有歡迎語、
+                     兩顆在 `components/faq-chatroom` 都掛 `.hidden`（正式環境演的是「有歡迎語、
                      服務正常、連結完整」那一態），這裡是它們唯一的可見處。繁中逐字照抄該元件。 #}
-                {# 4-1 問答紀錄表的 **masking_budget_exceeded** 那一列（round48）：上游整頁遮蔽的
-                     工作量到頂時，那幾列回的是**清空的內容欄 ＋ 一顆旗標**（product
-                     `app/routers/history.py` 的允許清單逐字列著它）。示範資料一律 false（把錯誤態
-                     畫成預設態，每個打開頁面的人都會以為出事了），所以這兩句在真實頁上渲染不出來。
+                {# 4-1 問答紀錄表的 **masking_budget_exceeded** 那一列：上游整頁遮蔽的
+                     工作量到頂時，那幾列回的是**清空的內容欄 ＋ 一顆旗標**
+                     （product 的允許清單逐字列著它）。示範資料一律 false（把錯誤態
+                     畫成預設態，每個打開頁面的人都會以為出事了），所以這兩句在正式環境渲染不出來。
                      兩格分開講：辨識欄那一格只說「沒載入」，說明留給比較寬的回答欄——同一列印兩次
                      長句子讀起來像壞掉了兩次。 #}
                 <div class="flex-row align-items-center gap-8 flex-wrap">
@@ -1246,14 +1260,14 @@ bodyClass: guideline-page
                 </div>
                 <p class="text-red m-0" data-i18n="faq.noTokenHint">這條連結少了辨識網站用的參數，暫時問不了問題——請向提供這條連結的人要一次正確的網址。</p>
                 <p class="m-0" data-i18n="faq.defaultWelcome">你好，請問有甚麼問題需要我幫你解答的?</p>
-                {# **四句具名的空狀態**（round47，取代原本四處泛用的 `common.noData`）。
+                {# **四句具名的空狀態**：這四處各有自己的一顆 key，**不共用一顆泛用的 `common.noData`**。
                      判準是「這一格為什麼是空的、怎麼才會有東西」——「無資料」三個字對每一種原因
                      都成立，等於什麼都沒講，而這四處的下一步完全不同：
                        · 稽核表空著：可能真的沒人做過，也可能被七個篩選濾掉了 ⇒ 放寬條件再查。
                        · 健檢清單空著：預設只看「未處置」，所以很可能只是被篩掉 ⇒ 切成「全部」。
                        · 未標註文件窗空著：**這是好消息**（這個維度全標完了），不是查不到東西。
                        · 覆蓋缺口空著：**也是好消息**（這段期間都答得出來），而且只涵蓋這一段時間。
-                   四頁的示範陣列都非空（它們要演的是有資料的樣子），所以這四句在真實頁上一頁都
+                   四頁的示範陣列都非空（它們要演的是有資料的樣子），所以這四句在正式環境一頁都
                      渲染不出來——這裡是它們唯一的可見處（§5，同本節其餘各條）。
                    繁中逐字照抄各自的使用頁（§4-2 同 key 兩種繁中會互相覆蓋）。 #}
                 <p class="text-gray m-0" data-i18n="audit.noRows">這段條件下沒有稽核紀錄。可能是這段期間真的沒有人做過這些動作，也可能是上面的篩選（時間、動作、租戶、操作者…）把它們濾掉了——放寬條件再查一次就知道是哪一種。</p>
@@ -1262,23 +1276,22 @@ bodyClass: guideline-page
                 <p class="text-gray m-0" data-i18n="settings.gapNoneInRange">這段期間沒有答不出來的問題——每一題都在知識庫裡找得到依據。換一段時間區間再查，結果可能不一樣。</p>
                 {# 參考來源表的**空來源**態（`components/sources-block` 的 `{% else %}`）：三個使用頁
                      （2-1／2-2-1／4-2）的示範來源都非空——它們要演的是有引用的樣子——所以這一句在
-                     真實頁上渲染不出來。它是一個重要的狀態：模型沒有引用任何知識庫資料，也就是
+                     那三頁上渲染不出來。它是一個重要的狀態：模型沒有引用任何知識庫資料，也就是
                      這一則答案沒有依據可以查。 #}
                 <p class="text-gray m-0" data-i18n="qa.sourcesNone">這一則回答沒有引用任何知識庫資料——它不是從你的資料裡找出來的，請自行查證。</p>
                 {# 嵌入式 widget 的**租戶沒設歡迎語**那一態（`ui/widget-shell` 的
                      `.js-widget-default-greeting`，掛 `.hidden`）：元件的示範演的是有歡迎語的樣子，
                      所以這一句在任何頁上都渲染不出來。沒有它的時候，面板打開來是全白的。 #}
                 <p class="m-0" data-i18n="comp.widgetDefaultGreeting">您好，這裡可以就本網站的內容提問，我會依據網站管理者提供的資料回答你。</p>
-                {# 「這個設定檔把所有資料集都設成不使用」那一態的**兩套**文案（round47）。
-                     它先前是 React 單方面造的一顆 key（`ask.noDatasetsSelected`，切版全站零引用），
-                     而且**只有後台那一套**——前台訪客拿到的是「請到『設定 › 檢索設定』調整」，
-                     一條他永遠打不開的後台路徑。
+                {# 「這個設定檔把所有資料集都設成不使用」那一態的**兩套**文案。
+                     ⚠️ **這一態不能只有後台那一套**（`ask.noDatasetsSelected`）：只寫一套的話，
+                     前台訪客也會拿到「請到『設定 › 檢索設定』調整」——一條他永遠打不開的後台路徑。
                      兩套的差別不是語氣，是**收件人能做什麼**：後台的人改得動那個設定檔，
                      前台訪客只能告訴網站的管理者。故分成兩顆 key（§4-2：行為不同就分 key）。
-                     兩者都是 React 依回應條件渲染的分支，真實頁演的都是正常態 ⇒ 這裡是唯一可見處。 #}
+                     兩者都是 React 依回應條件渲染的分支，正式環境演的都是正常態 ⇒ 這裡是唯一可見處。 #}
                 <p class="text-red m-0" data-i18n="ask.noDatasetsSelected">目前生效的檢索設定檔把所有資料集都設為「不使用」，沒有可搜尋的範圍。請到「設定 › 檢索設定」調整。</p>
                 <p class="text-red m-0" data-i18n="ask.noDatasetsSelectedPublic">本站的知識庫還沒有設定完成，目前問不到東西——請聯絡本網站的管理者。</p>
-                {# 同一族的**另一個前提**（round48）：不是「設定檔把資料集都關掉」，是這個租戶根本
+                {# 同一族的**另一個前提**：不是「設定檔把資料集都關掉」，是這個租戶根本
                      還沒建過知識庫。後台那一句要指得出下一步（去匯入第一批資料）；**前台不另立第二顆
                      key**——訪客分不出「還沒建」與「設定成不使用」，能做的也是同一件事（告訴管理者），
                      兩句話在他眼裡是同一句（§4-2：繁中原文相同的 chrome 沿用既有 key，不另立）。 #}
@@ -1288,7 +1301,7 @@ bodyClass: guideline-page
                      這是它唯一的可見處。下一步要講得出來：重新整理通常就好，還是一樣就得有人去看
                      那支端點，所以要附網址。 #}
                 <p class="text-red m-0" data-i18n="common.contractDrift">這一區的資料格式與預期不符，暫時顯示不出來。重新整理一次通常就好；還是一樣的話請聯絡平台管理員，並附上這一頁的網址。</p>
-                {# 五句**頁級／欄位級的失敗態**（round48），它們在各自的頁面上都掛著 `.hidden`
+                {# 五句**頁級／欄位級的失敗態**，它們在各自的頁面上都掛著 `.hidden`
                      （那一份 markup 是位置與字色的規格），真實稿演的都是成功那一態 ⇒ 這裡是唯一可見處。
                      繁中逐字照抄各自的使用頁（§4-2 同 key 兩種繁中會互相覆蓋）。 #}
                 <p class="text-red m-0" data-i18n="dataset.fileNotLinkable">這個檔匯入時沒有留下擷取管道記錄，所以預覽不出它的內容——要看內容只能把同一份檔重新匯入一次。</p>
@@ -1297,7 +1310,7 @@ bodyClass: guideline-page
                 <p class="text-gray m-0" data-i18n="dataset.excelOriginalUnavailable">這個檔不是從 Excel 匯入的，所以沒有原始資料可以對照。</p>
                 <p class="text-red m-0" data-i18n="regression.runIdMissing">網址少了執行編號，這份報表開不起來。請回「回歸案例集」頁，從那一列的「看報表」進來。</p>
             </div>
-            <div class="subtitle">出處：2-2-4 的模型相容性兩句、2-2-5 的基準設定缺漏與命中清單截斷、2-2-5 的桶子列數截斷（每桶 20 則上限，那一頁只有 10 則案例故恆不觸發）、5-2 的逐代碼覆寫重複、5-2 的別名綁定與「沒有啟用任何輸出規則」、5-10 的覆蓋率可開啟與「尚未量測」、4-2 的兩欄合規、3-5 的「還沒跑過健檢」、2-2-5「沒得比」的另一個方向（基準沒有它）、5-9 的金鑰兩態（已存在／尚未產生）、4-2 意圖判斷的「是」、3-1-3 多選刪除的量詞、5-3 長條圖的系列欄名、import-sync-tag 索引同步演不到的兩態（1-1-6 停在最常見的 pending，1-2-1 逐檔演 pending／unknown／缺席態）、平台聯絡窗口沒設過時登入頁與無權限窗各自換上的那一句、3-5「內容過短」那一格的 null 態（那一欄在它存在之前寫下的掃描列上是 NULL，與量到的 0 不是同一件事）、四句具名的空狀態（稽核表／健檢清單／未標註文件窗／覆蓋缺口——四頁的示範陣列都非空，故那四句在真實頁上渲染不出來）、前台問答的「連結沒有 widget token」與「租戶沒設歡迎語時的預設開場」（兩顆在 faq-chatroom 都掛 .hidden）。它們在各自的頁面上都掛著 .hidden，或由一個在該頁恆為某一值的條件式產出，或是那一頁的示範推導不出來的枚舉成員，或住在切版畫不出內容的容器裡（&lt;canvas&gt;、業務 js 填的空槽）——那一態沒有人看得到，這裡是唯一可見處</div>
+            <div class="subtitle">出處：2-2-4 的模型相容性兩句、2-2-5 的基準設定缺漏與命中清單截斷、2-2-5 的桶子列數截斷（每桶 20 則上限，那一頁只有 10 則案例故恆不觸發）、5-2 的逐代碼覆寫重複、5-2 的別名綁定與「沒有啟用任何輸出規則」、5-10 的覆蓋率可開啟與「尚未量測」、4-2 的兩欄合規、3-5 的「還沒跑過健檢」、2-2-5「沒得比」的另一個方向（基準沒有它）、5-9 的金鑰兩態（已存在／尚未產生）、4-2 意圖判斷的「是」、3-1-3 多選刪除的量詞、5-3 長條圖的系列欄名、import-sync-tag 索引同步演不到的兩態（1-1-6 停在最常見的 pending，1-2-1 逐檔演 pending／unknown／缺席態）、平台聯絡窗口沒設過時登入頁與無權限窗各自換上的那一句、3-5「內容過短」那一格的 null 態（那一欄在它存在之前寫下的掃描列上是 NULL，與量到的 0 不是同一件事）、四句具名的空狀態（稽核表／健檢清單／未標註文件窗／覆蓋缺口——四頁的示範陣列都非空，故那四句在正式環境渲染不出來）、前台問答的「連結沒有 widget token」與「租戶沒設歡迎語時的預設開場」（兩顆在 faq-chatroom 都掛 .hidden）。它們在各自的頁面上都掛著 .hidden，或由一個在該頁恆為某一值的條件式產出，或是那一頁的示範推導不出來的枚舉成員，或住在切版畫不出內容的容器裡（&lt;canvas&gt;、業務 js 填的空槽）——那一態沒有人看得到，這裡是唯一可見處</div>
         </section>
 
         <section id="errorPageSection">
@@ -1305,9 +1318,11 @@ bodyClass: guideline-page
             <div class="caption">
                 <ul>
                     <li>ui/error-page：整頁置中的錯誤碼 + 說明（+ 選填的返回鈕）。生產 markup 是 src/404.html（找不到頁面）</li>
-                    <li>下面兩態都是<strong>公開分享頁 shared.html</strong> 的錯誤態：<strong>404</strong>（連結無效／已撤銷／過期）與 <strong>429</strong>（被節流）。那一頁是靜態的、只演得出正常態，故這裡是這兩態唯一看得到的地方（GUIDELINE §5）</li>
+                    <li>前兩態是<strong>公開分享頁 shared.html</strong> 的錯誤態：<strong>404</strong>（連結無效／已撤銷／過期）與 <strong>429</strong>（被節流）。那一頁是靜態的、只演得出正常態，故這裡是這兩態唯一看得到的地方（GUIDELINE §5）</li>
                     <li>刻意分成兩顆 key、不共用一句話：429 那一條連結<strong>還有效</strong>、只是此刻太頻繁——寫成找不到會讓使用者以為連結被撤銷而回頭要新的；反過來把 404 寫成太頻繁，則會讓人一直重試一條永遠打不開的連結</li>
-                    <li>兩態都沒有動作鈕（404.html 那一份有「回頁面目錄」）：公開分享頁的訪客沒有登入態，也沒有目錄可回</li>
+                    <li>後兩態是<strong>站內任何一頁被 403 擋下時的整頁態</strong>。導覽入口雖然依授權軸隱藏，但擋不了網址列——書籤或別人貼來的連結照樣打得開，而該頁的讀取端點回 403。不畫這一態的話整頁只剩一列麵包屑，<strong>空白與「你被擋住了」在畫面上長得一模一樣</strong></li>
+                    <li>403 分成兩顆 key，<strong>分界是收件人不是頁面</strong>：租戶層（能力／租戶管理員閘）找得到人開通 ⇒ 指向<strong>貴租戶的管理者</strong>；平台層（require_platform_admin／_auditor）租戶管理者也給不了 ⇒ 指向<strong>平台系統管理員</strong>。平台那一句刻意不寫「僅限系統管理員」——5-6-1 與 5-6-3 的頁層閘是 auditor，稽核員進得來</li>
+                    <li>四態都沒有動作鈕（404.html 那一份有「回頁面目錄」）：公開分享頁的訪客沒有登入態也沒有目錄可回；403 那兩顆換掉的只是 page-shell 的內容區，導覽列就在上面</li>
                 </ul>
             </div>
             {% include "ui/error-page/error-page.html" %}
@@ -1317,12 +1332,12 @@ bodyClass: guideline-page
             <h2 class="section-title"><span>26</span><span>嵌入式小工具外殼</span></h2>
             <div class="caption">
                 <ul>
-                    <li>ui/widget-shell：launcher 鈕 ＋ 面板。它跑在<strong>別人的網站上</strong>（gufofaq-saas 的 public/widget.js 建一個 shadow root、把樣式一起注進去），所以這一份是<strong>視覺定案</strong>而不是站內版面——widget.js 照抄這裡的值與結構</li>
+                    <li>ui/widget-shell：launcher 鈕 ＋ 面板。它跑在<strong>別人的網站上</strong>（gufofaq-saas 的嵌入腳本建一個 shadow root、把樣式一起注進去），所以這一份是<strong>視覺定案</strong>而不是站內版面——那支嵌入腳本照抄這裡的值與結構</li>
                     <li>launcher <strong>不另畫一顆</strong>：沿用 ui/faq-launcher 的「.faq-launcher」（<strong>--brand 純色</strong>圓 ＋ icon_owl.png ＋ 56px；刻意不是漸層——白貓頭鷹疊 --brand-gradient 右緣只有 2.89，低於圖形記號的 3:1），本元件只補按鈕該有的 reset 與開合狀態。那顆鈕是登入後每一頁右下角的前台入口，這裡是同一個東西在別人網站上的版本——各畫一顆的話同一個產品會有兩顆長得不一樣的貓頭鷹</li>
                     <li>差別只在它開的是面板不是新分頁，故是「button」不是「a」，並掛 aria-expanded ＋ aria-controls</li>
                     <li>訊息泡泡沿用 ui/chat-message：widget 的訊息與前台 FAQ 的訊息是同一種東西。輸入列則是 widget 自有的 .widget-panel-bar——chatroom-shell 的 .chat-input-container 是站內全寬版位，塞不進 360px 的面板</li>
                     <li>正式版的 launcher 與面板都是 position:fixed；此處掛示範變體「.demo-static」退回文流內（同上面的使用期閘門遮罩），結構與正式版相同</li>
-                    <li>面板標題是<strong>租戶設定值</strong>（widget.js 的 title 來自嵌入設定）＝資料不翻；關閉／送出／輸入框可及名稱是 chrome，走既有 key</li>
+                    <li>面板標題是<strong>租戶設定值</strong>（title 由嵌入設定帶進來）＝資料不翻；關閉／送出／輸入框可及名稱是 chrome，走既有 key</li>
                 </ul>
             </div>
             {% set widgetDemoStatic = true %}
@@ -1474,7 +1489,7 @@ bodyClass: guideline-page
 {% set resetToastType = "success|warning|warning|error" %}
 {% include "components/reset-password-modal/reset-password-modal.html" %}
 {# 本頁把「取不到租戶用量」那一態打開：它在 5-6-1 是 React 依 error state 條件渲染的分支，
-     沒有真實頁演得出來（§5）。 #}
+     沒有正式環境演得出來（§5）。 #}
 {% set manageTenantShowUsageError = true %}
 {% include "components/manage-tenant-modal/manage-tenant-modal.html" %}
 {# 租戶管理窗裡「重置當期用量」的二次確認窗：與 components/platform-tenants-panel 那一份逐字相同
@@ -1497,15 +1512,17 @@ bodyClass: guideline-page
 {% include "components/delete-modal/delete-modal.html" %}
 {% include "components/share-manage-modal/share-manage-modal.html" %}
 {% include "components/manage-members-modal/manage-members-modal.html" %}
-{# 前台分享窗的本體：真實頁上它由 components/faq-chatroom include（那顆分享鈕住在那裡），
-     這一份是給上面那顆示範觸發器用的——那顆鈕改成條件開窗之後，faq.html 上已經沒有任何
-     data-open-modal 指向它了（§1-2：每個 <dialog> 在它出現的每一頁上都要打得開）。 #}
+{# 前台分享窗的本體：在使用頁上它由 components/faq-chatroom include（那顆分享鈕住在那裡），
+     這一份則是給上面那顆示範觸發器用的——faq.html 那顆鈕是條件開窗、不掛 data-open-modal，
+     所以整個 faq.html 上沒有任何東西打得開這扇窗（§1-2：每個 <dialog> 在它出現的每一頁上
+     都要打得開），它的「看得見」只能靠這一頁。 #}
 {% include "components/faq-share-modal/faq-share-modal.html" %}
 {% include "components/glossary-entries-modal/glossary-entries-modal.html" %}
 {% include "components/alias-entries-modal/alias-entries-modal.html" %}
 {% include "components/skill-editor-modal/skill-editor-modal.html" %}
-{# 元件庫版演出 React 條件渲染分支（§5 分支要看得到）：config-copy 的 production 警告＋inline 錯誤列、
-   qa-import 的解析中＋解析失敗列；真實頁（5-2、3-3）不 set、不演 #}
+{# 這一頁把 React 的條件渲染分支一次打開（§5 分支要看得到）：config-copy 的 production 警告
+   ＋ inline 錯誤列、qa-import 的解析中 ＋ 解析失敗列。使用頁（5-2、3-3）刻意不 set 這幾顆參數
+   ——把錯誤態畫成預設態，每個打開那兩頁的人都會以為出事了。 #}
 {% set configCopyShowWarning = true %}
 {% set configCopyShowError = true %}
 {% include "components/config-copy-modal/config-copy-modal.html" %}
@@ -1548,20 +1565,22 @@ bodyClass: guideline-page
 {% include "components/rating-modal/rating-modal.html" %}
 
 {# help-modal 元件庫展示：三塊「這一區在做什麼／現在生效的條件／這一區的所有數字」逐一示範，
-   情境是假設性的「回覆長度上限」設定（非任何真實頁既有欄位，純為展示三塊各自的長相）。
+   情境是假設性的「回覆長度上限」設定（**刻意不對應任何使用頁上真的存在的欄位**，純為展示
+   三塊各自的長相——借用真欄位會讓人以為那一頁上真有這顆設定）。
    ②③兩塊各給兩筆，讓清單與表格兩種容器都被看過（GUIDELINE §5：沒有頁面演得出來的分支
-   等於沒驗收過）；helpModalId 用 `demoHelpModal`，不是真實頁的區塊 id。 #}
+   等於沒驗收過）；helpModalId 用 `demoHelpModal`，不是正式環境的區塊 id。 #}
 {% set helpModalId = "demoHelpModal" %}
 {% set helpModalTitleKey = "help.demo.title" %}
 {% set helpModalTitle = "回覆長度上限說明" %}
 {% set helpModalWhatKey = "help.demo.what" %}
 {% set helpModalWhat = "這一區決定單次回答最多可以輸出多少字；超過上限的部分會被截斷，不會影響檢索到的來源筆數。" %}
-{# ②的四條規則就是 `activeStateNotes` 回得出來的全部（正本 gufofaq-saas
-     `apps/web/lib/contracts/valueDependencies.ts` 的 `StateNote`／`RuleName`）：四顆 key 是**枚舉的成員**，
-     真實頁的 ② 由 React 執行期依當下設定挑其中幾條，所以那幾頁一條都畫不出來——這裡是它們
-     唯一的可見處（§4-2：枚舉的成員靠「有地方渲染得出來」活著，不是刪掉 key 讓消費端自己拼字串）。
-   先前這裡是兩句**就地編的展示散文**（沒有 key），於是四句真正會出現在使用者眼前的話，
-     正本落在 React 的字典裡而切版這一側零宣告。 #}
+{# ②的四條規則就是 `activeStateNotes` 回得出來的全部（正本：gufofaq-saas 的
+     `apps/web/lib/contracts/valueDependencies.ts`，`StateNote`／`RuleName`）：四顆 key 是
+     **枚舉的成員**，正式環境的 ② 由 React 執行期依當下設定挑其中幾條，所以那幾頁一條都畫不出來
+     ——這裡是它們唯一的可見處（§4-2：枚舉的成員靠「有地方渲染得出來」活著，不是刪掉 key
+     讓消費端自己拼字串）。
+   ⚠️ **這四筆要逐字等於那四顆 key、不可以就地編兩句展示散文**：編出來的示範沒有 key，
+     於是四句真正會出現在使用者眼前的話，正本就落到 React 的字典裡，而切版這一側零宣告。 #}
 {% set helpModalStateItems = [
     { textKey: "help.state.knowledgeOff", text: "知識模式目前設為「不參考知識」：模型不會使用檢索到的參考資料，因此這一段的檢索筆數與引用設定暫不生效。" },
     { textKey: "help.state.answerabilityOn", text: "可回答性閘目前是開啟狀態：判準與分數門檻會被用來決定「查無資料」時是否據實回覆。" },
@@ -1579,9 +1598,11 @@ bodyClass: guideline-page
 </button>
 
 <script>
-    // go to top + aside 導覽平滑捲動：改寫自真實 app 展示頁內嵌 script（原用 jQuery），改用原生 DOM API。
-    // 展示頁專屬 chrome、不重用於任何真實頁，故循真 app 原樣留在頁內（§5 內嵌 script 僅限 base.html
-    // no-flash 與本頁這支）。JS 捲動吃不到 _base 的 prefers-reduced-motion 全域關閉，自行退 auto。
+    // go to top ＋ aside 導覽的平滑捲動，原生 DOM API、不引任何套件。
+    // **這一支刻意留在頁內、不切成元件 js**：它是展示頁自己的 chrome，沒有任何別的頁面用得到，
+    // 抽成元件只會多一支永遠只有一個消費者的檔（§5 允許的內嵌 script 就兩處：base.html 的
+    // no-flash 與本頁這一支）。
+    // JS 捲動吃不到 _base 的 prefers-reduced-motion 全域關閉，所以這裡自己判斷、退回 auto。
     (function () {
         var mainContainer = document.querySelector('.main-container');
         var gotop = document.querySelector('.btn_gotop');
