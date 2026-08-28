@@ -192,9 +192,14 @@ permalink: 3-7_documentSearch.html
         <p class="text-gray m-0" id="docSearchDateHint" data-i18n="search.dateRangeHint">時間篩的是匯入時寫入的文件日期；沒有寫入日期的資料集，這兩欄篩不到任何結果。</p>
         <div class="flex-row align-items-center justify-content-center gap-16">
             <button type="button" class="button button-border js-filter-clear" data-i18n="action.clear">清除</button>
-            {# 五段逐條對回 `POST /api/v1/search` 的一條出口（§5 少列一段和多列一段一樣是說謊）：
+            {# 六段逐條對回 `POST /api/v1/search` 的一條出口（§5 少列一段和多列一段一樣是說謊）：
                  info    「正在查詢資料...」＝版型比照 5-7 的查詢鈕
                  warning 「沒有搜尋字串」＝`SearchParams.query` 的 `min_length=1`（422）
+                 warning 「結束時間不能早於開始時間」＝兩個日期欄填反了。**不得折進 error**：
+                         日期 DSL 是前端自己組的（見檔頭），填反了在送出之前就知道，而且是使用者
+                         改得掉的輸入錯誤；error 那一段說的是「再試一次」，對「你把日期填反了」
+                         是誤導。**子句與英譯逐字沿用 4-1 下載鈕的同一句**（§4-2「相同的繁中子句
+                         必須有相同英譯」，該條有測試掃 dist 把關），不另寫一種說法。
                  warning 「授權驗證失敗」＝`Depends(require_license)` 的 403
                          （`app/dependencies.py` 的 `require_license()`，訊息「授權驗證失敗: {message}」）。
                          **這一段不得折進 error**：管理者去補授權檔就修得掉，而 error 說的是
@@ -204,7 +209,7 @@ permalink: 3-7_documentSearch.html
                          ＋ catch-all 的 500「搜索執行失敗」。
                **刻意不列「沒有選擇資料集」**：`indexes` 空值是合法的「檢索全部」，不是錯誤
                （見檔頭）——列出不可能的結果與只演成功一樣是說謊。 #}
-            <button type="button" class="button button-primary js-doc-search" data-toast="正在查詢資料...|沒有搜尋字串|授權驗證失敗，請確認系統授權|查詢成功|查詢失敗，請稍後再試" data-i18n-data-toast="toast.docSearch" data-toast-type="info|warning|warning|success|error" data-i18n="action.query">查詢</button>
+            <button type="button" class="button button-primary js-doc-search" data-toast="正在查詢資料...|沒有搜尋字串|結束時間不能早於開始時間|授權驗證失敗，請確認系統授權|查詢成功|查詢失敗，請稍後再試" data-i18n-data-toast="toast.docSearch" data-toast-type="info|warning|warning|warning|success|error" data-i18n="action.query">查詢</button>
         </div>
     </div>
 </div>
