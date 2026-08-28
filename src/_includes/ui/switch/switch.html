@@ -2,8 +2,11 @@
      示範關閉態與開啟態兩顆孤立的開關長什麼樣。
      ⚠️ **生產 markup 不長這樣**——生產的每一顆都要有可及名稱綁定（`id` ＋ `<label for>`，
      或迴圈裡的 `aria-labelledby`），照這份抄會做出一排同名的無名開關。逐字契約見 `_switch.scss` 檔頭。
-     這兩顆各自帶 `aria-label` ＋ `data-i18n-aria-label`：開關沒有可見字面，
-     少了名稱它在報讀器上就是兩顆「切換按鈕」——展示頁也是 dist 頁，同樣會被輔具讀到。 #}
+     四顆各自帶 `aria-label` ＋ `data-i18n-aria-label`：開關沒有可見字面，
+     少了名稱它們在報讀器上就是四顆「切換按鈕」——展示頁也是 dist 頁，同樣會被輔具讀到。
+     四顆而不是兩顆：**停用態要有人看過它的長相**。生產頁上今天沒有停用的開關，而
+     `_switch.scss` 的 `&:has(.switch-checkbox:disabled)` 一份 markup 都演不出來就是出貨的死 CSS
+     （§5）。停用**且開著**那一顆特別要演：它證明軌道維持在「開」的顏色，沒有被停用底色蓋掉。 #}
 <div class="flex-row gap-20">
     <label class="switch">
         <input type="checkbox" class="switch-checkbox" role="switch" aria-label="關閉態示範" data-i18n-aria-label="comp.switchDemoOff">
@@ -13,6 +16,18 @@
     </label>
     <label class="switch">
         <input type="checkbox" class="switch-checkbox" role="switch" aria-label="開啟態示範" data-i18n-aria-label="comp.switchDemoOn" checked>
+        <span class="switch-box">
+            <span class="switch-btn"></span>
+        </span>
+    </label>
+    <label class="switch">
+        <input type="checkbox" class="switch-checkbox" role="switch" aria-label="停用態示範" data-i18n-aria-label="comp.switchDemoDisabled" disabled>
+        <span class="switch-box">
+            <span class="switch-btn"></span>
+        </span>
+    </label>
+    <label class="switch">
+        <input type="checkbox" class="switch-checkbox" role="switch" aria-label="停用但開著示範" data-i18n-aria-label="comp.switchDemoDisabledOn" checked disabled>
         <span class="switch-box">
             <span class="switch-btn"></span>
         </span>

@@ -90,6 +90,37 @@ label.switch {
             transform: translateY(-50%);
         }
     }
+
+    // **停用態**：`disabled` 說得出「現在不能調」，但只有在**看得出來**的時候才說得出來——
+    // 沒有樣式的 `disabled` 開關與可用的長得一模一樣，使用者會去按它、然後什麼都不會發生
+    // （§4：組合維度上的空格要由 markup 表達，而表達的前提是它在畫面上分得出來）。
+    // 顏色一律走既有的停用族 token，不新增色；游標比照 `_form-check.scss` 的
+    // `&:has(:disabled) { cursor: not-allowed }`（同一個語意兩處同值）。
+    // **落點在元件庫頁**：停用與「停用但開著」兩態各擺一顆。生產頁上今天沒有停用的開關，
+    // 而一份 markup 都演不出來的樣式就是出貨的死 CSS——沒有人看過它的長相（§5）。
+    &:has(.switch-checkbox:disabled) {
+        cursor: not-allowed;
+
+        .switch-box {
+            background-color: var(--surface-disabled);
+        }
+
+        .switch-btn {
+            background-color: var(--control-ink-disabled);
+        }
+
+        // 停用但**開著**：軌道維持 `--toggle-on`，只把圓鈕轉成停用墨色。
+        // ⚠️ 這一行不可以省：上面那條 `.switch-box` 與「已勾」那條同權重，本區塊在後面 ⇒
+        // 不明寫的話已勾的軌道會被蓋成停用底色，畫面上看起來就是**關的**——那是把值演掉了。
+        // 也不可以改用 `--control-track`：那顆 token 的角色是 **off 軌道**，數值接近不代表角色對。
+        .switch-checkbox:checked+.switch-box {
+            background-color: var(--toggle-on);
+
+            .switch-btn {
+                background-color: var(--control-ink-disabled);
+            }
+        }
+    }
 }
 
 // 「全部意圖判斷」那一列的啟用／停用開關：絕對定位釘在所在區塊的右上角（`right: 1.5rem`），

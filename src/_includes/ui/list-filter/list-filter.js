@@ -103,9 +103,20 @@
 // 三顆 class 缺一不可：.dataset-list-wrap 是 closest() 的範圍根（同頁兩個 modal 各過濾各的），
 // .form-control.search 是輸入框、.dataset-list 是被過濾的容器。
 //
-// 住在哪一頁（雙向）：兩顆 modal 元件各一份 ⇒ `components/manage-members-modal`（5-5-2 群組管理、
-// 元件庫頁）與 `components/select-dataset-modal`（1-1-1 資料匯入、元件庫頁）。
-// 反查：`grep -rln 'dataset-list-wrap' src --include=*.html` 除這兩支元件之外，
+// **一列是什麼**：`.dataset-list` 的**直接子** `<label>`。判準抽成 `ROW_SELECTOR` 一份正本
+// （§8-1 共用判準只准有一份）——兩個呼叫點都讀它，改一處就是改全部。
+// 為什麼是直接子而不是任意深度的 `label`：一列的定義是「清單的一個成員」，而巢狀在成員內部的
+// `<label>`（例如成員自己帶一顆附屬控制項）不是另一列。認任意深度時，被藏起來的會是內層那顆、
+// 而 `syncEmpty()` 也會把外層那一列算成不可見 ⇒ 明明有命中卻畫出「無符合選項」。
+// ⚠️ **一列裝得下兩個以上控制項時，那個殼要進 `ROW_SELECTOR`**（例如 `:scope > .dataset-list-row`）：
+// 只認 `<label>` 的話，過濾掉的是 label、留在畫面上的是它旁邊那顆控制項。今天三個消費點都是
+// 一列一顆勾選框，所以清單裡只有一個分支——**不得放沒有實例的分支進去**（§5：選擇器要打得到
+// dist 上的東西，留著就是死選擇器；有測試逐分支把關）。
+//
+// 住在哪一頁（雙向）：三顆 modal 元件各一份 ⇒ `components/manage-members-modal`（5-5-2 群組管理、
+// 元件庫頁）、`components/select-dataset-modal`（1-1-1 資料匯入、元件庫頁）與
+// `components/search-scope-modal`（3-7 文件檢索）。
+// 反查：`grep -rln 'dataset-list-wrap' src --include=*.html` 除這三支元件之外，
 // 只多命中 `ui/checkbox/checkbox.html`——那是一則 `{# #}` 說明註解，不是實例。
 // 零命中的空狀態（§5「無資料列正典」逐字點名這一族：「`ui/list-filter` 那一族打到零命中時的空框
 // 同理」）。使用頁的 `{% for %}…{% else %}` 只覆蓋「來源陣列本來就空」那一態——它是 nunjucks
@@ -118,6 +129,8 @@
 // `ui/theme-toggle` 與 `ui/lang-toggle` 各自也有一個（那兩支收在閉包裡，今天剛好安全），
 // 誰後載入誰贏、而且覆蓋是靜默的。整支收進 IIFE。
 (function () {
+// 一列＝`.dataset-list` 的直接子 `<label>`（見檔頭「一列是什麼」）。
+var ROW_SELECTOR = ":scope > label";
 var EMPTY_CLASS = "dataset-list-empty";
 var EMPTY_KEY = "common.noMatchingOptions";
 var ZH_EMPTY = "無符合選項";
@@ -148,7 +161,7 @@ function emptySlot(list) {
 }
 
 function syncEmpty(list) {
-    var labels = list.querySelectorAll("label");
+    var labels = list.querySelectorAll(ROW_SELECTOR);
     var visible = 0;
     labels.forEach(function (l) { if (!l.classList.contains("hidden")) visible++; });
     var slot = emptySlot(list);
@@ -163,7 +176,7 @@ document.addEventListener("input", function (e) {
     var list = wrap && wrap.querySelector(".dataset-list");
     if (!list) return;
     var keyword = search.value.toLowerCase();
-    list.querySelectorAll("label").forEach(function (label) {
+    list.querySelectorAll(ROW_SELECTOR).forEach(function (label) {
         // trim：textContent 會把 markup 的縮排換行一起收進來，真正要比對的是 label 內那顆 span 的純文字
         label.classList.toggle("hidden", label.textContent.trim().toLowerCase().indexOf(keyword) === -1);
     });

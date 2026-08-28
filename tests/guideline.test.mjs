@@ -12,7 +12,7 @@ import { readFileSync, readdirSync, existsSync, statSync } from "node:fs";
 import { execSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { inflateSync } from "node:zlib";
-import { basename } from "node:path";
+import { basename, dirname, join } from "node:path";
 
 const read = (f) => readFileSync(f, "utf8");
 // `git ls-files` **看不見還沒 add 的新檔**。整份測試的母體都從這裡來，所以一個「剛切好、還沒進版控」
@@ -1403,6 +1403,8 @@ test("§4-2 en.json 不得有孤兒 key（每個 key 都要被 markup／js 引�
 // 判準只有一句：**那個語意由同一句話的另一半承載，英文那一半不需要這個字段**。
 // 所以每一筆都要指出「另一半是誰」，指不出來的就是真漏翻、不准進表。
 const EMPTY_EN_ALLOWED = new Map([
+    ["search.scopeSelectedPrefix", "「已選 N 個資料集」的「已選 」：英文語序把量詞放在數字後面" +
+        "（`search.scopeSelectedSuffix` ＝「 datasets selected」⇒ “3 datasets selected”），前綴沒有東西可以承載"],
     ["comp.copyright", "頁尾「版權所有© <年份> All Rights Reserved」：英文那半句是 key 外的字面量，" +
         "已經整句在畫面上（components/footer；年份是 .js-copyright-year 資料槽，不寫進理由裡免得每年過期），" +
         "前綴再翻一次會變成 “All rights reserved © … All Rights Reserved”"],
@@ -1886,9 +1888,17 @@ test("README.md 的數字（page-shell 頁數、元件數）與實況一致", ()
     const biz = componentDirs.filter((c) => c.bucket === "components").length;
     assert.ok(doc.includes(`管理端 ${pages} 頁`), `README 的頁數過期，實際 ${pages} 頁`);
     assert.ok(doc.includes(`${comps} 個元件`), `README 的元件數過期，實際 ${comps} 個`);
-    // 搬桶時總數不變，兩個子數字會靜默過期
-    assert.ok(doc.includes(`（${ui} 個）`), `README 的 ui/ 數過期，實際 ${ui} 個`);
-    assert.ok(doc.includes(`（${biz} 個）`), `README 的 components/ 數過期，實際 ${biz} 個`);
+    // 搬桶時總數不變，兩個子數字會靜默過期。
+    // ⚠️ **數字必須錨在它自己的標籤上**：裸的 `doc.includes("（N 個）")` 只問「文件裡有沒有這個
+    // 數字」，而 README 那兩行本來就同時存在兩個括號數字 ⇒ 把 ui/ 與 components/ 的數字**互換**
+    // 照樣全綠，正是這條註解自己說要擋的那件事。
+    const countAfter = (label) => {
+        const line = doc.split(NL).find((l) => l.includes(`${label}/`) && /（\d+ 個）/.test(l));
+        assert.ok(line, `README 找不到 ${label}/ 那一行的元件數`);
+        return Number(line.match(/（(\d+) 個）/)[1]);
+    };
+    assert.equal(countAfter("ui"), ui, `README 的 ui/ 數過期，實際 ${ui} 個`);
+    assert.equal(countAfter("components"), biz, `README 的 components/ 數過期，實際 ${biz} 個`);
 });
 
 test("md 的 §N 引用都指向 GUIDELINE 存在的章節，README 的引用要標明 GUIDELINE", () => {
@@ -1917,6 +1927,13 @@ test("md 的 §N 引用都指向 GUIDELINE 存在的章節，README 的引用要
 // 卻會同時漏在這條與下面那條 §N 之外，整份主交付的連結與章節引用都沒人驗）
 const mdDocs = gitFiles('"*.md"');
 
+// 相對連結是**相對於該 md 自己的目錄**解析的，不是相對於 repo 根。直接 `existsSync(link)`
+// 等同從 cwd（＝repo 根）解析，只有在「全部的 md 都躺在根目錄」時才恰好成立——而那是**現況、
+// 不是規則**：哪天有人把文件收進 `docs/**`，正確的 `../specs/x.md` 與 `../../../GUIDELINE.md`
+// 會雙雙被判成死連結。**壞的方向是誤報**：它會逼下一個人把好連結改壞（或替這條規則開一張
+// 排除清單），比漏抓更貴。巢狀那一向由下面的 probe 用假住址守著，不必等真的有巢狀 md 進來。
+const mdLinkTarget = (doc, link) => join(dirname(doc), link);
+
 test("md 的相對連結都指向存在的檔案", () => {
     const LINKS = /\]\((?!https?:)([^)#]+)/g;
     const bad = [];
@@ -1924,11 +1941,16 @@ test("md 的相對連結都指向存在的檔案", () => {
     for (const doc of mdDocs)
         for (const m of read(doc).matchAll(LINKS)) {
             seen++;
-            if (!existsSync(m[1])) bad.push(`${doc}  → ${m[1]}`);
+            if (!existsSync(mdLinkTarget(doc, m[1]))) bad.push(`${doc}  → ${m[1]}`);
         }
     assert.ok(mdDocs.length >= 4, `只掃到 ${mdDocs.length} 支 md —— 掃描集合空了`);
     assert.ok(seen >= 10, `只抓到 ${seen} 條相對連結 —— 正則壞了，這條在空轉`);
-    probe("md 相對連結", (s) => [...s.matchAll(LINKS)].filter((m) => !existsSync(m[1])),
+    // probe 的樣本沒有真實住址，用根目錄的 README.md 當它的家（dirname＝"."）。
+    probe("md 相對連結（巢狀目錄）",
+        (s) => [...s.matchAll(LINKS)].filter((m) => !existsSync(mdLinkTarget("docs/a/b/x.md", m[1]))),
+        ["見 [規範](../../../GUIDELINE-不存在.md)", "見 [設計](../c/x.md)"],
+        ["見 [規範](../../../GUIDELINE.md)", "見 [說明](../../../README.md)"]);
+    probe("md 相對連結", (s) => [...s.matchAll(LINKS)].filter((m) => !existsSync(mdLinkTarget("README.md", m[1]))),
         ["見 [規範](GUIDELINE-不存在.md)"], ["見 [規範](GUIDELINE.md)", "見 [官網](https://example.com/x)"]);
     assert.equal(bad.length, 0, fail(bad));
 });
@@ -4394,6 +4416,15 @@ test("§4 每一顆會改狀態的鈕都要宣告它需要哪一道閘門（四�
     // 而且 `if (NO_GATE.has(f)) return out;` 一旦排在 `platformScopes()` **之前**，
     // 豁免檔裡「宣告元素配對不到收尾標籤」那種 fail loud 會一起被吞掉——順序也一起修。
     const NO_GATE = new Map([
+        // 3-7 文件檢索：整頁的端點正本是 GufoRAG `manager_backend`，不是 gufofaq-saas product。
+        // 四軸的值域正本是 product 的 `CAPABILITY_TOKENS`／`CAPABILITIES`，兩套鍵空間**不相交**
+        // ⇒ 標不出四軸的任何一顆值。同一句理由也寫在該頁檔頭（§4「痕跡要成對」）。
+        // ⚠️ **這一筆會過期**：這支功能若併進 gufofaq-saas，整頁的閘門要重標。
+        ["src/pages/dataset/3-7_documentSearch.html", new Map([
+            ["查詢成功", "`POST /api/v1/search` 只掛 `Depends(require_license)`（系統授權檔驗簽），" +
+                "`GET /api/v1/indexes` 掛的是 `require_user()`（只確認有登入主體）——兩者都不是租戶能力軸；" +
+                "`manager_backend` 的使用者模型只有 `is_admin` ＋ `roles`，沒有 capability token 這種東西"],
+        ])],
         ["src/pages/settings/5-1-1_accountInfo.html", new Map([
             ["個人資料已儲存", "`/me/profile` 是自助端點，product 只掛 get_current_user＋require_active_subscription，沒有 require_capability——標上能力軸反而會把「改自己的顯示名」擋在一顆它不需要的能力後面"],
             ["密碼已變更", "`/me/change-password` 同上：改自己的密碼不吃租戶能力軸"],
@@ -7919,9 +7950,14 @@ test("§1-2 展示片段與生產實例的硬規則屬性不一致時，生產�
     const prodPages = srcHtml.filter((f) => f.startsWith("src/pages/") && f !== "src/pages/components/component.html");
     const attrsOn = (text, cls) => {
         const out = new Set();
-        const re = new RegExp(`<([a-zA-Z][\\w-]*)((?:"[^"]*"|[^>"])*?class="[^"]*\\b${cls}\\b[^"]*"(?:"[^"]*"|[^>"])*)>`, "g");
-        for (const m of text.matchAll(re))
+        // class 比對以**整個 token** 為單位：`\b` 只認「詞字元 ↔ 非詞字元」的邊界，而 `-` 是非詞
+        // 字元 ⇒ 找 `accordion` 會命中 `js-accordion`、找 `search-select` 會命中 `js-doc-search-select`。
+        // 誤報的方向特別貴：它會逼下一個人去替一支根本沒被用到的元件補一份假的生產契約。
+        const re = new RegExp(`<([a-zA-Z][\\w-]*)((?:"[^"]*"|[^>"])*?class="([^"]*)"(?:"[^"]*"|[^>"])*)>`, "g");
+        for (const m of text.matchAll(re)) {
+            if (!m[3].split(/\s+/).includes(cls)) continue;
             for (const a of m[2].matchAll(/(?:^|\s)([a-zA-Z_:][\w:.-]*)\s*=/g)) if (HARD.test(a[1])) out.add(a[1]);
+        }
         return out;
     };
     const hits = [];
@@ -8323,6 +8359,30 @@ test("§6 stepNextHref 與 stepNextAction = true 不得同時 set（動作模式
             '{% set stepNextAction = true %}\n{% include "components/step-btn-wrap/step-btn-wrap.html" %}',
             '{% set stepNextHref = "x.html" %}\n{% include "components/step-btn-wrap/step-btn-wrap.html" %}']);
     assert.equal(hits.length, 0, `§6 沒有消費者的參數：\n${fail(hits)}`);
+});
+
+test("§5 ui/list-filter 的 ROW_SELECTOR 沒有零消費者的分支（選擇器要打得到 dist 上的東西）", () => {
+    // 「一列是什麼」抽成一份正本之後，那份正本自己會腐化：某個分支服務的形狀從畫面上消失了、
+    // 選擇器還留著 ＝ 死選擇器（§5：選擇器要打得到 dist 上的東西）。而它壞掉的方式是無聲的——
+    // 過濾照樣跑，只是那一個分支永遠比不到東西。
+    // 判準是「清單裡**每一個**分支都有實例」，不是「今天有幾種形狀」：下一次真的出現
+    // 「一列兩個控制項」的清單時，把那個殼加回 ROW_SELECTOR 就會被這條盯著。
+    const dead = (rowSelector, dist) => rowSelector.split(",").map((b) => b.trim()).filter(Boolean)
+        .filter((b) => (b === ":scope > label"
+            ? !/<div class="dataset-list"[^>]*>\s*<label/.test(dist)
+            : !dist.includes(b.replace(":scope > .", ""))));
+    const js = read("src/_includes/ui/list-filter/list-filter.js");
+    const sel = js.match(/var ROW_SELECTOR = "([^"]+)"/);
+    assert.ok(sel, "list-filter 要把列選擇器抽成 ROW_SELECTOR 一份正本（§8-1：共用判準只准有一份）");
+    const branches = sel[1].split(",").map((b) => b.trim()).filter(Boolean);
+    assert.ok(branches.includes(":scope > label"),
+        "「一列一顆勾選框」是三個消費點共用的那一種形狀，不得從 ROW_SELECTOR 拿掉");
+    const dist = distHtml.map((d) => read(`dist/${d}`)).join(NL);
+    // 負控：憑空塞一個沒有實例的分支要被抓到，只有真分支時要放行——否則這條永遠不會響
+    assert.deepEqual(dead(":scope > label, :scope > .no-such-row", dist), [":scope > .no-such-row"],
+        "負控失敗：憑空的分支沒有被抓出來 —— 這條規則不會響");
+    assert.deepEqual(dead(sel[1], dist), [],
+        "ROW_SELECTOR 有分支在 dist 上找不到實例（死選擇器）");
 });
 
 test("§3-2 help-modal 的界線字串（bound）全站一種寫法：短破折號兩側各一空白、不加千分位", () => {

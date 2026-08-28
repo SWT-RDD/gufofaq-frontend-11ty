@@ -54,7 +54,7 @@ src/
 ├── _includes/
 │   ├── layouts/            整頁模板（4 支，見下表）＋ 模板專屬樣式 `_base.scss` / `_page-shell.scss` / `_chatbot-shell.scss`（⚠️ 與 `src/scss/_base.scss` 同名，`main.scss` 以 `as layout-base` 消歧；`public-shell` 沒有自己的樣式，它沿用 page-shell 的 `.main`）
 │   ├── ui/                 不依賴其他元件的元件（60 個）
-│   └── components/         會用到其他元件，或某大元件的專屬子片段（59 個）
+│   └── components/         會用到其他元件，或某大元件的專屬子片段（60 個）
 ├── scss/                   全域層（元件樣式住在元件資料夾）
 │   ├── _var.scss           設計 token：語意色 + [data-theme=dark] 覆寫（全站唯一色源，單層直值）
 │   ├── _mixin.scss         共用 mixin：scrollbar 系列、icon-mask（單色 PNG 遮罩上色）、nav-collapsed（header↔mobile-nav 的 1250px 斷點，兩者必須同值）
@@ -74,7 +74,7 @@ src/
 ├── 404.html                GitHub Pages 的 404 fallback
 ├── catalog.html            部署站台首頁＝頁面目錄（permalink → index.html；右上角有語言/深淺鈕，在 i18n 範圍內）
 └── pages/                  內頁：依 section 分資料夾，permalink 輸出扁平檔名到 dist/ 根
-    ├── dataImport/(7) dataset/(10) qaHistory/(2) qaRecord/(1) qaTest/(4) settings/(15)  ← 管理端，走 page-shell
+    ├── dataImport/(7) dataset/(11) qaHistory/(2) qaRecord/(1) qaTest/(4) settings/(15)  ← 管理端，走 page-shell
     ├── faq/(1)                                                                        ← 前台 FAQ，走 chatbot-shell
     ├── shared/(1)                                                                     ← 公開唯讀分享頁，走 public-shell
     └── components/(1)                                                                 ← 元件總覽（showcase），走 base
@@ -89,7 +89,7 @@ dist/                       build 輸出（勿手改）
 
 | layout | 自動提供 | 用它的頁面 |
 |---|---|---|
-| `layouts/page-shell/page-shell.html` | `<head>` + skip-link + `header`（導覽 + 語言/夜間）+ `<main id="main">`（含 h1）+ `footer` + `ui/faq-launcher`（右下角前台入口） | 管理端 39 頁；front matter 必填 `titleKey` / `pageHeading` |
+| `layouts/page-shell/page-shell.html` | `<head>` + skip-link + `header`（導覽 + 語言/夜間）+ `<main id="main">`（含 h1）+ `footer` + `ui/faq-launcher`（右下角前台入口） | 管理端 40 頁；front matter 必填 `titleKey` / `pageHeading` |
 | `layouts/chatbot-shell/chatbot-shell.html` | `<head>` + skip-link + `chatbot-header`（logo + 語言/夜間，無導覽）+ 滿版 `<main id="main">`（含 sr-only h1 `GufoFAQ`）+ `footer` | 前台 FAQ 聊天頁 |
 | `layouts/public-shell/public-shell.html` | `<head>` + skip-link + `chatbot-header`（同 chatbot-shell，無導覽）+ 一般文件流 `<main class="main" id="main">` > `.wrap`（含 sr-only h1）+ `footer`。**無** Manager 導覽、**無** `ui/faq-launcher`（那是登入態才有）、**不**鎖 body 捲動 | 公開唯讀分享頁 `shared.html`；front matter 必填 `titleKey` / `pageHeading`，不設 `bodyClass` |
 | `layouts/base/base.html` | 只有 `<head>` + 空白外框 + script 清單 + `#toastContainer`（`popover="manual"`、`role="status" aria-live="polite"`，全站 toast 的唯一落點，見 GUIDELINE §5） | 登入頁、404、頁面目錄、元件總覽（各自在內容裡放唯一的 h1） |
@@ -133,6 +133,7 @@ dist/                       build 輸出（勿手改）
 | `components/pager-row` | 分頁列（每頁筆數＋頁碼）。無自有參數，沿用兩個子元件的頁面層 `total`／`perPage`／`currentPage`；版位由自有 scss 負責——每頁筆數絕對定位釘左、`ui/pagination` 維持獨占一列所以頁碼相對整列置中（不可在這層開 flex，否則頁碼縮成內容寬跑到左端），≤768px 改回文件流上下堆疊。用於 1-1-3、2-2-4、3-1-1、3-1-3、3-1-6、3-5、4-1、5-7。 |
 | `components/untagged-files-modal` | 未標註檔案清單（5-10 的 `.js-view-untagged` 條件開窗）：吃頁面的 `coverageDatasets`（與 5-10 覆蓋率量測範圍同一份目錄，GUIDELINE §6 一份正本）＋ `ui/pagination` 的 `total`／`perPage`／`currentPage`——**這三個必須在 include 前 set**（`{% set %}` 是頁面全域，而元件庫頁在本元件之前已經用過一次 pagination，不重設就會沿用上一次的值）。內含 `ui/modal-close`、`ui/pagination`。 |
 | `components/skill-try-sandbox` | Skill 試跑沙盒（3-4）：`trySkillName`（選填示範名，預設 refund-flow）／`trySkillAnswer`（選填示範回答）。開／關與「把列上的名字填進標題」由 `skill-try-sandbox.js` 當場做（正本也是純 UI state），觸發鈕沿用凍結的 `.js-try-skill`；「開始試跑」是送 API 的鈕、走 `data-toast`。內含 `components/step-flow`，其節點與摘要由使用頁成對覆寫。 |
+| `components/search-scope-modal` | 檢索範圍挑選 modal（`modals-lg`）。無參數（示範資料 `searchScopeIndexRows` 住在元件內）；內含 `ui/modal-close`，清單是一個 `ui/list-filter` widget（一列一顆勾選框）。由 3-7 的「檢索範圍」鈕**無條件開窗**（`data-open-modal`）。確認鈕不送 API——`indexes` 是查詢參數不是使用者設定，故無 `data-toast`，只留 hook 給 React 讀走勾選值。 |
 | `components/skill-editor-modal` | 租戶自訂 skill 編輯 modal（`modals-lg`）。無參數；內含 `ui/modal-close`。由 3-4 的 `.js-edit-skill` 條件開窗（不掛 `data-open-modal`），元件庫頁有示範觸發器。 |
 | `components/file-edit-modal` | `editConfirmBinding`（true＝儲存鈕交給業務 js 綁定、不自動關窗；每一個使用頁都傳 true）。 |
 | `components/import-report` | 匯入結果回報（`1-1-6` Excel／`1-2-1` PDF-Word 共用）：`importCounts = { inserted, updated, failed }`（必填，三計數同時顯示才分得出「新增」與「取代舊版」）＋選填 `importFileReports = [{ filename, structure?, droppedLinks?（＝`{ urls: [...] }`，筆數由 `urls` 長度推導、不另給 count）, unprocessableTables?, suspectedHeaderlessTables? }]`（後兩者的分界見元件檔頭：`unprocessableTables` 是**轉不出來**的，`suspectedHeaderlessTables` 是**轉出來了但欄名可能不對**的）（逐檔明細——後端這三項本來就是逐檔的，彙總成一份就看不出是哪個檔）＋選填 `importLabelSyncWarning`（`import_excel` 掛在 200 上的警語：匯入成功但顯示欄位標籤沒即時同步到檢索設定；批次端點的 `FIDELITY_REPORT_KEYS` 不含它，故只有 1-1-6 set）。被剝除連結的「複製為出口替換規則」是純前端互動，見 `import-report.js`。**兩條匯入流程的「報告落在哪一頁」不對稱**，唯一定義點是 `tests/guideline.test.mjs` 的 `REPORT_HOSTS`（那張表同時驗落點與 toast 的指路方向）——這裡刻意不重述：散文那一份沒有任何東西會讓它變紅，落點搬家的那一天它就是第二個錯誤的指路牌。**索引同步**（`sync_state`，六個匯入入口都回得出來）：`importSyncState`（必填＝`pending`／`succeeded`／`failed`／`unknown`；四態的視覺／文案對照表正本在 `components/import-sync-tag`）＋選填 `importSyncIndexed`／`importSyncFailed`（**字串**，沒 set ＝ 畫「—」不畫 `0`——「沒量到」與「零筆」是兩件事）＋選填 `importSyncReason`（product 產的業務字串＋維運要用的關聯編號，不翻）＋選填 `importSyncPerFile`（布林＝逐檔明細由使用頁自己畫，批次頁 `1-2-1` set true：彙總標籤改講「這一批」、兩顆彙總計數槽整排收掉，但 `importSyncReason` 不受它影響——關聯編號不可以無聲消失）。 |
@@ -174,11 +175,11 @@ dist/                       build 輸出（勿手改）
 
 ### Modal 清單（GUIDELINE §7 的「Modal 殼」現況）
 
-`modals-sm`：deleteModal、resetUsageModal（同一支 `components/delete-modal`，靠 `deleteModalId` 換 id——5-6-1 那三份稿與元件庫頁同頁兩顆）。`modals-md`：datasetModal、disclaimerModal、intentionModal、knowledgeModal、likeModal、shareModal、shareManageModal、manageMembersModal、manageTenantModal、resetPasswordModal、editModal、passwordModal、previewTextModal（元件庫展示版）、caseFromLogModal、ProductionSettingsModal、ProductionSettingsNoPermissionModal、ProductionSettingsCompareModal、configCopyModal、qaImportModal、以及 `components/help-modal` 的**每一份實例**（元件庫的 `demoHelpModal` ＋ 各生產頁的 `<blockId>HelpModal`，顆數不寫死、反查見該元件檔頭）。`modals-lg`：previewModal（iframe 檔案預覽）、glossaryEntriesModal、skillEditorModal、untaggedFilesModal、aliasEntriesModal。另有頁面層一次性的 aliasOutputInfoModal（`modals-md`，寫在 5-2 頁內，同 login 的 passwordModal 與元件庫的 previewTextModal）。實際以 `grep '<dialog' src` 為準。
+`modals-sm`：deleteModal、resetUsageModal（同一支 `components/delete-modal`，靠 `deleteModalId` 換 id——5-6-1 那三份稿與元件庫頁同頁兩顆）。`modals-md`：datasetModal、disclaimerModal、intentionModal、knowledgeModal、likeModal、shareModal、shareManageModal、manageMembersModal、manageTenantModal、resetPasswordModal、editModal、passwordModal、previewTextModal（元件庫展示版）、caseFromLogModal、ProductionSettingsModal、ProductionSettingsNoPermissionModal、ProductionSettingsCompareModal、configCopyModal、qaImportModal、以及 `components/help-modal` 的**每一份實例**（元件庫的 `demoHelpModal` ＋ 各生產頁的 `<blockId>HelpModal`，顆數不寫死、反查見該元件檔頭）。`modals-lg`：previewModal（iframe 檔案預覽）、glossaryEntriesModal、skillEditorModal、untaggedFilesModal、aliasEntriesModal、searchScopeModal。另有頁面層一次性的 aliasOutputInfoModal（`modals-md`，寫在 5-2 頁內，同 login 的 passwordModal 與元件庫的 previewTextModal）。實際以 `grep '<dialog' src` 為準。
 
 **`<元件名>.html` 的兩種身分**：被生產頁面 include 的是生產 markup；只被元件總覽頁 `component.html` include 的是展示片段（`button`、`checkbox`、`radio`、`switch`、`tab`、`form-control`、`multi-select`、`link-file`、`link-modal`、`list-style`、`divider-vertical`、`toast`、`tooltip`、`block`、`form-table`、`default-table`、`accordion`、`error-page`、`widget-shell`）。展示片段為了示範情境會用到別的元件，判斷桶歸屬時不算依賴（見 GUIDELINE §1-1）。
 
-> **上列不是完整清單**（`src/_includes/` 目前有 119 個元件）。完整結構以 `src/_includes/` 與元件總覽頁 `dist/component.html` 為準。跨檔一致性由 `npm test` 把關：有 js 的元件必須三方登記（實體檔 ⇄ `eleventy.config.js` ⇄ `base.html`）、有 scss 的必須在 `main.scss` `@use`、每個元件 html 都必須被 include（無孤兒）、每張圖都必須被引用。
+> **上列不是完整清單**（`src/_includes/` 目前有 120 個元件）。完整結構以 `src/_includes/` 與元件總覽頁 `dist/component.html` 為準。跨檔一致性由 `npm test` 把關：有 js 的元件必須三方登記（實體檔 ⇄ `eleventy.config.js` ⇄ `base.html`）、有 scss 的必須在 `main.scss` `@use`、每個元件 html 都必須被 include（無孤兒）、每張圖都必須被引用。
 
 ---
 
