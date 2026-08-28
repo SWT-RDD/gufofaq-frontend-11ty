@@ -1,4 +1,5 @@
-// 問答評分 modal：讚/倒讚二選一（取代真 app 那份 1~5 星）＋填理由。只用於本 modal。
+// 問答評分 modal：讚/倒讚二選一（**不是** 1~5 星——上游的評分欄位只有 positive／negative
+// 兩個值，畫成星等會讓使用者以為分得出程度）＋填理由。只用於本 modal。
 // 圖示沿用 images/icon_good.png、icon_not_good.png（同訊息動作鈕，但這裡是可選取的切換鈕，故自有樣式）。
 @use "../../../scss/mixin" as *;
 .feedback-vote {

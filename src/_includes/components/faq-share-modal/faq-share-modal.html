@@ -9,16 +9,15 @@
                 </div>
                 <div class="modals-body">
                     <span data-i18n="modals.shareConfirmHint">分享前，請確認此連結內容</span>
-                    {# ⚠️ 這一段先前是**裸字面、沒有 `data-i18n`**（round47）：英文模式下它會原樣露出
-                         一整段繁中，而全站沒有任何一條規則看得到它（不是 data-i18n 節點 ⇒ 孤兒 key、
-                         同 key 同繁中、空譯文那三張網都掃不到它）。同一句話在 `shared.html` 早就有
-                         `shared.aiDraftNotice` 這顆 key，這裡接上去、不另造第二份。 #}
+                    {# ⚠️ **這一段一定要掛 `data-i18n`、不可以留成裸字面**：留成裸字面的話，英文模式下
+                         它會原樣露出一整段繁中，而全站沒有任何一條規則看得到（不是 data-i18n 節點 ⇒
+                         孤兒 key、同 key 同繁中、空譯文那三張網都掃不到它）。同一句話在 `shared.html`
+                         已有 `shared.aiDraftNotice` 這顆 key，這裡接上去、不另造第二份。 #}
                     <div class="share-text" data-i18n="shared.aiDraftNotice">本內容由 AI 系統初步產出，僅作為草稿或參考依據使用，尚未經人工確認或修改，若需進一步採用，請先檢閱並確認內容之正確性與完整性。</div>
-                    {# **這扇窗是唯一給匿名訪客用的分享入口**，所以「這條連結有多公開」要在這裡講清楚
-                         （round47）。三件事都逐條對得回 product：
-                           · 免憑證：`GET /shared/{token}` 由 `app/conversation/share_links.py` 的
+                    {# **這扇窗是唯一給匿名訪客用的分享入口**，所以「這條連結有多公開」要在這裡講清楚。三件事都逐條對得回 product：
+                           · 免憑證：`GET /shared/{token}` 由 product 的
                              `view_shared_by_token` 提供，路徑上沒有任何認證依賴。
-                           · 沒有期限：`app/conversation/public_ask.py` 的 `create_public_share` 建的
+                           · 沒有期限：product 的 `create_public_share` 建的
                              `models.ShareLink` **不帶 `expires_at`**（後台 5-8 那條路才填得了有效天數）。
                            · 前台撤不掉：同一支寫 `created_by=None`，而撤銷入口在後台（4-2／5-8）。
                          寫在**建立之前**看得到的地方——建完才說等於沒說。 #}

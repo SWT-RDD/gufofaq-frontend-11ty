@@ -1,5 +1,5 @@
-// 取自凍結前端 `GufoFAQ_Frontend_New/scss/component.scss` 步驟 section（`.step-nodes`，2563-2606），
-// 另依規範調整——**偏離逐條列出**（上一版寫「逐位元照抄」，實際有三處）：
+// 步驟點（`.step-nodes`）的版位與狀態配色。
+// **這幾條要知道理由（改動前先讀）**：
 //   ①`.step-node` 的 `box-sizing: border-box` 移除（§4-1 全域已給，元件不得重寫）。
 //   ②未完成步驟的**字色** `rgba(19, 56, 111, 0.302)` → `--text-muted`：那是 30% 的深藍，
 //     疊白底混出 #b8c3d4、對白只有 1.78:1，讀不到（§4 對比度硬規則）。用一般的次要文字色。
@@ -20,8 +20,8 @@
         font-weight: 500;
         text-align: center;
         color: var(--text-muted);
-        // 未完成步驟的底線要看得見（真 app 是 30% 的深藍）：--border-subtle 疊白底只有 1.06:1，
-        // 整條軌道等於消失，使用者看不出「還有幾步」。用一般的分隔線色。
+        // 未完成步驟的底線要看得見：--border-subtle 疊白底只有 1.06:1，整條軌道等於消失，
+        // 使用者看不出「還有幾步」。用一般的分隔線色 --border。
         border-bottom: 4px solid var(--border);
 
         &.done {

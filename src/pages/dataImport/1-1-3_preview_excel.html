@@ -23,10 +23,9 @@ permalink: 1-1-3_preview_excel.html
 {% set stepPrevHref = "1-1-2_uploadFile_excel.html" %}
 {# **本頁打的端點**（§3-2：一頁多支端點時，檔頭第一段先列端點清單）：
      POST /datasets/excel/preview   讀暫存的 Excel、回工作表與前幾列（本頁整張預覽表的來源）
-     全部在 product `app/routers/datasets.py`。「下一步」本身不打 API（見下），
+     全部在 product。「下一步」本身不打 API（見下），
      真正把欄位對應送出去的是下一頁 1-1-4 的 `POST /datasets/{dataset_id}/excel/import`。 #}
-{# 這一頁的「下一步」是**純換頁**（凍結前端 `GufoFAQ_Frontend_New/js/previewExcel.js:202` 只寫 sessionStorage
-     再 `window.location.href`，沒有任何 API）⇒ 維持 `<a href>`。成對參數要一起清掉，
+{# 這一頁的「下一步」是**純換頁**（不打任何 API：選好的來源結構帶到下一頁才送出）⇒ 維持 `<a href>`。成對參數要一起清掉，
      否則沿用上一次 include 留下的動作模式（§2：set 是頁面全域）。 #}
 {% set stepNextAction = false %}
 {% set stepNextHref = "1-1-4_columnSelect_excel.html" %}
@@ -34,12 +33,13 @@ permalink: 1-1-3_preview_excel.html
     {% include "components/step-btn-wrap/step-btn-wrap.html" %}
 </div>
 
-{# 暫存檔存活時間（round47）：這一頁與下一頁看到的東西**都是從一份暫存在伺服器上的檔案讀出來的**
-     （`POST /datasets/excel/preview` 讀的就是它），而那份檔案有存活時間——product
-     `app/limits/ops_limits.py` 把 `settings.staged_upload_ttl_hours` 投影成 `GET /datasets/limits`
-     的 `upload.staged_ttl_hours`，過期的由 `app/data/dataset_ops.py` 那段回收邏輯直接 `unlink()`。
-     **這個數字先前全站零消費點**：後端投影了、React 連格式化函式都寫好了，畫面上一個字都沒有
-     ⇒ 使用者把分頁擱著過夜、回來按下一步，拿到的是一句「找不到檔案」而完全不知道為什麼。
+{# 暫存檔存活時間：這一頁與下一頁看到的東西**都是從一份暫存在伺服器上的檔案讀出來的**
+     （`POST /datasets/excel/preview` 讀的就是它），而那份檔案有存活時間——product 把
+     `settings.staged_upload_ttl_hours` 投影成 `GET /datasets/limits` 的
+     `upload.staged_ttl_hours`，過期的由 product 的回收邏輯直接 `unlink()`。
+     **為什麼非畫出來不可**：後端投影得出這個數字、React 端連格式化函式都有，但只要畫面上
+     少了它，使用者把分頁擱著過夜、回來按下一步，拿到的就是一句「找不到檔案」而完全不知道
+     為什麼、更不知道下次要多快做完。
      這一步與 1-1-4 是同一份暫存檔的兩個畫面，兩頁都要講（人可能直接落在任一頁）。
      數字是資料槽（`js-staged-ttl-hours`），不烤進譯文（§4-2）。 #}
 <p class="text-gray"><span data-i18n="dataImport.stagedTtlPrefix">剛上傳的檔案先暫存在伺服器上：</span><span class="js-staged-ttl-hours">24</span><span data-i18n="dataImport.stagedTtlSuffix"> 小時內沒有完成送出就會被清掉，屆時要重新上傳。</span></p>
@@ -47,7 +47,7 @@ permalink: 1-1-3_preview_excel.html
 {# ── 來源結構：工作表／表頭列數／交叉表 unpivot ────────────────────────────────────
      這三個設定決定「這份檔案讀出來的欄名長什麼樣」，而下一步（1-1-4）的欄位對應就是照這裡看到的
      欄名做的。所以它們是**同一組值**：改完要重新預覽，送出匯入時也必須原封不動帶著同一組。
-     出處：gufofaq-saas services/product/app/routers/datasets.py 的 `preview_excel`（Form 參數
+     出處：gufofaq-saas 的 `preview_excel`（Form 參數
      `sheet_name`／`header_rows`／`unpivot`／`unpivot_row_label_cols`）與 `ExcelImportIn`（同名欄位）。
      ⚠️ 三項不論漏帶哪一個，後果都一樣、而且**看得見**：`_do_excel_mapping_import` 在
      `combine_row_to_slots` 的**前一行**無條件呼叫 `_assert_assignment_columns_exist`——
@@ -58,8 +58,10 @@ permalink: 1-1-3_preview_excel.html
      前面，這條路走不到那一步——所以這裡**不可以**寫成「漏帶 `header_rows` 會一路 200、內容欄
      整批空字串而畫面上寫著匯入成功」。三個都是值載體，掛 hook class 交 React。 #}
 
-{# 工作表選擇：多工作表的活頁簿原本只會匯入第一張，其餘**靜默消失**——使用者上傳三張表，看到「匯入成功」，
-     另外兩張連提示都沒有。選了哪一張要跟著預覽與匯入走（值載體 → hook class .js-excel-sheet，不掛 data-toast，§5）。
+{# 工作表選擇：多工作表的活頁簿**只有選取的那一張**會被預覽與匯入，所以「挑哪一張」必須是
+     使用者明示的決定。少了這個欄位，其餘工作表就**靜默消失**——使用者上傳三張表、看到
+     「匯入成功」，另外兩張連一句提示都沒有。
+     選了哪一張要跟著預覽與匯入一起走（值載體 → hook class .js-excel-sheet，不掛 data-toast，§5）。
      只有一張時整個欄位不渲染（`{% if sheets.length > 1 %}`，React 依清單長度同理）。示範 3 張。 #}
 {% set sheets = ["問答集", "產品清單", "備用資料"] %}
 {% if sheets.length > 1 %}
@@ -78,7 +80,7 @@ permalink: 1-1-3_preview_excel.html
 </div>
 {% endif %}
 
-{# 表頭列數：數值欄一律 type="number" ＋合法區間（同 5-2 的理由）。區間出處＝product app/excel.py 的
+{# 表頭列數：數值欄一律 type="number" ＋合法區間（同 5-2 的理由）。區間出處＝product 的
      `MAX_HEADER_ROWS = 10` 與 `preview_excel` 的 `Form(default=1, ge=1, le=excel.MAX_HEADER_ROWS)`。
      **這是使用者的明示指定，不是偵測結果**：偵測只會回下面那條提示請他確認，絕不自動套用。 #}
 <div class="form-group row mobile-col mb-16">
@@ -140,7 +142,7 @@ permalink: 1-1-3_preview_excel.html
        請求**，故不能沿用 product 400 的那句話；③product 讀不出這組設定（`excel.ExcelFormatError`／
        `ExcelReadError`，例如指定的表頭列數讀出重複或空白欄名、unpivot 左側欄超出範圍）；
      ④儲存空間不足：`preview_excel` 第一件事就是 `assert_storage_quota(db, tenant_id, len(data))`
-       （datasets.py → dataset_ops.py 的 413 `storage_exceeded`）。**這顆鈕正是它防的那條路**——
+       （product 的 413 `storage_exceeded`）。**這顆鈕正是它防的那條路**——
        每按一次重新預覽就再落地一份暫存檔，而額度的現用量含暫存區的孤兒檔；⑤連線失敗。
      驗證結果只走這顆 toast 的 warning 段、欄位本身加 `.error`（§4：全站一種回報方式，不做逐欄內嵌訊息）。 #}
 <div class="flex-row mb-16">
@@ -151,14 +153,15 @@ permalink: 1-1-3_preview_excel.html
 </div>
 
 {# ══ 資料預覽表格：**欄是動態的**，所以寬度／夾字／`<col>` 三件事都要有規則 ══════════════
-     這張表的欄名、欄數、欄序全部由**使用者上傳的那份活頁簿**決定（真實頁在真 app 是
-     `previewExcel.js` 依檔案產生 thead/tbody）。正本＝product `app/excel.py` 的 `PreviewResult`：
+     這張表的欄名、欄數、欄序全部由**使用者上傳的那份活頁簿**決定：執行期是拿回應現產
+     thead/tbody，切版這一份是它的靜態鏡射。正本＝product 的 `PreviewResult`：
        · `columns: list[dict]`，形狀逐字是 `{"index": int, "title": str, "type": str}`
          （`index` 是 0-based 欄序，`for i in range(n_header)` 產出；`type` 的值域＝`_infer_type`
          的 `text`／`number`／`date`／`bool`）
        · `preview_rows: list[list[str]]`——**每一列是字串陣列、不是物件**，以 `columns[].index` 取值
-     示範資料照這個形狀給（原本是一份 `{question, answer, date, image}` 物件陣列 ＋ 手寫四顆 `<th>`：
-     那是「這一份活頁簿」的樣子，推不出「任何一份活頁簿」該怎麼畫）。
+     示範資料**照這個形狀給**，不寫成 `{question, answer, date, image}` 這種具名物件陣列 ＋
+     手寫四顆 `<th>`：那種寫法畫的是「這一份活頁簿」的樣子，推不出「任何一份活頁簿」該怎麼畫，
+     而這張表的全部難處正是欄不定。
 
      ── ① `<col>` 怎麼產：與 `<th>`、每一格 `<td>` 對**同一個陣列**迴圈 ───────────────────
      欄數不定 ⇒ `<colgroup>` 也是 `{% for c in previewColumns %}` 產出，順序＝`index` 升冪。
@@ -178,25 +181,24 @@ permalink: 1-1-3_preview_excel.html
      ⚠️ **動態欄的表全站有兩條路，這一頁走捲動、不走 3-1-6 的 `.fixed-layout`**：`table-layout: fixed`
      ＋ `width: 100%` 是把版面寬**平均**給每一欄，欄一多就每欄都讀不到（30 欄時不到 40px），
      而這一頁正是欄數最不可預測的那一站——使用者剛上傳一份誰也沒看過的活頁簿，`n_header` 由檔案決定。
-     3-1-6 那張是資料已經匯完之後的回看（比對面板畫的是欄位對照過的槽，product `app/field_schema.py`
+     3-1-6 那張是資料已經匯完之後的回看（比對面板畫的是欄位對照過的槽，product
      的 `SLOTS`；原始面板才是活頁簿的欄），兩條路都在設計系統裡，差別只在「欄多的時候要犧牲寬度
-     還是讓它捲」。200 對齊全站其他表的欄寬尺標；真 app 同型表逐欄同值的做法見凍結前端
-     `GufoFAQ_Frontend_New/js/previewExcelCompare.js:301`（`min-width:170px`，逐欄一顆）。
+     還是讓它捲」。200 對齊全站其他表的欄寬尺標，而且**逐欄同值**——欄名長短是這一份活頁簿的事，不該決定欄寬。
 
      ── ③ 哪些格要包 `.collapse-text`：**逐格都包** ───────────────────────────────────
      理由與②同源：分不出哪一欄是長文，就一律夾三行並給得開（契約逐字見 ui/collapse-text 檔頭）。
-     兩份正本都這樣做——真 app 這一頁 `GufoFAQ_Frontend_New/js/previewExcel.js:71` 每一格都包
-     `.ellipsis-2`；切版同為動態欄的 3-1-6 兩個面板逐格都包 `.collapse-text`。
-     ⚠️ **不可以只包「看起來像長文」的那一欄**（原本只有第 2 欄「客服回覆」包）：那是拿這一份
+     切版自己的另一處動態欄表也是這樣：3-1-6 兩個面板逐格都包 `.collapse-text`。
+     ⚠️ **不可以只包「看起來像長文」的那一欄**（例如只包第 2 欄「客服回覆」）：那是拿這一份
      示範活頁簿當規則，而下一份活頁簿的長文在別欄——少包的那一欄會把整張表撐開，而示範資料上
      完全看不出來。
 
      ── ④ 空狀態：帶 `{% else %}` 無資料列，colspan 走 `{{ previewColumns.length }}` ────────
-     版位鏡射真 app：`previewExcel.js:51` 在沒有列時 append 一列跨欄的空狀態列
-     （§5「『真 app 有對應頁』不是免畫的理由」）。**句子改成具名**（round48）：真 app 那一句是
-     泛用的「無資料」，而使用者剛上傳完一個檔、看到的卻是一張空表——要說得出「這張工作表只有
-     表頭」與下一步（換工作表／回上一步重傳），否則讀起來像上傳壞了。colspan 不寫死 4：欄數由
-     活頁簿決定，寫死就是烤一份會分岔的計數（同 3-1-6）。
+     「一列都沒有」是真實可達的一態（那張工作表只有表頭），所以非畫不可（§5：每個分支結果
+     都要有頁面演得出來）。
+     **句子一律具名、不用泛用的「無資料」**：使用者剛上傳完一個檔、看到的卻是一張空表——
+     要說得出「這張工作表只有表頭」與下一步（換一張工作表／回上一步重傳），否則讀起來
+     像上傳壞了。
+     colspan 不寫死 4：欄數由活頁簿決定，寫死就是烤一份會分岔的計數（同 3-1-6）。
 
      示範資料：欄名沿用與 1-1-4 欄位對應步驟一致的樣本（客服問題／客服回覆／建立時間／圖片連結），
      `index` 0..3 與 1-1-4 `columnOptions` 的 `value` 逐字相同（§6 跨頁自洽）。示範 3 筆。
@@ -243,9 +245,9 @@ permalink: 1-1-3_preview_excel.html
         </colgroup>
         <thead>
             <tr>
-                {# 這一列是**上傳的活頁簿自己的欄名**（真實頁由 previewExcel.js 依檔案動態產生），
+                {# 這一列是**上傳的活頁簿自己的欄名**（執行期依那份檔案現產，切版是它的靜態鏡射），
                      屬 §4-2「示範 Excel 欄位一律不翻」的假資料，故不掛 data-i18n——
-                     同一組四個字串在 1-1-4 的槽位選單裡就是純資料（無 key）。 #}
+                     同一組四個字串在 1-1-4 的槽位選單裡也是純資料（無 key），兩處一致。 #}
                 {% for c in previewColumns %}
                 <th id="previewColHead-{{ loop.index }}">{{ c.title }}</th>
                 {% endfor %}
@@ -276,14 +278,14 @@ permalink: 1-1-3_preview_excel.html
     </table>
 </div>
 
-{# 分頁：真實頁 pagination 由 GufoFAQ_Frontend_New/js/previewExcel.js 依資料筆數動態產生（data-total="0"）；
-     ui/pagination 也是同一套 data-total 驅動的 js render。
+{# 分頁：`ui/pagination` 是 data-total 驅動的 js render，依資料筆數產生頁碼。
      total＝**這一份活頁簿（選取的那張工作表）讀出來的資料列數**，與 1-1-6「匯入成功」那一頁的
      「資料總量」是同一個數字：兩處都是 product 的 `data_count`——預覽讀出幾列，匯入就寫幾列，
      而這是同一次匯入流程的第 2 步與第 4 步，不可能各講一個數（§6 跨頁自洽）。
      故取 **980**（＝1-1-6 的 `successDataCount`；那一頁的檔案大小 42KB ÷ 980 ≈ 43 B/列，
-     對得上一份純文字的問答表）。原本寫 115，那是資料集那一層的「檔案總數」
-     （3-1-1 的檔型加總／3-1-3 檔案列的 total），與這一頁畫的東西不是同一件事。
+     對得上一份純文字的問答表）。**不可以拿 115**：那是資料集那一層的「檔案總數」
+     （3-1-1 的檔型加總／3-1-3 檔案列的 total），與這一頁畫的「這一張工作表有幾列」
+     不是同一件事——混用會讓同一次匯入流程的第 2 步與第 4 步各講一個數。
      980 / 20 ＝ 49 頁：桌機 `--pagination-visible: 5`、門檻 `visible + 2` ⇒ ≥8 頁就出省略號，
      故這一頁演的是**滑動視窗**那一態；「頁數少到全部列出」那條分支在 3-1-3／4-1 這些
      6 頁以下的頁面仍然看得到，兩態都有人演。 #}

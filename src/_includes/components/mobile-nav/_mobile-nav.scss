@@ -1,4 +1,6 @@
-// 從 component.scss 的「mobile-nav」區段逐字抽出（僅本元件的 class）
+// 手機版選單的樣式：漢堡鈕、全螢幕遮罩、由上滑出的選單面板與其子選單。
+// 只寫本元件自己的 class；漢堡鈕的 markup 住在 components/header/header.html（§1-1 專屬子片段，
+// 兩邊檔頭互相指名），開合行為在同資料夾的 mobile-nav.js。
 @use "../../../scss/mixin" as *;
 @use "../../../scss/size" as *;
 
@@ -9,8 +11,8 @@
     border: 0;
     padding: 0;
     @include icon-mask("../images/menubar_open.png");
-    // 真 app 這裡是 position:absolute + right:1rem（那時 header 右側沒有別的東西）。
-    // 現在它和 header-controls 同住 .header-right，絕對定位會直接壓在深淺鈕上 → 改回排版流。
+    // 漢堡鈕留在排版流裡（**不要**改成 position:absolute + right:1rem）：它和 header-controls
+    // 同住 .header-right，一旦絕對定位就會直接疊在語言／深淺鈕上面，那兩顆按不到。
     flex-shrink: 0;
     transition: all 0.3s;
     cursor: pointer;

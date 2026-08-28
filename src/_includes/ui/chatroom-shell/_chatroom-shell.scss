@@ -2,7 +2,7 @@
 // 純樣式共用詞彙（無 html/js）：後台 chatroom 元件與 AB測 2-2-3 頁各自手寫 markup、共用這一套 class
 // （同 ui/chat-message 的訊息泡泡共用模式）——2-2-3 需要 .ab-compare 雙欄內容，無法直接 include chatroom，
 // 故外殼樣式升格為 ui/ 共用正本，不留在 components/chatroom 私有（§4：跨頁沿用要升格、不外借）。
-// 訊息泡泡本身在 ui/chat-message。值以真 app 編譯 css 為準。
+// 訊息泡泡本身在 ui/chat-message：本檔只管殼（卡片高度、捲動區、日期分隔列、次數列、輸入列的版位）。
 //
 // markup 契約（無 html 元件，§1-2；整段照抄）——外殼本體、次數列與輸入列。
 // **從外層那顆 flex row 寫起**：`.chatroom-wrap` 是 `flex: 1`，沒有 flex 父層它就只是一顆
@@ -43,9 +43,10 @@
 //       </div>
 //   </div>
 //
-// **`.chatroom-wrap` 後面那顆兄弟不屬本契約**（逐頁不同：2-2-1／2-2-3 是 components/qa-side-panel，
-// 2-1 是問答紀錄頁籤那顆 <div>）——先前它被寫在契約段**裡面**，而同一份檔頭上面那句話正好說它
-// 「不屬本契約」：照契約整段抄到 2-1 會得到一份錯的側欄（§3-2：理由不得被同一個檔案自己的 markup 推翻）。
+// **`.chatroom-wrap` 後面那顆兄弟不屬本契約，所以它不出現在上面那一段裡**（逐頁不同：
+// 2-2-1／2-2-3 是 components/qa-side-panel，2-1 是問答紀錄頁籤那顆 <div>）。把它寫進契約段等於
+// 一邊寫「不屬本契約」、一邊把它擺進可照抄的範圍：照抄到 2-1 就得到一份錯的側欄
+// （§3-2：理由不得被同一個檔案自己的 markup 推翻）。
 //
 // 抄的時候一個都不能省：
 //   ⓐ **`.chat-message-container` 底下是兩層、不是直接放訊息**：訊息一律住在
@@ -55,7 +56,7 @@
 //      把開場那一則整顆關掉——開場招呼是前台的招呼，後台測試區不讀 `GET /welcome`，理由正本
 //      在該元件檔頭）；2-2-3 兩顆都沒有——它從使用者的第一句問題直接起算。所以規則是
 //      「**有沒有那一則決定有沒有那顆容器；有訊息就一定要有 `.chat-box`**」，不是「三顆都得畫」。
-//      `.first-chat`／`.chat-box` 都是凍結真 app 的具名掛點（`NAMED_HOOKS`，React 端要靠它們認出
+//      `.first-chat`／`.chat-box` 都是**具名業務掛點**（`NAMED_HOOKS`，React 端要靠它們認出
 //      該接什麼），本 repo 無樣式——所以把開場那一則直接塞進 `.chat-box` 視覺一模一樣，
 //      只有轉換的時候才會發現兩種訊息全擠在同一個容器裡。
 //   ⓑ **`.qa-count` 是 `.chatroom-block` 與 `.chat-input-container` 之間的那一列**（本檔有規則：
@@ -82,7 +83,7 @@
 .chatroom-wrap {
     border-radius: 8px;
     background-color: var(--surface-raised);
-    height: 600px; // 真 app 編譯 css 為 600px（scss 源碼舊值 690px）
+    height: 600px; // 卡片定高：捲動要發生在 .chatroom-block 裡，不給高度整張卡會被訊息撐長、整頁跟著捲
     flex: 1;
     display: flex;
     flex-direction: column;
@@ -110,16 +111,16 @@
     // 日期分隔列（有它的時候是 `.chat-message-container` 的第一個子元素，排在 `.message-container`
     // 之前；2-2-3 沒有這一列，見檔頭 ⓐ）。markup 契約已含在本檔檔頭那一整段裡，這裡不重寫第二份：
     //   <div class="date-wrap"><div class="date">2024/12/02</div></div>
-    // 真 app 由業務 js 在執行期插入（qaRecord.js:133／singleTest.js:476）；切版在
-    // components/chatroom 畫出一份靜態示範——沒有任何 markup 的話這段就是出貨死 CSS，
-    // 沒有人看過它的長相（§5）。日期是資料、不翻。
+    // 正式環境（執行期）由業務端依訊息的日期分組插入這一列；切版在 components/chatroom 畫出一份
+    // 靜態示範——一份 markup 都沒有的話，這段規則就是出貨的死 CSS，沒有人看過它的長相（§5）。
+    // 日期是資料、不翻。
     .date-wrap {
         display: flex;
         justify-content: center;
         margin-bottom: 1.5rem;
         position: sticky;
         top: 8px;
-        z-index: 5; // 真 app 編譯 css 有（sticky 日期需壓在訊息之上）
+        z-index: 5; // sticky 的日期要壓在捲過去的訊息之上，否則會被泡泡蓋掉
 
         .date {
             width: fit-content;

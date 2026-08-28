@@ -1,6 +1,6 @@
 // 刪除確認 modal 的提示文字。
-// 原本寫在 ui/modals 的 `#deleteModal .modals-body p`——那是通用元件反向指名另一個元件的實例，
-// 依 §4 改成 delete-modal 自有的 slot class。
+// 這一條**必須住在 delete-modal 自有的 slot class 上**，不可以寫成 ui/modals 裡的
+// `#deleteModal .modals-body p`——那是通用元件反向指名另一個元件的實例，§4 不允許。
 .delete-modal-text {
     margin: 0;
     font-size: 1.25rem;

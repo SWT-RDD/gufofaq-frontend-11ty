@@ -1,18 +1,19 @@
-// 提示詞版本卡（5-2 對話設定 hub 的提示詞／歡迎語子頁籤）：.block 的 variant。
-// 純樣式元件（無 html/js）：markup 寫在頁面（草稿卡 .prompt-card.draft、歷史版本卡 .prompt-card）。
-// （原始規則來自真實 app css/style.css「提示詞管理 (5-4-1)」段；textarea 依 GUIDELINE §4
-//  「slot class」原則改指本元件自己的 .prompt-input，不指名 ui/form-control 的 class；
-//  卡片內的列表行距改用 ui/list-style 的 .line-loose variant，本檔不觸碰它的 class。）
+// 提示詞版本卡（5-2 對話設定 hub 的提示詞／歡迎語子頁籤）：`ui/block` 的一種 variant。
+// 純樣式元件（無 html/js）：markup 寫在頁面上，兩型——草稿卡 `.prompt-card.draft` 與
+// 已發布的歷史版本卡 `.prompt-card`。
+// 本檔只寫自己那兩顆 slot class：卡內 textarea 走本元件的 `.prompt-input`，**不指名**
+// `ui/form-control` 的 class；卡內清單的行距走 `ui/list-style` 的 `.line-loose` variant，
+// 本檔也不碰它的 class（§4：A 元件的 scss 不得出現 B 元件的 class）。
 //
 // markup 契約（無 html 元件，§1-2；整段照抄）—— 生產 markup 全部寫在 5-2_conversationSettings.html。
 // **三型分開寫**，因為 `.prompt-text` 與 `.prompt-input` 的規則只在 `.prompt-card.draft` 之內成立
 // （本檔唯一的巢狀就是 `&.draft`）——把它們畫在已發布卡或 `.prompt-card-list` 直下，class 找得到、
 // 樣式一條都不生效（§4 第三種死法：祖先錯位）。
 //
-// **`.prompt-card-list` 是無樣式的真 app 業務掛點，不是漏掉的樣式**（§5：hook 是轉換契約、不是死碼）：
-// 凍結前端 `GufoFAQ_Frontend_New/js/promptManagement.js` 以 `$('.prompt-card-list')` 取它、再
-// `$list.find('.prompt-card:not(.draft)').remove()` 清空重繪版本卡。版位全由 `flex-row column gap-10`
-// 提供，所以**全站 scss 不得為它寫規則**，也不得因為「在 scss 裡找不到它」而把它當無主 class 移除。
+// **`.prompt-card-list` 是無樣式的業務掛點／轉換契約，不是漏掉的樣式**（§5：hook 是契約、不是死碼）：
+// 執行期靠它定址整份版本史容器，把 `.prompt-card:not(.draft)` 那幾張清掉重繪（草稿卡不在它裡面，
+// 見下面 ③）。版位全部由 `flex-row column gap-10` 這幾顆工具 class 提供，
+// 所以**全站 scss 不得為它寫規則**，也不得因為「在 scss 裡找不到它」而把它當無主 class 移除。
 //
 // 契約段裡凡是**重複同型節點**都只寫一顆並在該行標明重複次數的來源（§1-2 只准這一種省略）。
 //

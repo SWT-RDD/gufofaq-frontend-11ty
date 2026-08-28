@@ -1,6 +1,6 @@
-// 檔案上傳區：點擊開啟原生檔案選擇窗、拖曳時切換 .drag-over 樣式 class
-// 行為改寫自凍結前端 GufoFAQ_Frontend_New/js/main.js 696-716 行（原用 jQuery），僅轉切版視覺行為；
-// 實際讀檔/上傳 API 邏輯（uploadFile_excel.js、uploadFilePdf.js 等）為業務邏輯，不轉。
+// 檔案上傳區的行為：點放置區開原生檔案選擇窗、拖曳時切 `.drag-over` 外觀、
+// 以及**在送出之前**就把不合格的檔案（副檔名不符／超過單檔上限）點名出來（見下方 screen）。
+// 這一支**不讀檔、不打上傳 API**——那是業務範圍，由 React 端接手（§5）。
 document.addEventListener("DOMContentLoaded", function () {
     document.querySelectorAll(".upload-box").forEach(function (box) {
         // input 是放置區的下一個兄弟（`<a>`/`<button>` 不能包互動內容），而且只有按鈕版才有。
@@ -13,8 +13,10 @@ document.addEventListener("DOMContentLoaded", function () {
             if (input) input.click();
         });
 
-        // input 是 box 的「兄弟」，input.click() 的事件不會冒泡經過 box——
-        // 舊版在這裡多掛一個 stopPropagation 防「無限迴圈」，但那個迴圈結構上不存在，已移除（§3-2 註解要與事實相符）。
+        // 這裡**不需要** stopPropagation：input 是 box 的「兄弟」而不是子孫，
+        // `input.click()` 發出的事件不會冒泡經過 box，所以「點 box → 開檔案窗 → 又觸發 box」
+        // 那種無限迴圈在這個結構下不可能發生。多掛一道守衛只會讓下一個人以為那個迴圈是真的
+        // （§3-2：註解與程式碼都要與事實相符）。
 
         // 拖放**只在有 <input type="file"> 的那一版**宣告自己是放置目標。
         // 連結版（uploadNextHref）整顆是一個 <a>、沒有 input 也沒有 .upload-error：
@@ -43,7 +45,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         // 不支援的副檔名：拖進來的檔案不在 accept 清單內時，列出被略過的檔名。
         // 為什麼切版就要做：這是純前端互動（比對副檔名、報出結果），沒有業務主人（§5 ④）；
-        // 而「靜默丟掉」正是這條要修的行為——使用者只會看到「怎麼少了幾個檔案」。
+        // 而**靜默丟掉**正是這條要消滅的行為——不說的話，使用者只會看到「怎麼少了幾個檔案」。
         // 兩列 `.upload-error` 各自一種拒絕理由（副檔名／太大），從 input 之後連續掃出來——
         // 不用 `nextElementSibling` 硬數第幾個：加一列就要改一次索引，而那種改法看不出來壞了。
         var errorRow = null, sizeRow = null;
@@ -113,7 +115,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 screen(e.dataTransfer ? Array.prototype.slice.call(e.dataTransfer.files || []) : []);
             });
             // **原生檔案選擇窗那條路也要驗**：`accept` 幫我們濾掉了副檔名，但它**濾不掉大小**
-            // ——從選擇窗挑一份 200MB 的 PDF，先前一路走到送出、再等 413。這是這一輪補的那一半。
+            // ——不掛這一條的話，從選擇窗挑一份 200MB 的 PDF 會一路走到送出、再等後端回 413。
+            // 拖放與選檔是兩條入口，兩條都要過同一支 screen()。
             if (input) input.addEventListener("change", function (e) {
                 screen(Array.prototype.slice.call((e.target && e.target.files) || []));
             });

@@ -1,4 +1,4 @@
-// accordion 手風琴：改寫自凍結前端 GufoFAQ_Frontend_New/js/main.js「表格 accordion 控制」（原用 jQuery + slideDown/slideUp(300)），
+// accordion 手風琴（表格與卡片兩型），原生 DOM API ＋ `GufoSlide` 的高度動畫，
 // 開合的高度動畫走 ui/slide-toggle（同一套 300ms，與手機選單共用）
 // 只轉切版互動（開合本身），資料載入/API 等業務邏輯不在此列
 //
@@ -23,7 +23,8 @@ document.addEventListener("DOMContentLoaded", function () {
     // 下面三個函式不依賴任何單一 .js-accordion 根（只從 btn 自己往上找列），故住在外層供所有根與
     // 匯出的 API 共用——setOpen 是本元件唯一改變狀態的入口，aria/標籤/動畫都在它裡面一次寫齊。
     // 兩種結構：表格（明細在下一列 tr.detail-row 裡）與卡片（明細在同一張卡內）。
-    // 表格路徑先試、命中就返回，既有 sources-block / step-flow / default-table 的行為一個字都不變。
+    // 表格路徑先試、命中就返回：表格型（sources-block／step-flow／default-table）一定有 tr.detail-row，
+    // 找不到才落到卡片型，兩型不會互相搶到對方的 .accordion-content。
     function findContent(btn) {
         var row = btn.closest("tr");
         var detailRow = row ? row.nextElementSibling : null;
@@ -57,7 +58,7 @@ document.addEventListener("DOMContentLoaded", function () {
         var content = findContent(btn);
         if (!content) return;
         if (animate === false) window.GufoSlide.set(content, open);
-        else if (open) window.GufoSlide.down(content); // 真 app 是 slideDown(300)
+        else if (open) window.GufoSlide.down(content); // 展開／收合都走 ui/slide-toggle 的 300ms 高度動畫
         else window.GufoSlide.up(content);
     }
 
@@ -88,7 +89,8 @@ document.addEventListener("DOMContentLoaded", function () {
         // 並補齊 aria-expanded／標籤，讓輔具在首次互動前就知道每一筆是開還是關。
         // 為什麼要讀 markup 而不是一律 false：初始開合可能是伺服器決定的狀態
         // （5-2 的 builtin-tool-card：已自訂的工具預設展開），寫死 false 會讓那個狀態在 js 一跑就被關掉。
-        // 未標 .open 的一律關 —— 既有表格用法（sources-block／step-flow）markup 都沒有 .open，行為不變。
+        // 沒標 .open 的一律關：表格型的用法（sources-block／step-flow）markup 上都不帶 .open，
+        // 所以它們一律以收合態開場——「預設展開」是要在 markup 上明講的，不是預設值。
         block.querySelectorAll(".accordion-btn").forEach(function (btn) {
             setOpen(btn, btn.classList.contains("open"), false);
         });

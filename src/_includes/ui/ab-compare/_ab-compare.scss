@@ -1,4 +1,5 @@
-// AB 測試對話區的雙欄比較（2-2-3）。樣式取自真 app 已編譯 GufoFAQ_Frontend_New/css/component.css（scss 源碼漏了）。
+// AB 測試對話區的雙欄比較（2-2-3）：把同一題的 A／B 兩側答案並排成等寬兩欄，讓人一眼比出
+// 兩組設定產出的差別；窄螢幕（.mobile-column）收回上下堆疊。
 // 本檔只寫 ab-compare 自有的 class（.ab-compare/.ab-compare-item/.item-title/.item-content）；
 // 對 .message-content/.message-time 的情境覆寫改由 ui/chat-message 自帶的
 // .message-content.in-compare / .message-time.after-compare 變體提供（§4：不指名他人元件的 class）。
@@ -66,8 +67,8 @@
 //
 // 抄的時候一個都不能省：
 //   ⓐ′ **中點自己也要有 key**（`common.midDot`，全站已存在）：留成 span 外的字面量，英文句子
-//      中央就會露出一個繁中字身（§4-2）。設定檔那一段還要包 `{% if %}`——上游那兩欄是
-//      `Mapped[int | None]`（`AbTestRound.a_profile_no`／`b_profile_no`），拿不到編號時整段
+//      中央就會露出一個繁中字身（§4-2）。設定檔那一段還要包 `{% if %}`——product 那兩欄
+//      （`AbTestRound.a_profile_no`／`b_profile_no`）可以是 null，拿不到編號時整段
 //      （含它前面那顆 `·`）不畫，不退回一個猜出來的設定檔（§6）。
 //   ⓐ **`.item-title` 一定要帶 `id="abAnswerTitle-<側>"`**。那不是裝飾：同一層的
 //      `.message-icon` 用 `role="group" aria-labelledby` 指著它——兩側的動作鈕字面完全相同、
@@ -82,10 +83,10 @@
 //   ⓔ 兩側的引用標記（`components/citation-ref`）各自從 1 起算、指向各自那一側的來源集合——
 //      兩側的 [[1]] 不是同一份文件，別共用一組號碼（理由見 2-2-3 頁內註解）。徽章住在
 //      `.item-content` 的 `<ul class="list-style-disc">` 的 `<li>` 裡（**清單本身也是契約的一部分**：
-//      上一版的契約只留了那顆 `<p>`，照抄的人會得到一則沒有任何引用標記的答案，而
+//      契約只留那顆 `<p>` 的話，照抄的人會得到一則沒有任何引用標記的答案，而
 //      「哪一句話出自哪一份文件」正是這頁要比較的東西）。
-//   ⓕ **`.message-icon` 五顆鈕一顆都不能省**（上一版砍到只剩複製那一顆，卻同時寫著
-//      「一個都不能省」）。被砍掉的四顆各自帶著不同的掛點，缺一顆就是一條斷掉的行為：
+//   ⓕ **`.message-icon` 五顆鈕一顆都不能省**。看起來只有複製那顆有用，其實
+//      另外四顆各自帶著不同的掛點，缺一顆就是一條斷掉的行為：
 //      `.watchBtn` 由 `components/chatroom/chatroom.js` 的 document 委派接住、呼叫
 //      `GufoSources.show()` 揭示同頁的參考來源區；`.js-vote` ＋ `data-vote` 是評分的**條件開窗**
 //      hook（要先認出這是哪一側的 log，故不掛 `data-open-modal`，§5 ①；窗本體由該頁底部
@@ -110,9 +111,10 @@
         flex-direction: column;
     }
 
-    // 以 .ab-compare-item 墊高特異度到 (0,3,0)：真 app 原選擇器 .ab-compare .message-content .item-title
-    // 也是三層、贏過 chat-message 的 .message-content .robot-msg p (0,2,1)；§4 去掉他人 class 改寫時
-    // 層疊勝負必須不變——只寫 .ab-compare .item-title (0,2,0) 會輸，margin/line-height 變死宣告。
+    // 多墊一層 .ab-compare-item 把特異度撐到 (0,3,0)，才贏得過 ui/chat-message 的
+    // .message-content .robot-msg p (0,2,1)。§4 不准指名他人元件的 class，所以改用自己的
+    // .ab-compare-item 當第三層——只寫 .ab-compare .item-title (0,2,0) 會輸，下面的
+    // margin/line-height 就變成寫了不生效的死宣告。
     .ab-compare-item .item-title {
         border-bottom: solid 1px var(--border);
         text-align: center;

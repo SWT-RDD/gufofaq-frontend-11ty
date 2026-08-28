@@ -1,20 +1,23 @@
-{# 資料驅動頁碼列，js render（pagination.js，改寫自凍結前端 GufoFAQ_Frontend_New/js/main.js:499 renderPagination()）。
-     頁面 include 前 set total（總筆數，必填）；可選 set perPage（每頁筆數，預設 10，對照真 app perPage）
+{# 資料驅動頁碼列，js render（pagination.js）。
+     頁面 include 前 set total（總筆數，必填）；可選 set perPage（每頁筆數，預設 10）
      ／set currentPage（目前頁，預設 1）／set paginationOwnerId（**同一頁 include 兩份時必填**：
      這一顆是 `<nav>` 地標，兩份的可及名稱逐字都是「頁碼分頁」，報讀器的地標清單上會出現兩行
      一模一樣的字——與 §4「同一頁同時可見、語意不同的兩個以上控制項不得共用同一個可及名稱」
-     是同一件事，只是換了一種節點。給了就改吃 `aria-labelledby="<擁有者> <本列自己>"`）。<ul> 空殼由 js 依 data-total/data-per-page/data-current 動態產生：
-     prev → 首頁碼恆顯 → 中間滑動視窗（visible=5，真 app 是 3——可視頁碼變多，設計演進）+ 左右省略號
-     → 尾頁碼恆顯 → next；點 a[data-page] 換頁即重新 render（兩態＝有無 data-page，同真 app）。
-     .page-info 顯示總頁數：真 app main.js:500 有 `$(".pagination .page-info span").text(totalItems)`
-     這行引用，但真 app html 從未補上這塊 markup（未完成的意圖）——這裡把它做完，數字由 js 填。 #}
+     是同一件事，只是換了一種節點。給了就改吃 `aria-labelledby="<擁有者> <本列自己>"`）。
+     `<ul>` 是**空殼**，每一顆 `<li>` 都由 pagination.js 依 data-total／data-per-page／data-current 現算現畫，
+     順序固定是：prev → 首頁碼（恆顯）→ 中間滑動視窗（可視頁碼數讀 CSS 的 `--pagination-visible`，
+     桌機 5、≤768px 3）＋左右省略號 → 尾頁碼（恆顯）→ next。
+     每一顆頁碼有兩態：**有 `data-page` ＝點得動**（換頁後整份重繪），**沒有 `data-page` ＝目前頁或停用**。
+     `.page-info` 那一行顯示**總頁數**，數字由 js 填（見下面那則註解的推導）。 #}
 <div class="pagination" role="navigation"{% if paginationOwnerId %} id="paginationNav-{{ paginationOwnerId }}" aria-labelledby="{{ paginationOwnerId }} paginationNav-{{ paginationOwnerId }}"{% else %} aria-label="頁碼分頁" data-i18n-aria-label="pagination.nav"{% endif %}
     data-total="{{ total }}"{% if perPage %} data-per-page="{{ perPage }}"{% endif %}{% if currentPage %} data-current="{{ currentPage }}"{% endif %}>
     <ul></ul>
-    {# span 內容寫一行，消除縮排 whitespace（同 breadcrumb 67b26e3 修法）：三個 <span> 之間若有縮排換行，
-       會留下 whitespace text node，讓「共 12 頁」數字兩側字距比 zh 原文字距寬一截；轉 React 時 JSX
-       又不會產生這種縮排空白，兩邊字距因此不一致——寫一行讓字距純由 CSS 決定。
-       數字填的是 totalPages（頁數）是詮釋而非逐字對照：真 app main.js:500 引用 .page-info span 時填的其實是
-       totalItems（總筆數），但真 app 從未補上這塊 markup；這裡把它做完，順著標籤語意「共／頁」改填 totalPages。 #}
+    {# 三個 `<span>` **寫在同一行**，不要為了好讀而換行縮排（同 ui/breadcrumb 的處置）：
+       標籤之間只要有縮排換行就會留下一顆 whitespace text node，讓「共 12 頁」的數字兩側字距比
+       中文字距寬一截；而轉 React 時 JSX 不會產生這種縮排空白，兩邊字距因此對不起來。
+       寫成一行，字距就純粹由 CSS 決定，兩側一致。
+       **填的是 totalPages（總頁數）不是 totalItems（總筆數）**：這一行的可見字面是「共 N 頁」，
+       數字要與它兩側的標籤語意一致——填總筆數的話畫面會說出「共 132 頁」而其實只有 14 頁。
+       總筆數已經由 `data-total` 帶進來，需要時由使用頁自己另外寫一句。 #}
     <div class="page-info mt-8"><span data-i18n="pagination.totalPrefix">共</span><span class="page-info-count"></span><span data-i18n="pagination.totalSuffix">頁</span></div>
 </div>

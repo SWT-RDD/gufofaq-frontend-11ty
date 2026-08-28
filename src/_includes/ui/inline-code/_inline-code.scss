@@ -1,7 +1,7 @@
 // 行內碼（`.inline-code`）：把識別字（skill 名、工具名、參數）畫成一塊墨色 chip。
-// 這個視覺原本在三處各抄一份且數值已開始分岔（step-flow 的 .step-flow-code padding 0.0625/0.375、
-// radius 4、font-size .8125；chat-message 的 markdown `code` padding 0.125/0.25、radius 3、font-size .875；
-// 3-4 的裸 <code> 什麼都沒有）——§4「兩個以上元件必須同值的東西抽成共用正本」，故升格成 ui 原子。
+// **它是共用正本，不准各處各抄一份**：同一個視覺散在三個地方（step-flow 的 `.step-flow-code`、
+// chat-message 的 markdown `code`、3-4 的裸 `<code>`）時，內距、圓角、字級三項就已經開始分岔，
+// 同一頁上會出現三種大小的 chip——§4「兩個以上元件必須同值的東西抽成共用正本」，故升格成 ui 原子。
 //
 // 無 html 檔：它是「直接在 markup 寫 class」的單元素原子（同 ui/button／ui/block 的用法）。
 //

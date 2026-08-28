@@ -21,7 +21,7 @@
 //      抄的時候：選中那一顆要**同時**有 `.active` 與 `aria-current="true"`（§4），面板的 id 要與
 //      `data-target` 逐字相同（打錯＝死頁籤／死面板，有測試在 dist 把關）。
 //
-// tab 頁籤切換：改寫自凍結前端 GufoFAQ_Frontend_New/js/main.js「tab頁籤切換」（原用 jQuery），改用原生 DOM API
+// tab 頁籤切換：原生 DOM API
 // 只轉切版互動（切換 .active / 顯示對應群組），資料載入/API 等業務邏輯不在此列
 // 選中態同步進 ARIA：.active 只是視覺，報讀器聽不到——每一條改變選中態的路徑都同步 aria-current
 // （§4「狀態要寫進 ARIA」；markup 的初始 active 頁籤也帶 aria-current="true"）
@@ -57,9 +57,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // 帶 data-target 的頁籤：切換對應的 .tab-content 內容面板。
     // 面板隱藏是 document 級全域（§5：同頁只放一套 data-target 切換系統）。
-    // **雙層與單層共用同一支**——原本只有 .sub-tabs 那條路徑做面板切換，於是單層 tab-group
-    // 掛了 data-target 的頁籤（3-1-6 的比對／原始資料）點下去只換 .active 與 aria-current、
-    // 面板不動：頁面沒反應，報讀器卻被告知「這是目前頁籤」，比純粹沒反應更糟。
+    // **雙層與單層共用這一支**：只讓 `.sub-tabs` 那條路徑做面板切換的話，單層 `.tab-group` 裡
+    // 掛了 `data-target` 的頁籤（3-1-6 的比對／原始資料）點下去只會換 `.active` 與 `aria-current`、
+    // 面板不動——頁面沒反應，報讀器卻被告知「這是目前頁籤」，比純粹沒反應更糟。
     function showPanel(tab) {
         var target = tab.getAttribute("data-target");
         if (!target) return;   // 元件庫雙層示範的子頁籤沒有 data-target，維持原行為、不碰內容面板
@@ -70,7 +70,9 @@ document.addEventListener("DOMContentLoaded", function () {
         if (activePanel) activePanel.style.display = "";
     }
 
-    // 第二層頁籤切換（真 app 行為：清掉所有 .sub-tabs 裡的選中，跨群組全域）
+    // 第二層頁籤切換：清掉**全頁所有** .sub-tabs 裡的選中，不只清同一組——第一層換群組時，
+    // 上一組子頁籤雖然被藏起來，它身上的 .active／aria-current 還在；不跨群組清的話，
+    // 切回去會看到兩組各有一顆選中。
     document.querySelectorAll(".sub-tabs .tab").forEach(function (tab) {
         tab.addEventListener("click", function () {
             setCurrent(tab, Array.prototype.slice.call(document.querySelectorAll(".sub-tabs .tab")));

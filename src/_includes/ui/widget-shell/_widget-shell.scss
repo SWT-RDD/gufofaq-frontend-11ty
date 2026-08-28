@@ -2,9 +2,10 @@
 //
 @use "../../../scss/mixin" as *;
 
-// 它跑在**別人的網站上**（widget.js 建 shadow root、把樣式一起注進去），所以這一份的角色是
-// 「視覺定案」而不是站內版面：widget.js 照抄這裡的值與結構。因此刻意只用語意 token
-// （--brand／--surface-raised／--border…），換膚與深色一併帶過去。
+// 它跑在**別人的網站上**：gufofaq-saas 的 `widget.js` 建一個 shadow root、把樣式一起注進去，
+// 所以這一份的角色是「視覺定案」而不是站內版面——那一側照抄這裡的值與結構。
+// 因此刻意只用語意 token（--brand／--surface-raised／--border…），換膚與深色才會一併帶過去；
+// 寫死色碼等於在客戶網站上凍結一組跟不上主題的顏色。
 // （舉例刻意不用 --brand-gradient：那正是下方「launcher 的圓與位置沿用 ui/faq-launcher」那段
 //   說明為什麼**不能**用的那一顆。§3-2：同檔自我互指不用行號，行號漂得一樣快。）
 .widget-shell {
@@ -15,8 +16,8 @@
         padding: 0;
         cursor: pointer;
 
-        // 面板開著時 launcher 轉成關閉的手勢（widget.js 現況是換 emoji；這裡不換圖，
-        // 因為那顆貓頭鷹就是產品識別，換掉會讓人以為按到別的東西）。
+        // 面板開著時 launcher 轉 90° 當成「再按一次就收起來」的手勢。
+        // **不換圖示**：那顆貓頭鷹就是產品識別，開合之間換掉它會讓人以為自己按到了別的東西。
         &[aria-expanded="true"] {
             transform: rotate(90deg);
         }
@@ -28,7 +29,7 @@
         // launcher 是 56px、離底 24px ⇒ 面板底邊落在它上方 8px。
         bottom: 88px;
         z-index: 900; // 與 .faq-launcher 同層（modal 1000／toast 2000 之下）
-        display: none; // 初始態；開合由 widget.js 切
+        display: none; // 初始是收合的；開合由 widget 那一側切 [data-open]（見下）
         flex-direction: column;
         width: 360px;
         max-width: calc(100vw - 48px);

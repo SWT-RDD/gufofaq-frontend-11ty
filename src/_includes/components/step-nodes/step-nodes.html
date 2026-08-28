@@ -1,4 +1,5 @@
-{# 步驟進度條（取自真實 app pages/components/component.html 18 步驟 section；真實 app 僅定義 .done 狀態，無 .active）。
+{# 步驟進度條：一排等寬的步驟點，用底線與字色標示走到哪。**只有「已完成」一種狀態**（`.done`）——
+     沒有 `.active`：目前這一步不另外標示，看的是「前面幾格已變色」。
      由頁面單獨 include（1-1-2／1-1-6／1-2-6），或由 `components/step-btn-wrap` 內含
      （`steps`／`stepNodesLg` 兩個參數共用同一份，見該元件檔頭）——§1-1 的專屬子片段：
      耦合點要在雙方檔頭互相指名。

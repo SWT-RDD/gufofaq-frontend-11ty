@@ -5,33 +5,34 @@ titleKey: nav.abTest
 pageHeading: AB測試
 permalink: 2-2-3_abTest.html
 ---
-{# 真 app 掛點沿用（§4：非 js- 形狀的無樣式 class 要在檔頭寫出出處）：
-     `.sample-count` ＝ 凍結前端 GufoFAQ_Frontend_New 的 `js/abTest.js`（`$col.find('input.sample-count')`，
-     兩側取樣欄的讀值掛點）。本 repo 的 scss 與 js 都不碰它，寬度來自同掛的 `.w100`。 #}
-{# **刻意不沿用真 app 的一處**（§5 要記載）：三個數值欄真 app 是 `type="text"`，切版改成
-     `type="number"` ＋後端區間（1–100／1–20，出處同 2-2-1 檔頭）——值要交給 React 送 API，
-     `Number()` 打錯一個字就是 NaN→null。真 app 的 id／hook 契約原樣保留。 #}
+{# 非 `js-` 形狀的無樣式 class 要在檔頭交代它是誰的掛點（§4）：
+     `.sample-count` ＝ 兩側取樣欄的**讀值掛點**（React 從它讀兩側的取樣數）。
+     本 repo 的 scss 與 js 都不碰它，寬度來自同掛的 `.w100`。 #}
+{# **三個數值欄一律 `type="number"`**（§5 要記載），配後端區間（1–100／1–20，出處同 2-2-1 檔頭）：
+     這幾格的值 React 要讀去送 API，`Number()` 少打一個字就是 NaN、序列化成 JSON 是 null，
+     而純文字欄要等到按下送出、後端回話才擋得到——數字欄讓瀏覽器在打字當下就擋。
+     id 與 hook class 那一組轉換契約原樣保留。 #}
 {# 問答紀錄側欄的三顆頁籤（經 components/qa-side-panel 傳給 components/qa-record-tabs）。
-     本頁側欄的每一筆＝一次 AB 比較（product qatest.py 的 `GET /qatest/ab-history`，每筆含 A/B 兩側 log_id）。
+     本頁側欄的每一筆＝一次 AB 比較（product 的 `GET /qatest/ab-history`，每筆含 A/B 兩側 log_id）。
      `id` 是**列鍵**（渲染成 `data-chat-sn` 的值）：紀錄刪得掉，位置不是身分（§6 列鍵）。
      **這一頁的一列不是一個聊天室**，所以那顆值不是聊天室 SN：示範值取該筆的 `a_log_id`
      （A 側那筆 chat log 的 id，整數，`ab_history` 回得出來）。同一支端點的 `round_id` 是
-     前端產生的 uuid，形狀對不上 `data-chat-sn` 這個凍結掛點，故不畫它。
-     原本三筆都沒給 `id`，那顆屬性會渲染成 `data-chat-sn=""`——§4 明文不輸出空屬性，而真 app 的
-     委派選擇器 `.qa-side-panel .tab[data-chat-sn]` 正是靠它才點得動。
+     前端產生的 uuid，形狀對不上 `data-chat-sn` 這個列鍵掛點，故不畫它。
+     **每一筆都必須給 `id`**——少給就渲染成 `data-chat-sn=""`，而 §4 明文不輸出空屬性、整顆屬性
+     因此消失；業務掛點那支委派選擇器 `.qa-side-panel .tab[data-chat-sn]` 正是靠它才點得動，
+     屬性不在＝整排頁籤按不動。
      `label` ＝**這一頁的那一筆比較當初問的題目**（`ab_history` 的 `question`），不是聊天室的
      `ChatTitle`——上一段已經說了「一列不是一個聊天室」，那兩件事必須同時成立。使用者資料、不翻。
-     原本三筆寫的「問答紀錄1／2／3」正好是真 app fallback 的字面——那是寫死在 js 裡的 chrome，
-     當成 label 傳進來就是把 chrome 當資料（同 2-1 的修法）。
+     **label 不得寫成「問答紀錄1／2／3」**：那是 `qa-record-tabs` 無標題 fallback 自己拼得出來的
+     chrome，當成 label 傳進來就是把 chrome 當資料（同 2-1 的作法）。
      ⚠️ **這一頁三筆都必須有 label**：`qa-record-tabs` 的無標題 fallback（可翻前綴
-     `qa.recordFallbackPrefix` ＋ 序號）在這一頁的上游**到不了**——gufofaq-saas product
-     `app/models.py` 的 `AbTestRound.question` 是 `Mapped[str]`（migration
-     `d6e7f8a9b0c1_ab_test_rounds` 建欄即 `nullable=False` 且無 server_default ⇒ 也沒有「早於本欄
-     存在」的舊列），值來自 `routers/qatest.py` 的 `_upsert_ab_round(…, body.query, …)`，而送出那條
+     `qa.recordFallbackPrefix` ＋ 序號）在這一頁的上游**到不了**——gufofaq-saas product 的
+     `AbTestRound.question` 是 `Mapped[str]`（建欄當下就是 `nullable=False` 且沒有 server_default
+     ⇒ 連「早於這一欄存在」的舊列都沒有），值來自 product 的 `_upsert_ab_round(…, body.query,…)`，而送出那條
      路徑先 trim 再擋空字串、且只有拿到 log_id 才落庫。所以**沒有任何租戶會看到一筆沒有題目的
      比較**，第二筆留空演的是上游產不出來的狀態（§6：示範資料要有某個真實租戶畫得出來）。
      那條分支不會因此沒人驗收（§5）：它在 `2-1_qaRecord`（第三筆）與 `2-2-1_singleTest`（第二筆）
-     照演——那兩頁的 label 走 `routers/history.py` 的 `/history/rooms`，`title` 是
+     照演——那兩頁的 label 走 product 的 `/history/rooms`，`title` 是
      `x.get("human_content", "") or ""`，真的空得出來。
      選中那一筆的標題＝本頁對話區那句使用者輸入，§6 同頁自洽；另兩筆同屬本頁的 UH3240 主題。 #}
 {% set qaRecordTabs = [
@@ -58,20 +59,20 @@ permalink: 2-2-3_abTest.html
      提示詞版本，那不是一個真實可能的狀態（§6），AB 測試的用途也演不出來。
      `promptVersion` 只是回覆標題上的版本註記（提示詞本文由使用者當場編，兩側各一份）。
      ⚠️ **版本只有號碼、沒有名字**：`V3-角色定位型` 這種示範值暗示了一個不存在的欄位——提示詞版本
-       在上游是 GufoRAG 的原生版本號（product `prompts.py` 與 `PromptOut` 只有 `version_no`；
-       `history.py` 的單則紀錄同樣只帶號碼），全站也沒有任何一處讓使用者替版本命名。
+       在上游是 GufoRAG 的原生版本號（product 與 `PromptOut` 只有 `version_no`；
+       product 的單則紀錄同樣只帶號碼），全站也沒有任何一處讓使用者替版本命名。
        同一個東西在 5-2 的版本史卡與版本下拉就是純 `V3`／`V2`／`V1`（§6 跨頁自洽），這裡跟著它。
        要有名字得先讓上游長出那一欄，那是另一件事，不能靠示範值先斬後奏。
      `state` 是這一側的 DOM 狀態 token（小寫，見下方參考來源表的兩態槽）；`side` 是畫在畫面上、
        也進 id 的顯示字母——兩者刻意分開，因為 HTML 屬性名一律小寫。
      `i18nKey` / `label` 是**這一側自己的標籤**（「（設定 A）」），與卡片標題那句
        `qaTest.setting` ＋ 字母不同：那是拆開的 chrome＋資料，這一顆是整句、給參考來源表那一格用。
-     `llm` 的值＝`GET /qatest/models` 回的 `value`（product `app/routers/qatest.py` 的 `list_models`／
-       `effective_models`，形狀 `<provider>:<model>`）。原本寫成 `OpenAI gpt-4o-mini`——那個字面過不了
-       product `app/llm.py` 的 `can_build_model`（`model.startswith(PROVIDER_PREFIXES)`，前綴只有
-       `openai:`／`anthropic:`），送出去必定判否。
-     `prompt` 是**這一側的提示詞本文**，兩側必須不同：原本兩顆 textarea 各寫死同一段文字、標題卻標著
-       V3 與 V2——AB 測試比的就是這一欄，兩側逐字相同時整頁演的是一個「比了也不會有差別」的狀態（§6）。
+     `llm` 的值＝`GET /qatest/models` 回的 `value`（product 的 `list_models`／
+       `effective_models`，形狀 `<provider>:<model>`）。**不可寫成 `OpenAI gpt-4o-mini` 那種給人看的
+       字面**：它過不了 product 的 `can_build_model`（`model.startswith(PROVIDER_PREFIXES)`，前綴
+       只有 `openai:`／`anthropic:`），送出去必定判否，而畫面上兩種寫法長得幾乎一樣。
+     `prompt` 是**這一側的提示詞本文**，兩側必須逐字不同：AB 測試比的就是這一欄，兩側寫同一段文字、
+       標題卻標著 V3 與 V2 的話，整頁演的是一個「比了也不會有差別」的狀態（§6）。
        **B 側逐字等於 `components/apply-settings-compare-modal` 的「設定 B」欄**：那顆彈窗的檔頭自己釘死
        「設定 B 欄必須等於使用頁 2-2-3 的 B 側」，而它從這一頁的「套用為正式設定」開出來——同一份資料
        在頁面與彈窗兩處說兩套就是跨區不自洽。改這一欄要連那一份一起改。 #}
@@ -107,8 +108,10 @@ permalink: 2-2-3_abTest.html
             <span class="text-lg text-bold text-blue" id="abSideLabel-{{ ab.side }}"><span data-i18n="qaTest.setting">設定</span> {{ ab.side }}</span>
         </div>
 
-        {# 真 app 此層有 .select-row class，但其樣式已依 §4 改寫為 .ab-field-label slot（見 _ab-test-block.scss），
-             js 也不查它（abTest.js 全檔 grep 零命中）——無主 class 不掛（§4） #}
+        {# 這一層的標籤欄掛 `.ab-field-label`（樣式正本在 `ui/ab-test-block/_ab-test-block.scss`，
+             它是固定寬度對齊兩側欄位的 slot），**不另掛 `.select-row` 這類詞彙**：那個 class 在
+             本 repo 的 scss 與 js 都沒有主人，而 §4 明文「markup 上的每個 class 都要有主人」——
+             無主 class 掛上去零效果，卻會變成下一次複製貼上的陷阱。 #}
         {# 兩側的 7 組欄位 label 逐字相同、同頁同時可見，`id` 唯一救不了**可及名稱**——
              報讀器只念得出「知識檢索」兩次，聽不出在設 A 還是 B。§4：「同一頁同時可見、語意不同的
              兩個以上控制項不得共用同一個可及名稱，要嘛落在不同的 group」，而逐列脈絡的豁免明文
@@ -149,11 +152,11 @@ permalink: 2-2-3_abTest.html
             {# 思考深度（reasoning effort）：與模型同排的一次性測試覆寫（A/B 各一份）。選項依所選模型
                  動態（React 端）；切版靜態列代表性枚舉。空＝沿用該模型預設（chatbot init_llm clamp）。
                **兩側刻意不同**（A 空、B `high`）：①這一欄**確實會被「套用為正式設定」寫出去**
-                 （gufofaq-saas product `app/routers/qatest.py` 的 `ApplyIn.reasoning_effort`），而
+                 （gufofaq-saas product 的 `ApplyIn.reasoning_effort`），而
                  `components/apply-settings-compare-modal` 的「設定 B」欄必須逐欄等於這一側——
-                 兩側都停在空值的話，那顆比對窗的思考深度欄就只畫得出「沿用模型預設」，而它正是
-                 這一輪要補進去的那一欄（§6 跨區自洽）。②順帶讓枚舉的「被選中」態在 dist 上真的
-                 有一處畫得出來——`reasoning-effort-select` 先前恆定停在空值那一顆。 #}
+                 兩側都停在空值的話，那顆比對窗的思考深度欄就只畫得出「沿用模型預設」，比不出
+                 這一欄的差別（§6 跨區自洽）。②`reasoning-effort-select` 那組枚舉的「被選中」態
+                 因此在 dist 上有一處真的畫得出來（§5：沒有頁面演得出來的分支等於沒驗收過）。 #}
             <div class="form-group row mobile-col">
                 <div class="label ab-field-label">
                     <label for="abReasoningEffortSelect-{{ ab.side }}" class="control-label" data-i18n="settings.reasoningEffort">思考深度</label>
@@ -228,8 +231,8 @@ permalink: 2-2-3_abTest.html
            只要常駐展開輸入框，動作鈕在下方動作列。示範文案領域中性。 #}
         {# 提示詞區在 role="group" 之外（那個 group 只框設定欄位），所以 textarea 的可及名稱要自帶
              區分——兩側都叫「提示詞」的話報讀器聽不出在編哪一側。用 aria-labelledby 串上側別。 #}
-        {# 界線提示（§4 三件套第三件）。上限的正本是 product `app/limits/chat_config_limits.py` 的
-             `MAX_SINGLE_PROMPT_LEN`，執行點是 `app/routers/qatest.py` 的 `SingleTestIn.prompt`
+        {# 界線提示（§4 三件套第三件）。上限的正本是 product 的
+             `MAX_SINGLE_PROMPT_LEN`，執行點是 product 的 `SingleTestIn.prompt`
              ——與 2-2-1 同一顆常數、同一段 markup（那一頁的檔頭寫了完整理由）。
              **提示句逐側各一份**：hint 的 id 要跟著側別走，否則兩側的 `aria-describedby` 會指到
              同一顆節點，而同頁 id 重複（§4）。 #}
@@ -242,7 +245,8 @@ permalink: 2-2-3_abTest.html
 
         {# 動作列（每側三鈕同排，套用為正式設定移到此處與其他按鈕一起排列）：
              回復儲存的設定（js-restore-saved，直送重載該側已儲存設定）／儲存提示詞版本（js-prompt-new-version）／
-             套用為正式設定（js-apply-production，業務依模型權限開彈窗，見 abTest.js）。
+             套用為正式設定（js-apply-production）——**有條件開窗，故只掛 hook、不掛 data-open-modal**（§5）：
+             按下去先問後端這個人的模型權限夠不夠，不夠才彈窗，那是執行期才知道的事。
            **這一列自己是一個 group**：三顆鈕的可見字面兩側逐字相同、同頁同時可見（六顆），而上面
              設定欄那個 `role="group"` 在 textarea 之前就收掉了（§4：group 不得框到不屬於那一組的東西），
              所以列脈絡救不了這六顆——報讀器只念得出三組同名。做法與那一組相同：容器掛
@@ -256,15 +260,15 @@ permalink: 2-2-3_abTest.html
     {% endfor %}
 </div>
 
-{# 對話區：AB 雙欄比較訊息真實系統無對應既有元件（components/chatroom 是單欄 user/robot 結構），
+{# 對話區：AB 雙欄比較的訊息沒有對應的既有元件（components/chatroom 是單欄 user/robot 結構），
      故聊天視窗外殼（.chatroom-wrap/.chatroom-block/.chat-input-container）逐字寫死、僅回覆訊息改用 .ab-compare 雙欄比較 markup，
-     與 2-2-1_singleTest 共用同一份聊天室外殼樣式；右側問答紀錄側欄與 2-2-1 同款、**本輪起交付**——
-     凍結的真 app 在這頁把它藏起來（AB 頁當時不支援），但 SaaS 已有 `GET /qatest/ab-history`
-     （product qatest.py，docstring 明寫「供問答紀錄側欄」，每筆＝一次比較、含 A/B 兩側 log_id），
-     再藏著就是「後端查得到、前端有實作、只差版面」的死功能。故 qa-side-panel 的 sidePanelHidden 參數
-     一併移除（已無消費者）。這是 README「與真 app 的刻意差異」的一條。
+     與 2-2-1_singleTest 共用同一份聊天室外殼樣式；右側問答紀錄側欄與 2-2-1 同款、**這一頁也照畫**：
+     上游已經有 `GET /qatest/ab-history`（product，docstring 明寫「供問答紀錄側欄」，每筆＝一次比較、
+     含 A/B 兩側 log_id），資料查得到、元件也現成，不畫出來就是一個「後端有、前端有、只差版面」的
+     死功能。**故 qa-side-panel 沒有「把整座側欄藏起來」的參數**——沒有任何一頁需要它，留著只會讓
+     下一個人以為側欄可以選擇性不畫。
      刻意不含 chatroom 的串流狀態列與建議追問 chip：雙欄各自串流沒有單一狀態文案，
-     suggest_questions 也只在單一問答流回傳（ask.py 的 chat_room chunk 允許清單）——非漏植。
+     suggest_questions 也只在單一問答流回傳（product 的 chat_room chunk 允許清單）——非漏植。
      **兩側的答案各自帶引用標記（components/citation-ref），而且是兩組不同的號碼**（A：1、4；
      B：2、6）：AB 兩側各是一筆獨立的 chat_log，`source_no` 各自從 1 起算，**兩側的 [[1]] 指的
      不是同一份文件**。所以徽章必須綁到自己那一側的來源集合——共用一組集合的話，點 A 的 [[2]]
@@ -292,25 +296,25 @@ permalink: 2-2-3_abTest.html
                                         <div class="ab-compare-item">
                                             <div class="message-content in-compare">
                                                 <div class="robot-msg">
-                                                    {# 「設定」與「設置一/二」在本頁其他地方都是 chrome（每側卡片標題的 qaTest.setting、
-                                                         比較彈窗的 settings.config1）——原本這裡是裸繁中，英文模式會同頁出現 Setting A 與「設定A（設置一」。
-                                                         `configKey` 原本 set 了零消費者，接上去它就有主人了。
-                                                       ⚠️ **分隔符改用 ` · `、不用全形括號與逗號**：`（`／`，`／`）` 是裸字面，
-                                                         掛不上 key（§4-2 標點屬版面、不折進譯文），英文模式會印成
-                                                         `Setting A（Config 1，V3-角色定位型）`——一句話裡混著兩套標點。
-                                                         `qaTest.setting` 的英譯是 `Setting`，後面直接接側別還會黏成 `SettingA`，
-                                                         故 `設定` 與側別之間也補一個空白。三段（設定側別／設定檔名／提示詞版本）
-                                                         以中點並列，繁中「設定 A · 設置一 · V3-角色定位型」與英文兩邊都讀得通。
-                                                         **中點自己也掛 key**（`common.midDot`，全站已存在且已在 manage-tenant-modal
-                                                         與元件庫頁用著）：§4-2「把數個已翻譯節點串起來的分隔符，自己也要有 key」。
-                                                         先前這裡寫「另一條路是替三個標點各開一顆 key——那會替版面的東西建字典，不採」，
-                                                         而那個前提（要新開 key）已經不成立，同一個分隔符不該在站上有兩種寫法。
-                                                       ✅ **中間那一段（設定檔名）原本是切版對後端提的要求，上游已回流**
-                                                         （gufofaq-saas `4d164ee`「AB 比較記下兩側各自用的設定檔編號」）：
-                                                         `app/models.py` 的 `AbTestRound` 已有 `a_profile_no`／`b_profile_no`，
-                                                         `app/routers/qatest.py` 的 `ab_history` 也把兩顆帶出來了。
-                                                         （「上游還沒有 X」是這個專案最會過期的一種斷言——主張成功了上游就補上了，
-                                                         而登記還停在原地就會讓 React 端以為沒有落點、不去讀那兩顆欄位。§4）
+                                                    {# 答案標題那一行由三段拼起來：設定側別 ／ 設定檔名 ／ 提示詞版本。
+                                                       **「設定」與「設置一／二」都走 key、不寫裸繁中**：這兩個詞在本頁其他地方
+                                                         都是 chrome（每側卡片標題的 `qaTest.setting`、比較彈窗的 `settings.config1`），
+                                                         這一行寫成裸繁中的話，英文模式會在同一頁上同時出現 `Setting A` 與
+                                                         「設定A（設置一」。設定檔名這一段吃 abSides 的 `configKey`，那顆槽的消費點
+                                                         就是這裡。
+                                                       ⚠️ **分隔符用 ` · `，不用全形括號與逗號**：`（`／`，`／`）` 是裸字面、掛不上 key
+                                                         （§4-2 標點屬版面、不折進譯文），英文模式會印成 `Setting A（Config 1，V3）`
+                                                         ——一句話裡混著兩套標點。`qaTest.setting` 的英譯是 `Setting`，後面直接接
+                                                         側別還會黏成 `SettingA`，故 `設定` 與側別之間也補一個空白。三段以中點並列，
+                                                         繁中「設定 A · 設置一 · V3」與英文兩邊都讀得通。
+                                                         **中點自己也掛 key**（`common.midDot`，全站已存在、manage-tenant-modal 與
+                                                         元件庫頁都用著）：§4-2「把數個已翻譯節點串起來的分隔符，自己也要有 key」——
+                                                         同一個分隔符不該在站上有兩種寫法。
+                                                       ✅ **中間那一段（設定檔名）上游給得出來**：product 的 `AbTestRound` 有
+                                                         `a_profile_no`／`b_profile_no`，product 的 `ab_history` 也把兩顆帶出來了。
+                                                         （「上游還沒有 X」是這個專案最會過期的一種斷言——切版提的要求一旦被採納，
+                                                         上游就補上了，而註解還停在原地就會讓 React 端以為沒有落點、
+                                                         不去讀那兩顆欄位。§4）
                                                        ⚠️ **`null` 那一態仍然要切**：上游那兩欄是 `Mapped[int | None]`，`ab_history`
                                                          的 docstring 逐字寫著「那一側還沒跑完，或這一列早於這兩欄存在」時**照實回
                                                          `null`、不補值**。拿不到編號時整段（含它前面那顆 `·`）不畫，不要退回一個
@@ -339,8 +343,8 @@ permalink: 2-2-3_abTest.html
                                                 <button type="button" class="button-icon watch watchBtn has-tooltip">
                                                     <span class="tooltip" data-i18n="comp.viewSource">查看來源</span>
                                                 </button>
-                                                {# 讚/倒讚：AB 兩側各自是一筆真的 chat_log（qatest.py 的 /compare 從 SSE 取
-                                                     latest_chat_log_id，經 `_upsert_ab_round` 配成 `models.py` 的
+                                                {# 讚/倒讚：AB 兩側各自是一筆真的 chat_log（product 的 /compare 從 SSE 取
+                                                     latest_chat_log_id，經 `_upsert_ab_round` 配成 product 的
                                                      `AbTestRound`（表 ab_test_rounds）的 `a_log_id`／`b_log_id`），所以評分走的是
                                                      跟前台同一支 product `POST /history/{log_id}/rating`——評完在 4-1 用
                                                      「AB測試」那個 tag 篩得出來。沿用前台的契約（.js-vote ＋ data-vote）；
@@ -360,11 +364,11 @@ permalink: 2-2-3_abTest.html
                                             </div>
                                             {# ── A 側的執行流程 ────────────────────────────────────────────
                                                  **每側各一份、內嵌在自己的 .ab-compare-item 裡**（不是頁尾單一份）：
-                                                 AB 比較的語意就是兩側各跑一輪、各是一筆獨立 chat_log（product
-                                                 `routers/qatest.py` 的 `/compare` 是**單側**端點，前端對 A/B 各開一條
-                                                 串流、各自累積步驟），所以「這一輪怎麼跑的」本來就有兩份、而且正是
-                                                 使用者要並排比的東西。頁尾放一份等於問「這張流程圖是哪一側的」而
-                                                 答不出來。saas `apps/web/app/(app)/ab-test/page.tsx` 就是這個位置
+                                                 AB 比較的語意就是兩側各跑一輪、各是一筆獨立 chat_log（product 的
+                                                 `/compare` 是**單側**端點，前端對 A/B 各開一條串流、各自累積步驟），
+                                                 所以「這一輪怎麼跑的」本來就有兩份、而且正是使用者要並排比的東西。
+                                                 頁尾放一份等於問「這張流程圖是哪一側的」而答不出來。
+                                                 gufofaq-saas 的 `apps/web/app/(app)/ab-test/page.tsx` 就是這個位置
                                                  （`(["A","B"]).map` 的 `.ab-compare-item` 內、動作鈕列之後）。
                                                **本頁兩側都演「跑完並落庫的重播」**（§6 單一敘事）：上面兩則答案都已
                                                  完整渲染、讚/倒讚與分享都要有該側的 log_id 才做得了事，側欄也選著一筆
@@ -376,7 +380,7 @@ permalink: 2-2-3_abTest.html
                                                  模型逐側對上該側設定卡的 `llm`（A：openai:gpt-4o-mini／B：openai:gpt-4o）。
                                                QA 直答那一站兩側**判否的理由刻意不同**（A 是裁判判否、B 是未達分數門檻）：
                                                  兩側吃的是不同設定檔，這正是要比的東西之一；而**兩側都必須是未命中**
-                                                 ——命中是結構性短路（GufoRAG chatbot `services/agent_service.py` 的
+                                                 ——命中是結構性短路（GufoRAG chatbot 的
                                                  `after_tools`：不經 respond、grounding 同樣跳過），這一頁畫得出檢索與
                                                  生成，那一站就不可能是 hit。`poolSize` ＝ max(取用資料筆數, MIN_CANDIDATE_POOL)
                                                  ＝ max(16, 2) ＝ 16，16 就是本頁兩側「取用資料筆數」欄的值（§6 同頁同源）。
@@ -434,8 +438,8 @@ permalink: 2-2-3_abTest.html
                                                 <button type="button" class="button-icon watch watchBtn has-tooltip">
                                                     <span class="tooltip" data-i18n="comp.viewSource">查看來源</span>
                                                 </button>
-                                                {# 讚/倒讚：AB 兩側各自是一筆真的 chat_log（qatest.py 的 /compare 從 SSE 取
-                                                     latest_chat_log_id，經 `_upsert_ab_round` 配成 `models.py` 的
+                                                {# 讚/倒讚：AB 兩側各自是一筆真的 chat_log（product 的 /compare 從 SSE 取
+                                                     latest_chat_log_id，經 `_upsert_ab_round` 配成 product 的
                                                      `AbTestRound`（表 ab_test_rounds）的 `a_log_id`／`b_log_id`），所以評分走的是
                                                      跟前台同一支 product `POST /history/{log_id}/rating`——評完在 4-1 用
                                                      「AB測試」那個 tag 篩得出來。沿用前台的契約（.js-vote ＋ data-vote）；
@@ -492,11 +496,11 @@ permalink: 2-2-3_abTest.html
             {# 兩對數字的出處與「為什麼第二對是萃取次數不是摘要次數」見 components/chatroom 那一列的註解
                  （同一份 `ui/chatroom-shell` 契約 ⓑ，兩處必須說同一件事）。 #}
             {# **這一頁的額度警語與 components/chatroom 那一句刻意不同一顆 key**：AB 比較按一次送出
-                 是**兩次**真的問答——product `app/routers/qatest.py` 的 AB 端點逐字寫著「一次 AB 比較
+                 是**兩次**真的問答——product 的 AB 端點逐字寫著「一次 AB 比較
                  扣 2 次額度是正確的：前端對 A/B 兩側各開一條串流、各打本端點一次……這是定案的語意，
                  不要『優化』成整回合只扣一次」。共用單測那一句會讓這一頁把兩次說成一次（§4-2：
                  行為不同就分 key，即使句型相同）。
-                 「失敗也不退」的出處同 chatroom 那一段（`ask_flow.py` 的帳單語意）。 #}
+                 「失敗也不退」的出處同 chatroom 那一段（product 的帳單語意）。 #}
             <p class="text-gray" data-i18n="qaTest.quotaWarnAb">每按一次送出會同時問 A、B 兩側，也就是兩次真的問答：一次扣掉兩次問答額度，而且失敗也不退還。</p>
             <div class="qa-count"><span data-i18n="comp.qaCount">問答次數：</span>12/3000<span data-i18n="comp.extractionCount">，萃取次數：</span>3/1000</div>
             <div class="chat-input-container">
@@ -506,21 +510,21 @@ permalink: 2-2-3_abTest.html
                             <textarea class="form-control chat-input-control" placeholder="輸入問題" data-i18n-placeholder="comp.enterQuestion" aria-label="輸入問題" data-i18n-aria-label="comp.enterQuestion"></textarea>
                         </div>
                     </div>
-                    {# 與 components/chatroom 是同一顆送出鈕、同一個旁邊的自由輸入 textarea，所以同一組分支：
-                         多一條「沒填問題」（apps/web ab-test 那一頁的 `handleSubmit` 第一行也是
-                         空值分支是 `if (!query) { toast.show(segs[2], "warning"); return; }`——**它彈 warning、
-                         不是靜默 return**；第一行擋的是 `loading`）。共用 `toast.chatSubmit` 會讓那顆 key 同時代表
-                         「固定問句的 chip，不可能空」與「自由輸入，可能空」兩種行為契約（§4-2）。 #}
+                    {# 與 components/chatroom 是同一顆送出鈕、旁邊也是同一個自由輸入 textarea，所以走同一組
+                         分支，只是**多一條「沒填問題」**：gufofaq-saas `apps/web` 的 ab-test 頁在
+                         `handleSubmit` 裡對空值是 `if (!query) { toast.show(segs[2], "warning"); return; }`
+                         ——**它彈 warning、不是靜默 return**，所以切版這一段也要有對應的 toast 段。
+                         **不共用 `toast.chatSubmit`**：那會讓同一顆 key 同時代表「固定問句的 chip，
+                         不可能空」與「自由輸入，可能空」兩種行為契約（§4-2）。 #}
                     <button data-capability="ask" type="button" class="button button-primary chat-input-submit" data-toast="回答生成中...|權限不足，無法送出——請找貴租戶的管理者開通|請先輸入問題|回答生成成功|回答生成失敗，請重新送出一次" data-i18n-data-toast="toast.chatSend" data-toast-type="info|warning|warning|success|error" data-i18n="action.submit">送出</button>
                 </div>
             </div>
         </div>
-        {# 側欄總筆數（`GET /qatest/ab-history` 的 `total_count`，product `app/routers/qatest.py` 的
-             `ab_history`）。**這一格非有不可**：`AbTestRound` 是 append-only、沒有任何清理路徑，
-             而那一支端點先前硬編 `.limit(100)`、不回總數也收不了偏移量 ⇒ 租戶累積超過一頁之後，
-             更早的比較從側欄**無聲消失**，畫面上與「那些回合不存在」逐位元組相同。端點這一輪已改成
-             分頁並回總數，這一格就是那個修正在畫面上的落點——**而總數只是徵狀，出路是它下面那一列
-             頁碼**（round48 補上，見 qa-side-panel 檔頭：只有給得出總數的那一頁才畫）。
+        {# 側欄總筆數（`GET /qatest/ab-history` 的 `total_count`，product 的 `ab_history`；那一支
+             端點分頁並回總數）。**這一格非有不可**：`AbTestRound` 是 append-only、沒有任何清理路徑，
+             側欄一次只載得下一頁 ⇒ 不把總數畫出來的話，租戶累積超過一頁之後，更早的比較就從側欄
+             **無聲消失**，畫面上與「那些回合根本不存在」逐位元組相同。**而總數只是徵狀，真正的出路
+             是它下面那一列頁碼**（見 qa-side-panel 檔頭：只有給得出總數的那一頁才畫）。
              128 與三顆示範頁籤刻意不相等：它演的正是「這張清單被切過」（同 pagination 的 `total`
              是滑窗示範參數、不與示範列數對帳，§6）。值以字串傳入，理由見元件檔頭。 #}
         {% set sidePanelTotal = "128" %}
@@ -567,8 +571,10 @@ permalink: 2-2-3_abTest.html
 {% set sourcesInfoClass = "js-sources-side" %}
 {% include "components/sources-block/sources-block.html" %}
 
-{# 兩份「套用為正式設定」彈窗：業務 js 依模型權限決定開哪一份（真 app abTest.js 的 .js-apply-production）。
-   切版不做那個分支，兩份 markup 都要在（React 端才有東西可轉）；示範觸發器在元件庫頁。 #}
+{# 兩份「套用為正式設定」彈窗：開哪一份由業務層依模型權限決定，觸發鈕是每側動作列上的業務掛點
+   `.js-apply-production`（條件開窗，故不掛 data-open-modal）。切版不做那個分支，但**兩份 markup
+   都要在**——React 端要轉的是兩條路，缺一份就等於那條路沒有版型可接；兩顆窗自己的示範觸發器
+   在元件庫頁。 #}
 {% include "components/apply-settings-no-permission-modal/apply-settings-no-permission-modal.html" %}
 {% include "components/apply-settings-compare-modal/apply-settings-compare-modal.html" %}
 {% include "components/knowledge-retrieval-modal/knowledge-retrieval-modal.html" %}
@@ -576,7 +582,7 @@ permalink: 2-2-3_abTest.html
 {# 評分窗（兩側動作列的讚/倒讚開的那一份，由業務 js 帶著「哪一側的 log」開）。
    這一頁的答案是這次測試剛產生的，沒有既有評分可覆寫，故不給 ratingModalNote 的覆寫警語，
    改用 ratingModalNote 講清楚「這不是畫面上的一個小記號、是寫進問答紀錄」——
-   評完在 4-1 用 tag=ab_test 篩得出來（product history.py 的 tag 參數）。
+   評完在 4-1 用 tag=ab_test 篩得出來（product 的 tag 參數）。
    toast 四段同 4-2（成功／權限不足／沒選讚或倒讚／其餘失敗），故沿用同一顆 key。 #}
 {% set ratingModalTitleKey = "modals.rateAnswerTitle" %}
 {% set ratingModalTitle = "為這一側的答案評分" %}
@@ -601,8 +607,8 @@ permalink: 2-2-3_abTest.html
 {% set deleteMessageKey = "common.confirmRevoke" %}
 {% set deleteMessageZh = "確定要撤銷" %}
 {% set deleteTargetId = "revokeShareTarget" %}
-{# 連帶後果（`deleteNoteKey`）：撤銷是**軟刪**（product `app/conversation/share_links.py` 的
-     `revoke_share` 只把 `ShareLink.disabled` 設成 true），而 `share.py` 全境只有四支端點
+{# 連帶後果（`deleteNoteKey`）：撤銷是**軟刪**（product 的
+     `revoke_share` 只把 `ShareLink.disabled` 設成 true），而 product 全境只有四支端點
      （`POST /share`／`GET /share`／`GET /shared/{token}`／`DELETE /share/{id}`）——**沒有任何一支
      解得回來**。撤銷之後 `view_shared_by_token` 對那個 token 回 404，也就是已經把連結寄出去的
      那些人當場打不開。上一行只問「確定要撤銷 X」，講不出「那條連結永遠回不來、要再分享得另建一條」。

@@ -1,4 +1,4 @@
-{# 取自真實頁 pages/qaHistory/4-2_qaHistory_detail.html「參考來源」區塊（class 沿用真實系統）。
+{# 參考來源區塊：把「這一則答案引用了哪幾筆知識庫資料」逐列攤開，供 2-1／2-2-1／2-2-3／4-2 共用。
      .sources-block 的外觀主要來自 .block + .default-table + ui/accordion；自有 scss 只有一條狀態：
      `tr.is-cited > td`＝被答案內文的引用標記（components/citation-ref 的 [[N]]）點到的那一列的高亮動畫
      （見 _sources-block.scss；class 的主人是本元件，因為被套用的元素是本元件的 <tr>）。
@@ -20,14 +20,14 @@
                 值域與順序都是租戶設定，故 label 是資料值（不掛 data-i18n），順序照給的順序
                 （＝報表欄序）。**值為空的槽照樣列一列**：這一筆沒填那個欄位，正是統計報表把它
                 歸進「未標註」的原因，空白列讓那件事在單則層看得見；濾掉空值的話，讀的人只會
-                以為這份文件沒有歸因維度。出處：product `app/routers/settings_hub.py` 的
+                以為這份文件沒有歸因維度。出處：product 的
                 `GET /settings/attribution`（回 `slots`＋值域 `available_slots`）、
-                `app/attribution.py::attribution_values`。
-       sourcesHidden：true 時根加 .hidden（真實頁預設隱藏、等 JS 依載入狀態顯示）
+                `attribution_values`。
+       sourcesHidden：true 時根加 .hidden（正式環境預設隱藏、等 JS 依載入狀態顯示）
        sourcesTotal / sourcesSelected / sourcesModel：標題後那句「（挑選規則 N 取 M；使用模型：X）」
                 的三個**資料**槽（預設 16／8／openai:gpt-4o-mini）。句子本身是 chrome，走前中後綴 key
                 （`qa.sourcesRulePrefix`／`qa.sourcesRuleMid`／`qa.sourcesModelMid`＋既有的 `storage.close`）
-                ——原本整串寫死、零 `data-i18n`，英文模式在 2-1／2-2-1／4-2 三頁上原樣印繁中。
+                ——整串寫死、零 `data-i18n` 的話，英文模式在 2-1／2-2-1／4-2 三頁上會原樣印繁中。
                 ⚠️ **內建預設不是佔位字，那三個使用頁都沒有覆寫它**，所以它就是那三頁真正顯示的值：
                 16／8＝取用與選用資料筆數（4-2 的 `conversation.searchTotalNumber`／`searchSelectedNumber`、
                 2-2-1 的 `#sampleTotalInput`／`#sampleSelectedInput` 都是 16／8），模型＝那一輪真的用的那顆
@@ -59,8 +59,8 @@
                  執行流程那一份，兩組四顆鈕的可見字面兩兩相同。 #}
             <span class="text-lg text-bold" id="sourcesBlockTitle" data-i18n="qa.referenceSources">參考來源</span>
             {# 這一格是 **chrome ＋ 資料**，不是整串資料：「挑選規則」「使用模型」是介面用語，
-                 16／8／模型名才是資料。原本整串寫死、零 `data-i18n`，英文模式在 2-1／2-2-1／4-2
-                 三頁上原樣印出繁中（§4-2）。拆成前中後綴 key 夾資料槽（正典 pagination.totalPrefix），
+                 16／8／模型名才是資料。整串寫死、零 `data-i18n` 的話，英文模式在 2-1／2-2-1／4-2
+                 三頁上會原樣印出繁中（§4-2）。故拆成前中後綴 key 夾資料槽（正典 pagination.totalPrefix），
                  數字也因此不會被烤進譯文字串（§3-2：會變動的數字不進譯文）。
                  2-2-3 那一份是另一種東西——它標的是「這是哪一側的來源」，故走 sourcesSideKey 那一支。 #}
             <span class="text-bold text-gray {{ sourcesInfoClass or 'sources-info' }}">
@@ -90,7 +90,7 @@
         </div>
     </div>
 
-    {# **`[[N]]` 那顆徽章全站沒有一個字在解釋**（round47）：答案內文裡的方括號數字是
+    {# **`[[N]]` 那顆徽章全站沒有一個字在解釋**：答案內文裡的方括號數字是
          `components/citation-ref` 畫出來的引用標記，點下去會捲到這張表對應的那一列並高亮
          （`sources-block.js` 的 `reveal`，比對的是「序號」欄的值）。使用者看到 `[[7]]`
          而這張表的序號**本來就不連續、也不等於列序**（見本檔上方 `source.sourceNo` 那一段），
@@ -125,16 +125,12 @@
                     </td>
                     <td>{{ source.sourceNo or '—' }}</td>
                     <td>
-                        {# **這一顆是動作、不是連結**（§4「判準是它打不打 API」）：真 app 點檔名是下載原稿
-                             （`GufoFAQ_Frontend_New/js/singleTest.js` 的
-                             `$(document).on('click', '.sources-block .link-file', …)` → `downloadOriginalFile(did, fileName)`，
-                             `js/abTest.js`／`js/qaRecord.js`／`js/qaHistoryDetail.js` 三支同型）。切版先前寫成
-                             `<a href="#">` 且零 `data-*` ⇒ 一顆按了只會捲回頁首的死連結（§5）。
-                           **列鍵用位置、不用 `data-did`**：活正本是 gufofaq-saas product
-                             `app/routers/history.py` 的 `download_source_file`
-                             （`GET /history/{log_id}/source/{source_index}/download`），**以索引位置定址、不吃路徑**；
-                             凍結前端的 `data-did` 不能拿來論證後端契約（§3-2）。log id 是頁層脈絡
-                             （這一則問答自己的 id），逐列只需要 index。
+                        {# **這一顆是動作、不是連結**（§4「判準是它打不打 API」）：點檔名要打下載端點取回原稿，
+                             不是換頁。⚠️ 寫成 `<a href="#">` 且零 `data-*` 的話，它就是一顆按了只會捲回
+                             頁首的死連結（§5）。
+                           **列鍵用位置、不用 `data-did`**：正本是 gufofaq-saas product 的 `download_source_file`
+                             （`GET /history/{log_id}/source/{source_index}/download`），**以索引位置定址、
+                             不吃文件路徑**。log id 是頁層脈絡（這一則問答自己的 id），逐列只需要 index。
                            **分支集合對回上游的 raise**：`require_capability("history")` 的 403、索引越界／
                              無檔名候選／租戶不擁有該索引／路徑不落在索引資料夾內全部是 404（逐列匯入的
                              來源**沒有 per-row 原稿**，那一族一律 404）——四種 404 對使用者是同一句
@@ -186,8 +182,8 @@
                     </td>
                 </tr>
                 {% else %}
-                {# ⚠️ **空來源先前沒有任何畫面**（round47）：這個 `{% for %}` 沒有 `{% else %}`，
-                     `sources` 為空時整張表只剩表頭——而那與「還在載入」「這一塊壞了」長得一模一樣。
+                {# ⚠️ **空來源一定要有畫面**：少了這一顆 `{% else %}`，`sources` 為空時整張表只剩表頭，
+                     而那與「還在載入」「這一塊壞了」長得一模一樣。
                      它是一個真實而且重要的狀態：模型沒有引用任何知識庫資料（例如閒聊、或它憑
                      自己的知識答的）。講出來，使用者才知道這一則答案**沒有依據可以查**——
                      那正是他最該提高警覺的一則。

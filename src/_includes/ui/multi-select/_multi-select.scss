@@ -1,10 +1,10 @@
-// ui/multi-select：select2 多選（.multiSelect）的原生 vanilla 替代。
-// 注意：select2 的 DOM（.select2-container/.select2-selection--multiple/.select2-selection__choice...）已不存在，
-// 所以本檔「無法逐位元照抄」真實 app 的 select2 規則——這是整個轉換案唯一刻意的非逐字例外。
-// 視覺數值（顏色變數、border、padding、min-height、chip 樣式、下拉箭頭圖示）取自真實 app
-// GufoFAQ_Frontend_New/scss/component.scss 第 993-1133 行（.multiSelect / select2 多選樣式改寫區段），重新對應到本檔自訂的
-// class 名稱（.multi-select-control / .multi-select-tag / .multi-select-search / .multi-select-dropdown）。
-//   **宣告集合差集**（與上面那段凍結範圍逐條 diff，只比種類不比值——色值換語意 token 是 §4 要求的、不算偏離）：本檔新增 `opacity`／`transition`／`outline`／`outline-offset`／`appearance`／`font-family`／`left`／`z-index`／`max-height`／`overflow-y`／`box-shadow`／`bottom`；凍結有本檔沒有 `visibility`／`padding-right`／`background-size`／`box-sizing`／`background-image`／`background-repeat`。本檔是 select2 的**原生替代**，不是同一份 DOM 的搬移：凍結那一段是 select2 容器的樣式（背景箭頭圖、visibility 切換），本檔改用自繪下拉（絕對定位 + max-height 捲動 + 焦點環 + 過場）。
+// ui/multi-select：可搜尋的**多選**下拉，由 `multi-select.js` 就地把 `<select multiple class="multiSelect">`
+// 增強出來（外框 ＋ 已選標籤 ＋ 內嵌搜尋框 ＋ 下拉清單）。
+// **不引任何下拉套件、不依賴 jQuery**（§4 不引第三方前端套件）：整份 DOM 是本元件自己建的，
+// 所以視覺數值（色 token、border、padding、min-height、標籤樣式、下拉箭頭圖示）全部掛在本檔
+// 自有的 class 上——`.multi-select-control`／`.multi-select-tag`／`.multi-select-search`／
+// `.multi-select-dropdown`——不會有任何套件產生的 class 需要覆寫。
+//
 @use "../../../scss/size" as *;
 
 @use "../../../scss/mixin" as *;
@@ -26,7 +26,7 @@
     pointer-events: none;
 }
 
-// 對應真實 app：.select2-container--default .select2-selection--multiple
+// 控制項外框：使用者眼中的「那顆欄位」——已選標籤與搜尋框都排在它裡面，故是 flex + wrap。
 .multi-select-control {
     width: 100%;
     min-height: $field-control-height;
@@ -50,7 +50,8 @@
         outline-offset: 2px;
     }
 
-    // 對應：.select2-container--default .select2-selection--multiple::after（下拉箭頭圖示）
+    // 右緣的下拉箭頭：純裝飾，故用 ::after ＋ 遮罩上色，不佔文流、也不吃點擊（pointer-events:none），
+    // 點在它上面等同點在控制項上。
     &::after {
         content: "";
         position: absolute;
@@ -64,12 +65,12 @@
     }
 }
 
-// 對應：.select2-container--default.select2-container--focus .select2-selection--multiple
+// 下拉展開態（.open 由 multi-select.js 切）：外框換成 --info，讓「清單開著」在視覺上說得出來。
 .multi-select.open .multi-select-control {
     border: solid 1px var(--info);
 }
 
-// 對應：.select2-container--default .select2-selection--multiple .select2-selection__rendered
+// 已選標籤的排列容器（搜尋框也排在同一列的最後一格）：選多了就換行往下長，故 flex-wrap。
 .multi-select-tags {
     flex: 1 1 auto;
     display: flex;
@@ -80,7 +81,7 @@
     min-width: 0;
 }
 
-// 對應：.select2-container--default .select2-selection--multiple .select2-selection__choice
+// 一顆已選標籤。右側留 29px 內距給絕對定位的移除鈕，標籤本身不撐破控制項（max-width:100%）。
 .multi-select-tag {
     display: inline-flex;
     align-items: center;
@@ -102,7 +103,8 @@
     white-space: nowrap;
 }
 
-// 對應：.select2-selection__choice__remove + ::after（用背景圖代替文字符號）
+// 標籤上的移除鈕：可見字面是叉叉圖形（font-size:0 把文字節點壓掉、改用遮罩上色畫），
+// 可及名稱由 multi-select.js 寫成「移除＋選項標籤」，見該檔 renderTags。
 .multi-select-tag-remove {
     appearance: none;
     border: none;
@@ -118,7 +120,7 @@
     @include icon-mask("../images/icon_close_black.png");
 }
 
-// 對應：.select2-container--default .select2-search--inline .select2-search__field
+// 內嵌搜尋框：它與標籤排在同一列，所以沒有自己的外框與底色，看起來就是控制項的一部分。
 .multi-select-search {
     flex: 1 1 auto;
     min-width: 0.75rem;
@@ -139,14 +141,16 @@
     }
 }
 
-// 有已選標籤時，搜尋框縮成一小段（對應 main.js：searchField.css('width', '0.75rem')）
+// 有已選標籤時搜尋框縮成一小段（0.75rem）：標籤才是這一列的主體，搜尋框只留一個游標放得下的寬度；
+// 全空時它會回到全寬並顯示 placeholder（切換由 multi-select.js 掛 .has-tags 驅動）。
 .multi-select.has-tags .multi-select-search {
     flex: 0 0 auto;
     width: 0.75rem;
 }
 
-// 下拉選項清單：select2 未在真實 app 客製此區塊樣式（沿用套件內建外觀），
-// 這裡改用本設計系統既有 token（border/box-shadow/gray 色階）重新設計，維持整體視覺一致。
+// 下拉選項清單：整份用本設計系統既有 token（--surface-raised／--border／--shadow）畫，
+// 與站內其他浮層同一套視覺語彙。position:absolute ＋ z-index:20 疊在控制項之下緣，
+// 空間不夠時由 js 掛 .open-up 翻上開（見下）。
 .multi-select-dropdown {
     display: none;
     position: absolute;

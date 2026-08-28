@@ -1,4 +1,3 @@
-// 結構與數值取自凍結前端 `GufoFAQ_Frontend_New/scss/component.scss` 2337-2357（tooltip 區塊）。
 //
 // **生產契約**（§1-2）：`tooltip.html` 是展示片段，而生產的 `.has-tooltip` **一定是一顆圖示鈕**，
 // 那顆鈕自己的可及名稱不能靠 tooltip 那一段文字（tooltip 是視覺提示、不是名稱）。逐字取自 5-8：
@@ -14,11 +13,13 @@
 //      `.button-icon.copy`，那一份 markup 寫在 `ui/button` 的展示片段裡）。
 //   ⓒ 送 API 的那一族照 §5 ③ 掛 `data-toast` 三件套 ＋ 宣告閘門。
 //
-// **偏離逐條列出**：
-//   ① 色值換語意 token
-//   ② 顯示條件增補 `:focus-visible`（見下註）——`:hover` 單掛的話鍵盤使用者看不到圖示鈕唯一的可見標籤
-//   ③ `.tooltip` 的 `box-sizing: border-box`（原檔 2347）移除（§4-1：`_base.scss` 已全域給）
-//   ④ `.has-tooltip { position: relative }` 是切版新增（原檔靠 `.button-icon` 定位，切版收成獨立的觸發 class）
+// **這幾條要知道理由（改動前先讀）**：
+//   ① 色值走語意 token（`--tooltip-bg`／`--tooltip-text` 這一對，深色模式跟著換）。
+//   ② 顯示條件是 `:hover` **與** `:focus-visible` 兩條並列：tooltip 常常是圖示鈕唯一的可見標籤，
+//      只掛 hover 的話鍵盤使用者永遠看不到它（§4 a11y）。
+//   ③ 不寫 `box-sizing: border-box`（§4-1：`_base.scss` 已全域給）。
+//   ④ `position: relative` 這個定位基準寫在 `.has-tooltip` 自己身上，**不靠 `.button-icon` 提供**
+//      （理由逐字寫在下方 `.has-tooltip` 的區塊註解）。
 /*===============================
     tooltip
 ================================*/
@@ -42,8 +43,7 @@
 
 // 顯示由 host hover／鍵盤焦點驅動：host（放 tooltip 的按鈕）掛 tooltip 自有的 .has-tooltip 觸發 class，
 // 只用 tooltip 自己的 class——不寫裸 button 選擇器（§4 裸元素選擇器只准 _normalize/_base），也不指名別元件的 .button-icon。
-// :focus-visible 併列：tooltip 常是圖示鈕唯一的可見標籤，只掛 hover 的話鍵盤使用者永遠看不到（§4 a11y）；
-// 真 app 只有 hover——這是申報過的 a11y 增補，非失真。
+// :focus-visible 併列：tooltip 常是圖示鈕唯一的可見標籤，只掛 hover 的話鍵盤使用者永遠看不到（§4 a11y）。
 // 轉 Tailwind：.has-tooltip → group、兩條顯示規則 → group-hover:opacity-100 group-focus-visible:opacity-100。
 // `.tooltip` 是 position:absolute，定位基準必須由 host 自己提供——否則它會飛到最近的 positioned
 // 祖先。現況的 host 恰好都同時掛著 `.button-icon`（ui/button 給了 position:relative），但那是

@@ -28,8 +28,9 @@
             </li>
             {% endfor %}
         </ul>
-        {# 窄視窗的 header 只留 logo + 漢堡（真 app 樣貌，logo 才不會被擠小），語言／深淺鈕改放這裡。
-           桌機那份在 header 裡；兩支 JS 都以 querySelectorAll 綁定，兩份按鈕同時生效。 #}
+        {# 窄視窗的 header 只留 logo + 漢堡（擠進第三、四顆鈕的話 logo 會被壓小），語言／深淺鈕
+           改放在展開的選單底部。桌機那一份仍在 header 裡；兩支 JS 都用 querySelectorAll 綁定，
+           所以同一顆鈕在兩個位置各有一份、兩份都會生效。 #}
         <div class="mobile-menu-controls">
             {% include "components/header-controls/header-controls.html" %}
         </div>

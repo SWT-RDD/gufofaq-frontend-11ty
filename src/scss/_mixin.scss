@@ -5,120 +5,127 @@
 // 1250px 是量出來的：桌機選單一露臉，整列就得塞得下
 //   24(左內距) + logo + 24(gap) + 選單 + 20(gap) + 語言/深淺 90 + 24(右內距)
 // 英文標籤比中文寬約 200px（選單 861px vs 662px），取寬者當基準；
-// 於是 1251px 時 logo 還有 208px（原尺寸 272.5px 的 76%），1316px 起回到原尺寸。
-// 真 app 用 992px —— 那時 header 右邊沒有語言／深淺鈕，也沒有英文版。
+// 於是 1251px 時 logo 還有 208px（滿版 272.5px 的 76%），1316px 起回到滿版。
+// **改斷點前要重量一次**：header 右側的語言／深淺鈕、英文標籤長度任何一項變動，這個數字就不成立。
 @mixin nav-collapsed {
     @media screen and (max-width: 1250px) {
         @content;
     }
 }
 
-/*html整頁用*/
+/* 整頁捲軸（掛在 html 上）：6px，thumb 走 --scrollbar-thumb-strong。
+   整頁捲軸是唯一貫穿全螢幕的那一條，顏色要比元件內的捲軸重，否則在長頁面上找不到自己捲到哪。 */
 @mixin scrollbar() {
 
-    /* width */
+    /* 捲軸粗細（WebKit／Blink） */
     &::-webkit-scrollbar {
         width: 6px;
         height: 6px;
     }
 
-    /* Handle */
+    /* 拉桿 */
     &::-webkit-scrollbar-thumb {
         border-radius: 4px;
         background-color: var(--scrollbar-thumb-strong);
     }
 
-    /* Track */
+    /* 軌道：透明，讓底色透出來，捲軸不會在版面上留一條灰帶 */
     &::-webkit-scrollbar-track {
         background-color: transparent;
 
     }
 
+    /* 橫直捲軸交會的右下角 */
     &::-webkit-scrollbar-corner {
         background-color: transparent;
     }
 
-    /*某些元素的corner部分的部分样式(例:textarea的可拖动按钮)*/
+    /* 部分元素在右下角的拖曳把手（例：textarea 的縮放握把） */
     &::-webkit-resizer {
         background-color: transparent;
         border-color: transparent;
 
     }
 
-    /*firefox scrollbar*/
+    /* Firefox 走另一組標準屬性，形狀與顏色要各給一次 */
     scrollbar-width: thin;
     scrollbar-color: var(--scrollbar-thumb-strong) transparent;
 }
 
-/*元件用，滾動條較細*/
+/* 元件內捲軸：4px（比整頁那條細），thumb 走一般色 --scrollbar-thumb。
+   元件內捲的是自己那一小塊，捲軸不該比內容還顯眼。 */
 @mixin scrollbar_thin() {
 
-    /* width */
+    /* 捲軸粗細（WebKit／Blink） */
     &::-webkit-scrollbar {
         width: 4px;
         height: 6px;
     }
 
-    /* Handle */
+    /* 拉桿 */
     &::-webkit-scrollbar-thumb {
         border-radius: 4px;
         background-color: var(--scrollbar-thumb);
     }
 
-    /* Track */
+    /* 軌道：透明，讓底色透出來，捲軸不會在版面上留一條灰帶 */
     &::-webkit-scrollbar-track {
         background-color: transparent;
 
     }
 
+    /* 橫直捲軸交會的右下角 */
     &::-webkit-scrollbar-corner {
         background-color: transparent;
     }
 
-    /*某些元素的corner部分的部分样式(例:textarea的可拖动按钮)*/
+    /* 部分元素在右下角的拖曳把手（例：textarea 的縮放握把） */
     &::-webkit-resizer {
         background-color: transparent;
         border-color: transparent;
 
     }
 
-    /*firefox scrollbar*/
+    /* Firefox 走另一組標準屬性，形狀與顏色要各給一次 */
     scrollbar-width: thin;
     scrollbar-color: var(--scrollbar-thumb) transparent;
 }
 
+/* 跳窗內容區捲軸：寬度同整頁那條（6px），thumb 走一般色 --scrollbar-thumb。
+   跳窗是浮在頁面之上、自成一個閱讀範圍的面，捲軸尺寸跟著窗、顏色跟著元件。 */
 @mixin scrollbar_modal() {
 
-    /* width */
+    /* 捲軸粗細（WebKit／Blink） */
     &::-webkit-scrollbar {
         width: 6px;
         height: 6px;
     }
 
-    /* Handle */
+    /* 拉桿 */
     &::-webkit-scrollbar-thumb {
         border-radius: 4px;
         background-color: var(--scrollbar-thumb);
     }
 
-    /* Track */
+    /* 軌道：透明，讓底色透出來，捲軸不會在版面上留一條灰帶 */
     &::-webkit-scrollbar-track {
         background-color: transparent;
 
     }
 
+    /* 橫直捲軸交會的右下角 */
     &::-webkit-scrollbar-corner {
         background-color: transparent;
     }
 
-    /*某些元素的corner部分的部分样式(例:textarea的可拖动按钮)*/
+    /* 部分元素在右下角的拖曳把手（例：textarea 的縮放握把） */
     &::-webkit-resizer {
         background-color: transparent;
         border-color: transparent;
 
     }
 
-    /*firefox scrollbar*/
+    /* Firefox 走另一組標準屬性，形狀與顏色要各給一次 */
     scrollbar-width: thin;
     scrollbar-color: var(--scrollbar-thumb) transparent;
 }
@@ -131,8 +138,8 @@
 // 深色模式就只是「token 換值」——不必反相、也不必讓全域層去認識元件的 class（見 _dark-icons.scss）。
 // 副作用：hover／active 換色只要換 token，於是 *_bluehover.png 這種「同一個字形換個顏色」的資產全部不必存在。
 //
-// $ink 傳語意 token；$size 對齊原本的 background-size。
-// 只給單色字形用 —— 彩色圖（icon_beta 徽章）遮罩後會被塗平，要留 background-image／<img>。
+// $ink 傳語意 token（圖示要塗成什麼顏色）；$size 給遮罩尺寸，語意等同 background-size。
+// 只給單色字形用 —— 彩色圖（icon_beta 徽章）遮罩後會被整片塗平，那種要留 background-image／<img>。
 @mixin icon-mask($url, $ink: var(--text), $size: contain) {
     background-color: $ink;
     background-image: none;

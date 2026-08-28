@@ -1,6 +1,9 @@
-// pagination-input（輸入版頁碼）：改寫自凍結前端 GufoFAQ_Frontend_New/js/main.js「pagination-input (輸入版)」（原用 jQuery），改用原生 DOM API
-// 僅切版行為：輸入框數字過濾、上一頁/下一頁按鈕 disabled 狀態、blur/Enter 確認頁碼並 clamp 在 1~total 之間
-// 資料抓取/實際換頁請求等業務邏輯不在此列（原 main.js 的 .pagination 動態產生頁碼清單 renderPagination 為資料驅動邏輯，同樣不轉）
+// pagination-input（輸入版頁碼）的切版行為，原生 DOM API、不依賴任何框架。
+// 做什麼：①輸入框只收數字；②上一頁/下一頁按鈕在兩端自動 disabled 並換成灰色箭頭圖；
+//         ③blur 或按 Enter 時確認頁碼，並 clamp 在 1~total 之間（空字串或非數字一律回到 1）。
+// 為什麼只做到這裡：這些是「不管接哪個後端都一樣」的輸入健全性，屬於切版；
+// 而抓資料、送出換頁請求、依查詢結果重算 total 是業務邏輯，切版不假造（GUIDELINE §5）。
+// total 從 wrapper 的 data-total 讀，那是業務掛點：執行期會被覆寫成真正的總筆數。
 document.addEventListener("DOMContentLoaded", function () {
     document.querySelectorAll(".pagination-input").forEach(function (wrap) {
         var total = Number(wrap.getAttribute("data-total")) || 1;

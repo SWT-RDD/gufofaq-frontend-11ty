@@ -1,67 +1,73 @@
-// 結構與版型逐條照抄自凍結前端 GufoFAQ_Frontend_New/scss/guideline.scss（僅元件庫展示頁使用的版型/說明樣式，非全站樣式）。
-// **偏離逐條列在這裡**——§9 說這支是「禁止依頁面覆寫元件」的唯一豁免檔、且「新增行不得擴大覆寫面」，
-// 而判斷「哪些是鏡像、哪些是我們加的」全靠這幾行；寫成「唯一調整」就等於下一輪沒有基準可比：
-//   ① 第一行 `@import "base/var"` → `@use "var"`（本檔內文其實未使用任何 $ 變數，僅為對齊真實檔頭、維持可解析）
-//   ② **整支收進 `.guideline-page {}`**（＋ `body.guideline-page{overflow:hidden}`）——§9 的頁面專屬
-//      樣式限定，理由見下方「以下所有規則限定在元件庫展示頁」那段註解
-//   ③ `height: 100vh` 一律補同值 `100dvh`（§4-1）
-//   ④ 全部色值換成 `var(--gl-*)`／`var(--on-accent)`／`var(--surface-raised)`／`var(--shadow)`，
-//      原檔是字面色（§9：showcase 專屬色走 `_guideline-var.scss`，不寫裸 hex）
-//   ⑤ 五處 `box-sizing: border-box`（原檔 51／58／70／90／287）移除（§4-1：`_base.scss` 已全域給）
-//   ⑥ 原檔 39-41 的 `html { overflow: inherit !important; }` **整條刪除**——§9 禁止頁面專屬檔寫裸
-//      元素選擇器（打包進單一 main.css 會洩漏到每一頁），捲動改由 ② 的 `body.guideline-page` 承擔
-//   ⑦ `footer` 規則**新增** `background-color: var(--gl-dark)`（原檔沒有）——原檔的白字是靠 markup
-//      借 `.footer`（`components/footer` 的私有 class）的底色活著，解耦之後 showcase 自己給填充；
-//      實算與完整理由見該規則上方的註解
-//   ⑧ `.margin-center`／`.layout-img-1`／`.layout-img-2`／`.page-title`／`.filter .flex-row`／
-//      `.chart-control`／`.well .flex-row` 七條**整段刪除**：本頁未搬對應的版位（`layout.png` 那張
-//      截圖見 `pages/components/component.html` 第 01 節的註解），而整支收在 `.guideline-page {}` 之下
-//      ⇒ 那七條的 host 在全站 markup 上一個都不存在（`.page-title` 雖有別頁在用，但那幾頁的 body
-//      沒有 `.guideline-page`，選擇器結構上永遠選不到）——出貨死 CSS（§4／§8「零死碼」）
-//   **宣告集合差集**（與上面那段凍結範圍逐條 diff，只比種類不比值——色值換語意 token 是 §4 要求的、不算偏離）：本檔新增 `width`／`height`／`border-radius`／`background-color`／`border-color`／`scrollbar-width`／`scrollbar-color`／`display`／`padding`／`position`／`overflow-y`／`flex-shrink`／`font-size`／`font-weight`／`color`／`text-decoration`／`transition`／`margin-bottom`／`z-index`／`border-right`／`padding-right`／`padding-left`／`opacity`／`top`／`left`／`transform`／`line-height`／`text-align`／`background`／`margin-top`／`justify-content`／`align-items`／`flex-direction`／`right`／`bottom`／`box-shadow`／`border-style`／`border-width`／`border-top`／`padding-top`／`margin`。本檔只服務元件庫展示頁：凍結那一段是舊版 guideline.scss 的版型，本檔另補了捲軸樣式、色票方塊、程式碼區塊與側欄目錄的定位（全部只在 `.guideline-page` 之下）。
+// 元件庫展示頁（`pages/components/component.html`）專用的版型與說明樣式，**不是全站樣式**。
+// 色盤見 `_guideline-var.scss`（GUIDELINE §9）。
+//
+// §9 只給這支一項豁免：全站唯一允許「依頁面調整」的樣式檔。豁免有邊界，而且明文「新增行不得
+// 擴大覆寫面」——下面五條就是邊界本身，新增規則前逐條對過：
+//   ① **整支收在 `.guideline-page {}` 之下**（＋ `body.guideline-page { overflow: hidden }`）。
+//      理由見下方「以下所有規則限定在元件庫展示頁」那段。
+//   ② **不寫要咬到 `.guideline-page` 之外的規則**（`html { overflow: inherit !important }` 這一形）。
+//      `html` 是 `.guideline-page` 的祖先，包不進 ① 的巢裡，於是只能寫在外面——一寫在外面就落到
+//      每一頁。本頁要的捲動行為由 ① 的 `body.guideline-page` 承擔，那一顆咬得到、又關得住。
+//   ③ **不寫裸色值**：一律 `var(--gl-*)`（showcase 專屬色）或 app 的語意 token
+//      （`--on-accent`／`--surface-raised`／`--shadow`）。裸 hex 會讓 showcase 變成第三個色源。
+//   ④ **不重覆全域基底**：`box-sizing: border-box` 這類 `_base.scss` 已全域給的不再寫一次；
+//      `height: 100vh` 一律補同值 `100dvh`（兩條都是 §4-1）。
+//   ⑤ **不留沒有 host 的規則**。整支收在 `.guideline-page` 之下 ⇒ 選擇器只在本頁成立，
+//      判斷「有沒有 host」也只看本頁的 markup。兩種都是死碼：本頁沒切出來的版位；
+//      以及**別頁在用、本頁沒有**的 class（如 `.page-title`——那些頁的 body 不帶
+//      `.guideline-page`，結構上永遠選不到，看起來卻很像有人在用）。§4／§8「零死碼」。
+//
+// 本檔的色值全部走 CSS custom property，不吃 Sass `$` 變數，所以下面這行 `@use "var"`
+// 目前沒有實際消費點（`_var.scss` 裡沒有任何 `$` 變數）。
 @use "var";
 
+// 本頁專屬的細捲軸。形狀與 `_mixin.scss` 的 `scrollbar()` 相同，差別在顏色：thumb／track 走
+// showcase 色盤（`--gl-scrollbar-thumb`／`--surface-raised`），而不是 app 的 `--scrollbar-thumb-strong`。
+// showcase 的 chrome 不歸 app 色盤管（同 `_guideline-var.scss` 檔頭），故獨立一支，不共用。
 @mixin scrollbar() {
 
-    /* width */
+    /* 捲軸粗細（WebKit／Blink） */
     &::-webkit-scrollbar {
         width: 6px;
         height: 6px;
     }
 
-    /* Handle */
+    /* 拉桿 */
     &::-webkit-scrollbar-thumb {
         border-radius: 3px;
         background-color: var(--gl-scrollbar-thumb);
     }
 
-    /* Track */
+    /* 軌道：透明，讓底色透出來，捲軸不會在版面上留一條灰帶 */
     &::-webkit-scrollbar-track {
         background-color: transparent;
 
     }
 
+    /* 橫直捲軸交會的右下角 */
     &::-webkit-scrollbar-corner {
         background-color: transparent;
     }
 
-    /*某些元素的corner部分的部分样式(例:textarea的可拖动按钮)*/
+    /* 部分元素在右下角的拖曳把手（例：textarea 的縮放握把） */
     &::-webkit-resizer {
         background-color: transparent;
         border-color: transparent;
 
     }
 
-    /*firefox scrollbar*/
+    /* Firefox 走另一組標準屬性，形狀與顏色要各給一次 */
     scrollbar-width: thin;
     scrollbar-color: var(--gl-scrollbar-thumb) var(--surface-raised);
 }
 
-// 以下所有規則限定在元件庫展示頁（body.guideline-page）。
-// 本檔是頁面專屬樣式（原 app 只在 component.html 載入 guideline.css）；本專案把全部 scss 打包進單一 main.css、
-// 全站載入，若不限定，這裡的裸選擇器（html/body/aside/section/footer）與撞名 class（.mobile-nav/.form-table-wrap…）
-// 會洩漏、覆蓋全站——最嚴重的是 body{overflow:hidden} 讓每一頁都無法捲動。
-// 元件庫頁自身的版型：.full-container 佔滿 100vh、內部 .main-container/aside 各自捲動，故 body 不捲。
+// 以下所有規則限定在元件庫展示頁（`body.guideline-page`）。
+// 本檔是頁面專屬樣式，但全站 scss 打包成單一 main.css、每一頁都載——沒有這層限定，
+// 這裡的裸元素選擇器（html／body／aside／section／footer）與撞名 class
+// （.mobile-nav／.form-table-wrap…）會直接覆蓋全站；最嚴重的是 `body { overflow: hidden }`
+// 讓每一頁都捲不動。
+// 本頁自己要 `overflow: hidden` 的理由：版型是 `.full-container` 佔滿一整個視窗高、
+// 內部 `.main-container` 與 `aside` 各自捲動，body 不該再疊第二層捲動。
 body.guideline-page {
     overflow: hidden;
 }
@@ -89,7 +95,6 @@ aside {
     width: 200px;
     height: 100vh;
     height: 100dvh; // 行動瀏覽器：扣掉會伸縮的網址列
-    // padding-top: 56px;
     background-color: var(--gl-aside-bg);
     overflow-y: auto;
     flex-shrink: 0;
@@ -297,13 +302,15 @@ section {
     border-color: transparent transparent var(--gl-gotop-ink) transparent;
 }
 
-// ⚠️ **這一條的白字先前是靠借來的底色才看得見**：markup 曾掛 `class="footer"`，而 `.footer` 的
-//   唯一主人是 `components/footer/_footer.scss`（`components/` 桶的元件根 class，§4 明文不外借），
-//   它順手給的 `background-color: var(--brand)` 才是白字的襯底。拿掉那顆 class（正確的解耦）之後
-//   白字會落在 `--gl-bg` 上——實算 **1.03:1**，整行字消失，而視覺指紋在借著的時候看不出來
-//   （§4 第三種死法「祖先錯位」的變體：scss 找得到、markup 找得到，兩者其實搭不上）。
-//   故 showcase 自己給填充：`--gl-dark` 是 `_guideline-var` 既有的「襯 --on-accent 白字」那一顆
-//   （淺 8.19:1／深 11.37:1，實算見該檔）。
+// ⚠️ **showcase 的頁尾要自己給填充，不准去借 `components/footer` 的底色。**
+//   `.footer` 的唯一主人是 `components/footer/_footer.scss`（`components/` 桶的元件根 class，
+//   §4 明文不外借），它的 `background-color: var(--brand)` 只服務那一顆元件；
+//   在 markup 上多掛一顆 `class="footer"` 把底色借過來，等於讓這裡的白字寄生在別人的規則上。
+//   借不到的時候白字會落在 `--gl-bg` 上——實算 **1.03:1**，整行字直接消失。
+//   而這種寄生在「還借著」的期間視覺指紋完全看不出異常（§4 第三種死法「祖先錯位」的變體：
+//   scss 找得到、markup 找得到，兩者其實搭不上），所以它是規則、不是隨手補的色。
+//   `--gl-dark` 是 `_guideline-var` 裡「襯 --on-accent 白字」的那一顆（淺 8.19:1／深 11.37:1，
+//   實算見該檔）。
 footer {
     display: flex;
     align-items: center;

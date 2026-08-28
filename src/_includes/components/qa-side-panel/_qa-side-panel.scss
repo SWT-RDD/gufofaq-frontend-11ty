@@ -1,12 +1,14 @@
-// 可收合問答紀錄側欄（單測 2-2-1 / AB測 2-2-3，固定於視窗右側）。取自真 app 已編譯 GufoFAQ_Frontend_New/css/component.css
-// （scss 源碼漏了、只存在編譯輸出）。原本我們專案完全沒有 .qa-side-panel 樣式，側欄整個沒定位/沒外觀。
+// 可收合問答紀錄側欄（單測 2-2-1 / AB測 2-2-3）：固定貼在視窗右緣，收合時整塊往右滑出畫面，
+// 只留一條直立的「問答紀錄」標籤鈕。這一份負責定位、外觀，以及**收合態不可聚焦**那一條。
 @use "../../../scss/mixin" as *;
 .qa-side-panel {
     display: flex;
     align-items: flex-start;
     flex-shrink: 0;
     position: fixed;
-    // 72px 取自真 app 已編譯 css 的原值（來意未註明；≠ $header-height(56)+16 的推導證據，不擅改成 calc）
+    // 垂直落點：面板高約 550px，先貼著視窗底部往上算，但不得高過 72px——那是它不會蓋到 header 的
+    // 下界。72px 是這個側欄自己的一顆定值，**不要**改寫成 `$header-height + 16` 之類的算式：
+    // 沒有證據說它是從 header 高度推導來的，寫成 calc 只是替它捏一條不存在的相依。
     top: max(72px, 100vh - 550px);
     top: max(72px, 100dvh - 550px); // 行動瀏覽器：扣掉會伸縮的網址列
     right: 0;

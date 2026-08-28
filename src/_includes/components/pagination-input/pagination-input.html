@@ -1,8 +1,8 @@
 {# 可輸入頁碼切換：「第 [1] 個對話，共 12 個」＋前後鈕。與 ui/pagination 是兩種互不相干的頁碼互動
    （那邊是資料驅動的頁碼列）。行為見 pagination-input.js：數字過濾、clamp 在 1~total、前後鈕 disabled 與箭頭換圖。
 
-   參數：paginationTotal（總筆數，預設 12）。真實頁的 data-total 由業務 js 依查詢結果填入
-   （真 app 的 qaHistoryDetail.js），切版給靜態值當示範；`.total` 的內容也會被 js 覆寫。 #}
+   參數：paginationTotal（總筆數，預設 12）。`data-total` 是**業務掛點**：執行期由查詢結果填入，
+   切版給靜態值當示範；`.total` 那顆節點的內容同樣會被接手的程式覆寫。 #}
 {# 預設值收進元件專屬的區域名（同 components/chart-box 的 cbId 做法）：`{% set %}` 是**頁面全域**，
      直接 set 回參數名的話，這顆 12 會外洩給同頁後續的 include，而且與使用頁自己的
      `{% set paginationTotal %}` 撞名（§2／§6）。 #}
@@ -25,7 +25,7 @@
     <span class="sr-only" id="pagerInputRange">1 – {{ pagerTotal }}</span>
 
     {# 分隔空白住在**譯文**、不留在 markup（§4-2；正典 ui/pagination 的 totalPrefix／totalSuffix）：
-         留在 markup 會讓繁中比凍結正本多兩個半形空白，而 JSX 又不會產生這種縮排空白，兩邊長不一樣。 #}
+         留在 markup 會多出兩個半形空白，而 JSX 不會產生這種縮排空白，兩邊於是長不一樣。 #}
     <span class="pager-text"><span data-i18n="qa.detailConvOf">個對話，共</span><span class="total">{{ pagerTotal }}</span><span data-i18n="common.unitItems">個</span></span>
 
     <button type="button" class="pager-btn next">

@@ -1,7 +1,6 @@
 // 可捲動清單 widget（.dataset-list-wrap：搜尋框 + .dataset-list）的關鍵字過濾。
-// 純前端互動（§5 當場要動得起來），行為改寫自凍結前端
-// `GufoFAQ_Frontend_New/js/dataImport.js` 的 keyword filter：
-// 兩邊 toLowerCase 後比對（不分大小寫、不 trim——與真 app 同款），不符的 label 加 .hidden。
+// 純前端互動（§5 當場要動得起來）：兩邊 toLowerCase 後比對（**不分大小寫、不 trim**），
+// 不符的 label 加 .hidden。
 // 這顆 widget 由兩個 modal 共用（select-dataset-modal 的 radio 清單、manage-members-modal 的
 // checkbox 清單）——過濾行為依 §4「兩個以上元件必須同值」升格成共用行為原子，兩邊都吃得到。
 // document 級 input 委派：動態插入的清單也吃得到；載入時不碰 DOM。
@@ -51,11 +50,10 @@
 // ② 資料集清單（radio，生產 markup＝components/select-dataset-modal）——殼的三層與 ① 逐字相同
 //    （只有 `<h3>` 的 id 與 i18n key 換成自己的），差別在 `.modals-body` 裡：多一層
 //    `.dataset-box-wrap > .checkbox-container` 的並排容器、清單是 `role="radiogroup"`
-//    ⓓ `.checkbox-container` 是沿用真 app 1-1-1 `#datasetModal` 的 wrapper（凍結前端
-//       `GufoFAQ_Frontend_New/js/dataImport.js:19` 註明「Modal 確認按鈕（單選模式，不需要 check-all）」）。
-//       它全站零樣式，而 `ui/checkbox/checkbox.js` 會對它綁一個永遠不會觸發的 listener
-//       （這份清單是 radio 單選，窗內沒有任何 `.check-all`／`.check-one`）。
-//       **它不是本 widget 的必要層**——做新 modal 時不必帶；留著是忠實保留既有 markup（§5）。
+//    ⓓ `.checkbox-container` 這一層全站零樣式，而 `ui/checkbox/checkbox.js` 會對它綁一個永遠不會
+//       觸發的 listener（這份清單是 radio 單選，窗內沒有任何 `.check-all`／`.check-one`）。
+//       **它不是本 widget 的必要層**——做新 modal 時不必帶它。這一份留著不動：拿掉它不會多出任何
+//       好處，卻要動一份已經驗過的生產 markup（§5 不做無謂改動）。
 //    且由 modal 標題供名、每一筆是 `type="radio" name="dataset_radio" value`：
 //
 //   <div class="modals-wrap">
@@ -166,7 +164,7 @@ document.addEventListener("input", function (e) {
     if (!list) return;
     var keyword = search.value.toLowerCase();
     list.querySelectorAll("label").forEach(function (label) {
-        // trim：textContent 含 markup 縮排空白，真 app 比對的是 label 內 span 的純文字
+        // trim：textContent 會把 markup 的縮排換行一起收進來，真正要比對的是 label 內那顆 span 的純文字
         label.classList.toggle("hidden", label.textContent.trim().toLowerCase().indexOf(keyword) === -1);
     });
     syncEmpty(list);

@@ -14,10 +14,10 @@ permalink: 5-5-2_groupManagement.html
     {% include "ui/breadcrumb/breadcrumb.html" %}
 </div>
 
-{# 租戶群組（分組）＋群組權限管理（僅租戶管理者）。SaaS 新需求，逆向自 product app/routers/groups.py：
+{# 租戶群組（分組）＋群組權限管理（僅租戶管理者）。SaaS 新需求，逆向自 product：
      群組＝權限群組，能力（細粒度 token）定在群組上，使用者屬於群組即繼承其能力（多群組聯集）。
      真正把關在 product（require_admin），本頁僅提供管理介面。
-     能力 token 集合對齊 product app/authz.py CAPABILITY_TOKENS（data/settings 拆讀寫；ask/history/audit 單一）。
+     能力 token 集合對齊 product CAPABILITY_TOKENS（data/settings 拆讀寫；ask/history/audit 單一）。
      **memberCount 要與 5-5-1 的成員指派對得起來**（§6 跨頁自洽，兩頁是同一個示範租戶——
      群組名稱與能力聯集逐字相同、5-5-1 檔頭也明寫「群組本身在本頁維護」）：
      那一頁三位成員的 groupIds 是 []／[3]／[2, 3] ⇒ 管理 0、業務 1、研發 2。 #}
@@ -32,7 +32,7 @@ permalink: 5-5-2_groupManagement.html
 ] %}
 {# 列鍵（§6）：這張表刪得掉列（逐列 `.js-delete-group`），所以每一筆要帶身分欄位、逐列 id 不用
      `loop.index`——刪一筆之後位置整排前頂，React 的 key 與逐列動作會一起指錯人。`id` 就是
-     `PATCH /groups/{group_id}`／`DELETE /groups/{group_id}` 吃的那一顆（product `app/routers/groups.py`
+     `PATCH /groups/{group_id}`／`DELETE /groups/{group_id}` 吃的那一顆（product
      的 `update_group`／`delete_group`）。**號碼沿用 5-5-1 的同一批群組**（跨頁同源，§6）。 #}
 {% set groups = [
   { id: 1, name: "管理群組", capabilities: ["data:read", "data:write", "settings:read", "settings:write", "ask", "history", "audit"], memberCount: 0 },
@@ -45,7 +45,7 @@ permalink: 5-5-2_groupManagement.html
 {# 新增群組：名稱 + 能力 token 勾選（ui/checkbox）+ 新增按鈕（三態 toast：成功／名稱已存在／失敗）#}
 <div class="block mb-16 flex-row column gap-16">
     {# ⓘ 說明：markup 同既有 info-btn 六件組（GUIDELINE §1-2 無 html 元件契約）。①出處：本頁檔頭
-         「群組＝權限群組：能力定在群組上」一節，與 product `app/routers/groups.py` 的
+         「群組＝權限群組：能力定在群組上」一節，與 product 的
          `GroupIn`（name／capabilities）、`create_group`（名稱必填、能力驗證於 `CAPABILITY_TOKENS`）。
          成員指派**不在**本區——那是 `PATCH /users/{id}` 的 `group_ids`（見 5-5-1），本區只決定
          「這個群組帶什麼能力」，是能力疊加三件事裡的第二件（群組本身），與逐使用者的勾選、
@@ -87,8 +87,8 @@ permalink: 5-5-2_groupManagement.html
     </div>
 </div>
 
-{# 「新增群組」的說明視窗：②③留空——現在生效的條件與這一區的數字由 React 執行期算，
-     切版這一側只提供容器（同批次既有區塊的現況）。 #}
+{# 「新增群組」的說明視窗：②③留空——「現在生效的條件」與「這一區的數字」都要由 React 在
+     執行期依實際租戶狀態算出來，切版這一側只把容器與 ① 那段固定文案定出來，不編假的列。 #}
 {% set helpModalId = "addGroupHelpModal" %}
 {% set helpModalTitleKey = "help.settings.addGroup.title" %}
 {% set helpModalTitle = "新增群組說明" %}
@@ -103,8 +103,8 @@ permalink: 5-5-2_groupManagement.html
      故用 hook class（.js-manage-members / .js-delete-group），不掛 data-open-modal（§5）。
      刪除群組守衛（尚有資料集歸屬 → 409）由 product 把關，前端顯示錯誤。示範 3 筆。 #}
 <div class="block flex-row column gap-16">
-    {# ⓘ 說明：markup 同既有 info-btn 六件組。①出處：本頁上方檔頭「群組清單」一節與 product
-         `app/routers/groups.py` 的 `update_group`／`delete_group`（409 `group_has_datasets`）、
+    {# ⓘ 說明：markup 同既有 info-btn 六件組。①出處：本頁上方檔頭「群組清單」一節，與 product 的
+         `update_group`／`delete_group`（409 `group_has_datasets`）、
          `_member_count`。這一區仍是能力疊加三件事裡的第二件（群組本身的能力與成員數），
          「管理成員」開的是成員↔群組的指派關係（見 5-5-1），與租戶管理者旗標、平台系統管理員
          的跨租戶身分都是各自獨立的事。 #}
@@ -168,7 +168,7 @@ permalink: 5-5-2_groupManagement.html
                     </td>
                 </tr>
                 {% else %}
-                {# 具名空狀態（round48）：「能力定在群組上」是本頁頁層說明的第一句，而它的後果
+                {# 具名空狀態：「能力定在群組上」是本頁頁層說明的第一句，而它的後果
                      （沒有群組＝成員登得進來卻什麼都做不了）只有在這一格才來得及講。 #}
                 <tr><td colspan="4" class="text-center text-gray" data-i18n="settings.noGroups">這個租戶還沒有群組。能力定在群組上，所以在建第一個群組並把人加進去之前，成員登得進來卻什麼都做不了。按上面的「新增群組」開始。</td></tr>
                 {% endfor %}
@@ -194,7 +194,7 @@ permalink: 5-5-2_groupManagement.html
 {% set deleteTargetId = "deleteGroupName" %}
 {# `deleteConfirmBinding = true` ＝確認鈕交給業務 js 綁定、不自動關窗 ⇒ **必須同時給它一個抓得到的記號**
      （delete-modal 檔頭：`deleteConfirmClass`／`deleteConfirmId` 二擇一必給，兩種都不給＝那顆確認鈕在
-     markup 上沒有任何記號，React 認不出它該接誰）。全站另外七個使用頁都給了，先前只有這一頁漏掉。
+     markup 上沒有任何記號，React 認不出它該接誰）。凡是開 `deleteConfirmBinding` 的使用頁一律要給。
      命名照 §5 `js-<動詞>-<名詞>`，與同頁的觸發鈕 `.js-delete-group` 成對。 #}
 {# 連帶後果（`deleteNoteKey`）：能力定在群組上（本頁頁層說明第一句），所以刪掉一個群組＝**它的成員
      當場失去這一組能力**。要講清楚的是另一半：能力是多群組取聯集，所以其他群組給的不受影響——

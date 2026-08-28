@@ -1,12 +1,11 @@
-{# 展示片段，取自真實 app pages/components/component.html **07 按鈕** section 內 .link-file 用法（節錄，class 沿用真實系統）。
-     （節號逐一數過：07 是按鈕、08 是輸入框——原註寫的「08 按鈕」把兩節混成一個。） #}
-{# a 連結檔案，hover 後有底線；不用加上 .button
-   **`.link-file` 是兩族，不是一族**（真 app 逐條驗過）：
-     ①**導覽族**——有真去向的連結（`GufoFAQ_Frontend_New/js/datasetList.js`→`3-1-3_previewDataset.html?sn=`、
-       `js/qaHistory.js`→`4-2_qaHistory_detail.html?logSn=`、`js/previewDataset.js` 的可預覽型別）。
-       本片段示範的就是這一族，故給**簡化版靜態跳轉**，不留 `href="#"` 死連結（§5，同 3-1-3 的處置）。
-     ②**下載族**——來源表格裡點檔名下載原稿，真 app 是 `href="javascript:void(0)"` ＋ `data-did` ＋
-       `$(document).on('click', '.sources-block .link-file', …)`（`js/singleTest.js` 等四支同型）。
-       那一族**不是連結而是動作**，切版寫成 `<button class="link-file">`，生產正本在
+{# 展示片段（非生產 markup）：元件庫頁「07 按鈕」一節裡的 `.link-file` 示範。
+     （節號別記錯：07 是按鈕、08 才是輸入框。） #}
+{# 檔名連結，hover 後有底線；不用加上 .button。
+   **`.link-file` 是兩族，不是一族**——判準是「點下去會不會換頁」：
+     ①**導覽族**——有真去向的連結（`3-1-3_previewDataset.html?sn=`、
+       `4-2_qaHistory_detail.html?logSn=`、可預覽型別的檔案預覽頁）。本片段示範的就是這一族，
+       故給**簡化版靜態跳轉**，不留 `href="#"` 死連結（§5，同 3-1-3 的處置）。
+     ②**下載族**——來源表格裡點檔名下載原稿。那一族**不是導覽而是動作**（不換頁、要打 API、
+       會失敗也要回報），所以切版寫成 `<button class="link-file">` 而不是 `<a>`；生產正本在
        `components/sources-block`（含 `data-source-index`／閘門／`data-toast` 四段），這裡不重抄一份。 #}
 <a href="3-1-5_previewFile_detail.html" class="link-file">vector8_chunk718_20240829024537_111-1021-5-_入出國及法令彙編1671頁.xlsx</a>

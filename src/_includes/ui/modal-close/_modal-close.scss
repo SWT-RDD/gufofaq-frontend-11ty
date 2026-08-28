@@ -1,5 +1,8 @@
-// 跳窗右上角的關閉鈕。原本是 `.modals-wrap` 底下的一段巢狀 + 一張 <img>，
-// 現在字形改用遮罩上色（icon-mask），<img> 整個消失；position:absolute 的基準仍是 `.modals-wrap`。
+// 跳窗右上角關閉鈕（`.modals-close`）的樣式正本：全站每一顆 `<dialog class="modals">` 右上角那顆叉叉。
+// 叉叉字形由 `icon-mask()` 以遮罩上色畫出來，markup 裡沒有 `<img>`——墨色吃 `--brand-text`，
+// 深色模式跟著 token 走、不必為了白叉叉另存一張圖，也免反相。
+// `position: absolute` 的定位基準是 `.modals-wrap` 的 `position: relative`（宣告在 `_modals.scss`），
+// 所以這顆鈕只有掛在那一層殼底下才貼得到右上角；換一個祖先就會飛掉（§4 的祖先錯位死法）。
 @use "../../../scss/mixin" as *;
 
 .modals-close {

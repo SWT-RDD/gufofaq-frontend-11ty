@@ -1,7 +1,9 @@
-{# ui/search-select 範例：**單選**下拉的可搜尋替代（.searchSelect），
-     由 ui/search-select/search-select.js 在 DOMContentLoaded 時增強成 combobox。
+{# ui/search-select 的展示片段（元件庫頁 include 它）：示範一顆 `<select class="searchSelect">`
+     該長什麼樣。畫面上看到的輸入框與下拉都不在這份 markup 裡——`ui/search-select/search-select.js`
+     在 DOMContentLoaded 時把這顆原生 select 藏到無障礙樹外、就地建出一顆 combobox 替身，
+     原生 select 留在 DOM 內繼續當唯一資料來源。
      消費頁：5-7 稽核日誌的三顆篩選（操作類型／使用者／群組）——操作類型有 ~120 個選項，
-     原生 select 只能一顆一顆捲。 #}
+     原生 select 只能一顆一顆捲，使用者沒有任何辦法把想找的那幾顆問出來。 #}
 <div class="form-group row mobile-col">
     <div class="label label-md">
         <label for="demoSearchSelect" class="control-label">可搜尋單選</label>

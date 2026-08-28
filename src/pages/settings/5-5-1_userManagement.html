@@ -14,20 +14,24 @@ permalink: 5-5-1_userManagement.html
     {% include "ui/breadcrumb/breadcrumb.html" %}
 </div>
 
-{# 租戶成員與群組指派管理（僅租戶管理者）。SaaS 需求，逆向自 apps/web app/(app)/users。
-     逐使用者能力已改由群組繼承：不再逐使用者勾能力，改指派「所屬群組」（多選），有效能力唯讀顯示
-     （由所屬群組能力聯集算出；管理者＝全部）。真正把關在 product（require_admin / group_ids）。
+{# 租戶成員與群組指派管理（僅租戶管理者）。SaaS 需求，逆向自 gufofaq-saas 的
+     `apps/web/app/(app)/users`。
+     **能力由群組繼承、不逐使用者勾**：這一頁指派的是「所屬群組」（多選），有效能力那一欄是
+     唯讀的推導結果（所屬群組能力的聯集；租戶管理者＝全部）。真正把關在 product
+     （require_admin ／ group_ids），這一頁只是管理介面。
      群組本身（名稱＋能力）在「群組管理」頁維護（5-5-2_groupManagement.html）。 #}
-{# 能力 token 目錄與 5-5-2 是**同一份**（product `app/authz.py` 的 `CAPABILITY_TOKENS`，
+{# 能力 token 目錄與 5-5-2 是**同一份**（product 的 `CAPABILITY_TOKENS`，
      檔頭自述「群組能力勾選的完整集合，單一真相來源」）：那是封閉枚舉的顯示標籤＝UI chrome，
-     要翻（§4-2）。原本這一頁把有效能力存成一整串繁中、零 data-i18n，英文模式整欄不會變——
-     而姊妹頁 5-5-2 對**同一批標籤**是掛 data-i18n 的，兩頁對同一組枚舉的判定相反。
+     要翻（§4-2）。所以有效能力那一欄**不可以存成一整串繁中**：整串就掛不上 data-i18n，
+     英文模式整欄不會變，而姊妹頁 5-5-2 對同一批標籤是逐顆掛的——同一組枚舉在兩頁得到相反
+     的判定，是最難發現的那種 i18n 漏洞。
      群組的 `capabilities` 也與 5-5-2 逐字相同（§6 跨頁同一份目錄要對得起來）。
    **`history` 的顯示標籤刻意寫成「歷史紀錄檢視」，與上游 `CAPABILITY_TOKENS["history"]`（「歷史紀錄」）
      差兩個字**（§5：product 先行的 NET-NEW，每一處刻意差異在檔頭記載）：七顆標籤要同一種構詞
      ——`data:read`「資料集檢視」、`settings:read`「設定檢視」、`audit`「稽核日誌檢視」都是
-     「＜資源＞＋檢視」，只有 `history` 上游寫成裸資源名。其餘六顆與上游逐字相同；saas 的
-     `messages.zh.json` 也已經是「歷史紀錄檢視」，三處（本頁／5-5-2／platform-tenants-panel）一致。 #}
+     「＜資源＞＋檢視」，只有 `history` 上游寫成裸資源名。其餘六顆與上游逐字相同；
+     gufofaq-saas 的 `messages.zh.json` 也是「歷史紀錄檢視」，本頁／5-5-2／platform-tenants-panel
+     三處必須一致。 #}
 {% set capabilities = [
   { key: "data:read", label: "資料集檢視", i18nKey: "settings.capDataRead" },
   { key: "data:write", label: "資料匯入／資料集管理", i18nKey: "settings.capData" },
@@ -42,14 +46,15 @@ permalink: 5-5-1_userManagement.html
   { id: 2, name: "業務群組", capabilities: ["data:read", "ask", "history"] },
   { id: 3, name: "研發群組", capabilities: ["data:read", "data:write", "settings:read"] }
 ] %}
-{# isActive＝product `app/routers/users.py` 的 `User.is_active`（PATCH /users/{id} 收 `UserUpdate.is_active`）。
+{# isActive＝product 的 `User.is_active`（PATCH /users/{id} 收 `UserUpdate.is_active`）。
      示範第三筆為已停用：離職成員留著帳號但不能登入，那一列要一眼看得出來（§5 分支要演得到）。
    **`id` 是列鍵、不可省**（§6）：兩顆列動作打的是 `PATCH /users/{user_id}` 與
      `POST /users/{user_id}/reset-password`，沒有它 React 連要改誰都送不出去；而這張清單**不是成員固定**
      的（本頁上方就有「新增成員」，平台端另有刪除），`loop.index` 會在刪一筆之後整排前頂、逐列動作指錯人。
-     saas 端已經自己補了（`apps/web/app/(app)/users/page.tsx` 的 `key={m.id}` 與 `memberEmail-${member.id}`）
-     ——切版是正本，不能落後於它的複製品。姊妹頁 5-5-2 的群組表一開始就做對了。
-   **列序＝`order_by(User.id)`**（product `app/routers/users.py` 的 `list_users`），示範三筆照 id 遞增。 #}
+     gufofaq-saas 的 `apps/web/app/(app)/users/page.tsx` 也是用 `key={m.id}` 與
+     `memberEmail-${member.id}`——切版是正本，這一顆列鍵不能只有下游有。
+     姊妹頁 5-5-2 的群組表是同一個形狀。
+   **列序＝`order_by(User.id)`**（product 的 `list_users`），示範三筆照 id 遞增。 #}
 {# **`platformRole` 不可省**（`UserOut.platform_role`，值域 `none`／`auditor`／`admin`）：
      平台管理員／稽核員**寄生在一般租戶裡**，所以他們就在這張清單上，而 `GET /users` 原樣回這一欄
      ——上游 `_assert_tenant_manageable` 的 docstring 逐字寫著「這裡回 403 而非 404：`platform_role`
@@ -66,8 +71,8 @@ permalink: 5-5-1_userManagement.html
 {# 新增成員：電子郵件 + 初始密碼 + 所屬群組勾選（ui/checkbox）+ 租戶管理者（ui/switch）+ 新增按鈕 #}
 <div class="block mb-16 flex-row column gap-16">
     {# ⓘ 說明：markup 同既有 info-btn 六件組（GUIDELINE §1-2 無 html 元件契約）。①出處：本頁檔頭
-         「逐使用者能力已改由群組繼承……有效能力唯讀顯示」一節，與 product `app/routers/users.py` 的
-         `UserCreate`（email／password／is_admin／group_ids）、`app/authz.py` 的
+         「逐使用者能力已改由群組繼承……有效能力唯讀顯示」一節，與 product 的
+         `UserCreate`（email／password／is_admin／group_ids）、product 的
          `effective_capabilities`（聯集）。**能力疊加三件事只有兩件在這一區**：所屬群組帶來的能力
          （唯讀顯示於下方成員清單，這裡只是指派）與「租戶管理者」旗標（跳過群組限制、拿到全部
          token）——平台系統管理員的跨租戶身分是第三件事，與本頁無關，故 ①末句刻意點出兩者不同。 #}
@@ -99,14 +104,15 @@ permalink: 5-5-1_userManagement.html
                     {# 「至少 8 碼」是**約束提示**、不是錯誤訊息：.error-prompt 預設 display:none
                          （靠 .form-group:has(.error) 才揭示），aria-describedby 指過去等於輔具讀到零。
                          約束要在填之前就講得出來，故改成常駐可見的說明字（§4）。
-                         **8 是資料節點、不是譯文的一部分**（§3-2 / §4-2）：正本是 product `app/security.py` 的
-                         `MIN_PASSWORD_LEN`，五個消費點（`app/routers/platform.py` 的 `TenantCreate.admin_password`／
-                         `PlatformResetPwIn.new_password`、`app/routers/users.py` 的 `UserCreate.password`／
+                         **8 是資料節點、不是譯文的一部分**（§3-2 / §4-2）：正本是 product 的
+                         `MIN_PASSWORD_LEN`，五個消費點（product 的 `TenantCreate.admin_password`／
+                         `PlatformResetPwIn.new_password`、product 的 `UserCreate.password`／
                          `ChangePwIn.new_password`／`ResetPwIn.new_password`）寫的都是
-                         `Field(min_length=security.MIN_PASSWORD_LEN)`——**先前這裡把消費點抄成 `Field(min_length=8)`，
-                         那個字面在上游 grep 為零**，而同一句話自己宣告「符號 grep 得到」。
-                         它已經投影成 `GET /users/limits`（`app/ops_limits.py` 的 `USER_LIMIT_GROUPS`）的
-                         `member.password.min`，那是下一輪 grep 得到全部抄本的鉤子。加上這一格的
+                         `Field(min_length=security.MIN_PASSWORD_LEN)`——**引消費點要連符號一起引**：
+                         寫成 `Field(min_length=8)` 那個字面在上游 grep 為零，等於一邊宣告「符號 grep
+                         得到」一邊給了一個 grep 不到的字串。
+                         它已經投影成 `GET /users/limits`（product 的 `USER_LIMIT_GROUPS`）的
+                         `member.password.min`，那顆投影就是把全部抄本一次 grep 出來的鉤子。加上這一格的
                          `minlength="8"`，這個數字已經有好幾份抄本；再烤進英譯就是「改上限要改兩份譯文」。
                          形狀沿用 2-2-4 的 200（前綴 key ＋ 數字節點 ＋ 單位 key）。
                          同一頁的 placeholder（settings.pleaseEnterNewPassword）與送出鈕的 data-toast **維持**把 8 寫在譯文裡：
@@ -137,7 +143,7 @@ permalink: 5-5-1_userManagement.html
         </label>
         <span class="text-bold" data-i18n="settings.tenantAdmin">租戶管理者</span>
         {# 直接送 API 的建立動作 → data-toast 列全結果（§5）。409「email already exists」
-             （product app/routers/users.py 的 `account.email_exists` 409）是**換一個 Email 就修得掉**的 warning，自成一段——
+             （product 的 `account.email_exists` 409）是**換一個 Email 就修得掉**的 warning，自成一段——
              折進「新增失敗，請稍後再試」再用「可能」對沖，等於叫使用者重試一個永遠不會成功的動作。
              全站同型的 create 409 都自成 warning（5-5-2 群組名稱、3-3 QA 集、5-6-2 MCP 名稱）。 #}
         <button data-tenant-role="admin" type="button" class="button button-primary" data-toast="成員已新增|請填寫 Email 與至少 8 碼密碼|Email 已被使用，請換一個|選到的群組不存在，請重新載入頁面再選一次|新增失敗，請稍後再試" data-i18n-data-toast="toast.createUser" data-toast-type="success|warning|warning|warning|error">
@@ -147,11 +153,12 @@ permalink: 5-5-1_userManagement.html
     </div>
 </div>
 
-{# 「新增成員」的說明視窗：②留空（現在生效的條件由 React 執行期算）；**③ 有一列**——密碼下限已經
-     投影進 `GET /users/limits`（product `app/ops_limits.py` 的 `USER_LIMIT_GROUPS` 的 `member.password`），
-     saas 端也已經渲染那一列（`apps/web/app/(app)/users/page.tsx` 的 `ADD_MEMBER_HELP_ROWS`）。
-     先前這裡寫「由 React 執行期算」當理由——那是 ③ 每一列的共同性質（`bound` 本來就是執行期槽），
-     它區分不出這一列該不該存在，所以它不是一個理由。 #}
+{# 「新增成員」的說明視窗：②留空（現在生效的條件由 React 執行期算）；**③ 有一列**——密碼下限
+     投影在 `GET /users/limits`（product 的 `USER_LIMIT_GROUPS` 的 `member.password`），
+     gufofaq-saas 的 `apps/web/app/(app)/users/page.tsx` 也渲染那一列（`ADD_MEMBER_HELP_ROWS`）。
+     ⚠️ ③ 的收錄判準是「這顆界線有沒有被上游投影成一支拿得到的端點」。**「由 React 執行期算」
+     不是一個理由**——那是 ③ 每一列的共同性質（`bound` 本來就是執行期槽），它區分不出任何一列
+     該不該存在，拿它當理由等於整個 ③ 都可以留空。 #}
 {% set helpModalId = "addMemberHelpModal" %}
 {% set helpModalTitleKey = "help.settings.addMember.title" %}
 {% set helpModalTitle = "新增成員說明" %}
@@ -166,17 +173,18 @@ permalink: 5-5-1_userManagement.html
 
 {# 成員清單：default-table。狀態欄用 ui/switch（啟用／停用）；角色欄用 ui/switch（管理者切換）；
      所屬群組欄每一個群組一個 checkbox（多選指派）；有效能力欄唯讀顯示（由群組聯集算出，管理者＝全部）。
-     狀態（is_active）：後端早就支援（product `app/routers/users.py` 的 PATCH /users/{id} 收 `UserUpdate.is_active`），
-     但這頁原本既看不到誰被停用、也停用不了任何人——離職員工的帳號留在啟用狀態，畫面上與在職的一模一樣。
+     狀態（is_active）這一欄**一定要在**：product 的 `PATCH /users/{id}` 收 `UserUpdate.is_active`，
+     少了它，離職員工的帳號在畫面上與在職的一模一樣，誰被停用看不出來、也停用不了任何人。
      切換是值載體（隨同列「儲存」一起送，不是各自 PATCH），故只掛 hook class .js-member-active（§5 ②）；
      同列的管理者 switch 與群組 checkbox **一顆記號都沒有**（無 class、無 id、無 name），它們的定址靠
-     `<tr data-user-id>` 的列鍵 ＋ 欄位序（saas 端也是這樣接的，`apps/web/app/(app)/users/page.tsx` 兩顆
-     都是純 local state）——**這不是「既有契約，不順手改名」**：沒有名字的東西改不了名，先前那句話
-     宣告了一份不存在的契約。要補記號就補 `js-member-admin`／`js-member-group`，與 `.js-member-active` 一致。
+     `<tr data-user-id>` 的列鍵 ＋ 欄位序（gufofaq-saas 的 `apps/web/app/(app)/users/page.tsx` 也是
+     這樣接的，兩顆都是純 local state）。**別把這件事說成「既有契約，不順手改名」**：沒有名字的
+     東西改不了名，那句話宣告的是一份不存在的契約。要補記號就補 `js-member-admin`／
+     `js-member-group`，與 `.js-member-active` 同一個構詞。
      停用列整列上內嵌面底色（ui/default-table 的 tr.is-inactive；底色下在 > td，§4）。 #}
 <div class="block flex-row column gap-16">
-    {# ⓘ 說明：markup 同既有 info-btn 六件組。①出處：本頁上方檔頭「成員清單」一節與 product
-         `app/routers/users.py` 的 `update_user`（PATCH，`_assert_tenant_manageable` 的 403：
+    {# ⓘ 說明：markup 同既有 info-btn 六件組。①出處：本頁上方檔頭「成員清單」一節，與 product 的
+         `update_user`（PATCH，`_assert_tenant_manageable` 的 403：
          「平台角色持有者不是租戶層的管轄對象」）、`lock_active_tenant_admins`／最後一位管理者
          守衛（400）、`reset_member_password`。有效能力欄唯讀，出處同上方「新增成員」①——這一區
          管的仍是租戶內部角色（群組聯集＋租戶管理者），平台系統管理員／稽核員的跨租戶身分不受
@@ -188,7 +196,7 @@ permalink: 5-5-1_userManagement.html
             <span class="sr-only" data-i18n="help.settings.memberList.title">成員清單說明</span>
         </button>
     </div>
-    {# **「草稿 vs 落地」全站先前沒說**（round47）：這種逐列就地編輯的表格上，改一顆開關、改一個
+    {# **「草稿 vs 落地」一定要講**：這種逐列就地編輯的表格上，改一顆開關、改一個
          下拉之後畫面**立刻**變成新的樣子，而那只是 DOM 的狀態——真正寫進去的是同一列那顆「儲存」。
          看的人沒有任何線索分辨「我已經改好了」與「我以為我改好了」，而離開這一頁就全部回去。
          這一句是同一族三張表（5-5-1／5-5-2／5-6-1 的租戶功能開通表）共用的同一顆 key。 #}
@@ -259,7 +267,7 @@ permalink: 5-5-1_userManagement.html
                             {% endfor %}
                         </div>
                     </td>
-                    {# 有效能力＝所屬群組能力的聯集（product app/authz.py 的 `effective_capabilities`；
+                    {# 有效能力＝所屬群組能力的聯集（product 的 `effective_capabilities`；
                          `is_admin` 隱含全部）。**從資料推導、不寫死一整串繁中**（§6）：寫死的話
                          改了群組能力這一欄不會跟著動，而且整欄零 i18n。 #}
                     <td>{% if member.isAdmin %}<span data-i18n="settings.allCapabilities">全部能力</span>{% else %}
@@ -284,8 +292,8 @@ permalink: 5-5-1_userManagement.html
                         <div class="btn-group">{% if member.platformRole == "none" %}
                             {# 儲存＝把這一列的狀態／角色／群組一起送 PATCH /users/{id}。後端有兩道守衛，
                                  訊息不能被吞掉（否則使用者只看到「儲存失敗」，不知道要先指派另一位管理者）：
-                                 400「cannot deactivate the last active tenant admin」（product users.py）、
-                                 403「平台角色持有者不得在租戶端變更」（同檔 _assert_tenant_manageable（users.py）：
+                                 400「cannot deactivate the last active tenant admin」（product）、
+                                 403「平台角色持有者不得在租戶端變更」（同一支模組 _assert_tenant_manageable（product）：
                                  平台管理員／稽核員寄生在一般租戶裡，停用他會讓平台治理端點沒人打得動）。 #}
                             <button data-tenant-role="admin" type="button" id="memberSave-{{ member.id }}" aria-labelledby="memberEmail-{{ member.id }} memberSave-{{ member.id }}" class="button button-border button-sm" data-toast="已更新|不可移除租戶最後一位管理者，請先指派另一位|不可停用最後一位在職的租戶管理者，請先指派另一位|平台角色持有者不可在租戶端變更，請由平台管理端處理|選到的群組不存在，請重新載入頁面再選一次|儲存失敗，請稍後再試" data-i18n-data-toast="toast.saveMember" data-toast-type="success|warning|warning|warning|warning|error" data-i18n="action.save">儲存</button>
                             {# 重設密碼：開窗需先選定「重設哪一位成員」＝業務條件開窗，故用 hook class（.js-reset-password），
@@ -312,7 +320,7 @@ permalink: 5-5-1_userManagement.html
 {% set helpModalLimitRows = [] %}
 {% include "components/help-modal/help-modal.html" %}
 
-{# 租戶端的重設密碼多一道 403：product `app/routers/users.py` 的 `_assert_tenant_manageable`
+{# 租戶端的重設密碼多一道 403：product 的 `_assert_tenant_manageable`
      （那道守衛的存在理由正是「租戶管理者不得重設平台管理員的密碼再拿去登入」）。 #}
 {% set resetTenantRole = "admin" %}
 {# 長度那一段與同頁「新增成員」鈕的「請填寫 Email 與至少 8 碼密碼」是同一件事：彈窗裡沒有

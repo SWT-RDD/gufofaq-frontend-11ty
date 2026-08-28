@@ -8,23 +8,22 @@ permalink: 1-1-4_columnSelect_excel.html
 {# 欄位對應資料（多選/預覽兩欄共用）——依 §3-2/§6 由頁面提供，components/multi-select-box 只負責 for 渲染。
    固定槽 schema（title/content/source/date/category/number/flag/tags/privilege/note1..note10/date2/date3
    ＋不進索引的 internal_note，共 22 槽，
-   出處：gufofaq-saas services/product/app/field_schema.py 的 `SLOTS`——順序與 default_label 逐字對齊）；
-   **note1..note10 全部**是 TEXT 篩選槽、date2/date3 是 DATE 篩選槽（field_schema.py 的
+   出處：gufofaq-saas 的 `SLOTS`——順序與 default_label 逐字對齊）；
+   **note1..note10 全部**是 TEXT 篩選槽、date2/date3 是 DATE 篩選槽（product 的
    `FILTERABLE_TEXT_SLOTS = tuple(f"note{i}" for i in range(1, 11))`／`FILTERABLE_DATE_SLOTS = ("date2","date3")`，
    對得到 DSL 的 $note1／$date2）。抄「note6..note10」會讓下一個人以為 note1..note5 指派不到篩選欄。少列一個槽的後果是那個篩選欄在 UI 上根本指派不到，
    而後端早就收得下——使用者只會覺得「文件裡寫的篩選欄不存在」。
    使用者把 Excel 欄位對應到這些槽；label 用各槽預設顯示名。
-   §6 示範要是真實可能的狀態：真 app（columnSelect_excel.js）給**每個槽同一份選項清單＝上傳 excel 的欄位**，
+   §6 示範要是真實可能的狀態：**每個槽的選項清單是同一份＝上傳的那份活頁簿讀出來的欄**，
    故每個槽共用同一份 4 欄樣本（客服問題/客服回覆/建立時間/圖片連結，同 1-1-3 的預覽樣本）；
    已對應的槽 selected + 預覽該欄第一列值，未對應的槽空選（multi-select 顯示 placeholder）、預覽空。
-   date 槽示範格式警告：預覽值故意用中文日期（validateDate 只收 YYYY/MM/DD 或 YYYY-MM-DD，這個值真的會 fail）。 #}
+   date 槽示範格式警告：預覽值故意用中文日期——日期槽只收 YYYY/MM/DD 或 YYYY-MM-DD，
+   這個值真的會被判為格式不符，所以那一態在畫面上演得出來（§5）。 #}
 {# 槽目錄走**唯一正本** ui/field-slot-catalog（§2 的 {% from … import %}）。
      這一頁自己的附加資料以 key 查一張 map：來源欄位的預選值／提示文字／預覽值／格式警告。
-     **來源欄位選項只列一份，而且是每一個槽都吃同一份**（示範活頁簿的 4 個欄位）——原本逐槽
-     各抄一次＝抄 22 遍。這不是為了省字：凍結前端 `GufoFAQ_Frontend_New/js/columnSelect_excel.js`
-     只算出**一份** `fieldOptions`（`colTitles.map(...)`，:68），五處 `<select>`
-     （:87 標題／:101 日期／:115 內容／:129 圖片網址／:145 自訂欄位那一圈）逐字用同一份去 render，
-     沒有任何槽拿得到別人拿不到的選項。extras 裡各槽的差異因此只有「預選了哪一個」與提示文字
+     **來源欄位選項只列一份，而且是每一個槽都吃同一份**（示範活頁簿的 4 個欄位）——逐槽
+     各抄一次就是抄 22 遍。這不是為了省字：**來源欄位的值域就是這份活頁簿讀出來的欄**，
+     每一個槽面對的是同一份欄清單，沒有任何槽拿得到別人拿不到的選項。extras 裡各槽的差異因此只有「預選了哪一個」與提示文字
      ——**不含「多一個選項」**：那會與這一段自己的斷言互相打臉，而且那一欄在 1-1-3 的預覽表上
      根本不存在（那張表就是這份活頁簿的欄名清單）。 #}
 {% from "ui/field-slot-catalog/field-slot-catalog.html" import fieldSlotCatalog %}
@@ -78,9 +77,9 @@ permalink: 1-1-4_columnSelect_excel.html
 ] %}
 <div class="mt-10 mb-24">
     {% set stepPrevHref = "1-1-3_preview_excel.html" %}
-    {# 這一頁的「下一步」是**送出鈕**，不是連結（見 step-btn-wrap 檔頭）：凍結前端
-         `GufoFAQ_Frontend_New/js/columnSelect_excel.js:364` 先驗必填欄、再組 `fileProcessVM` 送出，成功才換頁。
-         結果分支逐條對回 gufofaq-saas product `app/routers/datasets.py` 的
+    {# 這一頁的「下一步」是**送出鈕**，不是連結（見 step-btn-wrap 檔頭）：先驗必填欄、
+         送出成功才換頁。
+         結果分支逐條對回 gufofaq-saas product 的
          `POST /datasets/{id}/excel/import`（`import_excel` → `_do_excel_mapping_import`）：
          ・403 `require_capability("data","write")`（能力軸）
          ・403 `_writable_file_dataset` → `_writable_dataset` 的 `dataset.not_writable_group`
@@ -108,7 +107,7 @@ permalink: 1-1-4_columnSelect_excel.html
 <p class="text-gray"><span data-i18n="dataImport.stagedTtlPrefix">剛上傳的檔案先暫存在伺服器上：</span><span class="js-staged-ttl-hours">24</span><span data-i18n="dataImport.stagedTtlSuffix"> 小時內沒有完成送出就會被清掉，屆時要重新上傳。</span></p>
 
 {# ── 匯入選項 ─────────────────────────────────────────────────────────────────────
-     出處：gufofaq-saas services/product/app/routers/datasets.py 的 `ExcelImportIn`
+     出處：gufofaq-saas 的 `ExcelImportIn`
      （`convert_html`、`external_key`）。兩者都是值載體，掛 hook class 交 React（§5）。
      HTML 轉換：儲存格裡的 HTML 標籤原樣進向量與答案是這批要修的缺口，故預設開；但**已經是純文字的
      資料不該被動到**，所以要關得掉（型別槽本來就不套用，見 product `field_schema.is_typed_slot`）。

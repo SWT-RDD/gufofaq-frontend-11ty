@@ -1,5 +1,7 @@
-{# 意圖判斷啟用 modal，取自真實 app pages/settings/5-2-1_knowledgeRetrieval.html #intentionModal（與 component.html 展示版一致，class/id 沿用真實系統）；
-     真實 markup 僅 modals-header + modals-body 提示文字，無 modals-footer 按鈕，僅可用右上角 .modals-close 關閉 #}
+{# 意圖判斷啟用 modal（dialog id `intentionModal`）。做什麼：在啟用意圖判斷時提醒「還有資料夾沒設
+     任務描述」——沒設的那些不會被列入判斷，設定看得到卻不生效，所以要先講。
+     只有 modals-header ＋ modals-body 一句提示、**沒有 modals-footer**：這扇窗沒有可按的動作
+     （沒有「確認／取消」可言），故只留右上角的 .modals-close 關閉。 #}
 <dialog class="modals" id="intentionModal" aria-labelledby="intentionModal-title">
     <div class="modals-dialog modals-md">
         <div class="modals-wrap">

@@ -1,19 +1,24 @@
-// 結構與數值照抄自凍結前端 GufoFAQ_Frontend_New/scss/component.scss 2363-2399（toast彈跳訊息區塊），只搬檔案位置。
-// **偏離逐條列出**：
-//   ① `.toast-container` 整顆是**切版新增**（原檔沒有）——刻意不沿用真 app 的定位方式，見下方註解
-//   ② `.toast-error` / `.toast-warning` / `.toast-info` 三個色變體是切版新增（原檔只有 `.toast-success`）
-//   ③ `.toast` 移除原檔的 `position:fixed; top:129px; left:0; right:0; margin:0 auto`（改由容器定位）
-//   ④ 色值換成語意 token
-//   ⑤ `.toast` 的 `box-sizing: border-box`（原檔 2367）移除（§4-1：`_base.scss` 已全域給）
-//   ⑥ `.toast` 的 `pointer-events: auto` 與 `.toast-close` 整顆是切版新增（WCAG 2.2.1，見 toast.js 檔頭）
-//   **宣告集合差集**（與上面那段凍結範圍逐條 diff，只比種類不比值——色值換語意 token 是 §4 要求的、不算偏離）：本檔新增 `inset`／`flex-direction`／`border`／`overflow`／`background`／`margin-left`／`font`／`line-height`／`cursor`；凍結有本檔沒有 `box-sizing`／`left`。隨 ① 的 `.toast-container`（定位/堆疊/透明底）與 ⑥ 的 `.toast-close`（外觀重置）一起新增。
+// toast 彈跳訊息：畫面上方那一疊短暫提示，由 `toast.js` 逐則建出來、插進頁面唯一的 `#toastContainer`。
+// **這幾條要知道理由（改動前先讀）**：
+//   ① **定位由容器負責、`.toast` 自己回到文流內**：`.toast-container` 是那顆 `position: fixed`
+//      的直向堆疊器，每一則 toast 不再各自 fixed（理由見下方該區塊的註解）。
+//   ② 四個色變體 `.toast-success` / `.toast-error` / `.toast-warning` / `.toast-info` 是一整組，
+//      對應 `toast.js` 的四種 type——少一個，那一型就會落回沒有底色的裸文字。
+//   ③ 因此 `.toast` **不寫** `position: fixed` 與 `top/left/right/margin` 那一族定位宣告；
+//      寫了會跳出容器的堆疊，兩則以上就疊在同一個位置。
+//   ④ 色值全數走語意 token，且填充要配成對的前景（`--success`／`--danger` 配 `--on-accent`、
+//      `--warning` 配 `--on-warning`，§4 對比度硬規則）。
+//   ⑤ 不寫 `box-sizing: border-box`（§4-1：`_base.scss` 已全域給）。
+//   ⑥ `.toast` 的 `pointer-events: auto` 與 `.toast-close` 這一顆是 WCAG 2.2.1 的兩條出口
+//      （移上去暫停倒數、隨時關得掉），不是裝飾——完整推導見 `toast.js` 檔頭。
+//
 
 // toast 的容器。掛了 popover，故要把 popover 的 UA 預設樣式（置中的方框、邊框、overflow:auto）清乾淨：
 // 它只是個進 top layer 的殼，不吃點擊（pointer-events:none）；定位與堆疊都由它負責，.toast 回到文流內。
-// **刻意不沿用真 app 的定位方式**（§5 要記載什麼取代了什麼）：真 app 每一顆 .toast 各自
-// position:fixed; top:129px ⇒ 連點兩下、或一次動作彈兩則時，兩顆完全疊在同一個位置，
-// 後面那一則把前面那一則蓋掉、看起來只是「閃了一下」。改由容器當直向 flex 堆疊，
-// .toast 回到文流內依序往下排。§5 那條「時長歸 CSS」的重入代價因此不必靠計時器守衛去補。
+// **定位一定要由這顆容器負責，不能讓每一則 toast 各自 `position: fixed; top: 129px`**：
+// 那樣寫的話，連點兩下、或一次動作彈兩則時，兩顆會完全疊在同一個位置，後面那一則把前面那一則
+// 蓋掉，看起來只是「閃了一下」。容器當直向 flex 堆疊、`.toast` 回到文流內依序往下排之後，
+// 同時存在幾則都自己排得開——§5 那條「時長歸 CSS」帶來的重入情形也就不必靠計時器守衛去補。
 .toast-container {
     position: fixed;
     inset: 129px 0 auto 0;
@@ -44,7 +49,8 @@
     gap: 4px;
     font-size: 1.125rem;
 
-    // 顏色變體（success 為真 app 原有；error/warning/info 為本專案擴充，用 _var 語意色）
+    // 四個顏色變體，與 toast.js 的四種 type 一對一。每一顆填充都配它成對的前景色
+    // （§4：填充族與前景族要成對取用，不可以挑一個「看起來差不多」的）。
     &.toast-success {
         color: var(--on-accent);
         background-color: var(--success);

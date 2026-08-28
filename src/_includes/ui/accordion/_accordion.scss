@@ -1,7 +1,9 @@
-// 結構與數值取自凍結前端 `GufoFAQ_Frontend_New/scss/component.scss` 1935-2005（accordion 手風琴區塊）。
-// **偏離逐條列出**：
-//   ① 色值換語意 token
-//   ② `th, td` 內的 `box-sizing: border-box`（原檔 1975）移除（§4-1：`_base.scss` 已全域給）
+// accordion 手風琴：一列（或一張卡）底下藏一塊明細，點箭頭鈕就地展開／收合。
+// 本檔只管靜態視覺——箭頭鈕的兩態圖示、以及展開後那張內嵌明細表的框線／底色／欄寬；
+// 高度動畫與 aria 狀態在 `accordion.js`。
+// **這幾條要知道理由（改動前先讀）**：
+//   ① 色值全數走語意 token，不寫死色碼——深色模式靠 `[data-theme]` 換 token 值，寫死就換不動。
+//   ② `th, td` 內不各寫一次 `box-sizing: border-box`（§4-1：`_base.scss` 已全域給，重複一份只會漂）。
 // **箭頭維持 `background-image`，刻意不用 `icon-mask()`**（§4 那條的前提是「單色 PNG」）：
 //   `icon_table_arrow_default/open.png` 是**圓底 ＋ 箭頭**的雙色圖（48×48，不透明面積 57%，
 //   圓底 `#efefef`／`#13386f` 佔 85%，箭頭 `#494949`／`#ffffff` 只有 154 px），而 `icon-mask()` 是

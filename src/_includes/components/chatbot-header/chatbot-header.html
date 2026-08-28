@@ -3,9 +3,8 @@
 <header class="chatbot-header">
     {# logo 不是頁面標題 —— 用 div；本頁 h1 由 chatbot-shell 提供 #}
     <div class="logo">
-        {# 去向是**公開 FAQ 那一頁**（`faq.html`，本站前台唯一的首頁）。凍結前端
-             （`GufoFAQ_Standard_Frontend/index.html:17`）那顆寫的是 `href="#"`，切版不沿用：
-             `#` 是死連結（§5），而這顆 logo 的 title 逐字宣告了它會去某個地方。 #}
+        {# 去向是**公開 FAQ 那一頁**（`faq.html`，本站前台唯一的首頁）：`#` 是死連結（§5），
+             而這顆 logo 的 title 逐字宣告了它會去某個地方。 #}
         <a href="faq.html" title="GufoFAQ 首頁" data-i18n-title="header.logoHome">GufoFAQ</a>
     </div>
     {% include "components/header-controls/header-controls.html" %}

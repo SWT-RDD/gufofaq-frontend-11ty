@@ -14,8 +14,7 @@ permalink: 5-6-3_platformServiceKeys.html
     {% include "ui/breadcrumb/breadcrumb.html" %}
 </div>
 
-{# 平台機器憑證（SaaS 新需求，真 app 21 頁無對應）。逆向自 gufofaq-saas product
-     `app/routers/platform.py` 的四支端點與 `app/authz.py` 的授權模型：
+{# 平台機器憑證（SaaS 新需求）。逆向自 product 的四支端點與它的授權模型：
        · `GET /platform/service-keys/scopes`（`require_platform_auditor`）→ `{範圍: 說明}`，
          值域正本是 `authz.PLATFORM_SERVICE_KEY_SCOPES` 本人（端點回的是那份 dict，不是手抄的清單）
        · `POST /platform/service-keys`（`require_platform_admin`）→ 201 `ServiceKeyOut`，
@@ -57,16 +56,16 @@ permalink: 5-6-3_platformServiceKeys.html
      `health-scan-readonly` 的範圍會滿足 `health-scan`，看起來更窄的名字反而成了更寬的鑰匙）。
      值域來自端點、不是這一頁抄一份：抄的那份會漂成「選得到、送出去 400」。
 
-     **裁決（round45）：「授權範圍不在值域內」那一段從核發鈕的 `data-toast` 拿掉。**
+     **裁決：核發鈕的 `data-toast` 不列「授權範圍不在值域內」那一段。**
      `create_service_key` 確實有那道 400（`if body.scope not in PLATFORM_SERVICE_KEY_SCOPES`），
      但這一頁**產不出**那個請求：範圍是 `<select>`，選項由 `GET /platform/service-keys/scopes` 回的
      值域本身渲染（見下方 `serviceKeyScopes`），UI 上選不出域外的值——只有直接打 API 才會撞到。
      §5「每個 data-toast 分支都要對得上正本的一條真實結果路徑；列出不可能的結果與只演成功一樣是說謊」。
-     同型情境 5-6-1 的平台時區早就是這樣裁的（那顆儲存鈕只列成敗兩段，並逐字寫著「無『無效時區』分支
-     ——後端 400 的情境是直接呼叫 API 才會發生，本頁 select 選不出來」），兩頁對同一種情境不該相反。
-     ⚠️ 這一段拿掉之後 `toast.issueServiceKey` 從 5 段變 4 段；round48 又在**最末位**補了兩段
-     善後 warning（見核發鈕上方那則註解）⇒ 現在是 6 段。`|` 是索引契約，en.json 與 saas 端
-     若有對位讀取要一起改。 #}
+     同型情境的正典是 5-6-1 的平台時區（那顆儲存鈕只列成敗兩段，並逐字寫著「無『無效時區』分支
+     ——後端 400 的情境是直接呼叫 API 才會發生，本頁 select 選不出來」），兩頁對同一種情境要一致。
+     ⚠️ `toast.issueServiceKey` **現在是 6 段**（成功、缺用途名稱、未勾確認、其他失敗，
+     加末兩段善後 warning——見核發鈕上方那則註解）。`|` 的段序是索引契約：動段數就要同步檢查
+     en.json 與 gufofaq-saas 端有沒有按位置取段的地方。 #}
 {# 授權範圍值域（`GET /platform/service-keys/scopes`）。今天一個鍵；說明文字是 API 回的資料
      （不翻），逐字取自 product `authz.PLATFORM_SERVICE_KEY_SCOPES`。 #}
 {% set serviceKeyScopes = [
@@ -79,20 +78,22 @@ permalink: 5-6-3_platformServiceKeys.html
        示範資料自己證明「一個範圍可以同時有多把有效憑證」
      `keyHint` 是 product `security.platform_service_key_hint` 的形狀（前綴 ＋ … ＋ 末四碼）。
    **列序＝id 升冪**，那是端點自己的順序（`list_service_keys` 的
-     `select(PlatformServiceKey).order_by(PlatformServiceKey.id)`，platform.py）——沒有第二層排序、
-     也不是「新到舊」。原本排成 3 → 8 → 1（照「服役中→新核發→已撤銷」的敘事），那是這支端點
-     產不出來的順序（§6：演的必須是一個真實可能的畫面）。
+     `select(PlatformServiceKey).order_by(PlatformServiceKey.id)`，product）——沒有第二層排序、
+     也不是「新到舊」。**不可以照敘事順手排成 3 → 8 → 1**（服役中→新核發→已撤銷）：那讀起來
+     很順，卻是這支端點產不出來的順序（§6：演的必須是一個真實可能的畫面）。
      id 升冪在這一頁剛好也是**核發時間升冪**（自增主鍵）：#1 2026/01/18 → #3 03/02 → #8 07/13，
      所以輪替的故事照樣讀得出來——初版先撤銷、接手的那把在服役、最新那把剛核發還沒被用過。
    **時間全部錨在站台的「現在」2026-07-14**（`components/iso-review-wizard` 名單上那個查詢時間；
-     §6「全站只有一個現在」）：先前這一叢寫在 2024 年下半，於是同一頁的兩句文案自相矛盾——
-     `serviceKey.intro` 說「今天只有每日資料健檢的排程」、`serviceKey.none` 說「沒有金鑰排程每天會失敗」，
-     而唯一在服役的 #3 已經 19 個月沒有前進、#8 被描述成「剛核發」卻建於 19 個月前。
+     §6「全站只有一個現在」）。**這一叢日期不可以離「現在」太遠**：整頁的文案是拿它們當前提寫的
+     ——`serviceKey.intro` 說「今天只有每日資料健檢的排程」、`serviceKey.none` 說「沒有金鑰排程
+     每天會失敗」；把日期挪到一年多前，就會變成唯一在服役的 #3 十幾個月沒有前進、#8 被描述成
+     「剛核發」卻建於十幾個月前，兩句文案與資料互相打臉。
      #3 的 `lastUsedAt` 落在 `2026/07/14 03:20`：每日健檢排在 03:15（3-5 那一頁），今天已經跑過一輪。
    **核發者／撤銷者是 12**：上游 `create_service_key` 寫 `created_by=admin["user_id"]`、
      `revoke_service_key` 寫 `row.revoked_by = admin["user_id"]`，而 `admin` 來自 `require_platform_admin`
-     ⇒ 這兩個 id 必然是一位**平台 admin**。5-6-1 的平台權限盤點只有 88（auditor）／12（admin）／205（admin），
-     先前寫的 7 不在其中——7 在這一族裡是**租戶主鍵**（示範租戶 A），最容易誤讀成那個。 #}
+     ⇒ 這兩個 id 必然是一位**平台 admin**，只能從 5-6-1 平台權限盤點那三個 id 裡挑
+     （88 是 auditor，12／205 是 admin）。⚠️ 別把 7 填進來：7 在這一族裡是**租戶主鍵**
+     （示範租戶 A），長得像使用者 id，是最容易誤填的那一個。 #}
 {% set serviceKeys = [
   {
     id: 1, name: "每日健檢 CronJob（初版）", scope: "health-scan", keyHint: "psk_…10b4",
@@ -119,8 +120,8 @@ permalink: 5-6-3_platformServiceKeys.html
      用途名稱與範圍是值載體（GUIDELINE §5 組合矩陣②）＝只掛 hook、不掛 data-toast。 #}
 <div class="block mb-16 flex-row column gap-16" data-platform-role="admin">
     {# ⓘ 說明：markup 同既有 info-btn 六件組（GUIDELINE §1-2 無 html 元件契約）。①出處：本頁檔頭
-         「① 明碼只出現一次……② 明碼的目的地是 Secret Manager，不是終端機」兩節，與 product
-         `app/routers/platform.py` 的 `ServiceKeyIn`／`create_service_key`（明碼僅這一次回應有值，
+         「① 明碼只出現一次……② 明碼的目的地是 Secret Manager，不是終端機」兩節，與 product 的
+         `ServiceKeyIn`／`create_service_key`（明碼僅這一次回應有值，
          範圍須在 `PLATFORM_SERVICE_KEY_SCOPES` 內才送得出去）。這是**平台層、跨租戶**的機器憑證
          ——給「不是人」的呼叫端用，不構成任何人的登入身分；核發限平台系統管理員，稽核員看得到
          這一頁但送不出這顆動作。與 5-8／5-9 的差異見 GUIDELINE 對這三頁的區隔（本頁檔頭同節）。 #}
@@ -142,10 +143,11 @@ permalink: 5-6-3_platformServiceKeys.html
                 <div class="field">
                     <input type="text" id="newServiceKeyName" class="form-control js-new-service-key-name" maxlength="200" placeholder="這一把是誰在用" data-i18n-placeholder="serviceKey.namePlaceholder" aria-describedby="newServiceKeyNameHint" required>
                     {# 三件式（§4-2）：**前綴 key ＋ 純數字節點 ＋ 單位 key**，數字另有 class 讓執行期填得進去。
-                         先前是裸的 `<span>200</span>` 直接黏在一句完全沒提到長度的說明前面，畫面讀到的是
-                         「200輪替時要分得出…」／英文「200During rotation…」——約束等於沒有講出來。
-                         200 的正本是 product `app/routers/mcp.py` 的 `MAX_SERVICE_KEY_NAME_LEN`，
-                         已投影成 `GET /platform/mcp/limits` 的 `service_key.name.max_len`（同檔
+                         **不可以只丟一個裸的 `<span>200</span>`** 黏在一句完全沒提到長度的說明前面：
+                         那樣畫面讀到的是「200輪替時要分得出…」／英文「200During rotation…」，
+                         約束等於沒有講出來。
+                         200 的正本是 product 的 `MAX_SERVICE_KEY_NAME_LEN`，
+                         已投影成 `GET /platform/mcp/limits` 的 `service_key.name.max_len`（同一支模組 
                          `get_platform_mcp_limits`）——那顆 class 就是 React 執行期填它的槽，
                          同 5-6-2 的 `js-mcp-*-max-len` 一族。 #}
                     <span id="newServiceKeyNameHint" class="text-gray"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-service-key-name-max-len">200</span><span data-i18n="common.unitChars"> 字</span><span data-i18n="common.labelSep">：</span><span data-i18n="serviceKey.nameHint">輪替時要分得出「這一列是誰在用」，所以請寫得出消費者是什麼（例如「每日健檢 CronJob」）。名稱不影響權限，只影響你之後看不看得懂這張表。</span></span>
@@ -175,9 +177,9 @@ permalink: 5-6-3_platformServiceKeys.html
         <span data-i18n="serviceKey.ackOnce">我知道明碼只會顯示這一次，而且已經準備好要把它貼到哪裡。</span>
     </label>
     <div class="flex-row">
-        {# 「授權範圍不在值域內」那一段已依檔頭的裁決拿掉——範圍下拉的選項就是端點回的
+        {# **不列「授權範圍不在值域內」那一段**（檔頭有完整裁決）——範圍下拉的選項就是端點回的
              值域本身，這一頁選不出域外的值，那道 400 只有直接打 API 才走得到。
-           **末兩段是善後**（round48）：核發成功時 DB 裡已經多一列、而**明碼只有那一次回應帶得出來**
+           **末兩段是善後**：核發成功時 DB 裡已經多一列、而**明碼只有那一次回應帶得出來**
              （檔頭 ① 逐字：DB 只存 SHA-256 雜湊）。所以「回應回來了但沒有 `key`」與「連線中斷、
              不知道核發成功沒有」這兩種情況下，正確處置都不是重按核發（那會再多一把懸空的憑證），
              而是先確認再撤銷重發——只演成敗的話，畫面上沒有任何地方講得出這件事。
@@ -189,8 +191,9 @@ permalink: 5-6-3_platformServiceKeys.html
     </div>
 </div>
 
-{# 「核發一把新憑證」的說明視窗：②③留空——現在生效的條件與這一區的數字由 React 執行期算，
-     切版這一側只提供容器（同批次既有區塊的現況）。 #}
+{# 「核發一把新憑證」的說明視窗：②③留空——「現在生效的條件」與「這一區的數字」都要由 React
+     在執行期算出來（用途名稱那顆 200 走上面的資料槽，不重複進 ③），切版這一側只把容器與 ①
+     那段固定文案定出來，不編假的列。 #}
 {% set helpModalId = "issueTitleHelpModal" %}
 {% set helpModalTitleKey = "help.serviceKey.issueTitle.title" %}
 {% set helpModalTitle = "核發一把新憑證說明" %}
@@ -205,11 +208,11 @@ permalink: 5-6-3_platformServiceKeys.html
      沒有明碼就整塊不畫（不是畫一個空欄位——空欄位讀起來像「還沒產生」，而實際上是
      「產生過了，只是拿不回來」）。切版以「剛核發」那一態示範。
      欄位是 readonly、預設遮蔽；顯示/隱藏由 ui/reveal-input 委派切 type（純前端互動，無業務）。
-     **明碼長度是推導值，不是隨手打的字串**：product `app/security.py` 的
+     **明碼長度是推導值，不是隨手打的字串**：product 的
      `new_platform_service_key()` ＝ `_PLATFORM_SERVICE_KEY_PREFIX + secrets.token_urlsafe(32)`，
-     而 32 bytes 的 base64url 恆為 43 字元 ⇒ `psk_` ＋ 43 ＝ **47 字元**（同一支推導在 5-9 的
-     `sk_` ＋ 43 ＝ 46 已經落地）。原本只有 35 字元：短了 12 個字，複製鈕與遮蔽欄的實際寬度、
-     以及「這一串長什麼樣」都跟著失真。末四碼 `c091` 對回下面盤點表 #8 的 `keyHint`（`psk_…c091`，
+     而 32 bytes 的 base64url 恆為 43 字元 ⇒ `psk_` ＋ 43 ＝ **47 字元**（同一支推導在 5-9 是
+     `sk_` ＋ 43 ＝ 46）。示範值一定要湊足這 47 字元：短一個字，複製鈕與遮蔽欄的實際寬度、
+     以及「這一串長什麼樣」就跟著失真。末四碼 `c091` 對回下面盤點表 #8 的 `keyHint`（`psk_…c091`，
      `security._key_hint` 的形狀）——那一把正是「剛核發、還沒有人用過」的那一列（§6 同頁同源）。 #}
 <div class="block mb-16 flex-row column gap-16 js-service-key-issued" id="serviceKeyIssued" data-platform-role="admin">
     {# ⓘ 說明：markup 同既有 info-btn 六件組。①出處：本頁檔頭「① 明碼只出現一次……② 明碼的
@@ -238,7 +241,7 @@ permalink: 5-6-3_platformServiceKeys.html
             data-i18n="extractKey.show">顯示</button>
         {# **這一顆的失敗段不是可選的**：明碼是 show-once（DB 只留雜湊，見上面那塊的說明），
              而 `navigator.clipboard` 只在安全脈絡存在——內網 http／file:// ／使用者拒絕過權限時
-             它整個是 undefined，`execCommand` 那條退路也會丟例外。原本只有成功那一段 ⇒ 複製沒成
+             它整個是 undefined，`execCommand` 那條退路也會丟例外。只寫成功那一段的話，複製沒成
              功的那一次照樣彈綠勾，使用者關掉這一塊之後那把金鑰就永久遺失了。
              句子沿用全站複製族既有的那一段（`toast.copyKey`／`widget.embedCopied`／`common.copied`
              的第 2 段逐字相同）——不另立措辭。 #}
@@ -264,11 +267,11 @@ permalink: 5-6-3_platformServiceKeys.html
 {# ── 授權範圍值域 ─────────────────────────────────────────────────────────────
      `GET /platform/service-keys/scopes`。列出來的理由：核發前要選一個，而「有哪些可選、各自
      涵蓋哪幾支端點」不該靠翻程式碼。說明文字是 API 回的資料（不翻）。 #}
-{# 這一區是唯讀值域，端點 `list_service_key_scopes` 是 require_platform_auditor（product app/routers/platform.py）——
+{# 這一區是唯讀值域，端點 `list_service_key_scopes` 是 require_platform_auditor（product）——
      稽核員讀得到，故標 auditor 而不是跟著整頁最嚴的那一級走。 #}
 <div class="block mb-16 flex-row column gap-16" data-platform-role="auditor">
-    {# ⓘ 說明：markup 同既有 info-btn 六件組。①出處：本頁上方兩則檔頭與 product
-         `app/routers/platform.py` 的 `list_service_key_scopes`（`require_platform_auditor`，
+    {# ⓘ 說明：markup 同既有 info-btn 六件組。①出處：本頁上方兩則檔頭，與 product 的
+         `list_service_key_scopes`（`require_platform_auditor`，
          回的就是 `authz.PLATFORM_SERVICE_KEY_SCOPES` 本人）與 `create_service_key` 的逐字比對。
          這是唯讀值域，稽核員也讀得到——與下面「核發」那一區的寫入動作不同軸。 #}
     <div class="flex-row align-items-center gap-8">
@@ -301,7 +304,7 @@ permalink: 5-6-3_platformServiceKeys.html
                     <td>{{ s.detail }}</td>
                 </tr>
                 {% else %}
-                {# 具名空狀態（round48）：這張表的來源是 `GET /platform/service-keys/scopes`（見上方
+                {# 具名空狀態：這張表的來源是 `GET /platform/service-keys/scopes`（見上方
                      `serviceKeyScopes`），而核發的第一道守衛就是「範圍要在值域內」——值域空的時候
                      核發一定送不出去。只寫「無資料」看不出核發鈕為什麼點不出結果。 #}
                 <tr><td colspan="3" class="text-center text-gray" data-i18n="serviceKey.noScopes">上游沒有回報任何授權範圍。每一把憑證都必須帶一個範圍，所以這個時候核發不了憑證。</td></tr>
@@ -329,7 +332,7 @@ permalink: 5-6-3_platformServiceKeys.html
     <div class="flex-row justify-content-between align-items-center flex-wrap gap-16">
         {# ⓘ 說明：markup 同既有 info-btn 六件組，巢狀在既有的 justify-content-between 列內
              （比照 2-2-4 regressionSuites 的「案例：」區塊，同型版面）。①出處：本頁上方檔頭
-             「④ 撤銷是軟刪、當場生效」一節，與 product `app/routers/platform.py` 的
+             「④ 撤銷是軟刪、當場生效」一節，與 product 的
              `list_service_keys`（`require_platform_auditor`，永遠不回明碼）、`revoke_service_key`
              （`require_platform_admin`，409 已撤銷過）。稽核員讀得到整張表，撤銷限平台系統管理員。 #}
         <div class="flex-row align-items-center gap-8">
@@ -340,11 +343,11 @@ permalink: 5-6-3_platformServiceKeys.html
             </button>
         </div>
         {# **預設勾起來**：篩選控制項的預設值就是示範資料的前提（§6）。下面三列裡**第 1 列**
-             （#1，2024/11/03 撤銷的初版）是已撤銷的，而 `list_service_keys` 在 `include_revoked`
-             為 false 時 `q.where(PlatformServiceKey.revoked_at.is_(None))`（product app/routers/platform.py）
-             ——沒勾的話那一列不可能回得來，畫面卻同時說著兩件事。
-             （這句原本寫「第 3 列」：那是列序改成 id 升冪**之前**的位置，已撤銷的那一把 id 最小、
-             重排後跑到第一列，敘述沒跟著改。） #}
+             （#1，2026/03/03 撤銷的初版）是已撤銷的，而 `list_service_keys` 在 `include_revoked`
+             為 false 時 `q.where(PlatformServiceKey.revoked_at.is_(None))`（product）
+             ——沒勾的話那一列不可能回得來，畫面會同時說著兩件互相矛盾的事。
+             ⚠️ 這一句指的是**列序上的位置**：列序是 id 升冪，而已撤銷的那一把 id 最小，
+             所以它在第一列；改動列序時這句話要跟著對。 #}
         <label class="form-checkbox">
             <input type="checkbox" class="js-service-key-include-revoked" checked>
             <span data-i18n="serviceKey.includeRevoked">含已撤銷</span>
@@ -354,11 +357,12 @@ permalink: 5-6-3_platformServiceKeys.html
     <p class="text-gray" data-i18n="serviceKey.rotateHint">零停機輪替：先核發新的一把（同一個範圍可以同時有多把有效憑證），把新的貼進 Secret Manager 並讓消費者取到，接著盯「最後使用時間」——舊那把不再前進就代表沒有人在用它了，這時候才撤銷。強制「一個範圍只准一把」會讓每一次輪替中間都有一段憑證真空，那段時間排程是啞的，而且沒有人會注意到。</p>
     <div class="table-container scrollTable">
         <table class="default-table">
-            {# 欄寬要與**表頭順序**對齊：加欄位時把新的 <col> 插在對應位置，不是接在尾巴。
-                 上一版把「核發者」「撤銷者」兩欄插在第 6／第 9 個表頭，兩個 <col> 卻附加在第 9／第 10——
-                 第 6 欄之後全部錯位（核發者這種個位數 id 拿到 170px，而「撤銷時間」那格裝的是
-                 `2024/11/03 11:27`、與 160px 的「核發時間」同格式，卻被擠到 110px）。
-                 數量仍然 10/10/10，所以每一條測試都是綠的——這一型只有逐欄對照看得出來。 #}
+            {# 欄寬要與**表頭順序**對齊：加欄位時把新的 `<col>` 插在對應位置，**不是接在尾巴**。
+                 像「核發者」「撤銷者」插在第 6／第 9 個表頭、`<col>` 卻附加在第 9／第 10 的話，
+                 第 6 欄之後整排錯位（核發者這種個位數 id 拿到 170px，而「撤銷時間」那格裝的是
+                 `2026/03/03 11:27`、與 160px 的「核發時間」同格式，卻被擠到 110px）。
+                 ⚠️ 這種錯位下 `<col>` 數量仍然對得上表頭數，所有測試照樣全綠——只有逐欄對照
+                 看得出來，所以插欄時要一格一格數過去。 #}
             <colgroup>
                 <col style="width:70px; min-width:70px;">
                 <col style="min-width:220px;">
@@ -421,13 +425,13 @@ permalink: 5-6-3_platformServiceKeys.html
             </tbody>
         </table>
     </div>
-    {# ⚠️ **這一句原本與上面那顆 checkbox 互相矛盾**（round47）：markup 逐字寫著 `checked`，而這裡
-         寫「撤銷過的預設不列」。兩邊只能有一邊是對的，改的是**這一句**，不是那顆 `checked`：
+    {# ⚠️ **這一句要與上面那顆 checkbox 對得起來**：markup 逐字寫著 `checked`，所以這裡講的是
+         「撤銷過的**也會**列出來」，不能寫成「預設不列」。為什麼保 `checked`、不是反過來改 markup：
            · 拿掉 `checked` 的話，上面那三列裡「已撤銷」的那一列（#1）就不可能回得來
              （`list_service_keys` 在 `include_revoked=false` 時 `where(revoked_at.is_(None))`），
              示範資料必須跟著刪掉那一列 ⇒ **「撤銷之後那一列長什麼樣」全站就沒有任何地方看得到**
              （§5：沒有頁面演得出來的分支等於沒驗收過），而那正是這一頁最需要演的一態。
-           · 而且這一頁是**稽核視角**：上一句自己就寫著「這把曾經存在、誰在什麼時候撤了它是稽核要
+           · 而且這一頁是**稽核視角**：下一句自己就寫著「這把曾經存在、誰在什麼時候撤了它是稽核要
              查得到的事實」。預設把那些列藏起來，與這一頁存在的理由相反。
          ⚠️ 這是**畫面的預設**，不是端點的預設：`include_revoked` 在 product 那一支的預設是 false
          （query 參數不帶就是不含），畫面預設勾起來＝每次載入都明確帶 `include_revoked=true`。

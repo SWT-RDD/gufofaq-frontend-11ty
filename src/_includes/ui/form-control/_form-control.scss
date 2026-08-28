@@ -16,9 +16,12 @@
 //      的節點、不進譯文（§4-2）——`placeholder` 不算，它在填字時就消失了。
 //   ⓒ **值載體要有 React 綁定記號**（class 或 id 擇一，§5 矩陣②）。
 //
-// 取自真實 app 的 form-control 樣式（`.select-sm`／`.select-md` 的內距**在 scss 源碼就有**（929／937 行），
-// 本檔只是刪掉與 select2 耦合的 `+ .select2-container` 那半；真正只存在編譯 css 的是 textarea.size-lg 高度變體，
-// scss 源碼漏抓、依編譯輸出補回）。與 select2 vendor 耦合的 .select-*+select2-container 規則屬 §5 不做。
+// 本檔是全站表單欄位的正本：`.form-group`（一組問句）／`.label`＋`.control-label`（欄名）／
+// `.field`（控制項欄，含搜尋與時間欄的圖示）／`.form-control`（輸入框、下拉、textarea 的共同外觀）／
+// `.error-prompt`（欄位下方的錯誤訊息）。
+// **不寫任何與第三方下拉套件（select2）耦合的規則**（例如 `.select-* + .select2-container`）：
+// 那是 vendor 的 DOM，切版不擁有它、也不保證它存在（§5 不做）。自訂下拉走 `ui/search-select`
+// 與 `ui/multi-select`，它們增強的是原生 `<select>`。
 @use "../../../scss/mixin" as *;
 
 .form-group {
@@ -69,7 +72,9 @@
     }
 
     &.label-md {
-        // 真 app 此處 text-align: right；設計決策改欄位名稱一律靠左（block 預設），只留定寬對齊欄
+        // 定寬欄名：同一組欄位的控制項因此對齊在同一條起始線上。
+        // **文字仍靠左**（沿用 block 的預設對齊），不靠右——欄名靠右會讓長短不一的中文欄名參差，
+        // 而讀者掃的是每一行的第一個字。
         width: 80px;
         flex-shrink: 0;
 
@@ -82,15 +87,15 @@
 .field {
     flex-grow: 1;
     position: relative;
-    width: 100%; // 真 app 編譯 css 有（scss 源碼漏）
+    width: 100%; // 欄位欄要撐滿可用寬度，裡面的控制項才吃得到 100%；少了它輸入框只有內容寬
 }
 
-// 搜尋框的放大鏡、時間框的時鐘。真 app 把它們畫在 <input> 自己的 background 上 ——
-// 但 <input> 沒有偽元素可以承載遮罩，而遮罩加在 <input> 上會把整個輸入框裁成圖示的形狀。
-// 於是那兩顆是全站最後兩個換不動色的圖示（深色模式下黑放大鏡壓在近黑的輸入框上）。
+// 搜尋框的放大鏡、時間框的時鐘。**畫在 `<input>` 自己的 background 上是死路**：`<input>` 沒有偽元素
+// 可以承載遮罩，而遮罩直接加在 `<input>` 上會把整個輸入框裁成圖示的形狀。那樣的話這兩顆就是全站
+// 僅存的兩個換不動色的圖示（深色模式下一顆黑放大鏡壓在近黑的輸入框上，看不見）。
 //
 // 圖示改掛在它們唯一的容器 `.field` 的 ::after，markup 一個字都不必動（**每一顆都是 .field 的直接子元素**，有測試釘住）。
-// 不寫死顆數：那是會隨頁面增減的計數，寫了就會像上一版那樣落後（§3-2 能不寫死計數就不要寫）。
+// 不寫死顆數：那是會隨頁面增減的計數，寫了就一定會落後（§3-2 能不寫死計數就不要寫）。
 // `.field` 疊成單欄 grid：圖示與 <input> 佔同一格，垂直置中由 align-self 決定 ——
 // 這樣就算 `.error-prompt` 展開把 `.field` 撐高，圖示仍然對齊 <input> 的中線，不必寫死任何高度。
 .field:has(> .form-control.search),
@@ -99,7 +104,7 @@
     grid-template-columns: 1fr;
     // `.field` 常常被外層 flex 拉高（例：4-1 的日期欄）。grid 的 align-content 預設 stretch，
     // 會把唯一那一列撐滿、連帶把 <input> 拉高 1px；`start` 讓列維持內容高，多出來的高度留在下面 ——
-    // 這正是原本 inline-block 的 <input> 在區塊流裡的樣子（底下那 1px 是 descender 空隙）。
+    // 那也正是 inline-block 的 <input> 在一般區塊流裡的樣子（底下那 1px 是 descender 空隙）。
     align-content: start;
 
     // 兩個都要明確指到同一格。只指定 ::after 的話，grid 會先放「有明確位置」的項目、
@@ -108,7 +113,7 @@
         grid-area: 1/1;
     }
 
-    // .error-prompt 平時 display:none 不是 grid item；展開時自動放到第二列，一如原本的區塊流。
+    // .error-prompt 平時 display:none、不算 grid item；展開時自動落到第二列，一如一般區塊流。
     &::after {
         content: "";
         grid-area: 1/1;
@@ -143,9 +148,9 @@
     font-weight: 500;
     display: inline-flex;
     align-items: center;
-    gap: 0.25rem; // 原只存在真 app 編譯 css
+    gap: 0.25rem; // 欄名旁邊掛得下一顆 ⓘ（ui/info-btn）或必填星號時，兩者之間的呼吸
     padding: 0.4375rem 0.5rem;
-    line-height: normal; // 原只存在真 app 編譯 css；缺這條會吃到 body 的 1.375 行高、整列變高（如 知識檢索+ⓘ）
+    line-height: normal; // 不吃 body 的 1.375：那會把欄名的文字盒撐高，整列跟著變高（例：知識檢索＋ⓘ）
 
     &.required {
         &::after {
@@ -202,7 +207,7 @@
         padding-right: 2.75rem;
     }
 
-    // 內距變體（原只存在真 app 編譯 css）
+    // 內距變體：擠在工具列或表格 cell 裡的下拉，用比預設矮一號／兩號的內距，才不會把那一列撐高
     &.select-sm {
         padding: 0.25rem 0.5rem;
     }
@@ -235,7 +240,7 @@ textarea.form-control {
     }
 
     &.size-lg {
-        height: 25.75rem; // 412px（原只存在真 app 編譯 css）
+        height: 25.75rem; // 412px：提示詞那種要一次看到整段的長文欄用
     }
 }
 

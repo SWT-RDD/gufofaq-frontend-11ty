@@ -5,8 +5,8 @@ titleKey: nav.coverageGaps
 pageHeading: 覆蓋缺口
 permalink: 5-4_coverageGaps.html
 ---
-{# 覆蓋缺口報表（Spec 庚 §5，SaaS 新頁、真 app 無對應）。逆向自 product
-     `app/routers/stats.py` 的 `GET /stats/coverage-gaps`（`CoverageGapsOut`）。
+{# 覆蓋缺口報表（Spec 庚 §5）。這一頁是 SaaS 才有的新頁，逆向自 product 的
+     `GET /stats/coverage-gaps`（`CoverageGapsOut`）。
 
      這份清單回答的是「知識庫下一步該補什麼」：**問得最多、卻一份文件都沒撈到**的那些題目。
      母集合＝零命中，判定與 5-3 的無命中率共用同一個函式（`_is_no_answer_log`），兩張報表不會
@@ -54,10 +54,10 @@ permalink: 5-4_coverageGaps.html
 {# **時間區間由篩選預設值 ＋ 站台的「現在」推導**（§6：全站只有一個現在＝2026-07-14 09:00 UTC，
      由 `components/iso-review-wizard` 名單上那個查詢時間釘死）：本頁 `timeFilterChecked = "last24h"`
      ⇒ 區間必然是 `現在 − 24h ~ 現在`。
-   先前寫 2024/12/01~12/02，兩件事同時錯：①畫面同時說「這是近 24 小時」與「這是 2024 年 12 月」；
-     ②那個區間**這支端點產不出來**——`stats._resolve_range` 對 `start < now - 365 天` 直接 400
-     （距 2026-07-14 是 590 天），而本頁的 toast 就把那條界線印給使用者看（「且在一年內」）。
-     示範資料演的必須是一個真實可能的狀態。 #}
+   **這一格不可以隨手填一個日期**，兩道檢查都要過：①它要與篩選列上勾著的那一顆對得起來
+     （寫成別的月份，畫面會同時說「這是近 24 小時」與另一個時間）；②那個區間必須是**這支端點
+     產得出來的**——`stats._resolve_range` 對 `start < now - 365 天` 直接 400，而本頁的 toast
+     就把那條界線印給使用者看（「且在一年內」）。示範資料演的必須是一個真實可能的狀態。 #}
 {% set gapSummary = {
     range: "2026/07/13 09:00 ~ 2026/07/14 09:00",
     totalLogs: 1200,
@@ -78,14 +78,15 @@ permalink: 5-4_coverageGaps.html
      一切正常，只是每一題都落在未分類）。日期維度與字典是空的維度沒有受控詞彙可挑，故不列進選項，
      並在下面用一句話交代它們為什麼不在。 #}
 {# 第三筆是 5-10 的「文件密級」：single ＋ 有兩個代碼 ⇒ 分得了群（`intent_classify.CLASSIFIABLE_KINDS`
-     只排除 date，product `app/routers/stats.py` 只擋空字典）。本頁的排除理由是「日期維度與字典是空的維度」，
-     文件密級兩者皆非，卻一直不在清單上（§6 跨頁自洽）。 #}
+     只排除 date，product 只擋空字典）。本頁對外講的排除理由是「日期維度與字典是空的維度」，
+     文件密級兩者皆非 ⇒ 它**必須**在這份清單上，少一筆就是文案講的規則與實際列出的選項對不起來
+     （§6 跨頁自洽：5-10 加一個分得了群的維度，這裡要跟著加）。 #}
 {% set gapDimensions = [
     { slotKey: "note3", name: "業務範疇" },
     { slotKey: "note4", name: "業務方向" },
     { slotKey: "note5", name: "文件密級" }
 ] %}
-{# ★ 四種 `kind` 是**四種不同的事實**，畫面上絕不可以併成一列（product `app/routers/stats.py`
+{# ★ 四種 `kind` 是**四種不同的事實**，畫面上絕不可以併成一列（product
      的 `(kind, key)` 才是分群鍵）：
        · `code`          ＝分類器把這些提問分到這個業務代碼 → 這個業務面缺料，先補它
        · `out_of_scope`  ＝分類器**有把握地**說不屬於任何代碼（招呼、閒聊）→ 擴字典或用「排除」拿掉
@@ -166,7 +167,8 @@ permalink: 5-4_coverageGaps.html
     {% include "ui/breadcrumb/breadcrumb.html" %}
 </div>
 
-{# 篩選列：與 5-3 統計模組同一組參數（range / start / end / data_type），起訖欄真實頁由 flatpickr 掛載 #}
+{# 篩選列：與 5-3 統計模組同一組參數（range / start / end / data_type）。起訖兩欄在正式環境是由
+     flatpickr 在執行期掛載的，切版只留原生 class 與 disabled 預設狀態、不引入該 vendor。 #}
 <div class="block flex-row column gap-24 mt-10">
     <div class="flex-row column gap-16">
         <div class="text-gray" data-i18n="settings.coverageGapsIntro">列出這段期間問得最多、卻一份文件都沒撈到的提問原文。招呼與閒聊照實列出，不做關鍵字猜測；要拿掉哪一句由你逐句指定。</div>
@@ -175,7 +177,7 @@ permalink: 5-4_coverageGaps.html
              節點 id（起訖兩欄 aria-describedby 指它）。屬性型譯文（`data-i18n-data-toast`）只有在
              「同一個約束另有一處常駐可見的資料節點承載」時才准把常數烤進譯文（§4-2）——這個 id
              就是那一處。三顆鈕共用同一顆 `toast.queryStats`、也共用這一段起訖欄，故只需要一處抄本。
-             上游是同一支 `_resolve_range`（product `app/routers/stats.py`，`GET /stats/coverage-gaps`
+             上游是同一支 `_resolve_range`（product，`GET /stats/coverage-gaps`
              與 `GET /stats` 都呼叫它）。 #}
         {% set timeFilterName = "gap-time" %}
         {% set timeFilterLabelId = "gapTimeFilterLabel" %}
@@ -203,12 +205,13 @@ permalink: 5-4_coverageGaps.html
         </div>
     </div>
     {# 同 5-3：`GET /stats/coverage-gaps` 也走 `_fetch_logs`，筆數超過單次上限
-         （`stats._stats_max_logs()`，讀 `app/settings.py` 的 `stats_max_logs`，**不是模組常數**、可由 env 覆寫）
-         即 400「此時間範圍資料量過大…請縮小範圍」（product `app/routers/stats.py` 的 `_fetch_logs`／`stats.too_many_logs`）。下面兩顆排除/取消排除
+         （`stats._stats_max_logs()`，讀 product 的 `stats_max_logs`，**不是模組常數**、可由 env 覆寫）
+         即 400「此時間範圍資料量過大…請縮小範圍」（product 的 `_fetch_logs`／`stats.too_many_logs`）。下面兩顆排除/取消排除
          也重新查同一支端點，故三顆共用同一顆 key、同一組分支（§5 同一道守衛分支集合一致）。
-         左邊那顆「取消」全站沒有任何 js 選得到，換成篩選列正典的 `.js-filter-clear`。
-         **意圖分組那一段 400 是本輪補的**：帶了 `dimension` 時，`coverage_gaps` 在拉資料**之前**
-         先呼叫 `_assert_classifier_is_configured(model, effort)`（product `app/routers/stats.py`），
+         左邊那顆是篩選列正典的 `.js-filter-clear`「清除」，不寫成「取消」——那個字面全站沒有
+         任何 js 選得到，會變成一顆按了不會有事發生的鈕（§5 ④）。
+         **意圖分組那一段 400 不可以漏**：帶了 `dimension` 時，`coverage_gaps` 在拉資料**之前**
+         先呼叫 `_assert_classifier_is_configured(model, effort)`（product），
          模型設定送不出去就是 400 `stats.classifier_not_configured`。本頁的示範預設就選著「業務範疇」
          （`gapSummary.dimensionName`），所以按一下查詢就撞得到，而它是**使用者自己修得掉**的
          ——去 5-2「生成設定」的分組 LLM 把「意圖判斷」那一組的模型設好——折進「載入資料失敗，
@@ -258,9 +261,9 @@ permalink: 5-4_coverageGaps.html
          照樣按得下去，那道 403 是這兩顆的**第 2 段 warning**（GUIDELINE §4：`data-capability`
          不足不比照 `data-platform-role` 做「不渲染」，改把結果列進 data-toast）。 #}
     {# 兩個上限畫在消費點（§3-2「上限寫在消費點（『N / 30』）」），形狀比照本頁上面的
-         「已分類提問數：200 / 200」——先前它們只活在兩顆鈕的 toast 裡（「清單太長或有一筆超過長度上限」），
-         也就是**撞到才知道**，而這一份清單是人一句一句加起來的。
-         出處＝product `app/routers/stats.py` 的 `MAX_GAP_EXCLUSIONS = 200`（`put_gap_exclusions` 去重後
+         「已分類提問數：200 / 200」。**不可以只活在兩顆鈕的 toast 裡**（「清單太長或有一筆超過
+         長度上限」）——那樣就是撞到才知道，而這一份清單是人一句一句加起來的，快滿了要看得見。
+         出處＝product 的 `MAX_GAP_EXCLUSIONS = 200`（`put_gap_exclusions` 去重後
          超過即 400 `stats.gap_exclusions_too_many`）與 `MAX_GAP_EXCLUSION_LEN = 2000`
          （逐筆超過即 400 `stats.gap_exclusion_too_long`，訊息指名是哪一筆）。
          兩個數字是**資料**故獨立成節點（§4-2：契約裡有欄位的常數不准寫進譯文）。 #}
@@ -291,7 +294,7 @@ permalink: 5-4_coverageGaps.html
                     data-i18n="action.remove">移除</button>
             </div>
             {% else %}
-            {# 具名空狀態（round48）：這兩份排除清單的差別（常設 vs 只算這一次）正是它們各自空著時
+            {# 具名空狀態：這兩份排除清單的差別（常設 vs 只算這一次）正是它們各自空著時
                  最需要講的事——共用一句「無資料」的話，看不出哪一份會留到下一次查詢。 #}
             <span class="text-gray" data-i18n="settings.noPersistentExclusions">還沒有把任何一句設成常設排除。在下面每一組的樣本旁邊按「存成常設排除」，設過的就會列在這裡，之後每一次查詢都會自動排掉它。</span>
             {% endfor %}
@@ -306,7 +309,7 @@ permalink: 5-4_coverageGaps.html
             {% for q in gapExcludedSession %}
             {# 逐列辨識欄（§4）：這是 {% for %} 產出的 <div> 清單、不是 <tr>——無障礙樹裡沒有列脈絡
                  可倚靠（「豁免來自 <tr>，不是來自『長得像一列』」）。**本次查詢的排除筆數沒有上界**
-                 （`exclude` 是查詢參數，product `app/routers/stats.py` 的 `coverage_gaps` docstring 逐字
+                 （`exclude` 是查詢參數，product 的 `coverage_gaps` docstring 逐字
                  「不另設數量上限」）⇒ 逐列辨識欄更不能省。**這一列有兩顆異型鈕，兩顆都要綁**：
                  判準是「這個 {% for %} 體內的每一顆控制項」，不是「這一列有沒有做過」。
                  順序照正典：辨識在前、動作在後。 #}
@@ -392,7 +395,7 @@ permalink: 5-4_coverageGaps.html
 </div>
 {% else %}
 {# 全期間都答得出來時 product 回空的 groups（不列一個 count=0 的空組充數），畫面就只剩這一句。
-   ⚠️ **不用泛用的 `common.noData`**（round47）：這一頁空著是**好消息**——這段期間每一題都答得出來，
+   ⚠️ **不用泛用的 `common.noData`**：這一頁空著是**好消息**——這段期間每一題都答得出來，
      沒有任何覆蓋缺口。寫成「無資料」會讓它讀起來像報表壞了或還沒查，而這一頁的整個用途就是
      「有沒有答不出來的題目」。同時要把另一半講掉：它只涵蓋**這段時間區間**，換一段可能就有。 #}
 <div class="block text-center text-gray mt-16" data-i18n="settings.gapNoneInRange">這段期間沒有答不出來的問題——每一題都在知識庫裡找得到依據。換一段時間區間再查，結果可能不一樣。</div>

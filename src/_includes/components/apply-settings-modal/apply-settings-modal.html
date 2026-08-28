@@ -1,6 +1,7 @@
-{# 套用正式設定：確認 modal，取自真實 app pages/qaTest/2-2-1_singleTest.html #ProductionSettingsModal。
-     單一測試頁只需二次確認、避免直接覆蓋正式設定。A/B 測試頁的比對版本是另一個元件 apply-settings-compare-modal
-     （真 app 兩頁共用同一個 id，切版拆成兩個 id；理由寫在那支的檔頭）。無權限版本見 apply-settings-no-permission-modal。 #}
+{# 套用正式設定：確認 modal（id ProductionSettingsModal）。做什麼：單一測試頁按下「套用為正式設定」時
+     擋一道二次確認，避免直接覆蓋正式設定——這一頁只有一組設定、沒有第二欄可比，故不並列、只問一句。
+     要並列比對的是 A/B 測試頁，那是另一個元件 apply-settings-compare-modal（兩份彈窗結構不同、
+     各自一個 id；理由寫在那支的檔頭）。權限不足時另開 apply-settings-no-permission-modal。 #}
 <dialog class="modals" id="ProductionSettingsModal" aria-labelledby="ProductionSettingsModal-title">
     <div class="modals-dialog modals-md">
         <div class="modals-wrap">

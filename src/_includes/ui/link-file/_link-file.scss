@@ -1,9 +1,10 @@
-// 結構與數值取自凍結前端 `GufoFAQ_Frontend_New/scss/component.scss` 746-753（`.link-file` 區塊）。
-// **偏離逐條列出**：①色值換語意 token（`--brand-text`）；②新增 `button.link-file` 的預設外觀重置——
+// 檔名連結：表格與來源列裡那種「藍字、hover 出底線、長檔名會斷行」的樣式。
+// **這幾條要知道理由（改動前先讀）**：①文字色走語意 token `--brand-text`，不寫死藍色碼；
+//   ②`button.link-file` 要做預設外觀重置——
 //   `.link-file` 是兩族，下載族在切版是 `<button>` 而不是 `<a>`（理由見 `ui/link-file/link-file.html`
 //   檔頭與 `components/sources-block`），瀏覽器給 button 的底色／外框／字體要清掉，才與同表的 `<a>`
 //   逐字一樣；`text-align: left` 是 button 專屬的（`<a>` 本來就靠左，button 會置中）。
-//   **宣告集合差集**（與上面那段凍結範圍逐條 diff，只比種類不比值——色值換語意 token 是 §4 要求的、不算偏離）：本檔新增 `padding`／`border`／`background`／`font`／`text-align`／`cursor`。隨 ② 的 `button.link-file` 外觀重置一起新增。
+//
 .link-file {
     color: var(--brand-text);
     word-break: break-all;

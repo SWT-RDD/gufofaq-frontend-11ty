@@ -1,10 +1,11 @@
 // 共用「訊息泡泡」：後台 chatroom 與前台 faq-chatroom 都用這一套（message-wrap/row/content/time/icon）。
 // 由 components/chatroom（Manager 卡片容器）與 components/faq-chatroom（FAQ 全高容器）各自的容器包住。
-// 值以真 app 編譯 css 為準（原在 _chatroom.scss，抽出共用，宣告不變）。
+// 泡泡的樣式正本住在本檔、不寄在任一邊的容器 scss 裡：兩個容器都要用，寄在其中一邊就是
+// 「另一邊得帶著別人的祖先才有樣式」（§4）。
 //
 // markup 契約（無 html 元件，§1-2；整段照抄）—— 訊息泡泡。
-// **三個消費點不是逐字相同的**（上一版的開場白寫成「逐字相同」，於是整段契約只對得上其中一個，
-// 而照抄的人不會知道自己抄的是哪一型）。逐型各一段完整 markup，差異列在這裡：
+// **三個消費點不是逐字相同的**：一句「逐字相同」會讓整段契約只對得上其中一型，而照抄的人不會知道
+// 自己抄的是哪一型。所以逐型各給一段完整 markup，差異先列在這裡：
 //   ・後台 `components/chatroom`：① ② ③——動作鈕兩顆（複製／查看來源）、chip 帶
 //     `data-capability="ask"`、toast 四段（`toast.chatSubmit`）。
 //   ・前台 `components/faq-chatroom`：①′ ② ③′——機器人側多一顆 `.avatar`；動作鈕四顆
@@ -148,7 +149,7 @@
 //      （chatroom 用 chatroomSuggestedLabel、faq-chatroom 用 faqSuggestedLabel）——同頁兩份會撞 id。
 //      chip 陣列的 `{% set %}` 同理取元件專屬名（chatroomSuggested／faqSuggested，§6）。
 //   ⓓ **chip 的授權宣告是 ③ 與 ③′ 唯一看不出來的差別**：後台走 `/ask`（租戶能力 token）故帶
-//      `data-capability="ask"`，前台走 product `app/conversation/public_ask.py` 的 `require_widget_token`
+// `data-capability="ask"`，前台走 product 的 `require_widget_token`
 //      故一軸都不帶——抄錯一道比不抄貴（§1-2「授權四軸屬必列」）。同一道 `require_widget_token`
 //      連帶 `enforce_widget_rate_limit`，所以 ③′ 的 toast 才多一段 429 的 warning。
 //
@@ -262,10 +263,9 @@
             list-style-type: decimal;
         }
 
-        // **`li` 的列距歸兩種清單共有**：凍結正本 `GufoFAQ_Frontend_New/css/component.css` 是
-        // `.message-content .robot-msg ul li, .message-content .robot-msg ol li` 一起給的。
-        // 補 `list-style-type` 那一輪把它收進了 `ol {}`，於是 renderer 產出的**項目符號清單**
-        // （AI 答案裡最常見的那一種）整個掉了列距與行高，而編譯後只剩 `ol li` 一條看得出來。
+        // **`li` 的列距歸兩種清單共有，要寫在 `ul`／`ol` 之外的這一層。**
+        // 收進 `ol {}` 裡的話，renderer 產出的**項目符號清單**（AI 答案裡最常見的那一種）
+        // 會整個掉了列距與行高，而編譯後的 css 只剩 `ol li` 一條，看的人也讀不出少了誰。
         li {
             margin: 0.25rem 0;
             line-height: 1.4;
@@ -281,8 +281,9 @@
             border-radius: 4px;
             font-family: var(--fontFamilyMono);
             font-size: 0.8125rem;
-            // `ui/inline-code` 正本有這一條，這裡先前漏抄：長識別字落在最窄的容器
-            // （訊息泡泡 `max-width: 70%`）裡時會撐破泡泡，而 markdown 產生的 code 掛不上 class。
+            // 這一條跟著 `ui/inline-code` 正本走，不可省：長識別字落在全站最窄的容器
+            // （訊息泡泡 `max-width: 70%`）裡會直接撐破泡泡，而 markdown 產生的 code 掛不上 class、
+            // 借不到正本那份規則。
             word-break: break-word;
         }
 
@@ -377,7 +378,8 @@
     display: flex;
     align-self: flex-end;
 
-    // 緊接在 AB 雙欄比較之後的時間戳，加大下方間距（取代原 .ab-compare + .message-time，§4）
+    // 緊接在 AB 雙欄比較之後的時間戳，加大下方間距，讓兩欄與下一則之間有喘息。
+    // 由本元件出變體、不寫 `.ab-compare + .message-time`（§4：不指名他人元件的 class 做相鄰覆寫）。
     &.after-compare {
         margin-bottom: 44px;
     }
@@ -391,8 +393,10 @@
     gap: 10px;
 }
 
-// 建議追問（A7）：機器人答案下方一列可點 chip；點擊＝把該題當下一題送出（業務行為由 consumer 綁——
-// 見 React 端 onAskSuggested；11ty 保留 .js-ask-suggested 業務掛點）。複用 ui/button 的 .button-border.button-sm。
+// 建議追問（A7）：機器人答案下方一列可點 chip；點擊＝把那一題當成下一題送出。送出這件事是業務行為、
+// 由 consumer 綁（gufofaq-saas `apps/web` 的 `onAskSuggested`），切版這邊只留 `.js-ask-suggested`
+// 這個業務掛點／轉換契約，不要因為本 repo 沒有對應 js 就當死碼刪掉。
+// chip 本身複用 ui/button 的 `.button-border.button-sm`，不另造樣式。
 .suggested-questions {
     margin-top: 0.5rem;
     display: flex;

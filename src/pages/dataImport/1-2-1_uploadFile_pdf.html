@@ -15,8 +15,9 @@ permalink: 1-2-1_uploadFile_pdf.html
 
 {# 頁層說明：語意出處同下面「上傳區」與「批次匯入結果」兩段檔頭——非結構化文件（PDF/WORD/
      圖片）可多選、逐檔各自編輯、逐檔各自成敗，不是整批一次成敗。 #}
-{# 格式清單跟著 accept 走（round47：`.pdf`／`.docx`，理由見下方 uploadAccept 那一段）——
-     這一句原本寫「圖片等」，而影像既選不到、也沒有匯入端點。 #}
+{# 這一句的格式清單跟著 accept 走（`.pdf`／`.docx`，理由見下方 `uploadAccept` 那一段）——
+     它不可以寫成「圖片等」：影像在這一頁既選不到、上游也沒有任何匯入端點收得下，
+     寫了就是在廣告一個做不到的格式。 #}
 <p class="text-gray" data-i18n="dataImport.uploadFilePdfIntro">這一頁是 PDF、WORD 等非結構化文件的上傳與匯入介面：可以一次選取多個檔案、逐一編輯每個檔案的標題與內容。送出後會看到這批文件逐檔的匯入結果，包含哪些成功、哪些失敗與失敗原因。</p>
 {# 暫存檔存活時間：完整理由寫在 1-1-3 的同一段。這一頁的清單是**還沒送出**的待上傳檔，
      同一條 TTL 管得到它們。 #}
@@ -33,9 +34,7 @@ permalink: 1-2-1_uploadFile_pdf.html
 ] %}
 {% set stepNoPrev = true %}
 {% set stepNodesLg = true %}
-{# 同 1-1-4：這一頁的「下一步」是送出鈕（凍結前端 `GufoFAQ_Frontend_New/js/uploadFilePdf.js:91`
-     `await submitFileUpload()`），不是連結。分支對回 gufofaq-saas product
-     `app/routers/datasets.py` 的 `POST /datasets/{id}/documents/batch-import`
+{# 同 1-1-4：這一頁的「下一步」是**送出鈕**，不是連結。分支對回 gufofaq-saas product 的 `POST /datasets/{id}/documents/batch-import`
      （`batch_import_documents`）：
      ・403 `require_capability("data","write")`（能力軸）
      ・403 `_writable_file_dataset` → `_writable_dataset` 的 `dataset.not_writable_group`（資源層 scope，
@@ -48,7 +47,7 @@ permalink: 1-2-1_uploadFile_pdf.html
        而且它不是 error：成功的那幾檔真的進去了，逐檔原因就在**本頁**下面那張批次匯入結果表格
        （`results` 逐檔一列，狀態／訊息／索引同步）。
      ・502 上游呼叫失敗
-     這一整套結果先前一段都沒有：整頁零 data-toast、零 data-capability，等於把一顆會失敗的
+     **這一整套結果一段都不能省**：整頁零 data-toast、零 data-capability，等於把一顆會失敗的
      送出鈕演成一條必然成功的連結。
      **兩段「逐檔」的 toast 指的是當頁那張表，不是別頁**（`toast.importDocuments` 的第 1、6 段）：
      匯入報告就 include 在這一頁，而 1-2-6（PDF 流程的完成頁）的頁層說明逐字寫著「顯示的是
@@ -67,42 +66,39 @@ permalink: 1-2-1_uploadFile_pdf.html
 {# 上傳區：這一條是**非結構化文件**流程，可多選、與元件共用同一個 50MB 單檔上限
      （product 唯一的 `Settings.upload_max_bytes`，見 ui/upload-box 檔頭的出處），
      格式清單那一句由本頁 set 覆寫（§6）。
-     **本頁是三個執行期變體的靜態合體**：真 app 由 1-1-1 的卡片帶 `?type=pdf|word|image` 進來，
-     uploadFilePdf.js:98 的 getFileTypeConfig 依 type 查表，:130 才把 accept 寫上去、:134 一併改寫
-     說明文字（`$('.upload-desc').text(...)`；:133 是它上面那行算 maxSize 的
-     `uploadedFolderVM?.MaxPDFSize || 30`——**這是凍結前端自己的舊 fallback，不是 product 現在
-     真正的上限**：product 的 `upload_max_bytes` 對 xlsx／pdf／doc／docx／png／jpg 全部上傳路徑
-     一視同仁，沒有任何呼叫端覆寫、也沒有 PDF 專用上限，故這裡不比照凍結前端的 30，
-     改用 ui/upload-box 元件唯一的 50MB）（pdf→`.pdf`／word→`.doc,.docx`／image→`.png,.jpg,.jpeg`）。
-     切版沒有查詢字串，一頁只有一組 accept。
-     ⚠️ **accept 收窄成後端真的收得下的那兩種（round47）**。先前是三種類型的**聯集**
-     （`.pdf,.doc,.docx,.png,.jpg,.jpeg`），理由是「accept 少列一種，那張卡就變成點得進來、卻選不到
-     自己廣告的檔案的死路」——那個理由本身沒錯，錯的是它保護的東西：**那四種多出來的格式選得到、
-     送出去必定 400**（product `app/limits/ops_limits.py` 的
-     `DOCUMENT_UPLOAD_EXTENSIONS = (".pdf", ".docx")`，`app/routers/datasets.py` 的三個強制點都
+     **單檔上限只有一顆**：product 的 `upload_max_bytes` 對全部上傳路徑一視同仁，沒有任何呼叫端
+     覆寫、也沒有「PDF 專用上限」這種東西 ⇒ 這一頁直接吃 `ui/upload-box` 元件唯一的那一顆，
+     不在使用頁另抄一個數字（兩邊各留一份字面量，改上限時一定會漏掉其中一支）。
+     **一頁只有一組 accept**：正式環境是由 1-1-1 的卡片帶著檔型參數進來、在執行期把 accept 與
+     說明文字收窄成該格式；切版沒有查詢字串，所以本頁 set 的是那幾個變體共用的那一組。
+     ⚠️ **accept 只列後端真的收得下的那兩種**（`.pdf`／`.docx`），不列各檔型的**聯集**
+     （`.pdf,.doc,.docx,.png,.jpg,.jpeg`）。列聯集的顧慮是「accept 少列一種，那張卡就變成
+     點得進來、卻選不到自己廣告的檔案的死路」——那個顧慮本身成立，但它保護錯了東西：
+     **多出來的那四種選得到、送出去必定 400**（product 的
+     `DOCUMENT_UPLOAD_EXTENSIONS = (".pdf", ".docx")`，product 的三個強制點都
      `endswith(DOCUMENT_UPLOAD_EXTENSIONS)`，其餘回 `dataset.only_pdf_docx`「僅支援 .pdf / .docx」）。
      「挑得到、必定失敗」比「挑不到」貴：後者當場就知道，前者要等整個檔案上傳完才知道。
-     **`.doc` 也一併拿掉**——只有 `.docx` 過得了，`.doc` 與影像同一族。
+     **`.doc` 同樣不列**——只有 `.docx` 過得了，`.doc` 與影像同一族。
      同一份清單上游已經投影成 `GET /datasets/limits` 的 `upload.extensions.document`，React 端讀契約，
      切版這一份是它的靜態鏡射；**改後端白名單時這一行要跟著改**。
-     連帶：`ui/upload-card` 的 Image 卡已撤、WORD 卡的說明改成 docx，理由寫在該元件檔頭。 #}
+     連帶：`ui/upload-card` 沒有影像那一張卡、WORD 卡的說明講的是 docx，理由寫在該元件檔頭。 #}
 {% set uploadAccept = ".pdf,.docx" %}
 {% set uploadMultiple = true %}
 {% set uploadDescPrefixText = "支援上傳pdf、docx檔案，檔案最大不超過" %}
 {% set uploadDescPrefixKey = "dataImport.uploadDescDocsPrefix" %}
 {% include "ui/upload-box/upload-box.html" %}
 
-{# 檔案列表表格：真實頁 thead/tbody 皆為 GufoFAQ_Frontend_New/js/uploadFilePdf.js 動態渲染（renderTableHeaders()/renderFileList()），
-     欄位取其固定欄（檔案名稱、標題、時間、檔案大小、功能，略過依租戶而異的自訂欄位），
-     用 set+for 資料化示範 3 筆，father/table class 沿用 ui/default-table 同一組真實系統 class #}
+{# 檔案列表表格：thead/tbody 都是執行期依待上傳清單渲染的，這裡只切固定欄
+     （檔案名稱、標題、時間、檔案大小、功能；依租戶而異的自訂欄位不在切版的固定欄裡），
+     用 set+for 資料化示範 3 筆，外框與表身走 ui/default-table。 #}
 {# PDF 與 Word 同一條流程，故示範兩種副檔名各一（另加一筆演匯入失敗）。
-     **檔名是使用者本機挑的那個原始檔名，不是落地檔名**：這張表畫的是**還沒送出**的待上傳清單
-     （真 app `uploadFilePdf.js` 的 renderFileList 印的是 `file.UploadPDFFile.name`＝File 物件的
-     `name`），落地檔名要等 product 寫檔時才生成。順帶：product 的落地檔名是
-     `{14位時間戳}_{6位hex}_{序號}_{原始檔名}`（`dataset_ops.stored_filename`），
-     原本這裡寫的 `{14位時間戳}_{原始檔名}` 是 product 產不出來的形狀——
-     `history.py` 的 `_STORED_PREFIX = re.compile(r"^\d{14}_[a-f0-9]{6}_\d+_")` 靠那段 hex
-     剝前綴，少了它連下載都認不出來。 #}
+     **檔名是使用者本機挑的那個原始檔名，不是落地檔名**：這張表畫的是**還沒送出**的待上傳清單，
+     執行期印的就是瀏覽器 File 物件的 `name`；落地檔名要等 product 寫檔那一刻才生成。
+     順帶把落地檔名的形狀記在這裡，因為它是**下載**那條路的前提：
+     `{14位時間戳}_{6位hex}_{序號}_{原始檔名}`（product 的 `stored_filename`）。
+     **不可以簡寫成 `{14位時間戳}_{原始檔名}`**，那是 product 產不出來的形狀——
+     product 的 `_STORED_PREFIX = re.compile(r"^\d{14}_[a-f0-9]{6}_\d+_")` 靠那段 hex 剝前綴，
+     少了它連下載都認不出來。 #}
 {% set fileRows = [
     {
         name: "公文範本.pdf",
@@ -161,7 +157,7 @@ permalink: 1-2-1_uploadFile_pdf.html
                         </button>
                         {# 動詞是「移除」不是「刪除」：這一列的檔案還沒送出，按下去只是把它從這一批
                              拿掉（見下方 delete-modal 的 set 區塊）。列上、確認窗、回執三處同一個動詞。
-                             `.btn-delete-file` 是凍結 hook、不因為改字面而改名（§5）。 #}
+                             `.btn-delete-file` 是**業務掛點**、不因為改字面而改名（§5）。 #}
                         <button type="button" id="pdfFileDelete-{{ loop.index }}" aria-labelledby="pdfFileRowName-{{ loop.index }} pdfFileDelete-{{ loop.index }}" class="button-icon no-bg size-sm delete btn-delete-file" data-index="{{ loop.index0 }}" title="移除" data-i18n-title="action.remove">
                             <span class="sr-only" data-i18n="action.remove">移除</span>
                         </button>
@@ -169,8 +165,10 @@ permalink: 1-2-1_uploadFile_pdf.html
                 </td>
             </tr>
             {% else %}
-            {# 空狀態鏡射真 app：uploadFilePdf.js:274-276 檔案清單為空時 append 一列「尚未上傳檔案」。
-                 真 app 寫 colspan="100%"（HTML 的 colspan 只吃整數，瀏覽器會當成 1），這裡照欄數給 5。 #}
+            {# 空狀態：還沒挑任何檔案時列一列「尚未上傳檔案」——那是每個人進到這一頁看到的第一態，
+                 非畫不可（§5：每個分支結果都要看得到）。
+                 colspan 照欄數給 **5**，不寫 `colspan="100%"`：HTML 的 colspan 只吃整數，
+                 給百分比瀏覽器會當成 1，那一列就只跨得了第一欄。 #}
             <tr>
                 <td colspan="5" class="text-center text-gray" data-i18n="dataImport.noUploadedFiles">尚未上傳檔案</td>
             </tr>
@@ -202,14 +200,16 @@ permalink: 1-2-1_uploadFile_pdf.html
 {% include "components/file-preview-modal/file-preview-modal.html" %}
 
 {# 編輯 modal：整包 include components/file-edit-modal（固定槽自填；content 自 PDF 抽取為 disabled，其餘可填） #}
-{# 儲存交給業務 js（uploadFilePdf.js 的 saveEdit）——與真實頁一致，不自動關窗 #}
+{# 儲存交給業務 js（`editConfirmBinding`）：那一顆要帶著「編的是哪一列」回去改本地清單，
+     所以切版**不自動關窗**——關不關窗由那一段業務邏輯決定，切版替它決定就是多給 React
+     一個它沒有要的行為（§5）。 #}
 {% set editConfirmBinding = true %}
 {% include "components/file-edit-modal/file-edit-modal.html" %}
 
 {# 移除 modal：檔名由業務 js 填入 #deleteFileName、確認鈕由業務 js 綁定，故 set 這兩個參數；
    markup 只有一份正本，見 components/delete-modal（§1-2／§6）
    ⚠️ **標題與內文講「移除」不是「刪除」**：這一頁的動作是把檔案從**還沒送出**的待上傳清單裡拿掉
-   （真 app `GufoFAQ_Frontend_New/js/uploadFilePdf.js:480-486` 只做 `fileList.splice`），
+   （只是把那一列從本地清單拿掉，伺服器上還沒有這個檔），
    而這顆鈕的回執本來就寫著「移除成功」（`toast.removePendingFile`）——確認窗卻問「確定要刪除」，
    同一個動作在同一條路徑上用了兩個動詞，讀起來像是這一步會去刪伺服器上的東西。
    ⚠️ **刻意不給 `deleteNoteKey`**：那一行是紅字的「按下去會失去什麼」，而這裡什麼都不會失去；
@@ -220,14 +220,14 @@ permalink: 1-2-1_uploadFile_pdf.html
 {% set deleteMessageKey = "common.confirmRemove" %}
 {% set deleteMessageZh = "確定要移除" %}
 {% set deleteTargetId = "deleteFileName" %}
-{# 確認鈕的 React 綁定記號（與列上的 .btn-delete-file（凍結 hook）成對）：`deleteConfirmBinding` ＝交給業務 js 綁定、不自動關窗，
+{# 確認鈕的 React 綁定記號（與列上的 .btn-delete-file 成對）：`deleteConfirmBinding` ＝交給業務 js 綁定、不自動關窗，
      兩顆記號都不給等於那顆鈕在 markup 上沒有任何東西可以抓（delete-modal 檔頭：二擇一必給）。 #}
 {% set deleteConfirmClass = "js-confirm-remove-pending-file" %}
 {% set deleteConfirmBinding = true %}
-{# 只有一段：這一頁的「移除」是**送出前**把檔案從待上傳清單拿掉，真 app 就是
-     `fileList.splice(index, 1)` ＋ `showToast('刪除成功')`（uploadFilePdf.js:480-486），
-     沒有 API、沒有失敗路徑。原本沿用 3-1-3 的「刪除檔案失敗」是抄版型抄來的——
-     演一個不可能發生的結果，與只演成功一樣是說謊（§5）。 #}
+{# 只有一段：這一頁的「移除」是**送出前**把檔案從待上傳清單拿掉——純本地陣列操作，
+     沒有 API、也沒有任何失敗路徑，所以結果集合就只有「成功」這一種。
+     **不可以沿用 3-1-3 的「刪除檔案失敗」**：那是抄版型抄來的，等於演一個不可能發生的結果，
+     與只演成功一樣是說謊（§5）。 #}
 {% set deleteToast = "移除成功" %}
 {% set deleteToastKey = "toast.removePendingFile" %}
 {% set deleteToastType = "success" %}
@@ -237,11 +237,11 @@ permalink: 1-2-1_uploadFile_pdf.html
    回傳後在此以 default-table 逐檔如實顯示（混合成敗都要顯示，不可只報成功＝fail-loud）。
    成功列狀態＝匯入成功（text-bold，只有字重、沒有顏色——工具層沒有綠色文字 class，
    而「成功」不靠顏色表達也讀得出來），失敗列＝匯入失敗（text-red 紅字）+ 錯誤訊息。
-   示範 2 成功 1 失敗共三列；真實頁筆數由送出結果動態渲染。
+   示範 2 成功 1 失敗共三列；執行期的列數由那一次送出的結果決定。
    **第四欄是逐檔的索引同步**（`results[].sync_state`）：與前三欄不同層，判準與
    缺席態見 components/import-sync-tag 與 import-report 兩支的檔頭。
    **`health_scan` 這一格刻意不畫在本頁**（`batch_import_documents` 回應的第三個頂層欄位，
-   `_post_import_health_scan` → `health_findings.scan_after_import` 的 `PostImportScanOut`：
+   `post_import_health_scan` → `scan_after_import` 的 `PostImportScanOut`：
    `ok`／`detail`／`scan`）：那是匯入**之後**才跑的健檢，成敗兩態都由 3-5 資料健檢承接——
    成功那一次寫進 `_record_scan_run(trigger=SCAN_TRIGGER_IMPORT)`，由 3-5 的「上一次掃描」
    （`GET /health/scan/last` 的 `scan`）畫；失敗那一次由 `_record_scan_failure(trigger=
@@ -258,8 +258,8 @@ permalink: 1-2-1_uploadFile_pdf.html
      的 413，經 `_result_error` 攤成 `error` 字串）／`PdfReadError`／`DocxReadError`／
      `dataset.structured_pipeline_failed`。其中只有儲存額度是「前兩檔寫進去了、第三檔才撞上」的
      那一種——額度是逐檔在 `_import_one_document` 裡現算的，而副檔名／讀檔失敗與檔案順序無關。
-     原本寫的「萃取額度已用罄」是**另一支端點**的話（`quota.extraction_exceeded` 全 product 只在
-     `routers/extract.py` 丟、而且是 429），這條批次匯入的路完全不碰萃取額度。 #}
+     **不可以寫成「萃取額度已用罄」**：那是**另一支端點**的話（`quota.extraction_exceeded`，
+     全 product 只有那一支丟得出來、而且是 429），這條批次匯入的路完全不碰萃取額度。 #}
 {# 逐檔的索引同步（`results[].sync_state`）。**每個檔各自派一條 celery 管道、各自成敗**，
      所以這是**逐檔一份**的欄位，不是整批一份——壓成一顆彙總徽章的話，「三檔還在同步、一檔查不到
      結果」會整塊變成「查不到結果」，另外那幾檔在畫面上就消失了（判準與缺席態見
@@ -390,8 +390,8 @@ permalink: 1-2-1_uploadFile_pdf.html
      「共 N 個檔案，成功／失敗」講的是**檔數**，三計數講的是**這批對知識庫做了什麼**——
      成功 1 檔可能是新增、也可能是把同鍵舊版換掉，只看檔數分不出來，故兩者並列不是重複。
      抽取統計是「實際抽出多少內容」，不是原始結構數：表格 0 個而檔案明明有表格，就是這次沒抽到
-     （出處：product app/docx.py 的 DocxStats＝段落/表格/表格列數；app/pdf_tables.py 的 PdfStats
-     另有頁數/沒有表頭的續表/有格線卻抽不出表格的頁數）。這裡示範 word 那組。
+     （出處：product 的 `DocxStats`＝段落／表格／表格列數；`PdfStats` 另有頁數／沒有表頭的續表／
+     有格線卻抽不出表格的頁數）。
      示範值與上面的成功列自洽（§6）：2 檔成功、外部主鍵未填故都是純新增，failed 1 對到失敗列那一檔。
      兩種副檔名各演一份統計，因為**欄位本來就不同**：pdf 是頁數／表格／表格列數＋兩個警訊欄，
      word 是段落／表格／表格列數。只演一種的話，另一種的那幾個標籤全站沒有任何頁面看得到。 #}

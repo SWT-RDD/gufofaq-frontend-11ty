@@ -31,10 +31,10 @@
 
      ── 這一整台是 auditor 進得來的 ─────────────────────────────────────────────────
      名單與門檻是 auditor 讀得到的（GET /platform/review/overdue ＝ require_platform_auditor，
-     product app/routers/platform.py 的 `review_overdue`；docstring 自述「這一步不動任何資料，管理員截圖存證用」）——整區標 admin
+     product 的 `review_overdue`；docstring 自述「這一步不動任何資料，管理員截圖存證用」）——整區標 admin
      等於唯讀稽核員連那張截圖都看不到，正是 §5 要防的「把整塊 gate 在是不是管理員」。
      區塊標 auditor，只有真的會寫入的那一顆（preview 態的「確認執行」＝ POST /review/apply
-     ＝ require_platform_admin，platform.py 的 `review_apply`）標 admin。idle 態那三顆是「選動作＋拉名單」，
+     ＝ require_platform_admin，product 的 `review_apply`）標 admin。idle 態那三顆是「選動作＋拉名單」，
      打的是同一支 GET，auditor 要按得到才截得到圖。
 
      示範資料（§6(b) 純示範假資料，元件專屬名）：`isoReviewCandidates`／`isoReviewOkResults`／
@@ -61,7 +61,7 @@
      "Overdue by" 寫成 "Overdue over"）就是在 React 端開了第二份文案正本，而字典比對放行含
      `{{ }}` 的值、fpdiff 又不比文字內容，兩張網都看不到。 #}
 {# **`id` 是列鍵、不可省**（§6）：`ReviewTenantOut.id` 是這張表的第一欄，而確認鈕送出的
-     `ReviewApplyIn.tenant_ids` 就是這一份清單推導出來的（gufofaq-saas product `app/routers/platform.py`）——沒有它，React 端
+     `ReviewApplyIn.tenant_ids` 就是這一份清單推導出來的（gufofaq-saas product）——沒有它，React 端
      組不出 payload。判準是「這一列會不會成為某個動作的 payload 元素」，不是「列內有沒有刪除鈕」
      （處置鈕在迴圈外面，整批打一次）。id 與 `components/platform-tenants-panel` 的租戶表同源。 #}
 {% set isoReviewCandidates = [
@@ -72,10 +72,11 @@
      表格先渲染成功列再渲染失敗列 #}
 {# 逐筆帶 `tenantId`：`review_apply` 回的是 `{"tenant_id": …, "name": …, "ok": …}`（＋失敗才有 `error`）。
    **失敗訊息要是正本組得出來的字面**（§6／§3-2「插值填進去的東西也要是正本產得出來的」）：
-     product `app/i18n.py` 的 `platform.purge_tenant_failed` 逐字是「清租戶資料失敗（tenant={tenant_id}）：{error}」
+     product 的 `platform.purge_tenant_failed` 逐字是「清租戶資料失敗（tenant={tenant_id}）：{error}」
      （刪帳號那一支是姊妹句 `platform.delete_tenant_failed`），而 `review_apply` 收的是 `str(e.detail)`
-     ⇒ 畫面上那一格就是整串，含 `：{error}` 後半。先前寫的「從 GufoRAG 刪租戶索引失敗（tenant=42）」
-     在上游 grep 為零，而且後半段整段不見——那一半是這一格唯一講得出「為什麼」的部分。
+     ⇒ 畫面上那一格就是整串，含 `：{error}` 後半。**不可以自己編一句**（例如
+     「從 GufoRAG 刪租戶索引失敗（tenant=42）」——那串在上游 grep 為零，而且丟掉了 `：{error}` 後半，
+     那一半正是這一格唯一講得出「為什麼」的部分）。
    **演的是 `purge_data` 那一支**：`_purge_tenant_data` 的 docstring 逐字寫著它**保留** Tenant／User／
      TenantSetting／群組／widget token／API 金鑰，所以同一頁的租戶表照樣列得出 C 與 D；換成
      `delete_account` 就會與那張表互相否定（那一支 `delete(User)` ＋ `delete(Tenant)`）。 #}
@@ -85,8 +86,8 @@
 {% set isoReviewFailResults = [
   { tenantId: 42, name: "示範租戶 D", error: "清租戶資料失敗（tenant=42）：GufoRAG 刪索引回 502" }
 ] %}
-{# 授權：整區的下限是 `auditor`——`GET /platform/review/overdue`（gufofaq-saas product
-     `app/routers/platform.py` 的 `review_overdue`）掛的就是 `require_platform_auditor`，
+{# 授權：整區的下限是 `auditor`——`GET /platform/review/overdue`
+     （gufofaq-saas product 的 `review_overdue`）掛的就是 `require_platform_auditor`，
      稽核員要拉得到名單才截得了圖。那三顆載入鈕**是唯讀的**（讀名單畫成 preview，
      一筆狀態都不落），故不在鈕上再標一次——§4 的兩級可見性把 `auditor` 定義成「看得到、
      按不動」，動作鈕標在那一級會被讀成「唯讀角色也渲染得出寫入鈕」。
@@ -130,7 +131,7 @@
                     {# 三件套的第三件（§4）：可見區間 ＋ aria-describedby——**被指到的節點裡要讀得到那兩個數字**，
                          寫成開區間（「≥ 0」）等於只給了一半。出處引全那一行：`GET /platform/review/overdue` 的
                          `overdue_days: int = Query(default=REVIEW_DUE_DAYS, ge=0, le=MAX_REVIEW_OVERDUE_DAYS)`
-                         （gufofaq-saas product `app/routers/platform.py`；`REVIEW_DUE_DAYS = 90` 就是這一格的
+                         （gufofaq-saas product；`REVIEW_DUE_DAYS = 90` 就是這一格的
                          預設值、`MAX_REVIEW_OVERDUE_DAYS = 36500` 是上界）。**上界不可省**：那顆常數自帶的
                          註解逐字寫著界外值會讓 `now - timedelta(days=…)` 拋 OverflowError 變成裸 500。
                          數字獨立成不翻的節點（§3-2：那是資料不是譯文）。 #}
@@ -142,19 +143,18 @@
                     <label class="form-radio"><input type="radio" name="review-threshold-mode" value="cutoff" class="js-review-threshold-mode" data-filter-reset="unchecked"><span data-i18n="platform.cutoffDateLabel">截止日期</span></label>
                 </div>
                 <div class="field">
-                    {# `.calendar` 是凍結前端 `GufoFAQ_Frontend_New/js/main.js` 的 flatpickr 掛點
-                         （本 repo 零樣式、零行為；日期選擇交由 React 端的套件實作）——同
-                         `components/manage-tenant-modal` 與 `components/data-time-filter` 的做法。
-                         這一頁是 NET-NEW 的平台頁、沒有真 app 對應，不寫這一句就查不出它為什麼在這裡。 #}
+                    {# `.calendar` 是日期選擇器的掛點（本 repo 零樣式、零行為；日期選擇交由 React 端的
+                         套件實作）——同 `components/manage-tenant-modal` 與 `components/data-time-filter`
+                         的做法。無樣式 class 要在檔頭交代它是誰的掛點（§4），否則它讀起來就是一顆死 class。 #}
                     <input type="text" id="reviewCutoffDateInput" placeholder="請選擇" data-i18n-placeholder="common.pleaseSelect" class="form-control calendar" aria-label="截止日期" data-i18n-aria-label="platform.cutoffDateLabel" disabled>
                 </div>
             </div>
         </div>
         <p class="text-gray m-0" id="reviewThresholdHint" data-i18n="platform.thresholdHint">兩個門檻二擇一：選「截止日期」時以那一天為準，逾期天數不生效（上游只看其中一顆，不會兩顆一起算）。</p>
         {# 這三顆只是**選動作＋拉名單**：打的是 `GET /platform/review/overdue`
-             （product app/routers/platform.py `require_platform_auditor`，docstring 自述「這一步不動任何資料，
-             管理員截圖存證用」）。原本標 admin ⇒ 稽核員整區沒有任何入口拉得到名單，
-             正是註解自己說要避免的事。真正寫入的是 preview 態那顆確認鈕。 #}
+             （product `require_platform_auditor`，docstring 自述「這一步不動任何資料，
+             管理員截圖存證用」）。**所以不標 admin**：標了的話稽核員整區沒有任何入口拉得到名單，
+             正是上游註解自己說要避免的事。真正寫入的是 preview 態那顆確認鈕。 #}
         <div class="flex-row gap-10 align-items-center">
             {# 三顆都是**送 API 的動作鈕**（§5 ③）：讀上面那兩顆輸入、打 `GET /platform/review/overdue`
                  把名單拉回來畫成 preview。它們不開任何窗，所以不適用「有條件開窗」的豁免（§5 明文）；
@@ -164,16 +164,17 @@
                  的區塊內，而平台軸的渲染規則是「低於該級時**動作鈕不渲染**」（§5），導覽入口也掛著
                  同一級（`components/header` 的 `platformRole: "auditor"`）⇒ 那道 403 在這三顆上走不到。
                  同 repo 對同一件事已經裁決過兩次（`components/platform-disclaimer-panel`、
-                 `components/manage-tenant-modal`），先前只有這三顆走了反方向；全站帶「權限不足」段的鈕
-                 也只有這三顆沒掛 `data-capability`——能力軸才把 403 列進 toast（§4）。姊妹鈕：5-10 的「重新量測」同樣是唯讀 GET ＋ 結果畫回頁上。 #}
+                 `components/manage-tenant-modal`），這三顆照同一個方向走：**不列「權限不足」段、
+                 也不掛 `data-capability`**——那一段只屬於能力軸（§4：能力軸才把 403 列進 toast），
+                 而這三顆走的是平台軸。姊妹鈕：5-10 的「重新量測」同樣是唯讀 GET ＋ 結果畫回頁上。 #}
             <button type="button" class="button button-red js-review-purge" data-toast="正在載入逾時名單...|逾時天數超出可用範圍|名單已載入|載入失敗，請稍後再試" data-i18n-data-toast="toast.reviewOverdue" data-toast-type="info|warning|success|error" data-i18n="platform.reviewActionPurge">刪除逾時資料</button>
             <button type="button" class="button button-red js-review-delete" data-toast="正在載入逾時名單...|逾時天數超出可用範圍|名單已載入|載入失敗，請稍後再試" data-i18n-data-toast="toast.reviewOverdue" data-toast-type="info|warning|success|error" data-i18n="platform.reviewActionDelete">刪除逾時帳號</button>
             <button type="button" class="button button-border js-review-freeze" data-toast="正在載入逾時名單...|逾時天數超出可用範圍|名單已載入|載入失敗，請稍後再試" data-i18n-data-toast="toast.reviewOverdue" data-toast-type="info|warning|success|error" data-i18n="platform.reviewActionFreeze">凍結逾時帳號</button>
         </div>
-        {# **三顆動作各是什麼，先前全站沒有一個字**（round47）：三個按鈕字面差兩個字
+        {# **三顆動作各是什麼，一定要有一段話講清楚**：三個按鈕字面只差兩個字
              （「刪除逾時資料」／「刪除逾時帳號」／「凍結逾時帳號」），而它們的破壞程度差了三個量級
              ——一個保留帳號、一個連帳號一起刪、一個完全可逆。這三顆是同一排、同樣的紅、同樣的大小。
-           **可逆性尤其要講**：`freeze` 有對稱的 `unfreeze_tenant`（product `app/routers/platform.py`，
+           **可逆性尤其要講**：`freeze` 有對稱的 `unfreeze_tenant`（product，
              docstring 逐字「把凍結時長補回 trial_end，剩餘天數原封保留」），另外兩顆沒有回頭路。
              下一步那顆確認鈕已經按動作切換「不可逆／可解凍」兩態，但**那是在名單拉出來之後**——
              選錯動作的那一刻是在這裡。
@@ -194,8 +195,8 @@
                  中文語系的稽核紀錄上只會留下一串 `DELETE-ACCOUNT`。
                  三態槽（§4-2 `data-text-<態>`＋`data-key-<態>`：這一句是 chrome、要翻，故繁中原文與 key
                  都給）。**態名與片語欄的 `data-phrase-<動作>` 同一組**（purge／delete／freeze，逐字對回
-                 `ReviewApplyIn.action` 的值域 `purge_data`／`delete_account`／`freeze`，product
-                 app/routers/platform.py），React 依選定的動作把同一顆值換上去——兩處若各取一套態名，
+                 `ReviewApplyIn.action` 的值域 `purge_data`／`delete_account`／`freeze`，
+                 gufofaq-saas product），React 依選定的動作把同一顆值換上去——兩處若各取一套態名，
                  同一顆 state 就要在兩個地方各對一次表。三顆 key 是 idle 態那三顆鈕的原字面，不另立新 key。
                  靜態稿演 delete 那一態，與片語 `DELETE-ACCOUNT`、確認鈕的「不可逆」互相對得上（§6 示範資料自洽）。
                  前綴自帶分隔空白（§4-2；en 值 "Action: "），與同列另外四顆前綴同型。 #}
@@ -203,7 +204,7 @@
             <span><span data-i18n="platform.reviewMatched">符合筆數：</span>{{ isoReviewCandidates.length }}</span>
             <span><span data-i18n="platform.reviewThreshold">門檻：</span><span data-i18n="platform.overdueDaysPrefix">逾期滿</span> 90 <span data-i18n="platform.overdueDaysSuffix">天</span></span>
             <span><span data-i18n="platform.reviewAsOf">查詢時間：</span>2026-07-14 09:00 UTC</span>
-            {# `ReviewOverdueOut.cutoff`（product app/routers/platform.py）：後端註解說這兩欄「是 ISO 稽核截圖存證要用的」。
+            {# `ReviewOverdueOut.cutoff`（product）：後端註解說這兩欄「是 ISO 稽核截圖存證要用的」。
                  只畫門檻天數不夠——idle 態的兩種門檻（天數／截止日期）擇一時，真正決定名單的是 cutoff。 #}
             <span><span data-i18n="platform.reviewCutoff">截止時刻：</span>2026-04-15 09:00 UTC</span>
         </div>
@@ -226,9 +227,10 @@
                         <th data-i18n="platform.daysOverdue">逾期天數</th>
                         <th data-i18n="settings.userCount">使用者數</th>
                         <th data-i18n="platform.storageUsedMb">儲存量(MB)</th>
-                        {# `ReviewTenantOut.frozen`（product app/routers/platform.py）的後端註解逐字寫著
+                        {# `ReviewTenantOut.frozen`（product）的後端註解逐字寫著
                              「此旗標讓管理員一眼分辨『這季新逾期的』與『上季已凍結、還在等後續處置的』」
-                             ——那正是這張截圖要回答的問題，原本沒有欄位（§3-2 response 落點）。 #}
+                             ——那正是這張截圖要回答的問題，所以這一欄非畫不可（§3-2：response 有的
+                             欄位要在畫面上有落點）。 #}
                         <th data-i18n="platform.statusFrozen">已凍結</th>
                     </tr>
                 </thead>
@@ -244,7 +246,7 @@
                         <td>{% if c.frozen %}<span class="text-gray" data-i18n="platform.statusFrozen">已凍結</span>{% else %}—{% endif %}</td>
                     </tr>
                     {% else %}
-                    {# 名單為空是**走得到的常態**，不是錯誤：`review_overdue`（product app/routers/platform.py）
+                    {# 名單為空是**走得到的常態**，不是錯誤：`review_overdue`（product）
                          零命中時照樣回 200 ＋ `tenants: []`（它只逐筆篩 `trial_end ≤ cutoff`，沒有任何
                          「空清單就 400」的出口），而門檻是使用者自己填的——逾期天數拉大到沒有租戶符合就是這一態。
                          §5「元件內部與頁面的示範資料表…真實可能為空者一律帶 `{% else %}` 鏡射無資料列，
@@ -262,41 +264,41 @@
                 </tbody>
             </table>
         </div>
-        {# ── type-to-confirm 片語（round45 裁決）────────────────────────────────────────
-             **片語是「值」，不是 chrome，所以它永遠不掛 `data-i18n`。** 原本 label 與 placeholder 各掛一顆
-             key，繁中要打「刪除」、英文要打 `DELETE`——**同一道閘在兩個語系要求不同的輸入**，而 React 端
-             比對的只會是其中一份，另一個語系的使用者照著畫面打就是解不開。
+        {# ── type-to-confirm 片語────────────────────────────────────────
+             **片語是「值」，不是 chrome，所以它永遠不掛 `data-i18n`。** label 與 placeholder 若各掛一顆
+             key（繁中要打「刪除」、英文要打 `DELETE`），就是**同一道閘在兩個語系要求不同的輸入**，
+             而 React 端比對的只會是其中一份，另一個語系的使用者照著畫面打就是解不開。
              正典有兩處：同站 manage-tenant-modal 的 type-to-confirm 打的是**租戶名稱**（一個值，兩個語系
              都打同一串），product 的 `declare_filter_slots` 用 `_FILTER_SLOTS_CONFIRM_PHRASE = "REBUILD-ALL"`
              （逐字比對的固定字串，並在 400 訊息裡把片語本身回給呼叫端）。故改成語言中立的固定字串，
              label 走「前綴 key ＋片語節點＋後綴 key」（§4-2 前後綴 key 自帶分隔空白）。
              **片語還要跟著上一步選的動作換一組**：`ReviewApplyIn.action` 的值域逐字是
-             `purge_data`／`delete_account`／`freeze`（platform.py），idle 態三顆動作鈕各對一個，
-             原本不論選哪一顆都要求打「刪除」——選了「凍結逾時帳號」卻被要求打「刪除」。
+             `purge_data`／`delete_account`／`freeze`（product），idle 態三顆動作鈕各對一個。
+             **三顆不可以共用同一串**：共用的話，選了「凍結逾時帳號」的人會被要求打「刪除」。
              三組片語由 `data-phrase-<動作>` 承載，React 依選定的動作把可見那一顆換上去。
              **刻意不用 `data-text-<態>`／`data-key-<態>` 那組資料槽**：那一族的定義是「繁中原文 ＋ 對應的
              i18n key」，而這裡的重點正是**這串字不翻**，掛上去會讓下一個人以為少了一半。 #}
         <div class="form-group">
             <div class="label">
-                {# 前綴的繁中是「請逐字輸入 」而不是「請輸入 」：後者與 `common.pleaseEnter` 逐字相同，
+                {# 前綴的繁中是「請逐字輸入」而不是「請輸入」：後者與 `common.pleaseEnter` 逐字相同，
                      §4-2「繁中原文相同的 chrome 沿用既有 key」會把兩顆判成同文異 key，而那顆是 placeholder
                      專用、不帶尾空白，這裡沿用它反而會讓英文黏成 "Please enter DELETE-ACCOUNT"。 #}
                 <label for="reviewConfirmInput" class="control-label"><span data-i18n="platform.confirmTypePrefix">請逐字輸入 </span><span data-phrase-purge="PURGE-DATA" data-phrase-delete="DELETE-ACCOUNT" data-phrase-freeze="FREEZE">DELETE-ACCOUNT</span><span data-i18n="platform.confirmTypeSuffix"> 以確認執行</span></label>
             </div>
             <div class="field">
-                {# placeholder 與 label 那顆片語節點是**同一組三態**：只給 label 三態槽、placeholder 寫死一個，
-                     選「凍結逾時帳號」時欄位裡仍提示 DELETE-ACCOUNT——那正是這一輪要修掉的那個 bug 的另一半。
+                {# placeholder 與 label 那顆片語節點是**同一組三態**：只給 label 三態槽、placeholder 寫死一個
+                     的話，選「凍結逾時帳號」時欄位裡仍會提示 DELETE-ACCOUNT——那是同一個 bug 的另一半。
                      不掛 data-i18n-placeholder：片語是值、不隨語言變（§4-2 type-to-confirm）。 #}
                 <input data-platform-role="admin" type="text" id="reviewConfirmInput" data-phrase-ph-purge="PURGE-DATA" data-phrase-ph-delete="DELETE-ACCOUNT" data-phrase-ph-freeze="FREEZE" placeholder="DELETE-ACCOUNT" class="form-control" aria-describedby="reviewConfirmHint">
                 <span class="text-gray" id="reviewConfirmHint" data-i18n="platform.confirmPhraseHint">片語要逐字相同（含大小寫與連字號），而且會隨上面選的動作換一組；它不隨語言變。</span>
             </div>
         </div>
-        {# `POST /platform/review/apply` ＝ `require_platform_admin`（product app/routers/platform.py），
-             所以標 admin 的是**這一顆**。低於該級時動作鈕不渲染（§5）——原本反過來標，
+        {# `POST /platform/review/apply` ＝ `require_platform_admin`（product），
+             所以標 admin 的是**這一顆**。低於該級時動作鈕不渲染（§5）——標反了的話，
              稽核員反而看得到一顆「確認執行（不可逆）」，按了必定 403。
              「取消」是純前端互動（回 idle 態），不標。 #}
         {# 「（不可逆）」**只對三顆動作裡的兩顆成立**：`purge_data` 與 `delete_account` 沒有回頭路，
-             而 `freeze` 有對稱的 `unfreeze_tenant`（product app/routers/platform.py，docstring 逐字「把凍結時長補回 trial_end，
+             而 `freeze` 有對稱的 `unfreeze_tenant`（product，docstring 逐字「把凍結時長補回 trial_end，
              剩餘天數原封保留」），對它說不可逆是假的警語——假警語會讓真的那兩顆一起被當成裝飾。
              故做成隨動作切換的兩態（§4-2 `data-text-<態>`＋`data-key-<態>`：這一句是 chrome、要翻，
              所以繁中原文與 key 都要給，與上面那顆「片語」剛好相反）。靜態稿演的是不可逆那一態。 #}
@@ -313,11 +315,12 @@
              **busy 那一態的 `disabled` 不進 markup**：這一稿演的不是「送出中」，靜態稿沒有那一刻。
              （鈕上確實有一顆 `disabled`，但它是另一件事——見下一段的 type-to-confirm 鎖。
              REACT-CONVERSION §⑥ 列的兩種合規 disable：進行中、以及窗內看得見的解鎖條件未滿足。） #}
-        {# 這是整台精靈**唯一的寫入鈕**（`POST /platform/review/apply`，product `app/routers/platform.py`
-             的 `review_apply`），先前零 `data-toast` ⇒ ①它整顆掉出 §4 閘門測試的母體（那條以
-             「`data-toast-type` 含 success」為母體）；②`toast.reviewApplied` 這顆 key 在切版根本不存在，
-             而 saas `apps/web/app/(app)/platform/page.tsx` 的 `applyReview()` **已經在跑**
-             `t("toast.reviewApplied").split("|")` 並取 `segs[0]`／`segs[1]`——React 端自己長出了一顆
+        {# 這是整台精靈**唯一的寫入鈕**（`POST /platform/review/apply`，product
+             的 `review_apply`），所以 `data-toast` 一段都不能少 ⇒ 少了會同時出兩件事：①它整顆掉出
+             §4 閘門測試的母體（那條測試以「`data-toast-type` 含 success」為母體）；
+             ②`toast.reviewApplied` 這顆 key 在切版就不存在，而 gufofaq-saas
+             `apps/web/app/(app)/platform/page.tsx` 的 `applyReview()` 真的在跑
+             `t("toast.reviewApplied").split("|")` 並取 `segs[0]`／`segs[1]`——React 端於是長出一顆
              切版從未定過的文案 key，正是本檔上方那段警告的情況（§5：文案正本在切版）。
            分支對回 `review_apply` 的實際出口：它**逐租戶各自成敗**（`results.append({… ok: True/False,
              error: …})`，整批不 rollback、不拋例外），所以「部分租戶失敗」是一條真實可達、而且與

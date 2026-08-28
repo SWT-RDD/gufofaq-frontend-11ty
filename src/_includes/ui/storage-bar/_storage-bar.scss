@@ -1,9 +1,10 @@
-// 取自凍結前端 `GufoFAQ_Frontend_New/scss/component.scss`「步驟 / 容量使用條」區段（2645-2673）。
-// **排版宣告逐字不動，色值依 §4 換成語意 token**（上一版寫 verbatim，但三顆色值都換過）：
-//   ①`.bar` 底色 `#b4bfc9` → `--control-track-alt`（軌道，不承載文字）
-//   ②`.bar-fill` `var(--color-primary-dark)` → `--brand-ink`（不承載文字的圖形記號，§4 前景墨色）
-//   ③`.text` `var(--color-text-dark)` → `--text-muted`
-// 容量使用條
+// 容量使用條：一條 200×6px 的進度軌 ＋ 右側一行說明文字（3-1-1 的儲存空間、5-10 的標註覆蓋率）。
+// 條寬由使用頁以行內 `style="width: N%"` 資料驅動（見 `storage-bar.html`），本檔不管長度、只管樣子。
+// **三顆色值各有各的角色，換錯即使數值接近也是 bug**（§4 token 角色分家）：
+//   ①`.bar` 的底＝`--control-track-alt`：那是**軌道**，不承載任何文字，所以不能拿表面色來塗。
+//   ②`.bar-fill`＝`--brand-ink`：已使用的那一段是「不承載文字的圖形記號」，用前景墨色而非填充族的
+//     `--brand`——後者是「可按的東西」的填充，塗在這裡會讓人以為這條進度軌點得下去。
+//   ③`.text`＝`--text-muted`：它是輔助說明，不與主文同一階。
 .storage-bar {
     display: flex;
     gap: 8px;

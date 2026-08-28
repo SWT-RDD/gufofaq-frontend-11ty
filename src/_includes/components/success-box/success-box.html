@@ -2,16 +2,14 @@
      successRetryHref / successRetryLabel / successRetryKey：左鈕（預設 "#"／再次上傳／comp.uploadAgain）
      successViewHref / successViewLabel / successViewKey：右鈕（預設 "#"／查看資料／comp.viewData）
      successDescPdf：true ＝ 走 PDF／Word 那一支的資訊列——**只有兩行、而且順序與 Excel 相反**
-       （先資料總量、後檔案大小），也不畫檔案名稱。這不是「少畫」，是鏡射真 app：
-       `GufoFAQ_Frontend_New/js/uploadSuccess.js` 的 `descHtml` 有兩個分支，
-       `fileType === 'excel' && fileName` 那一支是「檔案名稱／檔案大小／資料總量」三行，
-       `else`（PDF 流程，資料從 query string 來）那一支是「資料總量／檔案大小」兩行——
-       PDF 那條路的 `fileName` 其實是**資料集名稱**，所以它不進這張卡。
-       ⚠️ 原本這裡是 `successHideDesc`（整塊拿掉、只留空的 .success-desc 容器）：那是把「隨真 app」
-       讀成「一句都不畫」，而 §5 的結論是**鏡射它那一句**。已撤除。
+       （先資料總量、後檔案大小），也不畫檔案名稱。
+       這不是「少畫一行」而是兩條匯入路徑本來就交付不同的事實：Excel 那一支有真正的來源檔名，
+       PDF 那一支手上的名字其實是**資料集名稱**，印成「檔案名稱」會指鹿為馬，所以它不進這張卡。
+       ⚠️ **不可以**改成「整塊 desc 都不畫、只留一個空的 .success-desc 容器」：使用者剛匯完，
+       這張卡唯一的作用就是告訴他「匯進去了多少」，兩行都拿掉等於這張卡什麼都沒說（§5）。
      successHealthScanFailed：true ＝在按鈕之上多畫一段紅字，說「這一批匯入完成了，但**匯入後的健檢**
-       沒有跑成功」。對回三支匯入端點回應的頂層 `health_scan` 欄（product `app/quality/health_scan_hook.py`
-       的 `post_import_health_scan` → `app/quality/health_findings_service.py` 的 `scan_after_import`，
+       沒有跑成功」。對回三支匯入端點回應的頂層 `health_scan` 欄（product 的
+       `post_import_health_scan` → `scan_after_import`，
        形狀 `PostImportScanOut`：`ok`／`detail`／`scan`）——**只有 `ok === false` 那一態畫**，成功那一態
        就是這一段整段不存在（不是畫一句「健檢成功」）。
        為什麼在這裡而不是只留給資料健檢頁：`scan_after_import` 的 docstring 把三件事逐條寫死，其中
@@ -24,11 +22,12 @@
      successFileName / successFileSize / successDataCount：檔案名稱／大小／資料總量。
        **未給＝用元件內建的示範值**（不是「寫死的假資料」——1-1-6 三顆都覆寫了）。值是資料、不翻譯。
        內建檔名走 product 的落地檔名形狀 `{14位時間戳}_{6位hex}_{序號}_{原始檔名}`
-       （`dataset_ops.stored_filename`；`history.py` 的
+       （`dataset_ops.stored_filename`；product 的
        `_STORED_PREFIX = re.compile(r"^\d{14}_[a-f0-9]{6}_\d+_")` 靠那段 hex 剝前綴）——
        少了 hex 與序號的字串是 product 產不出來的東西，而這一份預設在元件庫頁真的畫得出來。
        內建的大小與筆數也要互推得出來（§6）：4KB ÷ 90 ≈ 43 B/列，與 1-1-6 的 42KB ÷ 980 同一個
-       量級（一份純文字問答表）；原本 1KB 配 90 筆 ≈ 11 B/列，一列連一個問句都放不下。
+       量級（一份純文字問答表）。⚠️ 兩顆值不可以各自隨手填：例如 1KB 配 90 筆 ≈ 11 B/列，
+       一列連一個問句都放不下，示範資料自己就互相矛盾了。
    父層 .block.block-lg.corner-md 由本元件掛上（.block 樣式由 ui/block 提供）。 #}
 <div class="block block-lg corner-md success-box">
     <div class="success-message">
@@ -49,9 +48,9 @@
     <p class="text-red text-center m-0" data-i18n="dataImport.postImportScanFailed">這批資料匯入完成，但匯入後健檢沒有跑成功——請到「資料健檢」頁手動重掃確認。</p>
     {% endif %}
     <div class="btn-row">
-        {# 兩顆去向**必填**：先前是 `{{ … or '#' }}`，忘了傳就靜默渲染成一顆按了只會捲回頁首的死連結（§5）。
-             `or '#'` 這種 nunjucks 後備比裸寫 `href="#"` 更難抓——src 上看不到那四個字。
-             沒有去向就整顆不畫（同 `ui/breadcrumb` 對沒有 href 的分類層的處置）。 #}
+        {# 兩顆去向**必填**，而且**不得寫成 `{{ … or '#' }}` 這種後備**：忘了傳時它會靜默渲染成
+             一顆按了只會捲回頁首的死連結（§5），而且 `or '#'` 比裸寫 `href="#"` 更難抓——
+             src 上看不到那四個字。沒有去向就整顆不畫（同 `ui/breadcrumb` 對沒有 href 的分類層的處置）。 #}
         {% if successRetryHref %}<a href="{{ successRetryHref }}" class="button button-border" data-i18n="{{ successRetryKey or 'comp.uploadAgain' }}">{{ successRetryLabel or '再次上傳' }}</a>{% endif %}
         {% if successViewHref %}<a href="{{ successViewHref }}" class="button button-primary" data-i18n="{{ successViewKey or 'comp.viewData' }}">{{ successViewLabel or '查看資料' }}</a>{% endif %}
     </div>

@@ -5,9 +5,12 @@ titleKey: nav.datasetList
 pageHeading: 資料集列表
 permalink: 3-1-6_previewExcel_compare.html
 ---
-{# 麵包屑：真實頁第三層為 .folder-name-link（回連資料集）、第四層為 .file-name（目前檔案）。
-     ui/breadcrumb 的 item 支援 class / i18nKey，故這兩個專屬 class 由 breadcrumbItems 帶進去，
-     不必手寫一份麵包屑（§1-2：元件只有一份正本）；資料以「客服問答知識庫 / 商品清單.xlsx」呈現載入完成狀態 #}
+{# 麵包屑：第三層帶 `.folder-name-link`（回連資料集）、第四層帶 `.file-name`（目前這個檔）——
+     兩顆都是**業務掛點**，執行期由業務 js 把名字填進去，所以 class 與位置都要在。
+     ui/breadcrumb 的 item 支援 class／i18nKey，故這兩個專屬 class 由 breadcrumbItems 帶進去，
+     不手寫第二份麵包屑（§1-2：元件只有一份正本）。
+     示範資料「客服問答知識庫 / 商品清單.xlsx」畫的是載入完成那一態，兩個名字都對得回 3-1-3
+     的檔案列（§6 跨頁自洽）。 #}
 {% set breadcrumbItems = [
   { label: "首頁", href: "2-1_qaRecord.html", i18nKey: "nav.home" },
   { label: "資料集列表", href: "3-1-1_datasetList.html", i18nKey: "nav.datasetList" },
@@ -17,11 +20,11 @@ permalink: 3-1-6_previewExcel_compare.html
 <div class="flex-row column gap-16">
     {% include "ui/breadcrumb/breadcrumb.html" %}
 
-    {# `.file-name-title` 全站 scss 沒有規則＝**真 app 掛點**，不是死碼也不是自創詞彙：
-         previewExcelCompare.js:167 `$('.file-name-title').text(file.FileName)`，與同檔 :165 的
-         `.folder-name-link`、:166 的 `.file-name`（兩者都在上面的麵包屑裡）是同一批填字掛點。
-         §4「新增的無樣式 class 一律走 `js-` 命名，非此形狀者必須在檔頭寫出真 app／product 出處」——
-         這一顆是沿用真 app 的既有名字，故不改名（§5：hook 是轉換契約）。 #}
+    {# `.file-name-title` 在全站 scss 一條規則都沒有＝**業務掛點**，不是死碼、也不是自創詞彙：
+         它與上面麵包屑裡的 `.folder-name-link`、`.file-name` 是同一批「由業務 js 填字」的掛點，
+         執行期把這個檔的名字寫進來。
+         §4 的預設是「新增的無樣式 class 一律走 `js-` 命名」，而這一顆是既有名字、不在新增之列
+         ⇒ **不改名**（§5：hook 是轉換契約，改名等於把 React 那一側的填字目標弄丟）。 #}
     <div class="page-title plain file-name-title">商品清單.xlsx</div>
 </div>
 
@@ -35,11 +38,11 @@ permalink: 3-1-6_previewExcel_compare.html
 
 {# 兩個面板**每一欄一顆**排序鈕共用的「排序」字樣（可及名稱組成「<欄名> 排序」）；一頁一份、不逐鈕複製。
      **它必須住在兩個 `.tab-content` 之外**：ui/tab 的 `showPanel()` 是 document 級全域，切到
-     另一個面板時會把沒被選中的 `.tab-content` 整塊 `style.display = "none"`——原本它住在
-     `#panelCompare` 裡，於是使用者一切到「原始資料」，那 7 顆鈕的 `aria-labelledby` 就指向一個
+     另一個面板時會把沒被選中的 `.tab-content` 整塊 `style.display = "none"`。這顆節點要是住在
+     `#panelCompare` 裡，使用者一切到「原始資料」，那一整排排序鈕的 `aria-labelledby` 就指向一個
      display:none 的節點，可及名稱當場變成空的（§4「判準是無障礙樹讀得到，不是 markup 接上了」）。
      `.sr-only` 是 `position:absolute` 裁切、不是 display:none，放在這裡兩個面板都讀得到。
-     id 同時拿掉 `cmp` 前綴——它從來就不專屬比對面板，帶著面板名只會誘導下一個人再放回去。 #}
+     id 也不帶 `cmp` 前綴——它從來就不專屬比對面板，帶著面板名只會誘導下一個人再把它搬回去。 #}
 <span id="sortWord" class="sr-only" data-i18n="common.sort">排序</span>
 
 {# 比對資料表格：欄位為「動態」——由帳號的欄位對照（document_field_mapping）決定有哪些欄與各欄顯示名，
@@ -47,19 +50,19 @@ permalink: 3-1-6_previewExcel_compare.html
      渲染時 thead/tbody 皆對 columns 迴圈（→ React 直接 .map()）。每欄皆可排序（th-sort + icon）。
      class 沿用 ui/default-table。示範資料含「供應商 / 價格」等自訂顯示名，凸顯**顯示名**由對照表決定。
      ⚠️ **`key` 不是自由字串，是固定欄位槽的槽名**（值域＝ui/field-slot-catalog，那是
-     product `app/field_schema.py` 的 `SLOTS` 22 槽在本 repo 的唯一正本）。對照表能改的是
+     product 的 `SLOTS` 22 槽在本 repo 的唯一正本）。對照表能改的是
      `label`（租戶自己取的顯示名），不是槽名——槽名是欄位在資料層的身分。
-     本輪把四個不在值域裡的 key 換成真的槽（label 一個字都沒動，畫面完全一樣）：
-     `time`→`date`、`image`→`note1`、`supplier`→`note2`、`price`→`number`
-     （`number` 是數值槽，正好承載「價格」；圖片網址與供應商沒有專屬槽，落在通用備註槽，
-     那也是真實租戶會做的事）。
-     為什麼一定要改：槽名寫錯在 React 端是**靜默空白**——`row[col.key]` 取不到值就渲染成空字串，
+     ⚠️ **`key` 一定要挑值域裡真的有的槽**，不可以自己取一個看起來合理的字（`time`／`image`／
+     `supplier`／`price` 都不是槽）。這一份示範用的是 `date`／`note1`／`note2`／`number`
+     （`number` 是數值槽，正好承載「價格」；圖片網址與供應商沒有專屬槽，落在通用備註槽——
+     那也正是真實租戶會做的事）。`label` 不受這條規則影響，它本來就是租戶自己取的字。
+     為什麼非對不可：槽名寫錯在 React 端是**靜默空白**——`row[col.key]` 取不到值就渲染成空字串，
      不報錯、不警告，而這一頁的全部價值就是讓人確認「對照表有沒有接錯欄」。
-     ⚠️ **`label` 一顆 `data-i18n` 都不掛，那是決定不是遺漏**（round45 裁決：租戶自取的顯示名是
-     「資料」不是 chrome，§4-2「只翻 UI chrome，不翻假資料」）。出處：product
-     `app/routers/datasets.py` 的 `_document_field_mapping`（讀三份設定檔的 `document_field_mapping`，
+     ⚠️ **`label` 一顆 `data-i18n` 都不掛，那是決定不是遺漏**（租戶自取的顯示名是
+     「資料」不是 chrome，§4-2「只翻 UI chrome，不翻假資料」）。出處：product 的
+     `_document_field_mapping`（讀三份設定檔的 `document_field_mapping`，
      slot key → 租戶取的顯示標籤）與 `_product_only_labels`（讀 `RetrievalProfile.field_labels`）；
-     兩者都查不到時才退 `app/field_schema.py` 的 `DEFAULT_LABELS`（槽預設名）——**只有那份預設名
+     兩者都查不到時才退 product 的 `DEFAULT_LABELS`（槽預設名）——**只有那份預設名
      才是 chrome**（產品出的字，正典＝multi-select-box 的 `field.<key>`）。這一頁畫的是租戶那一份，
      故當資料。姊妹頁 3-1-5 的六格表頭反過來是 chrome、照掛 `data-i18n`，理由寫在該頁檔頭。 #}
 {% set columns = [
@@ -74,7 +77,7 @@ permalink: 3-1-6_previewExcel_compare.html
      （col_contents）。它與「比對資料」的差別只在表頭：一邊是欄位對照後的顯示名、一邊是原始欄名
      ＋括號註記它被對到哪一欄——使用者要靠這一頁確認「對照表有沒有接錯欄」。
      `label`＝那一欄被對到哪個槽的顯示名，逐字對回 product 的 `_annotate()`：
-     `datasets.py` 對到槽者回 `f"{t} ({label})"`、**沒對到槽的原樣回傳不加括號**。
+     product 對到槽者回 `f"{t} ({label})"`、**沒對到槽的原樣回傳不加括號**。
      故最後一欄「條碼」刻意不給 label——那是活頁簿裡沒被對照表接走的欄，兩個分支各演一次；
      它也因此只出現在原始面板、不出現在比對面板（比對面板畫的是槽，不是活頁簿的欄）。
      原始欄名是活頁簿的資料，不翻（§4-2）；括號裡的顯示名沿用 columns 的 label。 #}
@@ -103,7 +106,8 @@ permalink: 3-1-6_previewExcel_compare.html
                 <th>
                     <div class="th-sort">
                         <span id="cmpColName-{{ col.key }}">{{ col.label }}</span>
-                        {# 排序觸發器用真 button（§4）；.sort＝真 app 掛點（previewExcelCompare.js .sort click），掛 button 照樣命中。
+                        {# 排序觸發器用真 button（§4）；`.sort` 由 `ui/table-sort` 接管（就地重排已載入的列、零 API），
+                             不是業務掛點，掛在 button 上照樣命中。
                              可及名稱要帶欄名（§4：同頁同時可見、語意不同的控制項不得同名）——欄名文字是
                              .th-sort 裡的**兄弟節點**、不會進按鈕的可及名稱，只掛 .sr-only「排序」的話，
                              這一列每一顆鈕在報讀器裡都叫「排序」，聽不出正在排哪一欄。 #}
@@ -130,10 +134,10 @@ permalink: 3-1-6_previewExcel_compare.html
                 {% endfor %}
             </tr>
             {% else %}
-            {# 空狀態的**版位**鏡射真 app：previewExcelCompare.js:257 `if (displayData.length === 0)` 就 append
-                 一列 colspan 的空狀態列（原始面板在 :325 有自己的一份，兩個面板各一）。
-                 **句子不鏡射**：兩個面板各自具名（round48），否則左右兩欄同時印出一模一樣的
-                 「無資料」，讀的人分不出是對照表沒接到欄、還是這個檔本來就沒有列。
+            {# 空狀態：這個面板沒有資料列時列一列 colspan 的空狀態列（原始面板另有自己的一份，
+                 兩個面板各一、不共用）。
+                 **句子要各自具名**：兩個面板印出一模一樣的「無資料」的話，讀的人分不出是
+                 對照表沒接到欄、還是這個檔本來就沒有列。
                  colspan 走 `{{ columns.length }}` 而不是寫死 6：這張表的欄數由對照表決定
                  （thead 也是對同一個陣列迴圈），寫死就是烤一份會分岔的計數（§3-2／§6）。 #}
             <tr>
@@ -146,11 +150,11 @@ permalink: 3-1-6_previewExcel_compare.html
 </div>
 
 <div class="tab-content" id="panelRaw" style="display: none;">
-    {# **這個檔不是從 Excel 匯入的**那一態（round48）：原始面板畫的是活頁簿自己的欄與儲存格，
+    {# **這個檔不是從 Excel 匯入的**那一態：原始面板畫的是活頁簿自己的欄與儲存格，
          而資料夾匯入／PDF 那一族根本沒有活頁簿 ⇒ 整張表不適用。它與下面那一列「沒有資料列」
          是兩件事：那一列說的是「有活頁簿、但裡面沒有列」。共用一句話會讓人回頭去找一個
-         不存在的原始檔。先前這一句是 React 自己造的 key；`.hidden` 那一份是位置與字色的規格，
-         可見處在元件庫頁的「React 條件文案」區（§5）。 #}
+         不存在的原始檔。這一句的繁中正本在切版，這裡的 `.hidden` markup 就是它的位置與字色規格，
+         React 不另造 key；可見處在元件庫頁的「React 條件文案」區（§5）。 #}
     <p class="text-gray mt-10 js-raw-unavailable hidden" role="status" data-i18n="dataset.excelOriginalUnavailable">這個檔不是從 Excel 匯入的，所以沒有原始資料可以對照。</p>
     <div class="table-container scrollTable mt-10">
         <table class="default-table fixed-layout">
@@ -159,11 +163,11 @@ permalink: 3-1-6_previewExcel_compare.html
                     {% for col in rawTitles %}
                     <th>
                         <div class="th-sort">
-                            {# data-column 在這個面板是**活頁簿原始欄名**，不是槽 key：真 app 的
-                                 `sortOriginalData()` 第一行就是 `originalData.ColTitles.indexOf(column)`
-                                 （previewExcelCompare.js:426），傳槽 key 進去恆為 -1、下一行直接 return，
-                                 排序靜默失效。比對面板才是 `data-column="${col.key}"`（同檔 :243）——
-                                 同一個 class、兩個鍵空間，是真 app 本來就有的分別。 #}
+                            {# `data-column` 在這個面板帶的是**活頁簿原始欄名**，不是槽 key：這一側的
+                                 排序是拿這個值到原始欄名清單裡找位置，傳槽 key 進去會找不到、
+                                 直接返回，**排序靜默失效**（不報錯、畫面上看不出來）。
+                                 比對面板那一側帶的才是槽 key——同一個 `.sort` 掛點、兩個鍵空間，
+                                 是這兩個面板本來就有的分別，不是可以統一掉的重複。 #}
                             <span id="rawColName-{{ loop.index }}">{{ col.raw }}{% if col.label %} ({{ col.label }}){% endif %}</span>
                             <button type="button" class="sort" data-column="{{ col.raw }}" aria-labelledby="rawColName-{{ loop.index }} sortWord">
                                 <img src="./images/icon_ascending_order_black.png" width="20" height="37" decoding="async" alt="">
@@ -184,9 +188,9 @@ permalink: 3-1-6_previewExcel_compare.html
                     {% endfor %}
                 </tr>
                 {% else %}
-                {# 空狀態鏡射真 app：previewExcelCompare.js:325 那一列的 colspan 就是
-                     `originalData.ColTitles.length`＝原始欄數，與比對面板各算各的（這張表多一欄
-                     「條碼」——活頁簿裡沒被對照表接走的欄只出現在這一側）。 #}
+                {# 空狀態：colspan 走 `rawTitles.length`＝**原始欄數**，與比對面板各算各的——
+                     這張表多一欄「條碼」（活頁簿裡沒被對照表接走的欄只出現在這一側），
+                     兩邊共用同一個數字就會有一側跨不滿。 #}
                 <tr>
                     <td colspan="{{ rawTitles.length }}" class="text-center text-gray" data-i18n="dataset.rawNoRows">原始檔裡沒有資料列——只有欄標題，或這張工作表是空的。</td>
                 </tr>
@@ -196,11 +200,11 @@ permalink: 3-1-6_previewExcel_compare.html
     </div>
 </div>
 
-{# 分頁：真實頁 .pagination data-total="20" 由 pagination.js 動態產生；ui/pagination 也是同一套
-     data-total 驅動的 js render。total＝**這一個檔的資料筆數**（product `RecordsOut.total`，
-     datasets.py 的 `total` 欄，註解就寫「＝data_count（供前端分頁）」），故取 3-1-3 檔案列裡
-     商品清單.xlsx 那一筆的 980（§6 跨頁自洽）。原本寫 115 是把「資料集的檔案總數」搬過來用，
-     那是 3-1-1／3-1-3 那一層的量，跟這一頁畫的東西不是同一件事。 #}
+{# 分頁：`ui/pagination` 是 data-total 驅動的 js render，依資料筆數產生頁碼。
+     total＝**這一個檔的資料筆數**（product `RecordsOut.total`，那個欄位的註解就寫著
+     「＝data_count（供前端分頁）」），故取 3-1-3 檔案列裡商品清單.xlsx 那一筆的 980（§6 跨頁自洽）。
+     **不可以拿 115**：那是「資料集的檔案總數」，屬 3-1-1／3-1-3 那一層的量，
+     與這一頁畫的「一個檔裡有幾列」不是同一件事。 #}
 {% set total = 980 %}
 {# 每頁筆數與頁碼列吃同一個 perPage（§6 同源：選擇器顯示 20、頁碼卻按 10 算總頁數就是自打架）。 #}
 {% set perPage = 20 %}

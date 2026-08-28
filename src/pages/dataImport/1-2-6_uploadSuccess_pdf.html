@@ -13,14 +13,15 @@ permalink: 1-2-6_uploadSuccess_pdf.html
     {% include "ui/breadcrumb/breadcrumb.html" %}
 </div>
 
-{# 頁層說明：語意出處同下面 successDescPdf 那段檔頭——PDF/WORD 走的是批次匯入，這裡看到的
-     是整批彙總（資料總量＋檔案大小），不是單一檔案的細節，鏡射 uploadSuccess.js 的 else 分支。 #}
+{# 頁層說明：語意出處同下面 `successDescPdf` 那段檔頭——PDF／WORD 走的是批次匯入、一次是一整批，
+     所以這裡看得到的只有整批彙總（資料總量＋檔案大小），不是單一檔案的細節。 #}
 <p class="text-gray" data-i18n="dataImport.uploadSuccessPdfIntro">這一頁是 PDF／WORD 批次匯入完成後的結果畫面：確認這一批文件已經送入你選定的資料集。這裡顯示的是整批的彙總結果，不是單一檔案的細節。</p>
 
 {# **本頁是無導覽入口頁**（§3-1 第③條，同時登記在測試的 `NO_NAV`）：入口同 1-1-6——1-2-1 的送出鈕
      是動作模式（product `batch_import_documents` 成功之後才換頁），那是條件動作、切版不做靜態跳轉，
      所以沒有任何一頁的 `href` 連得到它；部署站台上由頁面目錄 `catalog.html` 進入。1-2-1 那顆
-     渲染不到的 `stepNextHref` 已撤，理由逐字同 1-1-6 檔頭。
+     1-2-1 同樣不 set `stepNextHref`（動作模式渲染成 `<button>`，那個參數渲染不到），
+     理由逐字同 1-1-6 檔頭。
      **這一頁不是逐檔結果的落點**：PDF/WORD 那條流程的匯入報告畫在 1-2-1 當頁（唯一定義點是測試裡的
      `REPORT_HOSTS`），所以上面那句「顯示的是整批的彙總結果，不是單一檔案的細節」是準確的，
      而 1-2-1 的送出 toast 也因此只指當頁、不指這一頁。 #}
@@ -37,11 +38,10 @@ permalink: 1-2-6_uploadSuccess_pdf.html
 </div>
 
 {# 上傳成功通知：PDF 流程的按鈕文字/去向與 excel 流程不同，由本頁 set 覆寫元件預設值。
-   資訊列走 `successDescPdf`＝**兩行、順序與 Excel 相反**（先資料總量、後檔案大小），鏡射
-   `GufoFAQ_Frontend_New/js/uploadSuccess.js` 的 `else` 分支（PDF 那條路的資料從 query string
-   來，`fileName` 其實是資料集名稱，故不畫檔名）。原本這裡 set `successHideDesc = true` 把整塊
-   拿掉——那是把「隨真 app」讀成「一句都不畫」，而 §5 的結論是**鏡射它那一句**：真 app 那一支
-   有兩行，不是零行。`successHideDesc` 全站只有這一頁用，隨之撤除。
+   資訊列走 `successDescPdf`＝**兩行、順序與 Excel 相反**（先資料總量、後檔案大小）：這一條路
+   拿不到單一檔名（一次是一整批），所以不畫檔名那一格。
+   **但整塊資訊列不可以整個藏掉**（例如另給一顆「隱藏資訊列」的參數）：「這一批寫進了多少資料」
+   正是使用者按下送出之後唯一想確認的事，一句都不畫就等於讓成功畫面說不出成功了什麼。
    示範值與 1-2-1 自洽（§6）：那一頁批次匯入 2 成功 1 失敗，成功的是 1.20MB 的 `公文範本.pdf`
    與 0.32MB 的 `作業要點.docx`——結構化匯入一檔一份文件，故資料總量 2 筆、檔案大小 1.52MB。 #}
 {% set successRetryHref = "1-2-1_uploadFile_pdf.html" %}
@@ -54,8 +54,8 @@ permalink: 1-2-6_uploadSuccess_pdf.html
 {% set successDataCount = "2" %}
 {% set successFileSize = "1.52MB" %}
 {# 匯入後健檢沒跑成功那一態（`batch_import_documents` 回應頂層 `health_scan.ok === false`；
-     gufofaq-saas product `app/routers/data_import.py` 與 `app/routers/datasets.py` 的每一支匯入端點
-     收尾都掛 `post_import_health_scan`）。完整理由寫在 1-1-6 檔頭與 components/success-box 檔頭。
+     gufofaq-saas product 的每一支匯入端點收尾都掛 `post_import_health_scan`）。
+     完整理由寫在 1-1-6 檔頭與 components/success-box 檔頭。
    **兩張卡各演一次不是重複**：Excel 那張是三行資訊列（檔名／大小／筆數）、這張是兩行而且順序相反，
      兩邊的卡片幾何不同 ⇒ 這一段長在哪一格、換行成什麼樣，兩邊各是一份自己的版面規格。
    與本頁其餘示範值自洽（§6）：1-2-1 那一批 2 成功 1 失敗，成功的兩份已經落地（`successDataCount` 2），

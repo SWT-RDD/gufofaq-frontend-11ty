@@ -1,15 +1,14 @@
-{# 取自真實頁面 pages/dataImport/1-1-4_columnSelect_excel.html「欄位對應」步驟（class 沿用真實系統）。
-     真實頁面左右兩欄內容是頁面自身 js/columnSelect_excel.js 在執行期動態產生（.multi-select-box .block:first / :last 內 empty() 後 append()），
-     此處依其產生的 markup 結構以 njk set fields + for 靜態化。
+{# 匯入精靈「欄位對應」那一步的左右兩欄盒（1-1-4）：左欄逐槽問「把哪一個來源欄對到這個槽」，
+     右欄同步顯示「對完長什麼樣」的預覽。
+     兩欄的欄位清單都由同一份槽目錄跑 `for` 靜態展開——不靠執行期 js 生 DOM，行數、順序、欄名
+     兩欄才必然一致（一邊多一列、另一邊沒有，使用者就對不起來了）。
      左欄「select.multiSelect」重用 ui/multi-select 既有 class 命名（由已登記的 ui/multi-select/multi-select.js 於 DOMContentLoaded 增強成 tag 多選 UI）；
      左右兩欄的 form-group/label/field 結構沿用 ui/form-control 既有寫法。
-     `.field-<槽鍵>`／`.preview-<槽鍵>` 兩族是**凍結前端逐槽定位左右欄的掛點**
-     （`GufoFAQ_Frontend_New/js/columnSelect_excel.js`），全站零樣式、零本 repo js——槽鍵集合的
-     唯一正本是 `ui/field-slot-catalog`（22 槽，對回 product `app/field_schema.py` 的 `SLOTS`）。
+     `.field-<槽鍵>`／`.preview-<槽鍵>` 兩族是**逐槽定位左右欄的業務掛點**，全站零樣式、零本 repo js——槽鍵集合的
+     唯一正本是 `ui/field-slot-catalog`（22 槽，對回 product 的 `SLOTS`）。
      測試那一份白名單（`tests/guideline.test.mjs` 由 catalog 推導出這兩族）逐字指著**這一段**當契約
      正本，所以這裡不能不寫（§4「痕跡要成對：只住在測試裡的豁免，讀元件的人看不到」）。
-     `.date-error` 是**凍結前端的業務掛點**（`GufoFAQ_Frontend_New/js/columnSelect_excel.js:275/278`
-     的 `.show()`／`.hide()`），全站零樣式、零 js——切版改由 `.form-group:has(.error)` 揭示，
+     `.date-error` 是**日期欄錯誤訊息的業務掛點**，全站零樣式、零 js——切版改由 `.form-group:has(.error)` 揭示，
      掛點原樣保留（§5 轉換契約，不是無主 class；沒有這一句它長得就像 §4 死法②）。
      本元件不自帶任何槽清單，三個變數全部由使用頁供給（§3-2/§6）——**其中一個不是 `{% set %}`，
      是 `import`**，而缺了那一行的失敗方式與缺一個 `set` 完全相同：不報錯、只是整個迴圈跑 0 次，
@@ -31,8 +30,8 @@
      · `fieldSlotCatalog`（來自 ui/field-slot-catalog 的唯一正本）：逐槽的 `key`／`defaultLabel`／
        `productOnly`。本元件對它跑三圈：非 productOnly 的欄位、`msHasProductOnly` 的偵測、
        productOnly 的欄位。
-     · `columnOptions = [{ value, label }]`：來源欄位選項，**全部的槽共用同一份**（凍結
-       `GufoFAQ_Frontend_New/js/columnSelect_excel.js` 只算一份 `fieldOptions` 餵給每一顆 select）。
+     · `columnOptions = [{ value, label }]`：來源欄位選項，**全部的槽共用同一份**——來源檔的欄位
+       是同一組，每顆 select 只是從同一份清單裡各挑各的，不必逐槽再算一次。
      · `fieldExtras`：以槽 key 查的差異——`selected`（預選的 option value）／`placeholder` ＋
        `placeholderKey`（ui/multi-select 的資料槽，§4-2）／`preview`（右欄預覽值）／
        `error`（true 時右欄那格標紅並揭示格式警告）。查不到的 key 就是「沒有差異」，不是錯誤。 #}
@@ -111,7 +110,8 @@
                         <input type="text" id="ms-preview-{{ field.key }}" class="form-control disabled ms-control preview-{{ field.key }}{% if msExtra.error %} error{% endif %}" value="{{ msExtra.preview }}" disabled>
                         {% if msExtra.error %}
                         {# .error-prompt 預設就 display:none，靠父層 .form-group:has(.error) 揭示（見 _form-control.scss）。
-                           原本這裡寫死行內 display:none，等於把揭示機制永久壓死——error: true 的示範欄從來沒顯示過警告。 #}
+                           ⚠️ 這裡**不得**補行內 `display:none`：行內樣式贏過 :has 那條規則，等於把揭示機制
+                           永久壓死，error: true 的欄位就再也顯示不出警告了。 #}
                         <span class="error-prompt date-error" role="alert" data-i18n="dataImport.formatWarning">此格式可能無法被正確讀取</span>
                         {% endif %}
                     </div>

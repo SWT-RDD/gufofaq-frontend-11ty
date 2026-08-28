@@ -6,7 +6,7 @@
 // 只能一顆一顆捲——使用者知道自己要找「資料集」相關的那幾顆，卻沒有任何方法問出來。
 // 同一頁的「使用者」下拉在成員多的租戶上是同一個問題。
 //
-// **與 ui/multi-select 的關係**：那一支是 select2 多選的替代，本檔是**單選**的。刻意不合併成
+// **與 ui/multi-select 的關係**：那一支做的是**多選**，本檔做的是**單選**。刻意不合併成
 // 一支帶 `multiple` 旗標的元件——兩者的互動語意在關鍵處相反（選取後關不關閉、Enter 的意義、
 // 關閉時輸入框顯示什麼、Backspace 做什麼），合併後每一條規則都要帶一個分支，而分支的兩半
 // 各自只有一個消費者。**沒有繼承 `data-suffix`／`data-suffix-key`**（多選那一支的狀態後綴槽）：
@@ -25,8 +25,9 @@
 // 而且看的人會以為篩選還在。
 document.addEventListener("DOMContentLoaded", function () {
     var uid = 0;
-    //: 每一顆增強過的原生 select → 它的重繪函式。用 WeakMap 而不是掛在節點上，是為了讓
-    //  節點被移除時這一份跟著消失（清單頁重繪 DOM 時不留下一堆指著 detached 節點的閉包）。
+    // 每一顆增強過的原生 select → 它自己的重繪函式。用 WeakMap 而不是把函式掛在節點上，
+    // 是為了讓節點被移除時這一份對應跟著消失——清單頁整份重繪 DOM 時，才不會留下一堆
+    // 指著 detached 節點的閉包（那些閉包會一直活著，而它們畫的是已經不在畫面上的東西）。
     var repaint = new WeakMap();
 
     window.GufoSearchSelect = {
@@ -107,9 +108,10 @@ document.addEventListener("DOMContentLoaded", function () {
         wrapper.appendChild(dropdown);
 
         var activeIndex = -1; // 鍵盤游標位置（對應 dropdown 內第幾個 role=option）
-        //: 使用者正在打的過濾字。**與「輸入框裡的字」是兩件事**：關閉時輸入框顯示的是已選項的
-        //  標籤（那不是過濾字），把兩者混成同一個變數會讓「選了『問答』之後再打開」變成
-        //  「用『問答』過濾」——選過一次以後就再也看不到完整清單。
+        // 使用者正在打的過濾字；null＝現在沒有人在打字。
+        // **這與「輸入框裡顯示的字」是兩件事**：關閉時輸入框顯示的是已選項的標籤，那不是過濾條件。
+        // 把兩者混成同一個變數的話，「選了『問答』之後再打開」會被當成「用『問答』過濾」
+        // ——選過一次以後就再也看不到完整清單。
         var keyword = null;
 
         function options() { return Array.prototype.slice.call(select.options); }
@@ -177,7 +179,7 @@ document.addEventListener("DOMContentLoaded", function () {
             if (el.scrollIntoView) el.scrollIntoView({ block: "nearest" });
         }
 
-        // 單選：選取後**關閉**（與 ui/multi-select 的 closeOnSelect:false 相反）。
+        // 單選：選取後**立刻關閉**（與 ui/multi-select 相反——那一支選了不關，因為還要繼續選）。
         //
         // **先聚焦、再關閉**，順序是這一支唯一容易寫反的地方：`search` 身上綁著
         // `focus → setOpen(true)`（那是「點進欄位就展開」那條路）。反過來寫的話，

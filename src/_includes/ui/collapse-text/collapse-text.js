@@ -1,5 +1,6 @@
-// 長文收合：點 .collapse-toggle → 切 .collapse-text.open（CSS 解除 line-clamp、箭頭轉 180°），按鈕字在 展開↔收合 之間換。
-// 對應凍結前端 GufoFAQ_Frontend_New/js/main.js:880-884（原 jQuery toggleClass + .text()），純 UI，無業務邏輯。
+// 長文收合：點 `.collapse-toggle` → 在 `.collapse-text` 上切 `.open`，css 憑它解除 line-clamp、
+// 並把箭頭轉 180°；同時把鈕面的字在「展開 ↔ 收合」之間換掉。
+// 純 UI，無業務邏輯：狀態只有一個 class，沒有任何請求。
 //
 // i18n：展開↔收合的標籤由 JS 切換，故除了寫入文字，也同步改寫 data-i18n 的 key，
 //       之後切換語言時 lang-toggle 的 apply() 才會依「當下狀態的 key」重譯（見 gufo:langchange）。

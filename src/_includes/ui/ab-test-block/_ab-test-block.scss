@@ -1,9 +1,9 @@
 // AB 測試設定區塊（2-2-3）：.block 的 variant，左右兩組設定各佔一半、可被壓縮。
 // 純樣式元件（無 html/js）：markup 寫在頁面——外層 .block.ab-test-block，
 // 兩側容器加本元件的 slot class .ab-side、設定欄位的標籤加 .ab-field-label（固定 108px 對齊兩側欄位）。
-// （原始規則來自凍結前端 GufoFAQ_Frontend_New/css/style.css「AB測試 (2-2-3)」段的 .ab-test-block > div 與
-//  .ab-test-block .select-row .form-group .label，依 GUIDELINE §4「slot class」原則
-//  改為自己命名的 class，不指名 ui/form-control 的 .form-group/.label。）
+// （兩顆 slot class 都由本元件自己命名：依 GUIDELINE §4「slot class」原則，不用
+//  `.ab-test-block > div` 這種靠位置點名的選擇器、也不指名 ui/form-control 的
+//  `.form-group`／`.label`——否則 form-control 一改結構或 2-2-3 一加節點，這兩條就靜默失效。）
 //
 // markup 契約（無 html 元件，§1-2；整段照抄）—— 生產 markup 逐字寫在 2-2-3_abTest.html，
 // 從**承載樣式的最外層 `.block.ab-test-block` 寫起**（`.ab-side` / `.ab-field-label` 兩條規則都
@@ -142,8 +142,8 @@
 //       {% endfor %}
 //   </div>
 //
-// **`.ab-side` 裡有三塊，各自是一個獨立的 group，不是一個大 group**（上一版的契約只寫了第一塊，
-// 另外兩塊用一句中文括號帶過——那既是省略、又是把散文寫進契約段裡，整段複製會把中文貼進 HTML）：
+// **`.ab-side` 裡有三塊，各自是一個獨立的 group，不是一個大 group**（三塊都要逐字寫進上面的契約段：
+// 拿一句中文括號帶過另外兩塊，既是省略、又把散文混進可照抄的 markup 裡，整段複製會把中文貼進 HTML）：
 //   1. 七組設定欄位 —— `role="group" aria-labelledby="abSideLabel-<側>"`
 //   2. 提示詞區 —— 沒有 group（只有一顆控制項），可及名稱由 textarea 自己的
 //      `aria-labelledby="abSideLabel-<側> abPromptLabel-<側>"`（**側別在前**）串出來；

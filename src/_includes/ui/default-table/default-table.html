@@ -1,12 +1,15 @@
-{# 展示片段，取自真實 app pages/components/component.html 11 Table表格 section（主要表格，class 沿用真實系統）。
-   內含 {% include ui/accordion %} 示範可展開列——展示片段的依賴不算數（§1-1），故本元件留在 ui/。 #}
+{# 展示片段（非生產 markup）：元件庫頁「11 Table表格」的主要表格示範——一張捲動表加三列假資料，
+   示範排序鈕、連結欄、長文收合欄的長相。
+   末尾另 {% include ui/accordion %} 示範可展開列；**展示片段的依賴不算元件依賴**（§1-1），
+   所以 default-table 仍是 ui/ 的原子、不會因此變成組合元件。 #}
 {# 父層用「div.table-container」包覆，需左右滾動時加「.scrollTable」；主要表格用「table.default-table」；
      欄位排序在 th 內加 div.th-sort + img.sort；內容較多的欄位用 ui/collapse-text 包覆（純 clamp 的 .ellipsis-* 只給控制項標籤用）；
      功能欄按鈕用 div.btn-group 包覆；固定欄寬加 .fixed-layout；無外框加 .no-border（見下方 accordion 表格範例） #}
 {# 示範列的 userType／satisfaction 是**封閉枚舉**，不可自由編（§6：正本給不出來的值不得為了讀起來順而編一個）：
      userType 對 4-1 的 #userTypeSelect（前台問答／後台問答；正本 product 的 tag=frontend／backend），
-     satisfaction 對 #ratingSelect（讚／倒讚／無意見；正本 history.py 的 _RATING_LABEL 與 rating_type
-     的 positive/negative/unrated）。round44 之前第三列寫「後台測試」「普通」，兩個都不在枚舉裡。
+     satisfaction 對 #ratingSelect（讚／倒讚／無意見；正本 product 的 _RATING_LABEL 與 rating_type
+     的 positive/negative/unrated）。像「後台測試」「普通」這種讀起來順、但不在枚舉裡的值一律不准編：
+     假資料一旦跑出枚舉之外，看的人會以為那是個合法選項，篩選器卻永遠選不到它。
      （這段寫在 set 之前而不是列旁邊——§2：nunjucks 註解不可出現在 set 的運算式裡，會 build 失敗。） #}
 {% set demoTableRows = [
     {
@@ -74,9 +77,9 @@
                 <td id="demoTableRowId-{{ loop.index }}">{{ row.id }}</td>
                 <td>{{ row.chatId }}</td>
                 <td>
-                    {# 提問連到那一則的詳情頁（真 app：`GufoFAQ_Frontend_New/js/qaHistory.js` 的
-                         `4-2_qaHistory_detail.html?logSn=${…}`）。展示片段給**簡化版靜態跳轉**、
-                         不留 `href="#"` 死連結（§5，同 3-1-3 的處置）。 #}
+                    {# 提問連到那一則的詳情頁；正式環境會帶上該筆的識別參數
+                         （`4-2_qaHistory_detail.html?logSn=…`）。展示片段沒有真的列鍵，故給
+                         **簡化版靜態跳轉**，不留 `href="#"` 死連結（§5，同 3-1-3 的處置）。 #}
                     <a href="4-2_qaHistory_detail.html" class="link-file">{{ row.question }}</a>
                 </td>
                 <td>

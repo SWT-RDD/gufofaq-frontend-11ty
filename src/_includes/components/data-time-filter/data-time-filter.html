@@ -1,7 +1,8 @@
 {# 「資料時間篩選」整列（近24小時／上週／上個月／時間區間＋起訖欄）。
      5-3 統計模組與 5-4 覆蓋缺口逐字相同（約 45 行），§3-3「同一段版面出現在 2 頁以上就抽成元件」。
-     抄本已經開始分岔：兄弟列（查詢資料類型）一頁寫 role="group"、另一頁寫 role="radiogroup"——
-     那一列是純 radio，`radiogroup` 才對（見 data-type-filter）。
+     抽成元件的理由不只是省行數：手抄兩份時分岔會落在 role 這種看不出來的屬性上。
+     兄弟列（查詢資料類型）是純 radio，只有 `radiogroup` 對，`group` 讀不出「三選一」
+     （見 data-type-filter）。
      **但這一列不是** `radiogroup`：`field-with-input-group` 的構造讓它必然含兩個文字欄
      （起訖時間），`radiogroup` 的 owned element 只能是 radio，報讀器會把那兩格念成單選成員。
      故這一列維持 `role="group"`。
@@ -11,7 +12,7 @@
        timeFilterChecked —— 預設選中哪一顆：last24h / lastWeek / lastMonth / range（不給＝一顆都不選）
        timeFilterRangeHintId —— 區間上限那句常駐說明的 id（同頁唯一；起訖兩欄 aria-describedby 指它）
      **365 這個數字寫在元件裡、不開成參數**（§6 (a) 全站不變的結構性設定）：兩個消費頁打的是
-     同一支驗證——product `app/routers/stats.py` 的 `_resolve_range`，`GET /stats` 與
+     同一支驗證——product 的 `_resolve_range`，`GET /stats` 與
      `GET /stats/coverage-gaps` 都呼叫它，裡面兩條界線都是 `timedelta(days=365)`
      （`stats.start_over_a_year_ago`＝開始時間不得早於 365 天前、`stats.range_over_365_days`＝
      區間不得超過 365 天）。哪一天有頁面要不同的界線，才照 §6 開成參數。
@@ -19,11 +20,11 @@
      那條例外**要求同頁另有一處常駐可見的節點承載同一個數字**——沒有它，改了上限只會讓譯文
      靜默過期。故走正典寫法：前綴 key ＋ 不翻的 `<span>` 數字節點 ＋ 後綴 key，並依 §3-2
      「值域寫在填之前」擺在起訖欄旁邊、而不是等按下查詢才由 toast 說。
-     起訖欄是 flatpickr 的掛點（凍結前端 GufoFAQ_Frontend_New/js/main.js 綁 .start-date/.end-date），切版不引 vendor、
+     起訖欄是日期選擇器的掛點（`.start-date`／`.end-date`），切版不引 vendor、
      只保留 class 與 disabled 初始態；`.time` 是 form-control 的日曆圖示變體（`.field:has(> .form-control.time)::after`），
-     4-1 的同型欄位有、這兩頁原本漏掉。
-     `.field-with-input-group` / `.field-with-input` / `.with-input` 是**真 app 的掛點**
-     （js/main.js:430-455：選了哪顆 radio 就解除它附屬輸入框的 disabled），不是無主 class——
+     全站的日期輸入欄一律帶它——4-1 的同型欄位也是這一顆，三處要一致。
+     `.field-with-input-group` / `.field-with-input` / `.with-input` 是**業務掛點／轉換契約**
+     （選了哪顆 radio 就解除它附屬輸入框的 disabled），不是無主 class——
      那個 `disabled` 初始態的意義就是「還沒選時間區間」。行為由 `ui/field-with-input` 當場做（§5 ④）。 #}
 <div class="form-group row flex-row mobile-column-xs gap-16">
     <div class="label mobile-align">

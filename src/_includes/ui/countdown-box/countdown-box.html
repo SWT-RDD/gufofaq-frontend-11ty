@@ -1,6 +1,7 @@
-{# 生產 markup（被真實頁 5-1-1_accountInfo include），取自真實 app pages/settings/5-1-1_accountInfo.html（class 沿用真實系統）
-     img 使用 img_clock.png；容器背景 img_countdown_bg_pattern.png 由 scss background-image 帶出。
-   剩餘天數與到期日是同一支 `AccountOut` 的 `days_left`／`trial_end`（product `app/routers/account.py`），
+{# 生產 markup（唯一使用頁 5-1-1_accountInfo）：帳號資訊頁最上面那一條「使用期剩餘 N 天」的橫幅。
+     時鐘插圖是 `<img>`（img_clock.png），底紋 img_countdown_bg_pattern.png 由 scss 的
+     background-image 帶出——兩者深色模式的處理不同，見 `_countdown-box.scss` 的 ③④。
+   剩餘天數與到期日是同一支 `AccountOut` 的 `days_left`／`trial_end`（product），
      示範值**與 5-6-1 的示範租戶 A 同一個 `trial_end`**——推導（站台的「現在」是哪一天、9 天怎麼來的）
      寫在唯一的使用頁 5-1-1_accountInfo 檔頭，改這裡就要回頭改那兩處。 #}
 <div class="countdown-box">

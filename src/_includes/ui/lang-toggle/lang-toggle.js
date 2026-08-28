@@ -36,19 +36,20 @@
 //
 //   鈕面文字由本檔管理（繁中時 EN、英文時 中），故**那一顆 `.js-lang-toggle-label` 刻意不掛 data-i18n**：
 //   掛了會被 apply() 的文字迴圈與這裡的 textContent 兩邊互相覆寫。`.lang-toggle` 的樣式主人是 header-controls。
-//   ⚠️ **鈕面那兩個字元不是可及名稱**（round47）：先前整顆鈕的名稱就只有「EN」／「中」，報讀器唸出來
+//   ⚠️ **鈕面那兩個字元不是可及名稱**：整顆鈕的名稱如果只有「EN」／「中」，報讀器唸出來
 //   聽不出它是做什麼的。故拆成兩顆子節點——`.js-lang-toggle-label` 是本檔在改的狀態標籤，
 //   `.sr-only` 那一段是給輔具的說明（要翻，掛 data-i18n），另有 `title` 給滑鼠懸停。
 //   說明裡那句「AI 回答的語言由提問語言決定」是這顆鈕最常見的誤解，不是裝飾。
 //
-//   ⚠️ **`.js-lang-toggle-label` 留在切版、也留在 React 的 DOM 上，這是查證過的裁定**（round48）：
+//   ⚠️ **`.js-lang-toggle-label` 留在切版、也留在 React 的 DOM 上，這是查證過的裁定**：
 //   REACT-CONVERSION §⑤ 的「切版 js 查得到 ⇒ React 不帶」講的是**行為**不要帶過去（那支 runtime
 //   swap 是切版專用），不是要 React 從 DOM 上把這顆 class 拔掉——逐位元組比對的骨架序列含 class 串，
 //   拔掉就要為每一份帶 header 的比對案例補一筆具名改寫。
 //   **而切版這一側不可能改**：拿掉它之後本檔只剩「第一顆 span」這種位置定位，而那顆 `.sr-only`
-//   兄弟正是 round47 為了補可及名稱才加進來的——位置定位的意思是「下一次為了 a11y 調整子節點順序
+//   兄弟正是為了補可及名稱才加進來的——位置定位的意思是「下一次為了 a11y 調整子節點順序
 //   就靜默改錯節點」，§4 明文要求元件 js 查自己的 class、不查位置。
-//   兩邊各自都站得住，所以 saas 端把它登記在 `jsHooks.test.ts` 的 OVERLAP_KEEP、切版不動。
+//   兩邊各自都站得住，所以 gufofaq-saas 那一側把它登記在 `apps/web` 的 `jsHooks.test.ts`
+//   （`OVERLAP_KEEP`），切版這一側不動。
 //
 // 匯出（GUIDELINE §1-1「共享行為工具」，全體元件通用故不算依賴）：
 //   window.GufoI18n = { t(key, zhFallback), lang() }  ＋ 事件 `gufo:langchange`（detail.lang）
@@ -63,8 +64,9 @@
 //   · `data-page-title-key` 來自 layouts/base 的 `titleKey`；**`component.html` 與 `faq.html` 沒有**
 //     （兩頁的 front matter 都沒有 `titleKey`）。
 // 判準：`grep -c 'js-lang-toggle' dist/*.html` 與 `grep -c 'data-page-title-key' dist/*.html`，
-// 例外就是上面那三頁——先前這裡寫「全站每一頁都有」，而 README 那份衍生抄本反而寫對了
-// （正本錯、抄本對，正是 §1-2「參數的唯一正本是檔頭那一份枚舉」最怕的方向）。
+// 例外就是上面那三頁。**別把它寫成「全站每一頁都有」**：那句話讀起來省事，但只要有一頁不成立，
+// 這份檔頭就不再是可信的正本，而衍生抄本（README）反而變成比較準的那一份——正是 §1-2
+// 「參數的唯一正本是檔頭那一份枚舉」最怕的方向。
 (function () {
     var DEFAULT = "zh-Hant";
     var root = document.documentElement;
@@ -144,11 +146,11 @@
             document.title = tv != null ? "GufoFAQ::" + tv : defaults.title;
         }
         root.setAttribute("lang", lang === "en" ? "en" : "zh-Hant");
-        // **只改「狀態標籤」那一顆子節點，不是整顆鈕的 textContent**（round47）：那顆鈕裡還有一段
+        // **只改「狀態標籤」那一顆子節點，不是整顆鈕的 textContent**：那顆鈕裡還有一段
         // `.sr-only` 的說明（它是這顆鈕唯一講得出「切的是介面語言、不是 AI 回答的語言」的地方），
         // 而 `btn.textContent = …` 會把子節點整組換掉，那段說明會在第一次切語言時就消失
         // ——而且是**切過去才消失**，繁中模式下永遠看不出來。
-        // 舊 markup（沒有 `.js-lang-toggle-label` 的那一種）落回鈕本身，行為與先前逐字相同。
+        // 沒有 `.js-lang-toggle-label` 的那一種 markup 由 `|| btn` 落回鈕本身，仍然切得動。
         document.querySelectorAll(".js-lang-toggle").forEach(function (btn) {
             var b = btn.querySelector(".js-lang-toggle-label") || btn;
             b.textContent = lang === "en" ? "中" : "EN";

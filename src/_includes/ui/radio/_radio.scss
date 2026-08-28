@@ -1,22 +1,21 @@
-// radio atom：外框排版 base 見共用的 scss/_form-check.scss（與 checkbox 共用，§4 不在此寫 checkbox 的 class）。
-// 以下只寫 radio 自己的 class 與其 input 控制項樣式。
-// 結構與數值取自凍結前端 `GufoFAQ_Frontend_New/scss/component.scss` 的 `.form-radio`（1172-1180）
-// 與 `input[type="radio"]`（1244-1306）。**偏離逐條列出**：
-//   ①原檔 `.form-checkbox, .form-radio` 那一段共用外框排版**不在本檔**——已升格成全域的
-//     `scss/_form-check.scss`（§4）。
-//   ②裸選擇器 `input[type="radio"]` 收進 `.form-radio input[type="radio"]`（§9）。
-//   ③`box-sizing: border-box` 移除（§4-1 全域已給）。
-//   ④色值換語意 token：`#fff`→`--surface-input`、`var(--color-border-default)`→`--border`、
-//     `::before` 的圓點 `#fff`→`--control-knob`、`:checked::before` 的 `var(--color-primary-dark)`→
-//     `--brand-ink`、`:disabled` 底色 `#ebebeb`→`--surface-disabled`；`:disabled:checked` 的
-//     `border-color: #ebebeb` → `--border-subtle`（那一顆是邊框不是填充，§4 角色分家）。
-//   ⑤**就地修正一處上游的複製貼上錯誤**（核心原則 2）：`:disabled::before` 的 transform，凍結正本
-//     寫的是 `translateX(-50%) rotate(45deg) scale(0)`——那是 **checkbox 勾記**的幾何（勾記靠
-//     `rotate(45deg)` 立起來、只水平置中因為它的 `top` 是固定的 1px），整條被複製到 radio 上。
-//     radio 的圓點基準是 `translate(-50%, -50%)`（`top: 50%` 垂直也要拉回一半），而且圓點沒有 45°
-//     可轉。`scale(0)` 讓它在靜態畫面上看不出差別，但**過渡路徑是錯的**：停用態的 radio 一旦被
-//     選起來（`:disabled:checked::before` 是 `translate(-50%,-50%) scale(1)`），圓點會從一個
-//     偏下、帶著 45° 的起點轉正、同時往上跳半格。改成與本檔其餘三處同一個基準。
+// radio 原子：一顆自畫的單選鈕（`.form-radio` ＋ 它裡面那顆 `input[type="radio"]`）。
+// 本檔**只寫 radio 自己的東西**；`.form-checkbox, .form-radio` 共用的那段外框排版住在全域的
+// `scss/_form-check.scss`（與 checkbox 共用，§4 不在這裡寫 checkbox 的 class）。
+// **這幾條要知道理由（改動前先讀）**：
+//   ①外框排版不在本檔，在 `scss/_form-check.scss`（見上）——在這裡再寫一份就是第二份真相。
+//   ②選擇器一律限定在自有 class 底下（`.form-radio input[type="radio"]`），
+//     不寫裸的 `input[type="radio"]`（§9：裸元素選擇器會打包進全站 main.css）。
+//   ③不寫 `box-sizing: border-box`（§4-1：`_base.scss` 已全域給）。
+//   ④色值一律走語意 token 且**角色要分家**（§4）：外框底色＝`--surface-input`、邊框＝`--border`、
+//     `::before` 那顆圓點＝`--control-knob`、選中時的圓點＝`--brand-ink`（不承載文字的圖形記號
+//     用前景墨色）、停用底色＝`--surface-disabled`；`:disabled:checked` 的 `border-color` 用
+//     `--border-subtle` 而不是任何一顆填充色——那一條畫的是邊框，不是面。
+//   ⑤`:disabled::before` 的 transform **必須是 `translate(-50%, -50%) scale(0)`**，
+//     與本檔其餘三處同一個基準。radio 的圓點靠 `top: 50%` ＋ `left: 50%` 定位，所以水平垂直
+//     都要拉回一半；checkbox 勾記那一套 `translateX(-50%) rotate(45deg)`（勾記靠 45° 立起來、
+//     `top` 是固定的 1px 所以只水平置中）套過來會**在靜態畫面上看不出差別**——`scale(0)` 把它縮沒了
+//     ——但**過渡路徑是錯的**：停用態的 radio 一旦被選起來（`:disabled:checked::before` 是
+//     `translate(-50%,-50%) scale(1)`），圓點會從一個偏下、帶著 45° 的起點轉正並往上跳半格。
 .form-radio {
     &.border-wrap {
         border: 1px solid var(--border);
@@ -74,8 +73,8 @@
         border-color: var(--border);
         cursor: not-allowed;
 
-        // 圓點的基準是 translate(-50%, -50%)（見上方 ::before 與 :checked::before）。
-        // 凍結正本這一條是 checkbox 勾記的幾何被複製過來的，就地修正（理由見檔頭 ⑤）。
+        // 圓點的基準是 translate(-50%, -50%)，與上方 ::before 及 :checked::before 逐字相同——
+        // 三處一致，停用態被選起來時圓點才不會邊轉正邊跳位（推導見檔頭 ⑤）。
         &::before {
             transform: translate(-50%, -50%) scale(0);
         }

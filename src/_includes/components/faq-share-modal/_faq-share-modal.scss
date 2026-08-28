@@ -1,6 +1,6 @@
-// 前台 FAQ 分享 modal 內容（分享說明區 + 連結列）。取自真 app FAQ scss/layout/_modal.scss。
-// .share-text（分享前的草稿提示區塊）已搬到 ui/modals/_modals.scss——後台 share-manage-modal
-// 也用同一顆（round 12 補齊時發現跨元件借用），改成 modal 內共用文字區塊的正本，這裡不留一份（§4）。
+// 前台 FAQ 分享 modal 的內容區（分享說明區 + 連結列）。
+// .share-text（分享前的草稿提示區塊）**不住在這裡**：後台 share-manage-modal 也用同一顆，
+// 跨元件共用的 modal 文字區塊正本在 ui/modals/_modals.scss，本檔不留第二份（§4）。
 
 .share-link {
     display: flex;

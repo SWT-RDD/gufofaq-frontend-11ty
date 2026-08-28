@@ -1,6 +1,6 @@
 {# 匯入結果回報：Excel（1-1-6）與 PDF/Word（1-2-1 送出後）共用同一塊，故切成元件（GUIDELINE §3-3 第 1 條）。
-     出處：gufofaq-saas services/product/app/routers/datasets.py。`import_excel` 與
-     `batch_import_documents` 兩支的回應同形，都帶 `inserted`／`updated`／`failed` 三個計數
+     出處：gufofaq-saas product 的 `import_excel` 與
+     `batch_import_documents`，兩支的回應同形，都帶 `inserted`／`updated`／`failed` 三個計數
      （`_tally`）；`FIDELITY_REPORT_KEYS` 那一族（`structure` 抽取統計／`dropped_links`／
      `unprocessable_tables`／`suspected_headerless_tables`）是**逐檔**的
      （批次端點放在 `results` 的每一項裡），故本元件也做成逐檔一塊、標上檔名——彙總成一份的話，
@@ -11,9 +11,9 @@
 
      ── 索引同步（`sync_state`）───────────────────────────────────────────────────────
      **這一塊在的理由是一條 CRITICAL 缺陷**：匯入回 200／`failed: 0`／筆數正確，而 GufoRAG 索引裡
-     一列都沒有——上游 celery 的 `FieldMapperError` 整檔失敗，product 這一側完全看不到。實際發生過
-     同一份檔重匯三次、三次都以為成功。後端補上 `GufoRagClient.sync_outcome()`（去問 manager 的
-     `operations/history`），六個匯入入口的回應現在都帶 `sync_state`，本元件是它的落點。
+     一列都沒有——上游 celery 的 `FieldMapperError` 整檔失敗，product 這一側完全看不到，於是同一份檔
+     會被重匯好幾次、每一次都以為成功。後端因此有 `GufoRagClient.sync_outcome()`（去問 manager 的
+     `operations/history`），六個匯入入口的回應都帶 `sync_state`，本元件就是它在畫面上的落點。
      **它與上面那行三計數是兩個不同的層**：三計數講的是「資料進了 product 的資料集」，這一塊講的是
      「進了 GufoRAG 的索引」。前者成功、後者失敗，就是「匯入成功但搜不到」——正是這條缺陷的形狀。
      所以兩者相鄰、而且措辭刻意分開（一個說「新增／更新」，一個說「索引」）。
@@ -89,8 +89,8 @@
        importFileReports = [{ filename, structure?, droppedLinks?, unprocessableTables?, suspectedHeaderlessTables? }]（選填）
          filename＝**原始檔名**（`results[].filename` 是 `Path(f.filename).name`；Excel 那一支是
            `import_excel` 由 `stored_name` 剝掉前綴的 `orig_filename`），不是落地檔名
-         structure = [{ labelKey, label, value }]——word 與 pdf 的欄位不同（product app/docx.py 的
-           DocxStats 是段落/表格/表格列數；app/pdf_tables.py 的 PdfStats 是頁數/表格/表格列數/
+         structure = [{ labelKey, label, value }]——word 與 pdf 的欄位不同（product 的
+           DocxStats 是段落/表格/表格列數；product 的 PdfStats 是頁數/表格/表格列數/
            沒有表頭的續表/有格線卻抽不出表格的頁數），故做成通用 label-value 列而不是寫死的句子
          droppedLinks = { urls: [...] }——HTML→Markdown 剝掉的連結；**筆數由陣列推導**
            （上游兩處都是 `{"count": len(dropped_urls), "urls": dropped_urls}`，那個 `count`
@@ -102,13 +102,13 @@
            混成一塊會告訴使用者一件不是事實的事
 
      被剝除連結區塊是「把連結搬回答案端」的入口：連結在匯入時就從內文剝掉了，要讓它回到答案裡
-     只能靠〈對話設定 → 出口替換規則〉在生成後替換（product app/routers/settings_hub.py 的
+     只能靠〈對話設定 → 出口替換規則〉在生成後替換（product 的
      `output_replacements`）。「複製為出口替換規則」把每個網址轉成一條可直接貼進「替換內容」欄的
      值 `[${0}](網址)`（`${0}`＝命中的別名文字），別名由租戶自己填——匯入端剝連結時只留得下 href，
-     拿不到原本的錨文字（product app/html_md.py 的 `_render_link`）。
-     ⚠️ 界線已經縮小：**能安全表示成 markdown 的（絕對位址且協定在 `_SAFE_SCHEMES` 內）現在就地轉成
-     `[文字](網址)`、不再進這份清單**；落進來的只剩「表示不出來」的那些——相對路徑、`javascript:`、
-     片段錨點、沒有 href。示範資料要照這個形狀給，否則演的是一個上游產不出來的清單（§6）。
+     拿不到原始的錨文字（product 的 `_render_link`）。
+     ⚠️ **這份清單只收「表示不出來」的那些**：能安全表示成 markdown 的（絕對位址且協定在
+     `_SAFE_SCHEMES` 內）在上游就地轉成 `[文字](網址)`、根本不會落進來；剩下的是相對路徑、
+     `javascript:`、片段錨點、沒有 href。示範資料要照這個形狀給，否則演的是一個上游產不出來的清單（§6）。
      複製是純前端互動（GUIDELINE §5 ④），行為在 import-report.js 當場做，toast 走 data-toast 委派。 #}
 <div class="block flex-row column gap-16">
     {# 三計數串成一句：前綴／中綴 key 夾資料槽，寫法沿用同一批的批次結果摘要（1-2-1 的
@@ -209,7 +209,7 @@
             {% endfor %}
         </ul>
         <div class="flex-row">
-            {# 失敗段沿用複製族那一句（「請手動選取後複製」）。**先前寫的是「請稍後再試」——
+            {# 失敗段沿用複製族那一句（「請手動選取後複製」）。**不可以寫成「請稍後再試」——
                  那是 API 失敗的措辭，用在剪貼簿上是錯的建議**：這顆鈕是純前端複製
                  （import-report.js 的 clipboard ＋ execCommand），失敗的成因是安全脈絡／權限，
                  再按一百次也是同一個結果，能救的動作只有手動選取。`toast.copyConfig` 的

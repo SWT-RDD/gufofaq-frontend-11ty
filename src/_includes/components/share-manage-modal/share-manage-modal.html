@@ -5,23 +5,24 @@
      可建立新的唯讀分享連結（可指定有效天數），並列出目前連結逐一複製/撤銷（撤銷＝軟刪，立即失效）。
      與前台 faq-share-modal（單一連結、只複製）不同：此為登入態的多連結管理。
      建立＝直接送 API 的動作鈕（§5 矩陣③）：`data-toast` 列全結果，並掛 `.js-create-share` 當 React 綁定記號。
-     ⚠️ 這顆 hook 先前不在切版上（當時的理由是「零輸入零目標歧義」，而**有效天數欄補上之後那個理由就不成立了**
-     ——它現在要讀同窗的 `#shareExpiresDaysInput`），但 saas 端一直用著它：
-     `gufofaq-saas apps/web/components/ShareManageModal/ShareManageModal.tsx` 的 `create` 鈕、
-     同資料夾的 `ShareManageModal.test.tsx`、以及 `apps/web/e2e/history-detail.spec.ts` 都以
-     `.js-create-share` 定址。§5「hook 一經 saas 端（頁面／e2e）引用即凍結」⇒ 切版補上這一份宣告，
-     不是去 saas 端改名或回收；
+     ⚠️ `.js-create-share` 這顆 hook **不可省、也不可改名**：它要讀同窗的 `#shareExpiresDaysInput`
+     才組得出請求（不是一顆零輸入的鈕），而 gufofaq-saas 的
+     `apps/web/components/ShareManageModal/ShareManageModal.tsx` 的 `create` 鈕、同資料夾的
+     `ShareManageModal.test.tsx`、以及 `apps/web/e2e/history-detail.spec.ts` 都以它定址。
+     §5「hook 一經 gufofaq-saas 端（頁面／e2e）引用即凍結」——要對齊就在切版這邊補宣告，
+     不是去那邊改名或回收；
 
-     每列複製鈕補 .shareBtn（真 app 剪貼簿 hook，同 faq-share-modal 的 .share-link-btn.shareBtn）；
+     每列複製鈕帶 .shareBtn（剪貼簿的**業務掛點**，與 faq-share-modal 的 .share-link-btn.shareBtn 同一族）；
      撤銷鈕每列目標需由業務 js 認列，保留 hook class（.js-revoke-share）。
 
-  **有效期與狀態**（product app/routers/share.py）：
+  **有效期與狀態**（product）：
     · 建立：`POST /share` 收 `expires_days`（**兩道 400 不是一道**：`≤ 0` 回 `share.expires_days_positive`、
-      `> MAX_EXPIRES_DAYS` 回 `share.expires_days_too_large`——上界常數是 gufofaq-saas product
-      `app/routers/share.py` 的 `MAX_EXPIRES_DAYS`；**留空＝永久**），回應帶 `expires_at`／`disabled`。
+      `> MAX_EXPIRES_DAYS` 回 `share.expires_days_too_large`——上界常數是 gufofaq-saas product 的
+      `MAX_EXPIRES_DAYS`；**留空＝永久**），回應帶 `expires_at`／`disabled`。
       本檔沒有 `<form>`（全站唯一在 `src/login.html`），`max` 屬性不觸發原生驗證也擋不住鍵入 ⇒
       上界那道 400 是真實可達的結果路徑，兩道各佔一段 warning。
-      前端原本一個都沒接，所以每一條分享連結都是永久有效的——而分享連結是全服務唯一免憑證就讀得到問答內容的東西。
+      ⚠️ 這個欄位**不可以不畫**：沒有它，每一條分享連結都會是永久有效的——而分享連結是全服務
+      唯一免憑證就讀得到問答內容的東西。
     · 另有 404 `notfound.chat_log`（`_own_log_or_404`：這一筆問答不在了、或不屬於這個租戶）——
       同一顆鈕的第三種結果，不折進 error（使用者換一筆就好）。
     · 列表：`GET /share?log_id=` 只回**未撤銷**的連結（`disabled.is_(False)`），但**過期的仍會回**
@@ -35,7 +36,7 @@
 {# 列鍵（§6）：撤銷會讓那一列從 `GET /share` 的結果消失（該支只回未撤銷的），所以每一筆要帶
      身分欄位、逐列 id 不用 `loop.index`——`id` 就是 `DELETE /share/{share_id}` 吃的那一顆。
    token 的長度也是推導值（同 5-8 既有處置）：`token = "shr_" + secrets.token_urlsafe(24)`
-     （gufofaq-saas product `app/routers/share.py`）⇒ 共 36 字元。這一欄整串顯示在可複製的
+     （gufofaq-saas product）⇒ 共 36 字元。這一欄整串顯示在可複製的
      `<input readonly>` 裡，長度不對，抄去做欄寬與換行測試的人第一眼就被誤導。 #}
 {% set shareRows = [
   { id: 401, url: "https://gufofaq.com/shared/shr_aB3xYz9Qle8sample0000shareaaa", expires: "", state: "active" },
@@ -53,9 +54,9 @@
                 </div>
                 <div class="modals-body">
                     <span data-i18n="modals.shareConfirmHint">分享前，請確認此連結內容</span>
-                    {# 同 components/faq-share-modal：這一段先前是**裸字面、沒有 `data-i18n`**，
-                         英文模式會原樣露出一整段繁中，而三張 i18n 的網都掃不到它（不是 data-i18n 節點）。
-                         接上 `shared.aiDraftNotice`，不另造第二份。 #}
+                    {# 這一段**必須掛 `data-i18n`**（同 components/faq-share-modal）：寫成裸字面的話，
+                         英文模式會原樣露出一整段繁中，而三張 i18n 的網都掃不到它（它不是 data-i18n
+                         節點，等於沒有任何測試守得住）。共用 `shared.aiDraftNotice`，不另造第二份。 #}
                     <div class="share-text" data-i18n="shared.aiDraftNotice">本內容由 AI 系統初步產出，僅作為草稿或參考依據使用，尚未經人工確認或修改，若需進一步採用，請先檢閱並確認內容之正確性與完整性。</div>
                     {# 有效天數：值載體（React 讀去組 POST /share 的 expires_days），留空＝永久。
                          min=1 對齊後端「expires_days must be positive」（≤0 回 400）。 #}
@@ -85,8 +86,9 @@
                         {% for row in shareRows %}
                         {# 逐列同型控制項的可及名稱要靠**列脈絡**（§4）：這裡沒有表頭也沒有辨識欄，
                              故給每一列一顆 sr-only 的序號當辨識，input 與兩顆鈕都指它＋自己的欄意。
-                             原本四列的 input 都叫「分享連結」、複製與撤銷也各四顆同名。 #}
-                        {# 列鍵（§6）：撤銷是**逐列**的（product `app/routers/share.py` 的
+                             少了它，每一列的 input 全叫「分享連結」、複製與撤銷也逐顆同名，
+                             報讀器聽不出正在複製或撤銷哪一條。 #}
+                        {# 列鍵（§6）：撤銷是**逐列**的（product 的
                              `DELETE /share/{share_id}`），而 `shareRows` 本來就帶 id——不把它印在
                              列上，React 端就只剩陣列 index，撤掉第 2 筆之後第 3 筆會打到第 2 筆。 #}
                         <div class="flex-row align-items-center gap-8 flex-wrap" data-share-id="{{ row.id }}">

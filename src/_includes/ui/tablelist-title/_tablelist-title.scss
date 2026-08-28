@@ -1,18 +1,17 @@
-// 區段小標題（原真 app component.scss「優先等級表格」附帶樣式）。
-// 從 ui/default-table 升格：它其實是表格「外」的獨立標題（分層檢索標題、欄位命名、
-// modal 內的分組標題都在表格外用它），寄生在 default-table 的 scss 裡等於一個沒有主人的
-// class（§4）——比照 data-info 先例獨立成原子。
+// 區段小標題：一行藍字的小標，用在表格**外面**（分層檢索的模式標題、欄位命名、彈窗裡的分組標題）。
+// **它是獨立原子，不屬於 ui/default-table**（§4）：雖然多數實例都出現在某張表的正上方，
+// 但它在 `<table>` 之外、與表格沒有任何選擇器關係——寄生在 default-table 的 scss 裡，
+// 這顆 class 就變成一個沒有主人的 class，改表格樣式的人不會知道自己也在改標題。
+// 同 `ui/data-info` 的處置。
 //
 // markup 契約（無 html 元件，§1-2；整段照抄）。**別把它記成「N 型」**——那是兩條互相獨立的軸，
 // 數型一定會漏掉組合（同 `ui/verdict-tag` 檔頭記取的那次教訓）：
 //   軸一：字面是 chrome ⇒ **一定帶 data-i18n**；key 可以寫死，也可以由頁面資料插值。
 //   軸二：同表控制項要 `aria-labelledby` 指得到它時才加唯一 `id`（正典 5-2 的 `intentLevelTitle-<n>`）。
-// **只寫軸，不列組合**：這一段先前補了一份「現存實例佔了三種組合（5-2 ×6…）」的清單，而它
-// ①漏掉第四種組合（key 寫死＋**有** id——5-2 的 `priorityUnusedTitle`／`priorityAgentInUseTitle`／
-// `priorityAgentUnusedTitle` 三顆，各自被一份 `priorityTableOwnerId` 指著，是合法且必要的一型），
-// ②數字也錯（5-2 是 4 顆不是 6 顆；以 dist 為母體是 10 顆，因為 `intentLevelTitle` 在迴圈裡）。
-// 檔頭自己開場那句「別把它記成 N 型，數型一定會漏掉組合」正好預言了下面兩行——所以那兩行刪掉。
-// 反查指令（母體是 dist，§1-2）：`grep -c 'class="tablelist-title' dist/*.html`。
+// **只寫軸，不在這裡列「現存實例佔了哪幾種組合」**：那種清單一定會漏——四種組合都合法且都有實例
+// （包括最容易被漏掉的「key 寫死 ＋ **有** id」，例如 5-2 的 `priorityUnusedTitle` 那一族，
+// 各自被一份 `priorityTableOwnerId` 指著），而顆數也數不準：`intentLevelTitle` 住在 `{% for %}` 裡，
+// src 上是一行、dist 上是十行。要數就對 dist 數（§1-2）：`grep -c 'class="tablelist-title' dist/*.html`。
 // 下面兩段是**其中兩種組合的範例**，不是全集：
 //
 //   ① 固定標題：字面是 chrome ⇒ **一定帶 data-i18n**（少了它英文模式整條標題是繁中，而視覺指紋看不出來）

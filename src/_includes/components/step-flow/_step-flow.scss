@@ -90,7 +90,7 @@
         // 不用填充族 --danger（為襯白字壓深，當文字在深色模式讀不到）；也不用 --danger-text——
         // 這個 cell 的底是 accordion 給的 --surface-sunken，--danger-text 疊上去淺色只有 4.40:1 < AA
         //（它的宣告值只保證疊 --surface／--surface-raised）。前景墨色 --danger-ink 疊 sunken 是
-        // 5.54:1／深色 5.25:1（同 round15 把 --brand-text 換成 --brand-ink 的理由）。
+        // 5.54:1／深色 5.25:1（同把 --brand-text 換成 --brand-ink 的理由）。
         color: var(--danger-ink);
     }
 

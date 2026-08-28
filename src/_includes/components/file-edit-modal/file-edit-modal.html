@@ -1,20 +1,22 @@
-{# 儲存鈕**不掛任何授權軸**：這是送出前的本地編輯（凍結正本 GufoFAQ_Frontend_New 的
-     `js/uploadFilePdf.js` 的 `saveEdit` 只改本地陣列），沒有端點可以宣告閘門——與
+{# 儲存鈕**不掛任何授權軸**：這是**送出前的本地編輯**（只改還沒送出的那份清單），
+     沒有端點可以宣告閘門——與
      `tests/guideline.test.mjs` 的 `NO_GATE` 那一筆成對（§4「痕跡要成對：只住在測試裡的豁免，
      讀元件的人看不到」）。 #}
-{# 檔案編輯 modal（PDF 自填），class/id 沿用真實 app pages/components/component.html #editModal 系統。
+{# 檔案編輯 modal（PDF 自填），dialog id `editModal`。
      固定槽 schema（title/content/source/date/category/number/flag/tags/privilege/note1..note10/date2/date3，
-     出處：gufofaq-saas services/product/app/field_schema.py 的 SLOTS——順序與 default_label 逐字對齊）：
+     出處：gufofaq-saas product 的 `SLOTS`——順序與 `default_label` 逐字對齊）：
      每槽一個輸入框供逐筆手填，label 用各槽預設顯示名。
-     槽之外另有一個**外部主鍵**欄：批次匯入是逐檔一把鍵（product `app/routers/datasets.py` 的
+     槽之外另有一個**外部主鍵**欄：批次匯入是逐檔一把鍵（product 的
      `batch_import_documents`，其 `external_keys` 是 `{原始檔名: 鍵}`），共用一把的話同批第二個檔會 purge 掉第一個、回應卻說兩筆都成功，
      所以它必須跟著「這一個檔」的編輯窗走，不能放在頁面層。
-     內容（content）由 PDF 自動擷取，故 render 成 disabled textarea（沿用真實系統 .form-control.disabled + disabled 屬性）；
+     內容（content）由 PDF 自動擷取、不給人改，故 render 成 disabled textarea
+     （`.form-control.disabled` ＋ `disabled` 屬性兩者都掛：class 管視覺、屬性管互動）；
      其餘槽為可填 input。資料驅動：set editFields + for 內嵌渲染欄位列（依 §9，元件內部 for 不再巢狀 include 子元件）。
      editConfirmBinding —— true＝儲存鈕交給業務 js 綁定（不掛 btn-close-modals 自動關窗）。
-     真 app 的功能頁（1-2-1）儲存鈕沒有 btn-close-modals，由 uploadFilePdf.js:81 的 saveEdit() 決定何時關；
+     功能頁（1-2-1）的儲存鈕**不掛** btn-close-modals：何時關窗要等存檔真的完成才知道。
      寫死自動關窗＝「按了儲存，窗關了，但什麼都沒存」，所以**每一個** include 本元件的頁（含元件庫
-     展示頁）都設它——沒有任何一頁演那一支，這顆參數留著是為了讓「為什麼不掛」有地方寫下來。 #}
+     展示頁）都設這顆參數——自動關窗那一支全站沒有任何一頁在演，它留著是為了讓「為什麼不掛」
+     有地方寫下來。 #}
 {# 槽目錄走唯一正本 ui/field-slot-catalog（22 槽，§2 的 {% from … import %}）。
    本元件自己的附加資料只有兩件事：哪一槽是長文 textarea（內容，PDF 自動擷取故 disabled）、
    哪一槽帶示範值。以 key 查一張小 map——附加欄位塞進正本目錄的話，那份目錄就變成下一個要對齊的東西。 #}

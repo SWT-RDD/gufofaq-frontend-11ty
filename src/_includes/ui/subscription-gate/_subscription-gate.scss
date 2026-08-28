@@ -9,13 +9,14 @@
 // `components/SubscriptionGate/SubscriptionGate.tsx` 的 `type Status` 逐字如此）。
 // 「強制改密」**不是 subscription_status 的一個值**：它是 `/me` 上另一顆布林欄
 // `must_change_password`，而且只在 `active` 時才擋（pending／expired／frozen 的面板優先）。
-// 先前這裡寫的 `first_login` 與 `must_change_password` 兩個狀態值上游都不存在。
+// ⚠️ 所以不要把 `must_change_password` 當成第五個狀態值寫進判斷，也不要發明 `first_login`
+// 這種上游沒有的值——那會做出一個永遠不會成立的分支，而畫面上完全看不出來。
 //
 // markup 契約（無 html 元件，§1-2；整段照抄）—— **兩型都住在同一組
 // `.subscription-overlay > .subscription-panel` 之內**，差別只在面板裡放哪一種內容。
 // 下面三段是 `pages/components/component.html` 的靜態示範，逐字如此（①與①′同型、body 不同，
 // 故逐型各寫一段完整 markup——§1-2：差異不得只用散文交代）。
-// **每一句 chrome 都掛 `data-i18n`**（round48）：這幾句是使用者真的讀得到的 app 文字，
+// **每一句 chrome 都掛 `data-i18n`**：這幾句是使用者真的讀得到的 app 文字，
 // 只是全站只有元件庫頁演得出來；漏抄 key 的話那句話的正本就會掉回 React 的字典。
 //
 // ① 三段式面板／`pending_disclaimer` 首登免責：
@@ -86,12 +87,13 @@
 //   </div>
 //
 // **「30 天」永遠是獨立節點、不烤進譯文**（§3-2：那個數字在 API 契約裡有欄位就不准出現在譯文裡）：
-// 正本是 product `app/tenancy/subscription.py` 的 `TRIAL_DAYS`，`GET /account` 回得出 `trial_end`
+// 正本是 product 的 `TRIAL_DAYS`，`GET /account` 回得出 `trial_end`
 // 與 `days_left`。同意鈕與到期說明兩處都走「前綴 key ＋ 數字節點 ＋ 後綴 key」。
 //
-// **最後一段不帶 `mb-8`**（帶了面板底部會多出 8px）——這一句原本用 `↑`／`↓` 兩行寫在契約段
-// **中間**：形式上沒有 `…`、實質是省略，而整段複製會把兩行中文貼進 HTML（§1-2：合法的
-// 「重複第 N 次同型節點」標註要寫成 `{# … #}` 這種不會被複製進 HTML 的形狀）。
+// **最後一段不帶 `mb-8`**（帶了面板底部會多出 8px）。
+// 這句話要寫在契約段**外面**，不要用 `↑`／`↓` 之類的散文夾在 markup 中間：那形式上沒有 `…`、
+// 實質卻是省略，而整段照抄會把那兩行中文一起貼進 HTML（§1-2：合法的「重複第 N 次同型節點」
+// 標註只有 `{# … #}` 這一種——它不會被複製進 HTML）。
 //
 // 抄的時候注意：
 //   ⓐ **`.subscription-expired-box` 不是根**。少掉 `.subscription-overlay >

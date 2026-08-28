@@ -11,38 +11,38 @@ permalink: 5-3_statsModule.html
   { label: "統計模組", i18nKey: "nav.statsModule" }
 ] %}
 {# **本頁打的端點**（§3-2：一頁多支端點時，檔頭第一段先列端點清單）：
-     GET /stats                 `StatsOut`（product `app/routers/stats.py`）——巢狀七個 model：
+     GET /stats `StatsOut`（product）——巢狀七個 model：
                                 `Totals`／`RangeCount`／`DistItem`／`RankItem`／`WeeklyOut`／`WeekBucket`／`Series`。
                                 落點：`totals.*`→指標列、`period`／`weekly.window`→`ui/chart-desc` 三顆槽、
                                 `distribution`→chart1、`ranking`→chart2、`weeks`／`series`→chart3。
-     GET /settings/attribution  `AttributionOut`（`app/routers/settings_hub.py`）——`slots`／`available_slots`
+     GET /settings/attribution `AttributionOut`（product）——`slots`／`available_slots`
      PUT /settings/attribution  同上（`require_capability("settings","write")`）
-   **`ranking` 那張表由業務 js 產，切版只留容器**（`#chart2-ranking`）：忠實鏡射凍結前端
-     （`GufoFAQ_Frontend_New/js/statsModule.js` 的 `renderRanking()` 才吐 `<th>` 與列）。
-     **「建議」欄已收（本輪裁決）**：`RankItem` 現在是**五欄**，`suggestion` 整欄被上游移除
-     ——不是「恆為 None」而是**欄位本身不存在**（product `app/routers/stats.py` 的 `RankItem`
-     grep 不到該名）。前一版的裁決是「等上游真的實作了再畫」，那句成立的前提是那一欄還在
-     schema 上、只是沒填；欄位撤掉之後，畫出來的那一格永遠是「—」，而標題那半句
-     「與優先續建議」是在替一個上游**不再有**的東西做承諾（§4：出貨文案不可以替不存在的
-     東西做承諾）。故標題改成「貢獻度排行」，`settings.contributionRanking` 的兩份譯文
-     同步改值、**key 名不動**（REACT-CONVERSION：key 是識別碼、已被 React／e2e 鏡射）。
-     不走「保留該欄 ＋ 一句『這一欄上游不再提供』」那條：那是把一欄永久的空白留在報表上再
-     花一句話解釋它，而報表的每一欄都該是量得到的東西（本頁指標列那條「報表要能自證它算的
-     是什麼」同一條理由）。React 同批把 `stats.suggestion` 從字典與 `REACT_ONLY` 移除，
-     `renderRanking()` 回到五欄。
+   **`ranking` 那張表由業務 js 產，切版只留容器**（`#chart2-ranking`）：表頭與列都要等查詢結果
+     回來才知道有幾欄幾列。
+     **這張表是五欄，沒有「建議」欄**：`suggestion` 在 product 的 `RankItem` 上 grep 不到——
+     不是「恆為 None」而是**欄位本身不存在**。判準的差別很重要：欄位還在 schema 上只是沒填，
+     可以先畫著等它有值；欄位根本不在，畫出來的那一格就永遠是「—」，而標題掛上「與優先續建議」
+     等於替一個上游給不出來的東西做承諾（§4：出貨文案不可以替不存在的東西做承諾）。
+     故標題是「貢獻度排行」；`settings.contributionRanking` 的兩份譯文改值時 **key 名不動**
+     （REACT-CONVERSION：key 是識別碼，已被 React／e2e 鏡射）。
+     也不走「保留該欄 ＋ 一句『這一欄上游不再提供』」那條：那是把一欄永久的空白留在報表上再
+     花一句話解釋它，而報表的每一欄都該是量得到的東西（同本頁指標列「報表要能自證它算的
+     是什麼」那一條）。React 端 `renderRanking()` 一樣是五欄，字典與 `REACT_ONLY` 都沒有
+     `stats.suggestion`。
 
-   歸因槽值域：product `app/field_schema.py` 的 `ATTRIBUTION_SLOT_KEYS`＝`attribution_slot_keys(SLOTS)`。
+   歸因槽值域：product 的 `ATTRIBUTION_SLOT_KEYS`＝`attribution_slot_keys(SLOTS)`。
      它**排掉的是五類角色**、不是兩個槽名：`privileges`／`containsAny`／`filterBool`／`search`／
      `PRODUCT_ONLY_ROLE`（對應 `privilege`／`tags`／`flag`／`content`／`internal_note` 五個槽），
-     母體是 `SLOTS` 全部 22 槽。（先前這裡寫「21 減 4」——母體與扣除項**兩個操作數都錯**，而結果
-     17 是對的：算式對得上不代表推導對得上，下一輪拿它當判準就會把 `internal_note` 漏掉。）
+     母體是 `SLOTS` 全部 22 槽。**算式要逐個操作數對得上、不是結果對就算數**：22 減 5 與
+     「21 減 4」都得到 17，但後者的母體與扣除項兩個操作數都錯，照它推下去會把 `internal_note`
+     當成沒被排除的槽。要驗就驗 `attribution_slot_keys` 排掉哪五類角色，不是驗那個 17。
      照槽名列名單會無聲落後（product 該函式的 docstring 就是這樣寫的）；切版沒有 `role` 欄可讀
      （`ui/field-slot-catalog` 只帶 key ＋ 預設名，§2），故下面以一張**排除清單**鏡射同一個子集，
      上游加槽時要回頭對 `attribution_slot_keys`——措辭與 5-10 那一頁對齊。
      同一份目錄本頁用兩次（統計維度 select ＋ 歸因維度多選），故 set 成一個陣列共用（GUIDELINE §6）。
      **React 端不得把這 17 個硬編**：`GET /settings/attribution` 回的 `available_slots` 就是這份值域的
-     單一真相（product `app/routers/settings_hub.py`），值域一變前端才不會跟著漂。
-     `label` 是各槽的**預設**顯示名——真實環境顯示的是租戶為該槽取的名字（per-profile `field_labels`，
+     單一真相（product），值域一變前端才不會跟著漂。
+     `label` 是各槽的**預設**顯示名——正式環境在執行期顯示的是租戶為該槽取的名字（per-profile `field_labels`，
      如「承辦組室」），屬業務資料故不掛 data-i18n（同 5-2 的 MCP server 名）。
      示範裡這個租戶把 note1／note2 取名為「承辦組室」「業務範疇」（與 4-2 來源區塊的歸因列同一個租戶）。
      **這與 5-10 的「標籤維度名」是兩件事**（product 兩張表：`RetrievalProfile.field_labels` ↔
@@ -70,8 +70,9 @@ permalink: 5-3_statsModule.html
     {% include "ui/breadcrumb/breadcrumb.html" %}
 </div>
 
-{# 篩選列：資料時間篩選（近24小時/上週/上個月單選 + 時間區間，起訖欄真實頁由 flatpickr 掛載，此處不引入 vendor，
-     僅保留原生 class 與 disabled 預設狀態）+ 查詢資料類型單選 #}
+{# 篩選列：資料時間篩選（近24小時/上週/上個月單選 ＋ 時間區間）＋ 查詢資料類型單選。
+     起訖兩欄在正式環境是由 flatpickr 在執行期掛載的，切版不引入該 vendor，只保留原生 class
+     與 disabled 預設狀態——版型與可及性驗得到，日曆的行為不在切版的射程內。 #}
 <div class="block flex-row column gap-24 mt-10">
     <div class="flex-row column gap-16">
         {# 這一列與 5-4 逐字相同，抽成 components/data-time-filter（§3-3）。
@@ -79,7 +80,7 @@ permalink: 5-3_statsModule.html
              節點 id（起訖兩欄 aria-describedby 指它）。屬性型譯文（`data-i18n-data-toast`）只有在
              「同一個約束另有一處常駐可見的資料節點承載」時才准把常數烤進譯文（§4-2）——這個 id
              就是那一處；沒有它，365 改了譯文會靜默過期。上游符號名見該元件檔頭與本頁查詢鈕註解
-             （product `app/routers/stats.py` 的 `_resolve_range`）。 #}
+             （product 的 `_resolve_range`）。 #}
         {% set timeFilterName = "data-time" %}
         {% set timeFilterLabelId = "dataTimeFilterLabel" %}
         {% set timeFilterChecked = "lastWeek" %}
@@ -104,7 +105,7 @@ permalink: 5-3_statsModule.html
         </div>
         {# 計數方式：一則問答命中多份文件時，`per_log` 同一則的同一個值只計一次、`per_hit` 逐筆命中各計一次。
              兩者的總數都回在回應的 totals 裡（見下方指標列），報表才自證得了它算的是什麼。
-             product `/stats` 的**預設是 per_log**（`app/routers/stats.py` 的 `count_mode`），故這裡預設選它。 #}
+             product `/stats` 的**預設是 per_log**（`count_mode`），故這裡預設選它。 #}
         <div class="form-group row flex-row mobile-column-xs gap-16">
             <div class="label mobile-align">
                 <label id="countModeLabel" class="control-label" data-i18n="settings.countMode">計數方式</label>
@@ -133,18 +134,20 @@ permalink: 5-3_statsModule.html
          （`GET /stats` 的 dependency `authz.require_stats_scope` 的第一層），走全站統一子句
          「權限不足，無法查詢」；`dimension=attribution:*` 時**另要** `data:read`（同一支 dependency
          的第二層，理由是分群鍵就是文件欄位值本身），那一段自帶條件敘述、**不代替**主閘那一段。
-         先前只列了附加閘那一段——它開頭也有「權限不足」四個字，於是子字串比對看不出主閘 403 沒被列。
-         主閘走得到：導覽選單沒有 `data-capability`，沒有 `settings:read` 的人照樣進得來這一頁。 #}
+         **兩段都必須在**：附加閘那一段開頭也是「權限不足」四個字，只留它的話，用子字串比對
+         查有沒有列 403 會一路綠燈，主閘那一條路徑卻沒有任何文案。而主閘是真的走得到的——
+         導覽選單沒有 `data-capability`，沒有 `settings:read` 的人照樣進得來這一頁。 #}
     {# 這一頁的查詢打的是 `GET /stats`，`_fetch_logs` 對「筆數超過單次上限」回 400
-         「此時間範圍資料量過大…請縮小範圍」（product `app/routers/stats.py` 的 `_fetch_logs`／`stats.too_many_logs`）。
-         **那個上限不是常數**：它是 `stats._stats_max_logs()`，每次呼叫讀 `app/settings.py` 的
-         `stats_max_logs`（預設 5000，可由 env 覆寫），所以切版任何一處都不寫死那個數字
-         （先前這裡引的 `MAX_STATS_LOGS` 在上游 grep 為零——符號名錯，而且它刻意不是常數）。時間篩選最長給到 365 天，
+         「此時間範圍資料量過大…請縮小範圍」（product 的 `_fetch_logs`／`stats.too_many_logs`）。
+         **那個上限不是常數**：它是 `stats._stats_max_logs()`，每次呼叫讀 product 的
+         `stats_max_logs`（預設 5000，可由 env 覆寫），所以切版任何一處都不寫死那個數字，
+         引它也只能引函式名——寫成 `MAX_STATS_LOGS` 那種常數式的名字在上游 grep 為零，
+         既指不到東西，也把「可由 env 覆寫」這件事講反了。時間篩選最長給到 365 天，
          這是按幾下就撞得到、而且使用者自己縮小範圍就修得掉的結果——折進「載入資料失敗，請重新整理頁面」
          等於叫人重整一個永遠不會成功的請求，故另立 key 加一段 warning（§5）。
-         左邊那顆換成全站篩選列正典的 `.js-filter-clear`「清除」（ui/filter-fields 提供行為，
-         沒有 .filter-fields 就清整個 .block）——原本的「取消」全站沒有任何 js 選得到它，
-         是一顆按了什麼都不會發生的鈕（§5 ④）。 #}
+         左邊那顆是全站篩選列正典的 `.js-filter-clear`「清除」，行為由 ui/filter-fields 提供
+         （沒有 .filter-fields 就清整個 .block）。**不寫成「取消」**：那個字面全站沒有任何 js
+         選得到，會變成一顆按了什麼都不會發生的鈕（§5 ④）。 #}
     <div class="flex-row align-items-center justify-content-center gap-16">
         <button type="button" class="button button-border js-filter-clear" data-i18n="action.clear">清除</button>
         <button data-capability="settings:read" type="button" class="button button-primary" data-toast="正在查詢資料...|權限不足，無法查詢——請找貴租戶的管理者開通|查詢成功|時間區間不正確（起訖需成對、開始須早於結束與現在、且在一年內、範圍不超過 365 天）|這段期間的資料量超過單次上限，請縮小時間範圍|權限不足：依歸因維度分群另外需要「資料集檢視」能力——請找貴租戶的管理者開通|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.queryStatsAttribution" data-toast-type="info|warning|success|warning|warning|warning|error" data-i18n="action.query">查詢</button>
@@ -153,10 +156,10 @@ permalink: 5-3_statsModule.html
 
 {# 指標列：報表要能自證「它算的是什麼、分母是誰」（Spec 庚 §4）。
      - 統計維度／計數方式是**回應的回聲**（不是畫面上的選擇），送出的與算出來的不一致時才看得出來。
-     - 無命中率＝零命中則數 ÷ 對話則數。**只有這一個比率、沒有第二個「拒答率」**：上游在誠實查無時
-       會把 search_results 清空（GufoRAG chatbot `services/chat.py`／`services/agent_service.py`），
+     - 無命中率＝零命中則數 ÷ 對話則數。**只有這一個比率、沒有第二個「拒答率」**：GufoRAG chatbot
+       在誠實查無（含 grounding 判 `NO_ANSWER`）時會把該則的 `search_results` 清空、不落成來源卡，
        所以拒答必然落在零命中裡，而零命中還含「本來就不需要文件的提問」（招呼、閒聊）——
-       product 手上只有這一個量得到的集合（`app/routers/stats.py` 的 `StatsOut.no_hit_rate`）。
+       product 手上只有這一個量得到的集合（`StatsOut.no_hit_rate`）。
        同一個數字掛兩個名字，報表看起來就像量了兩件事。期間內一則都沒有時回 null，畫面顯示「—」
        而不是 0%（0% 會被讀成「每一則都有命中」）。
      - 已計入／群組數＝`totals.counted`／`totals.groups`：前者恆等於排行各列次數的總和（有沒有被吃掉
@@ -164,9 +167,9 @@ permalink: 5-3_statsModule.html
 <div class="block flex-row gap-24 flex-wrap mt-16">
     <p><span class="text-bold" data-i18n="settings.statsDimensionLabel">統計維度：</span><span id="stats-dimension-echo">-</span></p>
     <p><span class="text-bold" data-i18n="settings.countModeLabel">計數方式：</span><span id="stats-count-mode-echo">-</span></p>
-    {# `-` 是**載入前的佔位**（業務 js 待填，同 `ui/chart-desc` 的三顆槽），不是空值畫法：
+    {# 半形 `-` 是**載入前的佔位**（業務 js 待填，同 `ui/chart-desc` 的三顆槽），**不是空值畫法**：
          期間內一則都沒有時上游回 `null`，那時 js 寫進去的是全形「—」（§6 空值一律「—」）。
-         兩者是不同的東西，先前的註解把它們寫成一件事。 #}
+         兩個字元代表兩種不同的狀態（還沒查 vs 查了沒有），寫成同一個就分不出來了。 #}
     <p><span class="text-bold" data-i18n="settings.noHitRate">無命中率：</span><span id="stats-no-hit-rate">-</span></p>
     <p><span class="text-bold" data-i18n="settings.conversationCount">對話次數：</span><span id="stats-total-logs">0</span></p>
     <p><span class="text-bold" data-i18n="settings.retrievedCount">取用資料數：</span><span id="stats-total-hits">0</span></p>
@@ -195,17 +198,17 @@ permalink: 5-3_statsModule.html
     </div>
     <div class="chart-box">
         {# ⚠️ 這張圖的「近4周」**不跟著上面的資料時間篩選變**，所以標題寫死 4 周不是漏做：
-             product `app/routers/stats.py` 的 `/stats` 對圖 3 是「獨立取近 28 天（自 p_end 回推），
+             product 的 `/stats` 對圖 3 是「獨立取近 28 天（自 p_end 回推），
              分 4 個 7 天桶」（該段註解逐字），回在 `WeeklyOut.weeks`／`series` 上——篩「上週」時
              上面的指標與圖 1／圖 2 走那個區間，這一張仍然是四個 7 天桶。
-             把標題改成跟著篩選走，才會與端點說的話對不上（曾被指為「預設上週 vs 標題寫死近4周」
-             的自打架，複驗後駁回，理由記在這裡免得下一輪再改一次）。 #}
+             ⚠️ 「預設篩上週、標題卻寫死近4周」看起來像自打架，其實不是：那正是端點的行為。
+             把標題改成跟著篩選走，反而會讓畫面說出一件端點做不到的事。 #}
         <div class="chart-title" data-i18n="settings.weeklyRetrievalTrend">近4周取用次數變化</div>
         <div class="chart"><canvas id="chart3-line"></canvas></div>
         {% set chartDescId = "chart3" %}
         {% set chartDescRow = false %}
         {% include "ui/chart-desc/chart-desc.html" %}
-        {# **未進圖的則數**＝`WeeklyOut.unbucketed_logs`（product `app/routers/stats.py`）：落在近 28 天
+        {# **未進圖的則數**＝`WeeklyOut.unbucketed_logs`（product）：落在近 28 天
              窗裡、但 `human_time` 缺席或解析不出來，進不了任何一個 7 天桶的則數。
              沒有這一格時，折線圖各系列的總和會比它上面那顆「對話次數：」少，而畫面上沒有任何
              地方解釋得了那個差額——這是「被排除的筆數一律外顯」那一族的消費端（同族的
@@ -217,8 +220,8 @@ permalink: 5-3_statsModule.html
              只有圖 3 餵得到：開成第 4 槽等於在圖 1／圖 2 底下畫兩顆**沒有任何端點欄位填得進去**
              的槽（§4：不替上游給不出來的東西留位子；同一條理由收掉了本頁排行榜的「建議」欄）。
 
-           **0 也畫（常駐），不是「0 就整行不畫」。** 這一條與交辦單的建議相反，理由是本 repo 對
-             同一族已經裁決過兩次、判準不一樣：
+           **0 也畫（常駐），不是「0 就整行不畫」。** 全站對「被排除的筆數」這一族有兩種畫法，
+             判準不同，這一行落在常駐那一邊：
                · 3-5 的 `slotless_records`／`exact_match_only_records` **常駐**（0 也畫），逐字理由是
                  「只在非 0 才出現的話，看不到它就分不出是『這一次沒有被排除』還是『這個版本不報
                  這件事』」——而這裡問的正是同一個問題：值班的人看到總和對不上時，要能當場分辨

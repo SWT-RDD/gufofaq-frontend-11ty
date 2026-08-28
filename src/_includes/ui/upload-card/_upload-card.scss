@@ -1,8 +1,10 @@
-// 結構與數值取自凍結前端 `GufoFAQ_Frontend_New/scss/component.scss` 的檔案上傳 section
-// （.upload-card-list / .upload-card，2404-2477）。
-// **偏離逐條列出**：
-//   ① 色值換語意 token
-//   ② `.upload-card` 的 `box-sizing: border-box`（原檔 2427）移除（§4-1：`_base.scss` 已全域給）
+// 檔案上傳卡：1-1-1 資料匯入頁「選一種檔型」的那一排卡片。
+// `.upload-card-list` 是 grid 版位（桌機三欄／≤992px 兩欄／≤768px 一欄），
+// `.upload-card` 是單張卡本身——它可能被渲染成 `<a>` 也可能是 `<button>`（見 `upload-card.html`），
+// 所以這裡把 `text-decoration` 與 `color` 一併抹平，兩種標籤才長得一樣。
+// **這幾條要知道理由（改動前先讀）**：
+//   ① 色值走語意 token（卡面與邊框都用 `--surface-raised`，hover 才換成 `--info` 的邊框）。
+//   ② 不寫 `box-sizing: border-box`（§4-1：`_base.scss` 已全域給）。
 .upload-card-list {
     display: grid;
     grid-template-columns: repeat(3, 1fr);

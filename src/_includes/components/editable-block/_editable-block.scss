@@ -1,7 +1,8 @@
-// 照抄自凍結前端 GufoFAQ_Frontend_New/scss/component.scss「文字編輯區」區段（line 2678-2716），另依規範做了申報過的調整：
-// .form-group:has(textarea)→.edit-field-group（§4 隔離）、拿掉 display:none 家族（見下註）、
-// 拿掉 box-sizing（真 app 同選擇器先 content-box 後 border-box、末條勝出＝實效 border-box，
-// 與全域 _base 相同故整條不寫，§4-1；editable-block.js 的 resizeInput 寬度計算即 border-box 式）。
+// 文字編輯區。下列這幾條要知道理由（改動前先讀）：
+// ①版位掛在自有的 .edit-field-group 上，不用 .form-group:has(textarea) 這種指名別人結構的選擇器（§4 隔離）；
+// ②本檔不寫 display:none 家族（見下方那一段的理由）；
+// ③本檔不寫 box-sizing——實效值就是 border-box，與全域 _base 相同故整條省掉（§4-1），
+//   editable-block.js 的 resizeInput 寬度計算也是照 border-box 算的。
 /*===============================
     文字編輯區
 ================================*/
@@ -12,7 +13,8 @@
     position: relative;
     width: 100%;
 
-    // §4 隔離：本元件自己命名的 slot class（原 .form-group:has(textarea)，改由 markup 直接掛 class）
+    // §4 隔離：本元件自己命名的 slot class，由 markup 直接掛上——不靠 .form-group:has(textarea) 這種
+    // 反向指名別人結構的選擇器
     .edit-field-group {
         width: 100%;
     }

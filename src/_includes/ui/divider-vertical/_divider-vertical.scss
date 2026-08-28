@@ -1,8 +1,8 @@
-// 垂直分隔線。樣式取自凍結前端**已編譯的** GufoFAQ_Frontend_New/css/component.css（scss 源碼漏抓了這些宣告，
-// 編譯輸出才是最終真相——同 chart-box/footer 的情況）。原先誤判為「無樣式 class」做成空規則，
-// 導致全站分隔線不可見，此處補回。
-// 真 app 依所在區塊給不同高度（.footer 18px、.sources-block 28px），依 GUIDELINE §4
-// 「外觀覆寫改成 owning 元件的 variant class」改為本元件自帶的尺寸變體，不由 footer/sources-block 反向指名。
+// 垂直分隔線：兩段並排文字（頁尾連結、來源列的中繼資料）之間那一條 1px 直線。
+// 它是**純視覺、沒有內容的 `<span>`**，全靠這幾條規則才看得見——寫成空規則等於全站分隔線消失，
+// 而 markup 照樣掛著 class，看起來一切正常。
+// 高度分三檔，全部由本元件自帶變體提供（基礎 24px、`.sm` 18px、`.lg` 28px）：依 GUIDELINE §4
+// 「外觀覆寫改成 owning 元件的 variant class」，不讓 footer／sources-block 反過來指名這顆 class 改高度。
 .divider-vertical {
     display: block;
     flex-shrink: 0;

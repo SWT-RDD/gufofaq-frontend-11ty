@@ -2,13 +2,13 @@
    免責聲明鈕開的彈窗 include 在這裡（§1-2：誰的按鈕開的彈窗，彈窗就 include 在誰裡面）；
    開窗掛 data-open-modal，由 ui/modals 的事件委派接手（§5），故本元件零 js。
 
-   ⚠️ **版號與年份是資料槽，不是假資料**（round46；上一版這裡逐字寫著「版號與版權文字為假資料」，
-     而 React 端把那兩串**逐字**渲染成正式 chrome——`apps/web/components/Footer/Footer.tsx` 寫的就是
-     `{t("comp.buildLabel")} 2.10` 與 `{t("comp.copyright")}© 2025 All Rights Reserved`。一句寫在
-     切版註解裡的「這是假的」攔不住任何東西：那兩串字每天出現在每一個登入後頁面的頁尾上，其中
-     年份還是錯的）。
+   ⚠️ **版號與年份是資料槽，不是假資料**——不可以在註解裡寫一句「這是假資料」就了事：
+     消費端會把那兩串字**逐字**渲染成正式 chrome（gufofaq-saas
+     `apps/web/components/Footer/Footer.tsx` 就寫成 `{t("comp.buildLabel")} 2.10` 與
+     `{t("comp.copyright")}© 2025 All Rights Reserved`）。寫在切版註解裡的「這是假的」攔不住任何東西：
+     那兩串字每天出現在每一個登入後頁面的頁尾上，年份還可能是錯的。
    · `js-build-version`＝建置版號，格式 **YYYY.MM.DD-N**（N＝該 commit 是當天的第幾個，台北時區），
-     由建置流程注入（saas 那一側走 build-arg `NEXT_PUBLIC_BUILD_REF`）。
+     由建置流程注入（gufofaq-saas 那一側走 build-arg `NEXT_PUBLIC_BUILD_REF`）。
    · `js-copyright-year`＝年份，React 接 `new Date().getFullYear()`。**不寫死**：寫死的那一顆
      每年一月一日開始說謊，而沒有任何測試看得到（它不是 i18n key、不是資料、也不影響版面）。
    示範值錨在**站台的「現在」＝2026-07-14**（§6「全站只有一個現在」，正本是

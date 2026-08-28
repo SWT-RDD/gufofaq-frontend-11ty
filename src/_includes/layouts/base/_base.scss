@@ -4,10 +4,11 @@
 // 全站每一頁都經過它——`.main`（page-shell）與 `.chatbot-main`（chatbot-shell）的 `flex: 1 0 auto`
 // 就是靠這個 column flex 容器才撐得開頁尾。
 //
-// 這條原本住在 `GufoFAQ_Frontend_New/scss/_base.scss`：那裡是**全域 reset/base**（每一個元件都要遵守的地基），
-// 而這顆 class 全站只有 base.html 一個消費者，放在全域層會讓人以為它是共用詞彙而拿去套。
-// 對照組：`.wrap`（ui/breadcrumb 也在用）與 `.skip-link`（page-shell 與 chatbot-shell 共用）
-// 是真的跨消費者，那兩顆留在全域層才對。
+// **不放全域 `src/scss/`**：那一層是每個元件都要遵守的地基，而 `.full-wrap` 全站只有 base.html
+// 一個消費者，擺上去會被當成共用詞彙拿去套。
+// 對照組——`.wrap`（page-shell、public-shell 與 ui/breadcrumb 三處在用）與 `.skip-link`
+// （page-shell、chatbot-shell、public-shell 三支 layout 共用）是真的跨消費者，
+// 那兩顆留在 `src/scss/_base.scss` 才對。判準是消費者數，不是「感覺像不像基礎樣式」。
 .full-wrap {
     display: flex;
     flex-direction: column;

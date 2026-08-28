@@ -1,11 +1,15 @@
-// 只放 @use 組裝清單（依 GUIDELINE.md）
-// 註：_mixin.scss / _size.scss 是純定義檔（零 CSS 輸出），由需要的元件各自 @use，不列在這裡
+// 全站樣式的組裝清單：本檔**只放 @use**，一條規則都不寫（GUIDELINE §4）。
+// 打包成單一 main.css 全站載入，所以這份清單的先後**就是層疊順序**——
+// 「要不要載」與「排在第幾行」是兩件要分開想的事。
+//
+// _mixin.scss／_size.scss 不列在這裡：它們是零 CSS 輸出的純定義檔（mixin 與 $ 尺寸 token），
+// 由需要的元件各自 @use；掛上來只多一次不產生任何輸出的解析。
 @use "var";
 @use "normalize";
 @use "base";
 @use "utilities";
 
-// chrome 元件
+// chrome 元件：不屬於任何一頁、每一頁都在的外框（桌機導覽、行動選單、頁尾、跳窗殼）
 @use "../_includes/components/header/header";
 @use "../_includes/components/mobile-nav/mobile-nav";
 @use "../_includes/components/footer/footer";
@@ -90,14 +94,14 @@
 @use "../_includes/components/multi-select-box/multi-select-box";
 @use "../_includes/ui/subscription-gate/subscription-gate";
 @use "../_includes/ui/widget-shell/widget-shell";
-// 原第二支樣式表（凍結前端 GufoFAQ_Frontend_New/css/style.css）已依 GUIDELINE §4 解散歸戶成下列三個純樣式元件
-// （:root 變數與 _var.scss 重複，直接沿用 _var）：
+// 下列三個純樣式元件依 GUIDELINE §4 各自歸戶（一支 scss 只服務一顆元件、與它的 markup 同住），
+// 色值一律取 _var.scss 的語意 token——元件檔不得自帶 :root 變數，全站唯一色源只有一處。
 @use "../_includes/ui/filter-fields/filter-fields";
 @use "../_includes/ui/prompt-card/prompt-card";
 @use "../_includes/ui/ab-test-block/ab-test-block";
-// qa-detail-info：真實 scss 無專屬 class 規則（純語意/JS wrapper，視覺全由 block/default-table/accordion/form-table 提供），
-// 無 scss 檔可搬，故不新增 @use（同 disclaimer-modal 先例）
-// sources-block 原屬同類，後因引用標記加入而有了一個自有狀態（.is-cited，被 [[N]] 點到的那一列）
+// qa-detail-info 不在這份清單上：它沒有任何自有 class 規則（純語意／業務掛點的 wrapper，
+// 視覺全由 block／default-table／accordion／form-table 提供），沒有 scss 檔可載（disclaimer-modal 同理）。
+// sources-block 則有一個自有狀態要畫（.is-cited，被 [[N]] 點到的那一列），所以它有檔要載。
 @use "../_includes/components/sources-block/sources-block";
 // 引用標記：答案內文的 [[N]] 上標小徽章（點擊跳到參考來源第 N 筆）
 @use "../_includes/components/citation-ref/citation-ref";
@@ -106,12 +110,14 @@
 // 內建工具卡（5-2 Agent 工具）：卡片模式 accordion 的版位與唯讀參數面板
 @use "../_includes/components/builtin-tool-card/builtin-tool-card";
 
-// 元件庫展示頁（component.html）專屬版型/說明樣式，放在最後避免與一般頁面規則衝突
-@use "guideline-var"; // showcase 頁專屬色盤（--gl-*，不進 _var）
+// 元件庫展示頁（component.html）專屬的版型／說明樣式。排在所有元件之後：它與元件規則同權重，
+// 靠後來居上蓋掉展示情境要調的那幾處，才不必動元件本身、也不必加 !important。
+@use "guideline-var"; // showcase 專屬色盤（--gl-*）：不進 _var，讓「app 唯一色源」保持乾淨
 @use "guideline";
 
-// 部署站台首頁（catalog.html）專屬樣式，同 guideline 為 showcase 專用
+// 部署站台首頁（catalog.html）專屬樣式：性質同 guideline，只服務 showcase，正式頁面用不到
 @use "catalog";
 
-// 深色模式：只剩 <img src*="_black"> 的反相（單色 background-image 圖示走 _mixin 的 icon-mask，不在這裡）
+// 深色模式的最後一層：只處理 <img src*="_black"> 的反相。
+// 單色 background-image 圖示不走這裡——它們用 _mixin 的 icon-mask()，深色只是 token 換值。
 @use "dark-icons";

@@ -1,6 +1,8 @@
-{# 展示片段，取自真實 app pages/components/component.html 09 Checkbox&Radio section 的 Radio 部分（節錄，class 沿用真實系統）。
-     §4「一組 radio 要報出這組在問什麼」對展示頁同樣成立（component.html 也是會被輔具讀的 dist 頁），
-     三組示範各掛 radiogroup + aria-label（示範用途、字面即說明，不進翻譯字典——showcase 整頁豁免 i18n）。 #}
+{# 展示片段：元件庫頁（`pages/components/component.html`）的「Checkbox & Radio」那一節 include 它，
+     示範 `.form-radio` 的三種外觀——一般、停用、外框（`.border-wrap`）。
+     §4「一組 radio 要報得出這一組在問什麼」對展示頁同樣成立（component.html 也是會被輔具讀的 dist 頁），
+     故三組各自掛 `role="radiogroup"` ＋ `aria-label`；沒有它，三組六顆會念成六顆彼此無關的單選鈕。
+     這幾句 `aria-label` 是示範用途、字面本身就是說明，不進翻譯字典（showcase 整頁豁免 i18n）。 #}
 <div class="flex-row flex-wrap gap-20">
     <div class="flex-row gap-20" role="radiogroup" aria-label="一般樣式示範">
         <label class="form-radio">

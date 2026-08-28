@@ -1,26 +1,26 @@
-// 結構與數值取自凍結前端 `GufoFAQ_Frontend_New/scss/layout/_modal.scss`。
-// **偏離逐條列出**：
-//   ① 進出場動畫由 `.show`/`.hide` keyframes 改為 `@starting-style` + `allow-discrete`（§5 設計演進，見下段）
-//   ② 色值換語意 token
-//   ③ 新增 `.share-text`（分享彈窗的切版增補）
-//   ④ 三處 `box-sizing: border-box`（原檔 65／110／140）移除（§4-1：`_base.scss` 已全域給）
-//   ⑤ `.file-content` 的 `span { font-size / color / text-align }`（原檔 165-169）**攤平到
-//      `.file-content` 自己身上**——射程從「只套在 `<span>` 子元素」放寬成整格：兩個消費點
+// 跳窗（`.modals`）的外殼與版型：全站每一顆 `<dialog>` 共用的定位層、卡片、頭／身／腳三段的間距。
+// **這幾條要知道理由（改動前先讀）**：
+//   ① 進出場動畫**全部在 CSS**（`@starting-style` ＋ `display`／`overlay` 的 `allow-discrete`），
+//      不靠 js 加 `.show`／`.hide`、也不靠 setTimeout 延後關窗（§5；完整理由見下方 `.modals` 的區塊註解）。
+//   ② 色值一律走語意 token，不寫裸 hex（§4）。
+//   ③ `.share-text` 是兩顆分享彈窗共用的草稿提示區塊（見下方該區塊自己的註解）。
+//   ④ 不寫 `box-sizing: border-box`（§4-1：`_base.scss` 已全域給，元件檔再寫一次是第二份真相）。
+//   ⑤ `.file-content` 的字級／字色／對齊寫在 **`.file-content` 自己身上**，不要收進
+//      `.file-content span { … }`：射程要涵蓋整格，而不是只套在 `<span>` 子元素上。兩個消費點
 //      （`components/disclaimer-modal` 的免責聲明全文、元件庫頁的 `previewTextModal` 長文）
-//      內容都是 `<div>` 不是 `<span>`，原本那三條**一條都不生效**。
-//      （先前這裡指名 `file-preview-modal` 並說它「內容是 `<iframe>`／純文字兩型」——那支元件
-//      從頭到尾沒有用過 `.file-content`，它的 body 是 `.preview-frame-wrap > iframe`。）
-//   ⑥ `.modals` 新增 `position: fixed; inset: 0`（`width`／`height`／`max-width`／`max-height`
-//      **原檔本來就有**，凍結 `GufoFAQ_Frontend_New/scss/layout/_modal.scss:1-5`——先前把那四條
-//      一起列成新增，下一個人會以為它們是切版加的、可以隨便動；括號裡那句「沒有這兩行」
-//      自己也只講了兩行）——理由逐字寫在
-//      該區塊自己的註解：不支援 `overlay` 過渡的瀏覽器沒有這兩行會在退場途中跳位）
-//   ⑦ 同區塊的 `height: 100vh` 之後補同值 `100dvh`（§4-1）
-//   ⑧ `.modals-wrap .modals-close`（原檔 87-105，含 `img` 的三條）整段移出，升格成 `ui/modal-close`
-//      並改用 `icon-mask()`；原檔尾巴的 `#deleteModal`（195 起）移到 `components/delete-modal`
-//      （§4：`#id` 選擇器不進元件 scss、且那是某一顆窗的專屬樣式，不屬共用殼）
-//   ⑨ `&::backdrop` 的 transition 由 `background-color 0.15s linear` 改為 `0.3s ease-out`
-//      （與 ① 的進出場時長對齊——兩者不同步時遮罩會先退場、窗還留在畫面上）
+//      內容都是 `<div>` 不是 `<span>`，包一層 `span` 的寫法**一條都不會生效**。
+//      （`components/file-preview-modal` 不吃這一區：它的 body 是 `.preview-frame-wrap > iframe`，
+//      整支元件沒有用過 `.file-content`。）
+//   ⑥ `.modals` 的 `position: fixed; inset: 0` 是**顯式宣告**，理由逐字寫在該區塊自己的註解
+//      （不支援 `overlay` 過渡的瀏覽器沒有這兩行會在退場途中跳位）。同區塊的 `width`／`height`／
+//      `max-width`／`max-height` 是覆寫 UA 對 `dialog:modal` 的預設幾何，四條都是凍結值、不是可調參數。
+//   ⑦ 同區塊的 `height` 寫 `100vh` 之後再寫一次同值的 `100dvh`（§4-1 的降級疊寫：不支援 `dvh`
+//      的瀏覽器吃前一行，支援的吃後一行，行動瀏覽器伸縮網址列時才不會多出一截）。
+//   ⑧ 右上角關閉鈕的樣式**不在本檔**，住在 `ui/modal-close`（用 `icon-mask()` 畫叉叉）；
+//      單一顆窗的專屬樣式（`#deleteModal` 那一類）住在對應的 `components/*`
+//      （§4：`#id` 選擇器不進元件 scss，某一顆窗的專屬樣式也不屬共用殼）。
+//   ⑨ `&::backdrop` 的 transition 是 `0.3s ease-out`，與 ① 的進出場時長逐字對齊——兩者不同步時
+//      遮罩會先退場、窗還留在畫面上。
 //
 // ─────────────────────────────────────────────────────────────────────────────
 // markup 契約（無 html 元件，§1-2；整段照抄）—— 全站每一顆 `<dialog>` 的外殼。
@@ -58,8 +58,7 @@
 // `aria-labelledby` **指向本窗那顆 `.modals-title` 的 id**（有測試釘住的是這件事，不是「等於
 // `<dialog id>`」）。多數彈窗的標題 id 恰好是 `<dialog id>-title`，但那只是命名慣例不是規則：
 // `components/file-preview-modal` 的 `<dialog id="previewModal">` 指的是 `previewFileName`
-// ——那顆 id 是真 app 的業務掛點（凍結前端 `GufoFAQ_Frontend_New/js/uploadFilePdf.js:335` 的
-// `$('#previewFileName').text(...)` 那一族靠它把檔名寫進標題），沿用不改名。
+// ——那顆 id 是**業務掛點／轉換契約**（執行期靠它把檔名寫進標題），沿用不改名。
 // 照「跟著 `<dialog id>` 走」抄的人會寫出一個指向不存在 id 的 `aria-labelledby`。
 //
 // 授權宣告（§5 的四條授權軸）掛在 `<dialog>` 上＝**整顆彈窗的可見性**（低於該級時整份不渲染），
@@ -96,10 +95,11 @@
 
 // 進出場動畫全部交給瀏覽器（`display` / `overlay` 的 discrete transition + `@starting-style`）。
 //
-// 曾經：`display:none` 不能過渡，所以退場動畫要靠 js 把 `.close()` 延後 300ms（setTimeout），
-// 再加兩道重入守衛（關到一半又點關閉、關到一半又重開）與 close 事件的 class 收尾。
-// 那顆 timer 是本專案重入 / Esc / 巢狀 bug 的溫床。現在 `[open]` 一被拿掉就開始退場，
-// 瀏覽器自己撐到動畫結束才真的 `display:none`；中途重開的話 transition 原生就會反向 —— 免費的 `stop(true,true)`。
+// 為什麼不用 js 延後關窗：`display:none` 本身不能過渡，要在純 js 裡做退場動畫就得把 `.close()`
+// 延後 300ms（setTimeout），再補兩道重入守衛（關到一半又點關閉、關到一半又重開）與 close 事件的
+// class 收尾——那顆 timer 正是重入 / Esc / 巢狀開窗那一族 bug 的溫床。改成宣告式之後，`[open]`
+// 一被拿掉就開始退場，瀏覽器自己撐到動畫結束才真的 `display:none`；中途重開的話 transition 原生
+// 就會反向 —— 等於免費拿到 `stop(true,true)`，而且「窗是開是關」只有 `[open]` 這一份真相。
 //
 // `position: fixed; inset: 0` 是顯式寫的：不支援 `overlay` 過渡的瀏覽器，`close()` 後 dialog 立刻離開
 // top layer、UA 的 `dialog:modal` 規則失效，沒有這兩行它會在退場途中跳位。有了它，最壞情況只是
@@ -248,9 +248,10 @@
             text-align: left;
         }
 
-        // 分享前的草稿提示區塊：faq-share-modal 與 share-manage-modal 兩顆分享 modal 共用同一份
-        // （搬自 faq-share-modal 的 scss，取自真 app FAQ scss/layout/_modal.scss）。
-        // §4 判準：兩個以上元件必須同值的東西才抽共用層——各寫一份遲早走鐘。
+        // 分享前的草稿提示區塊：`faq-share-modal` 與 `share-manage-modal` 兩顆分享彈窗共用同一份規則，
+        // 故它住在共用殼、不住在其中任何一支元件裡。
+        // §4 判準：兩個以上元件必須同值的東西才抽共用層——各寫一份遲早走鐘，而兩顆窗不會同時開著、
+        // 底色與內距差一點也沒有人比得出來。
         .share-text {
             margin: 1rem 0 1.25rem 0;
             font-size: 1.125rem;

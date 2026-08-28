@@ -28,17 +28,18 @@ permalink: 3-1-1_datasetList.html
     </div>
 </div>
 
-{# 資料集表格：欄位與真實頁 pages/dataset/3-1-1_datasetList.html + GufoFAQ_Frontend_New/js/datasetList.js 的 createDatasetRow() 一致，
-     動態渲染的列改用 set+for 資料化示範 2-3 筆 #}
+{# 資料集表格：列由執行期的清單資料渲染，這裡改用 set+for 資料化示範 2-3 筆。 #}
 {# fileTypes 五種檔型的數字加總＝該資料集的檔案總數，也就是 3-1-3 檔案列的 total（115）。
      3-1-3 只列三筆當版型示範，兩邊的帳這樣對：容量 12.30＋3.05＋0.85＝16.20 MB（＝第一列
      128.45 MB 的 12.6%）；筆數看得到的是 312＋980＝1,292（客服應對規範.docx 那一筆是「—」，
      理由見該頁 record_count 註解），＝第一列 12,480 的 10.4%——都只是這個資料集的一小部分。
-     ⚠️ 第一列的 count 本輪由 3,204 改成 12,480：3,204 時光是 3-1-3 那三筆就佔 71.9%，
-     「只是其中一小部分」被示範資料自己推翻（§6：演的必須是一個真實可能的狀態——115 個檔裡的
-     3 個不會裝著七成的資料）。12,480 / 115 ≈ 108 筆/檔，示範挑的正好是筆數偏大的那幾個。 #}
-{# **最後兩筆**是 3-5（資料健康度）與 5-10（標籤覆蓋率）一直在操作、而這張清單先前列不出來的
-     資料集。QA 集與檔案集在 product 是同一張表（`models.Dataset` 的 `kind` 欄）⇒ 同一個 id 空間，
+     ⚠️ 第一列的 count 要**夠大**（這裡是 12,480），不能隨手給個小數字：3-1-3 只列三筆當版型示範，
+     那三筆必須讀起來「只是其中一小部分」。填 3,204 的話，光那三筆就佔 71.9%——示範資料自己把
+     那句話推翻了（§6：演的必須是一個真實可能的狀態，115 個檔裡的 3 個不會裝著七成的資料）。
+     12,480 / 115 ≈ 108 筆/檔，而示範挑的正好是筆數偏大的那幾個，兩邊對得起來。 #}
+{# **最後兩筆**是 3-5（資料健康度）與 5-10（標籤覆蓋率）整頁都在操作的那兩個資料集，
+     這張清單一定要列得出它們。QA 集與檔案集在 product 是同一張表（`models.Dataset` 的 `kind` 欄）
+     ⇒ 同一個 id 空間，
      故 sn 直接沿用那兩頁的 id（3 與 12），不另發一組；目錄正本見 3-5 的 `healthScanDatasets`。
      「一個資料集只出現在健康度頁、資料集清單上找不到它」是這一批示範資料最大的破口：使用者從
      健康度處置完點回來就沒有落點，而那正是那一頁每一顆處置鈕的下一步（§6 跨頁自洽）。
@@ -132,8 +133,8 @@ permalink: 3-1-1_datasetList.html
                 </td>
                 <td>{{ row.group }}</td>
                 <td>
-                    {# `.number` 是凍結前端的掛點（`GufoFAQ_Frontend_New/js/datasetList.js:177/183/189/195/201` 逐檔型
-                         append 這顆計數 span），無樣式、不改名（§5 轉換契約）。 #}
+                    {# `.number` 是**逐檔型計數的資料槽**（React 執行期逐型填一顆），
+                         無樣式、不改名（§5 轉換契約）。 #}
                     <div class="file-number-group">
                         <div class="item">
                             <img src="./images/icon_XLSX_s.png" width="60" height="76" decoding="async" alt="XLSX" class="icon">
@@ -163,11 +164,11 @@ permalink: 3-1-1_datasetList.html
                 <td class="text-center">{{ row.count }} <span data-i18n="common.recordsUnit">筆</span></td>
                 <td>
                     <div class="btn-group">
-                        {# 這顆刪除鈕**刻意沒有列鍵**：真 app 是 `$deleteBtn.data('folder-sn', …)`
-                             ＋`.data('folder-name', …)`（datasetList.js:223-224），jQuery 的 .data() 寫進
-                             記憶體、不落成 DOM 屬性——markup 上本來就查不到。3-1-3 那一頁才是真的把
-                             `data-filesn`／`data-filename` 印在標籤上（previewDataset.js:140/167），
-                             兩頁不對稱是忠實保留、不是漏。React 端這一顆從 map 的 row 閉包取值即可。 #}
+                        {# 這顆刪除鈕**刻意沒有列鍵屬性**：它要刪的是哪一筆，由「按下它的那一列」
+                             本身決定——React 端從 map 的 row 閉包直接取得，不必再往 DOM 上印一份。
+                             3-1-3 的檔案列不同：那一頁的 `data-filesn`／`data-filename` 是**業務掛點**，
+                             逐列動作要靠它們認出這一列是哪個檔（見該頁「兩顆列動作」那一段），
+                             所以印在標籤上。兩頁不對稱是刻意的，不是這一頁漏掉了。 #}
                         <button type="button" id="datasetDelete-{{ loop.index }}" aria-labelledby="datasetRowName-{{ loop.index }} datasetDelete-{{ loop.index }}" class="button-icon no-bg size-sm delete" title="刪除" data-i18n-title="action.delete">
                             <span class="sr-only" data-i18n="action.delete">刪除</span>
                         </button>
@@ -175,15 +176,14 @@ permalink: 3-1-1_datasetList.html
                 </td>
             </tr>
             {% else %}
-            {# 空狀態的**版位**鏡射真 app：datasetList.js:137-139 `if (filteredDatasets.length === 0)` 就 append
-                 一列 colspan 的空狀態列。本頁 8 欄（真 app 7 欄 ＋ SaaS 新增的「所屬群組」）。
-                 **句子不鏡射**——真 app 那一句是泛用的「無資料」，切版改成具名（理由見下一則註解，
-                 §5 無資料列正典：凍結前端是來源考據、不是文案的上游）。 #}
+            {# 空狀態是**一列 colspan 的無資料列**（§5 無資料列正典），本頁 8 欄。
+                 那一句一律**具名**、不用泛用的「無資料」——理由見下一則註解。 #}
             <tr>
-                {# 具名空狀態（round48，取代泛用的「無資料」）：這一列**兩種原因都走得到**——真 app 的
-                     `datasetList.js:137-139` 是 `if (filteredDatasets.length === 0)`，也就是搜尋濾到零筆與
-                     一個資料集都沒有共用同一列。只寫「無資料」的話，第一次進來的人會以為系統壞了，
-                     而搜尋濾光的人會以為資料被刪了；兩種的下一步剛好相反（清搜尋 vs 去建第一個）。 #}
+                {# 具名空狀態，不用泛用的「無資料」：這一列**兩種原因都走得到**——判準只有一個
+                     「要畫的清單長度為 0」，所以「搜尋濾到零筆」與「這個租戶一個資料集都還沒有」
+                     共用同一列。只寫「無資料」的話，第一次進來的人會以為系統壞了，而搜尋濾光的人
+                     會以為資料被刪了；兩種的下一步剛好相反（清掉搜尋 vs 去建第一個），
+                     所以這一句必須同時說得出這兩條路。 #}
                 <td colspan="8" class="text-center text-gray" data-i18n="dataset.emptyStateHint">這裡目前沒有資料集：可能一個都還沒建，也可能是上面的搜尋把它們濾掉了。先把搜尋清空看看；真的還沒有，就按「新增資料集」匯入第一批資料。</td>
             </tr>
             {% endfor %}
@@ -191,57 +191,58 @@ permalink: 3-1-1_datasetList.html
     </table>
 </div>
 
-{# 分頁：真實頁由 GufoFAQ_Frontend_New/js/datasetList.js renderPagination() 動態產生（li.prev/li.active/li.next 結構）；
-     ui/pagination 現在也是同一套 data-total 驅動的 js render，故直接沿用。
-     total＝資料集清單的**伺服器總筆數**（示範列只畫 3 筆版型，不是把總數畫完）。
+{# 分頁：`ui/pagination` 是 data-total 驅動的 js render，直接沿用。
+     total＝資料集清單的**伺服器總筆數**（示範列只畫幾筆版型，不是把總數畫完）。
      115 / 20 ＝ 6 頁，而省略號的門檻是 `visible + 2`
      （ui/pagination 的 pagination.js：`totalPages <= VISIBLE + 2` 就全部顯示）——桌機
      `--pagination-visible: 5`、門檻 `visible + 2` ⇒ **≥8 頁**才出省略號（7 頁仍是全部列出），
      **這一頁桌機是「頁數少到全部列出」那一態**；≤768px 的 `--pagination-visible` 是 3 ⇒ 門檻 5
-     ⇒ ≥6 頁就出省略號，6 頁在手機上就看得到。原本這裡寫「total 挑大一點讓省略號露出來」，桌機一顆都沒有。
+     ⇒ ≥6 頁就出省略號，6 頁在手機上就看得到。
+     ⚠️ **不可以用「total 挑大一點好讓省略號露出來」當理由挑這個數字**：這一頁桌機一顆省略號都
+     沒有，那條理由在這裡是假的，而且 total 的來源本來就不是版面需求——它是那一層真正的總筆數。
      滑動視窗那一態由 1-1-3（49 頁）與元件庫頁（12 頁，左右兩顆都演得到）負責。 #}
 {% set total = 115 %}
 {# 每頁筆數與頁碼列吃同一個 perPage（§6 同源：選擇器顯示 20、頁碼卻按 10 算總頁數就是自打架）。 #}
 {% set perPage = 20 %}
 {% include "components/pager-row/pager-row.html" %}
 
-{# 刪除確認鈕交給業務 js：真 app 的 datasetList.js:360 綁 `#confirmDeleteBtn`，故保留 **id 契約**
-   （§5 矩陣：class 或 id 擇一，這一頁真 app 靠 id，3-1-3 才是 .confirm-delete-btn）。
-   不掛 btn-close-modals 的理由不是「關窗太早」——真 app 這一顆恰恰是先關窗（:341）才發 DELETE（:348）——
-   而是關窗與刪除都由業務 js 決定：切版自動關窗會讓 React 端多一個它沒有要的行為。
-   （3-1-3 才是「API 成功後才關窗」那一種：previewDataset.js:475 await fetch → :498 closeModal。）
-   deleteTargetId：本頁刪的是資料集，名字由業務 js 填進這顆空槽（全站逐列刪除的做法，同 3-1-3／3-3）。
-   原本寫死 `deleteTargetName = "客服問答知識庫"`——那是 rows 第一筆，於是三列的刪除鈕點下去都問
-   第一筆，第二、三列會看到「確定要刪除 客服問答知識庫」（§6 示範自洽）。
-   **這顆 id 刻意不叫 `deleteModalText`**：真 app 的 `#deleteModalText` 是整個 `<p>`、js 一次覆寫
-   整句（`確定要刪除 ${folderName} 嗎？`，datasetList.js:231），而本元件的 `deleteTargetId` 只是句中
-   那一顆名字 span——同名不同義比沒有名字更貴（照真 app 的寫法填進來會變成「確定要刪除 確定要刪除
-   客服問答知識庫 嗎？」）。React 正本也是名字模型（apps/web `datasets/page.tsx` 傳 `itemName`），
-   故沿用全站的名字槽命名。列上那顆觸發鈕仍沒有列鍵，理由見上面表格內的註解。 #}
+{# 刪除確認鈕交給業務 js，並保留 **id 契約** `#confirmDeleteBtn`（§5 矩陣：class 或 id 擇一——
+   這一頁走 id，3-1-3 走 `.confirm-delete-btn`；兩者都是**轉換契約**，不因為換框架而改名）。
+   **不掛 btn-close-modals**：關窗與刪除都由業務 js 一起決定（它要帶著「刪哪一筆」去送 DELETE、
+   再依結果決定關不關窗），切版自動關窗就是替 React 多做一個它沒有要的行為（§5）。
+   `deleteTargetId`：本頁刪的是資料集，名字由業務 js 填進這顆空槽（全站逐列刪除的做法，同 3-1-3／3-3）。
+   ⚠️ **不可以改成寫死的 `deleteTargetName`**：寫死就固定成 rows 的某一筆，於是每一列的刪除鈕
+   點下去都問同一個名字，第二列以後看到的是別人的名字（§6 示範自洽）。
+   **這顆槽刻意只包住名字那一段，不是整句**：`deleteTargetId` 指的是句中那一顆名字 span。
+   一個指「整句」、一個指「名字」卻共用同一個名字，比沒有名字更貴——照「整句」的用法填進來
+   會變成「確定要刪除 確定要刪除 客服問答知識庫 嗎？」。React 正本也是名字模型
+   （gufofaq-saas `apps/web/app/(app)/datasets/page.tsx` 傳 `itemName`），故沿用全站的名字槽命名。
+   列上那顆觸發鈕仍沒有列鍵屬性，理由見上面表格裡「這顆刪除鈕刻意沒有列鍵屬性」那一段。 #}
 {% set deleteTargetId = "deleteDatasetName" %}
-{# 連帶後果（round47，`deleteNoteKey`）：這一顆是全站最貴的刪除之一——它不只是清掉一列，
+{# 連帶後果（`deleteNoteKey`）：這一顆是全站最貴的刪除之一——它不只是清掉一列，
      而是那個資料集底下**所有檔案與它們在搜尋索引裡的內容**一起消失，而且沒有還原路徑。
-     先前這扇窗只說得出「確定要刪除 <名字>」，那句話對刪一個標籤維度也成立。 #}
+     少了這一行，這扇窗只說得出「確定要刪除 <名字>」——那句話對刪一個標籤維度也一字不差地成立，
+     完全講不出這一顆按下去會失去什麼（§3-2：後果寫在做那個決定的控制項旁邊）。 #}
 {% set deleteNoteKey = "dataset.deleteDatasetNote" %}
 {% set deleteNoteZh = "底下所有檔案與它們在搜尋索引裡的內容都會一起消失，而且無法復原。" %}
 {% set deleteConfirmBinding = true %}
 {% set deleteConfirmId = "confirmDeleteBtn" %}
-{# 刪除資料集的四段（product `app/routers/datasets.py` 的 `delete_dataset`，逐 raise 對回這顆確認鈕）：
-     ① 403 `dataset.not_writable_group`——`_writable_dataset`（同檔）驗「目標資料集的群組在不在我
-        授予 data:write 的群組裡」。清單端點 `list_datasets`（同檔）只 where tenant_id、**不依這道
+{# 刪除資料集的四段（product 的 `delete_dataset`，逐 raise 對回這顆確認鈕）：
+     ① 403 `dataset.not_writable_group`——`_writable_dataset`（同一支模組）驗「目標資料集的群組在不在我
+        授予 data:write 的群組裡」。清單端點 `list_datasets`（同一支模組）只 where tenant_id、**不依這道
         scope 過濾**，所以「列得出來、按下去 403」是真實可達的一條路；使用者找得到人開通／換群組
         ⇒ warning，不折進 error（§4「資源層 scope 不是閘門，是結果分支」）。
      ② 400 `ChatConfigRejectedError`——刪完要把三份設定檔投影推回 chatbot
         （`sync_tenant_profile_configs`），上游驗的是**合併後**的整份 payload，於是「對話設定裡某一欄
         填錯」（那一欄可能跟這次刪除完全無關）會在這裡現形。它不包成 502：同一支的
         `except ChatConfigRejectedError: db.rollback(); raise` 原樣重拋，由全域處理器統一成 400
-        （`app/errors.py` 的 `chat_config_rejected_handler`）。修法是去對話設定頁改那一欄 ⇒ warning。
+        （product 的 `chat_config_rejected_handler`）。修法是去對話設定頁改那一欄 ⇒ warning。
         折進「刪除資料集失敗」等於叫使用者去查一個不存在的跨服務故障，而重試永遠不會成功（§5）。
      ③ 其餘（`purge_dataset_assets` 真的失敗 → 502、404）併進末段 error。 #}
 {% set deleteCapability = "data:write" %}
 {# **能力 403 與資源層 scope 403 是兩段，不共用一句**（§4）：前者換一個群組也沒用（要一顆 token）、
      後者是「這個資料集不在你可以寫入的群組裡」（找人加入群組或換一個）——兩者的修法不同。
-     資源層那一道是 product `app/routers/datasets.py` 的 `_writable_dataset` → 403
+     資源層那一道是 product 的 `_writable_dataset` → 403
      `dataset.not_writable_group`（`authz.can_write_dataset`）；而 `list_datasets` 只以 `tenant_id`
      收斂、不依該 scope 過濾 ⇒「看得到一筆、按下去 403」是真實可達的路徑（§4 的判準）。
      這一句是全站同一道守衛的**共用子句**：3-1-3（刪檔／名稱／兩處欄位／切塊參數）、3-3（刪 QA 集、
@@ -249,9 +250,8 @@ permalink: 3-1-1_datasetList.html
      3-5 那五顆處置鈕**措辭不同、而且是對的**：那一頁的主詞是「記錄」不是「資料集」（「這幾筆記錄
      所在的資料集不在你可以寫入的群組裡——處置會就地改寫來源檔，需要與匯入、刪檔同一道群組寫入
      權限」）。同一道守衛、兩種主詞，不是同一句話。
-     （先前這裡寫「與 3-5 五顆處置鈕、3-1-3 三處就地編輯**逐字共用**」：前半誇大，後半在當時根本
-     不成立——3-1-3 那幾處那時只有「權限不足，無法儲存」一句，這一輪才補上。§3-2 斷言要能被一行
-     可貼出的引文支撐。） #}
+     ⚠️ **「逐字共用」是一句可驗證的斷言，不是修辭**：寫下它之前要真的能把每一處的那一段貼出來
+     比對，比不出來就改寫成「同一族」（§3-2：斷言要能被一行可貼出的引文支撐）。 #}
 {% set deleteToast = "已刪除|權限不足，無法刪除——請找貴租戶的管理者開通|這個資料集不在你可以寫入的群組裡，請找管理員把你加進該群組|對話設定有一欄不合法，請先到對話設定頁修正|刪除資料集失敗" %}
 {% set deleteToastKey = "toast.deleteDataset" %}
 {% set deleteToastType = "success|warning|warning|warning|error" %}

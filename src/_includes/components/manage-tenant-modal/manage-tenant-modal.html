@@ -1,5 +1,5 @@
 {# 租戶管理 modal，取自 5-6-1_platformTenants 頁「管理」鈕（.js-manage-tenant）：平台系統管理員管理指定租戶的
-     額度／使用期／模型開通／凍結解凍／成員治理／危險操作。開窗需先選定哪個租戶才知道管理誰＝業務條件開窗，故該鈕保留真 app hook class、
+     額度／使用期／模型開通／凍結解凍／成員治理／危險操作。開窗需先選定哪個租戶才知道管理誰＝業務條件開窗，故該鈕保留業務 hook class、
      不掛 data-open-modal（GUIDELINE §5）。彈窗本體回歸切版，區塊：
        1. 額度——三個數字欄對齊 product QuotaIn（qa_limit／extraction_limit／storage_limit_mb）+ 用量週期
           select（無/每日/每月，QuotaIn.usage_period，隨額度共用 footer「儲存」鈕一起送出）+ 重置當期用量鈕
@@ -11,9 +11,9 @@
           400 `platform.used_exceeds_limit`，那道 warning 也一併列進 footer 儲存鈕的 `data-toast`。
           **`TenantUsageOut.storage_used_mb` 也畫在這裡**（見該欄註解）：它是 `GET /platform/usage` 回的
           唯讀欄，不在 `QuotaIn` 裡，故只顯示、不可編輯。
-       2. 使用期——「延展／縮短天數」數字欄 + 「指定到期日」日期欄（exactly-one：product platform.py 兩者都給
+       2. 使用期——「延展／縮短天數」數字欄 + 「指定到期日」日期欄（exactly-one：product 兩者都給
           回 400 `tenant.trial_one_of`（引 key 不引英文字面——被抽進 i18n 的句子隨時會改，§3-2；
-          出處是 `platform.py` 的 `extend_tenant_trial`），React 端送出前擇一；日期選擇不在
+          出處是 product 的 `extend_tenant_trial`），React 端送出前擇一；日期選擇不在
           切版範圍，沿用 .calendar hook class 交由 React 套件實作）
        3. 模型開通——「不限制」開關（承載 `available_models = None`）+ checkbox 清單，欄位寫法比照
           5-5-1_userManagement「能力」checkbox
@@ -33,8 +33,8 @@
      `components/platform-tenants-panel`（列上的 `.js-manage-tenant` 就在那裡；比照 footer 內含
      disclaimer-modal 的「誰的按鈕開的彈窗、彈窗就 include 在誰裡面」）。那個元件被
      5-6-1／5-6-1-2／5-6-1-3 三份稿共用 ⇒ 這顆 `<dialog>` 在 dist 上出現在那三頁 ＋ 元件庫頁。
-     （先前這裡寫「見 5-6-1_platformTenants.html 底部」——那一頁的 include 只有 breadcrumb 與
-     三個 panel，照著去找找不到，也看不出它同時在另外兩份稿上。）
+     ⚠️ 這條登記要指到**真正 include 它的那個元件**，不要寫成「見 5-6-1_platformTenants.html 底部」：
+     那一頁自己的 include 只有 breadcrumb 與三個 panel，照著去找找不到，也看不出它同時活在另外兩份稿上。
      參數（示範開關；React 端為條件渲染，元件庫頁 set true 演出該分支，同 config-copy-modal 的 configCopyShowError）：
        manageTenantShowUsageError＝**取不到該租戶目前用量**時的持久錯誤列。這一態要與一般「載入失敗」分開
          講：額度欄拿不到現值就會顯示 0，按下儲存等於把該租戶的額度歸零鎖死，所以 React 端在用量取不到時
@@ -42,11 +42,11 @@
          兩種呈現共用同一句。
        manageTenantFrozen＝這個租戶**目前是不是凍結中**（`TenantOut.frozen`／`FreezeOut.frozen`）。凍結區
          兩態的鈕與說明由它決定（見該區註解）。 #}
-{# id＝`UserOut.id`（product `app/routers/users.py` 的 `UserOut` 第一欄，`app/routers/platform.py` 的 `platform_tenant_users` 沿用它）。
+{# id＝`UserOut.id`（product 的 `UserOut` 第一欄，product 的 `platform_tenant_users` 沿用它）。
      這一列的三顆動作全部以它定址（`PATCH /platform/users/{user_id}`、
      `POST /platform/users/{user_id}/reset-password`、`DELETE /platform/users/{user_id}`），
      所以列鍵不可以是 loop.index——這張名冊刪得掉列，位置不是身分（§6 列鍵）。
-     platformRole＝`UserOut.platform_role`。它不是裝飾：停用／刪除／降級這一列時，product `platform.py` 的
+     platformRole＝`UserOut.platform_role`。它不是裝飾：停用／刪除／降級這一列時，product 的
      `_assert_not_last_platform_admin` 會對**最後一位平台系統管理員**回 409 `last_platform_admin`，
      不畫出來的話「為什麼這一列按了會被拒」在畫面上沒有任何線索。示範放的是 `auditor`——那一態不受
      那道守衛管（它只認 admin），不會在畫面上留一顆必定失敗的鈕；`admin` 那一態是 warning 段講的那件事。
@@ -62,10 +62,10 @@
      （`ops-admin@example.com`）——在這裡補第四位會讓 B 變成四個人（與那張表的使用者數對不上），
      改用那兩個信箱之一則是同一個人同時待在兩個租戶；兩條都是 §6 跨頁自洽，而且那兩張表就在同一頁上
      逐列讀得到。
-     ⚠️ 同一條理由也管住這份名冊自己：第三位原本叫 `viewer@example.com`，而**那個信箱是租戶 A 的人**
-     （5-5-1_userManagement 的第三列，同樣是「已停用」）——正是這一段自己說不可以的「同一個人
-     同時待在兩個租戶」。改成 `b-viewer@example.com`（沿用 iso-review-wizard 的 `c-admin@example.com`
-     那種以租戶字母起頭的命名）。故走 §4-2「枚舉的成員靠『有地方渲染得出來』活著」那條的第二條路：這一段 markup 留在
+     ⚠️ 同一條理由也管住這份名冊自己：信箱**不可以直接借用別頁的**。例如 `viewer@example.com`
+     是租戶 A 的人（5-5-1_userManagement 的第三列，同樣是「已停用」），借到這裡就正是這一段自己
+     說不可以的「同一個人同時待在兩個租戶」。故一律用以租戶字母起頭的命名（`b-viewer@example.com`，
+     同 iso-review-wizard 的 `c-admin@example.com`）。故走 §4-2「枚舉的成員靠『有地方渲染得出來』活著」那條的第二條路：這一段 markup 留在
      這裡當**位置與字色的規格**，那顆 key 可見的一份放元件庫頁的「React 條件文案」節（繁中逐字照抄）。
      要改回在這裡演，得先動 5-6-1 的盤點表讓某一個租戶同時有一位稽核員與一位系統管理員。 #}
 {% set manageMembers = [
@@ -79,7 +79,7 @@
        · `get_tenant_models`（`GET /platform/tenants/{id}/models`，模型白名單）
        · `platform_tenant_users`（`GET /platform/tenants/{id}/users`，成員名冊）
        · `list_tenants`（`GET /platform/tenants`，`TenantOut.subscription_status`／`trial_end`／`frozen`）
-     四支的 `Depends` 全是 `require_platform_auditor`（product `app/routers/platform.py`），而**這份 modal 是
+     四支的 `Depends` 全是 `require_platform_auditor`（product），而**這份 modal 是
      全站唯一畫得出額度／用量／模型白名單／成員名冊的地方**——整份不渲染給稽核員，等於他在切版裡看不到
      任何一個租戶的這些值，而那正是 ISO 職責分離要他看的東西。
      故照 §5 的兩級渲染規則逐顆標：
@@ -96,7 +96,7 @@
             {% include "ui/modal-close/modal-close.html" %}
             <div class="modals-content">
                 <div class="modals-header">
-                    {# 標題接租戶名（round47，與 manage-members-modal 同一件事）：這扇窗一開，遮罩就蓋住
+                    {# 標題接租戶名（與 manage-members-modal 同一件事）：這扇窗一開，遮罩就蓋住
                          底下那張租戶表——而窗裡每一顆旋鈕（額度、模型白名單、凍結、刪除資料／帳號）都作用在
                          **某一個特定租戶**身上，畫面上卻沒有一個字說得出是哪一個。租戶名是資料（不翻），
                          走「chrome ＋分隔符 key ＋資料槽」；分隔符沿用 `common.labelSep`（英譯 `": "` 自帶
@@ -118,8 +118,8 @@
                                         <label for="tenantQaLimitInput" class="control-label" data-i18n="platform.qaLimit">問答額度</label>
                                     </div>
                                     <div class="field">
-                                        {# 三件套的第三件（§4）：三顆額度欄的下界出處＝`set_tenant_quota`（product app/routers/platform.py
-                                             的 `set_tenant_quota` → 400 `platform.quota_field_negative`，引 key 不引英文字面）；數字獨立成不翻的節點（§3-2）。 #}
+                                        {# 三件套的第三件（§4）：三顆額度欄的下界出處＝product 的 `set_tenant_quota`
+                                             （負值 → 400 `platform.quota_field_negative`，引 key 不引英文字面）；數字獨立成不翻的節點（§3-2）。 #}
                                         <input type="number" min="0" step="1" id="tenantQaLimitInput" data-platform-role="admin" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control" value="3000" aria-describedby="tenantQaLimitRange">
                                         <span class="text-gray" id="tenantQaLimitRange">≥ 0</span>
                                     </div>
@@ -147,7 +147,7 @@
                                         {# `TenantUsageOut.storage_used_mb`（`GET /platform/usage`）的落點。同一支端點的另外兩顆
                                              已用量（qa_used／extraction_used）在下面各有一顆可編輯的欄，只有這一顆沒有——而它
                                              **不可編輯**：`QuotaIn` 沒有這一欄，儲存已用量是 `DatasetFile.size_bytes` 的總和
-                                             （product app/routers/platform.py 的 `platform_usage` 逐字 `round(used_bytes / 1024 / 1024, 2)`），
+                                             （product 的 `platform_usage` 逐字 `round(used_bytes / 1024 / 1024, 2)`），
                                              設不了、也不該設。故畫成唯讀的一句，緊貼著它所解釋的那個上限（§3-2 上限與現值寫在
                                              做決定的控制項旁邊）。數字是資料節點、不進譯文（§4-2）。 #}
                                         <span class="text-gray"><span data-i18n="platform.storageUsedPrefix">目前已用 </span>412.5 MB</span>
@@ -159,9 +159,9 @@
                                  下界 0；上界不是常數而是**同一次送出的那個額度**——超過時上游回 400
                                  `platform.used_exceeds_limit`，故那道 warning 也列在 footer 的儲存鈕上。
                                ⚠️ 提示句**用欄位名指稱、不用位置**：這一排是 `flex-wrap` 的兩欄格，
-                                 「問答已用量」正上方那一格其實是「萃取額度」、「萃取已用量」上方是「儲存上限」，
-                                 原本兩顆共用一句「不可大於上面那格的額度」，指的都是隔壁那一欄。
-                                 兩顆因此拆成各自的 key（上游那道 400 也是逐欄比 `qa_used vs qa_limit`、
+                                 「問答已用量」正上方那一格其實是「萃取額度」、「萃取已用量」上方是「儲存上限」——
+                                 共用一句「不可大於上面那格的額度」的話，兩顆指的都會是隔壁那一欄。
+                                 故兩顆各用各的 key（上游那道 400 也是逐欄比 `qa_used vs qa_limit`、
                                  `extraction_used vs extraction_limit`，本來就不是同一件事）。 #}
                             <div class="col-6-md col-12-sm">
                                 <div class="form-group">
@@ -201,21 +201,22 @@
                                 </div>
                             </div>
                         </div>
-                        {# 重置當期用量：**業務條件開窗**（round48）——歸零 qa_used/extraction_used、
+                        {# 重置當期用量：**業務條件開窗**——歸零 qa_used/extraction_used、
                              週期是每日／每月時另把 usage_period_start 設成現在
-                             （product `app/tenancy/platform_admin.py` 的 `reset_tenant_usage`，
+                             （product 的 `reset_tenant_usage`，
                              端點 `POST /platform/tenants/{id}/reset-usage`），不經共用 footer 鈕。
-                           ⚠️ **它先前是「按下去就送 API」的直接動作，理由是彈窗開不出來**：
-                             `components/delete-modal` 的 `<dialog id>` 當時寫死，而這扇窗出現的每一頁
-                             （5-6-1／5-6-1-2／5-6-1-3 ＋ 元件庫）都已經有一顆 `#deleteModal`
-                             （成員那一顆），第二顆同 id 是 §4／§5 明文禁止的。那道限制讓一個**不可逆、
-                             動到錢**的動作變成全站唯一沒有二次確認的破壞性動作，與 5-8 當年因為標題
-                             寫死「刪除」而放棄確認是同一種死法。本輪把 id 開成參數
-                             （`deleteModalId`），這顆鈕回到 §5 矩陣①：只掛 hook class、不掛
-                             `data-toast`；成敗與閘門的家搬到彈窗裡那顆確認鈕
+                           ⚠️ **它一定要開二次確認窗，不可以退成「按下去就送 API」**：這是不可逆、
+                             而且動到錢的動作，沒有確認就成了全站唯一沒有二次確認的破壞性動作。
+                             會想退回直送的原因通常是「彈窗開不出來」——這扇窗出現的每一頁
+                             （5-6-1／5-6-1-2／5-6-1-3 ＋ 元件庫）都已經有一顆 `#deleteModal`（成員那一顆），
+                             而第二顆同 id 是 §4／§5 明文禁止的。正解是用 `components/delete-modal` 的
+                             `deleteModalId` 參數另給一個 id，不是放棄確認（5-8 也曾因為標題寫死「刪除」
+                             而落進同一種死法）。
+                             於是這顆鈕落在 §5 矩陣①：只掛 hook class、不掛 `data-toast`；
+                             成敗與閘門的家在彈窗裡那顆確認鈕
                              （彈窗本體 include 在開它的那顆鈕住的地方＝`components/platform-tenants-panel`
                              與元件庫頁，理由同 `.js-reset-password`／`.js-delete-user`，見本檔頭）。
-                           ⚠️ **這一整塊是這扇窗裡唯一直接動到「錢」的地方，先前一句說明都沒有**（round47）。
+                           ⚠️ **這一整塊是這扇窗裡唯一直接動到「錢」的地方，所以說明不可省**。
                              三件事要講，而且都是按下去之前才有用：
                                ① 額度填 0 ＝ 這個租戶下一題就被擋住（`consume_qa_quota` 的條件式 UPDATE
                                   `WHERE qa_used < qa_limit` 永遠不成立）——那是把人鎖住，不是「暫時關小」。
@@ -242,9 +243,9 @@
                             <div class="text-bold" data-i18n="settings.extendExpiry">使用期延展</div>
                             {# 「二擇一」是這一區的**硬約束**，而且是 `extend_tenant_trial` 的**第一道守衛**
                                  （`extend_days` 與 `set_trial_end` 同時給、或同時留空，都回 400 `tenant.trial_one_of`；
-                                 product app/routers/platform.py）。原本它只活在 footer 儲存鈕的 `data-toast` 裡——那是按下去之後才讀得到，
-                                 而 §3-2 說約束要寫在填之前。改成常駐可見一句，兩顆欄各自 `aria-describedby` 指過來
-                                 （`#tenantExpiryInput` 在此之前一個 describedby 都沒有）。 #}
+                                 product）。⚠️ 這條約束**不可以只寫在 footer 儲存鈕的 `data-toast` 裡**：
+                                 那是按下去之後才讀得到，而 §3-2 說約束要寫在填之前。故做成常駐可見的一句，
+                                 兩顆欄各自 `aria-describedby` 指過來。 #}
                             <p class="text-gray m-0" id="tenantTrialOneOfHint" data-i18n="platform.trialOneOfHint">延展天數與指定到期日只能填一個：兩個都填、或兩個都留空，送出都會被退回。</p>
                             <div class="flex-row gap-40 mobile-column sm-gap-16">
                                 <div class="col-6-md col-12-sm">
@@ -253,8 +254,9 @@
                                             <label for="tenantTrialDaysInput" class="control-label" data-i18n="settings.extendDays">延展天數</label>
                                         </div>
                                         <div class="field">
-                                            {# 「正數延展、負數縮短」原本只在 placeholder 裡——一打字就消失，也接不上輔具。
-                                                 改成常駐說明 ＋ aria-describedby；不可為 0 的出處是 product app/routers/platform.py 的 `extend_tenant_trial`。 #}
+                                            {# 「正數延展、負數縮短」是常駐說明 ＋ aria-describedby，**不可以只放在 placeholder 裡**：
+                                                 placeholder 一打字就消失，也接不上輔具，而這正是要一邊填一邊看的一句。
+                                                 「不可為 0」的出處是 product 的 `extend_tenant_trial`。 #}
                                             <input type="number" step="1" id="tenantTrialDaysInput" data-platform-role="admin" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control" aria-describedby="tenantTrialDaysHint tenantTrialOneOfHint">
                                             <span class="text-gray" id="tenantTrialDaysHint" data-i18n="platform.extendDaysHint">正數延展、負數縮短，不可為 0</span>
                                         </div>
@@ -276,9 +278,10 @@
                         <div class="flex-row column gap-8">
                             <div id="tenantModelEnableLabel" class="text-bold" data-i18n="settings.modelEnablement">模型開通</div>
                             {# 模型目錄與 5-2 是**同一份**（兩邊都源自 `gufo.list_models()`；平台端在
-                                 product app/routers/platform.py 拿它當白名單的值域，`unknown models: […]` ⇒ 400）。
-                                 §6 逐字點名「可用模型」不得各烤一份——原本這裡硬寫兩顆 checkbox、
-                                 而且**沒有 `value`**，比對的正是 `m["value"]`（`openai:gpt-4o` 這種帶前綴的識別字）。
+                                 product 拿它當白名單的值域，`unknown models: […]` ⇒ 400）。
+                                 §6 逐字點名「可用模型」不得各烤一份，所以這裡**不可以硬寫幾顆 checkbox**，
+                                 而且每一顆都**必須帶 `value`**：上游比對的正是 `m["value"]`
+                                 （`openai:gpt-4o` 這種帶前綴的識別字），少了它送出去的是一組對不上的名字。
                                  目錄本身在 5-2 那一頁 set 成 `llmModels`；這裡的示範沿用同一組值，
                                  顯示字就是識別字（業務資料、不翻）。 #}
                             {# **`available_models` 有三種值，checkbox 群只表達得出其中兩種**：
@@ -294,7 +297,8 @@
                                 <span data-i18n="platform.modelsUnrestricted">不限制（這個租戶可以用全部模型）</span>
                             </label>
                             {# 代價寫在做這個決定的控制項旁邊（§3-2）：全部取消勾選送出去的是一份**空白名單**，
-                                 不是「不限制」——那個租戶從此一顆模型都選不到。原本畫面上完全沒有講這件事。 #}
+                                 不是「不限制」——那個租戶從此一顆模型都選不到。這句話不寫出來，畫面上沒有
+                                 任何地方分得出這兩件相反的事。 #}
                             <p class="text-gray m-0" id="tenantModelsCostHint" data-i18n="platform.modelsAllOffHint">取消「不限制」之後，這個租戶只用得到下面勾起來的模型；一顆都不勾＝這個租戶一顆模型都不能用，不等於不限制。</p>
                             {% set tenantModels = ["openai:gpt-4o", "openai:gpt-4o-mini", "openai:gpt-4.1", "anthropic:claude-3-5-sonnet"] %}
                             <div class="flex-row flex-wrap gap-20" role="group" aria-labelledby="tenantModelEnableLabel" aria-describedby="tenantModelsCostHint">
@@ -322,9 +326,9 @@
                         </div>
 
                         {# 凍結／解凍：暫停使用期時鐘、完全鎖住。
-                             **上游是兩支對稱的端點**（product app/routers/platform.py 的 `freeze_tenant`／`unfreeze_tenant`，各自
-                             `POST /platform/tenants/{id}/freeze`／`/unfreeze`，兩支都冪等），而這裡原本只切了
-                             「凍結」一態——同一區的可見文案自己寫著「可隨時解凍」，畫面上卻沒有那顆鈕。
+                             **上游是兩支對稱的端點**（product 的 `freeze_tenant`／`unfreeze_tenant`，各自
+                             `POST /platform/tenants/{id}/freeze`／`/unfreeze`，兩支都冪等）⇒ 畫面也**必須兩態成對**。
+                             只切「凍結」一態的話，同一區的可見文案自己寫著「可隨時解凍」，畫面上卻沒有那顆鈕。
                              比照同檔「停用／啟用」的做法：成對參數 `manageTenantFrozen` ＋ `{% if %}` 分岔，
                              兩態各自的 toast 與 key 也分開（解凍成功的句子不是「已凍結租戶」）。
                              說明也跟著分岔：解凍會把凍結時長補回 `trial_end`（`unfreeze_tenant` 的 docstring
@@ -354,7 +358,8 @@
                                      在這裡不成立（那條的判準逐字是「豁免來自 `<tr>`，不是來自長得像一列」）——
                                      無障礙樹裡沒有列脈絡可倚靠，三列 × 三顆鈕就是 9 顆同名。故自己造辨識欄：
                                      email 給一顆 id，三顆鈕各自 `aria-labelledby="<列辨識欄> <自己>"`
-                                     （順序照 §4 的「列名 → 動作名」；指到自己是為了保留鈕上原本那句可見字面）。 #}
+                                     （順序照 §4 的「列名 → 動作名」；把自己也指進去是為了保住鈕上那句可見字面，
+                                     否則可及名稱會與看得見的字對不上，違反 WCAG 2.5.3 Label in Name）。 #}
                                 <div class="flex-row justify-content-between align-items-center gap-16 flex-wrap" data-user-id="{{ member.id }}">
                                     <div class="flex-row column">
                                         <span class="text-bold" id="tenantMemberEmail-{{ member.id }}">{{ member.email }}</span>
@@ -366,8 +371,8 @@
                                     </div>
                                     {# 這一列不在 .default-table 裡，`.btn-group` 的規則帶著那個祖先（§4 祖先錯位）。 #}
                                     <div class="flex-row gap-10 align-items-center flex-wrap">
-                                        {# 停用路徑上有**兩道**具名 409（gufofaq-saas product `platform.py`：停用端點自己回
-                                             `last_tenant_admin`，同檔的 `_assert_not_last_platform_admin` 回
+                                        {# 停用路徑上有**兩道**具名 409（gufofaq-saas product：停用端點自己回
+                                             `last_tenant_admin`，同一支模組的 `_assert_not_last_platform_admin` 回
                                              `last_platform_admin`「不可停用/刪除/降級最後一位平台系統管理員」）。
                                              同一頁的刪除鈕早就把這兩道分開列了（5-6-1 的 deleteToast），
                                              這裡卻只列一道——抄版型而不是逐 raise 對鈕（§5）。 #}
@@ -392,13 +397,13 @@
 
                         {# 危險操作（不可逆）：刪除資料（保留帳號）／刪除帳號（硬刪整租戶）。破壞性 → button-red；
                              需輸入該租戶名稱字串相符才可執行＝type-to-confirm（業務條件），故鈕用 hook class（.js-delete-tenant-*）、不掛 data-open-modal。
-                           ⚠️ **但兩顆照樣掛 `data-toast`**（round48）：type-to-confirm 免除的是「片語沒打對」
+                           ⚠️ **但兩顆照樣掛 `data-toast`**：type-to-confirm 免除的是「片語沒打對」
                              那一態（它由 `disabled` ＋ 常駐 hint 表達，見下面那一段），**不免除送出之後的成敗**
                              ——這兩顆鈕不開任何窗，按下去就是 `DELETE /platform/tenants/{id}/data` 與
-                             `DELETE /platform/tenants/{id}`（product `app/routers/platform.py`），落在 §5
-                             「凡點下去就送 API 的鈕都是③」那一條。先前兩顆一段都不列，於是全站最不可逆的
-                             兩個動作在切版上連「成功長什麼樣」都沒有人看過。
-                             逐 raise 對回上游（`app/tenancy/platform_admin.py`）：`purge_tenant_data` 的
+                             `DELETE /platform/tenants/{id}`（product），落在 §5
+                             「凡點下去就送 API 的鈕都是③」那一條。兩顆一段都不列的話，全站最不可逆的
+                             兩個動作在切版上連「成功長什麼樣」都沒有人看得到。
+                             逐 raise 對回上游（product）：`purge_tenant_data` 的
                              docstring 逐字「raises 404/502」⇒ 成敗兩段；`delete_tenant` 逐字
                              「raises 404/409/502」，而那道 409 是 `cannot_delete_own_tenant`（刪自己所屬的
                              租戶）——那是使用者換一個目標就過得了的事，故是 warning、不折進 error。
@@ -454,7 +459,7 @@
                     {# 這扇窗有**四塊**（額度／用量、模型白名單、凍結、危險操作），而 footer 只有一顆
                          「儲存」——它送的是上面那幾塊裡**值控制項**目前的值，不是「我剛剛看的那一塊」。
                          沒有這一句的話，改完額度就直接關窗是很自然的動作，而那等於什麼都沒做
-                         （round47，同三張表的 `settings.rowDraftHint`：草稿 vs 落地）。
+                         （同三張表的 `settings.rowDraftHint`：草稿 vs 落地）。
                          **兩顆自帶動作的鈕不在這一句的範圍內**：凍結／解凍與「重置當期用量」是各自
                          直接送出的（它們有自己的 data-toast），下面危險操作那兩顆更是——所以這句話
                          只講「上面那幾格」，不說「這扇窗的全部」。 #}

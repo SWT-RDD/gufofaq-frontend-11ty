@@ -1,5 +1,10 @@
-{# 展示片段，取自真實 app pages/components/component.html 07 按鈕 section 內的 tooltip 用法（節錄，class 沿用真實系統） #}
-{# .tooltip 只負責視覺（見 _tooltip.scss）；顯示由 host 按鈕掛 tooltip 自有的 .has-tooltip 觸發 class，於 hover 時由 .has-tooltip:hover .tooltip 驅動，這裡示範組合用法 #}
+{# 展示片段：元件庫頁（`pages/components/component.html`）的按鈕那一節 include 它，
+     示範 `.has-tooltip` ＋ `.tooltip` 這一對怎麼組。
+     ⚠️ **生產的 `.has-tooltip` 一定還要有自己的可及名稱**（`aria-labelledby` 或另一顆 `.sr-only`）：
+     tooltip 是視覺提示、不是名稱，照這份展示片段抄會做出一顆無名的圖示鈕。逐字契約見 `_tooltip.scss` 檔頭。 #}
+{# 分工：`.tooltip` 只負責那顆氣泡的樣子（見 `_tooltip.scss`），**它自己不管顯示時機**；
+     時機由 host（放它的那顆按鈕）掛 `.has-tooltip` 決定——`.has-tooltip:hover .tooltip` 與
+     `:focus-visible` 兩條規則把 opacity 打開。host 同時提供 `position: relative` 這個定位基準。 #}
 <div class="flex-row gap-20">
     <button type="button" class="button-icon copy has-tooltip" data-toast="文字已複製!|複製失敗，請手動選取後複製" data-toast-type="success|error">
         <span class="tooltip">複製</span>

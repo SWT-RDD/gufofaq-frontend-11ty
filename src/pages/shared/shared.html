@@ -17,15 +17,15 @@ permalink: shared.html
    不是連結本身）。切版把它收在 catalog.html 的頁面目錄，否則部署後只有知道確切檔名的人開得到。
 
    ── 畫哪些欄（逐欄對回正本回應）────────────────────────────────────────────────
-   端點：gufofaq-saas product `app/routers/share.py` 的 `view_shared`（`GET /shared/{token}`），
-   response_model 是同檔的 `SharedOut`，**只有三個欄位**：`question`／`answer`／`time`，三個都畫了：
+   端點：gufofaq-saas product 的 `view_shared`（`GET /shared/{token}`），
+   response_model 是 product 的 `SharedOut`，**只有三個欄位**：`question`／`answer`／`time`，三個都畫了：
      · `time` → 「對話時間」。型別是 `str | None`（上游 chat log 的 `human_time` 逐字轉發），
         故 null 那一態畫「—」，不留白（留白會被讀成「這一則沒有時間」）。
      · `question` → 「使用者對話內容」
      · `answer` → 「AI對話內容」
    request 側只有路徑上的 token，沒有任何查詢參數，故畫面上沒有對應的控制項。
    **刻意不畫**滿意度／意見回饋／系統提示詞／模型與筆數／參考來源——不是版面取捨，是上游沒有回：
-     `SharedOut` 就那三個欄位（同一筆問答的完整欄位要登入態的 `app/routers/history.py`）。
+     `SharedOut` 就那三個欄位（同一筆問答的完整欄位要登入態的 product）。
      連帶：答案內文**不放 `components/citation-ref` 的 `[[N]]` 徽章**——那顆徽章點下去要跳到同頁的
      參考來源表（`GufoSources.reveal`），而這一頁結構上沒有來源表，畫了就是指向不存在的東西。
 
@@ -34,7 +34,7 @@ permalink: shared.html
    `view_shared` 是全服務唯一一支不需要任何憑證的端點（它的 docstring 逐字寫著這件事），沒有 `require_*`
    相依可對。它的守衛全在後端、而且**每一個出口都是 404**——逐個數過：token 查無或已撤銷、已過期、
    `subscription.status(...)` 非 ACTIVE、`tenant_has_feature(db, …, "history")` 為否、上游 chat log
-   不存在或不屬該租戶，五個 `raise HTTPException` 全是 404（同檔註解寫明「不分辨…不洩漏租戶狀態」），
+   不存在或不屬該租戶，五個 `raise HTTPException` 全是 404（product 在那一支上寫明「不分辨…不洩漏租戶狀態」），
    另有一個非 404 出口是 `enforce_shared_link_rate_limit` 的 429。所以對訪客而言那些閘不是「按不動的鈕」，
    而是下面那兩個錯誤態。頁面上也沒有任何控制項（唯讀檢視，零按鈕、零表單）。
 
@@ -45,8 +45,8 @@ permalink: shared.html
       只演得出一態，而這兩態的**版型是同一顆原子**，並排放才看得出它們刻意不共用同一句話
       （§5：分支的單位是版型，一處演過就夠）。兩態不共用文案的理由寫在那支片段的檔頭。
    ④ 載入中（React 的 `common.loading`）**刻意不切**：那是執行期狀態，切版沒有請求可等；
-      跨 repo 已有共識（saas `apps/web/lib/i18n/parity.test.ts` 的 `REACT_ONLY` 把「載入中」這一類
-      逐字列為 React-only）。
+      跨 repo 已有共識（gufofaq-saas 的 `apps/web/lib/i18n/parity.test.ts` 裡，`REACT_ONLY`
+      把「載入中」這一類逐字列為 React-only）。
 
    ── 示範資料 ───────────────────────────────────────────────────────────────
    **刻意不是 4-2 的那一筆（#12173 新住民結婚注意事項）**：那則答案的長文正本只有一份、住在
@@ -99,7 +99,7 @@ permalink: shared.html
     </div>
     {# 免責提示：它是**產品自己的 chrome**（每一條分享連結都印同一句），不是租戶在後台打的免責聲明
          內文（那一份是資料、不翻，見 components/disclaimer-modal），故照常掛 data-i18n。 #}
-    {# 這一句的繁中由「本連結內容」改成場合中性的「本內容」（round47）：同一顆 key 現在有四個
+    {# 這一句的繁中由「本連結內容」改成場合中性的「本內容」：同一顆 key 現在有四個
          消費點（本頁、components/faq-share-modal、components/share-manage-modal、
          components/faq-chatroom ＋ ui/widget-shell），而「連結」只在這一頁與兩顆分享窗說得通。
          同 key 同繁中是硬不變量（切回繁中以 key 為索引就地擷取），故四處一起改。 #}

@@ -1,19 +1,18 @@
-{# 資料取自真實 app pages/qaRecord/2-1_qaRecord.html（.chatroom-wrap 結構）+ pages/qaTest/2-2-1_singleTest.html（qa-count + chat-input-container）。
-     只轉結構＋樣式，串流/送出/markdown 渲染屬業務邏輯，不在此元件內（見 qaRecord.js / singleTest.js）。
-     .robot-msg 是 Markdown 區塊容器（內含 p/ul/table…），依 GUIDELINE §4 用 div——原始切版的 span 包區塊元素是無效巢狀，轉 React SSR 會 hydration 錯誤。
+{# 後台問答聊天室：訊息串（.chatroom-wrap）＋ 問答次數列（qa-count）＋（可選）輸入區
+     （chat-input-container）。消費頁是 2-1 問答紀錄（唯讀預覽）與 2-2-1 單一測試（可送出）。
+     本元件只做結構＋樣式；串流、送出、markdown 渲染都是業務邏輯，執行期由消費端負責，不在此元件內。
+     .robot-msg 是 Markdown 區塊容器（內含 p/ul/table…），依 GUIDELINE §4 用 div——
+     用 span 包區塊元素是無效巢狀，轉 React SSR 會 hydration 錯誤。
      參數（頁面 include 前 set，見 §6）：
        chatInputHidden —— true 時不渲染輸入區（2-1 唯讀預覽沒有輸入框；2-2-1 需要）。
        chatWelcomeHidden —— true 時整顆 `.first-chat`（開場歡迎語）不渲染。
          **為什麼要有這一顆**：開場招呼是**前台的招呼**，它只出現在有開場情境的頁。
-         ① 凍結前端就是分兩種：`GufoFAQ_Frontend_New/js/qaRecord.js:132-144` 每次渲染都畫
-            `.first-chat` ＋「歡迎回來，想問些什麼呢 ?」（2-1）；而 `js/singleTest.js:478-491`
-            那一則只在 `ChatLogs.length === 0`（空聊天室）那一支出現、而且畫在 `.chat-box` 裡
-            **沒有** `.first-chat`——有對話之後 `renderChatLogs` 走下面那條路，一則招呼都不畫。
-            本元件的示範演的是「已經有一輪對話」，所以後台測試區那一份不該有這一則。
-         ② SaaS 這一側同向：開場歡迎語的唯一真相是 `GET /welcome`（product `app/routers/welcome.py`
+         ① 有對話之後就不該再出現一則招呼——本元件的示範演的是「已經有一輪對話」，
+            所以後台測試區那一份不畫這一則。
+         ② 開場歡迎語的唯一真相是 `GET /welcome`（product
             的 `current_welcome`，讀該設定檔 chatbot config 的 `welcome_message`），而**後台測試區
-            刻意不讀它**——測試區的對話串裡多一則不是這一輪產出的訊息，就多一個雜訊來源。
-         `.first-chat` 是凍結真 app 的具名掛點（見 ui/chatroom-shell 契約 ⓐ）：這一則被關掉時
+            刻意不讀它**——測試區的對話串裡多一則不是這一次問答產出的訊息，就多一個雜訊來源。
+         `.first-chat` 是**具名業務掛點**（見 ui/chatroom-shell 契約 ⓐ）：這一則被關掉時
          **整顆容器一起不渲染**，不是留一顆空的 `<div class="first-chat">`——「有沒有那一則決定有沒有
          那顆容器」。同理，`chatroomMessages` 裡那一則 robot 訊息在關掉時整則不出現（它不會改畫到
          `.chat-box` 去）。 #}
@@ -34,14 +33,15 @@
 <div class="chatroom-wrap">
     <div class="chatroom-block">
         <div class="chat-message-container">
-            {# 日期分隔列：真 app 由業務 js 在執行期插入（qaRecord.js:133／singleTest.js:476）。
+            {# 日期分隔列：正式環境（執行期）由業務層依訊息時間動態插入。
                  切版把它畫出來一次——沒有任何 markup 的話那段 scss 是出貨死 CSS，
                  沒有人看過它的長相，React 端也沒有可抄的結構（§5「每個分支結果都要看得到」）。
                  日期是資料、不翻。 #}
             <div class="date-wrap">
                 {# 日期＝這一則問答自己的日期（§6 跨頁自洽）：本元件的示範答案就是 log #12173，
-                     而 4-1 那一列與 4-2 的 `conversation.time` 都寫 2024/12/01 13:29:24——訊息時間
-                     13:29／13:30 本來就對得上，先前只有日期差了一天（12/02 是 #12174 那一列的）。 #}
+                     而 4-1 那一列與 4-2 的 `conversation.time` 都寫 2024/12/01 13:29:24，訊息時間
+                     13:29／13:30 也對得上。**日期一個字都不能差**：12/02 是 #12174 那一列的日期，
+                     寫成它等於同一筆紀錄在兩頁上發生在兩天。 #}
                 <div class="date">2024/12/01</div>
             </div>
             <div class="message-container">
@@ -86,7 +86,7 @@
                          **示範號碼刻意不連續（3 與 7）**：連續號碼下「比對序號」與「拿第 N 列」兩種實作
                          畫出來一模一樣，那樣的示範分不出對錯。include 本元件的頁面（2-1／2-2-1）其
                          sources 的 sourceNo 必須就是這兩個號。
-                         **號碼跟著 4-2 走**（先前是 2 與 5）：2-1 的「檢視詳細內容」連的是
+                         **號碼跟著 4-2 走**：2-1 的「檢視詳細內容」連的是
                          `4-2_qaHistory_detail.html?logSn=12173`，而 4-2 畫的同一次問答寫的是 3 與 7
                          ——同一筆紀錄在兩頁上引用編號不一樣，是 §6 跨頁不自洽。 #}
                     <div class="message-wrap">
@@ -133,17 +133,17 @@
                                 <span class="tooltip" data-i18n="comp.viewSource">查看來源</span>
                             </button>
                         </div>
-                        {# 建議追問（A7，SaaS 新需求／真 app 無對應）：問答完成後 chatbot 於 SSE chat_room 塊回傳
-                             suggest_questions 陣列（gufofaq-saas ask.py：chat_room chunk 允許清單含 suggest_questions、
+                        {# 建議追問（A7，SaaS 新需求）：問答完成後 chatbot 於 SSE chat_room 塊回傳
+                             suggest_questions 陣列（gufofaq-saas：chat_room chunk 允許清單含 suggest_questions、
                              meta 帶 enable_suggest_questions——引符號不引行號，該檔行號常變動），渲染成一排可點 chip；
                              點擊＝把該題當下一題送出（業務行為，React 端 onAskSuggested）。
                              此處示範資料，正式環境由回傳陣列驅動（空陣列則整塊不渲染）。
                              agent 模式的反問選項也共用這塊 chip（同為可點 chip、不另切 markup）；反問選項如何併入
                              suggest_questions 回傳陣列屬後端契約，React 端依實際 SSE 回傳實作。
                              只在互動模式渲染：唯讀的問答紀錄預覽（chatInputHidden，2-1）沒有「送出下一題」可言
-                             ——**理由只有這一個**。前一版還寫了「且 history API 不回傳 suggest_questions」，
-                             那是錯的：product `history.py` 的 `_PUBLIC_LOG_FIELDS` 收了 `suggest_questions`，
-                             詳情頁拿得到。渲染條件不變，但別再拿一個不成立的理由當第二支柱（§3-2 負面斷言）。
+                             ——**理由只有這一個**，不要再補「且 history API 不回傳 suggest_questions」
+                             當第二支柱：那句話不成立（product 的 `_PUBLIC_LOG_FIELDS` 收了
+                             `suggest_questions`，詳情頁拿得到），撐不住的理由比沒有理由更貴（§3-2 負面斷言）。
                              變數用元件專屬名；label id 同理取元件專屬名（faq-chatroom 另有一份自己的 chip 區）
                              **chip 帶 `disabled`**：它們掛在第一問的答案下，而互動模式這一稿演的是
                              第二問正在生成（見下方串流狀態列）——chip 送的也是一題，生成中同樣不能再送。 #}
@@ -189,22 +189,21 @@
         </div>
     </div>
     {# 次數為示範值：至少要 ≥ 同頁演出的已完成問答數（§6 自洽），真值由 React 依 API 填入。
-         **第二對是「萃取次數」不是「摘要次數」**：這一列的兩對數字對回 gufofaq-saas product
-         `app/routers/ask.py` 的 `usage`（`qa_used`／`qa_limit`／`extraction_used`／`extraction_limit`），
-         整份回應裡沒有任何一顆「摘要」——新產品沒有摘要這件事，那是凍結前端留下的舊字面
-         （而且凍結的 `GufoFAQ_Frontend_New/js/singleTest.js` 的 `refreshQaCount` 把整格覆寫成只有問答次數，
-         那第二對從來沒有真值餵過它）。留著就是在畫面上指著一個不存在的功能（§6）。
+         **第二對是「萃取次數」不是「摘要次數」**：這一列的兩對數字對回 gufofaq-saas
+         product 的 `usage`（`qa_used`／`qa_limit`／`extraction_used`／`extraction_limit`），
+         整份回應裡沒有任何一顆「摘要」——**這個產品沒有摘要這件事**，寫「摘要次數」就是在畫面上
+         指著一個不存在的功能（§6）。
          四個節點、不是一顆字串：chrome span ＋ 資料 ＋ chrome span ＋ 資料。 #}
     <div class="qa-count"><span data-i18n="comp.qaCount">問答次數：</span>12/3000<span data-i18n="comp.extractionCount">，萃取次數：</span>3/1000</div>
-    {# chatInputHidden：true 時不渲染輸入區（2-1 是唯讀的問答紀錄預覽，真實頁沒有輸入框；
-       單測頁 2-2-1 需要它）。qa-count 兩頁都留。 #}
+    {# chatInputHidden：true 時不渲染輸入區（2-1 是唯讀的問答紀錄預覽，沒有輸入框可言；
+       單測頁 2-2-1 才要送問題）。qa-count 兩頁都留。 #}
     {% if not chatInputHidden %}
-    {# **「按下去要花錢」這件事先前在 UI 上完全不存在**（round47）：上面那一格只寫得出
+    {# **「按下去要花錢」這件事一定要在 UI 上講出來**：上面那一格只寫得出
          「問答次數：12/3000」，講的是**現在用掉多少**，講不出「我按這一下會發生什麼」。
        三件事都要講，第三件最容易被誤會：
          ① 這不是預覽，是一次真的問答（打 chatbot、寫一筆 chat_log）。
          ② 扣一次額度。
-         ③ **失敗也不退**——product `app/conversation/ask_flow.py` 逐字寫著「『扣了卻沒答案』因此是
+         ③ **失敗也不退**——product 逐字寫著「『扣了卻沒答案』因此是
             **帳單語意**，不是缺陷……不要把這一段往下搬，也不要加補償性的退款」。所以「重試」
             在額度上不是免費的，而使用者只會看到一句「回答生成失敗」。
        寫法照 2-2-4 既有的 `regression.quotaWarnPrefix`／`Suffix` 那一族（那一頁早就在講同一件事）。
@@ -221,8 +220,9 @@
                     <span class="text-gray" id="chatAskMaxLenHint"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-ask-max-len">2000</span><span data-i18n="common.unitChars"> 字</span></span>
                 </div>
             </div>
-            {# 送出鈕另立 key：它多一條「沒填問題」（真 app singleTest.js:795-803 `if (!question)` 就地擋下（`$error.text('請輸入問題').show()` ＋ `$textarea.addClass('error')`））。
-                 建議追問的 chip 送的是固定問句，不可能空——共用同一顆 key 會讓那四顆 chip 演一個
+            {# 送出鈕另立 key：它多一條「沒填問題」的結果——輸入框空著時，送出在前端就被擋下
+                 （輸入框標紅＋欄位旁的錯誤字），根本不會打 API。
+                 建議追問的 chip 送的是固定問句、不可能空——共用同一顆 key 會讓那幾顆 chip 演一個
                  不可能的結果（§5）。 #}
             <button data-capability="ask" type="button" class="button button-primary chat-input-submit" data-toast="回答生成中...|權限不足，無法送出——請找貴租戶的管理者開通|請先輸入問題|回答生成成功|回答生成失敗，請重新送出一次" data-i18n-data-toast="toast.chatSend" data-toast-type="info|warning|warning|success|error" data-i18n="action.submit" disabled>送出</button>
         </div>

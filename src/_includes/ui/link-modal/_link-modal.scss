@@ -1,9 +1,10 @@
-// 結構與數值取自凍結前端 `GufoFAQ_Frontend_New/scss/component.scss` 755-771（link-modal 區塊，含原註解）。
-// **偏離逐條列出**：
-//   ① 色值換語意 token（`var(--color-primary)`→`--brand-text`）
-//   ② `&.on-dark` 變體是切版新增（原檔沒有）——footer 深底要不同的文字色，§4 明文
-//      「外觀覆寫改成 owning 元件的 variant class」，故由本元件提供、不由 footer 覆寫
-// 連結樣式的按鈕
+// 連結樣式的按鈕：長得像超連結、實際是 `<button>`（點了開彈窗，不換頁）。
+// 規則本身就是**把 button 的預設外觀清乾淨**（去底色、去邊框、去內距、字級字重回到內文），
+// 再補上連結的藍字與 hover 底線——不做這件事，它在句子中間會是一顆灰色方框鈕。
+// **這幾條要知道理由（改動前先讀）**：
+//   ① 文字色走語意 token `--brand-text`，不寫死藍色碼（深色模式靠換 token 值）。
+//   ② `&.on-dark` 是本元件自有的變體：footer 的深底上要換一個文字色。§4 明文
+//      「外觀覆寫改成 owning 元件的 variant class」，故由本元件提供，不讓 footer 反過來覆寫它。
 .link-modal {
     color: var(--brand-text);
     text-decoration: none;

@@ -2,14 +2,13 @@
 // （附屬控制項不限文字欄：4-1 掛的是一顆 checkbox，見下面的型②。）
 //
 // 這是**純前端互動**（同頁的啟用/停用切換，無業務、無 API），§5 ④：行為要當場動得起來。
-// 真 app 把它寫在 GufoFAQ_Frontend_New/js/main.js:430-455（`$(".field-with-input-group").each(...)`），三個 class
-// 名稱原樣沿用：`.field-with-input-group`（一組）→ `.field-with-input`（一顆 radio ＋ 它的附屬控制項）
-// → `.with-input`（被啟用/停用的那些控制項）。
+// 三層 class 各有職責：`.field-with-input-group`（整組的邊界）→ `.field-with-input`（一顆 radio ＋
+// 它的附屬控制項）→ `.with-input`（會被解鎖／鎖回去的那幾顆控制項）。
 //
 // 為什麼一定要有這支：起訖時間欄在 markup 上帶著 `disabled`，那個初始態的意義就是
 // 「還沒選『時間區間』那顆 radio」。少了這支行為，那兩格永遠解不開——畫面上是一個
-// 點了沒反應的旋鈕。（本 repo 曾經把這三個 class 當成無主 class 拿掉，那是把真 app 的
-// 掛點誤判成死碼；§5：找死碼要先去讀真 app。）
+// 點了沒反應的旋鈕。**這三個 class 是業務掛點／轉換契約，不是無主 class**：本 repo 沒有別的
+// 檔案指名它們，光看 scss 會誤判成死碼（§5：判死碼之前先確認它是不是掛點）。
 //
 // markup 契約（無 html 元件，§1-2；整段照抄）—— 選了哪顆 radio 就解除它附屬控制項的 disabled。
 // **有兩型，逐型各一段完整 markup**（§1-2：同一個契約兩型以上時不得只用散文交代差異）：
@@ -125,8 +124,8 @@
 //   · **附屬控制項是 checkbox 時，`.with-input` 掛在 `<input type="checkbox">` 上**（型① 掛在
 //     `<input type="text">` 上）：本檔切的是 `input.disabled`，對控制項型別沒有假設。
 //
-// 三個 class 是真 app js/main.js 的掛點（行為改寫成切版自有）：group 定範圍、.field-with-input
-// 是一組、.with-input 是被解鎖的那些。兩型共通、抄的時候最容易錯的四件事：
+// 兩型共通、抄的時候最容易錯的四件事（三層 class 的分工：group 定範圍、`.field-with-input`
+// 是「一顆 radio ＋ 它的附屬控制項」、`.with-input` 是被解鎖的那幾顆）：
 //   · **`.field-with-input` 是 `<div>`，不是 `<label>`。** radio 有自己的 `<label class="form-radio">`、
 //     附屬控制項有自己的殼（型① 是 `<div class="field">`、型② 是 `<label class="form-checkbox">`）；
 //     把整組包成一顆 `<label>`＝點附屬控制項也會選到 radio，而且一個 label 對到兩個以上的控制項，
@@ -166,8 +165,9 @@ document.addEventListener("DOMContentLoaded", function () {
             radio.addEventListener("change", function () { sync(radio); });
         });
 
-        // 初始化：讓 markup 上預設 checked 的那顆決定初始啟用狀態（真 app 是
-        // `radios.filter(":checked").trigger("change")`；這裡直接呼叫，不用合成事件，見 §5）。
+        // 初始化：讓 markup 上預設 checked 的那顆決定初始啟用狀態。
+        // **直呼 sync()、不對 radio 發合成 change**（§5）：合成事件會重新進入全站每一支 document
+        // 委派，把載入當下的一次同步變成一串別人也收得到的假互動。
         sync(group.querySelector("input[type='radio']:checked"));
     });
 });

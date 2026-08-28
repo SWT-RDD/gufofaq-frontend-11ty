@@ -1,11 +1,10 @@
 {# 意圖判斷表格（5 欄 .default-table.priority-table，class 沿用既有系統）。
      資料由使用頁面在 include 前 set（見 §3-2/§6）：
        rows = [{ sn, category, description, prompt, priority }]
-       sn＝資料集（UploadedFolder）主鍵，落在 `<tr data-folder-sn>`：真 app 兩支業務行為都靠它認列——
-         `.js-edit-btn` 的 `$row.data('folder-sn')`（GufoFAQ_Frontend_New `js/knowledgeRetrieval.js:560`）與 `.priority-select` 的
-         `$this.closest('tr').data('folder-sn')`（同檔 646）。jQuery `.data()` 讀得到 DOM 屬性，
-         真 app 的列也確實是 `<tr data-folder-sn="…">` 印出來的（同檔 267）——少了它，這兩顆掛點
-         有名字卻認不出自己在操作哪一列。
+       sn＝資料集（UploadedFolder）主鍵，落在 `<tr data-folder-sn>`——這是**列鍵、也是轉換契約**：
+         同一列上的兩顆業務掛點（`.js-edit-btn` 與 `.priority-select`）都靠它從自己往上找 `<tr>`
+         才知道「我在操作哪一個資料集」。少了它，那兩顆掛點有名字卻認不出自己在操作哪一列。
+         ⚠️ **不可以改用 `loop.index`**：優先級一改，這一列就會跳到別組表格去，位置不是身分（§6）。
        priority 對應「變更優先級」下拉的選中值（"高優先級"/"中優先級"/"低優先級"/"不使用"，空字串＝未選）；rows 空陣列＝空狀態表。
        priorityTableOwnerId（**必填**）＝指向「這一張表是誰的」那個既有標題節點的 id（5-2 的
          `.tablelist-title`）。instance 只解決 id 相撞，解決不了**可及名稱**相撞：5-2 的版面 A（逐層）
@@ -16,19 +15,20 @@
          的值控制項不得掛靜態 aria-label，否則同頁七顆 select 全叫「變更優先級」，報讀器聽不出
          正在設哪一筆）。表頭 id 因此要帶實例鍵，否則四張表的 th 會撞 id。
        tierless（選填，預設 false）＝**取消三層、只分使用/不使用**的變體，供 Agent 對話模式用。
-         ⚠️ **這個變體當初的理由已被上游撤回，待重新量測**（§3-2：出處會過期；§5：欄位×模式的
+         ⚠️ **支撐這個變體的那條理由已被上游撤回，待重新量測**（§3-2：出處會過期；§5：欄位×模式的
          生效斷言以實測矩陣為準）。gufofaq-saas `docs/mode-matrix.md` 的 `index_tiers` 那一列現在
          逐字寫著 `~~agent search_knowledge_base 只吃 selected_index~~（**此理由已不成立**）`——
-         chatbot 的 `services/scope.py::effective_scope` 上線後，`index_tiers` 攤平非空即為有效範圍
+         chatbot 的 `effective_scope` 上線後，`index_tiers` 攤平非空即為有效範圍
          （agent 的 search_knowledge_base 也走它），該格標註「待以 `--only index_tiers` 重量」。
          也就是說「agent 模式下高/中/低毫無差別」這個前提現在**沒有證據支撐**。
          重量結果出來之前不動這個變體（拿掉它會讓已經在用的頁面當場少一種版型），但**不得再拿舊理由
          當依據**：要嘛重量後確認仍不生效、要嘛把 tierless 收掉。
          給三個沒有差別的選項＝讓使用者以為自己在調一個實際不存在的旋鈕，故此變體把下拉收成
          「使用中/不使用」兩項、表頭改「變更使用狀態」。**選項值仍用同一組業務詞**（"高優先級"
-         代表使用中）：切回傳統模式時原本的分層要還在，值域換掉就等於一切模式資料就被抹平。
+         代表使用中）：切回傳統模式時，已經設好的分層要還在；值域換掉就等於一切換模式，
+         那些分層資料當場被抹平。
      可編輯欄位：任務描述 td.edit-cell.description、任務對應提示詞 td.edit-cell.prompt，內容用 ui/collapse-text 包覆（夾住而且打得開）；
-     編輯/設定按鈕、textarea 切換屬 main.js 業務邏輯，不在此列。
+     編輯／設定鈕與 textarea 的切換屬業務邏輯（執行期才決定進不進編輯態），不在本元件的職責裡。
      用法：component.html（單張示範）、5-2_conversationSettings.html（檢索與欄位子頁籤依高/中/低優先級分組，每組 set rows 後 include）。 #}
 <div class="table-container scrollTable">
     <table class="default-table priority-table">
@@ -55,15 +55,13 @@
         <tbody>
             {% for row in rows %}
             <tr data-folder-sn="{{ row.sn }}">
-                {# `.description`／`.prompt` 是 `.edit-cell` 的修飾字，兩顆一起才定位得到那一格：
-                     凍結前端 `GufoFAQ_Frontend_New/js/knowledgeRetrieval.js:269/272` 產出、`:578-579`／`:603-604` 以
-                     `$row.find('.edit-cell.description')` 取回（§5 轉換契約，全站 scss 不得引用）。 #}
+                {# `.description`／`.prompt` 是 `.edit-cell` 的修飾字，兩顆一起才定位得到那一格
+                     （§5 轉換契約，全站 scss 不得引用）。 #}
                 <td id="priorityCat-{{ priorityTableInstance }}-{{ row.sn }}">{{ row.category }}</td>
                 {# 兩欄都可以是空字串（還沒有人填任務描述／提示詞，5-2 與元件庫頁都有這樣一列）：
                      空值不包 collapse-text——那會渲染出空的收合區塊配一顆展得開卻什麼都沒有的鈕
                      （§5 不放按了沒反應的鈕）。畫「—」而不是留白，語意是「這一列還沒填」。
-                     `.edit-cell` 的 `.html()` 是整格覆寫、預填值取自資料物件而不是這一格的文字
-                     （凍結前端 GufoFAQ_Frontend_New/js/knowledgeRetrieval.js 的 `startEdit` 讀的是 `folder.FolderDescription`），
+                     `.edit-cell` 是整格覆寫、預填值取自**資料**而不是這一格畫出來的文字，
                      所以這個「—」不會被編輯器當成初值帶進 textarea。 #}
                 {# 整格內容都在 {% if %} 裡 ⇒ `<td>…</td>` 收成一行（§2）：`{% else %}—{% endif %}` 那一支
                      會把縮排換行併進同一個文字節點，而 JSX 會把它整段丟掉。 #}
@@ -80,7 +78,8 @@
                 <td>
                     <div class="form-group">
                         <div class="field">
-                            {# .priority-select 是真 app 的 change 掛點（knowledgeRetrieval.js:643 的 $(document).on('change','.priority-select')）#}
+                            {# .priority-select 是**業務掛點**：接手的程式用它做 change 委派，
+                                 讀到新值後配上該列的 data-folder-sn 送出。全站 scss 不得引用（§5）。#}
                             {% if tierless %}
                             <select class="form-control select-sm singleSelect priority-select" aria-labelledby="{{ priorityTableOwnerId }} priorityCat-{{ priorityTableInstance }}-{{ row.sn }} priorityHead-{{ priorityTableInstance }}">
                                 <option value="" data-i18n="common.pleaseSelect">請選擇</option>
@@ -102,10 +101,10 @@
                 </td>
             </tr>
             {% else %}
-            {# 空狀態的版位鏡射真 app（GufoFAQ_Frontend_New `js/knowledgeRetrieval.js:257` 也是一列 colspan，
-                 不是空 tbody）；**句子改成具名**（round48）：這支元件同頁 include 四次（高／中／低／不使用），
-                 四張表同時印「無資料」等於四行一模一樣的字，說不出「這一組沒有資料集」與「資料集在別組」
-                 的差別。 #}
+            {# 空狀態畫成**一列 colspan**、不是空 tbody：表頭已經在了，留一片空白會讓人以為還在載入。
+                 **句子必須具名**：這支元件同頁 include 四次（高／中／低／不使用），四張表同時印
+                 一句泛用的「無資料」等於四行一模一樣的字，說不出「這一組沒有資料集」與「資料集
+                 被設到別組去了」的差別——而後者才是使用者要知道的下一步。 #}
             <tr>
                 <td colspan="5" class="text-center" data-i18n="settings.noPriorityRows">這一組沒有資料集。優先級是逐個資料集設定的，設成別組（或「不使用」）的不會出現在這裡。</td>
             </tr>

@@ -212,11 +212,14 @@ button::-moz-focus-inner,
 }
 
 /**
- * normalize 原本在這裡用 `outline: 1px dotted ButtonText` 還原 Firefox 的焦點環。
- * 那是全站唯一一個需要色彩規則豁免的地方（`ButtonText` 是系統具名色），而 §4 說「零裸 hex／
- * 具名色，無例外」。它也是多餘的：`_base.scss` 已經給了統一的
- * `:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible`
- * 焦點環，涵蓋這四種選擇器。刪掉它，stylelint 的豁免清單就只剩兩支真正的色源檔。
+ * **上游 normalize.css 在這個位置的那條規則（`outline: 1px dotted ButtonText`，用來補回上一條
+ * `::-moz-focus-inner` 清掉的 Firefox 焦點環）本專案不收。** 兩個理由：
+ *   ① 它會成為全站唯一需要色彩規則豁免的地方（`ButtonText` 是系統具名色），而 §4 說
+ *      「零裸 hex／具名色，無例外」。不收，stylelint 的豁免清單就只剩兩支真正的色源檔。
+ *   ② 它是多餘的：`_base.scss` 已經給了統一的
+ *      `:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible` 焦點環，
+ *      涵蓋上一條那四種按鈕選擇器。
+ * 之後同步上游版本時，這一條照樣不要拉進來。
  */
 
 /**

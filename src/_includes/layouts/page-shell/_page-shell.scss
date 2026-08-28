@@ -5,10 +5,11 @@
 // 而不是內容底部；`tabindex="-1"` 是給 `.skip-link` 跳進來的落點。
 //
 // **兩個消費者**（都是 layout，沒有任何元件用它）：`layouts/page-shell`（管理端）與
-// `layouts/public-shell`（公開唯讀頁，它沿用這一顆、不覆寫，故自己沒有 scss）。正本留在這裡而不是
-// 升上 `GufoFAQ_Frontend_New/scss/_base.scss`：那一層是**每個元件**都要遵守的地基，而這顆 class 的消費者只有整頁模板，
-// 放上去會讓人以為它是元件也能拿來套的共用詞彙（`.main-container`／`.main-menu`／`.chatbot-main`
-// 是別的 class）。改動它要同時看兩支 layout。
+// `layouts/public-shell`（公開唯讀頁，它沿用這一顆、不覆寫，故自己沒有 scss）。
+// 正本留在這裡而不是升上全域 `src/scss/`：那一層是**每個元件**都要遵守的地基，而這顆 class
+// 的消費者只有整頁模板，擺上去會被當成「元件也能拿來套」的共用詞彙
+// （名字很像但無關的有 `.main-container`／`.main-menu`／`.chatbot-main`，那是別人的 class）。
+// 兩個消費者共用同一份正本，所以改動它要同時看兩支 layout 的畫面。
 .main {
     flex: 1 0 auto;
     padding: 1rem 2.5rem 2.5rem 2.5rem;

@@ -1,7 +1,9 @@
-{# 套用正式設定：無權限 modal，取自真實 app pages/qaTest/2-2-3_abTest.html #ProductionSettingsNoPermissionModal（class/id 沿用真實系統）。
-     真實 app 的第三種「套用正式設定」變體：權限不足時的提示（無 modals-footer，僅右上角關閉）。
+{# 套用正式設定：無權限 modal（id ProductionSettingsNoPermissionModal）。
+     「套用正式設定」的第三種變體：權限不足時只給一句提示，沒有可按的動作，
+     故**不出 modals-footer**（沒有「確認／取消」可言），只留右上角關閉。
      由 2-2-3_abTest.html include —— 該頁的 .js-apply-production 依模型權限決定開這份還是 apply-settings-compare-modal，
-     那是業務判斷，故該鈕不掛 data-open-modal（§5）；看得見的保證落在元件庫頁的示範觸發器上。 #}
+     那是業務判斷，故該鈕不掛 data-open-modal（§5：只有無條件開窗才掛）；
+     看得見的保證改落在元件庫頁的示範觸發器上。 #}
 <dialog class="modals" id="ProductionSettingsNoPermissionModal" aria-labelledby="ProductionSettingsNoPermissionModal-title">
     <div class="modals-dialog modals-md">
         <div class="modals-wrap">
@@ -11,7 +13,7 @@
                     <h3 class="modals-title" id="ProductionSettingsNoPermissionModal-title" data-i18n="qaTest.applyProduction">套用為正式設定</h3>
                 </div>
                 <div class="modals-body">
-                    {# 聯絡窗口＝平台設定（product `app/routers/platform.py` 的 `get_support_contact`，
+                    {# 聯絡窗口＝平台設定（product 的 `get_support_contact`，
                          路徑 `GET /platform/support-contact`；登入頁那一份走零憑證的
                          `GET /public/support-contact`，同一個 getter）。值是資料、不掛 `data-i18n`
                          （§4-2；理由與 login.html 那一處逐字相同），故獨立成一顆資料槽。

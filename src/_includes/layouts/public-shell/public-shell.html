@@ -12,7 +12,7 @@ layout: layouts/base/base.html
        `.chatbot-main` 的 `overflow: hidden`，見 `_chatbot-shell.scss`）——那是聊天視窗要「輸入列固定在
        底部、訊息區自己捲」才這樣切的。分享頁畫的是一則可能很長的問答，套上去會被裁掉且捲不到。
      所以本外殼＝**chatbot-shell 的 chrome ＋ page-shell 的版位**：
-       skip-link（兩支共用，全域 `.skip-link`）
+       skip-link（`page-shell` 與 `chatbot-shell` 都有；樣式正本是全域 `.skip-link`）
        ＋ `components/chatbot-header`（取自 chatbot-shell）
        ＋ `<main class="main" id="main" tabindex="-1"> > .wrap`（取自 page-shell；`.main` 的
           `flex: 1 0 auto` 靠 `layouts/base` 的 `.full-wrap` column flex 把頁尾推到視窗底部）

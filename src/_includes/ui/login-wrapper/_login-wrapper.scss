@@ -1,11 +1,12 @@
-// 結構與數值取自凍結前端 `GufoFAQ_Frontend_New/scss/component.scss` 的「login page」區段
-// （`.login-wrapper`，3190-3271）。
-// **偏離逐條列出**：
-//   ① 色值換語意 token（`#fafafa`→`--surface`、`#4e4e4e`→`--text-strong`、
-//      `var(--color-gray-300)`→`--surface-sunken`）
-//   ② `height: 100vh` 之後補同值 `100dvh`（§4-1：行動瀏覽器的 vh 含會伸縮的網址列）
-//   ③ `position: relative` ＋ `.login-controls` 絕對定位層是切版新增（原檔沒有）——登入前就要
-//      切得了語言／深淺，故右上角放 `components/header-controls`
+// 登入頁的外框（`.login-wrapper`）：滿版一分為二——左半是登入表單（logo ＋ 兩欄 ＋ 登入鈕），
+// 右半是一張裝飾插圖，≤992px 右半整塊收掉、左半吃滿寬。
+// **這幾條要知道理由（改動前先讀）**：
+//   ① 底色與文字色全數走語意 token（`--surface`／`--text-strong`／`--surface-sunken`），不寫死
+//      色碼——這一頁在登入前就切得動深淺，寫死那一份換不過去。
+//   ② `height: 100vh` 之後補一條同值的 `100dvh`（§4-1）：行動瀏覽器的 `vh` 把會伸縮的網址列算進去，
+//      只寫 `vh` 的話捲動時整頁會抽動一下。兩條並列，不吃 `dvh` 的舊瀏覽器落回 `vh`。
+//   ③ `position: relative` ＋ `.login-controls` 這一層絕對定位是本元件自有的：登入**之前**就要
+//      切得了語言與深淺，所以右上角放一份 `components/header-controls`（與登入後 header 同位置）。
 //
 // markup 契約（無 html 元件，§1-2；整段照抄）—— 生產 markup 手寫在 src/login.html，逐字如下：
 //
@@ -73,7 +74,7 @@
 //
 // 住在哪一頁（雙向）：只有 `src/login.html`（→ dist/login.html）。
 // 反查：`grep -rn 'login-wrapper' src --include=*.html` 只命中該頁。
-//   **宣告集合差集**（與上面那段凍結範圍逐條 diff，只比種類不比值——色值換語意 token 是 §4 要求的、不算偏離）：本檔新增 `position`／`top`／`right`／`z-index`。隨既有偏離條目的語言/主題切換鈕定位一起新增。
+//
 .login-wrapper {
     display: flex;
     height: 100vh;

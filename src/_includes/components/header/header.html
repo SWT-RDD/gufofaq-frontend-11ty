@@ -4,9 +4,9 @@
 
    **「X 管理」的英譯構詞**（§4-2：同一組枚舉、同一層選單內要同一種構詞與大小寫）：submenu 裡
    每一顆「X 管理」一律 `X Management`（QA Set／Glossary／Alias Table／Skill／User／Group／
-   MCP Server／Embed Key）。`nav.widgetTokens` 原本是 `Embed Keys`，而它與 `User Management`、
-   `Group Management` **同在「設定」這一張下拉卡裡**，一張卡裡兩種構詞＝兩份清單黏在一起，
-   round45 改成 `Embed Key Management`。
+   MCP Server／Embed Key）。`nav.widgetTokens` 因此是 `Embed Key Management`、不是 `Embed Keys`：
+   它與 `User Management`、`Group Management` **同在「設定」這一張下拉卡裡**，一張卡裡兩種構詞
+   ＝兩份清單黏在一起。
    **唯一的例外是頂層的 `nav.platformMgmt`＝`Platform Admin`**，理由：它與上面那一族**不同層**
    （頂層項，不與任何 `X Management` 並列），而且它指的不是「管理某一種資源」而是「平台管理員的
    工作區」——這一層的下轄項各自才是資源（租戶功能開通／MCP Server 管理／平台機器憑證）。
@@ -15,10 +15,10 @@
    「X 管理」照樣 `X Management`。
 
    **下拉的觸發是 `<button>`、不是連結**（§5 不放按了沒反應的鈕）：「資料配置」「服務預覽」這些分類層
-   沒有自己的頁，原本寫成 `<a href="#" class="dropdown">`。桌機的展開收合是**純 CSS**（`_header.scss` 的
+   沒有自己的頁，所以**不可以寫成 `<a href="#" class="dropdown">`**。桌機的展開收合是**純 CSS**（`_header.scss` 的
    `li:hover > ul` / `li:focus-within > ul`，見 header.js 檔頭），那顆 `#` 按下去不會展開任何東西，只會把
-   頁面捲回頁首；手機版則是 `mobile-nav.js` 攔下 click 自己 slideToggle，`href` 從頭到尾沒用過。
-   兩邊一致改成 `<button type="button" class="dropdown">`：角色對了、`#` 沒了，`:focus-within` 照樣把
+   頁面捲回頁首；手機版則是 `mobile-nav.js` 攔下 click 自己 slideToggle，`href` 從頭到尾用不到。
+   兩邊一致用 `<button type="button" class="dropdown">`：角色對了、`#` 沒了，`:focus-within` 照樣把
    鍵盤與觸控的焦點算進展開條件。樣式重置寫在兩支 `.scss` 的 `.dropdown` 裡。
 
    **下拉子項的可及名稱＝「父層 子項」**（§4 可及名稱不得重複；辨識在前、動作在後）：`menuItems` 裡有
@@ -33,10 +33,10 @@
    平台層有兩種角色而不是一種：`auditor`（唯讀稽核，ISO 情境刻意設計的職責分離）與 `admin`（全權）。
    把整塊「平台管理」gate 在 is_platform_admin，等於讓稽核員在 UI 上不存在（只能手動打 URL）。
    對照 product：`GET /platform/tenants`／`usage`／`license-usage`／`admins`／`tenants/export` 等唯讀端點是
-   `require_platform_auditor`（app/authz.py：platform_role ∈ {auditor, admin}），故 5-6-1 是 auditor 入得去；
-   5-6-2 的 MCP 全域註冊表**連讀都是** `require_platform_admin`（app/routers/mcp.py 整支平台 router），故標 admin；
+   `require_platform_auditor`（product：platform_role ∈ {auditor, admin}），故 5-6-1 是 auditor 入得去；
+   5-6-2 的 MCP 全域註冊表**連讀都是** `require_platform_admin`（product 整支平台 router），故標 admin；
    5-6-3 的機器憑證盤點與值域是 `require_platform_auditor`、核發與撤銷才是 `require_platform_admin`
-   （app/routers/platform.py 的四支），故入口標 auditor、頁內兩塊寫入標 admin。 #}
+   （product 的四支），故入口標 auditor、頁內兩塊寫入標 admin。 #}
 {% set menuItems = [
   {
     label: "資料配置", i18nKey: "nav.dataConfig",

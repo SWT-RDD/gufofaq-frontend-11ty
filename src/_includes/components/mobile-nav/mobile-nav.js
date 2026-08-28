@@ -1,6 +1,8 @@
-// 手機版選單：切換開關（切 .active；捲動鎖是 CSS 靠 nav-toggle 的 data-scroll-lock 做，本檔不自己鎖，
-// 只在開之前呼叫 GufoScrollLock.measure() 補量捲軸寬度）、子選單展開收合、resize 自我收合
-// 行為改寫自凍結前端 GufoFAQ_Frontend_New/js/main.js（原用 jQuery + slideDown/slideUp），改為標準 DOM API
+// 手機版選單的開合，標準 DOM API、不依賴任何框架。做三件事：
+//   ①切換開關：切 `.nav-toggle` 的 .active（捲動鎖是 CSS 靠 nav-toggle 的 data-scroll-lock 做，
+//     本檔不自己鎖 body，只在開之前呼叫 GufoScrollLock.measure() 補量捲軸寬度）；
+//   ②子選單展開收合；
+//   ③視窗被拉寬過收合斷點時自我收合。
 document.addEventListener("DOMContentLoaded", function () {
     var navToggle = document.querySelector(".nav-toggle");
     var menuWrap = document.querySelector(".mobile-menu-wrap");
@@ -39,7 +41,8 @@ document.addEventListener("DOMContentLoaded", function () {
         navToggle.setAttribute("aria-expanded", open ? "true" : "false");
         overlay.classList.toggle("active", open);
         // body 捲動鎖是純 CSS：`html:has([data-scroll-lock].active)`（見 _base.scss；nav-toggle 掛 data-scroll-lock）。這裡只負責切 .active。
-        // 真 app 是 slideDown/slideUp(300)，不是 display 一次切掉
+        // 開合走 GufoSlide 的高度動畫（300ms），不是 display 一次切掉：整片選單瞬間出現／消失，
+        // 使用者看不出它是從漢堡展開的，也接不上遮罩的淡入。
         if (open) {
             window.GufoSlide.down(menuWrap);
         } else {
@@ -61,12 +64,13 @@ document.addEventListener("DOMContentLoaded", function () {
     // 子選單開關（手機版點擊展開/收合）
     submenuToggles.forEach(function (toggle) {
         toggle.addEventListener("click", function () {
-            // 不用 preventDefault：`type="button"` 本來就沒有預設動作（先前是 `<a href="#">` 才要擋）
+            // 不用 preventDefault：觸發是 `<button type="button">`，本來就沒有預設動作要擋
+            // （會需要擋的是 `<a href="#">` 那種寫法，而 §5 不許用連結當開合鈕）
             var submenu = toggle.parentElement.querySelector("ul");
             if (!submenu) return;
             // aria-expanded 用 toggle 的回傳值（目標態）：收合動畫進行中再點一次會反轉成展開，
             // 自己讀 computed display 會在這條路徑跟實際結局脫鉤（§4 每條路徑同步）
-            var open = window.GufoSlide.toggle(submenu); // 真 app 是 slideToggle(300)
+            var open = window.GufoSlide.toggle(submenu); // 同樣走 300ms 的高度動畫，回傳目標態
             toggle.setAttribute("aria-expanded", open ? "true" : "false");
         });
     });

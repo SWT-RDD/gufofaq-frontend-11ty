@@ -40,25 +40,26 @@
 //   ⓓ `.check-cell`（欄寬）與 `.in-cell`（格內對齊）是 `ui/default-table` 的 class，不是本元件的。
 //   ⓔ 行為（全選 ↔ 逐列連動、`indeterminate`、載入即同步）由 `checkbox.js` 供給，markup 不必寫。
 //
-// 結構與數值取自凍結前端 `GufoFAQ_Frontend_New/scss/component.scss` 的 `.form-checkbox`（1159-1169）
-// 與 `input[type="checkbox"]`（1182-1242）。**偏離逐條列出**（上一版寫「逐字取自」，實際有八處）：
-//   ①原檔 `.form-checkbox, .form-radio` 那一段共用外框排版**不在本檔**——已升格成全域的
+// 本檔兩塊：`.form-checkbox`（外框／變體）與它裡面那顆 `input[type="checkbox"]`（方框、勾記、
+// 三種狀態）。**這幾條要知道理由（改動前先讀）**：
+//   ①`.form-checkbox` 與 `.form-radio` 共用的那一段外框排版**不在本檔**——已升格成全域的
 //     `scss/_form-check.scss`（第二個消費者出現時就升格成共用正本，§4）。
 //   ②裸選擇器 `input[type="checkbox"]` 收進 `.form-checkbox input[type="checkbox"]`
 //     （§9：裸元素選擇器只准 `_normalize`／`_base`；理由寫在該條旁邊）。
-//   ③`box-sizing: border-box` 移除（§4-1 全域已給）。
-//   ④色值換語意 token：`#fff`→`--surface-input`、`var(--color-border-default)`→`--border`、
-//     `::before` 的勾記 `#fff`→`--control-knob`、`:checked` 的 `var(--color-primary-dark)`→
-//     `--brand-ink`、`:disabled` 的 `#ebebeb`→`--surface-disabled`。
+//   ③本檔不自己寫 `box-sizing: border-box`（§4-1 全域已給，重複一份只會在全域改動時分岔）。
+//   ④色值全數走語意 token，不寫死色碼：方框底 `--surface-input`、框線 `--border`、
+//     `::before` 那一筆勾記 `--control-knob`、`:checked` 的勾記 `--brand-ink`、
+//     `:disabled` 的底 `--surface-disabled`。
 //   ⑤`:disabled:checked::before` 的勾記**不跟著 ④ 走** `--control-knob`，改用專用的
-//     `--control-ink-disabled`（原檔是 `#fff`，理由寫在該條旁邊）。
+//     `--control-ink-disabled`（理由寫在該條旁邊）。
 //   ⑥`:checked::before` 補上 `content`／`width`／`height`／`border-radius`／`top` 五條：
 //     `:indeterminate` 把同一顆 `::before` 改成橫槓之後，`:checked` 必須有能力把幾何整組改回勾記
-//     （原檔沒有 `:indeterminate`，所以只需要改兩條邊框顏色）。
-//   ⑦`&:indeterminate` 整段是切版新增（與 `ui/checkbox/checkbox.js` 同一批交付，見該段註解）。
-//   ⑧`.form-checkbox.in-cell` 變體是切版新增：原本是 `ui/default-table` 那邊寫
-//     `.default-table .form-checkbox` 跨元件覆寫，§4 改由 owning 元件提供變體。
-//   **宣告集合差集**（與上面那段凍結範圍逐條 diff，只比種類不比值——色值換語意 token 是 §4 要求的、不算偏離）：本檔新增 `justify-content`。`.form-checkbox` 的水平對齊改由 `_form-check.scss` 的共用 base 給（同一份正本，見檔頭第一段）。
+//     （本元件自創 `:indeterminate`，所以只需要改兩條邊框顏色）。
+//   ⑦`&:indeterminate`（半選：全選框在「選了一部分」時畫橫槓）是本元件自有的，與
+//     `ui/checkbox/checkbox.js` 是同一批交付——只有樣式沒有 js，那個狀態永遠不會出現（見該段註解）。
+//   ⑧`.form-checkbox.in-cell`（表格格內的緊湊置中變體）由本元件出，**不寫成 `ui/default-table`
+//     那邊的 `.default-table .form-checkbox`**（§4：外觀覆寫要由 owning 元件提供變體）。
+//
 .form-checkbox {
     padding: 0.5625rem 0.625rem;
     border: 1px solid transparent;
@@ -70,7 +71,8 @@
         border-radius: 4px;
     }
 
-    // 放在表格 cell 內的緊湊置中變體（原本用 `.default-table .form-checkbox` 覆寫，改由本元件自有變體提供，維持 §4 隔離）
+    // 放在表格 cell 內的緊湊置中變體：去掉外框內距、在格子裡置中。
+    // 由本元件出變體，不讓 default-table 寫 `.default-table .form-checkbox` 跨元件覆寫（§4 隔離）。
     &.in-cell {
         padding: 0;
         display: flex;

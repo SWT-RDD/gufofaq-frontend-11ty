@@ -16,19 +16,19 @@ permalink: 4-2_qaHistory_detail.html
      對應的詳情頁示範），而直答沒有工具軌跡可看，詳情頁演它就等於整個執行流程區塊都是空的。
    `intent` 與 `tag` 兩欄**給上游字面、不給顯示字**（顯示中文由 components/qa-detail-info 的
      `{% if %}` 鏈 ＋ i18n key 產生，見該元件那兩格的註解）：
-     · `intent` ＝ `chat_logs.is_intension`，**可為 null 的布林**（product `app/routers/history.py`
+     · `intent` ＝ `chat_logs.is_intension`，**可為 null 的布林**（product
        的 `_PUBLIC_LOG_FIELDS` 收了 `is_intension`，`_project_log` 原樣帶過），故給布林、不給顯示字。
-       同檔 `_detail_cells` 那句「是／否／空」是 **CSV 匯出**的顯示層（欄名見 `_EXPORT_DETAIL_HEADER`
+       product 的 `_detail_cells` 那句「是／否／空」是 **CSV 匯出**的顯示層（欄名見 `_EXPORT_DETAIL_HEADER`
        的「有無意圖判斷」），不是 API 值域——拿它當值域，React 端會拿布林去比中文而恆為否。
        **值給 `false`，不給 `true`**：本筆是 agent 模式，而 `is_intension` 在 agent 下**恆為 False**
        （實測矩陣 gufofaq-saas `docs/mode-matrix.md` 的 `intent_enabled` 那一列逐字「agent 恆 False」）
        ——給 `true` 就是為了「讓那一態看得到」而演一個上游做不出來的狀態（§5／§6 明文禁止）。
        「是」那一態因此在本頁演不到（要傳統搜尋 ＋ 意圖開啟才出得來），它的可見示範落在
        元件庫頁的「React 條件文案」節（§4-2：枚舉成員靠「有地方渲染得出來」活著）。
-     · `tag` ＝ `chat_logs.tag`，值域正本 product 同檔的 `_TAG_LABEL`＝`frontend`／`backend`／`ab_test`，
+     · `tag` ＝ `chat_logs.tag`，值域正本是 product 的 `_TAG_LABEL`＝`frontend`／`backend`／`ab_test`，
        故給 `frontend`（＝上面說的「前台問答」那一筆，與 4-1 #12173 的「使用者類型」欄同源）。
-       原本塞的是顯示字「前台問答」，由該元件原樣輸出——React 接上真 API 只會印出 `frontend`，
-       而英文模式下那格永遠是中文。 #}
+       **不得塞顯示字「前台問答」**讓元件原樣輸出：React 接上真 API 之後那一格只會印出
+       `frontend`，而英文模式下它永遠是中文。 #}
 {% set conversation = {
     satisfaction: { type: "positive", icon: "./images/icon_good.png" },
     feedback: "回答很快也很清楚，謝謝！",
@@ -90,7 +90,7 @@ permalink: 4-2_qaHistory_detail.html
 <div class="flex-row column gap-16">
     {% include "ui/breadcrumb/breadcrumb.html" %}
 
-    {# 可輸入頁碼切換：真實頁由 GufoFAQ_Frontend_New/js/qaHistoryDetail.js 依上一頁查詢結果總數渲染 data-total 與 pager 行為 #}
+    {# 可輸入頁碼切換：`data-total` 由上一頁那次查詢的結果總數填（§6 跨頁同源）。 #}
     <div class="page-title-wrap">
         {# 總數＝上一頁（4-1）那次查詢的結果總數（§6 跨頁同源）。不 set 的話落回元件內建的 12，
              畫面會寫「第 1 個對話，共 12 個」而上一頁寫「共 115 筆」。 #}
@@ -99,11 +99,12 @@ permalink: 4-2_qaHistory_detail.html
     </div>
 </div>
 
-{# 列印按鈕：真實頁與下方表格同包在一個 .block.block-sm 內，但 components/qa-detail-info 已把該 .block.block-sm 連同表格一起封裝，
-     為避免重複／新建一個不存在於真實系統的空 block，改置於表格正上方、靠右（flex justify-content-end）＋ margin 呈現 #}
+{# 頁面層的動作鈕列（設定滿意度／分享／列印）。**不另包一層 `.block.block-sm`**：下方表格的那一層
+     已經由 components/qa-detail-info 連同表格一起封裝，這裡再包一個就是憑空多一個空殼區塊。
+     改成貼在表格正上方、靠右（flex justify-content-end）＋ margin。 #}
 <div class="mt-16 flex-row justify-content-end gap-8">
-    {# 設定滿意度：product `POST /history/{log_id}/rating`（登入態，require_capability("history")）。
-         真 app 後台只把滿意度印出來、按不動——而那支端點一直都在。
+    {# 設定滿意度：後台在這一頁改得動滿意度，走 product `POST /history/{log_id}/rating`
+         （登入態，require_capability("history")）——端點在，就不該讓這一格只印得出來、按不動。
          **無條件開窗**：這一頁只有一筆問答、開的永遠是同一份內容，沒有「先選要評哪一筆」可言，
          故掛 data-open-modal 而不是 hook class（§5；隔壁的分享鈕相反，它要先讀那筆的既有連結清單）。
          窗內二選一（讚/倒讚）＋預填目前的意見回饋，覆寫語意寫在窗內的說明句上——
@@ -115,7 +116,9 @@ permalink: 4-2_qaHistory_detail.html
     <button type="button" class="button button-green" data-print data-i18n="qa.printPage">列印此頁</button>
 </div>
 
-{# 對話詳細內容：真實頁「滿意度回饋」+「基本對話資訊」表格，與 components/qa-detail-info 完全一致（同一份真實頁抽出），直接 include #}
+{# 對話詳細內容＝「滿意度回饋」＋「基本對話資訊」兩張表，整塊的結構正本住在
+     components/qa-detail-info，這一頁只 include、不自己再寫一份（複製出來的第二份會在元件
+     改版時無聲分岔）。表格吃的是上面那份 `conversation`。 #}
 {% include "components/qa-detail-info/qa-detail-info.html" %}
 
 {# ── 執行流程 ＋ 執行摘要 ───────────────────────────────────────────────────────
@@ -130,14 +133,15 @@ permalink: 4-2_qaHistory_detail.html
        （回 step_events／tool_activity／thinking_by_node 的完整版），詳情頁帶回來的是前 N 筆 ＋
        尾端 `{truncated, total}` 標記的檢視。故本頁把成對參數設起來，那顆鈕與截斷提示都渲染得出來。 #}
 {% if conversation.chatMode == "agent" %}
-{# 節點清單＝正典管線的九站（saas `apps/web/lib/domain/stepFlow.ts` 的 `CANONICAL_PIPELINE.agent`）。
-     首站 `input_gate` 是串流開頭無條件發射的（chatbot `routes/_chat_stream.py` 的
-     `_gate_step_sse`），第二站 `qa_direct` 則是每一輪都送一筆判定（`services/qa_direct.py` 的
-     `QaDirectProbe.record`，未命中那半也送，整輪沒判到還會由 `routes/chat.py` 補一筆
+{# 節點清單＝正典管線的九站（gufofaq-saas 的 `apps/web/lib/domain/stepFlow.ts`，
+     `CANONICAL_PIPELINE.agent`）。
+     首站 `input_gate` 是串流開頭無條件發射的（chatbot 的
+     `_gate_step_sse`），第二站 `qa_direct` 則是每一輪都送一筆判定（GufoRAG chatbot 的
+     `QaDirectProbe.record`，未命中那半也送，整輪沒判到還會由 GufoRAG chatbot 補一筆
      `not_attempted`）。React 端的 `computeFlow` 是把整條管線一次畫滿、再用事件點亮——
      清單要與正典同長同序，少畫任何一站都是它產不出來的形狀（§6）。
      這一筆的 QA 直答演「建圖前閘門判否」：`answerSource` 是 `generated`，而命中直答會結構性短路
-     （chatbot `services/agent_service.py` 的 `after_tools`：不經 respond、grounding 同樣跳過）
+     （chatbot 的 `after_tools`：不經 respond、grounding 同樣跳過）
      ⇒ 這一頁畫得出檢索與生成，就代表那一站必然是未命中。分數 2.4 < 門檻 3 ⇒ `below_score_floor`，
      `poolSize` ＝ max(取用資料筆數, MIN_CANDIDATE_POOL) ＝ max(16, 2) ＝ 16，而 16 就是上面那格
      「取用資料筆數」（§6 同頁同源）。 #}
@@ -153,10 +157,11 @@ permalink: 4-2_qaHistory_detail.html
     { label: "輸出合規檢查", state: "completed", time: "24ms" }
 ] %}
 {# 摘要是節點的衍生值（§6）：延遲＝九站耗時總和 8＋14＋340＋1200＋210＋2100＋180＋8＋24
-     ＝ 4,084ms ⇒ **4.1s**；TTFT 從同一個起點算到第一個回答 token（chatbot `routes/chat.py` 的
+     ＝ 4,084ms ⇒ **4.1s**；TTFT 從同一個起點算到第一個回答 token（chatbot 的
      `_ttft_ms`），生成答案的起點是前五站的和 8＋14＋340＋1200＋210 ＝ 1,772ms ⇒ **1.8s**。
-     取整規則只有一份、寫在 step-flow 檔頭（`formatMs`：≥1s 一位小數四捨五入）：4.084 → 4.1、
-     1.772 → 1.8。前一版寫 4.2s／1.9s，兩個都是把同一個毫秒數往上多進了一格。 #}
+     取整規則只有一份、寫在 step-flow 檔頭（`formatMs`：≥1s 一位小數**四捨五入**）：4.084 → 4.1、
+     1.772 → 1.8。⚠️ 不是無條件進位——寫成 4.2s／1.9s 就是把同一個毫秒數往上多進了一格，
+     而畫面上這兩個數字與節點的耗時是對得起來的，讀的人加得出來。 #}
 {% set stepFlowSummary = {
     tokens: "1,284", tokensIn: "980", tokensOut: "304",
     latency: "4.1s", ttft: "1.8s", results: "8", model: "openai:gpt-4o-mini"
@@ -229,10 +234,11 @@ permalink: 4-2_qaHistory_detail.html
                     </div>
                     <div class="col col-12-md">
                         <div class="th" data-i18n="qa.suggestQuestions">推薦問題</div>
-                        {# 整格收成一行（§2）：`{% else %}` 那顆「—」原本前後各有一段換行縮排，
-                             輸出的是 `"\n                            —\n                        "`——
+                        {# 整格**收成一行**（§2）：`{% else %}` 那顆「—」若前後各留一段換行縮排，
+                             輸出的會是 `"\n                            —\n                        "`——
                              那串空白會併進**同一個文字節點**，而 JSX 對含換行的前後空白是整段丟掉，
-                             兩邊的可見文字序列因此不同。同表「上一則」那一格早就是收成一行的寫法。 #}
+                             於是 11ty 與 React 兩邊的可見文字序列對不起來。同表「上一則」那一格
+                             用的也是收成一行的寫法。 #}
                         <div class="td">{% for q in detailSuggestQuestions %}<div>{{ q }}</div>{% else %}—{% endfor %}</div>
                     </div>
                 </div>
@@ -241,7 +247,8 @@ permalink: 4-2_qaHistory_detail.html
     </div>
 </div>
 
-{# 參考來源表格區塊：與 components/sources-block 完全一致（同一份真實頁抽出），直接 include #}
+{# 參考來源表格區塊：結構正本住在 components/sources-block，這一頁只 include、只餵上面那份
+     `sources`——這張表在 2-1／2-2-1／2-2-3 也出現，各頁自己刻就會刻出好幾份會分岔的表頭。 #}
 {% include "components/sources-block/sources-block.html" %}
 
 {# 評分窗（上方「設定滿意度」開的那一份）。意見回饋預填目前存著的那段話：product 的 client 一律
@@ -267,14 +274,15 @@ permalink: 4-2_qaHistory_detail.html
 {# 撤銷分享連結的二次確認：撤銷是軟刪且不可逆（該連結永久失效），故走與刪除同一顆確認彈窗
    （components/delete-modal 的泛用版：標題／內文換成「撤銷」）。開窗需先選定「撤銷哪一條連結」
    ＝業務條件開窗，故 share-manage-modal 那顆鈕保留 hook class .js-revoke-share、不掛 data-open-modal（§5）；
-   成敗 toast 掛在這顆確認鈕上（原本掛在列上的 toast.revokeShare 移到這裡，key 不變）。 #}
+   **成敗 toast 掛在這顆確認鈕上、不掛在清單那一列的撤銷鈕上**（`toast.revokeShare`）：真正送出
+   請求的是確認鈕，列上那顆只負責開窗——toast 掛錯地方就會在還沒撤銷時先報成功。 #}
 {% set deleteTitleKey = "action.revoke" %}
 {% set deleteTitleZh = "撤銷" %}
 {% set deleteMessageKey = "common.confirmRevoke" %}
 {% set deleteMessageZh = "確定要撤銷" %}
 {% set deleteTargetId = "revokeShareTarget" %}
-{# 連帶後果（`deleteNoteKey`）：撤銷是**軟刪**（product `app/conversation/share_links.py` 的
-     `revoke_share` 只把 `ShareLink.disabled` 設成 true），而 `share.py` 全境只有四支端點
+{# 連帶後果（`deleteNoteKey`）：撤銷是**軟刪**（product 的
+     `revoke_share` 只把 `ShareLink.disabled` 設成 true），而 product 全境只有四支端點
      （`POST /share`／`GET /share`／`GET /shared/{token}`／`DELETE /share/{id}`）——**沒有任何一支
      解得回來**。撤銷之後 `view_shared_by_token` 對那個 token 回 404，也就是已經把連結寄出去的
      那些人當場打不開。上一行只問「確定要撤銷 X」，講不出「那條連結永遠回不來、要再分享得另建一條」。

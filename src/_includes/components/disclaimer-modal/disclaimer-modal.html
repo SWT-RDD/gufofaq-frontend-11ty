@@ -6,10 +6,10 @@
    平台系統管理員在 5-6-1 的免責聲明版本管理裡編輯的就是一個 textarea 的字串，
    消費端 `gufofaq-saas apps/web/components/DisclaimerModal/DisclaimerModal.tsx` 的 `DisclaimerModal`
    取 `GET /api/disclaimer` 的 `text` 之後只做 `text.split("\n")` 逐行渲染、行間補 `<br/>`。
-   所以切版這裡畫一顆 `<ul class="list-style-disc">`，在 React 端沒有任何落點：後端送不出巢狀結構，
-   renderer 也不解析 markdown。兩條路裡選 (b)——**切版跟上後端契約**，把原本那四項損害類型
-   （營運損失／業務中斷／企業資訊的損失／其他財務損失）改成與上下文同型的純文字行（`<br>` 斷行），
-   而不是 (a) 去要求後端把本文改成有結構：本文是法律文字、平台一份全租戶共用，
+   所以切版這裡若畫一顆 `<ul class="list-style-disc">`，在 React 端沒有任何落點：後端送不出巢狀結構，
+   renderer 也不解析 markdown。兩條路裡選 (b)——**切版跟上後端契約**：那四項損害類型
+   （營運損失／業務中斷／企業資訊的損失／其他財務損失）一律寫成與上下文同型的純文字行（`<br>` 斷行）。
+   不選 (a) 去要求後端把本文改成有結構，是因為本文是法律文字、平台一份全租戶共用，
    為了四個項目符號把它升級成 markdown 或分段欄位，會讓「編輯的人打的是什麼」也跟著變。
    ⚠️ 這條的逆向也成立：日後若有人想在本文裡加標題或表格，先改的是後端契約，不是這個檔。 #}
 <dialog class="modals" id="disclaimerModal" aria-labelledby="disclaimerModal-title">

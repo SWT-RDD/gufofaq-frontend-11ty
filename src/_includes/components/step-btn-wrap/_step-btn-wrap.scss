@@ -1,6 +1,8 @@
-// 照抄自凍結前端 GufoFAQ_Frontend_New/scss/component.scss 步驟按鈕 section（.step-btn-wrap，行 2608-2643），
-// 另依規範調整：排版選擇器不用 ui/button 的 .button（§4 隔離），也不用 .btn-prev/.btn-next——
-// 那兩顆是真 app JS hook（§5：hook 不得被 scss 樣式），改用本元件自有 slot class .step-prev/.step-next。
+// 步驟按鈕列（`.step-btn-wrap`）：一列裡把上一步推到最左、下一步推到最右，進度條吃中間；
+// 窄視窗改成直排。只有下一步的那一種（.no-prev）改成置中 ＋ 下一步絕對定位在右上。
+// **這幾條要知道理由（改動前先讀）**：排版選擇器不用 ui/button 的 .button（§4 隔離），
+// 也不用 .btn-prev/.btn-next——那兩顆是**業務掛點**，§5 規定 hook 不得被 scss 樣式
+// （判準是「全站 scss 找不到它」）；改用本元件自有的 slot class .step-prev/.step-next。
 .step-btn-wrap {
     display: flex;
     justify-content: space-between;

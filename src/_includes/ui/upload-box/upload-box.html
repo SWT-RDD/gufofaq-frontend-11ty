@@ -9,8 +9,9 @@
                      說明，本元件不開放覆寫那個數字
      uploadErrorFiles：**僅示範用**——先填好檔名並讓「不支援的副檔名」那一列可見，
                        讓這個分支在元件庫頁看得到（§5：沒有頁面演得出來的分支等於沒驗收過）；
-                       真實頁不設，由 upload-box.js 在 drop 時填入被略過的檔名
-   真實 app 上傳完由業務 JS 自動跳到預覽頁（此頁無下一步按鈕，§5 不做）。
+                       正式環境不設它，那一列的內容由 upload-box.js 在 drop／選檔時填入被略過的檔名
+   上傳完成後往下一頁走是**業務行為**（正式環境由 React 端在上傳成功之後自己導頁），所以這一頁
+   **沒有**「下一步」按鈕——§5：切版不放一顆要等 API 結果才知道能不能按的鈕。
    放置區是可點的東西，故一律用真 `<a>`／`<button>`，不用 div 假扮（§4）。內容用 `<span>` 不用 `<div>`：
    `<button>` 只吃 phrasing content，包 `<div>` 是非法巢狀（§4）；排版由 class 決定，與標籤無關。
    `<input type=file>` 只在按鈕版渲染（連結版不開檔案窗），放在放置區外面（`<a>`／`<button>` 都不能包互動內容），
@@ -29,18 +30,18 @@
 {# `.upload-desc` 的大小數字（50MB）是後端真的會拒絕的界線，不是文案裡的裝飾——正本住在
    `ui/upload-limit-catalog`（GUIDELINE §2 的 `{% from … import %}`，出處與單位逐條寫在那一份檔頭）。
    **這顆數字全站只有一份**，而且那一份不在本檔裡：`ui/upload-card` 三張卡吃的是同一顆
-   `uploadLimitCatalog.maxMb`，兩支元件各烤一份就是這一頁歷史上真的發生過的事（見目錄檔頭）。
-   **也不開放使用頁覆寫**：`read_upload()`／`UploadBudget()` 每個呼叫點
+   `uploadLimitCatalog.maxMb`。兩支元件各留一份字面量的話，改上限時一定會漏掉其中一支，
+   而畫面上兩頁各講一個數字完全看不出來（推導見目錄檔頭）。
+   **也不開放使用頁覆寫**：product 的 `read_upload()`／`UploadBudget()` 每一個呼叫點
    （xlsx／pdf／doc／docx／png／jpg 全部上傳路徑）都沒有覆寫 `max_bytes`，也沒有任何
-   PDF/Word 專用上限——先前切版分別寫「10MB」（本元件預設）與「30MB」（1-2-1 的覆寫）都是
-   與後端不符的手抄值，已經改成同一個 50MB。使用頁仍可覆寫 `uploadDescPrefixText`／
-   `uploadDescPrefixKey`（檔案格式清單那一句因頁而異），但不再讓頁面覆寫數字本身——
-   一旦數字可覆寫，下一頁就可能又抄出第三個與後端對不上的值。
-   ⚠️ **round47：那個數字先前只是畫出來，沒有任何人在擋。** `upload-box.js` 的 `accepted()` 只比
-   副檔名，`file.size` 全檔零引用 ⇒ 一份 200MB 的 PDF 照樣進清單、照樣送出，直到 413 才知道
-   （product `app/core/uploads.py` 的 `read_upload()`，回 `upload_too_large` ＋ 那句
-   `upload.too_large`）——而那時整個檔案已經傳過一次了。既然畫面講得出這條界線，就要在
-   送出之前擋下來。
+   PDF/Word 專用上限——所以每一頁講的都是**同一條**界線，各寫各的字面量必然有人與後端對不上，
+   而畫面上兩頁各講一個數字完全看不出來。使用頁仍可覆寫 `uploadDescPrefixText`／
+   `uploadDescPrefixKey`（檔案格式清單那一句因頁而異），但不讓頁面覆寫數字本身——
+   一旦數字可覆寫，下一頁就會再抄出一個與後端對不上的值。
+   ⚠️ **這個數字不只是畫出來的，選檔／拖放的當下就要擋。** 只比副檔名（`accepted()`）而不看
+   `file.size` 的話，一份 200MB 的 PDF 照樣進清單、照樣送出，要等到 413 才知道
+   （product 的 `read_upload()` 回 `upload_too_large` ＋ 那句 `upload.too_large`）——
+   而那時整個檔案已經傳過一次了。既然畫面講得出這條界線，就要在送出之前擋下來。
    **本檔只留一顆 `uploadMaxMb`**（值由目錄給）：可見文字與 js 讀的 `data-max-mb` 是同一個變數
    渲染出來的（§6：一個數字只有一份真相，正典是 `components/prompt-edit` 的 `data-max-len`）——不是
    js 寫死一份、markup 寫死另一份。單位見目錄檔頭（MiB），故 js 換算用 1024 不是 1000。

@@ -36,7 +36,7 @@
         align-items: center;
 
         // 單色 PNG ⇒ 走遮罩上色（§4）：alpha 是字形、顏色交給語意 token。這顆疊在
-        // 上面那顆 --brand 純色圓上，故墨色是 --on-accent（渲染值與原本的純白資產相同）。
+        // 上面那顆 --brand 純色圓上，故墨色是 --on-accent（渲染出來就是純白，與圖檔本身同色）。
         // 換膚／深色模式因此免反相、也不必為了別的底色另存一張圖。
         // 同一張圖在 ui/faq-launcher 是 <img>——那是 §4 明列的例外（CSS 選不到 url() 裡的顏色）。
         .pic {
@@ -80,7 +80,7 @@
         width: 100%;
         padding: 1rem 1.5rem 2rem 1.5rem;
 
-        // .faq-input-wrap：自有名（原 .input-wrap 與 ui/chatroom-shell 的同名 class 撞主人，§4 一名一主改名）
+        // .faq-input-wrap：自有名——不可以叫 .input-wrap，那個名字的 scss 主人是 ui/chatroom-shell（§4 一名一主）
         .faq-input-wrap {
             display: flex;
             align-items: center;

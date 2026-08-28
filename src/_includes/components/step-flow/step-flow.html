@@ -1,7 +1,7 @@
-{# 執行流程（後台測試區詳細觀測）：SaaS 新需求／真 app 無對應。把「這次回答執行到哪一步、
+{# 執行流程（後台測試區詳細觀測）：SaaS 新需求。把「這次回答執行到哪一步、
      現在在哪個 node、用了哪些工具、grounding 判定、agent 推理」畫成一張類 mermaid 的直式流程圖，
-     並在頂端給整體執行摘要（token/延遲/TTFT/檢索筆數/模型）。取代原分開的 ui/step-timeline（步驟列）
-     與 components/agent-activity（工具軌跡），統一成一處詳細檢視。
+     並在頂端給整體執行摘要（token/延遲/TTFT/檢索筆數/模型）。**步驟列與工具軌跡合成這一處**，
+     不再分成兩個元件：同一輪的事攤在兩張表上，讀的人沒辦法把「第幾步」與「那一步用了什麼工具」對起來。
    正典管線各節點依序畫出（未跑到＝待處理），以 chatbot 的結構化步驟事件（step_id/step_status，
      Part 1 completed-only 對齊）點亮；當前節點高亮＝最後一個 completed 的下一個正典節點（前端 lib/domain/stepFlow
      computeFlow 推斷）。狀態 class：is-completed（--success 綠點）/ is-running（--brand-ink 深墨點，當前高亮）/
@@ -13,24 +13,23 @@
      include 子元件，會靜默渲染成空白）。真值由 React 端串流事件驅動（lib/sse steps/toolActivity/
      thinkingByNode/summary + lib/domain/stepFlow computeFlow）；此處為靜態示範。
    巢狀（skill）：租戶自訂 skill 被 agent 呼叫時會跑一個 scoped 子 agent 迴圈，其子步驟由 chatbot
-     以 parent 欄掛成子樹（`agent_service` 的 `_record`；巢狀樹由 parent 鏈組成）。
+     以 parent 欄掛成子樹（GufoRAG chatbot 的 `_record`；巢狀樹由 parent 鏈組成）。
      **`depth` 是「顯示用的樹深」，不是後端那個同名欄**：後端的 depth 是 skill 遞迴層數，一個 skill
-     呼叫與它自己的子步驟同值（見 GufoRAG chatbot `agent_service._record` 與 saas `lib/domain/stepFlow` 的
+     呼叫與它自己的子步驟同值（見 GufoRAG chatbot `_record` 與 gufofaq-saas `lib/domain/stepFlow` 的
      `attachSkillSteps` 測試）；縮排要的是 parent 鏈的層數，故 1＝被正典節點呼叫的 skill、2＝它的子步驟、
-     3＝再一層。值域夾在 3（與 saas `components/StepFlow` 的 `Math.min(depth, 3)` 對齊）——插值出
+     3＝再一層。值域夾在 3（與 gufofaq-saas `components/StepFlow` 的 `Math.min(depth, 3)` 對齊）——插值出
      `is-depth-4` 這種未定義的 class 只會靜默不縮排，所以夾在模板裡而不是靠資料自律。
      skill 節點另有 skill/version/iterations/error 明細列——後端送什麼，這裡就要看得見；
      刻意**不**收工具參數與結果原文（後端也不送，那是洩漏面）。
    **時間的取整規則（全站唯一一份，使用頁不要各自另發明）**：時間欄與摘要的三個時間值一律只寫
-     `formatMs` 產得出來的字串——saas `components/StepFlow/StepFlow.tsx` 的
+     `formatMs` 產得出來的字串——gufofaq-saas `components/StepFlow/StepFlow.tsx` 的
      `ms >= 1000 ? (ms / 1000).toFixed(1) + "s" : Math.round(ms) + "ms"`：**≥1s 是一位小數、
      四捨五入**（4,096ms → 4.1s、3,340ms → 3.3s、1,784ms → 1.8s、2,140ms → 2.1s），<1s 是整數毫秒。
      `1.95s` 這種兩位小數是它產不出來的形狀。示範資料的摘要要能從節點推導（§6）：**延遲**＝已跑過
      節點的耗時和、**TTFT**＝答案節點（`respond_generate`／`respond_no_answer`）的起點＝它之前那幾站
      的和；兩個都先加成毫秒、再套同一條規則取整，寫進使用頁註解時要把式子與母體一起寫出來。
-   **時間欄的來源**（⚠️ 上一版寫「這是切版對 React 端提的要求：React 的 durations 只收 completed
-     且從第二筆起算」——**那個主張已經被滿足，本輪複驗改寫**，§4「上游還沒有 X 是最會過期的斷言」）：
-     上游現在**逐步量**耗時，GufoRAG chatbot `models/chat.py` 的 `step_event_data` 收 `duration_ms`
+   **時間欄的來源**（⚠️ 這一段是最容易過期的一種斷言，§4「上游還沒有 X」改動前務必重新查證）：
+     上游**逐步量**耗時，GufoRAG chatbot 的 `step_event_data` 收 `duration_ms`
      （由發射端量，`StepClock`），failed 那一顆照寫。React 端主路徑因此是 gufofaq-saas
      `apps/web/lib/domain/stepFlow.ts` 的 `stepDurations`：逐 `step_id` **加總** `duration_ms`、
      **不做 status 過濾**（agent↔tools 每輪都會再發一次同一個 step_id，取最後一輪等於把前面幾輪
@@ -39,7 +38,7 @@
      的相鄰相減，那條**連 `failed` 也收**，唯一留白的是第一站（沒有前驅可減）——三個已知死角逐條
      寫在 `stepDurations` 的 docstring 裡，不必在這裡再抄一份。
    QA 直答判定（S6）：上游**每一輪都送一筆**判定，未命中那半也送，故節點另收五個鍵（值一律
-     照抄 GufoRAG chatbot `app/services/qa_direct.py` 的常數，不另發明詞彙）：
+     照抄 GufoRAG chatbot 的常數，不另發明詞彙）：
        decision —— hit／no_exact_and_judge_rejected／below_score_floor／reconstruct_failed／
          not_attempted。查表查不到的值**原樣輸出**（上游新增第六種結論時，畫面要看得到那個生字）。
        entry —— pre_graph（建圖前閘門）／agent_tool（agent 工具）：哪一道閘門做的判定。
@@ -52,23 +51,23 @@
      **同一輪出現兩個 qa_direct 節點是正常的**（建圖前判否 → agent 又判一次），逐筆依序畫、不去重。
    **節點示範資料的三條上游形狀**（§6：演的必須是上游做得出來的狀態）。三處同源——本檔的內建示範
      ＋每一份使用頁的 `stepFlowNodes`——改一處就要一起改：
-     ① **`params` 只印得出形狀、印不出值。** product `app/routers/ask.py` 的
+     ① **`params` 只印得出形狀、印不出值。** product 的
         `_project_agent_tool_call_data`／`_project_agent_tool_result_data` 把 `args` **原文不送**，
         改送 `_args_shape` 導出的 `args_shape`（鍵名 `_ARGS_SHAPE_KEY`）：只有**鍵名 ＋ 值的 JSON
         型別名**，值、字串長度、陣列筆數一律不出，且不遞迴巢狀。三個轉發入口共用同一支
-        `_strip_chat_room_secrets`（`/ask` 與 `/public/ask` 的 `run_ask_stream`、`routers/qatest.py`
-        的單測串流、同檔 `/compare` 的 AB 單側）⇒ **後台測試區沒有「內部所以給原文」那條路**。
-        畫面字串由 saas `components/StepFlow` 的 `formatArgsShape` 組：
+        `_strip_chat_room_secrets`（`/ask` 與 `/public/ask` 的 `run_ask_stream`、product
+        的單測串流、同一支模組的 `/compare` 的 AB 單側）⇒ **後台測試區沒有「內部所以給原文」那條路**。
+        畫面字串由 gufofaq-saas `components/StepFlow` 的 `formatArgsShape` 組：
         `[已列出/實際帶了] 鍵: 型別, 鍵: 型別`（那兩個數字的差是截斷唯一的出口，且兩個都來自
         payload、不抄後端上限）⇒ 示範值一律寫成 `[1/1] query: string` 這種形狀。
         `{ query: '新住民 結婚 應備文件' }` 是那支 API **結構上**送不出來的東西。
-     ② **`floor` 是純數字。** 上游 `score_floor` 的型別是 `float | None`（GufoRAG chatbot
-        `app/services/qa_direct.py` 的 `_score_floor` → `relevance_judge.resolve_score_floor`），
+     ② **`floor` 是純數字。** 上游 `score_floor` 的型別是 `float | None`
+        （GufoRAG chatbot 的 `_score_floor` → `resolve_score_floor`），
         沒有單位、沒有尺標註記。`3（llm_reranker 的 1–5 尺）` 是替一個不存在的欄位編字面；
         「這是哪一把尺」要讓人知道的話，那件事**已經有家了**——`ui/score-scale-note`（5-2 對話設定頁
         的分數尺說明，逐字「llm_reranker：1–5（分數越高越相關）」），不是塞進這一格的值裡。
-     ③′ **`MCP 工具載入` 不在 `STEP_LABELS` 內、也不進正典管線**（GufoRAG chatbot
-        `app/services/agent_service.py` 的 `run_agent_chat_streaming`：工具載入失敗時才發一則
+     ③′ **`MCP 工具載入` 不在 `STEP_LABELS` 內、也不進正典管線**（GufoRAG chatbot 的
+        `run_agent_chat_streaming`：工具載入失敗時才發一則
         `mcp_tool_load` 的 STATUS 步驟事件，`step_status=failed` ＋ `failed_servers`，並在
         `_load_data["label"]` 自帶顯示名——因為 `STEP_LABELS` 那份是圖節點的正典名）。
         於是它有三個推論，缺一就畫錯：
@@ -79,7 +78,7 @@
           ・**位置在 `Agent 推理` 之前**：工具是先載入才進迴圈的；畫在後面會讓人以為是
             迴圈跑完才發現載不到。
         狀態恆為 `failed` ⇒ 走既有的紅色樣式，不必新增任何 class。
-     ③ **節點 `label` 逐字照抄** GufoRAG chatbot `app/models/chat.py` 的 `STEP_LABELS`——
+     ③ **節點 `label` 逐字照抄** GufoRAG chatbot 的 `STEP_LABELS`——
         `qa_direct` 是 **「QA 直答比對」**。其餘十一顆本來就逐字相同，只有這一顆自己縮寫成
         「QA 直答」；而 React 端顯示名是以 `step_id` 查自己的字典（`stepNode.qa_direct`），
         字面分岔時畫面不會報錯，只會兩邊各說各話。
@@ -104,38 +103,38 @@
        所以在**資料這一層**收斂成字串——`"0"` 在 nunjucks 是 true、在 JSX 也照樣渲染。
        （不改成 `is defined` 的理由：那會讓「上游沒送這個鍵」與「送了但為空字串」變成兩種寫法，
        而元件現在對兩者的處置相同。）
-     ——工具結果**只有一個 `result` 欄、沒有截斷指標**（先前那一對 `resultShown`／`resultLength`
-       已整段移除，理由逐條寫在下方「結果」那一列的註解裡：上游兩條路都沒有可讀的數字長度欄）；
+     ——工具結果**只有一個 `result` 欄、沒有截斷指標**（⚠️ 不要補一對 `resultShown`／`resultLength`：
+       上游兩條路都沒有可讀的數字長度欄，理由逐條寫在下方「結果」那一列的註解裡）；
        `decidedBy` 只在 `decision == "hit"` 時有值（上游只在 `DECISION_HIT` 的判定紀錄帶 `gate=`；值域是 `GATE_EXACT`／`GATE_SCORE_FLOOR`／`GATE_LLM_JUDGE`——不寫死幾處 `_rec`，§3-2）、
        `matchedRank` 只在 **① 完全命中那一層**有值（`hit` 走 `exact` 與 `reconstruct_failed` 兩種收尾，
        其餘 `_rec` 一個都不帶）——硬給就是演一個 API 產不出的組合。
        反過來，`hits`／`score` **未命中時照樣有值**：`decide()` 裡的 `_rec` 一律帶 `hit=top`
        （`doc_name`／`score` 由它衍生）；`not_attempted` 沒有 `hit` ⇒ `hits`／`score` 全空。
-       ⚠️ **`floor` 與 `poolSize` 不是「照樣有值」**（上一版這麼寫，兩顆都過度概化，本輪逐條複驗）：
+       ⚠️ **`floor` 與 `poolSize` 不是「照樣有值」**（很容易被上一句的「照樣有值」概化過去，逐條看）：
          ・`floor`：`QaDirectProbe.record()` 每一筆都無條件**寫這個鍵**沒錯，但寫進去的值是
            `_effective_floor(chat_room)`，而它**可以回 None**（房間沒設門檻；或「關 LLM 裁判又沒開
            全域 enable_rerank」那個組合——那時 ② 層不生效，刻意當作未設）。None 原樣送 null，那是
            「未校準」這個真實狀態、不用 0 充數，畫面上就是這一列不渲染。
-         ・`poolSize`：只有**建圖前閘門**那一筆 `not_attempted` 帶 `pool_size=0`（GufoRAG chatbot
-           `app/services/qa_direct.py` 的 `resolve`：一筆 QA 都檢索不到）。**agent 工具那一支不傳
-           這個引數**——收尾補的那筆在 GufoRAG chatbot `app/routes/chat.py` 的
+         ・`poolSize`：只有**建圖前閘門**那一筆 `not_attempted` 帶 `pool_size=0`
+           （GufoRAG chatbot 的 `resolve`：一筆 QA 都檢索不到）。**agent 工具那一支不傳
+           這個引數**——收尾補的那筆在 GufoRAG chatbot 的
            `stream_agent_chat`，`record(DECISION_NOT_ATTEMPTED, entry=ENTRY_AGENT_TOOL, …)`
            沒有 `pool_size`，預設 None ⇒ `entry` 是 `agent_tool` 的 `not_attempted` 那一列**沒有
            候選池可畫**，硬給就是演一個 API 產不出來的組合。
-       **命中是結構性短路**（`agent_service.py` 的 `after_tools`：不經 respond、grounding 同樣跳過），
+       **命中是結構性短路**（GufoRAG chatbot 的 `after_tools`：不經 respond、grounding 同樣跳過），
        所以同一份節點清單裡出現 `decision: "hit"` 之後又有生成節點＝上游做不出來的一輪。＋
      stepFlowSummary（選填，{ tokens, latency, ttft, results, model ＋選填成對的 tokensIn／tokensOut }）
      ——使用頁換對話主題時「兩個一起覆寫」，
      否則摘要（檢索筆數/模型）會與節點對不上（§6 自洽）；內部變數用元件專屬名 stepFlowNodeRows／stepFlowSummaryData。
      ——**沒給就整列不渲染**（不是退回一份內建摘要）：五欄全部來自 `chat_room` 塊，而那一塊是 chatbot
-       在**整輪收尾**才發（GufoRAG chatbot `routes/chat.py` 的兩個發射點與 `routes/_chat_stream.py`
-       的 `_qa_direct_stream`：`latency_ms`／`ttft_ms` 都是量到 `_t_end` 才填進 payload）
-       ⇒ **還在串流的那一輪畫不出摘要**。saas `components/StepFlow` 就是這個條件——整列的渲染條件是
+       在**整輪收尾**才發（GufoRAG chatbot 的兩個發射點與
+       GufoRAG chatbot 的 `_qa_direct_stream`：`latency_ms`／`ttft_ms` 都是量到 `_t_end` 才填進 payload）
+       ⇒ **還在串流的那一輪畫不出摘要**。gufofaq-saas `components/StepFlow` 就是這個條件——整列的渲染條件是
        `metrics.length > 0 || truncatedRows.length > 0`（**整條複製**：`truncatedRows` 還收
        `truncated.tools`，寫成 `truncated?.steps !== undefined` 會讓「只有工具截斷」那一輪推導成不渲染），
        逐欄也是「缺欄不顯示」。
      ——**`model` 只有重播那條路拿得到**：product 的 `_CHAT_ROOM_PUBLIC_KEYS` 沒有 `model_name`
-       （連 `usage.model` 都被剝掉），saas `apps/web/lib/sse.ts` 的 chat_room 分支逐字寫著
+       （連 `usage.model` 都被剝掉），gufofaq-saas `apps/web/lib/sse.ts` 的 chat_room 分支逐字寫著
        「這裡讀不到 `model_name`…而且永遠讀不到」；它的正當來源是 `lib/traceReplay` 讀
        `/api/history/{logId}`（那一支的 `_PUBLIC_LOG_FIELDS` 有它）。
        ⇒ **給了 `model` 的使用頁＝在演一筆重播的落庫紀錄**：那一頁的節點不得有 running／pending，
@@ -150,7 +149,7 @@
        兩態各有一頁，不重複也不留空（§5）。
    進度「目前 X / N」只數**正典管線節點**（無 depth 者）：N＝正典節點數、X＝已執行到的最後一個正典節點序號。
      巢狀子步驟不計入——它們是某一站底下的細節，算進分母會讓進度隨串流冒出子步驟而倒退（正典管線是
-     固定長度，見 saas `lib/domain/stepFlow` 的 CANONICAL_PIPELINE）。**`offPipeline: true` 的節點同樣不計入**
+     固定長度，見 gufofaq-saas `lib/domain/stepFlow` 的 CANONICAL_PIPELINE）。**`offPipeline: true` 的節點同樣不計入**
      （目前只有 `MCP 工具載入` 這一顆）：它不在 CANONICAL_PIPELINE 裡、只在故障那一輪出現，算進分母
      會讓正常那一輪的 N 少一格。不烤字面量：使用頁改節點數，烤死的總數就會說謊（§6）。
    示範資料＝假資料（工具名/參數/結果/推理），依 GUIDELINE §4-2「只翻 UI chrome、不翻假資料」不掛 data-i18n。 #}
@@ -173,8 +172,9 @@
      連同節點一起覆寫才不會自打架（§6）。缺欄由 React 端不顯示，靜態示範一律備齊五欄。
    **內建示範刻意是空的**（沒有 `or { … }` 的那份預設）：內建那一輪還在串流，而五欄全部來自
      整輪收尾才發的 `chat_room` 塊、`model` 更是只有重播那條路拿得到（理由逐條在檔頭）。
-     先前這裡烤了一份 `tokens/latency/ttft/results/model`，於是同一張圖上半寫著「生成答案 進行中」、
-     頂端卻已經報出整輪的 token、延遲、首字與模型——上下半互斥，而兩邊看起來都很合理。 #}
+     ⚠️ **不要在這裡烤一份 `tokens/latency/ttft/results/model` 當預設**：那會讓同一張圖上半寫著
+     「生成答案 進行中」、頂端卻已經報出整輪的 token、延遲、首字與模型——上下半互斥，
+     而兩邊各自看起來都很合理，沒有人會發現。 #}
 {% set stepFlowSummaryData = stepFlowSummary or {} %}
 {# 進度序號與總數只數正典節點（無 depth 者），巢狀子步驟不計入（見檔頭）。
      已執行＝completed/running/failed；skipped 是未走的分支、pending 尚未到，都不算。
@@ -203,13 +203,13 @@
 
     {# 整體執行摘要（stepFlowSummaryData，來自 chat_room chunk 的既有欄）：一眼看完本次成本/效能。
          label 走 i18n，數值為資料（不翻）。
-       **整列有條件**（對齊 saas `components/StepFlow` 的 `metrics.length > 0 ||
+       **整列有條件**（對齊 gufofaq-saas `components/StepFlow` 的 `metrics.length > 0 ||
          truncatedRows.length > 0`）：`chat_room` 塊是整輪收尾才發的，串流中那一輪
          一欄都拿不到 ⇒ 沒給 stepFlowSummary 就整列不出現，而不是渲染五格空值。
          軌跡截斷那一對可以單獨成立（重播一筆撞上限、但摘要欄位沒回來），故條件是「或」。 #}
     {% if stepFlowSummary or stepFlowTraceTotal %}
     <div class="step-flow-summary flex-row flex-wrap gap-16 mt-16">
-        {# 軌跡截斷（S3 前半）：**檢視**上限＝GufoRAG chatbot `routes/_chat_trace.py` 的
+        {# 軌跡截斷（S3 前半）：**檢視**上限＝GufoRAG chatbot 的
              `VIEW_STEP_EVENTS`／`VIEW_TOOL_ACTIVITY`（跨 repo 常數**只指名符號、不抄值**，§3-2：
              抄了值就要能被機器比對，而本專案的測試比不到隔壁 repo 的 Python 常數；同段下面本來
              就已經指名這兩顆），引擎在陣列尾端追加 {truncated: true, total: N}。
@@ -222,19 +222,20 @@
              那一對（結果截斷）沒有來源、已整段移除——理由見下方「結果」那一列的註解，別因為
              兩者形狀相同就把它加回來。
              數字是資料、夾在前後綴 key 中間（不是插值 key）。
-             「載入完整軌跡」**已經接得上了**（本輪回頭查證，前一版檔頭寫的「超出上限的事件目前沒有落庫」
-             已經過期）：GufoRAG chatbot `routes/_chat_trace.py` 把上限分成兩層——落庫 `MAX_STEP_EVENTS`
-             ／`MAX_TOOL_ACTIVITY`，檢視 `VIEW_STEP_EVENTS`／`VIEW_TOOL_ACTIVITY`，所以詳情頁帶回來的
+             「載入完整軌跡」**接得上真的端點**（⚠️ 別以為「超出上限的事件沒有落庫」——那是誤解，
+             改動前先照下面這條路徑查證）：GufoRAG chatbot 把上限分成兩層——落庫的
+             `MAX_STEP_EVENTS`／`MAX_TOOL_ACTIVITY`，檢視 GufoRAG chatbot 的
+             `VIEW_STEP_EVENTS`／`VIEW_TOOL_ACTIVITY`，所以詳情頁帶回來的
              是前 N 筆 ＋ 尾端 `{truncated, total}`，被截掉的那一段**存下來了**、單筆去要即可；取用端點
-             ＝product `routers/history.py` 的 `GET /history/{log_id}/trace`（租戶隔離走 `_own_log_or_404`）
-             與 chatbot `routes/chat.py` 的 `GET /chatlogs/{id}/trace`。
+             ＝product 的 `GET /history/{log_id}/trace`（租戶隔離走 `_own_log_or_404`）
+             與 chatbot 的 `GET /chatlogs/{chat_log_id}/trace`。
              端點在了 ⇒ 它就是一顆**點下去就送 API 的動作鈕**（§5 ③，「不開任何窗的送 API 鈕不適用條件開窗
              豁免」），故掛 data-toast 列全結果，不再只掛 hook class。 #}
         {% if stepFlowTraceTotal %}
         <p class="text-gray m-0"><span data-i18n="agent.traceTruncatedPrefix">已顯示 </span><span>{{ stepFlowTraceShown }}</span><span data-i18n="agent.traceTruncatedMid"> ／共 </span><span>{{ stepFlowTraceTotal }}</span><span data-i18n="agent.traceTruncatedSuffix"> 筆</span></p>
         <button data-capability="history" type="button" class="button button-border button-sm js-load-full-trace" data-toast="完整軌跡已載入|權限不足，無法載入——請找貴租戶的管理者開通|這一筆已經不在了，或不屬於這個租戶|載入失敗，請稍後再試" data-i18n-data-toast="toast.loadFullTrace" data-toast-type="success|warning|warning|error" data-i18n="agent.loadFullTrace">載入完整軌跡</button>
         {% endif %}
-        {# 逐欄「有值才畫」（saas `components/StepFlow` 逐欄 push metric 的那一串）：整列的條件放行了
+        {# 逐欄「有值才畫」（gufofaq-saas `components/StepFlow` 逐欄 push metric 的那一串）：整列的條件放行了
              「只有軌跡截斷、沒有摘要」那一態，此時五格若無條件渲染就是五個空 chip。
              值域含 0 的欄（`results`）以字串傳入，理由與節點欄位同一條（見檔頭）。 #}
         {% if stepFlowSummaryData.tokens %}
@@ -286,9 +287,9 @@
                     </td>
                     <td>
                         {# **這一串要涵蓋詳細表真的會畫的每一欄**：少列一欄，使用頁只給那一欄的節點時
-                             展開鈕與整個 detail-row 都不渲染，資料靜默消失。原本列了 12 項而明細列有 15 種
-                             （漏掉 iterations／entry／poolSize），只因為現行使用頁的節點都另帶 decision 或
-                             skill 才沒觸發。 #}
+                             展開鈕與整個 detail-row 都不渲染，資料靜默消失。
+                             ⚠️ 這種漏很難被發現——只要示範節點順手多帶一顆 decision 或 skill，條件就成立了，
+                             漏掉的那一欄要等到有人給出「只有它」的節點才會炸。加欄位時兩處一起改。 #}
                         {% if node.tools or node.params or node.result or node.verdict or node.thinking or node.skill or node.error or node.hits or node.score or node.decidedBy or node.floor or node.decision or node.iterations or node.entry or node.poolSize or node.failedServers %}
                         {# 可及名稱＝「這一站的名字 ＋ 本鈕自己的字」（§4）：自指是為了讓 WCAG 2.5.3
                              Label in Name 成立——鈕上看得到的字是「展開表格」，可及名稱裡就必須含它，
@@ -329,7 +330,7 @@
                                     {% endif %}
                                     {# 載入失敗的 MCP Server 清單（`failed_servers`）。**畫得出「哪一台」是這一則事件存在的理由**：
                                          沒有這一格，節點只說得出「MCP 工具載入」＋紅色，而使用者看到的症狀是「模型好像不會用工具」。
-                                         上游 GufoRAG chatbot `app/services/agent_service.py` 的 `run_agent_chat_streaming` 在
+                                         上游 GufoRAG chatbot 的 `run_agent_chat_streaming` 在
                                          `_init_tools` 之後發 `mcp_tool_load`（`step_status=failed` ＋ `failed_servers`），
                                          而 product 已經把原始字串裡的指令路徑切掉、只留 server 名（任何問得動問答的租戶使用者
                                          都不該從一次 MCP 故障讀到 agent 主機的檔案系統佈局）——**所以這一格只畫名稱、不畫指令**，
@@ -358,17 +359,16 @@
                                     <tr>
                                         <th id="stepNodeResultHead-{{ stepFlowInstance }}-{{ loop.index }}" data-i18n="agent.result">結果</th>
                                         {# 工具輸出是長文 ⇒ 走 ui/collapse-text（夾住而且打得開）。**就這樣、沒有截斷指標**。
-                                             這裡曾經有一組 `resultShown`／`resultLength` 的「已顯示前 N 字／共 M 字」＋
-                                             「看完整輸出」，理由寫的是「被截到的欄位會自述原始長度 ⇒ 渲染條件是上游回了長度」。
-                                             那個機制看錯了，本輪逐條複驗後整段拿掉：
-                                             ・**即時串流**：`result_preview` 原樣送，而 product `app/routers/ask.py` 的
+                                             ⚠️ **不要補一組 `resultShown`／`resultLength` 的「已顯示前 N 字／共 M 字」＋
+                                             「看完整輸出」**：那需要「被截到的欄位會自述原始長度」，而兩條路都沒有——
+                                             ・**即時串流**：`result_preview` 原樣送，而 product 的
                                                `_AGENT_TOOL_RESULT_PUBLIC_KEYS` 只放行 `tool`／`tool_call_id`／
-                                               `result_preview`，**沒有任何長度欄**（saas `apps/web/lib/sse.ts` 的 `ToolActivity` 型別註解逐字寫著「**沒有『原始長度』這一欄**，
+                                               `result_preview`，**沒有任何長度欄**（gufofaq-saas `apps/web/lib/sse.ts` 的 `ToolActivity` 型別註解逐字寫著「**沒有『原始長度』這一欄**，
                                                而且不是『上游還沒回』而是產不出來」）。而且即時那一輪連 chat log id 都還沒有，
                                                取全文的端點根本呼叫不了。
-                                             ・**重播**：GufoRAG chatbot `routes/_chat_serialization.py` 的
+                                             ・**重播**：GufoRAG chatbot 的
                                                `DEFAULT_PREVIEW_CHARS = 0`＝不截、回完整原文；真的帶 `preview_chars` 去截時，
-                                               它的「自述原始長度」是**接在字串尾巴的一句話**（同檔 `_clip`：
+                                               它的「自述原始長度」是**接在字串尾巴的一句話**（同一支模組 `_clip`：
                                                `…（原始 N 字，可用 preview_chars 取完整版）`），不是一個數字欄位——
                                                而 product 沒有任何呼叫端帶那個參數。
                                              ⇒ 沒有任何一條路產得出「這一次被截到、原長 M」這個狀態，所以沒有任何使用頁
@@ -388,16 +388,17 @@
                                         <td>{{ node.verdict }}</td>
                                     </tr>
                                     {% endif %}
-                                    {# QA 直答的命中細節（S1）。qa_direct 節點原本只有 label／state／time，
-                                         連「可展開」的條件都不成立（那個判斷看 verdict／tools／iterations，
+                                    {# QA 直答的命中細節（S1）。**這幾欄不可省**：qa_direct 節點只有 label／state／time
+                                         的話，連「可展開」的條件都不成立（那個判斷看 verdict／tools／iterations，
                                          三個都沒有）——畫面上就是一個綠盒子，說不出「憑什麼直出這一則」。
-                                         判定層有且只有三層，**值就是上游 GufoRAG chatbot `app/services/qa_direct.py` 的那三顆常數**：
+                                         判定層有且只有三層，**值就是上游 GufoRAG chatbot 的那三顆常數**：
                                          `GATE_EXACT = "exact"`（正規化完全命中）／`GATE_SCORE_FLOOR = "score_floor"`
                                          （分數門檻）／`GATE_LLM_JUDGE = "llm_judge"`（LLM 單裁）。**三顆各自比對、
                                          收尾的 else 原樣輸出**（同 decision 那條）：上游多一層時要看得到生字。
-                                         ⚠️ 這裡曾經比對 `"floor"`，而當時 `llm_judge` 是靠 else 接住的——於是分數門檻
-                                         命中會掉進 else、顯示成「LLM 裁判」，畫面上完全看不出錯（React 端照抄也踩過
-                                         同一次）。比對值要與上游逐字相同，而且**不可以拿 else 當某個已知值的家**。
+                                         ⚠️ 比對值要與上游**逐字相同**，而且**不可以拿 else 當某個已知值的家**：
+                                         例如把門檻那一顆寫成 `"floor"`（上游是 `score_floor`）而讓 `llm_judge`
+                                         靠 else 接住，分數門檻命中就會掉進 else、顯示成「LLM 裁判」——
+                                         畫面完全看不出錯，接手的人也會照抄。
                                          故走 {% if %} 鏈、i18n key 逐條寫成字面——投影成模板
                                          變數的 key 在 en.json 對帳時查不到引用處（同 components/record-identity）。
                                          門檻值與分數是同一把尺上的兩個數字，成對出現才有意義：只給分數看不出
@@ -405,7 +406,7 @@
                                     {# 判定結果（S6）。**這一段以 `decision` 為條件，不是以 `hits`**：上游每一輪
                                          都會送一筆判定，未命中那半也送，而未命中時 decidedBy／matchedRank 沒有值
                                          （`gate=` 只寫在 `DECISION_HIT` 的判定紀錄上）、`not_attempted` 更是連
-                                         `hit` 都不帶 ⇒ 整條 {% if %} 鏈原本全數落空。剩下兩種雖然還有 hits／score／
+                                         `hit` 都不帶 ⇒ 以 `hits` 當條件的話整條 {% if %} 鏈會全數落空。剩下兩種雖然還有 hits／score／
                                          floor 可畫，但畫面上一樣分不出「裁判判否」與「未達門檻」——同樣的三格數字，
                                          結論卻是兩件事。
                                          客戶最在乎的就是 QA 直答，而改了判準文字之後沒有任何畫面能回答「有沒有變好」。
@@ -437,9 +438,9 @@
                                                  不是另一種結論——重用可能重用命中、也可能重用判否，一個值講不清楚是哪一種
                                                  （上游也是為了這個理由把它做成獨立欄位）。 #}
                                             {# 收尾的 else **原樣輸出**，與 decision 那條同一個規矩（見檔頭）：
-                                                 上游日後多一個入口時，畫面要看得到那個生字。原本的 else 是
-                                                 「agent 工具」——查表查不到就被靜靜畫成一個既有的詞，而那是本檔
-                                                 最難查的一種錯（畫面自洽、看不出少了什麼）。 #}
+                                                 上游日後多一個入口時，畫面要看得到那個生字。⚠️ **不可以把 else 寫成
+                                                 某個已知入口**（例如「agent 工具」）：查表查不到就被靜靜畫成一個既有的詞，
+                                                 而那是本檔最難查的一種錯（畫面自洽、看不出少了什麼）。 #}
                                             {% if node.reusedFrom %}
                                             <span class="text-gray"><span data-i18n="agent.qaReusedFrom">重用自</span>{% if node.reusedFrom == "pre_graph" %}<span data-i18n="agent.qaEntryPreGraph">建圖前閘門</span>{% elif node.reusedFrom == "agent_tool" %}<span data-i18n="agent.qaEntryAgentTool">agent 工具</span>{% else %}<span>{{ node.reusedFrom }}</span>{% endif %}</span>
                                             {% endif %}
@@ -447,7 +448,7 @@
                                         </td>
                                     </tr>
                                     {% endif %}
-                                    {# 值域＝GufoRAG chatbot `app/services/qa_direct.py` 的 `ENTRY_PRE_GRAPH`／`ENTRY_AGENT_TOOL` 兩顆常數。
+                                    {# 值域＝GufoRAG chatbot 的 `ENTRY_PRE_GRAPH`／`ENTRY_AGENT_TOOL` 兩顆常數。
                                          收尾的 else **原樣輸出**（同 decision）：上游多一個判定入口時要看得到生字。 #}
                                     {% if node.entry %}
                                     <tr>

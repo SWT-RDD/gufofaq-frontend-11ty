@@ -1,7 +1,7 @@
 {# 分數門檻旁邊的「目前這把尺是什麼」＋兩個附帶狀態。5-2 的兩個門檻（QA 直答 `qa_direct_score_floor`、
      可回答性 `grounding_score_floor`）逐字相同，故依 §3-3（同頁重複出現→切）抽成元件。
 
-     **尺不是由重排序器單獨決定**（這是規格最容易漏掉的一半，上游 GufoRAG chatbot `app/config/rerankers_catalog.py` 自己標了 ⚠️）。
+     **尺不是由重排序器單獨決定**（這是規格最容易漏掉的一半，上游 GufoRAG chatbot 自己標了 ⚠️）。
      判斷順序是 `GET /settings/rerankers` 契約的一部分：
        enable_rerank == true                        ⇒ rerankers[] 裡 reranker_name 那一筆的 score_scale
        enable_rerank == false 且 ratio == 0         ⇒ retrieval_backends[] 的 weaviate
@@ -17,9 +17,10 @@
        scaleNoteText  —— 目前生效那一把尺的 note 原文
        scaleNoteMixed —— mixed_scale_warning 原文（不給＝不渲染那一態）
        scaleNoteRecalibrated —— true＝演「分數尺剛才變了、門檻要重新校準」那一態（不給＝不渲染）。
-         真實頁不會常駐它（React 依「重排序模型／開關／資料來源比例有沒有變」決定），
-         故元件庫展示頁把它設起來當唯一可見處（§5，同 platform.usageError 的處置）。
-         原本這一句寫死 `.hidden`：參數收得下、畫面卻永遠不顯示，全站沒有人看過它的長相。 #}
+         正式環境不會常駐這一句（React 端依「重排序模型／開關／資料來源比例有沒有變」決定要不要出現），
+         所以元件庫展示頁把它 set 起來當唯一可見處（§5，同 platform.usageError 的處置）。
+         **開關是這顆參數，不是 `.hidden`**：寫死 `.hidden` 的話參數收得下、畫面卻永遠不顯示，
+         等於全站沒有人看過它的長相（同下面第二態那一則註解的理由）。 #}
 <div class="flex-row column gap-4">
     <span class="text-gray" id="{{ scaleNoteId }}"><span data-i18n="settings.currentScoreScale">目前這把尺：</span>{{ scaleNoteText }}</span>
     {% if scaleNoteMixed %}
@@ -34,9 +35,9 @@
        **`role="status"` ＋中性色，不是 `role="alert"` ＋ danger**（§4）：這一句是**偵測**
          （尺變了）＋「請重新校準」——存得下去、什麼都沒被擋。`alert` 與紅字留給「有東西壞了
          或被擋下」；掛 alert 會打斷報讀器，配紅字還會讓人以為這一格存不了。
-         同型的兩處正典（1-1-3 的 excelHeaderWarning、alias-entries-modal 的第三種衝突）
-         都是這樣裁的，先前只有這一顆走反方向。
-         （這一段推導的是 live region 的**範圍**，推不出 role 的**級別**——先前把兩件事寫成一件。） #}
+         同型的兩處正典（1-1-3 的 excelHeaderWarning、alias-entries-modal 的第三種衝突）都是這樣裁的。
+         ⚠️ 上面那一段推導的是 live region 的**範圍**（只框這一句），推不出 role 的**級別**——
+         那是兩件事，各有各的判準，不要把其中一條的結論拿去當另一條的理由。 #}
     {% if scaleNoteRecalibrated %}
     <span class="text-gray" role="status" data-i18n="settings.scoreScaleRecalibrate">分數尺剛才變了（改了重排序模型、重排序開關或資料來源比例）。這個門檻是照舊的尺定的，請重新校準：把 1–5 那把尺上的數字搬到 0–1 的尺上，就是一個永遠擋不下任何東西的死條件。</span>
     {% endif %}

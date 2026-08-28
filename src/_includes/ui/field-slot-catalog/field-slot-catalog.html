@@ -1,4 +1,8 @@
-{# 固定欄位槽目錄的唯一正本（product app/field_schema.py 的 SLOTS，22 槽）。 #}
+{# 固定欄位槽目錄的**唯一正本**（對應 product 的 `SLOTS`）：資料集的每一欄只能對應到這幾個槽，
+     欄位對應、標籤自訂、篩選器等頁面都 include 這一份再自己畫，不各抄一份——枚舉抄成好幾份，
+     漂掉的那一份會讓畫面上出現一個上游根本收不下的槽。
+     `defaultLabel` 是沒有自訂標籤時顯示的預設中文名；`productOnly` 標的是「產品內部欄位」，
+     呼叫端一律把它另起一組（或整組不畫），不要混進一般欄位那一串裡。 #}
 {% set fieldSlotCatalog = [
   { key: "title", defaultLabel: "標題" },
   { key: "content", defaultLabel: "內容" },

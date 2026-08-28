@@ -1,6 +1,7 @@
-// 全域 showToast(message, type, duration)：改寫自凍結前端 GufoFAQ_Frontend_New/js/toast.js，原生 DOM API，無 jQuery/vendor。
-//   type：'success'（預設，綠）/ 'error'（紅）/ 'warning'（黃）/ 'info'（藍）—— 真實 app 只有 success，多色為本專案擴充。
-//   相容舊呼叫 showToast(msg, 2000)：第二參數是數字時視為 duration。
+// 全域 showToast(message, type, duration)：原生 DOM API，不引任何提示框套件（§4）。
+//   type：'success'（預設，綠）/ 'error'（紅）/ 'warning'（黃）/ 'info'（藍）——四型各對一顆語意色 token，
+//   由 `_toast.scss` 的 `.toast-<type>` 提供；型別與顏色的對應是全站唯一一份。
+//   簽名相容：`showToast(msg, 2000)` 這種第二參數給數字的呼叫，視為 `duration`、type 落回 success。
 //
 // toast 永遠掛在頁面層唯一的 #toastContainer。它能蓋過 showModal() 的 <dialog>，
 // 是因為容器本身掛 popover —— 見 raiseContainer()。
@@ -68,11 +69,13 @@ function showToast(message, type = 'success', duration = 3000) {
     void toast.offsetWidth;
     toast.classList.add('show');
 
-    // 顯示時長留在 js —— 它是 showToast 的參數，而且不該被 prefers-reduced-motion 壓成 0.01ms。
-    // **淡出那 300ms 歸 CSS**（§5：有時長的視覺狀態，時長歸 CSS）：原本內層再包一顆
-    // setTimeout(…, 300)，那個數字是 _toast.scss `transition: opacity 0.3s` 的第二份真相，
-    // 而且在 reduced-motion 下（_base 把 transition-duration 壓成 0.01ms）淡出瞬間完成、
-    // 節點卻還多留 300ms 在 #toastContainer 裡，popover 也跟著多佔 top layer 300ms。
+    // 顯示時長留在 js —— 它是 showToast 的參數（一則提示要停多久是內容決定的），
+    // 而且不該被 prefers-reduced-motion 壓成 0.01ms：那是「動畫」的減量，不是「閱讀時間」的減量。
+    // **但淡出那 300ms 歸 CSS**（§5：有時長的視覺狀態，時長歸 CSS）：所以移除節點靠聽
+    // `transitionend`，不要再包一顆 `setTimeout(…, 300)`。那個 300 會變成 `_toast.scss`
+    // `transition: opacity 0.3s` 的第二份真相，而且在 reduced-motion 下（`_base` 把
+    // transition-duration 壓成 0.01ms）淡出瞬間就完成、節點卻還多留 300ms 在 #toastContainer 裡，
+    // popover 也跟著多佔 top layer 300ms。
     function dismiss() {
         toast.addEventListener('transitionend', function (e) {
             if (e.target !== toast || e.propertyName !== 'opacity') return;
@@ -119,7 +122,9 @@ function lowerIfEmpty(el) {
     try { el.hidePopover(); } catch (e) { }
 }
 
-// data-toast 元素點擊 → 彈 toast（event delegation，涵蓋 .copyBtn 等；真實 app 為 $('.copyBtn').on('click',...)）
+// 掛了 data-toast 的元素被點到就彈 toast。用 document 級事件委派而不是逐顆綁：
+// 動態插入的鈕（表格重繪、清單載入更多、彈窗內容換一批）也要吃得到，而且 markup 只要宣告屬性、
+// 不必為了彈一則提示寫任何 js（§5：行為宣告在 markup、由 owning 元件的委派接手）。
 document.addEventListener('DOMContentLoaded', function () {
     document.addEventListener('click', function (e) {
         const el = e.target.closest('[data-toast]');

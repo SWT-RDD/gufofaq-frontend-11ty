@@ -1,4 +1,9 @@
-{# 展示片段，取自真實 app pages/components/component.html 10 Switch section（節錄，class 沿用真實系統） #}
+{# 展示片段：元件庫頁（`pages/components/component.html`）的「Switch」那一節 include 它，
+     示範關閉態與開啟態兩顆孤立的開關長什麼樣。
+     ⚠️ **生產 markup 不長這樣**——生產的每一顆都要有可及名稱綁定（`id` ＋ `<label for>`，
+     或迴圈裡的 `aria-labelledby`），照這份抄會做出一排同名的無名開關。逐字契約見 `_switch.scss` 檔頭。
+     這兩顆各自帶 `aria-label` ＋ `data-i18n-aria-label`：開關沒有可見字面，
+     少了名稱它在報讀器上就是兩顆「切換按鈕」——展示頁也是 dist 頁，同樣會被輔具讀到。 #}
 <div class="flex-row gap-20">
     <label class="switch">
         <input type="checkbox" class="switch-checkbox" role="switch" aria-label="關閉態示範" data-i18n-aria-label="comp.switchDemoOff">

@@ -3,15 +3,15 @@
      ② 現在生效的條件：**規則是導出的，句子不是**。呼叫端算的是「哪幾條規則現在成立」，
         每一條規則對應**一顆固定的 i18n key**（正本 gufofaq-saas `apps/web/lib/contracts/valueDependencies.ts`
         的 `StateNote`，逐字是 `{ rule, i18nKey }` ——「文字住在 i18n，規則住在這裡」）。
-        ⚠️ **round48 修正**：這裡先前寫「逐條是呼叫端已經算好的完整句子，不掛 `data-i18n`」，
-        而那個設計的後果是**這一整塊在英文模式下永遠是繁中**——句子是站內字面（規則的名字），
+        ⚠️ **逐條一定要掛 `data-i18n`**：若寫成「呼叫端已經算好的完整句子、不掛 key」，
+        後果是**這一整塊在英文模式下永遠是繁中**——句子是站內字面（規則的名字），
         不是使用者資料，§4-2「只翻 UI chrome」要翻的正是這一族。故 `helpModalStateItems`
-        逐條改成 `{ textKey, text }`：規則導出、句子照舊掛 key。手寫散文那條禁令沒有放寬——
+        逐條是 `{ textKey, text }`：規則導出、句子照舊掛 key。手寫散文那條禁令沒有因此放寬——
         不准的是「就地編一句話」，不是「這一族不翻」。
      ③ 這一區的所有數字：由 React 執行期讀 product 的 limits 端點填入（gufofaq-saas
-        `services/product/app/ops_limits.py` 的 `*_LIMIT_GROUPS`——`DATASET_`／`HISTORY_`／
+        product 的 `*_LIMIT_GROUPS`——`DATASET_`／`HISTORY_`／
         `STATS_`／`USER_`／`SELF_`／`EXTRACT_` 六族，各自投影成 `GET /<資源>/limits`；對話設定
-        那一族另走 `settings_hub.py` 的 `GET /settings/upstream-limits`。逐區塊實際打哪一支，
+        那一族另走 product 的 `GET /settings/upstream-limits`。逐區塊實際打哪一支，
         寫在各使用頁自己的檔頭）。界線（`bound`）與譯文分開成獨立節點——同
         `dataImport.headerRowsHint` 既有處置（GUIDELINE §3-2：上下界是資料不是譯文，
         烤進譯文的話繁中改了英譯不會跟、`npm run check` 也看不出來）。
@@ -23,8 +23,9 @@
      **②在生產頁上恆空**（現在生效的條件由 React 執行期算，切版只提供容器）；**③不是恆空**——
      判準是「這顆界線有沒有被上游投影成一支拿得到的端點」：拿得到就寫一列（正典 5-5-1 的
      初始密碼下限，`GET /users/limits` 的 `member.password.min`），拿不到才留空。
-     先前這裡寫「生產頁上這兩塊恆空」，那是當時每個使用點都 `[]` 的現況，不是規則——
-     而 saas 端已經先渲染了那一列，等於 11ty 這份正本落後於它的複製品。
+     **不要把「生產頁上這兩塊恆空」寫成規則**：那頂多是「每個使用點碰巧都給 `[]`」的現況。
+     ③ 只要那顆界線投影得出端點就該寫一列；寫成恆空，11ty 這份正本就落後於它的複製品
+     （gufofaq-saas 那一側渲染得出那一列）。
      兩塊的長相在元件庫頁的 `demoHelpModal` 也演得到（GUIDELINE §5：一處演過就夠）。
      這裡不寫「N 顆裡有 M 顆是空的」：顆數每加一個使用點就變（GUIDELINE §3-2「能不寫死計數就不要寫」）——畫一顆只有表頭
      沒有列的表格、或一顆「現在生效的條件」標題卻底下什麼都沒有，只是在告訴使用者

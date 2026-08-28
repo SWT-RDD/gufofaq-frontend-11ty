@@ -14,20 +14,23 @@ permalink: 1-1-1_dataImport.html
 </div>
 
 {# 頁層說明：這一頁是整條匯入流程的起點——選資料集＋選格式。語意分別來自下面
-     select-dataset-modal（單選要匯入的目標資料集）與 ui/upload-card（四張卡各自連到該格式
+     select-dataset-modal（單選要匯入的目標資料集）與 ui/upload-card（三張卡各自連到該格式
      專屬的上傳頁）兩個元件的檔頭，見各自 include 處的說明。
-     **授權**：先前這裡寫「沒有自己的 API 呼叫」——那是錯的，而且它同時是本頁零授權宣告的
-     唯一理由（§4：空白與「忘了標」在 markup 上長得一模一樣）。資料集清單來自 gufofaq-saas
-     product `app/routers/datasets.py` 的 `list_datasets`（`GET /datasets`，
-     `require_capability("data", "read")`），由頁面載入時取得、不是任何一顆控制項觸發的動作
-     ⇒ 四軸不標在控制項上，但查證結論要留在這裡（§4：讀取型端點同樣要標或寫明查證結論）。 #}
-{# 格式清單跟著卡片走（round47：Image 卡已撤，理由見 ui/upload-card 檔頭）——這一句要是留著
-     「圖片」，它就是這一頁上唯一還在廣告一個做不到的格式的地方。 #}
+     **授權**：本頁的控制項一顆都不送 API，但**頁面本身有一支讀取型端點**——資料集清單來自
+     gufofaq-saas product 的 `list_datasets`（`GET /datasets`，`require_capability("data", "read")`），
+     它在頁面載入時就取回，不是任何一顆控制項觸發的動作 ⇒ 四軸不標在控制項上。
+     查證結論仍要留在這裡：markup 上「查過了、沒有東西可標」與「忘了標」長得一模一樣，
+     只有這段話分得開它們（§4：讀取型端點同樣要標，或寫明查證結論）。 #}
+{# 這一句的格式清單跟著卡片走（只有 Excel／PDF／WORD 三張，沒有影像那一張，理由見
+     ui/upload-card 檔頭）——它要是列了「圖片」，就會是這一頁上唯一還在廣告一個
+     做不到的格式的地方。 #}
 <p class="text-gray" data-i18n="dataImport.entryIntro">這一頁是資料匯入的起點：先選定要匯入到哪一個資料集，再依你手上的檔案格式（Excel、PDF、WORD）點選對應的卡片，就會進入該格式專屬的上傳流程。</p>
 
-{# 選擇資料集：真實頁 pages/dataImport/1-1-1_dataImport.html 的「模擬select」觸發 datasetModal，
-     class 沿用真實系統（同 ui/form-control 的 .field.select-wrap 寫法）。
-     開窗掛 data-open-modal，由 ui/modals 的事件委派接手（§5：不寫 inline onclick） #}
+{# 選擇資料集：這一格畫的不是原生 `<select>`，而是一顆「模擬 select」——按下去開 datasetModal，
+     由那扇窗負責從清單裡單選要匯入的目標資料集。外觀沿用 ui/form-control 既有的
+     `.field.select-wrap` 寫法，不另立一套版型（§1-2：同一種控制項只有一份正本）。
+     開窗是**無條件**的（不必先選好任何東西、也不打 API）⇒ 直接掛 data-open-modal，由 ui/modals
+     的事件委派接手（§5：不寫 inline onclick；條件開窗才改掛 hook class）。 #}
 <div class="form-group row mt-10">
     <div class="label">
         <label id="datasetNameLabel" class="control-label" data-i18n="dataset.datasetName">資料集名稱</label>
@@ -42,9 +45,11 @@ permalink: 1-1-1_dataImport.html
     </div>
 </div>
 
-{# 簡化版靜態跳轉：卡片直接連到該類型上傳頁（excel→1-1-2、pdf/word/image→1-2-1） #}
-{# 這一頁的卡片只是「選一種檔型然後換頁」，沒有任何 API ⇒ 維持 `<a href>`。
-     成對參數要一起清掉（§2：set 是頁面全域）。 #}
+{# 三張格式卡：點一張就換到該格式專屬的上傳頁（excel→1-1-2、pdf／word→1-2-1）。
+     這一頁的卡片只做「選一種檔型然後換頁」這件事、不打任何 API ⇒ 維持 `<a href>`，
+     不進 upload-card 的動作模式（那一模式是給 3-1-2「先建資料集再換頁」用的）。
+     `uploadCardAction` 明確 set 成 false 而不是省略：`{% set %}` 在頁面層是全域的，
+     省略就會沿用上一次 include 留下的動作模式，成對參數要一起清掉（§2）。 #}
 {% set uploadCardAction = false %}
 {% include "ui/upload-card/upload-card.html" %}
 

@@ -1,5 +1,7 @@
-// 從 component.scss 的「header」與「mobile-nav」區段逐字抽出（僅本元件的 class）
-// superfish 被拿掉：桌機下拉選單改用 CSS-hover（&:hover > ul）取代原本 JS 展開行為，視覺不變
+// Manager 頁首：logo ＋ 桌機下拉選單 ＋ header-controls slot ＋ 漢堡鈕的版位。
+// 這幾條要知道理由（改動前先讀）：
+// ①桌機下拉選單的展開收合是**純 CSS**（`&:hover > ul` ＋ `&:focus-within > ul`），本檔不靠 JS 展開；
+// ②窄視窗（nav-collapsed）時桌機選單與 header-controls slot 一起收起來，header 只剩 logo ＋ 漢堡。
 @use "../../../scss/mixin" as *;
 @use "../../../scss/size" as *;
 
@@ -22,7 +24,7 @@
 
     .logo {
         margin: 0;
-        // 窄視窗時讓位給右側的語言／深淺／漢堡三顆鈕（真 app 右側只有漢堡，logo 才能一直是固定寬）。
+        // 窄視窗時讓位給右側的語言／深淺／漢堡三顆鈕——右側不只一顆漢堡，logo 就不能一直是固定寬。
         // 縮到多小由斷點保證：桌機選單只在 logo 還有 208px 以上時才出現（見 mixin 的 nav-collapsed）。
         min-width: 0;
 
@@ -79,7 +81,7 @@
             button.dropdown {
                 position: relative;
                 padding: 1rem 0.625rem;
-                display: flex; // 真 app 編譯 css 為 flex（scss 源碼舊值 block）
+                display: flex; // 不是 block：文字要和 .dropdown 的箭頭 ::after 並排在同一列
 
                 &.dropdown {
                     // 下拉觸發是 `<button type="button">` 而不是連結（理由見 header.html 檔頭）。
@@ -149,7 +151,7 @@
                 }
             }
 
-            // 原本靠 superfish JS 展開；切版改為 CSS-hover，視覺結果相同。
+            // 展開條件只有這兩條、不靠 JS。
             // :focus-within 讓鍵盤 tab 到觸發鈕就能展開（只有 :hover 的話鍵盤完全打不開子選單）；
             // aria-expanded 由 header.js 同步（CSS 改不了 ARIA）。
             &:hover>ul,
@@ -173,7 +175,7 @@
 
     .header {
         height: $header-height; // mobile-nav 的浮層／選單全靠這個高度對齊（見 _size.scss）
-        // 右緣收成 1rem：真 app 的漢堡就是 right: 1rem（比 logo 那側的 1.5rem 更貼邊）
+        // 右緣收成 1rem：漢堡比 logo 那側的 1.5rem 更貼邊，窄視窗才把寬度留給 logo
         padding-right: 1rem;
     }
 }

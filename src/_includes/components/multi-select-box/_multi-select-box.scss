@@ -1,7 +1,9 @@
-// 結構與數值照抄自凍結前端 GufoFAQ_Frontend_New/scss/component.scss「1-1-4 欄位對應」區段（line 3151-3162），只搬移位置。
-// **偏離**：①選擇器從 `.form-control` 改名成自有的 `.ms-control`（§4 不在本元件的 scss 裡寫別元件的 class）
-// ②`56px` 換成 `$field-control-height` token（§4 兩個以上元件必須同值的尺寸抽全域）。
-// 1-1-4 欄位對應
+// 1-1-4「欄位對應」那一區的多選盒：只管兩欄的等寬分配與欄內控制項的高度，配色/邊框沿用原子。
+// **這幾條要知道理由（改動前先讀）**：
+//   ①控制項的選擇器用自有的 `.ms-control`，不是 `.form-control`
+//     （§4 不在本元件的 scss 裡寫別元件的 class）。
+//   ②高度不寫死 `56px`，走 `$field-control-height` token
+//     （§4 兩個以上元件必須同值的尺寸抽全域——左欄的 .multi-select-control 要跟它等高）。
 @use "../../../scss/size" as *;
 
 .multi-select-box {

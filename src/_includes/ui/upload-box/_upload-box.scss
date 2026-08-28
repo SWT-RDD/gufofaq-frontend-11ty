@@ -1,13 +1,13 @@
-// 結構與數值照抄自凍結前端 GufoFAQ_Frontend_New/scss/component.scss 檔案上傳區 section（.upload-box，行 2479-2522）。
-// **偏離逐條列出**：
-//   ① 色值換成語意 token
-//   ② `.upload-error` 整段是切版新增（見下方該區塊自己的註解）
-//   ③ `.upload-input { display: none }`（原檔 2495-2497）移除——markup 改用 `hidden` 屬性
-//      （§4：JS 切換顯示的 `display` 才是合法行內 style，靜態隱藏走屬性）
-//   ④ 新增 `padding: 0; font: inherit; color: inherit;`——放置區由 `<div>` 換成真
-//      `<button>`／`<a>`（§4「不要用 div 假扮控制項」），這三條是該換法必要的 UA reset
-// 檔案上傳區
-//   **宣告集合差集**（與上面那段凍結範圍逐條 diff，只比種類不比值——色值換語意 token 是 §4 要求的、不算偏離）：本檔新增 `font`／`padding`／`margin`／`word-break`。隨既有偏離條目一起來：錯誤檔名列的外距與長檔名斷行。
+// 檔案上傳區（`.upload-box`）：一塊虛線框的放置區，底下接兩列錯誤訊息。
+// **這幾條要知道理由（改動前先讀）**：
+//   ① 色值走語意 token（框線 `--border`／hover 與拖曳中 `--brand-ink`／錯誤字 `--danger-text`）。
+//   ② `.upload-error` 那兩列是元件的一部分，不是頁面自己加的——理由見下方該區塊自己的註解。
+//   ③ 本檔**不寫** `.upload-input { display: none }`：那顆 file input 的靜態隱藏走 markup 上的
+//      `hidden` 屬性（§4：只有「JS 切換顯示」的 `display` 才是合法的行內 style，靜態隱藏走屬性，
+//      而且 `hidden` 同時把它移出無障礙樹）。
+//   ④ `padding: 0; font: inherit; color: inherit;` 這三條是 UA reset，不能省：放置區是真的
+//      `<button>`／`<a>`（§4「不要用 div 假扮控制項」），而 `<button>` 自帶內距與自己的字體。
+//
 .upload-box {
     width: 100%;
     height: 200px;
@@ -51,8 +51,9 @@
     }
 }
 
-// 不支援的副檔名（放置區的下方，upload-box.js 在 drop 時揭示）。切版新增：真 app 把不合格的檔案
-// 靜默丟掉，使用者只看到「少了幾個」。
+// 被擋下來的檔案（放置區下方兩列：副檔名不符／超過單檔上限，由 upload-box.js 在 drop 或選檔時揭示）。
+// 這兩列存在的理由：不把被略過的檔名說出來，就等於**靜默丟掉**——使用者只會看到「少了幾個」，
+// 而且不知道要換檔還是要壓縮。
 .upload-error {
     margin: 0.5rem 0 0;
     color: var(--danger-text);

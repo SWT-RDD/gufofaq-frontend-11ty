@@ -1,6 +1,9 @@
-// 取自真 app 的 breadcrumb 樣式。base padding 與 justify-content:flex-start 只存在真 app 的
-// 已編譯 GufoFAQ_Frontend_New/css/component.css（scss 源碼漏了 padding、且 ul 的 justify 是舊值 flex-end；編譯輸出才是最終真相）。
-// → 補回 .breadcrumb 外距、並改回 flex-start（麵包屑靠左，與真 app 一致）。
+// 麵包屑：頁首下方那一列「上層／上層／目前頁」的路徑指示。分隔的 "/" 由 `li+li::before` 畫出來，
+// 左右間距全由它的 padding 決定，markup 裡不放分隔字元（理由見 breadcrumb.html 那則一行式 li 註解）。
+// **這兩條要知道理由（改動前先讀）**：
+//   ① `.breadcrumb` 自己帶 0.375rem 上下內距——全站每頁共用同一個垂直節奏，頁面不必各補一次外距。
+//   ② `ul` 用 `justify-content: flex-start`：麵包屑是閱讀路徑，一律靠左；靠右會讓短路徑飄離左邊界，
+//      與下方內容的起始線對不上。
 /*===============================
     breadcrumb麵包屑
 ================================*/

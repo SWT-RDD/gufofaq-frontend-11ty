@@ -9,8 +9,8 @@
 //   · 第一格空、後面有別名 ⇒ 該列標紅、掛「這一行沒有標準詞」（**不可以先去空再取第一格**：
 //     那會把第一個別名升格成標準詞，一個錯都不報而資料被改寫）
 //   · 只有一欄（沒有別名）⇒ 該列標紅、掛「這一行沒有別名」
-//   · 標準詞 > 200 字 或 別名 > 50 個 ⇒ 該列標紅並指出是哪一項（上限＝GufoRAG
-//     chatbot app/services/alias.py 的 MAX_CANONICAL_LEN／MAX_ALIASES_PER_ENTRY）
+//   · 標準詞 > 200 字 或 別名 > 50 個 ⇒ 該列標紅並指出是哪一項
+//     （上限＝GufoRAG chatbot 的 MAX_CANONICAL_LEN／MAX_ALIASES_PER_ENTRY）
 //   · **不去重、不排序**：貼進來的順序就是使用者的順序，動它會讓人對不上原始檔
 //
 // i18n：新列的文字全部走 GufoI18n.t(key, 繁中原文) 並同步寫 data-i18n，否則英文模式下貼一次
@@ -18,7 +18,7 @@
 document.addEventListener("DOMContentLoaded", function () {
     var MAX_CANONICAL_LEN = 200;
     var MAX_ALIASES_PER_ENTRY = 50;
-    // **每個別名自己的長度上限**（chatbot `app/services/alias.py` 的 `MAX_ALIAS_LEN`，
+    // **每個別名自己的長度上限**（GufoRAG chatbot 的 `MAX_ALIAS_LEN`，
     // `validate_alias_entries` 對每一個別名逐一驗）。三個上限裡只有這一個畫面上沒有別的機制擋得住：
     // 標準詞欄有 `maxlength="200"`，別名欄是逗號分隔字串故沒有 `maxlength`——而彈窗自己的可見提示
     // 對使用者承諾了「別名每個 200 字」。少了這一支，貼上一個超長別名會靜靜地存進去。

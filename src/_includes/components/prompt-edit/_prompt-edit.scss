@@ -1,6 +1,6 @@
-// 提示詞收合/展開編輯區（5-2 對話設定頁；元件庫頁另有 promptDefaultOpen 示範）。取自真 app 已編譯 GufoFAQ_Frontend_New/css/component.css
-// （scss 源碼漏了、只存在編譯輸出——同 divider-vertical/footer/info-btn/ab-compare 的系統性漏抓）。
-// 原本我們專案完全沒有 .prompt-edit 樣式，導致該區塊排版跑掉。
+// 提示詞收合/展開編輯區（5-2 對話設定頁；元件庫頁另有 promptDefaultOpen 示範）的版位：
+// 直式堆疊、固定間距，並負責「工具列只在展開時出現」這一條。
+// 沒有這一份，`.prompt-edit` 底下的標題列／內容／工具列會各自貼在一起，整區排版跑掉。
 .prompt-edit {
     display: flex;
     flex-direction: column;

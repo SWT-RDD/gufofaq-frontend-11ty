@@ -3,14 +3,15 @@
      版型比照 components/glossary-entries-modal（同一種東西的管理彈窗，沒有理由長得不一樣），
      但**只有兩欄**：標準詞 ＋ 別名。**沒有定義欄**——別名表就是等價關係，不是詞典。
 
-   上限是契約欄位（§6），出處＝GufoRAG chatbot `app/services/alias.py`：
+   上限是契約欄位（§6），出處＝GufoRAG chatbot：
      `MAX_CANONICAL_LEN = 200`／`MAX_ALIAS_LEN = 200`（每個別名各自算）／
-     `MAX_ALIASES_PER_ENTRY = 50`／`MAX_ALIAS_ENTRIES_PER_TABLE = 20000`（2026-08-11 與術語表一起由 5000 調高）。
+     `MAX_ALIASES_PER_ENTRY = 50`／`MAX_ALIAS_ENTRIES_PER_TABLE = 20000`（與術語表的筆數上限同一個數字，
+     兩邊要一起看）。
      單一 maxlength 夾不住「每個別名 200 字、最多 50 個」（逗號分隔的多值字串），故那兩個數字
      走可見提示 ＋ aria-describedby（同 glossary-entries-modal 的處置）。
 
    衝突提示（inline，**不擋存檔**）：三種都由列資料的 `conflict` 決定，切版不做偵測——
-     前兩種存檔時後端會 400（`services/alias.py` 的寫入層驗證），inline 提示只是讓人在按下
+     前兩種存檔時後端會 400（chatbot 的寫入層驗證），inline 提示只是讓人在按下
      存檔**之前**就看到；第三種後端不擋（那是跨功能的資訊），純提示。
      **第三種的 role 與顏色跟前兩種不同**（§4：「請確認」等級的提示掛 `role="status"` ＋中性色，
      `role="alert"` 與 danger 色留給「有東西壞了或被擋下」）：既然存得下去、什麼都沒被擋，它就是
@@ -27,8 +28,8 @@
      但要掛 hook class 讓 React 認得出它們該接誰（§5）。 #}
 {# 示範資料變數用元件專屬名（{% set %} 是頁面全域，§2/§6）。
      示範 8 列，涵蓋：多別名／單別名／sameTable 衝突一對／chain 衝突一對／outputRule 衝突／超長別名清單。
-     （原本寫「六種列型各一，見 3-6 檔頭」——3-6 檔頭沒有任何「列型」枚舉，跟著那條指標查不到東西；
-     §3-2：能不寫死計數就不要寫，要寫就就地寫清楚。） #}
+     （涵蓋範圍**就地列完**，不要寫成「N 種列型各一，見某某檔頭」——§3-2：能不寫死計數就不要寫，
+     要寫就寫在讀得到的地方；把枚舉推給別支檔頭的指標，讀的人跟過去只會查不到東西。） #}
 {% set aliasEntryRows = [
     { canonical: "推廣貿易服務費", aliases: "推貿費, 推廣費, 貿服費" },
     { canonical: "關港貿單一窗口", aliases: "單一窗口" },
@@ -129,21 +130,20 @@
                         {# 儲存＝整批 PUT（同術語表，不做逐筆 diff）。**第 2 段**是 product
                              `require_capability("data", "write")` 的 403（GUIDELINE §4：能力不足不做
                              「不渲染／不可按」，照樣按得下去、把那道 403 列進 data-toast）。
-                             其後三段 warning 逐一對回 GufoRAG chatbot
-                             `app/routes/alias.py` 的 `replace_alias_entries`——它的 docstring 逐字寫著
-                             「兩道驗證，順序有意義」：
-                             ① `app/services/alias.py` 的 `validate_alias_entries`＝表內的空標準詞、長度、
+                             其後三段 warning 逐一對回 GufoRAG chatbot 的 `replace_alias_entries`
+                             ——它的 docstring 逐字寫著「兩道驗證，順序有意義」：
+                             ① GufoRAG chatbot 的 `validate_alias_entries`＝表內的空標準詞、長度、
                                 筆數（第 3 段）與同別名兩義／鏈式兩條衝突（第 4 段）；
                              ② `validate_alias_apply_lists`——對**每一個把這張表套用著**的設定檔各跑一次
                                 （`_configs_applying`），以這批還沒落庫的內容取代 DB 舊值。它的
                                 `_validate_match_budget_and_conflicts` 擋跨表同名不同義（「兩張表單獨都合法，
                                 但放進同一個套用清單就互相矛盾」）與比對期 `MAX_MATCH_STAGE_ALIASES`，
                                 `_validate_output_budget` 擋出口期的 `MAX_OUTPUT_STAGE_RULES`／
-                                `MAX_OUTPUT_STAGE_ALIASES`＝**第 5 段**。這一段先前漏掉：它同樣是 400、
-                                同樣是使用者自己改詞條就修得掉的，卻沒有分支演得出來（round40 補）。
-                             product `app/routers/alias.py` 的 `replace_alias_entries` docstring 也逐字記著
-                             「失敗一律 400 並原樣帶回上游的訊息」。待回流 product catalog（saas 的
-                             `messages.zh.json` 同 key 目前仍是 4 段）。
+                                `MAX_OUTPUT_STAGE_ALIASES`＝**第 5 段**。這一段少不得：它同樣是 400、
+                                同樣是使用者自己改詞條就修得掉的，漏了就沒有分支演得出這條路。
+                             product 的 `replace_alias_entries` docstring 也逐字記著
+                             「失敗一律 400 並原樣帶回上游的訊息」。這 6 段**待回流**到 gufofaq-saas
+                             （`apps/web` 的 `messages.zh.json` 同一顆 key 目前仍是 4 段）。
                              有 warning 分支故**不掛 btn-close-modals**（每點必關窗會打斷修正，§5）。 #}
                         <button data-capability="data:write" type="button" class="button button-primary js-save-alias-entries" data-toast="別名已更新|權限不足，無法儲存——請找貴租戶的管理者開通|別名沒有通過寫入層驗證（標準詞不可為空、每列至少一個別名、長度與筆數有上限），請修正後再存|同一個別名指向不同的標準詞，或出現鏈式對映，請先攤平|這張表正被某個設定檔套用著：改完之後與同一份套用清單裡的另一張表互相矛盾，或超過套用階段的別名／規則上限，請先調整再存|更新失敗，請稍後再試" data-i18n-data-toast="toast.saveAliasEntries" data-toast-type="success|warning|warning|warning|warning|error" data-i18n="action.save">儲存</button>
                     </div>

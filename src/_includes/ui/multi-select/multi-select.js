@@ -1,7 +1,8 @@
-// ui/multi-select：select2 多選（.multiSelect）的原生替代——標籤（可 × 移除）＋下拉複選（不關閉）＋搜尋過濾＋placeholder。
+// ui/multi-select：可搜尋的**多選**下拉——已選項畫成可 × 移除的標籤、下拉複選（選了不關閉）、
+// 打字即過濾、無選取時顯示 placeholder。
 // 原生 <select multiple class="multiSelect"> 仍是唯一資料來源：所有互動最終都寫回 option.selected 並 dispatch change，
 // 轉 React 時可直接對應 react-select（isMulti），value 陣列＝原生 select 目前選取的 options。
-// 行為改寫自凍結前端 GufoFAQ_Frontend_New/js/main.js 的 select2({ closeOnSelect: false, placeholder }) 設定，但完全不依賴 select2/jQuery。
+// 不引任何下拉套件、不依賴 jQuery（§4）：整組替身 DOM 由本檔建出來，樣式全在 _multi-select.scss。
 //
 // a11y：原生 select 被移出無障礙樹（aria-hidden + tabindex=-1），故自訂控制項必須自己補回完整語意與鍵盤操作——
 //   搜尋框 = role=combobox（aria-expanded / aria-controls / aria-activedescendant），下拉 = role=listbox（aria-multiselectable），
@@ -201,7 +202,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 tagList.insertBefore(tag, search);
             });
 
-            // 對應真實 app main.js：有選取時搜尋框縮窄、不顯示 placeholder；無選取時全寬顯示 placeholder
+            // 有選取時搜尋框縮窄、不顯示 placeholder；無選取時全寬顯示 placeholder。
+            // .has-tags 只是把這個狀態交給 CSS，寬度數值一律在 _multi-select.scss（§5：尺寸歸 CSS）。
             wrapper.classList.toggle("has-tags", selected.length > 0);
             var ph = placeholder();
             search.placeholder = selected.length > 0 ? "" : ph;
@@ -320,7 +322,8 @@ document.addEventListener("DOMContentLoaded", function () {
             // 用 composedPath() 而非 event.target + contains()：本頁可能有其他 document click 委派
             // （例如 pagination.js）在這個 click 事件冒泡途中先把自己的 innerHTML 整個重繪，於是被點的
             // 節點被拔掉重建，冒泡到這裡時 event.target 已是 detached 節點，wrapper.contains(target) 恆
-            // false，會誤判成「點在外面」而錯關——違反 select2 closeOnSelect:false 的設計意圖。
+            // false，會誤判成「點在外面」而錯關——而本元件的設計就是**選了不關閉**（見檔頭），
+            // 一關掉就等於每選一顆都要重新打開清單。
             // composedPath() 是 dispatch 當下就固定的路徑快照，不受後續 DOM 突變影響，故用它判斷才準。
             if (!event.composedPath().includes(wrapper)) setOpen(false);
         });

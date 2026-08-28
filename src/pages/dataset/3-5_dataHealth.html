@@ -5,8 +5,7 @@ titleKey: nav.dataHealth
 pageHeading: 資料健檢
 permalink: 3-5_dataHealth.html
 ---
-{# 資料健檢（SaaS 新頁，真 app 21 頁無對應）。逆向自 gufofaq-saas product
-     `app/routers/health_findings.py`：
+{# 資料健檢（SaaS 新頁）。逆向自 gufofaq-saas product，這一頁打的端點：
        · `GET /health/findings`（`FindingsOut`：`total`／`page`／`size`／`findings[]`，逐筆
          `FindingOut` 帶 `check_type`／`severity`／`status`／`dataset_id`／`record_keys`／
          `records[]`／`evidence`／`note`／`resolved_by`／`resolved_at`／`first_seen_at`／
@@ -24,7 +23,7 @@ permalink: 3-5_dataHealth.html
          ＝`failed_at`／`trigger`／`detail`；兩格都可能是 null）
        · 五支處置：`…/dismiss`／`…/disable`／`…/merge`／`…/supersede`／`…/add-phrasing`
        · 還原：`…/undo`（`UndoIn.reason`）
-     檢查判準、證據形狀與重新開啟的判準出自 `app/health_checks.py`
+     檢查判準、證據形狀與重新開啟的判準出自 product
      （`HEALTH_CHECK_TYPES` 十一項、`HEALTH_SEVERITIES` 兩態、`_premise_changes`／`_reopen_note`）。
 
      這一頁要外顯六件「不寫出來就會靜默出事」的事，逐一：
@@ -127,8 +126,10 @@ permalink: 3-5_dataHealth.html
   { label: "資料健檢", i18nKey: "nav.dataHealth" }
 ] %}
 {# 本租戶的資料集目錄（`ScanIn.dataset_id` 的值域）＝**這個租戶全部的資料集**，與
-     `healthScan.datasets`（這一次掃到幾個）**不是同一個數**——先前這裡寫著「筆數必須等於
-     `healthScan.datasets`（4）」，那是目錄只有四筆時的推導，收成全站正本之後就被自己的陣列推翻了。
+     `healthScan.datasets`（這一次掃到幾個）**不是同一個數**：目錄是全部，`datasets` 只算這一趟
+     真的掃過的那幾個。
+   ⚠️ **不可以寫成「這份清單的筆數必須等於 `healthScan.datasets`」**——那條等式只在目錄剛好
+     只有那幾筆時成立，目錄一收成全站正本，它就會被自己的陣列推翻。
      這一頁指名得出來的四個是：法規彙編（含 `法規彙編_2026.xlsx`、`稅務問答_舊版.xlsx`、
      `犬貓入境檢疫作業手冊.pdf`、`關稅稅則對照表.png`）、檢疫問答集（`檢疫問答_2026Q1.xlsx`、
      `舊版問答_匯出.xlsx`）、客服問答集（QA 集，`客服問答集.xlsx`）、2026 新制問答
@@ -138,14 +139,15 @@ permalink: 3-5_dataHealth.html
 {# **這是本站示範租戶的資料集目錄正本**（§6 跨頁自洽）。QA 集與檔案集在 product 是**同一張表**
      （`models.Dataset` 的 `kind` 欄：`file`／`qa`，「QA 集騎現有 Excel 匯入與資料集 CRUD，僅以此欄分流」）
      ⇒ **同一個 id 空間**：3-1-1 的資料集清單（kind=file）、3-3 的 QA 集清單（kind=qa）與這裡的
-     檢查範圍下拉，三處講的是同一批 id。先前三頁各自維護一份，於是：
-       · 3-1-1 的三個資料集（101／102／103）在這裡與 5-10 一個都不在
-       · 3-3 的「產品 FAQ」寫 id 3，而這裡的 id 3 是「法規彙編」——**同一個 id 兩個資料集**
-       · 這裡的「客服直答集」與 3-3 的「客服問答集」是兩個名字、同一種東西（都是客服 QA 集）
-     現在收成一份：QA 集用 3-3 的 id（客服問答集 2／產品 FAQ 5／檢疫問答集 7），
+     檢查範圍下拉，三處講的是同一批 id，而**這裡就是那份目錄的正本**。
+     三頁各自維護一份的話，會長出這幾種對不起來的形狀，每一種都真的發生得了：
+       · 3-1-1 列得出來的資料集（101／102／103），在這一頁與 5-10 一個都不在
+       · 同一個 id 在兩頁各指一個資料集（id 3 一邊是「產品 FAQ」、一邊是「法規彙編」）
+       · 兩個名字其實是同一種東西（「客服直答集」與「客服問答集」都是客服 QA 集）
+     故 id 一律照這一份取：QA 集用 3-3 的 id（客服問答集 2／產品 FAQ 5／檢疫問答集 7），
      檔案集用 3-1-1 與 5-10 的 id（法規彙編 3／2026 新制問答 12／101／102／103）。
-     「檢疫問答集」原名「常見問答」——它與 3-1-1 的「常見問題彙整」只差兩個字，而它的內容
-     （犬貓輸入檢疫）自己說得出更好的名字。 #}
+     名字也要挑得開：「檢疫問答集」不叫「常見問答」——那與 3-1-1 的「常見問題彙整」只差兩個字，
+     而它的內容（犬貓輸入檢疫）自己說得出更好的名字。 #}
 {% set healthScanDatasets = [
   { id: 2, name: "客服問答集" },
   { id: 3, name: "法規彙編" },
@@ -333,7 +335,7 @@ permalink: 3-5_dataHealth.html
   }
 ] %}
 {# 逐項清單（`FindingsOut`）。**列序照端點的 `.order_by(check_type, id)`**
-     （health_findings.py，本頁 `health.findingsSortHint` 那句話也是這樣寫給使用者看的）——
+     （product，本頁 `health.findingsSortHint` 那句話也是這樣寫給使用者看的）——
      示範資料的順序若不是這個，畫面上那句話就沒有對應的證據。`total` 41 ＞ 本頁列數 ⇒ 分頁列演得到「這一頁不是全部」（35 未處置 ＋ 6 已處置）。
      **這裡沒有命中次數欄**：`GET /health/findings` 不回它（命中數在上游的問答紀錄裡，那一支
      是分頁的、不去碰上游），畫一個欄位出來就得自己算一份，而那會是第二個真相。
@@ -347,13 +349,13 @@ permalink: 3-5_dataHealth.html
        · 930 事實衝突 → dismiss ＋ supersede
        · 940 標題不是問句（**QA 集**，與 903 同一個資料集）→ dismiss ＋ add-phrasing。
          **它非在 QA 集不可**：`check_non_question` 的迴圈第一行就是 `if r.dataset_kind != "qa": continue`
-         （product `health_checks.py`），所以這一項只可能出現在 kind 為 qa 的資料集上。
-         先前這一筆掛在「檢疫問答集」，而同一個資料集的 901 提供合併、907 已經合併過——
-         product `app/routers/health_findings.py` 的 `_available_actions`（上一句指名的是
-         `health_checks.py`，這兩顆符號不在那裡）只要有任何一筆不是 `kind == "file"` 就把 MERGE 濾掉
-         （`_QA_FORBIDDEN_ACTIONS`），兩件事在同一個資料集上不可能同時成立。搬到「客服問答集」
-         之後兩邊各自成立：那一集是 qa（903 的合併正是因此被拿掉的），而 add-phrasing 不在
-         `_QA_FORBIDDEN_ACTIONS` 裡，QA 集照樣做得到。列號另取（33），不與 903 的 4／19 相撞。
+         （product），所以這一項只可能出現在 kind 為 qa 的資料集上。
+         ⚠️ **它不可以掛在「檢疫問答集」**：那個資料集上的 901 提供合併、907 已經合併過，而
+         product 的 `_available_actions` 只要有任何一筆不是 `kind == "file"` 就把 MERGE 濾掉
+         （`_QA_FORBIDDEN_ACTIONS`）——「這一集是 qa」與「這一集做得了合併」在同一個資料集上
+         不可能同時成立。掛在「客服問答集」兩邊才各自成立：那一集是 qa（903 的合併正是因此
+         被拿掉的），而 add-phrasing 不在 `_QA_FORBIDDEN_ACTIONS` 裡，QA 集照樣做得到。
+         列號另取（33），不與 903 的 4／19 相撞。
        · 950 標籤缺口 → **只有 dismiss**：該標哪一個代碼是租戶自己才知道的業務值，系統挑一個
          填進去就是替使用者做業務判斷
        · 960 從未被命中，涉及的是**資料夾匯入的整份文件** → **只有 dismiss**：五支處置動作全部
@@ -397,7 +399,7 @@ permalink: 3-5_dataHealth.html
 
      **918 的 `noteLines` 第二行是 product `_reopen_note` 寫的**：
      `json.dumps(row.evidence, ensure_ascii=False, sort_keys=True, separators=(",", ":"))`
-     ⇒ 鍵照字典序、無空白，而且形狀必須與同一筆的 `evidence` 是**同一種**。演的這一輪：處置當時
+     ⇒ 鍵照字典序、無空白，而且形狀必須與同一筆的 `evidence` 是**同一種**。這一份示範演的是：處置當時
      有效期是 2024-11-10（那天已經過了 ⇒ confirmed），使用者以「11 月底之前仍然有效」消音；
      之後有人把那一格更正成 2024-11-30，今天（2024/12/02）又過了 ⇒ `evidence_digest` 變了、
      `severity` 沒變 ⇒ `_premise_changes` 回 `["證據"]`，與那一行括號裡的字對得上。 #}
@@ -585,7 +587,7 @@ permalink: 3-5_dataHealth.html
      `<option value="">` 承載「還沒挑」。 #}
 <div class="block mt-16 flex-row column gap-16">
     {# ⓘ 說明：markup 逐字照抄 `settings/5-2_conversationSettings.html` 出口套用欄那顆既有
-         info-btn 六件組。①出處：`app/routers/health_findings.py` 的 `scan_now`／`_scan_tenant`
+         info-btn 六件組。①出處：product 的 `scan_now`／`_scan_tenant`
          （檢查本身只讀不寫——`health_checks` 模組連寫記錄的路都組不出來）與 `ScanIn.dataset_id`
          的檔頭（「只挑把哪些發現併進清單，不挑拿哪些記錄去比對」）；不重複下面「一併重算」
          checkbox 自己的 hint（`health.includeHitChecksHint` 已經講過那顆開關），①改講「檢查
@@ -700,10 +702,10 @@ permalink: 3-5_dataHealth.html
          **這幾個數字是「排除的事實」的載體**，不是統計花絮：它們與上面那排計數刻意分開一塊、
          標題直接說「沒有做完的檢查」，因為混在「這一次算出來的發現」那一排裡，讀起來會變成
          「這些也檢查過了」。0 也照畫（同 `hit_checks` 三態的理由）。
-         **不寫「兩個／三個」**（§3-2 能不寫死計數就不要寫）：這一塊本來就是逐次補齊的，
-         上一版那句「兩個數字」在補進第三格的當下就過期了。 #}
+         **不寫「兩個／三個」**（§3-2 能不寫死計數就不要寫）：這一塊本來就是逐格補齊的，
+         寫死數量的說法會在補進下一格的當下靜默過期。 #}
     {# ⓘ 說明：同一顆 info-btn 六件組。①出處：`_collect_records` 算 `slotless`／`exact_match_only`
-         那兩段（`app/routers/health_findings.py`）＋ `ScanOut.slotless_records`／
+         那兩段（product）＋ `ScanOut.slotless_records`／
          `exact_match_only_records` 的欄位檔頭——這兩個數字答的是「排除」不是「查過且乾淨」，
          與下面 uncoveredTitle「完全沒讀到內容」是不同的兩件事：這裡的記錄**有**被讀到，
          只是某幾項檢查對它們結構上不適用。 #}
@@ -714,11 +716,11 @@ permalink: 3-5_dataHealth.html
             <span class="sr-only" data-i18n="help.health.partial.title">這一次沒有做完的檢查說明</span>
         </button>
     </div>
-    {# 這一句刻意**不寫「下面兩個數字」**（原文如此）：§3-2「能不寫死計數就不要寫」——補進第三格的
-         那一天，那句話就開始說謊，而它是一段翻譯字串、不會有任何測試看得到。改成不帶數量的說法。 #}
+    {# 這一句刻意**不寫「下面兩個數字」**：§3-2「能不寫死計數就不要寫」——補進下一格的那一天，
+         那句話就開始說謊，而它是一段翻譯字串、不會有任何測試看得到，所以一律用不帶數量的說法。 #}
     <p class="text-gray" data-i18n="health.partialHint">下面這幾個數字說的是「哪些記錄的哪一項沒有被檢查」，不是「檢查過了而且沒問題」。這兩件事在發現清單上長得一模一樣——清單只列得出算出來的發現，列不出「這一項根本沒算」。</p>
-    {# 第三格 `too_short_records`：內容太短、**完全沒有進近似重複分群**的筆數（正本是 product
-         `app/quality/health_checks.py` 的 `NEAR_DUPLICATE_MIN_CHARS`，掃描層由 `groupable` 統一判定
+    {# 第三格 `too_short_records`：內容太短、**完全沒有進近似重複分群**的筆數（正本是 product 的
+          `NEAR_DUPLICATE_MIN_CHARS`，掃描層由 `groupable` 統一判定
          並逐次回進 `ScanOut.too_short_records`）。它與上一格是同一段文字的兩端——一個太長只比得了
          逐字相同、一個太短連分群都不進，**兩個都是漏報方向的偏差**，所以兩個都要有一個數字。
          這個訊號後端算出來了、也存下來了（`health_scan_runs.too_short_records`）、端點也端出來了，
@@ -768,11 +770,9 @@ permalink: 3-5_dataHealth.html
          **那張表自己有筆數上限**，所以「列出幾筆／總共幾個」並列，並把逐原因的計數畫出來
          （`uncovered_by_reason` 算的是全部、不受截斷影響）——被切掉的那一族只剩那個數字看得見，
          而它往往正是最該看的那一個（例如整批裡唯一一個擷取失敗的檔）。 #}
-    {# ⓘ 說明：同一顆 info-btn 六件組。①出處：product `app/health_extract.py` 檔頭
+    {# ⓘ 說明：同一顆 info-btn 六件組。①出處：product 的四個原因常數
          （`REASON_NO_EXTRACTOR`／`REASON_EXTRACT_FAILED`／`REASON_SOURCE_FILE_MISSING`／
-         `REASON_NOT_LINKABLE` 四個常數）與 product `app/routers/health_findings.py` 的
-         `_folder_record`／`_collect_records`（**那三者不在 `health_extract.py` 裡**——一段註解出現
-         第二個檔的符號時要重新指名檔案，§3-2）的
+         `REASON_NOT_LINKABLE`），以及同 repo `_folder_record`／`_collect_records` 的
          `not_row_imported` 分支——這裡列的是**完全沒被任何一項檢查讀過內容**的檔，與上面
          partialTitle「讀到了、但某幾項不適用」是不同的兩件事。 #}
     <div class="flex-row align-items-center gap-8">
@@ -866,16 +866,17 @@ permalink: 3-5_dataHealth.html
             <span class="sr-only" data-i18n="help.health.overview.title">健檢總覽說明</span>
         </button>
     </div>
-    {# 這一支的兩個查詢參數（`days`／`top_n`）先前一個控制項都沒有，而下面那句可見文案叫使用者
-         「把窗拉長」——講得出一個做不到的動作。兩顆都是**值載體**（值交給 React 讀去重打
+    {# 這一支的兩個查詢參數（`days`／`top_n`）各要有一顆控制項：下面那句可見文案叫使用者
+         「把窗拉長」，少了控制項就是叫人做一件這個畫面上做不到的事。
+         兩顆都是**值載體**（值交給 React 讀去重打
          `GET /health/findings/overview`）⇒ 只掛 hook class、不掛 data-toast（§5 組合矩陣②）；
          成敗分支由 React 演。
        **數字欄三件套**（§4）：`type="number"` ＋ 後端的 `min`／`max`／`step` ＋ 一段**讀得到那兩個
-         數字**的可見區間提示（`id` ＋ `aria-describedby`）。出處逐字＝gufofaq-saas product
-         `app/routers/health_findings.py` 的 `findings_overview` 簽章：
+         數字**的可見區間提示（`id` ＋ `aria-describedby`）。出處逐字＝gufofaq-saas product 的
+          `findings_overview` 簽章：
          `days: int = Query(default=HIT_WINDOW_DAYS, ge=1, le=90)`、
          `top_n: int = Query(default=OVERVIEW_TOP_N, ge=1, le=MAX_OVERVIEW_TOP_N)`，
-         三顆常數同檔＝`HIT_WINDOW_DAYS = 7`／`OVERVIEW_TOP_N = 5`／`MAX_OVERVIEW_TOP_N = 50`。
+         三顆常數在同一支模組＝`HIT_WINDOW_DAYS = 7`／`OVERVIEW_TOP_N = 5`／`MAX_OVERVIEW_TOP_N = 50`。
        初值吃 `healthOverview` 的同一份資料（§6 一個語意參數只能有一個來源）：那兩格是 API 的
          **回聲**（實際生效的值），輸入框與旁邊印出來的數字不得各說各話。 #}
     <div class="flex-row flex-wrap gap-16 mobile-column sm-gap-16">
@@ -909,7 +910,7 @@ permalink: 3-5_dataHealth.html
         <p><span class="text-bold" data-i18n="health.overviewTotalHits">這個窗內的總命中次數：</span><span>{{ healthOverview.totalHits }}</span></p>
     </div>
     <p class="text-gray" data-i18n="health.overviewSortHint">這張表不是照發現數量排的，是照「這一組涉及的記錄在這個時間窗內被檢索命中幾次」的總和排——一筆從沒被命中過的重複，遠不如一筆每天被命中 50 次的過期答案重要。命中次數已經扣掉批次回歸的重放，所以跑一次回歸不會把被重放的那幾筆推上頂端。</p>
-    {# 5000 是後端真的會夾住的界線（product app/settings.py 的 `Settings.stats_max_logs`，經
+    {# 5000 是後端真的會夾住的界線（product 的 `Settings.stats_max_logs`，經
          `ops_limits.STATS_LIMIT_GROUPS.aggregate.logs` 投影成 `GET /stats/limits` 的 `aggregate.logs.max`；
          超過即明確報錯、不靜默截斷），改了這裡也要跟著改，故獨立成資料節點（§3-2）。
          同句稍後的「30 天」不是同一種東西：那是「如果窗是這個天數會怎樣」的舉例情境，不對應任何
@@ -956,7 +957,7 @@ permalink: 3-5_dataHealth.html
                     </td>
                 </tr>
                 {% else %}
-                {# 具名空狀態（round48）：「沒跑過健檢」是**另一回事**，那一態由 `health.lastScanNever`
+                {# 具名空狀態：「沒跑過健檢」是**另一回事**，那一態由 `health.lastScanNever`
                      在總覽那一區講（見元件庫頁「React 條件文案」節）。兩者共用一句「無資料」的話，
                      值班的人分不出「檢查過而且乾淨」與「根本還沒檢查過」——而那兩件事的下一步相反。 #}
                 <tr><td colspan="5" class="text-center text-gray" data-i18n="health.groupsNone">這一次檢查沒有分出任何一組，也就是每一項檢查都沒有命中。還沒跑過健檢是另一回事，上面的總覽會另外說。</td></tr>
@@ -989,7 +990,7 @@ permalink: 3-5_dataHealth.html
         {# ⓘ 說明：同一顆 info-btn 六件組，併入既有 `justify-content-between` 那一列（與展開/收合
              鈕同排）——多包一層 `flex-row align-items-center gap-8` 是為了把標題與 ⓘ 綁成同一個
              flex item，不跟展開/收合鈕擠在一起（§5 組合矩陣同 3-1-2/3-1-3 的保護理由）。
-             ①出處：`list_findings`（`app/routers/health_findings.py`）的檔頭——`status` 預設
+             ①出處：`list_findings`（product）的檔頭——`status` 預設
              `open`，這是一張待處理工作清單；**不重複**下面緊接著的 `health.findingsSortHint`
              （為什麼排序是 `(check_type, id)` 而不是依影響）：①改講這一區是什麼——唯一實際
              按得下處置動作的清單。 #}
@@ -1215,9 +1216,9 @@ permalink: 3-5_dataHealth.html
                                 </div>
                                 {% elif action == "disable" %}
                                 {# ⚠️ **「一筆都不勾」這一態：畫面刻意不送出，而不是照上游語意送。**
-                                     上游的契約是「空＝全部」——product `app/routers/health_findings.py` 的
+                                     上游的契約是「空＝全部」——product 的
                                      `DisableIn.records` 欄位註解逐字「空＝停用這個發現涉及的**全部**記錄」，
-                                     `app/quality/health_findings_service.py` 的 `disable_records` 也是
+                                     product 的 `disable_records` 也是
                                      `keys = list(records) if records else list(finding.record_keys)`。
                                      那個預設是給**程式化呼叫端**的便利（想要整批就不帶這一欄），不是一個
                                      畫面上做得出來的動作：這一組 checkbox **預設全勾**，所以「空」只有一條
@@ -1227,8 +1228,8 @@ permalink: 3-5_dataHealth.html
                                      故切版在這裡定的規則是：**至少勾一筆才送得出去**，零選取由這顆鈕的
                                      warning 段擋下（見下方 `|` 第 3 段）。上游那條「空＝全部」不會因此變成
                                      死碼——它仍然是 API 呼叫端的合法用法，只是這個畫面不走它。
-                                     說明句因此也要改：先前寫「一筆都不勾＝停用全部」，那句話**對上游是真的、
-                                     對這個畫面是假的**，而使用者讀的是這個畫面。 #}
+                                     說明句也照這條規則寫：**不可以寫「一筆都不勾＝停用全部」**——
+                                     那句話對上游是真的、對這個畫面是假的，而使用者讀的是這個畫面。 #}
                                 <div class="block block-sm border corner-md flex-row column gap-8" data-health-action="disable">
                                     <div class="text-bold" data-i18n="health.actionDisable">停用（不刪除）</div>
                                     <p class="text-gray" data-i18n="health.actionDisableHint">把這幾筆的有效期改寫成一個已經過去的哨兵日期，讓它們離開檢索集合。資料還在來源檔與索引裡，只是有效期已過；判斷錯了，把那一格改回去就回來了。前提是這個租戶要先在「標籤維度」宣告一個角色是 valid_until 的日期維度，資料上才有地方表達「已停用」——沒有宣告的話這一支會被擋下，並指名缺的是什麼。至少要勾一筆；全部勾起來＝停用這個發現涉及的所有記錄（預設就是全勾）。</p>
@@ -1356,7 +1357,7 @@ permalink: 3-5_dataHealth.html
                     </td>
                 </tr>
                 {% else %}
-                {# ⚠️ **不用泛用的 `common.noData`**（round47）：這張清單空著至少有三種意思，而只有
+                {# ⚠️ **不用泛用的 `common.noData`**：這張清單空著至少有三種意思，而只有
                      第一種是好消息——(a) 掃過了、這一次沒有任何發現；(b) 篩選（處置狀態預設只看
                      「未處置」、加上檢查類型）把它們濾掉了；(c) 這個租戶還沒跑過健檢。
                      (c) 另有自己的一句（`health.lastScanNever`，在上面那一區），所以這一句要負責

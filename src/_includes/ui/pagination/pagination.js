@@ -1,13 +1,15 @@
-// pagination 頁碼列：改寫自凍結前端 GufoFAQ_Frontend_New/js/main.js:499 renderPagination()（原用 jQuery + $(".pagination").data("total")），
-// 改標準 DOM。data-total（總筆數）÷ data-per-page（預設 10，對照真 app perPage）算 totalPages，
-// data-current（目前頁，預設 1）驅動要畫哪一頁；<ul> 整份由本檔動態產生，點 button[data-page] 換頁即重新 render。
-// 滑動視窗演算法對照真 app：total<=visible+2 時全部顯示，否則以 current 為中心的滑動視窗；
-// 中間可視頁碼數（visible）不寫死——讀 CSS 的 --pagination-visible（_pagination.scss：預設 5、
-// ≤768px 改 3），斷點只有那一份真相，同 mobile-nav.js 的 hamburgerHidden() 哲學（問 CSS，不猜斷點）。
-// .page-info 總頁數：真 app main.js:500 引用了 .page-info 卻從未補上 markup（未完成的意圖）——這裡補上，
-// 數字由 js 填、標籤文字（共／頁）走 markup 原生 data-i18n（非 JS 產生字串，不必再走 GufoI18n.t）。
-// 省略號可點（切版新增，真 app 的 "..." 是死文字）：固定跳 ±3 頁、clamp 在 1~totalPages，外觀不變（仍是
-// "..."，不 hover 變箭頭），data-page 走跟頁碼一樣的委派與 hover 回饋。
+// pagination 頁碼列：整份 `<ul>` 由本檔用原生 DOM API 現算現畫，不引任何分頁套件。
+// 輸入全部來自 `.pagination` 上的三顆屬性：`data-total`（總筆數，必填）÷ `data-per-page`
+// （每頁筆數，預設 10）算出 totalPages，`data-current`（目前頁，預設 1）決定要畫哪一頁；
+// 點 `button[data-page]` 就把 `data-current` 改寫再整份重繪。
+// 滑動視窗：totalPages ≤ visible+2 時頁碼全部攤開，否則以 current 為中心開一個視窗、兩側補省略號。
+// **中間可視頁碼數（visible）不寫死在 js**——讀 CSS 的 `--pagination-visible`（`_pagination.scss`：
+// 桌機 5、≤768px 3）。斷點只有 CSS 那一份真相，js 問它、不自己猜（同 mobile-nav.js 的
+// `hamburgerHidden()` 哲學）；也因此 resize 時只有跨過斷點才需要重繪（見檔尾）。
+// `.page-info` 的數字由 js 填總頁數，兩側標籤（共／頁）是 markup 原生的 `data-i18n` 節點，
+// 不是 js 產生的字串，所以不必再走 `GufoI18n.t`。
+// **省略號是可點的**：固定跳 ±3 頁、clamp 在 1～totalPages，外觀仍是「...」（不 hover 變箭頭），
+// 靠同一顆 `data-page` 吃到跟頁碼一樣的委派與 hover 回饋——一顆看得到卻按不動的省略號就是 §5 的死鈕。
 // i18n：per-page aria-label（第N頁）、prev/next 兩態標籤、省略號的跳頁 aria-label，由 GufoI18n.t(key, 繁中原文) 產生；
 // 監聽 gufo:langchange 依「當下 data-current」重新 render，讓切語言後的頁碼列也是對的語言。
 //
@@ -134,9 +136,9 @@ document.addEventListener("DOMContentLoaded", function () {
             t("action.nextPage", "下一頁"), t("pagination.nextDisabled", "下一頁不可用"),
             "./images/icon_arrow_right_blue.png", "./images/icon_arrow_right_gray.png");
 
-        // 整份重繪會讓「剛被按下的那顆 <a>」當場離開文件，焦點掉回 <body>——鍵盤使用者換一頁
-        // 就得從頁首重新 Tab 回來。重繪前記住焦點在不在這一塊裡，重繪後還給等價的節點
-        // （優先同一個頁碼；那一顆若變成目前頁而不再是連結，就給新的 .active）。
+        // 整份重繪會讓「剛被按下的那一顆鈕」當場離開文件，焦點掉回 <body>——鍵盤使用者換一頁
+        // 就得從頁首重新 Tab 回來。所以重繪前先記住焦點在不在這一塊裡，重繪後還給等價的節點：
+        // 優先找同一個 data-page；那一顆若已經變成目前頁（不再帶 data-page），就把焦點給新的 .active。
         var refocus = el.contains(document.activeElement) ? document.activeElement.getAttribute("data-page") : null;
         ul.innerHTML = html;
         if (refocus !== null) {
@@ -151,13 +153,14 @@ document.addEventListener("DOMContentLoaded", function () {
     var containers = document.querySelectorAll(".pagination");
     containers.forEach(function (el) { render(el); });
 
-    // 事件委派：動態插入的頁碼 <a> 也吃得到
+    // 事件委派掛在 document 上：頁碼鈕每次換頁都被整批換掉，逐顆綁 listener 會在重繪後全部失效。
     document.addEventListener("click", function (e) {
         var a = e.target.closest(".pagination button");
         if (!a) return;
-        // 頁碼列的每一顆都是 `<button type="button">`（§4 判準：它點了在同一頁重繪、不導覽；
-        // 先前寫成 `<a href="#">` 就是 §5 明文禁止的死連結，只是它由 js 產生、src 掃描看不到），
-        // 故不必 preventDefault——`type="button"` 本來就沒有預設動作。
+        // 頁碼列的每一顆都是 `<button type="button">`，不是 `<a href="#">`（§4 判準：它點了在同一頁
+        // 重繪、不導覽；`<a href="#">` 就是 §5 明文禁止的死連結，而且這些節點由 js 產生，
+        // 對 src 做的靜態掃描抓不到——只能靠這一行把規則釘在產生它的地方）。
+        // 因為是 `type="button"`，本來就沒有預設動作，所以這裡不必 preventDefault。
         var page = a.getAttribute("data-page");
         if (!page) return;
         var el = a.closest(".pagination");

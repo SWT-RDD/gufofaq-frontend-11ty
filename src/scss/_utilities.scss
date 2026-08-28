@@ -1,16 +1,19 @@
-// 工具 class（utility layer）——語意沿用真實 app component.scss「樣式共用」「flex欄位」區段
-// （class 名與視覺不變），相對原始寫法有三點升級（規則說明見 GUIDELINE §4）：
+// 工具 class（utility layer）：跨元件共用的「最後一手」單屬性工具——文字、間距、對齊、顯示、
+// flex 子項與 12 欄欄寬。它取代的是頁面上的行內 style，所以規則跟元件層不一樣（GUIDELINE §4）：
 //
-// 1) 尺標生成：原本 gap/col 三個斷點手寫三份，改用同一把 $spacing-scale 尺標以 @each 生成（輸出等價）；
-//    並新增同尺標的 .mt-*/.mb-*/.my-*/.m-0 間距工具，取代頁面四散的行內 style="margin-*"。
-// 2) 欄寬修正：.col-N-* 改為 calc() 扣除 gap 分攤——同一列 col 總和 = 12 時剛好填滿 100%。
-//    （原寫法 width: N/12*100% 未扣 gap，總寬超過 100% 靠 flex-shrink 硬擠，搭配 .flex-wrap 會提早掉行。）
-//    gap-* 同時寫入 --flex-gap 供 col 計算；直向排列（.column、斷點下的 .mobile-column(-xs)）時
-//    把 --flex-gap 歸零，讓 .col-12-* 恆為整寬。
-// 3) 覆寫層級：間距（mt/mb/my/m-0）、顯示（hidden）、對齊（text-left/center/right）、
-//    方向（column／mobile-column(-xs)／xs-column-reverse）這類「最後一手」
-//    單屬性工具帶 !important——它們取代的是行內 style，語意上不允許被元件樣式反壓。
-//    文字大小與顏色工具不帶 !important（允許元件情境覆寫，無例外）。
+// 1) **同一把尺標生成，不手寫三份。** gap-*／sm-gap-*／xs-gap-*／mt-*／mb-*／my-* 全部由
+//    $spacing-scale 以 @each 產出。三個斷點各抄一份的話，改了一份會漏兩份，尺標本身也會慢慢長歪；
+//    有了同尺標的 .mt-*／.mb-*／.my-*／.m-0，頁面就不必再散落 style="margin-*"。
+// 2) **欄寬要扣掉 gap 分攤。** .col-N-* 用 calc()，同一列各 col 的 span 總和 = 12 時，
+//    寬度加上 gap 剛好 100%。直接寫 width: N/12*100% 不扣 gap 的話總寬會超過 100%，
+//    靠 flex-shrink 硬擠，搭配 .flex-wrap 就會提早掉行。
+//    做法：gap-* 在設 gap 的同時把值寫進 --flex-gap 供 col 計算；直向排列
+//    （.column、斷點下的 .mobile-column(-xs)）沒有水平 gap 要扣，故把 --flex-gap 歸零，
+//    讓 .col-12-* 恆為整寬。
+// 3) **!important 只給「最後一手」那一族。** 間距（mt/mb/my/m-0）、顯示（hidden）、
+//    對齊（text-left/center/right）、方向（column／mobile-column(-xs)／xs-column-reverse）
+//    帶 !important——它們取代的是行內 style，語意上就不允許被元件樣式反壓。
+//    文字大小與顏色工具**不帶**：那是設計選擇，元件在自己的情境裡該蓋得掉。無例外。
 
 @use "sass:map";
 
@@ -27,9 +30,9 @@ $spacing-scale: (
     32: 2rem,
     40: 2.5rem,
 );
-$gaps-md: (2, 4, 8, 10, 12, 16, 20, 24, 32, 40); // 桌機 gap-*（沿用原有清單）
-$gaps-mobile: (4, 8, 10, 12, 16, 20, 24, 32); // sm-gap-*/xs-gap-*（沿用原有清單）
-$margins: (4, 8, 10, 12, 16, 20, 24, 32, 40); // mt-*/mb-*/my-*
+$gaps-md: (2, 4, 8, 10, 12, 16, 20, 24, 32, 40); // 桌機 gap-*：尺標全段
+$gaps-mobile: (4, 8, 10, 12, 16, 20, 24, 32); // sm-gap-*／xs-gap-*：窄螢幕用的子集（不含兩端的 2 與 40）
+$margins: (4, 8, 10, 12, 16, 20, 24, 32, 40); // mt-*／mb-*／my-*：不含 2（垂直節奏沒有細到 2px 的階）
 
 .text-md {
     font-size: 1.125rem; // 18px
@@ -92,7 +95,8 @@ $margins: (4, 8, 10, 12, 16, 20, 24, 32, 40); // mt-*/mb-*/my-*
     color: var(--text-muted);
 }
 
-// 「粗體」沿用真實 app 的視覺定義 = 500（medium）；class 名是設計系統既有詞彙，勿改名、勿改值
+// 設計系統把「粗體」定義成 500（medium），不是 700。
+// class 名與值都不要動：改名會斷掉全站 markup，改值會讓整站的字重階層一起位移。
 .text-bold {
     font-weight: 500;
 }
@@ -107,7 +111,8 @@ $margins: (4, 8, 10, 12, 16, 20, 24, 32, 40); // mt-*/mb-*/my-*
     object-fit: contain;
 }
 
-// 選單項的 BETA 小徽章圖（header / mobile-nav 共用；取代原本的行內 width/margin/vertical-align）
+// 選單項的 BETA 小徽章圖。header 與 mobile-nav 兩支都要用同一組尺寸與對齊，
+// 所以抽成工具 class——兩邊各寫一次行內 width/margin/vertical-align 的話，一邊調了另一邊不會跟。
 .beta-icon {
     width: 26px;
     vertical-align: middle;
@@ -181,12 +186,14 @@ $margins: (4, 8, 10, 12, 16, 20, 24, 32, 40); // mt-*/mb-*/my-*
     position: relative;
     --flex-gap: 0rem; // col-N-* 欄寬計算用；由 gap-* 寫入、直向排列時歸零
 
-    // `.align-items-start` 與 `.justify-content-start` 兩顆已移除（round47）：全站零消費者
-    //（`grep -rho 'class="[^"]*"' dist/*.html` 對兩者皆 0），而元件庫頁只有散文提到它們、
-    // 沒有任何元素演得出長相 ⇒ 不符 §5 死碼豁免的三件（①同族有生產頁選擇器 ②元件庫有靜態示範
-    // ③白名單登記）。`justify-content-start` 另有一層：`.flex-row` 與全站元件 scss 都沒有設過
-    // `justify-content`，所以它產出的是 CSS 初始值、在任何情境都覆寫不了任何東西——工具層是
-    //「最後一手的覆寫層」（§4），改變不了畫面的 class 不屬於這一層。要回來就照 §5 三件辦。
+    // ⚠️ 這一族**不收「補齊對稱」的對齊工具**（`.align-items-start`／`.justify-content-start`
+    // 就是被這兩道判準擋掉的）。新增一顆之前先走完：
+    //   ① **有沒有人用**——`grep -rho 'class="[^"]*"' dist/*.html` 數得出來。零消費者、
+    //      元件庫又沒有任何元素演得出它的長相（散文提到不算），就不符 §5 死碼豁免的三件
+    //      （①同族有生產頁選擇器 ②元件庫有靜態示範 ③白名單登記）。
+    //   ② **加了會不會改變畫面**——`.flex-row` 與全站元件 scss 都沒有設過 `justify-content`，
+    //      所以 `justify-content: flex-start` 產出的是 CSS 初始值，在任何情境都覆寫不了任何東西。
+    //      工具層是「最後一手的覆寫層」（§4），改變不了畫面的 class 不屬於這一層。
     &.align-items-center {
         align-items: center;
     }
@@ -248,10 +255,11 @@ $margins: (4, 8, 10, 12, 16, 20, 24, 32, 40); // mt-*/mb-*/my-*
                     gap: map.get($spacing-scale, $n);
                 }
             }
-            // 這裡曾有一顆 `.align-self-end`：全站零消費者，而且形狀本身就是 §4 的死法③
-            // （規則巢在 `.flex-row.mobile-column` 之內又包在 media query 裡，照字面
-            // `<div class="align-self-end">` 用一定靜默無效）。真的需要時做成不吃祖先的頂層
-            // 單屬性工具，並同時給出至少一個消費點。
+            // ⚠️ 不要把 `align-self-*` 這類**掛在元素自己身上**的工具塞進這個巢裡。
+            // 這裡的規則巢在 `.flex-row.mobile-column` 之內、又包在 media query 中，
+            // 照字面 `<div class="align-self-end">` 用一定靜默無效——那正是 §4 的死法③
+            // （scss 找得到、markup 找得到，選擇器結構上搭不起來）。
+            // 真的需要就做成不吃祖先的頂層單屬性工具，並同時給出至少一個消費點。
         }
     }
 }

@@ -1,24 +1,23 @@
-{# 步驟導覽：上一步 + step-nodes + 下一步（取自真實 app 步驟 section，class 沿用真實系統）。
+{# 步驟導覽列：上一步 ＋ step-nodes 進度條 ＋ 下一步，一列排到底。
      頁面 include 前 set steps（[{ label, done, i18nKey }]）+ 選填 stepNoPrev（true＝只留下一步、外層加 .no-prev）/ stepNodesLg（傳給內含 step-nodes）
      / stepPrevHref・stepNextHref（簡化版靜態跳轉；**連結模式下必填、動作模式下不得 set**——
        動作模式渲染的是 `<button>`，下面那條 `<a href>` 永遠走不到 ⇒ 那時 `stepNextHref` 是一個
        沒有消費者、也沒有任何東西驗證它的值的參數（有測試把關）。「這一步之後去哪」由那顆送出鈕
        的實際目標講，不由一個渲染不到的參數講；`stepPrevHref` 不受影響（上一步永遠是連結）。
-       先前未設會退 `"#"`，
-       那是一顆按了只會捲回頁首的死連結（§5），而 `or '#'` 這種 nunjucks 後備在 src 上看不到那四個字。
+       ⚠️ **不得寫成 `{{ … or '#' }}` 這種後備**：忘了傳時它會靜默渲染成一顆按了只會捲回頁首的
+       死連結（§5），而且 `or '#'` 比裸寫 `href="#"` 更難抓——src 上看不到那四個字。
        沒有去向就整顆不畫，同 `ui/breadcrumb` 對沒有 href 的分類層的處置）。
      **「下一步」有兩種，不是同一顆鈕**（§5 的 hook × data-toast 矩陣）：
-       ・**純換頁**（1-1-3 的預覽 → 欄位對應）：凍結前端 `GufoFAQ_Frontend_New/js/previewExcel.js:202` 只做
-         `sessionStorage.setItem(...)` ＋ `window.location.href = …`，沒有任何 API。這種是 `<a href>`。
-       ・**送 API 的動作鈕**（1-1-4 欄位對應送出、1-2-1 檔案上傳送出）：`js/columnSelect_excel.js:364`
-         先驗必填欄再 POST `fileProcessVM`、`js/uploadFilePdf.js:91` `await submitFileUpload()`。
-         這種是 `<button>`，而且照 §5 ③ 要掛 `data-toast` 列全結果 ＋ 宣告閘門——原本兩頁都沿用
-         `<a href="下一頁.html">`，等於把「會失敗的送出」演成一條必然成功的連結：整頁零 data-toast、
-         零 data-capability，React 端照著切版接就會漏掉每一條錯誤路徑。
+       ・**純換頁**（1-1-3 的預覽 → 欄位對應）：只把狀態帶到下一頁，**不打任何 API**。這種是 `<a href>`。
+       ・**送 API 的動作鈕**（1-1-4 欄位對應送出、1-2-1 檔案上傳送出）：先驗必填欄再送出，
+         這種是 `<button>`，而且照 §5 ③ 要掛 `data-toast` 列全結果 ＋ 宣告閘門。
+         ⚠️ 這兩頁**不可以**退成 `<a href="下一頁.html">`：那等於把「會失敗的送出」演成一條必然
+         成功的連結，整頁零 data-toast、零 data-capability，接手的人照著切版接就會漏掉每一條
+         錯誤路徑。
      參數（動作模式）：stepNextAction（true＝渲染成 button）、stepNextToast／stepNextToastKey／
        stepNextToastType（§5 三件套，段數要一致）、stepNextCapability（閘門，值＝上游閘門自己的名字）。
-     真實 app 的驗證+送出邏輯本身不做（§5 只做切版互動）。
-     .btn-prev/.btn-next 是真 app JS hook（columnSelect_excel.js/previewExcel.js/uploadFilePdf.js 綁定）——
+     驗證與送出的邏輯本身不做（§5 只做切版互動）。
+     .btn-prev/.btn-next 是**業務掛點**（轉換契約：接手的程式靠它綁上一步／下一步）——
      hook 不得被 scss 樣式（§5「全站 scss 找不到它」判準），排版改掛本元件自有 slot class .step-prev/.step-next。 #}
 <div class="step-btn-wrap{% if stepNoPrev %} no-prev{% endif %}">
     {% if not stepNoPrev %}

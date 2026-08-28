@@ -1,18 +1,19 @@
-// 提示詞收合/展開編輯（5-2 對話設定頁；元件庫頁另有 promptDefaultOpen 的預設展開示範）：點「展開編輯」切換 .open——展開時注入編輯用 textarea、
-// 收合時顯示首行預覽，並切換按鈕文字（data-text-open/close）。工具列（取消/儲存…）由 CSS 依 .open 顯示。
-// 改寫自真實 app **GufoFAQ_Frontend_New/js/main.js** 的 prompt-edit 行為（原 jQuery；`.prompt-edit` 初始化與
-// `.js-prompt-toggle` 委派都在那一支——`singleTest.js` 自己也寫著「提示詞的暫存/還原由 main.js
-// 的 editable-block 處理」）。純前端互動、不含儲存 API。
+// 提示詞收合/展開編輯（5-2 對話設定頁；元件庫頁另有 promptDefaultOpen 的預設展開示範）。
+// 做什麼：點「展開編輯」切 .open——展開時注入編輯用 textarea、收合時顯示首行預覽，
+// 並依當下狀態切換按鈕文字（data-text-open/close）。工具列（取消/暫存/…）由 CSS 依 .open 顯示。
+// 純前端互動、不含任何儲存 API。
 //
-// **三顆鈕的語意逐字照真 app**（§5：切版刻意不沿用時要記載「什麼取代了什麼」——這裡沒有要不沿用）：
-//   暫存編輯（`.js-prompt-save`）＝把 textarea 的內容暫存回 `data-full-text`，**不收合**
-//     （`$box.data("full-text", text)`）。**行為沒變，變的是字面**（round47）：它先前寫著「儲存」，
-//     而這個元件裡唯一存得下去的是「儲存為新版本」——React 端照字面把它接上了寫入端點。
-//     class 維持 `.js-prompt-save`（凍結前端 `promptManagement.js` 的具名掛點，見 5-2 檔頭）。
-//   取消＝把 textarea 還原成暫存值，**不收合**（`$textarea.val(savedText)`）
-//   回復至預設＝真 app 去取「目前正式提示詞」再寫回編輯器（`setPromptText(content)`）——**那是送 API 的③**，
-//     切版只列 toast、不實作（沒有那個來源，寫本地假還原就是演一個 API 給不出來的結果）
-// 先前三顆一律「收合了事」，取消甚至什麼都沒還原——而那顆鈕的 toast 卻說「已回復至目前正式提示詞」。
+// **三顆工具鈕各自做什麼，以及為什麼只做到這裡**：
+//   暫存編輯（`.js-prompt-save`）＝把 textarea 的內容寫回 `data-full-text`，**不收合**。
+//     它是純本地暫存、不送 API，所以字面必須是「暫存」不是「儲存」——同畫面右邊那顆
+//     「儲存為新版本」才是真的存得下去的那一顆（理由詳見 prompt-edit.html 該鈕旁註）。
+//     class 維持 `.js-prompt-save`（具名業務掛點，見 5-2 檔頭）。
+//   取消＝把 textarea 還原成暫存值，**不收合**。收合了事會讓使用者以為改動已經生效。
+//   回復至預設（`.js-prompt-reset`）＝要去取「目前正式提示詞」再寫回編輯器，**那是送 API 的③**，
+//     切版只在 markup 列 toast、這裡不實作：沒有那個來源，寫一個本地的假還原就是演一個
+//     API 給不出來的結果（§5）。
+// ⚠️ 三顆都**不可以**退化成「按了就收合」：那既不是它們各自的行為，也會讓 markup 上列的 toast
+//    （例如「已回復至目前正式提示詞」）與實際發生的事對不上。
 document.addEventListener("DOMContentLoaded", function () {
     function t(key, zh) {
         return (window.GufoI18n && window.GufoI18n.t) ? window.GufoI18n.t(key, zh) : zh;
@@ -81,7 +82,7 @@ document.addEventListener("DOMContentLoaded", function () {
             render();
         });
 
-        // 儲存：暫存回 data-full-text，維持展開（真 app 同款）
+        // 暫存編輯：把當下打的內容寫回 data-full-text，**維持展開**（不是存到後端，見檔頭）
         box.querySelectorAll(".js-prompt-save").forEach(function (b) {
             b.addEventListener("click", saveFromTextarea);
         });
@@ -92,10 +93,10 @@ document.addEventListener("DOMContentLoaded", function () {
                 if (ta) ta.value = fullText();
             });
         });
-        // `.js-prompt-reset`（回復至預設）**刻意不在這裡實作**：它是 §5 矩陣③——真 app 去
-        // 取「目前正式提示詞」再寫回編輯器，成敗各一種 toast（markup 上已列全結果）。
+        // `.js-prompt-reset`（回復至預設）**刻意不在這裡綁任何處理器**：它是 §5 矩陣③——
+        // 要去取「目前正式提示詞」再寫回編輯器，成敗各一種 toast（markup 上已列全結果）。
         // 切版沒有那個來源，寫一個本地的假還原＝演一個 API 給不出來的結果。
-        // 先前它與取消共用「收合了事」的處理器，那既不是③也不是④，兩邊都不對。
+        // ⚠️ 也不可以把它接到取消那個處理器上：那既不是③也不是純本地互動，兩邊都不對。
 
         // 切換語言後依「當下開合狀態」重畫按鈕文字（展開編輯 ↔ 完成編輯）
         // ＋**注入 textarea 的 aria-label 也要自己寫回去**：lang-toggle 切回繁中時，預設值是

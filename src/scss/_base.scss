@@ -1,5 +1,10 @@
-// 全站基底：取自真實 app component.scss 的「樣式共用」與「main主要內容區」，
-// 另補上現代瀏覽器基底（color-scheme／focus-visible／reduced-motion／box-sizing／媒體元素）。
+// 全站基底層：每一個元件都站在這上面的地基。三塊內容——
+//   ① 現代瀏覽器基底（color-scheme／focus-visible／reduced-motion／box-sizing／媒體元素）；
+//   ② 全站共用的排版原子（html／body／ul／a／.wrap／.skip-link）；
+//   ③ 主要內容區的頁標題版位（.page-title-wrap／.page-title）。
+// **收進這一層的判準是「每個元件都要遵守」**。只有一個擁有者的 class 跟著擁有者住，不放這裡
+// （對照：`.full-wrap` 住 layouts/base、`.main` 住 layouts/page-shell）——擺上來會被當成
+// 共用詞彙拿去套，而它其實不是。
 @use "mixin" as *;
 @use "size" as *;
 
@@ -82,8 +87,10 @@ img {
     樣式共用
 ================================*/
 
-// 原有 `transition: font-size 0.3s ease` 已移除：全站無任何字級調整功能，
-// 卻對每個元素掛上過渡（效能負擔且無人使用）。
+// 全域字型家族。`*` 命中整棵 DOM 的每一個元素，所以這條**只給字型**：
+// 掛在這裡的每一條宣告都要乘上全站元素數，而且會蓋過元件的繼承鏈。
+// 尤其不要在這裡放 transition（例如 font-size 的過渡）——全站沒有任何調整字級的功能會觸發它，
+// 代價卻是每個元素都多背一個過渡。
 * {
     font-family: var(--fontFamily);
 }
@@ -95,18 +102,18 @@ html {
     text-size-adjust: 100%;
 }
 
-// body 捲動鎖。宣告式：DOM 上「有東西進了 top layer」或「有掛 data-scroll-lock 的開關被打開」就鎖。
+// body 捲動鎖：DOM 上「有東西進了 top layer」或「有掛 data-scroll-lock 的開關被打開」，就鎖住整頁捲動。
 //
-// 曾經這是一支 js（ui/scroll-lock）維護的計數器 —— 因為跳窗與手機選單是兩個互不知情的擁有者，
-// 各鎖各的話，先關的那個會把還開著的那個一起解鎖。`:has()` 是宣告式的 OR：狀態就在 DOM 上，
+// **用 `:has()` 而不是 js 計數器。** 跳窗與手機選單是兩個互不知情的擁有者，各自加減同一個計數器時，
+// 先關的那個會把還開著的那個一起解鎖。`:has()` 是宣告式的 OR——狀態就寫在 DOM 上，
 // 計數器不可能失衡，巢狀開窗也自動成立。
 //
-// 而這條規則**不認識任何元件的 class**：
-//   `:modal` 是 `showModal()` 開出來的東西（原生），新增第 15 個 modal 不必回來改這裡；
+// **這條規則不認識任何元件的 class**，選擇器只咬原生狀態與宣告式契約：
+//   `:modal` 是原生的——`showModal()` 開出來的東西一律命中，新增第 15 個 modal 不必回來改這裡；
 //   `[data-scroll-lock]` 是宣告式契約（同 `data-open-modal`／`data-toast`）：任何全螢幕浮層
 //   把它掛在自己的開關上、開著時帶 `.active`，就自動吃到鎖。
-// 曾經這裡是 `html:has(dialog.modals[open]), html:has(.nav-toggle.active)` —— 全域層逐一登記
-// 元件 class，正是 `_dark-icons.scss` 已經消滅掉的那個反模式的最後一處。
+// 反面寫法是 `html:has(dialog.modals[open]), html:has(.nav-toggle.active)` 這種「全域層逐一登記
+// 元件 class」——每加一顆浮層就要回來補一行，正是 `_dark-icons.scss` 檔頭列的那個反模式。
 //
 // padding-right 補的是「鎖起來時消失的那條捲軸」的寬度，否則版面會橫跳一下。
 // CSS 量不到捲軸有多寬（也分不出這一頁本來有沒有捲軸），故由 ui/scroll-lock 寫進 --scrollbar-width；
@@ -145,9 +152,10 @@ a {
     margin: 0 auto;
 
     @media screen and (max-width: $wrap-max) {
-        // **這個階梯是鏡像自凍結前端**（`GufoFAQ_Frontend_New/scss/component.scss:95-101` 逐條相同），不是失誤：
-        // 1200~1560px 這一段的側邊留白比更大或更小的螢幕都多，那是原設計的取捨。
-        // 1200 只有這裡在意「縮到多窄」，不必上升成跨元件 token。
+        // **這個階梯是刻意的**，不是失誤：視窗一落到 $wrap-max 以下就直接收到 1200px，
+        // 內容寬度先站定、不隨視窗連續縮放，代價是 1200~1560px 這一段的側邊留白
+        // 比更大或更小的螢幕都多——那是取捨，不要「順手改成連續縮放」把它抹掉。
+        // 1200 這個值只有這一處在意（`.wrap` 縮到多窄），不必上升成 _size.scss 的跨元件 token。
         max-width: 1200px;
     }
 }

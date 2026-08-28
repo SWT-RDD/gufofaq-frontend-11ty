@@ -1,5 +1,7 @@
-{# ui/multi-select 範例：真實 app（pages/components/component.html 第 823-830 行）的 .multiSelect 用法，
-     由 ui/multi-select/multi-select.js 在 DOMContentLoaded 時增強成 tag 多選 UI #}
+{# ui/multi-select 的展示片段（元件庫頁 `pages/components/component.html` include 它）：示範一顆
+     `<select multiple class="multiSelect">` 該長什麼樣。畫面上看到的 tag 列與下拉都不在這份 markup 裡
+     ——`ui/multi-select/multi-select.js` 在 DOMContentLoaded 時就地把這顆原生 select 包起來、
+     藏到無障礙樹外，再建出整組自訂控制項；原生 select 留在 DOM 內繼續當唯一資料來源。 #}
 <div class="form-group row mobile-col">
     <div class="label label-md">
         <label for="demoMultiSelect" class="control-label">多選框</label>

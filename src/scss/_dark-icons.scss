@@ -1,15 +1,17 @@
-// 深色模式：光柵 PNG 圖示的反相（GUIDELINE §4 的機制②）。CSS 選不到 url() 裡的顏色。
+// 深色模式：光柵 PNG 圖示的反相（GUIDELINE §4 的機制②）。CSS 選不到 url() 裡面的顏色，
+// 所以 <img> 這一種只能整張翻。
 //
-// 這裡只剩 <img>，而且只認**檔名**：帶 `_black` 的一律反相。新增黑圖示不必回來加一行，
-// 這層也不必認識任何元件的 class —— 它讀的是資產的命名慣例，不是別人的內部結構。
+// **這一層只認檔名、不認 class**：帶 `_black` 的一律反相。新增一張黑圖示不必回來加一行，
+// 全域層也不必去認識任何元件的內部結構——它讀的是資產的命名慣例。
 //
-// `background-image` 的單色圖示曾經要逐一登記在這裡（13 個元件 class）。現在它們改用
-// `icon-mask()`：把 PNG 的 alpha 當遮罩、顏色交給語意 token，深色模式只是 token 換值。
-// 順帶收掉三個舊病：
+// **`background-image` 的單色圖示不走這裡**，走 `_mixin.scss` 的 `icon-mask()`：把 PNG 的 alpha
+// 當遮罩、顏色交給語意 token，深色模式只是 token 換值。三個理由，也是「不要把它們搬回這一層
+// 逐一登記元件 class」的理由：
 //   ① 反相會把彩色圖示的色相一起翻掉（讚的綠拇指、beta 徽章）—— 遮罩是塗色，不是翻色；
-//   ② 曾有一條 `img.icon:not([src*="white"])` 黑名單，把純白但檔名不含 white 的 icon_back/icon_next
-//      翻成黑箭頭壓在藍底上。白名單 `img[src*="_black"]` 不會有這種漏；
-//   ③ hover 換色不必再多存一張 *_bluehover.png（那五張已刪）。
+//   ② 用黑名單挑「哪些不要翻」一定會漏：`img.icon:not([src*="white"])` 這一形就會把純白、
+//      但檔名不含 white 的 icon_back／icon_next 翻成黑箭頭壓在藍底上。
+//      白名單 `img[src*="_black"]` 沒有這種漏；
+//   ③ hover 換色只要換 token，不必為「同一個字形換個顏色」再多存一張 *_bluehover.png。
 //
 // ⚠️ filter 不可以加在「有底色＋文字」的元素上（如 `.form-control.search` / `.time` 輸入框）：
 //    invert 會連整個輸入框的底色一起翻。那兩處的搜尋／時鐘 icon 畫在 <input> 自己的 background 上，

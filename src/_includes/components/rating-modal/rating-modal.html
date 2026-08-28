@@ -2,7 +2,7 @@
      三處共用：前台 FAQ 訊息的讚/倒讚（components/faq-chatroom）、後台 4-2 對話詳細、後台 2-2-3 AB 測試兩側。
 
      **一筆問答只有一份評分**：GufoRAG 的 `POST /api/chat/chatlogs/{id}/rating` 一次寫三欄
-     （`rating_type`／`rating_feedback`／`rating_time`，chatbot `app/routes/chat.py` 逐行無條件覆寫），
+     （`rating_type`／`rating_feedback`／`rating_time`，chatbot 的 `POST /chatlogs/{chat_log_id}/rating` 逐行無條件覆寫），
      而 product 的 `POST /history/{log_id}/rating`（登入態）與前台那支打的是**同一個欄位**
      ——沒有「管理者另外的一份評分」這種東西。因此：
        · 意見回饋欄要**預填目前存著的那段話**（`ratingModalFeedback`）：product 的 client 一律送出
@@ -10,9 +10,8 @@
          留空送出＝把對方寫的理由清掉。
        · 用在會覆寫既有評分的地方（4-2）時，用 `ratingModalNote` 把這件事寫在畫面上。
 
-     `<dialog id="likeModal">` 的 id 是真 app 的契約（凍結前端 GufoFAQ_Standard_Frontend `index.html`
-     的 `#likeModal`，那份是 1~5 星、且因「API 不支援」整個 hidden）——本專案按真實 API 的
-     `rating_type`（positive／negative）改寫成讚/倒讚二選一，但 id 不改名（§4 轉換契約）。
+     `<dialog id="likeModal">` 的 id 是**轉換契約**（React 端靠它認出這一顆窗）：評分本身按 API 的
+     `rating_type`（positive／negative）做成讚／倒讚二選一，但 id 不改名（§4）。
 
      參數（使用頁／使用元件在 include 前 set，見 §3-2/§6）：
        ratingModalTitle / ratingModalTitleKey       —— 標題（不給＝前台的「幫助我們改進」）
@@ -21,7 +20,7 @@
        ratingModalFeedback                          —— 意見回饋欄的預填值（不給＝空）
        ratingModalToast / ...Key / ...Type          —— 送出鈕的結果（不給＝前台的三段）
        ratingCapability                             —— 送出鈕的能力閘門（§4）。後台兩頁（4-2／2-2-3）都給
-                                                      "history"，對回 product `history.py` 的 `rate_history`
+                                                      "history"，對回 product 的 `rate_history`
                                                       ＝`require_capability("history")`；前台 faq 不給
                                                       ＝匿名無閘門，那是對的。
      一個參數都不給＝前台現況逐字不變。 #}
@@ -49,10 +48,10 @@
                             <label for="feedbackText" class="control-label" data-i18n="modals.feedback">意見回饋</label>
                         </div>
                         <div class="field">
-                            {# 字數上限（round47）：正本是 product `app/limits/chat_config_limits.py` 的
-                                 `RATING_FIELD_LIMITS["feedback"]["max_len"]`，兩條寫入路徑都以它夾——
-                                 後台 `app/routers/history.py` 與前台 `app/routers/public.py` 的
-                                 `feedback: str | None = Field(max_length=…)`。四個使用點裡有一個是
+                            {# 字數上限：正本是 product 的
+                                 `RATING_FIELD_LIMITS["feedback"]["max_len"]`，後台與前台**兩條寫入
+                                 路徑都以它夾**（各自的請求模型都是
+                                 `feedback: str | None = Field(max_length=…)`）。四個使用點裡有一個是
                                  **前台訪客**，而他打完一段長回饋才被擋下來時，連「哪裡不對」都不會知道。
                                  數字是資料槽，不烤進譯文（§4-2）。 #}
                             <textarea class="form-control" id="feedbackText" rows="3" placeholder="請告訴我們原因（選填）" data-i18n-placeholder="modals.feedbackReasonPlaceholder" aria-describedby="feedbackTextHint">{{ ratingModalFeedback }}</textarea>

@@ -1,8 +1,9 @@
 {# 嵌入式問答小工具的外殼（launcher 鈕 ＋ 面板）。**這是 widget 的視覺定案**：
-     **已回流**——gufofaq-saas `apps/web/public/widget.js`（`gufofaq-saas@e8df966`）現在逐字採用
-     本元件的 class 與值（`faq-launcher widget-launcher js-widget-toggle`、`widget-panel-close
-     js-widget-close`、`icon_owl.png` 40×40、面板 360×520 ＋ `[data-open]`），先前那份暫定稿
-     （`.launcher` 56px 圓 ＋ emoji 💬）已不存在。改本檔＝要同步改對方那一份。
+     gufofaq-saas 的 `apps/web/public/widget.js` 逐字採用本元件的 class 與值
+     （`faq-launcher widget-launcher js-widget-toggle`、`widget-panel-close js-widget-close`、
+     `icon_owl.png` 40×40、面板 360×520 ＋ `[data-open]`）。
+     ⚠️ **兩份是同一個東西的兩側，改本檔就要同步改對方那一份**——它跑在客戶網站上，
+     不會因為這裡改了就自己跟上。
 
   它與站內的頁面不一樣：**跑在別人的網站上**（widget.js 建一個 shadow root、自帶 CSS）。所以這一份
     定的是「長什麼樣、結構是什麼」，不是 build 出來會被誰 include 的版面——唯一看得到它的地方是元件庫頁
@@ -30,7 +31,7 @@
     用得到的元件」掃 markup class，而這一顆只出現在元件庫頁，所以掃不到。記在這裡免得下一個人以為
     它真的零依賴而去改那兩顆的 class。
 
-  ⚠️ **widget 端有一處刻意不逐字**（saas 回報）：遮罩圖與 <img> 不同，跨網域取用要
+  ⚠️ **widget 那一側有一處刻意不逐字**：遮罩圖與 `<img>` 不同，跨網域取用需要
     `Access-Control-Allow-Origin`，而 `/images/*` 是純靜態 ⇒ widget 跑在別人網站上時遮罩圖被 CORS 擋掉。
     那邊改用**內嵌 data URI 的遮罩**（同一個字形、同一種上色，但不發請求）。切版這一側維持檔案路徑
     （站內同源，沒有那個問題），兩邊的差異僅此一處。
@@ -52,9 +53,9 @@
     <div class="widget-panel" id="widgetPanel"{% if widgetDemoStatic %} data-open{% endif %} role="dialog" aria-labelledby="widgetPanelTitle">
         <div class="widget-panel-head">
             {# 標題是租戶設定值（資料，不翻）；它同時是面板的可及名稱，故給 id 讓 dialog 指過來。
-               ⚠️ **但「沒設定時的那一句」是 chrome，不是資料**（round47）：先前不論有沒有租戶標題，
-                 這一格都是同一個寫死的繁中字面。這顆 widget 是**嵌在客戶自己網站上**的東西，
-                 客戶的網站可能整站英文（`data-lang="en"`），而租戶沒填標題時它就固定冒出四個中文字。
+               ⚠️ **但「沒設定時的那一句」是 chrome，不是資料**：不分兩支寫的話，這一格永遠是同一個
+                 寫死的繁中字面。這顆 widget 是**嵌在客戶自己網站上**的東西，客戶的網站可能整站英文
+                 （`data-lang="en"`），而租戶沒填標題時它就會固定冒出四個中文字。
                  故：有租戶標題＝純資料節點（不掛 data-i18n）；沒有＝落回一顆**會翻譯**的預設標題。
                  兩者共用同一顆 id（面板的可及名稱），只差掛不掛 data-i18n。 #}
             {# 兩支分開寫、不用 `{{ x or "字面" }}` 收成一行：`data-i18n` 節點的繁中原文是以 key 為索引
@@ -73,9 +74,10 @@
              把靜態說明塞進去會讓報讀器在每一次內容變動時連它一起唸。
              嵌在客戶網站上的這一版尤其需要——訪客多半不知道自己正在跟一個模型講話。 #}
         <p class="text-gray" data-i18n="shared.aiDraftNotice">本內容由 AI 系統初步產出，僅作為草稿或參考依據使用，尚未經人工確認或修改，若需進一步採用，請先檢閱並確認內容之正確性與完整性。</p>
-        {# role="log" ＋ aria-live="polite"：新回答是非同步長出來的，報讀器要唸得到（同 widget.js 現況）。 #}
+        {# role="log" ＋ aria-live="polite"：回答是問完之後才非同步長出來的，不掛 live region 的話
+             報讀器不會知道有新內容進來。polite 而非 assertive——它不該打斷使用者正在讀的東西。 #}
         <div class="widget-panel-log" role="log" aria-live="polite">
-            {# ⚠️ **租戶沒設歡迎語時，這一整塊先前是全白的**（round47）：面板打開來只有一個輸入框，
+            {# ⚠️ **租戶沒設歡迎語時，這一整塊不可以是全白的**：那樣面板打開來只有一個輸入框，
                  訪客看不出這是什麼、能問什麼、甚至看不出它有沒有壞。
                  下面那一則是**租戶的歡迎語**（資料，不翻）；這一則是它缺席時的預設開場，
                  那是 chrome，所以要翻。`.hidden` ＋ hook class 給 React 定址；
@@ -111,20 +113,21 @@
             {# `.widget-panel-input`／`.widget-panel-send` 是本元件自有的 slot class（§4：要覆寫
                  別元件原子的排版就掛自己的 class，不寫 `.form-control`／`.button` 的選擇器）。
                  沒有它們的話這一列會等比縮，送出鈕被壓到比文字窄而換行——理由寫在 scss 那兩條旁邊。 #}
-            {# 字數上限：同 components/faq-chatroom 那一格（同一支 `/public/ask`、同一顆
-                 `MAX_CASE_QUESTION_LEN`），完整出處寫在那個元件的同一段。 #}
+            {# 字數上限：與 components/faq-chatroom 那一格是同一件事（同一支 `/public/ask`、
+                 同一顆 product 的 `MAX_CASE_QUESTION_LEN`），完整出處寫在那個元件的同一段。 #}
             <input type="text" class="form-control widget-panel-input js-widget-input" placeholder="輸入問題"
                 data-i18n-placeholder="comp.enterQuestion" aria-label="輸入問題" data-i18n-aria-label="comp.enterQuestion" aria-describedby="widgetAskMaxLenHint">
-            {# 送出是直接送 API 的動作鈕 ⇒ data-toast 列全結果（§5 矩陣③）。節流那一段對回公開問答端點
-                 的每分鐘上限（gufofaq-saas product `app/tenancy/rate_limit.py` 的
-                 `enforce_widget_rate_limit`，由 `app/conversation/public_ask.py` 在兩道 gate 之前呼叫，
-                 429 `{"code": "rate_limited"}`），不是泛用的「失敗」。
-                 **不在 `widget_tokens.py`**：那一支只管金鑰的建立／列出／撤銷，全檔零 429。
+            {# 送出是直接送 API 的動作鈕 ⇒ data-toast 列全結果（§5 矩陣③）。節流那一段對應的是公開
+                 問答端點（`/public/*`）的每分鐘上限：product 的 `enforce_widget_rate_limit`，
+                 由存取權杖那道守衛在兩道 gate 之前先跑，逾限回 429 `{"code": "rate_limited"}`。
+                 它是一個**具名的**結果，不是泛用的「失敗」。
+                 **節流不在金鑰管理那一族端點上**（`/widget-tokens` 的建立／列出／撤銷全檔零 429），
+                 所以不要把那幾支的行為拿來推論這一顆鈕。
                ⚠️ **429 有兩種成因，處置相反，所以要兩段**（`|` 是索引契約，額度那一段補在**尾端**、
                  前五段位置不動）：
                    · `rate_limited`＝節流，等一分鐘就好 ⇒ 第 3 段「稍後再試」是對的。
                    · `quota_exceeded`＝這個租戶**本計費期**的問答額度用罄
-                     （product `app/conversation/ask_flow.py`：`consume_qa_quota` 回 False ⇒ 429 ＋
+                     （product：`consume_qa_quota` 回 False ⇒ 429 ＋
                      `{"error": …, "code": "quota_exceeded"}`）⇒ **重試永遠不會成功**。
                  兩者都講成「稍後再試」的後果不是一句話不準：那是租戶網站上**每一位訪客**都照著那句話
                  一直重試，而每一次重試再吃掉一次節流計數——一個講錯的提示自己製造了它所描述的狀態。

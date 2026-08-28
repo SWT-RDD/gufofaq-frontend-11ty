@@ -1,7 +1,7 @@
-// 文字編輯區：切換 view/edit 顯示狀態（原生 DOM）
-// 行為改寫自凍結前端 GufoFAQ_Frontend_New/js/main.js 719-826 行左右「文字編輯切換」（原用 jQuery）。
-// 僅轉「切換編輯/檢視顯示狀態」的視覺行為；exitEditMode 沿用真實 app 邏輯把值寫回 display-text（DOM 層面），
-// 不含任何存檔 API / 資料送出邏輯（真實 save() 之後若有呼叫後端 API 屬業務邏輯，此處不轉）。
+// 文字編輯區：在「檢視」與「編輯」兩態之間切換（原生 DOM，不依賴框架）。
+// 本檔只做視覺行為——進編輯態把輸入欄解禁、聚焦、游標移到末尾，離開時把值寫回 .display-text
+// （純 DOM 層面）。**不含任何存檔／送出邏輯**：確認鈕按下去是真的送 API，那一段是業務層的事
+// （閘門與結果 toast 宣告在元件 html 的 editCapability／editSaveToast）。
 document.addEventListener("DOMContentLoaded", function () {
     document.querySelectorAll(".editable-block").forEach(function (block) {
         initEditableBlock(block);
@@ -26,7 +26,7 @@ document.addEventListener("DOMContentLoaded", function () {
             if (el) el.style.display = "none";
         }
 
-        // input 自動計算寬度（沿用真實 app 行為，讓單行 input 貼合文字寬度）
+        // 單行 input 自動量寬：讓輸入框貼合目前文字的寬度，而不是一進編輯態就撐成整列
         function resizeInput(input) {
             var span = document.createElement("span");
             // absolute：append 目標可能是 flex/grid 容器（節點會被 blockify 拉伸，量到的寬就不是文字寬），

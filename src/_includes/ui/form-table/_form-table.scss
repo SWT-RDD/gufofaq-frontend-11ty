@@ -1,8 +1,10 @@
-// 結構與數值取自凍結前端 `GufoFAQ_Frontend_New/scss/component.scss` 1847-1929
-// （.form-table-wrap / .form-table 表單表格區塊）。
-// **偏離逐條列出**：
-//   ① 色值換語意 token
-//   ② 三處 `box-sizing: border-box` 移除（§4-1：`_base.scss` 已全域給）
+// 表單型表格：詳情頁那種「左欄名、右內容」的唯讀資料表。**用 div 模擬 table**（`.form-table-wrap`
+// ＞ `.form-table-group` ＞ `.form-table` ＞ `.row` ＞ `.col` ＞ `.th` ＋ `.td`），
+// 因為每一格要能各自吃 `col-*-md`／`col-*-sm` 的欄寬工具、在窄螢幕自己斷行——真 `<table>` 的
+// 儲存格做不到這件事。
+// **這幾條要知道理由（改動前先讀）**：
+//   ① 色值全數走語意 token（`--border`／`--text`／`--surface-sunken`），不寫死色碼。
+//   ② `.th`／`.td` 都不自己寫 `box-sizing: border-box`（§4-1：`_base.scss` 已全域給）。
 @use "../../../scss/mixin" as *;
 
 /*===============================

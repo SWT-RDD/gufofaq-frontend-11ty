@@ -5,8 +5,10 @@ titleKey: nav.datasetList
 pageHeading: 資料集列表
 permalink: 3-1-5_previewFile_detail.html
 ---
-{# 麵包屑 + 頁面標題：真實頁第三層麵包屑與 .page-title 皆為 js previewFileDetail.js 載入後動態填字（原文「載入中...」），
-     改用範例檔名「常見問題.pdf」呈現載入完成狀態，與 3-1-3_previewDataset.html 的範例檔案列表對應 #}
+{# 麵包屑 + 頁面標題：第三層麵包屑與 `.page-title` 在執行期都要等資料回來才填得出字，
+     切版一律畫**載入完成**那一態（載入中是 React 的事）。
+     檔名取「常見問題.pdf」＝3-1-3 檔案列裡的那一筆——從那一頁點進來看到的必須是同一個檔
+     （§6 跨頁自洽）。 #}
 {% set breadcrumbItems = [
   { label: "首頁", href: "2-1_qaRecord.html", i18nKey: "nav.home" },
   { label: "資料集列表", href: "3-1-1_datasetList.html", i18nKey: "nav.datasetList" },
@@ -18,62 +20,63 @@ permalink: 3-1-5_previewFile_detail.html
     {# `chunk_count`（外層 `FileChunksOut`）：這一頁只畫得下**第一個** chunk，不講總數等於把
          「後面還有 N-1 塊」整個藏起來（§6 截斷指標不得小於本體）。312 ＝ 3-1-3 檔案列裡
          常見問題.pdf 那一筆的資料筆數——folder 檔的 `record_count` 就是它的 chunk 數
-         （product `app/routers/datasets.py` 的 `_file_record_count`：folder 走
+         （product 的 `_file_record_count`：folder 走
          `len(get_document_chunks(...))`），兩頁同源（§6 跨頁自洽）。
          數字是資料、獨立成不翻的節點（§3-2：那個數字在 API 契約裡有欄位，不准進譯文字串）。 #}
     <p class="text-gray m-0"><span data-i18n="common.total">共</span> 312 <span data-i18n="dataset.chunksShowingFirst">個區塊，以下顯示第一個</span></p>
-    {# 這一頁的兩種**打不開**態（round48）。兩者都不是「這個檔是空的」，而下一步完全不同：
-         · `dataset.fileNotLinkable`——這個檔匯入時沒有留下擷取管道記錄（product
-           `app/routers/datasets.py` 的預覽端點回 409 `file_not_linkable`，同一族的另一支在
+    {# 這一頁的兩種**打不開**態。兩者都不是「這個檔是空的」，而下一步完全不同：
+         · `dataset.fileNotLinkable`——這個檔匯入時沒有留下擷取管道記錄（product 的
+           預覽端點回 409 `file_not_linkable`，同一族的另一支在
            刪除路徑上），要看內容只能重新匯入。
          · `dataset.noExtractedContent`——擷取還沒完成，或這個檔裡沒有解得出來的文字。等一下再來
            與「這個檔沒有內容」是兩件事，所以兩種原因都要講。
-       兩顆先前都是 **React 自己造的 key**（靠 REACT_ONLY 白名單擋著），而切版這一頁只畫得出
-       成功那一態 ⇒ 那兩句話的正本落在 React 的字典裡。`.hidden` ＋ live region：這一份 markup 是
-       位置與字色的規格，可見處在元件庫頁的「React 條件文案」區（§5）。 #}
+       兩句的繁中正本都在切版，這裡的 `.hidden` markup 就是它們的**位置與字色規格**，
+       React 不另造 key（切版是唯一真實來源）。做成 `.hidden` ＋ live region 是因為這一頁本體
+       只畫得出成功那一態，這兩態要由 React 在執行期切開；可見處在元件庫頁的
+       「React 條件文案」區（§5）。 #}
     <p class="text-red m-0 js-file-not-linkable hidden" role="alert" data-i18n="dataset.fileNotLinkable">這個檔匯入時沒有留下擷取管道記錄，所以預覽不出它的內容——要看內容只能把同一份檔重新匯入一次。</p>
     <p class="text-gray m-0 js-no-extracted-content hidden" role="status" data-i18n="dataset.noExtractedContent">這個檔還沒有擷取內容：可能還在擷取中，也可能它裡面沒有解得出來的文字。過幾分鐘再回來看，一直是空的就是後者。</p>
 </div>
 
-{# 表單內容（模擬table）：真實頁 form-table-wrap 只有單一 form-table-group（無 subtitle），
-     欄位固定為 標題/時間/頻道/類型/供應商/內容，逐字沿用 ui/form-table 的 class 結構，改以範例資料呈現。
-   **資料源＝`GET /datasets/{id}/files/{file_id}/chunks`**（product `app/routers/datasets.py` 的
+{# 表單內容（模擬 table）：一個 `form-table-wrap` 底下只有一組 `form-table-group`（不分小節、
+     沒有 subtitle），六個固定欄位是 標題／時間／頻道／類型／供應商／內容；class 結構整組走
+     ui/form-table 的既有正本（§1-2：不另立第二種寫法），只換成示範資料。
+   **資料源＝`GET /datasets/{id}/files/{file_id}/chunks`**（product 的
      `get_file_chunks`），`response_model` 是**外層** `FileChunksOut` 包著 `chunks: list[ChunkOut]`。
-     §3-2「response 回得出的每個欄位都要有地方畫，而且要**逐層**列」——原本這段只列了內層 `ChunkOut`
-     的五欄，於是論證建立在一份不完整的欄位表上，而畫面上那格「類型」畫的正是被漏掉的外層
+     §3-2「response 回得出的每個欄位都要有地方畫，而且要**逐層**列」——只列內層 `ChunkOut` 那五欄
+     的話，整段論證就建立在一份不完整的欄位表上，而畫面上那一格「類型」畫的正好是外層才有的
      `file_type`。外層六欄逐欄交代：
        · `filename`     → 麵包屑最後一層 ＋ `.page-title`，並且是「標題」那格的退路（第一個 chunk 的
                           `doc_name` 為 null 時退它；React 正本 apps/web
                           `datasets/[id]/files/[fileId]/page.tsx` 即 `first.doc_name ?? data?.filename`）
        · `file_type`    → 「類型」那一格（大寫）。它是 product 自己的檔型欄位
-       · `chunk_count`  → 標題下面那一行（本輪補上，理由見該行註解）
+       · `chunk_count`  → 標題下面那一行（理由見該行註解）
        · `chunks`       → 這一頁只畫**第一個** chunk 的欄位（`doc_name`／`date`／`value`／`search`）；
-                          逐 chunk 全列是另一種畫面，真 app 與 React 正本也都只取
-                          `CompareData[0]`／`chunks[0]`
+                          逐 chunk 全列是另一種畫面，這一頁的定位是「看一眼這個檔抽出來長什麼樣」，
+                          React 正本同樣只取 `chunks[0]`
        · `file_id`      → 不畫：它就是網址上的 `?sn=`（3-1-3 檔案列的列鍵、進到這一頁的憑據），
                           再印一次不會讓任何人多做得了一個決定
        · `document_id`  → 不畫：GufoRAG 的內部識別碼（由索引名＋`data_source_id`＋`stored_name`
-                          重算出來的雜湊，見同檔 `compute_document_id`），使用者讀不懂也用不上；
+                          重算出來的雜湊，見同一支模組的 `compute_document_id`），使用者讀不懂也用不上；
                           查問題走後端日誌
    ⚠️ **「頻道」與「供應商」兩格畫「—」，那是實話不是偷懶**（§6：演的必須是一個真實可能的狀態）。
      內層 `ChunkOut` 只有 `chunk_index／doc_name／date／value／search` 五個欄位——頻道（來源資料集
      名稱）與供應商都不在裡面。它們是 `value` 那一包裡 **Excel 匯入才有**的動態欄（見 `ChunkOut.value`
      的逐字註解），偏偏這支端點對 `connector_type == "excel"` **一律 409 `use_compare_view`**
      （Excel 一列一 doc，「單 doc 多 chunk」模型不適用，導去 3-1-6）——所以走得到這一頁的檔案
-     結構上不可能有這兩欄。原本填「客服問答知識庫／自行上傳」是憑空造了兩個端點回不出來的值。
+     結構上不可能有這兩欄。**不可以填「客服問答知識庫／自行上傳」這種值**——那是憑空造了兩個
+     端點回不出來的東西，而示範資料一旦說謊，這一頁就再也驗不出對照有沒有接錯。
      React 正本已經是 `—` ＋「chunk 尚未提供，先佔位」。
    📌 交辦：這兩格要有真值，得由 product／GufoRAG 在 chunk 投影上補來源資料集與供應商兩欄；
      補上之前畫面就是「—」，不是留白（留白會被讀成「這一份沒有頻道」）。
-   ⚠️ **這六格 `.th` 是 chrome，照掛 `data-i18n`**——round45 對「租戶自取的顯示名是資料不是 chrome」
-     那條裁決的複驗結論是：裁決本身成立，但它的消費點是 3-1-6 而不是這一頁。3-1-6 的欄標籤真的是
-     租戶取的（product 同檔 `_document_field_mapping` 讀三份設定檔的 `document_field_mapping`、
+   ⚠️ **這六格 `.th` 是 chrome，照掛 `data-i18n`**——「租戶自取的顯示名是資料不是 chrome」那條
+     裁決本身成立，但它的消費點是 3-1-6、不是這一頁。3-1-6 的欄標籤真的是
+     租戶取的（product 同一支模組的 `_document_field_mapping` 讀三份設定檔的 `document_field_mapping`、
      `_product_only_labels` 讀 `RetrievalProfile.field_labels`），所以那一頁一顆 `data-i18n` 都不掛、
      label 由 `{% set %}` 給。而 `get_file_chunks` **從頭到尾沒有呼叫過那兩支**，它結構上回不出
      任何租戶顯示名；這六格是固定欄位的固定標題，React 正本也是六格全走 `t("dataset.*")`，
      真正動態的那一族（`ChunkOut.value` 的其餘鍵）在 React 是拿**原始鍵**當標題、不翻——那才是
-     裁決講的那一種。凍結前端 `previewFileDetail.js:171/177/183` 確實把這三格的 `.th` 換成
-     `cusFieldSettings[N].FieldName`，但 §3-2 明文：凍結前端只能拿來說明「切版沿用了什麼」、
-     不能拿來論證後端契約；而切版這一格早就不是它的 `CusField[1]` 了（畫的是 `file_type`）。 #}
+     裁決講的那一種。 #}
 <div class="form-table-wrap mt-10">
     <div class="form-table-group">
         <div class="form-table">

@@ -1,9 +1,12 @@
-// 結構與數值照抄自凍結前端 GufoFAQ_Frontend_New/scss/component.scss 1387-1495（tab 頁籤區塊），只搬檔案位置。
-// **偏離逐條列出**（「一字不改」的章會讓下一個人把切版自創的東西當成不可動的上游契約）：
-//   ① 色值全數換成語意 token（§4 不寫裸 hex）
-//   ② `.tab.on-record` 整段是**切版新增**的變體——取代原本 `.qa-record .tab` 的跨元件覆寫（§4）
-//   ③ `max-height` 600px（原檔 634px）
-//   ④ 三處 `box-sizing: border-box` 移除，交給 `_base.scss` 的全域宣告（§4-1）
+// tab 頁籤：側欄式直向頁籤（`.tab-wrap` ＋ `.tab-group`）與水平頁籤列（`.tab-row`）兩種版位，
+// 共用同一顆 `.tab` 鈕與它的 `.active` 選中態。
+// **這幾條要知道理由（改動前先讀）**：
+//   ① 色值全數走語意 token，不寫裸 hex（§4）。
+//   ② 問答紀錄側欄那一種外觀走 `.tab.on-record` 這顆**變體 class**，不要寫成
+//      `.qa-record .tab` 那種靠祖先限定的跨元件覆寫（§4：本元件的樣式由本元件的 class 決定）。
+//   ③ `.tab-wrap` 的 `max-height` 是 600px（≤768px 改 262.25px）：側欄比這再高就會頂到版面下緣，
+//      清單過長時靠 `.tab-group` 自己的 `overflow-y: auto` 內捲。
+//   ④ 不寫 `box-sizing: border-box`（§4-1：`_base.scss` 已全域給）。
 @use "../../../scss/mixin" as *;
 
 /*===============================
@@ -18,7 +21,7 @@
     gap: 0.75rem;
     width: 240px;
     height: fit-content;
-    max-height: 600px; // 真 app 編譯 css 為 600px（scss 源碼舊值 634px）
+    max-height: 600px; // 側欄封頂；再高就會頂到版面下緣，超出的部分由 .tab-group 內捲
 
     @media screen and (max-width: 768px) {
         width: 100%;
@@ -67,8 +70,9 @@
         color: var(--on-accent);
     }
 
-    // 問答紀錄側欄用的頁籤變體：未激活為主色藍字。
-    // 由 components/qa-record-tabs 掛用，取代原本 .qa-record .tab 的跨元件覆寫（§4）。
+    // 問答紀錄側欄用的頁籤變體：未選中時是主色藍字（而不是通用的 --text-muted 灰字）。
+    // 由 components/qa-record-tabs 掛用。**寫成變體 class 而不是 `.qa-record .tab`**（§4）：
+    // 靠祖先限定去覆寫別人的 class，換一個版位就靜默失效，而且樣式的主人會變得看不出來。
     &.on-record {
         color: var(--brand-text);
 

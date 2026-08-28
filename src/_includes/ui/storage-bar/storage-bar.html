@@ -6,7 +6,8 @@
                          5-10 那一列會渲染成「條寬 84.3%、文字 0 / 132（0%）」，一條說謊的進度條。
        storageBarText —— 條下那行說明。**未給時走內建的儲存空間文案**（chrome 走 i18n、數字是資料）；
                          給了就整行由使用頁提供（5-10 那一行是「118 / 132（89.4%）」，純資料不翻）。
-     原本這份 markup 被 5-10 手抄了一份（§1-2：同一個元件絕不複製貼上，要用就 include）。 #}
+     ⚠️ **要用就 `{% include %}`，不要把這三行 markup 手抄過去**（§1-2）：條寬與文字是同一顆資料的
+     兩種呈現，手抄一份出去之後，改條寬的人不會知道還有另一處要跟著改。 #}
 {% set storageBarPctResolved = 84.3 %}
 {% if storageBarPct != null %}{% set storageBarPctResolved = storageBarPct %}{% endif %}
 <div class="storage-bar">

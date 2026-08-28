@@ -1,72 +1,71 @@
-{# 套用正式設定：A/B 比對 modal，取自真實 app pages/qaTest/2-2-3_abTest.html 的 #ProductionSettingsModal。
-     A/B 測試頁套用前要並列比對「原設定」與「設定B」；單一測試頁的簡易確認版本是另一個元件 apply-settings-modal。
-     真 app 兩頁各有一份彼此結構完全不同的彈窗、卻共用 id ProductionSettingsModal（同一份文件內不衝突而已）。
-     切版是單一站台、且一個 dialog id 就是一份正本，故這裡改名為 ProductionSettingsCompareModal。
+{# 套用正式設定：A/B 比對 modal。做什麼：A/B 測試頁按下「套用為正式設定」前，把「原設定」與
+     「設定 B」並列，讓人在覆蓋正式設定之前看得出差在哪。單一測試頁只要二次確認、不必比對，
+     那是另一個元件 apply-settings-modal。
+     兩者是結構完全不同的兩份彈窗，故各自一個 id：這一顆叫 ProductionSettingsCompareModal
+     （切版是單一站台、一個 dialog id 就是一份正本，同名會互撞）。
      id 不是轉換契約（React 不靠 getElementById）；真正要原樣保留的業務掛點是
      .js-apply-current-title / .js-apply-title / .js-confirm-apply（§5）。
-     ⚠️ **前兩顆是成對的**（上一版只枚舉了 `.js-apply-title`，左欄那顆整個漏掉）：凍結前端
-     `GufoFAQ_Frontend_New/js/abTest.js` 的 `populateApplyModal` 用
-     `$('#ProductionSettingsModal .js-apply-current-title').parent()` 定位**左欄「原設定」**、
-     再用 `$('#ProductionSettingsModal .js-apply-title').parent()` 定位**右欄「要套用的那一側」**，
-     兩欄各自 `$col.find('input')`／`find('input.sample-count')`／`find('textarea')` 填值
-     （**本 repo 這一版已經沒有 textarea**：提示詞那一欄依 round46 的判定撤掉，見下方那一段）。
-     少了左欄那顆，React 端就只認得出「要套用的是哪一欄」，認不出「拿現值來填的是哪一欄」——
-     而這顆彈窗的整個用途就是把那兩欄擺在一起比。
-     確認鈕 toast 只列 success|error（key toast.applyProductionCompare、2 段）：權限不足在 React 走**獨立的**
-     apply-settings-no-permission-modal（saas apps/web ab-test/page.tsx 的 setNoPermOpen），不是本鈕的 toast 分支，
-     故不列（§5：分支要對得上真實結果的**機制**）。單一測試頁的 apply-settings-modal 才把權限不足演成 inline warning。
-     `.sample-count` 同樣是凍結前端的掛點（`js/abTest.js` 的 `$col.find('input.sample-count')`），
-     本 repo scss/js 零引用，寬度來自同掛的 `.w100`（§4：無樣式 class 要寫出真 app 出處）。 #}
+     ⚠️ **前兩顆是成對的，缺一不可**：
+     `.js-apply-current-title` 定位**左欄「原設定」**、`.js-apply-title` 定位**右欄「要套用的那一側」**，
+     兩欄各自去填自己那幾格的值。少了左欄那顆，React 端就只認得出「要套用的是哪一欄」，
+     認不出「拿現值來填的是哪一欄」——而這顆彈窗的整個用途就是把那兩欄擺在一起比。
+     確認鈕 toast 三段（`toast.applyProductionCompare`：success｜warning｜error）。**第 2 段是那道 403**：
+     這顆鈕掛 `data-capability="settings:write"`，而能力不足是走得到的結果路徑（有 `settings:read`
+     沒有 `settings:write` 的人打得開頁面、看得到鈕），§4 明訂它要列成 warning 段、不做「不渲染／不可按」。
+     ⚠️ 另有一條**不同機制**的權限路徑：AB 比較這一側在 React 端還會開 `apply-settings-no-permission-modal`
+     那顆獨立的窗（gufofaq-saas `apps/web` 的 `setNoPermOpen`）。兩者不衝突——彈窗是那一頁自己多做的一層，
+     toast 段列的是**這顆鈕送出去之後的結果集合**（§5：分支要對得上真實結果的機制）。
+     單一測試頁的 apply-settings-modal 才把權限不足演成 inline warning。
+     `.sample-count` 同樣是**取樣欄的讀值掛點**，本 repo scss／js 零引用，寬度來自同掛的 `.w100`
+     （§4：非 `js-` 形狀的無樣式 class 要在檔頭交代它是誰的掛點）。 #}
 {# **左欄「原設定」＝套用前的正式設定**——也就是「前台現在跑的是哪一套設定檔、它的參數長什麼樣」，
-     不是「這一側自己的設定檔」。凍結前端 `GufoFAQ_Frontend_New/js/abTest.js` 的 `populateApplyModal`
-     逐格就是這樣填的：`:578` 的知識檢索那一格取 `DefaultFrontendSettingSN`（＝前台預設那一組），
-     `:579`-`:583` 其餘四格（LLM 模型／取樣兩格／提示詞）取 `SharedParameters`。
-     （`:578` 的字面是「配置一/二/三」，本 repo 全站統一用「設置一/二/三」——引它是為了說明**那一格的值
+     不是「這一側自己的設定檔」。逐格的來源：知識檢索那一格取**前台預設的那一組**，
+     其餘四格（LLM 模型／取樣兩格／提示詞）取**共用參數**。
+     （本 repo 全站統一用「設置一/二/三」——這裡講的是**那一格的值
      從哪裡來**，不是逐字沿用它的字面。）
    ⚠️ 這一欄與同頁那顆 `components/knowledge-retrieval-modal` 說的是**同一個值**：那顆窗標「（預設）」
      的分頁、5-2_conversationSettings 的「前台問答預設使用」radio、與這裡的左欄知識檢索，三處都是
-     `TenantSetting.default_frontend_profile_no`（gufofaq-saas product `app/models.py`）的投影。
-     這一欄原本寫「設置一」而那顆窗標的是「設置二（預設）」⇒ 沒有任何一個租戶狀態畫得出 2-2-3 那一頁
-     （§6 同頁自洽）。三處統一成設置二。
+     `TenantSetting.default_frontend_profile_no`（gufofaq-saas product）的投影。
+     三處一律寫「設置二」：任一處寫成別的值（例如這一欄「設置一」、那顆窗標「設置二（預設）」），
+     就沒有任何一個租戶狀態畫得出 2-2-3 那一頁（§6 同頁自洽）。
    本頁的示範狀態裡，B 側選的設定檔（設置二）**正好就是前台預設**，故左欄的知識檢索與右欄同值；
      兩欄真正的差異落在其餘四格（gpt-4o-mini／4／6／已儲存的提示詞 vs 這一側臨時改成的
      gpt-4o／8／16／編輯中的提示詞）。兩者不同時（側別設定檔 ≠ 前台預設）以「前台預設那一套」為準——
      這顆窗回答的是「按下去之後前台會變成什麼樣」。
-   SaaS 這一側的注意事項：套用**沒有**跨設定檔的共用參數可寫，product `app/routers/qatest.py` 的
+   SaaS 這一側的注意事項：套用**沒有**跨設定檔的共用參數可寫，product 的
      `apply_production` 是「把參數 merge 進**該側設定檔**的 chatbot config ＋ 把 `default_frontend_profile_no`
      指到該設定檔」兩件事。
-   ⚠️ **這顆窗列的欄位＝`ApplyIn` 的欄位，一個不多一個不少**（round46 修正，兩個方向都錯過）：
-     · **拿掉「提示詞」**。它**不在** `ApplyIn` 裡（那顆 model 是 `extra="forbid"` 且沒有 `prompt` 欄；
-       提示詞另走「儲存提示詞版本」）。上一版把它留著、註解寫「它在這顆窗裡是比對脈絡、不是會被
-       套用的東西」——**那個理由撐不住這一區的用途**：這一區回答的是「按下去之後前台會變成什麼樣」，
+   ⚠️ **這顆窗列的欄位＝`ApplyIn` 的欄位，一個不多一個不少**——兩個方向都會出錯，各舉一例：
+     · **不放「提示詞」**。它**不在** `ApplyIn` 裡（那顆 model 是 `extra="forbid"` 且沒有 `prompt` 欄；
+       提示詞另走「儲存提示詞版本」）。看起來它是有用的比對脈絡，但**那個理由撐不住這一區的用途**：
+       這一區回答的是「按下去之後前台會變成什麼樣」，
        而使用者看到兩欄提示詞不同、按下去拿到「已套用為正式設定」，前台的提示詞卻紋風不動。
        端一個不會變的欄位比不端更糟：不端只是少講一件事，端了是講錯一件事。
-     · **補上「思考深度」**。`ApplyIn.reasoning_effort` 真的會被寫進去，而它在這顆窗上完全沒有落點
-       ——使用者於是在毫不知情的狀況下把正式設定檔的思考深度換掉了。
+     · **一定要放「思考深度」**。`ApplyIn.reasoning_effort` 真的會被寫進去；它若在這顆窗上沒有落點，
+       使用者就會在毫不知情的狀況下把正式設定檔的思考深度換掉。
      判準一句話：**這一欄會不會因為按下那顆鈕而改變**；會就要在窗上，不會就不准在窗上。 #}
 {# 比對窗要看得到**差異**（§6 示範資料要自洽）：兩欄逐欄相同時，這顆彈窗演的是一個
      「套用了也不會有任何改變」的狀態，而它存在的理由正是讓人在套用前看出差在哪。
      「設定 B」欄必須等於使用頁 2-2-3 的 B 側（abSides[1]：設置二／openai:gpt-4o，取樣 8／16，
      思考深度 `high`）——同一份資料在頁面與彈窗兩處說兩套，是跨區不自洽。
-     ⚠️ 思考深度那一欄是**這一輪連帶逼出來的**：2-2-3 的兩側原本都停在「沿用模型預設」
-     （`components/reasoning-effort-select` 恆定選中空值那一顆），這裡若照抄就只畫得出兩欄相同的
+     ⚠️ 思考深度那一欄**連帶決定了 2-2-3 的示範值**：`components/reasoning-effort-select` 的預設是
+     恆定選中「沿用模型預設」那顆空值，兩側都照那個預設走的話，這裡就只畫得出兩欄相同的
      「沿用模型預設」，而這顆窗存在的理由正是看出差異。故該元件開了 `reasoningEffortSelected`
      參數、2-2-3 的 B 側設 `high`，兩處才對得上（見該元件與 2-2-3 的註解）。
      ⚠️ 兩欄的 `llm` 值是 `GET /qatest/models` 回的 `value`（`<provider>:<model>`，gufofaq-saas
-     product `app/routers/qatest.py` 的 `list_models`／`effective_models`）。原本寫成
-     `OpenAI gpt-4o-mini`／`OpenAI gpt-4o`——那個字面過不了 product `app/llm.py` 的
+     product 的 `list_models`／`effective_models`）。**不可以寫成顯示用的
+     `OpenAI gpt-4o-mini`／`OpenAI gpt-4o`**：那個字面過不了 product 的
      `can_build_model`（`model.startswith(PROVIDER_PREFIXES)`，前綴只有 `openai:`／`anthropic:`），
      而 2-2-3 的 `abSides` 也是這個形狀——兩邊沒同時是 `openai:` 就同時犯了兩件事。
      四欄逐欄都是資料（不是迴圈內的寫死文字），否則兩欄結構上不可能不同。 #}
 {# 變數用元件專屬名（§6：`set` 是頁面全域，泛用名如 `settingColumns` 會和使用頁自己的同名變數
      互相覆蓋，而渲染結果的靜默覆蓋沒有測試看得到）。
-   `jsApplyCurrentTitle`／`jsApplyTitle` 是兩顆成對的凍結 hook 開關，見上方檔頭。 #}
+   `jsApplyCurrentTitle`／`jsApplyTitle` 是兩顆成對的業務掛點開關，見上方檔頭。 #}
 {# **右欄標題是執行期會換字的那一格**，故走兩態槽（`titleStates` → `data-text-<態>`／`data-key-<態>`，
      §4-2；正典 `ui/theme-toggle`／`components/prompt-edit`，同頁的另一處是參考來源表那一格）。
      這顆彈窗兩欄講的不是同一種東西：**左欄是固定標籤**（「原設定」＝前台現在跑的那一套，見上方
      檔頭），任何時候都是這四個字，故一顆 `modals.originalSettings` 就夠；**右欄標的是「這次要套用
-     的是哪一側」**，凍結前端 `GufoFAQ_Frontend_New/js/abTest.js:587` 就是 `$('.js-apply-title').text(sideName($side))`
-     ——同一個節點在 A/B 兩態之間換字（`sideName` 回「設定A」／「設定B」）。
+     的是哪一側」**——同一個節點在 A／B 兩態之間換字（「設定 A」／「設定 B」）。
    兩態的繁中原文與 key 都要在 markup 備妥：只寫得出 B 側的話，A 側的繁中在全站沒有家，消費端
      只能就地拼 `t("qaTest.setting") ＋ 字母`＝在切版之外開第二個文案正本（§4-2「枚舉的成員…缺的
      成員不是刪掉 key…給它一個渲染點」）。只補 `en.json` 一顆 key 也不行，那只給得出英文，而且
@@ -77,8 +76,8 @@
      這一顆是**單一節點在兩態間切換的整句**，成員是封閉的兩顆、切版當下就列得完。前者的正典是
      `pagination.totalPrefix` 夾資料槽（值是開放的數字），後者的正典是兩態槽。
    繁中寫「設定 A／設定 B」（拉丁字母前留半形空白）：本頁其餘三處側別標籤（`abSideLabel-<側>`、
-     兩顆答案標題、參考來源表的「（設定 A）」）都已經是這個排版，這一顆原本是凍結前端的字面
-     「設定B」——同一頁同一句話兩種字距是 §6 不自洽。`state` token 一律小寫（HTML 屬性名的限制），
+     兩顆答案標題、參考來源表的「（設定 A）」）都是這個排版，這一顆**不可以寫成「設定B」**
+     ——同一頁同一句話兩種字距是 §6 不自洽。`state` token 一律小寫（HTML 屬性名的限制），
      與 2-2-3 `abSides[].state` 同一組值。 #}
 {% set applyCompareColumns = [
     { title: "原設定", titleKey: "modals.originalSettings", retrieval: "設置二", llm: "openai:gpt-4o-mini", sampleMin: "4", sampleMax: "6", reasoningEffort: "medium", jsApplyCurrentTitle: true },
@@ -140,8 +139,8 @@
                                         </div>
                                     </div>
                                 </div>
-                                {# 思考深度：`ApplyIn` **有**這一欄（gufofaq-saas product
-                                     `app/routers/qatest.py`），所以它會跟著這顆鈕被寫進正式設定檔。
+                                {# 思考深度：gufofaq-saas product 的 `ApplyIn` **有**這一欄，
+                                     所以它會跟著這顆鈕被寫進正式設定檔。
                                      值是枚舉成員、不翻（同 `components/reasoning-effort-select` 的
                                      `<option>`，那裡是這組枚舉的正本）。 #}
                                 <div class="form-group row mobile-col">

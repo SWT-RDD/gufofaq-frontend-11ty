@@ -1,7 +1,7 @@
 // header 桌機下拉選單的無障礙補完。
 //
 // 展開/收合本身是純 CSS：_header.scss 的 `li:hover > ul` 與 `li:focus-within > ul`
-// （原真實 app 用 superfish JS，切版改 CSS-hover；只有 hover 的話鍵盤使用者完全打不開子選單）。
+// （**兩個條件缺一不可**：只寫 `:hover` 的話鍵盤使用者完全打不開子選單）。
 // CSS 改不了 ARIA，故本檔只做一件事：讓 aria-expanded 反映「子選單當下是否顯示」。
 //
 // 觸發是 `<button type="button" class="dropdown">` 而不是 `<a href="#">`（§5，理由見 header.html 檔頭）：

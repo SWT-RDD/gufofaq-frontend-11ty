@@ -1,8 +1,9 @@
 // 篩選列欄位群：讓一列篩選欄位均分剩餘寬度、可被壓縮。
 // 無 html（markup 由頁面自組——外層 .filter-fields，每個欄位加本元件的 slot class .filter-field）；
 // 行為 js 見同資料夾 filter-fields.js（.js-filter-clear 清除鈕）。
-// （原始規則來自凍結前端 GufoFAQ_Frontend_New/css/style.css 的 .filter-fields .form-group，依 GUIDELINE §4
-//  「容器排版子元件改用 parent 自有的 slot class」改為 .filter-field，不指名 ui/form-control 的 class。）
+// （欄位那一層掛的是本元件自有的 `.filter-field`，**不寫 `.filter-fields .form-group`**：依
+//  GUIDELINE §4「容器排版子元件改用 parent 自有的 slot class」，容器不得指名 ui/form-control 的
+//  class——那樣寫的話，form-control 一改結構、或篩選列裡混進一顆非 form-group 的欄位，就會出錯。）
 // 即使頁面只有單一欄位，也必須包在 .filter-fields 裡：漏了外層，.filter-field 這個巢狀選擇器
 // 就不會命中（規則直接不生效），該欄位的 .col-N-* 也會從錯誤的祖先（外層 .gap-24 而非本元件的
 // .gap-16）繼承 --flex-gap，欄寬計算跟著跑掉。
@@ -25,8 +26,8 @@
 //   </div>
 //
 //   · 這一段逐字抄自 2-2-1 的「LLM模型」那一格。**選項的值是 `<provider>:<model>`**
-//     （`GET /qatest/models` 回的 `value`，product `app/routers/qatest.py` 的 `list_models`／
-//     `effective_models`）——抄成 `OpenAI gpt-4o` 那種字面會過不了 product `app/integrations/llm.py` 的
+// （`GET /qatest/models` 回的 `value`，product 的 `list_models`／
+// `effective_models`）——抄成 `OpenAI gpt-4o` 那種字面會過不了 product 的
 //     `can_build_model`（`model.startswith(PROVIDER_PREFIXES)`，前綴只有 `openai:`／`anthropic:`）
 //   · `.filter-field` 是本元件的 slot class（不去寫 ui/form-control 的 class，§4）
 //   · `<div class="label">` **不帶 flex-row**。只有那一欄的標籤旁邊要放 `ui/info-btn` 時才多掛

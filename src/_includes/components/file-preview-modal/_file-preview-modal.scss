@@ -1,5 +1,5 @@
-// 檔案預覽 modal 的 iframe 容器尺寸：原為 file-preview-modal.html 的行內 width/height/border，
-// 依 GUIDELINE §4（行內 style 不含尺寸類版面）收進元件自己的 scss。
+// 檔案預覽 modal 的 iframe 容器尺寸。**尺寸不寫在 markup 的行內 style 上**
+// （GUIDELINE §4：行內 style 不承載尺寸類版面），故 width／height／border 都收在元件自己的 scss。
 .preview-frame-wrap {
     width: 100%;
     height: 600px;

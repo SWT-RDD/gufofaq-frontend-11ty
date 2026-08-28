@@ -1,11 +1,13 @@
-// checkbox 全選控制：.checkbox-container 內 .check-all 勾選/取消時連動所有 .check-one；反之單一 .check-one 全數勾選時 .check-all 自動勾選
-// 行為改寫自凍結前端 GufoFAQ_Frontend_New/js/main.js「checkbox 全選控制」（原用 jQuery），改為標準 DOM API
+// checkbox 全選控制（原生 DOM API，掃描根是 `.checkbox-container`）：
+//   ・勾／取消 `.check-all` → 連動容器內所有 `.check-one`
+//   ・改動任一 `.check-one` → 回頭算出 `.check-all` 的三態（全勾／全不勾／半選）
+// 三態裡的「半選」是 `indeterminate`，它是 DOM property、寫不進 markup，只能由這支 js 給。
 document.addEventListener("DOMContentLoaded", function () {
     // **載入即同步一次**（§6：元件自帶 js 若會改變被推導的值，載入時就要同步）：
-    // `indeterminate` 先前只在「使用者點了某顆 .check-one」時才算，頁面載入時零計算——
-    // markup 帶著部分 `checked`（伺服器決定的初始態，例如「上次勾選的檔案」）時，表頭的全選框
-    // 會畫成完全沒勾，正是本檔下面那段註解自己說的失敗樣態。轉 React 時它是 derived value，
-    // 不是事件副作用。
+    // 只在「使用者點了某顆 .check-one」時才算的話，頁面載入時等於零計算——markup 帶著部分
+    // `checked`（伺服器決定的初始態，例如「上次勾選的檔案」）時，表頭的全選框會畫成完全沒勾，
+    // 正是本檔下面那段註解自己說的失敗樣態。
+    // 這個值是**推導值**（勾了幾顆算出來的），不是事件的副作用——轉 React 時它是 derived value。
     document.querySelectorAll(".checkbox-container").forEach(function (container) {
         var all = container.querySelector(".check-all");
         if (!all) return;

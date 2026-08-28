@@ -1,6 +1,10 @@
-{# 展示片段，取自真實 app pages/components/component.html 13 Tab頁籤 section（節錄，class 沿用真實系統） #}
-{# 使用 .tab 加 .active 呈現激活狀態；大父層 div.tab-wrap 包覆；同一組按鈕父層 div.tab-group 包覆；
-     雙層頁籤第一層 .tab-group 加 .top-tabs、第二層加 .sub-tabs。切換行為見 tab.js #}
+{# 展示片段：元件庫頁（`pages/components/component.html`）的「Tab 頁籤」那一節 include 它，
+     示範兩種版位——左邊是側欄式的雙層頁籤（`.tab-wrap` 直向），右邊是單層水平頁籤（`.tab-row`）。
+     ⚠️ **生產頁用的全是第二種語意**（`data-target` 指向一顆 `.tab-content` 面板），
+     這裡第一層示範的 `data-target` 指的卻是一整組子頁籤；兩種都要照抄得出來，逐型契約見 tab.js 檔頭。 #}
+{# 結構：`.tab-wrap` 是整塊的殼，同一組頁籤鈕再包一層 `.tab-group`；雙層時第一層的 group 加
+     `.top-tabs`、第二層加 `.sub-tabs`（tab.js 靠這兩顆 class 分辨要換群組還是換面板）。
+     選中態**同時**掛 `.active`（視覺）與 `aria-current="true"`（報讀器聽得到的那一份），切換行為見 tab.js。 #}
 <div class="flex-row gap-20">
     <div class="tab-wrap">
         <div class="tabs-title">問答紀錄</div>

@@ -1,8 +1,9 @@
 // 部署站台首頁：頁面目錄（catalog）專屬樣式。僅本頁使用（性質同 _guideline，showcase 專用、正式頁面不引入）。
 // 顏色一律走 _var.scss 變數；間距用固定尺標，維持與全站一致。
 //
-// §9：頁面專屬樣式一律限定在該頁的 body class 底下（同 _guideline 收進 .guideline-page）。
-// 曾經這支靠 `.catalog-*` 前綴自律隔離 —— 前綴不是機制，撞名就外洩。
+// §9：頁面專屬樣式一律限定在該頁的 body class 底下（同 _guideline 收進 `.guideline-page`）。
+// **不可以只靠 `.catalog-*` 前綴自律隔離**：全站 scss 打包成單一 main.css 每頁都載，
+// 前綴是命名習慣、不是機制，一撞名就洩到別頁；body class 才真的關得住。
 body.catalog-page {
     // **頁底要由 token 決定，不能落回 UA canvas。** 這一頁不走 page-shell（沒有 `.main` 的
     // `background-color: var(--surface)`），全站唯一一頁沒有任何一層鋪滿的底——深色模式下

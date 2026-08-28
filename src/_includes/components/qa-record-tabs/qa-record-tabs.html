@@ -3,25 +3,24 @@
 
      住在哪一頁（雙向對得上，§1-2）：`2-1_qaRecord.html` 直接 include；`2-2-1_singleTest.html` 與
      `2-2-3_abTest.html` 經 `components/qa-side-panel` include；`pages/components/component.html`
-     （元件庫頁）以 `qaRecordTabs = []` include ——**那是空狀態唯一被看得到的地方**（三個真實頁的
+     （元件庫頁）以 `qaRecordTabs = []` include ——**那是空狀態唯一被看得到的地方**（另外三個使用頁的
      示範資料都非空），漏列它就等於這一段 `{% else %}` 沒有人驗收過（§5）。
 
      資料 `qaRecordTabs = [{ id, label, active }]` 由頁面提供（§3-2/§6），本元件不自帶：
-       `id`（必填）＝**那一筆問答紀錄自己的識別碼**，真 app 是 `LogChatLogHistorySN`
-         （凍結 `GufoFAQ_Frontend_New/js/singleTest.js:638` 的 `data-chat-sn="${chat.LogChatLogHistorySN}"`，
-         :952 的委派選擇器 `.qa-side-panel .tab[data-chat-sn]` 靠它才點得動）。
+       `id`（必填）＝**那一筆問答紀錄自己的識別碼**，寫進業務掛點 `data-chat-sn`：側欄那條委派
+         選擇器 `.qa-side-panel .tab[data-chat-sn]` 靠它才點得動，屬性掉了整條委派就落空。
          **不可以用 `loop.index`**：這個清單刪得掉（側欄那顆「開啟新對話」與聊天室刪除都會改動它），
          位置不是身分——刪一筆之後每一顆鍵整排前頂，React 的 key 與逐列動作會一起指錯人（§6 列鍵）。
        `label`（選填）＝那一筆的標題，**是使用者資料不是 chrome**，故不翻，也只有它在時才掛
-         `title`（截斷時的完整字面；不掛空屬性，§4）。未給時走真 app 的 fallback：
-         `qaRecord.js:83` 取 `room.ChatTitle`，取不到就用「問答紀錄」接上序號（同檔 `singleTest.js:636`
-         取不到時是「無標題」）——那一半是寫死在 js 裡的 UI chrome，所以切版把它拆成
-         「可翻的前綴（qa.recordFallbackPrefix）＋ 不翻的序號」，英文模式才不會在頁籤上冒出繁中。
-         整串「問答紀錄1」當成一個 label 字面量傳進來時，chrome 與資料烤在一起，兩邊都失真。
-         ⚠️ 序號那一半用 `loop.index` 是對的（真 app 就是 `index + 1`，它是「第幾顆」不是身分）；
+         `title`（截斷時的完整字面；不掛空屬性，§4）。未給時走 fallback：「問答紀錄」接上序號。
+         這個 fallback **是 UI chrome 不是資料**（它是畫面自己生的名字，上游沒有這個字串），
+         所以切版把它拆成「可翻的前綴（qa.recordFallbackPrefix）＋ 不翻的序號」，英文模式才不會
+         在頁籤上冒出繁中。整串「問答紀錄1」當成一個 label 字面量傳進來時，chrome 與資料烤在一起，
+         兩邊都失真。
+         ⚠️ 序號那一半用 `loop.index` 是對的——它答的是「這是畫面上第幾顆」而不是身分；
          身分永遠走 `id`。
          **這條 fallback 由 `2-1_qaRecord`（第三筆）與 `2-2-1_singleTest`（第二筆）演，`2-2-3_abTest`
-         刻意三筆都有 label**：前兩頁的 label 走 gufofaq-saas product `routers/history.py` 的
+         刻意三筆都有 label**：前兩頁的 label 走 gufofaq-saas product 的
          `/history/rooms`（`title` ＝ `x.get("human_content", "") or ""`，空得出來）；2-2-3 的一列
          不是聊天室而是一次 AB 比較，label 走 `ab_history` 的 `question`，那顆是
          `AbTestRound.question: Mapped[str]`（建欄即 NOT NULL、無 server_default）且送出前先 trim
@@ -33,18 +32,17 @@
          會黏成 `Q&A record1`，§4-2 前綴 key 自帶分隔空白）。共用一顆會讓兩邊同時說謊。
        `active`（選填）＝目前選中的那一筆。
 
-     ⚠️ **列鍵屬性統一到 `data-chat-sn`，值是 id**。三件事原本都對不上：真 app 沒有任何一頁叫
-     `data-record-index`；`2-1` 的 `qaRecord.js:85` 用的是 `data-room-index`（而且值是**陣列位置**，
-     :243 直接 `chatHistories[index]`）；`2-2-1` 的 `singleTest.js` 用的是 `data-chat-sn`（值是 id）。
-     切版取後者：①它是身分不是位置，符合 §6「列鍵是資料契約的一部分」；②它是兩者中唯一被
-     **選擇器**依賴的（`.tab[data-chat-sn]`），改掉會讓那條委派整條落空；③saas 的
-     `apps/web/components/QaRecordTabs/QaRecordTabs.tsx` 兩個都不用（它走 React 的 `key={tab.key}`），
-     所以這一顆屬性是切版單方面定的契約，定成 id 形狀不會與已出貨的 React 打架。
-     `2-1` 那一頁沿用 `data-room-index`（位置）的寫法刻意不跟——同一顆頁籤在兩頁長出兩種列鍵，
-     正是這條規則要消滅的東西。
+     ⚠️ **列鍵屬性全站統一到 `data-chat-sn`，值是 id**，三頁一模一樣。理由：①它是身分不是位置，
+     符合 §6「列鍵是資料契約的一部分」；②它是唯一被**選擇器**依賴的屬性（`.tab[data-chat-sn]`），
+     換成別的名字會讓那條委派整條落空；③gufofaq-saas 的
+     `apps/web/components/QaRecordTabs/QaRecordTabs.tsx` 不讀任何 data-* 屬性（它走 React 的
+     `key={tab.key}`），所以這一顆屬性是切版單方面定下的轉換契約，定成 id 形狀不會與已出貨的
+     React 打架。
+     ⚠️ 反過來說，**不准出現以「位置」為值的列鍵**（例如 `data-record-index` 這種名字）：
+     同一顆頁籤在不同頁長出兩種列鍵、其中一種還是陣列索引，正是這條規則要消滅的東西。
 
-     無紀錄時顯示空狀態（真 app qaRecord.js:78／singleTest.js:629 皆有；原 inline padding 收進
-     _qa-record-tabs.scss，div/span 不一統一為 div）。 #}
+     無紀錄時顯示空狀態，`{% else %}` 那一段：padding 進 _qa-record-tabs.scss（不留行內樣式），
+     標籤統一用 div。 #}
 <div class="tab-group">
     {% for tab in qaRecordTabs %}
     <button type="button" class="tab on-record{% if tab.active %} active{% endif %}"{% if tab.active %} aria-current="true"{% endif %} data-chat-sn="{{ tab.id }}"{% if tab.label %} title="{{ tab.label }}"{% endif %}>{% if tab.label %}{{ tab.label }}{% else %}<span data-i18n="qa.recordFallbackPrefix">問答紀錄</span>{{ loop.index }}{% endif %}</button>

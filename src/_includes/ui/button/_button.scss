@@ -1,17 +1,19 @@
-// 結構與數值取自凍結前端 `GufoFAQ_Frontend_New/scss/component.scss` 的「button按鈕」區段（521-744）。
-// **偏離逐條列出**：
-//   ① 色值換語意 token
-//   ② `.button` 的 `box-sizing: border-box`（原檔 537）移除（§4-1：`_base.scss` 已全域給）
-//   ③ `.button` 的 `line-height: 1.375` → `normal`（理由見該行行內註解：真 app 編譯後的 css 是 normal）
-//   ④ `.button .icon { width/height/object-fit }`（原檔 550-554）整段移除——**升格成全域工具**
-//      `scss/_utilities.scss` 的 `.icon`（同一份宣告全站共用，不再逐元件抄一份）
+// 全站按鈕：`.button` 是共同底盤（尺寸、字重、圓角、失效態），`.button-*` 是語意變體（主要／外框／
+// 橘／綠／紅／深墨），`.button-icon` 是沒有可見字面、只畫一顆圖示的圓鈕。
+// **這幾條要知道理由（改動前先讀）**：
+//   ① 色值全數走語意 token（`--brand`／`--success`／`--danger`…），不寫死色碼——深色模式與 hover
+//      都是換 token 值換過去的，寫死那一份就跟不上。
+//   ② `.button` 不自己寫 `box-sizing: border-box`（§4-1：`_base.scss` 已全域給，重複一份只會分岔）。
+//   ③ `.button` 的 `line-height` 是 `normal` 不是 body 的 1.375（理由見該行行內註解）。
+//   ④ `.button .icon { width/height/object-fit }` **不在本檔**——已升格成全域工具
+//      `scss/_utilities.scss` 的 `.icon`（同一份宣告全站共用，不再逐元件抄一份）。
 //   （**生產契約**見檔尾「生產形狀」一節。）
-//   ⑤ `.button-icon` 由 `background-image` 改寫成 `::before` ＋ `icon-mask()`（原檔 660-700；
-//      顏色交給語意 token，深色模式免存 hover 版資產）
-//   ⑥ `&:has(.tooltip)`（原檔 706-713）整段移除——tooltip 的顯示條件改由 `ui/tooltip` 自己的
-//      `.has-tooltip` 承載（§4：外觀覆寫改成 owning 元件的變體，且它要含 `:focus-visible`）
-//   ⑦ 新增 `.like`／`.dislike`／`.share` 三個變體（原檔沒有；前台評分／分享鈕用）
-//   **宣告集合差集**（與上面那段凍結範圍逐條 diff，只比種類不比值——色值換語意 token 是 §4 要求的、不算偏離）：本檔新增 `inset`；凍結有本檔沒有 `box-sizing`／`object-fit`／`background-size`／`background-repeat`／`background-position`／`background-image`。圖示改用 `icon-mask()`（見 ⑤）故沒有 background-* 那一族；`inset` 是 `.button-icon::before` 的定位，隨 ⑤ 一起新增。
+//   ⑤ `.button-icon` 的圖示畫在 `::before` ＋ `icon-mask()`，不用 `background-image`：顏色因此交給
+//      語意 token，換色（hover／深色模式）不必再存一份換過色的圖檔。
+//   ⑥ tooltip 的顯示條件**不在本檔**——由 `ui/tooltip` 自己的 `.has-tooltip` 承載（§4：外觀覆寫要改成
+//      owning 元件的變體，而且那條規則得連 `:focus-visible` 一起管，鍵盤才叫得出提示）。
+//   ⑦ `.like`／`.dislike`／`.share` 三個變體是本元件自有的（前台訊息的評分／分享鈕用）。
+//
 @use "../../../scss/mixin" as *;
 
 .button {
@@ -27,7 +29,7 @@
     border: 1px solid transparent;
     border-radius: 4px;
     font-weight: 500;
-    line-height: normal; // 真 app 編譯 css 為 normal（scss 源碼舊值 1.375 會讓按鈕偏高）
+    line-height: normal; // 不吃 body 的 1.375：那會把文字盒撐高，同一列的鈕與輸入框就對不齊
     cursor: pointer;
     text-decoration: none;
     transition: all 0.3s;
@@ -182,8 +184,8 @@
         @include icon-mask("../images/icon_delete.png", var(--brand-text), 24px 24px);
     }
 
-    // 下載鈕：生產 markup 在 3-1-3 的檔案列（逐列一顆 `.download-file-btn`，業務掛點、切版只給圖示樣式）；
-    // 真 app 該處是 previewDataset.js:170 執行期產生的。
+    // 下載鈕：生產 markup 在 3-1-3 的檔案列，逐列一顆 `.download-file-btn`——那是業務掛點／轉換契約
+    // （下載那一下由業務端接），切版這裡只負責給它圖示樣式，不要因為本 repo 沒有對應 js 就當死碼刪掉。
     &.download::before {
         @include icon-mask("../images/icon_download.png", var(--brand-text), 24px 24px);
     }
@@ -197,7 +199,7 @@
     }
 
     // 前台 FAQ 訊息動作鈕（讚/倒讚/分享；複製沿用上面的 .copy）
-    // 讚是語意綠（真 app 的 icon_good 就是綠的），倒讚與分享是深墨色。
+    // 讚給語意綠（正向回饋的全站語意色），倒讚與分享是深墨色——只有「肯定」需要顏色說話。
     // 綠色用 --success-text 不是 --success：填充色為了襯白字而壓深，當前景在深色下只有 3.41:1。
     &.like::before {
         @include icon-mask("../images/icon_good.png", var(--success-text), 24px 24px);
@@ -217,8 +219,9 @@
 
     // tooltip 的 hover 顯示規則已移到 ui/tooltip/_tooltip.scss（§4：本元件不再指名 .tooltip）
 
-    // 真 app 的 *_bluehover.png 與對應原圖 alpha 逐像素相同、只是換了顏色。遮罩化之後換色＝換 token，
-    // 那五張圖沒有存在的理由，已刪（icon_{edit,delete,download,check,close}_bluehover.png）。
+    // 無底色變體：hover 不畫藥丸底，改讓圖示本身變色。**換色靠換 token，不靠換圖**——一張 hover 版
+    // 圖檔與原圖的 alpha 逐像素相同、只差顏色，遮罩化之後它就沒有存在的理由，所以本專案不留
+    // `icon_{edit,delete,download,check,close}_bluehover.png` 那一族資產。
     &.no-bg {
         &:hover {
             background-color: transparent;

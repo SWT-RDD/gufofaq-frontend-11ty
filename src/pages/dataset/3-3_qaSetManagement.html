@@ -14,28 +14,29 @@ permalink: 3-3_qaSetManagement.html
     {% include "ui/breadcrumb/breadcrumb.html" %}
 </div>
 
-{# QA 集管理（SaaS 新需求，21 頁真 app 無對應）。QA 集＝加 kind='qa' 的 TenantIndex（gufofaq-saas product app/models.py 的 TenantIndex.kind；
-     app/routers/datasets.py 以 kind 分流 CRUD／清單）。問答完全命中直答（qa_direct，chatbot
-     qa_direct.py）：問題→title 槽、答案→content 槽（field_schema.py 的 SLOTS）。哪些 QA 集參與直答在
-     「對話設定 ▸ QA 直答」子頁籤選。版型比照資料集列表＋術語表管理（新增區＋清單表＋條件開窗 modal）。示範 2 筆。
-     nav.qaSetMgmt 英譯 QA Set Management（站內 nav 家族一致）；product catalog 已對齊（round28 驗 saas messages.en.json）。
+{# QA 集管理（SaaS 新需求）。QA 集＝加 kind='qa' 的 TenantIndex（gufofaq-saas product 的 TenantIndex.kind；
+     product 以 kind 分流 CRUD／清單）。問答完全命中直答（qa_direct，chatbot
+     GufoRAG chatbot）：問題→title 槽、答案→content 槽（product 的 SLOTS）。哪些 QA 集參與直答在
+     「對話設定 ▸ QA 直答」子頁籤選。版型比照資料集列表＋術語表管理（新增區＋清單表＋條件開窗 modal）。
+     `nav.qaSetMgmt` 英譯 QA Set Management（與站內 nav 家族一致），已與 gufofaq-saas 的英文字典對齊。
    **本頁打的端點**（§3-2：一頁多支端點時，檔頭第一段先列端點清單）：
        GET    /datasets                 列表（`list[DatasetOut]`；QA 集靠 `kind='qa'` 分流）
        POST   /datasets                 建 QA 集（`DatasetOut`，201）
        GET    /datasets/{dataset_id}    單一 QA 集（`DatasetDetailOut`）
        PATCH  /datasets/{dataset_id}    改名／改欄位（`DatasetOut`）
        DELETE /datasets/{dataset_id}    刪 QA 集
-     全部在 product `app/routers/datasets.py`（同一支 router 以 `kind` 分流資料集與 QA 集）。 #}
-{# id＝`TenantIndex.id`（product `app/routers/datasets.py` 的 `dataset_id: int`）——QA 集是
+     全部在 product（同一族端點以 `kind` 分流資料集與 QA 集，不是另一套 CRUD）。 #}
+{# id＝`TenantIndex.id`（product 的 `dataset_id: int`）——QA 集是
      `kind='qa'` 的資料集，與資料集共用同一支 router（`list_datasets` 的 `kind` 參數註解逐字寫著
      「QA 集管理頁用 kind=qa」）。
      **不可拿 loop.index 當列鍵**：這張表刪得掉列，位置不是身分——刪掉前一列之後，
      後面每一列的列鍵都會往前頂一格，React 端的 key 與逐列動作的目標會一起指錯人（§6 列鍵）。 #}
 {# QA 集與檔案集在 product 是**同一張表**（`models.Dataset` 的 `kind` 欄）⇒ 同一個 id 空間。
-     目錄正本與 id 的分配見 3-5 的 `healthScanDatasets` 那一段。
-     · 產品 FAQ 的 id 由 3 改成 **5**：3 是 3-5／5-10 的「法規彙編」，同一個 id 不能是兩個資料集。
-     · 補上第三筆「檢疫問答集」（id 7）——3-5 的 907 與 936 兩筆發現就掛在它上面，而這一頁
-       是 QA 集的清單頁，列不出它就是「健康度頁在替一個不存在的 QA 集報問題」。 #}
+     目錄正本與 id 的分配見 3-5 的 `healthScanDatasets` 那一段，這一頁的 id 一律照那一份取：
+     · 「產品 FAQ」是 **5**，不能是 3——3 是 3-5／5-10 的「法規彙編」，同一個 id 不可以是
+       兩個資料集（§6 跨頁自洽）。
+     · 「檢疫問答集」（id 7）一定要列得出來：3-5 有兩筆發現掛在它上面，而這一頁是 QA 集的清單頁，
+       列不出它就等於「健康度頁在替一個不存在的 QA 集報問題」。 #}
 {% set qaSets = [
   { id: 2, name: "客服問答集", group: "管理群組", count: "512", createdAt: "2025/11/05 09:12", updatedAt: "2026/06/20 14:30" },
   { id: 5, name: "產品 FAQ", group: "業務群組", count: "128", createdAt: "2026/01/12 10:48", updatedAt: "2026/06/28 16:05" },
@@ -49,7 +50,7 @@ permalink: 3-3_qaSetManagement.html
 <div class="block mb-16 flex-row column gap-16">
     {# ⓘ 說明：markup 逐字照抄 `settings/5-2_conversationSettings.html` 出口套用欄那顆既有
          info-btn 六件組。①出處：本檔檔頭「QA 集＝加 kind='qa' 的 TenantIndex」＋
-         product `app/routers/datasets.py` 的 `create_dataset`（`can_write_dataset`／
+         product 的 `create_dataset`（`can_write_dataset`／
          `dataset.group_not_writable` 那段群組寫入權限判斷，與一般資料集共用同一支）——
          這一點本頁沒有任何常駐文字講過，故寫進①，不與上方 `qaSet.intro` 重複
          （那句只講直答比對邏輯）。 #}
@@ -106,10 +107,11 @@ permalink: 3-3_qaSetManagement.html
 
 {# QA 集清單：名稱／所屬群組／資料筆數／建立時間／最後更新／操作（匯入問答、刪除）。
      匯入問答＝條件開窗（先選定匯入到哪個 QA 集）故 hook class js-qa-import、不掛 data-open-modal（§5）；
-     刪除同理 js-delete-qa-set（確認鈕由業務 js 綁定，名稱填入 #deleteQaSetName）。示範 2 筆。 #}
+     刪除同理 js-delete-qa-set（確認鈕由業務 js 綁定，名稱填入 #deleteQaSetName）。
+     示範資料見上方 `qaSets`（筆數不在這裡寫死，§3-2）。 #}
 <div class="block flex-row column gap-16">
     {# ⓘ 說明：同上一顆 info-btn 六件組。①出處：本區塊下方刪除段落自己的檔頭（刪除同時解除
-         所有引用它的對話設定、ChatConfigRejectedError 400）＋ product `datasets.py` 的
+         所有引用它的對話設定、ChatConfigRejectedError 400）＋ product 的
          `delete_dataset`（`prune_dataset_from_profiles`／`sync_tenant_profile_configs`）。 #}
     <div class="flex-row align-items-center gap-8">
         <div class="text-md text-bold" data-i18n="qaSet.qaSetList">QA 集清單</div>
@@ -187,7 +189,7 @@ permalink: 3-3_qaSetManagement.html
 {% set deleteConfirmClass = "js-confirm-delete-qa-set" %}
 {% set deleteConfirmBinding = true %}
 {% set deleteCapability = "data:write" %}
-{# QA 集刪除打的是**與 3-1-1 資料集刪除同一支端點**（product `app/routers/datasets.py` 的
+{# QA 集刪除打的是**與 3-1-1 資料集刪除同一支端點**（product 的
      `delete_dataset`，QA 集只是 `kind="qa"` 的 TenantIndex）⇒ §5「同一道後端守衛，不論從哪一頁、
      哪一顆鈕觸發，分支集合與語意型別都要一致」。逐 raise 對回那一支：
        · `_writable_dataset` → 403 `dataset.not_writable_group`（使用者找得到人開通／換群組 ⇒ warning）
@@ -199,7 +201,7 @@ permalink: 3-3_qaSetManagement.html
      路徑（§4 資源層 scope 不是閘門、是一條結果分支）。子句與 3-1-1 **逐字相同**（§4-2）。 #}
 {# **資源層 scope 403 是獨立的一段**（§4／§5：同一道守衛在別頁已有的分支集合就是這一頁的下限）。
      這一顆與 3-1-1 的刪除鈕打同一支 `delete_dataset`，本體第一行就是 `_writable_dataset` →
-     403 `dataset.not_writable_group`（product `app/routers/datasets.py`），而 `list_datasets` 只依
+     403 `dataset.not_writable_group`（product），而 `list_datasets` 只依
      `tenant_id` 過濾、不依寫入群組 ⇒ 「看得到一筆、按下去 403」是真實可達的。
      能力 403 與它是兩件事：前者換一個群組也沒用，後者是找人把你加進那個群組——折成一句，
      React 端會把「換個群組就能做」畫成同一條死路。子句逐字沿用 3-1-1（同繁中同英譯，§4-2）。 #}

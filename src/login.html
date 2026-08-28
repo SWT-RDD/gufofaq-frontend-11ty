@@ -36,26 +36,27 @@ permalink: login.html
 
                 <button type="button" class="forgot-btn" id="forgotBtn" data-open-modal="passwordModal" data-i18n="faq.forgotPassword">忘記密碼？</button>
 
-                {# type=button：真 app 由業務 js fetch 登入（不走原生 form 送出）；原型若留 type=submit，
-                     無 handler 的 form 會原生 GET 重載、toast 演出瞬間被殺掉（§5 每個結果都要演得出來）。
-                     React 端換回 type=submit + onSubmit(preventDefault)。 #}
+                {# type=button：登入在執行期是業務 js 發 fetch、不走原生 form 送出，所以這顆鈕在切版上
+                     也不當 submit。若留 type=submit，這份沒有 submit handler 的 form 會原生 GET 重載，
+                     四段 toast 的演出在畫面上瞬間被殺掉（§5 每個結果都要演得出來）。React 端接上
+                     onSubmit(preventDefault) 之後換回 type=submit。 #}
                 {# 節流秒數：BFF 透傳 `Retry-After`。**不塞進 toast 那一段**——`data-toast` 的 `|`
                      是索引契約（繁中段數＝英譯段數＝type 段數），一段裡放不下「前綴＋數字＋後綴」。
                      故第 3 段維持不帶秒數的句子，秒數走這個 live region（業務 js 填數字、加 .is-shown）。
                      空的 live region ＋ role="alert"：訊息由業務 js 填（§4 那條「要嘛具體、要嘛空 live region」）。
                      數字是資料，夾在前後綴 key 中間（同 ② 的理由：t() 不做插值）。 #}
                 <span class="error-prompt" role="alert" id="loginRetryHint"><span data-i18n="auth.retryAfterPrefix">請於 </span><span class="js-login-retry-seconds"></span><span data-i18n="auth.retryAfterSuffix"> 秒後再試</span></span>
-                {# ⚠️ **第 3 段改寫（round47）：節流訊息先前讀起來像在指責使用者。**
-                     「嘗試次數過多，請稍後再試」對**帳號被別人猛試**的那個人來說是一句莫名其妙的
-                     責備——而那正是節流最該服務的情境（憑證填充攻擊打的是別人的帳號）。
-                     改成兩件事都講：這是暫時鎖定（多久由旁邊那顆 live region 填的秒數說），
-                     以及「如果不是你本人操作請聯絡管理者」——後者是這一頁唯一能給出的求救路徑。
-                     `|` 是索引契約：段數不變（4 段），只換第 3 段的字。 #}
+                {# ⚠️ **節流那一段（第 3 段）刻意不寫成「嘗試次數過多，請稍後再試」**：節流最該服務的
+                     情境是**帳號被別人猛試**（憑證填充攻擊打的正是別人的帳號），對坐在螢幕前的那個人
+                     來說，「你試太多次」是一句莫名其妙的責備。這一段因此把兩件事都講：這是暫時鎖定
+                     （鎖多久由旁邊那顆 live region 填的秒數說），以及「如果不是你本人操作請聯絡管理者」
+                     ——後者是這一頁唯一給得出來的求救路徑。
+                     `|` 是索引契約：四段的段數與順序（繁中／英譯／type 三份對齊）不得更動。 #}
                 <button type="button" class="button button-primary login-btn" aria-describedby="loginRetryHint" data-toast="登入成功！|帳號已停用，請聯絡管理者|這個帳號近期嘗試次數過多，已暫時鎖定；若不是你本人操作，請聯絡管理者|登入時發生錯誤，請稍後再試" data-i18n-data-toast="toast.login" data-toast-type="success|warning|warning|error" data-i18n="auth.login">登入</button>
-                {# **「我沒有帳號怎麼辦」在這一頁先前無解**（round47）：這是一個邀請制系統
-                     （product 沒有任何自助註冊端點——帳號一律由平台或租戶管理者建立），
-                     而登入頁只有「忘記密碼」一條路。沒有帳號的人在這裡會一直試「忘記密碼」，
-                     那條路對他永遠不會有結果。
+                {# 這一句在畫面上回答「我沒有帳號怎麼辦」：這是一個邀請制系統（product 沒有任何自助
+                     註冊端點——帳號一律由平台或租戶管理者建立），而登入頁除了它之外只有「忘記密碼」
+                     一條路。**少了這句話**，沒有帳號的人只會一直去試「忘記密碼」，而那條路對他永遠
+                     不會有結果。
                      擺在登入鈕**下面**：它服務的是按不下去的那個人，不該擠在表單中間。 #}
                 <p class="text-gray text-center" data-i18n="auth.noAccountHint">本系統採邀請制，沒有自助註冊：還沒有帳號的話，請洽貴單位的系統管理者替你開通。</p>
             </form>
@@ -78,26 +79,26 @@ permalink: login.html
                     <h3 class="modals-title" id="passwordModal-title" data-i18n="faq.forgotPasswordTitle">忘記密碼</h3>
                 </div>
                 <div class="modals-body">
-                    {# 聯絡窗口＝**平台設定**，不是寫死的字面（product `app/routers/public.py` 的
+                    {# 聯絡窗口＝**平台設定**，不是寫死的字面（product 的
                          `public_support_contact`，路徑 `GET /public/support-contact`——零憑證，因為
                          這一頁的讀者還沒登入）。值不烤進翻譯字串（§4-2：它是值不是 chrome，
                          而且要放得下 email、分機或一句「請洽資訊室」），故獨立成一顆資料槽。
                        **兩態，而這一稿演的是「有設」那一態**：服務層
-                         （product `app/tenancy/platform_admin.py` 的 `get_support_contact`）
+                         （product 的 `get_support_contact`）
                          沒設過回 `null`，此時整句換成 `faq.forgotPasswordNoContact`——**不是**把
                          這一句留著、後面接一段空白（那會畫出一句「聯絡方式：」然後什麼都沒有）。
                          另一態的繁中家在元件庫頁的「React 條件文案」區（§4-2：枚舉/分支的成員要有
                          一個渲染得出來的地方，不是刪掉 key 讓消費端自己拼字串）。
-                       **`faq.forgotPasswordDescSuffix`（「，謝謝！」）連同它的英譯一併撤除**，兩個理由：
-                         ① 它只掛得上「有設」那一態——`faq.forgotPasswordNoContact` 已經以「。」收句，
+                       **這一句刻意收在值上、不接任何尾綴 key**（例如一顆「，謝謝！」的後綴），兩個理由：
+                         ① 尾綴只掛得上「有設」那一態——`faq.forgotPasswordNoContact` 已經以「。」收句，
                             接不上一個逗號起頭的尾巴 ⇒ 同一頁會因為一個看不見的平台設定而時而客套、
                             時而不客套，而那個差異沒有任何人解釋得了。
-                         ② 它把標點黏在**值**的正後面（`…gov.tw，謝謝！` / `…gov.tw. Thank you!`）——
+                         ② 尾綴會把標點黏在**值**的正後面（`…gov.tw，謝謝！` / `…gov.tw. Thank you!`）——
                             這一頁的使用者要做的事就是把那串位址複製走，而拖選很容易連標點一起帶走。
                             §4-2 那一整套前綴／值／後綴的紀律就是為了讓值切得乾淨。
                          客套話仍在：兩態都以「親愛的使用者您好」開場。
-                       示範值刻意用一看就知道是示範的位址（先前這裡是一位同仁的個人信箱，
-                       而這一頁登入前任何人都看得到）。 #}
+                       示範值刻意用一看就知道是示範的位址：這一頁**登入前任何人都看得到**，
+                       把真人信箱寫進切版等於把個資公開在部署站台上。 #}
                     <p class="text-center m-0"><span data-i18n="faq.forgotPasswordDesc">親愛的使用者您好，如忘記密碼請與平台管理者聯絡。聯絡方式：</span><span class="js-support-contact">support@example.gov.tw</span></p>
                 </div>
             </div>

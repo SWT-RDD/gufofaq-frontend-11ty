@@ -1,16 +1,16 @@
 {#
   Skill 試跑沙盒：把選定的 skill 臨時指派給**測試** config 跑一輪 Agent 問答，作者部署前就能看到它實際
-    被怎麼呼叫、選了哪些工具、答案長什麼樣。正式設定檔完全不受影響（product qatest.py 只寫測試 config：
+    被怎麼呼叫、選了哪些工具、答案長什麼樣。正式設定檔完全不受影響（product 只寫測試 config：
     `tenant{id}_test`／`tenant{id}_ab_{a,b}`，正式設定只由獨立的 apply-production 端點寫）。
   行為（同資料夾 skill-try-sandbox.js）：
-    - 開／關這塊面板、把列上的 skill 名填進標題 —— 在正本也是**純 UI state**（saas skills/page.tsx 的
+    - 開／關這塊面板、把列上的 skill 名填進標題 —— 在正本也是**純 UI state**（gufofaq-saas 的 apps/web 那一支 skills 頁的
       `setTryTarget(skill)` / `setTryTarget(null)`，沒有 API），故依 §5 ④「純前端互動當場就要動得起來」
-      由本元件的 js 做。開啟的觸發鈕住在頁面的清單列上，class 沿用已被 saas（page.tsx 與 e2e）
-      引用而凍結的 `.js-try-skill`（§5：hook 一經 saas 引用即凍結，不因它其實是純前端互動而改名）。
-    - 「開始試跑」是送 API 的動作鈕（product qatest.py 的 SSE ask），依 §5 ③ 掛 `data-toast` 列全結果，
+      由本元件的 js 做。開啟的觸發鈕住在頁面的清單列上，class 沿用已被 gufofaq-saas（skills 頁與其 e2e）
+      引用而凍結的 `.js-try-skill`（§5：hook 一經 gufofaq-saas 引用即凍結，不因它其實是純前端互動而改名）。
+    - 「開始試跑」是送 API 的動作鈕（product 的 SSE ask），依 §5 ③ 掛 `data-toast` 列全結果，
       成敗分支由 React 演；切版不假造它的執行。
   答案輸出槽 `.skill-try-answer`：試跑的產出就是答案，沒有它這塊面板演不完整。樣式主人在同資料夾的
-    `_skill-try-sandbox.scss`；**saas 已跟上**（round40 複驗）——`apps/web/components/SkillTrySandbox/`
+    `_skill-try-sandbox.scss`；**gufofaq-saas 已跟上**——`apps/web/components/SkillTrySandbox/`
     的 `SkillTrySandbox.tsx` 有 `className="skill-try-answer m-0"`，`SkillTrySandbox.scss` 與這裡的
     `.skill-try .skill-try-answer` 逐字相同。切版填示範答案當長相示範（§3-2 長文寫死）。
   參數：trySkillName（選填，示範用的 skill 名，預設 refund-flow）、
@@ -28,10 +28,10 @@
         <button type="button" class="button button-border button-sm js-skill-try-close" data-i18n="action.close">關閉</button>
     </div>
     <p class="text-gray m-0" data-i18n="settings.trySkillHint">把這個 skill 臨時指派給測試設定跑一輪 Agent 問答；正式設定檔完全不受影響。下方流程圖會顯示它實際被怎麼呼叫。</p>
-    {# 「沙盒」「試跑」這兩個詞都在暗示這是免費的預演——**它不是**（round47）：那顆鈕打的是與正式
+    {# 「沙盒」「試跑」這兩個詞都在暗示這是免費的預演——**它不是**：那顆鈕打的是與正式
          問答同一支端點（`data-capability="ask"`），走同一段 `consume_qa_quota`。上一句已經說了
          「正式設定檔完全不受影響」，很容易被讀成「什麼都不受影響」，所以額度這件事要緊接著講。
-         「失敗也不退」的出處同 components/chatroom 那一段（product `app/conversation/ask_flow.py`
+         「失敗也不退」的出處同 components/chatroom 那一段（product
          的帳單語意：扣了卻沒答案不是缺陷，也不做補償性退款）。 #}
     <p class="text-gray m-0" data-i18n="settings.quotaWarnSkillTry">試跑是一次真的 Agent 問答，不是預演：會扣掉一次問答額度，而且失敗也不退還。</p>
     <div class="flex-row flex-wrap gap-16 mobile-column sm-gap-16">
@@ -46,7 +46,7 @@
             <button data-capability="ask" type="button" class="button button-primary js-run-try-skill" data-toast="回答生成中...|權限不足，無法試跑——請找貴租戶的管理者開通|請先輸入問題|試跑完成|試跑失敗，請稍後再試" data-i18n-data-toast="toast.runTrySkill" data-toast-type="info|warning|warning|success|error" data-i18n="settings.trySkillRun">開始試跑</button>
         </div>
     </div>
-    {# 答案：真實環境是 SSE 串流填進來的，這裡寫死一段當長相示範（§3-2 長文不進 front matter）。
+    {# 答案：正式環境是 SSE 串流一段一段填進來的，這裡寫死一段當長相示範（§3-2 長文不進 front matter）。
          live region 讓串流結束時報讀器念得到（§4：動態出現的訊息要在 live region 裡）。 #}
     <div class="form-group">
         <div class="label"><span class="control-label" id="skillTryAnswerLabel" data-i18n="settings.trySkillAnswer">試跑回答</span></div>

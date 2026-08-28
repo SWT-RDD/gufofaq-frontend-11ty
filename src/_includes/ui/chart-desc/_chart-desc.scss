@@ -1,17 +1,17 @@
 // 圖表底下的三個數據槽（資料時間／對話次數／取用資料數）。markup 見 chart-desc.html。
 //
-// 這段規則原本住在 `components/chart-box/_chart-box.scss` 的 `.chart-box` 底下——抽出元件時
-// markup 搬了、樣式沒搬，於是連 `.row` 這個**它自己的參數**產生的變體都寄在別人家，而且帶著
-// `.chart-box` 祖先：只要有人在 `.chart-box` 之外 include 它，就是一塊完全沒有樣式的區塊
-// （§4 無主 class 的第三種死法：祖先錯位；而視覺指紋比的是幾何，看不出來）。
+// **樣式住在本檔，不寄在 `components/chart-box` 底下**：規則一旦寫成 `.chart-box .chart-desc`，
+// 連 `.row` 這個**它自己的參數**產生的變體都綁著 `.chart-box` 祖先，任何人在 `.chart-box` 之外
+// include 它就得到一塊完全沒有樣式的區塊（§4 無主 class 的第三種死法：祖先錯位——而視覺指紋比的是
+// 幾何，那一頁只是「排版看起來怪」，不會亮紅）。
 .chart-desc {
     display: flex;
     flex-direction: column;
     gap: 10px;
     margin-top: 22px;
 
-    // 橫向排列變體（真 app 編譯 css 有；scss 源碼漏）：桌機一列、≤992px 收回直排。
-    // 由 `chartDescRow` 參數決定掛不掛。
+    // 橫向排列變體：桌機把三個數據槽排成一列，≤992px 收回直排（一列擠不下三段中文標籤＋數字）。
+    // 由 `chartDescRow` 參數決定掛不掛——版位夠寬的那一種才給。
     &.row {
         flex-direction: row;
 
@@ -20,8 +20,9 @@
         }
     }
 
-    // 「粗體」走全域正本 .text-bold（_utilities）。這裡曾有一條 `.bold { font-weight: 600 }`，
-    // 但它只在 .chart-box .chart-desc p 底下成立——被複製到別頁後就是一顆沒有字重的裸 class。
+    // 「粗體」一律走全域正本 `.text-bold`（`_utilities`），本檔**不自訂 `.bold`**：那種區域性的
+    // `.bold { font-weight: 600 }` 只在 `.chart-box .chart-desc p` 這個祖先鏈底下成立，markup 被複製到
+    // 別頁之後就是一顆沒有字重的裸 class。
     p {
         margin: 0;
         font-size: 18px;

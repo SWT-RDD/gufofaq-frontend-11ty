@@ -1,6 +1,6 @@
-// 取自凍結前端**已編譯的** GufoFAQ_Frontend_New/css/component.css（scss 源碼漏了 flex-wrap/gap，且寫死 height:48px；
-// 編譯輸出才是最終真相）：footer 用 flex-wrap + gap 讓項目間有間距、窄螢幕可換行，不寫死高度。
-// 分隔線高度改由 divider-vertical 自帶的 .sm 變體提供（§4），此處不指名 .divider-vertical。
+// 頁尾。**高度不寫死**（不寫 `height: 48px` 這一類）：改用 flex-wrap ＋ gap 排項目，
+// 窄螢幕換行時高度自己長出來——寫死高度的話換行的那一列會被切掉。
+// 分隔線高度由 divider-vertical 自帶的 .sm 變體提供（§4），本檔不指名 .divider-vertical。
 .footer {
     width: 100%;
     white-space: nowrap;

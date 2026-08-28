@@ -7,12 +7,14 @@ permalink: 2-2-1_singleTest.html
 ---
 {# 問答紀錄側欄的三顆頁籤（經 components/qa-side-panel 傳給 components/qa-record-tabs）。
      `id` 是**列鍵**（＝聊天室 SN，渲染成 `data-chat-sn` 的值）：聊天室刪得掉，位置不是身分
-     （§6 列鍵）。原本三筆都沒給 `id`，那顆屬性會渲染成 `data-chat-sn=""`——§4 明文不輸出空屬性，
-     而真 app 的委派選擇器 `.qa-side-panel .tab[data-chat-sn]` 正是靠它才點得動。
-     `label` 是真 app 的 `ChatTitle`＝**使用者資料、不翻**；第二筆刻意不給 label，讓元件的 fallback
-     分支（可翻前綴 `qa.recordFallbackPrefix` ＋ 不翻的序號）在這一頁也演得出來（§5：沒有頁面演
-     得出來的分支等於沒驗收過）。原本三筆寫的「問答紀錄1／2／3」正好是真 app fallback 的字面
-     ——那是寫死在 js 裡的 chrome，當成 label 傳進來就是把 chrome 當資料（同 2-1 的修法）。
+     （§6 列鍵）。**每一筆都必須給 `id`**——少給就渲染成 `data-chat-sn=""`，而 §4 明文不輸出空屬性，
+     於是那顆屬性整個消失；業務掛點那支委派選擇器 `.qa-side-panel .tab[data-chat-sn]` 正是靠它
+     才點得動，屬性不在＝整排頁籤按不動。
+     `label` 是聊天室標題（`ChatTitle`）＝**使用者資料、不翻**；第二筆刻意不給 label，讓元件的
+     fallback 分支（可翻前綴 `qa.recordFallbackPrefix` ＋ 不翻的序號）在這一頁也演得出來（§5：沒有
+     頁面演得出來的分支等於沒驗收過）。
+     **label 不得寫成「問答紀錄1／2／3」**：那正是 fallback 自己拼得出來的 chrome，當成 label 傳進來
+     就是把 chrome 當資料，於是 fallback 壞掉時畫面上看不出任何差別（同 2-1 的作法）。
      選中那一筆的標題＝本頁聊天室裡那句使用者輸入（components/chatroom 的示範訊息），§6 同頁自洽。 #}
 {% set qaRecordTabs = [
     { id: 5107, label: "居留證延期要準備哪些文件" },
@@ -35,17 +37,16 @@ permalink: 2-2-1_singleTest.html
      （適用性只寫在各該欄自己的註解裡，畫面上不標示），React 端依當前模式**不渲染**不符欄位
      （gufofaq-saas `apps/web/lib/modeMatrix.ts` 的 `appliesToMode`；不用「顯示但標示不生效」，
      理由見 5-2 檔頭「子頁籤 2：生成設定」那段註解）。
-   **刻意不沿用真 app 的一處**（§5 要記載）：三個數值欄真 app 是 `type="text"`
-     （凍結前端 2-2-1_singleTest.html:195 的 #sampleTotalInput 即是），切版改成 `type="number"`
-     ＋後端區間（qatest.py 的 TestConfig：search_*_number 1–100、agent_max_iterations 1–20，
-     常數在 chat_config_limits.py）。理由：這幾格的值 React 要讀去送 API，`Number("2o")` 是 NaN、
-     序列化成 JSON 是 null，而真 app 那邊要按下送出才擋得到。id 契約（#sampleTotalInput…）原樣保留。
+   **三個數值欄一律 `type="number"`**（§5 要記載）：不是 `type="text"`
+     ＋後端區間（product 的 TestConfig：search_*_number 1–100、agent_max_iterations 1–20，
+     常數在 product）。理由：這幾格的值 React 要讀去送 API，`Number("2o")` 是 NaN、
+     序列化成 JSON 是 null，而純文字欄要等到按下送出、後端回話才擋得到——`type="number"` 讓
+     瀏覽器在打字當下就擋。id 契約（#sampleTotalInput…）原樣保留。
    值載體走 hook class（js-chat-mode／js-agent-max-iter…，全站 scss 不引用），React 受控、change 交業務層。
    下方按鈕列三顆**不落在同一格**（§5 矩陣）：「回復儲存的設定」與「儲存提示詞版本」是③——點下去
      就送 API，故各自掛 data-toast 列全結果；只有「套用為正式設定」是①**條件開窗**：它先驗兩個取樣數、
      再比對所選模型在不在租戶白名單內，兩關都過才開 ProductionSettingsModal（權限不足只彈 toast、
-     不開窗）——出處是凍結前端 `GufoFAQ_Frontend_New/js/singleTest.js:919` 的 `.js-apply-production`
-     委派與同檔 `applyProductionSetting()`，故它只留 hook class、不掛 data-open-modal。
+     不開窗）——故它只留 hook class（`.js-apply-production`）、不掛 data-open-modal。
    示範選 agent（§6 示範自洽：本頁下方展示 agent 工具軌跡與步驟時間軸，傳統搜尋模式不會有）。 #}
 <div class="block">
     <div class="filter-fields flex-row flex-wrap gap-16 mobile-column">
@@ -70,11 +71,12 @@ permalink: 2-2-1_singleTest.html
             <div class="label">
                 <label for="llmModelSelect" class="control-label" data-i18n="qaTest.llmModel">LLM模型</label>
             </div>
-            {# 識別字＝`GET /qatest/models` 回的 `value`（product `app/routers/qatest.py` 的
-                 `list_models`／`effective_models`，形狀是 `<provider>:<model>`）。原本寫成
-                 `OpenAI gpt-4o-mini`：那個字面過不了 product `app/llm.py` 的 `can_build_model`
-                 （`model.startswith(PROVIDER_PREFIXES)`，前綴只有 `openai:`／`anthropic:`），
-                 送出去必定判否。這兩顆是版型示範的**子集**，完整目錄在 5-2 的 `llmModels`
+            {# 識別字＝`GET /qatest/models` 回的 `value`（product 的
+                 `list_models`／`effective_models`，形狀是 `<provider>:<model>`）。
+                 **不可寫成 `OpenAI gpt-4o-mini` 這種給人看的字面**：它過不了 product 的
+                 `can_build_model`（`model.startswith(PROVIDER_PREFIXES)`，前綴只有 `openai:`／
+                 `anthropic:`），送出去必定判否，而畫面上兩種寫法長得幾乎一樣。
+                 這兩顆是版型示範的**子集**，完整目錄在 5-2 的 `llmModels`
                  （同一支 `gufo.list_models()`）；值是業務識別字，不翻（§4-2）。 #}
             <div class="field">
                 <select class="form-control singleSelect" id="llmModelSelect">
@@ -109,9 +111,10 @@ permalink: 2-2-1_singleTest.html
                 <label for="chatModeSelect" class="control-label" data-i18n="qaTest.chatMode">對話模式</label>
             </div>
             <div class="field">
-                {# 「傳統搜尋」與「Agent 對話」這兩個詞**全站先前沒有任何一處定義過**（round47）：
-                     它是整個問答行為的主開關，卻只有兩個選項字面。這一句在 2-2-1／2-2-3／2-2-4／5-2
-                     四處共用同一顆 key，因為那是同一個旋鈕的四個入口，四種說法遲早分岔。 #}
+                {# 下面這一句是「傳統搜尋」與「Agent 對話」在全站**唯一的定義**：它是整個問答行為的
+                     主開關，而畫面上除了兩個選項字面之外沒有別的線索，選的人得先知道兩者差在哪。
+                     這一句在 2-2-1／2-2-3／2-2-4／5-2 四處共用同一顆 key：那是同一個旋鈕的四個入口，
+                     各寫各的遲早分岔成四種說法。 #}
                 <select class="form-control singleSelect js-chat-mode" id="chatModeSelect" aria-describedby="chatModeSelectHint">
                     <option value="traditional" data-i18n="qaTest.chatModeTraditional">傳統搜尋</option>
                     <option value="agent" selected data-i18n="qaTest.chatModeAgent">Agent 對話</option>
@@ -158,8 +161,8 @@ permalink: 2-2-1_singleTest.html
        受控、change 交業務層）。不用 components/prompt-edit（那是含版本管理工具列的系統提示詞編輯器，
        仍用於對話設定頁）——測試頁只要一個常駐展開的輸入框，動作鈕在下方動作列。示範文案領域中性。 #}
     {# 界線提示（§4 三件套的第三件：可見的界線 ＋ `aria-describedby` 接得上）。上限的正本是
-         product `app/limits/chat_config_limits.py` 的 `MAX_SINGLE_PROMPT_LEN`，這一欄的執行點是
-         `app/routers/qatest.py` 的 `SingleTestIn.prompt`（`Field(max_length=…)`）——同一顆常數，
+         product 的 `MAX_SINGLE_PROMPT_LEN`，這一欄的執行點是
+         product 的 `SingleTestIn.prompt`（`Field(max_length=…)`）——同一顆常數，
          5-2 的三顆系統提示詞欄用的也是它，所以畫面上的數字要一致。
          **不寫成 `maxlength` 屬性**（同 5-6-2 那一批的理由）：值是執行期才知道的，寫死就是第二份
          會過期的抄本；數字獨立成資料槽 `js-prompt-max-len`。
@@ -190,7 +193,8 @@ permalink: 2-2-1_singleTest.html
          送出前二次確認，權限不足走確認鈕 `data-toast` 的 warning 段、不另開彈窗——與 2-2-3 的
          雙彈窗分支（apply-settings-no-permission-modal ＋ apply-settings-compare-modal）**刻意不同**，
          出處見 `components/apply-settings-compare-modal` 檔頭那句「單一測試頁的 apply-settings-modal
-         才把權限不足演成 inline warning」。原本這裡寫「業務依模型權限開彈窗」是把 2-2-3 的行為抄過來的。 #}
+         才把權限不足演成 inline warning」。**這一頁不得寫成「業務依模型權限開彈窗」**：那是 2-2-3
+         的行為，抄過來會讓兩頁的同名按鈕各演一套互相矛盾的分支。 #}
     <div class="flex-row justify-content-center flex-wrap gap-16 mt-24">
         <button data-capability="settings:read" type="button" class="button button-green js-restore-saved" data-toast="已回復儲存的設定|權限不足，無法載入——請找貴租戶的管理者開通|無法載入儲存的設定" data-i18n-data-toast="toast.restoreSettings" data-toast-type="success|warning|error" data-i18n="qaTest.restoreSaved">回復儲存的設定</button>
         <button data-capability="settings:write" type="button" class="button button-primary js-prompt-new-version" data-toast="已儲存為新版本|權限不足，無法儲存——請找貴租戶的管理者開通|內容欄位不可為空|新增提示詞失敗，請稍後再試" data-i18n-data-toast="toast.savePrompt" data-toast-type="success|warning|warning|error" data-i18n="qaTest.savePromptVersion">儲存提示詞版本</button>
@@ -198,18 +202,14 @@ permalink: 2-2-1_singleTest.html
     </div>
 </div>
 
-{# 對話區：聊天視窗沿用 components/chatroom（結構與真實頁一致）；右側可收合問答紀錄面板走
-     components/qa-side-panel。
-     **它在真實系統本來就有**：凍結前端 `GufoFAQ_Frontend_New/css/component.css:3556` 起就是
-     `.qa-side-panel` 那一整段規則（本 repo 的 `_qa-side-panel.scss` 從它切出來），不是切版新造的元件。
-     **展開/收合是 §5 ④純前端互動，不是業務邏輯**：凍結前端把它寫在**共用**的 `js/main.js:1026`
-     （`.js-side-toggle` 的 `toggleClass("collapsed")` ＋ 點外部收合），不在 `singleTest.js`
-     ——那支只拿 `.qa-side-panel` 當容器選頁籤與清空對話（`js/singleTest.js:952`／`:958`）。
-     本 repo 已照 §5 把開合實作在 `components/qa-side-panel/qa-side-panel.js`，當場動得起來。
+{# 對話區：聊天視窗沿用 components/chatroom（整塊結構的正本在那支元件裡）；右側可收合的問答紀錄
+     面板走 components/qa-side-panel。
+     **展開／收合是 §5 ④純前端互動，不是業務邏輯**：`.js-side-toggle` 切 `.collapsed` ＋ 點外部收合，
+     不打任何 API，所以行為跟著元件走、實作在 `components/qa-side-panel/qa-side-panel.js`，
+     切版上當場動得起來，也因此不掛任何授權軸。
      這一頁對它**零 markup**：class 與內部結構逐字住在該元件，這裡只 include。
    **開場歡迎語關掉**（`chatWelcomeHidden`，理由正本在該元件檔頭）：招呼是前台的招呼，
-     後台測試區不讀 `GET /welcome`；凍結前端的這一頁也只有在空聊天室那一支才畫一則招呼，
-     而本頁演的是「已經有一輪對話、第二問正在跑」。 #}
+     後台測試區不讀 `GET /welcome`，而本頁演的是「已經有一輪對話、第二問正在跑」。 #}
 {% set chatWelcomeHidden = true %}
 <div class="mt-24">
     <div class="flex-row gap-10 mobile-column-xs xs-column-reverse">
@@ -221,26 +221,30 @@ permalink: 2-2-1_singleTest.html
 
 {# 執行流程（測試區詳細觀測）：類 mermaid 直式流程圖——含合規閘的完整正典管線依序畫出、即時點亮
      當前步驟，每節點可展開看工具/參數/結果/grounding 判定/agent 推理。
-     取代原分開的 agent-activity（工具軌跡）＋ step-timeline（步驟列），統一成一處。
-     真值由 React 端串流事件驅動（lib/sse steps/toolActivity/thinkingByNode/summary + lib/domain/stepFlow）；
-     示範假資料住元件內（見該元件檔頭註解）。
+     工具軌跡與步驟列**合成這一處**、不拆成兩塊：同一輪的兩種視角分開擺，讀的人得自己把兩份時間軸
+     對起來。
+     真值由 React 端串流事件驅動（gufofaq-saas 的 `apps/web/lib/sse`：steps／toolActivity／
+     thinkingByNode／summary，配 `apps/web/lib/domain/stepFlow`）；示範假資料住元件內
+     （見該元件檔頭註解）。
    **這一頁的單一敘事＝「這一輪還在跑」**（§6 同頁自洽，全站唯一演這一態的頁）：
      上半聊天區已經演著串流中的第二問（`components/chatroom` 的狀態列「搜尋資料中…」，有字、沒有
      回覆泡泡），流程圖這一半就必須是同一時刻——生成答案 running、其後 pending、**頂端沒有執行摘要**。
      摘要五欄全部來自整輪收尾才發的 `chat_room` 塊，`model` 更是只有重播那條路拿得到
-     （product 的 `_CHAT_ROOM_PUBLIC_KEYS` 沒有 `model_name`；saas `apps/web/lib/sse.ts` 的
-     chat_room 分支逐字寫著「永遠讀不到」）⇒ 串流中的畫面報得出 Token／延遲／首字／模型是
-     上下半互斥。**故本頁不設 stepFlowSummary、也不設結果截斷那一對**（「看完整輸出」要 chat log id，
-     即時那一輪還沒有：saas `apps/web/components/StepFlow/StepFlow.tsx` 那一段註解逐字寫著「這一格**曾經**有
-     一組『已顯示前 N 字／共 M 字』＋『看完整輸出』，而那個狀態**沒有任何一條路產得出來**」——整個機制在
-     React 端已經移除（別再引 `onViewFullOutput` 那顆不存在的 prop）；當時的不渲染條件是 `logId === undefined`
-     為不渲染條件）。跑完並落庫那一態由 4-2 詳情頁與 2-2-3 演（那兩頁都是重播）。 #}
+     （product 的 `_CHAT_ROOM_PUBLIC_KEYS` 沒有 `model_name`；gufofaq-saas `apps/web/lib/sse.ts` 的
+     chat_room 分支逐字寫著「永遠讀不到」）⇒「串流中」與「報得出 Token／延遲／首字／模型」
+     兩件事互斥。
+     **故本頁不設 stepFlowSummary、也不設結果截斷那一對**：一組「已顯示前 N 字／共 M 字」＋
+     「看完整輸出」的狀態**沒有任何一條路產得出來**（gufofaq-saas 的
+     `apps/web/components/StepFlow/StepFlow.tsx` 在同一格的註解逐字寫著這件事，該元件也沒有
+     任何「看完整輸出」的 prop），因為那顆連結要 chat log id，而串流中的這一輪還沒有落庫的 id。
+     跑完並落庫那一態由 4-2 詳情頁與 2-2-3 演（那兩頁都是重播）。 #}
 {% set stepFlowInstance = "single" %}
 {% set stepFlowOwnerId = "" %}
 {% include "components/step-flow/step-flow.html" %}
 
-{# 參考來源表格區塊：真實頁預設 hidden（點擊訊息列「查看來源」才顯示），表頭與 components/sources-block 一致，
-     來源列資料 set sources（示範 2 筆）交給 components/sources-block 內嵌 for 渲染（同 2-1_qaRecord.html 手法）。
+{# 參考來源表格區塊：這一區預設 hidden，執行期要點訊息列的「查看來源」才展開；表頭與
+     components/sources-block 一致，來源列資料 set sources（示範 2 筆）交給該元件內嵌的 for
+     渲染（同 2-1_qaRecord.html 的作法）。
      **sourceNo 就是上面那則答案裡的兩個 [[N]]**（3 與 7，見 components/chatroom 的示範答案）：
      「序號」欄與引用標記是同一組號碼（見 components/sources-block 檔頭）。 #}
 {% set sources = [

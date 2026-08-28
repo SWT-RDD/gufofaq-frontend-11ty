@@ -1,7 +1,8 @@
 // 分頁列版位：頁碼置中、每頁筆數釘左。
 // 為什麼用絕對定位而不是 justify-content: space-between —— 後者會把 .pagination 變成一個
 // 「內容寬」的 flex item 並推到列的右端，而它自己的 justify-content: center 只在它自己那塊裡生效，
-// 於是整排頁碼看起來歪掉。把每頁筆數移出正常流，頁碼才會相對**整列**置中（回到它原本的長相）。
+// 於是整排頁碼看起來歪掉。把每頁筆數移出正常流，頁碼才會相對**整列**置中
+// （＝`.pagination` 獨占一整列時的長相，也是這個元件要維持的長相）。
 .pager-row {
     // 刻意**不**在這層開 flex：`.pagination` 自己是 display:flex + justify-content:center，
     // 只有讓它維持「獨占一整列的區塊」，那份置中才是相對整列的。一旦把這層變成 flex 容器，

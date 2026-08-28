@@ -43,8 +43,9 @@
     --brand-ink: #13386f; // 深品牌：勾記 / radio 圓點 / 步驟條（深色下提亮）
     --brand-tint: #e7f7ff; // 品牌淡藍底（使用者泡泡 / selected / chip）
     // **只給不承載前景的裝飾**：目前的消費點是 header 與 chatbot-header 的 2px 底線（border-image）。
-    // footer 底與 faq 頭像原本也用它，已改純色 --brand——漸層兩端對比差很多（右端疊白 2.30:1），
-    // 承載文字或圖形記號時過不了 §4 的門檻。要放漸層之前先確認那一塊上面不會站東西。
+    // 漸層兩端的對比差很多（右端疊白只有 2.30:1），上面一站文字或圖形記號就過不了 §4 的門檻——
+    // 頁尾底、faq 頭像這類「面上有東西」的地方一律用純色 --brand。
+    // 要在哪裡放漸層之前，先確認那一塊上面不會站東西。
     --brand-gradient: linear-gradient(to right, #0a62ac, #2ebbcf);
 
     /* 狀態 state（皆為「填充」色，配 --on-accent 白字；warning 例外配 --on-warning 深字） */
@@ -77,7 +78,7 @@
     --control-track-alt: #b4bfc9; // storage-bar 空軌
     --control-knob: #ffffff; // switch 把手（未勾的 checkbox 勾記也是它，但 scale(0) 看不到）——已勾的勾記墨色是 --brand-ink（§4）
     // 停用**且已勾**的勾記：它是疊在 --surface-disabled 上的圖形記號，不是填充也不是文字，
-    // 故獨立成一顆墨色 token。原本沿用 --control-knob（白）疊 #efefef 只有 1.15:1，
+    // 故獨立成一顆墨色 token，**不共用 --control-knob**。共用的話白勾記疊 #efefef 只有 1.15:1，
     // 淺色模式下「已勾且停用」與「未勾且停用」長得一模一樣；深色卻是 12.83——這種光暗不對稱
     // 就是沒實算過的指紋。§5 明文「值控制項照渲染但 disabled，狀態要看得見才稽核得到」。
     // 實算：4.57（#6c6c6c on #efefef）／4.55（#8a8a8a on #232323），兩邊都遠高於圖形記號 3:1。
@@ -155,11 +156,11 @@
     /* 控制項零件 */
     --scrollbar-thumb: #3a3a3a;
     --scrollbar-thumb-strong: #4a6a8a;
-    --control-track: #6b6b6b; // switch off 軌道：對卡片 3.20:1（原 #444 只有 1.75，看不出開關邊界）
+    --control-track: #6b6b6b; // switch off 軌道：對卡片 3.20:1——軌道是圖形記號，低於 3:1 就看不出開關邊界
     --control-track-alt: #33414d;
     --control-knob: #e8e8e8;
     --control-ink-disabled: #8a8a8a; // 對 --surface-disabled(#232323) 4.55:1
-    --toggle-on: #3d8749; // 對把手 3.60:1（原 #4aa257 只有 2.60，把手在綠底上糊掉）
+    --toggle-on: #3d8749; // switch on 底：對把手 3.60:1——綠底要壓得夠深，白把手才不會在上面糊掉
 
     /* tooltip 反相成淺泡泡 */
     --tooltip-bg: #e5e5e5;

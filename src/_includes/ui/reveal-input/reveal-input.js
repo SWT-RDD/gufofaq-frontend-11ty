@@ -34,8 +34,8 @@
 //   </div>
 //
 // **`value` 的長度是規格的一部分**：這一格預設 `type="password"`，遮罩點數就等於字面量長度，
-// 短一顆點就是把「金鑰有多長」畫錯（5-9 檔頭有推導：`new_api_key()` ＝ `_API_KEY_PREFIX`
-// ＋ `secrets.token_urlsafe(32)` ⇒ 46 字元）。上面那一串是 5-9 現行的字面量逐字。
+// 短一顆點就是把「金鑰有多長」畫錯（5-9 檔頭有推導：product 的 `new_api_key()` ＝
+// `_API_KEY_PREFIX` ＋ `secrets.token_urlsafe(32)` ⇒ 46 字元）。上面那一串是 5-9 現行的字面量逐字。
 //
 // 5-6-3_platformServiceKeys.html 那一份換掉四處：`id="apiKeyInput"` → `id="serviceKeyPlain"`
 // （`data-reveal-target` 跟著換）、`aria-label="剛核發的明碼" data-i18n-aria-label="serviceKey.plainTitle"`，

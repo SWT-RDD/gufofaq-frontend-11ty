@@ -1,6 +1,8 @@
-// 照抄自凍結前端 GufoFAQ_Frontend_New/scss/component.scss 2302-2334（list style列表樣式區塊），只搬檔案位置；
-// 另補 .line-loose variant（原為 css/style.css 的 .prompt-content .list-style-disc > li 跨元件覆寫，
-// 依 GUIDELINE §4「外觀覆寫改成 owning 元件的 variant class」收編到本元件）
+// 清單樣式（`.list-style-*`）：內文裡的項目符號清單與編號清單——`<ul>`／`<ol>` 的 UA 預設縮排與
+// 行距在中文內文裡太緊，這兩條規則把符號位置、左內距、行距、字距統一成全站一套。
+// `.line-loose` 是本元件自有的行距放鬆變體：**不寫成 `.prompt-content .list-style-disc > li`**
+// 那種跨元件覆寫（GUIDELINE §4「外觀覆寫改成 owning 元件的 variant class」）——那樣寫的話，
+// 同一份清單搬到別的容器裡就靜默失去行距，而清單本身看起來完全正常。
 .list-style-disc {
     list-style-type: disc;
     list-style-position: outside;
