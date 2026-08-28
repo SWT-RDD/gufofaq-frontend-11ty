@@ -53,7 +53,7 @@
   追回它切版的 `ui/` atom、抽成獨立 `components/ui/<Name>/`、退掉寄生（例：`.data-info` 曾寄生在 `Pagination.scss`）。
 - 走樣 scss 若把 hook class 選擇器寫成裸元素（如 `button:hover .tooltip` 而非 `.has-tooltip:hover .tooltip`），修回
   切版選擇器時 grep 所有 consumer、在觸發元素補上該 hook class——consumer 常是靠走樣的裸選擇器意外運作、自己沒掛 class。
-- 舊 jQuery 真 app 不看。
+- **只引 GUIDELINE §3-2 那一級正本**（gufofaq-saas ＋ GufoRAG）：那一級以外的前端不看、也不引，它不是正本、也不是考據來源。
 - **切版搬桶（`ui/` ↔ `components/`）時 React 同步搬**：§1-1 的判準變了就搬（例：`citation-ref` 的 js 呼叫
   `GufoSources.reveal()`＝呼叫「會產出可見 UI 的元件匯出」），並 grep 全 repo 更新 import **與檔頭／測試／
   e2e 註解裡的切版路徑字串**——那些路徑是下一輪審查對回正本的指標，留舊路徑會讓下一輪讀錯檔。
@@ -96,7 +96,7 @@
   切版 `_var.scss` 的 **light + dark 兩處宣告**一起補（值與對比註解照抄）。缺 token 時 `scss-diff` 仍 exit 0、
   `fpdiff` 幾何也不變，畫面卻靜默回退成繼承色（反例：`--danger-ink`）。
 - **表格列的狀態底色一律下到 `> td`**：`default-table` 對 `tbody tr td` 下了不透明底，CSS 表格繪製層序 row < cell
-  ——寫在 `tr.is-*` 上是 100% 看不見的死樣式。抄到 `tr.is-*{background}` 就是抄到舊版。
+  ——寫在 `tr.is-*` 上是 100% 看不見的死樣式。抄到 `tr.is-*{background}` 就是抄到走樣的那一份。
 - **markdown renderer 產生的元素掛不上 class，允許保留一份自寫規則**（`.message-content .robot-msg code`），
   但**值的正本在共用原子**：兩者 specificity 不同（(0,2,1) vs (0,1,0)），cascade 永遠是元件贏，所以「值一致」
   無法靠層疊保證，只能靠註解 + `scss-diff` byte-identical；改原子的值時這份抄本要在同一個 commit 跟著改。
@@ -179,7 +179,7 @@
     條件渲染，切版保留 markup 當位置與字色的規格、預設掛 `.hidden`」）——`hidden` 不帶、節點改成條件
     渲染，條件寫在切版註解裡。照字面把 `hidden` 抄進 `className` 得到的是一顆永遠看不見的節點，而
     `fpdiff` 比的是預設狀態、兩邊都不可見，抓不到。
-  - **「切版常駐、React 不渲染」有兩個維度，這一條先前只寫了一半。** 一個欄位在 React 端會消失，
+  - **「切版常駐、React 不渲染」有兩個維度，兩個都要收。** 一個欄位在 React 端會消失，
     可能是因為：①**對話模式**（`gufofaq-saas` `apps/web/lib/modeMatrix.ts` 的 `appliesToMode`），
     也可能是因為②**同頁其他欄位目前的值**（5-2 的知識使用模式＝`none`、關掉重排序、關掉可回答性閘、
     QA 直答＝停用，四處）。切版是靜態超集、兩種都常駐，所以**兩種在 markup 上長得一模一樣**——
@@ -254,8 +254,8 @@
     **整句本身是一次獨立通知**的那一族（`ui/score-scale-note` 的「需要重新校準」）相反——切版就是用
     `{% if %}` 把整段切掉的，React 照做**條件渲染**。判準一句話：**這一格在「沒有訊息」的時候還存不存在
     一個位置**——存在（那格永遠在版面上佔位）就常駐切內容，不存在（整段連版位一起消失）就條件渲染。
-    先前這裡沒有分家，於是 React 端把 `score-scale-note` 兩句做成常駐 `.hidden`：兩邊都不合規——
-    `display:none` 的 live region 多數報讀器同樣播報不到，而 DOM 上又多兩顆切版沒有的節點。
+    把後者做成常駐 `.hidden` 是兩邊都不合規——`display:none` 的 live region 多數報讀器同樣播報不到，
+    而 DOM 上又多兩顆切版沒有的節點。
 - **同頁兩個元件共吃的參數只能有一個來源**（GUIDELINE §6 同源；`perPage` 之於 `page-size-select` 與
   `ui/pagination`）：由共同祖先持有一份 state、往兩個子元件各發一份，並把該 prop 在祖先上做成**必填無預設**。
   子元件各自的 fallback 只服務「單獨使用」那條路，不得在祖先或第二個子元件再放一份預設——兩份預設＝畫面
@@ -266,7 +266,7 @@
   是元件預設；**使用頁** set 的值（`20`）是頁面資料。把頁面值搬進元件＝§6「元件不得寫死會因頁面而異的資料」。
 - **但 `{% set %}` 的列資料陣列不轉**：上一條只管非資料的頁面參數（`perPage`、預設頁籤那一類）。set 的
   清單若對應後端某支端點的回應（切版註解通常直接指名，如 5-6-1 的 `{% set tenants = [...] %}` ↔ product
-  `platform.py` 的 `TenantOut`、5-8 的 `{% set tokens = [...] %}`），那是**示範資料**——React 的那幾格
+  的 `TenantOut`、5-8 的 `{% set tokens = [...] %}`），那是**示範資料**——React 的那幾格
   來自 API，一個字都不搬。切版每一輪的頁面 diff 常有超過一半是這種陣列的修正（列序改成端點真實排序、id 換成
   真主鍵、金鑰長度補足），逐條寫著理由但全部只對切版成立；照字面讀會把示範租戶 id（7/15/23/42/58）
   當成頁面資料寫進 React 常數。
@@ -277,11 +277,11 @@
 
 ### modal 外殼（全站每一顆 `<dialog>` 收成一顆 `<Modal>`）
 
-殼的正本是 `ui/modals/_modals.scss` 檔頭那段逐字 markup，**可變的只有它列出來的那幾處**——React 就把
-那幾處開成 props，其餘一個字不給呼叫端碰：
+殼的正本是 `ui/modals/_modals.scss` 檔頭那段逐字 markup，**可變處以它那一份為準**（不在這裡抄第二份清單）。
+下面列的是**那幾處各自對到哪一顆 prop**，其餘一個字不給呼叫端碰：
 
 - `id`（`<dialog id>`；**共用彈窗由使用頁持有一顆**，觸發者只交出「動哪一筆＋按下確認做什麼」）
-- `titleId`（預設 `${id}-title`；真 app 以固定 id 綁標題的沿用原 id，照「跟著 `<dialog id>` 走」抄會寫出懸空的 `aria-labelledby`）
+- `titleId`（預設 `${id}-title`；以固定 id 綁標題的那幾顆沿用原 id，照「跟著 `<dialog id>` 走」抄會寫出懸空的 `aria-labelledby`）
 - `size`（`sm|md|lg`）、`children`（`.modals-body` 內容）、`footer`（可以沒有）
 - `title`：型別是 **`ReactNode` 不是 `string`**——切版有標題是「固定字 ＋ 資料槽」兩顆 span，收字串只能接成一個文字節點，骨架就少一顆 SPAN
 - 授權宣告（`<dialog>` 上的 `data-platform-role` 那一顆）：畫不出任何像素，抄漏了只有骨架比對看得到
@@ -333,8 +333,8 @@ portal 時的唯一辦法，**不是設計**。React 端一律收斂成**一顆�
   - 元件 js 的 `<script defer>` 清單：全部不帶（行為已改寫成 hooks），但那份清單是**元件盤點的檢查表**——轉換時逐支對過去，漏一支就是漏一個元件。
 - **`layouts/page-shell`** → 管理端 route layout（`app/(app)/layout.tsx`）。提供：`.skip-link`（`href="#main"`，鍵盤第一個 Tab 的落點）、`components/header`、`<main class="main" id="main" tabindex="-1">` ＞ **`<div class="wrap">`**（全站內容容器，規則在全域 `src/scss/_base.scss`；少了它每一頁的內容都沒有寬度上限、直接貼齊視窗邊）、**每頁唯一的 `<h1 class="sr-only">`**（內容來自 front matter 的 `pageHeading`／`titleKey`）、`components/footer`、
   以及 **`ui/faq-launcher`（在 footer 之後——那是 DOM 順序上頁面最後一顆可聚焦元素，出現條件＝登入態）**。
-  這份清單被當檢查表用（chatbot-shell 那一條逐字寫著「它提供的東西逐項都要有落點」），先前漏列 launcher
-  的代價不是漏做，是**做對的人沒有依據**：下一輪逐項核對「五項都有 ⇒ 通過」，多出來的那顆沒有出處，
+  這份清單被當檢查表用（chatbot-shell 那一條逐字寫著「它提供的東西逐項都要有落點」），所以**漏列一項的
+  代價不是漏做，是做對的人沒有依據**：下一個人逐項核對「清單上的都有 ⇒ 通過」，多出來的那顆沒有出處，
   很可能被當成 React 自創的東西刪掉。
   - `pageHeading`／`titleKey` 是 front matter＝**props**：React 端由各 route 傳給 layout（或 `generateMetadata` ＋ 一顆 `<h1 class="sr-only">`），**不可以讓各頁自己再長一顆 h1**（§3-1：每頁恰好一個）。
   - `#main` 的 `tabindex="-1"` 是 skip-link 的落點，少了它跳過去不會真的移動焦點。
@@ -343,7 +343,7 @@ portal 時的唯一辦法，**不是設計**。React 端一律收斂成**一顆�
   直欄骨架——header 不縮、`.chatbot-main` 撐開、footer 自然高度，三者都掛在它下面；少了它不是
   「少一層 div」，是滿版版型整個不成立）、`.skip-link`（`href="#main"`，§4 強制）、`components/chatbot-header`、
   `<main class="chatbot-main" id="main" tabindex="-1">`（`tabindex="-1"` 是 skip-link 的落點）、
-  自帶 sr-only h1、`components/footer`。少帶 skip-link 與 footer 是照這一條的舊版直翻最容易掉的兩樣。使用頁 front matter 的 `bodyClass: chatbot-page` 讓 body 不整頁捲動（`_chatbot-shell.scss`）——React 端要在該 route 的 `<body>`／根容器加同一個 class，否則前台聊天會變成雙捲軸。
+  自帶 sr-only h1、`components/footer`。skip-link 與 footer 是直翻時最容易掉的兩樣。使用頁 front matter 的 `bodyClass: chatbot-page` 讓 body 不整頁捲動（`_chatbot-shell.scss`）——React 端要在該 route 的 `<body>`／根容器加同一個 class，否則前台聊天會變成雙捲軸。
 - **`layouts/public-shell`** → 公開唯讀分享頁的 route layout（`app/shared/layout.tsx`）。它是**混血**：
   chrome 取自 chatbot-shell、版位取自 page-shell，所以兩邊直翻都會翻錯一半。逐項落點：
   `.skip-link`（`href="#main"`）、`components/chatbot-header`、`<main class="main" id="main" tabindex="-1">`
@@ -391,7 +391,7 @@ portal 時的唯一辦法，**不是設計**。React 端一律收斂成**一顆�
 - markup 不掛 `data-i18n`／`.js-lang-toggle`。
 - **一顆 key 不得承載兩種行為語意**：行為契約不同就是兩顆 key，即使繁中字面相同。正典：思考深度的空值——
   主回答空＝`settings.reasoningEffortDefault`（該模型預設），分組 LLM 空＝`settings.reasoningEffortMinimal`
-  （最低思考，product `profile_config.py` 的 `PROFILE_FIELD_DEFAULTS` 中 `reasoning_effort_*`）。共用元件把空值 key 做成**呼叫端
+  （最低思考，product 的 `PROFILE_FIELD_DEFAULTS` 中 `reasoning_effort_*`）。共用元件把空值 key 做成**呼叫端
   決定的 prop**，不要在元件內寫死一顆——寫死等於用元件把謊話複製到每個呼叫點。
 - **前綴／後綴 key 自帶分隔空白**（`"Total "`／`" pages"`／`"Source "`／`"Show "`／`" per page"`），不靠 JSX 補
   `{" "}`、也不靠 CSS 的副作用。`.sr-only` 前綴 ＋ 緊接的數字（`來源 N`）同理。
@@ -431,12 +431,24 @@ portal 時的唯一辦法，**不是設計**。React 端一律收斂成**一顆�
   `` `(${t("qaTest.setting")}${sourcesSide})` `` 就是），等於在 React 端開了第二個文案正本，而字典比對、
   孤兒 key、fpdiff 三張網一張都看不到。**同理也不要去鬆綁 11ty 的孤兒 key 規則**：放行「沒有引用點的 key」
   會讓死翻譯與缺口長得一模一樣，那條規則的價值就沒了。
-  切版該交的兩種形狀：
+  切版該交的三種形狀（前兩種是「給它一個家」，第三種是「它不該有家」）：
   - **執行期會換字的那一格 → 兩態槽**：`data-text-<態>`／`data-key-<態>` 把每個成員的繁中與 key 都掛在
     **同一個元素**上，正典 `ui/theme-toggle`、`components/prompt-edit`。React 讀槽、不自己拼。
     後綴是狀態式還是動作式看正典檔頭，認錯會讓兩態整組對調而畫面照樣有字。
   - **使用頁演不到的成員 → 元件庫頁**（`src/pages/components/component.html` 的「React 條件文案」區）：
-    那一區本來就是「在真實頁上沒有人看得到的那一態」的家，枚舉成員與 `.hidden` 分支同住。
+    那一區本來就是「在生產頁上沒有人看得到的那一態」的家，枚舉成員與 `.hidden` 分支同住。
+    - **整頁級的那一態走 `ui/error-page`，不是一行 `<p className="text-red">`。** 正典：各路由
+      `if (forbidden) return …` 那一支——不逐路由各留一顆 `REACT_ONLY`（`platform.forbidden`／
+      `users.forbidden`／`retrieval.forbidden` 這種），一律收斂成 `error.forbidden`／
+      `error.forbiddenPlatform` 兩顆——**分界是收件人不是頁面**。轉換時整個內容區換成 `.error-page`（`error-code` ＋ `error-message`，
+      契約逐字在 `_error-page.scss` 檔頭），麵包屑與導覽由 route layout 照畫。
+  - **那一態根本走不到 → 刪掉，不要給它版位。** `REACT_ONLY` 之所以留得住一顆 key，前提是「執行期真的
+    到得了那一態」；到不了的那些是**防禦性死碼配上一句翻譯**，而一句翻譯讀起來就像它會發生。判準是
+    去讀那條路徑而不是讀那段程式碼的註解：`dataImport.uploadExcelFirst`／`dataImport.backToUpload`
+    掛在 Excel 匯入精靈的 `// 後備：狀態不完整` 那一支，而 `step` 的初值是 `1`、每一次 `setStep(n)` 都與
+    它的資料同批設定、`setPreview(null)` 只出現在 `resetWizard()` 裡（同批 `setStep(1)`）⇒ 那一支
+    render 不出來（兩顆一起退場，後備分支改成直接 `resetWizard()`——真的走到了，
+    使用者落在一個能用的畫面而不是一個死路）。
   這條同時是 §⑥ 的驗收判準：**枚舉的每個成員都要有一個 render 得出它的地方**，否則它是出貨死碼。
 - **上游「沒有給這個欄位」是一個獨立的視覺態，不是枚舉的預設值。** 批次匯入 `results[]` 裡 `ok: false`
   的那一筆**沒有** `sync_state`（檔案連送出去都沒成功，沒有管道可查），而 `state ?? "unknown"`／
@@ -455,7 +467,7 @@ portal 時的唯一辦法，**不是設計**。React 端一律收斂成**一顆�
 - **「送出中／載入中／載入失敗」這一族與枚舉成員同辦法。** 它們不是枚舉，是**執行期狀態**：切版是靜態
   原型，畫得出「送出」畫不出「送出中」，於是 React 端一律就地多一顆 key（`action.saving`、
   `dataImport.previewFailed`…）。處置與缺成員完全相同——**回切版給它一個渲染點**（會換字的那一格用
-  兩態槽、真實頁演不到的落在元件庫頁的「React 條件文案」區），`REACT_ONLY` 只當**過渡登記**、不是終局。
+  兩態槽、生產頁演不到的落在元件庫頁的「React 條件文案」區），`REACT_ONLY` 只當**過渡登記**、不是終局。
   理由也一樣：那句繁中在切版沒有家，就等於在 React 端開了第二個文案正本，而字典比對、孤兒 key、
   fpdiff 三張網一張都看不到。（`disabled={submitting}` 本身合規——§⑥ 合規 disable 的第①種；
   不合規的是那顆**沒有人定過**的第二態文字。）
@@ -480,7 +492,7 @@ portal 時的唯一辦法，**不是設計**。React 端一律收斂成**一顆�
   **漏帶業務 hook 是 fpdiff 抓不到的一類漂移**，靠審查與 vitest。
 - 業務 hook class（`.watchBtn`／`.copyBtn`／`.js-apply-production`／`.js-chat-mode`…）保留——含 `js-` 開頭的**業務**
   hook（條件開窗／值載體／切版新頁自創的 React 綁定記號，GUIDELINE §5 的組合矩陣）；業務值載體 `<select>`／`<input>`
-  轉成受控元件、hook class 留在 className、change 綁定交業務層。真 app 以 **id 契約**綁定的控制項（2-2-1 的
+  轉成受控元件、hook class 留在 className、change 綁定交業務層。以 **id 契約**綁定的控制項（2-2-1 的
   `#knowledgeConfigSelect`／`#llmModelSelect`、faq-chatroom 的 `#chat-input-txt`）id 照帶。
 - **`data-platform-role="auditor|admin"` → 條件渲染的判準**（GUIDELINE §5）：值是**最低**需要的平台角色
   （`auditor` ＝ auditor 與 admin 都可）。React 讀 `/api/me` 的 `platform_role`（不是只讀 `is_platform_admin`
@@ -489,7 +501,7 @@ portal 時的唯一辦法，**不是設計**。React 端一律收斂成**一顆�
 - **表單驗證的回報方式只有一種**（GUIDELINE §4）：送出鈕 `data-toast` 的 warning 段就是「哪裡填錯」，
   欄位本身加 `.error` 標紅；切版**沒有**寫成通用佔位（「錯誤訊息文字」）的逐欄 `.error-prompt`——
   那種槽的顯示條件沒人觸發、內容也沒人知道要填什麼。React 端照這個分工做：欄位級只加 class，訊息走同一顆 toast key。
-  `.error-prompt` 只剩「訊息具體」或「真 app 業務 js 會填」的少數幾處，那幾處照抄。
+  `.error-prompt` 只剩「訊息具體」或「業務 js 會填」的少數幾處，那幾處照抄。
 - 業務邏輯（抓資料／SSE／圖表／表單驗證／日期）不轉。串流狀態列（`role="status"` live region）與建議追問 chip
   （`.js-ask-suggested`）markup 照切版轉、內容改由 SSE 事件驅動（切版是凍結的一格示範）。
 - 零自帶 js、行為全借共用原子 hook 的元件（step-flow 借 `ui/accordion` 的 `.js-accordion`／`.js-expand-all`／
@@ -538,7 +550,7 @@ portal 時的唯一辦法，**不是設計**。React 端一律收斂成**一顆�
   兩者皆無同樣違規」）。這是 fpdiff 抓不到的屬性級失真。
 - **`ui/scroll-lock`**：鎖本身是純 CSS（`html:has(...)`），這支 js 只做 CSS 做不到的那一件事——
   量捲軸寬度寫進 `--scrollbar-width`（且正鎖著時要跳過不量，否則量到 0）。React 端仍然需要它。
-  **它有兩半，先前只寫了一半**：load＋resize 那一半是全域監聽；另一半是「**任何會讓 `html` 進入鎖定態
+  **它有兩半，兩半都要轉**：load＋resize 那一半是全域監聽；另一半是「**任何會讓 `html` 進入鎖定態
   的動作，在切狀態之前先補量一次**」（`ui/modals` 的 `showModal()` 之前、`mobile-nav` 的加 `.active`
   之前，**順序不能反**）。漏掉補量那一半的症狀是：每次開跳窗或手機選單，整頁往右跳一條捲軸寬——
   而 `scss-diff` 綠（讀取端那條規則逐字照抄了）、`fpdiff` 比未互動快照、jsdom 沒有真捲軸，三張網全綠。
@@ -560,7 +572,7 @@ portal 時的唯一辦法，**不是設計**。React 端一律收斂成**一顆�
 - **`components/editable-block`**：三個 React 特有陷阱——`compositionstart`/`compositionend` 防注音誤送
   （→ `onCompositionStart/End`）、`setTimeout(0)` 後 `setSelectionRange` 把游標移到尾端、量寬用的暫時 span。
 - **剪貼簿**（`faq-chatroom` 前台複製、`import-report` 複製失敗清單）：`navigator.clipboard.writeText`
-  ＋ `document.execCommand("copy")` fallback，兩條都要帶。**管理端的 `.copyBtn` 相反**——真 app 本來就只彈 toast、
+  ＋ `document.execCommand("copy")` fallback，兩條都要帶。**管理端的 `.copyBtn` 相反**——它只彈 toast、
   不寫剪貼簿，照抄即忠實（GUIDELINE §5）。
 - **「點外部收合」一律 `event.composedPath()`**（`ui/multi-select`、`components/qa-side-panel`）：
   同頁別的委派可能先跑並用 `innerHTML` 重繪把 target 拔出文件，`ref.contains(e.target)` 會失效。
@@ -636,9 +648,9 @@ portal 時的唯一辦法，**不是設計**。React 端一律收斂成**一顆�
   - **grep 要剝掉註解再比。** 切版 js 的檔頭常提到**別的** hook 名（`ui/dismiss-panel` 的檔頭就寫著
     `js-service-key-issued`），照字面 grep 會把業務 hook 判成「切版自有」而刪掉它。判準是「這支 js
     的**程式碼**選得到它」，不是「這個檔案裡出現過這個字串」。
-  - **這條規則要有網，不能只有判準。** 它先前是全篇唯一「寫成可跑的、卻沒有任何一關在跑」的規則：
-    `fpdiff` 明文排除 `.js-*`、`scss-diff` 不看 tsx、型別與 lint 都看不到。結果是同一輪同時出現兩個
-    方向的錯，而且**錯的兩處各自都有註解宣稱自己是對的**（`.js-ask-suggested` 被刪掉還配了一條
+  - **這條規則要有網，不能只有判準。** 判準寫成可跑的還不夠——`fpdiff` 明文排除 `.js-*`、`scss-diff`
+    不看 tsx、型別與 lint 都看不到，於是兩個方向的錯可以同時存在，
+    而且**錯的兩處各自都有註解宣稱自己是對的**（`.js-ask-suggested` 被刪掉還配了一條
     「必須為 null」的反向斷言；`.js-accordion` 那一族被抄過來還寫著「切版 markup 有就保留」的錯判準）。
     React 端的落點是 `apps/web/lib/slicing/jsHooks.test.ts`：兩個方向各一條斷言 ＋ 一條負控（兩族都必須
     非空，否則測試恆綠）。**重疊案例逐顆登記在該檔的 `OVERLAP_KEEP` 並寫理由**，清單只准短。
@@ -652,7 +664,7 @@ portal 時的唯一辦法，**不是設計**。React 端一律收斂成**一顆�
   這類值隨語言翻譯的屬性不進零容忍比對（fpdiff 對照的切版 dist 跟 React 開發模式預設同語言，比不出翻譯錯誤，
   靠 §③ 規則 + code review 把關）；`--component` normalize 元件絕對位置；`--legacy-eval`／`--react-eval` 開隱藏元件；
   排除 `.js-*`；both-empty／loadFail 守門。
-- full-width 元件：gallery 展示槽用**該元件在切版真實頁的容器環境**——對照 `component.html`（guideline shell）的
+- full-width 元件：gallery 展示槽用**該元件在切版生產頁的容器環境**——對照 `component.html`（guideline shell）的
   元件用它的 `.full-container` 算式（aside 200px + main `calc(100% - 200px)` + padding 1rem + border-box）；
   對照業務頁（如 `5-1-1_accountInfo.html`）的元件用業務頁的 `.main > .wrap`（`.wrap` 在全域 `src/scss/_base.scss`、
   `.main` 在 `layouts/page-shell/_page-shell.scss`，兩支都是現成規則，
@@ -689,14 +701,13 @@ portal 時的唯一辦法，**不是設計**。React 端一律收斂成**一顆�
 - **切版以示範列數隱含一個顯示上限時，那個上限要是具體數字**：2-2-5 的桶子截斷說明白了「後端一律回
   整桶、畫面只列前幾則」是版面決策不是後端截斷，卻沒說「幾則」——轉換的人只能猜，而猜錯不會有任何
   測試看得到（fpdiff 比的是切版畫出來的那幾列，React 端上限設多少都不影響那張快照）。讀到只寫
-  「前幾則」的，回去要人補，別自己填一個。**該頁現在寫死了：每桶 20 列**（`bucket.slice(0, 20)`，
+  「前幾則」的，回去要人補，別自己填一個。**該頁的上限寫死是每桶 20 列**（`bucket.slice(0, 20)`，
   `count` 仍是整桶長度，`rows.length < count` 才畫截斷說明）。
-  ⚠️ **上限與示範列數是兩個數字，不要拿示範列數反推上限**：切版那一頁**三個桶子現在一律列滿**
-  （退步 1 ＋ 修好 1 ＋ 無變化 8 ＝ 10，因為這一輪只有 10 則案例、任何一桶都到不了 20），
-  截斷句的**可見**示範搬到了元件庫頁的「React 條件文案」節。所以快照上看得到的列數就是資料筆數，
-  20 才是規則——切版註解沒有分開講的時候尤其要問，別把快照上的列數抄成常數。
-  （先前這裡引的是上一版：那一版硬把無變化桶寫成 2 列、`count` 留 8 來「演截斷」，而切版已經
-  自己把它推翻——那是一個依它自己上一段規則不可能發生的狀態，§6。）
+  ⚠️ **上限與示範列數是兩個數字，不要拿示範列數反推上限**：那一頁的三個桶子一律列滿
+  （示範資料只有 10 則案例、任何一桶都到不了 20），截斷句的**可見**示範落在元件庫頁的
+  「React 條件文案」節。所以快照上看得到的列數就是資料筆數，20 才是規則——切版註解沒有分開講的
+  時候尤其要問，別把快照上的列數抄成常數。**也不要為了「演截斷」把示範列砍到少於 `count`**：
+  那是一個依 §6 不可能發生的狀態（示範資料要自洽）。
 - **樣板拼接的階梯 class**（`is-depth-${n}`）在 React 也要 `Math.min(n, 上限)` 夾住（scss 沒定義的階數＝靜默
   不縮排），且 **scss 定義的每一階都要有一條測試或 gallery render 得到它**，否則是出貨死 CSS。
   陷阱：後端同名欄位（事件的 `depth`）不等於顯示樹深，縮排只能用 DFS 深度。
@@ -705,9 +716,10 @@ portal 時的唯一辦法，**不是設計**。React 端一律收斂成**一顆�
   - **第一順位的判準是「切版有沒有列那一段 warning」，不是「理由看不看得見」**：列了就不准 disable
     （`config-copy-modal` 的「請至少勾選一個複製項目」、5-3 的「權限不足」——兩處都逐字寫著這句）。
     切版**沒有**那一段時才輪得到下面兩種。
-  - **合規的 `disabled` 只有兩種**：①**進行中**（`disabled={submitting}`、問答生成中——那一刻不是使用者
+  - **送 API 的鈕，合規的 `disabled` 只有兩種**：①**進行中**（`disabled={submitting}`、問答生成中——那一刻不是使用者
     改得掉的）；②**type-to-confirm 尚未解鎖**（`manage-tenant-modal` 的兩顆刪除、`iso-review-wizard` 的
-    「確認執行」）。②之所以走 disabled 而不是 warning，是因為 GUIDELINE §5 的 hook 矩陣①明文那一族
+    「確認執行」）。**射程只到鈕**：值控制項（`<select>`／`<input>`／switch）在平台角色低於該級時
+    **渲染成 `disabled`** 是 §④ 的第三種、也是合規的——唯讀角色要看得見那些值才稽核得到（GUIDELINE §4）。②之所以走 disabled 而不是 warning，是因為 GUIDELINE §5 的 hook 矩陣①明文那一族
     **不掛 `data-toast`**，而解鎖條件就在同一個窗裡、常駐可見（片語欄 ＋ `aria-describedby` 接的 hint），
     使用者看得到自己差什麼。這兩種**切版自己就畫得出來**，所以 `disabled` 寫在切版 markup 上、React 照抄，
     不是 React 自己加的。

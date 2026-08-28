@@ -4,7 +4,7 @@
 
 **你（agent）的產出契約**：
 - 每個 `src/_includes/{ui,components}/<name>/` → 一個 `<Name>.tsx`，外觀用 Tailwind utility（含 arbitrary value），**不產生元件旁的 .scss/.css**。
-- 樣式的**值以實際 SCSS 檔為準**（本文件給的是「翻譯規則與 theme 設定」，不是值的清單）。SCSS 已對齊真 app 編譯 css，是正確來源。
+- 樣式的**值以實際 SCSS 檔為準**（本文件給的是「翻譯規則與 theme 設定」，不是值的清單）——SCSS 就是正本。
 - 對照 `dist/`（本專案 build 後每頁的最終外觀）逐頁驗收。
 
 轉換順序：**① 建 theme → ② 設斷點 → ③ 裝 plugin → ④ 轉 utility 層與元件 → ⑤ 逃生口用 plugin/renderer → ⑥ 對 dist 驗收**。
@@ -43,11 +43,11 @@ Tailwind v4：把同一組名字加上 `--color-` 前綴放進 `@theme`，深色
 
 漸層 `--brand-gradient`（header 底線、footer 背景）不是顏色 token：設成一般 CSS 變數或用 `bg-[linear-gradient(...)]`。
 
-> ⚠️ **`_var.scss` 裡還有一族「非顏色旗標」**（成員以測試的 `COLOR_ROLES.nonColor` 為準，§3-2 不寫死計數），值是 `block`/`none`/`invert(.8)…`/`multiply` 之類，被元件當 `display`/`filter`/`background-blend-mode` 用：`--theme-icon-light`、`--theme-icon-dark`、`--raster-invert`、`--pattern-blend`。**不要加 `--color-` 前綴、不要放進 `@theme` 的顏色區**——改名就會讓 `var(--theme-icon-light)` 斷鏈，日/月圖示切換、插圖反相、底紋壓暗全部失效。（`--pattern-tint` 是**顏色** token（`transparent` ↔ `#333333`，當 `background-color`），照常進 `@theme`。）
+> ⚠️ **`_var.scss` 裡還有一族「非顏色旗標」**（成員以測試的 `COLOR_ROLES.nonColor` 為準，§3-2 不寫死計數），值是 `block`/`none`/`invert(.8)…`/`multiply` 之類，被元件當 `display`/`filter`/`background-blend-mode` 用：`--theme-icon-light`、`--theme-icon-dark`、`--raster-invert`、`--pattern-blend`。**不要加 `--color-` 前綴、不要放進 `@theme` 的顏色區**——改名就會讓 `var(--theme-icon-light)` 斷鏈，日/月圖示切換、插圖反相、底紋壓暗全部失效。（`--pattern-tint` 是**顏色** token（淺色 `transparent` ↔ 深色一顆實色，當 `background-color`；值以 `_var.scss` 為準），照常進 `@theme`。）
 
 ### 全域基底：Tailwind preflight 沒給的三條，必須自己帶過去
 
-preflight 已含 `box-sizing: border-box` 與 `img{max-width:100%; height:auto}`（本專案 `_base.scss` 的 `img{height:auto}` 因此不必另帶），但下面三條**沒有**。它們在 `_base.scss`，是全站可及性/體感的地基，轉換時逐條搬進全域樣式層（v4 用 `@layer base`）：
+preflight 已含 `box-sizing: border-box` 與 `img{max-width:100%; height:auto}`（`_base.scss` 的 `img{height:auto}` 因此不必另帶）。⚠️ **`max-width` 那一半只涵蓋 `img`／`video`**：`_base.scss` 的是 `img, svg, video, canvas { max-width: 100% }`，`svg` 與 `canvas` **preflight 不管**，轉換時要自己帶。下面三條 preflight 同樣**沒有**。它們在 `_base.scss`，是全站可及性/體感的地基，轉換時逐條搬進全域樣式層（v4 用 `@layer base`）：
 
 > ⚠️ 反過來，**preflight 會多給 `img{display:block; vertical-align:middle}`**，本專案的 `<img>` 維持 inline（`.icon`、`.beta-icon`…）。轉換後要視情況以 `inline`/`inline-block` 覆寫，否則徽章與圖示會換行或位移。（header logo 不是 `<img>`：它是 block `<a>` + `background-image` + `text-indent:101%` 的文字替換法，見 §5-5，不受這條影響。）
 
@@ -91,7 +91,7 @@ preflight 已含 `box-sizing: border-box` 與 `img{max-width:100%; height:auto}`
 
 ### 圓角 / 字級
 
-- 圓角（**Tailwind v4 半徑階已改名**，本專案 §1 推 v4）：4px → v4 `rounded-sm`（v3 `rounded`）、8px → `rounded-lg`、2px → v4 `rounded-xs`（v3 `rounded-sm`）、圓形/膠囊 `50%`/`100px`/`1000px`（radio/switch handle/storage-bar/switch 軌道）→ `rounded-full`、30px（date 膠囊）→ `rounded-full`。**其餘尺標外的值一律 `rounded-[N]`，這裡刻意不列舉**（今天至少還有 `999px`／`18px`／`12px`／`0.75rem`／`1px` 五種，抄下來的清單注定過期，§3-2「能不寫死清單就不要寫」）——轉換時以實際 SCSS 為準。（先前這裡舉的 `3px`（`_chat-message.scss` 的 `code`）已經改成 4px 並統一到 `ui/inline-code`；全 repo 僅存的 3px 在 `src/scss/_guideline.scss` 的 showcase 捲軸，不進 app bundle。）（字級 `text-*` v4 未改名，不受影響。）
+- 圓角（**Tailwind v4 半徑階已改名**，本專案 §1 推 v4）：4px → v4 `rounded-sm`（v3 `rounded`）、8px → `rounded-lg`、2px → v4 `rounded-xs`（v3 `rounded-sm`）、圓形/膠囊 `50%`/`100px`/`1000px`（radio/switch handle/storage-bar/switch 軌道）→ `rounded-full`、30px（date 膠囊）→ `rounded-full`。**其餘尺標外的值一律 `rounded-[N]`，這裡刻意不列舉**（今天至少還有 `999px`／`18px`／`12px`／`0.75rem`／`1px` 五種，抄下來的清單注定過期，§3-2「能不寫死清單就不要寫」）——轉換時以實際 SCSS 為準。（字級 `text-*` v4 未改名，不受影響。）
 - 字級（**注意命名偏移 +1，別同名對應**）：`text-md`(18px)→`text-lg`、`text-lg`(20px)→`text-xl`、`text-xl`(24px)→`text-2xl`；base 16px→`text-base`。
 - 字型：`--fontFamily` 設進 theme 的 `--font-sans` 或 config `fontFamily.sans`；**`--fontFamilyMono` 設進 `--font-mono`／`fontFamily.mono`**（消費者：`ui/inline-code`、`ui/code-block`、`ui/chat-message` 的行內碼、`components/skill-editor-modal`——GUIDELINE §4 要求它是全站唯一一份等寬堆疊，零 CSS 路線非映射不可，漏了那四處會落回瀏覽器預設等寬字）。
 
@@ -203,7 +203,7 @@ scrollbar-thin scrollbar-thumb-scrollbar-thumb scrollbar-track-transparent
 用 `appearance:none`（或隱藏 `opacity:0` 的 input）+ 偽元素/相鄰兄弟畫出控制項（checkbox 用旋轉 border 打勾、radio 用 scale 圓點，**switch 用隱藏 checkbox + `:checked + .switch-box .switch-btn` 相鄰兄弟 + custom property `calc()` 推 handle 位置**，含 `:checked`/`:disabled` 過渡）。純 Tailwind arbitrary `before:` 很難忠實重現。**建議做法：改成受控的 React 元件（SVG icon / 自畫 handle），或此處留一小段 CSS 逃生口**。這是整個轉換裡唯一「硬要零 CSS 會很痛」的地方——若團隊零 CSS 是硬底線，優先走受控元件。
 
 ### 5-5. 單色 PNG 圖示＝遮罩上色（`icon-mask()`），**不是** `background-image`
-全站的單色圖示（`.button-icon::before` 系列、`.nav-toggle`、`.accordion-btn`、`.multi-select-tag-remove`、六個 `::after` 箭頭（見 §5-3）、`.modals-close`、`.feedback-vote-icon`、搜尋/時鐘）都走 `src/scss/_mixin.scss` 的 `icon-mask($url, $ink, $size)`：**PNG 的 alpha 當遮罩、顏色由語意 token 給**。因此深色模式不必反相、hover 換色只要換 token（真 app 的 `*_bluehover.png` 已因此刪除）。
+全站的單色圖示（`.button-icon::before` 系列、`.nav-toggle`、`.accordion-btn`、`.multi-select-tag-remove`、六個 `::after` 箭頭（見 §5-3）、`.modals-close`、`.feedback-vote-icon`、搜尋/時鐘）都走 `src/scss/_mixin.scss` 的 `icon-mask($url, $ink, $size)`：**PNG 的 alpha 當遮罩、顏色由語意 token 給**。因此深色模式不必反相、hover 換色只要換 token（`*_bluehover.png` 那一族資產也因此不需要）。
 
 → **轉 Tailwind（零 CSS）路線時直接改成內嵌 SVG component + `fill="currentColor"`**：那正是遮罩在模擬的東西，而且省掉一整批 PNG 請求。
 > ⚠️ **這條只適用零 CSS 路線。** scss 路線（REACT-CONVERSION）的驗收門檻是 `scss-diff.mjs` byte-identical，換掉 `icon-mask()` 會讓那條門檻結構上不可能成立——那邊逐字照抄，改 SVG 是之後另一次獨立重構（見 GUIDELINE §7 的裁決）。若要機械照搬，Tailwind 沒有 mask utility，得寫 arbitrary property：`bg-text [mask:url(/icons/x.png)_no-repeat_center/contain]`（底線代空白）。**顏色來自 `background-color`，不是 `color`** —— 這是遮罩的關鍵，別把它當成普通底色而套上填充 token（見 GUIDELINE §4「遮罩」）。
@@ -254,7 +254,7 @@ scrollbar-thin scrollbar-thumb-scrollbar-thumb scrollbar-track-transparent
 10. **自訂 checkbox/radio 別硬 utility**（§5-4）：`appearance:none`+偽元素畫的控制項，零 CSS 就走 SVG 元件；硬用 arbitrary `before:` 會重現不出旋轉打勾。這是零 CSS 唯一真的痛點。（scss 路線不受此限——那邊照抄。）
 11. **單色圖示是遮罩不是背景圖**（§5-5）：`.button-icon` 系列、箭頭、搜尋/時間框…清單自己數（`grep -o 'mask:url("[^"]*")' dist/css/main.css | sort -u`）→ 建議一律改成 `fill="currentColor"` 的內嵌 SVG。若照搬遮罩，記得上色的是 `background-color`（墨色）而非 `color`；Tailwind 無 mask utility，需 arbitrary property。
 12. **顏色不全在 token**（§1 附註）：一批 token 外硬寫色需 arbitrary color，別假設都有 token。
-13. **值以 SCSS + dist 為準**：本文件是規則；遇到衝突，以實際 `_<name>.scss` 的宣告與 `dist/<page>.html` 的最終外觀為準（兩者已對齊真 app）。
+13. **值以 SCSS + dist 為準**：本文件是規則；遇到衝突，以實際 `_<name>.scss` 的宣告與 `dist/<page>.html` 的最終外觀為準。
 14. **z-index 值一律 arbitrary**：Tailwind 只出 `z-0..z-50`，但 code 有 `toast 2000`、`.skip-link 2000`、`header 1000`（子選單 `15`）、`modals 1000`（含 `.modals-close 1`）、`subscription-overlay 1000`、`mobile-nav 97~100`、`multi-select 20`、`switch 10`、`tooltip 10`、`qa-side-panel 10/2/1`、`chatroom-shell 5`、`faq-launcher 900`（由 `layouts/page-shell` 掛在每一頁上，夾成 `z-50` 會被 header 的 1000 蓋掉）、`login-wrapper 1` → 一律 `z-[N]`，別夾成 `z-50` 破壞疊層（小值如 `5` 也沒有對應 utility）。**這份清單會過期**：動手前先 `grep -rn 'z-index' src`，以實際 SCSS 為準（§3-2）。
 15. **事件委派的資料屬性不是樣式**：`data-open-modal="X"`（`ui/modals`）與 `data-toast="…"`（`ui/toast`）是切版期「markup 沒有 props 可傳」的替身，由掛在 `document` 的委派接手。轉 React 時**一律換成 `onClick`**（`onClick={() => openModal("X")}`），不要保留這兩個屬性、也不要保留 document-level 委派。
 16. **版面值裡的 `max()/min()/calc()`**：如 `qa-side-panel` 的 `top: max(72px, 100vh - 550px)` → arbitrary 並把算式包進 `calc()`：`top-[max(72px,calc(100vh-550px))]`（底線代空白、留意巢狀）。
