@@ -46,7 +46,7 @@ permalink: 3-7_documentSearch.html
    （`DEFAULT_FILTER_FIELD_NAMES`），故兩個日期欄由 React 端組成
    `$filterDate >= '…' and $filterDate <= '…'` 塞進 `SearchParams.filter`。
    ⚠️ **前提是匯入 pipeline 的 mapper 有把日期寫進 `filterDate`**——沒寫的資料集這兩欄篩不到東西，
-   而那是資料面的事、畫面上看不出來。列為交辦（§6）。
+   而那是資料面的事、畫面上看不出來——所以結果表的空狀態要把這件事說出來。
 
    **未勾選任何資料集＝檢索全部**：`SearchParams.indexes` 是 `Optional`，而
    GufoNet 那一側的 `_build_query_sentence()` 是 `if search_params.indexes:` ⇒ 空值就不加索引條件。所以檢索範圍窗
@@ -79,10 +79,10 @@ permalink: 3-7_documentSearch.html
        兩支都沒有對應 ⇒ 檔名降成純文字，`components/field-content-modal` 整顆刪。
      · **「標題」欄**：`SearchResult` 沒有 title。GufoNet 那側的 `TfFieldWeight` 給 `$Title$` 開了權重
        證明索引裡有 Title，但它沒被寫進 `_BASE_CONTENT_FIELD`、也沒被 `_convert_to_search_result`
-       取出來 ⇒ 要畫得先改後端。**列為交辦，不是設計**（§6）。
+       取出來 ⇒ 值拿不到。
      · **明細列的自訂欄位逐欄**（發布單位／原始連結）：`_build_content_field()` 確實會把自訂欄位
        append 進 GufoNet 的 `ContentField`，但 `_convert_to_search_result` **沒有把它們映射進
-       `SearchResult`**（兩個引擎都只映射同 12 欄）⇒ 值拿不到。同上列為交辦。
+       `SearchResult`**（兩個引擎都只映射同 12 欄）⇒ 值拿不到。
      · **「摘要生成」逐列鈕與整顆 `components/doc-summary-modal`**：`GenerateSummary` 是 SolIdea2
        的端點，`manager_backend` 與 GufoRAG `chatbot` 兩邊都沒有對應。
      · **命中段落的「累計命中序號」與命中字標紅**：`search` 就是 GufoNet 的 `DocAbstract`，而

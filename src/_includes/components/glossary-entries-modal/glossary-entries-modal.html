@@ -22,24 +22,19 @@
      （200／280／90）、操作欄 `<th><span className="sr-only">`，空狀態是 `rows.length === 0` 時的
      `colSpan={3}` 無資料列（不是表格後面補一顆 `<p>`）。標題的表名是執行期資料，由 React 填。
 
-     i18n key 值與結構以 product catalog 對齊。**複驗基準：gufofaq-saas@02ddb25**（§3-2：記「已回流／
-     待回流」一律釘對方的 commit sha，否則下一次無從判斷該不該重驗）。該 sha 上已對齊的部分：
-     `messages.en.json` 的 `toast.saveGlossaryEntries` 與 `regression.charsUnit`（`" characters"`）
-     與本站逐字相同；React 那一側也有 `#glossaryLimitsHint`、`glossaryEntryCountPrefix` 計數列、
-     `aria-labelledby` 逐列脈絡、`required` 與兩顆 `aria-describedby`，且不掛靜態 `aria-label`。
+     i18n key 值與結構以 product catalog 對齊。
 
-     **四項待回流**（本站是這樣寫的、`gufofaq-saas@02ddb25` 尚未跟上；§4-2「同一領域名詞的英譯
-     拼寫要一致」——「詞條」在同一顆窗裡不可以同時譯成 Term 與 Entries，那會讓
-     `toast.saveGlossaryEntries` 一句話內兩種都出現，而姊妹頁 3-6 的別名表詞條一律用 entry。
-     **繁中原文一個字都不動**，只動英譯值與一個 key 名）：
+     **這一顆窗的英譯裁定：「詞條」一律 entry，不用 term**（§4-2「同一領域名詞的英譯拼寫要一致」）。
+     兩種混用會讓 `toast.saveGlossaryEntries` **一句話裡同時出現 Term 與 Entries**，而姊妹頁 3-6 的
+     別名表詞條一律用 entry ⇒ 同一個概念在站上有兩個英文名字。
+     **繁中原文一個字都不動**，動的只有英譯值與一個 key 名：
        ① `settings.term`：`Term` → `Entry`
        ② `settings.glossaryLimitTerm`：`Term limit ` → `Entry limit `
        ③ `toast.saveGlossaryEntries` 的 warning 段：`a term cannot be empty; term length…`
           → `an entry cannot be empty; entry length…`
        ④ 本檔第三顆量詞由 `regression.charsUnit` 改名成 `common.unitChars`（同一顆「 字」被五頁
           跨命名空間借用，§4-2 升格到 `common.*`；值不變，仍是 `" characters"`）。
-     在這四項回流之前，兩邊 catalog 逐字比對（§8 的 NET-NEW 程式比對）會在這四顆 key 上報差異，
-     那是預期內的，不是本檔跑掉。 #}
+     這四顆是**刻意與 product catalog 不同字**的，逐字比對在它們上面報差異是預期內的。 #}
 {# 示範資料變數用元件專屬名 glossaryEntryRows（不用泛用名）：{% set %} 是頁面全域（§2/§6）。 #}
 {% set glossaryEntryRows = [
     { term: "年終獎金", definition: "依年度考核與公司獲利發放的額外獎金。" },

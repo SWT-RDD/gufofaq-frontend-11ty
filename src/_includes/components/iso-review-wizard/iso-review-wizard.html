@@ -106,8 +106,7 @@
        會被讀成早 8 小時），所以刻意不轉當地時間、也刻意帶上 `UTC` 三個字。
      · `trial_end` 走 `YYYY-MM-DD`（同 5-6-1 租戶表的 `fmtTrialEnd`）。
      · 這一族其他時間欄（建立時間等）走當地時間 `YYYY/MM/DD HH:mm`（saas 的 `fmtMinute`）。
-   ⚠️ **待回流**（gufofaq-saas@648c3cc 複驗）：`apps/web` 那一側對這三格**完全不格式化**
-     （`{preview.as_of}`／`{preview.cutoff}`／`{c.trial_end ?? ""}` 直接印 raw ISO）。 #}
+   ⚠️ 這三格**不得直接印 raw ISO**：那是給機器讀的字串，人看不出時區也讀不出日期。 #}
 {% if isoReviewStep == "idle" %}
     <div class="flex-row column gap-8">
         <div class="text-bold" data-i18n="platform.reviewStep1">① 設定門檻與動作</div>
@@ -326,8 +325,8 @@
              error: …})`，整批不 rollback、不拋例外），所以「部分租戶失敗」是一條真實可達、而且與
              「整批送不出去」要做的事完全不同的結果。`require_platform_admin` 的 403 不列——那一級
              走「動作鈕不渲染」（§5 渲染規則）。
-           ⚠️ **待回流（gufofaq-saas@648c3cc 複驗）**：那一側目前把 `segs[1]` 當 error 用，補了中間這一段
-             之後要改成 `segs[2]`（`|` 分段是索引契約）。 #}
+           ⚠️ **這一顆是三段**：error 在 `segs[2]`，`segs[1]` 是「部分租戶失敗」。假設「末段即 error」
+             的消費端會在這裡接錯位（`|` 分段是索引契約）。 #}
         {# **`disabled`＝type-to-confirm 尚未解鎖**（同 manage-tenant-modal 危險操作區那兩顆）：
              這一稿演的是片語欄空著的那一刻，而片語欄的全部意義就是「沒逐字打對之前按不下去」。
              它不是把 `data-toast` 的任何一段演掉——那三段是這顆鈕**送得出去之後**的結果集合

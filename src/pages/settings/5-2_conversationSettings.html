@@ -175,11 +175,7 @@ permalink: 5-2_conversationSettings.html
            - 「啟用可回答性閘」關閉 ⇒ 它的判準與分數門檻不顯示（GufoRAG chatbot 的
              `_score_floor` 只在閘內呼叫）。
            - 「QA 直答」＝停用 ⇒ 它的分數門檻／判定補充說明／QA 集選取不顯示
-             （GufoRAG chatbot 的 `qa_direct_active`／`_enabled`）。
-         **已回流**：gufofaq-saas `apps/web/lib/i18n/messages.{zh,en}.json` 的
-         `settings.modeApplicabilityHint` 與本頁逐字相同，`page.tsx` 也照②在渲染。
-         ⚠️ 「待回流」這種標註要**雙向**複驗：只查切版這一側、不查下游有沒有跟上，就會留下一個
-         其實已經補好的缺口，害讀的人去修一件已經做完的事。 #}
+             （GufoRAG chatbot 的 `qa_direct_active`／`_enabled`）。 #}
     <div class="text-gray mt-8" data-i18n="settings.modeApplicabilityHint">哪些欄位會出現，取決於對話模式與其他欄位目前的值——在目前設定下不會生效的欄位一律不顯示。</div>
 </div>
 
@@ -789,10 +785,9 @@ permalink: 5-2_conversationSettings.html
      intension 僅傳統搜尋模式生效（agent 無意圖路由階段）、role/chatroom 兩模式皆用；**不適用者不渲染**
      （見「生成設定」子頁籤檔頭註的理由）——「進階提示詞」
      區塊的名字因此是**「進階提示詞」而不是「Agent 提示詞」**：後者的字面暗示「僅 Agent」，與矩陣
-     相反（這五欄裡有兩欄兩模式皆生效）。**已回流**：gufofaq-saas
-     `apps/web/app/(app)/conversation-settings/page.tsx` 渲染 `settings.advancedPrompts`
-     （「進階提示詞」）並逐欄標模式適用性；`settings.agentPrompts` 這顆 key 在 `apps/web` 全樹零命中，
-     不要把它接回來。 #}
+     相反（這五欄裡有兩欄兩模式皆生效）。
+     ⚠️ **`settings.agentPrompts` 這顆 key 已經退場，不要把它接回來**：它的字面就是上面說的那個
+     誤導，接回來等於把已經裁定過的錯字面重新請回站上。 #}
 <div class="tab-content" data-capability="settings:write" id="panelPrompts" style="display: none;">
     <div class="block mb-10 flex-row column gap-16">
         {# ⓘ 說明：markup 同 5-2 既有的 info-btn 六件組。①出處：本子頁籤檔頭「產品系統提示詞（含版本史）
@@ -865,10 +860,9 @@ permalink: 5-2_conversationSettings.html
             </div>
             <div class="flex-row flex-wrap gap-16 align-items-center">
                 <button type="button" class="button button-border js-filter-clear" data-i18n="action.clear">清除</button>
-                {# ⚠️ **待回流**：gufofaq-saas 的 `toast.queryPrompt`／`toast.queryWelcome`
-                     還是兩段（`成功|失敗`），而 `PromptVersionEditor.tsx` 是**照索引取**的
-                     （`segs[1] ?? segs[0]` 當 error 用）⇒ 拿這一份字典時它會把 403 那句以 error 型別彈出。
-                     `|` 是索引契約，兩邊段數不同就是接錯位（§4-2／REACT-CONVERSION ⑥）。 #}
+                {# `|` 是索引契約：這一顆是三段（成功｜權限不足｜失敗），**中間那一段是 warning
+                     不是 error**。照索引取的消費端如果假設「末段即 error」，403 就會被彈成紅色
+                     ——那是把「找人開通就好」演成「再試一次」（§4-2／REACT-CONVERSION ⑥）。 #}
                 <button data-capability="settings:read" type="button" class="button button-primary js-prompt-search" data-toast="查詢成功|權限不足，無法查詢——請找貴租戶的管理者開通|時間區間不正確（起訖需成對）|這段期間的版本數超過單次上限，請縮小時間範圍|無法載入提示詞版本列表" data-i18n-data-toast="toast.queryPrompt" data-toast-type="success|warning|warning|warning|error" data-i18n="action.query">查詢</button>
             </div>
         </div>
@@ -2011,8 +2005,8 @@ permalink: 5-2_conversationSettings.html
              ⚠️ **出處要 grep 得回去**：符號名對、位置錯（例如把 ③ 那顆算到 product 頭上）是最難發現的一種
                 ——查的人找不到，得到的結論會是「這條界線不存在」，而那與「這條界線在三個地方」剛好相反。
                 所以這裡一律只寫 repo 名 ＋ 符號名，不寫會搬家的路徑。
-             這兩顆數字（10／30）今天仍是前端的抄本，而它們**其實投影得到**（同上 ② 那支端點）：
-                做成資料槽才是終局，但那會動到兩處使用頁與 React 的接線。
+             這兩顆數字（10／30）今天是這一頁的字面量，而它們**其實投影得到**（同上 ② 那支端點）
+                ——改動上限時這裡不會自己跟著變，所以引用它們的人要知道正本在那支端點上。
              **四顆共用同一份目錄**（§3-3：同頁兩個以上 select 的 option value 集合相同 ⇒ 必須 set
              成一個陣列共用）：值域正本是 3-6 的別名表清單，選取狀態各自一份 id 清單。
              四份抄本改一處就會漏，而這四顆正是「三個 apply 清單 ⊆ alias_table_ids」那條寫入層
@@ -2348,10 +2342,8 @@ permalink: 5-2_conversationSettings.html
         </div>
         {# grounding 判定前的分數粗篩門檻（chatbot `ChatConfig.grounding_score_floor`，預設 0.5）。
              **與 QA 直答那一格刻意不對稱**：這一格非空、沿用 0.5。
-           ⚠️ **待回流**：gufofaq-saas `apps/web/lib/i18n/messages.{zh,en}.json` 的
-             `settings.groundingScoreFloorNote` 還是舊句（「只是判定前的門票，閘開著時 LLM 判定
-             一定會跑」），要改成與這一頁逐字相同的版本。
-             ⚠️ **那句「門票」是假的，不可以寫回來**：分數粗篩命中時 `assess_grounding` 直接回
+           ⚠️ **「只是判定前的門票，閘開著時 LLM 判定一定會跑」那句是假的，不可以寫回來**：
+             分數粗篩命中時 `assess_grounding` 直接回
              NO_ANSWER，**零 LLM、終局拒答**，隨後整批來源卡被清空——它不是「多付一次判定」，
              是這一輪的結局。
              0.5 看起來無害只是因為 weaviate certainty 幾乎恆大於 0.5；換 `bge_reranker`（未正規化
