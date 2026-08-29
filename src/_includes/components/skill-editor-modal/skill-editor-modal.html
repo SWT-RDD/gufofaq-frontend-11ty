@@ -25,8 +25,8 @@
    兩個欄位的輔助文字是功能的一部分、不是裝飾：
      - name 的規則若不寫出來，租戶只會反覆撞 400（後端才是權威，但不該讓人用猜的）。
      - description 是 agent 選不選這個 skill 的**唯一**依據，寫得含糊 skill 就永遠不會被觸發。
-   工具白名單四個 multi-select 對應 allowed_tools 的四個桶（內建工具／MCP server／術語表／
-     其他 skill）。它是**安全邊界**——子圖只用勾選的工具建起來，沒勾的在執行時根本不存在，
+   工具白名單四個 multi-select 對應 allowed_tools 的四個桶（內建工具／術語表／巢狀 skill／
+     MCP server，桶序的出處與理由見下方那一則）。它是**安全邊界**——子圖只用勾選的工具建起來，沒勾的在執行時根本不存在，
      故 UI 不提供「全選」之類的捷徑（勾了什麼就是什麼）。
    示範資料＝假資料，依 GUIDELINE §4-2「只翻 UI chrome、不翻假資料」不掛 data-i18n。
    示範資料變數用元件專屬名 skillEditorBuiltinTools（{% set %} 是頁面全域，§2/§6）。
@@ -156,11 +156,16 @@
                                 </div>
                             </div>
                         </div>
-                        {# 四個桶的順序＝**內建 → 術語表 → MCP → 巢狀 skill**，逐字對回 GufoRAG chatbot
+                        {# 四個桶的順序＝**內建 → 術語表 → 巢狀 skill → MCP**，逐字對回 GufoRAG chatbot
                              `_resolve_skill_tools` 逐段 `tools.extend` 的順序
                              （agent 實際拿到工具的順序）。⚠️ **順序不可自行對調**：桶序一分岔，全站就有
                              兩份，而 3-4 清單的「可使用的工具」欄要照其中一份攤平時，沒有任何依據挑得出來。
-                             3-4 的規格引用的是同一個出處。 #}
+                             3-4 的規格引用的是同一個出處。
+                             **巢狀 skill 排在 MCP 之前是安全論證，不是版面偏好**：撞名時先進來的那一顆勝，
+                             後面同名的被丟棄。頂層建 skill 工具時手上的既有名字只有內建工具，於是撞名的
+                             MCP 工具被丟掉 ⇒ **skill 勝**。這一層若把 MCP 排在巢狀 skill 之前，同一個名字
+                             就會變成 MCP 勝、巢狀 skill 被丟棄——同一輪對話裡，使用者直接叫那個名字跑的是
+                             skill、透過父 skill 叫跑的是 MCP 工具，兩個位置指向不同實作。 #}
                         <div class="form-group row mobile-col">
                             <div class="label label-md">
                                 <label for="skillGlossarySelect" class="control-label" data-i18n="settings.glossaryTables">綁定術語表</label>
@@ -171,26 +176,6 @@
                                 <select id="skillGlossarySelect" class="form-control multiSelect js-skill-glossary" multiple="multiple" data-placeholder="請選擇" data-placeholder-key="common.pleaseSelect">
                                     <option value="4">人資術語</option>
                                     <option value="5">產品術語</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="form-group row mobile-col">
-                            <div class="label label-md">
-                                <label for="skillMcpSelect" class="control-label" data-i18n="settings.mcpServers">MCP Server</label>
-                            </div>
-                            <div class="field col-12-sm">
-                                {# MCP 註冊表與 5-2（`#mcpServersSelect`）／5-6-2 是**同一份三台**，
-                                     值也同源（id 1／2／3）。**停用中的不可濾掉**：理由與 5-2 那一段逐字相同
-                                     ——`allowed_tools.mcp_server_ids` 的驗證吃的是註冊表全集
-                                     （chatbot 的 `validate_mcp_server_ids`），
-                                     濾掉清單等於在 UI 上把一個存得進去的合法值變成不存在；而停用期間它
-                                     本來就不會被呼叫（GufoRAG chatbot 的 `_select_mcp_servers` 以
-                                     `id.in_()` ＋ `is_active` 取交集）。⚠️ 示範清單裡**停用中那一台不可以少**：
-                                     少了它，同一份註冊表就變成在一頁看得到、在另一頁看不到（§6）。 #}
-                                <select id="skillMcpSelect" class="form-control multiSelect js-skill-mcp" multiple="multiple" data-placeholder="請選擇" data-placeholder-key="common.pleaseSelect">
-                                    <option value="1">時間工具</option>
-                                    <option value="2">內部文件搜尋</option>
-                                    <option value="3" data-suffix="（停用中）" data-suffix-key="settings.mcpServerInactive">舊版文件搜尋</option>
                                 </select>
                             </div>
                         </div>
@@ -212,6 +197,26 @@
                                 {# 深度上限走資料節點（§4-2）：出處＝chatbot 的
                                      `MAX_SKILL_RECURSION_DEPTH`。 #}
                                 <p class="skill-editor-hint" id="skillNestedHint"><span data-i18n="settings.skillNestedHintPrefix">被引用的 skill 會成為這個 skill 可呼叫的工具。不可互相引用成環，巢狀深度上限 </span><span>3</span><span data-i18n="settings.skillNestedHintSuffix"> 層。</span></p>
+                            </div>
+                        </div>
+                        <div class="form-group row mobile-col">
+                            <div class="label label-md">
+                                <label for="skillMcpSelect" class="control-label" data-i18n="settings.mcpServers">MCP Server</label>
+                            </div>
+                            <div class="field col-12-sm">
+                                {# MCP 註冊表與 5-2（`#mcpServersSelect`）／5-6-2 是**同一份三台**，
+                                     值也同源（id 1／2／3）。**停用中的不可濾掉**：理由與 5-2 那一段逐字相同
+                                     ——`allowed_tools.mcp_server_ids` 的驗證吃的是註冊表全集
+                                     （chatbot 的 `validate_mcp_server_ids`），
+                                     濾掉清單等於在 UI 上把一個存得進去的合法值變成不存在；而停用期間它
+                                     本來就不會被呼叫（GufoRAG chatbot 的 `_select_mcp_servers` 以
+                                     `id.in_()` ＋ `is_active` 取交集）。⚠️ 示範清單裡**停用中那一台不可以少**：
+                                     少了它，同一份註冊表就變成在一頁看得到、在另一頁看不到（§6）。 #}
+                                <select id="skillMcpSelect" class="form-control multiSelect js-skill-mcp" multiple="multiple" data-placeholder="請選擇" data-placeholder-key="common.pleaseSelect">
+                                    <option value="1">時間工具</option>
+                                    <option value="2">內部文件搜尋</option>
+                                    <option value="3" data-suffix="（停用中）" data-suffix-key="settings.mcpServerInactive">舊版文件搜尋</option>
+                                </select>
                             </div>
                         </div>
                         <div class="form-group row mobile-col">

@@ -37,7 +37,14 @@ permalink: 3-2_glossaryManagement.html
 
 <p class="text-gray" data-i18n="settings.glossaryMgmtIntro">術語表供問答 agent 查詢專有名詞的定義；「何時查閱」即工具描述，供 LLM 判斷何時該查此表。別名改由「別名表」統一管理，在對話設定裡決定要不要讓術語查詢套用。</p>
 
-{# 四欄的上限與格式是契約欄位（§6），**數字走資料節點、不烤進譯文**（§4-2）。出處逐字：
+{# 四欄的上限與格式是契約欄位（§6），**數字走資料節點、不烤進譯文**（§4-2），而且**那顆數字
+     自己也是資料、不是字面量**：同一顆上限在這一頁有四個落點（新增區的 `maxlength`、新增區的
+     可見提示、逐列就地編輯的 `maxlength`、表格下方那份共用提示），逐格寫死＝同一份契約在一頁裡
+     烤了四份抄本（§3-2「重複資料在頁面資料化」、§6「同一份業務目錄不得各烤一份」）。開成一顆槽
+     之後它在轉換契約上就是 props：React 端由 `GET /api/settings/chat-config-limits` 的
+     `glossary.*.max_len` 填，不必在 tsx 裡再寫一次——四欄的執法點全在上游，前端多一份字面量就多
+     一個會靜默過期的地方。切版沒有端點可讀，故槽裡就是正本當下的值，改的只有「它是誰填的」。
+     出處逐字：
      · 表名稱／何時查閱／補充指示的長度與「不可含 XML/HTML 標籤」＝GufoRAG chatbot 的
        `MAX_TABLE_NAME_LEN = 64`／`MAX_WHEN_TO_CONSULT_LEN = 1024`／`MAX_TOOL_PROMPT_LEN = 1024`，
        三欄同由 `validate_table_metadata` 執法（長度之外還跑 `contains_markup`：三欄都會原文進
@@ -47,6 +54,7 @@ permalink: 3-2_glossaryManagement.html
    **新增區與逐列就地編輯兩處都要掛**（§4）：兩處打的是同一支端點的同一組守衛，只掛新增區
      等於那條約束在編輯路徑上不存在。逐列那四顆吃表格下方那一份共用提示（正典＝
      glossary-entries-modal 的 `#glossaryLimitsHint`）。 #}
+{% set glossaryFieldLimits = { tableName: 64, whenToConsult: 1024, toolPrompt: 1024, normalizeRegex: 500 } %}
 {# 新增術語表：名稱（必填）＋何時查閱＋工具提示（textarea）＋新增鈕（五態 toast：成功／權限不足／填錯／失敗／到達張數上限）。
      **逐 raise 對回 product 的 `create_glossary_table`，出口共五條**
      （§3-2 負面斷言要列全部出口，`raise HTTPException` 只是其中一種形狀）：
@@ -102,8 +110,8 @@ permalink: 3-2_glossaryManagement.html
                     <label for="newGlossaryNameInput" class="control-label required" data-i18n="settings.glossaryTableName">表名稱</label>
                 </div>
                 <div class="field">
-                    <input type="text" id="newGlossaryNameInput" maxlength="64" placeholder="請輸入術語表名稱" data-i18n-placeholder="settings.pleaseEnterGlossaryTableName" class="form-control" required aria-describedby="newGlossaryNameHint">
-                    <span class="text-gray" id="newGlossaryNameHint"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span>64</span><span data-i18n="common.unitChars"> 字</span><span data-i18n="settings.noMarkupSuffix">，不可含 XML/HTML 標籤</span></span>
+                    <input type="text" id="newGlossaryNameInput" maxlength="{{ glossaryFieldLimits.tableName }}" placeholder="請輸入術語表名稱" data-i18n-placeholder="settings.pleaseEnterGlossaryTableName" class="form-control" required aria-describedby="newGlossaryNameHint">
+                    <span class="text-gray" id="newGlossaryNameHint"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span>{{ glossaryFieldLimits.tableName }}</span><span data-i18n="common.unitChars"> 字</span><span data-i18n="settings.noMarkupSuffix">，不可含 XML/HTML 標籤</span></span>
                 </div>
             </div>
         </div>
@@ -113,8 +121,8 @@ permalink: 3-2_glossaryManagement.html
                     <label for="newGlossaryWhenInput" class="control-label" data-i18n="settings.glossaryWhenToConsult">何時查閱（工具描述）</label>
                 </div>
                 <div class="field">
-                    <input type="text" id="newGlossaryWhenInput" maxlength="1024" placeholder="請說明何時該查此表" data-i18n-placeholder="settings.pleaseEnterWhenToConsult" class="form-control" aria-describedby="newGlossaryWhenHint">
-                    <span class="text-gray" id="newGlossaryWhenHint"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span>1024</span><span data-i18n="common.unitChars"> 字</span><span data-i18n="settings.noMarkupSuffix">，不可含 XML/HTML 標籤</span></span>
+                    <input type="text" id="newGlossaryWhenInput" maxlength="{{ glossaryFieldLimits.whenToConsult }}" placeholder="請說明何時該查此表" data-i18n-placeholder="settings.pleaseEnterWhenToConsult" class="form-control" aria-describedby="newGlossaryWhenHint">
+                    <span class="text-gray" id="newGlossaryWhenHint"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span>{{ glossaryFieldLimits.whenToConsult }}</span><span data-i18n="common.unitChars"> 字</span><span data-i18n="settings.noMarkupSuffix">，不可含 XML/HTML 標籤</span></span>
                 </div>
             </div>
         </div>
@@ -127,8 +135,8 @@ permalink: 3-2_glossaryManagement.html
                      時候（§4「約束不得只活在 placeholder 裡」）。約束改掛常駐的 #glossaryRegexHint，
                      新增區與逐列兩處都指它。 #}
                 <div class="field">
-                    <input type="text" id="newGlossaryNormalizeRegexInput" maxlength="500" placeholder="如 [-.\s]" data-i18n-placeholder="settings.glossaryNormalizeRegexPlaceholder" class="form-control" aria-describedby="glossaryRegexHint">
-                    <span class="text-gray" id="glossaryRegexHint"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span>500</span><span data-i18n="common.unitChars"> 字</span><span data-i18n="settings.glossaryRegexFormatHint">；必須是合法 regex，不可含量詞（* + ? {}），交替至多一個</span></span>
+                    <input type="text" id="newGlossaryNormalizeRegexInput" maxlength="{{ glossaryFieldLimits.normalizeRegex }}" placeholder="如 [-.\s]" data-i18n-placeholder="settings.glossaryNormalizeRegexPlaceholder" class="form-control" aria-describedby="glossaryRegexHint">
+                    <span class="text-gray" id="glossaryRegexHint"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span>{{ glossaryFieldLimits.normalizeRegex }}</span><span data-i18n="common.unitChars"> 字</span><span data-i18n="settings.glossaryRegexFormatHint">；必須是合法 regex，不可含量詞（* + ? {}），交替至多一個</span></span>
                 </div>
             </div>
         </div>
@@ -138,8 +146,8 @@ permalink: 3-2_glossaryManagement.html
                     <label for="newGlossaryPromptInput" class="control-label" data-i18n="settings.glossaryToolPrompt">補充指示（選填）</label>
                 </div>
                 <div class="field">
-                    <textarea id="newGlossaryPromptInput" maxlength="1024" class="form-control" aria-describedby="newGlossaryPromptHint"></textarea>
-                    <span class="text-gray" id="newGlossaryPromptHint"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span>1024</span><span data-i18n="common.unitChars"> 字</span><span data-i18n="settings.noMarkupSuffix">，不可含 XML/HTML 標籤</span></span>
+                    <textarea id="newGlossaryPromptInput" maxlength="{{ glossaryFieldLimits.toolPrompt }}" class="form-control" aria-describedby="newGlossaryPromptHint"></textarea>
+                    <span class="text-gray" id="newGlossaryPromptHint"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span>{{ glossaryFieldLimits.toolPrompt }}</span><span data-i18n="common.unitChars"> 字</span><span data-i18n="settings.noMarkupSuffix">，不可含 XML/HTML 標籤</span></span>
                 </div>
             </div>
         </div>
@@ -251,11 +259,11 @@ permalink: 3-2_glossaryManagement.html
                          regex 那一欄另指格式提示 #glossaryRegexHint（與新增區同一份，不另寫第二套說法）。 #}
                     <td>
                         <span id="glossaryTableRowName-{{ tbl.id }}" class="sr-only">{{ tbl.name }}</span>
-                        <input type="text" class="form-control" maxlength="64" value="{{ tbl.name }}" aria-labelledby="glossaryTableRowName-{{ tbl.id }} glossaryHeadName" aria-describedby="glossaryTableLimitsHint" required>
+                        <input type="text" class="form-control" maxlength="{{ glossaryFieldLimits.tableName }}" value="{{ tbl.name }}" aria-labelledby="glossaryTableRowName-{{ tbl.id }} glossaryHeadName" aria-describedby="glossaryTableLimitsHint" required>
                     </td>
-                    <td><input type="text" class="form-control" maxlength="1024" value="{{ tbl.whenToConsult }}" aria-labelledby="glossaryTableRowName-{{ tbl.id }} glossaryHeadWhenToConsult" aria-describedby="glossaryTableLimitsHint"></td>
-                    <td><input type="text" class="form-control" maxlength="1024" value="{{ tbl.toolPrompt }}" aria-labelledby="glossaryTableRowName-{{ tbl.id }} glossaryHeadToolPrompt" aria-describedby="glossaryTableLimitsHint"></td>
-                    <td><input type="text" class="form-control" maxlength="500" value="{{ tbl.normalizeRegex }}" aria-labelledby="glossaryTableRowName-{{ tbl.id }} glossaryHeadNormalizeRegex" aria-describedby="glossaryTableLimitsHint glossaryRegexHint"></td>
+                    <td><input type="text" class="form-control" maxlength="{{ glossaryFieldLimits.whenToConsult }}" value="{{ tbl.whenToConsult }}" aria-labelledby="glossaryTableRowName-{{ tbl.id }} glossaryHeadWhenToConsult" aria-describedby="glossaryTableLimitsHint"></td>
+                    <td><input type="text" class="form-control" maxlength="{{ glossaryFieldLimits.toolPrompt }}" value="{{ tbl.toolPrompt }}" aria-labelledby="glossaryTableRowName-{{ tbl.id }} glossaryHeadToolPrompt" aria-describedby="glossaryTableLimitsHint"></td>
+                    <td><input type="text" class="form-control" maxlength="{{ glossaryFieldLimits.normalizeRegex }}" value="{{ tbl.normalizeRegex }}" aria-labelledby="glossaryTableRowName-{{ tbl.id }} glossaryHeadNormalizeRegex" aria-describedby="glossaryTableLimitsHint glossaryRegexHint"></td>
                     <td class="text-center">{{ tbl.entryCount }}</td>
                     <td>
                         <div class="btn-group">
@@ -280,7 +288,7 @@ permalink: 3-2_glossaryManagement.html
     {# 逐列四欄共用的常駐可見上限（正典＝glossary-entries-modal 的 #glossaryLimitsHint）。
          **不能只掛新增區**：兩處打的是同一支端點的同一組守衛，而 maxlength 是靜默截斷
          （打不進去也不說為什麼）。數字走資料節點、不烤進譯文（§4-2）。 #}
-    <p id="glossaryTableLimitsHint" class="text-gray m-0"><span data-i18n="settings.glossaryLimitTableName">表名稱上限 </span><span>64</span><span data-i18n="settings.glossaryLimitWhenToConsult"> 字、何時查閱 </span><span>1024</span><span data-i18n="settings.glossaryLimitToolPrompt"> 字、補充指示 </span><span>1024</span><span data-i18n="settings.glossaryLimitNormalizeRegex"> 字、正規化 regex </span><span>500</span><span data-i18n="settings.glossaryLimitsRuleSuffix"> 字。前三欄不可含 XML/HTML 標籤（它們會原文進工具描述）。</span></p>
+    <p id="glossaryTableLimitsHint" class="text-gray m-0"><span data-i18n="settings.glossaryLimitTableName">表名稱上限 </span><span>{{ glossaryFieldLimits.tableName }}</span><span data-i18n="settings.glossaryLimitWhenToConsult"> 字、何時查閱 </span><span>{{ glossaryFieldLimits.whenToConsult }}</span><span data-i18n="settings.glossaryLimitToolPrompt"> 字、補充指示 </span><span>{{ glossaryFieldLimits.toolPrompt }}</span><span data-i18n="settings.glossaryLimitNormalizeRegex"> 字、正規化 regex </span><span>{{ glossaryFieldLimits.normalizeRegex }}</span><span data-i18n="settings.glossaryLimitsRuleSuffix"> 字。前三欄不可含 XML/HTML 標籤（它們會原文進工具描述）。</span></p>
 </div>
 
 {# 「術語表清單」的說明視窗：②③留空，理由同上一顆。 #}

@@ -14,19 +14,21 @@ permalink: 5-10_tagDimensions.html
          ——`retrieval_profiles` 上沒有它、`ProfileOut` 也不回它（product 有一段退休說明），
          所以這一頁任何一格都不可以畫它：畫了就是替一個上游給不出來的東西留位子）
        · product（`UNSET_TAG_VALUE`／`NEVER_EXPIRES` 哨兵、`slots_missing_from_files`：
-         哪些維度槽不是每一個檔都寫進索引了——開啟過濾的唯一硬閘門）
+         哪些維度槽不是每一個檔都寫進索引了——切到任何一種會過濾的模式的唯一硬閘門）
        · product（`tag_dimension_slots`：維度可掛的槽值域＝`custom_field_mapping` 那批）
        · product（`MIN_FILTERABLE_DATE` / `MAX_FILTERABLE_DATE` 的可篩選日期區間）
 
      這一頁要外顯四件「不寫出來就會靜默出事」的事，逐一：
 
-     ① **旋鈕預設關閉，開啟是一道硬閘門、不是勾一下**——而那道閘門判的是**結構**，不是標註完成度。
+     ① **旋鈕預設停用，切到任何一種會過濾的模式都是一道硬閘門、不是挑一下**——而那道閘門判的是**結構**，
+        不是標註完成度。**兩種會過濾的模式共用同一道閘門**：靜默排除的成因（文件連這一欄都沒有）與
+        「誰決定收窄條件、什麼時候決定」無關，所以閘門的判準不隨模式改變，只有適用範圍多一種模式。
         「未標註」是**寫入端的哨兵值**（`tag_values.UNSET_TAG_VALUE`／`NEVER_EXPIRES`）：沒填的
         格子在匯入時就寫成一個真實的值，於是述詞只要「這一欄等於某個代碼**或**等於未標註」，
         三種 kind 都表達得出來 ⇒ **不存在「哪些維度必須先標滿才准開過濾」這回事**
         （`GET /settings/tag-dimension-contract` 的投影裡沒有這一項——見 product 的
         `project_tag_dimension_contract`，它只投影 slots／kinds／roles／filterable_date_range）。
-        **覆蓋率不是開啟的證明**，別把它寫成閘門。
+        **覆蓋率不是可以過濾的證明**，別把它寫成閘門。
         真正的閘門是：**每一個檔都要把這一槽寫進索引**
         （`tag_values.slots_missing_from_files`，一次 DB 查詢、當下的事實，不是會過期的快照）。
         哨兵的代價只有一個：它不命中 property **缺席**的文件，而缺席只有兩個來源——宣告這個維度
@@ -37,14 +39,18 @@ permalink: 5-10_tagDimensions.html
         閘門只看**會產生述詞**的維度（`role is None` 或 `kind=date` 且 `role=valid_until`，與
         `retrieval_filter._dimension_clause` 逐條一致），QA 集不計。
 
-     ② **還有檔沒帶到這一欄就開啟＝那些檔被靜默排除**，這正是旋鈕預設 off 的理由，故兩態警語就放
-        在開關旁邊（比照 5-2 輸出規則的串流代價兩態：兩句各自完整敘述代價，只看到其中一句的人也
-        讀得到後果）。「可以開」那一句要順帶講出它之後會怎麼退化：資料夾匯入的檔永遠沒有欄位槽。
+     ② **還有檔沒帶到這一欄就開始過濾＝那些檔被靜默排除**，這正是旋鈕預設 off 的理由，故兩態警語就放
+        在挑模式的地方（比照 5-2 輸出規則的串流代價兩態：兩句各自完整敘述代價，只看到其中一句的人也
+        讀得到後果）。「都可以用」那一句要順帶講出它之後會怎麼退化：資料夾匯入的檔永遠沒有欄位槽。
 
-     ③ **時間窗不能獨立於維度存在**。意圖分類判不準時整組條件一起丟棄、`recency` 一併歸零
+     ③ **時間窗不能獨立於維度存在，而且它只有「問答前系統判定」這一種模式在用**。那個模式下它仍然
+        不是一顆可以單獨生效的開關：意圖分類判不準時整組條件一起丟棄、`recency` 一併歸零
         （product），理由是時間窗是唯一沒有「未標註」分支的述詞
         （product 的回歸測試 `test_recency_excludes_undated_documents_by_design`），留著會連沒有
-        發布日的文件一起濾掉。UI 講「時間窗」時不可以讓人以為它是一顆可以單獨生效的開關。
+        發布日的文件一起濾掉。另外兩種模式一條都不送：旋鈕不在 `on` 時，product 餵的是**具名的空
+        意圖**（`NO_INTENT`），標籤過濾與時間窗一條都不出。故那一格是**值相依**的——不是 `on` 就
+        整顆輸入框不畫（§4「組合維度上的空格要由 markup 表達」），畫成 `disabled` 的輸入框仍然顯示
+        一個數字，讀起來像「目前設定是 7 天」，而它一天都沒有生效。
 
      ④ **日期維度的值有上下界**，而且是**填之前**就要知道的規則：檢索引擎的日期索引是 int64 奈秒
         epoch，出界的值存得進去、`=` 也命中，但任何範圍過濾都漏掉它（product
@@ -117,26 +123,29 @@ permalink: 5-10_tagDimensions.html
   { id: 5, code: "import", label: "進口向", description: "輸入我國的貨品、人員或資金" }
 ] %}
 {% set coverageScan = { documents: 132, examined: 132, notIndexed: 0, filesNotEnumerable: 0, qaDatasetsExcluded: 2 } %}
-{# 三套設定檔各自一個旋鈕（product `RetrievalProfile` 是 per-profile 狀態）。示範：設置一開著、
-     另外兩套關著。**沒有 per-profile 的「證明」可以顯示了**：閘門是租戶層級的結構事實
-     （每一個檔都要把維度槽寫進索引），不是開啟當下存下來的一份快照——所以三欄變兩欄，
-     開著的那一套與關著的那兩套在這張表上只差開關本身。
-     示範資料要演得出一個**真實可能**的狀態（§6）：設置一開著，代表它開啟的那一刻每一個檔都帶得到
-     那些欄；而下面那張「要重新匯入的檔」表有列，代表之後又匯入了缺欄的檔——這正是為什麼閘門要問
-     當下的事實而不是留一份快照（product 逐字寫著舊快照「量完之後又匯入一批留白的資料，
-     快照就過期了，而畫面上看不出來」）。 #}
+{# 三套設定檔各自一個旋鈕（product `RetrievalProfile` 是 per-profile 狀態）。
+     **沒有 per-profile 的「證明」可以顯示了**：閘門是租戶層級的結構事實
+     （每一個檔都要把維度槽寫進索引），不是切過去當下存下來的一份快照——所以三欄變兩欄，
+     過濾中的那幾套與停用的那一套在這張表上只差模式本身。
+     示範資料要演得出一個**真實可能**的狀態（§6）：設置一在過濾中，代表它切過去的那一刻每一個檔都
+     帶得到那些欄；而下面那張「要重新匯入的檔」表有列，代表之後又匯入了缺欄的檔——這正是為什麼閘門
+     要問當下的事實而不是留一份快照（product 逐字寫著舊快照「量完之後又匯入一批留白的資料，
+     快照就過期了，而畫面上看不出來」）。
+     **三種模式各渲染到一次**（`on`／`llm`／`off`）：`selected` 的分支是逐值渲染的，示範資料漏掉
+     哪一種，那一種在 `dist` 裡就一次都不出現——而 i18n 抽取器掃的正是 `dist`。
+     順帶把時間窗那一格的**值相依**演出來：只有 `on` 那一列畫得出輸入框，另外兩列畫的是那句常駐說明。 #}
 {% set tagFilterProfiles = [
   { no: 1, name: "設置一", i18nKey: "settings.config1", mode: "on", recentWindowDays: 7 },
-  { no: 2, name: "設置二", i18nKey: "settings.config2", mode: "off", recentWindowDays: 7 },
+  { no: 2, name: "設置二", i18nKey: "settings.config2", mode: "llm", recentWindowDays: 7 },
   { no: 3, name: "設置三", i18nKey: "settings.config3", mode: "off", recentWindowDays: 14 }
 ] %}
-{# 開啟被擋下時 product 回 400，detail 逐維度指名兩種缺法、各自附處置（`_assert_every_file_carries_the_slots`）：
+{# 切到會過濾的模式被擋下時 product 回 400，detail 逐維度指名兩種缺法、各自附處置（`_assert_every_file_carries_the_slots`）：
      · `not_mapped`：「N 個檔匯入時沒有這一欄」→ 重新匯入一次（新的匯入會帶上這一欄，沒填的自動補「未標註」）
      · `whole_file`：「N 個檔是以資料夾方式匯入的、整份是一份文件」→ 改成逐列匯入，或不要用這個維度過濾
      兩種的處置不同，所以畫面**一列一個（維度 × 缺法）**，與 400 的結構一對一。
      product 每一組只列前 5 個檔名、超過就 `…`，所以列表要說得出「共 N 個」，示範資料把截斷演出來。
      沒有查詢端點可以先看：`slots_missing_from_files` 只在 `PUT …/tag-filter` 那條寫入路徑上被呼叫，
-     所以這一區演的是**被擋下之後**的狀態，**不是事前的預先提示**——沒有端點可以在按下開關之前
+     所以這一區演的是**被擋下之後**的狀態，**不是事前的預先提示**——沒有端點可以在按下儲存之前
      先問一次，寫成預先提示就是承諾一件切版與 React 都做不到的事。 #}
 {# 覆蓋率量測的「量測範圍」下拉吃這一份資料集目錄（`GET /tags/coverage` 的 `dataset_id` 參數）。
      它與下面那張「要重新匯入的檔」表**沒有關係**：那張表的最小單位是檔、而且 product 給的
@@ -561,7 +570,7 @@ permalink: 5-10_tagDimensions.html
                              ⇒ 這一顆按下去 100% 撞得到，只演成功等於把整道守衛演掉（§5）。
                              它是 warning 不是 error：使用者自己關掉標籤過濾就刪得動（那道守衛的
                              docstring 逐字寫著「不是永久禁止」）。 #}
-                        <button data-capability="settings:write" type="button" id="tagVocabDelete-{{ row.id }}" aria-labelledby="tagVocabRowCode-{{ row.id }} tagVocabDelete-{{ row.id }}" class="button button-red button-sm" data-toast="代碼已刪除|權限不足，無法刪除——請找貴租戶的管理者開通|標籤檢索過濾正開著，刪掉代碼會立刻改變每一輪問答的過濾條件——請先把設定檔的標籤過濾關掉|刪除失敗，請稍後再試" data-i18n-data-toast="toast.deleteTagCode" data-toast-type="success|warning|warning|error" data-i18n="action.delete">刪除</button>
+                        <button data-capability="settings:write" type="button" id="tagVocabDelete-{{ row.id }}" aria-labelledby="tagVocabRowCode-{{ row.id }} tagVocabDelete-{{ row.id }}" class="button button-red button-sm" data-toast="代碼已刪除|權限不足，無法刪除——請找貴租戶的管理者開通|標籤檢索過濾正開著，刪掉代碼會立刻改變每一輪問答的過濾條件——請先把設定檔的過濾模式切成「停用」|刪除失敗，請稍後再試" data-i18n-data-toast="toast.deleteTagCode" data-toast-type="success|warning|warning|error" data-i18n="action.delete">刪除</button>
                     </td>
                 </tr>
                 {% else %}
@@ -580,7 +589,7 @@ permalink: 5-10_tagDimensions.html
 {% set helpModalTitleKey = "help.settings.tagVocabulary.title" %}
 {% set helpModalTitle = "受控詞彙（字典）說明" %}
 {% set helpModalWhatKey = "help.settings.tagVocabulary.what" %}
-{% set helpModalWhat = "這一區編輯的是標籤維度清單裡「目前選定」那一個維度的字典；要換成別的維度，回上面清單點該列的「編輯字典」。刪除一個代碼前，只要任一套對話設定已經開啟標籤檢索過濾，系統會先擋下——那個代碼被刪除之後，原本標著它的文件會在每一輪問答的過濾條件裡都比對不到，必須先把過濾關掉才刪得動。" %}
+{% set helpModalWhat = "這一區編輯的是標籤維度清單裡「目前選定」那一個維度的字典；要換成別的維度，回上面清單點該列的「編輯字典」。刪除一個代碼前，只要任一套對話設定已經開啟標籤檢索過濾，系統會先擋下——那個代碼被刪除之後，原本標著它的文件會在每一輪問答的過濾條件裡都比對不到，必須先把過濾模式切成「停用」才刪得動。" %}
 {% set helpModalStateItems = [] %}
 {% set helpModalLimitRows = [] %}
 {% include "components/help-modal/help-modal.html" %}
@@ -667,19 +676,27 @@ permalink: 5-10_tagDimensions.html
 {% include "components/help-modal/help-modal.html" %}
 
 {# ── 檢索過濾旋鈕（每套設定檔各一份）───────────────────────────────────────────
-     product `RetrievalProfile.retrieval_filter_mode` 預設 `off`、`recent_window_days` 預設 7。
-     開啟走 `PUT /retrieval/profiles/{no}/tag-filter`，它會**先驗結構再開**：只要還有檔沒把某個維度槽
-     寫進索引就 400（`_assert_every_file_carries_the_slots`），旋鈕維持 off。故開關這顆的 toast 一定要有
-     那一段 warning——只演成功等於把整道閘門演掉了。
+     product `RetrievalProfile.retrieval_filter_mode` 預設 `off`、`recent_window_days` 預設 7
+     （product 的 `RETRIEVAL_FILTER_DEFAULTS`），寫入走 `PUT /retrieval/profiles/{no}/tag-filter`。
+     **這顆旋鈕是三態，不是開關**——差別在誰決定收窄條件、什麼時候決定，所以形狀是 `<select>`
+     而不是 switch，表頭也是「過濾模式」不是「過濾開關」：
+       · `off`＝沒有人決定收窄，不收窄。
+       · `on`＝系統的意圖分類層決定，時機是送出問題後、開始檢索前；判不出來時整組條件一起丟棄
+         （連時間窗一起），不退成一條寬鬆的條件。
+       · `llm`＝AI 自己決定，時機在檢索過程中（可以先搜一次再收窄）；判不出來就不帶條件，照樣答得
+         出來——所以它不會因為判錯而查不到東西。`on` 的失效形狀正是「明明有資料卻謊稱沒有」。
+     **切到任何一種會過濾的模式都要先驗結構**：只要還有檔沒把某個維度槽寫進索引就 400
+     （`_assert_every_file_carries_the_slots`），而**模式維持原樣沒有改動**——不是退成 `off`。
+     故這一顆的 toast 一定要有那一段 warning——只演成功等於把整道閘門演掉了。
      這道驗證是一次 DB 查詢（O(檔數)），**不是**逐份讀文件的覆蓋率掃描（那會是 O(文件數) 次上游
-     往返、有上限、而且存下來的是會過期的快照）——所以這顆開關**沒有**「超過掃描上限」
+     往返、有上限、而且存下來的是會過期的快照）——所以這一顆**沒有**「超過掃描上限」
      「量測途中被改動」那些分支，別替它補上。 #}
-{# 租戶能力標記（同 5-2 的理由：唯讀閘要從 markup 讀得出來，不是 React 應用層各自判斷）：檢索過濾旋鈕：PUT …/tag-filter 掛 settings:write，另外要 data:read（開啟要逐檔驗結構）。 #}
+{# 租戶能力標記（同 5-2 的理由：唯讀閘要從 markup 讀得出來，不是 React 應用層各自判斷）：檢索過濾旋鈕：PUT …/tag-filter 掛 settings:write，另外要 data:read（切到會過濾的模式要逐檔驗結構）。 #}
 <div data-capability="settings:write data:read" class="block flex-row column gap-16">
     {# ⓘ 說明：markup 逐字照抄 `settings/5-2_conversationSettings.html` 出口套用欄那顆既有
          info-btn 六件組。①出處：本檔檔頭「檢索過濾旋鈕（每套設定檔各一份）」——不重複下方
          ②③④已經逐段講過的內容（覆蓋警語兩態／時間窗歸零理由／日期上下界），①改講三套
-         設定檔彼此獨立這件事，以及下面那張表與這裡的開關是同一個閘門的兩面。 #}
+         設定檔彼此獨立這件事，以及下面那張表與這裡的旋鈕是同一個閘門的兩面。 #}
     <div class="flex-row align-items-center gap-8">
         <div class="text-md text-bold" data-i18n="settings.tagFilter">標籤檢索過濾</div>
         <button type="button" class="info-btn" title="標籤檢索過濾說明" data-i18n-title="help.settings.tagFilter.title" data-open-modal="tagFilterHelpModal">
@@ -687,15 +704,19 @@ permalink: 5-10_tagDimensions.html
             <span class="sr-only" data-i18n="help.settings.tagFilter.title">標籤檢索過濾說明</span>
         </button>
     </div>
-    <p class="text-gray" data-i18n="settings.tagFilterIntro">開啟之後，問答會先判斷這一題屬於哪些業務維度，再把判斷結果編成檢索過濾條件送給引擎。判不準時整組條件一起丟棄（連時間窗一起），不會退成一條寬鬆的條件。</p>
+    {# 三種模式的差別只在這裡講一份：下面每一顆 `<select>` 以 `aria-describedby` 指回這一段
+         （`#tagFilterModeIntro`）。**不另寫一顆 hint key**——同一件事寫兩份，分家時畫面上沒有
+         任何訊號看得出來哪一份過期了。 #}
+    <p class="text-gray" id="tagFilterModeIntro" data-i18n="settings.tagFilterIntro">這一區決定問答要不要用標籤收窄檢索範圍，三種模式的差別在誰決定收窄條件、什麼時候決定。停用＝不收窄。問答前系統判定＝送出問題後、開始檢索前，系統先判斷這一題屬於哪些業務維度，判不準時整組條件一起丟棄（連時間窗一起），不會退成一條寬鬆的條件。AI 邊查邊收窄＝不預先判定，改由 AI 在查資料的過程中自己決定要不要帶標籤，判斷不出來就不帶，所以它不會因為判錯而查不到東西。</p>
 
-    {# ② 「還有檔沒帶到這一欄就開啟＝那些檔被靜默排除」的警語，就放在開開關的地方。兩態各自完整
+    {# ② 「還有檔沒帶到這一欄就開始過濾＝那些檔被靜默排除」的警語，就放在挑模式的地方。兩態各自完整
          敘述後果，未生效的那句掛 .hidden（React 依 `PUT …/tag-filter` 擋不擋得下來擇一渲染）。 #}
-    <p class="text-red" data-i18n="settings.tagFilterCoverageWarnBlocked">目前還有檔沒有把這一欄寫進索引（匯入的時候還沒有這個維度，或那個檔是以資料夾方式匯入的）。在這個狀態下開啟過濾，那些檔會被靜默排除——過濾條件比對的是「這一欄等於某個代碼或等於未標註」，而那些檔連這一欄都沒有；agent 模式沒有無結果放寬階梯，被濾掉就是真的消失，使用者只會體驗成「有些資料查不到」。這正是這顆旋鈕預設關閉的理由。</p>
-    <p class="text-gray hidden" data-i18n="settings.tagFilterCoverageWarnOk">目前每一份資料都帶得到這一欄，可以開啟。沒填的格子在匯入時就已經寫成「未標註」，過濾條件會連它們一起比對，所以標了幾成不影響會不會漏文件。之後要注意的只有一件事：資料夾匯入的檔永遠沒有欄位槽，那樣匯入一批新資料就會又缺這一欄，要改成逐列匯入才接得回來。</p>
+    <p class="text-red" data-i18n="settings.tagFilterCoverageWarnBlocked">目前還有檔沒有把這一欄寫進索引（匯入的時候還沒有這個維度，或那個檔是以資料夾方式匯入的）。在這個狀態下切到任何一種會過濾的模式，那些檔會被靜默排除——過濾條件比對的是「這一欄等於某個代碼或等於未標註」，而那些檔連這一欄都沒有；Agent 對話模式沒有無結果放寬階梯，被濾掉就是真的消失，使用者只會體驗成「有些資料查不到」。這正是這顆旋鈕預設停用的理由。</p>
+    <p class="text-gray hidden" data-i18n="settings.tagFilterCoverageWarnOk">目前每一份資料都帶得到這一欄，兩種過濾模式都可以用。沒填的格子在匯入時就已經寫成「未標註」，過濾條件會連它們一起比對，所以標了幾成不影響會不會漏文件。之後要注意的只有一件事：資料夾匯入的檔永遠沒有欄位槽，那樣匯入一批新資料就會又缺這一欄，要改成逐列匯入才接得回來。</p>
 
-    {# ③ 時間窗不能獨立於維度存在：講清楚它跟著意圖判定走、判不準就一起歸零，以及為什麼。 #}
-    <p class="text-gray" data-i18n="settings.recencyWindowNote">「最新資料時間窗」不是一顆可以單獨生效的開關：它只在意圖分類判定這一題在問最新資料時才會出現，而判不準時整組條件連同時間窗一起丟棄。理由是時間窗是唯一沒有「未標註」分支的述詞——留著它就會連沒有發布日的文件一起濾掉。</p>
+    {# ③ 時間窗不能獨立於維度存在：講清楚它只有哪一種模式在用、在那個模式下也跟著意圖判定走、
+         判不準就一起歸零，以及另外兩種模式為什麼一條都不送。 #}
+    <p class="text-gray" data-i18n="settings.recencyWindowNote">「最新資料時間窗」只有「問答前系統判定」這一種模式在用，而且在那個模式下也不是單獨生效的開關：只在系統判定這一題在問最新資料時才會出現，判不準時整組條件連同時間窗一起丟棄。另外兩種模式一條都不送——停用不送任何條件，「AI 邊查邊收窄」只讓 AI 帶標籤、不讓它帶日期。理由是時間窗是唯一沒有「未標註」分支的述詞，留著它就會連沒有發布日的文件一起濾掉。</p>
 
     <div class="table-container scrollTable">
         <table class="default-table">
@@ -703,16 +724,21 @@ permalink: 5-10_tagDimensions.html
                  已經不存在（見檔頭那則退休說明），畫出來就是一格永遠空白的證明欄。
                  「這個設定檔憑什麼可以過濾」的答案現在是**結構閘門**（每一個檔都把這一槽寫進索引），
                  那是全租戶當下的事實、不是 per-profile 的快照，所以沒有東西可以擺進這一欄。 #}
+            {# 模式那一欄 260px：三個選項的英文（Off／System classifies up front／AI narrows while
+                 searching）比中文長得多，原本的 140px 會把 `<select>` 的字截掉。
+                 **260 是量出來的、不是估的**：英文最長那一顆讓 `<select>` 的自然寬達 237.6px
+                 （含原生下拉箭頭約 20px 與左右各 8px 內距），加上 `.default-table` 儲存格左右各 10px
+                 的 padding ⇒ 258px 是不截字的下界，取同族的整數 260。 #}
             <colgroup>
                 <col style="width:140px; min-width:140px;">
-                <col style="width:140px; min-width:140px;">
+                <col style="width:260px; min-width:260px;">
                 <col style="min-width:220px;">
                 <col style="width:140px; min-width:140px;">
             </colgroup>
             <thead>
                 <tr>
                     <th data-i18n="settings.profile">設定檔</th>
-                    <th id="tagFilterModeHead" data-i18n="settings.tagFilterMode">過濾開關</th>
+                    <th id="tagFilterModeHead" data-i18n="settings.tagFilterMode">過濾模式</th>
                     <th id="tagFilterDaysHead" data-i18n="settings.recentWindowDays">最新資料時間窗（天）</th>
                     <th data-i18n="common.actions">操作</th>
                 </tr>
@@ -722,27 +748,49 @@ permalink: 5-10_tagDimensions.html
                 <tr data-profile-no="{{ profile.no }}">
                     <td id="tagFilterProfileName-{{ loop.index }}" data-i18n="{{ profile.i18nKey }}">{{ profile.name }}</td>
                     <td>
-                        {# 可及名稱＝「設置一 過濾開關」（表頭 id ＋ 本列名稱 id），三顆才分得出是哪一套
-                             設定檔的開關（GUIDELINE §4「同頁兩個以上控制項不得共用同一個可及名稱」）。 #}
-                        <label class="switch">
-                            <input type="checkbox" class="switch-checkbox js-tag-filter-mode" role="switch" aria-labelledby="tagFilterProfileName-{{ loop.index }} tagFilterModeHead"{% if profile.mode == "on" %} checked{% endif %}>
-                            <span class="switch-box"><span class="switch-btn"></span></span>
-                        </label>
+                        {# 三態旋鈕的形狀＝`<select>`，不是 radiogroup：這一欄是 200px 的表格儲存格，
+                             三顆並排的 radio 塞不下（5-2 的 `qaDirectMode` 之所以是 radiogroup，是因為
+                             它在面板裡吃整列寬）。寫法照 5-2 的 `js-chat-mode` 那一顆：
+                             `form-control singleSelect` ＋ 每個 `<option>` 各自 `data-i18n` ＋ 一顆
+                             `aria-describedby`。值是 product 的旗標值（`off`／`on`／`llm`），不翻。
+                             可及名稱＝「設置一 過濾模式」（表頭 id ＋ 本列名稱 id），三顆才分得出是哪一套
+                             設定檔的旋鈕（GUIDELINE §4「同頁兩個以上控制項不得共用同一個可及名稱」）；
+                             `aria-describedby` 指回上面那一段 intro——三種模式的差別只寫一份。
+                             值載體只掛 hook class、不掛 `data-toast`（§5 矩陣②）：`js-tag-filter-mode`
+                             這個名字沿用不改，它是 React 端 e2e 的定址契約。 #}
+                        <select class="form-control singleSelect js-tag-filter-mode" aria-labelledby="tagFilterProfileName-{{ loop.index }} tagFilterModeHead" aria-describedby="tagFilterModeIntro">
+                            <option value="off"{% if profile.mode == "off" %} selected{% endif %} data-i18n="settings.tagFilterModeOff">停用</option>
+                            <option value="on"{% if profile.mode == "on" %} selected{% endif %} data-i18n="settings.tagFilterModeOn">問答前系統判定</option>
+                            <option value="llm"{% if profile.mode == "llm" %} selected{% endif %} data-i18n="settings.tagFilterModeLlm">AI 邊查邊收窄</option>
+                        </select>
                     </td>
                     <td>
-                        {# 三件套的第三件（§4）：可見區間 ＋ aria-describedby。上下界出處＝
+                        {# **值相依**（§4「組合維度上的空格要由 markup 表達」；理由見檔頭 ③）：時間窗只有
+                             `on` 這一種模式在用，不是 `on` 時整格不畫輸入框、改畫一句常駐說明。
+                             不用 `disabled` 的輸入框：那仍然顯示一個數字，讀起來像「目前設定是 7 天」，
+                             而它一天都沒有生效（`disabled` 留給能力軸）。
+                             `tagFilterDaysRange-{{ loop.index }}` 跟著一起不畫——它是那個輸入框三件套
+                             的第三件，輸入框不在就沒有東西可以描述。
+                             三件套（§4）：可見區間 ＋ aria-describedby。上下界出處＝
                              product 的 `MIN_RECENT_WINDOW_DAYS = 1`／
                              `MAX_RECENT_WINDOW_DAYS = 3650`（product 以 ge/le 收）。
                              數字獨立成不翻的節點（§3-2：那是資料不是譯文）；id 帶 loop.index（同頁唯一）。 #}
+                        {% if profile.mode == "on" %}
                         <input type="number" class="form-control js-recent-window-days" min="1" max="3650" step="1" value="{{ profile.recentWindowDays }}" aria-labelledby="tagFilterProfileName-{{ loop.index }} tagFilterDaysHead" aria-describedby="tagFilterDaysRange-{{ loop.index }}">
                         <span class="text-gray" id="tagFilterDaysRange-{{ loop.index }}">1 – 3650</span>
+                        {% else %}
+                        <span class="text-gray" data-i18n="settings.recencyWindowNotUsed">這個模式不使用時間窗</span>
+                        {% endif %}
                     </td>
                     <td>
-                        {# 閘門是一次 DB 查詢，所以開啟只有兩種擋法可言：有檔沒把這一欄寫進索引（400），
+                        {# 閘門是一次 DB 查詢，所以切模式只有兩種擋法可言：有檔沒把這一欄寫進索引（400），
                              或存不進去。**不要補覆蓋率相關的 warning**（量不出來／量得不完整／超過掃描
                              上限／量測途中維度被改動）——product 沒有任何一條路徑會回那些，列出來
-                             就是演一個回不出來的錯誤（§5）。 #}
-                        <button data-capability="settings:write data:read" type="button" id="tagFilterSave-{{ loop.index }}" aria-labelledby="tagFilterProfileName-{{ loop.index }} tagFilterSave-{{ loop.index }}" class="button button-border button-sm" data-toast="檢索過濾設定已儲存|權限不足，無法儲存——請找貴租戶的管理者開通|還有檔沒有把這一欄寫進索引，過濾維持關閉|儲存失敗，請稍後再試" data-i18n-data-toast="toast.saveTagFilter" data-toast-type="success|warning|warning|error" data-i18n="action.save">儲存</button>
+                             就是演一個回不出來的錯誤（§5）。
+                             第 3 段講的是**被擋下之後模式沒有變**，不是「過濾變成關閉」：從 `on` 想切到
+                             `llm` 被擋下來時，這個設定檔仍然在 `on`，寫成「維持關閉」會讓使用者以為
+                             自己剛把過濾停用了。 #}
+                        <button data-capability="settings:write data:read" type="button" id="tagFilterSave-{{ loop.index }}" aria-labelledby="tagFilterProfileName-{{ loop.index }} tagFilterSave-{{ loop.index }}" class="button button-border button-sm" data-toast="檢索過濾設定已儲存|權限不足，無法儲存——請找貴租戶的管理者開通|還有檔沒有把這一欄寫進索引，模式維持原樣沒有改動|儲存失敗，請稍後再試" data-i18n-data-toast="toast.saveTagFilter" data-toast-type="success|warning|warning|error" data-i18n="action.save">儲存</button>
                     </td>
                 </tr>
                 {% endfor %}
@@ -781,7 +829,7 @@ permalink: 5-10_tagDimensions.html
          （正典：`qaHistory/4-2` 的 `detailPolicyDetections`）。示範資料非空 ⇒ 這一頁畫的是被擋下那一態。 #}
     {% if blockedSlots.length %}
     <div class="flex-row column gap-8">
-        <div class="text-bold text-red" role="alert" data-i18n="settings.tagFilterBlockedTitle">下列維度還不是每一份資料都帶得到，現在開啟過濾會把那些檔靜默排除</div>
+        <div class="text-bold text-red" role="alert" data-i18n="settings.tagFilterBlockedTitle">下列維度還不是每一份資料都帶得到，現在切到任何一種會過濾的模式會把那些檔靜默排除</div>
         <div class="table-container scrollTable">
             <table class="default-table">
                 <colgroup>
@@ -841,7 +889,7 @@ permalink: 5-10_tagDimensions.html
 {% set helpModalTitleKey = "help.settings.tagFilter.title" %}
 {% set helpModalTitle = "標籤檢索過濾說明" %}
 {% set helpModalWhatKey = "help.settings.tagFilter.what" %}
-{% set helpModalWhat = "這一區是各套設定檔各自獨立的標籤檢索過濾開關與時間窗，互不相干，可以只開其中一套。開啟前系統會先檢查是否每一個檔都已經把用得到的維度槽寫進索引，卡在哪些檔、要怎麼處理，會列在下面那張表裡。" %}
+{% set helpModalWhat = "這一區是各套設定檔各自獨立的標籤檢索過濾模式與時間窗，互不相干，可以只讓其中一套過濾。切到任何一種會過濾的模式之前，系統會先檢查是否每一個檔都已經把用得到的維度槽寫進索引，卡在哪些檔、要怎麼處理，會列在下面那張表裡。" %}
 {% set helpModalStateItems = [] %}
 {% set helpModalLimitRows = [] %}
 {% include "components/help-modal/help-modal.html" %}
@@ -862,7 +910,7 @@ permalink: 5-10_tagDimensions.html
      是 warning 不是 error（關掉標籤過濾就刪得動，那道守衛自己寫著「不是永久禁止」）。
      `deleteToastType` **必須跟著給**：delete-modal 少給就落回預設的兩段 `success|error`，
      第三段會沿用 error、演不出「使用者自己修得掉」（見該元件檔頭的參數說明）。 #}
-{% set deleteToast = "標籤維度已刪除|權限不足，無法刪除——請找貴租戶的管理者開通|標籤檢索過濾正開著，刪掉維度會立刻改變每一輪問答的過濾條件——請先把設定檔的標籤過濾關掉|刪除失敗，請稍後再試" %}
+{% set deleteToast = "標籤維度已刪除|權限不足，無法刪除——請找貴租戶的管理者開通|標籤檢索過濾正開著，刪掉維度會立刻改變每一輪問答的過濾條件——請先把設定檔的過濾模式切成「停用」|刪除失敗，請稍後再試" %}
 {% set deleteToastKey = "toast.deleteTagDimension" %}
 {% set deleteToastType = "success|warning|warning|error" %}
 {% include "components/delete-modal/delete-modal.html" %}

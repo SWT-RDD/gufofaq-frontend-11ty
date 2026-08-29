@@ -46,7 +46,17 @@
             {% include "ui/modal-close/modal-close.html" %}
             <div class="modals-content">
                 <div class="modals-header">
-                    <h3 class="modals-title" id="glossaryEntriesModal-title" data-i18n="settings.manageEntries">管理詞條</h3>
+                    {# 標題帶術語表名稱，形狀＝`components/untagged-files-modal` 的標題（前綴 key ＋ 資料槽，
+                         **分隔符在槽外面**），與姊妹窗 `components/alias-entries-modal` 逐字同型：這個窗一次
+                         只編一張表，而使用者是從清單某一列點進來的——不寫的話，同時開過兩三張表之後回頭看，
+                         畫面上沒有任何東西說得出這是哪一張。破折號是版面的分隔符、不是表名的一部分，
+                         所以不進槽：放進去的話，消費端要嘛連分隔符一起寫（版面跑進資料裡，而全形分隔符會
+                         原樣進英文模式），要嘛只寫名稱而分隔符當場消失（同 §4-2「前後綴自帶分隔、值獨立成
+                         節點」，正典＝pagination 的 totalPrefix／totalSuffix）。**標題只有單一文字節點時，
+                         名稱在版面上沒有家**，消費端只好自己發明一個位置——而那個位置切版沒有。
+                         示範值＝`人資術語`（3-2 `glossaryTables` 的 id 4，詞條數 2 與下面那兩列對得上，
+                         §6 跨頁自洽）。 #}
+                    <h3 class="modals-title" id="glossaryEntriesModal-title"><span data-i18n="settings.manageEntries">管理詞條</span> — <span class="js-glossary-table-name">人資術語</span></h3>
                 </div>
                 <div class="modals-body">
                     <div class="glossary-entries-list">

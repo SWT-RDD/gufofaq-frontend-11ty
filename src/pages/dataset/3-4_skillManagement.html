@@ -128,12 +128,14 @@ permalink: 3-4_skillManagement.html
      ── 「可使用的工具」欄怎麼組（規格。只放一串示範字串的話，下一個人推不出規則）──────
      這一欄＝把 `allowed_tools` 的**四個桶攤平成一行**，分隔符 `", "`。
 
-     ① 順序：**內建 → 術語表 → MCP → 巢狀 skill**。逐字對回 GufoRAG chatbot
+     ① 順序：**內建 → 術語表 → 巢狀 skill → MCP**。逐字對回 GufoRAG chatbot
         `_resolve_skill_tools` 逐段 `tools.extend` 的順序——那才是 agent 實際拿到這些工具的順序。
         **不採用編輯器窗四個勾選群組的排法**：那是版面，而這一欄描述的是執行期的東西
         （編輯器窗用的是同一份順序，全站只留一份桶序，見 skill-editor-modal）。
+        **巢狀 skill 在 MCP 之前是撞名的優先序**（同名時先進來的勝、後面的被丟棄），
+        理由逐條寫在 skill-editor-modal 桶序那一則。
      ② 名字來源：內建＝`allowed_tools.builtin` 的字串原樣（識別字，不翻）；
-        術語表＝`GET /glossary` 的表名；MCP＝MCP 註冊表的 server 名；巢狀 skill＝本頁清單的 name。
+        術語表＝`GET /glossary` 的表名；巢狀 skill＝本頁清單的 name；MCP＝MCP 註冊表的 server 名。
      ③ **名字解析不到時畫 `—`**（那一桶的那一筆，不是整欄）。白名單指向已刪資源是上游明文會
         發生的狀態（`_resolve_skill_tools` 對每一種都記 ERROR）。畫 id 是答非所問——這一欄說的是
         「這顆 skill 用得到哪些工具」，印一個內部編號回答不了它；整欄消失則會讓人以為沒設定過。
