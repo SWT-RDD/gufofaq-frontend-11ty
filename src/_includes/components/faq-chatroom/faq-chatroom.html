@@ -111,7 +111,7 @@
             <div class="suggested-questions" role="group" aria-labelledby="faqSuggestedLabel">
                 <span id="faqSuggestedLabel" class="suggested-questions-label" data-i18n="comp.suggestedQuestions">建議追問：</span>
                 {% for q in faqSuggested %}
-                <button type="button" class="button button-border button-sm js-ask-suggested" data-toast="回答生成中...|詢問太頻繁，請稍後再試|回答生成成功|回答生成失敗，請重新送出一次" data-i18n-data-toast="toast.faqChatSubmit" data-toast-type="info|warning|success|error" disabled>{{ q }}</button>
+                <button type="button" class="button button-border button-sm js-ask-suggested" data-toast="回答生成中...|詢問太頻繁，請稍後再試|回答生成成功|回答生成失敗，請重新送出一次|本站的問答額度已用罄，請聯絡本網站管理者。" data-i18n-data-toast="toast.faqChatSubmit" data-toast-type="info|warning|success|error|error" disabled>{{ q }}</button>
                 {% endfor %}
             </div>
         </div>
@@ -201,7 +201,7 @@
             {# 同 components/chatroom：送出鈕多一條「沒填問題」，建議追問的 chip 沒有那一態。
                  `disabled` 與那幾段 toast 不衝突：停用的是**這一刻**（生成中），那幾段演的是
                  「可以送的時候按下去會得到什麼」——toast 分支是這顆鈕的結果集合，不是它的現在式。 #}
-            <button type="button" class="button button-primary flex-shrink-0" data-toast="回答生成中...|請先輸入問題|詢問太頻繁，請稍後再試|回答生成成功|回答生成失敗，請重新送出一次" data-i18n-data-toast="toast.faqChatSend" data-toast-type="info|warning|warning|success|error" data-i18n="action.submit" disabled>送出</button>
+            <button type="button" class="button button-primary flex-shrink-0" data-toast="回答生成中...|請先輸入問題|詢問太頻繁，請稍後再試|回答生成成功|回答生成失敗，請重新送出一次|本站的問答額度已用罄，請聯絡本網站管理者。" data-i18n-data-toast="toast.faqChatSend" data-toast-type="info|warning|warning|success|error|error" data-i18n="action.submit" disabled>送出</button>
         </div>
     </div>
 </div>

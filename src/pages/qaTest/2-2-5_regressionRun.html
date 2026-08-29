@@ -780,7 +780,7 @@ permalink: 2-2-5_regressionRun.html
      退步那一則要先看到的需求由上方「退步」桶子承擔，不靠這張表重排。 #}
 {% set runResultRows = [
   {
-    caseNo: "#34", question: "鋁材的關稅是多少",
+    id: 34, caseNo: "#34", question: "鋁材的關稅是多少",
     verdict: "通過", verdictKey: "regression.verdictPass", verdictClass: "is-pass",
     judgeKind: "none", judgeText: "無主觀分", judgeKey: "regression.judgeNone", judgeClass: "is-muted",
     latency: "1,780", tokens: "884", turnsSent: "0",
@@ -792,7 +792,7 @@ permalink: 2-2-5_regressionRun.html
     failures: []
   },
   {
-    caseNo: "#35", question: "鋼品輸美有哪些關稅減免條件",
+    id: 35, caseNo: "#35", question: "鋼品輸美有哪些關稅減免條件",
     verdict: "通過", verdictKey: "regression.verdictPass", verdictClass: "is-pass",
     judgeKind: "unavailable", judgeText: "評審未完成", judgeKey: "regression.judgeUnavailable", judgeClass: "is-warn",
     latency: "2,905", tokens: "1,242", turnsSent: "1",
@@ -807,7 +807,7 @@ permalink: 2-2-5_regressionRun.html
     failures: []
   },
   {
-    caseNo: "#39", question: "臺灣輸美鋼品的關稅稅率是多少",
+    id: 39, caseNo: "#39", question: "臺灣輸美鋼品的關稅稅率是多少",
     verdict: "未通過", verdictKey: "regression.verdictFail", verdictClass: "is-fail",
     judgeScore: "2.4",
     latency: "2,140", tokens: "1,096", turnsSent: "2",
@@ -868,15 +868,15 @@ permalink: 2-2-5_regressionRun.html
             </thead>
             <tbody>
                 {% for row in runResultRows %}
-                <tr data-case-no="{{ row.caseNo }}">
+                <tr data-case-no="{{ row.id }}">
                     <td>
-                        <button type="button" id="runRowToggle-{{ row.caseNo }}" aria-labelledby="runRowName-{{ row.caseNo }} runRowToggle-{{ row.caseNo }}" class="button accordion-btn" aria-expanded="false" title="展開表格" data-i18n-title="common.expandRow">
+                        <button type="button" id="runRowToggle-{{ row.id }}" aria-labelledby="runRowName-{{ row.id }} runRowToggle-{{ row.id }}" class="button accordion-btn" aria-expanded="false" title="展開表格" data-i18n-title="common.expandRow">
                             <span class="sr-only" data-i18n="common.expandRow">展開表格</span>
                         </button>
                     </td>
                     <td>{{ row.caseNo }}</td>
                     {# 逐列辨識欄（§4）：展開鈕指到它。 #}
-                    <td id="runRowName-{{ row.caseNo }}">{{ row.question }}</td>
+                    <td id="runRowName-{{ row.id }}">{{ row.question }}</td>
                     <td><span class="verdict-tag {{ row.verdictClass }}" data-i18n="{{ row.verdictKey }}">{{ row.verdict }}</span></td>
                     {# 有分數時畫**數字**（那是資料、不翻）；評不出來／沒有判準才畫 keyed 標籤。
                          **不可無條件走標籤**：那樣一來，佔 8/10 的「有分數」那一態整頁演不出來，

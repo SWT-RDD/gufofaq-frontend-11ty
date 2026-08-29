@@ -2291,12 +2291,15 @@ permalink: 5-2_conversationSettings.html
                 <label for="qaDirectDatasetsSelect" class="control-label" data-i18n="settings.qaDirectDatasets">參與直答的 QA 集</label>
             </div>
             <div class="field col-12-sm">
-                {# `<option value>`＝QA 集主鍵，值域正本是 3-3 那張管理表：2（客服問答集）／3（產品 FAQ）。
-                     ⚠️ **不可以另烤 1／2**：那不只是「號碼不一樣」——`value="2"` 會在這一頁指產品 FAQ、
-                     在 3-3 指客服問答集，同一個值兩頁指到不同的東西，接上 API 之後是**靜默選錯集**（§6）。 #}
+                {# `<option value>`＝QA 集主鍵，值域正本是 3-3 那張管理表：2（客服問答集）／5（產品 FAQ）／
+                     7（檢疫問答集），跨頁 id 目錄在 3-5 的 `healthScanDatasets`。
+                     ⚠️ **不可以另烤一組號碼**：那不只是「號碼不一樣」——`value="3"` 在目錄裡是**法規彙編**
+                     （一個檔案集，不是 QA 集），同一個值兩頁指到不同的東西，接上 API 之後是
+                     **靜默選錯集**（§6 識別碼的唯一性範圍要跟著上游的鍵空間）。 #}
                 <select id="qaDirectDatasetsSelect" class="form-control multiSelect js-qa-direct-datasets" multiple="multiple" data-placeholder="請選擇" data-placeholder-key="common.pleaseSelect">
                     <option value="2" selected>客服問答集</option>
-                    <option value="3">產品 FAQ</option>
+                    <option value="5">產品 FAQ</option>
+                    <option value="7">檢疫問答集</option>
                 </select>
             </div>
         </div>

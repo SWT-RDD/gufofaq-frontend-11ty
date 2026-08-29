@@ -224,7 +224,9 @@ permalink: 2-2-4_regressionSuites.html
      對話、備註（一鍵建立時自動寫入的出處）。
      示範 2 筆刻意演兩種形狀：一筆多輪＋多型斷言，一筆單輪＋`no_answer`（無參數斷言）。 #}
 {# id＝案例主鍵（product 的 TestCase.id，整數； `_owned_case(db, tenant_id, suite_id, case_id)`），
-     與畫面上的「序號」欄不是同一件事——序號是這一頁的排序位置，id 才是身分。
+     與畫面上的「序號」欄不是同一件事——序號是它在整套 12 則裡的位次（case_id 升冪），id 才是身分。
+     ⚠️ **序號不可以用 `loop.index`**：這張表只列了 12 則裡的兩則版型示範，用迴圈位置畫出來就是
+     宣告 #31／#32 不存在，而 2-2-5 的無變化桶正列著它們。故逐筆給 `seq`。
      號碼要與 2-2-5（#311 的報表，跑的正是這一套案例集）對得起來：那一頁把
      「臺灣輸美鋼品的關稅稅率是多少」記成 **#39**，而 #41 是中斷點那一則、#42 是「鋁材的反傾銷稅率」。
      41 不能給這裡的任何一則——2-2-5 逐字寫著「id ≥ 41 的案例這一次一則結果都沒有」，
@@ -237,7 +239,7 @@ permalink: 2-2-4_regressionSuites.html
      ——**新到舊**，兩張表的排序方向刻意相反，各自照自己那支查詢。 #}
 {% set regressionCases = [
   {
-    id: 33,
+    id: 33, seq: 3,
     question: "火星的關稅稅率是多少",
     contextTurns: [],
     assertions: [
@@ -246,7 +248,7 @@ permalink: 2-2-4_regressionSuites.html
     note: "從問答紀錄 #48377 建立（這則問答是誠實查無（零命中），期望它仍然誠實查無）"
   },
   {
-    id: 39,
+    id: 39, seq: 9,
     question: "臺灣輸美鋼品的關稅稅率是多少",
     contextTurns: [
       { human: "我要出口鋼品到美國", ai: "好的，請問您想了解關稅、配額還是文件？" },
@@ -315,7 +317,7 @@ permalink: 2-2-4_regressionSuites.html
                             <span class="sr-only" data-i18n="common.expandRow">展開表格</span>
                         </button>
                     </td>
-                    <td>{{ loop.index }}</td>
+                    <td>{{ case.seq }}</td>
                     {# 逐列辨識欄（§4）：展開鈕與刪除鈕都指到它。 #}
                     <td id="caseRowName-{{ case.id }}">{{ case.question }}</td>
                     <td class="text-center">{{ case.contextTurns.length }}<span data-i18n="regression.turnsUnit"> 輪</span></td>
@@ -1014,10 +1016,10 @@ permalink: 2-2-4_regressionSuites.html
      **已經跑完的批次標在兩週後**，而最上面那一筆還寫著「進行中」。
      2-2-5 那一頁畫的是 #311，它的開始／結束時間與這裡的 startedAt 是同一顆值，改一邊就要改另一邊。 #}
 {% set regressionRuns = [
-  { no: "#313", startedAt: "2026/07/14 14:30", profile: "設置一", profileKey: "settings.config1", version: "7", status: "running", statusLabel: "進行中", statusKey: "agent.stepRunning", statusClass: "is-warn", passed: "", total: "", note: "" },
-  { no: "#312", startedAt: "2026/07/14 09:12", profile: "設置一", profileKey: "settings.config1", version: "7", status: "finished", statusLabel: "完成", statusKey: "regression.statusFinished", statusClass: "is-pass", passed: "11", total: "12", note: "" },
-  { no: "#311", startedAt: "2026/07/13 18:40", profile: "設置一", profileKey: "settings.config1", version: "7", status: "aborted", statusLabel: "中斷", statusKey: "regression.statusAborted", statusClass: "is-fail", passed: "8", total: "10", note: "問答額度不足（案例 41 的第 1 輪）——已完成的結果保留" },
-  { no: "#310", startedAt: "2026/07/13 11:02", profile: "設置一", profileKey: "settings.config1", version: "7", status: "finished", statusLabel: "完成", statusKey: "regression.statusFinished", statusClass: "is-pass", passed: "10", total: "12", note: "" }
+  { id: 313, no: "#313", startedAt: "2026/07/14 14:30", profile: "設置一", profileKey: "settings.config1", version: "7", status: "running", statusLabel: "進行中", statusKey: "agent.stepRunning", statusClass: "is-warn", passed: "", total: "", note: "" },
+  { id: 312, no: "#312", startedAt: "2026/07/14 09:12", profile: "設置一", profileKey: "settings.config1", version: "7", status: "finished", statusLabel: "完成", statusKey: "regression.statusFinished", statusClass: "is-pass", passed: "11", total: "12", note: "" },
+  { id: 311, no: "#311", startedAt: "2026/07/13 18:40", profile: "設置一", profileKey: "settings.config1", version: "7", status: "aborted", statusLabel: "中斷", statusKey: "regression.statusAborted", statusClass: "is-fail", passed: "8", total: "10", note: "問答額度不足（案例 41 的第 1 輪）——已完成的結果保留" },
+  { id: 310, no: "#310", startedAt: "2026/07/13 11:02", profile: "設置一", profileKey: "settings.config1", version: "7", status: "finished", statusLabel: "完成", statusKey: "regression.statusFinished", statusClass: "is-pass", passed: "10", total: "12", note: "" }
 ] %}
 <div class="block mt-16 flex-row column gap-16">
     {# ⓘ 說明：markup 同既有 info-btn 六件組。①出處：本頁檔頭「示範 4 筆刻意演三種終態」一節，
@@ -1054,9 +1056,9 @@ permalink: 2-2-4_regressionSuites.html
             </thead>
             <tbody>
                 {% for run in regressionRuns %}
-                <tr data-run-id="{{ run.no }}">
+                <tr data-run-id="{{ run.id }}">
                     {# 逐列辨識欄（§4）：批次編號就是這一列的身分，兩顆列動作都指到它。 #}
-                    <td id="runRowNo-{{ run.no }}">{{ run.no }}</td>
+                    <td id="runRowNo-{{ run.id }}">{{ run.no }}</td>
                     <td>{{ run.startedAt }}</td>
                     <td data-i18n="{{ run.profileKey }}">{{ run.profile }}</td>
                     <td class="text-center">{{ run.version }}</td>
@@ -1064,8 +1066,8 @@ permalink: 2-2-4_regressionSuites.html
                     <td class="text-center">{% if run.total %}{{ run.passed }} / {{ run.total }}{% else %}—{% endif %}{% if run.note %}<span class="text-red">（{{ run.note }}）</span>{% endif %}</td>
                     <td>
                         <div class="btn-group">
-                            <a href="2-2-5_regressionRun.html" id="runReport-{{ run.no }}" aria-labelledby="runRowNo-{{ run.no }} runReport-{{ run.no }}" class="button button-border button-sm" data-i18n="regression.viewReport">看報表</a>
-                            <button data-capability="settings:read" type="button" id="runExport-{{ run.no }}" aria-labelledby="runRowNo-{{ run.no }} runExport-{{ run.no }}" class="button button-border button-sm js-export-run" data-toast="報表已下載|權限不足，無法下載——請找貴租戶的管理者開通|匯出失敗，請稍後再試" data-i18n-data-toast="toast.exportRun" data-toast-type="success|warning|error" data-i18n="action.download">下載</button>
+                            <a href="2-2-5_regressionRun.html?run={{ run.id }}" id="runReport-{{ run.id }}" aria-labelledby="runRowNo-{{ run.id }} runReport-{{ run.id }}" class="button button-border button-sm" data-i18n="regression.viewReport">看報表</a>
+                            <button data-capability="settings:read" type="button" id="runExport-{{ run.id }}" aria-labelledby="runRowNo-{{ run.id }} runExport-{{ run.id }}" class="button button-border button-sm js-export-run" data-toast="報表已下載|權限不足，無法下載——請找貴租戶的管理者開通|匯出失敗，請稍後再試" data-i18n-data-toast="toast.exportRun" data-toast-type="success|warning|error" data-i18n="action.download">下載</button>
                         </div>
                     </td>
                 </tr>
