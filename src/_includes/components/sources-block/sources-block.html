@@ -26,7 +26,7 @@
        sourcesHidden：true 時根加 .hidden（正式環境預設隱藏、等 JS 依載入狀態顯示）
        sourcesTotal / sourcesSelected / sourcesModel：標題後那句「（挑選規則 N 取 M；使用模型：X）」
                 的三個**資料**槽（預設 16／8／openai:gpt-4o-mini）。句子本身是 chrome，走前中後綴 key
-                （`qa.sourcesRulePrefix`／`qa.sourcesRuleMid`／`qa.sourcesModelMid`＋既有的 `storage.close`）
+                （`qa.sourcesRulePrefix`／`qa.sourcesRuleMid`／`qa.sourcesModelMid`＋既有的 `common.parenClose`）
                 ——整串寫死、零 `data-i18n` 的話，英文模式在 2-1／2-2-1／4-2 三頁上會原樣印繁中。
                 ⚠️ **內建預設不是佔位字，那三個使用頁都沒有覆寫它**，所以它就是那三頁真正顯示的值：
                 16／8＝取用與選用資料筆數（4-2 的 `conversation.searchTotalNumber`／`searchSelectedNumber`、
