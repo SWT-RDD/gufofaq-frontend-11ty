@@ -243,7 +243,7 @@ permalink: 2-2-4_regressionSuites.html
     question: "火星的關稅稅率是多少",
     contextTurns: [],
     assertions: [
-      { type: "no_answer", text: "須為誠實查無" }
+      { type: "no_answer", labelKey: "regression.typeNoAnswer", label: "須為誠實查無" }
     ],
     note: "從問答紀錄 #48377 建立（這則問答是誠實查無（零命中），期望它仍然誠實查無）"
   },
@@ -255,9 +255,9 @@ permalink: 2-2-4_regressionSuites.html
       { human: "先看關稅", ai: "了解，請告訴我品項。" }
     ],
     assertions: [
-      { type: "contains", text: "答案須包含：25%／鋼品" },
-      { type: "cites_document", text: "須引用文件：9f2c1b7e…a41" },
-      { type: "judge", text: "主觀評分判準：答案有沒有正面回答「稅率是多少」" }
+      { type: "contains", labelKey: "regression.typeContains", label: "答案須包含", value: "25%／鋼品" },
+      { type: "cites_document", labelKey: "regression.typeCitesDocument", label: "須引用文件", value: "9f2c1b7e…a41" },
+      { type: "judge", labelKey: "regression.typeJudge", label: "主觀評分判準", value: "答案有沒有正面回答「稅率是多少」" }
     ],
     note: "從問答紀錄 #48213 建立（這則問答的主要來源是 document_id=「9f2c1b7e…a41」，期望它仍然引用得到）"
   }
@@ -336,7 +336,7 @@ permalink: 2-2-4_regressionSuites.html
                                         <td colspan="3">
                                             <ul class="list-style-disc">
                                                 {% for a in case.assertions %}
-                                                <li>{{ a.text }} {% if a.type == "judge" %}<span class="verdict-tag is-warn" data-i18n="regression.subjective">主觀分</span>{% else %}<span class="verdict-tag is-muted" data-i18n="regression.deterministic">確定性</span>{% endif %}</li>
+                                                <li><span data-i18n="{{ a.labelKey }}">{{ a.label }}</span>{% if a.value %}<span data-i18n="common.labelSep">：</span><span>{{ a.value }}</span>{% endif %} {% if a.type == "judge" %}<span class="verdict-tag is-warn" data-i18n="regression.subjective">主觀分</span>{% else %}<span class="verdict-tag is-muted" data-i18n="regression.deterministic">確定性</span>{% endif %}</li>
                                                 {% endfor %}
                                             </ul>
                                         </td>
@@ -466,8 +466,8 @@ permalink: 2-2-4_regressionSuites.html
             {# 可及名稱走「sr-only 前綴 key ＋ 數字節點」＋ `aria-labelledby`（同本頁斷言列的
      `assertionRowLabel-N`），**不要一輪一顆 key**：上限是 10 輪、旁邊還有一顆「新增一輪」，
      照 `contextTurnAria1/2` 那個形狀要開到 `Aria10`，而數字本來就不該烤進譯文（§4-2）。 #}
-<span id="newCaseContextRow1" class="sr-only"><span data-i18n="regression.contextTurnRowPrefix">前置對話第 </span>1<span data-i18n="regression.contextTurnRowSuffix"> 輪的提問</span></span>
-<input type="text" id="newCaseContext1" class="form-control" aria-labelledby="newCaseContextRow1" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" value="我要出口鋼品到美國">
+            <span id="newCaseContextRow1" class="sr-only"><span data-i18n="regression.contextTurnRowPrefix">前置對話第 </span>1<span data-i18n="regression.contextTurnRowSuffix"> 輪的提問</span></span>
+            <input type="text" id="newCaseContext1" class="form-control" aria-labelledby="newCaseContextRow1" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" value="我要出口鋼品到美國">
             <span id="newCaseContextRow2" class="sr-only"><span data-i18n="regression.contextTurnRowPrefix">前置對話第 </span>2<span data-i18n="regression.contextTurnRowSuffix"> 輪的提問</span></span>
 <input type="text" id="newCaseContext2" class="form-control" aria-labelledby="newCaseContextRow2" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" value="先看關稅">
             <div class="flex-row gap-16 align-items-center flex-wrap">
@@ -900,11 +900,13 @@ permalink: 2-2-4_regressionSuites.html
              夾住——這一欄的值原樣進 `overrides`，超長是 `_build_override_config` 的
              `regression.bad_override_values` 400（見上方開始執行鈕的 warning 段）。
              同頁另三格（`#newSuiteName` 200／`#newCaseQuestion` 2000／`#assertionCriteria` 1024）
-             早就是這個形狀，就這一格沒接：貼一份兩萬字以上的提示詞進來，按下去只會拿到一句
-             紅色的失敗，而重試永遠不會成功。
+             是「`maxlength` ＋一個數字節點」那一種：值是 product 寫死的欄位長度，改動時兩處一起改。
+             **這一格不同**：同一顆 `MAX_SINGLE_PROMPT_LEN` 在 2-2-1、2-2-3、`components/prompt-edit`
+             三處都是「不寫 `maxlength`、數字獨立成資料槽 `js-prompt-max-len`」——同一顆常數在同一個
+             產品裡不能有兩種投影法，否則 React 端要為它寫兩套讀值路徑。故這一格照那三處。
            數字不烤進譯文（§4-2）：拆成「前綴 key ＋數字節點＋單位 key」。 #}
-        <textarea id="runPromptInput" class="form-control size-lg js-prompt-input" maxlength="20000" aria-describedby="runPromptInputHint">你是一位專業的知識庫問答助手，回答必須僅依據檢索到的資料片段。資料不足時明確說明「無法從現有資料判斷」。</textarea>
-        <p id="runPromptInputHint" class="text-gray"><span data-i18n="regression.runPromptLimit">提示詞字數上限：</span><span>20000</span><span data-i18n="common.unitChars"> 字</span></p>
+        <textarea id="runPromptInput" class="form-control size-lg js-prompt-input" aria-describedby="runPromptInputHint">你是一位專業的知識庫問答助手，回答必須僅依據檢索到的資料片段。資料不足時明確說明「無法從現有資料判斷」。</textarea>
+        <p id="runPromptInputHint" class="text-gray"><span data-i18n="regression.runPromptLimit">提示詞字數上限：</span><span class="js-prompt-max-len">20000</span><span data-i18n="common.unitChars"> 字</span></p>
     </div>
 
     <div class="flex-row gap-24 flex-wrap">

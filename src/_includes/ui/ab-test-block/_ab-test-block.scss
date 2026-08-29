@@ -105,7 +105,7 @@
 //                       <label for="abSampleSelected-{{ ab.side }}" class="control-label" data-i18n="settings.searchSelectedNumber">選用資料筆數</label>
 //                   </div>
 //                   <div class="field">
-//                       <input type="number" min="1" max="100" step="1" id="abSampleSelected-{{ ab.side }}" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control sample-count w100 js-sample-selected" value="8" aria-describedby="abSampleSelectedRange-{{ ab.side }}">
+//                       <input type="number" min="1" max="100" step="1" id="abSampleSelected-{{ ab.side }}" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control w100 js-sample-selected" value="8" aria-describedby="abSampleSelectedRange-{{ ab.side }}">
 //                       <span class="text-gray" id="abSampleSelectedRange-{{ ab.side }}">1 – 100</span>
 //                   </div>
 //               </div>
@@ -114,7 +114,7 @@
 //                       <label for="abSampleTotal-{{ ab.side }}" class="control-label" data-i18n="settings.searchTotalNumber">取用資料筆數</label>
 //                   </div>
 //                   <div class="field">
-//                       <input type="number" min="1" max="100" step="1" id="abSampleTotal-{{ ab.side }}" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control sample-count w100 js-sample-total" value="16" aria-describedby="abSampleTotalRange-{{ ab.side }}">
+//                       <input type="number" min="1" max="100" step="1" id="abSampleTotal-{{ ab.side }}" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control w100 js-sample-total" value="16" aria-describedby="abSampleTotalRange-{{ ab.side }}">
 //                       <span class="text-gray" id="abSampleTotalRange-{{ ab.side }}">1 – 100</span>
 //                   </div>
 //               </div>

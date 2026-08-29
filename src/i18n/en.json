@@ -95,7 +95,7 @@
   "audit.allTenants": "All tenants",
   "audit.detail": "Detail",
   "audit.group": "Group",
-  "audit.groupHint": "Filters by members' current group membership — not the membership at the time of the action; if someone changed groups, their past actions follow their current group. While All tenants is on this field has no effect.",
+  "audit.groupHint": "Filters by members’ current group membership — not the membership at the time of the action; if someone changed groups, their past actions follow their current group. While All tenants is on this field has no effect.",
   "audit.listTitle": "Audit entries",
   "audit.noRows": "No audit entries match these conditions. Either nobody performed these actions during this period, or the filters above (time, action, tenant, operator…) removed them — widen the conditions and search again to find out which.",
   "audit.operator": "Operator",

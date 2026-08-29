@@ -6,7 +6,8 @@ pageHeading: AB測試
 permalink: 2-2-3_abTest.html
 ---
 {# 非 `js-` 形狀的無樣式 class 要在檔頭交代它是誰的掛點（§4）：
-     `.sample-count` ＝ 兩側取樣欄的**讀值掛點**（React 從它讀兩側的取樣數）。
+     兩側取樣欄的讀值掛點是 `.js-sample-selected`／`.js-sample-total`（§5 的 js- 命名）——
+     同一顆節點不再另掛一顆非 js- 的同義 class：兩顆掛點會讓 React 端不知道該接哪一顆。
      本 repo 的 scss 與 js 都不碰它，寬度來自同掛的 `.w100`。 #}
 {# **三個數值欄一律 `type="number"`**（§5 要記載），配後端區間（1–100／1–20，出處同 2-2-1 檔頭）：
      這幾格的值 React 要讀去送 API，`Number()` 少打一個字就是 NaN、序列化成 JSON 是 null，
@@ -197,7 +198,7 @@ permalink: 2-2-3_abTest.html
                 </div>
                 <div class="field">
                     {# 三件套的第三件（§4）：可見區間 ＋ aria-describedby；數字獨立成不翻的節點（§3-2）。id 帶側別。 #}
-                    <input type="number" min="1" max="100" step="1" id="abSampleSelected-{{ ab.side }}" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control sample-count w100 js-sample-selected" value="8" aria-describedby="abSampleSelectedRange-{{ ab.side }}">
+                    <input type="number" min="1" max="100" step="1" id="abSampleSelected-{{ ab.side }}" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control w100 js-sample-selected" value="8" aria-describedby="abSampleSelectedRange-{{ ab.side }}">
                     <span class="text-gray" id="abSampleSelectedRange-{{ ab.side }}">1 – 100</span>
                 </div>
             </div>
@@ -209,7 +210,7 @@ permalink: 2-2-3_abTest.html
                     <label for="abSampleTotal-{{ ab.side }}" class="control-label" data-i18n="settings.searchTotalNumber">取用資料筆數</label>
                 </div>
                 <div class="field">
-                    <input type="number" min="1" max="100" step="1" id="abSampleTotal-{{ ab.side }}" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control sample-count w100 js-sample-total" value="16" aria-describedby="abSampleTotalRange-{{ ab.side }}">
+                    <input type="number" min="1" max="100" step="1" id="abSampleTotal-{{ ab.side }}" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control w100 js-sample-total" value="16" aria-describedby="abSampleTotalRange-{{ ab.side }}">
                     <span class="text-gray" id="abSampleTotalRange-{{ ab.side }}">1 – 100</span>
                 </div>
             </div>

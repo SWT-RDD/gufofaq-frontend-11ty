@@ -42,11 +42,14 @@ permalink: 2-2-1_singleTest.html
      常數在 product）。理由：這幾格的值 React 要讀去送 API，`Number("2o")` 是 NaN、
      序列化成 JSON 是 null，而純文字欄要等到按下送出、後端回話才擋得到——`type="number"` 讓
      瀏覽器在打字當下就擋。id 契約（#sampleTotalInput…）原樣保留。
-   值載體走 hook class（js-chat-mode／js-agent-max-iter…，全站 scss 不引用），React 受控、change 交業務層。
+   值載體一律要有 React 綁定記號（§5 矩陣②）：本頁走 hook class（js-chat-mode／js-agent-max-iter／
+     js-reasoning-effort／js-sample-selected／js-sample-total，全站 scss 不引用），React 受控、change 交業務層。
+     `<label for>` 需要的 id 照舊各自留著，兩者不互斥、也不能拿 id 頂掉 hook。
    下方按鈕列三顆**不落在同一格**（§5 矩陣）：「回復儲存的設定」與「儲存提示詞版本」是③——點下去
      就送 API，故各自掛 data-toast 列全結果；只有「套用為正式設定」是①**條件開窗**：它先驗兩個取樣數、
-     再比對所選模型在不在租戶白名單內，兩關都過才開 ProductionSettingsModal（權限不足只彈 toast、
-     不開窗）——故它只留 hook class（`.js-apply-production`）、不掛 data-open-modal。
+     再比對所選模型在不在租戶白名單內，兩關都過才開 ProductionSettingsModal——故它只留
+     hook class（`.js-apply-production`）、不掛 data-open-modal。權限不足那一態由窗內
+     「確認套用」鈕的 `data-toast` warning 段承擔（見下方動作列那一段），這顆鈕自己零 toast。
    示範選 agent（§6 示範自洽：本頁下方展示 agent 工具軌跡與步驟時間軸，傳統搜尋模式不會有）。 #}
 <div class="block">
     <div class="filter-fields flex-row flex-wrap gap-16 mobile-column">
@@ -128,7 +131,7 @@ permalink: 2-2-1_singleTest.html
                 <label for="sampleSelectedInput" class="control-label" data-i18n="settings.searchSelectedNumber">選用資料筆數</label>
             </div>
             <div class="field">
-                <input type="number" min="1" max="100" step="1" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control" id="sampleSelectedInput" value="8" aria-describedby="sampleSelectedRange">
+                <input type="number" min="1" max="100" step="1" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control js-sample-selected" id="sampleSelectedInput" value="8" aria-describedby="sampleSelectedRange">
                 {# 三件套的第三件（§4）：可見區間 ＋ aria-describedby；數字獨立成不翻的節點（§3-2）。 #}
                 <span class="text-gray" id="sampleSelectedRange">1 – 100</span>
             </div>
@@ -140,7 +143,7 @@ permalink: 2-2-1_singleTest.html
                 <label for="sampleTotalInput" class="control-label" data-i18n="settings.searchTotalNumber">取用資料筆數</label>
             </div>
             <div class="field">
-                <input type="number" min="1" max="100" step="1" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control" id="sampleTotalInput" value="16" aria-describedby="sampleTotalRange">
+                <input type="number" min="1" max="100" step="1" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control js-sample-total" id="sampleTotalInput" value="16" aria-describedby="sampleTotalRange">
                 <span class="text-gray" id="sampleTotalRange">1 – 100</span>
             </div>
         </div>

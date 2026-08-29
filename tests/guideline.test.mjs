@@ -679,6 +679,7 @@ const NAMED_HOOKS = new Map([
     ["singleSelect", "單選下拉的初始化掛點"],
     ["multiSelect", "多選下拉的初始化掛點；本 repo 由 ui/multi-select 查它"],
     ["range-date", "區間日期欄的選擇器掛點（起訖共用同一個輸入框）"],
+    ["sample-count", "apply-settings-compare-modal 左右欄那兩顆唯讀取樣數欄的讀值掛點（那兩顆是 disabled 的比對顯示欄，沒有 js- 掛點）"],
     ["priority-switch", "優先序表的模式開關：切換會換掉整張表的欄位與選項值域"],
     ["priority-box", "優先序表的外框——開關要靠它找到自己管的是哪一張表"],
     ["prompt-card-list", "提示詞卡片列表的容器（逐張卡由業務端灌）"],
@@ -708,7 +709,6 @@ const NAMED_HOOKS = new Map([
     ["pager-text", "輸入版頁碼的文字（「第」／「個對話，共」——夾在輸入框兩側的兩截）"],
     ["priority-select", "逐列的優先序下拉（改動即送出）"],
     ["rating-select", "評價篩選下拉（送查詢時讀它的值）"],
-    ["sample-count", "兩側取樣筆數欄的讀值掛點"],
     ["sources-detail-link", "來源明細的連結：href 由業務端依該筆組出來"],
     ["sources-info", "「挑選規則 N 取 M」那一格"],
     ["sources-rating", "來源那一區的評價欄"],
@@ -5618,6 +5618,27 @@ test("§4-2 英譯字串不得含全形標點（那是繁中的字身，混在�
     }
     assert.ok(FULLWIDTH.test("「x」") && !FULLWIDTH.test("“x”"), "全形偵測式壞了，這條測試永遠會綠");
     assert.equal(hits.length, 0, `§4-2 英譯裡的全形標點：\n${fail(hits)}`);
+});
+
+test("§4-2 英譯的引號與撇號只有一種拼法（直引號／直撇號是另一種字身）", () => {
+    // 只擋全形的話，「不是全形」就永遠是合規的下限，於是同一份 catalog 裡直引號與彎引號並存
+    // ——最刺眼的一組是把「」譯成兩顆一模一樣的直引號，左右不分，讀的人看不出哪一顆是開頭。
+    // 字元清單那種**樣本字面**除外（那一句在講「這些字元不可以出現」，符號本身是被引用的資料）。
+    const en = JSON.parse(read("src/i18n/en.json"));
+    const SAMPLE = new Map([
+        ["settings.tagCodeHint", "標籤代碼的字元限制：句中逐字列出「不可以出現的字元」，直引號與直撇號本身就是那份清單的成員"],
+    ]);
+    const STRAIGHT = /['"]/;
+    const bad = Object.entries(en).filter(([k, v]) => !SAMPLE.has(k) && STRAIGHT.test(v))
+        .map(([k, v]) => `${k}  ${v.slice(0, 80)}`);
+    assert.ok(Object.keys(en).length > 500, `en.json 只讀到 ${Object.keys(en).length} 顆 key —— 這條測試在空轉`);
+    assert.ok(STRAIGHT.test(`it's`) && !STRAIGHT.test(`it’s`), "直撇號偵測式壞了，這條測試永遠會綠");
+    for (const [k, why] of SAMPLE) {
+        assert.ok(k in en, `SAMPLE 有死豁免：${k} 已經不在 en.json 裡`);
+        assert.ok(STRAIGHT.test(en[k]), `SAMPLE 的 ${k} 其實已經沒有直引號了——沒有豁免也會過，留著等於預先放行下一個同名 key`);
+        assert.ok(why.length > 20, `SAMPLE 的 ${k} 沒寫理由（空白不等於查證過）`);
+    }
+    assert.equal(bad.length, 0, `§4-2 英譯裡的直引號／直撇號（撇號一律 ’、引號一律 “ ”）：\n${fail(bad)}`);
 });
 
 test("§6 同頁的 page-size 選中值必須等於 pagination 生效的 perPage（兩者同源）", () => {

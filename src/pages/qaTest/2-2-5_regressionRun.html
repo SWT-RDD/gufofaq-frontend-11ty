@@ -57,10 +57,9 @@ permalink: 2-2-5_regressionRun.html
      `history`）。§4：**判準是「打了掛 `require_*` 的端點」，不是「會不會改狀態」**，讀取型
      端點同樣要標、或像這裡一樣寫明查證結論——**不能什麼都不寫**：一片空白與「查了卻忘了標」
      在 markup 上長得一模一樣。
-     **不在控制項上掛 `data-capability`**：四軸的宣告單位是「會改狀態的控制項」，而這一頁三顆鈕
-     （比較／下載結果 CSV／看報表的入口）全是唯讀讀取，整頁是同一級要求 ⇒ 痕跡留在檔頭，
-     與 3-4／4-1 同一種寫法（3-4 檔頭「能力閘 settings:read 檢視／settings:write 編輯」、
-     4-1 匯出那一段「唯讀匯出，不宣告授權軸」）。
+     **兩顆打端點的鈕各自掛 `data-capability="settings:read"`**（比較、下載結果 CSV），
+     並在 `data-toast` 裡帶「權限不足」那一段的 warning：判準是「打了掛 `require_*` 的端點」，
+     讀取型端點同樣要標。頁面本身的載入（`get_run`）沒有控制項可標，故那一軸寫在這裡。
      ⚠️ 這也代表**導覽路徑上的每一站都要有 `settings:read` 才走得到**：入口是 2-2-4 的「看報表」，
      而 2-2-4 的寫入面是 `settings:write`（含 read）。 #}
 {% set breadcrumbItems = [
@@ -784,7 +783,9 @@ permalink: 2-2-5_regressionRun.html
     verdict: "通過", verdictKey: "regression.verdictPass", verdictClass: "is-pass",
     judgeKind: "none", judgeText: "無主觀分", judgeKey: "regression.judgeNone", judgeClass: "is-muted",
     latency: "1,780", tokens: "884", turnsSent: "0",
-    expectations: ["答案須包含：10%"],
+    expectations: [
+      { labelKey: "regression.typeContains", label: "答案須包含", value: "10%" }
+    ],
     answer: "鋁材輸美目前適用 10% 的關稅。",
     hits: [
       { name: "鋁材關稅公告.pdf", source: "關稅資料集", index: "tenant7_tariff", chunk: "1", score: "0.88" }
@@ -797,8 +798,8 @@ permalink: 2-2-5_regressionRun.html
     judgeKind: "unavailable", judgeText: "評審未完成", judgeKey: "regression.judgeUnavailable", judgeClass: "is-warn",
     latency: "2,905", tokens: "1,242", turnsSent: "1",
     expectations: [
-      "答案須包含：減免",
-      "主觀評分判準：答案有沒有講清楚適用條件"
+      { labelKey: "regression.typeContains", label: "答案須包含", value: "減免" },
+      { labelKey: "regression.typeJudge", label: "主觀評分判準", value: "答案有沒有講清楚適用條件" }
     ],
     answer: "符合特定用途或原產地認定的鋼品，可申請關稅減免，需檢附產地證明與用途聲明。",
     hits: [
@@ -812,9 +813,9 @@ permalink: 2-2-5_regressionRun.html
     judgeScore: "2.4",
     latency: "2,140", tokens: "1,096", turnsSent: "2",
     expectations: [
-      "答案須包含：25%／鋼品",
-      "須引用文件：9f2c1b7e…a41",
-      "主觀評分判準：答案有沒有正面回答「稅率是多少」"
+      { labelKey: "regression.typeContains", label: "答案須包含", value: "25%／鋼品" },
+      { labelKey: "regression.typeCitesDocument", label: "須引用文件", value: "9f2c1b7e…a41" },
+      { labelKey: "regression.typeJudge", label: "主觀評分判準", value: "答案有沒有正面回答「稅率是多少」" }
     ],
     answer: "鋼品出口到美國需要依照 HS 稅則號列申報，實際稅率請洽海關。",
     hits: [
@@ -896,7 +897,7 @@ permalink: 2-2-5_regressionRun.html
                                         <td colspan="3">
                                             <ul class="list-style-disc">
                                                 {% for e in row.expectations %}
-                                                <li>{{ e }}</li>
+                                                <li><span data-i18n="{{ e.labelKey }}">{{ e.label }}</span>{% if e.value %}<span data-i18n="common.labelSep">：</span><span>{{ e.value }}</span>{% endif %}</li>
                                                 {% endfor %}
                                             </ul>
                                         </td>
