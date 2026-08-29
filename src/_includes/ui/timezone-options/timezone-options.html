@@ -1,7 +1,8 @@
 {# 時區 `<option>` 清單（只有 options，外層 `<select>` 由使用頁自己給——兩處的 id／class／
      `data-platform-role` 都不同）。
      為什麼全站只有這一份：§6「同一份業務目錄不得各烤一份」。兩個 include 點——5-2（per-config）
-     與 5-6-1（平台預設）——各烤一份的話，兩份的顆數與順序遲早分岔（一份 15 顆、一份 5 顆這種），
+     與 `components/platform-tenants-panel`（平台預設；那顆面板被 5-6-1／5-6-1-2／5-6-1-3 三頁
+     include，所以渲染後共四頁看得到這份清單）——各烤一份的話，兩份的顆數與順序遲早分岔，
      而且兩邊的檔頭誰也不會提到對方，於是**平台管理員設不了 Asia/Seoul，隔壁頁的租戶卻設得了**，
      而那種不一致要並排兩頁才看得出來。
      後端對兩者都只驗「是不是合法 IANA 時區」（product 的 `set_platform_timezone`：

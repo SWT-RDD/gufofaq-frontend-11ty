@@ -20,7 +20,7 @@
 //
 // **對外匯出一支重繪函式**（`window.GufoSearchSelect.refresh`）：`ui/filter-fields` 的「清除」
 // 直接寫 `select.value`，而它**刻意不 dispatch 合成 change**（§5 不得用合成事件跨元件驅動；
-// 那支檔案自己寫著「正解是元件匯出一支重繪函式由這裡呼叫」）。沒有這條路的話，按下清除之後
+// 那支檔案自己在同一段寫明「呼叫該元件匯出的重繪函式」才是正路）。沒有這條路的話，按下清除之後
 // 原生 select 已經回到「全部」，而畫面上那三顆 combobox 還顯示著舊標籤——值與畫面分家，
 // 而且看的人會以為篩選還在。
 document.addEventListener("DOMContentLoaded", function () {
@@ -277,8 +277,10 @@ document.addEventListener("DOMContentLoaded", function () {
                     if (isOpen() && list.length) { event.preventDefault(); setActive(list.length - 1); }
                     break;
                 case "Enter":
-                    // 一律 preventDefault：combobox 放進 <form> 時不攔會觸發原生表單送出
-                    // （implicit submission）整頁重載——而本元件的兩個消費頁都在查詢區裡。
+                    // 一律 preventDefault：開著的清單裡按 Enter 要選中目前那一顆，不是把
+                    // 這顆鍵傳出去。它同時擋掉「combobox 放進 <form> 時的 implicit submission」——
+                    // 本專案全站只有 src/login.html 有 <form>、本元件不在那裡，所以那一條是
+                    // 預防性的，不是這一行存在的理由。
                     event.preventDefault();
                     if (isOpen() && activeIndex >= 0 && list[activeIndex]) {
                         chooseOption(list[activeIndex].__gufoOption);

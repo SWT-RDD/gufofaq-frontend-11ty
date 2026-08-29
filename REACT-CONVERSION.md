@@ -740,7 +740,8 @@ portal 時的唯一辦法，**不是設計**。React 端一律收斂成**一顆�
 
 ## 機械對照（元件常見）
 
-- Button：`.button`（文字按鈕，variant 走 `.button-{primary,border,green,red,dark,orange}` + `.button-sm`）
+- Button：`.button`（文字按鈕，variant 走 `.button-{primary,border,green,red,dark,orange,edit-save}` + `.button-sm`——
+  `.button-edit-save` 是零內距、只有品牌色字的行內動作，用在表格格子裡）
   與 `.button-icon`（遮罩圖示按鈕：copy/watch/edit/delete/download/save/cancel/like/dislike/share +
   `.no-bg` + `.size-sm`）雖同檔 scss、byte-identical 一起照抄，但是**兩種獨立元件**，不是同一元件的
   variant——`.button-icon` 不吃 `.button` 的 padding/border/背景樣式，用途也是純圖示鈕。`<Button>` 只做

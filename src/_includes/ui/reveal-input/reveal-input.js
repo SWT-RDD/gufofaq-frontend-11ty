@@ -14,10 +14,10 @@
 //   `.flex-row`／`.align-items-center`／`.gap-8`／`.flex-wrap`／`.col-6-md`／`.col-12-sm`＝全域工具層；
 //   `.copyBtn`＝業務 hook（不屬本契約，見段後）。本元件只加行為（`data-reveal-target` 的委派）。
 //
-// markup 契約（無 html 元件，§1-2；整段照抄）—— **下面這一份是 5-6-3 的形狀**（`value` 是字面量）。
-// 5-9 多了兩層：`{% set extractKeyPlain = "…" %}` 那一行定義（§1-2：契約要含它自己需要的 `{% set %}`
-// 定義行——缺一行的失敗方式和缺一層祖先完全相同）與 `{% if extractKeyPlain %}…{% else %}…{% endif %}`
-// 兩態（有明碼／只剩提示），照抄這一段到 5-9 那種位置會做出一顆無條件顯示明碼的欄位。
+// markup 契約（無 html 元件，§1-2；整段照抄）—— **下面這一份是 5-9 的形狀**。它住在該頁
+// `{% if extractKeyPlain %}` 的**有明碼**那一支之內：外面還有 `{% set extractKeyPlain = "…" %}`
+// 那一行定義（§1-2：契約要含它自己需要的 `{% set %}` 定義行——缺一行的失敗方式和缺一層祖先
+// 完全相同），以及 `{% else %}` 那一支的唯讀提示欄。少了那兩層就是一顆無條件顯示明碼的欄位。
 // 另外，那顆 flex-row 還有**第三個子節點**（`.copyBtn`），不屬本契約。
 //
 //   <div class="flex-row align-items-center gap-8 flex-wrap">
@@ -35,7 +35,8 @@
 //
 // **`value` 的長度是規格的一部分**：這一格預設 `type="password"`，遮罩點數就等於字面量長度，
 // 短一顆點就是把「金鑰有多長」畫錯（5-9 檔頭有推導：product 的 `new_api_key()` ＝
-// `_API_KEY_PREFIX` ＋ `secrets.token_urlsafe(32)` ⇒ 46 字元）。上面那一串是 5-9 現行的字面量逐字。
+// `_API_KEY_PREFIX` ＋ `secrets.token_urlsafe(32)` ⇒ 46 字元）。值由該頁的
+// `{% set extractKeyPlain %}` 供給，那一行的字面量長度就是這一格畫出來的點數。
 //
 // 5-6-3_platformServiceKeys.html 那一份換掉四處：`id="apiKeyInput"` → `id="serviceKeyPlain"`
 // （`data-reveal-target` 跟著換）、`aria-label="剛核發的明碼" data-i18n-aria-label="serviceKey.plainTitle"`，

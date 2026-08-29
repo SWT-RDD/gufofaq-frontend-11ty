@@ -71,7 +71,7 @@
 //
 // 住在哪一頁（雙向）：只有 5-3_statsModule（一份 include `components/chart-box`、兩份手寫）。
 // 反查：`grep -rn 'chart-box' src --include=*.html` 除該頁與 `components/chart-box` 之外，
-// 只命中 `ui/chart-desc`／`components/pagination-input` 檔頭註解裡的說明文字。
+// 只命中 `ui/chart-desc`／`components/pagination-input`／元件庫頁註解裡的說明文字。
 //
 // 為什麼是 `ui/` 而不是留在 `components/chart-box`：5-3 除了 include 那顆元件之外，
 // 自己另外手寫了兩張圖，用的是同一組 class；而 `.chart-auto` 這個變體**元件從來不輸出**，

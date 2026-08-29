@@ -99,8 +99,9 @@
 //      ——一句話裡混著兩套標點。`qaTest.setting` 的英譯是 `Setting`，後面直接接側別還會黏成
 //      `SettingA`，故 `設定` 與側別之間也要補一個空白。理由逐字寫在 2-2-3 的頁面註解。
 //
-// 住在哪一頁（雙向）：只有 2-2-3_abTest。
-// 反查：`grep -rn 'ab-compare' src --include=*.html` 除該頁之外，只多命中
+// 住在哪一頁（雙向）：2-2-3_abTest 是生產實例；元件庫頁另有一份只演祖先鏈的靜態示範
+// （`.item-title` 的規則帶著 `.ab-compare .ab-compare-item` 兩層，少一層就沒有樣式）。
+// 反查：`grep -rn 'ab-compare' src --include=*.html` 除這兩頁之外，只多命中
 // `components/qa-side-panel` 檔頭註解裡的說明文字（不是實例）。
 .ab-compare {
     flex: 1;

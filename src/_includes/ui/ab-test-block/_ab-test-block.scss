@@ -158,9 +158,11 @@
 // 外面那層 `.form-group.row.mobile-col > .label.ab-field-label + .field` 確實七組都一樣，
 // 但 `.field` 裡面四種形狀各不相同：第 1／2／4 組是 `<select>`（第 1 組的 `.label` 還多帶
 // `.flex-row` 與一顆 ui/info-btn）、第 3 組整顆是 `components/reasoning-effort-select` 的
-// `{% include %}` ＋ 六行 `{% set %}` 參數（最後一行 `reasoningEffortSelected` 決定選中哪一顆，
-// 兩側不同值——缺這一行畫面完全正常，只是兩側一起落回「沿用模型預設」，而
-// `components/apply-settings-compare-modal` 的思考深度欄與這一側有跨區自洽契約）、
+// `{% include %}` ＋ 一組 `{% set %}` 參數（**顆數不寫死**，§3-2；逐顆見該元件檔頭）。
+// 其中兩顆缺了會壞在看不見的地方：`reasoningEffortSelected` 決定選中哪一顆，兩側不同值
+// ——缺它畫面完全正常，只是兩側一起落回「沿用模型預設」，而 `components/apply-settings-compare-modal`
+// 的思考深度欄與這一側有跨區自洽契約；`reasoningEffortHintId` 是那顆可見區間 span 的 id，
+// 缺它 `aria-describedby` 串不起來（§4 數值欄三件套）、
 // 第 5／6／7 組是 `<input type="number">` ＋ 一顆
 // `<span class="text-gray" id>` 兩個子元素並靠 `aria-describedby` 串起來（§4 數值欄三件套）。
 // 寫成「與第 2 組同型」＝抄的人會把三顆數值欄畫成 select、把可見區間與 `aria-describedby` 一起漏掉，

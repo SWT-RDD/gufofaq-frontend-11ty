@@ -102,7 +102,8 @@
 //
 // 住在哪一頁（雙向；判準＝`grep -rn 'class="sort"' src --include=*.html`，命中四檔——
 //   其中 `pages/components/component.html` 那一筆是說明散文、不是實例）：
-//   3-1-6（兩個面板共 13 顆，型③）、4-1（1 顆，型③′）、`ui/default-table` 的展示片段（1 顆，型③″）。
+//   3-1-6（兩個面板，型③——src 是兩處 `{% for %}`，渲染後 13 顆）、4-1（型③′）、
+//   `ui/default-table` 的展示片段（型③″）。顆數只在需要區分 src 與 dist 時才寫，且兩個數字要各自標明是哪一邊。
 // 反查：`grep -rn 'class="sort"' src --include=*.html`。
 document.addEventListener("DOMContentLoaded", function () {
     var NONE = "none", ASC = "ascending", DESC = "descending";
