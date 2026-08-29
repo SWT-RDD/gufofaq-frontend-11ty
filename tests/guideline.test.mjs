@@ -6158,6 +6158,16 @@ function runStubDom(jsSrc, build) {
         };
         n.addEventListener = (type, fn) => n.handlers.set(type, [...(n.handlers.get(type) || []), fn]);
         n.dispatch = (type, event) => (n.handlers.get(type) || []).forEach((fn) => fn(event));
+        // 真 DOM 的 `el.dispatchEvent(new Event("change", { bubbles: true }))`：事件從自己往上冒泡，
+        // 沿路每一層的同名 handler 都收得到。元件 js 用它通知「值是程式改的」，少了這顆
+        // 被測 js 會在 stub 上直接丟 TypeError（＝那條路徑根本沒被跑到，而測試看起來只是紅在別的地方）。
+        n.dispatchEvent = (ev) => {
+            for (let p = n; p; p = p.parent) {
+                (p.handlers.get(ev.type) || []).forEach((fn) => fn({ type: ev.type, target: n }));
+                if (!ev.bubbles) break;
+            }
+            return true;
+        };
         n.contains = (other) => { for (let p = other; p; p = p.parent) if (p === n) return true; return false; };
         n.closest = (sel) => { for (let p = n; p; p = p.parent) if (matches(p, sel)) return p; return null; };
         n.querySelectorAll = (sel) => descendants(n).filter((d) => matches(d, sel));
@@ -8563,6 +8573,51 @@ test("§6 stepNextHref 與 stepNextAction = true 不得同時 set（動作模式
             '{% set stepNextAction = true %}\n{% include "components/step-btn-wrap/step-btn-wrap.html" %}',
             '{% set stepNextHref = "x.html" %}\n{% include "components/step-btn-wrap/step-btn-wrap.html" %}']);
     assert.equal(hits.length, 0, `§6 沒有消費者的參數：\n${fail(hits)}`);
+});
+
+test("§5 ui/checkbox 全選只動畫面上看得到的那幾列（過濾隱藏的不算）", () => {
+    // `ui/list-filter` 的關鍵字過濾是把整列掛 `.hidden`，DOM 節點還在。全選若收 DOM 全部，
+    // 使用者過濾出兩筆、按下全選，卻把畫面外的那幾筆一起勾走——而他完全看不出來，
+    // 直到送出之後才發現範圍不對（3-7 的搜尋範圍窗就是這個組合）。
+    const build = (node, root) => {
+        const container = node("div", "checkbox-container");
+        const all = node("input", "check-all");
+        all.checked = false;
+        container.append(all);
+        const rows = ["a", "b", "c"].map((name, i) => {
+            const label = node("label", "form-checkbox" + (i === 2 ? " hidden" : ""));
+            const one = node("input", "check-one");
+            one.checked = false;
+            label.append(one);
+            container.append(label);
+            return one;
+        });
+        root.append(container);
+        return { container, all, rows };
+    };
+    const js = read("src/_includes/ui/checkbox/checkbox.js");
+    const { fixture } = runStubDom(js, build);
+    fixture.all.checked = true;
+    fixture.container.dispatch("click", { target: fixture.all });
+    assert.deepEqual(fixture.rows.map((r) => r.checked), [true, true, false],
+        "全選勾到了被過濾隱藏的那一列——使用者看不到它，卻會跟著送出去");
+
+    // 三態的分母也要是同一份：看得見的兩顆都勾了就是「全勾」，不是「半選」
+    assert.equal(fixture.all.indeterminate, false,
+        "全選路徑不該把 indeterminate 留成半選（這一條走的是 .check-all 那一支）");
+    fixture.rows[1].checked = false;
+    fixture.container.dispatch("click", { target: fixture.rows[1] });
+    assert.equal(fixture.all.checked, false, "看得見的兩顆只勾了一顆，全選框不該是全勾");
+    assert.equal(fixture.all.indeterminate, true, "看得見的兩顆勾了一顆＝半選");
+
+    // 負控：把 visibleOnes 的過濾拿掉（改回收 DOM 全部），上面第一條必須失敗
+    const noFilter = js.replace('.filter((el) => !el.closest(".hidden"))', "");
+    assert.notEqual(noFilter, js, "負控的替換沒有命中——這條測試驗的不是那一段");
+    const probeRun = runStubDom(noFilter, build);
+    probeRun.fixture.all.checked = true;
+    probeRun.fixture.container.dispatch("click", { target: probeRun.fixture.all });
+    assert.deepEqual(probeRun.fixture.rows.map((r) => r.checked), [true, true, true],
+        "拿掉可見性過濾之後全選竟然還是只勾兩顆 —— 這條測試沒有在驗那一段");
 });
 
 test("驗收工具自己：commentsOf 的區塊註解起點要有字串／正則意識", () => {
