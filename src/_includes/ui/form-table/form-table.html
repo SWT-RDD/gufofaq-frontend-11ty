@@ -1,5 +1,6 @@
-{# 展示片段（非生產 markup）：元件庫頁「11 Table表格」的「表單表格」示範，資料形狀比照問答詳情頁
-     4-2_qaHistory_detail——分組標題、一列多格、格內帶圖示、以及需要捲軸的長文格各示範一次。 #}
+{# 展示片段（非生產 markup）：元件庫頁「11 Table表格」的「表單表格」示範，四種格型各一次——
+     分組標題與一列多格取自問答詳情頁 4-2_qaHistory_detail，格內帶圖示同上，
+     需要捲軸的長文格（`.long-text`）取自 3-1-5_previewFile_detail（4-2 那一頁刻意不用 `.long-text`）。 #}
 {# 表單表格是用 div 模擬 table：最外層「.form-table-wrap」包覆多個「.form-table-group」（含 div.subtitle 標題 + div.form-table）；
      每個 .form-table 由多個 .row 組成，.row 內是多個 .col（每個 .col 含 div.th + div.td）；
      td 內含圖示用 td:has(.icon)（自動調整排版）；長文字需捲軸請用 div.long-text 包覆 #}

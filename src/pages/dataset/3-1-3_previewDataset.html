@@ -100,9 +100,13 @@ permalink: 3-1-3_previewDataset.html
      （這個資料集只要有 folder 管道就擋），但 `DatasetDetailOut` **沒有任何欄位講得出這個資料集是不是
      已經被鎖住**——前端拿不到那個事實，就不可能在使用者打字之前把欄位 disabled 掉；能誠實做的只有
      「照常給改，改不動時由 409 那一段 warning 說清楚」（§5：分支結果由 data-toast 演）。
-   📌 交辦：請 product 在 `DatasetDetailOut` 補一個布林（例如 `chunk_params_locked`，判準就是
-     `_assert_chunk_params_still_settable` 那兩條證據的聯集），這一區才能在進頁的當下就說「這個資料集
-     已經鎖住了」，而不是等使用者填完按下去才知道（§4 切版主張需求）。
+   **「這個資料集鎖住了沒有」是切版對後端提的要求**（§4「切版主張需求，不等後端」）。
+     要求的內容：`DatasetDetailOut` 補一個布林（`chunk_params_locked`），判準＝
+     `_assert_chunk_params_still_settable` 那兩條證據的聯集。
+     為什麼非它不可：有了它，這一區在進頁的當下就說得出「這個資料集已經鎖住了」，
+     而不是等使用者填完按下去才由 409 告知。
+     **上游那一側的符號名是 `_assert_chunk_params_still_settable`**：下一輪 grep 它一次
+     就知道這個前提還在不在（§4）。
    儲存鈕是③直接送 API 的鈕 → `data-toast` 列全結果；hook 用 `js-save-chunk-params`（全站 scss 不引用）。 #}
         <div class="block flex-row column gap-16">
     <div class="flex-row column gap-8">
@@ -313,7 +317,7 @@ permalink: 3-1-3_previewDataset.html
    什麼都沒刪」——而畫面上完全看不出來。 #}
 {# 逐列刪除的檔名由業務 js 填進這顆空槽（同 1-2-1／3-2 的做法）。不設的話 delete-modal 會落回
      內建預設「檔案名稱2.pdf」，而本頁清單是常見問題.pdf／商品清單.xlsx／客服應對規範.docx——
-     彈窗會問「確定要刪除一個不存在的檔」（§6 示範自洽；3-1-1 已經修過同一件事）。 #}
+     彈窗會問「確定要刪除一個不存在的檔」（§6 示範自洽）。 #}
 {% set deleteTargetId = "deleteFileName" %}
 {# 連帶後果（`deleteNoteKey`）：這一顆刪的不只是清單上那一列。`_remove_file_and_purge`
      （product）先刪 DB 列、再依 connector 把**那個檔的文件從
@@ -344,14 +348,14 @@ permalink: 3-1-3_previewDataset.html
      不打 API），根本沒有失敗路徑，兩顆鈕的結果集合本來就不一樣。
 
      **末段「請先勾選要刪除的檔案」的消費點不是這顆確認鈕，是清單上那顆 `.delete-selected-btn`。**
-     那顆鈕一個檔都沒勾就按下去，本來是**完全沒有訊號**（不開窗、不彈 toast），讀起來與「這顆鈕
+     那顆鈕一個檔都沒勾就按下去，若**完全沒有訊號**（不開窗、不彈 toast），讀起來與「這顆鈕
      壞了」逐字相同；而 §4 對「需要驗證的送出鈕」要的正是一段 warning（同 5-6-3 的
      「請先填寫用途名稱」、rating-modal 的「請先選擇讚或倒讚」）。它與其餘五段是**同一個動作的
      結果集合**（都是「刪這幾個檔」這件事的出口），所以留在同一顆 key，不另開第二顆。
 
      排在**末位**而不是插在「權限不足」之後：段序是 React 端 `split("|")[n]` 的索引契約，插中間
-     會讓其後每一段的索引整批位移＝在錯的情況彈錯訊息（實際發生過：另一顆 toast 插段後
-     `segs[3]` 從「失敗」變成「試跑完成」，網路失敗時彈出綠意思的紅 toast）。代價是段序與隔壁
+     會讓其後每一段的索引整批位移＝在錯的情況彈錯訊息（插一段進中間，`segs[3]` 就從「失敗」
+     變成別的話，網路失敗時彈出的會是另一種語意的 toast）。代價是段序與隔壁
      `toast.runTrySkill` 那一族（warning 排在中間）不一致，換到的是不必碰任何既有索引。
 
      它**不會**也**不該**掛成 `.delete-selected-btn` 自己的 `data-toast`：那顆鈕在切版上是條件

@@ -15,8 +15,7 @@ permalink: 5-2_conversationSettings.html
      － 「功能未開通」的遮罩不屬於這一頁：SaaS 訂閱閘門 `ui/subscription-gate` 在 app-shell 層
         統一處理，本頁不自己畫一層 overlay。
      階層＝資料真實階層：跨三設置共用的（前台預設）在 profile 頁籤之外；每設置
-     各一份的旋鈕在 profile 頁籤底下的主題子頁籤內。設計正本：spec 2026-07-22-conversation-
-     settings-hub-design.md。 #}
+     各一份的旋鈕在 profile 頁籤底下的主題子頁籤內。#}
 {# 可用模型目錄：主回答與分組 LLM 填的是同一份 available models（React 端來自
      GET /api/config/models ∩ 租戶 available_models），故本頁只留一份陣列、兩處都從它渲染（§6）。 #}
 {# 可用模型目錄：`GET /api/config/models` ∩ 租戶 `available_models`。**同一份目錄的另外兩個消費點**：
@@ -27,7 +26,7 @@ permalink: 5-2_conversationSettings.html
      chatbot 的 `GET /api/config/rerankers`）。形狀逐欄照端點：rerankers[] 與 retrieval_backends[]
      各帶 `name`／`label`／`score_scale{kind,min,max,note}`，外加一段 `mixed_scale_warning`。
      **這一份不是切版自己維護的清單**——上游的 module docstring 逐字寫著硬編下拉的後果，還舉了實例：
-     同一份清單在 `manager_frontend/search.html` 有三個 option，而它的建置產物只有一個。所以第四顆
+     所以第四顆
      重排序器出現時，這裡不必改（React 端照端點渲染，切版這一份只是版型示範）。
      `label`／`note` 是**端點給的字串**，故不掛 data-i18n：上游自己走 Accept-Language，切版再包一層
      就是同一句話有兩份譯文，兩份分家的那天畫面說的與存檔被擋時說的不一樣。欄位標題
@@ -786,8 +785,7 @@ permalink: 5-2_conversationSettings.html
      （見「生成設定」子頁籤檔頭註的理由）——「進階提示詞」
      區塊的名字因此是**「進階提示詞」而不是「Agent 提示詞」**：後者的字面暗示「僅 Agent」，與矩陣
      相反（這五欄裡有兩欄兩模式皆生效）。
-     ⚠️ **`settings.agentPrompts` 這顆 key 已經退場，不要把它接回來**：它的字面就是上面說的那個
-     誤導，接回來等於把已經裁定過的錯字面重新請回站上。 #}
+     ⚠️ **不要另立一顆叫「Agent 提示詞」的 key**：那個字面就是上面說的那個誤導。 #}
 <div class="tab-content" data-capability="settings:write" id="panelPrompts" style="display: none;">
     <div class="block mb-10 flex-row column gap-16">
         {# ⓘ 說明：markup 同 5-2 既有的 info-btn 六件組。①出處：本子頁籤檔頭「產品系統提示詞（含版本史）
@@ -1066,8 +1064,7 @@ permalink: 5-2_conversationSettings.html
      政策主題表（每列 主題/定義/範例/輸入動作/輸出動作/拒絕訊息，逐列可就地編輯）＋新增/刪除列，
      結構比照 glossary-entries-modal 的詞條編輯器；新增/刪除列動業務輸入（值交給 React 去 PUT），
      故 hook class js-add-policy-topic／js-remove-policy-topic（§5）。詞彙過濾＋兩則封鎖訊息為值載體。
-     `settings.policyActionOff` 英譯 Ignore 為修正後值（對齊 policyIntro 詞彙）；saas 已跟上，
-     `apps/web/lib/i18n/messages.en.json` 的同 key 也是 Ignore。
+     `settings.policyActionOff` 英譯是 Ignore（對齊 policyIntro 的詞彙），與 gufofaq-saas 同 key 逐字相同。
      全部隨底部「儲存對話設定」直送（policy 分組 merge 寫回 GufoRAG ChatConfig）。示範 2 筆。 #}
 <div class="tab-content" data-capability="settings:write" id="panelPolicy" style="display: none;">
     <p class="text-gray" data-i18n="settings.policyIntro">定義敏感主題與詞彙過濾：對命中的輸入／輸出可封鎖、記錄或不處理，並設定被封鎖時回覆使用者的拒絕訊息。</p>
@@ -1226,7 +1223,7 @@ permalink: 5-2_conversationSettings.html
         </div>
     </div>
 
-    {# 出口替換規則（NET-NEW，Spec 乙）：生成後對答案做 match→replacement 直接替換（別名任一命中→
+    {# 出口替換規則（NET-NEW）：生成後對答案做 match→replacement 直接替換（別名任一命中→
        同一 replacement）。確定性後處理、**兩模式皆生效**（與術語表僅 agent 不同）。逐列增刪用 hook
        class js-add-osub／js-remove-osub（§5）。別名逗號分隔（比照 glossary aliases）；${0}=命中文字、
        ${name}=regex 具名群組、$$=字面$；regex 禁量詞（ReDoS，backref 靠字面 alternation 非 \w+）。
@@ -1237,8 +1234,8 @@ permalink: 5-2_conversationSettings.html
       { aliases: "推貿費, 推廣貿易費, 貿推費", replacement: "[${0}](https://www.trade.gov.tw/tpf)", isRegex: false }
     ] %}
     <div class="block flex-row column gap-16">
-        {# ⓘ 說明：markup 同 5-2 既有的 info-btn 六件組。①出處：本區塊上方檔頭（Spec 乙「出口替換
-             規則」：生成後對答案做 match→replacement 直接替換、確定性後處理、與術語表僅 agent 不同）
+        {# ⓘ 說明：markup 同 5-2 既有的 info-btn 六件組。①出處：本區塊上方檔頭（「出口替換規則」＝
+             生成後對答案做 match→replacement 直接替換、確定性後處理、與術語表僅 agent 不同）
              ＋ product 模組檔頭（「本檔只是投影……product 要在邊界就把使用者
              輸入錯誤回成 400」）。①刻意不重複下方常駐提示（`settings.outputReplacementsHint`）已經
              講過的 ${0}／${name}／$$ 語法與「兩模式皆生效」，改講提示沒講的「這一步不經過模型、
@@ -1309,7 +1306,7 @@ permalink: 5-2_conversationSettings.html
     {% include "components/help-modal/help-modal.html" %}
 </div>
 
-{# ═══ 子頁籤 6：輸出規則（NET-NEW，Spec 丁）═══
+{# ═══ 子頁籤 6：輸出規則（NET-NEW）═══
      生成答案之後、送進合規閘門之前，對**整段**答案做的確定性後處理（不經 LLM）。契約正本＝
      gufofaq-saas 的 OUTPUT_RULE_CONTRACT（鏡射自 GufoRAG
      chatbot，兩側以 `OUTPUT_RULE_CONTRACT_FINGERPRINT` 釘同一個字串）：
@@ -1545,7 +1542,6 @@ permalink: 5-2_conversationSettings.html
                                         <input type="text" id="oruleCategorySlot{{ loop.index }}" class="form-control js-orule-category-slot" value="note3" aria-describedby="oruleCategoryHint{{ loop.index }}">
                                         {# 上下界是資料不是譯文（§3-2）：同一組界線就寫在下面 `js-orule-category-limit` 的
                                              `min="1" max="100000"` 上（正本 product 的 `by_category`）。
-                                             414eecc 已經對本頁另外三處做過同一個修正，這是第四處漏網。
                                              「最多 50 個代碼」在 markup 沒有第二份抄本，維持譯文。 #}
                                         <span id="oruleCategoryHint{{ loop.index }}" class="text-gray"><span data-i18n="settings.outputRuleCategoryHintPrefix">填標籤維度的欄位鍵（note1…note10、date2、date3），不是維度的名稱——填別的字不會報錯，只會讓這條規則永遠不命中。維度槽與逐代碼上限要一起設；只設一邊會存不起來（整份被擋下）。最多 </span><span>50</span><span data-i18n="settings.outputRuleCategoryHintMid"> 個代碼、每個代碼上限 </span><span>1 – 100000</span><span data-i18n="settings.outputRuleCategoryHintSuffix"> 字。</span></span>
                                     </div>
@@ -1911,8 +1907,8 @@ permalink: 5-2_conversationSettings.html
                4（人資術語）與 5（產品術語）。⚠️ **不可以另烤 1／2**：那會讓同一份目錄在兩頁各有
                一組主鍵，而 React 端送出去的就是這個值（§6）。正典是下面「綁定別名表」與 3-6
                共用的那一組（12／9／7）。
-             **「授權哪幾張」與「誰拿得到」是兩個欄位**（GufoRAG chatbot 2026-08-17 拆開，見
-               `chatbot/README.md`「術語表管理 API」）：`glossary_table_ids` ＝這份設定檔**授權**的表
+             **「授權哪幾張」與「誰拿得到」是兩個欄位**（GufoRAG chatbot 的 `glossary_table_ids` 與
+               `glossary_apply_agent`）：`glossary_table_ids` ＝這份設定檔**授權**的表
                （也是 skill 白名單的取值範圍），`glossary_apply_agent` ＝其中哪幾張讓**主 agent** 直接
                看得到、每張掛一顆查詢工具。綁死時，一張只有 skill 會用的表也一定佔掉主 agent 的工具
                額度，而主 agent 手上一旦有那顆工具，它就能直接查表、繞過 skill 的作業程序。
@@ -2157,7 +2153,7 @@ permalink: 5-2_conversationSettings.html
     </div>
 </div>
 
-{# ═══ 子頁籤 8：QA 直答（NET-NEW，Spec B）═══
+{# ═══ 子頁籤 8：QA 直答（NET-NEW）═══
      使用者問句完美命中某 QA 集的問題時，直接回該 QA 的答案原文（qa_direct）；judge 模式再加一道 LLM 裁決。
      模式(off/exact/judge)＋judge 判準 textarea 是租戶旋鈕，隨底部「儲存對話設定」直送 settings PUT；
      「參與直答的 QA 集」multi-select 是 RetrievalProfile.qa_direct_dataset_ids（另走 retrieval PUT

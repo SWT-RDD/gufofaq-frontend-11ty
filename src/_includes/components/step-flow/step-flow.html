@@ -1,7 +1,7 @@
 {# 執行流程（後台測試區詳細觀測）：SaaS 新需求。把「這次回答執行到哪一步、
      現在在哪個 node、用了哪些工具、grounding 判定、agent 推理」畫成一張類 mermaid 的直式流程圖，
      並在頂端給整體執行摘要（token/延遲/TTFT/檢索筆數/模型）。**步驟列與工具軌跡合成這一處**，
-     不再分成兩個元件：同一輪的事攤在兩張表上，讀的人沒辦法把「第幾步」與「那一步用了什麼工具」對起來。
+     步驟列與工具軌跡收在同一個元件：攤成兩張表的話，讀的人沒辦法把「第幾步」與「那一步用了什麼工具」對起來。
    正典管線各節點依序畫出（未跑到＝待處理），以 chatbot 的結構化步驟事件（step_id/step_status，
      Part 1 completed-only 對齊）點亮；當前節點高亮＝最後一個 completed 的下一個正典節點（前端 lib/domain/stepFlow
      computeFlow 推斷）。狀態 class：is-completed（--success 綠點）/ is-running（--brand-ink 深墨點，當前高亮）/
@@ -230,7 +230,7 @@
              ＝product 的 `GET /history/{log_id}/trace`（租戶隔離走 `_own_log_or_404`）
              與 chatbot 的 `GET /chatlogs/{chat_log_id}/trace`。
              端點在了 ⇒ 它就是一顆**點下去就送 API 的動作鈕**（§5 ③，「不開任何窗的送 API 鈕不適用條件開窗
-             豁免」），故掛 data-toast 列全結果，不再只掛 hook class。 #}
+             豁免」），故掛 data-toast 列全結果，不是只掛 hook class。 #}
         {% if stepFlowTraceTotal %}
         <p class="text-gray m-0"><span data-i18n="agent.traceTruncatedPrefix">已顯示 </span><span>{{ stepFlowTraceShown }}</span><span data-i18n="agent.traceTruncatedMid"> ／共 </span><span>{{ stepFlowTraceTotal }}</span><span data-i18n="agent.traceTruncatedSuffix"> 筆</span></p>
         <button data-capability="history" type="button" class="button button-border button-sm js-load-full-trace" data-toast="完整軌跡已載入|權限不足，無法載入——請找貴租戶的管理者開通|這一筆已經不在了，或不屬於這個租戶|載入失敗，請稍後再試" data-i18n-data-toast="toast.loadFullTrace" data-toast-type="success|warning|warning|error" data-i18n="agent.loadFullTrace">載入完整軌跡</button>

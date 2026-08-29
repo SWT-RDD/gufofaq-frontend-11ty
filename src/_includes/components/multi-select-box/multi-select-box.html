@@ -64,8 +64,10 @@
                 </div>
                 {% endif %}{% endfor %}
                 {# product 專用槽（`field_schema` 的 role="product_only"）與其餘的槽分群：
-                     混在備註 1–10 中間時，它看起來就只是第 11 個備註欄。說明掛在小標下、不塞進欄位名裡
-                     ——租戶可以把它改名成「維護人」，改掉的當下括號裡那句就沒了（同 5-2 欄位命名區的處置）。
+                     混在備註 1–10 中間時，它看起來就只是第 11 個備註欄。欄位名帶的括號來自
+                     `ui/field-slot-catalog` 的 `defaultLabel`（＝product 的 `SLOTS`，屬產品預設名 ⇒ chrome，§4-2）；
+                     **不能只靠它**，所以說明另外掛在小標下——租戶把顯示名改成「維護人」的當下，
+                     括號裡那句就跟著沒了（同 5-2 欄位命名區的處置）。
                      productOnly 是選填：沒有那一筆的使用頁（目前只有 1-1-4 有）整段不渲染。 #}
                 {% set msHasProductOnly = false %}
                 {% for field in fieldSlotCatalog %}{% set msExtra = fieldExtras[field.key] %}{% if field.productOnly %}{% set msHasProductOnly = true %}{% endif %}{% endfor %}
@@ -118,8 +120,10 @@
                 </div>
                 {% endif %}{% endfor %}
                 {# product 專用槽（`field_schema` 的 role="product_only"）與其餘的槽分群：
-                     混在備註 1–10 中間時，它看起來就只是第 11 個備註欄。說明掛在小標下、不塞進欄位名裡
-                     ——租戶可以把它改名成「維護人」，改掉的當下括號裡那句就沒了（同 5-2 欄位命名區的處置）。
+                     混在備註 1–10 中間時，它看起來就只是第 11 個備註欄。欄位名帶的括號來自
+                     `ui/field-slot-catalog` 的 `defaultLabel`（＝product 的 `SLOTS`，屬產品預設名 ⇒ chrome，§4-2）；
+                     **不能只靠它**，所以說明另外掛在小標下——租戶把顯示名改成「維護人」的當下，
+                     括號裡那句就跟著沒了（同 5-2 欄位命名區的處置）。
                      productOnly 是選填：沒有那一筆的使用頁（目前只有 1-1-4 有）整段不渲染。 #}
                 {% set msHasProductOnly = false %}
                 {% for field in fieldSlotCatalog %}{% set msExtra = fieldExtras[field.key] %}{% if field.productOnly %}{% set msHasProductOnly = true %}{% endif %}{% endfor %}

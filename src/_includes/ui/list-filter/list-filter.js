@@ -1,8 +1,8 @@
 // 可捲動清單 widget（.dataset-list-wrap：搜尋框 + .dataset-list）的關鍵字過濾。
-// 純前端互動（§5 當場要動得起來）：兩邊 toLowerCase 後比對（**不分大小寫、不 trim**），
-// 不符的 label 加 .hidden。
-// 這顆 widget 由兩個 modal 共用（select-dataset-modal 的 radio 清單、manage-members-modal 的
-// checkbox 清單）——過濾行為依 §4「兩個以上元件必須同值」升格成共用行為原子，兩邊都吃得到。
+// 純前端互動（§5 當場要動得起來）：**不分大小寫**（兩邊 toLowerCase）；label 側 trim 掉縮排，
+// 關鍵字側不 trim（打了尾隨空白就零命中）。不符的 label 加 .hidden。
+// 這顆 widget 由三個 modal 共用（select-dataset-modal 的 radio 清單、manage-members-modal 與
+// search-scope-modal 的 checkbox 清單）——過濾行為依 §4「兩個以上元件必須同值」升格成共用行為原子。
 // document 級 input 委派：動態插入的清單也吃得到；載入時不碰 DOM。
 //
 // markup 契約（無 html 元件，§1-2；整段照抄）。

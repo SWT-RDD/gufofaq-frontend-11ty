@@ -42,7 +42,8 @@
 //                   <button type="button" class="forgot-btn" id="forgotBtn" data-open-modal="passwordModal" data-i18n="faq.forgotPassword">忘記密碼？</button>
 //
 //                   <span class="error-prompt" role="alert" id="loginRetryHint"><span data-i18n="auth.retryAfterPrefix">請於 </span><span class="js-login-retry-seconds"></span><span data-i18n="auth.retryAfterSuffix"> 秒後再試</span></span>
-//                   <button type="button" class="button button-primary login-btn" aria-describedby="loginRetryHint" data-toast="登入成功！|帳號已停用，請聯絡管理者|嘗試次數過多，請稍後再試|登入時發生錯誤，請稍後再試" data-i18n-data-toast="toast.login" data-toast-type="success|warning|warning|error" data-i18n="auth.login">登入</button>
+//                   <button type="button" class="button button-primary login-btn" aria-describedby="loginRetryHint" data-toast="登入成功！|帳號已停用，請聯絡管理者|這個帳號近期嘗試次數過多，已暫時鎖定；若不是你本人操作，請聯絡管理者|登入時發生錯誤，請稍後再試" data-i18n-data-toast="toast.login" data-toast-type="success|warning|warning|error" data-i18n="auth.login">登入</button>
+//                   <p class="text-gray text-center" data-i18n="auth.noAccountHint">本系統採邀請制，沒有自助註冊：還沒有帳號的話，請洽貴單位的系統管理者替你開通。</p>
 //               </form>
 //           </div>
 //

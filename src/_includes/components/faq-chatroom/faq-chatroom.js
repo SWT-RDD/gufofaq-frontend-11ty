@@ -1,7 +1,8 @@
 // 前台 FAQ 聊天：捲到最底按鈕、訊息的讚／倒讚、訊息複製。
 // 原生 DOM、不依賴框架。串流送問答等屬業務邏輯，不在此檔。
 // 讚/倒讚要先預選 like/dislike 再開窗，只能命令式呼叫 rating-modal 匯出的 openRating()（§5）。
-// 分享是「點了就開窗」，掛 data-open-modal 交給 ui/modals 的委派，這裡不寫 js。
+// 分享是**條件開窗**（先送 `POST /public/share` 拿 token，成功才開窗）：依 §5 不掛 data-open-modal，
+// 觸發鈕保留 `.js-share-message` ＋ 自己的 `data-toast`，開窗那一段由業務 js 接，這裡不寫。
 // 訊息複製：前台這一顆 copyBtn **真的寫剪貼簿**（clipboard API ＋ execCommand 退路），
 // 與後台 components/chatroom 那顆「只彈 toast」的同名鈕不是同一件事。寫剪貼簿是純前端互動，
 // 切版當場就要做得到（§5）；toast 由 data-toast 委派彈出，這裡只負責寫入。

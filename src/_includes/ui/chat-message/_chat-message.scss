@@ -84,7 +84,7 @@
 //       <div class="suggested-questions" role="group" aria-labelledby="chatroomSuggestedLabel">
 //           <span id="chatroomSuggestedLabel" class="suggested-questions-label" data-i18n="comp.suggestedQuestions">建議追問：</span>
 //           {% for q in chatroomSuggested %}
-//           <button data-capability="ask" type="button" class="button button-border button-sm js-ask-suggested" data-toast="回答生成中...|權限不足，無法送出|回答生成成功|回答生成失敗" data-i18n-data-toast="toast.chatSubmit" data-toast-type="info|warning|success|error">{{ q }}</button>
+//           <button data-capability="ask" type="button" class="button button-border button-sm js-ask-suggested" data-toast="回答生成中...|權限不足，無法送出——請找貴租戶的管理者開通|回答生成成功|回答生成失敗，請重新送出一次" data-i18n-data-toast="toast.chatSubmit" data-toast-type="info|warning|success|error">{{ q }}</button>
 //           {% endfor %}
 //       </div>
 //       {% endif %}
@@ -113,7 +113,7 @@
 //       <div class="suggested-questions" role="group" aria-labelledby="faqSuggestedLabel">
 //           <span id="faqSuggestedLabel" class="suggested-questions-label" data-i18n="comp.suggestedQuestions">建議追問：</span>
 //           {% for q in faqSuggested %}
-//           <button type="button" class="button button-border button-sm js-ask-suggested" data-toast="回答生成中...|詢問太頻繁，請稍後再試|回答生成成功|回答生成失敗" data-i18n-data-toast="toast.faqChatSubmit" data-toast-type="info|warning|success|error">{{ q }}</button>
+//           <button type="button" class="button button-border button-sm js-ask-suggested" data-toast="回答生成中...|詢問太頻繁，請稍後再試|回答生成成功|回答生成失敗，請重新送出一次" data-i18n-data-toast="toast.faqChatSubmit" data-toast-type="info|warning|success|error">{{ q }}</button>
 //           {% endfor %}
 //       </div>
 //   </div>

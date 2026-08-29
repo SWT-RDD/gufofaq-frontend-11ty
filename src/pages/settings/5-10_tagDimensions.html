@@ -214,7 +214,7 @@ permalink: 5-10_tagDimensions.html
     {# ⓘ 說明：markup 逐字照抄 `settings/5-2_conversationSettings.html` 出口套用欄那顆既有
          info-btn 六件組。①出處：本檔檔頭「標籤維度／受控詞彙…旋鈕」那段，
          ＋ product 的 `tag_dimension_slots`（哪些槽承載得了維度）。
-         **不重複 `#tagSlotHint`／`#tagKindHint`／`#tagRoleHint`**（brief 明文）：三顆已經逐條講了
+         **不重複 `#tagSlotHint`／`#tagKindHint`／`#tagRoleHint`**：三顆已經逐條講了
          槽／型別／角色的合法組合，①改講這一區在整個頁面工作流裡的位置——沒有在這裡登記過的槽，
          下面的受控詞彙區與檢索過濾都構不到它。 #}
     <div class="flex-row align-items-center gap-8">
@@ -322,7 +322,7 @@ permalink: 5-10_tagDimensions.html
              **兩個日期是資料不是譯文**（§3-2）：它們在契約裡有欄位——`GET /settings/tag-dimension-contract`
              的 `filterable_date_range.min_date`／`max_date`（product），
              而那支端點的檔頭點名的失敗樣態正是「區間改了而畫面照舊寫著舊日期」。
-             故拆成資料槽 ＋ 前中後三段可翻的文字（同 414eecc 對 5-2 三個上下界做過的修正）。 #}
+             故拆成資料槽 ＋ 前中後三段可翻的文字（同 5-2 三個上下界的處置）。 #}
         {% set filterableDateMin = "1677-09-21" %}
         {% set filterableDateMax = "2262-04-11" %}
         <p class="text-red"><span data-i18n="settings.filterableDateRangePrefix">日期維度的值必須落在 </span><span>{{ filterableDateMin }}</span><span data-i18n="settings.filterableDateRangeMid"> 到 </span><span>{{ filterableDateMax }}</span><span data-i18n="settings.filterableDateRangeSuffix"> 之間：檢索引擎把日期存成 64 位元奈秒數，超出去會溢位成另一端的時間。出界的值存得進去、精確比對也找得到，但任何用到日期範圍的過濾都會漏掉那份資料，查詢時它只是不見了、不會有錯誤訊息。若本來就是想表示「永遠有效」，請把該格留白，系統會自己補上不會過期的值。</span></p>

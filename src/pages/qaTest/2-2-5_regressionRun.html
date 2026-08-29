@@ -102,8 +102,7 @@ permalink: 2-2-5_regressionRun.html
          regression.suiteName 是 2-2-4 的必填欄標籤與表頭、qa.startTime／qa.endTime 是 4-1 的篩選欄、
          regression.configVersion 只有這裡但同族要一致。
          所以分隔符一律走 common.labelSep（英譯 ": "）：裸的全形「：」不在任何 data-i18n 節點**之內**，
-         切英文時沒有任何一支規則碰得到它，會原樣印成 `Suite name：關稅問答基準集`。
-         上一輪只接了知識檢索那一個，其餘四個仍是裸的。 #}
+         切英文時沒有任何一支規則碰得到它，會原樣印成 `Suite name：關稅問答基準集`。 #}
     <div class="flex-row gap-24 flex-wrap">
         <p><span class="text-bold" data-i18n="regression.suiteName">案例集名稱</span><span data-i18n="common.labelSep">：</span><span>關稅問答基準集</span></p>
         <p><span class="text-bold" data-i18n="qaTest.knowledgeRetrieval">知識檢索</span><span data-i18n="common.labelSep">：</span><span data-i18n="settings.config1">設置一</span></p>
@@ -116,7 +115,7 @@ permalink: 2-2-5_regressionRun.html
 </div>
 
 {# 「執行身分」的說明視窗：②③留空——現在生效的條件與這一區的數字由 React 執行期算，
-     切版這一側只提供容器（同本批次既有 38 顆區塊的現況）。 #}
+     切版這一側只提供容器。 #}
 {% set helpModalId = "runIdentityHelpModal" %}
 {% set helpModalTitleKey = "help.regression.runIdentity.title" %}
 {% set helpModalTitle = "執行身分說明" %}

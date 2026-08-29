@@ -3,16 +3,15 @@
     被怎麼呼叫、選了哪些工具、答案長什麼樣。正式設定檔完全不受影響（product 只寫測試 config：
     `tenant{id}_test`／`tenant{id}_ab_{a,b}`，正式設定只由獨立的 apply-production 端點寫）。
   行為（同資料夾 skill-try-sandbox.js）：
-    - 開／關這塊面板、把列上的 skill 名填進標題 —— 在正本也是**純 UI state**（gufofaq-saas 的 apps/web 那一支 skills 頁的
-      `setTryTarget(skill)` / `setTryTarget(null)`，沒有 API），故依 §5 ④「純前端互動當場就要動得起來」
+    - 開／關這塊面板、把列上的 skill 名填進標題 —— 在正本也是**純 UI state**（gufofaq-saas 的
+      `setTryTarget`，沒有 API），故依 §5 ④「純前端互動當場就要動得起來」
       由本元件的 js 做。開啟的觸發鈕住在頁面的清單列上，class 沿用已被 gufofaq-saas（skills 頁與其 e2e）
       引用而凍結的 `.js-try-skill`（§5：hook 一經 gufofaq-saas 引用即凍結，不因它其實是純前端互動而改名）。
     - 「開始試跑」是送 API 的動作鈕（product 的 SSE ask），依 §5 ③ 掛 `data-toast` 列全結果，
       成敗分支由 React 演；切版不假造它的執行。
   答案輸出槽 `.skill-try-answer`：試跑的產出就是答案，沒有它這塊面板演不完整。樣式主人在同資料夾的
-    `_skill-try-sandbox.scss`；**gufofaq-saas 已跟上**——`apps/web/components/SkillTrySandbox/`
-    的 `SkillTrySandbox.tsx` 有 `className="skill-try-answer m-0"`，`SkillTrySandbox.scss` 與這裡的
-    `.skill-try .skill-try-answer` 逐字相同。切版填示範答案當長相示範（§3-2 長文寫死）。
+    `_skill-try-sandbox.scss`；React 正本 `gufofaq-saas` 的 `SkillTrySandbox` 沿用同一組 class。
+    切版填示範答案當長相示範（§3-2 長文寫死）。
   參數：trySkillName（選填，示範用的 skill 名，預設 refund-flow）、
        trySkillAnswer（選填，答案輸出槽的內容）。**答案是節點的衍生值**：使用頁覆寫了 stepFlowNodes
        （試跑走到哪一步、成功還失敗）卻沿用元件內建的成功答案，畫面會同時演「答案還沒生成」與

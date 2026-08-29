@@ -374,8 +374,9 @@
                                         {# 停用路徑上有**兩道**具名 409（gufofaq-saas product：停用端點自己回
                                              `last_tenant_admin`，同一支模組的 `_assert_not_last_platform_admin` 回
                                              `last_platform_admin`「不可停用/刪除/降級最後一位平台系統管理員」）。
-                                             同一頁的刪除鈕早就把這兩道分開列了（5-6-1 的 deleteToast），
-                                             這裡卻只列一道——抄版型而不是逐 raise 對鈕（§5）。 #}
+                                             兩道各佔一段、不折成一句（§5 逐 raise 對回鈕）：使用者修得掉的動作
+                                             不同——一道是先指派另一位租戶管理者，一道是先指派另一位平台管理員。
+                                             同一頁的刪除鈕（5-6-1 的 deleteToast）也是分開兩段。 #}
                                         {# **toast 分支要隨態分岔**：那兩道 409 都在上游 `platform_update_user` 的
                                              `if u.is_active and not body.is_active:` 之內＝**只有停用路徑走得到**，
                                              啟用態列出來就是「列出不可能的結果」（§5 與只演成功一樣是說謊）。

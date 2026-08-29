@@ -172,7 +172,7 @@ tailwind-scrollbar        → scrollbar-thin 等，處理自訂捲軸（見 §5-
 ## ⑤ 逃生口 → 零 CSS 處理（**這裡最容易轉錯，逐項照做**）
 
 ### 5-1. 捲軸（`src/scss/_mixin.scss` 的 `scrollbar()/scrollbar_thin()/scrollbar_modal()`）
-用 `tailwind-scrollbar` plugin。用到的地方：**9 個元件**（form-control、chatroom-shell、faq-chatroom、multi-select、tab、default-table、form-table、modals、mobile-nav）+ **整頁 html**（`_base.scss`）+ 元件庫頁（`_guideline.scss`）。多數用 `scrollbar_thin`/`scrollbar_modal`（thumb = `--scrollbar-thumb`；`faq-chatroom` 的 `.faq-chat-scroll` 亦此類）→ 掛：
+用 `tailwind-scrollbar` plugin。用到的地方：**10 個元件**（form-control、chatroom-shell、faq-chatroom、multi-select、search-select、tab、default-table、form-table、modals、mobile-nav）+ **整頁 html**（`_base.scss`）+ 元件庫頁（`_guideline.scss`）。多數用 `scrollbar_thin`/`scrollbar_modal`（thumb = `--scrollbar-thumb`；`faq-chatroom` 的 `.faq-chat-scroll` 亦此類）→ 掛：
 ```
 scrollbar-thin scrollbar-thumb-scrollbar-thumb scrollbar-track-transparent
 ```
@@ -208,7 +208,7 @@ scrollbar-thin scrollbar-thumb-scrollbar-thumb scrollbar-track-transparent
 → **轉 Tailwind（零 CSS）路線時直接改成內嵌 SVG component + `fill="currentColor"`**：那正是遮罩在模擬的東西，而且省掉一整批 PNG 請求。
 > ⚠️ **這條只適用零 CSS 路線。** scss 路線（REACT-CONVERSION）的驗收門檻是 `scss-diff.mjs` byte-identical，換掉 `icon-mask()` 會讓那條門檻結構上不可能成立——那邊逐字照抄，改 SVG 是之後另一次獨立重構（見 GUIDELINE §7 的裁決）。若要機械照搬，Tailwind 沒有 mask utility，得寫 arbitrary property：`bg-text [mask:url(/icons/x.png)_no-repeat_center/contain]`（底線代空白）。**顏色來自 `background-color`，不是 `color`** —— 這是遮罩的關鍵，別把它當成普通底色而套上填充 token（見 GUIDELINE §4「遮罩」）。
 
-彩色/多色圖不遮罩，維持 `background-image` 或 `<img>`：`faq-chatroom` 頭像 `icon_owl.png`、`chatbot-header` 的 `Logo.png`、`_header.scss` 的 `img_logo.png`、`countdown-box` 的底紋、`.beta-icon` 徽章、檔型徽章。→ `bg-[url(...)] bg-no-repeat bg-contain`，或直接 `<img>`。
+彩色/多色圖不遮罩，維持 `background-image` 或 `<img>`：`chatbot-header` 的 `Logo.png`、`_header.scss` 的 `img_logo.png`、`countdown-box` 的底紋、`.beta-icon` 徽章、檔型徽章。→ `bg-[url(...)] bg-no-repeat bg-contain`，或直接 `<img>`。
 
 `<img>` 的深色反相仍留在全域的 `src/scss/_dark-icons.scss`：**只認檔名** `img[src*="_black"]`，不認任何元件 class。**零 CSS 路線**改用 SVG component 之後這條可以整條丟掉；**scss 路線照抄**（同上，byte-identical）。
 
@@ -226,7 +226,9 @@ scrollbar-thin scrollbar-thumb-scrollbar-thumb scrollbar-track-transparent
 
 ### 5-7. 漸層（**背景 vs 邊框是兩種不同的配方，別混用**）
 `--brand-gradient` → theme 存成一般 CSS 變數（不是顏色 token）。兩種用法：
-- **背景漸層**（`footer` 背景、`faq-chatroom .avatar`）→ `bg-[image:var(--brand-gradient)]`。
+- **背景漸層**：站上**沒有**任何一塊填充用 `--brand-gradient`（它的唯一消費點是下一條的 `border-image`）。
+  ⚠️ **不要把 `footer` 背景或 `faq-chatroom .avatar` 換成漸層**——那兩處是刻意的純色 `--brand`，
+  理由（承載前景時漸層兩端只有 2.30:1／2.74:1，過不了 §4 的門檻）逐條寫在各自的 scss 檔頭裡。
 - **漸層邊框**（`chatbot-header`/`header` 的 2px 底線用 `border-bottom:2px solid; border-image:var(--brand-gradient) 1`）→ **不能用 `bg-`**（背景會填滿整塊，不是 2px 底線）。`border-image` 無 utility，用 arbitrary property：`border-b-2 border-solid [border-image:var(--brand-gradient)_1]`。
 
 ### 5-8. 前台聊天頁的滿版版型（flex 直欄，別用絕對定位或高度魔術數字）

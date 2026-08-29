@@ -42,7 +42,7 @@
      select 是**值載體**（§5 矩陣②）⇒ 只掛業務 hook class（.js-set-platform-role，命名依 §5
      「切版新頁業務觸發鈕自創 hook class」，同 ab-test 的 .js-knowledge-select／.js-llm-select 先例），
      不掛 data-toast——`data-toast` 是 `document` 上的 **click** 委派，抓不到 select 的 `change`。
-   ⚠️ **這一格從「選了就送」改成「選了、按同列的『儲存』才送」。**
+   ⚠️ **這一格是「值載體 ＋ 同列的『儲存』鈕」，不是「選了就送」。**
      兩個理由，任一單獨都成立：
      ① **零回饋是那個形狀自己造成的**，不是「這一頁列舉不出結果」。結果其實列得出來，而且只有三種
         （見下方那顆鈕）；真正的問題是**值載體按定義掛不了 toast**，於是改完角色之後畫面上什麼都
@@ -158,9 +158,9 @@
                          ① 200 ＋ `record_audit(platform.role.grant／revoke)`
                          ② **409 `last_platform_admin`**（`_assert_not_last_platform_admin`：把最後一位
                             在職 admin 降級或撤銷，含降級自己）——使用者先指派另一位就做得到 ⇒ **warning**。
-                            這一段就是交辦單上那顆 `platform.lastPlatformAdminError`
-                            （「不可降級/撤銷最後一位平台系統管理員」）的落點：它是這顆鈕的一種結果，
-                            不是一句獨立的頁面訊息，故折進段落、獨立 key 退場。
+                            「不可降級/撤銷最後一位平台系統管理員」這句話的家就是本鈕的 `data-toast`
+                            這一段：它是這顆鈕的一種結果，不是一句獨立於任何動作的頁面訊息，
+                            故折進段落、不另立獨立 key。
                          ③ 其餘（404 使用者已被別人刪掉、上游/DB 故障）→ error。
                          **422 `platform.role_domain` 不列**：值域由 `<option>` 自己渲染，UI 選不出域外值
                          ——對平台時區那一顆下的裁決，全站正典（§5：列出不可能的結果與只演成功
@@ -210,7 +210,7 @@
      **它與 manage-tenant-modal 那組額度／已用量不是同一個池**：那是逐租戶的產品額度
      （`TenantSetting.qa_used/qa_limit`），這一支是 GufoRAG 授權賣給**整個平台**的天花板，chatbot 對整張
      `chat_logs` 當日計數、不分租戶。混在一起看會把它誤讀成某個租戶的數字，所以自成一塊、標題寫明是平台級。
-     **「今日」的日界＝平台時區**（`usage_mod.platform_timezone`，與用量週期邊界同源），所以這一塊
+     **「今日」的日界＝平台時區**（product 的 `platform_timezone`，與用量週期邊界同源），所以這一塊
      緊接在平台時區下面：改了時區，這個面板數的「今天」跟著換一天，而數字本身看起來完全正常。
      示範值自洽：剩餘 ＝ 上限 − 已用（5000 − 3182 ＝ 1818）；`is_allowed` 因此是「尚可問答」；
      使用率 ＝ 已用 ÷ 上限（3182 ÷ 5000 ＝ 63.64% → 63.6%）。
@@ -243,7 +243,6 @@
      直接回 `current_usage: 0` 而**完全不執行 COUNT**（省一次查詢；chatbot 那幾支用量 API 對齊的
      刻意契約，不會改），所以那顆 `0` 講的不是「今天沒有人問」，是「沒有人去數」——照樣印出來
      就是把「沒量到」演成「零」（§6，同 1-1-6 的 `indexed_count`：`null` 畫「—」不畫 `0`）。
-     這一格是這個面板裡最後一個還在說謊的：另外三格早就有哨兵，它沒有。
      **四格三種語意，字面不可以撞**（撞了就等於沒有分）：
        授權上限     定義上不存在（沒有「上限」這個東西）        → 「不限量」
        剩餘／使用率 算不出來（沒有上限就沒有剩餘、沒有百分比）  → 「不適用」
@@ -344,7 +343,7 @@
      gufofaq-saas 的 `apps/web` platform 區；真正把關在 product（require_platform_admin），
      本元件僅提供管理介面。
      功能鍵集合對齊 product 的 `CAPABILITIES`（⚠️ **指名符號、不抄數量**：寫死「全部 N 鍵」
-     這種句子會靜默落後於正本，而畫面上看不出少了哪一欄。`extract` 就是後加的一顆，
+     這種句子會靜默落後於正本，而畫面上看不出少了哪一欄。`extract` 就是其中一顆，
      理由逐字寫在 product 該鍵上方：兩者共用 `data` 這把鑰匙的話，關掉某租戶的資料匯入會連帶
      把萃取 API 也關掉，而畫面上看不出這件事——少一欄開關，平台管理員就沒有地方替租戶開通
      萃取 API，而 5-9 那一頁靠的就是它）。平台開通維持粗粒度整項開關，不拆讀寫。
@@ -368,9 +367,9 @@
         EXPIRED。⚠️ 同一列**不可以**同時掛「已凍結」標記與「已到期」狀態：那是同一支端點的兩個欄位互相打架。
         （B 仍然 reviewDue: false：`_is_review_due` 要求逾期滿 90 天，而 B 的到期日 2026-06-30
         距本元件的「現在」約 2026-07-14——由 C／D 的 daysOverdue 135／150 回推——只逾期 14 天。）
-        改成 FROZEN 之後，`frozen` 這個旗標在這張表上就沒有第二件事可說了
+        `frozen` 這個旗標在這張表上沒有第二件事可說
         （`_tenant_out` 寫的是 `frozen=t.frozen_at is not None`，與 status 同一個判斷式），
-        所以列物件不再帶 `frozen` 欄、名稱欄的「已凍結」徽章也一併移除——留著就是同一列用
+        所以列物件**不帶** `frozen` 欄、名稱欄也**不畫**「已凍結」徽章——畫了就是同一列用
         同一顆 key 印同一句話兩遍。ISO 名單那張表的 `frozen` 欄不同，見 `components/iso-review-wizard`
         的註解（`ReviewTenantOut` 用它分辨「這季新逾期的」與「上季已凍結、還在等處置的」，那張表沒有 status 欄）。
      ② **使用者數的下界是 1，不是 0**：建租戶的 `TenantCreate` 把 `admin_email`／`admin_password`
@@ -402,7 +401,7 @@
      `purge_data`／`delete_account`／`freeze` 三顆，**沒有 `delete`**），位置不是身分——
      刪掉前面一列之後，後面每一列的列鍵都往前頂一格，
      React 的 key 與逐列動作（PATCH /platform/tenants/{id}/features、.js-manage-tenant）
-     會一起指錯人（§6 列鍵，同 5-8／5-6-2／5-6-3 已經改過的那三張表）。
+     會一起指錯人（§6 列鍵，同 5-8／5-6-2／5-6-3 那三張表）。
      **示範租戶 C 是 `FROZEN` 不是 `EXPIRED`**：`components/iso-review-wizard` 的逾期名單把它標成
      `frozen: true`，而上游那兩個欄位是**同一個判斷式**算出來的——product 的 `status()`
      第一句就是 `if tenant.frozen_at is not None: return FROZEN`（凍結優先於到期），product 的
@@ -410,7 +409,7 @@
      ⚠️ 這條規則管住每一列，不是只管 B（見下方那段）——改任何一列的凍結／到期都要兩張表一起看。
      ISO 名單那一欄存在的理由正是「分辨這季新逾期的與上季已凍結的」，所以要留一筆 true，那一筆就是 C。
      **示範租戶 D 的 id 是 42**：不是隨手挑的——`components/iso-review-wizard` 的 result 態失敗結果
-     逐字寫著「從 GufoRAG 刪租戶索引失敗（tenant=42）」，那筆講的就是它（§6 同源）。 #}
+     逐字寫著「清租戶資料失敗（tenant=42）：GufoRAG 刪索引回 502」，那筆講的就是它（§6 同源）。 #}
 {% set platformTenantRows = [
   { id: 7, name: "示範租戶 A", userCount: 3, features: ["data", "ask", "history", "settings", "audit", "extract"], reviewDue: false, status: "ACTIVE", statusKey: "platform.statusActive", statusLabel: "使用期內", trialEnd: "2026-07-23" },
   { id: 15, name: "示範租戶 B", userCount: 3, features: ["data", "ask"], reviewDue: false, status: "FROZEN", statusKey: "platform.statusFrozen", statusLabel: "已凍結", trialEnd: "2026-06-30" },
@@ -525,7 +524,7 @@
                         </label>
                     </td>
                     {% endfor %}
-                    {# 這一格**不再整格標 admin**：格子裡兩顆鈕要的不是同一級。
+                    {# 這一格**不整格標 admin**：格子裡兩顆鈕要的不是同一級。
                          · 儲存＝`PATCH /platform/tenants/{id}/features`（require_platform_admin）⇒ admin，低於該級不渲染。
                          · 管理＝只是「先選定要管哪一個租戶」然後開窗，它自己不打任何端點；§5 逐字寫著
                            「真正送 API 的是彈窗裡那顆確認鈕，不是列上那顆條件開窗的觸發鈕——閘門宣告的家在確認鈕」。
@@ -563,11 +562,11 @@
      的意思是登入頁那一段**整段不畫**，不是畫一句空的「請聯絡」。提示句要把這件事說出來，
      否則使用者以為清空只是把字清掉。
    ⚠️ 上限 200 的正本是 product 的 `MAX_SUPPORT_CONTACT_LEN`，
-     **已經投影出來了**（複查）：`GET /platform/limits` 的 `governance.support_contact_len`
+     它**投影得出來**：`GET /platform/limits` 的 `governance.support_contact_len`
      ——`PLATFORM_LIMIT_GROUPS` 在 product，那一格旁邊逐字寫著為什麼落在這一支
      而不是 `GET /users/limits`（它是平台欄位，併進租戶的成員管理頁等於把一條平台治理界線
-     發給每一位租戶管理者）。⚠️ 別再說「沒有任何端點把它投影出來、所以這個數字是前端的一份抄本」
-     ——它是執行期讀得到的值。資料槽（`js-support-contact-max-len`）就是為此準備的：
+     發給每一位租戶管理者）。⚠️ 所以這個數字**不是**前端的一份抄本，是執行期讀得到的值。
+     資料槽（`js-support-contact-max-len`）就是為此準備的：
      接手的程式把投影值填進那顆節點即可，切版這一份只是靜態稿的值（§4-2 界線數字不烤進譯文）。 #}
 <div class="block mb-16 flex-row column gap-16" data-platform-role="auditor">
     <div class="text-md text-bold" data-i18n="settings.supportContactLabel">聯絡窗口</div>
@@ -646,7 +645,7 @@
 
 {# 危險操作：宣告實體篩選槽（`POST /platform/filter-slots/declare`，product 的 `declare_filter_slots` → 同名服務）。
    **為什麼一定要有這個入口**：宣告是匯入的前置——沒有宣告過的欄位槽，之後匯入的每一列都不會有欄位，
-     而匯入本身回報的是成功（`failed: 0`）。今天這件事在畫面上完全沒有入口。
+     而匯入本身回報的是成功（`failed: 0`）。這一塊是宣告的唯一入口。
    **形狀照 manage-tenant-modal 的危險操作區**：紅色標題 ＋ 常駐的不可逆警語 ＋ type-to-confirm ＋
      一顆預設 `disabled` 的紅鈕（`disabled` 演的是確認欄空著的那一刻，而 type-to-confirm 的全部意義
      就是「沒打對之前按不下去」；解鎖條件常駐可見並由 `aria-describedby` 接上，所以不需要也不該

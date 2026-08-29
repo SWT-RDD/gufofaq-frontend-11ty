@@ -46,7 +46,7 @@
 //
 //   <div class="flex-row flex-wrap gap-16 align-items-center">
 //       <button type="button" class="button button-border js-filter-clear" data-i18n="action.clear">清除</button>
-//       <button data-capability="settings:read" type="button" class="button button-primary js-prompt-search" data-toast="查詢成功|權限不足，無法查詢|時間區間不正確（起訖需成對）|這段期間的版本數超過單次上限，請縮小時間範圍|無法載入提示詞版本列表" data-i18n-data-toast="toast.queryPrompt" data-toast-type="success|warning|warning|warning|error" data-i18n="action.query">查詢</button>
+//       <button data-capability="settings:read" type="button" class="button button-primary js-prompt-search" data-toast="查詢成功|權限不足，無法查詢——請找貴租戶的管理者開通|時間區間不正確（起訖需成對）|這段期間的版本數超過單次上限，請縮小時間範圍|無法載入提示詞版本列表" data-i18n-data-toast="toast.queryPrompt" data-toast-type="success|warning|warning|warning|error" data-i18n="action.query">查詢</button>
 //   </div>
 //
 //   · 它與查詢鈕是一對、住在同一顆 `flex-row` 裡；畫進 `.filter-fields` 就會被排進欄位那一列

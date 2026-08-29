@@ -20,8 +20,8 @@ const langTogglePath = join(DIST, "js", "lang-toggle.js");
 if (existsSync(i18nPath) && existsSync(langTogglePath)) {
     const v = hash(i18nPath);
     const src = stripVer(readFileSync(langTogglePath, "utf8"));
-    // 只蓋「帶引號的那一個」——檔頭註解裡也提到 ./i18n/en.json，而 String.replace(字串,…)
-    // 只換第一個出現處，曾經因此蓋在註解上、真正的 fetch 一直沒有版號。
+    // 只蓋「帶引號的那一個」：檔頭註解裡也有 ./i18n/en.json，而 String.replace(字串,…)
+    // 只換第一個出現處——不指名帶引號的那一份，版號會蓋在註解上，真正的 fetch 沒有版號。
     const target = '"./i18n/en.json"';
     if (!src.includes(target)) throw new Error(`[hash-assets] 找不到 ${target}，i18n 蓋章會失效`);
     writeFileSync(langTogglePath, src.split(target).join(`"./i18n/en.json?v=${v}"`));
@@ -37,11 +37,11 @@ for (const f of readdirSync(join(DIST, "js")).filter((f) => f.endsWith(".js"))) 
 // 3) 改寫所有 HTML 的資產引用
 //
 // 走「掃到什麼就蓋什麼」，而不是「拿已知資產名去做字串比對」。
-// 舊寫法 html.split(`"${asset}"`) 綁死了「雙引號 ＋ ./ 前綴 ＋ 目錄在 css|js 底下」，
+// 後者要寫成 html.split(`"${asset}"`)，那會綁死三件事：雙引號、`./` 前綴、目錄在 css|js 底下；
 // 於是 href='./css/main.css'（單引號）、src="/js/x.js"（絕對路徑）、src="./sw.js"（根層）
-// 通通靜默蓋不到——而 tests/guideline.test.mjs 那條白名單當時共用同一組形狀假設，
-// 兩邊一起瞎（round41 實測）。現在反過來：逐個屬性值掃出站內 css/js 引用再蓋章，
-// 掃到不在資產表裡的就當場中斷——沉默的漏蓋比 build 失敗貴得多。
+// 通通靜默蓋不到，而 tests/guideline.test.mjs 那條白名單一旦共用同一組形狀假設，兩邊會一起瞎。
+// 故逐個屬性值掃出站內 css/js 引用再蓋章，掃到不在資產表裡的就當場中斷——
+// 沉默的漏蓋比 build 失敗貴得多。
 const norm = (t) => "./" + t.replace(/^\.\//, "").replace(/^\//, "");
 // **只有「真的會發請求的屬性」或「長得像路徑」才算資產引用。**
 // 少了這道形狀檢查，屬性值裡的**散文檔名**會被當成引用而 throw，把 build 打斷：

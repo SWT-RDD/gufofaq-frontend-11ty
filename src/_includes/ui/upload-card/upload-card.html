@@ -7,9 +7,9 @@
      ⚠️ 這種卡片會**自己找到掩護**：為了讓它不變成死路，1-2-1 的 `uploadAccept` 就得跟著列出影像，
      於是一個假的 accept 與一張假的卡互相背書，兩邊看起來都自洽。判準只認後端收不收，
      所以卡撤掉、accept 也跟著收窄，兩處一起處理。
-     **要恢復影像匯入**：product 先補影像的擷取器與白名單（`DOCUMENT_UPLOAD_EXTENSIONS` 加副檔名），
-     再把這張卡連同 `dataImport.uploadImage`／`dataImport.uploadDescImagePrefix` 兩顆 key 加回來，
-     1-2-1 的 `uploadAccept` 同步放寬。`icon_img_s.png` 不必動——3-1-1 資料集清單的檔案類型欄
+     **判準是後端收不收**：`DOCUMENT_UPLOAD_EXTENSIONS` 收得下的副檔名才有卡，
+     卡與 1-2-1 的 `uploadAccept` 是同一個判準的兩個投影，兩處必須同時成立。
+     `icon_img_s.png` 與這條路徑無關——3-1-1 資料集清單的檔案類型欄
      仍在用它（那一欄畫的是**已經在資料集裡**的影像檔，那些是資料夾連接器帶進來的，不是這條上傳路徑）。
    這一組卡是 1-1-1 資料匯入頁的「選一種檔型」選單，目前三張：Excel／PDF／WORD。
      正式環境點卡片之後要先驗證、上傳、取回批次識別碼才跳頁，那是業務行為（§5 不做）；
@@ -79,7 +79,7 @@
 ] %}
 
 <div class="upload-card-list">
-    {# `title` 屬性用 `card.name`（給人看的名字：Excel／PDF／WORD／Image），不用 `card.type`——
+    {# `title` 屬性用 `card.name`（給人看的名字：Excel／PDF／WORD），不用 `card.type`——
          **欄名刻意不叫 `title`**：它與 `titleKey` 同一個物件，而 i18n 的「同 key 同繁中」收集器
          會把 `xxxKey` 與同物件的 `xxx` 配成一對，於是這顆 key 的繁中被讀成「Excel」，
          與 catalog 那一份「上傳 Excel」對打（屬性實際渲染出來兩邊都是「上傳 Excel」，

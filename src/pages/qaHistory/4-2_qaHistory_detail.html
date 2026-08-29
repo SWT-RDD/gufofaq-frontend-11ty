@@ -101,7 +101,7 @@ permalink: 4-2_qaHistory_detail.html
 
 {# 頁面層的動作鈕列（設定滿意度／分享／列印）。**不另包一層 `.block.block-sm`**：下方表格的那一層
      已經由 components/qa-detail-info 連同表格一起封裝，這裡再包一個就是憑空多一個空殼區塊。
-     改成貼在表格正上方、靠右（flex justify-content-end）＋ margin。 #}
+     貼在表格正上方、靠右（flex justify-content-end）＋ margin。 #}
 <div class="mt-16 flex-row justify-content-end gap-8">
     {# 設定滿意度：後台在這一頁改得動滿意度，走 product `POST /history/{log_id}/rating`
          （登入態，require_capability("history")）——端點在，就不該讓這一格只印得出來、按不動。
@@ -129,7 +129,7 @@ permalink: 4-2_qaHistory_detail.html
        使用者中途關分頁）三欄皆 NULL。所以這一整塊是「有值才畫」——沒有軌跡的那一輪不該多一塊空白
        （§5「不放按了沒反應的鈕」在版面上的對應）。示範這一筆是 Agent 模式且有軌跡。
      · 延遲＝`request_ended_at − request_started_at`（兩欄都是觀測性欄位，切版直接畫算好的差）。
-     · 「載入完整軌跡」這一次是**真的接得上**：product `GET /history/{log_id}/trace` 已經在了
+     · 「載入完整軌跡」接的是 product 的 `GET /history/{log_id}/trace`
        （回 step_events／tool_activity／thinking_by_node 的完整版），詳情頁帶回來的是前 N 筆 ＋
        尾端 `{truncated, total}` 標記的檢視。故本頁把成對參數設起來，那顆鈕與截斷提示都渲染得出來。 #}
 {% if conversation.chatMode == "agent" %}

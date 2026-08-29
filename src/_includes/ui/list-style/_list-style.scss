@@ -19,7 +19,7 @@
         }
     }
 
-    // 行距放鬆版（長文卡片內使用，例：5-4-1 提示詞內容）
+    // 行距放鬆版（長文卡片內使用；唯一消費點是 5-2 提示詞子頁籤的草稿卡，見 ui/prompt-card 的 .prompt-content）
     &.line-loose {
         >li {
             line-height: 1.625;

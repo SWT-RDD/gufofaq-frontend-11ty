@@ -69,7 +69,7 @@
       onClick 清該卡 state，class 不帶過去（REACT-CONVERSION §⑤）。
     字數提示同理由本元件 js 即時更新（§5：切版是原型，不放一顆永遠不會動的計數器）。
 
-  與交辦規格的三處刻意差異：①識別字用 ui/inline-code 原子（識別字＝墨色 chip 是全站既有正本，
+  三處要知道理由的寫法：①識別字用 ui/inline-code 原子（識別字＝墨色 chip 是全站既有正本，
     §4 不另造第二種識別字視覺），非另寫一份灰字樣式；②「範例」的 i18n 值含冒號（settings.toolExample
     ＝「範例：」），因為 §4-2 要求標點折進 key——這顆的用途是句首標籤（後面接一段範例文字），與 5-2
     政策主題那一欄的表頭（settings.policyExamples，現值「範例（逗號分隔）」）不是同一個繁中原文，
@@ -142,7 +142,7 @@
                  故收在自有底色的面板裡，與下面兩個輸入欄明顯分離。 #}
             <div class="builtin-tool-params flex-row column gap-8">
                 {# 「參數」沿用既有的 agent.params（step-flow 的工具參數表頭、5-6-2 的 MCP 參數 label
-                     同一顆）——§4-2：繁中原文相同的 chrome 不另立 key，故不是交辦文件寫的 settings.toolParams。 #}
+                     同一顆）——§4-2：繁中原文相同的 chrome 沿用既有 key，不另立 settings.toolParams。 #}
                 <span class="builtin-tool-params-title" data-i18n="agent.params">參數</span>
                 {% for param in tool.params %}
                 <div class="builtin-tool-param flex-row flex-wrap align-items-center gap-8">

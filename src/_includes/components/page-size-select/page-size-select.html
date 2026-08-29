@@ -1,7 +1,7 @@
 {#
   每頁筆數選擇器（page-size / per-page）。放在頁面層 pager 旁的 wrapper——**不進 pagination 原子**：
   那顆原子只負責頁碼本身的 markup，是不加料的既有契約，每頁筆數屬於它外面的一層。
-  業務 <select>：值交給 React 讀去重新分頁/查詢（gufofaq-saas 現況是純前端切片，待接成查詢參數），
+  業務 <select>：值交給 React 讀去重新分頁/查詢，
   只掛 hook class `js-page-size`、切版**不**假造行為（GUIDELINE §5）。
   **選中值與同頁 pagination 同源**：兩者都吃頁面的 `perPage`（§6：耦合的衍生值不可只開放一半——
   一邊把 20 寫死在元件裡、另一邊落回 pagination 的預設 10，畫面就會同時出現「每頁 20 筆」與

@@ -160,12 +160,12 @@ const distDoc = (f) => stripNonMarkup(read(`dist/${f}`));
         if (n < 10) thin.push(`dist/${f} 剝完只剩 ${n} 個開標籤`);
     }
     assert.equal(thin.length, 0, `distDoc() 把整頁挖空了：\n${thin.join("\n")}`);
-    // 棘輪：重量 29329（舊值 25000 是實測 25467 取整；那之後 markup 長了
-    // 三千多個標籤，門檻卻沒跟著抬，等於留了 15% 的縫——剝除規則吃掉一成的真 markup 仍會全綠）。
+    // 棘輪＝**這次實際量出來的**開標籤數。門檻與母體之間留多少縫，就等於剝除規則可以吃掉多少
+    // 真 markup 而仍然全綠；沿用一個算出來的估值等於這條守門不存在。
     // **棘輪要跟著母體一起長**：加了頁面／區塊就重量一次；真的刪頁才把它調下來，那是一次有意識的決定。
-    const PREV_DIST_TAGS = 29600;
-    assert.ok(total >= PREV_DIST_TAGS,
-        `dist 剝完只剩 ${total} 個開標籤（上一輪 ${PREV_DIST_TAGS}）—— distDoc() 的剝除規則吃掉了真 markup，` +
+    const DIST_TAGS_FLOOR = 31212;
+    assert.ok(total >= DIST_TAGS_FLOOR,
+        `dist 剝完只剩 ${total} 個開標籤（門檻 ${DIST_TAGS_FLOOR}）—— distDoc() 的剝除規則吃掉了真 markup，` +
         `所有以它為母體的測試都在對著空文件斷言`);
 }
 
@@ -621,9 +621,9 @@ const NAMED_HOOKS = new Map([
     // 業務掛點／轉換契約：**名字由切版單方面定，React 端照接**。全站 scss 找不到它們、元件 js
     // 也不查，所以看起來就是死碼——白名單不在，下一個人會把它們當垃圾清掉。值寫的是**這一顆
     // 標記的是什麼**（不是它從哪裡來：那個「哪裡」已經沒有人維護了，指過去只會送人到死地址）。
-    ["copyBtn", "複製鈕的具名掛點（ui/clipboard 查它）"],
-    ["watchBtn", "同一組的第二顆鈕「查看來源」（ui/clipboard 查它）"],
-    ["shareBtn", "問答紀錄的分享鈕：按下去開不開分享窗由業務端決定，故只掛掛點"],
+    ["copyBtn", "複製鈕的具名掛點：前台由 components/faq-chatroom 的 js 真的寫剪貼簿，後台只彈 toast（§5）"],
+    ["watchBtn", "同一組的第二顆鈕「查看來源」：由 components/chatroom 的 js 委派接住並呼叫 GufoSources.show()"],
+    ["shareBtn", "分享連結的**複製**鈕（faq-share-modal 與 share-manage-modal 逐列共用同一族；它不開任何窗）"],
     ["btn-prev", "多步驟流程的「上一步」鈕（步進由業務端接）"],
     ["btn-next", "多步驟流程的「下一步」鈕（同上）"],
     ["btn-delete-file", "待上傳清單裡逐列的刪除鈕（送出前把這一筆移出清單，沒有端點）"],
@@ -636,7 +636,7 @@ const NAMED_HOOKS = new Map([
     ["priority-switch", "優先序表的模式開關：切換會換掉整張表的欄位與選項值域"],
     ["priority-box", "優先序表的外框——開關要靠它找到自己管的是哪一張表"],
     ["prompt-card-list", "提示詞卡片列表的容器（逐張卡由業務端灌）"],
-    ["table-container", "`.priority-box` 底下的捲動容器（與上面那顆開關同一組）"],
+    ["table-container", "表格的語意外殼（設計系統詞彙，全站零 scss 規則；ui/default-table 的每一張表都包它）"],
     ["account-company", "帳號頁的公司名欄：值由業務端回填，切版只負責留槽"],
     ["account-email", "帳號頁的信箱欄（同上）"],
     ["account-spec", "帳號頁的方案欄（同上）"],
@@ -644,8 +644,8 @@ const NAMED_HOOKS = new Map([
     ["add-file-btn", "資料集預覽頁的新增檔案鈕"],
     ["aside-link", "元件庫頁側欄目錄的連結（那一頁自有的捲動目錄）"],
     ["chat-box", "對話容器：整段對話由業務端灌進來"],
-    ["chat-log-sn", "查詢條件的隱藏欄（單則問答的識別碼）"],
-    ["chat-room-sn", "查詢條件的隱藏欄（對話的識別碼）"],
+    ["chat-log-sn", "4-1 查詢列的「對話編號」欄（可見輸入框，值交給 React 讀去送查詢）"],
+    ["chat-room-sn", "4-1 查詢列的「聊天室編號」欄（可見輸入框，值交給 React 讀去送查詢）"],
     ["confirm-delete-btn", "刪除確認窗裡真正送出的那一顆"],
     ["date-error", "日期格式的警告槽（驗證訊息由業務端填）"],
     ["delete-selected-btn", "批次刪除鈕（目標＝已勾選的那幾列）"],
@@ -822,8 +822,8 @@ test("§4 markup 上的每個 class 都要有主人（反向網：css 規則／�
     //    但要逐筆寫出理由，並由這條測試釘住「哪幾筆是這種」——名單漂移時當場報出來，
     //    而不是讓一張看起來很長的豁免表把真正的豁免面積藏起來。
     const REDUNDANT_BUT_KEPT = new Map([
-        ["copyBtn", "複製鈕的具名掛點（ui/clipboard 查它）"],
-        ["watchBtn", "同一組的第二顆鈕「查看來源」（ui/clipboard 查它）"],
+        ["copyBtn", "複製鈕的具名掛點：前台由 components/faq-chatroom 的 js 真的寫剪貼簿，後台只彈 toast（§5）"],
+        ["watchBtn", "同一組的第二顆鈕「查看來源」：由 components/chatroom 的 js 委派接住並呼叫 GufoSources.show()"],
         ["multiSelect", "多選下拉的初始化掛點；本 repo 由 ui/multi-select 查它"],
         ["with-input", "附屬輸入框的解鎖掛點；本 repo 由 ui/field-with-input 查它"],
         ["field-with-input", "同上（radio 與它附屬輸入框的那一格）"],
@@ -2431,12 +2431,11 @@ test("§8 css / js 的每一個引用都帶 ?v=；images 刻意不帶（改圖�
     //   兩個數字都是**新收集器**（形狀判準）在 dist 的實測值，不是沿用舊收集器的。
     //   實例：imgs 沿用舊值 258，而當時的收集器實測是 261（多出來的三個是
     //   1-2-1 `accept=".png/.jpg/.jpeg"`——測試自己在下方 probe 裡列為「不是引用」的東西）：
-    //   棘輪一出生就鬆了三格。收集器一改就要重量，不能靠推論。
-    //   重量：refs 1665／imgs 334（舊值 1512／258 已經鬆到 9%／23%）。同上，母體長了就要重量。
-    const PREV = { refs: 1665, imgs: 334 };
+    //   門檻＝這次實際量出來的筆數，不是推論值：收集器一改就要重量。
+    const FLOOR = { refs: 1748, imgs: 352 };
     assert.equal(blind.length, 0, `這幾頁一個 css/js 或圖片引用都沒收到（收集器的形狀假設又縮回去了？）：\n${fail(blind)}`);
-    assert.ok(refs >= PREV.refs, `css/js 引用 這一輪 ${refs}（上一輪 ${PREV.refs}）—— 掉了就是收集器壞了；真的刪了頁面請一併把 PREV.refs 調下來`);
-    assert.ok(imgs >= PREV.imgs, `圖片引用 這一輪 ${imgs}（上一輪 ${PREV.imgs}）—— 掉了就是收集器壞了；真的刪了圖請一併把 PREV.imgs 調下來`);
+    assert.ok(refs >= FLOOR.refs, `css/js 引用只收到 ${refs}（門檻 ${FLOOR.refs}）—— 掉了就是收集器壞了；真的刪了頁面請一併把 FLOOR.refs 調下來`);
+    assert.ok(imgs >= FLOOR.imgs, `圖片引用只收到 ${imgs}（門檻 ${FLOOR.imgs}）—— 掉了就是收集器壞了；真的刪了圖請一併把 FLOOR.imgs 調下來`);
     probe("§8 資產版號", scan,
         ['<link rel="stylesheet" href="./css/main.css">',
             '<script src="./js/toast.js"></script>',
@@ -2507,7 +2506,6 @@ test("§8 dist 裡每一個 ?v= 都等於它所指檔案**當下**的內容雜�
     }
     // 空轉守門：不是一個「掉 30/36 支還會綠」的整數，而是「dist 裡每一支可蓋章的資產都要被比對到」。
     // 沒有任何 ?v= 指到某支資產＝它要嘛沒被引用（死資產），要嘛收集器又縮回只看 HTML 的 href/src。
-    const PREV_SEEN = 36;   // 實測（1 支 css ＋ 35 支 js；i18n 那支當時整個在射程外）
     const mustCover = [
         ...readdirSync("dist/css").filter((f) => f.endsWith(".css")).map((f) => `./css/${f}`),
         ...readdirSync("dist/js").filter((f) => f.endsWith(".js")).map((f) => `./js/${f}`),
@@ -2517,7 +2515,7 @@ test("§8 dist 裡每一個 ?v= 都等於它所指檔案**當下**的內容雜�
     assert.equal(uncovered.length, 0,
         `這幾支 dist 資產沒有任何一個 ?v= 指到它（沒被引用＝死資產，或收集器又縮小了射程）：\n${fail(uncovered)}`);
     assert.ok(seen.size >= mustCover.length,
-        `這一輪只比對到 ${seen.size} 支資產（上一輪 ${PREV_SEEN}，dist 現有 ${mustCover.length} 支）—— 這條在空轉`);
+        `只比對到 ${seen.size} 支資產（dist 現有 ${mustCover.length} 支）—— 這條在空轉`);
     // 這三支各自代表一種形狀：HTML 上的 css、HTML 上的 js、以及**住在 js 內文裡**的 i18n 字典
     // （後者是順序契約唯一的當事人；readdir 撈到空清單時 mustCover 會靜靜縮水，這裡點名釘住）。
     for (const must of ["./css/main.css", "./js/lang-toggle.js", "./i18n/en.json"])
@@ -3367,9 +3365,9 @@ test("§5/§8 元件 scss 的頂層根 class 要打得到 markup 或元件 js（
         }
     }
     // 母體含「元件 scss ＋ src/scss/ 的全域 partial」——只掃元件 scss 的話，全域工具 class
-    // 完全不受死 CSS 這條管（三條 scss 規則裡有兩條把 src/scss/ 濾掉了）。擴完實測 0 筆死 CSS，
-    // 但下限要跟著抬（60 → 175，實測 178），否則濾條再縮回去就靜靜地變綠。
-    assert.ok(roots >= 175, `只掃到 ${roots} 個頂層根 class —— 收集壞了？這條測試在空轉`);
+    // 完全不受死 CSS 這條管（只掃元件 scss 的話，全域工具 class 整族在網外）。
+    // 下限＝這次實際量出來的根 class 數，否則濾條一縮回去就靜靜地變綠。
+    assert.ok(roots >= 185, `只掃到 ${roots} 個頂層根 class —— 收集壞了？這條測試在空轉`);
     assert.equal(bad.length, 0, fail(bad));
 });
 
@@ -3799,26 +3797,16 @@ test("§4-2 繁中原文相同的 chrome 沿用既有 key、不另立（同文�
     //   2) DELIBERATE 白名單——語意/單複數/兩套 app chrome/組字上下文確實不同（各附裁決理由）
     const DELIBERATE = new Set([
         "問答紀錄",                                                        // qa.qaRecords="Q&A records"（側欄／區塊標題，整批）vs qa.recordFallbackPrefix="Q&A record "（單一筆沒有 ChatTitle 時的 fallback 名，後面緊接序號 ⇒ 單數＋自帶尾空白）
-        "標題", "內容",                                                    // dataImport/dataset/audit 各區段表頭語境（暫留的舊家族）
-        // 已移除三項（併掉重複的那一族之後，該繁中今天只剩一顆 key）：
-        //   「時間」 dataImport.time／dataset.time／audit.time 併回 common.time
-        //   「檔案名稱」 dataImport.fileName 併回 dataset.fileName
-        //   「資料集名稱」 dataImport.datasetName 併回 dataset.datasetName
-        //   三組的英譯本來就逐字相同（File name／Dataset name／Time），屬 §4-2「繁中原文相同的
-        //   UI chrome 沿用既有 key、不另立」；`field.title` 那一族不併，它是 product `SLOTS` 的
-        //   欄位槽預設名（`field.<key>` 整族由上游目錄產生，併掉會讓那份目錄少一顆）。
-        "啟用", "停用",                                                    // 動作鈕（Enable/Disable，3-4 每列直送 PATCH）vs 狀態/選項（widget.active=Active、qaDirectModeOff=Off）
+        "標題", "內容",                                                    // dataImport/dataset/audit 各區段表頭語境
+        // `field.title` 那一族不併回 common.*：它是 product `SLOTS` 的欄位槽預設名
+        //（`field.<key>` 整族由上游目錄產生，併掉會讓那份目錄少一顆）。
+        "啟用", "停用",                                                  // 動作鈕（Enable/Disable，3-4 每列直送 PATCH）vs 狀態/選項（widget.active=Active、qaDirectModeOff=Off）
         "資料集", "所屬群組",                                              // 單/複數語意（Dataset/Datasets、Group/Groups）
         "開始時間", "結束時間", "狀態",                                    // qa 篩選 vs settings 統計篩選；批次匯入欄 vs widget 欄
         "結果", "共", "讚", "倒讚", "筆", "第", "頁",                       // 量詞/前綴/評價的組字上下文各異。「共」已把四顆同英譯的併回 common.total，剩下的兩顆是 common.total="Total"（markup 夾資料槽）vs pagination.totalPrefix="Total "（js 串接，§4-2 空白必須由 key 自帶）
         "設定",                                                            // qaTest.setting="Setting"（2-2-3 的「設定 A／設定 B」組字前綴，單數）vs nav.settings="Settings"（選單項）
         "資料匯入",                                                        // audit.actImport（稽核日誌的動作詞彙）vs nav.dataImport（選單項，Title Case）
-        // 已移除四項（該繁中今天只剩一顆 key，白名單留著只會靜默放行下一次的另立）：
-        //   「登入」 faq.login 併回 auth.login（同一頁的 sr-only h1 與送出鈕，英譯無區別必要）
-        //   「無」 platform.roleNone／usagePeriodNone 併成 platform.none（同一個「未設定」語意）
-        //   「知識檢索」「套用為正式設定」 modals.* 併回 qaTest.*（英譯本來就逐字相同）
-        //   「欄位對應」 dataImport.columnMapping 併回 step.mapping
-        // dist 掃描後才看得到的兩組（英譯本來就不同，屬 §4-2「語意確實不同才分 key」）：
+        // 下面兩組要掃 dist 才看得到（英譯本來就不同，屬 §4-2「語意確實不同才分 key」）：
         "移除",                                                            // action.remove="Remove"（獨立按鈕字面，2-2-4／5-4）vs action.removePrefix="Remove "（multi-select 由 js 拼 tag 名的前綴，§4-2 空白必須由 key 自帶——在前者尾巴加空白會讓那兩顆鈕多一格）
         "來源",                                                            // qa.citationSourcePrefix="Source "（引用徽章前綴，§4-2 前綴 key 自帶尾空白）vs field.source="Source"（欄位槽名）
         "成員",                                                            // role.member="Member"（角色，單數）vs settings.members="Members"（欄名/計數，複數）
@@ -3909,11 +3897,9 @@ test("§5/§6 逐列可刪/撤銷的管理表要帶 {% else %} 無資料列（�
     //（data-i18n="action.delete|revoke" 或 js-delete/revoke/remove-* hook）＝使用者能把列刪到零的管理表，
     // 真實初始態可為空 → 需 {% else %} 鏡射無資料列（§5「無資料列正典」＋§6「分支是給 React 的規格」）。
     // 只掃 src（{% else %} 在 dist 已被 njk 渲染掉）。
-    // 豁免（EXEMPT）目前是空的：這條空狀態正典適用於每一張逐列可刪／可撤銷的管理表。
-    //   以「空狀態另有依據」登記的三筆豁免查證後全數撤銷——那三頁本來就畫得出空狀態
-    //（datasetList.js:137-139「無資料」、previewDataset.js:123-125「無檔案資料」、
-    //  uploadFilePdf.js:274-276「尚未上傳檔案」），結論該是鏡射那三句、不是一句都不畫。
-    //  真要新增豁免時逐筆列出＋出處，別拿豁免蓋掉新頁的漏網。
+    // 豁免（EXEMPT）是空的：這條空狀態正典適用於每一張逐列可刪／可撤銷的管理表，
+    //   沒有哪一張答不出「空著代表什麼」。真要新增豁免時逐筆列出＋理由，
+    //   別拿豁免蓋掉新頁的漏網。
     const EXEMPT = new Set([]);
     const forSrc = /\{%-?\s*for\s+\w+\s+in\s+([\s\S]+?)-?%\}/;
     // `js-remove-` 拿掉——那是**表單 repeater**的「移除這一列」（5-2 的逐代碼上限／情境條件、
@@ -3966,7 +3952,7 @@ test("§5/§6 逐列可刪/撤銷的管理表要帶 {% else %} 無資料列（�
     assert.equal(missing.length, 0, `逐列可刪的管理表缺無資料列（§5 無資料列正典；另有依據的請入 EXEMPT 並附理由）：\n${fail(missing)}`);
 });
 
-const TOAST_TYPES_R31 = ["success", "error", "warning", "info"];
+const TOAST_TYPES_ALLOWED = ["success", "error", "warning", "info"];
 
 // ───────────────────────────反向補測 ───────────────────────────
 
@@ -3995,7 +3981,7 @@ test("§5/§6 元件 scss 的巢狀狀態/變體 class（&.is-*）都要有頁�
     const distMarkup = distHtml.map((f) => distDoc(f)).join("\n");
     const jsBlob = srcJs.map((f) => read(f)).join("\n");
     // 執行期以前綴串接生成的 class：由 toast 的型別常數推導，不手打（同 data-toast-type 白名單那條的來源）
-    const runtimeGenerated = new Set(/toast\s+toast-/.test(jsBlob) ? TOAST_TYPES_R31.map((t) => `toast-${t}`) : []);
+    const runtimeGenerated = new Set(/toast\s+toast-/.test(jsBlob) ? TOAST_TYPES_ALLOWED.map((t) => `toast-${t}`) : []);
     // 下面也很容易寫成 `jsBlob.includes(cls)`（第三份子字串比對）。改吃共用正本。
     const hits = [];
     let seen = 0;
@@ -4101,7 +4087,7 @@ test("§4 送 API 的數字欄三件套：type=number ＋ min/max/step ＋ 可�
     // 兩邊都沒有界線的欄位：逐筆列出＋理由（新增前先去正本確認它真的兩邊都不設限）
     const NO_BOUND = new Map([
         ["tenantTrialDaysInput",
-         "延展天數：正數延展、負數縮短，兩邊都沒有界線（product platform.py 的 extend_tenant_trial 只擋 extend_days == 0）"],
+         "延展天數：正數延展、負數縮短，兩邊都沒有界線（product 的 extend_tenant_trial 只擋 extend_days == 0）"],
         // 分數門檻兩顆（qaDirectScoreFloor／groundingScoreFloor）**不再豁免**：
         // 上界照舊不綁（尺由重排序器／檢索後端決定——llm 1–5、jina 0–1、gufonet BM25 數百～數千，
         // 寫死 [0,1] 會讓 BM25 部署填不進合法值），但**下界綁 min="0"**：GufoRAG chatbot
@@ -4441,18 +4427,18 @@ test("§4 每一顆會改狀態的鈕都要宣告它需要哪一道閘門（四�
             ["密碼已變更", "`/me/change-password` 同上：改自己的密碼不吃租戶能力軸"],
         ])],
         ["src/pages/components/component.html", new Map([
-            ["已開始使用", "使用期閘門遮罩那一節的「我已閱讀並同意」：`POST /account/accept-disclaimer`（product `app/routers/account.py`）的閘只有 `get_current_user`，docstring 逐字「任何登入者可呼叫（首次登入強制流程）」——首登流程按定義不可能要求任何能力，標任何一軸都是宣告一道那裡不存在的閘"],
+            ["已開始使用", "使用期閘門遮罩那一節的「我已閱讀並同意」：`POST /account/accept-disclaimer`（product 的 `accept_disclaimer`）的閘只有 `get_current_user`，docstring 逐字「任何登入者可呼叫（首次登入強制流程）」——首登流程按定義不可能要求任何能力，標任何一軸都是宣告一道那裡不存在的閘"],
             ["密碼已變更", "同一節的強制改密面板：`POST /me/change-password` 是自助端點（理由與 5-1-1 那一顆逐字相同——改自己的密碼不吃租戶能力軸）"],
         ])],
         ["src/_includes/components/file-edit-modal/file-edit-modal.html", new Map([
-            ["已更新", "送出前的本地編輯（凍結正本 uploadFilePdf.js 的 saveEdit 只改本地陣列），沒有端點"],
+            ["已更新", "送出前的本地編輯：這顆鈕改的是**還沒送出**的待上傳清單，全站沒有對應端點"],
         ])],
         ["src/login.html", new Map([
             ["登入成功！", "登入是**認證之前**的那一顆：這時還沒有主體，能力／角色都是登入之後才判得出來的東西，宣告不出任何一道閘門。它不是唯讀——之前被塞在 READONLY 裡，那是把「不需要閘門」誤寫成「不寫入」"],
         ])],
         ["src/_includes/components/faq-chatroom/faq-chatroom.html", new Map([
             ["回答生成成功", "前台公開機器人（faq.html，chatbot-shell 外殼）送問答走吃 `X-Widget-Token` 的公開端點（見 5-8 檔頭：標頭 X-Widget-Token／query ?wt=），那條路徑上根本沒有租戶能力軸——硬標一顆 data-capability 等於宣告一道這裡不存在的閘門。後台 components/chatroom 的同型鈕才吃 data-capability=\"ask\""],
-            ["連結已建立", "分享鈕送的是 `POST /public/share`（product `app/conversation/public_ask.py` 的 `create_public_share`），與同一支元件的送問答鈕走同一條吃 `X-Widget-Token` 的公開路徑，理由逐字相同：匿名訪客身上沒有能力或角色可以判"],
+            ["連結已建立", "分享鈕送的是 `POST /public/share`（product 的 `create_public_share`），與同一支元件的送問答鈕走同一條吃 `X-Widget-Token` 的公開路徑，理由逐字相同：匿名訪客身上沒有能力或角色可以判"],
         ])],
         ["src/_includes/ui/widget-shell/widget-shell.html", new Map([
             ["回答生成成功", "嵌入式 widget 的送出鈕與 faq-chatroom 打的是同一支吃 `X-Widget-Token` 的公開端點，理由同上。 success 段之前，它是「少一段 success ⇒ 整顆掉出本測試母體」——那一段不是可選的裝飾，它決定這顆鈕受不受這條規則管"],
@@ -4557,18 +4543,14 @@ test("§4 每一顆會改狀態的鈕都要宣告它需要哪一道閘門（四�
         for (const [, , r] of sc) scopeRoles.add(r);
         hits.push(...gateScan(src, f));
     }
-    assert.ok(seen >= 60, `只掃到 ${seen} 顆帶 data-toast 的鈕 —— 這條測試在空轉`);
-    // 洞⑥ 的守門：`>= 60` 那道對「母體從 105 掉到 100」完全無感（少掉的那 5 顆正是插值型的）。
-    // 改成**釘住上一次實測的筆數**：母體只准往上長，掉下來就是有一族鈕從網裡漏出去了。
-    // 這個數字要跟著 markup 一起長——加了新的 data-toast 鈕就把它調高，而不是把它調低。
-    // 重量 117（舊值 105 是實測值；那之後多了十二顆鈕，門檻沒跟著抬）。
-    // 重量 134：整個複製族（`common.copied`／`toast.copyServiceKey`／`modals.linkCopied`／
-    // `prompt.copied`／`welcome.copied`）補上失敗段之後才有了 `data-toast-type`——+17 顆**全部**是
-    // 「本來就在 markup 上、但 type 收斂不出來所以整顆看不見」的鈕，不是新畫的鈕。
-    // 也就是說這 17 顆在之前從來沒有被這條規則看過一眼，正是這道門檻要抓的方向。
-    const SEG_FLOOR = 134;
+    assert.ok(seen >= 147, `只掃到 ${seen} 顆帶 data-toast 的鈕 —— 這條測試在空轉`);
+    // 兩道門檻管的是兩件事：上面那道守「鈕的母體」，這道守「**解析得出 type 的** success 段數」。
+    // 兩個數字都必須是這次實際量出來的——`data-toast-type` 寫成插值帶預設而收斂不出字面時，
+    // 那一顆鈕不是被放行，是整顆離開母體，而母體縮水在畫面上沒有任何訊號。
+    // 門檻與母體之間留多少縫，就等於可以有多少顆鈕靜靜地消失而仍然全綠。
+    const SEG_FLOOR = 143;
     assert.ok(allSegs.length >= SEG_FLOOR,
-        `只解析出 ${allSegs.length} 個 success 段（上一輪 ${SEG_FLOOR}）—— 母體縮水了：` +
+        `只解析出 ${allSegs.length} 個 success 段（門檻 ${SEG_FLOOR}）—— 母體縮水了：` +
         `data-toast-type 若寫成插值帶預設而解析不出來，那一顆會靜靜地整個消失，不是被放行`);
     // toast **文字**可以是純參數（`data-toast="{{ deleteToast }}"`，由使用頁灌——另一條測試在管），
     // 但 **type** 不行：type 收斂不出字面就等於這顆鈕落在母體外。這裡釘的是後者。
@@ -5189,7 +5171,7 @@ test("§5/§6 別名表：出口套用預設不勾、三個 apply ⊆ 綁定、�
         assert.match(page, new RegExp(`data-i18n="settings\\.${k}"`), `缺 ${k} 的示範列`);
     assert.match(page, /data-i18n="settings\.aliasRedLine"/, "彈窗頂部的紅線提示不可省——那條機器判不出來");
 
-    // 術語表的別名欄整欄移除（上游 2026-08-07 已拿掉；留著就會有兩個地方可以填別名）
+    // 術語表不設別名欄：別名的正本在 3-6 別名表，兩個地方都能填就會有兩份答案
     const glossary = distDoc("3-2_glossaryManagement.html");
     assert.ok(!glossary.includes('data-i18n="settings.aliases"'), "術語表不得再有別名欄");
     assert.match(glossary, /data-i18n="settings\.glossaryMgmtIntro"/, "術語表說明句要在");
@@ -5342,7 +5324,7 @@ test("§3-2 跨 repo 活正本的出處不得引行號（行號會漂到語意�
     //   ② 裸範圍（`2381-2389`）＋「整則沒有檔名 ⇒ 自我引用」的兜底會誤判 `每頁 10-20 筆`、
     //     `768-1024`、`Node 18-22`、`2024-2026`。**裸範圍只在同則出現活正本檔名時才啟用**——
     //     它本來就只是「檔名與行號被拆開寫」那一種的補網，沒有活正本檔名就沒有東西可補。
-    //   ③ 母體只有 `src/**`，`tests/`（就藏著 `users.py:310`／`:317`）與四份 root `.md` 都在網外。
+    //   ③ 母體只有 `src/**` 的話，`tests/` 與四份 root `.md` 都在網外——而斷言訊息與規範散文同樣是出處斷言。
     //     兩者納入：`.md` 逐行為一則（散文沒有註解符號）、`tests/*.mjs` 除註解外連**中文字串常值**
     //     一起收（斷言訊息就是那種散文，`assert.match(…, "…（users.py:310）…")` 一樣是出處斷言）。
     const EXT = "py|ts|tsx|js|jsx|mjs|scss|css|html|md";
@@ -6540,8 +6522,8 @@ test("§5 5-5-1 儲存鈕要演出後端每一道守衛（降級 400／停用 40
     assert.equal(en.length, toast.length, "en.json 的 toast.saveMember 段數要跟 markup 一致");
     // 逐條語意（不綁索引，補新守衛時不會位移）
     const body = en.slice(1, -1).join(" | ");
-    assert.match(body, /remove the last tenant admin/i, "降級那道（product users.py 的守衛）要講得出「最後一位管理者」");
-    assert.match(body, /last active tenant admin/i, "停用那道（product users.py 的守衛）要講得出「最後一位在職管理者」");
+    assert.match(body, /remove the last tenant admin/i, "降級那道（product 的 `_assert_not_last_tenant_admin`）要講得出「最後一位管理者」");
+    assert.match(body, /last active tenant admin/i, "停用那道（product 的 `_assert_not_last_active_tenant_admin`）要講得出「最後一位在職管理者」");
     assert.match(body, /platform role/i, "403 那道要講得出是「平台角色持有者」");
 });
 
@@ -7713,7 +7695,7 @@ test("§6 可刪除清單的每一列都要帶列鍵（位置不是身分：刪�
     // 而它壞掉的樣子完全看不出來：畫面一模一樣，只有「刪掉第 2 筆之後第 3 筆的動作打到第 2 筆」。
     //
     // 判準（放寬到「列內任何地方」而不是只看列根）：列鍵常常掛在**動作控制項**上而不是
-    // `<tr>` 上（previewDataset.js 的 `data-filesn` 就掛在刪除／下載鈕），照抄那個位置是對的。
+    // `<tr>` 上（逐列刪除／下載鈕身上的 `data-*` 列鍵就是這種位置），照抄那個位置是對的。
     // 只要這一列的 markup 裡有任何一顆從資料插值來的身分屬性就算數。
     const DELETABLE = /js-delete|js-remove|js-revoke|delete-single-btn|class="[^"]*\bdelete\b|data-i18n="action\.(delete|remove|revoke)"/;
     const ROWKEY = /\bdata-[\w-]*(?:id|sn|no|key|code|index|question|filename)="\{\{/;
@@ -8154,7 +8136,7 @@ test("§6 授權用量那一列：四格都要有 is_unlimited 哨兵，而「�
 });
 
 test("§6 1-2-1 批次匯入：索引同步逐檔一顆徽章，匯入失敗那一列畫缺席態、不畫「寫入索引失敗」", () => {
-    // 交辦：批次端點的 `sync_state` 是**逐檔**一份（一檔一條 celery 管道、各自成敗），
+    // 批次端點的 `sync_state` 是**逐檔**一份（一檔一條 celery 管道、各自成敗），
     // 壓成一顆彙總徽章之後「三檔還在同步、一檔查不到結果」會整塊變成查不到——另外那幾檔
     // 在畫面上消失了。這條測試釘三件事：
     //   ① 每一列都有自己的那一顆（漏一列＝那一檔的狀態又不見了）
@@ -8216,7 +8198,7 @@ test("§6 1-2-1 批次匯入：索引同步逐檔一顆徽章，匯入失敗那�
     assert.equal(rule(row("dataImport.importOk", "is-progress", "dataImport.syncPending") +
         row("dataImport.importFailed", "is-faint", ABSENT)).out.length, 0, "負控失效：正確的兩列被判成違規");
     assert.ok(rule(row("dataImport.importFailed", "is-fail", "dataImport.syncFailed")).out.length > 0,
-        "負控失效：把匯入失敗的列畫成「寫入索引失敗」抓不到（這就是交辦點名的那件事）");
+        "負控失效：把匯入失敗的列畫成「寫入索引失敗」抓不到——那是在講一件沒發生過的事");
     assert.ok(rule(`<tr><td>x.pdf</td><td><span data-i18n="dataImport.importOk">s</span></td><td></td><td></td></tr>`).out.length > 0,
         "負控失效：整格留白（一顆徽章都沒有）抓不到");
     assert.ok(rule(row("dataImport.importOk", "is-faint", ABSENT)).out.length > 0,

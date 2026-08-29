@@ -99,9 +99,9 @@ permalink: shared.html
     </div>
     {# 免責提示：它是**產品自己的 chrome**（每一條分享連結都印同一句），不是租戶在後台打的免責聲明
          內文（那一份是資料、不翻，見 components/disclaimer-modal），故照常掛 data-i18n。 #}
-    {# 這一句的繁中由「本連結內容」改成場合中性的「本內容」：同一顆 key 現在有四個
-         消費點（本頁、components/faq-share-modal、components/share-manage-modal、
-         components/faq-chatroom ＋ ui/widget-shell），而「連結」只在這一頁與兩顆分享窗說得通。
-         同 key 同繁中是硬不變量（切回繁中以 key 為索引就地擷取），故四處一起改。 #}
+    {# 這一句的繁中用場合中性的「本內容」，不寫成「本**連結**內容」：這顆 key 有多個消費點
+         （反查 `grep -rl 'shared.aiDraftNotice' src --include=*.html`；不逐頁列舉，§3-2），
+         而「連結」只在這一頁與兩顆分享窗說得通——聊天室與嵌入式 widget 上沒有連結可指。
+         同 key 同繁中是硬不變量（切回繁中以 key 為索引就地擷取），所以每一個消費點逐字相同。 #}
     <p class="text-gray mt-16" data-i18n="shared.aiDraftNotice">本內容由 AI 系統初步產出，僅作為草稿或參考依據使用，尚未經人工確認或修改，若需進一步採用，請先檢閱並確認內容之正確性與完整性。</p>
 </div>

@@ -51,8 +51,8 @@ permalink: 3-6_aliasTables.html
      （`MAX_ALIAS_ENTRIES_PER_TABLE = 20000` 與 `MAX_ALIASES_PER_ENTRY = 50` 是兩條不同的上限），
      而它從詞條數推導不出來——切版沒有算術，前端自己去逐列加總就得先整表撈回來。
      **上游那一側的符號名是 `_table_to_dict`**：下一輪 grep 它一次就知道這個前提還在不在（§4）。
-     **兩態都要切**：拿不到那個數字時畫「—」（saas `apps/web/app/(app)/alias/page.tsx` 已經
-     照這個規格寫成 `alias_count?: number` ＋ `{table.alias_count ?? "—"}`），拿得到就畫數字。
+     **兩態都要切**：拿不到那個數字時畫「—」（gufofaq-saas 的 React 正本形狀是
+     `alias_count?: number` ＋ `{table.alias_count ?? "—"}`），拿得到就畫數字。
      示範把「—」落在**空表**那一列——「0 個別名」與「後端沒給這個數字」正是在那一列長得最像。
      （這不是宣稱同一次回應裡會有兩種形狀：上游補上之前三列都是「—」，補上之後三列都是數字；
      示範同時畫兩態是為了讓兩種長相都有人驗收過。） #}

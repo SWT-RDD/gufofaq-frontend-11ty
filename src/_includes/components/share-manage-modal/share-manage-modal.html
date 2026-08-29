@@ -6,9 +6,8 @@
      與前台 faq-share-modal（單一連結、只複製）不同：此為登入態的多連結管理。
      建立＝直接送 API 的動作鈕（§5 矩陣③）：`data-toast` 列全結果，並掛 `.js-create-share` 當 React 綁定記號。
      ⚠️ `.js-create-share` 這顆 hook **不可省、也不可改名**：它要讀同窗的 `#shareExpiresDaysInput`
-     才組得出請求（不是一顆零輸入的鈕），而 gufofaq-saas 的
-     `apps/web/components/ShareManageModal/ShareManageModal.tsx` 的 `create` 鈕、同資料夾的
-     `ShareManageModal.test.tsx`、以及 `apps/web/e2e/history-detail.spec.ts` 都以它定址。
+     才組得出請求（不是一顆零輸入的鈕），而 gufofaq-saas 的 `ShareManageModal`（`create` 鈕與
+     它的單元測試）與 history-detail 的 e2e 都以它定址。
      §5「hook 一經 gufofaq-saas 端（頁面／e2e）引用即凍結」——要對齊就在切版這邊補宣告，
      不是去那邊改名或回收；
 

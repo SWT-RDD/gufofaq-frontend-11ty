@@ -66,7 +66,7 @@
 ## ① scss（byte-identical）
 
 - 逐字照抄 `_<name>.scss`，**含切版原有註解**。差異只有**三處路徑**：`@use` 路徑深度、`url(../images/…)`→`url(/images/…)`、
-  **`icon-mask("../images/…")`→`icon-mask("/images/…")`**。第三處最容易漏（它不包在 `url()` 裡，全站 28 處、遠多於
+  **`icon-mask("../images/…")`→`icon-mask("/images/…")`**。第三處最容易漏（它不包在 `url()` 裡，遠多於
   `url()` 的 3 處），而漏掉的失敗方式恰好三張網都看不到：`scss-diff` 因為做路徑映射仍 exit 0、`fpdiff` 幾何不變
   （mask 只影響繪製），畫面上圖示整批消失。
 - 顏色走 `_var.scss` 語意 token，零裸 hex／裸色。填充用 `--brand`、文字用 `--brand-text`、遮罩墨色取文字族。

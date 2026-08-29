@@ -248,7 +248,7 @@
 // 照片段抄一定會漏掉整組 §4／§5 的硬規則：
 //
 //   ① 送 API 的鈕（§5 ③）：
-//     <button data-capability="settings:write" type="button" class="button button-primary js-save-x" data-toast="已儲存|權限不足，無法儲存|儲存失敗，請稍後再試" data-i18n-data-toast="toast.saveX" data-toast-type="success|warning|error" data-i18n="action.save">儲存</button>
+//     <button data-capability="settings:write" type="button" class="button button-primary js-save-x" data-toast="已儲存|權限不足，無法儲存——請找貴租戶的管理者開通|儲存失敗，請稍後再試" data-i18n-data-toast="toast.saveX" data-toast-type="success|warning|error" data-i18n="action.save">儲存</button>
 //
 //   ② 圖示鈕（沒有可見字面）：可及名稱另給，且住在 `{% for %}` 裡時要併讀列脈絡：
 //     <button type="button" id="xDelete-{{ row.id }}" aria-labelledby="xRowName-{{ row.id }} xDelete-{{ row.id }}" class="button-icon no-bg size-sm delete" title="刪除" data-i18n-title="action.delete">

@@ -24,8 +24,11 @@
      動得起來，寫在同資料夾的 alias-entries-modal.js。**不去重、不排序**：貼進來的順序就是
      使用者的順序，動它會讓人對不上原始檔。
 
-   增刪列與 glossary-entries-modal 同型：不送 API（儲存時才整批 PUT）故不掛 data-toast，
-     但要掛 hook class 讓 React 認得出它們該接誰（§5）。 #}
+   增刪列不送 API（儲存時才整批 PUT）故不掛 data-toast；行為是**純前端互動**（§5 ④），
+     由同資料夾的 `alias-entries-modal.js` 當場做得起來，`.js-add-alias-entry`／
+     `.js-remove-alias-entry` 是它自己查的掛點（§4「某支切版元件 js 查得到它 ⇒ 切版自有」）。
+     ⚠️ `components/glossary-entries-modal` 是同一種版型但**沒有 js**，那一份的增刪列在原型上
+     按了沒反應——不要照抄它的形狀。 #}
 {# 示範資料變數用元件專屬名（{% set %} 是頁面全域，§2/§6）。
      示範 8 列，涵蓋：多別名／單別名／sameTable 衝突一對／chain 衝突一對／outputRule 衝突／超長別名清單。
      （涵蓋範圍**就地列完**，不要寫成「N 種列型各一，見某某檔頭」——§3-2：能不寫死計數就不要寫，
