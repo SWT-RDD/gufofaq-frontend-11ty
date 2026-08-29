@@ -1,5 +1,6 @@
 {# 問答評分 modal（讚/倒讚二選一 ＋ 選填理由）。沿用 ui/modals 結構；二選一由 rating-modal.js 控制。
-     三處共用：前台 FAQ 訊息的讚/倒讚（components/faq-chatroom）、後台 4-2 對話詳細、後台 2-2-3 AB 測試兩側。
+     三個生產消費點：前台 FAQ 訊息的讚/倒讚（components/faq-chatroom）、後台 4-2 對話詳細、
+     後台 2-2-3 AB 測試兩側；元件庫頁另有一份示範（下面數「使用點」時把它一起算，共四個）。
 
      **一筆問答只有一份評分**：GufoRAG 的 `POST /api/chat/chatlogs/{id}/rating` 一次寫三欄
      （`rating_type`／`rating_feedback`／`rating_time`，chatbot 的 `POST /chatlogs/{chat_log_id}/rating` 逐行無條件覆寫），

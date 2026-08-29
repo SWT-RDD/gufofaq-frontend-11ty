@@ -9,7 +9,9 @@
      `.js-apply-current-title` 定位**左欄「原設定」**、`.js-apply-title` 定位**右欄「要套用的那一側」**，
      兩欄各自去填自己那幾格的值。少了左欄那顆，React 端就只認得出「要套用的是哪一欄」，
      認不出「拿現值來填的是哪一欄」——而這顆彈窗的整個用途就是把那兩欄擺在一起比。
-     確認鈕 toast 三段（`toast.applyProductionCompare`：success｜warning｜error）。**第 2 段是那道 403**：
+     確認鈕 toast 三段（`toast.applyProduction`：success｜warning｜error）。**與 `components/apply-settings-modal`
+     共用同一顆 key**：同一個動作（把這一份設定寫成正式設定）、同一組結果，只是從兩顆不同的窗按下去
+     ——各立一顆 key 就是同一句話兩份正本，英譯遲早自己分岔（§4-2）。**第 2 段是那道 403**：
      這顆鈕掛 `data-capability="settings:write"`，而能力不足是走得到的結果路徑（有 `settings:read`
      沒有 `settings:write` 的人打得開頁面、看得到鈕），§4 明訂它要列成 warning 段、不做「不渲染／不可按」。
      ⚠️ 另有一條**不同機制**的權限路徑：AB 比較這一側在 React 端還會開 `apply-settings-no-permission-modal`
@@ -160,7 +162,7 @@
                 <div class="modals-footer">
                     <div class="button-row center">
                         <button type="button" class="button button-border btn-close-modals" data-i18n="action.cancel">取消</button>
-                        <button data-capability="settings:write" type="button" class="button button-primary btn-close-modals js-confirm-apply" data-toast="已套用為正式設定|權限不足，無法套用——請找貴租戶的管理者開通|套用為正式設定失敗，請稍後再試" data-i18n-data-toast="toast.applyProductionCompare" data-toast-type="success|warning|error" data-i18n="qaTest.applyProduction">套用為正式設定</button>
+                        <button data-capability="settings:write" type="button" class="button button-primary btn-close-modals js-confirm-apply" data-toast="已套用為正式設定|權限不足，無法套用——請找貴租戶的管理者開通|套用為正式設定失敗，請稍後再試" data-i18n-data-toast="toast.applyProduction" data-toast-type="success|warning|error" data-i18n="qaTest.applyProduction">套用為正式設定</button>
                     </div>
                 </div>
             </div>

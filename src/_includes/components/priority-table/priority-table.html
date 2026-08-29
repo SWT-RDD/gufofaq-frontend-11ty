@@ -25,7 +25,10 @@
          那些分層資料當場被抹平。
      可編輯欄位：任務描述 td.edit-cell.description、任務對應提示詞 td.edit-cell.prompt，內容用 ui/collapse-text 包覆（夾住而且打得開）；
      編輯／設定鈕與 textarea 的切換屬業務邏輯（執行期才決定進不進編輯態），不在本元件的職責裡。
-     用法：component.html（單張示範）、5-2_conversationSettings.html（檢索與欄位子頁籤依高/中/低優先級分組，每組 set rows 後 include）。 #}
+     用法：component.html（單張示範）、5-2_conversationSettings.html **四個 include 點**——
+     檢索與欄位子頁籤依高/中/低優先級分組的那一組（在 `{% for %}` 裡，渲染成三張）、
+     同一區的「未使用」一張，以及 Agent 版面那兩張（在用／未使用，兩張都 tierless）。
+     每一個 include 點都要自己 set 一整組參數（`{% set %}` 是頁面全域，沿用上一份就是撞 id）。 #}
 <div class="table-container scrollTable">
     <table class="default-table priority-table">
         <colgroup>

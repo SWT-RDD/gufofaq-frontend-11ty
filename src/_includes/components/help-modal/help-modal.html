@@ -64,7 +64,8 @@
 
      住在哪一頁（雙向，**判準句而非清單**——這顆元件注定被數十頁 include，逐頁列在第三頁就
      開始腐化，而腐化的清單比沒有清單更貴）：
-       正向＝`grep -rl 'include "components/help-modal/help-modal.html"' src/pages`；
+       正向＝`grep -rl 'include "components/help-modal/help-modal.html"' src`（**母體不可收窄成 `src/pages`**：
+       `components/platform-tenants-panel` 自己 include 了兩份，那三個平台頁的原始碼裡一行都搜不到）；
        反向＝`grep -l 'HelpModal-title' dist/*.html`（`aria-labelledby` 的值＝`<blockId>HelpModal-title`，
        由下面的 id 命名慣例保證；母體是 `dist`：src 的一行在 `{% for %}` 內會渲染成多份，
        兩邊不等價）。三塊 `<section>` 刻意不掛 class——它們沒有樣式、沒有 js，

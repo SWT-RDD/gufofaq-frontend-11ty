@@ -18,7 +18,9 @@
        `platformAdminRows`／`platformFeatureCols`／`platformTenantRows`。
      內含的子元件（除 `timezoneSelected` 外，其餘參數由本元件在 include 前設齊，見各區塊上方註解）：
        `ui/timezone-options`（`timezoneSelected` ← 使用頁）、`components/manage-tenant-modal`（`manageTenantFrozen`）、
-       `components/delete-modal`、`components/reset-password-modal`。
+       `components/delete-modal`、`components/reset-password-modal`、`components/help-modal`（本檔兩處各一份，
+       各自 set 一整組 `helpModal*` 參數——它也因此讓 help-modal 出現在三個平台頁上，
+       而那三頁的原始碼裡搜不到 include 它的那一行）。
      不含：麵包屑（頁面自己畫，§3-1 每頁的 breadcrumbItems 不同的那一族沿用頁面層）、
        ISO 審核精靈（`components/iso-review-wizard`）、免責聲明（`components/platform-disclaimer-panel`）。
 

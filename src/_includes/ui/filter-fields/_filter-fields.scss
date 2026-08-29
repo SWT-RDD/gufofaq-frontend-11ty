@@ -39,10 +39,11 @@
 //     （數值欄三件套見 §4），本元件只規定「每一欄都是 `.form-group.filter-field` ＋ 欄寬 class，
 //     而且都住在 `.filter-fields` 裡」——連只有一欄的時候也要有外層（見上面第三段）。
 //
-// ── 清除鈕：**它不在 `.filter-fields` 裡面**。有 `.filter-fields` 的那兩份（5-2）它是它的兄弟；
-//    其餘四份（4-1／5-3／5-4／5-7）那一頁根本沒有 `.filter-fields`——它靠 `closest(".block")` 定範圍，
-//    所以單獨用得上（見下面「清除鈕以 closest」那一條；§3-2 同檔自我互指不寫行號，行號漂得一樣快）。
-//    六份共通的只有一件事：**它與查詢鈕同住一顆 `flex-row`**。
+// ── 清除鈕：**它不在 `.filter-fields` 裡面**。有 `.filter-fields` 的那兩顆（5-2 的後兩列）
+//    它是它的兄弟；其餘幾顆所在的那一頁根本沒有 `.filter-fields`（3-7／4-1／5-3／5-4／5-7）
+//    ——它靠 `closest(".block")` 定範圍，所以單獨用得上（見下面「清除鈕以 closest」那一條；
+//    §3-2 同檔自我互指不寫行號，行號漂得一樣快）。**顆數不寫死**（§3-2）：判準見本檔最後那一段。
+//    每一顆共通的只有一件事：**它與查詢鈕同住一顆 `flex-row`**。
 //
 //   <div class="flex-row flex-wrap gap-16 align-items-center">
 //       <button type="button" class="button button-border js-filter-clear" data-i18n="action.clear">清除</button>
@@ -51,8 +52,8 @@
 //
 //   · 它與查詢鈕是一對、住在同一顆 `flex-row` 裡；畫進 `.filter-fields` 就會被排進欄位那一列
 //     跟著欄位斷行，而且與查詢鈕分家。**那顆 `flex-row` 的對齊各頁不同、不屬本契約**：
-//     5-2 兩列靠 `.filter-fields` 的 `flex:1` 把它推到列尾，4-1／5-3／5-4／5-7 用 `justify-content-center`
-//   · `data-i18n="action.clear"` 不可省——這顆鈕全站六份，漏一份就是英文模式那一頁露出繁中
+//     5-2 兩列靠 `.filter-fields` 的 `flex:1` 把它推到列尾，其餘幾頁用 `justify-content-center`
+//   · `data-i18n="action.clear"` 不可省——漏一顆就是英文模式那一頁露出繁中
 //   · 清除鈕以 closest(".block") 定範圍（filter-fields.js）：同頁兩條篩選列各清各的，故沿用同一個
 //     hook 名而不改名（§5：改了名就脫離既有委派，變成沒人綁的死鈕）。有 `.filter-fields` 就只清它，
 //     沒有就清整個 `.block`——所以**沒有 `.filter-fields` 的頁也可以單獨用這顆鈕**
@@ -60,8 +61,9 @@
 // 住在哪一頁（雙向；判準＝`grep -rn 'filter-fields\|js-filter-clear' src --include=*.html`）——
 //   `.filter-fields`：2-2-1_singleTest（一列）、5-2_conversationSettings（三列：對話模式總開關、
 //     提示詞版本史、歡迎語版本史）。反向：渲染後含 `.filter-fields` 的頁只有這兩頁。
-//   `.js-filter-clear`：上面 5-2 的後兩列各一顆，另外四顆在**沒有 `.filter-fields`** 的就地篩選列上——
-//     4-1_qaHistory、5-3_statsModule、5-4_coverageGaps、5-7_auditLog。反向：這五頁就是全部。
+//   `.js-filter-clear`：上面 5-2 的後兩列各一顆，其餘在**沒有 `.filter-fields`** 的就地篩選列上——
+//     3-7_documentSearch、4-1_qaHistory、5-3_statsModule、5-4_coverageGaps、5-7_auditLog 各一顆。
+//     反向：渲染後含這顆鈕的就是這六頁（3-7／4-1／5-2／5-3／5-4／5-7）。
 .filter-fields {
     flex: 1 1 auto;
     min-width: 0;

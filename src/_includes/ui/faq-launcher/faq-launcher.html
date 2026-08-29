@@ -4,7 +4,8 @@
 
      住在 `layouts/page-shell`（＝登入後的外殼）而不是逐頁 include：它的出現條件就是「登入態」，
      而 login／404／catalog／component 走的是 `base.html`，天然不會有它；前台 faq 頁自己走
-     `chatbot-shell`，也不會冒出一顆連到自己的鈕。**這顆鈕沒有任何條件判斷**，所以不掛 hook class。
+     `chatbot-shell`，也不會冒出一顆連到自己的鈕；公開分享頁（shared）走 `public-shell`
+     ——那是**未登入也打得開**的一頁，給它一顆通往後台入口的鈕等於對訪客宣傳一個他進不去的地方。**這顆鈕沒有任何條件判斷**，所以不掛 hook class。
 
      是 `<a>` 不是 `<button>`：它做的事是「去另一個頁面」＝導覽。§4 那條「可點的東西一律用真 button」
      說的是**動作**；導覽用連結才有 Ctrl+click／中鍵開新分頁／複製連結網址，換成 button 全部消失。

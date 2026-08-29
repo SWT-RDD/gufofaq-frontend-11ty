@@ -3784,7 +3784,9 @@ test("§1 permalink 全部輸出扁平檔名（dist 掃描不遞迴，巢狀輸�
 test("§4-2 繁中原文相同的 chrome 沿用既有 key、不另立（同文異 key 遲早讓英譯自己分岔）", () => {
     // 實測 34 顆同文異 key（英譯已分岔的重災區）；這條擋增量。
     // 放行兩類已裁決的刻意分 key：
-    //   1) toast.* 家族——每顆動作各自一份成敗訊息（同文屬巧合，動作語境不同）
+    //   1) toast.* 家族——每顆動作各自一份成敗訊息（同文屬巧合，動作語境不同）。
+    //      **但英譯也逐字相同的不放行**：那代表兩顆 key 連「怎麼說」都沒有分岔，也就沒有分成兩顆的理由，
+    //      而它的失效方式是改一句、漏一句（§8-1：白名單不得寫成萬用前綴）。
     //   2) DELIBERATE 白名單——語意/單複數/兩套 app chrome/組字上下文確實不同（各附裁決理由）
     const DELIBERATE = new Set([
         "問答紀錄",                                                        // qa.qaRecords="Q&A records"（側欄／區塊標題，整批）vs qa.recordFallbackPrefix="Q&A record "（單一筆沒有 ChatTitle 時的 fallback 名，後面緊接序號 ⇒ 單數＋自帶尾空白）
@@ -3802,6 +3804,7 @@ test("§4-2 繁中原文相同的 chrome 沿用既有 key、不另立（同文�
         "來源",                                                            // qa.citationSourcePrefix="Source "（引用徽章前綴，§4-2 前綴 key 自帶尾空白）vs field.source="Source"（欄位槽名）
         "成員",                                                            // role.member="Member"（角色，單數）vs settings.members="Members"（欄名/計數，複數）
     ]);
+    const enDict = JSON.parse(read("src/i18n/en.json"));   // 判「英譯有沒有分岔」用
     const keyZh = new Map(); // key -> zh（第一個看到的原文；同 key 同繁中另有測試把關）
     const recordKZ = (key, zh) => {
         if (!key || key.includes("{{") || !zh || !zh.trim()) return;
@@ -3866,7 +3869,10 @@ test("§4-2 繁中原文相同的 chrome 沿用既有 key、不另立（同文�
     for (const [zh, keys] of byZh) {
         if (keys.size >= 2 && DELIBERATE.has(zh)) usedDeliberate.add(zh);
         if (keys.size < 2 || DELIBERATE.has(zh)) continue;
-        if ([...keys].every((k) => k.startsWith("toast."))) continue;
+        // toast.* 這一族**不是無條件放行**：同繁中而英譯不同 ⇒ 兩個動作各自的成敗句，同字屬巧合；
+        // 同繁中而**英譯也逐字相同** ⇒ 那是同一個動作被寫成兩份正本（同一顆鈕從兩顆窗按下去、
+        // 同一條流程的兩個版位…），改一句就會漏改另一句。通配整族放行的話，這一種永遠不會紅。
+        if ([...keys].every((k) => k.startsWith("toast.")) && new Set([...keys].map((k) => enDict[k])).size > 1) continue;
         // `tool.<工具名>.param.<參數名>` 鏡射 product 的內建工具目錄，key 空間**刻意**逐工具一份
         // （14 張卡各自對回自己那支工具的參數說明）。兩支工具的參數描述剛好同字是正常的，
         // 收成一顆就破壞了與 product 目錄的一對一對應。同 toast. 那條的理由。
