@@ -592,8 +592,8 @@ permalink: 2-2-3_abTest.html
 {% set ratingModalNote = "評分會寫進這一側的問答紀錄，之後在歷史紀錄裡篩「AB測試」就找得到。" %}
 {% set ratingModalToastKey = "toast.saveRating" %}
 {% set ratingCapability = "history" %}
-{% set ratingModalToast = "滿意度已更新|權限不足，無法送出——請找貴租戶的管理者開通|請先選擇讚或倒讚|更新失敗，請稍後再試" %}
-{% set ratingModalToastType = "success|warning|warning|error" %}
+{% set ratingModalToast = "滿意度已更新|權限不足，無法送出——請找貴租戶的管理者開通|請先選擇讚或倒讚|找不到這一筆問答紀錄，請確認它還在|更新失敗，請稍後再試" %}
+{% set ratingModalToastType = "success|warning|warning|warning|error" %}
 {% include "components/rating-modal/rating-modal.html" %}
 
 {# 分享連結管理（兩側動作列的分享鈕開的那一份）：與 4-2 同一顆彈窗、同一組撤銷二次確認參數。 #}

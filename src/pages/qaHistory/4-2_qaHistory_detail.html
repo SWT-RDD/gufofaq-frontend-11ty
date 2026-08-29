@@ -255,7 +255,8 @@ permalink: 4-2_qaHistory_detail.html
    送出 feedback（None 就是 null），空著送出＝把使用者寫的理由清掉（見 components/rating-modal 檔頭）。
    toast 四段對回後端：成功／權限不足（`require_capability("history")` 的 403，GUIDELINE §4：能力不足
    照樣按得下去、結果列進 data-toast）／沒選讚或倒讚（RatingIn.rating 是 Literal["up","down"]）／其餘失敗
-   （_own_log_or_404 的 404 併進「更新失敗」，同 share-manage-modal 建立鈕對 404 的處理）。 #}
+   （_own_log_or_404 的 404 自成一段 warning——那一筆不在了或不屬於這個租戶，使用者換一筆就好，
+     不折進紅色終局；同 share-manage-modal 建立鈕對同一道守衛的處理，§5 分支集合與語意型別要一致）。 #}
 {% set ratingModalTitleKey = "modals.setRatingTitle" %}
 {% set ratingModalTitle = "設定這筆問答的滿意度" %}
 {% set ratingModalQuestionKey = "modals.ratingLabel" %}
@@ -265,8 +266,8 @@ permalink: 4-2_qaHistory_detail.html
 {% set ratingModalFeedback = conversation.feedback %}
 {% set ratingModalToastKey = "toast.saveRating" %}
 {% set ratingCapability = "history" %}
-{% set ratingModalToast = "滿意度已更新|權限不足，無法送出——請找貴租戶的管理者開通|請先選擇讚或倒讚|更新失敗，請稍後再試" %}
-{% set ratingModalToastType = "success|warning|warning|error" %}
+{% set ratingModalToast = "滿意度已更新|權限不足，無法送出——請找貴租戶的管理者開通|請先選擇讚或倒讚|找不到這一筆問答紀錄，請確認它還在|更新失敗，請稍後再試" %}
+{% set ratingModalToastType = "success|warning|warning|warning|error" %}
 {% include "components/rating-modal/rating-modal.html" %}
 
 {% include "components/share-manage-modal/share-manage-modal.html" %}
