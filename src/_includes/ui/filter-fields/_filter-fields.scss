@@ -8,6 +8,19 @@
 // 就不會命中（規則直接不生效），該欄位的 .col-N-* 也會從錯誤的祖先（外層 .gap-24 而非本元件的
 // .gap-16）繼承 --flex-gap，欄寬計算跟著跑掉。
 //
+// **宣告式契約：`data-filter-reset`**。清除鈕的射程**不由控制項的 type 推導**，而是由 markup
+// 上的這顆屬性宣告（值＝那一顆的預設態）。三種形狀，逐字如下：
+//
+//   <input type="radio" name="count-mode" value="per_log" data-filter-reset="checked" checked>
+//   <input type="radio" name="count-mode" value="per_hit" data-filter-reset="unchecked">
+//   <select id="statsDimension" class="form-control js-stats-dimension" data-filter-reset="dataset">
+//
+//   · radio／checkbox 的值只有 `checked`／`unchecked` 兩種——**沒有這顆屬性的一律不碰**
+//     （逐列的多選勾選框、4-1 的匯出格式都住在同一塊 `.block` 裡，它們不是篩選參數）。
+//   · `<select>` 只有在「第一顆 option 不是空值 placeholder」時才需要宣告（值＝要回到的 `value`）；
+//     第一顆是空值的走預設的 `selectedIndex = 0`，不必寫。
+//   · 文字欄不必宣告：清除一律把它們清空。
+//
 // markup 契約（無 html 元件，§1-2；整段照抄）—— 篩選列本體：
 //
 //   <div class="filter-fields flex-row flex-wrap gap-16 mobile-column">

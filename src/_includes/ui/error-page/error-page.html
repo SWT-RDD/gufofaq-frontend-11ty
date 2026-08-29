@@ -17,11 +17,11 @@
      可回；能做的動作只有稍後重試。
 
    ── ③④：整頁 403────────────────────────────────────────────────
-     **這一族的落點就在這裡**——它同時活在 React 那一側（gufofaq-saas 的 `apps/web`：
-     `platform.forbidden`／`users.forbidden`／`retrieval.forbidden` 三顆，橫跨十條路由，
-     `apps/web/app/(app)/` 底下的 audit／conversation-settings／glossary／groups／mcp-servers／
-     platform／qa-sets／regression／skills／users，反查
-     `grep -rln 'users.forbidden\|retrieval.forbidden\|platform.forbidden' apps/web/app`）。
+     **這一族的落點就在這裡**——它同時活在 React 那一側（gufofaq-saas 的 `apps/web`，
+     用的是**與這一頁同一組 key**：`error.forbidden`（租戶層）與 `error.forbiddenPlatform`（平台層），
+     散在 `apps/web/app/(app)/` 底下的 audit／conversation-settings／glossary／groups／qa-sets／
+     regression／skills／users（租戶層）與 mcp-servers／platform（平台層），反查
+     `grep -rl 't("error.forbidden")' apps/web/app` 與同法的 `error.forbiddenPlatform`）。
      走得到的路徑很平常：導覽入口是照
      `data-platform-role`／`data-capability` 隱藏的，但**擋不了網址列**——把網址記在書籤、或別人貼一條
      連結過來，頁面就打得開，而該頁的讀取端點回 403。
