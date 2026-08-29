@@ -74,9 +74,11 @@ permalink: 2-2-3_abTest.html
        只有 `openai:`／`anthropic:`），送出去必定判否，而畫面上兩種寫法長得幾乎一樣。
      `prompt` 是**這一側的提示詞本文**，兩側必須逐字不同：AB 測試比的就是這一欄，兩側寫同一段文字、
        標題卻標著 V3 與 V2 的話，整頁演的是一個「比了也不會有差別」的狀態（§6）。
-       **B 側逐字等於 `components/apply-settings-compare-modal` 的「設定 B」欄**：那顆彈窗的檔頭自己釘死
-       「設定 B 欄必須等於使用頁 2-2-3 的 B 側」，而它從這一頁的「套用為正式設定」開出來——同一份資料
-       在頁面與彈窗兩處說兩套就是跨區不自洽。改這一欄要連那一份一起改。 #}
+       ⚠️ **提示詞不在跨區契約裡**：從這一頁的「套用為正式設定」開出來的
+       `components/apply-settings-compare-modal` 逐字釘著「設定 B 欄必須等於使用頁 2-2-3 的 B 側」，
+       但那顆窗**刻意不放提示詞**（它不在 product 的 `ApplyIn` 裡，按下去前台的提示詞不會變，
+       理由逐字寫在該元件檔頭）。要與那份對齊的是**設定檔／模型／取樣兩格／思考深度**四樣，
+       改那四樣要連那一份一起改；這一欄改了不影響它。 #}
 {% set abSides = [
     { side: "A", state: "a", i18nKey: "qaTest.settingSideA", label: "（設定 A）", knowledge: "1", llm: "openai:gpt-4o-mini", configKey: "settings.config1", configLabel: "設置一", promptVersion: "V3", reasoningEffort: "",
       prompt: "角色定位：

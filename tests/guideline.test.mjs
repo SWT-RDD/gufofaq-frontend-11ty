@@ -5620,6 +5620,24 @@ test("§4-2 英譯字串不得含全形標點（那是繁中的字身，混在�
     assert.equal(hits.length, 0, `§4-2 英譯裡的全形標點：\n${fail(hits)}`);
 });
 
+test("§4 同頁多份同型元件的兩顆參數（OwnerId／Instance）都要在 README 登記得到", () => {
+    // 這兩顆是「同一支元件在同一頁出現多次」時唯一的區分手段：`Instance` 讓逐列 id 不撞、
+    // `OwnerId` 讓逐列可及名稱不逐字同名（§4）。它們不是元件自己的 class，掃 class 的網看不到；
+    // 而漏登記的後果不是壞掉，是**下一個人不知道要傳**——他寫出來的第二份會靜靜地與第一份撞 id。
+    // 判準：src 上出現過的每一顆，README 的參數表都要提到（README 是元件參數的登記處）。
+    const readme = read("README.md");
+    const params = new Set();
+    for (const f of srcHtml)
+        for (const m of stripNjk(read(f)).matchAll(/\b(\w+(?:OwnerId|Instance))\b/g)) params.add(m[1]);
+    assert.ok(params.size >= 6, `只掃到 ${params.size} 顆 OwnerId／Instance 參數 —— 這條測試在空轉`);
+    const missing = [...params].filter((p) => !readme.includes(p)).sort();
+    assert.deepEqual(missing, [], `這幾顆同頁多份參數在 README 找不到登記：${missing.join("、")}`);
+    // 反向：README 登記了、src 卻一顆都不用 ⇒ 死登記（照它傳參數的人會發現元件根本不讀）
+    const stale = [...readme.matchAll(/\b(\w+(?:OwnerId|Instance))\b/g)].map((m) => m[1])
+        .filter((p, i, a) => a.indexOf(p) === i && !params.has(p)).sort();
+    assert.deepEqual(stale, [], `README 登記了 src 上不存在的同頁多份參數：${stale.join("、")}`);
+});
+
 test("§4-2 英譯的引號與撇號只有一種拼法（直引號／直撇號是另一種字身）", () => {
     // 只擋全形的話，「不是全形」就永遠是合規的下限，於是同一份 catalog 裡直引號與彎引號並存
     // ——最刺眼的一組是把「」譯成兩顆一模一樣的直引號，左右不分，讀的人看不出哪一顆是開頭。
