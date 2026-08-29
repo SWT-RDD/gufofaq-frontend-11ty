@@ -14,7 +14,8 @@
          （gufofaq-saas 的 `apps/web/components/QaImportModal/QaImportModal.tsx` 的 `runPreview()`），那一支的
          `header_rows` 同樣預設 1。要支援多列表頭就得**兩支一起給**（預覽帶了、匯入沒帶＝
          `_assert_assignment_columns_exist` 400 `unknown_column`），還要在窗裡多一顆數值欄與
-         「改了要重新預覽」的連動——那是另一條交辦，不是這一顆的缺口。
+         「改了要重新預覽」的連動——那是**另一條完整的功能**（兩支端點 ＋ 一顆欄位 ＋ 一條連動），
+         不是這一顆窗漏掉的東西。
          ⚠️ 不可以寫成「這顆 modal 根本沒有預覽步驟」：同一份 markup 裡就有 `dataImport.parsing`
          （解析中）、`qaSet.previewFailed`（讀取 Excel 欄位失敗）與工作表那句「只有選取的這一張會被
          預覽與匯入」，理由會被自己的 markup 推翻（§3-2）。
