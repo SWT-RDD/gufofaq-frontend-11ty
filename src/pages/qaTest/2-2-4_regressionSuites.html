@@ -389,9 +389,19 @@ permalink: 2-2-4_regressionSuites.html
 {% include "components/help-modal/help-modal.html" %}
 
 {# ── 手動新增案例 ───────────────────────────────────────────────────────────
-     斷言列：型別 select（11 型，值域＝引擎的 `ASSERTION_TYPES`）＋依型別而異的參數欄。
-     示範 7 列刻意各演一種**參數形狀**（values／平台規則名／整數／連結前綴／文件身分／
-     維度槽＋代碼／判準），而且七條放在同一則案例上互不矛盾——那是一則真的可能存在的案例。
+     斷言列：型別 select（**顆數不寫死**，§3-2：值域＝引擎的 `ASSERTION_TYPES`，而它是從 `_CHECKERS` 的鍵
+     推導出來的、不是另抄一份）＋依型別而異的參數欄。
+     示範 8 列刻意各演一種**參數形狀**（values／平台規則名／整數／連結前綴／文件身分／
+     維度槽＋代碼／無參數／判準），而且八條放在同一則案例上互不矛盾——那是一則真的可能存在的案例。
+
+     ## `answers` 這一型存在的理由（別把它讀成 `judge` 的弱化版）
+
+     `judge` **恆不進 `failed`**：判準由 LLM 每次重打，讓它決定紅綠燈等於把評審的抖動讀成回歸。
+     於是**一則只有 `judge` 的案例永遠 `passed=true`**，在基準比較裡永遠落在「無變化」
+     ——它偵測不到任何回歸，而那正是 `create_case` 那道「至少要有一條確定性斷言」的閘擋它的理由。
+     `answers`（`no_answer` 的反面，判定共用 `attribution.is_no_answer` 同一支）把那個**確定性的
+     地板**講出來：答得好不好是主觀的，但「答不答得出來」不是。它讓「主觀品質」有一個客觀的
+     地板可以站——判準沒有變鬆，是原本無法表達的那一半。
 
      `matches`／`not_matches` 的 pattern 是**平台清單裡的名稱、不是 regex 原文**
      （`PLATFORM_PATTERNS`）：收原文的話任何呼叫端都能把一段會回溯爆炸的
@@ -417,6 +427,7 @@ permalink: 2-2-4_regressionSuites.html
   { value: "cites_document", label: "須引用文件", i18nKey: "regression.typeCitesDocument" },
   { value: "direction_is", label: "命中文件的維度值", i18nKey: "regression.typeDirectionIs" },
   { value: "no_answer", label: "須為誠實查無", i18nKey: "regression.typeNoAnswer" },
+  { value: "answers", label: "必須答得出來", i18nKey: "regression.typeAnswers" },
   { value: "judge", label: "主觀評分判準", i18nKey: "regression.typeJudge" }
 ] %}
 {% set regressionPatterns = [
@@ -438,6 +449,7 @@ permalink: 2-2-4_regressionSuites.html
   { type: "has_link", shape: "prefix", prefix: "https://www.trade.gov.tw/" },
   { type: "cites_document", shape: "document", idKind: "document_id", identity: "9f2c1b7e…a41" },
   { type: "direction_is", shape: "slot", slotKey: "note4", value: "export" },
+  { type: "answers", shape: "none" },
   { type: "judge", shape: "criteria", criteria: "答案有沒有正面回答「稅率是多少」，而不是只講申報流程" }
 ] %}
 <div class="block mt-16 flex-row column gap-16">
@@ -615,6 +627,11 @@ permalink: 2-2-4_regressionSuites.html
                         </div>
                     </div>
                 </div>
+                {% endif %}
+                {# 無參數那兩型（`no_answer`／`answers`，`ASSERTION_PARAM_SHAPES` 都是 `none`）：
+                     **這一格不留白**——空白會被讀成「這一型的參數欄還沒做出來」，而它本來就沒有參數。 #}
+                {% if a.shape == "none" %}
+                <p class="text-gray m-0" data-i18n="regression.assertionNoParams">這一型不需要填參數。</p>
                 {% endif %}
                 {% if a.shape == "criteria" %}
                 <div class="form-group">
