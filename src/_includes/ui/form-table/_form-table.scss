@@ -33,6 +33,25 @@
     }
 }
 
+// **生產契約**（§1-2）：`form-table.html` 是展示片段，它的 `.subtitle` 與 `.th` **一顆
+// `data-i18n` 都沒有**（showcase 整頁不翻，§4-2），而生產的每一顆都要有——那兩種都是 chrome
+// （區段小標與欄名），照片段抄就是英文模式整張表露出繁中，而視覺指紋完全看不出來。
+// 逐字取自 components/qa-detail-info（4-2／shared 兩頁的問答詳情）：
+//
+//   <div class="form-table-group">
+//       <div class="subtitle" data-i18n="qa.satisfactionFeedback">滿意度回饋</div>
+//       <div class="form-table">
+//           <div class="row">
+//               <div class="col col-6-md col-12-sm">
+//                   <div class="th" data-i18n="qa.userSatisfaction">使用者滿意度</div>
+//                   <div class="td">{{ 值 }}</div>
+//               </div>
+//           </div>
+//       </div>
+//   </div>
+//
+// `.td` 裡是資料、不掛 key（§4-2）。
+//
 .form-table {
     width: 100%;
     min-width: auto;

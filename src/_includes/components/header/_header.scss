@@ -2,6 +2,10 @@
 // 這幾條要知道理由（改動前先讀）：
 // ①桌機下拉選單的展開收合是**純 CSS**（`&:hover > ul` ＋ `&:focus-within > ul`），本檔不靠 JS 展開；
 // ②窄視窗（nav-collapsed）時桌機選單與 header-controls slot 一起收起來，header 只剩 logo ＋ 漢堡。
+// **與 components/mobile-nav 的耦合點**：漢堡鈕 `.nav-toggle` 的 markup 住在 `header.html`，
+// 但它的樣式**不在本檔**、在 `_mobile-nav.scss`（開合行為同樣在那支元件的 js）。
+// 那不是跨元件借用的例外，是 §1-1 的「專屬子片段＝同一個元件邊界」——但耦合點要在雙方檔頭
+// 互相指名，否則在本檔找不到 `.nav-toggle` 的人會以為它沒有樣式主人。
 @use "../../../scss/mixin" as *;
 @use "../../../scss/size" as *;
 

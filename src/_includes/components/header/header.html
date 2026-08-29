@@ -1,4 +1,9 @@
-{# i18n：每個 label 帶 i18nKey，markup 渲染成 data-i18n；繁中文字即預設。
+{# **與 components/mobile-nav 的耦合點（雙方檔頭互相指名，改名要兩邊一起改）**：
+   漢堡鈕 `.nav-toggle` 的 markup 在本檔（見下方那顆 `<button>`），樣式在 `_mobile-nav.scss`、
+   開合行為在 `mobile-nav.js`（它 `querySelector(".nav-toggle")`）。§1-1 的專屬子片段＝同一個
+   元件邊界，跨界借用不算違規，但少了這一句，改名的人會做出一顆沒有樣式也沒有人綁的死鈕。
+
+   i18n：每個 label 帶 i18nKey，markup 渲染成 data-i18n；繁中文字即預設。
    語言＋夜間切換抽到共用 components/header-controls；桌機放這裡（nav 之後、漢堡之前），
    窄視窗改由 mobile-nav 放進展開的選單裡（header 只留 logo + 漢堡）。此選單只剩導覽與登出。
 

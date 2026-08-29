@@ -5,6 +5,25 @@
 //   ① 文字色走語意 token `--brand-text`，不寫死藍色碼（深色模式靠換 token 值）。
 //   ② `&.on-dark` 是本元件自有的變體：footer 的深底上要換一個文字色。§4 明文
 //      「外觀覆寫改成 owning 元件的 variant class」，故由本元件提供，不讓 footer 反過來覆寫它。
+// **生產契約**（§1-2）：`link-modal.html` 是展示片段（它示範的是「開一顆固定的窗」）。
+// 生產有兩型，都與片段不同：
+//
+//   ① 深色底上的連結鈕（生產 markup＝components/footer）——多一顆 `.on-dark` 變體與 `data-i18n`：
+//
+//   <button type="button" class="link-modal on-dark" data-open-modal="disclaimerModal" data-i18n="comp.disclaimer">免責聲明</button>
+//
+//   ② **有條件開窗**（生產 markup＝1-2-1 的待上傳清單）——它要先知道「點的是哪一列」才開得了窗，
+//      所以**不掛 `data-open-modal`**、改留 hook class ＋ 列鍵（§5 矩陣①）：
+//
+//   {% for file in pendingFiles %}
+//   <button type="button" id="pdfFileRowName-{{ loop.index }}" class="link-modal btn-preview-file" data-index="{{ loop.index0 }}">{{ file.name }}</button>
+//   {% endfor %}
+//
+//   抄的時候先問一句：**這顆鈕點下去開的窗，內容需不需要先知道是哪一筆？**
+//   不需要就照 ①（靜態 `data-open-modal`）；需要就照 ②——靜態掛上去等於在 markup 裡寫一句謊話，
+//   有測試把關（「掛 data-open-modal 的鈕不得同時帶業務 hook class」）。
+//   `.on-dark` 是本元件自己的變體（§4：外觀覆寫由 owning 元件提供 variant，不由使用頁覆寫）。
+//
 .link-modal {
     color: var(--brand-text);
     text-decoration: none;

@@ -6,7 +6,8 @@
      ——空白與「忘了標」在 markup 上長得一模一樣）：前台公開問答走的是 widget token
      （gufofaq-saas product 的 `require_widget_token`），不是租戶內的能力
      token；後台 `components/chatroom` 的同型鈕走 `/ask` 才掛 `data-capability="ask"`。
-     `ui/chat-message` 的契約段因此**只有後台那兩份帶 `data-capability`**，前台這一份不帶。
+     `ui/chat-message` 的契約段因此**只有後台那一份（① 的建議追問 chip）帶 `data-capability`**，
+     前台那兩型（①′ 與 ⑤）都不帶。
 
      **429 節流是同一道守衛**：`require_widget_token` 對每一支 `/public/*` 都跑
      `enforce_widget_rate_limit`（product），所以送出鈕與建議追問 chip 都要有那一段
