@@ -10,7 +10,8 @@ permalink: 2-2-4_regressionSuites.html
        `POST/GET /qatest/suites`、`GET/DELETE /qatest/suites/{id}`、
        `POST /qatest/suites/{id}/cases`、`POST /qatest/suites/{id}/cases/from-log`、
        `DELETE /qatest/suites/{id}/cases/{cid}`、`POST /qatest/suites/{id}/run`（SSE）、
-       `POST /qatest/runs/{id}/abort`、`GET /qatest/runs/{id}/export`（執行清單那一列的「下載」）。
+       `POST /qatest/runs/{id}/abort`、`POST /qatest/runs/{id}/metrics`（2-2-5 的 RAGAS 那一區，
+       **不會自動算**、由那一頁的鈕觸發）、`GET /qatest/runs/{id}/export`（執行清單那一列的「下載」）。
        另外三支只供**界線與值域**、不改狀態：`GET /qatest/contract`（案例集／案例／斷言的所有上限，
        見下方各欄的界線提示）、`GET /qatest/models`（可覆寫的模型清單）、
        `GET /settings/llm-contract`（哪一顆模型吃得下 reasoning_effort）。
@@ -736,8 +737,8 @@ permalink: 2-2-4_regressionSuites.html
      判準不在畫面上：`GET /settings/llm-contract` 投影 product 的
      `PROVIDER_PREFIXES`／`REASONING_EFFORT_PREFIXES`，前端不得自己抄一份前綴清單。
      為什麼會壞：judge 斷言的評審模型讀的是設定檔的判定分組，**分組沒設就繼承這一輪的
-     `model_name`**；繼承到 product 建不起來的 provider 時，這一輪每一則主觀分斷言都會變成
-     「評審未完成」——報表看起來只是「評審漂移」，沒有人會知道是這一顆旋鈕造成的。 #}
+     `model_name`**；繼承到 product 建不起來的 provider 時，這一輪每一條判準都會變成
+     「未評出」（`met: null`）——報表看起來只是「評審漂移」，沒有人會知道是這一顆旋鈕造成的。 #}
 {% set regressionTurnTotal = 21 %}
 {% set regressionOverrideCount = 4 %}
 {% set regressionLimits = [

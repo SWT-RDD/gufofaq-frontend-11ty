@@ -1069,6 +1069,18 @@ bodyClass: guideline-page
                      （不是「已選 0 個資料集」）。那一頁的示範資料勾了兩筆，所以 0 態在使用頁上
                      永遠看不到——它的家在這裡（§5：沒有頁面演得出來的分支等於沒驗收過）。 #}
                 <p class="text-gray m-0" data-i18n="settings.scanScopeAll">全部資料集</p>
+                {# 2-2-5 的終止鈕**兩態**：它只在 `status == "running"` 時出現，而那一頁演的是
+                     已經中斷的執行 ⇒ 兩顆在使用頁上都畫不到。中間那一態（「終止中…」）尤其重要：
+                     終止是在案例邊界收手，按下去之後那一輪還會把手上這一則跑完——沒有這一態，
+                     按下去畫面上什麼都不會變，使用者只能再按一次，而第二次拿到 409。 #}
+                <div class="flex-row align-items-center gap-8">
+                    <button data-capability="settings:write" type="button" class="button button-red button-sm js-abort-run" data-toast="已送出終止：這一輪會在跑完手上這一則之後停下來|權限不足，無法終止——請找貴租戶的管理者開通|這一輪已經不是進行中，沒有東西可以終止|終止失敗，請稍後再試" data-i18n-data-toast="toast.abortRun" data-toast-type="success|warning|warning|error" data-i18n="regression.abortRun">終止</button>
+                    <button type="button" class="button button-red button-sm js-abort-requested" disabled data-i18n="regression.abortRequested">終止中…</button>
+                </div>
+                {# 2-2-5 的 RAGAS 兩態：「還沒算過」是 `summary` 沒有 `ragas` 鍵那一支（那一頁演的是
+                     已經算過的），「多個評測模型」則要拆成多批才會發生。 #}
+                <p class="text-gray m-0" data-i18n="regression.ragasNotComputed">這一輪還沒有算過 RAGAS 指標。按上面那顆鈕開始計算——它是逐筆發 LLM 的離線評測，會跑一段時間；算完之後也可以再算一次。</p>
+                <p class="text-red m-0" data-i18n="regression.ragasMultiModelWarn">這一批指標是由多個評測模型分批算出來的，彼此不該互相比較——離線評測的全部用途是把兩批拿來比，而只有同一個評測模型算出來的兩批才比得下去。</p>
                 {# 5-2 的「主 agent 可直接查詢」全部不勾（送 `[]`）那一態：那一頁的示範是部分勾選，
                      所以它在使用頁上永遠看不到。 #}
                 <p class="text-gray m-0" data-i18n="settings.glossaryApplyAgentNoneHint">目前沒有任何表讓主 agent 直接查詢——術語表只能經 skill 取用。</p>
