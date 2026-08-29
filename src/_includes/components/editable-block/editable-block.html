@@ -58,7 +58,7 @@
     {# 欄名在這一型沒有可見 label（值本身就是標題），故補一顆 sr-only 供三顆動作鈕的可及名稱組字用（§4）。 #}
     <span class="sr-only" id="{{ editId }}-fieldLabel"{% if editLabelKey %} data-i18n="{{ editLabelKey }}"{% endif %}>{{ editLabel }}</span>
     <span class="display-text">{{ editValue }}</span>
-    <input type="text" class="form-control edit-field" value="{{ editValue }}" style="display: none;"
+    <input type="text" class="form-control edit-field disabled" value="{{ editValue }}" style="display: none;" disabled
         aria-label="{{ editLabel }}"{% if editLabelKey %} data-i18n-aria-label="{{ editLabelKey }}"{% endif %}>
     <button type="button" class="button-icon no-bg size-sm edit edit-icon" title="編輯" data-i18n-title="action.edit" aria-labelledby="{{ editId }}-fieldLabel {{ editId }}-editLabel"><span
             class="sr-only" id="{{ editId }}-editLabel" data-i18n="action.edit">編輯</span></button>

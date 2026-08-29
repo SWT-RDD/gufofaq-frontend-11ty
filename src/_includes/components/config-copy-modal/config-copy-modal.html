@@ -5,10 +5,19 @@
      COPY_GROUPS，資料化於下方 configCopyGroups）。標題「複製到「<目標>」」的目標設定檔名是執行期資料：前後綴拆
      i18n key（§4-2），名字放 #configCopyTarget 資料槽由 React 填（同 delete-modal 的 deleteTargetId
      慣例），示範值＝5-2 檢視中的設置一。
-     參數（示範開關；React 端為條件渲染，元件庫頁 set true 演出該分支）：
+     參數：
+       configCopyTargetName＝標題那顆 #configCopyTarget 槽的示範名（正式頁面由 React 填；預設「設置一」）。
+         **那顆槽不掛 `data-i18n`**（同 delete-modal 的 deleteTargetId 慣例：掛了的話，
+         使用者切一次語言就會把 React 填進去的設定檔名蓋回字典裡那一顆）。
+       configCopySources＝來源下拉的選項（**必須排除目標本身**：複製到自己是無意義的覆寫）。
+         預設是 5-2 的形狀（檢視中＝設置一 ⇒ 來源只剩設置二／設置三）。
        configCopyShowWarning＝目標為前台公開問答生效設定檔時的對外影響警告（React 依 targetIsProduction
-         渲染；5-2 示範目標設置一非前台預設，故該頁不演）；
+         渲染；5-2 的前台預設是設置二、檢視中是設置一，兩者不同 ⇒ 該頁不演這一段。
+         **要演這一段的頁面必須同時把 configCopyTargetName 換成那一份真的是前台預設的**，
+         否則畫面演的是一個資料上不可能的狀態，§6）；
        configCopyShowError＝送出失敗的持久錯誤列（React 依 error state 渲染）。
+     複製項目 checkbox 的 `value` ＝ GufoRAG chatbot `COPY_GROUPS` 的鍵（§6 值＝上游字面）：
+     沒有 value 的 checkbox 在 DOM 上一律讀到 "on"，七組分不開。
      契約在 gufofaq-saas product 的 `copy_config`（`POST /config/profiles/{no}/copy-from`），
      套用由 React 業務 js 帶條件驗證後直送，故 .js-config-copy-apply；示範來源 2 筆。
      與 gufofaq-saas `apps/web/components/ConfigCopyModal/ConfigCopyModal.tsx` 對齊的三件事：
@@ -25,14 +34,18 @@
      每一組的 label 是「這一組**包含什麼**」的如實列舉，所以上游往組裡加欄位時要回頭重讀這幾行字：
      少寫一個欄位，使用者就會以為那個欄位不會被複製。最容易漏的三處是 glossary（別名表那四欄）、
      policy（出口替換與輸出規則）、retrieval（可回答性閘那三欄與分組 LLM／評測模型）。 #}
+{# 預設值收進元件專屬的區域名（同 ui/storage-bar 的 *Resolved 做法）：{% set %} 是**頁面全域**，
+     在元件內用同一個名字寫回去的話，這一頁後面每一個元件都會看到被改過的值。 #}
+{% set configCopySourcesResolved = [{ value: "2", i18nKey: "settings.config2", label: "設置二" }, { value: "3", i18nKey: "settings.config3", label: "設置三" }] %}
+{% if configCopySources %}{% set configCopySourcesResolved = configCopySources %}{% endif %}
 {% set configCopyGroups = [
-    { i18nKey: "settings.copyConfigGroupPrompts", label: "提示詞：五層系統提示詞（聊天室／產品／意圖／回答／Agent）、機器人人設、回答格式、歡迎語" },
-    { i18nKey: "settings.copyConfigGroupRetrieval", label: "檢索與生成：模型與思考深度（主回答與各分組 LLM）、評測模型、溫度、取樣數（總數／選用數）、資料來源比例、知識模式、QA 直答模式與判準與門檻、可回答性閘模式與判準與門檻、重排序、記憶輪數、建議問題、標題自動命名（僅首次）、時區、搜尋模式與 Agent 迭代上限、引用、Langfuse 追蹤、資料集分層與逐層意圖、欄位顯示標籤、事實時效角色" },
-    { i18nKey: "settings.copyConfigGroupPolicy", label: "合規：敏感詞、禁止主題、輸入擋下訊息、輸出擋下訊息、出口替換規則、輸出規則" },
-    { i18nKey: "settings.copyConfigGroupTools", label: "工具：內建工具啟停與客製設定、MCP 伺服器選用" },
-    { i18nKey: "settings.copyConfigGroupGlossary", label: "術語與別名綁定：本設定檔生效的術語表、綁定的別名表與比對／推理／出口三個套用階段" },
-    { i18nKey: "settings.copyConfigGroupSkills", label: "Skill 指派：本設定檔指派的租戶自訂 Skill" },
-    { i18nKey: "settings.copyConfigGroupDatasetBinding", label: "答題索引綁定：答題索引、QA 直答索引" }
+    { key: "prompts", i18nKey: "settings.copyConfigGroupPrompts", label: "提示詞：五層系統提示詞（聊天室／產品／意圖／回答／Agent）、機器人人設、回答格式、歡迎語" },
+    { key: "retrieval", i18nKey: "settings.copyConfigGroupRetrieval", label: "檢索與生成：模型與思考深度（主回答與各分組 LLM）、評測模型、溫度、取樣數（總數／選用數）、資料來源比例、知識模式、QA 直答模式與判準與門檻、可回答性閘模式與判準與門檻、重排序、記憶輪數、建議問題、標題自動命名（僅首次）、時區、搜尋模式與 Agent 迭代上限、引用、Langfuse 追蹤、資料集分層與逐層意圖、欄位顯示標籤、事實時效角色" },
+    { key: "policy", i18nKey: "settings.copyConfigGroupPolicy", label: "合規：敏感詞、禁止主題、輸入擋下訊息、輸出擋下訊息、出口替換規則、輸出規則" },
+    { key: "tools", i18nKey: "settings.copyConfigGroupTools", label: "工具：內建工具啟停與客製設定、MCP 伺服器選用" },
+    { key: "glossary", i18nKey: "settings.copyConfigGroupGlossary", label: "術語與別名綁定：本設定檔生效的術語表、綁定的別名表與比對／推理／出口三個套用階段" },
+    { key: "skills", i18nKey: "settings.copyConfigGroupSkills", label: "Skill 指派：本設定檔指派的租戶自訂 Skill" },
+    { key: "dataset_binding", i18nKey: "settings.copyConfigGroupDatasetBinding", label: "答題索引綁定：答題索引、QA 直答索引" }
 ] %}
 <dialog class="modals" id="configCopyModal" aria-labelledby="configCopyModal-title">
     <div class="modals-dialog modals-md">
@@ -40,7 +53,7 @@
             {% include "ui/modal-close/modal-close.html" %}
             <div class="modals-content">
                 <div class="modals-header">
-                    <h3 class="modals-title" id="configCopyModal-title"><span data-i18n="settings.copyConfigModalTitlePrefix">複製到「</span><span id="configCopyTarget" data-i18n="settings.config1">設置一</span><span data-i18n="settings.copyConfigModalTitleSuffix">」</span></h3>
+                    <h3 class="modals-title" id="configCopyModal-title"><span data-i18n="settings.copyConfigModalTitlePrefix">複製到「</span><span id="configCopyTarget">{{ configCopyTargetName or "設置一" }}</span><span data-i18n="settings.copyConfigModalTitleSuffix">」</span></h3>
                 </div>
                 <div class="modals-body">
                     <div class="flex-row column gap-16">
@@ -53,9 +66,11 @@
                                 <label for="configCopySourceSelect" class="control-label" data-i18n="settings.copyConfigSource">來源設定檔</label>
                             </div>
                             <div class="field">
-                                <select id="configCopySourceSelect" class="form-control singleSelect">
-                                    <option value="2" data-i18n="settings.config2">設置二</option>
-                                    <option value="3" data-i18n="settings.config3">設置三</option>
+                                <select id="configCopySourceSelect" class="form-control singleSelect js-copy-source">
+                                    <option value="" data-i18n="common.pleaseSelect">請選擇</option>
+                                    {% for src in configCopySourcesResolved %}
+                                    <option value="{{ src.value }}" data-i18n="{{ src.i18nKey }}">{{ src.label }}</option>
+                                    {% endfor %}
                                 </select>
                             </div>
                         </div>
@@ -69,7 +84,7 @@
                             <legend id="configCopyGroupsLabel" class="control-label" data-i18n="settings.copyConfigGroups">複製項目</legend>
                             {% for group in configCopyGroups %}
                             <label class="form-checkbox config-copy-group-row">
-                                <input type="checkbox" checked>
+                                <input type="checkbox" class="js-copy-group" value="{{ group.key }}" checked>
                                 <span data-i18n="{{ group.i18nKey }}">{{ group.label }}</span>
                             </label>
                             {% endfor %}
@@ -88,7 +103,7 @@
                         {# 這一下會整份覆寫目標設定檔——「複製」是寫入動詞，不是唯讀。閘門對回
                  gufofaq-saas product 的 `copy_config`（`require_capability("settings", "write")`）；
                  姊妹彈窗 apply-settings-modal／apply-settings-compare-modal 也是同一道。 #}
-            <button data-capability="settings:write" type="button" class="button button-primary js-config-copy-apply" data-toast="設定已複製|權限不足，無法複製——請找貴租戶的管理者開通|請至少勾選一個複製項目|複製失敗，請稍後再試" data-i18n-data-toast="toast.copyConfig" data-toast-type="success|warning|warning|error" data-i18n="action.copy">複製</button>
+            <button data-capability="settings:write" type="button" class="button button-primary js-config-copy-apply" data-toast="設定已複製|權限不足，無法複製——請找貴租戶的管理者開通|請先選擇來源設定檔|請至少勾選一個複製項目|複製失敗，請稍後再試" data-i18n-data-toast="toast.copyConfig" data-toast-type="success|warning|warning|warning|error" data-i18n="action.copy">複製</button>
                     </div>
                 </div>
             </div>

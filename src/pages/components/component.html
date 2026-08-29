@@ -1531,6 +1531,14 @@ bodyClass: guideline-page
 {# 這一頁把 React 的條件渲染分支一次打開（§5 分支要看得到）：config-copy 的 production 警告
    ＋ inline 錯誤列、qa-import 的解析中 ＋ 解析失敗列。使用頁（5-2、3-3）刻意不 set 這幾顆參數
    ——把錯誤態畫成預設態，每個打開那兩頁的人都會以為出事了。 #}
+{# 這一頁要演「目標是前台公開問答生效設定檔」那一段警告，所以目標換成 5-2 資料裡
+     真的是前台預設的那一份（設置二），來源清單跟著排除它——目標與警告不一致的話，
+     演的是一個資料上不可能的狀態（§6）。 #}
+{% set configCopyTargetName = "設置二" %}
+{% set configCopySources = [
+    { value: "1", i18nKey: "settings.config1", label: "設置一" },
+    { value: "3", i18nKey: "settings.config3", label: "設置三" }
+] %}
 {% set configCopyShowWarning = true %}
 {% set configCopyShowError = true %}
 {% include "components/config-copy-modal/config-copy-modal.html" %}

@@ -4,7 +4,11 @@
      參數（使用頁在 include 前 set）：
        dataTypeName    —— radio 的 name（同頁多組要不同）
        dataTypeLabelId —— 群組標題的 id（供 aria-labelledby 指到；同頁唯一）
-     三顆都不帶條件 checked：`全部` 是唯一的預設值（值域只有三種，預設全部＝不過濾）。 #}
+     三顆都不帶條件 checked：`全部` 是唯一的預設值（值域只有三種，預設全部＝不過濾）。
+     `value` 是上游 `GET /stats`／`GET /stats/coverage-gaps` 的 `data_type` 字面
+     （all／frontend／backend），§6「值＝上游字面」——沒有 `value` 的 radio 在 DOM 上一律讀到 "on"，
+     三顆分不開。三顆都帶 `data-filter-reset`：清除鈕不由 type 推導哪些是篩選參數，
+     沒宣告就完全不動它（見 `ui/filter-fields` 的 js）。 #}
 <div class="form-group row flex-row mobile-column-xs gap-16">
     <div class="label mobile-align">
         <label id="{{ dataTypeLabelId }}" class="control-label" data-i18n="settings.queryDataType">查詢資料類型</label>
@@ -12,19 +16,19 @@
     <div class="field flex-row gap-24 col-12-sm mobile-column-xs" role="radiogroup" aria-labelledby="{{ dataTypeLabelId }}">
         <div class="function">
             <label class="form-radio">
-                <input type="radio" name="{{ dataTypeName }}" checked>
+                <input type="radio" name="{{ dataTypeName }}" value="all" data-filter-reset="checked" checked>
                 <span data-i18n="common.all">全部</span>
             </label>
         </div>
         <div class="function">
             <label class="form-radio">
-                <input type="radio" name="{{ dataTypeName }}">
+                <input type="radio" name="{{ dataTypeName }}" value="frontend" data-filter-reset="unchecked">
                 <span data-i18n="qa.frontendQa">前台問答</span>
             </label>
         </div>
         <div class="function">
             <label class="form-radio">
-                <input type="radio" name="{{ dataTypeName }}">
+                <input type="radio" name="{{ dataTypeName }}" value="backend" data-filter-reset="unchecked">
                 <span data-i18n="qa.backendQa">後台問答</span>
             </label>
         </div>

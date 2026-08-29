@@ -5620,6 +5620,76 @@ test("§4-2 英譯字串不得含全形標點（那是繁中的字身，混在�
     assert.equal(hits.length, 0, `§4-2 英譯裡的全形標點：\n${fail(hits)}`);
 });
 
+test("§5 清除鈕射程內的每顆 radio／checkbox 都要宣告 data-filter-reset（沒宣告＝清不到）", () => {
+    // `ui/filter-fields` 的清除鈕以 `closest(".block")` 定範圍，而它**刻意不由控制項的 type
+    // 推導**哪些算篩選參數——逐列的多選勾選框、匯出格式那種「不是篩選」的控制項都住在同一塊裡。
+    // 判準因此寫在 markup 上：宣告了就回到宣告的那一態，沒宣告就一顆都不碰。
+    // 漏宣告的失敗方式最難看見：畫面完全正常，只有「按下清除、那一格沒回去」才看得出來，
+    // 而那要比對前後值。母體是 dist（`{% for %}` 展開後才數得準）。
+    //
+    // `<select>` 不在母體裡：它的預設是 `selectedIndex = 0`，第一顆是空值 placeholder 時本來就對，
+    // 只有「第一顆不是預設」的才要自己宣告（`#statsDimension`），那一顆已經宣告了。
+    const NOT_FILTER = new Map([
+        ["js-export-format", "4-1 的匯出格式（csv／xlsx）：它決定的是**匯出成什麼檔**，不是查哪些資料——" +
+            "清除篩選不該把使用者選好的匯出格式一起清掉"],
+        ["js-export-with-header", "同上那一組的附屬 checkbox（要不要含表頭）：它跟著匯出格式走，不是查詢參數"],
+    ]);
+    // 從 `.block` 起算 <div> 配對，切出「含清除鈕的那一塊」
+    const blocksOf = (html) => {
+        const out = [];
+        for (const m of html.matchAll(/<div\b[^>]*\bclass="[^"]*\bblock\b[^"]*"[^>]*>/g)) {
+            let depth = 0;
+            const tag = /<\/?div\b[^>]*>/g;
+            tag.lastIndex = m.index;
+            let t;
+            while ((t = tag.exec(html))) {
+                if (t[0].startsWith("</")) { if (--depth === 0) { out.push(html.slice(m.index, t.index)); break; } }
+                else depth++;
+            }
+        }
+        return out;
+    };
+    const scan = (html) => {
+        const out = [];
+        for (const b of blocksOf(html)) {
+            if (!b.includes("js-filter-clear")) continue;
+            for (const m of b.matchAll(/<input\b[^>]*>/g)) {
+                const t = m[0];
+                if (!/type="(?:radio|checkbox)"/.test(t)) continue;
+                if (/\bdata-filter-reset=/.test(t)) continue;
+                if ([...NOT_FILTER.keys()].some((c) => new RegExp(`class="[^"]*\\b${c}\\b`).test(t))) continue;
+                out.push(t.slice(0, 140));
+            }
+        }
+        return out;
+    };
+    const hits = [];
+    let scopedBlocks = 0;
+    for (const f of distHtml) {
+        const html = distDoc(f);
+        scopedBlocks += blocksOf(html).filter((b) => b.includes("js-filter-clear")).length;
+        for (const h of scan(html)) hits.push(`dist/${f}  ${h}`);
+    }
+    assert.ok(scopedBlocks >= 6, `只切出 ${scopedBlocks} 塊「含清除鈕的 .block」—— 區塊切割壞了，這條在空轉`);
+    // 豁免衛生：逐筆理由 ＋ 死名單（那顆 class 已經不在任何清除鈕射程內）
+    for (const [c, why] of NOT_FILTER) {
+        assert.ok(why.length > 20, `NOT_FILTER 的 .${c} 沒寫理由（空白不等於查證過）`);
+        const alive = distHtml.some((f) => blocksOf(distDoc(f))
+            .some((b) => b.includes("js-filter-clear") && new RegExp(`class="[^"]*\\b${c}\\b`).test(b)));
+        assert.ok(alive, `NOT_FILTER 有死名單：.${c} 已經不在任何清除鈕的射程內`);
+    }
+    probe("§5 清除鈕射程", scan, [
+        `<div class="block"><button class="js-filter-clear"></button><input type="radio" name="x" value="a" checked></div>`,
+        `<div class="block"><button class="js-filter-clear"></button><input type="checkbox" class="js-foo"></div>`,
+    ], [
+        `<div class="block"><button class="js-filter-clear"></button><input type="radio" name="x" value="a" data-filter-reset="checked" checked></div>`,
+        `<div class="block"><button class="js-filter-clear"></button><input type="radio" class="js-export-format" name="x" value="csv" checked></div>`,
+        `<div class="block"><input type="radio" name="x" value="a" checked></div>`,
+        `<div class="block"><button class="js-filter-clear"></button><input type="text" class="form-control"></div>`,
+    ]);
+    assert.equal(hits.length, 0, `§5 這幾顆住在清除鈕射程內、卻沒宣告 data-filter-reset（按下清除不會動它）：\n${fail(hits)}`);
+});
+
 test("§4 同頁多份同型元件的兩顆參數（OwnerId／Instance）都要在 README 登記得到", () => {
     // 這兩顆是「同一支元件在同一頁出現多次」時唯一的區分手段：`Instance` 讓逐列 id 不撞、
     // `OwnerId` 讓逐列可及名稱不逐字同名（§4）。它們不是元件自己的 class，掃 class 的網看不到；

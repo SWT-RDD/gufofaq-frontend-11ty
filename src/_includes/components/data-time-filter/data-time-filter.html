@@ -9,7 +9,12 @@
      參數（使用頁在 include 前 set，見 §3-2/§6）：
        timeFilterName    —— radio 的 name（同頁多組要不同：5-3 是 data-time、5-4 是 gap-time）
        timeFilterLabelId —— 群組標題的 id（供 aria-labelledby 指到；同頁唯一）
-       timeFilterChecked —— 預設選中哪一顆：last24h / lastWeek / lastMonth / range（不給＝一顆都不選）
+       timeFilterChecked —— 預設選中哪一顆：last24h / lastWeek / lastMonth / range（不給＝一顆都不選）。
+                            這是**參數名**，不是送出去的值：`value` 是上游 `GET /stats`／
+                            `GET /stats/coverage-gaps` 的 `range` 字面（daily／weekly／monthly／custom），
+                            §6「值＝上游字面，不另發明詞彙」。四顆都帶 `data-filter-reset`：
+                            清除鈕**不由 type 推導**哪些是篩選參數，沒宣告的 radio 它一顆都不碰
+                            （見 `ui/filter-fields` 的 js），於是按了清除時間篩選會留在原地。
        timeFilterRangeHintId —— 區間上限那句常駐說明的 id（同頁唯一；起訖兩欄 aria-describedby 指它）
      **365 這個數字寫在元件裡、不開成參數**（§6 (a) 全站不變的結構性設定）：兩個消費頁打的是
      同一支驗證——product 的 `_resolve_range`，`GET /stats` 與
@@ -35,19 +40,19 @@
             <div class="flex-row gap-16 mobile-column-xs col-12-xs">
                 <div class="function">
                     <label class="form-radio border-wrap w100">
-                        <input type="radio" name="{{ timeFilterName }}"{% if timeFilterChecked == "last24h" %} checked{% endif %}>
+                        <input type="radio" name="{{ timeFilterName }}" value="daily" data-filter-reset="{% if timeFilterChecked == "last24h" %}checked{% else %}unchecked{% endif %}"{% if timeFilterChecked == "last24h" %} checked{% endif %}>
                         <span data-i18n="settings.last24h">近24小時</span>
                     </label>
                 </div>
                 <div class="function">
                     <label class="form-radio border-wrap w100">
-                        <input type="radio" name="{{ timeFilterName }}"{% if timeFilterChecked == "lastWeek" %} checked{% endif %}>
+                        <input type="radio" name="{{ timeFilterName }}" value="weekly" data-filter-reset="{% if timeFilterChecked == "lastWeek" %}checked{% else %}unchecked{% endif %}"{% if timeFilterChecked == "lastWeek" %} checked{% endif %}>
                         <span data-i18n="settings.lastWeek">上週</span>
                     </label>
                 </div>
                 <div class="function">
                     <label class="form-radio border-wrap w100">
-                        <input type="radio" name="{{ timeFilterName }}"{% if timeFilterChecked == "lastMonth" %} checked{% endif %}>
+                        <input type="radio" name="{{ timeFilterName }}" value="monthly" data-filter-reset="{% if timeFilterChecked == "lastMonth" %}checked{% else %}unchecked{% endif %}"{% if timeFilterChecked == "lastMonth" %} checked{% endif %}>
                         <span data-i18n="settings.lastMonth">上個月</span>
                     </label>
                 </div>
@@ -55,7 +60,7 @@
             <div class="flex-row gap-16 mobile-column-xs field-with-input">
                 <div class="function">
                     <label class="form-radio">
-                        <input type="radio" name="{{ timeFilterName }}"{% if timeFilterChecked == "range" %} checked{% endif %}>
+                        <input type="radio" name="{{ timeFilterName }}" value="custom" data-filter-reset="{% if timeFilterChecked == "range" %}checked{% else %}unchecked{% endif %}"{% if timeFilterChecked == "range" %} checked{% endif %}>
                         <span data-i18n="settings.timeRange">時間區間</span>
                     </label>
                 </div>
