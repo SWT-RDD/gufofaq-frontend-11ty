@@ -21,6 +21,14 @@
 //      （§4：`#id` 選擇器不進元件 scss，某一顆窗的專屬樣式也不屬共用殼）。
 //   ⑨ `&::backdrop` 的 transition 是 `0.3s ease-out`，與 ① 的進出場時長逐字對齊——兩者不同步時
 //      遮罩會先退場、窗還留在畫面上。
+//   ⑩ `.dataset-box-wrap`／`.dataset-list-wrap`／`.dataset-list`／`.add-dataset` 這一組住在本檔，
+//      理由與 ③⑤ 那兩顆同一條：**它們的規則帶著 `.modals` 與 `.modals-body`／`.modals-footer` 祖先**，
+//      搬到別的檔就得把那兩層祖先一起抄過去（§4：祖先錯位＝規則整條失效）。前三顆是
+//      `ui/list-filter` 的契約 class（那支是 js-only、自己沒有 scss，契約 class 一律住在別人家，
+//      GUIDELINE §1-2 的 js-only 原子那一條）；`.add-dataset` 是 `components/select-dataset-modal`
+//      footer 那顆「新增資料集」鈕的字重與內距，而該元件同樣沒有自己的 scss。
+//      **這一組不是誰都可以往本檔加東西的先例**：判準是「它的規則需不需要 `.modals*` 當祖先」，
+//      不需要就回到自己的元件檔。
 //
 // ─────────────────────────────────────────────────────────────────────────────
 // markup 契約（無 html 元件，§1-2；整段照抄）—— 全站每一顆 `<dialog>` 的外殼。
@@ -52,8 +60,15 @@
 //
 // 可變的只有這幾處（不寫顆數：下面用逗號列出來的東西自己就是清單，多一顆少一顆看得出來）：
 // `<dialog>` 的 `id`、`aria-labelledby`、`.modals-dialog` 上的尺寸 class、
-// `.modals-body` 的內容、`.modals-footer` 整段（可以沒有——`components/intent-enable-modal`、
-// `apply-settings-no-permission-modal` 只有 header + body），以及 `<dialog>` 上的**授權宣告**。
+// `.modals-body` 的內容與它可以再掛的排版工具 class（`class="modals-body flex-row column gap-16"`
+// 是全站唯一的另一種寫法，其餘都是裸的 `.modals-body`）、`.modals-title` 的**內部結構**
+// （多數是一顆掛 `data-i18n` 的文字節點；少數把「前綴 key ＋資料槽 ＋後綴 key」拆成幾顆 `<span>`
+// ——標題裡要放執行期資料時一定是這一種，因為資料不進譯文字串，§4-2），以及 `<dialog>` 上的**授權宣告**。
+//
+// `.modals-footer` **整段可以沒有**，而且那不是少數例外：**判準是「這顆窗有沒有要使用者做決定」**
+// ——純告知型的窗（免責聲明、`components/help-modal` 的三塊式說明、預覽、權限不足、資訊型 info 窗）
+// 只有 header ＋ body，關閉走右上角那顆 `ui/modal-close`。顆數不寫死（§3-2），
+// 反查：`grep -l 'modals-footer' dist/*.html` 與 `grep -l '<dialog' dist/*.html` 的差集。
 //
 // `aria-labelledby` **指向本窗那顆 `.modals-title` 的 id**（有測試釘住的是這件事，不是「等於
 // `<dialog id>`」）。多數彈窗的標題 id 恰好是 `<dialog id>-title`，但那只是命名慣例不是規則：

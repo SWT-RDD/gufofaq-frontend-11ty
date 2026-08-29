@@ -1,6 +1,29 @@
 // radio 原子：一顆自畫的單選鈕（`.form-radio` ＋ 它裡面那顆 `input[type="radio"]`）。
 // 本檔**只寫 radio 自己的東西**；`.form-checkbox, .form-radio` 共用的那段外框排版住在全域的
 // `scss/_form-check.scss`（與 checkbox 共用，§4 不在這裡寫 checkbox 的 class）。
+// **生產契約**（§1-2）：`radio.html` 是展示片段（只示範三種外觀），生產的每一顆 radio 還要帶
+// 三樣它一顆都沒有的東西，照片段抄就會做出一組「選了也讀不出選了什麼」的單選鈕。
+// 逐字取自 `components/data-type-filter`：
+//
+//   <div class="function">
+//       <label class="form-radio">
+//           <input type="radio" name="{{ dataTypeName }}" value="all" data-filter-reset="checked" checked>
+//           <span data-i18n="common.all">全部</span>
+//       </label>
+//   </div>
+//
+// 抄的時候一個都不能省：
+//   ⓐ **`value`**：沒有它時 DOM 上每一顆都讀到 "on"，同組分不開。值取上游字面（§6），
+//      不另發明詞彙。
+//   ⓑ **可見字面那顆 `<span>` 要掛 `data-i18n`**：它是 chrome、不是資料（§4-2）。
+//   ⓒ **住在清除鈕射程內的要宣告 `data-filter-reset`**（值＝這一顆的預設態）：清除鈕不由控制項
+//      的 type 推導哪些算篩選參數，沒宣告就一顆都不碰（見 `ui/filter-fields`，有測試把關）。
+//   ⓓ 外面那顆 `<div class="function">` 不是裝飾：它是 `ui/form-control` 的全域原子
+//      （`flex-shrink:0` ＋ inline flex），少了它 radio 會在窄容器裡被壓扁。
+//   ⓔ 一組 radio 要報得出「這一組在問什麼」（§4）：容器掛 `role="radiogroup"` ＋
+//      `aria-labelledby` 指向那一組的標籤；**組裡混進非 radio 的控制項時改用 `role="group"`**
+//      （`radiogroup` 的 owned element 只能是 radio，理由逐字在 `components/data-time-filter` 檔頭）。
+//
 // **這幾條要知道理由（改動前先讀）**：
 //   ①外框排版不在本檔，在 `scss/_form-check.scss`（見上）——在這裡再寫一份就是第二份真相。
 //   ②選擇器一律限定在自有 class 底下（`.form-radio input[type="radio"]`），

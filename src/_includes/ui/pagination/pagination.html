@@ -1,16 +1,20 @@
 {# 資料驅動頁碼列，js render（pagination.js）。
      頁面 include 前 set total（總筆數，必填）；可選 set perPage（每頁筆數，預設 10）
      ／set currentPage（目前頁，預設 1）／set paginationOwnerId（**同一頁 include 兩份時必填**：
-     這一顆是 `<nav>` 地標，兩份的可及名稱逐字都是「頁碼分頁」，報讀器的地標清單上會出現兩行
-     一模一樣的字——與 §4「同一頁同時可見、語意不同的兩個以上控制項不得共用同一個可及名稱」
-     是同一件事，只是換了一種節點。給了就改吃 `aria-labelledby="<擁有者> <本列自己>"`）。
+     這一顆帶 `role="navigation"`＝一個地標，不給 OwnerId 時兩份的可及名稱逐字都是「頁碼分頁」，
+     報讀器的地標清單上會出現兩行一模一樣的字——與 §4「同一頁同時可見、語意不同的兩個以上控制項
+     不得共用同一個可及名稱」是同一件事，只是換了一種節點。
+     給了就改吃 `aria-labelledby="<擁有者> <本列自己那顆 sr-only>"`——**第二段一定要指向那顆
+     只寫「頁碼分頁」的 `.sr-only`，不可以指回這一層自己**：`aria-labelledby` 指到誰就取誰的
+     整段文字，指回自己會把「上一頁 1 2 3 … 共 12 頁 下一頁」整串念成這個地標的名字。）。
      `<ul>` 是**空殼**，每一顆 `<li>` 都由 pagination.js 依 data-total／data-per-page／data-current 現算現畫，
      順序固定是：prev → 首頁碼（恆顯）→ 中間滑動視窗（可視頁碼數讀 CSS 的 `--pagination-visible`，
      桌機 5、≤768px 3）＋左右省略號 → 尾頁碼（恆顯）→ next。
      每一顆頁碼有兩態：**有 `data-page` ＝點得動**（換頁後整份重繪），**沒有 `data-page` ＝目前頁或停用**。
      `.page-info` 那一行顯示**總頁數**，數字由 js 填（見下面那則註解的推導）。 #}
-<div class="pagination" role="navigation"{% if paginationOwnerId %} id="paginationNav-{{ paginationOwnerId }}" aria-labelledby="{{ paginationOwnerId }} paginationNav-{{ paginationOwnerId }}"{% else %} aria-label="頁碼分頁" data-i18n-aria-label="pagination.nav"{% endif %}
+<div class="pagination" role="navigation"{% if paginationOwnerId %} aria-labelledby="{{ paginationOwnerId }} paginationNav-{{ paginationOwnerId }}"{% else %} aria-label="頁碼分頁" data-i18n-aria-label="pagination.nav"{% endif %}
     data-total="{{ total }}"{% if perPage %} data-per-page="{{ perPage }}"{% endif %}{% if currentPage %} data-current="{{ currentPage }}"{% endif %}>
+    {% if paginationOwnerId %}<span class="sr-only" id="paginationNav-{{ paginationOwnerId }}" data-i18n="pagination.nav">頁碼分頁</span>{% endif %}
     <ul></ul>
     {# 三個 `<span>` **寫在同一行**，不要為了好讀而換行縮排（同 ui/breadcrumb 的處置）：
        標籤之間只要有縮排換行就會留下一顆 whitespace text node，讓「共 12 頁」的數字兩側字距比
