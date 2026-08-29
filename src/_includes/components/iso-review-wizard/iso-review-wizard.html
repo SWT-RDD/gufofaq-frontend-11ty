@@ -118,15 +118,20 @@
              那一格是這一族最不該說錯的一格（ISO 稽核截圖存證）。
              收成一組 radio：未選中那一邊的輸入 `disabled`（照渲染但改不動，狀態要看得見才稽核得到），
              並給一段**常駐可見**的依賴說明（`aria-describedby`）——`disabled` 說得出「現在不能填」，
-             說不出「為什麼」。 #}
-        <div class="flex-row flex-wrap gap-16 align-items-end mobile-column sm-gap-16" role="group" aria-labelledby="reviewThresholdModeLabel" aria-describedby="reviewThresholdHint">
+             說不出「為什麼」。
+             ⚠️ **那顆 `disabled` 要由 `ui/field-with-input` 切**（三層 class：`.field-with-input-group`
+             ／`.field-with-input`／`.with-input`）：自己寫死一個初始 `disabled` 而沒有接上那支行為，
+             旋鈕點下去永遠解不開——畫面上是一個點了沒反應的二擇一（§5 ④ 純前端互動當場要動得起來）。
+             ⚠️ **兩顆輸入的可及名稱不得與它們的 radio 逐字相同**（§4：同一個 group 內語意不同的控制項
+             不得同名）：radio 是「選哪一種算法」，輸入是「填什麼值」，報讀器要分得出來。 #}
+        <div class="flex-row flex-wrap gap-16 align-items-end mobile-column sm-gap-16 field-with-input-group" role="group" aria-labelledby="reviewThresholdModeLabel" aria-describedby="reviewThresholdHint">
             <span id="reviewThresholdModeLabel" class="sr-only" data-i18n="platform.thresholdMode">逾時門檻的算法（二擇一）</span>
-            <div class="form-group">
+            <div class="form-group field-with-input">
                 <div class="label">
-                    <label class="form-radio"><input type="radio" name="review-threshold-mode" value="days" class="js-review-threshold-mode" data-filter-reset="checked" checked><span data-i18n="platform.overdueDaysLabel">逾期滿（天）</span></label>
+                    <label class="form-radio"><input type="radio" name="review-threshold-mode" value="days" class="js-review-threshold-mode" checked><span data-i18n="platform.overdueDaysLabel">逾期滿（天）</span></label>
                 </div>
                 <div class="field">
-                    <input type="number" min="0" max="36500" step="1" id="reviewOverdueDaysInput" value="90" class="form-control" aria-describedby="reviewOverdueDaysRange">
+                    <input type="number" min="0" max="36500" step="1" id="reviewOverdueDaysInput" value="90" class="form-control with-input" aria-label="逾期天數" data-i18n-aria-label="platform.daysOverdue" aria-describedby="reviewOverdueDaysRange">
                     {# 三件套的第三件（§4）：可見區間 ＋ aria-describedby——**被指到的節點裡要讀得到那兩個數字**，
                          寫成開區間（「≥ 0」）等於只給了一半。出處引全那一行：`GET /platform/review/overdue` 的
                          `overdue_days: int = Query(default=REVIEW_DUE_DAYS, ge=0, le=MAX_REVIEW_OVERDUE_DAYS)`
@@ -137,15 +142,15 @@
                     <span class="text-gray" id="reviewOverdueDaysRange">0 – 36500</span>
                 </div>
             </div>
-            <div class="form-group">
+            <div class="form-group field-with-input">
                 <div class="label">
-                    <label class="form-radio"><input type="radio" name="review-threshold-mode" value="cutoff" class="js-review-threshold-mode" data-filter-reset="unchecked"><span data-i18n="platform.cutoffDateLabel">截止日期</span></label>
+                    <label class="form-radio"><input type="radio" name="review-threshold-mode" value="cutoff" class="js-review-threshold-mode"><span data-i18n="platform.cutoffDateLabel">截止日期</span></label>
                 </div>
                 <div class="field">
                     {# `.calendar` 是日期選擇器的掛點（本 repo 零樣式、零行為；日期選擇交由 React 端的
                          套件實作）——同 `components/manage-tenant-modal` 與 `components/data-time-filter`
                          的做法。無樣式 class 要在檔頭交代它是誰的掛點（§4），否則它讀起來就是一顆死 class。 #}
-                    <input type="text" id="reviewCutoffDateInput" placeholder="請選擇" data-i18n-placeholder="common.pleaseSelect" class="form-control calendar" aria-label="截止日期" data-i18n-aria-label="platform.cutoffDateLabel" disabled>
+                    <input type="text" id="reviewCutoffDateInput" placeholder="請選擇" data-i18n-placeholder="common.pleaseSelect" class="form-control calendar with-input" aria-label="截止日期（年月日）" data-i18n-aria-label="platform.cutoffDateInput" disabled>
                 </div>
             </div>
         </div>
@@ -376,7 +381,7 @@
                     </tr>
                     {% endfor %}
                     {% for r in isoReviewFailResults %}
-                    <tr>
+                    <tr data-tenant-id="{{ r.tenantId }}">
                         <td>{{ r.name }}</td>
                         <td class="text-bold text-red" data-i18n="platform.resultFail">失敗</td>
                         <td>{{ r.error }}</td>

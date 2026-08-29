@@ -812,6 +812,7 @@
   "platform.confirmTypePrefix": "Type exactly ",
   "platform.confirmTypeSuffix": " to confirm execution",
   "platform.currentVersion": "Current version",
+  "platform.cutoffDateInput": "Cutoff date (yyyy/mm/dd)",
   "platform.cutoffDateLabel": "Cutoff date",
   "platform.dangerZone": "Danger zone",
   "platform.daysOverdue": "Days overdue",
