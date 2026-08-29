@@ -2,8 +2,13 @@
 // 以下只寫 checkbox 自己的 class 與其 input 控制項樣式。
 // **生產契約**（§1-2）：`checkbox.html` 是**展示片段**、逐字聲明自己不是生產形狀（那兩層殼是從
 // modal 複製過來的），而真正會被複製的「全選表格」markup 只散在使用頁上，全站沒有一份可對答案的
-// 正本——這一族少一顆屬性視覺指紋完全看不出來，正是這條規則要防的狀況。逐字取自唯一實例
-// `src/pages/dataset/3-1-3_previewDataset.html`：
+// 正本——這一族少一顆屬性視覺指紋完全看不出來，正是這條規則要防的狀況。
+//
+// **兩型**：下面這一段是**表格型**，逐字取自 `src/pages/dataset/3-1-3_previewDataset.html`。
+// 另一型是**清單型**（`components/search-scope-modal`）：沒有 `<table>`／`<th>`，
+// 全選框仍是 `.check-all` ＋ `aria-label` ＋ `data-i18n-aria-label`，逐列則是
+// `.check-one` ＋ 值載體三件（`value` ＝索引名、hook class、`checked` 由資料決定），
+// 可及名稱來自它自己那一行的可見文字、不需要 `aria-labelledby` 組字。抄的時候先認自己是哪一型：
 //
 //   <div class="table-container scrollTable checkbox-container">
 //       <table class="default-table">
@@ -38,7 +43,9 @@
 //      辨識在前，反過來會先念「選取此列」）。
 //   ⓒ **列鍵 `data-filesn` 掛在每一顆要認列的控制項上**（`.check-one`、同列的 `.link-file`、
 //      逐列的刪除／下載鈕），不是掛在 `<tr>` 上：React 端接的是控制項的事件，從 target 讀得到鍵才算數（§5）。
-//   ⓓ `.check-cell`（欄寬）與 `.in-cell`（格內對齊）是 `ui/default-table` 的 class，不是本元件的。
+//   ⓓ `.check-cell`（欄寬）是 `ui/default-table` 的 class；`.in-cell` 是**本元件自己的變體**
+//      （`.form-checkbox.in-cell`，見下面第⑧條）——外觀覆寫由 owning 元件提供變體，不寫成
+//      `ui/default-table` 那邊的 `.default-table .form-checkbox`（§4）。
 //   ⓔ 行為（全選 ↔ 逐列連動、`indeterminate`、載入即同步）由 `checkbox.js` 供給，markup 不必寫。
 //
 // 本檔兩塊：`.form-checkbox`（外框／變體）與它裡面那顆 `input[type="checkbox"]`（方框、勾記、

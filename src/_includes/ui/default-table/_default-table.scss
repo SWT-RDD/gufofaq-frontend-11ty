@@ -6,9 +6,42 @@
 //   `<button>` 不是 `<img>`（圖片點不了、也上不了鍵盤焦點）⑤`tr.is-inactive`（停用列）與
 //   `.check-cell`（勾選欄）是本元件自有的。
 // 本檔含 `.scrollTable`（捲動外框）、`.default-table`（表身）、`.file-number-group`（逐檔型計數）。
-// `.tablelist-title` **不在本檔**——已升格成 `ui/tablelist-title` 純樣式原子，理由見本檔下方那則
-// 「.tablelist-title 已升格為 ui/tablelist-title…」註解（§3-2：同檔自我互指不用行號，行號會隨每一次編輯漂掉）。
+// `.tablelist-title` **不在本檔**：它的正本是 `ui/tablelist-title` 純樣式原子，理由見本檔下方那則
+// 以「.tablelist-title 的正本」開頭的註解（§3-2：同檔自我互指不用行號，行號會隨每一次編輯漂掉）。
 // `.priority-table` 是 `.default-table` 的變體（`&.priority-table`，見下），供 priority-table 與 knowledge-retrieval-modal 沿用
+//
+// **生產契約**（§1-2）：`default-table.html` 是展示片段，而生產表格身上有四樣它一份都沒演到的
+// 東西——照片段抄就會漏。四段各取自一個實例，逐字如下：
+//
+//   ① 停用列（本元件自有的 `tr.is-inactive`；底色下在 `> td` 上，掛在 `<tr>` 自己身上
+//      100% 看不見，§4）。取自 5-5-1：
+//
+//   <tr data-user-id="{{ member.id }}"{% if not member.isActive %} class="is-inactive"{% endif %}>
+//
+//   ② 逐列動作鈕（`.btn-group`；**它的規則只在 `.default-table` 之內成立**，表格外掛它等於
+//      零樣式，有測試把關）。取自 1-2-1：
+//
+//   <td>
+//       <div class="btn-group">
+//           {# 逐顆 button-icon：各自帶 id ＋ aria-labelledby「本列辨識欄 ＋ 本鈕」（§4） #}
+//       </div>
+//   </td>
+//
+//   ③ 逐檔型計數（`.file-number-group`）。取自 3-1-1：
+//
+//   <div class="file-number-group">
+//       <div class="item">
+//           <img src="./images/icon_XLSX_s.png" width="60" height="76" decoding="async" alt="XLSX" class="icon">
+//           <span class="number">{{ row.fileTypes.xlsx }}</span>
+//       </div>
+//   </div>
+//
+//   ④ 固定欄寬（`.fixed-layout` 掛在 `<table>` 上，不是掛在捲動外框上）。取自 3-1-6：
+//
+//   <table class="default-table fixed-layout">
+//
+// 另兩樣有自己的正本、不在這裡重抄：勾選欄（`.check-cell` ＋ 全選／逐列）逐字在
+// `ui/checkbox` 檔頭，排序欄（`.th-sort > button.sort`）逐字在 `ui/table-sort` 檔頭。
 //
 @use "../../../scss/mixin" as *;
 
@@ -194,7 +227,7 @@
     }
 }
 
-// .tablelist-title 已升格為 ui/tablelist-title 純樣式原子：它是表格「外」的獨立區段標題
+// .tablelist-title 的正本是 ui/tablelist-title 純樣式原子，不在本檔：它是表格「外」的獨立區段標題
 // （5-2、knowledge-retrieval-modal 都當標題用），寄生在表格元件裡沒有主人（§4）。
 
 // 表格中檔案數量組：markup 只出現在 default-table 家族的儲存格內（3-1-1 檔案數 cell），

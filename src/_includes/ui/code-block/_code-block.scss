@@ -4,12 +4,14 @@
 // markup 契約（無 html 元件，§1-2；整段照抄）——`<pre>` 掛 class、`<code>` 是必經的內層：
 //
 //   <pre class="code-block"><code>curl -X POST "https://&lt;your-host&gt;/api/extract/country-or-time" \
-//   -H "X-API-Key: YOUR_KEY" \
-//   -H "Content-Type: application/json" \
-//   -d '{"text":"我們下週三在東京開會","mode":3,"time_reference":"2026-07-14"}'</code></pre>
+//     -H "X-API-Key: YOUR_KEY" \
+//     -H "Content-Type: application/json" \
+//     -d '{"text":"我們下週三在東京開會","mode":3,"time_reference":"2026-07-14"}'</code></pre>
 //
 //   · 內容緊貼在 `<code>` 的開／收標籤內側：`white-space: pre` 會把換行與縮排原樣畫出來，
 //     換行寫在標籤外就多一列空白（§2 同一件事的另一個面）
+//   · **續行前面那兩個空白也是內容**：這一段的縮排會逐字畫在畫面上，抄的時候連空白一起抄
+//     ——本元件唯一的賣點就是「縮排看得見」，縮排抄錯就是把範例抄壞了
 //   · 尖括號一律寫 HTML 實體（`&lt;your-host&gt;`），否則瀏覽器會當成標籤吃掉
 //   · 內容是命令列樣本＝資料，**不掛 data-i18n**（同 ui/inline-code 的識別字）
 //   · 水平捲動由 `.code-block` 自己承擔，外面不要再包一層捲動容器

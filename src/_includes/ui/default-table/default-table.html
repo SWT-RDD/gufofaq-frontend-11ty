@@ -3,7 +3,8 @@
    末尾另 {% include ui/accordion %} 示範可展開列；**展示片段的依賴不算元件依賴**（§1-1），
    所以 default-table 仍是 ui/ 的原子、不會因此變成組合元件。 #}
 {# 父層用「div.table-container」包覆，需左右滾動時加「.scrollTable」；主要表格用「table.default-table」；
-     欄位排序在 th 內加 div.th-sort + img.sort；內容較多的欄位用 ui/collapse-text 包覆（純 clamp 的 .ellipsis-* 只給控制項標籤用）；
+     欄位排序在 th 內加 `div.th-sort` ＋ 它裡面的 `button.sort`（圖示是那顆鈕裡的 `<img>`，
+     旁邊一顆 `.sr-only` 給它可及名稱——排序要可鍵盤操作，掛在 `<img>` 上點不下去，見 `ui/table-sort`）；內容較多的欄位用 ui/collapse-text 包覆（純 clamp 的 .ellipsis-* 只給控制項標籤用）；
      功能欄按鈕用 div.btn-group 包覆；固定欄寬加 .fixed-layout；無外框加 .no-border（見下方 accordion 表格範例） #}
 {# 示範列的 userType／satisfaction 是**封閉枚舉**，不可自由編（§6：正本給不出來的值不得為了讀起來順而編一個）：
      userType 對 4-1 的 #userTypeSelect（前台問答／後台問答；正本 product 的 tag=frontend／backend），

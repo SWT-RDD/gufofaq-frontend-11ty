@@ -7,8 +7,9 @@
 // markup 契約（無 html 元件，§1-2；整段照抄）——外殼本體、次數列與輸入列。
 // **從外層那顆 flex row 寫起**：`.chatroom-wrap` 是 `flex: 1`，沒有 flex 父層它就只是一顆
 // 內容寬的方塊、右側的並排欄也不會並排（§1-2：樣式靠祖先才成立時從祖先寫起）。
-// 三個消費點的那一層逐字相同，連 class 串都一樣（`.chatroom-wrap` **後面那顆兄弟則逐頁不同**，
-// 不屬本契約：2-2-1／2-2-3 是 `components/qa-side-panel`，2-1 是問答紀錄頁籤那顆 `<div>`）：
+// 三個消費點的**外殼那幾層**逐字相同，連 class 串都一樣（`.chatroom-wrap` **後面那顆兄弟則逐頁不同**，
+// 不屬本契約：2-2-1／2-2-3 是 `components/qa-side-panel`，2-1 是問答紀錄頁籤那顆 `<div>`）。
+// **輸入列以下不是三處都有**：2-1 是唯讀預覽，額度警語與 `.chat-input-container` 一起不渲染（見 ⓔ）。
 //
 //   <div class="flex-row gap-10 mobile-column-xs xs-column-reverse">
 //       <div class="chatroom-wrap">
@@ -68,7 +69,10 @@
 //   ⓓ **送出鈕是三件套 ＋ 閘門**：`data-toast`（五段，比建議追問的 chip 多一條「請先輸入問題」）＋
 //      `data-i18n-data-toast="toast.chatSend"` ＋ `data-toast-type`（段數必須相等）＋
 //      `data-capability="ask"`（§4：toast 與閘門是同一個交付單位）。
-//   ⓔ 沒有輸入列的頁（2-1 唯讀預覽）整顆 `.chat-input-container` 不渲染，`.qa-count` 留著。
+//   ⓔ 沒有輸入列的頁（2-1 唯讀預覽）：`.chat-input-container` **與它上面那句額度警語 `<p>` 一起**
+//      不渲染（`components/chatroom` 裡是同一個 `{% if not chatInputHidden %}`）——那句話講的是
+//      「按下送出會扣一次額度」，沒有送出鈕的頁面上它指著一個不存在的動作。`.qa-count` 留著：
+//      它講的是「現在用掉多少」，唯讀頁一樣讀得到。
 //
 // 三顆 slot class（.chat-input-field／-control／-submit）是本元件覆寫排版的落點：**不直接寫
 // ui/form-control 與 ui/button 的 class 選擇器**（§4）。前台 FAQ 不用這一套（走 components/faq-chatroom

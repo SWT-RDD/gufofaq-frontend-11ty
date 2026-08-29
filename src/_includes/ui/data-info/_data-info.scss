@@ -39,11 +39,14 @@
 // 與型① 直接牴觸。它只被元件庫頁 include，而 showcase 整頁不翻（§4-2），故不補 key；抄它就錯了。
 //
 // 住在哪一頁（雙向；判準＝`grep -rn 'class="data-info' src`，實跑過，命中就是下面這幾列）——
-//   型①：2-2-4_regressionSuites、4-1_qaHistory、5-7_auditLog（各一列，頁面自寫）
-//   型②：5-2_conversationSettings（三列：政策主題／出口替換規則／輸出規則）、
-//        5-10_tagDimensions（掃描結果，一列）
+//   型①（純計數列）：2-2-4_regressionSuites、4-1_qaHistory、5-7_auditLog（各一列，頁面自寫）
+//   型②（多欄統計列，另掛 `.flex-row.flex-wrap.gap-24`）：5-2_conversationSettings
+//        （三列：政策主題／出口替換規則／輸出規則）、5-10_tagDimensions（掃描結果，一列）
+//   型③（型②的版位 ＋ 第一組是型①的計數）：3-7_documentSearch 的搜尋結果列
+//        （「共 N 筆」＋「耗時：N 秒」）——**它不是型①**：型① 是獨佔一列的計數，這一型的計數
+//        與其他統計並排，所以要跟著型② 掛那組 flex 工具 class，否則兩組會黏在一起。
 //   例外：ui/block 的展示片段 → 只渲染在 component.html
-//   反向：渲染後含 `.data-info` 的頁只有 2-2-4、4-1、5-2、5-7、5-10、component.html
+//   反向：渲染後含 `.data-info` 的頁只有 2-2-4、3-7、4-1、5-2、5-7、5-10、component.html
 
 .data-info {
     padding: 1rem 0;

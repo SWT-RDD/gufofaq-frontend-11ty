@@ -121,7 +121,29 @@
 //       </div>
 //   </div>
 //
-// ④ widget 展示（生產 markup＝ui/widget-shell，住在 `.widget-panel-log` 裡）——**沒有
+// ⑤ **預設開場**（`components/faq-chatroom` 與 `ui/widget-shell` 各一份）：它與一般泡泡的
+//    差別**只在最外層那顆 `.message-wrap`**——多掛 `.hidden` ＋ 一顆 hook class 給 React 定址
+//    （`.js-faq-default-greeting`／`.js-widget-default-greeting`），裡面照原型。
+//    為什麼一定要自己切成一則：那句話是**產品的預設開場**、不是租戶寫的示範，兩者長得一樣的話
+//    「產品有沒有預設開場」在切版上看不出來，那顆 key 就只能由 React 自己造（§5）。
+//
+//   <div class="message-wrap js-faq-default-greeting hidden">
+//       <div class="message-row by-robot">
+//           <div class="avatar">
+//               <div class="pic"></div>
+//           </div>
+//           <div class="message-content">
+//               <div class="robot-msg" data-i18n="faq.defaultWelcome">你好，請問有甚麼問題需要我幫你解答的?</div>
+//           </div>
+//           <div class="message-time">13:29</div>
+//       </div>
+//   </div>
+//
+//    widget 那一份同形，只是照 ④ 的規則不畫 `.message-time`、沒有 `.avatar`，
+//    hook 換成 `.js-widget-default-greeting`、key 換成 `comp.widgetDefaultGreeting`。
+//
+// ④ widget 展示（markup 在 ui/widget-shell，住在 `.widget-panel-log` 裡；那支是**展示片段**、
+//    沒有生產頁在 include，見 README 的展示片段清單）——**沒有
 //    `.message-time`、沒有 `.message-icon`、沒有 `.suggested-questions`**，兩顆泡泡就是全部：
 //
 //   <div class="message-wrap">
@@ -144,7 +166,8 @@
 //      它的 `align-self: flex-end` 只有在 flex 容器（`.message-row`）的直接子元素上才成立；
 //      拉到 `.message-wrap` 底下就變成沒有 flex 父層的死宣告，時間戳掉到訊息下一行、
 //      使用者側也不再貼右。判準（不寫死幾顆，§3-2）：`grep -rn 'message-time' src --include=*.html`
-//      命中的每一個 `<div class="message-time">` 的直接父層都必須是 `.message-row`。
+//      命中的每一顆帶 `.message-time` 的 `<div>`——**含 `class="message-time after-compare"`
+//      那個變體**，判準不可寫死整串 class 字面——的直接父層都必須是 `.message-row`。
 //   ⓑ **`.robot-msg` 那一層不可省。** 底下那一整套 markdown 排版（標題／清單／表格／引言／
 //      行內碼／pre）是本檔最大的一塊樣式，只掛 `.message-content` 一條都吃不到。
 //   ⓒ **建議追問是一整組控制項，group 語意不可省**（§4）：`role="group"` ＋ `aria-labelledby`
@@ -165,8 +188,9 @@
 //
 // 住在哪一頁（雙向）：`components/chatroom`（2-1 問答紀錄、2-2-1 單測）、`components/faq-chatroom`
 // （前台 faq）、`ui/widget-shell`（元件庫頁）、`2-2-3_abTest`（手寫）。
-// 反查：`grep -rn 'message-wrap' src --include=*.html` 命中這四個檔，其中 `ui/widget-shell`
-// 多出來的第一筆是它檔頭註解裡的說明文字（「訊息泡泡走 ui/chat-message…」），不是實例。
+// 反查：`grep -rn 'message-wrap' src --include=*.html` 命中這四個檔。其中兩筆是註解、不是實例：
+// `ui/widget-shell` 檔頭那句「訊息泡泡走 ui/chat-message…」，以及 `components/faq-chatroom`
+// 說明「房間說明不在 `.message-wrap` 之內」的那一句。
 .message-wrap {
     margin-bottom: 1rem;
 }
@@ -396,7 +420,7 @@
     gap: 10px;
 }
 
-// 建議追問（A7）：機器人答案下方一列可點 chip；點擊＝把那一題當成下一題送出。送出這件事是業務行為、
+// 建議追問：機器人答案下方一列可點 chip；點擊＝把那一題當成下一題送出。送出這件事是業務行為、
 // 由 consumer 綁（gufofaq-saas `apps/web` 的 `onAskSuggested`），切版這邊只留 `.js-ask-suggested`
 // 這個業務掛點／轉換契約，不要因為本 repo 沒有對應 js 就當死碼刪掉。
 // chip 本身複用 ui/button 的 `.button-border.button-sm`，不另造樣式。

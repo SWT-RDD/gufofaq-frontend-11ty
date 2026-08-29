@@ -7,8 +7,10 @@
 //   `{% for %}` 裡、都要多帶 `id` ＋ `aria-labelledby`。照型③ 抄進任何一張迴圈表格，那一欄
 //   每一列的可及名稱都會是「展開」——正是 §4 第一句要擋的東西。）
 //
-// ③ 基本型——**不在迴圈裡**、同頁只有這一顆，鈕的可及名稱就是它自己的字面。
-//   唯一實例：components/qa-detail-info 的「提示詞」（內容直接寫在 markup，見型③ 的長文版）：
+// ③ 基本型——**不在迴圈裡**、同頁只有這一顆，鈕的可及名稱就是它自己的字面（沒有 `id`／
+//   `aria-labelledby`）。全站唯一實例是 components/qa-detail-info 的「提示詞」，而**它的內容是
+//   直接寫在 markup 的長文**，所以那一份是跨行的——逐字形狀見下面的變體②，不要照下面這一行抄。
+//   下面這一行是同一型「內容是一顆資料槽」時的寫法（今天沒有這種實例，形狀先釘在這裡）：
 //
 //   <div class="collapse-text"><div class="collapse-body">{{ row.answer }}</div><button type="button" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>
 //
@@ -38,9 +40,11 @@
 //   · `.open` 由 js 掛在 `.collapse-text` 上（不是 body）
 //
 // 變體①：外層再掛全域文字色工具（`.text-gray`／`.text-red`），內層照**型③′**——
-// 5-6-2 的「可用工具」與「錯誤訊息」兩格：
+// 5-6-2 的「可用工具」與「錯誤訊息」兩格。**`.collapse-body` 裡面是什麼由那一格自己決定**：
+// 「可用工具」是逐項迴圈（每一項 `名稱 ＋ common.labelSep ＋ 說明`，項與項之間 `<br>`），
+// 壓成一顆純量槽就會把整份清單印成一串物件字面：
 //
-//   <div class="collapse-text text-gray"><div class="collapse-body">{{ server.lastTest.tools }}</div><button type="button" id="mcpToolsToggle-{{ server.id }}" aria-labelledby="mcpRowName-{{ server.id }} mcpToolsToggle-{{ server.id }}" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>
+//   <div class="collapse-text text-gray"><div class="collapse-body">{% for tool in server.lastTest.tools %}{% if not loop.first %}<br>{% endif %}{{ tool.name }}<span data-i18n="common.labelSep">：</span>{{ tool.description }}{% endfor %}</div><button type="button" id="mcpToolsToggle-{{ server.id }}" aria-labelledby="mcpRowName-{{ server.id }} mcpToolsToggle-{{ server.id }}" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>
 //   <div class="collapse-text text-red"><div class="collapse-body">{{ server.lastTest.message or server.lastTest.error }}</div><button type="button" id="mcpErrorToggle-{{ server.id }}" aria-labelledby="mcpRowName-{{ server.id }} mcpErrorToggle-{{ server.id }}" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>
 //
 // 變體②：內容是直接寫在 markup 的長文示範（§3-2）時，只有 `.collapse-body` 跨行，
