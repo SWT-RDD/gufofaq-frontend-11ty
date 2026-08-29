@@ -146,8 +146,15 @@ function t(key, zh) {
 //   ② 這一句是使用者逐字輸入當下才出現的訊息 ⇒ 要在 live region 裡（§4），否則報讀器一個字都不會唸
 //      ——而那正是這顆元件存在的理由（「零命中時使用者看到的是一塊空白，沒有任何一個字說
 //      『是打不到，不是壞了』」）。
-//   ③ region 要**先在樹上、再寫內容**（§4，正典 ui/toast）：故常駐一顆空的 `role="status"` 槽，
-//      只改它的文字，不做 append／remove。
+//   ③ region 要**先在樹上、再寫內容**（§4，正典 ui/toast）：故**載入時就替每一份清單建好**
+//      一顆空的 `role="status"` 槽，之後只改它的文字，不做 append／remove。
+//      延遲到第一次零命中才建的話，region 與內容同一個 tick 進場——那正是 live region
+//      唸不出來的那一種（瀏覽器是在「region 已經在樹上」之後才監看它的內容變化）。
+//   ④ 這顆槽**不掛 `data-i18n`**：它整顆是本元件產生的，翻譯也由本元件在 `gufo:langchange`
+//      自己重畫（見檔尾）。掛了的話 lang-toggle 的 `apply()` 會把它一起收進 `[data-i18n]` 母體，
+//      **不管當下有沒有命中都寫進那一句**——使用者明明篩出兩筆，切一次語言就多出一行
+//      「找不到符合的選項」；而且切回繁中時 `collectDefaults()` 沒有它的快照（它是載入後才生的），
+//      那一句還會留在畫面上。一顆節點只能有一個文字主人。
 function emptySlot(list) {
     var host = list.parentElement || list;
     var slot = host.querySelector(":scope > ." + EMPTY_CLASS);
@@ -155,7 +162,6 @@ function emptySlot(list) {
     slot = document.createElement("div");
     slot.className = EMPTY_CLASS + " text-center text-gray";
     slot.setAttribute("role", "status");
-    slot.setAttribute("data-i18n", EMPTY_KEY);
     host.insertBefore(slot, list.nextSibling);
     return slot;
 }
@@ -188,6 +194,10 @@ document.addEventListener("input", function (e) {
 // **這一段包在 DOMContentLoaded 裡**：上面那支 input 委派掛在 document 上、載入時不碰 DOM，
 // 這一段則會去文件裡撈節點（§5：會去 DOM 找元素的就要等 parse 完才綁）。
 document.addEventListener("DOMContentLoaded", function () {
+    // 先把每一份清單的 live region 建起來（見上面第③條）：這一步不寫任何文字，
+    // 只是讓它在使用者按下第一個字之前就已經在樹上。
+    document.querySelectorAll(".dataset-list").forEach(function (list) { emptySlot(list); });
+
     document.addEventListener("gufo:langchange", function () {
         document.querySelectorAll("." + EMPTY_CLASS).forEach(function (el) {
             if (!el.textContent) return;   // 空槽不必翻，翻了會把它從「沒有訊息」變成「有一句話」
