@@ -3,8 +3,11 @@
      `tests/guideline.test.mjs` 的 `NO_GATE` 那一筆成對（§4「痕跡要成對：只住在測試裡的豁免，
      讀元件的人看不到」）。 #}
 {# 檔案編輯 modal（PDF 自填），dialog id `editModal`。
-     固定槽 schema（title/content/source/date/category/number/flag/tags/privilege/note1..note10/date2/date3，
+     固定槽 schema（title/content/source/date/category/number/flag/tags/privilege/note1..note10/date2/date3/internal_note，
      出處：gufofaq-saas product 的 `SLOTS`——順序與 `default_label` 逐字對齊）：
+     最後那一顆 `internal_note` 是 `productOnly`，本窗把它與其他 productOnly 槽一起排在
+     「產品內部欄位」那一區（見下面兩支各自帶 `{% if %}` 的迴圈）——列名少一顆的話，
+     讀的人會以為那一區是憑空多出來的：
      每槽一個輸入框供逐筆手填，label 用各槽預設顯示名。
      槽之外另有一個**外部主鍵**欄：批次匯入是逐檔一把鍵（product 的
      `batch_import_documents`，其 `external_keys` 是 `{原始檔名: 鍵}`），共用一把的話同批第二個檔會 purge 掉第一個、回應卻說兩筆都成功，
