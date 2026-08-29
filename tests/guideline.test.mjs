@@ -6105,7 +6105,13 @@ test("§5 內建工具卡：只有 customized 的那張預設展開（markup 就
 function runStubDom(jsSrc, build) {
     // 只需要「單一 compound（.class 或 tag）」與逗號並列（builtin-tool-card.js 用
     // ".js-tool-description, .js-tool-extra-prompt" 一次抓兩欄）
-    const matchOne = (n, sel) => (sel === "*" ? true : sel.startsWith(".") ? n.classes.has(sel.slice(1)) : n.tag === sel);
+    // `#id` 也要認得：元件 js 常以 id 定位自己那一顆殼（alias-entries-modal 的 #aliasEntriesModal、
+    // #aliasBulkPanel）。只認 .class 與 tag 的話那一支 js 在 stub 上是整支 no-op——而測試會顯示成
+    // 「那個行為沒發生」，看起來像被測程式壞了，其實是量具沒有那一格。
+    const matchOne = (n, sel) => (sel === "*" ? true
+        : sel.startsWith(".") ? n.classes.has(sel.slice(1))
+        : sel.startsWith("#") ? n.getAttribute("id") === sel.slice(1)
+        : n.tag === sel);
     const matches = (n, sel) => sel.split(",").map((s) => s.trim()).filter(Boolean).some((s) => matchOne(n, s));
     const descendants = (n) => n.children.flatMap((c) => [c, ...descendants(c)]);
     function node(tag, cls) {
@@ -6173,6 +6179,10 @@ function runStubDom(jsSrc, build) {
         n.querySelectorAll = (sel) => descendants(n).filter((d) => matches(d, sel));
         n.querySelector = (sel) => n.querySelectorAll(sel)[0] || null;
         Object.defineProperty(n, "parentElement", { get: () => n.parent });
+        // parentNode 與 remove()：元件 js 拿它們摘掉節點（空狀態列讓位、刪一列）。
+        // 少了它們，被測 js 會在 stub 上丟 TypeError——而那條路徑於是完全沒被驗到。
+        Object.defineProperty(n, "parentNode", { get: () => n.parent });
+        n.remove = () => { if (n.parent) { const sib = n.parent.children; sib.splice(sib.indexOf(n), 1); n.parent = null; } };
         Object.defineProperty(n, "nextElementSibling", {
             get: () => { const s = n.parent ? n.parent.children : []; return s[s.indexOf(n) + 1] || null; },
         });
@@ -8573,6 +8583,52 @@ test("§6 stepNextHref 與 stepNextAction = true 不得同時 set（動作模式
             '{% set stepNextAction = true %}\n{% include "components/step-btn-wrap/step-btn-wrap.html" %}',
             '{% set stepNextHref = "x.html" %}\n{% include "components/step-btn-wrap/step-btn-wrap.html" %}']);
     assert.equal(hits.length, 0, `§6 沒有消費者的參數：\n${fail(hits)}`);
+});
+
+test("§6 alias-entries-modal 的「已 N / 20000」是推導值：增刪列之後要跟著動", () => {
+    // 那個數字是使用者判斷「還能不能再貼」的依據。本元件真的會增刪列（整批貼上、新增一列、
+    // 刪一列三條路徑），計數卻是渲染時就烤死的話，貼進四十列之後畫面上還是「已 3 筆」。
+    const build = (node, root) => {
+        const modal = node("dialog", "modals");
+        modal.id = "aliasEntriesModal";
+        const table = node("table");
+        const body = node("tbody", "js-alias-entry-body");
+        for (let i = 0; i < 2; i++) body.append(node("tr").append(node("td")));
+        table.append(body);
+        const add = node("button", "button js-add-alias-entry");
+        const count = node("span", "js-alias-entry-count");
+        count.textContent = "2";
+        // 整批貼上那一組（元件 js 綁定時會找它們；缺一顆它會整支 return）
+        const toggle = node("button", "js-alias-bulk-toggle");
+        const panel = node("div", "hidden");
+        panel.id = "aliasBulkPanel";
+        const input = node("textarea", "js-alias-bulk-input");
+        const parse = node("button", "js-alias-bulk-parse");
+        modal.append(table, add, count, toggle, panel, input, parse);
+        root.append(modal);
+        return { modal, body, add, count, input, parse };
+    };
+    const js = read("src/_includes/components/alias-entries-modal/alias-entries-modal.js");
+    const { fixture } = runStubDom(js, build);
+    fixture.add.dispatch("click", { target: fixture.add });
+    assert.equal(fixture.count.textContent, "3", "新增一列之後計數沒有跟著動");
+
+    fixture.input.value = "甲\t甲一,甲二\n乙\t乙一";
+    fixture.parse.dispatch("click", { target: fixture.parse });
+    assert.equal(fixture.count.textContent, "5", "整批貼上兩列之後計數沒有跟著動");
+
+    const del = fixture.body.querySelectorAll(".js-remove-alias-entry")[0];
+    assert.ok(del, "每一列都要有刪除鈕（本測試靠它走刪除那一條路徑）");
+    fixture.body.dispatch("click", { target: del });
+    assert.equal(fixture.count.textContent, "4", "刪一列之後計數沒有跟著動");
+
+    // 負控：把同步呼叫拿掉，第一條斷言必須失敗
+    const noSync = js.split("syncCount();").join("");
+    assert.notEqual(noSync, js, "負控的替換沒有命中——這條測試驗的不是那一段");
+    const probeRun = runStubDom(noSync, build);
+    probeRun.fixture.add.dispatch("click", { target: probeRun.fixture.add });
+    assert.equal(probeRun.fixture.count.textContent, "2",
+        "拿掉同步之後計數竟然還是會動 —— 這條測試沒有在驗那一段");
 });
 
 test("§5 ui/checkbox 全選只動畫面上看得到的那幾列（過濾隱藏的不算）", () => {

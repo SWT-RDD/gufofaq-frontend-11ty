@@ -76,7 +76,7 @@
                                         <th><span class="sr-only" data-i18n="common.actions">操作</span></th>
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody class="js-glossary-entry-body">
                                     {# 列名前綴是 glossaryEntryRowName-（詞條），**不與使用頁 3-2 的
                                          glossaryTableRowName-（術語表）共用前綴**：本 modal 被 include 在 3-2 之內，
                                          那張表的列名吃主鍵、這裡吃 loop.index，同前綴遲早在同一份 DOM 上撞出兩顆同 id。
@@ -106,14 +106,14 @@
                         <p id="glossaryLimitsHint" class="text-gray m-0"><span data-i18n="settings.glossaryLimitTerm">詞條上限 </span><span>200</span><span data-i18n="settings.glossaryLimitDefinition"> 字、定義 </span><span>2000</span><span data-i18n="common.unitChars"> 字</span></p>
                         <div class="flex-row align-items-center gap-16">
                             <button type="button" class="button button-border button-sm js-add-glossary-entry" data-i18n="settings.addEntry">新增一列</button>
-                            <span class="text-gray"><span data-i18n="settings.glossaryEntryCountPrefix">已 </span><span>{{ glossaryEntryRows.length }}</span><span data-i18n="settings.glossaryEntryCountMid"> / </span><span>20000</span><span data-i18n="settings.glossaryEntryCountSuffix"> 筆</span></span>
+                            <span class="text-gray"><span data-i18n="settings.glossaryEntryCountPrefix">已 </span><span class="js-glossary-entry-count">{{ glossaryEntryRows.length }}</span><span data-i18n="settings.glossaryEntryCountMid"> / </span><span>20000</span><span data-i18n="settings.glossaryEntryCountSuffix"> 筆</span></span>
                         </div>
                     </div>
                 </div>
                 <div class="modals-footer">
                     <div class="button-row center">
                         <button type="button" class="button button-border btn-close-modals" data-i18n="action.cancel">取消</button>
-                        <button data-capability="data:write" type="button" class="button button-primary" data-toast="詞條已更新|權限不足，無法儲存——請找貴租戶的管理者開通|詞條沒有通過寫入層驗證（詞條不可為空、單筆長度有上限、整表筆數有上限），請修正後再存|更新失敗，請稍後再試" data-i18n-data-toast="toast.saveGlossaryEntries" data-toast-type="success|warning|warning|error" data-i18n="action.save">儲存</button>
+                        <button data-capability="data:write" type="button" class="button button-primary js-save-glossary-entries" data-toast="詞條已更新|權限不足，無法儲存——請找貴租戶的管理者開通|詞條沒有通過寫入層驗證（詞條不可為空、單筆長度有上限、整表筆數有上限），請修正後再存|更新失敗，請稍後再試" data-i18n-data-toast="toast.saveGlossaryEntries" data-toast-type="success|warning|warning|error" data-i18n="action.save">儲存</button>
                     </div>
                 </div>
             </div>

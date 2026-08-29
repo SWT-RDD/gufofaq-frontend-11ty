@@ -15,7 +15,9 @@
      內容（content）由 PDF 自動擷取、不給人改，故 render 成 disabled textarea
      （`.form-control.disabled` ＋ `disabled` 屬性兩者都掛：class 管視覺、屬性管互動）；
      其餘槽為可填 input。資料驅動：set editFields + for 內嵌渲染欄位列（依 §9，元件內部 for 不再巢狀 include 子元件）。
-     editConfirmBinding —— true＝儲存鈕交給業務 js 綁定（不掛 btn-close-modals 自動關窗）。
+     editConfirmBinding —— true＝儲存鈕交給業務 js 綁定：不掛 btn-close-modals（關窗時機由它決定），
+                            改掛 `.js-save-edit-file` 供它定址（§5 矩陣①：交給業務端的鈕一定要留一顆
+                            React 認得出來的記號，否則那顆鈕在轉換之後是沒有人綁的死鈕）。
      功能頁（1-2-1）的儲存鈕**不掛** btn-close-modals：何時關窗要等存檔真的完成才知道。
      寫死自動關窗＝「按了儲存，窗關了，但什麼都沒存」，所以**每一個** include 本元件的頁（含元件庫
      展示頁）都設這顆參數——自動關窗那一支全站沒有任何一頁在演，它留著是為了讓「為什麼不掛」
@@ -92,7 +94,7 @@ that identifies frequently executed loop traces at run-time and then generates m
                 <div class="modals-footer">
                     <div class="button-row center">
                         <button type="button" class="button button-border btn-close-modals" data-i18n="action.cancel">取消</button>
-                        <button type="button" class="button button-primary{% if not editConfirmBinding %} btn-close-modals{% endif %}" data-toast="已更新" data-i18n-data-toast="toast.savePendingFile" data-toast-type="success" data-i18n="action.save">儲存</button>
+                        <button type="button" class="button button-primary{% if editConfirmBinding %} js-save-edit-file{% else %} btn-close-modals{% endif %}" data-toast="已更新" data-i18n-data-toast="toast.savePendingFile" data-toast-type="success" data-i18n="action.save">儲存</button>
                     </div>
                 </div>
             </div>

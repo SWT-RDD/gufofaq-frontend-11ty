@@ -160,7 +160,19 @@ document.addEventListener("DOMContentLoaded", function () {
             input.value = "";
             panel.classList.add("hidden");
             toggle.setAttribute("aria-expanded", "false");
+            syncCount();
         });
+
+        // 「已 N / 20000」是**推導值**（數這張表現在有幾列），不是事件的副作用：整批貼上、
+        // 新增一列、刪一列**三條路徑都會改變它**，所以每一條走完都要同步一次（§6：元件自帶 js
+        // 若會改變被推導的值，改完就要同步）。少了它，使用者貼進 40 列之後看到的還是「已 3 筆」
+        // ——而那個數字正是他判斷「還能不能再貼」的依據。
+        var countNode = modal.querySelector(".js-alias-entry-count");
+        function syncCount() {
+            if (!countNode) return;
+            // 空狀態那一列不是資料列（它是 {% else %} 的 colspan 無資料列）
+            countNode.textContent = String(body.querySelectorAll("tr").length - (body.querySelector("td[colspan]") ? 1 : 0));
+        }
 
         // 增刪列：與 glossary-entries-modal 同型（不送 API，儲存時才整批 PUT）
         var add = modal.querySelector(".js-add-alias-entry");
@@ -168,10 +180,11 @@ document.addEventListener("DOMContentLoaded", function () {
             var empty = body.querySelector("td[colspan]");
             if (empty && empty.parentNode) empty.parentNode.remove();
             body.appendChild(makeRow("", "", null));
+            syncCount();
         });
         body.addEventListener("click", function (e) {
             var btn = e.target.closest(".js-remove-alias-entry");
-            if (btn && body.contains(btn)) btn.closest("tr").remove();
+            if (btn && body.contains(btn)) { btn.closest("tr").remove(); syncCount(); }
         });
 
         // 切語言時把 js 產生的那幾顆字重畫（markup 上的 data-i18n 由 lang-toggle 自己處理，
