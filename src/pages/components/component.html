@@ -1065,6 +1065,10 @@ bodyClass: guideline-page
                     <span class="verdict-tag is-warn">個資：身分證字號（record，未阻擋）</span>
                 </div>
                 <p class="text-gray m-0" data-i18n="settings.aliasApplyNeedsBind">請先綁定別名表</p>
+                {# 3-7 檢索範圍鈕的 **0 態**：一筆都沒勾＝不加索引條件，鈕面上的字換成「全部資料集」
+                     （不是「已選 0 個資料集」）。那一頁的示範資料勾了兩筆，所以 0 態在使用頁上
+                     永遠看不到——它的家在這裡（§5：沒有頁面演得出來的分支等於沒驗收過）。 #}
+                <p class="text-gray m-0" data-i18n="settings.scanScopeAll">全部資料集</p>
                 {# 5-2 的「主 agent 可直接查詢」全部不勾（送 `[]`）那一態：那一頁的示範是部分勾選，
                      所以它在使用頁上永遠看不到。 #}
                 <p class="text-gray m-0" data-i18n="settings.glossaryApplyAgentNoneHint">目前沒有任何表讓主 agent 直接查詢——術語表只能經 skill 取用。</p>

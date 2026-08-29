@@ -6776,7 +6776,10 @@ test("§5 整頁需要平台角色的頁面：每個控制項都要落在宣告�
         const html = distDoc(page);
         // 只看 <main> 內的頁面內容：header／footer 是 layout 的 chrome，各有自己的 gate
         const main = html.slice(html.indexOf("<main"), html.indexOf("</main>"));
-        assert.ok(main.length > 20206, `${page} 取不到 <main> 內容 —— 這條測試在空轉`);
+        // 結構式守門（§8-1）：問「切出來的那一段裡面有沒有頁面內容」，不問它有幾個位元組
+        // ——位元組數會被每一次文案編輯改掉，紅了也只代表有人改了字。
+        assert.ok(main.startsWith("<main") && /<\/?\w+/.test(main.slice(6)),
+            `${page} 取不到 <main> 內容 —— 這條測試在空轉`);
         const stack = [];
         for (const ev of tagEvents(main)) {
             if (ev.type === "open") {
@@ -6863,7 +6866,10 @@ test("§5/§6 分享連結管理：有效天數欄（可留空＝永久）＋ �
     // 都是永久有效的，而分享連結是全服務唯一免憑證就讀得到問答內容的東西。
     const html = distDoc("4-2_qaHistory_detail.html");
     const modal = html.slice(html.indexOf('id="shareManageModal"'), html.indexOf('id="deleteModal"'));
-    assert.ok(modal.length > 8294, "4-2 取不到分享管理彈窗 —— 這條測試在空轉");
+    // 結構式守門（§8-1）：切出來的那一段要真的是這顆彈窗——問它有幾個位元組的話，
+    // 這一段每改一次文案就會紅一次，而那與「切不出來」是兩件完全不同的事。
+    assert.ok(modal.includes('id="shareManageModal"') && modal.includes("modals-footer"),
+        "4-2 取不到分享管理彈窗（或只切到半顆）—— 這條測試在空轉");
 
     const input = modal.match(/<input[^>]*id="shareExpiresDaysInput"[^>]*>/);
     assert.ok(input, "缺「有效天數」欄");
@@ -6877,10 +6883,13 @@ test("§5/§6 分享連結管理：有效天數欄（可留空＝永久）＋ �
         assert.match(modal, new RegExp(`data-i18n="${key.replace(".", "\\.")}"`), `缺「${label}」狀態的示範`);
     assert.match(modal, /data-i18n="share\.neverExpires"/, "缺「永久有效」（expires_at 為 null）的示範");
 
-    // 已過期／已撤銷的列：撤銷鈕要 disabled（那一列已經沒有東西可撤，留著就是一顆按了什麼都不會發生的鈕）
+    // **只有已撤銷的那一列** disabled：對回上游的 `revoke_share`——它不看到期，只把 `disabled` 設成 True；
+    // 而 `GET /share` 只濾 `disabled`，所以**過期的列還在清單裡**，撤銷是唯一能把它清掉的動作。
+    // 把過期那一列也鎖住，等於讓使用者永遠清不掉它——而清單會一直長。
     const revokeBtns = [...modal.matchAll(/<button[^>]*js-revoke-share[^>]*>/g)].map((m) => m[0]);
     assert.equal(revokeBtns.length, 4, `示範列應為 4 列（永久／有到期日／已過期／已撤銷），實際 ${revokeBtns.length}`);
-    assert.equal(revokeBtns.filter((b) => /\bdisabled\b/.test(b)).length, 2, "已過期與已撤銷這兩列的撤銷鈕要 disabled");
+    assert.equal(revokeBtns.filter((b) => /\bdisabled\b/.test(b)).length, 1,
+        "只有已撤銷那一列的撤銷鈕要 disabled——過期的列 upstream 的 disabled 仍是 False，撤銷得掉，也只有撤銷清得掉");
     // 條件開窗：撤銷鈕只留 hook，成敗 toast 掛在確認鈕上（§5）
     for (const b of revokeBtns) assert.ok(!/data-toast/.test(b), "撤銷鈕是條件開窗（要先選定撤銷哪一條），不掛 data-toast");
 });
@@ -8244,7 +8253,10 @@ test("§4/§5 pagination 由 js 產出的 markup 也要進 img／可及名稱／
         return html;
     `);
     const html = build();
-    assert.ok(html.length > 646, "產出的 markup 太短 —— 這條測試在空轉");
+    // 結構式守門（§8-1）：問「該有的幾種 <li> 都產出來了沒有」，不問位元組數。
+    assert.ok(/<li[^>]*class="[^"]*prev/.test(html) && /<li[^>]*class="[^"]*next/.test(html)
+        && /<li[^>]*class="[^"]*ellipsis/.test(html) && (html.match(/<li/g) || []).length === 5,
+        "產出的 markup 缺了 prev／next／省略號或頁碼（三支 builder 各出幾顆是寫死的：2＋2＋1）—— 這條測試在空轉");
 
     const bad = [];
     // ① 死連結：這一族是控制項（點了在同一頁重繪），不是導覽（§4 判準／§5 href="#"）

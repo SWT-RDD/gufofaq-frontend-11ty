@@ -80,7 +80,10 @@
                     </div>
                     {# 每列＝連結唯讀框 + 到期時間 + 狀態 + 複製 + 撤銷。
                          到期時間是資料（不翻）；空值代表永久，用 chrome 的「永久有效」表示（§4-2 資料與 chrome 分開）。
-                         已撤銷／已過期的列：撤銷鈕改為 disabled（那一列已經沒有東西可撤），避免「按了什麼都不會發生」。 #}
+                         **只有已撤銷的列鎖住撤銷鈕**：那一列真的沒有東西可撤（`disabled` 已經是 True），
+                         按了什麼都不會發生。**已過期的不鎖**——同檔頭那一段講過，`GET /share` 只比對
+                         `disabled`，過期的列 `disabled` 仍然是 False，也就是它還在清單裡、而且撤銷是
+                         **唯一能把它從清單上清掉的動作**。鎖住它等於讓那一列永遠留著。 #}
                     <div class="flex-row column gap-8">
                         {% for row in shareRows %}
                         {# 逐列同型控制項的可及名稱要靠**列脈絡**（§4）：這裡沒有表頭也沒有辨識欄，
@@ -98,7 +101,7 @@
                             {% elif row.state == "expired" %}<span class="text-gray" data-i18n="share.stateExpired">已過期</span>
                             {% else %}<span class="text-bold" data-i18n="share.stateActive">生效中</span>{% endif %}
                             <button type="button" class="button button-border button-sm shareBtn" data-toast="連結已複製!|複製失敗，請手動選取後複製" data-i18n-data-toast="modals.linkCopied" data-toast-type="success|error" aria-labelledby="shareRowName-{{ row.id }} shareCopyLabel-{{ row.id }}"><span id="shareCopyLabel-{{ row.id }}" data-i18n="action.copy">複製</span></button>
-                            <button type="button" class="button button-red button-sm js-revoke-share"{% if row.state != "active" %} disabled{% endif %} aria-labelledby="shareRowName-{{ row.id }} shareRevokeLabel-{{ row.id }}"><span id="shareRevokeLabel-{{ row.id }}" data-i18n="action.revoke">撤銷</span></button>
+                            <button type="button" class="button button-red button-sm js-revoke-share"{% if row.state == "revoked" %} disabled{% endif %} aria-labelledby="shareRowName-{{ row.id }} shareRevokeLabel-{{ row.id }}"><span id="shareRevokeLabel-{{ row.id }}" data-i18n="action.revoke">撤銷</span></button>
                         </div>
                         {% else %}
                         {# GET /share 只回未撤銷的列，且一筆都還沒建過的問答初始態就是空的——
