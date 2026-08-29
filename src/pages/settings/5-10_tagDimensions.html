@@ -139,6 +139,17 @@ permalink: 5-10_tagDimensions.html
   { no: 2, name: "設置二", i18nKey: "settings.config2", mode: "llm", recentWindowDays: 7 },
   { no: 3, name: "設置三", i18nKey: "settings.config3", mode: "off", recentWindowDays: 14 }
 ] %}
+{# `llm` 那一種模式獨有的第二道前提：交給模型挑值的那份**值域目錄**可以多大。
+     正本是 `GET /api/settings/chat-config-limits` 的 `tag_filter`（product 的
+     `TAG_FILTER_CATALOG_LIMITS`，兩顆都是 `{"max_len": N}`），值本身來自 GufoRAG chatbot 的
+     `MAX_FILTER_VALUES_PER_SLOT`／`MAX_FILTER_TEXT_LEN`。切版沒有端點可讀，故槽裡是正本當下
+     的值；**兩個數字都是可見文字，所以走資料槽、不烤進譯文**（§3-2／§4-2，同 3-2 的
+     `glossaryFieldLimits`）。
+     **`textLen` 是一顆、不是三顆**：上游是一顆常數 ＋ 一支驗證器同時管維度名稱、代碼與代碼
+     名稱，投影成三顆等於在契約上發明一個上游沒有的區分——三個欄位讀同一顆常數，看的人會以為
+     它們可以各自變動，而它們不能。上游哪天拆開也不是靜默事件：product 那側的跨 repo 比對照
+     名字讀對面原始檔的字面值，名字一消失就先紅，由人回來改契約形狀與這一頁那句話。 #}
+{% set tagFilterCatalogLimits = { codesPerDimension: 50, textLen: 200 } %}
 {# 切到會過濾的模式被擋下時 product 回 400，detail 逐維度指名兩種缺法、各自附處置（`_assert_every_file_carries_the_slots`）：
      · `not_mapped`：「N 個檔匯入時沒有這一欄」→ 重新匯入一次（新的匯入會帶上這一欄，沒填的自動補「未標註」）
      · `whole_file`：「N 個檔是以資料夾方式匯入的、整份是一份文件」→ 改成逐列匯入，或不要用這個維度過濾
@@ -718,6 +729,15 @@ permalink: 5-10_tagDimensions.html
          判不準就一起歸零，以及另外兩種模式為什麼一條都不送。 #}
     <p class="text-gray" data-i18n="settings.recencyWindowNote">「最新資料時間窗」只有「問答前系統判定」這一種模式在用，而且在那個模式下也不是單獨生效的開關：只在系統判定這一題在問最新資料時才會出現，判不準時整組條件連同時間窗一起丟棄。另外兩種模式一條都不送——停用不送任何條件，「AI 邊查邊收窄」只讓 AI 帶標籤、不讓它帶日期。理由是時間窗是唯一沒有「未標註」分支的述詞，留著它就會連沒有發布日的文件一起濾掉。</p>
 
+    {# `llm` 獨有的第二道前提，擺在時間窗那一句之後：兩句同族——都是「某一種模式獨有的規則」，
+         而那一族就住在表格上方。**這是前提說明、不是警示**（故 `text-gray`）：什麼都還沒有被擋
+         下來，紅字留給「有東西壞了或被擋下」（§4）。
+         兩個數字獨立成資料節點、分隔空白寫在前後綴 key 裡（§4-2，正典＝pagination 的
+         totalPrefix／totalSuffix）——烤進譯文的話，上游改上限時中英兩份譯文會一起靜默過期。
+         末句（「上限是為了這件事，不是資料庫存不下」）不可省：少了它，一個被擋下來的租戶合理
+         的下一步是來問「可以幫我調大嗎」，而答案是不行、而且理由與容量無關。 #}
+    <p class="text-gray" id="tagFilterLlmCatalogNote"><span data-i18n="settings.tagFilterLlmCatalogPrefix">「AI 邊查邊收窄」還多一道前提：可挑的值域要交得到 AI 手上，所以一個維度最多 </span><span>{{ tagFilterCatalogLimits.codesPerDimension }}</span><span data-i18n="settings.tagFilterLlmCatalogMid"> 個代碼，維度名稱、代碼與代碼名稱各最多 </span><span>{{ tagFilterCatalogLimits.textLen }}</span><span data-i18n="settings.tagFilterLlmCatalogSuffix"> 字。超過的話切到這個模式會被擋下來，並指名是哪一個維度。這一段值域每一輪都隨問題重送給 AI，清單太長只會讓它更常挑錯——上限是為了這件事，不是資料庫存不下。</span></p>
+
     <div class="table-container scrollTable">
         <table class="default-table">
             {# **這張表沒有「開啟當下量到的未標註筆數」那一欄**：`tag_untagged_counts` 在 product
@@ -758,7 +778,7 @@ permalink: 5-10_tagDimensions.html
                              `aria-describedby` 指回上面那一段 intro——三種模式的差別只寫一份。
                              值載體只掛 hook class、不掛 `data-toast`（§5 矩陣②）：`js-tag-filter-mode`
                              這個名字沿用不改，它是 React 端 e2e 的定址契約。 #}
-                        <select class="form-control singleSelect js-tag-filter-mode" aria-labelledby="tagFilterProfileName-{{ loop.index }} tagFilterModeHead" aria-describedby="tagFilterModeIntro">
+                        <select class="form-control singleSelect js-tag-filter-mode" aria-labelledby="tagFilterProfileName-{{ loop.index }} tagFilterModeHead" aria-describedby="tagFilterModeIntro tagFilterLlmCatalogNote">
                             <option value="off"{% if profile.mode == "off" %} selected{% endif %} data-i18n="settings.tagFilterModeOff">停用</option>
                             <option value="on"{% if profile.mode == "on" %} selected{% endif %} data-i18n="settings.tagFilterModeOn">問答前系統判定</option>
                             <option value="llm"{% if profile.mode == "llm" %} selected{% endif %} data-i18n="settings.tagFilterModeLlm">AI 邊查邊收窄</option>
@@ -889,7 +909,7 @@ permalink: 5-10_tagDimensions.html
 {% set helpModalTitleKey = "help.settings.tagFilter.title" %}
 {% set helpModalTitle = "標籤檢索過濾說明" %}
 {% set helpModalWhatKey = "help.settings.tagFilter.what" %}
-{% set helpModalWhat = "這一區是各套設定檔各自獨立的標籤檢索過濾模式與時間窗，互不相干，可以只讓其中一套過濾。切到任何一種會過濾的模式之前，系統會先檢查是否每一個檔都已經把用得到的維度槽寫進索引，卡在哪些檔、要怎麼處理，會列在下面那張表裡。" %}
+{% set helpModalWhat = "這一區是各套設定檔各自獨立的標籤檢索過濾模式與時間窗，互不相干，可以只讓其中一套過濾。切到任何一種會過濾的模式之前，系統會先檢查是否每一個檔都已經把用得到的維度槽寫進索引，卡在哪些檔、要怎麼處理，會列在下面那張表裡。「AI 邊查邊收窄」另有一道值域大小的前提，寫在那張表上方那一段。" %}
 {% set helpModalStateItems = [] %}
 {% set helpModalLimitRows = [] %}
 {% include "components/help-modal/help-modal.html" %}
