@@ -17,7 +17,8 @@
 // 否則 §4「A 元件的 scss 禁止出現 B 元件的 class」與 §5「只操作自己元件的 class」對它都判不下去）：
 //   `.block`＝`ui/block`；`.info-btn`／`.icon`＝`ui/info-btn`；`.form-group`／`.field`／`.form-control`＝`ui/form-control`；
 //   `.button`／`.button-border`／`.button-icon`／`.copy`＝`ui/button`；`.tooltip`／`.has-tooltip`＝`ui/tooltip`；
-//   `.mb-16`／`.flex-row`／`.column`／`.gap-16`／`.col-6-md`／`.col-12-sm`／`.text-red`／`.sr-only`＝全域工具層；
+//   `.mb-16`／`.flex-row`／`.column`／`.gap-16`／`.gap-8`／`.flex-wrap`／`.align-items-center`／
+//   `.col-6-md`／`.col-12-sm`／`.text-md`／`.text-bold`／`.text-red`／`.sr-only`＝全域工具層；
 //   `.js-service-key-issued`／`.copyBtn`＝業務 hook。**本元件只加行為、不擁有任何 class。**
 //
 // 下面是 5-6-3_platformServiceKeys.html 的生產 markup，逐字如下：

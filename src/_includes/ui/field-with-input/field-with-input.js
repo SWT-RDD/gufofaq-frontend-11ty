@@ -27,23 +27,28 @@
 //   {% set timeFilterChecked = "lastWeek" %}
 //   {% set timeFilterRangeHintId = "dataTimeRangeHint" %}
 //
+//   <div class="form-group row flex-row mobile-column-xs gap-16">
+//       <div class="label mobile-align">
+//           <label id="{{ timeFilterLabelId }}" class="control-label" data-i18n="settings.dataTimeFilter">資料時間篩選</label>
+//       </div>
+//       <div class="field w100" role="group" aria-labelledby="{{ timeFilterLabelId }}">
 //   <div class="flex-row gap-16 mobile-column flex-wrap field-with-input-group">
 //       <div class="flex-row gap-16 mobile-column-xs col-12-xs">
 //           <div class="function">
 //               <label class="form-radio border-wrap w100">
-//                   <input type="radio" name="{{ timeFilterName }}"{% if timeFilterChecked == "last24h" %} checked{% endif %}>
+//                   <input type="radio" name="{{ timeFilterName }}" value="daily" data-filter-reset="{% if timeFilterChecked == "last24h" %}checked{% else %}unchecked{% endif %}"{% if timeFilterChecked == "last24h" %} checked{% endif %}>
 //                   <span data-i18n="settings.last24h">近24小時</span>
 //               </label>
 //           </div>
 //           <div class="function">
 //               <label class="form-radio border-wrap w100">
-//                   <input type="radio" name="{{ timeFilterName }}"{% if timeFilterChecked == "lastWeek" %} checked{% endif %}>
+//                   <input type="radio" name="{{ timeFilterName }}" value="weekly" data-filter-reset="{% if timeFilterChecked == "lastWeek" %}checked{% else %}unchecked{% endif %}"{% if timeFilterChecked == "lastWeek" %} checked{% endif %}>
 //                   <span data-i18n="settings.lastWeek">上週</span>
 //               </label>
 //           </div>
 //           <div class="function">
 //               <label class="form-radio border-wrap w100">
-//                   <input type="radio" name="{{ timeFilterName }}"{% if timeFilterChecked == "lastMonth" %} checked{% endif %}>
+//                   <input type="radio" name="{{ timeFilterName }}" value="monthly" data-filter-reset="{% if timeFilterChecked == "lastMonth" %}checked{% else %}unchecked{% endif %}"{% if timeFilterChecked == "lastMonth" %} checked{% endif %}>
 //                   <span data-i18n="settings.lastMonth">上個月</span>
 //               </label>
 //           </div>
@@ -51,7 +56,7 @@
 //       <div class="flex-row gap-16 mobile-column-xs field-with-input">
 //           <div class="function">
 //               <label class="form-radio">
-//                   <input type="radio" name="{{ timeFilterName }}"{% if timeFilterChecked == "range" %} checked{% endif %}>
+//                   <input type="radio" name="{{ timeFilterName }}" value="custom" data-filter-reset="{% if timeFilterChecked == "range" %}checked{% else %}unchecked{% endif %}"{% if timeFilterChecked == "range" %} checked{% endif %}>
 //                   <span data-i18n="settings.timeRange">時間區間</span>
 //               </label>
 //           </div>
@@ -71,6 +76,11 @@
 //       </div>
 //   </div>
 //   <p class="text-gray m-0 mt-8" id="{{ timeFilterRangeHintId }}"><span data-i18n="settings.timeRangeLimitPrefix">時間區間最長 </span><span>365</span><span data-i18n="settings.timeRangeLimitMid"> 天，開始時間也不得早於 </span><span>365</span><span data-i18n="settings.timeRangeLimitSuffix"> 天前；超出的範圍送出會被退回。</span></p>
+//
+// **最外面那兩層也屬本契約**（`.form-group.row` ＋ 帶 `id` 的 `<label>`，以及
+// `.field[role="group"][aria-labelledby]`）：從 `.field-with-input-group` 寫起的話，抄的人會得到
+// 一組**報不出「這一組在問什麼」**的 radio（§4），而畫面完全正常。型② 那一段本來就是從最外層
+// 寫起的，兩型要對稱——不對稱的契約會讓人以為型① 真的少那兩層。
 //
 // 那顆 `<p>` **不在 `.field-with-input-group` 之內、但屬於本契約**：起訖兩欄的 `aria-describedby`
 // 指的就是它，少抄它兩欄的描述當場落空（§4：判準是無障礙樹讀得到，不是 markup 接上了）。

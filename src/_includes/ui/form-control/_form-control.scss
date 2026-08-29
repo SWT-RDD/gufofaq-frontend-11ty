@@ -275,7 +275,7 @@ textarea.form-control {
 }
 
 
-// 模擬 select 選框 (2-1)
+// 模擬 select 選框：唯一消費點是 1-1-1 的資料集下拉（`.field.select-wrap`）
 .select-wrap {
     position: relative;
 

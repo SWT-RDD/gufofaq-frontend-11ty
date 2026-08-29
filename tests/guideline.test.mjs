@@ -4855,8 +4855,11 @@ test("§1-2 元件檔頭的 markup 契約要逐字對得上生產實例（形狀
     // 負控 probe 的五顆也全都在測「契約寫多」那一個方向。
     // 判準補成雙向、但只對**硬規則那一族**要求相等：契約仍可略掉頁面專屬的裝飾屬性
     // （`title`、業務 `data-*` 鍵…），而實例上有的可及名稱／i18n／授權四軸／toast 三件套／
-    // `<img>` 尺寸一旦出現，契約就必須也有。
-    const HARD_ATTR = /^(aria-|data-i18n|data-toast|data-capability$|data-tenant-feature$|data-tenant-role$|data-platform-role$|width$|height$|decoding$|type$|role$)/;
+    // `<img>` 尺寸／值載體的 `value` 與 `data-filter-reset` 一旦出現，契約就必須也有。
+    // 後兩顆是這一輪加進來的：radio 少了 `value` 在 DOM 上一律讀到 "on"、少了 `data-filter-reset`
+    // 清除鈕一顆都不碰它——兩者都是「畫面完全正常、只有行為壞掉」的那一種，而契約沒跟上實例時，
+    // 照抄的人抄到的就是壞掉的那一份。
+    const HARD_ATTR = /^(aria-|data-i18n|data-toast|data-capability$|data-tenant-feature$|data-tenant-role$|data-platform-role$|data-filter-reset$|value$|width$|height$|decoding$|type$|role$)/;
     const sameNode = (c, n) => {
         if (c.tag !== n.tag || c.cls !== n.cls) return false;
         const ca = c.at.split(",").filter(Boolean);
