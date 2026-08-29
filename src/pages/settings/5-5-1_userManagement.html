@@ -64,8 +64,8 @@ permalink: 5-5-1_userManagement.html
      `{ id: 12, admin, 示範租戶 A }`（§6 跨頁同源）。 #}
 {% set members = [
   { id: 12, email: "admin@example.com", isAdmin: true, isActive: true, groupIds: [], platformRole: "admin" },
-  { id: 8, email: "editor@example.com", isAdmin: false, isActive: true, groupIds: [3], platformRole: "none" },
-  { id: 15, email: "viewer@example.com", isAdmin: false, isActive: false, groupIds: [2, 3], platformRole: "none" }
+  { id: 18, email: "editor@example.com", isAdmin: false, isActive: true, groupIds: [3], platformRole: "none" },
+  { id: 25, email: "viewer@example.com", isAdmin: false, isActive: false, groupIds: [2, 3], platformRole: "none" }
 ] %}
 
 {# 新增成員：電子郵件 + 初始密碼 + 所屬群組勾選（ui/checkbox）+ 租戶管理者（ui/switch）+ 新增按鈕 #}
@@ -234,7 +234,7 @@ permalink: 5-5-1_userManagement.html
                              settings.enabled／settings.disabled 兩顆 key（§4-2：同繁中不另立 key）。 #}
                         <div class="flex-row align-items-center gap-8">
                             <label class="switch">
-                                <input type="checkbox" class="switch-checkbox js-member-active" role="switch" aria-labelledby="memberEmail-{{ member.id }} memberStatusHead"{% if member.isActive %} checked{% endif %}>
+                                <input type="checkbox" class="switch-checkbox js-member-active" role="switch" aria-labelledby="memberEmail-{{ member.id }} memberStatusHead"{% if member.isActive %} checked{% endif %}{% if member.platformRole != "none" %} disabled{% endif %}>
                                 <span class="switch-box">
                                     <span class="switch-btn"></span>
                                 </span>
@@ -245,7 +245,7 @@ permalink: 5-5-1_userManagement.html
                     <td>
                         <div class="flex-row align-items-center gap-8">
                             <label class="switch">
-                                <input type="checkbox" class="switch-checkbox" role="switch" aria-labelledby="memberEmail-{{ member.id }} memberRoleHead"{% if member.isAdmin %} checked{% endif %}>
+                                <input type="checkbox" class="switch-checkbox js-member-admin" role="switch" aria-labelledby="memberEmail-{{ member.id }} memberRoleHead"{% if member.isAdmin %} checked{% endif %}{% if member.platformRole != "none" %} disabled{% endif %}>
                                 <span class="switch-box">
                                     <span class="switch-btn"></span>
                                 </span>
@@ -261,7 +261,7 @@ permalink: 5-5-1_userManagement.html
                         <div class="flex-row flex-wrap gap-16 align-items-center" role="group" aria-labelledby="memberEmail-{{ member.id }} memberGroupsHead">
                             {% for group in groups %}
                             <label class="form-checkbox">
-                                <input type="checkbox"{% if group.id in member.groupIds %} checked{% endif %}>
+                                <input type="checkbox" class="js-member-group" value="{{ group.id }}"{% if group.id in member.groupIds %} checked{% endif %}{% if member.platformRole != "none" %} disabled{% endif %}>
                                 <span>{{ group.name }}</span>
                             </label>
                             {% endfor %}
@@ -282,7 +282,10 @@ permalink: 5-5-1_userManagement.html
                         {% set capPrinted = "" %}
                         {% for cap in capabilities %}{% set capHas = false %}{% for group in groups %}{% if group.id in member.groupIds and cap.key in group.capabilities %}{% set capHas = true %}{% endif %}{% endfor %}{% if capHas %}{% if capPrinted %}<span data-i18n="common.listSep">、</span>{% endif %}<span data-i18n="{{ cap.i18nKey }}">{{ cap.label }}</span>{% set capPrinted = "1" %}{% endif %}{% endfor %}{% endif %}</td>
                     <td>
-                        {# **平台角色持有者那一列不渲染這兩顆鈕**（§5 不放按了必定失敗的鈕）：
+                        {# **平台角色持有者那一列不渲染這兩顆鈕**（§5 不放按了必定失敗的鈕），
+                             而同一列的值控制項（狀態／管理者／群組）**照渲染但 disabled**（§5 渲染規則：
+                             狀態要看得見才稽核得到，只是改不動）——那一列沒有儲存鈕，讓它們可編輯
+                             等於畫出一組寫不回去的草稿：
                              `_assert_tenant_manageable` 對 `platform_role != "none"` 的目標一律 403，
                              而那一欄本來就對同租戶管理者可見（見上方 `platformRole` 那則註解），
                              所以「按下去才知道」是可以避免的。

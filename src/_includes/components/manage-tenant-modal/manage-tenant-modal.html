@@ -423,7 +423,7 @@
                                          元素清單上那兩行一模一樣——一個是輸入框、一個是不可逆的紅鈕。 #}
                                     <label for="deleteDataConfirmInput" class="control-label" data-i18n="platform.confirmTypeNameToDeleteData">輸入租戶名稱以刪除資料</label>
                                 </div>
-                                <p class="text-gray m-0" data-i18n="platform.deleteDataIrreversible">將刪除該租戶所有資料集與其 GufoRAG 索引（保留帳號本身），此操作不可復原。</p>
+                                <p class="text-gray m-0" id="deleteDataIrreversible" data-i18n="platform.deleteDataIrreversible">將刪除該租戶所有資料集與其 GufoRAG 索引（保留帳號本身），此操作不可復原。</p>
                                 <div class="field">
                                     {# 解鎖條件是**約束**，不能只寫在 placeholder：一打字就消失，而且輔具讀不到它（§4）。
                                          提成常駐說明並用 aria-describedby 接上，不可逆那句也一起指。
@@ -431,7 +431,7 @@
                                          `platform.confirmTypeNamePlaceholder` 講的是「輸入租戶名稱以確認」這件事，
                                          不是把某個片語翻成兩種語言——同一道閘不可以在中英兩邊要求不同的輸入
                                          （5-6-1 的 ISO 審核片語就是踩到這件事，該頁已改成語言中立字串）。 #}
-                                    <input type="text" id="deleteDataConfirmInput" data-platform-role="admin" placeholder="輸入租戶名稱以確認" data-i18n-placeholder="platform.confirmTypeNamePlaceholder" aria-describedby="deleteDataConfirmHint" class="form-control">
+                                    <input type="text" id="deleteDataConfirmInput" data-platform-role="admin" placeholder="輸入租戶名稱以確認" data-i18n-placeholder="platform.confirmTypeNamePlaceholder" aria-describedby="deleteDataIrreversible deleteDataConfirmHint" class="form-control">
                                     <span class="text-gray" id="deleteDataConfirmHint" data-i18n="platform.confirmTypeNameHint">要照著打的是這個租戶的名稱，逐字相同才解得開。</span>
                                 </div>
                             </div>
@@ -443,10 +443,10 @@
                                     {# 同上：label 是欄位名、不是鈕名（§4）。 #}
                                     <label for="deleteAccountConfirmInput" class="control-label" data-i18n="platform.confirmTypeNameToDeleteAccount">輸入租戶名稱以刪除帳號</label>
                                 </div>
-                                <p class="text-gray m-0" data-i18n="platform.deleteAccountIrreversible">將永久刪除整個帳號：租戶、所有使用者、資料集與 GufoRAG 索引，此操作不可復原（稽核日誌保留）。</p>
+                                <p class="text-gray m-0" id="deleteAccountIrreversible" data-i18n="platform.deleteAccountIrreversible">將永久刪除整個帳號：租戶、所有使用者、資料集與 GufoRAG 索引，此操作不可復原（稽核日誌保留）。</p>
                                 <div class="field">
                                     {# 同上：解鎖條件常駐可見、aria-describedby 接上。 #}
-                                    <input type="text" id="deleteAccountConfirmInput" data-platform-role="admin" placeholder="輸入租戶名稱以確認" data-i18n-placeholder="platform.confirmTypeNamePlaceholder" aria-describedby="deleteAccountConfirmHint" class="form-control">
+                                    <input type="text" id="deleteAccountConfirmInput" data-platform-role="admin" placeholder="輸入租戶名稱以確認" data-i18n-placeholder="platform.confirmTypeNamePlaceholder" aria-describedby="deleteAccountIrreversible deleteAccountConfirmHint" class="form-control">
                                     <span class="text-gray" id="deleteAccountConfirmHint" data-i18n="platform.confirmTypeNameHint">要照著打的是這個租戶的名稱，逐字相同才解得開。</span>
                                 </div>
                             </div>
