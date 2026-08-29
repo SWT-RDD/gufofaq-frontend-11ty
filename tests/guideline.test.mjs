@@ -284,10 +284,9 @@ test("§2 同一頁第二次用到某個元件參數時，該參數必須先重�
     // 判準以「變數」為單位而不是以「元件」為單位 —— stepNodesLg 被 step-nodes 與
     // step-btn-wrap 兩個不同元件消費，以元件為單位會漏掉跨元件的殘留。
 
-    // 註解挖掉時**保留行數**（把註解本體換成等量換行）：這條測試的訊息會報行號，而多數 `{% set %}`
-    // 前面都有一段十幾行的 `{# #}` 說明——整段刪掉之後報出來的行號與檔案裡的位置差好幾十行，
-    // 讀的人會照著去看一段不相干的 markup。
-    const stripNjk = (t) => t.replace(/\{#[\s\S]*?#\}/g, (m) => m.replace(/[^\n]/g, ""));
+    // 吃模組層級的 stripNjk（它把註解本體換成等量換行、**保留行數**）：這條測試的訊息會報行號，
+    // 而多數 `{% set %}` 前面都有一段十幾行的 `{# #}` 說明——整段刪掉的版本報出來的行號
+    // 與檔案裡的位置差好幾十行，讀的人會照著去看一段不相干的 markup。
     const root = (v) => v.split(".")[0];
     const RESERVED = new Set(["loop", "true", "false", "not", "and", "or"]);
 
@@ -538,6 +537,11 @@ test("§5 每顆 .tab 都要接得上東西（data-target 面板／業務 data-*
     // 三擇一：①切同頁面板→ data-target；②切業務資料（哪一筆紀錄／哪一份設定檔）→ 帶 data-* 契約，
     // React 才認得出點的是哪一個；③本身是 <a> 連到別頁（不在這條掃描範圍內，它不是 button.tab）。
     // 白名單：元件庫展示頁的靜態示範（那頁的頁籤只是外觀樣本，沒有行為）——名字住在模組層級的 SHOWCASE。
+    //
+    // ②那一支要**逐個屬性列名**，不能寫成 `data-(?!i18n)` 這種前綴通配：通配之下
+    // `data-tip`（純提示）、`data-i18n-aria-label`（翻譯屬性）都足以讓一顆死頁籤過關，
+    // 而那兩者跟「點下去要切哪一筆業務資料」毫無關係。下面每一個都要真的還在用（見死名單守門）。
+    const BIZ_TAB_ATTRS = ["data-setting-sn", "data-chat-sn"];
     const bad = [];
     let seenTabs = 0;
     for (const f of distHtml) {
@@ -548,13 +552,17 @@ test("§5 每顆 .tab 都要接得上東西（data-target 面板／業務 data-*
             if (t.tag !== "button" || !classesOf(t.attrs).includes("tab")) continue;
             seenTabs++;
             if (attrValue(t.attrs, "data-target") !== null) continue;
-            if (/(?:^|\s)data-(?!i18n)[\w-]+=/.test(t.attrs)) continue; // 業務 data-* 契約（data-setting-sn／data-chat-sn…）
+            if (BIZ_TAB_ATTRS.some((a) => new RegExp(`(?:^|\\s)${a}=`).test(t.attrs))) continue;
             bad.push(`dist/${f}  ${t.raw.slice(0, 100)}`);
         }
     }
     assert.ok(seenTabs >= 20, `只掃到 ${seenTabs} 顆 .tab —— 這條測試在空轉`);
+    // 死名單：某個業務屬性不再掛在任何頁籤上時，它留在表裡不豁免任何東西，
+    // 卻會在下一次有人用同名屬性當純資料標記時默默放行一顆死頁籤。
+    const staleBiz = BIZ_TAB_ATTRS.filter((a) => !distHtml.some((f) => new RegExp(`<button[^>]*\\b${a}=`).test(distDoc(f))));
+    assert.deepEqual(staleBiz, [], `BIZ_TAB_ATTRS 有死名單（已經沒有任何鈕帶它）：${staleBiz.join("、")}`);
     assert.equal(bad.length, 0,
-        `死頁籤（點了不會有任何事）：\n${fail(bad)}\n切同頁面板請補 data-target 並建 .tab-content；切業務資料請補 data-* 契約。`);
+        `死頁籤（點了不會有任何事）：\n${fail(bad)}\n切同頁面板請補 data-target 並建 .tab-content；切業務資料請補 BIZ_TAB_ATTRS 列名的契約。`);
 });
 
 test("§4 .btn-group 只在 .default-table 裡有規則，表格外掛它等於零樣式（祖先錯位）", () => {
@@ -599,6 +607,44 @@ test("§4 .btn-group 只在 .default-table 裡有規則，表格外掛它等於�
 // 每一個 `{` 前面那一段（選擇器或 at-rule 前導），宣告本體 `[^{}]*}` 永遠不會被捕捉到，
 // 而且巢狀（@media 內的選擇器）照樣收得到——用 `css.replace(/\{[^}]*\}/g,"")` 反而會把
 // @media 區塊的第一條規則連選擇器一起吃掉（實測掉 15 顆 col-12-sm／mobile-col… 那一族）。
+// ─── 元件 scss 的「頂層根 class」唯一正本────────────────────────
+// 只認 depth 0 的選擇器行、取每段選擇器的第一個 class＝這支 scss 的根名。
+// 巢狀在自家根底下的同名子元素 class（.logo／.row／.dropdown…設計系統的共同語言）
+// 被各自的根隔開，不算衝突也不算死 CSS，所以不能整份 scss 抓 `\.[\w-]+`。
+const SCSS_SHARED_STATE = new Set(["active", "open", "show", "hidden", "collapsed", "disabled", "done", "error"]);
+const scssRootClasses = (scss) => {
+    const out = new Set();
+    let depth = 0;
+    for (const raw of scss.split("\n")) {
+        const t = raw.trim();
+        if (/^[*/]/.test(t)) continue;   // 註解行（行註解、區塊註解、以及區塊內接續的星號行）
+        if (depth === 0 && /[{,]\s*$/.test(t)) {
+            for (const part of t.replace(/[{,]\s*$/, "").split(",")) {
+                const m = part.match(/\.([a-zA-Z][\w-]*)/);
+                if (m) out.add(m[1]);
+            }
+        }
+        depth += (raw.match(/\{/g) || []).length - (raw.match(/\}/g) || []).length;
+        if (depth < 0) depth = 0;
+    }
+    return out;
+};
+
+// ─── scss 色源檔的區塊切割與 token 收集唯一正本────────────────────
+// 從 start 起算大括號配對，切出**這一塊**的內容：一路 slice 到檔尾的話，
+// 日後在它後面新增第三個區塊（第二套主題、印刷樣式…）會被誤算進這一塊，
+// 兩邊 token 集合就永遠對得起來，而那正是這些測試要抓的東西。
+const scssBlockAt = (src, start, file) => {
+    let depth = 0;
+    for (let i = src.indexOf("{", start); i < src.length; i++) {
+        if (src[i] === "{") depth++;
+        else if (src[i] === "}" && --depth === 0) return src.slice(start, i);
+    }
+    throw new Error(`${file} 大括號不平衡`);
+};
+// 一塊裡宣告了哪些 custom property（行首錨定：`var(--x)` 這種引用不算宣告）
+const declaredTokens = (body) => new Set([...body.matchAll(/^\s*(--[\w-]+):/gm)].map((m) => m[1]));
+
 const cssSelectorClasses = () => {
     const css = read("dist/css/main.css");
     const selectors = [...css.matchAll(/([^{}]*)\{/g)].map((m) => m[1]).join(" ");
@@ -1332,7 +1378,11 @@ function commentsOf(text, mode) {
         if (cur) cur.body += `\n${c}`; else cur = { line: i + 1, body: c };
     });
     if (cur) out.push(cur);
-    for (const m of text.matchAll(/\/\*[\s\S]*?\*\//g)) out.push({ line: at(m.index), body: m[0] });
+    // 起點錨在「行首或空白之後」：裸 `/\*` 會在 glob 字面（`"src/**/*.html"`）與正則字元類
+    // （`[*/]`）裡開一則幽靈註解，一路吃到下一個 `*\/`，把中間的真實程式碼當成註解散文餵進
+    // 每一條吃 commentsOf 的規則——那會同時製造假紅（吃進來的程式碼長得像出處）與假綠
+    // （真正的註解被併進幽靈那一則、行號報在幾十行外）。真正的區塊註解一律前面是空白或行首。
+    for (const m of text.matchAll(/(?<=^|\s)\/\*[\s\S]*?\*\//gm)) out.push({ line: at(m.index), body: m[0] });
     return out;
 }
 
@@ -2017,7 +2067,8 @@ test("§4 送出鈕是 type=\"button\"——切版不包 <form>，submit 是等�
 test("§4 可點的東西一律用真 button，且不得省略 type", () => {
     // 掃的是原始碼（`{% if %}` 兩個分支都要驗），所以要先把 {# #} 註解挖掉——
     // 檔頭註解裡寫「一律用真 `<button>`」會被 tagsOf 當成一顆沒有 type 的按鈕。
-    const stripNjk = (s) => s.replace(/\{#[\s\S]*?#\}/g, "");
+    // 用模組層級的 stripNjk，不要在這裡重寫一份：區域版一旦跟正本分岔，
+    // 「哪些東西算註解」就會在兩條規則裡是兩套答案。
     // 錨點必須是 `(^|\s)type=` 而不是 `\btype=`：`-` 是非字元，所以 `\b` 在
     // `data-toast-type="success"` 的 `-type=` 前面也成立——全站 data-toast 幾乎都掛在按鈕上，
     // 只要有一顆忘了寫 type，那個寬鬆的錨點就會默默放行它（目前 0 顆，但差一步）。
@@ -2236,10 +2287,11 @@ test("§5 掛 data-open-modal 的鈕不得同時帶業務 hook class（那代表
     // 掃「編譯後的 css」而不是 scss 原始碼：_utilities.scss 的 .mt-#{$n} / .gap-#{$n} / .col-#{$i}-md
     // 是 Sass 插值生成的，原始碼裡只找得到 stem。掃原始碼的話，開窗鈕寫 class="button mt-4"
     // 就會被誤判成「.mt-4 沒有樣式 ⇒ 業務 hook」而爆紅 —— 而 §4 正是鼓勵用這些工具 class。
-    const cssClasses = new Set();
-    for (const m of read("dist/css/main.css").matchAll(/\.(-?[_a-zA-Z][\w-]*)/g)) cssClasses.add(m[1]);
+    // 吃共用的 cssSelectorClasses()（只解析選擇器）：自己重寫一份「掃整份 css」的收集器，
+    // 會把 `url(…icon_owl.png)` 的 `png` 收成 class，於是 class="png" 這種無主掛點被判成有樣式。
+    const cssClasses = cssSelectorClasses();
     assert.ok(cssClasses.size > 300, `dist/css/main.css 只掃到 ${cssClasses.size} 個 class —— 這條測試在空轉`);
-    const scssClasses = cssClasses;
+    assert.ok(!cssClasses.has("png"), "css class 收集器又把 url(...png) 的副檔名收成 class 了");
 
     let btnCount = 0;
     const hits = [];
@@ -2249,7 +2301,7 @@ test("§5 掛 data-open-modal 的鈕不得同時帶業務 hook class（那代表
             btnCount++;
             const cls = attrs.match(/\sclass=["']([^"']*)["']/);
             for (const c of (cls ? cls[1] : "").split(/\s+/).filter(Boolean))
-                if (!scssClasses.has(c))
+                if (!cssClasses.has(c))
                     hits.push(`dist/${f}  .${c} 沒有任何樣式 ⇒ 業務 js 掛點：<${raw.slice(0, 70)}`);
         }
     assert.ok(btnCount > 0, "dist 裡一顆 data-open-modal 都掃不到 —— 這條測試在空轉");
@@ -2318,7 +2370,7 @@ ${fail(hits)}`);
 test("§5 markup 零 inline 事件處理器 / javascript: href（行為住在元件 js 裡）", () => {
     // 要在 markup 宣告行為就掛資料屬性（data-open-modal / data-toast），由 owning 元件的 js 事件委派。
     // `javascript:` href 同樣是把 js 塞進 markup（`javascript:void(0)` 更是一顆死連結）。
-    const stripNjk = (s) => s.replace(/\{#[\s\S]*?#\}/g, "");
+    // 註解一律走模組層級的 stripNjk（區域重寫一份 = 同一句話在兩條規則裡算不算註解會分岔）。
     const rule = ({ tag, attrs, raw }) => {
         // HTML 屬性大小寫不敏感：onClick= 是合法的 inline handler，沒有 i flag 就抓不到
         if (/\son[a-z]+\s*=/i.test(" " + attrs)) return `inline handler: <${tag} ${raw.slice(0, 60)}`;
@@ -2618,13 +2670,12 @@ test("§9 裸元素選擇器只准出現在 _normalize / _base", () => {
         }
     };
     for (const f of srcScss.filter((x) => !/scss\/_(normalize|base)\.scss$/.test(x))) scanOne(f, read(f), hits);
-    // 負控自我檢查：合成樣本必須被認出來（零命中型測試唯一的空轉守門）
-    const probe = [];
-    scanOne("<probe>", "section { color: red; }\n@media screen { p { margin: 0 } }\n", probe);
-    assert.equal(probe.length, 2, `掃描器認不出裸元素選擇器（合成樣本只抓到 ${probe.length}／2）—— 這條測試永遠會綠`);
-    const probeOk = [];
-    scanOne("<probe>", ".card { section { color: red } }\nbody.guideline-page { margin: 0 }\n", probeOk);
-    assert.equal(probeOk.length, 0, `掃描器誤報了合法寫法：${probeOk.join("、")}`);
+    // 負控自我檢查：走檔頭共用的 probe()。兩個壞樣本拆開各驗一次——併成一段只斷言總數的話，
+    // 「@media 那一支壞掉、裸 section 多抓一顆」會互相抵銷成 2 而過關。
+    const runScan = (s) => { const out = []; scanOne("<probe>", s, out); return out; };
+    probe("§4 裸元素選擇器", runScan,
+        ["section { color: red; }\n", "@media screen { p { margin: 0 } }\n"],
+        [".card { section { color: red } }\n", "body.guideline-page { margin: 0 }\n"]);
     assert.equal(hits.length, 0, `打包進單一 main.css 會洩漏到全站：\n${fail(hits)}`);
 });
 
@@ -2634,18 +2685,9 @@ test("§4 :root 與 [data-theme=dark] 的顏色 token 集合必須一致", () =>
     const rootAt = src.search(/^:root\s*\{/m);
     const darkAt = src.search(/^\[data-theme="dark"\]\s*\{/m);
     assert.ok(rootAt >= 0 && darkAt > rootAt, "_var.scss 找不到 :root / [data-theme=dark] 區塊");
-    // 用大括號配對切出區塊，不要一路切到檔尾——日後在 dark 之後再加第三個區塊就會被誤算進來
-    const blockAt = (start) => {
-        let depth = 0;
-        for (let i = src.indexOf("{", start); i < src.length; i++) {
-            if (src[i] === "{") depth++;
-            else if (src[i] === "}" && --depth === 0) return src.slice(start, i);
-        }
-        throw new Error("_var.scss 大括號不平衡");
-    };
-    const tokens = (body) => new Set([...body.matchAll(/^\s*(--[\w-]+):/gm)].map((m) => m[1]));
-    const light = tokens(blockAt(rootAt));
-    const dark = tokens(blockAt(darkAt));
+    const blockAt = (start) => scssBlockAt(src, start, "_var.scss");
+    const light = declaredTokens(blockAt(rootAt));
+    const dark = declaredTokens(blockAt(darkAt));
     const NON_COLOR = new Set(["--fontFamily", "--fontFamilyMono"]); // 字型不隨主題變
     const onlyLight = [...light].filter((t) => !dark.has(t) && !NON_COLOR.has(t));
     const onlyDark = [...dark].filter((t) => !light.has(t));
@@ -2658,17 +2700,9 @@ test("§9 showcase 色盤 _guideline-var.scss 的 light 與 dark 也必須有完
     // 它跟 _var.scss 一樣是色源檔，一樣要兩邊給滿。
     const src = read("src/scss/_guideline-var.scss");
     const at = (re) => { const i = src.search(re); assert.ok(i >= 0, `找不到 ${re} —— 這條測試在空轉`); return i; };
-    const blockAt = (start) => {
-        let depth = 0;
-        for (let i = src.indexOf("{", start); i < src.length; i++) {
-            if (src[i] === "{") depth++;
-            else if (src[i] === "}" && --depth === 0) return src.slice(start, i);
-        }
-        throw new Error("_guideline-var.scss 大括號不平衡");
-    };
-    const tokens = (body) => new Set([...body.matchAll(/^\s*(--[\w-]+):/gm)].map((m) => m[1]));
-    const light = tokens(blockAt(at(/^\.guideline-page\s*\{/m)));
-    const dark = tokens(blockAt(at(/^\[data-theme="dark"\]\s+\.guideline-page\s*\{/m)));
+    const blockAt = (start) => scssBlockAt(src, start, "_guideline-var.scss");
+    const light = declaredTokens(blockAt(at(/^\.guideline-page\s*\{/m)));
+    const dark = declaredTokens(blockAt(at(/^\[data-theme="dark"\]\s+\.guideline-page\s*\{/m)));
     assert.ok(light.size >= 10, `只掃到 ${light.size} 顆 --gl-* —— 這條測試在空轉`);
     const onlyLight = [...light].filter((t) => !dark.has(t));
     const onlyDark = [...dark].filter((t) => !light.has(t));
@@ -2834,14 +2868,7 @@ test("§4 對比度硬規則：逐色實算（白字疊填充 ≥4.5、填充對
         return 0.2126 * lin((n >> 16) & 255) + 0.7152 * lin((n >> 8) & 255) + 0.0722 * lin(n & 255);
     };
     const src = read("src/scss/_var.scss");
-    const blockAt = (start) => {
-        let depth = 0;
-        for (let i = src.indexOf("{", start); i < src.length; i++) {
-            if (src[i] === "{") depth++;
-            else if (src[i] === "}" && --depth === 0) return src.slice(start, i);
-        }
-        throw new Error("_var.scss 大括號不平衡");
-    };
+    const blockAt = (start) => scssBlockAt(src, start, "_var.scss");
     // 抓「每一個」宣告，不只 hex —— 否則用 rgba()/gradient 寫的新填充色會靜默逃過窮舉分類
     const vars = (body) => Object.fromEntries([...body.matchAll(/(--[\w-]+):\s*([^;]+);/g)].map((m) => [m[1], m[2].trim()]));
 
@@ -3334,29 +3361,11 @@ test("§5/§8 元件 scss 的頂層根 class 要打得到 markup 或元件 js（
     for (const f of distHtml)
         for (const { value } of attrValuesIn(distDoc(f), "class"))   // 兩種引號都吃
             for (const c of value.split(/\s+/)) if (c) classAttr.add(c);
-    const SHARED = new Set(["active", "open", "show", "hidden", "collapsed", "disabled", "done", "error"]);
-    const rootTokens = (scss) => {
-        const out = new Set();
-        let depth = 0;
-        for (const raw of scss.split("\n")) {
-            const t = raw.trim();
-            if (t.startsWith("//") || t.startsWith("/*") || t.startsWith("*")) continue;
-            if (depth === 0 && /[{,]\s*$/.test(t)) {
-                for (const part of t.replace(/[{,]\s*$/, "").split(",")) {
-                    const m = part.match(/\.([a-zA-Z][\w-]*)/);
-                    if (m) out.add(m[1]);
-                }
-            }
-            depth += (raw.match(/\{/g) || []).length - (raw.match(/\}/g) || []).length;
-            if (depth < 0) depth = 0;
-        }
-        return out;
-    };
     const bad = [];
     let roots = 0;
     for (const f of srcScss.filter((x) => x.includes("_includes") || x.includes("src/scss/"))) {
-        for (const c of rootTokens(read(f))) {
-            if (SHARED.has(c)) continue;
+        for (const c of scssRootClasses(read(f))) {
+            if (SCSS_SHARED_STATE.has(c)) continue;
             roots++;
             // 這裡寫成 `jsBlob.includes(c)` 的話——同一個子字串 bug 的第二份。
             // 用共用的 jsOwnedClasses（選擇器字串／建構位置）判認領。
@@ -3740,35 +3749,17 @@ test("§4 元件檔案裡寫死的 id 只能由一個元件宣告（同 dialog i
 });
 
 test("§4 頂層根 class 名只能有一個元件 scss 主人（兩份頂層宣告＝兩份會分岔的正本）", () => {
-    // qa-record-tabs 曾在頂層寫 `.tab-group .no-records`（根名 .tab-group 是 ui/tab 的）。
-    // 只看「頂層選擇器的根名」：巢狀在自家根之下的同名子元素 class（.logo/.row/.dropdown…設計系統
-    // 共同語言）各元件各自擁有、彼此的規則被各自的根隔開，不是衝突。
-    const SHARED = new Set(["active", "open", "show", "hidden", "collapsed", "disabled", "done", "error"]);
-    const rootTokens = (scss) => {
-        const out = new Set();
-        let depth = 0;
-        for (const raw of scss.split("\n")) {
-            const t = raw.trim();
-            if (t.startsWith("//") || t.startsWith("/*") || t.startsWith("*")) continue;
-            if (depth === 0 && /[{,]\s*$/.test(t)) {
-                for (const part of t.replace(/[{,]\s*$/, "").split(",")) {
-                    const m = part.match(/\.([a-zA-Z][\w-]*)/); // 每段選擇器的第一個 class＝根名
-                    if (m) out.add(m[1]);
-                }
-            }
-            depth += (raw.match(/\{/g) || []).length - (raw.match(/\}/g) || []).length;
-            if (depth < 0) depth = 0;
-        }
-        return out;
-    };
+    // 反面寫法：某支元件 scss 在頂層寫 `.tab-group .no-records`——根名 .tab-group 是 ui/tab 的，
+    // 於是那顆根有兩份會分岔的正本，改了其中一份另一份靜靜留著舊排版。
+    // 只看「頂層選擇器的根名」：巢狀在自家根之下的同名子元素 class 被各自的根隔開，不是衝突。
     const owner = new Map(); // root class -> Set(file)
     // 這一條**刻意只看元件 scss**：`src/scss/` 底下的共用 base 與元件 scss 分持同一顆根 class 是
     // §4 明文的正典（`_form-check.scss` 拿走 checkbox／radio 共用的外框排版、兩個 atom 各留自己的部分；
     // `_guideline-var.scss` 給 token、`_guideline.scss` 給規則）。把全域 partial 一起收進來只會把那三組
     // 判成違規，而它們正是這條規則要的結果——一份共用正本，不是兩份會分岔的正本。
     for (const f of srcScss.filter((x) => x.includes("_includes"))) {
-        for (const c of rootTokens(read(f))) {
-            if (SHARED.has(c)) continue;
+        for (const c of scssRootClasses(read(f))) {
+            if (SCSS_SHARED_STATE.has(c)) continue;
             if (!owner.has(c)) owner.set(c, new Set());
             owner.get(c).add(f);
         }
@@ -4707,27 +4698,29 @@ test("§4 掛 data-capability 的鈕都要有 warning 型的「權限不足」�
     // **母體是 dist 的 `<button>`**：①參數化元件（delete-modal 那一族）的 toast 由使用頁灌進來，
     // src 上只看得到 `{{ deleteToast }}`；②`data-capability` 另有 13 顆掛在 `<div>` 上（§4 的區塊級
     // 宣告＝那一塊的下限，不是鈕），區塊沒有 toast 可言，收進來會製造一整批假紅。
-    // 豁免逐筆列出＋理由。**目前是空的**：唯一那一筆（`toast.applyProductionCompare`，理由是
-    // 「權限不足走獨立的彈窗、不是它自己的 toast 分支」）已經作廢——那顆鈕現在自己就有 warning 段。
-    // 這一族的失敗方式是**死豁免**：規則早就通得過了，豁免卻還掛著，於是哪天有人把那一段拿掉，
-    // 這條測試會靜靜放行。故下面另有一道「豁免必須真的用得到」的守門。
+    // 豁免逐筆列出＋理由，**目前是空的**：每一顆掛 data-capability 的鈕都自己有 warning 段。
+    // 這一族的失敗方式是**死豁免**：規則不靠豁免也通得過，豁免卻還掛著，於是哪天有人把那一段
+    // 拿掉，這條測試會靜靜放行。故下面另有一道「豁免必須真的用得到」的守門。
     const EXEMPT = new Map([]);
-    const scan = (html) => {
+    // 判準只寫一份，用 `inExempt` 選母體：正查（非豁免的鈕要合規）與死豁免查（豁免的鈕
+    // 拿掉豁免後還會不會產生 hit）走的必須是同一條規則，各寫一份的話改了其中一份就會分岔。
+    const scanWhere = (html, inExempt) => {
         const out = [];
         for (const [tag] of stripNonMarkup(html).matchAll(/<button\b[^>]*>/g)) {
             if (!/\bdata-capability="/.test(tag)) continue;
             const key = (tag.match(/\bdata-i18n-data-toast="([^"]*)"/) || [])[1] || "(無 i18n key)";
-            if (EXEMPT.has(key)) continue;
+            if (EXEMPT.has(key) !== inExempt) continue;
             const zh = (tag.match(/\bdata-toast="([^"]*)"/) || [])[1];
-            if (zh === undefined) { out.push(`${key}：掛了 data-capability 卻連 data-toast 都沒有`); continue; }
+            if (zh === undefined) { out.push({ key, msg: `${key}：掛了 data-capability 卻連 data-toast 都沒有` }); continue; }
             const segs = zh.split("|");
             const types = ((tag.match(/\bdata-toast-type="([^"]*)"/) || [])[1] || "").split("|");
             const i = segs.findIndex((s) => s.includes("權限不足"));
-            if (i === -1) out.push(`${key}：data-toast 沒有「權限不足」那一段 → ${zh}`);
-            else if (types[i] !== "warning") out.push(`${key}：第 ${i + 1} 段是「權限不足」，type 卻是 ${types[i] || "(缺)"}`);
+            if (i === -1) out.push({ key, msg: `${key}：data-toast 沒有「權限不足」那一段 → ${zh}` });
+            else if (types[i] !== "warning") out.push({ key, msg: `${key}：第 ${i + 1} 段是「權限不足」，type 卻是 ${types[i] || "(缺)"}` });
         }
         return out;
     };
+    const scan = (html) => scanWhere(html, false).map((h) => h.msg);
     probe("能力閘鈕的 403 段", scan,
         [`<button type="button" data-capability="settings:write" data-toast="已儲存|儲存失敗" data-toast-type="success|error">儲存</button>`,
          `<button type="button" data-capability="data:write" data-toast="已刪除|權限不足，無法刪除|刪除失敗" data-toast-type="success|error|error">刪除</button>`,
@@ -4746,23 +4739,9 @@ test("§4 掛 data-capability 的鈕都要有 warning 型的「權限不足」�
     const stale = [...EXEMPT.keys()].filter((k) => !distHtml.some((f) => read(`dist/${f}`).includes(`data-i18n-data-toast="${k}"`)));
     assert.equal(stale.length, 0, `EXEMPT 有過期項（那顆鈕已不在 dist）：${stale.join("、")}`);
     // 死豁免：那顆鈕**沒有豁免也會過**。留著等於把那一段的守門悄悄關掉——哪天有人把 warning 段
-    // 拿掉，這條測試照樣綠。判準＝拿掉豁免重掃一次，那顆鈕不產生任何 hit ⇒ 這筆豁免沒有消費者。
-    const scanNoExempt = (html) => {
-        const out = [];
-        for (const [tag] of stripNonMarkup(html).matchAll(/<button\b[^>]*>/g)) {
-            if (!/\bdata-capability="/.test(tag)) continue;
-            const key = (tag.match(/\bdata-i18n-data-toast="([^"]*)"/) || [])[1] || "(無 i18n key)";
-            if (!EXEMPT.has(key)) continue;
-            const zh = (tag.match(/\bdata-toast="([^"]*)"/) || [])[1];
-            if (zh === undefined) { out.push(key); continue; }
-            const segs = zh.split("|");
-            const types = ((tag.match(/\bdata-toast-type="([^"]*)"/) || [])[1] || "").split("|");
-            const i = segs.findIndex((s) => s.includes("權限不足"));
-            if (i === -1 || types[i] !== "warning") out.push(key);
-        }
-        return out;
-    };
-    const needed = new Set(distHtml.flatMap((f) => scanNoExempt(read(`dist/${f}`))));
+    // 拿掉，這條測試照樣綠。判準＝把豁免那一側當母體重掃一次（同一個 scanWhere、同一條規則），
+    // 那顆鈕不產生任何 hit ⇒ 這筆豁免沒有消費者。
+    const needed = new Set(distHtml.flatMap((f) => scanWhere(read(`dist/${f}`), true).map((h) => h.key)));
     const dead = [...EXEMPT.keys()].filter((k) => !needed.has(k));
     assert.equal(dead.length, 0, `EXEMPT 有死豁免（那顆鈕沒有豁免也會過，留著等於關掉它的守門）：${dead.join("、")}`);
     assert.equal(hits.length, 0, `§4：能力不足時 React 只剩 disabled 可用，而那是把契約演掉：\n${fail(hits)}`);
@@ -5548,12 +5527,20 @@ test("§1-2 元件庫的節號從 00 起連續不重複，且 aside 目錄與 <s
 
 test("§4-2 英譯字串不得含全形標點（那是繁中的字身，混在英文句子裡會露出來）", () => {
     const FULLWIDTH = /[　-〿＀-￯]/;
-    // 例外：在講「一個字面上就是全形的東西」時，那個符號是被引用的樣本
-    const SAMPLE = new Set(["settings.outputRuleListMarkerDesc"]);
+    // 例外：在講「一個字面上就是全形的東西」時，那個符號是被引用的樣本。
+    // 逐筆寫理由，並附兩道守門——沒有理由的豁免會被下一個人當成「這一族都可以」。
+    const SAMPLE = new Map([
+        ["settings.outputRuleListMarkerDesc", "輸出規則的清單符號說明：句中逐字列出「會被改寫的來源寫法」，其中一種就是全形頓號的「一、」——那是被引用的字面樣本，不是這句英文自己的標點"],
+    ]);
     const en = JSON.parse(read("src/i18n/en.json"));
     const hits = Object.entries(en).filter(([k, v]) => !SAMPLE.has(k) && FULLWIDTH.test(v))
         .map(([k, v]) => `${k}  ${v.slice(0, 60)}`);
     assert.ok(Object.keys(en).length > 500, `en.json 只讀到 ${Object.keys(en).length} 顆 key —— 這條測試在空轉`);
+    for (const [k, why] of SAMPLE) {
+        assert.ok(k in en, `SAMPLE 有死豁免：${k} 已經不在 en.json 裡`);
+        assert.ok(FULLWIDTH.test(en[k]), `SAMPLE 的 ${k} 其實已經沒有全形標點了——沒有豁免也會過，留著等於預先放行下一個同名 key`);
+        assert.ok(why.length > 20, `SAMPLE 的 ${k} 沒寫理由（空白不等於查證過）`);
+    }
     assert.ok(FULLWIDTH.test("「x」") && !FULLWIDTH.test("“x”"), "全形偵測式壞了，這條測試永遠會綠");
     assert.equal(hits.length, 0, `§4-2 英譯裡的全形標點：\n${fail(hits)}`);
 });
@@ -8383,6 +8370,18 @@ test("§6 stepNextHref 與 stepNextAction = true 不得同時 set（動作模式
             '{% set stepNextAction = true %}\n{% include "components/step-btn-wrap/step-btn-wrap.html" %}',
             '{% set stepNextHref = "x.html" %}\n{% include "components/step-btn-wrap/step-btn-wrap.html" %}']);
     assert.equal(hits.length, 0, `§6 沒有消費者的參數：\n${fail(hits)}`);
+});
+
+test("驗收工具自己：commentsOf 的區塊註解起點要有字串／正則意識", () => {
+    // 這支解析器是「出處不得引行號」「註解不得寫時間軸」等多條規則的共同母體，
+    // 它多吃或少吃一段，那幾條會一起靜靜地換一套判準。
+    const ghost = commentsOf(`const a = glob('"src/**/*.html"');\nconst b = 1;\nconst c = /[*/]/;\n`, "js");
+    assert.deepEqual(ghost, [], "glob 字面與正則字元類裡的斜線星號被當成區塊註解起點了");
+    const real = commentsOf("code();\n/* 真的區塊註解 */\nmore();\n", "js");
+    assert.equal(real.length, 1, "行首的區塊註解要收得到");
+    assert.equal(real[0].line, 2, "區塊註解的行號要指到它自己那一行");
+    const inline = commentsOf("code(); /* 尾隨的區塊註解 */\n", "js");
+    assert.equal(inline.length, 1, "程式碼後面（空白之後）的區塊註解也要收得到");
 });
 
 test("驗收工具自己：DOM stub 的三顆反射屬性要與真 DOM 同語意", () => {
