@@ -13,13 +13,21 @@
 //   ③′ **第二層／單層頁籤**：值＝一個 `.tab-content` **面板**的 id。**全站生產頁用的都是這一種**
 //      （5-2 八顆 → `#panelRetrieval`…；3-1-6 兩顆 → `#panelCompare`／`#panelRaw`）：
 //
-//        <div class="tab-group">
-//            <button type="button" class="tab active" aria-current="true" data-target="panelRetrieval" data-i18n="settings.tabRetrieval">檢索設定</button>
+//        <div class="tab-row mb-10">
+//            <div class="tab-group sub-tabs">
+//                <button type="button" class="tab active" aria-current="true" data-target="panelRetrieval" title="檢索與欄位" data-i18n="settings.retrievalAndFields" data-i18n-title="settings.retrievalAndFields">檢索與欄位</button>
+//            </div>
 //        </div>
-//        <div class="tab-content" id="panelRetrieval" data-capability="settings:write">…</div>
+//        <div class="tab-content" data-capability="settings:write" id="panelRetrieval">…</div>
+//        <div class="tab-content" data-capability="settings:write" id="panelGeneration" style="display: none;">…</div>
 //
-//      抄的時候：選中那一顆要**同時**有 `.active` 與 `aria-current="true"`（§4），面板的 id 要與
-//      `data-target` 逐字相同（打錯＝死頁籤／死面板，有測試在 dist 把關）。
+//      抄的時候：①選中那一顆要**同時**有 `.active` 與 `aria-current="true"`（§4）；②面板的 id 要與
+//      `data-target` 逐字相同（打錯＝死頁籤／死面板，有測試在 dist 把關）；③`.tab-group` 要帶
+//      `.sub-tabs`、外面要有 `.tab-row`——少了那一層，第二層頁籤拿不到自己的排版；
+//      ④**除了第一顆以外的每一塊面板都要 `style="display: none;"`**：初始只顯示選中那一塊，
+//      tab.js 是靠切 `style.display` 換面板的，沒有它整頁面板會全部同時攤開。
+//      ⑤頁籤的可見字與 `title` 走同一顆 key 的兩個屬性（`data-i18n` ＋ `data-i18n-title`）：
+//      文字被寬度截斷時，滑鼠停留看得到全名。
 //
 // tab 頁籤切換：原生 DOM API
 // 只轉切版互動（切換 .active / 顯示對應群組），資料載入/API 等業務邏輯不在此列

@@ -11,7 +11,7 @@
 // 四種組合全站都有實例，抄的時候對號入座：
 //
 //   ① class 寫死 ＋ key 寫死（字面是 chrome）
-//     <span class="verdict-tag is-pass" data-i18n="regression.verdictPass">通過</span>
+//     <span class="verdict-tag is-pass" data-i18n="dataImport.syncSucceeded">已寫入索引</span>
 //
 //   ② 無 key（字面是值）：class 可以寫死、也可以由頁面資料給
 //     <span class="verdict-tag is-warn">{{ notComparedRows.length }}</span>

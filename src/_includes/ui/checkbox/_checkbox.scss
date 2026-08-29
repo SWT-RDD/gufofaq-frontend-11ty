@@ -18,8 +18,8 @@
 //               </tr>
 //           </thead>
 //           <tbody>
-//               {% for file in files %}
-//               <tr data-filesn="{{ file.sn }}">
+//               {% for file in fileRows %}
+//               <tr>
 //                   <td class="check-cell">
 //                       <label class="form-checkbox in-cell">
 //                           <input type="checkbox" class="check-one" data-filesn="{{ file.sn }}" aria-labelledby="previewFileRowName-{{ file.sn }} previewFileHeadSelect">
@@ -36,7 +36,8 @@
 //   ⓑ **欄表頭那顆 `.sr-only` 是逐列 checkbox 的可及名稱來源**（表頭那一格只有一顆全選框、沒有文字
 //      可以被引用），逐列則是 `aria-labelledby="<本列辨識欄> <欄表頭>"`——**順序不可反**（§4：
 //      辨識在前，反過來會先念「選取此列」）。
-//   ⓒ **列鍵 `data-filesn` 要同時掛在 `<tr>` 與 `.check-one` 上**：業務 js 靠它認出這一列是哪個檔（§5）。
+//   ⓒ **列鍵 `data-filesn` 掛在每一顆要認列的控制項上**（`.check-one`、同列的 `.link-file`、
+//      逐列的刪除／下載鈕），不是掛在 `<tr>` 上：React 端接的是控制項的事件，從 target 讀得到鍵才算數（§5）。
 //   ⓓ `.check-cell`（欄寬）與 `.in-cell`（格內對齊）是 `ui/default-table` 的 class，不是本元件的。
 //   ⓔ 行為（全選 ↔ 逐列連動、`indeterminate`、載入即同步）由 `checkbox.js` 供給，markup 不必寫。
 //

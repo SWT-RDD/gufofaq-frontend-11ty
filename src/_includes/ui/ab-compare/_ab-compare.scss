@@ -50,11 +50,12 @@
 //                           <span class="tooltip" data-i18n="comp.share">分享</span>
 //                       </button>
 //                   </div>
-//                   {# 每一側自己的 components/step-flow（動作鈕列之後）。四行 {% set %} 一併附上——
+//                   {# 每一側自己的 components/step-flow（動作鈕列之後），四行 {% set %} 缺一不可——
 //                        set 是頁面全域，缺 stepFlowInstance 兩側的逐列 id 會撞，缺 stepFlowOwnerId
-//                        兩側的逐列可及名稱會逐字同名（§4）；OwnerId 正是靠 .item-title 的 id 組出來的。 #}
-//                   {% set stepFlowNodes = … %}
-//                   {% set stepFlowSummary = … %}
+//                        兩側的逐列可及名稱會逐字同名（§4）；OwnerId 正是靠 .item-title 的 id 組出來的。
+//                        前兩行（stepFlowNodes 的節點陣列、stepFlowSummary 的摘要物件）的值是
+//                        **這一頁自己的示範資料**，§3-2 明文長文示範寫在使用它的地方、不進契約：
+//                        逐字見 2-2-3_abTest.html 同一段，兩側各一份。 #}
 //                   {% set stepFlowInstance = "sideA" %}
 //                   {% set stepFlowOwnerId = "abAnswerTitle-" + abSides[0].side %}
 //                   {% include "components/step-flow/step-flow.html" %}

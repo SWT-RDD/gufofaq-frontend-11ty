@@ -29,7 +29,7 @@
 //   {% set columns = [
 //       { key: "title", label: "品名", raw: "商品名稱" }
 //   ] %}
-//   <span class="sr-only" id="sortWord" data-i18n="common.sort">排序</span>
+//   <span id="sortWord" class="sr-only" data-i18n="common.sort">排序</span>
 //   <table class="default-table fixed-layout">
 //       <thead>
 //           <tr>

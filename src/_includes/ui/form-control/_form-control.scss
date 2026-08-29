@@ -1,13 +1,20 @@
 // **生產契約**（§1-2）：`form-control.html` 是展示片段（只示範外觀），生產的每一顆欄位還要帶三樣
 // 片段上看不到的東西，照片段抄一定會漏：
 //
+// 逐字取自 3-6 的「表名稱」欄（`id` 與 key 換成新欄位自己的，其餘照抄）：
+//
 //   <div class="form-group">
-//       <div class="label"><label for="<欄位 id>" class="control-label" data-i18n="<key>">標籤</label></div>
+//       <div class="label">
+//           <label for="newAliasTableName" class="control-label required" data-i18n="settings.glossaryTableName">表名稱</label>
+//       </div>
 //       <div class="field">
-//           <input type="text" id="<欄位 id>" class="form-control js-<業務 hook>" placeholder="…" data-i18n-placeholder="<key>" aria-describedby="<欄位 id>Hint">
-//           <span class="text-gray" id="<欄位 id>Hint"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-<欄位>-max-len">N</span><span data-i18n="common.unitChars"> 字</span></span>
+//           <input type="text" id="newAliasTableName" class="form-control" maxlength="200" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" required aria-describedby="newAliasTableNameHint">
+//           <span class="text-gray" id="newAliasTableNameHint"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span>200</span><span data-i18n="common.unitChars"> 字</span></span>
 //       </div>
 //   </div>
+//
+// 界線數字掛不掛 hook class，看那個值誰算：上游常數（如這裡的 200）就是裸 `<span>`；
+// 要由 js 依當下設定改寫的（`components/chatroom` 的 `.js-ask-max-len`）才掛 hook。
 //
 // 抄的時候一個都不能省：
 //   ⓐ **`<label for>` ＋ 欄位 `id`**；欄位住在 `{% for %}` 裡時改吃

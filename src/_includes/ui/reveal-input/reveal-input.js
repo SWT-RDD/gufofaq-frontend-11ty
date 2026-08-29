@@ -24,7 +24,7 @@
 //       <div class="col-6-md col-12-sm">
 //           <div class="form-group">
 //               <div class="field">
-//                   <input type="password" id="apiKeyInput" class="form-control" value="sk_aB3xYz9Qle8sample000apikeyvalue000000000000" readonly aria-label="目前金鑰" data-i18n-aria-label="extractKey.currentKey">
+//                   <input type="password" id="apiKeyInput" class="form-control" value="{{ extractKeyPlain }}" readonly aria-label="目前金鑰" data-i18n-aria-label="extractKey.currentKey">
 //               </div>
 //           </div>
 //       </div>

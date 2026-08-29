@@ -4782,7 +4782,7 @@ test("§4 共用元件把 data-toast 開成參數時，閘門也要開成參數�
     assert.equal(hits.length, 0, `§4 toast 與閘門是同一個交付單位：\n${fail(hits)}`);
 });
 
-test("§1-2 無 html 元件的 markup 契約要逐字寫在自己的 scss／js 檔頭（不是散文列 class 名）", () => {
+test("§1-2 元件檔頭的 markup 契約要逐字對得上生產實例（形狀 ＋ 硬規則屬性的值）", () => {
     // 為什麼非有不可：沒有 <名>.html 的元件，它的 markup 必然被複製到各個使用頁（collapse-text
     // 一輪之內從 1 份長到 13 份）。少一個 aria-expanded／data-i18n，視覺指紋看不出來、i18n 掃描
     // 也掃不到（那顆節點根本不存在）。契約寫在一個地方，抄的人才有東西可對。
@@ -4913,13 +4913,14 @@ test("§1-2 無 html 元件的 markup 契約要逐字寫在自己的 scss／js �
     };
     const hits = [];
     let scopedComponents = 0;
+    const headsOf = ({ path, name }) => [`${path}/_${name}.scss`, `${path}/${name}.js`].filter(existsSync).map((f) => {
+        const t = read(f);
+        // 檔頭＝第一條非註解程式碼之前的那一段
+        const end = t.search(/^\s*(?:[.&@:#a-zA-Z\[]|document\.|\(function|window\.|var |const |let )/m);
+        return end > 0 ? t.slice(0, end) : t;
+    }).join("\n");
     for (const { bucket, name, path } of noHtml) {
-        const heads = [`${path}/_${name}.scss`, `${path}/${name}.js`].filter(existsSync).map((f) => {
-            const t = read(f);
-            // 檔頭＝第一條非註解程式碼之前的那一段
-            const end = t.search(/^\s*(?:[.&@:#a-zA-Z\[]|document\.|\(function|window\.|var |const |let )/m);
-            return end > 0 ? t.slice(0, end) : t;
-        }).join("\n");
+        const heads = headsOf({ path, name });
         // 有些無 html 元件的契約是**宣告式屬性**而不是 class（`data-print`／`data-scroll-lock`／
         // `data-dismiss-target`／`data-reveal-target`…），純行為工具（GufoSlide）則連 markup 都沒有、
         // 契約是匯出的函式。這兩型只要檔頭寫得出那個屬性名或函式名即可。
@@ -4931,6 +4932,80 @@ test("§1-2 無 html 元件的 markup 契約要逐字寫在自己的 scss／js �
         const pool = cons.length ? allForest.filter(({ f }) => cons.includes(f)) : allForest;
         hits.push(...checkContract(heads, pool).map((h) => `${bucket}/${name}  ${h}`));
     }
+    // **有 html 的元件也要驗**：`<名>.html` 只保證「展示片段」是對的，而 §1-2 要求
+    // 「展示片段不是生產形狀時，生產契約要寫在 scss／js 檔頭」——那份契約一樣是拿來整段照抄的正本。
+    // 母體若只收無 html 元件，ui/tab、ui/block、ui/checkbox、ui/form-control 這幾份契約
+    // 就一份都沒有被比對過（它們各自都寫著一個全站不存在的形狀，而測試全綠）。
+    // 這一半不要求「一定要有契約」——有 html 的元件多數不需要第二份正本，有寫才驗。
+    let withHtmlChecked = 0;
+    for (const { bucket, name, path } of componentDirs) {
+        if (!existsSync(`${path}/${name}.html`)) continue;
+        const heads = headsOf({ path, name });
+        if (!contractBlocks(heads).length) continue;
+        withHtmlChecked++;
+        const cons = declaredConsumers(heads);
+        hits.push(...checkContract(heads, cons.length ? allForest.filter(({ f }) => cons.includes(f)) : allForest)
+            .map((h) => `${bucket}/${name}  ${h}`));
+    }
+    assert.ok(withHtmlChecked >= 8, `只有 ${withHtmlChecked} 個有 html 的元件被驗到契約 —— 契約段辨識壞了，這一半在空轉`);
+
+    // ── 硬規則屬性的**值**要有落點（同構比對只看屬性名）──────────────────────
+    // 少半句的 data-toast、指向不存在 key 的 data-i18n、指向不存在 id 的 aria-describedby，
+    // 三者的屬性名都在、形狀也對，同構那一關一顆都攔不到——而它們正是照抄之後會直接壞掉的東西。
+    // 插值型的值（`{{ … }}`）跳過：那是內容槽，值由使用頁給。
+    const enKeys = JSON.parse(read("src/i18n/en.json"));
+    const allSrc = srcHtml.map(read).join("\n");
+    let toastLits = 0, i18nLits = 0, ariaLits = 0;
+    const scanValues = (text) => {
+        const out = [];
+        for (const m of text.matchAll(/\bdata-toast="([^"]*)"/g)) {
+            if (/\{[{%]/.test(m[1])) continue;
+            toastLits++;
+            if (!allSrc.includes(`data-toast="${m[1]}"`))
+                out.push(`契約的 data-toast 字面在任何使用頁上都不存在（照抄＝抄到一份已經分岔的文案）：${m[1]}`);
+        }
+        for (const m of text.matchAll(/\bdata-i18n(?:-[\w-]+)?="([^"]*)"/g)) {
+            if (/\{[{%]/.test(m[1]) || !m[1]) continue;
+            i18nLits++;
+            if (!(m[1] in enKeys)) out.push(`契約指的 i18n key 不在 en.json：${m[1]}`);
+        }
+        for (const m of text.matchAll(/\baria-(?:describedby|labelledby|controls|owns)="([^"]*)"/g)) {
+            if (/\{[{%]/.test(m[1])) continue;
+            for (const id of m[1].split(/\s+/).filter(Boolean)) {
+                ariaLits++;
+                // 契約自己那一段內有那顆 id ⇒ 算數（契約常常把「被指的節點」也一併附上）
+                if (new RegExp("\\sid=\"" + id.replace(/[.*+?^${}()|[\]\\]/g, "\\\\$&") + "\"").test(text)) continue;
+                if (allSrc.includes(`id="${id}"`)) continue;
+                out.push(`契約的 aria 指向一個不存在的 id：${id}`);
+            }
+        }
+        // 尖角佔位符：`<欄位 id>`／`js-<業務 hook>` 抄下去會得到字面上的角括號（§1-2 逐字可照抄）
+        for (const m of text.matchAll(/="([^"]*<[^">]*>[^"]*)"/g))
+            out.push(`契約的屬性值是代稱、不是可照抄的字面：${m[1]}`);
+        return out;
+    };
+    const valueHits = [];
+    for (const c of componentDirs) {
+        const text = contractBlocks(headsOf(c)).join("\n");
+        if (text) valueHits.push(...scanValues(text).map((h) => `${c.bucket}/${c.name}  ${h}`));
+    }
+    assert.ok(toastLits >= 30 && i18nLits >= 100 && ariaLits >= 10,
+        `契約值掃描只取到 toast ${toastLits}／i18n ${i18nLits}／aria ${ariaLits} 顆 —— 這一半在空轉`);
+    probe("§1-2 契約屬性值有落點", scanValues, [
+        `<button data-toast="已儲存|儲存失敗，請稍後再試一次而且這句全站沒有人這樣寫">x</button>`,   // 分岔的文案
+        `<span data-i18n="settings.thisKeyDoesNotExist">x</span>`,                                  // 不存在的 key
+        `<span data-i18n-title="settings.thisKeyDoesNotExist">x</span>`,                            // 後綴型也要驗
+        `<input aria-describedby="noSuchHintIdAnywhere">`,                                          // 指向不存在的 id
+        `<label for="<欄位 id>" data-i18n="common.account">x</label>`,                               // 代稱不是字面
+    ], [
+        `<button data-toast="已複製金鑰|複製失敗，請手動選取後複製">x</button>`,
+        `<span data-i18n="common.account">帳號</span>`,
+        `<input aria-describedby="chatAskMaxLenHint">`,
+        `<input aria-describedby="probeLocalHint"><span id="probeLocalHint">x</span>`,   // 契約自帶被指的節點
+        `<span data-i18n="{{ row.reasonKey }}">x</span>`,                                 // 插值型是內容槽
+    ]);
+    assert.equal(valueHits.length, 0, `§1-2 契約的硬規則屬性值沒有落點：\n${fail(valueHits)}`);
+
     // 空轉守門：契約 parse 壞掉（挖掉插值挖過頭、多行標籤沒併回來）會讓一顆節點都不被驗、照樣全綠
     assert.ok(contractRoots >= 50, `只 parse 出 ${contractRoots} 顆契約根節點 —— 契約 parser 壞了，這條在空轉`);
     assert.ok(scopedComponents >= 20, `只有 ${scopedComponents} 個元件解析得出消費頁 —— 消費頁解析壞了，母體退化成全站，這條在空轉`);
@@ -4973,7 +5048,7 @@ test("§1-2 無 html 元件的 markup 契約要逐字寫在自己的 scss／js �
     ], [
         G("modals", "modals-dialog modals-md", "modals-wrap", true, "modals-header", ""),
     ]);
-    assert.equal(hits.length, 0, `§1-2 無 html 元件的 markup 契約：\n${fail(hits)}`);
+    assert.equal(hits.length, 0, `§1-2 元件檔頭的 markup 契約：\n${fail(hits)}`);
 });
 
 test("§5/§6 4-1 答案來源篩選：三顆值、只掛 hook、清單只有直答掛徽章", () => {

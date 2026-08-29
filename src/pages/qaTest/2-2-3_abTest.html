@@ -507,7 +507,11 @@ permalink: 2-2-3_abTest.html
                 <div class="input-wrap">
                     <div class="form-group chat-input-field">
                         <div class="field">
-                            <textarea class="form-control chat-input-control" placeholder="輸入問題" data-i18n-placeholder="comp.enterQuestion" aria-label="輸入問題" data-i18n-aria-label="comp.enterQuestion"></textarea>
+                            <textarea class="form-control chat-input-control" placeholder="輸入問題" data-i18n-placeholder="comp.enterQuestion" aria-label="輸入問題" data-i18n-aria-label="comp.enterQuestion" aria-describedby="chatAskMaxLenHint"></textarea>
+                            {# 提問長度的界線：與 components/chatroom 同一顆上游常數（chatbot 的 ask 長度上限），
+                                 故形狀與 key 逐字相同。數字獨立成一顆掛 hook 的 <span>、不進譯文（§4-2），
+                                 值由業務 js 依當下設定寫入（`.js-ask-max-len`）。 #}
+                            <span class="text-gray" id="chatAskMaxLenHint"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-ask-max-len">2000</span><span data-i18n="common.unitChars"> 字</span></span>
                         </div>
                     </div>
                     {# 與 components/chatroom 是同一顆送出鈕、旁邊也是同一個自由輸入 textarea，所以走同一組

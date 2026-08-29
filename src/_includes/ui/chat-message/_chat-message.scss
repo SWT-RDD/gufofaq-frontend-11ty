@@ -11,7 +11,10 @@
 //   ・前台 `components/faq-chatroom`：①′ ② ③′——機器人側多一顆 `.avatar`；動作鈕四顆
 //     （讚／倒讚／複製／分享）且順序與後台不同；chip **刻意不帶 `data-capability`**
 //     （公開問答走 widget token 而不是租戶能力 token，理由逐字寫在 faq-chatroom 檔頭）、
-//     toast 四段（`toast.faqChatSubmit`，多一段 429 節流的 warning）。
+//     toast 五段（`toast.faqChatSubmit`：比後台多一段 429 節流的 warning，再多一段站台問答
+//     額度用罄的 error——那顆額度是站台級的，使用者自己開通不了，所以句子指向網站管理者）。
+//   ・兩份 chip 契約都帶 `disabled`：它們掛在第一問的答案下，而畫面演的是使用者點了其中一顆、
+//     第二問正在生成——生成中不能再送第二題（§4：不可送出的狀態要在 markup 上宣告，不是靠 js 補）。
 //   ・widget 展示 `ui/widget-shell`：④——只有 ① ② 的前半段，面板窄故**不畫 `.message-time`**，
 //     而且**根本沒有 `.message-icon` / `.suggested-questions` 這兩層**（那顆面板不放動作鈕）。
 //   ・`2-2-3_abTest` 另手寫一份雙欄比較（`.ab-compare`，契約在 ui/ab-compare 檔頭）。
@@ -84,7 +87,7 @@
 //       <div class="suggested-questions" role="group" aria-labelledby="chatroomSuggestedLabel">
 //           <span id="chatroomSuggestedLabel" class="suggested-questions-label" data-i18n="comp.suggestedQuestions">建議追問：</span>
 //           {% for q in chatroomSuggested %}
-//           <button data-capability="ask" type="button" class="button button-border button-sm js-ask-suggested" data-toast="回答生成中...|權限不足，無法送出——請找貴租戶的管理者開通|回答生成成功|回答生成失敗，請重新送出一次" data-i18n-data-toast="toast.chatSubmit" data-toast-type="info|warning|success|error">{{ q }}</button>
+//           <button data-capability="ask" type="button" class="button button-border button-sm js-ask-suggested" data-toast="回答生成中...|權限不足，無法送出——請找貴租戶的管理者開通|回答生成成功|回答生成失敗，請重新送出一次" data-i18n-data-toast="toast.chatSubmit" data-toast-type="info|warning|success|error" disabled>{{ q }}</button>
 //           {% endfor %}
 //       </div>
 //       {% endif %}
@@ -113,7 +116,7 @@
 //       <div class="suggested-questions" role="group" aria-labelledby="faqSuggestedLabel">
 //           <span id="faqSuggestedLabel" class="suggested-questions-label" data-i18n="comp.suggestedQuestions">建議追問：</span>
 //           {% for q in faqSuggested %}
-//           <button type="button" class="button button-border button-sm js-ask-suggested" data-toast="回答生成中...|詢問太頻繁，請稍後再試|回答生成成功|回答生成失敗，請重新送出一次" data-i18n-data-toast="toast.faqChatSubmit" data-toast-type="info|warning|success|error">{{ q }}</button>
+//           <button type="button" class="button button-border button-sm js-ask-suggested" data-toast="回答生成中...|詢問太頻繁，請稍後再試|回答生成成功|回答生成失敗，請重新送出一次|本站的問答額度已用罄，請聯絡本網站管理者。" data-i18n-data-toast="toast.faqChatSubmit" data-toast-type="info|warning|success|error|error" disabled>{{ q }}</button>
 //           {% endfor %}
 //       </div>
 //   </div>
