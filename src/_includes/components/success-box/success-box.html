@@ -1,6 +1,8 @@
 {# 上傳成功通知。參數由使用頁面 include 前 set（§6：會因頁面而異的資料不寫死在元件裡）：
-     successRetryHref / successRetryLabel / successRetryKey：左鈕（預設 "#"／再次上傳／comp.uploadAgain）
-     successViewHref / successViewLabel / successViewKey：右鈕（預設 "#"／查看資料／comp.viewData）
+     successRetryHref：左鈕的去向，**必填、無預設**（未給整顆鈕不畫，見下方 markup 的理由）；
+     successRetryLabel / successRetryKey：左鈕字面（預設 再次上傳／comp.uploadAgain）
+     successViewHref：右鈕的去向，**必填、無預設**（同上）；
+     successViewLabel / successViewKey：右鈕字面（預設 查看資料／comp.viewData）
      successDescPdf：true ＝ 走 PDF／Word 那一支的資訊列——**只有兩行、而且順序與 Excel 相反**
        （先資料總量、後檔案大小），也不畫檔案名稱。
        這不是「少畫一行」而是兩條匯入路徑本來就交付不同的事實：Excel 那一支有真正的來源檔名，

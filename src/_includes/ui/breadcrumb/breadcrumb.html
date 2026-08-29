@@ -1,4 +1,5 @@
-{# 生產元件：全站每一頁頁首下方的路徑指示，由頁面自己備好資料再 include。 #}
+{# 生產元件：頁首下方的路徑指示，由頁面自己備好資料再 include（走 page-shell／public-shell 的頁自己
+     include；`base.html` 那幾頁沒有——反查 `grep -L 'class="breadcrumb"' dist/*.html`）。 #}
 {# 用法：include 前先 set breadcrumbItems（陣列，元素為 { label, href, i18nKey, class }）。
    規則：最後一項＝目前頁，畫成純文字（目前頁不連回自己）；其餘**有 href 的**才畫成連結。
    **沒有 href 的中間層畫成純文字，不退回 `href="#"`**（§5「不放按了沒反應的鈕」——`#` 是一顆死連結，

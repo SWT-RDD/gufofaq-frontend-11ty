@@ -1,5 +1,6 @@
 // **生產契約**（§1-2）：`switch.html` 是展示片段（兩顆孤立的開關，只示範外觀），而真正會被複製的
-// 生產 markup 散在四個檔上（`components/platform-tenants-panel`、5-2、5-5-1×2、5-7）——展示片段
+// 生產 markup 散在多個檔上（判準＝`grep -rn 'class="switch"' src --include=*.html`；
+// 反查＝`grep -l 'class="switch"' dist/*.html`，兩邊的檔案集合要對得起來）——展示片段
 // **沒有**生產一定要有的可及名稱綁定，照它抄就會做出一排同名的無名開關。逐字取自 5-7：
 //
 //   <label class="switch">

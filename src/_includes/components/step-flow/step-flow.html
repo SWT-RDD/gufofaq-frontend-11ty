@@ -1,22 +1,18 @@
 {# 執行流程（後台測試區詳細觀測）：SaaS 新需求。把「這次回答執行到哪一步、
      現在在哪個 node、用了哪些工具、grounding 判定、agent 推理」畫成一張類 mermaid 的直式流程圖，
-     並在頂端給整體執行摘要（token/延遲/TTFT/檢索筆數/模型）。**步驟列與工具軌跡合成這一處**，
-     步驟列與工具軌跡收在同一個元件：攤成兩張表的話，讀的人沒辦法把「第幾步」與「那一步用了什麼工具」對起來。
-   正典管線各節點依序畫出（未跑到＝待處理），以 chatbot 的結構化步驟事件（step_id/step_status，
-     Part 1 completed-only 對齊）點亮；當前節點高亮＝最後一個 completed 的下一個正典節點（前端 lib/domain/stepFlow
-     computeFlow 推斷）。狀態 class：is-completed（--success 綠點）/ is-running（--brand-ink 深墨點，當前高亮）/
+     並在頂端給整體執行摘要（token/延遲/TTFT/檢索筆數/模型）。**步驟列與工具軌跡收在同一個元件**：攤成兩張表的話，讀的人沒辦法把「第幾步」與「那一步用了什麼工具」對起來。
+   正典管線各節點依序畫出（未跑到＝待處理），以 chatbot 的結構化步驟事件（step_id/step_status，只吃 completed）點亮；當前節點高亮＝最後一個 completed 的下一個正典節點（gufofaq-saas 的 `computeFlow` 推斷）。狀態 class：is-completed（--success 綠點）/ is-running（--brand-ink 深墨點，當前高亮）/
      is-skipped（--text-muted 灰虛，分支/反問跳過）/ is-failed（--danger）/ 其餘 pending（--border）。
    收合機制復用 ui/accordion（根 .js-accordion + 每節點列的 .accordion-btn + 隱藏的 .detail-row >
      .accordion-content，見 ui/accordion accordion.js：GufoSlide 300ms、aria-expanded 每路徑同步）——
      本元件不自帶 js；表格結構是 accordion findContent（closest("tr")+.detail-row 兄弟列）的硬需求。
    每節點（摘要列＋隱藏詳細列）以 {% for %} 內嵌渲染（GUIDELINE §9 陷阱：元件內部的 for 不可再巢狀
-     include 子元件，會靜默渲染成空白）。真值由 React 端串流事件驅動（lib/sse steps/toolActivity/
-     thinkingByNode/summary + lib/domain/stepFlow computeFlow）；此處為靜態示範。
+     include 子元件，會靜默渲染成空白）。真值由 React 端串流事件驅動（gufofaq-saas 的串流事件 steps／toolActivity／thinkingByNode／summary
+     ＋ `computeFlow`）；此處為靜態示範。
    巢狀（skill）：租戶自訂 skill 被 agent 呼叫時會跑一個 scoped 子 agent 迴圈，其子步驟由 chatbot
      以 parent 欄掛成子樹（GufoRAG chatbot 的 `_record`；巢狀樹由 parent 鏈組成）。
      **`depth` 是「顯示用的樹深」，不是後端那個同名欄**：後端的 depth 是 skill 遞迴層數，一個 skill
-     呼叫與它自己的子步驟同值（見 GufoRAG chatbot `_record` 與 gufofaq-saas `lib/domain/stepFlow` 的
-     `attachSkillSteps` 測試）；縮排要的是 parent 鏈的層數，故 1＝被正典節點呼叫的 skill、2＝它的子步驟、
+     呼叫與它自己的子步驟同值（見 GufoRAG chatbot `_record` 與 gufofaq-saas 的 `attachSkillSteps` 測試）；縮排要的是 parent 鏈的層數，故 1＝被正典節點呼叫的 skill、2＝它的子步驟、
      3＝再一層。值域夾在 3（與 gufofaq-saas `components/StepFlow` 的 `Math.min(depth, 3)` 對齊）——插值出
      `is-depth-4` 這種未定義的 class 只會靜默不縮排，所以夾在模板裡而不是靠資料自律。
      skill 節點另有 skill/version/iterations/error 明細列——後端送什麼，這裡就要看得見；
@@ -135,13 +131,13 @@
        逐欄也是「缺欄不顯示」。
      ——**`model` 只有重播那條路拿得到**：product 的 `_CHAT_ROOM_PUBLIC_KEYS` 沒有 `model_name`
        （連 `usage.model` 都被剝掉），gufofaq-saas `apps/web/lib/sse.ts` 的 chat_room 分支逐字寫著
-       「這裡讀不到 `model_name`…而且永遠讀不到」；它的正當來源是 `lib/traceReplay` 讀
+       「這裡讀不到 `model_name`…而且永遠讀不到」；它的正當來源是 gufofaq-saas 的 `traceReplay` 讀
        `/api/history/{logId}`（那一支的 `_PUBLIC_LOG_FIELDS` 有它）。
        ⇒ **給了 `model` 的使用頁＝在演一筆重播的落庫紀錄**：那一頁的節點不得有 running／pending，
        聊天區也不得同時演「正在生成」。反過來，演串流中的那一頁不給 stepFlowSummary。
      stepFlowTraceShown ＋ stepFlowTraceTotal（選填，成對）＝**原始事件軌跡被引擎夾掉**那一態的兩個數字；
      兩個都沒給＝未截斷（整段不渲染，見下方 S3 那段註解）。它們與節點數不同源、不互相推導：
-     正典管線是固定長度的**摘要**，軌跡是產生它的原始事件流（8 個節點配 231 筆事件不衝突）。
+     正典管線是固定長度的**摘要**，軌跡是產生它的原始事件流（一條九站的管線配數百筆原始事件不衝突）。
      **不覆寫＝主動採用內建示範**，那份示範必須與使用頁的其他內容自洽（內建示範是移民主題，配 2-2-1）。
      **內建示範演的是「這一輪還在跑」**（2-2-1 單測的唯一敘事）：生成答案 running、其後 pending、
        **沒有摘要**（`stepFlowSummary` 不設）、**沒有結果截斷那一對**。這是全站唯一演得到
@@ -149,7 +145,7 @@
        兩態各有一頁，不重複也不留空（§5）。
    進度「目前 X / N」只數**正典管線節點**（無 depth 者）：N＝正典節點數、X＝已執行到的最後一個正典節點序號。
      巢狀子步驟不計入——它們是某一站底下的細節，算進分母會讓進度隨串流冒出子步驟而倒退（正典管線是
-     固定長度，見 gufofaq-saas `lib/domain/stepFlow` 的 CANONICAL_PIPELINE）。**`offPipeline: true` 的節點同樣不計入**
+     固定長度，見 gufofaq-saas 的 `CANONICAL_PIPELINE`）。**`offPipeline: true` 的節點同樣不計入**
      （目前只有 `MCP 工具載入` 這一顆）：它不在 CANONICAL_PIPELINE 裡、只在故障那一輪出現，算進分母
      會讓正常那一輪的 N 少一格。不烤字面量：使用頁改節點數，烤死的總數就會說謊（§6）。
    示範資料＝假資料（工具名/參數/結果/推理），依 GUIDELINE §4-2「只翻 UI chrome、不翻假資料」不掛 data-i18n。 #}
@@ -216,9 +212,9 @@
              **兩態都要切（§4）**：未截斷＝整段不渲染（常駐會變成「已顯示 231／共 231」那種廢話），
              截斷＝把這件事說出來並給一顆去拿全文的鈕。故由 stepFlowTraceShown／stepFlowTraceTotal
              成對參數決定，**不用 .hidden**——`.hidden` 的另一態是「什麼都不渲染」時，這塊 markup
-             全站每一頁都看不到，等於沒有人驗收過它的長相（§5）；元件庫頁把它設起來當唯一可見處。
+             沒有人設過那一對參數的話全站看不到，等於沒有人驗收過它的長相（§5）；4-2 詳情頁與元件庫頁各設一份。
              ⚠️ 這一對與**工具結果**的截斷指標長得很像、可得性卻不同：這一對（軌跡截斷）上游真的
-             送得出來（`capped_view` 追加的 `{truncated, total}` 一路到 `lib/traceReplay`），
+             送得出來（`capped_view` 追加的 `{truncated, total}` 一路到 gufofaq-saas 的 `traceReplay`），
              那一對（結果截斷）沒有來源、已整段移除——理由見下方「結果」那一列的註解，別因為
              兩者形狀相同就把它加回來。
              數字是資料、夾在前後綴 key 中間（不是插值 key）。

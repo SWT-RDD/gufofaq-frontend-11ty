@@ -3,7 +3,7 @@
      .form-table-wrap（ui/form-table，已含 .form-table-group/.subtitle/.form-table/.row/.col/.th/.td）。
      不建立 _qa-detail-info.scss、main.scss 也不新增 @use（§4：沒有覆寫就不加殼，多開一顆 class
      只會多一個沒人知道歸誰管的樣式主人）。
-     AI 對話內容直接在 .td 內以純文字＋多個 <p> 呈現（不加 .long-text，也不收合）：這一頁的用途
+     AI 對話內容直接在 .td 內以 markdown 渲染結果的形狀呈現（標題 <h3> ＋ .list-style-disc 清單 ＋ 段落）（不加 .long-text，也不收合）：這一頁的用途
      就是把整段答案看完，摘要起來等於要人再點一次。
      「提示詞」欄才用 ui/collapse-text 收合（.collapse-text/.collapse-body/.collapse-toggle）：
      那是一大段設定文字、不是這一頁的主角，收起來但**打得開**，完整欄位清單不因此少一欄。 #}
