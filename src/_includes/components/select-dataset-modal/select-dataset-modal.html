@@ -50,8 +50,8 @@
                                     {% else %}
                                     {# **這一顆 `{% else %}` 只覆蓋「來源陣列本來就空」那一態**（還沒建過任何資料集時
                                          這一窗就是空的）——它是 nunjucks 的編譯期分支，救不了「有資料集但關鍵字
-                                         打不到」。零命中那一態由 `ui/list-filter` 在執行期 append 一顆
-                                         `.dataset-list-empty`（§5 那條括號句逐字點名這一族）。
+                                         打不到」。零命中那一態由 `ui/list-filter` 寫進一顆常駐的
+                                         `.dataset-list-empty` live region（§5 那條括號句逐字點名這一族）。
                                          **那一句是這一窗自己的**，不與 3-1-1 那張表共用（兩個畫面、兩種下一步），
                                          故用具名的 `dataset.noSelectableDatasets` 而**不是**全站泛用的空狀態 key：
                                          這一窗與 manage-members-modal 選的不是同一種東西（資料集 vs 使用者），

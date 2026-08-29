@@ -7,6 +7,17 @@
 //
 // markup 契約（無 html 元件，§1-2；整段照抄）。
 //
+// **本契約的 class 沒有一顆是本元件的**（§1-2：js-only 行為原子要在契約段開頭指名樣式主人，
+// 否則 §4「A 元件的 scss 禁止出現 B 元件的 class」與 §5「只操作自己元件的 class」對它都判不下去）：
+//   `.modals-wrap`／`.modals-content`／`.modals-header`／`.modals-body`／`.modals-title`／
+//   `.dataset-list-wrap`／`.dataset-list`＝`ui/modals`（見該檔檔頭第⑩條）；
+//   `.form-group`／`.field`／`.form-control`／`.search`＝`ui/form-control`；
+//   `.form-checkbox`／`.border-wrap`＝全域的 `scss/_form-check.scss`（checkbox 與 radio 共用的外框排版）；
+//   `.form-radio`＝同上；`.check-all`／`.check-one`／`.checkbox-container`＝`ui/checkbox`；
+//   `.text-gray`／`.text-center`／`.text-md`／`.text-bold`／`.m-0`／`.mt-8`＝全域工具層。
+//   本元件只加行為，並在執行期產生一顆 `.dataset-list-empty`（那顆是本元件唯一擁有的 class，
+//   樣式也只有兩顆全域工具 class，沒有自己的規則）。
+//
 // **從 .modals-wrap 寫起**：`.dataset-list-wrap` / `.dataset-list` 的樣式正本是
 // `_modals.scss` 裡巢狀成 `.modals-wrap` → `.modals-body` → `.dataset-list-wrap` → `.dataset-list`
 // ——兩層祖先都是後代選擇器的一部分，從中間層抄起會得到一顆沒有高度、沒有底色、內部不捲的清單
@@ -39,6 +50,8 @@
 //                           <input type="checkbox"{% if member.checked %} checked{% endif %}>
 //                           <span>{{ member.email }}</span>
 //                       </label>
+//                       {% else %}
+//                       <div class="text-center text-gray" data-i18n="settings.noTenantUsers">這個租戶還沒有其他使用者可以加進群組。先到「使用者管理」把人建起來。</div>
 //                       {% endfor %}
 //                   </div>
 //               </div>
@@ -86,6 +99,41 @@
 //           （接著是 .modals-footer：兩顆 modal 各有自己的按鈕列，屬 ui/modals 的契約）
 //       </div>
 //   </div>
+//
+// ③ 檢索範圍清單（checkbox ＋ **全選列**，生產 markup＝components/search-scope-modal）——
+//    與 ① 的差別有三處，抄錯任何一處都會壞在看不見的地方：
+//    ⓔ `.checkbox-container` **直接包住 `.dataset-list-wrap`**（① 沒有這一層，② 的那一顆在
+//       `.dataset-box-wrap` 裡面）：`ui/checkbox/checkbox.js` 的委派掛在它身上，全選要靠它定範圍。
+//    ⓕ 搜尋框**上面**還有一列全選（`.check-all` ＋ 一顆同時當群組名的 `<span id>`）；逐列則是
+//       `.check-one` ＋ 值載體三件（`value`＝索引名、hook class、`checked` 由資料決定）。
+//    ⓖ 清單另掛 `aria-describedby` 指向窗內那句「一筆都沒有勾＝涵蓋全部」的常駐說明。
+//
+//   <div class="checkbox-container">
+//       <div class="dataset-list-wrap">
+//           <label class="form-checkbox">
+//               <input type="checkbox" class="check-all" aria-label="全選" data-i18n-aria-label="dataset.selectAll">
+//               <span class="text-md text-bold" id="searchScopeIndexLabel" data-i18n="common.dataset">資料集</span>
+//           </label>
+//           <div class="form-group">
+//               <div class="field">
+//                   <input type="text" placeholder="搜尋資料集..." data-i18n-placeholder="modals.searchDatasetPlaceholder" aria-label="搜尋資料集" data-i18n-aria-label="modals.searchDataset" class="form-control search">
+//               </div>
+//           </div>
+//           <div class="dataset-list" role="group" aria-labelledby="searchScopeIndexLabel" aria-describedby="searchScopeEmptyHint">
+//               {% for row in searchScopeIndexRows %}
+//               <label class="form-checkbox border-wrap">
+//                   <input type="checkbox" class="check-one js-search-scope-index" value="{{ row.name }}"{% if row.selected %} checked{% endif %}>
+//                   <span>{{ row.label }}</span>
+//               </label>
+//               {% else %}
+//               <div class="text-center text-gray" data-i18n="dataset.noSelectableDatasets">這個租戶還沒有資料集可以選。先到「資料集管理」建一個並匯入資料。</div>
+//               {% endfor %}
+//           </div>
+//       </div>
+//   </div>
+//
+//    ⚠️ 這一型的全選與本元件的過濾是**同一顆容器上的兩種行為**：過濾把不符的列掛 `.hidden`，
+//    而全選只動看得見的那幾列（理由逐字在 `ui/checkbox/checkbox.js` 檔頭）。抄的時候兩支 js 都要在。
 //
 // 抄的時候三件事一個都不能省：
 //   ⓐ **`.form-group > .field` 這兩層是放大鏡本身**。ui/form-control 畫圖示的規則是

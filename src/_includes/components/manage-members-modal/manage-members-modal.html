@@ -63,8 +63,8 @@
                             {% else %}
                             {# **這一顆 `{% else %}` 只覆蓋「來源陣列本來就空」那一態**（`GET /users` 只回本租戶
                                  使用者，租戶剛開通時除了自己以外一個都沒有）——它是 nunjucks 的編譯期分支，
-                                 救不了「有人但關鍵字打不到」。零命中那一態由 `ui/list-filter` 在執行期
-                                 append 一顆 `.dataset-list-empty`（§5 那條括號句逐字點名這一族）。
+                                 救不了「有人但關鍵字打不到」。零命中那一態由 `ui/list-filter` 寫進
+                                 一顆常駐的 `.dataset-list-empty` live region（§5 那條括號句逐字點名這一族）。
                                  兩者不重疊：有列被濾光才畫前者，陣列空才畫這一顆。
                                  這一列不是 `<tr>`（清單由 <label> 疊成），故照 share-manage-modal／
                                  manage-tenant-modal 那一族用 div 版，不用 colspan。 #}
