@@ -184,9 +184,17 @@ permalink: 5-5-1_userManagement.html
 {% set helpModalWhatKey = "help.settings.addMember.what" %}
 {% set helpModalWhat = "這一區建立一個新的租戶成員：帶著登入用的 Email、初始密碼、所屬群組（可複選）與是否為租戶管理者一起送出。這個成員之後真正能做什麼，看的是它所屬每個群組能力的聯集——不是這裡逐項勾出來的；勾了「租戶管理者」則不受群組限制，直接擁有本租戶全部能力並能管理其他成員與群組。這裡動的是租戶內部的角色，與平台系統管理員的跨租戶身分是兩件不同的事。" %}
 {% set helpModalStateItems = [] %}
+{# **這一列是雙邊界線，不是「≥ 8」**：密碼政策的兩端是 product 的同一支模組（`MIN_PASSWORD_LEN`／
+     `MAX_PASSWORD_LEN`），而 `GET /users/limits` 的 `member.password` 一次投影兩顆
+     （`bounds(MIN, MAX)`）。同一頁的欄位提示與 `maxlength` 講的也是同一件事——只寫下界會讓
+     這一格與它上面那一句互相打臉，而「上限沒有」是一句可以查證為假的話。
+   `bound` 走全站唯一的界線字串寫法（§3-2）：雙邊 `N – M`，半形短破折號、兩側各一空白、不加千分位。
+   **兩端的「超過時會怎樣」不一樣，所以效果欄要分開講**：下界是打得進去、按下去才失敗（欄位上的
+     `minlength` 不會觸發原生驗證——全站零 `<form>`），由「新增成員」那顆鈕的 warning 段承載；
+     上界是 `maxlength` 在輸入層截斷，多的字根本進不了這一格。 #}
 {% set helpModalLimitRows = [
-  { labelKey: "settings.initialPassword", label: "初始密碼", bound: "≥ 8",
-    effectKey: "help.settings.addMember.passwordEffect", effect: "少於下限時當場擋在這一格，不是送出後才被拒；上限沒有。" }
+  { labelKey: "settings.initialPassword", label: "初始密碼", bound: "8 – 1024",
+    effectKey: "help.settings.addMember.passwordEffect", effect: "不足下限時送不出去，按下「新增成員」才會告訴你；超過上限的字則是打不進去——這一格本身就擋著，不會等到送出。" }
 ] %}
 {% include "components/help-modal/help-modal.html" %}
 

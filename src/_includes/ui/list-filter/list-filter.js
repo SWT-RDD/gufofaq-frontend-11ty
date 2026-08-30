@@ -105,25 +105,28 @@
 //    ⓔ `.checkbox-container` **直接包住 `.dataset-list-wrap`**（① 沒有這一層，② 的那一顆在
 //       `.dataset-box-wrap` 裡面）：`ui/checkbox/checkbox.js` 的委派掛在它身上，全選要靠它定範圍。
 //    ⓕ 搜尋框**上面**還有一列全選（`.check-all` ＋ 一顆同時當群組名的 `<span id>`）；逐列則是
-//       `.check-one` ＋ 值載體三件（`value`＝索引名、hook class、`checked` 由資料決定）。
+//       `.check-one` ＋ 值載體三件（`value`＝**product 的 dataset id**、hook class、`checked` 由資料決定）。
+//       **不是索引名**：索引名是 GufoRAG manager 那一側的內部識別，不進瀏覽器（理由與翻譯點寫在
+//       `components/search-scope-modal` 檔頭）。抄的時候連 hook 名一起抄——它叫
+//       `js-search-scope-dataset`，名字裡不留「index」正是為了不讓下一個人送錯東西。
 //    ⓖ 清單另掛 `aria-describedby` 指向窗內那句「一筆都沒有勾＝涵蓋全部」的常駐說明。
 //
 //   <div class="checkbox-container">
 //       <div class="dataset-list-wrap">
 //           <label class="form-checkbox">
 //               <input type="checkbox" class="check-all" aria-label="全選" data-i18n-aria-label="dataset.selectAll">
-//               <span class="text-md text-bold" id="searchScopeIndexLabel" data-i18n="common.dataset">資料集</span>
+//               <span class="text-md text-bold" id="searchScopeDatasetLabel" data-i18n="common.dataset">資料集</span>
 //           </label>
 //           <div class="form-group">
 //               <div class="field">
 //                   <input type="text" placeholder="搜尋資料集..." data-i18n-placeholder="modals.searchDatasetPlaceholder" aria-label="搜尋資料集" data-i18n-aria-label="modals.searchDataset" class="form-control search">
 //               </div>
 //           </div>
-//           <div class="dataset-list" role="group" aria-labelledby="searchScopeIndexLabel" aria-describedby="searchScopeEmptyHint">
-//               {% for row in searchScopeIndexRows %}
+//           <div class="dataset-list" role="group" aria-labelledby="searchScopeDatasetLabel" aria-describedby="searchScopeEmptyHint">
+//               {% for row in searchScopeDatasetRows %}
 //               <label class="form-checkbox border-wrap">
-//                   <input type="checkbox" class="check-one js-search-scope-index" value="{{ row.name }}"{% if row.selected %} checked{% endif %}>
-//                   <span>{{ row.label }}</span>
+//                   <input type="checkbox" class="check-one js-search-scope-dataset" value="{{ row.id }}"{% if row.selected %} checked{% endif %}>
+//                   <span>{{ row.name }}</span>
 //               </label>
 //               {% else %}
 //               <div class="text-center text-gray" data-i18n="dataset.noSelectableDatasets">這個租戶還沒有資料集可以選。先到「資料集管理」建一個並匯入資料。</div>

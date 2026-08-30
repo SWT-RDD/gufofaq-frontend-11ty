@@ -26,12 +26,15 @@
          所以確認鈕掛得起 `.btn-close-modals`。這件事要在窗內說得出來，故留一段常駐可見的
          `#searchScopeEmptyHint`——空著送出會搜到全部，那是使用者該先知道的事。
 
-     **`.js-search-scope-index` 這個名字不改**（§5「已存在的 hook 不回收」，saas 端已經引用著它）：
-     它讀起來像「檢索範圍清單上的那一項」，值域是 product 的 `dataset_id`。**名字不是契約的全部**
-     ——值域寫在上面那一段，改的人要看的是那一段，不是從名字推導。
+     **hook 是 `.js-search-scope-dataset`，名字裡不留「index」**：這一窗送出去的是 product 的
+     `dataset_id`，而「index」是上游 manager 那一側的詞——兩者不是同一種東西，而且那條路
+     瀏覽器已經走不到了。§5「已存在的 hook 不回收」擋的是**因為命名風格而改名**；這裡改的是
+     **值域**（索引名字串 → dataset id），而值域換了名字不換，就是讓一個只讀名字的人以為
+     要送索引名。同理，群組標籤的 id 是 `searchScopeDatasetLabel`——這一窗裡不留第二個
+     指向已經不存在的那條路的詞彙。
 
      **確認鈕同時掛 hook class 與 `.btn-close-modals`**：它不送 API，但它是**值的交付點**
-     （React 要在這一刻讀走勾起來的索引名、去更新觸發鈕上的「已選 N 個」）。兩顆鈕在 markup 上
+     （React 要在這一刻讀走勾起來的 dataset id、去更新觸發鈕上的「已選 N 個」）。兩顆鈕在 markup 上
      必須分得出來，否則 React 認不出該接哪一顆（§5）；關窗那一半是宣告式的，不必寫 js。
 
      列殼用 `ui/modals` 既有的 `.dataset-list-wrap > .dataset-list`（同 `manage-members-modal`），
@@ -69,17 +72,17 @@
                         <div class="dataset-list-wrap">
                             <label class="form-checkbox">
                                 <input type="checkbox" class="check-all" aria-label="全選" data-i18n-aria-label="dataset.selectAll">
-                                <span class="text-md text-bold" id="searchScopeIndexLabel" data-i18n="common.dataset">資料集</span>
+                                <span class="text-md text-bold" id="searchScopeDatasetLabel" data-i18n="common.dataset">資料集</span>
                             </label>
                             <div class="form-group">
                                 <div class="field">
                                     <input type="text" placeholder="搜尋資料集..." data-i18n-placeholder="modals.searchDatasetPlaceholder" aria-label="搜尋資料集" data-i18n-aria-label="modals.searchDataset" class="form-control search">
                                 </div>
                             </div>
-                            <div class="dataset-list" role="group" aria-labelledby="searchScopeIndexLabel" aria-describedby="searchScopeEmptyHint">
+                            <div class="dataset-list" role="group" aria-labelledby="searchScopeDatasetLabel" aria-describedby="searchScopeEmptyHint">
                                 {% for row in searchScopeDatasetRows %}
                                 <label class="form-checkbox border-wrap">
-                                    <input type="checkbox" class="check-one js-search-scope-index" value="{{ row.id }}"{% if row.selected %} checked{% endif %}>
+                                    <input type="checkbox" class="check-one js-search-scope-dataset" value="{{ row.id }}"{% if row.selected %} checked{% endif %}>
                                     <span>{{ row.name }}</span>
                                 </label>
                                 {% else %}
