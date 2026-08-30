@@ -54,9 +54,18 @@
                                  路徑都以它夾**（各自的請求模型都是
                                  `feedback: str | None = Field(max_length=…)`）。四個使用點裡有一個是
                                  **前台訪客**，而他打完一段長回饋才被擋下來時，連「哪裡不對」都不會知道。
-                                 數字是資料槽，不烤進譯文（§4-2）。 #}
-                            <textarea class="form-control" id="feedbackText" rows="3" placeholder="請告訴我們原因（選填）" data-i18n-placeholder="modals.feedbackReasonPlaceholder" aria-describedby="feedbackTextHint">{{ ratingModalFeedback }}</textarea>
-                            <span class="text-gray" id="feedbackTextHint"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-feedback-max-len">2000</span><span data-i18n="common.unitChars"> 字</span></span>
+                                 數字是資料槽，不烤進譯文（§4-2）。
+                               **提示之外還要有 `maxlength`**：常駐提示說得出上限，但打字當下沒有任何
+                                 東西擋——訪客要打完整段、按下送出、吃到一個 422 才知道。這一格沒有
+                                 「幾個項目、每個多長」那種多維度界線（同 alias-entries-modal 的理由不適用），
+                                 一顆 `maxlength` 夾得住它。
+                               **兩處吃同一顆 `{% set %}`、不各抄一個數字**（§6）：改上限只改這一行，
+                                 提示與夾制不可能分家。值是執行期才知道的（`GET /history/limits` 的
+                                 `rating.feedback_len`），故切版畫契約當前的值、React 由契約覆寫，
+                                 載不到就不掛（同 5-8 名稱欄的處置）。 #}
+                            {% set ratingFeedbackMaxLen = 2000 %}
+                            <textarea class="form-control" id="feedbackText" rows="3" maxlength="{{ ratingFeedbackMaxLen }}" placeholder="請告訴我們原因（選填）" data-i18n-placeholder="modals.feedbackReasonPlaceholder" aria-describedby="feedbackTextHint">{{ ratingModalFeedback }}</textarea>
+                            <span class="text-gray" id="feedbackTextHint"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-feedback-max-len">{{ ratingFeedbackMaxLen }}</span><span data-i18n="common.unitChars"> 字</span></span>
                         </div>
                     </div>
                 </div>

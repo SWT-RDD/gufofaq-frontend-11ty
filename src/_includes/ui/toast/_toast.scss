@@ -11,6 +11,8 @@
 //   ⑤ 不寫 `box-sizing: border-box`（§4-1：`_base.scss` 已全域給）。
 //   ⑥ `.toast` 的 `pointer-events: auto` 與 `.toast-close` 這一顆是 WCAG 2.2.1 的兩條出口
 //      （移上去暫停倒數、隨時關得掉），不是裝飾——完整推導見 `toast.js` 檔頭。
+//   ⑦ **`max-width` ＋ 可換行是一組**：這是全站唯一的結果回報通道，而其中有幾顆鈕會把後端原句
+//      原樣丟進來——沒有上限就是橫向溢出視窗，而讀不到的那一半正是「哪裡填錯」。理由寫在該宣告旁。
 //
 
 // toast 的容器。掛了 popover，故要把 popover 的 UA 預設樣式（置中的方框、邊框、overflow:auto）清乾淨：
@@ -36,7 +38,17 @@
 
 .toast {
     width: fit-content;
-    white-space: nowrap;
+    // **上限與換行是一組，不能只加其中一顆**：短訊息仍然只佔它需要的寬（`fit-content`），
+    // 長訊息在 40rem 或 90vw（取小）折行。全站唯一的結果回報通道會端出後端原句
+    // （`components/skill-editor-modal` 存檔失敗、`components/share-manage-modal` 的 400
+    // 都把上游的 detail 原樣丟進來，而 GufoRAG chatbot 的 `validate_skill_definition`
+    // 那一族訊息會指名第幾條、哪個欄位、界線多少），先前的 `white-space: nowrap` 讓那種
+    // 長度直接橫向溢出視窗——右半截讀不到，而它正是「哪裡填錯」的那一半。
+    // `90vw` 那一半管的是窄視窗（40rem 在手機上比螢幕還寬）。
+    max-width: min(90vw, 40rem);
+    // 後端原句裡的長識別字（JSON path、URL、沒有空白的欄位名）在 `normal` 之下仍然撐得破
+    // 上限——`anywhere` 讓它在必要時斷開，而不是把整則往外推。
+    overflow-wrap: anywhere;
     padding: .625rem 1rem;
     border-radius: 4px;
     z-index: 2000;

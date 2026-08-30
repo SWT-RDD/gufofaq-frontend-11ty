@@ -909,6 +909,12 @@ permalink: 5-2_conversationSettings.html
                 </div>
             </div>
         </div>
+        {% else %}
+        {# 具名空狀態（§5「無資料列正典」的非表格版：`.text-center.text-gray` 的 div）。
+             這一格的「空」有**兩種成因**，而下一步不同，所以兩種都要說出來：這個設定檔真的
+             一版都還沒存過（下一步在上面的編輯器按儲存），或是上面那三顆篩選收得太緊
+             （下一步是清掉條件再查一次）。版本清單是分頁／篩選型的，兩種都走得到。 #}
+        <div class="text-center text-gray" data-i18n="settings.noPromptVersions">沒有符合的提示詞版本。這個設定檔可能一版都還沒存過——上面編輯提示詞並儲存就會建立第一版；也可能是關鍵字、日期區間或版本收得太緊，清掉條件再查一次就看得到。</div>
         {% endfor %}
     </div>
 
@@ -1056,6 +1062,10 @@ permalink: 5-2_conversationSettings.html
                 </div>
             </div>
         </div>
+        {% else %}
+        {# 具名空狀態，兩種成因與下一步同提示詞版本卡那一份（見上）——**另立 key、不共用**：
+             兩句話指的是不同的編輯器，共用一顆 key 會讓其中一邊把人送去錯的地方。 #}
+        <div class="text-center text-gray" data-i18n="settings.noWelcomeVersions">沒有符合的歡迎語版本。這個設定檔可能一版都還沒存過——上面編輯歡迎語並按「儲存為新版本」就會建立第一版；也可能是關鍵字、日期區間或版本收得太緊，清掉條件再查一次就看得到。</div>
         {% endfor %}
     </div>
 </div>
@@ -1278,9 +1288,9 @@ permalink: 5-2_conversationSettings.html
                              「新增替換規則」加出來的列由 React 端沿用同一個形狀（列鍵改成該列的 key）。 #}
                         <td>
                             <span id="osubRowName-{{ loop.index }}" class="sr-only">{{ rule.aliases }}</span>
-                            <input type="text" class="form-control js-osub-aliases" value="{{ rule.aliases }}" aria-labelledby="osubRowName-{{ loop.index }} osubHeadAliases">
+                            <input type="text" class="form-control js-osub-aliases" value="{{ rule.aliases }}" aria-labelledby="osubRowName-{{ loop.index }} osubHeadAliases" aria-describedby="outputReplacementLimitsHint">
                         </td>
-                        <td><input type="text" class="form-control js-osub-replacement" value="{{ rule.replacement }}" aria-labelledby="osubRowName-{{ loop.index }} osubHeadReplacement"></td>
+                        <td><input type="text" class="form-control js-osub-replacement" value="{{ rule.replacement }}" aria-labelledby="osubRowName-{{ loop.index }} osubHeadReplacement" aria-describedby="outputReplacementLimitsHint"></td>
                         <td class="text-center"><label class="form-checkbox in-cell"><input type="checkbox" class="js-osub-is-regex" aria-labelledby="osubRowName-{{ loop.index }} osubHeadIsRegex"{% if rule.isRegex %} checked{% endif %}><span class="sr-only" data-i18n="settings.outputReplacementIsRegex">Regex</span></label></td>
                         <td><button type="button" id="osubDelete-{{ loop.index }}" aria-labelledby="osubRowName-{{ loop.index }} osubDelete-{{ loop.index }}" class="button button-border button-sm js-remove-osub" data-i18n="action.delete">刪除</button></td>
                     </tr>
@@ -1290,6 +1300,19 @@ permalink: 5-2_conversationSettings.html
                 </tbody>
             </table>
         </div>
+        {# 別名欄與替換內容欄的界線常駐可見，一份 hint 給整張表用（同上方「範例」與「詞彙過濾」那兩份）。
+             **這一欄有兩顆界線，而且維度不同**：`aliases_per_rule`（一條規則能列幾個別名）與
+             `match_len`（每一個別名多長）——`OUTPUT_REPLACEMENTS_LIMITS`（gufofaq-saas product）
+             是同一張表的四格，第四格 `replacement_len` 落在隔壁那一欄，也一起列（§3-2「同 group 的
+             姊妹界線要一起檢查有沒有落點」；剩下那一格 `max_items` 已經是表上方那一列「N / 30」）。
+             執法點是同 repo 的 `validate_output_replacements`（`outsub.too_many_aliases`／
+             `outsub.alias_too_long`／`outsub.replacement_too_long`，逐條 400）。
+           ⚠️ **不掛 `maxlength`**：那顆屬性夾得住「這一格總共打了幾個字」，夾不住「幾個別名、
+             每個別名多長」——拿任一顆界線去夾整串的話，三個合法的短別名會在第二個字上被擋住
+             （同 alias-entries-modal 與「詞彙過濾」那兩處的理由）。
+           三個數字都是資料不是譯文（§4-2）：值執行期由 `GET /settings/chat-config-limits` 的
+             `output_replacements` 給，切版畫契約當前的值、React 覆寫。 #}
+        <p id="outputReplacementLimitsHint" class="text-gray"><span data-i18n="settings.osubLimitsPrefix">別名以逗號分隔，一條規則最多 </span><span class="js-osub-aliases-max">50</span><span data-i18n="settings.osubLimitsMid1"> 個、每個最多 </span><span class="js-osub-alias-max-len">500</span><span data-i18n="settings.osubLimitsMid2"> 字；替換內容最多 </span><span class="js-osub-replacement-max-len">2000</span><span data-i18n="settings.osubLimitsSuffix"> 字。任一項超過就整份存不進去，不會只存前幾條。</span></p>
         <div class="flex-row">
             <button type="button" class="button button-border button-sm js-add-osub" data-i18n="settings.addOutputReplacement">新增替換規則</button>
         </div>

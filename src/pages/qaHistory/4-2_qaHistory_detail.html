@@ -293,7 +293,7 @@ permalink: 4-2_qaHistory_detail.html
 {% set deleteConfirmBinding = true %}
 {% set deleteConfirmClass = "js-revoke-share-confirm" %}
 {% set deleteCapability = "history" %}
-{% set deleteToast = "連結已撤銷|權限不足，無法撤銷——請找貴租戶的管理者開通|撤銷失敗，請稍後再試" %}
+{% set deleteToast = "連結已撤銷|權限不足，無法撤銷——請找貴租戶的管理者開通|撤銷失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" %}
 {% set deleteToastKey = "toast.revokeShare" %}
-{% set deleteToastType = "success|warning|error" %}
+{% set deleteToastType = "success|warning|error|warning" %}
 {% include "components/delete-modal/delete-modal.html" %}

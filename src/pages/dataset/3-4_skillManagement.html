@@ -248,17 +248,20 @@ permalink: 3-4_skillManagement.html
      **父子的包含關係是「掛在誰底下」給的，不是畫面上兩個數字給的**：skill 子樹掛在 retrieve 之下
      ⇒ 這一站的耗時必須含得下整棵子樹。故 refund-flow 1,800ms ＜ retrieve 1,900ms，
      而 refund-flow 直屬子步驟的和 240 ＋ 430 ＋ 95 ＝ 765ms（再往下 lookup-order 的 180ms ⊆ 它的 430ms）
-     也在 1,800ms 之內。
+     也在 1,800ms 之內。**這組數字在兩邊都看得到**（見下一段），所以它不只是切版自己的帳。
      時間欄的字面照 `formatMs` 的取整規則寫（見 step-flow 檔頭：≥1s 一律一位小數）——`1.95s` 是它
      產不出來的形狀，故 retrieve 寫 1.9s；ttft 與延遲都跟著這一組數字算，見下方摘要那則註解。
-   ⚠️ **切版對 React 端提的要求（時間欄）**：本元件的時間欄是無條件輸出的 `{{ node.time }}`，
-     每一列都印得出來；而 gufofaq-saas `apps/web/components/StepFlow/StepFlow.tsx` 的 `durations` 只收
-     `status === "completed" && s.ts`、迴圈又從第二筆起算（`for (let i = 1; …)`），所以 React 端
-     ① failed 節點恆空白（本頁的 `skill：refund-flow`）② 第一個 completed 節點恆空白（本頁的
-     「輸入合規檢查 6ms」）。兩格都不是「上游沒有這個數字」——GufoRAG chatbot 的
-     `step_event_data` 對每一顆事件都寫 `timestamp`，failed 那一顆照寫。要補的是 React 那一側
-     （時間欄要畫得出 failed 與首站），**不是把切版示範改成「反正畫不出來就別寫」**（切版是正本）。
-     在補上之前，這兩個數字只在切版看得到——所以上面那段父子包含的論證不建立在它們身上。
+   ⚠️ **時間欄有兩條路，示範要對得上主路徑那一條**：本元件的時間欄是無條件輸出的 `{{ node.time }}`，
+     每一列都印得出來；React 那一側（gufofaq-saas `apps/web` 的 `stepDurations`）**主路徑吃上游
+     每一顆事件自帶的 `durationMs`**——每一站都算得出來，含 `failed`、含第一站，多輪的還會逐輪加總。
+     只有**一顆 `durationMs` 都沒送**時才退回相鄰時間戳相減（同一支檔案的 `legacyDurations`），
+     而那一支已經把 `failed` 收進來了（它的註解逐字寫著理由：濾掉的話「掛掉的那一站花了多久」
+     永遠是空的，而那正是最想看的一格）。
+     **退路上唯一留白的是第一站**：那一筆沒有前驅可以相減，迴圈因此從第二筆起算，程式碼裡具名
+     登記成留白。**刻意不補 0、也不補「—」**：0 讀起來是「量到了、而且是零」，而這一站其實是
+     「這條路上算不出來」；一個看起來合理的錯數字會被當成真的耗時拿去做判斷，比一格空白貴
+     （同 §6「這一格沒有數字不是一種狀態，是三種」）。
+     ⚠️ 這一段講的是**現況**，不是待辦：舊紀錄那條退路只在上游一顆 `durationMs` 都沒送時才走得到。
    同理 `verdict`：可回答性判定的值域是 GufoRAG chatbot 的 `GroundingVerdict`，
      **只有 `generate` 與 `no_answer` 兩顆**（`insufficient` 不存在）。這一份示範走誠實查無
      ⇒ `no_answer（素材不足以回答）`，而下面的節點列**只畫「誠實查無」、不畫「生成答案」**：

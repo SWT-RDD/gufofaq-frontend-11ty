@@ -133,6 +133,16 @@
                                 <span class="tooltip" data-i18n="comp.viewSource">查看來源</span>
                             </button>
                         </div>
+                        {# **串流被切斷那一態**：與 components/faq-chatroom 同一件事、同一顆 key
+                             ——完整理由寫在那個元件的同一段。後台這一條路（`/qatest/ask`）少的是
+                             log id 與合法的 `[[N]]` 號碼，所以「查看來源」那一顆同樣按不出東西
+                             （前台少的是簽章參照，兩邊少的鍵不同、後果相同）。
+                             **只在互動模式渲染**：唯讀的問答紀錄預覽（`chatInputHidden`，2-1）
+                             沒有串流可以斷——那一頁的內容是從歷史紀錄讀回來的，不是這一次收的。
+                             `.hidden` ＋ hook class；可見處在元件庫頁的「React 條件文案」區（§5）。 #}
+                        {% if not chatInputHidden %}
+                        <p class="text-red m-0 js-stream-truncated hidden" role="alert" data-i18n="comp.streamTruncated">這一輪的連線中斷了：答案的文字收到了，但來源清單與評分、分享所需的資訊沒有收到——所以這則答案下面沒有來源可看，也評不了分。把同一題再送一次就會有完整的一份。</p>
+                        {% endif %}
                         {# 建議追問（SaaS 新需求）：問答完成後 chatbot 於 SSE chat_room 塊回傳
                              suggest_questions 陣列（gufofaq-saas：chat_room chunk 允許清單含 suggest_questions、
                              meta 帶 enable_suggest_questions——引符號不引行號，該檔行號常變動），渲染成一排可點 chip；

@@ -9,7 +9,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync, existsSync, statSync } from "node:fs";
-import { execSync } from "node:child_process";
+import { execSync, execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { inflateSync } from "node:zlib";
 import { basename, dirname, join } from "node:path";
@@ -1113,12 +1113,12 @@ test("§4/§5 target=\"_blank\" 三件套：rel=noopener ＋ 可及名稱講明�
     }
     assert.ok(seen >= 1, "全站一個 target=\"_blank\" 都沒有 —— 這條測試在空轉（正典：ui/faq-launcher）");
     probe("§4 _blank 三件套", (s) => scanTags(s, rule),
-        ['<a href="faq.html" target="_blank" aria-label="開啟（另開新視窗）" data-i18n-aria-label="a11y.openFaqChatbot">x</a>',
+        ['<a href="faq.html" target="_blank" aria-label="開啟（另開新視窗）" data-i18n-aria-label="a11y.openFrontPreview">x</a>',
             '<a href="faq.html" target="_blank" rel="noopener">x</a>',
-            '<a href="faq.html" target="_blank" rel="noopener" aria-label="開啟 FAQ" data-i18n-aria-label="a11y.openFaqChatbot">x</a>',
+            '<a href="faq.html" target="_blank" rel="noopener" aria-label="開啟 FAQ" data-i18n-aria-label="a11y.openFrontPreview">x</a>',
             '<a href="faq.html" target="_blank" rel="noopener" aria-label="開啟（另開新視窗）">x</a>',
             '<a href="faq.html" target="_blank" rel="noopener" aria-label="開啟（另開新視窗）" data-i18n-aria-label="a11y.skipToContent">x</a>'],
-        ['<a href="faq.html" target="_blank" rel="noopener" aria-label="開啟（另開新視窗）" data-i18n-aria-label="a11y.openFaqChatbot">x</a>',
+        ['<a href="faq.html" target="_blank" rel="noopener" aria-label="開啟（另開新視窗）" data-i18n-aria-label="a11y.openFrontPreview">x</a>',
             '<a href="3-1-1_datasetList.html">同分頁導覽，不在此規則</a>']);
     assert.equal(hits.length, 0, `另開新視窗的三件套沒做齊：\n${fail(hits)}`);
 });
@@ -2584,6 +2584,35 @@ test("§8 dist 裡每一個 ?v= 都等於它所指檔案**當下**的內容雜�
             '<script src="https://cdn.example.com/x.js?v=deadbeef"></script>',   // 外站資產不歸這條管
             '<script src="//cdn.example.com/x.js?v=deadbeef"></script>']);
     assert.equal(bad.length, 0, `蓋章順序壞了（版號指向舊內容）：\n${fail(bad)}`);
+});
+
+test("§8 dist/.build-ref 說得出這份 dist 是哪一個 commit 建的（不是讀取當下的 HEAD）", () => {
+    // `dist/` 不進版控 ⇒ `git checkout` 動不到它。切到另一個 commit 而忘了重 build 時，任何
+    // 「拿當下的 HEAD 當這份 dist 的身分」的逐位元組比對都會把舊產物蓋上新 commit 的章，
+    // 而**那種失敗的樣子是全綠**（新一輪加進來的東西根本不在比對範圍裡）。這一行是 build 當下
+    // 寫的，所以它記的是產物真正的身分——這條測試守的是「那一步還在」。
+    //
+    // 值的形狀與 gufofaq-saas 匯出目錄的 `.slicing-ref` 一致（單獨一行、trim 之後直接比 commit）；
+    // 工作樹是髒的時候前綴 `dirty-`，而且**前綴寫在前面**是刻意的：消費端的比對是雙向前綴
+    // （`a.startsWith(b) || b.startsWith(a)`），標記接在 SHA 後面的話 `abc123-dirty` 照樣通得過。
+    //
+    // **本測試不要求它等於當下的 HEAD**：那正好是這個檔要取代的那個判準（讀取當下的 HEAD）。
+    // 它要求的是「它是一個真的存在於本 repo 的 commit」——編出來的、或上一輪殘留的別的東西
+    // 都通不過 `git cat-file`。
+    const p = "dist/.build-ref";
+    assert.ok(existsSync(p), `${p} 不見了 —— hash-assets 那一步掉了，這份 dist 說不出自己是哪一輪`);
+    const raw = readFileSync(p, "utf8");
+    assert.ok(raw.endsWith("\n"), ".build-ref 要以換行收尾（同 .slicing-ref 的形狀，消費端 trim 得掉）");
+    const ref = raw.trim();
+    const m = /^(dirty-)?([0-9a-f]{40})$/.exec(ref);
+    assert.ok(m, `.build-ref 的形狀不對："${ref}"（要是 40 位小寫 SHA，工作樹髒時前綴 dirty-）`);
+    // 這顆 SHA 要真的是一個 commit：`git cat-file -t` 對編出來的四十個 f 會非零離開。
+    const type = execFileSync("git", ["cat-file", "-t", m[2]], { encoding: "utf8" }).trim();
+    assert.equal(type, "commit", `.build-ref 指的不是一個 commit（是 ${type}）`);
+    // 負控：這條測試自己不可以對「隨便四十個十六進位字元」放行。
+    assert.throws(() => execFileSync("git", ["cat-file", "-t", "f".repeat(40)],
+        { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }),
+        "git cat-file 竟然認得一顆編出來的 SHA —— 上面那道驗證是空的");
 });
 
 test("§4 同一頁的 id 不得重複（label[for] / aria-labelledby / getElementById 會指錯）", () => {
@@ -4410,15 +4439,6 @@ test("§4 每一顆會改狀態的鈕都要宣告它需要哪一道閘門（四�
     // 而且 `if (NO_GATE.has(f)) return out;` 一旦排在 `platformScopes()` **之前**，
     // 豁免檔裡「宣告元素配對不到收尾標籤」那種 fail loud 會一起被吞掉——順序也一起修。
     const NO_GATE = new Map([
-        // 3-7 文件檢索：整頁的端點正本是 GufoRAG `manager_backend`，不是 gufofaq-saas product。
-        // 四軸的值域正本是 product 的 `CAPABILITY_TOKENS`／`CAPABILITIES`，兩套鍵空間**不相交**
-        // ⇒ 標不出四軸的任何一顆值。同一句理由也寫在該頁檔頭（§4「痕跡要成對」）。
-        // ⚠️ **這一筆會過期**：這支功能若併進 gufofaq-saas，整頁的閘門要重標。
-        ["src/pages/dataset/3-7_documentSearch.html", new Map([
-            ["查詢成功", "`POST /api/v1/search` 只掛 `Depends(require_license)`（系統授權檔驗簽），" +
-                "`GET /api/v1/indexes` 掛的是 `require_user()`（只確認有登入主體）——兩者都不是租戶能力軸；" +
-                "`manager_backend` 的使用者模型只有 `is_admin` ＋ `roles`，沒有 capability token 這種東西"],
-        ])],
         ["src/pages/settings/5-1-1_accountInfo.html", new Map([
             ["個人資料已儲存", "`/me/profile` 是自助端點，product 只掛 get_current_user＋require_active_subscription，沒有 require_capability——標上能力軸反而會把「改自己的顯示名」擋在一顆它不需要的能力後面"],
             ["密碼已變更", "`/me/change-password` 同上：改自己的密碼不吃租戶能力軸"],
@@ -5476,9 +5496,9 @@ test("§3-2 跨 repo 活正本的出處不得引行號（行號會漂到語意�
     for (const f of gitFiles('"*.md"')) hits.push(...scan(read(f), f, "md", part.md));
     for (const p of Object.values(part)) bump(p);
     // 三塊母體各自要真的掃到東西（少接一塊，總數照樣過門檻）
-    assert.ok(part.src.seen >= 2377, `src/** 只掃到 ${part.src.seen} 則註解 —— 這條測試在空轉`);
-    assert.ok(part.tests.seen >= 2384, `tests/ 只掃到 ${part.tests.seen} 則 —— 這一塊母體沒有真的接上`);
-    assert.ok(part.md.seen >= 1683, `root .md 只掃到 ${part.md.seen} 行 —— 這一塊母體沒有真的接上`);
+    assert.ok(part.src.seen >= 2420, `src/** 只掃到 ${part.src.seen} 則註解 —— 這條測試在空轉`);
+    assert.ok(part.tests.seen >= 2396, `tests/ 只掃到 ${part.tests.seen} 則 —— 這一塊母體沒有真的接上`);
+    assert.ok(part.md.seen >= 1685, `root .md 只掃到 ${part.md.seen} 行 —— 這一塊母體沒有真的接上`);
     // 負控用**真實世界的五種形狀**（用 `platform.py:1437-1440` 這種現實中不存在的寫法，
     // 於是認證了一條永遠不會響的規則）。good 樣本擋反方向：誤報一次就會有人去放寬排除清單。
     probe("跨 repo 行號", (s) => scan(s), [

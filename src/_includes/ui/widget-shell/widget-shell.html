@@ -103,6 +103,13 @@
                     </div>
                 </div>
             </div>
+            {# **串流被切斷那一態**：與 components/faq-chatroom 同一件事、同一顆 key（同一條
+                 `/public/ask` SSE、同一筆 `chat_room` 記錄帶著來源與簽章參照）——完整理由寫在
+                 那個元件的同一段。**位置是「那一則答案的泡泡下面」**，所以它住在 log 之內；
+                 這一稿的訊息串停在使用者剛送出那一刻、還沒有一則答完的答案，故它落在最後一則之後，
+                 執行期由 React 掛到那一則答案的下面。
+                 `.hidden` ＋ hook class；可見處在元件庫頁的「React 條件文案」區（§5）。 #}
+            <p class="text-red m-0 js-stream-truncated hidden" role="alert" data-i18n="comp.streamTruncated">這一輪的連線中斷了：答案的文字收到了，但來源清單與評分、分享所需的資訊沒有收到——所以這則答案下面沒有來源可看，也評不了分。把同一題再送一次就會有完整的一份。</p>
         </div>
         {# **整站停用那一態**：與 components/faq-chatroom 同一件事、同一顆 key（同一條公開端點、
              同兩道 403 閘）——完整理由寫在那個元件的同一段。嵌在客戶網站上的這一版尤其需要它：

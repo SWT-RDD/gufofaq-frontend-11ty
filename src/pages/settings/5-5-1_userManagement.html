@@ -100,7 +100,7 @@ permalink: 5-5-1_userManagement.html
                     <label for="newMemberPasswordInput" class="control-label required" data-i18n="settings.initialPassword">初始密碼</label>
                 </div>
                 <div class="field">
-                    <input type="password" id="newMemberPasswordInput" minlength="8" placeholder="至少 8 碼" data-i18n-placeholder="settings.pleaseEnterNewPassword" aria-describedby="newMemberPasswordInputHint" class="form-control" required>
+                    <input type="password" id="newMemberPasswordInput" minlength="8" maxlength="1024" placeholder="至少 8 碼" data-i18n-placeholder="settings.pleaseEnterNewPassword" aria-describedby="newMemberPasswordInputHint" class="form-control" required>
                     {# 「至少 8 碼」是**約束提示**、不是錯誤訊息：.error-prompt 預設 display:none
                          （靠 .form-group:has(.error) 才揭示），aria-describedby 指過去等於輔具讀到零。
                          約束要在填之前就講得出來，故改成常駐可見的說明字（§4）。
@@ -117,8 +117,23 @@ permalink: 5-5-1_userManagement.html
                          形狀沿用 2-2-4 的 200（前綴 key ＋ 數字節點 ＋ 單位 key）。
                          同一頁的 placeholder（settings.pleaseEnterNewPassword）與送出鈕的 data-toast **維持**把 8 寫在譯文裡：
                          那是 §4-2「屬性型譯文」那條例外——屬性值是原子字串、切不出前後綴節點；例外的兩個條件這裡都
-                         成立（上面那顆常駐可見的資料節點承載同一個約束、上游符號名已寫在本段）。 #}
-                    <span class="text-gray" id="newMemberPasswordInputHint"><span data-i18n="settings.passwordMinLengthPrefix">密碼至少 </span><span>8</span><span data-i18n="settings.passwordMinLengthSuffix"> 碼</span></span>
+                         成立（上面那顆常駐可見的資料節點承載同一個約束、上游符號名已寫在本段）。
+                         **上下界一起講、一起夾**：密碼政策是兩端的（product 的 `MIN_PASSWORD_LEN` 與
+                         `MAX_PASSWORD_LEN`，同一支模組的兩顆常數，五個入口共用），兩顆一起投影在
+                         `GET /users/limits` 的 `member.password`（`min`／`max`）。只講下界的話，貼進一段超長
+                         passphrase 只會拿到一個 422，而畫面從頭到尾沒有任何地方說過有上限（§3-2「同 group 的
+                         姊妹界線要一起檢查有沒有落點」）。故這一句改成「密碼長度 8 – 1024 碼」，欄位上的
+                         `minlength` 也配一顆 `maxlength`——只夾一邊等於宣告了一條只有一半的政策。
+                         **兩顆數字合成一個資料節點**（`8 – 1024`）：那是既有的「槽裡不是單一數字」那一族
+                         （同 2-2-1 的 `1 – 20`、share-manage-modal 的 `1 – 3650`），前後綴仍是兩顆 key。
+                         key 從 `settings.passwordMinLength*` 改名成 `settings.passwordLen*`：這一句的語意從
+                         「下界」變成「上下界」，而 §4-2「一個 key 的語意由它背後的契約決定」——留著舊名字的話，
+                         下一個人會拿 `MinLength` 那顆去承載一句其實講了兩端的話。
+                         **上界沒有自己的 toast 段，下界有——那不是漏列，是兩顆屬性的射程不同**：全站零 `<form>`（§4），
+                         所以 `minlength` 永遠不會觸發原生驗證，下界只能由送出鈕的 warning 段承載；而 `maxlength` 是
+                         輸入層的截斷，不論有沒有 `<form>` 都生效 ⇒ 超長那個 422 從畫面上按不出來，列了就是演一個
+                         走不到的結果（§5）。 #}
+                    <span class="text-gray" id="newMemberPasswordInputHint"><span data-i18n="settings.passwordLenPrefix">密碼長度 </span><span class="js-password-len-range">8 – 1024</span><span data-i18n="settings.passwordLenSuffix"> 碼</span></span>
                 </div>
             </div>
         </div>
@@ -145,8 +160,12 @@ permalink: 5-5-1_userManagement.html
         {# 直接送 API 的建立動作 → data-toast 列全結果（§5）。409「email already exists」
              （product 的 `account.email_exists` 409）是**換一個 Email 就修得掉**的 warning，自成一段——
              折進「新增失敗，請稍後再試」再用「可能」對沖，等於叫使用者重試一個永遠不會成功的動作。
-             全站同型的 create 409 都自成 warning（5-5-2 群組名稱、3-3 QA 集、5-6-2 MCP 名稱）。 #}
-        <button data-tenant-role="admin" type="button" class="button button-primary" data-toast="成員已新增|請填寫 Email 與至少 8 碼密碼|Email 已被使用，請換一個|選到的群組不存在，請重新載入頁面再選一次|新增失敗，請稍後再試" data-i18n-data-toast="toast.createUser" data-toast-type="success|warning|warning|warning|error">
+             全站同型的 create 409 都自成 warning（5-5-2 群組名稱、3-3 QA 集、5-6-2 MCP 名稱）。
+           「成員數已達上限」同理自成一段：`create_user` 在 409 之後、解群組之前做
+             `assert_max_count(members + 1, limit=MAX_USERS_PER_TENANT)`（400），段序照那個
+             raise 順序落在兩者中間。**少了它，滿員那一次會落到「選到的群組不存在」**——一句與
+             事實無關的話，而管理者要做的是先停掉／刪掉用不到的帳號，不是重挑群組。 #}
+        <button data-tenant-role="admin" type="button" class="button button-primary" data-toast="成員已新增|請填寫 Email 與至少 8 碼密碼|Email 已被使用，請換一個|成員數已達上限，請先移除用不到的帳號再新增|選到的群組不存在，請重新載入頁面再選一次|新增失敗，請稍後再試" data-i18n-data-toast="toast.createUser" data-toast-type="success|warning|warning|warning|warning|error">
             <img src="./images/icon_add_white.png" width="48" height="48" decoding="async" alt="" class="icon">
             <span data-i18n="settings.addMember">新增成員</span>
         </button>
@@ -189,12 +208,24 @@ permalink: 5-5-1_userManagement.html
          守衛（400）、`reset_member_password`。有效能力欄唯讀，出處同上方「新增成員」①——這一區
          管的仍是租戶內部角色（群組聯集＋租戶管理者），平台系統管理員／稽核員的跨租戶身分不受
          這裡任何一顆鈕影響。 #}
-    <div class="flex-row align-items-center gap-8">
-        <div class="text-md text-bold" data-i18n="settings.memberList">成員清單</div>
-        <button type="button" class="info-btn" title="成員清單說明" data-i18n-title="help.settings.memberList.title" data-open-modal="memberListHelpModal">
-            <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
-            <span class="sr-only" data-i18n="help.settings.memberList.title">成員清單說明</span>
-        </button>
+    {# 「已經用掉幾位」畫在清單標題那一列，形狀與 3-6 別名表清單、5-8 金鑰清單逐字同構
+         （前綴／中段／後綴三顆 key 夾兩個資料槽，數字不進譯文）。左邊由 `members.length` 推導
+         （§6：能從示範陣列推導的就從陣列渲染）；右邊的 500 是契約值，正本是 gufofaq-saas product 的
+         `MAX_USERS_PER_TENANT`，執行點是同 repo 的 `create_user`（`assert_max_count`，400），
+         投影在 `GET /users/limits` 的 `tenant.users`。
+       **這個上限不分啟用與停用**：`create_user` 數的是本租戶所有成員（停用是欄位不是刪除），
+         所以計數也要照樣把停用的那一列算進去——與 5-8 金鑰那顆「只數未撤銷」刻意不同，
+         兩邊的數法各自跟著自己的上限走。
+       不畫的後果：滿員時新增成員只會拿到一段不相干的 warning，而管理者看不出「已經滿了」。 #}
+    <div class="flex-row align-items-center flex-wrap gap-16">
+        <div class="flex-row align-items-center gap-8">
+            <div class="text-md text-bold" data-i18n="settings.memberList">成員清單</div>
+            <button type="button" class="info-btn" title="成員清單說明" data-i18n-title="help.settings.memberList.title" data-open-modal="memberListHelpModal">
+                <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+                <span class="sr-only" data-i18n="help.settings.memberList.title">成員清單說明</span>
+            </button>
+        </div>
+        <span class="text-gray"><span data-i18n="settings.glossaryEntryCountPrefix">已 </span><span class="js-member-count">{{ members.length }}</span><span data-i18n="settings.glossaryEntryCountMid"> / </span><span class="js-member-max">500</span><span data-i18n="settings.memberCountSuffix"> 位</span></span>
     </div>
     {# **「草稿 vs 落地」一定要講**：這種逐列就地編輯的表格上，改一顆開關、改一個
          下拉之後畫面**立刻**變成新的樣子，而那只是 DOM 的狀態——真正寫進去的是同一列那顆「儲存」。

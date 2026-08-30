@@ -7,6 +7,7 @@
 // 為什麼用查詢字串而非改檔名：src 的模板保持乾淨（不需 filter / data file，符合 GUIDELINE §2 的語法白名單），
 // 全部在建置後處理；hash 只依內容計算，內容沒變就不會產生無謂的 diff。
 import { createHash } from "node:crypto";
+import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync, readdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
 
@@ -67,6 +68,34 @@ for (const f of readdirSync(DIST).filter((f) => f.endsWith(".html"))) {
         dq !== undefined ? `${pre}"${stamp(dq, f, attr)}"` : `${pre}'${stamp(sq, f, attr)}'`);
     writeFileSync(p, html);
     touched++;
+}
+
+// 4) 蓋一行「這份 dist 是哪一個 commit 建的」到 `dist/.build-ref`
+//
+// **為什麼要有它**：`dist/` 不進版控，所以 `git checkout` 動不到它——切到另一個 commit 而忘了
+// 重 build 時，工作樹是新的、`dist/` 還是舊的，而任何「拿 HEAD 當這份 dist 的身分」的比對
+// 都會把舊產物蓋上新 commit 的章。**那種失敗的樣子是全綠**：新一輪加進來的東西根本不在比對
+// 範圍裡，「還沒同步」與「已經同步」逐位元組相同。
+// 這一行是在**build 當下**寫的，所以它記的是產物真正的身分，不是讀取當下的 HEAD。
+// mtime 答不了同一個問題：它會被 touch／複製／解壓縮弄髒，而且說不出是哪一個 commit。
+//
+// 形狀與 `.slicing-ref` 一致（單獨一行、可 `trim()` 之後直接比 commit），跨 repo 的消費端
+// （gufofaq-saas `apps/web` 的 `slicingRepoRef`）因此不必為它多學一種格式。
+//
+// **工作樹是髒的時候，前綴要是 `dirty-`**：那份 dist 含著沒有 commit 的改動，它不等於任何一個
+// commit。標記寫在**前面**是刻意的——消費端的比對是雙向前綴（`a.startsWith(b) || b.startsWith(a)`），
+// 標記接在 SHA 後面的話 `abc123-dirty` 照樣通得過，等於這一行對最該擋的情況沉默。
+//
+// **問不到 git 就不寫這個檔**（不是寫一個編出來的值）：`git archive` 匯出的目錄本來就沒有
+// `.git`，而那條路自己會寫 `.slicing-ref`；消費端對「兩者都沒有」已經有一句明確的錯誤。
+// 這裡只在 build 輸出留一行，讓在本機看到的人知道為什麼那個檔沒出現。
+const git = (args) => execFileSync("git", args, { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
+try {
+    const head = git(["rev-parse", "HEAD"]).trim();
+    const dirty = git(["status", "--porcelain"]).trim() !== "";
+    writeFileSync(join(DIST, ".build-ref"), `${dirty ? "dirty-" : ""}${head}\n`);
+} catch {
+    console.warn("[hash-assets] 問不到 git HEAD，這一份 dist 不寫 .build-ref（它說不出自己是哪一輪）");
 }
 
 console.log(`[hash-assets] 蓋章 ${versions.size} 支資產，改寫 ${touched} 個 HTML`);

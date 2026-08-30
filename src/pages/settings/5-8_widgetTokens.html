@@ -58,8 +58,17 @@ permalink: 5-8_widgetTokens.html
                 <div class="label">
                     <label for="widgetNameInput" class="control-label" data-i18n="widget.tokenName">名稱</label>
                 </div>
+                {# 長度上限寫在填之前（§3-2）：正本是 gufofaq-saas product 的
+                     `MAX_WIDGET_TOKEN_NAME_LEN`，執行點是同 repo 的 `create_widget_token`
+                     （`assert_max_len`，400 指名欄位）；投影在 `GET /users/limits` 的
+                     `widget_token.name_len`，閘與本頁同為 `require_admin`。
+                   數字走資料槽、不進譯文（§4-2）：值執行期才由契約給，故形狀比照 2-2-1 的
+                     `js-prompt-max-len`——切版畫契約當前的值，React 由契約覆寫，也由契約決定
+                     要不要掛 `maxLength`（載不到就不掛，猜一個數字兩個方向都看不出錯）。
+                   前綴沿用 `regression.suiteNameLimit`（同一句繁中，§4-2 同文沿用既有 key）。 #}
                 <div class="field">
-                    <input type="text" id="widgetNameInput" placeholder="例如：官網客服" data-i18n-placeholder="widget.namePlaceholder" class="form-control">
+                    <input type="text" id="widgetNameInput" placeholder="例如：官網客服" data-i18n-placeholder="widget.namePlaceholder" class="form-control" aria-describedby="widgetNameHint">
+                    <span id="widgetNameHint" class="text-gray"><span data-i18n="regression.suiteNameLimit">名稱字數上限：</span><span class="js-widget-name-max-len">100</span><span data-i18n="common.unitChars"> 字</span></span>
                 </div>
             </div>
         </div>
@@ -69,7 +78,7 @@ permalink: 5-8_widgetTokens.html
                     <label for="widgetOriginsInput" class="control-label required" data-i18n="widget.allowedOrigins">允許網域</label>
                 </div>
                 <div class="field">
-                    <textarea id="widgetOriginsInput" rows="3" placeholder="一行一個，例如 https://example.com" data-i18n-placeholder="widget.originsPlaceholder" class="form-control" aria-describedby="widgetOriginsHint" required></textarea>
+                    <textarea id="widgetOriginsInput" rows="3" placeholder="一行一個，例如 https://example.com" data-i18n-placeholder="widget.originsPlaceholder" class="form-control" aria-describedby="widgetOriginsHint widgetOriginsLimitHint" required></textarea>
                     {# 格式是後端硬守的（product 的 `_normalize_origins`：非 http/https、
                          沒有 netloc、帶 path 一律 400），所以講在填之前、而且要接得上輔具——
                          寫在 placeholder 一打字就消失（§4 帶約束的輔助文字要掛 id ＋ aria-describedby）。
@@ -80,39 +89,78 @@ permalink: 5-8_widgetTokens.html
                          寫成「不含路徑與結尾斜線」的話，使用者會以為 `https://example.com/` 是錯的，
                          回頭去改一個根本不必改的東西。 #}
                     <span id="widgetOriginsHint" class="text-gray" data-i18n="widget.originsHint">一行一個，須為 https://網域 或 http://網域，不可帶路徑；結尾斜線與大小寫會自動整理。</span>
+                    {# **這一欄有兩顆界線，兩顆都要講**（§3-2「界線的正本若是一個 group，
+                         同 group 的姊妹界線要一起檢查有沒有落點」）：筆數（`MAX_ALLOWED_ORIGINS`）
+                         擋的是「每一題要比幾次」，單筆長度（`MAX_ORIGIN_LEN`）擋的是「每次比多長」
+                         ——兩個維度，只講一顆的話管理者會在另一個維度上撞到一句事前沒看過的 400。
+                         執行點都在 gufofaq-saas product 的 `create_widget_token`（筆數）與
+                         `_normalize_origins`（單筆長度），投影在 `GET /users/limits` 的
+                         `widget_token.allowed_origins`／`widget_token.origin_len`。
+                       與上一句分成兩顆節點、兩個 id：上一句講**格式**（會被擋下 vs 會被自動整理），
+                         這一句講**數量**——併成一句之後就沒有辦法只更新其中一半。兩顆都被
+                         textarea 的 `aria-describedby` 指到。 #}
+                    <span id="widgetOriginsLimitHint" class="text-gray"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-widget-origins-max">50</span><span data-i18n="widget.originsCountLimitMid"> 筆，每一筆最長 </span><span class="js-widget-origin-max-len">270</span><span data-i18n="common.unitChars"> 字</span></span>
                 </div>
             </div>
         </div>
     </div>
     <div class="flex-row">
-        {# 逐 raise 對回 `create_widget_token`（product），順序＝上游由上而下：
+        {# 逐 raise 對回 `create_widget_token`（product），順序＝上游由上而下。**四道界線各有一段**
+             ——它們全部落在這一顆鈕上（沒有改名端點、沒有第二個 mint 入口），少列的那幾道會一起
+             掉進紅色的「產生失敗，請稍後再試」，而每一道使用者都自己修得掉：
              · 400 `credential.origins_required` —— 函式的**第一個 raise**（`if not body.allowed_origins`）。
                **本頁製造得出來、所以這一段不可省**：全站零 `<form>`（§4），textarea 上的 `required`
-               不會觸發任何原生驗證，什麼都不填按下去就是它。少了這一段，這個最容易發生的結果
-               會被折進紅色的「產生失敗，請稍後再試」，而那句話叫人去重試一個永遠不會成功的動作。
+               不會觸發任何原生驗證，什麼都不填按下去就是它。
+             · 400 `limits.too_long`（`assert_max_len`，`MAX_WIDGET_TOKEN_NAME_LEN`）—— 名稱過長。
+             · 400 `limits.too_many`（`assert_max_count`，`MAX_ALLOWED_ORIGINS`）—— 允許網域筆數過多。
+             · 400 `limits.too_long`（`_normalize_origins` 逐筆，`MAX_ORIGIN_LEN`）—— 單筆網域過長。
+               **排在格式那一段之前**：長度那道在 `_normalize_origins` 的迴圈裡先量，才輪到形狀檢查。
              · 400 `credential.origin_invalid` —— `_normalize_origins` 逐行驗（scheme 非 http/https、
-               沒有 netloc、帶 path）。使用者當場改得掉 ⇒ warning。
+               沒有 netloc、帶 path／query／fragment、帶 userinfo）。
+             · 400 `limits.too_many`（`assert_max_count`，`MAX_WIDGET_TOKENS_PER_TENANT`）—— 這個租戶
+               **未撤銷**的金鑰數已經滿了。它排在最後：那道計數在列鎖之後才做，前面每一道都先過。
+               **這一段最容易被誤讀成「網域填錯」**——名稱與網域都完全正確，卻被擋下，而畫面上唯一
+               的紅字如果是格式錯誤，管理者會反覆修改一個沒有問題的網域。
              · 其餘（含網路失敗）⇒ error。
            `data-tenant-role="admin"`＝端點的 `Depends(require_admin)`（§4 授權軸第三軸）。
-           ⚠️ `|` 的段序是**索引契約**：React 端照 `split("|")` 的位置取
-             `toast.createWidgetToken`，往中間插一段會讓其後每一段的索引整批位移。
-             要加新分支就加在最末位，除非上游的 raise 順序真的要求插在中間。 #}
-        <button data-tenant-role="admin" type="button" class="button button-primary" data-toast="已產生金鑰|請至少填一個允許網域|網域格式錯誤，請確認格式為 https://網域|產生失敗，請稍後再試" data-i18n-data-toast="toast.createWidgetToken" data-toast-type="success|warning|warning|error">
+           ⚠️ `|` 的段序是**索引契約**：React 端照 `split("|")` 的位置取 `toast.createWidgetToken`。
+             段序＝上游 raise 的先後，新分支照那個順序落位、不一律往後接——接在末位會讓段序不再
+             說得出「先撞到哪一道」，而那正是這一族 toast 唯一的排序依據。 #}
+        <button data-tenant-role="admin" type="button" class="button button-primary" data-toast="已產生金鑰|請至少填一個允許網域|名稱超過長度上限，請縮短後再送出|允許網域筆數超過上限，請刪掉幾筆再送出|有一筆網域超過長度上限，請確認沒有多貼到路徑或參數|網域格式錯誤，請確認格式為 https://網域|金鑰數已達上限，請先撤銷用不到的金鑰再產生新的|產生失敗，請稍後再試" data-i18n-data-toast="toast.createWidgetToken" data-toast-type="success|warning|warning|warning|warning|warning|warning|error">
             <img src="./images/icon_add_white.png" width="48" height="48" decoding="async" alt="" class="icon">
             <span data-i18n="widget.createToken">產生金鑰</span>
         </button>
     </div>
 </div>
 
-{# 「產生金鑰」的說明視窗：②③留空——「現在生效的條件」與「這一區的數字」都要由 React 在
-     執行期依實際租戶狀態算出來，切版這一側只把容器與 ① 那段固定文案定出來，不編假的列。 #}
+{# 「產生金鑰」的說明視窗：②留空（「現在生效的條件」由 React 執行期依實際租戶狀態算，切版只給
+     容器）；**③四列都要在**——判準是「這顆界線有沒有被上游投影成一支拿得到的端點」（見 help-modal
+     檔頭），而這四顆全部投影在 `GET /users/limits` 的 `widget_token.*`（gufofaq-saas product 的
+     `USER_LIMIT_GROUPS`），閘與本頁同為 `require_admin`。
+   **四列都掛在這一顆窗、不分給「金鑰清單」那一顆**：四道全部由 `create_widget_token` 執法，
+     這一區才是它們的消費點（§3-2「上限寫在做那個決定的控制項旁邊」）。清單那一區沒有任何
+     使用者填得出來的值會被拒，故它的 ③ 維持空的。
+   `bound` 一律走全站唯一的界線字串寫法（§3-2）：單邊 `≤ N`、不加千分位。 #}
 {% set helpModalId = "createTokenHelpModal" %}
 {% set helpModalTitleKey = "help.widget.createToken.title" %}
 {% set helpModalTitle = "產生金鑰說明" %}
 {% set helpModalWhatKey = "help.widget.createToken.what" %}
 {% set helpModalWhat = "這一區產生一把嵌入金鑰：填入這把要綁定的允許網域後送出，就能拿去組出前台嵌入連結。這把金鑰是給客戶自己網站上的公開機器人用的，本來就會被瀏覽器載入、任何看得到那個網頁原始碼的人都看得到它——它的防護不是保密，而是每次呼叫都會核對來源網域是不是在允許清單內；網域不在清單內，拿到金鑰也打不通。" %}
 {% set helpModalStateItems = [] %}
-{% set helpModalLimitRows = [] %}
+{% set helpModalLimitRows = [
+  { labelKey: "widget.tokenName", label: "名稱", bound: "≤ 100",
+    effectKey: "help.widget.nameLenEffect",
+    effect: "超過就整個送不出去（400 指名這一欄），已經產生的金鑰不受影響。名稱只給管理者自己認哪一把是哪一把，前後空白會先被去掉再算長度。" },
+  { labelKey: "widget.allowedOrigins", label: "允許網域", bound: "≤ 50",
+    effectKey: "help.widget.originsCountEffect",
+    effect: "填了超過這個筆數就整個送不出去（400）。這條白名單在每一次前台問答都要逐筆比對，所以筆數本身是有代價的——重複的網域會先被合併，合併後仍超過才算超過。" },
+  { labelKey: "help.widget.originLen", label: "單筆網域長度", bound: "≤ 270",
+    effectKey: "help.widget.originLenEffect",
+    effect: "任何一筆超過就整個送不出去（400）。會超過通常不是網域太長，而是貼進了完整網址——路徑、問號後面的參數、井號後面的片段都不屬於「來源」，那些也會被格式那一關擋下。" },
+  { labelKey: "help.widget.tokensPerTenant", label: "每租戶金鑰數（未撤銷）", bound: "≤ 50",
+    effectKey: "help.widget.tokensPerTenantEffect",
+    effect: "達到上限之後產生不了新的金鑰（400），既有的金鑰照常運作。撤銷會讓那一把不再算進這個數字，所以要再產生就先撤銷用不到的——清單標題旁邊那個計數用的是同一種數法。" }
+] %}
 {% include "components/help-modal/help-modal.html" %}
 
 {# 金鑰清單：default-table。名稱 / 金鑰（可複製）/ 允許網域 / 狀態 / 操作（複製嵌入連結 + 撤銷）。
@@ -148,17 +196,30 @@ permalink: 5-8_widgetTokens.html
         disabled: false
     }
 ] %}
+{# ＝上面那份陣列裡 `disabled: false` 的筆數（兩筆示範裡的一筆）。理由與「為什麼不寫成
+     `tokens.length`」寫在清單標題那一列的註解裡；示範列增刪時這一顆要一起對帳。 #}
+{% set widgetActiveTokens = 1 %}
 <div class="block flex-row column gap-16">
     {# ⓘ 說明：markup 同既有 info-btn 六件組。①出處：本頁上方檔頭「金鑰清單」一節（「token 本就
          嵌在瀏覽器端、非機密，故清單直接顯示全值供複製」），與 product 的
          `list_widget_tokens`／`revoke_widget_token`。**全值常態顯示、不是 show-once**——這是
          這一區與 5-6-3／5-9 兩頁最根本的不同，①末句刻意點出來，不要讓人以為這裡也該遮起來。 #}
-    <div class="flex-row align-items-center gap-8">
-        <div class="text-md text-bold" data-i18n="widget.tokenList">金鑰清單</div>
-        <button type="button" class="info-btn" title="金鑰清單說明" data-i18n-title="help.widget.tokenList.title" data-open-modal="tokenListHelpModal">
-            <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
-            <span class="sr-only" data-i18n="help.widget.tokenList.title">金鑰清單說明</span>
-        </button>
+    {# 「已經用掉幾把」畫在清單標題那一列，形狀與 3-6 別名表清單、3-2 術語表清單逐字同構
+         （前綴／中段／後綴三顆 key 夾兩個資料槽，數字不進譯文）。**它數的是未撤銷的那些**：
+         上限 `MAX_WIDGET_TOKENS_PER_TENANT`（product）只數 `disabled=False` 的列
+         （撤銷是軟刪、保留稽核軌跡），計數器與上限用同一種數法，否則「還剩幾把可用」對不起來。
+       左邊那顆**不是** `tokens.length`：nunjucks 的 `{% set %}` 出不了 `{% for %}` 的 scope，
+         過濾後的筆數算不出來，故 `widgetActiveTokens` 由下方那份示範陣列手動對帳
+         ——增刪示範列時要一起改。右邊的 50 是契約值，出處同上方說明窗那一列。 #}
+    <div class="flex-row align-items-center flex-wrap gap-16">
+        <div class="flex-row align-items-center gap-8">
+            <div class="text-md text-bold" data-i18n="widget.tokenList">金鑰清單</div>
+            <button type="button" class="info-btn" title="金鑰清單說明" data-i18n-title="help.widget.tokenList.title" data-open-modal="tokenListHelpModal">
+                <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+                <span class="sr-only" data-i18n="help.widget.tokenList.title">金鑰清單說明</span>
+            </button>
+        </div>
+        <span class="text-gray"><span data-i18n="settings.glossaryEntryCountPrefix">已 </span><span class="js-widget-token-count">{{ widgetActiveTokens }}</span><span data-i18n="settings.glossaryEntryCountMid"> / </span><span class="js-widget-token-max">50</span><span data-i18n="widget.tokenCountSuffix"> 把（不含已撤銷）</span></span>
     </div>
     <div class="table-container scrollTable">
         <table class="default-table">

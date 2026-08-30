@@ -820,8 +820,52 @@ bodyClass: guideline-page
                              服務層 `account_service.accept_disclaimer` 是冪等的、沒有拒絕路徑，
                              所以除了成功就只剩網路／伺服器那一種。
                              **不掛任何授權軸**是查證過的結論、不是忘了標（§4：空白與「忘了標」在
-                             markup 上長得一模一樣，所以理由寫在這裡）。 #}
-                        <button type="button" class="button button-primary" data-toast="已開始使用|送出失敗，請稍後再試" data-i18n-data-toast="toast.acceptDisclaimer" data-toast-type="success|error"><span data-i18n="subscription.acceptDisclaimerPrefix">我已閱讀並同意，開始使用（</span><span>30</span><span data-i18n="subscription.acceptDisclaimerSuffix"> 天）</span></button>
+                             markup 上長得一模一樣，所以理由寫在這裡）。
+                           **失敗那一段照樣走 toast，不改成面板內的行內錯誤字**（§4「全站一種回報方式」）：
+                             伺服器講出來的原因不會因此丟掉——它由業務層填進那一段的位置端出來
+                             （`errorText(body, <error 段>)`，正典是 3-7 文件檢索的 403 與
+                             skill-editor-modal 的存檔失敗），段文字只是讀不到 body 時的退路。
+                             改成行內錯誤會讓**同一顆元件裡的兩塊面板對同一種形狀有兩套答案**：
+                             下面那塊強制改密面板打的 `POST /me/change-password` 與 5-1-1 是同一支端點、
+                             共用 `toast.changePassword` 的同一組分支，那一份改不動（§5「同一道後端守衛，
+                             不論從哪一頁觸發，分支集合與語意型別都要一致」）。
+                           `data-text-busy`／`data-key-busy`＝送出中那一態的鈕面（§4-2 兩態文字槽）。
+                             `platform.applying` 是既有的那一顆（iso-review-wizard 的確認鈕同用一顆，
+                             §4-2 同文沿用既有 key）。**busy 的 `disabled` 不進 markup**：靜態稿沒有
+                             「送出中」那一刻（同 iso-review-wizard 檔頭那一條）。 #}
+                        <button type="button" class="button button-primary" data-toast="已開始使用|送出失敗，請稍後再試" data-i18n-data-toast="toast.acceptDisclaimer" data-toast-type="success|error" data-text-busy="處理中…" data-key-busy="platform.applying"><span data-i18n="subscription.acceptDisclaimerPrefix">我已閱讀並同意，開始使用（</span><span>30</span><span data-i18n="subscription.acceptDisclaimerSuffix"> 天）</span></button>
+                    </div>
+                </div>
+            </div>
+            {# **①′′ 讀不到免責聲明本文那一態**（`GET /disclaimer` 非 2xx 或網路失敗）。
+                 這一態非切不可，理由不是「多一種樣子」：`.panel-body` 只有本文與「載入中…」兩態時，
+                 讀失敗會**永遠停在載入中**——畫面不動、console 不響，報讀器聽到的是一句永遠不變的話。
+                 而這塊面板底下坐著一顆**送出法律同意**的鈕，使用者按下去我們就收到一份他從未看過
+                 內容的同意。
+               訊息由業務層填（後端原句或執行期狀態句），故這一顆**不掛 `data-i18n`**——一顆節點只能有
+                 一個文字主人（§4-2）。形狀逐字比照 5-2 存檔失敗那一條紅字（`text-red` ＋ `role="alert"`
+                 的 live region ＋ 由 `{% set %}` 供示範字面）：訊息出現時焦點不在這裡，不報讀就等於沒說。
+               **本文為空 ⇒ 同意鈕 `disabled`**（REACT-CONVERSION §⑥ 的第二種合規 disable：面板內
+                 看得見的解鎖條件未滿足）。**停用而不是不渲染**：鈕消失會讓人以為這一頁壞了，而停用態
+                 把「現在還不能同意」與「為什麼」留在同一個畫面上——`aria-describedby` 指的就是那句話
+                 （§4：`disabled` 說得出「現在不能按」，說不出「為什麼」）。
+               **「載入中…」那一態刻意不切**：那是執行期狀態，靜態稿沒有請求可等；跨 repo 已有共識
+                 （gufofaq-saas `apps/web/lib/i18n/parity.test.ts` 的 `REACT_ONLY` 逐字列著 `common.loading`），
+                 同 `pages/shared/shared.html` 檔頭第 ④ 條。React 端那一態換掉的就是這一顆 `<p>`，
+                 停用規則與這一態相同（本文還沒到＝還不能同意）。 #}
+            {% set gateDisclaimerError = "讀取免責聲明失敗（502）" %}
+            <div class="subscription-overlay demo-static mt-16">
+                <div class="subscription-panel">
+                    <div class="panel-header" data-i18n="comp.disclaimer">免責聲明</div>
+                    <div class="panel-body">
+                        <p class="text-red m-0" role="alert" id="gateDisclaimerError">{{ gateDisclaimerError }}</p>
+                    </div>
+                    <div class="panel-footer">
+                        {# 這一顆與上面那份示範的鈕**可見字面逐字相同**，而同頁不得有兩個同名的可及名稱
+                             （§4）。作法照 §4 目錄型示範那一條：鈕內補一段 `.sr-only` 的態名——不動版面，
+                             可見字面仍完整包含在可及名稱裡（不違反 WCAG 2.5.3），而那段字本來就是這份
+                             示範要說的話。 #}
+                        <button type="button" class="button button-primary" data-toast="已開始使用|送出失敗，請稍後再試" data-i18n-data-toast="toast.acceptDisclaimer" data-toast-type="success|error" data-text-busy="處理中…" data-key-busy="platform.applying" aria-describedby="gateDisclaimerError" disabled><span data-i18n="subscription.acceptDisclaimerPrefix">我已閱讀並同意，開始使用（</span><span>30</span><span data-i18n="subscription.acceptDisclaimerSuffix"> 天）</span><span class="sr-only" data-i18n="comp.gateBodyUnreadable">（讀不到本文時）</span></button>
                     </div>
                 </div>
             </div>
@@ -833,8 +877,11 @@ bodyClass: guideline-page
                  `ChangePwIn` 收 `old_password` ＋ `new_password` ⇒ 舊密碼欄非有不可，少一顆就是送不出去的表單。
                  欄位寫法與 toast 段落逐字比照 5-1-1 的「變更密碼」區塊（同一支端點、同一組守衛，
                  §5「同一道後端守衛，不論從哪一頁觸發，分支集合與語意型別都要一致」）。
-               `minlength="8"` 與那句常駐提示的出處同 `components/reset-password-modal`
-                 （product 的 `MIN_PASSWORD_LEN`）；React 端執行期改讀 `GET /me/limits` 的 `password.min`。 #}
+               `minlength="8" maxlength="1024"` 與那句常駐提示的出處同 `components/reset-password-modal`
+                 （product 的 `MIN_PASSWORD_LEN`／`MAX_PASSWORD_LEN`）；React 端執行期改讀
+                 `GET /me/limits` 的 `password.min`／`password.max`。
+               **上下界一起講、一起夾**：只講下界的話，貼進一段超長 passphrase 只會拿到一個 422，
+                 而畫面從頭到尾沒有任何地方說過有上限（§3-2「同 group 的姊妹界線要一起檢查有沒有落點」）。 #}
             <div class="subscription-overlay demo-static mt-16">
                 <div class="subscription-panel">
                     <div class="panel-header" data-i18n="settings.mustChangePasswordTitle">請先變更密碼</div>
@@ -853,8 +900,8 @@ bodyClass: guideline-page
                                 <label for="gateNewPasswordInput" class="control-label required" data-i18n="settings.newPassword">新密碼</label>
                             </div>
                             <div class="field">
-                                <input type="password" id="gateNewPasswordInput" minlength="8" placeholder="至少 8 碼" data-i18n-placeholder="settings.pleaseEnterNewPassword" aria-describedby="gateNewPasswordHint" class="form-control" required>
-                                <span class="text-gray" id="gateNewPasswordHint"><span data-i18n="settings.passwordMinLengthPrefix">密碼至少 </span><span>8</span><span data-i18n="settings.passwordMinLengthSuffix"> 碼</span></span>
+                                <input type="password" id="gateNewPasswordInput" minlength="8" maxlength="1024" placeholder="至少 8 碼" data-i18n-placeholder="settings.pleaseEnterNewPassword" aria-describedby="gateNewPasswordHint" class="form-control" required>
+                                <span class="text-gray" id="gateNewPasswordHint"><span data-i18n="settings.passwordLenPrefix">密碼長度 </span><span class="js-password-len-range">8 – 1024</span><span data-i18n="settings.passwordLenSuffix"> 碼</span></span>
                             </div>
                         </div>
                         <div class="form-group">
@@ -862,7 +909,7 @@ bodyClass: guideline-page
                                 <label for="gateConfirmPasswordInput" class="control-label required" data-i18n="settings.confirmPassword">確認新密碼</label>
                             </div>
                             <div class="field">
-                                <input type="password" id="gateConfirmPasswordInput" minlength="8" placeholder="再次輸入新密碼" data-i18n-placeholder="settings.pleaseEnterConfirmPassword" aria-describedby="gateNewPasswordHint" class="form-control" required>
+                                <input type="password" id="gateConfirmPasswordInput" minlength="8" maxlength="1024" placeholder="再次輸入新密碼" data-i18n-placeholder="settings.pleaseEnterConfirmPassword" aria-describedby="gateNewPasswordHint" class="form-control" required>
                             </div>
                         </div>
                     </div>
@@ -1081,6 +1128,29 @@ bodyClass: guideline-page
                      已經算過的），「多個評測模型」則要拆成多批才會發生。 #}
                 <p class="text-gray m-0" data-i18n="regression.ragasNotComputed">這一輪還沒有算過 RAGAS 指標。按上面那顆鈕開始計算——它是逐筆發 LLM 的離線評測，會跑一段時間；算完之後也可以再算一次。</p>
                 <p class="text-red m-0" data-i18n="regression.ragasMultiModelWarn">這一批指標是由多個評測模型分批算出來的，彼此不該互相比較——離線評測的全部用途是把兩批拿來比，而只有同一個評測模型算出來的兩批才比得下去。</p>
+                {# 2-2-5 的 RAGAS 分母那一列演不到的三態。2-2-5 的示範是一輪乾淨的執行（單批、
+                     零失敗批、零剔除），所以這三句在那一頁結構上畫不出來：
+                       · `failed_batches.count > 0`：有幾批整批沒算出來 ⇒ 指標比看起來薄。
+                       · `skipped.count > 0`：有幾筆評不了 ⇒ 分母比送出去的少。
+                       · `scores_reproducible` 的另外兩態（`true` 與 `null`）——2-2-5 演的是 `false`
+                         那一態（product `compute_run_metrics` 逐字寫著預設部署就是它）。
+                         **`null` 不是 `false`**：一個是「上游沒記錄」，一個是「記錄了、不成立」。
+                     繁中逐字照抄 2-2-5（§4-2 同 key 兩種繁中會互相覆蓋）。 #}
+                <p class="text-red m-0" data-i18n="regression.ragasFailedBatchesWarn">有幾批指標整批沒有算出來，所以下面每一顆分數的分母都比這一輪的紀錄數少——指標看起來變薄不是因為樣本本來就少。重算一次通常就好；一直失敗的話，是評測模型那一側的問題。</p>
+                <p class="text-red m-0" data-i18n="regression.ragasSkippedWarn">有幾筆問答紀錄沒有被評到（沒有答案、沒有檢索來源，或被輸出閘遮蔽），所以「實際評分」比「這一輪的問答紀錄」少。分數講的是被評到的那幾筆，不是整輪的成績——剔除比例高的時候，這一份指標不足以代表這一輪。</p>
+                <div class="flex-row align-items-center gap-8">
+                    <span class="text-bold" data-i18n="regression.ragasReproducible">分數可重現</span><span data-i18n="common.labelSep">：</span><span data-i18n="common.yes">是</span><span data-i18n="common.listSep">、</span><span data-i18n="regression.ragasReproducibleUnknown">未記錄</span>
+                </div>
+                {# `llm_calls`／`llm_tokens` 為 `null` 時填進那兩顆資料槽的哨兵字。**它與 0 和「—」是
+                     三件不同的事**（§6）：0 是量到了而且是零、「—」是還沒有值、這一顆是上游刻意
+                     沒去量。2-2-5 的示範兩格都有數字，所以這個字在那一頁畫不出來。 #}
+                <p class="text-gray m-0" data-i18n="common.notCounted">未計數</p>
+                {# 三支聊天室（`components/faq-chatroom`／`components/chatroom`／`ui/widget-shell`）
+                     共用的「串流被切斷」那一句。三處的靜態稿演的都是收乾淨的那一輪，所以它在使用頁上
+                     結構性地畫不到。上游把這件事說得出來（gufofaq-saas `apps/web` 的
+                     `AccumulateSseResult.truncated`），畫面上先前沒有任何地方在說。
+                     繁中逐字照抄那三支（§4-2 同 key 兩種繁中會互相覆蓋）。 #}
+                <p class="text-red m-0" data-i18n="comp.streamTruncated">這一輪的連線中斷了：答案的文字收到了，但來源清單與評分、分享所需的資訊沒有收到——所以這則答案下面沒有來源可看，也評不了分。把同一題再送一次就會有完整的一份。</p>
                 {# 5-2 的「主 agent 可直接查詢」全部不勾（送 `[]`）那一態：那一頁的示範是部分勾選，
                      所以它在使用頁上永遠看不到。 #}
                 <p class="text-gray m-0" data-i18n="settings.glossaryApplyAgentNoneHint">目前沒有任何表讓主 agent 直接查詢——術語表只能經 skill 取用。</p>
@@ -1500,6 +1570,12 @@ bodyClass: guideline-page
 {% set deleteConfirmClass = "js-confirm-delete-demo" %}
 {% set deleteConfirmBinding = true %}
 {% include "components/delete-modal/delete-modal.html" %}
+{# 免責聲明彈窗：這一頁演的是**「本文是空的」**那一態（元件檔頭的 ②）。生產頁的 footer 每一頁都在
+     演本文那一態，所以這裡不必再演一次；而「空的」在生產頁上結構性地演不到，元件庫頁是它唯一
+     看得到的地方（§5：元件裡的分支改成成對參數 ＋ `{% if %}`，由元件庫展示頁把那一態 set 出來）。
+   ⚠️ 本頁走 `layouts/base`（沒有 footer），所以整頁只有這一份 `disclaimerModal`——
+     `<dialog id>` 沒有第二份，這個 set 不會影響到任何生產頁。 #}
+{% set disclaimerBodyEmpty = true %}
 {% include "components/disclaimer-modal/disclaimer-modal.html" %}
 {% include "components/intent-enable-modal/intent-enable-modal.html" %}
 {% include "components/apply-settings-no-permission-modal/apply-settings-no-permission-modal.html" %}

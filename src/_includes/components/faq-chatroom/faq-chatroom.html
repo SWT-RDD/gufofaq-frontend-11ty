@@ -96,10 +96,36 @@
                      形狀比照 5-10 的 `.js-edit-vocabulary`：**條件開窗的觸發鈕自己就送 API ⇒ 照 §5 ③
                      掛 `data-toast` 列全結果**，同時保留 hook class 讓 React 認得出要接哪一顆。
                      不掛授權軸：這條路徑上沒有租戶能力軸（同 `.js-ask-suggested`——前台公開端點
-                     吃的是 `X-Widget-Token`，能力／角色都是登入態才判得出來的東西）。 #}
-                <button type="button" class="button-icon share js-share-message" data-toast="連結已建立|建立失敗，請稍後再試" data-i18n-data-toast="toast.createPublicShare" data-toast-type="success|error" title="分享" data-i18n-title="comp.share"><span
+                     吃的是 `X-Widget-Token`，能力／角色都是登入態才判得出來的東西）。
+                   **但有一道租戶開通閘，而且它不是能力軸**：`create_public_share`（product）
+                     在任何寫入與任何上游呼叫之前先跑 `require_tenant_feature(db, tenant_id, "history")`
+                     ——`X-Widget-Token` 那一支驗的是 `ask`（widget 能不能問答），而分享連結要被打開
+                     靠的是 `history`，兩顆是各自獨立的開通鍵。平台把某租戶的 `history` 關掉之後，
+                     這顆鈕先前會回 200 ＋ 一個**保證打不開**的連結，現在回 403。
+                     **它不能折進「建立失敗，請稍後再試」**：那句話叫訪客重試一件永遠不會成功的事。
+                   **收件人是這個網站的管理者，不是我們、也不是訪客自己**（同本元件下方額度那一段的
+                     判準）：訪客這一側完全無能為力，所以型別是 `error` 不是 `warning`
+                     （warning 在本站的語意是「你改一下輸入就過得了」）。
+                   **這一態出現之後，這顆鈕就不該再渲染**（§5 不放按了沒反應的鈕）：那道閘是
+                     **整個租戶**的狀態、不是這一則答案的，所以同一次工作階段裡每一則答案按下去
+                     都會是同一個 403。這是給 React 的條件渲染契約——切版畫的是開通著的那一態。 #}
+                <button type="button" class="button-icon share js-share-message" data-toast="連結已建立|建立失敗，請稍後再試|本站沒有開通分享功能，這個回答分享不出去，請聯絡本網站管理者。" data-i18n-data-toast="toast.createPublicShare" data-toast-type="success|error|error" title="分享" data-i18n-title="comp.share"><span
                         class="sr-only" data-i18n="comp.share">分享</span></button>
             </div>
+            {# **串流被切斷那一態**：連線斷在最後一筆 `chat_room` 記錄中間時，答案文字已經逐字到齊、
+                 照樣畫得出來，但那一筆才帶得到的東西（來源清單、評分與分享用的簽章參照、續談參照、
+                 合法的 `[[N]]` 號碼）**一個都收不到**——而畫面上那與「這則答案本來就沒有來源、
+                 也不能評分」逐位元組相同。上游把這件事說得出來（gufofaq-saas `apps/web` 的
+                 `AccumulateSseResult.truncated`，「鍵在不在就是語意」），畫面上卻沒有任何地方在說。
+               **它掛在這一則答案下面、不走 toast**：toast 講的是「剛剛按的那顆鈕怎麼了」，
+                 而這件事是**這一則答案**的性質——同一段對話裡上一則好好的、這一則不完整，
+                 toast 彈完就消失，讀的人分不出是哪一則。
+               **同一態下，讚／倒讚／分享三顆鈕不渲染**（§5 不放按了沒反應的鈕）：那三顆都要那顆
+                 簽章參照才送得出去，而它正是沒收到的那一半。這一句因此同時是「那三顆為什麼不見了」
+                 的答案——這是給 React 的條件渲染契約。
+               `.hidden` ＋ hook class；可見處在元件庫頁的「React 條件文案」區（§5）。
+                 `role="alert"`：它是動態出現的、而且使用者正在讀答案，不報讀等於沒說。 #}
+            <p class="text-red m-0 js-stream-truncated hidden" role="alert" data-i18n="comp.streamTruncated">這一輪的連線中斷了：答案的文字收到了，但來源清單與評分、分享所需的資訊沒有收到——所以這則答案下面沒有來源可看，也評不了分。把同一題再送一次就會有完整的一份。</p>
             {# 建議追問（SaaS 新需求）：問答完成後 chatbot 於 SSE chat_room 塊回傳
                  suggest_questions 陣列（gufofaq-saas：chat_room chunk 允許清單含 suggest_questions、
                  meta 帶 enable_suggest_questions——引符號不引行號），渲染成一排可點 chip；

@@ -2,26 +2,33 @@
      這一顆窗是**無條件開窗**（點了就開，沒有任何前置條件），故觸發鈕掛 `data-open-modal`、
      不是 hook class（§5）。
 
-     端點正本＝GufoRAG `manager_backend`：
-       · 清單來源：`GET /api/v1/indexes` 的 `list_indexes()` → `IndexListResponse`。
-         勾起來的那幾筆的**索引名**組成 `SearchParams.indexes`，隨下一次 `POST /api/v1/search` 送出。
-       · **這一窗自己不打任何 API**：`indexes` 是查詢參數、不是使用者設定——沒有「把這個帳號要搜
+     端點正本＝gufofaq-saas product（瀏覽器打不到 GufoRAG，見 3-7 檔頭）：
+       · 清單來源：product 的 `GET /datasets`＝**本租戶的**資料集。
+         **不是 manager 的 `GET /api/v1/indexes`**：那一支只掛 `require_user`、manager 沒有租戶概念
+         ⇒ 它回的是**跨租戶全清單**，拿它當這一窗的值域就是把別的租戶的索引名端到瀏覽器上。
+       · 勾起來的那幾筆的 **`dataset_id`** 組成 `SearchIn.dataset_ids`，隨下一次
+         `POST /search/documents` 送出；索引名由 product 的 `resolve_indexes` 在伺服器端翻譯，
+         而那一步同時就是擁有權檢查（別的租戶的 id ⇒ 404）。
+         **值是 id 不是索引名**，這不是換個欄位那麼簡單：索引名是內部識別，讓瀏覽器持有它
+         等於給前端一個猜別人索引名的起點。
+       · **這一窗自己不打任何 API**：`dataset_ids` 是查詢參數、不是使用者設定——沒有「把這個帳號要搜
          哪些資料集存起來」這回事，所以確認鈕沒有成功／失敗可列，也就沒有 `data-toast`
          （§5 矩陣④：純前端互動）。
 
      **這一窗刻意沒有的東西**（§4：不做的要寫明理由，否則下一個人分不出「不能」與「還沒」）：
        · **沒有第二欄「自訂資料集」清單**：`manager_backend` 只有 index 一種容器，沒有再上一層
          collection 的概念 ⇒ 兩欄併成一份清單。
-       · **每一列沒有「優先度」下拉**：`SearchParams` 帶 `extra: "forbid"`，沒有 priority 這個欄位
-         ⇒ 送出即 422。**畫得出來卻送不出去的旋鈕在這個後端上不是「還沒接」，是送出即失敗。**
-       · **沒有「一筆都沒選」的守衛**：`SearchParams.indexes` 是 `Optional`，而組查詢句那一段是
-         `if search_params.indexes:` ⇒ 空值就不加索引條件，**一筆都沒勾＝檢索全部**，不是錯誤。
+       · **每一列沒有「優先度」下拉**：`SearchIn` 與上游的 `SearchParams` 都帶 `extra: "forbid"`，
+         兩層都沒有 priority 這個欄位 ⇒ 送出即 422。
+         **畫得出來卻送不出去的旋鈕在這條路上不是「還沒接」，是送出即失敗。**
+       · **沒有「一筆都沒選」的守衛**：`SearchIn.dataset_ids` 缺席或空陣列 ⇒ product 展開成
+         **本租戶全部**（`resolve_indexes`），**一筆都沒勾＝檢索全部**，不是錯誤。
          所以確認鈕掛得起 `.btn-close-modals`。這件事要在窗內說得出來，故留一段常駐可見的
          `#searchScopeEmptyHint`——空著送出會搜到全部，那是使用者該先知道的事。
 
-     **hook 名認的是索引名、不是資料夾序號**：`.js-search-scope-index` 的值域是索引名（字串），
-     而索引名在 `manager_backend` 就是主鍵（`GET /api/v1/indexes/{index_name}`）。§5「已存在的
-     hook 不回收」講的是不拿舊名去指新東西——值域換了就換名字，否則 React 端會以為契約沒變。
+     **`.js-search-scope-index` 這個名字不改**（§5「已存在的 hook 不回收」，saas 端已經引用著它）：
+     它讀起來像「檢索範圍清單上的那一項」，值域是 product 的 `dataset_id`。**名字不是契約的全部**
+     ——值域寫在上面那一段，改的人要看的是那一段，不是從名字推導。
 
      **確認鈕同時掛 hook class 與 `.btn-close-modals`**：它不送 API，但它是**值的交付點**
      （React 要在這一刻讀走勾起來的索引名、去更新觸發鈕上的「已選 N 個」）。兩顆鈕在 markup 上
@@ -37,13 +44,16 @@
      `dataset.noSelectableDatasets`（同 `select-dataset-modal`），不用全站泛用的空狀態 key——
      前者放寬關鍵字就有，後者要先去建資料集，處置完全不同，共用一句話就分不出來了。
 
-     示範資料用元件專屬名 `searchScopeIndexRows`（§6：泛用名會與使用頁的同名變數互相覆蓋）。
-     `name` 既是列鍵也是送出去的值，故不另造一顆 sn。
+     示範資料用元件專屬名 `searchScopeDatasetRows`（§6：泛用名會與使用頁的同名變數互相覆蓋）。
+     `id` 既是列鍵也是送出去的值，故不另造一顆 sn。
+     **id 照 3-5 的 `healthScanDatasets` 取**——那是本站示範租戶的資料集目錄正本（§6：QA 集與檔案集
+     在 product 是同一張表、同一個 id 空間，跨頁只能有一份目錄）。自己另編三個 id 的話，這一窗會
+     長出一批在資料集管理頁上根本找不到的資料集。
      勾起來的筆數要與 3-7 的 `searchScopeSelectedCount` 對得上（§6 示範資料自洽）。 #}
-{% set searchScopeIndexRows = [
-    { name: "immigration_faq", label: "移民署 測試", selected: true },
-    { name: "immigration_law", label: "入出國及移民法彙編", selected: true },
-    { name: "household_reg", label: "戶政法規（未納入本次檢索）" }
+{% set searchScopeDatasetRows = [
+    { id: 3, name: "法規彙編", selected: true },
+    { id: 7, name: "檢疫問答集", selected: true },
+    { id: 12, name: "2026 新制問答" }
 ] %}
 <dialog class="modals" id="searchScopeModal" aria-labelledby="searchScopeModal-title">
     <div class="modals-dialog modals-lg">
@@ -67,10 +77,10 @@
                                 </div>
                             </div>
                             <div class="dataset-list" role="group" aria-labelledby="searchScopeIndexLabel" aria-describedby="searchScopeEmptyHint">
-                                {% for row in searchScopeIndexRows %}
+                                {% for row in searchScopeDatasetRows %}
                                 <label class="form-checkbox border-wrap">
-                                    <input type="checkbox" class="check-one js-search-scope-index" value="{{ row.name }}"{% if row.selected %} checked{% endif %}>
-                                    <span>{{ row.label }}</span>
+                                    <input type="checkbox" class="check-one js-search-scope-index" value="{{ row.id }}"{% if row.selected %} checked{% endif %}>
+                                    <span>{{ row.name }}</span>
                                 </label>
                                 {% else %}
                                 <div class="text-center text-gray" data-i18n="dataset.noSelectableDatasets">這個租戶還沒有資料集可以選。先到「資料集管理」建一個並匯入資料。</div>

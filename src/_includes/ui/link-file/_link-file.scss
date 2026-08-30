@@ -15,7 +15,7 @@
 //    今天只有一個生產實例，`components/sources-block`（打 GufoFAQ 自己的來源下載，故有租戶能力軸）：
 //
 //      {% for source in sources %}
-//      <button data-capability="history" type="button" class="link-file" id="sourceRowFile-{{ loop.index }}" data-source-index="{{ loop.index0 }}" data-toast="下載已開始|權限不足，無法下載——請找貴租戶的管理者開通|此來源無法下載|下載失敗，請稍後再試" data-i18n-data-toast="toast.downloadFile" data-toast-type="success|warning|warning|error">{{ source.file }}</button>
+//      <button data-capability="history" type="button" class="link-file" id="sourceRowFile-{{ loop.index }}" data-source-index="{{ loop.index0 }}" data-toast="下載已開始|權限不足，無法下載——請找貴租戶的管理者開通|此來源無法下載|下載失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.downloadFile" data-toast-type="success|warning|warning|error|warning">{{ source.file }}</button>
 //
 //      {% endfor %}
 //

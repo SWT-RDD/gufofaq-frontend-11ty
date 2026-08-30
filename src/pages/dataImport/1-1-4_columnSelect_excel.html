@@ -97,6 +97,19 @@ permalink: 1-1-4_columnSelect_excel.html
            （**資源層 scope**，與上一條是兩件事：那一條換群組也沒用，這一條是找人把你加進那個群組。
            `list_datasets` 只依 `tenant_id` 過濾、不依寫入群組 ⇒ 看得到一筆、按下去 403 是真實可達）
          ・400 `content_required`（`slots.content_column_required`）與 `unknown_slot`
+           ——**這一顆講的是「對照沒有選到內容欄」**，下一步是回上一步重選；與下面那兩顆
+           逐列的守衛是三件不同的事，文案不可以互相借用。
+         ・400 `content_cell_required`（`_assert_excel_content_cells_present`，逐列指名、`detail` 帶 `rows`）
+           ——對照選到了內容欄，但**某幾列那一格是空的**。下一步是**回試算表補那幾列**，
+           不是回上一步重選欄。少了這一段，這一態會落到 `content_required` 那一句，
+           而使用者會回去重選一個本來就選對了的欄。
+         ・400 `content_empty_after_conversion`（`_assert_excel_content_survived_conversion`，
+           同樣逐列指名、`detail` 帶 `rows`）——內容欄**轉換前有字、HTML 轉換後一個字都不剩**
+           （整格只有一張圖或一個空連結）。轉換是我們主動做的改寫，改寫把內容改沒了正是使用者
+           最需要知道的事；下一步是回試算表補上文字，或把同一頁的「轉換 HTML」關掉再送。
+           **與上一顆不共用一段**：一個是他沒填，一個是我們把它清掉了。
+         ・這兩顆排在標籤／日期那一段之後：上游的順序是「逐列標籤與日期 → 內容欄逐列非空 →
+           逐儲存格轉換」，段序照它走（`|` 是索引契約）。
          ・400 `excel.ExcelFormatError`／`ExcelReadError`／`_assert_assignment_columns_exist`
            的 `unknown_column`——三者都是「這份檔跟預覽時看到的不是同一份」
          ・400 `fact_recency.apply_recency_and_tags` 的逐列標籤／日期驗（逐列指名）
@@ -107,9 +120,9 @@ permalink: 1-1-4_columnSelect_excel.html
          型別：能自己修得掉的一律 warning，只有 502 是 error（§5）。 #}
     {% set stepNextAction = true %}
     {% set stepNextCapability = "data:write" %}
-    {% set stepNextToast = "匯入完成|權限不足，無法匯入——請找貴租戶的管理者開通|這個資料集不在你可以寫入的群組裡，請找管理員把你加進該群組|內容欄位不可為空，或指定了不存在的欄位槽|這份檔案讀不出來，或它的欄名與預覽時不一致——請回上一步重新確認|有幾列的標籤代碼不在字典裡，或日期欄格式不對（錯誤訊息會逐列指名）|暫存的檔案已經不在了，請回上一步重新上傳|儲存空間不足，請先清掉一些檔案再匯入|同一份資料正在被另一次匯入寫入，請稍後再送一次|匯入失敗，請稍後再試" %}
+    {% set stepNextToast = "匯入完成|權限不足，無法匯入——請找貴租戶的管理者開通|這個資料集不在你可以寫入的群組裡，請找管理員把你加進該群組|還沒指定內容欄，或指定了不存在的欄位槽——請回上一步的欄位對照重選|這份檔案讀不出來，或它的欄名與預覽時不一致——請回上一步重新確認|有幾列的標籤代碼不在字典裡，或日期欄格式不對（錯誤訊息會逐列指名）|有幾列的內容欄是空的，請回試算表把那幾列補齊再匯入（錯誤訊息會逐列指名）|有幾列的內容經 HTML 轉換後一個字都不剩（整格只有一張圖或一個空連結），請回試算表補上文字，或把上面的「轉換 HTML」關掉再送（錯誤訊息會逐列指名）|暫存的檔案已經不在了，請回上一步重新上傳|儲存空間不足，請先清掉一些檔案再匯入|同一份資料正在被另一次匯入寫入，請稍後再送一次|匯入失敗，請稍後再試" %}
     {% set stepNextToastKey = "toast.importExcel" %}
-    {% set stepNextToastType = "success|warning|warning|warning|warning|warning|warning|warning|warning|error" %}
+    {% set stepNextToastType = "success|warning|warning|warning|warning|warning|warning|warning|warning|warning|warning|error" %}
     {% include "components/step-btn-wrap/step-btn-wrap.html" %}
 </div>
 

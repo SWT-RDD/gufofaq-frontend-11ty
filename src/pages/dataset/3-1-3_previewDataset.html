@@ -275,11 +275,21 @@ permalink: 3-1-3_previewDataset.html
                        `data-filesn`／`data-filename`／`data-filetype`，業務 js 靠它們認出這一列是哪個檔
                        ——下載那顆的「此來源無法下載」就是依 `data-filetype` 判出來的。
                        少了它們，React 端只剩陣列 index，改到隔壁列不會有任何徵兆（§5 轉換契約）。 #}
+                    {# 下載鈕的**末段是第二種 403**：product 的 `require_capability` 內部串著
+                         `require_tenant_feature`，所以這顆鈕的 403 有兩種——`missing_capability`
+                         （收件人＝貴租戶的管理者，就是「權限不足，無法下載」那一段）與
+                         `tenant_feature_disabled`（平台把整個租戶的 `data` 關掉，**連租戶管理者也擋**，
+                         收件人＝平台管理員）。§4 逐字寫著「折進同一個屬性＝把兩種 403 說成同一件事」
+                         ——一句「請找貴租戶的管理者」對第二種是錯的指示，它叫人去找一個改不動這件事的人。
+                       **一律追加在末位**（正典＝2-2-4 的「開始執行」）：段序是 React 端 `split("|")[n]`
+                         的索引契約，插在中間會讓其後每一段整批位移。
+                       子句全站一句、不逐處改寫：`toast.downloadFile` 同時服務這顆（`data`）與
+                         `components/sources-block` 那顆（`history`），寫死是哪一項功能的話，其中一頁一定會說錯。 #}
                     <div class="btn-group">
                         <button type="button" id="previewFileDelete-{{ file.sn }}" aria-labelledby="previewFileRowName-{{ file.sn }} previewFileDelete-{{ file.sn }}" class="button-icon no-bg size-sm delete delete-single-btn" data-filesn="{{ file.sn }}" data-filename="{{ file.name }}" title="刪除" data-i18n-title="action.delete">
                             <span class="sr-only" data-i18n="action.delete">刪除</span>
                         </button>
-                        <button data-capability="data:read" type="button" class="button-icon no-bg size-sm download download-file-btn" data-filesn="{{ file.sn }}" data-filename="{{ file.name }}" data-filetype="{{ file.type }}" id="previewFileDownload-{{ file.sn }}" aria-labelledby="previewFileRowName-{{ file.sn }} previewFileDownload-{{ file.sn }}" data-toast="下載已開始|權限不足，無法下載——請找貴租戶的管理者開通|此來源無法下載|下載失敗，請稍後再試" data-i18n-data-toast="toast.downloadFile" data-toast-type="success|warning|warning|error" title="下載" data-i18n-title="action.download">
+                        <button data-capability="data:read" type="button" class="button-icon no-bg size-sm download download-file-btn" data-filesn="{{ file.sn }}" data-filename="{{ file.name }}" data-filetype="{{ file.type }}" id="previewFileDownload-{{ file.sn }}" aria-labelledby="previewFileRowName-{{ file.sn }} previewFileDownload-{{ file.sn }}" data-toast="下載已開始|權限不足，無法下載——請找貴租戶的管理者開通|此來源無法下載|下載失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.downloadFile" data-toast-type="success|warning|warning|error|warning" title="下載" data-i18n-title="action.download">
                             <span class="sr-only" data-i18n="action.download">下載</span>
                         </button>
                     </div>

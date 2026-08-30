@@ -412,13 +412,63 @@ permalink: 2-2-5_regressionRun.html
         <p><span class="text-bold">{{ m.name }}</span><span data-i18n="common.labelSep">：</span>{% if m.score %}<span>{{ m.score }}</span>{% else %}<span>—</span>{% endif %}<span data-i18n="regression.ragasSamplesPrefix">（量到 </span><span>{{ m.samples }}</span><span data-i18n="regression.ragasSamplesSuffix"> 筆樣本）</span></p>
         {% endfor %}
     </div>
+    {# 這一列是**分母與可信度**：分數本身沒有意義，除非同時說得出它由多少樣本算出來、有沒有算不
+         出來的批、有幾筆被剔除、以及這一批分數能不能拿去跟別輪比。逐格對回 `summary.ragas` 的一個鍵
+         （product 的 `compute_run_metrics` 寫進去的那一份）：
+           `chat_logs`        → 這一輪的問答紀錄（送出 N 筆）
+           `skipped.count`    → 實際評分＝`chat_logs - skipped.count`（**推導、不另抄一個數字**，§6）
+           `batches`          → 分批（**算出分數的批數**，不含失敗的）
+           `failed_batches.count` → 沒算出來的批次
+           `evaluator_models` → 評測模型
+           `scores_reproducible` → 分數可重現（三態，見下）
+           `llm_calls`／`llm_tokens` → 這一次評測燒掉多少
+       **`failed_batches` 非有不可**：`metrics` 變薄（某幾顆指標的分母特別小、或整個缺席）在畫面上
+         與「這一輪樣本本來就少」逐字相同，而這一格是唯一說得出「有幾批根本沒算出來」的地方。
+         `0` 是**肯定答覆**（一批都沒失敗），不是「沒有這個欄位」——所以它恆渲染、不做成
+         `{% if %}`（§6：值域含 0 的參數不得用真值判斷當渲染條件）。
+       **`skipped` 同理**：上游逐筆剔除算不了的那些（沒有答案、沒有 contexts、被輸出閘遮蔽…），
+         而剔除比例最高的正是設了輸入合規閘、最需要看指標的那群租戶。少了「送出 N 筆／實際評 M 筆」
+         這一對，指標看起來就是整輪的成績。
+       **`llm_calls`／`llm_tokens` 的 `null` 是「沒量到」不是 0**：批次評估不佔每日問答配額，
+         這兩格是「授權額度用完了」與「有人一直在按計算指標」在畫面上唯一分得開的地方。
+         `null` 那一態由 React 把 `common.notCounted`（「未計數」）寫進同一顆資料槽——**不是畫 0、
+         也不是畫「—」**：0 是量到了而且是零，「—」是「還沒有值」，這一顆是「上游刻意沒去量」，
+         三種的下一步不同（§6「這一格沒有數字不是一種狀態，是三種」）。
+       示範值與同頁自洽：跑完 10 則 ⇒ `chat_logs` 10、`skipped` 0（故實際評 10，與上面
+         `faithfulness` 的 10 筆樣本對得上）、單批且沒有失敗批。 #}
+    {% set ragasChatLogs = 10 %}
+    {% set ragasSkipped = 0 %}
+    {% set ragasFailedBatches = 0 %}
     <div class="flex-row gap-24 flex-wrap">
-        <p><span class="text-bold" data-i18n="regression.ragasChatLogs">這一輪的問答紀錄</span><span data-i18n="common.labelSep">：</span><span>10</span> <span data-i18n="common.recordsUnit">筆</span></p>
+        <p><span class="text-bold" data-i18n="regression.ragasChatLogs">這一輪的問答紀錄</span><span data-i18n="common.labelSep">：</span><span>{{ ragasChatLogs }}</span> <span data-i18n="common.recordsUnit">筆</span></p>
+        <p><span class="text-bold" data-i18n="regression.ragasEvaluated">實際評分</span><span data-i18n="common.labelSep">：</span><span>{{ ragasChatLogs - ragasSkipped }}</span> <span data-i18n="common.recordsUnit">筆</span></p>
         <p><span class="text-bold" data-i18n="regression.ragasBatches">分批</span><span data-i18n="common.labelSep">：</span><span>1</span></p>
+        <p><span class="text-bold" data-i18n="regression.ragasFailedBatches">沒算出來的批次</span><span data-i18n="common.labelSep">：</span><span>{{ ragasFailedBatches }}</span></p>
         <p><span class="text-bold" data-i18n="regression.ragasEvaluator">評測模型</span><span data-i18n="common.labelSep">：</span><span>gpt-4o</span></p>
+        {# 三態，不是布林（§6）：`true`＝可重現、`false`＝同一批重跑分數會不同、`null`＝上游沒記錄。
+             **`null` 不可以畫成 `false`**：一個是「記錄了、不成立」，一個是「不知道」，
+             而後者不該被說成前者。示範演 `false`——product 的 `compute_run_metrics` 逐字寫著
+             預設部署上它就是 `false`（評測模型繼承預設、供應商把 temperature 丟掉）。
+             另外兩態的可見處在元件庫頁的「React 條件文案」區（§5）。
+           **另外兩態不在這裡掛 `.hidden` 的兄弟節點**：三顆值節點相鄰時，英文模式下兩個看得見的
+             會黏成一個字（§4-2「分隔空白的家在 key 的值裡」），而它們的位置與字色規格由這一顆
+             同樣的槽承載——多掛兩顆只會多兩顆永遠不顯示的節點。
+           值沿用既有的 `common.no`／`common.yes`（§4-2 同繁中沿用既有 key、不另立）。 #}
+        <p><span class="text-bold" data-i18n="regression.ragasReproducible">分數可重現</span><span data-i18n="common.labelSep">：</span><span data-i18n="common.no">否</span></p>
+        <p><span class="text-bold" data-i18n="regression.ragasLlmCalls">LLM 呼叫</span><span data-i18n="common.labelSep">：</span><span>128</span> <span data-i18n="settings.timesUnit">次</span></p>
+        <p><span class="text-bold" data-i18n="regression.ragasLlmTokens">LLM token</span><span data-i18n="common.labelSep">：</span><span>341,200</span></p>
     </div>
+    {# `scores_reproducible === false` 那一態的**後果**：上面那一格只說得出「否」，說不出「所以呢」。
+         這一句在示範上就是可見的（見上：預設部署就是這一態）。 #}
+    <p class="text-red m-0" data-i18n="regression.ragasNotReproducibleNote">這一批分數不可重現：同一批問答紀錄再算一次，分數會與這一次不同，所以它不宜直接拿去和別一輪比較——調校前後那 0.03 的差可能純粹是評測模型的雜訊。要比就把兩輪在同一段時間內用同一個評測模型重算一次。</p>
     {# 多於一個評測模型那一態：不是靜靜把幾個模型名並排就算了。 #}
     <p class="text-red m-0 js-ragas-multi-model hidden" data-i18n="regression.ragasMultiModelWarn">這一批指標是由多個評測模型分批算出來的，彼此不該互相比較——離線評測的全部用途是把兩批拿來比，而只有同一個評測模型算出來的兩批才比得下去。</p>
+    {# `failed_batches.count > 0` 與 `skipped.count > 0` 兩態各自的後果。兩句都是 `.hidden` 的規格
+         markup（示範演的是乾淨的那一輪），可見處在元件庫頁的「React 條件文案」區（§5）。
+         **兩句不可合併**：一個是「有幾批整批沒算出來」（指標比看起來薄），一個是「有幾筆被剔除」
+         （分母比你送出去的少），下一步也不同——前者重算一次，後者要回頭看那幾筆為什麼評不了。 #}
+    <p class="text-red m-0 js-ragas-failed-batches hidden" data-i18n="regression.ragasFailedBatchesWarn">有幾批指標整批沒有算出來，所以下面每一顆分數的分母都比這一輪的紀錄數少——指標看起來變薄不是因為樣本本來就少。重算一次通常就好；一直失敗的話，是評測模型那一側的問題。</p>
+    <p class="text-red m-0 js-ragas-skipped hidden" data-i18n="regression.ragasSkippedWarn">有幾筆問答紀錄沒有被評到（沒有答案、沒有檢索來源，或被輸出閘遮蔽），所以「實際評分」比「這一輪的問答紀錄」少。分數講的是被評到的那幾筆，不是整輪的成績——剔除比例高的時候，這一份指標不足以代表這一輪。</p>
 </div>
 
 {# 「RAGAS 品質指標」的說明視窗：②③留空，理由同本頁其他說明視窗。 #}

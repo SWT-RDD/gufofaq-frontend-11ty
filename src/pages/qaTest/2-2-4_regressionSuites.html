@@ -998,8 +998,12 @@ permalink: 2-2-4_regressionSuites.html
                             已 commit 的那幾則保留——與 ⑦ 的差別就在這裡）。
              `unknown_override_fields` 那道 400 刻意不列：那是「前端送了 `_OVERRIDE_FIELDS` 以外的鍵」，
              畫面上沒有任何控制項製造得出來（六顆覆寫欄的鍵是寫死的），列了就是演一個不可能的結果。 #}
-        {# **這顆鈕是全站唯一同時標兩條授權軸的**（§4 的正典：寫的是設定、跑的是問答），
-             所以它也是全站唯一一顆**兩種 403 都真的走得到**的鈕：
+        {# **這顆鈕是全站唯一同時標兩條授權軸的**（§4 的正典：寫的是設定、跑的是問答）。
+             **兩種 403 都真的走得到不是這一顆的特權**：`require_capability(cap, mode)` 內部就串著
+             `require_tenant_feature(db, tid, cap)`（product），所以每一顆掛 `data-capability` 的鈕
+             都撞得到第③層；這一顆特別的地方只在於它的租戶開通鍵與能力領域**不同**，所以那一軸要另標。
+             同族的另外幾顆（`toast.downloadFile`／`toast.createShare`／`toast.revokeShare`／
+             `toast.saveSkill`／`toast.queryUntagged`／`toast.measureCoverage`）也各自有這一段：
                · `missing_capability`（product 的 `require_capability` 第④層，
                  帶 `code`）——收件人是貴租戶的管理者，那是「權限不足，無法執行」那一段。
                · `tenant_feature_disabled`（product 的 `require_tenant_feature`，第③層，

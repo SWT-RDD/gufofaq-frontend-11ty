@@ -1,5 +1,33 @@
-{# 免責聲明彈窗。無參數；由 components/footer 的「免責聲明」鈕開啟，故 include 在 footer 裡（§1-2）。
+{# 免責聲明彈窗。由 components/footer 的「免責聲明」鈕開啟，故 include 在 footer 裡（§1-2）。
    內文為免責聲明全文（假資料，§4-2 不譯）。
+
+   參數：
+     disclaimerBodyEmpty —— 選填，布林。真＝演「本文是空的」那一態（見下）。預設 falsy＝畫本文。
+
+   ─────────────────────────────────────────────────────────────────────────────
+   **本文有四態，這支元件負責其中兩態**（正本＝gufofaq-saas product 的 `read_disclaimer`
+   ，`GET /disclaimer` 回 `{"text": …}`）：
+
+     ① 本文到了（`disclaimerBodyEmpty` falsy）—— 下面那一大段。生產頁的 footer 每一頁都演得到。
+     ② **本文是空的**（`disclaimerBodyEmpty` 真）—— 具名空狀態。這一態非有不可：product 的
+        `DisclaimerIn.text` 是 `str` 而且**刻意不夾 `min_length`**（`set_platform_disclaimer` 那一段
+        逐字寫著理由：那是法務文件，長度由法務決定），所以平台管理員存得進一個空字串。
+        少了這一態，這扇窗會在**每個租戶的每一頁頁尾**永遠停在「載入中…」——沒有錯誤、沒有
+        console、也沒有重試的理由，而使用者只會一直等。
+        它與「還沒到」共用一句話就是那個缺陷本身：兩者都是空字串，而下一步完全不同
+        （一個是等，一個是去找平台管理員）。
+        **示範落在元件庫頁**（§5：元件裡的分支改成成對參數 ＋ `{% if %}`，由元件庫展示頁把
+        那一態 set 出來）——生產頁的 footer 演的是 ①，兩態各有一處演得到。
+     ③ 讀不到本文（非 2xx／網路失敗）—— **版型與 `ui/subscription-gate` 的 ①′′ 逐字同型**，
+        一行取代 `.file-content` 那一塊：
+          <p class="text-red m-0" role="alert">讀取免責聲明失敗（502）</p>
+        訊息由業務層填（後端原句或執行期狀態句），故不掛 `data-i18n`（§4-2 一顆節點一個文字主人）。
+        **這裡不做成第三個參數**：兩個使用點（footer 與元件庫頁）都不會選它，那就是一個
+        `{% if %}` 產得出來、卻沒有任何一頁畫得到的死分支（§5）；而那個版型在同一張元件庫頁上
+        由 subscription-gate ①′′ 演過了（§5「分支的單位是版型，一處演過就夠」）。
+     ④ 還沒到（載入中…）—— **刻意不切**：執行期狀態，靜態稿沒有請求可等；跨 repo 已有共識
+        （gufofaq-saas `apps/web/lib/i18n/parity.test.ts` 的 `REACT_ONLY` 逐字列著 `common.loading`），
+        同 `pages/shared/shared.html` 檔頭第 ④ 條。
 
    **本文是「單一純文字塊」，不得再出現任何結構化 markup（清單、標題、表格）。**
    裁決理由：這段本文在正式環境不是切版寫死的 HTML，而是後端給的一整段**純文字**——
@@ -21,6 +49,9 @@
                     <h3 class="modals-title" id="disclaimerModal-title" data-i18n="comp.disclaimer">免責聲明</h3>
                 </div>
                 <div class="modals-body">
+                    {% if disclaimerBodyEmpty %}
+                    <div class="text-center text-gray" data-i18n="comp.disclaimerEmpty">這份聲明目前沒有內容。這不是還在載入——平台管理員把它存成了空的一份，請聯絡平台管理員補上；在那之前，這扇窗不會有任何條文可讀。</div>
+                    {% else %}
                     <div class="file-content">
                         <div>致使用者：<br>
                             歡迎使用本平台！在使用我們的服務之前，請您仔細閱讀並同意以下免責聲明，閱讀後即視為使用者同意此聲明。<br>
@@ -56,6 +87,7 @@
                             最後修訂時間：2025/1/3
                         </div>
                     </div>
+                    {% endif %}
                 </div>
             </div>
         </div>

@@ -72,8 +72,17 @@
                             <span class="text-gray" id="shareExpiresDaysHint"><span>1 – 3650</span><span data-i18n="share.expiresDaysHint"> 天，留空＝永久有效。分享連結不需登入即可讀取；建議設定天數，到期後自動失效。</span></span>
                         </div>
                     </div>
+                    {# **末段是第二種 403**：product 的 `require_capability` 內部串著 `require_tenant_feature`，
+                         所以這顆鈕的 403 有兩種——`missing_capability`（收件人＝貴租戶的管理者，就是
+                         「權限不足，無法建立」那一段）與 `tenant_feature_disabled`（平台把整個租戶的
+                         `history` 關掉，**連租戶管理者也擋**，收件人＝平台管理員）。§4 逐字寫著「折進同一個
+                         屬性＝把兩種 403 說成同一件事」——一句「請找貴租戶的管理者」對第二種是錯的指示。
+                       **一律追加在末位**（正典＝2-2-4 的「開始執行」）：段序是 React 端 `split("|")[n]`
+                         的索引契約，插在中間會讓其後每一段整批位移。同一份彈窗的撤銷鈕（走
+                         `components/delete-modal` 的 `deleteToast`，由 4-2／2-2-3 兩頁各 set 一份）
+                         照同一條加了同一段——同一支端點族的兩個動作，分支集合不得只補其中一顆（§5）。 #}
                     <div class="flex-row mt-16 mb-16">
-                        <button data-capability="history" type="button" class="button button-primary js-create-share" data-toast="連結已建立|權限不足，無法建立——請找貴租戶的管理者開通|有效天數必須是正整數|有效天數超過上限|找不到這一筆問答紀錄，請確認它還在|建立失敗，請稍後再試" data-i18n-data-toast="toast.createShare" data-toast-type="success|warning|warning|warning|warning|error">
+                        <button data-capability="history" type="button" class="button button-primary js-create-share" data-toast="連結已建立|權限不足，無法建立——請找貴租戶的管理者開通|有效天數必須是正整數|有效天數超過上限|找不到這一筆問答紀錄，請確認它還在|建立失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.createShare" data-toast-type="success|warning|warning|warning|warning|error|warning">
                             <img src="./images/icon_add_white.png" width="48" height="48" decoding="async" alt="" class="icon">
                             <span data-i18n="share.createLink">建立分享連結</span>
                         </button>

@@ -285,8 +285,16 @@
                              （skill 的名稱就是送進模型的工具名，`SKILL_NAME_RE` 允許純小寫英數 ⇒
                              `calculate` 這一族全是合法的 skill 名稱）——使用者換個名字就修得掉，
                              故併進同一段 warning。
+                           **末段是第二種 403**：product 的 `require_capability` 內部串著
+                             `require_tenant_feature`，所以這顆鈕的 403 有兩種——`missing_capability`
+                             （收件人＝貴租戶的管理者，就是「權限不足，無法儲存」那一段）與
+                             `tenant_feature_disabled`（平台把整個租戶的 `settings` 關掉，**連租戶管理者
+                             也擋**，收件人＝平台管理員）。§4 逐字寫著「折進同一個屬性＝把兩種 403 說成
+                             同一件事」——一句「請找貴租戶的管理者」對第二種是錯的指示。
+                           **一律追加在末位**（正典＝2-2-4 的「開始執行」）：段序是 React 端
+                             `split("|")[n]` 的索引契約，插在中間會讓其後每一段整批位移。
  #}
-                        <button data-capability="settings:write" type="button" class="button button-primary js-save-skill" data-toast="Skill 已更新|權限不足，無法儲存——請找貴租戶的管理者開通|欄位未通過驗證（名稱格式或與內建工具同名、用途說明必填、迭代 1-20、巢狀不可成環、參數格式頂層須為 object 且不可宣告範圍參數、序列化後不可超過上限）|更新失敗，請稍後再試" data-i18n-data-toast="toast.saveSkill" data-toast-type="success|warning|warning|error" data-i18n="action.save">儲存</button>
+                        <button data-capability="settings:write" type="button" class="button button-primary js-save-skill" data-toast="Skill 已更新|權限不足，無法儲存——請找貴租戶的管理者開通|欄位未通過驗證（名稱格式或與內建工具同名、用途說明必填、迭代 1-20、巢狀不可成環、參數格式頂層須為 object 且不可宣告範圍參數、序列化後不可超過上限）|更新失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.saveSkill" data-toast-type="success|warning|warning|error|warning" data-i18n="action.save">儲存</button>
                     </div>
                 </div>
             </div>

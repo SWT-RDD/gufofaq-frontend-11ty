@@ -10,29 +10,33 @@ permalink: 3-7_documentSearch.html
    端點契約、旋鈕取捨、以及**這一頁刻意沒有的東西**全部寫在下面。
 
    ─────────────────────────────────────────────────────────────────────────────
-   **端點正本＝GufoRAG `manager_backend`**——不是 gufofaq-saas product，也不是任何 .NET 後端
-   （那些不在交付範圍內）。**這一頁只留這個後端接得住的旋鈕**：一個檢索頁看起來該有的東西
-   （進階篩選、排序、摘要、存入資料集⋯）大半在這裡沒有入口，逐條理由寫在下面
-   「這一頁刻意沒有的東西」——不寫的話，下一個人分不出那是「不能」還是「還沒」。
+   **這一頁打的是 gufofaq-saas product，而檢索本身的能力邊界由 GufoRAG `manager_backend` 決定**
+   ——兩層都要看：瀏覽器打不到 GufoRAG，product 是代理；而「這一頁畫得出什麼旋鈕」問的是上游
+   接不接得住。**這一頁只留接得住的那些**：一個檢索頁看起來該有的東西（進階篩選、排序、摘要、
+   存入資料集⋯）大半在這裡沒有入口，逐條理由寫在下面「這一頁刻意沒有的東西」——不寫的話，
+   下一個人分不出那是「不能」還是「還沒」。
 
-   端點清單（動詞 ＋ 路徑 ＋ 檔案 ＋ 型別）：
-     POST /api/v1/search               `search()`                   SearchManagerRequest → SearchResponse
-     GET  /api/v1/indexes              `list_indexes()`           → IndexListResponse（檢索範圍窗的清單來源）
-     GET  /api/v1/system/filter-fields `get_filter_fields()`      → FilterFieldDefinition[]（DSL 可引用的欄位值域）
+   端點清單（動詞 ＋ 路徑 ＋ 符號 ＋ 型別）：
+     product  POST /search/documents   `search_documents`   SearchIn → DocumentSearchOut（本頁唯一送出的請求）
+     product  GET  /datasets           `list_datasets`                （檢索範圍窗的清單來源，見該元件檔頭）
+     上游     POST /api/v1/search      `search()`           SearchManagerRequest → SearchResponse（product 代打）
 
-   **送出的參數面就這些**（型別正本＝`SearchManagerRequest` 那一族）：
-     SearchManagerRequest  strategy｜search_params｜deduplicate_by_document｜hybrid_config｜use_reranker
-     SearchParams          query｜limit｜offset｜need_total_count｜indexes[]｜document_ids[]｜filter(DSL)
-   `SearchParams` 帶 `model_config = {"extra": "forbid"}` ⇒ **多送一個沒宣告的欄位是 422、不是被忽略**。
-   這一條是下面每一條「刻意沒有」的總依據：畫得出來卻送不出去的旋鈕，在這個後端上不是「還沒接」，是送出即失敗。
+   **送出的參數面就這些**（型別正本＝product 的 `SearchIn`）：
+     SearchIn  query｜dataset_ids[]｜strategy｜start_date｜end_date｜page｜page_size
+   `SearchIn` 帶 `model_config = ConfigDict(extra="forbid")`，上游的 `SearchParams` 也是
+   ⇒ **多送一個沒宣告的欄位是 422／400、不是被忽略**。這一條是下面每一條「刻意沒有」的總依據：
+   畫得出來卻送不出去的旋鈕，在這條路上不是「還沒接」，是送出即失敗。
 
-   回得到的欄位（`SearchResult`，兩個引擎的 `_convert_to_search_result` 逐欄同形）：
-     document_id｜index｜data_source｜doc_name｜date｜search｜value｜chunk_index｜chunk_count｜filter｜score｜search_engine
-   `SearchResponse` 另有 `total_count`／`returned_count`／`processing_time_ms`／`search_engines_used`。
+   **回應是投影、不是轉發**：`DocumentSearchOut` 只有 `total`／`returned`／`elapsed_ms`／`rows`，
+   而一列（`SearchRowOut`）只有四欄——`document_id`｜`doc_name`｜`date`｜`abstract`，恰好是這一頁
+   畫得出來的那些。上游 `SearchResult` 的其餘欄位在 product 那一層就被擋掉了：`data_source` 是
+   伺服器上的絕對路徑、`index` 是內部索引名，兩者都不該進瀏覽器。
 
    ─────────────────────────────────────────────────────────────────────────────
-   **「檢索模式」兩顆改綁 `SearchManagerRequest.strategy`，並補上第三顆**（§5：切版刻意不照搬
-   某段既有行為時，要在該頁檔頭記載什麼取代了什麼）：
+   **「檢索模式」兩顆改綁 `strategy`，並補上第三顆**（§5：切版刻意不照搬
+   某段既有行為時，要在該頁檔頭記載什麼取代了什麼）。三顆的 `value` 逐字取自上游的
+   `SearchStrategy` enum，而 product 的 `SearchIn.strategy` 以同一組 `Literal` 夾住它
+   （值域寫成 `Literal` 而不是裸 `str`，是為了讓它出現在 OpenAPI 上）：
 
      畫面           strategy          實際打誰
      混合檢索       hybrid            兩個引擎都打再合併（**`SearchManagerRequest.strategy` 的預設值**）
@@ -42,16 +46,20 @@ permalink: 3-7_documentSearch.html
    補第三顆是**必要的誠實**、不是加功能：`strategy` 的預設就是 `HYBRID`，只畫兩顆等於畫面上
    表達不出後端的預設態，使用者一進來看到的勾選狀態會是假的。三顆的預設勾在「混合檢索」。
 
-   **「開始／結束時間」改走 `filter` DSL**：`filterDate` 是 `DEFAULT_FILTER_FIELD_NAMES` 六欄之一
-   （`DEFAULT_FILTER_FIELD_NAMES`），故兩個日期欄由 React 端組成
-   `$filterDate >= '…' and $filterDate <= '…'` 塞進 `SearchParams.filter`。
+   **「開始／結束時間」兩欄送的是日期本身（`SearchIn.start_date`／`end_date`），不是 DSL**：
+   組 `$filterDate >= '…' and $filterDate <= '…'` 的是 product（`build_date_range_dsl`），
+   前端一個字都不拼。`filterDate` 是上游 `DEFAULT_FILTER_FIELD_NAMES` 六欄之一。
+   **這件事決定了「結束時間早於開始時間」是誰擋的**：product 回 400 ＋ `code: date_range_reversed`，
+   不是前端送出前自己發現的（見下方查詢鈕那一段）。
    ⚠️ **前提是匯入 pipeline 的 mapper 有把日期寫進 `filterDate`**——沒寫的資料集這兩欄篩不到東西，
    而那是資料面的事、畫面上看不出來——所以結果表的空狀態要把這件事說出來。
 
-   **未勾選任何資料集＝檢索全部**：`SearchParams.indexes` 是 `Optional`，而
-   GufoNet 那一側的 `_build_query_sentence()` 是 `if search_params.indexes:` ⇒ 空值就不加索引條件。所以檢索範圍窗
-   **沒有「一筆都沒選」的守衛**，查詢鈕也因此**沒有**「沒有選擇資料集」那一段 warning，
-   觸發鈕的 0 態要說得出「全部資料集」而不是「已選 0 個」。
+   **未勾選任何資料集＝檢索全部**：`SearchIn.dataset_ids` 缺席或空陣列時，product 的
+   `resolve_indexes` 把它展開成**本租戶全部**的索引；再往上游，`SearchParams.indexes` 空值是
+   「不加索引條件」（GufoNet 那一側的 `_build_query_sentence()` 是 `if search_params.indexes:`）
+   ——那一層沒有租戶概念，所以「全部」的意思是由 product 那一步給的。
+   兩層都不擋空值 ⇒ 檢索範圍窗**沒有「一筆都沒選」的守衛**，查詢鈕也因此**沒有**「沒有選擇資料集」
+   那一段 warning，觸發鈕的 0 態要說得出「全部資料集」而不是「已選 0 個」。
 
    ─────────────────────────────────────────────────────────────────────────────
    **這一頁刻意沒有的東西**（GUIDELINE §4「不做的那些在檔頭寫明理由」）：
@@ -90,28 +98,36 @@ permalink: 3-7_documentSearch.html
        ＋ `AbstractTermMark=0`（**刻意關掉** 01h/02h/03h 命中詞與分段標記，理由寫在那段檔頭）
        ⇒ `{ no, before, hit, after }` 那種逐段拆解在這條路徑上沒有輸入。改畫成單一段純文字。
 
-   **API 回得出來、這一頁刻意不畫的欄位**（§4：不做的要寫明，否則下一個人分不出「不能」與「還沒」）：
-   `index`（這一筆來自哪個資料集）、`score`、`search_engine`（HYBRID 下這一筆由誰命中）、
-   `chunk_index`／`chunk_count`（Weaviate 路徑）、以及 `GET /search/documents/{id}` 的整份切塊。
-   **補畫這幾欄是另一次決策**：這一頁的判準是「只留接得住的旋鈕」，多畫一欄要各自論證它解決誰的問題，不夾帶。
+   **上游回得出來、這一頁刻意不畫的欄位**（§4：不做的要寫明，否則下一個人分不出「不能」與「還沒」）：
+   `score`、`search_engine`（HYBRID 下這一筆由誰命中）、`chunk_index`／`chunk_count`（Weaviate 路徑）、
+   以及 `GET /api/v1/search/documents/{id}` 的整份切塊。**它們今天連投影都沒有**：`DocumentSearchOut`
+   的四欄是 product 挑過的，所以要補畫任何一欄，得先讓 product 那一層把它投影出來。
+   （`index` 與 `data_source` 不在這一族：那兩顆是**刻意不外送**的內部識別，見上面回應那一段。）
+   **補畫是另一次決策**：這一頁的判準是「只留接得住的旋鈕」，多畫一欄要各自論證它解決誰的問題，不夾帶。
 
    ─────────────────────────────────────────────────────────────────────────────
    彈窗（§5）：`searchScopeModal`（檢索範圍）＝**無條件開窗** ⇒ 掛 `data-open-modal`。
    **沒有別的彈窗**：`docSummaryModal`／`fieldContentModal` 那兩顆條件開窗服務的功能，這一頁都沒有（見上）。
 
    ─────────────────────────────────────────────────────────────────────────────
-   **本頁不宣告任何授權閘門，這是查證過的結論、不是漏標**（GUIDELINE §4「查證過確定不需要
-   閘門的，要留下痕跡」；同一句理由在 `tests/guideline.test.mjs` 的 `NO_GATE` 也登記了一份，
-   §4「痕跡要成對」）：
-     · 四軸（`data-capability`／`data-tenant-feature`／`data-tenant-role`／`data-platform-role`）的
-       值域正本是 gufofaq-saas product 的 `CAPABILITY_TOKENS`／`CAPABILITIES`，而本頁端點的正本是
-       GufoRAG `manager_backend`，兩套鍵空間不相交。
-     · `POST /api/v1/search` 只掛 `Depends(require_license)`（`search()` 上）——那是**系統授權**
-       檢查（`require_license()`，驗簽章授權檔），不是租戶能力軸，失敗回 403「授權驗證失敗」。
-     · `GET /api/v1/indexes` 掛的是 `require_user()`，而那支只確認
-       「有登入主體」、不看任何能力位元；`manager_backend` 的使用者模型只有 `is_admin: bool`
-       ＋ `roles: str`，沒有 capability token 這種東西。
-   ⚠️ **這條會過期**：這支功能若併進 gufofaq-saas，整頁的閘門要重標。 #}
+   **授權閘門是 `data:read`**（查詢鈕上那一顆 `data-capability`）。瀏覽器打不到 GufoRAG——
+   這支功能經 gufofaq-saas product 代理（`search_documents`，`POST /search/documents`），
+   而那一層掛的是 `require_capability("data", "read")`，與 3-1-5 檔案預覽同一族：讀的就是
+   租戶自己資料集裡的文件內容。
+     · **兩道 403 不是同一件事，故各佔一段 toast**：能力不足那道的收件人是貴租戶的管理者
+       （product 的 `require_capability`），系統授權檔那道的收件人是平台管理者
+       （GufoRAG `manager_backend` 的 `require_license()`，經 product 投影成
+       `gufo_license_invalid`）。折成一段等於把兩個修得掉的狀況指向同一個修不了的人。
+     · **不另標 `data-tenant-feature="data"`**：`require_capability(cap, mode)` 內部就串了
+       `require_tenant_feature`，再標一顆只是把同一句話說兩遍（GUIDELINE §4）。
+     · 「未勾選任何資料集＝檢索全部」在 product 那一層展開成**本租戶全部**（`resolve_indexes`）
+       ——上游 `SearchParams.indexes` 空值是「不加索引條件」，那句話只有在單租戶的 manager 上
+       才等價。畫面上那句「全部資料集」兩邊都為真。
+     · **檢索範圍那一窗送的是 product 的 `dataset_id`，不是索引名**：清單來源是 product 的
+       `GET /datasets`（本租戶的資料集），勾起來的 id 組成 `SearchIn.dataset_ids`，索引名由
+       `resolve_indexes` 在伺服器端翻譯。manager 的 `GET /api/v1/indexes` **不能當那一窗的值域**
+       ——它只掛 `require_user`、manager 沒有租戶概念，回的是跨租戶全清單。逐條理由與示範 id 的
+       出處寫在 `components/search-scope-modal` 的檔頭。 #}
 {% set breadcrumbItems = [
   { label: "首頁", href: "2-1_qaRecord.html", i18nKey: "nav.home" },
   { label: "文件檢索", i18nKey: "nav.documentSearch" }
@@ -193,24 +209,32 @@ permalink: 3-7_documentSearch.html
         <p class="text-gray m-0" id="docSearchDateHint" data-i18n="search.dateRangeHint">時間篩的是匯入時寫入的文件日期；沒有寫入日期的資料集，這兩欄篩不到任何結果。</p>
         <div class="flex-row align-items-center justify-content-center gap-16">
             <button type="button" class="button button-border js-filter-clear" data-i18n="action.clear">清除</button>
-            {# 六段逐條對回 `POST /api/v1/search` 的一條出口（§5 少列一段和多列一段一樣是說謊）：
+            {# 七段逐條對回一條出口（§5 少列一段和多列一段一樣是說謊）：
                  info    「正在查詢資料...」＝版型比照 5-7 的查詢鈕
-                 warning 「沒有搜尋字串」＝`SearchParams.query` 的 `min_length=1`（422）
-                 warning 「結束時間不能早於開始時間」＝兩個日期欄填反了。**不得折進 error**：
-                         日期 DSL 是前端自己組的（見檔頭），填反了在送出之前就知道，而且是使用者
-                         改得掉的輸入錯誤；error 那一段說的是「再試一次」，對「你把日期填反了」
-                         是誤導。**子句與英譯逐字沿用 4-1 下載鈕的同一句**（§4-2「相同的繁中子句
-                         必須有相同英譯」，該條有測試掃 dist 把關），不另寫一種說法。
-                 warning 「授權驗證失敗」＝`Depends(require_license)` 的 403
-                         （`require_license()`，訊息「授權驗證失敗: {message}」）。
-                         **這一段不得折進 error**：管理者去補授權檔就修得掉，而 error 說的是
-                         「再試一次」——兩件事。
+                 warning 「權限不足，無法查詢」＝`require_capability("data", "read")` 第④層那道 403
+                         （gufofaq-saas product 的 `search_documents`）。**排在索引 1**：全站
+                         「權限不足」那一段一律緊接在 info 之後（3-5 的 `.js-health-query`、
+                         4-1 的查詢鈕同形），子句與英譯逐字沿用（§4-2 同子句同英譯）。
+                 warning 「沒有搜尋字串」＝`SearchIn.query` 的 `min_length=1`（product 這一層先擋，
+                         對回上游 `SearchParams.query` 的同一道）
+                 warning 「結束時間不能早於開始時間」＝product 回 400 ＋ `code: date_range_reversed`
+                         （組日期 DSL 的是 product，不是前端，見檔頭）。**不得折進 error**：
+                         那是使用者改得掉的輸入錯誤，而 error 那一段說的是「再試一次」——再試一次
+                         不會有任何不同。**子句與英譯逐字沿用 4-1 下載鈕的同一句**（§4-2「相同的
+                         繁中子句必須有相同英譯」，該條有測試掃 dist 把關），不另寫一種說法。
+                 warning 「授權驗證失敗」＝GufoRAG `manager_backend` 的 `require_license()`
+                         （驗簽章授權檔），經 product 投影成 `gufo_license_invalid`。
+                         **這一段不得折進 error**：平台管理者去補授權檔就修得掉，而 error 說的是
+                         「再試一次」——兩件事。**也不得與上一顆 403 共用一段**：收件人不同
+                         （§4「兩組不同的鍵…失敗的方式也不同」）。
                  success 「查詢成功」
-                 error   「查詢失敗」＝`FilterDslError` 的 422（日期 DSL 組壞了＝前端的錯）
-                         ＋ catch-all 的 500「搜索執行失敗」。
-               **刻意不列「沒有選擇資料集」**：`indexes` 空值是合法的「檢索全部」，不是錯誤
-               （見檔頭）——列出不可能的結果與只演成功一樣是說謊。 #}
-            <button type="button" class="button button-primary js-doc-search" data-toast="正在查詢資料...|沒有搜尋字串|結束時間不能早於開始時間|授權驗證失敗，無法查詢——請找平台管理者確認系統授權檔|查詢成功|查詢失敗，請稍後再試" data-i18n-data-toast="toast.docSearch" data-toast-type="info|warning|warning|warning|success|error" data-i18n="action.query">查詢</button>
+                 error   「查詢失敗」＝`filter_dsl_invalid`（product 自己組的日期 DSL 被上游拒收
+                         ＝我方的錯，使用者做不了任何事）＋ 上游那一側的 500、以及網路層失敗。
+               **刻意不列「沒有選擇資料集」**：`dataset_ids` 空陣列是合法的「檢索全部」，不是錯誤
+               （見檔頭）——列出不可能的結果與只演成功一樣是說謊。
+               **也不列 404**：`resolve_indexes` 對別的租戶的 dataset id 回 404，而這一頁的資料集
+               清單就是本租戶的（`GET /datasets`）⇒ 畫面上按不出那一態。 #}
+            <button data-capability="data:read" type="button" class="button button-primary js-doc-search" data-toast="正在查詢資料...|權限不足，無法查詢——請找貴租戶的管理者開通|沒有搜尋字串|結束時間不能早於開始時間|授權驗證失敗，無法查詢——請找平台管理者確認系統授權檔|查詢成功|查詢失敗，請稍後再試" data-i18n-data-toast="toast.docSearch" data-toast-type="info|warning|warning|warning|warning|success|error" data-i18n="action.query">查詢</button>
         </div>
     </div>
 </div>

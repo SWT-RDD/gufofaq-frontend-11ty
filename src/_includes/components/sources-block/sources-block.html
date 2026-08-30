@@ -135,8 +135,18 @@
                              無檔名候選／租戶不擁有該索引／路徑不落在索引資料夾內全部是 404（逐列匯入的
                              來源**沒有 per-row 原稿**，那一族一律 404）——四種 404 對使用者是同一句
                              「此來源無法下載」。子句與 key 逐字沿用 3-1-3 那顆下載鈕（§5「同一個動作在
-                             別頁已有的分支集合就是這一頁的下限」、§4-2 同繁中同英譯）。 #}
-                        <button data-capability="history" type="button" class="link-file" id="sourceRowFile-{{ loop.index }}" data-source-index="{{ loop.index0 }}" data-toast="下載已開始|權限不足，無法下載——請找貴租戶的管理者開通|此來源無法下載|下載失敗，請稍後再試" data-i18n-data-toast="toast.downloadFile" data-toast-type="success|warning|warning|error">{{ source.file }}</button>
+                             別頁已有的分支集合就是這一頁的下限」、§4-2 同繁中同英譯）。
+                           **末段是第二種 403**：`require_capability` 內部串著 `require_tenant_feature`
+                             （product），所以這顆鈕的 403 有兩種——`missing_capability`（收件人＝貴租戶
+                             的管理者，就是上面第二段）與 `tenant_feature_disabled`（平台把整個租戶的
+                             這項功能關掉，**連租戶管理者也擋**，收件人＝平台管理員）。§4 逐字寫著
+                             「折進同一個屬性＝把兩種 403 說成同一件事」，一句「請找貴租戶的管理者」對
+                             第二種是錯的指示——它叫人去找一個改不動這件事的人。
+                           **一律追加在末位**（正典＝2-2-4 的「開始執行」）：段序是 React 端
+                             `split(\"|\")[n]` 的索引契約，插在中間會讓其後每一段整批位移。
+                           子句全站一句、不逐處改寫：`toast.downloadFile` 同時服務這顆（`history`）與
+                             3-1-3 那顆（`data`），寫死是哪一項功能的話，其中一頁一定會說錯。 #}
+                        <button data-capability="history" type="button" class="link-file" id="sourceRowFile-{{ loop.index }}" data-source-index="{{ loop.index0 }}" data-toast="下載已開始|權限不足，無法下載——請找貴租戶的管理者開通|此來源無法下載|下載失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.downloadFile" data-toast-type="success|warning|warning|error|warning">{{ source.file }}</button>
                     </td>
                     <td>{{ source.dataset }}</td>
                 </tr>

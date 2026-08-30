@@ -91,8 +91,22 @@ permalink: 4-1_qaHistory.html
                 <div class="label">
                     <label for="keywordInput" class="control-label" data-i18n="qa.keyword">關鍵字</label>
                 </div>
+                {# 關鍵字的**下界**寫在填之前（§3-2「值域寫在填之前」）：正本是 gufofaq-saas product 的
+                     `MIN_CHATLOG_KEYWORD_LEN`，執行點是同 repo 的 `_assert_keyword_is_searchable`
+                     ——它量的是 `strip()` **之後**的長度，所以「兩個空白」照樣不算數，這一句要把
+                     「前後空白不計」講出來。三支端點（查詢、匯出、以及同族的清單）走的是同一道守衛。
+                   **留空是合法的**（＝不套用這個過濾），所以這一句不能寫成「必填至少兩個字」：
+                     那會讓使用者以為關鍵字是必填欄。
+                   數字走資料槽、不進譯文（§4-2）：值的正本是 `GET /history/limits` 的
+                     `filters.keyword_len`，執行期才知道，故形狀比照 2-2-1 的 `js-prompt-max-len`
+                     ——切版畫的是契約當前的值，React 由契約覆寫。**上界（2000）不在這裡畫**：
+                     它由 React 掛成 `maxLength`（靜默夾住、打不進去），而下界是打得進去、
+                     按下去才失敗的那一種，兩者需要的落點不同。
+                   不改的後果：中文單字查詢很常見，打一個字按查詢就是 400，而畫面上沒有任何地方
+                     說過有這條界線——使用者只會換一組關鍵字，永遠不會成功。 #}
                 <div class="field">
-                    <input type="text" id="keywordInput" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control keyword-input">
+                    <input type="text" id="keywordInput" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control keyword-input" aria-describedby="keywordMinLenHint">
+                    <span class="text-gray" id="keywordMinLenHint"><span data-i18n="qa.keywordMinLenPrefix">關鍵字至少 </span><span class="js-keyword-min-len">2</span><span data-i18n="qa.keywordMinLenSuffix"> 個字（前後空白不計）；留空表示不以關鍵字篩選。</span></span>
                 </div>
             </div>
             {# **兩個編號欄是二擇一，而且那件事只有這一句說得出來**：`list_history`
@@ -174,7 +188,11 @@ permalink: 4-1_qaHistory.html
                  ——清完再按查詢就是必填未填，所以這顆鈕的分支裡必須有「請填寫開始時間、結束時間與
                  使用者類型」這一段。**共用的 `toast.query` 不能加這一段**：其餘六頁沒有任何 required
                  欄，加了就是替那六頁演一個不可能發生的結果，故本頁另立 key。 #}
-            <button data-capability="history" type="button" class="button button-primary" data-toast="正在查詢資料...|權限不足，無法查詢——請找貴租戶的管理者開通|請填寫開始時間、結束時間與使用者類型|查詢成功|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.queryHistory" data-toast-type="info|warning|warning|success|error" data-i18n="action.query">查詢</button>
+            {# 「關鍵字至少 2 個字」那一段（product 的 `_assert_keyword_is_searchable`，400）
+                 與查詢共用同一道守衛，故查詢與下載兩顆鈕**各要有一段**。段內烤著數字走的是 §4-2
+                 屬性型譯文那條例外，兩個條件都成立：①同一個約束另有一處常駐可見的資料節點承載
+                 （關鍵字欄下方那一句）②上游符號名寫在檔頭（`MIN_CHATLOG_KEYWORD_LEN`）。 #}
+            <button data-capability="history" type="button" class="button button-primary" data-toast="正在查詢資料...|權限不足，無法查詢——請找貴租戶的管理者開通|請填寫開始時間、結束時間與使用者類型|關鍵字至少 2 個字，前後空白不計|查詢成功|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.queryHistory" data-toast-type="info|warning|warning|warning|success|error" data-i18n="action.query">查詢</button>
             {# 匯出格式（product `GET /history/export?format=`，`Query(alias="format")` 收
                  `Literal["csv","xlsx","jsonl"]`、預設 csv）。**畫面只給兩顆**：csv 與 xlsx 是同一個
                  問題的兩種答案（要不要巢狀明細），jsonl 是給程式與稽核的那一份、沒有人會在這個
@@ -243,8 +261,14 @@ permalink: 4-1_qaHistory.html
                    不能只靠 checkbox 被停用（停用說得出「現在不能勾」，說不出「為什麼」）。 #}
             <span class="text-gray" id="exportWithHeaderHint" data-i18n="qa.exportWithHeaderHint">統計表頭只有「摘要（CSV）」這一種格式輸出得出來，選了完整明細就沒有這一段。開啟後 CSV 第一列不再是欄名，既有的下游解析會錯位</span>
             <span class="text-gray" id="exportFormatHint" data-i18n="qa.exportFullDetailHint">完整明細會多出三張工作表——每一步、每次工具呼叫的完整輸出、每一張來源卡的全文</span>
-            {# `GET /history/export` 開跑前有**七道**使用者自己修得掉的 400，全部並列不可互相取代
-                 ——六道在 `_validate_export_range`（product，逐 raise 由上而下），一道在它之後：
+            {# `GET /history/export` 開跑前有**八道**使用者自己修得掉的 400，全部並列不可互相取代
+                 ——一道在 `_validate_export_range` 之前，六道在它裡面（product，逐 raise 由上而下），
+                 一道在它之後：
+                 · `history.keyword_too_short` —— 關鍵字有值、`strip()` 後不足下界
+                   （`_assert_keyword_is_searchable`，排在 `_validate_export_range` **之前**，故段序也在前）。
+                   正本常數是 `MIN_CHATLOG_KEYWORD_LEN`；段內烤著數字走 §4-2 屬性型譯文的例外，
+                   常駐可見的那一份在關鍵字欄下方。**與旁邊那顆查詢鈕是同一道守衛的兩個消費點**
+                   （§5「同一道後端守衛…分支集合與語意型別要一致」）。
                  · `history.export_needs_range`  —— 起訖**沒填齊**（`if not start_time or not end_time`）。
                    **這一條在本頁特別會咬人**：同一列的 `.js-filter-clear` 會把起訖兩格清空
                    （filter-fields.js），清完直接按下載就是它；而它與旁邊那顆「查詢」的必填 warning
@@ -263,11 +287,11 @@ permalink: 4-1_qaHistory.html
                  · 上面兩條的天數同理只指名符號：`EXPORT_RANGE_DAYS_MAX`／`EXPORT_LOOKBACK_DAYS_MAX`
                    （product）——`history.range_over_31_days` 那顆是**訊息鍵**、不是
                    承載值的常數，上限一改鍵名還會叫 `31`
-                 **七條都要各有一段**：少列的那幾條會全部落進紅色的「下載失敗」，而它們每一條
+                 **八條都要各有一段**：少列的那幾條會全部落進紅色的「下載失敗」，而它們每一條
                  使用者當場改得掉——一句「請稍後再試」等於叫他做一件沒有用的事。
                  ⚠️ `|` 是索引契約：段數與順序（＝上游 raise 的先後）就是 React 端 `split("|")` 的
                  位置契約，中間插一段就會讓所有取用 `toast.downloadRecords` 的地方一起錯位。 #}
-            <button data-capability="history" type="button" class="button button-green" data-toast="下載已開始|權限不足，無法下載——請找貴租戶的管理者開通|請先填開始時間與結束時間|時間格式不正確，請重新選擇起訖時間|開始時間不能晚於現在|結束時間不能早於開始時間|只提供31日間的問答記錄下載|只提供一年內的問答記錄下載|這段範圍的資料量過大，請縮小時間範圍|下載失敗，請稍後再試|下載用的是上一次按「查詢」時的條件，而上面的篩選欄已經改過——請先按一次「查詢」再下載" data-i18n-data-toast="toast.downloadRecords" data-toast-type="success|warning|warning|warning|warning|warning|warning|warning|warning|error|warning" data-i18n="action.download">下載</button>
+            <button data-capability="history" type="button" class="button button-green" data-toast="下載已開始|權限不足，無法下載——請找貴租戶的管理者開通|關鍵字至少 2 個字，前後空白不計|請先填開始時間與結束時間|時間格式不正確，請重新選擇起訖時間|開始時間不能晚於現在|結束時間不能早於開始時間|只提供31日間的問答記錄下載|只提供一年內的問答記錄下載|這段範圍的資料量過大，請縮小時間範圍|下載失敗，請稍後再試|下載用的是上一次按「查詢」時的條件，而上面的篩選欄已經改過——請先按一次「查詢」再下載" data-i18n-data-toast="toast.downloadRecords" data-toast-type="success|warning|warning|warning|warning|warning|warning|warning|warning|warning|error|warning" data-i18n="action.download">下載</button>
         </div>
     </div>
 </div>

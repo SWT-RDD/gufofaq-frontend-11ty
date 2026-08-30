@@ -19,7 +19,12 @@
          ⚠️ 不可以寫成「這顆 modal 根本沒有預覽步驟」：同一份 markup 裡就有 `dataImport.parsing`
          （解析中）、`qaSet.previewFailed`（讀取 Excel 欄位失敗）與工作表那句「只有選取的這一張會被
          預覽與匯入」，理由會被自己的 markup 推翻（§3-2）。
-       `convert_html`：QA 集是問答對、不是文件內文，沒有 HTML 來源；1-2-1 那條路才有那顆開關。
+       `convert_html`：**這顆窗刻意不給開關，但那條路是開著的**——`QaImportIn.convert_html` 預設為真，
+         而 QA 匯入與一般 Excel 匯入走同一支核心（product 的 `_do_excel_mapping_import`），
+         答案欄那一格照樣逐格跑 HTML 轉換。不給開關的理由是「QA 集是問答對、不是文件內文，
+         用不到那顆旋鈕」；**不是「這條路不會轉換」**——那句話會讓下一個人以為
+         `content_empty_after_conversion` 在這裡走不到，而它走得到（見下面匯入鈕的那一段）。
+         沒有開關的代價要一起講：那一態的下一步只有「回試算表把那幾列補成文字」一條。
        `external_key`：**每個檔各一把**（共用一把的話同批第二個檔會蓋掉第一個），而這裡是單檔匯入、
          沒有逐檔編輯的入口（1-2-1 是放在每一列的 file-edit-modal 裡）。
      上傳 Excel（ui/upload-box，button 版點開原生檔案窗）→ 選工作表／問題欄／答案欄 → 匯入
@@ -111,9 +116,18 @@
                     </div>
                 </div>
                 <div class="modals-footer">
+                    {# 倒數第二段對回 400 `content_empty_after_conversion`
+                         （product 的 `_assert_excel_content_survived_conversion`，逐列指名、
+                         `detail` 帶 `rows`）：答案欄那一格**轉換前有字、HTML 轉換後一個字都不剩**。
+                       **與上一段是兩件事**：`_assert_qa_answers_present` 驗的是**轉換前**的原始
+                         儲存格（他沒填），這一顆驗的是**轉換後**（我們把它清掉了）——上游那兩支
+                         的 docstring 逐字寫著這條分界。折成一段的話，一個明明填了字的人會被告知
+                         「答案欄有空白的列」，回試算表看了半天什麼都沒少。
+                       **這裡的下一步只有一條**：回試算表把那幾列補成文字。1-1-4 那一頁還可以關掉
+                         「轉換 HTML」再送，這顆窗沒有那顆開關（理由見檔頭）。 #}
                     <div class="button-row center">
                         <button type="button" class="button button-border btn-close-modals" data-i18n="action.cancel">取消</button>
-                        <button data-capability="data:write" type="button" class="button button-primary js-qa-import-submit" data-toast="問答已匯入|權限不足，無法匯入——請找貴租戶的管理者開通|這個資料集不在你可以寫入的群組裡，請找管理員把你加進該群組|請選擇問題欄與答案欄|答案欄有空白的列，請補齊後再匯入|匯入失敗，請稍後再試" data-i18n-data-toast="toast.importQa" data-toast-type="success|warning|warning|warning|warning|error" data-i18n="action.import">匯入</button>
+                        <button data-capability="data:write" type="button" class="button button-primary js-qa-import-submit" data-toast="問答已匯入|權限不足，無法匯入——請找貴租戶的管理者開通|這個資料集不在你可以寫入的群組裡，請找管理員把你加進該群組|請選擇問題欄與答案欄|答案欄有空白的列，請補齊後再匯入|有幾列的答案經 HTML 轉換後一個字都不剩（整格只有一張圖或一個空連結），請回試算表把那幾列補成文字再匯入（錯誤訊息會逐列指名）|匯入失敗，請稍後再試" data-i18n-data-toast="toast.importQa" data-toast-type="success|warning|warning|warning|warning|warning|error" data-i18n="action.import">匯入</button>
                     </div>
                 </div>
             </div>

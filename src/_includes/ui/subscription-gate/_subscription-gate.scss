@@ -19,7 +19,7 @@
 // **每一句 chrome 都掛 `data-i18n`**：這幾句是使用者真的讀得到的 app 文字，
 // 只是全站只有元件庫頁演得出來；漏抄 key 的話那句話的正本就會掉回 React 的字典。
 //
-// ① 三段式面板／`pending_disclaimer` 首登免責：
+// ① 三段式面板／`pending_disclaimer` 首登免責（本文到了那一態）：
 //
 //   <div class="subscription-overlay demo-static">
 //       <div class="subscription-panel">
@@ -30,10 +30,37 @@
 //               <p class="m-0">服務變更與可用性：本平台保留隨時修改、暫停或終止服務的權利，無需提前通知。使用者應理解服務可能因技術、法律或相關政策調整而有所變更。</p>
 //           </div>
 //           <div class="panel-footer">
-//               <button type="button" class="button button-primary" data-toast="已開始使用|送出失敗，請稍後再試" data-i18n-data-toast="toast.acceptDisclaimer" data-toast-type="success|error"><span data-i18n="subscription.acceptDisclaimerPrefix">我已閱讀並同意，開始使用（</span><span>30</span><span data-i18n="subscription.acceptDisclaimerSuffix"> 天）</span></button>
+//               <button type="button" class="button button-primary" data-toast="已開始使用|送出失敗，請稍後再試" data-i18n-data-toast="toast.acceptDisclaimer" data-toast-type="success|error" data-text-busy="處理中…" data-key-busy="platform.applying"><span data-i18n="subscription.acceptDisclaimerPrefix">我已閱讀並同意，開始使用（</span><span>30</span><span data-i18n="subscription.acceptDisclaimerSuffix"> 天）</span></button>
 //           </div>
 //       </div>
 //   </div>
+//
+// ①′′ 同一顆面板／**讀不到本文**那一態（`GET /disclaimer` 非 2xx 或網路失敗；同型，只換 body 那一顆
+//     節點與鈕上的兩顆屬性）。這一態非有不可：只留「本文」與「載入中…」兩態時，讀失敗會永遠停在
+//     載入中，而面板底下坐著一顆送出**法律同意**的鈕：
+//
+//   <div class="subscription-overlay demo-static mt-16">
+//       <div class="subscription-panel">
+//           <div class="panel-header" data-i18n="comp.disclaimer">免責聲明</div>
+//           <div class="panel-body">
+//               <p class="text-red m-0" role="alert" id="gateDisclaimerError">讀取免責聲明失敗（502）</p>
+//           </div>
+//           <div class="panel-footer">
+//               <button type="button" class="button button-primary" data-toast="已開始使用|送出失敗，請稍後再試" data-i18n-data-toast="toast.acceptDisclaimer" data-toast-type="success|error" data-text-busy="處理中…" data-key-busy="platform.applying" aria-describedby="gateDisclaimerError" disabled><span data-i18n="subscription.acceptDisclaimerPrefix">我已閱讀並同意，開始使用（</span><span>30</span><span data-i18n="subscription.acceptDisclaimerSuffix"> 天）</span><span class="sr-only" data-i18n="comp.gateBodyUnreadable">（讀不到本文時）</span></button>
+//           </div>
+//       </div>
+//   </div>
+//
+// 那一顆紅字**不掛 `data-i18n`**：訊息由業務層填（後端原句，或執行期狀態句），一顆節點只能有一個
+// 文字主人（§4-2）。形狀逐字比照 5-2 存檔失敗那一條紅字（`text-red` ＋ `role="alert"` 的 live region）。
+// 鈕尾那顆 `.sr-only` **只屬於元件庫頁的示範**：兩份示範的鈕可見字面逐字相同，同頁不得有兩個同名的
+// 可及名稱（§4 目錄型示範那一條）。出貨時同一時刻只畫得出一塊面板，那顆態名不帶過去。
+//
+// **第三態「本文還沒到（載入中…）」刻意不切**，換掉的是 `.panel-body` 內同一顆 `<p>`：
+// 那是執行期狀態，靜態稿沒有請求可等，跨 repo 已有共識（gufofaq-saas
+// `apps/web/lib/i18n/parity.test.ts` 的 `REACT_ONLY` 逐字列著 `common.loading`；同
+// `pages/shared/shared.html` 檔頭第 ④ 條）。**停用規則與 ①′′ 相同**——本文為空（讀失敗、還沒到、
+// 或平台管理員存了空字串）一律 `disabled`：不讓人簽一份自己沒看過的同意。
 //
 // ①′ 三段式面板／`active` + `must_change_password` 強制改密（同型，body 換成三顆密碼欄）：
 //
@@ -55,8 +82,8 @@
 //                       <label for="gateNewPasswordInput" class="control-label required" data-i18n="settings.newPassword">新密碼</label>
 //                   </div>
 //                   <div class="field">
-//                       <input type="password" id="gateNewPasswordInput" minlength="8" placeholder="至少 8 碼" data-i18n-placeholder="settings.pleaseEnterNewPassword" aria-describedby="gateNewPasswordHint" class="form-control" required>
-//                       <span class="text-gray" id="gateNewPasswordHint"><span data-i18n="settings.passwordMinLengthPrefix">密碼至少 </span><span>8</span><span data-i18n="settings.passwordMinLengthSuffix"> 碼</span></span>
+//                       <input type="password" id="gateNewPasswordInput" minlength="8" maxlength="1024" placeholder="至少 8 碼" data-i18n-placeholder="settings.pleaseEnterNewPassword" aria-describedby="gateNewPasswordHint" class="form-control" required>
+//                       <span class="text-gray" id="gateNewPasswordHint"><span data-i18n="settings.passwordLenPrefix">密碼長度 </span><span class="js-password-len-range">8 – 1024</span><span data-i18n="settings.passwordLenSuffix"> 碼</span></span>
 //                   </div>
 //               </div>
 //               <div class="form-group">
@@ -64,7 +91,7 @@
 //                       <label for="gateConfirmPasswordInput" class="control-label required" data-i18n="settings.confirmPassword">確認新密碼</label>
 //                   </div>
 //                   <div class="field">
-//                       <input type="password" id="gateConfirmPasswordInput" minlength="8" placeholder="再次輸入新密碼" data-i18n-placeholder="settings.pleaseEnterConfirmPassword" aria-describedby="gateNewPasswordHint" class="form-control" required>
+//                       <input type="password" id="gateConfirmPasswordInput" minlength="8" maxlength="1024" placeholder="再次輸入新密碼" data-i18n-placeholder="settings.pleaseEnterConfirmPassword" aria-describedby="gateNewPasswordHint" class="form-control" required>
 //                   </div>
 //               </div>
 //           </div>
@@ -94,6 +121,19 @@
 // 這句話要寫在契約段**外面**，不要用 `↑`／`↓` 之類的散文夾在 markup 中間：那形式上沒有 `…`、
 // 實質卻是省略，而整段照抄會把那兩行中文一起貼進 HTML（§1-2：合法的「重複第 N 次同型節點」
 // 標註只有 `{# … #}` 這一種——它不會被複製進 HTML）。
+//
+// **兩顆送出鈕的結果一律走 toast，不做面板內的行內錯誤字**（§4「全站一種回報方式」）。
+// 伺服器講出來的原因不會因此丟掉：它由業務層填進**對應那一段的位置**端出來
+// （`errorText(body, <該段>)`，全站正典是 3-7 文件檢索的 403 與 skill-editor-modal 的存檔失敗），
+// `data-toast` 的段文字是讀不到 body 時的退路。改成行內錯誤會讓同一顆元件裡的兩塊面板對同一種
+// 形狀有兩套答案——①′ 打的 `POST /me/change-password` 與 5-1-1 是同一支端點、共用
+// `toast.changePassword` 的同一組分支，那一份改不動（§5「同一道後端守衛，不論從哪一頁觸發，
+// 分支集合與語意型別都要一致」）。
+//
+// **鈕面的第三態「送出中」走兩態文字槽**（`data-text-busy` ＋ `data-key-busy="platform.applying"`，
+// §4-2）：同一顆 key 的另一個消費點是 `components/iso-review-wizard` 的確認鈕，不另立第二顆。
+// **busy 的 `disabled` 不進 markup**——靜態稿沒有「送出中」那一刻；markup 上那顆 `disabled` 講的是
+// 另一件事（本文為空，見 ①′′）。
 //
 // 抄的時候注意：
 //   ⓐ **`.subscription-expired-box` 不是根**。少掉 `.subscription-overlay >

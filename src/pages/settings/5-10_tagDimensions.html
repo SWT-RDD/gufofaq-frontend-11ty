@@ -430,12 +430,21 @@ permalink: 5-10_tagDimensions.html
                              ＝`settings:read` ＋ `data:read`（product），
                              既不是寫入、也不只要 settings。§4：「宣告錯一道比沒宣告更貴」，
                              祖先那顆會讓 React 把一顆唯讀查詢擋在寫入能力後面；而區塊上的宣告
-                             只表達這一塊的下限，區塊內另有不同要求的控制項仍要自己標。 #}
+                             只表達這一塊的下限，區塊內另有不同要求的控制項仍要自己標。
+                           **末段是第二種 403**：product 的 `require_capability` 內部串著
+                             `require_tenant_feature`，所以這顆鈕的 403 有兩種——`missing_capability`
+                             （收件人＝貴租戶的管理者，就是「權限不足，無法查看」那一段）與
+                             `tenant_feature_disabled`（平台把整個租戶的 `settings`／`data` 關掉，
+                             **連租戶管理者也擋**，收件人＝平台管理員）。§4：折進同一段等於把兩種 403
+                             說成同一件事，而「請找貴租戶的管理者」對第二種是錯的指示。
+                           **一律追加在末位**（正典＝2-2-4 的「開始執行」）：段序是 React 端
+                             `split("|")[n]` 的索引契約。下方「重新量測」打的是同一道守衛，
+                             同一段照樣要有（§5 分支集合要一致）。 #}
                         {% if dim.tagged < dim.total %}
                         <button data-capability="settings:read data:read" type="button" class="button button-border button-sm js-view-untagged"
                             data-dimension-id="{{ dim.id }}"
                             id="tagDimUntagged-{{ dim.id }}" aria-labelledby="tagDimSlot-{{ dim.id }} tagDimUntagged-{{ dim.id }}"
-                            data-toast="正在查詢資料...|權限不足，無法查看——請找貴租戶的管理者開通|查詢成功|文件數超過單次掃描上限，請改用單一資料集範圍|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.queryUntagged" data-toast-type="info|warning|success|warning|error"
+                            data-toast="正在查詢資料...|權限不足，無法查看——請找貴租戶的管理者開通|查詢成功|文件數超過單次掃描上限，請改用單一資料集範圍|載入資料失敗，請重新整理頁面|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.queryUntagged" data-toast-type="info|warning|success|warning|error|warning"
                             data-i18n="settings.viewUntagged">查看未標註</button>
                         {% endif %}
                         {% endif %}
@@ -650,7 +659,7 @@ permalink: 5-10_tagDimensions.html
                  （吃的是區塊上那一顆），而「掛了 `data-capability` 的鈕要有 warning 型權限不足段」
                  那條測試只看鈕**自己**的屬性，所以這顆整個不在母體裡，漏掉不會變紅。
                  子句與英譯逐字沿用同頁「查看未標註」那一顆（§4-2）。 #}
-            <button type="button" class="button button-border" data-toast="正在量測標註覆蓋率...|權限不足，無法量測——請找貴租戶的管理者開通|量測完成|文件數超過單次掃描上限，請改用單一資料集範圍|量測失敗，請稍後再試" data-i18n-data-toast="toast.measureCoverage" data-toast-type="info|warning|success|warning|error" data-i18n="settings.remeasureCoverage">重新量測</button>
+            <button type="button" class="button button-border" data-toast="正在量測標註覆蓋率...|權限不足，無法量測——請找貴租戶的管理者開通|量測完成|文件數超過單次掃描上限，請改用單一資料集範圍|量測失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.measureCoverage" data-toast-type="info|warning|success|warning|error|warning" data-i18n="settings.remeasureCoverage">重新量測</button>
         </div>
         {# 「查看範圍」的存在理由：量測有上限，選單是縮小範圍的出口。這一句是這顆上限**唯一**的
              常駐可見標籤（`help.settings.tagCoverageScan.what` 提到「上限」是散文、不是標籤；
@@ -724,6 +733,22 @@ permalink: 5-10_tagDimensions.html
          敘述後果，未生效的那句掛 .hidden（React 依 `PUT …/tag-filter` 擋不擋得下來擇一渲染）。 #}
     <p class="text-red" data-i18n="settings.tagFilterCoverageWarnBlocked">目前還有檔沒有把這一欄寫進索引（匯入的時候還沒有這個維度，或那個檔是以資料夾方式匯入的）。在這個狀態下切到任何一種會過濾的模式，那些檔會被靜默排除——過濾條件比對的是「這一欄等於某個代碼或等於未標註」，而那些檔連這一欄都沒有；Agent 對話模式沒有無結果放寬階梯，被濾掉就是真的消失，使用者只會體驗成「有些資料查不到」。這正是這顆旋鈕預設停用的理由。</p>
     <p class="text-gray hidden" data-i18n="settings.tagFilterCoverageWarnOk">目前每一份資料都帶得到這一欄，過濾不會漏掉任何檔。沒填的格子在匯入時就已經寫成「未標註」，過濾條件會連它們一起比對，所以標了幾成不影響會不會漏文件。之後要注意的只有一件事：資料夾匯入的檔永遠沒有欄位槽，那樣匯入一批新資料就會又缺這一欄，要改成逐列匯入才接得回來。</p>
+
+    {# ②′ **這顆旋鈕會自己跳回「停用」**，而那不是誰按的——所以要在開開關的地方就講出來（§3-2：
+         警語寫在做那個決定的控制項旁邊）。機制：開啟時過的那道閘門
+         （product 的 `_assert_every_file_carries_the_slots`）**只在按下開關與複製設定檔那兩刻檢查**，
+         匯入路徑一次都不呼叫它；所以匯入一批沒有欄位槽的檔之後，證明就不再成立。匯入的收尾因此
+         回頭量一次，把還在過濾的設定檔降回 `off`（product 的
+         `demote_filter_modes_that_lost_their_proof`），並寫一列 `user_id IS NULL` 的稽核。
+       **降級是對的**：留著開著會讓那批新檔在每一題被靜默排除，而降回停用只是多找到一些。
+         但它是「系統代替使用者改了設定」，畫面上不說的話，租戶下次進來只會看到旋鈕變了、
+         而上面兩句覆蓋警語講的是「現在能不能開」，講不出「剛剛為什麼被關掉」。
+       **不開「最近一次自動關閉」的資料版位**：那需要 `retrieval_filter_mode` 旁邊多兩個欄位
+         （降級時間、當時缺的槽），而讀設定的那支端點今天一顆都不回；唯一留著這件事的是稽核那一列
+         （`retrieval.filter_mode_demoted`，`detail` 帶 `reason` 與 `slots`），而它住在**另一頁**、
+         後面還隔著 `audit` 這把這一頁不需要的鑰匙。所以這裡先把機制講成常駐可見的一句——
+         要做成版位得先讓那支端點回得出那兩個欄位，那是下一次的事，不在這一句能承擔的範圍。 #}
+    <p class="text-gray" data-i18n="settings.tagFilterAutoDemoteNote">這顆旋鈕會被系統自己關回「停用」：開啟時檢查的是「每一份檔都把這些欄位槽寫進索引了」，而匯入不會重新檢查——所以匯入一批沒有欄位槽的檔（例如資料夾方式匯入的），系統會在匯入的收尾把還在過濾的設定檔一起降回停用，免得那批新檔在每一題被靜默排除。要再開啟，先把缺欄位槽的那幾份檔重新匯入；是哪一次、缺哪些槽，查得到的地方在稽核日誌。</p>
 
     {# ③ 時間窗不能獨立於維度存在：講清楚它只有哪一種模式在用、在那個模式下也跟著意圖判定走、
          判不準就一起歸零，以及另外兩種模式為什麼一條都不送。 #}
