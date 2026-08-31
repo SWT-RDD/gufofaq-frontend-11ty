@@ -21,10 +21,18 @@
        · **每一列沒有「優先度」下拉**：`SearchIn` 與上游的 `SearchParams` 都帶 `extra: "forbid"`，
          兩層都沒有 priority 這個欄位 ⇒ 送出即 422。
          **畫得出來卻送不出去的旋鈕在這條路上不是「還沒接」，是送出即失敗。**
-       · **沒有「一筆都沒選」的守衛**：`SearchIn.dataset_ids` 缺席或空陣列 ⇒ product 展開成
-         **本租戶全部**（`resolve_indexes`），**一筆都沒勾＝檢索全部**，不是錯誤。
-         所以確認鈕掛得起 `.btn-close-modals`。這件事要在窗內說得出來，故留一段常駐可見的
-         `#searchScopeEmptyHint`——空著送出會搜到全部，那是使用者該先知道的事。
+       · **沒有「空＝全部」這一態**：`SearchIn.dataset_ids` 帶 `min_length=1`，缺席或空陣列是 422。
+         「檢索全部」＝把全選勾起來、**逐一送出每一個 id**，不是送一份空清單。
+         空清單在上游（`SearchParams.indexes`）的語意是「不加索引條件」，而 manager 沒有租戶概念
+         ⇒ 那一層的「全部」是**全平台**；product 有能力把空清單翻譯成「本租戶全部」，但翻譯完
+         那個形狀還留在契約上——少翻一次就是跨租戶檢索，而回應看起來完全正常。
+         所以**這一窗要收掉那個值**，不是靠下游補救。
+       · **一筆都沒勾時確認鈕 `disabled`**（給 React 的契約：切版畫的是有勾的那一態）。
+         `disabled` 說得出「現在按不了」、說不出「為什麼」，故配一段常駐可見的
+         `#searchScopeEmptyHint`（§4：組合維度上的空格由 markup 表達，並要有常駐可見的說明）；
+         清單與確認鈕都 `aria-describedby` 指過去。
+         確認鈕因此**不掛 `.btn-close-modals`**：關不關窗取決於勾了沒有，那不是宣告式的
+         （同 `select-dataset-modal` 的 `.js-confirm-dataset`）。
 
      **hook 是 `.js-search-scope-dataset`，名字裡不留「index」**：這一窗送出去的是 product 的
      `dataset_id`，而「index」是上游 manager 那一側的詞——兩者不是同一種東西，而且那條路
@@ -33,9 +41,9 @@
      要送索引名。同理，群組標籤的 id 是 `searchScopeDatasetLabel`——這一窗裡不留第二個
      指向已經不存在的那條路的詞彙。
 
-     **確認鈕同時掛 hook class 與 `.btn-close-modals`**：它不送 API，但它是**值的交付點**
-     （React 要在這一刻讀走勾起來的 dataset id、去更新觸發鈕上的「已選 N 個」）。兩顆鈕在 markup 上
-     必須分得出來，否則 React 認不出該接哪一顆（§5）；關窗那一半是宣告式的，不必寫 js。
+     **確認鈕只掛 hook class**：它不送 API，但它是**值的交付點**（React 要在這一刻讀走勾起來的
+     dataset id、去更新觸發鈕上的「已選 N 個」），而且關窗要看勾了沒有 ⇒ 兩件事都由 js 決定。
+     兩顆鈕在 markup 上必須分得出來，否則 React 認不出該接哪一顆（§5）。
 
      列殼用 `ui/modals` 既有的 `.dataset-list-wrap > .dataset-list`（同 `manage-members-modal`），
      一列一顆 `<label>`——那正是 `ui/list-filter` 的 `ROW_SELECTOR` 認的形狀（見該檔檔頭）。
@@ -91,14 +99,16 @@
                             </div>
                         </div>
                     </div>
-                    <p class="text-gray m-0 mt-8" id="searchScopeEmptyHint" data-i18n="search.scopeEmptyHint">一筆都沒有勾選時，這次檢索會涵蓋全部資料集。</p>
+                    <p class="text-gray m-0 mt-8" id="searchScopeEmptyHint" data-i18n="search.scopeEmptyHint">至少要勾選一個資料集；要檢索全部，請用上面的「全選」把它們都勾起來。</p>
                 </div>
                 <div class="modals-footer">
                     <div class="button-row center">
                         <button type="button" class="button button-border btn-close-modals" data-i18n="action.cancel">取消</button>
-                        {# 見檔頭：不送 API（故無 `data-toast`），但要留 hook 給 React 讀走勾選值；
-                             關窗那一半交給宣告式的 `.btn-close-modals`。 #}
-                        <button type="button" class="button button-primary js-confirm-search-scope btn-close-modals" data-i18n="action.confirm">確認</button>
+                        {# 見檔頭：不送 API（故無 `data-toast`），但要留 hook 給 React 讀走勾選值。
+                             **不掛 `.btn-close-modals`**：一筆都沒勾時這顆是 `disabled`，關窗與否
+                             取決於勾了沒有 ⇒ 不是宣告式的。`aria-describedby` 指向那段常駐可見的
+                             說明，因為 `disabled` 自己說不出為什麼。 #}
+                        <button type="button" class="button button-primary js-confirm-search-scope" aria-describedby="searchScopeEmptyHint" data-i18n="action.confirm">確認</button>
                     </div>
                 </div>
             </div>

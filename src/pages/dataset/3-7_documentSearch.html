@@ -54,12 +54,16 @@ permalink: 3-7_documentSearch.html
    ⚠️ **前提是匯入 pipeline 的 mapper 有把日期寫進 `filterDate`**——沒寫的資料集這兩欄篩不到東西，
    而那是資料面的事、畫面上看不出來——所以結果表的空狀態要把這件事說出來。
 
-   **未勾選任何資料集＝檢索全部**：`SearchIn.dataset_ids` 缺席或空陣列時，product 的
-   `resolve_indexes` 把它展開成**本租戶全部**的索引；再往上游，`SearchParams.indexes` 空值是
-   「不加索引條件」（GufoNet 那一側的 `_build_query_sentence()` 是 `if search_params.indexes:`）
-   ——那一層沒有租戶概念，所以「全部」的意思是由 product 那一步給的。
-   兩層都不擋空值 ⇒ 檢索範圍窗**沒有「一筆都沒選」的守衛**，查詢鈕也因此**沒有**「沒有選擇資料集」
-   那一段 warning，觸發鈕的 0 態要說得出「全部資料集」而不是「已選 0 個」。
+   **檢索範圍逐一列舉，沒有「空＝全部」這一態**：`SearchIn.dataset_ids` 帶 `min_length=1`，
+   缺席或空陣列是 422。**「檢索全部」＝在檢索範圍窗按全選、把每一個 id 都送出去。**
+   理由在上游：`SearchParams.indexes` 空值是「不加索引條件」（GufoNet 那一側的
+   `_build_query_sentence()` 是 `if search_params.indexes:`），而 manager 沒有租戶概念
+   ⇒ 那一層的「全部」是**全平台**。product 有能力把空清單翻譯成「本租戶全部」，但只要那個值
+   還在契約上，少翻一次就是跨租戶檢索、而回應看起來完全正常——所以值域收在**送出的那一端**。
+   由此三件事：檢索範圍窗一筆都沒勾時確認鈕 `disabled`（見該元件檔頭）、查詢鈕多一段
+   「沒有選擇資料集」的 warning（這個租戶一個資料集都沒有時按得到）、觸發鈕的 0 態**照數字印
+   「已選 0 個資料集」**——0 不再是「全部」的別名，照著印就是真話。
+   **進頁時預設全選**（給 React 的契約）：值域收緊之後，不預設就等於每次進來都要先開一次窗。
 
    ─────────────────────────────────────────────────────────────────────────────
    **這一頁刻意沒有的東西**（GUIDELINE §4「不做的那些在檔頭寫明理由」）：
@@ -120,9 +124,9 @@ permalink: 3-7_documentSearch.html
        `gufo_license_invalid`）。折成一段等於把兩個修得掉的狀況指向同一個修不了的人。
      · **不另標 `data-tenant-feature="data"`**：`require_capability(cap, mode)` 內部就串了
        `require_tenant_feature`，再標一顆只是把同一句話說兩遍（GUIDELINE §4）。
-     · 「未勾選任何資料集＝檢索全部」在 product 那一層展開成**本租戶全部**（`resolve_indexes`）
-       ——上游 `SearchParams.indexes` 空值是「不加索引條件」，那句話只有在單租戶的 manager 上
-       才等價。畫面上那句「全部資料集」兩邊都為真。
+     · **「檢索全部」在這條路上是逐一列舉，不是送空清單**：上游 `SearchParams.indexes` 空值是
+       「不加索引條件」，而那一層沒有租戶概念 ⇒ 空清單的「全部」是全平台。值域因此收在送出端
+       （`min_length=1`），畫面上按全選、逐一送 id。
      · **檢索範圍那一窗送的是 product 的 `dataset_id`，不是索引名**：清單來源是 product 的
        `GET /datasets`（本租戶的資料集），勾起來的 id 組成 `SearchIn.dataset_ids`，索引名由
        `resolve_indexes` 在伺服器端翻譯。manager 的 `GET /api/v1/indexes` **不能當那一窗的值域**
@@ -157,8 +161,9 @@ permalink: 3-7_documentSearch.html
             {# 「檢索範圍」是**無條件開窗**（點了就開，沒有前置條件）⇒ 掛 `data-open-modal`（§5）。
                  鈕面上的「已選 N 個」從 `searchScopeSelectedCount` 推導，不烤字面量（§6）——
                  它是窗裡那份示範陣列勾起來的筆數，兩邊必須對得上。
-                 ⚠️ **0 態的字面不是「已選 0 個」而是「全部資料集」**：`indexes` 空值＝不加索引條件
-                 （見檔頭）。切版畫的是有勾的那一態，0 態由 React 依筆數換字面——這是給 React 的契約。 #}
+                 **0 態就照著印「已選 0 個資料集」**：空清單送不出去（見檔頭）⇒ 0 是一個**擋著的
+                 狀態**、不是一種範圍，照數字印就是真話，不必換字面。進頁預設全選，所以 0 只有在
+                 這個租戶一個資料集都沒有時才看得到，而「為什麼查不了」由查詢鈕那一段 warning 說。 #}
             {% set searchScopeSelectedCount = 2 %}
             <div class="form-group col-4-md col-12-sm">
                 <div class="label">
@@ -209,7 +214,7 @@ permalink: 3-7_documentSearch.html
         <p class="text-gray m-0" id="docSearchDateHint" data-i18n="search.dateRangeHint">時間篩的是匯入時寫入的文件日期；沒有寫入日期的資料集，這兩欄篩不到任何結果。</p>
         <div class="flex-row align-items-center justify-content-center gap-16">
             <button type="button" class="button button-border js-filter-clear" data-i18n="action.clear">清除</button>
-            {# 七段逐條對回一條出口（§5 少列一段和多列一段一樣是說謊）：
+            {# 八段逐條對回一條出口（§5 少列一段和多列一段一樣是說謊）：
                  info    「正在查詢資料...」＝版型比照 5-7 的查詢鈕
                  warning 「權限不足，無法查詢」＝`require_capability("data", "read")` 第④層那道 403
                          （gufofaq-saas product 的 `search_documents`）。**排在索引 1**：全站
@@ -217,6 +222,11 @@ permalink: 3-7_documentSearch.html
                          4-1 的查詢鈕同形），子句與英譯逐字沿用（§4-2 同子句同英譯）。
                  warning 「沒有搜尋字串」＝`SearchIn.query` 的 `min_length=1`（product 這一層先擋，
                          對回上游 `SearchParams.query` 的同一道）
+                 warning 「沒有選擇資料集」＝`SearchIn.dataset_ids` 的 `min_length=1`，形狀同上一段
+                         （前端先擋，對回 product 的同一道）。**按得到**：進頁預設全選，但這個租戶
+                         一個資料集都沒有時全選也是空的——那時這一段就是唯一說得出「為什麼查不了」
+                         的地方（結果表的空狀態說的是「條件收太緊」，那是另一件事）。
+                         範圍窗那一側的同一道由 `disabled` 表達（見該元件檔頭）。
                  warning 「結束時間不能早於開始時間」＝product 回 400 ＋ `code: date_range_reversed`
                          （組日期 DSL 的是 product，不是前端，見檔頭）。**不得折進 error**：
                          那是使用者改得掉的輸入錯誤，而 error 那一段說的是「再試一次」——再試一次
@@ -230,11 +240,9 @@ permalink: 3-7_documentSearch.html
                  success 「查詢成功」
                  error   「查詢失敗」＝`filter_dsl_invalid`（product 自己組的日期 DSL 被上游拒收
                          ＝我方的錯，使用者做不了任何事）＋ 上游那一側的 500、以及網路層失敗。
-               **刻意不列「沒有選擇資料集」**：`dataset_ids` 空陣列是合法的「檢索全部」，不是錯誤
-               （見檔頭）——列出不可能的結果與只演成功一樣是說謊。
-               **也不列 404**：`resolve_indexes` 對別的租戶的 dataset id 回 404，而這一頁的資料集
+               **不列 404**：`resolve_indexes` 對別的租戶的 dataset id 回 404，而這一頁的資料集
                清單就是本租戶的（`GET /datasets`）⇒ 畫面上按不出那一態。 #}
-            <button data-capability="data:read" type="button" class="button button-primary js-doc-search" data-toast="正在查詢資料...|權限不足，無法查詢——請找貴租戶的管理者開通|沒有搜尋字串|結束時間不能早於開始時間|授權驗證失敗，無法查詢——請找平台管理者確認系統授權檔|查詢成功|查詢失敗，請稍後再試" data-i18n-data-toast="toast.docSearch" data-toast-type="info|warning|warning|warning|warning|success|error" data-i18n="action.query">查詢</button>
+            <button data-capability="data:read" type="button" class="button button-primary js-doc-search" data-toast="正在查詢資料...|權限不足，無法查詢——請找貴租戶的管理者開通|沒有搜尋字串|沒有選擇資料集——請在「檢索範圍」裡至少勾一個|結束時間不能早於開始時間|授權驗證失敗，無法查詢——請找平台管理者確認系統授權檔|查詢成功|查詢失敗，請稍後再試" data-i18n-data-toast="toast.docSearch" data-toast-type="info|warning|warning|warning|warning|warning|success|error" data-i18n="action.query">查詢</button>
         </div>
     </div>
 </div>
