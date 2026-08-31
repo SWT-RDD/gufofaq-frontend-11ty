@@ -1276,7 +1276,7 @@
   "search.modeKeyword": "Keyword search",
   "search.modeSemantic": "Semantic search",
   "search.noDateField": "This dataset has no date field — the date never reached the index, so no time range can match this row.",
-  "search.noDisplayableFields": "This document has no displayable fields — a field only shows up here once it has been given a name under Field naming in Conversation Settings.",
+  "search.noDisplayableFields": "This document has no other fields to show. Which fields appear in the document details is decided under Conversation settings → Field naming.",
   "search.noResults": "No documents match these conditions. Narrowing the search scope, the search mode or the time range too far all land here — and the time range relies on the document date recorded at import, so datasets imported without a date never match.",
   "search.scopeEmptyHint": "Tick at least one dataset. Select all only ticks the datasets currently listed — to search all of them, clear the search box above first, then use Select all.",
   "search.scopeSelectedPrefix": "",
