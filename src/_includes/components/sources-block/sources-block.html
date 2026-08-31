@@ -4,8 +4,20 @@
      （見 _sources-block.scss；class 的主人是本元件，因為被套用的元素是本元件的 <tr>）。
      展開/收合互動的根改用 accordion 自有的 .js-accordion（見 ui/accordion，§1 原子解耦）。
      參數（頁面 include 前 set，見 §3-2/§6）：
-       sources：來源列陣列（每筆欄位：sourceNo/file/dataset/title/time/content/note1/note2/reference
-                ＋選填 attribution）
+       sources：來源列陣列（每筆欄位：sourceNo/file/dataset/title/date/content/fields ＋選填 attribution）
+       source.title／source.date／source.content：product 投影裡**各自單獨給**的三欄
+                （title 槽／date 槽／content 槽）。三者都可能是 null——`title` 與 `date` 為 null 時
+                各印一句具名的空文字（見下面那兩段），不留白、也不 fallback 到別的值。
+       source.fields：**逐欄清單** `[{ label, value }]`，與 3-7 結果明細**同一支投影、同一份判準**。
+                規則由 product 保證，切版一條都不判斷：已照 `SLOTS` 排序、已配好租戶標籤
+                （`RetrievalProfile.field_labels`，正本＝5-2「欄位命名」）、已排除 title／content／date
+                三槽與歸因槽、已排除存取控制槽與 `product_only`、每格逐格截斷。
+                ⇒ 這裡**不查標籤表、不排序、不印 slot key、不比對顯示名**。
+                空陣列時那一段整個不畫，改一句具名空狀態——與 3-7 **同一顆 key**，不另寫一種說法。
+                ⚠️ **逐欄那一段不可以抽成 `{% include %}`**：它住在 `{% for source in sources %}` 之內，
+                而 `{% include %}` 巢在**已被 include 的元件內部**的 `{% for %}` 裡會渲染成空白、
+                而且不報錯（§9 的 Pitfall，有測試把關）。與 3-7 的「共用」只能是規則共用
+                （同一份判準、同一個 markup 形狀、同一顆 i18n key），逐列 markup 兩邊各自 inline。
        source.sourceNo：「序號」欄的值＝這一筆命中的**引用編號**（product `GET /history/{id}` 的
                 `search_results[].source_no`），**不是列的位置**。答案內文的引用標記
                 （components/citation-ref 的 [[N]]）比對的就是它，所以兩者必須是同一個號碼——
@@ -50,6 +62,26 @@
                 走 i18n key——滿意度是封閉枚舉、不是租戶取的名字，塞顯示字的話 React 接真 API 只印得出
                 `positive`，英文模式那一格永遠是中文（§6／§4-2；同 4-1 那一欄與 qa-detail-info 的規矩）
        sourcesDetailHref：有值時顯示「檢視詳細內容」連結（前台問答頁用）
+     **時間那一格印的是 date 槽，不是 `last_modified`**：chatbot 那一側的 `DocumentResult.last_modified`
+     是**文件被讀進管道的時刻**——四支 connector（csv／folder／excel／odbc）在 manager 那一側一律把它
+     寫死成當下的 UTC 時間，與資料內容無關、同一批匯入的列全部相同、每次重新同步還會變。
+     而使用者理解的「這份文件的時間」是 product 的 date 槽（`Slot("date", "filterDate", …)`），
+     那也是文件檢索的時間範圍真正篩的那一欄。同一個欄名底下兩種東西，讀的人分不出來。
+     沒指派 date 槽的資料集那一格印一句具名的空文字（**不留白**）：空格子說不出「所以用時間範圍
+     篩不到它」，而那是使用者接下來會撞到的事。
+
+     **「內容」不再是雜物袋**：那一格只印 content 槽本身。其餘的槽各自成一列（`fields`），
+     判準是**槽 key**、由 product 決定，不是把「標籤：值」拼進答案內文後面——一格裡混著答案本體與
+     八個欄位時，沒有人看得出哪一段是哪一欄。
+
+     **沒有「參考資料」那一列**：那是固定 schema 裡沒有的槽，靠**比對顯示名**（租戶把某個槽取名叫
+     「參考資料」）補出來的一列。逐欄之後那個槽會以租戶取的名字自己出現在 `fields` 裡，不需要它；
+     那條判準也一起收掉——它是這條路上唯一沒有伺服器端守衛的判準（把存取控制槽取名成「參考資料」
+     就會讓它溜回畫面）。
+
+     **歸因欄不併進 `fields`**：兩者射程不同。`fields` 只列「這一列有值」的槽，歸因欄**值是空的也要
+     出一列**——那正是統計報表把這一筆歸進「未標註」的原因，濾掉就在單則層看不見了。
+
      每筆來源列（摘要列 + 隱藏的 accordion detail 列）以 for-source 迴圈直接內嵌渲染
      （原 source-row 子元件已內嵌：Eleventy 的 include 巢狀在 for 內會渲染空白，故不再拆子元件 include）。 #}
 <div class="block sources-block js-accordion mt-24{% if sourcesHidden %} hidden{% endif %}">
@@ -156,30 +188,34 @@
                             {# tr 一律包 tbody：table 直下放 tr 瀏覽器會自動補 tbody，轉 React 後 SSR/hydration 會 mismatch（§4） #}
                             <table class="accordion-table">
                                 <tbody>
+                                    {# 三列固定（title／date／content 三槽各有自己的一列，見檔頭），
+                                         其餘的槽走下面的逐欄清單。 #}
                                     <tr>
                                         <th data-i18n="field.title">標題</th>
-                                        <td>{{ source.title }}</td>
+                                        <td>{% if source.title %}{{ source.title }}{% else %}<span class="text-gray" data-i18n="search.untitledDoc">這一列沒有標題欄</span>{% endif %}</td>
                                         <th data-i18n="common.time">時間</th>
-                                        <td>{{ source.time }}</td>
+                                        <td>{% if source.date %}{{ source.date }}{% else %}<span class="text-gray" data-i18n="search.noDateField">這個資料集沒有日期欄——日期沒有進索引，用時間範圍就篩不到這一列</span>{% endif %}</td>
                                     </tr>
                                     <tr>
                                         <th data-i18n="field.content">內容</th>
                                         <td colspan="3">{{ source.content }}</td>
                                     </tr>
+                                    {# 逐欄清單：product 配好標籤、排好順序（見檔頭）⇒ 這裡只印。
+                                         `label` 是租戶取的顯示名＝資料值，**不掛 `data-i18n`**（§4-2）。
+                                         空陣列時整段不畫，改一句具名空狀態——與 3-7 結果明細同一顆 key。 #}
+                                    {% for field in source.fields %}
                                     <tr>
-                                        <th data-i18n="field.note1">備註1</th>
-                                        <td colspan="3">{{ source.note1 }}</td>
+                                        <th>{{ field.label }}</th>
+                                        <td colspan="3">{{ field.value }}</td>
                                     </tr>
+                                    {% else %}
                                     <tr>
-                                        <th data-i18n="field.note2">備註2</th>
-                                        <td colspan="3">{{ source.note2 }}</td>
+                                        <td colspan="4" class="text-gray" data-i18n="search.noDisplayableFields">這份文件沒有可顯示的欄位——欄位要先在「對話設定」的欄位命名裡取好名字，才會出現在這裡。</td>
                                     </tr>
-                                    <tr>
-                                        <th data-i18n="common.referenceData">參考資料</th>
-                                        <td colspan="3">{{ source.reference }}</td>
-                                    </tr>
+                                    {% endfor %}
                                     {# 歸因欄位：追加在既有欄位之後（同匯出 CSV「新欄一律追加」的作法），
-                                         租戶沒指定任何歸因維度時整段不渲染。label 是租戶取的名字＝資料值，不翻。 #}
+                                         租戶沒指定任何歸因維度時整段不渲染。label 是租戶取的名字＝資料值，不翻。
+                                         **不併進上面那一段**：這一族值是空的也要出一列（見檔頭）。 #}
                                     {% for a in source.attribution %}
                                     <tr>
                                         <th>{{ a.label }}</th>

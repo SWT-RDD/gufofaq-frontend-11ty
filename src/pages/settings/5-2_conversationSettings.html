@@ -375,6 +375,8 @@ permalink: 5-2_conversationSettings.html
       title: "問題標題",
       content: "回覆內容",
       date: "建立日期",
+      source: "參考資料",
+      category: "法規類別",
       note1: "承辦組室",
       note2: "業務範疇"
     } %}
@@ -383,6 +385,10 @@ permalink: 5-2_conversationSettings.html
             <div class="tablelist-title" data-i18n="settings.fieldNaming">欄位命名</div>
             {# 槽數從陣列推導、不烤進譯文（§6 能推導的數字不寫死；§4-2 那個數字是資料不是譯文）。
                  值域是 `field_schema.SLOTS` 全部 22 個（21 個進索引的 ＋ internal_note；正本 product 的 SLOTS）。
+                 **這張 map 同時決定文件明細上看得到哪幾欄**：3-7 的結果明細與 `components/sources-block`
+                 的逐欄清單只列「這個租戶有取過名」的槽，再扣掉各有自己一列的 title／content／date
+                 與歸因槽（note1／note2）⇒ `source`／`category` 是那兩處實際列得出來的欄。
+                 這張 map 少一顆，那兩處就少一欄，而畫面上看不出少了什麼（§6 跨頁自洽）。
                  note1／note2 的顯示名與 5-3 的歸因維度、4-2 的來源歸因列一致（「承辦組室」「業務範疇」）
                  ——那三頁演的是同一個示範租戶，而這一頁是那份 `RetrievalProfile.field_labels` 的
                  **唯一編輯畫面**，不一致的話讀的人推不出哪一份算數（§6 跨頁自洽）。

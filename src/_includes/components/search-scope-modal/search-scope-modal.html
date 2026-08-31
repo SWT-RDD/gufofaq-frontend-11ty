@@ -13,7 +13,8 @@
          等於給前端一個猜別人索引名的起點。
        · **這一窗自己不打任何 API**：`dataset_ids` 是查詢參數、不是使用者設定——沒有「把這個帳號要搜
          哪些資料集存起來」這回事，所以確認鈕沒有成功／失敗可列，也就沒有 `data-toast`
-         （§5 矩陣④：純前端互動）。
+         （§5 矩陣②：值載體只掛 hook、不列 toast——**不是④**，④ 那一族連 hook 都不掛，
+         而這一顆是 React 要認的交付點）。
 
      **這一窗刻意沒有的東西**（§4：不做的要寫明理由，否則下一個人分不出「不能」與「還沒」）：
        · **沒有第二欄「自訂資料集」清單**：`manager_backend` 只有 index 一種容器，沒有再上一層
@@ -22,17 +23,25 @@
          兩層都沒有 priority 這個欄位 ⇒ 送出即 422。
          **畫得出來卻送不出去的旋鈕在這條路上不是「還沒接」，是送出即失敗。**
        · **沒有「空＝全部」這一態**：`SearchIn.dataset_ids` 帶 `min_length=1`，缺席或空陣列是 422。
-         「檢索全部」＝把全選勾起來、**逐一送出每一個 id**，不是送一份空清單。
+         「檢索全部」＝**逐一送出每一個 id**，不是送一份空清單（「全選」是把列出來的那幾筆一次
+         勾起來的捷徑，射程見下面那一段）。
          空清單在上游（`SearchParams.indexes`）的語意是「不加索引條件」，而 manager 沒有租戶概念
          ⇒ 那一層的「全部」是**全平台**；product 有能力把空清單翻譯成「本租戶全部」，但翻譯完
          那個形狀還留在契約上——少翻一次就是跨租戶檢索，而回應看起來完全正常。
          所以**這一窗要收掉那個值**，不是靠下游補救。
-       · **一筆都沒勾時確認鈕 `disabled`**（給 React 的契約：切版畫的是有勾的那一態）。
-         `disabled` 說得出「現在按不了」、說不出「為什麼」，故配一段常駐可見的
-         `#searchScopeEmptyHint`（§4：組合維度上的空格由 markup 表達，並要有常駐可見的說明）；
-         清單與確認鈕都 `aria-describedby` 指過去。
+       · **一筆都沒勾時彈 warning、留在窗裡**（`search-scope-modal.js`），**不是把確認鈕 `disabled`**：
+         「沒選任何一筆」的理由要說得出口，而合規的 `disabled` 只有「進行中」與「type-to-confirm
+         尚未解鎖」兩種（REACT-CONVERSION §⑥）。同一個前提全站已有兩處正典，兩處都是 warning 分支
+         ——`select-dataset-modal`（js 彈 warning、留在窗裡）與 `config-copy-modal`（`data-toast` 的
+         「請至少勾選一個複製項目」）——這一窗是第三處，不另立第三種寫法。
+         ⚠️ **不可以退成 `if (!checked) return;`**：那是零訊號，讀起來與「這顆鈕壞了」逐字相同。
          確認鈕因此**不掛 `.btn-close-modals`**：關不關窗取決於勾了沒有，那不是宣告式的
          （同 `select-dataset-modal` 的 `.js-confirm-dataset`）。
+       · **`#searchScopeEmptyHint` 是這一窗的規則說明，不是那顆 warning 的替身**：它常駐可見在清單
+         下方、由清單 `aria-describedby` 指過去，講的是「至少一個」與「全選只勾得到列出來的那幾筆」
+         ——兩件按下去之前就該知道的事。**清單空的時候整段不渲染**（連同那個 `aria-describedby`）：
+         那一態畫面上是「這個租戶還沒有資料集可以選」，叫人去勾一個不存在的東西是假話，
+         而真正的下一步（去建一個資料集）那一句自己就說了。
 
      **hook 是 `.js-search-scope-dataset`，名字裡不留「index」**：這一窗送出去的是 product 的
      `dataset_id`，而「index」是上游 manager 那一側的詞——兩者不是同一種東西，而且那條路
@@ -44,6 +53,20 @@
      **確認鈕只掛 hook class**：它不送 API，但它是**值的交付點**（React 要在這一刻讀走勾起來的
      dataset id、去更新觸發鈕上的「已選 N 個」），而且關窗要看勾了沒有 ⇒ 兩件事都由 js 決定。
      兩顆鈕在 markup 上必須分得出來，否則 React 認不出該接哪一顆（§5）。
+     切版自己那一半——守衛、把筆數回填到 3-7 的 `#docSearchScopeCount`、關窗——由
+     `search-scope-modal.js` **當場做掉**（§5：開合這類純前端互動要當場動得起來；只留一顆沒人接的
+     hook 就是一顆死鈕，而那正是拿掉 `.btn-close-modals` 之後最容易掉進去的坑）。
+     同一支 js 另外匯出 `window.GufoSearchScope.reset(fields)`：**篩選列的「清除」要把這個篩選帶回
+     預設態（全選）**，而清除鈕搆不到這裡——值住在這一窗的勾選框上，`<dialog>` 不在那一列的 `.block`
+     之內（§5：要讓別的元件跟著動就呼叫它匯出的函式）。
+
+     **「全選」只勾得到畫面上列出來的那幾筆**：`ui/checkbox` 的 `.check-all` 母體是可見列
+     （`visibleOnes()` 濾掉 `.hidden`，該檔檔頭逐字點名這一窗）——搜尋框有字時按全選只會勾到過濾
+     後那幾筆。那個行為本身是對的（勾走畫面外的十幾筆才是失真），但值域收成 `min_length=1` 之後
+     「全選」變成「檢索全部」的**唯一**達成手段 ⇒ 這個前提要在窗裡說出來，否則使用者看到滿格的
+     全選框、送出去卻是子集，而回應完全正常。
+     ⚠️ 送出去的值**不是**可見列：確認鈕讀的是全部 `:checked`（被過濾隱藏起來的勾選一樣算數）
+     ——過濾是看的人的事，不是值的事。
 
      列殼用 `ui/modals` 既有的 `.dataset-list-wrap > .dataset-list`（同 `manage-members-modal`），
      一列一顆 `<label>`——那正是 `ui/list-filter` 的 `ROW_SELECTOR` 認的形狀（見該檔檔頭）。
@@ -60,7 +83,10 @@
      **id 照 3-5 的 `healthScanDatasets` 取**——那是本站示範租戶的資料集目錄正本（§6：QA 集與檔案集
      在 product 是同一張表、同一個 id 空間，跨頁只能有一份目錄）。自己另編三個 id 的話，這一窗會
      長出一批在資料集管理頁上根本找不到的資料集。
-     勾起來的筆數要與 3-7 的 `searchScopeSelectedCount` 對得上（§6 示範資料自洽）。 #}
+     勾起來的筆數要與 3-7 的 `searchScopeSelectedCount` 對得上（§6 示範資料自洽）。
+     **示範刻意不是全勾**：三筆勾兩筆是唯一畫得出 `.check-all` `indeterminate`（`ui/checkbox` 的
+     半選態）的一態，全勾的話那顆三態在全站就沒有任何一頁看得到。3-7 檔頭的「進頁預設全選」講的是
+     React 的初始態，與這份靜態示範演哪一態是兩件事。 #}
 {% set searchScopeDatasetRows = [
     { id: 3, name: "法規彙編", selected: true },
     { id: 7, name: "檢疫問答集", selected: true },
@@ -87,7 +113,7 @@
                                     <input type="text" placeholder="搜尋資料集..." data-i18n-placeholder="modals.searchDatasetPlaceholder" aria-label="搜尋資料集" data-i18n-aria-label="modals.searchDataset" class="form-control search">
                                 </div>
                             </div>
-                            <div class="dataset-list" role="group" aria-labelledby="searchScopeDatasetLabel" aria-describedby="searchScopeEmptyHint">
+                            <div class="dataset-list" role="group" aria-labelledby="searchScopeDatasetLabel"{% if searchScopeDatasetRows %} aria-describedby="searchScopeEmptyHint"{% endif %}>
                                 {% for row in searchScopeDatasetRows %}
                                 <label class="form-checkbox border-wrap">
                                     <input type="checkbox" class="check-one js-search-scope-dataset" value="{{ row.id }}"{% if row.selected %} checked{% endif %}>
@@ -99,16 +125,20 @@
                             </div>
                         </div>
                     </div>
-                    <p class="text-gray m-0 mt-8" id="searchScopeEmptyHint" data-i18n="search.scopeEmptyHint">至少要勾選一個資料集；要檢索全部，請用上面的「全選」把它們都勾起來。</p>
+                    {# 見檔頭：清單空的時候整段不渲染——那一態的下一步是去建資料集，不是去勾一個
+                         不存在的東西。 #}
+                    {% if searchScopeDatasetRows %}
+                    <p class="text-gray m-0 mt-8" id="searchScopeEmptyHint" data-i18n="search.scopeEmptyHint">至少要勾選一個資料集。「全選」只會勾到目前列出來的那幾筆——要檢索全部，先把上面的搜尋框清空再按「全選」。</p>
+                    {% endif %}
                 </div>
                 <div class="modals-footer">
                     <div class="button-row center">
                         <button type="button" class="button button-border btn-close-modals" data-i18n="action.cancel">取消</button>
                         {# 見檔頭：不送 API（故無 `data-toast`），但要留 hook 給 React 讀走勾選值。
-                             **不掛 `.btn-close-modals`**：一筆都沒勾時這顆是 `disabled`，關窗與否
-                             取決於勾了沒有 ⇒ 不是宣告式的。`aria-describedby` 指向那段常駐可見的
-                             說明，因為 `disabled` 自己說不出為什麼。 #}
-                        <button type="button" class="button button-primary js-confirm-search-scope" aria-describedby="searchScopeEmptyHint" data-i18n="action.confirm">確認</button>
+                             **不掛 `.btn-close-modals`**：一筆都沒勾時要彈 warning 並留在窗裡，
+                             關窗與否取決於勾了沒有 ⇒ 不是宣告式的。守衛、回填「已選 N 個」與關窗
+                             三件事都在 `search-scope-modal.js`。 #}
+                        <button type="button" class="button button-primary js-confirm-search-scope" data-i18n="action.confirm">確認</button>
                     </div>
                 </div>
             </div>

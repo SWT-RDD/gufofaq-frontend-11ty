@@ -28,42 +28,111 @@ permalink: 3-7_documentSearch.html
    畫得出來卻送不出去的旋鈕，在這條路上不是「還沒接」，是送出即失敗。
 
    **回應是投影、不是轉發**：`DocumentSearchOut` 只有 `total`／`returned`／`elapsed_ms`／`rows`，
-   而一列（`SearchRowOut`）只有四欄——`document_id`｜`doc_name`｜`date`｜`abstract`，恰好是這一頁
-   畫得出來的那些。上游 `SearchResult` 的其餘欄位在 product 那一層就被擋掉了：`data_source` 是
-   伺服器上的絕對路徑、`index` 是內部索引名，兩者都不該進瀏覽器。
+   而一列（`SearchRowOut`）就下面這六欄。上游 `SearchResult` 的其餘欄位在 product 那一層就被擋掉了：
+   `data_source` 是伺服器上的絕對路徑、`index` 是內部索引名，兩者都不該進瀏覽器。
+
+     欄            型別                  值域／缺值
+     document_id   str                   列鍵，**不顯示**
+     doc_name      str                   內部識別，**畫面上不印**（理由見下一段）
+     title         str | null            `value` 的 title 槽；該資料集沒指派 title 槽、或這一列該欄
+                                         是空的 ⇒ null
+     date          ISO8601 帶時區 | null  `value` 的 date 槽＝**時間篩選篩的那一欄**；該資料集沒指派
+                                         date 槽 ⇒ null（理由見下下段）
+     abstract      str                   命中段落，單段純文字（上限 1000 字，上游 `AbstractMaxCharNo`）
+     fields        [{label, value}]      已排序、已配好標籤的逐欄清單，**可為空陣列**
+
+   **結果列印的是標題，不是檔名**：`doc_name` 由 manager 的命名規則決定（`resolve_doc_name`），
+   沒設 `primary_key_fields` 時回的是 `str(row_number)`，而 product 建 excel 管道時不送
+   `primary_key_fields` ⇒ **一列一份文件的那一族**（Excel／QA 集／結構化 PDF·Word，
+   `connector_type="excel"`）**每一份文件的 `doc_name` 都是 1、2、3…**。只有 folder connector
+   （整份檔案進索引）那一族才是真檔名。同一欄底下兩種資料族語意不同、畫面上又分不出來，所以
+   這一欄整個換成 `title`——**欄名也一起換**：留著「檔案」兩個字而值換成標題，是把缺陷換一個位置重演。
+   `title` 是 null 時印一句具名的空文字，**不准 fallback 回 `doc_name`／`document_id`**（那正是
+   1、2、3 的來源）。
+   ⚠️ folder 那一族**沒有因此少掉檔名**：product 建 folder 管道時的預設 field_mapping 把
+   `file_name` 指給 title 槽（`title` ← `file_name`／`search`／`value` ← `content`），所以那一族的
+   標題欄印的就是檔名。一欄一個語意（「這份文件叫什麼」），兩族都說得出真話。
+
+   **時間欄印的是被篩的那一欄**：`SearchResult.date` 是**文件被讀進管道的時刻**——四支 connector
+   （csv／folder／excel／odbc）在 manager 那一側一律把它寫死成當下的 UTC 時間，與資料內容無關、
+   同一批匯入的列全部相同、每次重新同步還會變。而「開始／結束時間」篩的是 `$filterDate`＝product
+   的 **date 槽**（`Slot("date", "filterDate", …)`）。兩者並排、同名、卻不是同一個欄位：篩一月到二月、
+   每一列的時間欄卻顯示匯入當天，畫面上沒有任何一個字說得出為什麼。所以這一欄印 date 槽的值。
+   **沒指派 date 槽的資料集那一格留白**，不 fallback 回匯入時刻——folder 那一族的預設 field_mapping
+   就沒有 `filterDate`，而那正是 `search.dateRangeHint` 說的「這兩欄篩不到任何結果」的那一族：
+   格子空著與篩不到是同一件事的兩面，補一個篩不到的值上去只會讓它們對不起來。
+   **不另留一欄「匯入時間」**：沒有任何使用者流程需要那個值。
+
+   **明細展開兩區**：命中段落（這一次為什麼命中）＋ `fields` 逐欄（這份文件到底是什麼）。
+   `fields` 的值一直都在——上游 `SearchResult.value` 兩個引擎都有映射、匯入當下就寫進索引，
+   內容是 product 自己指定的（`build_field_mapping`：所有被指派的槽依 `SLOTS` 順序併入 `value`）
+   ——過去畫不出來是因為 product 的投影把它丟掉了，現在投影出來了。
+   **規則由 product 保證，切版不自己判斷**：順序＝`SLOTS` 順序且跨列穩定；只出現「該租戶有替那個
+   槽取名」且「這一列有值」的槽；**已排除 `title`／`content`／`date` 三槽與歸因槽**（各自另有落點）、
+   **存取控制槽與 `product_only`**；`label` 來自 `RetrievalProfile.field_labels`，與問答來源卡、
+   3-1-6 比對資料同一份正本。⇒ 這一頁**不查標籤表、不排序、不印 slot key、不比對顯示名**。
+   **同一支投影兩條路共用**：這一頁的 `SearchRowOut.fields` 與問答來源卡（`components/sources-block`）
+   的逐欄清單是同一份判準、同一個 markup 形狀、同一顆空狀態 key——但**逐列 markup 兩邊各自 inline**，
+   不抽成共用 include（那一段住在 `{% for %}` 裡，巢狀 include 會渲染成空白且不報錯，§9）。
+   每一格 `value` 的長度上限在 product 那一側
+   （超過會截並以「…」收尾）——**那個數字不進畫面**：它不是使用者填得到的欄位，印「最多 N 字」
+   只會讓人以為自己能做點什麼。
+   `fields` 是空陣列時**那一區整個不畫**，改一句具名空狀態：那個「空」＝一個槽都還沒被取名，
+   處置是去 5-2 的「欄位命名」取名；與「有欄位但都沒值」（回頭補資料）不是同一件事，畫一張空表
+   會讓兩者長得一模一樣。
+
+   **這一區刻意不加的東西**（§4：不做的要寫明理由）：
+     · **不畫 `score`／`search_engine`／`chunk_index`／`chunk_count`**：product 的投影裡沒有它們，
+       要畫得先讓 product 投影出來——那是另一次決策（同下面那一段的判準）。
+     · **不畫 `index` 與 `data_source`**：刻意不外送的內部識別（內部索引名／伺服器絕對路徑）。
+     · **`fields` 不加排序或篩選控制項**：`SearchParams` 沒有排序欄位且 `extra=forbid`，
+       畫得出來也送不出去（同這一頁排序下拉那一條）。
+     · **不動「命中段落」那一格的既有說明**：關鍵字引擎回的是摘要且命中詞標記被上游關掉、
+       語意引擎回的是整段 chunk——那段說明仍然成立。
 
    ─────────────────────────────────────────────────────────────────────────────
-   **「檢索模式」兩顆改綁 `strategy`，並補上第三顆**（§5：切版刻意不照搬
-   某段既有行為時，要在該頁檔頭記載什麼取代了什麼）。三顆的 `value` 逐字取自上游的
-   `SearchStrategy` enum，而 product 的 `SearchIn.strategy` 以同一組 `Literal` 夾住它
-   （值域寫成 `Literal` 而不是裸 `str`，是為了讓它出現在 OpenAPI 上）：
+   **「檢索模式」兩顆綁 `strategy`**（§5：切版刻意不照搬某段既有行為時，要在該頁檔頭記載
+   什麼取代了什麼）。兩顆的 `value` 逐字取自上游的 `SearchStrategy` enum，而 product 的
+   `SearchIn.strategy` 以同一組 `Literal` 夾住它（值域寫成 `Literal` 而不是裸 `str`，
+   是為了讓它出現在 OpenAPI 上）：
 
      畫面           strategy          實際打誰
-     混合檢索       hybrid            兩個引擎都打再合併（**`SearchManagerRequest.strategy` 的預設值**）
      關鍵字檢索     gufonet_only      GufoNet BM25（GufoNet 那一側）
      語意檢索       weaviate_only     Weaviate `near_vector`（Weaviate 那一側的非同步 `search()`）
 
-   補第三顆是**必要的誠實**、不是加功能：`strategy` 的預設就是 `HYBRID`，只畫兩顆等於畫面上
-   表達不出後端的預設態，使用者一進來看到的勾選狀態會是假的。三顆的預設勾在「混合檢索」。
+   **`hybrid` 在值域上，這一頁不給它入口**：`Literal` 三顆裡還有 `hybrid`（兩個引擎都打再合併，
+   也是 `SearchManagerRequest.strategy` 的預設值）。不畫它是**產品決定**：這一頁一次只走一個引擎，
+   讓使用者自己說在找的是**字面**還是**意思**——那是他答得出來的問題，「兩個都要」不是一個他做得了
+   的選擇。
+   **連帶結果：這一頁一律送出明確的 `strategy`**（兩顆 radio 恆有一顆勾著），永遠不會落回上游的
+   預設值；預設勾在「關鍵字檢索」——這一頁的第一格是關鍵字欄，找的是字面。
 
    **「開始／結束時間」兩欄送的是日期本身（`SearchIn.start_date`／`end_date`），不是 DSL**：
    組 `$filterDate >= '…' and $filterDate <= '…'` 的是 product（`build_date_range_dsl`），
    前端一個字都不拼。`filterDate` 是上游 `DEFAULT_FILTER_FIELD_NAMES` 六欄之一。
    **這件事決定了「結束時間早於開始時間」是誰擋的**：product 回 400 ＋ `code: date_range_reversed`，
    不是前端送出前自己發現的（見下方查詢鈕那一段）。
-   ⚠️ **前提是匯入 pipeline 的 mapper 有把日期寫進 `filterDate`**——沒寫的資料集這兩欄篩不到東西，
-   而那是資料面的事、畫面上看不出來——所以結果表的空狀態要把這件事說出來。
+   ⚠️ **前提是匯入 pipeline 的 mapper 有把日期寫進 `filterDate`**——沒寫的資料集這兩欄篩不到東西。
+   那一族在結果表上**看得出來**：時間欄就是那個值，沒有它的列那一格是空的（見下面時間欄那一段）。
+   結果表的空狀態仍要把這件事說出來——一列都沒篩到的時候，連那個空格子都沒有東西可以看。
 
    **檢索範圍逐一列舉，沒有「空＝全部」這一態**：`SearchIn.dataset_ids` 帶 `min_length=1`，
-   缺席或空陣列是 422。**「檢索全部」＝在檢索範圍窗按全選、把每一個 id 都送出去。**
+   缺席或空陣列是 422。**「檢索全部」＝在檢索範圍窗把每一個 id 都勾起來送出去。**
    理由在上游：`SearchParams.indexes` 空值是「不加索引條件」（GufoNet 那一側的
    `_build_query_sentence()` 是 `if search_params.indexes:`），而 manager 沒有租戶概念
    ⇒ 那一層的「全部」是**全平台**。product 有能力把空清單翻譯成「本租戶全部」，但只要那個值
    還在契約上，少翻一次就是跨租戶檢索、而回應看起來完全正常——所以值域收在**送出的那一端**。
-   由此三件事：檢索範圍窗一筆都沒勾時確認鈕 `disabled`（見該元件檔頭）、查詢鈕多一段
-   「沒有選擇資料集」的 warning（這個租戶一個資料集都沒有時按得到）、觸發鈕的 0 態**照數字印
+   由此三件事：檢索範圍窗一筆都沒勾時**彈 warning 並留在窗裡**（見該元件檔頭——「沒選任何一筆」
+   的家是 warning 分支，不准用 `disabled` 收，REACT-CONVERSION §⑥）、查詢鈕多一段
+   「沒有可檢索的資料集」的 warning（這個租戶一個資料集都沒有時按得到）、觸發鈕的 0 態**照數字印
    「已選 0 個資料集」**——0 不再是「全部」的別名，照著印就是真話。
    **進頁時預設全選**（給 React 的契約）：值域收緊之後，不預設就等於每次進來都要先開一次窗。
+   **「清除」也回到全選**：檢索範圍是這一列的查詢參數之一，清除鈕卻搆不到它——值住在彈窗的勾選框上，
+   而 `<dialog>` 不在篩選列的 `.block` 之內。清得掉關鍵字與日期、唯獨範圍原地不動的話，使用者眼中
+   那一列已經清乾淨了，按下查詢卻還帶著上一次的範圍。收法見 `ui/filter-fields` 與該元件的 `reset()`。
+   ⚠️ 那一窗的「全選」只勾得到**目前列出來的**那幾筆（`ui/checkbox` 的母體是可見列），搜尋框有字
+   時按下去只會勾到過濾後那幾筆——這個前提由窗裡那段常駐說明講出來，否則使用者看到滿格的全選框、
+   送出去卻是子集，而回應完全正常。
 
    ─────────────────────────────────────────────────────────────────────────────
    **這一頁刻意沒有的東西**（GUIDELINE §4「不做的那些在檔頭寫明理由」）：
@@ -87,14 +156,9 @@ permalink: 3-7_documentSearch.html
      · **「存入資料集」與「匯出整份檔案」**：新後端沒有 DocCollection 概念、也沒有
        `DownloadSearchResult` ⇒ `components/store-to-collection-modal` 整顆刪。
      · **逐列勾選框與表頭全選**：唯一的消費者是「存入資料集」，那顆沒了它們就是零消費者的控制項。
-     · **檔名的三態**（下載原檔／看欄位內容／純文字）：`DownloadOriginalFile` 與 `RetreiveContent`
-       兩支都沒有對應 ⇒ 檔名降成純文字，`components/field-content-modal` 整顆刪。
-     · **「標題」欄**：`SearchResult` 沒有 title。GufoNet 那側的 `TfFieldWeight` 給 `$Title$` 開了權重
-       證明索引裡有 Title，但它沒被寫進 `_BASE_CONTENT_FIELD`、也沒被 `_convert_to_search_result`
-       取出來 ⇒ 值拿不到。
-     · **明細列的自訂欄位逐欄**（發布單位／原始連結）：`_build_content_field()` 確實會把自訂欄位
-       append 進 GufoNet 的 `ContentField`，但 `_convert_to_search_result` **沒有把它們映射進
-       `SearchResult`**（兩個引擎都只映射同 12 欄）⇒ 值拿不到。
+     · **檔名那一欄整欄**，連同它的三態（下載原檔／看欄位內容／純文字）：`DownloadOriginalFile`
+       與 `RetreiveContent` 兩支都沒有對應 ⇒ `components/field-content-modal` 整顆刪；而 `doc_name`
+       本身也不印——理由見上面「結果列印的是標題，不是檔名」那一段。
      · **「摘要生成」逐列鈕與整顆 `components/doc-summary-modal`**：`GenerateSummary` 是 SolIdea2
        的端點，`manager_backend` 與 GufoRAG `chatbot` 兩邊都沒有對應。
      · **命中段落的「累計命中序號」與命中字標紅**：`search` 就是 GufoNet 的 `DocAbstract`，而
@@ -103,9 +167,10 @@ permalink: 3-7_documentSearch.html
        ⇒ `{ no, before, hit, after }` 那種逐段拆解在這條路徑上沒有輸入。改畫成單一段純文字。
 
    **上游回得出來、這一頁刻意不畫的欄位**（§4：不做的要寫明，否則下一個人分不出「不能」與「還沒」）：
-   `score`、`search_engine`（HYBRID 下這一筆由誰命中）、`chunk_index`／`chunk_count`（Weaviate 路徑）、
-   以及 `GET /api/v1/search/documents/{id}` 的整份切塊。**它們今天連投影都沒有**：`DocumentSearchOut`
-   的四欄是 product 挑過的，所以要補畫任何一欄，得先讓 product 那一層把它投影出來。
+   `score`、`search_engine`（這一筆由哪個引擎命中）、`chunk_index`／`chunk_count`（Weaviate 路徑）、
+   以及 `GET /api/v1/search/documents/{id}` 的整份切塊。
+   **它們今天連投影都沒有**：`SearchRowOut` 的六欄是 product 挑過的，所以要補畫任何一欄，
+   得先讓 product 那一層把它投影出來。
    （`index` 與 `data_source` 不在這一族：那兩顆是**刻意不外送**的內部識別，見上面回應那一段。）
    **補畫是另一次決策**：這一頁的判準是「只留接得住的旋鈕」，多畫一欄要各自論證它解決誰的問題，不夾帶。
 
@@ -126,7 +191,8 @@ permalink: 3-7_documentSearch.html
        `require_tenant_feature`，再標一顆只是把同一句話說兩遍（GUIDELINE §4）。
      · **「檢索全部」在這條路上是逐一列舉，不是送空清單**：上游 `SearchParams.indexes` 空值是
        「不加索引條件」，而那一層沒有租戶概念 ⇒ 空清單的「全部」是全平台。值域因此收在送出端
-       （`min_length=1`），畫面上按全選、逐一送 id。
+       （`min_length=1`），畫面上逐一勾、逐一送 id（「全選」是把列出來的那幾筆一次勾起來的捷徑，
+       不是另一種值）。
      · **檢索範圍那一窗送的是 product 的 `dataset_id`，不是索引名**：清單來源是 product 的
        `GET /datasets`（本租戶的資料集），勾起來的 id 組成 `SearchIn.dataset_ids`，索引名由
        `resolve_indexes` 在伺服器端翻譯。manager 的 `GET /api/v1/indexes` **不能當那一窗的值域**
@@ -140,11 +206,10 @@ permalink: 3-7_documentSearch.html
     {% include "ui/breadcrumb/breadcrumb.html" %}
 </div>
 
-{# 檢索模式三顆 radio 資料化：`value` 是**送出去的 `strategy` 值**（對上面那張表），不是畫面文字。
-     值逐字取自 `SearchStrategy` enum。 #}
+{# 檢索模式兩顆 radio 資料化：`value` 是**送出去的 `strategy` 值**（對上面那張表），不是畫面文字。
+     值逐字取自 `SearchStrategy` enum；enum 的第三顆 `hybrid` 刻意不在這份陣列裡（見檔頭）。 #}
 {% set searchStrategies = [
-    { value: "hybrid", label: "混合檢索", i18nKey: "search.modeHybrid", checked: true },
-    { value: "gufonet_only", label: "關鍵字檢索", i18nKey: "search.modeKeyword" },
+    { value: "gufonet_only", label: "關鍵字檢索", i18nKey: "search.modeKeyword", checked: true },
     { value: "weaviate_only", label: "語意檢索", i18nKey: "search.modeSemantic" }
 ] %}
 <div class="block block-sm border corner-md mt-16">
@@ -163,14 +228,16 @@ permalink: 3-7_documentSearch.html
                  它是窗裡那份示範陣列勾起來的筆數，兩邊必須對得上。
                  **0 態就照著印「已選 0 個資料集」**：空清單送不出去（見檔頭）⇒ 0 是一個**擋著的
                  狀態**、不是一種範圍，照數字印就是真話，不必換字面。進頁預設全選，所以 0 只有在
-                 這個租戶一個資料集都沒有時才看得到，而「為什麼查不了」由查詢鈕那一段 warning 說。 #}
+                 這個租戶一個資料集都沒有時才看得到，而「為什麼查不了」由查詢鈕那一段 warning 說。
+                 數字那一格帶 `id="docSearchScopeCount"`：確認鈕按下去時由 `search-scope-modal.js`
+                 回填（§5 當場動得起來），React 端接的也是它（§5 綁定記號 class 或 id 擇一即可）。 #}
             {% set searchScopeSelectedCount = 2 %}
             <div class="form-group col-4-md col-12-sm">
                 <div class="label">
                     <label id="docSearchScopeLabel" class="control-label" data-i18n="search.searchScope">檢索範圍</label>
                 </div>
                 <div class="field">
-                    <button type="button" class="button button-border w100" data-open-modal="searchScopeModal" aria-labelledby="docSearchScopeLabel docSearchScopeBtn"><span id="docSearchScopeBtn"><span data-i18n="search.scopeSelectedPrefix">已選 </span><span>{{ searchScopeSelectedCount }}</span><span data-i18n="search.scopeSelectedSuffix"> 個資料集</span></span></button>
+                    <button type="button" class="button button-border w100" data-open-modal="searchScopeModal" aria-labelledby="docSearchScopeLabel docSearchScopeBtn"><span id="docSearchScopeBtn"><span data-i18n="search.scopeSelectedPrefix">已選 </span><span id="docSearchScopeCount">{{ searchScopeSelectedCount }}</span><span data-i18n="search.scopeSelectedSuffix"> 個資料集</span></span></button>
                 </div>
             </div>
         </div>
@@ -189,7 +256,7 @@ permalink: 3-7_documentSearch.html
                 {% endfor %}
             </div>
         </div>
-        <p class="text-gray m-0" id="docSearchModeHint" data-i18n="search.searchModeHint">混合檢索同時使用關鍵字與語意兩個引擎並合併結果；只選其中一個時，另一個引擎的命中不會出現。</p>
+        <p class="text-gray m-0" id="docSearchModeHint" data-i18n="search.searchModeHint">關鍵字檢索找的是字面命中，語意檢索找的是意思相近的段落；一次只走一個引擎，另一個引擎的命中不會出現在結果裡。</p>
         <div class="flex-row gap-8 mobile-column sm-gap-16">
             <div class="form-group col-4-md col-12-sm">
                 <div class="label">
@@ -222,11 +289,13 @@ permalink: 3-7_documentSearch.html
                          4-1 的查詢鈕同形），子句與英譯逐字沿用（§4-2 同子句同英譯）。
                  warning 「沒有搜尋字串」＝`SearchIn.query` 的 `min_length=1`（product 這一層先擋，
                          對回上游 `SearchParams.query` 的同一道）
-                 warning 「沒有選擇資料集」＝`SearchIn.dataset_ids` 的 `min_length=1`，形狀同上一段
-                         （前端先擋，對回 product 的同一道）。**按得到**：進頁預設全選，但這個租戶
-                         一個資料集都沒有時全選也是空的——那時這一段就是唯一說得出「為什麼查不了」
-                         的地方（結果表的空狀態說的是「條件收太緊」，那是另一件事）。
-                         範圍窗那一側的同一道由 `disabled` 表達（見該元件檔頭）。
+                 warning 「沒有可檢索的資料集」＝`SearchIn.dataset_ids` 的 `min_length=1`，形狀同上一段
+                         （前端先擋，對回 product 的同一道）。**按得到的只有一種情境**：進頁預設全選、
+                         範圍窗又擋著空選（一筆都沒勾就彈 warning、不關窗），所以 0 只發生在這個租戶
+                         一個資料集都沒有的時候。這一段的下一步因此是**去建一個資料集**、不是「去勾
+                         一個」——窗裡沒有東西可以勾。子句與英譯逐字沿用 `dataset.noSelectableDatasets`
+                         （§4-2 同子句同英譯）。結果表的空狀態說的是「條件收太緊」，那是另一件事。
+                         範圍窗那一側的同一道由該元件 js 的 warning 表達（見該元件檔頭）。
                  warning 「結束時間不能早於開始時間」＝product 回 400 ＋ `code: date_range_reversed`
                          （組日期 DSL 的是 product，不是前端，見檔頭）。**不得折進 error**：
                          那是使用者改得掉的輸入錯誤，而 error 那一段說的是「再試一次」——再試一次
@@ -242,7 +311,7 @@ permalink: 3-7_documentSearch.html
                          ＝我方的錯，使用者做不了任何事）＋ 上游那一側的 500、以及網路層失敗。
                **不列 404**：`resolve_indexes` 對別的租戶的 dataset id 回 404，而這一頁的資料集
                清單就是本租戶的（`GET /datasets`）⇒ 畫面上按不出那一態。 #}
-            <button data-capability="data:read" type="button" class="button button-primary js-doc-search" data-toast="正在查詢資料...|權限不足，無法查詢——請找貴租戶的管理者開通|沒有搜尋字串|沒有選擇資料集——請在「檢索範圍」裡至少勾一個|結束時間不能早於開始時間|授權驗證失敗，無法查詢——請找平台管理者確認系統授權檔|查詢成功|查詢失敗，請稍後再試" data-i18n-data-toast="toast.docSearch" data-toast-type="info|warning|warning|warning|warning|warning|success|error" data-i18n="action.query">查詢</button>
+            <button data-capability="data:read" type="button" class="button button-primary js-doc-search" data-toast="正在查詢資料...|權限不足，無法查詢——請找貴租戶的管理者開通|沒有搜尋字串|沒有可檢索的資料集——先到「資料集管理」建一個並匯入資料|結束時間不能早於開始時間|授權驗證失敗，無法查詢——請找平台管理者確認系統授權檔|查詢成功|查詢失敗，請稍後再試" data-i18n-data-toast="toast.docSearch" data-toast-type="info|warning|warning|warning|warning|warning|success|error" data-i18n="action.query">查詢</button>
         </div>
     </div>
 </div>
@@ -257,29 +326,61 @@ permalink: 3-7_documentSearch.html
      · `did` 是列鍵（§6：清單的參數陣列要帶身分欄位，不用 loop.index），正本＝`SearchResult.document_id`。
      · `abstract` ＝ `SearchResult.search`（GufoNet 的 `DocAbstract`）：**單一段純文字**，
        `AbstractMaxCharNo` 設 1000 故上限一千字。命中的字沒有標記可以標紅（見檔頭）。
+     · `title` 與 `date` **第二列都刻意不給**（不給鍵＝上游的 null）：那一列演的是「這個資料集只指派
+       了少數幾個槽」——沒有 title 槽（畫面上是一句具名的空文字）、也沒有 date 槽（那一格留白，
+       而它同時就是 `search.dateRangeHint` 說的「這兩欄篩不到任何結果」的那一族）。不演的話，
+       全站沒有任何一頁看得到這兩態（§5：沒有頁面演得出來的分支等於沒驗收過）。
+       **空標題只演一列**：兩列都空的話，那兩顆展開鈕的可及名稱會逐字相同（§4）。
+     · `fields` 的 `label` **逐字沿用這個示範租戶的 `RetrievalProfile.field_labels`**——正本是 5-2
+       「欄位命名」那一區，§6：同一份業務目錄不得各烤一份。另編一套的話，這一頁會長出那個租戶
+       在設定畫面上根本設不出來的欄名。那一份共七個槽有名字，扣掉各有自己落點的
+       `title`／`content`／`date` 與歸因槽 `note1`／`note2`（承辦組室／業務範疇，正本＝5-3 的歸因維度）
+       ⇒ **這一頁列得出來的只有 `source`（參考資料）與 `category`（法規類別）**。
+       三列各演一種筆數：**多欄**（含一格被上游截斷、以「…」收尾的長值）、**單欄**（這一列只有
+       那個槽有值）、**零欄**（那一句具名空狀態）。列與列之間欄數不同是常態，不是資料不齊。
    `docSearchElapsed` ＝ `SearchResponse.processing_time_ms`，畫面上換算成秒。 #}
 {% set docSearchTotal = 203 %}
 {% set docSearchElapsed = "0.42" %}
 {% set docSearchRows = [
     {
-        did: "90142", name: "入出國及移民法函釋彙編.pdf", date: "2026-02-18 09:31:04",
-        abstract: "外籍配偶申請依親居留時，應檢附結婚證明文件正本；前項居留許可之效期，自核發之日起算三年，到期前三十日內得申請延期。"
+        did: "90142", title: "外籍配偶依親居留應備文件函釋", date: "2026-02-18 09:31:04",
+        abstract: "外籍配偶申請依親居留時，應檢附結婚證明文件正本；前項居留許可之效期，自核發之日起算三年，到期前三十日內得申請延期。",
+        fields: [
+            { label: "參考資料", value: "內政部移民署 111-1021-5 號函；本文所引法條為入出國及移民法第二十三條、第三十一條，並參照施行細則第十五條與駐外館處文件驗證要點第七點…" },
+            { label: "法規類別", value: "居留與定居" }
+        ]
     },
     {
-        did: "90177", name: "居留案件統計_2026Q1.xlsx", date: "2026-01-27 14:02:55",
-        abstract: "本季依親居留案件受理 1,204 件，核發 1,118 件，平均處理天數 12.4 日。"
+        did: "90177",
+        abstract: "本季依親居留案件受理 1,204 件，核發 1,118 件，平均處理天數 12.4 日。",
+        fields: [
+            { label: "參考資料", value: "內政部移民署統計處季報" }
+        ]
     },
     {
-        did: "90203", name: "戶政法規釋例摘錄.txt", date: "2025-11-06 16:45:12",
-        abstract: "換發居留證應於期限屆滿前三十日內辦理；逾期者依入出國及移民法第八十五條處罰鍰。"
+        did: "90203", title: "換發居留證期限與罰則釋例", date: "2025-11-06 16:45:12",
+        abstract: "換發居留證應於期限屆滿前三十日內辦理；逾期者依入出國及移民法第八十五條處罰鍰。",
+        fields: []
     }
 ] %}
-<div class="data-info flex-row flex-wrap gap-24 mt-16">
-    <span><span data-i18n="common.total">共</span> {{ docSearchTotal }} <span data-i18n="common.recordsUnit">筆</span></span>
-    <span><span data-i18n="search.elapsedPrefix">耗時：</span>{{ docSearchElapsed }}<span data-i18n="regression.secondsUnit"> 秒</span></span>
-</div>
-{# `.js-accordion` 是 accordion.js 的**掃描根**（它 querySelectorAll 那顆 class 再對 block 內委派）。 #}
-<div class="table-container scrollTable js-accordion mt-16">
+{# `.js-accordion` 是 accordion.js 的**掃描根**（它 querySelectorAll 那顆 class 再對 block 內委派），
+     而「全部展開／收合」兩顆鈕是 `block.querySelector(".js-expand-all")` 找的 ⇒ 它們必須在根**裡面**。
+     根因此罩住「這一列資訊 ＋ 表格」兩塊、不是只罩表格：收在 `.table-container` 上的話，那兩顆鈕
+     就得擠進可橫向捲動的表格殼裡，跟著表格一起左右捲。版位與 3-5／2-2-4／2-2-5 同形（資訊在左、
+     兩顆鈕靠右）。 #}
+<div class="js-accordion mt-16">
+    <div class="flex-row justify-content-between align-items-center flex-wrap gap-16">
+        <div class="data-info flex-row flex-wrap gap-24">
+            <span><span data-i18n="common.total">共</span> {{ docSearchTotal }} <span data-i18n="common.recordsUnit">筆</span></span>
+            <span><span data-i18n="search.elapsedPrefix">耗時：</span>{{ docSearchElapsed }}<span data-i18n="regression.secondsUnit"> 秒</span></span>
+        </div>
+        {# `.btn-group` 的規則帶著 `.default-table` 祖先（§4 祖先錯位），表格外吃不到。 #}
+        <div class="flex-row gap-10 align-items-center">
+            <button type="button" class="button button-border button-sm js-expand-all" data-i18n="common.expandAll">全部展開</button>
+            <button type="button" class="button button-border button-sm js-collapse-all" data-i18n="common.collapseAll">全部收合</button>
+        </div>
+    </div>
+<div class="table-container scrollTable mt-16">
     <table class="default-table">
         <colgroup>
             <col style="min-width:320px;">
@@ -288,7 +389,7 @@ permalink: 3-7_documentSearch.html
         </colgroup>
         <thead>
             <tr>
-                <th id="docSearchHeadFile" data-i18n="common.file">檔案</th>
+                <th data-i18n="dataset.title">標題</th>
                 <th data-i18n="common.time">時間</th>
                 <th><span class="sr-only" data-i18n="search.colDetail">明細</span></th>
             </tr>
@@ -296,12 +397,20 @@ permalink: 3-7_documentSearch.html
         <tbody>
             {% for row in docSearchRows %}
             <tr data-did="{{ row.did }}">
-                {# 檔名是純文字：下載原檔與看欄位內容兩支端點都沒有對應（見檔頭），
-                     畫成連結或按鈕等於在 markup 裡宣告一條不存在的流程。 #}
-                <td id="docSearchRowName-{{ row.did }}">{{ row.name }}</td>
-                <td>{{ row.date }}</td>
+                {# 標題是純文字：下載原檔與看欄位內容兩支端點都沒有對應（見檔頭），
+                     畫成連結或按鈕等於在 markup 裡宣告一條不存在的流程。
+                     **沒有標題時不 fallback 回 `doc_name`／`document_id`**（見檔頭：那個值對一列一份
+                     文件的那一族就是 1、2、3），改印一句具名的空文字——列的識別由標題承載，
+                     承載不了就要看得出來，不是換一個內部識別頂上去。
+                     連帶結果：那一列展開鈕的可及名稱也落在這一句上（`aria-labelledby` 指這一格）。 #}
+                <td id="docSearchRowTitle-{{ row.did }}">{% if row.title %}{{ row.title }}{% else %}<span class="text-gray" data-i18n="search.untitledDoc">這一列沒有標題欄</span>{% endif %}</td>
+                {# 印的是 date 槽＝時間篩選篩的那一欄（見檔頭）。沒指派 date 槽時印一句**具名的空文字**，
+                     不留白、也不 fallback 回匯入時刻：空格子說不出「所以你用時間範圍篩不到它」，
+                     而那正是使用者接下來會撞到的事；補一個篩不到的值上去則是讓兩件事互相打架。
+                     與來源卡（`components/sources-block`）同一顆 key。 #}
+                <td>{% if row.date %}{{ row.date }}{% else %}<span class="text-gray" data-i18n="search.noDateField">這個資料集沒有日期欄——日期沒有進索引，用時間範圍就篩不到這一列</span>{% endif %}</td>
                 <td>
-                    <button type="button" id="docSearchExpand-{{ row.did }}" aria-labelledby="docSearchRowName-{{ row.did }} docSearchExpand-{{ row.did }}" class="button accordion-btn" aria-expanded="false" title="展開表格" data-i18n-title="common.expandRow">
+                    <button type="button" id="docSearchExpand-{{ row.did }}" aria-labelledby="docSearchRowTitle-{{ row.did }} docSearchExpand-{{ row.did }}" class="button accordion-btn" aria-expanded="false" title="展開表格" data-i18n-title="common.expandRow">
                         <span class="sr-only" data-i18n="common.expandRow">展開表格</span>
                     </button>
                 </td>
@@ -309,12 +418,30 @@ permalink: 3-7_documentSearch.html
             <tr class="detail-row">
                 <td colspan="3" class="detail-cell">
                     <div class="accordion-content">
+                        {# 兩區：命中段落（這一次為什麼命中）＋ 這份文件的逐欄內容（它到底是什麼）。
+                             `fields` 是 product 配好標籤、照 `SLOTS` 排好的清單 ⇒ 這裡不查表、不排序、
+                             不印 slot key（見檔頭）。
+                             ⚠️ `label` **一顆 `data-i18n` 都不掛**：那是租戶自己取的顯示名＝資料，
+                             不是 chrome（§4-2；同 3-1-6 的比對表頭，理由寫在該頁檔頭）。 #}
                         <table class="accordion-table">
                             <tbody>
                                 <tr>
                                     <th data-i18n="search.hitPassages">命中段落</th>
                                     <td>{{ row.abstract }}</td>
                                 </tr>
+                                {% for field in row.fields %}
+                                <tr>
+                                    <th>{{ field.label }}</th>
+                                    <td>{{ field.value }}</td>
+                                </tr>
+                                {% else %}
+                                {# 空狀態具名（§5）：這裡的「空」＝**沒有任何槽被取過名**，不是「欄位都沒值」
+                                     ——前者去 5-2 的「欄位命名」取名就有，後者要回頭補資料，處置完全不同。
+                                     畫一張空表的話兩者長得一模一樣。 #}
+                                <tr>
+                                    <td colspan="2" class="text-gray" data-i18n="search.noDisplayableFields">這份文件沒有可顯示的欄位——欄位要先在「對話設定」的欄位命名裡取好名字，才會出現在這裡。</td>
+                                </tr>
+                                {% endfor %}
                             </tbody>
                         </table>
                     </div>
@@ -328,6 +455,7 @@ permalink: 3-7_documentSearch.html
             {% endfor %}
         </tbody>
     </table>
+</div>
 </div>
 {% set total = docSearchTotal %}
 {% set perPage = 10 %}

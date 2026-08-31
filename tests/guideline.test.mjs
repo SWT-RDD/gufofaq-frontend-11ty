@@ -2367,6 +2367,74 @@ test("§4 每個 <dialog> 在它所在的那一頁上都有辦法被打開（反
 ${fail(hits)}`);
 });
 
+test("§5 窗腳的每一顆鈕都要有主人（不掛 .btn-close-modals 的那幾顆，按下去必須真的會發生事）", () => {
+    // 擋的是這一種死法：確認鈕從「宣告式關窗」改成「關不關窗要看條件」，於是 `.btn-close-modals`
+    // 被拿掉——而那個「條件」沒有人寫。按下去不關窗、不彈訊息、什麼都沒有，讀起來與「這顆鈕壞了」
+    // 逐字相同（select-dataset-modal.js 檔頭逐字寫著這句）。markup 上完全合法：「每個 class 都要有
+    // 主人」那條把 `js-` 命名**本身**當主人放行，所以沒有任何既有測試看得到它。
+    //
+    // 一顆窗腳鈕算「有主人」有四條路，任一條成立即可：
+    //   (a) `.btn-close-modals` —— 宣告式關窗，ui/modals 接
+    //   (b) `data-toast` —— 送 API 的動作鈕，切版當場彈得出它的結果集合（§5 矩陣③）
+    //   (c) `data-open-modal` —— 這一顆是開下一扇窗的（同樣由 ui/modals 接）
+    //   (d) 某支元件 js 的原文裡出現它的 hook class —— 切版自有行為，當場動得起來（§5 矩陣②④）
+    // 都不成立時才輪到 REACT_BOUND_CONFIRM：**送 API、成敗分支由 React 演**的業務確認鈕，
+    // 靜態原型裡本來就不動作（§5 矩陣③）。逐顆寫出為什麼，否則「這顆鈕沒接」與「這顆鈕壞了」
+    // 在這條規則下長得一模一樣。
+    const REACT_BOUND_CONFIRM = new Map([
+        ["js-confirm-delete-demo", "元件庫頁 delete-modal 的版型示範（deleteConfirmBinding＝確認鈕交給業務 js 綁）：" +
+            "那一頁沒有真實觸發鈕，生產頁上這顆送的是刪除 API，成敗由 React 演；窗仍關得掉（取消鈕與右上角都掛著 btn-close-modals）"],
+    ]);
+    const cssClasses = cssSelectorClasses();
+    assert.ok(cssClasses.size > 544, `dist/css/main.css 只掃到 ${cssClasses.size} 個 class —— 「哪些 class 是 hook」判不出來，這條測試在空轉`);
+    const jsText = srcJs.map((f) => read(f)).join(NL);
+    assert.ok(jsText.includes("btn-close-modals"), "元件 js 全串起來卻找不到 btn-close-modals —— srcJs 收集器壞了，(d) 那條會全數落空");
+
+    // 窗腳（`.modals-footer`）的鈕：用字串感知的配對找出這一格到哪裡為止，不用貪婪 regex 掃到別的窗去
+    const footerButtons = (html) => {
+        const out = [];
+        for (const m of html.matchAll(/<div class="[^"]*\bmodals-footer\b[^"]*">/g)) {
+            const inner = html.slice(m.index + m[0].length);
+            for (const b of inner.slice(0, lastIndexOfBalanced(inner)).matchAll(/<button\b([^>]*)>/g)) out.push(b[1]);
+        }
+        return out;
+    };
+    // 這顆鈕的主人是誰（null＝沒有主人＝按下去什麼都不會發生）
+    const ownerOf = (attrs) => {
+        const cls = (attrs.match(/\sclass=["']([^"']*)["']/) || [, ""])[1].split(/\s+/).filter(Boolean);
+        if (cls.includes("btn-close-modals")) return "close";
+        if (/\sdata-toast=/.test(` ${attrs}`)) return "toast";
+        if (/\sdata-open-modal=/.test(` ${attrs}`)) return "open";
+        // hook 的機器判準與全站同一條：全站 css 找不到它 ⇒ 它只給 js 認鈕用
+        for (const h of cls.filter((c) => !cssClasses.has(c))) {
+            if (jsText.includes(h)) return `js:${h}`;
+            if (REACT_BOUND_CONFIRM.has(h)) return `react:${h}`;
+        }
+        return null;
+    };
+    assert.equal(ownerOf('type="button" class="button button-border btn-close-modals"'), "close");
+    assert.equal(ownerOf('type="button" class="button button-primary js-confirm-search-scope"'), "js:js-confirm-search-scope");
+    // 負控：一顆沒有任何 js 認得、也沒登記的 hook 必須判成無主——判不出來的話這條規則永遠是綠的
+    assert.equal(ownerOf('type="button" class="button button-primary js-nobody-binds-this"'), null,
+        "負控：合成的無主鈕沒有被判成無主");
+
+    let seen = 0;
+    const hits = [];
+    const usedRegistry = new Set();
+    for (const f of distHtml)
+        for (const attrs of footerButtons(distDoc(f))) {
+            seen++;
+            const owner = ownerOf(attrs);
+            if (owner === null) hits.push(`dist/${f}  <button${attrs.slice(0, 90)}>`);
+            else if (owner.startsWith("react:")) usedRegistry.add(owner.slice(6));
+        }
+    assert.ok(seen > 100, `dist 只掃到 ${seen} 顆窗腳鈕 —— 母體解析壞了，這條測試在空轉`);
+    const stale = [...REACT_BOUND_CONFIRM.keys()].filter((k) => !usedRegistry.has(k));
+    assert.deepEqual(stale, [], `REACT_BOUND_CONFIRM 有死豁免（那顆鈕已經有主人、或已經不存在）：${stale.join("、")}`);
+    assert.equal(hits.length, 0, `窗腳鈕沒有主人：按下去不關窗、不彈訊息，讀起來與「這顆鈕壞了」逐字相同（§5）：
+${fail(hits)}`);
+});
+
 test("§5 markup 零 inline 事件處理器 / javascript: href（行為住在元件 js 裡）", () => {
     // 要在 markup 宣告行為就掛資料屬性（data-open-modal / data-toast），由 owning 元件的 js 事件委派。
     // `javascript:` href 同樣是把 js 塞進 markup（`javascript:void(0)` 更是一顆死連結）。
@@ -3642,7 +3710,7 @@ test("§4 資料列的 colspan 必須等於該表的表頭欄數（空狀態那�
     }
     // 空轉守門：上面那三個坑任一個踩到，這兩個數字就會塌下來（實測踩坑時 tableN 直接變 0）
     assert.ok(tableN >= 55, `只掃到 ${tableN} 張表 —— 巢狀配對壞了，這條測試在空轉`);
-    assert.ok(spanN >= 53, `只掃到 ${spanN} 個資料列 colspan —— 這條測試在空轉`);
+    assert.ok(spanN >= 52, `只掃到 ${spanN} 個資料列 colspan —— 這條測試在空轉`);
     probe("§4 colspan vs 表頭欄數", scan,
         ["<table><thead><tr><th>a</th><th>b</th><th>c</th></tr></thead><tbody><tr><td colspan=\"2\">無資料</td></tr></tbody></table>",
             // 裸 <th> 也要算：只認帶屬性的 th 會把這張表當成 2 欄而放行 colspan=2
@@ -7200,6 +7268,7 @@ test("§5 `.hidden` 判準①的另一半：src 引用得到、dist 卻一頁都
         ["pagination.jumpNext", "ui/pagination/pagination.js"],
         ["pagination.nextDisabled", "ui/pagination/pagination.js"],
         ["toast.selectDatasetFirst", "components/select-dataset-modal/select-dataset-modal.js"],
+        ["toast.selectScopeFirst", "components/search-scope-modal/search-scope-modal.js"],
     ]);
     const { used } = collectUsedI18nKeys();
     const rendered = new Set();
@@ -8712,6 +8781,98 @@ test("§5 ui/checkbox 全選只動畫面上看得到的那幾列（過濾隱藏�
     probeRun.fixture.container.dispatch("click", { target: probeRun.fixture.all });
     assert.deepEqual(probeRun.fixture.rows.map((r) => r.checked), [true, true, true],
         "拿掉可見性過濾之後全選竟然還是只勾兩顆 —— 這條測試沒有在驗那一段");
+});
+
+test("§5 篩選列的「清除」把 3-7 的檢索範圍帶回預設態（全選）——那個值住在彈窗裡，掃不到", () => {
+    // 「清除」的射程是**這一列所有會被送進查詢參數的控制項**。檢索範圍是其中之一，但它的值不在
+    // 那一列裡——是 `#searchScopeModal` 的一排勾選框，而 `<dialog>` 不在 `.block` 之內，
+    // filter-fields.js 那幾圈 querySelectorAll 怎麼掃都搆不到。少了這一步，關鍵字與日期都清了、
+    // 唯獨範圍原地不動，而使用者眼中那一列已經清乾淨了，按下查詢卻還帶著上一次的範圍。
+    // 三支原文一起跑，驗的是**真的接上了**（清除鈕 → filter-fields → GufoSearchScope.reset →
+    // GufoCheckbox.sync），不是各自單元正確。
+    const build = (node, root) => {
+        const mkBlock = (withScope) => {
+            const block = node("div", "block");
+            const clear = node("button", "button js-filter-clear");
+            const keyword = node("input", "form-control");
+            keyword.value = "退貨";
+            block.append(clear, keyword);
+            let count = null;
+            if (withScope) {
+                const trigger = node("button", "button");
+                trigger.setAttribute("data-open-modal", "searchScopeModal");
+                count = node("span");
+                count.id = "docSearchScopeCount";
+                count.textContent = "1";
+                trigger.append(count);
+                block.append(trigger);
+            }
+            root.append(block);
+            return { block, clear, count };
+        };
+        const scoped = mkBlock(true);
+        const other = mkBlock(false);          // 同頁另一條篩選列：清它不該動到範圍（各清各的）
+        // 彈窗在 .block 之外（真實 markup 也是：dialog include 在頁尾）
+        const modal = node("dialog", "modals");
+        modal.id = "searchScopeModal";
+        const container = node("div", "checkbox-container");
+        const all = node("input", "check-all");
+        all.checked = false;
+        container.append(all);
+        // 第三列被關鍵字過濾隱藏起來（.hidden）且沒勾——reset 要把它一起帶回全選：
+        // 過濾是看的人的事，不是值的事
+        const rows = [true, false, false].map((checked, i) => {
+            const label = node("label", "form-checkbox border-wrap" + (i === 2 ? " hidden" : ""));
+            const one = node("input", "check-one js-search-scope-dataset");
+            one.checked = checked;
+            label.append(one);
+            container.append(label);
+            return one;
+        });
+        modal.append(container);
+        root.append(modal);
+        return { scoped, other, rows, all };
+    };
+    const parts = [
+        "src/_includes/ui/checkbox/checkbox.js",
+        "src/_includes/components/search-scope-modal/search-scope-modal.js",
+        "src/_includes/ui/filter-fields/filter-fields.js",
+    ];
+    const js = parts.map((f) => read(f)).join(NL);
+
+    // 合成 fixture 驗得了接線，驗不到**那一頁真的長成這樣**：`fields` 是清除鈕的 `closest(".block")`，
+    // 所以計數槽與清除鈕分屬兩個 `.block` 的話，上面全綠、瀏覽器上一動也不動。
+    const page = distDoc("3-7_documentSearch.html");
+    const sameBlock = [...page.matchAll(/<div class="[^"]*\bblock\b[^"]*">/g)].some((m) => {
+        const inner = page.slice(m.index + m[0].length);
+        const body = inner.slice(0, lastIndexOfBalanced(inner));
+        return body.includes('id="docSearchScopeCount"') && body.includes("js-filter-clear");
+    });
+    assert.ok(sameBlock, "3-7：#docSearchScopeCount 與 .js-filter-clear 不在同一個 .block 裡 —— 清除鈕的射程涵蓋不到檢索範圍");
+
+    const run = runStubDom(js, build);
+    // 載入即同步：看得見的兩列勾了一列＝半選（這一條也是三支真的都跑起來了的證據）
+    assert.equal(run.fixture.all.indeterminate, true, "載入同步沒跑 —— 後面的斷言驗不到 reset");
+
+    // 誤報方向：清另一條篩選列不該動到檢索範圍
+    run.fireDoc("click", run.fixture.other.clear);
+    assert.deepEqual(run.fixture.rows.map((r) => r.checked), [true, false, false],
+        "清另一條篩選列竟然動到了檢索範圍（射程認的是那一列有沒有 #docSearchScopeCount）");
+
+    run.fireDoc("click", run.fixture.scoped.clear);
+    assert.deepEqual(run.fixture.rows.map((r) => r.checked), [true, true, true],
+        "清除之後檢索範圍沒有回到預設態（全選）——被過濾隱藏的那一列也算在內");
+    assert.equal(run.fixture.scoped.count.textContent, "3", "觸發鈕上的「已選 N 個」沒有跟著回到全選的筆數");
+    assert.equal(run.fixture.all.checked, true, "全選框沒有跟著回到全勾（三態沒有同步）");
+    assert.equal(run.fixture.all.indeterminate, false, "全選框還停在半選");
+
+    // 負控：把 filter-fields 那一句呼叫拿掉，上面那幾條必須失敗
+    const noCall = js.split("if (window.GufoSearchScope) window.GufoSearchScope.reset(fields);").join("");
+    assert.notEqual(noCall, js, "負控的替換沒有命中——這條測試驗的不是那一句");
+    const probeRun = runStubDom(noCall, build);
+    probeRun.fireDoc("click", probeRun.fixture.scoped.clear);
+    assert.deepEqual(probeRun.fixture.rows.map((r) => r.checked), [true, false, false],
+        "拿掉那一句之後檢索範圍竟然還是被清回全選 —— 這條測試沒有在驗那一段");
 });
 
 test("驗收工具自己：commentsOf 的區塊註解起點要有字串／正則意識", () => {

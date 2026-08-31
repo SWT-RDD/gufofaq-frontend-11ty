@@ -8,6 +8,8 @@
 //   ③ `<select>` 的預設值「有 `data-filter-reset` 就用它，否則 `selectedIndex = 0`」——見下面
 //      第二段講的 `#statsDimension`。
 //   ④ **checkbox／radio 也在射程內**，但要由 markup 宣告（見下）。
+//   ⑤ 值**不住在這一列裡**的那一種（3-7 的檢索範圍：值是彈窗內的一排勾選框），這裡怎麼掃都搆不到，
+//      由該元件匯出的 reset() 收——見本檔最後那一段。
 //
 // **「清除」的射程＝這一列所有會被送進查詢參數的控制項**，含 checkbox／radio／switch——
 // 哪些算篩選值載體由 markup 用 `data-filter-reset` 宣告（值＝那一顆的預設態），**不由控制項的
@@ -57,5 +59,10 @@ document.addEventListener("DOMContentLoaded", function () {
         // 值與畫面分家，而看的人會以為篩選還在。這就是上面說的那條正路：呼叫該元件匯出的重繪函式。
         // 沒有 search-select 的頁面上這一句是空轉的（那支 js 沒載入 ⇒ 全域物件不存在）。
         if (window.GufoSearchSelect) window.GufoSearchSelect.refresh(fields);
+        // 3-7 的「檢索範圍」同理，但缺的不只是重繪：那個篩選的**值**根本不在這一列裡——
+        // 它是 `#searchScopeModal` 裡的一排勾選框，而 `<dialog>` 不在 `.block` 之內，上面每一圈都搆不到。
+        // 不呼叫的話，「清除」清掉了關鍵字與日期，唯獨檢索範圍原地不動，而使用者眼中那一列已經清乾淨了。
+        // 射程由該元件自己認（它找這一列有沒有 `#docSearchScopeCount`），沒有那顆槽的頁面上這一句空轉。
+        if (window.GufoSearchScope) window.GufoSearchScope.reset(fields);
     });
 });

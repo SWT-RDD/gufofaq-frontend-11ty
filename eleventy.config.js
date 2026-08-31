@@ -35,6 +35,7 @@ module.exports = function (eleventyConfig) {
         "src/_includes/components/prompt-edit/prompt-edit.js": "js/prompt-edit.js",
         "src/_includes/components/faq-chatroom/faq-chatroom.js": "js/faq-chatroom.js",
         "src/_includes/components/select-dataset-modal/select-dataset-modal.js": "js/select-dataset-modal.js",
+        "src/_includes/components/search-scope-modal/search-scope-modal.js": "js/search-scope-modal.js",
         "src/_includes/ui/list-filter/list-filter.js": "js/list-filter.js",
         "src/_includes/components/rating-modal/rating-modal.js": "js/rating-modal.js",
         "src/_includes/ui/toast/toast.js": "js/toast.js",
