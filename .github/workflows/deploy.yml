@@ -55,8 +55,53 @@ jobs:
         with:
           path: dist
 
+  # 真瀏覽器那一層。與 build 平行跑（各自 build 一次 dist），所以牌面時間是兩者的**最大值**
+  # 而不是相加；部署等兩邊都綠。
+  #
+  # 為什麼要擋部署：它驗的是「英文模式下逐頁 runtime、而且實際觸發互動」——
+  # 那是 GUIDELINE §8 檢查清單裡唯一靜態掃描做不到的一條。這個 repo 直推 master、
+  # push 就是部署，沒有 PR 階段可以攔；不在這裡擋，英文模式壞掉的版本會直接上線。
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      # 瀏覽器二進位檔約 150MB，每次重抓要一分多鐘。快取鍵綁 lockfile：
+      # @playwright/test 升版時 Playwright 會要求對應版本的瀏覽器，鍵跟著失效才不會拿到舊的。
+      - name: 快取 Playwright 的瀏覽器
+        id: pw-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: 安裝 Chromium
+        run: npx playwright install --with-deps chromium
+
+      - run: npm run build
+
+      - run: npm run e2e
+
+      # 失敗時把 trace／截圖留下來——e2e 的紅在文字上常常只是一句逾時，
+      # 而 trace 裡看得到當下的 DOM 與是誰擋住了點擊。
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+
   deploy:
-    needs: build
+    needs: [build, e2e]
     runs-on: ubuntu-latest
     environment:
       name: github-pages

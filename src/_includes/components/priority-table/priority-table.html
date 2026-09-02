@@ -29,7 +29,7 @@
      檢索與欄位子頁籤依高/中/低優先級分組的那一組（在 `{% for %}` 裡，渲染成三張）、
      同一區的「未使用」一張，以及 Agent 版面那兩張（在用／未使用，兩張都 tierless）。
      每一個 include 點都要自己 set 一整組參數（`{% set %}` 是頁面全域，沿用上一份就是撞 id）。 #}
-<div class="table-container scrollTable">
+<div class="table-container scrollTable" tabindex="0">
     <table class="default-table priority-table">
         <colgroup>
             <col style="width: 283px; min-width: 283px;">

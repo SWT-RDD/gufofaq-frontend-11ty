@@ -24,7 +24,7 @@
 //   <div class="subscription-overlay demo-static">
 //       <div class="subscription-panel">
 //           <div class="panel-header" data-i18n="comp.disclaimer">免責聲明</div>
-//           <div class="panel-body">
+//           <div class="panel-body" tabindex="0">
 //               <p class="m-0 mb-8">致使用者：歡迎使用本平台！在使用我們的服務之前，請您仔細閱讀並同意以下免責聲明，閱讀後即視為使用者同意此聲明。</p>
 //               {# 重複 N 次同型節點：免責聲明有幾段就幾顆，段數由內容決定 #}
 //               <p class="m-0">服務變更與可用性：本平台保留隨時修改、暫停或終止服務的權利，無需提前通知。使用者應理解服務可能因技術、法律或相關政策調整而有所變更。</p>
@@ -42,7 +42,7 @@
 //   <div class="subscription-overlay demo-static mt-16">
 //       <div class="subscription-panel">
 //           <div class="panel-header" data-i18n="comp.disclaimer">免責聲明</div>
-//           <div class="panel-body">
+//           <div class="panel-body" tabindex="0">
 //               <p class="text-red m-0" role="alert" id="gateDisclaimerError">讀取免責聲明失敗（502）</p>
 //           </div>
 //           <div class="panel-footer">
@@ -67,7 +67,7 @@
 //   <div class="subscription-overlay demo-static mt-16">
 //       <div class="subscription-panel">
 //           <div class="panel-header" data-i18n="settings.mustChangePasswordTitle">請先變更密碼</div>
-//           <div class="panel-body">
+//           <div class="panel-body" tabindex="0">
 //               <p class="m-0 mb-8" data-i18n="settings.mustChangePasswordDesc">為了帳號安全，請先設定新密碼才能繼續使用。</p>
 //               <div class="form-group">
 //                   <div class="label">

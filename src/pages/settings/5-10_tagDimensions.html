@@ -367,7 +367,7 @@ permalink: 5-10_tagDimensions.html
             <span class="sr-only" data-i18n="help.settings.tagDimensionList.title">標籤維度清單說明</span>
         </button>
     </div>
-    <div class="table-container scrollTable">
+    <div class="table-container scrollTable" tabindex="0">
         <table class="default-table">
             <colgroup>
                 <col style="width:110px; min-width:110px;">
@@ -559,7 +559,7 @@ permalink: 5-10_tagDimensions.html
             <span data-i18n="settings.addTagCode">新增代碼</span>
         </button>
     </div>
-    <div class="table-container scrollTable">
+    <div class="table-container scrollTable" tabindex="0">
         <table class="default-table">
             <colgroup>
                 <col style="width:180px; min-width:180px;">
@@ -763,7 +763,7 @@ permalink: 5-10_tagDimensions.html
          的下一步是來問「可以幫我調大嗎」，而答案是不行、而且理由與容量無關。 #}
     <p class="text-gray" id="tagFilterLlmCatalogNote"><span data-i18n="settings.tagFilterLlmCatalogPrefix">「AI 邊查邊收窄」還多一道前提：可挑的值域要交得到 AI 手上，所以一個維度最多 </span><span>{{ tagFilterCatalogLimits.codesPerDimension }}</span><span data-i18n="settings.tagFilterLlmCatalogMid"> 個代碼，維度名稱、代碼與代碼名稱各最多 </span><span>{{ tagFilterCatalogLimits.textLen }}</span><span data-i18n="settings.tagFilterLlmCatalogSuffix"> 字。超過的話切到這個模式會被擋下來，並指名是哪一個維度。這一段值域每一輪都隨問題重送給 AI，清單太長只會讓它更常挑錯——上限是為了這件事，不是資料庫存不下。</span></p>
 
-    <div class="table-container scrollTable">
+    <div class="table-container scrollTable" tabindex="0">
         <table class="default-table">
             {# **這張表沒有「開啟當下量到的未標註筆數」那一欄**：`tag_untagged_counts` 在 product
                  已經不存在（見檔頭那則退休說明），畫出來就是一格永遠空白的證明欄。
@@ -875,7 +875,7 @@ permalink: 5-10_tagDimensions.html
     {% if blockedSlots.length %}
     <div class="flex-row column gap-8">
         <div class="text-bold text-red" role="alert" data-i18n="settings.tagFilterBlockedTitle">下列維度還不是每一份資料都帶得到，現在切到任何一種會過濾的模式會把那些檔靜默排除</div>
-        <div class="table-container scrollTable">
+        <div class="table-container scrollTable" tabindex="0">
             <table class="default-table">
                 <colgroup>
                     <col style="width:200px; min-width:200px;">

@@ -98,7 +98,7 @@ permalink: 3-1-6_previewExcel_compare.html
     { title: "商品編號 A003", date: "2025/12/10 15:44", content: "USB-C 充電線 1.5M", note1: "https://example.com/img/a003.jpg", note2: "宏興電子", number: "199", barcode: "4710012340039" }
 ] %}
 <div class="tab-content" id="panelCompare">
-<div class="table-container scrollTable mt-10">
+<div class="table-container scrollTable mt-10" tabindex="0">
     <table class="default-table fixed-layout">
         <thead>
             <tr>
@@ -156,7 +156,7 @@ permalink: 3-1-6_previewExcel_compare.html
          不存在的原始檔。這一句的繁中正本在切版，這裡的 `.hidden` markup 就是它的位置與字色規格，
          React 不另造 key；可見處在元件庫頁的「React 條件文案」區（§5）。 #}
     <p class="text-gray mt-10 js-raw-unavailable hidden" role="status" data-i18n="dataset.excelOriginalUnavailable">這個檔不是從 Excel 匯入的，所以沒有原始資料可以對照。</p>
-    <div class="table-container scrollTable mt-10">
+    <div class="table-container scrollTable mt-10" tabindex="0">
         <table class="default-table fixed-layout">
             <thead>
                 <tr>

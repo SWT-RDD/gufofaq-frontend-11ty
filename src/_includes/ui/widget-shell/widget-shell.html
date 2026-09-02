@@ -76,7 +76,7 @@
         <p class="text-gray" data-i18n="shared.aiDraftNotice">本內容由 AI 系統初步產出，僅作為草稿或參考依據使用，尚未經人工確認或修改，若需進一步採用，請先檢閱並確認內容之正確性與完整性。</p>
         {# role="log" ＋ aria-live="polite"：回答是問完之後才非同步長出來的，不掛 live region 的話
              報讀器不會知道有新內容進來。polite 而非 assertive——它不該打斷使用者正在讀的東西。 #}
-        <div class="widget-panel-log" role="log" aria-live="polite">
+        <div class="widget-panel-log" tabindex="0" role="log" aria-live="polite">
             {# ⚠️ **租戶沒設歡迎語時，這一整塊不可以是全白的**：那樣面板打開來只有一個輸入框，
                  訪客看不出這是什麼、能問什麼、甚至看不出它有沒有壞。
                  下面那一則是**租戶的歡迎語**（資料，不翻）；這一則是它缺席時的預設開場，

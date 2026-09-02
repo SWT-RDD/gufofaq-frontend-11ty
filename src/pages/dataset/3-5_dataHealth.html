@@ -793,7 +793,7 @@ permalink: 3-5_dataHealth.html
         {% endfor %}
     </div>
     <p class="text-gray" data-i18n="health.uncoveredCountHint">斜線兩邊不一樣就代表下面那張表被截斷了：前面是這張表列得出來的筆數，後面是這一次沒掃到的檔總數。旁邊逐個原因的計數算的是全部、不受截斷影響——被切掉的那一族只剩那個數字看得見。</p>
-    <div class="table-container scrollTable">
+    <div class="table-container scrollTable" tabindex="0">
         <table class="default-table">
             <colgroup>
                 <col style="width:60px; min-width:60px;">
@@ -917,7 +917,7 @@ permalink: 3-5_dataHealth.html
          後端常數（`_resolve_range` 的實際上限是 90 天，見上面 `healthOverviewDaysInput` 的 `max="90"`），
          故維持譯文。 #}
     <p class="text-gray"><span data-i18n="health.overviewWindowHintPrefix">時間窗預設 </span><span>{{ healthOverview.windowDays }}</span><span data-i18n="health.overviewWindowHintMid"> 天而不是 30 天：上游一次最多彙總 </span><span>5000</span><span data-i18n="health.overviewWindowHintSuffix"> 則問答，30 天的窗對稍微忙一點的租戶必然跨過那條線，總覽會變成永遠打不開。窗拉長之後打不開時，回應會說得出是這個原因。</span></p>
-    <div class="table-container scrollTable">
+    <div class="table-container scrollTable" tabindex="0">
         <table class="default-table">
             <colgroup>
                 <col style="width:60px; min-width:60px;">
@@ -1031,7 +1031,7 @@ permalink: 3-5_dataHealth.html
         </div>
     </div>
     <p class="text-gray" data-i18n="health.findingsSortHint">這張清單照「檢查項目 → 發現編號」排，不是照影響排：命中次數住在上游的問答紀錄裡、排不進資料庫的排序，而這張清單是分頁的——在一頁之內排等於假的排序，第 2 頁那筆每天被命中 50 次的永遠上不了第 1 頁。要照影響看請用上面的總覽。</p>
-    <div class="table-container scrollTable">
+    <div class="table-container scrollTable" tabindex="0">
         <table class="default-table">
             <colgroup>
                 <col style="width:40px; min-width:40px;">

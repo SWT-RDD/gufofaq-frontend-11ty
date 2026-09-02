@@ -6,3 +6,7 @@ Thumbs.db
 .playwright-mcp
 
 .superpowers
+
+# Playwright 的失敗紀錄（trace／截圖），只在本機與 CI artifact 裡活著
+playwright-report/
+test-results/

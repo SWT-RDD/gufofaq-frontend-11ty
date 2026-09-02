@@ -228,7 +228,7 @@ permalink: 2-2-5_regressionRun.html
     <p class="text-gray" data-i18n="regression.effectiveIntro">這是這一輪實際送給問答引擎的那一份設定，開跑當下就落庫——不是現在回頭去讀設定檔（設定檔後來被改過，這裡仍然是當時真正跑的那一份）。標成「沿用設定檔」的欄位，跑的時候取的是被測設定檔當下的值；標成「這一次指定」的才是這一輪刻意換掉的。</p>
     {# 挑了基準才有這一句（與那兩欄同進同出）。單一句型把 0 那一態寫進句子裡，故切版演一態就夠。 #}
     <p><span class="text-bold" data-i18n="regression.effectiveDiffCountPrefix">與基準 </span><span>#310</span><span data-i18n="regression.effectiveDiffCountMid"> 相比，有 </span><span>3</span><span data-i18n="regression.effectiveDiffCountSuffix"> 個旋鈕不同——0 個時，兩輪跑的是同一組設定，退步就不是設定造成的。</span></p>
-    <div class="table-container scrollTable">
+    <div class="table-container scrollTable" tabindex="0">
         <table class="default-table">
             <colgroup>
                 <col style="width:200px; min-width:200px;">
@@ -771,7 +771,7 @@ permalink: 2-2-5_regressionRun.html
         <span class="verdict-tag {{ bucket.tagClass }}">{{ bucket.count }}</span>
     </div>
     <p class="text-gray" data-i18n="{{ bucket.whyKey }}">{{ bucket.why }}</p>
-    <div class="table-container scrollTable">
+    <div class="table-container scrollTable" tabindex="0">
         <table class="default-table">
             <colgroup>
                 <col style="width:90px; min-width:90px;">
@@ -843,7 +843,7 @@ permalink: 2-2-5_regressionRun.html
         <span class="verdict-tag is-warn">{{ notComparedRows.length }}</span>
     </div>
     <p class="text-red" data-i18n="regression.bucketNotComparedWhy">這些案例只有一邊有結果，所以它們有沒有回歸「這一次量不到」——不是「沒有變化」。把它們算進無變化，一次跑到一半就中斷的執行會比出「0 退步」。</p>
-    <div class="table-container scrollTable">
+    <div class="table-container scrollTable" tabindex="0">
         <table class="default-table">
             <colgroup>
                 <col style="width:90px; min-width:90px;">
@@ -900,7 +900,7 @@ permalink: 2-2-5_regressionRun.html
         <span class="verdict-tag is-warn">{{ judgeDriftTotal }}</span>
     </div>
     <p class="text-red" data-i18n="regression.bucketJudgeDriftWhy">這些案例的確定性判定確實沒變，所以它們真的落在「無變化」——但這一次的判準整批評不出來了。少了這一塊，報表會顯示「什麼都沒變」，而事實是這一批根本沒有判準結果。它讀的是「評得出來 ⇄ 評不出來」的轉移，不是分數高低。</p>
-    <div class="table-container scrollTable">
+    <div class="table-container scrollTable" tabindex="0">
         <table class="default-table">
             <colgroup>
                 <col style="min-width:280px;">
@@ -1079,7 +1079,7 @@ permalink: 2-2-5_regressionRun.html
             <button type="button" class="button button-border button-sm js-collapse-all" data-i18n="common.collapseAll">全部收合</button>
         </div>
     </div>
-    <div class="table-container scrollTable">
+    <div class="table-container scrollTable" tabindex="0">
         <table class="default-table">
             <colgroup>
                 <col style="width:40px; min-width:40px;">

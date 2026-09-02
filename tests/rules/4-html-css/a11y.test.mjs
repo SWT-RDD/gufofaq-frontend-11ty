@@ -662,3 +662,37 @@ test("§4 aria-labelledby 的順序：指向自己子樹的那一段（動作）
             '<span id="rowName">檔名</span><span id="head">操作</span><input aria-labelledby="rowName head">',
         ]);
 });
+
+test("§4 明確宣告會捲動的容器要能用鍵盤進去（.scrollTable ⇒ tabindex=\"0\"）", () => {
+    // 內容溢出時容器可以捲，但焦點放不進去 ⇒ 只用鍵盤的人只看得到露在外面的那一半。
+    // `_base.scss` 的 `:where(…,[tabindex]):focus-visible` 讓它自動有可見焦點環，不必另外畫。
+    //
+    // 為什麼要有這條靜態規則、而不是交給 e2e 的 axe：**axe 只在內容真的溢出時才看得到**
+    // （視窗夠寬、資料夠短時同一顆容器完全合規），而 `.scrollTable` 是「這張表要能左右捲」
+    // 的明確宣告——宣告了就是承諾它會捲，不該等到某一天資料變長才被發現。
+    // 其餘沒有具名宣告、只在 css 裡設了 overflow 的容器仍由 axe 逐頁盯著。
+    const rule = (html, f = "<probe>") =>
+        scanTags(html, ({ tag, attrs, raw }) => {
+            if (!classesOf(attrs).includes("scrollTable")) return null;
+            if (attrValue(attrs, "tabindex") === "0") return null;
+            return `<${tag}> 少了 tabindex="0"：${raw.slice(0, 80)}`;
+        }, f);
+
+    const hits = [];
+    let seen = 0;
+    for (const f of distHtml) {
+        const doc = distDoc(f);
+        seen += (doc.match(/\bscrollTable\b/g) || []).length;
+        hits.push(...rule(doc, `dist/${f}`));
+    }
+    // 空轉守門：實測值。收集器壞掉時 hits 一樣是空陣列。
+    assert.ok(seen >= 54, `dist 只掃到 ${seen} 顆 .scrollTable —— 這條測試在空轉`);
+
+    probe("§4 可捲動容器的鍵盤可及性", (s) => rule(s),
+        ['<div class="table-container scrollTable"><table></table></div>',
+            '<div class="table-container scrollTable mt-16" tabindex="-1"></div>'],
+        ['<div class="table-container scrollTable" tabindex="0"></div>',
+            '<div class="table-container"></div>']);
+
+    assert.equal(hits.length, 0, `可捲動的容器鍵盤到不了：\n${fail(hits)}`);
+});

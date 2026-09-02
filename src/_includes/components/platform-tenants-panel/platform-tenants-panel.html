@@ -113,7 +113,7 @@
     {% set helpModalStateItems = [] %}
     {% set helpModalLimitRows = [] %}
     {% include "components/help-modal/help-modal.html" %}
-    <div class="table-container scrollTable">
+    <div class="table-container scrollTable" tabindex="0">
         <table class="default-table">
             <colgroup>
                 <col style="min-width:220px;">
@@ -475,7 +475,7 @@
          **這一張最需要它**：切一顆功能開關的開關看起來就像「已經關掉了」，而那個租戶的使用者
          其實還在用——直到有人按下同一列的「儲存」。 #}
     <p class="text-gray" data-i18n="settings.rowDraftHint">這張表可以就地編輯：改動只是這一頁上的草稿，要按下同一列的「儲存」才會真的寫入；沒儲存就離開，改動會全部消失。</p>
-    <div class="table-container scrollTable">
+    <div class="table-container scrollTable" tabindex="0">
         <table class="default-table">
             <colgroup>
                 <col style="min-width:200px;">

@@ -282,7 +282,7 @@ permalink: 5-6-3_platformServiceKeys.html
         </button>
     </div>
     <p class="text-gray" data-i18n="serviceKey.scopesHint">這張表是端點回的值域本身，不是這一頁抄的一份。範圍決定一把憑證能做什麼，而不是「有沒有帶憑證」——一把 health-scan 的憑證打租戶清單、稽核、時區寫入或再核發一把，全部會被擋下。</p>
-    <div class="table-container scrollTable">
+    <div class="table-container scrollTable" tabindex="0">
         <table class="default-table">
             <colgroup>
                 <col style="width:60px; min-width:60px;">
@@ -355,7 +355,7 @@ permalink: 5-6-3_platformServiceKeys.html
     </div>
     <p class="text-gray" data-i18n="serviceKey.listStoredHint">這張表永遠回不出明碼：系統只保存 SHA-256 雜湊與一段辨識用的末四碼。認不出某一列是哪一把時，請看用途名稱與末四碼；對不上就撤掉它重發，不要猜。</p>
     <p class="text-gray" data-i18n="serviceKey.rotateHint">零停機輪替：先核發新的一把（同一個範圍可以同時有多把有效憑證），把新的貼進 Secret Manager 並讓消費者取到，接著盯「最後使用時間」——舊那把不再前進就代表沒有人在用它了，這時候才撤銷。強制「一個範圍只准一把」會讓每一次輪替中間都有一段憑證真空，那段時間排程是啞的，而且沒有人會注意到。</p>
-    <div class="table-container scrollTable">
+    <div class="table-container scrollTable" tabindex="0">
         <table class="default-table">
             {# 欄寬要與**表頭順序**對齊：加欄位時把新的 `<col>` 插在對應位置，**不是接在尾巴**。
                  像「核發者」「撤銷者」插在第 6／第 9 個表頭、`<col>` 卻附加在第 9／第 10 的話，

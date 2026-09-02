@@ -21,6 +21,7 @@ npm run dev      # 開發：eleventy --serve + sass --watch 並行，改 html/sc
 npm run build    # 產出：清 dist → 編譯 scss → eleventy → 替資產加 content hash
 npm run lint:css # stylelint：把關「零裸 hex／零裸色彩函式」（顏色只准用 _var.scss 的語意 token）
 npm test         # 把 GUIDELINE.md 的規則跑成測試（tests/，需先 build）
+npm run e2e      # 真瀏覽器逐頁跑（需先 build）：英文模式 runtime ＋ axe-core 無障礙
 npm run check    # 交付前跑這個：lint:css → build → test
 ```
 
@@ -28,6 +29,7 @@ npm run check    # 交付前跑這個：lint:css → build → test
 - 同一支腳本順手寫一行 `dist/.build-ref`＝**這份 dist 是哪一個 commit 建的**（工作樹是髒的就前綴 `dirty-`；問不到 git 就不寫、只在 build 輸出留一行）。理由：`dist/` 不進版控，`git checkout` 動不到它——切到另一個 commit 而忘了重 build 時，任何「拿當下的 HEAD 當這份 dist 的身分」的逐位元組比對都會把舊產物蓋上新 commit 的章，而**那種失敗的樣子是全綠**。這一行是在 build 當下寫的，所以它記的是產物真正的身分。形狀與 gufofaq-saas 匯出目錄的 `.slicing-ref` 一致（單獨一行、trim 之後直接比 commit），跨 repo 的消費端不必多學一種格式；`dirty-` 寫在前面是為了讓消費端的雙向前綴比對**擋得下來**（接在 SHA 後面的話 `abc123-dirty` 照樣會過）。mtime 答不了同一個問題——它會被 touch／複製／解壓縮弄髒，也說不出是哪一個 commit。
 - `npm test` 走 vitest，把規範裡機器可驗的條文變成斷言：每頁一個 `<h1>`、`<dialog>` 的 `aria-labelledby` 指向存在的 id、元件 js 三方登記、`data-i18n` key 都在 `en.json`…。**規則改了就改測試，不要只改 md。**
 - **測試的擺法就是規則的索引**：`tests/rules/<章號>-<主題>/` 一個資料夾對 GUIDELINE 一章，底下一支檔一個主題。一條測試的標題以它所屬的 GUIDELINE 章號開頭（引用多章時第一個是本體，如 GUIDELINE `§5/§8`），`tests/meta/rule-coverage.test.mjs` 釘住三件事：章號要是 GUIDELINE 真的有的、測試要住在章號對應的資料夾、GUIDELINE 每一章都要有測試（沒有的要在豁免表裡寫得出理由）。所以「這條規則的測試在哪」用路徑就找得到，不必全文搜尋。
+- `npm run e2e` 走 Playwright，在真 Chromium 上逐頁跑 `dist/`（母體由 `dist/*.html` 推導，新增頁面自動入網），驗**靜態掃描看不到的那一半**：切成英文後每顆 `data-i18n` 節點與五顆可翻屬性都要等於 `en.json` 的值，**然後觸發這一頁真的有的互動**（切主題、展開手風琴、開多選下拉、開彈窗）再驗一次——JS 事後組出來的節點不在 `dist` 的 HTML 裡，靜態規則永遠看不到它。同一輪還跑 axe-core（WCAG 2.0 A ＋ AA，零違規）。
 - 共用判準集中在 `tests/_lib/`（母體、HTML／SCSS 解析、class 認領、i18n、顏色角色、DOM、清單）。同一個問題只准有一份答案——散成好幾份時，修好一處不會修好其他處。**HTML 的「找出所有 X 再斷言」走真的解析器，「寫法本身違規」留在文字層**：解析器會修好某些違規，而那幾種正是規則要抓的東西——GUIDELINE §4「phrasing 內不得放區塊」在解析後已經看不到（`<p>` 被關掉、`<div>` foster 出去），GUIDELINE §4「table 直下不放 tr」與 GUIDELINE §2「不得帶縮排換行」則會被更嚴格的解析器抹掉。三條判的都是原始碼的寫法，而寫法對不對不該取決於哪一顆解析器。每一條的現況由 `tests/meta/harness.test.mjs` 釘成事實：解析器換了那條會紅。
 
 build 後每頁都在 `dist/` 根（如 `dist/component.html`、`dist/2-1_qaRecord.html`），雙擊或用任何靜態伺服器即可開。**想一頁看完所有元件 → 開 `dist/component.html`（元件總覽 / style guide）。**

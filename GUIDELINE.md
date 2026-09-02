@@ -492,7 +492,7 @@ CSS 不需任何翻譯：交付的樣式即正式環境的最終樣式。
 - [ ] 每頁恰好一個 `<h1>`；沒有 `div[role=button]`；可開合控制項的 `aria-expanded` **每一條路徑**都同步；`<dialog>` 有 `aria-labelledby`
 - [ ] 沒有裸 `outline: none`；元件沒有重寫 `box-sizing`；`100vh` 都配了 `100dvh`；`<img>` 都有 `width`/`height`
 - [ ] 新顏色算過對比：白字 on 填充 ≥ 4.5:1、填充 on 底色 ≥ 3:1；新 token 在測試裡歸了角色
-- [ ] 新 key 都補了 `en.json`；**英文模式下逐頁 runtime 驗過，而且要實際觸發互動**（展開 accordion、開多選下拉、切主題）——JS 產生的字串靜態掃描看不到
+- [ ] 新 key 都補了 `en.json`；**英文模式下逐頁 runtime 驗過，而且要實際觸發互動**（展開 accordion、開多選下拉、切主題）——JS 產生的字串靜態掃描看不到。這一條由 `npm run e2e` 逐頁跑真瀏覽器驗（`e2e/i18n-runtime.spec.mjs`）：切英文後每顆 `data-i18n` 節點與五顆可翻屬性都要等於 `en.json` 的值，觸發互動之後再驗一次
 - [ ] NET-NEW（product 先行）頁面/元件：其 i18n key 與 product 的雙語 catalog **程式比對**過（同 key 同值，或修正值＋使用頁檔頭記載**為什麼刻意不同字**）——LLM 對讀會漏，跑腳本 diff 兩份 json 才算驗過
 - [ ] 新增/改寫元件行為 js：邊界輸入（0、1、缺值、貼邊）逐一驗過，並把斷言寫進 `tests/rules/5-js/` 底下對應那支元件的測試檔（或等效可重跑腳本）——一次性手動探索不算驗收，下一輪重跑不到就等於沒測過
 - [ ] 條件開窗鈕的彈窗本體在**每一個**使用頁都 include 了；元件 js 的 class 選擇器都打得到元素；示範資料自洽（聯集/總數對得上）
