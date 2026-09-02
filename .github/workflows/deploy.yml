@@ -27,9 +27,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc # 單一真實來源：本機 / CI 同一版 Node
           cache: npm
@@ -64,9 +64,9 @@ jobs:
   e2e:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: npm
@@ -77,7 +77,7 @@ jobs:
       # @playwright/test 升版時 Playwright 會要求對應版本的瀏覽器，鍵跟著失效才不會拿到舊的。
       - name: 快取 Playwright 的瀏覽器
         id: pw-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
@@ -91,7 +91,7 @@ jobs:
 
       # 失敗時把 trace／截圖留下來——e2e 的紅在文字上常常只是一句逾時，
       # 而 trace 裡看得到當下的 DOM 與是誰擋住了點擊。
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: playwright-report

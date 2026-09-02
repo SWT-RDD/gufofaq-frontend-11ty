@@ -18,9 +18,9 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc # 單一真實來源：本機 / CI 同一版 Node
           cache: npm
@@ -40,14 +40,14 @@ jobs:
       #
       # stylelint 與語法檢查那兩顆在這裡是重複的（下面各自另有一步）。留著是因為拆掉
       # 就要在設定裡維護一份「CI 專用的 skip 清單」——那是第二個定義點，而它會漂。
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
 
       # 每一顆 hook 各自建一個獨立的環境。不快取的話每次 CI 都重新 clone ＋ 建 venv，
       # 約一分鐘；快取鍵綁設定檔內容，所以改了 rev 或加了 hook 就自然失效重建。
       - name: 快取 pre-commit 的 hook 環境
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cache/pre-commit
           key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
@@ -73,9 +73,9 @@ jobs:
   e2e:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: npm
@@ -86,7 +86,7 @@ jobs:
       # @playwright/test 升版時 Playwright 會要求對應版本的瀏覽器，鍵跟著失效才不會拿到舊的。
       - name: 快取 Playwright 的瀏覽器
         id: pw-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
@@ -100,7 +100,7 @@ jobs:
 
       # 失敗時把 trace／截圖留下來——e2e 的紅在文字上常常只是一句逾時，
       # 而 trace 裡看得到當下的 DOM 與是誰擋住了點擊。
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: playwright-report
