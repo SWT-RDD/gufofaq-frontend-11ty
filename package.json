@@ -10,20 +10,24 @@
     "dev": "run-p dev:html dev:css",
     "dev:html": "eleventy --serve",
     "dev:css": "sass --watch src/scss/main.scss:dist/css/main.css",
-    "build:html": "eleventy",
-    "build:css": "sass src/scss/main.scss:dist/css/main.css --style=compressed --no-source-map",
-    "build:hash": "node scripts/hash-assets.mjs",
     "build": "run-s build:clean build:css build:html build:hash",
+    "build:clean": "node scripts/clean-dist.mjs",
+    "build:css": "sass src/scss/main.scss:dist/css/main.css --style=compressed --no-source-map",
+    "build:html": "eleventy",
+    "build:hash": "node scripts/hash-assets.mjs",
     "lint:css": "stylelint \"src/**/*.scss\"",
-    "check": "run-s lint:css build test",
-    "test": "node --test \"tests/**/*.test.mjs\"",
-    "build:clean": "node scripts/clean-dist.mjs"
+    "test": "vitest run",
+    "check": "run-s lint:css build test"
   },
   "devDependencies": {
-    "@11ty/eleventy": "^3.0.0",
+    "@11ty/eleventy": "^3.1.6",
+    "linkedom": "^0.18.13",
     "npm-run-all": "^4.1.5",
+    "postcss": "^8.5.26",
     "postcss-scss": "^4.0.9",
-    "sass": "^1.83.0",
-    "stylelint": "^17.14.0"
+    "postcss-selector-parser": "^7.1.5",
+    "sass": "^1.103.1",
+    "stylelint": "^17.14.1",
+    "vitest": "^4.1.11"
   }
 }

@@ -40,7 +40,7 @@ for (const f of readdirSync(join(DIST, "js")).filter((f) => f.endsWith(".js"))) 
 // 走「掃到什麼就蓋什麼」，而不是「拿已知資產名去做字串比對」。
 // 後者要寫成 html.split(`"${asset}"`)，那會綁死三件事：雙引號、`./` 前綴、目錄在 css|js 底下；
 // 於是 href='./css/main.css'（單引號）、src="/js/x.js"（絕對路徑）、src="./sw.js"（根層）
-// 通通靜默蓋不到，而 tests/guideline.test.mjs 那條白名單一旦共用同一組形狀假設，兩邊會一起瞎。
+// 通通靜默蓋不到，而 tests/rules/8-checklist/asset-hash.test.mjs 那條白名單一旦共用同一組形狀假設，兩邊會一起瞎。
 // 故逐個屬性值掃出站內 css/js 引用再蓋章，掃到不在資產表裡的就當場中斷——
 // 沉默的漏蓋比 build 失敗貴得多。
 const norm = (t) => "./" + t.replace(/^\.\//, "").replace(/^\//, "");
@@ -48,7 +48,7 @@ const norm = (t) => "./" + t.replace(/^\.\//, "").replace(/^\//, "");
 // 少了這道形狀檢查，屬性值裡的**散文檔名**會被當成引用而 throw，把 build 打斷：
 // 3-1-3 的 `data-filename="{{ file.name }}"` 是活的表面（今天是 .pdf/.xlsx，換成 .js 就中斷）、
 // `accept=".js,.css"`、`title="請改 config.js 再重試"` 同理。判準與
-// tests/guideline.test.mjs 的 assetRefs **共用同一條**——兩邊一起瞎過一次，不要再分岔。
+// tests/rules/8-checklist/asset-hash.test.mjs 的 assetRefs **共用同一條**——兩邊一起瞎過一次，不要再分岔。
 const REQ_ATTR = /^(?:src|href|srcset|poster|data)$/i;
 const isRef = (attr, tok) => REQ_ATTR.test(attr) || /^(?:\.{1,2}\/|\/)/.test(tok);
 const stamp = (val, f, attr) =>

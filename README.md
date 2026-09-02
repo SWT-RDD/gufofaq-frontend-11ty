@@ -20,13 +20,15 @@ npm install
 npm run dev      # 開發：eleventy --serve + sass --watch 並行，改 html/scss 即時重載（http://localhost:8080）
 npm run build    # 產出：清 dist → 編譯 scss → eleventy → 替資產加 content hash
 npm run lint:css # stylelint：把關「零裸 hex／零裸色彩函式」（顏色只准用 _var.scss 的語意 token）
-npm test         # 把 GUIDELINE.md 的規則跑成測試（tests/guideline.test.mjs，需先 build）
+npm test         # 把 GUIDELINE.md 的規則跑成測試（tests/，需先 build）
 npm run check    # 交付前跑這個：lint:css → build → test
 ```
 
 - `build` 最後會跑 `scripts/hash-assets.mjs`，替 `css`/`js`/`i18n` 加上 `?v=<content hash>` 查詢字串——GitHub Pages 的資產檔名固定又有邊緣快取，沒有這步的話改版後使用者會拿到「新 HTML + 舊 CSS/JS」。內容沒變 hash 就不變（冪等）。**`dist/images/` 刻意不蓋章**（GUIDELINE §8）：失效窗口只有 `max-age` 的 600 秒，圖示舊十分鐘與樣式壞掉不是同一量級；規則是**改圖必改檔名**。「三類該有版號」與「版號必須等於當下的檔案雜湊」（蓋章順序契約——射程含**住在 `js/lang-toggle.js` 內文裡**的那個 i18n 版號，它才是順序契約唯一的當事人）都由 `npm test` 釘著。反方向的「圖片不該有版號」**只釘得到 `dist/*.html` 的屬性**：GUIDELINE §8 不蓋圖片的理由本身就是圖片有三種引用形狀（HTML 屬性、CSS `url()` 的帶引號與不帶引號、JS 執行期組出的路徑），而後兩種不在那條測試的射程內——要改成蓋圖片，得先把三種形狀一起納管。
 - 同一支腳本順手寫一行 `dist/.build-ref`＝**這份 dist 是哪一個 commit 建的**（工作樹是髒的就前綴 `dirty-`；問不到 git 就不寫、只在 build 輸出留一行）。理由：`dist/` 不進版控，`git checkout` 動不到它——切到另一個 commit 而忘了重 build 時，任何「拿當下的 HEAD 當這份 dist 的身分」的逐位元組比對都會把舊產物蓋上新 commit 的章，而**那種失敗的樣子是全綠**。這一行是在 build 當下寫的，所以它記的是產物真正的身分。形狀與 gufofaq-saas 匯出目錄的 `.slicing-ref` 一致（單獨一行、trim 之後直接比 commit），跨 repo 的消費端不必多學一種格式；`dirty-` 寫在前面是為了讓消費端的雙向前綴比對**擋得下來**（接在 SHA 後面的話 `abc123-dirty` 照樣會過）。mtime 答不了同一個問題——它會被 touch／複製／解壓縮弄髒，也說不出是哪一個 commit。
-- `npm test` 用 Node 內建的 `node:test`（零依賴），把規範裡機器可驗的條文變成斷言：每頁一個 `<h1>`、`<dialog>` 的 `aria-labelledby` 指向存在的 id、元件 js 三方登記、`data-i18n` key 都在 `en.json`…。**規則改了就改測試，不要只改 md。**
+- `npm test` 走 vitest，把規範裡機器可驗的條文變成斷言：每頁一個 `<h1>`、`<dialog>` 的 `aria-labelledby` 指向存在的 id、元件 js 三方登記、`data-i18n` key 都在 `en.json`…。**規則改了就改測試，不要只改 md。**
+- **測試的擺法就是規則的索引**：`tests/rules/<章號>-<主題>/` 一個資料夾對 GUIDELINE 一章，底下一支檔一個主題。一條測試的標題以它所屬的 GUIDELINE 章號開頭（引用多章時第一個是本體，如 GUIDELINE `§5/§8`），`tests/meta/rule-coverage.test.mjs` 釘住三件事：章號要是 GUIDELINE 真的有的、測試要住在章號對應的資料夾、GUIDELINE 每一章都要有測試（沒有的要在豁免表裡寫得出理由）。所以「這條規則的測試在哪」用路徑就找得到，不必全文搜尋。
+- 共用判準集中在 `tests/_lib/`（母體、HTML／SCSS 解析、class 認領、i18n、顏色角色、DOM、清單）。同一個問題只准有一份答案——散成好幾份時，修好一處不會修好其他處。**HTML 的「找出所有 X 再斷言」走真的解析器，「寫法本身違規」留在文字層**：解析器會修好某些違規，而那幾種正是規則要抓的東西——GUIDELINE §4「phrasing 內不得放區塊」在解析後已經看不到（`<p>` 被關掉、`<div>` foster 出去），GUIDELINE §4「table 直下不放 tr」與 GUIDELINE §2「不得帶縮排換行」則會被更嚴格的解析器抹掉。三條判的都是原始碼的寫法，而寫法對不對不該取決於哪一顆解析器。每一條的現況由 `tests/meta/harness.test.mjs` 釘成事實：解析器換了那條會紅。
 
 build 後每頁都在 `dist/` 根（如 `dist/component.html`、`dist/2-1_qaRecord.html`），雙擊或用任何靜態伺服器即可開。**想一頁看完所有元件 → 開 `dist/component.html`（元件總覽 / style guide）。**
 
@@ -34,7 +36,21 @@ build 後每頁都在 `dist/` 根（如 `dist/component.html`、`dist/2-1_qaReco
 
 ## 部署（GitHub Pages）
 
-push 到 `master` 會自動觸發 [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)：`npm ci` → `npm run check`（lint + build + test，任何一關紅就擋下部署）→ 把 `dist/` 發布到 GitHub Pages。也可在 GitHub 的 **Actions** 頁手動觸發（workflow_dispatch）。
+push 到 `master` 會自動觸發 [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)：`npm ci` → lint → build → test（三個獨立 step，任何一關紅就擋下部署）→ 把 `dist/` 發布到 GitHub Pages。也可在 GitHub 的 **Actions** 頁手動觸發（workflow_dispatch）。
+
+master 以外的分支與 PR 走 [`.github/workflows/ci.yml`](.github/workflows/ci.yml)（同樣三關，不含部署）。兩份的 branches 條件互斥，同一次 push 不會跑兩套。
+
+本機的守門走 [`pre-commit`](https://pre-commit.com)，設定在 [`.pre-commit-config.yaml`](.pre-commit-config.yaml)：`pre-commit` 階段做秒級的快檢（混用 CRLF/LF、行尾空白、檔尾換行、壞掉的 YAML/JSON、只差大小寫的檔名、大檔誤入，加上改到的 scss 過 stylelint、js 過 `node --check`），`pre-push` 階段跑全套 `npm run check`。**同一份設定在 CI 也跑一次 `--all-files`**——檔案衛生那一族在 CI 沒有其他對應物，不在那邊跑就等於「有人記得裝就有」。
+
+每個人各做一次：
+
+```bash
+git config --unset core.hooksPath          # 設了它 .git/hooks/ 會整個被忽略，而且不報錯
+pre-commit install -t pre-commit -t pre-push
+pre-commit run --all-files                 # 第一次接上先全掃一次
+```
+
+沒有全域 `pre-commit` 時用 `uv tool install pre-commit`（`uvx pre-commit` 也能跑，但它把解譯器寫死成暫時快取路徑，`uv cache clean` 之後 hook 就失效）。要跳過某一次用 `--no-verify`。`.pre-commit-config.yaml` 的不變式由 `tests/meta/precommit-config.test.mjs` 釘著。
 
 - **線上網址**：<https://swt-rdd.github.io/gufofaq-frontend-11ty/>（進站是**頁面目錄**，可點去任一頁；登入頁在 `/login.html`、元件總覽在 `/component.html`）。
 - 站台全頁掛 `<meta name="robots" content="noindex, nofollow">`：它是公開的切版預覽、內含假的後台畫面，不希望被搜尋引擎收錄。
@@ -79,7 +95,11 @@ src/
     ├── faq/(1)                                                                        ← 前台 FAQ，走 chatbot-shell
     ├── shared/(1)                                                                     ← 公開唯讀分享頁，走 public-shell
     └── components/(1)                                                                 ← 元件總覽（showcase），走 base
-tests/guideline.test.mjs    GUIDELINE 規則的可執行版本（npm test）
+tests/                      GUIDELINE 規則的可執行版本（npm test）
+├── _lib/                   共用判準（母體、解析、清單）——同一個問題只有一份答案
+├── rules/<章號>-<主題>/     一個資料夾對 GUIDELINE 一章，一支檔一個主題
+├── docs/                   README／md 之間的一致性（不對應 GUIDELINE 任何一章）
+└── meta/                   規則↔測試的對應關係，以及驗收工具自己
 scripts/                    build 前後處理：clean-dist、hash-assets
 dist/                       build 輸出（勿手改）
 ```
@@ -137,7 +157,7 @@ dist/                       build 輸出（勿手改）
 | `components/search-scope-modal` | 檢索範圍挑選 modal（`modals-lg`）。無參數（示範資料 `searchScopeDatasetRows` 住在元件內，id 照 3-5 的 `healthScanDatasets` 那份跨頁目錄取）；內含 `ui/modal-close`，清單是一個 `ui/list-filter` widget（一列一顆勾選框）。由 3-7 的「檢索範圍」鈕**無條件開窗**（`data-open-modal`）。清單來源是 product 的 `GET /datasets`，勾選框的值是 **dataset id**（不是 manager 的索引名），hook 因此叫 `js-search-scope-dataset`。確認鈕不送 API——`dataset_ids` 是查詢參數不是使用者設定，故無 `data-toast`，只留 hook 給 React 讀走勾選值；**不掛 `.btn-close-modals`**，守衛（一筆都沒勾就彈 warning、留在窗裡）、回填 3-7 的 `#docSearchScopeCount` 與關窗由 `search-scope-modal.js` 提供；同一支 js 匯出 `window.GufoSearchScope.reset(fields)`，讓篩選列的「清除」把這個篩選帶回預設態（全選）。 |
 | `components/skill-editor-modal` | 租戶自訂 skill 編輯 modal（`modals-lg`）。無參數；內含 `ui/modal-close`。由 3-4 的 `.js-edit-skill` 條件開窗（不掛 `data-open-modal`），元件庫頁有示範觸發器。 |
 | `components/file-edit-modal` | `editConfirmBinding`（true＝儲存鈕交給業務 js 綁定、不自動關窗；每一個使用頁都傳 true）。 |
-| `components/import-report` | 匯入結果回報（`1-1-6` Excel／`1-2-1` PDF-Word 共用）：`importCounts = { inserted, updated, failed }`（必填，三計數同時顯示才分得出「新增」與「取代舊版」）＋選填 `importFileReports = [{ filename, structure?, droppedLinks?（＝`{ urls: [...] }`，筆數由 `urls` 長度推導、不另給 count）, unprocessableTables?, suspectedHeaderlessTables? }]`（後兩者的分界見元件檔頭：`unprocessableTables` 是**轉不出來**的，`suspectedHeaderlessTables` 是**轉出來了但欄名可能不對**的）（逐檔明細——後端這三項本來就是逐檔的，彙總成一份就看不出是哪個檔）＋選填 `importLabelSyncWarning`（`import_excel` 掛在 200 上的警語：匯入成功但顯示欄位標籤沒即時同步到檢索設定；批次端點的 `FIDELITY_REPORT_KEYS` 不含它，故只有 1-1-6 set）。被剝除連結的「複製為出口替換規則」是純前端互動，見 `import-report.js`。**兩條匯入流程的「報告落在哪一頁」不對稱**，唯一定義點是 `tests/guideline.test.mjs` 的 `REPORT_HOSTS`（那張表同時驗落點與 toast 的指路方向）——這裡刻意不重述：散文那一份沒有任何東西會讓它變紅，落點搬家的那一天它就是第二個錯誤的指路牌。**索引同步**（`sync_state`，六個匯入入口都回得出來）：`importSyncState`（必填＝`pending`／`succeeded`／`failed`／`unknown`；四態的視覺／文案對照表正本在 `components/import-sync-tag`）＋選填 `importSyncIndexed`／`importSyncFailed`（**字串**，沒 set ＝ 畫「—」不畫 `0`——「沒量到」與「零筆」是兩件事）＋選填 `importSyncReason`（product 產的業務字串＋維運要用的關聯編號，不翻）＋選填 `importSyncPerFile`（布林＝逐檔明細由使用頁自己畫，批次頁 `1-2-1` set true：彙總標籤改講「這一批」、兩顆彙總計數槽整排收掉，但 `importSyncReason` 不受它影響——關聯編號不可以無聲消失）。 |
+| `components/import-report` | 匯入結果回報（`1-1-6` Excel／`1-2-1` PDF-Word 共用）：`importCounts = { inserted, updated, failed }`（必填，三計數同時顯示才分得出「新增」與「取代舊版」）＋選填 `importFileReports = [{ filename, structure?, droppedLinks?（＝`{ urls: [...] }`，筆數由 `urls` 長度推導、不另給 count）, unprocessableTables?, suspectedHeaderlessTables? }]`（後兩者的分界見元件檔頭：`unprocessableTables` 是**轉不出來**的，`suspectedHeaderlessTables` 是**轉出來了但欄名可能不對**的）（逐檔明細——後端這三項本來就是逐檔的，彙總成一份就看不出是哪個檔）＋選填 `importLabelSyncWarning`（`import_excel` 掛在 200 上的警語：匯入成功但顯示欄位標籤沒即時同步到檢索設定；批次端點的 `FIDELITY_REPORT_KEYS` 不含它，故只有 1-1-6 set）。被剝除連結的「複製為出口替換規則」是純前端互動，見 `import-report.js`。**兩條匯入流程的「報告落在哪一頁」不對稱**，唯一定義點是 `tests/_lib/inventory.mjs` 的 `REPORT_HOSTS`（那張表同時驗落點與 toast 的指路方向）——這裡刻意不重述：散文那一份沒有任何東西會讓它變紅，落點搬家的那一天它就是第二個錯誤的指路牌。**索引同步**（`sync_state`，六個匯入入口都回得出來）：`importSyncState`（必填＝`pending`／`succeeded`／`failed`／`unknown`；四態的視覺／文案對照表正本在 `components/import-sync-tag`）＋選填 `importSyncIndexed`／`importSyncFailed`（**字串**，沒 set ＝ 畫「—」不畫 `0`——「沒量到」與「零筆」是兩件事）＋選填 `importSyncReason`（product 產的業務字串＋維運要用的關聯編號，不翻）＋選填 `importSyncPerFile`（布林＝逐檔明細由使用頁自己畫，批次頁 `1-2-1` set true：彙總標籤改講「這一批」、兩顆彙總計數槽整排收掉，但 `importSyncReason` 不受它影響——關聯編號不可以無聲消失）。 |
 | `components/import-sync-tag` | 索引同步狀態徽章：`sync_state.state` →（`verdict-tag` 變體 ＋ i18n key ＋ 繁中）對照表的**唯一正本**，兩個消費端（`components/import-report` 的彙總那一顆、`1-2-1` 批次結果表格逐列那幾顆）。`syncTagState`＝`pending`／`succeeded`／`failed`／`unknown`（認不得的值一律當 unknown）；**不 set／空字串 ＝ 上游根本沒給這一格**（批次 `results[]` 裡 `ok: false` 的那一筆沒有 `sync_state`），畫 `.is-faint` 的缺席態「沒有索引任務」——不是「寫入索引失敗」（那是在講一件沒發生過的事），也不是留白（會被讀成版面漏畫）。 |
 | `components/builtin-tool-card` | 內建工具卡（5-2 Agent 工具子頁籤，一工具一張可展開的卡）。頁面在 `{% for tool in builtinTools %}` 內 include，故參數就是那筆 `tool`：`name`（英文識別字＝`data-tool` 與開關 value）／`title`・`desc`（中文標題與解釋，chrome）／`params = [{ name, required, desc }]`（唯讀清單，空陣列＝「無參數」）／`enabled`／`customized`（顯示「已自訂」標記且該卡預設展開）／`defaultDescription`（「工具描述」欄 placeholder＝內建預設描述原文，API 資料不翻）／`description`・`extraPrompt`（現有自訂值）／`exampleDescription`・`exampleExtraPrompt`（兩欄下方的範例）／`requiresUnmet`（選填**陣列**＝這一輪不成立的前提欄位名，非空時卡頭多一顆「已勾選，但本輪不會生效」）。開合復用 `ui/accordion` 的**卡片模式**（根掛 `.js-accordion-item`）；自帶 js 只做兩件純前端事：字數提示即時更新、「還原預設」清空本卡兩欄。 |
 | `components/record-identity` | 一筆健檢記錄的可讀身分（3-5 的「涉及的記錄」與合併／停用／取代／補寫四支處置的選項共用）。頁面在 `{% for %}` 內 `{% set recordIdentity = { title, titleChars, titleSource, filename, row, unavailableReason } %}` 後 include（`titleSource` 值域＝`title_slot`／`filename`／`no_answer_question`，種類標記走 `{% if %}` 鏈、i18n key 逐條寫成字面）；欄位逐一對回 product `health_findings.RecordOut`。**標題永遠帶著「這是哪一種身分」**（資料列／整份文件／使用者的問法——三種東西長得都像標題，而使用者是據此按下「保留這一筆」的）、同名時靠檔案與列號分辨、標題欄空白與標題讀不出來分成兩句話講、截斷說得出原文有多長。讀不出來時畫短標記 ＋ product 的原因代碼（不翻，同 `uncovered` 那張表的 `reason` 欄），完整那段話由使用頁另起一段。放 `components/` 是因為它自己的 markup 寫了 `ui/inline-code` 的 class（GUIDELINE §1-1）。 |

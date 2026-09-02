@@ -36,9 +36,17 @@ jobs:
 
       - run: npm ci
 
-      # lint（零裸 hex/色彩函式）→ build → test（GUIDELINE 的規則寫成的斷言）
-      # 任何一關紅就擋下部署
-      - run: npm run check
+      # lint → build → test，任何一關紅就擋下部署。
+      # 拆成三個 step 而不是一個 `npm run check`：擠在一格裡的話，Actions 頁只看得到
+      # 「那一格紅了」，要展開日誌才知道是哪一關。master 以外的分支與 PR 走 ci.yml。
+      - name: lint（零裸 hex／零裸色彩函式）
+        run: npm run lint:css
+
+      - name: build
+        run: npm run build
+
+      - name: test（GUIDELINE 的規則寫成的斷言）
+        run: npm test
 
       # v4 起 upload-pages-artifact 預設不收 dotfile（.nojekyll 之類的會被靜靜吃掉）。
       # 這個站 dist/ 目前一顆 dotfile 都沒有，所以不必開 include-hidden-files；

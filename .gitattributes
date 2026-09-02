@@ -1,0 +1,7 @@
+# CI 與 GitHub Pages 都在 Linux，開發機是 Windows（core.autocrlf=true）。
+# 不鎖定的話，一旦有人把 CRLF 版本 commit 進去，Linux 那一側會直接爆
+# （shell 是 `bad interpreter: ...^M`，YAML 是 workflow 靜靜不執行）。
+# 檔案「自己前後一致」是另一件事，由 pre-commit 的 mixed-line-ending 管。
+*.sh   text eol=lf
+*.yml  text eol=lf
+*.yaml text eol=lf

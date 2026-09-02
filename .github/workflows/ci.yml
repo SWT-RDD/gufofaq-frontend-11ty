@@ -1,0 +1,70 @@
+# master 以外的守門。master 的那一份在 deploy.yml 裡（它擋的是部署），
+# 兩邊的 branches 條件互斥，所以同一次 push 不會跑兩套。
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches-ignore: [master]
+  workflow_dispatch:
+
+# 同一個分支連續 push 時，前一次還沒跑完的就砍掉——它驗的已經不是即將合併的那份程式碼。
+# （deploy.yml 刻意相反：那一步在對 Pages 服務寫入，砍在半途會留下沒有人驗過的中間狀態。）
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc # 單一真實來源：本機 / CI 同一版 Node
+          cache: npm
+
+      - run: npm ci
+
+      # ── 檔案衛生（pre-commit；本機那一份的同一份設定）─────────────────────────
+      #
+      # **為什麼在 CI 也跑一次**：`.pre-commit-config.yaml` 是**本機**的——沒跑
+      # `pre-commit install` 就完全不執行，而且誰都能 `--no-verify`。它那幾顆裡有一半在
+      # CI 沒有任何對應的東西（行尾空白、檔尾換行、混用 CRLF/LF、壞掉的 YAML/JSON），
+      # 也就是說不在這裡跑一次的話，那一層等於「有人記得就有、沒人記得就沒有」。
+      #
+      # `--show-diff-on-failure`：那幾顆是**會改檔**的 hook，在 CI 上它們改完就沒了，
+      # 只留一個「Failed」——這一旗標把它們改了什麼印出來，否則使用者拿到的是一句
+      # 「trailing-whitespace 失敗」而不知道是哪個檔的哪一行。
+      #
+      # stylelint 與語法檢查那兩顆在這裡是重複的（下面各自另有一步）。留著是因為拆掉
+      # 就要在設定裡維護一份「CI 專用的 skip 清單」——那是第二個定義點，而它會漂。
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      # 每一顆 hook 各自建一個獨立的環境。不快取的話每次 CI 都重新 clone ＋ 建 venv，
+      # 約一分鐘；快取鍵綁設定檔內容，所以改了 rev 或加了 hook 就自然失效重建。
+      - name: 快取 pre-commit 的 hook 環境
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
+
+      - run: pip install pre-commit
+
+      - name: pre-commit（檔案衛生）
+        run: pre-commit run --all-files --show-diff-on-failure
+
+      # 三關拆成三個 step：擠在一個 `npm run check` 裡的話，Actions 頁只看得到「那一格紅了」，
+      # 要展開日誌才知道是 lint、build 還是 test。
+      - name: lint（零裸 hex／零裸色彩函式）
+        run: npm run lint:css
+
+      - name: build
+        run: npm run build
+
+      # vitest 在 CI 走 github-actions reporter：失敗的斷言直接標在 PR 的那一行上。
+      - name: test（GUIDELINE 的規則寫成的斷言）
+        run: npm test

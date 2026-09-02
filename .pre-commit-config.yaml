@@ -1,0 +1,136 @@
+# 推之前就知道，而不是等 CI 跑完才知道。
+#
+# ## 這份設定的定位：**早一點知道**——擋得住的是 CI
+#
+# pre-commit 是**本機**的：沒跑 `pre-commit install` 就完全不會執行，而且誰都能用
+# `--no-verify` 繞過。所以它自己不是防線。
+#
+# 它換到的是**時間**：stylelint 與語法檢查在本機是秒級，在 CI 是排隊 ＋ `npm ci`
+# ＋ build 之後才輪到；而檔案衛生那一族的典型失效是「中鏢的是別人的檔」，
+# 改動者根本不會想到去跑它。
+#
+# **同一份設定在 CI 也跑一次**（`ci.yml` 的「pre-commit（檔案衛生）」那一步，`--all-files`）。
+# 這件事是必要的而不是保險：lint 與測試在 CI 各自另有一步，但**檔案衛生那一族在 CI
+# 沒有任何對應的東西**（行尾空白、檔尾換行、同檔混用 CRLF/LF、壞掉的 YAML/JSON）。
+# 不在那邊跑一次的話，那一層等於「有人記得裝就有、沒人記得就沒有」——而那種守門在
+# 沒有生效的時候，畫面上與生效時逐字相同。
+#
+# ## 安裝（每個人各做一次）
+#
+#     git config --unset core.hooksPath        # 見下面那一段
+#     pre-commit install -t pre-commit -t pre-push
+#
+# 沒有全域的 `pre-commit` 時用 `uvx pre-commit install -t pre-commit -t pre-push`。
+# 第一次接上時先跑一次全掃，把既有的檔案衛生問題一次清乾淨：
+#
+#     pre-commit run --all-files
+#
+# ## ⚠️ `core.hooksPath` 必須是未設定
+#
+# **設了 `core.hooksPath` 時 `.git/hooks/` 整個被忽略**，也就是 `pre-commit install`
+# 寫進去的那一支不會執行——而它不會報錯，它會安靜地不跑。兩者只能擇一，這裡選
+# pre-commit：檔案衛生那一族自己寫要花很多力氣，而它現成。
+#
+# ## ⚠️ 會改檔的 hook 一定要帶 `files:`
+#
+# 不寫範圍的話，`--all-files` 會去動 `package-lock.json` 這種產生出來的檔，
+# 而那種 diff 沒有人看得完、也看不出真正的改動在哪。
+# 由 `tests/meta/precommit-config.test.mjs` 逐顆機械檢查。
+#
+# ## 為什麼沒有 prettier
+#
+# 這個 repo 的註解排版（對齊的論證段落、表格）是刻意的，格式化器會把它們重排，
+# 而那些排版本身就是可讀性的一部分。同理沒有 eslint --fix。
+
+repos:
+  # ── 檔案衛生 ────────────────────────────────────────────────────────────────
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      # 同一個檔案裡混 CRLF 與 LF。`.gitattributes` 管的是「進 repo 存什麼」，
+      # 這一顆管的是「這個檔案自己前後一致」——兩件事，而後者 git 不會替你發現。
+      #
+      # 這個 repo 的開發機是 Windows（`core.autocrlf=true`）而 CI 在 Linux：
+      # 用腳本或編輯器改檔時很容易把 LF 寫進 CRLF 的檔案，症狀是 diff 從幾行變成整檔
+      # 重寫，而「這一行到底改了什麼」看不出來。
+      - id: mixed-line-ending
+        # `auto` ＝ 修齊成**它自己的多數**換行，而不是硬指定。硬指定的話兩個平台必有
+        # 一邊每次都被改動：`.gitattributes` 讓 repo 一律存 LF，但簽出來的形狀按平台
+        # 而定（Windows 是 CRLF）。`auto` 對兩邊都成立。
+        args: [--fix=auto]
+        files: ^(src/|tests/|scripts/|\.github/|[^/]+\.(md|yml|yaml|json)$)
+        exclude: ^package-lock\.json$
+
+      # 把 `<<<<<<< HEAD` 那幾行 commit 進去。
+      - id: check-merge-conflict
+        files: ^(src/|tests/|scripts/|\.github/|[^/]+\.(md|yml|yaml|json)$)
+
+      # workflow 的語法。壞掉的 YAML 在 GitHub 上是「workflow 不執行」，
+      # 那比紅還難發現——而這個 repo 的 workflow 就是部署本身。
+      - id: check-yaml
+        files: ^(\.github/|\.pre-commit-config\.yaml$)
+
+      # i18n 字典（`src/i18n/en.json`，247 KB）壞掉時，測試裡看到的是一句
+      # 看不懂的 parse error，不是「這個檔壞了」。
+      - id: check-json
+        files: ^(src/i18n/.*\.json$|[^/]+\.json$)
+        exclude: ^package-lock\.json$
+
+      # 行尾空白／檔尾沒有換行。`--markdown-linebreak-ext=md` 保留 markdown 用兩個
+      # 空白表示斷行的寫法（本 repo 的四份 md 大量使用）。
+      # 接上這兩顆的當下，`src/` 底下量到 2 個檔中鏢：一個檔尾多一行空白，
+      # 一個註解行尾有空白——後者在等寬字體下與沒有空白逐字相同。
+      - id: end-of-file-fixer
+        files: ^(src/|tests/|scripts/|\.github/|[^/]+\.md$)
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+        files: ^(src/|tests/|scripts/|\.github/|[^/]+\.md$)
+
+      # 大檔案誤入。版控內目前最大的是 `src/i18n/en.json` 的 247 KB，
+      # 512 KB 的門檻留一倍餘裕；真的要放更大的東西是一次有意識的決定。
+      - id: check-added-large-files
+        args: [--maxkb=512]
+        files: ^(src/|tests/|scripts/|\.github/)
+
+      # 只差大小寫的兩個檔名。**開發機是 Windows（不分大小寫）、CI 與 Pages 在 Linux
+      # （分大小寫）**：在這裡加得進去、在那裡是兩個檔，而症狀是「別人的機器上圖片 404」。
+      - id: check-case-conflict
+        files: ^(src/|tests/|scripts/|\.github/)
+
+  # ── 這個 repo 自己的那幾顆 ───────────────────────────────────────────────────
+  #
+  # 都是 `language: system`：它們跑的是這個 repo 自己 `npm ci` 裝好的東西，
+  # 不該讓 pre-commit 另建一份環境（那會是第二個版本來源，而它會跟 lockfile 分家）。
+  - repo: local
+    hooks:
+      # 顏色只准用 `_var.scss` 的語意 token（零裸 hex／零裸色彩函式）。
+      # 規則組不在這裡重抄：`.stylelintrc.json` 是唯一真相，CI 的 `npm run lint:css`
+      # 吃的是同一份。
+      - id: stylelint
+        name: stylelint（零裸 hex／零裸色彩函式）
+        entry: npx --no-install stylelint
+        language: system
+        files: ^src/.*\.scss$
+
+      # 打錯字不必等到 build。`node --check` 一次只吃一個檔，故走一支包裝腳本
+      # 逐檔問一次（`.mjs` 當模組解析、`.js` 當 script——那正是它們在這個 repo 裡的身分）。
+      - id: node-syntax
+        name: node --check（js / mjs 語法）
+        entry: node scripts/check-syntax.mjs
+        language: system
+        files: ^(src/|tests/|scripts/|[^/]+)\.?.*\.(js|mjs)$
+
+      # push 前跑全套。這個 repo 直推 master，而 push 就是部署——
+      # 讓紅的東西上去，使用者拿到的就是壞的那一版。CI 也會擋，但等 CI 回報時
+      # 它已經在部署佇列裡了。
+      #
+      # `stages: [pre-push]` ＋ `always_run` ＋ `pass_filenames: false`：它要的是整個
+      # 工作區的狀態，不是被改到的那幾個檔——`npm test` 的母體是全站。
+      # 這一顆刻意沒有 `files:`（它不改檔，而且射程本來就是全部）。
+      - id: full-check
+        name: npm run check（lint → build → test）
+        entry: npm run check
+        language: system
+        stages: [pre-push]
+        always_run: true
+        pass_filenames: false

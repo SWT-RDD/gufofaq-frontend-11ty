@@ -6,7 +6,7 @@
 **產出契約**：每個 `src/_includes/{ui,components}/<name>/`（`<name>.html`+`<name>.js`+`_<name>.scss`）
 → `<Name>.tsx` + `<Name>.scss`。scss `scss-diff.mjs` exit 0；tsx 從切版 html+js 重寫；對 `dist/` 用 `fpdiff.mjs` 驗收。
 **這兩支工具住在 React 端**（`gufofaq-saas/apps/web/scripts/fpdiff.mjs`、`.../scss-diff.mjs`），
-不在切版 repo 裡——切版這一側的守門是 `npm run check`（stylelint ＋ build ＋ `tests/guideline.test.mjs` 的 GUIDELINE 測試；條數以實際跑出來的為準，不在這裡抄一個會過期的數字）。
+不在切版 repo 裡——切版這一側的守門是 `npm run check`（stylelint ＋ build ＋ `tests/` 的 GUIDELINE 測試；條數以實際跑出來的為準，不在這裡抄一個會過期的數字）。
 **值以實際 `_<name>.scss` / `<name>.html` / `dist/` 為準**（本文件是規則，不是值的清單）。
 
 順序：**⓪ 重寫 → ① scss → ② markup → ③ i18n → ④ 行為 → ⑤ 原生機制 → ⑥ 驗收**。
