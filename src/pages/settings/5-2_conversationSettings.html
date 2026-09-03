@@ -2187,8 +2187,15 @@ permalink: 5-2_conversationSettings.html
      模式(off/exact/judge)＋judge 判準 textarea 是租戶旋鈕，隨底部「儲存對話設定」直送 settings PUT。
      「參與直答的 QA 集」multi-select 寫的是 `RetrievalProfile.qa_direct_dataset_ids`，端點是
      `PUT /retrieval/profiles/{no}/qa-direct-datasets`（product 的 `save_qa_direct_datasets`，
-     `require_capability("settings","write")`）——**與頁尾那顆不是同一支端點**（`ProfileConfigIn`
-     裡沒有這一欄），所以它自己要有一顆送出鈕，理由與「欄位命名」那一區逐字相同。
+     `require_capability("settings","write")`）——**與頁尾那顆不是同一支端點，但是同一顆鈕**：
+     那一顆送兩支，而且**順序是規格、不是實作細節**——先送 QA 集、再送 config。
+     反過來送的話，「選了 QA 集、又把直答打開、按一次儲存」這個最自然的操作**必定 400**：
+     上游的 `validate_qa_direct_combination` 讀的是**伺服器上現有的那一份** `qa_direct_indexes`
+     （product 由 `qa_direct_dataset_ids` 編出來的），config 先到時那一刻看到的還是空清單。
+     順序也決定了「失敗的那一半是哪一半」：QA 集寫進去而 config 失敗＝集合選好了、功能沒開
+     （無害，再存一次就好）；反過來則是功能開著卻指著舊集合。
+     所以這一區**沒有自己的送出鈕**——多一顆會讓使用者以為兩件事可以分開存，而它們不行。
+     那兩支端點的結果都併進頁尾那顆的 `data-toast`（見該鈕上方的註解）。
      三者皆值載體、掛 hook class（js-qa-direct-*，全站 scss 不引用）。QA 集名為業務資料（識別字），不翻。 #}
 <div class="tab-content" data-capability="settings:write" id="panelQaDirect" style="display: none;">
     <p class="text-gray" data-i18n="settings.qaDirectIntro">問句完全命中某 QA 集的問題時，直接回該問答的答案原文、不經 AI 重組；judge 模式再加一道 LLM 裁決。</p>
@@ -2334,17 +2341,6 @@ permalink: 5-2_conversationSettings.html
                 </select>
             </div>
         </div>
-        {# **這一欄有自己的送出路徑**，不隨頁尾那顆「儲存對話設定」走（見本子頁籤檔頭）：頁尾那顆打的是
-             `PUT /settings/profiles/{no}`，而 `ProfileConfigIn` 裡沒有 `qa_direct_dataset_ids` 這一欄。
-             ⚠️ **這顆鈕不能少，而且少了不會被任何規則抓到**：全站的檢查都是從按鈕出發的（有鈕才查它的
-             toast 與閘門），一顆不存在的按鈕不在任何母體裡——理由與「欄位命名」那一區逐字相同。
-           分支逐個對回該端點：`require_capability` 的 403、id 不是本租戶 `kind='qa'` 的 QA 集時
-             **整批 400**（`retrieval.qa_datasets_not_owned`，不靜默略過那幾顆）、選取數超過單一索引
-             清單上界的 400（`assert_index_list_within_limit`），其餘（含存後重同步三配置失敗）落 error。
-             **不寫出那個上界的數字**：它是上游常數，抄一份在畫面上就是一份會漂的計數（§3-2／§6）。 #}
-        <div class="flex-row">
-            <button data-capability="settings:write" type="button" class="button button-primary js-save-qa-direct-datasets" data-toast="參與直答的 QA 集已儲存|權限不足，無法儲存——請找貴租戶的管理者開通|有 QA 集不屬於這個租戶，或那不是 QA 集|選取的 QA 集數量超過單一清單上限|儲存失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.saveQaDirectDatasets" data-toast-type="success|warning|warning|warning|error|warning" data-i18n="settings.saveQaDirectDatasets">儲存參與直答的 QA 集</button>
-        </div>
     </div>
 
     {# 可回答性 grounding 閘：收斂/檢索到的素材不足以回答時誠實查無、不硬生成無依據的答案。
@@ -2453,9 +2449,15 @@ permalink: 5-2_conversationSettings.html
      而本頁那顆多選是 `<option>` 的選取狀態、產不出重複 id ⇒ 不列，§5「列出不可能的結果與
      只演成功一樣是說謊」。）
      **追在末位、不插中間**：React 端讀的是 `split("|")[n]` 的索引契約，中間插一段會讓其後
-     每一段整批位移。 #}
+     每一段整批位移。
+   **這一顆送的是兩支端點**：先 `PUT /retrieval/profiles/{no}/qa-direct-datasets`（QA 直答子頁籤
+     那顆多選），成功之後才 `PUT /settings/profiles/{no}`。順序的理由與失敗時停在哪一半，逐字寫在
+     那個子頁籤的檔頭。第一支獨有的兩種拒絕因此也是這顆鈕的結果，各佔一段 warning：
+     id 不是本租戶 `kind='qa'` 的 QA 集時**整批 400**（`retrieval.qa_datasets_not_owned`，
+     不靜默略過那幾顆），以及選取數超過單一索引清單上界的 400（`assert_index_list_within_limit`）。
+     **不寫出那個上界的數字**：它是上游常數，抄一份在畫面上就是一份會漂的計數（§3-2／§6）。 #}
 <div class="flex-row justify-content-center mt-24">
-    <button data-capability="settings:write" type="button" class="button button-primary js-save-profile-config" data-toast="對話設定已儲存|部分欄位未通過驗證|權限不足，無法儲存——請找貴租戶的管理者開通|儲存失敗，請稍後再試|這份設定檔掛了兩顆同名的 skill。skill 的名稱就是送進模型的工具名，同名時只有一顆會生效——請改名，或只掛其中一顆|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.saveProfileConfig" data-toast-type="success|warning|warning|error|warning|warning" data-i18n="settings.saveConfig">儲存對話設定</button>
+    <button data-capability="settings:write" type="button" class="button button-primary js-save-profile-config" data-toast="對話設定已儲存|部分欄位未通過驗證|權限不足，無法儲存——請找貴租戶的管理者開通|儲存失敗，請稍後再試|這份設定檔掛了兩顆同名的 skill。skill 的名稱就是送進模型的工具名，同名時只有一顆會生效——請改名，或只掛其中一顆|有 QA 集不屬於這個租戶，或那不是 QA 集|選取的 QA 集數量超過單一清單上限|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.saveProfileConfig" data-toast-type="success|warning|warning|error|warning|warning|warning|warning" data-i18n="settings.saveConfig">儲存對話設定</button>
 </div>
 
 {# 意圖啟用確認 modal（intentionModal）：檢索與欄位子頁籤開啟某層意圖、但仍有資料集未填任務描述時彈出
