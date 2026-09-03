@@ -11,6 +11,9 @@
 // 行為規格（轉 React 時這就是規格）：
 //   三態循環 none → asc → desc → none（回到 markup 原始列序）。
 //   同一張表同時只有一顆欄在排序；換欄時前一顆回 none。
+//   排序鍵＝該格的**值節點**文字：格子扣掉 button／input／select／textarea／`.sr-only` 之後的
+//   textContent。格內幾乎都還有一顆收合鈕（`.collapse-toggle`「展開」），整格拿會把那三個字
+//   併進鍵裡——空格因此不再是空的、數字因此不再 parse 得出來（見 cellText 那一段）。
 //   比較子：兩邊都 parse 得出數字就數值比，否則 `localeCompare`（`zh-Hant`，`numeric: true`，
 //   讓「檔案10」排在「檔案9」之後）。空字串與「—」一律沉底，不參與升降（缺值不是最小值）。
 //   狀態的唯一真相源是該欄 `<th>` 的 `aria-sort`（ascending／descending／none）——**不另掛狀態 class**：
@@ -126,11 +129,23 @@ document.addEventListener("DOMContentLoaded", function () {
         return String(a).localeCompare(String(b), "zh-Hant", { numeric: true });
     }
 
-    // 一列的「排序鍵」＝該欄 cell 的可見文字。用 textContent 而不是 innerText：後者受 CSS 影響，
-    // 而收合中的 collapse-text 內容仍是這一列的值。
+    // 一列的「排序鍵」＝該欄 cell 的**值節點**文字，不是整格的 textContent。
+    // 整格拿會把格內的控制項字面一起吃進來：3-1-6 每一格都是
+    // `<div class="collapse-text"><div class="collapse-body">值</div><button …>展開</button></div>`，
+    // 整格 textContent 於是是「值展開」——
+    //   ‧ 空格變成「展開」⇒ 它不再是 isBlank，缺值沉底整條規則在那張表上失效；
+    //   ‧ 「1200」變成「1200展開」⇒ numOf() 回 null，整欄從數值比退化成字串比。
+    // 兩者都不會報錯、只是順序不對，所以判準是**取值節點**：把格子複製一份、拿掉格內的
+    // 控制項（button／input／select／textarea）與純報讀文字（.sr-only），剩下的才是這一格的值。
+    // `<a>` 不拿掉：它常常就是那一格的值本身（4-1 的問句欄）。
+    // 用 textContent 而不是 innerText：後者受 CSS 影響，而收合中的 collapse-text 內容仍是這一列的值。
+    var CHROME = "button, input, select, textarea, .sr-only";
     function cellText(row, index) {
         var cell = row.children[index];
-        return cell ? cell.textContent.trim() : "";
+        if (!cell) return "";
+        var clone = cell.cloneNode(true);
+        clone.querySelectorAll(CHROME).forEach(function (el) { el.remove(); });
+        return clone.textContent.trim();
     }
 
     document.querySelectorAll(".default-table").forEach(function (table) {

@@ -30,9 +30,12 @@ permalink: 5-6-1-3_platformIsoReviewResult.html
        `components/iso-review-wizard` 的區塊標題與說明、`components/platform-disclaimer-panel`。
      **步驟指示器**＝`platform.reviewStep3` 那一行標題本身（繁中與英譯都自帶 ③）。
 
-     ⚠️ 示範資料跨元件自洽（§6）：失敗那一列逐字寫著「從 GufoRAG 刪租戶索引失敗（tenant=42）」，
+     ⚠️ 示範資料跨元件自洽（§6）：失敗那一列的 `error` 是**上游那顆穩定 code** `upstream_unavailable`
+       （product 的 `_review_failure_code`，值域五顆），畫面上那一句由切版寫、走 i18n key
+       ——理由與五顆 code 的清單在 `components/iso-review-wizard` 的 `isoReviewFailResults` 上方。
        42 就是 `components/platform-tenants-panel` 裡示範租戶 D 的 id；而 C／D 兩筆正是
-       preview 態名單上的那兩列。改任何一邊都要回頭對另外兩處。
+       preview 態名單上的那兩列，preview 選的動作也必須是 **purge**（那一支保留 Tenant／User，
+       所以這一頁的租戶表照樣列得出 C 與 D）。改任何一邊都要回頭對另外兩處。
 
      front matter 與另外兩份稿完全相同：三份在 React 端是**同一個路由**（`/platform`）的三個 state。 #}
 {% set breadcrumbItems = [

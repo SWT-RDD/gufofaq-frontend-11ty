@@ -42,8 +42,8 @@
     // 長訊息在 40rem 或 90vw（取小）折行。全站唯一的結果回報通道會端出後端原句
     // （`components/skill-editor-modal` 存檔失敗、`components/share-manage-modal` 的 400
     // 都把上游的 detail 原樣丟進來，而 GufoRAG chatbot 的 `validate_skill_definition`
-    // 那一族訊息會指名第幾條、哪個欄位、界線多少），先前的 `white-space: nowrap` 讓那種
-    // 長度直接橫向溢出視窗——右半截讀不到，而它正是「哪裡填錯」的那一半。
+    // 那一族訊息會指名第幾條、哪個欄位、界線多少）。**這一則因此不可以是 `white-space: nowrap`**：
+    // 不折行的話那種長度會直接橫向溢出視窗，右半截讀不到，而它正是「哪裡填錯」的那一半。
     // `90vw` 那一半管的是窄視窗（40rem 在手機上比螢幕還寬）。
     max-width: min(90vw, 40rem);
     // 後端原句裡的長識別字（JSON path、URL、沒有空白的欄位名）在 `normal` 之下仍然撐得破

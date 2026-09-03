@@ -63,7 +63,7 @@ test("§5/§6 內建工具卡：參數清單唯讀、兩個 textarea 帶 hook cl
         for (const [hook, label] of [["js-tool-description", "工具描述"], ["js-tool-extra-prompt", "工具內提示詞"]]) {
             const ta = html.match(new RegExp(`<textarea[^>]*\\b${hook}\\b[^>]*>`));
             if (!ta) { hits.push(`${name}：缺 ${label} 的 textarea（.${hook}）`); continue; }
-            if (!/maxlength="1024"/.test(ta[0])) hits.push(`${name}：${label} 沒有 maxlength="1024"（product tool_refs.py 的 MAX_BUILTIN_TOOL_TEXT_LEN）`);
+            if (!/maxlength="1024"/.test(ta[0])) hits.push(`${name}：${label} 沒有 maxlength="1024"（product 的 MAX_BUILTIN_TOOL_TEXT_LEN）`);
             if (!/aria-describedby="/.test(ta[0])) hits.push(`${name}：${label} 沒有接上範例與字數上限（§4 帶約束的輔助文字要 aria-describedby）`);
         }
         // 字數提示：兩欄各一顆，且已填數要等於欄位實際內容長度（模板從同一份資料算，不烤字面量）

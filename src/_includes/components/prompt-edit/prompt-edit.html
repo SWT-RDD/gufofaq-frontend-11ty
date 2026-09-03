@@ -87,8 +87,8 @@
              `require_capability("settings", "read")`。§4 的判準是「**打了掛 require_* 的端點**」，
              不是「會不會改狀態」——讀取型端點同樣要標。這一格不能留空：空白與「忘了標」在 markup 上
              長得一模一樣，看的人分不出哪一種。 #}
-        <button data-capability="settings:read" type="button" class="button button-green js-prompt-reset" data-toast="已回復至目前正式提示詞|權限不足，無法回復——請找貴租戶的管理者開通|無法取得正式提示詞" data-i18n-data-toast="toast.resetPrompt" data-toast-type="success|warning|error" data-i18n="action.resetDefault">回復至預設</button>
+        <button data-capability="settings:read" type="button" class="button button-green js-prompt-reset" data-toast="已回復至目前正式提示詞|權限不足，無法回復——請找貴租戶的管理者開通|無法取得正式提示詞|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.resetPrompt" data-toast-type="success|warning|error|warning" data-i18n="action.resetDefault">回復至預設</button>
 
-        <button data-capability="settings:write" type="button" class="button button-primary js-prompt-new-version" data-toast="已儲存為新版本|權限不足，無法儲存——請找貴租戶的管理者開通|內容欄位不可為空|新增提示詞失敗，請稍後再試" data-i18n-data-toast="toast.savePrompt" data-toast-type="success|warning|warning|error" data-i18n="action.saveNewVersion">儲存為新版本</button>
+        <button data-capability="settings:write" type="button" class="button button-primary js-prompt-new-version" data-toast="已儲存為新版本|權限不足，無法儲存——請找貴租戶的管理者開通|內容欄位不可為空|新增提示詞失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.savePrompt" data-toast-type="success|warning|warning|error|warning" data-i18n="action.saveNewVersion">儲存為新版本</button>
     </div>
 </div>

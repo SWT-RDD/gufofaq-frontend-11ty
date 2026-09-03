@@ -192,7 +192,7 @@ permalink: 4-1_qaHistory.html
                  與查詢共用同一道守衛，故查詢與下載兩顆鈕**各要有一段**。段內烤著數字走的是 §4-2
                  屬性型譯文那條例外，兩個條件都成立：①同一個約束另有一處常駐可見的資料節點承載
                  （關鍵字欄下方那一句）②上游符號名寫在檔頭（`MIN_CHATLOG_KEYWORD_LEN`）。 #}
-            <button data-capability="history" type="button" class="button button-primary" data-toast="正在查詢資料...|權限不足，無法查詢——請找貴租戶的管理者開通|請填寫開始時間、結束時間與使用者類型|關鍵字至少 2 個字，前後空白不計|查詢成功|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.queryHistory" data-toast-type="info|warning|warning|warning|success|error" data-i18n="action.query">查詢</button>
+            <button data-capability="history" type="button" class="button button-primary" data-toast="正在查詢資料...|權限不足，無法查詢——請找貴租戶的管理者開通|請填寫開始時間、結束時間與使用者類型|關鍵字至少 2 個字，前後空白不計|查詢成功|載入資料失敗，請重新整理頁面|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.queryHistory" data-toast-type="info|warning|warning|warning|success|error|warning" data-i18n="action.query">查詢</button>
             {# 匯出格式（product `GET /history/export?format=`，`Query(alias="format")` 收
                  `Literal["csv","xlsx","jsonl"]`、預設 csv）。**畫面只給兩顆**：csv 與 xlsx 是同一個
                  問題的兩種答案（要不要巢狀明細），jsonl 是給程式與稽核的那一份、沒有人會在這個
@@ -291,7 +291,7 @@ permalink: 4-1_qaHistory.html
                  使用者當場改得掉——一句「請稍後再試」等於叫他做一件沒有用的事。
                  ⚠️ `|` 是索引契約：段數與順序（＝上游 raise 的先後）就是 React 端 `split("|")` 的
                  位置契約，中間插一段就會讓所有取用 `toast.downloadRecords` 的地方一起錯位。 #}
-            <button data-capability="history" type="button" class="button button-green" data-toast="下載已開始|權限不足，無法下載——請找貴租戶的管理者開通|關鍵字至少 2 個字，前後空白不計|請先填開始時間與結束時間|時間格式不正確，請重新選擇起訖時間|開始時間不能晚於現在|結束時間不能早於開始時間|只提供31日間的問答記錄下載|只提供一年內的問答記錄下載|這段範圍的資料量過大，請縮小時間範圍|下載失敗，請稍後再試|下載用的是上一次按「查詢」時的條件，而上面的篩選欄已經改過——請先按一次「查詢」再下載" data-i18n-data-toast="toast.downloadRecords" data-toast-type="success|warning|warning|warning|warning|warning|warning|warning|warning|warning|error|warning" data-i18n="action.download">下載</button>
+            <button data-capability="history" type="button" class="button button-green" data-toast="下載已開始|權限不足，無法下載——請找貴租戶的管理者開通|關鍵字至少 2 個字，前後空白不計|請先填開始時間與結束時間|時間格式不正確，請重新選擇起訖時間|開始時間不能晚於現在|結束時間不能早於開始時間|只提供31日間的問答記錄下載|只提供一年內的問答記錄下載|這段範圍的資料量過大，請縮小時間範圍|下載失敗，請稍後再試|下載用的是上一次按「查詢」時的條件，而上面的篩選欄已經改過——請先按一次「查詢」再下載|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.downloadRecords" data-toast-type="success|warning|warning|warning|warning|warning|warning|warning|warning|warning|error|warning|warning" data-i18n="action.download">下載</button>
         </div>
     </div>
 </div>
@@ -440,7 +440,7 @@ permalink: 4-1_qaHistory.html
                  是常態的第一眼。**版位走 §5 的 `text-center text-gray`**、不寫行內 style：空列的長相
                  全站一份，各頁自己刻就會刻出七種。
                  **句子刻意講兩件事**：只寫「沒有符合條件的資料」講不出另一半——這一頁有查詢鈕與
-                 六個篩選欄，「這段期間真的沒有人問過」與「被上面的條件濾掉了」是兩件事，而下一步
+                 一整列篩選欄（顆數不寫死，§3-2），「這段期間真的沒有人問過」與「被上面的條件濾掉了」是兩件事，而下一步
                  （就這樣 vs 放寬條件再查）剛好相反。與 5-7 稽核表的 `audit.noRows` 同一族、同一個理由。 #}
             <tr>
                 <td colspan="7" class="text-center text-gray" data-i18n="qa.noRowsInRange">這段條件下沒有問答紀錄。可能這段期間真的沒有人問過，也可能是上面的查詢條件把它們濾掉了——放寬條件再查一次就知道是哪一種。</td>

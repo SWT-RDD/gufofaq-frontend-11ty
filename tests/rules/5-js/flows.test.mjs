@@ -34,7 +34,7 @@ test("§5 data-toast 的結果數與 data-toast-type 的語意數要對得起來
             if (messages.some((m) => !m.trim()))
                 hits.push(`dist/${f}  data-toast 有空的結果（多打了一個 |）：<${raw.slice(0, 60)}`);
         }
-    assert.ok(count > 0, "dist 裡一個 data-toast 都掃不到 —— 這條測試在空轉");
+    assert.ok(count >= 349, `dist 只掃到 ${count} 個 data-toast —— 這條測試在空轉（門檻是實測值，§8-1）`);
     assert.equal(hits.length, 0, fail(hits));
 });
 

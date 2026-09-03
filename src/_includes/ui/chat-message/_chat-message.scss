@@ -75,7 +75,7 @@
 //           <div class="message-time">{{ msg.time }}</div>
 //       </div>
 //       <div class="message-icon">
-//           <button type="button" class="button-icon copy copyBtn has-tooltip" data-toast="文字已複製!|複製失敗，請手動選取後複製" data-i18n-data-toast="common.copied" data-toast-type="success|error">
+//           <button type="button" class="button-icon copy copyBtn has-tooltip" data-toast="文字已複製|複製失敗，請手動選取後複製" data-i18n-data-toast="common.copied" data-toast-type="success|error">
 //               <span class="tooltip" data-i18n="action.copy">複製</span>
 //           </button>
 //           <button type="button" class="button-icon watch watchBtn has-tooltip">
@@ -87,7 +87,7 @@
 //       <div class="suggested-questions" role="group" aria-labelledby="chatroomSuggestedLabel">
 //           <span id="chatroomSuggestedLabel" class="suggested-questions-label" data-i18n="comp.suggestedQuestions">建議追問：</span>
 //           {% for q in chatroomSuggested %}
-//           <button data-capability="ask" type="button" class="button button-border button-sm js-ask-suggested" data-toast="回答生成中...|權限不足，無法送出——請找貴租戶的管理者開通|回答生成成功|回答生成失敗，請重新送出一次" data-i18n-data-toast="toast.chatSubmit" data-toast-type="info|warning|success|error" disabled>{{ q }}</button>
+//           <button data-capability="ask" type="button" class="button button-border button-sm js-ask-suggested" data-toast="回答生成中...|權限不足，無法送出——請找貴租戶的管理者開通|回答生成成功|回答生成失敗，請重新送出一次|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.chatSubmit" data-toast-type="info|warning|success|error|warning" disabled>{{ q }}</button>
 //           {% endfor %}
 //       </div>
 //       {% endif %}
@@ -109,14 +109,14 @@
 //       <div class="message-icon">
 //           <button type="button" class="button-icon like js-vote" data-vote="like" title="讚" data-i18n-title="comp.like"><span class="sr-only" data-i18n="comp.like">讚</span></button>
 //           <button type="button" class="button-icon dislike js-vote" data-vote="dislike" title="倒讚" data-i18n-title="comp.dislike"><span class="sr-only" data-i18n="comp.dislike">倒讚</span></button>
-//           <button type="button" class="button-icon copy copyBtn has-tooltip" data-toast="文字已複製!|複製失敗，請手動選取後複製" data-i18n-data-toast="common.copied" data-toast-type="success|error"><span class="tooltip" data-i18n="action.copy">複製</span></button>
-//           <button type="button" class="button-icon share js-share-message" data-toast="連結已建立|建立失敗，請稍後再試|本站沒有開通分享功能，這個回答分享不出去，請聯絡本網站管理者。" data-i18n-data-toast="toast.createPublicShare" data-toast-type="success|error|error" title="分享" data-i18n-title="comp.share"><span class="sr-only" data-i18n="comp.share">分享</span></button>
+//           <button type="button" class="button-icon copy copyBtn has-tooltip" data-toast="文字已複製|複製失敗，請手動選取後複製" data-i18n-data-toast="common.copied" data-toast-type="success|error"><span class="tooltip" data-i18n="action.copy">複製</span></button>
+//           <button type="button" data-tenant-feature="history" class="button-icon share js-share-message" data-toast="連結已建立|建立失敗，請稍後再試|本站沒有開通分享功能，這個回答分享不出去，請聯絡本網站管理者。" data-i18n-data-toast="toast.createPublicShare" data-toast-type="success|error|error" title="分享" data-i18n-title="comp.share"><span class="sr-only" data-i18n="comp.share">分享</span></button>
 //       </div>
 //       {% set faqSuggested = ["結婚登記要準備哪些文件？", "面談流程大約需要多久？"] %}
 //       <div class="suggested-questions" role="group" aria-labelledby="faqSuggestedLabel">
 //           <span id="faqSuggestedLabel" class="suggested-questions-label" data-i18n="comp.suggestedQuestions">建議追問：</span>
 //           {% for q in faqSuggested %}
-//           <button type="button" class="button button-border button-sm js-ask-suggested" data-toast="回答生成中...|詢問太頻繁，請稍後再試|回答生成成功|回答生成失敗，請重新送出一次|本站的問答額度已用罄，請聯絡本網站管理者。" data-i18n-data-toast="toast.faqChatSubmit" data-toast-type="info|warning|success|error|error" disabled>{{ q }}</button>
+//           <button data-tenant-feature="ask" type="button" class="button button-border button-sm js-ask-suggested" data-toast="回答生成中...|詢問太頻繁，請稍後再試|回答生成成功|回答生成失敗，請重新送出一次|本站的問答額度已用罄，請聯絡本網站管理者。" data-i18n-data-toast="toast.faqChatSubmit" data-toast-type="info|warning|success|error|error" disabled>{{ q }}</button>
 //           {% endfor %}
 //       </div>
 //   </div>

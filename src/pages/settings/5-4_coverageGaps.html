@@ -219,7 +219,7 @@ permalink: 5-4_coverageGaps.html
          不分群（`dimension` 空）時這一段走不到，但同一顆鈕兩種選擇都送得出去，故照樣列。 #}
     <div class="flex-row align-items-center justify-content-center gap-16">
         <button type="button" class="button button-border js-filter-clear" data-i18n="action.clear">清除</button>
-        <button data-capability="history" type="button" class="button button-primary" data-toast="正在查詢資料...|權限不足，無法查詢——請找貴租戶的管理者開通|查詢成功|時間區間不正確（起訖需成對、開始須早於結束與現在、且在一年內、範圍不超過 365 天）|這段期間的資料量超過單次上限，請縮小時間範圍|意圖分組的模型還沒設好，這份報表分不了群——請先到對話設定的「生成設定」把「意圖判斷」那一組的模型設好|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.queryStats" data-toast-type="info|warning|success|warning|warning|warning|error" data-i18n="action.query">查詢</button>
+        <button data-capability="history" type="button" class="button button-primary" data-toast="正在查詢資料...|權限不足，無法查詢——請找貴租戶的管理者開通|查詢成功|時間區間不正確（起訖需成對、開始須早於結束與現在、且在一年內、範圍不超過 365 天）|這段期間的資料量超過單次上限，請縮小時間範圍|意圖分組的模型還沒設好，這份報表分不了群——請先到對話設定的「生成設定」把「意圖判斷」那一組的模型設好|載入資料失敗，請重新整理頁面|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.queryStats" data-toast-type="info|warning|success|warning|warning|warning|error|warning" data-i18n="action.query">查詢</button>
     </div>
 </div>
 
@@ -290,7 +290,7 @@ permalink: 5-4_coverageGaps.html
                          它與「存成常設排除」打的是同一支 `PUT /stats/coverage-gaps/exclusions`，
                          而那一顆兩條 400 都走得到。分支集合以**守衛**為單位、不以呼叫端為單位，
                          否則同一支端點在同一頁上會有兩份不一樣的結果清單。 #}
-                    data-toast="正在儲存...|權限不足，無法移除——請找貴租戶的管理者開通|已從常設排除移除|清單太長或有一筆超過長度上限|儲存失敗，請重新整理頁面" data-i18n-data-toast="toast.removePersistentExclusion" data-toast-type="info|warning|success|warning|error"
+                    data-toast="正在儲存...|權限不足，無法移除——請找貴租戶的管理者開通|已從常設排除移除|清單太長或有一筆超過長度上限|儲存失敗，請重新整理頁面|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.removePersistentExclusion" data-toast-type="info|warning|success|warning|error|warning"
                     data-i18n="action.remove">移除</button>
             </div>
             {% else %}
@@ -317,11 +317,11 @@ permalink: 5-4_coverageGaps.html
                 <span id="gapExclSessionName-{{ loop.index }}">{{ q }}</span>
                 <button data-capability="history" type="button" class="button button-border button-sm js-undo-exclude-question" data-question="{{ q }}"
                     id="gapExclSessionUndo-{{ loop.index }}" aria-labelledby="gapExclSessionName-{{ loop.index }} gapExclSessionUndo-{{ loop.index }}"
-                    data-toast="正在查詢資料...|權限不足，無法查詢——請找貴租戶的管理者開通|查詢成功|時間區間不正確（起訖需成對、開始須早於結束與現在、且在一年內、範圍不超過 365 天）|這段期間的資料量超過單次上限，請縮小時間範圍|意圖分組的模型還沒設好，這份報表分不了群——請先到對話設定的「生成設定」把「意圖判斷」那一組的模型設好|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.queryStats" data-toast-type="info|warning|success|warning|warning|warning|error"
+                    data-toast="正在查詢資料...|權限不足，無法查詢——請找貴租戶的管理者開通|查詢成功|時間區間不正確（起訖需成對、開始須早於結束與現在、且在一年內、範圍不超過 365 天）|這段期間的資料量超過單次上限，請縮小時間範圍|意圖分組的模型還沒設好，這份報表分不了群——請先到對話設定的「生成設定」把「意圖判斷」那一組的模型設好|載入資料失敗，請重新整理頁面|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.queryStats" data-toast-type="info|warning|success|warning|warning|warning|error|warning"
                     data-i18n="action.undoExclude">取消排除</button>
                 <button type="button" data-capability="settings:write" class="button button-border button-sm js-persist-exclusion" data-question="{{ q }}"
                     id="gapExclSessionPersist-{{ loop.index }}" aria-labelledby="gapExclSessionName-{{ loop.index }} gapExclSessionPersist-{{ loop.index }}"
-                    data-toast="正在儲存...|權限不足，無法儲存——請找貴租戶的管理者開通|已存成常設排除|清單太長或有一筆超過長度上限|儲存失敗，請重新整理頁面" data-i18n-data-toast="toast.savePersistentExclusion" data-toast-type="info|warning|success|warning|error"
+                    data-toast="正在儲存...|權限不足，無法儲存——請找貴租戶的管理者開通|已存成常設排除|清單太長或有一筆超過長度上限|儲存失敗，請重新整理頁面|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.savePersistentExclusion" data-toast-type="info|warning|success|warning|error|warning"
                     data-i18n="action.persistExclusion">存成常設排除</button>
             </div>
             {% else %}
@@ -338,7 +338,7 @@ permalink: 5-4_coverageGaps.html
      ——上限值只有 product 知道，前端抄一份就會在它改動時開始說謊。 #}
 {% for group in gapGroups %}
 {# 巢狀迴圈的外圈序號要另存：內圈的 {{ loop.index }} 只看得到內圈，
-     四組各 5 筆的「排除」鈕若只帶內圈序號，第 1 組第 1 筆與第 4 組第 1 筆會撞 id（§4）。 #}
+     內圈序號在不同組之間會重複，只帶它的話跨組的「排除」鈕會撞 id（§4）。 #}
 {% set gapGroupNo = loop.index %}
 <div class="block flex-row column gap-16 mt-16">
     <div class="flex-row justify-content-between align-items-center flex-wrap gap-8">
@@ -376,13 +376,13 @@ permalink: 5-4_coverageGaps.html
                 {% for sample in group.samples %}
                 <tr>
                     <td>{{ loop.index }}</td>
-                    {# 逐列辨識欄（§4）：四組表加起來 20 顆逐字同名的「排除」，可及名稱要帶提問原文。 #}
+                    {# 逐列辨識欄（§4）：每一組都有一排逐字同名的「排除」，可及名稱要帶提問原文。 #}
                     <td id="gapSampleQ-{{ gapGroupNo }}-{{ loop.index }}">{{ sample.question }}</td>
                     <td>{{ sample.count }}</td>
                     <td>
                         <button data-capability="history" type="button" class="button button-border button-sm js-exclude-question" data-question="{{ sample.question }}"
                             id="gapSampleExclude-{{ gapGroupNo }}-{{ loop.index }}" aria-labelledby="gapSampleQ-{{ gapGroupNo }}-{{ loop.index }} gapSampleExclude-{{ gapGroupNo }}-{{ loop.index }}"
-                            data-toast="正在查詢資料...|權限不足，無法查詢——請找貴租戶的管理者開通|查詢成功|時間區間不正確（起訖需成對、開始須早於結束與現在、且在一年內、範圍不超過 365 天）|這段期間的資料量超過單次上限，請縮小時間範圍|意圖分組的模型還沒設好，這份報表分不了群——請先到對話設定的「生成設定」把「意圖判斷」那一組的模型設好|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.queryStats" data-toast-type="info|warning|success|warning|warning|warning|error"
+                            data-toast="正在查詢資料...|權限不足，無法查詢——請找貴租戶的管理者開通|查詢成功|時間區間不正確（起訖需成對、開始須早於結束與現在、且在一年內、範圍不超過 365 天）|這段期間的資料量超過單次上限，請縮小時間範圍|意圖分組的模型還沒設好，這份報表分不了群——請先到對話設定的「生成設定」把「意圖判斷」那一組的模型設好|載入資料失敗，請重新整理頁面|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.queryStats" data-toast-type="info|warning|success|warning|warning|warning|error|warning"
                             data-i18n="action.exclude">排除</button>
                     </td>
                 </tr>

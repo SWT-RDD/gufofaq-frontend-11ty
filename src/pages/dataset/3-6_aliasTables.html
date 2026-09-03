@@ -42,24 +42,18 @@ permalink: 3-6_aliasTables.html
    示範 3 張：一張大的、一張小的、**一張空的**——空表要看得出「詞條數 0」不是壞掉（§5 每個
      分支都要看得到）。
 
-   **「別名總數」這一格是切版對後端提的要求**（§4「切版主張需求，不等後端」），不是端點今天
-     回得出來的欄：GufoRAG chatbot 的 `_table_to_dict` 逐欄是
-     `id`／`tenant_ref`／`name`／`description`／`version`／`entry_count`／`created_at`／`updated_at`
-     ——**沒有任何別名計數**，而 product 是原樣代理、不加欄。
-     要求的內容：`GET /api/alias` 應補 `alias_count`（＝各列 `len(aliases)` 的總和）。
-     為什麼非它不可：一張表「有幾個詞條」與「總共登記了幾個別名」是兩個決定
-     （`MAX_ALIAS_ENTRIES_PER_TABLE = 20000` 與 `MAX_ALIASES_PER_ENTRY = 50` 是兩條不同的上限），
-     而它從詞條數推導不出來——切版沒有算術，前端自己去逐列加總就得先整表撈回來。
-     **上游那一側的符號名是 `_table_to_dict`**：下一輪 grep 它一次就知道這個前提還在不在（§4）。
-     **兩態都要切**：拿不到那個數字時畫「—」（gufofaq-saas 的 React 正本形狀是
-     `alias_count?: number` ＋ `{table.alias_count ?? "—"}`），拿得到就畫數字。
-     示範把「—」落在**空表**那一列——「0 個別名」與「後端沒給這個數字」正是在那一列長得最像。
-     （這不是宣稱同一次回應裡會有兩種形狀：上游補上之前三列都是「—」，補上之後三列都是數字；
-     示範同時畫兩態是為了讓兩種長相都有人驗收過。） #}
+   **「別名總數」這一格上游回得出來**：GufoRAG chatbot 的 `_table_to_dict` 把 `alias_count` 列為
+     **必填具名參數**（沒有預設值，四個呼叫端都得自己算），product 原樣代理。
+     為什麼要單獨一欄：一張表「有幾個詞條」與「總共登記了幾個別名」是兩個決定
+     （`MAX_ALIAS_ENTRIES_PER_TABLE` 與 `MAX_ALIASES_PER_ENTRY` 是兩條不同的上限），
+     而它從詞條數推導不出來。**上游那一側的符號名是 `_table_to_dict`**：改版時 grep 它一次就知道
+     這一格還在不在（§4「上游還沒有 X」是最會過期的一種斷言——這一條就是主張成功之後上游補上的）。
+     **值域含 0**（空表就是 `0`），所以這一格不用真值判斷、也不留「—」那一態：那顆破折號的語意是
+     「量得到、只是這一刻還沒有值」（§6 三種哨兵），拿它承載一個量到的 `0` 會讓值班的人分不出兩者。 #}
 {% set aliasTables = [
   { id: 12, name: "關務通用別名", desc: "報關、稅費、單證的常見簡稱與口語說法。", entryCount: 8, aliasCount: 19 },
   { id: 9, name: "系統別名", desc: "內部系統與模組的舊稱、代號。", entryCount: 3, aliasCount: 5 },
-  { id: 7, name: "待整理別名", desc: "", entryCount: 0 }
+  { id: 7, name: "待整理別名", desc: "", entryCount: 0, aliasCount: 0 }
 ] %}
 
 {# 第二句一定要有：不然使用者建完表會以為它就生效了。 #}
@@ -117,7 +111,7 @@ permalink: 3-6_aliasTables.html
         </div>
     </div>
     <div class="flex-row">
-        <button data-capability="data:write" type="button" class="button button-primary" data-toast="別名表已建立|權限不足，無法新增——請找貴租戶的管理者開通|表名稱不可為空，或長度超過上限|建立失敗，請稍後再試|這個租戶的別名表已經達到上限，建不了新的——每一張掛進設定檔的表都會常駐在每一輪對話的提示詞裡。請先刪掉用不到的那幾張" data-i18n-data-toast="toast.createAliasTable" data-toast-type="success|warning|warning|error|warning">
+        <button data-capability="data:write" type="button" class="button button-primary" data-toast="別名表已建立|權限不足，無法新增——請找貴租戶的管理者開通|表名稱不可為空，或長度超過上限|建立失敗，請稍後再試|這個租戶的別名表已經達到上限，建不了新的——每一張掛進設定檔的表都會常駐在每一輪對話的提示詞裡。請先刪掉用不到的那幾張|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.createAliasTable" data-toast-type="success|warning|warning|error|warning|warning">
             <img src="./images/icon_add_white.png" width="48" height="48" decoding="async" alt="" class="icon">
             <span data-i18n="settings.addAliasTable">新增別名表</span>
         </button>
@@ -133,12 +127,12 @@ permalink: 3-6_aliasTables.html
 {% set helpModalWhat = "這一區用來新增一張別名表，把使用者可能用不同說法（例如簡稱、口語）問到的同一件事登記成一組「正式寫法＋別名」，供比對時把使用者的說法歸到同一個詞或同一筆資料。" %}
 {% set helpModalStateItems = [] %}
 {# ③ 這一區唯一的界線：**每個租戶最多幾張表**，同構於 3-2 那一列。
-     出處＝`GET /api/datasets/limits` 的 `alias.tables_per_tenant`（product 的
+     出處＝`GET /datasets/limits` 的 `alias.tables_per_tenant`（product 的
       `DATASET_LIMIT_GROUPS.alias`，值取
      `chat_config_limits.MAX_TABLES_PER_TENANT`——**與術語表共用同一顆常數**，兩族各自這麼多）。
      **落在 `/datasets/limits` 而不是 `/settings/chat-config-limits`**：判準是閘（別名表走
      `data:read`／`data:write`，與該端點同閘；`chat-config-limits` 是 `settings:read`），
-     見 product 那一段逐字寫著的理由。執法點＝product 的 `_assert_table_quota`。
+     見 product 那一段逐字寫著的理由。執法點＝product 的 `assert_table_quota`。
      名稱／說明兩欄的長度上限**不列在這裡**：它們已經是欄位旁常駐可見的 hint ＋ `maxlength`（§4）。
      `bound` 寫法照全站慣例（半形短破折號兩側各一個空白、不加千分位；單邊界線只寫 `≤ 30`）。
      ⚠️ 兩顆 key 與 3-2 術語表共用（理由逐字寫在該頁同一列的註解：繁中原文相同的 chrome
@@ -211,10 +205,8 @@ permalink: 3-6_aliasTables.html
                     </td>
                     <td><input type="text" class="form-control" maxlength="2000" value="{{ table.desc }}" aria-labelledby="aliasTableRowName-{{ table.id }} aliasTableHeadDesc" aria-describedby="aliasTableLimitsHint"></td>
                     <td class="text-center">{{ table.entryCount }}</td>
-                    {# 「解不出來時畫什麼」那一態（見檔頭）：上游今天不回 `alias_count`，React 端是
-                         `alias_count ?? "—"`。破折號不掛 data-i18n——它兩種語言逐字相同（同
-                         5-6-3 撤銷者那一格的做法）。 #}
-                    <td class="text-center">{% if table.aliasCount == null %}<span class="text-gray">—</span>{% else %}{{ table.aliasCount }}{% endif %}</td>
+                    {# 值域含 0（空表就是 0），故直接插值、不做真值判斷也不留哨兵那一態（見檔頭）。 #}
+                    <td class="text-center">{{ table.aliasCount }}</td>
                     <td>
                         {# 「編輯詞條」與「刪除」要先選定「哪一張表」＝業務條件開窗 ⇒ 只掛 hook class、不掛
                              data-open-modal（§5）。刪除沿用既有的 delete-modal（本頁底部 include）。
@@ -228,7 +220,7 @@ permalink: 3-6_aliasTables.html
                              「名稱已存在」。 #}
                         <div class="btn-group">
                             {# 三顆的可及名稱＝「本列表名 ＋ 本鈕自己的字」（§4 逐列控制項）。 #}
-                            <button data-capability="data:write" type="button" id="aliasTableSave-{{ table.id }}" aria-labelledby="aliasTableRowName-{{ table.id }} aliasTableSave-{{ table.id }}" class="button button-border button-sm" data-toast="別名表已更新|權限不足，無法儲存——請找貴租戶的管理者開通|表名稱不可為空，或長度超過上限|儲存失敗，請稍後再試" data-i18n-data-toast="toast.saveAliasTable" data-toast-type="success|warning|warning|error" data-i18n="action.save">儲存</button>
+                            <button data-capability="data:write" type="button" id="aliasTableSave-{{ table.id }}" aria-labelledby="aliasTableRowName-{{ table.id }} aliasTableSave-{{ table.id }}" class="button button-border button-sm" data-toast="別名表已更新|權限不足，無法儲存——請找貴租戶的管理者開通|表名稱不可為空，或長度超過上限|儲存失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.saveAliasTable" data-toast-type="success|warning|warning|error|warning" data-i18n="action.save">儲存</button>
                             <button type="button" id="aliasTableEntries-{{ table.id }}" aria-labelledby="aliasTableRowName-{{ table.id }} aliasTableEntries-{{ table.id }}" class="button button-border button-sm js-manage-alias-entries" data-i18n="settings.manageAliasEntries">編輯詞條</button>
                             <button type="button" id="aliasTableDelete-{{ table.id }}" aria-labelledby="aliasTableRowName-{{ table.id }} aliasTableDelete-{{ table.id }}" class="button button-red button-sm js-delete-alias-table" data-i18n="action.delete">刪除</button>
                         </div>
@@ -273,8 +265,8 @@ permalink: 3-6_aliasTables.html
 {% set deleteNoteZh = "表內詞條會一併消失；還綁著它的設定檔會少一份別名對照。" %}
 {% set deleteConfirmBinding = true %}
 {% set deleteCapability = "data:write" %}
-{% set deleteToast = "別名表已刪除|權限不足，無法刪除——請找貴租戶的管理者開通|這張表還被設定檔綁著，請先在對話設定裡取消綁定|刪除失敗，請稍後再試" %}
+{% set deleteToast = "別名表已刪除|權限不足，無法刪除——請找貴租戶的管理者開通|這張表還被設定檔綁著，請先在對話設定裡取消綁定|刪除失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" %}
 {% set deleteToastKey = "toast.deleteAliasTable" %}
-{% set deleteToastType = "success|warning|warning|error" %}
+{% set deleteToastType = "success|warning|warning|error|warning" %}
 {% set deleteConfirmClass = "js-confirm-delete-alias-table" %}
 {% include "components/delete-modal/delete-modal.html" %}

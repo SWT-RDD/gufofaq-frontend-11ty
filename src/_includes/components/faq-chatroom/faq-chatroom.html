@@ -3,7 +3,7 @@
      include 的子元件：components/rating-modal、components/faq-share-modal（本元件的按鈕開的彈窗，§1-2）。
 
      **授權：送出鈕與建議追問 chip 刻意不掛四軸中的任何一軸**（§4「查證過確定不需要閘門的要留下痕跡」
-     ——空白與「忘了標」在 markup 上長得一模一樣）：前台公開問答走的是 widget token
+     ——空白與「忘了標」在 markup 上長得一模一樣）：**租戶開通軸照標**（`require_tenant_feature` 判的是租戶不是主體，widget token 認得出租戶，§4）；免除的只有能力／租戶管理員／平台角色三軸——前台公開問答走的是 widget token
      （gufofaq-saas product 的 `require_widget_token`），不是租戶內的能力
      token；後台 `components/chatroom` 的同型鈕走 `/ask` 才掛 `data-capability="ask"`。
      `ui/chat-message` 的契約段因此**只有後台那一份（① 的建議追問 chip）帶 `data-capability`**，
@@ -86,7 +86,7 @@
             <div class="message-icon">
                 <button type="button" class="button-icon like js-vote" data-vote="like" title="讚" data-i18n-title="comp.like"><span class="sr-only" data-i18n="comp.like">讚</span></button>
                 <button type="button" class="button-icon dislike js-vote" data-vote="dislike" title="倒讚" data-i18n-title="comp.dislike"><span class="sr-only" data-i18n="comp.dislike">倒讚</span></button>
-                <button type="button" class="button-icon copy copyBtn has-tooltip" data-toast="文字已複製!|複製失敗，請手動選取後複製" data-i18n-data-toast="common.copied" data-toast-type="success|error"><span class="tooltip" data-i18n="action.copy">複製</span></button>
+                <button type="button" class="button-icon copy copyBtn has-tooltip" data-toast="文字已複製|複製失敗，請手動選取後複製" data-i18n-data-toast="common.copied" data-toast-type="success|error"><span class="tooltip" data-i18n="action.copy">複製</span></button>
                 {# **分享是有條件的開窗，不是無條件開窗**：按下去先送
                      `POST /public/share`（product 的
                      `create_public_share`，帶 `X-Widget-Token`）拿到 token，**成功才**開窗把連結畫出來。
@@ -95,13 +95,15 @@
                      （「建立分享連結失敗，請稍後再試」就只會活在 React 的字典裡）。
                      形狀比照 5-10 的 `.js-edit-vocabulary`：**條件開窗的觸發鈕自己就送 API ⇒ 照 §5 ③
                      掛 `data-toast` 列全結果**，同時保留 hook class 讓 React 認得出要接哪一顆。
-                     不掛授權軸：這條路徑上沒有租戶能力軸（同 `.js-ask-suggested`——前台公開端點
-                     吃的是 `X-Widget-Token`，能力／角色都是登入態才判得出來的東西）。
-                   **但有一道租戶開通閘，而且它不是能力軸**：`create_public_share`（product）
-                     在任何寫入與任何上游呼叫之前先跑 `require_tenant_feature(db, tenant_id, "history")`
-                     ——`X-Widget-Token` 那一支驗的是 `ask`（widget 能不能問答），而分享連結要被打開
-                     靠的是 `history`，兩顆是各自獨立的開通鍵。平台把某租戶的 `history` 關掉之後，
-                     這顆鈕先前會回 200 ＋ 一個**保證打不開**的連結，現在回 403。
+                   **四軸裡標得出來的是租戶開通軸，而且標了**：`create_public_share`（product）在任何
+                     寫入與任何上游呼叫之前先跑 `require_tenant_feature(db, tenant_id, "history")`，
+                     那道閘判的是**租戶**、不是主體，而 `X-Widget-Token` 本身就認得出是哪個租戶——
+                     所以 `data-tenant-feature="history"` 是一句這條路徑上為真的宣告。
+                     另外三軸（能力／租戶管理員／平台角色）標不出來：它們判的是登入主體，
+                     而公開路徑上沒有主體（同 `.js-ask-suggested`）。
+                   **`history` 與 `ask` 是兩顆各自獨立的開通鍵**：`X-Widget-Token` 那一支驗的是 `ask`
+                     （這個 widget 能不能問答），分享連結要被打開靠的是 `history`。平台把某租戶的
+                     `history` 關掉，問答照常、只有分享回 403——所以它要有自己的一段結果文案。
                      **它不能折進「建立失敗，請稍後再試」**：那句話叫訪客重試一件永遠不會成功的事。
                    **收件人是這個網站的管理者，不是我們、也不是訪客自己**（同本元件下方額度那一段的
                      判準）：訪客這一側完全無能為力，所以型別是 `error` 不是 `warning`
@@ -109,7 +111,7 @@
                    **這一態出現之後，這顆鈕就不該再渲染**（§5 不放按了沒反應的鈕）：那道閘是
                      **整個租戶**的狀態、不是這一則答案的，所以同一次工作階段裡每一則答案按下去
                      都會是同一個 403。這是給 React 的條件渲染契約——切版畫的是開通著的那一態。 #}
-                <button type="button" class="button-icon share js-share-message" data-toast="連結已建立|建立失敗，請稍後再試|本站沒有開通分享功能，這個回答分享不出去，請聯絡本網站管理者。" data-i18n-data-toast="toast.createPublicShare" data-toast-type="success|error|error" title="分享" data-i18n-title="comp.share"><span
+                <button type="button" data-tenant-feature="history" class="button-icon share js-share-message" data-toast="連結已建立|建立失敗，請稍後再試|本站沒有開通分享功能，這個回答分享不出去，請聯絡本網站管理者。" data-i18n-data-toast="toast.createPublicShare" data-toast-type="success|error|error" title="分享" data-i18n-title="comp.share"><span
                         class="sr-only" data-i18n="comp.share">分享</span></button>
             </div>
             {# **串流被切斷那一態**：連線斷在最後一筆 `chat_room` 記錄中間時，答案文字已經逐字到齊、
@@ -138,7 +140,7 @@
             <div class="suggested-questions" role="group" aria-labelledby="faqSuggestedLabel">
                 <span id="faqSuggestedLabel" class="suggested-questions-label" data-i18n="comp.suggestedQuestions">建議追問：</span>
                 {% for q in faqSuggested %}
-                <button type="button" class="button button-border button-sm js-ask-suggested" data-toast="回答生成中...|詢問太頻繁，請稍後再試|回答生成成功|回答生成失敗，請重新送出一次|本站的問答額度已用罄，請聯絡本網站管理者。" data-i18n-data-toast="toast.faqChatSubmit" data-toast-type="info|warning|success|error|error" disabled>{{ q }}</button>
+                <button data-tenant-feature="ask" type="button" class="button button-border button-sm js-ask-suggested" data-toast="回答生成中...|詢問太頻繁，請稍後再試|回答生成成功|回答生成失敗，請重新送出一次|本站的問答額度已用罄，請聯絡本網站管理者。" data-i18n-data-toast="toast.faqChatSubmit" data-toast-type="info|warning|success|error|error" disabled>{{ q }}</button>
                 {% endfor %}
             </div>
         </div>
@@ -229,7 +231,7 @@
             {# 同 components/chatroom：送出鈕多一條「沒填問題」，建議追問的 chip 沒有那一態。
                  `disabled` 與那幾段 toast 不衝突：停用的是**這一刻**（生成中），那幾段演的是
                  「可以送的時候按下去會得到什麼」——toast 分支是這顆鈕的結果集合，不是它的現在式。 #}
-            <button type="button" class="button button-primary flex-shrink-0" data-toast="回答生成中...|請先輸入問題|詢問太頻繁，請稍後再試|回答生成成功|回答生成失敗，請重新送出一次|本站的問答額度已用罄，請聯絡本網站管理者。" data-i18n-data-toast="toast.faqChatSend" data-toast-type="info|warning|warning|success|error|error" data-i18n="action.submit" disabled>送出</button>
+            <button data-tenant-feature="ask" type="button" class="button button-primary flex-shrink-0" data-toast="回答生成中...|請先輸入問題|詢問太頻繁，請稍後再試|回答生成成功|回答生成失敗，請重新送出一次|本站的問答額度已用罄，請聯絡本網站管理者。" data-i18n-data-toast="toast.faqChatSend" data-toast-type="info|warning|warning|success|error|error" data-i18n="action.submit" disabled>送出</button>
         </div>
     </div>
 </div>

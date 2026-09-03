@@ -33,7 +33,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // markup 契約（無 html 元件，§1-2；整段照抄）—— 全站每一顆 `<dialog>` 的外殼。
 // 這是**逐字相同的殼**：§7 要靠它在 React 端抽出一顆 `<Modal size>`，有一顆長得不一樣就抽不掉
-// （`tests/guideline.test.mjs` 的「§7 所有 modal 的外殼逐字相同」逐顆比對巢狀順序）。
+// （§7「所有 modal 的外殼逐字相同」那條測試逐顆比對巢狀順序）。
 // 下面這一份是 `components/apply-settings-modal` 的生產 markup，一個字都沒改：
 //
 //   <dialog class="modals" id="ProductionSettingsModal" aria-labelledby="ProductionSettingsModal-title">
@@ -50,7 +50,7 @@
 //                   <div class="modals-footer">
 //                       <div class="button-row center">
 //                           <button type="button" class="button button-border btn-close-modals" data-i18n="action.cancel">取消</button>
-//                           <button data-capability="settings:write" type="button" class="button button-primary btn-close-modals js-confirm-apply" data-toast="已套用為正式設定|權限不足，無法套用——請找貴租戶的管理者開通|套用為正式設定失敗，請稍後再試" data-i18n-data-toast="toast.applyProduction" data-toast-type="success|warning|error" data-i18n="modals.confirmApply">確認套用</button>
+//                           <button data-capability="settings:write" type="button" class="button button-primary btn-close-modals js-confirm-apply" data-toast="已套用為正式設定|權限不足，無法套用——請找貴租戶的管理者開通|套用為正式設定失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.applyProduction" data-toast-type="success|warning|error|warning" data-i18n="modals.confirmApply">確認套用</button>
 //                       </div>
 //                   </div>
 //               </div>

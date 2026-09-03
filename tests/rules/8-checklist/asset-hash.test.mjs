@@ -99,7 +99,7 @@ test("§8 css / js 的每一個引用都帶 ?v=；images 刻意不帶（改圖�
     //   反面：門檻沿用一個算出來的估值時，收集器實測比它多幾筆（多出來的常常是
     //   1-2-1 `accept=".png/.jpg/.jpeg"`——測試自己在下方 probe 裡列為「不是引用」的東西）：
     //   門檻＝這次實際量出來的筆數，不是推論值：收集器一改就要重量。
-    const FLOOR = { refs: 1748, imgs: 352 };
+    const FLOOR = { refs: 1794, imgs: 352 };
     assert.equal(blind.length, 0, `這幾頁一個 css/js 或圖片引用都沒收到（收集器的形狀假設又縮回去了？）：\n${fail(blind)}`);
     assert.ok(refs >= FLOOR.refs, `css/js 引用只收到 ${refs}（門檻 ${FLOOR.refs}）—— 掉了就是收集器壞了；真的刪了頁面請一併把 FLOOR.refs 調下來`);
     assert.ok(imgs >= FLOOR.imgs, `圖片引用只收到 ${imgs}（門檻 ${FLOOR.imgs}）—— 掉了就是收集器壞了；真的刪了圖請一併把 FLOOR.imgs 調下來`);

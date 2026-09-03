@@ -17,9 +17,6 @@
 //      以及**別頁在用、本頁沒有**的 class（如 `.page-title`——那些頁的 body 不帶
 //      `.guideline-page`，結構上永遠選不到，看起來卻很像有人在用）。§4／§8「零死碼」。
 //
-// 本檔的色值全部走 CSS custom property，不吃 Sass `$` 變數，所以下面這行 `@use "var"`
-// 目前沒有實際消費點（`_var.scss` 裡沒有任何 `$` 變數）。
-@use "var";
 
 // 本頁專屬的細捲軸。形狀與 `_mixin.scss` 的 `scrollbar()` 相同，差別在顏色：thumb／track 走
 // showcase 色盤（`--gl-scrollbar-thumb`／`--surface-raised`），而不是 app 的 `--scrollbar-thumb-strong`。

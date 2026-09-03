@@ -41,13 +41,40 @@
 //   </div>
 //
 // ②③ 另外兩型是**同一列裡的兩顆兄弟**（5-3 手寫），所以從讓 `flex: 1 1 0%` 成立的 `.flex-row`
-//    祖先寫起：② 的中段是表格（`.chart.chart-auto`：自動高 ＋ 橫向可捲，**沒有 `<canvas>`**，
-//    內容由業務 js 填），③ 的中段是單一 `<canvas>`（`.chart` 直接掛在 `.chart-box` 下）：
+//    祖先寫起：② 的中段是表格（`.chart.chart-auto`：自動高 ＋ 橫向可捲，**沒有 `<canvas>`**；
+//    欄由切版定、列由業務 js 填，故契約含 `<thead>` 與 `{% for %}` 那一列），③ 的中段是單一
+//    `<canvas>`（`.chart` 直接掛在 `.chart-box` 下）：
 //
 //   <div class="flex-row gap-24 mobile-column mt-16">
 //       <div class="chart-box">
 //           <div class="chart-title" data-i18n="settings.contributionRanking">貢獻度排行</div>
-//           <div class="chart chart-auto" id="chart2-ranking"></div>
+//           {% set rankingRows = [] %}
+//           <div class="chart chart-auto" id="chart2-ranking" tabindex="0">
+//               <table class="default-table">
+//                   <thead>
+//                       <tr>
+//                           <th data-i18n="stats.rank">排名</th>
+//                           <th data-i18n="stats.source">來源</th>
+//                           <th class="text-right" data-i18n="stats.retrievalCount">取用次數</th>
+//                           <th class="text-right" data-i18n="stats.contribution">貢獻度</th>
+//                           <th data-i18n="stats.currentPriority">目前優先度</th>
+//                       </tr>
+//                   </thead>
+//                   <tbody>
+//                       {% for row in rankingRows %}
+//                       <tr>
+//                           <td>{{ row.rank }}</td>
+//                           <td>{{ row.source }}</td>
+//                           <td class="text-right">{{ row.count }}</td>
+//                           <td class="text-right">{{ row.contribution }}%</td>
+//                           <td>{{ row.priority }}</td>
+//                       </tr>
+//                       {% else %}
+//                       <tr><td colspan="5" class="text-center text-gray" data-i18n="stats.noUsageData">還沒有可以排名的取用紀錄。查詢送出前這裡就是這一行；送出之後它只會在這段期間一次取用都沒有時留著——換一段時間或換一個統計維度再查一次。</td></tr>
+//                       {% endfor %}
+//                   </tbody>
+//               </table>
+//           </div>
 //           {% set chartDescId = "chart2" %}
 //           {% set chartDescRow = false %}
 //           {% include "ui/chart-desc/chart-desc.html" %}
@@ -110,7 +137,8 @@
         width: 100%;
         height: 300px; // 畫布要定高：`<canvas>` 沒有內在高度，父層不給就塌成 0，圖畫上去也看不見
 
-        // 內容為表格（非固定高 canvas）時：自動高、可橫向捲動（取代頁面行內 height/overflow）
+        // 內容為表格（非固定高 canvas）時：自動高、可橫向捲動（取代頁面行內 height/overflow）。
+        // 消費端要在同一顆元素上掛 `tabindex="0"`：捲動容器不可聚焦的話，鍵盤使用者捲不到右邊那幾欄。
         &.chart-auto {
             height: auto;
             overflow-x: auto;

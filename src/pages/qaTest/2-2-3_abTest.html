@@ -55,7 +55,7 @@ permalink: 2-2-3_abTest.html
      最大迭代次數僅 Agent，modeMatrix 見 gufofaq-saas docs/mode-matrix.md）；設定為臨時，底部「回復儲存的
      設定」隨時回復已儲存值。提示詞是**就地寫的常駐 textarea**、不走 components/prompt-edit
      （理由見下方「提示詞（測試用，常駐展開輸入框）」那則註解：那是版本管理型編輯器，測試頁只要常駐展開的輸入框），
-     套用/回復/儲存版本三鈕移到每側底部同排（使用者定案）。 #}
+     套用/回復/儲存版本三鈕在每側底部同排。 #}
 {# 兩側的**差異**要放進資料：控制項全部渲染成同一組預設值、下面兩則回覆卻標著不同的設置與
      提示詞版本，那不是一個真實可能的狀態（§6），AB 測試的用途也演不出來。
      `promptVersion` 只是回覆標題上的版本註記（提示詞本文由使用者當場編，兩側各一份）。
@@ -246,7 +246,7 @@ permalink: 2-2-3_abTest.html
             <span class="text-gray" id="abPromptHint-{{ ab.side }}"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-prompt-max-len">20000</span><span data-i18n="common.unitChars"> 字</span></span>
         </div>
 
-        {# 動作列（每側三鈕同排，套用為正式設定移到此處與其他按鈕一起排列）：
+        {# 動作列：每側三顆鈕同排在該側底部（回復儲存的設定／儲存提示詞版本／套用為正式設定）。
              回復儲存的設定（js-restore-saved，直送重載該側已儲存設定）／儲存提示詞版本（js-prompt-new-version）／
              套用為正式設定（js-apply-production）——**有條件開窗，故只掛 hook、不掛 data-open-modal**（§5）：
              按下去先問後端這個人的模型權限夠不夠，不夠才彈窗，那是執行期才知道的事。
@@ -255,8 +255,8 @@ permalink: 2-2-3_abTest.html
              所以列脈絡救不了這六顆——報讀器只念得出三組同名。做法與那一組相同：容器掛
              `role="group" aria-labelledby="abSideLabel-<側>"`，鈕各自保留可見字面（§4 一格內多顆同型控制項）。 #}
         <div class="flex-row justify-content-center flex-wrap gap-16 mt-24" role="group" aria-labelledby="abSideLabel-{{ ab.side }}">
-            <button data-capability="settings:read" type="button" class="button button-green js-restore-saved" data-toast="已回復儲存的設定|權限不足，無法載入——請找貴租戶的管理者開通|無法載入儲存的設定" data-i18n-data-toast="toast.restoreSettings" data-toast-type="success|warning|error" data-i18n="qaTest.restoreSaved">回復儲存的設定</button>
-            <button data-capability="settings:write" type="button" class="button button-primary js-prompt-new-version" data-toast="已儲存為新版本|權限不足，無法儲存——請找貴租戶的管理者開通|內容欄位不可為空|新增提示詞失敗，請稍後再試" data-i18n-data-toast="toast.savePrompt" data-toast-type="success|warning|warning|error" data-i18n="qaTest.savePromptVersion">儲存提示詞版本</button>
+            <button data-capability="settings:read" type="button" class="button button-green js-restore-saved" data-toast="已回復儲存的設定|權限不足，無法載入——請找貴租戶的管理者開通|無法載入儲存的設定|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.restoreSettings" data-toast-type="success|warning|error|warning" data-i18n="qaTest.restoreSaved">回復儲存的設定</button>
+            <button data-capability="settings:write" type="button" class="button button-primary js-prompt-new-version" data-toast="已儲存為新版本|權限不足，無法儲存——請找貴租戶的管理者開通|內容欄位不可為空|新增提示詞失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.savePrompt" data-toast-type="success|warning|warning|error|warning" data-i18n="qaTest.savePromptVersion">儲存提示詞版本</button>
             <button type="button" class="button button-dark js-apply-production" data-i18n="qaTest.applyProduction">套用為正式設定</button>
         </div>
     </div>
@@ -340,7 +340,7 @@ permalink: 2-2-3_abTest.html
                                                  aria-labelledby 指這一側的答案標題，報讀器才唸得出「設定A…讚」而不是四顆同名鈕
                                                  （§4；同頁設定區那七組欄位用的是同一招，見 abSideLabel-*）。 #}
                                             <div class="message-icon" role="group" aria-labelledby="abAnswerTitle-{{ abSides[0].side }}">
-                                                <button type="button" class="button-icon copy copyBtn has-tooltip" data-toast="文字已複製!|複製失敗，請手動選取後複製" data-i18n-data-toast="common.copied" data-toast-type="success|error">
+                                                <button type="button" class="button-icon copy copyBtn has-tooltip" data-toast="文字已複製|複製失敗，請手動選取後複製" data-i18n-data-toast="common.copied" data-toast-type="success|error">
                                                     <span class="tooltip" data-i18n="action.copy">複製</span>
                                                 </button>
                                                 <button type="button" class="button-icon watch watchBtn has-tooltip">
@@ -360,8 +360,10 @@ permalink: 2-2-3_abTest.html
                                                     <span class="tooltip" data-i18n="comp.dislike">倒讚</span>
                                                 </button>
                                                 {# 分享：把這一側的答案建成唯讀分享連結（product POST /share 吃 log_id）。
-                                                     同 4-2 的分享鈕：要先讀那筆既有的連結清單＝條件開窗，保留 hook class。 #}
-                                                <button type="button" class="button-icon share js-share-log has-tooltip">
+                                                     同 4-2 的分享鈕：開窗前先讀那筆既有的連結清單（`GET /share?log_id=…`）＝條件開窗，
+                                                     保留 hook class；而**先讀就是自己送 API** ⇒ 照 §5 掛 `data-toast` 列全結果，
+                                                     五段與 4-2 那一顆逐字相同（同一支端點、同一組結果）。 #}
+                                                <button data-capability="history" type="button" class="button-icon share js-share-log has-tooltip" data-toast="正在查詢資料...|權限不足，無法查詢——請找貴租戶的管理者開通|查詢成功|載入資料失敗，請重新整理頁面|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.query" data-toast-type="info|warning|success|error|warning">
                                                     <span class="tooltip" data-i18n="comp.share">分享</span>
                                                 </button>
                                             </div>
@@ -435,7 +437,7 @@ permalink: 2-2-3_abTest.html
                                                  aria-labelledby 指這一側的答案標題，報讀器才唸得出「設定A…讚」而不是四顆同名鈕
                                                  （§4；同頁設定區那七組欄位用的是同一招，見 abSideLabel-*）。 #}
                                             <div class="message-icon" role="group" aria-labelledby="abAnswerTitle-{{ abSides[1].side }}">
-                                                <button type="button" class="button-icon copy copyBtn has-tooltip" data-toast="文字已複製!|複製失敗，請手動選取後複製" data-i18n-data-toast="common.copied" data-toast-type="success|error">
+                                                <button type="button" class="button-icon copy copyBtn has-tooltip" data-toast="文字已複製|複製失敗，請手動選取後複製" data-i18n-data-toast="common.copied" data-toast-type="success|error">
                                                     <span class="tooltip" data-i18n="action.copy">複製</span>
                                                 </button>
                                                 <button type="button" class="button-icon watch watchBtn has-tooltip">
@@ -455,8 +457,10 @@ permalink: 2-2-3_abTest.html
                                                     <span class="tooltip" data-i18n="comp.dislike">倒讚</span>
                                                 </button>
                                                 {# 分享：把這一側的答案建成唯讀分享連結（product POST /share 吃 log_id）。
-                                                     同 4-2 的分享鈕：要先讀那筆既有的連結清單＝條件開窗，保留 hook class。 #}
-                                                <button type="button" class="button-icon share js-share-log has-tooltip">
+                                                     同 4-2 的分享鈕：開窗前先讀那筆既有的連結清單（`GET /share?log_id=…`）＝條件開窗，
+                                                     保留 hook class；而**先讀就是自己送 API** ⇒ 照 §5 掛 `data-toast` 列全結果，
+                                                     五段與 4-2 那一顆逐字相同（同一支端點、同一組結果）。 #}
+                                                <button data-capability="history" type="button" class="button-icon share js-share-log has-tooltip" data-toast="正在查詢資料...|權限不足，無法查詢——請找貴租戶的管理者開通|查詢成功|載入資料失敗，請重新整理頁面|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.query" data-toast-type="info|warning|success|error|warning">
                                                     <span class="tooltip" data-i18n="comp.share">分享</span>
                                                 </button>
                                             </div>
@@ -523,7 +527,7 @@ permalink: 2-2-3_abTest.html
                          ——**它彈 warning、不是靜默 return**，所以切版這一段也要有對應的 toast 段。
                          **不共用 `toast.chatSubmit`**：那會讓同一顆 key 同時代表「固定問句的 chip，
                          不可能空」與「自由輸入，可能空」兩種行為契約（§4-2）。 #}
-                    <button data-capability="ask" type="button" class="button button-primary chat-input-submit" data-toast="回答生成中...|權限不足，無法送出——請找貴租戶的管理者開通|請先輸入問題|回答生成成功|回答生成失敗，請重新送出一次" data-i18n-data-toast="toast.chatSend" data-toast-type="info|warning|warning|success|error" data-i18n="action.submit">送出</button>
+                    <button data-capability="ask" type="button" class="button button-primary chat-input-submit" data-toast="回答生成中...|權限不足，無法送出——請找貴租戶的管理者開通|請先輸入問題|回答生成成功|回答生成失敗，請重新送出一次|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.chatSend" data-toast-type="info|warning|warning|success|error|warning" data-i18n="action.submit">送出</button>
                 </div>
             </div>
         </div>
@@ -596,8 +600,8 @@ permalink: 2-2-3_abTest.html
 {% set ratingModalNote = "評分會寫進這一側的問答紀錄，之後在歷史紀錄裡篩「AB測試」就找得到。" %}
 {% set ratingModalToastKey = "toast.saveRating" %}
 {% set ratingCapability = "history" %}
-{% set ratingModalToast = "滿意度已更新|權限不足，無法送出——請找貴租戶的管理者開通|請先選擇讚或倒讚|找不到這一筆問答紀錄，請確認它還在|更新失敗，請稍後再試" %}
-{% set ratingModalToastType = "success|warning|warning|warning|error" %}
+{% set ratingModalToast = "滿意度已更新|權限不足，無法送出——請找貴租戶的管理者開通|請先選擇讚或倒讚|找不到這一筆問答紀錄，請確認它還在|更新失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" %}
+{% set ratingModalToastType = "success|warning|warning|warning|error|warning" %}
 {% include "components/rating-modal/rating-modal.html" %}
 
 {# 分享連結管理（兩側動作列的分享鈕開的那一份）：與 4-2 同一顆彈窗、同一組撤銷二次確認參數。 #}

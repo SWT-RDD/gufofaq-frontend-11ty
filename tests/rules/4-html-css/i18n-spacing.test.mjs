@@ -70,7 +70,7 @@ test("§4-2 i18n 的文字槽不得寫 markdown 強調（`**…**` 會原樣印�
             nodes++;
             if (EMPHASIS.test(m[1])) hits.push(`${basename(f)}  「${m[1].trim().slice(0, 40)}…」`);
         }
-    assert.ok(Object.keys(en).length > 400 && nodes > 500, `只掃到 ${Object.keys(en).length} 個 key／${nodes} 個文字節點 —— 這條測試在空轉`);
+    assert.ok(Object.keys(en).length >= 2133 && nodes >= 9097, `只掃到 ${Object.keys(en).length} 個 key／${nodes} 個文字節點 —— 這條測試在空轉`);
     probe("§4-2 markdown 強調", (s) => (EMPHASIS.test(s) ? [s] : []),
         ["這一組**每輪都會跑**（推薦問題預設開啟）", "This group **runs every round**"],
         ["這一組每輪都會跑（推薦問題預設開啟）", "環境變數值不可以是「***」（那是讀取時的遮罩）", "a * b * c"]);
@@ -173,7 +173,7 @@ test("§4-2 全形標點收尾的標籤＋緊接的值：譯文必須自帶分�
         hits.push(...scan(html, en, basename(f)));
     }
     // 棘輪跟著母體一起長（§8-1 第 2 條）：放寬包裹那一層之後實測 274 處，門檻重量到 250。
-    assert.ok(seen >= 294, `只掃到 ${seen} 處「全形標點標籤＋緊接的值」—— 這條測試在空轉`);
+    assert.ok(seen >= 317, `只掃到 ${seen} 處「全形標點標籤＋緊接的值」—— 這條測試在空轉`);
     probe("§4-2 標點標籤分隔空白",
         (s) => scan(s, { "x.label": "File name:", "x.ok": "File name: " }),
         // 三個全形標點各一個樣本：只寫 `：` 的話，把 population 縮成 `[：]` 照樣全綠（實測過），

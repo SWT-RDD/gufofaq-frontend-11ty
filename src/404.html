@@ -5,7 +5,11 @@ titleKey: error.notFoundTitle
 permalink: 404.html
 ---
 {# GitHub Pages 找不到路徑時會自動回傳站台根層的 404.html（不需任何設定）。
-   用最小外殼（base.html，無導覽），避免在不存在的巢狀路徑下相對資產路徑解析錯誤。 #}
+   用最小外殼（base.html，無導覽），避免在不存在的巢狀路徑下相對資產路徑解析錯誤。
+   **本頁是無導覽入口頁**（§3-1 第③條，同時登記在測試的 `NO_NAV`）：它的入口是**伺服器**
+   ——使用者打錯網址時由 GitHub Pages 送出來，站內沒有、也不該有任何一頁連到它（連得到就表示
+   站內有一條走得到「找不到頁面」的死路）。切版把它收在 catalog.html 的頁面目錄，
+   否則部署後只有故意打錯網址的人看得到它的長相。 #}
 <div class="error-page">
     <p class="error-code" aria-hidden="true">404</p>
     <h1 class="error-message" data-i18n="error.notFound">找不到這個頁面</h1>

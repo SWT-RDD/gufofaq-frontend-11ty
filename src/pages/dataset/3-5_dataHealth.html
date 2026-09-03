@@ -148,6 +148,13 @@ permalink: 3-5_dataHealth.html
      檔案集用 3-1-1 與 5-10 的 id（法規彙編 3／2026 新制問答 12／101／102／103）。
      名字也要挑得開：「檢疫問答集」不叫「常見問答」——那與 3-1-1 的「常見問題彙整」只差兩個字，
      而它的內容（犬貓輸入檢疫）自己說得出更好的名字。 #}
+{# **這一頁的時間全部錨在站台的「現在」2026-07-14**（§6「全站只有一個現在」；出處是
+     `components/iso-review-wizard` 名單上那個查詢時間，5-6-3 的金鑰時間也錨在同一天）。
+     **不可以讓它離「現在」漂走**：這一頁演的是「每天 03:15 跑一趟的排程掃描」，而 5-6-3 逐字
+     寫著「每日健檢排在 03:15（3-5 那一頁），今天已經跑過一輪」——最後一趟掃描的時間一旦落在
+     幾個月前，那句話與這一頁的資料就互相打臉，而且兩頁分開看都很合理。
+     頁內的相對關係才是要保住的東西（首見→末見的間隔、處置早於最後一趟掃描一天、
+     有效期落在今天之前…），改錨點時整批同量平移。 #}
 {% set healthScanDatasets = [
   { id: 2, name: "客服問答集" },
   { id: 3, name: "法規彙編" },
@@ -205,7 +212,7 @@ permalink: 3-5_dataHealth.html
      `uncoveredTotal` 2 ＝ 下面 `healthUncovered` 的兩筆（這一份示範沒有被截斷；截斷時它會大於
      列出來的筆數，而畫面上那一對數字正是唯一看得出來的地方）。 #}
 {% set healthScan = {
-    scannedAt: "2024/12/02 03:15",
+    scannedAt: "2026/07/14 03:15",
     trigger: "daily",
     datasets: 4,
     files: 9,
@@ -230,7 +237,7 @@ permalink: 3-5_dataHealth.html
      `detail` 是 product 自己那句話（`_failure_message` 取結構化 detail 的人話那一段），原樣端出來
      ——這裡逐字取自 `scan_now` 的 `too_many_records`。 #}
 {% set healthScanFailure = {
-    failedAt: "2024/12/02 09:40",
+    failedAt: "2026/07/14 09:40",
     trigger: "manual",
     detail: "這個租戶有 24310 筆記錄，超過單次健檢上限 20000。近似重複是兩兩比對，超過上限會讓掃描跑到沒有人等得下去——掃一半與掃完在清單上看不出差別，所以擋在這裡而不是只掃前面幾筆。"
 } %}
@@ -269,7 +276,7 @@ permalink: 3-5_dataHealth.html
      的記錄鍵不是 document_id，命中統計上沒有它，所以也是 0。 #}
 {% set healthOverview = {
     windowDays: 7,
-    windowRange: "2024/11/25 03:15 ~ 2024/12/02 03:15",
+    windowRange: "2026/07/07 03:15 ~ 2026/07/14 03:15",
     totalOpen: 35,
     totalHits: 4820,
     topN: 5
@@ -400,8 +407,8 @@ permalink: 3-5_dataHealth.html
      **918 的 `noteLines` 第二行是 product `_reopen_note` 寫的**：
      `json.dumps(row.evidence, ensure_ascii=False, sort_keys=True, separators=(",", ":"))`
      ⇒ 鍵照字典序、無空白，而且形狀必須與同一筆的 `evidence` 是**同一種**。這一份示範演的是：處置當時
-     有效期是 2024-11-10（那天已經過了 ⇒ confirmed），使用者以「11 月底之前仍然有效」消音；
-     之後有人把那一格更正成 2024-11-30，今天（2024/12/02）又過了 ⇒ `evidence_digest` 變了、
+     有效期是 2026-06-22（那天已經過了 ⇒ confirmed），使用者以「11 月底之前仍然有效」消音；
+     之後有人把那一格更正成 2026-07-12，今天（2026/07/14）又過了 ⇒ `evidence_digest` 變了、
      `severity` 沒變 ⇒ `_premise_changes` 回 `["證據"]`，與那一行括號裡的字對得上。 #}
 {# 示範演的是「全部」那一態（要看得到已處置列與「還原」動作），故上面的狀態下拉標 selected；
      total 因此是全部發現數（35 未處置 ＋ 已處置若干），不等於總覽的 totalOpen。
@@ -413,7 +420,7 @@ permalink: 3-5_dataHealth.html
     severityLabel: "候選", severityKey: "health.severityCandidate",
     statusLabel: "未處置", statusKey: "health.statusOpen", disposed: false, reopened: false,
     datasetName: "法規彙編",
-    firstSeenAt: "2024/11/29 04:02", lastSeenAt: "2024/12/02 03:15",
+    firstSeenAt: "2026/07/11 04:02", lastSeenAt: "2026/07/14 03:15",
     evidence: [
       { key: "fact_topic", value: "汽車貨物稅稅率" },
       { key: "claims", value: "{\"7d18b0a3f5c2\":[\"15%\"],\"ae64c9017d3b\":[\"20%\"]}" }
@@ -430,19 +437,19 @@ permalink: 3-5_dataHealth.html
     severityLabel: "確定", severityKey: "health.severityConfirmed",
     statusLabel: "未處置", statusKey: "health.statusOpen", disposed: false, reopened: true,
     datasetName: "法規彙編",
-    firstSeenAt: "2024/10/03 04:02", lastSeenAt: "2024/12/02 03:15",
+    firstSeenAt: "2026/05/15 04:02", lastSeenAt: "2026/07/14 03:15",
     evidence: [
       { key: "reasons", value: "[\"valid_until_passed\"]" },
-      { key: "valid_until", value: "2024-11-30" }
+      { key: "valid_until", value: "2026-07-12" }
     ],
     records: [
       { key: "3c9f52ea18b6", title: "貨物稅減免申請的有效期到什麼時候", titleChars: 16, titleSource: "title_slot", filename: "法規彙編_2026.xlsx", row: 58 }
     ],
     noteLines: [
       "同一份規定在 11 月底之前仍然有效，不算過期。",
-      "原判定的前提已改變（證據）。處置當時的證據：{\"reasons\":[\"valid_until_passed\"],\"valid_until\":\"2024-11-10\"}"
+      "原判定的前提已改變（證據）。處置當時的證據：{\"reasons\":[\"valid_until_passed\"],\"valid_until\":\"2026-06-22\"}"
     ],
-    resolvedAt: "2024/11/12 09:41", resolvedBy: "42",
+    resolvedAt: "2026/06/24 09:41", resolvedBy: "42",
     actions: ["dismiss", "disable"]
   },
   {
@@ -450,7 +457,7 @@ permalink: 3-5_dataHealth.html
     severityLabel: "候選", severityKey: "health.severityCandidate",
     statusLabel: "未處置", statusKey: "health.statusOpen", disposed: false, reopened: false,
     datasetName: "",
-    firstSeenAt: "2024/11/18 04:02", lastSeenAt: "2024/12/02 03:15",
+    firstSeenAt: "2026/06/30 04:02", lastSeenAt: "2026/07/14 03:15",
     evidence: [
       { key: "representative", value: "b7c1e93a4d20" },
       { key: "min_similarity", value: "0.9231" },
@@ -469,7 +476,7 @@ permalink: 3-5_dataHealth.html
     severityLabel: "候選", severityKey: "health.severityCandidate",
     statusLabel: "未處置", statusKey: "health.statusOpen", disposed: false, reopened: false,
     datasetName: "客服問答集",
-    firstSeenAt: "2024/11/22 04:02", lastSeenAt: "2024/12/02 03:15",
+    firstSeenAt: "2026/07/04 04:02", lastSeenAt: "2026/07/14 03:15",
     evidence: [
       { key: "representative", value: "5a30b1cf7e64" },
       { key: "min_similarity", value: "0.9410" },
@@ -487,7 +494,7 @@ permalink: 3-5_dataHealth.html
     severityLabel: "候選", severityKey: "health.severityCandidate",
     statusLabel: "已處置", statusKey: "health.statusResolved", disposed: true, reopened: false,
     datasetName: "檢疫問答集",
-    firstSeenAt: "2024/11/20 04:02", lastSeenAt: "2024/12/02 03:15",
+    firstSeenAt: "2026/07/02 04:02", lastSeenAt: "2026/07/14 03:15",
     evidence: [
       { key: "representative", value: "44e1a7c0b96d" },
       { key: "min_similarity", value: "0.9702" },
@@ -502,7 +509,7 @@ permalink: 3-5_dataHealth.html
         unavailableDetail: "這一筆記錄在本租戶的資料集裡找不到——可能是上一次掃描之後那一列已被刪除或重新匯入（重新匯入會換一組文件編號）。重新掃描就會拿到最新的清單。" }
     ],
     noteLines: ["合併：保留 44e1a7c0b96d，併入 2 個問法，其餘 2 筆停用（未刪除）"],
-    resolvedAt: "2024/12/01 15:08", resolvedBy: "42",
+    resolvedAt: "2026/07/13 15:08", resolvedBy: "42",
     actions: ["undo"]
   },
   {
@@ -510,9 +517,9 @@ permalink: 3-5_dataHealth.html
     severityLabel: "候選", severityKey: "health.severityCandidate",
     statusLabel: "未處置", statusKey: "health.statusOpen", disposed: false, reopened: false,
     datasetName: "法規彙編",
-    firstSeenAt: "2024/11/26 04:02", lastSeenAt: "2024/12/02 03:15",
+    firstSeenAt: "2026/07/08 04:02", lastSeenAt: "2026/07/14 03:15",
     evidence: [
-      { key: "live_since", value: "2024-10-15" },
+      { key: "live_since", value: "2026-05-27" },
       { key: "window_days", value: "7" }
     ],
     records: [
@@ -526,7 +533,7 @@ permalink: 3-5_dataHealth.html
     severityLabel: "候選", severityKey: "health.severityCandidate",
     statusLabel: "未處置", statusKey: "health.statusOpen", disposed: false, reopened: false,
     datasetName: "",
-    firstSeenAt: "2024/11/28 04:02", lastSeenAt: "2024/12/02 03:15",
+    firstSeenAt: "2026/07/10 04:02", lastSeenAt: "2026/07/14 03:15",
     evidence: [
       { key: "question", value: "犬貓可以帶上飛機嗎" },
       { key: "asks_at_least", value: "10" }
@@ -542,7 +549,7 @@ permalink: 3-5_dataHealth.html
     severityLabel: "候選", severityKey: "health.severityCandidate",
     statusLabel: "未處置", statusKey: "health.statusOpen", disposed: false, reopened: false,
     datasetName: "客服問答集",
-    firstSeenAt: "2024/11/30 04:02", lastSeenAt: "2024/12/02 03:15",
+    firstSeenAt: "2026/07/12 04:02", lastSeenAt: "2026/07/14 03:15",
     evidence: [
       { key: "title", value: "退運作業" },
       { key: "kind", value: "noun_phrase" }
@@ -558,7 +565,7 @@ permalink: 3-5_dataHealth.html
     severityLabel: "確定", severityKey: "health.severityConfirmed",
     statusLabel: "未處置", statusKey: "health.statusOpen", disposed: false, reopened: false,
     datasetName: "2026 新制問答",
-    firstSeenAt: "2024/12/02 03:15", lastSeenAt: "2024/12/02 03:15",
+    firstSeenAt: "2026/07/14 03:15", lastSeenAt: "2026/07/14 03:15",
     evidence: [
       { key: "missing_slots", value: "[\"note1\"]" }
     ],
@@ -619,8 +626,8 @@ permalink: 3-5_dataHealth.html
     <p id="healthHitChecksHint" class="text-gray" data-i18n="health.includeHitChecksHint">那三項要向上游取回整個時間窗的問答紀錄才算得出來，所以預設不重算：處置完立刻複驗時改的是資料，命中統計一秒之內不會變，開著跑只是每按一次多付一次上游取回，還會把「能不能複驗」綁在「統計上游活著」上。每日全量重掃一定會算它們。</p>
     <div class="flex-row">
         <button data-capability="data:write" type="button" class="button button-primary js-health-scan"
-            data-toast="正在重新檢查…|權限不足，無法重新檢查——請找貴租戶的管理者開通|檢查完成|資料筆數超過單次健檢上限，這一次一筆都沒有檢查|檢查失敗，請稍後再試"
-            data-i18n-data-toast="toast.healthScan" data-toast-type="info|warning|success|warning|error"
+            data-toast="正在重新檢查…|權限不足，無法重新檢查——請找貴租戶的管理者開通|檢查完成|資料筆數超過單次健檢上限，這一次一筆都沒有檢查|檢查失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員"
+            data-i18n-data-toast="toast.healthScan" data-toast-type="info|warning|success|warning|error|warning"
             data-i18n="health.rescan">重新檢查</button>
     </div>
 </div>
@@ -731,7 +738,7 @@ permalink: 3-5_dataHealth.html
          「這一欄存在之前寫下的那些列」是 `NULL`，而那個 `NULL` 的意思是**那一次掃描還沒有這個概念**，
          不是「量了、是零」。補 0 會讓每一筆舊紀錄都宣稱自己量過（§6：替一次沒有發生的量測編一個結果）。
          故 null 走自己的哨兵字，不與 `0` 撞字；`0` 照畫（同 `hit_checks` 三態的理由）。
-         示範走「有值」那一態（本頁那一趟是 `2024/12/02` 的排程掃描，欄位早就存在），null 那一態的
+         示範走「有值」那一態（本頁那一趟是 `2026/07/14` 的排程掃描，欄位早就存在），null 那一態的
          繁中家在元件庫頁的「React 條件文案」區。
        ⚠️ **值以字串傳入**（`"47"`），另外兩格維持數字——差別是刻意的、而且非這樣不可：這一格的渲染
          條件是真值判斷，而它的值域**含 0**（量了、一筆都沒被排除），`0` 在 nunjucks 是 false ⇒ 真的
@@ -887,7 +894,7 @@ permalink: 3-5_dataHealth.html
                 </div>
                 <div class="field">
                     <input type="number" id="healthOverviewDaysInput" class="form-control js-health-overview-days" value="{{ healthOverview.windowDays }}" min="1" max="90" step="1" aria-describedby="healthOverviewDaysHint">
-                    <span class="text-gray" id="healthOverviewDaysHint"><span data-i18n="health.rangePrefix">可填 </span><span>1-90</span><span data-i18n="health.overviewDaysRangeSuffix"> 天。改了這一格，上面那個時間窗與整張表都跟著重算。</span></span>
+                    <span class="text-gray" id="healthOverviewDaysHint"><span data-i18n="health.rangePrefix">可填 </span><span>1 – 90</span><span data-i18n="health.overviewDaysRangeSuffix"> 天。改了這一格，上面那個時間窗與整張表都跟著重算。</span></span>
                 </div>
             </div>
         </div>
@@ -898,7 +905,7 @@ permalink: 3-5_dataHealth.html
                 </div>
                 <div class="field">
                     <input type="number" id="healthOverviewTopNInput" class="form-control js-health-overview-top-n" value="{{ healthOverview.topN }}" min="1" max="50" step="1" aria-describedby="healthOverviewTopNHint">
-                    <span class="text-gray" id="healthOverviewTopNHint"><span data-i18n="health.rangePrefix">可填 </span><span>1-50</span><span data-i18n="health.overviewTopNRangeSuffix"> 筆。這是「最該先看的幾筆」那一欄的列出上限，不是分頁；其餘的要到下面的清單才看得到。</span></span>
+                    <span class="text-gray" id="healthOverviewTopNHint"><span data-i18n="health.rangePrefix">可填 </span><span>1 – 50</span><span data-i18n="health.overviewTopNRangeSuffix"> 筆。這是「最該先看的幾筆」那一欄的列出上限，不是分頁；其餘的要到下面的清單才看得到。</span></span>
                 </div>
             </div>
         </div>
@@ -1025,8 +1032,8 @@ permalink: 3-5_dataHealth.html
                 {% endfor %}
             </select>
             <button data-capability="data:read" type="button" class="button button-primary js-health-query"
-                data-toast="正在查詢資料...|權限不足，無法查詢——請找貴租戶的管理者開通|查詢成功|載入資料失敗，請重新整理頁面"
-                data-i18n-data-toast="toast.query" data-toast-type="info|warning|success|error"
+                data-toast="正在查詢資料...|權限不足，無法查詢——請找貴租戶的管理者開通|查詢成功|載入資料失敗，請重新整理頁面|此功能尚未對貴租戶開通，請聯絡平台管理員"
+                data-i18n-data-toast="toast.query" data-toast-type="info|warning|success|error|warning"
                 data-i18n="action.query">查詢</button>
         </div>
     </div>
@@ -1184,8 +1191,8 @@ permalink: 3-5_dataHealth.html
                                     </div>
                                     <div class="flex-row">
                                         <button data-capability="data:write" type="button" class="button button-primary button-sm js-health-dismiss" id="healthDismissBtn-{{ f.id }}" aria-labelledby="healthFindingId-{{ f.id }} healthDismissBtn-{{ f.id }}"
-                                            data-toast="已判定為非問題（資料一個字都沒動）|權限不足，無法判定——請找貴租戶的管理者開通|請填寫判定理由|這個發現已經處置過了，下一次檢查會依前提是否改變決定要不要把它推回清單|操作失敗，請稍後再試"
-                                            data-i18n-data-toast="toast.healthDismiss" data-toast-type="success|warning|warning|warning|error"
+                                            data-toast="已判定為非問題（資料一個字都沒動）|權限不足，無法判定——請找貴租戶的管理者開通|請填寫判定理由|這個發現已經處置過了，下一次檢查會依前提是否改變決定要不要把它推回清單|操作失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員"
+                                            data-i18n-data-toast="toast.healthDismiss" data-toast-type="success|warning|warning|warning|error|warning"
                                             data-i18n="health.actionDismiss">判定為非問題</button>
                                     </div>
                                 </div>
@@ -1209,8 +1216,8 @@ permalink: 3-5_dataHealth.html
                                     </div>
                                     <div class="flex-row">
                                         <button data-capability="data:write" type="button" class="button button-primary button-sm js-health-merge" id="healthMergeBtn-{{ f.id }}" aria-labelledby="healthFindingId-{{ f.id }} healthMergeBtn-{{ f.id }}"
-                                            data-toast="已合併（問法併入保留的那一筆，其餘停用未刪除）|權限不足，無法合併——請找貴租戶的管理者開通|請選擇要保留哪一筆|這個租戶還沒有宣告「有效期」維度，被併的那幾筆停用不了|這個發現已經處置過了，下一次檢查會依前提是否改變決定要不要把它推回清單|這幾筆記錄所在的資料集不在你可以寫入的群組裡——處置會就地改寫來源檔，需要與匯入、刪檔同一道群組寫入權限|操作失敗，請稍後再試"
-                                            data-i18n-data-toast="toast.healthMerge" data-toast-type="success|warning|warning|warning|warning|warning|error"
+                                            data-toast="已合併（問法併入保留的那一筆，其餘停用未刪除）|權限不足，無法合併——請找貴租戶的管理者開通|請選擇要保留哪一筆|這個租戶還沒有宣告「有效期」維度，被併的那幾筆停用不了|這個發現已經處置過了，下一次檢查會依前提是否改變決定要不要把它推回清單|這幾筆記錄所在的資料集不在你可以寫入的群組裡——處置會就地改寫來源檔，需要與匯入、刪檔同一道群組寫入權限|操作失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員"
+                                            data-i18n-data-toast="toast.healthMerge" data-toast-type="success|warning|warning|warning|warning|warning|error|warning"
                                             data-i18n="health.actionMerge">合併問法</button>
                                     </div>
                                 </div>
@@ -1261,8 +1268,8 @@ permalink: 3-5_dataHealth.html
                                                  位置對齊姊妹兩顆（`toast.healthMerge`／`toast.healthSupersede` 的 index 2
                                                  都是「請選擇…」那一族），讓「這一格選錯了」在四顆處置鈕上落在同一個索引。
                                                ⚠️ `|` 是索引契約：插這一段之後「請填寫停用理由」由 2 移到 3，其後全部 +1。 #}
-                                            data-toast="已停用（有效期設成哨兵日期，未刪除）|權限不足，無法停用——請找貴租戶的管理者開通|請至少勾選一筆要停用的記錄|請填寫停用理由|這個租戶還沒有宣告「有效期」維度，資料上沒有地方可以表達停用|這個發現已經處置過了，下一次檢查會依前提是否改變決定要不要把它推回清單|這幾筆記錄所在的資料集不在你可以寫入的群組裡——處置會就地改寫來源檔，需要與匯入、刪檔同一道群組寫入權限|操作失敗，請稍後再試"
-                                            data-i18n-data-toast="toast.healthDisable" data-toast-type="success|warning|warning|warning|warning|warning|warning|error"
+                                            data-toast="已停用（有效期設成哨兵日期，未刪除）|權限不足，無法停用——請找貴租戶的管理者開通|請至少勾選一筆要停用的記錄|請填寫停用理由|這個租戶還沒有宣告「有效期」維度，資料上沒有地方可以表達停用|這個發現已經處置過了，下一次檢查會依前提是否改變決定要不要把它推回清單|這幾筆記錄所在的資料集不在你可以寫入的群組裡——處置會就地改寫來源檔，需要與匯入、刪檔同一道群組寫入權限|操作失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員"
+                                            data-i18n-data-toast="toast.healthDisable" data-toast-type="success|warning|warning|warning|warning|warning|warning|error|warning"
                                             data-i18n="health.actionDisable">停用（不刪除）</button>
                                     </div>
                                 </div>
@@ -1287,8 +1294,8 @@ permalink: 3-5_dataHealth.html
                                     <p class="text-gray" data-i18n="health.supersedeRestHint">沒有被選成現行版的那幾筆，就是被它取代的那幾筆。</p>
                                     <div class="flex-row">
                                         <button data-capability="data:write" type="button" class="button button-primary button-sm js-health-supersede" id="healthSupersedeBtn-{{ f.id }}" aria-labelledby="healthFindingId-{{ f.id }} healthSupersedeBtn-{{ f.id }}"
-                                            data-toast="已設取代參照|權限不足，無法設取代參照——請找貴租戶的管理者開通|請選擇哪一筆是現行版|現行版所在的檔案沒有外部主鍵，指不到東西的取代參照是一個斷掉的指標|這幾筆與現行版在同一個檔案裡，取代參照的粒度是檔案，同檔案請改用合併或停用|這個租戶還沒有宣告「取代參照」維度|這個發現已經處置過了，下一次檢查會依前提是否改變決定要不要把它推回清單|這幾筆記錄所在的資料集不在你可以寫入的群組裡——處置會就地改寫來源檔，需要與匯入、刪檔同一道群組寫入權限|操作失敗，請稍後再試"
-                                            data-i18n-data-toast="toast.healthSupersede" data-toast-type="success|warning|warning|warning|warning|warning|warning|warning|error"
+                                            data-toast="已設取代參照|權限不足，無法設取代參照——請找貴租戶的管理者開通|請選擇哪一筆是現行版|現行版所在的檔案沒有外部主鍵，指不到東西的取代參照是一個斷掉的指標|這幾筆與現行版在同一個檔案裡，取代參照的粒度是檔案，同檔案請改用合併或停用|這個租戶還沒有宣告「取代參照」維度|這個發現已經處置過了，下一次檢查會依前提是否改變決定要不要把它推回清單|這幾筆記錄所在的資料集不在你可以寫入的群組裡——處置會就地改寫來源檔，需要與匯入、刪檔同一道群組寫入權限|操作失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員"
+                                            data-i18n-data-toast="toast.healthSupersede" data-toast-type="success|warning|warning|warning|warning|warning|warning|warning|error|warning"
                                             data-i18n="health.actionSupersede">設取代參照</button>
                                     </div>
                                 </div>
@@ -1320,8 +1327,8 @@ permalink: 3-5_dataHealth.html
                                     </div>
                                     <div class="flex-row">
                                         <button data-capability="data:write" type="button" class="button button-primary button-sm js-health-add-phrasing" id="healthAddPhrasingBtn-{{ f.id }}" aria-labelledby="healthFindingId-{{ f.id }} healthAddPhrasingBtn-{{ f.id }}"
-                                            data-toast="已補寫問法（新增為一列，原標題保留）|權限不足，無法補寫問法——請找貴租戶的管理者開通|請選擇要補寫在哪一筆|請填寫要補寫的問法|補寫的問法與原標題逐字相同，新增一列只會多出一筆完全重複的記錄|這個發現已經處置過了，下一次檢查會依前提是否改變決定要不要把它推回清單|這幾筆記錄所在的資料集不在你可以寫入的群組裡——處置會就地改寫來源檔，需要與匯入、刪檔同一道群組寫入權限|操作失敗，請稍後再試"
-                                            data-i18n-data-toast="toast.healthAddPhrasing" data-toast-type="success|warning|warning|warning|warning|warning|warning|error"
+                                            data-toast="已補寫問法（新增為一列，原標題保留）|權限不足，無法補寫問法——請找貴租戶的管理者開通|請選擇要補寫在哪一筆|請填寫要補寫的問法|補寫的問法與原標題逐字相同，新增一列只會多出一筆完全重複的記錄|這個發現已經處置過了，下一次檢查會依前提是否改變決定要不要把它推回清單|這幾筆記錄所在的資料集不在你可以寫入的群組裡——處置會就地改寫來源檔，需要與匯入、刪檔同一道群組寫入權限|操作失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員"
+                                            data-i18n-data-toast="toast.healthAddPhrasing" data-toast-type="success|warning|warning|warning|warning|warning|warning|error|warning"
                                             data-i18n="health.actionAddPhrasing">補寫問法</button>
                                     </div>
                                 </div>
@@ -1345,8 +1352,8 @@ permalink: 3-5_dataHealth.html
                                     </div>
                                     <div class="flex-row">
                                         <button data-capability="data:write" type="button" class="button button-border button-sm js-health-undo" id="healthUndoBtn-{{ f.id }}" aria-labelledby="healthFindingId-{{ f.id }} healthUndoBtn-{{ f.id }}"
-                                            data-toast="已還原這次處置，這一筆回到未處置|權限不足，無法還原——請找貴租戶的管理者開通|請填寫還原理由|保留的那一筆內容已經不是這次合併寫出去的那一份（多半是又被另一個發現併過一次），把舊內容寫回去會連那一次的問法一起抹掉|處置寫下去的那一格在那之後又被改過，還原的前提不成立，請直接編輯資料|查不到這個發現的處置紀錄，沒有辦法知道當初改了哪一格、把什麼值蓋掉了|這幾筆記錄所在的資料集不在你可以寫入的群組裡——處置會就地改寫來源檔，需要與匯入、刪檔同一道群組寫入權限|操作失敗，請稍後再試"
-                                            data-i18n-data-toast="toast.healthUndo" data-toast-type="success|warning|warning|warning|warning|warning|warning|error"
+                                            data-toast="已還原這次處置，這一筆回到未處置|權限不足，無法還原——請找貴租戶的管理者開通|請填寫還原理由|保留的那一筆內容已經不是這次合併寫出去的那一份（多半是又被另一個發現併過一次），把舊內容寫回去會連那一次的問法一起抹掉|處置寫下去的那一格在那之後又被改過，還原的前提不成立，請直接編輯資料|查不到這個發現的處置紀錄，沒有辦法知道當初改了哪一格、把什麼值蓋掉了|這幾筆記錄所在的資料集不在你可以寫入的群組裡——處置會就地改寫來源檔，需要與匯入、刪檔同一道群組寫入權限|操作失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員"
+                                            data-i18n-data-toast="toast.healthUndo" data-toast-type="success|warning|warning|warning|warning|warning|warning|error|warning"
                                             data-i18n="health.actionUndo">還原這次處置</button>
                                     </div>
                                 </div>

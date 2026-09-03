@@ -36,7 +36,7 @@
      ⚠️ **本元件依賴 upload-box 的全部預設值，這是使用頁的前置條件**（§2：set 是頁面全域，§6：
      元件內 include 帶參數的子元件時要申明）。兩個使用頁的現況不是「從未 set」：
      `pages/components/component.html` **有** set 過 `uploadErrorFiles`（第 17 節那顆 upload-box 示範，
-     為了讓「不支援的副檔名」那一列看得見），靠的是它緊接著那一行 `{% set uploadErrorFiles = "" %}`
+     為了讓「不支援的副檔名」那一列看得見），靠的是它緊接著把兩顆（`uploadErrorFiles` 與 `uploadTooLargeFiles`）都重設回空的那兩行
      重設回空——沒有那一行，本元件裡的 upload-box 會在窗內長出一列別人的錯誤檔名。
      `pages/dataset/3-3_qaSetManagement.html` 則是整頁沒有任何 `upload*` 的 set。
 
@@ -124,10 +124,10 @@
                          的 docstring 逐字寫著這條分界。折成一段的話，一個明明填了字的人會被告知
                          「答案欄有空白的列」，回試算表看了半天什麼都沒少。
                        **這裡的下一步只有一條**：回試算表把那幾列補成文字。1-1-4 那一頁還可以關掉
-                         「轉換 HTML」再送，這顆窗沒有那顆開關（理由見檔頭）。 #}
+                         「HTML 轉 Markdown」再送，這顆窗沒有那顆開關（理由見檔頭）。 #}
                     <div class="button-row center">
                         <button type="button" class="button button-border btn-close-modals" data-i18n="action.cancel">取消</button>
-                        <button data-capability="data:write" type="button" class="button button-primary js-qa-import-submit" data-toast="問答已匯入|權限不足，無法匯入——請找貴租戶的管理者開通|這個資料集不在你可以寫入的群組裡，請找管理員把你加進該群組|請選擇問題欄與答案欄|答案欄有空白的列，請補齊後再匯入|有幾列的答案經 HTML 轉換後一個字都不剩（整格只有一張圖或一個空連結），請回試算表把那幾列補成文字再匯入（錯誤訊息會逐列指名）|匯入失敗，請稍後再試" data-i18n-data-toast="toast.importQa" data-toast-type="success|warning|warning|warning|warning|warning|error" data-i18n="action.import">匯入</button>
+                        <button data-capability="data:write" type="button" class="button button-primary js-qa-import-submit" data-toast="問答已匯入|權限不足，無法匯入——請找貴租戶的管理者開通|這個資料集不在你可以寫入的群組裡，請找管理員把你加進該群組|請選擇問題欄與答案欄|答案欄有空白的列，請補齊後再匯入|有幾列的答案經 HTML 轉換後一個字都不剩（整格只有一張圖或一個空連結），請回試算表把那幾列補成文字再匯入（錯誤訊息會逐列指名）|匯入失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.importQa" data-toast-type="success|warning|warning|warning|warning|warning|error|warning" data-i18n="action.import">匯入</button>
                     </div>
                 </div>
             </div>

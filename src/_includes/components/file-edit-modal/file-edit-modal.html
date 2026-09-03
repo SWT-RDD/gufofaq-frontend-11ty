@@ -1,6 +1,6 @@
 {# 儲存鈕**不掛任何授權軸**：這是**送出前的本地編輯**（只改還沒送出的那份清單），
      沒有端點可以宣告閘門——與
-     `tests/guideline.test.mjs` 的 `NO_GATE` 那一筆成對（§4「痕跡要成對：只住在測試裡的豁免，
+     §4 授權測試的 `NO_GATE` 那一筆成對（§4「痕跡要成對：只住在測試裡的豁免，
      讀元件的人看不到」）。 #}
 {# 檔案編輯 modal（PDF 自填），dialog id `editModal`。
      固定槽 schema（title/content/source/date/category/number/flag/tags/privilege/note1..note10/date2/date3/internal_note，
@@ -22,7 +22,7 @@
      寫死自動關窗＝「按了儲存，窗關了，但什麼都沒存」，所以**每一個** include 本元件的頁（含元件庫
      展示頁）都設這顆參數——自動關窗那一支全站沒有任何一頁在演，它留著是為了讓「為什麼不掛」
      有地方寫下來。 #}
-{# 槽目錄走唯一正本 ui/field-slot-catalog（22 槽，§2 的 {% from … import %}）。
+{# 槽目錄走唯一正本 ui/field-slot-catalog（槽數不抄，§2／§8-1）。
    本元件自己的附加資料只有兩件事：哪一槽是長文 textarea（內容，PDF 自動擷取故 disabled）、
    哪一槽帶示範值。以 key 查一張小 map——附加欄位塞進正本目錄的話，那份目錄就變成下一個要對齊的東西。 #}
 {% from "ui/field-slot-catalog/field-slot-catalog.html" import fieldSlotCatalog %}
@@ -93,6 +93,9 @@ that identifies frequently executed loop traces at run-time and then generates m
                 </div>
                 <div class="modals-footer">
                     <div class="button-row center">
+                        {# **這顆鈕標不出授權軸**（§4；同時登記在測試的 `NO_GATE`）：右邊那顆確認鈕改的是
+                             **還沒送出**的待上傳清單（記憶體裡的那一份），全站沒有任何對應端點——沒有端點
+                             就沒有閘門，標一軸等於宣告一道不存在的守衛。真正吃閘門的是那一批檔案送出去的時候。 #}
                         <button type="button" class="button button-border btn-close-modals" data-i18n="action.cancel">取消</button>
                         <button type="button" class="button button-primary{% if editConfirmBinding %} js-save-edit-file{% else %} btn-close-modals{% endif %}" data-toast="已更新" data-i18n-data-toast="toast.savePendingFile" data-toast-type="success" data-i18n="action.save">儲存</button>
                     </div>

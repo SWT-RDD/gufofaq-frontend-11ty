@@ -6,6 +6,10 @@ permalink: index.html
 bodyClass: catalog-page
 ---
 {# 部署站台首頁：所有頁面的目錄，也是站台的進入點（登入頁移到 login.html）。
+   **本頁是無導覽入口頁**（§3-1 第③條，同時登記在測試的 `NO_NAV`）：它就是那個入口本身
+   ——站台根目錄的 `index.html`，沒有上一頁可以連到它。 #}
+{# 這份清單的母體是「每一支有 permalink 的 src 頁」（含 404 與登入頁）：檔頭第一行說的是
+   「所有頁面」，少一頁就是一頁沒有人打得開、也就沒有人驗收過。
    在 app i18n 範圍內（chrome 要翻譯）；連結清單資料化，新增頁面時在此加一筆（label 是繁中原文，i18nKey 是英文的 key）。
 
    **英譯一律 Title Case**（§4-2：同一組枚舉、同一層選單內的構詞與大小寫要一致）：這份清單把
@@ -101,7 +105,8 @@ bodyClass: catalog-page
         title: "其他", i18nKey: "catalog.secOther",
         links: [
             { label: "元件庫（style guide）", href: "component.html", i18nKey: "catalog.linkComponentLibrary" },
-            { label: "登入頁", href: "login.html", i18nKey: "catalog.linkLogin" }
+            { label: "登入頁", href: "login.html", i18nKey: "catalog.linkLogin" },
+            { label: "找不到頁面（404）", href: "404.html", i18nKey: "catalog.linkNotFound" }
         ]
     }
 ] %}

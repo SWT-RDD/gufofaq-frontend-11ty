@@ -57,7 +57,7 @@
              比較在畫面上仍然到不了。總數是徵狀，頁碼列才是出路，兩格都要有。
              `perPage` ＝上游的**預設**頁大小 `DEFAULT_AB_HISTORY_PAGE`（product，經
              `GET /qatest/contract` 的 `paging.default_ab_history_page` 投影出來）：分頁器要算
-             「總共幾頁」就得知道它。**一定要讀投影值、不可以在這裡抄一份字面**——後端哪天把預設
+             「總共幾頁」就得知道它。**React 端一定要讀投影值、不可以抄一份字面**——後端哪天把預設
              調小而畫面仍以舊值分頁，頁碼從第 2 頁起會全部指錯位置，而畫面上沒有任何訊號。
            ⚠️ **同 group 的另外兩顆界線刻意沒有可見落點**，理由查證過（§3-2：空白與「忘了標」
              長得一模一樣，所以寫在這裡）：
@@ -71,6 +71,7 @@
              會自己折行，故不需要 parent slot class 覆寫（§4：不覆寫就不加殼）。 #}
         {% if sidePanelTotal %}
         {% set total = sidePanelTotal %}
+        {# 切版這顆 100 是該投影值當下的快照（React 端讀 `paging.default_ab_history_page`，見上）。 #}
         {% set perPage = 100 %}
         {% include "ui/pagination/pagination.html" %}
         {% endif %}

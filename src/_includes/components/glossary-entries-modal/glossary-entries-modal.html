@@ -13,7 +13,12 @@
      是同樣兩顆（`className="… js-add-glossary-entry"`／`className="… js-remove-glossary-entry"`）。
      詞條／定義的 maxlength 是契約欄位（§6），出處＝GufoRAG chatbot 的
      `MAX_TERM_LEN = 200`／`MAX_DEFINITION_LEN = 2000`，兩道逐筆檢查都在 `validate_entries` 裡
-     （存檔即驗、fail-fast），經 product 的 `_as_bad_request` 映成 400。
+     （存檔即驗、fail-fast）。**那兩道現在擋在 product 這一層就結束了**：長度由
+     `GlossaryEntryIn` 的欄位驗證（請求層）擋，整批筆數由 `replace_glossary_entries` 在呼叫上游
+     之前手動比對 `MAX_GLOSSARY_ENTRIES_PER_TABLE`；只有其餘「只有 chatbot 驗得到」的錯誤才會
+     走上游那一趟，並由 `proxy_upstream` 依上游信封的 `code` 分流成 400（原句轉述）或 502／503
+     （關聯編號）。所以這一顆 `maxlength` 的**可見提示**不是裝飾——打不進去的字在請求層就被擋掉，
+     沒有那句提示的話使用者只會看到輸入框吃不下字。
      **這顆窗沒有別名欄**：GufoRAG chatbot 逐字寫著「別名一律住在 `alias_entries`」，
      別名由 3-6_aliasTables 統一管理、在 5-2 決定哪個階段套用。這裡不留、也不 deprecate——
      留著就會有兩個地方可以填別名，而這整件事就是為了收掉那個。
@@ -113,7 +118,7 @@
                 <div class="modals-footer">
                     <div class="button-row center">
                         <button type="button" class="button button-border btn-close-modals" data-i18n="action.cancel">取消</button>
-                        <button data-capability="data:write" type="button" class="button button-primary js-save-glossary-entries" data-toast="詞條已更新|權限不足，無法儲存——請找貴租戶的管理者開通|詞條沒有通過寫入層驗證（詞條不可為空、單筆長度有上限、整表筆數有上限），請修正後再存|更新失敗，請稍後再試" data-i18n-data-toast="toast.saveGlossaryEntries" data-toast-type="success|warning|warning|error" data-i18n="action.save">儲存</button>
+                        <button data-capability="data:write" type="button" class="button button-primary js-save-glossary-entries" data-toast="詞條已更新|權限不足，無法儲存——請找貴租戶的管理者開通|詞條沒有通過寫入層驗證（詞條不可為空、單筆長度有上限、整表筆數有上限），請修正後再存|更新失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.saveGlossaryEntries" data-toast-type="success|warning|warning|error|warning" data-i18n="action.save">儲存</button>
                     </div>
                 </div>
             </div>

@@ -17,6 +17,10 @@
 //
 // **`aria-atomic` 掛在每一則上、不掛容器**（容器同時是直向堆疊器，見 base.html 那則註解）：
 // 掛容器等於第二則進場時把第一則連同第二則整串重唸一次。
+//
+// **切語言時開著的那幾則要跟著重畫**（§4-2）：關閉鈕的可及名稱由本檔產生，訊息本文則依
+// 來源鈕的段索引重讀 `data-toast`。與其他元件不同的是，這裡不是可有可無的收尾——
+// `warning`／`error` 不自動消失，那兩型必然活得比一次語言切換久。
 function showToast(message, type = 'success', duration = 3000) {
     // 舊簽名相容：showToast(msg, duration)
     if (typeof type === 'number') { duration = type; type = 'success'; }
@@ -55,11 +59,28 @@ function showToast(message, type = 'success', duration = 3000) {
     closeGlyph.textContent = '\u00D7';
     const closeName = document.createElement('span');
     closeName.className = 'sr-only';
-    closeName.textContent = (window.GufoI18n && window.GufoI18n.t)
-        ? window.GufoI18n.t('action.close', '關閉') : '關閉';
     closeBtn.appendChild(closeGlyph);
     closeBtn.appendChild(closeName);
     toast.appendChild(closeBtn);
+
+    // 這一則還開著的時候語言被切掉，它要跟著重畫（§4-2：js 產生的 chrome 走 GufoI18n.t，
+    // 並在 `gufo:langchange` 時依當下狀態重畫——全站每一支自己產字的元件都是這樣接的）。
+    // **這不是邊角**：`warning`／`error` 兩型不自動消失（見檔頭），所以它們必然活得比一次語言
+    // 切換久；少了這一段，切到英文之後畫面上會留著一則整句繁中的錯誤訊息，而它正是那一刻
+    // 唯一在說「剛剛那件事怎麼了」的東西。
+    // 訊息本文靠**來源鈕的索引**重讀：`data-toast` 那一串已經由 lang-toggle 依
+    // `data-i18n-data-toast` 重寫成新語言（它在 dispatch `gufo:langchange` 之前就跑完），
+    // 所以同一個索引取到的就是同一段的新語言。直接呼叫 `showToast(訊息)` 的呼叫端沒有來源鈕
+    // （那一段字是它自己組的），那一則就只換得掉關閉鈕的名稱——換不掉的東西不假裝換得掉。
+    function relabel() {
+        closeName.textContent = (window.GufoI18n && window.GufoI18n.t)
+            ? window.GufoI18n.t('action.close', '關閉') : '關閉';
+        if (!toast._gufoSource) return;
+        const segs = (toast._gufoSource.el.getAttribute('data-toast') || '').split('|');
+        if (segs[toast._gufoSource.at] != null) toastText.textContent = segs[toast._gufoSource.at].trim();
+    }
+    relabel();
+    document.addEventListener('gufo:langchange', relabel);
 
     const container = document.getElementById('toastContainer') || document.body;
     raiseContainer(container);
@@ -79,6 +100,9 @@ function showToast(message, type = 'success', duration = 3000) {
     function dismiss() {
         toast.addEventListener('transitionend', function (e) {
             if (e.target !== toast || e.propertyName !== 'opacity') return;
+            // 監聽跟著節點一起收：不拆的話，每彈一則就在 document 上多留一顆
+            // 永遠不會被回收的 listener（它閉包著已經離開 DOM 的那一則）。
+            document.removeEventListener('gufo:langchange', relabel);
             toast.remove();
             lowerIfEmpty(container);
         }, { once: true });
@@ -137,6 +161,8 @@ document.addEventListener('DOMContentLoaded', function () {
         const types = (el.getAttribute('data-toast-type') || 'success').split('|');
         const at = el._gufoToastAt || 0;
         el._gufoToastAt = (at + 1) % messages.length;
-        showToast(messages[at].trim(), (types[at] || types[types.length - 1]).trim());
+        // 來源鈕與段索引留在節點上：切語言時 relabel() 靠它重讀同一段的新語言（見 showToast）。
+        const toast = showToast(messages[at].trim(), (types[at] || types[types.length - 1]).trim());
+        toast._gufoSource = { el: el, at: at };
     });
 });

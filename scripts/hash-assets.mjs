@@ -95,7 +95,7 @@ try {
     const dirty = git(["status", "--porcelain"]).trim() !== "";
     writeFileSync(join(DIST, ".build-ref"), `${dirty ? "dirty-" : ""}${head}\n`);
 } catch {
-    console.warn("[hash-assets] 問不到 git HEAD，這一份 dist 不寫 .build-ref（它說不出自己是哪一輪）");
+    console.warn("[hash-assets] 問不到 git HEAD，這一份 dist 不寫 .build-ref（它說不出自己是哪一個 commit 建的）");
 }
 
 console.log(`[hash-assets] 蓋章 ${versions.size} 支資產，改寫 ${touched} 個 HTML`);

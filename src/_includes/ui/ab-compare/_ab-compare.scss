@@ -34,7 +34,7 @@
 //                       </div>
 //                   </div>
 //                   <div class="message-icon" role="group" aria-labelledby="abAnswerTitle-{{ abSides[0].side }}">
-//                       <button type="button" class="button-icon copy copyBtn has-tooltip" data-toast="文字已複製!|複製失敗，請手動選取後複製" data-i18n-data-toast="common.copied" data-toast-type="success|error">
+//                       <button type="button" class="button-icon copy copyBtn has-tooltip" data-toast="文字已複製|複製失敗，請手動選取後複製" data-i18n-data-toast="common.copied" data-toast-type="success|error">
 //                           <span class="tooltip" data-i18n="action.copy">複製</span>
 //                       </button>
 //                       <button type="button" class="button-icon watch watchBtn has-tooltip">
@@ -46,7 +46,7 @@
 //                       <button type="button" class="button-icon dislike js-vote has-tooltip" data-vote="dislike">
 //                           <span class="tooltip" data-i18n="comp.dislike">倒讚</span>
 //                       </button>
-//                       <button type="button" class="button-icon share js-share-log has-tooltip">
+//                       <button data-capability="history" type="button" class="button-icon share js-share-log has-tooltip" data-toast="正在查詢資料...|權限不足，無法查詢——請找貴租戶的管理者開通|查詢成功|載入資料失敗，請重新整理頁面|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.query" data-toast-type="info|warning|success|error|warning">
 //                           <span class="tooltip" data-i18n="comp.share">分享</span>
 //                       </button>
 //                   </div>

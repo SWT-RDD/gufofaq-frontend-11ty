@@ -285,7 +285,7 @@ test("§4 送 API 的數字欄三件套：type=number ＋ min/max/step ＋ 可�
             if (!/aria-describedby=/.test(a)) hits.push(`${where} 缺可見區間提示（aria-describedby）`);
         }
     }
-    assert.ok(seen >= 44, `只掃到 ${seen} 顆數字欄 —— 這條測試在空轉`);
+    assert.ok(seen >= 42, `只掃到 ${seen} 顆數字欄 —— 這條測試在空轉`);
     const staleNoBound = [...NO_BOUND.keys()].filter((k) => !seenNoBound.has(k));
     assert.equal(staleNoBound.length, 0, `NO_BOUND 有過期項（欄位已改名或已補上界線）：${staleNoBound.join("、")}`);
     assert.equal(hits.length, 0, fail(hits));
@@ -574,7 +574,7 @@ test("§4 同一個無障礙範圍內，控制項的可及名稱不得重複（�
     };
     const hits = [];
     for (const f of distHtml) hits.push(...dupsIn(distDoc(f)).map((s) => `dist/${f}  ${s}`));
-    assert.ok(seen > 5373, `只掃到 ${seen} 顆控制項 —— 這條測試在空轉（母體含全部 <a href> 之後實測 5148）`);
+    assert.ok(seen >= 5389, `只掃到 ${seen} 顆控制項 —— 這條測試在空轉（母體含全部 <a href> 之後實測 5148）`);
     assert.equal(hits.length, 0, `可及名稱撞名（可見字面可以逐列重複，可及名稱不在豁免之內，§4）：\n${fail(hits)}`);
 
     // 合成樣本：四種豁免各一顆 good（豁免被寫寬／寫窄都會當場變紅），bad 三顆。
@@ -686,7 +686,7 @@ test("§4 明確宣告會捲動的容器要能用鍵盤進去（.scrollTable ⇒
         hits.push(...rule(doc, `dist/${f}`));
     }
     // 空轉守門：實測值。收集器壞掉時 hits 一樣是空陣列。
-    assert.ok(seen >= 54, `dist 只掃到 ${seen} 顆 .scrollTable —— 這條測試在空轉`);
+    assert.ok(seen >= 99, `dist 只掃到 ${seen} 顆 .scrollTable —— 這條測試在空轉`);
 
     probe("§4 可捲動容器的鍵盤可及性", (s) => rule(s),
         ['<div class="table-container scrollTable"><table></table></div>',

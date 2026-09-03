@@ -187,7 +187,11 @@ export function withinSizeFn() {
 
 // ── ui/table-sort：三態循環 / 缺值沉底 / 成對 detail-row / 還原原序（§5 ④、§8 邊界輸入）────────
 // 切這支元件時一併交付（§8：一次性手動探索不算驗收，之後重跑不到就等於沒測過）。
-export function tableSortFixture(node, root, rows) {
+// `shape` ＝ 值欄那一格的形狀。預設 "plain"（4-1 的 `<td>{{ row.date }}</td>`）；
+// "collapse" 長成 3-1-6 每一格的生產形狀：值住在 `.collapse-body`，格內還有一顆「展開」鈕。
+// 兩型都要有 fixture——只有 plain 的話，「整格 textContent 當排序鍵」這個 bug 在測試裡看不見
+// （fixture 的格子裡沒有任何 chrome 可以污染鍵值），而它在唯一一張多欄排序表上是全欄失效。
+export function tableSortFixture(node, root, rows, shape) {
     const table = node("table", "default-table");
     const thead = node("thead");
     const htr = node("tr");
@@ -201,7 +205,14 @@ export function tableSortFixture(node, root, rows) {
     const made = rows.map(([name, val, withDetail]) => {
         const tr = node("tr");
         const c0 = node("td"); c0.textContent = name;
-        const c1 = node("td"); c1.textContent = val;
+        const c1 = node("td");
+        if (shape === "collapse") {
+            const wrap = node("div", "collapse-text");
+            const body = node("div", "collapse-body"); body.textContent = val;
+            const toggle = node("button", "collapse-toggle"); toggle.textContent = "展開";
+            wrap.append(body, toggle);
+            c1.append(wrap);
+        } else c1.textContent = val;
         tr.append(c0, c1);
         tbody.appendChild(tr);
         let detail = null;

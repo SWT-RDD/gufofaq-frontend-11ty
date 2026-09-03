@@ -56,7 +56,7 @@
                                 {# 上限拆成「前綴 key ＋ 資料節點 ＋ 後綴 key」：`1-64` 就是這一行的
                                      `maxlength`，可見節點拆得出來就一定要拆（§4-2）。
                                      3-4 新增區那一顆名稱欄的 hint 逐字共用這同一組 key。 #}
-                                <p class="skill-editor-hint" id="skillNameHint"><span data-i18n="settings.skillNameHintPrefix">小寫英數與連字號，長度 </span><span>1-64</span><span data-i18n="settings.skillNameHintSuffix">；不可以連字號開頭／結尾，也不可連續連字號。此名稱同時就是 agent 看到的工具名。</span></p>
+                                <p class="skill-editor-hint" id="skillNameHint"><span data-i18n="settings.skillNameHintPrefix">小寫英數與連字號，長度 </span><span>1 – 64</span><span data-i18n="settings.skillNameHintSuffix">；不可以連字號開頭／結尾，也不可連續連字號。此名稱同時就是 agent 看到的工具名。</span></p>
                             </div>
                         </div>
                         <div class="form-group">
@@ -254,7 +254,7 @@
                                 <input type="number" id="skillMaxIterationsInput" class="form-control" value="5" min="1" max="20" step="1" aria-describedby="skillMaxIterationsHint">
                                 {# 區間走資料節點（§4-2）：`1-20` 就是同一行的 min／max，
                                      出處＝chatbot 的 `MIN/MAX_SKILL_MAX_ITERATIONS`。 #}
-                                <p class="skill-editor-hint" id="skillMaxIterationsHint"><span data-i18n="settings.skillMaxIterationsHintPrefix">這個 skill 的子迴圈最多來回幾輪（</span><span>1-20</span><span data-i18n="settings.skillMaxIterationsHintSuffix">）。設太小會讓它還沒做完就被截斷。</span></p>
+                                <p class="skill-editor-hint" id="skillMaxIterationsHint"><span data-i18n="settings.skillMaxIterationsHintPrefix">這個 skill 的子迴圈最多來回幾輪（</span><span>1 – 20</span><span data-i18n="settings.skillMaxIterationsHintSuffix">）。設太小會讓它還沒做完就被截斷。</span></p>
                             </div>
                         </div>
                     </div>

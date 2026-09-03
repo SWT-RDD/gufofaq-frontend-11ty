@@ -11,9 +11,10 @@
 // 檔案指名它們，光看 scss 會誤判成死碼（§5：判死碼之前先確認它是不是掛點）。
 //
 // markup 契約（無 html 元件，§1-2；整段照抄）—— 選了哪顆 radio 就解除它附屬控制項的 disabled。
-// **有兩型，逐型各一段完整 markup**（§1-2：同一個契約兩型以上時不得只用散文交代差異）：
+// **有三型，逐型各一段完整 markup**（§1-2：同一個契約兩型以上時不得只用散文交代差異）：
 //   型①＝radio ＋ 附屬**文字欄**，正本 components/data-time-filter（5-3／5-4 的「資料時間篩選」）；
-//   型②＝radio ＋ 附屬**checkbox**，正本 4-1_qaHistory 的「匯出格式」。
+//   型②＝radio ＋ 附屬**checkbox**，正本 4-1_qaHistory 的「匯出格式」；
+//   型③＝radio ＋ 附屬**數字欄／日期欄**，正本 components/iso-review-wizard（5-6-1 的逾時門檻）。
 // 兩型的差別不只是控制項換一種：容器的 `role`、初始 `disabled` 掛在誰身上、group 的可及名稱從哪裡來，
 // 三件都不同——抄錯一型比不抄貴。
 //
@@ -134,7 +135,44 @@
 //   · **附屬控制項是 checkbox 時，`.with-input` 掛在 `<input type="checkbox">` 上**（型① 掛在
 //     `<input type="text">` 上）：本檔切的是 `input.disabled`，對控制項型別沒有假設。
 //
-// 兩型共通、抄的時候最容易錯的四件事（三層 class 的分工：group 定範圍、`.field-with-input`
+// ── 型③ radio ＋ 附屬數字欄／日期欄（下面這段與 components/iso-review-wizard 逐字相同）。
+//    **群組標題是 `.sr-only`、住在 group 之內**（型② 那顆是可見的 `.control-label`、住在 group 之外）：
+//    這一組的可見脈絡由它上方的區塊標題提供，再畫一行可見標籤就是同一句話說兩次；
+//    但可及名稱不能因此落空，所以留一顆只有報讀器讀得到的：
+//
+//   <div class="flex-row flex-wrap gap-16 align-items-end mobile-column sm-gap-16 field-with-input-group" role="group" aria-labelledby="reviewThresholdModeLabel" aria-describedby="reviewThresholdHint">
+//       <span id="reviewThresholdModeLabel" class="sr-only" data-i18n="platform.thresholdMode">逾時門檻的算法（二擇一）</span>
+//       <div class="form-group field-with-input">
+//           <div class="label">
+//               <label class="form-radio"><input type="radio" name="review-threshold-mode" value="days" class="js-review-threshold-mode" checked><span data-i18n="platform.overdueDaysLabel">逾期滿（天）</span></label>
+//           </div>
+//           <div class="field">
+//               <input type="number" min="0" max="36500" step="1" id="reviewOverdueDaysInput" value="90" class="form-control with-input" aria-label="逾期天數" data-i18n-aria-label="platform.daysOverdue" aria-describedby="reviewOverdueDaysRange">
+//               <span class="text-gray" id="reviewOverdueDaysRange">0 – 36500</span>
+//           </div>
+//       </div>
+//       <div class="form-group field-with-input">
+//           <div class="label">
+//               <label class="form-radio"><input type="radio" name="review-threshold-mode" value="cutoff" class="js-review-threshold-mode"><span data-i18n="platform.cutoffDateLabel">截止日期</span></label>
+//           </div>
+//           <div class="field">
+//               <input type="text" id="reviewCutoffDateInput" placeholder="請選擇" data-i18n-placeholder="common.pleaseSelect" class="form-control calendar with-input" aria-label="截止日期（年月日）" data-i18n-aria-label="platform.cutoffDateInput" disabled>
+//           </div>
+//       </div>
+//   </div>
+//   <p class="text-gray m-0" id="reviewThresholdHint" data-i18n="platform.thresholdHint">兩個門檻二擇一：選「截止日期」時以那一天為準，逾期天數不生效（上游只看其中一顆，不會兩顆一起算）。</p>
+//
+// 型③ 與另外兩型差在四件事，抄的時候逐件對：
+//   · **兩顆 radio 都帶附屬控制項**（型①／型② 都是「一顆帶、其餘不帶」）：於是 group 裡有兩顆
+//     `.field-with-input`，`sync()` 每次只留下被選中的那一顆的 `.with-input` 是啟用的。
+//   · **`.field-with-input` 直接就是 `.form-group`，沒有 `.function` 那一層**：這一型的 radio 與
+//     它的欄位是上下兩層（`.label` ＋ `.field`），不是同一列並排的兩顆控制項。
+//   · **群組標題走 `.sr-only` 且住在 group 內**（見上）。
+//   · **group 自己帶 `aria-describedby`**，指向 group **外面**那顆 `<p>`——那一句說的是「兩個門檻
+//     二擇一」這件事，屬於整組、不屬於任何一顆欄位；型① 的 `<p>` 則是被兩個文字欄各自指的。
+//     兩者都要一起抄：被指到的節點不在同頁，描述就整個落空（§4）。
+//
+// 三型共通、抄的時候最容易錯的四件事（三層 class 的分工：group 定範圍、`.field-with-input`
 // 是「一顆 radio ＋ 它的附屬控制項」、`.with-input` 是被解鎖的那幾顆）：
 //   · **`.field-with-input` 是 `<div>`，不是 `<label>`。** radio 有自己的 `<label class="form-radio">`、
 //     附屬控制項有自己的殼（型① 是 `<div class="field">`、型② 是 `<label class="form-checkbox">`）；
@@ -151,12 +189,14 @@
 // 初始化用直呼 sync()、不用合成事件（§5）。
 //
 // 住在哪一頁（雙向；判準＝`grep -rn 'field-with-input-group' src`，實跑過，命中分屬三個檔）：
-//   · **markup 只有兩份**：型① `components/data-time-filter`（被 5-3_statsModule 與
-//     5-4_coverageGaps 各 include 一次）、型② `pages/qaHistory/4-1_qaHistory.html`（頁面自寫）。
-//   · 其餘命中**全是註解或本檔自己**，不是第三份實例（§1-2：反查要列出全部命中，含只是註解的
-//     那種）：`data-time-filter.html` 與 `4-1_qaHistory.html` 各兩則檔頭註解、本檔的檔頭與上面
-//     兩段契約、以及下面那行 `querySelectorAll(".field-with-input-group")`。
-//   · 反向：渲染後含 `.field-with-input-group` 的頁只有 5-3、5-4、4-1 三頁。
+//   · **markup 有三份**：型① `components/data-time-filter`（被 5-3_statsModule 與 5-4_coverageGaps
+//     各 include 一次）、型② `pages/qaHistory/4-1_qaHistory.html`（頁面自寫）、
+//     型③ `components/iso-review-wizard`（被 5-6-1_platformTenants include）。
+//   · 其餘命中**全是註解或本檔自己**，不是第四份實例（§1-2：反查要列出全部命中，含只是註解的
+//     那種）：`data-time-filter.html`、`4-1_qaHistory.html` 與 `iso-review-wizard.html` 的檔頭註解、
+//     本檔的檔頭與上面三段契約、以及下面那行 `querySelectorAll(".field-with-input-group")`。
+//   · 反向：渲染後含 `.field-with-input-group` 的頁是 4-1、5-3、5-4、5-6-1 四頁。
+//     **兩向要各自數**：正向少一份 markup 的樣子，就是反向多出一頁沒有人解釋得了它從哪來。
 document.addEventListener("DOMContentLoaded", function () {
     document.querySelectorAll(".field-with-input-group").forEach(function (group) {
         var boxes = group.querySelectorAll(".field-with-input");

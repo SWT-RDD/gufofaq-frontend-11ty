@@ -13,6 +13,8 @@ bodyClass: guideline-page
 ] %}
 {# 元件庫展示頁（style-guide catalog）：全站每一顆 ui/*、components/* 在同一頁上的長相與用法，
    給設計師與轉 React 的人一頁看完。
+   **本頁是無導覽入口頁**（§3-1 第③條，同時登記在測試的 `NO_NAV`）：它是給做這個站的人看的，
+   不屬於產品的任何一條使用者流程，所以 app 的導覽列裡不該有它。入口是 catalog.html 的頁面目錄。
    本頁有自己的版型（.full-container ＋ aside 導覽 ＋ .main-container 分節，節數見 aside 目錄），
    不是一般頁面 chrome，故不用 layouts/page-shell（header/main/footer），直接掛 layouts/base/base.html。
    **各節一律 `{% include %}` 已建好的元件檔**，不在這裡另抄一份 markup——抄出來的第二份會與使用頁
@@ -81,7 +83,7 @@ bodyClass: guideline-page
             <div class="caption">
                 <ul>
                     <li>圖片在images資料夾內</li>
-                    <li>另外scss資料夾中的_guideline.scss只服務元件庫本頁，但**它一樣被打包進全站唯一的 main.css**——所以它的規則全部限定在 body.guideline-page 底下（本專案不做分頁樣式表；裸選擇器不限定就會洩漏覆蓋每一頁）</li>
+                    <li>另外scss資料夾中的_guideline.scss只服務元件庫本頁，但<strong>它一樣被打包進全站唯一的 main.css</strong>——所以它的規則全部限定在 body.guideline-page 底下（本專案不做分頁樣式表；裸選擇器不限定就會洩漏覆蓋每一頁）</li>
                 </ul>
             </div>
         </section>
@@ -317,8 +319,7 @@ bodyClass: guideline-page
                 {% set linkModalOwnerId = "buttonSectionTitle" %}
                 {% include "ui/link-modal/link-modal.html" %}
             </div>
-            <br>
-            <div class="caption">
+            <div class="caption mt-16">
                 <ul>
                     <li>圖示類型的按鈕「不需要」加上.button產生基本樣式</li>
                     <li>hover時不用背景色，加上「.no-bg」這個class</li>
@@ -403,8 +404,9 @@ bodyClass: guideline-page
                 </ul>
             </div>
             {% include "ui/checkbox/checkbox.html" %}
-            <br>
-            {% include "ui/radio/radio.html" %}
+            <div class="mt-16">
+                {% include "ui/radio/radio.html" %}
+            </div>
             <div class="caption description mt-16">
                 <ul>
                     <li>全選checkbox使用「.checkbox-container」包覆所有checkbox，全選checkbox請給class「.check-all」，其餘單個checkbox請給class「.check-one」
@@ -415,8 +417,9 @@ bodyClass: guideline-page
 
         <section id="switchSection">
             <h2 class="section-title"><span>10</span><span>Switch</span></h2>
-            <br>
-            {% include "ui/switch/switch.html" %}
+            <div class="mt-16">
+                {% include "ui/switch/switch.html" %}
+            </div>
         </section>
 
         <section id="tableSection">
@@ -441,8 +444,7 @@ bodyClass: guideline-page
                     <li>表格要固定欄寬，請在table加上「.fixed-layout」這個class</li>
                 </ul>
             </div>
-            <br>
-            <div class="caption">
+            <div class="caption mt-16">
                 <ul>
                     {# 這一行同時是本張示範表的**擁有者節點**（priorityTableOwnerId 指到它）：
                          列控制項的可及名稱要從「哪一張表」起頭，見元件檔頭。 #}
@@ -464,8 +466,7 @@ bodyClass: guideline-page
                     </li>
                 </ul>
             </div>
-            <br>
-            <div class="caption">
+            <div class="caption mt-16">
                 <ul>
                     <li>表單表格</li>
                 </ul>
@@ -479,7 +480,6 @@ bodyClass: guideline-page
                     <li>表格中長文字內容若需要使用捲軸滑動觀看，請使用「div.long-text」將文字內容包住</li>
                 </ul>
             </div>
-            <br>
         </section>
 
         <section id="accordionSection">
@@ -548,11 +548,11 @@ bodyClass: guideline-page
             {% set currentPage = 6 %}
             {% set paginationOwnerId = "paginationSectionTitle" %}
             {% include "ui/pagination/pagination.html" %}
-            <br>
-            {# 可輸入頁碼切換（另一互動變體）；實用範例見 4-2 #}
-            {% include "components/pagination-input/pagination-input.html" %}
-            <br>
-            <div class="caption">
+            <div class="mt-16">
+                {# 可輸入頁碼切換（另一互動變體）；實用範例見 4-2 #}
+                {% include "components/pagination-input/pagination-input.html" %}
+            </div>
+            <div class="caption mt-16">
                 <ul>
                     <li id="paginationEmptyCaption"><strong>total = 0 的定義態</strong>（pagination.js）：<strong>一個 li 都不畫、「共 N 頁」整塊不渲染</strong>。零筆資料沒有「第 1 頁」可以停在——硬扳成一頁的話，「篩到零筆」那種真實可達的狀態會同時渲染出「無資料」與「共 1 頁／頁碼 1」，畫面自己說兩件事。空狀態由表格自己的無資料列說，分頁列這時沒有話要說，所以<strong>下面這一塊看起來就該是空的</strong>——那不是壞掉，是規格</li>
                 </ul>
@@ -653,8 +653,7 @@ bodyClass: guideline-page
                 {% include "ui/upload-card/upload-card.html" %}
                 <div class="subtitle">描述：檔案上傳選項，使用「.upload-card」這個class，最外層用「div.upload-card-list」包覆</div>
             </div>
-            <br>
-            <div>
+            <div class="mt-16">
                 {# uploadErrorFiles／uploadTooLargeFiles 只在本頁設：讓兩種拒絕理由各自那一列看得到
                      （使用頁上這兩列由 upload-box.js 在 drop／change 當下填入被略過的檔名，平常是空的；
                      §5 分支要有頁面演得出來）。
@@ -671,8 +670,7 @@ bodyClass: guideline-page
                 {% set uploadTooLargeFiles = "" %}
                 <div class="subtitle">描述：檔案上傳區，使用「.upload-box」這個class；不支援的副檔名拖進來時，下方「.upload-error」列出被略過的檔名（不靜默丟掉）。超過單檔上限的檔另有一列——兩種拒絕理由分開兩句，因為使用者的下一步不同（換一份檔 vs 拆檔或壓縮）</div>
             </div>
-            <br>
-            <div>
+            <div class="mt-16">
                 {# 兩顆去向必填（元件檔頭）：元件庫給的是 1-1-6 那一頁實際用的兩條，
                      不留 `href="#"` 死連結（§5）。 #}
                 {% set successRetryHref = "1-1-1_dataImport.html" %}
@@ -680,8 +678,7 @@ bodyClass: guideline-page
                 {% include "components/success-box/success-box.html" %}
                 <div class="subtitle">描述：上傳成功通知，使用「.success-box」這個class</div>
             </div>
-            <br>
-            <div>
+            <div class="mt-16">
                 {# prompt-edit 的「開頁即展開」那一態（`promptDefaultOpen`）在生產頁沒有人 set
                      ——唯一使用者 5-2 走的是收合初始態。沒有這一份示範，prompt-edit.js 那句
                      `hasAttribute("data-default-open")` 分支全站沒有人看得到（§5 每個分支結果都要看得到）。 #}
@@ -712,8 +709,7 @@ bodyClass: guideline-page
             ] %}
             {% set stepNodesLg = true %}
             {% include "components/step-nodes/step-nodes.html" %}
-            <br>
-            <div class="caption">
+            <div class="caption mt-16">
                 <ul>
                     <li>按鈕樣式</li>
                 </ul>
@@ -772,7 +768,7 @@ bodyClass: guideline-page
             <div class="caption">
                 <ul>
                     <li>1. 在 host 按鈕加「.has-tooltip」，內放「span.tooltip」放提示文字</li>
-                    <li>2. 純 CSS，無 js；顯示條件是 :hover **與 :focus-visible**（tooltip 常是圖示鈕唯一的可見標籤，只掛 hover 的話鍵盤使用者永遠看不到）</li>
+                    <li>2. 純 CSS，無 js；顯示條件是 :hover <strong>與 :focus-visible</strong>（tooltip 常是圖示鈕唯一的可見標籤，只掛 hover 的話鍵盤使用者永遠看不到）</li>
                 </ul>
             </div>
             {% include "ui/tooltip/tooltip.html" %}
@@ -832,7 +828,13 @@ bodyClass: guideline-page
                            `data-text-busy`／`data-key-busy`＝送出中那一態的鈕面（§4-2 兩態文字槽）。
                              `platform.applying` 是既有的那一顆（iso-review-wizard 的確認鈕同用一顆，
                              §4-2 同文沿用既有 key）。**busy 的 `disabled` 不進 markup**：靜態稿沒有
-                             「送出中」那一刻（同 iso-review-wizard 檔頭那一條）。 #}
+                             「送出中」那一刻（同 iso-review-wizard 檔頭那一條）。
+                           **這顆鈕標不出授權軸**（§4；同時登記在測試的 `NO_GATE`）：
+                             `POST /account/accept-disclaimer`（product 的 `accept_disclaimer`）的閘只有
+                             `get_current_user`，docstring 逐字「任何登入者可呼叫（首次登入強制流程）」
+                             ——首登流程按定義不可能要求任何能力，標任何一軸都是宣告一道那裡不存在的閘。
+                             同一節下面那顆強制改密的鈕同理（`/me/change-password` 是自助端點，理由與
+                             5-1-1 那一顆逐字相同）。 #}
                         <button type="button" class="button button-primary" data-toast="已開始使用|送出失敗，請稍後再試" data-i18n-data-toast="toast.acceptDisclaimer" data-toast-type="success|error" data-text-busy="處理中…" data-key-busy="platform.applying"><span data-i18n="subscription.acceptDisclaimerPrefix">我已閱讀並同意，開始使用（</span><span>30</span><span data-i18n="subscription.acceptDisclaimerSuffix"> 天）</span></button>
                     </div>
                 </div>
@@ -1089,10 +1091,10 @@ bodyClass: guideline-page
             <h2 class="section-title"><span>24</span><span>React 條件文案</span></h2>
             <div class="caption">
                 <ul>
-                    <li>下面這幾句在正式環境是 React 依 state 條件渲染的分支，它們的「另一態」是**什麼都不渲染**——所以在那些頁上永遠看不到（GUIDELINE §5：沒有頁面演得出來的分支等於沒驗收過）</li>
-                    <li>使用頁保留 <strong>.hidden</strong> 的那份 markup 當**位置與樣式的規格**（React 要知道它長在哪一格、用哪個字色），這一區則是它們**長相**的唯一可見處</li>
+                    <li>下面這幾句在正式環境是 React 依 state 條件渲染的分支，它們的「另一態」是<strong>什麼都不渲染</strong>——所以在那些頁上永遠看不到（GUIDELINE §5：沒有頁面演得出來的分支等於沒驗收過）</li>
+                    <li>使用頁保留 <strong>.hidden</strong> 的那份 markup 當<strong>位置與樣式的規格</strong>（React 要知道它長在哪一格、用哪個字色），這一區則是它們<strong>長相</strong>的唯一可見處</li>
                     <li>示範資料刻意不觸發它們：把預設態畫成錯誤態，等於讓每個打開頁面的人都以為出事了</li>
-                    <li>本節的最後三組是**枚舉的成員**（不是條件式的另一支）：`absent_in_baseline`（2-2-5 的示範推導不到）、5-1-1 的<strong>額度週期單位三態</strong>（那一格是 input 的 value 屬性，拆不出節點掛 key，所以只畫得出示範租戶那一個）、manage-tenant-modal 的<strong>平台系統管理員徽章</strong>（那份名冊裡沒有這一級的人）——三者的繁中在全站只有這裡渲染得出來</li>
+                    <li>本節混著兩族：<strong>條件式的另一支</strong>（`.hidden` 那份 markup 在使用頁）與<strong>枚舉的成員</strong>（使用頁的示範推導不到，例如 <code class="inline-code">regression.reasonAbsentInBaseline</code>）、5-1-1 的<strong>額度週期單位三態</strong>（那一格是 input 的 value 屬性，拆不出節點掛 key，所以只畫得出示範租戶那一個）、manage-tenant-modal 的<strong>平台系統管理員徽章</strong>（那份名冊裡沒有這一級的人）——三者的繁中在全站只有這裡渲染得出來</li>
                     <li>末尾那一顆是另一種缺席：<strong>枚舉的成員</strong>，不是條件式的另一支。使用頁的示範資料推導下來只演得到同一個枚舉的其中幾個成員，剩下的成員沒有被否決、只是那一頁畫不到——它們的家在這裡，不是「刪掉 key、讓 React 自己拼字串」（GUIDELINE §4-2：繁中是原文，留在字串出現的地方）</li>
                 </ul>
             </div>
@@ -1112,12 +1114,21 @@ bodyClass: guideline-page
                     <span class="verdict-tag is-warn">個資：身分證字號（record，未阻擋）</span>
                 </div>
                 <p class="text-gray m-0" data-i18n="settings.aliasApplyNeedsBind">請先綁定別名表</p>
+                {# ISO 季度審核「處理結果」表的失敗欄：上游 `review_apply` 逐筆回一顆**穩定 code**
+                     （product 的 `_review_failure_code`，值域五顆），畫面上的句子由切版寫、走 i18n key。
+                     5-6-1-3 那一頁演的是一筆失敗，所以只推導得到 `upstream_unavailable` 那一句；
+                     另外四句在那一頁結構上畫不出來（要同一批裡有五種不同的失敗才湊得齊，而那一批
+                     只有兩個租戶）——這一區是它們唯一的可見處，屬本節「枚舉的成員」那一族。 #}
+                <p class="text-red m-0" data-i18n="platform.reviewFailTenantNotFound">這個租戶已經不在了——名單是查詢當下的快照，重新拉一次逾期清單再送。</p>
+                <p class="text-red m-0" data-i18n="platform.reviewFailOwnTenant">這一筆是你自己所屬的租戶，平台管理員不能對它做這個處置——把那一筆取消勾選再送一次。</p>
+                <p class="text-red m-0" data-i18n="platform.reviewFailInternal">這一筆遇到未預期的錯誤，處置沒有完成——完整例外在伺服器日誌裡，請聯絡維運。</p>
+                <p class="text-red m-0" data-i18n="platform.reviewFailOther">這一筆的處置沒有完成，原因不在上面那幾種——請聯絡維運，並提供這一列的租戶編號。</p>
                 {# 2-2-5 的終止鈕**兩態**：它只在 `status == "running"` 時出現，而那一頁演的是
                      已經中斷的執行 ⇒ 兩顆在使用頁上都畫不到。中間那一態（「終止中…」）尤其重要：
                      終止是在案例邊界收手，按下去之後那一輪還會把手上這一則跑完——沒有這一態，
                      按下去畫面上什麼都不會變，使用者只能再按一次，而第二次拿到 409。 #}
                 <div class="flex-row align-items-center gap-8">
-                    <button data-capability="settings:write" type="button" class="button button-red button-sm js-abort-run" data-toast="已送出終止：這一輪會在跑完手上這一則之後停下來|權限不足，無法終止——請找貴租戶的管理者開通|這一輪已經不是進行中，沒有東西可以終止|終止失敗，請稍後再試" data-i18n-data-toast="toast.abortRun" data-toast-type="success|warning|warning|error" data-i18n="regression.abortRun">終止</button>
+                    <button data-capability="settings:write" type="button" class="button button-red button-sm js-abort-run" data-toast="已送出終止：這一輪會在跑完手上這一則之後停下來|權限不足，無法終止——請找貴租戶的管理者開通|這一輪已經不是進行中，沒有東西可以終止|終止失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.abortRun" data-toast-type="success|warning|warning|error|warning" data-i18n="regression.abortRun">終止</button>
                     <button type="button" class="button button-red button-sm js-abort-requested" disabled data-i18n="regression.abortRequested">終止中…</button>
                 </div>
                 {# 2-2-5 的 RAGAS 兩態：「還沒算過」是 `summary` 沒有 `ragas` 鍵那一支（那一頁演的是
@@ -1664,8 +1675,8 @@ bodyClass: guideline-page
 {% set ratingModalNote = "評分會寫進這一側的問答紀錄，之後在歷史紀錄裡篩「AB測試」就找得到。" %}
 {% set ratingModalToastKey = "toast.saveRating" %}
 {% set ratingCapability = "history" %}
-{% set ratingModalToast = "滿意度已更新|權限不足，無法送出——請找貴租戶的管理者開通|請先選擇讚或倒讚|找不到這一筆問答紀錄，請確認它還在|更新失敗，請稍後再試" %}
-{% set ratingModalToastType = "success|warning|warning|warning|error" %}
+{% set ratingModalToast = "滿意度已更新|權限不足，無法送出——請找貴租戶的管理者開通|請先選擇讚或倒讚|找不到這一筆問答紀錄，請確認它還在|更新失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" %}
+{% set ratingModalToastType = "success|warning|warning|warning|error|warning" %}
 {% include "components/rating-modal/rating-modal.html" %}
 
 {# help-modal 元件庫展示：三塊「這一區在做什麼／現在生效的條件／這一區的所有數字」逐一示範，

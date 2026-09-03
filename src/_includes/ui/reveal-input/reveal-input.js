@@ -38,10 +38,30 @@
 // `_API_KEY_PREFIX` ＋ `secrets.token_urlsafe(32)` ⇒ 46 字元）。值由該頁的
 // `{% set extractKeyPlain %}` 供給，那一行的字面量長度就是這一格畫出來的點數。
 //
-// 5-6-3_platformServiceKeys.html 那一份換掉四處：`id="apiKeyInput"` → `id="serviceKeyPlain"`
-// （`data-reveal-target` 跟著換）、`aria-label="剛核發的明碼" data-i18n-aria-label="serviceKey.plainTitle"`，
-// 以及 `value="psk_sample000000000000000000000000000000000c091"`（`psk_` ＋ 43 ＝ 47 字元，
-// 推導見該頁檔頭）。其餘每一顆屬性逐字相同。
+// ── 第二個消費點（5-6-3_platformServiceKeys）**也寫一段完整 markup**，不用散文交代差異。
+//    理由與 `ui/table-sort` 檔頭那一句相同：釘住契約的同構比對是 `pool.some(...)`，只要契約段
+//    命中一個消費點就通過——被寫進同一句散文裡的另一份，沒有任何測試在對帳，而它換掉的正是
+//    `aria-label`／`data-i18n-aria-label` 這種「屬性名相同、值不同」的東西（同構那一關看不到值）。
+//    它不住在 `{% if %}` 裡（明碼是 show-once，那一塊整塊由發鈕的結果決定要不要渲染）：
+//
+//   <div class="flex-row align-items-center gap-8 flex-wrap">
+//       <div class="col-6-md col-12-sm">
+//           <div class="form-group">
+//               <div class="field">
+//                   <input type="password" id="serviceKeyPlain" class="form-control" value="psk_sample000000000000000000000000000000000c091" readonly aria-label="剛核發的明碼" data-i18n-aria-label="serviceKey.plainTitle">
+//               </div>
+//           </div>
+//       </div>
+//       <button type="button" class="button button-border" data-reveal-target="serviceKeyPlain"
+//           data-text-show="顯示" data-text-hide="隱藏" data-key-show="extractKey.show" data-key-hide="extractKey.hide"
+//           data-i18n="extractKey.show">顯示</button>
+//   </div>
+//
+// 兩份的差異只有四處（`id`／`data-reveal-target`／那兩顆 `aria-label`／`value`），其餘每一顆屬性
+// 逐字相同——**兩態文字的四顆 `data-*` 連 key 都沿用 `extractKey.*`**：那兩個字（顯示／隱藏）
+// 兩頁說的是同一件事，另造一組 key 就是同一句話有兩份要對齊的譯文（§4-2）。
+// `value` 是 `psk_` ＋ 43 ＝ 47 字元（推導見該頁檔頭），與 5-9 那一份的 46 不同：**長度是規格**，
+// 遮罩點數就等於字面量長度（見上一段）。
 //
 // 五顆 data-* 是一整組，少一顆就壞在看不見的地方：
 //   `data-reveal-target` ＝ 目標 `<input>` 的 id（本檔 getElementById 用它）。

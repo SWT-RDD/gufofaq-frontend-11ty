@@ -254,8 +254,8 @@ permalink: 5-2_conversationSettings.html
              403 是真實可達的結果，一律列進 `data-toast`。子句與 5-1-1／5-3 的那句**逐字相同**
              （§4-2：`|` 切開的相同繁中子句必須有相同英譯）。 #}
         <div class="switch-control-row">
-            <button data-capability="settings:write" type="button" id="openPrioritySwitch" class="button button-border" data-toast="已啟用全部意圖判斷|權限不足，無法儲存——請找貴租戶的管理者開通|操作失敗，請稍後再試" data-i18n-data-toast="toast.enableAllIntent" data-toast-type="success|warning|error" data-i18n="settings.enableAllIntent">啟用全部意圖判斷</button>
-            <button data-capability="settings:write" type="button" id="closePrioritySwitch" class="button button-border" data-toast="已停用全部意圖判斷|權限不足，無法儲存——請找貴租戶的管理者開通|操作失敗，請稍後再試" data-i18n-data-toast="toast.disableAllIntent" data-toast-type="success|warning|error" data-i18n="settings.disableAllIntent">停用全部意圖判斷</button>
+            <button data-capability="settings:write" type="button" id="openPrioritySwitch" class="button button-border" data-toast="已啟用全部意圖判斷|權限不足，無法儲存——請找貴租戶的管理者開通|操作失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.enableAllIntent" data-toast-type="success|warning|error|warning" data-i18n="settings.enableAllIntent">啟用全部意圖判斷</button>
+            <button data-capability="settings:write" type="button" id="closePrioritySwitch" class="button button-border" data-toast="已停用全部意圖判斷|權限不足，無法儲存——請找貴租戶的管理者開通|操作失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.disableAllIntent" data-toast-type="success|warning|error|warning" data-i18n="settings.disableAllIntent">停用全部意圖判斷</button>
         </div>
 
         {% set priorityLevels = [
@@ -457,7 +457,7 @@ permalink: 5-2_conversationSettings.html
              沒有送出路徑」這種缺口結構上看不見，只能靠人記得。
              分支對回該端點：`require_capability` 的 403、鍵不是合法 slot key 的 400、其餘 error。 #}
         <div class="flex-row">
-            <button data-capability="settings:write" type="button" class="button button-primary js-save-field-labels" data-toast="欄位命名已儲存|權限不足，無法儲存——請找貴租戶的管理者開通|欄位鍵不合法|儲存失敗，請稍後再試" data-i18n-data-toast="toast.saveFieldLabels" data-toast-type="success|warning|warning|error" data-i18n="settings.saveFieldLabels">儲存欄位命名</button>
+            <button data-capability="settings:write" type="button" class="button button-primary js-save-field-labels" data-toast="欄位命名已儲存|權限不足，無法儲存——請找貴租戶的管理者開通|欄位鍵不合法|儲存失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.saveFieldLabels" data-toast-type="success|warning|warning|error|warning" data-i18n="settings.saveFieldLabels">儲存欄位命名</button>
         </div>
     </div>
 </div>
@@ -867,7 +867,7 @@ permalink: 5-2_conversationSettings.html
                 {# `|` 是索引契約：這一顆是三段（成功｜權限不足｜失敗），**中間那一段是 warning
                      不是 error**。照索引取的消費端如果假設「末段即 error」，403 就會被彈成紅色
                      ——那是把「找人開通就好」演成「再試一次」（§4-2／REACT-CONVERSION ⑥）。 #}
-                <button data-capability="settings:read" type="button" class="button button-primary js-prompt-search" data-toast="查詢成功|權限不足，無法查詢——請找貴租戶的管理者開通|時間區間不正確（起訖需成對）|這段期間的版本數超過單次上限，請縮小時間範圍|無法載入提示詞版本列表" data-i18n-data-toast="toast.queryPrompt" data-toast-type="success|warning|warning|warning|error" data-i18n="action.query">查詢</button>
+                <button data-capability="settings:read" type="button" class="button button-primary js-prompt-search" data-toast="查詢成功|權限不足，無法查詢——請找貴租戶的管理者開通|時間區間不正確（起訖需成對）|這段期間的版本數超過單次上限，請縮小時間範圍|無法載入提示詞版本列表|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.queryPrompt" data-toast-type="success|warning|warning|warning|error|warning" data-i18n="action.query">查詢</button>
             </div>
         </div>
     </div>
@@ -885,13 +885,13 @@ permalink: 5-2_conversationSettings.html
                     <div class="flex-row align-items-center gap-8">
                         <span><span data-i18n="settings.referencedCount">被問答引用次數：</span> {{ v.refCount }} <span data-i18n="settings.timesUnit">次</span></span>
                         <span class="divider-vertical"></span>
-                        <button type="button" id="promptVersionCopy-{{ loop.index }}" aria-labelledby="promptVersionName-{{ loop.index }} promptVersionCopy-{{ loop.index }}" class="button-icon copy copyBtn has-tooltip" data-toast="提示詞已複製！|複製失敗，請手動選取後複製" data-i18n-data-toast="prompt.copied" data-toast-type="success|error">
+                        <button type="button" id="promptVersionCopy-{{ loop.index }}" aria-labelledby="promptVersionName-{{ loop.index }} promptVersionCopy-{{ loop.index }}" class="button-icon copy copyBtn has-tooltip" data-toast="提示詞已複製|複製失敗，請手動選取後複製" data-i18n-data-toast="prompt.copied" data-toast-type="success|error">
                             <span class="tooltip" data-i18n="action.copy">複製</span>
                         </button>
                         <span class="divider-vertical"></span>
                         {# 403 那一段見「啟用全部意圖判斷」旁的註解（`POST /prompts/{version_no}/activate`
                              掛 product 的 `require_capability("settings","write")`）。 #}
-                        <button data-capability="settings:write" type="button" id="promptVersionRestore-{{ loop.index }}" aria-labelledby="promptVersionName-{{ loop.index }} promptVersionRestore-{{ loop.index }}" class="button button-border button-sm js-prompt-restore" data-toast="已還原此提示詞版本|權限不足，無法儲存——請找貴租戶的管理者開通|還原失敗，請稍後再試" data-i18n-data-toast="toast.restorePrompt" data-toast-type="success|warning|error" data-i18n="action.restore">還原此版本</button>
+                        <button data-capability="settings:write" type="button" id="promptVersionRestore-{{ loop.index }}" aria-labelledby="promptVersionName-{{ loop.index }} promptVersionRestore-{{ loop.index }}" class="button button-border button-sm js-prompt-restore" data-toast="已還原此提示詞版本|權限不足，無法儲存——請找貴租戶的管理者開通|還原失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.restorePrompt" data-toast-type="success|warning|error|warning" data-i18n="action.restore">還原此版本</button>
                     </div>
                 </div>
                 <div class="prompt-content">
@@ -994,7 +994,7 @@ permalink: 5-2_conversationSettings.html
             <div class="flex-row justify-content-center gap-16">
                 {# 403 那一段見「啟用全部意圖判斷」旁的註解（`POST /welcome` 掛 product
                      的 `require_capability("settings","write")`）。 #}
-                <button data-capability="settings:write" type="button" class="button button-primary js-welcome-save" data-toast="已儲存為新版本|內容欄位不可為空|權限不足，無法儲存——請找貴租戶的管理者開通|儲存歡迎語失敗，請稍後再試" data-i18n-data-toast="toast.saveWelcome" data-toast-type="success|warning|warning|error" data-i18n="action.saveNewVersion">儲存為新版本</button>
+                <button data-capability="settings:write" type="button" class="button button-primary js-welcome-save" data-toast="已儲存為新版本|內容欄位不可為空|權限不足，無法儲存——請找貴租戶的管理者開通|儲存歡迎語失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.saveWelcome" data-toast-type="success|warning|warning|error|warning" data-i18n="action.saveNewVersion">儲存為新版本</button>
             </div>
         </div>
     </div>
@@ -1041,7 +1041,7 @@ permalink: 5-2_conversationSettings.html
             </div>
             <div class="flex-row flex-wrap gap-16 align-items-center">
                 <button type="button" class="button button-border js-filter-clear" data-i18n="action.clear">清除</button>
-                <button data-capability="settings:read" type="button" class="button button-primary js-welcome-search" data-toast="查詢成功|權限不足，無法查詢——請找貴租戶的管理者開通|時間區間不正確（起訖需成對）|這段期間的版本數超過單次上限，請縮小時間範圍|無法載入歡迎語版本列表" data-i18n-data-toast="toast.queryWelcome" data-toast-type="success|warning|warning|warning|error" data-i18n="action.query">查詢</button>
+                <button data-capability="settings:read" type="button" class="button button-primary js-welcome-search" data-toast="查詢成功|權限不足，無法查詢——請找貴租戶的管理者開通|時間區間不正確（起訖需成對）|這段期間的版本數超過單次上限，請縮小時間範圍|無法載入歡迎語版本列表|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.queryWelcome" data-toast-type="success|warning|warning|warning|error|warning" data-i18n="action.query">查詢</button>
             </div>
         </div>
     </div>
@@ -1054,13 +1054,13 @@ permalink: 5-2_conversationSettings.html
                     {# 同提示詞版本卡：卡片辨識欄。 #}
                     <div class="text-md text-blue" id="welcomeVersionName-{{ loop.index }}">{{ v.label }}（{{ v.timeRange }}）</div>
                     <div class="flex-row align-items-center gap-8">
-                        <button type="button" id="welcomeVersionCopy-{{ loop.index }}" aria-labelledby="welcomeVersionName-{{ loop.index }} welcomeVersionCopy-{{ loop.index }}" class="button-icon copy copyBtn has-tooltip" data-toast="歡迎語已複製！|複製失敗，請手動選取後複製" data-i18n-data-toast="welcome.copied" data-toast-type="success|error">
+                        <button type="button" id="welcomeVersionCopy-{{ loop.index }}" aria-labelledby="welcomeVersionName-{{ loop.index }} welcomeVersionCopy-{{ loop.index }}" class="button-icon copy copyBtn has-tooltip" data-toast="歡迎語已複製|複製失敗，請手動選取後複製" data-i18n-data-toast="welcome.copied" data-toast-type="success|error">
                             <span class="tooltip" data-i18n="action.copy">複製</span>
                         </button>
                         <span class="divider-vertical"></span>
                         {# 403 那一段見「啟用全部意圖判斷」旁的註解（`POST /welcome/{version_no}/activate`
                              掛 product 的 `require_capability("settings","write")`）。 #}
-                        <button data-capability="settings:write" type="button" id="welcomeVersionRestore-{{ loop.index }}" aria-labelledby="welcomeVersionName-{{ loop.index }} welcomeVersionRestore-{{ loop.index }}" class="button button-border button-sm js-welcome-restore" data-toast="已還原此歡迎語版本|權限不足，無法儲存——請找貴租戶的管理者開通|還原失敗，請稍後再試" data-i18n-data-toast="toast.restoreWelcome" data-toast-type="success|warning|error" data-i18n="action.restore">還原此版本</button>
+                        <button data-capability="settings:write" type="button" id="welcomeVersionRestore-{{ loop.index }}" aria-labelledby="welcomeVersionName-{{ loop.index }} welcomeVersionRestore-{{ loop.index }}" class="button button-border button-sm js-welcome-restore" data-toast="已還原此歡迎語版本|權限不足，無法儲存——請找貴租戶的管理者開通|還原失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.restoreWelcome" data-toast-type="success|warning|error|warning" data-i18n="action.restore">還原此版本</button>
                     </div>
                 </div>
                 <div class="prompt-content">
@@ -1340,8 +1340,8 @@ permalink: 5-2_conversationSettings.html
      gufofaq-saas 的 OUTPUT_RULE_CONTRACT（鏡射自 GufoRAG
      chatbot，兩側以 `OUTPUT_RULE_CONTRACT_FINGERPRINT` 釘同一個字串）：
      kind 值域、規則數上限 30、逐 kind 的參數型別與上下界。本頁的選單值域、參數欄與區間都照它演出。
-     **指紋的值不抄在這裡**——抄了就會在對面改表時靜默過期（它從 11 種擴到 13 種時這裡就過期了一輪），
-     而本 repo 沒有測試比得到它；要對帳請直接讀那個符號。
+     **指紋的值不抄在這裡**——kind 值域每加一種，抄本就會靜默過期，而本 repo 沒有測試比得到它；
+     要對帳請直接讀 `OUTPUT_RULE_CONTRACT_FINGERPRINT`。
 
      本區有三件事是**規格要求外顯**、不是版面裝飾：
      ① **順序**：出口替換 →輸出規則 →合規閘門，由平台固定（GufoRAG
@@ -2184,10 +2184,12 @@ permalink: 5-2_conversationSettings.html
 
 {# ═══ 子頁籤 8：QA 直答（NET-NEW）═══
      使用者問句完美命中某 QA 集的問題時，直接回該 QA 的答案原文（qa_direct）；judge 模式再加一道 LLM 裁決。
-     模式(off/exact/judge)＋judge 判準 textarea 是租戶旋鈕，隨底部「儲存對話設定」直送 settings PUT；
-     「參與直答的 QA 集」multi-select 是 RetrievalProfile.qa_direct_dataset_ids（另走 retrieval PUT
-     /profiles/{no}/qa-direct-datasets），故三者皆值載體、掛 hook class（js-qa-direct-*，全站 scss 不引用），
-     React 接手送 API。QA 集名為業務資料（識別字），不翻。 #}
+     模式(off/exact/judge)＋judge 判準 textarea 是租戶旋鈕，隨底部「儲存對話設定」直送 settings PUT。
+     「參與直答的 QA 集」multi-select 寫的是 `RetrievalProfile.qa_direct_dataset_ids`，端點是
+     `PUT /retrieval/profiles/{no}/qa-direct-datasets`（product 的 `save_qa_direct_datasets`，
+     `require_capability("settings","write")`）——**與頁尾那顆不是同一支端點**（`ProfileConfigIn`
+     裡沒有這一欄），所以它自己要有一顆送出鈕，理由與「欄位命名」那一區逐字相同。
+     三者皆值載體、掛 hook class（js-qa-direct-*，全站 scss 不引用）。QA 集名為業務資料（識別字），不翻。 #}
 <div class="tab-content" data-capability="settings:write" id="panelQaDirect" style="display: none;">
     <p class="text-gray" data-i18n="settings.qaDirectIntro">問句完全命中某 QA 集的問題時，直接回該問答的答案原文、不經 AI 重組；judge 模式再加一道 LLM 裁決。</p>
     <div class="block mb-16 flex-row column gap-16">
@@ -2332,6 +2334,17 @@ permalink: 5-2_conversationSettings.html
                 </select>
             </div>
         </div>
+        {# **這一欄有自己的送出路徑**，不隨頁尾那顆「儲存對話設定」走（見本子頁籤檔頭）：頁尾那顆打的是
+             `PUT /settings/profiles/{no}`，而 `ProfileConfigIn` 裡沒有 `qa_direct_dataset_ids` 這一欄。
+             ⚠️ **這顆鈕不能少，而且少了不會被任何規則抓到**：全站的檢查都是從按鈕出發的（有鈕才查它的
+             toast 與閘門），一顆不存在的按鈕不在任何母體裡——理由與「欄位命名」那一區逐字相同。
+           分支逐個對回該端點：`require_capability` 的 403、id 不是本租戶 `kind='qa'` 的 QA 集時
+             **整批 400**（`retrieval.qa_datasets_not_owned`，不靜默略過那幾顆）、選取數超過單一索引
+             清單上界的 400（`assert_index_list_within_limit`），其餘（含存後重同步三配置失敗）落 error。
+             **不寫出那個上界的數字**：它是上游常數，抄一份在畫面上就是一份會漂的計數（§3-2／§6）。 #}
+        <div class="flex-row">
+            <button data-capability="settings:write" type="button" class="button button-primary js-save-qa-direct-datasets" data-toast="參與直答的 QA 集已儲存|權限不足，無法儲存——請找貴租戶的管理者開通|有 QA 集不屬於這個租戶，或那不是 QA 集|選取的 QA 集數量超過單一清單上限|儲存失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.saveQaDirectDatasets" data-toast-type="success|warning|warning|warning|error|warning" data-i18n="settings.saveQaDirectDatasets">儲存參與直答的 QA 集</button>
+        </div>
     </div>
 
     {# 可回答性 grounding 閘：收斂/檢索到的素材不足以回答時誠實查無、不硬生成無依據的答案。
@@ -2442,7 +2455,7 @@ permalink: 5-2_conversationSettings.html
      **追在末位、不插中間**：React 端讀的是 `split("|")[n]` 的索引契約，中間插一段會讓其後
      每一段整批位移。 #}
 <div class="flex-row justify-content-center mt-24">
-    <button data-capability="settings:write" type="button" class="button button-primary js-save-profile-config" data-toast="對話設定已儲存|部分欄位未通過驗證|權限不足，無法儲存——請找貴租戶的管理者開通|儲存失敗，請稍後再試|這份設定檔掛了兩顆同名的 skill。skill 的名稱就是送進模型的工具名，同名時只有一顆會生效——請改名，或只掛其中一顆" data-i18n-data-toast="toast.saveProfileConfig" data-toast-type="success|warning|warning|error|warning" data-i18n="settings.saveConfig">儲存對話設定</button>
+    <button data-capability="settings:write" type="button" class="button button-primary js-save-profile-config" data-toast="對話設定已儲存|部分欄位未通過驗證|權限不足，無法儲存——請找貴租戶的管理者開通|儲存失敗，請稍後再試|這份設定檔掛了兩顆同名的 skill。skill 的名稱就是送進模型的工具名，同名時只有一顆會生效——請改名，或只掛其中一顆|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.saveProfileConfig" data-toast-type="success|warning|warning|error|warning|warning" data-i18n="settings.saveConfig">儲存對話設定</button>
 </div>
 
 {# 意圖啟用確認 modal（intentionModal）：檢索與欄位子頁籤開啟某層意圖、但仍有資料集未填任務描述時彈出

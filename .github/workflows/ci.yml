@@ -85,7 +85,6 @@ jobs:
       # 瀏覽器二進位檔約 150MB，每次重抓要一分多鐘。快取鍵綁 lockfile：
       # @playwright/test 升版時 Playwright 會要求對應版本的瀏覽器，鍵跟著失效才不會拿到舊的。
       - name: 快取 Playwright 的瀏覽器
-        id: pw-cache
         uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright

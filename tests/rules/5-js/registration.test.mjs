@@ -59,7 +59,7 @@ test("§5 會去 DOM 找元素的元件 js 都在 DOMContentLoaded 內綁定", (
     // 只要檔案裡出現「去文件裡撈元素」的呼叫，就必須等 DOM parse 完才綁。
     const DOM_QUERY = /document\.(querySelector(All)?|getElementById|getElementsBy\w+)\(/;
     const comp = srcJs.filter((f) => f.startsWith("src/_includes/"));
-    assert.ok(comp.length > 0, "掃不到任何元件 js —— 這條測試在空轉");
+    assert.ok(comp.length >= 38, "掃不到任何元件 js —— 這條測試在空轉");
     const bad = comp.filter((f) => DOM_QUERY.test(read(f)) && !read(f).includes("DOMContentLoaded"));
     assert.equal(bad.length, 0, fail(bad));
 });

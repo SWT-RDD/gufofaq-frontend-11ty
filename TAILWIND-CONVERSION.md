@@ -172,11 +172,16 @@ tailwind-scrollbar        → scrollbar-thin 等，處理自訂捲軸（見 §5-
 ## ⑤ 逃生口 → 零 CSS 處理（**這裡最容易轉錯，逐項照做**）
 
 ### 5-1. 捲軸（`src/scss/_mixin.scss` 的 `scrollbar()/scrollbar_thin()/scrollbar_modal()`）
-用 `tailwind-scrollbar` plugin。用到的地方：**10 個元件**（form-control、chatroom-shell、faq-chatroom、multi-select、search-select、tab、default-table、form-table、modals、mobile-nav）+ **整頁 html**（`_base.scss`）+ 元件庫頁（`_guideline.scss`）。多數用 `scrollbar_thin`/`scrollbar_modal`（thumb = `--scrollbar-thumb`；`faq-chatroom` 的 `.faq-chat-scroll` 亦此類）→ 掛：
+用 `tailwind-scrollbar` plugin。**顆數不寫死**（§3-2；判準＝`grep -rln 'scrollbar_thin\|scrollbar_modal\|@include scrollbar()' src`）——要對的是「哪一處 `@include` 的是哪一支 mixin」，三支各有自己的 thumb token：
+- `scrollbar_thin()`（thumb = `--scrollbar-thumb`）：`ui/form-control`、`ui/chatroom-shell`、`components/faq-chatroom`（`.faq-chat-scroll`）、`ui/multi-select`、`ui/search-select`、`ui/tab`、`ui/default-table`、`ui/form-table`。
+- `scrollbar_modal()`（thumb 同上，另有跳窗自己的內距與軌道處置）：`ui/modals` 兩處。
+- 完整的 `scrollbar()`（thumb = `--scrollbar-thumb-strong`）：**整頁 `html`**（`_base.scss`）與 `components/mobile-nav`。
+
+前兩支 → 掛：
 ```
 scrollbar-thin scrollbar-thumb-scrollbar-thumb scrollbar-track-transparent
 ```
-**例外：整頁 `html` 與 `mobile-nav` 用的是 `_mixin.scss` 的完整 `scrollbar()`，thumb = `--scrollbar-thumb-strong`**（別跟其他一樣上 `--scrollbar-thumb`）。**元件庫頁 `_guideline.scss` 另有一支同名的本地 `scrollbar()` mixin，thumb = `--gl-scrollbar-thumb`**（showcase 專用色盤，見 `_guideline-var.scss`）——同名不同義，別混用。thumb 顏色一律照該處 `@include` 的是哪支 mixin 決定。**不要略過捲軸樣式。**
+**第三支那兩處別跟前兩支一樣上 `--scrollbar-thumb`**（thumb token 不同）。**元件庫頁 `_guideline.scss` 另有一支同名的本地 `scrollbar()` mixin，thumb = `--gl-scrollbar-thumb`**（showcase 專用色盤，見 `_guideline-var.scss`）——同名不同義，別混用。thumb 顏色一律照該處 `@include` 的是哪支 mixin 決定。**不要略過捲軸樣式。**
 
 ### 5-2. markdown 產生的富文字（`.robot-msg`，住在共用 `src/_includes/ui/chat-message/_chat-message.scss`）
 > **`.robot-msg` 由 `chatroom`（後台卡片）與 `faq-chatroom`（前台全高）兩個容器共用**：markdown renderer 的 `components` 對應放在**共用的 `ChatMessage` 元件**，別在兩個容器各複製一份。

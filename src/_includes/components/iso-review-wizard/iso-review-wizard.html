@@ -71,12 +71,20 @@
 {# 結果拆成功/失敗兩個陣列：result 態的「共 N 筆，成功 X，失敗 Y」全部從陣列長度推導（§6 可推導的值不烤死），
      表格先渲染成功列再渲染失敗列 #}
 {# 逐筆帶 `tenantId`：`review_apply` 回的是 `{"tenant_id": …, "name": …, "ok": …}`（＋失敗才有 `error`）。
-   **失敗訊息要是正本組得出來的字面**（§6／§3-2「插值填進去的東西也要是正本產得出來的」）：
-     product 的 `platform.purge_tenant_failed` 逐字是「清租戶資料失敗（tenant={tenant_id}）：{error}」
-     （刪帳號那一支是姊妹句 `platform.delete_tenant_failed`），而 `review_apply` 收的是 `str(e.detail)`
-     ⇒ 畫面上那一格就是整串，含 `：{error}` 後半。**不可以自己編一句**（例如
-     「從 GufoRAG 刪租戶索引失敗（tenant=42）」——那串在上游 grep 為零，而且丟掉了 `：{error}` 後半，
-     那一半正是這一格唯一講得出「為什麼」的部分）。
+   **`error` 是一顆穩定 code、不是一句訊息**（product 的 `_review_failure_code`，docstring 逐字說明
+     為什麼）：`str(e)` 對 `httpx` 例外會逐字帶出 GufoRAG 的內部主機與埠，而這份 JSON 是回給瀏覽器的。
+     值域是封閉的五顆——`tenant_not_found`（名單過期了，重查一次逾期清單）／`cannot_delete_own_tenant`
+     （選到了自己所屬的租戶，把那一筆勾掉）／`upstream_unavailable`（GufoRAG 那側 502/503）／
+     `review_action_failed`（其餘 HTTPException）／`internal_error`（非 HTTPException）。
+     上游刻意不收斂成一句通用訊息：這個欄位是**逐筆**的，它同時是「這一批裡哪幾個租戶失敗、各自是
+     哪一種失敗」的唯一線索，而三種失敗的下一步完全不同。
+   **所以資料存上游字面、顯示走 i18n key**（同 4-1 的 `userType`／`rating` 兩欄）：塞顯示字的話
+     React 接真 API 只印得出 `upstream_available` 這種識別字，而英文模式那一格永遠是中文（§6／§4-2）。
+   **句子由切版寫**（§4：出貨文案的繁中正本在切版）：上游給的是 code，畫面上要讓值班的人知道
+     下一步做什麼，所以五顆各自一句、各自講得出下一步——不是把 code 原樣印上去。
+   ⚠️ **不可以自己編一句上游的訊息**（例如「清租戶資料失敗（tenant=42）：GufoRAG 刪索引回 502」，
+     或宣稱它出自一顆叫 `platform.purge_tenant_failed` 的 key）：那顆 key 在上游 grep 為零，
+     而且它假設了一件上游明文拒絕做的事——把例外原文放進回應。
    **演的是 `purge_data` 那一支**：`_purge_tenant_data` 的 docstring 逐字寫著它**保留** Tenant／User／
      TenantSetting／群組／widget token／API 金鑰，所以同一頁的租戶表照樣列得出 C 與 D；換成
      `delete_account` 就會與那張表互相否定（那一支 `delete(User)` ＋ `delete(Tenant)`）。 #}
@@ -84,7 +92,7 @@
   { tenantId: 23, name: "示範租戶 C", error: "" }
 ] %}
 {% set isoReviewFailResults = [
-  { tenantId: 42, name: "示範租戶 D", error: "清租戶資料失敗（tenant=42）：GufoRAG 刪索引回 502" }
+  { tenantId: 42, name: "示範租戶 D", error: "upstream_unavailable" }
 ] %}
 {# 授權：整區的下限是 `auditor`——`GET /platform/review/overdue`
      （gufofaq-saas product 的 `review_overdue`）掛的就是 `require_platform_auditor`，
@@ -94,7 +102,7 @@
      真正寫入的是 preview 態那顆 `.js-review-confirm`（`POST /platform/review/apply`＝
      `require_platform_admin`），它與 type-to-confirm 輸入框各自標了 `admin`（§4：區塊內
      更高一級的控制項要自己標）。
-     ⚠️ 這一句與 `tests/guideline.test.mjs` 的 `READONLY`「名單已載入」那一筆是**成對**的
+     ⚠️ 這一句與 `§4 授權測試` 的 `READONLY`「名單已載入」那一筆是**成對**的
      （§4：只住在測試裡的豁免，讀元件的人看不到）。 #}
 <div class="block mt-16 flex-row column gap-16" data-platform-role="auditor">
     <div class="text-md text-bold" data-i18n="platform.reviewTitle">ISO 季度審核</div>
@@ -202,9 +210,12 @@
                  `ReviewApplyIn.action` 的值域 `purge_data`／`delete_account`／`freeze`，
                  gufofaq-saas product），React 依選定的動作把同一顆值換上去——兩處若各取一套態名，
                  同一顆 state 就要在兩個地方各對一次表。三顆 key 是 idle 態那三顆鈕的原字面，不另立新 key。
-                 靜態稿演 delete 那一態，與片語 `DELETE-ACCOUNT`、確認鈕的「不可逆」互相對得上（§6 示範資料自洽）。
+                 靜態稿演 **purge** 那一態，與片語 `PURGE-DATA`、確認鈕的「不可逆」互相對得上（§6 示範資料自洽）。
+                 **態名必須與 result 態那一份稿同一支**：5-6-1-3 的失敗訊息是 `purge_tenant_failed` 的字面、
+                 而那一頁的租戶表照樣列得出 C 與 D（`_purge_tenant_data` 保留 Tenant／User）——
+                 選 delete 就會與那張表互相否定（見下方 isoReviewFailResults 那一段）。
                  前綴自帶分隔空白（§4-2；en 值 "Action: "），與同列另外四顆前綴同型。 #}
-            <span><span data-i18n="platform.reviewAction">動作：</span><span data-text-purge="刪除逾時資料" data-key-purge="platform.reviewActionPurge" data-text-delete="刪除逾時帳號" data-key-delete="platform.reviewActionDelete" data-text-freeze="凍結逾時帳號" data-key-freeze="platform.reviewActionFreeze" data-i18n="platform.reviewActionDelete">刪除逾時帳號</span></span>
+            <span><span data-i18n="platform.reviewAction">動作：</span><span data-text-purge="刪除逾時資料" data-key-purge="platform.reviewActionPurge" data-text-delete="刪除逾時帳號" data-key-delete="platform.reviewActionDelete" data-text-freeze="凍結逾時帳號" data-key-freeze="platform.reviewActionFreeze" data-i18n="platform.reviewActionPurge">刪除逾時資料</span></span>
             <span><span data-i18n="platform.reviewMatched">符合筆數：</span>{{ isoReviewCandidates.length }}</span>
             <span><span data-i18n="platform.reviewThreshold">門檻：</span><span data-i18n="platform.overdueDaysPrefix">逾期滿</span> 90 <span data-i18n="platform.overdueDaysSuffix">天</span></span>
             <span><span data-i18n="platform.reviewAsOf">查詢時間：</span>2026-07-14 09:00 UTC</span>
@@ -287,13 +298,13 @@
                 {# 前綴的繁中是「請逐字輸入」而不是「請輸入」：後者與 `common.pleaseEnter` 逐字相同，
                      §4-2「繁中原文相同的 chrome 沿用既有 key」會把兩顆判成同文異 key，而那顆是 placeholder
                      專用、不帶尾空白，這裡沿用它反而會讓英文黏成 "Please enter DELETE-ACCOUNT"。 #}
-                <label for="reviewConfirmInput" class="control-label"><span data-i18n="platform.confirmTypePrefix">請逐字輸入 </span><span data-phrase-purge="PURGE-DATA" data-phrase-delete="DELETE-ACCOUNT" data-phrase-freeze="FREEZE">DELETE-ACCOUNT</span><span data-i18n="platform.confirmTypeSuffix"> 以確認執行</span></label>
+                <label for="reviewConfirmInput" class="control-label"><span data-i18n="platform.confirmTypePrefix">請逐字輸入 </span><span data-phrase-purge="PURGE-DATA" data-phrase-delete="DELETE-ACCOUNT" data-phrase-freeze="FREEZE">PURGE-DATA</span><span data-i18n="platform.confirmTypeSuffix"> 以確認執行</span></label>
             </div>
             <div class="field">
                 {# placeholder 與 label 那顆片語節點是**同一組三態**：只給 label 三態槽、placeholder 寫死一個
                      的話，選「凍結逾時帳號」時欄位裡仍會提示 DELETE-ACCOUNT——那是同一個 bug 的另一半。
                      不掛 data-i18n-placeholder：片語是值、不隨語言變（§4-2 type-to-confirm）。 #}
-                <input data-platform-role="admin" type="text" id="reviewConfirmInput" data-phrase-ph-purge="PURGE-DATA" data-phrase-ph-delete="DELETE-ACCOUNT" data-phrase-ph-freeze="FREEZE" placeholder="DELETE-ACCOUNT" class="form-control" aria-describedby="reviewConfirmHint">
+                <input data-platform-role="admin" type="text" id="reviewConfirmInput" data-phrase-ph-purge="PURGE-DATA" data-phrase-ph-delete="DELETE-ACCOUNT" data-phrase-ph-freeze="FREEZE" placeholder="PURGE-DATA" class="form-control" aria-describedby="reviewConfirmHint">
                 <span class="text-gray" id="reviewConfirmHint" data-i18n="platform.confirmPhraseHint">片語要逐字相同（含大小寫與連字號），而且會隨上面選的動作換一組；它不隨語言變。</span>
             </div>
         </div>
@@ -384,7 +395,11 @@
                     <tr data-tenant-id="{{ r.tenantId }}">
                         <td>{{ r.name }}</td>
                         <td class="text-bold text-red" data-i18n="platform.resultFail">失敗</td>
-                        <td>{{ r.error }}</td>
+                        {# 封閉枚舉（見檔頭的五顆 code）⇒ `{% if %}` 鏈 ＋ i18n key，資料存上游字面。
+                             末支不是「其他」的裝飾：`review_action_failed` 與**上游 HTTPException 自帶的**
+                             code（`detail["code"]`，例如租戶那一側自己的拒絕理由）都落在這裡，
+                             所以它要講得出「原因不在上面那幾種」而不是假裝知道原因。 #}
+                        <td>{% if r.error == "tenant_not_found" %}<span data-i18n="platform.reviewFailTenantNotFound">這個租戶已經不在了——名單是查詢當下的快照，重新拉一次逾期清單再送。</span>{% elif r.error == "cannot_delete_own_tenant" %}<span data-i18n="platform.reviewFailOwnTenant">這一筆是你自己所屬的租戶，平台管理員不能對它做這個處置——把那一筆取消勾選再送一次。</span>{% elif r.error == "upstream_unavailable" %}<span data-i18n="platform.reviewFailUpstream">GufoRAG 那一側沒有回應，這一筆沒有處置成功——稍後重送，或聯絡維運。</span>{% elif r.error == "internal_error" %}<span data-i18n="platform.reviewFailInternal">這一筆遇到未預期的錯誤，處置沒有完成——完整例外在伺服器日誌裡，請聯絡維運。</span>{% else %}<span data-i18n="platform.reviewFailOther">這一筆的處置沒有完成，原因不在上面那幾種——請聯絡維運，並提供這一列的租戶編號。</span>{% endif %}</td>
                     </tr>
                     {% endfor %}
                 </tbody>

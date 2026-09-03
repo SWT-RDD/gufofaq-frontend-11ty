@@ -77,9 +77,9 @@ repos:
         exclude: ^package-lock\.json$
 
       # 行尾空白／檔尾沒有換行。`--markdown-linebreak-ext=md` 保留 markdown 用兩個
-      # 空白表示斷行的寫法（本 repo 的四份 md 大量使用）。
-      # 接上這兩顆的當下，`src/` 底下量到 2 個檔中鏢：一個檔尾多一行空白，
-      # 一個註解行尾有空白——後者在等寬字體下與沒有空白逐字相同。
+      # 空白表示斷行的寫法（repo 根的 md 大量使用）。
+      # 這兩顆抓的是**看不見的字元**：註解行尾的空白在等寬字體下與沒有空白逐字相同，
+      # 檔尾多一行空白則會讓下一次真正的改動多出一行雜訊 diff。
       - id: end-of-file-fixer
         files: ^(src/|tests/|scripts/|\.github/|[^/]+\.md$)
       - id: trailing-whitespace

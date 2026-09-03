@@ -208,8 +208,11 @@ test("§3-2 註解不得寫上游的內部模組路徑／檔名（出處只留 r
     //   · **符號名**——可 grep、跨重構存活、下一個人真的會打的字；
     //   · **HTTP 端點**（`POST /glossary`）——那才是切版與後端之間真正的介面（另有一條測試在管）。
     //
-    // 判準寫成可跑的一句：**`src/` 的註解裡不准出現 `*.py`**。不用白名單——真要指名一支守衛或
+    // 判準寫成可跑的一句：**註解裡不准出現 `*.py`**。不用白名單——真要指名一支守衛或
     // 測試，指它的**名字**（`check_frontend_limits`／`TestCopyGroupsRegistry`），那是符號不是路徑。
+    // **母體與上一條同一份**（`src/**` ＋ `tests/**` ＋ root `.md`）：理由（對方重構就死、
+    // 而本 repo 沒有任何一關驗得到）在那三塊一字不差地成立，只掃 `src/` 等於同一句規則有兩種射程
+    // ——而規則書與測試檔本來就是引用上游最密集的兩塊（§8-1：一條規則的母體只能有一個定義點）。
     // `.ts`／`.tsx` 不在此列：那是 React 正本（我們自己的下游），由下一條管它要不要標 repo。
     // 連著路徑一起吃（`app/knowledge/glossary/service.py` 與裸 `service.py` 都要命中）：
     // 用 lookbehind 擋斜線的話，最典型的那一種（帶目錄前綴）會整族逃掉。
@@ -223,9 +226,23 @@ test("§3-2 註解不得寫上游的內部模組路徑／檔名（出處只留 r
         }
         return out;
     };
+    // **整支 comment-sources.test.mjs 不掃**（唯一的豁免，下面那道斷言釘住「只有它」）：
+    // 這支檔案是這一族規則的定義點，它的說明與負控**逐字引用違規樣本**——那幾支 `.py` 就是
+    // 用來示範什麼叫違規的，而且散在同檔每一條 test 的 probe 樣本裡（行號那一條的負控尤其多）。
+    // 逐條切自我區間在這裡切不乾淨；換成整支豁免的代價，是這支檔案自己的散文若真的引了一支
+    // 上游模組路徑不會被抓到——而它的每一條規則都附負控，負控就是這支檔案的守門。
+    const SELF_FILE = "tests/rules/3-page/comment-sources.test.mjs";
     const hits = [];
-    for (const f of srcHtml) hits.push(...scan(read(f), f, "njk"));
-    for (const f of [...srcJs, ...srcScss]) hits.push(...scan(read(f), f, "js"));
+    let seenSrc = 0, seenElse = 0;
+    for (const f of srcHtml) { seenSrc++; hits.push(...scan(read(f), f, "njk")); }
+    for (const f of [...srcJs, ...srcScss]) { seenSrc++; hits.push(...scan(read(f), f, "js")); }
+    const testFiles = gitFiles('"tests/*.mjs" "tests/**/*.mjs"');
+    assert.ok(testFiles.includes(SELF_FILE), `唯一的豁免 ${SELF_FILE} 不在母體裡——檔案改名了，這條豁免正在替別人開門`);
+    for (const f of testFiles) { if (f === SELF_FILE) continue; seenElse++; hits.push(...scan(read(f), f, "mjs")); }
+    // root `.md` 整份都是「說明文字」，沒有註解語法可以切——整支當一則掃。
+    for (const f of gitFiles('"*.md"')) { seenElse++; hits.push(...scan("// " + read(f).split("\n").join("\n// "), f, "js")); }
+    assert.ok(seenSrc >= 140 && seenElse >= 40,
+        `母體沒有真的接上：src ${seenSrc} 支、tests＋md ${seenElse} 支`);
     probe("§3-2 不得寫上游模組路徑", (s) => scan(s),
         ["{# 上限見 GufoRAG chatbot app/knowledge/glossary/service.py 的 MAX_TERM_LEN #}",
             "{# 逆向自 product routers/platform.py 的 review_apply #}",

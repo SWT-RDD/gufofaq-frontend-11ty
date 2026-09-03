@@ -51,7 +51,7 @@
     /* 狀態 state（皆為「填充」色，配 --on-accent 白字；warning 例外配 --on-warning 深字） */
     --success: #00881d; // 白字 4.63:1
     --success-hover: #01781a;
-    --success-text: #007a1a; // 語意綠的前景（讚的拇指等遮罩圖示）：疊表面 5.25:1（深色下提亮）
+    --success-text: #007a1a; // 語意綠的前景（讚的拇指等遮罩圖示）：疊 --surface 5.25:1（深色下提亮）
     --danger: #e40f0f; // 白字 4.80:1
     --danger-hover: #c51313;
     --danger-text: #e40f0f; // 錯誤訊息 / 必填星號等「危險色文字」（深色下提亮）
@@ -133,7 +133,7 @@
     /* 狀態：填充壓深到白字可讀；hover 提亮 */
     --success: #1f8036; // 白字 5.00:1
     --success-hover: #208637;
-    --success-text: #3aa851; // 語意綠當前景，黑底要亮：疊表面 5.60:1
+    --success-text: #3aa851; // 語意綠當前景，黑底要亮：疊 --surface-raised 5.60:1
     --danger: #d51319; // 白字 5.33:1
     --danger-hover: #dd2b31;
     --danger-text: #f0555a; // 危險色文字在黑底要亮：vs 卡片 4.99:1

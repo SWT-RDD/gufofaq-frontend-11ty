@@ -16,14 +16,14 @@
 //           <div class="chatroom-block">
 //               <div class="chat-message-container">
 //                   <div class="date-wrap">
-//                       <div class="date">2024/12/02</div>
+//                       <div class="date">2024/12/01</div>
 //                   </div>
 //                   <div class="message-container">
 //                       <div class="first-chat">
-//                           {# 開場那一則：ui/chat-message 的 .message-wrap，見該元件檔頭 #}
+//                           {# 此處接 ui/chat-message 的 .message-wrap（開場那一則），見該元件檔頭 #}
 //                       </div>
 //                       <div class="chat-box">
-//                           {# 其餘往返訊息：一則一顆 .message-wrap，同上 #}
+//                           {# 此處接 ui/chat-message 的 .message-wrap（其餘往返訊息，一則一顆），見該元件檔頭 #}
 //                       </div>
 //                   </div>
 //               </div>
@@ -38,7 +38,7 @@
 //                           <span class="text-gray" id="chatAskMaxLenHint"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-ask-max-len">2000</span><span data-i18n="common.unitChars"> 字</span></span>
 //                       </div>
 //                   </div>
-//                   <button data-capability="ask" type="button" class="button button-primary chat-input-submit" data-toast="回答生成中...|權限不足，無法送出——請找貴租戶的管理者開通|請先輸入問題|回答生成成功|回答生成失敗，請重新送出一次" data-i18n-data-toast="toast.chatSend" data-toast-type="info|warning|warning|success|error" data-i18n="action.submit">送出</button>
+//                   <button data-capability="ask" type="button" class="button button-primary chat-input-submit" data-toast="回答生成中...|權限不足，無法送出——請找貴租戶的管理者開通|請先輸入問題|回答生成成功|回答生成失敗，請重新送出一次|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.chatSend" data-toast-type="info|warning|warning|success|error|warning" data-i18n="action.submit">送出</button>
 //               </div>
 //           </div>
 //       </div>
@@ -113,8 +113,8 @@
     position: relative;
 
     // 日期分隔列（有它的時候是 `.chat-message-container` 的第一個子元素，排在 `.message-container`
-    // 之前；2-2-3 沒有這一列，見檔頭 ⓐ）。markup 契約已含在本檔檔頭那一整段裡，這裡不重寫第二份：
-    //   <div class="date-wrap"><div class="date">2024/12/02</div></div>
+    // 之前；2-2-3 沒有這一列，見檔頭 ⓐ）。**markup 一律只有檔頭那一份**：契約檢查讀的是「第一條
+    // 非註解程式碼之前的那一段」，寫在檔身的抄本不受任何規則檢查，兩份的日期會各走各的。
     // 正式環境（執行期）由業務端依訊息的日期分組插入這一列；切版在 components/chatroom 畫出一份
     // 靜態示範——一份 markup 都沒有的話，這段規則就是出貨的死 CSS，沒有人看過它的長相（§5）。
     // 日期是資料、不翻。

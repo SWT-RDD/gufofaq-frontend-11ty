@@ -28,11 +28,11 @@
 //                   <div class="flex-row align-items-center gap-8">
 //                       <span><span data-i18n="settings.referencedCount">被問答引用次數：</span> {{ v.refCount }} <span data-i18n="settings.timesUnit">次</span></span>
 //                       <span class="divider-vertical"></span>
-//                       <button type="button" id="promptVersionCopy-{{ loop.index }}" aria-labelledby="promptVersionName-{{ loop.index }} promptVersionCopy-{{ loop.index }}" class="button-icon copy copyBtn has-tooltip" data-toast="提示詞已複製！|複製失敗，請手動選取後複製" data-i18n-data-toast="prompt.copied" data-toast-type="success|error">
+//                       <button type="button" id="promptVersionCopy-{{ loop.index }}" aria-labelledby="promptVersionName-{{ loop.index }} promptVersionCopy-{{ loop.index }}" class="button-icon copy copyBtn has-tooltip" data-toast="提示詞已複製|複製失敗，請手動選取後複製" data-i18n-data-toast="prompt.copied" data-toast-type="success|error">
 //                           <span class="tooltip" data-i18n="action.copy">複製</span>
 //                       </button>
 //                       <span class="divider-vertical"></span>
-//                       <button data-capability="settings:write" type="button" id="promptVersionRestore-{{ loop.index }}" aria-labelledby="promptVersionName-{{ loop.index }} promptVersionRestore-{{ loop.index }}" class="button button-border button-sm js-prompt-restore" data-toast="已還原此提示詞版本|權限不足，無法儲存——請找貴租戶的管理者開通|還原失敗，請稍後再試" data-i18n-data-toast="toast.restorePrompt" data-toast-type="success|warning|error" data-i18n="action.restore">還原此版本</button>
+//                       <button data-capability="settings:write" type="button" id="promptVersionRestore-{{ loop.index }}" aria-labelledby="promptVersionName-{{ loop.index }} promptVersionRestore-{{ loop.index }}" class="button button-border button-sm js-prompt-restore" data-toast="已還原此提示詞版本|權限不足，無法儲存——請找貴租戶的管理者開通|還原失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.restorePrompt" data-toast-type="success|warning|error|warning" data-i18n="action.restore">還原此版本</button>
 //                   </div>
 //               </div>
 //               <div class="prompt-content">
@@ -57,11 +57,11 @@
 //               <div class="flex-row justify-content-between align-items-center flex-wrap gap-16">
 //                   <div class="text-md text-blue" id="welcomeVersionName-{{ loop.index }}">{{ v.label }}（{{ v.timeRange }}）</div>
 //                   <div class="flex-row align-items-center gap-8">
-//                       <button type="button" id="welcomeVersionCopy-{{ loop.index }}" aria-labelledby="welcomeVersionName-{{ loop.index }} welcomeVersionCopy-{{ loop.index }}" class="button-icon copy copyBtn has-tooltip" data-toast="歡迎語已複製！|複製失敗，請手動選取後複製" data-i18n-data-toast="welcome.copied" data-toast-type="success|error">
+//                       <button type="button" id="welcomeVersionCopy-{{ loop.index }}" aria-labelledby="welcomeVersionName-{{ loop.index }} welcomeVersionCopy-{{ loop.index }}" class="button-icon copy copyBtn has-tooltip" data-toast="歡迎語已複製|複製失敗，請手動選取後複製" data-i18n-data-toast="welcome.copied" data-toast-type="success|error">
 //                           <span class="tooltip" data-i18n="action.copy">複製</span>
 //                       </button>
 //                       <span class="divider-vertical"></span>
-//                       <button data-capability="settings:write" type="button" id="welcomeVersionRestore-{{ loop.index }}" aria-labelledby="welcomeVersionName-{{ loop.index }} welcomeVersionRestore-{{ loop.index }}" class="button button-border button-sm js-welcome-restore" data-toast="已還原此歡迎語版本|權限不足，無法儲存——請找貴租戶的管理者開通|還原失敗，請稍後再試" data-i18n-data-toast="toast.restoreWelcome" data-toast-type="success|warning|error" data-i18n="action.restore">還原此版本</button>
+//                       <button data-capability="settings:write" type="button" id="welcomeVersionRestore-{{ loop.index }}" aria-labelledby="welcomeVersionName-{{ loop.index }} welcomeVersionRestore-{{ loop.index }}" class="button button-border button-sm js-welcome-restore" data-toast="已還原此歡迎語版本|權限不足，無法儲存——請找貴租戶的管理者開通|還原失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.restoreWelcome" data-toast-type="success|warning|error|warning" data-i18n="action.restore">還原此版本</button>
 //                   </div>
 //               </div>
 //               <div class="prompt-content">
@@ -88,7 +88,7 @@
 //               </div>
 //           </div>
 //           <div class="flex-row justify-content-center gap-16">
-//               <button data-capability="settings:write" type="button" class="button button-primary js-welcome-save" data-toast="已儲存為新版本|內容欄位不可為空|權限不足，無法儲存——請找貴租戶的管理者開通|儲存歡迎語失敗，請稍後再試" data-i18n-data-toast="toast.saveWelcome" data-toast-type="success|warning|warning|error" data-i18n="action.saveNewVersion">儲存為新版本</button>
+//               <button data-capability="settings:write" type="button" class="button button-primary js-welcome-save" data-toast="已儲存為新版本|內容欄位不可為空|權限不足，無法儲存——請找貴租戶的管理者開通|儲存歡迎語失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.saveWelcome" data-toast-type="success|warning|warning|error|warning" data-i18n="action.saveNewVersion">儲存為新版本</button>
 //           </div>
 //       </div>
 //   </div>

@@ -270,7 +270,7 @@
 {# 建立租戶：平台管理員新增租戶（同時建立首位管理員帳號 + 預設額度）。逆向自 product POST /platform/tenants
      （`TenantCreate` 收五欄：name／company／features／admin_email／admin_password，密碼至少 8 碼；201）。
      五欄的落點：name／admin_email／admin_password 在下面三格；`features` 在下方的租戶功能開通表
-     （PATCH /features）；**`company` 也要在這裡有一格**——少了它，平台建出來的租戶公司欄一定是空的，
+     （`PATCH /platform/tenants/{tenant_id}/features`）；**`company` 也要在這裡有一格**——少了它，平台建出來的租戶公司欄一定是空的，
      只有租戶自己在 5-1-1 改得到（§3-2：request 收得下的每個參數都要有落點）。
      沿用同站 5-8 widget「產生 Token」的 inline 建立區塊模式（非彈窗，無條件動作），
      data-toast 直接掛按鈕。 #}
@@ -645,7 +645,7 @@
             </div>
             <div class="field">
                 <input type="number" min="0" step="1" id="healthScanAfterInput" data-platform-role="admin" class="form-control js-health-scan-after" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" aria-describedby="healthScanAfterHint">
-                <span class="text-gray" id="healthScanAfterHint" data-i18n="settings.healthScanAfterTenantHint">只掃編號比它大的租戶；留空＝從第一個開始</span>
+                <span class="text-gray" id="healthScanAfterHint" data-i18n="settings.healthScanAfterTenantHint">0 以上；只掃編號比它大的租戶，留空＝從第一個開始</span>
             </div>
         </div>
         {# 四段，`|` 是索引契約。分支對回 `DailyScanOut` 真的分得出來的結果：

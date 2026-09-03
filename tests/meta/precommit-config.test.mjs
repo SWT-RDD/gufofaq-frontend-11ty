@@ -9,7 +9,7 @@
 import { test } from "vitest";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import { read } from "../_lib/corpus.mjs";
 
 const CONFIG = ".pre-commit-config.yaml";
@@ -97,19 +97,27 @@ test("[meta] 本機那幾顆 local hook 的實作與規則組都指得到", () =
             `stylelint hook 帶了 ${banned} —— 規則組在 .stylelintrc.json，在這裡再寫一份就是第二個定義點`);
 });
 
-test("[meta] CI 跑的是同一份設定，而且是 --all-files", () => {
+test("[meta] 每一支會擋下改動的 workflow 都跑同一份設定，而且是 --all-files", () => {
     // 檔案衛生那一族在 CI **沒有任何對應的東西**（行尾空白、檔尾換行、混用 CRLF/LF、
     // 壞掉的 YAML/JSON）。不在 CI 跑一次的話，那一層等於「有人記得裝就有、沒人記得就沒有」——
     // 而那種守門在沒有生效的時候，畫面上與生效時逐字相同。
-    const ci = read(".github/workflows/ci.yml");
-    assert.match(ci, /pre-commit run --all-files/,
-        "ci.yml 沒有跑 `pre-commit run --all-files` —— 檔案衛生那一族在 CI 就完全沒有守門");
-    assert.match(ci, /--show-diff-on-failure/,
-        "少了 --show-diff-on-failure：會改檔的 hook 在 CI 上改完就沒了，只留一句「Failed」，"
-        + "看不出是哪個檔的哪一行");
-    // 快取鍵要綁設定檔內容，否則改了 rev／加了 hook 之後 CI 還在用舊環境
-    assert.match(ci, /hashFiles\('\.pre-commit-config\.yaml'\)/,
-        "pre-commit 的環境快取沒有綁 .pre-commit-config.yaml 的內容 —— 改了 rev 也不會重建");
+    //
+    // **母體是「每一支 workflow」，不是點名 ci.yml**：兩支的 branches 條件互斥，
+    // 只釘其中一支的話，另一條路上這一層就不存在——而這個 repo 直推 master、
+    // 走的正是 deploy.yml 那一條（§8-1 第 6 條：同一條規範拆成多條路時母體要收得進去）。
+    const flows = readdirSync(".github/workflows").filter((f) => f.endsWith(".yml"));
+    assert.ok(flows.length >= 2, `.github/workflows 只掃到 ${flows.length} 支 —— 這條測試在空轉`);
+    for (const f of flows) {
+        const wf = read(`.github/workflows/${f}`);
+        assert.match(wf, /pre-commit run --all-files/,
+            `${f} 沒有跑 \`pre-commit run --all-files\` —— 這條路上檔案衛生那一族完全沒有守門`);
+        assert.match(wf, /--show-diff-on-failure/,
+            `${f} 少了 --show-diff-on-failure：會改檔的 hook 在 CI 上改完就沒了，只留一句「Failed」，`
+            + "看不出是哪個檔的哪一行");
+        // 快取鍵要綁設定檔內容，否則改了 rev／加了 hook 之後 CI 還在用舊環境
+        assert.match(wf, /hashFiles\('\.pre-commit-config\.yaml'\)/,
+            `${f} 的 pre-commit 環境快取沒有綁 .pre-commit-config.yaml 的內容 —— 改了 rev 也不會重建`);
+    }
 });
 
 test("[meta] 上面那幾條的負控：沒有 files: 的 hook 與指不到的 entry 都要抓得出來", () => {

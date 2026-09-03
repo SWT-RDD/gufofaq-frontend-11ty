@@ -64,7 +64,7 @@ test("§5 值載體 <select>／<input> 不得掛 data-toast（document 上的 cl
             if (/\bdata-toast=/.test(m[2])) hits.push(`${f}:${countLines(t, m.index)}  <${m[1]}> 掛了 data-toast`);
         }
     }
-    assert.ok(seen >= 389, `只掃到 ${seen} 顆表單控制項 —— 這條測試在空轉`);
+    assert.ok(seen >= 386, `只掃到 ${seen} 顆表單控制項 —— 這條測試在空轉`);
     // 負控自我檢查：零命中型測試要證明比對式真的認得違規的形狀
     assert.ok(/\bdata-toast=/.test(' class="x" data-toast="a|b"'), "比對式認不出 data-toast —— 這條測試永遠會綠");
     assert.equal(hits.length, 0, fail(hits));

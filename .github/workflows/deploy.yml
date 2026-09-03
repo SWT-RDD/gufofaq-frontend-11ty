@@ -36,6 +36,31 @@ jobs:
 
       - run: npm ci
 
+      # ── 檔案衛生（pre-commit；本機那一份的同一份設定）─────────────────────────
+      #
+      # **這一步在 master 上尤其不能少**：這個 repo 直推 master，push 就是部署，
+      # 沒有 PR 階段可以攔——`ci.yml` 的 `branches-ignore: [master]` 讓它跑不到這條路。
+      # 而檔案衛生那一族（行尾空白、檔尾換行、混用 CRLF/LF、壞掉的 YAML/JSON、只差大小寫
+      # 的檔名）在 CI 沒有任何其他對應物，不在這裡跑一次的話，實際被使用的那條路上
+      # 那一層等於「有人記得裝就有」——正是 `.pre-commit-config.yaml` 檔頭要避免的狀態。
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+
+      # 每一顆 hook 各自建一個獨立的環境。快取鍵綁設定檔內容，改了 rev 或加了 hook 就自然失效重建。
+      - name: 快取 pre-commit 的 hook 環境
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
+
+      - run: pip install pre-commit
+
+      # `--show-diff-on-failure`：那幾顆是會改檔的 hook，在 CI 上改完就沒了、只留一個「Failed」，
+      # 這一旗標把它們改了什麼印出來。
+      - name: pre-commit（檔案衛生）
+        run: pre-commit run --all-files --show-diff-on-failure
+
       # lint → build → test，任何一關紅就擋下部署。
       # 拆成三個 step 而不是一個 `npm run check`：擠在一格裡的話，Actions 頁只看得到
       # 「那一格紅了」，要展開日誌才知道是哪一關。master 以外的分支與 PR 走 ci.yml。
@@ -76,7 +101,6 @@ jobs:
       # 瀏覽器二進位檔約 150MB，每次重抓要一分多鐘。快取鍵綁 lockfile：
       # @playwright/test 升版時 Playwright 會要求對應版本的瀏覽器，鍵跟著失效才不會拿到舊的。
       - name: 快取 Playwright 的瀏覽器
-        id: pw-cache
         uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright

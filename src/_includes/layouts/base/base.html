@@ -11,7 +11,8 @@
        這裡跟 no-flash 是全站唯一「色碼不從 token 讀」的地方——它們跑在 CSS 載入前，讀不到 var()。
        兩個值必須等於 _var.scss 的 --surface-raised（淺/深），有測試盯著（§4）。 #}
     <meta name="theme-color" content="#ffffff">
-    {# no-flash：在套用 CSS 前先定 <html data-theme>（讀 localStorage → 否則跟系統），避免載入白閃。切換行為見 theme-toggle.js #}
+    {# no-flash：在套用 CSS 前先定 `<html data-theme>` 與 `<html lang>`（各讀自己的 localStorage 鍵，
+     theme 讀不到就跟系統），避免載入時閃一次淺色／繁中。切換行為分別見 theme-toggle.js／lang-toggle.js #}
     <script>
         (function () {
             try {
@@ -46,6 +47,9 @@
          由 `toast.js` 掛在每一顆 `.toast` 上。 #}
     <div id="toastContainer" class="toast-container" popover="manual" role="status" aria-live="polite"></div>
 
+    {# clipboard 排在最前：它掛的 `window.GufoClipboard` 是 faq-chatroom.js 與 import-report.js
+         的呼叫對象。三支都是 defer（依序執行、都在 DOMContentLoaded 之前），順序在這裡是明講的。 #}
+    <script defer src="./js/clipboard.js"></script>
     <script defer src="./js/scroll-lock.js"></script>
     <script defer src="./js/slide-toggle.js"></script>
     <script defer src="./js/print.js"></script>

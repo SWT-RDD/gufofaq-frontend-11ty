@@ -86,7 +86,7 @@ permalink: 5-6-2_platformMcpServers.html
           （上游根本不會收下那些鍵；它們甚至存得進去也只會在起子行程時被靜默剔除）。
      還有一段 **422 超過上限**：`McpServerCreate`／`McpServerUpdate` 的 `max_length` 群
      （名稱／執行指令／描述的字數，args 的項數與每項字數，env 的組數與鍵值字數；值集中在
-     product 的 `chat_config_limits`）。畫面上既然把上限標出來了，超過那一態就要有鈕演得出來。
+     product 的 `MCP_FIELD_LIMITS`）。畫面上既然把上限標出來了，超過那一態就要有鈕演得出來。
      ⚠️ **`|` 的段序是索引契約，動它就要連下游一起動**：gufofaq-saas
      `apps/web/app/(app)/mcp-servers/page.tsx` 的 `showMcpWriteError` 以 `MCP_WRITE_SEGMENT`
      把 400 的 code 對到**中間**那三段（索引 1–3），最後那顆 error 則是按位置取最末段。
@@ -145,7 +145,7 @@ permalink: 5-6-2_platformMcpServers.html
                      /platform/mcp/limits` 的值），不是寫死的字面——形狀照既有正典
                      （`ui/pagination` 的 totalPrefix／totalSuffix）：前綴 key ＋ 槽 ＋ 中綴 key
                      ＋ 槽 ＋ 後綴 key，**不是插值 key**。
-                   ⚠️ 這裡的數字**必須取 product `chat_config_limits.MCP_FIELD_LIMITS` 的正本值**，
+                   ⚠️ 這裡的數字**必須取 product 的 `MCP_FIELD_LIMITS` 的正本值**，
                      不可以隨手填一組示範值：React 那側的切版比對 fixture 是照這一頁調的，兩邊會
                      一起停在同一組沒有人在執法的數字——`slicingParity` 全綠，而正式環境顯示另一組。 #}
                 <div class="field">
@@ -295,7 +295,7 @@ permalink: 5-6-2_platformMcpServers.html
                             <input type="checkbox" aria-labelledby="mcpRowName-{{ server.id }} mcpHeadActive"{% if server.active %} checked{% endif %}>
                         </label>
                     </td>
-                    {# 「工具」欄：載入這一頁時就去問的工具數（`GET /platform/mcp/{server_id}/tools`，
+                    {# 「工具數」欄：載入這一頁時就去問的工具數（`GET /platform/mcp/{server_id}/tools`，
                          product 的 `get_platform_mcp_server_tools` →
                          GufoRAG chatbot 的 `get_mcp_server_tools`）。
                        **為什麼不能併進右邊那一欄**：那一欄的第三態 `settings.mcpNeverTested`
@@ -355,7 +355,7 @@ permalink: 5-6-2_platformMcpServers.html
                     </td>
                 </tr>
                 {% else %}
-                {# colspan＝表頭欄數 9（名稱／執行指令／參數／環境變數／描述／啟用／工具／最近一次測試／操作）。
+                {# colspan＝表頭欄數 9（名稱／執行指令／參數／環境變數／描述／啟用／工具數／最近一次測試／操作）。
                      ⚠️ 加欄位時這個數字要一起改：對不上時只有**空狀態**那一格看得出來（表格右側缺格），
                      有資料的畫面完全正常，所以它是最容易留在錯值上的一個數。 #}
                 {# 具名空狀態：「全平台共用的一份」逐字出自本頁檔頭（不分租戶各自持有）——

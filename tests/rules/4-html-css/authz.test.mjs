@@ -47,18 +47,16 @@ test("§4 每一顆會改狀態的鈕都要宣告它需要哪一道閘門（四�
     // 留下來的四筆各自有一顆真的沒有閘門、也標不出閘門的鈕。
     const READONLY = [
         ["下載", "把既有資料匯出成檔案，走讀取端點；產生檔案不落任何一筆新狀態"],
-        ["已複製", "寫進剪貼簿，完全不碰後端"],
-        // `common.copied` 從一段變兩段（成功／失敗）之後，那一族 `.copyBtn` 才第一次
-        // 進得了本測試的母體——沒有 data-toast-type 的鈕，`successSeg()` 回 null ⇒ 整批
-        // 不是被放行，是根本沒被看見（同「插值型 type 收斂不出字面」那一種）。上面那筆「已複製」是**前綴**錨定，
-        // 配不到「文字已複製!」這一句，所以要自己一筆。
-        // 這一族要**四筆**而不是一筆，是因為這張表是**前綴**錨定，而複製類的繁中是「受詞在前」
-        // （文字／連結／提示詞／歡迎語 ＋「已複製」），四句沒有共同前綴。刻意不改成子字串比對：
-        // 子字串比對會放行「已核發，請立即複製下方明碼」那顆 require_platform_admin 的寫入。
-        ["文字已複製", "同上：`.copyBtn` 寫進剪貼簿（faq-chatroom.js 的 clipboard ＋ execCommand 退路），沒有任何端點"],
+        ["已複製為", "`import-report.js` 把被剝掉的連結組成出口替換規則寫進剪貼簿，完全不碰後端（貼到哪一區是下一步的指示，不是它做的事）"],
+        // 複製類的繁中一律是「**受詞在前** ＋ 已複製」（`X已複製`），所以這張**前綴**錨定的表
+        // 要逐句一筆、沒有共同前綴可收。刻意不改成子字串比對：子字串會放行
+        // 「已核發，請立即複製下方明碼」那顆 require_platform_admin 的寫入。
+        ["文字已複製", "`.copyBtn` 寫進剪貼簿（faq-chatroom.js 的 clipboard ＋ execCommand 退路），沒有任何端點"],
         ["連結已複製", "同上：`.shareBtn` 把**已經產生好的**分享連結寫進剪貼簿（faq-share-modal 那一顆旁邊就是唯讀的 textarea，連結是開窗前就有的）——產生連結是 share-manage-modal 的「建立分享連結」，那一顆自己標了 data-capability=\"history\""],
         ["提示詞已複製", "同上：5-2 提示詞版本列的 `.copyBtn` 把該版本的內容寫進剪貼簿，不落任何一筆設定（套用是另一顆鈕）"],
         ["歡迎語已複製", "同上：5-2 歡迎語版本列的 `.copyBtn`，理由與提示詞那一顆逐字相同"],
+        ["金鑰已複製", "同上：5-8／5-9 列上的 `.copyBtn` 把已經核發好的金鑰寫進剪貼簿——核發是另一顆鈕，那一顆自己標了閘門"],
+        ["嵌入片段已複製", "同上：5-8 的 `.copyBtn` 複製的是由已核發的 token 組出來的 <script> 片段，不打任何端點"],
         ["量測完成", "5-10 檔頭引的 `GET /tags/coverage`：讀既有標註算覆蓋率，不改任何一筆標註"],
         ["名單已載入", "iso-review-wizard 檔頭引的 `GET /platform/review/overdue`（require_platform_auditor）：把逾時名單讀回來畫成 preview，寫入在下一態那顆 .js-review-confirm"],
     ];
@@ -67,6 +65,11 @@ test("§4 每一顆會改狀態的鈕都要宣告它需要哪一道閘門（四�
     // 改成 **(檔, success 段) 兩層**：豁免的單位＝那一顆鈕做成的那件事，理由要對得上它。
     // 而且 `if (NO_GATE.has(f)) return out;` 一旦排在 `platformScopes()` **之前**，
     // 豁免檔裡「宣告元素配對不到收尾標籤」那種 fail loud 會一起被吞掉——順序也一起修。
+    // **痕跡要成對**（§4）：這張表寫理由，被豁免的那支檔案自己的鈕旁也要寫。
+    // 錨定字串固定是「這顆鈕標不出授權軸」——下面那道斷言逐檔 grep 它，只寫在這張表上、
+    // 檔案裡什麼都沒說的豁免當場報紅：讀那一頁的人不會來翻測試檔，而「沒有閘門」與「忘了標」
+    // 在 markup 上長得一模一樣，那句話是唯一分得出兩者的東西。
+    const NO_GATE_ANCHOR = "這顆鈕標不出授權軸";
     const NO_GATE = new Map([
         ["src/pages/settings/5-1-1_accountInfo.html", new Map([
             ["個人資料已儲存", "`/me/profile` 是自助端點，product 只掛 get_current_user＋require_active_subscription，沒有 require_capability——標上能力軸反而會把「改自己的顯示名」擋在一顆它不需要的能力後面"],
@@ -81,13 +84,6 @@ test("§4 每一顆會改狀態的鈕都要宣告它需要哪一道閘門（四�
         ])],
         ["src/login.html", new Map([
             ["登入成功！", "登入是**認證之前**的那一顆：這時還沒有主體，能力／角色都是登入之後才判得出來的東西，宣告不出任何一道閘門。它不是唯讀——之前被塞在 READONLY 裡，那是把「不需要閘門」誤寫成「不寫入」"],
-        ])],
-        ["src/_includes/components/faq-chatroom/faq-chatroom.html", new Map([
-            ["回答生成成功", "前台公開機器人（faq.html，chatbot-shell 外殼）送問答走吃 `X-Widget-Token` 的公開端點（見 5-8 檔頭：標頭 X-Widget-Token／query ?wt=），那條路徑上根本沒有租戶能力軸——硬標一顆 data-capability 等於宣告一道這裡不存在的閘門。後台 components/chatroom 的同型鈕才吃 data-capability=\"ask\""],
-            ["連結已建立", "分享鈕送的是 `POST /public/share`（product 的 `create_public_share`），與同一支元件的送問答鈕走同一條吃 `X-Widget-Token` 的公開路徑，理由逐字相同：匿名訪客身上沒有能力或角色可以判"],
-        ])],
-        ["src/_includes/ui/widget-shell/widget-shell.html", new Map([
-            ["回答生成成功", "嵌入式 widget 的送出鈕與 faq-chatroom 打的是同一支吃 `X-Widget-Token` 的公開端點，理由同上。 success 段之前，它是「少一段 success ⇒ 整顆掉出本測試母體」——那一段不是可選的裝飾，它決定這顆鈕受不受這條規則管"],
         ])],
     ]);
     // 屬性值可以是**插值帶預設**（`data-toast-type="{{ editSaveToastType or 'success|error' }}"`）。
@@ -231,6 +227,9 @@ test("§4 每一顆會改狀態的鈕都要宣告它需要哪一道閘門（四�
     // 逐顆之後，「理由只涵蓋兩顆、檔案裡卻有四顆」這種擴權寫不出來了——多的那顆沒有自己的理由。
     for (const [f, segs] of NO_GATE) {
         assert.ok(srcHtml.includes(f), `NO_GATE 的 ${f} 已經不在 srcHtml 裡（死豁免）`);
+        assert.ok(read(f).includes(NO_GATE_ANCHOR),
+            `NO_GATE 豁免了 ${f}，但那支檔案裡沒有寫「${NO_GATE_ANCHOR}」——痕跡要成對（§4）：` +
+            `理由只寫在測試檔裡的話，讀那一頁的人看到的就只是一顆沒有標閘門的鈕`);
         const src = stripNjk(read(f));
         const { scopes } = platformScopes(src, f);
         const wouldFail = new Set([...src.matchAll(/<button\b((?:"[^"]*"|[^>"])*)>/g)].filter((m) => {
@@ -275,7 +274,7 @@ test("§4 每一顆會改狀態的鈕都要宣告它需要哪一道閘門（四�
          // auditor 區塊裡的**唯讀**動作（下載）本來就合法——收層級不可以把它一起收掉
          `<div data-platform-role="auditor"><button type="button" data-toast="下載已開始|失敗" data-toast-type="success|error">匯出</button></div>`,
          // 插值帶預設但成功段是唯讀動詞：解析得出來、而且照樣豁免
-         `<button type="button" data-toast="{{ x or '已複製|失敗' }}" data-toast-type="{{ y or 'success|error' }}">複製</button>`]);
+         `<button type="button" data-toast="{{ x or '文字已複製|失敗' }}" data-toast-type="{{ y or 'success|error' }}">複製</button>`]);
     // 順序那一半：NO_GATE 檔裡「宣告元素配對不到收尾標籤」的 fail loud 不可以被豁免吞掉
     // （`if (NO_GATE.has(f)) return out;` 排在 platformScopes() 之前就是這種吞法）。
     const noGateFile = [...NO_GATE.keys()][0];

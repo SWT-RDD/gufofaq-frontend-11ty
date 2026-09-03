@@ -160,6 +160,7 @@ test("§4 markup 上的每個 class 都要有主人（反向網：css 規則／�
     const REDUNDANT_BUT_KEPT = new Map([
         ["copyBtn", "複製鈕的具名掛點：前台由 components/faq-chatroom 的 js 真的寫剪貼簿，後台只彈 toast（§5）"],
         ["watchBtn", "同一組的第二顆鈕「查看來源」：由 components/chatroom 的 js 委派接住並呼叫 GufoSources.show()"],
+        ["shareBtn", "分享連結的複製鈕：由 ui/clipboard 委派接住，把同一個容器裡那顆唯讀欄位的值寫進剪貼簿（faq-share-modal 與 share-manage-modal 兩處）"],
         ["multiSelect", "多選下拉的初始化掛點；本 repo 由 ui/multi-select 查它"],
         ["with-input", "附屬輸入框的解鎖掛點；本 repo 由 ui/field-with-input 查它"],
         ["field-with-input", "同上（radio 與它附屬輸入框的那一格）"],

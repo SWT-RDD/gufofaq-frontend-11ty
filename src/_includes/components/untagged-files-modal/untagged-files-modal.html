@@ -45,11 +45,17 @@
      ⚠️ 隨手填一組名字（例如「法規文件／產品資料」）與 5-10 的 `coverageDatasets`（法規彙編／
      2026 新制問答）交集會是 0，那正是上面說的自相矛盾。檔名也要取自 5-10 自己那批
      （`blockedSlots` 用的移民主題假檔名），不要借別頁的主題（關稅那一組是 2-2-x 的）。 #}
-{% set untaggedFileRows = [
+{# **這份清單是可覆寫參數，不是寫死在元件裡的**（§6：兩個互相推導的值，可覆寫性必須同級——
+     不論方向）：與它耦合的 `total`／`perPage`／`currentPage` 與資料集值域都由使用頁供給，
+     清單卻只能由元件決定的話，使用頁一改 `total` 或 `coverageDatasets` 這幾列不會跟，
+     而畫面自洽、只靠一段人工提醒撐著。使用頁沒給時走下面這份內建示範（§6(b) 純示範假資料）。
+     ⚠️ 使用頁 set 了它就要負責重設（`{% set %}` 是頁面全域，§2）。 #}
+{% set untaggedFileRowsDemo = [
     { documentId: "3f9a1c7042be", docName: "歸化國籍作業要點.xlsx", datasetName: "法規彙編" },
     { documentId: "b2d80e56a913", docName: "新住民生活須知問答.xlsx", datasetName: "2026 新制問答" },
     { documentId: "7c410fb9d28e", datasetName: "法規彙編" }
 ] %}
+{% set untaggedFileRowsShown = untaggedFileRows if untaggedFileRows is defined else untaggedFileRowsDemo %}
 {# 頁碼列的三個參數由**使用頁**提供（同 components/pager-row 的慣例）：`{% set %}` 是頁面全域，
      在元件內設的話，「同一頁第二次用到 pagination 前必須重設」那道守門看不到它——元件庫頁在本
      元件之前已經用過一次 pagination，於是那一次的 total/currentPage 會沿用過來，而兩邊看起來
@@ -99,7 +105,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {% for row in untaggedFileRows %}
+                                    {% for row in untaggedFileRowsShown %}
                                     <tr>
                                         <td>{% if row.docName %}{{ row.docName }}{% else %}<span class="text-gray" data-i18n="settings.docNameUnavailable">（讀不到這一份的檔名）</span>{% endif %}</td>
                                         <td><code class="inline-code">{{ row.documentId }}</code></td>

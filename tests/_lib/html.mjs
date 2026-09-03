@@ -47,7 +47,7 @@ export const distDoc = (f) => stripNonMarkup(read(`dist/${f}`));
     // 棘輪＝**這次實際量出來的**開標籤數。門檻與母體之間留多少縫，就等於剝除規則可以吃掉多少
     // 真 markup 而仍然全綠；沿用一個算出來的估值等於這條守門不存在。
     // **棘輪要跟著母體一起長**：加了頁面／區塊就重量一次；真的刪頁才把它調下來，那是一次有意識的決定。
-    const DIST_TAGS_FLOOR = 31212;
+    const DIST_TAGS_FLOOR = 31548;
     assert.ok(total >= DIST_TAGS_FLOOR,
         `dist 剝完只剩 ${total} 個開標籤（門檻 ${DIST_TAGS_FLOOR}）—— distDoc() 的剝除規則吃掉了真 markup，` +
         `所有以它為母體的測試都在對著空文件斷言`);

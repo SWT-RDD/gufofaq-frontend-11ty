@@ -108,8 +108,14 @@ permalink: 4-2_qaHistory_detail.html
          一筆問答只有一份評分，這顆鈕改的就是下面表格顯示的那兩格（見 components/rating-modal 檔頭）。 #}
     <button type="button" class="button button-border" data-open-modal="likeModal" data-i18n="qa.setSatisfaction">設定滿意度</button>
     {# 分享：登入態把本筆問答建成唯讀分享連結（product POST /share）。業務條件開窗＝hook class js-share-log，
-         彈窗本體見 components/share-manage-modal（可建立新連結 + 列出生效連結逐一複製/撤銷，include 於本頁底部）。 #}
-    <button type="button" class="button button-primary js-share-log" data-i18n="comp.share">分享</button>
+         彈窗本體見 components/share-manage-modal（可建立新連結 + 列出生效連結逐一複製/撤銷，include 於本頁底部）。
+       **這顆鈕自己就送 API**（開窗前先讀這一筆既有的連結清單，`GET /share?log_id=…`，
+         product 的 `list_shares`，`require_capability("history")`）⇒ 照 §5 掛 `data-toast` 列全結果：
+         讀不回來時窗開不了，而使用者按了鈕、畫面上什麼都沒發生。形狀與 5-10 的 `.js-edit-vocabulary`
+         逐字相同（同樣是「先讀再開窗」的觸發鈕），故共用 `toast.query` 那一組五段。
+         **末段的租戶開通不可省**：`history` 也是一顆租戶開通鍵（同前台 faq-chatroom 的分享鈕），
+         關掉時回 403，而那句話的收件人是平台管理員、不是這個租戶的管理者。 #}
+    <button data-capability="history" type="button" class="button button-primary js-share-log" data-toast="正在查詢資料...|權限不足，無法查詢——請找貴租戶的管理者開通|查詢成功|載入資料失敗，請重新整理頁面|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.query" data-toast-type="info|warning|success|error|warning" data-i18n="comp.share">分享</button>
     <button type="button" class="button button-green" data-print data-i18n="qa.printPage">列印此頁</button>
 </div>
 
@@ -263,8 +269,8 @@ permalink: 4-2_qaHistory_detail.html
 {% set ratingModalFeedback = conversation.feedback %}
 {% set ratingModalToastKey = "toast.saveRating" %}
 {% set ratingCapability = "history" %}
-{% set ratingModalToast = "滿意度已更新|權限不足，無法送出——請找貴租戶的管理者開通|請先選擇讚或倒讚|找不到這一筆問答紀錄，請確認它還在|更新失敗，請稍後再試" %}
-{% set ratingModalToastType = "success|warning|warning|warning|error" %}
+{% set ratingModalToast = "滿意度已更新|權限不足，無法送出——請找貴租戶的管理者開通|請先選擇讚或倒讚|找不到這一筆問答紀錄，請確認它還在|更新失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" %}
+{% set ratingModalToastType = "success|warning|warning|warning|error|warning" %}
 {% include "components/rating-modal/rating-modal.html" %}
 
 {% include "components/share-manage-modal/share-manage-modal.html" %}

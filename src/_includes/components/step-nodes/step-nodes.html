@@ -1,6 +1,6 @@
 {# 步驟進度條：一排等寬的步驟點，用底線與字色標示走到哪。**只有「已完成」一種狀態**（`.done`）——
      沒有 `.active`：目前這一步不另外標示，看的是「前面幾格已變色」。
-     由頁面單獨 include（1-1-2／1-1-6／1-2-6），或由 `components/step-btn-wrap` 內含
+     由頁面單獨 include（1-1-2／1-1-6／1-2-6，＋元件庫頁兩份：一般與 `.lg`），或由 `components/step-btn-wrap` 內含
      （`steps`／`stepNodesLg` 兩個參數共用同一份，見該元件檔頭）——§1-1 的專屬子片段：
      耦合點要在雙方檔頭互相指名。
      頁面 include 前 set steps（[{ label, done, i18nKey }]，i18nKey 選填、給該步驟的英文翻譯）+ 選填 stepNodesLg（true 加 .lg 大尺寸變體）。資料由頁面提供，本元件不自帶。 #}

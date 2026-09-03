@@ -13,9 +13,9 @@
 //      白名單 `img[src*="_black"]` 沒有這種漏；
 //   ③ hover 換色只要換 token，不必為「同一個字形換個顏色」再多存一張 *_bluehover.png。
 //
-// ⚠️ filter 不可以加在「有底色＋文字」的元素上（如 `.form-control.search` / `.time` 輸入框）：
-//    invert 會連整個輸入框的底色一起翻。那兩處的搜尋／時鐘 icon 畫在 <input> 自己的 background 上，
-//    而 <input> 沒有偽元素可以承載遮罩 —— 要修得先給它們一層 wrapper，不在這一層想辦法。
+// ⚠️ filter 不可以加在「有底色＋文字」的元素上：invert 會連整塊底色一起翻。
+//    所以搜尋／時鐘那一族的 icon 不畫在 `<input>` 自己的 background 上，而是畫在 `.field::after`
+//    走 `icon-mask()`（`ui/form-control`）——`<img>` 之外的單色圖示一律走那條路，本檔不必認識它們。
 [data-theme="dark"] {
     img[src*="_black"] {
         filter: invert(1) hue-rotate(180deg);

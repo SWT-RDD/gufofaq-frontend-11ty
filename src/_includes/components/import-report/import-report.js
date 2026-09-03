@@ -20,21 +20,7 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 
-    // 同 faq-chatroom.js：clipboard API + execCommand fallback（file:// 或無權限時）
-    function copyText(text) {
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(text).catch(function () { fallbackCopy(text); });
-        } else {
-            fallbackCopy(text);
-        }
-    }
-
-    function fallbackCopy(text) {
-        var area = document.createElement("textarea");
-        area.value = text;
-        document.body.appendChild(area);
-        area.select();
-        try { document.execCommand("copy"); } catch (err) { /* 複製失敗即無聲，toast 已由 data-toast 演出 */ }
-        document.body.removeChild(area);
-    }
+    // 寫入本身走共用原語（ui/clipboard 的 `window.GufoClipboard.write`）：本檔負責的是
+    // 「要複製哪一段字」——把被剝掉的連結組成出口替換規則。
+    function copyText(text) { window.GufoClipboard.write(text); }
 });

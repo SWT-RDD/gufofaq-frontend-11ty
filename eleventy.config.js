@@ -12,6 +12,7 @@ module.exports = function (eleventyConfig) {
     // 不用萬用字元掃整個 _includes：那會把還沒接上頁面的實驗檔一起出貨，也讓「這個站到底載了哪些 js」
     // 從一份可讀的清單變成要跑一次 build 才知道。新增元件 js 就在這裡加一行（GUIDELINE §5）。
     eleventyConfig.addPassthroughCopy({
+        "src/_includes/ui/clipboard/clipboard.js": "js/clipboard.js",
         "src/_includes/ui/scroll-lock/scroll-lock.js": "js/scroll-lock.js",
         "src/_includes/ui/slide-toggle/slide-toggle.js": "js/slide-toggle.js",
         "src/_includes/ui/print/print.js": "js/print.js",

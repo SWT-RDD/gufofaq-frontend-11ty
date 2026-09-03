@@ -54,13 +54,20 @@ test("§6 元件內部 {% set %} 示範變數名：跨元件唯一、且不與�
     const hits = [];
     for (const [name, files] of compVars) {
         const uniq = [...new Set(files)];
-        if (uniq.length > 1) hits.push(`{% set ${name} %} 由多個元件宣告：${uniq.join("、")}`);
+        // 「多個元件宣告同一個名字」也要走 passesThrough：兩個元件各自 include 同一顆子元件、
+        // 各自在 include 前把它的參數設齊時，那不是撞名，是**同一顆子元件有兩個消費點**
+        // （`components/chunk-settings` 與 `components/platform-tenants-panel` 都 include
+        // `components/help-modal`，於是兩邊都 set 那七顆 `helpModal*`）。判準與下面那條頁面撞名
+        // 用同一支：名字要真的被自己 include 的某個子元件**當參數讀**（運算式開頭位置），
+        // 不是只在某處被提過。少了這一支，這條規則會把「元件 include 元件」整條路禁掉。
+        if (uniq.length > 1 && !uniq.every((f) => passesThrough(f, name)))
+            hits.push(`{% set ${name} %} 由多個元件宣告：${uniq.join("、")}`);
         // 頁面 set 元件的「參數」是合法的（include 前傳值）；危險的是元件「內部示範」變數撞頁面自用變數。
         // 參數與內部變數的機器判準：參數只在頁面 set、內部變數只在元件 set —— 兩邊都 set 同一個名字就是撞名。
         if (pageVars.has(name) && !uniq.every((f) => passesThrough(f, name)))
             hits.push(`{% set ${name} %} 元件內部（${uniq.join("、")}）與頁面（${[...new Set(pageVars.get(name))].join("、")}）同名`);
     }
-    assert.ok(compVars.size >= 5 && pageVars.size >= 5, "set 收集異常 —— 空轉");
+    assert.ok(compVars.size >= 92 && pageVars.size >= 287, "set 收集異常 —— 空轉");
     assert.equal(hits.length, 0, fail(hits));
 });
 
@@ -333,4 +340,69 @@ test("§6 stepNextHref 與 stepNextAction = true 不得同時 set（動作模式
             '{% set stepNextAction = true %}\n{% include "components/step-btn-wrap/step-btn-wrap.html" %}',
             '{% set stepNextHref = "x.html" %}\n{% include "components/step-btn-wrap/step-btn-wrap.html" %}']);
     assert.equal(hits.length, 0, `§6 沒有消費者的參數：\n${fail(hits)}`);
+});
+
+test("§6/§8 元件讀得到、卻沒有任何使用頁 set 的參數，都要有一筆寫得出理由的登記", () => {
+    // 這一族在 markup 上長得跟正常參數一模一樣：`{{ x or 預設 }}` 永遠走預設、`{% if x %}` 永遠不成立。
+    // 兩種東西混在裡面，而它們的處置相反：
+    //   ① **轉換契約**——React 那一側會傳（`widgetTitle` 是租戶設定的面板標題、`chartBoxTitleKey`
+    //      是 React 逐張圖傳的標題）。切版沒有那個資料來源，所以它在這裡永遠是預設值。留著。
+    //   ② **真死參數**——沒有人傳、也不會有人傳（本 repo 撤過 `stepNextHref`：那個死參數還替
+    //      「§3-1 新頁要有導覽入口」背了很久的假書，見 front-matter.test.mjs 的 NO_NAV 註解）。
+    // 沒有這張表的話兩者分不出來，而分不出來的代價是「死參數永遠刪不掉、活契約隨時被誤刪」。
+    // 每一筆都要寫出**誰會傳它**（或為什麼永遠不會有人傳）；下面三道衛生把表本身釘住。
+    const UNSET_OK = new Map([
+        ["components/chart-box:chartBoxTitleText", "React 逐張圖傳標題（gufofaq-saas 的 `<ChartBox title={…}>`，同一頁兩張圖兩個標題）；切版只有一張圖、走預設"],
+        ["components/chart-box:chartBoxTitleKey", "與 chartBoxTitleText 成對的 i18n key：那一顆是譯完的字（React 傳），這一顆是切版 data-i18n 用的；兩顆一起給或一起不給"],
+        ["components/delete-modal:deleteTargetName", "**只在沒給 `deleteTargetId` 時才用得到的靜態退路**：生產頁一律走逐列的 id，落回這顆的只有元件庫展示頁那一份（見 platform-tenants-panel 檔頭）"],
+        ["components/editable-block:editRows", "textarea 列數；三個實例都要 10 列，所以沒有人覆寫。留著是因為它是版位參數——下一個要 3 列的欄位不必改元件"],
+        ["components/import-report:importSyncIndexed", "整批同步那三格；1-2-1 檔頭逐字寫著「一律不 set」（逐檔的那三格畫在逐檔區，整批區重複一次會有兩個互相矛盾的數字）"],
+        ["components/import-report:importSyncFailed", "同 importSyncIndexed：1-2-1 檔頭逐字寫著整批區那三格「一律不 set」，逐檔的同名格畫在逐檔區"],
+        ["components/import-report:importSyncReason", "同上；它另有一條硬規則——真的 set 了就照畫，關聯編號絕不可以無聲消失（見該元件檔頭）"],
+        ["components/skill-try-sandbox:trySkillName", "試跑的是哪一顆 skill；3-4 的試跑面板由業務 js 開，skill 名執行期才知道（同檔的 js 靠 `#trySkillName` 填），切版走示範預設"],
+        ["ui/upload-box:uploadHintText", "放置區主提示；**兩個版本的預設不同**（點選版／拖曳版），兩個實例各自要的就是自己那一版的預設，所以沒有人覆寫"],
+        ["ui/upload-box:uploadHintKey", "與 uploadHintText 成對的 i18n key：兩個版本（點選／拖曳）各自的預設不同，兩個實例要的就是自己那一版，所以沒有人覆寫"],
+        ["ui/widget-shell:widgetTitle", "面板標題＝**租戶設定值**，React 從設定讀進來傳；切版沒有那個來源，走 `{% else %}` 那一支的示範文字（那一支才是切版畫得出來的態）"],
+    ]);
+    // 「誰供給這個名字」有兩種：使用頁的 `{% set %}`，以及**使用頁的迴圈變數**——
+    // `{% for tool in builtinToolCards %}` 裡 include 一顆元件時，`tool` 是那一圈給的，
+    // 元件裡看不到它的宣告。少算後者的話，那一族會被誤判成「沒有人傳」。
+    const setNames = new Map();
+    for (const f of srcHtml) {
+        const body = stripNjk(read(f));
+        const add = (n) => { if (!setNames.has(n)) setNames.set(n, new Set()); setNames.get(n).add(f); };
+        for (const m of body.matchAll(/\{%-?\s*set\s+([A-Za-z_]\w*)/g)) add(m[1]);
+        for (const m of body.matchAll(/\{%-?\s*for\s+([A-Za-z_]\w*)(?:\s*,\s*([A-Za-z_]\w*))?\s+in/g)) { add(m[1]); if (m[2]) add(m[2]); }
+    }
+    const hits = [];
+    const used = new Set();
+    let scanned = 0;
+    for (const file of srcHtml) {
+        const m0 = file.replace(/\\/g, "/").match(/src\/_includes\/((?:ui|components)\/([^/]+))\/\2\.html$/);
+        if (!m0) continue;
+        scanned++;
+        const body = stripNjk(read(file));
+        const selfSet = new Set([...body.matchAll(/\{%-?\s*set\s+([A-Za-z_]\w*)/g)].map((x) => x[1]));
+        const loopVars = new Set([...body.matchAll(/\{%-?\s*for\s+(\w+)(?:\s*,\s*(\w+))?\s+in/g)].flatMap((x) => [x[1], x[2]].filter(Boolean)));
+        const read1 = new Set();
+        for (const x of body.matchAll(/\{\{-?\s*([A-Za-z_]\w*)/g)) read1.add(x[1]);
+        for (const x of body.matchAll(/\{%-?\s*(?:if|elif)\s+(?:not\s+)?([A-Za-z_]\w*)/g)) read1.add(x[1]);
+        for (const x of body.matchAll(/\{%-?\s*for\s+\w+(?:\s*,\s*\w+)?\s+in\s+([A-Za-z_]\w*)/g)) read1.add(x[1]);
+        // `loop`／字面量／版型注入的 `content` 不是參數；迴圈變數與自己 set 的也不是。
+        for (const v of read1) {
+            if (selfSet.has(v) || loopVars.has(v)) continue;
+            if (["loop", "true", "false", "none", "range", "content"].includes(v)) continue;
+            const who = setNames.get(v);
+            if (who && [...who].some((x) => x !== file)) continue;   // 有別人 set ⇒ 正常參數
+            const key = `${m0[1]}:${v}`;
+            if (UNSET_OK.has(key)) { used.add(key); continue; }
+            hits.push(`${key}  讀得到、卻沒有任何使用頁 set 它 —— 是 React 那一側會傳的轉換契約，還是該撤掉的死參數？兩種都要寫進 UNSET_OK`);
+        }
+    }
+    assert.ok(scanned >= 60, `只掃到 ${scanned} 支元件 html —— 這條測試在空轉`);
+    const stale = [...UNSET_OK.keys()].filter((k) => !used.has(k));
+    assert.deepEqual(stale, [], `UNSET_OK 有死豁免（那顆參數已經有人 set 了，或已經撤掉）：\n${stale.join("\n")}`);
+    for (const [k, why] of UNSET_OK)
+        assert.ok((why || "").length > 20, `UNSET_OK 的「${k}」沒寫誰會傳它 —— 寫不出一句話的登記與憑空放行沒有分別`);
+    assert.equal(hits.length, 0, fail(hits));
 });

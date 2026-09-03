@@ -23,18 +23,49 @@
 //
 //   <td>
 //       <div class="btn-group">
-//           {# 逐顆 button-icon：各自帶 id ＋ aria-labelledby「本列辨識欄 ＋ 本鈕」（§4） #}
+//           <button type="button" id="pdfFileEdit-{{ loop.index }}" aria-labelledby="pdfFileRowName-{{ loop.index }} pdfFileEdit-{{ loop.index }}" class="button-icon no-bg size-sm edit btn-edit-file" data-index="{{ loop.index0 }}" title="編輯" data-i18n-title="action.edit">
+//               <span class="sr-only" data-i18n="action.edit">編輯</span>
+//           </button>
+//           <button type="button" id="pdfFileDelete-{{ loop.index }}" aria-labelledby="pdfFileRowName-{{ loop.index }} pdfFileDelete-{{ loop.index }}" class="button-icon no-bg size-sm delete btn-delete-file" data-index="{{ loop.index0 }}" title="移除" data-i18n-title="action.remove">
+//               <span class="sr-only" data-i18n="action.remove">移除</span>
+//           </button>
 //       </div>
 //   </td>
 //
-//   ③ 逐檔型計數（`.file-number-group`）。取自 3-1-1：
+//      兩顆逐字寫出來、不用一則 `{# 逐顆 button-icon：各自帶 id ＋ aria-labelledby #}` 帶過（§1-2）：
+//      那種寫法形式上不是散文、也不會被貼進 HTML，於是**同構比對與屬性值比對兩張網都碰不到它**
+//      ——而「逐列動作鈕的可及名稱要併讀本列辨識欄」正是照抄時最常掉的那一件事。
+//
+//   ③ 逐檔型計數（`.file-number-group`）。取自 3-1-1，**五格逐格寫出來**：五個 `.item` 的
+//      `src`／`alt`／取值欄逐格不同，不是「重複同型節點」（§1-2 只准略那一種，屬性一律不得略）
+//      ——尤其最後那一格的 `alt` 是繁中、因此多一顆 `data-i18n-alt`，只寫第一格的話它必然掉：
 //
 //   <div class="file-number-group">
 //       <div class="item">
 //           <img src="./images/icon_XLSX_s.png" width="60" height="76" decoding="async" alt="XLSX" class="icon">
 //           <span class="number">{{ row.fileTypes.xlsx }}</span>
 //       </div>
+//       <div class="item">
+//           <img src="./images/icon_PDF_s.png" width="60" height="76" decoding="async" alt="PDF" class="icon">
+//           <span class="number">{{ row.fileTypes.pdf }}</span>
+//       </div>
+//       <div class="item">
+//           <img src="./images/icon_doc_s.png" width="60" height="76" decoding="async" alt="Word" class="icon">
+//           <span class="number">{{ row.fileTypes.word }}</span>
+//       </div>
+//       <div class="item">
+//           <img src="./images/icon_API_s.png" width="60" height="76" decoding="async" alt="API" class="icon">
+//           <span class="number">{{ row.fileTypes.api }}</span>
+//       </div>
+//       <div class="item">
+//           <img src="./images/icon_img_s.png" width="60" height="76" decoding="async" alt="圖片" data-i18n-alt="common.image" class="icon">
+//           <span class="number">{{ row.fileTypes.img }}</span>
+//       </div>
 //   </div>
+//
+//      前四格的 `alt` 是**格式代號**（XLSX／PDF／Word／API）＝識別字，不翻也不掛 key；
+//      第五格的「圖片」是普通名詞＝chrome，所以掛（§4-2 的判準是「它是不是識別字」，
+//      不是「它在不在同一組節點裡」）。
 //
 //   ④ 固定欄寬（`.fixed-layout` 掛在 `<table>` 上，不是掛在捲動外框上）。取自 3-1-6：
 //

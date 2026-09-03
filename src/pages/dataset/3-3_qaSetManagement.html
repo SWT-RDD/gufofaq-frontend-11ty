@@ -88,7 +88,7 @@ permalink: 3-3_qaSetManagement.html
         </div>
     </div>
     <div class="flex-row">
-        <button data-capability="data:write" type="button" class="button button-primary" data-toast="QA 集已建立|權限不足，無法新增——請找貴租戶的管理者開通|請填寫 QA 集名稱並選擇所屬群組|選到的群組不存在，請重新選一個|你在這個群組沒有寫入權限，請換一個群組或找管理者開通|QA 集名稱已存在|建立失敗，請稍後再試" data-i18n-data-toast="toast.createQaSet" data-toast-type="success|warning|warning|warning|warning|warning|error">
+        <button data-capability="data:write" type="button" class="button button-primary" data-toast="QA 集已建立|權限不足，無法新增——請找貴租戶的管理者開通|請填寫 QA 集名稱並選擇所屬群組|選到的群組不存在，請重新選一個|你在這個群組沒有寫入權限，請換一個群組或找管理者開通|QA 集名稱已存在|建立失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.createQaSet" data-toast-type="success|warning|warning|warning|warning|warning|error|warning">
             <img src="./images/icon_add_white.png" width="48" height="48" decoding="async" alt="" class="icon">
             <span data-i18n="qaSet.addQaSet">新增 QA 集</span>
         </button>
@@ -205,7 +205,7 @@ permalink: 3-3_qaSetManagement.html
      `tenant_id` 過濾、不依寫入群組 ⇒ 「看得到一筆、按下去 403」是真實可達的。
      能力 403 與它是兩件事：前者換一個群組也沒用，後者是找人把你加進那個群組——折成一句，
      React 端會把「換個群組就能做」畫成同一條死路。子句逐字沿用 3-1-1（同繁中同英譯，§4-2）。 #}
-{% set deleteToast = "QA 集已刪除|權限不足，無法刪除——請找貴租戶的管理者開通|這個資料集不在你可以寫入的群組裡，請找管理員把你加進該群組|對話設定有一欄不合法，請先到對話設定頁修正|刪除失敗，請稍後再試" %}
-{% set deleteToastType = "success|warning|warning|warning|error" %}
+{% set deleteToast = "QA 集已刪除|權限不足，無法刪除——請找貴租戶的管理者開通|這個資料集不在你可以寫入的群組裡，請找管理員把你加進該群組|對話設定有一欄不合法，請先到對話設定頁修正|刪除失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" %}
+{% set deleteToastType = "success|warning|warning|warning|error|warning" %}
 {% set deleteToastKey = "toast.deleteQaSet" %}
 {% include "components/delete-modal/delete-modal.html" %}

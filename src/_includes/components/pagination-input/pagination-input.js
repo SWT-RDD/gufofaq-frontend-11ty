@@ -6,7 +6,10 @@
 // total 從 wrapper 的 data-total 讀，那是業務掛點：執行期會被覆寫成真正的總筆數。
 document.addEventListener("DOMContentLoaded", function () {
     document.querySelectorAll(".pagination-input").forEach(function (wrap) {
-        var total = Number(wrap.getAttribute("data-total")) || 1;
+        // `|| 1` 會把「總數 0」與「忘了 set」一起扳成 1（同 ui/pagination 的 `total = 0` 定義態：
+    // 忘了 set 就該看得出來，不該靜默演成一頁）。缺值／空字串一律落在 0 這一態。
+    var rawTotal = wrap.getAttribute("data-total");
+    var total = (rawTotal === null || rawTotal === "") ? 0 : Number(rawTotal);
         var inputPage = wrap.querySelector(".pager-input");
         var totalPage = wrap.querySelector(".total");
         var prevBtn = wrap.querySelector(".prev");

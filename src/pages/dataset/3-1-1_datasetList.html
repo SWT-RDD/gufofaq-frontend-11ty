@@ -51,7 +51,7 @@ permalink: 3-1-1_datasetList.html
 {% set rows = [
     {
         name: "客服問答知識庫",
-        href: "3-1-3_previewDataset.html?sn=101",
+        id: 101,
         group: "管理群組",
         fileTypes: { xlsx: 20, pdf: 80, word: 12, api: 0, img: 3 },
         createdAt: "2025/11/02 10:20",
@@ -61,7 +61,7 @@ permalink: 3-1-1_datasetList.html
     },
     {
         name: "產品規格文件集",
-        href: "3-1-3_previewDataset.html?sn=102",
+        id: 102,
         group: "研發群組",
         fileTypes: { xlsx: 0, pdf: 20, word: 5, api: 1, img: 0 },
         createdAt: "2025/12/15 14:33",
@@ -71,7 +71,7 @@ permalink: 3-1-1_datasetList.html
     },
     {
         name: "常見問題彙整",
-        href: "3-1-3_previewDataset.html?sn=103",
+        id: 103,
         group: "業務群組",
         fileTypes: { xlsx: 1, pdf: 4, word: 0, api: 0, img: 0 },
         createdAt: "2026/01/08 08:52",
@@ -81,7 +81,7 @@ permalink: 3-1-1_datasetList.html
     },
     {
         name: "法規彙編",
-        href: "3-1-3_previewDataset.html?sn=3",
+        id: 3,
         group: "管理群組",
         fileTypes: { xlsx: 6, pdf: 31, word: 2, api: 0, img: 1 },
         createdAt: "2025/11/18 16:04",
@@ -91,7 +91,7 @@ permalink: 3-1-1_datasetList.html
     },
     {
         name: "2026 新制問答",
-        href: "3-1-3_previewDataset.html?sn=12",
+        id: 12,
         group: "業務群組",
         fileTypes: { xlsx: 3, pdf: 0, word: 0, api: 0, img: 0 },
         createdAt: "2026/02/20 09:47",
@@ -128,8 +128,13 @@ permalink: 3-1-1_datasetList.html
             {% for row in rows %}
             <tr>
                 <td>
-                    {# 逐列辨識欄（§4）：這一列的刪除鈕（圖示鈕，可見字面在 .sr-only）指到它。 #}
-                    <a href="{{ row.href }}" id="datasetRowName-{{ loop.index }}" title="{{ row.name }}" class="link-file">{{ row.name }}</a>
+                    {# 逐列辨識欄（§4）：這一列的刪除鈕（圖示鈕，可見字面在 .sr-only）指到它。
+                       **逐列 id 一律由資料集 id 組，不用 `loop.index`**（§6：位置不是身分）——這張清單
+                         刪得掉列，刪一筆之後每一顆位置鍵都往前頂一格，於是 `aria-labelledby` 指到的
+                         是**別一筆**的名字，而畫面上完全看不出來（報讀器唸得出名字、只是唸錯人）。
+                       `href` 也由同一顆 id 推導：把 `?sn=101` 另存一欄就是同一個號碼在同一列烤兩份
+                         （§3-2），而兩份分岔時連結會指到另一個資料集。 #}
+                    <a href="3-1-3_previewDataset.html?sn={{ row.id }}" id="datasetRowName-{{ row.id }}" title="{{ row.name }}" class="link-file">{{ row.name }}</a>
                 </td>
                 <td>{{ row.group }}</td>
                 <td>
@@ -164,12 +169,13 @@ permalink: 3-1-1_datasetList.html
                 <td class="text-center">{{ row.count }} <span data-i18n="common.recordsUnit">筆</span></td>
                 <td>
                     <div class="btn-group">
-                        {# 這顆刪除鈕**刻意沒有列鍵屬性**：它要刪的是哪一筆，由「按下它的那一列」
-                             本身決定——React 端從 map 的 row 閉包直接取得，不必再往 DOM 上印一份。
-                             3-1-3 的檔案列不同：那一頁的 `data-filesn`／`data-filename` 是**業務掛點**，
-                             逐列動作要靠它們認出這一列是哪個檔（見該頁「兩顆列動作」那一段），
-                             所以印在標籤上。兩頁不對稱是刻意的，不是這一頁漏掉了。 #}
-                        <button type="button" id="datasetDelete-{{ loop.index }}" aria-labelledby="datasetRowName-{{ loop.index }} datasetDelete-{{ loop.index }}" class="button-icon no-bg size-sm delete" title="刪除" data-i18n-title="action.delete">
+                        {# 這顆刪除鈕**沒有另外的 `data-*` 列鍵**：它要刪的是哪一筆，由「按下它的那一列」
+                             本身決定——React 端從 map 的 row 閉包直接取得，而這一列的身分已經印在
+                             `id`／`aria-labelledby` 上（`datasetDelete-<資料集 id>`）。
+                             3-1-3 的檔案列多印一份 `data-filesn`／`data-filename`，是因為那一頁的
+                             逐列動作（下載）要讀**檔名與型別**才決定得了行為（見該頁「兩顆列動作」那一段）；
+                             這裡沒有那種需求。兩頁不對稱是刻意的，不是這一頁漏掉了。 #}
+                        <button type="button" id="datasetDelete-{{ row.id }}" aria-labelledby="datasetRowName-{{ row.id }} datasetDelete-{{ row.id }}" class="button-icon no-bg size-sm delete" title="刪除" data-i18n-title="action.delete">
                             <span class="sr-only" data-i18n="action.delete">刪除</span>
                         </button>
                     </div>
@@ -192,16 +198,17 @@ permalink: 3-1-1_datasetList.html
 </div>
 
 {# 分頁：`ui/pagination` 是 data-total 驅動的 js render，直接沿用。
-     total＝資料集清單的**伺服器總筆數**（示範列只畫幾筆版型，不是把總數畫完）。
-     115 / 20 ＝ 6 頁，而省略號的門檻是 `visible + 2`
-     （ui/pagination 的 pagination.js：`totalPages <= VISIBLE + 2` 就全部顯示）——桌機
-     `--pagination-visible: 5`、門檻 `visible + 2` ⇒ **≥8 頁**才出省略號（7 頁仍是全部列出），
-     **這一頁桌機是「頁數少到全部列出」那一態**；≤768px 的 `--pagination-visible` 是 3 ⇒ 門檻 5
-     ⇒ ≥6 頁就出省略號，6 頁在手機上就看得到。
-     ⚠️ **不可以用「total 挑大一點好讓省略號露出來」當理由挑這個數字**：這一頁桌機一顆省略號都
-     沒有，那條理由在這裡是假的，而且 total 的來源本來就不是版面需求——它是那一層真正的總筆數。
-     滑動視窗那一態由 1-1-3（49 頁）與元件庫頁（12 頁，左右兩顆都演得到）負責。 #}
-{% set total = 115 %}
+     **total 的量綱是「這個租戶有幾個 kind=file 的資料集」**（`list_datasets` 的總筆數），
+     不是「某一個資料集裡有幾個檔」——同一份檔案上方的 115 是後者（第一列 fileTypes 的加總，
+     ＝3-1-3 檔案列的 total）。§6：`total` 的分頁豁免只免除「與同頁示範列數的帳目核對」，
+     不免除「它算的是哪一種東西」；同一份檔案裡同一個數值不得同時是兩種量綱。
+     值取自跨頁的資料集目錄正本（3-5 的 `healthScanDatasets`）裡 kind=file 那一族——
+     5-10 的 `coverageDatasets` 逐字寫著「kind=file 的每一個都要列」，那份清單就是這裡的母體，
+     兩邊必須同數。畫大一點會讓這一頁宣告「本租戶有一百多個資料集」，而 3-5／5-10 的下拉
+     同時宣告「全部就這幾個」（§6 跨頁目錄一份正本）。
+     ⚠️ **不可以用「total 挑大一點好讓省略號露出來」當理由挑這個數字**：滑動視窗與省略號那一態
+     由 1-1-3（49 頁）與元件庫頁（12 頁，左右兩顆都演得到）負責，這一頁演的是「一頁就列完」。 #}
+{% set total = 5 %}
 {# 每頁筆數與頁碼列吃同一個 perPage（§6 同源：選擇器顯示 20、頁碼卻按 10 算總頁數就是自打架）。 #}
 {% set perPage = 20 %}
 {% include "components/pager-row/pager-row.html" %}
@@ -252,7 +259,7 @@ permalink: 3-1-1_datasetList.html
      權限」）。同一道守衛、兩種主詞，不是同一句話。
      ⚠️ **「逐字共用」是一句可驗證的斷言，不是修辭**：寫下它之前要真的能把每一處的那一段貼出來
      比對，比不出來就改寫成「同一族」（§3-2：斷言要能被一行可貼出的引文支撐）。 #}
-{% set deleteToast = "已刪除|權限不足，無法刪除——請找貴租戶的管理者開通|這個資料集不在你可以寫入的群組裡，請找管理員把你加進該群組|對話設定有一欄不合法，請先到對話設定頁修正|刪除資料集失敗" %}
+{% set deleteToast = "已刪除|權限不足，無法刪除——請找貴租戶的管理者開通|這個資料集不在你可以寫入的群組裡，請找管理員把你加進該群組|對話設定有一欄不合法，請先到對話設定頁修正|刪除資料集失敗|此功能尚未對貴租戶開通，請聯絡平台管理員" %}
 {% set deleteToastKey = "toast.deleteDataset" %}
-{% set deleteToastType = "success|warning|warning|warning|error" %}
+{% set deleteToastType = "success|warning|warning|warning|error|warning" %}
 {% include "components/delete-modal/delete-modal.html" %}

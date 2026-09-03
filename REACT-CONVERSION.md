@@ -150,8 +150,8 @@
   解決不了名稱相撞（2-2-3 的 A／B 兩側跑同一條正典管線，兩邊的「序號 1 QA 直答比對 展開表格」
   逐字相同）。它的型別是**一個既有節點的 id 字串**（側別標題、區塊標題），不是要渲染的文字——
   React 端照樣是一顆 `ownerId?: string` prop，接進同一條 `aria-labelledby` 鏈的最前面。
-  正典：`step-flow` 的 `stepFlowOwnerId`、`priority-table` 的 `priorityTableOwnerId`、
-  `ui/accordion` 的 `accordionOwnerId`、`ui/link-modal` 的 `linkModalOwnerId`。
+  **現況有哪幾支不在這裡列舉**（GUIDELINE §4 明文：列舉注定落後）——反查
+  `grep -rho '[a-zA-Z]*OwnerId' src/_includes src/pages | sort -u`，逐支的語意見 README 的「元件使用一覽」。
 - **型態參數（`<a>` ⇄ `<button>`）兩支都要留**。切版用 `stepNextAction`／`uploadCardAction` 決定
   外殼標籤：純換頁那一支是 `<a href>`，送 API 那一支是 `<button>` ＋ `data-toast` ＋ 閘門
   （判準見 GUIDELINE §4）。**不要在 React 端「統一成 button 再自己導頁」**——那會把純換頁那幾頁的

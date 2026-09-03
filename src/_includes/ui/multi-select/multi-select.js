@@ -10,6 +10,51 @@
 // i18n：placeholder／空狀態／移除鈕標籤由 JS 產生，故走 GufoI18n.t(key, 繁中原文)，並在 gufo:langchange 時重畫。
 //   選項標籤同理：`<option>` 內放不進第二個節點，故「資料＋狀態後綴」（如「舊版文件搜尋（停用中）」）
 //   由 data-suffix／data-suffix-key 兩個槽組出來，見 optionLabel。
+//
+// **生產契約**（§1-2）：`multi-select.html` 是**展示片段**（只演長相與互動），生產實例還帶著
+// 展示片段沒有的可及名稱綁定——照片段抄就會做出一排報讀器唸不出名字的多選。兩型，各取自一個實例：
+//
+// ① 名稱來自 `<label for>`，另有一句可見提示 ⇒ `aria-describedby` 指它（5-2 的「綁定術語表」）：
+//
+//   {% set glossaryTableCatalog = [
+//       { id: 4, name: "人資術語" }
+//   ] %}
+//   {% set glossaryBindIds = [4] %}
+//   <div class="form-group row mobile-col">
+//       <div class="label label-md">
+//           <label for="glossaryTablesSelect" class="control-label" data-i18n="settings.glossaryTables">綁定術語表</label>
+//       </div>
+//       <div class="field col-12-sm">
+//           <select id="glossaryTablesSelect" class="form-control multiSelect js-glossary-tables" multiple="multiple" aria-describedby="glossaryBindHint" data-placeholder="請選擇" data-placeholder-key="common.pleaseSelect">
+//               {% for t in glossaryTableCatalog %}<option value="{{ t.id }}"{% if t.id in glossaryBindIds %} selected{% endif %}>{{ t.name }}</option>{% endfor %}
+//           </select>
+//           <span class="text-gray" id="glossaryBindHint"><span data-i18n="settings.aliasBindLimitPrefix">一個設定檔最多綁 </span><span>30</span><span data-i18n="common.unitItems">個</span></span>
+//       </div>
+//   </div>
+//
+// ② 標籤那一格裡除了名字還有一顆 ⓘ 鈕 ⇒ **不能用 `<label for>`**（`for` 會把整格的字都算進
+//    可及名稱，把「出口套用說明」黏進欄位名），改成具名 `<span>` ＋ `aria-labelledby`（5-2 的「出口套用」）：
+//
+//   <div class="label label-md">
+//       <span id="aliasApplyOutputLabel" class="control-label" data-i18n="settings.aliasApplyOutput">出口套用</span>
+//       <button type="button" class="info-btn" title="出口套用說明" data-i18n-title="settings.aliasApplyOutputInfo" data-open-modal="aliasOutputInfoModal">
+//           <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+//           <span class="sr-only" data-i18n="settings.aliasApplyOutputInfo">出口套用說明</span>
+//       </button>
+//   </div>
+//   <div class="field col-12-sm">
+//       <select id="aliasApplyOutputSelect" class="form-control multiSelect js-alias-apply-output" multiple="multiple" aria-labelledby="aliasApplyOutputLabel" data-placeholder="請選擇" data-placeholder-key="common.pleaseSelect">
+//           {% for t in aliasTableCatalog %}<option value="{{ t.id }}"{% if t.id in aliasApplyOutputIds %} selected{% endif %}>{{ t.name }}</option>{% endfor %}
+//       </select>
+//   </div>
+//
+// 抄的時候：
+//   ⓐ **名稱與說明是兩件事**：名字走 `<label for>` 或 `aria-labelledby` 二選一（型①／型②），
+//      旁邊那句可見提示走 `aria-describedby`。把提示塞進名稱，報讀器會把整段限制當成欄位名唸。
+//   ⓑ **`data-placeholder` ＋ `data-placeholder-key` 成對**：本檔用 `GufoI18n.t(key, 繁中)` 畫
+//      placeholder，只給繁中那一顆的話英文模式那一格永遠是繁中（§4-2）。
+//   ⓒ `{% set %}` 的目錄與已選 id 陣列一起抄：`set` 是頁面全域，缺那兩行 `<option>` 整批不渲染，
+//      而畫面上就只是一顆空的多選（§1-2）。
 document.addEventListener("DOMContentLoaded", function () {
     var uid = 0;
 

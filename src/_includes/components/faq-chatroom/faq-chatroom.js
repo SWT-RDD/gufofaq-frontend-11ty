@@ -3,9 +3,9 @@
 // 讚/倒讚要先預選 like/dislike 再開窗，只能命令式呼叫 rating-modal 匯出的 openRating()（§5）。
 // 分享是**條件開窗**（先送 `POST /public/share` 拿 token，成功才開窗）：依 §5 不掛 data-open-modal，
 // 觸發鈕保留 `.js-share-message` ＋ 自己的 `data-toast`，開窗那一段由業務 js 接，這裡不寫。
-// 訊息複製：前台這一顆 copyBtn **真的寫剪貼簿**（clipboard API ＋ execCommand 退路），
+// 訊息複製：前台這一顆 copyBtn **真的寫剪貼簿**（`window.GufoClipboard.write`，見 ui/clipboard），
 // 與後台 components/chatroom 那顆「只彈 toast」的同名鈕不是同一件事。寫剪貼簿是純前端互動，
-// 切版當場就要做得到（§5）；toast 由 data-toast 委派彈出，這裡只負責寫入。
+// 切版當場就要做得到（§5）；toast 由 data-toast 委派彈出，這裡只負責挑出**要複製哪一段文字**。
 // `common.copied` 是**兩段**（已複製／複製失敗）：委派是「每點一次輪播下一段」的原型演出
 // （ui/toast 檔頭），不是依這裡的實際成敗分支——**React 那一側必須依實際結果挑段**
 // （gufofaq-saas `apps/web/lib/hooks/useCopy.ts` 的 catch 走第 2 段），照抄輪播就會在複製成功時彈紅字。
@@ -39,23 +39,9 @@ document.addEventListener("DOMContentLoaded", function () {
                 var wrap = copy.closest(".message-wrap");
                 var msg = wrap && wrap.querySelector(".robot-msg");
                 if (!msg) return;
-                var text = msg.textContent.trim();
-                if (navigator.clipboard && navigator.clipboard.writeText) {
-                    navigator.clipboard.writeText(text).catch(function () { fallbackCopy(text); });
-                } else {
-                    fallbackCopy(text);
-                }
+                window.GufoClipboard.write(msg.textContent.trim());
             });
         });
     });
 
-    // 剪貼簿退路：file:// 或拿不到 clipboard 權限時，改用 execCommand 複製
-    function fallbackCopy(text) {
-        var area = document.createElement("textarea");
-        area.value = text;
-        document.body.appendChild(area);
-        area.select();
-        try { document.execCommand("copy"); } catch (err) { /* 複製失敗即無聲，toast 已由 data-toast 演出 */ }
-        document.body.removeChild(area);
-    }
 });

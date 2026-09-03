@@ -17,9 +17,19 @@ permalink: 5-3_statsModule.html
                                 `distribution`→chart1、`ranking`→chart2、`weeks`／`series`→chart3。
      GET /settings/attribution `AttributionOut`（product）——`slots`／`available_slots`
      PUT /settings/attribution  同上（`require_capability("settings","write")`）
-   **`ranking` 那張表由業務 js 產，切版只留容器**（`#chart2-ranking`）：表頭與列都要等查詢結果
-     回來才知道有幾欄幾列。
-     **這張表是五欄，沒有「建議」欄**：`suggestion` 在 product 的 `RankItem` 上 grep 不到——
+   **`ranking` 那張表的欄由切版定、列由業務 js 填**（容器 `#chart2-ranking`）：列數要等查詢結果
+     回來才知道，但**有幾欄、每一欄叫什麼**是切版拍的板——五欄逐個對回 product 的 `RankItem`：
+     `rank`／`source`／`count`／`contribution`／`current_priority`。
+     欄名寫進 markup、不留給業務 js 造字串，理由有二：① 那五個名字是出貨文案，繁中正本在切版、
+     英文在 `src/i18n/en.json`（§4-2）——由 js 造字串等於讓它們活在字典之外，英文模式那一列永遠是繁中；
+     ② `{% for %}` 裡那一列就是 React 的轉換契約（§7）：哪一格靠右、空清單畫哪一句，都在這裡定案。
+     **`count` 與 `contribution` 要並列**：只有百分比的話，「排行各列次數的總和＝`totals.counted`」
+     這條恆等式（見下方指標列那一段）在畫面上就驗不了，而那是「有沒有被靜默截斷」唯一看得出來的地方
+     ——`RankItem` 把兩個欄位並列的理由逐字就是這一條。
+     **`source` 與 `current_priority` 兩格不掛 data-i18n**：值是上游**已經翻好**的字串
+     （`_priority_label`、合併列與未標註列的標籤都在 product 那一側跑過 `i18n.t`），
+     前端再翻一次只會翻不到、掉成 key 本身。
+     **沒有「建議」欄**：`suggestion` 在 product 的 `RankItem` 上 grep 不到——
      不是「恆為 None」而是**欄位本身不存在**。判準的差別很重要：欄位還在 schema 上只是沒填，
      可以先畫著等它有值；欄位根本不在，畫出來的那一格就永遠是「—」，而標題掛上「與優先續建議」
      等於替一個上游給不出來的東西做承諾（§4：出貨文案不可以替不存在的東西做承諾）。
@@ -27,8 +37,7 @@ permalink: 5-3_statsModule.html
      （REACT-CONVERSION：key 是識別碼，已被 React／e2e 鏡射）。
      也不走「保留該欄 ＋ 一句『這一欄上游不再提供』」那條：那是把一欄永久的空白留在報表上再
      花一句話解釋它，而報表的每一欄都該是量得到的東西（同本頁指標列「報表要能自證它算的
-     是什麼」那一條）。React 端 `renderRanking()` 一樣是五欄，字典與 `REACT_ONLY` 都沒有
-     `stats.suggestion`。
+     是什麼」那一條）。
 
    歸因槽值域：product 的 `ATTRIBUTION_SLOT_KEYS`＝`attribution_slot_keys(SLOTS)`。
      它**排掉的是五類角色**、不是兩個槽名：`privileges`／`containsAny`／`filterBool`／`search`／
@@ -150,7 +159,7 @@ permalink: 5-3_statsModule.html
          選得到，會變成一顆按了什麼都不會發生的鈕（§5 ④）。 #}
     <div class="flex-row align-items-center justify-content-center gap-16">
         <button type="button" class="button button-border js-filter-clear" data-i18n="action.clear">清除</button>
-        <button data-capability="settings:read" type="button" class="button button-primary" data-toast="正在查詢資料...|權限不足，無法查詢——請找貴租戶的管理者開通|查詢成功|時間區間不正確（起訖需成對、開始須早於結束與現在、且在一年內、範圍不超過 365 天）|這段期間的資料量超過單次上限，請縮小時間範圍|權限不足：依歸因維度分群另外需要「資料集檢視」能力——請找貴租戶的管理者開通|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.queryStatsAttribution" data-toast-type="info|warning|success|warning|warning|warning|error" data-i18n="action.query">查詢</button>
+        <button data-capability="settings:read" type="button" class="button button-primary" data-toast="正在查詢資料...|權限不足，無法查詢——請找貴租戶的管理者開通|查詢成功|時間區間不正確（起訖需成對、開始須早於結束與現在、且在一年內、範圍不超過 365 天）|這段期間的資料量超過單次上限，請縮小時間範圍|權限不足：依歸因維度分群另外需要「資料集檢視」能力——請找貴租戶的管理者開通|載入資料失敗，請重新整理頁面|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.queryStatsAttribution" data-toast-type="info|warning|success|warning|warning|warning|error|warning" data-i18n="action.query">查詢</button>
     </div>
 </div>
 
@@ -191,7 +200,42 @@ permalink: 5-3_statsModule.html
 <div class="flex-row gap-24 mobile-column mt-16">
     <div class="chart-box">
         <div class="chart-title" data-i18n="settings.contributionRanking">貢獻度排行</div>
-        <div class="chart chart-auto" id="chart2-ranking"></div>
+        {# 列來自查詢結果，靜態稿手上沒有結果，故 `rankingRows` 是空陣列——渲染出來的是下面
+             `{% else %}` 那一列，與本頁其他每一塊同樣是「還沒查」的長相（指標列的 `-`／`0`、
+             兩張空 `<canvas>`）。**填示範列反而會讓這一頁自打架**：指標列的「已計入」恆等於
+             排行各列次數的總和，那一格現在是佔位的 0。
+           **列的 markup 照樣寫在這裡**：它是這五欄唯一有 i18n key 的地方，也是 React 的轉換契約。
+           `tabindex="0"`：`.chart-auto` 是 `overflow-x: auto` 的捲動容器，鍵盤使用者要進得去才捲得動
+             （同各頁 `.table-container.scrollTable` 的做法）。 #}
+        {% set rankingRows = [] %}
+        <div class="chart chart-auto" id="chart2-ranking" tabindex="0">
+            <table class="default-table">
+                <thead>
+                    <tr>
+                        <th data-i18n="stats.rank">排名</th>
+                        <th data-i18n="stats.source">來源</th>
+                        <th class="text-right" data-i18n="stats.retrievalCount">取用次數</th>
+                        <th class="text-right" data-i18n="stats.contribution">貢獻度</th>
+                        <th data-i18n="stats.currentPriority">目前優先度</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {# 兩個數字欄靠右：同一欄的位數要對齊才比得出大小。
+                         `%` 貼著數字不留空白（§4-2 的間距規則管的是中文與半形之間，不是數字與單位）。 #}
+                    {% for row in rankingRows %}
+                    <tr>
+                        <td>{{ row.rank }}</td>
+                        <td>{{ row.source }}</td>
+                        <td class="text-right">{{ row.count }}</td>
+                        <td class="text-right">{{ row.contribution }}%</td>
+                        <td>{{ row.priority }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="5" class="text-center text-gray" data-i18n="stats.noUsageData">還沒有可以排名的取用紀錄。查詢送出前這裡就是這一行；送出之後它只會在這段期間一次取用都沒有時留著——換一段時間或換一個統計維度再查一次。</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
         {% set chartDescId = "chart2" %}
         {% set chartDescRow = false %}
         {% include "ui/chart-desc/chart-desc.html" %}
@@ -277,8 +321,8 @@ permalink: 5-3_statsModule.html
     </div>
     <div class="flex-row justify-content-end">
         <button data-capability="settings:write" type="button" class="button button-primary js-save-attribution"
-            data-toast="歸因維度已儲存|權限不足，無法儲存——請找貴租戶的管理者開通|儲存失敗，請稍後再試"
-            data-i18n-data-toast="toast.saveAttribution" data-toast-type="success|warning|error"
+            data-toast="歸因維度已儲存|權限不足，無法儲存——請找貴租戶的管理者開通|儲存失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員"
+            data-i18n-data-toast="toast.saveAttribution" data-toast-type="success|warning|error|warning"
             data-i18n="action.save">儲存</button>
     </div>
 </div>

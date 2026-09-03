@@ -52,6 +52,9 @@ permalink: login.html
                      （鎖多久由旁邊那顆 live region 填的秒數說），以及「如果不是你本人操作請聯絡管理者」
                      ——後者是這一頁唯一給得出來的求救路徑。
                      `|` 是索引契約：四段的段數與順序（繁中／英譯／type 三份對齊）不得更動。 #}
+                {# **這顆鈕標不出授權軸**（§4；同時登記在測試的 `NO_GATE`）：它是**認證之前**的那一顆
+                     ——這時還沒有主體，能力／租戶管理員／平台角色都是登入之後才判得出來的東西。
+                     它不是「唯讀所以免標」（登入會寫 session、會落稽核）：是**宣告不出來**。 #}
                 <button type="button" class="button button-primary login-btn" aria-describedby="loginRetryHint" data-toast="登入成功！|帳號已停用，請聯絡管理者|這個帳號近期嘗試次數過多，已暫時鎖定；若不是你本人操作，請聯絡管理者|登入時發生錯誤，請稍後再試" data-i18n-data-toast="toast.login" data-toast-type="success|warning|warning|error" data-i18n="auth.login">登入</button>
                 {# 這一句在畫面上回答「我沒有帳號怎麼辦」：這是一個邀請制系統（product 沒有任何自助
                      註冊端點——帳號一律由平台或租戶管理者建立），而登入頁除了它之外只有「忘記密碼」

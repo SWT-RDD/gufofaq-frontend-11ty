@@ -109,7 +109,7 @@
                             {% if row.state == "revoked" %}<span class="text-gray" data-i18n="widget.revoked">已撤銷</span>
                             {% elif row.state == "expired" %}<span class="text-gray" data-i18n="share.stateExpired">已過期</span>
                             {% else %}<span class="text-bold" data-i18n="share.stateActive">生效中</span>{% endif %}
-                            <button type="button" class="button button-border button-sm shareBtn" data-toast="連結已複製!|複製失敗，請手動選取後複製" data-i18n-data-toast="modals.linkCopied" data-toast-type="success|error" aria-labelledby="shareRowName-{{ row.id }} shareCopyLabel-{{ row.id }}"><span id="shareCopyLabel-{{ row.id }}" data-i18n="action.copy">複製</span></button>
+                            <button type="button" class="button button-border button-sm shareBtn" data-toast="連結已複製|複製失敗，請手動選取後複製" data-i18n-data-toast="modals.linkCopied" data-toast-type="success|error" aria-labelledby="shareRowName-{{ row.id }} shareCopyLabel-{{ row.id }}"><span id="shareCopyLabel-{{ row.id }}" data-i18n="action.copy">複製</span></button>
                             <button type="button" class="button button-red button-sm js-revoke-share"{% if row.state == "revoked" %} disabled{% endif %} aria-labelledby="shareRowName-{{ row.id }} shareRevokeLabel-{{ row.id }}"><span id="shareRevokeLabel-{{ row.id }}" data-i18n="action.revoke">撤銷</span></button>
                         </div>
                         {% else %}

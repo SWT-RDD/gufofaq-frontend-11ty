@@ -77,17 +77,25 @@
                 <td>
                     <div class="form-group">
                         <div class="field">
-                            {# .priority-select 是**業務掛點**：接手的程式用它做 change 委派，
-                                 讀到新值後配上該列的 data-folder-sn 送出。全站 scss 不得引用（§5）。#}
+                            {# .priority-select 是**業務掛點**：接手的程式用它做 change 委派，讀到新值後配上
+                                 該列的 `data-folder-sn` 送出——`PUT /retrieval/profiles/{no}` 的 `dataset_tiers`
+                                 （product 的 `save_profile`）。全站 scss 不得引用（§5）。
+                               **閘門標在這顆 select 上**：§4 要求標在「觸發寫入的那個控制項」，而這條路徑上
+                                 沒有鈕——改動本身就是送出。
+                               **它不掛 data-toast，失敗落在頁面上那條紅字**（5-2 頁首 `saveConfigError` 的
+                                 `role="alert"`）：toast 說的是「剛剛按的那顆鈕怎麼了」，而這是**值載體**，
+                                 同一批下拉常常連改好幾列，逐列各彈一顆 toast 會互相蓋掉；紅字留在畫面上，
+                                 而且能原樣帶出後端指名的那一段 detail。同頁「啟用／停用全部意圖判斷」是鈕、走 toast，
+                                 兩條出口不混用——混用的話同一次失敗會同時彈 toast 與印紅字，等於兩套說法。#}
                             {% if tierless %}
-                            <select class="form-control select-sm singleSelect priority-select" aria-labelledby="{{ priorityTableOwnerId }} priorityCat-{{ priorityTableInstance }}-{{ row.sn }} priorityHead-{{ priorityTableInstance }}">
+                            <select data-capability="settings:write" class="form-control select-sm singleSelect priority-select" aria-labelledby="{{ priorityTableOwnerId }} priorityCat-{{ priorityTableInstance }}-{{ row.sn }} priorityHead-{{ priorityTableInstance }}">
                                 <option value="" data-i18n="common.pleaseSelect">請選擇</option>
                                 {# 值沿用「高優先級」＝使用中：agent 模式不分層，但切回傳統時分層資料要還在（見檔頭）。 #}
                                 <option value="高優先級" data-i18n="comp.inUse"{% if row.priority != "不使用" and row.priority %} selected{% endif %}>使用中</option>
                                 <option value="不使用" data-i18n="comp.doNotUse"{% if row.priority == "不使用" %} selected{% endif %}>不使用</option>
                             </select>
                             {% else %}
-                            <select class="form-control select-sm singleSelect priority-select" aria-labelledby="{{ priorityTableOwnerId }} priorityCat-{{ priorityTableInstance }}-{{ row.sn }} priorityHead-{{ priorityTableInstance }}">
+                            <select data-capability="settings:write" class="form-control select-sm singleSelect priority-select" aria-labelledby="{{ priorityTableOwnerId }} priorityCat-{{ priorityTableInstance }}-{{ row.sn }} priorityHead-{{ priorityTableInstance }}">
                                 <option value="" data-i18n="common.pleaseSelect">請選擇</option>
                                 <option value="高優先級" data-i18n="comp.highPriority"{% if row.priority == "高優先級" %} selected{% endif %}>高優先級</option>
                                 <option value="中優先級" data-i18n="comp.mediumPriority"{% if row.priority == "中優先級" %} selected{% endif %}>中優先級</option>

@@ -120,7 +120,7 @@ test("§5 寫死 .hidden 的分支文案，至少要有一處看得見（否則�
     const { hits, visible, hiddenNodes, roots } = hiddenScan(distHtml.map((f) => ({ f: `dist/${f}`, html: distDoc(f) })));
     // 空轉守門：母體（可見 key）與被查的東西（.hidden 節點）任一塌掉，這條都會靜靜全綠
     assert.ok(visible.size >= 2056, `dist 只掃到 ${visible.size} 顆看得見的 i18n key —— 屬性家族的解析壞了？這條測試在空轉`);
-    assert.ok(hiddenNodes >= 33, `dist 只掃到 ${hiddenNodes} 個 .hidden 節點 —— 祖先鏈掃描在空轉`);
+    assert.ok(hiddenNodes >= 43, `dist 只掃到 ${hiddenNodes} 個 .hidden 節點 —— 祖先鏈掃描在空轉`);
     assert.ok(roots.length >= 33, `只找到 ${roots.length} 個 .hidden 根 —— 祖先鏈配對壞了？這條測試在空轉`);
     // 負控：逐行掃描看不到的三種形狀，各一。good 樣本擋反方向（同一顆 key 另有可見處、兩族豁免）。
     const run = (s) => hiddenScan([{ f: "<probe>", html: s }]).hits;

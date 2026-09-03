@@ -8,7 +8,28 @@
 //   ③ `.button` 的 `line-height` 是 `normal` 不是 body 的 1.375（理由見該行行內註解）。
 //   ④ `.button .icon { width/height/object-fit }` **不在本檔**——已升格成全域工具
 //      `scss/_utilities.scss` 的 `.icon`（同一份宣告全站共用，不再逐元件抄一份）。
-//   （**生產契約**見檔尾「生產形狀」一節。）
+//
+// **生產契約**（§1-2）：`button.html` 是展示片段（只示範外觀變體），而生產的每一顆鈕還要帶
+// 片段上看不到的東西——照片段抄一定會漏掉整組 §4／§5 的硬規則。**兩型逐字取自生產實例**
+// （代稱不算契約：`js-save-x`／`toast.saveX` 這種抄下去是一顆指不到任何東西的 hook 與一顆
+// 字典裡沒有的 key，而契約的用途正是「整段照抄就對」）：
+//
+// ① 送 API 的鈕（§5 ③）——取自 5-2 的「儲存欄位命名」：
+//
+//   <button data-capability="settings:write" type="button" class="button button-primary js-save-field-labels" data-toast="欄位命名已儲存|權限不足，無法儲存——請找貴租戶的管理者開通|欄位鍵不合法|儲存失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.saveFieldLabels" data-toast-type="success|warning|warning|error|warning" data-i18n="settings.saveFieldLabels">儲存欄位命名</button>
+//
+// ② 圖示鈕（沒有可見字面）：可及名稱另給，且住在 `{% for %}` 裡時要併讀列脈絡——取自 3-1-1 的逐列刪除：
+//
+//   <button type="button" id="datasetDelete-{{ row.id }}" aria-labelledby="datasetRowName-{{ row.id }} datasetDelete-{{ row.id }}" class="button-icon no-bg size-sm delete" title="刪除" data-i18n-title="action.delete">
+//       <span class="sr-only" data-i18n="action.delete">刪除</span>
+//   </button>
+//
+// ③ 純換頁的「鈕」是 `<a href>`、不是 `<button>`（§4 判準：它打不打 API）；沒有去向就不要畫（§5）。
+//
+// 抄的時候一個都不能省：`type="button"`（§4 不得省略）、`data-i18n`（可見字面）或 `.sr-only` ＋
+// `data-i18n-title`（圖示鈕）、授權四軸、`data-toast` 三件套（段數與 `data-toast-type` 逐段對齊）。
+// **契約要住在檔頭**：契約檢查讀的是「第一條非註解程式碼之前的那一段」，寫在檔尾等於那一份
+// 正本不受任何一條規則檢查——上面那兩顆代稱能存活這麼久，原因就是它們從來沒有被看過。
 //   ⑤ `.button-icon` 的圖示畫在 `::before` ＋ `icon-mask()`，不用 `background-image`：顏色因此交給
 //      語意 token，換色（hover／深色模式）不必再存一份換過色的圖檔。
 //   ⑥ tooltip 的顯示條件**不在本檔**——由 `ui/tooltip` 自己的 `.has-tooltip` 承載（§4：外觀覆寫要改成
@@ -174,7 +195,7 @@
     }
 
     &.watch::before {
-        @include icon-mask("../images/icon_watch_blacck.png", var(--text), 24px 24px);
+        @include icon-mask("../images/icon_watch_black.png", var(--text), 24px 24px);
     }
 
     &.edit::before {
@@ -242,21 +263,3 @@
         height: 24px;
     }
 }
-
-// ───────── 生產形狀（§1-2 生產契約） ─────────
-//
-// `button.html` 是展示片段（只示範外觀變體），而生產的每一顆鈕還要帶片段上看不到的東西——
-// 照片段抄一定會漏掉整組 §4／§5 的硬規則：
-//
-//   ① 送 API 的鈕（§5 ③）：
-//     <button data-capability="settings:write" type="button" class="button button-primary js-save-x" data-toast="已儲存|權限不足，無法儲存——請找貴租戶的管理者開通|儲存失敗，請稍後再試" data-i18n-data-toast="toast.saveX" data-toast-type="success|warning|error" data-i18n="action.save">儲存</button>
-//
-//   ② 圖示鈕（沒有可見字面）：可及名稱另給，且住在 `{% for %}` 裡時要併讀列脈絡：
-//     <button type="button" id="xDelete-{{ row.id }}" aria-labelledby="xRowName-{{ row.id }} xDelete-{{ row.id }}" class="button-icon no-bg size-sm delete" title="刪除" data-i18n-title="action.delete">
-//         <span class="sr-only" data-i18n="action.delete">刪除</span>
-//     </button>
-//
-//   ③ 純換頁的「鈕」是 `<a href>`、不是 `<button>`（§4 判準：它打不打 API）；沒有去向就不要畫（§5）。
-//
-// 抄的時候一個都不能省：`type="button"`（§4 不得省略）、`data-i18n`（可見字面）或 `.sr-only`＋
-// `data-i18n-title`（圖示鈕）、授權四軸、`data-toast` 三件套（段數與 `data-toast-type` 逐段對齊）。

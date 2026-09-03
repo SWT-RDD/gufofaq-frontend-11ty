@@ -189,7 +189,7 @@ permalink: 2-2-1_singleTest.html
         <span class="text-gray" id="promptMaxLenHint"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-prompt-max-len">20000</span><span data-i18n="common.unitChars"> 字</span></span>
     </div>
 
-    {# 動作列（三鈕同排，使用者定案「套用為正式設定移到下面與其他按鈕一起排列」）：
+    {# 動作列：三顆鈕同排在設定卡底部（回復儲存的設定／儲存提示詞版本／套用為正式設定）。
          回復儲存的設定＝直送 API 重載已儲存設定（data-toast 列結果）＋自創 hook class js-restore-saved；
          儲存提示詞版本＝寫入提示詞管理最新版本（沿 5-4-1 四段結果 toast）；
          套用為正式設定＝寫共用檢索參數＋設前台預設。**這一頁只有一份彈窗**（ProductionSettingsModal）：
@@ -199,8 +199,8 @@ permalink: 2-2-1_singleTest.html
          才把權限不足演成 inline warning」。**這一頁不得寫成「業務依模型權限開彈窗」**：那是 2-2-3
          的行為，抄過來會讓兩頁的同名按鈕各演一套互相矛盾的分支。 #}
     <div class="flex-row justify-content-center flex-wrap gap-16 mt-24">
-        <button data-capability="settings:read" type="button" class="button button-green js-restore-saved" data-toast="已回復儲存的設定|權限不足，無法載入——請找貴租戶的管理者開通|無法載入儲存的設定" data-i18n-data-toast="toast.restoreSettings" data-toast-type="success|warning|error" data-i18n="qaTest.restoreSaved">回復儲存的設定</button>
-        <button data-capability="settings:write" type="button" class="button button-primary js-prompt-new-version" data-toast="已儲存為新版本|權限不足，無法儲存——請找貴租戶的管理者開通|內容欄位不可為空|新增提示詞失敗，請稍後再試" data-i18n-data-toast="toast.savePrompt" data-toast-type="success|warning|warning|error" data-i18n="qaTest.savePromptVersion">儲存提示詞版本</button>
+        <button data-capability="settings:read" type="button" class="button button-green js-restore-saved" data-toast="已回復儲存的設定|權限不足，無法載入——請找貴租戶的管理者開通|無法載入儲存的設定|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.restoreSettings" data-toast-type="success|warning|error|warning" data-i18n="qaTest.restoreSaved">回復儲存的設定</button>
+        <button data-capability="settings:write" type="button" class="button button-primary js-prompt-new-version" data-toast="已儲存為新版本|權限不足，無法儲存——請找貴租戶的管理者開通|內容欄位不可為空|新增提示詞失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.savePrompt" data-toast-type="success|warning|warning|error|warning" data-i18n="qaTest.savePromptVersion">儲存提示詞版本</button>
         <button type="button" class="button button-dark js-apply-production" data-i18n="qaTest.applyProduction">套用為正式設定</button>
     </div>
 </div>

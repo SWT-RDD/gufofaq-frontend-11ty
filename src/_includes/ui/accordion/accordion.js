@@ -2,10 +2,56 @@
 // 開合的高度動畫走 ui/slide-toggle（同一套 300ms，與手機選單共用）
 // 只轉切版互動（開合本身），資料載入/API 等業務邏輯不在此列
 //
-// 兩種 markup 結構都吃：**表格**（摘要列 + 下一列 tr.detail-row 內的 .accordion-content）與
-// **卡片**（一張 .js-accordion-item 內含自己的 .accordion-btn 與 .accordion-content，如
-// components/builtin-tool-card）。差異只在 findContent 怎麼找到內容，其餘（動畫、aria、i18n 標籤、
+// 兩種 markup 結構都吃。差異只在 findContent 怎麼找到內容，其餘（動畫、aria、i18n 標籤、
 // 全部展開／收合）兩者共用同一份實作——卡片模式不另寫一套 js。
+//
+// **生產契約**（§1-2）：`accordion.html` 是**展示片段**，而且它只演表格那一型；
+// 片段上的鈕沒有 `data-i18n-title`／`.sr-only` 的 `data-i18n`（元件庫頁整頁不翻，§4-2），
+// 生產實例有——照片段抄就會做出一顆切到英文之後 title 還是繁中的鈕。**兩型各一段完整 markup**：
+//
+// ① **表格型**（掃描根 `.js-accordion`；摘要列 ＋ 下一列 `tr.detail-row`）——逐字取自 3-7_documentSearch：
+//
+//   <tr>
+//       <td>
+//           <button type="button" id="docSearchExpand-{{ row.did }}" aria-labelledby="docSearchRowTitle-{{ row.did }} docSearchExpand-{{ row.did }}" class="button accordion-btn" aria-expanded="false" title="展開表格" data-i18n-title="common.expandRow">
+//               <span class="sr-only" data-i18n="common.expandRow">展開表格</span>
+//           </button>
+//       </td>
+//   </tr>
+//   <tr class="detail-row">
+//       <td colspan="3" class="detail-cell">
+//           <div class="accordion-content">…</div>
+//       </td>
+//   </tr>
+//
+// ② **卡片型**（掃描根是每一張卡自己的 `.js-accordion-item`；明細在同一張卡內）——逐字取自
+//    `components/builtin-tool-card`。它多一件事：**初始態可以是開著的**（`.open` ＋ `aria-expanded`
+//    ＋ 兩態標籤三者要一起翻面，本檔的 `label()` 寫的就是這三顆）：
+//
+//   <div class="block builtin-tool-card js-accordion-item" data-tool="{{ tool.name }}">
+//       <div class="builtin-tool-head flex-row align-items-center flex-wrap gap-8">
+//           <button type="button" class="button accordion-btn{% if tool.customized %} open{% endif %}"
+//               aria-expanded="{% if tool.customized %}true{% else %}false{% endif %}"
+//               aria-labelledby="tool-{{ tool.name }}-title tool-{{ tool.name }}-toggle"
+//               title="{% if tool.customized %}收合表格{% else %}展開表格{% endif %}"
+//               data-i18n-title="{% if tool.customized %}common.collapseRow{% else %}common.expandRow{% endif %}">
+//               <span class="sr-only" id="tool-{{ tool.name }}-toggle" data-i18n="{% if tool.customized %}common.collapseRow{% else %}common.expandRow{% endif %}">{% if tool.customized %}收合表格{% else %}展開表格{% endif %}</span>
+//           </button>
+//           <span class="text-md text-bold" id="tool-{{ tool.name }}-title" data-i18n="tool.{{ tool.name }}.title">{{ tool.title }}</span>
+//       </div>
+//       <div class="accordion-content builtin-tool-body" role="group" aria-labelledby="tool-{{ tool.name }}-title">…</div>
+//   </div>
+//
+// 抄的時候：
+//   ⓐ **`title` 與 `.sr-only` 兩處都要有 i18n 的槽**（`data-i18n-title`／`data-i18n`）：本檔在
+//      每一次開合都會改寫那兩顆 key，`lang-toggle` 之後才譯得出「當下狀態」那一句。
+//   ⓑ **可及名稱是「本列（本卡）的辨識欄 ＋ 本鈕自己」**（§4 逐列控制項）：同一頁十幾顆鈕的
+//      字面逐字相同，只掛 `.sr-only` 的話報讀器唸不出正在展開哪一列。自指那一段讓
+//      WCAG 2.5.3（Label in Name）成立，也讓本檔換成「收合表格」時可及名稱自動跟上。
+//   ⓒ **表格型的明細一定住在下一個 `tr.detail-row`**、卡片型一定住在同一張 `.js-accordion-item`
+//      之內：`findContent` 先試表格、命中就返回，兩型不會互相搶到對方的 `.accordion-content`。
+//   ⓓ 初始開著的那一態（型②）**三顆要一起翻面**：`.open`、`aria-expanded="true"`、
+//      兩態標籤（`title`／`.sr-only`／兩顆 key）。只翻其中一顆的話，畫面與報讀器會各說各話。
 //
 // a11y：按鈕的 aria-expanded 必須反映實際狀態——單筆開合與「全部展開／收合」都走同一組 open/close，避免批次操作後狀態殘留。
 // i18n：展開↔收合的標籤由 JS 切換，故除了寫入文字，也同步改寫 data-i18n / data-i18n-title 的 key，

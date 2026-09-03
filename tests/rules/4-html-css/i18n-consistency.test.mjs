@@ -195,7 +195,7 @@ test("§4-2 同一個 i18n key 的繁中原文全站必須一致", () => {
         if (variants.size > 1)
             wsBad.push(`${key}\n` + [...variants].map(([zh, w]) => `      ${JSON.stringify(zh)} ← ${w.join(", ")}`).join("\n"));
     assert.equal(wsBad.length, 0, `同一顆 key 的繁中只差在空白／換行上（lang-toggle 不 trim，切回繁中會互相覆蓋）：\n${fail(wsBad)}`);
-    assert.ok(seen.size > 2085, `只收集到 ${seen.size} 個 key —— 屬性 regex 腐掉了？這條測試在空轉`);
+    assert.ok(seen.size >= 2096, `只收集到 ${seen.size} 個 key —— 屬性 regex 腐掉了？這條測試在空轉`);
     const bad = [];
     for (const [key, variants] of seen)
         if (variants.size > 1)

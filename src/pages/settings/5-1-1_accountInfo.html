@@ -37,8 +37,11 @@ permalink: 5-1-1_accountInfo.html
                               `trial_end`／`days_left`
      GET  /me/profile         `ProfileOut` —— `email`／`display_name`／`contact`
      PUT  /me/profile         同上（唯一守衛是 `require_active_subscription`，見儲存鈕）
+     PUT  /account            `AccountIn` → 回 `AccountOut`（`require_capability("settings","write")`，見儲存鈕）
      POST /me/change-password 回 `{"ok", "token"}`
-     四支端點全部在 product。
+     以上全部在 product。
+     · `ProfileOut.email` 不另畫——它與上面帳號區塊那一格（`AccountOut.email`）是同一個值，
+       畫兩份會讓人以為可以各改各的。`token` 是換發的登入憑證，由 React 換掉 session，畫面上沒有它的位子。
    **`AccountOut` 十欄裡兩欄刻意不吃**：
      · `can_edit`（＝當前使用者有沒有 settings 能力）——切版**不**拿它去 disable 公司欄：
        §4「`data-capability` 不足時不做 disabled、把 403 列進 `data-toast`」，吃了它會把契約演掉。
@@ -100,8 +103,11 @@ permalink: 5-1-1_accountInfo.html
                         <label for="accountSpecInput" class="control-label" data-i18n="settings.spec">規格</label>
                     </div>
                     <div class="field">
+                        {# 單位是 chrome、數字才是資料：`value` 不在 §4-2 那五個可翻屬性之列，整串烤進去
+                             英文模式就永遠露出一段繁中（fpdiff 不比屬性值、e2e 只驗那五顆屬性，兩張網都看不到）。
+                             故數字留在唯讀輸入框裡，單位拆成同一格內的兄弟節點。 #}
                         <input type="text" id="accountSpecInput" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control disabled account-spec"
-                            value="3000次/日" disabled>
+                            value="3000" disabled><span class="text-gray" data-i18n="settings.quotaUnitPerDay">次/日</span>
                     </div>
                 </div>
             </div>
@@ -147,7 +153,7 @@ permalink: 5-1-1_accountInfo.html
         {# PUT /account 掛的是 `require_capability("settings", "write")`（product），
              該 dep（product 的 `require_capability`）raise 403「missing capability」——同一道守衛在 5-3 的歸因儲存鈕
              是自成一段的 warning（那顆端點的 dep 逐字相同），這裡不能折進 error（§5 分支集合一致）。 #}
-        <button data-capability="settings:write" type="button" class="button button-primary" data-toast="帳號資訊已儲存|權限不足，無法儲存——請找貴租戶的管理者開通|儲存失敗，請稍後再試" data-i18n-data-toast="toast.saveAccount" data-toast-type="success|warning|error" data-i18n="settings.saveAccountInfo">儲存帳號資訊</button>
+        <button data-capability="settings:write" type="button" class="button button-primary" data-toast="帳號資訊已儲存|權限不足，無法儲存——請找貴租戶的管理者開通|儲存失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.saveAccount" data-toast-type="success|warning|error|warning" data-i18n="settings.saveAccountInfo">儲存帳號資訊</button>
     </div>
 </div>
 
@@ -201,6 +207,12 @@ permalink: 5-1-1_accountInfo.html
          `disclaimer_required`／`subscription_expired`（product）在畫面上是同一件事：這一格還看得見、
          按下去存不進去——本頁說明視窗逐字就是這樣寫的，所以它是 §5 定義的一條真實結果路徑，不能不列。
          型別是 warning 不是 error：使用者找得到人續期／簽署就修得掉，不是紅色終局。 #}
+    {# **這顆鈕標不出授權軸**（§4；同時登記在測試的 `NO_GATE`）：`/me/profile` 是自助端點，
+         product 只掛 `get_current_user` ＋ `require_active_subscription`，**沒有** `require_capability`
+         ——標上能力軸等於宣告一道這條路徑上不存在的閘門，還會把「改自己的顯示名」擋在一顆
+         它不需要的能力後面。下面那顆改密碼鈕同理（`/me/change-password` 也是自助端點）。
+         這一頁另外那顆 `PUT /account` 就標得出來（`require_capability("settings","write")`），
+         兩者的差別是**端點**、不是頁面——所以豁免的單位是「那一顆鈕做成的那件事」，不是整支檔案。 #}
     <div class="flex-row">
         <button type="button" class="button button-primary" data-toast="個人資料已儲存|使用期不是有效狀態（待簽免責聲明／已到期／已凍結），無法儲存|儲存失敗，請稍後再試" data-i18n-data-toast="toast.saveProfile" data-toast-type="success|warning|error" data-i18n="settings.saveProfile">儲存個人資料</button>
     </div>

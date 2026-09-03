@@ -6,7 +6,9 @@
 {# 預設值收進元件專屬的區域名（同 components/chart-box 的 cbId 做法）：`{% set %}` 是**頁面全域**，
      直接 set 回參數名的話，這顆 12 會外洩給同頁後續的 include，而且與使用頁自己的
      `{% set paginationTotal %}` 撞名（§2／§6）。 #}
-{% set pagerTotal = paginationTotal or 12 %}
+{# 值域含 0（§6：分母來自資料時 0 是必須被畫出來的態，不是被夾掉的邊界）——用 `is defined`
+     而不是 `or`：`paginationTotal = 0` 用真值判斷會被靜默換成 12，而畫面上完全正常。 #}
+{% set pagerTotal = paginationTotal if paginationTotal is defined else 12 %}
 <div class="pagination-input" data-total="{{ pagerTotal }}">
     <button type="button" class="pager-btn prev" disabled>
         <img src="./images/icon_arrow_left_gray.png" width="48" height="48" decoding="async" alt="上一頁" data-i18n-alt="action.prevPage" class="icon">
@@ -17,7 +19,7 @@
     {# 值交給 React 讀去換頁 ⇒ 數字欄三件套（§4）：type=number ＋ 區間 ＋ 可見提示接 aria-describedby。
          type="text" ＋ Number() 打錯一個字就是 NaN，序列化成 JSON 是 null；區間只寫在 js 的 clamp 裡，
          使用者要按下去才知道打錯。上限由使用頁的 pagerTotal 供給（同一份資料，不另烤一個常數）。 #}
-    {# describedby 指的是**區間**，不是後半句：`pagerInputHint` 的內容是「個對話，共 12 個」——
+    {# describedby 指的是**區間**，不是後半句：下面那顆 `.pager-text`（「個對話，共 N 個」）——
          那是句子的下半截，報讀器會唸出「頁碼，個對話，共 12 個」這種從中間開始的殘句，而且它
          沒有講出下界。區間另給一顆 .sr-only 節點（上下界都由 pagerTotal 推導，不另烤常數）；
          看得見的那半句照舊留在畫面上給看得到的人（§4 三件套的「可見提示」由它負責）。 #}

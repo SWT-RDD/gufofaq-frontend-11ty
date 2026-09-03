@@ -2,13 +2,15 @@
 // 這裡**只有頁碼列**——同一區另外兩顆元件 `ui/data-info`（每頁筆數那一列）與跳頁輸入框
 // 各有自己的 scss，不要因為它們在畫面上相鄰就搬進本檔（§4：一支 scss 只寫自己那顆的 class）。
 // **這幾條要知道理由（改動前先讀）**：
-//   ①色值全數走語意 token，不寫裸 hex：`li a` 的字色＝`--brand-text`；`.active a` 與
-//     `:not(.prev):not(.next) a:hover` 的白字＝`--on-accent`、底色＝`--brand`（填充配對成的前景，§4）。
+//   ①色值全數走語意 token，不寫裸 hex：頁碼的字色＝`--brand-text`；`.active` 與
+//     `:not(.prev):not(.next)` 的 hover 白字＝`--on-accent`、底色＝`--brand`（填充配對成的前景，§4）。
+//     ⚠️ **每一條規則都要同時選 `a, button`**：`pagination.js` 只產 `<button>`，只選 `a` 的規則
+//     在 dist 上一個元素都打不到（§4 的第三種無主死法），而畫面上只是「當頁沒有底色」。
 //   ②不寫 `box-sizing: border-box`（§4-1：`_base.scss` 已全域給）。
 //   ③`li img` 要加 `max-width: none` 解除 `_base` 的 `img { max-width: 100% }`——理由逐字寫在那條旁邊。
-//   ④`li.ellipsis` 只補 `a { font-weight: bold }`，**不自己寫盒模型**：省略號是**可點的**
+//   ④`li.ellipsis` 只補一條字重，**不自己寫盒模型**：省略號是**可點的**
 //     `<button data-page>`（跳 ±3 頁，見 pagination.js），尺寸／置中／底色／hover 全部吃上面
-//     `li a` 與 `:not(.prev):not(.next) a:hover` 那兩條，與數字頁碼不同的只有字重。
+//     `li { a, button }` 與 `:not(.prev):not(.next)` 的 hover 那兩條，與數字頁碼不同的只有字重。
 //   ⑤`--pagination-visible` 自訂屬性 ＋ 768px 的覆寫，是滑動視窗要顯示幾顆頁碼的**唯一真相**，
 //     給 pagination.js 用 `getComputedStyle` 讀（§5：斷點只有 CSS 這一份，js 不猜）。
 //   ⑥`.page-info`（「共 N 頁」）與頁碼列共用同一份 token；它的數字由 js 填，
@@ -75,8 +77,13 @@
                 }
             }
 
+            // 這四條的選擇器要與上面那條 `li { a, button { … } }` 同集合。
+            // `pagination.js` 產出的每一顆頁碼都是 `<button>`，一顆 `<a>` 都沒有——只選 `a`
+            // 的規則在 dist 上一個元素都命中不到（§4 無主 class 的第三種死法：scss 找得到、
+            // markup 也找得到，只是兩者搭不上），而「目前頁沒有選中底色」視覺指紋看不出來。
             &.active {
-                a {
+                a,
+                button {
                     color: var(--on-accent);
                     background-color: var(--brand);
                 }
@@ -85,13 +92,15 @@
             &.disabled {
                 cursor: not-allowed;
 
-                a {
+                a,
+                button {
                     pointer-events: none;
                 }
             }
 
             &:not(.prev):not(.next) {
-                a {
+                a,
+                button {
                     &:hover {
                         color: var(--on-accent);
                         background-color: var(--brand);
@@ -114,7 +123,8 @@
             // `:not(.prev):not(.next) a:hover` 那兩條規則。這裡只補「與數字頁碼不同」的字重，
             // 不重複宣告盒模型——重複宣告等於把頁碼尺寸在兩個地方各留一份。
             &.ellipsis {
-                a {
+                a,
+                button {
                     font-weight: bold;
                 }
             }

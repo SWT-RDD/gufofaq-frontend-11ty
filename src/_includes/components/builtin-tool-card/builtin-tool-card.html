@@ -48,7 +48,7 @@
     因此全叫「展開表格」，報讀器聽不出在開哪一顆。故**只在 markup 補上下文**（不改 accordion.js）：
     鈕掛 aria-labelledby="tool-<工具名>-title <本卡的鈕標 id>"，念出來是「<工具中文標題>　展開表格」。
     `.builtin-tool-param`＝參數列的列身分（無樣式、版位由工具 class 供；React 端 `params.map()` 的 key），
-      與 `tests/guideline.test.mjs` 的 `NAMED_HOOKS` 那一筆成對（§4「痕跡要成對」）。
+      與 `§4 class 歸屬測試` 的 `NAMED_HOOKS` 那一筆成對（§4「痕跡要成對」）。
     **順序是「辨識 → 動作」**（§4）：反過來會先念「展開表格」才念是哪一顆工具，把辨識資訊推到後面——
     十四張卡連著聽就是十四次「展開表格…」，要等第二個詞才分得出差別。
     同卡的啟用開關與展開區的 role=group 早就是這樣接的（都指 tool-<工具名>-title），三處同一招。

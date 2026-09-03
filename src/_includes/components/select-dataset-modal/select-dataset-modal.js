@@ -46,7 +46,11 @@ document.addEventListener("DOMContentLoaded", function () {
         var value = fakeSelect && fakeSelect.querySelector(".select-value");
         if (placeholder && value) {
             placeholder.classList.add("hidden");
-            value.textContent = checked.value;
+            // `value` 是 dataset id（送出去的那一顆），畫面上要填的是同一列的名字——
+            // 兩者是兩種東西，不可以拿 id 當顯示字（§6：識別碼的唯一性範圍跟著上游的鍵空間）。
+            var picked = checked.closest("label");
+            var name = picked && picked.querySelector("span");
+            value.textContent = name ? name.textContent : checked.value;
             value.classList.remove("hidden");
         }
         if (window.closeModal) window.closeModal(modal);

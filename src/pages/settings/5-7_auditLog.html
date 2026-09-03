@@ -190,7 +190,7 @@ permalink: 5-7_auditLog.html
         <p class="text-gray m-0" id="auditTimeRangeHint" data-i18n="audit.timeRangeHint">起訖兩端都包含在內；留空＝不限。稽核軌跡不設查詢天數上限，查得到多久以前的紀錄取決於保存了多久。</p>
         <div class="flex-row align-items-center justify-content-center gap-16">
             <button type="button" class="button button-border js-filter-clear" data-i18n="action.clear">清除</button>
-            <button data-capability="audit" type="button" class="button button-primary" data-toast="正在查詢資料...|權限不足，無法查詢——請找貴租戶的管理者開通|查詢成功|載入稽核日誌失敗，請重新整理頁面" data-i18n-data-toast="toast.queryAudit" data-toast-type="info|warning|success|error" data-i18n="action.query">查詢</button>
+            <button data-capability="audit" type="button" class="button button-primary" data-toast="正在查詢資料...|權限不足，無法查詢——請找貴租戶的管理者開通|結束時間不能早於開始時間|查詢成功|載入稽核日誌失敗，請重新整理頁面|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.queryAudit" data-toast-type="info|warning|warning|success|error|warning" data-i18n="action.query">查詢</button>
         </div>
     </div>
 </div>
@@ -238,7 +238,7 @@ permalink: 5-7_auditLog.html
      total／perPage 先於列表宣告，計數列與 pager-row 吃同一個值（§6 同源）。
      product 回得出這個數：`list_audit` 結尾是
      `return {"audit_logs": items, "total_count": total}`（與 /history 同形）。
-     **總數只能走回應本體、不能走標頭**：BFF 的 `PASSTHROUGH_RESPONSE_HEADERS` 只放行三個標頭，
+     **總數只能走回應本體、不能走標頭**：BFF 的 `gufofaq-saas` `apps/web` 的 `PASSTHROUGH_RESPONSE_HEADERS` 是白名單（顆數不抄，§3-2），
      `X-Total-Count` 那類自訂標頭會被靜默剝掉，前端拿到的是「沒有這個標頭」而不是錯誤。 #}
 {% set total = 115 %}
 {% set perPage = 20 %}

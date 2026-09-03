@@ -10,8 +10,9 @@ $header-height: 56px;
 // 否則那一列會參差。
 $control-btn-size: 36px;
 
-// 欄位對應頁的左右兩欄逐列對齊：左欄是 ui/multi-select 增強後的控制項，
-// 右欄是 multi-select-box 的預覽輸入框，高度不同就會錯位。
+// 替身控制項與它旁邊的原生欄位要逐列對齊：`ui/multi-select` 增強後的控制項、`ui/search-select`
+// 的模擬 select、`components/multi-select-box` 的預覽輸入框，任一支高度不同就會錯位。
+// 消費點不列清單（會長）：反查 `grep -rn '$field-control-height' src --include=*.scss`。
 $field-control-height: 56px;
 
 // 內容容器最大寬（_base.scss 的 .wrap）。ui/countdown-box 的底紋要在同一個門檻換排列方式，

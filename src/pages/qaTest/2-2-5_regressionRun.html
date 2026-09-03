@@ -130,7 +130,7 @@ permalink: 2-2-5_regressionRun.html
                閘門是 `settings:write`（`abort_run` 的簽章；docstring：「與『開始跑』同一道閘」）。
                第三段是 409 `regression.abort_not_running`：已經結束的再按要說出當下狀態，
                  **不可以回 200**——那會讓人以為自己剛終止了某個正在跑的東西。 #}
-            <button data-capability="settings:write" type="button" class="button button-red button-sm js-abort-run hidden" data-toast="已送出終止：這一輪會在跑完手上這一則之後停下來|權限不足，無法終止——請找貴租戶的管理者開通|這一輪已經不是進行中，沒有東西可以終止|終止失敗，請稍後再試" data-i18n-data-toast="toast.abortRun" data-toast-type="success|warning|warning|error" data-i18n="regression.abortRun">終止</button>
+            <button data-capability="settings:write" type="button" class="button button-red button-sm js-abort-run hidden" data-toast="已送出終止：這一輪會在跑完手上這一則之後停下來|權限不足，無法終止——請找貴租戶的管理者開通|這一輪已經不是進行中，沒有東西可以終止|終止失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.abortRun" data-toast-type="success|warning|warning|error|warning" data-i18n="regression.abortRun">終止</button>
             <button type="button" class="button button-red button-sm js-abort-requested hidden" disabled data-i18n="regression.abortRequested">終止中…</button>
             <span class="verdict-tag is-fail" data-i18n="regression.statusAborted">中斷</span>
         </div>
@@ -279,7 +279,7 @@ permalink: 2-2-5_regressionRun.html
 
 {# ── 摘要 ───────────────────────────────────────────────────────────────────
      示範自洽（GUIDELINE §6）：通過 8 ＋ 未通過 2 ＝ 總數 10。
-     判準的單位是**條數**：達成 22 ＋ 未達成 3 ＋ 未評出 1 ＝ 這一輪總共評了 **26 條**判準，
+     判準的單位是**條數**：達成 22 ＋ 未達成 3 ＋ 未評出 2 ＝ 這一輪總共評了 **27 條**判準，
      分佈在**有判準的 8 則**上；剩下 2 則沒有任何判準——#34（逐案例區那一列，`judge_results` 是
      空陣列）與 #33（2-2-4 `regressionCases` 那一則誠實查無，斷言只有一條 `no_answer`；
      它就在無變化那張表上）。
@@ -290,7 +290,7 @@ permalink: 2-2-5_regressionRun.html
      逐案例區只列 4 則當版型示範，**不是比例縮影**。挑的是：
      #34 沒有判準（`judge_results` 空陣列）、#35 與 #37 **通過但有判準未達成**（那是「判準不參與
      通過與否」唯一演得出來的地方，少了它那句話在畫面上沒有任何東西支持）、#39 三態同時出現。
-     **這四則涵蓋了全部的未達成與未評出**（3 ＋ 1）：上面那串「有判準未達成的案例」是同頁錨點，
+     **這四則涵蓋了全部的未達成（3 條）與看得到的那一條未評出**：另一條未評出落在 #36（無變化那一桶、
      指到的三則都要真的在這張表上，否則點下去什麼都不會發生（§5）。
      #37 的判定不是隨手挑的：比較區已經把它釘成「兩次都過」（無變化那 8 則裡的一員），
      所以它只能是「通過」那一種。
@@ -323,12 +323,12 @@ permalink: 2-2-5_regressionRun.html
     <div class="flex-row gap-24 flex-wrap">
         <p><span class="text-bold" data-i18n="regression.criteriaMet">判準達成：</span><span>22</span><span data-i18n="regression.unitAssertions"> 條</span></p>
         <p><span class="text-bold" data-i18n="regression.criteriaUnmet">判準未達成：</span><span class="text-red text-bold">3</span><span data-i18n="regression.unitAssertions"> 條</span></p>
-        <p><span class="text-bold" data-i18n="regression.criteriaUnavailable">判準未評出：</span><span>1</span><span data-i18n="regression.unitAssertions"> 條</span></p>
+        <p><span class="text-bold" data-i18n="regression.criteriaUnavailable">判準未評出：</span><span>2</span><span data-i18n="regression.unitAssertions"> 條</span></p>
     </div>
     <p class="text-gray" data-i18n="regression.criteriaUnitHint">上面三個數字的單位是「判準條數」不是案例數——一則案例可以有好幾條判準，所以它們的總和與跑完的案例數本來就不會相等。</p>
     {# `criteria_unmet_cases` 是案例編號，那一串要能點過去（逐案例區同頁，故走同頁錨點）。
          沒有任何一則未達成時整段不渲染（存一串空值只是噪音）——那一態由 React 依陣列長度決定。 #}
-    <p class="text-gray"><span data-i18n="regression.criteriaUnmetCases">有判準未達成的案例：</span>{% for c in criteriaUnmetCases %}{% if not loop.first %}<span>、</span>{% endif %}<a href="#runRowName-{{ c }}">#{{ c }}</a>{% endfor %}</p>
+    <p class="text-gray"><span data-i18n="regression.criteriaUnmetCases">有判準未達成的案例：</span>{% for c in criteriaUnmetCases %}{% if not loop.first %}<span data-i18n="common.listSep">、</span>{% endif %}<a href="#runRowName-{{ c }}">#{{ c }}</a>{% endfor %}</p>
 </div>
 
 {# 「執行摘要」的說明視窗：②③留空，理由同本頁其他說明視窗。 #}
@@ -399,7 +399,7 @@ permalink: 2-2-5_regressionRun.html
              400 `regression.metrics_no_chat_logs`（這一輪一筆問答紀錄都沒有）。
              **400 之後這一區仍然是「尚未計算」，不是「分數 0」**——那一態由下面那一句承擔。
              閘門 `settings:write`（`compute_run_metrics` 的簽章）。 #}
-        <button data-capability="settings:write" type="button" class="button button-border button-sm js-compute-metrics" data-toast="指標已計算完成|權限不足，無法計算——請找貴租戶的管理者開通|這一輪還在跑，現在算指標的分母下一刻就不對了——等它結束再算|這一輪沒有留下任何問答紀錄編號，算不了指標|計算失敗，請稍後再試" data-i18n-data-toast="toast.computeMetrics" data-toast-type="success|warning|warning|warning|error" data-i18n="regression.computeMetrics">計算 RAGAS 指標</button>
+        <button data-capability="settings:write" type="button" class="button button-border button-sm js-compute-metrics" data-toast="指標已計算完成|權限不足，無法計算——請找貴租戶的管理者開通|這一輪還在跑，現在算指標的分母下一刻就不對了——等它結束再算|這一輪沒有留下任何問答紀錄編號，算不了指標|計算失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.computeMetrics" data-toast-type="success|warning|warning|warning|error|warning" data-i18n="regression.computeMetrics">計算 RAGAS 指標</button>
     </div>
     {# 還沒算過那一態（`summary` 沒有 `ragas` 鍵）。**不是「分數 0」**：它是「這一輪還沒有人算過」。 #}
     <p class="text-gray m-0 js-ragas-not-computed hidden" data-i18n="regression.ragasNotComputed">這一輪還沒有算過 RAGAS 指標。按上面那顆鈕開始計算——它是逐筆發 LLM 的離線評測，會跑一段時間；算完之後也可以再算一次。</p>
@@ -544,7 +544,7 @@ permalink: 2-2-5_regressionRun.html
     </div>
     <p class="text-red"><span data-i18n="regression.exportPartialPrefix">這一次執行是中斷的，匯出的 CSV 只有 </span><span>10</span><span data-i18n="regression.exportPartialSuffix"> 則案例的結果，最後一列會明說筆數與中斷原因——不要把它讀成「整套案例都跑過」。</span></p>
     <div class="flex-row">
-        <button data-capability="settings:read" type="button" class="button button-border js-export-run" data-toast="報表已下載|權限不足，無法下載——請找貴租戶的管理者開通|匯出失敗，請稍後再試" data-i18n-data-toast="toast.exportRun" data-toast-type="success|warning|error" data-i18n="regression.exportCsv">下載結果 CSV</button>
+        <button data-capability="settings:read" type="button" class="button button-border js-export-run" data-toast="報表已下載|權限不足，無法下載——請找貴租戶的管理者開通|匯出失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.exportRun" data-toast-type="success|warning|error|warning" data-i18n="regression.exportCsv">下載結果 CSV</button>
     </div>
     <p class="text-gray" data-i18n="regression.exportColumns">七欄：案例／期望／實際答案／通過與否／命中文件／判準達成情形／未通過原因。「通過與否」逐字只有「通過」或「未通過」兩種，失敗細節在自己那一欄（下游做樞紐分析時，塞進狀態欄的每一句細節都會變成一個新的狀態值）；「命中文件」印的是真的引用到哪幾份，零命中的列寫「（零命中）」、被夾掉時明說共幾筆——留白會被讀成「這一題零命中」。</p>
 </div>
@@ -593,7 +593,7 @@ permalink: 2-2-5_regressionRun.html
             </div>
         </div>
         <div class="flex-row">
-            <button data-capability="settings:read" type="button" class="button button-primary js-compare-baseline" data-toast="正在比較…|權限不足，無法比較——請找貴租戶的管理者開通|比較完成|不能拿這一次執行自己當基準|載入比較結果失敗，請稍後再試" data-i18n-data-toast="toast.compareBaseline" data-toast-type="info|warning|success|warning|error" data-i18n="regression.compare">比較</button>
+            <button data-capability="settings:read" type="button" class="button button-primary js-compare-baseline" data-toast="正在比較…|權限不足，無法比較——請找貴租戶的管理者開通|比較完成|不能拿這一次執行自己當基準|載入比較結果失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.compareBaseline" data-toast-type="info|warning|success|warning|error|warning" data-i18n="regression.compare">比較</button>
         </div>
     </div>
     {# 基準那一次自己的狀態也要看得見，否則 partial 會被當成 complete。 #}
@@ -743,7 +743,7 @@ permalink: 2-2-5_regressionRun.html
      `cases` 是**顯示字**（案例編號串；React 端是 `judge_drift.<方向>.map(...)`），沒有值時畫「—」、
      不留白（§6）。 #}
 {% set judgeDriftGroups = [
-  { key: "unavailableNow", titleKey: "regression.driftUnavailableNow", title: "上次評得出來、這次評不出來", tagClass: "is-warn", cases: "#35", count: 1 },
+  { key: "unavailableNow", titleKey: "regression.driftUnavailableNow", title: "上次評得出來、這次評不出來", tagClass: "is-warn", cases: "#36", count: 1 },
   { key: "availableNow", titleKey: "regression.driftAvailableNow", title: "上次評不出來、這次評得出來", tagClass: "is-muted", cases: "—", count: 0 }
 ] %}
 {% set judgeDriftTotal = judgeDriftGroups[0].count + judgeDriftGroups[1].count %}
@@ -1011,7 +1011,9 @@ permalink: 2-2-5_regressionRun.html
     latency: "2,905", tokens: "1,242", turnsSent: "1",
     expectations: [
       { labelKey: "regression.typeContains", label: "答案須包含", value: "減免" },
-      { labelKey: "regression.typeJudge", label: "主觀評分判準", value: "答案有沒有講清楚適用條件" }
+      { labelKey: "regression.typeJudge", label: "主觀評分判準", value: "必須說明申請期限" },
+      { labelKey: "regression.typeJudge", label: "主觀評分判準", value: "須引用法規條號" },
+      { labelKey: "regression.typeJudge", label: "主觀評分判準", value: "不得建議聯絡客服" }
     ],
     answer: "符合特定用途或原產地認定的鋼品，可申請關稅減免，需檢附產地證明與用途聲明。",
     hits: [
@@ -1030,7 +1032,10 @@ permalink: 2-2-5_regressionRun.html
     ],
     latency: "1,540", tokens: "702", turnsSent: "0",
     expectations: [
-      { labelKey: "regression.typeContains", label: "答案須包含", value: "稅則號列" }
+      { labelKey: "regression.typeContains", label: "答案須包含", value: "稅則號列" },
+      { labelKey: "regression.typeJudge", label: "主觀評分判準", value: "必須指出查詢稅則號列的官方管道" },
+      { labelKey: "regression.typeJudge", label: "主觀評分判準", value: "不得直接斷言某一個號列就是答案" },
+      { labelKey: "regression.typeJudge", label: "主觀評分判準", value: "須提醒號列會依材質與加工程度而不同" }
     ],
     answer: "可以到財政部關務署的稅則稅率查詢系統，用貨品名稱或關鍵字查對應的稅則號列。",
     hits: [
@@ -1051,7 +1056,9 @@ permalink: 2-2-5_regressionRun.html
     expectations: [
       { labelKey: "regression.typeContains", label: "答案須包含", value: "25%／鋼品" },
       { labelKey: "regression.typeCitesDocument", label: "須引用文件", value: "9f2c1b7e…a41" },
-      { labelKey: "regression.typeJudge", label: "主觀評分判準", value: "答案有沒有正面回答「稅率是多少」" }
+      { labelKey: "regression.typeJudge", label: "主觀評分判準", value: "必須指出稅則號列是判斷依據" },
+      { labelKey: "regression.typeJudge", label: "主觀評分判準", value: "答案有沒有正面回答「稅率是多少」" },
+      { labelKey: "regression.typeJudge", label: "主觀評分判準", value: "不得出現與問題無關的品項" }
     ],
     answer: "鋼品出口到美國需要依照 HS 稅則號列申報，實際稅率請洽海關。",
     hits: [

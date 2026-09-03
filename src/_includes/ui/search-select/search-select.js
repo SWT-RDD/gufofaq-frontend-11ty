@@ -23,6 +23,30 @@
 // 那支檔案自己在同一段寫明「呼叫該元件匯出的重繪函式」才是正路）。沒有這條路的話，按下清除之後
 // 原生 select 已經回到「全部」，而畫面上那三顆 combobox 還顯示著舊標籤——值與畫面分家，
 // 而且看的人會以為篩選還在。
+// **生產契約**（§1-2）：`search-select.html` 是**展示片段**，生產實例還帶著它沒有的
+// `aria-describedby`（那一句可見提示說得出「這一欄什麼時候不生效」）。逐字取自 5-7 的使用者欄：
+//
+//   <div class="form-group col-4-md col-12-sm">
+//       <div class="label">
+//           <label for="auditUserSelect" class="control-label" data-i18n="audit.user">使用者</label>
+//       </div>
+//       <div class="field">
+//           <select id="auditUserSelect" class="form-control searchSelect" data-placeholder="全部" data-placeholder-key="common.all" aria-describedby="auditUserHint" disabled>
+//               <option value="" selected data-i18n="common.all">全部</option>
+//               <option value="12">alice@initech.io</option>
+//           </select>
+//           <span class="text-gray" id="auditUserHint" data-i18n="audit.userHint">「全部租戶」開啟時本欄不生效；留空＝不限使用者。清單是本租戶的成員。</span>
+//       </div>
+//   </div>
+//
+// 抄的時候：
+//   ⓐ **名稱走 `<label for>`、限制走 `aria-describedby`**：把那句提示併進名稱，報讀器唸出來的
+//      欄位名會是一整段說明。
+//   ⓑ **`disabled` 是一種要看得見的狀態，不是不渲染**：這一欄在「全部租戶」開著時沒有值域可言，
+//      照渲染但改不動（§5：狀態要看得見）。本檔對 `disabled` 的原生 select 不做替身。
+//   ⓒ **`<option>` 的字是資料還是 chrome 要分清楚**：「全部」是 chrome（掛 `data-i18n`），
+//      底下的信箱是業務資料（不掛）。`data-placeholder`／`data-placeholder-key` 成對，理由同
+//      `ui/multi-select` 檔頭 ⓑ。
 document.addEventListener("DOMContentLoaded", function () {
     var uid = 0;
     // 每一顆增強過的原生 select → 它自己的重繪函式。用 WeakMap 而不是把函式掛在節點上，

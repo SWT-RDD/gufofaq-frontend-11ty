@@ -88,7 +88,7 @@ permalink: 5-8_widgetTokens.html
                          尾斜線）。所以措辭要把「會被自動整理掉」與「會被擋下」分成兩件事講；
                          寫成「不含路徑與結尾斜線」的話，使用者會以為 `https://example.com/` 是錯的，
                          回頭去改一個根本不必改的東西。 #}
-                    <span id="widgetOriginsHint" class="text-gray" data-i18n="widget.originsHint">一行一個，須為 https://網域 或 http://網域，不可帶路徑；結尾斜線與大小寫會自動整理。</span>
+                    <span id="widgetOriginsHint" class="text-gray" data-i18n="widget.originsHint">一行一個，須為 https://網域 或 http://網域，不可帶路徑、問號後的參數或井號後的片段，也不可帶帳密；結尾斜線與大小寫會自動整理。</span>
                     {# **這一欄有兩顆界線，兩顆都要講**（§3-2「界線的正本若是一個 group，
                          同 group 的姊妹界線要一起檢查有沒有落點」）：筆數（`MAX_ALLOWED_ORIGINS`）
                          擋的是「每一題要比幾次」，單筆長度（`MAX_ORIGIN_LEN`）擋的是「每次比多長」
@@ -145,7 +145,7 @@ permalink: 5-8_widgetTokens.html
 {% set helpModalTitleKey = "help.widget.createToken.title" %}
 {% set helpModalTitle = "產生金鑰說明" %}
 {% set helpModalWhatKey = "help.widget.createToken.what" %}
-{% set helpModalWhat = "這一區產生一把嵌入金鑰：填入這把要綁定的允許網域後送出，就能拿去組出前台嵌入連結。這把金鑰是給客戶自己網站上的公開機器人用的，本來就會被瀏覽器載入、任何看得到那個網頁原始碼的人都看得到它——它的防護不是保密，而是每次呼叫都會核對來源網域是不是在允許清單內；網域不在清單內，拿到金鑰也打不通。" %}
+{% set helpModalWhat = "這一區產生一把嵌入金鑰：填入這把要綁定的允許網域後送出，就能拿去組出嵌入片段（一段 `<script>`，貼進客戶自己的網頁）。這把金鑰是給客戶自己網站上的公開機器人用的，本來就會被瀏覽器載入、任何看得到那個網頁原始碼的人都看得到它——它的防護不是保密，而是每次呼叫都會核對來源網域是不是在允許清單內；網域不在清單內，拿到金鑰也打不通。" %}
 {% set helpModalStateItems = [] %}
 {% set helpModalLimitRows = [
   { labelKey: "widget.tokenName", label: "名稱", bound: "≤ 100",
@@ -259,7 +259,7 @@ permalink: 5-8_widgetTokens.html
                     <td>
                         <div class="flex-row align-items-center gap-8">
                             <span>{{ row.token }}</span>
-                            <button type="button" id="widgetTokenCopyKey-{{ row.id }}" aria-labelledby="widgetTokenRowName-{{ row.id }} widgetTokenCopyKey-{{ row.id }}" class="button-icon copy copyBtn has-tooltip" data-toast="已複製金鑰|複製失敗，請手動選取後複製" data-i18n-data-toast="toast.copyKey" data-toast-type="success|error">
+                            <button type="button" id="widgetTokenCopyKey-{{ row.id }}" aria-labelledby="widgetTokenRowName-{{ row.id }} widgetTokenCopyKey-{{ row.id }}" class="button-icon copy copyBtn has-tooltip" data-toast="金鑰已複製|複製失敗，請手動選取後複製" data-i18n-data-toast="toast.copyKey" data-toast-type="success|error">
                                 <span class="tooltip" data-i18n="action.copy">複製</span>
                             </button>
                         </div>
@@ -278,7 +278,7 @@ permalink: 5-8_widgetTokens.html
                     </td>
                     <td>
                         <div class="btn-group">
-                            <button type="button" id="widgetTokenCopyEmbed-{{ row.id }}" aria-labelledby="widgetTokenRowName-{{ row.id }} widgetTokenCopyEmbed-{{ row.id }}" class="button button-border button-sm copyBtn" data-toast="已複製嵌入片段|複製失敗，請手動選取後複製" data-i18n-data-toast="widget.embedCopied" data-toast-type="success|error" data-i18n="widget.copyEmbed">複製嵌入片段</button>
+                            <button type="button" id="widgetTokenCopyEmbed-{{ row.id }}" aria-labelledby="widgetTokenRowName-{{ row.id }} widgetTokenCopyEmbed-{{ row.id }}" class="button button-border button-sm copyBtn" data-toast="嵌入片段已複製|複製失敗，請手動選取後複製" data-i18n-data-toast="widget.embedCopied" data-toast-type="success|error" data-i18n="widget.copyEmbed">複製嵌入片段</button>
                             {% if not row.disabled %}
                             {# 撤銷走二次確認（彈窗本體見頁尾）：不可逆，而且撤銷後前台所有掛這把金鑰的
                                  嵌入頁當場失效。開窗需先選定「撤銷哪一把」＝業務條件開窗，故只留 hook class、
@@ -308,7 +308,7 @@ permalink: 5-8_widgetTokens.html
 {% set helpModalTitleKey = "help.widget.tokenList.title" %}
 {% set helpModalTitle = "金鑰清單說明" %}
 {% set helpModalWhatKey = "help.widget.tokenList.what" %}
-{% set helpModalWhat = "這一區列出本租戶目前所有的嵌入金鑰：名稱、完整金鑰全值、綁定的允許網域與目前狀態，每一列可以複製完整的前台嵌入連結，或撤銷一把還在啟用中的金鑰。金鑰全值在這裡是常態顯示，不是只出現一次——它本來就會出現在客戶自己的網頁上，不是需要被藏起來的機密；撤銷則不可逆，撤銷之後前台所有掛著這把金鑰的嵌入頁會立即失效。" %}
+{% set helpModalWhat = "這一區列出本租戶目前所有的嵌入金鑰：名稱、完整金鑰全值、綁定的允許網域與目前狀態，每一列可以複製完整的嵌入片段，或撤銷一把還在啟用中的金鑰。金鑰全值在這裡是常態顯示，不是只出現一次——它本來就會出現在客戶自己的網頁上，不是需要被藏起來的機密；撤銷則不可逆，撤銷之後前台所有掛著這把金鑰的嵌入頁會立即失效。" %}
 {% set helpModalStateItems = [] %}
 {% set helpModalLimitRows = [] %}
 {% include "components/help-modal/help-modal.html" %}

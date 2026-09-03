@@ -9,7 +9,8 @@
 @use "base";
 @use "utilities";
 
-// chrome 元件：不屬於任何一頁、每一頁都在的外框（桌機導覽、行動選單、頁尾、跳窗殼）
+// chrome 元件：不屬於任何一頁的整頁外框（桌機導覽、行動選單、頁尾、跳窗殼）——由 layout 提供、不由頁面 include。
+// （哪幾頁有哪一支看 layout：走 base.html 的那四頁三者皆無，見 README 的 Layout 表。）
 @use "../_includes/components/header/header";
 @use "../_includes/components/mobile-nav/mobile-nav";
 @use "../_includes/components/footer/footer";
@@ -19,7 +20,7 @@
 // login 頁面專屬
 @use "../_includes/ui/login-wrapper/login-wrapper";
 
-// 404 頁面專屬
+// 整頁錯誤版型（HTTP 404 / 403 兩態 / 429）：生產 markup 在 src/404.html，四態示範在元件庫頁
 @use "../_includes/ui/error-page/error-page";
 
 // ui 原子
@@ -80,7 +81,7 @@
 @use "../_includes/ui/chatroom-shell/chatroom-shell";
 @use "../_includes/components/faq-chatroom/faq-chatroom";
 @use "../_includes/layouts/base/base" as layout-base;
-@use "../_includes/layouts/page-shell/page-shell" as layout-page-shell;
+@use "../_includes/layouts/page-shell/page-shell";
 @use "../_includes/layouts/chatbot-shell/chatbot-shell";
 @use "../_includes/components/chatbot-header/chatbot-header";
 @use "../_includes/components/header-controls/header-controls";
@@ -94,7 +95,8 @@
 @use "../_includes/components/multi-select-box/multi-select-box";
 @use "../_includes/ui/subscription-gate/subscription-gate";
 @use "../_includes/ui/widget-shell/widget-shell";
-// 下列三個純樣式元件依 GUIDELINE §4 各自歸戶（一支 scss 只服務一顆元件、與它的 markup 同住），
+// 下列三支依 GUIDELINE §4 各自歸戶（一支 scss 只服務一顆元件）。三支都**沒有** `<名>.html`——
+// markup 手寫在使用頁、契約寫在各自的 scss 檔頭（§1-2）；`filter-fields` 另有行為 js（見 base.html 的 script 清單）。
 // 色值一律取 _var.scss 的語意 token——元件檔不得自帶 :root 變數，全站唯一色源只有一處。
 @use "../_includes/ui/filter-fields/filter-fields";
 @use "../_includes/ui/prompt-card/prompt-card";

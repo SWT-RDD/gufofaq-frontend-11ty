@@ -72,7 +72,7 @@ test("§5 掛 data-open-modal 的鈕不得同時帶業務 hook class（那代表
                 if (!cssClasses.has(c))
                     hits.push(`dist/${f}  .${c} 沒有任何樣式 ⇒ 業務 js 掛點：<${raw.slice(0, 70)}`);
         }
-    assert.ok(btnCount > 0, "dist 裡一顆 data-open-modal 都掃不到 —— 這條測試在空轉");
+    assert.ok(btnCount >= 150, `dist 只掃到 ${btnCount} 顆 data-open-modal —— 這條測試在空轉（門檻是實測值，§8-1）`);
     assert.equal(hits.length, 0, `有條件的開窗是業務邏輯，拿掉 data-open-modal、留 hook class 就好（§5）：\n${fail(hits)}`);
 });
 
@@ -137,7 +137,7 @@ test("§5 窗腳的每一顆鈕都要有主人（不掛 .btn-close-modals 的那
             if (owner === null) hits.push(`dist/${f}  <button${attrs.slice(0, 90)}>`);
             else if (owner.startsWith("react:")) usedRegistry.add(owner.slice(6));
         }
-    assert.ok(seen > 100, `dist 只掃到 ${seen} 顆窗腳鈕 —— 母體解析壞了，這條測試在空轉`);
+    assert.ok(seen >= 125, `dist 只掃到 ${seen} 顆窗腳鈕 —— 母體解析壞了，這條測試在空轉`);
     const stale = [...REACT_BOUND_CONFIRM.keys()].filter((k) => !usedRegistry.has(k));
     assert.deepEqual(stale, [], `REACT_BOUND_CONFIRM 有死豁免（那顆鈕已經有主人、或已經不存在）：${stale.join("、")}`);
     assert.equal(hits.length, 0, `窗腳鈕沒有主人：按下去不關窗、不彈訊息，讀起來與「這顆鈕壞了」逐字相同（§5）：
@@ -172,7 +172,7 @@ test("§5 元件 js 查詢的 class 選擇器都要在 src markup 打得到（�
     for (const f of distHtml)
         for (const { value } of attrValuesIn(distDoc(f), "class"))   // 兩種引號都吃
             for (const c of value.split(/\s+/)) if (c) (f === SHOWCASE.dist ? showcaseClasses : markupClasses).add(c);
-    assert.ok(markupClasses.size > 200 && showcaseClasses.size > 100, `class 收集異常（生產 ${markupClasses.size}／showcase ${showcaseClasses.size}）—— 這條測試在空轉`);
+    assert.ok(markupClasses.size >= 917 && showcaseClasses.size >= 396, `class 收集異常（生產 ${markupClasses.size}／showcase ${showcaseClasses.size}）—— 這條測試在空轉`);
     const usedShowcase = new Set();
     const compJs = srcJs.filter((f) => /_includes\/(ui|components)\//.test(f));
     assert.ok(compJs.length > 36, `只掃到 ${compJs.length} 支元件 js —— 這條測試在空轉`);
@@ -432,7 +432,7 @@ test("§5 同一頁只放一套 data-target 切換系統（tab.js 的面板隱�
         if (s.size) { pagesWithTabs++; owners += [...s.values()].reduce((a, b) => a + b, 0); }
         hits.push(...scan(html, `dist/${f}`));
     }
-    assert.ok(owners >= 7 && pagesWithTabs >= 2,
+    assert.ok(owners >= 12 && pagesWithTabs >= 3,
         `全站只掃到 ${owners} 顆 data-target（分布在 ${pagesWithTabs} 頁）—— 祖先鏈掃描壞了，這條在空轉`);
     probe("§5 同頁一套 data-target", scan, [
         // 兩個 .tab-group 各帶一套：點左邊那套會把右邊的面板關掉

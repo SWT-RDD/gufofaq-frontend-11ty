@@ -49,8 +49,8 @@ permalink: 3-2_glossaryManagement.html
        `MAX_TABLE_NAME_LEN = 64`／`MAX_WHEN_TO_CONSULT_LEN = 1024`／`MAX_TOOL_PROMPT_LEN = 1024`，
        三欄同由 `validate_table_metadata` 執法（長度之外還跑 `contains_markup`：三欄都會原文進
        工具中繼資料＝常駐系統提示詞）。
-     · 正規化 regex 的長度＝gufofaq-saas product 的 `_MAX_NORMALIZE_REGEX_LEN = 500`，
-       格式判準＝同 repo 的 `regex_has_backtracking_risk`（禁量詞、交替至多一個）。
+     · 正規化 regex 的長度＝gufofaq-saas product 的 `MAX_GLOSSARY_NORMALIZE_REGEX_LEN = 500`，
+       格式判準＝GufoRAG chatbot 的 `regex_has_backtracking_risk`（product 端沒有這道判準的複本）（禁量詞、交替至多一個）。
    **新增區與逐列就地編輯兩處都要掛**（§4）：兩處打的是同一支端點的同一組守衛，只掛新增區
      等於那條約束在編輯路徑上不存在。逐列那四顆吃表格下方那一份共用提示（正典＝
      glossary-entries-modal 的 `#glossaryLimitsHint`）。 #}
@@ -62,16 +62,19 @@ permalink: 3-2_glossaryManagement.html
           結果本身是**第 2 段 warning**——GUIDELINE §4：能力不足不做「不渲染／不可按」，照樣按得下去、
           把那道 403 列進 data-toast）
        ② 空名 → 400 `glossary.name_required`
-       ③ `_validate_normalize_regex` → 400 三種：超長（`_MAX_NORMALIZE_REGEX_LEN`）／
+       ③ `_validate_normalize_regex` → 400 三種：超長（`MAX_GLOSSARY_NORMALIZE_REGEX_LEN`）／
           `re.compile` 失敗／`regex_has_backtracking_risk`（含量詞或兩個以上交替）
-       ④ **`except RuntimeError: raise _as_bad_request(e)` → 400**——這一條最容易整條漏掉，
-          因為它在 product 這一側看不出有幾種結果：
-          `GufoRagClient._glossary_call` 把 chatbot 所有非成功信封（除了「不存在」）一律轉成
-          `RuntimeError`，所以 chatbot `validate_table_metadata` 的六道（三欄長度 ＋ 三欄
-          `contains_markup`）與它自己那份 `validate_normalize_regex` 全部從這裡出來，
-          使用者自己改得掉 ⇒ 併進 warning 段。同一條出口也會端出上游的 `DATABASE_ERROR`
-          （信封非成功即轉 RuntimeError），那一顆訊息說得出是伺服器端的事、落在 error 段。
-       ⑤ **`_assert_table_quota` → 400 `table.too_many_for_tenant`**：這個租戶的術語表已經有
+       ④ **`proxy_upstream` → 400 或 503**——這一條最容易整條漏掉，因為它在 product 這一側
+          看不出有幾種結果：那一支把上游失敗**分流**，判準是上游信封的 `code`——
+          在 `UPSTREAM_USER_INPUT_CODES` 白名單裡的 → **400 ＋ 上游原句**（原句指名了撞到哪個
+          名字、哪一張 config 還在引用這張表，那是使用者唯一據以行動的資訊，所以不改寫）；
+          分不出來的（沒有 `code`、或不在白名單）一律交給 `upstream_call` → 502／503 ＋ 關聯編號。
+          chatbot `validate_table_metadata` 的六道（三欄長度 ＋ 三欄 `contains_markup`）與它自己
+          那份 `validate_normalize_regex` 全部走 400 那一條，使用者自己改得掉 ⇒ 併進 warning 段；
+          503 那一條說得出是伺服器端的事、落在 error 段。
+          **分流的方向是刻意不對稱的**（那一支的 docstring 逐字）：把上游故障講成「你輸入錯了」
+          比反過來危險得多——前者沒有日誌、沒有告警、沒有關聯編號，使用者被指去改一個沒問題的欄位。
+       ⑤ **`assert_table_quota` → 400 `table.too_many_for_tenant`**：這個租戶的術語表已經有
           `MAX_TABLES_PER_TENANT` 張。**執法點在 product**（`MAX_TABLES_PER_TENANT = 30`），
           不在 GufoRAG chatbot——那一側的 `tenant_id` 是呼叫端自填的 tag、當不了配額鍵
           （換一個 tag 就再拿 30 張），product 這一層的 `tenant_id` 才是來自 session。
@@ -153,7 +156,7 @@ permalink: 3-2_glossaryManagement.html
         </div>
     </div>
     <div class="flex-row">
-        <button data-capability="data:write" type="button" class="button button-primary" data-toast="術語表已建立|權限不足，無法新增——請找貴租戶的管理者開通|表名稱不可為空、任一欄超過長度上限或含 XML/HTML 標籤，或正規化 regex 不合法（不可含量詞、不可兩個以上交替）|建立失敗，請稍後再試|這個租戶的術語表已經達到上限，建不了新的——每一張掛進設定檔的表都會常駐在每一輪對話的提示詞裡。請先刪掉用不到的那幾張" data-i18n-data-toast="toast.createGlossaryTable" data-toast-type="success|warning|warning|error|warning">
+        <button data-capability="data:write" type="button" class="button button-primary" data-toast="術語表已建立|權限不足，無法新增——請找貴租戶的管理者開通|表名稱不可為空、任一欄超過長度上限或含 XML/HTML 標籤，或正規化 regex 不合法（不可含量詞、不可兩個以上交替）|建立失敗，請稍後再試|這個租戶的術語表已經達到上限，建不了新的——每一張掛進設定檔的表都會常駐在每一輪對話的提示詞裡。請先刪掉用不到的那幾張|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.createGlossaryTable" data-toast-type="success|warning|warning|error|warning|warning">
             <img src="./images/icon_add_white.png" width="48" height="48" decoding="async" alt="" class="icon">
             <span data-i18n="settings.addGlossaryTable">新增術語表</span>
         </button>
@@ -172,7 +175,7 @@ permalink: 3-2_glossaryManagement.html
      ——「這顆界線有沒有被上游投影成一支拿得到的端點」：拿得到就寫一列。
      出處＝`GET /api/settings/chat-config-limits` 的 `glossary.tables_per_tenant.max_len`
      （product 的 `GLOSSARY_FIELD_LIMITS`，值取同一顆 `MAX_TABLES_PER_TENANT = 30`），
-     執法點是同 repo 的 `_assert_table_quota`（第 31 張 → 400 `table.too_many_for_tenant`）。
+     執法點是同 repo 的 `assert_table_quota`（第 31 張 → 400 `table.too_many_for_tenant`）。
      四欄的長度上限**不列在這裡**：它們已經是欄位旁常駐可見的 hint ＋ `maxlength`（§4），
      再抄一份進說明窗就是第二個會分家的地方。
      `bound` 是獨立節點、不進 `labelKey`／`effectKey` 的譯文（help-modal 檔頭）；寫法照全站慣例
@@ -270,7 +273,7 @@ permalink: 3-2_glossaryManagement.html
                             {# 三顆列動作鈕的可及名稱＝「本列表名 ＋ 本鈕自己的字」（§4 逐列控制項）：
                                  只有可見字面可以逐列重複，可及名稱不在豁免之內；自指那一半讓 WCAG 2.5.3
                                  Label in Name 成立（語音控制唸得到「儲存」）。 #}
-                            <button data-capability="data:write" type="button" id="glossaryTableSave-{{ tbl.id }}" aria-labelledby="glossaryTableRowName-{{ tbl.id }} glossaryTableSave-{{ tbl.id }}" class="button button-border button-sm" data-toast="術語表已更新|權限不足，無法儲存——請找貴租戶的管理者開通|表名稱不可為空、任一欄超過長度上限或含 XML/HTML 標籤，或正規化 regex 不合法（不可含量詞、不可兩個以上交替）|儲存失敗，請稍後再試" data-i18n-data-toast="toast.saveGlossaryTable" data-toast-type="success|warning|warning|error" data-i18n="action.save">儲存</button>
+                            <button data-capability="data:write" type="button" id="glossaryTableSave-{{ tbl.id }}" aria-labelledby="glossaryTableRowName-{{ tbl.id }} glossaryTableSave-{{ tbl.id }}" class="button button-border button-sm" data-toast="術語表已更新|權限不足，無法儲存——請找貴租戶的管理者開通|表名稱不可為空、任一欄超過長度上限或含 XML/HTML 標籤，或正規化 regex 不合法（不可含量詞、不可兩個以上交替）|儲存失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.saveGlossaryTable" data-toast-type="success|warning|warning|error|warning" data-i18n="action.save">儲存</button>
                             <button type="button" id="glossaryTableEntries-{{ tbl.id }}" aria-labelledby="glossaryTableRowName-{{ tbl.id }} glossaryTableEntries-{{ tbl.id }}" class="button button-border button-sm js-manage-entries" data-i18n="settings.manageEntries">管理詞條</button>
                             <button type="button" id="glossaryTableDelete-{{ tbl.id }}" aria-labelledby="glossaryTableRowName-{{ tbl.id }} glossaryTableDelete-{{ tbl.id }}" class="button button-red button-sm js-delete-glossary" data-i18n="action.delete">刪除</button>
                         </div>
@@ -315,7 +318,7 @@ permalink: 3-2_glossaryManagement.html
 {% set deleteConfirmClass = "js-confirm-delete-glossary" %}
 {% set deleteConfirmBinding = true %}
 {% set deleteCapability = "data:write" %}
-{% set deleteToast = "術語表已刪除|權限不足，無法刪除——請找貴租戶的管理者開通|此術語表仍被 Skill 或設定檔參照，請先移除參照|刪除失敗，請稍後再試" %}
-{% set deleteToastType = "success|warning|warning|error" %}
+{% set deleteToast = "術語表已刪除|權限不足，無法刪除——請找貴租戶的管理者開通|此術語表仍被 Skill 或設定檔參照，請先移除參照|刪除失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" %}
+{% set deleteToastType = "success|warning|warning|error|warning" %}
 {% set deleteToastKey = "toast.deleteGlossaryTable" %}
 {% include "components/delete-modal/delete-modal.html" %}

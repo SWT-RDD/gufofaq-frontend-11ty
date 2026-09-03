@@ -15,13 +15,18 @@
    ⚠️ 確認鈕與關窗拆開的連帶結果：**右上角 X 與 Esc 都只剩取消語意、不回填**，這是刻意的。
    把回填綁在 .btn-close-modals 上會讓 X 也回填，而 Esc 不會——同一個窗兩種關法、兩種結果，
    那是使用者猜不到的規則。
-   示範資料用元件專屬名 selectDatasetRows（§6：泛用名 datasets 會與資料集頁的同名變數互相覆蓋）。 #}
+   示範資料用元件專屬名 selectDatasetRows（§6：泛用名 datasets 會與資料集頁的同名變數互相覆蓋）。
+   **id 與名稱照跨頁的資料集目錄正本取**（3-5 的 `healthScanDatasets`，同 `components/search-scope-modal`）：
+   自己另編一批的話，這一窗會長出一批在 3-1-1 資料集清單上根本找不到的資料集（§6：跨頁的目錄要有一份正本）。
+   這一窗挑的是**匯入目標**，所以只列 kind=file 那五顆（QA 集不是匯入目標）。
+   **radio 的 `value` 是 dataset id、不是名字**（同 search-scope-modal：送出去的是 id，名字只是給人看的），
+   回填給模擬 select 的顯示字由同一列的 `<span>` 供給，見 select-dataset-modal.js。 #}
 {% set selectDatasetRows = [
-    { label: "資料集AA" },
-    { label: "資料集BB" },
-    { label: "資料集CC" },
-    { label: "資料集DD" },
-    { label: "資料集EE" }
+    { id: 3, label: "法規彙編" },
+    { id: 12, label: "2026 新制問答" },
+    { id: 101, label: "客服問答知識庫" },
+    { id: 102, label: "產品規格文件集" },
+    { id: 103, label: "常見問題彙整" }
 ] %}
 <dialog class="modals" id="datasetModal" aria-labelledby="datasetModal-title">
     <div class="modals-dialog modals-md">
@@ -44,7 +49,7 @@
                                 <div class="dataset-list" role="radiogroup" aria-labelledby="datasetModal-title">
                                     {% for dataset in selectDatasetRows %}
                                     <label class="form-checkbox border-wrap">
-                                        <input type="radio" name="dataset_radio" value="{{ dataset.label }}"{% if dataset.checked %} checked{% endif %}>
+                                        <input type="radio" name="dataset_radio" value="{{ dataset.id }}"{% if dataset.checked %} checked{% endif %}>
                                         <span>{{ dataset.label }}</span>
                                     </label>
                                     {% else %}

@@ -1,0 +1,95 @@
+{# 切塊設定的欄位組（`chunk_size`／`chunk_overlap`／`prepend_title_each_chunk`）＋ 它的 ⓘ 說明窗。
+     兩個消費點是同一份設定的兩個入口：3-1-2_dataImport_input（建立資料集，`DatasetIn` 三欄，
+     送出動作是那一頁的三張 upload-card）與 3-1-3_previewDataset（改既有資料集，`DatasetPatchIn`
+     三欄，送出是本區自己的儲存鈕）。
+   **為什麼抽成元件**：兩處的欄位、值域可見提示、兩句代價說明與 ⓘ 內容**必須逐字相同**
+     （§4：同一個欄位的多個入口，每一處都要有同一組約束提示）。各頁抄一份的話，值域或那兩句
+     代價說明改動時只會有一頁跟著改——而兩頁都看得到、兩頁都像是對的，沒有任何地方會紅。
+   **端點差異不在這裡**：打哪一支端點、有哪些 raise、拿不到「鎖住了沒有」這件事怎麼辦，
+     寫在各自頁面的檔頭——那才是兩頁真正不同的部分。
+
+     參數（呼叫端 include 前 set）：
+       chunkSettingsBlockClass（選填）＝補在 `.block` 上的版位 class（3-1-2 用 `mt-16`）。
+       chunkSettingsSubmit（選填，預設 false）＝true 時在欄位之後畫這一區自己的儲存鈕（3-1-3）。
+         3-1-2 不畫：那一頁的送出動作是下面三張 upload-card，這裡多一顆儲存鈕就是兩個送出點。
+
+     `role="group"` **只框那三個欄位**（§4：不得連同旁邊不屬於這組的控制項一起框）——標題與兩句
+     代價說明在 group 之外，儲存鈕也在 group 之外：把送出鈕框進來，報讀器會把它念成「切塊設定」
+     的成員。名字由 `#chunkSettingsTitle` 提供，所以那顆標題 div **不塞子節點**（混進按鈕的字會
+     把整組的名字弄髒），另包一層 `flex-row` 放標題與 ⓘ 鈕。
+
+     ⓘ 六件組的 markup 逐字照抄 `settings/5-2_conversationSettings.html` 出口套用欄那顆既有
+     info-btn（`aliasOutputInfoModal` 觸發鈕）。
+
+     `chunkSettingsHelpModal` 與其餘 id 都是**一頁一份**：兩個消費點各自輸出成獨立的 dist 檔，
+     id 不會撞（§4「id 在一頁裡必須唯一」是逐檔驗證，不是全站）。 #}
+<div class="block flex-row column gap-16{% if chunkSettingsBlockClass %} {{ chunkSettingsBlockClass }}{% endif %}">
+    <div class="flex-row column gap-8">
+        <div class="flex-row align-items-center gap-8">
+            <div class="text-md text-bold" id="chunkSettingsTitle" data-i18n="dataset.chunkSettings">切塊設定</div>
+            <button type="button" class="info-btn" title="切塊設定說明" data-i18n-title="help.dataset.chunkSettings.title" data-open-modal="chunkSettingsHelpModal">
+                <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+                <span class="sr-only" data-i18n="help.dataset.chunkSettings.title">切塊設定說明</span>
+            </button>
+        </div>
+        {# 代價寫在做這個決定的控制項旁邊，且排在觸發鈕之前（§3-2）——3-1-2 的觸發鈕是下面那三張卡、
+             3-1-3 的是這一區的儲存鈕，兩處都在這兩句之後。 #}
+        <p class="text-gray m-0" data-i18n="dataset.chunkAffectsFutureOnly">切塊參數只在建立擷取管道時送給上游，所以只影響之後匯入的檔案；已經匯入的內容不會重新切塊。</p>
+        <p class="text-gray m-0" data-i18n="dataset.chunkLockedAfterUpload">而且這個資料集只要做過一次「檔案上傳」匯入，這三個值就再也改不動，之後不論從哪一條路匯入都只能沿用現值——請在這裡決定好。</p>
+    </div>
+    <div class="flex-row column gap-16" role="group" aria-labelledby="chunkSettingsTitle">
+        <div class="form-group row">
+            <div class="label">
+                <label for="chunkSize" class="control-label" data-i18n="dataset.chunkSize">切塊大小</label>
+            </div>
+            <div class="field">
+                <input type="number" id="chunkSize" class="form-control" min="100" max="8000" step="1" value="1000" aria-describedby="chunkSizeRange">
+                {# 區間是資料不是譯文（§3-2），數字獨立成不翻的節點。 #}
+                <span class="text-gray" id="chunkSizeRange">100 – 8000</span>
+            </div>
+        </div>
+        <div class="form-group row">
+            <div class="label">
+                <label for="chunkOverlap" class="control-label" data-i18n="dataset.chunkOverlap">切塊重疊</label>
+            </div>
+            <div class="field">
+                {# 沒有 `max`：上界是跨欄約束（重疊必須小於切塊大小），不是一顆常數，所以由右邊那句
+                     可見提示承載、不寫進屬性（§4 數字欄三件套）。 #}
+                <input type="number" id="chunkOverlap" class="form-control" min="0" step="1" value="200" aria-describedby="chunkOverlapRange">
+                <span class="text-gray" id="chunkOverlapRange">≥ 0<span data-i18n="dataset.chunkOverlapBelowSize">，且必須小於切塊大小</span></span>
+            </div>
+        </div>
+        <label class="form-checkbox">
+            <input type="checkbox" id="prependTitleEachChunk" aria-describedby="prependTitleHint">
+            <span data-i18n="dataset.prependTitleEachChunk">每一塊都帶上文件標題</span>
+        </label>
+        <p id="prependTitleHint" class="text-gray m-0" data-i18n="dataset.prependTitleHint">開啟後每一塊的開頭都會補上這份文件的標題，檢索時比較不會斷章取義；代價是每一塊少一點放正文的長度。</p>
+    </div>
+    {% if chunkSettingsSubmit %}
+    <div class="flex-row justify-content-end">
+        {# 逐 raise 對回這顆鈕（product 的 `update_dataset`）：403 `require_capability("data","write")`（能力軸）／
+             403 `dataset.not_writable_group`（`_writable_dataset`，與 3-1-3 名稱那顆同一道守衛）／
+             422（`_assert_overlap_below_size`，端點拿**合併後**的值複驗，只送一欄時另一半在 DB 裡）／
+             409 `dataset.chunk_params_locked`（`_assert_chunk_params_still_settable`；訊息要講清楚三欄是
+             共用的一份值、這一次一個都沒存下來）——三段都是使用者自己處理得掉的 warning。
+             404／500 併進末段 error。
+             400 `common.no_fields_to_update` 不列：這張表單一定會送出三欄，走不到那條路。 #}
+        <button data-capability="data:write" type="button" class="button button-primary js-save-chunk-params"
+            data-toast="切塊設定已更新|權限不足，無法儲存——請找貴租戶的管理者開通|這個資料集不在你可以寫入的群組裡，請找管理員把你加進該群組|切塊重疊必須小於切塊大小|這個資料集已經做過「檔案上傳」匯入，切塊參數不能再改；這一次三個值一個都沒有存下來|儲存失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員"
+            data-i18n-data-toast="toast.saveChunkParams" data-toast-type="success|warning|warning|warning|warning|error|warning"
+            data-i18n="action.save">儲存</button>
+    </div>
+    {% endif %}
+</div>
+
+{# 「切塊設定」的說明視窗：①出處＝product 的 `DatasetIn`／`DatasetPatchIn` 三欄與
+     `_assert_chunk_params_still_settable`（逐頁的端點差異見各自頁面檔頭）。
+     ②③留空——同 `excelImportOptionsHelpModal` 那份的理由，容器見 help-modal.html 檔頭。 #}
+{% set helpModalId = "chunkSettingsHelpModal" %}
+{% set helpModalTitleKey = "help.dataset.chunkSettings.title" %}
+{% set helpModalTitle = "切塊設定說明" %}
+{% set helpModalWhatKey = "help.dataset.chunkSettings.what" %}
+{% set helpModalWhat = "這一區決定之後匯入這個資料集的檔案要怎麼被切成一塊一塊：每一塊多大、相鄰兩塊之間要不要保留一段重疊內容以免把一句話從中間切斷，以及要不要讓每一塊都帶著原始文件的標題，方便檢索時看出這段內容出自哪一份文件。" %}
+{% set helpModalStateItems = [] %}
+{% set helpModalLimitRows = [] %}
+{% include "components/help-modal/help-modal.html" %}

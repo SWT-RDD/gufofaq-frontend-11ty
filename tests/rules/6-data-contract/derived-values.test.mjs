@@ -64,7 +64,24 @@ test("§6 可刪除清單的每一列都要帶列鍵（位置不是身分：刪�
     // `<tr>` 上（逐列刪除／下載鈕身上的 `data-*` 列鍵就是這種位置），照抄那個位置是對的。
     // 只要這一列的 markup 裡有任何一顆從資料插值來的身分屬性就算數。
     const DELETABLE = /js-delete|js-remove|js-revoke|delete-single-btn|class="[^"]*\bdelete\b|data-i18n="action\.(delete|remove|revoke)"/;
-    const ROWKEY = /\bdata-[\w-]*(?:id|sn|no|key|code|index|question|filename)="\{\{/;
+    // 列鍵**也可以印在 `id` 上**：逐列的 a11y 綁定（`aria-labelledby="<名稱 id> <鈕 id>"`）本來就要
+    // 一個逐列唯一的字串，那個字串就是這一列的身分。只認 `data-*` 的話，3-1-1 那種「刪除目標由
+    // 按下的那一列決定、身分只印在 id 上」的形狀會被逼著多印一份 `data-*`，或是掛一筆豁免。
+    // **但位置不算列鍵**：`loop.index`／`loop.index0` 是位置不是身分（§6），刪一筆之後整排前頂，
+    // 而那正是這條規則要擋的事。**改名之後照樣是位置**——`{% set oruleIdx = loop.index %}` 之後
+    // 的 `id="oruleRowName-{{ oruleIdx }}"` 與直接寫 `loop.index` 是同一件事，只擋字面的話，
+    // 換個名字就從「位置」變成「身分」。故先把迴圈體內所有「= loop.index」的別名收出來一起當位置。
+    // 別名的搜尋範圍是**整支檔案**、不是這一圈的迴圈體：巢狀迴圈的外圈才是 `{% set oruleIdx = loop.index %}`
+    // 的宣告處，只掃內圈的話那個名字會被當成身分（而它就是位置）。
+    // 判準是**至少有一個插值不是位置**（不是「整串都不含位置」）：`id="x-{{ 列號 }}-{{ col.key }}"`
+    // 這種混合寫法裡，`col.key` 才是那一格的身分，位置只是拿來湊唯一。
+    const ID_ATTR = /\b(?:data-[\w-]*(?:id|sn|no|key|code|index|question|filename)|id)="([^"]*)"/g;
+    const POS_ALIAS = /\{%-?\s*set\s+([A-Za-z_]\w*)\s*=\s*loop\.index0?\s*-?%\}/g;
+    const EXPR = /\{\{-?\s*([^}]*?)\s*-?\}\}/g;
+    const ROWKEY = { test: (body, src = body) => {
+        const positional = new Set(["loop.index", "loop.index0", ...[...src.matchAll(POS_ALIAS)].map((m) => m[1])]);
+        return [...body.matchAll(ID_ATTR)].some(([, v]) => [...v.matchAll(EXPR)].some(([, e]) => !positional.has(e.trim())));
+    } };
 
     // 豁免：**上游的正本就是一個沒有身分欄的陣列**（整批取代／尚未落庫），位置在那裡真的就是身分。
     // 每一筆都要寫出「為什麼上游沒有 id」，而且下面會驗它真的還在（死豁免當場報出來）。
@@ -73,8 +90,9 @@ test("§6 可刪除清單的每一列都要帶列鍵（位置不是身分：刪�
             "整批取代：GufoRAG chatbot 的 `replace_alias_entries`（`PUT /api/alias/{table_id}/entries`）docstring 逐字寫著「不做逐筆 diff」——編輯器送出的是整份陣列，DB 的 `alias_entries.id` 由後端重建"],
         ["src/_includes/components/glossary-entries-modal/glossary-entries-modal.html:entry in glossaryEntryRows",
             "同型：GufoRAG chatbot 的 `replace_glossary_entries`（`PUT /{table_id}/entries`）也是整表存檔"],
-        ["src/pages/dataset/3-1-1_datasetList.html:row in rows",
-            "這一頁的刪除鈕不印列鍵：目標由「按下它的那一列」決定（React 從 map 的 row 閉包取值）。3-1-3 才是真的印在標籤上——那幾顆是逐列動作、要靠列鍵認列，兩頁不對稱是保留不是漏"],
+
+        ["src/pages/dataImport/1-2-1_uploadFile_pdf.html:file in fileRows",
+            "送出前的待上傳清單：這一批檔還沒送到後端，沒有任何 id 可用（同 2-2-4 那一筆的理由）。這一列的 `data-index` 印的正是位置——它是 React 端從同一個陣列 re-render 出來的，移除一筆之後整份重畫，位置與陣列永遠同步；把它當成一顆身分鍵拿去對比後端資料才是錯的"],
         ["src/pages/qaTest/2-2-4_regressionSuites.html:a in regressionNewAssertions",
             "「新增案例」表單裡還沒送出的斷言列：這一份根本還沒落庫，沒有任何後端 id 可用"],
         ["src/pages/settings/5-2_conversationSettings.html:topic in policyTopics",
@@ -108,7 +126,7 @@ test("§6 可刪除清單的每一列都要帶列鍵（位置不是身分：刪�
             const body = src.slice(m.index + m[0].length, end);
             if (!DELETABLE.test(body)) continue;
             loops++;
-            if (ROWKEY.test(body)) continue;
+            if (ROWKEY.test(body, src)) continue;
             const key = `${f}:${m[1]}`;
             if (POSITIONAL.has(key)) { used.add(key); continue; }
             hits.push(`${f}:${countLines(src, m.index)}  {% for ${m[1]} %} 這一列刪得掉，卻沒有任何列鍵——位置不是身分（§6）`);
@@ -130,12 +148,15 @@ test("§6 可刪除清單的每一列都要帶列鍵（位置不是身分：刪�
             const end = s.indexOf("{% endfor %}", m.index);
             if (end < 0) continue;
             const body = s.slice(m.index + m[0].length, end);
-            if (DELETABLE.test(body) && !ROWKEY.test(body)) out.push(m[1]);
+            if (DELETABLE.test(body) && !ROWKEY.test(body, s)) out.push(m[1]);
         }
         return out;
     },
-        ['{% for r in rows %}<tr><td>{{ r.name }}</td><td><button class="js-delete-x">刪除</button></td></tr>{% endfor %}'],
+        ['{% for r in rows %}<tr><td>{{ r.name }}</td><td><button class="js-delete-x">刪除</button></td></tr>{% endfor %}',
+            '{% for r in rows %}<tr><td id="rowName-{{ loop.index }}">{{ r.name }}</td><td><button class="js-delete-x">刪除</button></td></tr>{% endfor %}',
+            '{% for r in rows %}{% set n = loop.index %}<tr><td id="rowName-{{ n }}">{{ r.name }}</td><td><button class="js-delete-x">刪除</button></td></tr>{% endfor %}'],
         ['{% for r in rows %}<tr data-row-id="{{ r.id }}"><td><button class="js-delete-x">刪除</button></td></tr>{% endfor %}',
+            '{% for r in rows %}<tr><td id="rowName-{{ r.id }}">{{ r.name }}</td><td><button class="js-delete-x">刪除</button></td></tr>{% endfor %}',
             '{% for r in rows %}<tr><td>{{ r.name }}</td></tr>{% endfor %}']);
 });
 

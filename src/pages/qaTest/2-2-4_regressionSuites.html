@@ -105,7 +105,7 @@ permalink: 2-2-4_regressionSuites.html
         </div>
     </div>
     <div class="flex-row">
-        <button data-capability="settings:write" type="button" class="button button-primary" data-toast="案例集已建立|權限不足，無法新增——請找貴租戶的管理者開通|案例集名稱不可為空白|建立失敗，請稍後再試" data-i18n-data-toast="toast.createSuite" data-toast-type="success|warning|warning|error">
+        <button data-capability="settings:write" type="button" class="button button-primary" data-toast="案例集已建立|權限不足，無法新增——請找貴租戶的管理者開通|案例集名稱不可為空白|建立失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.createSuite" data-toast-type="success|warning|warning|error|warning">
             <img src="./images/icon_add_white.png" width="48" height="48" decoding="async" alt="" class="icon">
             <span data-i18n="regression.addSuite">新增案例集</span>
         </button>
@@ -201,7 +201,7 @@ permalink: 2-2-4_regressionSuites.html
                     <td>{{ suite.createdAt }}</td>
                     <td>
                         <div class="btn-group">
-                            <button data-capability="settings:read" type="button" id="suiteOpen-{{ suite.id }}" aria-labelledby="suiteRowName-{{ suite.id }} suiteOpen-{{ suite.id }}" class="button button-border button-sm js-open-suite" data-toast="正在查詢資料...|權限不足，無法查詢——請找貴租戶的管理者開通|查詢成功|載入資料失敗，請重新整理頁面" data-i18n-data-toast="toast.query" data-toast-type="info|warning|success|error" data-i18n="regression.openSuite">檢視案例</button>
+                            <button data-capability="settings:read" type="button" id="suiteOpen-{{ suite.id }}" aria-labelledby="suiteRowName-{{ suite.id }} suiteOpen-{{ suite.id }}" class="button button-border button-sm js-open-suite" data-toast="正在查詢資料...|權限不足，無法查詢——請找貴租戶的管理者開通|查詢成功|載入資料失敗，請重新整理頁面|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.query" data-toast-type="info|warning|success|error|warning" data-i18n="regression.openSuite">檢視案例</button>
                             <button type="button" id="suiteDelete-{{ suite.id }}" aria-labelledby="suiteRowName-{{ suite.id }} suiteDelete-{{ suite.id }}" class="button button-red button-sm js-delete-suite" data-i18n="action.delete">刪除</button>
                         </div>
                     </td>
@@ -453,8 +453,8 @@ permalink: 2-2-4_regressionSuites.html
   { type: "judge", shape: "criteria", criteria: "答案有沒有正面回答「稅率是多少」，而不是只講申報流程" }
 ] %}
 <div class="block mt-16 flex-row column gap-16">
-    {# ⓘ 說明：markup 同既有 info-btn 六件組。①出處：本頁檔頭「斷言列：型別 select（11 型，
-         值域＝引擎的 `ASSERTION_TYPES`）」一節，與 product 的
+    {# ⓘ 說明：markup 同既有 info-btn 六件組。①出處：本頁檔頭「斷言列：型別 select」一節
+         （值域＝引擎的 `ASSERTION_TYPES`，從 `_CHECKERS` 的鍵推導；顆數不寫死，§3-2），與 product 的
          `ASSERTION_TYPES`／`ASSERTION_PARAM_SHAPES`、product 的
          `_validate_assertions`（至少一條、且至少一條確定性斷言）。 #}
     <div class="flex-row align-items-center gap-8">
@@ -678,7 +678,7 @@ permalink: 2-2-4_regressionSuites.html
     </div>
 
     <div class="flex-row">
-        <button data-capability="settings:write" type="button" class="button button-primary" data-toast="案例已新增|權限不足，無法新增——請找貴租戶的管理者開通|案例的問題不可為空白，長度也不能超過 2000 字|有一條斷言的參數不合法，請檢查|至少要有一條確定性斷言（主觀分不進通過與否）|新增失敗，請稍後再試" data-i18n-data-toast="toast.createCase" data-toast-type="success|warning|warning|warning|warning|error" data-i18n="regression.addCase">手動新增案例</button>
+        <button data-capability="settings:write" type="button" class="button button-primary" data-toast="案例已新增|權限不足，無法新增——請找貴租戶的管理者開通|案例的問題不可為空白，長度也不能超過 2000 字|有一條斷言的參數不合法，請檢查|至少要有一條確定性斷言（主觀分不進通過與否）|新增失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.createCase" data-toast-type="success|warning|warning|warning|warning|error|warning" data-i18n="regression.addCase">手動新增案例</button>
     </div>
 </div>
 
@@ -1011,7 +1011,7 @@ permalink: 2-2-4_regressionSuites.html
              **兩者各佔一段、不得折在一起**：§4 逐字寫著「折進同一個屬性＝把兩種 403 說成同一件事」
              ——一句「請找貴租戶的管理者」對第二種是錯的指示，它叫使用者去找一個改不動這件事的人。
              **接在最末位**：段序是 React 端 `split("|")[n]` 的索引契約（同 3-1-3／5-9／5-6-3）。 #}
-        <button data-capability="settings:write" data-tenant-feature="ask" type="button" class="button button-primary" data-toast="開始執行回歸…|權限不足，無法執行——請找貴租戶的管理者開通|回歸執行完成|這個案例集還沒有任何案例，沒有東西可以跑|案例數超過單次執行上限，請拆成多個案例集|這一次指定的覆寫值超出可用範圍，請改回範圍內再跑|被測設定檔存著一個超出可覆寫範圍的值，這一輪一則都沒有跑到，請回報|執行中斷，已完成的結果保留|這個租戶的問答功能已經被平台關閉，回歸跑不起來——請聯絡平台管理員" data-i18n-data-toast="toast.runRegression" data-toast-type="info|warning|success|warning|warning|warning|error|error|warning" data-i18n="regression.startRun">開始執行</button>
+        <button data-capability="settings:write" data-tenant-feature="ask" type="button" class="button button-primary" data-toast="開始執行回歸…|權限不足，無法執行——請找貴租戶的管理者開通|回歸執行完成|這個案例集還沒有任何案例，沒有東西可以跑|案例數超過單次執行上限，請拆成多個案例集|這一次指定的覆寫值超出可用範圍，請改回範圍內再跑|被測設定檔存著一個超出可覆寫範圍的值，這一輪一則都沒有跑到，請回報|執行中斷，已完成的結果保留|這個租戶的問答功能已經被平台關閉，回歸跑不起來——請聯絡平台管理員|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.runRegression" data-toast-type="info|warning|success|warning|warning|warning|error|error|warning|warning" data-i18n="regression.startRun">開始執行</button>
     </div>
 </div>
 
@@ -1103,7 +1103,7 @@ permalink: 2-2-4_regressionSuites.html
                     <td>
                         <div class="btn-group">
                             <a href="2-2-5_regressionRun.html?run={{ run.id }}" id="runReport-{{ run.id }}" aria-labelledby="runRowNo-{{ run.id }} runReport-{{ run.id }}" class="button button-border button-sm" data-i18n="regression.viewReport">看報表</a>
-                            <button data-capability="settings:read" type="button" id="runExport-{{ run.id }}" aria-labelledby="runRowNo-{{ run.id }} runExport-{{ run.id }}" class="button button-border button-sm js-export-run" data-toast="報表已下載|權限不足，無法下載——請找貴租戶的管理者開通|匯出失敗，請稍後再試" data-i18n-data-toast="toast.exportRun" data-toast-type="success|warning|error" data-i18n="action.download">下載</button>
+                            <button data-capability="settings:read" type="button" id="runExport-{{ run.id }}" aria-labelledby="runRowNo-{{ run.id }} runExport-{{ run.id }}" class="button button-border button-sm js-export-run" data-toast="報表已下載|權限不足，無法下載——請找貴租戶的管理者開通|匯出失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.exportRun" data-toast-type="success|warning|error|warning" data-i18n="action.download">下載</button>
                         </div>
                     </td>
                 </tr>
@@ -1153,7 +1153,7 @@ permalink: 2-2-4_regressionSuites.html
      `delete_suite` 的 docstring 逐字寫著 `regression_runs.suite_id` **刻意不級聯**。同一段還要同時
      說得通兩道守衛（刪案例集是 409 `suite_has_runs`、刪案例是 409 `case_has_results`），所以句子
      講的是「跑過就凍結」這個事實，不是叫人先去刪別的東西。 #}
-{% set deleteToast = "已刪除|權限不足，無法刪除——請找貴租戶的管理者開通|它已經跑過，為了保住歷史紀錄不能刪除|刪除失敗，請稍後再試" %}
+{% set deleteToast = "已刪除|權限不足，無法刪除——請找貴租戶的管理者開通|它已經跑過，為了保住歷史紀錄不能刪除|刪除失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" %}
 {% set deleteToastKey = "toast.deleteRegression" %}
-{% set deleteToastType = "success|warning|warning|error" %}
+{% set deleteToastType = "success|warning|warning|error|warning" %}
 {% include "components/delete-modal/delete-modal.html" %}

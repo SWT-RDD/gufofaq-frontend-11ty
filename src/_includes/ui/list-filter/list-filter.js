@@ -56,7 +56,7 @@
 //                   </div>
 //               </div>
 //           </div>
-//           （接著是 .modals-footer：兩顆 modal 各有自己的按鈕列，屬 ui/modals 的契約）
+//           {# 此處接 ui/modals 的 .modals-footer，見該元件檔頭（兩顆 modal 各有自己的按鈕列） #}
 //       </div>
 //   </div>
 //
@@ -96,7 +96,7 @@
 //                   </div>
 //               </div>
 //           </div>
-//           （接著是 .modals-footer：兩顆 modal 各有自己的按鈕列，屬 ui/modals 的契約）
+//           {# 此處接 ui/modals 的 .modals-footer，見該元件檔頭（兩顆 modal 各有自己的按鈕列） #}
 //       </div>
 //   </div>
 //

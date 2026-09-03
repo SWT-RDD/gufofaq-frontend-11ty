@@ -5,6 +5,28 @@
 // **這幾條要知道理由（改動前先讀）**：
 //   ① 色值全數走語意 token（`--border`／`--text`／`--surface-sunken`），不寫死色碼。
 //   ② `.th`／`.td` 都不自己寫 `box-sizing: border-box`（§4-1：`_base.scss` 已全域給）。
+//
+// **生產契約**（§1-2）：`form-table.html` 是展示片段，它的 `.subtitle` 與 `.th` **一顆
+// `data-i18n` 都沒有**（showcase 整頁不翻，§4-2），而生產的每一顆都要有——那兩種都是 chrome
+// （區段小標與欄名），照片段抄就是英文模式整張表露出繁中，而視覺指紋完全看不出來。
+// **契約要住在檔頭**：契約檢查讀的是「第一條非註解程式碼之前的那一段」，寫在檔尾等於
+// 那一份正本不受任何一條規則檢查（同構、屬性值落點、省略形式三張網一張都碰不到它）。
+// 逐字取自 components/qa-detail-info（4-2／shared 兩頁的問答詳情）：
+//
+//   <div class="form-table-group">
+//       <div class="subtitle" data-i18n="qa.basicConversationInfo">基本對話資訊</div>
+//       <div class="form-table">
+//           <div class="row">
+//               <div class="col col-12-md">
+//                   <div class="th" data-i18n="qa.chatroomId">聊天室編號</div>
+//                   <div class="td">{{ conversation.chatroomId }}</div>
+//               </div>
+//           </div>
+//       </div>
+//   </div>
+//
+// `.td` 裡是資料、不掛 key（§4-2）。欄寬工具（`col-6-md`／`col-12-sm`／`col-12-md`）逐欄各不相同，
+// 不屬本契約——它是那一格要占幾欄的版位決定，由使用頁給。
 @use "../../../scss/mixin" as *;
 
 /*===============================
@@ -33,25 +55,6 @@
     }
 }
 
-// **生產契約**（§1-2）：`form-table.html` 是展示片段，它的 `.subtitle` 與 `.th` **一顆
-// `data-i18n` 都沒有**（showcase 整頁不翻，§4-2），而生產的每一顆都要有——那兩種都是 chrome
-// （區段小標與欄名），照片段抄就是英文模式整張表露出繁中，而視覺指紋完全看不出來。
-// 逐字取自 components/qa-detail-info（4-2／shared 兩頁的問答詳情）：
-//
-//   <div class="form-table-group">
-//       <div class="subtitle" data-i18n="qa.satisfactionFeedback">滿意度回饋</div>
-//       <div class="form-table">
-//           <div class="row">
-//               <div class="col col-6-md col-12-sm">
-//                   <div class="th" data-i18n="qa.userSatisfaction">使用者滿意度</div>
-//                   <div class="td">{{ 值 }}</div>
-//               </div>
-//           </div>
-//       </div>
-//   </div>
-//
-// `.td` 裡是資料、不掛 key（§4-2）。
-//
 .form-table {
     width: 100%;
     min-width: auto;

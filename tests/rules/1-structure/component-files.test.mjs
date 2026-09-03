@@ -280,7 +280,7 @@ test("§1-2 元件檔頭的 markup 契約要逐字對得上生產實例（形狀
         const text = contractBlocks(headsOf(c)).join("\n");
         if (text) valueHits.push(...scanValues(text).map((h) => `${c.bucket}/${c.name}  ${h}`));
     }
-    assert.ok(toastLits >= 30 && i18nLits >= 100 && ariaLits >= 10,
+    assert.ok(toastLits >= 48 && i18nLits >= 216 && ariaLits >= 19,
         `契約值掃描只取到 toast ${toastLits}／i18n ${i18nLits}／aria ${ariaLits} 顆 —— 這一半在空轉`);
     probe("§1-2 契約屬性值有落點", scanValues, [
         `<button data-toast="已儲存|儲存失敗，請稍後再試一次而且這句全站沒有人這樣寫">x</button>`,   // 分岔的文案
@@ -289,13 +289,99 @@ test("§1-2 元件檔頭的 markup 契約要逐字對得上生產實例（形狀
         `<input aria-describedby="noSuchHintIdAnywhere">`,                                          // 指向不存在的 id
         `<label for="<欄位 id>" data-i18n="common.account">x</label>`,                               // 代稱不是字面
     ], [
-        `<button data-toast="已複製金鑰|複製失敗，請手動選取後複製">x</button>`,
+        `<button data-toast="金鑰已複製|複製失敗，請手動選取後複製">x</button>`,
         `<span data-i18n="common.account">帳號</span>`,
         `<input aria-describedby="chatAskMaxLenHint">`,
         `<input aria-describedby="probeLocalHint"><span id="probeLocalHint">x</span>`,   // 契約自帶被指的節點
         `<span data-i18n="{{ row.reasonKey }}">x</span>`,                                 // 插值型是內容槽
     ]);
     assert.equal(valueHits.length, 0, `§1-2 契約的硬規則屬性值沒有落點：\n${fail(valueHits)}`);
+
+    // ── 契約裡的**文字內容**也要對得上生產實例（§1-2 逐字）────────────────────
+    // 上面兩張網一張看巢狀／class／屬性名、一張看屬性值——**文字節點兩張都看不到**。
+    // 實測漂掉的兩處：`ui/chatroom-shell` 的日期分隔列寫 `2024/12/02`（生產是 `2024/12/01`），
+    // `ui/collapse-text` 的長文示範被縮寫成一句意思相近、但 src 裡一個字都找不到的句子。
+    // 判準：契約裡**不含插值**的文字節點，要在某一支 src markup 上找得到同一段文字
+    // （比對前後都 trim——同一句話在兩處的縮排與換行位置本來就不同）。
+    // `{% set %}` 的字串字面也算數：`subscription-gate` 那句錯誤訊息是使用頁 set 進來的，
+    // 它在 markup 上永遠是 `{{ gateDisclaimerError }}`（同 authz 對 data-toast 的處置）。
+    const textPool = new Set();
+    for (const g of srcHtml) {
+        const raw = read(g).replace(/\{#[\s\S]*?#\}/g, " ");   // 註解裡的引用不是實例
+        for (const m of raw.matchAll(/>([^<>]*)</g)) { const s = m[1].trim(); if (s) textPool.add(s); }
+        for (const m of raw.matchAll(/\{%-?\s*set\s+\w+\s*=\s*"([^"]*)"/g)) { const s = m[1].trim(); if (s) textPool.add(s); }
+    }
+    const textHits = [];
+    let textNodes = 0;
+    for (const c of componentDirs)
+        for (const b of contractBlocks(headsOf(c)))
+            for (const m of b.matchAll(/>([^<>{}]+)</g)) {
+                const txt = m[1].trim();
+                if (txt.length < 2) continue;
+                textNodes++;
+                if (!textPool.has(txt))
+                    textHits.push(`${c.bucket}/${c.name}  契約的文字內容在任何 src markup 上都找不到（照抄＝抄到一份已經分岔的字）：${txt.slice(0, 40)}`);
+            }
+    assert.ok(textNodes >= 180, `契約裡只掃到 ${textNodes} 個字面文字節點 —— 這一條在空轉`);
+    probe("§1-2 契約文字對得上實例", (s) => {
+        const out = [];
+        for (const m of s.matchAll(/>([^<>{}]+)</g)) { const x = m[1].trim(); if (x.length >= 2 && !textPool.has(x)) out.push(x); }
+        return out;
+    }, [
+        `<div class="date">2024/12/02</div>`,            // 與生產差一天
+        `<span data-i18n="action.copy">拷貝</span>`,      // 意思相近、字不同
+    ], [
+        `<div class="date">2024/12/01</div>`,
+        `<span data-i18n="action.copy">複製</span>`,
+    ]);
+    assert.equal(textHits.length, 0, `§1-2 契約的文字內容：\n${fail(textHits)}`);
+
+    // ── 契約不准住在檔身（§1-2：生產契約寫在**檔頭**）───────────────────────
+    // `headsOf` 取的是「第一條非註解程式碼之前的那一段」——契約寫在檔尾或夾在規則中間時，
+    // 上面每一條檢查（同構、屬性值落點、省略形式）**一條都碰不到它**。實測過的後果：
+    // `ui/button` 檔尾那一份寫著 `js-save-x`／`toast.saveX` 這種代稱（抄下去是一顆指不到任何
+    // 東西的 hook ＋ 一顆字典裡沒有的 key），`ui/chatroom-shell` 檔身那一份的日期與生產實例
+    // 差一天——兩份都活了很久，因為沒有人看過它們。
+    // 判準是**連續兩行以上的 markup 註解**（單獨一行常常是散文裡順手引一顆節點，例如
+    // `lang-toggle` 講 `<title>` 那一句；連著兩行以上就是一份被搬到檔身的契約）。
+    const isMarkupLine = (l) => /^\s*(?:<|\{[%#])/.test(l);
+    const tailHits = [];
+    let tailsScanned = 0;
+    for (const { bucket, name, path } of componentDirs)
+        for (const file of [`${path}/_${name}.scss`, `${path}/${name}.js`].filter(existsSync)) {
+            const src = read(file);
+            const end = src.search(/^\s*(?:[.&@:#a-zA-Z\[]|document\.|\(function|window\.|var |const |let )/m);
+            if (end <= 0) continue;
+            tailsScanned++;
+            const lines = src.slice(end).split(/\r?\n/).map((l) => { const m = l.match(/^\s*\/\/ ?(.*)$/); return m === null ? null : m[1]; });
+            let run = 0;
+            for (const l of lines) {
+                run = l !== null && isMarkupLine(l) ? run + 1 : 0;
+                if (run === 2) { tailHits.push(`${bucket}/${name}  ${file} 的**檔身**有一段 markup 契約 —— 契約檢查只讀檔頭，那一份不受任何規則約束`); break; }
+            }
+        }
+    assert.ok(tailsScanned >= 60, `只掃到 ${tailsScanned} 支元件檔的檔身 —— 檔頭切點壞了，這一條在空轉`);
+    assert.equal(tailHits.length, 0, `§1-2 生產契約要寫在檔頭：\n${fail(tailHits)}`);
+
+    // ── 契約段裡的省略只准兩種形式（§1-2）────────────────────────────────
+    // 用 `{# … #}` 描述一顆**被略掉的節點該有哪些屬性**（`{# 逐顆 button-icon：各自帶 id ＋
+    // aria-labelledby #}`）是這條規則逐字禁止的那一種：它形式上不是散文、也不會被貼進 HTML，
+    // 於是上面兩張網（同構比對、屬性值比對）**兩張都碰不到它**——而被它帶過的，往往正是照抄時
+    // 最常掉的那幾顆屬性。合法的只有兩種：①「重複 N 次同型節點」；②「此處接 <元件> 的 <節點>，
+    // 見該元件檔頭」（該元件檔頭要真的有完整契約）。
+    const OMIT_OK = /^(?:重複|此處接)/;
+    const omitHits = [];
+    let omits = 0;
+    for (const c of componentDirs)
+        for (const b of contractBlocks(headsOf(c)))
+            for (const m of b.matchAll(/\{#([\s\S]*?)#\}/g)) {
+                omits++;
+                const body = m[1].trim();
+                if (!OMIT_OK.test(body))
+                    omitHits.push(`${c.bucket}/${c.name}  契約段裡的省略不是那兩種法定形式：{# ${body.slice(0, 60)} #}`);
+            }
+    assert.ok(omits >= 6, `契約段裡只找到 ${omits} 則 {# #} —— 契約段辨識壞了，這一條在空轉`);
+    assert.equal(omitHits.length, 0, `§1-2 契約段的省略形式：\n${fail(omitHits)}`);
 
     // 空轉守門：契約 parse 壞掉（挖掉插值挖過頭、多行標籤沒併回來）會讓一顆節點都不被驗、照樣全綠
     assert.ok(contractRoots >= 109, `只 parse 出 ${contractRoots} 顆契約根節點 —— 契約 parser 壞了，這條在空轉`);
@@ -410,29 +496,68 @@ test("§1-2 展示片段與生產實例的硬規則屬性不一致時，生產�
     // 判準只在**真的有漂移**時要求契約：同一顆根 class 上，生產實例帶了片段沒有的 §4 硬規則屬性。
     const HARD = /^(aria-|data-i18n|data-toast|data-capability$|data-tenant-|data-platform-role$|role$|width$|height$|decoding$|type$)/;
     const prodPages = srcHtml.filter((f) => f.startsWith("src/pages/") && f !== "src/pages/components/component.html");
-    const attrsOn = (text, cls) => {
+    // **根 class 不等於資料夾名的那幾支**：`attrsOn(text, name)` 兩邊都比不到任何節點 ⇒ drift 恆空
+    // ⇒ 這條規則對它們**靜靜不執行**（19 支展示片段裡有 7 支是這樣，而它們正是最容易漂的那幾支：
+    // `ui/radio`／`ui/checkbox` 的片段沒有任何 `aria-` 綁定）。逐支寫出它真正的根 class。
+    // 空陣列＝**這一支沒有可比的根節點**，而且要寫出為什麼——不是「比不到所以跳過」。
+    const ROOT_CLASS = new Map([
+        ["checkbox", ["form-checkbox"]],
+        ["radio", ["form-radio"]],
+        ["multi-select", ["multiSelect"]],
+        ["search-select", ["searchSelect"]],
+        ["list-style", ["list-style-disc", "list-style-decimal"]],
+        // 開合鈕與它的內容槽——`.js-accordion`／`.js-accordion-item` 是掃描根，兩型各不相同，
+        // 兩型共有的是這兩顆（`accordion.js` 的 `label()` 寫的 aria 就掛在鈕上）。
+        ["accordion", ["accordion-btn", "accordion-content"]],
+        // 生產節點由 `toast.js` 在執行期產生（片段裡只有觸發鈕），沒有一顆 markup 上的 `.toast`
+        // 可以兩邊對照；那一份契約寫在 `toast.js` 檔頭（它產出的節點逐行都在那裡）。
+        ["toast", []],
+    ]);
+    const attrsOn = (text, classes) => {
         const out = new Set();
         // class 比對以**整個 token** 為單位：`\b` 只認「詞字元 ↔ 非詞字元」的邊界，而 `-` 是非詞
         // 字元 ⇒ 找 `accordion` 會命中 `js-accordion`、找 `search-select` 會命中 `js-doc-search-select`。
         // 誤報的方向特別貴：它會逼下一個人去替一支根本沒被用到的元件補一份假的生產契約。
         const re = new RegExp(`<([a-zA-Z][\\w-]*)((?:"[^"]*"|[^>"])*?class="([^"]*)"(?:"[^"]*"|[^>"])*)>`, "g");
         for (const m of text.matchAll(re)) {
-            if (!m[3].split(/\s+/).includes(cls)) continue;
+            // class 值裡的 `{% if %}`／`{{ }}` 先抹掉再切 token：`class="widget-shell{% if x %} y{% endif %}"`
+            // 直接切出來的第一顆是 `widget-shell{%`，永遠對不上——那一支於是整支不受這條規則管。
+            const tokens = m[3].replace(/\{[%{][\s\S]*?[%}]\}/g, " ").split(/\s+/);
+            if (!classes.some((c) => tokens.includes(c))) continue;
             for (const a of m[2].matchAll(/(?:^|\s)([a-zA-Z_:][\w:.-]*)\s*=/g)) if (HARD.test(a[1])) out.add(a[1]);
         }
         return out;
     };
-    const hits = [];
-    let checked = 0;
+    // **展示片段＝它的 html 只被元件庫頁、或被另一支展示片段 include**（傳遞閉包）。
+    // 只認「直接被元件庫頁 include」的話，`ui/accordion` 這種**被另一支展示片段夾帶**的
+    // （元件庫頁一次、`ui/default-table` 的片段一次）判準不成立 ⇒ 整支從母體掉出去，
+    // 而它正是「片段只演一型、生產另有一型」的典型（片段是表格型，生產還有卡片型）。
+    const GALLERY = "src/pages/components/component.html";
+    const includersOf = new Map();
     for (const { name, path } of componentDirs) {
         const html = `${path}/${name}.html`;
         if (!existsSync(html)) continue;
-        // 展示片段＝它的 html 只被元件庫頁 include
-        const inc = srcHtml.filter((f) => f !== html && read(f).includes(`include "${path.replace("src/_includes/", "")}/${name}.html"`));
-        if (!inc.length || !inc.every((f) => f === "src/pages/components/component.html")) continue;
-        const fragAttrs = attrsOn(read(html), name);
+        includersOf.set(html, srcHtml.filter((f) => f !== html && read(f).includes(`include "${path.replace("src/_includes/", "")}/${name}.html"`)));
+    }
+    const showcaseHtml = new Set();
+    for (let grew = true; grew;) {
+        grew = false;
+        for (const [html, inc] of includersOf) {
+            if (showcaseHtml.has(html) || !inc.length) continue;
+            if (inc.every((x) => x === GALLERY || showcaseHtml.has(x))) { showcaseHtml.add(html); grew = true; }
+        }
+    }
+    const hits = [];
+    let checked = 0, showcases = 0, declaredNoRoot = 0;
+    for (const { name, path } of componentDirs) {
+        const html = `${path}/${name}.html`;
+        if (!showcaseHtml.has(html)) continue;
+        showcases++;
+        const roots = ROOT_CLASS.get(name) ?? [name];
+        if (!roots.length) { declaredNoRoot++; continue; }
+        const fragAttrs = attrsOn(read(html), roots);
         const prodAttrs = new Set();
-        for (const f of prodPages) for (const a of attrsOn(read(f), name)) prodAttrs.add(a);
+        for (const f of prodPages) for (const a of attrsOn(read(f), roots)) prodAttrs.add(a);
         const drift = [...prodAttrs].filter((a) => !fragAttrs.has(a));
         if (!drift.length) continue;
         checked++;
@@ -441,6 +566,13 @@ test("§1-2 展示片段與生產實例的硬規則屬性不一致時，生產�
         if (!/生產契約|生產形狀/.test(heads))
             hits.push(`${path}  展示片段少了生產實例上的 ${drift.join("、")}，而 scss／js 檔頭沒有生產契約`);
     }
+    // 空轉守門有兩道：真的比對過幾支（checked），以及**母體有沒有整支從網眼漏掉**。
+    // 後者是這條規則原本的失效方式：根 class 對不上時 drift 恆空，看起來就是「這一支沒有漂移」。
     assert.ok(checked >= 5, `只掃到 ${checked} 支有漂移的展示片段 —— 這條測試在空轉`);
+    assert.equal(declaredNoRoot, [...ROOT_CLASS.values()].filter((v) => !v.length).length,
+        "ROOT_CLASS 裡宣告『沒有可比根節點』的支數與實際跳過的支數對不上 —— 名單漂了");
+    assert.ok(showcases - declaredNoRoot >= 19,
+        `展示片段母體只剩 ${showcases - declaredNoRoot} 支比得到根節點 —— 有元件的根 class 換名了，` +
+        "請補進 ROOT_CLASS（比不到的那幾支會靜靜不受這條規則管）");
     assert.equal(hits.length, 0, `§1-2：展示片段不是生產形狀時，生產契約要有一份可對答案的正本：\n${fail(hits)}`);
 });
