@@ -1747,8 +1747,15 @@ bodyClass: guideline-page
      讓消費端自己拼字串）。
    ⚠️ **這四筆要逐字等於那四顆 key、不可以就地編兩句展示散文**：編出來的示範沒有 key，
      於是四句真正會出現在使用者眼前的話，正本就落到 React 的字典裡，而切版這一側零宣告。 #}
+{# ②的每一條可以再帶一行**成因**（`noteKey`／`note`，灰字接在結論下面）——結論可掃視、成因講機制，
+     分工與「不取代結論、不收進 ⓘ」的理由寫在該元件檔頭。**兩態都要演**：第一筆帶成因、其餘三筆
+     不帶，那是 React 端要條件渲染的兩個分支。
+   成因同樣是 key（`help.state.knowledgeOffNote`），不是就地編的展示散文——理由與上面那四顆完全
+     相同：編出來的示範沒有 key，正本就落到 React 的字典裡。這一句的機制出處在 5-2 的檔頭
+     （GufoRAG chatbot 的 `GATE_KNOWLEDGE_MODE_NONE`：知識模式為 `none` 時生成端整段參考資料都不組）。 #}
 {% set helpModalStateItems = [
-    { textKey: "help.state.knowledgeOff", text: "知識模式目前設為「不參考知識」：模型不會使用檢索到的參考資料，因此這一段的檢索筆數與引用設定暫不生效。" },
+    { textKey: "help.state.knowledgeOff", text: "知識模式目前設為「不參考知識」：模型不會使用檢索到的參考資料，因此這一段的檢索筆數與引用設定暫不生效。",
+      noteKey: "help.state.knowledgeOffNote", note: "「不參考知識」時，生成端整段參考資料都不組，這幾顆旋鈕因此沒有作用對象——不是它們被關掉了。" },
     { textKey: "help.state.answerabilityOn", text: "可回答性閘目前是開啟狀態：判準與分數門檻會被用來決定「查無資料」時是否據實回覆。" },
     { textKey: "help.state.qaDirectOn", text: "QA 直答目前是開啟狀態：分數門檻、判定補充說明與可選取的 QA 資料集都會被用到。" },
     { textKey: "help.state.rerankOff", text: "重排序目前是關閉狀態：所選的重排序模型名稱不會被檢索端使用。" }

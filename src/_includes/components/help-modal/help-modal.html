@@ -8,6 +8,21 @@
         不是使用者資料，§4-2「只翻 UI chrome」要翻的正是這一族。故 `helpModalStateItems`
         逐條是 `{ textKey, text }`：規則導出、句子照舊掛 key。手寫散文那條禁令沒有因此放寬——
         不准的是「就地編一句話」，不是「這一族不翻」。
+        **逐條可以再帶一行成因**（`noteKey`／`note`，灰字、緊接在結論下面）：上面那一句是
+        **結論**（這條規則現在成不成立），成因講的是**機制**（為什麼是這樣）。兩者的版位分工是
+        規格，不是排版偏好：
+          · **成因不取代結論**。結論是可掃視的一行、而且是一組枚舉的成員（§4-2「枚舉的成員靠
+            有地方渲染得出來活著」）；換成一段講機制的散文，讀的人要自己從機制推回「所以我現在
+            這樣算不算生效」，而那組 key 也就此沒有渲染點。
+          · **成因不收進 ⓘ**。這顆窗本身就是一顆 ⓘ 打開的；窗裡再開一顆窗＝`<dialog>` 疊
+            `<dialog>`（焦點陷阱、Esc 關哪一顆、top layer 疊放全部要重新處理），換到的只是幾十
+            px 高度——而這是點開才存在的視窗，高度在這裡是最便宜的資源。而「為什麼」正是讀完
+            結論後最會追問的那一句，藏在第二次點擊後面等於多數人讀不到。
+          · **成因與結論同樣是 key，不是上游回的裸字串**。上游宣告若附了一段現成的說明，它是
+            **產品打的字**（§4-2 判準：租戶打的才是資料），所以在 i18n 射程內——直接顯示那段
+            字省下的是我們的維護，換來的是英文模式下這一行永遠是繁中，與本節開頭那道⚠️同一種
+            死法。要真的「與上游同進退」，上游得連 key（或兩個語系）一起投影，前端拿 key 查
+            字典，形狀與 `{ textKey, text }` 完全相同。
      ③ 這一區的所有數字：由 React 執行期讀 product 的 limits 端點填入（gufofaq-saas
         product 的 `*_LIMIT_GROUPS`——`DATASET_`／`HISTORY_`／
         `STATS_`／`USER_`／`SELF_`／`EXTRACT_` 六族，各自投影成 `GET /<資源>/limits`；對話設定
@@ -54,9 +69,12 @@
        helpModalWhatKey/
        helpModalWhat        —— 必填。①「這一區在做什麼」，本元件裡**唯一手寫**的一段
                                （i18n key 慣例 `help.<page>.<block>.what`）。
-       helpModalStateItems  —— 必填，物件陣列 `{textKey, text}`。②「現在生效的條件」逐條列出，
+       helpModalStateItems  —— 必填，物件陣列 `{textKey, text}`，逐條可再帶選填的
+                               `{noteKey, note}`。②「現在生效的條件」逐條列出，
                                每一條就是一條**規則**（見上方 ②）：`textKey` 是那條規則的 i18n key、
-                               `text` 是它的繁中原文。示範時至少給一筆，讓這個分支被看過
+                               `text` 是它的繁中原文；`noteKey`／`note` 是那條規則的**成因**，畫成
+                               結論下面一行灰字（給了 `noteKey` 才渲染那一行）。示範時至少給一筆，
+                               並且**帶成因與不帶成因各演一筆**——兩態都是 React 要條件渲染的分支
                               （GUIDELINE §5：沒有頁面演得出來的分支等於沒驗收過）。
        helpModalLimitRows   —— 必填，物件陣列 `{labelKey, label, bound, effectKey, effect}`。
                                ③「這一區的所有數字」，`bound` 是獨立節點、不得烤進
@@ -93,7 +111,10 @@
                         <h4 class="help-modal-subtitle mb-8" data-i18n="help.stateTitle">現在生效的條件</h4>
                         <ul class="list-style-disc">
                             {% for item in helpModalStateItems %}
-                            <li data-i18n="{{ item.textKey }}">{{ item.text }}</li>
+                            <li>
+                                <span data-i18n="{{ item.textKey }}">{{ item.text }}</span>
+                                {% if item.noteKey %}<p class="text-gray m-0 mt-4" data-i18n="{{ item.noteKey }}">{{ item.note }}</p>{% endif %}
+                            </li>
                             {% endfor %}
                         </ul>
                     </section>

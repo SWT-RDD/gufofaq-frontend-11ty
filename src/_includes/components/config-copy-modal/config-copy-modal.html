@@ -32,7 +32,7 @@
      （**GufoRAG chatbot** 的 `TestCopyGroupsRegistry`——gufofaq-saas 那一側沒有這個 class；它要求 COPY_GROUPS ∪ COPY_EXCLUDED
      恰等於 `ChatConfig.model_fields`）。
      每一組的 label 是「這一組**包含什麼**」的如實列舉，所以上游往組裡加欄位時要回頭重讀這幾行字：
-     少寫一個欄位，使用者就會以為那個欄位不會被複製。最容易漏的三處是 glossary（別名表那四欄）、
+     少寫一個欄位，使用者就會以為那個欄位不會被複製。最容易漏的三處是 glossary（別名表那五欄）、
      policy（出口替換與輸出規則）、retrieval（可回答性閘那三欄與分組 LLM／評測模型）。 #}
 {# 預設值收進元件專屬的區域名（同 ui/storage-bar 的 *Resolved 做法）：{% set %} 是**頁面全域**，
      在元件內用同一個名字寫回去的話，這一頁後面每一個元件都會看到被改過的值。 #}
@@ -43,7 +43,7 @@
     { key: "retrieval", i18nKey: "settings.copyConfigGroupRetrieval", label: "檢索與生成：模型與思考深度（主回答與各分組 LLM）、評測模型、溫度、取樣數（總數／選用數）、資料來源比例、知識模式、QA 直答模式與判準與門檻、可回答性閘模式與判準與門檻、重排序、記憶輪數、建議問題、標題自動命名（僅首次）、時區、搜尋模式與 Agent 迭代上限、引用、Langfuse 追蹤、資料集分層與逐層意圖、欄位顯示標籤、事實時效角色" },
     { key: "policy", i18nKey: "settings.copyConfigGroupPolicy", label: "合規：敏感詞、禁止主題、輸入擋下訊息、輸出擋下訊息、出口替換規則、輸出規則" },
     { key: "tools", i18nKey: "settings.copyConfigGroupTools", label: "工具：內建工具啟停與客製設定、MCP 伺服器選用" },
-    { key: "glossary", i18nKey: "settings.copyConfigGroupGlossary", label: "術語與別名綁定：本設定檔生效的術語表、綁定的別名表與比對／推理／出口三個套用階段" },
+    { key: "glossary", i18nKey: "settings.copyConfigGroupGlossary", label: "術語與別名綁定：本設定檔生效的術語表、綁定的別名表與比對／檢索／推理／出口四個套用階段" },
     { key: "skills", i18nKey: "settings.copyConfigGroupSkills", label: "Skill 指派：本設定檔指派的租戶自訂 Skill" },
     { key: "dataset_binding", i18nKey: "settings.copyConfigGroupDatasetBinding", label: "答題索引綁定：答題索引、QA 直答索引" }
 ] %}

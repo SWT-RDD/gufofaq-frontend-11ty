@@ -152,7 +152,10 @@
                                 `_validate_match_budget_and_conflicts` 擋跨表同名不同義（「兩張表單獨都合法，
                                 但放進同一個套用清單就互相矛盾」）與比對期 `MAX_MATCH_STAGE_ALIASES`，
                                 `_validate_output_budget` 擋出口期的 `MAX_OUTPUT_STAGE_RULES`／
-                                `MAX_OUTPUT_STAGE_ALIASES`＝**第 5 段**。這一段少不得：它同樣是 400、
+                                `MAX_OUTPUT_STAGE_ALIASES`＝**第 5 段**。檢索期也有自己的一條諸表別名
+                                加總上限（投影成 `alias.search_stage_aliases`）——第 5 段那句「套用階段的
+                                別名／規則上限」刻意把四個階段一起涵蓋、不逐階段點名：點名一個就得點名
+                                全部，而那份清單每多一個階段就會落後一次。這一段少不得：它同樣是 400、
                                 同樣是使用者自己改詞條就修得掉的，漏了就沒有分支演得出這條路。
                              product 的 `replace_alias_entries` docstring 也逐字記著
                              「失敗一律 400 並原樣帶回上游的訊息」。**這一顆是 6 段**，段序即索引契約。

@@ -187,7 +187,7 @@ test("§5/§6 4-1 答案來源篩選：三顆值、只掛 hook、清單只有直
     assert.match(dist, /id="exportFormatHint"/, "代價提示要真的渲染得出來");
 });
 
-test("§5/§6 別名表：出口套用預設不勾、三個 apply ⊆ 綁定、術語表不得再有別名欄", () => {
+test("§5/§6 別名表：四個階段照管線排序、檢索與出口預設不勾、apply ⊆ 綁定、術語表不得再有別名欄", () => {
     const cfg = distDoc("5-2_conversationSettings.html");
     const opts = (id) => {
         const i = cfg.indexOf(id);
@@ -195,20 +195,33 @@ test("§5/§6 別名表：出口套用預設不勾、三個 apply ⊆ 綁定、�
         const seg = cfg.slice(i, cfg.indexOf("</select>", i));
         return { all: [...seg.matchAll(/<option value="(\d+)"([^>]*)>/g)].map((m) => ({ v: m[1], sel: /selected/.test(m[2]) })) };
     };
+    // **順序本身是規格**：綁定 → 直答比對 → 檢索 → 推理 → 出口，照管線走。照字母序或照上游欄位
+    // 的宣告序排，畫面就講不出「一句話依序經過哪幾關」，而那正是這五顆多選唯一能給的東西。
+    // 這條在 dist 上以 DOM 出現序判定——版位順序沒有別的載體，看不出來就只能靠人記得。
+    const ORDER = ["aliasTablesSelect", "aliasApplyMatchSelect", "aliasApplySearchSelect",
+        "aliasApplyReasoningSelect", "aliasApplyOutputSelect"];
+    const at = ORDER.map((id) => { opts(id); return cfg.indexOf(id); });   // opts() 兼作「這顆在不在」的守門
+    for (let i = 1; i < at.length; i++)
+        assert.ok(at[i] > at[i - 1], `別名面板順序錯了：${ORDER[i]} 排在 ${ORDER[i - 1]} 前面（管線序＝綁定／比對／檢索／推理／出口）`);
     const bind = opts("aliasTablesSelect");
     const bound = new Set(bind.all.filter((o) => o.sel).map((o) => o.v));
-    assert.ok(bound.size > 0, "示範要綁幾張表，否則後三顆的「⊆ 綁定」驗不到");
-    for (const id of ["aliasApplyMatchSelect", "aliasApplyReasoningSelect", "aliasApplyOutputSelect"]) {
-        // 寫入層驗「三個 apply 清單必須 ⊆ alias_table_ids」（chatbot retrieval_profiles）——
+    assert.ok(bound.size > 0, "示範要綁幾張表，否則後四顆的「⊆ 綁定」驗不到");
+    for (const id of ORDER.slice(1)) {
+        // 寫入層驗「四個 apply 清單必須 ⊆ alias_table_ids」（chatbot retrieval_profiles）——
         // 選項只能來自已綁定的那幾張，否則畫面演得出一個後端會 400 的狀態
         for (const o of opts(id).all)
             assert.ok(bound.has(o.v), `${id} 出現了沒被綁定的表 id=${o.v}（apply ⊆ 綁定）`);
     }
     // **出口示範刻意留空**：它是唯一會改寫使用者看到的字的階段，用它得是一個明確動作——
-    // 示範先勾起來會讓人以為那是預設值（上游四欄也全部預設空）。
-    assert.equal(opts("aliasApplyOutputSelect").all.filter((o) => o.sel).length, 0,
-        "出口套用的示範資料不得有值");
+    // 示範先勾起來會讓人以為那是預設值（上游五欄也全部預設空）。
+    // **檢索同辦**：附加標準詞會拉高召回、也可能拉低精確度，同樣得是一個明確動作。
+    for (const id of ["aliasApplySearchSelect", "aliasApplyOutputSelect"])
+        assert.equal(opts(id).all.filter((o) => o.sel).length, 0, `${id} 的示範資料不得有值`);
     assert.ok(opts("aliasApplyMatchSelect").all.some((o) => o.sel), "比對套用要演「有套用」那一態");
+    // 值載體要掛得住 React：五顆各自一個 hook class，缺一顆就是那一階段的值讀不到（§5 矩陣②）
+    for (const h of ["js-alias-tables", "js-alias-apply-match", "js-alias-apply-search",
+        "js-alias-apply-reasoning", "js-alias-apply-output"])
+        assert.ok(cfg.includes(h), `5-2 缺 hook class ${h}`);
     // 出口那顆警語兩段都要在（少了第二段，設定者會勾了出口、發現 QA 直答沒變、回報功能壞了）
     for (const k of ["settings.aliasOutputWarning", "settings.aliasOutputQaDirectNote"])
         assert.match(cfg, new RegExp(`data-i18n="${k.replace(".", "\\.")}"`), `5-2 缺 ${k}`);
@@ -219,7 +232,7 @@ test("§5/§6 別名表：出口套用預設不勾、三個 apply ⊆ 綁定、�
     assert.ok(rows.length >= 3, `別名表示範只有 ${rows.length} 張`);
     assert.ok(rows.some((r) => />\s*0\s*</.test(r[1])), "示範要有一張空表（詞條數 0）");
     // 清單刻意不顯示「生效於哪些功能」：同一張表在不同設定檔可以完全不同，一欄塞不下也會說謊
-    for (const k of ["settings.aliasApplyMatch", "settings.aliasApplyReasoning", "settings.aliasApplyOutput"])
+    for (const k of ["settings.aliasApplyMatch", "settings.aliasApplySearch", "settings.aliasApplyReasoning", "settings.aliasApplyOutput"])
         assert.ok(!page.includes(`data-i18n="${k}"`), `別名表清單不該出現「${k}」——那是設定檔的事`);
     // 三種衝突提示都要有一列演得到（§5 每個分支都要看得到）
     for (const k of ["aliasConflictSameTable", "aliasConflictChain", "aliasConflictOutputRule"])

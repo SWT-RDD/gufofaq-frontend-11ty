@@ -23,8 +23,8 @@ permalink: 3-6_aliasTables.html
      alias_entries」），這一頁也不留、不 deprecate 任何第二份別名——兩份別名一定會分岔，
      而分岔的那一天沒有任何畫面看得出來。
 
-   **階段不標在每一列詞條上**：那會變成幾百列 × 三個勾選框，實務上一定被「全選」處理掉，
-     得到的是假的細緻度。三個套用開關放在設定檔（5-2），一個明確、看得見、一鍵可撤的決定。
+   **階段不標在每一列詞條上**：那會變成幾百列 × 四個勾選框，實務上一定被「全選」處理掉，
+     得到的是假的細緻度。四個套用開關放在設定檔（5-2），一個明確、看得見、一鍵可撤的決定。
 
    上限是契約欄位（§6），出處＝GufoRAG chatbot 的這六顆常數：
      `MAX_TABLE_NAME_LEN = 200`／`MAX_DESCRIPTION_LEN = 2000`／`MAX_ALIAS_ENTRIES_PER_TABLE = 20000`／
@@ -149,7 +149,7 @@ permalink: 3-6_aliasTables.html
     {# ⓘ 說明：同上一顆 info-btn 六件組。①出處：本區塊逐列刪除鈕上方的檔頭
          （product 的 `delete_alias_table` 只代理，守衛在 GufoRAG）＋
          GufoRAG chatbot 的 `delete_alias_table`
-         （四個欄位——`alias_table_ids`／三個 apply 清單——任一提到都算參照）。 #}
+         （五個欄位——`alias_table_ids`／四個 apply 清單——任一提到都算參照）。 #}
     {# 「已經用掉幾張」畫在清單標題那一列，與 3-2 逐字同構——形狀出處（本頁自己那顆
          `components/alias-entries-modal` 的「已 N / 20000 筆」計數列）與三顆 key 的沿用理由
          寫在 3-2 同一處。左邊的 N 由 `aliasTables.length` 推導（§6 示範資料自洽），右邊的 30
