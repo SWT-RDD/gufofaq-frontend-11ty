@@ -262,9 +262,12 @@ permalink: 3-4_skillManagement.html
      「這條路上算不出來」；一個看起來合理的錯數字會被當成真的耗時拿去做判斷，比一格空白貴
      （同 §6「這一格沒有數字不是一種狀態，是三種」）。
      ⚠️ 這一段講的是**現況**，不是待辦：舊紀錄那條退路只在上游一顆 `durationMs` 都沒送時才走得到。
-   同理 `verdict`：可回答性判定的值域是 GufoRAG chatbot 的 `GroundingVerdict`，
-     **只有 `generate` 與 `no_answer` 兩顆**（`insufficient` 不存在）。這一份示範走誠實查無
-     ⇒ `no_answer（素材不足以回答）`，而下面的節點列**只畫「誠實查無」、不畫「生成答案」**：
+   同理 `verdict`：可回答性判定那一站的值域是 GufoRAG chatbot 的 `GroundingVerdict`，
+     **只有 `generate` 與 `no_answer` 兩顆**（`insufficient` 不存在；`blocked` 是合規閘那兩站的值，
+     不會出現在這一站）。**值就是機器碼、中文由元件的 i18n 分支給**（見 step-flow 檔頭）——
+     把「（素材不足以回答）」寫進值裡是替一個 API 產不出來的字串背書。這一份示範走誠實查無
+     ⇒ `no_answer`；成因是判定器真的跑了並判素材不足 ⇒ `reason: "llm"`（這一輪檢索確實有回東西，
+     所以不是 `empty_material`）。而下面的節點列**只畫「誠實查無」、不畫「生成答案」**：
      gufofaq-saas `apps/web/lib/domain/stepFlow.ts` 是 `base.splice(i, 1, "respond_no_answer")`
      ——deleteCount=1 ＝**取代**，兩顆永不並存（釘住它的測試在 gufofaq-saas
      `apps/web/components/StepFlow/StepFlow.test.tsx`，名字逐字「誠實查無入圖、生成答案不在」）；
@@ -291,7 +294,7 @@ permalink: 3-4_skillManagement.html
   { label: "skill：lookup-order", state: "completed", time: "430ms", depth: 2, skill: "lookup-order", version: "v1", iterations: "1", tools: "search_knowledge_base" },
   { label: "呼叫工具", state: "completed", time: "180ms", depth: 3, tools: "search_knowledge_base", result: "命中 4 筆訂單紀錄片段（相似度 0.74–0.91），取得訂單金額、狀態與品項。" },
   { label: "呼叫工具", state: "completed", time: "95ms", depth: 2, tools: "calculate" },
-  { label: "可回答性判定", state: "completed", time: "150ms", verdict: "no_answer（素材不足以回答）" },
+  { label: "可回答性判定", state: "completed", time: "150ms", verdict: "no_answer", reason: "llm" },
   { label: "誠實查無", state: "completed", time: "260ms" },
   { label: "生成推薦問題", state: "completed", time: "180ms" },
   { label: "完成對話", state: "completed", time: "20ms" },

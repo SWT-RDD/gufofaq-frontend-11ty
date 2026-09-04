@@ -7,7 +7,7 @@ import { basename } from "node:path";
 import { distHtml, read, srcHtml } from "../../_lib/corpus.mjs";
 import { distDoc, innerBlock } from "../../_lib/html.mjs";
 import { BUILTIN_TOOL_CARDS, builtinToolCards } from "../../_lib/inventory.mjs";
-import { fail, probe } from "../../_lib/probe.mjs";
+import { fail, probe, scanText } from "../../_lib/probe.mjs";
 import { CJK, countLines, stripNjk } from "../../_lib/text.mjs";
 
 test("§6 元件內部 {% set %} 示範變數名：跨元件唯一、且不與頁面層變數同名（靜默覆蓋沒有其他測試抓得到）", () => {
@@ -213,6 +213,148 @@ test("§6 QA 直答判定：判否／未達門檻不得畫成錯誤紅，且未�
         assert.match(gallery, new RegExp(`data-i18n="agent\\.qaDecision${k}"`), `元件庫缺 decision=${k} 的示範`);
     assert.match(gallery, /verdict-tag is-muted">some_future_decision</, "else 那條也要演得出來");
     assert.match(gallery, /data-i18n="agent\.qaReusedFrom"/, "元件庫缺「重用自」小標的示範");
+});
+
+test("§6 可回答性判定與合規閘：三顆鍵的值域逐字對上游，示範值只能是機器碼", () => {
+    const src = read("src/_includes/components/step-flow/step-flow.html");
+    // 母體＝step-flow 的節點陣列（元件內建示範 ＋ 每一份使用頁的覆寫），不是整份 src：
+    // `verdict:`／`reason:` 這兩個欄名在別的資料集上也有（2-2-5 回歸案例的中文判定、
+    // 5-10 未覆蓋原因的 camelCase 代號），拿整份 src 當母體會把它們一起判成違規，
+    // 而那條規則講的是 step-flow 這一顆元件的上游值域。
+    const NODE_BLOCK = /\{%-?\s*set\s+stepFlowNode(?:s|Rows)\s*=[\s\S]*?\]\s*%\}/g;
+    const scanNodes = (rule) => {
+        const hits = [];
+        for (const f of srcHtml) {
+            const text = read(f);
+            for (const m of text.matchAll(NODE_BLOCK)) {
+                const base = text.slice(0, m.index).split(/\r?\n/).length;
+                m[0].split(/\r?\n/).forEach((line, k) => {
+                    const msg = rule(line);
+                    if (msg) hits.push(`${f}:${base + k}  ${msg}`);
+                });
+            }
+        }
+        return hits;
+    };
+    const countInNodes = (re) => {
+        let n = 0;
+        for (const f of srcHtml)
+            for (const m of read(f).matchAll(NODE_BLOCK)) n += [...m[0].matchAll(re)].length;
+        return n;
+    };
+
+    // ① 三顆鍵的每一個成員各有一顆 key，比對值與上游逐字相同。值域＝GufoRAG chatbot 的
+    //    `step_verdict_vocabulary`（`GroundingVerdict` 兩顆 ＋ `GATE_VERDICT_BLOCKED`）與
+    //    `GroundingReason` 五顆。**比對值打錯不會有任何症狀**：那個值會掉進收尾的 else、
+    //    畫面上原樣印出一個機器碼，看起來像「上游又多了一顆值」而不是「我們拼錯字」。
+    const WANT = {
+        verdict: {
+            generate: "agent.verdictGenerate",
+            no_answer: "agent.verdictNoAnswer",
+            blocked: "agent.verdictBlocked",
+        },
+        reason: {
+            gate_off: "agent.reasonGateOff",
+            empty_material: "agent.reasonEmptyMaterial",
+            score_floor: "agent.reasonScoreFloor",
+            llm: "agent.reasonLlm",
+            judge_failed: "agent.reasonJudgeFailed",
+        },
+    };
+    for (const [field, members] of Object.entries(WANT))
+        for (const [value, key] of Object.entries(members)) {
+            const m = src.match(new RegExp(String.raw`node\.${field} == "${value}" %\}\s*<td data-i18n="([\w.]+)"`));
+            assert.ok(m, `找不到 ${field}=${value} 的分支`);
+            assert.equal(m[1], key, `${field}=${value} 掛錯 i18n key`);
+        }
+
+    // ② 兩顆鍵都要有收尾的 else 原樣輸出（上游多一顆值時，畫面要看得到那個生字）
+    for (const field of ["verdict", "reason"])
+        assert.match(src, new RegExp(String.raw`node\.${field} == "\w+" %\}[\s\S]{0,900}?\{% else %\}\s*<td>\{\{ node\.${field} \}\}</td>`),
+            `${field} 少了 else：查表查不到的值會靜靜消失`);
+
+    // ③ verdict 不做成徽章：三顆值分屬兩種站（可回答性判定／合規閘），而 decision 那五顆是
+    //    「同一道判定的五種結論」——配一組顏色會讓人以為這兩族可以互相比較。
+    assert.ok(!/node\.verdict ==[\s\S]{0,600}?verdict-tag/.test(src),
+        "verdict 不得畫成 verdict-tag");
+
+    // ④ blockedRules 的**整列條件是陣列本身**，不是 `.length`：拿長度當整列的條件，空陣列
+    //    （被擋了、但擋它的不是具名規則）會連同「被擋」一起消失，而畫面上它與「這一輪沒被擋」
+    //    長得一模一樣。內層才用 `.length` 分「列規則名」與「無具名規則」。
+    assert.match(src, /\{% if node\.blockedRules %\}/, "blockedRules 的整列條件要是陣列本身");
+    assert.ok(!/\{% if node\.blockedRules\.length %\}\s*<tr>/.test(src),
+        "整列條件不得是 .length：空陣列那一態會整列消失");
+    assert.match(src, /node\.blockedRules\.length %\}[\s\S]{0,400}?\{% else %\}[\s\S]{0,200}?agent\.blockedRulesNone/,
+        "空陣列要畫出「無具名規則」，不是留白");
+
+    // ⑤ 三顆鍵都要進「這一列展不展得開」的兩處長條件：漏一顆，使用頁只給那一欄的節點時
+    //    展開鈕與整個 detail-row 都不渲染，資料靜默消失（那兩行原有註解自己寫的失效形狀）。
+    const conds = [...src.matchAll(/\{% if node\.tools or [^%]*%\}/g)].map((m) => m[0]);
+    assert.equal(conds.length, 2, `展開條件應該有兩處（展開鈕與 detail-row），掃到 ${conds.length} 處 —— 這條測試在空轉`);
+    for (const c of conds)
+        for (const field of ["node.verdict", "node.reason", "node.blockedRules"])
+            assert.ok(c.includes(field), `展開條件漏了 ${field}：只給那一欄的節點會整個 detail-row 不渲染`);
+
+    // ⑥ 示範值只能是**機器碼**（§6：每一欄都要對得回正本回應的一個欄位）。上游送的是閉合詞彙、
+    //    一個中文字都沒有；把「（素材足以回答）」那半句寫進值裡，切版看起來讀得懂，React 端
+    //    接上真 API 只剩一個機器碼——而那半句沒有任何一條路產得出來。
+    const badLiteral = (line) => {
+        const out = [];
+        for (const m of line.matchAll(/\b(verdict|reason):\s*"([^"]*)"/g))
+            if (!/^[a-z][a-z_]*$/.test(m[2])) out.push(`${m[1]}: "${m[2]}" 不是機器碼（上游值域閉合、零自由文字）`);
+        return out.length ? out.join("；") : null;
+    };
+    const demoValues = countInNodes(/\b(?:verdict|reason):\s*"[^"]*"/g);
+    assert.ok(demoValues >= 12, `只掃到 ${demoValues} 個 verdict／reason 示範值 —— 這條測試在空轉`);
+    probe("§6 verdict／reason 示範值", (t) => scanText(t, badLiteral),
+        ['{ label: "可回答性判定", verdict: "generate（素材足以回答）" },',
+            '{ label: "可回答性判定", reason: "llm（判定器跑了）" },'],
+        ['{ label: "可回答性判定", verdict: "no_answer", reason: "empty_material" },',
+            '{ label: "輸入合規檢查", verdict: "blocked", blockedRules: ["機密"] },']);
+    assert.equal(scanNodes(badLiteral).length, 0,
+        `§6 示範值要與真實 API 同形：\n${fail(scanNodes(badLiteral))}`);
+
+    // ⑦ reason 與 state 綁死（GufoRAG chatbot 的 `grounding_step_status`／
+    //    `grounding_step_is_skipped`）：`judge_failed` ⇒ failed（fail-open 放行，verdict 反而是
+    //    `generate`——只有「判定成因」那一列說得出「這一輪的閘門沒有生效」）、`gate_off` ⇒ skipped
+    //    （而 skipped 不帶 `duration_ms` ⇒ 時間欄留白）。配錯的那一筆在畫面上完全自洽，
+    //    只有比對上游才看得出來。
+    const STATE_OF = { judge_failed: "failed", gate_off: "skipped" };
+    const nodePairs = (line) => {
+        const out = [];
+        for (const obj of line.matchAll(/\{[^{}]*\breason:\s*"([a-z_]+)"[^{}]*\}/g)) {
+            const want = STATE_OF[obj[1]];
+            if (!want) continue;
+            const state = obj[0].match(/\bstate:\s*"(\w+)"/);
+            if (!state || state[1] !== want)
+                out.push(`reason=${obj[1]} 的節點 state 應該是 ${want}，實際是 ${state ? state[1] : "（沒給）"}`);
+            if (obj[1] === "gate_off" && !/\btime:\s*""/.test(obj[0]))
+                out.push("reason=gate_off ⇒ skipped ⇒ 上游不送 duration_ms，時間欄要留白");
+        }
+        return out.length ? out.join("；") : null;
+    };
+    const paired = countInNodes(/\{[^{}]*\breason:\s*"(?:judge_failed|gate_off)"[^{}]*\}/g);
+    assert.ok(paired >= 2, `只掃到 ${paired} 筆 judge_failed／gate_off 節點 —— 這條測試在空轉（§5：兩態都要有一頁演得出來）`);
+    probe("§6 reason↔state", (t) => scanText(t, nodePairs),
+        ['{ label: "可回答性判定", state: "completed", time: "2.4s", verdict: "generate", reason: "judge_failed" },',
+            '{ label: "可回答性判定", state: "skipped", time: "2ms", verdict: "generate", reason: "gate_off" },'],
+        ['{ label: "可回答性判定", state: "failed", time: "2.4s", verdict: "generate", reason: "judge_failed" },',
+            '{ label: "可回答性判定", state: "skipped", time: "", verdict: "generate", reason: "gate_off" },',
+            '{ label: "可回答性判定", state: "completed", time: "5ms", verdict: "no_answer", reason: "score_floor" },']);
+    assert.equal(scanNodes(nodePairs).length, 0,
+        `§6 reason 與 state 配成了上游產不出來的組合：\n${fail(scanNodes(nodePairs))}`);
+
+    // ⑧ 值域的每一個成員、兩條 else、blockedRules 的兩種有值形狀，都要有一頁演得出來（§5）。
+    //    真實一輪只走得到其中一種組合，所以它們的家只有元件庫那份狀態目錄。
+    const gallery = distDoc("component.html");
+    for (const members of Object.values(WANT))
+        for (const key of Object.values(members))
+            assert.match(gallery, new RegExp(`data-i18n="${key.replace(".", "\\.")}"`), `元件庫缺 ${key} 的示範`);
+    assert.match(gallery, /<td>needs_more_material<\/td>/, "verdict 的 else 沒有一頁演得出來");
+    assert.match(gallery, /<td>material_recall<\/td>/, "reason 的 else 沒有一頁演得出來");
+    assert.match(gallery, /data-i18n="agent\.blockedRulesNone"/, "blockedRules 的空陣列態沒有一頁演得出來");
+    assert.match(gallery, /data-i18n="agent\.blockedRules">[^<]*<\/th>\s*<td>機密<span data-i18n="common\.listSep">/,
+        "blockedRules 的具名規則清單（含 common.listSep 分隔符）沒有一頁演得出來");
 });
 
 test("§6 5-2 內建工具：14 張卡包在同一個 .js-accordion 根裡，並有全部展開／收合", () => {

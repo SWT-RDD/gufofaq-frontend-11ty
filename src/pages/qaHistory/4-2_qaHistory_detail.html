@@ -153,7 +153,7 @@ permalink: 4-2_qaHistory_detail.html
     { label: "QA 直答比對", state: "completed", time: "14ms", decision: "below_score_floor", entry: "pre_graph", poolSize: "16", hits: "客服問答集 / 新住民結婚登記要準備什麼文件？", score: "2.4", floor: "3" },
     { label: "Agent 推理", state: "completed", time: "340ms", thinking: "問題涉及具體法規與應備文件，決定先查知識庫再生成。" },
     { label: "檢索知識庫", state: "completed", time: "1.2s", tools: "search_knowledge_base", params: "[1/1] query: string", result: "命中 8 筆片段（相似度 0.79–0.92），注入後續生成脈絡。" },
-    { label: "可回答性判定", state: "completed", time: "210ms", verdict: "generate（素材足以回答）" },
+    { label: "可回答性判定", state: "completed", time: "210ms", verdict: "generate", reason: "llm" },
     { label: "生成答案", state: "completed", time: "2.1s" },
     { label: "生成推薦問題", state: "completed", time: "180ms" },
     { label: "完成對話", state: "completed", time: "8ms" },

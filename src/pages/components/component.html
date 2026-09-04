@@ -949,6 +949,7 @@ bodyClass: guideline-page
                     <li>components/step-flow：後台測試區（單測 2-2-1／AB 2-2-3 <strong>每側各一份</strong>）與問答紀錄詳情（4-2）的詳細執行觀測——把整條正典管線畫成類 mermaid 直式流程圖，每節點可展開看工具/參數/結果/grounding 判定/agent 推理</li>
                     <li>頂端的整體執行摘要<strong>有條件</strong>：五欄全部來自整輪收尾才發的 <code class="inline-code">chat_room</code> 塊、<code class="inline-code">model</code> 更是只有重播那條路拿得到，所以還在串流的那一輪（2-2-1）整列不渲染；給得出摘要的頁＝在演一筆重播的落庫紀錄</li>
                     <li>狀態點：is-completed（綠）／is-running（深墨，當前高亮）／is-skipped（空心環，未走分支）／is-failed（紅）／pending（灰）。正式環境演到 completed（2-2-3 兩側、4-2、3-4）、running 與 pending（<strong>只有 2-2-1</strong>——它是全站唯一演「這一輪還在跑」的頁，走元件內建示範；2-2-3 兩側與 4-2 演的是跑完並落庫的重播，全 completed）與 failed（3-4 的試跑沙盒）；<strong>只有 is-skipped 沒有任何生產頁演得到</strong>，靠這一節活著（GUIDELINE §5：scss 狀態 class 沒有頁面演得出＝補元件庫靜態示範）</li>
+                    <li>可回答性判定與合規閘三顆鍵（<code class="inline-code">verdict</code>／<code class="inline-code">reason</code>／<code class="inline-code">blocked_rules</code>）的每一個值都靠<strong>示範三</strong>活著：真實一輪只走得到其中一種組合，而 <code class="inline-code">blocked_rules</code> 更是只有軌跡重播那條路拿得到（即時串流上 product 整顆不放行，規則名是租戶自取的字、不得跨匿名邊界）</li>
                     <li>進度「目前 X / N」與摘要「檢索」筆數全由節點資料推導、不烤字面量；收合復用 ui/accordion，本元件不自帶 js</li>
                 </ul>
             </div>
@@ -982,7 +983,7 @@ bodyClass: guideline-page
                 { label: "QA 直答比對", state: "completed", time: "240ms", decision: "no_exact_and_judge_rejected", entry: "agent_tool", poolSize: "1", hits: "產品問答集 / 這個型號保固多久", score: "4.1", floor: "3" },
                 { label: "Agent 推理", state: "completed", time: "320ms", thinking: "先判斷是否需要檢索工具，再決定生成策略。" },
                 { label: "檢索知識庫", state: "completed", time: "1.4s", tools: "search_knowledge_base", params: "[1/1] query: string", result: "命中 3 筆片段（相似度 0.74–0.88），注入後續生成脈絡。" },
-                { label: "可回答性判定", state: "completed", time: "160ms", verdict: "generate（素材足以回答）" },
+                { label: "可回答性判定", state: "completed", time: "160ms", verdict: "generate", reason: "llm" },
                 { label: "生成答案", state: "failed", time: "1.2s", error: "生成時偵測到不允許的外部連結，已攔截並中止本次回答。" },
                 { label: "生成推薦問題", state: "skipped", time: "" },
                 { label: "完成對話", state: "skipped", time: "" },
@@ -1004,9 +1005,9 @@ bodyClass: guideline-page
                  節點是固定長度的正典管線摘要，這兩個數字算的是產生它的原始事件流。 #}
             {% set stepFlowTraceShown = 200 %}
             {% set stepFlowTraceTotal = 231 %}
-            {# 本節放兩份執行流程（正典管線一份、QA 直答判定目錄一份）⇒ 各給一句短標題當
-                 可及名稱的起頭（§4：instance 只解決 id 相撞，兩份的「全部展開」「序號 2 …」
-                 逐字同名）。 #}
+            {# 本節放三份執行流程（正典管線一份、QA 直答判定目錄一份、可回答性與合規閘目錄一份）
+                 ⇒ 各給一句短標題當可及名稱的起頭（§4：instance 只解決 id 相撞，三份的
+                 「全部展開」「序號 2 …」逐字同名）。 #}
             <div class="subtitle" id="stepFlowFullDemoTitle">示範一：正典管線九節點（含巢狀 skill 子樹）</div>
             {% set stepFlowInstance = "demoFull" %}
             {% set stepFlowOwnerId = "stepFlowFullDemoTitle" %}
@@ -1085,6 +1086,56 @@ bodyClass: guideline-page
             {% set stepFlowOwnerId = "stepFlowQaDirectDemoTitle" %}
             {% include "components/step-flow/step-flow.html" %}
             <div class="subtitle">描述：五種 decision 各至少一筆，＋三種判定層各一筆（第 1 筆分數門檻、第 2 筆完全命中、第 8 筆 LLM 裁判——判定層只有命中時才有值，而命中會結構性短路，所以真實執行流程演不到它們），＋「重用」小標一筆，＋最後一筆刻意給一個目錄裡沒有的值（<code class="inline-code">some_future_decision</code>）演那條 else：上游日後新增第六種結論時，畫面要看得到那個生字，不能因為查表查不到就靜靜消失。命中＝綠、判否／未達門檻＝中性灰、原文重組失敗＝警示、整輪未判定＝更淡的 .is-faint（那一顆是「沒判過」，與「判過了、判否」不是同一件事）。第 5 筆演 reused_from 的小標——它掛在徽章旁而不是做成第六種徽章：重用可能重用命中、也可能重用判否，一個值講不清楚是哪一種</div>
+            {# ── 可回答性判定與合規閘：三顆鍵的狀態目錄 ────────────────────────────────
+                 **這一份也是「狀態目錄」，不是一次真實執行**（同示範二的理由）：這三顆鍵的值
+                 分屬三種互斥的處境——閘開著判過、閘關著沒判、判定器炸了、被合規閘擋下——
+                 真實一輪只走得到其中一種，所以值域的每一個成員只有目錄型示範演得到（§5）。
+                 為什麼要有：`no_answer` 那一輪只看「判定」那一列，「知識庫裡真的沒有」、
+                 「有但都不夠像」、「判定器掛了所以其實沒判」三者長得一模一樣，而三者要使用者
+                 做的事完全不同（去補資料／去調門檻／去看模型設定）。
+                 ⚠️ **state 不是隨手挑的**，判準是 GufoRAG chatbot 的 `grounding_step_status`：
+                 `judge_failed` ⇒ failed（那一輪 fail-open 放行、閘門其實沒生效，所以「判定」
+                 那一列寫的是「素材足以回答」——這正是這一列不能只有 verdict 的理由）、
+                 `gate_off` ⇒ skipped（而 skipped 不帶 `duration_ms` ⇒ 時間欄留白）、其餘 ⇒ completed。
+                 合規閘被擋那兩筆是 failed（`input_gate_blocked_step` 與輸出閘的 `_blocked` 分支）。
+                 ⚠️ **`blocked_rules` 的空陣列與鍵不存在是兩件事**：第 6 筆有具名規則、第 7 筆是
+                 `[]`（那一輪確實被擋，只是擋它的不是具名規則，例如主題判定），其餘每一筆
+                 連這顆鍵都沒有 ⇒ 整列不渲染。收成同一種的話，「被擋了但說不出被什麼擋」
+                 與「這一輪根本沒被擋」在畫面上會一樣。
+                 最後一筆的 `verdict`／`reason` 是**刻意的生字**（兩顆都不在上游值域內）：
+                 值域外的字面走 `{% else %}` 原樣印出來，證明畫面不會靜默吞掉沒見過的值。
+                 §2：同一頁第三次用到同元件，**全部參數都要重設**（set 是頁面全域）。
+                 註解放在 `{% set %}` **之前**——nunjucks 註解寫進運算式裡會 build 失敗（§2）。 #}
+            {% set stepFlowNodes = [
+                { label: "可回答性判定", state: "completed", time: "180ms", verdict: "generate", reason: "llm" },
+                { label: "可回答性判定", state: "completed", time: "3ms", verdict: "no_answer", reason: "empty_material" },
+                { label: "可回答性判定", state: "completed", time: "5ms", verdict: "no_answer", reason: "score_floor" },
+                { label: "可回答性判定", state: "failed", time: "2.4s", verdict: "generate", reason: "judge_failed" },
+                { label: "可回答性判定", state: "skipped", time: "", verdict: "generate", reason: "gate_off" },
+                { label: "輸入合規檢查", state: "failed", time: "12ms", verdict: "blocked", blockedRules: ["機密", "內部代號"] },
+                { label: "輸出合規檢查", state: "failed", time: "9ms", verdict: "blocked", blockedRules: [] },
+                { label: "可回答性判定", state: "completed", time: "15ms", verdict: "needs_more_material", reason: "material_recall" }
+            ] %}
+            {# 摘要在這一份同樣是**目錄的表頭**、不是某一輪的觀測（同示範二）：八筆判定不是同一輪
+                 發生的，所以「檢索」只能是 0——這份示範一個檢索節點都沒有。延遲 2.7s ≥ 七筆
+                 耗時總和 180＋3＋5＋2400＋12＋9＋15 ＝ 2,624ms，對得上（第 5 筆是 skipped、
+                 上游不送 `duration_ms`，所以它不進這個和）。取整規則見 step-flow 檔頭
+                 （`formatMs`：≥1s 一位小數四捨五入）——`2.6s` 會小於那個和，`2624ms` 則是它
+                 產不出來的形狀（≥1s 一律換成秒）。
+                 **給了 `model` ＝在演一筆重播的落庫紀錄**，而這一份非如此不可：`blocked_rules`
+                 只有軌跡重播那條路拿得到（即時串流上 product 整顆不放行），所以它與 `model`
+                 是同一條可得性判準的兩半，不能一給一不給。 #}
+            {% set stepFlowSummary = {
+                tokens: "286", latency: "2.7s", ttft: "1.4s", results: "0", model: "openai:gpt-4o-mini"
+            } %}
+            {# 這一份不演軌跡截斷（示範一演了）；成對參數要一起清掉，否則沿用上一次的值（§2） #}
+            {% set stepFlowTraceShown = "" %}
+            {% set stepFlowTraceTotal = "" %}
+            <div class="subtitle" id="stepFlowVerdictDemoTitle">示範三：可回答性判定與合規閘的狀態目錄</div>
+            {% set stepFlowInstance = "demoVerdict" %}
+            {% set stepFlowOwnerId = "stepFlowVerdictDemoTitle" %}
+            {% include "components/step-flow/step-flow.html" %}
+            <div class="subtitle">描述：三種 <code class="inline-code">verdict</code>（素材足以回答／素材不足以回答／被規則擋下）＋五種 <code class="inline-code">reason</code> 各一筆，＋<code class="inline-code">blocked_rules</code> 的兩種有值形狀（具名規則清單／空陣列「無具名規則」；第三態是鍵不存在，其餘六筆就是它）。第 4 筆是這一節的重點：判定器故障走 fail-open ⇒ 「判定」那一列寫著「素材足以回答」，而那一輪的閘門根本沒有生效——只有「判定成因」那一列說得出來，那一站也因此是紅色的 failed。第 5 筆的閘關著 ⇒ 略過、時間留白（上游不送耗時）。最後一筆兩顆值都刻意給目錄裡沒有的字面，演那條 else：上游日後多一顆值時，畫面要看得到那個生字，不能因為查表查不到就靜靜消失</div>
         </section>
 
         <section id="conditionalTextSection">

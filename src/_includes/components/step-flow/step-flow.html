@@ -45,6 +45,42 @@
        reusedFrom —— 這個結論是重用前一道的。掛在徽章旁當小標、**不做成第六種徽章**：它修飾的是
          「結論怎麼來的」，而重用可能重用命中、也可能重用判否，一個值講不清楚是哪一種。
      **同一輪出現兩個 qa_direct 節點是正常的**（建圖前判否 → agent 又判一次），逐筆依序畫、不去重。
+   可回答性判定與合規閘（verdict／reason／blockedRules）：三顆鍵、三個閉合值域，**都不得夾自由文字**
+     （上游把規則名搬進 `blocked_rules` 正是為了讓 `verdict` 保持閉合，否則消費端只能做字串前綴解析）：
+       verdict —— `generate`（素材足以回答）／`no_answer`（素材不足以回答）／`blocked`（被規則擋下）。
+         值域＝GufoRAG chatbot 的 `step_verdict_vocabulary`：前兩顆來自 `GroundingVerdict`，
+         掛在**可回答性判定**那一站；`blocked` 來自 `GATE_VERDICT_BLOCKED`，只掛在**合規閘**
+         （`input_gate`／`output_gate`）而且**只在真的被擋那一輪**——放行與未啟用的閘一顆 verdict 都不帶
+         （`gate_step_data` 的 `if verdict:`）。同 decision，**查表查不到的值原樣輸出**。
+         比對寫成**逐字相等**是安全的：值域閉合之前落庫的列把規則名接在 `blocked：` 後面，而 product 的
+         `_project_status_data` 會把那個前綴收斂回裸 `blocked` 再送出來 ⇒ 重播舊列也只會是這三顆。
+       reason —— 這個判定**是從哪一層出來的**，值域＝GufoRAG chatbot 的 `GroundingReason` 五顆：
+         `gate_off`（閘關著、透明直通）／`empty_material`（素材為空）／`score_floor`（分數粗篩判否，
+         零 LLM 的終局拒答）／`llm`（判定器實際跑了）／`judge_failed`（判定器故障 ⇒ fail-open 放行，
+         **本輪閘門沒有生效**）。**只掛在可回答性判定那一站**——合規閘的成因走 `verdict`，
+         `gate_step_data` 明文沒有這顆鍵。
+         **值得一列的理由**：`no_answer` 那一輪只看 verdict 分不出「知識庫裡真的沒有」（`empty_material`）、
+         「有但都不夠像」（`score_floor`）、還是「判定器掛了所以其實沒判」（`judge_failed`）——三者要
+         使用者做的事完全不同（去補資料／去調門檻／去看模型設定）。`judge_failed` 尤其不能藏。
+         ⚠️ **這一顆與 state 綁死，別畫出組不出來的配對**（判準是 GufoRAG chatbot 的
+         `grounding_step_status`／`grounding_step_is_skipped`）：`judge_failed` ⇒ 那一站是 `failed`；
+         `gate_off` ⇒ `skipped`（而 skipped 不帶 `duration_ms` ⇒ 時間欄留白）；其餘 ⇒ `completed`。
+         **`gate_off` 只有 agent 模式產得出來、`null` 只有傳統模式產得出來**，兩者都只落在 skipped 上；
+         反過來配（傳統的 `gate_off`、agent 主管線的 `null`）是永遠不亮的路，不畫。
+       blockedRules —— 被哪幾條**具名**規則擋下，`verdict == "blocked"` 時**結構保證這顆鍵一定在**。
+         **三態、三種畫法，空陣列與鍵不存在不可收成同一種**：有名字 ⇒ 列出來；`[]` ⇒ 仍要說「被擋」
+         但沒有具名規則可列（例如主題判定擋的）；鍵不存在 ⇒ 整列不渲染。
+         故**以字串陣列傳入**（不是頓號串好的一段字）：串成字串的話 `[]` 會塌成空字串，
+         與「鍵不存在」在真值判斷下再也分不開。`[]` 在 nunjucks 與 JSX 都是真值，兩邊同形。
+         ⚠️ **可得性與別的欄位不同**：即時串流（測試區問一題、前台問答）**一定沒有**——規則名是租戶
+         自取的字、不得跨匿名邊界（同一支投影也服務完全匿名的 `/public/ask`），product 的
+         `_STATUS_PUBLIC_KEYS` 因此整顆不放行；軌跡重播（`GET /history/{log_id}`，稽核路徑，保留得比
+         SSE 多）才有。
+         ⇒ **給得出這一列的使用頁＝在演一筆重播的落庫紀錄**，與 `model` 同一條判準。
+         ⚠️ 也因此**不可以**把「verdict 是 blocked、卻沒有 blockedRules」畫成一句「規則名被遮掉了」：
+         那在即時串流上是**常態**（product 整顆丟掉）；而重播那條路上它另有一個成因——租戶自己的
+         詞過濾命中規則名時，GufoRAG chatbot 的 `_mask_step_events` 是**丟整個鍵**（不是抽掉那一筆，
+         留下一份會誤導人的名單）。同一個缺席、兩種成因、消費端分不出來 ⇒ 只能不畫。
    **節點示範資料的三條上游形狀**（§6：演的必須是上游做得出來的狀態）。三處同源——本檔的內建示範
      ＋每一份使用頁的 `stepFlowNodes`——改一處就要一起改：
      ① **`params` 只印得出形狀、印不出值。** product 的
@@ -78,7 +114,7 @@
         `qa_direct` 是 **「QA 直答比對」**。其餘十一顆本來就逐字相同，只有這一顆自己縮寫成
         「QA 直答」；而 React 端顯示名是以 `step_id` 查自己的字典（`stepNode.qa_direct`），
         字面分岔時畫面不會報錯，只會兩邊各說各話。
-   參數：stepFlowInstance（**必填**）＝同頁多實例的消歧鍵（2-2-3 一頁 include 兩次、元件庫頁兩次）。
+   參數：stepFlowInstance（**必填**）＝同頁多實例的消歧鍵（2-2-3 一頁 include 兩次、元件庫頁三次）。
      每一列的可及名稱要帶「哪一站」，那些 id 都以它為前綴；沒有它的話同頁十顆展開鈕全叫「展開表格」，
      而且 id 會直接撞（§4）。正典見 components/priority-table 的 priorityTableInstance。
    參數：stepFlowOwnerId（選填）＝**同頁另一份執行流程**時，指向「這一份是誰的」那個既有標題節點的 id。
@@ -89,7 +125,7 @@
      沙盒就演到了；元件庫的判定目錄更是十列同名），所以每一列的辨識欄前面掛一段 .sr-only 的
      「序號 N」。它不可見、不動版面，但讓「第幾站」進得了無障礙樹。
    參數：stepFlowNodes（選填，[{ label, state, time, depth, skill, version, iterations, error,
-     tools, params, result, verdict, thinking, failedServers, offPipeline,
+     tools, params, result, verdict, reason, blockedRules, thinking, failedServers, offPipeline,
      hits, score, decidedBy, floor, decision, entry, matchedRank, poolSize, reusedFrom }]）
      ——**值域含 0 的欄一律以「字串」傳入**（`poolSize: "0"`、`score: "0"`、`matchedRank: "1"`、
        `iterations: "0"`）：這些欄的渲染條件是 `{% if node.X %}` 真值判斷，而
@@ -130,7 +166,7 @@
        `truncated.tools`，寫成 `truncated?.steps !== undefined` 會讓「只有工具截斷」那一輪推導成不渲染），
        逐欄也是「缺欄不顯示」。
      ——**`model` 只有重播那條路拿得到**：product 的 `_CHAT_ROOM_PUBLIC_KEYS` 沒有 `model_name`
-       （連 `usage.model` 都被剝掉），gufofaq-saas `apps/web/lib/sse.ts` 的 chat_room 分支逐字寫著
+       （連 `usage.model` 都被剝掉），gufofaq-saas `apps/web/lib/domain/sse.ts` 的 chat_room 分支逐字寫著
        「這裡讀不到 `model_name`…而且永遠讀不到」；它的正當來源是 gufofaq-saas 的 `traceReplay` 讀
        `/api/history/{logId}`（那一支的 `_PUBLIC_LOG_FIELDS` 有它）。
        ⇒ **給了 `model` 的使用頁＝在演一筆重播的落庫紀錄**：那一頁的節點不得有 running／pending，
@@ -158,7 +194,7 @@
     { label: "MCP 工具載入", state: "failed", time: "420ms", offPipeline: true, failedServers: "內部工單系統, 出貨查詢" },
     { label: "Agent 推理", state: "completed", time: "340ms", thinking: "先判斷是否需要檢索；問題涉及具體規定，決定呼叫知識庫搜尋。" },
     { label: "檢索知識庫", state: "completed", time: "1.2s", tools: "search_knowledge_base", params: "[1/1] query: string", result: "命中 8 筆片段（相似度 0.79–0.92），依相似度排序後注入後續生成脈絡。前三筆來自「新住民結婚登記須知」：第一筆說明雙方當事人須親自到任一戶政事務所辦理，並備妥雙方身分證、印章、戶口名簿與三個月內之戶籍謄本；第二筆列出外籍配偶應另備經我國駐外館處驗證之單身證明與出生證明，且文件如為外文須附中文譯本並經驗證；第三筆說明部分國籍之當事人另須完成境外面談，面談未通過者不予登記。第四至第六筆來自「跨國婚姻健康檢查與居留」：包含健康檢查項目、居留簽證與外僑居留證之申請時程，以及未於期限內辦理的罰則。第七筆為各縣市新住民家庭服務中心的通譯服務申請方式與免費諮詢管道。第八筆為常見退件原因彙整，其中以譯本未經驗證與戶籍謄本逾期兩項最多。第九筆之後為相似度低於門檻的候選，未納入本次脈絡。另補充：結婚登記自登記之日起生效，未辦理登記者婚姻關係不成立；當事人如已於境外辦妥結婚，仍須持經驗證之結婚證明文件回國辦理登記，並注意譯本有效期限。戶政事務所受理後如發現文件不全，會當場開立補正通知，補正期限內未補齊者將予退件。最後，若當事人之一為未成年人，另須法定代理人同意書並一併驗證。" },
-    { label: "可回答性判定", state: "completed", time: "210ms", verdict: "generate（素材足以回答）" },
+    { label: "可回答性判定", state: "completed", time: "210ms", verdict: "generate", reason: "llm" },
     { label: "生成答案", state: "running", time: "" },
     { label: "生成推薦問題", state: "pending", time: "" },
     { label: "完成對話", state: "pending", time: "" },
@@ -286,7 +322,7 @@
                              展開鈕與整個 detail-row 都不渲染，資料靜默消失。
                              ⚠️ 這種漏很難被發現——只要示範節點順手多帶一顆 decision 或 skill，條件就成立了，
                              漏掉的那一欄要等到有人給出「只有它」的節點才會炸。加欄位時兩處一起改。 #}
-                        {% if node.tools or node.params or node.result or node.verdict or node.thinking or node.skill or node.error or node.hits or node.score or node.decidedBy or node.floor or node.decision or node.iterations or node.entry or node.poolSize or node.failedServers %}
+                        {% if node.tools or node.params or node.result or node.verdict or node.reason or node.blockedRules or node.thinking or node.skill or node.error or node.hits or node.score or node.decidedBy or node.floor or node.decision or node.iterations or node.entry or node.poolSize or node.failedServers %}
                         {# 可及名稱＝「這一站的名字 ＋ 本鈕自己的字」（§4）：自指是為了讓 WCAG 2.5.3
                              Label in Name 成立——鈕上看得到的字是「展開表格」，可及名稱裡就必須含它，
                              否則語音控制唸「展開表格」點不到；而 accordion.js 換 sr-only 文字時，
@@ -297,7 +333,7 @@
                         {% endif %}
                     </td>
                 </tr>
-                {% if node.tools or node.params or node.result or node.verdict or node.thinking or node.skill or node.error or node.hits or node.score or node.decidedBy or node.floor or node.decision or node.iterations or node.entry or node.poolSize or node.failedServers %}
+                {% if node.tools or node.params or node.result or node.verdict or node.reason or node.blockedRules or node.thinking or node.skill or node.error or node.hits or node.score or node.decidedBy or node.floor or node.decision or node.iterations or node.entry or node.poolSize or node.failedServers %}
                 <tr class="detail-row">
                     <td colspan="5" class="detail-cell">
                         <div class="accordion-content">
@@ -358,8 +394,9 @@
                                              ⚠️ **不要補一組 `resultShown`／`resultLength` 的「已顯示前 N 字／共 M 字」＋
                                              「看完整輸出」**：那需要「被截到的欄位會自述原始長度」，而兩條路都沒有——
                                              ・**即時串流**：`result_preview` 原樣送，而 product 的
-                                               `_AGENT_TOOL_RESULT_PUBLIC_KEYS` 只放行 `tool`／`tool_call_id`／
-                                               `result_preview`，**沒有任何長度欄**（gufofaq-saas `apps/web/lib/sse.ts` 的 `ToolActivity` 型別註解逐字寫著「**沒有『原始長度』這一欄**，
+                                               `_AGENT_TOOL_RESULT_PUBLIC_KEYS` 放行的是 `tool`／`tool_call_id`／
+                                               `result_preview` ＋四顆樹狀骨架鍵（`_TOOL_TREE_SKELETON_KEYS`：
+                                               parent／depth／skill_id／skill_version），**沒有任何長度欄**（gufofaq-saas `apps/web/lib/domain/sse.ts` 的 `ToolActivity` 型別註解逐字寫著「**沒有『原始長度』這一欄**，
                                                而且不是『上游還沒回』而是產不出來」）。而且即時那一輪連 chat log id 都還沒有，
                                                取全文的端點根本呼叫不了。
                                              ・**重播**：GufoRAG chatbot 的
@@ -378,10 +415,71 @@
                                         </td>
                                     </tr>
                                     {% endif %}
+                                    {# 判定結論（S2）。**值是機器碼，文案在這裡**（同 decidedBy／entry 那兩條）：
+                                         上游送的是閉合詞彙 `generate`／`no_answer`／`blocked`，一個中文字都沒有；
+                                         把「（素材足以回答）」那半句寫進值裡等於在示範資料上編一個 API 產不出來的字串，
+                                         而 React 端接上真 API 之後畫面只會剩下一個機器碼。
+                                       **不做成徽章**：verdict 的三顆值分屬兩種站（可回答性／合規閘），
+                                         與 decision 那五顆「同一道判定的五種結論」不是同一種東西，
+                                         配一組顏色只會讓人以為它們可以互相比較。
+                                       收尾的 else **原樣輸出**（同 decision）：上游多一顆值時要看得到那個生字，
+                                         而且**不可以拿 else 當某個已知值的家**——查表查不到就被靜靜畫成一個既有的詞，
+                                         是本檔最難查的一種錯。 #}
                                     {% if node.verdict %}
                                     <tr>
                                         <th data-i18n="agent.verdict">判定</th>
+                                        {% if node.verdict == "generate" %}
+                                        <td data-i18n="agent.verdictGenerate">素材足以回答</td>
+                                        {% elif node.verdict == "no_answer" %}
+                                        <td data-i18n="agent.verdictNoAnswer">素材不足以回答</td>
+                                        {% elif node.verdict == "blocked" %}
+                                        <td data-i18n="agent.verdictBlocked">被規則擋下</td>
+                                        {% else %}
                                         <td>{{ node.verdict }}</td>
+                                        {% endif %}
+                                    </tr>
+                                    {% endif %}
+                                    {# 判定成因（S2）：`verdict` 說結論，這一列說**它是從哪一層出來的**。
+                                         值得一列的理由與五個值的值域寫在檔頭那一段；這裡只記兩件會畫錯的事：
+                                       ・**判否與故障不同色、也不同列**：`judge_failed` 的那一輪 verdict 是
+                                         `generate`（fail-open 放行），只看上一列會讀成「判定通過」——而閘門
+                                         其實一次都沒生效。那一站的 state 是 `failed`，紅點由既有樣式給，
+                                         這一列負責說出為什麼。
+                                       ・**null／缺席時整列不渲染**（同 floor／poolSize 的判準）：上游對
+                                         「沒有可講的原因」就是送 null，那是一個真實狀態、不用哨兵充數。
+                                       收尾的 else 原樣輸出，同上一列。 #}
+                                    {% if node.reason %}
+                                    <tr>
+                                        <th data-i18n="agent.verdictReason">判定成因</th>
+                                        {% if node.reason == "gate_off" %}
+                                        <td data-i18n="agent.reasonGateOff">閘門未啟用（透明直通）</td>
+                                        {% elif node.reason == "empty_material" %}
+                                        <td data-i18n="agent.reasonEmptyMaterial">素材為空</td>
+                                        {% elif node.reason == "score_floor" %}
+                                        <td data-i18n="agent.reasonScoreFloor">分數粗篩判否（零 LLM）</td>
+                                        {% elif node.reason == "llm" %}
+                                        <td data-i18n="agent.reasonLlm">判定器實際執行</td>
+                                        {% elif node.reason == "judge_failed" %}
+                                        <td data-i18n="agent.reasonJudgeFailed">判定器故障，本輪閘門未生效</td>
+                                        {% else %}
+                                        <td>{{ node.reason }}</td>
+                                        {% endif %}
+                                    </tr>
+                                    {% endif %}
+                                    {# 被哪幾條具名規則擋下（S3）。**三態、三種畫法**，判準與可得性見檔頭：
+                                         有名字 ⇒ 逐條列（規則名是租戶自取的字＝資料，不翻、不掛 data-i18n，
+                                         也**不套 ui/inline-code**——那顆是給識別字用的，租戶自取的中文名塞進等寬字
+                                         只是難讀，同一元件的 failedServers 也是純文字；分隔符自己有 key，
+                                         留成字面量的話英文句子中央會露出一個全形頓號）；
+                                         `[]` ⇒ 那一輪確實被擋、只是擋它的不是具名規則，仍要說得出「被擋」
+                                         這件事，故畫一句話而不是留白；鍵不存在 ⇒ 整列不渲染。
+                                       **條件是 `node.blockedRules` 本身**（`[]` 在 nunjucks 與 JSX 都是真值），
+                                         不是 `.length`——拿長度當整列的條件，空陣列那一態就會連同「被擋」一起消失，
+                                         而畫面上它與「這一輪沒被擋」長得一模一樣。 #}
+                                    {% if node.blockedRules %}
+                                    <tr>
+                                        <th data-i18n="agent.blockedRules">命中規則</th>
+                                        <td>{% if node.blockedRules.length %}{% for rule in node.blockedRules %}{% if not loop.first %}<span data-i18n="common.listSep">、</span>{% endif %}{{ rule }}{% endfor %}{% else %}<span class="text-gray" data-i18n="agent.blockedRulesNone">無具名規則</span>{% endif %}</td>
                                     </tr>
                                     {% endif %}
                                     {# QA 直答的命中細節（S1）。**這幾欄不可省**：qa_direct 節點只有 label／state／time

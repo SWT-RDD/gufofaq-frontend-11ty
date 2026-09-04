@@ -233,7 +233,7 @@ permalink: 2-2-1_singleTest.html
      上半聊天區已經演著串流中的第二問（`components/chatroom` 的狀態列「搜尋資料中…」，有字、沒有
      回覆泡泡），流程圖這一半就必須是同一時刻——生成答案 running、其後 pending、**頂端沒有執行摘要**。
      摘要五欄全部來自整輪收尾才發的 `chat_room` 塊，`model` 更是只有重播那條路拿得到
-     （product 的 `_CHAT_ROOM_PUBLIC_KEYS` 沒有 `model_name`；gufofaq-saas `apps/web/lib/sse.ts` 的
+     （product 的 `_CHAT_ROOM_PUBLIC_KEYS` 沒有 `model_name`；gufofaq-saas `apps/web/lib/domain/sse.ts` 的
      chat_room 分支逐字寫著「永遠讀不到」）⇒「串流中」與「報得出 Token／延遲／首字／模型」
      兩件事互斥。
      **故本頁不設 stepFlowSummary、也不設結果截斷那一對**：一組「已顯示前 N 字／共 M 字」＋
