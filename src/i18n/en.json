@@ -514,6 +514,8 @@
   "health.overviewWindowHintSuffix": " conversations per request, and for a moderately busy tenant a 30-day window is bound to cross that line, which would make the overview impossible to open. When a longer window cannot be opened, the response says that is the reason.",
   "health.partialHint": "The numbers below say which records had which check skipped — they do not say “checked and clean”. On the findings list those two look identical: the list can only show findings that were computed, never “this check was not run at all”.",
   "health.partialTitle": "Checks not completed this time",
+  "health.qaDirectChecks": "QA direct-answer checks: ",
+  "health.qaDirectChecksLegend": "ran = they were evaluated this time; no_config = this tenant’s conversation settings have not reached the answering engine yet, so “Same question twice” and “Often asked, never answered” did not run this time (which is not the same as running and finding nothing) — saving the conversation settings once brings them back; inactive = the settings are there, but no question in this run goes through QA direct answering, so those two did not run either — turn QA direct answering on and pick a QA set. Neither state affects existing findings: they stay in the list below and can still be dealt with.",
   "health.rangePrefix": "Allowed range: ",
   "health.recordCount": "Records",
   "health.recordCountLabel": "Records involved: ",

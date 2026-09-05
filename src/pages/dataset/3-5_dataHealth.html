@@ -166,6 +166,11 @@ permalink: 3-5_dataHealth.html
      「上一次檢查是 20 分鐘前」在「有人剛按過」與「排程跑的」之間不是同一件事。
      `hitChecks` 演的是 **unavailable** 那一態：三態裡唯一會讓人「以為乾淨」的一種——沒有這一格，
      「沒有陳舊高頻」與「這一次根本沒算」在畫面上長得一模一樣。
+     `qaDirectChecks` 演的是 **inactive**，同一條理由：三態裡最會讓人「以為乾淨」的是它——設定
+     完好、掃描成功、清單乾淨，而那兩項根本沒跑。`no_config` 只發生在租戶剛建立、還沒存過設定
+     的那個窗口，示範價值低。
+     `qaDirectChecksDetail` 刻意用**完整長度**的一句：這一行在真實資料下就是這麼長，用短句示範
+     會讓版位在上線之後才第一次換行破版。
      ⑦ 的兩個數字也自洽：`files` 9 ＝ 掃到的 7 ＋ 沒掃到的 2（`uncoveredTotal`），而**沒掃到的那 2 個
      一筆記錄都不產**（`healthUncovered` 的 detail 逐字寫著「它不會出現在任何一項檢查裡」）。
      掃到的那 7 個是**本頁自己指名過的檔去重**得來的：
@@ -196,7 +201,9 @@ permalink: 3-5_dataHealth.html
     tooShortRecords: "47",
     uncoveredTotal: 2,
     hitChecks: "unavailable",
-    hitChecksDetail: "取不到問答紀錄，這一次沒有重算「陳舊高頻／從未被命中／高頻查無」：這段期間的問答筆數超過單次彙總上限（5000 則），請縮短時間窗再試。"
+    hitChecksDetail: "取不到問答紀錄，這一次沒有重算「陳舊高頻／從未被命中／高頻查無」：這段期間的問答筆數超過單次彙總上限（5000 則），請縮短時間窗再試。",
+    qaDirectChecks: "inactive",
+    qaDirectChecksDetail: "這一輪沒有評估「同問法重複」與「高頻查無」：這個設定檔的 QA 直答目前是停用狀態，這一輪一題都不會走直答，兩項檢查因此沒有比對對象。要讓它們重新進入評估，請到對話設定把 QA 直答打開並選好 QA 集，下一次檢查就會算。既有的發現仍然留在清單上，處置照舊。"
 } %}
 {# 最近一次**失敗**的掃描嘗試。這一格只在它**比上一次成功的掃描新**的時候才畫（判準是時間，
      不是「有沒有」——一次成功之後舊的失敗只是噪音，而噪音會讓人連真的那一次也一起略過），
@@ -666,6 +673,22 @@ permalink: 3-5_dataHealth.html
     <p class="text-gray" data-i18n="health.hitChecksLegend">ran ＝這一次算了；not_requested ＝這一次沒有要求算（陳舊高頻／從未被命中／高頻查無這三類維持上一次的結果，那不等於「沒有問題」）；unavailable ＝要求了但取不到問答紀錄，原因見下一行。</p>
     {% if healthScan.hitChecksDetail %}
     <p class="text-red">{{ healthScan.hitChecksDetail }}</p>
+    {% endif %}
+    {# 「同問法重複」與「高頻查無」這一次評估了沒有。理由與上面那一格一模一樣：少了它，
+         「沒有同問法重複」與「這一次根本沒評估同問法重複」在畫面上分不出來。
+         **兩種「沒評估」不可以合成一態**：`no_config` 要做的是「去對話設定存一次」，
+         `inactive` 要做的是「把 QA 直答打開並選好 QA 集」——合成一態，畫面就只能講一句
+         對其中一半錯的話，而那一半的人會照著做、然後發現沒有用。
+         `ran` 也照畫（同上一格「0 也照畫」的理由）：它是**狀態**不是事件，每一次掃描都有值，
+         所以不畫成警示框、也不彈 toast。
+         ⚠️ **「高頻查無」在兩格都會被提到，那不是複製錯誤**：它同時要問答紀錄（上一格）與
+         QA 直答設定（這一格），兩條路各自都擋得住它，所以兩個圖例都得列它。 #}
+    <div class="flex-row gap-24 flex-wrap">
+        <p><span class="text-bold" data-i18n="health.qaDirectChecks">直答類檢查：</span><span>{{ healthScan.qaDirectChecks }}</span></p>
+    </div>
+    <p class="text-gray" data-i18n="health.qaDirectChecksLegend">ran ＝這一次評估了；no_config ＝這個租戶的對話設定還沒推到問答引擎，「同問法重複」與「高頻查無」這一次沒有跑（那不等於「跑了、沒發現」），到對話設定存一次就會恢復；inactive ＝設定在，但這一輪一題都不會走 QA 直答，那兩項同樣沒有跑，要把 QA 直答打開並選好 QA 集。兩種都不影響既有的發現——它們照樣留在下面的清單上，也照樣處置得了。</p>
+    {% if healthScan.qaDirectChecksDetail %}
+    <p class="text-red">{{ healthScan.qaDirectChecksDetail }}</p>
     {% endif %}
     {# ⑦ 這一次沒有做到的檢查（沒有欄位槽的／只做得了完全相同比對的／內容太短沒進分群的）。
          **這幾個數字是「排除的事實」的載體**，不是統計花絮：它們與上面那排計數刻意分開一塊、
