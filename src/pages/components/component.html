@@ -1384,6 +1384,11 @@ bodyClass: guideline-page
                      ⇒ 那一頁演不到它，這裡是它唯一的可見處。
                      繁中逐字照抄 3-5 那一格（§4-2 同 key 兩種繁中會互相覆蓋）。 #}
                 <p class="m-0"><span class="text-bold" data-i18n="health.scanTooShort">內容過短、跳過近似重複比對的記錄：</span><span class="text-gray" data-i18n="health.scanTooShortNotMeasured">上一次檢查時還沒有這一項</span></p>
+                {# 3-5「直答類檢查」那一格的 **null** 態，同上一筆的理由：空的意思是「那一次掃描
+                     跑的時候還沒有這個欄位」，與 `ran`／`no_config`／`inactive` 三態都不是同一件事。
+                     3-5 的示範演 `inactive`（有值）⇒ 那一頁演不到它，這裡是它唯一的可見處。
+                     繁中逐字照抄 3-5 那一格（§4-2 同 key 兩種繁中會互相覆蓋）。 #}
+                <p class="m-0"><span class="text-bold" data-i18n="health.qaDirectChecks">直答類檢查：</span><span class="text-gray" data-i18n="health.qaDirectChecksNotRecorded">上一次檢查跑的時候還沒有這一項，所以沒有記錄；下一次檢查就會有。</span></p>
                 {# 前台問答「整站停用」那一態（`components/faq-chatroom` 與 `ui/widget-shell` 各一份
                      `.js-faq-unavailable`，兩處都掛 `.hidden`）。使用期閘與功能開通閘擋下來時
                      （兩道都是 403），輸入框停用、換上這一句。

@@ -682,9 +682,14 @@ permalink: 3-5_dataHealth.html
          `ran` 也照畫（同上一格「0 也照畫」的理由）：它是**狀態**不是事件，每一次掃描都有值，
          所以不畫成警示框、也不彈 toast。
          ⚠️ **「高頻查無」在兩格都會被提到，那不是複製錯誤**：它同時要問答紀錄（上一格）與
-         QA 直答設定（這一格），兩條路各自都擋得住它，所以兩個圖例都得列它。 #}
+         QA 直答設定（這一格），兩條路各自都擋得住它，所以兩個圖例都得列它。
+         **這一欄可以是空的，而空不是第四種狀態**：它的意思是「那一次掃描跑的時候還沒有這個
+         欄位」，與三態裡任何一個都不是同一件事，所以走一顆哨兵句、不補預設值——補 `ran` 就是
+         替一次沒有發生的評估編一個結果。形狀逐字照「內容過短」那一格的處置（值的位置改印
+         一句灰字），空態在這一頁演不到（示範是一趟近期的掃描），唯一的可見處在元件庫頁的
+         「React 條件文案」節。 #}
     <div class="flex-row gap-24 flex-wrap">
-        <p><span class="text-bold" data-i18n="health.qaDirectChecks">直答類檢查：</span><span>{{ healthScan.qaDirectChecks }}</span></p>
+        <p><span class="text-bold" data-i18n="health.qaDirectChecks">直答類檢查：</span>{% if healthScan.qaDirectChecks %}<span>{{ healthScan.qaDirectChecks }}</span>{% else %}<span class="text-gray" data-i18n="health.qaDirectChecksNotRecorded">上一次檢查跑的時候還沒有這一項，所以沒有記錄；下一次檢查就會有。</span>{% endif %}</p>
     </div>
     <p class="text-gray" data-i18n="health.qaDirectChecksLegend">ran ＝這一次評估了；no_config ＝這個租戶的對話設定還沒推到問答引擎，「同問法重複」與「高頻查無」這一次沒有跑（那不等於「跑了、沒發現」），到對話設定存一次就會恢復；inactive ＝設定在，但這一輪一題都不會走 QA 直答，那兩項同樣沒有跑，要把 QA 直答打開並選好 QA 集。兩種都不影響既有的發現——它們照樣留在下面的清單上，也照樣處置得了。</p>
     {% if healthScan.qaDirectChecksDetail %}
