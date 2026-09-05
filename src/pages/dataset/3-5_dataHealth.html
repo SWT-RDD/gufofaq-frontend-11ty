@@ -738,7 +738,7 @@ permalink: 3-5_dataHealth.html
     <div class="flex-row gap-24 flex-wrap">
         <p><span class="text-bold" data-i18n="health.scanSlotless">沒有欄位槽、標籤兩項不適用的記錄：</span><span>{{ healthScan.slotlessRecords }}</span></p>
         <p><span class="text-bold" data-i18n="health.scanExactMatchOnly">內容過長、只比了逐字相同的記錄：</span><span>{{ healthScan.exactMatchOnlyRecords }}</span></p>
-        <p><span class="text-bold" data-i18n="health.scanTooShort">內容過短、跳過近似重複比對的記錄：</span>{% if healthScan.tooShortRecords %}<span>{{ healthScan.tooShortRecords }}</span>{% else %}<span class="text-gray" data-i18n="health.scanTooShortNotMeasured">上一次檢查時還沒有這一項</span>{% endif %}</p>
+        <p><span class="text-bold" data-i18n="health.scanTooShort">內容過短、跳過近似重複比對的記錄：</span>{% if healthScan.tooShortRecords %}<span>{{ healthScan.tooShortRecords }}</span>{% else %}<span class="text-gray" data-i18n="health.scanTooShortNotMeasured">上一次檢查跑的時候還沒有這一項，所以沒有量到；下一次檢查就會有。</span>{% endif %}</p>
     </div>
     <p class="text-gray" data-i18n="health.scanSlotlessHint">資料夾匯入的整份文件沒有欄位槽——欄位對照是逐列匯入才有的東西，系統沒有任何路徑寫得進它們的標籤。所以「標籤缺口」與「缺基準日」這兩項把它們排除在外，這幾筆不會因為沒標而出現在清單上，也不代表它們標好了。要讓這些內容也受維度過濾管轄，得改用逐列匯入。</p>
     <p class="text-gray" data-i18n="health.scanExactMatchOnlyHint">內容超過長度上限的記錄，這一次的「近似重複」只對它們做逐字相同判定：同一份文件上傳兩次仍然抓得到，但「幾乎一樣的兩份」沒有被比。上限存在的理由是相似度為兩兩比對，長文件一對就要十幾秒，幾十份共用樣板的月報會讓整趟掃描跑不完——而那是全部檢查一起停擺，比單一項漏報嚴重。</p>
