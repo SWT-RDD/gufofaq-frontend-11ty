@@ -9,14 +9,14 @@ import { BUILTIN_TOOL_CARDS, builtinToolCards } from "../../_lib/inventory.mjs";
 import { fail } from "../../_lib/probe.mjs";
 
 test("§5/§6 skill 的內建工具白名單：不可用於 skill 的那幾顆要灰掉並附理由（照欄位、不照名字）", () => {
-    // `allowed_in_skill === false` 的工具**灰掉、不拿掉**：拿掉會讓使用者以為那顆工具不存在，
-    // 而它在 5-2「內建工具啟用」面板上看得到。理由（`skill_restriction_reason`）與存檔被擋時的
-    // 400 訊息是同一句（product 直接把它塞進 400），所以顯示它不會出現
-    // 「設定頁說一套、存檔說另一套」；也因此**不掛 data-i18n**（端點給的字串）。
+    // 不可用於 skill 的那幾顆工具**灰掉、不拿掉**：拿掉會讓使用者以為那顆工具不存在，
+    // 而它在 5-2「內建工具啟用」面板上看得到。灰掉那一顆旁邊那句理由，與存檔被擋下時看到的
+    // 是同一句，所以不會出現「設定頁說一套、存檔說另一套」；也因此**不掛 data-i18n**——
+    // 那句話是資料不是 chrome。
     //
     // 這條釘三件事：①至少演得出一顆被禁的（不然那一態等於沒切）②disabled 的那一顆一定要附理由
-    // ③理由那一段不得掛 data-i18n。判準都是 markup 的形狀，不是工具名字——名字會變（上游是一張
-    // 表，`SKILL_FORBIDDEN_BUILTIN_TOOLS`，名字集合由它導出），下一顆被禁的工具出現時不必改這裡。
+    // ③理由那一段不得掛 data-i18n。判準都是 markup 的形狀，不是工具名字——哪幾顆被禁是會變的
+    // 資料，下一顆被禁的工具出現時不必改這裡。
     const html = distDoc("3-4_skillManagement.html");
     // 一列一顆工具，列內沒有巢狀 <div>（label ＋ 選填的理由 span），故收到第一個 </div> 為止即可。
     // 要求「兩個連續 </div>」的話只有最後一列配得上（那次實測只掃到 1 顆）。
@@ -25,7 +25,7 @@ test("§5/§6 skill 的內建工具白名單：不可用於 skill 的那幾顆�
         .filter((r) => /js-skill-builtin/.test(r));
     assert.ok(rows.length >= 14, `skill 編輯窗只掃到 ${rows.length} 顆內建工具 —— 這條測試在空轉（那個變數沒有人 set 時整個群組會是空的）`);
     const disabled = rows.filter((r) => /\bdisabled\b/.test(r));
-    assert.ok(disabled.length >= 1, "沒有任何一顆演出「不可用於 skill」的灰掉態（allowed_in_skill=false）");
+    assert.ok(disabled.length >= 1, "沒有任何一顆演出「不可用於 skill」的灰掉態");
     const hits = [];
     for (const r of disabled) {
         const name = (r.match(/value="([^"]*)"/) || [, "?"])[1];
@@ -34,8 +34,8 @@ test("§5/§6 skill 的內建工具白名單：不可用於 skill 的那幾顆�
         // `id="skillBuiltinReason-<tool>"`，於是理由「掛得好好的卻抓不到」，紅在正則不在 markup。
         // 同一條測試下一行檢查 data-i18n 用的就是 `[^>]*`，這條是漏改的那一半。
         const reason = r.match(/<span class="text-gray"[^>]*>([^<]*)<\/span>/);
-        if (!reason || reason[1].trim().length < 20) hits.push(`${name}：灰掉了卻沒有附理由（skill_restriction_reason）`);
-        if (/<span class="text-gray"[^>]*data-i18n/.test(r)) hits.push(`${name}：理由掛了 data-i18n（端點給的字串不再包一層 i18n）`);
+        if (!reason || reason[1].trim().length < 20) hits.push(`${name}：灰掉了卻沒有一句說得出為什麼的理由`);
+        if (/<span class="text-gray"[^>]*data-i18n/.test(r)) hits.push(`${name}：理由掛了 data-i18n（那句話是資料，不包一層 i18n）`);
     }
     assert.equal(hits.length, 0, fail(hits));
 });
@@ -59,11 +59,11 @@ test("§5/§6 內建工具卡：參數清單唯讀、兩個 textarea 帶 hook cl
             noParams++;
             if (!params.includes('data-i18n="settings.toolNoParams"')) hits.push(`${name}：零參數卻沒有顯示「無參數」`);
         }
-        // 兩個租戶可填欄位：hook class（React 讀值組 builtin_tool_overrides）＋後端硬上限
+        // 兩個租戶可填欄位：hook class（React 靠它讀得到這一欄的值）＋單欄字數上限
         for (const [hook, label] of [["js-tool-description", "工具描述"], ["js-tool-extra-prompt", "工具內提示詞"]]) {
             const ta = html.match(new RegExp(`<textarea[^>]*\\b${hook}\\b[^>]*>`));
             if (!ta) { hits.push(`${name}：缺 ${label} 的 textarea（.${hook}）`); continue; }
-            if (!/maxlength="1024"/.test(ta[0])) hits.push(`${name}：${label} 沒有 maxlength="1024"（product 的 MAX_BUILTIN_TOOL_TEXT_LEN）`);
+            if (!/maxlength="1024"/.test(ta[0])) hits.push(`${name}：${label} 沒有 maxlength="1024"（這兩欄的字數上限）`);
             if (!/aria-describedby="/.test(ta[0])) hits.push(`${name}：${label} 沒有接上範例與字數上限（§4 帶約束的輔助文字要 aria-describedby）`);
         }
         // 字數提示：兩欄各一顆，且已填數要等於欄位實際內容長度（模板從同一份資料算，不烤字面量）
@@ -126,7 +126,7 @@ test("§5/§8 builtin-tool-card.js：打字即更新字數（貼邊值也算得�
     assert.equal(count.textContent, "1 / 1024", "打第一個字就要更新");
     ta.value = "x".repeat(1024);
     fireDoc("input", ta);
-    assert.equal(count.textContent, "1024 / 1024", "貼到上限時要顯示上限值（1024 是後端硬限制）");
+    assert.equal(count.textContent, "1024 / 1024", "貼到上限時要顯示上限值（1024 是這兩欄的字數上限）");
 });
 
 test("§5/§8 builtin-tool-card.js：還原預設清掉本卡兩欄並把字數歸零，且不動隔壁卡", () => {

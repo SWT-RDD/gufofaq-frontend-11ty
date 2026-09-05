@@ -6,11 +6,10 @@
        **它不是 `qaRecordTabs.length`**：頁籤只畫得下前面幾筆，而總數的用途正是講出「清單被切過」。
        故不從陣列推導（§6 那條「能推導就從陣列渲染」的例外形狀同 pagination 的 `total`）。
        **兩頁只有一頁給得出它**，所以是選填、且以 `{% if %}` 決定畫不畫：
-         · 2-2-3（AB 比較歷史）：`GET /qatest/ab-history` 回 `{rounds, total_count}`
-           （product 的 `ab_history`）⇒ 有總數。
-         · 2-2-1（聊天室清單）：`GET /history/rooms` 的 docstring 逐字寫著「**不宣告總數**」——
-           上游的 `total_count` 數的是問答**則數**而這裡列的是**聊天室**，掛上去會被讀成室數。
-           所以那一頁不 set 這顆參數，整段不畫；硬給一個數字就是編一個上游產不出來的欄位（§6）。
+         · 2-2-3（AB 比較歷史）：那份清單自己就報得出總筆數 ⇒ 有總數。
+         · 2-2-1（聊天室清單）：那份清單**不報總數**——唯一數得出來的是問答**則數**，
+           而這裡列的是**聊天室**，掛上去會被讀成室數。
+           所以那一頁不 set 這顆參數，整段不畫；硬給一個數字就是編一個沒有人算得出來的欄位（§6）。
      **值以字串傳入**（§6：值域含 0——一次比較都還沒跑過的租戶就是 0，而 `0` 在 nunjucks 是 false
        ⇒ 整段靜默消失，JSX 的 `{n && …}` 又會把 `0` 印出來。正典見 components/step-flow 檔頭）。
        `0` 那一態與 qa-record-tabs 的空狀態列（`qa.noRecords`）講的是同一件事，不會互相打架。
@@ -25,16 +24,13 @@
         {# 「開啟新對話」。掛點是自創的 hook class `.js-new-conversation`，**不是**拿 `.button-orange`
              這種樣式 class 當選擇器：樣式 class 隨時可能因為改配色而換掉，把契約綁在上面等於把
              視覺決定變成不能動的東西（§5 切版新頁命名慣例）。
-             **它不是③、不掛 data-toast**：上游根本沒有「建立對話」這支端點（GufoRAG chatbot 只有
-             `GET /chatrooms`、`GET /chatrooms/user/{id}`、`DELETE /chatrooms/{id}`、
-             `GET /chatrooms/{id}/chatlogs`——聊天室是第一則訊息送出時隱含建立的），gufofaq-saas 的
-             `apps/web` 也把它模成一顆由頁面自己供的 callback（`QaSidePanel.tsx` 的
-             `onNewChat: () => void`）。
+             **它不是③、不掛 data-toast**：按下去**不會送出任何請求**——聊天室是第一則訊息送出時
+             才隱含建立的，這一顆鈕只是把畫面清空、等使用者打第一句話。
              ⚠️ 因此**不可以**替它掛一段「只有成功」的 `data-toast`：那落不進 §5 四格矩陣的任何一格
              ——當③就得連失敗也演得出來，當②就不該掛結果。
              而它清的東西**逐頁不同**（2-2-1 是 `components/chatroom` 的訊息串、2-2-3 是 ab-compare
              兩側），切版這一層演不出一個共通的結果——故定調成②：只留 hook 標記「React 接手」，
-             不假造一個上游給不出來的成敗。 #}
+             不假造一個根本不會發生的成敗。 #}
         <button type="button" class="button button-orange w100 js-new-conversation">
             <img src="./images/icon_add_white.png" width="48" height="48" decoding="async" alt="" class="icon">
             <span data-i18n="comp.newConversation">開啟新對話</span>
@@ -52,26 +48,25 @@
             {% include "components/qa-record-tabs/qa-record-tabs.html" %}
         </div>
         {# 頁碼列：**只有給得出總數的那一頁才畫**，條件與上面那一格相同。
-             為什麼非它不可：`AbTestRound` 是 append-only、沒有任何清理路徑，而上一格只講得出
+             為什麼非它不可：AB 比較歷史是**只增不刪**的（沒有任何清理路徑），而上一格只講得出
              「共 128 筆」——**光是說得出清單被切過，並沒有給人翻到第二頁的辦法**，那些更早的
              比較在畫面上仍然到不了。總數是徵狀，頁碼列才是出路，兩格都要有。
-             `perPage` ＝上游的**預設**頁大小 `DEFAULT_AB_HISTORY_PAGE`（product，經
-             `GET /qatest/contract` 的 `paging.default_ab_history_page` 投影出來）：分頁器要算
-             「總共幾頁」就得知道它。**React 端一定要讀投影值、不可以抄一份字面**——後端哪天把預設
+             `perPage` ＝這份清單的**預設**頁大小：分頁器要算「總共幾頁」就得知道它。
+             **React 端一定要讀執行期拿到的那一顆、不可以抄一份字面**——預設值哪天
              調小而畫面仍以舊值分頁，頁碼從第 2 頁起會全部指錯位置，而畫面上沒有任何訊號。
-           ⚠️ **同 group 的另外兩顆界線刻意沒有可見落點**，理由查證過（§3-2：空白與「忘了標」
+           ⚠️ **同一組界線的另外兩顆刻意沒有可見落點**，理由查證過（§3-2：空白與「忘了標」
              長得一模一樣，所以寫在這裡）：
-               · `max_ab_history_page`（頁大小上界）——這一格沒有「每頁筆數」控制項，頁大小固定
-                 吃上游預設，UI 產不出域外的值。同 5-6-1 平台時區與 5-6-3 授權範圍的裁決
-                 （值域由端點自己決定 ⇒ 選不出域外值 ⇒ 那道 422 不畫）。
-               · `max_round_id_len`（round_id 長度上界）——`round_id` 由前端 `crypto.randomUUID()`
+               · **頁大小的上界**——這一格沒有「每頁筆數」控制項，頁大小固定
+                 吃預設值，UI 產不出域外的值。同 5-6-1 平台時區與 5-6-3 授權範圍的裁決
+                 （值域由控制項自己決定 ⇒ 選不出域外值 ⇒ 那道錯誤不畫）。
+               · **比較批次識別碼的長度上界**——那顆識別碼由前端 `crypto.randomUUID()`
                  產生（36 字），使用者碰不到它，畫成可見文字沒有任何人做得了決定。
-             兩顆的意義在**執行期**：React 端拿投影值當退路那一支（`r-<毫秒>-<亂數>`）的自我檢查。
+             兩顆的意義在**執行期**：React 端拿它們替退路那一支識別碼（`r-<毫秒>-<亂數>`）做自我檢查。
            `.pagination` 自帶 `flex-wrap: wrap`（見 ui/pagination 的 scss），在 269px 的面板裡
              會自己折行，故不需要 parent slot class 覆寫（§4：不覆寫就不加殼）。 #}
         {% if sidePanelTotal %}
         {% set total = sidePanelTotal %}
-        {# 切版這顆 100 是該投影值當下的快照（React 端讀 `paging.default_ab_history_page`，見上）。 #}
+        {# 切版這顆 100 是預設頁大小的當前值；React 端在執行期會拿到真正的那一顆並覆寫它（見上）。 #}
         {% set perPage = 100 %}
         {% include "ui/pagination/pagination.html" %}
         {% endif %}

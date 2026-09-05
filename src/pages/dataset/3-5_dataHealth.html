@@ -5,92 +5,64 @@ titleKey: nav.dataHealth
 pageHeading: 資料健檢
 permalink: 3-5_dataHealth.html
 ---
-{# 資料健檢（SaaS 新頁）。逆向自 gufofaq-saas product，這一頁打的端點：
-       · `GET /health/findings`（`FindingsOut`：`total`／`page`／`size`／`findings[]`，逐筆
-         `FindingOut` 帶 `check_type`／`severity`／`status`／`dataset_id`／`record_keys`／
-         `records[]`／`evidence`／`note`／`resolved_by`／`resolved_at`／`first_seen_at`／
-         `last_seen_at`／`available_actions`；`records[]` 與 `record_keys` **同序等長**，
-         逐筆 `RecordOut` 帶 `key`／`title`／`title_chars`／`title_source`／`dataset_id`／
-         `filename`／`row`／`unavailable_reason`／`unavailable_detail`）
-       · `GET /health/findings/overview`（**查詢參數 `days`（`ge=1, le=90`，預設
-         `HIT_WINDOW_DAYS = 7`）與 `top_n`（`ge=1, le=MAX_OVERVIEW_TOP_N = 50`，預設
-         `OVERVIEW_TOP_N = 5`）**；`OverviewOut`：`window_days`／`window_start`／
-         `window_end`／`total_open`／`total_hits`／`top_n`／`groups[]`，逐組 `OverviewGroupOut`
-         帶 `check_type`／`open_count`／`hit_sum`／`top[]`）
-       · `POST /health/scan`（`ScanIn` 的 `dataset_id`／`include_hit_checks` → `ScanOut`）
-       · `GET /health/scan/last`（`LastScanOut`：`scan` 是上一次**成功**的掃描
-         ＝`ScanOut` ＋ `trigger`，`failure` 是**比它新**的那一次失敗嘗試
-         ＝`failed_at`／`trigger`／`detail`；兩格都可能是 null）
-       · 五支處置：`…/dismiss`／`…/disable`／`…/merge`／`…/supersede`／`…/add-phrasing`
-       · 還原：`…/undo`（`UndoIn.reason`）
-     檢查判準、證據形狀與重新開啟的判準出自 product
-     （`HEALTH_CHECK_TYPES` 十一項、`HEALTH_SEVERITIES` 兩態、`_premise_changes`／`_reopen_note`）。
+{# 資料健檢。這一頁要外顯這幾件「不寫出來就會靜默出事」的事，逐一（§3-2：能不寫死計數就不寫）：
 
-     這一頁要外顯六件「不寫出來就會靜默出事」的事，逐一：
-
-     ① **排序依影響、不依發現數量**。總覽那一支把每一組「涉及記錄的命中次數總和」算出來排序
-        （product `findings_overview`：`groups.sort(key=(-hit_sum, -open_count, check_type))`），
-        因為一筆從沒被命中過的重複遠不如一筆每天被命中 50 次的過期答案重要。命中數取的是
-        **剝掉批次回歸重放之後**的問答紀錄（`_fetch_window_logs` 走 `stats._fetch_logs` 本人）
+     ① **排序依影響、不依發現數量**。總覽把每一組「涉及記錄的命中次數總和」算出來排序
+        （命中總和遞減 → 未處置數遞減 → 檢查項目字典序），因為一筆從沒被命中過的重複遠不如
+        一筆每天被命中 50 次的過期答案重要。命中數取的是**剝掉批次回歸重放之後**的問答紀錄
         ——另抄一份取回邏輯的話，跑一次回歸就會把被重放的那幾筆推上頂端，而畫面上看起來就是
         「這幾筆最常被問」。
-        **逐項清單那一支排的是 `(check_type, id)`**：命中次數住在上游的問答紀錄裡、排不進 SQL，
+        **逐項清單排的是「檢查項目 → 發現編號」**：命中次數住在問答紀錄裡、排不進資料庫的排序，
         而清單是分頁的，在一頁之內排等於假排序（第 2 頁的高命中筆數永遠上不了第 1 頁）。
         兩張表照什麼排各自在畫面上講明；不講的話沒有人分得出來。
 
-     ② **消音之後又冒出來，畫面要答得出「為什麼」**。product 只在 `evidence_digest` 或 `severity`
-        變了才重新開啟（`_premise_changes`），並把「原判定的前提已改變（…）。處置當時的證據：…」
-        寫進 `note`（`_reopen_note`；這一次掃描的證據馬上要覆蓋掉舊的，`note` 是它唯一留得住的
-        地方）。判準是 API 給得出來的：`status` 是 `open` 而 `resolved_at` 還在 ⇒ 這一筆被處置過
-        又回到未處置（前提改變重新開啟，或被 `/undo` 退回；兩者都刻意留著 `resolved_by`／
-        `resolved_at`）。少了這一格，清單每天跳同樣的既有發現，人看兩次就不看了。
+     ② **消音之後又冒出來，畫面要答得出「為什麼」**。只有證據摘要或嚴重度變了才會重新開啟，
+        並把「原判定的前提已改變（…）。處置當時的證據：…」寫進 `note`（這一次掃描的證據馬上
+        要覆蓋掉舊的，`note` 是它唯一留得住的地方）。判準畫得出來：`status` 是 `open` 而
+        `resolved_at` 還在 ⇒ 這一筆被處置過又回到未處置（前提改變重新開啟，或被還原退回；
+        兩者都刻意留著 `resolved_by`／`resolved_at`）。少了這一格，清單每天跳同樣的既有發現，
+        人看兩次就不看了。
 
-     ③ **五支處置裡有四支是具體的資料操作，不是「標記已讀」**。`dismiss` 是唯一不動資料的一支（product
-        那支逐字寫著「只動發現這一列，一個字都不碰資料」）；`disable` 寫哨兵有效期、`merge` 改
-        保留者的內容、`supersede` 寫外部主鍵、`add-phrasing` 新增一列。**檢查本身不改資料**
-        （八項檢查連寫記錄的路都組不出來），這句話要在按下重新檢查之前就看得到。
-        `disable`／`supersede` 在租戶還沒宣告對應角色維度時會 400 並指名缺的前提
-        （`_require_valid_until_slot`／`_require_superseded_by_slot`），故兩支的說明與 toast
-        分支都講得出那個前提。
+     ③ **五支處置裡有四支是具體的資料操作，不是「標記已讀」**。「判定為非問題」是唯一不動資料
+        的一支（只動發現這一列，一個字都不碰資料）；停用寫哨兵有效期、合併改保留者的內容、
+        指定現行版寫外部主鍵、補寫問法新增一列。**檢查本身不改資料**（檢查那一側連寫記錄的路
+        都組不出來），這句話要在按下重新檢查之前就看得到。
+        停用／指定現行版在租戶還沒宣告對應角色維度時會被擋下並指名缺的前提，故兩支的說明與
+        toast 分支都講得出那個前提。
 
-     ④ **`/undo` 不是永遠成功**。判準是「我們寫出去的那一份還在不在」（稽核裡的 `content_after`
-        與現況逐字比對），不是「試著算出反向操作」。合併把問法併進內容開頭那一行，而再併一次是
-        就地擴充同一行——同一筆保留者被第二個發現又併過之後，那一行同時裝著兩次的問法，把舊內容
+     ④ **還原不是永遠成功**。判準是「我們寫出去的那一份還在不在」（稽核留下的處置後內容與現況
+        逐字比對），不是「試著算出反向操作」。合併把問法併進內容開頭那一行，而再併一次是就地
+        擴充同一行——同一筆保留者被第二個發現又併過之後，那一行同時裝著兩次的問法，把舊內容
         寫回去會連第二次的一起抹掉，只拿掉這一次的又會留下一個誰都沒寫過的中間狀態。兩個都不是
-        反向操作，所以 409 指名。兩種 409 的文案不同，兩條都列在還原鈕的 toast 分支裡。
+        反向操作，所以擋下來並指名。兩種擋法的文案不同，兩條都列在還原鈕的 toast 分支裡。
 
-     ⑤ **「沒掃到」是誠實記錄，不得被藏起來**。掃不到的檔逐檔列進 `ScanOut.uncovered`，各帶
-        `reason` 與 `detail`。五種原因（`health_findings._collect_records` ＋ `_folder_record`／
-        `health_extract.REASON_*`）：`not_row_imported`（不是逐列匯入、也沒有逐列的擷取連結）、
-        `file_not_linkable`（沒有落地檔名／擷取連結的舊列）、`no_extractor`（圖片、舊版 .doc 等
-        本機沒有擷取器的格式）、`source_file_missing`（列還在、磁碟上那一份不見了）、
-        `extract_failed`（擷取器讀不出來）。漏報比誤報嚴重，而「以為乾淨、其實沒掃」的唯一解藥
-        是讓沒掃到的部分出現在使用者眼前。**那張表自己也有筆數上限**，所以
-        `uncovered_total`（總共幾個）與 `uncovered_by_reason`（逐原因幾個，不受截斷影響）兩個
-        數字要一起畫出來——少了後者，被切掉的那一族（例如唯一一個擷取失敗的檔）會整族從畫面上
-        消失，而它往往正是最該看的那一個。
+     ⑤ **「沒掃到」是誠實記錄，不得被藏起來**。掃不到的檔逐檔列出來，各帶原因與說明。五種原因：
+        不是逐列匯入、也沒有逐列的擷取連結；沒有落地檔名／擷取連結的舊列；本機沒有擷取器的格式
+        （圖片、舊版 .doc 等）；列還在、磁碟上那一份不見了；擷取器讀不出來。漏報比誤報嚴重，
+        而「以為乾淨、其實沒掃」的唯一解藥是讓沒掃到的部分出現在使用者眼前。**那張表自己也有
+        筆數上限**，所以「總共幾個」與「逐原因幾個」（不受截斷影響）兩個數字要一起畫出來——
+        少了後者，被切掉的那一族（例如唯一一個擷取失敗的檔）會整族從畫面上消失，而它往往正是
+        最該看的那一個。
 
-     ⑥ **任何上限／截斷都在消費點外顯**：清單的 `total`／`page`／`size`（分頁）、總覽每組只附
-        `top_n` 筆（不是分頁，要逐筆看走清單）、命中窗 `window_days`（預設 7 天而不是 30——上游
-        一次最多彙總 5000 則）、單次掃描的記錄數上限（`ScanOut.max_records`，超過就 400 擋下、
-        不靜默只掃前 N 筆）、沒掃到的檔那張表的列出數與總數（見⑤）、記錄標題只回前 N 個字而
-        `title_chars` 是原文長度、三項命中檢查這一次到底跑了沒有（`hit_checks` 三態），以及
-        **這一次哪些記錄的哪一項沒有被檢查**（`slotless_records`／`exact_match_only_records`，
-        見下）。**每一個上限的數字都由 API 給**：前端自己抄一份常數的那一天，改了上限畫面照樣
-        印舊的數字，而「掃了一半」與「掃完了」正是靠那一對數字才分得出來。
+     ⑥ **任何上限／截斷都在消費點外顯**：清單的總筆數／頁碼／每頁筆數（分頁）、總覽每組只附
+        前 N 筆（不是分頁，要逐筆看走清單）、命中窗天數（預設 7 天而不是 30——一次最多彙總
+        5000 則問答）、單次掃描的記錄數上限（超過就整趟擋下、不靜默只掃前 N 筆）、沒掃到的檔
+        那張表的列出數與總數（見⑤）、記錄標題只回前 N 個字而原文長度另有一格、三項命中檢查
+        這一次到底跑了沒有（三態），以及**這一次哪些記錄的哪一項沒有被檢查**（見下）。
+        **每一個上限的數字都要讀得到、不在畫面上寫死**：前端自己抄一份的那一天，改了上限畫面
+        照樣印舊的數字，而「掃了一半」與「掃完了」正是靠那一對數字才分得出來。
 
-     ⑦ **「這一次沒有做這一項」與「做了、沒問題」必須分得出來**。掃描回應有兩個數字專門
+     ⑦ **「這一次沒有做這一項」與「做了、沒問題」必須分得出來**。掃描結果有兩個數字專門
         承載這件事，兩者都是**排除的事實**、不是統計花絮：
-          · `slotless_records`＝資料夾匯入的整份文件（它們沒有欄位槽，欄位對照是逐列匯入
-            才有的東西）。這些記錄**被排除在標籤缺口與未填基準日之外**——不是「檢查過而且
-            沒有缺口」。少了這個數字，兩者在畫面上長得一模一樣。
-          · `exact_match_only_records`＝內容長度超過兩兩比對上限的記錄
-            （product `health_checks.NEAR_DUPLICATE_PAIRWISE_MAX_CHARS`）。相似度是
-            O(la·lb) 的兩兩比對（實測 20000 字一對 18.95 秒），所以超過上限的那一批**只做
-            逐字相同判定**：同一份上傳兩次仍然抓得到，「幾乎一樣的兩份」這一次沒有比。
-            這是**漏報方向**的偏差，與本頁其他地方的取捨相反，所以更要寫出來。
-        兩個數字**常駐**（0 也畫），理由與 `hit_checks` 那一格相同：只在非 0 才出現的話，
-        看不到它就分不出是「這一次沒有被排除」還是「這個版本不報這件事」。
+          · 沒有欄位槽的記錄＝資料夾匯入的整份文件（欄位對照是逐列匯入才有的東西）。這些記錄
+            **被排除在標籤缺口與未填基準日之外**——不是「檢查過而且沒有缺口」。少了這個數字，
+            兩者在畫面上長得一模一樣。
+          · 只做得了完全相同比對的記錄＝內容長度超過兩兩比對上限的那一批。相似度是兩兩比對，
+            成本隨字數平方成長，所以超過上限的那一批**只做逐字相同判定**：同一份上傳兩次仍然
+            抓得到，「幾乎一樣的兩份」這一次沒有比。這是**漏報方向**的偏差，與本頁其他地方的
+            取捨相反，所以更要寫出來。
+        兩個數字**常駐**（0 也畫），理由與命中檢查那一格相同：只在非 0 才出現的話，看不到它就
+        分不出是「這一次沒有被排除」還是「這個版本不報這件事」。
 
      i18n 的兩處刻意分 key（§4-2「語意確實不同、英譯必須區別才分 key」）：
        · `health.statusOpen`（未處置／Open）與既有的 `agent.stepPending`（待處理／Pending）——
@@ -98,34 +70,32 @@ permalink: 3-5_dataHealth.html
        · `health.actionDismiss`（判定為非問題）與 `health.statusDismissed`（已判定為非問題）——
          一個是動作、一個是狀態，繁中已經分得開。
 
-     **記錄的可讀身分**：`FindingOut.records[]` 與 `record_keys` 同序等長，逐筆帶得出標題
-     （`RecordOut`）。「保留哪一筆」「哪一筆是現行版」「補寫在哪一筆」三個選項是使用者據此做出
-     的、**會改資料的決定**——只有 `document_id` 雜湊時那幾支處置在畫面上沒有辦法用。
+     **記錄的可讀身分**：一筆發現的記錄鍵與記錄本身同序等長，逐筆帶得出標題。「保留哪一筆」
+     「哪一筆是現行版」「補寫在哪一筆」三個選項是使用者據此做出的、**會改資料的決定**——只有
+     一串文件識別碼雜湊的話，那幾支處置在畫面上沒有辦法用。
      渲染走 `components/record-identity`（同一頁五處共用）：**標題永遠帶著「這是哪一種身分」**
      （逐列匯入的一列／資料夾匯入的整份文件／查無主題的問法，三種東西長得都像標題但意思不同）、
      同名時靠檔案與列號分辨、標題欄空白與標題讀不出來分成兩句話講、截斷說得出原文有多長。
-     處置端點吃的仍是 `record_keys`（畫面上讀的是 `records[]`，兩者不得分家），所以「涉及的
-     記錄」那一列在標題後面仍然列得出文件識別碼。
+     處置吃的仍是記錄鍵（畫面上讀的是記錄本身，兩者不得分家），所以「涉及的記錄」那一列在標題
+     後面仍然列得出文件識別碼。
 
-     權限：清單與總覽掛 `data:read`，掃描與五支處置＋還原掛 `data:write`
-     （product `require_capability("data", …)`）。切版不做權限過濾（那是 React 應用層的事）：
-     能力不足**不做「不渲染／不可按」**，鈕照樣按得下去、那道 403 是每一顆的**第 2 段 warning**
-     （GUIDELINE §4——能力 token 是逐鈕的細粒度，逐鈕過濾在應用層做不出來）。
+     權限：清單與總覽掛 `data:read`，掃描與五支處置＋還原掛 `data:write`。
+     切版不做權限過濾（那是 React 應用層的事）：能力不足**不做「不渲染／不可按」**，鈕照樣按得
+     下去、那一態是每一顆的**第 2 段 warning**（GUIDELINE §4——能力 token 是逐鈕的細粒度，
+     逐鈕過濾在應用層做不出來）。
      **能力閘之後還有一道「他可以寫哪一個資料集」的資源層 scope**（GUIDELINE §4：四軸表達不出
-     它，它的家在 §5 的 `data-toast`，列成 warning、不折進 error）：`_rewrite_and_sync` 在任何一個
-     位元組落地之前先跑 `_assert_writable` → `authz.can_write_dataset`，不通過是 403
-     `dataset_not_writable_group`。它**真實可達**——清單端點不依群組過濾，同租戶成員看得到那一筆、
-     按下去才 403，而使用者自己找得到人開通或換群組。落在 `disable`／`merge`／`supersede`／
-     `add-phrasing`／`undo` 五顆（它們都只能經由 `_rewrite_and_sync` 落地，那正是把守衛掛在那裡的
-     理由）；**`dismiss` 不走那一支**（product 那一支逐字寫著「只動發現這一列，一個字都不碰資料」）
-     故不列。五顆的那一段是**同一句話、同一個型別**（§5：同一道守衛不論從哪顆鈕觸發，語意型別
-     都要一致）。 #}
+     它，它的家在 §5 的 `data-toast`，列成 warning、不折進 error）：任何一個位元組落地之前先驗
+     「這個資料集在不在我可以寫入的群組裡」，不通過就擋下來。它**真實可達**——清單不依群組過濾，
+     同租戶成員看得到那一筆、按下去才被擋，而使用者自己找得到人開通或換群組。落在停用／合併／
+     指定現行版／補寫問法／還原五顆（它們都只能經由同一條寫入路徑落地，那正是把守衛掛在那裡的
+     理由）；**「判定為非問題」不走那一條**（它一個字都不碰資料）故不列。五顆的那一段是**同一
+     句話、同一個型別**（§5：同一道守衛不論從哪顆鈕觸發，語意型別都要一致）。 #}
 {% set breadcrumbItems = [
   { label: "首頁", href: "2-1_qaRecord.html", i18nKey: "nav.home" },
   { label: "資料配置", href: "", i18nKey: "nav.dataConfig" },
   { label: "資料健檢", i18nKey: "nav.dataHealth" }
 ] %}
-{# 本租戶的資料集目錄（`ScanIn.dataset_id` 的值域）＝**這個租戶全部的資料集**，與
+{# 本租戶的資料集目錄（＝「檢查範圍」下拉的值域）＝**這個租戶全部的資料集**，與
      `healthScan.datasets`（這一次掃到幾個）**不是同一個數**：目錄是全部，`datasets` 只算這一趟
      真的掃過的那幾個。
    ⚠️ **不可以寫成「這份清單的筆數必須等於 `healthScan.datasets`」**——那條等式只在目錄剛好
@@ -136,10 +106,9 @@ permalink: 3-5_dataHealth.html
      （`2026新制問答_v3.xlsx`、`客服話術彙編.xlsx`）。
    **id 3 與 7 不是隨手編的**：`healthUncovered` 兩筆的 `datasetId` 就是這兩個（`關稅稅則對照表.png`
      在 3、`舊版問答_匯出.xlsx` 在 7），示範資料同頁互相推導得出來（§6）。 #}
-{# **這是本站示範租戶的資料集目錄正本**（§6 跨頁自洽）。QA 集與檔案集在 product 是**同一張表**
-     （`models.Dataset` 的 `kind` 欄：`file`／`qa`，「QA 集騎現有 Excel 匯入與資料集 CRUD，僅以此欄分流」）
-     ⇒ **同一個 id 空間**：3-1-1 的資料集清單（kind=file）、3-3 的 QA 集清單（kind=qa）與這裡的
-     檢查範圍下拉，三處講的是同一批 id，而**這裡就是那份目錄的正本**。
+{# **這是本站示範租戶的資料集目錄正本**（§6 跨頁自洽）。QA 集與檔案集是同一種東西，只差在裝的
+     是逐題問答還是檔案（QA 集沿用同一套匯入與 CRUD）⇒ **同一個 id 空間**：3-1-1 的資料集清單、
+     3-3 的 QA 集清單與這裡的檢查範圍下拉，三處講的是同一批 id，而**這裡就是那份目錄的正本**。
      三頁各自維護一份的話，會長出這幾種對不起來的形狀，每一種都真的發生得了：
        · 3-1-1 列得出來的資料集（101／102／103），在這一頁與 5-10 一個都不在
        · 同一個 id 在兩頁各指一個資料集（id 3 一邊是「產品 FAQ」、一邊是「法規彙編」）
@@ -165,10 +134,10 @@ permalink: 3-5_dataHealth.html
   { id: 102, name: "產品規格文件集" },
   { id: 103, name: "常見問題彙整" }
 ] %}
-{# 檢查項目的閉合值域＝product `models.HEALTH_CHECK_TYPES` 十一項。這是本頁的**單一目錄**：
+{# 檢查項目的閉合值域就是下面這十一項，在這裡宣告一次。這是本頁的**單一目錄**：
      篩選下拉由它渲染。列上的 `checkLabel`／`checkLabelKey` 是這份目錄在示範列上的投影（切版
-     沒有查表可用；React 端是一張 `CHECK_LABEL_KEY` 表，不是第二份字典）。後三項（陳舊高頻／
-     從未被命中／高頻查無）要上游的問答紀錄才算得出來，只在「一併重算」開著的那一次掃描才更新
+     沒有查表可用；React 端是一張機器碼對譯文 key 的表，不是第二份字典）。後三項（陳舊高頻／
+     從未被命中／高頻查無）要問答紀錄才算得出來，只在「一併重算」開著的那一次掃描才更新
      ——值域照樣列出來，篩選得到才看得出「這一類今天有沒有東西」。 #}
 {% set healthCheckTypes = [
   { value: "near_duplicate", label: "近似重複", i18nKey: "health.checkNearDuplicate" },
@@ -183,28 +152,28 @@ permalink: 3-5_dataHealth.html
   { value: "never_hit", label: "從未被命中", i18nKey: "health.checkNeverHit" },
   { value: "no_answer_topic", label: "高頻查無", i18nKey: "health.checkNoAnswerTopic" }
 ] %}
-{# 上一次**成功**的掃描（`GET /health/scan/last` 的 `scan`＝`ScanOut` ＋ `trigger`）。
-     這一塊**開頁就畫得出來**：product 把每一次掃描的結果落庫（一租戶一列，覆寫），所以重新整理
-     之後「這一次沒有看到的檔」與「三項命中檢查跑了沒有」還在。少了那一支讀取端點的日子裡，這兩
-     格只活在 `POST /health/scan` 的那一次回應裡，而每日重掃那一趟根本沒有人看著回應。
+{# 上一次**成功**的掃描（連同它是被誰觸發的）。
+     這一塊**開頁就畫得出來**：每一次掃描的結果都落庫（一租戶一列，覆寫），所以重新整理
+     之後「這一次沒有看到的檔」與「三項命中檢查跑了沒有」還在。讀不到落庫的那一份時，這兩
+     格就只活在「按下重新檢查」的那一次回應裡，而每日重掃那一趟根本沒有人看著回應。
 
      示範資料要自洽（GUIDELINE §6）：
-     `new + reopened + touched == findings`（6 ＋ 1 ＋ 26 ＝ 33，product `upsert_findings` 保證
-     這三個數是一個分割）；`records` 1180 ＜ 上限 20000；`files` 9 ＝ 掃到的 7 ＋ 沒掃到的 2。
-     `maxRecords` ＝ `ScanOut.max_records`：**這個數字由 API 給**，不是前端的常數（改了上限而
-     畫面照樣印舊的分母時，「掃了一半」與「掃完了」就再也分不出來）。
+     `new + reopened + touched == findings`（6 ＋ 1 ＋ 26 ＝ 33，這三個數是同一批發現的一個
+     分割）；`records` 1180 ＜ 上限 20000；`files` 9 ＝ 掃到的 7 ＋ 沒掃到的 2。
+     `maxRecords`：**這個數字要讀得到**，不是前端寫死的常數（改了上限而畫面照樣印舊的分母時，
+     「掃了一半」與「掃完了」就再也分不出來）。
      `trigger` 演的是 **daily**：三種觸發來源（`manual`／`import`／`daily`）讀起來完全不同——
      「上一次檢查是 20 分鐘前」在「有人剛按過」與「排程跑的」之間不是同一件事。
      `hitChecks` 演的是 **unavailable** 那一態：三態裡唯一會讓人「以為乾淨」的一種——沒有這一格，
      「沒有陳舊高頻」與「這一次根本沒算」在畫面上長得一模一樣。
      ⑦ 的兩個數字也自洽：`files` 9 ＝ 掃到的 7 ＋ 沒掃到的 2（`uncoveredTotal`），而**沒掃到的那 2 個
-     一筆記錄都不產**（`_collect_records` 對它們 `continue`，`healthUncovered` 的 detail 也逐字寫著
-     「它不會出現在任何一項檢查裡」）。掃到的那 7 個是**本頁自己指名過的檔去重**得來的：
+     一筆記錄都不產**（`healthUncovered` 的 detail 逐字寫著「它不會出現在任何一項檢查裡」）。
+     掃到的那 7 個是**本頁自己指名過的檔去重**得來的：
      6 個逐列匯入的 .xlsx ＋ 1 個資料夾匯入的 .pdf（`犬貓入境檢疫作業手冊.pdf`），沒掃到的兩個
      則是 `healthUncovered` 那兩筆（`關稅稅則對照表.png`、`舊版問答_匯出.xlsx`）——加起來剛好
-     `files` 9，沒有第 10 個檔的空間。資料夾匯入的檔**一檔恰好一筆** `slotted=False`
-     （`record_from_document` 寫死 `slotted=False`、一檔一個 document_id）⇒ `slotlessRecords` **1**；
-     其餘 1179 筆逐列記錄（`slotted=True`）由那 6 個 .xlsx 貢獻 ⇒ `records` 1180。
+     `files` 9，沒有第 10 個檔的空間。資料夾匯入的檔**一檔恰好一筆沒有欄位槽的記錄**
+     （一檔一份文件）⇒ `slotlessRecords` **1**；其餘 1179 筆是有欄位槽的逐列記錄，
+     由那 6 個 .xlsx 貢獻 ⇒ `records` 1180。
      **這個 1 不能照「幾個資料夾檔」以外的方式推**：寫成 5 或 7 都要求有那麼多個資料夾匯入的檔，
      而本頁指名得出來的只有一個。
      `exactMatchOnlyRecords` 3 ＝ 內容超過兩兩比對上限、只做得了完全相同比對的那幾筆。
@@ -229,21 +198,20 @@ permalink: 3-5_dataHealth.html
     hitChecks: "unavailable",
     hitChecksDetail: "取不到問答紀錄，這一次沒有重算「陳舊高頻／從未被命中／高頻查無」：這段期間的問答筆數超過單次彙總上限（5000 則），請縮短時間窗再試。"
 } %}
-{# 最近一次**失敗**的掃描嘗試（`GET /health/scan/last` 的 `failure`）。
-     product 只在它**比上一次成功的掃描新**的時候才回這一格（判準是時間，不是「有沒有」——一次
-     成功之後舊的失敗只是噪音，而噪音會讓人連真的那一次也一起略過），所以這一塊與上面那一排數字
-     同時出現是一個真實可能的狀態：09:40 有人手動按了重新檢查、被擋下來了，而畫面上那一排仍然是
-     03:15 排程那一趟的結果。失敗**不覆蓋**成功那一列，否則上一次的 `uncovered` 會被一起沖走。
-     `detail` 是 product 自己那句話（`_failure_message` 取結構化 detail 的人話那一段），原樣端出來
-     ——這裡逐字取自 `scan_now` 的 `too_many_records`。 #}
+{# 最近一次**失敗**的掃描嘗試。這一格只在它**比上一次成功的掃描新**的時候才畫（判準是時間，
+     不是「有沒有」——一次成功之後舊的失敗只是噪音，而噪音會讓人連真的那一次也一起略過），
+     所以這一塊與上面那一排數字同時出現是一個真實可能的狀態：09:40 有人手動按了重新檢查、
+     被擋下來了，而畫面上那一排仍然是 03:15 排程那一趟的結果。失敗**不覆蓋**成功那一列，
+     否則上一次沒掃到的那張表會被一起沖走。
+     `detail` 是擋下來的那一句原文，原樣端出來、不改寫（它自己就說得出為什麼擋在這裡）。 #}
 {% set healthScanFailure = {
     failedAt: "2026/07/14 09:40",
     trigger: "manual",
     detail: "這個租戶有 24310 筆記錄，超過單次健檢上限 20000。近似重複是兩兩比對，超過上限會讓掃描跑到沒有人等得下去——掃一半與掃完在清單上看不出差別，所以擋在這裡而不是只掃前面幾筆。"
 } %}
-{# 這一次沒有看到的檔（`ScanOut.uncovered`）。兩種 `reason` 各演一筆：本機沒有擷取器的格式，
-     以及不是逐列匯入、也沒有逐列擷取連結的檔。`reason` 與 `detail` 都是 API 回的資料（不翻），
-     兩段文字逐字取自 product（`_folder_record`／`_collect_records`）。 #}
+{# 這一次沒有看到的檔。兩種 `reason` 各演一筆：本機沒有擷取器的格式，以及不是逐列匯入、
+     也沒有逐列擷取連結的檔。`reason` 與 `detail` 都是資料、不翻——`detail` 是那一筆自己
+     帶來的整段說明，畫面原樣端出來。 #}
 {% set healthUncovered = [
   {
     datasetId: 3, fileId: 41, filename: "關稅稅則對照表.png",
@@ -256,18 +224,18 @@ permalink: 3-5_dataHealth.html
     detail: "這個檔不是逐列匯入的、也沒有記下逐列的擷取連結，健檢算不出它每一列的文件編號——它不會出現在任何一項檢查裡。要讓內容也被檢查，請改用逐列匯入（Excel 欄位對照／PDF 結構化匯入）。"
   }
 ] %}
-{# 沒掃到的檔**逐原因幾個**（`ScanOut.uncovered_by_reason`，product 那邊是 `{原因: 幾個}`，
-     這裡是同一份資料的陣列形狀——切版沒有物件走訪，React 端走 `Object.entries()`）。
+{# 沒掃到的檔**逐原因幾個**（正本的形狀是「原因 → 幾個」的對應表，這裡是同一份資料的陣列
+     形狀——切版沒有物件走訪，React 端走 `Object.entries()`）。
      它算的是**全部**，不受上面那張表的筆數上限影響：被切掉的那一族只剩這個數字看得見。
      與 `healthUncovered` 自洽——兩筆各一種原因。 #}
 {% set healthUncoveredByReason = [
   { reason: "no_extractor", count: 1 },
   { reason: "not_row_imported", count: 1 }
 ] %}
-{# 總覽（`OverviewOut`）。**排序的證明就在示範資料裡**：`tag_gap` 的未處置數最多（24 筆）卻被
+{# 總覽。**排序的證明就在示範資料裡**：`tag_gap` 的未處置數最多（24 筆）卻被
      排到 2 筆的 `expired` 後面——它涉及的記錄在這個窗內一次都沒有被命中（`hitSum` 0），而
-     `expired` 那兩筆被命中 312 次。照發現數量排的話這兩組的位置會恰好對調，而那正是 spec 明文說
-     不要的排序。命中同為 0 的三組再照未處置數遞減、最後照 `check_type` 字典序定序
+     `expired` 那兩筆被命中 312 次。照發現數量排的話這兩組的位置會恰好對調，而那正是檔頭①明文
+     說不要的排序。命中同為 0 的三組再照未處置數遞減、最後照 `check_type` 字典序定序
      （`tag_gap` 24 → `never_hit` 1 → `no_answer_topic` 1）。
      `totalOpen` 35 ＝ 2 ＋ 4 ＋ 1 ＋ 2 ＋ 24 ＋ 1 ＋ 1（七組未處置數加總）；每組的 `top` 逐筆
      `hitSum` 遞減、加總 ≤ 該組的 `hitSum`（`near_duplicate` 的 87 ＝ 前四筆 61+18+5+3 恰好相等，
@@ -341,78 +309,72 @@ permalink: 3-5_dataHealth.html
     ]
   }
 ] %}
-{# 逐項清單（`FindingsOut`）。**列序照端點的 `.order_by(check_type, id)`**
-     （product，本頁 `health.findingsSortHint` 那句話也是這樣寫給使用者看的）——
-     示範資料的順序若不是這個，畫面上那句話就沒有對應的證據。`total` 41 ＞ 本頁列數 ⇒ 分頁列演得到「這一頁不是全部」（35 未處置 ＋ 6 已處置）。
-     **這裡沒有命中次數欄**：`GET /health/findings` 不回它（命中數在上游的問答紀錄裡，那一支
-     是分頁的、不去碰上游），畫一個欄位出來就得自己算一份，而那會是第二個真相。
+{# 逐項清單。**列序照「檢查項目 → 發現編號」**（本頁 `health.findingsSortHint` 那句話也是這樣
+     寫給使用者看的）——示範資料的順序若不是這個，畫面上那句話就沒有對應的證據。`total` 41 ＞ 本頁列數 ⇒ 分頁列演得到「這一頁不是全部」（35 未處置 ＋ 6 已處置）。
+     **這裡沒有命中次數欄**：這張清單讀不到它（命中數在問答紀錄裡，而清單是分頁的、不去碰那一份
+     紀錄），畫一個欄位出來就得自己算一份，而那會是第二個真相。
      示範九列刻意把每一支處置動作與每一種狀態各演一次（GUIDELINE §5「每個分支結果都要看得到」）：
        · 901 近似重複（跨資料集）→ dismiss ＋ merge ＋ disable
-       · 903 近似重複（**QA 集**）→ dismiss ＋ disable，**沒有 merge**：對 qa_direct 的完全命中
-         而言多問法是資產不是重複，併成一份就是把那幾種問法的直答一起停用掉（product
-         `_available_actions`：只要有任何一筆不是 `kind == "file"` 就不提供合併）
+       · 903 近似重複（**QA 集**）→ dismiss ＋ disable，**沒有 merge**：對完全命中直答而言多問法
+         是資產不是重複，併成一份就是把那幾種問法的直答一起停用掉（只要涉及的記錄有任何一筆
+         不是檔案型資料集的，就不提供合併）
        · 918 內容已過期，**處置過又回到未處置**（`status` open 而 `resolvedAt` 還在）→ 這一格
          答的是「這一筆為什麼又出現了」
        · 930 事實衝突 → dismiss ＋ supersede
        · 940 標題不是問句（**QA 集**，與 903 同一個資料集）→ dismiss ＋ add-phrasing。
-         **它非在 QA 集不可**：`check_non_question` 的迴圈第一行就是 `if r.dataset_kind != "qa": continue`
-         （product），所以這一項只可能出現在 kind 為 qa 的資料集上。
+         **它非在 QA 集不可**：這一項檢查只看 QA 集的記錄，所以它不可能出現在檔案型資料集上。
          ⚠️ **它不可以掛在「檢疫問答集」**：那個資料集上的 901 提供合併、907 已經合併過，而
-         product 的 `_available_actions` 只要有任何一筆不是 `kind == "file"` 就把 MERGE 濾掉
-         （`_QA_FORBIDDEN_ACTIONS`）——「這一集是 qa」與「這一集做得了合併」在同一個資料集上
-         不可能同時成立。掛在「客服問答集」兩邊才各自成立：那一集是 qa（903 的合併正是因此
-         被拿掉的），而 add-phrasing 不在 `_QA_FORBIDDEN_ACTIONS` 裡，QA 集照樣做得到。
+         「涉及的記錄有任何一筆不是檔案型」就會把合併濾掉——「這一集是 QA 集」與「這一集做得了
+         合併」在同一個資料集上不可能同時成立。掛在「客服問答集」兩邊才各自成立：那一集是
+         QA 集（903 的合併正是因此被拿掉的），而補寫問法不在被濾掉的那一族裡，QA 集照樣做得到。
          列號另取（33），不與 903 的 4／19 相撞。
        · 950 標籤缺口 → **只有 dismiss**：該標哪一個代碼是租戶自己才知道的業務值，系統挑一個
          填進去就是替使用者做業務判斷
        · 960 從未被命中，涉及的是**資料夾匯入的整份文件** → **只有 dismiss**：五支處置動作全部
-         是「改正規化來源檔的某一列」，而整份文件沒有那一列（product `_available_actions` 的
-         `has_document_record`），清單畫出「停用」按下去只會拿到 404
-       · 970 高頻查無 → **只有 dismiss**（product `_ACTIONS_BY_CHECK["no_answer_topic"]` 是空的：
-         它根本沒有記錄可以改，`record_keys` 是 `no-answer-topic:` ＋問法的 sha256）
+         是「改正規化來源檔的某一列」，而整份文件沒有那一列，清單畫出「停用」按下去只會撲空
+       · 970 高頻查無 → **只有 dismiss**（這一項一支處置都沒有：它根本沒有記錄可以改，記錄鍵是
+         `no-answer-topic:` ＋問法的雜湊）
        · 907 近似重複，**已處置**（`status` resolved）→ 可用動作只有 `undo`
-     `evidence` 的鍵與值、`records[].key`（`document_id`）、`note` 都是 API 回的資料（不翻）。
-     `noteLines` 是 `note` 逐行拆開（product 用 `\n\n` 把「上一次的處置理由」與「為什麼又回來」
-     分成兩段；React 端是 `note.split("\n")` 去掉空行，切版沒有字串運算可用故列成陣列）。
+     `evidence` 的鍵與值、`records[].key`（文件識別碼）、`note` 都是資料（不翻）。
+     `noteLines` 是 `note` 逐行拆開（正本用空行把「上一次的處置理由」與「為什麼又回來」分成兩段；
+     React 端是 `note.split("\n")` 去掉空行，切版沒有字串運算可用故列成陣列）。
 
-     **`records` 逐筆＝`FindingOut.records[]`（`RecordOut`）**，渲染走 `components/record-identity`
-     （`titleSource` 是 product 的識別字本身，不是投影出來的 label／key 一組——理由見該元件檔頭）。
+     **`records` 逐筆＝這一筆發現涉及的記錄**，渲染走 `components/record-identity`
+     （`titleSource` 是識別字本身，不是投影出來的 label／key 一組——理由見該元件檔頭）。
      示範刻意把每一種身分與每一種「讀不出來」各演到（否則那幾個分支沒有人看過它們的長相）：
        · 901 的前兩筆**標題逐字相同**（近似重複本來就長這樣）⇒ 只有檔案與列號分得開；第三筆的
          **標題欄是空的**（`title` 空字串，不是 null）
        · 960 那一筆是 `filename`：**整份文件的身分是原始檔名**，沒有列號
        · 970 那一筆是 `no_answer_question`：標題是它代表的**問法**（取自該發現自己的
          `evidence.question`），沒有資料集、沒有檔、沒有列號
-       · 907 的第二筆標題**被截斷**（顯示 200 字＝product `RECORD_TITLE_MAX_CHARS`，`titleChars` 231）
+       · 907 的第二筆標題**被截斷**（顯示 200 字，`titleChars` 231 是原文長度）
        · 907 的第三筆 `unavailableReason` 是 `record_not_found`（合併之後有人把那一列刪了）；
-         那一筆的 `filename`／`row` 也是空的——product 對這一種原因回的就是三格 null（找不到那
-         一列，自然也說不出它在哪個檔的第幾列）
+         那一筆的 `filename`／`row` 也是空的——這一種原因回的就是三格 null（找不到那一列，
+         自然也說不出它在哪個檔的第幾列）
      三種 `unavailableReason` 要人做的事完全不同（`record_not_found` 重新掃描就會收掉、
      `source_unreadable` 重新掃描一百次也沒有用要去看那個檔、`topic_question_missing` 它本來就
-     不是一筆記錄），而**說得出這件事的只有後端**：畫面上是「原因代碼＋product 那一整段話」，
-     與上面 `uncovered` 那張表同一個做法，前端不另立映射表。
+     不是一筆記錄），而**說得出這件事的只有算出這一筆的那一側**：畫面上是「原因代碼＋它自己
+     那一整段話」，與上面沒掃到的那張表同一個做法，前端不另立映射表。
 
      **`evidence` 的形狀要對回正本**（§3-2：正本給的是集合就畫成集合，`list` 畫成純量會讓同一顆
      鍵在同一頁長出兩種形狀）。這一份示範裡有兩顆是 list，都寫成 JSON 陣列字面（同 930 的
      `claims` 那一格，整份 `evidence` 在畫面上就是它的 JSON 樣子）：
-       · `reasons`（918）＝`check_expired` 的 `evidence={**evidence, "reasons": sorted(why)}`
-       · `missing_slots`（950）＝`check_tag_gap` 的 `evidence={"missing_slots": missing}`，
-         `missing` 是逐槽算出來的清單
+       · `reasons`（918）＝內容已過期的判定理由，排序過的清單
+       · `missing_slots`（950）＝逐槽算出來的、這一筆缺哪幾個標籤維度
      **`expired` 的兩個理由互斥、而且各帶不同的證據欄**：`valid_until_passed` 帶 `valid_until`；
      另一顆的字面是 **`superseded_by_newer_as_of`**（沒有 `superseded_by_newer` 這顆），帶的是
-     `fact_topic`／`as_of`／`current_as_of`、**不帶 `valid_until`**——`check_expired` 第二個迴圈
-     開頭就是 `if r.record_key in reasons or r.superseded_by: continue`，同一筆不會兩個都有。
-     918 演的是前者，所以 `severity` 是「確定」（`"confirmed" if "valid_until_passed" in why`）。
+     `fact_topic`／`as_of`／`current_as_of`、**不帶 `valid_until`**——一筆記錄只要已經因為有效期
+     過了而被判過，就不會再走第二種，同一筆不會兩個都有。
+     918 演的是前者，所以 `severity` 是「確定」（有效期真的過了就是確定，不是候選）。
 
-     **918 的 `noteLines` 第二行是 product `_reopen_note` 寫的**：
-     `json.dumps(row.evidence, ensure_ascii=False, sort_keys=True, separators=(",", ":"))`
-     ⇒ 鍵照字典序、無空白，而且形狀必須與同一筆的 `evidence` 是**同一種**。這一份示範演的是：處置當時
-     有效期是 2026-06-22（那天已經過了 ⇒ confirmed），使用者以「11 月底之前仍然有效」消音；
-     之後有人把那一格更正成 2026-07-12，今天（2026/07/14）又過了 ⇒ `evidence_digest` 變了、
-     `severity` 沒變 ⇒ `_premise_changes` 回 `["證據"]`，與那一行括號裡的字對得上。 #}
+     **918 的 `noteLines` 第二行是重新開啟時寫下的**：那一行把處置當時的證據原樣序列化成 JSON
+     （鍵照字典序、無空白），而且形狀必須與同一筆的 `evidence` 是**同一種**。這一份示範演的是：
+     處置當時有效期是 2026-06-22（那天已經過了 ⇒ confirmed），使用者以「11 月底之前仍然有效」
+     消音；之後有人把那一格更正成 2026-07-12，今天（2026/07/14）又過了 ⇒ 證據摘要變了、
+     嚴重度沒變 ⇒ 前提改變的那一項只有「證據」，與那一行括號裡的字對得上。 #}
 {# 示範演的是「全部」那一態（要看得到已處置列與「還原」動作），故上面的狀態下拉標 selected；
      total 因此是全部發現數（35 未處置 ＋ 已處置若干），不等於總覽的 totalOpen。
-     product 端 `list_findings` 的**預設**仍是 open（那是 API 契約，不是這張示範演的那一態）。 #}
+     清單的**預設**仍是只看未處置（那是契約，不是這張示範演的那一態）。 #}
 {% set healthFindingsPage = { total: 41, perPage: 10, currentPage: 1 } %}
 {% set healthFindings = [
   {
@@ -584,19 +546,19 @@ permalink: 3-5_dataHealth.html
 <p class="text-gray" data-i18n="health.intro">健檢把知識庫裡「答得出來、但答得不對」的那些資料撈出來：重複的問法、彼此打架的數字、已經過期卻還在被命中的答案。檢查本身只讀不寫，一個字都不會改到你的資料；會改資料的是下面那幾支處置動作，而它們每一支都留得下稽核、也都退得回去。</p>
 
 {# ── 立即重新檢查 ─────────────────────────────────────────────────────────────
-     `POST /health/scan`。要 `data:write` 而不是 `data:read`——它會寫發現清單（新增／重新開啟／
-     更新最後看到的時間），而且近似重複是兩兩比對的 n² 級計算。
-     「一併重算」是值載體 checkbox（值交給 React 讀去送 `include_hit_checks`）＝只掛 hook、
-     不掛 data-toast（GUIDELINE §5 組合矩陣②）；下面那顆下拉同理，載的是 `ScanIn.dataset_id`。
-   **`dataset_id` 一定要有落點**（§3-2：request 收得下的每個參數都要在畫面上有落點）：它正是
+     這一顆要 `data:write` 而不是 `data:read`——它會寫發現清單（新增／重新開啟／更新最後看到的
+     時間），而且近似重複是兩兩比對的 n² 級計算。
+     「一併重算」是值載體 checkbox（值交給 React 讀去一起送出）＝只掛 hook、不掛 data-toast
+     （GUIDELINE §5 組合矩陣②）；下面那顆下拉同理，載的是這一次的檢查範圍。
+   **檢查範圍一定要有落點**（§3-2：送得出去的每個參數都要在畫面上有落點）：它正是
      這一頁的日常動作——「處置完立刻複驗」只想重掃剛動過的那一集，全租戶重掃在近似重複那一項
-     是 n² 級的計算。空值＝不送（全租戶），**不是送空字串**（product 對空字串會 422），故那一顆
-     `<option value="">` 承載「還沒挑」。 #}
+     是 n² 級的計算。空值＝不送（全租戶），**不是送空字串**（空字串會被當成不合法的值擋下），
+     故那一顆 `<option value="">` 承載「還沒挑」。 #}
 <div class="block mt-16 flex-row column gap-16">
     {# ⓘ 說明：markup 逐字照抄 `settings/5-2_conversationSettings.html` 出口套用欄那顆既有
-         info-btn 六件組。①出處：product 的 `scan_now`／`_scan_tenant`
-         （檢查本身只讀不寫——`health_checks` 模組連寫記錄的路都組不出來）與 `ScanIn.dataset_id`
-         的檔頭（「只挑把哪些發現併進清單，不挑拿哪些記錄去比對」）；不重複下面「一併重算」
+         info-btn 六件組。①講的是這一次掃描做什麼（檢查本身只讀不寫，那一側連寫記錄的路都
+         組不出來），以及「檢查範圍」的語意：它只挑把哪些發現併進清單，不挑拿哪些記錄去比對；
+         不重複下面「一併重算」
          checkbox 自己的 hint（`health.includeHitChecksHint` 已經講過那顆開關），①改講「檢查
          範圍」這顆下拉在做什麼決定。 #}
     <div class="flex-row align-items-center gap-8">
@@ -644,7 +606,7 @@ permalink: 3-5_dataHealth.html
 {% include "components/help-modal/help-modal.html" %}
 
 {# ── 上一次檢查 ───────────────────────────────────────────────────────────────
-     `GET /health/scan/last`。**開頁就畫**：掃描結果落庫（一租戶一列，覆寫），所以重新整理之後
+     **開頁就畫**：掃描結果落庫（一租戶一列，覆寫），所以重新整理之後
      「這一次沒有看到的檔」與「三項命中檢查跑了沒有」還在——那兩格正是「以為乾淨」的解藥，
      重新整理一次就不見的話等於不存在。三態各有各的畫法：
        · `scan` 有值 → 下面那一排（含 `trigger`：手動複驗／匯入後／每日排程）
@@ -652,11 +614,11 @@ permalink: 3-5_dataHealth.html
          什麼都沒有」，那是三態裡最糟的一種誤讀）
        · `failure` 非空 → 另外一塊紅字（見下）：它只在**比上一次成功的掃描新**的時候才出現
      三個計數是一個分割（`new + reopened + touched == findings`）。
-     記錄數與上限並列：超過上限 product 一律 400 擋下、不靜默只掃前 N 筆——掃一半與掃完在清單上
-     看不出差別，而後者是「以為乾淨、其實沒掃」。**那個分母是 `ScanOut.max_records`**，由 API 給。 #}
+     記錄數與上限並列：超過上限一律整趟擋下、不靜默只掃前 N 筆——掃一半與掃完在清單上
+     看不出差別，而後者是「以為乾淨、其實沒掃」。**那個分母是讀進來的，不是畫面上寫死的**。 #}
 <div class="block mt-16 flex-row column gap-16">
-    {# ⓘ 說明：同一顆 info-btn 六件組。①出處：`GET /health/scan/last`（`last_scan`）的檔頭
-         ——這一支存在的理由是掃描結果會落庫（一租戶一列、覆寫），所以這個標題底下畫的其實是
+    {# ⓘ 說明：同一顆 info-btn 六件組。①講的是這一區為什麼存在：掃描結果會落庫
+         （一租戶一列、覆寫），所以這個標題底下畫的其實是
          **持久化讀取**，不是剛才那次操作的即時回應。這顆 ⓘ 不放進 `{% if healthScan %}` 之內：
          標題本身在「還沒跑過健檢」那一態也會畫出來（見下面 `health.lastScanNever`），
          按鈕與說明視窗要一起維持在畫。 #}
@@ -668,8 +630,8 @@ permalink: 3-5_dataHealth.html
         </button>
     </div>
     {# 最近一次**失敗**的嘗試。排在數字之前，因為它改變下面那一排的讀法：那些數字是上一次
-         **成功**那一趟的，不是最近一次。product 刻意不讓失敗覆蓋成功那一列（覆蓋會把上一次的
-         `uncovered` 一起沖走），所以兩者同時出現是正常狀態，不是矛盾。 #}
+         **成功**那一趟的，不是最近一次。失敗刻意不覆蓋成功那一列（覆蓋會把上一次「有哪些檔
+         沒掃到」一起沖走），所以兩者同時出現是正常狀態，不是矛盾。 #}
     {% if healthScanFailure %}
     <div class="block block-sm border corner-md flex-row column gap-8">
         <div class="text-bold text-red" data-i18n="health.scanFailedTitle">最近一次檢查沒有做完</div>
@@ -705,15 +667,14 @@ permalink: 3-5_dataHealth.html
     {% if healthScan.hitChecksDetail %}
     <p class="text-red">{{ healthScan.hitChecksDetail }}</p>
     {% endif %}
-    {# ⑦ 這一次沒有做到的檢查（`slotless_records`／`exact_match_only_records`／`too_short_records`）。
+    {# ⑦ 這一次沒有做到的檢查（沒有欄位槽的／只做得了完全相同比對的／內容太短沒進分群的）。
          **這幾個數字是「排除的事實」的載體**，不是統計花絮：它們與上面那排計數刻意分開一塊、
          標題直接說「沒有做完的檢查」，因為混在「這一次算出來的發現」那一排裡，讀起來會變成
          「這些也檢查過了」。0 也照畫（同 `hit_checks` 三態的理由）。
          **不寫「兩個／三個」**（§3-2 能不寫死計數就不要寫）：這一塊本來就是逐格補齊的，
          寫死數量的說法會在補進下一格的當下靜默過期。 #}
-    {# ⓘ 說明：同一顆 info-btn 六件組。①出處：`_collect_records` 算 `slotless`／`exact_match_only`
-         那兩段（product）＋ `ScanOut.slotless_records`／
-         `exact_match_only_records` 的欄位檔頭——這兩個數字答的是「排除」不是「查過且乾淨」，
+    {# ⓘ 說明：同一顆 info-btn 六件組。①講的是這兩個數字各自算的是哪一批記錄——它們答的是
+         「排除」不是「查過且乾淨」，
          與下面 uncoveredTitle「完全沒讀到內容」是不同的兩件事：這裡的記錄**有**被讀到，
          只是某幾項檢查對它們結構上不適用。 #}
     <div class="flex-row align-items-center gap-8">
@@ -726,18 +687,16 @@ permalink: 3-5_dataHealth.html
     {# 這一句刻意**不寫「下面兩個數字」**：§3-2「能不寫死計數就不要寫」——補進下一格的那一天，
          那句話就開始說謊，而它是一段翻譯字串、不會有任何測試看得到，所以一律用不帶數量的說法。 #}
     <p class="text-gray" data-i18n="health.partialHint">下面這幾個數字說的是「哪些記錄的哪一項沒有被檢查」，不是「檢查過了而且沒問題」。這兩件事在發現清單上長得一模一樣——清單只列得出算出來的發現，列不出「這一項根本沒算」。</p>
-    {# 第三格 `too_short_records`：內容太短、**完全沒有進近似重複分群**的筆數（正本是 product 的
-          `NEAR_DUPLICATE_MIN_CHARS`，掃描層由 `groupable` 統一判定
-         並逐次回進 `ScanOut.too_short_records`）。它與上一格是同一段文字的兩端——一個太長只比得了
+    {# 第三格：內容太短、**完全沒有進近似重複分群**的筆數（短到一定長度以下的內容一律不分群）。
+         它與上一格是同一段文字的兩端——一個太長只比得了
          逐字相同、一個太短連分群都不進，**兩個都是漏報方向的偏差**，所以兩個都要有一個數字。
-         這個訊號後端算出來了、也存下來了（`health_scan_runs.too_short_records`）、端點也端出來了，
-         在此之前於畫面上沒有任何落點（§3-2：response 回得出的每個欄位都要有地方畫）。
-       ⚠️ **這一格與另外兩格不同：它可為 null，而 null 不是 0。** 另外兩欄在 product 是不可空的
-         `int`（`slotless_records`／`exact_match_only_records`），這一欄是 `int | None`——
-         `models.HealthScanRun.too_short_records` 刻意可空、**而且沒有 `server_default`**，因為
-         「這一欄存在之前寫下的那些列」是 `NULL`，而那個 `NULL` 的意思是**那一次掃描還沒有這個概念**，
+         這個訊號算得出來、也存得下來、讀得到，就要在畫面上有落點
+         （§3-2：讀得出來的每一項都要有地方畫）。
+       ⚠️ **這一格與另外兩格不同：它可為 null，而 null 不是 0。** 另外兩格不可空，這一格刻意
+         可空、**而且沒有預設值**，因為
+         「這一欄存在之前寫下的那些列」是空的，而那個空的意思是**那一次掃描還沒有這個概念**，
          不是「量了、是零」。補 0 會讓每一筆舊紀錄都宣稱自己量過（§6：替一次沒有發生的量測編一個結果）。
-         故 null 走自己的哨兵字，不與 `0` 撞字；`0` 照畫（同 `hit_checks` 三態的理由）。
+         故 null 走自己的哨兵字，不與 `0` 撞字；`0` 照畫（同命中檢查三態的理由）。
          示範走「有值」那一態（本頁那一趟是 `2026/07/14` 的排程掃描，欄位早就存在），null 那一態的
          繁中家在元件庫頁的「React 條件文案」區。
        ⚠️ **值以字串傳入**（`"47"`），另外兩格維持數字——差別是刻意的、而且非這樣不可：這一格的渲染
@@ -773,14 +732,13 @@ permalink: 3-5_dataHealth.html
     {% set helpModalStateItems = [] %}
     {% set helpModalLimitRows = [] %}
     {% include "components/help-modal/help-modal.html" %}
-    {# ⑤ 沒掃到的檔：逐檔列出來，不是靜靜跳過。`reason` 與 `detail` 是 API 回的資料（不翻）。
+    {# ⑤ 沒掃到的檔：逐檔列出來，不是靜靜跳過。`reason` 與 `detail` 是資料（不翻）。
          **那張表自己有筆數上限**，所以「列出幾筆／總共幾個」並列，並把逐原因的計數畫出來
-         （`uncovered_by_reason` 算的是全部、不受截斷影響）——被切掉的那一族只剩那個數字看得見，
+         （那一份算的是全部、不受截斷影響）——被切掉的那一族只剩那個數字看得見，
          而它往往正是最該看的那一個（例如整批裡唯一一個擷取失敗的檔）。 #}
-    {# ⓘ 說明：同一顆 info-btn 六件組。①出處：product 的四個原因常數
-         （`REASON_NO_EXTRACTOR`／`REASON_EXTRACT_FAILED`／`REASON_SOURCE_FILE_MISSING`／
-         `REASON_NOT_LINKABLE`），以及同 repo `_folder_record`／`_collect_records` 的
-         `not_row_imported` 分支——這裡列的是**完全沒被任何一項檢查讀過內容**的檔，與上面
+    {# ⓘ 說明：同一顆 info-btn 六件組。①講的是五種原因各是什麼意思（沒有擷取器／擷取失敗／
+         來源檔不見了／沒有擷取連結的舊列／不是逐列匯入）——這裡列的是**完全沒被任何一項檢查
+         讀過內容**的檔，與上面
          partialTitle「讀到了、但某幾項不適用」是不同的兩件事。 #}
     <div class="flex-row align-items-center gap-8">
         <div class="text-md text-bold" data-i18n="health.uncoveredTitle">這一次沒有看到的檔</div>
@@ -858,11 +816,11 @@ permalink: 3-5_dataHealth.html
 {% include "components/help-modal/help-modal.html" %}
 
 {# ── ① 健檢總覽：依影響排序 ───────────────────────────────────────────────────
-     `GET /health/findings/overview`。排序鍵是「這一組所有未處置發現涉及記錄的命中次數總和」，
+     排序鍵是「這一組所有未處置發現涉及記錄的命中次數總和」，
      同分時未處置數多者在前、再以檢查項目字典序（定序，同分的兩組不會每次重新整理換一次位置）。 #}
 <div class="block mt-16 flex-row column gap-16">
-    {# ⓘ 說明：同一顆 info-btn 六件組。①出處：`GET /health/findings/overview`（`findings_overview`）
-         的檔頭——這一支是「按檢查項目分組加總」的彙整層，**不重複**它自己緊接在下面那句
+    {# ⓘ 說明：同一顆 info-btn 六件組。①講的是這一區是「按檢查項目分組加總」的彙整層，
+         **不重複**它自己緊接在下面那句
          `health.overviewSortHint`（為什麼照命中次數總和排、命中次數怎麼扣掉回歸重放）：①改講
          這一區是什麼——分組彙整用來看「整體上哪一種檢查項目最該優先處理」，逐筆處置仍要到
          下面的逐項清單去做。 #}
@@ -873,19 +831,15 @@ permalink: 3-5_dataHealth.html
             <span class="sr-only" data-i18n="help.health.overview.title">健檢總覽說明</span>
         </button>
     </div>
-    {# 這一支的兩個查詢參數（`days`／`top_n`）各要有一顆控制項：下面那句可見文案叫使用者
+    {# 這一區的兩個參數（時間窗天數／每組列幾筆）各要有一顆控制項：下面那句可見文案叫使用者
          「把窗拉長」，少了控制項就是叫人做一件這個畫面上做不到的事。
-         兩顆都是**值載體**（值交給 React 讀去重打
-         `GET /health/findings/overview`）⇒ 只掛 hook class、不掛 data-toast（§5 組合矩陣②）；
-         成敗分支由 React 演。
-       **數字欄三件套**（§4）：`type="number"` ＋ 後端的 `min`／`max`／`step` ＋ 一段**讀得到那兩個
-         數字**的可見區間提示（`id` ＋ `aria-describedby`）。出處逐字＝gufofaq-saas product 的
-          `findings_overview` 簽章：
-         `days: int = Query(default=HIT_WINDOW_DAYS, ge=1, le=90)`、
-         `top_n: int = Query(default=OVERVIEW_TOP_N, ge=1, le=MAX_OVERVIEW_TOP_N)`，
-         三顆常數在同一支模組＝`HIT_WINDOW_DAYS = 7`／`OVERVIEW_TOP_N = 5`／`MAX_OVERVIEW_TOP_N = 50`。
-       初值吃 `healthOverview` 的同一份資料（§6 一個語意參數只能有一個來源）：那兩格是 API 的
-         **回聲**（實際生效的值），輸入框與旁邊印出來的數字不得各說各話。 #}
+         兩顆都是**值載體**（值交給 React 讀去重新取一次總覽）⇒ 只掛 hook class、不掛 data-toast
+         （§5 組合矩陣②）；成敗分支由 React 演。
+       **數字欄三件套**（§4）：`type="number"` ＋ `min`／`max`／`step` ＋ 一段**讀得到那兩個
+         數字**的可見區間提示（`id` ＋ `aria-describedby`）。**值域在這裡宣告**：
+         時間窗 1–90 天、預設 7；每組列 1–50 筆、預設 5。
+       初值吃 `healthOverview` 的同一份資料（§6 一個語意參數只能有一個來源）：那兩格是**實際
+         生效的值的回聲**，輸入框與旁邊印出來的數字不得各說各話。 #}
     <div class="flex-row flex-wrap gap-16 mobile-column sm-gap-16">
         <div class="col-6-md col-12-sm">
             <div class="form-group">
@@ -917,11 +871,10 @@ permalink: 3-5_dataHealth.html
         <p><span class="text-bold" data-i18n="health.overviewTotalHits">這個窗內的總命中次數：</span><span>{{ healthOverview.totalHits }}</span></p>
     </div>
     <p class="text-gray" data-i18n="health.overviewSortHint">這張表不是照發現數量排的，是照「這一組涉及的記錄在這個時間窗內被檢索命中幾次」的總和排——一筆從沒被命中過的重複，遠不如一筆每天被命中 50 次的過期答案重要。命中次數已經扣掉批次回歸的重放，所以跑一次回歸不會把被重放的那幾筆推上頂端。</p>
-    {# 5000 是後端真的會夾住的界線（product 的 `Settings.stats_max_logs`，經
-         `ops_limits.STATS_LIMIT_GROUPS.aggregate.logs` 投影成 `GET /stats/limits` 的 `aggregate.logs.max`；
-         超過即明確報錯、不靜默截斷），改了這裡也要跟著改，故獨立成資料節點（§3-2）。
-         同句稍後的「30 天」不是同一種東西：那是「如果窗是這個天數會怎樣」的舉例情境，不對應任何
-         後端常數（`_resolve_range` 的實際上限是 90 天，見上面 `healthOverviewDaysInput` 的 `max="90"`），
+    {# 5000 是真的會夾住的界線（一次彙總的問答則數上限，超過即明確報錯、不靜默截斷），
+         改了這裡也要跟著改，故獨立成資料節點（§3-2）。
+         同句稍後的「30 天」不是同一種東西：那是「如果窗是這個天數會怎樣」的舉例情境，不對應
+         任何界線（時間窗的實際上限是 90 天，見上面 `healthOverviewDaysInput` 的 `max="90"`），
          故維持譯文。 #}
     <p class="text-gray"><span data-i18n="health.overviewWindowHintPrefix">時間窗預設 </span><span>{{ healthOverview.windowDays }}</span><span data-i18n="health.overviewWindowHintMid"> 天而不是 30 天：上游一次最多彙總 </span><span>5000</span><span data-i18n="health.overviewWindowHintSuffix"> 則問答，30 天的窗對稍微忙一點的租戶必然跨過那條線，總覽會變成永遠打不開。窗拉長之後打不開時，回應會說得出是這個原因。</span></p>
     <div class="table-container scrollTable" tabindex="0">
@@ -972,9 +925,9 @@ permalink: 3-5_dataHealth.html
             </tbody>
         </table>
     </div>
-    {# 上限走資料槽：`top_n` 是 API 回出來的（product `findings_overview` 的 `OverviewOut.top_n`），
-         抄成字面量就等於前端自己存了一份後端常數。原文還指名「標籤缺口 24／19」做減法，
-         那三個數字會隨 healthGroups 一起變，卻沒有任何東西推導它們——整句改成不指名任何一組。 #}
+    {# 上限走資料槽：「每組列幾筆」是這一次實際生效的值、讀得到，抄成字面量就等於前端自己
+         存了一份會過期的常數。**這一句也不指名任何一組做減法**（「標籤缺口 24 筆裡的 19 筆」
+         這種寫法要的三個數字會隨 `healthGroups` 一起變，卻沒有任何東西推導它們）。 #}
     <p class="text-gray"><span data-i18n="health.overviewTopHintPrefix">每一組只列前 </span>{{ healthOverview.topN }}<span data-i18n="health.overviewTopHintSuffix"> 筆，那不是分頁：它的用途是把最該先看的那幾筆撈到眼前。某一組的未處置數超過這個數字時，其餘的要到下面的清單才看得到。</span></p>
 </div>
 
@@ -990,16 +943,16 @@ permalink: 3-5_dataHealth.html
 {% include "components/help-modal/help-modal.html" %}
 
 {# ── 逐項清單 ─────────────────────────────────────────────────────────────────
-     `GET /health/findings`。`status` 預設 `open`：這是一張未處置的工作清單，預設把已處置的一起
+     `status` 預設 `open`：這是一張未處置的工作清單，預設把已處置的一起
      端出來會讓它每天變長、人看兩次就不看了。 #}
 <div class="block mt-16 flex-row column gap-16 js-accordion">
     <div class="flex-row justify-content-between align-items-center flex-wrap gap-16">
         {# ⓘ 說明：同一顆 info-btn 六件組，併入既有 `justify-content-between` 那一列（與展開/收合
              鈕同排）——多包一層 `flex-row align-items-center gap-8` 是為了把標題與 ⓘ 綁成同一個
              flex item，不跟展開/收合鈕擠在一起（§5 組合矩陣同 3-1-2/3-1-3 的保護理由）。
-             ①出處：`list_findings`（product）的檔頭——`status` 預設
-             `open`，這是一張待處理工作清單；**不重複**下面緊接著的 `health.findingsSortHint`
-             （為什麼排序是 `(check_type, id)` 而不是依影響）：①改講這一區是什麼——唯一實際
+             ①講的是這張清單預設只看 `open`、它是一張待處理工作清單；**不重複**下面緊接著的
+             `health.findingsSortHint`（為什麼排序是「檢查項目 → 發現編號」而不是依影響）：
+             ①改講這一區是什麼——唯一實際
              按得下處置動作的清單。 #}
         <div class="flex-row align-items-center gap-8">
             <div class="text-md text-bold" data-i18n="health.findingsTitle">逐項清單</div>
@@ -1078,8 +1031,8 @@ permalink: 3-5_dataHealth.html
                     <td class="text-center"><span data-i18n="{{ f.severityKey }}">{{ f.severityLabel }}</span></td>
                     <td>
                         <span data-i18n="{{ f.statusKey }}">{{ f.statusLabel }}</span>
-                        {# ② 處置過又回到未處置：清單這一層就看得到，不必先展開。判準是 API 給得出來的
-                             ——`status` 是 `open` 而 `resolved_at` 還在（product 重新開啟與 `/undo` 都
+                        {# ② 處置過又回到未處置：清單這一層就看得到，不必先展開。判準畫得出來
+                             ——`status` 是 `open` 而 `resolved_at` 還在（重新開啟與還原都
                              刻意留著 `resolved_by`／`resolved_at`：誰在什麼時候做過那個處置是稽核要
                              查得到的事實，前提改變不會讓它沒發生過）。 #}
                         {% if f.reopened %}<span class="text-red" data-i18n="health.reopenedTag">（處置過又回來）</span>{% endif %}
@@ -1091,10 +1044,10 @@ permalink: 3-5_dataHealth.html
                 <tr class="detail-row">
                     <td colspan="8" class="detail-cell">
                         <div class="accordion-content">
-                            {# ② 「這一筆為什麼又出現了」。product 的 `_reopen_note` 把「改的是證據還是
-                                 確定程度」與處置當時的證據原文一起寫進 `note`，因為這一次掃描的證據
-                                 馬上要覆蓋掉它、`note` 是它唯一留得住的地方。下面那幾行是 API 回的
-                                 資料（不翻），旁邊那句解釋才是 chrome。 #}
+                            {# ② 「這一筆為什麼又出現了」。重新開啟時會把「改的是證據還是確定程度」
+                                 與處置當時的證據原文一起寫進 `note`，因為這一次掃描的證據
+                                 馬上要覆蓋掉它、`note` 是它唯一留得住的地方。下面那幾行是資料
+                                 （不翻），旁邊那句解釋才是 chrome。 #}
                             {% if f.reopened %}
                             <div class="block block-sm border corner-md flex-row column gap-8 mb-16">
                                 <div class="text-bold text-red" data-i18n="health.reopenedTitle">這一筆處置過，又回到未處置</div>
@@ -1164,9 +1117,9 @@ permalink: 3-5_dataHealth.html
                                     {% endif %}
                                 </tbody>
                             </table>
-                            {# ③ 處置動作。**渲染哪幾支由 `available_actions` 決定，前端不自己算**：
-                                 product 的 `_assert_action_available` 與清單的 `available_actions` 是
-                                 同一支函式算出來的——分開算的話，介面藏起了「合併」而端點照收，
+                            {# ③ 處置動作。**渲染哪幾支由這一筆帶來的 `available_actions` 決定，
+                                 前端不自己算**：擋在送出那一側的判斷與清單上這一份是同一份——
+                                 分開算的話，介面藏起了「合併」而送出那一側照收，
                                  一支 curl 就能對 QA 集做掉那件「正確處置恰好相反」的事。
                                  每一支各自是一小塊表單（要填的東西不一樣），送出鈕依 GUIDELINE §5
                                  矩陣③列出它所有可能的結果；欄位是值載體（矩陣②）只掛 hook。 #}
@@ -1222,21 +1175,18 @@ permalink: 3-5_dataHealth.html
                                     </div>
                                 </div>
                                 {% elif action == "disable" %}
-                                {# ⚠️ **「一筆都不勾」這一態：畫面刻意不送出，而不是照上游語意送。**
-                                     上游的契約是「空＝全部」——product 的
-                                     `DisableIn.records` 欄位註解逐字「空＝停用這個發現涉及的**全部**記錄」，
-                                     product 的 `disable_records` 也是
-                                     `keys = list(records) if records else list(finding.record_keys)`。
-                                     那個預設是給**程式化呼叫端**的便利（想要整批就不帶這一欄），不是一個
-                                     畫面上做得出來的動作：這一組 checkbox **預設全勾**，所以「空」只有一條
-                                     到得了的路——使用者逐顆取消。而逐顆取消是一個人能做出的**最明確的
-                                     「我一筆都不要停用」**，把它翻譯成「全部停用」是把使用者的意思反過來執行，
-                                     而且停用是會改寫來源檔的動作。
+                                {# ⚠️ **「一筆都不勾」這一態：畫面刻意不送出。**
+                                     送出那一側收得下的語意是「這一欄空著＝停用這個發現涉及的**全部**
+                                     記錄」。那個預設是給**程式化呼叫端**的便利（想要整批就不帶這一欄），
+                                     不是一個畫面上做得出來的動作：這一組 checkbox **預設全勾**，所以
+                                     「空」只有一條到得了的路——使用者逐顆取消。而逐顆取消是一個人能做出
+                                     的**最明確的「我一筆都不要停用」**，把它翻譯成「全部停用」是把使用者
+                                     的意思反過來執行，而且停用是會改寫來源檔的動作。
                                      故切版在這裡定的規則是：**至少勾一筆才送得出去**，零選取由這顆鈕的
-                                     warning 段擋下（見下方 `|` 第 3 段）。上游那條「空＝全部」不會因此變成
-                                     死碼——它仍然是 API 呼叫端的合法用法，只是這個畫面不走它。
+                                     warning 段擋下（見下方 `|` 第 3 段）。「空＝全部」那條語意不會因此
+                                     變成死碼——程式化呼叫端仍然用得到，只是這個畫面不走它。
                                      說明句也照這條規則寫：**不可以寫「一筆都不勾＝停用全部」**——
-                                     那句話對上游是真的、對這個畫面是假的，而使用者讀的是這個畫面。 #}
+                                     那句話對呼叫端是真的、對這個畫面是假的，而使用者讀的是這個畫面。 #}
                                 <div class="block block-sm border corner-md flex-row column gap-8" data-health-action="disable">
                                     <div class="text-bold" data-i18n="health.actionDisable">停用（不刪除）</div>
                                     <p class="text-gray" data-i18n="health.actionDisableHint">把這幾筆的有效期改寫成一個已經過去的哨兵日期，讓它們離開檢索集合。資料還在來源檔與索引裡，只是有效期已過；判斷錯了，把那一格改回去就回來了。前提是這個租戶要先在「標籤維度」宣告一個角色是 valid_until 的日期維度，資料上才有地方表達「已停用」——沒有宣告的話這一支會被擋下，並指名缺的是什麼。至少要勾一筆；全部勾起來＝停用這個發現涉及的所有記錄（預設就是全勾）。</p>
@@ -1264,7 +1214,7 @@ permalink: 3-5_dataHealth.html
                                     </div>
                                     <div class="flex-row">
                                         <button data-capability="data:write" type="button" class="button button-primary button-sm js-health-disable" id="healthDisableBtn-{{ f.id }}" aria-labelledby="healthFindingId-{{ f.id }} healthDisableBtn-{{ f.id }}"
-                                            {# 第 3 段（index 2）是**切版自己定的閘**，不是上游的 400——理由見本區塊上方那段。
+                                            {# 第 3 段（index 2）是**切版自己定的閘**，不是送出那一側擋的——理由見本區塊上方那段。
                                                  位置對齊姊妹兩顆（`toast.healthMerge`／`toast.healthSupersede` 的 index 2
                                                  都是「請選擇…」那一族），讓「這一格選錯了」在四顆處置鈕上落在同一個索引。
                                                ⚠️ `|` 是索引契約：插這一段之後「請填寫停用理由」由 2 移到 3，其後全部 +1。 #}
@@ -1338,7 +1288,7 @@ permalink: 3-5_dataHealth.html
                                      而再併一次是就地擴充同一行——同一筆保留者被第二個發現又併過之後，
                                      那一行同時裝著兩次的問法，此時把舊內容寫回去會連第二次的一起抹掉，
                                      只拿掉這一次的又會留下一個誰都沒寫過的中間狀態。兩個都不是反向操作，
-                                     所以後端 409 指名，而不是挑一個寫下去。 #}
+                                     所以這一次還原會被擋下並指名，而不是挑一個寫下去。 #}
                                 <div class="block block-sm border corner-md flex-row column gap-8" data-health-action="undo">
                                     <div class="text-bold" data-i18n="health.actionUndo">還原這次處置</div>
                                     <p class="text-gray" data-i18n="health.actionUndoHint">把上一次處置對資料做的事退回去，並讓這一筆回到未處置。還原不是永遠成功的：它只在「處置寫下去的那一份原封不動」時才是確定的——資料在那之後又被改過的話，把舊值寫回去會連後來那次改動一起抹掉，所以後端會擋下並指名是哪一格對不上。合併尤其如此：同一筆被第二個發現再併一次之後，那一行同時裝著兩次的問法，沒有任何一種寫法算得上是反向操作。被擋下來的時候請直接編輯資料，不要用還原。</p>
@@ -1375,7 +1325,7 @@ permalink: 3-5_dataHealth.html
             </tbody>
         </table>
     </div>
-    {# 分頁：`total` 是後端算出來的全部筆數，本頁只是其中一頁——⑥「這一頁不是全部」要看得見。 #}
+    {# 分頁：`total` 是全部筆數（不是這一頁的列數），本頁只是其中一頁——⑥「這一頁不是全部」要看得見。 #}
     {% set total = healthFindingsPage.total %}
     {% set perPage = healthFindingsPage.perPage %}
     {% set currentPage = healthFindingsPage.currentPage %}

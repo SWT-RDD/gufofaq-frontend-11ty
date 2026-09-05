@@ -1,18 +1,14 @@
-{# 一筆健檢記錄的**可讀身分**（gufofaq-saas product 的
-     `RecordOut`）。使用頁在 `{% for %}` 內 `{% set recordIdentity = … %}` 之後 include。
+{# 一筆健檢記錄的**可讀身分**。使用頁在 `{% for %}` 內 `{% set recordIdentity = … %}` 之後 include。
 
-     參數 `recordIdentity = { title, titleChars, titleSource, filename, row, unavailableReason }`
-     （**逐欄逐值對回 `RecordOut`**，包含 `titleSource` 的三個識別字本身）。
-     `unavailableDetail`（product 算出來的那一整段話）**不在這裡畫**：它是一段獨立的說明文字，
+     參數 `recordIdentity = { title, titleChars, titleSource, filename, row, unavailableReason }`。
+     「這一筆為什麼讀不出來」的那一整段完整說明**不在這裡畫**：它是一段獨立的說明文字，
      由「涉及的記錄」那一列在身分後面另起一段，處置選項那幾格只需要短標記。
 
      種類標記走 `{% if %}` 鏈、key 逐條寫成字面，**不走「示範列上帶一組 label／key」那套投影**
      （本頁的 `severityLabel`／`severityKey` 是那一套）：投影出來的 `data-i18n="{{ … }}"` 是模板
-     變數，繫結在巢狀集合裡解不開——gufofaq-saas 的 `apps/web/lib/i18n/parity.test.ts` 的
-     `TEMPLATE_I18N_UNRESOLVED` 逐字列著 `3-5_dataHealth.html :: 內文 {{ tf.severityKey }}`。
-     那一族並非完全沒有網：「形狀 5」`collectStemPairs` 不看繫結、只在同一個 `{ … }` 裡配
-     `<stem>Key` ↔ `<stem>Label`，所以 `health.severityConfirmed`／`health.severityCandidate`
-     都不在 `ZH_UNGUARDED` 上。但那是一張**後備**的網、而且**輸給形狀 4**（讀得到繫結者優先）；
+     變數，繫結在巢狀集合裡解不開，i18n 對帳掃描讀不到它指向哪一顆 key。
+     那一族並非完全沒有網：還有一張後備網不看繫結、只在同一個 `{ … }` 裡配
+     `<stem>Key` ↔ `<stem>Label`。但那是一張**後備**的網、而且**輸給**讀得到繫結的那一條；
      寫成字面的三顆從一開始就受最直接的那條逐字對帳守門，不必依賴任何後備網。
      為什麼在意這個差別：只靠後備網守住的 key，一旦抽取器的形狀對不上就整族靜默漏掉
      （`settings.outputRule*Desc` 就是這樣漏過），而漏掉時畫面上沒有任何訊號。
@@ -26,13 +22,13 @@
 
      ## 種類標記與標題同進同出
 
-     product 的 `title` 有**三種來源**，三種東西長得都像標題：
-       · 逐列匯入的一列 → 那一列的**標題槽**（`TITLE_FROM_SLOT`；合併真的寫進來源檔的那個
-         字串就是它，`merge_records` 讀同一格）
-       · 資料夾匯入的整份文件 → **原始檔名**（`TITLE_FROM_FILENAME`；不是內容，也不是落地
-         檔名——`record_from_document` 的 title 恆為空是刻意的）
-       · 查無主題 → 它代表的那個**問法**（`TITLE_FROM_QUESTION`；`record_keys` 是
-         `no-answer-topic:` ＋ sha256，它本來就不是知識庫裡的一筆記錄）
+     `title` 有**三種來源**（`titleSource` 的值域就是下面這三顆，在這裡宣告一次，就是正本），
+     三種東西長得都像標題：
+       · 逐列匯入的一列 → 那一列的**標題槽**（`title_slot`；合併時真的寫回來源檔的那個
+         字串就是它，讀的是同一格）
+       · 資料夾匯入的整份文件 → **原始檔名**（`filename`；不是內容，也不是落地
+         檔名——這一型的標題槽恆為空是刻意的）
+       · 查無主題 → 它代表的那個**問法**（`no_answer_question`；它本來就不是知識庫裡的一筆記錄）
      使用者是**據此按下「保留這一筆」**的，而那會改資料。把一份 PDF 的檔名與一則問答的問法混
      在一起呈現，那句話的意思就變了——所以種類標記不是只寫在清單那一處，它跟著標題走。
 
@@ -40,26 +36,26 @@
 
      兩筆近似重複的問法常常**逐字相同**（那正是它們被抓出來的原因）。同名時只有 `filename`
      與 `row` 分得開，少了它們，radio 上會出現兩個一模一樣的選項。整份文件與查無主題沒有列號
-     （product 那兩支回 `row: null`），查無主題連檔案都沒有，所以那兩段各自不渲染、不是印一個
+     （那兩型的 `row` 是 null），查無主題連檔案都沒有，所以那兩段各自不渲染、不是印一個
      0 或一格空白。
 
-     **`title_source == "filename"` 那一型不重畫檔案**：product 的 `_record_views` 對整份文件
-     是 `title, chars = _title_view(f.filename)` ＋ `filename=f.filename`——標題與檔名由**同一個
-     值**構造，兩格逐字相同。照畫就是同一個檔名在同一行印兩次，而「檔案」那一段存在的理由是
+     **`titleSource == "filename"` 那一型不重畫檔案**：這一型的標題與檔名是由**同一個
+     值**構造的，兩格逐字相同。照畫就是同一個檔名在同一行印兩次，而「檔案」那一段存在的理由是
      「同名的兩筆靠它分得開」，對這一型完全不成立（一檔一筆，沒有同名可分）。檔名太長時原文長度
-     仍由截斷提示說出來（`_title_view` 切的就是它）。
+     仍由截斷提示說出來（被截的就是那個檔名）。
 
      ## 空標題不是「讀不出來」
 
      `title` 是空字串＝**這一筆的標題欄留白**（一件關於資料的事實，處置是回去補標）；
      `title` 為 null ＝**標題讀不出來**。兩者都退成一格空白的話，畫面對兩件要人做不同事的事說
-     同一句話。讀不出來時畫的是一句固定的短標記 ＋ **product 的原因代碼**（`record_not_found`／
-     `source_unreadable`／`topic_question_missing`，同 `uncovered` 那張表的 `reason` 欄：代碼是
-     API 資料不翻，而說得出「這代表什麼」的那句話只有後端算得出來，前端不另立映射表）。
+     同一句話。讀不出來時畫的是一句固定的短標記 ＋ **原因代碼**（`unavailableReason` 的值域是
+     `record_not_found`／`source_unreadable`／`topic_question_missing` 三顆，在這裡宣告一次，
+     就是正本）：代碼是資料、不翻，畫面也不另立一張「代碼 → 中文」的映射表——說得出
+     「這代表什麼」的那整段話由「涉及的記錄」那一列在身分後面另起一段給（見上），這裡只畫代碼。
 
      ## 截斷跟著標題走
 
-     product 只回前 `RECORD_TITLE_MAX_CHARS` 個字，`titleChars` 一律是**原文**長度。只印前
+     `title` 只給開頭那幾個字，`titleChars` 一律是**原文**長度。只印前
      N 字而不說原本多長，讀的人會以為那就是全部——而這裡正是他要據以選擇的那一格，所以截斷的
      提示在每一處都出現，不是只出現在清單那一份。 #}
 {% if recordIdentity.unavailableReason %}<span class="text-gray" data-i18n="health.recordUnavailable">（讀不出這一筆的標題）</span>

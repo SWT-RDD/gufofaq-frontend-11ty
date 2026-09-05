@@ -54,7 +54,7 @@
 //      `.message-container` 之內，`.message-container > .chat-box` 是**每一份都有**的那一顆。
 //      `.first-chat`（開場那一則）與最上面的 `.date-wrap` **各自獨立、逐頁決定**，三份都不同：
 //      2-1 兩顆都有；2-2-1 只有 `.date-wrap`（`components/chatroom` 的 `chatWelcomeHidden`
-//      把開場那一則整顆關掉——開場招呼是前台的招呼，後台測試區不讀 `GET /welcome`，理由正本
+//      把開場那一則整顆關掉——開場招呼是前台的招呼，後台測試區不畫它，理由正本
 //      在該元件檔頭）；2-2-3 兩顆都沒有——它從使用者的第一句問題直接起算。所以規則是
 //      「**有沒有那一則決定有沒有那顆容器；有訊息就一定要有 `.chat-box`**」，不是「三顆都得畫」。
 //      `.first-chat`／`.chat-box` 都是**具名業務掛點**（`NAMED_HOOKS`，React 端要靠它們認出

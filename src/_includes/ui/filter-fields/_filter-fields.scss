@@ -38,10 +38,9 @@
 //       </div>
 //   </div>
 //
-//   · 這一段逐字抄自 2-2-1 的「LLM模型」那一格。**選項的值是 `<provider>:<model>`**
-// （`GET /qatest/models` 回的 `value`，product 的 `list_models`／
-// `effective_models`）——抄成 `OpenAI gpt-4o` 那種字面會過不了 product 的
-//     `can_build_model`（`model.startswith(PROVIDER_PREFIXES)`，前綴只有 `openai:`／`anthropic:`）
+//   · 這一段逐字抄自 2-2-1 的「LLM模型」那一格。**選項的值是 `<provider>:<model>`**，
+//     前綴只有 `openai:` 與 `anthropic:` 兩種、在這裡定——抄成 `OpenAI gpt-4o` 那種字面
+//     是一顆送不出去的值
 //   · `.filter-field` 是本元件的 slot class（不去寫 ui/form-control 的 class，§4）
 //   · `<div class="label">` **不帶 flex-row**。只有那一欄的標籤旁邊要放 `ui/info-btn` 時才多掛
 //     `flex-row`（2-2-1 的「知識檢索」是全站唯一一欄），把它寫進契約＝每一欄都多一顆無用的 flex 容器

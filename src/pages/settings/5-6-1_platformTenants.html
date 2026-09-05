@@ -6,30 +6,29 @@ pageHeading: 租戶功能開通
 permalink: 5-6-1_platformTenants.html
 ---
 {# ══ ISO 季度審核精靈：狀態 idle（第 ① 步「設定門檻與動作」）══════════════════════════
-     **這一份稿演的是什麼**：平台管理頁在精靈**還沒開始**時的樣子——正本
-     gufofaq-saas `apps/web/app/(app)/platform/page.tsx` 的 `ReviewWizard`，
-     `step === "idle"`（`useState<"idle" | "preview" | "result">("idle")` 的初值）。
+     **這一份稿演的是什麼**：平台管理頁在精靈**還沒開始**時的樣子——精靈的狀態值域是三顆
+     （`idle`／`preview`／`result`，在這裡宣告一次，就是正本），這一份是初始的 `idle`。
      它同時是這一族三份稿裡**唯一進得了主選單的那一份**（`components/header` 的 menuItems 指著它），
      所以「平台管理 → 租戶功能開通」點進來看到的就是這一頁。
 
      **上一步**：無——這是精靈的入口態。
      **下一步**：`5-6-1-2_platformIsoReviewPreview.html`（`step === "preview"`）。
        走法是業務 js：idle 的三顆動作鈕（`.js-review-purge`／`.js-review-delete`／`.js-review-freeze`）
-       打 `GET /platform/review/overdue` 拉名單之後切到 preview。**切版不做靜態跳轉**（§5 條件動作只掛
+       先把逾期租戶名單拉回來，再切到 preview。**切版不做靜態跳轉**（§5 條件動作只掛
        hook class），三份稿在部署站台上由頁面目錄 `catalog.html` 進入、在檔頭互相指名。
 
      **這一步獨有的區塊**：ISO 季度審核那一塊裡的「① 設定門檻與動作」——逾期天數／截止日期兩種門檻，
        加上三顆動作鈕。preview／result 兩份稿的同一個位置各是它們自己的那一段。
      **與另外兩份稿逐位元相同的部分**（所以收成元件、不複製貼上）：
        麵包屑（本頁自己畫，每頁的 breadcrumbItems 本來就住在頁面層）、
-       `components/platform-tenants-panel`（平台權限／平台時區／GufoRAG 授權用量／建立租戶／帳號治理／
+       `components/platform-tenants-panel`（平台權限／平台時區／授權用量／建立租戶／帳號治理／
        租戶功能開通表／聯絡窗口／每日資料健檢／宣告實體篩選槽 ＋ 三個彈窗本體）、
        `components/iso-review-wizard` 的區塊標題與說明、
        `components/platform-disclaimer-panel`（免責聲明設定 ＋ 版本史）。
      **步驟指示器**＝`platform.reviewStep1` 那一行標題本身（繁中與英譯都自帶 ①），故一份稿只畫得出
        自己那一顆號碼；本族不用 `components/step-nodes`（理由見 `components/iso-review-wizard` 檔頭）。
 
-     三份稿在 React 端是**同一個路由**（`/platform`）的三個 state，所以 front matter 的
+     三份稿在 React 端是**同一個畫面**的三個 state，所以 front matter 的
      `title`／`titleKey`／`pageHeading` 三份完全相同——同資料匯入精靈那一族（`1-1-2`～`1-1-6` 全部
      `titleKey: nav.dataImport`）。 #}
 {% set breadcrumbItems = [

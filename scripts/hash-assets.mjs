@@ -79,15 +79,15 @@ for (const f of readdirSync(DIST).filter((f) => f.endsWith(".html"))) {
 // 這一行是在**build 當下**寫的，所以它記的是產物真正的身分，不是讀取當下的 HEAD。
 // mtime 答不了同一個問題：它會被 touch／複製／解壓縮弄髒，而且說不出是哪一個 commit。
 //
-// 形狀與 `.slicing-ref` 一致（單獨一行、可 `trim()` 之後直接比 commit），跨 repo 的消費端
-// （gufofaq-saas `apps/web` 的 `slicingRepoRef`）因此不必為它多學一種格式。
+// 形狀是單獨一行、`trim()` 之後直接比 commit：讀它的人不必為這個檔多學一種格式。
 //
 // **工作樹是髒的時候，前綴要是 `dirty-`**：那份 dist 含著沒有 commit 的改動，它不等於任何一個
-// commit。標記寫在**前面**是刻意的——消費端的比對是雙向前綴（`a.startsWith(b) || b.startsWith(a)`），
-// 標記接在 SHA 後面的話 `abc123-dirty` 照樣通得過，等於這一行對最該擋的情況沉默。
+// commit。標記寫在**前面**是刻意的——前綴在前，任何只比對前綴的讀取端都不會把 dirty 版誤判成
+// 乾淨版；標記接在 SHA 後面的話，`abc123-dirty` 的前面那一截與乾淨版逐字相同，照樣通得過，
+// 等於這一行對最該擋的情況沉默。**格式不可改**：改了會讓既有產物的讀取端一起失準。
 //
 // **問不到 git 就不寫這個檔**（不是寫一個編出來的值）：`git archive` 匯出的目錄本來就沒有
-// `.git`，而那條路自己會寫 `.slicing-ref`；消費端對「兩者都沒有」已經有一句明確的錯誤。
+// `.git`。編一個值出來只會讓「說不出身分」偽裝成「說得出身分」，而那正是這一行要消滅的東西。
 // 這裡只在 build 輸出留一行，讓在本機看到的人知道為什麼那個檔沒出現。
 const git = (args) => execFileSync("git", args, { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
 try {

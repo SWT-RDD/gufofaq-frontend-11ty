@@ -14,26 +14,25 @@ permalink: 5-9_extractApiKey.html
     {% include "ui/breadcrumb/breadcrumb.html" %}
 </div>
 
-{# 萃取 API 金鑰管理（獨立設定頁）。SaaS 新需求，逆向自 product：
-     每租戶一把金鑰，供外部程式以 X-API-Key 標頭呼叫萃取端點（國家／時間）與資料 API
-     （/api/v1）；重新產生後舊金鑰立即失效。/api-key 的 GET／POST 皆僅租戶管理者可用
-     （require_admin，比照 widget-tokens）。
-     **明碼只在產生的那一次出現**：product 端只存雜湊，重新載入後只回得出末四碼 hint。
+{# 萃取 API 金鑰管理（獨立設定頁）：
+     每租戶一把金鑰，供外部程式以 X-API-Key 標頭呼叫萃取 API（國家／時間）與資料 API
+     （/api/v1）；重新產生後舊金鑰立即失效。讀取與重新產生都只有租戶管理者做得到
+     （同 5-8 的嵌入金鑰）。
+     **明碼只在產生的那一次出現**：這一側只存雜湊，重新載入後只拿得回末四碼 hint。
 
-     ## `ApiKeyOut` 三個欄位、三種態，逐態成對參數（§5：`{% if %}` ＋ 參數，不用 `.hidden`）
+     ## 三件事、三種態，逐態成對參數（§5：`{% if %}` ＋ 參數，不用 `.hidden`）
 
-     正本 product 的 `ApiKeyOut` 只有三欄：`api_key`（明碼，**僅產生當下**）、`api_key_hint`
-     （前綴＋末四碼，product 的 `_key_hint` ⇒ 形狀是 `sk_…` ＋末四碼）、`has_key`。
-     `POST /api-key` 回 `(api_key, api_key_hint, has_key=True)`；`GET /api-key` 在沒有金鑰時回
-     `has_key=False`、有金鑰時回 `(api_key_hint, has_key=True)` 而**永遠不回明碼**。
-     三態逐一對回這三欄，切版參數：
-       · `extractKeyHasKey`  ＝ `has_key`。false ⇒ 這個租戶還沒有金鑰：不畫金鑰欄，鈕改成
+     這一區手上只有三件事：明碼（**僅產生當下**）、末碼提示（形狀是 `sk_…` ＋末四碼）、
+     以及「這個租戶有沒有金鑰」。產生的那一次三件都拿得到；之後每一次載入都只拿得到後兩件，
+     **永遠拿不回明碼**。
+     三態逐一對回這三件事，切版參數：
+       · `extractKeyHasKey`  ＝ 有沒有金鑰。false ⇒ 這個租戶還沒有：不畫金鑰欄，鈕改成
          「產生金鑰」而且**不走二次確認**（沒有舊金鑰會失效，那顆確認窗的內文在這一態是假的）。
-       · `extractKeyPlain`   ＝ `api_key`。有值＝**剛產生**那一次：完整明碼 ＋「唯一一次」紅字 ＋
+       · `extractKeyPlain`   ＝ 明碼。有值＝**剛產生**那一次：完整明碼 ＋「唯一一次」紅字 ＋
          顯示/隱藏 ＋ 複製。
-       · `extractKeyHint`    ＝ `api_key_hint`。恆有（has_key 為真時），是「已存在」那一態畫面上
+       · `extractKeyHint`    ＝ 末碼提示。有金鑰時恆有，是「已存在」那一態畫面上
          唯一看得到的東西——**這一態才是使用者日常會看到的那一個**（只要重新整理過一次就是它），
-         所以 `api_key_hint` 與 `has_key` 這兩欄一定要在畫面上有落點，否則檔頭宣稱的三種態裡
+         所以末碼提示與「有沒有金鑰」這兩件事一定要在畫面上有落點，否則檔頭宣稱的三種態裡
          只有「剛產生」那一種畫得出來。
      切版示範「剛產生」態；另外兩態的可見示範在元件庫頁（§5：`{% if %}` 的另一支在唯一使用頁上
      恆為某一值，等於沒有人看過它的長相）。 #}
@@ -41,17 +40,16 @@ permalink: 5-9_extractApiKey.html
 
 {# 金鑰顯示欄：readonly，預設遮蔽（type=password）+ 顯示/隱藏切換 + 複製 + 產生/重新產生。
      三態的成對參數見檔頭；示範值＝「剛產生」那一態。
-     `extractKeyHint` 是**推導值、不是另外編的**：product 的
-     `_key_hint` ＝ `f"{prefix}…{key[-4:]}"`，前綴 `sk_`、末四碼取自 `extractKeyPlain` 的最後四個字元
+     `extractKeyHint` 是**推導值、不是另外編的**：末碼提示＝前綴 `sk_` ＋ `…` ＋ 金鑰的最後四個
+     字元，所以它的末四碼取自 `extractKeyPlain` 的最後四個字元
      （`…0000`）。兩者對不起來的話，這一頁就會演出一個「hint 不是這把金鑰的 hint」的狀態。 #}
 {% set extractKeyHasKey = true %}
 {% set extractKeyPlain = "sk_aB3xYz9Qle8sample000apikeyvalue000000000000" %}
 {% set extractKeyHint = "sk_…0000" %}
 <div class="block mb-16 flex-row column gap-16">
     {# ⓘ 說明：markup 同既有 info-btn 六件組（GUIDELINE §1-2 無 html 元件契約）。①出處：本頁檔頭
-         「每租戶一把金鑰，供外部程式以 X-API-Key 標頭呼叫萃取端點……與資料 API」一節，與 product 的
-         `ApiKeyOut`／`generate_api_key`（明碼僅產生當下有值）、
-         `require_api_key_for`（`data`／`extract` 兩個 feature 各自的租戶開通閘）。**這是租戶層、
+         「每租戶一把金鑰，供外部程式以 X-API-Key 標頭呼叫萃取 API……與資料 API」一節
+         （明碼只在產生當下有值；資料與萃取兩個功能各自還有一道租戶開通閘）。**這是租戶層、
          程式化路徑的憑證**——與 5-6-3 的平台層機器憑證、5-8 的客戶公開網站憑證都是不同軸，
          ①末句刻意點出「不構成使用者登入身分」，避免與租戶內成員的能力模型混為一談。 #}
     <div class="flex-row align-items-center gap-8">
@@ -62,11 +60,11 @@ permalink: 5-9_extractApiKey.html
         </button>
     </div>
     {% if not extractKeyHasKey %}
-    {# has_key = false：這個租戶還沒有金鑰。不畫金鑰欄（沒有東西可畫，留一格空輸入框會被讀成
-         「有一把空金鑰」），鈕改成「產生金鑰」而且**不走二次確認**——`generate_api_key` 是同一支
-         端點，但這一態沒有舊金鑰會失效，確認窗那句「舊金鑰會立即失效」在這裡是假的。
+    {# 「還沒有金鑰」那一態：不畫金鑰欄（沒有東西可畫，留一格空輸入框會被讀成
+         「有一把空金鑰」），鈕改成「產生金鑰」而且**不走二次確認**——做的是同一件事，
+         但這一態沒有舊金鑰會失效，確認窗那句「舊金鑰會立即失效」在這裡是假的。
          這一顆因此落回 §5 ③（點下去就送 API），自己掛 data-toast 列全結果——分支集合與確認鈕
-         那顆逐字相同（同一支端點、同一組守衛），故沿用同一顆 `toast.generateKey`（§5）。
+         那顆逐字相同（同一件事、同一組守衛），故沿用同一顆 `toast.generateKey`（§5）。
          鈕面的「產生金鑰」與 5-8 那顆的繁中逐字相同 ⇒ 沿用既有的 `widget.createToken`，
          不另立 key（§4-2：繁中原文相同的 UI chrome 沿用既有 key，英譯也是同一個 "Create key"）。 #}
     <p class="text-gray" data-i18n="extractKey.noKeyYet">這個租戶還沒有萃取 API 金鑰。按下面的「產生金鑰」建立第一把——明碼只會在產生的那一次顯示。</p>
@@ -82,7 +80,7 @@ permalink: 5-9_extractApiKey.html
          使用者在一個沒有明碼可複製的畫面上找複製鈕。 #}
     <p class="text-red" data-i18n="extractKey.onceOnly">這是這把金鑰唯一一次顯示明碼——關閉或重新整理本頁後就只看得到末四碼。請現在複製並妥善保存。</p>
     {% else %}
-    {# 已存在那一態：畫面上唯一看得到的就是 `api_key_hint`。**沒有顯示/隱藏鈕、也沒有複製鈕**
+    {# 已存在那一態：畫面上唯一看得到的就是那串末碼提示。**沒有顯示/隱藏鈕、也沒有複製鈕**
          ——遮罩後面沒有明碼可以揭開，而複製一串末四碼對使用者沒有任何用處（複製了也不能拿去呼叫）。
          這一句要講出這串短字面是拿來做什麼的，否則它讀起來像一把壞掉的金鑰。 #}
     <p class="text-gray" data-i18n="extractKey.hintOnlyNote">明碼已經無法再顯示，下面只列得出前綴與末四碼——它的用途是讓你對照「現在掛在外部程式上的是不是同一把」。要換一把請按「重新產生金鑰」。</p>
@@ -90,8 +88,7 @@ permalink: 5-9_extractApiKey.html
     <div class="flex-row align-items-center gap-8 flex-wrap">
         <div class="col-6-md col-12-sm">
             <div class="form-group">
-                {# 示範值的長度是推導值，不是隨手打的：product 的
-                     `new_api_key()` ＝ `_API_KEY_PREFIX + secrets.token_urlsafe(32)`
+                {# 示範值的長度是推導值，不是隨手打的：金鑰＝前綴 `sk_` ＋ 32 bytes 隨機的 base64url
                      ⇒ 32 bytes 的 base64url 是 43 字元、加 `sk_` 共 46 字元。
                      這一格在「剛產生」態是 `type="password"`，**遮罩點數就等於字面量長度**——示範值少一個
                      字元，畫面上那排點就少一顆，欄寬與換行等於是在一串比真金鑰短的字串上驗的，
@@ -119,9 +116,9 @@ permalink: 5-9_extractApiKey.html
         </button>
         {% endif %}
     </div>
-    {# 不可逆：product 的 generate_api_key 直接覆寫 tenant.api_key_hash，舊金鑰在回應那一刻
-         起全部 401，而明碼只回這一次。後果不可逆的動作在全站一律走 delete-modal 的二次確認
-         （比照 4-2／5-8／5-6-3 的撤銷），所以這一顆是**條件開窗**——同一支端點在「還沒有金鑰」
+    {# 不可逆：重新產生會直接覆寫掉這個租戶那把金鑰的雜湊，舊金鑰在回應那一刻
+         起全部 401，而明碼只給這一次。後果不可逆的動作在全站一律走 delete-modal 的二次確認
+         （比照 4-2／5-8／5-6-3 的撤銷），所以這一顆是**條件開窗**——同一件事在「還沒有金鑰」
          那一態是直接送出（見上面 `js-generate-key`），只有這一態才需要先問一次，因此只掛
          hook class、不掛 `data-open-modal`（§4：無條件開窗才掛屬性），成敗 toast 也跟著
          移到彈窗裡那顆確認鈕上。 #}
@@ -154,7 +151,7 @@ permalink: 5-9_extractApiKey.html
 {% set deleteConfirmBinding = true %}
 {% set deleteConfirmClass = "js-regenerate-key-confirm" %}
 {% set deleteTenantRole = "admin" %}
-{# 兩段 warning 是**善後**那一族：`generate_api_key` 直接覆寫 `tenant.api_key_hash`，
+{# 兩段 warning 是**善後**那一族：重新產生會直接覆寫掉那把金鑰的雜湊，
      所以「請求送出去了、明碼沒回來」與「連線中斷、不知道有沒有成功」兩種情況下，舊金鑰都可能
      已經失效——而畫面若只演成敗，使用者會以為「失敗＝什麼都沒發生」而繼續用舊的那一把。
      **兩段接在最末位、不插中間**：段序是 React 端 `split("|")[n]` 的索引契約，插中間會讓其後
@@ -177,26 +174,20 @@ permalink: 5-9_extractApiKey.html
             <span class="sr-only" data-i18n="help.extractKey.howToTitle.title">如何呼叫萃取 API 說明</span>
         </button>
     </div>
-    {# text 長度是 product 真的會擋的界線，不是文案裡的舉例數字 ⇒ 拆成獨立的資料節點
+    {# text 長度是**送出去真的會被擋**的界線，不是文案裡的舉例數字 ⇒ 拆成獨立的資料節點
          （§3-2：會擋的界線要能單獨換掉，不能寫死在一句翻譯字串裡）。
-         上游是 `MIN_EXTRACT_TEXT_LEN`（2）／`MAX_EXTRACT_TEXT_LEN`（5000），判在
-         `if not (MIN_EXTRACT_TEXT_LEN <= len(text) <= MAX_EXTRACT_TEXT_LEN)`。
-         **出處要落在符號名上、不要引字面量**：像 `if not (2 <= len(text) <= 5000)` 這種
-         repo ＋ 位置 ＋ 疑似原文三者齊全、看起來完全合規、實際在上游逐字不存在的引用，
-         是 §3-2 最難抓的一種假出處——引符號名才查得回去。
-         **契約已經到位**：product 把這顆投影成 `GET /extract/limits` 的 `text.length`
-         （`ops_limits.EXTRACT_LIMIT_GROUPS`），所以這個節點接得上真值、不必永遠是硬編。
-         排法（en dash 前後帶空白）對齊 `apps/web` `lib/useLimits.ts::formatBound` 既有的界線呈現慣例（`1 – 10`）。
+         界線在這裡宣告一次，就是正本：`text` 長度 **2 – 5000** 字，超界回 400 並指名是哪一欄。
+         這個值執行期取得到當下生效的實際值，所以這個節點接得上真值、不必永遠是硬編。
+         排法（en dash 前後帶空白）沿用全站唯一的界線字串寫法（§3-2）。
        **`time_reference` 是同一個 group 的姊妹界線**（§3-2：group 的姊妹界線要一起檢查有沒有落點）：
-         `ExtractIn` 收三欄（`text`／`mode`／`time_reference`），第三欄與 `text` 一樣**原文渲進提示詞**，
-         故上游也夾了 `MAX_EXTRACT_TIME_REFERENCE_LEN`（200，`extract.time_reference_too_long` 那道 400），
-         並且為了這件事補了投影（`EXTRACT_LIMIT_GROUPS` 的 `text.time_reference_len`）。
+         這支 API 收三欄（`text`／`mode`／`time_reference`），第三欄與 `text` 一樣**原文渲進提示詞**，
+         所以它也有自己的上界——**最多 200 字**，超過同樣是一道 400。
          這一欄的上界必須在畫面上講得出來：持金鑰的整合方是照這一頁寫程式的，這裡不寫，
          他在那一欄打超過 200 字被擋時，全站沒有一處說得出界線是多少。
          所以下面那句說明與 curl 範例都帶著它。
          `mode 1=國家、2=時間、3=兩者` 與句尾的 `429` 維持譯文：前者是**枚舉值**不是界線
-         （`body.mode not in (1, 2, 3)` 判的是值域不是夾輸入），後者是固定的 HTTP 狀態碼，
-         兩者都不是「改了後端常數這裡要跟著改」的那一類數字。 #}
+         （判的是值域，不是夾輸入的長度），後者是固定的 HTTP 狀態碼，
+         兩者都不是「界線改了這裡要跟著改」的那一類數字。 #}
     <p class="text-gray"><span data-i18n="extractKey.howToDescPrefix">以 X-API-Key 標頭呼叫；mode 1=國家、2=時間、3=兩者；text 長度 </span><span>2 – 5000</span><span data-i18n="extractKey.howToDescMid"> 字；選填的 time_reference（發文時間基準）最多 </span><span>200</span><span data-i18n="extractKey.howToDescSuffix"> 字；額度用罄回 429。</span></p>
     <pre class="code-block"><code>curl -X POST "https://&lt;your-host&gt;/api/extract/country-or-time" \
   -H "X-API-Key: YOUR_KEY" \
@@ -208,9 +199,8 @@ permalink: 5-9_extractApiKey.html
 </div>
 
 {# 「如何呼叫萃取 API」的說明視窗：②留空（沒有值相依的顯示條件）；**③ 有兩列**——`text` 與
-     `time_reference` 的長度界線，兩顆都投影在 `GET /extract/limits` 的
-     `text.length`／`text.time_reference_len`（product 的 `EXTRACT_LIMIT_GROUPS`），
-     超界都是 400、訊息指得出是哪一欄。判準是「這顆界線有沒有被上游投影成一支拿得到的端點」
+     `time_reference` 的長度界線，兩顆執行期都取得到當下生效的實際值，
+     超界都是 400、訊息指得出是哪一欄。判準是「這顆界線執行期取得到實際值」
      （見 components/help-modal 檔頭），不是「由 React 執行期算」——後者是 ③ 每一列的共同性質。
      429 維持不進表：它是固定的 HTTP 狀態碼，不是界線。 #}
 {% set helpModalId = "howToTitleHelpModal" %}

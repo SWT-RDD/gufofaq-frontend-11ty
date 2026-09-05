@@ -1,7 +1,7 @@
 // 別名表詞條彈窗的「整批貼上」：展開 textarea → 逐行解析 → append 到清單 → 清空 → 收合。
 //
 // 純前端互動（GUIDELINE §5 矩陣④：解析與 append 都不需要業務資料，也不送 API）⇒ 行為當場
-// 就要動得起來，不是掛個 hook 等 React。儲存仍是整批 PUT，由那顆 .js-save-alias-entries 送。
+// 就要動得起來，不是掛個 hook 等 React。儲存仍是整批取代，由那顆 .js-save-alias-entries 送。
 //
 // 解析規則（規格逐條，**不要自作聰明**）：
 //   · 空行略過
@@ -10,7 +10,7 @@
 //     那會把第一個別名升格成標準詞，一個錯都不報而資料被改寫）
 //   · 只有一欄（沒有別名）⇒ 該列標紅、掛「這一行沒有別名」
 //   · 標準詞 > 200 字 或 別名 > 50 個 ⇒ 該列標紅並指出是哪一項
-//     （上限＝GufoRAG chatbot 的 MAX_CANONICAL_LEN／MAX_ALIASES_PER_ENTRY）
+//     （上限＝本檔宣告的 MAX_CANONICAL_LEN／MAX_ALIASES_PER_ENTRY）
 //   · **不去重、不排序**：貼進來的順序就是使用者的順序，動它會讓人對不上原始檔
 //
 // i18n：新列的文字全部走 GufoI18n.t(key, 繁中原文) 並同步寫 data-i18n，否則英文模式下貼一次
@@ -18,8 +18,8 @@
 document.addEventListener("DOMContentLoaded", function () {
     var MAX_CANONICAL_LEN = 200;
     var MAX_ALIASES_PER_ENTRY = 50;
-    // **每個別名自己的長度上限**（GufoRAG chatbot 的 `MAX_ALIAS_LEN`，
-    // `validate_alias_entries` 對每一個別名逐一驗）。三個上限裡只有這一個畫面上沒有別的機制擋得住：
+    // **每個別名自己的長度上限**（逗號分隔的每一個別名各自算，不是整串加起來）。
+    // 三個上限裡只有這一個畫面上沒有別的機制擋得住：
     // 標準詞欄有 `maxlength="200"`，別名欄是逗號分隔字串故沒有 `maxlength`——而彈窗自己的可見提示
     // 對使用者承諾了「別名每個 200 字」。少了這一支，貼上一個超長別名會靜靜地存進去。
     var MAX_ALIAS_LEN = 200;
@@ -138,9 +138,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 var aliases = cells.filter(Boolean);
                 // key 逐字寫在 t() 的呼叫點（靜態掃描要看得到它被引用，否則會被當成孤兒翻譯刪掉）；
                 // 繁中走上面那幾顆常數，與 langchange 重畫共用同一份（兩處各寫一份就會分岔）。
-                // 兩個方向的缺格分開講（判準與 gufofaq-saas `apps/web/components/AliasEntriesModal/AliasEntriesModal.tsx`
-                // 的 `rowIssue()` 逐條同序）：
-                // 有別名沒標準詞 → NoCanonical；有標準詞沒別名 → NoAlias（後者才是上游的 400）。
+                // 兩個方向的缺格分開講：
+                // 有別名沒標準詞 → NoCanonical；有標準詞沒別名 → NoAlias（後者才是送出時會被擋下的那一種）。
                 var err = null;
                 if (!canonical && aliases.length) {
                     err = { key: "settings.bulkPasteNoCanonical", text: t("settings.bulkPasteNoCanonical", ZH_NO_CANONICAL) };
@@ -174,7 +173,7 @@ document.addEventListener("DOMContentLoaded", function () {
             countNode.textContent = String(body.querySelectorAll("tr").length - (body.querySelector("td[colspan]") ? 1 : 0));
         }
 
-        // 增刪列：與 glossary-entries-modal 同型（不送 API，儲存時才整批 PUT）
+        // 增刪列：與 glossary-entries-modal 同型（不送 API，儲存時才整批取代）
         var add = modal.querySelector(".js-add-alias-entry");
         if (add) add.addEventListener("click", function () {
             var empty = body.querySelector("td[colspan]");

@@ -58,15 +58,15 @@ document.addEventListener("DOMContentLoaded", function () {
         var sizeFiles = sizeRow ? sizeRow.querySelector(".upload-error-files") : null;
 
         // 單檔上限。**數字從 markup 來**（`data-max-mb`，與 `.upload-desc` 畫的是同一顆變數，
-        // §6 一個數字只有一份真相）；單位是 MiB，故換算用 1024——正本 product 的
-        // `Settings.upload_max_bytes` 預設就是 50 MiB（`GET /datasets/limits` 的 `upload.bytes.max`
-        // ＝ 52428800）。沒給或給不出數字＝不限制（同 accept 沒給的處置）。
+        // §6 一個數字只有一份真相）；單位是 MiB（50 MiB ＝ 52428800 位元組），故換算用 1024
+        // 不是 1000。沒給或給不出數字＝不限制（同 accept 沒給的處置）。
         var maxMb = parseFloat(box.getAttribute("data-max-mb") || "");
         var maxBytes = (isFinite(maxMb) && maxMb > 0) ? maxMb * 1024 * 1024 : 0;
         function withinSize(size) {
             if (!maxBytes) return true;
             // `size` 拿不到（非 File 物件）時**不擋**：擋一個量不到的東西等於把使用者鎖在門外，
-            // 而後端那一關仍然在（413）。這裡的職責是「看得出來會失敗的就先講」，不是取代它。
+            // 而送出之後那一關仍然在（超過上限一樣會被退回）。這裡的職責是「看得出來會失敗的就先講」，
+            // 不是取代它。
             return typeof size !== "number" ? true : size <= maxBytes;
         }
 
@@ -115,7 +115,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 screen(e.dataTransfer ? Array.prototype.slice.call(e.dataTransfer.files || []) : []);
             });
             // **原生檔案選擇窗那條路也要驗**：`accept` 幫我們濾掉了副檔名，但它**濾不掉大小**
-            // ——不掛這一條的話，從選擇窗挑一份 200MB 的 PDF 會一路走到送出、再等後端回 413。
+            // ——不掛這一條的話，從選擇窗挑一份 200MB 的 PDF 會一路走到送出，整份傳完才被退回。
             // 拖放與選檔是兩條入口，兩條都要過同一支 screen()。
             if (input) input.addEventListener("change", function (e) {
                 screen(Array.prototype.slice.call((e.target && e.target.files) || []));

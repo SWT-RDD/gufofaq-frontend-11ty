@@ -172,8 +172,8 @@ test("§5 platform.usageError／share.rateLimited 這兩個 React 條件狀態�
 });
 
 test("§5/§6 分享連結管理：有效天數欄（可留空＝永久）＋ 三種狀態都演得出來 ＋ 過期/撤銷的列不留可按的撤銷鈕", () => {
-    // 後端 POST /share 早就收 expires_days、回應也帶 expires_at／disabled，前端一個都沒接 ⇒ 每一條分享連結
-    // 都是永久有效的，而分享連結是全服務唯一免憑證就讀得到問答內容的東西。
+    // 沒有有效天數欄、也不分態的話，畫面上每一條分享連結都是永久有效的——而分享連結是
+    // 全服務唯一免憑證就讀得到問答內容的東西。
     const html = distDoc("4-2_qaHistory_detail.html");
     const modal = html.slice(html.indexOf('id="shareManageModal"'), html.indexOf('id="deleteModal"'));
     // 結構式守門（§8-1）：切出來的那一段要真的是這顆彈窗——問它有幾個位元組的話，
@@ -184,22 +184,22 @@ test("§5/§6 分享連結管理：有效天數欄（可留空＝永久）＋ �
     const input = modal.match(/<input[^>]*id="shareExpiresDaysInput"[^>]*>/);
     assert.ok(input, "缺「有效天數」欄");
     assert.match(input[0], /type="number"/, "有效天數要是數值輸入");
-    assert.match(input[0], /min="1"/, "min 要對齊後端「expires_days must be positive」");
+    assert.match(input[0], /min="1"/, "有效天數的下界是 1 天（0 與負數不是一段有效期）");
     assert.match(input[0], /aria-describedby="shareExpiresDaysHint"/, "說明要用 aria-describedby 接起來（§4）");
     assert.ok(!/required/.test(input[0]), "留空＝永久有效，不能設成必填");
 
     // 狀態三態都要有示範（§5：沒有頁面演得出來的分支＝沒驗收過）
     for (const [key, label] of [["share.stateActive", "生效中"], ["share.stateExpired", "已過期"], ["widget.revoked", "已撤銷"]])
         assert.match(modal, new RegExp(`data-i18n="${key.replace(".", "\\.")}"`), `缺「${label}」狀態的示範`);
-    assert.match(modal, /data-i18n="share\.neverExpires"/, "缺「永久有效」（expires_at 為 null）的示範");
+    assert.match(modal, /data-i18n="share\.neverExpires"/, "缺「永久有效」（有效天數留空的那一條）的示範");
 
-    // **只有已撤銷的那一列** disabled：對回上游的 `revoke_share`——它不看到期，只把 `disabled` 設成 True；
-    // 而 `GET /share` 只濾 `disabled`，所以**過期的列還在清單裡**，撤銷是唯一能把它清掉的動作。
-    // 把過期那一列也鎖住，等於讓使用者永遠清不掉它——而清單會一直長。
+    // **只有已撤銷的那一列** disabled：撤銷與到期是兩件事——撤銷把這一條標成已撤銷，到期只是
+    // 這一條讀不到了；清單濾掉的是已撤銷的那幾條，所以**過期的列還留在清單裡**，撤銷是唯一能
+    // 把它清掉的動作。把過期那一列也鎖住，等於讓使用者永遠清不掉它——而清單會一直長。
     const revokeBtns = [...modal.matchAll(/<button[^>]*js-revoke-share[^>]*>/g)].map((m) => m[0]);
     assert.equal(revokeBtns.length, 4, `示範列應為 4 列（永久／有到期日／已過期／已撤銷），實際 ${revokeBtns.length}`);
     assert.equal(revokeBtns.filter((b) => /\bdisabled\b/.test(b)).length, 1,
-        "只有已撤銷那一列的撤銷鈕要 disabled——過期的列 upstream 的 disabled 仍是 False，撤銷得掉，也只有撤銷清得掉");
+        "只有已撤銷那一列的撤銷鈕要 disabled——過期的列還沒被撤銷，撤銷得掉，也只有撤銷清得掉");
     // 條件開窗：撤銷鈕只留 hook，成敗 toast 掛在確認鈕上（§5）
     for (const b of revokeBtns) assert.ok(!/data-toast/.test(b), "撤銷鈕是條件開窗（要先選定撤銷哪一條），不掛 data-toast");
 });

@@ -8,9 +8,8 @@
      （§5 每個分支都要演得出來）。 #}
 {# 示範提示詞取領域中性的知識庫助手文案：5-2 的示範資料橫跨好幾個主題（政策、輸出規則、
      內建工具），綁定單一領域的提示詞會與同頁其他區塊的示範對不起來（§6 示範自洽）。 #}
-{# 編輯 textarea 的長度上限。20000 ＝ product 的 `MAX_SINGLE_PROMPT_LEN`
-     （product 的 `PromptIn.content` 以 `Field(max_length=MAX_SINGLE_PROMPT_LEN)` 收，
-     同一顆常數也夾住 product 的 `TEXT_FIELD_LIMITS` 裡五層系統提示詞；正典寫法見 skill-editor-modal 的
+{# 編輯 textarea 的長度上限：單一提示詞 20000 字，在這裡宣告一次
+     （同一顆上限也夾住五層系統提示詞；正典寫法見 skill-editor-modal 的
      `skillInstructionsInput`）。**一個數字只有一份真相**（§6）：`data-max-len` 給 js 拿去掛到注入的
      textarea 上，下面那句可見提示渲染同一顆變數——不是 js 寫死一份、markup 寫死另一份。
      那個數字是**資料不是譯文**（§4-2：契約裡有欄位的常數不准寫進 data-i18n 的句子裡）。
@@ -58,8 +57,8 @@
     <div class="text-gray js-prompt-len-hint" id="promptEditLenHint"><span data-i18n="settings.promptMaxLenPrefix">提示詞最多 </span><span>{{ promptEditMaxLen }}</span><span data-i18n="settings.promptMaxLenSuffix"> 字，超過的字打不進去。</span></div>
 
     {# 四顆鈕裡有兩顆聽起來都像「存」，而只有一顆真的存得下去——這一句就是在分那件事。
-         **持久化只有一條路**：`POST /prompts`（product 的 `create_prompt`，
-         逐欄 MERGE 寫回設定檔、GufoRAG 端 append-if-changed），也就是「儲存為新版本」那一顆。
+         **持久化只有一條路**：「儲存為新版本」那一顆——它逐欄寫回設定檔本體，
+         內容沒變就不會多開一版。
          而它**當場改變線上機器人的回答**——寫的是設定檔本體，不需要再套用一次——所以這件事必須
          在畫面上講出來，不能只留在按鈕名字裡（姊妹的 `components/apply-settings-modal` 對同一種
          後果有 `modals.applyOverwriteWarning`）。
@@ -74,8 +73,7 @@
              所以 class 不動。
            字面必須是「暫存編輯」而**不能寫成「儲存」**：這個畫面上唯一存得下去的是右邊那一顆
              「儲存為新版本」，兩顆鈕都說「存」而只有一顆是真的，接手的人就會照字面把它接上
-             寫入端點（gufofaq-saas 的 `PromptEdit` 的 `onSave`，其測試逐字寫著「鈕上寫著儲存，
-             就必須真的存得下去」）——那不是讀錯，是字面在說謊。
+             寫入路徑——鈕上寫著儲存，就必須真的存得下去。那不是讀錯，是字面在說謊。
              解法是改字面，**不是替它補一道閘門**：補閘門等於承認它會寫入，而那會讓它與
              「儲存為新版本」變成同一顆鈕（持久化只有一條路）。
            故：不掛 `data-capability`、不掛 `data-toast`（§5 矩陣②：純本地互動只留 hook）。 #}
@@ -83,9 +81,9 @@
 
         {# 送 API 的直接動作鈕（`.js-prompt-reset`：去取目前正式提示詞、再寫回編輯器）
              ⇒ `data-toast` 要列全結果（§5）。
-           **必須掛 `data-capability`**：它打的是 `GET /prompts/active`，而那支端點掛著 product 的
-             `require_capability("settings", "read")`。§4 的判準是「**打了掛 require_* 的端點**」，
-             不是「會不會改狀態」——讀取型端點同樣要標。這一格不能留空：空白與「忘了標」在 markup 上
+           **必須掛 `data-capability`**：它要去讀目前正式的提示詞，而讀這件事本身也要
+             `settings:read` 這道能力。§4 的判準是「**這個動作要不要一道能力才做得到**」，
+             不是「會不會改狀態」——唯讀的動作同樣要標。這一格不能留空：空白與「忘了標」在 markup 上
              長得一模一樣，看的人分不出哪一種。 #}
         <button data-capability="settings:read" type="button" class="button button-green js-prompt-reset" data-toast="已回復至目前正式提示詞|權限不足，無法回復——請找貴租戶的管理者開通|無法取得正式提示詞|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.resetPrompt" data-toast-type="success|warning|error|warning" data-i18n="action.resetDefault">回復至預設</button>
 

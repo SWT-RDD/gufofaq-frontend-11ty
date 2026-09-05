@@ -3,14 +3,14 @@
      §4 授權測試的 `NO_GATE` 那一筆成對（§4「痕跡要成對：只住在測試裡的豁免，
      讀元件的人看不到」）。 #}
 {# 檔案編輯 modal（PDF 自填），dialog id `editModal`。
-     固定槽 schema（title/content/source/date/category/number/flag/tags/privilege/note1..note10/date2/date3/internal_note，
-     出處：gufofaq-saas product 的 `SLOTS`——順序與 `default_label` 逐字對齊）：
+     固定槽 schema（title/content/source/date/category/number/flag/tags/privilege/note1..note10/date2/date3/internal_note；
+     槽的順序與各槽的預設顯示名以正本 `ui/field-slot-catalog` 為準）：
      最後那一顆 `internal_note` 是 `productOnly`，本窗把它與其他 productOnly 槽一起排在
      「產品內部欄位」那一區（見下面兩支各自帶 `{% if %}` 的迴圈）——列名少一顆的話，
      讀的人會以為那一區是憑空多出來的：
      每槽一個輸入框供逐筆手填，label 用各槽預設顯示名。
-     槽之外另有一個**外部主鍵**欄：批次匯入是逐檔一把鍵（product 的
-     `batch_import_documents`，其 `external_keys` 是 `{原始檔名: 鍵}`），共用一把的話同批第二個檔會 purge 掉第一個、回應卻說兩筆都成功，
+     槽之外另有一個**外部主鍵**欄：批次匯入是**逐檔一把鍵**（一個原始檔名配一把），
+     共用一把的話同批第二個檔會把第一個整個取代掉、畫面上卻兩筆都算成功，
      所以它必須跟著「這一個檔」的編輯窗走，不能放在頁面層。
      內容（content）由 PDF 自動擷取、不給人改，故 render 成 disabled textarea
      （`.form-control.disabled` ＋ `disabled` 屬性兩者都掛：class 管視覺、屬性管互動）；
@@ -62,7 +62,7 @@ that identifies frequently executed loop traces at run-time and then generates m
                             </div>
                         </div>
                         {% endif %}{% endfor %}
-                        {# product 專用槽與其餘 21 槽分群（同 5-2 的欄位命名區）：混在備註 1–10 中間時，
+                        {# 產品內部欄位的槽與其餘 21 槽分群（同 5-2 的欄位命名區）：混在備註 1–10 中間時，
                              它看起來就只是第 11 個備註欄。說明掛在小標下、不塞進欄位名裡——租戶可以把它
                              改名成「維護人」，改掉的當下括號裡那句就沒了。 #}
                         <div class="flex-row column gap-8">

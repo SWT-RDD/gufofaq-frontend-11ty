@@ -15,7 +15,7 @@
          成功的連結，整頁零 data-toast、零 data-capability，接手的人照著切版接就會漏掉每一條
          錯誤路徑。
      參數（動作模式）：stepNextAction（true＝渲染成 button）、stepNextToast／stepNextToastKey／
-       stepNextToastType（§5 三件套，段數要一致）、stepNextCapability（閘門，值＝上游閘門自己的名字）。
+       stepNextToastType（§5 三件套，段數要一致）、stepNextCapability（閘門，值＝那項能力的名字）。
      驗證與送出的邏輯本身不做（§5 只做切版互動）。
      .btn-prev/.btn-next 是**業務掛點**（轉換契約：接手的程式靠它綁上一步／下一步）——
      hook 不得被 scss 樣式（§5「全站 scss 找不到它」判準），排版改掛本元件自有 slot class .step-prev/.step-next。 #}

@@ -17,13 +17,13 @@ permalink: 5-1-1_accountInfo.html
 {# 使用期倒數：整塊 markup 收在 `ui/countdown-box`，本頁只 include、不自己畫。
    ⚠️ **它的兩個數字是跨頁推導出來的，不是隨手填的**（§3-2 推導值要寫出公式與母體）：
      · 這個帳號是 `admin@example.com`（下面那格），而 5-6-1 的平台權限盤點逐字把它配給
-       **示範租戶 A** ⇒ 這顆倒數印的就是租戶 A 的 `trial_end`，與 5-6-1 那張表的「到期日」
+       **示範租戶 A** ⇒ 這顆倒數印的就是租戶 A 的到期日，與 5-6-1 那張表的「到期日」
        同一個欄位、必須同值（§6 跨頁同源）。
      · 站台的「現在」＝ **2026-07-14**：5-6-1 的 ISO 名單直接寫著「查詢時間 2026-07-14 09:00 UTC」，
        而該頁租戶 C（到期 2026-03-01，逾期 135 天）與租戶 D（到期 2026-02-14，逾期 150 天）
        各自回推也都落在同一天，三處互為佐證。
-     · `days_left` 取 9（倒數框演的就是「快到期」那一態，那是它存在的理由）
-       ⇒ `trial_end` ＝ 2026-07-14 ＋ 9 天 ＝ **2026-07-23**，租戶 A 因此仍是 ACTIVE（使用期內），
+     · 剩餘天數取 9（倒數框演的就是「快到期」那一態，那是它存在的理由）
+       ⇒ 到期日 ＝ 2026-07-14 ＋ 9 天 ＝ **2026-07-23**，租戶 A 因此仍在使用期內，
        與 5-6-1 那一列的狀態相容。
      **要改就只能改這一頁**：站台的「現在」被 5-6-1 那張 ISO 名單上的三筆逾期天數互相釘死了，
      反方向去挪動它（例如把「現在」推回 2026-01-12 好遷就一個較早的到期日）會讓已到期的
@@ -31,41 +31,32 @@ permalink: 5-1-1_accountInfo.html
      5-6-1 走，不是 5-6-1 跟著它走。 #}
 {% include "ui/countdown-box/countdown-box.html" %}
 
-{# **本頁打的端點**（§3-2：一頁多支端點時，檔頭第一段先列端點清單）：
-     GET  /account            `AccountOut` —— 十欄：`email`／`company`／`language`／`qa_limit`／
-                              `usage_period`／`storage_limit_mb`／`can_edit`／`subscription_status`／
-                              `trial_end`／`days_left`
-     GET  /me/profile         `ProfileOut` —— `email`／`display_name`／`contact`
-     PUT  /me/profile         同上（唯一守衛是 `require_active_subscription`，見儲存鈕）
-     PUT  /account            `AccountIn` → 回 `AccountOut`（`require_capability("settings","write")`，見儲存鈕）
-     POST /me/change-password 回 `{"ok", "token"}`
-     以上全部在 product。
-     · `ProfileOut.email` 不另畫——它與上面帳號區塊那一格（`AccountOut.email`）是同一個值，
-       畫兩份會讓人以為可以各改各的。`token` 是換發的登入憑證，由 React 換掉 session，畫面上沒有它的位子。
-   **`AccountOut` 十欄裡兩欄刻意不吃**：
-     · `can_edit`（＝當前使用者有沒有 settings 能力）——切版**不**拿它去 disable 公司欄：
+{# **這幾件事刻意不畫**：
+     · 個人資料區塊不另畫一次帳號 email——它與上面帳號區塊那一格是同一個值，
+       畫兩份會讓人以為可以各改各的。變更密碼成功後換發的登入憑證同理：由 React 換掉 session，
+       畫面上沒有它的位子。
+     · 當前使用者有沒有「設定」寫入能力——切版**不**拿它去 disable 公司欄：
        §4「`data-capability` 不足時不做 disabled、把 403 列進 `data-toast`」，吃了它會把契約演掉。
-     · `subscription_status`（`pending_disclaimer`／`active`／`expired`）——由 `ui/countdown-box`
-       的兩態承載（倒數中／已到期），本頁不另畫一顆狀態徽章。
+     · 使用期狀態三態（`pending_disclaimer`／`active`／`expired`，在這裡宣告一次，就是正本）
+       ——由 `ui/countdown-box` 的兩態承載（倒數中／已到期），本頁不另畫一顆狀態徽章。
 
    帳號資訊區塊只放帳號層欄位——帳號(唯讀)/公司單位(可編輯)/規格·資料儲存上限(唯讀)。
      per-profile 的對話設定（系統提示詞／檢索模式／資料取用規則／選用模型）**不屬於這一頁**：
      那些是 profile 維度、一個租戶可以有很多份，家在 5-2_conversationSettings；
      混進帳號頁會讓人以為「一個帳號只有一組對話設定」。 #}
-{# 三個唯讀欄的示範值（§6：同一支端點回的欄位不可以一半有值一半留白——上面那顆使用期倒數印著
-     具體到期日與剩餘天數，而它與這三格同出於 product 的 `AccountOut`：
-     `email`／`qa_limit`／`storage_limit_mb`／`trial_end`／`days_left` 是同一個投影，
+{# 三個唯讀欄的示範值（§6：同一批一起載入的帳號層欄位不可以一半有值一半留白——上面那顆使用期倒數
+     印著具體到期日與剩餘天數，而它與這三格是同一批資料，
      不可能倒數算得出來、帳號卻是空的）：
        · 帳號＝`admin@example.com`——本站示範租戶的管理員，5-5-1 成員清單第一列就是它（§6 跨頁同源）。
-       · 規格＝`{qa_limit}` ＋ 單位；3000 就是聊天室頁「問答次數：12/3000」的分母。
-         **單位不是固定的「次/日」**：額度週期是 `TenantSetting.usage_period`（`none`／`daily`／
-         `monthly`，平台管理員在租戶管理視窗可改），`AccountOut` 隨 `qa_limit` 一起回它。
+       · 規格＝問答次數上限 ＋ 單位；3000 就是聊天室頁「問答次數：12/3000」的分母。
+         **單位不是固定的「次/日」**：額度週期有三種（`none`／`daily`／`monthly`，在這裡宣告一次，
+         就是正本；平台管理員在租戶管理視窗可改），它與次數上限一起決定這一格印哪個單位。
          設成 monthly 的租戶印「次/日」就是說錯話。三顆單位 key：`settings.quotaUnitPerDay`／
          `quotaUnitPerMonth`／`quotaUnitTotal`。**這一格演不到那三個成員**——`value` 是原子屬性、
          切版拆不出節點來掛 `data-i18n`，而 §4-2 的屬性後綴白名單也沒有 `-value`，所以這一頁
          結構上只畫得出示範租戶那一個（`daily`）。枚舉的成員不靠刪 key 活著、靠有地方渲染得出來
          活著（§4-2）：三顆的渲染點在元件庫頁「React 條件文案」節，繁中原文的家在那裡。
-       · 資料儲存上限＝`storage_limit_mb`；1000MB 就是 3-1-1 那條 ui/storage-bar 的「共 1000MB」。
+       · 資料儲存上限＝1000MB，就是 3-1-1 那條 ui/storage-bar 的「共 1000MB」。
      儲存那一格是「數字 ＋ MB」的組字；規格那一格**不可以**寫成「N 次/日」——週期有三種（見上），
      把其中一種寫進字面，另外兩種的租戶會讀到一句錯的話。
      三個都是唯讀投影，故維持 disabled；值由 React 填，這裡是版型與長度的示範——**React 組字時
@@ -127,7 +118,7 @@ permalink: 5-1-1_accountInfo.html
             <div class="col-6-md col-12-sm">
                 <div class="form-group">
                     <div class="label">
-                        {# 語言＝送 chatbot 的 Accept-Language（控其系統/警告訊息語言）；per-tenant，值 zh-TW/en。 #}
+                        {# 語言＝這個租戶收到的系統／警告訊息要用哪一種語言；per-tenant，值域 zh-TW/en。 #}
                         <label for="accountLanguageSelect" class="control-label" data-i18n="settings.language">語言</label>
                     </div>
                     <div class="field">
@@ -150,24 +141,22 @@ permalink: 5-1-1_accountInfo.html
              行為的 `<button>` 點下去什麼都不會發生，是啞鈕）。
              REACT-CONVERSION §④：這種 demo 跳轉的 `<a>` 在 React 端保留標籤、改掛 onClick。 #}
         <a href="2-1_qaRecord.html" class="button button-border" data-i18n="action.cancel">取消</a>
-        {# PUT /account 掛的是 `require_capability("settings", "write")`（product），
-             該 dep（product 的 `require_capability`）raise 403「missing capability」——同一道守衛在 5-3 的歸因儲存鈕
-             是自成一段的 warning（那顆端點的 dep 逐字相同），這裡不能折進 error（§5 分支集合一致）。 #}
+        {# 這顆鈕要「設定」寫入能力（`data-capability="settings:write"`）；能力不足會回 403，
+             畫面上是自成一段的 warning——5-3 的歸因儲存鈕吃同一道能力閘、也是自成一段的 warning，
+             這裡不能折進 error（§5 分支集合一致）。 #}
         <button data-capability="settings:write" type="button" class="button button-primary" data-toast="帳號資訊已儲存|權限不足，無法儲存——請找貴租戶的管理者開通|儲存失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.saveAccount" data-toast-type="success|warning|error|warning" data-i18n="settings.saveAccountInfo">儲存帳號資訊</button>
     </div>
 </div>
 
-{# 個人資料（登入者自身，非租戶層）：顯示名稱 + 聯絡資訊，可編輯後儲存（product /me/profile）。
+{# 個人資料（登入者自身，非租戶層）：顯示名稱 + 聯絡資訊，可編輯後儲存。
      **這一塊與下面的變更密碼刻意不掛任何授權軸**（§4「查證過不需要閘門的要留下痕跡」）：
-     `/me/profile`／`/me/change-password` 都只吃 `get_current_user`，沒有 `require_capability`
+     兩者都是登入者的自助動作，只要登入就做得到，沒有任何能力閘
      ——標上能力軸反而會讓 React 把「改自己的顯示名」擋在一顆它根本不需要的能力後面，上面那顆
-     `PUT /account` 才是 settings:write。**兩者仍不是同一道閘**：`PUT /me/profile` 另外掛
-     `require_active_subscription`（凍結/到期的租戶連改自己顯示名都存不進去），`POST
-     /me/change-password` 刻意不掛（product 該函式旁的註解：這是帳號被盜用時的
-     自救路，鎖住它反而讓人換不掉已經外流的密碼）——下方兩顆 ⓘ 分別點出這個差異。 #}
+     儲存帳號資訊才是 settings:write。**兩者仍不是同一道閘**：儲存個人資料要求租戶使用期
+     正處於有效狀態（凍結/到期的租戶連改自己顯示名都存不進去），變更密碼刻意不要求
+     ——那是帳號被盜用時的自救路，鎖住它反而讓人換不掉已經外流的密碼——下方兩顆 ⓘ 分別點出這個差異。 #}
 {# ⓘ 說明：markup 同既有 info-btn 六件組（GUIDELINE §1-2 無 html 元件契約）。①出處：本頁上方
-     這段「個人資料」檔頭 ＋ product 的 `ProfileOut`／`ProfileIn`／
-     `update_my_profile`（`require_active_subscription`）。帳號頁的語意核心是**訂閱期／配額／
+     這段「個人資料」檔頭。帳號頁的語意核心是**訂閱期／配額／
      用量**三者——這一區跟配額、用量都無關（那兩個是上方帳號資訊區塊唯讀顯示的租戶資料），它
      唯一沾到的是訂閱期：存檔動作要求使用期正處於有效狀態，過期或還沒生效時這兩格仍看得到、
      但儲存會被擋下來。 #}
@@ -201,18 +190,17 @@ permalink: 5-1-1_accountInfo.html
             </div>
         </div>
     </div>
-    {# 中段是 `require_active_subscription` 那道 403（product 的 `update_my_profile`
-         **函式本體第一行**就呼叫它，§3-2 ②：那些 raise 不在本函式的縮排裡，逐 `raise` 掃內文會漏掉）。
-         它是這支端點**唯一**的授權守衛（沒有 `require_capability`），三個出口 `account_frozen`／
-         `disclaimer_required`／`subscription_expired`（product）在畫面上是同一件事：這一格還看得見、
+    {# 中段是「使用期不是有效狀態」那道 403。它是這顆鈕**唯一**的授權守衛（沒有能力閘），
+         三態 `account_frozen`／`disclaimer_required`／`subscription_expired`（在這裡宣告一次，
+         就是正本）在畫面上是同一件事：這一格還看得見、
          按下去存不進去——本頁說明視窗逐字就是這樣寫的，所以它是 §5 定義的一條真實結果路徑，不能不列。
          型別是 warning 不是 error：使用者找得到人續期／簽署就修得掉，不是紅色終局。 #}
-    {# **這顆鈕標不出授權軸**（§4；同時登記在測試的 `NO_GATE`）：`/me/profile` 是自助端點，
-         product 只掛 `get_current_user` ＋ `require_active_subscription`，**沒有** `require_capability`
+    {# **這顆鈕標不出授權軸**（§4；同時登記在測試的 `NO_GATE`）：儲存個人資料是自助動作，
+         只要登入 ＋ 使用期有效就做得到，**沒有**能力閘
          ——標上能力軸等於宣告一道這條路徑上不存在的閘門，還會把「改自己的顯示名」擋在一顆
-         它不需要的能力後面。下面那顆改密碼鈕同理（`/me/change-password` 也是自助端點）。
-         這一頁另外那顆 `PUT /account` 就標得出來（`require_capability("settings","write")`），
-         兩者的差別是**端點**、不是頁面——所以豁免的單位是「那一顆鈕做成的那件事」，不是整支檔案。 #}
+         它不需要的能力後面。下面那顆改密碼鈕同理（也是自助動作）。
+         這一頁另外那顆儲存帳號資訊就標得出來（`settings:write`），
+         兩者的差別是**那顆鈕做成的那件事**、不是頁面——所以豁免的單位是動作，不是整支檔案。 #}
     <div class="flex-row">
         <button type="button" class="button button-primary" data-toast="個人資料已儲存|使用期不是有效狀態（待簽免責聲明／已到期／已凍結），無法儲存|儲存失敗，請稍後再試" data-i18n-data-toast="toast.saveProfile" data-toast-type="success|warning|error" data-i18n="settings.saveProfile">儲存個人資料</button>
     </div>
@@ -226,8 +214,8 @@ permalink: 5-1-1_accountInfo.html
 {% set helpModalTitle = "個人資料說明" %}
 {% set helpModalWhatKey = "help.settings.myProfile.what" %}
 {# ⚠️ **「公司/單位」不是唯讀，別把它跟「規格／資料儲存上限」講成同一族**：同頁的
-     `accountCompanyInput` 沒有 `disabled`，而 product 的 `save_account`（`PUT /account`）掛
-     `require_capability("settings", "write")` 並真的寫入 `company`；只有規格與上限那兩顆才是唯讀。
+     `accountCompanyInput` 沒有 `disabled`，上面那顆儲存帳號資訊（要 `settings:write`）
+     真的會把它寫回去；只有規格與上限那兩顆才是唯讀。
      所以底下這段 ① 文案必須把**三件事分開**講：帳號層（這一區）／租戶層可寫（公司單位）／
      租戶層唯讀（規格與上限）。中間那一族最容易被誤會——它長在「我的個人資料」上面，
      卻是改了全租戶一起變的東西。 #}
@@ -236,10 +224,9 @@ permalink: 5-1-1_accountInfo.html
 {% set helpModalLimitRows = [] %}
 {% include "components/help-modal/help-modal.html" %}
 
-{# 變更密碼：舊密碼 + 新密碼（至少 8 碼）+ 確認新密碼（product /me/change-password）。 #}
+{# 變更密碼：舊密碼 + 新密碼（至少 8 碼）+ 確認新密碼。 #}
 {# ⓘ 說明：markup 同既有 info-btn 六件組。①出處：上面「個人資料」檔頭已比較過兩者的閘
-     ＋ product 的 `change_my_password`（只吃 `get_current_user`，
-     沒有 `require_active_subscription`）。這一區與訂閱期／配額／用量三者都無關：不看使用期
+     ——變更密碼只要登入就做得到。這一區與訂閱期／配額／用量三者都無關：不看使用期
      狀態，也不顯示任何租戶層數字，純粹是這個帳號自己的登入憑證異動。 #}
 <div class="block mt-16 flex-row column gap-16">
     <div class="flex-row align-items-center gap-8">
@@ -270,18 +257,17 @@ permalink: 5-1-1_accountInfo.html
                     {# 「至少 8 碼」是**約束提示**、不是錯誤訊息：.error-prompt 預設 display:none
                          （靠 .form-group:has(.error) 才揭示），aria-describedby 指過去等於輔具讀到零。
                          約束要在填之前就講得出來，故改成常駐可見的說明字（§4）。
-                         **8 是資料節點、不是譯文的一部分**（§3-2 / §4-2）：上游的 `Field(min_length=8)` 逐顆是
-                         product 的 `TenantCreate.admin_password`／`PlatformResetPwIn.new_password`、
-                         product 的 `UserCreate.password`／`ChangePwIn.new_password`／`ResetPwIn.new_password`
-                         （§3-2：跨 repo 的常數只指名符號、不抄數量——數量會變，符號 grep 得到），加上這一格的
+                         **8 是資料節點、不是譯文的一部分**（§3-2 / §4-2）：全站每一個要輸入密碼的入口
+                         （建立租戶、平台重設密碼、新增成員、變更密碼、忘記密碼重設）都吃同一組界線，
+                         加上這一格的
                          `minlength="8"`，這個數字已經有好幾份抄本；再烤進英譯就是「改上限要改兩份譯文」。
                          形狀沿用 2-2-4 的 200（前綴 key ＋ 數字節點 ＋ 單位 key）。
                          同一頁的 placeholder（settings.pleaseEnterNewPassword）與送出鈕的 data-toast **維持**把 8 寫在譯文裡：
                          那是 §4-2「屬性型譯文」那條例外——屬性值是原子字串、切不出前後綴節點；例外的兩個條件這裡都
-                         成立（上面那顆常駐可見的資料節點承載同一個約束、上游符號名已寫在本段）。
-                         **上下界一起講、一起夾**：密碼政策是兩端的（product 的 `MIN_PASSWORD_LEN` 與
-                         `MAX_PASSWORD_LEN`，同一支模組的兩顆常數，五個入口共用），兩顆一起投影在
-                         `GET /users/limits` 的 `member.password`（`min`／`max`）。只講下界的話，貼進一段超長
+                         成立（上面那顆常駐可見的資料節點承載同一個約束、界線值已在本段宣告）。
+                         **上下界一起講、一起夾**：密碼政策是兩端的——下界 8、上界 1024（在這裡宣告一次，
+                         就是正本），全站五個輸入密碼的入口共用同一組界線，
+                         畫面上也一起讀得到。只講下界的話，貼進一段超長
                          passphrase 只會拿到一個 422，而畫面從頭到尾沒有任何地方說過有上限（§3-2「同 group 的
                          姊妹界線要一起檢查有沒有落點」）。故這一句改成「密碼長度 8 – 1024 碼」，欄位上的
                          `minlength` 也配一顆 `maxlength`——只夾一邊等於宣告了一條只有一半的政策。

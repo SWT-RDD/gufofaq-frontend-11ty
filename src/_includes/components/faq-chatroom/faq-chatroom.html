@@ -2,16 +2,16 @@
      初始問候＋一組示範問答（含 讚/倒讚/複製/分享 動作鈕）為靜態示範；串流送問答是業務邏輯，不在切版範圍。
      include 的子元件：components/rating-modal、components/faq-share-modal（本元件的按鈕開的彈窗，§1-2）。
 
-     **授權：送出鈕與建議追問 chip 刻意不掛四軸中的任何一軸**（§4「查證過確定不需要閘門的要留下痕跡」
-     ——空白與「忘了標」在 markup 上長得一模一樣）：**租戶開通軸照標**（`require_tenant_feature` 判的是租戶不是主體，widget token 認得出租戶，§4）；免除的只有能力／租戶管理員／平台角色三軸——前台公開問答走的是 widget token
-     （gufofaq-saas product 的 `require_widget_token`），不是租戶內的能力
-     token；後台 `components/chatroom` 的同型鈕走 `/ask` 才掛 `data-capability="ask"`。
+     **授權：送出鈕與建議追問 chip 四軸裡只標得出租戶開通軸**（§4「查證過確定不需要閘門的要留下痕跡」
+     ——空白與「忘了標」在 markup 上長得一模一樣）：**租戶開通軸照標**（那道閘判的是租戶不是主體，
+     而前台公開問答帶的憑證本身就認得出是哪一個租戶，§4）；免除的是能力／租戶管理員／平台角色
+     三軸——前台這條路上沒有登入主體，不吃租戶內的能力
+     token；後台 `components/chatroom` 的同型鈕是登入之後才送得出去，才掛 `data-capability="ask"`。
      `ui/chat-message` 的契約段因此**只有後台那一份（① 的建議追問 chip）帶 `data-capability`**，
      前台那兩型（①′ 與 ⑤）都不帶。
 
-     **429 節流是同一道守衛**：`require_widget_token` 對每一支 `/public/*` 都跑
-     `enforce_widget_rate_limit`（product），所以送出鈕與建議追問 chip 都要有那一段
-     warning——`ui/widget-shell` 列的是同一段（§5：同一道後端守衛，不論從哪一頁、
+     **「詢問太頻繁」是同一道守衛**：前台每一條公開路徑都吃同一道節流，所以送出鈕與建議追問 chip
+     都要有那一段 warning——`ui/widget-shell` 列的是同一段（§5：同一道守衛，不論從哪一頁、
      哪一顆鈕觸發，分支集合與語意型別都要一致）。 #}
 <div class="faq-chatroom">
     <div class="faq-chat-scroll">
@@ -31,7 +31,7 @@
         <p class="text-gray" data-i18n="shared.aiDraftNotice">本內容由 AI 系統初步產出，僅作為草稿或參考依據使用，尚未經人工確認或修改，若需進一步採用，請先檢閱並確認內容之正確性與完整性。</p>
         {# **租戶沒設歡迎語時的預設開場**（與 `ui/widget-shell` 的
              `.js-widget-default-greeting` 是同一件事的兩個版本）。下面那一則是**租戶自己設的**
-             歡迎語（`GET /welcome` 的 `welcome_message`，資料、不翻，見 components/chatroom 檔頭）；
+             歡迎語（對話設定裡的那一句，資料、不翻，見 components/chatroom 檔頭）；
              這一則是它缺席時產品自己的開場——那是 chrome，所以要翻。
            **兩句刻意不同**：widget 跑在別人的網站上，要先講清楚「這裡可以問什麼」；這一頁是
              產品自己的前台，訪客是循著連結來問問題的，第一句話只要邀請他開口。收件人不同 ⇒ 分 key
@@ -39,7 +39,7 @@
            ⚠️ **預設開場一定要自己切成一則**（`.hidden` ＋ hook class 給 React 定址，可見處在元件庫頁
              的「React 條件文案」區，§5），而且下面那一則示範泡泡要寫成一句**明顯是租戶自己寫的**話。
              兩者若長得一模一樣，「產品的預設開場」在切版上看起來像已經有了、實際上一個字都沒有
-             （`faq.defaultWelcome` 於是只能由 React 自己造 key、靠 REACT_ONLY 白名單擋著
+             （`faq.defaultWelcome` 於是只能由 React 自己造一顆 key
              ＝切版之外的第二個文案正本）。 #}
         <div class="message-wrap js-faq-default-greeting hidden">
             <div class="message-row by-robot">
@@ -87,38 +87,37 @@
                 <button type="button" class="button-icon like js-vote" data-vote="like" title="讚" data-i18n-title="comp.like"><span class="sr-only" data-i18n="comp.like">讚</span></button>
                 <button type="button" class="button-icon dislike js-vote" data-vote="dislike" title="倒讚" data-i18n-title="comp.dislike"><span class="sr-only" data-i18n="comp.dislike">倒讚</span></button>
                 <button type="button" class="button-icon copy copyBtn has-tooltip" data-toast="文字已複製|複製失敗，請手動選取後複製" data-i18n-data-toast="common.copied" data-toast-type="success|error"><span class="tooltip" data-i18n="action.copy">複製</span></button>
-                {# **分享是有條件的開窗，不是無條件開窗**：按下去先送
-                     `POST /public/share`（product 的
-                     `create_public_share`，帶 `X-Widget-Token`）拿到 token，**成功才**開窗把連結畫出來。
+                {# **分享是有條件的開窗，不是無條件開窗**：按下去先去建立一條分享連結，
+                     **成功才**開窗把連結畫出來。
                      **所以不准掛 `data-open-modal="shareModal"`**，那是 §5 逐字點名的那句謊話——它把一個
                      會失敗的動作演成一條必然開窗的路，整條失敗路徑於是在切版上不存在
                      （「建立分享連結失敗，請稍後再試」就只會活在 React 的字典裡）。
                      形狀比照 5-10 的 `.js-edit-vocabulary`：**條件開窗的觸發鈕自己就送 API ⇒ 照 §5 ③
                      掛 `data-toast` 列全結果**，同時保留 hook class 讓 React 認得出要接哪一顆。
-                   **四軸裡標得出來的是租戶開通軸，而且標了**：`create_public_share`（product）在任何
-                     寫入與任何上游呼叫之前先跑 `require_tenant_feature(db, tenant_id, "history")`，
-                     那道閘判的是**租戶**、不是主體，而 `X-Widget-Token` 本身就認得出是哪個租戶——
+                   **四軸裡標得出來的是租戶開通軸，而且標了**：建立分享連結在寫任何東西之前，
+                     先看這個租戶有沒有開通「問答紀錄」，
+                     那道閘判的是**租戶**、不是主體，而前台這條路帶的憑證本身就認得出是哪個租戶——
                      所以 `data-tenant-feature="history"` 是一句這條路徑上為真的宣告。
                      另外三軸（能力／租戶管理員／平台角色）標不出來：它們判的是登入主體，
                      而公開路徑上沒有主體（同 `.js-ask-suggested`）。
-                   **`history` 與 `ask` 是兩顆各自獨立的開通鍵**：`X-Widget-Token` 那一支驗的是 `ask`
+                   **`history` 與 `ask` 是兩顆各自獨立的開通鍵**：問答那條路驗的是 `ask`
                      （這個 widget 能不能問答），分享連結要被打開靠的是 `history`。平台把某租戶的
-                     `history` 關掉，問答照常、只有分享回 403——所以它要有自己的一段結果文案。
+                     `history` 關掉，問答照常、只有分享被擋下——所以它要有自己的一段結果文案。
                      **它不能折進「建立失敗，請稍後再試」**：那句話叫訪客重試一件永遠不會成功的事。
                    **收件人是這個網站的管理者，不是我們、也不是訪客自己**（同本元件下方額度那一段的
                      判準）：訪客這一側完全無能為力，所以型別是 `error` 不是 `warning`
                      （warning 在本站的語意是「你改一下輸入就過得了」）。
                    **這一態出現之後，這顆鈕就不該再渲染**（§5 不放按了沒反應的鈕）：那道閘是
                      **整個租戶**的狀態、不是這一則答案的，所以同一次工作階段裡每一則答案按下去
-                     都會是同一個 403。這是給 React 的條件渲染契約——切版畫的是開通著的那一態。 #}
+                     都會被同一道閘擋在同一個地方。這是給 React 的條件渲染契約——切版畫的是開通著的那一態。 #}
                 <button type="button" data-tenant-feature="history" class="button-icon share js-share-message" data-toast="連結已建立|建立失敗，請稍後再試|本站沒有開通分享功能，這個回答分享不出去，請聯絡本網站管理者。" data-i18n-data-toast="toast.createPublicShare" data-toast-type="success|error|error" title="分享" data-i18n-title="comp.share"><span
                         class="sr-only" data-i18n="comp.share">分享</span></button>
             </div>
-            {# **串流被切斷那一態**：連線斷在最後一筆 `chat_room` 記錄中間時，答案文字已經逐字到齊、
+            {# **串流被切斷那一態**：連線斷在最後那一筆收尾記錄中間時，答案文字已經逐字到齊、
                  照樣畫得出來，但那一筆才帶得到的東西（來源清單、評分與分享用的簽章參照、續談參照、
                  合法的 `[[N]]` 號碼）**一個都收不到**——而畫面上那與「這則答案本來就沒有來源、
-                 也不能評分」逐位元組相同。上游把這件事說得出來（gufofaq-saas `apps/web` 的
-                 `AccumulateSseResult.truncated`，「鍵在不在就是語意」），畫面上卻沒有任何地方在說。
+                 也不能評分」逐位元組相同。資料上分得出來（那一筆收尾記錄到底有沒有到齊），
+                 畫面上卻沒有任何地方在說。
                **它掛在這一則答案下面、不走 toast**：toast 講的是「剛剛按的那顆鈕怎麼了」，
                  而這件事是**這一則答案**的性質——同一段對話裡上一則好好的、這一則不完整，
                  toast 彈完就消失，讀的人分不出是哪一則。
@@ -128,11 +127,9 @@
                `.hidden` ＋ hook class；可見處在元件庫頁的「React 條件文案」區（§5）。
                  `role="alert"`：它是動態出現的、而且使用者正在讀答案，不報讀等於沒說。 #}
             <p class="text-red m-0 js-stream-truncated hidden" role="alert" data-i18n="comp.streamTruncated">這一輪的連線中斷了：答案的文字收到了，但來源清單與評分、分享所需的資訊沒有收到——所以這則答案下面沒有來源可看，也評不了分。把同一題再送一次就會有完整的一份。</p>
-            {# 建議追問（SaaS 新需求）：問答完成後 chatbot 於 SSE chat_room 塊回傳
-                 suggest_questions 陣列（gufofaq-saas：chat_room chunk 允許清單含 suggest_questions、
-                 meta 帶 enable_suggest_questions——引符號不引行號），渲染成一排可點 chip；
-                 點擊＝把該題當下一題送出（業務行為，React 端 onAskSuggested）。
-                 此處示範資料，正式環境由回傳陣列驅動（空陣列則整塊不渲染）。
+            {# 建議追問：問答完成後隨答案一起回來的一批追問題目，渲染成一排可點 chip；
+                 點擊＝把該題當下一題送出（業務行為）。
+                 此處是示範資料，執行期由那一批題目驅動（一題都沒有則整塊不渲染）。
                  變數與 label id 用元件專屬名（components/chatroom 另有一份自己的 chip 區，§6／id 唯一）
                  **這一稿的 chip 帶 `disabled`**：它們掛在第一問的答案下，而畫面演的是使用者點了其中一顆、
                  第二問正在生成——chip 送的也是一題，生成中同樣不能再送（見下方串流狀態列那一段）。 #}
@@ -146,7 +143,7 @@
         </div>
 
         {# 串流狀態列（示範）：問答送出後、回答串流生成過程中即時顯示的狀態（如「搜尋資料中…」）。
-             真值由 React 端 SSE 串流事件驅動；此處為靜態示範，形狀與位置照 components/chatroom
+             真值由執行期的串流事件驅動；此處為靜態示範，形狀與位置照 components/chatroom
              那一份（前台沒有的只是後台那些控制項，狀態列本身兩邊同一種）。
              §4「動態出現的訊息要在 live region 裡」⇒ role="status" aria-live="polite"：串流是**持續更新
              的進度**，不是「有東西壞了」，故不用 role="alert"（那會打斷報讀器）。
@@ -184,11 +181,11 @@
     </button>
 
     {# **整站停用那一態**：使用期閘或功能開通閘擋下來時，這個前台機器人就不能問了
-         （product 在節流之後接連跑 `require_active_subscription`
-         與 `require_tenant_feature(db, tenant_id, "ask")`，兩者都回 403）。那不是「這一題失敗」，
-         是**這個站現在不提供問答**——輸入框與送出鈕會被停用，再問也只會拿到同一個 403。
-       ⚠️ **這一句的正本在切版**：繁中與 en.json 都在這裡定，React 端讀這一份。`faq.unavailable`
-         若由 React 單方面造 key（靠 REACT_ONLY 白名單擋著），就是切版之外的第二個文案正本。
+         （節流之後還有兩道閘：使用期還有效嗎、這個租戶開通問答了嗎，任一道沒過就是這一態）。
+         那不是「這一題失敗」，
+         是**這個站現在不提供問答**——輸入框與送出鈕會被停用，再問也只會被同一道閘擋下。
+       ⚠️ **這一句的正本在這裡**：繁中與 en.json 都在這個 repo 定。`faq.unavailable`
+         若由 React 單方面造一顆 key，就是切版之外的第二個文案正本。
        **不寫「請稍後再試」**（例如「請稍後再試，或聯絡本網站管理者」）：
          使用期到期／被凍結／功能被關掉，沒有一種會因為訪客等一下就好——那句話會讓每一位訪客
          照著它一直重試（同 widget-shell 額度用罄那一段的理由）。訪客這一側唯一做得到的事是
@@ -197,7 +194,7 @@
     <p class="text-red js-faq-unavailable hidden" role="alert" data-i18n="faq.unavailable">本站的問答服務目前停用中，請聯絡本網站管理者。</p>
     {# **這條連結身上沒有 widget token** 那一態。與上面那一句是兩件不同的事：上面是
          「這個站現在不提供問答」（服務被關掉），這一句是「這條連結本身不完整」——問答服務好好的，
-         只是這個瀏覽器帶不出是哪一個租戶（前台公開端點靠 `X-Widget-Token`／`?wt=` 認租戶，
+         只是這個瀏覽器帶不出是哪一個租戶（前台公開頁靠連結上那顆 widget 參數認租戶，
          見 5-8 檔頭）。共用一句話會讓拿到壞連結的人去找一個沒有問題的管理者。
        **不對訪客講「widget token」**（例如「此連結缺少 widget token，暫時無法問答」）：
          這一頁的讀者是匿名訪客——他沒有後台、也沒有那個詞彙。訪客這一側唯一做得到的事是去要
@@ -209,18 +206,15 @@
         <div class="faq-input-wrap">
             <div class="faq-chat-field form-group">
                 {# id/class chat-input-txt＝業務掛點／轉換契約（業務層靠這個 id 讀值送問答），值載體原樣保留（§5） #}
-                {# 字數上限：正本是 gufofaq-saas product 的
-                     `MAX_CASE_QUESTION_LEN`，product 的 `AskIn.query` 以它
-                     `Field(min_length=1, max_length=…)` 在請求邊界 fail-fast。**前台這一格非講不可**：
+                {# 字數上限 2000 字，在這裡宣告一次就是正本（後台那一格是同一個數字）：
+                     一題的長度在送出的當下就會被擋掉。**前台這一格非講不可**：
                      它的使用者是完全不知道這個系統有什麼規則的訪客——不講的話，貼一段長文進去，
                      得到的只有一句「回答生成失敗」。數字是資料槽，不烤進譯文（§4-2）。
-                   ⚠️ **這顆數字今天是字面值、不是讀契約來的，那是查證過的裁定**：前台這條路
-                     （`/public/*`）底下**一支界線投影端點都沒有**，而 React 端六支 `useLimits` group
-                     每一支都在登入態或 `settings:read` 之後 ⇒ 掛上去的結果是這一句在正式環境永遠不畫。
-                     所以它由 gufofaq-saas 的 `check_frontend_limits` 守衛對回 product 的
-                     `MAX_CASE_QUESTION_LEN`，而不是由執行期填。
-                     **切版這一側已經準備好了**：`.js-ask-max-len` 就是那顆資料槽——哪一天 product 開了
-                     一支公開的界線投影，React 只要把值填進這顆節點，切版一個位元組都不必動。 #}
+                   ⚠️ **這顆數字今天是字面值、不是執行期填進來的，那是查證過的裁定**：前台這條公開路徑
+                     底下沒有任何一處把界線投影出來，讀得到界線的都在登入之後
+                     ⇒ 真接上去的結果是這一句在正式環境永遠不畫。
+                     **切版這一側已經準備好了**：`.js-ask-max-len` 就是那顆資料槽——哪一天公開路徑
+                     投影得出界線，只要把值填進這顆節點，切版一個位元組都不必動。 #}
                 <input type="text" id="chat-input-txt" placeholder="請輸入問題..." data-i18n-placeholder="comp.pleaseEnterQuestion" class="chat-input-txt form-control" aria-label="輸入問題" data-i18n-aria-label="comp.enterQuestion" aria-describedby="faqAskMaxLenHint" disabled>
                 <span class="text-gray" id="faqAskMaxLenHint"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-ask-max-len">2000</span><span data-i18n="common.unitChars"> 字</span></span>
                 {# 空的 live region：訊息由業務層在執行期填（對同一顆 `.form-group` 內的 `.error-prompt`
@@ -241,7 +235,7 @@
      **匿名訪客**會看到的——他正是最不知道「按這個讚會發生什麼」的那個人。
      兩件事要講：①這不是畫面上的一個小記號，它會存進本站的問答紀錄、給管理者看；
      ②同一則回答只留一份評分，再送一次是覆蓋，不是多留一筆
-     （product 的評分路徑與後台走同一支上游 `ChatRatingRequest`，
+     （前台的評分與後台是同一條路，
      4-2 那一份的 `modals.ratingOverwriteNote` 講的是同一個事實的後台版）。 #}
 {% set ratingModalNoteKey = "modals.ratingPublicNote" %}
 {% set ratingModalNote = "你的評分會存進本站的問答紀錄，供這個網站的管理者改善品質。同一則回答只保留一份評分，再送一次會覆蓋掉上一次。" %}

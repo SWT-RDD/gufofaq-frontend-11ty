@@ -1,7 +1,7 @@
 {# 意圖判斷表格（5 欄 .default-table.priority-table，class 沿用既有系統）。
      資料由使用頁面在 include 前 set（見 §3-2/§6）：
        rows = [{ sn, category, description, prompt, priority }]
-       sn＝資料集（UploadedFolder）主鍵，落在 `<tr data-folder-sn>`——這是**列鍵、也是轉換契約**：
+       sn＝資料集主鍵，落在 `<tr data-folder-sn>`——這是**列鍵、也是轉換契約**：
          同一列上的兩顆業務掛點（`.js-edit-btn` 與 `.priority-select`）都靠它從自己往上找 `<tr>`
          才知道「我在操作哪一個資料集」。少了它，那兩顆掛點有名字卻認不出自己在操作哪一列。
          ⚠️ **不可以改用 `loop.index`**：優先級一改，這一列就會跳到別組表格去，位置不是身分（§6）。
@@ -15,10 +15,9 @@
          的值控制項不得掛靜態 aria-label，否則同頁七顆 select 全叫「變更優先級」，報讀器聽不出
          正在設哪一筆）。表頭 id 因此要帶實例鍵，否則四張表的 th 會撞 id。
        tierless（選填，預設 false）＝**取消三層、只分使用/不使用**的變體，供 Agent 對話模式用。
-         ⚠️ **不可以拿「agent 模式下高/中/低毫無差別」當這個變體的依據**（§3-2：出處會過期；
-         §5：欄位×模式的生效斷言以實測矩陣為準）：chatbot 的 `effective_scope` 把 `index_tiers`
-         攤平、非空即為有效範圍，而 agent 的 `search_knowledge_base` 也走它 ⇒ 三層在 agent 模式下
-         **是有差別的**。這個變體要留下來就要有自己的依據。
+         依據是：Agent 模式查知識庫時把三層攤平成一個有效範圍、非空即納入 ⇒ **高／中／低之間
+         沒有差別，但「有沒有被分到任一層」照樣決定納不納入**。這兩半都要講到——只講前半會讓人
+         以為 agent 模式下這張表整個不生效，只講後半則推不出為什麼要收成兩項。
          給三個沒有差別的選項＝讓使用者以為自己在調一個實際不存在的旋鈕，故此變體把下拉收成
          「使用中/不使用」兩項、表頭改「變更使用狀態」。**選項值仍用同一組業務詞**（"高優先級"
          代表使用中）：切回傳統模式時，已經設好的分層要還在；值域換掉就等於一切換模式，
@@ -78,14 +77,14 @@
                     <div class="form-group">
                         <div class="field">
                             {# .priority-select 是**業務掛點**：接手的程式用它做 change 委派，讀到新值後配上
-                                 該列的 `data-folder-sn` 送出——`PUT /retrieval/profiles/{no}` 的 `dataset_tiers`
-                                 （product 的 `save_profile`）。全站 scss 不得引用（§5）。
+                                 該列的 `data-folder-sn` 送出，寫回這一份設定檔的資料集分層。
+                                 全站 scss 不得引用（§5）。
                                **閘門標在這顆 select 上**：§4 要求標在「觸發寫入的那個控制項」，而這條路徑上
                                  沒有鈕——改動本身就是送出。
                                **它不掛 data-toast，失敗落在頁面上那條紅字**（5-2 頁首 `saveConfigError` 的
                                  `role="alert"`）：toast 說的是「剛剛按的那顆鈕怎麼了」，而這是**值載體**，
                                  同一批下拉常常連改好幾列，逐列各彈一顆 toast 會互相蓋掉；紅字留在畫面上，
-                                 而且能原樣帶出後端指名的那一段 detail。同頁「啟用／停用全部意圖判斷」是鈕、走 toast，
+                                 而且能原樣帶出失敗訊息裡指名的那一段。同頁「啟用／停用全部意圖判斷」是鈕、走 toast，
                                  兩條出口不混用——混用的話同一次失敗會同時彈 toast 與印紅字，等於兩套說法。#}
                             {% if tierless %}
                             <select data-capability="settings:write" class="form-control select-sm singleSelect priority-select" aria-labelledby="{{ priorityTableOwnerId }} priorityCat-{{ priorityTableInstance }}-{{ row.sn }} priorityHead-{{ priorityTableInstance }}">

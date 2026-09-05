@@ -1,21 +1,20 @@
-{# 分數門檻旁邊的「目前這把尺是什麼」＋兩個附帶狀態。5-2 的兩個門檻（QA 直答 `qa_direct_score_floor`、
-     可回答性 `grounding_score_floor`）逐字相同，故依 §3-3（同頁重複出現→切）抽成元件。
+{# 分數門檻旁邊的「目前這把尺是什麼」＋兩個附帶狀態。5-2 的兩個門檻（QA 直答、可回答性）
+     這一段逐字相同，故依 §3-3（同頁重複出現→切）抽成元件。
 
-     **尺不是由重排序器單獨決定**（這是規格最容易漏掉的一半，上游 GufoRAG chatbot 自己標了 ⚠️）。
-     判斷順序是 `GET /settings/rerankers` 契約的一部分：
-       enable_rerank == true                        ⇒ rerankers[] 裡 reranker_name 那一筆的 score_scale
-       enable_rerank == false 且 ratio == 0         ⇒ retrieval_backends[] 的 weaviate
-       enable_rerank == false 且 ratio == 1         ⇒ retrieval_backends[] 的 gufonet
-       enable_rerank == false 且 0 < ratio < 1      ⇒ 兩筆都成立 → 顯示端點的 mixed_scale_warning
-     切版沒有算術可以做那個分派，故使用頁把「算完的結果」當資料傳進來；React 端照三份目錄現算。
+     **尺不是由重排序器單獨決定**（這是規格最容易漏掉的一半）。四路分派**在這裡定**：
+       開了重排序                       ⇒ 用選中的那一顆重排序模型的分數尺
+       沒開重排序、資料來源比例 ＝ 0    ⇒ 用比例 0 那一端資料來源的分數尺
+       沒開重排序、資料來源比例 ＝ 1    ⇒ 用比例 1 那一端資料來源的分數尺
+       沒開重排序、比例在 0 與 1 之間   ⇒ 兩把尺同時成立 ⇒ 改畫混合檢索那一句警語
+     切版沒有算術可以做那個分派，故使用頁把「算完的結果」當資料傳進來；React 端照同一張表現算。
 
-     `scaleNoteText`／`scaleNoteMixed` 是**端點給的字串**，故不掛 data-i18n（上游自己走 Accept-Language，
-     再包一層就是同一句話有兩份譯文）。只有前綴與警語本身是切版自己的 chrome，那兩句才掛 i18n。
+     `scaleNoteText`／`scaleNoteMixed` 是**執行期填進來的資料、不是站內 chrome**，故不掛 data-i18n
+     （一顆節點只能有一個文字主人）。只有前綴與警語本身是切版自己的 chrome，那兩句才掛 i18n。
 
      參數（使用頁在 include 前 set，見 §3-2/§6）：
        scaleNoteId    —— 這一段的 id（必填，同頁唯一）；門檻輸入框用 aria-describedby 指過來
-       scaleNoteText  —— 目前生效那一把尺的 note 原文
-       scaleNoteMixed —— mixed_scale_warning 原文（不給＝不渲染那一態）
+       scaleNoteText  —— 目前生效那一把尺的說明原文
+       scaleNoteMixed —— 混合檢索那一句警語的原文（不給＝不渲染那一態）
        scaleNoteRecalibrated —— true＝演「分數尺剛才變了、門檻要重新校準」那一態（不給＝不渲染）。
          正式環境不會常駐這一句（React 端依「重排序模型／開關／資料來源比例有沒有變」決定要不要出現），
          所以元件庫展示頁把它 set 起來當唯一可見處（§5，同 platform.usageError 的處置）。
@@ -24,7 +23,8 @@
 <div class="flex-row column gap-4">
     <span class="text-gray" id="{{ scaleNoteId }}"><span data-i18n="settings.currentScoreScale">目前這把尺：</span>{{ scaleNoteText }}</span>
     {% if scaleNoteMixed %}
-    {# 第二態：混合檢索（0 < ratio < 1）時兩把尺同時出現在同一批結果裡，單一門檻無法同時對兩者成立。
+    {# 第二態：混合檢索（資料來源比例落在 0 與 1 之間）時兩把尺同時出現在同一批結果裡，
+         單一門檻無法同時對兩者成立。
          **開關是上面那個 if，不是 .hidden**：兩個一起掛的話，使用頁給了 scaleNoteMixed 也還是
          看不到——那就變成「參數收得下、畫面永遠不顯示」（§5 每個分支都要看得到）。 #}
     <span class="text-gray">{{ scaleNoteMixed }}</span>

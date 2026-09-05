@@ -5,31 +5,28 @@ titleKey: regression.runReportTitle
 pageHeading: 回歸執行報表
 permalink: 2-2-5_regressionRun.html
 ---
-{# 一次回歸執行的報表（SaaS 新需求）。逆向自 gufofaq-saas
-     的 `GET /qatest/runs/{run_id}`
-     （帶 `?baseline=<run_id>` 時多出比較區塊）與 `GET /qatest/runs/{run_id}/export`。
-     案例集與案例編輯在 2-2-4_regressionSuites（本頁由它的「看報表」連過來）。
+{# 一次回歸執行的報表。案例集與案例編輯在 2-2-4_regressionSuites（本頁由它的「看報表」連過來）。
 
      ## 比較有**五個**桶子，不是三個
 
-     判定的唯一依據是 `passed`（確定性斷言）：基準過、這次敗＝退步；反向＝修好了；相同＝無變化。
-     **判準完全不參與分類**（`_compare_runs`）：判準由 LLM 每次重打，讓它決定紅綠燈等於把評審的
+     判定的唯一依據是「有沒有通過」（確定性斷言）：基準過、這次敗＝退步；反向＝修好了；
+     相同＝無變化。**判準完全不參與分類**：判準由 LLM 每次重打，讓它決定紅綠燈等於把評審的
      抖動讀成回歸。
 
      另外兩個桶子存在的理由只有一個——**它們的預設歸宿都是「無變化」，而那是假綠燈**：
 
-       `not_compared`  只有一邊有結果（案例在基準之後才建立／某一次中斷前沒跑到）。
-                       一次跑到第 2 則就中斷的執行，若把另外 198 則算進「無變化」，
-                       報表會說「198 則沒有變化、0 退步」——最令人安心的假報表。
-       `judge_drift`   評審整批壞掉。這些案例的確定性判定**確實**沒變（分類是對的），
-                       但這一次的判準評不出來了。判別式讀的是**「評得出來 ⇄ 評不出來」的轉移**，
-                       而且問的是兩件分開的事：這一則**有沒有判準**（`judge_counts` 三態相加）、
-                       以及**有沒有評出來**（`unavailable` 的條數）——所以一則本來就沒有判準的案例
-                       不會被誤算進來。
+       **沒得比**    只有一邊有結果（案例在基準之後才建立／某一次中斷前沒跑到）。
+                     一次跑到第 2 則就中斷的執行，若把另外 198 則算進「無變化」，
+                     報表會說「198 則沒有變化、0 退步」——最令人安心的假報表。
+       **評審漂移**  評審整批壞掉。這些案例的確定性判定**確實**沒變（分類是對的），
+                     但這一次的判準評不出來了。判別式讀的是**「評得出來 ⇄ 評不出來」的轉移**，
+                     而且問的是兩件分開的事：這一則**有沒有判準**（那三格計數相加）、
+                     以及**有沒有評出來**（未評出的條數）——所以一則本來就沒有判準的案例
+                     不會被誤算進來。
 
      所以版面上這兩塊**不併進「無變化」，而且排在「無變化」前面**：200 則無變化之後的區塊
      等於沒有人會看到。頁面順序＝退步 → 沒得比 → 評審漂移 → 修好了 → 無變化；
-     API 的鍵序（regressed 置頂）是給人讀的約定，前端靠鍵名取值、不靠位置。
+     資料裡那幾個桶子的先後只是給人讀的約定，前端靠鍵名取值、不靠位置。
 
      ## 兩區：判準達成情形，與 RAGAS
 
@@ -38,51 +35,45 @@ permalink: 2-2-5_regressionRun.html
      看的人分不出是哪一條沒達成，而那正是他要找的東西。品質的趨勢線由 RAGAS 負責（固定指標，
      每一輪意義相同），所以這兩件事在版面上是**兩區**、不是同一區的兩欄。
 
-     逐條三態（`judge_results[].met`）：`true`＝達成（綠）、`false`＝未達成（紅）、
-     `null`＝沒評出來（黃）。摘要那三顆 `criteria_*` 的**單位是判準條數、不是案例數**
-     （一則案例可以有好幾條）——版面上要講出來，否則「達成 22」對一份 10 則的執行讀起來像壞掉。
+     逐條三態：達成（綠）、未達成（紅）、沒評出來（黃）。摘要那三顆計數的**單位是判準條數、
+     不是案例數**（一則案例可以有好幾條）——版面上要講出來，否則「達成 22」對一份 10 則的執行
+     讀起來像壞掉。
 
-     ⚠️ **`judge_results` 是空陣列與「三條全部 null」是兩件事，畫面不可以長得一樣**：前者是
-     這則本來就沒有判準（一顆 `regression.judgeNone` 標籤），後者要逐條畫黃燈。
+     ⚠️ **「這一則一條判準都沒有」與「三條判準全部沒評出來」是兩件事，畫面不可以長得一樣**：
+     前者是一顆 `regression.judgeNone` 標籤，後者要逐條畫黃燈。
 
-     ⚠️ **判準不參與通過與否**：`passed` 只由確定性斷言決定，一則案例三條判準全部未達成仍然
+     ⚠️ **判準不參與通過與否**：通過與否只由確定性斷言決定，一則案例三條判準全部未達成仍然
      可以是「通過」。這件事要在畫面上明講，否則看的人會覺得報表自相矛盾。
 
      ## RAGAS 不會自動算
 
      它是逐筆發 LLM 的離線評測：接在執行的串流尾巴會讓「案例跑完了」與「指標算完了」共用一條連線，
      而使用者要的第一個答案是前者；一次評測失敗不該汙染一份好的回歸結果；而且**可以重算**——
-     同一批問答紀錄再送一次就有新分數，不必把整套案例重跑。故由 `POST /qatest/runs/{id}/metrics`
-     觸發，那顆鈕**兩態都在**（沒算過要算、算過了可以重算）。
+     同一批問答紀錄再送一次就有新分數，不必把整套案例重跑。故由這一區自己那顆鈕觸發，
+     那顆鈕**兩態都在**（沒算過要算、算過了可以重算）。
 
      ## 這一輪到底用了什麼設定
 
-     `run.effective_config` 是實際送給問答引擎的那一份（開跑當下落庫），`run.overrides` 是這一次
-     明確指定的那幾個旋鈕。兩者缺一，報表就答不出「這一輪測的是不是設定檔目前的行為」——那正是
+     報表要同時拿到兩件事：**這一輪實際送去跑的那一份設定**（開跑當下就記下來），以及**這一次
+     明確指定的那幾個旋鈕**。兩者缺一，報表就答不出「這一輪測的是不是設定檔目前的行為」——那正是
      整份報表的前提，所以它自己一塊、緊接在執行身分後面（見「這一輪實際用的設定」）。
 
      ## 中斷過的執行
 
-     `status`／`summary.aborted_reason` 在頁首就要看得見，匯出鈕旁邊也要——那份 CSV 只有已經
-     跑完的那幾則，最後一列會附註（`_partial_notice`）。「一份少了列卻長得很完整的 CSV」
-     是這支端點最糟的失敗方式。
+     狀態與中斷原因在頁首就要看得見，匯出鈕旁邊也要——那份 CSV 只有已經跑完的那幾則，
+     最後一列會附註這件事。「一份少了列卻長得很完整的 CSV」是這個功能最糟的失敗方式。
 
      ## 權限：這一頁**不是「只要登入態」**
 
-     兩支端點都掛著同一把鑰匙——`get_run` 與 `export_run`（product）的簽章都是
-     `user: dict[str, int] = Depends(require_capability("settings", "read"))`，`export_run` 的
-     docstring 還逐字寫明「與 `GET /qatest/runs/{id}` 完全同一組資料，故同一把鑰匙
-     （`settings:read`）」（租戶的正式問答紀錄不在裡面，那是 `/history/export` 的另一把
-     `history`）。§4：**判準是「打了掛 `require_*` 的端點」，不是「會不會改狀態」**，讀取型
-     端點同樣要標、或像這裡一樣寫明查證結論——**不能什麼都不寫**：一片空白與「查了卻忘了標」
-     在 markup 上長得一模一樣。
-     **這一頁的鈕跨兩道閘，不是同一道**：比較與下載結果 CSV 打的是讀取型端點（`get_run`／
-     `export_run`），各自掛 `data-capability="settings:read"`；而**終止**（`abort_run`）與
-     **計算 RAGAS 指標**（`compute_run_metrics`）兩支的簽章都是
-     `Depends(require_capability("settings", "write"))`，各自掛 `settings:write`
-     ——`abort_run` 的 docstring 逐字寫明「與『開始跑』同一道閘：能發動的人就能停下它」。
-     四顆都在 `data-toast` 裡帶「權限不足」那一段的 warning：判準是「打了掛 `require_*` 的端點」，
-     讀取型端點同樣要標。頁面本身的載入（`get_run`）沒有控制項可標，故那一軸寫在這裡。
+     讀這份報表要 `settings:read`——**匯出與檢視是同一組資料，所以同一道閘**（租戶的正式問答
+     紀錄不在裡面，那一份走的是 `history`）。§4：**判準是「這個動作會不會撞到權限檢查」，
+     不是「會不會改狀態」**，唯讀的動作同樣要標、或像這裡一樣寫明查證結論——**不能什麼都不寫**：
+     一片空白與「查了卻忘了標」在 markup 上長得一模一樣。
+     **這一頁的鈕跨兩道閘，不是同一道**：比較與下載結果 CSV 是唯讀的，各自掛
+     `data-capability="settings:read"`；而**終止**與**計算 RAGAS 指標**兩顆是寫入，
+     各自掛 `settings:write`——終止與「開始跑」同一道閘：能發動的人就能停下它。
+     四顆都在 `data-toast` 裡帶「權限不足」那一段的 warning。頁面本身的載入沒有控制項可標，
+     故那一軸寫在這裡。
      ⚠️ 這也代表**導覽路徑上的每一站都要有 `settings:read` 才走得到**：入口是 2-2-4 的「看報表」，
      而 2-2-4 的寫入面是 `settings:write`（含 read）。 #}
 {% set breadcrumbItems = [
@@ -93,8 +84,8 @@ permalink: 2-2-5_regressionRun.html
 ] %}
 <div class="flex-row column gap-16">
     {% include "ui/breadcrumb/breadcrumb.html" %}
-    {# **網址少了執行編號**那一態：這一頁整份內容都靠 `run_id` 取，沒有它就什麼都畫不出來。
-         它不是「查不到那一份報表」（那是 404），是**連要查哪一份都不知道**——所以下一步是回案例集頁
+    {# **網址少了執行編號**那一態：這一頁整份內容都靠那顆編號取，沒有它就什麼都畫不出來。
+         它不是「查不到那一份報表」，是**連要查哪一份都不知道**——所以下一步是回案例集頁
          用「看報表」進來，不是重試。**這一句的繁中正本住在切版**（不是讓 React 自己造一顆 key），
          而這裡這一份 `.hidden` 的 markup 是它**位置與字色的規格**；長相的可見處在元件庫頁的
          「React 條件文案」區（§5）。 #}
@@ -107,8 +98,7 @@ permalink: 2-2-5_regressionRun.html
 <div class="block mt-16 flex-row column gap-16">
     <div class="flex-row justify-content-between align-items-center flex-wrap gap-16">
         {# ⓘ 說明：markup 同既有 info-btn 六件組（GUIDELINE §1-2 無 html 元件契約）。①出處：
-             本頁檔頭「示範刻意選一次中斷過的執行」一節，與 product 的
-             `RegressionRun`、product 的 `_run_out`。標題含執行期的
+             本頁檔頭「示範刻意選一次中斷過的執行」一節。標題含執行期的
              執行編號，ⓘ 因此掛在固定文字節點旁，說明本身不提示範編號。 #}
         <div class="flex-row align-items-center gap-8">
             <div class="text-md text-bold"><span data-i18n="regression.runNo">執行編號</span><span> #311</span></div>
@@ -118,18 +108,18 @@ permalink: 2-2-5_regressionRun.html
             </button>
         </div>
         <div class="flex-row align-items-center gap-8">
-            {# **終止鈕三態**（`status` × `run.abort_requested`）：
-                 · running ＋ abort_requested false → 「終止」可按
-                 · running ＋ abort_requested true  → 「終止中…」，禁用
-                 · finished／aborted／failed        → 整顆不畫
+            {# **終止鈕三態**（執行狀態 × 有沒有已經送出終止）：
+                 · 進行中 ＋ 還沒送出終止 → 「終止」可按
+                 · 進行中 ＋ 已經送出終止 → 「終止中…」，禁用
+                 · 完成／中斷／失敗       → 整顆不畫
                **中間那一態非畫不可**：終止是在案例邊界收手——按下去之後那一輪還會把手上這一則
-                 跑完（最長 `limits.case_timeout_seconds`）。少了它，按下去畫面上什麼都不會變，
-                 使用者只能再按一次，而第二次拿到 409，讀起來像「終止失敗」。
+                 跑完（最長就是「單則案例逾時」那一格的上限）。少了它，按下去畫面上什麼都不會變，
+                 使用者只能再按一次，而第二次會被擋下來，讀起來像「終止失敗」。
                本頁示範的是**已經中斷**的執行 ⇒ 依上表兩顆都不畫，故兩份 markup 都帶 `.hidden`：
                  它們在這裡是**位置與樣式的規格**，長相的可見處在元件庫頁的「React 條件文案」區（§5）。
-               閘門是 `settings:write`（`abort_run` 的簽章；docstring：「與『開始跑』同一道閘」）。
-               第三段是 409 `regression.abort_not_running`：已經結束的再按要說出當下狀態，
-                 **不可以回 200**——那會讓人以為自己剛終止了某個正在跑的東西。 #}
+               閘門是 `settings:write`——與「開始跑」同一道閘：能發動的人就能停下它。
+               第三段是「這一輪已經不是進行中」：已經結束的再按要說出當下狀態，
+                 **不可以當成成功**——那會讓人以為自己剛終止了某個正在跑的東西。 #}
             <button data-capability="settings:write" type="button" class="button button-red button-sm js-abort-run hidden" data-toast="已送出終止：這一輪會在跑完手上這一則之後停下來|權限不足，無法終止——請找貴租戶的管理者開通|這一輪已經不是進行中，沒有東西可以終止|終止失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.abortRun" data-toast-type="success|warning|warning|error|warning" data-i18n="regression.abortRun">終止</button>
             <button type="button" class="button button-red button-sm js-abort-requested hidden" disabled data-i18n="regression.abortRequested">終止中…</button>
             <span class="verdict-tag is-fail" data-i18n="regression.statusAborted">中斷</span>
@@ -164,15 +154,14 @@ permalink: 2-2-5_regressionRun.html
 {% include "components/help-modal/help-modal.html" %}
 
 {# ── 這一輪實際用的設定 ─────────────────────────────────────────────────────
-     `RegressionRun.effective_config`＝這一輪實際送給問答引擎的那一份 config（開跑當下落庫，
-     不是現在回頭去讀設定檔）。它與 `run.overrides`（這一次明確指定的那幾個旋鈕）缺一不可：
-     只有 overrides 看不出沿用來的值到底是什麼，只有 effective_config 看不出哪幾個是這一輪
-     刻意換掉的。所以這張表兩件事一起講——值 ＋ 來源。
+     **這一輪實際送去跑的那一份設定**（開跑當下就記下來，不是現在回頭去讀設定檔）。它與
+     **這一次明確指定的那幾個旋鈕**缺一不可：只有「指定了哪幾個」看不出沿用來的值到底是什麼，
+     只有「實際用的值」看不出哪幾個是這一輪刻意換掉的。所以這張表兩件事一起講——值 ＋ 來源。
 
-     列的是 product `_OVERRIDE_FIELDS`（＝TestConfig 的欄位扣掉 profile_no）**全部九個**，不只
-     2-2-4 畫得出來的六個——`資料來源比例`／`Agent 最大迭代次數`／`指派 Skill` 那三個那一頁沒有
-     輸入，所以永遠沿用，而「永遠沿用」也是這張表要回答的事。設定檔的其餘設定（內容政策、輸出
-     規則…）這一輪一律沿用，那支端點在結構上碰不到它們。
+     列的是可覆寫的旋鈕**全部九個**，不只 2-2-4 畫得出來的六個——`資料來源比例`／
+     `Agent 最大迭代次數`／`指派 Skill` 那三個那一頁沒有輸入，所以永遠沿用，而「永遠沿用」
+     也是這張表要回答的事。設定檔的其餘設定（內容政策、輸出規則…）這一輪一律沿用，
+     回歸這條路在結構上碰不到它們。
 
      列序：**兩輪不同的排最前面**（挑了基準時，「兩輪的設定差在哪」就是這張表要回答的問題），
      其次是這一次指定的（覆寫才是這一輪刻意換掉的東西），同一組之內＝提示詞 → 2-2-4 上其餘
@@ -201,7 +190,7 @@ permalink: 2-2-5_regressionRun.html
      （`#genReasoningEffort`／`#genSearchSelected`／`#genRatio`／`#profileAgentMaxIter`／`#skillsSelect`），
      逐一是 沿用模型預設／8／**0.0**／5／11——「沿用」的定義就是「跑的時候取被測設定檔當下的值」，
      兩頁對不上等於這一欄在說謊。⚠️ 最容易走鐘的是 `資料來源比例`：它必須是 **0.0**，因為 5-2 的
-     `#genRatio` 就是 0.0（與 product 的 `PROFILE_FIELD_DEFAULTS["data_source_ratio"]` 同值）
+     `#genRatio` 就是 0.0（那也是這一欄沒特別設過時的值）
      ——寫成 0.25 之類的數字，這一列就變成整張表上唯一自己編號碼的那一格。 #}
 {% set effectiveConfigRows = [
   { field: "prompt", labelKey: "comp.prompt", label: "提示詞", baseline: "你是一位知識庫問答助手，請依據檢索到的資料片段回答。", value: "你是一位專業的知識庫問答助手，回答必須僅依據檢索到的資料片段。資料不足時明確說明「無法從現有資料判斷」。", diffKey: "regression.effectiveDiffDiffer", diff: "不同", diffClass: "is-warn", sourceKey: "regression.overrideSet", source: "這一次指定", sourceClass: "is-warn" },
@@ -215,9 +204,8 @@ permalink: 2-2-5_regressionRun.html
   { field: "skill_ids", labelKey: "settings.assignedSkills", label: "指派 Skill", baseline: "11", value: "11", diffKey: "regression.effectiveDiffSame", diff: "相同", diffClass: "is-muted", sourceKey: "regression.overrideInherit", source: "沿用設定檔", sourceClass: "is-muted" }
 ] %}
 <div class="block mt-16 flex-row column gap-16">
-    {# ⓘ 說明：markup 同既有 info-btn 六件組。①出處：本頁檔頭「這一輪到底用了什麼設定」一節，
-         與 product 的 `_inherit_from_profile`、product 的
-         `RegressionRun.overrides`／`effective_config`。 #}
+    {# ⓘ 說明：markup 同既有 info-btn 六件組。①出處：本頁檔頭「這一輪到底用了什麼設定」一節
+         （沒指定的旋鈕沿用被測設定檔當下的值；實際用的那一份開跑當下就記下來）。 #}
     <div class="flex-row align-items-center gap-8">
         <div class="text-md text-bold" data-i18n="regression.effectiveSection">這一輪實際用的設定</div>
         <button type="button" class="info-btn" title="這一輪實際用的設定說明" data-i18n-title="help.regression.effectiveSection.title" data-open-modal="effectiveSectionHelpModal">
@@ -261,7 +249,7 @@ permalink: 2-2-5_regressionRun.html
             </tbody>
         </table>
     </div>
-    {# 基準那一輪沒有落下 effective_config 時：那兩欄整個不渲染，並在這裡大聲說出來
+    {# 基準那一輪沒有留下實際使用的設定時：那兩欄整個不渲染，並在這裡大聲說出來
          ——填滿九列「—」再逐列標「不同」等於憑空捏造一份差異。 #}
     <p class="text-red hidden" data-i18n="regression.effectiveBaselineMissing">基準那一輪沒有留下實際使用的設定，所以「兩輪的設定差在哪」這一次答不出來——不要把下面這張表讀成「兩輪設定相同」。</p>
     <p class="text-gray" data-i18n="regression.effectiveRestHint">這張表只列「執行這一套案例集」改得動的那幾個旋鈕。設定檔的其餘設定（內容政策、輸出規則、QA 直答、標籤過濾…）這一輪一律沿用，那支端點在結構上碰不到它們——把它們塞進覆寫會被擋成「未知的覆寫欄位」。</p>
@@ -280,30 +268,29 @@ permalink: 2-2-5_regressionRun.html
 {# ── 摘要 ───────────────────────────────────────────────────────────────────
      示範自洽（GUIDELINE §6）：通過 8 ＋ 未通過 2 ＝ 總數 10。
      判準的單位是**條數**：達成 22 ＋ 未達成 3 ＋ 未評出 2 ＝ 這一輪總共評了 **27 條**判準，
-     分佈在**有判準的 8 則**上；剩下 2 則沒有任何判準——#34（逐案例區那一列，`judge_results` 是
-     空陣列）與 #33（2-2-4 `regressionCases` 那一則誠實查無，斷言只有一條 `no_answer`；
+     分佈在**有判準的 8 則**上；剩下 2 則沒有任何判準——#34（逐案例區那一列，一條判準都沒有）
+     與 #33（2-2-4 `regressionCases` 那一則誠實查無，斷言只有一條 `no_answer`；
      它就在無變化那張表上）。
      ⚠️ 「有判準的則數」不可以算成 9：#33 的斷言清單在 2-2-4 就只有一條確定性斷言，把它算進去
      才湊得出 9，而那份清單是兩頁對得起來的，讀的人數得出來。
-     `criteria_unmet_cases` 是**案例編號**（不是條數）：3 條未達成落在 3 則不同的案例上
+     「有判準未達成的案例」那一串是**案例編號**（不是條數）：3 條未達成落在 3 則不同的案例上
      ——#35、#37、#39，恰好三則。
      逐案例區只列 4 則當版型示範，**不是比例縮影**。挑的是：
-     #34 沒有判準（`judge_results` 空陣列）、#35 與 #37 **通過但有判準未達成**（那是「判準不參與
+     #34 沒有判準（一條都沒有）、#35 與 #37 **通過但有判準未達成**（那是「判準不參與
      通過與否」唯一演得出來的地方，少了它那句話在畫面上沒有任何東西支持）、#39 三態同時出現。
      **這四則涵蓋了全部的未達成（3 條）與看得到的那一條未評出**：另一條未評出落在 #36（無變化那一桶、
      指到的三則都要真的在這張表上，否則點下去什麼都不會發生（§5）。
      #37 的判定不是隨手挑的：比較區已經把它釘成「兩次都過」（無變化那 8 則裡的一員），
      所以它只能是「通過」那一種。
 
-     「送出的前置對話」＝`summary.context_turns_sent`＝**跑完的那幾則**逐則相加
-     （`_summarize` 的 `sum(r["context_turns_sent"] for r in rows)`，而 `_replay_case` 寫進去的是
-     `len(turns) - 1`＝那一則的前置輪數）。母體與上界都在 2-2-4：這一套 12 則裡帶前置的有 4 則、
+     「送出的前置對話」＝**跑完的那幾則**各自的前置輪數相加。母體與上界都在 2-2-4：
+     這一套 12 則裡帶前置的有 4 則、
      逐則 5（#36）＋2（#39）＋1（#35）＋1，四則的 id 都 < 41（中斷點）⇒ 這一次都跑完了
      ⇒ 5＋2＋1＋1 ＝ **9**。這一格不是隨手填的數字：填別的值就會是一個整套案例集加不出來的和。 #}
 {% set criteriaUnmetCases = [35, 37, 39] %}
 <div class="block mt-16 flex-row column gap-16">
-    {# ⓘ 說明：markup 同既有 info-btn 六件組。①出處：product 的 `_summarize`
-         （`criteria_met`／`criteria_unmet`／`criteria_unavailable` 逐條相加，單位是判準條數）。 #}
+    {# ⓘ 說明：markup 同既有 info-btn 六件組。①出處：判準三態（達成／未達成／未評出）
+         逐條相加，單位是判準條數、不是案例數。 #}
     <div class="flex-row align-items-center gap-8">
         <div class="text-md text-bold" data-i18n="regression.summary">執行摘要</div>
         <button type="button" class="info-btn" title="執行摘要說明" data-i18n-title="help.regression.summary.title" data-open-modal="summaryHelpModal">
@@ -326,7 +313,7 @@ permalink: 2-2-5_regressionRun.html
         <p><span class="text-bold" data-i18n="regression.criteriaUnavailable">判準未評出：</span><span>2</span><span data-i18n="regression.unitAssertions"> 條</span></p>
     </div>
     <p class="text-gray" data-i18n="regression.criteriaUnitHint">上面三個數字的單位是「判準條數」不是案例數——一則案例可以有好幾條判準，所以它們的總和與跑完的案例數本來就不會相等。</p>
-    {# `criteria_unmet_cases` 是案例編號，那一串要能點過去（逐案例區同頁，故走同頁錨點）。
+    {# 這一串是案例編號，要能點過去（逐案例區同頁，故走同頁錨點）。
          沒有任何一則未達成時整段不渲染（存一串空值只是噪音）——那一態由 React 依陣列長度決定。 #}
     <p class="text-gray"><span data-i18n="regression.criteriaUnmetCases">有判準未達成的案例：</span>{% for c in criteriaUnmetCases %}{% if not loop.first %}<span data-i18n="common.listSep">、</span>{% endif %}<a href="#runRowName-{{ c }}">#{{ c }}</a>{% endfor %}</p>
 </div>
@@ -342,34 +329,33 @@ permalink: 2-2-5_regressionRun.html
 {% include "components/help-modal/help-modal.html" %}
 
 {# ── 第二區：RAGAS 品質指標 ─────────────────────────────────────────────────
-     **不會自動算**（`POST /qatest/runs/{id}/metrics`，`settings:write`）：RAGAS 是逐筆發 LLM 的
+     **不會自動算**（由這一區那顆鈕觸發，閘門 `settings:write`）：RAGAS 是逐筆發 LLM 的
      離線評測，接在執行的串流尾巴會讓「案例跑完了」與「指標算完了」共用一條連線，而使用者要的
      第一個答案是前者；一次評測失敗不該汙染一份好的回歸結果；而且**可以重算**——同一批問答紀錄
      再送一次就有新分數，不必把整套案例重跑。所以那顆鈕**兩態都在**，不是只在沒算過時出現。
 
-     ## 三顆指標的名字從契約端點取，不要寫死
+     ## 三顆指標的名字執行期取回來，不要寫死
 
-     `GET /qatest/contract` 的 `ragas_metrics`。理由不是潔癖：送給上游叫 `response_relevancy`、
-     收回來叫 `answer_relevancy`，是**同一顆指標的兩個名字**（product 的 `RAGAS_METRICS` 是
-     (外部名, 欄位名) 成對，契約端點吐的是**欄位名**）；抄成送出去那個名字的那一格不會報錯，
-     只會永遠畫「—」。切版這一份把它資料化成 `ragasMetricRows`，React 端改成照契約回來的順序渲染。
+     理由不是潔癖：**同一顆指標有兩個名字**——送去算的時候叫 `response_relevancy`、
+     拿回來的那一份叫 `answer_relevancy`；抄成送出去那個名字的那一格不會報錯，
+     只會永遠畫「—」。切版這一份把它資料化成 `ragasMetricRows`，React 端改成照讀回來的順序渲染。
 
      ## 三種「沒有數字」不可以混在一起
 
-       · `summary` **沒有 ragas 鍵** ＝ 還沒算過（不是「算出來是空的」）⇒ 畫「尚未計算」＋ 那顆鈕。
-       · 某一顆指標**一筆樣本都沒量到**時，那個鍵**整個不出現**（不是 0.0）⇒ 那一格畫「—」。
+       · **整份指標都不在** ＝ 還沒算過（不是「算出來是空的」）⇒ 畫「尚未計算」＋ 那顆鈕。
+       · 某一顆指標**一筆樣本都沒量到**時，那一顆**整個不出現**（不是 0.0）⇒ 那一格畫「—」。
          **絕不是「0.00」**：0 分是「很差」，沒量到是另一件事。
-       · `evaluator_models` 是**空陣列** ＝ 上游沒記錄 ⇒ 畫「—」。
+       · **評測模型是空的** ＝ 沒有記錄下來 ⇒ 畫「—」。
 
      ## 每一格各自寫出自己的 samples
 
-     不能只在區塊頂端寫一次 `chat_logs`：逐顆分母不同是正常的——某一筆沒有 contexts 就算不出
+     不能只在區塊頂端寫一次總筆數：逐顆分母不同是正常的——某一筆沒有檢索脈絡就算不出
      `context_precision`，那一顆的分母就少一格。示範故意讓兩顆分母不同（10／9），並讓第三顆
      整個缺席，三種長相各有一格演得出來。
 
-     ## evaluator_models 長度大於 1 要標出來
+     ## 評測模型不只一個時要標出來
 
-     一次執行可能拆成多批（每批 `RAGAS_BATCH_SIZE` 100 筆），每批可能落在不同的評測模型上。
+     一次執行可能拆成多批（每批 100 筆），每批可能落在不同的評測模型上。
      **離線評測的全部用途是把兩批拿來比，而只有同一個評測模型算出來的兩批才比得下去**——
      所以那一態要有一句紅字，不是靜靜把幾個模型名並排。
 
@@ -377,7 +363,7 @@ permalink: 2-2-5_regressionRun.html
 
      本頁演的是**已經算過**的那一態（指標表、逐顆分母、缺席那一格都要有可見處）；
      「尚未計算」與「多個評測模型」兩態是 `.hidden` 的規格 markup，長相的可見處在元件庫頁的
-     「React 條件文案」區（§5）。數字與本頁其他區塊自洽：跑完 10 則 ⇒ `chat_logs` 10、單批。 #}
+     「React 條件文案」區（§5）。數字與本頁其他區塊自洽：跑完 10 則 ⇒ 這一輪的問答紀錄 10 筆、單批。 #}
 {% set ragasMetricRows = [
   { name: "faithfulness", score: "0.94", samples: "10" },
   { name: "answer_relevancy", score: "0.87", samples: "9" },
@@ -385,8 +371,8 @@ permalink: 2-2-5_regressionRun.html
 ] %}
 <div class="block mt-16 flex-row column gap-16">
     <div class="flex-row justify-content-between align-items-center flex-wrap gap-16">
-        {# ⓘ 說明：markup 同既有 info-btn 六件組。①出處：product 的 `compute_run_metrics`
-             （與執行分開的三個理由）與 `RAGAS_METRICS`（外部名 ⇄ 欄位名）。 #}
+        {# ⓘ 說明：markup 同既有 info-btn 六件組。①出處：本頁檔頭「RAGAS 不會自動算」一節
+             （與執行分開的三個理由）與「同一顆指標有兩個名字」那一段。 #}
         <div class="flex-row align-items-center gap-8">
             <div class="text-md text-bold" data-i18n="regression.ragasSection">RAGAS 品質指標</div>
             <button type="button" class="info-btn" title="RAGAS 品質指標說明" data-i18n-title="help.regression.ragas.title" data-open-modal="ragasHelpModal">
@@ -395,46 +381,44 @@ permalink: 2-2-5_regressionRun.html
             </button>
         </div>
         {# ③ 直接送 API 的鈕 ⇒ `data-toast` 列全結果（§5）。第 3／4 段是那兩條錯誤路徑各自的畫面：
-             409 `regression.metrics_run_still_running`（還在跑不能算，分母下一刻就不對了）、
-             400 `regression.metrics_no_chat_logs`（這一輪一筆問答紀錄都沒有）。
-             **400 之後這一區仍然是「尚未計算」，不是「分數 0」**——那一態由下面那一句承擔。
-             閘門 `settings:write`（`compute_run_metrics` 的簽章）。 #}
+             還在跑不能算（分母下一刻就不對了）、這一輪一筆問答紀錄都沒有。
+             **被擋下來之後這一區仍然是「尚未計算」，不是「分數 0」**——那一態由下面那一句承擔。
+             閘門 `settings:write`。 #}
         <button data-capability="settings:write" type="button" class="button button-border button-sm js-compute-metrics" data-toast="指標已計算完成|權限不足，無法計算——請找貴租戶的管理者開通|這一輪還在跑，現在算指標的分母下一刻就不對了——等它結束再算|這一輪沒有留下任何問答紀錄編號，算不了指標|計算失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.computeMetrics" data-toast-type="success|warning|warning|warning|error|warning" data-i18n="regression.computeMetrics">計算 RAGAS 指標</button>
     </div>
-    {# 還沒算過那一態（`summary` 沒有 `ragas` 鍵）。**不是「分數 0」**：它是「這一輪還沒有人算過」。 #}
+    {# 還沒算過那一態（整份指標都不在）。**不是「分數 0」**：它是「這一輪還沒有人算過」。 #}
     <p class="text-gray m-0 js-ragas-not-computed hidden" data-i18n="regression.ragasNotComputed">這一輪還沒有算過 RAGAS 指標。按上面那顆鈕開始計算——它是逐筆發 LLM 的離線評測，會跑一段時間；算完之後也可以再算一次。</p>
     <div class="flex-row gap-24 flex-wrap">
         {% for m in ragasMetricRows %}
-        {# 每一格各自寫出自己的 samples（逐顆分母不同是正常的）。
-             `score` 缺席＝這一顆**整個鍵不出現**在 `metrics` 裡 ⇒ 畫「—」，**不是 0.00**
+        {# 每一格各自寫出自己的樣本數（逐顆分母不同是正常的）。
+             `score` 缺席＝這一顆指標**整個不在**那一份結果裡 ⇒ 畫「—」，**不是 0.00**
              （0 分是「很差」，沒量到是另一件事）。那一格的「量到 0 筆樣本」是**推導**出來的：
-             鍵不出現的原因就是一筆都沒量到，所以那個 0 不是抄來的數字、也不會與上游分岔。 #}
+             它不在的原因就是一筆都沒量到，所以那個 0 不是抄來的數字。 #}
         <p><span class="text-bold">{{ m.name }}</span><span data-i18n="common.labelSep">：</span>{% if m.score %}<span>{{ m.score }}</span>{% else %}<span>—</span>{% endif %}<span data-i18n="regression.ragasSamplesPrefix">（量到 </span><span>{{ m.samples }}</span><span data-i18n="regression.ragasSamplesSuffix"> 筆樣本）</span></p>
         {% endfor %}
     </div>
     {# 這一列是**分母與可信度**：分數本身沒有意義，除非同時說得出它由多少樣本算出來、有沒有算不
-         出來的批、有幾筆被剔除、以及這一批分數能不能拿去跟別輪比。逐格對回 `summary.ragas` 的一個鍵
-         （product 的 `compute_run_metrics` 寫進去的那一份）：
-           `chat_logs`        → 這一輪的問答紀錄（送出 N 筆）
-           `skipped.count`    → 實際評分＝`chat_logs - skipped.count`（**推導、不另抄一個數字**，§6）
-           `batches`          → 分批（**算出分數的批數**，不含失敗的）
-           `failed_batches.count` → 沒算出來的批次
-           `evaluator_models` → 評測模型
-           `scores_reproducible` → 分數可重現（三態，見下）
-           `llm_calls`／`llm_tokens` → 這一次評測燒掉多少
-       **`failed_batches` 非有不可**：`metrics` 變薄（某幾顆指標的分母特別小、或整個缺席）在畫面上
+         出來的批、有幾筆被剔除、以及這一批分數能不能拿去跟別輪比。這一排逐格是：
+           這一輪的問答紀錄 → 送出去幾筆
+           實際評分         → **推導**＝問答紀錄 − 被剔除的筆數（不另抄一個數字，§6）
+           分批             → **算出分數的批數**，不含失敗的
+           沒算出來的批次
+           評測模型
+           分數可重現       → 三態，見下
+           LLM 呼叫／LLM token → 這一次評測燒掉多少
+       **「沒算出來的批次」非有不可**：指標變薄（某幾顆的分母特別小、或整顆缺席）在畫面上
          與「這一輪樣本本來就少」逐字相同，而這一格是唯一說得出「有幾批根本沒算出來」的地方。
-         `0` 是**肯定答覆**（一批都沒失敗），不是「沒有這個欄位」——所以它恆渲染、不做成
+         `0` 是**肯定答覆**（一批都沒失敗），不是「沒有這個數字」——所以它恆渲染、不做成
          `{% if %}`（§6：值域含 0 的參數不得用真值判斷當渲染條件）。
-       **`skipped` 同理**：上游逐筆剔除算不了的那些（沒有答案、沒有 contexts、被輸出閘遮蔽…），
-         而剔除比例最高的正是設了輸入合規閘、最需要看指標的那群租戶。少了「送出 N 筆／實際評 M 筆」
-         這一對，指標看起來就是整輪的成績。
-       **`llm_calls`／`llm_tokens` 的 `null` 是「沒量到」不是 0**：批次評估不佔每日問答配額，
+       **「被剔除的筆數」同理**：算不了的那幾筆會逐筆被剔掉（沒有答案、沒有檢索脈絡、
+         被輸出閘遮蔽…），而剔除比例最高的正是設了輸入合規閘、最需要看指標的那群租戶。
+         少了「送出 N 筆／實際評 M 筆」這一對，指標看起來就是整輪的成績。
+       **LLM 呼叫／LLM token「沒有值」是「沒量到」不是 0**：批次評估不佔每日問答配額，
          這兩格是「授權額度用完了」與「有人一直在按計算指標」在畫面上唯一分得開的地方。
-         `null` 那一態由 React 把 `common.notCounted`（「未計數」）寫進同一顆資料槽——**不是畫 0、
-         也不是畫「—」**：0 是量到了而且是零，「—」是「還沒有值」，這一顆是「上游刻意沒去量」，
+         那一態由 React 把 `common.notCounted`（「未計數」）寫進同一顆資料槽——**不是畫 0、
+         也不是畫「—」**：0 是量到了而且是零，「—」是「還沒有值」，這一顆是「刻意沒去量」，
          三種的下一步不同（§6「這一格沒有數字不是一種狀態，是三種」）。
-       示範值與同頁自洽：跑完 10 則 ⇒ `chat_logs` 10、`skipped` 0（故實際評 10，與上面
+       示範值與同頁自洽：跑完 10 則 ⇒ 問答紀錄 10 筆、剔除 0（故實際評 10，與上面
          `faithfulness` 的 10 筆樣本對得上）、單批且沒有失敗批。 #}
     {% set ragasChatLogs = 10 %}
     {% set ragasSkipped = 0 %}
@@ -445,10 +429,10 @@ permalink: 2-2-5_regressionRun.html
         <p><span class="text-bold" data-i18n="regression.ragasBatches">分批</span><span data-i18n="common.labelSep">：</span><span>1</span></p>
         <p><span class="text-bold" data-i18n="regression.ragasFailedBatches">沒算出來的批次</span><span data-i18n="common.labelSep">：</span><span>{{ ragasFailedBatches }}</span></p>
         <p><span class="text-bold" data-i18n="regression.ragasEvaluator">評測模型</span><span data-i18n="common.labelSep">：</span><span>gpt-4o</span></p>
-        {# 三態，不是布林（§6）：`true`＝可重現、`false`＝同一批重跑分數會不同、`null`＝上游沒記錄。
-             **`null` 不可以畫成 `false`**：一個是「記錄了、不成立」，一個是「不知道」，
-             而後者不該被說成前者。示範演 `false`——product 的 `compute_run_metrics` 逐字寫著
-             預設部署上它就是 `false`（評測模型繼承預設、供應商把 temperature 丟掉）。
+        {# 三態，不是布林（§6）：可重現／同一批重跑分數會不同／沒有記錄下來。
+             **「沒有記錄」不可以畫成「否」**：一個是「記錄了、不成立」，一個是「不知道」，
+             而後者不該被說成前者。示範演「否」——預設情況下它就是這一態
+             （評測模型沿用預設，而那條路上取樣溫度不受控）。
              另外兩態的可見處在元件庫頁的「React 條件文案」區（§5）。
            **另外兩態不在這裡掛 `.hidden` 的兄弟節點**：三顆值節點相鄰時，英文模式下兩個看得見的
              會黏成一個字（§4-2「分隔空白的家在 key 的值裡」），而它們的位置與字色規格由這一顆
@@ -458,12 +442,12 @@ permalink: 2-2-5_regressionRun.html
         <p><span class="text-bold" data-i18n="regression.ragasLlmCalls">LLM 呼叫</span><span data-i18n="common.labelSep">：</span><span>128</span> <span data-i18n="settings.timesUnit">次</span></p>
         <p><span class="text-bold" data-i18n="regression.ragasLlmTokens">LLM token</span><span data-i18n="common.labelSep">：</span><span>341,200</span></p>
     </div>
-    {# `scores_reproducible === false` 那一態的**後果**：上面那一格只說得出「否」，說不出「所以呢」。
+    {# 「分數不可重現」那一態的**後果**：上面那一格只說得出「否」，說不出「所以呢」。
          這一句在示範上就是可見的（見上：預設部署就是這一態）。 #}
     <p class="text-red m-0" data-i18n="regression.ragasNotReproducibleNote">這一批分數不可重現：同一批問答紀錄再算一次，分數會與這一次不同，所以它不宜直接拿去和別一輪比較——調校前後那 0.03 的差可能純粹是評測模型的雜訊。要比就把兩輪在同一段時間內用同一個評測模型重算一次。</p>
     {# 多於一個評測模型那一態：不是靜靜把幾個模型名並排就算了。 #}
     <p class="text-red m-0 js-ragas-multi-model hidden" data-i18n="regression.ragasMultiModelWarn">這一批指標是由多個評測模型分批算出來的，彼此不該互相比較——離線評測的全部用途是把兩批拿來比，而只有同一個評測模型算出來的兩批才比得下去。</p>
-    {# `failed_batches.count > 0` 與 `skipped.count > 0` 兩態各自的後果。兩句都是 `.hidden` 的規格
+    {# 「有批次沒算出來」與「有筆數被剔除」兩態各自的後果。兩句都是 `.hidden` 的規格
          markup（示範演的是乾淨的那一輪），可見處在元件庫頁的「React 條件文案」區（§5）。
          **兩句不可合併**：一個是「有幾批整批沒算出來」（指標比看起來薄），一個是「有幾筆被剔除」
          （分母比你送出去的少），下一步也不同——前者重算一次，後者要回頭看那幾筆為什麼評不了。 #}
@@ -482,18 +466,17 @@ permalink: 2-2-5_regressionRun.html
 {% include "components/help-modal/help-modal.html" %}
 
 {# ── 上限與截斷 ─────────────────────────────────────────────────────────────
-     `summary.limits` 原樣攤在消費點。`upstream_memory_count` 是**上游的截斷**：chatbot 只把
-     最近 N 輪餵進提示詞，前置輪數 ＋ 本題超過它的案例，最早那幾輪不會出現在 LLM 眼前——
-     本引擎攔不住它，但逐案例點名，讓「這個追問案例好像沒有承接前文」有地方查。
+     這一次套用的各項上限原樣攤在消費點。**記憶輪數是對話那一側的截斷**：一輪問答只把最近
+     N 輪餵進提示詞，前置輪數 ＋ 本題超過它的案例，最早那幾輪不會出現在模型眼前——回歸這一側
+     攔不住它，但逐案例點名，讓「這個追問案例好像沒有承接前文」有地方查。
 
-     被點名的是誰**推導得出來**（§3-2）：product `_limits` 收的是
-     `len(context_turns) + 1 > memory_count` 的案例，母體是這一次排進佇列的全部 12 則
-     （不是只有跑完的那 10 則）。記憶輪數 5（＝設定檔的 `memory_count`，見 5-2 的 `#genMemory`）
-     ⇒ 門檻是「前置 ≥ 5 輪」。2-2-4 那一套逐則前置輪數是 5（#36）／2（#39）／1（#35）／1，
-     故這份清單恰好只有 **#36**（5＋1＝6 > 5）。
+     被點名的是誰**推導得出來**（§3-2）：判準是「前置輪數 ＋ 本題 > 記憶輪數」，母體是這一次
+     排進佇列的全部 12 則（不是只有跑完的那 10 則）。記憶輪數 5（＝設定檔那顆記憶輪數，
+     見 5-2 的 `#genMemory`）⇒ 門檻是「前置 ≥ 5 輪」。2-2-4 那一套逐則前置輪數是
+     5（#36）／2（#39）／1（#35）／1，故這份清單恰好只有 **#36**（5＋1＝6 > 5）。
      ⚠️ 這份清單**只能從 2-2-4 那一套的 id 與輪數推出來**：隨手寫兩個號碼（例如 `#7、#19`）
      的話，號碼不在這一套案例集的 id 範圍內，而依上式那份清單本來也可能只能是空的——
-     那就是拿這一段紅字演一個上游產不出來的狀態。 #}
+     那就是拿這一段紅字演一個產不出來的狀態。 #}
 {% set runLimitRows = [
   { labelKey: "regression.limitJudgeWhy", label: "評審理由字數上限：", value: "300", unitKey: "common.unitChars", unit: " 字" },
   { labelKey: "regression.limitCases", label: "單次執行案例上限：", value: "200", unitKey: "regression.casesUnit", unit: " 則" },
@@ -503,8 +486,8 @@ permalink: 2-2-5_regressionRun.html
   { labelKey: "regression.limitMemoryCount", label: "上游記憶輪數：", value: "5", unitKey: "regression.turnsUnit", unit: " 輪" }
 ] %}
 <div class="block mt-16 flex-row column gap-16">
-    {# ⓘ 說明：markup 同既有 info-btn 六件組。①出處：product 的
-         `_limits`（`upstream_memory_count` 是上游截斷，逐案例點名受影響的那幾則）。 #}
+    {# ⓘ 說明：markup 同既有 info-btn 六件組。①出處：本頁檔頭「上限與截斷」一節
+         （記憶輪數是對話那一側的截斷，逐案例點名受影響的那幾則）。 #}
     <div class="flex-row align-items-center gap-8">
         <div class="text-md text-bold" data-i18n="regression.limitsSection">這一次的上限</div>
         <button type="button" class="info-btn" title="這一次的上限說明" data-i18n-title="help.regression.limitsSection.title" data-open-modal="limitsSectionHelpModal">
@@ -533,8 +516,8 @@ permalink: 2-2-5_regressionRun.html
 {# ── 匯出 ───────────────────────────────────────────────────────────────────
      截斷必須在消費點看得見：中斷過／還在跑的執行，那份 CSV 只有已經跑完的那幾則。 #}
 <div class="block mt-16 flex-row column gap-16">
-    {# ⓘ 說明：markup 同既有 info-btn 六件組。①出處：product 的
-         `export_run`／`_partial_notice`（中斷過或還在跑的執行，匯出只有已跑完的那幾則）。 #}
+    {# ⓘ 說明：markup 同既有 info-btn 六件組。①出處：本頁檔頭「中斷過的執行」一節
+         （中斷過或還在跑的執行，匯出只有已跑完的那幾則）。 #}
     <div class="flex-row align-items-center gap-8">
         <div class="text-md text-bold" data-i18n="regression.exportSection">匯出</div>
         <button type="button" class="info-btn" title="匯出說明" data-i18n-title="help.regression.exportSection.title" data-open-modal="exportSectionHelpModal">
@@ -560,14 +543,13 @@ permalink: 2-2-5_regressionRun.html
 {% include "components/help-modal/help-modal.html" %}
 
 {# ── 基準比較 ───────────────────────────────────────────────────────────────
-     基準必須是同一個案例集的另一次執行（不同案例集的案例 id 天生對不起來，後端回 400 並
-     同時列出兩個案例集；跨租戶一律 404、訊息與「不存在」相同）。
-     沒有挑基準時後端**不回空的比較區塊**——空的「退步」讀起來是「比過了、沒有回歸」，
+     基準必須是同一個案例集的另一次執行（不同案例集的案例 id 天生對不起來，會被擋下來並同時
+     列出兩個案例集；別的租戶的執行一律當成「不存在」）。
+     沒有挑基準時**不會回一個空的比較區塊**——空的「退步」讀起來是「比過了、沒有回歸」，
      而實際上根本沒有比。故這一塊在 React 端是「挑了基準才渲染」。 #}
 <div class="block mt-16 flex-row column gap-16">
     {# ⓘ 說明：markup 同既有 info-btn 六件組。①出處：本頁檔頭「比較有五個桶子，不是三個」
-         一節，與 product 的 `get_run`（baseline 參數）／
-         `_compare_runs`（判定只看 `passed`，命中清單兩側並排）。 #}
+         一節（判定只看有沒有通過，命中清單兩側並排）。 #}
     <div class="flex-row align-items-center gap-8">
         <div class="text-md text-bold" data-i18n="regression.compareSection">與基準比較</div>
         <button type="button" class="info-btn" title="與基準比較說明" data-i18n-title="help.regression.compareSection.title" data-open-modal="compareSectionHelpModal">
@@ -596,7 +578,7 @@ permalink: 2-2-5_regressionRun.html
             <button data-capability="settings:read" type="button" class="button button-primary js-compare-baseline" data-toast="正在比較…|權限不足，無法比較——請找貴租戶的管理者開通|比較完成|不能拿這一次執行自己當基準|載入比較結果失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.compareBaseline" data-toast-type="info|warning|success|warning|error|warning" data-i18n="regression.compare">比較</button>
         </div>
     </div>
-    {# 基準那一次自己的狀態也要看得見，否則 partial 會被當成 complete。 #}
+    {# 基準那一次自己的狀態也要看得見，否則一次跑到一半的執行會被當成跑完的。 #}
     <p class="text-gray"><span data-i18n="regression.baselineStatePrefix">基準 </span><span>#310</span><span data-i18n="regression.baselineStateMid"> 的狀態是 </span><span data-i18n="regression.statusFinished">完成</span><span data-i18n="regression.baselineStateRan">，跑完 </span><span>12</span><span data-i18n="regression.casesUnit"> 則</span></p>
     {# 命中清單為什麼要兩側並排，以及它有上界這件事——講在比較區塊的入口，不是只寫在某一格裡。 #}
     <p class="text-gray" data-i18n="regression.hitsWhy">下面每一塊多了「基準引用」與「這一次引用」兩欄：退步最常見的原因就是「以前引 A、現在引 B」，而那只有兩側擺在一起才看得出來。逐筆命中只留文件身分與來源線索（不存全文），而且每一則有筆數上界——被夾掉時那一格會明說共幾筆，不要把它讀成「只引了這幾份」。</p>
@@ -620,32 +602,30 @@ permalink: 2-2-5_regressionRun.html
      示範自洽（§6）：令 c＝兩邊都有結果、a＝只有這一次有、b＝只有基準有。
      這一次跑完 10 ＝ c ＋ a、基準 #310 跑完 12 ＝ c ＋ b、沒得比 2 ＝ a ＋ b。
 
-     **a 只能是 0，這是結構事實、不是挑的**：`run_suite` 以 `.order_by(models.TestCase.id)` 逐則跑、
-     跑完一則才 `db.commit()`、`_abort` 先 `db.rollback()` ⇒ **任何一次執行的結果集都是案例集
-     id 序的前綴**；而有結果的案例刪不掉（`delete_case` 對 `RegressionResult` 有列時回 409
-     `case_has_results`）⇒ 案例集只會往後長，前綴之間必然一個包含另一個。
+     **a 只能是 0，這是結構事實、不是挑的**：執行照案例 id 升冪逐則跑、跑完一則才落庫、
+     中斷時手上那一則整個不算 ⇒ **任何一次執行的結果集都是案例集 id 序的前綴**；
+     而有結果的案例刪不掉 ⇒ 案例集只會往後長，前綴之間必然一個包含另一個。
      這一次跑到 41 就中斷（前綴＝id < 41 的 10 則），基準跑完全部 12 則 ⇒ 這一次的結果集 ⊂ 基準的
      ⇒ a＝0、b＝2 ⇒ **c ＝ 10**，三個桶子加到 10：退步 1 ＋ 修好 1 ＋ 無變化 **8**。
      b＝#41、#42（都在中斷點之後，這一次沒跑到）。
 
-     **代價寫在這裡**：`not_compared` 的另一個方向（`absent_in_baseline`＝「基準沒有它」，見
-     `_compare_runs` 的 `"absent_in_baseline" if missing_baseline else "absent_in_this_run"`）
-     **在本頁**演不到——單一中斷點下它與本頁互斥：要演它，得讓**基準**是被截短的那一次，
-     而本頁刻意演的就是「中斷過的執行」（那是唯一會讓報表說謊的狀態）。**兩個方向不可以同時
-     出現在這一頁**：那等於同時宣告兩次執行互相不包含，而前綴性質下產不出來。
-     （`regression.reasonAbsentInBaseline` 因此**不住在本頁、也不刪**：那個值上游真的回得出來
-     ——中斷之外還有一條路，基準跑完之後才新增的案例（product 的 e2e 案例 REG-B04），跟本頁的
-     前綴推導無關。枚舉少一個成員時該做的是**替它找一個渲染得出來的地方**，不是把 key 刪掉
-     讓消費端自己拼字串（§4-2 繁中是原文、留在字串出現的地方）。它的展示點在元件庫頁
-     `component.html` 的「React 條件文案」區——同一頁已經收著 2-2-4／2-2-5 那幾句同型的
-     「這一頁演不到的那一態」。**不要照抄下面 `reasonKey` 的值當成 not_compared 的全集**：
-     本頁兩列都是 `absent_in_this_run`，那是這一頁的推導結果，不是枚舉只有一個成員。）
+     **代價寫在這裡**：「沒得比」的另一個方向（**基準沒有它**）**在本頁**演不到——單一中斷點下
+     它與本頁互斥：要演它，得讓**基準**是被截短的那一次，而本頁刻意演的就是「中斷過的執行」
+     （那是唯一會讓報表說謊的狀態）。**兩個方向不可以同時出現在這一頁**：那等於同時宣告兩次
+     執行互相不包含，而前綴性質下產不出來。
+     （`regression.reasonAbsentInBaseline` 因此**不住在本頁、也不刪**：那一態真的發生得了
+     ——中斷之外還有一條路，基準跑完之後才新增的案例，跟本頁的前綴推導無關。枚舉少一個成員時
+     該做的是**替它找一個渲染得出來的地方**，不是把 key 刪掉讓消費端自己拼字串（§4-2 繁中是
+     原文、留在字串出現的地方）。它的展示點在元件庫頁 `component.html` 的「React 條件文案」區
+     ——同一頁已經收著 2-2-4／2-2-5 那幾句同型的「這一頁演不到的那一態」。
+     **不要照抄下面 `reasonKey` 的值當成「沒得比」的全集**：本頁兩列都是「這一次沒跑到」，
+     那是這一頁的推導結果，不是枚舉只有一個成員。）
 
      **切點一致性**：中斷在「案例 41 的第 1 輪」⇒ id ≥ 41 的案例這一次一則結果都沒有。所以退步／
      評審漂移／逐案例結果一律用 id < 41 的案例，#41／#42 只能落在「這一次沒跑到」。 #}
 {# 三個桶子的**案例 id 是推導出來的**（§6）：這一套 12 則、中斷點在 41 ⇒ 跑到的是 id 序的前 10 則
      ⇒ #31–#40（#41／#42 落在「沒得比」）。扣掉退步的 #39 與修好的 #38，無變化就是
-     #31、#32、#33、#34、#35、#36、#37、#40 這 8 則，列序照 `_compare_runs` 的 case_id 升冪。
+     #31、#32、#33、#34、#35、#36、#37、#40 這 8 則，列序照案例 id 升冪。
      其中 5 則的問題與別處同源、不可自由改字：#33 是 2-2-4 `regressionCases` 那一則誠實查無、
      #34／#35／#37／#39 是下面「逐案例結果」那四列、#36 是「這一次的上限」那段點名的 5 輪追問案例
      （所以它的問題就是一句承接前文的追問）。
@@ -659,10 +639,9 @@ permalink: 2-2-5_regressionRun.html
      ⚠️ 被夾掉那一格的兩個數字要與**真的列出來的檔名數**自洽：列了 2 個檔名就是「只列了前 2 筆」
      （真實資料的上界是幾十筆，切版列不完，所以示範用小數字；那個數字是資料不是規則）。 #}
 {# ## `count` 是桶子的**總則數**，不是這張表的列數——所以列數少於它時要說出來
-     `count` 對回 `_compare_runs` 那一桶陣列的長度（React 端＝`buckets.regressed.length`），
-     `rows` 是這張表**真的畫出來的**那幾列。單次執行上限 200 則（`MAX_CASES_PER_RUN`）⇒
-     「無變化」在真實資料上動輒上百列，畫面只列前幾則、其餘由「共 N 則」承載
-     ——這是版面決策，不是後端截斷（`GET /qatest/runs/{id}?baseline=` 一律回整桶）。
+     `count` ＝那一桶的總則數（React 端＝那一桶陣列的長度），`rows` 是這張表**真的畫出來的**
+     那幾列。單次執行上限 200 則 ⇒ 「無變化」在真實資料上動輒上百列，畫面只列前幾則、
+     其餘由「共 N 則」承載——這是版面決策，不是資料被截斷（比較結果一律回整桶）。
      推導：列出 M ＝ `rows.length`（模板數出來的，不是填的）、共 N ＝ `count`；M < N 才渲染截斷句。
      `count` 是**數字**不是字串：`rows.length < count` 要數值比較，字串會走隱式轉型。
      同頁「沒得比」的徽章走 `notComparedRows.length`（純推導）而不是資料欄——那一塊**不截斷**
@@ -688,8 +667,8 @@ permalink: 2-2-5_regressionRun.html
      截斷句那三顆 key（`regression.bucketListedPrefix`／`Mid`／`Suffix`）的 markup 留在下面當
      **位置與字色的規格**，可見示範移到元件庫頁的「React 條件文案」節——`{% if %}` 的條件在唯一
      使用頁上恆為某一值，等於沒有人看過它的長相（§5）。
-     （「引用的文件」那一格的 2／63 **不是**同一件事，別一起搬走：那是**後端**的截斷
-     （`_stored_hits` 夾在 `MAX_STORED_HITS_PER_RESULT`），真實資料上真的會發生，示範演得到。） #}
+     （「引用的文件」那一格的 2／63 **不是**同一件事，別一起搬走：那是**落庫當下就夾掉的**
+     ——逐則命中有筆數上界，真實資料上真的會發生，示範演得到。） #}
 {% set compareBuckets = [
   {
     key: "regressed", titleKey: "regression.bucketRegressed", title: "退步（本來對、現在錯）",
@@ -726,21 +705,19 @@ permalink: 2-2-5_regressionRun.html
 {# 這兩列**只能是同一個方向**（理由見上一段的前綴推導）：基準跑完 12 則、這一次停在 41，
      所以缺的那一邊永遠是「這一次」。號碼也跟著推導走——中斷點在 41 ⇒ 缺的恰好是 id ≥ 41 的
      #41 與 #42，一則不多一則不少（沒得比的計數 2 就是這樣來的，不是另外填的數字）。
-     列序照 `_compare_runs` 走訪結果的 case_id 升冪（同一份比較的其餘桶子也是），
-     故 #41 在 #42 前面。 #}
+     列序照案例 id 升冪（同一份比較的其餘桶子也是），故 #41 在 #42 前面。 #}
 {% set notComparedRows = [
   { caseNo: "#41", question: "鋼品出口的檢驗規定", reasonKey: "regression.reasonAbsentInThisRun", reason: "這一次沒跑到", detail: "中斷就發生在這一則的第 1 輪前置對話上（額度用罄），沒跑完的半套結果被 rollback 丟掉——它有沒有回歸，這一次量不到" },
   { caseNo: "#42", question: "鋁材的反傾銷稅率", reasonKey: "regression.reasonAbsentInThisRun", reason: "這一次沒跑到", detail: "這一次沒有跑到這則案例（執行在前一則就中斷了）——它有沒有回歸，這一次量不到" }
 ] %}
-{# `judge_drift` 在 `_compare_runs` 是**兩個陣列**（`{"unavailable_now": [...], "available_now": [...]}`），
-     成員固定兩個方向、不會多也不會少，故用 `[0]`／`[1]` 定址。判別式問的是**兩件分開的事**：
-     這一則有沒有判準（`judge_counts` 三態相加），以及有沒有評出來（`unavailable` 的條數）
-     ——所以一則本來就沒有判準的案例不會被誤算進來。
+{# 評審漂移是**兩個方向**（這次評不出來了／這次評得出來了），成員固定兩個、不會多也不會少，
+     故用 `[0]`／`[1]` 定址。判別式問的是**兩件分開的事**：這一則有沒有判準（那三格計數相加），
+     以及有沒有評出來（未評出的條數）——所以一則本來就沒有判準的案例不會被誤算進來。
      `count` 是**數字**不是字串（同上面 `compareBuckets.count`：同一個概念同頁兩種型別，
      React 端一邊 `Number()` 一邊直接比就是分岔的起點）。
      區塊徽章＝兩個方向相加，**不烤字面量**：同頁另兩處一個走 `.length`、一個走資料欄，
      這裡再寫死一顆 `1` 就是第三種寫法，而「涉及幾則案例」改了資料它不會跟著動（§6）。
-     `cases` 是**顯示字**（案例編號串；React 端是 `judge_drift.<方向>.map(...)`），沒有值時畫「—」、
+     `cases` 是**顯示字**（案例編號串；React 端由那個方向的案例陣列拼出來），沒有值時畫「—」、
      不留白（§6）。 #}
 {% set judgeDriftGroups = [
   { key: "unavailableNow", titleKey: "regression.driftUnavailableNow", title: "上次評得出來、這次評不出來", tagClass: "is-warn", cases: "#36", count: 1 },
@@ -755,8 +732,7 @@ permalink: 2-2-5_regressionRun.html
         {# ⓘ 只掛在「退步」這一桶：三桶共用同一份 markup（{% for %} 渲染），但只有這一桶需要
              額外的概念說明——它是本頁檔頭「這一份是整份報表的價值所在」那一句講的桶子；
              「修好了」與「無變化」各自已有的 `bucket.why` 一句已經完整交代自己是什麼，
-             重複掛一顆說明視窗只是同一句話再講一次。①出處：product 的 `_compare_runs`
-             （判定只看 `passed`）。 #}
+             重複掛一顆說明視窗只是同一句話再講一次。①出處：判定只看有沒有通過。 #}
         {% if bucket.key == "regressed" %}
         <div class="flex-row align-items-center gap-8">
             <h2 id="bucket-{{ bucket.key }}-title" class="text-md text-bold m-0" data-i18n="{{ bucket.titleKey }}">{{ bucket.title }}</h2>
@@ -831,8 +807,8 @@ permalink: 2-2-5_regressionRun.html
 {# ── 沒得比 ── 排在「無變化」之前：它的預設歸宿就是「無變化」，那正是假綠燈。 #}
 <section class="block mt-16 flex-row column gap-16" aria-labelledby="bucket-notCompared-title">
     <div class="flex-row align-items-center gap-10 flex-wrap">
-        {# ⓘ 說明：markup 同既有 info-btn 六件組。①出處：product
-             的 `_compare_runs`（`not_compared`：只有一邊有結果，刻意不算進無變化）。 #}
+        {# ⓘ 說明：markup 同既有 info-btn 六件組。①出處：本頁檔頭「比較有五個桶子」一節
+             （只有一邊有結果，刻意不算進無變化）。 #}
         <div class="flex-row align-items-center gap-8">
             <h2 id="bucket-notCompared-title" class="text-md text-bold m-0" data-i18n="regression.bucketNotCompared">沒得比（只有一邊有結果）</h2>
             <button type="button" class="info-btn" title="沒得比說明" data-i18n-title="help.regression.bucketNotCompared.title" data-open-modal="bucketNotComparedHelpModal">
@@ -888,8 +864,8 @@ permalink: 2-2-5_regressionRun.html
 {# ── 評審漂移 ── 同樣排在「無變化」之前，理由同上。 #}
 <section class="block mt-16 flex-row column gap-16" aria-labelledby="bucket-judgeDrift-title">
     <div class="flex-row align-items-center gap-10 flex-wrap">
-        {# ⓘ 說明：markup 同既有 info-btn 六件組。①出處：product
-             的 `_compare_runs`（`judge_drift`：讀「評得出來 ⇄ 評不出來」的轉移，不是分數高低）。 #}
+        {# ⓘ 說明：markup 同既有 info-btn 六件組。①出處：本頁檔頭「比較有五個桶子」一節
+             （評審漂移讀的是「評得出來 ⇄ 評不出來」的轉移，不是分數高低）。 #}
         <div class="flex-row align-items-center gap-8">
             <h2 id="bucket-judgeDrift-title" class="text-md text-bold m-0" data-i18n="regression.bucketJudgeDrift">評審漂移（判準評不出來了）</h2>
             <button type="button" class="info-btn" title="評審漂移說明" data-i18n-title="help.regression.bucketJudgeDrift.title" data-open-modal="bucketJudgeDriftHelpModal">
@@ -943,34 +919,30 @@ permalink: 2-2-5_regressionRun.html
      ui/accordion 的表格結構：摘要列 ＋ 下一列 tr.detail-row。展開後放這一則的期望（逐條講成
      人話）、實際答案、失敗的斷言（含引擎量到的實測值）與實際送出的前置對話輪數。
 
-     `context_turns_sent` ＝**這一則案例自己存著的前置輪數**，兩個產出點同一條公式：`_replay_case`
-     寫進結果的是 `len(turns) - 1`（`turns` ＝ `[t["human"] for t in context_turns] + [question]`），
-     `get_run` 的 `_result_rows` 那一支是 `len(case.context_turns or [])`——兩者恆等。所以這一格
-     **不是「重放時帶不帶得到」**：帶不到房間 id 的時候 `_replay_case` 是**整批 abort**
-     （`regrun.no_room_id`，理由逐字寫在 product 檔頭「沒有房間 id 的『多輪』其實是幾個互不
-     相干的單輪，那正是『前置對話設了但沒作用』」），不會靜靜送 0 輪回來。0 的唯一意思是
-     **這一則案例本來就是單輪**（`context_turns` 空）。
-     「勾了帶入前置對話卻拿到 0 輪」是**另一支端點**的事——建立案例那一支（`CaseFromLogIn.include_context`
-     ＋ `_context_note` 的 `if requested:` 分支），它的落點在 `components/case-from-log-modal`
-     的結果區，不在這一頁。
+     「送出前置對話」＝**這一則案例自己存著的前置輪數**，兩個產出點同一條算法、恆等。所以這一格
+     **不是「重放時帶不帶得到」**：接不上同一個聊天室的時候**整則中斷**——沒有聊天室編號的
+     「多輪」其實是幾個互不相干的單輪，那正是「前置對話設了但沒作用」，所以寧可中斷，
+     不會靜靜送 0 輪回來。0 的唯一意思是**這一則案例本來就是單輪**（沒有前置對話）。
+     「勾了帶入前置對話卻拿到 0 輪」是**建立案例**那一步的事，它的落點在
+     `components/case-from-log-modal` 的結果區，不在這一頁。
      那為什麼還要顯示實際輪數：它是「這一則到底扣了幾次額度、模型看到幾輪脈絡」的唯一去處，
-     而**上游記憶輪數的截斷**（見上面「這一次的上限」那一塊）也只能拿它來對。
+     而**記憶輪數的截斷**（見上面「這一次的上限」那一塊）也只能拿它來對。
      示範的 #34 是**單輪案例**（0 輪，與 2-2-4 的「#34 零輪前置」同源），#35 一輪、#39 兩輪
      ——三種都要看得到。
 
-     「判準」欄印的是 `judge_counts` 三格（達成／未達成／未評出，燈號與逐條那一份同一套）；
-     `judge_results` 是空陣列時整欄改印一顆「無判準」標籤。**三格恆常都畫、包含 0**：形狀固定，
+     「判準」欄印的是三格計數（達成／未達成／未評出，燈號與逐條那一份同一套）；
+     一條判準都沒有時整欄改印一顆「無判準」標籤。**三格恆常都畫、包含 0**：形狀固定，
      而且每一格都自帶文字標籤——顏色不是唯一的載體（§4）。
      逐條那一份在展開列裡：**要看得到每一條的原文**，只畫計數的話「3 條達成 1 條未達成」看不出
      是哪一條沒達成，而那正是看的人要找的東西。
-     `why` **只在未達成那一條顯示**：達成的那一條上游也可能給理由，但畫出來會讓那一格爆長，
-     而且沒有人在找它；未評出那一條同理不畫。上限 300 字（`max_judge_why_chars`）後端已經截過，
-     畫面不必再截，那一格的高度照這個上界留。
+     `why` **只在未達成那一條顯示**：達成的那一條可能也帶著理由，但畫出來會讓那一格爆長，
+     而且沒有人在找它；未評出那一條同理不畫。理由上限 300 字（＝上面「評審理由字數上限」那一格），
+     拿到手已經是截過的，畫面不必再截，那一格的高度照這個上界留。
 
      ## 命中文件那一列
 
-     `RegressionResult.hits` 逐筆只有**身分（檔名／文件 id）＋ 來源線索**（資料來源、索引、
-     第幾段、分數）——整份文件的欄位包不落庫（200 則 × 每則十幾筆命中把全文再存一份是幾十 MB）。
+     命中逐筆只有**身分（檔名／文件 id）＋ 來源線索**（資料來源、索引、第幾段、分數）
+     ——整份文件的欄位包不落庫（200 則 × 每則十幾筆命中把全文再存一份是幾十 MB）。
      這一列與比較表那兩欄是同一份資料的兩種粒度：那兩欄回答「以前引 A、現在引 B」，這一列回答
      「為什麼是這幾份」。
 
@@ -979,10 +951,9 @@ permalink: 2-2-5_regressionRun.html
      那是一個看起來正常的錯誤答案。示範這裡演第二種（#39 的第 3 筆命中），另外兩種在比較表那兩欄
      （#38 的基準零命中、#40 的這一次被夾掉）——三種用的是同一組 key。
 
-     **列序＝case_id 升冪**，與上方比較區同一條規則、同一個理由：`get_run` 的 `results` 逐列來自
-     `_result_rows` 的 `.order_by(models.RegressionResult.id)`，而結果列是 `run_suite` 依
-     `.order_by(models.TestCase.id)` 逐則跑、跑完一則才 commit 生出來的 ⇒ 結果列 id 序＝案例 id 序。
-     故 #34 → #35 → #39，不是「先放退步那一則」的敘事序（那是這支端點產不出來的順序，§6）。
+     **列序＝案例 id 升冪**，與上方比較區同一條規則、同一個理由：結果列是照案例 id 升冪逐則跑、
+     跑完一則才落庫生出來的 ⇒ 結果列的先後就是案例 id 的先後。
+     故 #34 → #35 → #39，不是「先放退步那一則」的敘事序（那是這份資料產不出來的順序，§6）。
      退步那一則要先看到的需求由上方「退步」桶子承擔，不靠這張表重排。 #}
 {% set runResultRows = [
   {
@@ -1071,8 +1042,8 @@ permalink: 2-2-5_regressionRun.html
 ] %}
 <div class="block mt-16 flex-row column gap-16 js-accordion">
     <div class="flex-row justify-content-between align-items-center flex-wrap gap-16">
-        {# ⓘ 說明：markup 同既有 info-btn 六件組。①出處：本頁檔頭「逐案例展開」一節，與 product 的
-             `get_run`（results 逐案例展開答案／斷言／主觀分）。 #}
+        {# ⓘ 說明：markup 同既有 info-btn 六件組。①出處：本頁檔頭「逐案例展開」一節
+             （逐案例展開答案／斷言／主觀分）。 #}
         <div class="flex-row align-items-center gap-8">
             <div class="text-md text-bold" data-i18n="regression.perCase">逐案例結果</div>
             <button type="button" class="info-btn" title="逐案例結果說明" data-i18n-title="help.regression.perCase.title" data-open-modal="perCaseHelpModal">
@@ -1122,8 +1093,8 @@ permalink: 2-2-5_regressionRun.html
                     {# 逐列辨識欄（§4）：展開鈕指到它。 #}
                     <td id="runRowName-{{ row.id }}">{{ row.question }}</td>
                     <td><span class="verdict-tag {{ row.verdictClass }}" data-i18n="{{ row.verdictKey }}">{{ row.verdict }}</span></td>
-                    {# `judge_counts` 三格恆常都畫（含 0）：形狀固定、每一格自帶文字標籤，
-                         顏色不是唯一的載體（§4）。`judge_results` 是空陣列時整欄換成一顆「無判準」
+                    {# 三格計數恆常都畫（含 0）：形狀固定、每一格自帶文字標籤，
+                         顏色不是唯一的載體（§4）。一條判準都沒有時整欄換成一顆「無判準」
                          ——那與「三條全部未評出」是兩件事，畫面不可以長得一樣（後者是三顆黃燈）。 #}
                     <td>{% if row.judgeCounts %}<span class="verdict-tag is-pass"><span data-i18n="regression.metShort">達成</span> {{ row.judgeCounts.met }}</span> <span class="verdict-tag is-fail"><span data-i18n="regression.unmetShort">未達成</span> {{ row.judgeCounts.unmet }}</span> <span class="verdict-tag is-warn"><span data-i18n="regression.judgeUnavailable">未評出</span> {{ row.judgeCounts.unavailable }}</span>{% else %}<span class="verdict-tag is-muted" data-i18n="regression.judgeNone">無判準</span>{% endif %}</td>
                     <td class="text-center">{{ row.latency }}<span data-i18n="regression.msUnit"> ms</span></td>

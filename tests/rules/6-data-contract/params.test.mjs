@@ -82,12 +82,11 @@ test("§6 step-flow：覆寫 stepFlowNodes 的頁面必須一起覆寫 stepFlowS
     assert.equal(missing.length, 0, fail(missing.map((f) => `${f}：set 了 stepFlowNodes 卻沒 set stepFlowSummary（摘要會沿用元件預設、與節點自打架）`)));
 });
 
-test("§6 分組 LLM 的 data-group 只能是後端認得的那幾組，且模型與思考深度兩顆成對", () => {
-    // `data-group` 是 React 端對回後端欄位的唯一線索：`model_name_<group>`／`reasoning_effort_<group>`
-    //（gufofaq-saas product 的 `PROFILE_FIELD_DEFAULTS` 與 `_MODEL_FIELDS`／`ProfileConfigIn`；
-    //  上游 GufoRAG chatbot 有同名欄位）。**拼錯不會有任何症狀**：兩顆 select 照樣渲染得出來，
-    // 存下去對不到任何欄位，畫面上完全看不出來 —— 只有白名單擋得住，所以這裡寫死那五組。
-    // 新增一組時：先確認後端收得下該欄位，再改這份清單（清單本身就是「有人確認過」的憑證）。
+test("§6 分組 LLM 的 data-group 只能是白名單裡的那五組，且模型與思考深度兩顆成對", () => {
+    // `data-group` 是 React 端唯一分得出「這兩顆旋鈕是哪一組的」的線索（模型與思考深度各一顆，
+    // 靠組名配對）。**拼錯不會有任何症狀**：兩顆 select 照樣渲染得出來，值卻對不回任何一組，
+    // 畫面上完全看不出來 —— 只有白名單擋得住，所以組名的值域寫死在這裡。
+    // 新增一組時：先確認那一組真的存在，再改這份清單（清單本身就是「有人確認過」的憑證）。
     const GROUPS = ["intent", "judge", "recommend", "skill", "tools"];
     // 兩顆 select 各自有自己的 hook：模型是 5-2 自己的 markup、思考深度來自
     // components/reasoning-effort-select 的 reasoningEffortGroup 參數 —— 兩邊各漏一半都只掉一顆選單，
@@ -131,13 +130,12 @@ test("§6 分組 LLM 的 data-group 只能是後端認得的那幾組，且模�
         ['<select class="form-control js-group-model" data-group="skill"></select><select class="form-control js-group-reasoning" data-group="skill"></select>',
             // 主回答那兩顆不掛 data-group、也不是 group hook，不該被掃到
             '<select class="form-control js-model-name" id="genModel"></select>']);
-    assert.equal(hits.length, 0, `分組 LLM 的旋鈕對不回後端欄位：\n${fail(hits)}`);
+    assert.equal(hits.length, 0, `分組 LLM 的旋鈕對不回任何一組：\n${fail(hits)}`);
 });
 
 test("§6 固定欄位槽目錄只有一份正本，附加資料的 key 都要在正本裡", () => {
-    // product 的 `SLOTS` 那 22 槽被抄成三份時（1-1-4 的欄位對應、
-    // components/file-edit-modal 的逐欄編輯、5-2 的欄位命名）——product 加第 22 槽那次要改三個地方，
-    // 就是那份重複的代價。§2 的白名單放寬收 {% from … import %} 之後三處都改吃正本
+    // 那 22 槽被抄成三份時（1-1-4 的欄位對應、components/file-edit-modal 的逐欄編輯、
+    // 5-2 的欄位命名）——加一槽要同時改三個地方，就是那份重複的代價。§2 的白名單放寬收 {% from … import %} 之後三處都改吃正本
     // `ui/field-slot-catalog`，這條測試守住兩件事：
     //   ① **沒有第二份槽清單**：任何檔案再宣告一個「≥20 個 key 的槽陣列」就是抄本復辟。
     //   ② 各消費點的**附加資料 map 的 key 必須都在正本裡**：打錯一個字（interal_note）不會壞掉、
@@ -191,16 +189,16 @@ test("§6 QA 直答判定：判否／未達門檻不得畫成錯誤紅，且未�
     }
     assert.ok(!/node\.decision[\s\S]{0,400}?verdict-tag is-fail/.test(src),
         "判定徽章不得出現 is-fail：判否與未達門檻是系統正確運作的結果，不是錯誤");
-    // ② 未知值原樣輸出——不是防禦性寫法：上游新增第六種結論時畫面要看得到那個生字
+    // ② 未知值原樣輸出——不是防禦性寫法：多出第六種結論時，畫面要看得到那個生字
     assert.match(src, /\{% else %\}\s*<span class="verdict-tag is-muted">\{\{ node\.decision \}\}<\/span>/,
         "少了 else：查表查不到的結論會靜靜消失");
     // ③ 這一段以 decision 為條件，不是以 hits（未命中時四個舊鍵都沒值，那正是問題所在）
     assert.match(src, /\{% if node\.decision %\}/, "判定區塊要以 decision 為條件");
     for (const cond of [...src.matchAll(/node\.hits or node\.score or node\.decidedBy or node\.floor[^%]*%\}/g)])
         assert.match(cond[0], /node\.decision/, "「這一列展得開」的條件要含 decision，否則未命中的節點展開是空的");
-    // ④ 判定層的比對值＝上游 `qa_direct` 的常數（寫成 "floor" 的話，分數門檻會落進 else 顯示「LLM 裁判」）
-    assert.match(src, /node\.decidedBy == "exact"/, "gate 值要與上游逐字相同");
-    assert.match(src, /node\.decidedBy == "score_floor"/, "上游是 score_floor，不是 floor");
+    // ④ 判定層的比對值是機器碼（寫成 "floor" 的話，分數門檻會落進 else 顯示「LLM 裁判」）
+    assert.match(src, /node\.decidedBy == "exact"/, "判定方式那一顆的值域是 exact／score_floor／llm");
+    assert.match(src, /node\.decidedBy == "score_floor"/, "分數門檻那一顆是 score_floor，不是 floor");
     assert.ok(!/node\.decidedBy == "floor"/.test(src), "「floor」是錯字：分數門檻會落到 else 顯示成 LLM 裁判");
     // ⑤ 名次與池子成對；沒有名次時只畫池子。reused 是徽章旁的小標，不是第六種徽章
     assert.match(src, /node\.matchedRank %\}[\s\S]{0,300}?qaRankMid[\s\S]{0,200}?\{% else %\}[\s\S]{0,200}?qaPoolPrefix/,
@@ -215,12 +213,12 @@ test("§6 QA 直答判定：判否／未達門檻不得畫成錯誤紅，且未�
     assert.match(gallery, /data-i18n="agent\.qaReusedFrom"/, "元件庫缺「重用自」小標的示範");
 });
 
-test("§6 可回答性判定與合規閘：三顆鍵的值域逐字對上游，示範值只能是機器碼", () => {
+test("§6 可回答性判定與合規閘：三顆鍵的值域是閉合詞彙，示範值只能是機器碼", () => {
     const src = read("src/_includes/components/step-flow/step-flow.html");
     // 母體＝step-flow 的節點陣列（元件內建示範 ＋ 每一份使用頁的覆寫），不是整份 src：
     // `verdict:`／`reason:` 這兩個欄名在別的資料集上也有（2-2-5 回歸案例的中文判定、
     // 5-10 未覆蓋原因的 camelCase 代號），拿整份 src 當母體會把它們一起判成違規，
-    // 而那條規則講的是 step-flow 這一顆元件的上游值域。
+    // 而那條規則講的是 step-flow 這一顆元件的值域。
     const NODE_BLOCK = /\{%-?\s*set\s+stepFlowNode(?:s|Rows)\s*=[\s\S]*?\]\s*%\}/g;
     const scanNodes = (rule) => {
         const hits = [];
@@ -243,10 +241,10 @@ test("§6 可回答性判定與合規閘：三顆鍵的值域逐字對上游，�
         return n;
     };
 
-    // ① 三顆鍵的每一個成員各有一顆 key，比對值與上游逐字相同。值域＝GufoRAG chatbot 的
-    //    `step_verdict_vocabulary`（`GroundingVerdict` 兩顆 ＋ `GATE_VERDICT_BLOCKED`）與
-    //    `GroundingReason` 五顆。**比對值打錯不會有任何症狀**：那個值會掉進收尾的 else、
-    //    畫面上原樣印出一個機器碼，看起來像「上游又多了一顆值」而不是「我們拼錯字」。
+    // ① 三顆鍵的每一個成員各有一顆 key。值域是下面 WANT 列的那幾顆——可回答性判定三顆
+    //    （generate／no_answer／blocked）、判定成因五顆，正本在 components/step-flow 的檔頭。
+    //    **比對值打錯不會有任何症狀**：那個值會掉進收尾的 else、畫面上原樣印出一個機器碼，
+    //    看起來像「值域又多了一顆」而不是「我們拼錯字」。
     const WANT = {
         verdict: {
             generate: "agent.verdictGenerate",
@@ -268,7 +266,7 @@ test("§6 可回答性判定與合規閘：三顆鍵的值域逐字對上游，�
             assert.equal(m[1], key, `${field}=${value} 掛錯 i18n key`);
         }
 
-    // ② 兩顆鍵都要有收尾的 else 原樣輸出（上游多一顆值時，畫面要看得到那個生字）
+    // ② 兩顆鍵都要有收尾的 else 原樣輸出（值域多一顆時，畫面要看得到那個生字）
     for (const field of ["verdict", "reason"])
         assert.match(src, new RegExp(String.raw`node\.${field} == "\w+" %\}[\s\S]{0,900}?\{% else %\}\s*<td>\{\{ node\.${field} \}\}</td>`),
             `${field} 少了 else：查表查不到的值會靜靜消失`);
@@ -295,13 +293,13 @@ test("§6 可回答性判定與合規閘：三顆鍵的值域逐字對上游，�
         for (const field of ["node.verdict", "node.reason", "node.blockedRules"])
             assert.ok(c.includes(field), `展開條件漏了 ${field}：只給那一欄的節點會整個 detail-row 不渲染`);
 
-    // ⑥ 示範值只能是**機器碼**（§6：每一欄都要對得回正本回應的一個欄位）。上游送的是閉合詞彙、
-    //    一個中文字都沒有；把「（素材足以回答）」那半句寫進值裡，切版看起來讀得懂，React 端
-    //    接上真 API 只剩一個機器碼——而那半句沒有任何一條路產得出來。
+    // ⑥ 示範值只能是**機器碼**（§6：每一欄都要對得回一個真的存在的欄位）。這幾顆鍵的值域是
+    //    閉合詞彙、一個中文字都沒有；把「（素材足以回答）」那半句寫進值裡，切版看起來讀得懂，
+    //    React 端接上真資料只剩一個機器碼——而那半句沒有任何一條路產得出來。
     const badLiteral = (line) => {
         const out = [];
         for (const m of line.matchAll(/\b(verdict|reason):\s*"([^"]*)"/g))
-            if (!/^[a-z][a-z_]*$/.test(m[2])) out.push(`${m[1]}: "${m[2]}" 不是機器碼（上游值域閉合、零自由文字）`);
+            if (!/^[a-z][a-z_]*$/.test(m[2])) out.push(`${m[1]}: "${m[2]}" 不是機器碼（這一欄的值域是閉合詞彙、零自由文字）`);
         return out.length ? out.join("；") : null;
     };
     const demoValues = countInNodes(/\b(?:verdict|reason):\s*"[^"]*"/g);
@@ -314,11 +312,10 @@ test("§6 可回答性判定與合規閘：三顆鍵的值域逐字對上游，�
     assert.equal(scanNodes(badLiteral).length, 0,
         `§6 示範值要與真實 API 同形：\n${fail(scanNodes(badLiteral))}`);
 
-    // ⑦ reason 與 state 綁死（GufoRAG chatbot 的 `grounding_step_status`／
-    //    `grounding_step_is_skipped`）：`judge_failed` ⇒ failed（fail-open 放行，verdict 反而是
+    // ⑦ reason 與 state 綁死：`judge_failed` ⇒ failed（判定器自己掛了、這一輪放行，verdict 反而是
     //    `generate`——只有「判定成因」那一列說得出「這一輪的閘門沒有生效」）、`gate_off` ⇒ skipped
-    //    （而 skipped 不帶 `duration_ms` ⇒ 時間欄留白）。配錯的那一筆在畫面上完全自洽，
-    //    只有比對上游才看得出來。
+    //    （閘門關著就沒跑過，沒跑過就沒有耗時 ⇒ 時間欄留白）。配錯的那一筆在畫面上完全自洽，
+    //    只有照這張對應表逐筆核才看得出來。
     const STATE_OF = { judge_failed: "failed", gate_off: "skipped" };
     const nodePairs = (line) => {
         const out = [];
@@ -329,7 +326,7 @@ test("§6 可回答性判定與合規閘：三顆鍵的值域逐字對上游，�
             if (!state || state[1] !== want)
                 out.push(`reason=${obj[1]} 的節點 state 應該是 ${want}，實際是 ${state ? state[1] : "（沒給）"}`);
             if (obj[1] === "gate_off" && !/\btime:\s*""/.test(obj[0]))
-                out.push("reason=gate_off ⇒ skipped ⇒ 上游不送 duration_ms，時間欄要留白");
+                out.push("reason=gate_off ⇒ skipped ⇒ 那一關沒跑過、沒有耗時，時間欄要留白");
         }
         return out.length ? out.join("；") : null;
     };
@@ -342,7 +339,7 @@ test("§6 可回答性判定與合規閘：三顆鍵的值域逐字對上游，�
             '{ label: "可回答性判定", state: "skipped", time: "", verdict: "generate", reason: "gate_off" },',
             '{ label: "可回答性判定", state: "completed", time: "5ms", verdict: "no_answer", reason: "score_floor" },']);
     assert.equal(scanNodes(nodePairs).length, 0,
-        `§6 reason 與 state 配成了上游產不出來的組合：\n${fail(scanNodes(nodePairs))}`);
+        `§6 reason 與 state 配成了不可能出現的組合：\n${fail(scanNodes(nodePairs))}`);
 
     // ⑧ 值域的每一個成員、兩條 else、blockedRules 的兩種有值形狀，都要有一頁演得出來（§5）。
     //    真實一輪只走得到其中一種組合，所以它們的家只有元件庫那份狀態目錄。
@@ -363,7 +360,7 @@ test("§6 5-2 內建工具：14 張卡包在同一個 .js-accordion 根裡，並
     // 兩顆批次鈕必須在同一個根內，否則 accordion.js 的 block.querySelector 找不到它們＝點了沒反應。
     const root = innerBlock(html, "js-accordion");
     assert.ok(root, "5-2 找不到 .js-accordion 根 —— 工具卡的開合會整組失效");
-    assert.equal(builtinToolCards(root).length, BUILTIN_TOOL_CARDS, `${BUILTIN_TOOL_CARDS} 顆內建工具＝同樣張數的卡（chatbot BUILTIN_TOOL_NAMES 全集；少一張就是那一顆工具在畫面上不存在）`);
+    assert.equal(builtinToolCards(root).length, BUILTIN_TOOL_CARDS, `${BUILTIN_TOOL_CARDS} 顆內建工具＝同樣張數的卡（內建工具的全集；少一張就是那一顆工具在畫面上不存在）`);
     assert.match(root, /class="[^"]*\bjs-expand-all\b/, ".js-expand-all 不在 accordion 根內");
     assert.match(root, /class="[^"]*\bjs-collapse-all\b/, ".js-collapse-all 不在 accordion 根內");
     // 三態說明：現行是逐工具開關，「未勾選任何工具＝全部啟用」那句敘述不成立
@@ -494,7 +491,7 @@ test("§6/§8 元件讀得到、卻沒有任何使用頁 set 的參數，都要�
     // 沒有這張表的話兩者分不出來，而分不出來的代價是「死參數永遠刪不掉、活契約隨時被誤刪」。
     // 每一筆都要寫出**誰會傳它**（或為什麼永遠不會有人傳）；下面三道衛生把表本身釘住。
     const UNSET_OK = new Map([
-        ["components/chart-box:chartBoxTitleText", "React 逐張圖傳標題（gufofaq-saas 的 `<ChartBox title={…}>`，同一頁兩張圖兩個標題）；切版只有一張圖、走預設"],
+        ["components/chart-box:chartBoxTitleText", "React 逐張圖傳標題（同一頁兩張圖要有兩個不同的標題）；切版只有一張圖、走預設"],
         ["components/chart-box:chartBoxTitleKey", "與 chartBoxTitleText 成對的 i18n key：那一顆是譯完的字（React 傳），這一顆是切版 data-i18n 用的；兩顆一起給或一起不給"],
         ["components/delete-modal:deleteTargetName", "**只在沒給 `deleteTargetId` 時才用得到的靜態退路**：生產頁一律走逐列的 id，落回這顆的只有元件庫展示頁那一份（見 platform-tenants-panel 檔頭）"],
         ["components/editable-block:editRows", "textarea 列數；三個實例都要 10 列，所以沒有人覆寫。留著是因為它是版位參數——下一個要 3 列的欄位不必改元件"],

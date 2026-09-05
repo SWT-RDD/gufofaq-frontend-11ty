@@ -13,18 +13,17 @@
          位置不是身分——刪一筆之後每一顆鍵整排前頂，React 的 key 與逐列動作會一起指錯人（§6 列鍵）。
        `label`（選填）＝那一筆的標題，**是使用者資料不是 chrome**，故不翻，也只有它在時才掛
          `title`（截斷時的完整字面；不掛空屬性，§4）。未給時走 fallback：「問答紀錄」接上序號。
-         這個 fallback **是 UI chrome 不是資料**（它是畫面自己生的名字，上游沒有這個字串），
+         這個 fallback **是 UI chrome 不是資料**（它是畫面自己生的名字，資料裡沒有這個字串），
          所以切版把它拆成「可翻的前綴（qa.recordFallbackPrefix）＋ 不翻的序號」，英文模式才不會
          在頁籤上冒出繁中。整串「問答紀錄1」當成一個 label 字面量傳進來時，chrome 與資料烤在一起，
          兩邊都失真。
          ⚠️ 序號那一半用 `loop.index` 是對的——它答的是「這是畫面上第幾顆」而不是身分；
          身分永遠走 `id`。
          **這條 fallback 由 `2-1_qaRecord`（第一筆）與 `2-2-1_singleTest`（第二筆）演，`2-2-3_abTest`
-         刻意三筆都有 label**：前兩頁的 label 走 gufofaq-saas product 的
-         `/history/rooms`（`title` ＝ `x.get("human_content", "") or ""`，空得出來）；2-2-3 的一列
-         不是聊天室而是一次 AB 比較，label 走 `ab_history` 的 `question`，那顆是
-         `AbTestRound.question: Mapped[str]`（建欄即 NOT NULL、無 server_default）且送出前先 trim
-         擋空——在那一頁留空是演一個上游產不出來的狀態（§6），理由寫在該頁檔頭。
+         刻意三筆都有 label**：前兩頁的一列是一間聊天室，label 取自室內第一則使用者訊息，
+         而那則訊息可以是空的 ⇒ 空 label 是走得到的狀態；2-2-3 的一列
+         不是聊天室而是一次 AB 比較，label 是那一次比較的問句，而問句**必填而且送出前先 trim
+         擋空**——在那一頁留空是演一個做不出來的狀態（§6），理由寫在該頁檔頭。
          **`qa.recordFallbackPrefix` 與 `qa.qaRecords` 繁中同字、刻意分兩顆**（§4-2「語意確實不同、
          英譯必須區別才分 key」，測試 DELIBERATE 白名單要成對登記同一句理由）：`qa.qaRecords` 是
          側欄／區塊的標題，講的是**整批**紀錄（英譯複數 “Q&A records”）；這一顆是**單一一筆**沒有
@@ -34,10 +33,8 @@
 
      ⚠️ **列鍵屬性全站統一到 `data-chat-sn`，值是 id**，三頁一模一樣。理由：①它是身分不是位置，
      符合 §6「列鍵是資料契約的一部分」；②它是唯一被**選擇器**依賴的屬性（`.tab[data-chat-sn]`），
-     換成別的名字會讓那條委派整條落空；③gufofaq-saas 的
-     `apps/web/components/QaRecordTabs/QaRecordTabs.tsx` 不讀任何 data-* 屬性（它走 React 的
-     `key={tab.key}`），所以這一顆屬性是切版單方面定下的轉換契約，定成 id 形狀不會與已出貨的
-     React 打架。
+     換成別的名字會讓那條委派整條落空；③它是這個 repo 單方面宣告的轉換契約——這一顆屬性的名字
+     與值域不由任何既有實作決定，在這裡定下一次就是正本。
      ⚠️ 反過來說，**不准出現以「位置」為值的列鍵**（例如 `data-record-index` 這種名字）：
      同一顆頁籤在不同頁長出兩種列鍵、其中一種還是陣列索引，正是這條規則要消滅的東西。
 

@@ -6,36 +6,33 @@
      與前台 faq-share-modal（單一連結、只複製）不同：此為登入態的多連結管理。
      建立＝直接送 API 的動作鈕（§5 矩陣③）：`data-toast` 列全結果，並掛 `.js-create-share` 當 React 綁定記號。
      ⚠️ `.js-create-share` 這顆 hook **不可省、也不可改名**：它要讀同窗的 `#shareExpiresDaysInput`
-     才組得出請求（不是一顆零輸入的鈕），而 gufofaq-saas 的 `ShareManageModal`（`create` 鈕與
-     它的單元測試）與 history-detail 的 e2e 都以它定址。
-     §5「hook 一經 gufofaq-saas 端（頁面／e2e）引用即凍結」——要對齊就在切版這邊補宣告，
-     不是去那邊改名或回收；
+     才組得出請求（不是一顆零輸入的鈕）。
+     §5「hook 名一經訂下就凍結」——它是這個 repo 對外宣告的定位契約，不因命名風格改名；
 
      每列複製鈕帶 .shareBtn（剪貼簿的**業務掛點**，與 faq-share-modal 的 .share-link-btn.shareBtn 同一族）；
      撤銷鈕每列目標需由業務 js 認列，保留 hook class（.js-revoke-share）。
 
-  **有效期與狀態**（product）：
-    · 建立：`POST /share` 收 `expires_days`（**兩道 400 不是一道**：`≤ 0` 回 `share.expires_days_positive`、
-      `> MAX_EXPIRES_DAYS` 回 `share.expires_days_too_large`——上界常數是 gufofaq-saas product 的
-      `MAX_EXPIRES_DAYS`；**留空＝永久**），回應帶 `expires_at`／`disabled`。
+  **有效期與狀態**：
+    · 建立：收一顆有效天數（**兩道驗證不是一道**：`≤ 0` 與「超過上限 3650」各是一種，
+      **留空＝永久**），建好之後那一條有自己的到期時間與撤銷狀態。
       本檔沒有 `<form>`（全站唯一在 `src/login.html`），`max` 屬性不觸發原生驗證也擋不住鍵入 ⇒
-      上界那道 400 是真實可達的結果路徑，兩道各佔一段 warning。
+      上界那一道是真實可達的結果路徑，兩道各佔一段 warning。
       ⚠️ 這個欄位**不可以不畫**：沒有它，每一條分享連結都會是永久有效的——而分享連結是全服務
       唯一免憑證就讀得到問答內容的東西。
-    · 另有 404 `notfound.chat_log`（`_own_log_or_404`：這一筆問答不在了、或不屬於這個租戶）——
+    · 另有「這一筆問答不在了、或不屬於這個租戶」——
       同一顆鈕的第三種結果，不折進 error（使用者換一筆就好）。
-    · 列表：`GET /share?log_id=` 只回**未撤銷**的連結（`disabled.is_(False)`），但**過期的仍會回**
-      （只比對 disabled），故列表要能顯示「已過期」；「已撤銷」是撤銷當下的即時態（下次重讀就不在清單裡了），
+    · 列表只回**未撤銷**的連結，但**過期的仍會回**
+      （撤銷與過期是兩件事），故列表要能顯示「已過期」；「已撤銷」是撤銷當下的即時態（下次重讀就不在清單裡了），
       切版把它演出來是為了讓那一列的鈕不再是一顆還能按的「撤銷」。
-      ⚠️ 若日後要看得到撤銷史，得由 product 讓 GET 回 disabled 的列（現況查不到）。
+      ⚠️ 撤銷史看不到：這份清單不列已撤銷的連結，要看得到得先讓它回得出那幾列。
     · 撤銷：破壞性且不可逆（軟刪後該連結永久失效），故加二次確認——沿用 components/delete-modal 的
       泛用確認版（deleteTitleKey／deleteMessageKey），文案用「撤銷」而不是「刪除」。
 
   參數：無（單一用途）。示範 4 列演完狀態的每一種：永久生效／有到期日生效中／已過期／剛撤銷。 #}
-{# 列鍵（§6）：撤銷會讓那一列從 `GET /share` 的結果消失（該支只回未撤銷的），所以每一筆要帶
-     身分欄位、逐列 id 不用 `loop.index`——`id` 就是 `DELETE /share/{share_id}` 吃的那一顆。
-   token 的長度也是推導值（同 5-8 既有處置）：`token = "shr_" + secrets.token_urlsafe(24)`
-     （gufofaq-saas product）⇒ 共 36 字元。這一欄整串顯示在可複製的
+{# 列鍵（§6）：撤銷會讓那一列從清單消失（清單只回未撤銷的），所以每一筆要帶
+     身分欄位、逐列 id 不用 `loop.index`——撤銷是逐列的，它吃的就是這顆 id。
+   token 的長度也是推導值（同 5-8 既有處置）：`shr_` 前綴 ＋ 32 字的亂數 ⇒ 共 36 字元。
+     這一欄整串顯示在可複製的
      `<input readonly>` 裡，長度不對，抄去做欄寬與換行測試的人第一眼就被誤導。 #}
 {% set shareRows = [
   { id: 401, url: "https://gufofaq.com/shared/shr_aB3xYz9Qle8sample0000shareaaa001", expires: "", state: "active" },
@@ -57,8 +54,8 @@
                          英文模式會原樣露出一整段繁中，而三張 i18n 的網都掃不到它（它不是 data-i18n
                          節點，等於沒有任何測試守得住）。共用 `shared.aiDraftNotice`，不另造第二份。 #}
                     <div class="share-text" data-i18n="shared.aiDraftNotice">本內容由 AI 系統初步產出，僅作為草稿或參考依據使用，尚未經人工確認或修改，若需進一步採用，請先檢閱並確認內容之正確性與完整性。</div>
-                    {# 有效天數：值載體（React 讀去組 POST /share 的 expires_days），留空＝永久。
-                         min=1 對齊後端「expires_days must be positive」（≤0 回 400）。 #}
+                    {# 有效天數：值載體（React 讀它去建立連結），留空＝永久。
+                         `min="1"` 對回「有效天數必須是正整數」那一道驗證。 #}
                     <div class="form-group row mobile-col mt-16">
                         <div class="label label-md">
                             <label for="shareExpiresDaysInput" class="control-label" data-i18n="share.expiresDays">有效天數</label>
@@ -67,20 +64,20 @@
                             <input type="number" id="shareExpiresDaysInput" class="form-control js-share-expires-days" min="1" max="3650" step="1"
                                 placeholder="留空＝永久有效" data-i18n-placeholder="share.expiresDaysPlaceholder" aria-describedby="shareExpiresDaysHint">
                             {# 三件套的第三件（§4）：被指到的節點裡要讀得到 min 與 max 兩個數字。
-                                 兩顆界線都是資料節點、不進譯文（§3-2）：1 對 `share.expires_days_positive`、
-                                 3650 對 `MAX_EXPIRES_DAYS`。 #}
+                                 **有效天數的值域是 1 – 3650**（在這裡宣告一次，就是正本），
+                                 兩顆界線都是資料節點、不進譯文（§3-2）。 #}
                             <span class="text-gray" id="shareExpiresDaysHint"><span>1 – 3650</span><span data-i18n="share.expiresDaysHint"> 天，留空＝永久有效。分享連結不需登入即可讀取；建議設定天數，到期後自動失效。</span></span>
                         </div>
                     </div>
-                    {# **末段是第二種 403**：product 的 `require_capability` 內部串著 `require_tenant_feature`，
-                         所以這顆鈕的 403 有兩種——`missing_capability`（收件人＝貴租戶的管理者，就是
-                         「權限不足，無法建立」那一段）與 `tenant_feature_disabled`（平台把整個租戶的
-                         `history` 關掉，**連租戶管理者也擋**，收件人＝平台管理員）。§4 逐字寫著「折進同一個
-                         屬性＝把兩種 403 說成同一件事」——一句「請找貴租戶的管理者」對第二種是錯的指示。
+                    {# **末段是第二種「被擋下來」**：能力閘門背後還串著租戶功能開關，
+                         所以這顆鈕擋得下來的方式有兩種——**這個帳號沒有這項能力**（收件人＝貴租戶的管理者，就是
+                         「權限不足，無法建立」那一段）與**整個租戶的問答紀錄功能被平台關掉**
+                         （**連租戶管理者也擋**，收件人＝平台管理員）。§4 逐字寫著「折進同一個
+                         屬性＝把兩種擋法說成同一件事」——一句「請找貴租戶的管理者」對第二種是錯的指示。
                        **一律追加在末位**（正典＝2-2-4 的「開始執行」）：段序是 React 端 `split("|")[n]`
                          的索引契約，插在中間會讓其後每一段整批位移。同一份彈窗的撤銷鈕（走
                          `components/delete-modal` 的 `deleteToast`，由 4-2／2-2-3 兩頁各 set 一份）
-                         照同一條加了同一段——同一支端點族的兩個動作，分支集合不得只補其中一顆（§5）。 #}
+                         照同一條加了同一段——同一項功能的兩個動作，分支集合不得只補其中一顆（§5）。 #}
                     <div class="flex-row mt-16 mb-16">
                         <button data-capability="history" type="button" class="button button-primary js-create-share" data-toast="連結已建立|權限不足，無法建立——請找貴租戶的管理者開通|有效天數必須是正整數|有效天數超過上限|找不到這一筆問答紀錄，請確認它還在|建立失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.createShare" data-toast-type="success|warning|warning|warning|warning|error|warning">
                             <img src="./images/icon_add_white.png" width="48" height="48" decoding="async" alt="" class="icon">
@@ -89,9 +86,9 @@
                     </div>
                     {# 每列＝連結唯讀框 + 到期時間 + 狀態 + 複製 + 撤銷。
                          到期時間是資料（不翻）；空值代表永久，用 chrome 的「永久有效」表示（§4-2 資料與 chrome 分開）。
-                         **只有已撤銷的列鎖住撤銷鈕**：那一列真的沒有東西可撤（`disabled` 已經是 True），
-                         按了什麼都不會發生。**已過期的不鎖**——同檔頭那一段講過，`GET /share` 只比對
-                         `disabled`，過期的列 `disabled` 仍然是 False，也就是它還在清單裡、而且撤銷是
+                         **只有已撤銷的列鎖住撤銷鈕**：那一列真的沒有東西可撤（它已經撤掉了），
+                         按了什麼都不會發生。**已過期的不鎖**——同檔頭那一段講過，清單只看撤銷與否，
+                         過期的列並沒有被撤銷，也就是它還在清單裡、而且撤銷是
                          **唯一能把它從清單上清掉的動作**。鎖住它等於讓那一列永遠留著。 #}
                     <div class="flex-row column gap-8">
                         {% for row in shareRows %}
@@ -99,8 +96,8 @@
                              故給每一列一顆 sr-only 的序號當辨識，input 與兩顆鈕都指它＋自己的欄意。
                              少了它，每一列的 input 全叫「分享連結」、複製與撤銷也逐顆同名，
                              報讀器聽不出正在複製或撤銷哪一條。 #}
-                        {# 列鍵（§6）：撤銷是**逐列**的（product 的
-                             `DELETE /share/{share_id}`），而 `shareRows` 本來就帶 id——不把它印在
+                        {# 列鍵（§6）：撤銷是**逐列**的（撤的是那一列自己的 id），
+                             而 `shareRows` 本來就帶 id——不把它印在
                              列上，React 端就只剩陣列 index，撤掉第 2 筆之後第 3 筆會打到第 2 筆。 #}
                         <div class="flex-row align-items-center gap-8 flex-wrap" data-share-id="{{ row.id }}">
                             <span class="sr-only" id="shareRowName-{{ row.id }}"><span data-i18n="modals.shareLink">分享連結</span> {{ loop.index }}</span>
@@ -113,7 +110,7 @@
                             <button type="button" class="button button-red button-sm js-revoke-share"{% if row.state == "revoked" %} disabled{% endif %} aria-labelledby="shareRowName-{{ row.id }} shareRevokeLabel-{{ row.id }}"><span id="shareRevokeLabel-{{ row.id }}" data-i18n="action.revoke">撤銷</span></button>
                         </div>
                         {% else %}
-                        {# GET /share 只回未撤銷的列，且一筆都還沒建過的問答初始態就是空的——
+                        {# 清單只回未撤銷的列，且一筆都還沒建過的問答初始態就是空的——
                              列上又有逐列撤銷，使用者撤得到零。空狀態是給 React 的分支規格（§5）。 #}
                         <div class="text-center text-gray" data-i18n="share.noLinks">這一則問答還沒有分享連結。用上面的「建立分享連結」產生第一條。</div>
                         {% endfor %}

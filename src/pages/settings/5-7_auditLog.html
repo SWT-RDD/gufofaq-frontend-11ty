@@ -14,36 +14,36 @@ permalink: 5-7_auditLog.html
     {% include "ui/breadcrumb/breadcrumb.html" %}
 </div>
 
-{# 查詢區：操作類型篩選（`ui/search-select`，對照後端 GET /audit?action= 精確比對）；此靜態頁列
+{# 查詢區：操作類型篩選（`ui/search-select`，送出去是**逐字精確比對**、不做模糊）；此靜態頁列
      代表性選項，React 端列完整操作類型清單。正式環境的 tbody 是 React 在執行期依查詢結果渲染的，
      切版這一側以 set＋for 資料化示範 3 筆。
      **本頁的七顆篩選控制項全部是「值載體」**（§5 組合矩陣②：值交給 React 讀去送查詢參數，
-     成敗看後端，click 委派也抓不到 select 的 change）——不是只有掛了 hook 的那一顆。
-     七顆是：`#auditActionSelect`（action）／`#auditUserSelect`（user_id）／`#auditGroupSelect`
-     （group_id）／`#auditStartDateInput`（start）／`#auditEndDateInput`（end）／
-     `#auditTenantInput`（tenant_id）／`#auditScopeAllInput`（scope=all）。
+     成敗由查詢鈕演，click 委派也抓不到 select 的 change）——不是只有掛了 hook 的那一顆。
+     七顆是：`#auditActionSelect`（操作類型）／`#auditUserSelect`（使用者）／`#auditGroupSelect`
+     （群組）／`#auditStartDateInput`（開始時間）／`#auditEndDateInput`（結束時間）／
+     `#auditTenantInput`（指定租戶）／`#auditScopeAllInput`（全部租戶）。
      **React 綁定記號擇一即可，class hook 或 id 契約都算**（§5 矩陣那一條，正典是 2-2-1 以
      `#knowledgeConfigSelect`／`#llmModelSelect` 綁定的那兩顆 select）：這幾顆各自有唯一 id，
      其中 `#auditTenantInput` 另外掛了 `.js-audit-tenant`——那**不是本頁的規矩**，是既成事實：
-     gufofaq-saas 的 `apps/web/app/(app)/audit/page.tsx` 已經引用它
-     （`className="form-control js-audit-tenant"`），§5「hook 一經 saas 端引用即凍結，改名＝跨 repo
-     遷移」⇒ 不為了七顆一致而補其餘六顆，也不為了風格一致而拿掉它。
+     那顆 hook 已經有人照它定址，而 §5「hook 名一經訂下就凍結，不因命名風格改名」
+     ⇒ 不為了七顆一致而補其餘六顆，也不為了風格一致而拿掉它。
      ⚠️ 所以這一段的說明**要寫成七顆的通則**：只替掛了 hook 的那一顆寫「值載體 → 只掛 hook class」，
      會讓同一頁對同一種控制項出現兩套說法——其餘六顆一顆 hook 都沒有，卻同樣是值載體。
-     **本頁那道閘是 `require_audit_access`（product），不是 `require_capability("audit")`**：
-     它是一道 **OR** 閘——`is_platform_auditor` **或**（訂閱 active ∧ 租戶開通 audit ∧（租戶管理者 ∨ audit token））。
-     上游 docstring 逐字說明為什麼不能直接用 `require_capability`：那支只對 `is_platform_admin` bypass，
-     於是 `platform_role='auditor'` 會被當成一般租戶使用者，而稽核員典型上不是任何租戶的 admin、
-     能力 token 為空集，結果是他連自己租戶的稽核都打不開。
+     **本頁那道閘不是單純的「有沒有 `audit` 能力」**：
+     它是一道 **OR** 閘——**平台稽核員**（平台角色 ∈ {auditor, admin}）
+     **或**（使用期有效 ∧ 租戶開通 audit ∧（租戶管理者 ∨ 持有 audit 能力））。
+     為什麼不能只看能力：純能力閘只對平台系統管理員放行，
+     於是平台**稽核員**會被當成一般租戶使用者，而稽核員典型上不是任何租戶的管理者、
+     能力集是空的，結果是他連自己租戶的稽核都打不開。
      四軸擺不下 OR，故本頁的分法是：**最寬的那一條掛區塊**（下面**兩個**欄位的 `data-platform-role="auditor"`
      ——租戶與「全部租戶」，數一數就是兩個，寫成別的數字就對不上 markup），
      **最窄的那一條掛控制項**（查詢鈕的 `data-capability="audit"`，＝租戶那一半）。
-     `data-capability="audit"` 這個字面對 `require_capability("audit")` 與 `require_audit_access` 長得一模一樣，
-     所以 dependency 的名字要寫在這裡——照字面看不出指錯了哪一支。
-     租戶（指定 tenant_id／全部租戶 switch 送 scope=all）那兩個篩選欄位要**平台角色**才動得了，
-     而那是 auditor 亦有的能力：product 的 list_audit 以 is_platform_auditor
-     （platform_role ∈ {auditor, admin}）判斷 scope=all／tenant_id，該檔自註「用 is_platform_admin
-     判斷會把唯讀稽核員一起排除掉」。故上列這幾欄一律掛 data-platform-role="auditor"（§5 兩級可見性），
+     `data-capability="audit"` 這個字面，套在純能力閘與上面那道 OR 閘上長得一模一樣，
+     所以 OR 的兩邊要逐字寫在這裡——照字面看不出這一頁走的是哪一種。
+     租戶（指定租戶／「全部租戶」開關）那兩個篩選欄位要**平台角色**才動得了，
+     而那是**稽核員也有的**：判斷這兩件事看的是「平台角色 ∈ {auditor, admin}」，
+     不是「是不是平台系統管理員」——後者會把唯讀稽核員一起排除掉。
+     故上列這幾欄一律掛 data-platform-role="auditor"（§5 兩級可見性），
      **它們都是值控制項（switch／input），不是動作鈕**，所以套的是 §5 兩級可見性的另一半：
      低於該級時**照渲染但 disabled**，不是不渲染——狀態要看得見才稽核得到。
      ⚠️ 兩個常見的寫反：說成「`data-platform-role` 決定是否渲染」，照著做出來的是這條規則的反面
@@ -59,10 +59,10 @@ permalink: 5-7_auditLog.html
              有 ~120 個選項（React 端列完整清單，此靜態頁列代表性選項），原生 select 只能一顆一顆
              捲——使用者知道自己要找「資料集」那一族，卻沒有任何方法問出來。使用者／群組兩顆在
              成員多的租戶上是同一個問題，故三顆同款。
-           **`#auditUserSelect`／`#auditGroupSelect` 的選項是執行期由 `GET /audit/filters` 填的**
-             （product `audit_filter_options`，閘與稽核列同一道
-             `require_audit_access`——不是 `require_admin`，否則有 `audit` 能力的一般成員與平台
-             稽核員拿到的會是空下拉，而空下拉與「這個租戶沒有群組」在畫面上一模一樣）。
+           **`#auditUserSelect`／`#auditGroupSelect` 的選項是執行期填進來的**
+             （取名冊那一趟過的是**與稽核列同一道閘**，不是「限租戶管理者」——否則有 `audit`
+             能力的一般成員與平台稽核員拿到的會是空下拉，而空下拉與「這個租戶沒有群組」
+             在畫面上一模一樣）。
              此靜態頁列示範選項。 #}
         <div class="flex-row gap-8 mobile-column sm-gap-16">
             <div class="form-group col-4-md col-12-sm">
@@ -72,7 +72,7 @@ permalink: 5-7_auditLog.html
                 <div class="field">
                     <select id="auditActionSelect" class="form-control searchSelect" data-placeholder="全部" data-placeholder-key="common.all">
                         <option value="" selected data-i18n="common.all">全部</option>
-                        {# 動作值對齊 product 實際寫入的 action 詞彙（record_audit 只有 login.success/login.failed，沒有裸 "login"）；
+                        {# 動作值就是稽核列真的寫得出來的那組詞彙（登入只有 login.success／login.failed，沒有裸的 "login"）；
                              示範列第 3 筆即 login.failed #}
                         <option value="login.failed" data-i18n="audit.actLoginFailed">登入失敗</option>
                         <option value="ask" data-i18n="audit.actAsk">問答</option>
@@ -88,7 +88,7 @@ permalink: 5-7_auditLog.html
                     <label for="auditUserSelect" class="control-label" data-i18n="audit.user">使用者</label>
                 </div>
                 <div class="field">
-                    {# **無效格由 markup 表達**（§3-2）：`scope=all` 時 `GET /audit/filters` 回空名冊
+                    {# **無效格由 markup 表達**（§3-2）：「全部租戶」開著時名冊回的是空的
                          （跨全部租戶時這一欄沒有值域可言），故這一欄與租戶欄同一態——本頁示範的是
                          開關 ON 的狀態，所以渲染成 `disabled`：照渲染但改不動，狀態要看得見。 #}
                     <select id="auditUserSelect" class="form-control searchSelect" data-placeholder="全部" data-placeholder-key="common.all" aria-describedby="auditUserHint" disabled>
@@ -104,12 +104,12 @@ permalink: 5-7_auditLog.html
                     <label for="auditGroupSelect" class="control-label" data-i18n="audit.group">群組</label>
                 </div>
                 <div class="field">
-                    {# hint 講的是**這個篩選到底在篩什麼**（§3-2 值域寫在填之前）：`AuditLog` 沒有存
-                         操作當下的群組歸屬，篩選是拿「目前的成員名單」去比對 `user_id`。換過群組的人，
+                    {# hint 講的是**這個篩選到底在篩什麼**（§3-2 值域寫在填之前）：稽核列沒有存
+                         操作當下的群組歸屬，篩選是拿「目前的成員名單」去比對操作者。換過群組的人，
                          他過去的操作會跟著他現在的群組跑。那是這個篩選的語意、不是缺陷——但沒有這句話
                          的話，看的人會把一份正確的結果讀成錯的。
-                       上游對應：product `list_audit` 的 `user_id IN (SELECT user_id FROM user_groups …)`，
-                         且 `scope=all` 時直接回 400（群組是租戶內的概念，跨租戶必然指不到東西）。 #}
+                       另一半：**「全部租戶」開著時帶群組會被直接擋下**（群組是租戶內的概念，
+                         跨租戶必然指不到東西），所以那時這一欄是死的。 #}
                     <select id="auditGroupSelect" class="form-control searchSelect" data-placeholder="全部" data-placeholder-key="common.all" aria-describedby="auditGroupHint" disabled>
                         <option value="" selected data-i18n="common.all">全部</option>
                         <option value="3">業務</option>
@@ -129,10 +129,9 @@ permalink: 5-7_auditLog.html
                          只保留 class 與 `.time` 的日曆圖示變體；
                          日期選擇交由 React 端的套件實作（同 components/data-time-filter 的做法）。
                        **本頁刻意不用 components/data-time-filter**：那一支把「時間區間最長 365 天、
-                         開始時間不得早於 365 天前」烤進它的常駐說明與兩個消費頁的 toast，依據是
-                         product 的 `_resolve_range`。稽核列打的是
-                         `GET /audit`，那一支**沒有**這兩條界線——調兩年前那一天的紀錄正是 ISO 證跡
-                         存在的理由。借用那個元件會在畫面上宣告一條上游根本不執行的限制。 #}
+                         開始時間不得早於 365 天前」烤進它的常駐說明與兩個消費頁的 toast。
+                         稽核查詢**沒有**這兩條界線——調兩年前那一天的紀錄正是 ISO 證跡
+                         存在的理由。借用那個元件會在畫面上宣告一條根本沒有人在執行的限制。 #}
                     <input type="text" id="auditStartDateInput" class="form-control time start-date" placeholder="請選擇開始時間" data-i18n-placeholder="settings.pleaseSelectStartTime" aria-describedby="auditTimeRangeHint">
                 </div>
             </div>
@@ -146,23 +145,23 @@ permalink: 5-7_auditLog.html
             </div>
             <div class="form-group col-3-md col-12-sm" data-platform-role="auditor">
                 <div class="label">
-                    {# 這一欄是 `tenant_id` 的落點（product，docstring「平台管理員可查指定租戶」）。
-                         §3-2：request 收得下的每個參數都要有落點——少了它，畫面就只做得到
+                    {# 這一欄是「指定要查哪一個租戶」的落點（有平台角色的人才查得了別人的租戶）。
+                         §3-2：查詢收得下的每個條件都要有落點——少了它，畫面就只做得到
                          「全部租戶或自己那一個」，指定單一租戶送不出去。
                          值載體 → 只掛 hook class（§5 矩陣②）。 #}
                     <label for="auditTenantInput" class="control-label" data-i18n="settings.tenant">租戶</label>
                 </div>
                 <div class="field">
-                    {# `.js-audit-tenant` 是**凍結**的 hook（gufofaq-saas 已引用，見檔頭）：不改名、
+                    {# `.js-audit-tenant` 是**凍結**的 hook（已經有人照它定址，見檔頭）：不改名、
                          也不因為同頁另外幾顆走 id 契約就把它拿掉。 #}
-                    {# **無效格由 markup 表達**（§3-2，不能只寫在 hint 裡）：上游 `list_audit` 是
-                         `if is_platform and scope == "all": pass`（不加租戶過濾）`else:` 才看 `tenant_id`
+                    {# **無效格由 markup 表達**（§3-2，不能只寫在 hint 裡）：查詢的優先序是「有平台角色
+                         ＋『全部租戶』開著 ⇒ 完全不加租戶過濾」，關掉之後才輪得到這一欄
                          ——「全部租戶」開著時這一欄**無條件被短路掉**，那一格是死的。本頁示範的是
                          開關 ON 的狀態，故這一欄同時渲染成 `disabled`（照渲染但改不動，狀態要看得見）。
                        hint 要講的是**誰蓋過誰**（開關蓋過這一欄），不是「什麼時候看誰」：後者在兩個
                          方向上都讀得通，於是它寫反了也一樣讀得通——「留空＝依開關決定」就是那種
-                         看起來沒問題、實際與上游優先序相反的句子。
-                       區間本身要讀得到（§4）：`min="1"` 是切版自己加的（上游 `tenant_id: int | None` 沒有 ge/le），
+                         看起來沒問題、實際與真正的優先序相反的句子。
+                       區間本身要讀得到（§4）：`min="1"` 是切版自己加的（送出去那一側對這個值沒有上下界），
                          更要說得出來。 #}
                     <input type="number" min="1" step="1" id="auditTenantInput" class="form-control js-audit-tenant" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" aria-describedby="auditTenantHint" disabled>
                     <span class="text-gray" id="auditTenantHint" data-i18n="audit.tenantHint">「全部租戶」開啟時本欄不生效，填了也會被忽略；關閉後才填得動。填租戶 id（≥ 1 的正整數），留空＝只看自己租戶</span>
@@ -196,67 +195,62 @@ permalink: 5-7_auditLog.html
 </div>
 
 {# 示範 3 筆已載入狀態；操作者/對象/詳情/IP 為假資料（§3-2，不翻）。
-     ⚠️ **每一列都要逐欄對回 `list_audit` 那一顆 action 真的寫得出來的形狀**（§6：示範資料的每一欄
-     都要對得回正本回應的一個欄位）。這張表上有三組欄位特別容易編出上游產不出來的組合：
-       ① **租戶欄與操作者欄同生同滅**：product 的兩處 `record_audit` 寫的是同一個三元式的兩半
-          （`tenant_id=user.tenant_id if user else None`、`user_id=user.id if user else None`）。
-          所以操作者是「—」（本表的語意逐字是「登入失敗查無操作者」，見下一段）＝走 `user is None`
-          那一條路 ⇒ 租戶欄必然也是「—」，不可以配一個租戶號碼。
+     ⚠️ **每一列都要逐欄對回「那一顆 action 真的寫得出來的形狀」**（§6：示範資料的每一欄
+     都要對得回一個真的存在的欄位）。這張表上有三組欄位特別容易編出產不出來的組合：
+       ① **租戶欄與操作者欄同生同滅**：這兩欄都取自「做這件事的那個帳號」，查不到帳號時兩欄
+          一起是空的。所以操作者是「—」（本表的語意逐字是「登入失敗查無操作者」，見下一段）
+          ⇒ 租戶欄必然也是「—」，不可以配一個租戶號碼。
           （帳號存在但被停用的那一條路不同：`detail` 會多一顆 `reason: "inactive"`，而且操作者查得到，
           那是另一種列。）本表因此只剩兩個租戶，跨租戶檢視照樣示範得到。
-       ② **`login.failed` 的對象欄一定有值**：那一支 action **無條件**帶 target，product 兩處都寫
-          `target_type=LOGIN_TARGET_TYPE, target_id=email`，而登入節流正是靠這一欄計數
-          （product 的 `LOGIN_TARGET_TYPE = "login"`，該處註解逐字說明「用 user_id 會讓
-          不存在的 email 永遠累積不到計數」）。`target_id` 是**正規化後的 email**（不是整數 id），
-          所以這一格畫不出「#數字」；它與 `detail` 裡的 email 重複是上游本來就這樣寫。
-       ③ **`ask` 那一列反過來：對象欄一定是「—」、`detail` 一定有 `query`**。`ask` 的
-          `record_audit`（product）只帶 `detail={"query": query, "tag": tag}`，**沒有
-          target_type/target_id**——編一顆 `chat_log #…` 出來就是憑空造了一個上游不寫的欄位；
+       ② **`login.failed` 的對象欄一定有值**：那一支 action **無條件**帶對象——型別是 `login`、
+          識別碼是**正規化後的 email**，而登入節流正是靠這一欄計數（拿使用者 id 當對象的話，
+          不存在的 email 永遠累積不到計數）。識別碼是 email 不是整數 id，
+          所以這一格畫不出「#數字」；它與 `detail` 裡的 email 重複，本來就是這樣寫的。
+       ③ **`ask` 那一列反過來：對象欄一定是「—」、`detail` 一定有 `query`**。那一支 action
+          只帶 `detail`（`query` 與 `tag`），**完全沒有對象**——編一顆 `chat_log #…` 出來就是
+          憑空造了一個不存在的欄位；
           而少了 `query`，這條路徑上最關鍵的欄位在切版裡等於不存在。
-          `query` 落在 product 的 `_project_detail` 分級投影的那一族鍵（`_QUERY_SCOPED_DETAIL_KEYS`）：
-          **不要抄它的成員**——上游自己註明每一種載著提問原文的鍵都要列進去，抄一份下來就是抄一份
-          會過期的舊清單（§3-2）。**遮蔽是兩道判準不是一道**：那一族鍵不看長度一律遮，其餘鍵走
-          allowlist（`_VERBATIM_DETAIL_KEYS`）＋長度上限（`_MAX_VERBATIM_DETAIL_CHARS`），未登記又過長者一樣被換掉——
+          **`detail` 的遮蔽是兩道判準不是一道**：載著提問原文的那一族鍵不看長度一律遮，
+          其餘鍵走 allowlist ＋ 長度上限，沒登記又過長的一樣被換掉——
           遮蔽面遠大於「一顆 query」。⚠️ 這一格另有一態：沒有 `history` 能力的稽核者看到的是
-          `audit.query_hidden`（上游把內容換成字數），那句話由 product 的 i18n 產生、不是本專案的譯文。
-     **「操作類型」不是假資料，是同一份封閉目錄**（product `record_audit` 寫進去的那組 action 詞彙）：
+          一句「內容已隱藏（N 字）」，那句話是連著資料一起送過來的、不是本專案的譯文。
+     **「操作類型」不是假資料，是同一份封閉目錄**（稽核列真的寫得出來的那組 action 詞彙）：
      上面的篩選下拉逐顆掛了 `audit.act*` 的 key，**列裡就不可以把同一組詞當純文字再烤一份繁中**
      ——那會讓英文模式下同一頁同時出現 "Create dataset" 的下拉與「建立資料集」的表格（§4-2／§6：
-     一份目錄只能有一份正本）。故每一列帶三件事：`action`＝上游字面（＝下拉的 `<option value>`，
+     一份目錄只能有一份正本）。故每一列帶三件事：`action`＝那顆詞彙的字面（＝下拉的 `<option value>`，
      兩邊對得起來才篩得到）、`actionKey`＋`actionLabel`＝與下拉同一顆 key 與同一句繁中。
-     此頁展示平台管理員的「全部租戶」檢視（上方 switch 開＝scope=all），故前 2 筆刻意分屬不同租戶
+     此頁展示平台管理員的「全部租戶」檢視（上方 switch 開著），故前 2 筆刻意分屬不同租戶
      （acme / globex），操作者信箱網域與各自租戶一致——§6：示範資料要演得到欄位的核心互動
      （租戶欄／全部租戶 switch 的存在意義就是跨租戶），全填同一租戶等於沒展示。
      第 3 筆是「查無帳號的登入失敗」，租戶與操作者兩欄同時是「—」（見上一段①）——它也只有在
-     `scope=all` 下才看得到：`tenant_id` 是 NULL 的列不會落在任何一個 `tenant_id == X` 的過濾裡，
+     「全部租戶」開著時才看得到：租戶是空的那些列不會落在任何一個「租戶＝某某」的過濾裡，
      所以那顆開關關掉時它會整列消失，而那正是這一列在這張示範表上的用處。
  #}
-{# 分頁是**伺服器端**的（product GET /audit 收 limit（1–1000，預設 100）與 offset）：換頁＝重新查詢，
+{# 分頁是**伺服器端**的（每頁筆數 1–1000、預設 100，另帶一顆跳過筆數）：換頁＝重新查詢，
      不是把一大包抓回來自己切。故「共 N 筆資料」必須是**伺服器總筆數**（total），不是這一頁渲染了幾列——
      顯示成本頁列數的話，「共 500 筆」看起來就像全部只有 500 筆，而稽核日誌是 ISO 證跡，
      「看不到更舊的」與「總數是錯的」都不能接受。
      total／perPage 先於列表宣告，計數列與 pager-row 吃同一個值（§6 同源）。
-     product 回得出這個數：`list_audit` 結尾是
-     `return {"audit_logs": items, "total_count": total}`（與 /history 同形）。
-     **總數只能走回應本體、不能走標頭**：BFF 的 `gufofaq-saas` `apps/web` 的 `PASSTHROUGH_RESPONSE_HEADERS` 是白名單（顆數不抄，§3-2），
+     總筆數與那一頁的列一起回得出來。
+     **總數只能走回應本體、不能走標頭**：中間那一層只放行白名單內的回應標頭，
      `X-Total-Count` 那類自訂標頭會被靜默剝掉，前端拿到的是「沒有這個標頭」而不是錯誤。 #}
 {% set total = 115 %}
 {% set perPage = 20 %}
-{# 租戶欄畫的是 **tenant_id（整數）**，不是名字：正本 product 的 list_audit 回的 items 只有
-     tenant_id，沒有 tenant_name（§6：正本給不出來的欄位不得為了讀起來順而編一個）。編一個名字出來，
-     React 接上真 API 只畫得出識別碼，而使用者正是據此做決定的；上面的租戶篩選要填的也正是這個 id。
-     同理，操作者那一欄的 email 後面補 **user_id**：稽核列以 id 認人（`user_id` 是 `list_audit` 的欄位、
-     email 只是它衍生出來的顯示值），欄位裡只給 email 的話那個識別碼全頁沒有出處。
-     要在這一欄顯示租戶名稱，前提是後端先在 `list_audit` 的 items 補出 `tenant_name`。 #}
-{# `id`（`list_audit` 的 items 第一欄）的落點是**列鍵**，不是一欄畫出來的數字：
+{# 租戶欄畫的是**租戶 id（整數）**，不是名字：稽核列本身只帶得出租戶 id，沒有租戶名稱
+     （§6：給不出來的欄位不得為了讀起來順而編一個）。編一個名字出來，
+     React 接上真資料只畫得出識別碼，而使用者正是據此做決定的；上面的租戶篩選要填的也正是這個 id。
+     同理，操作者那一欄的 email 後面補 **使用者 id**：稽核列以 id 認人（email 只是它衍生出來的
+     顯示值），欄位裡只給 email 的話那個識別碼全頁沒有出處。
+     要在這一欄顯示租戶名稱，前提是稽核列本身先帶得出租戶名稱。 #}
+{# 每一列的 `id` 的落點是**列鍵**，不是一欄畫出來的數字：
      這張表是伺服器端分頁的唯讀報表，逐列沒有任何動作，一個流水號對讀報表的人不回答任何問題
      （人是靠時間＋操作者＋動作認一筆的），畫成一欄只是多一格永遠在捲的寬度。
      但 React 的 `.map()` 需要一把穩定的鍵，而**位置不是身分**——這張表換頁就整批換一批列，
      以 `loop.index` 當鍵會讓上一頁的第 1 列與下一頁的第 1 列變成同一顆 key（§6 列鍵）。
      故落在 `<tr data-audit-id>`（同 5-6-2 的 `data-mcp-id`、5-6-1 的 `data-tenant-id`）。
-     示範 id 隨時間降冪（`created_at.desc()` 是這支端點的 order_by，而 id 是自增主鍵）。 #}
+     示範 id 隨時間降冪（列序是建立時間降冪，而 id 是自增主鍵）。 #}
 {# 第一列的 `target` 用 `#4207` 這種全站沒被佔用的號碼，**不可以借用示範租戶目錄裡的 id**：
-     `datasets.id` 是**全域主鍵**（`models.Dataset` 的 id，tenant_id 只是欄位），而 #12 已經是
+     資料集 id 是**全域主鍵**（租戶只是它的一個欄位），而 #12 已經是
      示範租戶的「2026 新制問答」（目錄正本見 3-5 的 `healthScanDatasets`）。這一列是**別的租戶**
      （tenantId 12）的建立事件，借了那顆 id 就等於在說兩個租戶共用同一筆資料集。
      跨租戶檢視本來就會看到不在自己目錄裡的名字——那正是這一頁要示範的事。 #}
@@ -295,8 +289,8 @@ permalink: 5-7_auditLog.html
     }
 ] %}
 {# ⓘ 說明：markup 同既有 info-btn 六件組（GUIDELINE §1-2 無 html 元件契約）。
-     **這一顆 ⓘ 的存在理由是替兩顆界線收留落點**：`AUDIT_LIMIT_GROUPS`（product）經
-     `GET /audit/limits` 投影出 `paging.limit` 與 `paging.offset`，而這一頁的每頁筆數走 `PagerRow`
+     **這一顆 ⓘ 的存在理由是替兩顆界線收留落點**：分頁的兩顆界線（每頁筆數、跳過筆數）
+     執行期讀得到當下生效的值，而這一頁的每頁筆數走 `PagerRow`
      的固定選項、頁碼是 js 算出來的，兩顆數字在頁面上沒有任何一格可見文字對得到
      （§3-2「界線的正本若是一個 group，同 group 的姊妹界線要一起檢查有沒有落點」）。
      ③那張表就是它們的落點：`bound` 是獨立節點、不烤進譯文。
@@ -314,18 +308,18 @@ permalink: 5-7_auditLog.html
 {% set helpModalWhatKey = "help.audit.list.what" %}
 {% set helpModalWhat = "這一區列出這個範圍內每一筆會留下軌跡的動作：誰、在什麼時候、對哪一個對象做了什麼，以及當時的來源 IP 與用戶端。它是唯讀的證跡，任何人都改不動也刪不掉；分頁是伺服器端的，換一頁就是重新查一次，所以上面那個「共 N 筆」講的是符合條件的總筆數，不是這一頁列了幾筆。稽核軌跡沒有「查不到那麼久以前」的限制——找不找得到一筆舊紀錄，取決於它被保留了多久。" %}
 {% set helpModalStateItems = [] %}
-{# ③ 這一區的所有數字：`GET /audit/limits`（product 的
-     `AUDIT_LIMIT_GROUPS.paging`）。`bound` 是資料節點，不進 `labelKey`／`effectKey` 的譯文。
-     兩顆常數的出處：`AUDIT_PAGE_LIMIT_MAX`（1000）與 `AUDIT_OFFSET_MAX`（2000000000）。
-     `offset` 那一顆**擋的不是業務語意**（不是「翻不到那麼後面」），而是算式的值域——
-     那顆常數旁邊逐字寫著：無界的 offset 會被原樣帶進 SQL 的 OFFSET，而 bigint 之外是一句
+{# ③ 這一區的所有數字：分頁的那兩顆界線，執行期讀得到當下生效的值。
+     `bound` 是資料節點，不進 `labelKey`／`effectKey` 的譯文。
+     兩顆界線在這裡宣告一次，就是正本：每頁筆數上限 1000、跳過筆數上限 2000000000。
+     跳過筆數那一顆**擋的不是業務語意**（不是「翻不到那麼後面」），而是算式的值域——
+     無界的話這個數字會被原樣帶進資料庫的分頁子句，超出整數值域就是一句
      使用者看不懂的資料庫錯誤。所以「超過時會怎樣」寫的是那件事，不是「看不到更舊的」。
    ⚠️ **`bound` 的寫法全站只有一種——半形短破折號（–）兩側各一個空白、不加千分位。**
      全站每一格 `bound` 都是這個形狀（`1 – 1000`／`≥ 8`／`2 – 5000`／`≤ 200`／`≤ 50000`／`≤ 30`…），
      寫成 `1–1000`（少了空白）或 `0–2,000,000,000`（多了千分位）就是這一頁自己開一種格式。
      為什麼是「其餘改成千分位」的反面：全站**每一顆界線／上限數字**在常駐資料節點裡都是裸寫的
      （`<span>20000</span>`／`50000`／`4096`／`1024`…，無一例外），帶千分位的只出現在**示範資料**
-     （筆數、token 數、毫秒）——那是後端會格式化的值，不是契約界線。界線這一族跟著契約走，
+     （筆數、token 數、毫秒）——那是送進來時就格式化好的值，不是契約界線。界線這一族跟著契約走，
      所以裸寫；而且 `bound` 是**同一個字串同時服務兩種語言**（它不掛 data-i18n），千分位分隔符
      是 locale 相關的字身，烤進去等於在一個不翻譯的節點裡做了一個只對某些 locale 成立的決定。
      React 端的 `formatBound` 只有一個定義點，全站格式一致時它就不需要為個別格子開例外。 #}
@@ -360,7 +354,7 @@ permalink: 5-7_auditLog.html
                 <th data-i18n="audit.target">對象</th>
                 <th data-i18n="audit.detail">詳情</th>
                 <th data-i18n="audit.sourceIp">來源 IP</th>
-                {# 這一欄是 `user_agent`（product）的落點，不可省：稽核軌跡的 UA 回答的是
+                {# 這一欄是 `user_agent` 的落點，不可省：稽核軌跡的 UA 回答的是
                      「這個動作是從哪個用戶端做的」，屬於 ISO 要查的事實（§3-2 response 落點）。 #}
                 <th data-i18n="audit.userAgent">來源用戶端</th>
             </tr>
@@ -375,9 +369,8 @@ permalink: 5-7_auditLog.html
                      與操作者欄的空值語意一致。 #}
                 <td>{% if row.tenantId %}{{ row.tenantId }}{% else %}—{% endif %}</td>
                 {# 四個 nullable 欄（租戶／操作者／對象／來源用戶端）的空值畫法**一律相同、而且住在 markup**：
-                     把「—」寫進 `{% set %}` 的陣列等於宣稱正本回了一個字串「—」，而正本回的是 `null`
-                     （`user_email` 在 product 是 `if… is not None else None`），
-                     React 接上真 API 會渲染出空白或 `null`。 #}
+                     把「—」寫進 `{% set %}` 的陣列等於宣稱那一欄回了一個字串「—」，而它其實是 `null`，
+                     React 接上真資料會渲染出空白或 `null`。 #}
                 <td>{% if row.operator %}{{ row.operator }}{% if row.operatorId %} <span class="text-gray">#{{ row.operatorId }}</span>{% endif %}{% else %}—{% endif %}</td>
                 <td data-i18n="{{ row.actionKey }}">{{ row.actionLabel }}</td>
                 {# `target_type`／`target_id` 兩者皆可為 NULL（`ask` 就是不帶 target 的那一支）：畫「—」。 #}

@@ -207,9 +207,9 @@ test("§8 dist/.build-ref 說得出這份 dist 是哪一個 commit 建的（不�
     // 而**那種失敗的樣子是全綠**（新一輪加進來的東西根本不在比對範圍裡）。這一行是 build 當下
     // 寫的，所以它記的是產物真正的身分——這條測試守的是「那一步還在」。
     //
-    // 值的形狀與 gufofaq-saas 匯出目錄的 `.slicing-ref` 一致（單獨一行、trim 之後直接比 commit）；
-    // 工作樹是髒的時候前綴 `dirty-`，而且**前綴寫在前面**是刻意的：消費端的比對是雙向前綴
-    // （`a.startsWith(b) || b.startsWith(a)`），標記接在 SHA 後面的話 `abc123-dirty` 照樣通得過。
+    // 值的形狀是單獨一行、trim 之後直接比 commit；工作樹是髒的時候前綴 `dirty-`，而且
+    // **前綴寫在前面**是刻意的：前綴在前，任何只比對前綴的讀取端都不會把 dirty 版誤判成乾淨版；
+    // 標記接在 SHA 後面的話，`abc123-dirty` 的前面那一截與乾淨版逐字相同，照樣通得過。
     //
     // **本測試不要求它等於當下的 HEAD**：那正好是這個檔要取代的那個判準（讀取當下的 HEAD）。
     // 它要求的是「它是一個真的存在於本 repo 的 commit」——編出來的、或上一輪殘留的別的東西
@@ -217,7 +217,7 @@ test("§8 dist/.build-ref 說得出這份 dist 是哪一個 commit 建的（不�
     const p = "dist/.build-ref";
     assert.ok(existsSync(p), `${p} 不見了 —— hash-assets 那一步掉了，這份 dist 說不出自己是哪一輪`);
     const raw = readFileSync(p, "utf8");
-    assert.ok(raw.endsWith("\n"), ".build-ref 要以換行收尾（同 .slicing-ref 的形狀，消費端 trim 得掉）");
+    assert.ok(raw.endsWith("\n"), ".build-ref 要以換行收尾（讀的人一次 trim 就拿得到那顆 commit）");
     const ref = raw.trim();
     const m = /^(dirty-)?([0-9a-f]{40})$/.exec(ref);
     assert.ok(m, `.build-ref 的形狀不對："${ref}"（要是 40 位小寫 SHA，工作樹髒時前綴 dirty-）`);

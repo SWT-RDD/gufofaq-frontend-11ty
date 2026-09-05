@@ -41,24 +41,20 @@ permalink: 4-1_qaHistory.html
                     <label for="userTypeSelect" class="control-label required" data-i18n="qa.userType">使用者類型</label>
                 </div>
                 {# `<option value>` 帶的是**送出去的值**，不是畫面文字（同本頁「滿意度」與「答案來源」
-                     那兩顆）。值域正本＝product 的 `_TAG_LABEL`
-                     （`{"frontend": "前台", "backend": "後台", "ab_test": "AB測試"}`，匯出那一欄
-                     就是拿它把 `chat_logs.tag` 翻成中文），`GET /history` 與 `/history/export`
-                     兩支的 `tag` 參數收的就是這三個字面。
-                     ⚠️ **value 絕不可以塞中文顯示字**（`全部`／`前台問答`／`後台問答`）：`tag` 是
-                     `str | None = Query(default=None, max_length=MAX_CHATLOG_TAG_LEN)` 的**自由字串**，
-                     打錯**不會 400、只會回空清單**——使用者看到的是「這段時間沒有問答」，
+                     那兩顆）。使用者類型的值域在這裡宣告一次，就這三顆：`frontend`／`backend`／
+                     `ab_test`——查詢與下載收的都是這三個字面。
+                     ⚠️ **value 絕不可以塞中文顯示字**（`全部`／`前台問答`／`後台問答`）：這一顆收的是
+                     **自由字串**，打錯**不會被擋下、只會回空清單**——使用者看到的是「這段時間沒有問答」，
                      而不是「你送了一個不存在的分類」。這是這一顆最貴的失敗方式，也是它最容易
                      長年沒被發現的原因。
-                     **`ab_test` 補上**：AB 測試兩側各是一筆真的 chat_log（2-2-3 的讚/倒讚寫的就是它，
-                     那一頁的評分窗文案逐字寫著「之後在歷史紀錄裡篩『AB測試』就找得到」），
-                     而 `_default_view_exclusions` 的 docstring 也明講 `ab_test` **不在**預設排除之列
-                     ⇒ 它會進這張清單，卻沒有任何一顆選項篩得到它。繁中「AB測試」站內已有主人
+                     **`ab_test` 是三顆之一、不可漏**：AB 測試兩側各是一筆真的問答紀錄（2-2-3 的讚／倒讚
+                     寫的就是它，那一頁的評分窗文案寫著「之後在歷史紀錄裡篩『AB測試』就找得到」），
+                     它會進這張清單，漏掉這顆選項就沒有任何一顆篩得到它。繁中「AB測試」站內已有主人
                      （`nav.abTest`），§4-2 同文沿用既有 key、不另立。
                      ⚠️ `all` 是**前端哨兵，不送出去**：這一欄 `required`，所以「還沒挑」必須是
                      `<option value="">`（§4），「全部」不能共用那顆空值、否則兩件事在
-                     `.js-filter-clear` 清完之後分不開。真的送 `tag=all` 只會回空清單（同上，不會 400），
-                     所以 React 讀到 `all` 就整個不帶 `tag` 參數——這一句是給轉換的人看的契約。 #}
+                     `.js-filter-clear` 清完之後分不開。真的把 `all` 送出去只會回空清單（同上，不會被擋），
+                     所以 React 讀到 `all` 就整個不帶這個參數——這一句是給轉換的人看的契約。 #}
                 <div class="field">
                     <select id="userTypeSelect" class="form-control singleSelect user-type-select" required>
                         <option value="" data-i18n="common.pleaseSelect">請選擇</option>
@@ -71,18 +67,15 @@ permalink: 4-1_qaHistory.html
             </div>
         </div>
         {# 下載那顆鈕的 `data-toast` 把 31 烤進譯文（「只提供31日間的問答記錄下載」）。屬性型譯文
-             那條例外**兩個條件缺一不可**（§4-2）：②上游符號名寫在檔頭——寫在下面那顆鈕的
-             逐 raise 清單上；①**同頁另有一處常駐可見的資料節點承載同一個約束**——就是這一句。
-             少了它，使用者要按下下載、撞到 400 才知道有這條界線。依 §3-2「值域寫在填之前」
-             擺在起訖兩欄旁邊（兩欄各自 `aria-describedby` 指它），不是擺在下載鈕那一列。
-             兩個數字都是資料節點、不進譯文：31＝`(e - s) > timedelta(days=31)`
-             （`history.range_over_31_days`）、366＝`(now - s) > timedelta(days=366)`
-             （`history.range_over_a_year`），兩條都在 product 的
-             `_validate_export_range` 裡。toast 那一句寫的「一年」就是 366 天這條界線的口語說法，
-             這裡照上游寫確切天數——譯文四捨五入得起來，常駐的那一份不行。
-             ⚠️ 起訖欄是**查詢與下載共用**的，而 `list_history` 沒有這道驗證（那支只有 `start_time`／
-             `end_time` 兩個查詢參數、不驗範圍），所以這一句要講清楚它只約束下載，否則就變成替
-             查詢宣告了一條上游不存在的限制。
+             那條例外**兩個條件缺一不可**（§4-2）：②那兩個界線值在本頁宣告一次——就是這一句裡的
+             兩顆數字，改值時 grep 得到全部抄本；①**同頁另有一處常駐可見的資料節點承載同一個約束**
+             ——也是這一句。少了它，使用者要按下下載、被擋下來才知道有這條界線。依 §3-2
+             「值域寫在填之前」擺在起訖兩欄旁邊（兩欄各自 `aria-describedby` 指它），不是擺在下載鈕那一列。
+             兩個數字都是資料節點、不進譯文：起訖範圍最長 31 天、開始時間不得早於 366 天前——
+             兩條是**不同的**界線。toast 那一句寫的「一年」就是 366 天這條界線的口語說法，
+             這裡寫確切天數——譯文四捨五入得起來，常駐的那一份不行。
+             ⚠️ 起訖欄是**查詢與下載共用**的，而查詢不受這兩條範圍限制，所以這一句要講清楚它只
+             約束下載，否則就變成替查詢宣告了一條不存在的限制。
              中段那顆 key 沿用 `settings.timeRangeLimitMid`（5-3／5-4 的同一句繁中）：§4-2「繁中原文
              相同的 UI chrome 沿用既有 key、不另立」——同文異 key 遲早讓英譯自己分岔。 #}
         <p class="text-gray m-0" id="exportRangeHint"><span data-i18n="qa.exportRangeLimitPrefix">下載的起訖範圍最長 </span><span>31</span><span data-i18n="settings.timeRangeLimitMid"> 天，開始時間也不得早於 </span><span>366</span><span data-i18n="qa.exportRangeLimitSuffix"> 天前；查詢不受這兩條限制。</span></p>
@@ -91,29 +84,27 @@ permalink: 4-1_qaHistory.html
                 <div class="label">
                     <label for="keywordInput" class="control-label" data-i18n="qa.keyword">關鍵字</label>
                 </div>
-                {# 關鍵字的**下界**寫在填之前（§3-2「值域寫在填之前」）：正本是 gufofaq-saas product 的
-                     `MIN_CHATLOG_KEYWORD_LEN`，執行點是同 repo 的 `_assert_keyword_is_searchable`
-                     ——它量的是 `strip()` **之後**的長度，所以「兩個空白」照樣不算數，這一句要把
-                     「前後空白不計」講出來。三支端點（查詢、匯出、以及同族的清單）走的是同一道守衛。
+                {# 關鍵字的**下界**寫在填之前（§3-2「值域寫在填之前」）：下界是 2 個字，量的是
+                     **去掉前後空白之後**的長度，所以「兩個空白」照樣不算數，這一句要把
+                     「前後空白不計」講出來。查詢與下載走的是同一道檢查。
                    **留空是合法的**（＝不套用這個過濾），所以這一句不能寫成「必填至少兩個字」：
                      那會讓使用者以為關鍵字是必填欄。
-                   數字走資料槽、不進譯文（§4-2）：值的正本是 `GET /history/limits` 的
-                     `filters.keyword_len`，執行期才知道，故形狀比照 2-2-1 的 `js-prompt-max-len`
-                     ——切版畫的是契約當前的值，React 由契約覆寫。**上界（2000）不在這裡畫**：
-                     它由 React 掛成 `maxLength`（靜默夾住、打不進去），而下界是打得進去、
-                     按下去才失敗的那一種，兩者需要的落點不同。
-                   不改的後果：中文單字查詢很常見，打一個字按查詢就是 400，而畫面上沒有任何地方
+                   數字走資料槽、不進譯文（§4-2）：這個下界是執行期才知道的設定值，故形狀比照
+                     2-2-1 的 `js-prompt-max-len`——切版畫的是當前的值，React 由讀回來的值覆寫。
+                     **上界（2000）不在這裡畫**：它由 React 掛成 `maxLength`（靜默夾住、打不進去），
+                     而下界是打得進去、按下去才失敗的那一種，兩者需要的落點不同。
+                   不改的後果：中文單字查詢很常見，打一個字按查詢就被擋下，而畫面上沒有任何地方
                      說過有這條界線——使用者只會換一組關鍵字，永遠不會成功。 #}
                 <div class="field">
                     <input type="text" id="keywordInput" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control keyword-input" aria-describedby="keywordMinLenHint">
                     <span class="text-gray" id="keywordMinLenHint"><span data-i18n="qa.keywordMinLenPrefix">關鍵字至少 </span><span class="js-keyword-min-len">2</span><span data-i18n="qa.keywordMinLenSuffix"> 個字（前後空白不計）；留空表示不以關鍵字篩選。</span></span>
                 </div>
             </div>
-            {# **兩個編號欄是二擇一，而且那件事只有這一句說得出來**：`list_history`
-                 （product）的第一段是 `if log_sn is not None:` ——命中就
-                 **當場 return**，`chat_room_sn` 連被讀到都沒有。所以兩個都填時聊天室編號是
+            {# **兩個編號欄是二擇一，而且那件事只有這一句說得出來**：對話編號一有值就當場拿它
+                 查、直接回結果，聊天室編號連被讀到都沒有。所以兩個都填時聊天室編號是
                  **靜默失效**：畫面上那一格填著值、查出來的卻是另一個條件的結果，而沒有任何
-                 訊號說得出為什麼。這不是送出後才知道的錯（後端不回 400），所以只能寫在**填之前**
+                 訊號說得出為什麼。這不是送出後才知道的錯（不會被擋下、也不會有錯誤訊息），
+                 所以只能寫在**填之前**
                  （§4 帶約束條件的輔助文字掛 id ＋ aria-describedby；§3-2 約束寫在做決定的控制項旁邊）。
                一顆 hint 被兩顆控制項共指（同 components/reset-password-modal 的密碼長度那一句）：
                  這條約束講的是**兩格之間的關係**，各寫一份就會變成兩句話講同一件事。 #}
@@ -139,14 +130,13 @@ permalink: 4-1_qaHistory.html
                     <label for="ratingSelect" class="control-label" data-i18n="qa.rating">滿意度</label>
                 </div>
                 <div class="field">
-                    {# `<option value>` 帶的是**送出去的值**，不是畫面文字。三顆值兩兩不交集、
-                         聯集＝不帶參數：product `GET /history` 與 `/history/export` 兩支都收
-                         `Literal["positive", "negative", "unrated"]`（product 的 `list_history`／`export_history`）。
-                         `unrated` 是一顆**只能查、寫不進去**的 token：
-                         `GET /api/chat/chatlogs?rating_type=unrated` → `rating_type IS NULL`，
-                         而它**刻意不在 RatingType 枚舉裡**——進了枚舉就等於讓「未評分」變成一個寫得進 DB
-                         的第三種值，那是另一件事。所以這一顆只出現在查詢下拉，不會出現在任何評分的寫入面。
-                         過濾套用在 `count()` 之前 ⇒ 「共 N 筆」與頁碼列跟著這個篩選一起變
+                    {# `<option value>` 帶的是**送出去的值**，不是畫面文字。值域在這裡宣告一次，就三顆：
+                         `positive`／`negative`／`unrated`，兩兩不交集、聯集＝不帶參數；查詢與下載收的
+                         是同一組。`unrated` 是一顆**只能查、寫不進去**的值：它問的是「這一筆還沒被
+                         評過」，**刻意不是評分本身的第三種值**——讓它變成寫得進去的值，就等於把
+                         「未評分」變成一種評分，那是另一件事。所以這一顆只出現在查詢下拉，
+                         不會出現在任何評分的寫入面。
+                         過濾套用在總筆數計算之前 ⇒ 「共 N 筆」與頁碼列跟著這個篩選一起變
                          （§6：那兩個數字必須同源，見本頁 data-info 與 pagination 的 total）。 #}
                     <select id="ratingSelect" class="form-control singleSelect rating-select">
                         <option value="" data-i18n="common.pleaseSelect">請選擇</option>
@@ -161,15 +151,13 @@ permalink: 4-1_qaHistory.html
                     <label for="answerSourceSelect" class="control-label" data-i18n="qa.answerSource">答案來源</label>
                 </div>
                 <div class="field">
-                    {# 值＝上游的字面：product 的 `list_history` 與 `export_history` 兩支都收
-                         `answer_source: Literal["qa_direct", "generated"]`（值域夾在 product 這一層，
-                         不原樣轉發——上游對打錯的值回 400）。
-                         **DB 那一側只有兩種狀態**：`chat_logs.answer_source` 是 `qa_direct` 或 **NULL**
-                         （正常生成），`generated` 是 product 替 NULL 那一側取的查詢字面。所以這裡送
-                         `generated` 是對的，不要改送空字串或 `null`——那與「全部（不帶參數）」在
-                         query string 上分不開，而這兩件事問的不是同一個問題。
+                    {# 值域在這裡宣告一次，就兩顆：`qa_direct`／`generated`，打錯的值會被擋下。
+                         **紀錄那一側其實只有兩種狀態**：直答，或不是直答（正常生成）；`generated`
+                         是替「不是直答」那一側取的查詢字面。所以這裡送 `generated` 是對的，
+                         不要改送空字串或 `null`——那與「全部（不帶參數）」在網址上分不開，
+                         而這兩件事問的不是同一個問題。
                          值載體 select ⇒ 只掛 hook class、不掛 data-toast（§5 矩陣②：document 上的 click
-                         委派抓不到 change，成敗也要看後端）。唯讀查詢 ⇒ 不掛任何授權軸。
+                         委派抓不到 change，成敗也要等查詢回來才知道）。唯讀查詢 ⇒ 不掛任何授權軸。
                          「全部」就是那顆 `<option value="">`（§4：「還沒挑」要有一顆承載得住、且有可讀標籤）。
                          key：「全部」與「QA 直答」的繁中在站內已經有主人（`common.all`／`settings.qaDirect`），
                          §4-2 同文沿用既有 key、不另立——只有「模型生成」是新的。 #}
@@ -188,27 +176,23 @@ permalink: 4-1_qaHistory.html
                  ——清完再按查詢就是必填未填，所以這顆鈕的分支裡必須有「請填寫開始時間、結束時間與
                  使用者類型」這一段。**共用的 `toast.query` 不能加這一段**：其餘六頁沒有任何 required
                  欄，加了就是替那六頁演一個不可能發生的結果，故本頁另立 key。 #}
-            {# 「關鍵字至少 2 個字」那一段（product 的 `_assert_keyword_is_searchable`，400）
-                 與查詢共用同一道守衛，故查詢與下載兩顆鈕**各要有一段**。段內烤著數字走的是 §4-2
-                 屬性型譯文那條例外，兩個條件都成立：①同一個約束另有一處常駐可見的資料節點承載
-                 （關鍵字欄下方那一句）②上游符號名寫在檔頭（`MIN_CHATLOG_KEYWORD_LEN`）。 #}
+            {# 「關鍵字至少 2 個字」那一段：查詢與下載走的是同一道檢查，故兩顆鈕**各要有一段**。
+                 段內烤著數字走的是 §4-2 屬性型譯文那條例外，兩個條件都成立：①同一個約束另有一處
+                 常駐可見的資料節點承載（關鍵字欄下方那一句）②那個下界在本頁宣告一次，
+                 改值時 grep 得到全部抄本。 #}
             <button data-capability="history" type="button" class="button button-primary" data-toast="正在查詢資料...|權限不足，無法查詢——請找貴租戶的管理者開通|請填寫開始時間、結束時間與使用者類型|關鍵字至少 2 個字，前後空白不計|查詢成功|載入資料失敗，請重新整理頁面|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.queryHistory" data-toast-type="info|warning|warning|warning|success|error|warning" data-i18n="action.query">查詢</button>
-            {# 匯出格式（product `GET /history/export?format=`，`Query(alias="format")` 收
-                 `Literal["csv","xlsx","jsonl"]`、預設 csv）。**畫面只給兩顆**：csv 與 xlsx 是同一個
+            {# 匯出格式：值域在這裡宣告一次，就三顆——`csv`／`xlsx`／`jsonl`，預設 csv。
+                 **畫面只給兩顆**：csv 與 xlsx 是同一個
                  問題的兩種答案（要不要巢狀明細），jsonl 是給程式與稽核的那一份、沒有人會在這個
                  畫面上挑它——列出來只會讓兩個真的要選的選項變難挑。
                  值載體 ⇒ 只掛 hook class、不掛 data-toast（§5 矩陣②）；成敗由旁邊那顆下載鈕演。
                  唯讀匯出，不宣告授權軸。
 
                ## 「含統計表頭」是 **csv 這一顆 radio 的附屬控制項**，不是獨立的旗標
-                 `with_header` 在正本 `export_history` 裡**只有 CSV 那條路徑碰得到**：`stats.rows(...)`
-                 只在 `_stream()`（csv）的第一個 yield 出現，`_stream_jsonl()` 與 `fmt == "xlsx"`
-                 那兩段完全不讀它。所以「完整明細（Excel）＋ 含統計表頭」是一個**無效格**。
-                 **上游現在會擋**：`export_history` 的 `if with_header and fmt != "csv": raise
-                 HTTPException(400, i18n.t("history.with_header_csv_only", format=fmt))`，而且那道
-                 守衛排在 `record_audit` 與第一次探頁**之前**——不會落稽核、也不會付累計那一遍。
-                 （⚠️ 上游的行為本身會變，這一段的斷言是**要跟著改**的那一種；§3-2「出處也會過期」。）
-                 那道 400 在畫面上**走不到**，因為下面這一格用 markup 表達了無效格：
+                 統計表頭**只有 CSV 這條路輸出得出來**，所以「完整明細（Excel）＋ 含統計表頭」
+                 是一個**無效格**：那個組合送出去會被擋下，而且是在動任何資料之前就擋掉
+                 ——不會落稽核、也不會白跑一遍統計。
+                 那一態在畫面上**走不到**，因為下面這一格用 markup 表達了無效格：
                  故把它收進 csv 那一格：`ui/field-with-input` 的三個 class（`.field-with-input-group`
                  一列／`.field-with-input` 一顆 radio 與它的附屬控制項／`.with-input` 被啟用停用的那些）
                  ——選 xlsx 的當下 checkbox 就被停用，依賴關係由 markup 表達、不靠人讀說明。
@@ -231,7 +215,7 @@ permalink: 4-1_qaHistory.html
                             <span data-i18n="qa.exportSummary">摘要（CSV）</span>
                         </label>
                     </div>
-                    {# 統計表頭（product `GET /history/export?with_header=true`）：在 CSV 最前面加一段
+                    {# 統計表頭：在 CSV 最前面加一段
                          統計區間／製表時間／使用人次／使用人數／滿意度計數。**預設關閉**——開著會
                          改變檔案首列，下游既有的解析會全部錯位。值載體 checkbox → 只掛 hook class
                          （§5 矩陣②），成敗由旁邊的下載鈕演。 #}
@@ -252,45 +236,34 @@ permalink: 4-1_qaHistory.html
             {# 兩句代價**各自貼著做決定的那顆控制項**（§3-2）：`exportWithHeaderHint` 由那顆 checkbox
                  指、`exportFormatHint` 由 xlsx 那顆 radio 指。兩句都掛到整組 radio 之後的話，
                  讀起來會像在講匯出格式，而其中一句其實是在講勾選框。
-                 · 完整明細的三張工作表對回正本 `export_history` 的 `format` 註解：執行步驟／工具呼叫／
-                   搜尋結果，各自一列一筆、以「對話編號」對回主表（主表本身與 CSV 同一份取值，
-                   故不算「多出來的」）。
-                 · 統計表頭那一句的後半是正本 docstring 逐字寫的「預設關閉，因為多一段前置區塊會讓
-                   『第一列就是欄名』的既有下游解析當場壞掉」；前半講的是**依賴關係**——
-                   `with_header` 只在 CSV 路徑輸出，所以「只有摘要（CSV）有」要在勾之前講得出來，
+                 · 完整明細多出來的是三張工作表：執行步驟／工具呼叫／搜尋結果，各自一列一筆、
+                   以「對話編號」對回主表（主表本身與 CSV 同一份取值，故不算「多出來的」）。
+                 · 統計表頭那一句的後半講的是代價：預設關閉，因為多一段前置區塊會讓
+                   「第一列就是欄名」的既有下游解析當場壞掉；前半講的是**依賴關係**——
+                   統計表頭只有 CSV 這條路輸出得出來，所以「只有摘要（CSV）有」要在勾之前講得出來，
                    不能只靠 checkbox 被停用（停用說得出「現在不能勾」，說不出「為什麼」）。 #}
             <span class="text-gray" id="exportWithHeaderHint" data-i18n="qa.exportWithHeaderHint">統計表頭只有「摘要（CSV）」這一種格式輸出得出來，選了完整明細就沒有這一段。開啟後 CSV 第一列不再是欄名，既有的下游解析會錯位</span>
             <span class="text-gray" id="exportFormatHint" data-i18n="qa.exportFullDetailHint">完整明細會多出三張工作表——每一步、每次工具呼叫的完整輸出、每一張來源卡的全文</span>
-            {# `GET /history/export` 開跑前有**八道**使用者自己修得掉的 400，全部並列不可互相取代
-                 ——一道在 `_validate_export_range` 之前，六道在它裡面（product，逐 raise 由上而下），
-                 一道在它之後：
-                 · `history.keyword_too_short` —— 關鍵字有值、`strip()` 後不足下界
-                   （`_assert_keyword_is_searchable`，排在 `_validate_export_range` **之前**，故段序也在前）。
-                   正本常數是 `MIN_CHATLOG_KEYWORD_LEN`；段內烤著數字走 §4-2 屬性型譯文的例外，
-                   常駐可見的那一份在關鍵字欄下方。**與旁邊那顆查詢鈕是同一道守衛的兩個消費點**
-                   （§5「同一道後端守衛…分支集合與語意型別要一致」）。
-                 · `history.export_needs_range`  —— 起訖**沒填齊**（`if not start_time or not end_time`）。
-                   **這一條在本頁特別會咬人**：同一列的 `.js-filter-clear` 會把起訖兩格清空
-                   （filter-fields.js），清完直接按下載就是它；而它與旁邊那顆「查詢」的必填 warning
-                   是**兩支不同的端點**，兩顆鈕各自要有自己的那一段。
-                 · `history.bad_time_format` —— `datetime.fromisoformat` 吃不下（`except ValueError`）。
-                   起訖是 `type="text"` ＋ flatpickr，使用者手打得進任何字串。
-                 · `history.start_in_future` —— `s >= now`
-                 · `history.end_before_start` —— `e < s`
-                 · `history.range_over_31_days` —— `(e - s) > 31 天`
-                 · `history.range_over_a_year` —— `(now - s) > 366 天`。與上一條是**不同條件**：
+            {# 下載開跑前有**八道**使用者自己修得掉的擋下，全部並列不可互相取代，順序由上而下：
+                 · **關鍵字太短** —— 關鍵字有值、去掉前後空白後不足下界。段內烤著數字走 §4-2
+                   屬性型譯文的例外，常駐可見的那一份在關鍵字欄下方。**與旁邊那顆查詢鈕是同一道
+                   檢查的兩個消費點**（§5「同一道守衛…分支集合與語意型別要一致」）。
+                 · **起訖沒填齊** —— **這一條在本頁特別會咬人**：同一列的 `.js-filter-clear` 會把
+                   起訖兩格清空（filter-fields.js），清完直接按下載就是它；而它與旁邊那顆「查詢」的
+                   必填 warning 是**兩件不同的事**，兩顆鈕各自要有自己的那一段。
+                 · **時間格式吃不下** —— 起訖是 `type="text"` ＋ 日期選擇器，使用者手打得進任何字串。
+                 · **開始時間在未來**
+                 · **結束時間早於開始時間**
+                 · **起訖範圍超過 31 天**
+                 · **開始時間早於 366 天前**。與上一條是**不同條件**：
                    選 2024/01/01～01/20 過得了 31 天那關，照樣被一年那關擋掉
-                 · `history.export_too_many` —— `total > _export_max_logs()`（串流開始前先探一頁擋掉：
-                   送出 200 標頭之後就沒有辦法再回錯誤了）。**沒有 `MAX_EXPORT_LOGS` 這顆常數**：
-                   值住在 product 的 `export_max_logs`，`_export_max_logs()` 每次呼叫才讀
-                   `Settings`（env 可覆寫），故此處只指名符號、不抄值（§3-2）
-                 · 上面兩條的天數同理只指名符號：`EXPORT_RANGE_DAYS_MAX`／`EXPORT_LOOKBACK_DAYS_MAX`
-                   （product）——`history.range_over_31_days` 那顆是**訊息鍵**、不是
-                   承載值的常數，上限一改鍵名還會叫 `31`
+                 · **這段範圍的資料量超過單次下載上限** —— 開始送檔之前先探一頁擋掉：檔案一旦開始
+                   傳，就沒有辦法再回錯誤了。那顆上限是可調的設定值、執行期才知道，故這裡不抄數字
+                   （31 與 366 是寫死的界線，抄得起；這一顆不是）。
                  **八條都要各有一段**：少列的那幾條會全部落進紅色的「下載失敗」，而它們每一條
                  使用者當場改得掉——一句「請稍後再試」等於叫他做一件沒有用的事。
-                 ⚠️ `|` 是索引契約：段數與順序（＝上游 raise 的先後）就是 React 端 `split("|")` 的
-                 位置契約，中間插一段就會讓所有取用 `toast.downloadRecords` 的地方一起錯位。 #}
+                 ⚠️ `|` 是索引契約：段數與順序就是 React 端 `split("|")` 的位置契約，
+                 中間插一段就會讓所有取用 `toast.downloadRecords` 的地方一起錯位。 #}
             <button data-capability="history" type="button" class="button button-green" data-toast="下載已開始|權限不足，無法下載——請找貴租戶的管理者開通|關鍵字至少 2 個字，前後空白不計|請先填開始時間與結束時間|時間格式不正確，請重新選擇起訖時間|開始時間不能晚於現在|結束時間不能早於開始時間|只提供31日間的問答記錄下載|只提供一年內的問答記錄下載|這段範圍的資料量過大，請縮小時間範圍|下載失敗，請稍後再試|下載用的是上一次按「查詢」時的條件，而上面的篩選欄已經改過——請先按一次「查詢」再下載|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.downloadRecords" data-toast-type="success|warning|warning|warning|warning|warning|warning|warning|warning|warning|error|warning|warning" data-i18n="action.download">下載</button>
         </div>
     </div>
@@ -311,22 +284,19 @@ permalink: 4-1_qaHistory.html
      **#12173 那一筆**（列序降冪之後排在最後）的另外六欄與 4-2 的 `conversation` 逐字同源（聊天室 6537／同一句提問／
      前台問答／讚／同一個時間戳），而那一列的 href 就指向 4-2 —— **兩頁演的是同一筆**。
      4-2 是基準：它畫了完整的 Agent 執行流程與工具軌跡，而 QA 直答是結構性短路
-     （命中 QA 就直接回，那一輪產不出 `search_knowledge_base` 節點與 tool_activity）
+     （命中既有 QA 就直接回，那一輪根本沒有檢索節點、也沒有工具軌跡）
      ⇒ 同一筆不可能一頁 `qa_direct`、另一頁 `generated`。
      故直答改掛在 #12175：它沒有對應的詳情頁示範，徽章分支照樣演得到。
-   `userType` **給上游字面**（`chat_logs.tag`＝`frontend`／`backend`／`ab_test`，值域正本是
-     product 的 `_TAG_LABEL`，與上面那顆篩選 select 同一組值）：
+   `userType` **給業務字面**（`frontend`／`backend`／`ab_test`，與上面那顆篩選 select 同一組值）：
      它是**封閉目錄**，中文由 cell 的 `{% if %}` 鏈配 i18n key 產生。**這一欄不得塞顯示字**
      （「前台問答」再 `{{ }}` 原樣輸出）：React 接上真 API 之後那一格只會印出 `frontend`，
      而英文模式下它永遠是中文（同 `components/qa-detail-info` 檔頭立的規）。 #}
-{# **列序＝端點的 `order_by`**（§6「列序也是示範資料的一部分」）：GufoRAG chatbot 的
-     `list_chat_logs_with_filters` 是
-     `.order_by(ChatLogModel.human_time.desc(), ChatLogModel.id.desc())`
+{# **列序是示範資料的一部分**（§6）：這張清單的預設排序在這裡宣告一次——對話時間降冪，
+     同一時間再以對話編號降冪
      ⇒ **最新的排在最前面**，這三列的順序照它寫。寫成升冪的話，本頁那顆三態循環的排序鈕在
      `none` 那一態（＝「還原 markup 原始列序」＝伺服器序）演的就是一個 API 產不出來的畫面。 #}
-{# `maskingBudgetExceeded`＝`GET /history` 每一列都回得出的那顆旗標（product 的允許清單裡逐字
-     列著 `masking_budget_exceeded`，旁邊那段註解說明為什麼它是「漏列比多列更糟」的少數之一）。
-     上游整頁遮蔽的工作量到頂時，那幾列**回的是清空的內容欄 ＋ 這顆旗標**，刻意不回未遮蔽的原文。
+{# `maskingBudgetExceeded`＝每一列都帶得出來的一顆旗標。整頁遮蔽的工作量到頂時，那幾列
+     **帶的是清空的內容欄 ＋ 這顆旗標**，刻意不給未遮蔽的原文。
      少了它，畫面上「這一列的內容被成本上限收掉了」與「這一列本來就沒有內容」長得一模一樣，
      而後者會被讀成「這題沒答出來」——那正是使用者據以下結論的東西。正確處置是把每頁筆數調小
      重查，而他得先知道發生了這件事。
@@ -418,19 +388,18 @@ permalink: 4-1_qaHistory.html
                 <td>
                     {% if row.maskingBudgetExceeded %}<span class="text-gray" data-i18n="qa.maskingBudgetExceeded">這一列的內容因為系統一次能遮蔽的量到頂而沒有載入——不是這一輪沒有內容。把每頁筆數調小再查一次就看得到。</span>{% else %}<div class="collapse-text"><div class="collapse-body">{{ row.aiMsg }}</div><button type="button" id="qaHistoryAnswerToggle-{{ row.id }}" aria-labelledby="qaHistoryRowName-{{ row.id }} qaHistoryAnswerToggle-{{ row.id }}" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>{% endif %}
                 </td>
-                {# 使用者類型是**封閉目錄**（`chat_logs.tag`）⇒ 走 `{% if %}` 鏈 ＋ i18n key，
+                {# 使用者類型是**封閉目錄** ⇒ 走 `{% if %}` 鏈 ＋ i18n key，
                      顯示字不塞進資料（見上方 rows 那則註解）；沿用同頁篩選 select 的三顆 key，
-                     兩處說的必須是同一組字。上游把這一欄寫成 NULL（欄位比舊資料晚出生）時畫「—」，
+                     兩處說的必須是同一組字。這一欄沒有值時（比這個欄位還早的舊紀錄）畫「—」，
                      不留白（同 components/qa-detail-info 那四格的規矩）。
                    直答那幾筆要在清單上看得出來（否則篩了才知道哪一筆是）。**只有直答掛徽章**：
                      生成是常態，每一列都掛一顆「模型生成」等於掛了一顆沒有資訊量的標籤。
                      `is-muted` 是中性事實標記（同 2-2-4 用它標「確定性」），不是判定好壞。 #}
                 <td>{% if row.userType == "frontend" %}<span data-i18n="qa.frontendQa">前台問答</span>{% elif row.userType == "backend" %}<span data-i18n="qa.backendQa">後台問答</span>{% elif row.userType == "ab_test" %}<span data-i18n="nav.abTest">AB測試</span>{% else %}—{% endif %}{% if row.answerSource == "qa_direct" %} <span class="verdict-tag is-muted" data-i18n="settings.qaDirect">QA 直答</span>{% endif %}</td>
-                {# 滿意度是**封閉枚舉**（`chat_logs.rating_type`，值域 positive／negative／NULL；
-                     顯示名的正本是 product 的 `_RATING_LABEL`），所以資料存
-                     上游字面、顯示走 i18n key——同上一格 `userType` 的規矩。塞顯示字的話 React 接上真 API
-                     只印得出 `positive`，而英文模式那一格永遠是中文（§6／§4-2）。
-                     NULL 落「無意見」（沒評過與評了「無意見」在畫面上是同一格，值域本來就只有三顆）；
+                {# 滿意度是**封閉枚舉**：值域在這裡宣告一次——`positive`／`negative`／沒有值，
+                     所以資料存業務字面、顯示走 i18n key——同上一格 `userType` 的規矩。塞顯示字的話
+                     React 接上真 API 只印得出 `positive`，而英文模式那一格永遠是中文（§6／§4-2）。
+                     沒有值落「無意見」（沒評過與評了「無意見」在畫面上是同一格，值域本來就只有三顆）；
                      三顆 key 就是同頁篩選 select 用的那三顆。 #}
                 <td>{% if row.rating == "positive" %}<span data-i18n="qa.ratingLike">讚</span>{% elif row.rating == "negative" %}<span data-i18n="qa.ratingDislike">倒讚</span>{% else %}<span data-i18n="qa.ratingNoOpinion">無意見</span>{% endif %}</td>
                 <td>{{ row.date }}</td>

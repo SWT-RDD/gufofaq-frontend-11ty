@@ -1,45 +1,35 @@
 {# 術語表詞條編輯 modal。入口是 3-2_glossaryManagement 頁的「管理詞條」鈕（.js-manage-entries）：
      開窗需先選定「編輯哪一張術語表」＝業務條件開窗，故該鈕保留 hook class、不掛 data-open-modal
      （GUIDELINE §5）。彈窗本體＝詞條清單表（term/definition 逐列）＋新增/移除列＋儲存。
-     3-2 是 SaaS 新頁、product 先行出貨（gufofaq-saas 的 `GlossaryEntriesModal`）＝NET-NEW
-     忠實度基準（§5）：i18n key 值以 product catalog 為準（新增一列／詞條已更新｜更新失敗）。
-     增刪列＝React local state 操作（onClick 元件作用域直綁），儲存時才整批 PUT
-     （gufofaq-saas product：「編輯一張表 → 整批 `PUT /glossary/{id}/entries`」，
-     不做逐筆 diff）——故增刪鈕**不掛 data-toast**（它們不送 API）；但**要掛 hook class**：
+     增刪列＝React local state 操作（onClick 元件作用域直綁），儲存時才整批送出
+     （編輯一張表 → 整批覆寫那張表的詞條，不做逐筆 diff）——故增刪鈕**不掛 data-toast**
+     （它們不送 API）；但**要掛 hook class**：
      §5「切版新頁的業務觸發鈕自創 hook class，命名 `js-<動詞>-<名詞>`」，而同型的表單 repeater
      全站都是這樣掛的（2-2-4 的 `js-add-assertion`／`js-remove-assertion`、5-2 的
      `js-add-policy-topic`／`js-remove-policy-topic`，同樣沒有切版行為、同樣由 React 接）。
-     兩顆若什麼都不掛，轉換時就認不出它們該接誰，畫面上是兩顆按了沒反應的鈕。React 那一側掛的
-     是同樣兩顆（`className="… js-add-glossary-entry"`／`className="… js-remove-glossary-entry"`）。
-     詞條／定義的 maxlength 是契約欄位（§6），出處＝GufoRAG chatbot 的
-     `MAX_TERM_LEN = 200`／`MAX_DEFINITION_LEN = 2000`，兩道逐筆檢查都在 `validate_entries` 裡
-     （存檔即驗、fail-fast）。**那兩道現在擋在 product 這一層就結束了**：長度由
-     `GlossaryEntryIn` 的欄位驗證（請求層）擋，整批筆數由 `replace_glossary_entries` 在呼叫上游
-     之前手動比對 `MAX_GLOSSARY_ENTRIES_PER_TABLE`；只有其餘「只有 chatbot 驗得到」的錯誤才會
-     走上游那一趟，並由 `proxy_upstream` 依上游信封的 `code` 分流成 400（原句轉述）或 502／503
-     （關聯編號）。所以這一顆 `maxlength` 的**可見提示**不是裝飾——打不進去的字在請求層就被擋掉，
-     沒有那句提示的話使用者只會看到輸入框吃不下字。
-     **這顆窗沒有別名欄**：GufoRAG chatbot 逐字寫著「別名一律住在 `alias_entries`」，
-     別名由 3-6_aliasTables 統一管理、在 5-2 決定哪個階段套用。這裡不留、也不 deprecate——
+     兩顆若什麼都不掛，轉換時就認不出它們該接誰，畫面上是兩顆按了沒反應的鈕。
+     詞條／定義的 maxlength 是契約欄位（§6）：**上限詞條 200 字、定義 2000 字、整表 20000 筆，
+     在這裡宣告一次，這裡就是正本**。三道都是逐筆／整批的存檔即驗（fail-fast），而且都在寫入
+     時就擋掉，不會走到索引那一趟；只有再後面才驗得出來的錯誤才會回一句錯誤訊息（原句轉述）
+     或一組關聯編號。所以這一顆 `maxlength` 的**可見提示**不是裝飾——打不進去的字在送出前就被
+     擋掉，沒有那句提示的話使用者只會看到輸入框吃不下字。
+     **這顆窗沒有別名欄**：別名一律住在別名那一側，由 3-6_aliasTables 統一管理、在 5-2 決定
+     哪個階段套用。這裡不留、也不 deprecate——
      留著就會有兩個地方可以填別名，而這整件事就是為了收掉那個。
-     與 gufofaq-saas `apps/web/components/GlossaryEntriesModal/GlossaryEntriesModal.tsx`
-     對齊的結構：`<div className="table-container scrollTable">` 包裹、同一組 `<colgroup>` 欄寬
-     （200／280／90）、操作欄 `<th><span className="sr-only">`，空狀態是 `rows.length === 0` 時的
-     `colSpan={3}` 無資料列（不是表格後面補一顆 `<p>`）。標題的表名是執行期資料，由 React 填。
-
-     i18n key 值與結構以 product catalog 對齊。
+     結構：`<div class="table-container scrollTable">` 包裹、`<colgroup>` 三欄欄寬
+     （200／280／90）、操作欄 `<th><span class="sr-only">`，空狀態是清單為空時的
+     `colspan="3"` 無資料列（不是表格後面補一顆 `<p>`）。標題的表名是執行期資料，由 React 填。
 
      **這一顆窗的英譯裁定：「詞條」一律 entry，不用 term**（§4-2「同一領域名詞的英譯拼寫要一致」）。
      兩種混用會讓 `toast.saveGlossaryEntries` **一句話裡同時出現 Term 與 Entries**，而姊妹頁 3-6 的
      別名表詞條一律用 entry ⇒ 同一個概念在站上有兩個英文名字。
-     **繁中原文一個字都不動**，動的只有英譯值與一個 key 名：
+     **繁中原文一個字都不動**，這條裁定落在英譯值與一個 key 名上：
        ① `settings.term`：`Term` → `Entry`
        ② `settings.glossaryLimitTerm`：`Term limit ` → `Entry limit `
        ③ `toast.saveGlossaryEntries` 的 warning 段：`a term cannot be empty; term length…`
           → `an entry cannot be empty; entry length…`
-       ④ 本檔第三顆量詞由 `regression.charsUnit` 改名成 `common.unitChars`（同一顆「 字」被五頁
-          跨命名空間借用，§4-2 升格到 `common.*`；值不變，仍是 `" characters"`）。
-     這四顆是**刻意與 product catalog 不同字**的，逐字比對在它們上面報差異是預期內的。 #}
+       ④ 本檔第三顆量詞是 `common.unitChars` 而不是 `regression.charsUnit`（同一顆「 字」被五頁
+          跨命名空間借用，§4-2 升格到 `common.*`；值是 `" characters"`）。 #}
 {# 示範資料變數用元件專屬名 glossaryEntryRows（不用泛用名）：{% set %} 是頁面全域（§2/§6）。 #}
 {% set glossaryEntryRows = [
     { term: "年終獎金", definition: "依年度考核與公司獲利發放的額外獎金。" },
@@ -103,9 +93,9 @@
                         </div>
                         {# 上限寫在做那個決定的控制項旁邊（§3-2）：只寫在送出失敗的 toast 裡不夠，
                              因為 maxlength 是靜默截斷——打不進去，畫面也不說為什麼。
-                             數字是資料節點、不進譯文（§3-2）；正本是 GufoRAG chatbot 的
-                             `MAX_TERM_LEN`／`MAX_DEFINITION_LEN`／`MAX_ENTRIES_PER_TABLE`。
-                             **別名的上限不在這裡**：這顆窗沒有別名欄，`MAX_ALIASES_PER_ENTRY` 是別名
+                             數字是資料節點、不進譯文（§3-2）；三顆上限（詞條長度／定義長度／
+                             整表筆數）在這裡宣告，這裡就是正本。
+                             **別名的上限不在這裡**：這顆窗沒有別名欄，每個詞條的別名上限是別名
                              那一側的界線，住在 components/alias-entries-modal 的 `#aliasLimitsHint`
                              ——兩顆 key 沿用同一份，這一側不得再描述它。 #}
                         <p id="glossaryLimitsHint" class="text-gray m-0"><span data-i18n="settings.glossaryLimitTerm">詞條上限 </span><span>200</span><span data-i18n="settings.glossaryLimitDefinition"> 字、定義 </span><span>2000</span><span data-i18n="common.unitChars"> 字</span></p>

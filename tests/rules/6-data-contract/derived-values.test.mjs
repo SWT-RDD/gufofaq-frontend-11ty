@@ -83,28 +83,28 @@ test("§6 可刪除清單的每一列都要帶列鍵（位置不是身分：刪�
         return [...body.matchAll(ID_ATTR)].some(([, v]) => [...v.matchAll(EXPR)].some(([, e]) => !positional.has(e.trim())));
     } };
 
-    // 豁免：**上游的正本就是一個沒有身分欄的陣列**（整批取代／尚未落庫），位置在那裡真的就是身分。
-    // 每一筆都要寫出「為什麼上游沒有 id」，而且下面會驗它真的還在（死豁免當場報出來）。
+    // 豁免：**這一份資料本來就沒有身分欄**（整份取代、或根本還沒送出去），位置在那裡真的就是身分。
+    // 每一筆都要寫出「為什麼這一份沒有列鍵」，而且下面會驗它真的還在（死豁免當場報出來）。
     const POSITIONAL = new Map([
         ["src/_includes/components/alias-entries-modal/alias-entries-modal.html:entry in aliasEntryRows",
-            "整批取代：GufoRAG chatbot 的 `replace_alias_entries`（`PUT /api/alias/{table_id}/entries`）docstring 逐字寫著「不做逐筆 diff」——編輯器送出的是整份陣列，DB 的 `alias_entries.id` 由後端重建"],
+            "整批取代：這個編輯器送出的是**整份**詞條陣列、不是逐筆增刪，存檔後每一筆的身分都是重新給的——所以編輯中的這一份沒有任何列鍵可用，位置在這裡真的就是身分"],
         ["src/_includes/components/glossary-entries-modal/glossary-entries-modal.html:entry in glossaryEntryRows",
-            "同型：GufoRAG chatbot 的 `replace_glossary_entries`（`PUT /{table_id}/entries`）也是整表存檔"],
+            "同型：術語表也是整表存檔（送出整份陣列取代舊的一份），編輯中的列同樣還沒有身分可用"],
 
         ["src/pages/dataImport/1-2-1_uploadFile_pdf.html:file in fileRows",
-            "送出前的待上傳清單：這一批檔還沒送到後端，沒有任何 id 可用（同 2-2-4 那一筆的理由）。這一列的 `data-index` 印的正是位置——它是 React 端從同一個陣列 re-render 出來的，移除一筆之後整份重畫，位置與陣列永遠同步；把它當成一顆身分鍵拿去對比後端資料才是錯的"],
+            "送出前的待上傳清單：這一批檔還沒送出去，沒有任何 id 可用（同 2-2-4 那一筆的理由）。這一列的 `data-index` 印的正是位置——它是 React 端從同一個陣列 re-render 出來的，移除一筆之後整份重畫，位置與陣列永遠同步；拿它當身分鍵去對比送出之後的資料才是錯的"],
         ["src/pages/qaTest/2-2-4_regressionSuites.html:a in regressionNewAssertions",
-            "「新增案例」表單裡還沒送出的斷言列：這一份根本還沒落庫，沒有任何後端 id 可用"],
+            "「新增案例」表單裡還沒送出的斷言列：這一份還沒送出去，也就還沒有任何一顆 id 可以當身分"],
         ["src/pages/settings/5-2_conversationSettings.html:topic in policyTopics",
-            "上游是 `Column(JSON, default=list)`：GufoRAG chatbot 的 `chat_configs.policy_topics` 是 `list[dict]`，整份存整份取，成員沒有 id"],
+            "這一份是設定裡的一個清單欄位：整份存、整份取，成員本身沒有身分欄，改一筆等於改整份"],
         ["src/pages/settings/5-2_conversationSettings.html:rule in outputReplacementRules",
-            "同上：`chat_configs.output_replacements` 是 `Column(JSON, default=list)`"],
+            "同上：出口替換規則也是設定裡的清單欄位，整份存整份取，成員沒有身分欄"],
         ["src/pages/settings/5-2_conversationSettings.html:rule in outputRules",
-            "同上：`chat_configs.output_rules` 是 `Column(JSON, default=list)`"],
+            "同上：出口規則也是設定裡的清單欄位，整份存整份取，成員沒有身分欄"],
         ["src/pages/settings/5-2_conversationSettings.html:cat in [{ code: \"B06\", limit: \"2000\" }, { code: \"B02\", limit: \"800\" }]",
-            "output_rules 那一顆規則物件裡的子陣列（逐代碼上限），同樣沒有 id；這一列的身分是代碼欄的值，可及名稱也是指它"],
+            "出口規則那一顆物件裡的子陣列（逐代碼上限），同樣沒有身分欄；這一列的身分是代碼欄的值，可及名稱也是指它"],
         ["src/pages/settings/5-2_conversationSettings.html:case in rule.cases",
-            "同上（情境條件是 output_rules 規則物件裡的子陣列）"],
+            "同上：情境條件是出口規則那一顆物件裡的子陣列，成員也沒有身分欄"],
     ]);
 
     const stripComments = (s) => s.replace(/\{#[\s\S]*?#\}/g, (m) => m.replace(/[^\n]/g, " "));
@@ -139,7 +139,7 @@ test("§6 可刪除清單的每一列都要帶列鍵（位置不是身分：刪�
     const deadEx = [...POSITIONAL.keys()].filter((k) => !used.has(k));
     assert.deepEqual(deadEx, [], `POSITIONAL 有死豁免（迴圈不在了，或已經有列鍵）：\n${deadEx.join("\n")}`);
     for (const [k, why] of POSITIONAL)
-        assert.ok(why.length > 20, `POSITIONAL 的「${k}」沒寫「為什麼上游沒有 id」`);
+        assert.ok(why.length > 20, `POSITIONAL 的「${k}」沒寫「為什麼這一份沒有列鍵」`);
 
     probe("§6 列鍵", (s) => {
         const out = [];
@@ -160,10 +160,10 @@ test("§6 可刪除清單的每一列都要帶列鍵（位置不是身分：刪�
             '{% for r in rows %}<tr><td>{{ r.name }}</td></tr>{% endfor %}']);
 });
 
-test("§6 授權用量那一列：四格都要有 is_unlimited 哨兵，而「沒有數字」的三種語意不得撞字", () => {
-    // `is_unlimited` 為真時，四格裡少一格哨兵（實例：「今日已用」那一格沒有），
-    // 那一格就照樣印上游的 `0`。而那顆 0 不是「今天沒有人問」，是**沒有人去數**
-    //（不限量那條分支直接回 `current_usage: 0` 而完全不執行 COUNT）。§6：「沒量到」與「零」是兩件事。
+test("§6 授權用量那一列：四格都要有「不限量」哨兵，而「沒有數字」的三種語意不得撞字", () => {
+    // 這個租戶不限量時，四格裡少一格哨兵（實例：「今日已用」那一格沒有），那一格就照樣印一個 `0`。
+    // 而那顆 0 不是「今天沒有人問」，是**沒有人去數**（不限量就不會去數今天用了幾次）。
+    // §6：「沒量到」與「零」是兩件事。
     // 兩件事一起釘，因為它們各擋一種壞法：
     //   ① 漏槽——某一格沒有哨兵，不限量的平台在那一格看到一個沒有意義的數字。
     //   ② 撞字——三種語意共用一顆字就等於沒有分：「不適用」會被讀成「這個平台沒有用量」（錯，
@@ -188,7 +188,7 @@ test("§6 授權用量那一列：四格都要有 is_unlimited 哨兵，而「�
             if (line === undefined) { out.push(`${labelKey}：這一格不見了（parse 失準或那一格被刪了）`); continue; }
             const text = attrValue(line, "data-text-unlimited");
             const key = attrValue(line, "data-key-unlimited");
-            if (!text || !key) { out.push(`${labelKey}：沒有 is_unlimited 哨兵（data-text-unlimited ＋ data-key-unlimited 要成對）`); continue; }
+            if (!text || !key) { out.push(`${labelKey}：沒有「不限量」哨兵（data-text-unlimited ＋ data-key-unlimited 要成對）`); continue; }
             slot.set(labelKey, { text, key });
         }
         if (slot.size !== CELLS.length) return out;   // 上面已經點名，不用殘缺的集合再算撞字

@@ -14,20 +14,10 @@ permalink: 3-2_glossaryManagement.html
     {% include "ui/breadcrumb/breadcrumb.html" %}
 </div>
 
-{# 租戶術語表管理（SaaS 新需求）。逆向自 gufofaq-saas product：術語表＝對 GufoRAG chatbot 術語表的租戶隔離代理，每張表在 agent
-     模式各生成一個查詢工具；能力閘 data:read 檢視／data:write 編輯，真正把關在 product。
-   **本頁打的端點**（§3-2：一頁多支端點時，檔頭第一段先列端點清單——只交代其中一支的時候，
-     漏掉的是「另一支存在」這件事，沒有任何判準看得出來）：
-       GET    /glossary                  列表（含詞條數）
-       POST   /glossary                  建表（201）
-       GET    /glossary/{table_id}       單表 ＋ 詞條
-       PATCH  /glossary/{table_id}       改表中繼資料（局部更新）
-       DELETE /glossary/{table_id}       刪表（被 config 或 skill 參照時 400）
-       PUT    /glossary/{table_id}/entries  整批取代詞條
-     （這一族沒有 `response_model=`：product 這一支是代理，回應形狀由 GufoRAG chatbot 的
-       `/api/glossary` 決定，見該 repo README 的「術語表管理 API」一節。）
+{# 租戶術語表管理：一張術語表就是問答 agent 的一顆查詢工具（在 agent 模式底下每張表各生成一個），
+     租戶之間互相隔離；檢視吃 data:read、編輯吃 data:write。
      版型比照 5-5-2_groupManagement（新增區＋清單表＋條件開窗 modal）。示範 2 筆。 #}
-{# id＝術語表 主鍵（product 的 `table_id: int`）。**不可拿 loop.index 當列鍵**：
+{# id＝這張術語表的識別碼。**不可拿 loop.index 當列鍵**：
      這張表刪得掉列，位置不是身分——刪掉前一列之後，後面每一列的列鍵都會往前頂一格，
      React 端的 key 與逐列動作的目標會一起指錯人（§6 列鍵）。 #}
 {% set glossaryTables = [
@@ -41,62 +31,47 @@ permalink: 3-2_glossaryManagement.html
      自己也是資料、不是字面量**：同一顆上限在這一頁有四個落點（新增區的 `maxlength`、新增區的
      可見提示、逐列就地編輯的 `maxlength`、表格下方那份共用提示），逐格寫死＝同一份契約在一頁裡
      烤了四份抄本（§3-2「重複資料在頁面資料化」、§6「同一份業務目錄不得各烤一份」）。開成一顆槽
-     之後它在轉換契約上就是 props：React 端由 `GET /api/settings/chat-config-limits` 的
-     `glossary.*.max_len` 填，不必在 tsx 裡再寫一次——四欄的執法點全在上游，前端多一份字面量就多
-     一個會靜默過期的地方。切版沒有端點可讀，故槽裡就是正本當下的值，改的只有「它是誰填的」。
-     出處逐字：
-     · 表名稱／何時查閱／補充指示的長度與「不可含 XML/HTML 標籤」＝GufoRAG chatbot 的
-       `MAX_TABLE_NAME_LEN = 64`／`MAX_WHEN_TO_CONSULT_LEN = 1024`／`MAX_TOOL_PROMPT_LEN = 1024`，
-       三欄同由 `validate_table_metadata` 執法（長度之外還跑 `contains_markup`：三欄都會原文進
-       工具中繼資料＝常駐系統提示詞）。
-     · 正規化 regex 的長度＝gufofaq-saas product 的 `MAX_GLOSSARY_NORMALIZE_REGEX_LEN = 500`，
-       格式判準＝GufoRAG chatbot 的 `regex_has_backtracking_risk`（product 端沒有這道判準的複本）（禁量詞、交替至多一個）。
-   **新增區與逐列就地編輯兩處都要掛**（§4）：兩處打的是同一支端點的同一組守衛，只掛新增區
-     等於那條約束在編輯路徑上不存在。逐列那四顆吃表格下方那一份共用提示（正典＝
+     之後它在轉換契約上就是 props：執行期由那份設定上限資料填進來，不必在每一處各寫一次——
+     多一份字面量就多一個會靜默過期的地方。
+     **四欄的值域在這裡宣告**：
+     · 表名稱 64 字、何時查閱 1024 字、補充指示 1024 字，三欄都**不可含 XML/HTML 標籤**——
+       這三欄會原文進工具中繼資料＝常駐在每一輪對話的提示詞裡，標籤混進去就是一道注入面。
+     · 正規化 regex 500 字，而且必須編得起來：**不可含量詞（* + ? {}）、交替至多一個**——
+       這兩種寫法會讓比對在長輸入上爆炸性回溯。
+   **新增區與逐列就地編輯兩處都要掛**（§4）：兩處是同一組守衛，只掛新增區等於那條約束在
+     編輯路徑上不存在。逐列那四顆吃表格下方那一份共用提示（正典＝
      glossary-entries-modal 的 `#glossaryLimitsHint`）。 #}
 {% set glossaryFieldLimits = { tableName: 64, whenToConsult: 1024, toolPrompt: 1024, normalizeRegex: 500 } %}
 {# 新增術語表：名稱（必填）＋何時查閱＋工具提示（textarea）＋新增鈕（五態 toast：成功／權限不足／填錯／失敗／到達張數上限）。
-     **逐 raise 對回 product 的 `create_glossary_table`，出口共五條**
-     （§3-2 負面斷言要列全部出口，`raise HTTPException` 只是其中一種形狀）：
-       ① `Depends(require_capability("data", "write"))` → 403（閘門由這顆鈕的 data-capability 宣告，
-          結果本身是**第 2 段 warning**——GUIDELINE §4：能力不足不做「不渲染／不可按」，照樣按得下去、
-          把那道 403 列進 data-toast）
-       ② 空名 → 400 `glossary.name_required`
-       ③ `_validate_normalize_regex` → 400 三種：超長（`MAX_GLOSSARY_NORMALIZE_REGEX_LEN`）／
-          `re.compile` 失敗／`regex_has_backtracking_risk`（含量詞或兩個以上交替）
-       ④ **`proxy_upstream` → 400 或 503**——這一條最容易整條漏掉，因為它在 product 這一側
-          看不出有幾種結果：那一支把上游失敗**分流**，判準是上游信封的 `code`——
-          在 `UPSTREAM_USER_INPUT_CODES` 白名單裡的 → **400 ＋ 上游原句**（原句指名了撞到哪個
-          名字、哪一張 config 還在引用這張表，那是使用者唯一據以行動的資訊，所以不改寫）；
-          分不出來的（沒有 `code`、或不在白名單）一律交給 `upstream_call` → 502／503 ＋ 關聯編號。
-          chatbot `validate_table_metadata` 的六道（三欄長度 ＋ 三欄 `contains_markup`）與它自己
-          那份 `validate_normalize_regex` 全部走 400 那一條，使用者自己改得掉 ⇒ 併進 warning 段；
-          503 那一條說得出是伺服器端的事、落在 error 段。
-          **分流的方向是刻意不對稱的**（那一支的 docstring 逐字）：把上游故障講成「你輸入錯了」
-          比反過來危險得多——前者沒有日誌、沒有告警、沒有關聯編號，使用者被指去改一個沒問題的欄位。
-       ⑤ **`assert_table_quota` → 400 `table.too_many_for_tenant`**：這個租戶的術語表已經有
-          `MAX_TABLES_PER_TENANT` 張。**執法點在 product**（`MAX_TABLES_PER_TENANT = 30`），
-          不在 GufoRAG chatbot——那一側的 `tenant_id` 是呼叫端自填的 tag、當不了配額鍵
-          （換一個 tag 就再拿 30 張），product 這一層的 `tenant_id` 才是來自 session。
+     **這顆鈕的結果共五條，逐條對回 data-toast**（§3-2 負面斷言要列全部出口）：
+       ① 沒有 data:write（閘門由這顆鈕的 data-capability 宣告，結果本身是**第 2 段 warning**——
+          GUIDELINE §4：能力不足不做「不渲染／不可按」，照樣按得下去、把那一態列進 data-toast）
+       ② 表名稱空著
+       ③ 正規化 regex 三種不合法：超長／編不起來／含量詞或兩個以上交替
+       ④ **驗證分兩處做，這一條最容易整條漏掉**：送出之後還要再過一道檢查，而那一道會把結果
+          **分流**成兩種——分得出「是使用者填的東西不對」的，原句直接送到眼前（原句指名了撞到
+          哪個名字、哪一張設定檔還在引用這張表，那是使用者唯一據以行動的資訊，所以不改寫）；
+          分不出來的一律當成故障 ＋ 關聯編號。三欄的長度、三欄的標籤檢查與 regex 檢查全部落在
+          前者，使用者自己改得掉 ⇒ 併進 warning 段；故障那一條說得出是伺服器端的事、落在 error 段。
+          **分流的方向是刻意不對稱的**：把故障講成「你輸入錯了」比反過來危險得多——前者沒有日誌、
+          沒有告警、沒有關聯編號，使用者被指去改一個沒問題的欄位。
+       ⑤ **這個租戶的術語表張數到頂**（上限 30 張，在這裡宣告）。配額算在租戶身上。
           **它是 warning、不是 error**：使用者刪掉用不到的表就建得起來。
           **而且一定要有自己的一段**：併進第 3 段「表名稱不可為空、任一欄超過長度上限……」的話，
           第 31 張會讓使用者回頭改名字、改欄位、改 regex——每一項都不是原因，改到底也不會有結果。
-     **無重名檢查**：chatbot 的 `create_glossary_table` 只跑那兩支驗證就 `db.add`，全檔零唯一鍵
-     分支，故不列「名稱已存在」（列一個上游產不出來的結果與只演成功一樣是說謊，§5）。
-     ⚠️ **第 5 段刻意不帶「現在幾張／上限幾張」**：product 的 400 detail 帶得出那兩個數字，但
-     `data-toast` 是屬性型譯文（§4-2 的唯一例外），把數字烤進去就要同頁另有一處常駐可見的節點
-     承載它——那一處就是下方「術語表清單」標題列的計數（`已 N / 30 張`）。段落本身只講「為什麼有
-     上限」與「下一步」，不覆寫後端訊息（同一顆鈕在不同錯誤下不該講兩種語氣）。
-     toast 值＝product catalog 的 toast.createGlossaryTable 逐字 #}
+     **無重名檢查**：建表只跑上面那幾道驗證，沒有任何唯一鍵分支，故不列「名稱已存在」
+     （列一個不可能發生的結果與只演成功一樣是說謊，§5）。
+     ⚠️ **第 5 段刻意不帶「現在幾張／上限幾張」**：`data-toast` 是屬性型譯文（§4-2 的唯一例外），
+     把數字烤進去就要同頁另有一處常駐可見的節點承載它——那一處就是下方「術語表清單」標題列的
+     計數（`已 N / 30 張`）。段落本身只講「為什麼有上限」與「下一步」，不改寫擋下來的那一句
+     （同一顆鈕在不同錯誤下不該講兩種語氣）。 #}
 <div class="block mb-16 flex-row column gap-16">
     {# ⓘ 說明：markup 逐字照抄 `settings/5-2_conversationSettings.html` 出口套用欄那顆既有
          info-btn（`aliasOutputInfoModal` 觸發鈕）六件組，只換 title/key/data-open-modal 三個值
          （§1-2 無 html 元件契約）。放在新的 flex-row 包裹層，不塞進 `.text-md.text-bold` 本體
          （該 div 不是任何 aria-labelledby 的目標，但比照 3-1-2/3-1-3 統一寫法）。
-         ①出處：本檔檔頭「租戶術語表管理」那段＋每張表在 agent 模式各生成一個查詢工具
-         那句，與 gufofaq-saas product 的 `create_glossary_table`；
-         正規化 regex 的語意（比對前先從輸入裡去掉匹配片段）出處是 GufoRAG chatbot 的
-         `apply_normalization`（`re.sub(normalize_regex, "", value)`）
+         ①講的是本檔檔頭那段：一張表在 agent 模式底下各生成一顆查詢工具；再加上正規化 regex
+         的語意（拿去比對之前，先從輸入裡把匹配到的片段去掉）
          ——這件事本頁沒有任何常駐提示講過，故寫進①，不與上方 `settings.glossaryMgmtIntro`
          或欄位 hint 重複。 #}
     <div class="flex-row align-items-center gap-8">
@@ -171,11 +146,8 @@ permalink: 3-2_glossaryManagement.html
 {% set helpModalWhatKey = "help.settings.addGlossaryTable.what" %}
 {% set helpModalWhat = "這一區用來新增一張術語表；每張表在 agent 模式底下都會各自生成一個可供 LLM 呼叫的查詢工具，供它在需要時查閱這裡定義的專有名詞。查詢正規化 regex 決定使用者輸入的詞要先去掉哪些片段（例如標點或空白的寫法差異）才拿去比對表裡的詞條，留白就只做基本正規化。" %}
 {% set helpModalStateItems = [] %}
-{# ③ 這一區唯一的界線：**每個租戶最多幾張表**。判準照 help-modal 檔頭那一句
-     ——「這顆界線有沒有被上游投影成一支拿得到的端點」：拿得到就寫一列。
-     出處＝`GET /api/settings/chat-config-limits` 的 `glossary.tables_per_tenant.max_len`
-     （product 的 `GLOSSARY_FIELD_LIMITS`，值取同一顆 `MAX_TABLES_PER_TENANT = 30`），
-     執法點是同 repo 的 `assert_table_quota`（第 31 張 → 400 `table.too_many_for_tenant`）。
+{# ③ 這一區唯一的界線：**每個租戶最多幾張表**，值 30、在這裡宣告（第 31 張會被擋下）。
+     判準照 help-modal 檔頭那一句——這顆界線執行期讀不讀得到一個值：讀得到就寫一列。
      四欄的長度上限**不列在這裡**：它們已經是欄位旁常駐可見的 hint ＋ `maxlength`（§4），
      再抄一份進說明窗就是第二個會分家的地方。
      `bound` 是獨立節點、不進 `labelKey`／`effectKey` 的譯文（help-modal 檔頭）；寫法照全站慣例
@@ -184,8 +156,8 @@ permalink: 3-2_glossaryManagement.html
      ⚠️ **這一列的兩顆 key 與 3-6 別名表共用**（`help.settings.tablesPerTenant` ＋ `…Effect`）：
      兩頁的繁中原文逐字相同（「哪一種表」由所在的說明窗本身交代），而 §4-2 明文「繁中原文相同的
      chrome 沿用既有 key、不另立」——另立 `glossaryTablesPerTenant`／`aliasTablesPerTenant` 兩份
-     只會讓同一句話的英譯在下一輪自己分岔（有測試把關）。共用同一顆 key 也對得上上游：兩族的
-     值本來就是同一顆常數 `MAX_TABLES_PER_TENANT`。 #}
+     只會讓同一句話的英譯在下一輪自己分岔（有測試把關）。共用同一顆 key 也對得上事實：術語表
+     與別名表的張數上限本來就是同一個值。 #}
 {% set helpModalLimitRows = [
   { labelKey: "help.settings.tablesPerTenant", label: "一個租戶最多幾張表",
     bound: "≤ 30",
@@ -197,13 +169,10 @@ permalink: 3-2_glossaryManagement.html
 {# 術語表清單：default-table。名稱／何時查閱／工具提示（逐列可就地編輯）＋詞條數＋操作
      （儲存｜管理詞條｜刪除）。管理詞條與刪除都需先選定「哪一張表」＝業務條件開窗，
      故用 hook class（.js-manage-entries／.js-delete-glossary），不掛 data-open-modal（§5）。
-     刪除**有**參照守衛（同 3-4 的 skill）：GufoRAG 的
-     `delete_glossary_table` 硬刪前先查 `SkillModel.allowed_tools.glossary_table_ids` 與
-     `ChatConfigModel.glossary_table_ids`，命中即 `error_glossary_table_still_referenced`，
-     product 端映成 400 並要求原樣傳到使用者眼前。示範 2 筆。 #}
+     刪除**有**參照守衛（同 3-4 的 skill）：真的刪掉之前先查有沒有 Skill 或對話設定檔還把這張表
+     當查詢工具在用，命中就擋下來，並把「還被誰用著」那句話原樣送到使用者眼前。示範 2 筆。 #}
 <div class="block flex-row column gap-16">
-    {# ⓘ 說明：同上一顆 info-btn 六件組。①出處：本區塊自己的檔頭（刪除參照守衛）＋
-         GufoRAG chatbot 的 `delete_glossary_table`。 #}
+    {# ⓘ 說明：同上一顆 info-btn 六件組。①講的是本區塊自己的檔頭那件事：刪除前的參照守衛。 #}
     {# 「已經用掉幾張」畫在**清單標題那一列**：這一頁再沒有第二個地方看得出這個租戶已經建了
          幾張表，少了它，使用者要撞到第 31 張被擋下來才知道有上限（§3-2「上限寫在消費點」）。
        **形狀＝本頁自己那顆詞條窗的既有計數列逐字同構**（`components/glossary-entries-modal` 的
@@ -289,7 +258,7 @@ permalink: 3-2_glossaryManagement.html
         </table>
     </div>
     {# 逐列四欄共用的常駐可見上限（正典＝glossary-entries-modal 的 #glossaryLimitsHint）。
-         **不能只掛新增區**：兩處打的是同一支端點的同一組守衛，而 maxlength 是靜默截斷
+         **不能只掛新增區**：兩處是同一組守衛，而 maxlength 是靜默截斷
          （打不進去也不說為什麼）。數字走資料節點、不烤進譯文（§4-2）。 #}
     <p id="glossaryTableLimitsHint" class="text-gray m-0"><span data-i18n="settings.glossaryLimitTableName">表名稱上限 </span><span>{{ glossaryFieldLimits.tableName }}</span><span data-i18n="settings.glossaryLimitWhenToConsult"> 字、何時查閱 </span><span>{{ glossaryFieldLimits.whenToConsult }}</span><span data-i18n="settings.glossaryLimitToolPrompt"> 字、補充指示 </span><span>{{ glossaryFieldLimits.toolPrompt }}</span><span data-i18n="settings.glossaryLimitNormalizeRegex"> 字、正規化 regex </span><span>{{ glossaryFieldLimits.normalizeRegex }}</span><span data-i18n="settings.glossaryLimitsRuleSuffix"> 字。前三欄不可含 XML/HTML 標籤（它們會原文進工具描述）。</span></p>
 </div>
@@ -312,7 +281,7 @@ permalink: 3-2_glossaryManagement.html
      兩顆記號都不給等於那顆鈕在 markup 上沒有任何東西可以抓（delete-modal 檔頭：二擇一必給）。 #}
 {# 連帶後果（`deleteNoteKey`）：術語表被刪掉時，表裡的詞條一起消失；而**正在用它的設定檔會少一顆
      查詢工具**——那是刪除當下看不到、下一次問答才發現的後果。這一頁的 toast 已經有「仍被參照」
-     那一段（上游擋得下來），這一句講的是**擋不下來、但確實會發生**的那一半。 #}
+     那一段（那一種擋得下來），這一句講的是**擋不下來、但確實會發生**的那一半。 #}
 {% set deleteNoteKey = "dataset.deleteGlossaryNote" %}
 {% set deleteNoteZh = "表內詞條會一併消失；還在用它的設定檔會少一顆查詢工具。" %}
 {% set deleteConfirmClass = "js-confirm-delete-glossary" %}

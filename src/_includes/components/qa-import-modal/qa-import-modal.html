@@ -1,37 +1,34 @@
 {# QA 問答匯入 modal，取自 3-3_qaSetManagement 頁「匯入問答」鈕（.js-qa-import）：開窗需先選定
      「匯入到哪個 QA 集」＝業務條件開窗，故該鈕保留 hook class、不掛 data-open-modal（GUIDELINE §5）。
-     QA 匯入騎現有 Excel 管道（gufofaq-saas product 的 import_qa：內部組
-     mapping={title:[問題欄], content:[答案欄]} 走 _do_excel_mapping_import）——UI 只需選問題欄、答案欄。
-     **`QaImportIn` 的每一個參數逐顆交代**（§3-2：request 收得下的都要有落點，不做的寫理由；
+     QA 匯入騎現有 Excel 管道（把問題欄對到標題槽、答案欄對到內容槽）——UI 只需選問題欄、答案欄。
+     **送出去的每一個參數逐顆交代**（§3-2：request 收得下的都要有落點，不做的寫理由；
      這裡不寫「幾個畫了、幾個沒畫」——那是推導值，補一顆就靜默過期，§3-2）：
-       `stored_name`：上傳那一步的產物（ui/upload-box → 預覽端點回的 `stored_name`），沒有獨立控制項。
-       `sheet_name`：`#qaSheetSelect`（形狀比照 1-1-3 的 `#excelSheetSelect`）——不給就取第一張，
+       檔案：上傳那一步的產物（ui/upload-box 上傳後拿到的暫存名），沒有獨立控制項。
+       工作表：`#qaSheetSelect`（形狀比照 1-1-3 的 `#excelSheetSelect`）——不給就取第一張，
          多工作表活頁簿會靜靜地只匯第一張，而使用者看不出來。值載體 ⇒ 掛 `js-qa-sheet`。
-       `question_col`／`answer_col`：`#qaQuestionCol`／`#qaAnswerCol`，值載體 ⇒ 掛 hook class。
-       `header_rows`：**兩邊同時落在預設 1，所以現況一致，不必畫**。它的約束是「必須與預覽時相同」
-         （`QaImportIn.header_rows` 的註解：question_col/answer_col 是使用者從預覽的欄名清單裡挑的，
-         多列表頭時那是串接後的名字）——而這顆 modal 的預覽是 `POST /datasets/excel/preview`
-         （gufofaq-saas 的 `apps/web/components/QaImportModal/QaImportModal.tsx` 的 `runPreview()`），那一支的
-         `header_rows` 同樣預設 1。要支援多列表頭就得**兩支一起給**（預覽帶了、匯入沒帶＝
-         `_assert_assignment_columns_exist` 400 `unknown_column`），還要在窗裡多一顆數值欄與
-         「改了要重新預覽」的連動——那是**另一條完整的功能**（兩支端點 ＋ 一顆欄位 ＋ 一條連動），
+       問題欄／答案欄：`#qaQuestionCol`／`#qaAnswerCol`，值載體 ⇒ 掛 hook class。
+       表頭列數：**預覽與匯入同時落在預設 1，所以現況一致，不必畫**。它的約束是「匯入時必須與預覽時
+         相同」——問題欄／答案欄是使用者從預覽的欄名清單裡挑的，多列表頭時那是串接後的名字。
+         要支援多列表頭就得**預覽與匯入兩邊一起給**（只有一邊帶＝欄名對不上，匯入被擋成
+         「找不到這個欄位」），還要在窗裡多一顆數值欄與
+         「改了要重新預覽」的連動——那是**另一條完整的功能**（一顆欄位 ＋ 一條連動 ＋ 兩處都要帶值），
          不是這一顆窗漏掉的東西。
          ⚠️ 不可以寫成「這顆 modal 根本沒有預覽步驟」：同一份 markup 裡就有 `dataImport.parsing`
          （解析中）、`qaSet.previewFailed`（讀取 Excel 欄位失敗）與工作表那句「只有選取的這一張會被
          預覽與匯入」，理由會被自己的 markup 推翻（§3-2）。
-       `convert_html`：**這顆窗刻意不給開關，但那條路是開著的**——`QaImportIn.convert_html` 預設為真，
-         而 QA 匯入與一般 Excel 匯入走同一支核心（product 的 `_do_excel_mapping_import`），
+       HTML 轉換：**這顆窗刻意不給開關，但那條路是開著的**——它預設為開，
+         而 QA 匯入與一般 Excel 匯入走同一條路，
          答案欄那一格照樣逐格跑 HTML 轉換。不給開關的理由是「QA 集是問答對、不是文件內文，
          用不到那顆旋鈕」；**不是「這條路不會轉換」**——那句話會讓下一個人以為
-         `content_empty_after_conversion` 在這裡走不到，而它走得到（見下面匯入鈕的那一段）。
+         「轉換後一個字都不剩」那一態在這裡走不到，而它走得到（見下面匯入鈕的那一段）。
          沒有開關的代價要一起講：那一態的下一步只有「回試算表把那幾列補成文字」一條。
-       `external_key`：**每個檔各一把**（共用一把的話同批第二個檔會蓋掉第一個），而這裡是單檔匯入、
+       檔案識別鍵：**每個檔各一把**（共用一把的話同批第二個檔會蓋掉第一個），而這裡是單檔匯入、
          沒有逐檔編輯的入口（1-2-1 是放在每一列的 file-edit-modal 裡）。
      上傳 Excel（ui/upload-box，button 版點開原生檔案窗）→ 選工作表／問題欄／答案欄 → 匯入
      （切版新頁的直送 API 鈕：data-toast 列全結果＋自創 js-qa-import-submit；warning 分支「未選欄」屬
      留在窗內就能修正的驗證，故不掛 btn-close-modals、關窗交 React 成功才關）。
-     欄位選項為執行期資料（上傳檔的欄）、option value＝欄標題字串
-     （product QaImportIn.question_col/answer_col），React 讀檔填入；此處示範 2 欄。
+     欄位選項為執行期資料（上傳檔的欄）、option value＝欄標題字串本身（送出去的就是那個字串），
+     React 讀檔填入；此處示範 2 欄。
 
      ⚠️ **本元件依賴 upload-box 的全部預設值，這是使用頁的前置條件**（§2：set 是頁面全域，§6：
      元件內 include 帶參數的子元件時要申明）。兩個使用頁的現況不是「從未 set」：
@@ -40,20 +37,17 @@
      重設回空——沒有那一行，本元件裡的 upload-box 會在窗內長出一列別人的錯誤檔名。
      `pages/dataset/3-3_qaSetManagement.html` 則是整頁沒有任何 `upload*` 的 set。
 
-     參數（示範開關；對回 gufofaq-saas 的 QaImportModal 已出貨的兩個條件渲染狀態，元件庫頁 set true 演出）：
-       qaImportShowParsing＝上傳後解析中（React 依 uploading 渲染）；
-       qaImportShowError＝解析失敗的持久錯誤列（React 依 error 渲染；文案為執行期值——excelOnly／
-         previewFailed／API detail，示範取 previewFailed）。 #}
-{# 工作表：`QaImportIn.sheet_name`。**只有一張時整個欄位不渲染**——單張活頁簿沒有可選的東西，
-     擺一顆只有一個選項的下拉只是讓人多按一次（React 正本 gufofaq-saas 的
-     `apps/web/components/QaImportModal/QaImportModal.tsx` 同樣以 `length > 1` 決定畫不畫，
-     形狀比照 1-1-3 的 #excelSheetSelect）。故這裡也走 `{% set %}` ＋ `{% if %}` ＋ `{% for %}`，
-     不是寫死兩顆 option。
+     參數（示範開關；這兩態元件庫頁 set true 演出）：
+       qaImportShowParsing＝上傳後解析中；
+       qaImportShowError＝解析失敗的持久錯誤列（文案為執行期值——只收 Excel／讀取欄位失敗／
+         失敗細節，示範取「讀取 Excel 欄位失敗」）。 #}
+{# 工作表。**只有一張時整個欄位不渲染**——單張活頁簿沒有可選的東西，
+     擺一顆只有一個選項的下拉只是讓人多按一次（形狀比照 1-1-3 的 #excelSheetSelect）。
+     故這裡走 `{% set %}` ＋ `{% if %}` ＋ `{% for %}`，不是寫死兩顆 option。
      選項是執行期資料（讀上傳檔得來），示範兩張。 #}
 {% set qaImportSheets = ["常見問答", "舊版問答"] %}
 {# 問題欄／答案欄共用同一份欄名清單：它們讀的是**同一個檔的同一組欄**，兩邊各抄一份的話，
-     改一處就會漏（§3-3：同頁兩個以上 select 的 option value 集合相同 ⇒ 必須 set 成一個陣列共用）。
-     React 正本也是同一個 `columns` 陣列 map 兩次。 #}
+     改一處就會漏（§3-3：同頁兩個以上 select 的 option value 集合相同 ⇒ 必須 set 成一個陣列共用）。 #}
 {% set qaImportColumns = ["客服問題", "客服回覆"] %}
 <dialog class="modals" id="qaImportModal" aria-labelledby="qaImportModal-title">
     <div class="modals-dialog modals-md">
@@ -116,12 +110,10 @@
                     </div>
                 </div>
                 <div class="modals-footer">
-                    {# 倒數第二段對回 400 `content_empty_after_conversion`
-                         （product 的 `_assert_excel_content_survived_conversion`，逐列指名、
-                         `detail` 帶 `rows`）：答案欄那一格**轉換前有字、HTML 轉換後一個字都不剩**。
-                       **與上一段是兩件事**：`_assert_qa_answers_present` 驗的是**轉換前**的原始
-                         儲存格（他沒填），這一顆驗的是**轉換後**（我們把它清掉了）——上游那兩支
-                         的 docstring 逐字寫著這條分界。折成一段的話，一個明明填了字的人會被告知
+                    {# 倒數第二段（逐列指名是哪幾列）：答案欄那一格**轉換前有字、HTML 轉換後一個字都不剩**。
+                       **與上一段是兩件事**：上一段驗的是**轉換前**的原始
+                         儲存格（他沒填），這一顆驗的是**轉換後**（我們把它清掉了）。
+                         折成一段的話，一個明明填了字的人會被告知
                          「答案欄有空白的列」，回試算表看了半天什麼都沒少。
                        **這裡的下一步只有一條**：回試算表把那幾列補成文字。1-1-4 那一頁還可以關掉
                          「HTML 轉 Markdown」再送，這顆窗沒有那顆開關（理由見檔頭）。 #}

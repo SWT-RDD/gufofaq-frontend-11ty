@@ -5,7 +5,7 @@
 
 **產出契約**：每個 `src/_includes/{ui,components}/<name>/`（`<name>.html`+`<name>.js`+`_<name>.scss`）
 → `<Name>.tsx` + `<Name>.scss`。scss `scss-diff.mjs` exit 0；tsx 從切版 html+js 重寫；對 `dist/` 用 `fpdiff.mjs` 驗收。
-**這兩支工具住在 React 端**（`gufofaq-saas/apps/web/scripts/fpdiff.mjs`、`.../scss-diff.mjs`），
+**這兩支比對工具由轉換方自己提供**；本文件定義的是它們要做到什麼——`scss-diff.mjs` 去掉路徑映射之後逐位元組比對，`fpdiff.mjs` 對兩側渲染出來的畫面比幾何與 a11y 結構屬性。名字沿用只是為了下文好指稱，
 不在切版 repo 裡——切版這一側的守門是 `npm run check`（stylelint ＋ build ＋ `tests/` 的 GUIDELINE 測試；條數以實際跑出來的為準，不在這裡抄一個會過期的數字）。
 **值以實際 `_<name>.scss` / `<name>.html` / `dist/` 為準**（本文件是規則，不是值的清單）。
 
@@ -16,7 +16,6 @@
 ## ⓪ 從切版整份重寫
 
 - 每個元件從切版 `<name>.html` + `<name>.js` + `_<name>.scss` 整份重寫。
-- 現況 `apps/web` 只讀 **consumer 介面**（props 被哪些頁面用），實作不參考。
 - 從現況保留的只有 **React 應用層**：權限過濾、`fetch`、路由、Next 慣例。
 - 重建到符合切版的正確路徑／命名（`ui/` 原子→`components/ui/`）：consumer 改用新元件、刪掉走樣舊檔，不留新舊兩套。
   （現況常有 undefined token 的走樣舊檔仍被 consumer import——那正是要退休的那份。）
@@ -53,7 +52,7 @@
   追回它切版的 `ui/` atom、抽成獨立 `components/ui/<Name>/`、退掉寄生（例：`.data-info` 曾寄生在 `Pagination.scss`）。
 - 走樣 scss 若把 hook class 選擇器寫成裸元素（如 `button:hover .tooltip` 而非 `.has-tooltip:hover .tooltip`），修回
   切版選擇器時 grep 所有 consumer、在觸發元素補上該 hook class——consumer 常是靠走樣的裸選擇器意外運作、自己沒掛 class。
-- **只引 GUIDELINE §3-2 那一級正本**（gufofaq-saas ＋ GufoRAG）：那一級以外的前端不看、也不引，它不是正本、也不是考據來源。
+- **不引用任何其他專案的程式碼或作法**（GUIDELINE §3-2）：切版是每一顆介面的定義點，轉換時要對的是切版這一份，不是任何一份既有實作。既有實作與這裡不同，是那一份要改。
 - **切版搬桶（`ui/` ↔ `components/`）時 React 同步搬**：§1-1 的判準變了就搬（例：`citation-ref` 的 js 呼叫
   `GufoSources.reveal()`＝呼叫「會產出可見 UI 的元件匯出」），並 grep 全 repo 更新 import **與檔頭／測試／
   e2e 註解裡的切版路徑字串**——那些路徑是下一輪審查對回正本的指標，留舊路徑會讓下一輪讀錯檔。
@@ -180,7 +179,7 @@
     渲染，條件寫在切版註解裡。照字面把 `hidden` 抄進 `className` 得到的是一顆永遠看不見的節點，而
     `fpdiff` 比的是預設狀態、兩邊都不可見，抓不到。
   - **「切版常駐、React 不渲染」有兩個維度，兩個都要收。** 一個欄位在 React 端會消失，
-    可能是因為：①**對話模式**（`gufofaq-saas` `apps/web/lib/modeMatrix.ts` 的 `appliesToMode`），
+    可能是因為：①**對話模式**（哪些欄位在哪個模式下畫得出來，逐欄寫在使用頁檔頭），
     也可能是因為②**同頁其他欄位目前的值**（5-2 的知識使用模式＝`none`、關掉重排序、關掉可回答性閘、
     QA 直答＝停用，四處）。切版是靜態超集、兩種都常駐，所以**兩種在 markup 上長得一模一樣**——
     只認第一種的人，會把第二種整批漏掉，而症狀是「一個永遠不生效的欄位照樣填得下去、存得起來」。
@@ -265,7 +264,7 @@
   不是 export 給多頁共用的模組常數、更不是子元件的預設值。判準：切版**元件檔頭**的 fallback（`perPage or 10`）
   是元件預設；**使用頁** set 的值（`20`）是頁面資料。把頁面值搬進元件＝§6「元件不得寫死會因頁面而異的資料」。
 - **但 `{% set %}` 的列資料陣列不轉**：上一條只管非資料的頁面參數（`perPage`、預設頁籤那一類）。set 的
-  清單若對應後端某支端點的回應（切版註解通常直接指名，如 5-6-1 的 `{% set tenants = [...] %}` ↔ product
+  清單若對應執行期取回的一批資料（如 5-6-1 的 `{% set tenants = [...] %}` ↔ 租戶列表
   的 `TenantOut`、5-8 的 `{% set tokens = [...] %}`），那是**示範資料**——React 的那幾格
   來自 API，一個字都不搬。切版每一輪的頁面 diff 常有超過一半是這種陣列的修正（列序改成端點真實排序、id 換成
   真主鍵、金鑰長度補足），逐條寫著理由但全部只對切版成立；照字面讀會把示範租戶 id（7/15/23/42/58）
@@ -398,7 +397,7 @@ portal 時的唯一辦法，**不是設計**。React 端一律收斂成**一顆�
 - markup 不掛 `data-i18n`／`.js-lang-toggle`。
 - **一顆 key 不得承載兩種行為語意**：行為契約不同就是兩顆 key，即使繁中字面相同。正典：思考深度的空值——
   主回答空＝`settings.reasoningEffortDefault`（該模型預設），分組 LLM 空＝`settings.reasoningEffortMinimal`
-  （最低思考，product 的 `PROFILE_FIELD_DEFAULTS` 中 `reasoning_effort_*`）。共用元件把空值 key 做成**呼叫端
+  （最低思考）。共用元件把空值 key 做成**呼叫端
   決定的 prop**，不要在元件內寫死一顆——寫死等於用元件把謊話複製到每個呼叫點。
 - **前綴／後綴 key 自帶分隔空白**（`"Total "`／`" pages"`／`"Source "`／`"Show "`／`" per page"`），不靠 JSX 補
   `{" "}`、也不靠 CSS 的副作用。`.sr-only` 前綴 ＋ 緊接的數字（`來源 N`）同理。
@@ -409,7 +408,7 @@ portal 時的唯一辦法，**不是設計**。React 端一律收斂成**一顆�
   「一對前後綴」的特例硬併。
 - **被拆成獨立節點的界線數字，React 端讀端點、不抄字面。** 判準是 markup 形狀：**一顆沒有 `data-i18n`
   的裸 `<span>`／`<td>` 夾在兩顆 `data-i18n` 之間，而切版檔頭指名了它的正本**（`GET /<資源>/limits` 的
-  某個路徑，或某支 product／chatbot 常數），那就是界線資料節點、不是文案。做法：走同一支
+  某個路徑，或某顆界線常數），那就是界線資料節點、不是文案。做法：走同一支
   `useLimits(group)` ＋ 路徑取值 ＋ 單位換算函式（`52428800 → 50MB` 集中在那一支，不在消費點各寫一份）；
   讀不到就**整段不畫**——不畫舊數字、不畫破折號、不畫半套。
   - **「先接成常數、之後再接端點」不算過渡**：那顆常數不會有人回來改，而它與正確答案在畫面上長得
@@ -432,7 +431,7 @@ portal 時的唯一辦法，**不是設計**。React 端一律收斂成**一顆�
   - 使用頁的示範推導下來**畫不到**某個成員（`regression.reasonAbsentInBaseline`：2-2-5 演的是「這一次中斷過」，
     結果集必為案例集 id 序的前綴 ⇒ 那一頁的「沒得比」兩列必然都是 `absent_in_this_run`）。
 
-  **不要用「React 保留並登記 `REACT_ONLY`」收掉它**：`REACT_ONLY` 只解決英文，
+  **不要用「React 保留並登記 「只有 React 有」登記表」收掉它**：「只有 React 有」登記表 只解決英文，
   而 §4-2 的硬不變量是**繁中才是原文、住在字串出現的地方**——切版沒有那顆 key 的渲染點時，缺的不只是
   `en.json` 一行，是那一段繁中在全站沒有家。React 只好就地拼字串（現況那句
   `` `(${t("qaTest.setting")}${sourcesSide})` `` 就是），等於在 React 端開了第二個文案正本，而字典比對、
@@ -445,11 +444,11 @@ portal 時的唯一辦法，**不是設計**。React 端一律收斂成**一顆�
   - **使用頁演不到的成員 → 元件庫頁**（`src/pages/components/component.html` 的「React 條件文案」區）：
     那一區本來就是「在生產頁上沒有人看得到的那一態」的家，枚舉成員與 `.hidden` 分支同住。
     - **整頁級的那一態走 `ui/error-page`，不是一行 `<p className="text-red">`。** 正典：各路由
-      `if (forbidden) return …` 那一支——不逐路由各留一顆 `REACT_ONLY`（`platform.forbidden`／
+      `if (forbidden) return …` 那一支——不逐路由各留一顆 「只有 React 有」登記表（`platform.forbidden`／
       `users.forbidden`／`retrieval.forbidden` 這種），一律收斂成 `error.forbidden`／
       `error.forbiddenPlatform` 兩顆——**分界是收件人不是頁面**。轉換時整個內容區換成 `.error-page`（`error-code` ＋ `error-message`，
       契約逐字在 `_error-page.scss` 檔頭），麵包屑與導覽由 route layout 照畫。
-  - **那一態根本走不到 → 刪掉，不要給它版位。** `REACT_ONLY` 之所以留得住一顆 key，前提是「執行期真的
+  - **那一態根本走不到 → 刪掉，不要給它版位。** 「只有 React 有」登記表 之所以留得住一顆 key，前提是「執行期真的
     到得了那一態」；到不了的那些是**防禦性死碼配上一句翻譯**，而一句翻譯讀起來就像它會發生。判準是
     去讀那條路徑而不是讀那段程式碼的註解：`dataImport.uploadExcelFirst`／`dataImport.backToUpload`
     掛在 Excel 匯入精靈的 `// 後備：狀態不完整` 那一支，而 `step` 的初值是 `1`、每一次 `setStep(n)` 都與
@@ -474,7 +473,7 @@ portal 時的唯一辦法，**不是設計**。React 端一律收斂成**一顆�
 - **「送出中／載入中／載入失敗」這一族與枚舉成員同辦法。** 它們不是枚舉，是**執行期狀態**：切版是靜態
   原型，畫得出「送出」畫不出「送出中」，於是 React 端一律就地多一顆 key（`action.saving`、
   `dataImport.previewFailed`…）。處置與缺成員完全相同——**回切版給它一個渲染點**（會換字的那一格用
-  兩態槽、生產頁演不到的落在元件庫頁的「React 條件文案」區），`REACT_ONLY` 只當**過渡登記**、不是終局。
+  兩態槽、生產頁演不到的落在元件庫頁的「React 條件文案」區），「只有 React 有」登記表 只當**過渡登記**、不是終局。
   理由也一樣：那句繁中在切版沒有家，就等於在 React 端開了第二個文案正本，而字典比對、孤兒 key、
   fpdiff 三張網一張都看不到。（`disabled={submitting}` 本身合規——§⑥ 合規 disable 的第①種；
   不合規的是那顆**沒有人定過**的第二態文字。）
@@ -659,8 +658,8 @@ portal 時的唯一辦法，**不是設計**。React 端一律收斂成**一顆�
     不看 tsx、型別與 lint 都看不到，於是兩個方向的錯可以同時存在，
     而且**錯的兩處各自都有註解宣稱自己是對的**（`.js-ask-suggested` 被刪掉還配了一條
     「必須為 null」的反向斷言；`.js-accordion` 那一族被抄過來還寫著「切版 markup 有就保留」的錯判準）。
-    React 端的落點是 `apps/web/lib/slicing/jsHooks.test.ts`：兩個方向各一條斷言 ＋ 一條負控（兩族都必須
-    非空，否則測試恆綠）。**重疊案例逐顆登記在該檔的 `OVERLAP_KEEP` 並寫理由**，清單只准短。
+    轉換方要有一支雙向對帳測試：兩個方向各一條斷言 ＋ 一條負控（兩族都必須
+    非空，否則測試恆綠）。**兩側都保留的那幾顆逐顆登記在那支測試的白名單裡並寫理由**，清單只准短。
 
 ## ⑥ 視覺指紋驗收
 
@@ -774,7 +773,7 @@ portal 時的唯一辦法，**不是設計**。React 端一律收斂成**一顆�
 ## 測試設定
 
 - `vitest.config.ts` 的 `resolve.alias` 補 `tsconfig.json` `paths` 的 `@/` 映射（Vitest 底層 Vite 不自動套 tsconfig paths）。
-- **`scss-diff.mjs` 要進 CI**（`package.json` 加 `scss:check`：對一張「切版路徑 ↔ React 路徑」清單逐對跑、全綠才算過）。
+- **`scss-diff.mjs` 要進轉換方的 CI**：對一張「切版路徑 ↔ React 路徑」清單逐對跑、全綠才算過。
   手動跑的結果是「當時對」不是「持續對」——反例：`_var.scss`／`_chat-message.scss`／`_multi-select.scss` 三支
   同時悄悄分岔，就是缺這張網。清單本身也是覆蓋率證據（新元件忘了登記＝看得出來）。
 - 顏色角色／對比度的正確性**不在 React 重算**（11ty 的 `COLOR_ROLES` 已守），React 只需守「複本沒跟上」。

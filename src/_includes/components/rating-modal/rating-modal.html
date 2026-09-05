@@ -2,17 +2,14 @@
      三個生產消費點：前台 FAQ 訊息的讚/倒讚（components/faq-chatroom）、後台 4-2 對話詳細、
      後台 2-2-3 AB 測試兩側；元件庫頁另有一份示範（顆數不寫死，§3-2；反查：正向 `grep -rl 'rating-modal/rating-modal.html' src`、反向 `grep -l 'id="likeModal"' dist/*.html`，兩邊推導出來的頁面集合相同）。
 
-     **一筆問答只有一份評分**：GufoRAG 的 `POST /api/chat/chatlogs/{id}/rating` 一次寫三欄
-     （`rating_type`／`rating_feedback`／`rating_time`，chatbot 的 `POST /chatlogs/{chat_log_id}/rating` 逐行無條件覆寫），
-     而 product 的 `POST /history/{log_id}/rating`（登入態）與前台那支打的是**同一個欄位**
-     ——沒有「管理者另外的一份評分」這種東西。因此：
-       · 意見回饋欄要**預填目前存著的那段話**（`ratingModalFeedback`）：product 的 client 一律送出
-         `feedback`（`json={"rating_type": …, "feedback": feedback}`，None 就是 null），
+     **一筆問答只有一份評分**：送出一次評分就是把評分別、理由與時間三樣一起無條件覆寫，
+     而前台訪客與後台登入者改的是**同一份**——沒有「管理者另外的一份評分」這種東西。因此：
+       · 意見回饋欄要**預填目前存著的那段話**（`ratingModalFeedback`）：送出時理由欄一律跟著送，
          留空送出＝把對方寫的理由清掉。
        · 用在會覆寫既有評分的地方（4-2）時，用 `ratingModalNote` 把這件事寫在畫面上。
 
-     `<dialog id="likeModal">` 的 id 是**轉換契約**（React 端靠它認出這一顆窗）：評分本身按 API 的
-     `rating_type`（positive／negative）做成讚／倒讚二選一，但 id 不改名（§4）。
+     `<dialog id="likeModal">` 的 id 是**轉換契約**（React 端靠它認出這一顆窗）：評分的值域是
+     `positive`／`negative` 兩顆（在這裡宣告一次，就是正本），做成讚／倒讚二選一，但 id 不改名（§4）。
 
      參數（使用頁／使用元件在 include 前 set，見 §3-2/§6）：
        ratingModalTitle / ratingModalTitleKey       —— 標題（不給＝前台的「幫助我們改進」）
@@ -21,9 +18,8 @@
        ratingModalFeedback                          —— 意見回饋欄的預填值（不給＝空）
        ratingModalToast / ...Key / ...Type          —— 送出鈕的結果（不給＝前台的三段）
        ratingCapability                             —— 送出鈕的能力閘門（§4）。後台兩頁（4-2／2-2-3）都給
-                                                      "history"，對回 product 的 `rate_history`
-                                                      ＝`require_capability("history")`；前台 faq 不給
-                                                      ＝匿名無閘門，那是對的。
+                                                      "history"（後台的評分要有問答紀錄這項能力才按得動）；
+                                                      前台 faq 不給＝匿名無閘門，那是對的。
      一個參數都不給＝前台現況逐字不變。 #}
 <dialog class="modals" id="likeModal" aria-labelledby="likeModal-title">
     <div class="modals-dialog modals-md">
@@ -49,19 +45,17 @@
                             <label for="feedbackText" class="control-label" data-i18n="modals.feedback">意見回饋</label>
                         </div>
                         <div class="field">
-                            {# 字數上限：正本是 product 的
-                                 `RATING_FIELD_LIMITS["feedback"]["max_len"]`，後台與前台**兩條寫入
-                                 路徑都以它夾**（各自的請求模型都是
-                                 `feedback: str | None = Field(max_length=…)`）。四個使用點裡有一個是
+                            {# 字數上限：意見回饋最多 2000 字（在這裡宣告一次，就是正本），
+                                 後台與前台**兩條寫入路徑都以它夾**。四個使用點裡有一個是
                                  **前台訪客**，而他打完一段長回饋才被擋下來時，連「哪裡不對」都不會知道。
                                  數字是資料槽，不烤進譯文（§4-2）。
                                **提示之外還要有 `maxlength`**：常駐提示說得出上限，但打字當下沒有任何
-                                 東西擋——訪客要打完整段、按下送出、吃到一個 422 才知道。這一格沒有
+                                 東西擋——訪客要打完整段、按下送出、被退回來才知道。這一格沒有
                                  「幾個項目、每個多長」那種多維度界線（同 alias-entries-modal 的理由不適用），
                                  一顆 `maxlength` 夾得住它。
                                **兩處吃同一顆 `{% set %}`、不各抄一個數字**（§6）：改上限只改這一行，
-                                 提示與夾制不可能分家。值是執行期才知道的（`GET /history/limits` 的
-                                 `rating.feedback_len`），故切版畫契約當前的值、React 由契約覆寫，
+                                 提示與夾制不可能分家。實際生效的那一顆是執行期才拿得到的，
+                                 故切版畫當前的值、React 在執行期覆寫它，
                                  載不到就不掛（同 5-8 名稱欄的處置）。 #}
                             {% set ratingFeedbackMaxLen = 2000 %}
                             <textarea class="form-control" id="feedbackText" rows="3" maxlength="{{ ratingFeedbackMaxLen }}" placeholder="請告訴我們原因（選填）" data-i18n-placeholder="modals.feedbackReasonPlaceholder" aria-describedby="feedbackTextHint">{{ ratingModalFeedback }}</textarea>

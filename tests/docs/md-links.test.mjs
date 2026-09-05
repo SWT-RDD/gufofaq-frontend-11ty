@@ -3,8 +3,7 @@
 import { test } from "vitest";
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
-import { basename } from "node:path";
-import { gitFiles, read, srcHtml } from "../_lib/corpus.mjs";
+import { gitFiles, read } from "../_lib/corpus.mjs";
 import { componentDirs, mdDocs, mdLinkTarget } from "../_lib/inventory.mjs";
 import { fail, probe } from "../_lib/probe.mjs";
 import { NL } from "../_lib/text.mjs";
@@ -95,16 +94,4 @@ test("[docs] md 的 §N 引用都指向存在的章節（GUIDELINE 的，或該�
     }
     assert.ok(seen >= 60, `只抓到 ${seen} 個 §N 引用 —— 正則壞了，這條在空轉`);
     assert.equal(bad.length, 0, fail(bad));
-});
-
-test("[docs] README.md 的由來表要列出每個沒有前身可鏡射的新頁", () => {
-    // 頁檔頭自述「SaaS 新需求 / SaaS 需求」＝沒有既有頁可鏡射的新頁，這種頁一定要進 README 差異表，
-    // 否則看 README 的人會以為它是漏抄。
-    const doc = read("README.md");
-    const newPages = srcHtml
-        .filter((f) => /src\/pages\//.test(f.replace(/\\/g, "/")) && /SaaS\s*新?需求/.test(read(f)))
-        .map((f) => basename(f, ".html"));
-    assert.ok(newPages.length >= 13, `只找到 ${newPages.length} 個自述 SaaS 新頁 —— 這條測試在空轉`);
-    const missing = newPages.filter((name) => !doc.includes(name));
-    assert.equal(missing.length, 0, `這些 SaaS 新頁沒進 README 差異表：\n${missing.join("\n")}`);
 });

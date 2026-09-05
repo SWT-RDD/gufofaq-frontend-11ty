@@ -8,14 +8,14 @@ import { SHOWCASE } from "../../_lib/inventory.mjs";
 import { fail, probe } from "../../_lib/probe.mjs";
 import { countLines, stripNjk } from "../../_lib/text.mjs";
 
-test("§4 每一顆會改狀態的鈕都要宣告它需要哪一道閘門（四條授權軸，值＝上游閘門自己的名字）", () => {
-    // 為什麼要有：唯讀使用者看到一顆按不動的鈕，是本專案反覆在修的那種「畫面說得出、後端不同意」。
+test("§4 每一顆會改狀態的鈕都要宣告它需要哪一道閘門（四條授權軸，值＝§4 宣告的那四組值域）", () => {
+    // 為什麼要有：唯讀使用者看到一顆按不動的鈕，是本專案反覆在修的那種「畫面說得出、實際做不到」。
     // 而「這一塊誰動得了」如果只存在 React 的應用層，切版與 React 就各有一份答案。
     //
-    // 三條軸各一個屬性，值一律是**上游閘門自己的名字**（不另發明詞彙）：
-    //   data-capability="data:write" / "settings:write"  ← require_capability("data","write") …
-    //   data-tenant-role="admin"                          ← require_admin（租戶管理員旗標，不是一顆能力）
-    //   data-platform-role="admin" / "auditor"            ← require_platform_admin／_auditor
+    // 三條軸各一個屬性，值域在 GUIDELINE §4 宣告一次（下面那張 VALID 是它的機器可讀版）：
+    //   data-capability="data:write" / "settings:write"  ← 能力 token，形狀是 <資源>:<read|write>
+    //   data-tenant-role="admin"                          ← 租戶管理員旗標（一個旗標，不是一顆能力）
+    //   data-platform-role="admin" / "auditor"            ← 平台兩級：admin 寫得了、auditor 唯讀
     // 前兩軸標在**觸發寫入的那顆控制項**上：看一顆鈕就知道它要什麼權限，不必往上推導祖先。
     // 平台頁例外，而且是有理由的例外：那一軸的單位是「整塊唯讀」——auditor 進得來、看得到、按不動，
     // 所以宣告掛在區塊上（見 5-6-1／5-6-2／5-6-3）。
@@ -38,7 +38,7 @@ test("§4 每一顆會改狀態的鈕都要宣告它需要哪一道閘門（四�
     //      `toast.split("|")[0]`——而第一段常常是 info 的「正在查詢資料…」「正在比較…」。
     //      要判的是**第一個 success 對位的那一段**（那才是「這顆鈕做成了什麼」）。
     //   ② **子字串比對放行了寫入**。「已核發，請立即複製下方明碼」因為句中有「複製」而免檢，
-    //      而核發服務金鑰是 require_platform_admin 才做得了的寫入。改成**以錨定字串開頭**。
+    //      而核發服務金鑰是要平台管理者才做得了的寫入。改成**以錨定字串開頭**。
     // 每一筆都要寫「為什麼是唯讀」：這張表是唯一能讓一顆會成功的鈕不宣告閘門的出口。
     // 這張表列過十筆，其中六筆（查詢／報表已下載／完整軌跡已載入／已回復至目前正式提示詞／
     // 已回復儲存的設定／比較完成）**一顆都沒有豁免到**——它們命中的鈕全都自己標了讀取軸的閘門
@@ -47,21 +47,21 @@ test("§4 每一顆會改狀態的鈕都要宣告它需要哪一道閘門（四�
     // 留下來的四筆各自有一顆真的沒有閘門、也標不出閘門的鈕。
     const READONLY = [
         ["下載", "把既有資料匯出成檔案，走讀取端點；產生檔案不落任何一筆新狀態"],
-        ["已複製為", "`import-report.js` 把被剝掉的連結組成出口替換規則寫進剪貼簿，完全不碰後端（貼到哪一區是下一步的指示，不是它做的事）"],
+        ["已複製為", "`import-report.js` 把被剝掉的連結組成出口替換規則寫進剪貼簿，不送出任何東西（貼到哪一區是下一步的指示，不是它做的事）"],
         // 複製類的繁中一律是「**受詞在前** ＋ 已複製」（`X已複製`），所以這張**前綴**錨定的表
         // 要逐句一筆、沒有共同前綴可收。刻意不改成子字串比對：子字串會放行
-        // 「已核發，請立即複製下方明碼」那顆 require_platform_admin 的寫入。
+        // 「已核發，請立即複製下方明碼」那顆要平台管理者才做得了的寫入。
         ["文字已複製", "`.copyBtn` 寫進剪貼簿（faq-chatroom.js 的 clipboard ＋ execCommand 退路），沒有任何端點"],
         ["連結已複製", "同上：`.shareBtn` 把**已經產生好的**分享連結寫進剪貼簿（faq-share-modal 那一顆旁邊就是唯讀的 textarea，連結是開窗前就有的）——產生連結是 share-manage-modal 的「建立分享連結」，那一顆自己標了 data-capability=\"history\""],
         ["提示詞已複製", "同上：5-2 提示詞版本列的 `.copyBtn` 把該版本的內容寫進剪貼簿，不落任何一筆設定（套用是另一顆鈕）"],
         ["歡迎語已複製", "同上：5-2 歡迎語版本列的 `.copyBtn`，理由與提示詞那一顆逐字相同"],
         ["金鑰已複製", "同上：5-8／5-9 列上的 `.copyBtn` 把已經核發好的金鑰寫進剪貼簿——核發是另一顆鈕，那一顆自己標了閘門"],
         ["嵌入片段已複製", "同上：5-8 的 `.copyBtn` 複製的是由已核發的 token 組出來的 <script> 片段，不打任何端點"],
-        ["量測完成", "5-10 檔頭引的 `GET /tags/coverage`：讀既有標註算覆蓋率，不改任何一筆標註"],
-        ["名單已載入", "iso-review-wizard 檔頭引的 `GET /platform/review/overdue`（require_platform_auditor）：把逾時名單讀回來畫成 preview，寫入在下一態那顆 .js-review-confirm"],
+        ["量測完成", "5-10 的標註覆蓋率量測：讀既有標註算出覆蓋率，不改任何一筆標註"],
+        ["名單已載入", "iso-review-wizard 的 idle→preview：把逾時名單讀回來畫成 preview（唯讀，稽核員也做得了），寫入在下一態那顆 .js-review-confirm"],
     ];
-    // 這張豁免表若是**整檔級**的——`5-1-1_accountInfo` 的理由只涵蓋兩顆自助端點
-    // （`/me/profile`、`/me/change-password`），整支檔案卻連 `PUT /account` 那一顆一起免檢。
+    // 這張豁免表若是**整檔級**的——`5-1-1_accountInfo` 的理由只涵蓋那兩顆「改自己的資料」的鈕，
+    // 整支檔案的每一顆鈕卻跟著一起免檢，包括那些不是自助動作的。
     // 改成 **(檔, success 段) 兩層**：豁免的單位＝那一顆鈕做成的那件事，理由要對得上它。
     // 而且 `if (NO_GATE.has(f)) return out;` 一旦排在 `platformScopes()` **之前**，
     // 豁免檔裡「宣告元素配對不到收尾標籤」那種 fail loud 會一起被吞掉——順序也一起修。
@@ -72,12 +72,12 @@ test("§4 每一顆會改狀態的鈕都要宣告它需要哪一道閘門（四�
     const NO_GATE_ANCHOR = "這顆鈕標不出授權軸";
     const NO_GATE = new Map([
         ["src/pages/settings/5-1-1_accountInfo.html", new Map([
-            ["個人資料已儲存", "`/me/profile` 是自助端點，product 只掛 get_current_user＋require_active_subscription，沒有 require_capability——標上能力軸反而會把「改自己的顯示名」擋在一顆它不需要的能力後面"],
-            ["密碼已變更", "`/me/change-password` 同上：改自己的密碼不吃租戶能力軸"],
+            ["個人資料已儲存", "改的是**自己**的顯示名：這是每一個登入者本來就做得了的自助動作，不落在任何一條租戶授權軸上——標上能力軸反而會把它擋在一顆它不需要的能力後面"],
+            ["密碼已變更", "同上：改自己的密碼也是自助動作，不吃租戶能力軸"],
         ])],
         ["src/pages/components/component.html", new Map([
-            ["已開始使用", "使用期閘門遮罩那一節的「我已閱讀並同意」：`POST /account/accept-disclaimer`（product 的 `accept_disclaimer`）的閘只有 `get_current_user`，docstring 逐字「任何登入者可呼叫（首次登入強制流程）」——首登流程按定義不可能要求任何能力，標任何一軸都是宣告一道那裡不存在的閘"],
-            ["密碼已變更", "同一節的強制改密面板：`POST /me/change-password` 是自助端點（理由與 5-1-1 那一顆逐字相同——改自己的密碼不吃租戶能力軸）"],
+            ["已開始使用", "使用期閘門遮罩那一節的「我已閱讀並同意」：首次登入的強制流程，任何登入者都走得到、也非走不可——首登流程按定義不可能要求任何能力，標任何一軸都是宣告一道那裡不存在的閘"],
+            ["密碼已變更", "同一節的強制改密面板：改自己的密碼是自助動作（理由同 5-1-1 那一顆——不吃租戶能力軸）"],
         ])],
         ["src/_includes/components/file-edit-modal/file-edit-modal.html", new Map([
             ["已更新", "送出前的本地編輯：這顆鈕改的是**還沒送出**的待上傳清單，全站沒有對應端點"],
@@ -252,7 +252,7 @@ test("§4 每一顆會改狀態的鈕都要宣告它需要哪一道閘門（四�
          `<button type="button" data-toast="已產生金鑰|失敗" data-toast-type="success|error">產生</button>`,
          // 第一段是 info 的「正在…」，success 段才是那顆鈕真正做成的事（寫入）
          `<button type="button" data-toast="正在查詢資料…|已刪除全部紀錄|失敗" data-toast-type="info|success|error">清空</button>`,
-         // 句中有「複製」但不是以唯讀動詞開頭——核發金鑰是 require_platform_admin 的寫入
+         // 句中有「複製」但不是以唯讀動詞開頭——核發金鑰是要平台管理者才做得了的寫入
          `<button type="button" data-toast="已核發，請立即複製下方明碼|失敗" data-toast-type="success|error">核發</button>`,
          // 宣告在別的區塊上，這顆鈕落在作用域外（整檔級豁免會放行它）
          `<div data-platform-role="admin"><span>唯讀區</span></div>\n<button type="button" data-toast="已凍結租戶|失敗" data-toast-type="success|error">凍結</button>`,
@@ -282,8 +282,9 @@ test("§4 每一顆會改狀態的鈕都要宣告它需要哪一道閘門（四�
         [`<div data-platform-role="admin"><span>沒有收尾</span>`],
         [`<div data-platform-role="admin"><span>有收尾</span></div>`]);
     // 值域也要釘住：發明新詞彙就等於讓「誰動得了」又有第二份答案。
-    // 兩組鍵來自 product 的 CAPABILITY_TOKENS（群組能力）與 CAPABILITIES（租戶功能開通）——
-    // 名字會重疊（ask／history／audit 兩邊都有），但失敗方式不同，故各佔一條軸（§4）。
+    // 兩組鍵講的是兩件事：能力 token（**這個人**被授予了什麼，形狀 <資源>:<read|write>）與
+    // 租戶功能開通（**這個租戶**開了哪幾項）。名字會重疊（ask／history／audit 兩邊都有），
+    // 但失敗方式不同——一個要找租戶管理者開通、一個要找平台——故各佔一條軸（§4）。
     const VALID = {
         "data-capability": ["data:read", "data:write", "settings:read", "settings:write", "ask", "history", "audit"],
         "data-tenant-feature": ["data", "ask", "history", "settings", "audit", "extract"],
@@ -295,20 +296,19 @@ test("§4 每一顆會改狀態的鈕都要宣告它需要哪一道閘門（四�
             // 樣板插值的值跳過（`data-platform-role="{{ item.platformRole }}"`）——那一份的值域由供
             // 資料的頁面負責，這裡看得到的只是 mustache 字面。
             for (const one of (v.includes("{{") ? [] : v.split(/\s+/).filter(Boolean)))
-                if (!VALID[a].includes(one)) hits.push(`${f}  ${a}="${one}" 不是上游閘門的名字（值域：${VALID[a].join("／")}）`);
+                if (!VALID[a].includes(one)) hits.push(`${f}  ${a}="${one}" 不在 GUIDELINE §4 宣告的值域裡（${VALID[a].join("／")}）`);
     assert.equal(hits.length, 0, `唯讀使用者會看到按不動的鈕，而畫面上沒有任何東西說得出為什麼：\n${fail(hits)}`);
 });
 
 test("§4 「權限不足」那一族要說得出找誰（收件人是子句的一部分，不是可選的裝飾）", () => {
     // §4 的子句正典是「權限不足，無法<動詞>——請找貴租戶的管理者開通」。收件人**唯一而且確定**：
-    // `require_capability`（product）第④層那道 403 只在「這個人少了能力
-    // token」時發生——平台管理員 bypass、租戶管理者 `is_admin` 直接過——所以看得到這一句的人
-    // 一定不是管理者，而能改這件事的一定是他的租戶管理者。
+    // 能力軸那道拒絕只在「這個人少了那顆能力 token」時發生——平台管理員與租戶管理者都不會走到
+    // 它——所以看得到這一句的人一定不是管理者，而能改這件事的一定是他的租戶管理者。
     // 少了收件人的那一版（之前全站 93 處都是）讀起來像一個沒有出口的狀態：使用者
     // 知道被擋下，卻不知道這修不修得掉、也不知道要找誰。
     //
-    // **例外只有一種**：第③層 `require_tenant_feature`（平台把整個租戶的功能關掉，連租戶管理者
-    // 也擋）的那一段，收件人是平台管理員——它的判準是那一段自己講得出「平台」，不是開一張白名單。
+    // **例外只有一種**：租戶功能軸那一段（平台把整個租戶的功能關掉，連租戶管理者也擋），
+    // 收件人是平台管理員——它的判準是那一段自己講得出「平台」，不是開一張白名單。
     const NEEDS = "請找貴租戶的管理者開通";
     const PLATFORM = "平台";
     const scan = (text, f = "<probe>") => {
@@ -443,7 +443,7 @@ test("§4 共用元件把 data-toast 開成參數時，閘門也要開成參數�
 });
 
 test("§4/§6 4-2 詳情：設定欄是「有值 vs 整格不存在」，合規兩欄有值才出現", () => {
-    // 正本 product 的 _SETTINGS_SCOPED_LOG_FIELDS 在無 settings:read 時是把鍵**整個拿掉**，
+    // 沒有 settings:read 的人，這幾欄是**整格不存在**、不是一個空值，
     // 所以這五欄不能切成「顯示空白」——空白會被讀成「這一輪沒設提示詞」而不是「你沒有權限看」。
     const comp = read("src/_includes/components/qa-detail-info/qa-detail-info.html");
     const gate = comp.match(/\{%\s*if conversation\.canReadSettings\s*%\}([\s\S]*?)\{%\s*endif\s*%\}/);
@@ -463,7 +463,7 @@ test("§4/§6 4-2 詳情：設定欄是「有值 vs 整格不存在」，合規�
         assert.match(gallery, new RegExp(`data-i18n="${k.replace(".", "\\.")}"`), `元件庫缺 ${k} 的可見示範`);
     // 執行流程：本頁的軌跡截斷兩態成對給，且「載入完整軌跡」真的渲染得出來
     const dist = distDoc("4-2_qaHistory_detail.html");
-    assert.match(dist, /data-i18n="agent\.loadFullTrace"/, "4-2 缺「載入完整軌跡」（product GET /history/{id}/trace 已經在了）");
+    assert.match(dist, /data-i18n="agent\.loadFullTrace"/, "4-2 缺「載入完整軌跡」（軌跡截斷時要有一顆把整份載回來的鈕）");
     assert.match(dist, /data-i18n="agent\.summaryTokensIn"/, "執行摘要要把 token 拆成 input／output");
 });
 

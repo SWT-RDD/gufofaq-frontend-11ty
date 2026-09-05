@@ -1,47 +1,42 @@
-{# 從問答紀錄一鍵建案例（2-2-4 批次回歸）。SaaS 的新需求，切版這一份就是它的正本；
-     業務契約在 gufofaq-saas product 的 `create_case_from_log`
-     （`POST /qatest/suites/{suite_id}/cases/from-log`，body `CaseFromLogIn`）。
+{# 從問答紀錄一鍵建案例（2-2-4 批次回歸）。切版這一份就是它的正本。
 
      為什麼它是主要入口而不是「進階功能」：人不會另外坐下來寫回歸案例，是「這一則答錯了」
-     才想把它留成案例。所以**斷言由後端自動推導**，前端不提供「先建再補」——一則沒有斷言
-     （或只有主觀分）的案例永遠通過，在基準比較裡永遠落在「無變化」（product 的
-     `_validate_assertions` 兩道閘門與 `_compare_runs`）。
+     才想把它留成案例。所以**斷言是自動推導出來的**，這扇窗不提供「先建再補」——一則沒有斷言
+     （或只有主觀分）的案例永遠通過，在基準比較裡永遠落在「無變化」。
 
      觸發鈕是 2-2-4 的 `.js-case-from-log`：開窗前要先選定「加到哪一個案例集」＝業務條件開窗，
      故不掛 data-open-modal（GUIDELINE §5）；元件庫展示頁另有示範觸發器。
      **閘門宣告的家在這裡、不在那顆觸發鈕上**（§4：真正送 API 的是窗內那顆確認鈕，觸發鈕只負責
      「先選定要動哪一筆」）。下方確認鈕的 `data-capability="settings:write history"` **兩顆並列＝AND**：
-     端點本身掛 `require_capability("settings", "write")`，函式第一行的 `_require_history_access`
-     再要一次 `history`——它讀的是提問、答案與來源文件名，少了那一道，只有設定權限的人可以拿任何一個
-     `log_id` 從側門把該租戶的問答讀出來（那些字會原樣變成案例的問題、前置對話與斷言）。
+     建案例這件事要的是設定的寫入能力，而它同時會去讀提問、答案與來源文件名，故另要一次
+     「問答紀錄」能力——少了那一道，只有設定權限的人可以拿任何一個問答紀錄編號從側門把該租戶的
+     問答讀出來（那些字會原樣變成案例的問題、前置對話與斷言）。
      2-2-4 那顆觸發鈕因此**不掛**這組屬性：掛了就是同一道閘門在同頁被宣告兩次。同頁另兩顆條件開窗鈕
      （刪除案例集／刪除案例）也都只宣告在 delete-modal 的確認鈕上——三顆一致。
 
      確認鈕**刻意不掛 btn-close-modals**：它的 toast 有一段「這一筆推導不出期望，換一筆」，
      那正是留在窗內就能修正的驗證結果（GUIDELINE §5：含可就地修正的 warning 分支者不自動關窗）。
 
-     兩種拒絕在文案上必須分得開（`_refuse_unusable_log`／`_log_hits`／`_assertions_from_log`／
-     `_prior_turns`）：
-       400 ＝ **這一筆紀錄不適合**（`log_has_no_answer`、`log_was_blocked`、`too_many_prior_turns`、
-              `prior_turn_gone`）——換一筆問答，或改用手動建立。
-       502 ＝ **系統有問題**，三種（可見文案要三種都列得出來，少一種就是那一態的使用者讀到一句
-              對不上自己畫面的話）：`log_hits_bad_shape`（命中清單形狀不符）、
-              `log_hit_has_no_identity`（第一筆命中沒有 document_id 也沒有 doc_name）、
-              `prior_turn_wrong_tenant`（前置鏈結指到別租戶的紀錄——聊天室屬單一租戶，那是上游
-              資料不一致，`_prior_turns` 同時記 ERROR）——不是使用者的操作問題，要回報。
+     兩種拒絕在文案上必須分得開：
+       **這一筆紀錄不適合**（沒有答案、被政策擋下、前置對話超過上限、前置鏈結中間那一輪
+              已不存在）——換一筆問答，或改用手動建立。
+       **系統有問題**，三種（可見文案要三種都列得出來，少一種就是那一態的使用者讀到一句
+              對不上自己畫面的話）：命中清單形狀不符、
+              第一筆命中沒有文件身分（既沒有文件 id 也沒有檔名）、
+              前置鏈結指到別租戶的紀錄（聊天室屬單一租戶，那是資料本身不一致）
+              ——不是使用者的操作問題，要回報。
      混成一句「建立失敗」的話，使用者只會一直換紀錄重試一個修不好的東西。
 
      結果區是 role="status" live region 且**常駐**（GUIDELINE §4：內容到達前節點就要在 DOM 裡，
      條件渲染等於報讀器永遠不播報）。示範內容刻意演「勾了帶入前置對話卻拿到 0 輪」那一態，
-     而**那一態的理由很容易寫錯**：不是「上游沒把聊天室帶下去」——product 的 `run_ask_stream`
-     會先 `resolve_room_id(room_ref,…)` 再把 `chat_room_id=` 傳下去，它帶得很清楚；
-     它刻意不收的是**呼叫端直接給的裸 `chat_room_id`**
-     （那是 GufoRAG 全域遞增的整數，跨租戶猜得到），對外只收 `room_ref`。
-     真正會拿到 0 輪的是「這一筆紀錄本身就沒有前置」（單題成室、或 `room_ref` 解不出來）。
+     而**那一態的理由很容易寫錯**：不是「問答時沒把聊天室帶下去」——問一題一定帶著聊天室的
+     對外參照走，帶得很清楚；不收的是**呼叫端直接給的內部聊天室整數**
+     （那是全域遞增的號碼，跨租戶猜得到），對外只認那顆參照。
+     真正會拿到 0 輪的是「這一筆紀錄本身就沒有前置」（單題成室、或那顆參照解不出來）。
      那一態必須被講出來，否則使用者只會以為前置對話帶進去了——這句話是使用者讀得到的紅字，
      理由寫錯比不寫更貴（§3-2）。
-     `derived.why` 與 `derived.context_note` 是後端回的整句話（執行期資料，不翻）；
-     `derived.assertions` 是型別識別字（`cites_document` 這種業務識別字，不翻）。 #}
+     「推導理由」與前置對話那句提示是執行期算出來的整句話（資料，不翻）；
+     「自動帶出的斷言」是型別識別字（`cites_document` 這種業務識別字，不翻）。 #}
 <dialog class="modals" id="caseFromLogModal" aria-labelledby="caseFromLogModal-title">
     <div class="modals-dialog modals-md">
         <div class="modals-wrap">
@@ -65,9 +60,9 @@
                                 <label for="fromLogId" class="control-label required" data-i18n="regression.fromLogLogId">問答紀錄編號</label>
                             </div>
                             <div class="field">
-                                {# 值交給 React 讀去送 API 的**整數**欄（正本 product 的 `CaseFromLogIn.log_id: int`）⇒
+                                {# 這一格送出去的是**整數**（問答紀錄編號）⇒
                                      §4 三件套：type=number ＋ min/step ＋ 可見區間（下面那句 hint 已接上 aria-describedby）。
-                                     寫成 type=text 時打錯一個字就是 NaN、序列化成 JSON 是 null。上游無上限故不寫 max。 #}
+                                     寫成 type=text 時打錯一個字就是 NaN、序列化成 JSON 是 null。沒有上限故不寫 max。 #}
                                 <input type="number" min="1" step="1" id="fromLogId" class="form-control js-from-log-id" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" aria-describedby="fromLogIdHint" required>
                                 <p id="fromLogIdHint" class="text-gray" data-i18n="regression.fromLogNeedsHistory">正整數；在「歷史紀錄」頁每一列的對話編號就是它。這支端點除了設定權限，另需「問答紀錄」權限——它讀的是提問、答案與來源文件名。</p>
                             </div>
@@ -80,15 +75,15 @@
                                 <label class="form-checkbox">
                                     {# 值載體 ⇒ 只掛 hook class、不掛 data-toast（§5 矩陣②）；沒有 hook 的話 React 只能靠 DOM 位置認它。
                                          **checked 是示範態的一部分**：下面結果區演的是「勾了帶入前置對話卻拿到 0 輪」，
-                                         那句紅字在上游只有 `include_context=true` 時才會出現（product 的 `_context_note`
-                                         只在 `if requested:` 那一支寫它）——沒勾卻印出那句話，畫面同時說兩件互斥的事。 #}
+                                         那句紅字只有在「有要求帶入前置對話」時才會出現——沒勾卻印出那句話，
+                                         畫面同時說兩件互斥的事。 #}
                                     <input type="checkbox" class="js-from-log-include-context" aria-describedby="fromLogContextHint" checked>
                                     <span data-i18n="regression.fromLogIncludeContextOn">沿著這則問答的前置鏈結，把整段對話一起帶成案例的前置輪</span>
                                 </label>
-                                <p id="fromLogContextHint" class="text-gray" data-i18n="regression.fromLogContextCost">預設不帶。每一輪前置對話在每一次執行都是一次真的問答（打一次 chatbot、扣一次問答額度）。超過上限時整筆擋下、不截成最近幾輪——截斷之後案例看起來完整，實際上少了最前面那幾輪脈絡。</p>
+                                <p id="fromLogContextHint" class="text-gray" data-i18n="regression.fromLogContextCost">預設不帶。每一輪前置對話在每一次執行都是一次真的問答（打一次問答引擎、扣一次問答額度）。超過上限時整筆擋下、不截成最近幾輪——截斷之後案例看起來完整，實際上少了最前面那幾輪脈絡。</p>
                             </div>
                         </div>
-                        {# 常駐 live region：建立成功後由業務 js 填入後端回的 derived 區塊。 #}
+                        {# 常駐 live region：建立成功後由業務 js 填入這一筆推導出來的結果。 #}
                         <div class="block block-sm border corner-md flex-row column gap-8" role="status" aria-live="polite">
                             <div class="text-bold" data-i18n="regression.fromLogResult">這一筆帶出來的東西</div>
                             <p><span class="text-bold" data-i18n="regression.fromLogDerived">自動帶出的斷言：</span><code class="inline-code">cites_document</code></p>

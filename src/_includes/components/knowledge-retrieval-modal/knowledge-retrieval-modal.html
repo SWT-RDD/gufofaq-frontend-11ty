@@ -11,8 +11,7 @@
      故 `active` 必須落在標「（預設）」的那一顆。
    哪一顆是預設是**跨頁共用的同一個語意值**（§6：同一個參數只能有一個來源）：
      5-2_conversationSettings 的 `settingTabs` 把 `default: true`（前台問答預設使用 radio）給了設置二，
-     2-2-3 的 apply-settings-compare-modal 左欄「原設定」也是同一個值 ⇒ 三處都是設置二。
-     上游那一欄是 gufofaq-saas product 的 `TenantSetting.default_frontend_profile_no`。 #}
+     2-2-3 的 apply-settings-compare-modal 左欄「原設定」也是同一個值 ⇒ 三處都是設置二。 #}
 {% set kmSettingTabs = [
     { label: "設置一", labelKey: "settings.config1" },
     { label: "設置二（預設）", labelKey: "modals.settingTwoDefault", active: true },

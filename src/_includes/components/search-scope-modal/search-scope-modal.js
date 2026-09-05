@@ -5,7 +5,7 @@
 //
 // **綁的是確認鈕自己（.js-confirm-search-scope），不是 .btn-close-modals 那一整族**（綁後者會連
 // 右上角 X 一起接管）。理由是這一窗有一個就地修得掉的前提：**至少要勾一個資料集**
-// （`SearchIn.dataset_ids` 帶 `min_length=1`，空清單是 422——見元件檔頭與 3-7 檔頭）。
+// （送出去的 dataset id 至少要有一個，空清單會被拒——見元件檔頭與 3-7 檔頭）。
 //   · 一筆都沒勾 → 彈 warning、**留在窗裡**。⚠️ 不可以退成 `if (!checked) return;`：那是零訊號，
 //     讀起來與「這顆鈕壞了」逐字相同。也**不可以改成把確認鈕 disabled**：合規的 disabled 只有
 //     「進行中」與「type-to-confirm 尚未解鎖」兩種（REACT-CONVERSION §⑥），「沒選任何一筆」的

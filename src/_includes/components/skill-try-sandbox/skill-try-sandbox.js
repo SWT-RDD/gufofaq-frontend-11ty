@@ -1,11 +1,10 @@
 // Skill 試跑沙盒的開合：清單列的「試跑」→ 顯示本面板並把該列的 skill 名填進標題；「關閉」→ 收起來。
 //
-// 為什麼這段行為在切版就要動得起來（§5 ④）：它在正本也是純 UI state（gufofaq-saas 的 apps/web 那一支 skills 頁的
-// `setTryTarget(skill)` / `setTryTarget(null)`），沒有 API、不需要業務資料——名字就在被點的那一列上。
+// 為什麼這段行為在切版就要動得起來（§5 ④）：它是純 UI state——開哪一個 skill 的面板、標題寫誰的名字，
+// 全部不送請求、不需要業務資料，名字就在被點的那一列上。
 // 「區塊的顯示條件是業務的」不能推導出「區塊內的鈕也是業務的」，否則整區三顆鈕都變成沒人接的死鈕。
 //
-// 觸發鈕的 class 沿用 `.js-try-skill`：它已被 gufofaq-saas（apps/web 的 skills 頁與其 e2e 測試）引用而凍結，
-// §5 明訂不因命名風格改名。所以這裡是「hook 名照留、行為由切版補上」，不是把 hook 收回來。
+// 觸發鈕的 class 是 `.js-try-skill`：hook 名一經訂下就凍結（§5），不因命名風格改名。
 //
 // 「開始試跑」（.js-run-try-skill）刻意不在這裡實作：那是送 API 的動作鈕，成敗分支由 data-toast 演（§5 ③）。
 document.addEventListener("DOMContentLoaded", function () {

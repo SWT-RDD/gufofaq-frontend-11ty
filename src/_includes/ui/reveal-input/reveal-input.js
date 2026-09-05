@@ -34,8 +34,7 @@
 //   </div>
 //
 // **`value` 的長度是規格的一部分**：這一格預設 `type="password"`，遮罩點數就等於字面量長度，
-// 短一顆點就是把「金鑰有多長」畫錯（5-9 檔頭有推導：product 的 `new_api_key()` ＝
-// `_API_KEY_PREFIX` ＋ `secrets.token_urlsafe(32)` ⇒ 46 字元）。值由該頁的
+// 短一顆點就是把「金鑰有多長」畫錯（這一把是 46 字元，推導寫在 5-9 檔頭）。值由該頁的
 // `{% set extractKeyPlain %}` 供給，那一行的字面量長度就是這一格畫出來的點數。
 //
 // ── 第二個消費點（5-6-3_platformServiceKeys）**也寫一段完整 markup**，不用散文交代差異。

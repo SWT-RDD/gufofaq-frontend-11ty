@@ -1,17 +1,13 @@
-{# 單檔上傳大小上限的**唯一正本**（product 的 `Settings.upload_max_bytes`，預設
-     50 MiB，經 product 的 `DATASET_LIMIT_GROUPS.upload.bytes` 投影成
-     `GET /datasets/limits` 的 `upload.bytes.max` —— 那支端點就是這顆數字的正本；React 端執行期
-     讀它，切版這一份是靜態稿的值）。
+{# 單檔上傳大小上限的**唯一正本**：50 MiB，在這裡宣告一次，兩個消費點共用。
    **為什麼非目錄不可**（GUIDELINE §2 為 `*-catalog` 放寬 `{% from … import %}` 的那條）：這顆數字有
      兩個消費點——`ui/upload-box`（`.upload-desc` 的可見文字 ＋ `data-max-mb` 那顆選檔當下的夾檔判準）
      與 `ui/upload-card`（三張卡的 `.upload-desc`）——而 `{% include %}` 表達不出「共用一份資料」
      （獨立 scope，子檔 `{% set %}` 的變數回不到父頁），`_data/` 又被 §2 明文禁止。
      各烤一份不是假想的風險：只要讓每張卡自己寫一個數字（Excel 10MB、其餘 30MB 這種），
-     就會與後端對不上——product 的 `read_upload()`／`UploadBudget()` 對這幾種副檔名走的是**同一段**
-     程式碼，沒有任何呼叫端覆寫 `max_bytes`，所以那幾個手抄值裡只有一個可能是對的。
+     那幾個手抄值裡就只有一個可能是對的——所有上傳路徑共用的是**同一條**上限，
+     沒有「某個格式專用」的版本。
      而這種錯**在畫面上完全看不出來**：每張卡各自看起來都很合理，要並排比對才會發現它們不一致。
-   **單位是 MiB**：`52428800` ＝ 50 × 1024 × 1024，與 `upload.bytes.max` 逐位元組相同，
-     故 `upload-box.js` 換算用 1024 不是 1000。
+   **單位是 MiB**：`52428800` ＝ 50 × 1024 × 1024，故 `upload-box.js` 換算用 1024 不是 1000。
    目錄只放跨消費點都相同的欄位（§2）：格式清單（xlsx／pdf／docx）因頁而異，留在各自的
      `uploadDescPrefixKey`／`card.descKey`，不進這裡。 #}
 {% set uploadLimitCatalog = { maxMb: 50 } %}

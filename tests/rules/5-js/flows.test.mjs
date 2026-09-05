@@ -96,7 +96,7 @@ test("§5/§6 逐列可刪/撤銷的管理表要帶 {% else %} 無資料列（�
                 if (!fr || fr.type !== "for") continue;
                 const body = src.slice(fr.bodyStart, m.index);
                 // 判準綁死 `<tr>` 的話，div 排版的可撤銷清單（share-manage-modal 的分享連結列）
-                // 整類隱形——那張表的列上就有 .js-revoke-share，而 GET /share 只回未撤銷的列，
+                // 整類隱形——那張表的列上就有 .js-revoke-share，而清單只列未撤銷的那幾條，
                 // 真實初始態就是空的。判準改成「這個 for 的列上有逐列刪除/撤銷動作」，不看它用什麼標籤。
                 if (!rowAction.test(body)) continue;
                 // for 的來源是**行內字面陣列**（`{% for cat in [{...}] %}`）＝表單 repeater 的示範列，
@@ -124,17 +124,17 @@ test("§5/§6 4-1 答案來源篩選：三顆值、只掛 hook、清單只有直
     const src = read("src/pages/qaHistory/4-1_qaHistory.html");
     const sel = src.match(/<select[^>]*id="answerSourceSelect"[\s\S]*?<\/select>/);
     assert.ok(sel, "4-1 缺「答案來源」篩選");
-    // 值＝上游的字面；「全部」是那顆 value=""（§4：「還沒挑」要有一顆承載得住）
+    // 值是機器碼、不另發明詞彙；「全部」是那顆 value=""（§4：「還沒挑」要有一顆承載得住）
     assert.deepEqual([...sel[0].matchAll(/<option value="([^"]*)"/g)].map((m) => m[1]), ["", "qa_direct", "generated"],
-        "選項的值要是 ''／qa_direct／generated（值＝上游字面，不另發明詞彙）");
+        "選項的值要是 ''／qa_direct／generated（答案來源的值域，不另發明詞彙）");
     // §5 矩陣②：值載體 select 只掛 hook class、不掛 data-toast（click 委派抓不到 change）
     assert.match(sel[0], /class="[^"]*\bjs-answer-source\b/, "值載體要有 hook class 讓 React 認得出它");
     assert.ok(!/data-toast/.test(sel[0]), "值載體不得掛 data-toast");
     // 唯讀查詢：不掛任何授權軸
     assert.ok(!/data-(capability|tenant-feature|tenant-role|platform-role)=/.test(sel[0]), "唯讀篩選不該宣告授權軸");
     // 清單：只有 qa_direct 掛徽章——生成是常態，每列都掛等於掛了一顆沒有資訊量的標籤
-    // 這一格已從 `{{ row.userType }}` 改成封閉目錄的 `{% if %}` 鏈（值＝上游字面
-    // frontend／backend／ab_test），所以整格本來就有一個「else —」（那是標籤欄沒值那一支）。
+    // 這一格是封閉目錄的 `{% if %}` 鏈（值域是 frontend／backend／ab_test 三顆機器碼），
+    // 所以整格本來就有一個「else —」（那是標籤欄沒值那一支）。
     // 判準因此收在**徽章那一段**上，而不是整格不得有 else。
     const cell = src.match(/<td>[^\n]*row\.userType[^\n]*<\/td>/);
     assert.ok(cell, "找不到「使用者類型」那一格");
@@ -148,7 +148,7 @@ test("§5/§6 4-1 答案來源篩選：三顆值、只掛 hook、清單只有直
     const rows = (dist.match(/<tr[^>]*>\s*<td>1217\d<\/td>/g) || []).length;
     assert.ok(badges >= 1 && badges < rows, `示範要同時有直答與生成兩種列（徽章 ${badges} / 列 ${rows}）`);
 
-    // ── 匯出格式（product export_history 的 Query(alias="format")，預設 csv）──────────
+    // ── 匯出格式（值域 csv／xlsx，預設 csv）─────────────────────────────────────
     // 這一列改成 `ui/field-with-input` 的附屬控制項結構（「含統計表頭」收成 csv 的附屬
     // checkbox——§3-2「組合無效格要由 markup 表達」），內層因此多了幾層 <div>：
     // 非貪婪 `[\s\S]*?<\/div>` 會停在**第一顆內層** `</div>`，radios 只抓得到 1 顆而誤報。
@@ -170,8 +170,8 @@ test("§5/§6 4-1 答案來源篩選：三顆值、只掛 hook、清單只有直
     assert.ok(/<\/div>\s*$/.test(group[0]), "取整段失敗——括號沒有配平，下面每一條斷言驗的都不是整組");
     const radios = [...group[0].matchAll(/<input type="radio"([^>]*)>/g)].map((m) => m[1]);
     assert.equal(radios.length, 2, "只給兩顆：csv 與 xlsx 是同一個問題的兩種答案；jsonl 是給程式的，不放進畫面");
-    assert.deepEqual(radios.map((a) => (a.match(/value="([^"]*)"/) || [])[1]), ["csv", "xlsx"], "值＝上游 format 的字面");
-    assert.match(radios[0], /\bchecked\b/, "預設要對回 product 的 Query(default=\"csv\")");
+    assert.deepEqual(radios.map((a) => (a.match(/value="([^"]*)"/) || [])[1]), ["csv", "xlsx"], "值是機器碼 csv／xlsx，不另發明詞彙");
+    assert.match(radios[0], /\bchecked\b/, "預設是 csv（一進來就要有一顆選好的）");
     assert.ok(radios.every((a) => /\bjs-export-format\b/.test(a)), "值載體要有 hook class");
     assert.ok(!/data-toast/.test(group[0]), "值載體不得掛 data-toast（成敗由下載鈕演）");
     assert.ok(!/data-(capability|tenant-feature|tenant-role|platform-role)=/.test(group[0]), "唯讀匯出不宣告授權軸");
@@ -195,8 +195,8 @@ test("§5/§6 別名表：四個階段照管線排序、檢索與出口預設不
         const seg = cfg.slice(i, cfg.indexOf("</select>", i));
         return { all: [...seg.matchAll(/<option value="(\d+)"([^>]*)>/g)].map((m) => ({ v: m[1], sel: /selected/.test(m[2]) })) };
     };
-    // **順序本身是規格**：綁定 → 直答比對 → 檢索 → 推理 → 出口，照管線走。照字母序或照上游欄位
-    // 的宣告序排，畫面就講不出「一句話依序經過哪幾關」，而那正是這五顆多選唯一能給的東西。
+    // **順序本身是規格**：綁定 → 直答比對 → 檢索 → 推理 → 出口，照管線走。照字母序或照欄位的
+    // 宣告序排，畫面就講不出「一句話依序經過哪幾關」，而那正是這五顆多選唯一能給的東西。
     // 這條在 dist 上以 DOM 出現序判定——版位順序沒有別的載體，看不出來就只能靠人記得。
     const ORDER = ["aliasTablesSelect", "aliasApplyMatchSelect", "aliasApplySearchSelect",
         "aliasApplyReasoningSelect", "aliasApplyOutputSelect"];
@@ -207,13 +207,13 @@ test("§5/§6 別名表：四個階段照管線排序、檢索與出口預設不
     const bound = new Set(bind.all.filter((o) => o.sel).map((o) => o.v));
     assert.ok(bound.size > 0, "示範要綁幾張表，否則後四顆的「⊆ 綁定」驗不到");
     for (const id of ORDER.slice(1)) {
-        // 寫入層驗「四個 apply 清單必須 ⊆ alias_table_ids」（chatbot retrieval_profiles）——
-        // 選項只能來自已綁定的那幾張，否則畫面演得出一個後端會 400 的狀態
+        // 四個 apply 清單必須 ⊆ 已綁定的那幾張別名表：選項只能來自綁定過的表，
+        // 否則畫面演得出一個存不下去的狀態
         for (const o of opts(id).all)
             assert.ok(bound.has(o.v), `${id} 出現了沒被綁定的表 id=${o.v}（apply ⊆ 綁定）`);
     }
     // **出口示範刻意留空**：它是唯一會改寫使用者看到的字的階段，用它得是一個明確動作——
-    // 示範先勾起來會讓人以為那是預設值（上游五欄也全部預設空）。
+    // 示範先勾起來會讓人以為那是預設值（這五欄的預設一律是空）。
     // **檢索同辦**：附加標準詞會拉高召回、也可能拉低精確度，同樣得是一個明確動作。
     for (const id of ["aliasApplySearchSelect", "aliasApplyOutputSelect"])
         assert.equal(opts(id).all.filter((o) => o.sel).length, 0, `${id} 的示範資料不得有值`);
@@ -245,10 +245,10 @@ test("§5/§6 別名表：四個階段照管線排序、檢索與出口預設不
     assert.match(glossary, /data-i18n="settings\.glossaryMgmtIntro"/, "術語表說明句要在");
 });
 
-test("§5/§6 5-2 的數值旋鈕必須是 type=number 並帶後端的合法區間（text＋Number() 打錯字會寫進 null）", () => {
-    // 為什麼要釘死：這六欄的值由 React 讀去送 API。type="text" ＋ Number() 打錯一個字就是 NaN、
-    // 序列化成 JSON 是 null，一路寫進該租戶的正式設定；後端投影欄是 float，下次開這頁就 500。
-    // 區間出處＝product 的 `ProfileConfigIn` Field(ge/le) 與 `chat_config_limits`。
+test("§5/§6 5-2 的數值旋鈕必須是 type=number 並帶這一欄的合法區間（text＋Number() 打錯字會寫進 null）", () => {
+    // 為什麼要釘死：這六欄的值由 React 讀去送出。type="text" ＋ Number() 打錯一個字就是 NaN、
+    // 序列化成 JSON 是 null，一路寫進該租戶的正式設定——那一欄要的是一個數字，寫進 null 之後
+    // 下一次開這頁就讀不回來。每一欄的合法區間就宣告在下面那張 SPEC 裡。
     const SPEC = [
         { hook: "js-temperature", min: "0", max: "1", step: "any" },
         { hook: "js-search-total-number", min: "1", max: "100", step: "1" },
@@ -277,8 +277,8 @@ test("§5/§6 5-2 的數值旋鈕必須是 type=number 並帶後端的合法區�
 });
 
 test("§5/§6 5-5-1 每位成員都要看得到啟用狀態、切得動，且停用列一眼看得出來", () => {
-    // 後端早就收 is_active（product 的 `PATCH /users/{id}`），而這頁沒有顯示也沒有切換的話——
-    // 離職員工的帳號留在啟用狀態，畫面上與在職的一模一樣，租戶管理者只能去找平台管理員。
+    // 成員本來就有「啟用／停用」這個狀態，而這頁沒有顯示、也沒有切換的話——離職員工的帳號
+    // 留在啟用狀態，畫面上與在職的一模一樣，租戶管理者只能去找平台管理員。
     const html = distDoc("5-5-1_userManagement.html");
     // 這一頁有一張以上的 `.default-table`（「新增成員」說明視窗的 ③ 界線表也是），
     // 所以不能抓「第一張」——要抓**含成員切換的那一張**。抓第一張的話，說明視窗一長出來
@@ -358,7 +358,7 @@ test("§5/§6 5-6-2 列編輯要能改 env（輪替憑證），且 args／env �
     // 建立表單同樣換成 textarea（兩邊形狀要一致，否則建立與編輯各切各的）
     for (const id of ["newMcpArgsInput", "newMcpEnvInput"])
         assert.match(html, new RegExp(`<textarea[^>]*id="${id}"`), `建立表單的 #${id} 應為 textarea`);
-    // env 的值在讀取路徑是遮罩字面（chatbot _mask_env）：示範資料要照實演，不要演成明文憑證
+    // env 的值讀回來時是遮罩字面（列上只拿得到鍵名）：示範資料要照實演，不要演成明文憑證
     const envCells = (html.match(/<textarea[^>]*aria-labelledby="mcpRowName-\d+ mcpHeadEnv"[^>]*>([\s\S]*?)<\/textarea>/g) || [])
         .map((s) => s.replace(/<[^>]*>/g, "")).filter((s) => s.trim());
     assert.ok(envCells.length >= 1, "示範資料裡沒有任何一台 server 帶 env —— 那一欄等於沒演到");

@@ -16,7 +16,7 @@ permalink: 1-2-1_uploadFile_pdf.html
 {# 頁層說明：語意出處同下面「上傳區」與「批次匯入結果」兩段檔頭——非結構化文件（PDF/WORD/
      圖片）可多選、逐檔各自編輯、逐檔各自成敗，不是整批一次成敗。 #}
 {# 這一句的格式清單跟著 accept 走（`.pdf`／`.docx`，理由見下方 `uploadAccept` 那一段）——
-     它不可以寫成「圖片等」：影像在這一頁既選不到、上游也沒有任何匯入端點收得下，
+     它不可以寫成「圖片等」：影像在這一頁既選不到、也沒有任何一條匯入路徑收得下，
      寫了就是在廣告一個做不到的格式。 #}
 <p class="text-gray" data-i18n="dataImport.uploadFilePdfIntro">這一頁是 PDF、WORD 等非結構化文件的上傳與匯入介面：可以一次選取多個檔案、逐一編輯每個檔案的標題與內容。送出後會看到這批文件逐檔的匯入結果，包含哪些成功、哪些失敗與失敗原因。</p>
 {# 暫存檔存活時間：完整理由寫在 1-1-3 的同一段。這一頁的清單是**還沒送出**的待上傳檔，
@@ -34,19 +34,18 @@ permalink: 1-2-1_uploadFile_pdf.html
 ] %}
 {% set stepNoPrev = true %}
 {% set stepNodesLg = true %}
-{# 同 1-1-4：這一頁的「下一步」是**送出鈕**，不是連結。分支對回 gufofaq-saas product 的 `POST /datasets/{id}/documents/batch-import`
-     （`batch_import_documents`）：
-     ・403 `require_capability("data","write")`（能力軸）
-     ・403 `_writable_file_dataset` → `_writable_dataset` 的 `dataset.not_writable_group`（資源層 scope，
+{# 同 1-1-4：這一頁的「下一步」是**送出鈕**，不是連結。這一顆送出去之後的全部結果：
+     ・403 沒有寫入資料的權限（能力軸）
+     ・403 這個資料集不在你可以寫入的群組裡（資源層 scope，
        與上一條是兩件事；理由同 1-1-4 那一段）
-     ・400 `_assert_no_duplicate_external_keys`（同一批兩個檔共用一個外部主鍵；
-       擋在動任何一個檔之前，否則第一個檔的文件已經被 purge）
-     ・413 `UploadBudget`（`settings.upload_request_max_bytes`：單檔上限擋不住「一次送 100 個 49MB」）
-     ・**部分失敗**：該端點 docstring 逐字寫著「每檔各自成敗、非整批原子」，逐檔 ok/error 進
-       `results`，另回 `inserted`／`updated`／`failed` 三個計數 ⇒ 這是一條**真實可達**的結果，
+     ・400 同一批裡兩個檔共用一個外部主鍵（擋在動任何一個檔之前，
+       否則等發現時第一個檔的文件已經被清掉了）
+     ・413 這一批的總大小超過單次上限（單檔上限擋不住「一次送 100 個 49MB」，故另有一道總量閘）
+     ・**部分失敗**：每檔各自成敗、不是整批原子，逐檔的成敗與原因隨結果一起回來，
+       另附 inserted／updated／failed 三個計數 ⇒ 這是一條**真實可達**的結果，
        而且它不是 error：成功的那幾檔真的進去了，逐檔原因就在**本頁**下面那張批次匯入結果表格
-       （`results` 逐檔一列，狀態／訊息／索引同步）。
-     ・502 上游呼叫失敗
+       （逐檔一列，狀態／訊息／索引同步）。
+     ・502 這一趟整個失敗
      **這一整套結果一段都不能省**：整頁零 data-toast、零 data-capability，等於把一顆會失敗的
      送出鈕演成一條必然成功的連結。
      **兩段「逐檔」的 toast 指的是當頁那張表，不是別頁**（`toast.importDocuments` 的第 1、6 段）：
@@ -64,23 +63,19 @@ permalink: 1-2-1_uploadFile_pdf.html
 </div>
 
 {# 上傳區：這一條是**非結構化文件**流程，可多選、與元件共用同一個 50MB 單檔上限
-     （product 唯一的 `Settings.upload_max_bytes`，見 ui/upload-box 檔頭的出處），
-     格式清單那一句由本頁 set 覆寫（§6）。
-     **單檔上限只有一顆**：product 的 `upload_max_bytes` 對全部上傳路徑一視同仁，沒有任何呼叫端
-     覆寫、也沒有「PDF 專用上限」這種東西 ⇒ 這一頁直接吃 `ui/upload-box` 元件唯一的那一顆，
+     （那顆數字的正本在 ui/upload-box 檔頭），格式清單那一句由本頁 set 覆寫（§6）。
+     **單檔上限只有一顆**：50MB 對全部上傳路徑一視同仁，沒有「PDF 專用上限」這種東西 ⇒
+     這一頁直接吃 `ui/upload-box` 元件唯一的那一顆，
      不在使用頁另抄一個數字（兩邊各留一份字面量，改上限時一定會漏掉其中一支）。
      **一頁只有一組 accept**：正式環境是由 1-1-1 的卡片帶著檔型參數進來、在執行期把 accept 與
      說明文字收窄成該格式；切版沒有查詢字串，所以本頁 set 的是那幾個變體共用的那一組。
-     ⚠️ **accept 只列後端真的收得下的那兩種**（`.pdf`／`.docx`），不列各檔型的**聯集**
+     ⚠️ **accept 只列真的收得下的那兩種**（`.pdf`／`.docx`），不列各檔型的**聯集**
      （`.pdf,.doc,.docx,.png,.jpg,.jpeg`）。列聯集的顧慮是「accept 少列一種，那張卡就變成
      點得進來、卻選不到自己廣告的檔案的死路」——那個顧慮本身成立，但它保護錯了東西：
-     **多出來的那四種選得到、送出去必定 400**（product 的
-     `DOCUMENT_UPLOAD_EXTENSIONS = (".pdf", ".docx")`，product 的三個強制點都
-     `endswith(DOCUMENT_UPLOAD_EXTENSIONS)`，其餘回 `dataset.only_pdf_docx`「僅支援 .pdf / .docx」）。
+     **多出來的那四種選得到、送出去必定 400**，訊息是「僅支援 .pdf / .docx」。
      「挑得到、必定失敗」比「挑不到」貴：後者當場就知道，前者要等整個檔案上傳完才知道。
      **`.doc` 同樣不列**——只有 `.docx` 過得了，`.doc` 與影像同一族。
-     同一份清單上游已經投影成 `GET /datasets/limits` 的 `upload.extensions.document`，React 端讀契約，
-     切版這一份是它的靜態鏡射；**改後端白名單時這一行要跟著改**。
+     **這一行就是文件副檔名白名單的正本**：要多收一種檔型，先改這裡，其他地方跟著這一行走。
      連帶：`ui/upload-card` 沒有影像那一張卡、WORD 卡的說明講的是 docx，理由寫在該元件檔頭。 #}
 {% set uploadAccept = ".pdf,.docx" %}
 {% set uploadMultiple = true %}
@@ -93,12 +88,11 @@ permalink: 1-2-1_uploadFile_pdf.html
      用 set+for 資料化示範 3 筆，外框與表身走 ui/default-table。 #}
 {# PDF 與 Word 同一條流程，故示範兩種副檔名各一（另加一筆演匯入失敗）。
      **檔名是使用者本機挑的那個原始檔名，不是落地檔名**：這張表畫的是**還沒送出**的待上傳清單，
-     執行期印的就是瀏覽器 File 物件的 `name`；落地檔名要等 product 寫檔那一刻才生成。
+     執行期印的就是瀏覽器 File 物件的 `name`；落地檔名要等寫檔那一刻才生成。
      順帶把落地檔名的形狀記在這裡，因為它是**下載**那條路的前提：
-     `{14位時間戳}_{6位hex}_{序號}_{原始檔名}`（product 的 `stored_filename`）。
-     **不可以簡寫成 `{14位時間戳}_{原始檔名}`**，那是 product 產不出來的形狀——
-     product 的 `_STORED_PREFIX = re.compile(r"^\d{14}_[a-f0-9]{6}_\d+_")` 靠那段 hex 剝前綴，
-     少了它連下載都認不出來。 #}
+     `{14位時間戳}_{6位hex}_{序號}_{原始檔名}`。
+     **不可以簡寫成 `{14位時間戳}_{原始檔名}`**，那是一個產不出來的形狀——
+     下載時是靠整個前綴（含那段 hex）把原始檔名還原出來，少了它連下載都認不出來。 #}
 {% set fileRows = [
     {
         name: "公文範本.pdf",
@@ -177,7 +171,7 @@ permalink: 1-2-1_uploadFile_pdf.html
     </table>
 </div>
 
-{# 匯入選項：批次匯入端點（product `batch_import_documents`）的 `convert_html`。抽出來的內文若含
+{# 匯入選項：這一批送出時要不要做 HTML 轉換。抽出來的內文若含
      HTML 標籤（掃描件轉檔、從網頁貼進 Word 的段落）就轉成 Markdown，剝掉的連結會列在下面的匯入結果裡；
      已是純文字的文件原樣通過。值載體，掛 hook class 交 React（§5）。
      逐檔的外部主鍵不在這裡——它是**每個檔各一把**（共用一把的話同批第二個檔會蓋掉第一個，而回應說兩筆都成功），
@@ -233,48 +227,42 @@ permalink: 1-2-1_uploadFile_pdf.html
 {% set deleteToastType = "success" %}
 {% include "components/delete-modal/delete-modal.html" %}
 
-{# 批次匯入結果：逐檔各自 metadata 暫存後一次送出（product /datasets/{id}/documents/batch-import 逐檔各自成敗），
+{# 批次匯入結果：逐檔各自 metadata 暫存後一次送出，逐檔各自成敗，
    回傳後在此以 default-table 逐檔如實顯示（混合成敗都要顯示，不可只報成功＝fail-loud）。
    成功列狀態＝匯入成功（text-bold，只有字重、沒有顏色——工具層沒有綠色文字 class，
    而「成功」不靠顏色表達也讀得出來），失敗列＝匯入失敗（text-red 紅字）+ 錯誤訊息。
    示範 2 成功 1 失敗共三列；執行期的列數由那一次送出的結果決定。
-   **第四欄是逐檔的索引同步**（`results[].sync_state`）：與前三欄不同層，判準與
+   **第四欄是逐檔的索引同步**：與前三欄不同層，判準與
    缺席態見 components/import-sync-tag 與 import-report 兩支的檔頭。
-   **`health_scan` 這一格刻意不畫在本頁**（`batch_import_documents` 回應的第三個頂層欄位，
-   `post_import_health_scan` → `scan_after_import` 的 `PostImportScanOut`：
-   `ok`／`detail`／`scan`）：那是匯入**之後**才跑的健檢，成敗兩態都由 3-5 資料健檢承接——
-   成功那一次寫進 `_record_scan_run(trigger=SCAN_TRIGGER_IMPORT)`，由 3-5 的「上一次掃描」
-   （`GET /health/scan/last` 的 `scan`）畫；失敗那一次由 `_record_scan_failure(trigger=
-   SCAN_TRIGGER_IMPORT)` 留一列，由 3-5 的 `healthScanFailure`（同一支端點的 `failure`）畫。
-   那支的註解自己寫著理由：「匯入回應裡那句 `ok=false` 只有這一次看得到（重新整理就沒了），
-   而這一支的呼叫端是匯入畫面、不是健檢頁——所以失敗要留一列，健檢頁才說得出『最近一次嘗試
-   失敗了』」。在這裡再畫一份＝同一件事兩個正本，而且重新整理就消失的那一份會先過期。 #}
+   **匯入後健檢那一格刻意不畫在本頁**：那是匯入**之後**才跑的健檢，成敗兩態都由 3-5 資料健檢
+   承接——成功那一次由 3-5 的「上一次掃描」畫；失敗那一次留一列，由 3-5 的 `healthScanFailure` 畫。
+   理由是「這一趟健檢沒過」跟著匯入結果走的話只有這一次看得到（重新整理就沒了），而看到它的人
+   在匯入畫面、不是健檢頁——所以失敗要留一列，健檢頁才說得出「最近一次嘗試失敗了」。
+   在這裡再畫一份＝同一件事兩個正本，而且重新整理就消失的那一份會先過期。 #}
 {# 成功/失敗拆兩陣列（§6：數字能推導就從陣列渲染、不烤字面量；正典＝5-6-1 審核結果拆 ok/fail 兩陣列）。
-     **`results[].filename` 是原始檔名**：`batch_import_documents` 逐檔條目寫的是
-     `orig = Path(f.filename or "unnamed").name`，不是落地檔名（那個要等 `_import_one_document`
-     寫檔才生成，而且失敗的那一檔根本沒有落地檔名）。
-     **訊息取 `dataset.storage_exceeded`（「儲存空間不足」）**：`results[].error` 的值域是
-     `dataset.only_pdf_docx`／`slots.unknown`／`dataset.storage_exceeded`（`assert_storage_quota`
-     的 413，經 `_result_error` 攤成 `error` 字串）／`PdfReadError`／`DocxReadError`／
-     `dataset.structured_pipeline_failed`。其中只有儲存額度是「前兩檔寫進去了、第三檔才撞上」的
-     那一種——額度是逐檔在 `_import_one_document` 裡現算的，而副檔名／讀檔失敗與檔案順序無關。
-     **不可以寫成「萃取額度已用罄」**：那是**另一支端點**的話（`quota.extraction_exceeded`，
-     全 product 只有那一支丟得出來、而且是 429），這條批次匯入的路完全不碰萃取額度。 #}
-{# 逐檔的索引同步（`results[].sync_state`）。**每個檔各自派一條 celery 管道、各自成敗**，
+     **逐檔那一格印的是使用者本機的原始檔名**，不是落地檔名（那個要等寫檔才生成，
+     而且失敗的那一檔根本沒有落地檔名）。
+     **訊息取「儲存空間不足」**：逐檔失敗原因的值域就這六種——副檔名不收、指到不認得的欄位槽、
+     儲存空間不足（413）、PDF 讀不出來、WORD 讀不出來、結構化處理失敗。其中只有儲存額度是
+     「前兩檔寫進去了、第三檔才撞上」的那一種——額度是逐檔現算的，而副檔名／讀檔失敗與檔案順序
+     無關。
+     **不可以寫成「萃取額度已用罄」**：那是另一條路（單檔萃取）才丟得出來的話、而且是 429，
+     這條批次匯入的路完全不碰萃取額度。 #}
+{# 逐檔的索引同步。**每個檔各自派一條非同步管道、各自成敗**，
      所以這是**逐檔一份**的欄位，不是整批一份——壓成一顆彙總徽章的話，「三檔還在同步、一檔查不到
      結果」會整塊變成「查不到結果」，另外那幾檔在畫面上就消失了（判準與缺席態見
      components/import-report 檔頭「逐檔 vs 彙總」那一段）。
      **示範刻意是混合態**，不是三檔同一態：這一頁是這個設計唯一的可見處，三列同色的話「逐檔」
-     這件事在畫面上看不出來，而混合態正是那支端點真的會回的形狀（`sync_outcome()` 逐檔去問
-     GufoRAG manager 的 `operations/history`，每一檔各自可能問到或問不到）。
+     這件事在畫面上看不出來，而混合態正是真的會發生的形狀（同步結果是逐檔各自去問的，
+     每一檔各自可能問到或問不到）。
      · 公文範本.pdf → `pending`：**匯入當下最常見的那一態**，這一頁保留一檔演它。
      · 作業要點.docx → `unknown` ＋ `reason`：唯一帶**關聯編號**的一態，示範它就地看得見、
-       不必展開任何東西（reason 逐字取 product 產的那句「查詢同步結果失敗，資料已送出、
+       不必展開任何東西（reason 是執行期產生的那句「查詢同步結果失敗，資料已送出、
        請勿重新匯入。關聯編號 …」；編號是十六進位短碼）。
-     · 服務條款.pdf → 匯入本身失敗 ⇒ **沒有 `sync_state` 這個欄位**，畫缺席態。
+     · 服務條款.pdf → 匯入本身失敗 ⇒ **連同步狀態這個欄位都不存在**，畫缺席態。
      **`succeeded` 刻意不演**：這一頁是「剛按下送出」的畫面，把任何一列畫成「已寫入索引」都會讓
      打開它的人以為索引一定進去了（同 1-1-6 那條「不可以把最好的那一態畫成預設態」）；那一態的
-     長相住在元件庫頁的「React 條件文案」區。`indexed_count`／`failed_count` 同理一律不 set——
+     長相住在元件庫頁的「React 條件文案」區。索引筆數／索引失敗筆數同理一律不 set——
      pending 與 unknown 的定義就是還不知道 ⇒ 兩格畫「—」而不是 `0`（§6：沒量到 ≠ 零筆）。
      真要 set 時**以字串傳入**（`"1204"`），理由同 components/import-report 檔頭（nunjucks 把數字
      `0` 判成 false，而 0 與 null 正是這兩格要分開的兩件事）。 #}
@@ -294,8 +282,8 @@ permalink: 1-2-1_uploadFile_pdf.html
     {# ⓘ 說明：markup 逐字照抄 `settings/5-2_conversationSettings.html` 出口套用欄那顆既有
          info-btn（`aliasOutputInfoModal` 觸發鈕）六件組。標題 div 本身是計算出來的彙總句
          （§6：數字能推導就從陣列渲染），不是純標題，
-         故同樣另包一層 flex-row 放它與按鈕，不動它的既有內容。①內容出處見下方 help-modal
-         那段 set（product `batch_import_documents` 的逐檔 ok/error）。 #}
+         故同樣另包一層 flex-row 放它與按鈕，不動它的既有內容。①講的是逐檔的成敗，內容見下方
+         help-modal 那段 set。 #}
     <div class="flex-row align-items-center gap-8">
         <div class="text-md text-bold"><span data-i18n="common.total">共</span> {{ batchOkRows.length + batchFailRows.length }} <span data-i18n="dataImport.batchSummaryOkMid">個檔案，成功</span> {{ batchOkRows.length }}<span data-i18n="dataImport.batchSummaryFailMid">、失敗</span> {{ batchFailRows.length }}</div>
         <button type="button" class="info-btn" title="批次匯入結果說明" data-i18n-title="help.dataImport.pdfBatchImportResult.title" data-open-modal="pdfBatchImportResultHelpModal">
@@ -316,8 +304,8 @@ permalink: 1-2-1_uploadFile_pdf.html
                     <th data-i18n="dataset.fileName">檔案名稱</th>
                     <th data-i18n="dataImport.colStatus">狀態</th>
                     <th data-i18n="dataImport.colMessage">訊息</th>
-                    {# 第四欄講的是**另一層**：前三欄是「進了 product 的資料集沒有」，這一欄是
-                         「進了 GufoRAG 的索引沒有」。兩者同一列並排是刻意的——「匯入成功、索引失敗」
+                    {# 第四欄講的是**另一層**：前三欄是「進了資料集沒有」，這一欄是
+                         「進了搜尋索引沒有」。兩者同一列並排是刻意的——「匯入成功、索引失敗」
                          正是這條缺陷的形狀，分成兩張表就要靠檔名跨表對帳才看得出來
                          （措辭刻意分開，見 components/import-report 檔頭）。 #}
                     <th data-i18n="dataImport.colSyncState">索引同步</th>
@@ -333,14 +321,14 @@ permalink: 1-2-1_uploadFile_pdf.html
                         <div class="flex-row column gap-8">
                             {% set syncTagState = row.syncState %}
                             {% include "components/import-sync-tag/import-sync-tag.html" %}
-                            {# 兩顆計數槽逐檔一份（`sync_state.indexed_count`／`failed_count`）：
-                                 沒 set ＝ 上游回 null ＝ 畫「—」，**不畫 0**（§6）。彙總那一份已經
+                            {# 兩顆計數槽逐檔一份（索引筆數／索引失敗筆數）：
+                                 沒 set ＝ 這一刻根本還沒有值 ＝ 畫「—」，**不畫 0**（§6）。彙總那一份已經
                                  收掉——混合態下總數必然量不到，而那會把別檔已經寫進索引的筆數藏起來。 #}
                             <div class="flex-row flex-wrap gap-16">
                                 <span><span data-i18n="dataImport.syncIndexedCount">索引筆數：</span>{% if row.syncIndexed %}{{ row.syncIndexed }}{% else %}—{% endif %}</span>
                                 <span><span data-i18n="dataImport.syncFailedCount">索引失敗筆數：</span>{% if row.syncFailed %}{{ row.syncFailed }}{% else %}—{% endif %}</span>
                             </div>
-                            {# `reason`（product 產的業務字串＋維運要用的關聯編號）**就地畫在這一格**、
+                            {# 原因字串（執行期產生的業務字串＋維運要用的關聯編號）**就地畫在這一格**、
                                  不收進任何要展開的細節裡：不展開就看不到有編號可拿，使用者根本不知道
                                  要展開。不翻、不掛 data-i18n（同 components/import-report 那一份）。
                                **不掛 `role="alert"`**：同一張表的訊息欄（匯入失敗原因）也沒掛——
@@ -356,7 +344,7 @@ permalink: 1-2-1_uploadFile_pdf.html
                     <td>{{ row.filename }}</td>
                     <td><span class="text-red" data-i18n="dataImport.importFailed">匯入失敗</span></td>
                     <td>{{ row.message }}</td>
-                    {# 匯入失敗的那一列**沒有** `sync_state`：檔案連送出去都沒成功，沒有 celery 管道
+                    {# 匯入失敗的那一列**沒有同步狀態**：檔案連送出去都沒成功，根本沒有索引任務
                          可查。所以這一格不是「寫入索引失敗」（那是在講一件沒發生過的事，而且指示
                          相反——它會叫人去修資料重匯，實際上該修的是訊息欄那一條），也不是留白
                          （留白讀起來是版面漏畫）。`syncTagState` 給空值 ⇒ 子元件畫缺席態
@@ -373,9 +361,9 @@ permalink: 1-2-1_uploadFile_pdf.html
     </div>
 </div>
 
-{# 「批次匯入結果」的說明視窗：①出處同上方「批次匯入結果：逐檔各自 metadata 暫存後一次送出」
-     那段檔頭，與 product `batch_import_documents` 的文件字串（逐檔各自成敗、fail-loud，
-     不因單檔失敗回滾整批）。②③留空——理由同 1-1-4 的 excelImportOptionsHelpModal，
+{# 「批次匯入結果」的說明視窗：①內容同上方「批次匯入結果：逐檔各自 metadata 暫存後一次送出」
+     那段檔頭講的那件事——逐檔各自成敗、fail-loud，
+     不因單檔失敗回滾整批。②③留空——理由同 1-1-4 的 excelImportOptionsHelpModal，
      容器見 help-modal.html 檔頭。 #}
 {% set helpModalId = "pdfBatchImportResultHelpModal" %}
 {% set helpModalTitleKey = "help.dataImport.pdfBatchImportResult.title" %}
@@ -386,12 +374,12 @@ permalink: 1-2-1_uploadFile_pdf.html
 {% set helpModalLimitRows = [] %}
 {% include "components/help-modal/help-modal.html" %}
 
-{# 匯入結果回報：三計數（product `_tally`）＋抽取統計＋無法保真轉換的表格。
+{# 匯入結果回報：三計數＋抽取統計＋無法保真轉換的表格。
      「共 N 個檔案，成功／失敗」講的是**檔數**，三計數講的是**這批對知識庫做了什麼**——
      成功 1 檔可能是新增、也可能是把同鍵舊版換掉，只看檔數分不出來，故兩者並列不是重複。
      抽取統計是「實際抽出多少內容」，不是原始結構數：表格 0 個而檔案明明有表格，就是這次沒抽到
-     （出處：product 的 `DocxStats`＝段落／表格／表格列數；`PdfStats` 另有頁數／沒有表頭的續表／
-     有格線卻抽不出表格的頁數）。
+     （兩種檔型各自的統計欄位在這裡宣告：WORD 是段落／表格／表格列數；PDF 另有頁數／
+     沒有表頭的續表／有格線卻抽不出表格的頁數）。
      示範值與上面的成功列自洽（§6）：2 檔成功、外部主鍵未填故都是純新增，failed 1 對到失敗列那一檔。
      兩種副檔名各演一份統計，因為**欄位本來就不同**：pdf 是頁數／表格／表格列數＋兩個警訊欄，
      word 是段落／表格／表格列數。只演一種的話，另一種的那幾個標籤全站沒有任何頁面看得到。 #}
@@ -408,30 +396,30 @@ permalink: 1-2-1_uploadFile_pdf.html
      （failed 要修好資料重匯、unknown 是絕對不要重匯），而「不要重匯」是不會製造重複資料的那一邊。
      **這裡是字面量而不是從 `batchOkRows` 推導**（§6 的例外，理由要寫出來）：nunjucks 的
      `{% set %}` 在 `{% for %}` 裡是迴圈框架區域變數，出了迴圈就回到舊值 ⇒ 這條優先序在模板裡
-     算不出來。改動上面任何一列的 `syncState` 都要回頭改這一行（有測試把關）。React 端由
-     `results[]` 現算，不是後端另外給的欄位。
+     算不出來。改動上面任何一列的 `syncState` 都要回頭改這一行（有測試把關）。這一顆是由逐檔那幾顆
+     現算出來的，不是另外給的一個欄位。
      `importSyncIndexed`／`importSyncFailed`／`importSyncReason` 一律不 set：逐檔的那三格畫在
      上面那張表裡。
      ⚠️ **表格裡那顆「索引失敗筆數」與上面那句彙總的「失敗 1」不是同一件事**（§6 同頁不得有兩個
-     講同一件事卻不同源的數字）：後者是 product 端解析／落地失敗的**檔數**（`batchFailRows`），
-     前者是 GufoRAG 索引寫入失敗的**則數**。所以它不可以從 `batchFailRows.length` 推導。 #}
+     講同一件事卻不同源的數字）：後者是解析／落地失敗的**檔數**（`batchFailRows`），
+     前者是寫進搜尋索引時失敗的**則數**。所以它不可以從 `batchFailRows.length` 推導。 #}
 {% set importSyncPerFile = true %}
 {% set importSyncState = "unknown" %}
 {# §2 重設：`syncTagState` 是 components/import-sync-tag 的參數，上面表格的兩個迴圈各給過一次
      （`set` 在頁面層是全域的）。往下 include import-report 之前先設成彙總態——元件內部也會
      設一次，這一行是頁面這一側的重設，同 5-3 對 ui/chart-desc 那組參數的做法。 #}
 {% set syncTagState = importSyncState %}
-{# `structTables` 是**偵測到的表格總數**：pdf_tables 的 `stats["tables"] += 1` 在判定
-     「這張處理不了」之前就無條件加一，所以無法處理的那幾張也算在內，總數必須 ≥ 兩份具名清單
+{# `structTables` 是**偵測到的表格總數**：一張表在被判定「這張處理不了」之前就已經算進去了，
+     所以無法處理的那幾張也算在內，總數必須 ≥ 兩份具名清單
      指名過的最大表格序號（§6：計數與具名清單要互推得出來）。
-     **續表計數與具名清單是同一件事的兩個投影**：`extract` 迴圈裡判為續表的那一支，
-     `stats["continuation_tables"] += 1` 之後把 `reason` 設成「疑似…的續表（沒有表頭），不套用
-     前一張表格的欄名」，而 `reason is not None` 就必然 append 進 `unprocessable_tables`——
-     故「續表 1」而 unprocessableTables 裡沒有那一筆，是 product 產不出來的組合。
-     **兩份清單的字面要逐字照 product 的形狀**：`〔表格 N〕無法處理：{reason}` 與
-     `〔表格 N〕疑似無表頭的續表：…`。那個 `〔表格 N〕` 是 product 用來把訊息定位到某一張表的
-     記號（`render_table_rows` 產出的逐列描述也用同一個序號），改寫成「第 N 個表格…」就等於
-     把定位記號拆掉。續表的原因字串（`第 {prev.page_no} 頁表格`／`同頁前一張表格`）也是逐字的。
+     **續表計數與具名清單是同一件事的兩個投影**：一張表被判為續表的同時就會帶著一句原因
+     （「疑似…的續表（沒有表頭），不套用前一張表格的欄名」），而帶著原因的表必然出現在
+     「無法處理」那份清單裡——故「續表 1」而 unprocessableTables 裡沒有那一筆，是一個
+     產不出來的組合。
+     **兩份清單的字面形狀在這裡宣告**：`〔表格 N〕無法處理：{原因}` 與
+     `〔表格 N〕疑似無表頭的續表：…`。那個 `〔表格 N〕` 是把訊息定位到某一張表的
+     記號（逐列描述也用同一個序號），改寫成「第 N 個表格…」就等於
+     把定位記號拆掉。續表的原因字串（`第 N 頁表格`／`同頁前一張表格`）同樣是固定的字面。
      這一份示範：表格 1 正常、表格 2 欄數對不上、表格 3 是第 4 頁那張的續表（＝續表計數 1）、
      表格 4 是疑似無表頭的兄弟表（續表那一支會 `continue` 掉這個判定，故兩者不可能是同一張）。 #}
 {% set importFileReports = [

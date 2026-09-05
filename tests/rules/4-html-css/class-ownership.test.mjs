@@ -72,7 +72,7 @@ test("§4 markup 上的每個 class 都要有主人（反向網：css 規則／�
     // 掛點的 class」正是這一族）。實測 64 個 FAMILY 命中裡，只有 45 個真的靠這條放行
     // （44 個槽鍵族 ＋ 1 個 is-pending），其餘 19 個本來就有 css 規則。
     // 走**白名單，而且從有出處的集合推導**：
-    //   ① 槽鍵族：22 槽的唯一正本是 ui/field-slot-catalog（對回 product 的 `SLOTS`）。
+    //   ① 槽鍵族：22 槽的唯一正本是 ui/field-slot-catalog（固定欄位槽的全集在那裡宣告一次）。
     //      catalog 少一槽、或 markup 打錯一個槽名，這裡就會當場報無主——這正是想要的。
     //   ② 無樣式的狀態契約：逐筆列名並寫理由（有 css 規則的 is-* 走 cssClasses 那一關，不必列）。
     const SLOT_KEYS = [...read("src/_includes/ui/field-slot-catalog/field-slot-catalog.html")

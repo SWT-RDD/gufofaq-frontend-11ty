@@ -213,9 +213,9 @@ test("§4-2 繁中原文相同的 chrome 沿用既有 key、不另立（同文�
     const DELIBERATE = new Set([
         "問答紀錄",                                                        // qa.qaRecords="Q&A records"（側欄／區塊標題，整批）vs qa.recordFallbackPrefix="Q&A record "（單一筆沒有 ChatTitle 時的 fallback 名，後面緊接序號 ⇒ 單數＋自帶尾空白）
         "標題", "內容",                                                    // dataImport/dataset/audit 各區段表頭語境
-        // `field.title` 那一族不併回 common.*：它是 product `SLOTS` 的欄位槽預設名
-        //（`field.<key>` 整族由上游目錄產生，併掉會讓那份目錄少一顆）。
-        "啟用", "停用",                                                  // 動作鈕（Enable/Disable，3-4 每列直送 PATCH）vs 狀態/選項（widget.active=Active、qaDirectModeOff=Off）
+        // `field.title` 那一族不併回 common.*：它是**固定欄位槽**的預設名，一槽一顆 key
+        //（槽的正本是 ui/field-slot-catalog，併掉會讓那份目錄少一顆）。
+        "啟用", "停用",                                                  // 動作鈕（Enable/Disable，3-4 每列改了就直接送出）vs 狀態/選項（widget.active=Active、qaDirectModeOff=Off）
         "資料集", "所屬群組",                                              // 單/複數語意（Dataset/Datasets、Group/Groups）
         "開始時間", "結束時間", "狀態",                                    // qa 篩選 vs settings 統計篩選；批次匯入欄 vs widget 欄
         "結果", "共", "讚", "倒讚", "筆", "第", "頁",                       // 量詞/前綴/評價的組字上下文各異。「共」已把四顆同英譯的併回 common.total，剩下的兩顆是 common.total="Total"（markup 夾資料槽）vs pagination.totalPrefix="Total "（js 串接，§4-2 空白必須由 key 自帶）
@@ -295,9 +295,9 @@ test("§4-2 繁中原文相同的 chrome 沿用既有 key、不另立（同文�
         // 同繁中而**英譯也逐字相同** ⇒ 那是同一個動作被寫成兩份正本（同一顆鈕從兩顆窗按下去、
         // 同一條流程的兩個版位…），改一句就會漏改另一句。通配整族放行的話，這一種永遠不會紅。
         if ([...keys].every((k) => k.startsWith("toast.")) && new Set([...keys].map((k) => enDict[k])).size > 1) continue;
-        // `tool.<工具名>.param.<參數名>` 鏡射 product 的內建工具目錄，key 空間**刻意**逐工具一份
-        // （14 張卡各自對回自己那支工具的參數說明）。兩支工具的參數描述剛好同字是正常的，
-        // 收成一顆就破壞了與 product 目錄的一對一對應。同 toast. 那條的理由。
+        // `tool.<工具名>.param.<參數名>` 的 key 空間**刻意**逐工具一份（一顆內建工具一張卡，
+        // 各自對回自己那幾顆參數的說明）。兩支工具的參數描述剛好同字是正常的，收成一顆就
+        // 破壞了「一顆工具一組 key」——改其中一支的字會連帶改掉另一支。同 toast. 那條的理由。
         if ([...keys].every((k) => /^tool\./.test(k))) continue;
         hits.push(`「${zh}」 掛了 ${keys.size} 個 key：${[...keys].join("、")}`);
     }

@@ -40,7 +40,7 @@ permalink: login.html
                      也不當 submit。若留 type=submit，這份沒有 submit handler 的 form 會原生 GET 重載，
                      四段 toast 的演出在畫面上瞬間被殺掉（§5 每個結果都要演得出來）。React 端接上
                      onSubmit(preventDefault) 之後換回 type=submit。 #}
-                {# 節流秒數：BFF 透傳 `Retry-After`。**不塞進 toast 那一段**——`data-toast` 的 `|`
+                {# 節流秒數是執行期才知道的數字。**不塞進 toast 那一段**——`data-toast` 的 `|`
                      是索引契約（繁中段數＝英譯段數＝type 段數），一段裡放不下「前綴＋數字＋後綴」。
                      故第 3 段維持不帶秒數的句子，秒數走這個 live region（業務 js 填數字、加 .is-shown）。
                      空的 live region ＋ role="alert"：訊息由業務 js 填（§4 那條「要嘛具體、要嘛空 live region」）。
@@ -56,8 +56,8 @@ permalink: login.html
                      ——這時還沒有主體，能力／租戶管理員／平台角色都是登入之後才判得出來的東西。
                      它不是「唯讀所以免標」（登入會寫 session、會落稽核）：是**宣告不出來**。 #}
                 <button type="button" class="button button-primary login-btn" aria-describedby="loginRetryHint" data-toast="登入成功！|帳號已停用，請聯絡管理者|這個帳號近期嘗試次數過多，已暫時鎖定；若不是你本人操作，請聯絡管理者|登入時發生錯誤，請稍後再試" data-i18n-data-toast="toast.login" data-toast-type="success|warning|warning|error" data-i18n="auth.login">登入</button>
-                {# 這一句在畫面上回答「我沒有帳號怎麼辦」：這是一個邀請制系統（product 沒有任何自助
-                     註冊端點——帳號一律由平台或租戶管理者建立），而登入頁除了它之外只有「忘記密碼」
+                {# 這一句在畫面上回答「我沒有帳號怎麼辦」：這是一個邀請制系統（沒有自助註冊這條路
+                     ——帳號一律由平台或租戶管理者建立），而登入頁除了它之外只有「忘記密碼」
                      一條路。**少了這句話**，沒有帳號的人只會一直去試「忘記密碼」，而那條路對他永遠
                      不會有結果。
                      擺在登入鈕**下面**：它服務的是按不下去的那個人，不該擠在表單中間。 #}
@@ -82,13 +82,11 @@ permalink: login.html
                     <h3 class="modals-title" id="passwordModal-title" data-i18n="faq.forgotPasswordTitle">忘記密碼</h3>
                 </div>
                 <div class="modals-body">
-                    {# 聯絡窗口＝**平台設定**，不是寫死的字面（product 的
-                         `public_support_contact`，路徑 `GET /public/support-contact`——零憑證，因為
-                         這一頁的讀者還沒登入）。值不烤進翻譯字串（§4-2：它是值不是 chrome，
+                    {# 聯絡窗口＝**平台設定**，不是寫死的字面（讀它不需要任何憑證——這一頁的讀者
+                         還沒登入）。值不烤進翻譯字串（§4-2：它是值不是 chrome，
                          而且要放得下 email、分機或一句「請洽資訊室」），故獨立成一顆資料槽。
-                       **兩態，而這一稿演的是「有設」那一態**：服務層
-                         （product 的 `get_support_contact`）
-                         沒設過回 `null`，此時整句換成 `faq.forgotPasswordNoContact`——**不是**把
+                       **兩態，而這一稿演的是「有設」那一態**：平台沒設過聯絡窗口時，
+                         整句換成 `faq.forgotPasswordNoContact`——**不是**把
                          這一句留著、後面接一段空白（那會畫出一句「聯絡方式：」然後什麼都沒有）。
                          另一態的繁中家在元件庫頁的「React 條件文案」區（§4-2：枚舉/分支的成員要有
                          一個渲染得出來的地方，不是刪掉 key 讓消費端自己拼字串）。

@@ -7,12 +7,11 @@ permalink: 1-1-4_columnSelect_excel.html
 ---
 {# 欄位對應資料（多選/預覽兩欄共用）——依 §3-2/§6 由頁面提供，components/multi-select-box 只負責 for 渲染。
    固定槽 schema（title/content/source/date/category/number/flag/tags/privilege/note1..note10/date2/date3
-   ＋不進索引的 internal_note，共 22 槽，
-   出處：gufofaq-saas 的 `SLOTS`——順序與 default_label 逐字對齊）；
-   **note1..note10 全部**是 TEXT 篩選槽、date2/date3 是 DATE 篩選槽（product 的
-   `FILTERABLE_TEXT_SLOTS = tuple(f"note{i}" for i in range(1, 11))`／`FILTERABLE_DATE_SLOTS = ("date2","date3")`，
-   對得到 DSL 的 $note1／$date2）。抄「note6..note10」會讓下一個人以為 note1..note5 指派不到篩選欄。少列一個槽的後果是那個篩選欄在 UI 上根本指派不到，
-   而後端早就收得下——使用者只會覺得「文件裡寫的篩選欄不存在」。
+   ＋不進索引的 internal_note，共 22 槽——這份槽表、它的順序與各槽預設顯示名的正本是
+   ui/field-slot-catalog，這一頁只是消費它）；
+   **note1..note10 全部**是 TEXT 篩選槽、date2/date3 是 DATE 篩選槽，篩選語法裡的 `$note1`／`$date2`
+   指的就是它們。寫成「note6..note10」會讓下一個人以為 note1..note5 指派不到篩選欄。少列一個槽的後果是那個篩選欄在 UI 上根本指派不到，
+   而那個槽本來就收得下——使用者只會覺得「文件裡寫的篩選欄不存在」。
    使用者把 Excel 欄位對應到這些槽；label 用各槽預設顯示名。
    §6 示範要是真實可能的狀態：**每個槽的選項清單是同一份＝上傳的那份活頁簿讀出來的欄**，
    故每個槽共用同一份 4 欄樣本（客服問題/客服回覆/建立時間/圖片連結，同 1-1-3 的預覽樣本）；
@@ -90,33 +89,30 @@ permalink: 1-1-4_columnSelect_excel.html
     {% set stepPrevHref = "1-1-3_preview_excel.html" %}
     {# 這一頁的「下一步」是**送出鈕**，不是連結（見 step-btn-wrap 檔頭）：先驗必填欄、
          送出成功才換頁。
-         結果分支逐條對回 gufofaq-saas product 的
-         `POST /datasets/{id}/excel/import`（`import_excel` → `_do_excel_mapping_import`）：
-         ・403 `require_capability("data","write")`（能力軸）
-         ・403 `_writable_file_dataset` → `_writable_dataset` 的 `dataset.not_writable_group`
+         這一顆送出去之後的全部結果列在這裡：
+         ・403 沒有寫入資料的權限（能力軸）
+         ・403 這個資料集不在你可以寫入的群組裡
            （**資源層 scope**，與上一條是兩件事：那一條換群組也沒用，這一條是找人把你加進那個群組。
-           `list_datasets` 只依 `tenant_id` 過濾、不依寫入群組 ⇒ 看得到一筆、按下去 403 是真實可達）
-         ・400 `content_required`（`slots.content_column_required`）與 `unknown_slot`
-           ——**這一顆講的是「對照沒有選到內容欄」**，下一步是回上一步重選；與下面那兩顆
+           資料集清單只依租戶過濾、不依寫入群組 ⇒ 看得到一筆、按下去 403 是真實可達）
+         ・400 對照沒有選到內容欄，或指到了不存在的欄位槽
+           ——**這一顆講的是「對照本身沒選對」**，下一步是回上一步重選；與下面那兩顆
            逐列的守衛是三件不同的事，文案不可以互相借用。
-         ・400 `content_cell_required`（`_assert_excel_content_cells_present`，逐列指名、`detail` 帶 `rows`）
-           ——對照選到了內容欄，但**某幾列那一格是空的**。下一步是**回試算表補那幾列**，
-           不是回上一步重選欄。少了這一段，這一態會落到 `content_required` 那一句，
+         ・400 對照選到了內容欄，但**某幾列那一格是空的**（逐列指名是哪幾列）。
+           下一步是**回試算表補那幾列**，不是回上一步重選欄。少了這一段，這一態會落到上一顆那一句，
            而使用者會回去重選一個本來就選對了的欄。
-         ・400 `content_empty_after_conversion`（`_assert_excel_content_survived_conversion`，
-           同樣逐列指名、`detail` 帶 `rows`）——內容欄**轉換前有字、HTML 轉換後一個字都不剩**
-           （整格只有一張圖或一個空連結）。轉換是我們主動做的改寫，改寫把內容改沒了正是使用者
+         ・400 內容欄**轉換前有字、HTML 轉換後一個字都不剩**（整格只有一張圖或一個空連結，
+           同樣逐列指名）。轉換是我們主動做的改寫，改寫把內容改沒了正是使用者
            最需要知道的事；下一步是回試算表補上文字，或把同一頁的「HTML 轉 Markdown」關掉再送。
            **與上一顆不共用一段**：一個是他沒填，一個是我們把它清掉了。
-         ・這兩顆排在標籤／日期那一段之後：上游的順序是「逐列標籤與日期 → 內容欄逐列非空 →
+         ・這兩顆排在標籤／日期那一段之後：實際的檢查順序是「逐列標籤與日期 → 內容欄逐列非空 →
            逐儲存格轉換」，段序照它走（`|` 是索引契約）。
-         ・400 `excel.ExcelFormatError`／`ExcelReadError`／`_assert_assignment_columns_exist`
-           的 `unknown_column`——三者都是「這份檔跟預覽時看到的不是同一份」
-         ・400 `fact_recency.apply_recency_and_tags` 的逐列標籤／日期驗（逐列指名）
-         ・404 `dataset.staged_missing_reupload`（暫存檔已被清掉）
-         ・413 `assert_storage_quota`（現用量＋本次 > 上限）
-         ・409 `dataset_file_extkey_conflict_as_409`（同一個外部主鍵並發匯入）
-         ・502 上游呼叫失敗 → rollback，不留半套
+         ・400 這份檔案讀不出來，或它的欄名與預覽時看到的對不上——都是「這份檔跟預覽時看到的
+           不是同一份」
+         ・400 逐列的標籤代碼或日期格式不合（逐列指名）
+         ・404 暫存檔已被清掉
+         ・413 儲存空間不足（現用量＋本次 > 上限）
+         ・409 同一個外部主鍵正在被另一次匯入寫入
+         ・502 這一趟寫到一半整個失敗、已回滾，不留半套
          型別：能自己修得掉的一律 warning，只有 502 是 error（§5）。 #}
     {% set stepNextAction = true %}
     {% set stepNextCapability = "data:write" %}
@@ -131,10 +127,9 @@ permalink: 1-1-4_columnSelect_excel.html
 <p class="text-gray"><span data-i18n="dataImport.stagedTtlPrefix">剛上傳的檔案先暫存在伺服器上：</span><span class="js-staged-ttl-hours">24</span><span data-i18n="dataImport.stagedTtlSuffix"> 小時內沒有完成送出就會被清掉，屆時要重新上傳。</span></p>
 
 {# ── 匯入選項 ─────────────────────────────────────────────────────────────────────
-     出處：gufofaq-saas 的 `ExcelImportIn`
-     （`convert_html`、`external_key`）。兩者都是值載體，掛 hook class 交 React（§5）。
+     這一區只有兩個值：HTML 轉換與外部主鍵。兩者都是值載體，掛 hook class 交 React（§5）。
      HTML 轉換：儲存格裡的 HTML 標籤原樣進向量與答案是這批要修的缺口，故預設開；但**已經是純文字的
-     資料不該被動到**，所以要關得掉（型別槽本來就不套用，見 product `field_schema.is_typed_slot`）。
+     資料不該被動到**，所以要關得掉（日期／數值那種型別槽本來就不套用轉換）。
      外部主鍵：留白＝純新增（既有行為）。填了就是「這份資料的新版」，同資料集同鍵的舊版會在同一個交易裡
      被取代——它是「重複匯入同一份檔案就多一份舊資料」的唯一解，故欄下要講清楚留白與填了的差別。 #}
 <div class="block flex-row column gap-16 mb-24">
@@ -176,9 +171,8 @@ permalink: 1-1-4_columnSelect_excel.html
     </div>
 </div>
 
-{# 「匯入選項」的說明視窗：①出處同上方「匯入選項」那段檔頭（product `ExcelImportIn` 的
-     convert_html／external_key）。②③留空——現在生效的條件與這一區的數字由 React 在執行期
-     依 MODE_APPLICABILITY／useLimits 算，切版這一側只提供容器（help-modal.html 檔頭）。 #}
+{# 「匯入選項」的說明視窗：①內容講的就是上方「匯入選項」那兩個值。②③留空——現在哪些條件生效、
+     這一區的界線數字是多少，都要到執行期才算得出來，切版這一側只提供容器（help-modal.html 檔頭）。 #}
 {% set helpModalId = "excelImportOptionsHelpModal" %}
 {% set helpModalTitleKey = "help.dataImport.importOptions.title" %}
 {% set helpModalTitle = "匯入選項說明" %}

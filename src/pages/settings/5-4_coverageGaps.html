@@ -5,39 +5,38 @@ titleKey: nav.coverageGaps
 pageHeading: 覆蓋缺口
 permalink: 5-4_coverageGaps.html
 ---
-{# 覆蓋缺口報表。這一頁是 SaaS 才有的新頁，逆向自 product 的
-     `GET /stats/coverage-gaps`（`CoverageGapsOut`）。
+{# 覆蓋缺口報表。
 
      這份清單回答的是「知識庫下一步該補什麼」：**問得最多、卻一份文件都沒撈到**的那些題目。
-     母集合＝零命中，判定與 5-3 的無命中率共用同一個函式（`_is_no_answer_log`），兩張報表不會
+     母集合＝零命中，判定與 5-3 的無命中率是同一條規則，兩張報表不會
      對同一段期間各給一個數字。
 
      招呼／閒聊也在裡面，而且**照實列出、不做關鍵字猜測**——「你好，請問輸美關稅多少」也以「你好」
-     開頭，猜的話真缺料會被靜靜濾掉。要拿掉的是人：每一列的「排除」把那句提問原文加進 `exclude`
-     參數（**修剪空白後全字比對**，不是前綴也不是子字串），排除量一律回報成「已排除則數」，
-     且 `sum(groups[].count) + excluded_count == total_no_answer` 恆成立——藏起來多少永遠看得見。
+     開頭，猜的話真缺料會被靜靜濾掉。要拿掉的是人：每一列的「排除」把那句提問原文送進這一次查詢的
+     排除名單（**修剪空白後全字比對**，不是前綴也不是子字串），排除量一律回報成「已排除則數」，
+     且**各組查無則數的總和 ＋ 已排除則數 ＝ 查無則數**恆成立——藏起來多少永遠看得見。
 
-     排除分**兩層**，因為後端刻意把它掛在兩把不同的鑰匙上：
+     排除分**兩層**，因為這兩層掛在兩把不同的鑰匙上：
 
-     ①**本次查詢**（`?exclude=` 查詢參數，可重複）——一次性的預覽，「先看看排掉這幾題長什麼樣」。
+     ①**本次查詢**（只活在這一次送出去的條件裡，可以放好幾句）——一次性的預覽，「先看看排掉這幾題長什麼樣」。
        讀報表要的能力是 `history`，所以**看得到報表的人就排得掉**，重新整理即失效。
-     ②**常設清單**（`GET/PUT /stats/coverage-gaps/exclusions`，存在 `TenantSetting`）——租戶層級的
+     ②**常設清單**（存在租戶設定上）——租戶層級的
        判斷，改一次**全租戶**的報表都跟著變，故寫入要 `settings:write`。整份取代語意（不是逐筆
-       增刪），product 端修剪空白、丟空字串、**保序去重**。
+       增刪）：送出的是整份陣列，存下來時修剪空白、丟掉空字串、**保序去重**。
 
      兩層在查詢時取**聯集**。畫面因此分成兩區，不是一份清單：混在一起的話，使用者分不出「這一句
      是我剛才排掉的」與「這一句是別人上週替全租戶排掉的」，而後者按下「取消排除」會改到別人看到
      的報表。「存成常設排除」那顆鈕只有 `settings:write` 看得到——`history`-only 的人仍然排得掉
      （第①層），只是存不起來。
 
-     兩區列出來的都是**回應的回聲**（product 修剪空白＋去重後的樣子），不是送出去的原字串——
+     兩區列出來的都是**存下來之後的回聲**（修剪空白＋去重後的樣子），不是送出去的原字串——
      貼回來的字帶了空白時，看得到的要是伺服器實際比對的那一份。
 
-     權限：報表本身掛的是 `require_capability("history")`（不是 5-3 的 `settings`）——它回的是**提問
+     權限：報表本身要 `history` 能力（不是 5-3 的 `settings`）——它端出來的是**提問
      原文**，屬歷史內容。故本頁的導覽入口與 5-3 同在「設定」選單下，但兩頁需要的能力不同。
 
-     分群：帶 `dimension=<標籤維度 slot_key>` 就依**提問的意圖**分群（不帶＝完全不分類，一次模型
-     都不打）。群組名稱是 API 回的資料（`label`），不掛 data-i18n；但**每一組的 `kind` 要外顯**，
+     分群：選一個標籤維度的槽鍵就依**提問的意圖**分群（不選＝完全不分類，一次模型
+     都不打）。群組名稱是查回來的業務資料，不掛 data-i18n；但**每一組的 `kind` 要外顯**，
      理由見下面 gapGroups 上方那段。 #}
 {% set breadcrumbItems = [
   { label: "首頁", href: "2-1_qaRecord.html", i18nKey: "nav.home" },
@@ -45,18 +44,18 @@ permalink: 5-4_coverageGaps.html
   { label: "覆蓋缺口", i18nKey: "nav.coverageGaps" }
 ] %}
 {# 示範資料要自洽（GUIDELINE §6）：300 ＋ 15 ＋ 9 ＋ 4 ＋ 2（五組，和 330）＋ 3（已排除）＝ 333（查無則數）；
-     第一組樣本 10 筆（＝product 每組上限 `MAX_GAP_SAMPLES`）、相異提問 192 種＝被截到剩 10 筆，
-     兩個數擺在一起才看得出「不是只有 10 種」；**`MAX_GAP_SAMPLES` 是 10**，所以相異數 ≤10 的組
-     一定是全部列出（樣本數＝相異數），只有 B06 那種大組才會被截到剩 10 筆。
+     第一組樣本 10 筆（＝每組樣本上限）、相異提問 192 種＝被截到剩 10 筆，
+     兩個數擺在一起才看得出「不是只有 10 種」；**每組樣本上限是 10**（在這裡宣告一次，就是正本），
+     所以相異數 ≤10 的組一定是全部列出（樣本數＝相異數），只有 B06 那種大組才會被截到剩 10 筆。
      可行性下界：`count ≥ Σ樣本次數 ＋ (相異數 − 樣本數)`——其餘每一種提問至少出現一次。
-     已分類提問數 192 ＋ 3 ＋ 3 ＋ 2 ＝ 200 ＝ 分類上限（product `MAX_GAP_CLASSIFY`）⇒ 剩下 2 種
+     已分類提問數 192 ＋ 3 ＋ 3 ＋ 2 ＝ 200 ＝ 單次請求的分類上限 ⇒ 剩下 2 種
      相異提問**根本沒送去分類**，落在 `unclassified` 那一組——這正是「上限也要在消費點看得見」的那一格。 #}
 {# **時間區間由篩選預設值 ＋ 站台的「現在」推導**（§6：全站只有一個現在＝2026-07-14 09:00 UTC，
      由 `components/iso-review-wizard` 名單上那個查詢時間釘死）：本頁 `timeFilterChecked = "last24h"`
      ⇒ 區間必然是 `現在 − 24h ~ 現在`。
    **這一格不可以隨手填一個日期**，兩道檢查都要過：①它要與篩選列上勾著的那一顆對得起來
-     （寫成別的月份，畫面會同時說「這是近 24 小時」與另一個時間）；②那個區間必須是**這支端點
-     產得出來的**——`stats._resolve_range` 對 `start < now - 365 天` 直接 400，而本頁的 toast
+     （寫成別的月份，畫面會同時說「這是近 24 小時」與另一個時間）；②那個區間必須是**查詢真的
+     產得出來的**——開始時間早於一年前會被擋下來，而本頁的 toast
      就把那條界線印給使用者看（「且在一年內」）。示範資料演的必須是一個真實可能的狀態。 #}
 {% set gapSummary = {
     range: "2026/07/13 09:00 ~ 2026/07/14 09:00",
@@ -69,16 +68,16 @@ permalink: 5-4_coverageGaps.html
 } %}
 {# 兩層排除各給一筆示範資料，合計 3 則＝上面 `excludedCount`（`excludedCount` 是**則數**、
      這兩份是**相異提問**，「你好」被問了兩次所以 2+1=3——示範資料要自洽，GUIDELINE §6）。
-     兩份都是回應的回聲：常設那份來自 `GET …/exclusions` 的 `questions`，本次那份來自
-     `GET /stats/coverage-gaps` 回的 `excluded` **減去**常設那一份（product 回的是聯集）。 #}
+     兩份都是回聲：常設那份是租戶設定上存著的清單，本次那份是這一次實際排掉的那些
+     **減去**常設那一份（查詢回來的是兩層的聯集）。 #}
 {% set gapExcludedPersistent = ["你好"] %}
 {% set gapExcludedSession = ["測試一下"] %}
 {# 分群維度：值域是**標籤維度的 slot_key**（不是 5-3 統計模組那個 `dataset`／`attribution:<slot>`），
-     同名不同值域，打錯的值 product 一律 400 並指名原因、**不退回「不分群」**（退回的話畫面看起來
+     同名不同值域，打錯的值會被擋下並指名原因、**不退回「不分群」**（退回的話畫面看起來
      一切正常，只是每一題都落在未分類）。日期維度與字典是空的維度沒有受控詞彙可挑，故不列進選項，
      並在下面用一句話交代它們為什麼不在。 #}
-{# 第三筆是 5-10 的「文件密級」：single ＋ 有兩個代碼 ⇒ 分得了群（`intent_classify.CLASSIFIABLE_KINDS`
-     只排除 date，product 只擋空字典）。本頁對外講的排除理由是「日期維度與字典是空的維度」，
+{# 第三筆是 5-10 的「文件密級」：single ＋ 有兩個代碼 ⇒ 分得了群（分不了群的只有兩種：
+     日期維度、字典是空的維度）。本頁對外講的排除理由是「日期維度與字典是空的維度」，
      文件密級兩者皆非 ⇒ 它**必須**在這份清單上，少一筆就是文案講的規則與實際列出的選項對不起來
      （§6 跨頁自洽：5-10 加一個分得了群的維度，這裡要跟著加）。 #}
 {% set gapDimensions = [
@@ -86,11 +85,11 @@ permalink: 5-4_coverageGaps.html
     { slotKey: "note4", name: "業務方向" },
     { slotKey: "note5", name: "文件密級" }
 ] %}
-{# ★ 四種 `kind` 是**四種不同的事實**，畫面上絕不可以併成一列（product
-     的 `(kind, key)` 才是分群鍵）：
+{# ★ 四種 `kind` 是**四種不同的事實**，畫面上絕不可以併成一列
+     （分群鍵是 `(kind, key)` 這一對，不是 key 自己）：
        · `code`          ＝分類器把這些提問分到這個業務代碼 → 這個業務面缺料，先補它
        · `out_of_scope`  ＝分類器**有把握地**說不屬於任何代碼（招呼、閒聊）→ 擴字典或用「排除」拿掉
-       · `undetermined`  ＝分類器**沒有結論**（含分類器整批失效）→ 這一列異常大就去看後端錯誤日誌
+       · `undetermined`  ＝分類器**沒有結論**（含分類器整批失效）→ 這一列異常大就去看伺服器的錯誤日誌
        · `unclassified`  ＝**根本沒送去分類**（沒帶維度，或超出分類上限）→ 這是報表的界線，不是資料的性質
      把 undetermined 併進 out_of_scope 的話，「分類器整批壞掉」在畫面上會長得像「這些提問都是閒聊」
      ——一個沒有任何人看得出來的假訊號；併進 unclassified 則等於宣稱分類器看過它們並放棄了。
@@ -167,7 +166,7 @@ permalink: 5-4_coverageGaps.html
     {% include "ui/breadcrumb/breadcrumb.html" %}
 </div>
 
-{# 篩選列：與 5-3 統計模組同一組參數（range / start / end / data_type）。起訖兩欄在正式環境是由
+{# 篩選列：與 5-3 統計模組同一組條件（時間區間、起訖、資料類型）。起訖兩欄在正式環境是由
      flatpickr 在執行期掛載的，切版只留原生 class 與 disabled 預設狀態、不引入該 vendor。 #}
 <div class="block flex-row column gap-24 mt-10">
     <div class="flex-row column gap-16">
@@ -176,9 +175,7 @@ permalink: 5-4_coverageGaps.html
              `timeFilterRangeHintId`＝本頁三顆「查詢」鈕 `data-toast` 裡 365 的**常駐可見抄本**所在的
              節點 id（起訖兩欄 aria-describedby 指它）。屬性型譯文（`data-i18n-data-toast`）只有在
              「同一個約束另有一處常駐可見的資料節點承載」時才准把常數烤進譯文（§4-2）——這個 id
-             就是那一處。三顆鈕共用同一顆 `toast.queryStats`、也共用這一段起訖欄，故只需要一處抄本。
-             上游是同一支 `_resolve_range`（product，`GET /stats/coverage-gaps`
-             與 `GET /stats` 都呼叫它）。 #}
+             就是那一處。三顆鈕共用同一顆 `toast.queryStats`、也共用這一段起訖欄，故只需要一處抄本。 #}
         {% set timeFilterName = "gap-time" %}
         {% set timeFilterLabelId = "gapTimeFilterLabel" %}
         {% set timeFilterChecked = "last24h" %}
@@ -204,28 +201,27 @@ permalink: 5-4_coverageGaps.html
             </div>
         </div>
     </div>
-    {# 同 5-3：`GET /stats/coverage-gaps` 也走 `_fetch_logs`，筆數超過單次上限
-         （`stats._stats_max_logs()`，讀 product 的 `stats_max_logs`，**不是模組常數**、可由 env 覆寫）
-         即 400「此時間範圍資料量過大…請縮小範圍」（product 的 `_fetch_logs`／`stats.too_many_logs`）。下面兩顆排除/取消排除
-         也重新查同一支端點，故三顆共用同一顆 key、同一組分支（§5 同一道守衛分支集合一致）。
+    {# 同 5-3：這一頁的查詢吃同一條「單次查詢筆數上限」，超過即擋下、回一句
+         「這段期間的資料量超過單次上限，請縮小時間範圍」；那個上限隨部署設定而變、**不是固定值**，
+         所以切版任何一處都不寫死它。下面兩顆排除/取消排除
+         也重新查一次同一份報表，故三顆共用同一顆 key、同一組分支（§5 同一道守衛分支集合一致）。
          左邊那顆是篩選列正典的 `.js-filter-clear`「清除」，不寫成「取消」——那個字面全站沒有
          任何 js 選得到，會變成一顆按了不會有事發生的鈕（§5 ④）。
-         **意圖分組那一段 400 不可以漏**：帶了 `dimension` 時，`coverage_gaps` 在拉資料**之前**
-         先呼叫 `_assert_classifier_is_configured(model, effort)`（product），
-         模型設定送不出去就是 400 `stats.classifier_not_configured`。本頁的示範預設就選著「業務範疇」
+         **意圖分組那一段 400 不可以漏**：選了分群維度時，會在拉資料**之前**先檢查意圖判斷那一組的
+         模型設好了沒有，沒設好就直接擋下、連資料都不拉。本頁的示範預設就選著「業務範疇」
          （`gapSummary.dimensionName`），所以按一下查詢就撞得到，而它是**使用者自己修得掉**的
          ——去 5-2「生成設定」的分組 LLM 把「意圖判斷」那一組的模型設好——折進「載入資料失敗，
          請重新整理頁面」等於叫人重整一個永遠不會成功的請求（§5：逐 raise 對回鈕，不可折進紅色終局）。
-         不分群（`dimension` 空）時這一段走不到，但同一顆鈕兩種選擇都送得出去，故照樣列。 #}
+         不分群時這一段走不到，但同一顆鈕兩種選擇都送得出去，故照樣列。 #}
     <div class="flex-row align-items-center justify-content-center gap-16">
         <button type="button" class="button button-border js-filter-clear" data-i18n="action.clear">清除</button>
         <button data-capability="history" type="button" class="button button-primary" data-toast="正在查詢資料...|權限不足，無法查詢——請找貴租戶的管理者開通|查詢成功|時間區間不正確（起訖需成對、開始須早於結束與現在、且在一年內、範圍不超過 365 天）|這段期間的資料量超過單次上限，請縮小時間範圍|意圖分組的模型還沒設好，這份報表分不了群——請先到對話設定的「生成設定」把「意圖判斷」那一組的模型設好|載入資料失敗，請重新整理頁面|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.queryStats" data-toast-type="info|warning|success|warning|warning|warning|error|warning" data-i18n="action.query">查詢</button>
     </div>
 </div>
 
-{# 摘要列：查無則數要有分母才讀得出是多還是少（product 回 total_logs 就是為了這件事）；
-     已排除則數與它並列，是「加總永遠對得起來」的可視化。
-     **分類上限也在這裡外顯**（product 回 `classify_limit` 就是為了這件事）：一次請求最多只分類
+{# 摘要列：查無則數要有分母才讀得出是多還是少，所以「對話次數」與它並列；
+     已排除則數也並列，是「加總永遠對得起來」的可視化。
+     **分類上限也在這裡外顯**：一次請求最多只分類
      N 種相異提問，超出的那些照實落在「沒送去分類」而不是消失。已分類數等於上限時多一句提示
      ——不然「這份報表只看了前 100 種」這件事沒有任何地方講得出來。 #}
 <div class="block flex-row column gap-8 mt-16">
@@ -234,12 +230,12 @@ permalink: 5-4_coverageGaps.html
         <p><span class="text-bold" data-i18n="settings.conversationCount">對話次數：</span><span id="gap-total-logs">{{ gapSummary.totalLogs }}</span></p>
         <p><span class="text-bold" data-i18n="settings.noAnswerTotal">查無則數：</span><span id="gap-total-no-answer">{{ gapSummary.totalNoAnswer }}</span></p>
         <p><span class="text-bold" data-i18n="settings.excludedTotal">已排除則數：</span><span id="gap-excluded-count">{{ gapSummary.excludedCount }}</span></p>
-        {# **這一格畫的是 join 出來的值**（§3-2「欄位的形狀也要對」）：`CoverageGapsOut.dimension`
-             回的是 `slot_key`（例如 `note3`）**不是名字**，人看得懂的 `name` 住在另一張表
-             （`models.TagDimension.name`，要打 `GET /tags/dimensions` 才拿得到；5-10 是它的編輯畫面）。
+        {# **這一格畫的是兩份資料兜出來的值**（§3-2「欄位的形狀也要對」）：報表本身只認得**槽鍵**
+             （例如 `note3`）**不是名字**，人看得懂的維度名住在標籤維度那一份資料上，
+             要另外讀一次才有（5-10 是它的編輯畫面）。
              故與同頁下拉同形狀「名（槽）」，**解不出名字時只畫槽鍵本身**——那是這一欄的 fallback 規格，
              不寫的話 React 會自己發明一個切版從未定過的畫面。
-           `dimension` 的 `null` 那一態（＝下拉第一顆「不分群」，也是端點預設）同樣要切：
+           分群維度是空的那一態（＝下拉第一顆「不分群」，也是預設）同樣要切：
              那時整格畫 `settings.gapNoGrouping`，不是留一個名字在那裡。 #}
         <p><span class="text-bold" data-i18n="settings.gapGroupedBy">分群維度：</span><span id="gap-dimension">{% if gapSummary.dimensionSlot %}{{ gapSummary.dimensionName or gapSummary.dimensionSlot }}{% if gapSummary.dimensionName %}<span data-i18n="common.parenOpen">（</span>{{ gapSummary.dimensionSlot }}<span data-i18n="common.parenClose">）</span>{% endif %}{% else %}<span data-i18n="settings.gapNoGrouping">不分群</span>{% endif %}</span></p>
         <p><span class="text-bold" data-i18n="settings.gapClassifiedQuestions">已分類提問數：</span><span id="gap-classified">{{ gapSummary.classifiedQuestions }} / {{ gapSummary.classifyLimit }}</span></p>
@@ -256,16 +252,15 @@ permalink: 5-4_coverageGaps.html
 <div class="block flex-row column gap-16 mt-16">
     <div class="text-bold" data-i18n="settings.excludedQuestions">已排除的提問</div>
 
-    {# ① 常設・全租戶。移除是 PUT 整份取代（送出「現有清單扣掉這一句」），故要 settings:write；
+    {# ① 常設・全租戶。移除是整份取代（送出「現有清單扣掉這一句」），故要 settings:write；
          沒有那顆能力時整區仍要**看得見**——看報表的人有權知道哪些題被誰藏起來了。鈕也照樣渲染、
          照樣按得下去，那道 403 是這兩顆的**第 2 段 warning**（GUIDELINE §4：`data-capability`
          不足不比照 `data-platform-role` 做「不渲染」，改把結果列進 data-toast）。 #}
     {# 兩個上限畫在消費點（§3-2「上限寫在消費點（『N / 30』）」），形狀比照本頁上面的
          「已分類提問數：200 / 200」。**不可以只活在兩顆鈕的 toast 裡**（「清單太長或有一筆超過
          長度上限」）——那樣就是撞到才知道，而這一份清單是人一句一句加起來的，快滿了要看得見。
-         出處＝product 的 `MAX_GAP_EXCLUSIONS = 200`（`put_gap_exclusions` 去重後
-         超過即 400 `stats.gap_exclusions_too_many`）與 `MAX_GAP_EXCLUSION_LEN = 2000`
-         （逐筆超過即 400 `stats.gap_exclusion_too_long`，訊息指名是哪一筆）。
+         界線在這裡宣告一次，就是正本：常設排除**最多 200 筆**（去重之後算），**每一句最多 2000 字**
+         （逐筆檢查，超過會被擋下並指名是哪一筆）。
          兩個數字是**資料**故獨立成節點（§4-2：契約裡有欄位的常數不准寫進譯文）。 #}
     <div class="flex-row column gap-8">
         <div class="flex-row align-items-center flex-wrap gap-16">
@@ -280,16 +275,16 @@ permalink: 5-4_coverageGaps.html
                  最多聽到 200 顆逐字同名的「移除」。順序照正典：辨識在前、動作在後。 #}
             <div class="flex-row align-items-center gap-4">
                 <span id="gapExclPersistName-{{ loop.index }}">{{ q }}</span>
-                {# data-question＝React 動作目標：product 的排除清單與提問原文用同一套正規化（修剪空白後
+                {# data-question＝React 動作目標：排除清單與提問原文用同一套正規化（修剪空白後
                      全字比對），所以鈕要帶得走那句原文，而不是去讀兄弟節點的 textContent。 #}
                 <button type="button" data-capability="settings:write" class="button button-border button-sm js-remove-persistent-exclusion" data-question="{{ q }}"
                     id="gapExclPersistRemove-{{ loop.index }}" aria-labelledby="gapExclPersistName-{{ loop.index }} gapExclPersistRemove-{{ loop.index }}"
                     {# 「清單太長或有一筆超過長度上限」在**移除**這一條路徑上其實觸發不了（送出去的是
                          「現有清單扣掉這一句」，逐筆長度不變、筆數只會變少），但**照樣列**——§5
                          「同一道後端守衛，不論從哪一頁、哪一顆鈕觸發，分支集合與語意型別都要一致」：
-                         它與「存成常設排除」打的是同一支 `PUT /stats/coverage-gaps/exclusions`，
+                         它與「存成常設排除」寫的是同一份常設清單、過同一道守衛，
                          而那一顆兩條 400 都走得到。分支集合以**守衛**為單位、不以呼叫端為單位，
-                         否則同一支端點在同一頁上會有兩份不一樣的結果清單。 #}
+                         否則同一道守衛在同一頁上會有兩份不一樣的結果清單。 #}
                     data-toast="正在儲存...|權限不足，無法移除——請找貴租戶的管理者開通|已從常設排除移除|清單太長或有一筆超過長度上限|儲存失敗，請重新整理頁面|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.removePersistentExclusion" data-toast-type="info|warning|success|warning|error|warning"
                     data-i18n="action.remove">移除</button>
             </div>
@@ -301,7 +296,7 @@ permalink: 5-4_coverageGaps.html
         </div>
     </div>
 
-    {# ② 本次查詢。「存成常設排除」把這一句加進常設清單（PUT 整份取代：現有常設 ＋ 這一句），
+    {# ② 本次查詢。「存成常設排除」把這一句加進常設清單（整份取代：現有常設 ＋ 這一句），
          成功後它會從這一區移到上一區。 #}
     <div class="flex-row column gap-8">
         <div class="text-gray" data-i18n="settings.excludedSessionTitle">本次查詢・重新整理即失效</div>
@@ -309,8 +304,8 @@ permalink: 5-4_coverageGaps.html
             {% for q in gapExcludedSession %}
             {# 逐列辨識欄（§4）：這是 {% for %} 產出的 <div> 清單、不是 <tr>——無障礙樹裡沒有列脈絡
                  可倚靠（「豁免來自 <tr>，不是來自『長得像一列』」）。**本次查詢的排除筆數沒有上界**
-                 （`exclude` 是查詢參數，product 的 `coverage_gaps` docstring 逐字
-                 「不另設數量上限」）⇒ 逐列辨識欄更不能省。**這一列有兩顆異型鈕，兩顆都要綁**：
+                 （不像常設清單那 200 筆，這一層不另設數量上限）⇒ 逐列辨識欄更不能省。
+                 **這一列有兩顆異型鈕，兩顆都要綁**：
                  判準是「這個 {% for %} 體內的每一顆控制項」，不是「這一列有沒有做過」。
                  順序照正典：辨識在前、動作在後。 #}
             <div class="flex-row align-items-center gap-4">
@@ -333,9 +328,9 @@ permalink: 5-4_coverageGaps.html
 
 {# 缺料清單：一組一張表。`count`（該組查無則數）與 `distinctQuestions`（相異提問數）兩個都要——
      只有前者看不出「300 則是同一題問 300 次，還是 300 個不同題目」，而兩種情況該補的東西完全不同。
-     「已列出」是這次實際列出的樣本筆數（product 每組上限 `MAX_GAP_SAMPLES`）：與相異提問數擺在
+     「已列出」是這次實際列出的樣本筆數（每組有樣本上限）：與相異提問數擺在
      一起，讀的人才分得出「只有 10 種」與「被截到剩 10 種」。這個數字從樣本陣列推導、不烤字面量
-     ——上限值只有 product 知道，前端抄一份就會在它改動時開始說謊。 #}
+     ——寫死一個數字，它就會在上限改動的那一天開始說謊。 #}
 {% for group in gapGroups %}
 {# 巢狀迴圈的外圈序號要另存：內圈的 {{ loop.index }} 只看得到內圈，
      內圈序號在不同組之間會重複，只帶它的話跨組的「排除」鈕會撞 id（§4）。 #}
@@ -344,10 +339,10 @@ permalink: 5-4_coverageGaps.html
     <div class="flex-row justify-content-between align-items-center flex-wrap gap-8">
         <div class="flex-row align-items-center gap-8 flex-wrap">
             <div class="text-lg text-bold">{{ group.label }}</div>
-            {# kind 與 key 都畫出來，兩個都是 API 回的**資料**（不翻）。理由：分群鍵是 `(kind, key)`
+            {# kind 與 key 都畫出來，兩個都是查回來的**資料**（不翻）。理由：分群鍵是 `(kind, key)`
                  這一對，只看 label 分不出這一列是「一個業務代碼」還是「判不準」（代碼本身沒有禁止
-                 叫 undetermined）；而 code 列的 key 要逐字看得到——自訂 TEXT 篩選欄位在上游是逐位
-                 元組比對，模型回小寫的 `b06` 而字典寫的是 `B06` 時，那條述詞零命中且完全無聲。 #}
+                 叫 undetermined）；而 code 列的 key 要逐字看得到——代碼的比對是**逐字元、分大小寫**的，
+                 模型回小寫的 `b06` 而字典寫的是 `B06` 時，那條篩選零命中且完全無聲。 #}
             <span class="text-gray">{{ group.kind }}</span>
             {% if group.kind == "code" %}<code class="inline-code">{{ group.key }}</code>{% endif %}
         </div>
@@ -394,7 +389,7 @@ permalink: 5-4_coverageGaps.html
     </div>
 </div>
 {% else %}
-{# 全期間都答得出來時 product 回空的 groups（不列一個 count=0 的空組充數），畫面就只剩這一句。
+{# 全期間都答得出來時分組是空的（不會列一個 count=0 的空組充數），畫面就只剩這一句。
    ⚠️ **不用泛用的 `common.noData`**：這一頁空著是**好消息**——這段期間每一題都答得出來，
      沒有任何覆蓋缺口。寫成「無資料」會讓它讀起來像報表壞了或還沒查，而這一頁的整個用途就是
      「有沒有答不出來的題目」。同時要把另一半講掉：它只涵蓋**這段時間區間**，換一段可能就有。 #}

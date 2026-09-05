@@ -1,8 +1,7 @@
 {# ISO 季度審核精靈——**一台三態互斥的狀態機**，不是三個並排的區塊。
      ── 為什麼要參數化成一態一份 ────────────────────────────────────────────────────
-     正本 gufofaq-saas `apps/web/app/(app)/platform/page.tsx` 的 `ReviewWizard`：
-     `const [step, setStep] = useState<"idle" | "preview" | "result">("idle")`，三段各自
-     `{step === "…" && (…)}` 條件渲染。**任何一個時刻只畫得出其中一段。**
+     三態是 `"idle"` → `"preview"` → `"result"`，三段各自條件渲染，
+     **任何一個時刻只畫得出其中一段。**
      **三段不得同時畫在一頁上**（不論是為了「一次看完三步長什麼樣」還是為了省一份稿），兩個理由：
        ① §5／§6「示範資料演的必須是一個真實可能的狀態」——三步同時在畫面上是使用者永遠看不到的一格；
        ② 三段是連續的 `.flex-row.column.gap-8` 兄弟節點、沒有各自的選擇器可以當 fpdiff 的比對根，
@@ -11,7 +10,7 @@
      React 端同樣是單一路由 ＋ step state）。
 
      參數（**必填、無預設**）：
-       isoReviewStep —— `"idle"` | `"preview"` | `"result"`，值與 `ReviewWizard` 的 `step` state 逐字相同
+       isoReviewStep —— `"idle"` | `"preview"` | `"result"`，這三顆值在這裡宣告一次
                         （不另發明詞彙，React 端就是拿這顆值去對）。三個值以外（含忘了 set）整塊步驟區
                         不渲染——空掉的區塊在畫面上看得見，比靜默落回某一態容易查（§5 fail loud）。
      使用頁與它演的狀態（三份稿互為前後步，改一份要回頭對另外兩份）：
@@ -20,25 +19,23 @@
        · `5-6-1-3_platformIsoReviewResult.html`    result  ——上一步：preview（`.js-review-confirm` 送出後到這）／下一步：回 idle（`.js-review-done`）
      **步驟指示器就是每一段自己的標題**（`platform.reviewStep1/2/3` 的繁中原文與英譯都自帶 ①②③），
      所以一份稿只畫得出自己那一顆號碼——不另外 include `components/step-nodes`：那是資料匯入精靈的
-     版型決策，`ReviewWizard` 沒有它，補上去就是 React 得跟著長出一個切版從未定過的東西。
+     版型決策，這一台沒有它，補上去就是 React 得跟著長出一個切版從未定過的東西。
 
      ── 狀態之間怎麼走（都是業務 js，切版不做靜態跳轉）──────────────────────────────
-     idle 的三顆動作鈕打 `GET /platform/review/overdue` 拉名單 → preview；
-     preview 的 `.js-review-confirm` 打 `POST /platform/review/apply` → result；
+     idle 的三顆動作鈕拉逾時名單 → preview；
+     preview 的 `.js-review-confirm` 送出處置 → result；
      `.js-review-cancel`／`.js-review-done` 回 idle。全部是 hook class（§5 條件動作），
      所以**三份稿之間沒有、也不該有 `<a href>`**——那會在 markup 裡寫一句 React 沒有的話。
      三份稿在部署站台上由頁面目錄（`catalog.html`）進入，彼此在檔頭互相指名。
 
      ── 這一整台是 auditor 進得來的 ─────────────────────────────────────────────────
-     名單與門檻是 auditor 讀得到的（GET /platform/review/overdue ＝ require_platform_auditor，
-     product 的 `review_overdue`；docstring 自述「這一步不動任何資料，管理員截圖存證用」）——整區標 admin
-     等於唯讀稽核員連那張截圖都看不到，正是 §5 要防的「把整塊 gate 在是不是管理員」。
-     區塊標 auditor，只有真的會寫入的那一顆（preview 態的「確認執行」＝ POST /review/apply
-     ＝ require_platform_admin，product 的 `review_apply`）標 admin。idle 態那三顆是「選動作＋拉名單」，
-     打的是同一支 GET，auditor 要按得到才截得到圖。
+     拉名單與設門檻是**唯讀**的（這一步不動任何資料，產出就是那張存證截圖），auditor 讀得到
+     ——整區標 admin 等於唯讀稽核員連那張截圖都看不到，正是 §5 要防的「把整塊 gate 在是不是管理員」。
+     區塊標 auditor，只有真的會寫入的那一顆（preview 態的「確認執行」）標 admin。
+     idle 態那三顆是「選動作＋拉名單」，走的是同一個唯讀查詢，auditor 要按得到才截得到圖。
 
      示範資料（§6(b) 純示範假資料，元件專屬名）：`isoReviewCandidates`／`isoReviewOkResults`／
-     `isoReviewFailResults`。正式環境由 React 走 GET /platform/review/overdue 與 POST /platform/review/apply。
+     `isoReviewFailResults`。正式環境由 React 執行期填。
 
      ── 執行期才換字的那三格（React 讀槽、不自己拼字串）─────────────────────────────
      切版是靜態稿，一次只畫得出一個狀態；下面三格的其餘狀態全部掛在**同一顆元素**上，
@@ -48,7 +45,8 @@
          `data-phrase-ph-purge|delete|freeze`（輸入框的 placeholder）**——兩者要一起換，只換 label
          會讓選「凍結」的人在欄位裡讀到 DELETE-ACCOUNT（**值**，不翻，理由見該處）
        · 確認鈕的字面               → `data-text-irreversible|reversible|busy`（chrome，要翻）
-     三處的態名都對回 `ReviewApplyIn.action` 的值域，只有確認鈕多一個與動作無關的 `busy`（送出中）。
+     三處的態名都對回同一組動作值域（purge／delete／freeze），只有確認鈕多一個與動作無關的
+     `busy`（送出中）。
 
      ── 前後綴夾資料槽的兩處（REACT-CONVERSION §③(a) 允許 React 併成單一插值 key）──────────
      切版的 `GufoI18n.t(key, zhFallback)` 沒有插值機制（ui/lang-toggle），所以這兩處一律是
@@ -60,8 +58,8 @@
      **逐字串接**（含分隔空白），兩個語系各對一次。中間自己改一個連接詞（「、失敗」寫成「，失敗」、
      "Overdue by" 寫成 "Overdue over"）就是在 React 端開了第二份文案正本，而字典比對放行含
      `{{ }}` 的值、fpdiff 又不比文字內容，兩張網都看不到。 #}
-{# **`id` 是列鍵、不可省**（§6）：`ReviewTenantOut.id` 是這張表的第一欄，而確認鈕送出的
-     `ReviewApplyIn.tenant_ids` 就是這一份清單推導出來的（gufofaq-saas product）——沒有它，React 端
+{# **`id` 是列鍵、不可省**（§6）：租戶編號是這張表的第一顆識別欄，而確認鈕送出的那份租戶清單
+     就是這一份名單推導出來的——沒有它，React 端
      組不出 payload。判準是「這一列會不會成為某個動作的 payload 元素」，不是「列內有沒有刪除鈕」
      （處置鈕在迴圈外面，整批打一次）。id 與 `components/platform-tenants-panel` 的租戶表同源。 #}
 {% set isoReviewCandidates = [
@@ -70,38 +68,34 @@
 ] %}
 {# 結果拆成功/失敗兩個陣列：result 態的「共 N 筆，成功 X，失敗 Y」全部從陣列長度推導（§6 可推導的值不烤死），
      表格先渲染成功列再渲染失敗列 #}
-{# 逐筆帶 `tenantId`：`review_apply` 回的是 `{"tenant_id": …, "name": …, "ok": …}`（＋失敗才有 `error`）。
-   **`error` 是一顆穩定 code、不是一句訊息**（product 的 `_review_failure_code`，docstring 逐字說明
-     為什麼）：`str(e)` 對 `httpx` 例外會逐字帶出 GufoRAG 的內部主機與埠，而這份 JSON 是回給瀏覽器的。
-     值域是封閉的五顆——`tenant_not_found`（名單過期了，重查一次逾期清單）／`cannot_delete_own_tenant`
-     （選到了自己所屬的租戶，把那一筆勾掉）／`upstream_unavailable`（GufoRAG 那側 502/503）／
-     `review_action_failed`（其餘 HTTPException）／`internal_error`（非 HTTPException）。
-     上游刻意不收斂成一句通用訊息：這個欄位是**逐筆**的，它同時是「這一批裡哪幾個租戶失敗、各自是
-     哪一種失敗」的唯一線索，而三種失敗的下一步完全不同。
-   **所以資料存上游字面、顯示走 i18n key**（同 4-1 的 `userType`／`rating` 兩欄）：塞顯示字的話
-     React 接真 API 只印得出 `upstream_available` 這種識別字，而英文模式那一格永遠是中文（§6／§4-2）。
-   **句子由切版寫**（§4：出貨文案的繁中正本在切版）：上游給的是 code，畫面上要讓值班的人知道
+{# 逐筆帶 `tenantId`：處置結果是**逐租戶一筆**（租戶編號、名稱、成敗；失敗才多一顆錯誤 code）。
+   **錯誤是一顆穩定 code、不是一句訊息**：例外原文會逐字帶出內部主機與埠，而這份結果是回給
+     瀏覽器的。值域是封閉的五顆——`tenant_not_found`（名單過期了，重查一次逾期清單）／
+     `cannot_delete_own_tenant`（選到了自己所屬的租戶，把那一筆勾掉）／`upstream_unavailable`
+     （索引那一側暫時不可用）／`review_action_failed`（其餘被拒的處置）／`internal_error`
+     （未預期的錯誤）。刻意不收斂成一句通用訊息：這個欄位是**逐筆**的，它同時是「這一批裡哪幾個
+     租戶失敗、各自是哪一種失敗」的唯一線索，而各種失敗的下一步完全不同。
+   **所以資料存 code 字面、顯示走 i18n key**（同 4-1 的 `userType`／`rating` 兩欄）：塞顯示字的話
+     React 接真資料只印得出 `upstream_unavailable` 這種識別字，而英文模式那一格永遠是中文（§6／§4-2）。
+   **句子由切版寫**（§4：出貨文案的繁中正本在切版）：拿到的是 code，畫面上要讓值班的人知道
      下一步做什麼，所以五顆各自一句、各自講得出下一步——不是把 code 原樣印上去。
-   ⚠️ **不可以自己編一句上游的訊息**（例如「清租戶資料失敗（tenant=42）：GufoRAG 刪索引回 502」，
-     或宣稱它出自一顆叫 `platform.purge_tenant_failed` 的 key）：那顆 key 在上游 grep 為零，
-     而且它假設了一件上游明文拒絕做的事——把例外原文放進回應。
-   **演的是 `purge_data` 那一支**：`_purge_tenant_data` 的 docstring 逐字寫著它**保留** Tenant／User／
-     TenantSetting／群組／widget token／API 金鑰，所以同一頁的租戶表照樣列得出 C 與 D；換成
-     `delete_account` 就會與那張表互相否定（那一支 `delete(User)` ＋ `delete(Tenant)`）。 #}
+   ⚠️ **不可以自己編一句失敗訊息塞進這一欄**（例如「清租戶資料失敗（tenant=42）：刪索引回 502」）：
+     那等於把例外原文搬上畫面，而這一欄的值域就是上面那五顆 code。
+   **演的是「刪除逾時資料」那一支**：它**保留**租戶、使用者、租戶設定、群組、嵌入金鑰與 API 金鑰，
+     只清掉資料與索引，所以同一頁的租戶表照樣列得出 C 與 D；換成「刪除逾時帳號」就會與那張表
+     互相否定（那一支連租戶與使用者一起刪掉）。 #}
 {% set isoReviewOkResults = [
   { tenantId: 23, name: "示範租戶 C", error: "" }
 ] %}
 {% set isoReviewFailResults = [
   { tenantId: 42, name: "示範租戶 D", error: "upstream_unavailable" }
 ] %}
-{# 授權：整區的下限是 `auditor`——`GET /platform/review/overdue`
-     （gufofaq-saas product 的 `review_overdue`）掛的就是 `require_platform_auditor`，
+{# 授權：整區的下限是 `auditor`——拉逾時名單是唯讀查詢，
      稽核員要拉得到名單才截得了圖。那三顆載入鈕**是唯讀的**（讀名單畫成 preview，
      一筆狀態都不落），故不在鈕上再標一次——§4 的兩級可見性把 `auditor` 定義成「看得到、
      按不動」，動作鈕標在那一級會被讀成「唯讀角色也渲染得出寫入鈕」。
-     真正寫入的是 preview 態那顆 `.js-review-confirm`（`POST /platform/review/apply`＝
-     `require_platform_admin`），它與 type-to-confirm 輸入框各自標了 `admin`（§4：區塊內
-     更高一級的控制項要自己標）。
+     真正寫入的是 preview 態那顆 `.js-review-confirm`，它與 type-to-confirm 輸入框各自標了
+     `admin`（§4：區塊內更高一級的控制項要自己標）。
      ⚠️ 這一句與 `§4 授權測試` 的 `READONLY`「名單已載入」那一筆是**成對**的
      （§4：只住在測試裡的豁免，讀元件的人看不到）。 #}
 <div class="block mt-16 flex-row column gap-16" data-platform-role="auditor">
@@ -109,19 +103,18 @@
     <p class="text-gray m-0" data-i18n="platform.reviewDesc">設定逾時門檻並一鍵列出所有符合的帳號；確認後批次處置。全手動，名單與結果畫面皆保留供稽核截圖。</p>
 
     {# **時間顯示的格式契約**（§5：NET-NEW 元件的每一處刻意差異都要記載）：
-     · `as_of`／`cutoff` 一律顯示成 `YYYY-MM-DD HH:mm UTC`——那兩欄是 ISO 稽核**截圖存證**要用的
-       （上游 `ReviewOverdueOut` 的註解逐字：沒有標記的話管理員截下來的「截止時刻」在 UTC+8
-       會被讀成早 8 小時），所以刻意不轉當地時間、也刻意帶上 `UTC` 三個字。
-     · `trial_end` 走 `YYYY-MM-DD`（同 5-6-1 租戶表的 `fmtTrialEnd`）。
-     · 這一族其他時間欄（建立時間等）走當地時間 `YYYY/MM/DD HH:mm`（saas 的 `fmtMinute`）。
+     · 「查詢時間」與「截止時刻」一律顯示成 `YYYY-MM-DD HH:mm UTC`——那兩欄是 ISO 稽核**截圖存證**
+       要用的（沒有標記的話管理員截下來的「截止時刻」在 UTC+8 會被讀成早 8 小時），
+       所以刻意不轉當地時間、也刻意帶上 `UTC` 三個字。
+     · 「到期日」走 `YYYY-MM-DD`（同 5-6-1 租戶表的到期日欄）。
+     · 這一族其他時間欄（建立時間等）走當地時間 `YYYY/MM/DD HH:mm`。
    ⚠️ 這三格**不得直接印 raw ISO**：那是給機器讀的字串，人看不出時區也讀不出日期。 #}
 {% if isoReviewStep == "idle" %}
     <div class="flex-row column gap-8">
         <div class="text-bold" data-i18n="platform.reviewStep1">① 設定門檻與動作</div>
         {# **兩個門檻是二擇一，不是「或」一個字**（§3-2：組合有無效格時要由 markup 表達，不能只寫在
-             一句 hint 裡）：上游 `review_overdue` 是
-             `cutoff = _platform_day_boundary_utc(…, before) if before is not None else now - timedelta(days=overdue_days)`
-             ——**兩顆都填時 `overdue_days` 被靜默忽略**，而它照樣被回進 `ReviewOverdueOut.overdue_days`，
+             一句 hint 裡）：算名單時只看其中一顆——填了截止日就以那一天為準，
+             **兩顆都填時逾期天數被靜默忽略**，而它照樣會被回進查詢結果裡，
              於是 preview 上那句「門檻：逾期滿 90 天」會在名單其實是照截止日算出來時照樣顯示 90。
              那一格是這一族最不該說錯的一格（ISO 稽核截圖存證）。
              收成一組 radio：未選中那一邊的輸入 `disabled`（照渲染但改不動，狀態要看得見才稽核得到），
@@ -141,11 +134,9 @@
                 <div class="field">
                     <input type="number" min="0" max="36500" step="1" id="reviewOverdueDaysInput" value="90" class="form-control with-input" aria-label="逾期天數" data-i18n-aria-label="platform.daysOverdue" aria-describedby="reviewOverdueDaysRange">
                     {# 三件套的第三件（§4）：可見區間 ＋ aria-describedby——**被指到的節點裡要讀得到那兩個數字**，
-                         寫成開區間（「≥ 0」）等於只給了一半。出處引全那一行：`GET /platform/review/overdue` 的
-                         `overdue_days: int = Query(default=REVIEW_DUE_DAYS, ge=0, le=MAX_REVIEW_OVERDUE_DAYS)`
-                         （gufofaq-saas product；`REVIEW_DUE_DAYS = 90` 就是這一格的
-                         預設值、`MAX_REVIEW_OVERDUE_DAYS = 36500` 是上界）。**上界不可省**：那顆常數自帶的
-                         註解逐字寫著界外值會讓 `now - timedelta(days=…)` 拋 OverflowError 變成裸 500。
+                         寫成開區間（「≥ 0」）等於只給了一半。值域在這裡宣告：逾期天數 0 – 36500、
+                         預設 90。**上界不可省**：界外的天數會讓「現在往前推 N 天」溢位，
+                         整支查詢當場垮成一個沒有訊息的錯誤。
                          數字獨立成不翻的節點（§3-2：那是資料不是譯文）。 #}
                     <span class="text-gray" id="reviewOverdueDaysRange">0 – 36500</span>
                 </div>
@@ -163,22 +154,22 @@
             </div>
         </div>
         <p class="text-gray m-0" id="reviewThresholdHint" data-i18n="platform.thresholdHint">兩個門檻二擇一：選「截止日期」時以那一天為準，逾期天數不生效（上游只看其中一顆，不會兩顆一起算）。</p>
-        {# 這三顆只是**選動作＋拉名單**：打的是 `GET /platform/review/overdue`
-             （product `require_platform_auditor`，docstring 自述「這一步不動任何資料，
-             管理員截圖存證用」）。**所以不標 admin**：標了的話稽核員整區沒有任何入口拉得到名單，
-             正是上游註解自己說要避免的事。真正寫入的是 preview 態那顆確認鈕。 #}
+        {# 這三顆只是**選動作＋拉名單**：走的是唯讀查詢，這一步不動任何資料，
+             產出就是管理員的存證截圖。**所以不標 admin**：標了的話稽核員整區沒有任何入口拉得到
+             名單，而這一整台就是為了讓稽核員截得到那張圖。真正寫入的是 preview 態那顆確認鈕。 #}
         <div class="flex-row gap-10 align-items-center">
-            {# 三顆都是**送 API 的動作鈕**（§5 ③）：讀上面那兩顆輸入、打 `GET /platform/review/overdue`
-                 把名單拉回來畫成 preview。它們不開任何窗，所以不適用「有條件開窗」的豁免（§5 明文）；
-                 少了 success 段還會讓三顆整個掉出 §4 閘門測試的母體。分支對回該端點的出口：
-                 `overdue_days` 界外的 422（使用者自己改得掉 ⇒ warning）、其餘網路失敗（error）。
-                 **`require_platform_auditor` 的 403 刻意不列**：這三顆落在 `data-platform-role="auditor"`
+            {# 三顆都是**送 API 的動作鈕**（§5 ③）：讀上面那兩顆輸入、把逾時名單拉回來畫成 preview。
+                 它們不開任何窗，所以不適用「有條件開窗」的豁免（§5 明文）；
+                 少了 success 段還會讓三顆整個掉出 §4 閘門測試的母體。分支對回這一步的出口：
+                 逾期天數界外被擋下（使用者自己改得掉 ⇒ warning）、其餘網路失敗（error）。
+                 **「權限不足」那一段刻意不列**：這三顆落在 `data-platform-role="auditor"`
                  的區塊內，而平台軸的渲染規則是「低於該級時**動作鈕不渲染**」（§5），導覽入口也掛著
-                 同一級（`components/header` 的 `platformRole: "auditor"`）⇒ 那道 403 在這三顆上走不到。
+                 同一級（`components/header` 的 `platformRole: "auditor"`）⇒ 那一段在這三顆上走不到。
                  同 repo 對同一件事已經裁決過兩次（`components/platform-disclaimer-panel`、
                  `components/manage-tenant-modal`），這三顆照同一個方向走：**不列「權限不足」段、
-                 也不掛 `data-capability`**——那一段只屬於能力軸（§4：能力軸才把 403 列進 toast），
-                 而這三顆走的是平台軸。姊妹鈕：5-10 的「重新量測」同樣是唯讀 GET ＋ 結果畫回頁上。 #}
+                 也不掛 `data-capability`**——那一段只屬於能力軸（§4：能力軸才把「權限不足」列進
+                 toast），而這三顆走的是平台軸。姊妹鈕：5-10 的「重新量測」同樣是唯讀查詢 ＋
+                 結果畫回頁上。 #}
             <button type="button" class="button button-red js-review-purge" data-toast="正在載入逾時名單...|逾時天數超出可用範圍|名單已載入|載入失敗，請稍後再試" data-i18n-data-toast="toast.reviewOverdue" data-toast-type="info|warning|success|error" data-i18n="platform.reviewActionPurge">刪除逾時資料</button>
             <button type="button" class="button button-red js-review-delete" data-toast="正在載入逾時名單...|逾時天數超出可用範圍|名單已載入|載入失敗，請稍後再試" data-i18n-data-toast="toast.reviewOverdue" data-toast-type="info|warning|success|error" data-i18n="platform.reviewActionDelete">刪除逾時帳號</button>
             <button type="button" class="button button-border js-review-freeze" data-toast="正在載入逾時名單...|逾時天數超出可用範圍|名單已載入|載入失敗，請稍後再試" data-i18n-data-toast="toast.reviewOverdue" data-toast-type="info|warning|success|error" data-i18n="platform.reviewActionFreeze">凍結逾時帳號</button>
@@ -186,8 +177,8 @@
         {# **三顆動作各是什麼，一定要有一段話講清楚**：三個按鈕字面只差兩個字
              （「刪除逾時資料」／「刪除逾時帳號」／「凍結逾時帳號」），而它們的破壞程度差了三個量級
              ——一個保留帳號、一個連帳號一起刪、一個完全可逆。這三顆是同一排、同樣的紅、同樣的大小。
-           **可逆性尤其要講**：`freeze` 有對稱的 `unfreeze_tenant`（product，
-             docstring 逐字「把凍結時長補回 trial_end，剩餘天數原封保留」），另外兩顆沒有回頭路。
+           **可逆性尤其要講**：「凍結」有對稱的解凍（解凍時把凍結那段時長補回到期日，
+             剩餘天數原封保留），另外兩顆沒有回頭路。
              下一步那顆確認鈕已經按動作切換「不可逆／可解凍」兩態，但**那是在名單拉出來之後**——
              選錯動作的那一刻是在這裡。
            擺在三顆鈕**下面**：擺上面會把「①設定門檻與動作」那一段的標題與鈕拆開。 #}
@@ -199,28 +190,27 @@
         <div class="flex-row flex-wrap gap-16">
             {# 「選了哪個動作」是這一列的第一格，而且**非有不可**：動作是在上一態（idle）按三顆鈕
                  之一選的，切過來之後這一格是畫面上唯一**用人話**講出選了哪一顆的地方。這一態的產出是
-                 稽核截圖（`review_overdue` 的 docstring：「這一步不動任何資料，管理員截圖存證用」），
+                 稽核截圖（這一步不動任何資料，產出就是那張圖），
                  而一張只寫「符合 2 筆」卻不寫「要對它們做什麼」的截圖，存證存不到重點。
-                 同頁另外兩處都答不了它：確認鈕只分「不可逆／可解凍」，而 `purge_data` 與
-                 `delete_account` 同屬不可逆那一態、字面完全相同；片語欄雖然三個動作各一組，
+                 同頁另外兩處都答不了它：確認鈕只分「不可逆／可解凍」，而「刪除逾時資料」與
+                 「刪除逾時帳號」同屬不可逆那一態、字面完全相同；片語欄雖然三個動作各一組，
                  但那是**要逐字打進去的值**、而且刻意不翻（理由見下方 type-to-confirm 那一段），
                  中文語系的稽核紀錄上只會留下一串 `DELETE-ACCOUNT`。
                  三態槽（§4-2 `data-text-<態>`＋`data-key-<態>`：這一句是 chrome、要翻，故繁中原文與 key
-                 都給）。**態名與片語欄的 `data-phrase-<動作>` 同一組**（purge／delete／freeze，逐字對回
-                 `ReviewApplyIn.action` 的值域 `purge_data`／`delete_account`／`freeze`，
-                 gufofaq-saas product），React 依選定的動作把同一顆值換上去——兩處若各取一套態名，
+                 都給）。**態名與片語欄的 `data-phrase-<動作>` 同一組**（purge／delete／freeze＝三顆
+                 動作鈕的值域，在這裡宣告一次），React 依選定的動作把同一顆值換上去——兩處若各取一套態名，
                  同一顆 state 就要在兩個地方各對一次表。三顆 key 是 idle 態那三顆鈕的原字面，不另立新 key。
                  靜態稿演 **purge** 那一態，與片語 `PURGE-DATA`、確認鈕的「不可逆」互相對得上（§6 示範資料自洽）。
-                 **態名必須與 result 態那一份稿同一支**：5-6-1-3 的失敗訊息是 `purge_tenant_failed` 的字面、
-                 而那一頁的租戶表照樣列得出 C 與 D（`_purge_tenant_data` 保留 Tenant／User）——
+                 **態名必須與 result 態那一份稿同一支**：5-6-1-3 演的是「刪除逾時資料」的結果，
+                 而那一頁的租戶表照樣列得出 C 與 D（這一支保留租戶與使用者）——
                  選 delete 就會與那張表互相否定（見下方 isoReviewFailResults 那一段）。
                  前綴自帶分隔空白（§4-2；en 值 "Action: "），與同列另外四顆前綴同型。 #}
             <span><span data-i18n="platform.reviewAction">動作：</span><span data-text-purge="刪除逾時資料" data-key-purge="platform.reviewActionPurge" data-text-delete="刪除逾時帳號" data-key-delete="platform.reviewActionDelete" data-text-freeze="凍結逾時帳號" data-key-freeze="platform.reviewActionFreeze" data-i18n="platform.reviewActionPurge">刪除逾時資料</span></span>
             <span><span data-i18n="platform.reviewMatched">符合筆數：</span>{{ isoReviewCandidates.length }}</span>
             <span><span data-i18n="platform.reviewThreshold">門檻：</span><span data-i18n="platform.overdueDaysPrefix">逾期滿</span> 90 <span data-i18n="platform.overdueDaysSuffix">天</span></span>
             <span><span data-i18n="platform.reviewAsOf">查詢時間：</span>2026-07-14 09:00 UTC</span>
-            {# `ReviewOverdueOut.cutoff`（product）：後端註解說這兩欄「是 ISO 稽核截圖存證要用的」。
-                 只畫門檻天數不夠——idle 態的兩種門檻（天數／截止日期）擇一時，真正決定名單的是 cutoff。 #}
+            {# 截止時刻與查詢時間這兩欄是 ISO 稽核截圖存證要用的。
+                 只畫門檻天數不夠——idle 態的兩種門檻（天數／截止日期）擇一時，真正決定名單的是截止時刻。 #}
             <span><span data-i18n="platform.reviewCutoff">截止時刻：</span>2026-04-15 09:00 UTC</span>
         </div>
         <div class="table-container scrollTable" tabindex="0">
@@ -242,10 +232,9 @@
                         <th data-i18n="platform.daysOverdue">逾期天數</th>
                         <th data-i18n="settings.userCount">使用者數</th>
                         <th data-i18n="platform.storageUsedMb">儲存量(MB)</th>
-                        {# `ReviewTenantOut.frozen`（product）的後端註解逐字寫著
-                             「此旗標讓管理員一眼分辨『這季新逾期的』與『上季已凍結、還在等後續處置的』」
-                             ——那正是這張截圖要回答的問題，所以這一欄非畫不可（§3-2：response 有的
-                             欄位要在畫面上有落點）。 #}
+                        {# 「已凍結」這一欄讓管理員一眼分辨「這季新逾期的」與「上季已凍結、還在等
+                             後續處置的」——那正是這張截圖要回答的問題，所以這一欄非畫不可
+                             （§3-2：拿得到的欄位要在畫面上有落點）。 #}
                         <th data-i18n="platform.statusFrozen">已凍結</th>
                     </tr>
                 </thead>
@@ -261,9 +250,9 @@
                         <td>{% if c.frozen %}<span class="text-gray" data-i18n="platform.statusFrozen">已凍結</span>{% else %}—{% endif %}</td>
                     </tr>
                     {% else %}
-                    {# 名單為空是**走得到的常態**，不是錯誤：`review_overdue`（product）
-                         零命中時照樣回 200 ＋ `tenants: []`（它只逐筆篩 `trial_end ≤ cutoff`，沒有任何
-                         「空清單就 400」的出口），而門檻是使用者自己填的——逾期天數拉大到沒有租戶符合就是這一態。
+                    {# 名單為空是**走得到的常態**，不是錯誤：查詢零命中時照樣是一次成功的查詢
+                         （它只逐筆篩「到期日早於截止時刻」，沒有「空清單就報錯」這條路），
+                         而門檻是使用者自己填的——逾期天數拉大到沒有租戶符合就是這一態。
                          §5「元件內部與頁面的示範資料表…真實可能為空者一律帶 `{% else %}` 鏡射無資料列，
                          即使示範資料恆非空——分支是給 React 的規格」。
                        **不可以改成「整張表換成一句 `<p>`」**：這一態的產出是稽核截圖，
@@ -283,12 +272,11 @@
              **片語是「值」，不是 chrome，所以它永遠不掛 `data-i18n`。** label 與 placeholder 若各掛一顆
              key（繁中要打「刪除」、英文要打 `DELETE`），就是**同一道閘在兩個語系要求不同的輸入**，
              而 React 端比對的只會是其中一份，另一個語系的使用者照著畫面打就是解不開。
-             正典有兩處：同站 manage-tenant-modal 的 type-to-confirm 打的是**租戶名稱**（一個值，兩個語系
-             都打同一串），product 的 `declare_filter_slots` 用 `_FILTER_SLOTS_CONFIRM_PHRASE = "REBUILD-ALL"`
-             （逐字比對的固定字串，並在 400 訊息裡把片語本身回給呼叫端）。故改成語言中立的固定字串，
+             站內正典：manage-tenant-modal 的 type-to-confirm 打的是**租戶名稱**（一個值，兩個語系
+             都打同一串）。故一律是語言中立的固定字串，
              label 走「前綴 key ＋片語節點＋後綴 key」（§4-2 前後綴 key 自帶分隔空白）。
-             **片語還要跟著上一步選的動作換一組**：`ReviewApplyIn.action` 的值域逐字是
-             `purge_data`／`delete_account`／`freeze`（product），idle 態三顆動作鈕各對一個。
+             **片語還要跟著上一步選的動作換一組**：三個動作 purge／delete／freeze，
+             idle 態三顆動作鈕各對一個。
              **三顆不可以共用同一串**：共用的話，選了「凍結逾時帳號」的人會被要求打「刪除」。
              三組片語由 `data-phrase-<動作>` 承載，React 依選定的動作把可見那一顆換上去。
              **刻意不用 `data-text-<態>`／`data-key-<態>` 那組資料槽**：那一族的定義是「繁中原文 ＋ 對應的
@@ -308,16 +296,15 @@
                 <span class="text-gray" id="reviewConfirmHint" data-i18n="platform.confirmPhraseHint">片語要逐字相同（含大小寫與連字號），而且會隨上面選的動作換一組；它不隨語言變。</span>
             </div>
         </div>
-        {# `POST /platform/review/apply` ＝ `require_platform_admin`（product），
-             所以標 admin 的是**這一顆**。低於該級時動作鈕不渲染（§5）——標反了的話，
-             稽核員反而看得到一顆「確認執行（不可逆）」，按了必定 403。
+        {# 送出處置是整台唯一的寫入，所以標 admin 的是**這一顆**。低於該級時動作鈕不渲染（§5）
+             ——標反了的話，稽核員反而看得到一顆「確認執行（不可逆）」，按了必定被拒。
              「取消」是純前端互動（回 idle 態），不標。 #}
-        {# 「（不可逆）」**只對三顆動作裡的兩顆成立**：`purge_data` 與 `delete_account` 沒有回頭路，
-             而 `freeze` 有對稱的 `unfreeze_tenant`（product，docstring 逐字「把凍結時長補回 trial_end，
-             剩餘天數原封保留」），對它說不可逆是假的警語——假警語會讓真的那兩顆一起被當成裝飾。
+        {# 「（不可逆）」**只對三顆動作裡的兩顆成立**：「刪除逾時資料」與「刪除逾時帳號」沒有回頭路，
+             而「凍結」有對稱的解凍（解凍時把凍結那段時長補回到期日，剩餘天數原封保留），
+             對它說不可逆是假的警語——假警語會讓真的那兩顆一起被當成裝飾。
              故做成隨動作切換的兩態（§4-2 `data-text-<態>`＋`data-key-<態>`：這一句是 chrome、要翻，
              所以繁中原文與 key 都要給，與上面那顆「片語」剛好相反）。靜態稿演的是不可逆那一態。 #}
-        {# 第三態 `busy`＝**送出中**（`POST /platform/review/apply` 在途）。它與上面兩態不同軸：
+        {# 第三態 `busy`＝**送出中**（處置請求在途）。它與上面兩態不同軸：
              前兩態由「選定的動作」決定，`busy` 在請求在途時**蓋過**那兩態，所以這一格的字在任一
              時刻仍然只會是三者之一，槽照樣掛在同一顆元素上（React 讀槽、不自己拼字串）。
              為什麼一定要有這一顆：切版是靜態原型，畫得出「確認執行」畫不出「處理中…」，
@@ -325,23 +312,19 @@
              文案正本，而字典比對、孤兒 key、fpdiff 三張網一張都看不到（REACT-CONVERSION §③
              「送出中／載入中」那一族：回切版給它一個渲染點，`REACT_ONLY` 只是過渡登記）。
              這一顆的家選在**這顆鈕**而不是元件庫頁：§③ 的判準是「會換字的那一格用兩態槽」，
-             而這正是那一格。同一顆 key 的另一個消費點（React 的 `SubscriptionGate` 接受免責聲明鈕）
-             共用這一份繁中與英譯，不另立第二顆。
+             而這正是那一格。
              **busy 那一態的 `disabled` 不進 markup**：這一稿演的不是「送出中」，靜態稿沒有那一刻。
              （鈕上確實有一顆 `disabled`，但它是另一件事——見下一段的 type-to-confirm 鎖。
              REACT-CONVERSION §⑥ 列的兩種合規 disable：進行中、以及窗內看得見的解鎖條件未滿足。） #}
-        {# 這是整台精靈**唯一的寫入鈕**（`POST /platform/review/apply`，product
-             的 `review_apply`），所以 `data-toast` 一段都不能少 ⇒ 少了會同時出兩件事：①它整顆掉出
-             §4 閘門測試的母體（那條測試以「`data-toast-type` 含 success」為母體）；
-             ②`toast.reviewApplied` 這顆 key 在切版就不存在，而 gufofaq-saas
-             `apps/web/app/(app)/platform/page.tsx` 的 `applyReview()` 真的在跑
-             `t("toast.reviewApplied").split("|")` 並取 `segs[0]`／`segs[1]`——React 端於是長出一顆
-             切版從未定過的文案 key，正是本檔上方那段警告的情況（§5：文案正本在切版）。
-           分支對回 `review_apply` 的實際出口：它**逐租戶各自成敗**（`results.append({… ok: True/False,
-             error: …})`，整批不 rollback、不拋例外），所以「部分租戶失敗」是一條真實可達、而且與
-             「整批送不出去」要做的事完全不同的結果。`require_platform_admin` 的 403 不列——那一級
+        {# 這是整台精靈**唯一的寫入鈕**，所以 `data-toast` 一段都不能少 ⇒ 少了會同時出兩件事：
+             ①它整顆掉出 §4 閘門測試的母體（那條測試以「`data-toast-type` 含 success」為母體）；
+             ②`toast.reviewApplied` 這顆 key 在切版就不存在，而消費端照樣要把那幾段字讀出來
+             ——於是長出一顆切版從未定過的文案 key，正是本檔上方那段警告的情況（§5：文案正本在切版）。
+           分支對回這一步的實際出口：它**逐租戶各自成敗**（整批不回捲、不中途拋掉剩下的），
+             所以「部分租戶失敗」是一條真實可達、而且與
+             「整批送不出去」要做的事完全不同的結果。「權限不足」不列——那一級
              走「動作鈕不渲染」（§5 渲染規則）。
-           ⚠️ **這一顆是三段**：error 在 `segs[2]`，`segs[1]` 是「部分租戶失敗」。假設「末段即 error」
+           ⚠️ **這一顆是三段**：error 在第三段，第二段是「部分租戶失敗」。假設「末段即 error」
              的消費端會在這裡接錯位（`|` 分段是索引契約）。 #}
         {# **`disabled`＝type-to-confirm 尚未解鎖**（同 manage-tenant-modal 危險操作區那兩顆）：
              這一稿演的是片語欄空著的那一刻，而片語欄的全部意義就是「沒逐字打對之前按不下去」。
@@ -386,7 +369,7 @@
                     <tr data-tenant-id="{{ r.tenantId }}">
                         <td>{{ r.name }}</td>
                         <td class="text-bold" data-i18n="platform.resultOk">成功</td>
-                        {# 成功那一筆上游**根本沒有 `error` 這個鍵**（`{"tenant_id", "name", "ok"}`）⇒ 畫「—」，
+                        {# 成功那一筆**根本沒有錯誤欄**（只有租戶編號、名稱、成敗）⇒ 畫「—」，
                              不是留白：同表另一欄（preview 的「已凍結」）與 5-6-3 的撤銷者欄都是這個畫法。 #}
                         <td>{% if r.error %}{{ r.error }}{% else %}—{% endif %}</td>
                     </tr>
@@ -395,11 +378,10 @@
                     <tr data-tenant-id="{{ r.tenantId }}">
                         <td>{{ r.name }}</td>
                         <td class="text-bold text-red" data-i18n="platform.resultFail">失敗</td>
-                        {# 封閉枚舉（見檔頭的五顆 code）⇒ `{% if %}` 鏈 ＋ i18n key，資料存上游字面。
-                             末支不是「其他」的裝飾：`review_action_failed` 與**上游 HTTPException 自帶的**
-                             code（`detail["code"]`，例如租戶那一側自己的拒絕理由）都落在這裡，
-                             所以它要講得出「原因不在上面那幾種」而不是假裝知道原因。 #}
-                        <td>{% if r.error == "tenant_not_found" %}<span data-i18n="platform.reviewFailTenantNotFound">這個租戶已經不在了——名單是查詢當下的快照，重新拉一次逾期清單再送。</span>{% elif r.error == "cannot_delete_own_tenant" %}<span data-i18n="platform.reviewFailOwnTenant">這一筆是你自己所屬的租戶，平台管理員不能對它做這個處置——把那一筆取消勾選再送一次。</span>{% elif r.error == "upstream_unavailable" %}<span data-i18n="platform.reviewFailUpstream">GufoRAG 那一側沒有回應，這一筆沒有處置成功——稍後重送，或聯絡維運。</span>{% elif r.error == "internal_error" %}<span data-i18n="platform.reviewFailInternal">這一筆遇到未預期的錯誤，處置沒有完成——完整例外在伺服器日誌裡，請聯絡維運。</span>{% else %}<span data-i18n="platform.reviewFailOther">這一筆的處置沒有完成，原因不在上面那幾種——請聯絡維運，並提供這一列的租戶編號。</span>{% endif %}</td>
+                        {# 封閉枚舉（見檔頭的五顆 code）⇒ `{% if %}` 鏈 ＋ i18n key，資料存 code 字面。
+                             末支不是「其他」的裝飾：`review_action_failed` 與其餘自帶 code 的拒絕理由
+                             都落在這裡，所以它要講得出「原因不在上面那幾種」而不是假裝知道原因。 #}
+                        <td>{% if r.error == "tenant_not_found" %}<span data-i18n="platform.reviewFailTenantNotFound">這個租戶已經不在了——名單是查詢當下的快照，重新拉一次逾期清單再送。</span>{% elif r.error == "cannot_delete_own_tenant" %}<span data-i18n="platform.reviewFailOwnTenant">這一筆是你自己所屬的租戶，平台管理員不能對它做這個處置——把那一筆取消勾選再送一次。</span>{% elif r.error == "upstream_unavailable" %}<span data-i18n="platform.reviewFailUpstream">檢索服務沒有回應，這一筆沒有處置成功——稍後重送，或聯絡維運。</span>{% elif r.error == "internal_error" %}<span data-i18n="platform.reviewFailInternal">這一筆遇到未預期的錯誤，處置沒有完成——完整例外在伺服器日誌裡，請聯絡維運。</span>{% else %}<span data-i18n="platform.reviewFailOther">這一筆的處置沒有完成，原因不在上面那幾種——請聯絡維運，並提供這一列的租戶編號。</span>{% endif %}</td>
                     </tr>
                     {% endfor %}
                 </tbody>

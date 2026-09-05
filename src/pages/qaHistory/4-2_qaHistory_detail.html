@@ -8,24 +8,21 @@ permalink: 4-2_qaHistory_detail.html
 {# 對話詳細資訊 + 參考來源資料——依 §3-2/§6 由頁面提供，元件只負責渲染 #}
 {# 示範狀態＝一則 **Agent 模式、模型生成** 的前台問答（＝下面 `tag` 那一格，也＝4-1 #12173 的
      「使用者類型」欄；兩頁同一筆，欄位逐字同源），看得到執行流程與工具軌跡；
-     `chatMode` 存的是上游字面 `agent`（`chat_logs.search_mode` 的兩個值之一），中文由
+     `chatMode` 存的是業務字面 `agent`（值域就 `traditional`／`agent` 兩顆），中文由
      components/qa-detail-info 的 {% if %} 鏈產生——本頁下面那道「有沒有軌跡可畫」的閘也比對同一個字面；
      canReadSettings 給 true（示範「有 settings:read」那一態；沒有那一態是四格整個不渲染，
      不是留白——見 components/qa-detail-info 那一段註解）。
      這一筆刻意不是 QA 直答：直答那一態在 4-1 清單的徽章上演得到（掛在 #12175，那一列沒有
      對應的詳情頁示範），而直答沒有工具軌跡可看，詳情頁演它就等於整個執行流程區塊都是空的。
-   `intent` 與 `tag` 兩欄**給上游字面、不給顯示字**（顯示中文由 components/qa-detail-info 的
+   `intent` 與 `tag` 兩欄**給業務字面、不給顯示字**（顯示中文由 components/qa-detail-info 的
      `{% if %}` 鏈 ＋ i18n key 產生，見該元件那兩格的註解）：
-     · `intent` ＝ `chat_logs.is_intension`，**可為 null 的布林**（product
-       的 `_PUBLIC_LOG_FIELDS` 收了 `is_intension`，`_project_log` 原樣帶過），故給布林、不給顯示字。
-       product 的 `_detail_cells` 那句「是／否／空」是 **CSV 匯出**的顯示層（欄名見 `_EXPORT_DETAIL_HEADER`
-       的「有無意圖判斷」），不是 API 值域——拿它當值域，React 端會拿布林去比中文而恆為否。
-       **值給 `false`，不給 `true`**：本筆是 agent 模式，而 `is_intension` 在 agent 下**恆為 False**
-       （實測矩陣 gufofaq-saas `docs/mode-matrix.md` 的 `intent_enabled` 那一列逐字「agent 恆 False」）
-       ——給 `true` 就是為了「讓那一態看得到」而演一個上游做不出來的狀態（§5／§6 明文禁止）。
+     · `intent` 是**可為空的布林**（是／否／沒判過三態），故給布林、不給顯示字：拿「是／否／空」
+       那三個中文當值域，React 端會拿布林去比中文而恆為否。
+       **值給 `false`，不給 `true`**：本筆是 agent 模式，而意圖判斷在 agent 模式下不會發生
+       ——給 `true` 就是為了「讓那一態看得到」而演一個產不出來的狀態（§5／§6 明文禁止）。
        「是」那一態因此在本頁演不到（要傳統搜尋 ＋ 意圖開啟才出得來），它的可見示範落在
        元件庫頁的「React 條件文案」節（§4-2：枚舉成員靠「有地方渲染得出來」活著）。
-     · `tag` ＝ `chat_logs.tag`，值域正本是 product 的 `_TAG_LABEL`＝`frontend`／`backend`／`ab_test`，
+     · `tag` 的值域是 `frontend`／`backend`／`ab_test` 三顆，
        故給 `frontend`（＝上面說的「前台問答」那一筆，與 4-1 #12173 的「使用者類型」欄同源）。
        **不得塞顯示字「前台問答」**讓元件原樣輸出：React 接上真 API 之後那一格只會印出
        `frontend`，而英文模式下它永遠是中文。 #}
@@ -48,8 +45,8 @@ permalink: 4-2_qaHistory_detail.html
 } %}
 {# 來源列。**sourceNo 就是上面 AI 回答裡的兩個 [[N]]**（3 與 7，見 components/qa-detail-info 的
      示範答案）：「序號」欄與引用標記是同一組號碼，否則使用者看到 [[7]] 在表上找不到 7。
-     這兩個號碼**刻意不連續、也不等於列序**——agent 模式的 source_no 是跨工具呼叫的連續計數器，
-     對外投影又會收掉模型沒看過的候選池（見 components/sources-block 檔頭）。 #}
+     這兩個號碼**刻意不連續、也不等於列序**——agent 模式的序號是跨多次工具呼叫的連續計數，
+     交出來時又會收掉模型沒看過的那些候選（見 components/sources-block 檔頭）。 #}
 {% set sources = [
     {
         sourceNo: 3,
@@ -100,21 +97,21 @@ permalink: 4-2_qaHistory_detail.html
      已經由 components/qa-detail-info 連同表格一起封裝，這裡再包一個就是憑空多一個空殼區塊。
      貼在表格正上方、靠右（flex justify-content-end）＋ margin。 #}
 <div class="mt-16 flex-row justify-content-end gap-8">
-    {# 設定滿意度：後台在這一頁改得動滿意度，走 product `POST /history/{log_id}/rating`
-         （登入態，require_capability("history")）——端點在，就不該讓這一格只印得出來、按不動。
+    {# 設定滿意度：後台在這一頁改得動滿意度（登入態，要 `history` 這顆能力）——改得動，
+         就不該讓這一格只印得出來、按不動。
          **無條件開窗**：這一頁只有一筆問答、開的永遠是同一份內容，沒有「先選要評哪一筆」可言，
          故掛 data-open-modal 而不是 hook class（§5；隔壁的分享鈕相反，它要先讀那筆的既有連結清單）。
          窗內二選一（讚/倒讚）＋預填目前的意見回饋，覆寫語意寫在窗內的說明句上——
          一筆問答只有一份評分，這顆鈕改的就是下面表格顯示的那兩格（見 components/rating-modal 檔頭）。 #}
     <button type="button" class="button button-border" data-open-modal="likeModal" data-i18n="qa.setSatisfaction">設定滿意度</button>
-    {# 分享：登入態把本筆問答建成唯讀分享連結（product POST /share）。業務條件開窗＝hook class js-share-log，
+    {# 分享：登入態把本筆問答建成唯讀分享連結。業務條件開窗＝hook class js-share-log，
          彈窗本體見 components/share-manage-modal（可建立新連結 + 列出生效連結逐一複製/撤銷，include 於本頁底部）。
-       **這顆鈕自己就送 API**（開窗前先讀這一筆既有的連結清單，`GET /share?log_id=…`，
-         product 的 `list_shares`，`require_capability("history")`）⇒ 照 §5 掛 `data-toast` 列全結果：
-         讀不回來時窗開不了，而使用者按了鈕、畫面上什麼都沒發生。形狀與 5-10 的 `.js-edit-vocabulary`
-         逐字相同（同樣是「先讀再開窗」的觸發鈕），故共用 `toast.query` 那一組五段。
+       **這顆鈕自己就送 API**（開窗前先讀這一筆既有的連結清單，要 `history` 這顆能力）⇒ 照 §5
+         掛 `data-toast` 列全結果：讀不回來時窗開不了，而使用者按了鈕、畫面上什麼都沒發生。
+         形狀與 5-10 的 `.js-edit-vocabulary` 相同（同樣是「先讀再開窗」的觸發鈕），
+         故共用 `toast.query` 那一組五段。
          **末段的租戶開通不可省**：`history` 也是一顆租戶開通鍵（同前台 faq-chatroom 的分享鈕），
-         關掉時回 403，而那句話的收件人是平台管理員、不是這個租戶的管理者。 #}
+         關掉時整顆功能不開放，而那句話的收件人是平台管理員、不是這個租戶的管理者。 #}
     <button data-capability="history" type="button" class="button button-primary js-share-log" data-toast="正在查詢資料...|權限不足，無法查詢——請找貴租戶的管理者開通|查詢成功|載入資料失敗，請重新整理頁面|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.query" data-toast-type="info|warning|success|error|warning" data-i18n="comp.share">分享</button>
     <button type="button" class="button button-green" data-print data-i18n="qa.printPage">列印此頁</button>
 </div>
@@ -127,26 +124,22 @@ permalink: 4-2_qaHistory_detail.html
 {# ── 執行流程 ＋ 執行摘要 ───────────────────────────────────────────────────────
      沿用 components/step-flow（2-2-1／2-2-3 已在用，不另做一份）。頂端那一列摘要同時承載
      token（總數＋拆 input／output）、TTFT、延遲與模型，故第 3 塊「執行摘要」與這一塊共用版位。
-     · 節點來源＝`chat_logs.step_events`；工具軌跡＝`tool_activity`；推理＝`thinking_by_node`。
-       **三欄都是 nullable**：傳統模式沒有工具軌跡、走不到 CHAT_ROOM chunk 的那兩條路（ERROR 收尾、
-       使用者中途關分頁）三欄皆 NULL。所以這一整塊是「有值才畫」——沒有軌跡的那一輪不該多一塊空白
-       （§5「不放按了沒反應的鈕」在版面上的對應）。示範這一筆是 Agent 模式且有軌跡。
-     · 延遲＝`request_ended_at − request_started_at`（兩欄都是觀測性欄位，切版直接畫算好的差）。
-     · 「載入完整軌跡」接的是 product 的 `GET /history/{log_id}/trace`
-       （回 step_events／tool_activity／thinking_by_node 的完整版），詳情頁帶回來的是前 N 筆 ＋
-       尾端 `{truncated, total}` 標記的檢視。故本頁把成對參數設起來，那顆鈕與截斷提示都渲染得出來。 #}
+     · 這一塊吃三份資料：節點、工具軌跡、逐節點推理。**三份都可能沒有**：傳統模式沒有工具軌跡，
+       而整輪沒跑完的那兩條路（出錯收尾、使用者中途關分頁）三份都是空的。所以這一整塊是
+       「有值才畫」——沒有軌跡的那一輪不該多一塊空白（§5「不放按了沒反應的鈕」在版面上的對應）。
+       示範這一筆是 Agent 模式且有軌跡。
+     · 延遲＝這一輪的起訖時間差（切版直接畫算好的差）。
+     · 「載入完整軌跡」拉的是整輪的完整版；詳情頁一開始帶回來的是前 N 筆 ＋ 尾端一個
+       「還有多少沒顯示」的截斷標記。故本頁把成對參數設起來，那顆鈕與截斷提示都渲染得出來。 #}
 {% if conversation.chatMode == "agent" %}
-{# 節點清單＝正典管線的九站（gufofaq-saas 的 `apps/web/lib/domain/stepFlow.ts`，
-     `CANONICAL_PIPELINE.agent`）。
-     首站 `input_gate` 是串流開頭無條件發射的（chatbot 的
-     `_gate_step_sse`），第二站 `qa_direct` 則是每一輪都送一筆判定（GufoRAG chatbot 的
-     `QaDirectProbe.record`，未命中那半也送，整輪沒判到還會由 GufoRAG chatbot 補一筆
-     `not_attempted`）。React 端的 `computeFlow` 是把整條管線一次畫滿、再用事件點亮——
-     清單要與正典同長同序，少畫任何一站都是它產不出來的形狀（§6）。
+{# 節點清單＝Agent 模式正典管線的九站，順序與長度就是下面這份陣列、在這裡宣告一次。
+     首站「輸入合規檢查」每一輪開頭無條件走；第二站「QA 直答比對」每一輪也都送一筆判定
+     ——未命中那半照樣送，整輪沒判到還會補一筆「沒判過」。React 端是把整條管線一次畫滿、
+     再用事件點亮——清單要與正典同長同序，少畫任何一站都是它產不出來的形狀（§6）。
      這一筆的 QA 直答演「建圖前閘門判否」：`answerSource` 是 `generated`，而命中直答會結構性短路
-     （chatbot 的 `after_tools`：不經 respond、grounding 同樣跳過）
+     （不經生成、可回答性判定同樣跳過）
      ⇒ 這一頁畫得出檢索與生成，就代表那一站必然是未命中。分數 2.4 < 門檻 3 ⇒ `below_score_floor`，
-     `poolSize` ＝ max(取用資料筆數, MIN_CANDIDATE_POOL) ＝ max(16, 2) ＝ 16，而 16 就是上面那格
+     `poolSize` ＝ max(取用資料筆數, 候選池下限 2) ＝ max(16, 2) ＝ 16，而 16 就是上面那格
      「取用資料筆數」（§6 同頁同源）。 #}
 {% set stepFlowNodes = [
     { label: "輸入合規檢查", state: "completed", time: "8ms" },
@@ -160,8 +153,8 @@ permalink: 4-2_qaHistory_detail.html
     { label: "輸出合規檢查", state: "completed", time: "24ms" }
 ] %}
 {# 摘要是節點的衍生值（§6）：延遲＝九站耗時總和 8＋14＋340＋1200＋210＋2100＋180＋8＋24
-     ＝ 4,084ms ⇒ **4.1s**；TTFT 從同一個起點算到第一個回答 token（chatbot 的
-     `_ttft_ms`），生成答案的起點是前五站的和 8＋14＋340＋1200＋210 ＝ 1,772ms ⇒ **1.8s**。
+     ＝ 4,084ms ⇒ **4.1s**；TTFT 從同一個起點算到第一個回答 token，
+     生成答案的起點是前五站的和 8＋14＋340＋1200＋210 ＝ 1,772ms ⇒ **1.8s**。
      取整規則只有一份、寫在 step-flow 檔頭（`formatMs`：≥1s 一位小數**四捨五入**）：4.084 → 4.1、
      1.772 → 1.8。⚠️ 不是無條件進位——寫成 4.2s／1.9s 就是把同一個毫秒數往上多進了一格，
      而畫面上這兩個數字與節點的耗時是對得起來的，讀的人加得出來。 #}
@@ -178,9 +171,9 @@ permalink: 4-2_qaHistory_detail.html
 {% endif %}
 
 {# ── 合規與其他 ────────────────────────────────────────────────────────────────
-     `blocked_by`／`policy_detections` 未被擋的那一輪是 NULL ⇒ **有值才出現整塊**，不畫空白。
-     其餘四欄（keywords／filenames／suggest_questions／chat_room_title）是常態欄，沒有就畫「—」。
-     `previous_chat_log_id`：多輪時可點回上一則（同一個聊天室的前一筆）；首輪為 NULL ⇒ 不渲染連結。 #}
+     「被什麼擋下」與「合規命中」在沒被擋的那一輪是空的 ⇒ **有值才出現整塊**，不畫空白。
+     其餘四格（關鍵字／命中檔名／推薦問題／聊天室標題）是常態欄，沒有就畫「—」。
+     「上一則」：多輪時可點回同一個聊天室的前一筆；首輪沒有 ⇒ 不渲染連結。 #}
 {% set detailBlockedBy = "" %}
 {% set detailPolicyDetections = [] %}
 {% set detailKeywords = "新住民, 結婚登記, 戶政事務所" %}
@@ -254,12 +247,12 @@ permalink: 4-2_qaHistory_detail.html
      `sources`——這張表在 2-1／2-2-1／2-2-3 也出現，各頁自己刻就會刻出好幾份會分岔的表頭。 #}
 {% include "components/sources-block/sources-block.html" %}
 
-{# 評分窗（上方「設定滿意度」開的那一份）。意見回饋預填目前存著的那段話：product 的 client 一律
-   送出 feedback（None 就是 null），空著送出＝把使用者寫的理由清掉（見 components/rating-modal 檔頭）。
-   toast 四段對回後端：成功／權限不足（`require_capability("history")` 的 403，GUIDELINE §4：能力不足
-   照樣按得下去、結果列進 data-toast）／沒選讚或倒讚（RatingIn.rating 是 Literal["up","down"]）／其餘失敗
-   （_own_log_or_404 的 404 自成一段 warning——那一筆不在了或不屬於這個租戶，使用者換一筆就好，
-     不折進紅色終局；同 share-manage-modal 建立鈕對同一道守衛的處理，§5 分支集合與語意型別要一致）。 #}
+{# 評分窗（上方「設定滿意度」開的那一份）。意見回饋預填目前存著的那段話：送出時一律連意見回饋
+   一起送，所以空著送出＝把使用者寫的理由清掉（見 components/rating-modal 檔頭）。
+   toast 每一段對回一條真實結果：成功／權限不足（GUIDELINE §4：能力不足照樣按得下去、結果列進
+   data-toast）／沒選讚或倒讚（值域就 `up`／`down` 兩顆）／找不到這一筆（那一筆不在了或不屬於
+   這個租戶，自成一段 warning——使用者換一筆就好，不折進紅色終局；同 share-manage-modal 建立鈕
+   對同一道檢查的處理，§5 分支集合與語意型別要一致）／其餘失敗／租戶未開通。 #}
 {% set ratingModalTitleKey = "modals.setRatingTitle" %}
 {% set ratingModalTitle = "設定這筆問答的滿意度" %}
 {% set ratingModalQuestionKey = "modals.ratingLabel" %}
@@ -285,12 +278,10 @@ permalink: 4-2_qaHistory_detail.html
 {% set deleteMessageKey = "common.confirmRevoke" %}
 {% set deleteMessageZh = "確定要撤銷" %}
 {% set deleteTargetId = "revokeShareTarget" %}
-{# 連帶後果（`deleteNoteKey`）：撤銷是**軟刪**（product 的
-     `revoke_share` 只把 `ShareLink.disabled` 設成 true），而 product 全境只有四支端點
-     （`POST /share`／`GET /share`／`GET /shared/{token}`／`DELETE /share/{id}`）——**沒有任何一支
-     解得回來**。撤銷之後 `view_shared_by_token` 對那個 token 回 404，也就是已經把連結寄出去的
-     那些人當場打不開。上一行只問「確定要撤銷 X」，講不出「那條連結永遠回不來、要再分享得另建一條」。
-     逐字同 2-2-3（同一顆彈窗、同一支端點，文案分岔就是兩頁對同一個動作說了兩種話）。 #}
+{# 連帶後果（`deleteNoteKey`）：撤銷是**軟刪**——那條連結只是被停掉、資料還在，但**沒有任何一條
+     路解得回來**。撤銷之後那個連結就打不開了，已經把連結寄出去的那些人當場失效。
+     上一行只問「確定要撤銷 X」，講不出「那條連結永遠回不來、要再分享得另建一條」。
+     與 2-2-3 說的是同一句（同一顆彈窗、同一個動作，文案分岔就是兩頁對同一件事說了兩種話）。 #}
 {% set deleteNoteKey = "share.revokeNote" %}
 {% set deleteNoteZh = "撤銷之後這條連結立刻失效，已經拿到連結的人也打不開了；要再分享只能另外建一條新的。" %}
 {% set deleteConfirmBinding = true %}

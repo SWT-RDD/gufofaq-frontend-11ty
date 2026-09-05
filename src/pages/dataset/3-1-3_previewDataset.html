@@ -22,25 +22,22 @@ permalink: 3-1-3_previewDataset.html
     {% set editLabel = "資料集名稱" %}
     {% set editLabelKey = "dataset.datasetName" %}
     {% set editValue = "客服問答知識庫" %}
-    {# 這顆確認鈕送 `PATCH /datasets/{id}`：409 `dataset.name_exists`「資料集名稱已存在」
-         （product 的 `update_dataset`）是換個名字就修得掉的 warning——
-         姊妹頁 5-5-2 對同型 409 就是這樣列的。同一支的 400 `dataset.name_required`
-         「資料集名稱不可為空」與它並列。
-         **403 `dataset.not_writable_group` 也要列**：`update_dataset` 第一行就是
-         `_writable_dataset`（同一支模組）——它驗的是「這個資料集的群組在不在我授予 data:write 的群組裡」，
-         而 `get_dataset`（同一支模組）走的是 `_owned_dataset`、只驗租戶，所以「進得來這一頁、按下去 403」
-         是真實可達的一條路。它是使用者找得到人開通／換群組的 warning（§4 資源層 scope），
+    {# 這顆確認鈕改的是資料集名稱：「資料集名稱已存在」是換個名字就修得掉的 warning——
+         姊妹頁 5-5-2 對同型重名就是這樣列的。「資料集名稱不可為空」與它並列。
+         **「這個資料集不在你可以寫入的群組裡」也要列**：改名驗的是「這個資料集的群組在不在我
+         授予 data:write 的群組裡」，而把人帶進這一頁的讀取只驗租戶，所以「進得來這一頁、按下去
+         被擋」是真實可達的一條路。它是使用者找得到人開通／換群組的 warning（§4 資源層 scope），
          而同一道守衛在本頁下面兩顆 editable-block 早就列成 warning 了——同一道守衛同頁兩種語意型別
          是 §5 明文禁止的。子句沿用那兩顆的「權限不足，無法儲存」（§4-2 同子句同英譯）。 #}
     {% set editCapability = "data:write" %}
-{# **資源層 scope 403 是獨立的一段**（§4／§5）：`update_dataset`（product）
-     本體第一行是 `_writable_dataset` → 403 `dataset.not_writable_group`，而 `list_datasets` 不依寫入群組
-     過濾 ⇒ 看得到一筆、按下去 403。子句逐字沿用 3-1-1 的刪除鈕（同繁中同英譯，§4-2）。 #}
+{# **資源層 scope 不足是獨立的一段**（§4／§5）：改名第一道就驗「這個資料集的群組在不在我可以
+     寫入的範圍裡」，而清單不依寫入群組過濾 ⇒ 看得到一筆、按下去被擋。子句逐字沿用 3-1-1 的
+     刪除鈕（同繁中同英譯，§4-2）。 #}
 {% set editSaveToast = "資料集名稱已更新|資料集名稱不可為空|資料集名稱已存在，請換一個|權限不足，無法儲存——請找貴租戶的管理者開通|這個資料集不在你可以寫入的群組裡，請找管理員把你加進該群組|儲存失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" %}
     {% set editSaveToastKey = "toast.saveDatasetName" %}
     {% set editSaveToastType = "success|warning|warning|warning|warning|error|warning" %}
     {% include "components/editable-block/editable-block.html" %}
-    {# 所屬群組（唯讀顯示）：資料集歸屬的群組（SaaS 群組權限需求，見 product DatasetDetailOut.group_id）。 #}
+    {# 所屬群組（唯讀顯示）：這個資料集歸屬的群組，也就是寫入權限的單位。 #}
     {# 冒號不折進 key：dataset.group 同時是 3-1-1／3-3 的表頭與 3-1-2／3-3 的欄位標籤（§4-2 例外——
          標點屬版面，折了會污染那幾處）。分隔符走 common.labelSep，裸的全形「：」在英文模式會原樣印出來。 #}
     <p class="text-gray m-0"><span data-i18n="dataset.group">所屬群組</span><span data-i18n="common.labelSep">：</span>管理群組</p>
@@ -56,12 +53,11 @@ permalink: 3-1-3_previewDataset.html
         {% set editPlaceholder = "請輸入任務描述" %}
         {% set editPlaceholderKey = "comp.enterTaskDesc" %}
         {% set editValue = "回答客服常見問題，內容涵蓋帳號、訂單與退換貨相關問題。" %}
-        {# 這兩欄走的是**另一支**端點 `PATCH /retrieval/datasets/{id}`（product::edit_dataset，
-             同步進 GufoRAG 索引供意圖排序），不是名稱那顆的 `PATCH /datasets/{id}`。
-             它逐 raise 只有三種：403（`require_capability("settings","write")` 未開通，
-             或 `can_write_dataset` 判跨群組，product）、404「dataset not found」、
-             502（同步 GufoRAG 失敗、整筆回滾）。403 是使用者自己找得到人開通／換群組的 warning，
-             措辭同 5-1-1 的 `toast.saveAccount`；404／502 併進末段 error。 #}
+        {# 這兩欄與名稱那一顆是**兩件不同的事**：它們存的是給檢索用的敘述，儲存時要一起同步進
+             索引供意圖排序，所以吃的能力是 settings:write 而不是 data:write。結果只有三種：
+             權限不足（整個租戶沒開通，或這個資料集不在我可以寫入的群組裡）、資料集已經不在了、
+             同步索引失敗整筆回滾。權限不足是使用者自己找得到人開通／換群組的 warning，
+             措辭同 5-1-1 的 `toast.saveAccount`；後兩者併進末段 error。 #}
         {% set editCapability = "settings:write" %}
         {% set editSaveToast = "已更新|權限不足，無法儲存——請找貴租戶的管理者開通|這個資料集不在你可以寫入的群組裡，請找管理員把你加進該群組|儲存失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" %}
         {% set editSaveToastKey = "toast.saveDatasetField" %}
@@ -76,7 +72,7 @@ permalink: 3-1-3_previewDataset.html
         {% set editPlaceholder = "請輸入任務對應提示詞" %}
         {% set editPlaceholderKey = "comp.enterTaskPrompt" %}
         {% set editValue = "你是客服助理，請根據提供的資料集內容，以親切、精簡的語氣回答使用者的問題。" %}
-        {# 與任務描述同一顆端點、同一組 raise（見上），故分支集合逐字相同。 #}
+        {# 與任務描述是同一件事、同一組結果（見上），故分支集合逐字相同。 #}
         {% set editCapability = "settings:write" %}
         {% set editSaveToast = "已更新|權限不足，無法儲存——請找貴租戶的管理者開通|這個資料集不在你可以寫入的群組裡，請找管理員把你加進該群組|儲存失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" %}
         {% set editSaveToastKey = "toast.saveDatasetField" %}
@@ -85,31 +81,26 @@ permalink: 3-1-3_previewDataset.html
     </div>
 </div>
 
-{# 切塊設定：`PATCH /datasets/{id}` 的 `DatasetPatchIn` 三欄——`chunk_size`／`chunk_overlap`／
-     `prepend_title_each_chunk`（product），現值由
-     `DatasetDetailOut`（同一支模組 `get_dataset`）的同名三欄回。3-1-2 建立頁有同一組欄位（走
-     `DatasetIn`），兩處是同一份設定的兩個消費點，所以約束提示兩邊都要有（§4：同一個欄位在同一頁
-     ／同一支端點的多個入口，每一處都要有）。
-   **為什麼要畫**：`DatasetPatchIn` 收得下這三欄，而它們決定之後匯入的檔案怎麼被切
-     （§3-2：request 收得下的每個參數都要在畫面上有落點）。
-   **值域出處**（§4 數字欄三件套的常數來源）：product 的 `CHUNK_SIZE_MIN` = 100／`CHUNK_SIZE_MAX` = 8000（**沒有前導底線**——上游那一行自帶的註解逐字說明那不是疏漏：這幾顆是跨模組共用的界線常數，端點那一側 `Field(ge=CHUNK_SIZE_MIN, le=CHUNK_SIZE_MAX)` 直接引它）
-     （`Field(ge=…, le=…)`），`chunk_overlap` 是 `Field(ge=0)` ⇒ **沒有上界常數**，真正的上界是
-     跨欄約束 `_assert_overlap_below_size`（overlap 必須小於 size），所以 max 不寫死、那句話由可見
-     提示承載；三欄都是整數／布林 ⇒ step="1"。示範值＝`DatasetIn` 的預設（1000／200／false）。
-   **為什麼欄位照樣渲染成可編輯的**：`_assert_chunk_params_still_settable`（同一支模組）是一道 409 硬閘門
-     （這個資料集只要有 folder 管道就擋），但 `DatasetDetailOut` **沒有任何欄位講得出這個資料集是不是
-     已經被鎖住**——前端拿不到那個事實，就不可能在使用者打字之前把欄位 disabled 掉；能誠實做的只有
-     「照常給改，改不動時由 409 那一段 warning 說清楚」（§5：分支結果由 data-toast 演）。
-   **「這個資料集鎖住了沒有」是切版對後端提的要求**（§4「切版主張需求，不等後端」）。
-     要求的內容：`DatasetDetailOut` 補一個布林（`chunk_params_locked`），判準＝
-     `_assert_chunk_params_still_settable` 那兩條證據的聯集。
+{# 切塊設定：這一頁修改的三欄——切塊大小／切塊重疊／每一塊都帶上文件標題，現值進頁時就讀得到。
+     3-1-2 建立頁有同一組欄位，兩處是同一份設定的兩個消費點，所以約束提示兩邊都要有（§4：同一個
+     欄位在同一頁／同一個動作的多個入口，每一處都要有）。
+   **為什麼要畫**：這三欄改得動，而它們決定之後匯入的檔案怎麼被切
+     （§3-2：收得下的每個參數都要在畫面上有落點）。
+   **值域在這裡宣告**（§4 數字欄三件套）：切塊大小 100–8000，切塊重疊下限 0 ⇒ **沒有上界**，
+     真正的上界是跨欄約束（重疊必須小於切塊大小），所以 max 不寫死、那句話由可見提示承載；
+     三欄都是整數／布林 ⇒ step="1"。示範值＝建立時的預設（1000／200／false）。
+   **為什麼欄位照樣渲染成可編輯的**：這是一道硬閘門（這個資料集只要有過一條檔案上傳管道就擋），
+     但進頁讀得到的資料**沒有任何一欄講得出這個資料集是不是已經被鎖住**——拿不到那個事實，
+     就不可能在使用者打字之前把欄位 disabled 掉；能誠實做的只有「照常給改，改不動時由那一段
+     warning 說清楚」（§5：分支結果由 data-toast 演）。
+   **「這個資料集鎖住了沒有」是切版在這裡主張的需求**（§4「切版主張需求，不等資料到齊」）。
+     要求的內容：進頁時多讀得到一顆布林「切塊參數已鎖定」，判準＝這個資料集已經有過一條
+     檔案上傳管道。
      為什麼非它不可：有了它，這一區在進頁的當下就說得出「這個資料集已經鎖住了」，
-     而不是等使用者填完按下去才由 409 告知。
-     **上游那一側的符號名是 `_assert_chunk_params_still_settable`**：下一輪 grep 它一次
-     就知道這個前提還在不在（§4）。
+     而不是等使用者填完按下去才被擋。
    儲存鈕是③直接送 API 的鈕 → `data-toast` 列全結果；hook 用 `js-save-chunk-params`（全站 scss 不引用）。 #}
 {# 欄位組與它的 ⓘ 說明窗的正本在 `components/chunk-settings`（與 3-1-2 共用同一份，理由見
-     該元件檔頭）。這一頁多一顆自己的儲存鈕：逐 raise 對回那顆鈕的說明寫在元件裡，
+     該元件檔頭）。這一頁多一顆自己的儲存鈕：逐段結果對回那顆鈕的說明寫在元件裡，
      因為只有它會渲染出那顆鈕。 #}
 {% set chunkSettingsBlockClass = "" %}
 {% set chunkSettingsSubmit = true %}
@@ -137,16 +128,13 @@ permalink: 3-1-3_previewDataset.html
 {# 檔案表格：tbody 在執行期依這個資料集的檔案清單現產，欄位就是 thead 這幾個固定欄；
      切版用 set+for 資料化示範 3 筆。檔名連結分別指向 3-1-5（一般檔案預覽）與 3-1-6（excel 比對預覽），
      兩條預覽路徑都要串得到——只連其中一條的話，另一頁在整個站上沒有任何入口。
-   **列序也是示範資料的一部分**（§6）：product 的 `get_dataset` 對
-     `ds.files` 做 `sorted(key=…f.uploaded_at, reverse=True)`＝最後上傳的排最前面，故示範列照
+   **列序也是示範資料的一部分**（§6）：這張清單的順序是**最後上傳的排最前面**，故示範列照
      建立時間**遞減**排（2026/01/22 → 2025/12/10 → 2025/11/02）。**不可以照時間遞增寫**：
-     那會演出一個這支端點產不出來的畫面。
-   **`count` 可為 null**：`FileOut.record_count` 的型別就是 `int | None`（同一支模組，欄位註解明寫
-     「取不到（舊列/GufoRAG 錯）＝None（前端顯示「—」）」），值由同一支模組的 `_file_record_count` 算——
-     excel 檔取 product 自己簿記的 `data_count`，folder 檔要重算 document_id 再向 GufoRAG 數
-     chunk，那一步失敗就 `logger.error` 後回 None。示範挑 1003 演這一態（folder 檔、取數失敗）；
-     **刻意不用「舊列無擷取連結」那條路**——那種檔連 3-1-5 預覽都會 409 `file_not_linkable`
-     （同一支模組 `get_file_chunks`），這一列的檔名連結會變成一個點進去只有錯誤訊息的謊。 #}
+     那會演出一個這張清單產不出來的畫面。
+   **`count` 可為空**：資料筆數取不到時就是沒有值，那一格畫「—」。excel 檔的筆數在匯入時就記
+     下來了；其他檔要回頭到索引裡數切塊，那一步失敗就沒有數字。示範挑 1003 演這一態（非 excel
+     檔、取數失敗）；**刻意不用「這個檔沒有留下擷取管道記錄」那條路**——那種檔連 3-1-5 預覽都
+     打不開，這一列的檔名連結會變成一個點進去只有錯誤訊息的謊。 #}
 {% set fileRows = [
     { sn: "1003", type: ".docx", name: "客服應對規範.docx", href: "3-1-5_previewFile_detail.html?sn=1003", createdAt: "2026/01/22 11:08", sizeMB: "0.85", count: null },
     { sn: "1002", type: ".xlsx", name: "商品清單.xlsx", href: "3-1-6_previewExcel_compare.html?sn=1002", createdAt: "2025/12/10 15:44", sizeMB: "3.05", count: "980" },
@@ -205,10 +193,10 @@ permalink: 3-1-3_previewDataset.html
                        `data-filesn`／`data-filename`／`data-filetype`，業務 js 靠它們認出這一列是哪個檔
                        ——下載那顆的「此來源無法下載」就是依 `data-filetype` 判出來的。
                        少了它們，React 端只剩陣列 index，改到隔壁列不會有任何徵兆（§5 轉換契約）。 #}
-                    {# 下載鈕的**末段是第二種 403**：product 的 `require_capability` 內部串著
-                         `require_tenant_feature`，所以這顆鈕的 403 有兩種——`missing_capability`
+                    {# 下載鈕的**末段是第二種權限不足**：能力檢查裡面還串著一道租戶開通檢查，
+                         所以這顆鈕的權限不足有兩種——這個帳號沒有 `data` 的能力
                          （收件人＝貴租戶的管理者，就是「權限不足，無法下載」那一段）與
-                         `tenant_feature_disabled`（平台把整個租戶的 `data` 關掉，**連租戶管理者也擋**，
+                         平台把整個租戶的 `data` 關掉（**連租戶管理者也擋**，
                          收件人＝平台管理員）。§4 逐字寫著「折進同一個屬性＝把兩種 403 說成同一件事」
                          ——一句「請找貴租戶的管理者」對第二種是錯的指示，它叫人去找一個改不動這件事的人。
                        **一律追加在末位**（正典＝2-2-4 的「開始執行」）：段序是 React 端 `split("|")[n]`
@@ -253,37 +241,31 @@ permalink: 3-1-3_previewDataset.html
 {% include "components/pager-row/pager-row.html" %}
 
 {# 刪除確認鈕交給業務 js，掛點是 `.confirm-delete-btn`（**轉換契約**，不改名）：這一顆要等
-   DELETE 真的回來、成功了才關窗。切版寫死 `btn-close-modals` 就是「按了確認、窗關了、
+   刪除真的成功了才關窗。切版寫死 `btn-close-modals` 就是「按了確認、窗關了、
    什麼都沒刪」——而畫面上完全看不出來。 #}
 {# 逐列刪除的檔名由業務 js 填進這顆空槽（同 1-2-1／3-2 的做法）。不設的話 delete-modal 會落回
      內建預設「檔案名稱2.pdf」，而本頁清單是常見問題.pdf／商品清單.xlsx／客服應對規範.docx——
      彈窗會問「確定要刪除一個不存在的檔」（§6 示範自洽）。 #}
 {% set deleteTargetId = "deleteFileName" %}
-{# 連帶後果（`deleteNoteKey`）：這一顆刪的不只是清單上那一列。`_remove_file_and_purge`
-     （product）先刪 DB 列、再依 connector 把**那個檔的文件從
-     GufoRAG 的索引移除**（folder 檔移暫存檔＋`sync_pipeline`，excel 檔 `purge_pipeline`），
-     兩條路都是不可逆的；產品沒有任何「還原檔案」的端點，同一份檔要回來只能重新匯入。
+{# 連帶後果（`deleteNoteKey`）：這一顆刪的不只是清單上那一列——它會把**那個檔的內容從搜尋索引
+     一起移除**，excel 與其他檔型走的清除路徑不同，但兩條都是不可逆的；沒有任何「還原檔案」
+     的路，同一份檔要回來只能重新匯入。
      上一行只問「確定要刪除 X」——它講不出「這個檔以後問答再也搜不到」，而那正是使用者
      真正在決定的事（§3-2 後果寫在做那個決定的控制項旁邊）。 #}
 {% set deleteNoteKey = "dataset.deleteFileNote" %}
 {% set deleteNoteZh = "這個檔的內容會一併從搜尋索引移除，之後問答再也搜不到它；救不回來，要回來只能重新匯入同一份檔。" %}
 {% set deleteConfirmBinding = true %}
 {% set deleteConfirmClass = "confirm-delete-btn" %}
-{# 刪除檔案的六段：product 的 `delete_file` → product
-     的 `_remove_file_and_purge`（**守衛與 409 都住在服務層那一支，不在端點函式本身**）的出口不只成敗。
-     403 `dataset_not_writable_group`（`delete_file` 本體第一行的 `_writable_dataset`，
-     同在 product）
-     **必須從 error 段拆出來自成一段**：那道守衛驗的是「這個資料集的群組在不在我授予 data:write 的群組裡」，
-     而把人帶進這一頁的 `get_dataset`（product）只驗租戶（`_owned_dataset`，
-     同在服務層那一支），所以「看得到檔案列、
-     按下去 403」是真實可達的一條路；它是使用者找得到人開通／換群組的 warning（§4 資源層 scope），
-     折進紅色的「刪除失敗」＝把可修復畫成終局。子句與本頁三顆 editable-block 的
-     「權限不足，無法儲存」同一族（§4-2 同子句同英譯，動詞按動作換成「刪除」）。
-     409 `folder_pipeline_not_recorded`（同一支 `_remove_file_and_purge`）的訊息**本身就是修復步驟**
+{# 刪除檔案的六段——這個動作的出口不只成敗：
+     「這個資料集不在你可以寫入的群組裡」**必須從 error 段拆出來自成一段**：那道守衛驗的是
+     「這個資料集的群組在不在我授予 data:write 的群組裡」，而把人帶進這一頁的讀取只驗租戶，
+     所以「看得到檔案列、按下去被擋」是真實可達的一條路；它是使用者找得到人開通／換群組的
+     warning（§4 資源層 scope），折進紅色的「刪除失敗」＝把可修復畫成終局。子句與本頁三顆
+     editable-block 的「權限不足，無法儲存」同一族（§4-2 同子句同英譯，動詞按動作換成「刪除」）。
+     「這個檔案沒有留下擷取管道記錄」的訊息**本身就是修復步驟**
      （「請用『檔案上傳』再匯入一次任一檔案，會自動接回原本的管道並補記，之後即可正常刪除」）——
      使用者自己修得掉，同樣不折進「刪除失敗」。
-     另一條 409 `file_not_linkable`（同一支 `_remove_file_and_purge` 的另一個出口）沒有復原路徑，
-     與 502／404 同屬 error。
+     另一種「這個檔接不回擷取管道」沒有復原路徑，與清除失敗、檔案已經不在了同屬 error。
      不與 1-2-1 共用 key：那一頁的「移除」是送出前把檔從**本地**待上傳清單拿掉（純陣列操作、
      不打 API），根本沒有失敗路徑，兩顆鈕的結果集合本來就不一樣。
 
@@ -302,7 +284,7 @@ permalink: 3-1-3_previewDataset.html
      開窗的觸發鈕（§5：真正送 API 的是彈窗裡那顆確認鈕，閘門與 toast 的家在那裡），而且一顆
      只有一段的 `data-toast` 會讓「結果數要等於 en.json 的段數」那條測試當場紅（1 vs 6）。 #}
 {% set deleteCapability = "data:write" %}
-{# 同上：`delete_file` 也是 `_writable_dataset` 開場（product）。 #}
+{# 同上：刪除檔案的第一道守衛也是「這個資料集在不在我可以寫入的群組裡」。 #}
 {% set deleteToast = "已刪除|權限不足，無法刪除——請找貴租戶的管理者開通|這個資料集不在你可以寫入的群組裡，請找管理員把你加進該群組|這個檔案沒有留下擷取管道記錄，請先用「檔案上傳」重新匯入一次以補記|刪除失敗，請稍後再試|請先勾選要刪除的檔案|此功能尚未對貴租戶開通，請聯絡平台管理員" %}
 {% set deleteToastKey = "toast.deleteFile" %}
 {% set deleteToastType = "success|warning|warning|warning|error|warning|warning" %}

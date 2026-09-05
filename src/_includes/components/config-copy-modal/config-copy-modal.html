@@ -1,8 +1,8 @@
 {# 跨設定檔複製 modal（NET-NEW 功能，沒有現成給稿；切版這一份就是它的正本）。入口在對話設定
      hub「檢索與欄位」子頁籤的「從其他設定檔複製…」鈕（.js-copy-config）：開窗需先選定「來源設定檔」
      ＝業務條件開窗，故該鈕保留 hook class、不掛 data-open-modal（GUIDELINE §5）。彈窗本體＝來源設定檔
-     選擇（排除目前檢視中的設定檔）＋**COPY_GROUPS 的每一組**（地位平等、預設全勾；依 GufoRAG chatbot
-     COPY_GROUPS，資料化於下方 configCopyGroups）。標題「複製到「<目標>」」的目標設定檔名是執行期資料：前後綴拆
+     選擇（排除目前檢視中的設定檔）＋**每一組可複製的設定**（地位平等、預設全勾；
+     資料化於下方 configCopyGroups）。標題「複製到「<目標>」」的目標設定檔名是執行期資料：前後綴拆
      i18n key（§4-2），名字放 #configCopyTarget 資料槽由 React 填（同 delete-modal 的 deleteTargetId
      慣例），示範值＝5-2 檢視中的設置一。
      參數：
@@ -11,27 +11,24 @@
          使用者切一次語言就會把 React 填進去的設定檔名蓋回字典裡那一顆）。
        configCopySources＝來源下拉的選項（**必須排除目標本身**：複製到自己是無意義的覆寫）。
          預設是 5-2 的形狀（檢視中＝設置一 ⇒ 來源只剩設置二／設置三）。
-       configCopyShowWarning＝目標為前台公開問答生效設定檔時的對外影響警告（React 依 targetIsProduction
-         渲染；5-2 的前台預設是設置二、檢視中是設置一，兩者不同 ⇒ 該頁不演這一段。
+       configCopyShowWarning＝目標為前台公開問答生效設定檔時的對外影響警告（依「目標是不是前台
+         那一份」渲染；5-2 的前台預設是設置二、檢視中是設置一，兩者不同 ⇒ 該頁不演這一段。
          **要演這一段的頁面必須同時把 configCopyTargetName 換成那一份真的是前台預設的**，
          否則畫面演的是一個資料上不可能的狀態，§6）；
        configCopyShowError＝送出失敗的持久錯誤列（React 依 error state 渲染）。
-     複製項目 checkbox 的 `value` ＝ GufoRAG chatbot `COPY_GROUPS` 的鍵（§6 值＝上游字面）：
-     沒有 value 的 checkbox 在 DOM 上一律讀到 "on"，七組分不開。
-     契約在 gufofaq-saas product 的 `copy_config`（`POST /config/profiles/{no}/copy-from`），
-     套用由 React 業務 js 帶條件驗證後直送，故 .js-config-copy-apply；示範來源 2 筆。
-     與 gufofaq-saas `apps/web/components/ConfigCopyModal/ConfigCopyModal.tsx` 對齊的三件事：
-     ①不出現 `.config-copy-body` 這種無主 class（§4）；②錯誤列是 `<p className="text-red" role="alert">`
-     且住在 `flex-row column gap-16` 容器內；③英文 `copyConfigProductionWarning` 用 frontend 一詞。
-     **唯一刻意差異是標題**：React 走單一插值 key `settings.copyConfigModalTitle`（`複製到「{{target}}」`），
-     切版拆成 `copyConfigModalTitlePrefix`／`Suffix` ＋ `#configCopyTarget` 資料槽——執行期資料不進譯文
-     字串（§3-2/§4-2）；gufofaq-saas 的 `apps/web/lib/i18n/parity.test.ts` 把這兩顆 key 登記為切版專屬。 #}
-{# 元件內部示範資料用元件專屬變數名（§6）。**這份清單是 GufoRAG chatbot 的
-     `COPY_GROUPS` 的逐組投影**——不寫死「幾組」（§3-2 能不寫死計數就不要寫），但**每一組都要在**：
-     少一組＝那一組的設定複製時被靜默跳過，畫面上完全看不出來。上游自己也為這個失效模式立了守衛
-     （**GufoRAG chatbot** 的 `TestCopyGroupsRegistry`——gufofaq-saas 那一側沒有這個 class；它要求 COPY_GROUPS ∪ COPY_EXCLUDED
-     恰等於 `ChatConfig.model_fields`）。
-     每一組的 label 是「這一組**包含什麼**」的如實列舉，所以上游往組裡加欄位時要回頭重讀這幾行字：
+     複製項目 checkbox 的 `value` 是這一組的識別字，在這裡定義一次就是正本：
+     沒有 value 的 checkbox 在 DOM 上一律讀到 "on"，各組分不開。
+     套用由業務 js 帶條件驗證後直送，故 .js-config-copy-apply；示範來源 2 筆。
+     另外三件事在這裡定死：①不出現 `.config-copy-body` 這種無主 class（§4）；②錯誤列是
+     `<p class="text-red" role="alert">` 且住在 `flex-row column gap-16` 容器內；
+     ③英文的 `copyConfigProductionWarning` 用 frontend 一詞。
+     **標題刻意拆成三個節點**（`copyConfigModalTitlePrefix`／`Suffix` ＋ `#configCopyTarget` 資料槽），
+     不寫成一顆帶插值的 key——執行期資料不進譯文字串（§3-2/§4-2）。 #}
+{# 元件內部示範資料用元件專屬變數名（§6）。**這份清單就是「可複製的設定分成哪幾組」的正本**
+     ——不寫死「幾組」（§3-2 能不寫死計數就不要寫），但**每一組都要在**：
+     少一組＝那一組的設定複製時被靜默跳過，畫面上完全看不出來。判準是「設定檔裡的每一個欄位，
+     不是落在這裡的某一組裡，就是明確不複製」，沒有第三種。
+     每一組的 label 是「這一組**包含什麼**」的如實列舉，所以組裡多一個欄位就要回頭重讀這幾行字：
      少寫一個欄位，使用者就會以為那個欄位不會被複製。最容易漏的三處是 glossary（別名表那五欄）、
      policy（出口替換與輸出規則）、retrieval（可回答性閘那三欄與分組 LLM／評測模型）。 #}
 {# 預設值收進元件專屬的區域名（同 ui/storage-bar 的 *Resolved 做法）：{% set %} 是**頁面全域**，
@@ -95,14 +92,14 @@
                     <div class="button-row center">
                         <button type="button" class="button button-border btn-close-modals" data-i18n="action.cancel">取消</button>
                         {# 複製項目 checkbox 是「至少要勾一個」的必選群組（每一組來自 configCopyGroups，
-                             §3-2 能不寫死計數就不要寫）：全部取消時端點會以 `groups=[]`
-                             回 200 而什麼都沒做，再配一顆成功 toast 就是 fail-silent。這一態要演成 warning，
+                             §3-2 能不寫死計數就不要寫）：一組都不勾照樣送得出去，
+                             結果是什麼都沒被複製，再配一顆成功 toast 就是 fail-silent。這一態要演成 warning，
                              不可以改用 disabled 讓它不可達（REACT-CONVERSION §⑥：切版列了那一段 warning
                              就不准 disable——合規的 disable 只有「進行中」與 type-to-confirm 未解鎖兩種，
                              而那兩種都不掛 data-toast）。 #}
-                        {# 這一下會整份覆寫目標設定檔——「複製」是寫入動詞，不是唯讀。閘門對回
-                 gufofaq-saas product 的 `copy_config`（`require_capability("settings", "write")`）；
-                 姊妹彈窗 apply-settings-modal／apply-settings-compare-modal 也是同一道。 #}
+                        {# 這一下會整份覆寫目標設定檔——「複製」是寫入動詞，不是唯讀，
+                 故掛 `data-capability="settings:write"`；
+                 姊妹彈窗 apply-settings-modal／apply-settings-compare-modal 也是同一道閘門。 #}
             <button data-capability="settings:write" type="button" class="button button-primary js-config-copy-apply" data-toast="設定已複製|權限不足，無法複製——請找貴租戶的管理者開通|請先選擇來源設定檔|請至少勾選一個複製項目|複製失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.copyConfig" data-toast-type="success|warning|warning|warning|error|warning" data-i18n="action.copy">複製</button>
                     </div>
                 </div>

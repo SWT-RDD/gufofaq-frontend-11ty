@@ -5,7 +5,7 @@
      左欄「select.multiSelect」重用 ui/multi-select 既有 class 命名（由已登記的 ui/multi-select/multi-select.js 於 DOMContentLoaded 增強成 tag 多選 UI）；
      左右兩欄的 form-group/label/field 結構沿用 ui/form-control 既有寫法。
      `.field-<槽鍵>`／`.preview-<槽鍵>` 兩族是**逐槽定位左右欄的業務掛點**，全站零樣式、零本 repo js——槽鍵集合的
-     唯一正本是 `ui/field-slot-catalog`（22 槽，對回 product 的 `SLOTS`）。
+     唯一正本是 `ui/field-slot-catalog`（22 槽）。
      測試那一份白名單（`§4 class 歸屬測試` 由 catalog 推導出這兩族）逐字指著**這一段**當契約
      正本，所以這裡不能不寫（§4「痕跡要成對：只住在測試裡的豁免，讀元件的人看不到」）。
      `.date-error` 是**日期欄錯誤訊息的業務掛點**，全站零樣式、零 js——切版改由 `.form-group:has(.error)` 揭示，
@@ -63,9 +63,9 @@
                     </div>
                 </div>
                 {% endif %}{% endfor %}
-                {# product 專用槽（`field_schema` 的 role="product_only"）與其餘的槽分群：
+                {# 產品內部欄位（`productOnly`）那一族與其餘的槽分群：
                      混在備註 1–10 中間時，它看起來就只是第 11 個備註欄。欄位名帶的括號來自
-                     `ui/field-slot-catalog` 的 `defaultLabel`（＝product 的 `SLOTS`，屬產品預設名 ⇒ chrome，§4-2）；
+                     `ui/field-slot-catalog` 的 `defaultLabel`（產品預設名 ⇒ chrome，§4-2）；
                      **不能只靠它**，所以說明另外掛在小標下——租戶把顯示名改成「維護人」的當下，
                      括號裡那句就跟著沒了（同 5-2 欄位命名區的處置）。
                      productOnly 是選填：沒有那一筆的使用頁（目前只有 1-1-4 有）整段不渲染。 #}
@@ -119,9 +119,9 @@
                     </div>
                 </div>
                 {% endif %}{% endfor %}
-                {# product 專用槽（`field_schema` 的 role="product_only"）與其餘的槽分群：
+                {# 產品內部欄位（`productOnly`）那一族與其餘的槽分群：
                      混在備註 1–10 中間時，它看起來就只是第 11 個備註欄。欄位名帶的括號來自
-                     `ui/field-slot-catalog` 的 `defaultLabel`（＝product 的 `SLOTS`，屬產品預設名 ⇒ chrome，§4-2）；
+                     `ui/field-slot-catalog` 的 `defaultLabel`（產品預設名 ⇒ chrome，§4-2）；
                      **不能只靠它**，所以說明另外掛在小標下——租戶把顯示名改成「維護人」的當下，
                      括號裡那句就跟著沒了（同 5-2 欄位命名區的處置）。
                      productOnly 是選填：沒有那一筆的使用頁（目前只有 1-1-4 有）整段不渲染。 #}

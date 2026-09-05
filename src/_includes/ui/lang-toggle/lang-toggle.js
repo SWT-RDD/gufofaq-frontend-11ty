@@ -48,8 +48,7 @@
 //   **而切版這一側不可能改**：拿掉它之後本檔只剩「第一顆 span」這種位置定位，而那顆 `.sr-only`
 //   兄弟正是為了補可及名稱才加進來的——位置定位的意思是「下一次為了 a11y 調整子節點順序
 //   就靜默改錯節點」，§4 明文要求元件 js 查自己的 class、不查位置。
-//   兩邊各自都站得住，所以 gufofaq-saas 那一側把它登記在 `apps/web` 的 `jsHooks.test.ts`
-//   （`OVERLAP_KEEP`），切版這一側不動。
+//   兩邊各自都站得住：這顆 class 兩側都留著，切版這一側不動。
 //
 // 匯出（GUIDELINE §1-1「共享行為工具」，全體元件通用故不算依賴）：
 //   window.GufoI18n = { t(key, zhFallback), lang() }  ＋ 事件 `gufo:langchange`（detail.lang）

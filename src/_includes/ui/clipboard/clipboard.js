@@ -9,8 +9,7 @@
 //     clipboard API 為主、`execCommand("copy")` 為退路（`file://` 開啟、或拿不到剪貼簿權限時
 //     前者會 reject——切版的靜態稿常常就是用 file:// 打開的）。回傳值：沒有。
 //     **成敗不由這裡演**：`data-toast` 是兩段（已複製／複製失敗），由 `ui/toast` 的委派輪播，
-//     那是原型的演出方式；React 那一側才依實際結果挑段（見 `ui/toast` 檔頭與
-//     gufofaq-saas `apps/web/lib/hooks/useCopy.ts` 的 catch 走第 2 段）。
+//     那是原型的演出方式；React 那一側才依實際結果挑段（見 `ui/toast` 檔頭：複製失敗走第 2 段）。
 //     這裡若自己再彈一次，同一次點擊就會有兩則 toast。
 //   兩個呼叫端：`components/faq-chatroom`（訊息的 `.copyBtn`，來源是那一則答案的文字）與
 //   `components/import-report`（來源是組出來的出口替換規則）。**原本兩支各抄一份 fallbackCopy**，
@@ -42,8 +41,8 @@
 //      複製到另一條連結而畫面上照樣彈「已複製」。
 //   ⓑ **欄位是 `readonly` 而不是 `disabled`**：`disabled` 的欄位不可聚焦、選取不到，
 //      而這一格的用途正是「複製不了時自己選起來複製」（`data-toast` 第 2 段講的就是這件事）。
-//   ⓒ `.shareBtn` 是**凍結的 hook**（gufofaq-saas 的 `FaqShareModal`／`ShareManageModal` 與
-//      它們的單元測試都以它定址，§5「hook 一經 gufofaq-saas 端引用即凍結」）——要改名就先改那邊。
+//   ⓒ `.shareBtn` 是**凍結的 hook**：名字一經訂下就不因命名風格改名——它是這個 repo 對外宣告的
+//      定址契約，消費端照它實作。
 //   ⓓ 它與 `.copyBtn` 不是同一顆：`.copyBtn` 複製的是一段**內容**（訊息文字、金鑰明碼），
 //      來源各不相同，由各自的元件 js 決定；`.shareBtn` 的來源固定是旁邊那顆唯讀欄位，
 //      所以只有它做得成宣告式。
@@ -70,7 +69,7 @@ function fallback(text) {
 }
 
 // 委派掛在 document 上：這兩顆鈕住在 `<dialog>` 裡，而分享管理窗的列是執行期才長出來的
-// （`GET /share` 回幾條就幾列）——逐顆綁定只綁得到切版靜態稿裡的那幾顆（§5）。
+// （有幾條分享連結就幾列）——逐顆綁定只綁得到切版靜態稿裡的那幾顆（§5）。
 document.addEventListener("click", function (e) {
     var btn = e.target.closest ? e.target.closest(".shareBtn") : null;
     if (!btn) return;

@@ -8,13 +8,11 @@
      參數：**無**（§6(b)：三份稿演同一個畫面，示範資料住在元件裡；示範變數用元件專屬名
        `platformDisclaimerVersions`）。
 
-     免責聲明設定（平台全域，系統管理員設定一份全租戶共用）：SaaS 新需求，畫面形狀對回 gufofaq-saas 的
-     `apps/web` platform 區；
-     真正把關在 product（PUT /platform/disclaimer，require_platform_admin）。免責聲明「本文」為法律文字、
+     免責聲明設定（平台全域，系統管理員設定一份全租戶共用）。免責聲明「本文」為法律文字、
      單一語言逐字顯示、不翻譯 → textarea 本文不掛 data-i18n；區塊標題與儲存鈕文案（chrome）才走 i18n。
-     編輯與還原都是 require_platform_admin（PUT /platform/disclaimer、POST /disclaimer/versions/{n}/activate）；
-     但**版本史與目前生效的本文是 auditor 讀得到的**（GET /platform/disclaimer/versions ＝
-     require_platform_auditor，product），而 ISO 要查的正是「這份聲明改過幾次、什麼時候改的」。
+     編輯與還原都要 admin；
+     但**版本史與目前生效的本文是 auditor 讀得到的**，
+     而 ISO 要查的正是「這份聲明改過幾次、什麼時候改的」。
      故**區塊標 auditor、不是 admin**：整區標 admin 的話，稽核員連版本史都打不開，而那正是他來這一頁
      要看的東西。本文 textarea 是值控制項（低於 admin 照渲染但 disabled，§5），只有儲存與還原鈕標 admin。 #}
 <div class="block mt-16 flex-row column gap-16" data-platform-role="auditor">
@@ -28,7 +26,7 @@
                  沒有名稱的話報讀器只念得出「多行文字方塊」。
                `data-platform-role="admin"` 也**必須寫在 markup 上**：它比區塊的 auditor 嚴一級
                  （低於 admin 照渲染但 disabled），而權限分級是契約——寫成宣告才會被繼承與檢查，
-                 只寫在註解裡等於沒有。寫入端是 PUT /platform/disclaimer ＝ require_platform_admin。 #}
+                 只寫在註解裡等於沒有。寫入這一份本文要 admin。 #}
             <textarea id="platformDisclaimerInput" class="form-control" rows="12" data-platform-role="admin">致使用者：
 歡迎使用本平台！在使用我們的服務之前，請您仔細閱讀並同意以下免責聲明，閱讀後即視為使用者同意此聲明。
 AI內容生成的性質
@@ -38,14 +36,14 @@ AI內容生成的性質
     <div class="flex-row" data-platform-role="admin">
         <button type="button" class="button button-primary" data-toast="免責聲明已儲存|儲存失敗，請稍後再試" data-i18n-data-toast="toast.saveDisclaimer" data-toast-type="success|error" data-i18n="platform.saveDisclaimer">儲存免責聲明</button>
     </div>
-    {# 免責聲明版本史：每次儲存 append 一版；可還原歷史版本（product 端 append 複本為當前，非覆寫）。示範 2 版。 #}
+    {# 免責聲明版本史：每次儲存 append 一版；可還原歷史版本（還原是把那一版複製成新的一版，不是覆寫）。示範 2 版。 #}
     <div class="flex-row column gap-8">
         <div class="text-bold" data-i18n="platform.disclaimerVersions">版本史</div>
-        {# `DisclaimerVersionOut.created_by`（product）也要有落點：同一區的檔頭自述理由是
+        {# 「修改者」也要有落點：同一區的檔頭自述理由是
              「ISO 要查的正是**這份聲明改過幾次、什麼時候改的**」，卻漏掉「**誰**改的」——而那是同一句話
-             的第三個問題。5-6-3 為一模一樣的理由畫了「核發者／撤銷者」兩欄（`ServiceKeyOut` 的
-             created_by／revoked_by），兩處不該不對稱（§3-2 response 回得出的欄位要有落點）。
-             上游回的是 user_id（`int | None`，沒有第二支端點 join 成 email），故畫識別碼、不編一個名字
+             的第三個問題。5-6-3 為一模一樣的理由畫了「核發者／撤銷者」兩欄，
+             兩處不該不對稱（§3-2：拿得到的欄位要有落點）。
+             拿得到的只有使用者編號（沒有另一條路把它換成 email），故畫識別碼、不編一個名字
              （§6：正本給不出來的欄位不得為了讀起來順而編一個）；解不出來時畫「—」。 #}
         {% set platformDisclaimerVersions = [
           { no: 2, time: "2026/07/14 10:00", createdBy: "12", current: true },
@@ -56,15 +54,15 @@ AI內容生成的性質
              可倚靠，豁免不成立（「豁免來自 `<tr>`，不是來自『長得像一列』」）。每存一次就 append 一版，
              真實資料下就是 N−1 顆逐字同名的「還原此版本」；示範只有一顆非目前版本，所以 dist 上
              看不出來——正是這條規則要抓的那種。
-           版號那顆同時是 `POST /platform/disclaimer/versions/{version_no}/activate` 的定址依據，
+           版號那顆同時是「還原這一版」的定址依據，
              故列上也帶 `data-version-no`（§6 列鍵：位置不是身分）。
            全形括號改半形：這一段沒有 `data-i18n`，全形標點在英文模式會原樣露出來（§4-2）。
-           **不列 403**：這顆鈕掛 `data-platform-role="admin"`，而 `activate_platform_disclaimer_version`
-           （product）是 `require_platform_admin` ⇒ 低於該級**動作鈕不渲染**
-           （§5 渲染規則），那道 403 在這顆鈕上走不到。⚠️ **不要照抄 5-2 兩顆「還原版本」鈕的
-           「權限不足，無法儲存」**：那兩顆走的是 `data-capability="settings:write"`，能力軸才把 403
-           列進 toast，平台角色軸與能力軸的粒度不同。同區的姊妹鈕（儲存免責聲明，同樣
-           require_platform_admin）也只有兩段；manage-tenant-modal 對同一件事的結論相同。 #}
+           **不列「權限不足」**：這顆鈕掛 `data-platform-role="admin"`，還原這件事本來就只有 admin
+           做得到 ⇒ 低於該級**動作鈕不渲染**
+           （§5 渲染規則），那一段在這顆鈕上走不到。⚠️ **不要照抄 5-2 兩顆「還原版本」鈕的
+           「權限不足，無法儲存」**：那兩顆走的是 `data-capability="settings:write"`，能力軸才把
+           權限不足列進 toast，平台角色軸與能力軸的粒度不同。同區的姊妹鈕（儲存免責聲明，同樣
+           只有 admin 做得到）也只有兩段；manage-tenant-modal 對同一件事的結論相同。 #}
         <div class="flex-row align-items-center gap-8" data-version-no="{{ v.no }}">
             <span id="disclaimerVersionNo-{{ v.no }}">V{{ v.no }} ({{ v.time }})</span>
             <span class="text-gray"><span data-i18n="platform.disclaimerChangedBy">修改者 </span>{% if v.createdBy %}#{{ v.createdBy }}{% else %}—{% endif %}</span>

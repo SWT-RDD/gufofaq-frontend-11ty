@@ -247,13 +247,11 @@ test("§4 送 API 的數字欄三件套：type=number ＋ min/max/step ＋ 可�
     // 兩邊都沒有界線的欄位：逐筆列出＋理由（新增前先去正本確認它真的兩邊都不設限）
     const NO_BOUND = new Map([
         ["tenantTrialDaysInput",
-         "延展天數：正數延展、負數縮短，兩邊都沒有界線（product 的 extend_tenant_trial 只擋 extend_days == 0）"],
-        // 分數門檻兩顆（qaDirectScoreFloor／groundingScoreFloor）**不再豁免**：
-        // 上界照舊不綁（尺由重排序器／檢索後端決定——llm 1–5、jina 0–1、gufonet BM25 數百～數千，
-        // 寫死 [0,1] 會讓 BM25 部署填不進合法值），但**下界綁 min="0"**：GufoRAG chatbot
-        // 的 validate_score_floors 對 _SCORE_FLOOR_FIELDS 兩欄一律拒負值，
-        // product 的 ProfileConfigIn.qa_direct_score_floor 因此綁 Field(ge=0)。
-        // 表單不夾＝把那個 400 推遲到按下儲存之後，而使用者已經離開那一格了。
+         "延展天數：正數延展、負數縮短，所以兩邊都沒有界線（0 不是界線，它是「沒有動作」）"],
+        // 分數門檻兩顆（qaDirectScoreFloor／groundingScoreFloor）**不在這張表裡**：
+        // 上界不綁——分數的尺會隨評分方式換（有的 1–5、有的 0–1、有的數百到數千），
+        // 寫死 [0,1] 會讓其中一種填不進自己的合法值；但**下界綁 min="0"**：負的分數門檻
+        // 沒有任何意義。表單不夾＝把那個錯誤推遲到按下儲存之後，而使用者早就離開那一格了。
     ]);
     const seenNoBound = new Set();
     let seen = 0;
@@ -273,7 +271,7 @@ test("§4 送 API 的數字欄三件套：type=number ＋ min/max/step ＋ 可�
             }
             if (!/type="number"/.test(a)) continue;
             seen++;
-            // 第二件：後端的區間。`step` 一定要有（整數 vs 小數是每一欄都有的事實）；
+            // 第二件：這一欄的合法區間。`step` 一定要有（整數 vs 小數是每一欄都有的事實）；
             // 界線至少要有一邊——上界不是每一欄都有（genMemory 刻意無上界），下界則有
             // 「負值合法」的欄位（延展天數：正數延展、負數縮短），逐筆豁免並附理由。
             if (!/\bstep="/.test(a)) hits.push(`${where} 缺 step（三件套第二件）`);
@@ -293,7 +291,8 @@ test("§4 送 API 的數字欄三件套：type=number ＋ min/max/step ＋ 可�
 
 test("§4 control-label required 與控制項的 required 成對（星號是視覺，required 是報讀器與 React 表單庫讀的那一份）", () => {
     // 為什麼要釘死：星號畫了、控制項沒 required，兩份就在說不同的話——報讀器不會念「必填」，
-    // React 表單庫（RHF/zod）從 markup 推不出這一欄是必填，於是必填只剩後端 400 那一道。
+    // React 表單庫（RHF/zod）從 markup 推不出這一欄是必填，於是「這一欄要填」在送出之前
+    // 沒有任何一處講得出來。
     // 實測 7 顆（qa-import 兩顆 select、skill-editor 的 name/description、
     // 3-1-2/3-3 的所屬群組、5-6-3 的授權範圍），既有測試一條都看不到。
     const esc = (x) => x.replace(/[^\w-]/g, (c) => "\\" + c);

@@ -1,10 +1,10 @@
 // 內建工具卡的兩個純前端互動（§5 ④：沒有業務主人的互動，切版當場就要動得起來）：
 //   ① 字數提示：兩個文字欄各自的「已填 / 上限」即時更新。上限**讀 textarea 自己的 maxlength**，
-//      不在 js 再抄一份 1024——那個數字只有一份真相，寫在 markup 上（它的上游出處見元件 html 檔頭）。
+//      不在 js 再抄一份 1024——那個數字只有一份真相，寫在 markup 上（見元件 html 檔頭的宣告）。
 //   ② 還原預設：清掉本卡兩欄＝回到內建預設（placeholder 就是預設描述原文），順手把字數歸零。
 //      比照 ui/filter-fields 的 .js-filter-clear：同樣是「把欄位清回預設」的純 UI 行為，不送 API。
-//      這裡本來就沒有 API 可打：override 是 profile config 的一部分，隨頁尾「儲存對話設定」一起 PUT
-//      （gufofaq-saas product 的 `ProfileConfigIn.builtin_tool_overrides`），所以這顆鈕不彈 toast。
+//      這裡本來就沒有 API 可打：兩欄的自訂覆寫是這一份對話設定的一部分，隨頁尾
+//      「儲存對話設定」一起送出，所以這顆鈕不彈 toast。
 //
 // 開合／aria-expanded／「全部展開收合」全部由 ui/accordion 供給（卡片模式，見 accordion.js），本檔不重寫。
 // 委派掛在 document 上：每一張卡都吃得到，React 端則各自轉成受控欄位的 onChange / onClick。

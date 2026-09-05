@@ -66,11 +66,12 @@ export const mdLinkTarget = (doc, link) => join(dirname(doc), link);
 
 export const TOAST_TYPES_ALLOWED = ["success", "error", "warning", "info"];
 
-// 內建工具的**種類數**：正本是 GufoRAG chatbot 的 `BUILTIN_TOOL_NAMES`（跨 repo 常數，本專案的測試
-// 比對不到它，故 §3-2「比不到就只指名符號、不抄值」——這裡是那個「只好抄值」的例外，所以值只准
-// 有一處字面，四條測試都引用它。這個 14 若抄進四條測試各一次（answer_from_qa 實測漏掉
-// 一張卡，而要改的話得同時改四個地方，漏改一個就是一條永遠不會紅的測試）。
-export const BUILTIN_TOOL_CARDS = 14;   // ＝ chatbot BUILTIN_TOOL_NAMES 的成員數
+// 內建工具的**種類數**：正本是 `components/builtin-tool-card` 畫出來的那份工具目錄
+// ——少一張卡就是那一顆工具在畫面上不存在。
+// **不改成從 markup 動態數**：那樣寫等於「畫面畫幾張就是幾張」，漏掉一顆工具時兩邊一起少一，
+// 這條守門就永遠不會紅。數字只准有一處字面，四條測試都引用它；抄進四條測試各一次的話，
+// 要改得同時改四個地方，漏改一個就是一條永遠不會紅的測試。
+export const BUILTIN_TOOL_CARDS = 14;   // 內建工具的種類數
 
 // 從 dist 切出每一張工具卡的 outerHTML（div 巢狀計數；dist 標籤是平衡的，見檔頭說明）。
 export function builtinToolCards(html) {

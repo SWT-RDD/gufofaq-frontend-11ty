@@ -2,8 +2,8 @@
 //
 @use "../../../scss/mixin" as *;
 
-// 它跑在**別人的網站上**：gufofaq-saas 的 `widget.js` 建一個 shadow root、把樣式一起注進去，
-// 所以這一份的角色是「視覺定案」而不是站內版面——那一側照抄這裡的值與結構。
+// 它跑在**別人的網站上**：嵌進去的那一份自己建一個 shadow root、把樣式一起注進去，
+// 所以這一份的角色是「視覺定案」而不是站內版面——嵌到客戶網站上的那一份照這裡的值與結構實作。
 // 因此刻意只用語意 token（--brand／--surface-raised／--border…），換膚與深色才會一併帶過去；
 // 寫死色碼等於在客戶網站上凍結一組跟不上主題的顏色。
 // （舉例刻意不用 --brand-gradient：那正是下方「launcher 的圓與位置沿用 ui/faq-launcher」那段
@@ -29,7 +29,7 @@
         // launcher 是 56px、離底 24px ⇒ 面板底邊落在它上方 8px。
         bottom: 88px;
         z-index: 900; // 與 .faq-launcher 同層（modal 1000／toast 2000 之下）
-        display: none; // 初始是收合的；開合由 widget 那一側切 [data-open]（見下）
+        display: none; // 初始是收合的；開合靠切 [data-open]（見下）
         flex-direction: column;
         width: 360px;
         max-width: calc(100vw - 48px);

@@ -1,9 +1,8 @@
 {# 管理群組成員 modal：由 5-5-2_groupManagement 頁每一列的「管理成員」鈕（.js-manage-members）開啟，
      把租戶使用者加入/移出**那一列的群組**（複選）。開窗需先選定「管理哪一個群組」＝業務條件開窗，
      故該鈕保留 hook class、不掛 data-open-modal（GUIDELINE §5）；彈窗本體回歸切版：
-     搜尋框 + 成員清單（每列一個 checkbox）+ 儲存。5-5-2 是 SaaS 新頁：
-     成員載入/預勾/儲存由 React 業務 js 實作，契約在 product（gufofaq-saas：
-     「成員指派走 PATCH /users/{id} 的 group_ids」）；此處示範 3 筆。
+     搜尋框 + 成員清單（每列一個 checkbox）+ 儲存。5-5-2 是新頁：
+     成員載入／預勾／儲存由 React 業務 js 實作，這裡只定版位；此處示範 3 筆。
      成員清單 widget 沿用 ui/modals 既有的 .dataset-list-wrap > .dataset-list（select-dataset-modal
      同款可捲動複選清單、自帶 scrollbar_modal()）：兩者是同一顆「可捲動、內含搜尋框的複選清單」，
      不另開一份 _manage-members-modal.scss 各寫一次（§4：兩個以上元件必須同值的東西才抽共用層，
@@ -61,7 +60,7 @@
                                 <span>{{ member.email }}</span>
                             </label>
                             {% else %}
-                            {# **這一顆 `{% else %}` 只覆蓋「來源陣列本來就空」那一態**（`GET /users` 只回本租戶
+                            {# **這一顆 `{% else %}` 只覆蓋「來源陣列本來就空」那一態**（名冊只含本租戶
                                  使用者，租戶剛開通時除了自己以外一個都沒有）——它是 nunjucks 的編譯期分支，
                                  救不了「有人但關鍵字打不到」。零命中那一態由 `ui/list-filter` 寫進
                                  一顆常駐的 `.dataset-list-empty` live region（§5 那條括號句逐字點名這一族）。
@@ -76,9 +75,8 @@
                 <div class="modals-footer">
                     <div class="button-row center">
                         <button type="button" class="button button-border btn-close-modals" data-i18n="action.cancel">取消</button>
-                        {# 送的是 `PATCH /users/{id}` 的 group_ids，而該端點在 404 之後**無條件**呼叫
-                             `_assert_tenant_manageable`（product），對平台角色持有者回 403。
-                             平台管理員／稽核員就寄生在一般租戶裡，`GET /users` 會把他列進這張勾選清單，
+                        {# 送出的是這幾位使用者的群組歸屬，而那條寫入路徑**無條件**拒絕平台角色持有者。
+                             平台管理員／稽核員就寄生在一般租戶裡，名冊會把他列進這張勾選清單，
                              所以這條路按得到；同一道守衛在 5-5-1 的列儲存鈕上就是具名 warning。
                              補了 warning 之後**不能再掛 btn-close-modals**：那是「取消勾選那一位就能修正」
                              的窗內驗證，每點必關窗會把使用者剛勾好的內容一起丟掉（§5）。 #}

@@ -26,7 +26,7 @@ document.addEventListener("DOMContentLoaded", function () {
             // 摘要列與 detail 列成對出現，故資料列＝tbody 內非 .detail-row 的那些。
             var rows = block.querySelectorAll(".sources-tbody > tr:not(.detail-row)");
             // **比對「序號」欄的值，不是拿 rows[no-1]**：那一欄是該筆來源的引用編號
-            // （source_no，見 sources-block.html 檔頭），agent 模式跨工具呼叫累加、對外投影又會
+            // （見 sources-block.html 檔頭），agent 模式跨工具呼叫累加、給到畫面前又會
             // 收掉候選池，兩件事都讓「第 N 號＝第 N 列」不成立——用位置定位會高亮到別筆，
             // 而畫面上看起來一樣「有反應」。序號是第二欄（第一欄是展開鈕）。
             var row = null;

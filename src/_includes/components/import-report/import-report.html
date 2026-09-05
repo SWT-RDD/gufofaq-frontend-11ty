@@ -1,30 +1,28 @@
 {# 匯入結果回報：Excel（1-1-6）與 PDF/Word（1-2-1 送出後）共用同一塊，故切成元件（GUIDELINE §3-3 第 1 條）。
-     出處：gufofaq-saas product 的 `import_excel` 與
-     `batch_import_documents`，兩支的回應同形，都帶 `inserted`／`updated`／`failed` 三個計數
-     （`_tally`）；`FIDELITY_REPORT_KEYS` 那一族（`structure` 抽取統計／`dropped_links`／
-     `unprocessable_tables`／`suspected_headerless_tables`）是**逐檔**的
-     （批次端點放在 `results` 的每一項裡），故本元件也做成逐檔一塊、標上檔名——彙總成一份的話，
+     兩種匯入的結果同形，都帶新增／更新／失敗三個計數；保真回報那一族（抽取統計／被剝除的
+     連結／無法保真轉換的表格／疑似沒有表頭的表格）是**逐檔**的（批次匯入的結果清單每一項各帶
+     一份），故本元件也做成逐檔一塊、標上檔名——彙總成一份的話，
      使用者看得到「有 2 個連結被移除」卻不知道是哪一個檔，那條訊息就不可行動了。
 
-     三計數必須一起顯示：`updated` 是「同 external_key 的舊版被取代」，只報「匯入 N 筆」的話，
+     三計數必須一起顯示：「更新」是「同一筆既有資料的舊版被取代」，只報「匯入 N 筆」的話，
      使用者分不出這次是新增了 N 筆，還是把 N 筆舊資料換掉了。
 
-     ── 索引同步（`sync_state`）───────────────────────────────────────────────────────
-     **這一塊在的理由是一條 CRITICAL 缺陷**：匯入回 200／`failed: 0`／筆數正確，而 GufoRAG 索引裡
-     一列都沒有——上游 celery 的 `FieldMapperError` 整檔失敗，product 這一側完全看不到，於是同一份檔
-     會被重匯好幾次、每一次都以為成功。後端因此有 `GufoRagClient.sync_outcome()`（去問 manager 的
-     `operations/history`），六個匯入入口的回應都帶 `sync_state`，本元件就是它在畫面上的落點。
-     **它與上面那行三計數是兩個不同的層**：三計數講的是「資料進了 product 的資料集」，這一塊講的是
-     「進了 GufoRAG 的索引」。前者成功、後者失敗，就是「匯入成功但搜不到」——正是這條缺陷的形狀。
+     ── 索引同步 ───────────────────────────────────────────────────────────────────
+     **這一塊在的理由是一種靜默的整批遺失**：匯入回報成功、失敗筆數 0、筆數正確，而檢索索引裡
+     一列都沒有——寫索引是另一條非同步管道，它整檔失敗時匯入這一側完全看不到，於是同一份檔
+     會被重匯好幾次、每一次都以為成功。所以每個匯入入口的結果都要帶一份索引同步狀態，
+     本元件就是它在畫面上的落點。
+     **它與上面那行三計數是兩個不同的層**：三計數講的是「資料進了資料集」，這一塊講的是
+     「進了檢索索引」。前者成功、後者失敗，就是「匯入成功但搜不到」——正是這條缺陷的形狀。
      所以兩者相鄰、而且措辭刻意分開（一個說「新增／更新」，一個說「索引」）。
 
-     四態的視覺與文案（`state` 的值域，四種在畫面上必須長得不一樣）：
+     四態的視覺與文案（狀態的值域，四種在畫面上必須長得不一樣）：
        pending    藍（`.is-progress`）「同步中」  ——任務已派出、結果還不知道（sync 是非同步的）。
                   **最常見**：匯入當下多半就是這個，所以 1-1-6 的示範是它，1-2-1 那批也留一檔演它。
                   **絕對不可以看起來像成功**：這整條缺陷的成因就是「還不知道」與「成功了」同形，
                   所以它不是綠勾而是進行中的藍，並用一句 hint 告訴使用者可以稍後回來看。
-       succeeded  綠（`.is-pass`）「已寫入索引」——上游確認寫進索引了。沒有 hint（沒有事要做）。
-       failed     紅（`.is-fail`）「寫入索引失敗」——上游明確失敗（`failed_count` 可能 > 0，也可能
+       succeeded  綠（`.is-pass`）「已寫入索引」——索引那一側確認寫進去了。沒有 hint（沒有事要做）。
+       failed     紅（`.is-fail`）「寫入索引失敗」——明確失敗（索引失敗筆數可能 > 0，也可能
                   整檔被拒）。正確動作＝修好資料重匯。
        unknown    黃（`.is-warn`）「查不到結果」  ——**查結局這件事本身失敗了**，不是匯入失敗。
                   資料已送出、管道已派工 ⇒ 正確動作＝拿關聯編號問維運，**絕對不要重匯**。
@@ -34,10 +32,10 @@
                   ——這正是 unknown 的定義。不原樣印那個機器碼（狀態詞是 chrome、不是值）。
      這張對照表（態 → 變體 ＋ key ＋ 繁中）**住在 components/import-sync-tag**：它有兩個消費端
      （這裡的彙總那一顆、1-2-1 結果表格逐列那幾顆），留在這裡就會有第二份會分岔的抄本。
-     那支元件另外有一顆**缺席態**（`.is-faint`「沒有索引任務」）給「上游根本沒給這一格」的那一列用。
+     那支元件另外有一顆**缺席態**（`.is-faint`「沒有索引任務」）給「根本沒有這一格」的那一列用。
 
      ── 逐檔 vs 彙總（`importSyncPerFile`）───────────────────────────────────────────
-     **批次端點的 `sync_state` 是逐檔一份**（`results[]` 每一筆各帶一份：一個檔一條 celery 管道、
+     **批次匯入的索引同步狀態是逐檔一份**（結果清單每一筆各帶一份：一個檔一條索引管道、
      各自成敗），所以「一個 state」這種介面在批次頁上是錯的形狀：壓成一顆彙總徽章之後，
      三檔成功一檔 unknown 會整塊變成「查不到結果」——那三個成功的檔在畫面上消失了；而
      failed 那一句「重新匯入」在批次裡也講不出是哪一份，照著做很可能把成功的那幾份一起重匯，
@@ -47,54 +45,50 @@
      彙總的取值是**逐檔優先序 unknown > failed > pending > succeeded 取最安全的那一邊**：
      unknown 蓋掉 failed 是刻意的——兩者的指示完全相反（failed 要修好資料重匯、unknown 是
      絕對不要重匯），而「不要重匯」是不會製造重複資料的那一邊。
-     **`ok: false` 的那一列在同步上是「沒有這一格」，不是「失敗」**：連送出都沒成功，沒有管道
+     **連送出都失敗的那一列在同步上是「沒有這一格」，不是「失敗」**：連送出都沒成功，沒有管道
      可查，給它一顆「寫入索引失敗」是在講一件沒發生過的事（那一列的匯入錯誤已經寫在訊息欄）。
      那一格畫缺席態，而不是留白——留白會被讀成版面漏畫。
 
-     **「不要重匯」與「稍後回來看」都做成 key、不靠後端那句 `reason` 承載**：`reason` 是 product 產的
-     業務字串（我方一句話＋關聯編號），不進字典 ⇒ 英文租戶讀到的是繁中。而「不要重匯」是這一態
-     **最關鍵的一句話**（搞錯就是重複資料），不可以只活在一個不翻譯的欄位裡。`reason` 照舊直接渲染，
-     它負責的是「哪一筆、編號多少」，hint 負責「你該做什麼」。
+     **「不要重匯」與「稍後回來看」都做成 key、不靠那句原因字串承載**：原因是執行期產生的業務
+     字串（一句話＋關聯編號），不進字典 ⇒ 英文租戶讀到的是繁中。而「不要重匯」是這一態
+     **最關鍵的一句話**（搞錯就是重複資料），不可以只活在一個不翻譯的欄位裡。原因字串照舊直接
+     渲染，它負責的是「哪一筆、編號多少」，hint 負責「你該做什麼」。
 
-     **`indexed_count`／`failed_count` 是 `null` 時畫「—」，不畫 `0`**（§6：「沒量到」與「零筆」是兩件
+     **索引筆數／索引失敗筆數「沒量到」時畫「—」，不畫 `0`**（§6：「沒量到」與「零筆」是兩件
      事）。pending 與 unknown 兩態本來就量不到，示範因此是兩格「—」——這一頁同時是這條規矩的
      可見處。實作上兩個參數**以字串傳入**（`"12"`／`"0"`），理由同 components/step-flow 檔頭那一條：
-     值域含 0 的欄用 `{% if %}` 真值判斷時，nunjucks 把數字 `0` 判成 false ⇒ 上游真的回 0 那一次會
+     值域含 0 的欄用 `{% if %}` 真值判斷時，nunjucks 把數字 `0` 判成 false ⇒ 真的量到 0 的那一次會
      靜默變成「—」，而 0 與 null 正是這一格要分開的兩件事。
 
      頁面 include 前 set（GUIDELINE §6，資料因頁面而異）：
        importCounts = { inserted, updated, failed }（必填）
-       importSyncState（必填，六個匯入入口都回得出來）＝`sync_state.state`：
+       importSyncState（必填，每個匯入入口都給得出來）＝索引同步狀態：
          "pending" / "succeeded" / "failed" / "unknown"。外面那圈 `{% if %}` 是「呼叫端忘了 set」
          的守門、不是可選功能——沒有這一塊的匯入畫面就是缺陷本身。
        importSyncPerFile（選填，布林）＝「逐檔的同步明細由使用頁自己畫」。批次頁 set `true`：
          彙總標籤改講「這一批」，而下面兩顆計數槽整排收掉（理由見那一段註解）。
          **這個旗標不吃掉 `importSyncReason`**：關聯編號絕不可以無聲消失，真的 set 了就照畫
          （但批次頁不該 set——逐檔的 reason 畫在那張表的同步格裡）。
-       importSyncIndexed／importSyncFailed（選填，**字串**）＝`sync_state.indexed_count`／
-         `failed_count`。不知道就不要 set（別 set `"0"`）：沒 set ＝ 畫「—」。
+       importSyncIndexed／importSyncFailed（選填，**字串**）＝索引筆數／索引失敗筆數。
+         不知道就不要 set（別 set `"0"`）：沒 set ＝ 畫「—」。
          `importSyncPerFile` 為真時不要 set（會被收掉）。
-       importSyncReason（選填）＝`sync_state.reason`。只在 failed／unknown 有值；product 產的業務
-         字串（我方一句話＋關聯編號，不是上游原文），不翻、不掛 data-i18n（同 `importLabelSyncWarning`）。
-       importLabelSyncWarning（選填）＝`import_excel` 那一支 **200 態**帶回來的
-         `label_sync_warning`（product `dataset.label_sync_warning`：「匯入成功，但顯示欄位標籤
-         未能即時同步到檢索設定」）。匯入本身已經落地，所以 product 刻意不回 5xx、也不吞掉——
-         `_do_excel_mapping_import` 那一段的註解逐字寫著「而是大聲記錄（不靜默）+ 回 200 帶
-         label_sync_warning，讓呼叫端知道標籤未即時投影」。沒有這一格，使用者會看到一次乾淨的
-         「匯入成功」，而檢索設定上的欄位標籤還是舊的。訊息是 product 產的業務字串、不翻
-         （同 1-1-3 的 `header_warning`）。
-         **只有 Excel 那一支給得出來**：批次端點的 `FIDELITY_REPORT_KEYS` 只複製
-         `structure`／`dropped_links`／`unprocessable_tables`／`suspected_headerless_tables`
-         四把鍵到逐檔條目，`label_sync_warning` 不在其中，故 1-2-1 不 set。
+       importSyncReason（選填）＝那一態的原因字串。只在 failed／unknown 有值；執行期產生的業務
+         字串（一句話＋關聯編號，不是原始錯誤訊息），不翻、不掛 data-i18n（同 `importLabelSyncWarning`）。
+       importLabelSyncWarning（選填）＝Excel 匯入**成功**時仍可能帶回來的標籤同步警語
+         （「匯入成功，但顯示欄位標籤未能即時同步到檢索設定」）。匯入本身已經落地，所以這件事
+         刻意不算成失敗、也不靜默吞掉。沒有這一格，使用者會看到一次乾淨的
+         「匯入成功」，而檢索設定上的欄位標籤還是舊的。訊息是執行期產生的業務字串、不翻
+         （同 1-1-3 的匯入表頭警語）。
+         **只有 Excel 匯入給得出來**：批次匯入的逐檔回報只含抽取統計／被剝除的連結／無法保真
+         轉換的表格／疑似沒有表頭的表格四項，標籤同步警語不在其中，故 1-2-1 不 set。
        importFileReports = [{ filename, structure?, droppedLinks?, unprocessableTables?, suspectedHeaderlessTables? }]（選填）
-         filename＝**原始檔名**（`results[].filename` 是 `Path(f.filename).name`；Excel 那一支是
-           `import_excel` 由 `stored_name` 剝掉前綴的 `orig_filename`），不是落地檔名
-         structure = [{ labelKey, label, value }]——word 與 pdf 的欄位不同（product 的
-           DocxStats 是段落/表格/表格列數；product 的 PdfStats 是頁數/表格/表格列數/
-           沒有表頭的續表/有格線卻抽不出表格的頁數），故做成通用 label-value 列而不是寫死的句子
-         droppedLinks = { urls: [...] }——HTML→Markdown 剝掉的連結；**筆數由陣列推導**
-           （上游兩處都是 `{"count": len(dropped_urls), "urls": dropped_urls}`，那個 `count`
-           定義上就等於陣列長度，另烤一個字面量只是多一個會說謊的地方；同下面兩個同形欄位）
+         filename＝**使用者上傳時的原始檔名**，不是落地檔名（落地檔名帶前綴，使用者認不得）
+         structure = [{ labelKey, label, value }]——word 與 pdf 的欄位不同（word 是段落／表格／
+           表格列數；pdf 是頁數／表格／表格列數／沒有表頭的續表／有格線卻抽不出表格的頁數），
+           故做成通用 label-value 列而不是寫死的句子
+         droppedLinks = { urls: [...] }——HTML→Markdown 剝掉的連結；**筆數由陣列推導**、
+           不另收一個計數欄位（那個數定義上就等於陣列長度，另烤一個字面量只是多一個會說謊的
+           地方；同下面兩個同形欄位）
          unprocessableTables = [ 描述, ... ]——無法保真轉換的表格；筆數由陣列推導，不另烤一個數字（§6）
          suspectedHeaderlessTables = [ 描述, ... ]——**轉出來了但欄名可能不對**的表格（多欄排版裡
            被切成兩段、後半段沒有表頭）。與 unprocessableTables 分開兩塊，因為兩者要使用者做的事
@@ -102,13 +96,12 @@
            混成一塊會告訴使用者一件不是事實的事
 
      被剝除連結區塊是「把連結搬回答案端」的入口：連結在匯入時就從內文剝掉了，要讓它回到答案裡
-     只能靠〈對話設定 → 出口替換規則〉在生成後替換（product 的
-     `output_replacements`）。「複製為出口替換規則」把每個網址轉成一條可直接貼進「替換內容」欄的
-     值 `[${0}](網址)`（`${0}`＝命中的別名文字），別名由租戶自己填——匯入端剝連結時只留得下 href，
-     拿不到原始的錨文字（product 的 `_render_link`）。
-     ⚠️ **這份清單只收「表示不出來」的那些**：能安全表示成 markdown 的（絕對位址且協定在
-     `_SAFE_SCHEMES` 內）在上游就地轉成 `[文字](網址)`、根本不會落進來；剩下的是相對路徑、
-     `javascript:`、片段錨點、沒有 href。示範資料要照這個形狀給，否則演的是一個上游產不出來的清單（§6）。
+     只能靠〈對話設定 → 出口替換規則〉在生成後替換。「複製為出口替換規則」把每個網址轉成一條
+     可直接貼進「替換內容」欄的值 `[${0}](網址)`（`${0}`＝命中的別名文字），別名由租戶自己填
+     ——匯入端剝連結時只留得下 href，拿不到原始的錨文字。
+     ⚠️ **這份清單只收「表示不出來」的那些**：能安全表示成 markdown 的（絕對位址、而且協定在
+     安全協定清單內）在匯入當下就地轉成 `[文字](網址)`、根本不會落進來；剩下的是相對路徑、
+     `javascript:`、片段錨點、沒有 href。示範資料要照這個形狀給，否則演的是一個產不出來的清單（§6）。
      複製是純前端互動（GUIDELINE §5 ④），行為在 import-report.js 當場做，toast 走 data-toast 委派。 #}
 <div class="block flex-row column gap-16">
     {# 三計數串成一句：前綴／中綴 key 夾資料槽，寫法沿用同一批的批次結果摘要（1-2-1 的
@@ -117,7 +110,7 @@
          轉 React 時併成單一插值 key（GUIDELINE §7 對照表：槽裡是資料就可以併）。 #}
     <div class="text-md text-bold"><span data-i18n="dataImport.countInsertedPrefix">新增</span> {{ importCounts.inserted }}<span data-i18n="dataImport.countUpdatedMid">、更新</span> {{ importCounts.updated }}<span data-i18n="dataImport.batchSummaryFailMid">、失敗</span> {{ importCounts.failed }}</div>
 
-    {# ── 索引同步狀態（`sync_state`）。四態的視覺／文案／判準與參數契約見檔頭。 ──────────────
+    {# ── 索引同步狀態。四態的視覺／文案／判準與參數契約見檔頭。 ────────────────────────────
          **排在三計數的正下方、標籤同步警語的上方**：它回答的是「這次匯入到底有沒有落地」，
          是這一整塊回報裡最要緊的一句；標籤同步警語講的是「落地了、但檢索設定的欄位標籤沒跟上」，
          是次一級的枝節。
@@ -134,12 +127,12 @@
         <div class="flex-row align-items-center gap-8 flex-wrap">
             {# 標籤兩種、由 `importSyncPerFile` 挑：逐檔明細另外畫在使用頁時，這一顆是**彙總**
                  （旁邊那張表每一列自己也有一顆），標籤不講明就會被讀成第五顆徽章。單檔頁的
-                 「索引同步：」不動——那一頁只有一份 `sync_state`，講「這一批」是說謊。 #}
+                 「索引同步：」不動——那一頁只有一份索引同步狀態，講「這一批」是說謊。 #}
             {% if importSyncPerFile %}<span class="text-bold" data-i18n="dataImport.syncStateBatchLabel">這一批的索引同步：</span>{% else %}<span class="text-bold" data-i18n="dataImport.syncStateLabel">索引同步：</span>{% endif %}
             {% set syncTagState = importSyncState %}
             {% include "components/import-sync-tag/import-sync-tag.html" %}
         </div>
-        {# 兩顆計數槽：沒 set ＝ 上游回 null ＝ 畫「—」（§6），**不畫 0**。
+        {# 兩顆計數槽：沒 set ＝ 沒量到 ＝ 畫「—」（§6），**不畫 0**。
              逐檔模式整排收掉：混合態下彙總值必然是「—」（一檔量不到，總數就量不到），而那會把
              另外幾檔已經寫進索引的筆數藏起來——同一批數字兩個投影、其中一個還恆為「—」。
              逐檔的這兩格畫在使用頁的結果表格裡。 #}
@@ -160,14 +153,14 @@
            `role="alert"` 只給 failed／unknown 兩句（要人動手的那兩態），理由同下面那句標籤同步
              警語：送出後才出現的訊息。pending／succeeded 沒有要做的事，不搶播報。 #}
         {% if importSyncState == "pending" %}<p class="text-gray m-0" data-i18n="dataImport.syncPendingHint">索引是另一條非同步管道寫的，這一刻還量不到結果，而這一頁不會自己更新。過幾分鐘回到這個資料集或〈資料健檢〉看一次就知道有沒有進去；在那之前不要重新匯入，那會產生重複資料。</p>{% elif importSyncState == "failed" %}<p class="text-red m-0" role="alert" data-i18n="dataImport.syncFailedHint">資料已經寫進資料集，但索引沒有建起來，所以這一批（或其中幾筆）現在搜不到。照該檔標示的原因把資料修好之後，只重新匯入標示為「寫入索引失敗」的檔案，不要整批重匯。</p>{% elif importSyncState != "succeeded" %}<p class="m-0" role="alert" data-i18n="dataImport.syncUnknownHint">查詢同步結果這件事本身失敗了，不代表匯入失敗——資料已經送出、索引任務也已經派工。請不要重新匯入，那會產生重複資料；把該檔那句原因裡的關聯編號交給維運人員查。</p>{% endif %}
-        {# `reason`＝product 產的業務字串（我方一句話＋關聯編號），只在 failed／unknown 有值。
+        {# 原因字串＝執行期產生的業務字串（一句話＋關聯編號），只在 failed／unknown 有值。
              不翻、不掛 data-i18n（同下面的 `importLabelSyncWarning`）——它負責「哪一筆、編號多少」，
              上面那句 hint 負責「你該做什麼」。 #}
         {% if importSyncReason %}<p class="m-0" role="alert">{{ importSyncReason }}</p>{% endif %}
     </div>
     {% endif %}
 
-    {# 標籤同步警語（200 態）。文字是 product 給的業務字串，不掛 data-i18n（同 1-1-3 的
+    {# 標籤同步警語（匯入成功態）。文字是執行期產生的業務字串，不掛 data-i18n（同 1-1-3 的
          `excelHeaderWarning`）；`role="alert"` 是因為它與整塊回報一樣是送出後才出現的訊息。 #}
     {% if importLabelSyncWarning %}<p class="text-red m-0" role="alert">{{ importLabelSyncWarning }}</p>{% endif %}
 

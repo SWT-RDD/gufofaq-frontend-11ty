@@ -7,12 +7,12 @@ import { distDoc, tagEvents } from "../../_lib/html.mjs";
 import { platformNavPages } from "../../_lib/inventory.mjs";
 import { fail } from "../../_lib/probe.mjs";
 
-test("§5 5-5-1 儲存鈕要演出後端每一道守衛（降級 400／停用 400／平台角色 403），不能只有成敗兩態", () => {
+test("§5 5-5-1 儲存鈕要演出每一道守衛（降級／停用／平台角色三道），不能只有成敗兩態", () => {
     // 只列「成功|失敗」的話，那幾句可行動的訊息無處可放，使用者只看到「儲存失敗」而不知道要先指派另一位管理者。
     // 這裡寫死 `toast.length === 4` ＋ types 陣列逐項比對的話，等於斷言「現在剛好有幾道守衛」。
-    // 那顆魔數會把漏掉的第三道釘住——product 的降級（"cannot remove the last tenant admin"）
-    // 與停用（"cannot deactivate the last active tenant admin"）是兩條不同訊息，而這顆儲存鈕同時送
-    // is_admin 與 is_active，兩條都打得到。補齊守衛的人會被這條測試擋下來，於是不補。
+    // 那顆魔數會把漏掉的第三道釘住——「不可降級最後一位租戶管理者」與「不可停用最後一位在職
+    // 租戶管理者」是兩道不同的守衛、兩句不同的話，而這顆儲存鈕同時改得動管理者旗標與啟用狀態，
+    // 兩道都打得到。補齊守衛的人會被這條測試擋下來，於是不補。
     // 判準改成「形狀」而不是「幾段」：首段 success、末段 error、中間全是使用者修得掉的 warning 且 ≥2 段。
     const html = distDoc("5-5-1_userManagement.html");
     const btn = html.match(/<button[^>]*data-i18n-data-toast="toast\.saveMember"[^>]*>/);
@@ -29,9 +29,9 @@ test("§5 5-5-1 儲存鈕要演出後端每一道守衛（降級 400／停用 40
     assert.equal(en.length, toast.length, "en.json 的 toast.saveMember 段數要跟 markup 一致");
     // 逐條語意（不綁索引，補新守衛時不會位移）
     const body = en.slice(1, -1).join(" | ");
-    assert.match(body, /remove the last tenant admin/i, "降級那道（product 的 `_assert_not_last_tenant_admin`）要講得出「最後一位管理者」");
-    assert.match(body, /last active tenant admin/i, "停用那道（product 的 `_assert_not_last_active_tenant_admin`）要講得出「最後一位在職管理者」");
-    assert.match(body, /platform role/i, "403 那道要講得出是「平台角色持有者」");
+    assert.match(body, /remove the last tenant admin/i, "降級那道守衛要講得出「不可降級最後一位租戶管理者」");
+    assert.match(body, /last active tenant admin/i, "停用那道守衛要講得出「不可停用最後一位在職租戶管理者」");
+    assert.match(body, /platform role/i, "平台角色那道要講得出是「平台角色持有者」");
 });
 
 test("§5 平台入口要宣告最低角色，且值只能是 auditor／admin（唯讀稽核員不是「不是管理員」）", () => {
@@ -56,7 +56,7 @@ test("§5 平台入口要宣告最低角色，且值只能是 auditor／admin（
 });
 
 test("§5 整頁需要平台角色的頁面：每個控制項都要落在宣告了層級的容器內（否則稽核員會看到按不動的鈕）", () => {
-    // 把整塊平台管理 gate 在 is_platform_admin 的話：唯讀稽核員在 UI 上等於不存在；
+    // 把整塊平台管理都收在 admin 那一級的話：唯讀稽核員在 UI 上等於不存在；
     // 反過來破壞性控制無條件渲染，稽核員每顆都按得到、每顆都失敗。這條把「哪一顆需要哪一級」變成可驗的宣告。
     const nav = platformNavPages();
     const CONTROL = new Set(["button", "input", "select", "textarea"]);
@@ -97,8 +97,8 @@ test("§5 整頁需要平台角色的頁面：每個控制項都要落在宣告�
 });
 
 test("§5 稽核日誌的跨租戶篩選是 auditor 的能力（標成 admin 會把唯讀稽核員排除掉）", () => {
-    // product 的 `list_audit` 用 is_platform_auditor 判斷 scope=all／tenant_id，
-    // 那支端點明寫「用 is_platform_admin 判斷會把唯讀稽核員一起排除掉」。
+    // 跨租戶篩選（全部租戶／指定某一個）是**稽核員**這一級就有的能力：宣告成 admin 的話，
+    // 唯讀稽核員連這個篩選都看不到——而讀跨租戶的稽核日誌正是那個角色存在的理由。
     const html = distDoc("5-7_auditLog.html");
     for (const id of ["auditScopeAllInput", "auditTenantInput"]) {
         const idx = html.indexOf(`id="${id}"`);

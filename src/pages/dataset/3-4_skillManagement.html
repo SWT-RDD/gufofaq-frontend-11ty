@@ -14,12 +14,12 @@ permalink: 3-4_skillManagement.html
     {% include "ui/breadcrumb/breadcrumb.html" %}
 </div>
 
-{# 租戶自訂 skill 管理（SaaS 新需求）。逆向自 gufofaq-saas product：skill＝對 GufoRAG chatbot skill CRUD 的租戶隔離代理；一個 skill＝
-     一段指令＋一組工具白名單，以一顆工具暴露給問答 agent，被呼叫時跑一個 scoped 子迴圈。
-     能力閘 settings:read 檢視／settings:write 編輯（skill 是 agent 的行為設定，不是知識資產，
-     故與術語表的 data 閘刻意不同），真正把關在 product。
+{# 租戶自訂 skill 管理：一個 skill＝一段指令＋一組工具白名單，以一顆工具暴露給問答 agent，
+     被呼叫時跑一個 scoped 子迴圈；租戶之間互相隔離。
+     能力閘 settings:read 檢視／settings:write 編輯（skill 是 agent 的行為設定、不是知識資產，
+     故與術語表的 data 閘刻意不同）。
      版型比照 3-2_glossaryManagement（新增區＋清單表＋條件開窗 modal）。示範 3 筆。 #}
-{# id＝Skill 主鍵（product 的 `skill_id: int`）。**不可拿 loop.index 當列鍵**：
+{# id＝這顆 Skill 的識別碼。**不可拿 loop.index 當列鍵**：
      這張表刪得掉列，位置不是身分——刪掉前一列之後，後面每一列的列鍵都會往前頂一格，
      React 端的 key 與逐列動作的目標會一起指錯人（§6 列鍵）。 #}
 {% set skills = [
@@ -33,40 +33,31 @@ permalink: 3-4_skillManagement.html
 {# 新增 skill：名稱（必填）＋用途說明（必填）＋新增鈕。細部設定（執行指令、工具白名單、
      迭代上限）在建立後於編輯器內完成——一次要填的欄位太多會讓建立這件事變得沉重。
      五態 toast：成功／權限不足／必填未填／名稱格式或撞內建工具名／失敗。
-   **這兩欄的守衛在 chatbot**：GufoRAG chatbot 的 `_validate_name` 有五道出口（非字串、markup、
-     `MAX_SKILL_NAME_LEN`、`SKILL_NAME_RE` 格式、`name in BUILTIN_TOOL_NAMES`）——**空名走的是
-     格式那一道**（`^[a-z0-9]+(-[a-z0-9]+)*$` 不接受空字串），不是一道獨立的空值檢查；
-     `_validate_description` 有四道（非字串、空值、長度、markup）。
+   **兩欄各有一組驗證**：名稱五道（不是字串、含 markup、超過長度、格式不符、與內建工具同名）
+     ——**空名走的是格式那一道**（`^[a-z0-9]+(-[a-z0-9]+)*$` 不接受空字串），不是一道獨立的
+     空值檢查；用途說明四道（不是字串、空值、長度、markup）。
    ⚠️ **第 4 段的字面同時受兩條裁定管，兩條都要記住**：
-     ① **不列「名稱已存在」**：chatbot 沒有 `UNIQUE(tenant_id, name)`，`_validate_name` 逐字寫著
-        「這裡刻意不查『同名的 skill 是否已存在』，別加回來」——`tenant_id` 是呼叫端自填的 tag，
-        那個分組鍵兩個方向都錯（跨 tag 挑兩顆同名進同一份 config 是真撞名卻擋不到，同一 tag 底下
-        永遠不會同台的兩顆是假撞名卻擋錯人）。唯一性的執法點在**掛載面**，落點是 5-2 的
-        `toast.saveProfileConfig`（見該頁那一段），不在這一顆鈕上。
-     ② **要列「不可與內建工具同名」**（`name in BUILTIN_TOOL_NAMES`，值域正本在 GufoRAG chatbot）：
-        skill 的名稱**就是**送進模型的工具名，而 `SKILL_NAME_RE` 允許純小寫英數 ⇒ `calculate`
-        這一族內建工具名全是合法的 skill 名稱；撞上時執行期會丟掉其中一顆、只在後端記一條 ERROR，
-        設定者零訊號。這一道使用者改得掉（換個名字）⇒ 併進第 4 段 warning、不另開一段：
-        它與長度、格式同屬「名稱這一欄填錯了」。
-     兩者的 `SkillValidationError` 經 product 的 `proxy_upstream`（只有 `UPSTREAM_USER_INPUT_CODES` 那一族轉 400）
-     映成 400。**product 這一側不是「只做 .strip()」**：`create_skill` 有 `require_capability`
-     的 403、`SkillIn` 三個文字欄 `max_length` 的 422，以及 `assert_skill_input_schema_within_limit`／
-     `assert_skill_allowed_tools_within_limits`（product）與
-     `assert_owned_allowed_tools`（product）的 400／502。那三道驗的是 `input_schema`
-     與工具白名單，**本表單一個都填不到**（細部設定在編輯器 modal 內完成），所以這顆鈕只列得到
-     上面五段（`require_capability` 的 403 ＝**第 2 段 warning**，GUIDELINE §4：能力不足照樣按得下去、
-     結果列進 data-toast）。product 唯一沒驗的是「名稱為空」，那一道只在 chatbot。
+     ① **不列「名稱已存在」**：skill 名稱**沒有**唯一性檢查，而且刻意不加——同名這件事只有在
+        「兩顆同時掛進同一份設定檔」時才成立，換任何一個分組鍵去判都會兩個方向都錯（跨組挑兩顆
+        同名進同一份設定是真撞名卻擋不到，同一組底下永遠不會同台的兩顆是假撞名卻擋錯人）。
+        唯一性的執法點在**掛載面**，落點是 5-2 的 `toast.saveProfileConfig`（見該頁那一段），
+        不在這一顆鈕上。
+     ② **要列「不可與內建工具同名」**：skill 的名稱**就是**送進模型的工具名，而名稱格式允許純
+        小寫英數 ⇒ `calculate` 這一族內建工具名全是合法的 skill 名稱；撞上時執行期會丟掉其中
+        一顆、只在日誌留一條 ERROR，設定者零訊號。這一道使用者改得掉（換個名字）⇒ 併進第 4 段
+        warning、不另開一段：它與長度、格式同屬「名稱這一欄填錯了」。
+     **這張表單填不到的守衛不列**：執行指令的參數結構與工具白名單另有自己的長度與擁有權檢查，
+     但那些欄位要在編輯器 modal 裡才填得到，所以這顆鈕只列得到上面五段（權限不足＝**第 2 段
+     warning**，GUIDELINE §4：能力不足照樣按得下去、結果列進 data-toast）。
    **兩欄的上限與格式落地成 markup**（契約欄位 §6；數字走資料節點、不烤進譯文 §4-2）：
-     `maxlength` 與常駐 hint 的出處逐字＝GufoRAG chatbot 的
-     `MAX_SKILL_NAME_LEN = 64`／`MAX_SKILL_DESCRIPTION_LEN = 1024`（由同一支模組的 `_validate_name`／
-     `_validate_description` 執法），名稱的格式判準＝同一支模組的 `SKILL_NAME_RE`。
-     `SKILL_NAME_RE` 不掛 `pattern`：§4 明訂驗證結果走 toast 的 warning 分支，長度才是宣告在
+     名稱 64 字、用途說明 1024 字，名稱格式 `^[a-z0-9]+(-[a-z0-9]+)*$`——這三個值在這裡宣告。
+     格式**不掛 `pattern`**：§4 明訂驗證結果走 toast 的 warning 分支，長度才是宣告在
      控制項上的契約（同 skill-editor-modal 的做法；名稱那段 hint 兩處共用同一組 key，
-     不另立第二種說法）。兩欄的 `contains_markup` 也在同兩支驗證裡，故 warning 段一併講明。 #}
+     不另立第二種說法）。兩欄都不可含 XML/HTML 標籤，故 warning 段一併講明。 #}
 <div class="block mb-16 flex-row column gap-16">
-    {# ⓘ 說明：markup 同既有 info-btn 六件組（§1-2 無 html 元件契約）。①出處：本頁上方檔頭
-         「新增 skill：名稱（必填）＋用途說明（必填）＋新增鈕」一段，與 product 的
-          `create_skill`／`SkillIn`——這顆鈕只建立名稱與用途說明，
+    {# ⓘ 說明：markup 同既有 info-btn 六件組（§1-2 無 html 元件契約）。①講的是本頁上方檔頭
+         「新增 skill：名稱（必填）＋用途說明（必填）＋新增鈕」那一段——這顆鈕只建立名稱與
+         用途說明，
          用途說明是 agent 決定何時自動呼叫這顆 skill 的依據；執行指令、工具白名單、迭代次數
          上限留到建立後在編輯器裡設定（同檔頭「細部設定……在建立後於編輯器內完成」）。 #}
     <div class="flex-row align-items-center gap-8">
@@ -114,7 +105,7 @@ permalink: 3-4_skillManagement.html
 {% set helpModalTitleKey = "help.settings.addSkill.title" %}
 {% set helpModalTitle = "新增 Skill 說明" %}
 {% set helpModalWhatKey = "help.settings.addSkill.what" %}
-{% set helpModalWhat = "這一區用來新增一顆 Skill：填入名稱與用途說明並送出，GufoRAG chatbot 就會建立一份新的指令與工具白名單定義；用途說明是 Agent 決定何時自動呼叫它的依據，實際的執行指令、工具白名單與迭代次數上限則留到建立後在編輯器裡設定。" %}
+{% set helpModalWhat = "這一區用來新增一顆 Skill：填入名稱與用途說明並送出，問答引擎就會建立一份新的指令與工具白名單定義；用途說明是 Agent 決定何時自動呼叫它的依據，實際的執行指令、工具白名單與迭代次數上限則留到建立後在編輯器裡設定。" %}
 {% set helpModalStateItems = [] %}
 {% set helpModalLimitRows = [] %}
 {% include "components/help-modal/help-modal.html" %}
@@ -122,34 +113,31 @@ permalink: 3-4_skillManagement.html
 {# Skill 清單：default-table。名稱／用途說明／版本／可用工具／狀態＋操作（編輯｜刪除）。
      編輯與刪除都需先選定「哪一個 skill」＝業務條件開窗，故用 hook class
      （.js-edit-skill／.js-delete-skill），不掛 data-open-modal（§5）。
-     版本欄反映 chatbot 的 active_version：每次存檔一筆不可變快照，進行中的對話綁當下版本，
+     版本欄反映目前生效的版本：每次存檔一筆不可變快照，進行中的對話綁當下版本，
      半路改不破在途對話——故這裡顯示版本而不是「最後修改時間」。示範 3 筆。
 
      ── 「可使用的工具」欄怎麼組（規格。只放一串示範字串的話，下一個人推不出規則）──────
-     這一欄＝把 `allowed_tools` 的**四個桶攤平成一行**，分隔符 `", "`。
+     這一欄＝把工具白名單的**四個桶攤平成一行**，分隔符 `", "`。
 
-     ① 順序：**內建 → 術語表 → 巢狀 skill → MCP**。逐字對回 GufoRAG chatbot
-        `_resolve_skill_tools` 逐段 `tools.extend` 的順序——那才是 agent 實際拿到這些工具的順序。
+     ① 順序：**內建 → 術語表 → 巢狀 skill → MCP**——那就是 agent 實際拿到這些工具的順序。
         **不採用編輯器窗四個勾選群組的排法**：那是版面，而這一欄描述的是執行期的東西
         （編輯器窗用的是同一份順序，全站只留一份桶序，見 skill-editor-modal）。
         **巢狀 skill 在 MCP 之前是撞名的優先序**（同名時先進來的勝、後面的被丟棄），
         理由逐條寫在 skill-editor-modal 桶序那一則。
-     ② 名字來源：內建＝`allowed_tools.builtin` 的字串原樣（識別字，不翻）；
-        術語表＝`GET /glossary` 的表名；巢狀 skill＝本頁清單的 name；MCP＝MCP 註冊表的 server 名。
-     ③ **名字解析不到時畫 `—`**（那一桶的那一筆，不是整欄）。白名單指向已刪資源是上游明文會
-        發生的狀態（`_resolve_skill_tools` 對每一種都記 ERROR）。畫 id 是答非所問——這一欄說的是
+     ② 名字來源：內建＝工具名原樣（識別字，不翻）；術語表＝3-2 那一頁的表名；
+        巢狀 skill＝本頁清單的 name；MCP＝MCP 註冊表的 server 名。
+     ③ **名字解析不到時畫 `—`**（那一桶的那一筆，不是整欄）。白名單指向已刪的資源是真的會
+        發生的狀態（每一種都只在日誌留一條 ERROR）。畫 id 是答非所問——這一欄說的是
         「這顆 skill 用得到哪些工具」，印一個內部編號回答不了它；整欄消失則會讓人以為沒設定過。
         同 3-1-1 群組欄解析不到時的做法。
-     ④ 四桶全空＝**合法狀態**（`_resolve_skill_tools` 的註解逐字寫著），那一格畫 `—`。
+     ④ 四桶全空＝**合法狀態**，那一格畫 `—`。
         它的意思是「這顆 skill 只靠指示做事、不呼叫任何工具」，不是缺資料。
      ⚠️ **不做 `+N` 折疊**：全站沒有任何一欄是那個形狀，而且折起來之後「用得到哪些工具」
         這個問題就得再點一次才答得出來——而這一欄存在的唯一理由就是回答它。 #}
 <div class="block flex-row column gap-16">
-    {# ⓘ 說明：markup 同既有 info-btn 六件組。①出處：本頁上方檔頭「Skill 清單……版本欄反映
-         chatbot 的 active_version……可使用的工具欄怎麼組」一節，與 product 的
-          `list_skills`／`_owned_skill`（逐租戶隔離取回）。這一區
-         列出的是名稱、用途說明、目前生效版本、彙總後可使用的工具與啟用狀態，並提供編輯、
-         試跑、啟用／停用與刪除的操作入口。 #}
+    {# ⓘ 說明：markup 同既有 info-btn 六件組。①講的是本頁上方檔頭「Skill 清單……版本欄反映
+         目前生效的版本……可使用的工具欄怎麼組」那一節：這一區列出的是名稱、用途說明、目前
+         生效版本、彙總後可使用的工具與啟用狀態，並提供編輯、試跑、啟用／停用與刪除的操作入口。 #}
     <div class="flex-row align-items-center gap-8">
         <div class="text-md text-bold" data-i18n="settings.skillList">Skill 清單</div>
         <button type="button" class="info-btn" title="Skill 清單說明" data-i18n-title="help.settings.skillList.title" data-open-modal="skillListHelpModal">
@@ -194,9 +182,8 @@ permalink: 3-4_skillManagement.html
                         <div class="btn-group">
                             <button type="button" id="skillEdit-{{ skill.id }}" aria-labelledby="skillRowName-{{ skill.id }} skillEdit-{{ skill.id }}" class="button button-border button-sm js-edit-skill" data-i18n="action.edit">編輯</button>
                             <button type="button" id="skillTry-{{ skill.id }}" aria-labelledby="skillRowName-{{ skill.id }} skillTry-{{ skill.id }}" class="button button-border button-sm js-try-skill" data-i18n="settings.trySkill">試跑</button>
-                            {# 啟用／停用：不開窗、直接送 PATCH（product SkillUpdateIn.enabled → chatbot
-                                 SkillUpdate.enabled；停用即不掛成工具，load_active_skill 回 None），
-                                 依 §5 ③ 掛 data-toast 列全結果。
+                            {# 啟用／停用：不開窗、按下去就送出（停用之後這顆 skill 不再被掛成
+                                 工具，agent 也就叫不到它），依 §5 ③ 掛 data-toast 列全結果。
                                  **狀態欄演了兩態，就一定要有路徑進得去、也出得來**：少了這一顆，
                                  畫面上示範的是一個改不動的狀態（§5）。 #}
                             {% if skill.enabled %}
@@ -209,9 +196,8 @@ permalink: 3-4_skillManagement.html
                     </td>
                 </tr>
                 {% else %}
-                {# 具名空狀態：「掛給設定檔才叫得到」有出處——刪 skill 的守衛逐字在查
-                     「有沒有任何 config 的 `skill_ids` 參照它」（GufoRAG chatbot 的
-                      `delete_skill`），也就是 skill 與設定檔之間確實隔著
+                {# 具名空狀態：「掛給設定檔才叫得到」不是猜的——刪 skill 的守衛就在查
+                     「有沒有任何設定檔還參照它」，也就是 skill 與設定檔之間確實隔著
                      一層綁定。只寫「無資料」的話，建完第一顆卻發現 agent 不理它的人查不到為什麼。 #}
                 <tr><td colspan="6" class="text-center text-gray" data-i18n="settings.noSkills">這個租戶還沒有 Skill。按上面的「新增 Skill」建第一個；建好之後還要在「對話設定」把它掛給設定檔，主 agent 才叫得到。</td></tr>
                 {% endfor %}
@@ -231,19 +217,18 @@ permalink: 3-4_skillManagement.html
 {% include "components/help-modal/help-modal.html" %}
 
 {# 試跑沙盒：把選定的 skill 臨時指派給**測試** config 跑一輪 Agent 問答，作者部署前就能看到
-     它實際被怎麼呼叫、選了哪些工具。正式設定檔完全不受影響（product 只寫測試 config）。
-     開合與「把列上的名字填進標題」在 React 正本也是純 UI state（`setTryTarget`），故依 §5 ④ 由
-     components/skill-try-sandbox 的 js 當場做得起來；觸發鈕的 class 是 `.js-try-skill`，
-     gufofaq-saas 那一側已經照這個名字接上 ⇒ **轉換契約，不改名**。
+     它實際被怎麼呼叫、選了哪些工具。正式設定檔完全不受影響（試跑只寫測試用的那一份）。
+     開合與「把列上的名字填進標題」是純 UI state，故依 §5 ④ 由
+     components/skill-try-sandbox 的 js 當場做得起來；觸發鈕的 class 是 `.js-try-skill`
+     ⇒ **轉換契約，不改名**。
    執行流程沿用既有 components/step-flow，但**節點與摘要一起覆寫**（§6 成對規則）：元件內建示範是
      移民主題（配 2-2-1），而本頁演的是 refund-flow 的試跑——沿用預設會出現「試跑退款 skill、
      檢索卻在查新住民結婚」這種不可能的一輪。本頁示範同時演到 skill 子樹的三階縮排
      （refund-flow → lookup-order → 它的工具呼叫）與 skill 失敗的明細列。
 
-   ⚠️ **「檢索知識庫」是 skill 子樹的宿主節點，所以它一定跑過**：gufofaq-saas
-     `apps/web/lib/domain/stepFlow.ts` 的 `SKILL_HOST_STEP_ID = "retrieve"`（＝這一站），註解逐字
-     寫著「skill 一定是在工具節點裡被呼叫的」，`attachSkillSteps` 把 parent 為空或指不到人的
-     skill 步驟一律掛到它底下。所以這一列**只能是 `completed`**：標成 `skipped` ＋ 時間空白，
+   ⚠️ **「檢索知識庫」是 skill 子樹的宿主節點，所以它一定跑過**：skill 一定是在工具節點裡被
+     呼叫的，而父節點為空或指不到人的 skill 步驟一律掛到這一站底下。
+     所以這一列**只能是 `completed`**：標成 `skipped` ＋ 時間空白，
      底下卻掛著一棵跑了 1.8 秒的子樹，等於同時宣稱「這一站沒有執行」與「它底下執行了 1.8 秒」（§6）。
      **父子的包含關係是「掛在誰底下」給的，不是畫面上兩個數字給的**：skill 子樹掛在 retrieve 之下
      ⇒ 這一站的耗時必須含得下整棵子樹。故 refund-flow 1,800ms ＜ retrieve 1,900ms，
@@ -252,36 +237,31 @@ permalink: 3-4_skillManagement.html
      時間欄的字面照 `formatMs` 的取整規則寫（見 step-flow 檔頭：≥1s 一律一位小數）——`1.95s` 是它
      產不出來的形狀，故 retrieve 寫 1.9s；ttft 與延遲都跟著這一組數字算，見下方摘要那則註解。
    ⚠️ **時間欄有兩條路，示範要對得上主路徑那一條**：本元件的時間欄是無條件輸出的 `{{ node.time }}`，
-     每一列都印得出來；React 那一側（gufofaq-saas `apps/web` 的 `stepDurations`）**主路徑吃上游
-     每一顆事件自帶的 `durationMs`**——每一站都算得出來，含 `failed`、含第一站，多輪的還會逐輪加總。
-     只有**一顆 `durationMs` 都沒送**時才退回相鄰時間戳相減（同一支檔案的 `legacyDurations`），
-     而那一支已經把 `failed` 收進來了（它的註解逐字寫著理由：濾掉的話「掛掉的那一站花了多久」
-     永遠是空的，而那正是最想看的一格）。
-     **退路上唯一留白的是第一站**：那一筆沒有前驅可以相減，迴圈因此從第二筆起算，程式碼裡具名
-     登記成留白。**刻意不補 0、也不補「—」**：0 讀起來是「量到了、而且是零」，而這一站其實是
+     每一列都印得出來；執行期的**主路徑吃每一顆事件自己帶的耗時**——每一站都算得出來，
+     含 `failed`、含第一站，多輪的還會逐輪加總。
+     只有**一顆耗時都沒帶**的紀錄才退回相鄰時間戳相減，而那條退路一樣要把 `failed` 收進來
+     （濾掉的話「掛掉的那一站花了多久」永遠是空的，而那正是最想看的一格）。
+     **退路上唯一留白的是第一站**：那一筆沒有前驅可以相減，所以從第二筆起算，那一格
+     具名登記成留白。**刻意不補 0、也不補「—」**：0 讀起來是「量到了、而且是零」，而這一站其實是
      「這條路上算不出來」；一個看起來合理的錯數字會被當成真的耗時拿去做判斷，比一格空白貴
      （同 §6「這一格沒有數字不是一種狀態，是三種」）。
-     ⚠️ 這一段講的是**現況**，不是待辦：舊紀錄那條退路只在上游一顆 `durationMs` 都沒送時才走得到。
-   同理 `verdict`：可回答性判定那一站的值域是 GufoRAG chatbot 的 `GroundingVerdict`，
-     **只有 `generate` 與 `no_answer` 兩顆**（`insufficient` 不存在；`blocked` 是合規閘那兩站的值，
-     不會出現在這一站）。**值就是機器碼、中文由元件的 i18n 分支給**（見 step-flow 檔頭）——
-     把「（素材不足以回答）」寫進值裡是替一個 API 產不出來的字串背書。這一份示範走誠實查無
+     ⚠️ 這一段講的是**現況**，不是待辦：那條退路只在一顆耗時都沒帶的紀錄上才走得到。
+   同理 `verdict`：可回答性判定那一站的值域**只有 `generate` 與 `no_answer` 兩顆**（沒有
+     `insufficient` 這一顆；`blocked` 是合規閘那兩站的值，不會出現在這一站）。**值就是機器碼、
+     中文由元件的 i18n 分支給**（見 step-flow 檔頭）——
+     把「（素材不足以回答）」寫進值裡是替一個產不出來的字串背書。這一份示範走誠實查無
      ⇒ `no_answer`；成因是判定器真的跑了並判素材不足 ⇒ `reason: "llm"`（這一輪檢索確實有回東西，
      所以不是 `empty_material`）。而下面的節點列**只畫「誠實查無」、不畫「生成答案」**：
-     gufofaq-saas `apps/web/lib/domain/stepFlow.ts` 是 `base.splice(i, 1, "respond_no_answer")`
-     ——deleteCount=1 ＝**取代**，兩顆永不並存（釘住它的測試在 gufofaq-saas
-     `apps/web/components/StepFlow/StepFlow.test.tsx`，名字逐字「誠實查無入圖、生成答案不在」）；
-     而且 `respond_no_answer` 只在 `completed.has()` 為真時才進 base，所以它也不可能是 running。
-     ⚠️ **兩顆不可以並排畫**，也不可以說成「同一件事的兩個畫面」——那是替一個上游產不出來的
+     那兩顆是**取代**關係——誠實查無入圖，生成答案就不在，兩顆永不並存；而且誠實查無只在它
+     真的完成時才入圖，所以它也不可能是 running。
+     ⚠️ **兩顆不可以並排畫**，也不可以說成「同一件事的兩個畫面」——那是替一個產不出來的
      狀態背書。
-   ⚠️ **`error` 只能是上游送得出來的形狀**：`_record` 的 error 會經 `_drain_skill_steps` → STATUS chunk
-     → SSE 直達瀏覽器（不過輸出閘門），所以 GufoRAG chatbot 的
-     `_run_skill_subgraph` 逐字寫著「只存例外型別、不存 `{e}` 內文」——訊息可能含 DSN／路徑等內部細節。
-     它六個 failed 出口送得出來的因此只有兩種：三句**固定**中文（巢狀深度超上限／白名單指名的工具
-     一顆都建不出來／子圖未產出任何內容）與三個**裸型別名**（`LlmCallBudgetExceeded`／
-     `SkillInputError`／`type(e).__name__`）。這一份示範演的是跑到一半逾時 ⇒ 落在 `except Exception`
-     那一道 ⇒ **`TimeoutError`**。
-     ⚠️ **不可以寫成 `RuntimeError: 退貨政策表讀取逾時`**＝「型別 ＋ 內文」，那正是那條註解明文
+   ⚠️ **`error` 只能是真的送得到瀏覽器的形狀**：這一格的字會直達瀏覽器、不過輸出閘門，所以它
+     **只放例外型別、不放例外內文**——內文可能含連線字串／路徑這一類內部細節。
+     失敗出口送得出來的因此只有兩種：三句**固定**中文（巢狀深度超上限／白名單指名的工具一顆都
+     建不出來／子圖未產出任何內容）與一個**裸型別名**。這一份示範演的是跑到一半逾時
+     ⇒ **`TimeoutError`**。
+     ⚠️ **不可以寫成 `RuntimeError: 退貨政策表讀取逾時`**＝「型別 ＋ 內文」，那正是這條界線明文
      拒絕外送的形狀。 #}
 {% set stepFlowNodes = [
   { label: "輸入合規檢查", state: "completed", time: "6ms" },
@@ -300,9 +280,9 @@ permalink: 3-4_skillManagement.html
   { label: "完成對話", state: "completed", time: "20ms" },
   { label: "輸出合規檢查", state: "completed", time: "8ms" }
 ] %}
-{# 摘要要與節點對得上（§6）。檢索筆數＝這一趟搜尋工具真的回給模型的片段數，而搜尋收集器是
-     **父 agent 與 skill 子圖共用的同一顆**（GufoRAG chatbot 的 `seen_document_ids` 逐字寫著
-     這件事）⇒ lookup-order 子迴圈裡那一次 `search_knowledge_base` 的 4 筆要算進來，
+{# 摘要要與節點對得上（§6）。檢索筆數＝這一趟搜尋工具真的回給模型的片段數，而搜尋結果的
+     收集器是**父 agent 與 skill 子圖共用的同一顆**
+     ⇒ lookup-order 子迴圈裡那一次 `search_knowledge_base` 的 4 筆要算進來，
      而這一趟也只有那一次搜尋 ⇒ **4**。
      **不可以寫 0**：0 的前提是「檢索被略過」，而那個前提與上面那棵子樹互相矛盾
      （見節點陣列上方那一段）。
@@ -310,8 +290,7 @@ permalink: 3-4_skillManagement.html
      （取整規則見 step-flow 檔頭：`formatMs` 一位小數四捨五入，2.818 → 2.8）。同一個數字
      **只能有一個值**——寫 3.0s 就會與檔頭另一處算出來的 2.8s 打架。
      ttft ＝ 誠實查無那一站的起點 6＋14＋280＋1,900＋150 ＝ 2,350ms ⇒ **2.4s**（2.35 → 2.4）：
-     `respond_no_answer` 是**會串流給使用者**的答案節點（GufoRAG 的 `_answer_nodes`），
-     TTFT 記在第一個 MESSAGE chunk。
+     「誠實查無」是**會串流給使用者**的答案節點，TTFT 記在它吐出的第一個字。
      **ttft 不可以留「—」、誠實查無也不可以標 running**：同一頁的 `trySkillAnswer` 已經渲染著
      一整段答案，畫面上有答案、摘要卻說還沒吐出第一個字。 #}
 {% set stepFlowSummary = {
@@ -321,8 +300,8 @@ permalink: 3-4_skillManagement.html
      所以答案槽不能沿用元件內建那段「本次可退金額為 1,280 元」的成功答案——過程與產出
      必須是同一趟（§6：覆寫了過程就要一起覆寫產出）。
      **這段話只能講模型知道的事**：skill 失敗時父 agent 拿到的工具結果就是
-     `[skill:refund-flow 失敗] 內部錯誤（TimeoutError），詳見伺服器日誌。`（`_run_skill_subgraph`
-     的回傳字串）——它知道「退款試算這一步逾時了」，但**不知道是哪一張表**。
+     `[skill:refund-flow 失敗] 內部錯誤（TimeoutError），詳見伺服器日誌。`
+     ——它知道「退款試算這一步逾時了」，但**不知道是哪一張表**。
      ⚠️ **不可以寫成「退貨政策表這次讀取逾時」**：那是替模型編一個它拿不到的細節，
      與上面 `error` 只送型別名是同一條界線。 #}
 {% set trySkillAnswer = "很抱歉，這一題我沒辦法算出可退金額：退款試算這一步執行逾時，沒有完成。請稍後再試一次，或改由人工客服協助。" %}
@@ -331,19 +310,18 @@ permalink: 3-4_skillManagement.html
 {% include "components/skill-editor-modal/skill-editor-modal.html" %}
 {# 刪除 modal：.js-delete-skill 條件開窗（先選定要刪哪個 skill），確認鈕歸業務 js
    （deleteConfirmBinding，不自動關窗）；skill 名由業務 js 填入 #deleteSkillName。
-   刪除**有**參照守衛：被其他 skill 的 allowed_tools.skill_ids、或任何設定檔的 skill_ids 參照時
-   一律拒刪並要求先移除參照（GufoRAG chatbot 的 delete_skill）——故 toast 除了成敗
-   另有那一態，且那一態是使用者自己修得掉的 warning，不是「請稍後再試」。執行期另有容錯（載不出的 skill 略過
-   並記 ERROR log，`_create_skill_tools`），但那只涵蓋已停用／版本快照缺漏，
-   不代表刪除端點允許懸空。 #}
+   刪除**有**參照守衛：被其他 skill 的工具白名單、或任何設定檔參照時一律拒刪並要求先移除參照
+   ——故 toast 除了成敗另有那一態，且那一態是使用者自己修得掉的 warning，不是「請稍後再試」。
+   執行期另有容錯（載不出的 skill 略過並在日誌記一條 ERROR），但那只涵蓋已停用／版本快照缺漏，
+   不代表刪除本身允許留下懸空的參照。 #}
 {% set deleteTargetId = "deleteSkillName" %}
-{# 連帶後果（`deleteNoteKey`）：`delete_skill` 的 docstring 逐字「刪 skill（版本史隨 cascade
-     一併刪除，不留孤兒列）」——所以被帶走的是**這個 skill 的每一版**，不只清單上那一列。
+{# 連帶後果（`deleteNoteKey`）：刪掉一顆 skill 時它的版本史會跟著一起刪、不留孤兒列
+     ——所以被帶走的是**這個 skill 的每一版**，不只清單上那一列。
      這一頁的編輯窗自己就在演版本史（`components/skill-editor-modal`），使用者按刪除時
      很容易以為「還留著舊版可以回去」。
-     ⚠️ **這一句刻意不寫「引用它的設定檔會少一顆工具」**：那件事發生不了——同一支端點在刪之前
-     先跑 `find_references`，被其他 skill 的 `allowed_tools.skill_ids` 或任何 config 的 `skill_ids`
-     參照時一律拒刪（那是 toast 第三段講的事）。寫進來就是替一個守衛擋掉的情況編一段後果。 #}
+     ⚠️ **這一句刻意不寫「引用它的設定檔會少一顆工具」**：那件事發生不了——刪之前先查參照，
+     被其他 skill 的工具白名單或任何設定檔參照時一律拒刪（那是 toast 第三段講的事）。
+     寫進來就是替一個守衛擋掉的情況編一段後果。 #}
 {% set deleteNoteKey = "settings.deleteSkillNote" %}
 {% set deleteNoteZh = "這個 Skill 的每一版歷史會跟著一起消失，救不回來——要回來只能重新寫一次。" %}
 {# 確認鈕的 React 綁定記號（與 .js-delete-skill 成對）：`deleteConfirmBinding` ＝交給業務 js 綁定、不自動關窗，

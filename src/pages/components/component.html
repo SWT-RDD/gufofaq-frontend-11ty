@@ -363,7 +363,7 @@ bodyClass: guideline-page
                  weaviate 那組實測數字是「使用者判斷門檻該填多少」的唯一依據，而 5-2 上沒有任何
                  版位畫得出它——把數字放進一個零消費點的資料陣列，等於它一個像素都沒出現過
                  （§5：沒有頁面演得出來的分支等於沒驗收過）。所以它畫在這裡。
-                 ⚠️ 實測數字**原文照抄不縮寫**：`0.5` 在這個後端上永遠擋不下任何東西，縮寫掉就等於
+                 ⚠️ 實測數字**原文照抄不縮寫**：`0.5` 在 weaviate 這把尺上永遠擋不下任何東西，縮寫掉就等於
                  把「這個門檻是死條件」這件事藏起來。
                  ⚠️ 四個參數要**全部重設**——`{% set %}` 是頁面全域，只設兩顆會沿用上面那一份的
                  `scaleNoteMixed`／`scaleNoteRecalibrated`（§2／§6）。 #}
@@ -600,8 +600,8 @@ bodyClass: guideline-page
                         <span class="sr-only">刪除</span>
                     </button>
                     <button type="button" class="button button-primary" data-open-modal="likeModal">開啟答案評分modal（AB 那一份）</button>
-                    {# 前台分享窗：使用頁（faq.html）上的那顆分享鈕是**條件開窗**（先送
-                         `POST /public/share` 拿 token，成功才開窗），故那顆鈕不掛 data-open-modal
+                    {# 前台分享窗：使用頁（faq.html）上的那顆分享鈕是**條件開窗**（要先建出
+                         那條分享連結、拿得到才開窗），故那顆鈕不掛 data-open-modal
                          ——這一顆示範觸發器就是它「看得見」的那條路（GUIDELINE §1-2 第三條路）。 #}
                     <button type="button" class="button button-primary" data-open-modal="shareModal">開啟前台分享連結modal</button>
                     <button type="button" class="button button-primary" data-open-modal="disclaimerModal">開啟免責聲明modal</button>
@@ -789,13 +789,13 @@ bodyClass: guideline-page
                `data-i18n`**：它們是使用者真的讀得到的 app chrome，只是**只有這一頁演得出來**
                ——§4-2 的「showcase 整頁不翻」豁免給的是「寫給切版者看的內容」（上面那幾條 caption），
                不是碰巧住在 showcase 頁上的 app 文字。**不掛 key 的後果**：這幾句話的正本會落到 React
-               的字典裡（`subscription.*`／`settings.mustChangePassword*` 那一族靠 REACT_ONLY 白名單
-               擋著），切版改了不會紅、英文那一份也沒有任何東西對帳——那正是「第二個文案正本」的定義。
-               免責本文則是正式環境 GET /api/disclaimer 的長法律文字（product，不走 i18n），此處取節錄
+               的字典裡（`subscription.*`／`settings.mustChangePassword*` 那一族只住在 React 端），
+               切版改了不會紅、英文那一份也沒有任何東西對帳——那正是「第二個文案正本」的定義。
+               免責本文則是正式環境取回來的那份長法律文字（不走 i18n），此處取節錄
                示意其長相（§3-2）——長到足以觸發面板的 max-height 封頂＋內捲（正式版靠 88dvh，展示版靠 demo-static 的固定高）。
-               ⚠️ **「30 天」不烤進譯文**（§3-2：那個數字在 API 契約裡有欄位，就不准出現在譯文字串裡）：
-               試用天數的正本是 product 的 `TRIAL_DAYS`，而 `GET /account`
-               回得出 `trial_end` 與 `days_left` ⇒ 拆成「前綴 key ＋ 數字節點 ＋ 後綴 key」（§4-2 正典形狀，
+               ⚠️ **「30 天」不烤進譯文**（§3-2：那個數字是回得出來的一顆值，就不准出現在譯文字串裡）：
+               試用天數是隨帳號回來的（到期日與剩餘天數都取得到）
+               ⇒ 拆成「前綴 key ＋ 數字節點 ＋ 後綴 key」（§4-2 正典形狀，
                同 pagination 那一組）。烤在句子裡的話，天數一改，繁中與英譯會各自靜默過期。 #}
             <div class="subscription-overlay demo-static">
                 <div class="subscription-panel">
@@ -809,50 +809,48 @@ bodyClass: guideline-page
                         <p class="m-0">服務變更與可用性：本平台保留隨時修改、暫停或終止服務的權利，無需提前通知。使用者應理解服務可能因技術、法律或相關政策調整而有所變更。</p>
                     </div>
                     <div class="panel-footer">
-                        {# 這一顆是**送 API 的鈕**（product 的 `POST /account/accept-disclaimer`）：
+                        {# 這一顆是**送 API 的鈕**（送出「我同意這份免責聲明」）：
                              照 §5 ③ 掛 `data-toast` 列全結果。
-                             **兩段就是全部**：那支端點的閘只有 `get_current_user`（docstring 逐字
-                             「任何登入者可呼叫（首次登入強制流程）」——首登流程本來就不可能要求任何能力），
-                             服務層 `account_service.accept_disclaimer` 是冪等的、沒有拒絕路徑，
+                             **兩段就是全部**：這件事的唯一條件是「已經登入」——首登流程按定義不可能
+                             再要求任何能力——而且同一個人按幾次結果都一樣、沒有任何拒絕路徑，
                              所以除了成功就只剩網路／伺服器那一種。
                              **不掛任何授權軸**是查證過的結論、不是忘了標（§4：空白與「忘了標」在
                              markup 上長得一模一樣，所以理由寫在這裡）。
                            **失敗那一段照樣走 toast，不改成面板內的行內錯誤字**（§4「全站一種回報方式」）：
                              伺服器講出來的原因不會因此丟掉——它由業務層填進那一段的位置端出來
-                             （`errorText(body, <error 段>)`，正典是 3-7 文件檢索的 403 與
-                             skill-editor-modal 的存檔失敗），段文字只是讀不到 body 時的退路。
+                             （正典是 3-7 文件檢索的 403 與 skill-editor-modal 的存檔失敗），
+                             段文字只是讀不到那句原因時的退路。
                              改成行內錯誤會讓**同一顆元件裡的兩塊面板對同一種形狀有兩套答案**：
-                             下面那塊強制改密面板打的 `POST /me/change-password` 與 5-1-1 是同一支端點、
+                             下面那塊強制改密面板送的與 5-1-1 是同一件事、
                              共用 `toast.changePassword` 的同一組分支，那一份改不動（§5「同一道後端守衛，
                              不論從哪一頁觸發，分支集合與語意型別都要一致」）。
                            `data-text-busy`／`data-key-busy`＝送出中那一態的鈕面（§4-2 兩態文字槽）。
                              `platform.applying` 是既有的那一顆（iso-review-wizard 的確認鈕同用一顆，
                              §4-2 同文沿用既有 key）。**busy 的 `disabled` 不進 markup**：靜態稿沒有
                              「送出中」那一刻（同 iso-review-wizard 檔頭那一條）。
-                           **這顆鈕標不出授權軸**（§4；同時登記在測試的 `NO_GATE`）：
-                             `POST /account/accept-disclaimer`（product 的 `accept_disclaimer`）的閘只有
-                             `get_current_user`，docstring 逐字「任何登入者可呼叫（首次登入強制流程）」
-                             ——首登流程按定義不可能要求任何能力，標任何一軸都是宣告一道那裡不存在的閘。
-                             同一節下面那顆強制改密的鈕同理（`/me/change-password` 是自助端點，理由與
-                             5-1-1 那一顆逐字相同）。 #}
+                           **這顆鈕標不出授權軸**（§4；同時登記在測試的 `NO_GATE`）：送出這份同意的
+                             唯一條件是「已經登入」——首登流程按定義不可能要求任何能力，標任何一軸
+                             都是宣告一道那裡不存在的閘。
+                             同一節下面那顆強制改密的鈕同理（改自己的密碼是自助動作，理由與
+                             5-1-1 那一顆相同）。 #}
                         <button type="button" class="button button-primary" data-toast="已開始使用|送出失敗，請稍後再試" data-i18n-data-toast="toast.acceptDisclaimer" data-toast-type="success|error" data-text-busy="處理中…" data-key-busy="platform.applying"><span data-i18n="subscription.acceptDisclaimerPrefix">我已閱讀並同意，開始使用（</span><span>30</span><span data-i18n="subscription.acceptDisclaimerSuffix"> 天）</span></button>
                     </div>
                 </div>
             </div>
-            {# **①′′ 讀不到免責聲明本文那一態**（`GET /disclaimer` 非 2xx 或網路失敗）。
+            {# **①′′ 讀不到免責聲明本文那一態**（取本文那一趟失敗，或根本連不上）。
                  這一態非切不可，理由不是「多一種樣子」：`.panel-body` 只有本文與「載入中…」兩態時，
                  讀失敗會**永遠停在載入中**——畫面不動、console 不響，報讀器聽到的是一句永遠不變的話。
                  而這塊面板底下坐著一顆**送出法律同意**的鈕，使用者按下去我們就收到一份他從未看過
                  內容的同意。
-               訊息由業務層填（後端原句或執行期狀態句），故這一顆**不掛 `data-i18n`**——一顆節點只能有
+               訊息由業務層填（伺服器原句或執行期狀態句），故這一顆**不掛 `data-i18n`**——一顆節點只能有
                  一個文字主人（§4-2）。形狀逐字比照 5-2 存檔失敗那一條紅字（`text-red` ＋ `role="alert"`
                  的 live region ＋ 由 `{% set %}` 供示範字面）：訊息出現時焦點不在這裡，不報讀就等於沒說。
                **本文為空 ⇒ 同意鈕 `disabled`**（REACT-CONVERSION §⑥ 的第二種合規 disable：面板內
                  看得見的解鎖條件未滿足）。**停用而不是不渲染**：鈕消失會讓人以為這一頁壞了，而停用態
                  把「現在還不能同意」與「為什麼」留在同一個畫面上——`aria-describedby` 指的就是那句話
                  （§4：`disabled` 說得出「現在不能按」，說不出「為什麼」）。
-               **「載入中…」那一態刻意不切**：那是執行期狀態，靜態稿沒有請求可等；跨 repo 已有共識
-                 （gufofaq-saas `apps/web/lib/i18n/parity.test.ts` 的 `REACT_ONLY` 逐字列著 `common.loading`），
+               **「載入中…」那一態刻意不切**：那是執行期狀態，靜態稿沒有請求可等，`common.loading`
+                 那一類 key 歸 React 端獨有、不進本專案的譯文對照，
                  同 `pages/shared/shared.html` 檔頭第 ④ 條。React 端那一態換掉的就是這一顆 `<p>`，
                  停用規則與這一態相同（本文還沒到＝還不能同意）。 #}
             {% set gateDisclaimerError = "讀取免責聲明失敗（502）" %}
@@ -871,17 +869,16 @@ bodyClass: guideline-page
                     </div>
                 </div>
             </div>
-            {# **強制改密那一面板**（`/me` 的 `must_change_password`，只在使用期生效中才擋）。
+            {# **強制改密那一面板**（帳號被標成「必須先改密碼」，只在使用期生效中才擋）。
                  它與上面那一面板同型（三段式），差別只在 body 放的是表單——**而這一份表單的版位與
                  回報方式正本就在這裡**：切版不定，React 端就會自己畫三顆欄位、把驗證結果寫成面板內的
                  行內錯誤字，而 §4「全站一種回報方式」要的是送出鈕的 toast warning 段。
-               **三顆欄位不是兩顆**：強制改密走的是 `POST /me/change-password`（product），
-                 `ChangePwIn` 收 `old_password` ＋ `new_password` ⇒ 舊密碼欄非有不可，少一顆就是送不出去的表單。
-                 欄位寫法與 toast 段落逐字比照 5-1-1 的「變更密碼」區塊（同一支端點、同一組守衛，
+               **三顆欄位不是兩顆**：改自己的密碼要同時收舊密碼與新密碼 ⇒ 舊密碼欄非有不可，
+                 少一顆就是送不出去的表單。
+                 欄位寫法與 toast 段落比照 5-1-1 的「變更密碼」區塊（同一個動作、同一組守衛，
                  §5「同一道後端守衛，不論從哪一頁觸發，分支集合與語意型別都要一致」）。
-               `minlength="8" maxlength="1024"` 與那句常駐提示的出處同 `components/reset-password-modal`
-                 （product 的 `MIN_PASSWORD_LEN`／`MAX_PASSWORD_LEN`）；React 端執行期改讀
-                 `GET /me/limits` 的 `password.min`／`password.max`。
+               `minlength="8" maxlength="1024"` 與那句常駐提示同 `components/reset-password-modal`
+                 那一份——密碼長度的上下界就是 8 與 1024，執行期取得到的是同一組數。
                **上下界一起講、一起夾**：只講下界的話，貼進一段超長 passphrase 只會拿到一個 422，
                  而畫面從頭到尾沒有任何地方說過有上限（§3-2「同 group 的姊妹界線要一起檢查有沒有落點」）。 #}
             <div class="subscription-overlay demo-static mt-16">
@@ -949,35 +946,32 @@ bodyClass: guideline-page
                     <li>components/step-flow：後台測試區（單測 2-2-1／AB 2-2-3 <strong>每側各一份</strong>）與問答紀錄詳情（4-2）的詳細執行觀測——把整條正典管線畫成類 mermaid 直式流程圖，每節點可展開看工具/參數/結果/grounding 判定/agent 推理</li>
                     <li>頂端的整體執行摘要<strong>有條件</strong>：五欄全部來自整輪收尾才發的 <code class="inline-code">chat_room</code> 塊、<code class="inline-code">model</code> 更是只有重播那條路拿得到，所以還在串流的那一輪（2-2-1）整列不渲染；給得出摘要的頁＝在演一筆重播的落庫紀錄</li>
                     <li>狀態點：is-completed（綠）／is-running（深墨，當前高亮）／is-skipped（空心環，未走分支）／is-failed（紅）／pending（灰）。正式環境演到 completed（2-2-3 兩側、4-2、3-4）、running 與 pending（<strong>只有 2-2-1</strong>——它是全站唯一演「這一輪還在跑」的頁，走元件內建示範；2-2-3 兩側與 4-2 演的是跑完並落庫的重播，全 completed）與 failed（3-4 的試跑沙盒）；<strong>只有 is-skipped 沒有任何生產頁演得到</strong>，靠這一節活著（GUIDELINE §5：scss 狀態 class 沒有頁面演得出＝補元件庫靜態示範）</li>
-                    <li>可回答性判定與合規閘三顆鍵（<code class="inline-code">verdict</code>／<code class="inline-code">reason</code>／<code class="inline-code">blocked_rules</code>）的每一個值都靠<strong>示範三</strong>活著：真實一輪只走得到其中一種組合，而 <code class="inline-code">blocked_rules</code> 更是只有軌跡重播那條路拿得到（即時串流上 product 整顆不放行，規則名是租戶自取的字、不得跨匿名邊界）</li>
+                    <li>可回答性判定與合規閘三顆鍵（<code class="inline-code">verdict</code>／<code class="inline-code">reason</code>／<code class="inline-code">blocked_rules</code>）的每一個值都靠<strong>示範三</strong>活著：真實一輪只走得到其中一種組合，而 <code class="inline-code">blocked_rules</code> 更是只有軌跡重播那條路拿得到（即時串流上整顆不放行，規則名是租戶自取的字、不得跨匿名邊界）</li>
                     <li>進度「目前 X / N」與摘要「檢索」筆數全由節點資料推導、不烤字面量；收合復用 ui/accordion，本元件不自帶 js</li>
                 </ul>
             </div>
             {# 失敗流程示範：生成到一半被合規攔截而中止，下游整段沒跑——一次演到 failed＋completed＋skipped
                （**skipped 才是唯一無正式環境的態**：failed 在 3-4 的試跑沙盒有一個節點，running／pending 在
                2-2-1／2-2-3 的元件內建示範裡），且是一個真實可能的狀態（§6）。節點與摘要一起給，檢索筆數對上「命中 3 筆」。
-               ⚠️ **failed 之後一律 skipped，沒有 pending**：gufofaq-saas 的
-               `apps/web/lib/domain/stepFlow.ts`，`computeFlow` 的 docstring 逐字寫著「`failed` 是
-               終止狀態：其後的節點本輪不會再跑，一律 skipped」。
+               ⚠️ **failed 之後一律 skipped，沒有 pending**：`failed` 是**終止狀態**——
+               其後的節點本輪不會再跑，一律 skipped。
                所以尾巴三站**不可以排成 skipped／pending／pending**：pending 的語意是「還沒輪到、
                等一下會跑」，而這一輪已經中止，那三個節點的處境是同一件事，不可能一個略過、
                兩個還在排隊。pending 那一態在元件內建示範與 3-4 的試跑沙盒都看得到，
                不會因為這裡不畫就沒有人演。 #}
             {# ⚠️ 這一份是**一次真實執行**，所以 QA 直答那一站只能是未命中：命中會結構性短路
-               （GufoRAG chatbot 的 `after_tools` 逐字「QA 原文本身就是回覆…
-               刻意不經 respond…grounding 同樣跳過」）——**`decision: "hit"` 配 `decidedBy` 再接著
-               檢索、判定、生成，是一個上游產不出來的組合**，而畫面上它看起來完全正常。
-               這裡走 agent 工具那一道判否（`entry: "agent_tool"` ⇒ `poolSize` 1，`answer_from_qa`
+               （命中時那一筆 QA 的原文本身就是回覆，刻意不再生成、可回答性判定同樣跳過）——
+               **`decision: "hit"` 配 `decidedBy` 再接著檢索、判定、生成，是一個產不出來的組合**，
+               而畫面上它看起來完全正常。
+               這裡走 agent 工具那一道判否（`entry: "agent_tool"` ⇒ `poolSize` 1，那一趟
                只判 agent 挑的那一筆，照實寫）。三種**判定層**（exact／score_floor／llm_judge）只在命中時才有值，
                而命中就沒有後續生成 ⇒ 它們的示範一律放在下面那份狀態目錄，不放在真實執行流程裡。
-               節點清單與正典管線同長同序（gufofaq-saas 的 `apps/web/lib/domain/stepFlow.ts`，
-               `CANONICAL_PIPELINE.agent` 九站，首站 `input_gate`、qa_direct 第 2 站）。
+               節點清單與正典管線同長同序（agent 模式九站，首站 `input_gate`、qa_direct 第 2 站）。
                判定雖然發生在 agent 迴圈**之內**，
-               節點仍畫在第 2 站——`computeFlow` 是照正典序畫、再用事件點亮，不是照事件到達順序排。
+               節點仍畫在第 2 站——流程圖是照正典序畫、再用事件點亮，不是照事件到達順序排。
                ⚠️ **失敗那一站的訊息走 `error`、不走 `result`**：`result` 是**工具輸出**那一欄
                （走 ui/collapse-text），而生成節點不是工具節點、根本拿不到它；failed 步驟身上帶的是
-               `error`（product 的 `_STATUS_PUBLIC_KEYS` 放行的欄位之一），
-               明細列渲染成「失敗原因」＋ `td.step-node-error`。3-4 試跑沙盒那顆 failed 節點即此支。 #}
+               `error`，明細列渲染成「失敗原因」＋ `td.step-node-error`。3-4 試跑沙盒那顆 failed 節點即此支。 #}
             {% set stepFlowNodes = [
                 { label: "輸入合規檢查", state: "completed", time: "9ms" },
                 { label: "QA 直答比對", state: "completed", time: "240ms", decision: "no_exact_and_judge_rejected", entry: "agent_tool", poolSize: "1", hits: "產品問答集 / 這個型號保固多久", score: "4.1", floor: "3" },
@@ -1018,32 +1012,29 @@ bodyClass: guideline-page
                  而靜態稿一次只畫得出一態，所以目錄型示範是那些成員唯一的家）：
                  真實一輪最多兩筆 qa_direct——建圖前閘門判否、agent 又判一次——那個形狀在第 3、5
                  兩筆上就演得到。六種並列是因為審的人要一眼比較得出差異，拆散到六個使用頁上反而看不出來。
-                 為什麼要有：上游每一輪都送判定、未命中那半也送，而未命中時 `decidedBy`（gate）與
+                 為什麼要有：每一輪都會送出判定、未命中那半也送，而未命中時 `decidedBy`（判定層）與
                  `matchedRank` 沒有值 ——「裁判判否」與「未達分數門檻」剩下的三格數字長得一模一樣，
                  「整輪未判定」更是連 `hit` 都沒帶、展開整個是空的。客戶最在乎的就是 QA 直答，
                  改了判準文字之後得有一個畫面回答得出「有沒有變好」。
                  **判否與未達門檻是中性灰、不是錯誤紅**：那是系統正確運作的結果（這一筆 QA 沒有完整
                  回答使用者，所以不逐字直出）；畫紅色會讓人以為系統壞了。
-                 ⚠️ **`decidedBy`（判定層）只在命中那幾筆有值**：上游 GufoRAG chatbot 把 `gate` 只寫進
-                 `DECISION_HIT` 的判定紀錄（值域 `GATE_EXACT`／`GATE_SCORE_FLOOR`／`GATE_LLM_JUDGE`；
-                 不寫死幾處 `_rec`——實際是四處 `_rec` 加一處 agent 工具路徑的 `probe.record`），
-                 `DECISION_RECONSTRUCT_FAILED` 那兩處 `_rec` 一個 `gate=` 都沒帶。語意上也只能如此：
+                 ⚠️ **`decidedBy`（判定層）只在命中那幾筆有值**：判定層只寫在**命中**那一種結論上
+                 （值域就這三顆：`exact`／`score_floor`／`llm_judge`——在這裡宣告一次，就是正本），
+                 原文重組失敗那一種一個判定層都不帶。語意上也只能如此：
                  「判定層」回答的是「哪一關**放行**了這一輪」，沒有放行就沒有那一格。
-                 ⚠️ 同理 **`matchedRank` 只有 ① 完全命中那一層寫得出來**：`decide()` 只在
-                 `_exact_layer` 的兩種收尾（`DECISION_HIT` 與 `DECISION_RECONSTRUCT_FAILED`）帶
-                 `matched_rank=`，② 分數門檻與 ③ LLM 裁判那兩處 `_rec` 都沒有。所以第 1 筆
-                 （分數門檻命中）**身上不得有名次**——「第 3 名／共 16 筆」是那支 API 產不出來的組合。
+                 ⚠️ 同理 **`matchedRank` 只有 ① 完全命中那一層寫得出來**：只有那一層的兩種收尾
+                 （命中、原文重組失敗）帶得出名次，② 分數門檻與 ③ LLM 裁判那兩層都沒有。所以第 1 筆
+                 （分數門檻命中）**身上不得有名次**——「第 3 名／共 16 筆」是一個產不出來的組合。
                  **三種判定層都住在這一份目錄**（第 1 筆分數門檻、第 2 筆完全命中、第 8 筆 LLM 裁判）：
                  判定層只在命中時有值，而命中會結構性短路（不經 respond／grounding）⇒ 任何一頁的
                  「真實執行流程」都不可能同時畫得出判定層與後面的生成節點，只有狀態目錄演得到。
                  §2：同一頁第二次用到同元件，**全部參數都要重設**（set 是頁面全域）。 #}
-            {# **除了 `not_attempted`，每一種判定都帶得出「命中的是哪一筆」**——
-                 GufoRAG chatbot 的 `decide()` 對 `no_exact_and_judge_rejected`／
-                 `below_score_floor`／`reconstruct_failed` 一律 `_rec(..., hit=top)`（`reconstruct_failed`
-                 在 `_exact_layer` 那一支是 `hit=hits[_rank-1]`），`hits`／`score` 由它衍生；只有
-                 `not_attempted` 沒有 `hit`。**「有分數、沒有那一筆是誰」是那支 API 產不出來的組合**，
-                 而那一格正是使用者判斷「有沒有變好」要看的東西（§6：每一欄都要對得回正本的一個欄位）。
-                 最後一筆 `some_future_decision` 是**刻意的生字**（不在 `DECISION_*` 值域）：值域外的
+            {# **除了 `not_attempted`，每一種判定都帶得出「命中的是哪一筆」**——判否、未達門檻、
+                 原文重組失敗三種都會把當下最上面那一筆記下來（原文重組失敗走完全命中那一層時，
+                 記的是命中的那一名），`hits`／`score` 由它衍生；只有 `not_attempted` 沒有那一筆。
+                 **「有分數、沒有那一筆是誰」是一個產不出來的組合**，
+                 而那一格正是使用者判斷「有沒有變好」要看的東西（§6：每一欄都要對得回一個真實欄位）。
+                 最後一筆 `some_future_decision` 是**刻意的生字**（不在上面那五種結論裡）：值域外的
                  字面走 `{% else %}` 原樣印出來，證明畫面不會靜默吞掉一個沒見過的判定。
                  註解放在 `{% set %}` **之前**——nunjucks 註解寫進運算式裡會 build 失敗（§2）。 #}
             {% set stepFlowNodes = [
@@ -1093,16 +1084,16 @@ bodyClass: guideline-page
                  為什麼要有：`no_answer` 那一輪只看「判定」那一列，「知識庫裡真的沒有」、
                  「有但都不夠像」、「判定器掛了所以其實沒判」三者長得一模一樣，而三者要使用者
                  做的事完全不同（去補資料／去調門檻／去看模型設定）。
-                 ⚠️ **state 不是隨手挑的**，判準是 GufoRAG chatbot 的 `grounding_step_status`：
+                 ⚠️ **state 不是隨手挑的**，判準是那一站當下的處境：
                  `judge_failed` ⇒ failed（那一輪 fail-open 放行、閘門其實沒生效，所以「判定」
                  那一列寫的是「素材足以回答」——這正是這一列不能只有 verdict 的理由）、
-                 `gate_off` ⇒ skipped（而 skipped 不帶 `duration_ms` ⇒ 時間欄留白）、其餘 ⇒ completed。
-                 合規閘被擋那兩筆是 failed（`input_gate_blocked_step` 與輸出閘的 `_blocked` 分支）。
+                 `gate_off` ⇒ skipped（而 skipped 根本沒有耗時 ⇒ 時間欄留白）、其餘 ⇒ completed。
+                 合規閘被擋那兩筆是 failed（輸入閘與輸出閘各一）。
                  ⚠️ **`blocked_rules` 的空陣列與鍵不存在是兩件事**：第 6 筆有具名規則、第 7 筆是
                  `[]`（那一輪確實被擋，只是擋它的不是具名規則，例如主題判定），其餘每一筆
                  連這顆鍵都沒有 ⇒ 整列不渲染。收成同一種的話，「被擋了但說不出被什麼擋」
                  與「這一輪根本沒被擋」在畫面上會一樣。
-                 最後一筆的 `verdict`／`reason` 是**刻意的生字**（兩顆都不在上游值域內）：
+                 最後一筆的 `verdict`／`reason` 是**刻意的生字**（兩顆都不在目錄列出的值域裡）：
                  值域外的字面走 `{% else %}` 原樣印出來，證明畫面不會靜默吞掉沒見過的值。
                  §2：同一頁第三次用到同元件，**全部參數都要重設**（set 是頁面全域）。
                  註解放在 `{% set %}` **之前**——nunjucks 註解寫進運算式裡會 build 失敗（§2）。 #}
@@ -1119,11 +1110,11 @@ bodyClass: guideline-page
             {# 摘要在這一份同樣是**目錄的表頭**、不是某一輪的觀測（同示範二）：八筆判定不是同一輪
                  發生的，所以「檢索」只能是 0——這份示範一個檢索節點都沒有。延遲 2.7s ≥ 七筆
                  耗時總和 180＋3＋5＋2400＋12＋9＋15 ＝ 2,624ms，對得上（第 5 筆是 skipped、
-                 上游不送 `duration_ms`，所以它不進這個和）。取整規則見 step-flow 檔頭
+                 根本沒有耗時可算，所以它不進這個和）。取整規則見 step-flow 檔頭
                  （`formatMs`：≥1s 一位小數四捨五入）——`2.6s` 會小於那個和，`2624ms` 則是它
                  產不出來的形狀（≥1s 一律換成秒）。
                  **給了 `model` ＝在演一筆重播的落庫紀錄**，而這一份非如此不可：`blocked_rules`
-                 只有軌跡重播那條路拿得到（即時串流上 product 整顆不放行），所以它與 `model`
+                 只有軌跡重播那條路拿得到（即時串流上那一顆整個不放行），所以它與 `model`
                  是同一條可得性判準的兩半，不能一給一不給。 #}
             {% set stepFlowSummary = {
                 tokens: "286", latency: "2.7s", ttft: "1.4s", results: "0", model: "openai:gpt-4o-mini"
@@ -1165,8 +1156,22 @@ bodyClass: guideline-page
                     <span class="verdict-tag is-warn">個資：身分證字號（record，未阻擋）</span>
                 </div>
                 <p class="text-gray m-0" data-i18n="settings.aliasApplyNeedsBind">請先綁定別名表</p>
-                {# ISO 季度審核「處理結果」表的失敗欄：上游 `review_apply` 逐筆回一顆**穩定 code**
-                     （product 的 `_review_failure_code`，值域五顆），畫面上的句子由切版寫、走 i18n key。
+                {# 一顆欄位的**模式適用性**：六句互斥的判定結果。**生產頁上一句都畫不出來**——說明視窗②
+                     只畫值相依那一族的規則，模式適用性不進②；而 5-2 的處置是「不適用的欄位整欄不渲染」，
+                     所以「僅某模式適用」那幾句在畫面上也沒有落點。這一區是六句唯一的可見處
+                     （§4-2：枚舉的成員靠「有地方渲染得出來」活著，不是刪掉 key 讓消費端自己拼字串）。
+                   前四句是適用性本身的四種結果，第五句是判不出來；第六句講的是「這一欄根本沒有適用性
+                     宣告」——它不是前五句的成員，但佔同一個版位、由同一段程式挑，所以一起立。
+                   六句一律用「**問答引擎**」這個字面（站內既有說法，同 2-2-4／2-2-5 的「實際送給問答引擎
+                     的那一份設定」）；六句不一致的話，讀的人會以為在講不同的東西。 #}
+                <p class="text-gray m-0" data-i18n="settings.modeApplicabilityAll">所有模式皆適用</p>
+                <p class="text-gray m-0" data-i18n="settings.modeApplicabilityAgent">僅 Agent 模式適用</p>
+                <p class="text-gray m-0" data-i18n="settings.modeApplicabilityTraditional">僅傳統模式適用</p>
+                <p class="text-gray m-0" data-i18n="settings.modeApplicabilityNone">所有模式皆不適用（問答引擎不讀這一欄）</p>
+                <p class="text-gray m-0" data-i18n="settings.modeApplicabilityUnknown">問答引擎未能判定</p>
+                <p class="text-gray m-0" data-i18n="settings.modeApplicabilityUndeclared">問答引擎未宣告這一欄</p>
+                {# ISO 季度審核「處理結果」表的失敗欄：逐筆回一顆**穩定的失敗代碼**（值域五顆），
+                     畫面上的句子由切版寫、走 i18n key。
                      5-6-1-3 那一頁演的是一筆失敗，所以只推導得到 `upstream_unavailable` 那一句；
                      另外四句在那一頁結構上畫不出來（要同一批裡有五種不同的失敗才湊得齊，而那一批
                      只有兩個租戶）——這一區是它們唯一的可見處，屬本節「枚舉的成員」那一族。 #}
@@ -1191,33 +1196,33 @@ bodyClass: guideline-page
                        · `failed_batches.count > 0`：有幾批整批沒算出來 ⇒ 指標比看起來薄。
                        · `skipped.count > 0`：有幾筆評不了 ⇒ 分母比送出去的少。
                        · `scores_reproducible` 的另外兩態（`true` 與 `null`）——2-2-5 演的是 `false`
-                         那一態（product `compute_run_metrics` 逐字寫著預設部署就是它）。
-                         **`null` 不是 `false`**：一個是「上游沒記錄」，一個是「記錄了、不成立」。
+                         那一態（預設部署就是它）。
+                         **`null` 不是 `false`**：一個是「根本沒記錄過」，一個是「記錄了、不成立」。
                      繁中逐字照抄 2-2-5（§4-2 同 key 兩種繁中會互相覆蓋）。 #}
                 <p class="text-red m-0" data-i18n="regression.ragasFailedBatchesWarn">有幾批指標整批沒有算出來，所以下面每一顆分數的分母都比這一輪的紀錄數少——指標看起來變薄不是因為樣本本來就少。重算一次通常就好；一直失敗的話，是評測模型那一側的問題。</p>
                 <p class="text-red m-0" data-i18n="regression.ragasSkippedWarn">有幾筆問答紀錄沒有被評到（沒有答案、沒有檢索來源，或被輸出閘遮蔽），所以「實際評分」比「這一輪的問答紀錄」少。分數講的是被評到的那幾筆，不是整輪的成績——剔除比例高的時候，這一份指標不足以代表這一輪。</p>
                 <div class="flex-row align-items-center gap-8">
                     <span class="text-bold" data-i18n="regression.ragasReproducible">分數可重現</span><span data-i18n="common.labelSep">：</span><span data-i18n="common.yes">是</span><span data-i18n="common.listSep">、</span><span data-i18n="regression.ragasReproducibleUnknown">未記錄</span>
                 </div>
-                {# `llm_calls`／`llm_tokens` 為 `null` 時填進那兩顆資料槽的哨兵字。**它與 0 和「—」是
-                     三件不同的事**（§6）：0 是量到了而且是零、「—」是還沒有值、這一顆是上游刻意
-                     沒去量。2-2-5 的示範兩格都有數字，所以這個字在那一頁畫不出來。 #}
+                {# 「LLM 呼叫次數」與「LLM token 數」沒有值時，填進那兩顆資料槽的哨兵字。**它與 0 和
+                     「—」是三件不同的事**（§6）：0 是量到了而且是零、「—」是還沒有值、這一顆是
+                     **刻意沒去量**。2-2-5 的示範兩格都有數字，所以這個字在那一頁畫不出來。 #}
                 <p class="text-gray m-0" data-i18n="common.notCounted">未計數</p>
                 {# 三支聊天室（`components/faq-chatroom`／`components/chatroom`／`ui/widget-shell`）
                      共用的「串流被切斷」那一句。三處的靜態稿演的都是收乾淨的那一輪，所以它在使用頁上
-                     結構性地畫不到。上游把這件事說得出來（gufofaq-saas `apps/web` 的
-                     `AccumulateSseResult.truncated`），畫面上先前沒有任何地方在說。
+                     結構性地畫不到。而「這一輪的串流有沒有收完」是分辨得出來的一件事，
+                     少了這一句，畫面上就沒有任何地方說得出它。
                      繁中逐字照抄那三支（§4-2 同 key 兩種繁中會互相覆蓋）。 #}
                 <p class="text-red m-0" data-i18n="comp.streamTruncated">這一輪的連線中斷了：答案的文字收到了，但來源清單與評分、分享所需的資訊沒有收到——所以這則答案下面沒有來源可看，也評不了分。把同一題再送一次就會有完整的一份。</p>
                 {# 5-2 的「主 agent 可直接查詢」全部不勾（送 `[]`）那一態：那一頁的示範是部分勾選，
                      所以它在使用頁上永遠看不到。 #}
                 <p class="text-gray m-0" data-i18n="settings.glossaryApplyAgentNoneHint">目前沒有任何表讓主 agent 直接查詢——術語表只能經 skill 取用。</p>
-                {# 5-1-1「規格」那一格的**額度週期單位**枚舉（`TenantSetting.usage_period` 的三個成員）。
+                {# 5-1-1「規格」那一格的**額度週期單位**枚舉（三個成員：每日／每月／累計）。
                      那一格是 `<input value="3000次/日" disabled>`，`value` 是原子屬性、切版拆不出
                      節點來掛 `data-i18n`，而 §4-2 的屬性後綴白名單也沒有 `-value` ⇒ 那一頁**結構上**
                      只演得到其中一個成員（示範租戶落在 `daily`）。另兩個成員沒有被否決、只是那一頁
                      畫不到——枚舉的成員不靠刪 key 活著，這裡就是它們的家（§4-2）。
-                     繁中逐字照抄 React 端字典（同 key 兩種繁中會互相覆蓋）。 #}
+                     這三顆 key 的繁中在這裡定；同一顆 key 不得有第二種繁中（會互相覆蓋）。 #}
                 <div class="flex-row align-items-center gap-8">
                     <span class="text-gray" data-i18n="settings.spec">規格</span>
                     <span>3000</span><span class="text-gray" data-i18n="settings.quotaUnitPerDay">次/日</span>
@@ -1230,8 +1235,8 @@ bodyClass: guideline-page
                 </div>
                 <p class="text-gray m-0" data-i18n="settings.tagFilterCoverageWarnOk">目前每一份資料都帶得到這一欄，過濾不會漏掉任何檔。沒填的格子在匯入時就已經寫成「未標註」，過濾條件會連它們一起比對，所以標了幾成不影響會不會漏文件。之後要注意的只有一件事：資料夾匯入的檔永遠沒有欄位槽，那樣匯入一批新資料就會又缺這一欄，要改成逐列匯入才接得回來。</p>
                 <p class="text-gray m-0"><span data-i18n="regression.hitsTruncatedPrefix">（這一格只列了前 </span><span>3</span><span data-i18n="regression.hitsTruncatedMid"> 筆，實際命中 </span><span>63</span><span data-i18n="regression.hitsTruncatedSuffix"> 筆）</span></p>
-                {# 桶子的截斷句。**與上面那一句不是同一件事**：上面是**後端**的命中截斷
-                     （`_stored_hits` 夾在 `MAX_STORED_HITS_PER_RESULT`），真實資料上會發生、2-2-5 演得到；
+                {# 桶子的截斷句。**與上面那一句不是同一件事**：上面那一句是**存下來的時候就被夾掉**的
+                     命中截斷（一筆結果最多留幾筆命中），真實資料上會發生、2-2-5 演得到；
                      這一句是**切版自己定的**每桶列 20 則上限，而 2-2-5 那一輪只有 10 則案例，
                      任何一桶都到不了 20 ⇒ `rows.length === count` 恆成立、`{% if %}` 永遠是另一支
                      ⇒ 那一頁**結構上**演不到它（GUIDELINE §5：條件在唯一使用頁上恆為某一值＝沒有人
@@ -1245,9 +1250,9 @@ bodyClass: guideline-page
                 <p class="text-gray m-0"><span data-i18n="regression.bucketListedPrefix">這個桶子共 </span><span>36</span><span data-i18n="regression.bucketListedMid"> 則，這張表只列出前 </span><span>20</span><span data-i18n="regression.bucketListedSuffix"> 則——徽章上的數字是桶子的總則數，不是這張表的列數。</span></p>
                 {# 「沒得比」的**另一個方向**：2-2-5 的示範是「這一次中斷過」，而任何一次執行的結果集
                      都是案例集 id 序的前綴 ⇒ 那一頁的兩列必然都是「這一次沒跑到」，`absent_in_baseline`
-                     在那一頁結構上演不到（推導寫在 2-2-5 的桶子註解）。但上游真的回得出它：
-                     `_compare_runs` 的 `"absent_in_baseline" if missing_baseline else "absent_in_this_run"`，
-                     走到它的是**基準跑完之後才新增的案例**（product e2e 目錄 REG-B04），與中斷無關。
+                     在那一頁結構上演不到（推導寫在 2-2-5 的桶子註解）。但這一態真的發生得了：
+                     兩輪比對時「基準沒有它」與「這一次沒跑到」是互斥的兩個值，
+                     走到它的是**基準跑完之後才新增的案例**，與中斷無關。
                      枚舉少一個成員時要替它找一個渲染得出來的地方，不是刪掉 key 讓消費端自己拼字串——
                      這裡就是它的地方。徽章樣式與 2-2-5 那一欄逐字相同（同一個 verdict-tag is-warn）。 #}
                 <div class="flex-row align-items-center gap-8">
@@ -1263,8 +1268,8 @@ bodyClass: guideline-page
                      繁中與 class 逐字照抄該元件那一行（同 key 兩種繁中會互相覆蓋，§4-2）。
                      稽核員那一態由該元件的名冊本身演得到，不重複放。 #}
                 <span class="text-gray"><span data-i18n="role.member">成員</span><span data-i18n="common.midDot"> · </span><span data-i18n="platform.rolePlatformAdmin">平台系統管理員</span></span>
-                {# 2-2-3 兩側答案卡標題的**缺席態**：`ab_history` 的 `a_profile_no`／`b_profile_no` 是
-                     `int | None`，那一側還沒跑完（或那一列早於這兩欄存在）時照實回 `null`。
+                {# 2-2-3 兩側答案卡標題的**缺席態**：兩側的設定檔編號都可以是空的——那一側還沒跑完
+                     （或那一列根本沒有這個值）時就照實留空，不猜一個。
                      2-2-3 兩側都給得出設定檔編號（即時比完那一輪的值），所以那一頁演不到這一態；
                      這裡是它唯一的可見處——中間那一段連同它前面的中點一起不畫，**不退回一個猜出來的
                      設定檔**。繁中與 class 逐字照抄 2-2-3 那一行（§4-2 同 key 兩種繁中會互相覆蓋）。 #}
@@ -1304,11 +1309,10 @@ bodyClass: guideline-page
                 <div class="flex-row">
                     <button data-tenant-role="admin" type="button" class="button button-primary js-generate-key" data-toast="已產生新金鑰|產生失敗，請稍後再試|金鑰已產生，但這一次沒有回傳明碼——請重新產生一次（舊金鑰已失效）|可能已經產生，請重新整理確認；舊金鑰可能已失效" data-i18n-data-toast="toast.generateKey" data-toast-type="success|error|warning|warning" data-i18n="widget.createToken">產生金鑰</button>
                 </div>
-                {# 4-2 的「有無進行意圖判斷」那一格的**第三個枚舉成員**。`chat_logs.is_intension` 是
-                     可為 null 的布林 ⇒ 三態（是／否／—），而 4-2 那一筆是 agent 模式，`is_intension`
-                     在 agent 下**恆為 False**（實測矩陣：gufofaq-saas 的 `docs/mode-matrix.md`，
-                     `intent_enabled` 那一列）——「否」與「—」那一頁畫得到，「是」要傳統搜尋 ＋ 意圖
-                     開啟才出得來，改示範資料去湊就是演一個上游做不出來的狀態（§6）。故落在這裡
+                {# 4-2 的「有無進行意圖判斷」那一格的**第三個枚舉成員**。這一格是可為空的布林
+                     ⇒ 三態（是／否／—），而 4-2 那一筆是 agent 模式，意圖判斷
+                     在 agent 模式下**恆為否**——「否」與「—」那一頁畫得到，「是」要傳統搜尋 ＋ 意圖
+                     開啟才出得來，改示範資料去湊就是演一個做不出來的狀態（§6）。故落在這裡
                      （§4-2：枚舉成員靠「有地方渲染得出來」活著，不是刪掉 key 讓消費端自己拼字串）。 #}
                 <div class="flex-row align-items-center gap-8">
                     <span data-i18n="qa.hasIntentDetection">有無進行意圖判斷</span>
@@ -1336,17 +1340,17 @@ bodyClass: guideline-page
                     <span class="text-gray" data-i18n="comp.folderContribution">資料夾使用貢獻度</span>
                     <span data-i18n="stats.retrievalCount">取用次數</span>
                 </div>
-                {# `components/import-sync-tag` 的**索引同步**（`sync_state`）演不到的那兩態。
+                {# `components/import-sync-tag` 的**索引同步**演不到的那兩態。
                      那支元件有四態＋一顆缺席態，而兩個使用頁都是**剛匯入完**的畫面：1-1-6 停在
                      `pending`，1-2-1 逐檔演 `pending`／`unknown`／缺席態（彙總那一顆也是 `unknown`）。
                      `succeeded` 兩頁都**刻意不演**——把它畫在剛送出的畫面上等於讓每個打開頁面的人
-                     以為索引一定進去了（同本節第 3 條的反向）；`failed` 則是那一刻上游還給不出的
+                     以為索引一定進去了（同本節第 3 條的反向）；`failed` 則是那一刻還給不出來的
                      結論。這兩態在正式環境演不到，這裡是它們長相的唯一可見處。
                      **顏色本身就是規格**：四態的正確動作各不相同——succeeded 不必做事、failed 是修好
                      資料重匯、unknown 是拿關聯編號問維運而且**絕對不要重匯**、pending 是等。所以四顆
                      徽章刻意四種色：綠／紅／黃／藍（`.is-progress` 這一顆變體就是為了不讓 pending 與
                      unknown 撞色才加的，判準寫在 ui/verdict-tag）。
-                     `reason`（product 產的業務字串＋關聯編號）不翻、不進字典，故這裡不放——這一區
+                     原因字串（執行期產生的業務字串＋關聯編號）不翻、不進字典，故這裡不放——這一區
                      只收「繁中在別處沒有家」的那些。
                      繁中與 class 逐字照抄 components/import-sync-tag 那條 if 鏈（§4-2 同 key 兩種繁中
                      會互相覆蓋）。 #}
@@ -1363,20 +1367,18 @@ bodyClass: guideline-page
                     <span class="verdict-tag is-fail" data-i18n="dataImport.syncFailed">寫入索引失敗</span>
                 </div>
                 <p class="text-red m-0" data-i18n="dataImport.syncFailedHint">資料已經寫進資料集，但索引沒有建起來，所以這一批（或其中幾筆）現在搜不到。照該檔標示的原因把資料修好之後，只重新匯入標示為「寫入索引失敗」的檔案，不要整批重匯。</p>
-                {# 平台聯絡窗口**沒設過**（`GET /platform/support-contact` 回 `contact: null`；服務層
-                     product 的 `get_support_contact` 逐字「沒設過就是
-                     `None`，不是空字串、也不是任何預設值」）那一態的兩句話。
+                {# 平台聯絡窗口**沒設過**那一態的兩句話。沒設過就是空的——不是空字串、
+                     也不是任何預設值，此時整句換成另一顆 key。
                      兩個使用頁（login.html 的忘記密碼窗、components/apply-settings-no-permission-modal）
                      的靜態稿都演「有設」那一態——那一態才畫得出值的槽位，也才是版面規格；「沒設」那一態
                      是**整句換掉**，不是把有值那一句留著後面接一段空白（那會畫出「聯絡方式：」然後什麼
                      都沒有）。故這兩句在正式環境永遠看不到，這裡是它們唯一的可見處。
-                     ⚠️ 這一態**不能靠「值是空字串」湊**：服務層清掉時是刪列，兩種都讀成 `null`，
-                     消費端拿到的就是「沒有這個東西」而不是「有一個空的東西」。 #}
+                     ⚠️ 這一態**不能靠「值是空字串」湊**：清掉的時候那顆值是整個不存在，不是變成
+                     一個空字串——消費端拿到的是「沒有這個東西」，不是「有一個空的東西」。 #}
                 <p class="text-center m-0" data-i18n="faq.forgotPasswordNoContact">親愛的使用者您好，如忘記密碼請與平台管理者聯絡。</p>
                 <p class="text-center m-0" data-i18n="modals.noPermissionNoContact">親愛的客戶您好，因權限不足，無法套用。如需開啟此功能，請聯絡平台管理者。</p>
                 {# 3-5「內容過短、跳過近似重複比對的記錄」那一格的 **null** 態。
-                     `health_scan_runs.too_short_records` 是**可空、且沒有 `server_default`** 的欄
-                     （product）：`NULL` 的意思是「那一次掃描還沒有這個概念」——
+                     這一格**可以是空的，而且沒有任何預設值**：空的意思是「那一次掃描還沒有這個概念」——
                      這一欄存在之前寫下的那些列——與 `0`「量過、一筆都沒被排除」是兩件事，補 0 就是
                      替一次沒有發生的量測編一個結果。3-5 的示範是一趟近期的排程掃描（欄位早就存在）
                      ⇒ 那一頁演不到它，這裡是它唯一的可見處。
@@ -1384,12 +1386,11 @@ bodyClass: guideline-page
                 <p class="m-0"><span class="text-bold" data-i18n="health.scanTooShort">內容過短、跳過近似重複比對的記錄：</span><span class="text-gray" data-i18n="health.scanTooShortNotMeasured">上一次檢查時還沒有這一項</span></p>
                 {# 前台問答「整站停用」那一態（`components/faq-chatroom` 與 `ui/widget-shell` 各一份
                      `.js-faq-unavailable`，兩處都掛 `.hidden`）。使用期閘與功能開通閘擋下來時
-                     （product 的 `require_active_subscription`／
-                     `require_tenant_feature`，兩者都 403），輸入框停用、換上這一句。
+                     （兩道都是 403），輸入框停用、換上這一句。
                      兩個正式環境演的都是**服務正常**那一態——把停用畫成預設態，等於讓每個打開
                      示範站的人以為機器人壞了（同本節第 3 條）。故這裡是它唯一的可見處。
-                   ⚠️ `faq.unavailable` 的**繁中正本就是這一份**：這種句子一旦只活在 React 端
-                     （靠 REACT_ONLY 白名單擋著不對帳），就是切版之外的第二個文案正本。 #}
+                   ⚠️ `faq.unavailable` 的**繁中正本就是這一份**：這種句子一旦只活在 React 端、
+                     沒有任何東西對帳，就是切版之外的第二個文案正本。 #}
                 <p class="text-red m-0" data-i18n="faq.unavailable">本站的問答服務目前停用中，請聯絡本網站管理者。</p>
                 {# 前台問答的另外兩態（兩顆的繁中正本同樣**只能住在切版**，理由同上一句）：
                      ① `.js-faq-no-token`——這條連結身上沒有 widget token（前台靠 `X-Widget-Token`／
@@ -1400,9 +1401,8 @@ bodyClass: guideline-page
                         網站上、要先講清楚這裡能問什麼，前台是產品自己的頁面、只要邀請訪客開口。
                      兩顆在 `components/faq-chatroom` 都掛 `.hidden`（正式環境演的是「有歡迎語、
                      服務正常、連結完整」那一態），這裡是它們唯一的可見處。繁中逐字照抄該元件。 #}
-                {# 4-1 問答紀錄表的 **masking_budget_exceeded** 那一列：上游整頁遮蔽的
-                     工作量到頂時，那幾列回的是**清空的內容欄 ＋ 一顆旗標**
-                     （product 的允許清單逐字列著它）。示範資料一律 false（把錯誤態
+                {# 4-1 問答紀錄表的**遮蔽量到頂**那一列：整頁遮蔽的
+                     工作量到頂時，那幾列回的是**清空的內容欄 ＋ 一顆旗標**。示範資料一律 false（把錯誤態
                      畫成預設態，每個打開頁面的人都會以為出事了），所以這兩句在正式環境渲染不出來。
                      兩格分開講：辨識欄那一格只說「沒載入」，說明留給比較寬的回答欄——同一列印兩次
                      長句子讀起來像壞掉了兩次。 #}
@@ -1484,7 +1484,7 @@ bodyClass: guideline-page
             <h2 class="section-title"><span>26</span><span>嵌入式小工具外殼</span></h2>
             <div class="caption">
                 <ul>
-                    <li>ui/widget-shell：launcher 鈕 ＋ 面板。它跑在<strong>別人的網站上</strong>（gufofaq-saas 的嵌入腳本建一個 shadow root、把樣式一起注進去），所以這一份是<strong>視覺定案</strong>而不是站內版面——那支嵌入腳本照抄這裡的值與結構</li>
+                    <li>ui/widget-shell：launcher 鈕 ＋ 面板。它跑在<strong>別人的網站上</strong>（嵌進客戶網站的那支腳本建一個 shadow root、把樣式一起注進去），所以這一份是<strong>視覺定案</strong>而不是站內版面——那支嵌入腳本照抄這裡的值與結構</li>
                     <li>launcher <strong>不另畫一顆</strong>：沿用 ui/faq-launcher 的「.faq-launcher」（<strong>--brand 純色</strong>圓 ＋ icon_owl.png ＋ 56px；刻意不是漸層——白貓頭鷹疊 --brand-gradient 右緣只有 2.89，低於圖形記號的 3:1），本元件只補按鈕該有的 reset 與開合狀態。那顆鈕是登入後每一頁右下角的前台入口，這裡是同一個東西在別人網站上的版本——各畫一顆的話同一個產品會有兩顆長得不一樣的貓頭鷹</li>
                     <li>差別只在它開的是面板不是新分頁，故是「button」不是「a」，並掛 aria-expanded ＋ aria-controls</li>
                     <li>訊息泡泡沿用 ui/chat-message：widget 的訊息與前台 FAQ 的訊息是同一種東西。輸入列則是 widget 自有的 .widget-panel-bar——chatroom-shell 的 .chat-input-container 是站內全寬版位，塞不進 360px 的面板</li>
@@ -1740,8 +1740,7 @@ bodyClass: guideline-page
 {% set helpModalTitle = "回覆長度上限說明" %}
 {% set helpModalWhatKey = "help.demo.what" %}
 {% set helpModalWhat = "這一區決定單次回答最多可以輸出多少字；超過上限的部分會被截斷，不會影響檢索到的來源筆數。" %}
-{# ②的四條規則就是 `activeStateNotes` 回得出來的全部（正本：gufofaq-saas 的
-     `apps/web/lib/contracts/valueDependencies.ts`，`StateNote`／`RuleName`）：四顆 key 是
+{# ②的四條規則**就是全部**（值相依那一族的規則只有這四條，在這裡宣告一次）：四顆 key 是
      **枚舉的成員**，正式環境的 ② 由 React 執行期依當下設定挑其中幾條，所以那幾頁一條都畫不出來
      ——這裡是它們唯一的可見處（§4-2：枚舉的成員靠「有地方渲染得出來」活著，不是刪掉 key
      讓消費端自己拼字串）。
@@ -1751,8 +1750,9 @@ bodyClass: guideline-page
      分工與「不取代結論、不收進 ⓘ」的理由寫在該元件檔頭。**兩態都要演**：第一筆帶成因、其餘三筆
      不帶，那是 React 端要條件渲染的兩個分支。
    成因同樣是 key（`help.state.knowledgeOffNote`），不是就地編的展示散文——理由與上面那四顆完全
-     相同：編出來的示範沒有 key，正本就落到 React 的字典裡。這一句的機制出處在 5-2 的檔頭
-     （GufoRAG chatbot 的 `GATE_KNOWLEDGE_MODE_NONE`：知識模式為 `none` 時生成端整段參考資料都不組）。 #}
+     相同：編出來的示範沒有 key，正本就落到 React 的字典裡。這一句講的機制（知識使用模式為
+     「不參考知識」時，生成端整段參考資料都不組，所以那幾顆旋鈕是沒有作用對象、不是被關掉）
+     ——出處寫在 5-2 檔頭的值相依清單那一條，不在這裡抄第二份。 #}
 {% set helpModalStateItems = [
     { textKey: "help.state.knowledgeOff", text: "知識模式目前設為「不參考知識」：模型不會使用檢索到的參考資料，因此這一段的檢索筆數與引用設定暫不生效。",
       noteKey: "help.state.knowledgeOffNote", note: "「不參考知識」時，生成端整段參考資料都不組，這幾顆旋鈕因此沒有作用對象——不是它們被關掉了。" },

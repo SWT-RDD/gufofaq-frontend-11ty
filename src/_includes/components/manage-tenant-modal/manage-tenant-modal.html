@@ -1,28 +1,27 @@
 {# 租戶管理 modal，取自 5-6-1_platformTenants 頁「管理」鈕（.js-manage-tenant）：平台系統管理員管理指定租戶的
      額度／使用期／模型開通／凍結解凍／成員治理／危險操作。開窗需先選定哪個租戶才知道管理誰＝業務條件開窗，故該鈕保留業務 hook class、
      不掛 data-open-modal（GUIDELINE §5）。彈窗本體回歸切版，區塊：
-       1. 額度——三個數字欄對齊 product QuotaIn（qa_limit／extraction_limit／storage_limit_mb）+ 用量週期
-          select（無/每日/每月，QuotaIn.usage_period，隨額度共用 footer「儲存」鈕一起送出）+ 重置當期用量鈕
-          （`.js-reset-usage` 業務條件開窗，逆向自 POST /platform/tenants/{id}/reset-usage；成敗與閘門在
+       1. 額度——三個數字欄（問答額度／萃取額度／儲存上限 MB）+ 用量週期
+          select（無/每日/每月，隨額度共用 footer「儲存」鈕一起送出）+ 重置當期用量鈕
+          （`.js-reset-usage` 業務條件開窗；成敗與閘門在
           二次確認窗那顆確認鈕上，不佔用共用 footer 鈕——見該區註解）
-          `QuotaIn` 的 `qa_used` / `extraction_used`（直接設當期已用值，管理員修正用）**已補**成兩顆
+          當期已用量（直接設當期已用值，管理員修正用）另有兩顆
           數字欄（`#tenantQaUsedInput` / `#tenantExtractionUsedInput`，≥ 0；上界不是常數而是同一次
-          送出的那個額度）——旁邊那顆「重置當期用量」只能歸零、改不成某個值。上游為這兩欄另有一條
-          400 `platform.used_exceeds_limit`，那道 warning 也一併列進 footer 儲存鈕的 `data-toast`。
-          **`TenantUsageOut.storage_used_mb` 也畫在這裡**（見該欄註解）：它是 `GET /platform/usage` 回的
-          唯讀欄，不在 `QuotaIn` 裡，故只顯示、不可編輯。
-       2. 使用期——「延展／縮短天數」數字欄 + 「指定到期日」日期欄（exactly-one：product 兩者都給
-          回 400 `tenant.trial_one_of`（引 key 不引英文字面——被抽進 i18n 的句子隨時會改，§3-2；
-          出處是 product 的 `extend_tenant_trial`），React 端送出前擇一；日期選擇不在
+          送出的那個額度）——旁邊那顆「重置當期用量」只能歸零、改不成某個值。已用量大於額度會被退回，
+          那道 warning 也一併列進 footer 儲存鈕的 `data-toast`。
+          **儲存已用量也畫在這裡**（見該欄註解）：它是量出來的唯讀值、不是設得了的額度，
+          故只顯示、不可編輯。
+       2. 使用期——「延展／縮短天數」數字欄 + 「指定到期日」日期欄（exactly-one：兩者都給
+          會被退回，React 端送出前擇一；日期選擇不在
           切版範圍，沿用 .calendar hook class 交由 React 套件實作）
        3. 模型開通——「不限制」開關（承載 `available_models = None`）+ checkbox 清單，欄位寫法比照
           5-5-1_userManagement「能力」checkbox
-       4. 凍結／解凍——暫停使用期時鐘（直接動作，data-toast 演出成敗）；兩支端點對稱，故切版也切兩態
+       4. 凍結／解凍——暫停使用期時鐘（直接動作，data-toast 演出成敗）；兩個動作對稱，故切版也切兩態
        5. 成員——逐位成員：停用啟用（直接動作 data-toast）＋重設密碼（.js-reset-password）／刪除（.js-delete-user，button-red）＝業務條件用 hook class
        6. 危險操作——刪除資料（.js-delete-tenant-data）／刪除帳號（.js-delete-tenant-account）：破壞性 button-red，需輸入該租戶名稱字串相符才可執行（type-to-confirm），屬業務條件、用 hook class 不掛 data-toast
      額度／使用期／模型開通共用 footer「儲存」鈕（toast.manageTenant，成功/失敗）；停用啟用等逐成員動作各自 data-toast。
      成員清單為純示範假資料（§6b，通用名冊、不綁定使用頁的特定租戶列——本 modal 是全部列共用的一份本體，
-     內容由業務 js 依「點了哪列的管理鈕」動態載入），正式環境由 React 讀 GET /platform/tenants/{id}/users 渲染。
+     內容由業務 js 依「點了哪列的管理鈕」動態載入），正式環境由 React 讀那個租戶的成員名冊渲染。
      .js-reset-password／.js-delete-user／.js-reset-usage 的彈窗本體（components/reset-password-modal
      與兩份 components/delete-modal）不巢狀 include 在本檔：component.html 展示頁已各自獨立 include 過
      那兩顆（給其他頁的示範觸發器用），本檔若再巢狀 include 一次，會在 component.html 同時 include
@@ -40,19 +39,18 @@
          講：額度欄拿不到現值就會顯示 0，按下儲存等於把該租戶的額度歸零鎖死，所以 React 端在用量取不到時
          不開窗（改用同一顆 key 彈 toast），開了窗也不得讓額度可存——訊息因此寫成「暫時無法管理」，
          兩種呈現共用同一句。
-       manageTenantFrozen＝這個租戶**目前是不是凍結中**（`TenantOut.frozen`／`FreezeOut.frozen`）。凍結區
+       manageTenantFrozen＝這個租戶**目前是不是凍結中**。凍結區
          兩態的鈕與說明由它決定（見該區註解）。 #}
-{# id＝`UserOut.id`（product 的 `UserOut` 第一欄，product 的 `platform_tenant_users` 沿用它）。
-     這一列的三顆動作全部以它定址（`PATCH /platform/users/{user_id}`、
-     `POST /platform/users/{user_id}/reset-password`、`DELETE /platform/users/{user_id}`），
+{# id＝使用者主鍵。
+     這一列的三顆動作（停用啟用／重設密碼／刪除）全部以它定址，
      所以列鍵不可以是 loop.index——這張名冊刪得掉列，位置不是身分（§6 列鍵）。
-     platformRole＝`UserOut.platform_role`。它不是裝飾：停用／刪除／降級這一列時，product 的
-     `_assert_not_last_platform_admin` 會對**最後一位平台系統管理員**回 409 `last_platform_admin`，
+     platformRole＝這一位在平台層的角色。它不是裝飾：停用／刪除／降級這一列時，
+     **最後一位平台系統管理員**會被擋下來，
      不畫出來的話「為什麼這一列按了會被拒」在畫面上沒有任何線索。示範放的是 `auditor`——那一態不受
      那道守衛管（它只認 admin），不會在畫面上留一顆必定失敗的鈕；`admin` 那一態是 warning 段講的那件事。
      ⚠️ 跨頁自洽（§6）：帶平台角色的那一位用 `auditor@example.com`，因為 5-6-1 的「平台權限」盤點
-     （`list_platform_admins` 回的是**全部**握有平台角色的人）就列著這個信箱、角色也是 auditor——
-     另編一個信箱等於在同一套 API 上多出一位那張盤點表沒有的平台角色持有者。同理第一位改叫
+     （那張表列的是**全部**握有平台角色的人）就列著這個信箱、角色也是 auditor——
+     另編一個信箱等於多出一位那張盤點表沒有的平台角色持有者。同理第一位改叫
      `owner@example.com`：5-6-1 把 `admin@example.com` 列成平台系統管理員，這裡若沿用同一個信箱
      又標 `none`，兩頁就對同一個人說了兩件事。
      ⚠️ **`platform.rolePlatformAdmin`（`platformRole == "admin"` 那顆徽章）在這份名冊上演不出來，
@@ -74,20 +72,20 @@
   { id: 4135, email: "b-viewer@example.com", isAdmin: false, isActive: false, platformRole: "none" }
 ] %}
 {# ── 本窗的兩級可見性（§5 data-platform-role）────────────────────────────────────
-     本窗**整份 auditor 進得來**，改成逐顆宣告，不再整份標 admin。理由是四支唯讀端點：
-       · `platform_usage`（`GET /platform/usage`，`TenantUsageOut` 的額度／已用量／用量週期／儲存已用量）
-       · `get_tenant_models`（`GET /platform/tenants/{id}/models`，模型白名單）
-       · `platform_tenant_users`（`GET /platform/tenants/{id}/users`，成員名冊）
-       · `list_tenants`（`GET /platform/tenants`，`TenantOut.subscription_status`／`trial_end`／`frozen`）
-     四支的 `Depends` 全是 `require_platform_auditor`（product），而**這份 modal 是
+     本窗**整份 auditor 進得來**，逐顆宣告，不整份標 admin。理由是這四類值本身都是唯讀就讀得到的：
+       · 額度／已用量／用量週期／儲存已用量
+       · 模型白名單
+       · 成員名冊
+       · 訂閱狀態／到期日／凍結旗標
+     四者 auditor 都讀得到，而**這份 modal 是
      全站唯一畫得出額度／用量／模型白名單／成員名冊的地方**——整份不渲染給稽核員，等於他在切版裡看不到
      任何一個租戶的這些值，而那正是 ISO 職責分離要他看的東西。
      故照 §5 的兩級渲染規則逐顆標：
        · **值控制項**（額度五顆 input、用量週期 select、使用期兩顆欄、模型開關與 checkbox 群、
          兩顆 type-to-confirm 輸入框）標 `admin`＝照渲染但 disabled，狀態看得見、改不動。
        · **動作鈕**（重置用量／凍結解凍／停用啟用／重設密碼／刪除／儲存／兩顆危險操作）
-         標 `admin`＝低於該級不渲染，不給唯讀角色一排按了只會 403 的鈕。
-     「關閉」不標：它是純前端互動，不打任何端點。
+         標 `admin`＝低於該級不渲染，不給唯讀角色一排按了只會被拒的鈕。
+     「關閉」不標：它是純前端互動，不送任何請求。
      （`ui/modals/_modals.scss` 檔頭那段授權宣告的登記是**判準句 ＋ 反查指令**、不是一張名單，
      所以這一顆窗改了授權軸不必回頭去改那一份。） #}
 <dialog class="modals" id="manageTenantModal" data-platform-role="auditor" aria-labelledby="manageTenantModal-title">
@@ -110,7 +108,7 @@
                         {% if manageTenantShowUsageError %}
                         <p class="text-red m-0" role="alert" data-i18n="platform.usageError">無法取得這個租戶的目前用量；為避免把額度誤存成 0，暫時無法管理，請稍後再試。</p>
                         {% endif %}
-                        {# 額度三欄位＝product QuotaIn 的 qa_limit／extraction_limit／storage_limit_mb（本 modal 是 React 藍圖，欄位集要跟契約） #}
+                        {# 額度三欄位：問答額度／萃取額度／儲存上限（MB）——這三顆的定義點就是這裡 #}
                         <div class="flex-row flex-wrap gap-40 mobile-column sm-gap-16">
                             <div class="col-6-md col-12-sm">
                                 <div class="form-group">
@@ -118,8 +116,8 @@
                                         <label for="tenantQaLimitInput" class="control-label" data-i18n="platform.qaLimit">問答額度</label>
                                     </div>
                                     <div class="field">
-                                        {# 三件套的第三件（§4）：三顆額度欄的下界出處＝product 的 `set_tenant_quota`
-                                             （負值 → 400 `platform.quota_field_negative`，引 key 不引英文字面）；數字獨立成不翻的節點（§3-2）。 #}
+                                        {# 三件套的第三件（§4）：三顆額度欄的下界是 0，負值送出會被退回；
+                                             數字獨立成不翻的節點（§3-2）。 #}
                                         <input type="number" min="0" step="1" id="tenantQaLimitInput" data-platform-role="admin" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control" value="3000" aria-describedby="tenantQaLimitRange">
                                         <span class="text-gray" id="tenantQaLimitRange">≥ 0</span>
                                     </div>
@@ -144,25 +142,23 @@
                                     <div class="field">
                                         <input type="number" min="0" step="1" aria-describedby="tenantStorageLimitRange" id="tenantStorageLimitInput" data-platform-role="admin" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control" value="1000">
                                         <span class="text-gray" id="tenantStorageLimitRange">≥ 0</span>
-                                        {# `TenantUsageOut.storage_used_mb`（`GET /platform/usage`）的落點。同一支端點的另外兩顆
-                                             已用量（qa_used／extraction_used）在下面各有一顆可編輯的欄，只有這一顆沒有——而它
-                                             **不可編輯**：`QuotaIn` 沒有這一欄，儲存已用量是 `DatasetFile.size_bytes` 的總和
-                                             （product 的 `platform_usage` 逐字 `round(used_bytes / 1024 / 1024, 2)`），
-                                             設不了、也不該設。故畫成唯讀的一句，緊貼著它所解釋的那個上限（§3-2 上限與現值寫在
+                                        {# 儲存已用量的落點。另外兩顆已用量（問答／萃取）在下面各有一顆可編輯的欄，
+                                             只有這一顆沒有——而它**不可編輯**：儲存已用量是這個租戶所有檔案大小的
+                                             總和（量出來的，不是設出來的），設不了、也不該設。
+                                             故畫成唯讀的一句，緊貼著它所解釋的那個上限（§3-2 上限與現值寫在
                                              做決定的控制項旁邊）。數字是資料節點、不進譯文（§4-2）。 #}
                                         <span class="text-gray"><span data-i18n="platform.storageUsedPrefix">目前已用 </span>412.5 MB</span>
                                     </div>
                                 </div>
                             </div>
-                            {# 當期已用量兩欄（`QuotaIn.qa_used` / `extraction_used`）：**直接設**當期已用值，
+                            {# 當期已用量兩欄：**直接設**當期已用值，
                                  供管理員修正／精細調整（旁邊那顆「重置當期用量」只能歸零，改不成某個值）。
-                                 下界 0；上界不是常數而是**同一次送出的那個額度**——超過時上游回 400
-                                 `platform.used_exceeds_limit`，故那道 warning 也列在 footer 的儲存鈕上。
+                                 下界 0；上界不是常數而是**同一次送出的那個額度**——超過會被退回，
+                                 故那道 warning 也列在 footer 的儲存鈕上。
                                ⚠️ 提示句**用欄位名指稱、不用位置**：這一排是 `flex-wrap` 的兩欄格，
                                  「問答已用量」正上方那一格其實是「萃取額度」、「萃取已用量」上方是「儲存上限」——
                                  共用一句「不可大於上面那格的額度」的話，兩顆指的都會是隔壁那一欄。
-                                 故兩顆各用各的 key（上游那道 400 也是逐欄比 `qa_used vs qa_limit`、
-                                 `extraction_used vs extraction_limit`，本來就不是同一件事）。 #}
+                                 故兩顆各用各的 key（那道檢查也是逐欄各比各的額度，本來就不是同一件事）。 #}
                             <div class="col-6-md col-12-sm">
                                 <div class="form-group">
                                     <div class="label">
@@ -201,10 +197,8 @@
                                 </div>
                             </div>
                         </div>
-                        {# 重置當期用量：**業務條件開窗**——歸零 qa_used/extraction_used、
-                             週期是每日／每月時另把 usage_period_start 設成現在
-                             （product 的 `reset_tenant_usage`，
-                             端點 `POST /platform/tenants/{id}/reset-usage`），不經共用 footer 鈕。
+                        {# 重置當期用量：**業務條件開窗**——把問答與萃取的已用量一起歸零、
+                             週期是每日／每月時另把週期起點設成現在，不經共用 footer 鈕。
                            ⚠️ **它一定要開二次確認窗，不可以退成「按下去就送 API」**：這是不可逆、
                              而且動到錢的動作，沒有確認就成了全站唯一沒有二次確認的破壞性動作。
                              會想退回直送的原因通常是「彈窗開不出來」——這扇窗出現的每一頁
@@ -218,14 +212,13 @@
                              與元件庫頁，理由同 `.js-reset-password`／`.js-delete-user`，見本檔頭）。
                            ⚠️ **這一整塊是這扇窗裡唯一直接動到「錢」的地方，所以說明不可省**。
                              三件事要講，而且都是按下去之前才有用：
-                               ① 額度填 0 ＝ 這個租戶下一題就被擋住（`consume_qa_quota` 的條件式 UPDATE
-                                  `WHERE qa_used < qa_limit` 永遠不成立）——那是把人鎖住，不是「暫時關小」。
+                               ① 額度填 0 ＝ 這個租戶下一題就被擋住（扣額度的條件是「已用量小於額度」，
+                                  額度 0 時它永遠不成立）——那是把人鎖住，不是「暫時關小」。
                                ② 把「已用量」改小 ＝ 直接把可用量還給對方，效果與加額度一樣，只是帳面上
                                   看起來像在修數字。
                                ③ 「重置當期用量」把兩個已用量歸零，**週期是每日／每月時另把週期起點設成現在**
                                   ——它不是「清一下計數器」，是重新開始一個計費週期。週期設為「無」時
-                                  沒有起點可以重設（`reset_tenant_usage` 那一行 `if s.usage_period in
-                                  ("daily", "monthly")`），故那一句寫成有條件的，不是無條件的。
+                                  沒有起點可以重設，故那一句寫成有條件的，不是無條件的。
                            **這一區刻意用常駐文字、不用 ⓘ 說明視窗**——理由**不是**「不能開第二層 dialog」
                              （那顆二次確認就是第二層，`ui/modals` 檔頭逐字寫著巢狀由 `:has(:modal)` 免費
                              處理）：§3-2 要的是「代價寫在做那個決定的控制項旁邊，不寫在說明頁」，而 ⓘ
@@ -238,12 +231,12 @@
                             </div>
                         </div>
 
-                        {# 使用期：延展／縮短天數 或 指定到期日（exactly-one——product 兩者都給回 400，React 送出前擇一；日期選擇沿用 .calendar hook 交由 React 套件實作）。 #}
+                        {# 使用期：延展／縮短天數 或 指定到期日（exactly-one——兩者都給會被退回，React 送出前擇一；日期選擇沿用 .calendar hook 交由 React 套件實作）。 #}
                         <div class="flex-row column gap-8">
                             <div class="text-bold" data-i18n="settings.extendExpiry">使用期延展</div>
-                            {# 「二擇一」是這一區的**硬約束**，而且是 `extend_tenant_trial` 的**第一道守衛**
-                                 （`extend_days` 與 `set_trial_end` 同時給、或同時留空，都回 400 `tenant.trial_one_of`；
-                                 product）。⚠️ 這條約束**不可以只寫在 footer 儲存鈕的 `data-toast` 裡**：
+                            {# 「二擇一」是這一區的**硬約束**，而且是送出時的**第一道守衛**
+                                 （延展天數與指定到期日同時給、或同時留空，都會被退回）。
+                                 ⚠️ 這條約束**不可以只寫在 footer 儲存鈕的 `data-toast` 裡**：
                                  那是按下去之後才讀得到，而 §3-2 說約束要寫在填之前。故做成常駐可見的一句，
                                  兩顆欄各自 `aria-describedby` 指過來。 #}
                             <p class="text-gray m-0" id="tenantTrialOneOfHint" data-i18n="platform.trialOneOfHint">延展天數與指定到期日只能填一個：兩個都填、或兩個都留空，送出都會被退回。</p>
@@ -256,7 +249,7 @@
                                         <div class="field">
                                             {# 「正數延展、負數縮短」是常駐說明 ＋ aria-describedby，**不可以只放在 placeholder 裡**：
                                                  placeholder 一打字就消失，也接不上輔具，而這正是要一邊填一邊看的一句。
-                                                 「不可為 0」的出處是 product 的 `extend_tenant_trial`。 #}
+                                                 「不可為 0」也是這一欄的值域，在這裡宣告。 #}
                                             <input type="number" step="1" id="tenantTrialDaysInput" data-platform-role="admin" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control" aria-describedby="tenantTrialDaysHint tenantTrialOneOfHint">
                                             <span class="text-gray" id="tenantTrialDaysHint" data-i18n="platform.extendDaysHint">正數延展、負數縮短，不可為 0</span>
                                         </div>
@@ -277,19 +270,19 @@
 
                         <div class="flex-row column gap-8">
                             <div id="tenantModelEnableLabel" class="text-bold" data-i18n="settings.modelEnablement">模型開通</div>
-                            {# 模型目錄與 5-2 是**同一份**（兩邊都源自 `gufo.list_models()`；平台端在
-                                 product 拿它當白名單的值域，`unknown models: […]` ⇒ 400）。
+                            {# 模型目錄與 5-2 是**同一份**（同一份可用模型清單；白名單的值域就是它，
+                                 不在清單上的名字送出去會被退回）。
                                  §6 逐字點名「可用模型」不得各烤一份，所以這裡**不可以硬寫幾顆 checkbox**，
-                                 而且每一顆都**必須帶 `value`**：上游比對的正是 `m["value"]`
-                                 （`openai:gpt-4o` 這種帶前綴的識別字），少了它送出去的是一組對不上的名字。
+                                 而且每一顆都**必須帶 `value`**：比對的是那顆帶前綴的識別字
+                                 （`openai:gpt-4o` 這種），少了它送出去的是一組對不上的名字。
                                  目錄本身在 5-2 那一頁 set 成 `llmModels`；這裡的示範沿用同一組值，
                                  顯示字就是識別字（業務資料、不翻）。 #}
-                            {# **`available_models` 有三種值，checkbox 群只表達得出其中兩種**：
-                                 `ModelsIn.available_models` 是 `list[str] | None`，而 `set_tenant_models` 逐字寫著
-                                 「None＝全部允許」——那也是新租戶的預設（`get_tenant_models` 在沒有 settings 列時
-                                 回 `None`）。純 checkbox 群裡，`None`（不限制）與 `[]`（一顆都不給）長得一模一樣，
-                                 而兩者的後果剛好相反。故補一顆「不限制」開關承載 `None`：勾起來時整組 checkbox
-                                 disabled（送 `null`），取消才輪到下面的勾選（送陣列）。
+                            {# **可用模型有三種值，checkbox 群只表達得出其中兩種**：
+                                 「沒有名單」＝全部允許（那也是新租戶的預設），「空名單」＝一顆都不給。
+                                 純 checkbox 群裡，這兩者長得一模一樣，
+                                 而兩者的後果剛好相反。故補一顆「不限制」開關承載「沒有名單」那一態：
+                                 勾起來時整組 checkbox disabled（送出「沒有名單」），
+                                 取消才輪到下面的勾選（送出一份名單）。
                                  開關是**值載體**，比照本窗其他欄位以 id 當 React 綁定契約（§5 矩陣②「class 或 id 契約
                                  擇一即可」，同 `#tenantUsagePeriodSelect`），不自創 hook class。 #}
                             <label class="form-checkbox">
@@ -326,13 +319,12 @@
                         </div>
 
                         {# 凍結／解凍：暫停使用期時鐘、完全鎖住。
-                             **上游是兩支對稱的端點**（product 的 `freeze_tenant`／`unfreeze_tenant`，各自
-                             `POST /platform/tenants/{id}/freeze`／`/unfreeze`，兩支都冪等）⇒ 畫面也**必須兩態成對**。
+                             **凍結與解凍是對稱的兩個動作**（各自冪等）⇒ 畫面也**必須兩態成對**。
                              只切「凍結」一態的話，同一區的可見文案自己寫著「可隨時解凍」，畫面上卻沒有那顆鈕。
                              比照同檔「停用／啟用」的做法：成對參數 `manageTenantFrozen` ＋ `{% if %}` 分岔，
                              兩態各自的 toast 與 key 也分開（解凍成功的句子不是「已凍結租戶」）。
-                             說明也跟著分岔：解凍會把凍結時長補回 `trial_end`（`unfreeze_tenant` 的 docstring
-                             逐字「剩餘天數原封保留」），那是凍結態才需要讀的一句。 #}
+                             說明也跟著分岔：解凍會把凍結那段時長補回到期日、剩餘天數原封保留，
+                             那是凍結態才需要讀的一句。 #}
                         <div class="flex-row column gap-8">
                             <div class="text-bold" data-i18n="platform.freezeSection">凍結／解凍</div>
                             {% if manageTenantFrozen %}
@@ -353,7 +345,7 @@
                             <div class="text-bold" data-i18n="settings.members">成員</div>
                             <div class="flex-row column gap-12">
                                 {% for member in manageMembers %}
-                                {# data-user-id＝React 列鍵契約（`UserOut.id`，見檔頭）：這一列三顆動作的路徑參數都是它。
+                                {# data-user-id＝React 列鍵契約（使用者主鍵，見檔頭）：這一列三顆動作都靠它定址。
                                      ⚠️ 這一列**不是 `<tr>`**，所以 §4「資料表逐列重複的同型控制項可以同名」那條例外
                                      在這裡不成立（那條的判準逐字是「豁免來自 `<tr>`，不是來自長得像一列」）——
                                      無障礙樹裡沒有列脈絡可倚靠，三列 × 三顆鈕就是 9 顆同名。故自己造辨識欄：
@@ -371,14 +363,13 @@
                                     </div>
                                     {# 這一列不在 .default-table 裡，`.btn-group` 的規則帶著那個祖先（§4 祖先錯位）。 #}
                                     <div class="flex-row gap-10 align-items-center flex-wrap">
-                                        {# 停用路徑上有**兩道**具名 409（gufofaq-saas product：停用端點自己回
-                                             `last_tenant_admin`，同一支模組的 `_assert_not_last_platform_admin` 回
-                                             `last_platform_admin`「不可停用/刪除/降級最後一位平台系統管理員」）。
-                                             兩道各佔一段、不折成一句（§5 逐 raise 對回鈕）：使用者修得掉的動作
+                                        {# 停用路徑上有**兩道**具名的拒絕：不可停用最後一位在職的租戶管理者、
+                                             不可停用／刪除／降級最後一位平台系統管理員。
+                                             兩道各佔一段、不折成一句（§5 逐一種拒絕對回鈕）：使用者修得掉的動作
                                              不同——一道是先指派另一位租戶管理者，一道是先指派另一位平台管理員。
                                              同一頁的刪除鈕（5-6-1 的 deleteToast）也是分開兩段。 #}
-                                        {# **toast 分支要隨態分岔**：那兩道 409 都在上游 `platform_update_user` 的
-                                             `if u.is_active and not body.is_active:` 之內＝**只有停用路徑走得到**，
+                                        {# **toast 分支要隨態分岔**：那兩道拒絕只在「從啟用改成停用」那一次才驗
+                                             ＝**只有停用路徑走得到**，
                                              啟用態列出來就是「列出不可能的結果」（§5 與只演成功一樣是說謊）。
                                              同一行已經在依 `member.isActive` 分岔字面，分支集合跟著分。 #}
                                         {% if member.isActive %}
@@ -400,14 +391,12 @@
                              需輸入該租戶名稱字串相符才可執行＝type-to-confirm（業務條件），故鈕用 hook class（.js-delete-tenant-*）、不掛 data-open-modal。
                            ⚠️ **但兩顆照樣掛 `data-toast`**：type-to-confirm 免除的是「片語沒打對」
                              那一態（它由 `disabled` ＋ 常駐 hint 表達，見下面那一段），**不免除送出之後的成敗**
-                             ——這兩顆鈕不開任何窗，按下去就是 `DELETE /platform/tenants/{id}/data` 與
-                             `DELETE /platform/tenants/{id}`（product），落在 §5
+                             ——這兩顆鈕不開任何窗，按下去就直接執行刪除，落在 §5
                              「凡點下去就送 API 的鈕都是③」那一條。兩顆一段都不列的話，全站最不可逆的
                              兩個動作在切版上連「成功長什麼樣」都沒有人看得到。
-                             逐 raise 對回上游（product）：`purge_tenant_data` 的
-                             docstring 逐字「raises 404/502」⇒ 成敗兩段；`delete_tenant` 逐字
-                             「raises 404/409/502」，而那道 409 是 `cannot_delete_own_tenant`（刪自己所屬的
-                             租戶）——那是使用者換一個目標就過得了的事，故是 warning、不折進 error。
+                             逐一種結果對回鈕：「刪除資料」只有成敗兩段；「刪除帳號」另有一道
+                             「不可刪除自己所屬的租戶」——那是使用者換一個目標就過得了的事，
+                             故是 warning、不折進 error。
                              type-to-confirm 那兩顆輸入框是「只有 admin 動得了的控制項」，即使整份窗降到 auditor 也要各自標 admin（§5）。
                              **兩顆鈕帶 `disabled`**：這一稿演的是確認欄空著的那一刻，而 type-to-confirm 的
                              全部意義就是「沒打對之前按不下去」——空欄配一顆按得下去的「刪除帳號」是執行期
@@ -423,7 +412,7 @@
                                          元素清單上那兩行一模一樣——一個是輸入框、一個是不可逆的紅鈕。 #}
                                     <label for="deleteDataConfirmInput" class="control-label" data-i18n="platform.confirmTypeNameToDeleteData">輸入租戶名稱以刪除資料</label>
                                 </div>
-                                <p class="text-gray m-0" id="deleteDataIrreversible" data-i18n="platform.deleteDataIrreversible">將刪除該租戶所有資料集與其 GufoRAG 索引（保留帳號本身），此操作不可復原。</p>
+                                <p class="text-gray m-0" id="deleteDataIrreversible" data-i18n="platform.deleteDataIrreversible">將刪除該租戶所有資料集與其檢索索引（保留帳號本身），此操作不可復原。</p>
                                 <div class="field">
                                     {# 解鎖條件是**約束**，不能只寫在 placeholder：一打字就消失，而且輔具讀不到它（§4）。
                                          提成常駐說明並用 aria-describedby 接上，不可逆那句也一起指。
@@ -443,7 +432,7 @@
                                     {# 同上：label 是欄位名、不是鈕名（§4）。 #}
                                     <label for="deleteAccountConfirmInput" class="control-label" data-i18n="platform.confirmTypeNameToDeleteAccount">輸入租戶名稱以刪除帳號</label>
                                 </div>
-                                <p class="text-gray m-0" id="deleteAccountIrreversible" data-i18n="platform.deleteAccountIrreversible">將永久刪除整個帳號：租戶、所有使用者、資料集與 GufoRAG 索引，此操作不可復原（稽核日誌保留）。</p>
+                                <p class="text-gray m-0" id="deleteAccountIrreversible" data-i18n="platform.deleteAccountIrreversible">將永久刪除整個帳號：租戶、所有使用者、資料集與檢索索引，此操作不可復原（稽核日誌保留）。</p>
                                 <div class="field">
                                     {# 同上：解鎖條件常駐可見、aria-describedby 接上。 #}
                                     <input type="text" id="deleteAccountConfirmInput" data-platform-role="admin" placeholder="輸入租戶名稱以確認" data-i18n-placeholder="platform.confirmTypeNamePlaceholder" aria-describedby="deleteAccountIrreversible deleteAccountConfirmHint" class="form-control">

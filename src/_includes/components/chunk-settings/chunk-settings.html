@@ -1,12 +1,12 @@
-{# 切塊設定的欄位組（`chunk_size`／`chunk_overlap`／`prepend_title_each_chunk`）＋ 它的 ⓘ 說明窗。
-     兩個消費點是同一份設定的兩個入口：3-1-2_dataImport_input（建立資料集，`DatasetIn` 三欄，
-     送出動作是那一頁的三張 upload-card）與 3-1-3_previewDataset（改既有資料集，`DatasetPatchIn`
+{# 切塊設定的欄位組（切塊大小／切塊重疊／每一塊都帶上文件標題）＋ 它的 ⓘ 說明窗。
+     兩個消費點是同一份設定的兩個入口：3-1-2_dataImport_input（建立資料集，這三欄，
+     送出動作是那一頁的三張 upload-card）與 3-1-3_previewDataset（改既有資料集，同樣這
      三欄，送出是本區自己的儲存鈕）。
    **為什麼抽成元件**：兩處的欄位、值域可見提示、兩句代價說明與 ⓘ 內容**必須逐字相同**
      （§4：同一個欄位的多個入口，每一處都要有同一組約束提示）。各頁抄一份的話，值域或那兩句
      代價說明改動時只會有一頁跟著改——而兩頁都看得到、兩頁都像是對的，沒有任何地方會紅。
-   **端點差異不在這裡**：打哪一支端點、有哪些 raise、拿不到「鎖住了沒有」這件事怎麼辦，
-     寫在各自頁面的檔頭——那才是兩頁真正不同的部分。
+   **兩頁的送出差異不在這裡**：這一份設定被送去做什麼、會有哪些失敗、拿不到「鎖住了沒有」
+     這件事怎麼辦，寫在各自頁面的檔頭——那才是兩頁真正不同的部分。
 
      參數（呼叫端 include 前 set）：
        chunkSettingsBlockClass（選填）＝補在 `.block` 上的版位 class（3-1-2 用 `mt-16`）。
@@ -67,13 +67,13 @@
     </div>
     {% if chunkSettingsSubmit %}
     <div class="flex-row justify-content-end">
-        {# 逐 raise 對回這顆鈕（product 的 `update_dataset`）：403 `require_capability("data","write")`（能力軸）／
-             403 `dataset.not_writable_group`（`_writable_dataset`，與 3-1-3 名稱那顆同一道守衛）／
-             422（`_assert_overlap_below_size`，端點拿**合併後**的值複驗，只送一欄時另一半在 DB 裡）／
-             409 `dataset.chunk_params_locked`（`_assert_chunk_params_still_settable`；訊息要講清楚三欄是
+        {# 逐條對回這顆鈕送出之後走得到的結果：能力不足（能力軸）／
+             這個資料集不在你可以寫入的群組裡（與 3-1-3 名稱那顆同一道守衛）／
+             重疊沒有小於切塊大小（送出時拿**合併後**的值複驗，只送一欄時另一半沿用現存的值）／
+             切塊參數已經鎖住（訊息要講清楚三欄是
              共用的一份值、這一次一個都沒存下來）——三段都是使用者自己處理得掉的 warning。
-             404／500 併進末段 error。
-             400 `common.no_fields_to_update` 不列：這張表單一定會送出三欄，走不到那條路。 #}
+             資料集不見了與非預期錯誤併進末段 error。
+             「沒有任何欄位要更新」不列：這張表單一定會送出三欄，走不到那條路。 #}
         <button data-capability="data:write" type="button" class="button button-primary js-save-chunk-params"
             data-toast="切塊設定已更新|權限不足，無法儲存——請找貴租戶的管理者開通|這個資料集不在你可以寫入的群組裡，請找管理員把你加進該群組|切塊重疊必須小於切塊大小|這個資料集已經做過「檔案上傳」匯入，切塊參數不能再改；這一次三個值一個都沒有存下來|儲存失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員"
             data-i18n-data-toast="toast.saveChunkParams" data-toast-type="success|warning|warning|warning|warning|error|warning"
@@ -82,8 +82,7 @@
     {% endif %}
 </div>
 
-{# 「切塊設定」的說明視窗：①出處＝product 的 `DatasetIn`／`DatasetPatchIn` 三欄與
-     `_assert_chunk_params_still_settable`（逐頁的端點差異見各自頁面檔頭）。
+{# 「切塊設定」的說明視窗：①講的是這三個欄位本身在做什麼（逐頁的送出差異見各自頁面檔頭）。
      ②③留空——同 `excelImportOptionsHelpModal` 那份的理由，容器見 help-modal.html 檔頭。 #}
 {% set helpModalId = "chunkSettingsHelpModal" %}
 {% set helpModalTitleKey = "help.dataset.chunkSettings.title" %}

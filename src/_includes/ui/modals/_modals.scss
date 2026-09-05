@@ -81,7 +81,7 @@
 // 整窗標到唯讀稽核員進得來的那一級，窗內每一顆值控制項與動作鈕再各自標自己真正需要的那一級。
 // **不寫死是哪幾顆、也不寫死幾顆**（§3-2）；反查指令
 // `grep -rn '<dialog[^>]*data-' src --include=*.html`，命中的每一顆都要在自己的元件檔頭寫出
-// 那一級對應的上游守衛名（`require_platform_admin`／`require_platform_auditor`…）。
+// 它宣告的是哪一級、以及低於那一級時整窗不渲染這件事。
 // 關閉鈕**寫那一行 `{% include %}`**，不要展開手抄：它是 `ui/modal-close` 的唯一正本，
 // 而 `.modals-wrap` 的直接子元素只准 modal-close ＋ `.modals-content` 兩個（測試會數）。
 //

@@ -1,11 +1,10 @@
-{# 嵌入式問答小工具的外殼（launcher 鈕 ＋ 面板）。**這是 widget 的視覺定案**：
-     gufofaq-saas 的 `apps/web/public/widget.js` 逐字採用本元件的 class 與值
-     （`faq-launcher widget-launcher js-widget-toggle`、`widget-panel-close js-widget-close`、
-     `icon_owl.png` 40×40、面板 360×520 ＋ `[data-open]`）。
-     ⚠️ **兩份是同一個東西的兩側，改本檔就要同步改對方那一份**——它跑在客戶網站上，
-     不會因為這裡改了就自己跟上。
+{# 嵌入式問答小工具的外殼（launcher 鈕 ＋ 面板）。**這一份是 widget 的視覺定案**：class、尺寸與
+     結構在這裡定（`faq-launcher widget-launcher js-widget-toggle`、
+     `widget-panel-close js-widget-close`、`icon_owl.png` 40×40、面板 360×520 ＋ `[data-open]`），
+     嵌到客戶網站上的那一份照它實作。
+     ⚠️ **那一份不會因為這裡改了就自己跟上**——它跑在客戶自己的網站上，改本檔就要把新的定案帶過去。
 
-  它與站內的頁面不一樣：**跑在別人的網站上**（widget.js 建一個 shadow root、自帶 CSS）。所以這一份
+  它與站內的頁面不一樣：**跑在別人的網站上**（嵌進去的那一份建一個 shadow root、自帶 CSS）。所以這一份
     定的是「長什麼樣、結構是什麼」，不是 build 出來會被誰 include 的版面——唯一看得到它的地方是元件庫頁
     （同 `ui/subscription-gate` 的處置：正式版是 position:fixed 浮層，展示版加 `.demo-static` 退回文流內）。
 
@@ -23,7 +22,7 @@
     （固定在聊天室底部、跟著 `.chatroom-shell` 的內距走），widget 面板只有 360px 寬且自帶邊框，
     故用自有 slot class `.widget-panel-bar`（§4：要覆寫別人的排版就改用自己的 slot class）。
 
-  chrome 與資料的分界：**面板標題是租戶設定的**（widget.js 的 `title` 來自嵌入設定）⇒ 資料、不翻；
+  chrome 與資料的分界：**面板標題是租戶設定的**（由嵌入設定帶進來）⇒ 資料、不翻；
     關閉／送出／輸入框可及名稱是 chrome ⇒ 走既有 key（`action.close`／`action.submit`／`comp.enterQuestion`）。
 
   桶歸屬：放 `ui/` 是因為它**不 include 任何其他元件**（§1-1 的機器判準）。它的 markup 確實寫了
@@ -31,9 +30,9 @@
     用得到的元件」掃 markup class，而這一顆只出現在元件庫頁，所以掃不到。記在這裡免得下一個人以為
     它真的零依賴而去改那兩顆的 class。
 
-  ⚠️ **widget 那一側有一處刻意不逐字**：遮罩圖與 `<img>` 不同，跨網域取用需要
-    `Access-Control-Allow-Origin`，而 `/images/*` 是純靜態 ⇒ widget 跑在別人網站上時遮罩圖被 CORS 擋掉。
-    那邊改用**內嵌 data URI 的遮罩**（同一個字形、同一種上色，但不發請求）。切版這一側維持檔案路徑
+  ⚠️ **嵌出去的那一份有一處刻意不逐字**：遮罩圖與 `<img>` 不同，跨網域取用要對方網域點頭，
+    而圖片是純靜態檔 ⇒ 跑在別人網站上時遮罩圖會被 CORS 擋掉。
+    那一份改用**內嵌 data URI 的遮罩**（同一個字形、同一種上色，但不發請求）。切版這一側維持檔案路徑
     （站內同源，沒有那個問題），兩邊的差異僅此一處。
 
   參數（使用頁在 include 前 set）：
@@ -41,10 +40,10 @@
     widgetDemoStatic —— true 時加 `.demo-static`（元件庫頁用：把 fixed 浮層退回文流內）
 
   **展示態要自洽（§6）**：`.demo-static` 把面板顯示出來，那就是「面板開著」那一態——所以同一份
-    markup 的 launcher 要跟著報 `aria-expanded="true"`、面板要帶 widget.js 的 `[data-open]`。
+    markup 的 launcher 要跟著報 `aria-expanded="true"`、面板要帶 `[data-open]`。
     寫死 `aria-expanded="false"` 配一個看得見的面板，是同一個畫面同時說兩件事；而且 scss 的
     `&[aria-expanded="true"]`（launcher 轉向）與 `&[data-open]` 兩條規則會變成全站沒人看過的死 CSS（§5）。
-    正式態（widget.js 建 shadow root 時）初始就是收合的，故非展示態維持 false／不帶 data-open。 #}
+    正式態（嵌在客戶網站上時）初始就是收合的，故非展示態維持 false／不帶 data-open。 #}
 <div class="widget-shell{% if widgetDemoStatic %} demo-static{% endif %}">
     <button type="button" class="faq-launcher widget-launcher js-widget-toggle" aria-expanded="{% if widgetDemoStatic %}true{% else %}false{% endif %}" aria-controls="widgetPanel"
         aria-label="開啟客服小幫手" data-i18n-aria-label="a11y.openWidget">
@@ -103,16 +102,16 @@
                     </div>
                 </div>
             </div>
-            {# **串流被切斷那一態**：與 components/faq-chatroom 同一件事、同一顆 key（同一條
-                 `/public/ask` SSE、同一筆 `chat_room` 記錄帶著來源與簽章參照）——完整理由寫在
+            {# **串流被切斷那一態**：與 components/faq-chatroom 同一件事、同一顆 key（同一條公開
+                 問答的串流、同一筆對話記錄帶著來源與簽章參照）——完整理由寫在
                  那個元件的同一段。**位置是「那一則答案的泡泡下面」**，所以它住在 log 之內；
                  這一稿的訊息串停在使用者剛送出那一刻、還沒有一則答完的答案，故它落在最後一則之後，
                  執行期由 React 掛到那一則答案的下面。
                  `.hidden` ＋ hook class；可見處在元件庫頁的「React 條件文案」區（§5）。 #}
             <p class="text-red m-0 js-stream-truncated hidden" role="alert" data-i18n="comp.streamTruncated">這一輪的連線中斷了：答案的文字收到了，但來源清單與評分、分享所需的資訊沒有收到——所以這則答案下面沒有來源可看，也評不了分。把同一題再送一次就會有完整的一份。</p>
         </div>
-        {# **整站停用那一態**：與 components/faq-chatroom 同一件事、同一顆 key（同一條公開端點、
-             同兩道 403 閘）——完整理由寫在那個元件的同一段。嵌在客戶網站上的這一版尤其需要它：
+        {# **整站停用那一態**：與 components/faq-chatroom 同一件事、同一顆 key（同一條公開問答路徑、
+             同兩道授權閘）——完整理由寫在那個元件的同一段。嵌在客戶網站上的這一版尤其需要它：
              訪客連「這是哪個系統」都不知道，一顆按不動的送出鈕在這裡是純粹的死路。
              `.hidden`＋live region；可見處在元件庫頁「React 條件文案」區（§5）。 #}
         <p class="text-red js-faq-unavailable hidden" role="alert" data-i18n="faq.unavailable">本站的問答服務目前停用中，請聯絡本網站管理者。</p>
@@ -120,22 +119,19 @@
             {# `.widget-panel-input`／`.widget-panel-send` 是本元件自有的 slot class（§4：要覆寫
                  別元件原子的排版就掛自己的 class，不寫 `.form-control`／`.button` 的選擇器）。
                  沒有它們的話這一列會等比縮，送出鈕被壓到比文字窄而換行——理由寫在 scss 那兩條旁邊。 #}
-            {# 字數上限：與 components/faq-chatroom 那一格是同一件事（同一支 `/public/ask`、
-                 同一顆 product 的 `MAX_CASE_QUESTION_LEN`），完整出處寫在那個元件的同一段。 #}
+            {# 字數上限：與 components/faq-chatroom 那一格是同一件事（同一條公開問答路徑、
+                 同一條字數上限），完整理由寫在那個元件的同一段。 #}
             <input type="text" class="form-control widget-panel-input js-widget-input" placeholder="輸入問題"
                 data-i18n-placeholder="comp.enterQuestion" aria-label="輸入問題" data-i18n-aria-label="comp.enterQuestion" aria-describedby="widgetAskMaxLenHint">
-            {# 送出是直接送 API 的動作鈕 ⇒ data-toast 列全結果（§5 矩陣③）。節流那一段對應的是公開
-                 問答端點（`/public/*`）的每分鐘上限：product 的 `enforce_widget_rate_limit`，
-                 由存取權杖那道守衛在兩道 gate 之前先跑，逾限回 429 `{"code": "rate_limited"}`。
-                 它是一個**具名的**結果，不是泛用的「失敗」。
-                 **節流不在金鑰管理那一族端點上**（`/widget-tokens` 的建立／列出／撤銷全檔零 429），
-                 所以不要把那幾支的行為拿來推論這一顆鈕。
-               ⚠️ **429 有兩種成因，處置相反，所以要兩段**（`|` 是索引契約，額度那一段補在**尾端**、
+            {# 送出是直接把問題送出去的動作鈕 ⇒ data-toast 列全結果（§5 矩陣③）。節流那一段對應的是
+                 公開問答的每分鐘上限：它由存取權杖那道守衛在兩道授權閘之前先跑，
+                 是一個**具名的**結果，不是泛用的「失敗」。
+                 **金鑰管理那一族動作（建立／列出／撤銷 widget token）沒有節流**，
+                 所以不要把那幾顆鈕的行為拿來推論這一顆。
+               ⚠️ **被擋下有兩種成因，處置相反，所以要兩段**（`|` 是索引契約，額度那一段補在**尾端**、
                  前五段位置不動）：
-                   · `rate_limited`＝節流，等一分鐘就好 ⇒ 第 3 段「稍後再試」是對的。
-                   · `quota_exceeded`＝這個租戶**本計費期**的問答額度用罄
-                     （product：`consume_qa_quota` 回 False ⇒ 429 ＋
-                     `{"error": …, "code": "quota_exceeded"}`）⇒ **重試永遠不會成功**。
+                   · 節流＝問得太密，等一分鐘就好 ⇒ 第 3 段「稍後再試」是對的。
+                   · 額度用罄＝這個租戶**本計費期**的問答額度已經用完 ⇒ **重試永遠不會成功**。
                  兩者都講成「稍後再試」的後果不是一句話不準：那是租戶網站上**每一位訪客**都照著那句話
                  一直重試，而每一次重試再吃掉一次節流計數——一個講錯的提示自己製造了它所描述的狀態。
                  額度那一段的收件人也不同：訪客改不了任何事，要找的是**這個網站的管理者**（不是我們），

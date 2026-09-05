@@ -6,10 +6,10 @@
      欄位排序在 th 內加 `div.th-sort` ＋ 它裡面的 `button.sort`（圖示是那顆鈕裡的 `<img>`，
      旁邊一顆 `.sr-only` 給它可及名稱——排序要可鍵盤操作，掛在 `<img>` 上點不下去，見 `ui/table-sort`）；內容較多的欄位用 ui/collapse-text 包覆（純 clamp 的 .ellipsis-* 只給控制項標籤用）；
      功能欄按鈕用 div.btn-group 包覆；固定欄寬加 .fixed-layout；無外框加 .no-border（見下方 accordion 表格範例） #}
-{# 示範列的 userType／satisfaction 是**封閉枚舉**，不可自由編（§6：正本給不出來的值不得為了讀起來順而編一個）：
-     userType 對 4-1 的 #userTypeSelect（前台問答／後台問答；正本 product 的 tag=frontend／backend），
-     satisfaction 對 #ratingSelect（讚／倒讚／無意見；正本 product 的 _RATING_LABEL 與 rating_type
-     的 positive/negative/unrated）。像「後台測試」「普通」這種讀起來順、但不在枚舉裡的值一律不准編：
+{# 示範列的 userType／satisfaction 是**封閉枚舉**，不可自由編（§6：值域裡沒有的值不得為了讀起來順而編一個）：
+     userType 的值域在 4-1 的 #userTypeSelect 宣告，只有「前台問答」「後台問答」兩個；
+     satisfaction 的值域在同頁的 #ratingSelect 宣告，只有「讚」「倒讚」「無意見」三個。
+     像「後台測試」「普通」這種讀起來順、但不在枚舉裡的值一律不准編：
      假資料一旦跑出枚舉之外，看的人會以為那是個合法選項，篩選器卻永遠選不到它。
      （這段寫在 set 之前而不是列旁邊——§2：nunjucks 註解不可出現在 set 的運算式裡，會 build 失敗。） #}
 {% set demoTableRows = [

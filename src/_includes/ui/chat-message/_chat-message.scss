@@ -1,5 +1,5 @@
 // 共用「訊息泡泡」：後台 chatroom 與前台 faq-chatroom 都用這一套（message-wrap/row/content/time/icon）。
-// 由 components/chatroom（Manager 卡片容器）與 components/faq-chatroom（FAQ 全高容器）各自的容器包住。
+// 由 components/chatroom（後台卡片容器）與 components/faq-chatroom（前台全高容器）各自的容器包住。
 // 泡泡的樣式正本住在本檔、不寄在任一邊的容器 scss 裡：兩個容器都要用，寄在其中一邊就是
 // 「另一邊得帶著別人的祖先才有樣式」（§4）。
 //
@@ -174,10 +174,10 @@
 //      指向同組的 `.suggested-questions-label`，而那顆 label 的 `id` 要**元件專屬**
 //      （chatroom 用 chatroomSuggestedLabel、faq-chatroom 用 faqSuggestedLabel）——同頁兩份會撞 id。
 //      chip 陣列的 `{% set %}` 同理取元件專屬名（chatroomSuggested／faqSuggested，§6）。
-//   ⓓ **chip 的授權宣告是 ③ 與 ③′ 唯一看不出來的差別**：後台走 `/ask`（租戶能力 token）故帶
-// `data-capability="ask"`，前台走 product 的 `require_widget_token`
-//      故一軸都不帶——抄錯一道比不抄貴（§1-2「授權四軸屬必列」）。同一道 `require_widget_token`
-//      連帶 `enforce_widget_rate_limit`，所以 ③′ 的 toast 才多一段 429 的 warning。
+//   ⓓ **chip 的授權宣告是 ③ 與 ③′ 唯一看不出來的差別**：後台問答認的是租戶能力，故帶
+//      `data-capability="ask"`；前台公開問答認的是 widget 存取權杖、不看租戶能力，
+//      故一軸都不帶——抄錯一道比不抄貴（§1-2「授權四軸屬必列」）。同一道權杖連帶每分鐘問答上限，
+//      所以 ③′ 的 toast 才多一段節流的 warning。
 //
 // **`.avatar` / `.pic` 的樣式正本不在本檔**：那是 `components/faq-chatroom` 私有的頭像
 // （規則寫在 `_faq-chatroom.scss`）。它只出現在 ①′ 與 ③′（前台的機器人側，插在 `.message-content`
@@ -421,7 +421,7 @@
 }
 
 // 建議追問：機器人答案下方一列可點 chip；點擊＝把那一題當成下一題送出。送出這件事是業務行為、
-// 由 consumer 綁（gufofaq-saas `apps/web` 的 `onAskSuggested`），切版這邊只留 `.js-ask-suggested`
+// 由消費端自己綁，切版這邊只留 `.js-ask-suggested`
 // 這個業務掛點／轉換契約，不要因為本 repo 沒有對應 js 就當死碼刪掉。
 // chip 本身複用 ui/button 的 `.button-border.button-sm`，不另造樣式。
 .suggested-questions {

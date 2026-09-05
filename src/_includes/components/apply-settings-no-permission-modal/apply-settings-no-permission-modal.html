@@ -13,11 +13,10 @@
                     <h3 class="modals-title" id="ProductionSettingsNoPermissionModal-title" data-i18n="qaTest.applyProduction">套用為正式設定</h3>
                 </div>
                 <div class="modals-body">
-                    {# 聯絡窗口＝平台設定（product 的 `get_support_contact`，
-                         路徑 `GET /platform/support-contact`；登入頁那一份走零憑證的
-                         `GET /public/support-contact`，同一個 getter）。值是資料、不掛 `data-i18n`
+                    {# 聯絡窗口＝平台層級的設定值（登入頁那一份不需要登入就讀得到，
+                         但兩處是同一個值）。值是資料、不掛 `data-i18n`
                          （§4-2；理由與 login.html 那一處逐字相同），故獨立成一顆資料槽。
-                       **兩態，這一稿演「有設」那一態**：沒設過回 `null` 時整句換成
+                       **兩態，這一稿演「有設」那一態**：沒設過時整句換成
                          `modals.noPermissionNoContact`（「…請聯絡平台管理者。」），不是留著這一句
                          再接一段空白。另一態的繁中家在元件庫頁的「React 條件文案」區。
                        示範值與 login.html 那一處**逐字相同**（§6：同一個平台設定在兩處畫出兩個值，

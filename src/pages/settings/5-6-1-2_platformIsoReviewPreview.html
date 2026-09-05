@@ -6,32 +6,31 @@ pageHeading: 租戶功能開通
 permalink: 5-6-1-2_platformIsoReviewPreview.html
 ---
 {# ══ ISO 季度審核精靈：狀態 preview（第 ② 步「預覽名單」）═════════════════════════════
-     **這一份稿演的是什麼**：平台管理頁在名單已經拉回來、還沒送出處置時的樣子——正本
-     gufofaq-saas `apps/web/app/(app)/platform/page.tsx` 的 `ReviewWizard`，`step === "preview"`
-     （`{step === "preview" && preview && action && (…)}`）。
-     這一態**畫面要停留**（不是一閃即逝的 toast）：`GET /platform/review/overdue` 的 docstring 逐字寫著
-     「這一步不動任何資料，管理員截圖存證用」，所以門檻、查詢時間與截止時刻都畫在名單上方。
+     **這一份稿演的是什麼**：平台管理頁在名單已經拉回來、還沒送出處置時的樣子——精靈三態
+     （`idle`／`preview`／`result`）裡的 `preview`，要同時有名單與已選定的動作才畫得出來。
+     這一態**畫面要停留**（不是一閃即逝的 toast）：拉名單這一步**不動任何資料**，
+     存在的理由就是給管理員截圖存證，所以門檻、查詢時間與截止時刻都畫在名單上方。
 
      **上一步**：`5-6-1_platformTenants.html`（`step === "idle"`）。回去的路是 `.js-review-cancel`
        （純前端互動，把 step 設回 idle）。
      **下一步**：`5-6-1-3_platformIsoReviewResult.html`（`step === "result"`）。走法是 `.js-review-confirm`
-       打 `POST /platform/review/apply`（`require_platform_admin`）成功之後切過去。
+       （要平台系統管理員）把處置送出去、成功之後切過去。
        **切版不做靜態跳轉**（§5 條件動作只掛 hook class）；三份稿在部署站台上由頁面目錄
        `catalog.html` 進入、在檔頭互相指名。
      **本頁是無導覽入口頁**（§3-1 第③條，同時登記在測試的 `NO_NAV`）：到得了這一態的唯一途徑是
-       在 idle 那一頁按下查詢、讓 `GET /platform/review/overdue` 回來，那是條件動作、沒有任何一頁
+       在 idle 那一頁按下查詢、等逾期名單回來，那是條件動作、沒有任何一頁
        連得到它。**檔頭裡的「上一步／下一步」是指路，不是導覽入口**——§3-1 第②條要的是真的連
        過去的 `href`，測試因此不看註解。
 
      **這一步獨有的區塊**：ISO 季度審核那一塊裡的「② 預覽名單（可截圖）」——門檻／查詢時間／截止時刻
-       四顆摘要、逾期租戶名單表（七欄，含 `ReviewTenantOut.frozen`）、type-to-confirm 片語欄，
+       四顆摘要、逾期租戶名單表（七欄，含「已凍結」那一欄）、type-to-confirm 片語欄，
        以及「確認執行」＋「取消」兩顆鈕。**這一態是三態裡唯一有寫入鈕的**，故那一顆
        （`.js-review-confirm`）標 `data-platform-role="admin"`，其餘照區塊的 auditor。
      **與另外兩份稿逐位元相同的部分**：麵包屑、`components/platform-tenants-panel`、
        `components/iso-review-wizard` 的區塊標題與說明、`components/platform-disclaimer-panel`。
      **步驟指示器**＝`platform.reviewStep2` 那一行標題本身（繁中與英譯都自帶 ②）。
 
-     front matter 與另外兩份稿完全相同：三份在 React 端是**同一個路由**（`/platform`）的三個 state
+     front matter 與另外兩份稿完全相同：三份在 React 端是**同一個畫面**的三個 state
      （同資料匯入精靈那一族，`1-1-2`～`1-1-6` 全部 `titleKey: nav.dataImport`）。 #}
 {% set breadcrumbItems = [
   { label: "首頁", href: "2-1_qaRecord.html", i18nKey: "nav.home" },

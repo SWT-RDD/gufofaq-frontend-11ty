@@ -13,12 +13,12 @@ permalink: 1-1-6_uploadSuccess_excel.html
     {% include "ui/breadcrumb/breadcrumb.html" %}
 </div>
 
-{# 頁層說明：語意出處同下面 import-report 區塊的檔頭——product `import_excel`／
-     `_do_excel_mapping_import` 的三計數（inserted/updated/failed 互斥）與 dropped_links。 #}
+{# 頁層說明：語意同下面 import-report 區塊的檔頭——三計數（inserted／updated 互斥，加上 failed）
+     與轉換時被剝除的連結。 #}
 <p class="text-gray" data-i18n="dataImport.uploadSuccessExcelIntro">這一頁是 Excel 匯入完成後的結果畫面：確認這份資料已經寫入你選定的資料集，並列出這次匯入實際做了什麼（新增或取代既有版本、轉換內容時捨棄了哪些連結）。</p>
 
 {# **本頁是無導覽入口頁**（§3-1 第③條，同時登記在測試的 `NO_NAV`）：到得了這一頁的唯一途徑是在
-     1-1-4 按下送出、product `import_excel` 那一支成功之後換頁——那是條件動作，§5 只掛 hook class、
+     1-1-4 按下送出、那一趟匯入成功之後換頁——那是條件動作，§5 只掛 hook class、
      不做靜態跳轉，所以沒有任何一頁的 `href` 連得到它；部署站台上由頁面目錄 `catalog.html` 進入。
      **1-1-4 刻意不 set `stepNextHref`**：那一頁的「下一步」是動作模式、渲染成 `<button>`，
      `<a href>` 那一支永遠走不到 ⇒ set 了就是一個沒有消費者的參數。而一個渲染不到的參數
@@ -41,12 +41,11 @@ permalink: 1-1-6_uploadSuccess_excel.html
 {# 簡化版靜態跳轉：再次上傳→資料匯入首頁、查看資料→資料集列表 #}
 {# 檔名／大小／筆數不覆寫就是採用元件的內建示範，而那份示範講的是別的檔——
      下面 import-report 的逐檔清單寫著「客服問答集.xlsx」，同一次匯入不會有兩個檔名（§6）。
-     這裡帶的是 product 的 `stored_name`：格式是 `{14位時間戳}_{6位hex}_{序號}_{原始檔名}`
-     （product 的 `stored_filename`，時間戳與亂數是為了「每次匯入都是新檔名」——
-     GufoRAG folder connector 以檔名認文件，同名就是覆蓋）。product 自己也把這個形狀釘成 regex：
-     product 的 `_STORED_PREFIX = re.compile(r"^\d{14}_[a-f0-9]{6}_\d+_")`，
-     下載時靠它把前綴剝掉——少了那段 hex 的字串它認不出來，示範值就成了 product 產不出來的東西。 #}
-{# 「資料總量」＝product 的 `data_count`，與 1-1-3 預覽那一頁的分頁 total 是**同一個數字**
+     這裡帶的是**存起來的那個檔名**，形狀在這裡宣告一次：`{14位時間戳}_{6位hex}_{序號}_{原始檔名}`。
+     時間戳與亂數是為了「每次匯入都是新檔名」——文件是以檔名認的，同名就是覆蓋。
+     下載時是靠這個形狀把前綴剝掉才還原成原始檔名，所以示範值少了那段 hex 就會是一個
+     根本產不出來的檔名。 #}
+{# 「資料總量」與 1-1-3 預覽那一頁的分頁 total 是**同一個數字**
      （預覽讀出幾列、匯入就寫幾列；同一次流程的第 2 步與第 4 步不可能各講一個數，§6）。
      這裡是基準：42KB ÷ 980 ≈ 43 B/列，對得上一份純文字的問答表；1-1-3 的分頁 total 取同一顆
      980。**不可以拿 115**——那是資料集那一層的檔案總數，換一個量綱來當這裡的分母。 #}
@@ -55,54 +54,47 @@ permalink: 1-1-6_uploadSuccess_excel.html
 {% set successDataCount = "980" %}
 {% set successRetryHref = "1-1-1_dataImport.html" %}
 {% set successViewHref = "3-1-1_datasetList.html" %}
-{# 匯入後健檢沒跑成功那一態（`import_excel` 回應頂層 `health_scan.ok === false`）。理由與參數語意
+{# 匯入後健檢沒跑成功那一態。理由與參數語意
      見 components/success-box 檔頭；為什麼本頁改成畫它，見下方 importCounts 那一段。
      與本頁其餘示範值自洽（§6）：匯入本身仍然成功（inserted=1）——健檢是匯入**之後**才跑的，
-     它炸掉不會回捲已經落地的資料（`scan_after_import` 逐字：「走到這裡時匯入已經落地了」）。 #}
+     它炸掉不會回捲已經落地的資料。 #}
 {% set successHealthScanFailed = true %}
 {% include "components/success-box/success-box.html" %}
 
-{# 匯入結果回報：Excel 端點回的三計數與「被剝除的連結」（product `_do_excel_mapping_import` 的
-     `dropped_links`——儲存格裡的 HTML 轉 Markdown 時剝掉的網址）。Excel 一次一個檔，故逐檔清單只有一項；
-     它沒有抽取統計（那是 PDF/Word 的 `structure`，見 1-2-1）。
-     **三計數的單位是「檔」不是「列」，而且 inserted／updated 互斥**：product 的單筆
-     Excel 端點回的是 `"inserted": 0 if superseded else 1`、`"updated": 1 if superseded else 0`，
-     兩者相加恆為 1；failed 恆為 0（失敗＝HTTP 錯誤碼，見 `import_excel` 的回應）。
-     示範走「直接新增」那一態：1-1-4 的外部主鍵欄留白＝不取代（superseded is None）⇒ inserted=1。
-     **`health_scan` 的失敗態畫在本頁**（`import_excel` 回應的頂層欄位，gufofaq-saas product 的
-     `post_import_health_scan` → `scan_after_import`，形狀 `PostImportScanOut`：
-     `ok`／`detail`／`scan`）。
+{# 匯入結果回報：這一趟的三計數與「被剝除的連結」（儲存格裡的 HTML 轉 Markdown 時剝掉的網址）。
+     Excel 一次一個檔，故逐檔清單只有一項；它沒有抽取統計（那是 PDF／WORD 那條路才有的，見 1-2-1）。
+     **三計數的單位是「檔」不是「列」，而且 inserted／updated 互斥**：這一次取代了同鍵的舊版就是
+     updated=1、否則 inserted=1，兩者相加恆為 1；failed 恆為 0（這條路上的失敗一律以 HTTP 錯誤碼
+     回報，不會出現「成功但 failed=1」的畫面）。
+     示範走「直接新增」那一態：1-1-4 的外部主鍵欄留白＝不取代 ⇒ inserted=1。
+     **匯入後健檢的失敗態畫在本頁**：那一趟健檢的結果是跟著匯入結果一起回來的，不必另外去問。
      **它與 3-5 資料健檢那一份不是重複，兩邊各答一個問題**：
-       · 3-5 那一份答的是「**最近一次嘗試**成功了沒有」：成功那一次
-         `_record_scan_run(trigger=SCAN_TRIGGER_IMPORT)` 由 3-5 的「上一次掃描」
-         （`GET /health/scan/last` 的 `scan`）畫；失敗那一次
-         `_record_scan_failure(trigger=SCAN_TRIGGER_IMPORT)` 留一列，由 3-5 的 `healthScanFailure`
-         （同一支端點的 `failure`）畫。那一列是持久的，重新整理還在。
+       · 3-5 那一份答的是「**最近一次嘗試**成功了沒有」：成功那一次由 3-5 的「上一次掃描」畫；
+         失敗那一次留一列，由 3-5 的 `healthScanFailure` 畫。那一列是持久的，重新整理還在。
        · 本頁這一份答的是「**你剛剛匯的這一批**有沒有被檢查過」——3-5 那一列答不了它，而剛按完
          送出的人也不會自己想到要去健檢頁：他看到的是一張只寫著「上傳成功」的卡。
-         `scan_after_import` 的 docstring 對這件事寫得很死：「只寫 log 的話，使用者看到的是一次
-         乾淨的匯入，而健檢清單上什麼都沒有，他不會知道那份剛匯進來的資料根本沒被檢查過」，
-         並要求 `ok=false` **由匯入回應原樣帶給使用者**。
-     兩件都要做：少了 3-5 那一列，這句 `ok=false` 重新整理就沒了；少了本頁這一張卡，剛匯完的人
+         這件事只寫進 log 的話，使用者看到的是一次乾淨的匯入、健檢清單上什麼都沒有，
+         他不會知道那份剛匯進來的資料根本沒被檢查過——所以「健檢沒過」要**原樣帶到這張卡上**。
+     兩件都要做：少了 3-5 那一列，「健檢沒過」重新整理就沒了；少了本頁這一張卡，剛匯完的人
      根本不知道有東西要看。
      故本頁 set `successHealthScanFailed`（參數語意見上方 `successHealthScanFailed` 那一段與
      components/success-box 檔頭）；成功那一態就是這一段不存在，由元件庫頁那一份不 set 的 include 演。 #}
 {% set importCounts = { inserted: 1, updated: 0, failed: 0 } %}
-{# 索引同步（`sync_state`；四態的語意與參數契約見 import-report 檔頭）。
+{# 索引同步狀態（四態的語意與參數契約見 import-report 檔頭）。
      **示範走 `pending`**：sync 是非同步的，匯入當下多半就是這一態。這一頁若從頭到尾只講得出
      「成功」，畫面上就再也表達不出「匯入回 200、索引裡一列都沒有」那條缺陷——而那正是這一格
      存在的理由。把示範畫成 `succeeded` 會讓每個打開這一頁的人以為索引一定進去了
      （元件庫頁那條「示範資料刻意不觸發錯誤態」的反向：也不可以把最好的那一態畫成預設態）。
-     **`indexed_count`／`failed_count` 刻意不 set**：pending 的定義就是「還不知道」，
-     上游此時回 `null` ⇒ 兩格畫「—」而不是 `0`（§6：沒量到 ≠ 零筆）。
+     **索引筆數／索引失敗筆數刻意不 set**：pending 的定義就是「還不知道」，
+     這一刻那兩個數字根本還沒有值 ⇒ 兩格畫「—」而不是 `0`（§6：沒量到 ≠ 零筆）。
      `reason` 同理不 set：它只在 failed／unknown 有值。
      與本頁其餘示範值自洽（§6）：三計數的單位是「檔」（inserted=1），而索引筆數的單位是「則」，
      真值會是上面 `successDataCount` 那 980 ——這也是這兩格不能亂填一個數的理由。 #}
 {% set importSyncState = "pending" %}
-{# `label_sync_warning`＝匯入成功（200）但設定檔標籤沒同步成的那一態。示範把它演出來：
-     這是 `import_excel` 回應裡唯一一個「成功了、但有話要說」的欄位，而**本頁是它全站唯一的
-     落點**（§3-2：response 回得出的每個欄位都要有地方畫；這裡不畫就等於整條資訊消失）。
-     文字逐字取自 product 的 `dataset.label_sync_warning`。 #}
+{# 標籤同步警語＝匯入成功（200）但顯示欄位標籤沒能同步進檢索設定的那一態。示範把它演出來：
+     這是這條匯入路徑上唯一一個「成功了、但有話要說」的欄位，而**本頁是它全站唯一的
+     落點**（§3-2：回得出來的每個欄位都要有地方畫；這裡不畫就等於整條資訊消失）。
+     它是執行期產生的業務字串，不翻。 #}
 {% set importLabelSyncWarning = "匯入成功，但顯示欄位標籤未能即時同步到檢索設定" %}
 {% set importFileReports = [
     {

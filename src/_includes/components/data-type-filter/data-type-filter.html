@@ -5,8 +5,8 @@
        dataTypeName    —— radio 的 name（同頁多組要不同）
        dataTypeLabelId —— 群組標題的 id（供 aria-labelledby 指到；同頁唯一）
      三顆都不帶條件 checked：`全部` 是唯一的預設值（值域只有三種，預設全部＝不過濾）。
-     `value` 是上游 `GET /stats`／`GET /stats/coverage-gaps` 的 `data_type` 字面
-     （all／frontend／backend），§6「值＝上游字面」——沒有 `value` 的 radio 在 DOM 上一律讀到 "on"，
+     `value` 是這一組選項的識別字（all／frontend／backend），在這裡定義一次就是正本
+     ——沒有 `value` 的 radio 在 DOM 上一律讀到 "on"，
      三顆分不開。三顆都帶 `data-filter-reset`：清除鈕不由 type 推導哪些是篩選參數，
      沒宣告就完全不動它（見 `ui/filter-fields` 的 js）。 #}
 <div class="form-group row flex-row mobile-column-xs gap-16">

@@ -10,62 +10,56 @@ permalink: 5-3_statsModule.html
   { label: "設定", href: "", i18nKey: "nav.settings" },
   { label: "統計模組", i18nKey: "nav.statsModule" }
 ] %}
-{# **本頁打的端點**（§3-2：一頁多支端點時，檔頭第一段先列端點清單）：
-     GET /stats `StatsOut`（product）——巢狀七個 model：
-                                `Totals`／`RangeCount`／`DistItem`／`RankItem`／`WeeklyOut`／`WeekBucket`／`Series`。
-                                落點：`totals.*`→指標列、`period`／`weekly.window`→`ui/chart-desc` 三顆槽、
-                                `distribution`→chart1、`ranking`→chart2、`weeks`／`series`→chart3。
-     GET /settings/attribution `AttributionOut`（product）——`slots`／`available_slots`
-     PUT /settings/attribution  同上（`require_capability("settings","write")`）
-   **`ranking` 那張表的欄由切版定、列由業務 js 填**（容器 `#chart2-ranking`）：列數要等查詢結果
-     回來才知道，但**有幾欄、每一欄叫什麼**是切版拍的板——五欄逐個對回 product 的 `RankItem`：
-     `rank`／`source`／`count`／`contribution`／`current_priority`。
+{# **這一頁畫的是這幾組值**（一次查詢回齊，落點固定）：
+     總量指標→指標列、查詢期間與週窗→`ui/chart-desc` 三顆槽、
+     分布→chart1、貢獻度排行→chart2、近四周趨勢→chart3。
+     另一組是歸因設定（已選的槽 ＋ 可選槽的值域），讀寫都在本頁最下方那一區。
+   **排行那張表的欄由切版定、列由業務 js 填**（容器 `#chart2-ranking`）：列數要等查詢結果
+     回來才知道，但**有幾欄、每一欄叫什麼**是切版拍的板——五欄：
+     排名／來源／取用次數／貢獻度／目前優先度。
      欄名寫進 markup、不留給業務 js 造字串，理由有二：① 那五個名字是出貨文案，繁中正本在切版、
      英文在 `src/i18n/en.json`（§4-2）——由 js 造字串等於讓它們活在字典之外，英文模式那一列永遠是繁中；
      ② `{% for %}` 裡那一列就是 React 的轉換契約（§7）：哪一格靠右、空清單畫哪一句，都在這裡定案。
-     **`count` 與 `contribution` 要並列**：只有百分比的話，「排行各列次數的總和＝`totals.counted`」
-     這條恆等式（見下方指標列那一段）在畫面上就驗不了，而那是「有沒有被靜默截斷」唯一看得出來的地方
-     ——`RankItem` 把兩個欄位並列的理由逐字就是這一條。
-     **`source` 與 `current_priority` 兩格不掛 data-i18n**：值是上游**已經翻好**的字串
-     （`_priority_label`、合併列與未標註列的標籤都在 product 那一側跑過 `i18n.t`），
-     前端再翻一次只會翻不到、掉成 key 本身。
-     **沒有「建議」欄**：`suggestion` 在 product 的 `RankItem` 上 grep 不到——
-     不是「恆為 None」而是**欄位本身不存在**。判準的差別很重要：欄位還在 schema 上只是沒填，
-     可以先畫著等它有值；欄位根本不在，畫出來的那一格就永遠是「—」，而標題掛上「與優先續建議」
-     等於替一個上游給不出來的東西做承諾（§4：出貨文案不可以替不存在的東西做承諾）。
+     **「取用次數」與「貢獻度」要並列**：只有百分比的話，「排行各列次數的總和＝指標列的『已計入』」
+     這條恆等式（見下方指標列那一段）在畫面上就驗不了，而那是「有沒有被靜默截斷」唯一看得出來的地方。
+     **「來源」與「目前優先度」兩格不掛 data-i18n**：這兩格的值（含合併列與未標註列的標籤）
+     進到畫面時已經是翻好的字串，前端再翻一次只會翻不到、掉成 key 本身。
+     **沒有「建議」欄**：這張表沒有「建議」這個值——不是「恆為空」而是**根本沒有人算它**。
+     判準的差別很重要：值算得出來只是這一次沒填，可以先畫著等它有值；根本沒有這個值，
+     畫出來的那一格就永遠是「—」，而標題掛上「與優先續建議」
+     等於替一個沒有人給得出來的東西做承諾（§4：出貨文案不可以替不存在的東西做承諾）。
      故標題是「貢獻度排行」；`settings.contributionRanking` 的兩份譯文改值時 **key 名不動**
      （REACT-CONVERSION：key 是識別碼，已被 React／e2e 鏡射）。
-     也不走「保留該欄 ＋ 一句『這一欄上游不再提供』」那條：那是把一欄永久的空白留在報表上再
+     也不走「保留該欄 ＋ 一句『這一欄沒有值』」那條：那是把一欄永久的空白留在報表上再
      花一句話解釋它，而報表的每一欄都該是量得到的東西（同本頁指標列「報表要能自證它算的
      是什麼」那一條）。
 
-   歸因槽值域：product 的 `ATTRIBUTION_SLOT_KEYS`＝`attribution_slot_keys(SLOTS)`。
-     它**排掉的是五類角色**、不是兩個槽名：`privileges`／`containsAny`／`filterBool`／`search`／
-     `PRODUCT_ONLY_ROLE`（對應 `privilege`／`tags`／`flag`／`content`／`internal_note` 五個槽），
-     母體是 `SLOTS` 全部 22 槽。**算式要逐個操作數對得上、不是結果對就算數**：22 減 5 與
+   歸因槽值域＝欄位槽目錄扣掉**五類不能拿來歸因的角色**、不是扣掉兩個槽名：
+     權限欄／多選標籤／布林旗標／全文內容欄／不進索引的內部備註
+     （對應 `privilege`／`tags`／`flag`／`content`／`internal_note` 五個槽），
+     母體是槽目錄全部 22 槽 ⇒ 17 個可歸因的槽。**算式要逐個操作數對得上、不是結果對就算數**：22 減 5 與
      「21 減 4」都得到 17，但後者的母體與扣除項兩個操作數都錯，照它推下去會把 `internal_note`
-     當成沒被排除的槽。要驗就驗 `attribution_slot_keys` 排掉哪五類角色，不是驗那個 17。
-     照槽名列名單會無聲落後（product 該函式的 docstring 就是這樣寫的）；切版沒有 `role` 欄可讀
+     當成沒被排除的槽。要驗就驗排掉的是哪五類角色，不是驗那個 17。
+     照槽名列名單會無聲落後；切版沒有 `role` 欄可讀
      （`ui/field-slot-catalog` 只帶 key ＋ 預設名，§2），故下面以一張**排除清單**鏡射同一個子集，
-     上游加槽時要回頭對 `attribution_slot_keys`——措辭與 5-10 那一頁對齊。
+     目錄加槽時要回頭確認那張清單還蓋得住那五類角色——措辭與 5-10 那一頁一致。
      同一份目錄本頁用兩次（統計維度 select ＋ 歸因維度多選），故 set 成一個陣列共用（GUIDELINE §6）。
-     **React 端不得把這 17 個硬編**：`GET /settings/attribution` 回的 `available_slots` 就是這份值域的
-     單一真相（product），值域一變前端才不會跟著漂。
-     `label` 是各槽的**預設**顯示名——正式環境在執行期顯示的是租戶為該槽取的名字（per-profile `field_labels`，
+     **React 端不得把這 17 個硬編**：可選槽的值域是進這一頁時一起讀進來的，值域一變前端才不會跟著漂。
+     `label` 是各槽的**預設**顯示名——正式環境在執行期顯示的是租戶為該槽取的名字（per-profile 的欄位命名，
      如「承辦組室」），屬業務資料故不掛 data-i18n（同 5-2 的 MCP server 名）。
      示範裡這個租戶把 note1／note2 取名為「承辦組室」「業務範疇」（與 4-2 來源區塊的歸因列同一個租戶）。
-     **這與 5-10 的「標籤維度名」是兩件事**（product 兩張表：`RetrievalProfile.field_labels` ↔
-     `TagDimension.name`），所以 5-10 的示範維度刻意掛在 note3 之後的槽上——同一個槽同時有兩個
+     **這與 5-10 的「標籤維度名」是兩件事**（一個是這個槽在這份對話設定裡叫什麼、一個是標籤維度
+     自己的名字），所以 5-10 的示範維度刻意掛在 note3 之後的槽上——同一個槽同時有兩個
      不同的中文名會讓讀的人推不出哪一份才算數（§6 跨頁自洽）。
-     其餘槽維持預設名。這一份 `field_labels` 的**唯一編輯畫面**是 5-2 的「欄位命名」區
+     其餘槽維持預設名。這一份欄位命名的**唯一編輯畫面**是 5-2 的「欄位命名」區
      （那一頁的 note1／note2 也是這兩個名字，§6 跨頁自洽）。 #}
 {# 歸因維度的槽清單＝**正本目錄的子集**（ui/field-slot-catalog，§2 的 {% from … import %}）：
      content／flag／tags／privilege 不是可歸因的欄位，internal_note 更是結構上不進索引
-     （product field_schema 的 role="product_only"），故以一張排除清單表達，不再抄一份槽清單。
-     顯示名同 5-2 的欄位命名（那是 field_labels 的唯一編輯畫面）：改過名的以 key 查，其餘走預設名。 #}
+     （目錄上標成 `productOnly` 的那一顆），故以一張排除清單表達，不再抄一份槽清單。
+     顯示名同 5-2 的欄位命名（那是欄位命名的唯一編輯畫面）：改過名的以 key 查，其餘走預設名。 #}
 {% from "ui/field-slot-catalog/field-slot-catalog.html" import fieldSlotCatalog %}
 {% set attributionExcluded = ["content", "flag", "tags", "privilege"] %}
-{# 這一份要與 5-2「欄位命名」區的 fieldSlotLabels **逐槽相同**：同一個租戶的同一份 field_labels，
+{# 這一份要與 5-2「欄位命名」區的 fieldSlotLabels **逐槽相同**：同一個租戶的同一份欄位命名，
      唯一的編輯畫面在 5-2，這裡只是讀它。少抄一個改過名的槽，同一顆槽在兩頁就會有兩個中文名
      （5-3 的下拉會回退成 slot.defaultLabel「標題」，而 5-2 說它叫「問題標題」）。
      content 被 attributionExcluded 濾掉、其餘槽在 5-2 也沒改名，故補齊 title/date 即完全對齊。 #}
@@ -88,15 +82,14 @@ permalink: 5-3_statsModule.html
              `timeFilterRangeHintId`＝下面那顆「查詢」鈕 `data-toast` 裡 365 的**常駐可見抄本**所在的
              節點 id（起訖兩欄 aria-describedby 指它）。屬性型譯文（`data-i18n-data-toast`）只有在
              「同一個約束另有一處常駐可見的資料節點承載」時才准把常數烤進譯文（§4-2）——這個 id
-             就是那一處；沒有它，365 改了譯文會靜默過期。上游符號名見該元件檔頭與本頁查詢鈕註解
-             （product 的 `_resolve_range`）。 #}
+             就是那一處；沒有它，365 改了譯文會靜默過期。 #}
         {% set timeFilterName = "data-time" %}
         {% set timeFilterLabelId = "dataTimeFilterLabel" %}
         {% set timeFilterChecked = "lastWeek" %}
         {% set timeFilterRangeHintId = "dataTimeRangeHint" %}
         {% include "components/data-time-filter/data-time-filter.html" %}
         {# 統計維度：`dataset`（依資料集）或 `attribution:<slot>`（依租戶指定的歸因欄位分群）。
-             值域＝上面的 attributionSlots（product `field_schema.ATTRIBUTION_SLOT_KEYS`），選項文字是
+             值域＝上面那份可歸因的槽清單（`fieldSlotCatalog` 扣掉 `attributionExcluded`），選項文字是
              租戶取的欄位名＝業務資料不翻；「資料集」那顆是 chrome 走 i18n。
              值載體 select → 只掛 hook class（GUIDELINE §5 組合矩陣②），成敗由旁邊的「查詢」鈕演。 #}
         <div class="form-group row flex-row mobile-column-xs gap-16">
@@ -112,9 +105,10 @@ permalink: 5-3_statsModule.html
                 </select>
             </div>
         </div>
-        {# 計數方式：一則問答命中多份文件時，`per_log` 同一則的同一個值只計一次、`per_hit` 逐筆命中各計一次。
-             兩者的總數都回在回應的 totals 裡（見下方指標列），報表才自證得了它算的是什麼。
-             product `/stats` 的**預設是 per_log**（`count_mode`），故這裡預設選它。 #}
+        {# 計數方式：一則問答命中多份文件時，`per_log` 同一則的同一個值只計一次、`per_hit` 逐筆命中各計一次
+             （值域就這兩顆，在這裡宣告一次，就是正本）。
+             兩者的總數都畫在下方指標列，報表才自證得了它算的是什麼。
+             **預設是 `per_log`**，故這裡預設選它。 #}
         <div class="form-group row flex-row mobile-column-xs gap-16">
             <div class="label mobile-align">
                 <label id="countModeLabel" class="control-label" data-i18n="settings.countMode">計數方式</label>
@@ -139,19 +133,16 @@ permalink: 5-3_statsModule.html
         {% set dataTypeLabelId = "queryDataTypeLabel" %}
         {% include "components/data-type-filter/data-type-filter.html" %}
     </div>
-    {# **這顆鈕上有兩道能力 403，各一段**：主閘是 `require_capability("settings", "read")`
-         （`GET /stats` 的 dependency `authz.require_stats_scope` 的第一層），走全站統一子句
-         「權限不足，無法查詢」；`dimension=attribution:*` 時**另要** `data:read`（同一支 dependency
-         的第二層，理由是分群鍵就是文件欄位值本身），那一段自帶條件敘述、**不代替**主閘那一段。
+    {# **這顆鈕上有兩道能力 403，各一段**：主閘是 `settings:read`，走全站統一子句
+         「權限不足，無法查詢」；統計維度選到 `attribution:<槽>` 時**另要** `data:read`
+         （理由是分群鍵就是文件欄位值本身），那一段自帶條件敘述、**不代替**主閘那一段。
          **兩段都必須在**：附加閘那一段開頭也是「權限不足」四個字，只留它的話，用子字串比對
          查有沒有列 403 會一路綠燈，主閘那一條路徑卻沒有任何文案。而主閘是真的走得到的——
          導覽選單沒有 `data-capability`，沒有 `settings:read` 的人照樣進得來這一頁。 #}
-    {# 這一頁的查詢打的是 `GET /stats`，`_fetch_logs` 對「筆數超過單次上限」回 400
-         「此時間範圍資料量過大…請縮小範圍」（product 的 `_fetch_logs`／`stats.too_many_logs`）。
-         **那個上限不是常數**：它是 `stats._stats_max_logs()`，每次呼叫讀 product 的
-         `stats_max_logs`（預設 5000，可由 env 覆寫），所以切版任何一處都不寫死那個數字，
-         引它也只能引函式名——寫成 `MAX_STATS_LOGS` 那種常數式的名字在上游 grep 為零，
-         既指不到東西，也把「可由 env 覆寫」這件事講反了。時間篩選最長給到 365 天，
+    {# 這一段期間的筆數超過單次查詢上限時會被擋下來，畫面上是一段自成一格的 warning
+         「這段期間的資料量超過單次上限，請縮小時間範圍」。
+         **那個上限不是固定值**：它隨部署設定而變、每次查詢當下才決定，所以切版任何一處都不寫死
+         那個數字——寫死等於在畫面上宣告一條會隨部署漂掉的界線。時間篩選最長給到 365 天，
          這是按幾下就撞得到、而且使用者自己縮小範圍就修得掉的結果——折進「載入資料失敗，請重新整理頁面」
          等於叫人重整一個永遠不會成功的請求，故另立 key 加一段 warning（§5）。
          左邊那顆是全站篩選列正典的 `.js-filter-clear`「清除」，行為由 ui/filter-fields 提供
@@ -165,19 +156,19 @@ permalink: 5-3_statsModule.html
 
 {# 指標列：報表要能自證「它算的是什麼、分母是誰」。
      - 統計維度／計數方式是**回應的回聲**（不是畫面上的選擇），送出的與算出來的不一致時才看得出來。
-     - 無命中率＝零命中則數 ÷ 對話則數。**只有這一個比率、沒有第二個「拒答率」**：GufoRAG chatbot
-       在誠實查無（含 grounding 判 `NO_ANSWER`）時會把該則的 `search_results` 清空、不落成來源卡，
+     - 無命中率＝零命中則數 ÷ 對話則數。**只有這一個比率、沒有第二個「拒答率」**：誠實查無
+       （含可答性判定判為不作答）的那一則不會留下任何來源卡，
        所以拒答必然落在零命中裡，而零命中還含「本來就不需要文件的提問」（招呼、閒聊）——
-       product 手上只有這一個量得到的集合（`StatsOut.no_hit_rate`）。
-       同一個數字掛兩個名字，報表看起來就像量了兩件事。期間內一則都沒有時回 null，畫面顯示「—」
+       量得出來的集合只有這一個。
+       同一個數字掛兩個名字，報表看起來就像量了兩件事。期間內一則都沒有時算不出比率，畫面顯示「—」
        而不是 0%（0% 會被讀成「每一則都有命中」）。
-     - 已計入／群組數＝`totals.counted`／`totals.groups`：前者恆等於排行各列次數的總和（有沒有被吃掉
+     - 已計入／群組數：前者恆等於排行各列次數的總和（有沒有被吃掉
        只有這裡看得出來），後者是**合併「其他（N 個來源）」之前**的真實組數。 #}
 <div class="block flex-row gap-24 flex-wrap mt-16">
     <p><span class="text-bold" data-i18n="settings.statsDimensionLabel">統計維度：</span><span id="stats-dimension-echo">-</span></p>
     <p><span class="text-bold" data-i18n="settings.countModeLabel">計數方式：</span><span id="stats-count-mode-echo">-</span></p>
     {# 半形 `-` 是**載入前的佔位**（業務 js 待填，同 `ui/chart-desc` 的三顆槽），**不是空值畫法**：
-         期間內一則都沒有時上游回 `null`，那時 js 寫進去的是全形「—」（§6 空值一律「—」）。
+         期間內一則都沒有時算不出值，那時 js 寫進去的是全形「—」（§6 空值一律「—」）。
          兩個字元代表兩種不同的狀態（還沒查 vs 查了沒有），寫成同一個就分不出來了。 #}
     <p><span class="text-bold" data-i18n="settings.noHitRate">無命中率：</span><span id="stats-no-hit-rate">-</span></p>
     <p><span class="text-bold" data-i18n="settings.conversationCount">對話次數：</span><span id="stats-total-logs">0</span></p>
@@ -242,34 +233,33 @@ permalink: 5-3_statsModule.html
     </div>
     <div class="chart-box">
         {# ⚠️ 這張圖的「近4周」**不跟著上面的資料時間篩選變**，所以標題寫死 4 周不是漏做：
-             product 的 `/stats` 對圖 3 是「獨立取近 28 天（自 p_end 回推），
-             分 4 個 7 天桶」（該段註解逐字），回在 `WeeklyOut.weeks`／`series` 上——篩「上週」時
+             它獨立取近 28 天（自查詢區間的結束日回推）、分成 4 個 7 天桶——篩「上週」時
              上面的指標與圖 1／圖 2 走那個區間，這一張仍然是四個 7 天桶。
-             ⚠️ 「預設篩上週、標題卻寫死近4周」看起來像自打架，其實不是：那正是端點的行為。
-             把標題改成跟著篩選走，反而會讓畫面說出一件端點做不到的事。 #}
+             ⚠️ 「預設篩上週、標題卻寫死近4周」看起來像自打架，其實不是：這張圖本來就是這樣算的。
+             把標題改成跟著篩選走，反而會讓畫面說出一件算不出來的事。 #}
         <div class="chart-title" data-i18n="settings.weeklyRetrievalTrend">近4周取用次數變化</div>
         <div class="chart"><canvas id="chart3-line"></canvas></div>
         {% set chartDescId = "chart3" %}
         {% set chartDescRow = false %}
         {% include "ui/chart-desc/chart-desc.html" %}
-        {# **未進圖的則數**＝`WeeklyOut.unbucketed_logs`（product）：落在近 28 天
-             窗裡、但 `human_time` 缺席或解析不出來，進不了任何一個 7 天桶的則數。
+        {# **未進圖的則數**：落在近 28 天窗裡、但沒有一個解析得出來的時間戳，
+             進不了任何一個 7 天桶的則數。
              沒有這一格時，折線圖各系列的總和會比它上面那顆「對話次數：」少，而畫面上沒有任何
              地方解釋得了那個差額——這是「被排除的筆數一律外顯」那一族的消費端（同族的
-             `truncated`／`params_total`／`too_short_records` 都已經外顯了）。
+             軌跡截斷標記、參數總數、3-5「這一次沒有做完的檢查」那幾格都已經外顯了）。
              有了它，這一張圖自證得出一條恆等式：**各系列總和 ＋ 這個數 ＝ 對話次數**。
 
            **落點是這一張圖底下，不是 `ui/chart-desc` 的第 4 個槽。** 那顆共用元件三處都在用
-             （chart-box 的圖 1、本頁的圖 2 與圖 3），而 `unbucketed_logs` 是 `WeeklyOut` 的欄位、
-             只有圖 3 餵得到：開成第 4 槽等於在圖 1／圖 2 底下畫兩顆**沒有任何端點欄位填得進去**
-             的槽（§4：不替上游給不出來的東西留位子；同一條理由收掉了本頁排行榜的「建議」欄）。
+             （chart-box 的圖 1、本頁的圖 2 與圖 3），而「未進圖的則數」只有這張週趨勢圖算得出來：
+             開成第 4 槽等於在圖 1／圖 2 底下畫兩顆**沒有任何值填得進去**
+             的槽（§4：不替給不出來的東西留位子；同一條理由收掉了本頁排行榜的「建議」欄）。
 
            **0 也畫（常駐），不是「0 就整行不畫」。** 全站對「被排除的筆數」這一族有兩種畫法，
              判準不同，這一行落在常駐那一邊：
-               · 3-5 的 `slotless_records`／`exact_match_only_records` **常駐**（0 也畫），逐字理由是
+               · 3-5「這一次沒有做完的檢查」那幾格 **常駐**（0 也畫），逐字理由是
                  「只在非 0 才出現的話，看不到它就分不出是『這一次沒有被排除』還是『這個版本不報
                  這件事』」——而這裡問的正是同一個問題：值班的人看到總和對不上時，要能當場分辨
-                 「沒有任何則被排除」與「這個後端還沒回這個欄」。
+                 「沒有任何則被排除」與「這個版本還不報這件事」。
                · step-flow 的軌跡截斷**未截斷就整段不畫**，理由是常駐會變成「已顯示 231／共 231」
                  那種廢話——但「未計入本圖的則數：0」不是廢話，它是那條恆等式的一半，講的是
                  「這張圖是完整的」。
@@ -288,19 +278,18 @@ permalink: 5-3_statsModule.html
 
 {# ── 歸因維度────────────────────────────────────────────────────────
      租戶指定哪幾個欄位是「歸因維度」＝報表要依哪些欄位歸戶（承辦組室、業務範疇…）。
-     這份設定是**每租戶一份**（product `TenantSetting.attribution_slots`，`GET/PUT /settings/attribution`），
-     不是 per-profile，所以放在本頁而不是 5-2 的三份設定裡。
+     這份設定是**每租戶一份**，不是 per-profile，所以放在本頁而不是 5-2 的三份設定裡。
      它同時決定三個地方：問答詳情來源區塊的歸因列（4-2）、歷史匯出 CSV 的歸因欄、以及上面那顆
-     「統計維度」下拉能對到的欄位；**清單順序即報表欄序**（product 照收不排序）。
-     選項文字＝租戶為該槽取的顯示名（業務資料不翻，見頁首 attributionSlots 註解）。
-     儲存鈕是送 API 的鈕（③）→ 列出全部結果：成功／權限不足（`require_capability("settings","write")`
-     回 403）／其他失敗。**權限不足那一段不可以改用 disabled 讓它不可達**——那是把契約演掉。 #}
+     「統計維度」下拉能對到的欄位；**清單順序即報表欄序**（照收，不重排）。
+     選項文字＝租戶為該槽取的顯示名（業務資料不翻，見頁首歸因槽那一段註解）。
+     儲存鈕是送 API 的鈕（③）→ 列出全部結果：成功／權限不足（缺 `settings:write`
+     會回 403）／其他失敗。**權限不足那一段不可以改用 disabled 讓它不可達**——那是把契約演掉。 #}
 <div class="block flex-row column gap-16 mt-24">
     <div class="flex-row column gap-8">
         <div class="text-lg text-bold" data-i18n="settings.attributionDimensions">歸因維度</div>
-        {# **「順序」那句話與這顆控制項表達得出來的東西要對得上**（§4：上游宣告某個維度有語意時，
+        {# **「順序」那句話與這顆控制項表達得出來的東西要對得上**（§4：某個維度有語意時，
              切版要嘛給得出表達它的控制項、要嘛把「這一半刻意沒切」寫進檔頭；不可以讓出貨文案
-             替一個不存在的控制項做承諾）。上游 `put_attribution` 逐字「順序即報表欄序（照收，不排序）」，
+             替一個不存在的控制項做承諾）。這份清單的順序就是報表欄序（照收，不重排），
              而本頁用的是 `ui/multi-select` 增強的原生 `<select multiple>`——它寫回去的順序**恆等於
              `<option>` 的 DOM 序**（＝欄位槽的宣告序），使用者不論先點哪一顆都改不動。
              **切版刻意不做排序控制項**（拖曳列／上下移鈕），所以文案改成描述現況：欄序＝槽的宣告序。

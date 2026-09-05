@@ -10,17 +10,15 @@
        timeFilterName    —— radio 的 name（同頁多組要不同：5-3 是 data-time、5-4 是 gap-time）
        timeFilterLabelId —— 群組標題的 id（供 aria-labelledby 指到；同頁唯一）
        timeFilterChecked —— 預設選中哪一顆：last24h / lastWeek / lastMonth / range（不給＝一顆都不選）。
-                            這是**參數名**，不是送出去的值：`value` 是上游 `GET /stats`／
-                            `GET /stats/coverage-gaps` 的 `range` 字面（daily／weekly／monthly／custom），
-                            §6「值＝上游字面，不另發明詞彙」。四顆都帶 `data-filter-reset`：
+                            這是**參數名**，不是送出去的值：`value` 是這一組選項的識別字
+                            （daily／weekly／monthly／custom），在這裡定義一次就是正本。
+                            四顆都帶 `data-filter-reset`：
                             清除鈕**不由 type 推導**哪些是篩選參數，沒宣告的 radio 它一顆都不碰
                             （見 `ui/filter-fields` 的 js），於是按了清除時間篩選會留在原地。
        timeFilterRangeHintId —— 區間上限那句常駐說明的 id（同頁唯一；起訖兩欄 aria-describedby 指它）
-     **365 這個數字寫在元件裡、不開成參數**（§6 (a) 全站不變的結構性設定）：兩個消費頁打的是
-     同一支驗證——product 的 `_resolve_range`，`GET /stats` 與
-     `GET /stats/coverage-gaps` 都呼叫它，裡面兩條界線都是 `timedelta(days=365)`
-     （`stats.start_over_a_year_ago`＝開始時間不得早於 365 天前、`stats.range_over_365_days`＝
-     區間不得超過 365 天）。哪一天有頁面要不同的界線，才照 §6 開成參數。
+     **365 這個數字寫在元件裡、不開成參數**（§6 (a) 全站不變的結構性設定）：兩個消費頁吃的是
+     同一組界線，而且兩條界線同一個數字——開始時間不得早於 365 天前、
+     區間不得超過 365 天。哪一天有頁面要不同的界線，才照 §6 開成參數。
      為什麼非有這一句不可（§4-2）：兩頁「查詢」鈕的 `data-toast` 把 365 烤進譯文，而屬性型譯文
      那條例外**要求同頁另有一處常駐可見的節點承載同一個數字**——沒有它，改了上限只會讓譯文
      靜默過期。故走正典寫法：前綴 key ＋ 不翻的 `<span>` 數字節點 ＋ 後綴 key，並依 §3-2

@@ -14,21 +14,18 @@ permalink: 3-6_aliasTables.html
     {% include "ui/breadcrumb/breadcrumb.html" %}
 </div>
 
-{# 別名表管理（SaaS 新需求）。逆向自 GufoRAG chatbot 的別名表模型與服務層：
-     **別名表統一管理「誰＝誰」，各功能自己決定要不要套用**。
+{# 別名表管理：**別名表統一管理「誰＝誰」，各功能自己決定要不要套用**。
      **為什麼要有這一頁**：別名散在術語表詞條與出口替換規則兩個地方時，最需要它的 QA 直答
      （逐字比對）一個都拿不到——使用者打「推廣貿易服務費要怎麼繳」、QA 集裡寫的是
-     「推貿費要如何繳納？」，實測 4 次只命中 1 次。
-     **別名只住在一個地方**：術語表沒有 `aliases` 欄（GufoRAG chatbot 逐字寫著「別名一律住在
-     alias_entries」），這一頁也不留、不 deprecate 任何第二份別名——兩份別名一定會分岔，
-     而分岔的那一天沒有任何畫面看得出來。
+     「推貿費要如何繳納？」，同一件事換個說法就命中不到。
+     **別名只住在一個地方**：術語表沒有別名欄，這一頁也不留任何第二份別名——兩份別名一定會
+     分岔，而分岔的那一天沒有任何畫面看得出來。
 
    **階段不標在每一列詞條上**：那會變成幾百列 × 四個勾選框，實務上一定被「全選」處理掉，
      得到的是假的細緻度。四個套用開關放在設定檔（5-2），一個明確、看得見、一鍵可撤的決定。
 
-   上限是契約欄位（§6），出處＝GufoRAG chatbot 的這六顆常數：
-     `MAX_TABLE_NAME_LEN = 200`／`MAX_DESCRIPTION_LEN = 2000`／`MAX_ALIAS_ENTRIES_PER_TABLE = 20000`／
-     `MAX_ALIASES_PER_ENTRY = 50`／`MAX_CANONICAL_LEN = 200`／`MAX_ALIAS_LEN = 200`。
+   上限是契約欄位（§6），**六條界線在這裡宣告**：表名稱 200 字、說明 2000 字、
+     一張表最多 20000 筆詞條、一筆詞條最多 50 個別名、正式寫法 200 字、單一別名 200 字。
      版型比照 3-2_glossaryManagement（新增區＋清單表＋條件開窗 modal）——它就是同一種東西的
      管理頁，沒有理由長得不一樣。
 
@@ -36,18 +33,15 @@ permalink: 3-6_aliasTables.html
      在設定檔 2 完全沒用——一欄塞不下，塞了就會說謊。
    **不做「何時查閱／補充指示／查詢正規化 regex」**：那三個是術語表的工具屬性，別名表不生成
      任何工具。 #}
-{# id＝別名表主鍵（chatbot `alias_tables.id`）。**不可拿 loop.index 當列鍵**：這張表刪得掉列，
+{# id＝這張別名表的識別碼。**不可拿 loop.index 當列鍵**：這張表刪得掉列，
      位置不是身分——刪掉前一列之後，後面每一列的列鍵都會往前頂一格，React 端的 key 與逐列
      動作的目標會一起指錯人（§6 列鍵）。
    示範 3 張：一張大的、一張小的、**一張空的**——空表要看得出「詞條數 0」不是壞掉（§5 每個
      分支都要看得到）。
 
-   **「別名總數」這一格上游回得出來**：GufoRAG chatbot 的 `_table_to_dict` 把 `alias_count` 列為
-     **必填具名參數**（沒有預設值，四個呼叫端都得自己算），product 原樣代理。
-     為什麼要單獨一欄：一張表「有幾個詞條」與「總共登記了幾個別名」是兩個決定
-     （`MAX_ALIAS_ENTRIES_PER_TABLE` 與 `MAX_ALIASES_PER_ENTRY` 是兩條不同的上限），
-     而它從詞條數推導不出來。**上游那一側的符號名是 `_table_to_dict`**：改版時 grep 它一次就知道
-     這一格還在不在（§4「上游還沒有 X」是最會過期的一種斷言——這一條就是主張成功之後上游補上的）。
+   **「別名總數」這一格逐張表讀得到，不是從詞條數推導的**：一張表「有幾個詞條」與「總共
+     登記了幾個別名」是兩個決定（詞條數上限與每一筆詞條的別名數上限是兩條不同的界線），
+     所以它自成一欄。
      **值域含 0**（空表就是 `0`），所以這一格不用真值判斷、也不留「—」那一態：那顆破折號的語意是
      「量得到、只是這一刻還沒有值」（§6 三種哨兵），拿它承載一個量到的 `0` 會讓值班的人分不出兩者。 #}
 {% set aliasTables = [
@@ -60,15 +54,11 @@ permalink: 3-6_aliasTables.html
 <p class="text-gray" data-i18n="settings.aliasTablesIntro">別名表管理「哪些詞是同一件事」。哪些功能要套用哪幾張表，在「對話設定」裡各自決定——別名表本身不決定它在哪裡生效。</p>
 
 {# 新增別名表：只有名稱（必填）與說明。送出鈕的 data-toast 列全結果（§5 矩陣③），
-     warning 段對回 chatbot 的 `validate_alias_table_metadata`（空名、長度上限）。
-     **沒有「名稱已存在」那一段**：GufoRAG chatbot 的 `create_alias_table` 只跑那一支驗證就 db.add，
-     而 GufoRAG chatbot 的 `alias_tables.name` 是 `Column(String(200), nullable=False)`——無 unique、
-     無 UniqueConstraint、全檔零 IntegrityError 分支。列一個上游產不出來的結果，與只演成功一樣是說謊（§5）。
-   **第 5 段：到達每租戶的張數上限。** product 的 `create_alias_table` 第一行就是
-     `await _assert_table_quota(...)` → 第 31 張回 400 `table.too_many_for_tenant`。
-     **執法點在 product**（`MAX_TABLES_PER_TENANT = 30`，術語表與別名表共用同一顆常數、
-     兩族各自這麼多），不在 GufoRAG chatbot——那一側的 `tenant_id` 是呼叫端自填的 tag、
-     當不了配額鍵（換一個 tag 就再拿 30 張）。
+     warning 段對回那兩欄的驗證（空名、長度上限）。
+     **沒有「名稱已存在」那一段**：表名稱沒有任何唯一性檢查，同名建得起來。列一個不可能發生
+     的結果，與只演成功一樣是說謊（§5）。
+   **第 5 段：到達每租戶的張數上限**（30 張，在這裡宣告；術語表與別名表兩族各自這麼多）。
+     配額算在租戶身上，第 31 張會被擋下。
      **它是 warning、不是 error**：使用者刪掉用不到的表就建得起來。
      **而且一定要有自己的一段**：併進第 4 段「建立失敗，請稍後再試」就是把一個永久的拒絕
      演成暫時故障——使用者的下一步變成「等一下再按一次」，而那永遠不會成功。
@@ -76,8 +66,8 @@ permalink: 3-6_aliasTables.html
      一處常駐可見的節點承載，那一處是下方「別名表清單」標題列的計數（`已 N / 30 張`）。 #}
 <div class="block mt-16 mb-16 flex-row column gap-16">
     {# ⓘ 說明：markup 逐字照抄 `settings/5-2_conversationSettings.html` 出口套用欄那顆既有
-         info-btn 六件組。①出處：本檔檔頭「別名表統一管理『誰＝誰』」那段＋ GufoRAG chatbot
-         的別名表形狀（`canonical` ＋ `aliases`）。刻意不提「哪裡套用」——
+         info-btn 六件組。①講的是本檔檔頭「別名表統一管理『誰＝誰』」那段，加上一筆詞條的
+         形狀：一個正式寫法配一組別名。刻意不提「哪裡套用」——
          那句已經是上方 `settings.aliasTablesIntro` 的內容，重寫一次只是噪音。 #}
     <div class="flex-row align-items-center gap-8">
         <div class="text-md text-bold" data-i18n="settings.addAliasTable">新增別名表</div>
@@ -126,17 +116,14 @@ permalink: 3-6_aliasTables.html
 {% set helpModalWhatKey = "help.settings.addAliasTable.what" %}
 {% set helpModalWhat = "這一區用來新增一張別名表，把使用者可能用不同說法（例如簡稱、口語）問到的同一件事登記成一組「正式寫法＋別名」，供比對時把使用者的說法歸到同一個詞或同一筆資料。" %}
 {% set helpModalStateItems = [] %}
-{# ③ 這一區唯一的界線：**每個租戶最多幾張表**，同構於 3-2 那一列。
-     出處＝`GET /datasets/limits` 的 `alias.tables_per_tenant`（product 的
-      `DATASET_LIMIT_GROUPS.alias`，值取
-     `chat_config_limits.MAX_TABLES_PER_TENANT`——**與術語表共用同一顆常數**，兩族各自這麼多）。
-     **落在 `/datasets/limits` 而不是 `/settings/chat-config-limits`**：判準是閘（別名表走
-     `data:read`／`data:write`，與該端點同閘；`chat-config-limits` 是 `settings:read`），
-     見 product 那一段逐字寫著的理由。執法點＝product 的 `assert_table_quota`。
+{# ③ 這一區唯一的界線：**每個租戶最多幾張表**（30），同構於 3-2 那一列——別名表與術語表
+     的張數上限是同一個值，兩族各自這麼多。
+     **這個數字要與別名表本身同一道閘讀得到**（`data:read`／`data:write`），不混進只有
+     `settings:read` 才讀得到的那一份對話設定上限：判準是閘，不是「這個數字長得像設定」。
      名稱／說明兩欄的長度上限**不列在這裡**：它們已經是欄位旁常駐可見的 hint ＋ `maxlength`（§4）。
      `bound` 寫法照全站慣例（半形短破折號兩側各一個空白、不加千分位；單邊界線只寫 `≤ 30`）。
      ⚠️ 兩顆 key 與 3-2 術語表共用（理由逐字寫在該頁同一列的註解：繁中原文相同的 chrome
-     沿用既有 key，§4-2；兩族的值本來就是同一顆常數）。 #}
+     沿用既有 key，§4-2；兩族的上限本來就是同一個值）。 #}
 {% set helpModalLimitRows = [
   { labelKey: "help.settings.tablesPerTenant", label: "一個租戶最多幾張表",
     bound: "≤ 30",
@@ -146,10 +133,8 @@ permalink: 3-6_aliasTables.html
 {% include "components/help-modal/help-modal.html" %}
 
 <div class="block flex-row column gap-16">
-    {# ⓘ 說明：同上一顆 info-btn 六件組。①出處：本區塊逐列刪除鈕上方的檔頭
-         （product 的 `delete_alias_table` 只代理，守衛在 GufoRAG）＋
-         GufoRAG chatbot 的 `delete_alias_table`
-         （五個欄位——`alias_table_ids`／四個 apply 清單——任一提到都算參照）。 #}
+    {# ⓘ 說明：同上一顆 info-btn 六件組。①講的是刪除前的參照守衛：一張表只要被某一套對話設定
+         的五個欄位（可選清單 ＋ 四個套用清單）之中任何一個提到，就算還被綁著、刪不掉。 #}
     {# 「已經用掉幾張」畫在清單標題那一列，與 3-2 逐字同構——形狀出處（本頁自己那顆
          `components/alias-entries-modal` 的「已 N / 20000 筆」計數列）與三顆 key 的沿用理由
          寫在 3-2 同一處。左邊的 N 由 `aliasTables.length` 推導（§6 示範資料自洽），右邊的 30
@@ -185,15 +170,11 @@ permalink: 3-6_aliasTables.html
             <tbody>
                 {% for table in aliasTables %}
                 <tr data-alias-table-id="{{ table.id }}">
-                    {# 名稱與說明是列內就地編輯 ＋ 同列「儲存」（版型比照 3-2）。**前端打的是
-                         gufofaq-saas product 的 `PATCH /alias/{table_id}`、收 `AliasTableUpdateIn`**
-                         ＝name 與 description 的**局部更新**，兩欄都改得到；product 再代理到
-                         GufoRAG chatbot 的 `PUT /api/alias/{table_id}`（收 `AliasTableUpdate`）
-                         ——兩層的函式同名而**動詞不同**，只寫「`update_alias_table`」照字面看不出
-                         指的是哪一層（§3-2：跨 repo 代理要指名前端真正打的那一層＋動詞）。
+                    {# 名稱與說明是列內就地編輯 ＋ 同列「儲存」（版型比照 3-2）。這一顆送的是
+                         **兩欄的局部更新**：只改一欄也送得出去，兩欄都改得到。
                        ⚠️ **不做「重新命名」那種鈕**：它只改得到名字，說明那一欄就再也沒有修改路徑，
-                         而 `AliasTableUpdateIn` 兩欄都收得下（§4：request 收得下的每個參數都要在
-                         畫面上有落點）；何況那顆鈕還要另開一扇全站不存在的窗。列內就地編輯兩欄一起解決。
+                         而這個動作兩欄都收得下（§4：送得出去的每個參數都要在畫面上有落點）；
+                         何況那顆鈕還要另開一扇全站不存在的窗。列內就地編輯兩欄一起解決。
                        迴圈內的值控制項不掛靜態 aria-label（§4：同表 3 列會全部同名）——改吃
                          「本列辨識欄 ＋ 欄表頭」，故另補一顆 sr-only 列名。
                        兩欄的 aria-describedby 指表格下方那一份共用上限（§4：同一個欄位在同一頁出現
@@ -210,14 +191,9 @@ permalink: 3-6_aliasTables.html
                     <td>
                         {# 「編輯詞條」與「刪除」要先選定「哪一張表」＝業務條件開窗 ⇒ 只掛 hook class、不掛
                              data-open-modal（§5）。刪除沿用既有的 delete-modal（本頁底部 include）。
-                           「儲存」是直接送 API 的動作鈕（③）⇒ 掛 data-toast 列全結果。**前端打的是
-                             product 的 `PATCH /alias/{table_id}`（`AliasTableUpdateIn`）**，
-                             它再代理到 chatbot 的 `PUT /api/alias/{table_id}`
-                             （`AliasTableUpdate`）——守衛住在 chatbot 那一層：
-                             `validate_alias_table_metadata` 的 AliasValidationError → 400
-                             （使用者修得掉＝warning）、找不到表 → 404、其餘 → DATABASE_ERROR。
-                             **沒有重名檢查**（`alias_tables.name` 無 unique constraint），故不列
-                             「名稱已存在」。 #}
+                           「儲存」是直接送 API 的動作鈕（③）⇒ 掛 data-toast 列全結果。結果就這幾種：
+                             兩欄的驗證擋下來（空名、超過長度上限——使用者修得掉＝warning）、
+                             這張表已經不在了、其餘故障。**沒有重名檢查**，故不列「名稱已存在」。 #}
                         <div class="btn-group">
                             {# 三顆的可及名稱＝「本列表名 ＋ 本鈕自己的字」（§4 逐列控制項）。 #}
                             <button data-capability="data:write" type="button" id="aliasTableSave-{{ table.id }}" aria-labelledby="aliasTableRowName-{{ table.id }} aliasTableSave-{{ table.id }}" class="button button-border button-sm" data-toast="別名表已更新|權限不足，無法儲存——請找貴租戶的管理者開通|表名稱不可為空，或長度超過上限|儲存失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.saveAliasTable" data-toast-type="success|warning|warning|error|warning" data-i18n="action.save">儲存</button>
@@ -235,8 +211,7 @@ permalink: 3-6_aliasTables.html
         </table>
     </div>
     {# 逐列兩欄共用的常駐可見上限（正典＝glossary-entries-modal 的 #glossaryLimitsHint）。
-         數字走資料節點、不烤進譯文（§4-2）；出處＝chatbot 的
-         `MAX_TABLE_NAME_LEN`／`MAX_DESCRIPTION_LEN`（見檔頭那份上限清單）。 #}
+         數字走資料節點、不烤進譯文（§4-2）；表名稱與說明的上限值見檔頭那份界線清單。 #}
     <p id="aliasTableLimitsHint" class="text-gray m-0"><span data-i18n="settings.glossaryLimitTableName">表名稱上限 </span><span>200</span><span data-i18n="settings.aliasLimitDesc"> 字、說明 </span><span>2000</span><span data-i18n="common.unitChars"> 字</span></p>
 </div>
 
@@ -252,14 +227,14 @@ permalink: 3-6_aliasTables.html
 
 {% include "components/alias-entries-modal/alias-entries-modal.html" %}
 
-{# 刪除確認：沿用既有的 delete-modal。閘門與新增鈕同一道（chatbot 的別名表是租戶資料）。
+{# 刪除確認：沿用既有的 delete-modal。閘門與新增鈕同一道（別名表是租戶資料）。
      deleteTargetId：不設的話會落回元件內建示範名「檔案名稱2.pdf」——別名表管理頁跳出一個 PDF 檔名
      （§6 示範自洽；3-1-1／3-1-3 已經各修過同一件事）。
-     deleteConfirmBinding：與 3-2／3-3／3-4 同——確認鈕交給業務 js（它要帶著「刪哪一張表」去送 DELETE），
+     deleteConfirmBinding：與 3-2／3-3／3-4 同——確認鈕交給業務 js（它要帶著「刪哪一張表」去送出），
      故不自動關窗。 #}
 {% set deleteTargetId = "deleteAliasTableName" %}
 {# 連帶後果（`deleteNoteKey`）：與 3-2 術語表同一族——表內詞條一起消失，而綁著它的設定檔
-     會少一份別名對照。同頁 toast 的「還被設定檔綁著」那一段是上游擋得下來的那一半；
+     會少一份別名對照。同頁 toast 的「還被設定檔綁著」那一段是擋得下來的那一半；
      這一句講的是擋不下來的那一半。 #}
 {% set deleteNoteKey = "dataset.deleteAliasTableNote" %}
 {% set deleteNoteZh = "表內詞條會一併消失；還綁著它的設定檔會少一份別名對照。" %}

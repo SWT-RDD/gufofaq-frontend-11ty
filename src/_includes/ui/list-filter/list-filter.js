@@ -105,8 +105,8 @@
 //    ⓔ `.checkbox-container` **直接包住 `.dataset-list-wrap`**（① 沒有這一層，② 的那一顆在
 //       `.dataset-box-wrap` 裡面）：`ui/checkbox/checkbox.js` 的委派掛在它身上，全選要靠它定範圍。
 //    ⓕ 搜尋框**上面**還有一列全選（`.check-all` ＋ 一顆同時當群組名的 `<span id>`）；逐列則是
-//       `.check-one` ＋ 值載體三件（`value`＝**product 的 dataset id**、hook class、`checked` 由資料決定）。
-//       **不是索引名**：索引名是 GufoRAG manager 那一側的內部識別，不進瀏覽器（理由與翻譯點寫在
+//       `.check-one` ＋ 值載體三件（`value`＝**資料集的識別碼**、hook class、`checked` 由資料決定）。
+//       **不是索引名**：這一顆送出去的是資料集的識別碼，索引名不進瀏覽器（理由與翻譯點寫在
 //       `components/search-scope-modal` 檔頭）。抄的時候連 hook 名一起抄——它叫
 //       `js-search-scope-dataset`，名字裡不留「index」正是為了不讓下一個人送錯東西。
 //    ⓖ 清單另掛 `aria-describedby` 指向窗內那句「一筆都沒有勾＝涵蓋全部」的常駐說明。

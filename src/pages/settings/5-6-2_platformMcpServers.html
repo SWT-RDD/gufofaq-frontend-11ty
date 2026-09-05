@@ -14,50 +14,44 @@ permalink: 5-6-2_platformMcpServers.html
     {% include "ui/breadcrumb/breadcrumb.html" %}
 </div>
 
-{# 兩級可見性（§5 data-platform-role）：本頁**整頁只有 platform_role=admin**——product 的
-     平台 router 每一支（含 list／tools／test 這些唯讀端點）都是 require_platform_admin，
+{# 兩級可見性（§5 data-platform-role）：本頁**整頁只有平台系統管理員進得來**——
+     這一頁的每一個動作（含列清單、問工具、測連線這些唯讀的）都要平台系統管理員，
      稽核員連讀都沒有，故導覽入口也標 admin（見 components/header 的 menuItems）。 #}
-{# 平台管理者專屬：MCP Server 全域註冊表（SaaS 新需求）。逆向自 product 的
-     `/platform/mcp`（代理 GufoRAG chatbot 的 `/api/mcp`，require_platform_admin）。
+{# 平台管理者專屬：MCP Server 全域註冊表。
      MCP Server ＝ Stdio 子程序（command/args/env）＝在 agent 主機執行任意指令，等同 RCE，
      故只准平台管理者註冊；租戶端只能在對話設定頁「勾選」已註冊的 server（唯讀投影，不碰此頁）。
      示範 3 筆：前 2 筆啟用、第 3 筆停用——**三筆都出現在 5-2 的勾選清單**，停用那筆在那邊以
-     「（停用中）」標示（跨頁自洽；理由見 5-2 該欄位註解：停用是可逆狀態，寫入層刻意不驗 is_active，
-     濾掉會讓「先建好設定、之後再啟用」做不到，也會讓已選取的 server 在被停用時從選單消失）。
-     上游是同一個判斷：product 的 `list_tenant_mcp_catalog` **不濾** `is_active`，
-     它的 docstring 逐字寫著「為什麼不濾掉停用中的」。 #}
-{# env 的值在讀取路徑一律被遮成 "***"（GufoRAG chatbot 的 _mask_env：管理 API 沒有認證，
-     原樣回傳等於任何連得到本服務的人都讀得到那些憑證），寫入時值仍是 "***" 的鍵沿用原值（_merge_env）。
-     故示範值就是遮罩字面——這不是佔位符，是**真的會從 API 拿到的東西**。 #}
-{# id＝MCP Server 主鍵（product 的 `server_id: int`）。**不可拿 loop.index 當列鍵**：
+     「（停用中）」標示（跨頁自洽；理由見 5-2 該欄位註解：停用是可逆狀態，租戶端那份目錄
+     **不濾掉停用中的**，濾掉會讓「先建好設定、之後再啟用」做不到，也會讓已選取的 server
+     在被停用時從選單消失）。 #}
+{# env 的值在讀取路徑一律被遮成 "***"（原樣回傳等於任何連得到這台服務的人都讀得到那些憑證），
+     寫入時值仍是 "***" 的鍵沿用原值。
+     故示範值就是遮罩字面——這不是佔位符，是**真的會拿到的東西**。 #}
+{# id＝MCP Server 的主鍵（整數）。**不可拿 loop.index 當列鍵**：
      這張表刪得掉列，位置不是身分——刪掉前一列之後，後面每一列的列鍵都會往前頂一格，
      React 端的 key 與逐列動作的目標會一起指錯人（§6 列鍵）。
      1/2/3 這三個號碼另有出處：5-2 對話設定的 MCP 勾選清單 `<option value>` 就是它們
      （跨頁同一份目錄，測試 §6「5-2 的 MCP Server 勾選清單與 5-6-2 註冊表跨頁自洽」把關）。 #}
-{# **列序＝`created_at` 降冪**，出處是 GufoRAG chatbot 的 `list_mcp_servers`
-     （排序住在它呼叫的 `paged_tables`，預設準則逐字是
-     `(created_at.desc(), id.desc())`）；product 的
-     `list_platform_mcp_servers` 只是把它原樣代理出去，沒有第二層排序）。id 是自增主鍵 ⇒ 建立時間升冪
-     ＝ id 升冪 ⇒ 這張表的順序是 **3 → 2 → 1**。**不可以順手排成 1 → 2 → 3**：那是這支端點
+{# **列序＝建立時間降冪、同時間再以 id 降冪**，清單端出來就是這個順序，途中沒有第二層重排。
+     id 是自增主鍵 ⇒ 建立時間升冪
+     ＝ id 升冪 ⇒ 這張表的順序是 **3 → 2 → 1**。**不可以順手排成 1 → 2 → 3**：那是這張清單
      產不出來的順序，而它讀起來完全合理，所以沒有人會覺得不對（§6 列序也是示範資料的一部分）。
      ⚠️ 改的是**列序**，不是 id 集合：5-2 對話設定那張勾選清單與本表有跨頁自洽測試，它比的是
      「同一組 id 與名稱、停用那筆要標示」，不比順序。 #}
-{# `liveToolCount`＝**載入時**就取到的工具數，出處是 GufoRAG chatbot 的
-     `get_mcp_server_tools` 回應（`{server_id, server_name, tools_count, tools[]}`），
-     由 product 的 `get_platform_mcp_server_tools` 原樣代理。
+{# `liveToolCount`＝**載入這一頁時**現去問到的工具數。
      **它與同一列的 `lastTest.toolsCount` 是兩個不同時刻的數字**，所以名字也要分得開：後者是
      上一次有人按「測試連線」留下的紀錄，前者是這一次開頁去問的結果——整欄的存在理由就是這件事
      （見下方「工具」欄的註解）。
    **值以字串傳入**（§6：值域含 0 的參數不得用真值判斷當渲染條件——`0` 在 nunjucks 是 false ⇒
      整格靜默消失，而 JSX 的 `{n && …}` 又會把 `0` 印在畫面上。正典：`components/step-flow`
      的 `poolSize`／`score`／`iterations` 那一族，理由逐字寫在該元件檔頭）。
-   **不帶這個鍵＝那一次取不到**（上游 404／502，或 chatbot 起子行程失敗）——這是三態裡的第三態，
+   **不帶這個鍵＝那一次取不到**（問不到那一台，或它的子行程起不來）——這是三態裡的第三態，
      與 `"0"`「問到了、它一顆工具都沒有」不是同一件事（§6：「這一格沒有數字」不是一種狀態）。
    三筆各演一態，而且與同列其餘欄位自洽（§6）：
      · id 1 上一次測試成功、`tools` 三筆 ⇒ `liveToolCount: "3"`，兩欄對得上。
      · id 2 上一次測試是 `TimeoutError`（連得上才問得到工具）⇒ 這一次同樣問不到 ⇒ 不帶鍵。
-     · id 3 是**停用**且從未測試過的舊版套件——`/tools` **不濾 `is_active`**（chatbot 那一支
-       拿到 server 就直接 spawn 子行程，沒有任何 `is_active` 判斷），所以停用中的 server 照樣
+     · id 3 是**停用**且從未測試過的舊版套件——問工具這條路徑**不看啟用狀態**（拿到 server
+       就直接起子行程去問），所以停用中的 server 照樣
        問得到；它問得到、但那個舊版套件的工具已經全數移除 ⇒ `"0"`。這一筆同時示範了
        「工具欄有值」與「最近一次測試＝尚未測試」可以並存，也就是本欄與那一欄非分開不可的理由。 #}
 {% set mcpServers = [
@@ -69,36 +63,28 @@ permalink: 5-6-2_platformMcpServers.html
 <p class="text-gray" data-i18n="settings.mcpServersIntro">MCP Server 讓 Agent 連上外部工具。註冊即在 Agent 主機執行指定指令，屬高權限操作，僅平台管理者可管理；租戶只能在對話設定勾選已註冊的 Server。</p>
 
 {# 新增 MCP Server：名稱＋執行指令（必填）＋參數＋環境變數＋描述＋啟用＋新增鈕。連線測試是獨立的
-     /servers/{id}/test 端點、不在建立路徑上。
-     **這條寫入路徑擋的是三件事**（漏掉第三件是常見的錯，因為那一道不在同一個 repo）：
-       ① 名稱重複、② `command` 不在白名單——兩件都在 GufoRAG 的
-          `create_mcp_server`／`update_mcp_server`（先查名稱重複、再跑 `assert_command_allowed`；
-          白名單是 GufoRAG chatbot 的 {python, python3, node, npx, uvx, uv}，該檔還特別交代
-          「不要把 shell（bash/sh）加進去，那等於放棄整道閘」）。而執行指令是自由文字欄，
+     動作、不在建立路徑上。
+     **這條寫入路徑擋的是三件事**（第三件最常被漏掉，因為它比另外兩件更早發生）：
+       ① 名稱重複；② `command` 不在白名單——白名單就是
+          `python`／`python3`／`node`／`npx`／`uvx`／`uv` 這六顆（在這裡宣告一次，就是正本），
+          **shell（`bash`／`sh`）刻意不在裡面**，加進去等於放棄整道閘。而執行指令是自由文字欄，
           打 bash／docker 是使用者自己改得掉的事，折進「建立失敗，請稍後再試」等於叫人重試。
-       ③ **`env` 含載入器掛鉤鍵**——這一道在 product 自己這一層（不在 GufoRAG）：
-          `_assert_env_keys_are_deliverable` 是 `create_platform_mcp_server` 與
-          `update_platform_mcp_server` **本體的第一行**（§3-2「函式本體第一行就呼叫的守衛，
-          那些 raise 不在本函式的縮排裡」正是這一型），比對 `BLOCKED_MCP_ENV_KEYS` 的成員與
-          `BLOCKED_MCP_ENV_PREFIXES` 的三條前綴規則，命中就 400。
-          **它不走 `_proxy_write`**，所以 `detail` 是純字串、沒有 `code` ⇒ React 端的
-          `showMcpWriteError` 認不出它，會落到最後那一段 error「請稍後再試」，而重試永遠不會成功
-          （上游根本不會收下那些鍵；它們甚至存得進去也只會在起子行程時被靜默剔除）。
-     還有一段 **422 超過上限**：`McpServerCreate`／`McpServerUpdate` 的 `max_length` 群
-     （名稱／執行指令／描述的字數，args 的項數與每項字數，env 的組數與鍵值字數；值集中在
-     product 的 `MCP_FIELD_LIMITS`）。畫面上既然把上限標出來了，超過那一態就要有鈕演得出來。
-     ⚠️ **`|` 的段序是索引契約，動它就要連下游一起動**：gufofaq-saas
-     `apps/web/app/(app)/mcp-servers/page.tsx` 的 `showMcpWriteError` 以 `MCP_WRITE_SEGMENT`
-     把 400 的 code 對到**中間**那三段（索引 1–3），最後那顆 error 則是按位置取最末段。
-     往中間插一段而沒有同步改索引，錯誤就會顯示成「環境變數的值不可以是***」這種完全無關的話。
-     `apps/web/lib/i18n/messages.zh.json` 的 `toast.createMcpServer`／`toast.saveMcpServer`
-     要與本頁逐字相同。 #}
+       ③ **`env` 含載入器掛鉤鍵**——這一道是寫入動作**做的第一件事**，比另外兩道更早：
+          比對一張封鎖鍵名清單與三條封鎖前綴規則，命中就 400。
+          它回的訊息**沒有可辨識的錯誤碼** ⇒ React 端若不特別接，會落到最後那一段 error
+          「請稍後再試」，而重試永遠不會成功（那些鍵根本不會被收下，就算存得進去，
+          起子行程時也會被靜默剔除）。
+     還有一段 **422 超過上限**：名稱／執行指令／描述的字數，args 的項數與每項字數，
+     env 的組數與鍵值字數——就是下面那幾顆資料槽標出來的界線。
+     畫面上既然把上限標出來了，超過那一態就要有鈕演得出來。
+     ⚠️ **`|` 的段序是索引契約，動它就要連 React 端一起動**：React 是以**段索引**把 400 的錯誤碼
+     對到**中間**那三段（索引 1–3），最後那顆 error 則是按位置取最末段。
+     往中間插一段而沒有同步改索引，錯誤就會顯示成「環境變數的值不可以是***」這種完全無關的話。 #}
 <div class="block mb-16 flex-row column gap-16" data-platform-role="admin">
     {# ⓘ 說明：markup 同既有 info-btn 六件組（§1-2 無 html 元件契約）。①出處：本頁上方檔頭
-         「兩級可見性……本頁整頁只有 platform_role=admin」與 product 的
-         模組檔頭（「平台層：全域 MCP 註冊表 CRUD……只准平台系統管理員」）與
-         `create_platform_mcp_server`（RCE 敏感：Stdio command/args/env）。這是**全平台共用
-         的一份登記**、不屬於任何單一租戶——這一點跟本批次其他頁不同（那些頁都是
+         「兩級可見性……本頁整頁只有平台系統管理員進得來」與「MCP Server ＝ Stdio 子程序
+         ……等同 RCE」那兩段。這是**全平台共用
+         的一份登記**、不屬於任何單一租戶——這一點跟其他設定頁不同（那些頁都是
          `settings:*` 租戶能力閘），寫進①而不留給②，因為它不隨頁面任何旋鈕的目前值改變。 #}
     <div class="flex-row align-items-center gap-8">
         <div class="text-md text-bold" data-i18n="settings.addMcpServer">新增 MCP Server</div>
@@ -113,9 +99,9 @@ permalink: 5-6-2_platformMcpServers.html
                 <div class="label">
                     <label for="newMcpNameInput" class="control-label required" data-i18n="widget.tokenName">名稱</label>
                 </div>
-                {# 名稱／執行指令／描述三欄也各有 `max_length`（`McpServerCreate`），**五欄都要有這句話**
+                {# 名稱／執行指令／描述三欄也各有自己的字數上限，**五欄都要有這句話**
                      ——只寫 args／env 兩欄，另外三條界線在畫面上就沒有落點。
-                     三顆數字同樣是**資料槽**（React 填 `GET /platform/mcp/limits`），
+                     三顆數字同樣是**資料槽**（值由 React 在執行期填），
                      不寫成 `maxlength` 屬性：那個值是執行期才知道的，寫死就是第二份會過期的抄本。
                      擋不住的那一態由送出鈕的 422 warning 段接住（見該鈕註解）。 #}
                 <div class="field">
@@ -141,13 +127,13 @@ permalink: 5-6-2_platformMcpServers.html
                     <label for="newMcpArgsInput" class="control-label" data-i18n="agent.params">參數</label>
                 </div>
                 {# 界線提示：`maxlength` 只夾得住「整段字數」，夾不住「幾行」與「每一行多長」，
-                     而這兩欄的規則正是後兩者。兩個數字是**資料槽**（由 React 填 `GET
-                     /platform/mcp/limits` 的值），不是寫死的字面——形狀照既有正典
+                     而這兩欄的規則正是後兩者。兩個數字是**資料槽**（值由 React 在執行期
+                     填進來），不是寫死的字面——形狀照既有正典
                      （`ui/pagination` 的 totalPrefix／totalSuffix）：前綴 key ＋ 槽 ＋ 中綴 key
                      ＋ 槽 ＋ 後綴 key，**不是插值 key**。
-                   ⚠️ 這裡的數字**必須取 product 的 `MCP_FIELD_LIMITS` 的正本值**，
-                     不可以隨手填一組示範值：React 那側的切版比對 fixture 是照這一頁調的，兩邊會
-                     一起停在同一組沒有人在執法的數字——`slicingParity` 全綠，而正式環境顯示另一組。 #}
+                   ⚠️ 這裡填的就是**這幾條界線真正的值**（在這裡宣告一次，就是正本），
+                     不可以隨手填一組好看的示範值：比對它的每一份都是照這一頁調的，寫錯就會
+                     一起停在同一組沒有人在執法的數字上——比對測試全綠，而正式環境顯示另一組。 #}
                 <div class="field">
                     <textarea id="newMcpArgsInput" class="form-control size-sm" placeholder="一行一個參數" data-i18n-placeholder="settings.pleaseEnterMcpArgs" aria-describedby="newMcpArgsHint"></textarea>
                     <span id="newMcpArgsHint" class="text-gray"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-mcp-args-max-items">50</span><span data-i18n="settings.mcpArgsLimitMid">個參數，每個最多</span><span class="js-mcp-args-max-len">500</span><span data-i18n="common.unitChars"> 字</span></span>
@@ -179,7 +165,7 @@ permalink: 5-6-2_platformMcpServers.html
     </div>
     <div class="flex-row align-items-center gap-16">
         <label class="form-checkbox">
-            {# 值載體（`McpServerCreate.is_active`）⇒ 要有 React 綁定記號（§5 矩陣②：class 或 id 擇一）。
+            {# 值載體（這一台建好之後啟不啟用）⇒ 要有 React 綁定記號（§5 矩陣②：class 或 id 擇一）。
                  這一區六欄一律走 id 契約；漏掉任一顆（無 id、無 class、無 name）那個欄位的值就
                  沒有任何東西抓得到，送出去的 body 會少一個鍵。 #}
             <input type="checkbox" id="newMcpActiveInput" checked>
@@ -208,16 +194,15 @@ permalink: 5-6-2_platformMcpServers.html
      （儲存｜測試連線｜刪除）。測試連線是送 API 的動作鈕（列全結果 toast），儲存同理。
      刪除需先選定「哪一個 Server」＝業務條件開窗 → hook class（.js-delete-mcp）。示範 3 筆（見上）。
 
-     **`_model_to_dict` 回的 `created_at`／`updated_at`（GufoRAG）刻意不畫**：
+     **每一台的建立時間／更新時間刻意不畫**：
      這張表是「現在的組態長什麼樣」，不是變更史；要追誰在什麼時候改的，稽核日誌（5-7）才是
      那件事的正本（`settings.mcp.*` 的事件），在這裡再畫一份時間戳會變成第二個真相。
-     **`test_mcp_server` 回的 `tools` / `tools_count` / `error` 則有落點**——見下方逐列的
-     「最近一次測試」欄（GufoRAG 明訂 `error` 是「連線測試的結果本身就是要顯示的資料」，
-     原樣回給呼叫端，所以失敗時要看得到那句話，不能只彈一顆紅色 toast）。 #}
+     **測試連線回的工具清單／工具數／失敗原因則有落點**——見下方逐列的
+     「最近一次測試」欄：連線測試的結果本身就是要顯示的資料，
+     所以失敗時要看得到那句話，不能只彈一顆紅色 toast。 #}
 <div class="block flex-row column gap-16" data-platform-role="admin">
     {# ⓘ 說明：markup 同既有 info-btn 六件組。①出處：本頁上方檔頭「Server 清單：default-table」
-         一節與 product 的 `list_platform_mcp_servers`（「全域 MCP Server
-         清單……平台管理者專屬」）——這是**全平台共用的一份清單**（同上方「新增 MCP Server」
+         一節——這是**全平台共用的一份清單**（同上方「新增 MCP Server」
          說明的架構事實，不分租戶各自持有），可在此就地編輯連線設定、測試連線並查看最近一次
          的測試結果，或刪除已不再使用的 Server。 #}
     <div class="flex-row align-items-center gap-8">
@@ -227,11 +212,11 @@ permalink: 5-6-2_platformMcpServers.html
             <span class="sr-only" data-i18n="help.settings.mcpServerList.title">MCP Server 清單說明</span>
         </button>
     </div>
-    {# 逐列就地編輯與上面的新增區打的是**同一組界線**（`McpServerUpdate` 與 `McpServerCreate` 的
-         `max_length` 群），而 §4 明訂「同一個欄位在同一頁出現多次時每一處都要有：只掛在新增區＝那條約束
+    {# 逐列就地編輯與上面的新增區吃的是**同一組界線**，
+         而 §4 明訂「同一個欄位在同一頁出現多次時每一處都要有：只掛在新增區＝那條約束
          在編輯路徑上不存在」，所以編輯區這五格也要有。不逐列複製五句（三列就是十五句同樣的話）：
          界線是全域的，故常駐一行、每一欄一顆 id，逐列的控制項各自 `aria-describedby` 指過來。
-         數字全部是資料槽（React 填 `GET /platform/mcp/limits`），與新增區同一批 class。 #}
+         數字全部是資料槽（值由 React 在執行期填），與新增區同一批 class。 #}
     <div class="flex-row flex-wrap gap-16 text-gray">
         <span id="mcpNameLimitHint"><span data-i18n="widget.tokenName">名稱</span><span data-i18n="common.labelSep">：</span><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-mcp-name-max-len">100</span><span data-i18n="common.unitChars"> 字</span></span>
         <span id="mcpCommandLimitHint"><span data-i18n="settings.mcpCommand">執行指令</span><span data-i18n="common.labelSep">：</span><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-mcp-command-max-len">100</span><span data-i18n="common.unitChars"> 字</span></span>
@@ -274,7 +259,7 @@ permalink: 5-6-2_platformMcpServers.html
             </thead>
             <tbody>
                 {% for server in mcpServers %}
-                {# data-mcp-id＝React 列鍵契約（gufofaq-saas 端是 `<tr data-mcp-id={server.id}>`），
+                {# data-mcp-id＝React 列鍵契約，
                      值取示範資料自己那一顆真 id、不用 `loop.index`（同 3-3 的 data-qa-set-id）。 #}
                 <tr data-mcp-id="{{ server.id }}">
                     <td><span id="mcpRowName-{{ server.id }}" class="sr-only">{{ server.name }}</span><input type="text" class="form-control" value="{{ server.name }}" aria-labelledby="mcpRowName-{{ server.id }} mcpHeadName" aria-describedby="mcpNameLimitHint"></td>
@@ -284,8 +269,8 @@ permalink: 5-6-2_platformMcpServers.html
                          而且切壞了畫面上不會有任何提示。 #}
                     <td><textarea class="form-control size-sm" aria-labelledby="mcpRowName-{{ server.id }} mcpHeadArgs" aria-describedby="mcpArgsLimitHint">{% for arg in server.args %}{{ arg }}
 {% endfor %}</textarea></td>
-                    {# 環境變數＝該 server 的憑證。值在讀取路徑已被遮成 "***"（chatbot _mask_env），
-                         原樣送回等於沿用原值（_merge_env）；要輪替就把該行的值改掉。
+                    {# 環境變數＝該 server 的憑證。值在讀取路徑已被遮成 "***"，
+                         原樣送回等於沿用原值；要輪替就把該行的值改掉。
                          沒有這一欄的時候，輪替金鑰只能把整台 server 刪掉重建。 #}
                     <td><textarea class="form-control size-sm" aria-labelledby="mcpRowName-{{ server.id }} mcpHeadEnv" aria-describedby="mcpEnvLimitHint" placeholder="一行一個 KEY=value" data-i18n-placeholder="settings.pleaseEnterMcpEnv">{% for pair in server.env %}{{ pair }}
 {% endfor %}</textarea></td>
@@ -295,9 +280,7 @@ permalink: 5-6-2_platformMcpServers.html
                             <input type="checkbox" aria-labelledby="mcpRowName-{{ server.id }} mcpHeadActive"{% if server.active %} checked{% endif %}>
                         </label>
                     </td>
-                    {# 「工具數」欄：載入這一頁時就去問的工具數（`GET /platform/mcp/{server_id}/tools`，
-                         product 的 `get_platform_mcp_server_tools` →
-                         GufoRAG chatbot 的 `get_mcp_server_tools`）。
+                    {# 「工具數」欄：載入這一頁時就現去問那一台的工具數。
                        **為什麼不能併進右邊那一欄**：那一欄的第三態 `settings.mcpNeverTested`
                          「尚未測試」是切版刻意演的一態（從來沒有人按過「測試連線」的 server 長這樣），
                          載入時就把工具數填進去等於那一態全站再也渲染不出來。兩件事、兩個時刻、兩欄。
@@ -312,26 +295,23 @@ permalink: 5-6-2_platformMcpServers.html
                     <td>{% if server.liveToolCount %}{% if server.liveToolCount == "0" %}<span class="text-gray" data-i18n="settings.mcpToolsNone">沒有工具</span>{% else %}{{ server.liveToolCount }}<span data-i18n="common.unitItems">個</span>{% endif %}{% else %}<span class="text-gray" data-i18n="settings.mcpToolsUnavailable">讀不到</span>{% endif %}</td>
                     {# 測試結果三種狀態：成功（幾顆工具＋清單）／失敗／從未測過（—）。
                          三種都要演得到（§5 每個分支都要看得到）。
-                       **失敗那一格印的是 `message`，不是 `error`**（與 gufofaq-saas
-                         `apps/web/app/(app)/mcp-servers/page.tsx` 的 `lastTest.message || lastTest.error`
-                         同一條式子）：上游 GufoRAG chatbot 的 `POST /servers/{server_id}/test` 把兩件事分得很開——
-                         `message` 是走 i18n 的**給人看的那句**，`error` 逐字「只放例外型別名，
-                         不放 `str(e)`」，理由是它會原樣回給呼叫端，而子行程啟動失敗的訊息會帶
-                         檔案路徑、環境變數、內部主機名。
+                       **失敗那一格印的是 `message`，`message` 是空的才退回 `error`**：這兩顆是
+                         兩件事——`message` 是走 i18n 的**給人看的那一句**；`error` 只放例外的
+                         **型別名**、不放例外訊息，理由是它會原樣回給呼叫端，而子行程啟動失敗的
+                         訊息會帶檔案路徑、環境變數、內部主機名。
                        ⇒ 示範資料的 `error` 只能填 `TimeoutError` 這種**型別名**；填一整句中文
-                         就是演出一個上游明文拒絕產生的值。 #}
+                         就是演出一個這一格拿不到的值。 #}
                     <td>
                         {% if server.lastTest.ok %}
                         <div class="flex-row column gap-4">
                             <span class="text-bold">{{ server.lastTest.toolsCount }}<span data-i18n="settings.mcpToolsUnit"> 個工具</span></span>
-                            {# **`tools` 是 `list[MCPToolInfo]`、不是一串字**（§3-2「欄位的形狀也要對」：正本給的是集合就畫成集合）：
-                                 GufoRAG chatbot 的 `MCPServerTestResult.tools` 是
-                                 `List[MCPToolInfo]`，每一顆有 `name`／`description`／`server_id`／`server_name`／
+                            {# **`tools` 是一份工具清單、不是一串字**（§3-2「欄位的形狀也要對」：是集合就畫成集合）：
+                                 每一顆工具帶五件事——`name`／`description`／`server_id`／`server_name`／
                                  `input_schema`。這一格畫 `name` ＋ `description` 兩欄——那兩顆就是平台管理員
                                  判斷「這台掛上去會給 agent 什麼」的全部依據；另外三顆不畫：`server_id`／
                                  `server_name` 是這一列自己（重複），`input_schema` 是給 LLM 的參數 schema、
-                                 不是給人讀的。**不可以把整份 list 壓成一行逗號串**——那會讓同一顆鍵
-                                 在這一頁長成純量，形狀與正本對不上。
+                                 不是給人讀的。**不可以把整份清單壓成一行逗號串**——那會讓同一顆鍵
+                                 在這一頁長成純量，形狀對不上。
                               #}
                             <div class="collapse-text text-gray"><div class="collapse-body">{% for tool in server.lastTest.tools %}{% if not loop.first %}<br>{% endif %}{{ tool.name }}<span data-i18n="common.labelSep">：</span>{{ tool.description }}{% endfor %}</div><button type="button" id="mcpToolsToggle-{{ server.id }}" aria-labelledby="mcpRowName-{{ server.id }} mcpToolsToggle-{{ server.id }}" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>
                         </div>
@@ -343,9 +323,8 @@ permalink: 5-6-2_platformMcpServers.html
                     </td>
                     <td>
                         <div class="btn-group">
-                            {# 第 4 段講的是**值**不是鍵：上游 `_merge_env` 的語意逐字是「值 == 遮罩字面就沿用原值」
-                                 （GufoRAG chatbot；product 的 `MCP_ENV_VALUE_MASKED`
-                                 也是比對「env 的 […] 送來遮罩字面」那句），所以被拒的是「新增的那組鍵沒有舊值
+                            {# 第 4 段講的是**值**不是鍵：規則是「值等於遮罩字面就沿用原值」，
+                                 所以被拒的是「新增的那組鍵沒有舊值
                                  可以沿用、值卻還是遮罩」。**不可以寫成「鍵不可以填 ***」**——那會讓這一顆鈕
                                  與同頁的建立鈕對同一道守衛說出兩件不同的事（§5 分支語意一致）。 #}
                             <button type="button" id="mcpSave-{{ server.id }}" aria-labelledby="mcpRowName-{{ server.id }} mcpSave-{{ server.id }}" class="button button-border button-sm" data-toast="MCP Server 已更新|名稱已存在|執行指令不在允許清單（僅 python／python3／node／npx／uvx／uv）|新增的環境變數，值不可以是「***」（那是讀取時的遮罩，沒有舊值可以沿用），請填入真正的值|參數（args）的值同樣不可以是那個遮罩字面，而這個位置沒有舊值可以沿用，請填入真正的值|環境變數裡有上游一定會剔除的載入器掛鉤鍵，存得進去也不會生效，請先移除它們|有欄位超過上面標示的長度或項數上限，請縮短後再送出|儲存失敗，請稍後再試" data-i18n-data-toast="toast.saveMcpServer" data-toast-type="success|warning|warning|warning|warning|warning|warning|error" data-i18n="action.save">儲存</button>
@@ -379,11 +358,8 @@ permalink: 5-6-2_platformMcpServers.html
 
 {# 刪除 modal：.js-delete-mcp 條件開窗（先選定要刪哪個 Server），確認鈕歸業務 js
    （deleteConfirmBinding）；Server 名由業務 js 填入 #deleteMcpName。
-   刪除**有**參照守衛（與 3-4 skill 同一道防護、同一種 toast 三態）：被任何 skill 的
-   allowed_tools.mcp_server_ids 或任何設定檔的 mcp_server_ids 參照時一律拒刪，並在訊息裡指名是哪些
-   skill／config（GufoRAG chatbot 的 delete_mcp_server → error_json(INVALID_OPERATION,
-   "error_mcp_server_still_referenced", detail="skill=…; config=…")；INVALID_OPERATION=1005 <2000 故
-   HTTP 400，product 的 _PASSTHROUGH_STATUS 含 400 會原樣透傳）。
+   刪除**有**參照守衛（與 3-4 skill 同一道防護、同一種 toast 三態）：只要還有任何一顆 skill 的
+   工具白名單、或任何一份對話設定檔在引用這一台，就一律拒刪，訊息裡並指名是哪些 skill 與設定檔。
    那一態是使用者自己修得掉的 warning，不是「請稍後再試」——只列成敗兩段的話，這條可行動的訊息
    無處可放，會被顯示成「請稍後再試」而重試永遠不會成功。 #}
 {% set deleteTargetId = "deleteMcpName" %}

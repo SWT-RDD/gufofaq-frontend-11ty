@@ -6,77 +6,61 @@ pageHeading: 文件檢索
 permalink: 3-7_documentSearch.html
 ---
 {# 文件檢索。版面走本站既有慣例（`.block` 篩選區 → `.data-info` → `default-table` ＋ accordion
-   詳細列 → `pager-row`）。**這段檔頭就是本頁的設計正本**——設計階段的 spec 與實作計畫不進版控，
-   端點契約、旋鈕取捨、以及**這一頁刻意沒有的東西**全部寫在下面。
+   詳細列 → `pager-row`）。**這段檔頭就是本頁的設計正本**——這一頁畫得出什麼、刻意沒有什麼、
+   以及每一顆旋鈕為什麼長這樣，全部寫在下面。
 
    ─────────────────────────────────────────────────────────────────────────────
-   **這一頁打的是 gufofaq-saas product，而檢索本身的能力邊界由 GufoRAG `manager_backend` 決定**
-   ——兩層都要看：瀏覽器打不到 GufoRAG，product 是代理；而「這一頁畫得出什麼旋鈕」問的是上游
-   接不接得住。**這一頁只留接得住的那些**：一個檢索頁看起來該有的東西（進階篩選、排序、摘要、
+   **這一頁只留「送得出去」的旋鈕**：一個檢索頁看起來該有的東西（進階篩選、排序、摘要、
    存入資料集⋯）大半在這裡沒有入口，逐條理由寫在下面「這一頁刻意沒有的東西」——不寫的話，
    下一個人分不出那是「不能」還是「還沒」。
 
-   端點清單（動詞 ＋ 路徑 ＋ 符號 ＋ 型別）：
-     product  POST /search/documents   `search_documents`   SearchIn → DocumentSearchOut（本頁唯一送出的請求）
-     product  GET  /datasets           `list_datasets`                （檢索範圍窗的清單來源，見該元件檔頭）
-     上游     POST /api/v1/search      `search()`           SearchManagerRequest → SearchResponse（product 代打）
+   **送出的參數面就這些**：關鍵字｜檢索範圍（資料集 id 陣列）｜檢索模式｜開始日期｜結束日期｜
+   頁碼｜每頁筆數。**多送一個沒宣告的欄位是送出即失敗、不是被靜默忽略**——這一條是下面每一條
+   「刻意沒有」的總依據：畫得出來卻送不出去的旋鈕，不是「還沒接」，是按下去就錯。
 
-   **送出的參數面就這些**（型別正本＝product 的 `SearchIn`）：
-     SearchIn  query｜dataset_ids[]｜strategy｜start_date｜end_date｜page｜page_size
-   `SearchIn` 帶 `model_config = ConfigDict(extra="forbid")`，上游的 `SearchParams` 也是
-   ⇒ **多送一個沒宣告的欄位是 422／400、不是被忽略**。這一條是下面每一條「刻意沒有」的總依據：
-   畫得出來卻送不出去的旋鈕，在這條路上不是「還沒接」，是送出即失敗。
-
-   **回應是投影、不是轉發**：`DocumentSearchOut` 只有 `total`／`returned`／`elapsed_ms`／`rows`，
-   而一列（`SearchRowOut`）就下面這六欄。上游 `SearchResult` 的其餘欄位在 product 那一層就被擋掉了：
-   `data_source` 是伺服器上的絕對路徑、`index` 是內部索引名，兩者都不該進瀏覽器。
+   **一列結果就下面這六欄**，其餘的東西在畫面拿到之前就被擋掉了：內部索引名與伺服器上的絕對
+   路徑都不該進瀏覽器。
 
      欄            型別                  值域／缺值
      document_id   str                   列鍵，**不顯示**
      doc_name      str                   內部識別，**畫面上不印**（理由見下一段）
-     title         str | null            `value` 的 title 槽；該資料集沒指派 title 槽、或這一列該欄
+     title         str | null            title 槽的值；該資料集沒指派 title 槽、或這一列該欄
                                          是空的 ⇒ null
-     date          ISO8601 帶時區 | null  `value` 的 date 槽＝**時間篩選篩的那一欄**；該資料集沒指派
+     date          ISO8601 帶時區 | null  date 槽的值＝**時間篩選篩的那一欄**；該資料集沒指派
                                          date 槽 ⇒ null（理由見下下段）
-     abstract      str                   命中段落，單段純文字（上限 1000 字，上游 `AbstractMaxCharNo`）
+     abstract      str                   命中段落，單段純文字（上限 1000 字）
      fields        [{label, value}]      已排序、已配好標籤的逐欄清單，**可為空陣列**
 
-   **結果列印的是標題，不是檔名**：`doc_name` 由 manager 的命名規則決定（`resolve_doc_name`），
-   沒設 `primary_key_fields` 時回的是 `str(row_number)`，而 product 建 excel 管道時不送
-   `primary_key_fields` ⇒ **一列一份文件的那一族**（Excel／QA 集／結構化 PDF·Word，
-   `connector_type="excel"`）**每一份文件的 `doc_name` 都是 1、2、3…**。只有 folder connector
-   （整份檔案進索引）那一族才是真檔名。同一欄底下兩種資料族語意不同、畫面上又分不出來，所以
-   這一欄整個換成 `title`——**欄名也一起換**：留著「檔案」兩個字而值換成標題，是把缺陷換一個位置重演。
+   **結果列印的是標題，不是檔名**：`doc_name` 是匯入時由命名規則決定的內部識別——**一列一份
+   文件的那一族**（Excel／QA 集／結構化 PDF·Word）沒有指定主鍵欄，所以每一份文件的 `doc_name`
+   就是 1、2、3…；只有「整份檔案進索引」那一族才是真檔名。同一欄底下兩種資料族語意不同、
+   畫面上又分不出來，所以這一欄整個換成 `title`——**欄名也一起換**：留著「檔案」兩個字而值換成
+   標題，是把缺陷換一個位置重演。
    `title` 是 null 時印一句具名的空文字，**不准 fallback 回 `doc_name`／`document_id`**（那正是
    1、2、3 的來源）。
-   ⚠️ folder 那一族**沒有因此少掉檔名**：product 建 folder 管道時的預設 field_mapping 把
-   `file_name` 指給 title 槽（`title` ← `file_name`／`search`／`value` ← `content`），所以那一族的
-   標題欄印的就是檔名。一欄一個語意（「這份文件叫什麼」），兩族都說得出真話。
+   ⚠️ 整份檔案進索引的那一族**沒有因此少掉檔名**：那一族匯入時的預設欄位對照就是把檔名指給
+   title 槽，所以它的標題欄印的就是檔名。一欄一個語意（「這份文件叫什麼」），兩族都說得出真話。
 
-   **時間欄印的是被篩的那一欄**：`SearchResult.date` 是**文件被讀進管道的時刻**——四支 connector
-   （csv／folder／excel／odbc）在 manager 那一側一律把它寫死成當下的 UTC 時間，與資料內容無關、
-   同一批匯入的列全部相同、每次重新同步還會變。而「開始／結束時間」篩的是 `$filterDate`＝product
-   的 **date 槽**（`Slot("date", "filterDate", …)`）。兩者並排、同名、卻不是同一個欄位：篩一月到二月、
-   每一列的時間欄卻顯示匯入當天，畫面上沒有任何一個字說得出為什麼。所以這一欄印 date 槽的值。
-   **沒指派 date 槽的資料集那一格留白**，不 fallback 回匯入時刻——folder 那一族的預設 field_mapping
-   就沒有 `filterDate`，而那正是 `search.dateRangeHint` 說的「這兩欄篩不到任何結果」的那一族：
-   格子空著與篩不到是同一件事的兩面，補一個篩不到的值上去只會讓它們對不起來。
+   **時間欄印的是被篩的那一欄**：一份文件身上還有另一個時間——它被讀進管道的時刻，那個值與資料
+   內容無關、同一批匯入的列全部相同、每次重新同步還會變。而「開始／結束時間」篩的是 **date 槽**。
+   兩者並排、同名、卻不是同一個欄位：篩一月到二月、每一列的時間欄卻顯示匯入當天，畫面上沒有任何
+   一個字說得出為什麼。所以這一欄印 date 槽的值。
+   **沒指派 date 槽的資料集那一格留白**，不 fallback 回匯入時刻——整份檔案進索引的那一族預設就
+   沒有這個槽，而那正是 `search.dateRangeHint` 說的「這兩欄篩不到任何結果」的那一族：格子空著與
+   篩不到是同一件事的兩面，補一個篩不到的值上去只會讓它們對不起來。
    **不另留一欄「匯入時間」**：沒有任何使用者流程需要那個值。
 
    **明細展開兩區**：命中段落（這一次為什麼命中）＋ `fields` 逐欄（這份文件到底是什麼）。
-   `fields` 的值一直都在——上游 `SearchResult.value` 兩個引擎都有映射、匯入當下就寫進索引，
-   內容是 product 自己指定的（`build_field_mapping`：所有被指派的槽依 `SLOTS` 順序併入 `value`）
-   ——過去畫不出來是因為 product 的投影把它丟掉了，現在投影出來了。
-   **規則由 product 保證，切版不自己判斷**：順序＝`SLOTS` 順序且跨列穩定；只出現「該租戶有替那個
-   槽取名」且「這一列有值」的槽；**已排除 `title`／`content`／`date` 三槽與歸因槽**（各自另有落點）、
-   **存取控制槽與 `product_only`**；`label` 來自 `RetrievalProfile.field_labels`，與問答來源卡、
+   `fields` 的值一直都在——匯入當下就寫進索引，內容是「所有被指派的槽依固定槽序併成的那一包」。
+   **規則由送過來的那一份保證，切版不自己判斷**：順序＝固定槽序且跨列穩定；只出現「該租戶有替
+   那個槽取名」且「這一列有值」的槽；**已排除 `title`／`content`／`date` 三槽與歸因槽**（各自另有
+   落點）、**存取控制槽與只給內部看的槽**；`label` 就是租戶替那個槽取的顯示名，與問答來源卡、
    3-1-6 比對資料同一份正本。⇒ 這一頁**不查標籤表、不排序、不印 slot key、不比對顯示名**。
-   **同一支投影兩條路共用**：這一頁的 `SearchRowOut.fields` 與問答來源卡（`components/sources-block`）
-   的逐欄清單是同一份判準、同一個 markup 形狀、同一顆空狀態 key——但**逐列 markup 兩邊各自 inline**，
+   **同一份投影兩條路共用**：這一頁的 `fields` 與問答來源卡（`components/sources-block`）的逐欄
+   清單是同一份判準、同一個 markup 形狀、同一顆空狀態 key——但**逐列 markup 兩邊各自 inline**，
    不抽成共用 include（那一段住在 `{% for %}` 裡，巢狀 include 會渲染成空白且不報錯，§9）。
-   每一格 `value` 的長度上限在 product 那一側
-   （超過會截並以「…」收尾）——**那個數字不進畫面**：它不是使用者填得到的欄位，印「最多 N 字」
-   只會讓人以為自己能做點什麼。
+   每一格 `value` 過長時會被截並以「…」收尾——**那個字數不進畫面**：它不是使用者填得到的欄位，
+   印「最多 N 字」只會讓人以為自己能做點什麼。
    `fields` 是空陣列時**那一區整個不畫**，改一句具名空狀態——它與「有欄位但都沒值」不是同一件事，
    畫一張空表會讓兩者長得一模一樣。
    **那一句陳述機制、不指示動作**：空陣列**不等於「一個槽都還沒取名」**——只取名了 title／content／
@@ -84,46 +68,42 @@ permalink: 3-7_documentSearch.html
    所以那一句說的是「這一區由『對話設定 → 欄位命名』決定」，不是叫他去取名：他可能已經取過了。
 
    **這一區刻意不加的東西**（§4：不做的要寫明理由）：
-     · **不畫 `score`／`search_engine`／`chunk_index`／`chunk_count`**：product 的投影裡沒有它們，
-       要畫得先讓 product 投影出來——那是另一次決策（同下面那一段的判準）。
-     · **不畫 `index` 與 `data_source`**：刻意不外送的內部識別（內部索引名／伺服器絕對路徑）。
-     · **`fields` 不加排序或篩選控制項**：`SearchParams` 沒有排序欄位且 `extra=forbid`，
-       畫得出來也送不出去（同這一頁排序下拉那一條）。
-     · **不動「命中段落」那一格的既有說明**：關鍵字引擎回的是摘要且命中詞標記被上游關掉、
-       語意引擎回的是整段 chunk——那段說明仍然成立。
+     · **不畫相關度分數／命中引擎／切塊序號與切塊總數**：這一頁拿不到它們，要畫得先讓送過來的
+       那一份帶上——那是另一次決策（同下面那一段的判準）。
+     · **不畫內部索引名與來源路徑**：刻意不外送的內部識別。
+     · **`fields` 不加排序或篩選控制項**：這條路上沒有排序參數，畫得出來也送不出去（同這一頁
+       排序下拉那一條）。
+     · **不動「命中段落」那一格的既有說明**：關鍵字引擎回的是摘要且命中詞標記關著、語意引擎回
+       的是整段切塊——那段說明仍然成立。
 
    ─────────────────────────────────────────────────────────────────────────────
    **「檢索模式」兩顆綁 `strategy`**（§5：切版刻意不照搬某段既有行為時，要在該頁檔頭記載
-   什麼取代了什麼）。兩顆的 `value` 逐字取自上游的 `SearchStrategy` enum，而 product 的
-   `SearchIn.strategy` 以同一組 `Literal` 夾住它（值域寫成 `Literal` 而不是裸 `str`，
-   是為了讓它出現在 OpenAPI 上）：
+   什麼取代了什麼）。**值域是這三顆**，這一頁只給前兩顆入口：
 
-     畫面           strategy          實際打誰
-     關鍵字檢索     gufonet_only      GufoNet BM25（GufoNet 那一側）
-     語意檢索       weaviate_only     Weaviate `near_vector`（Weaviate 那一側的非同步 `search()`）
+     畫面           strategy          走哪一條
+     關鍵字檢索     gufonet_only      關鍵字引擎（BM25 字面比對）
+     （無入口）     hybrid            兩個引擎都打再合併
+     語意檢索       weaviate_only     向量引擎（近似向量檢索）
 
-   **`hybrid` 在值域上，這一頁不給它入口**：`Literal` 三顆裡還有 `hybrid`（兩個引擎都打再合併，
-   也是 `SearchManagerRequest.strategy` 的預設值）。不畫它是**產品決定**：這一頁一次只走一個引擎，
-   讓使用者自己說在找的是**字面**還是**意思**——那是他答得出來的問題，「兩個都要」不是一個他做得了
+   **`hybrid` 在值域上，這一頁不給它入口**：不畫它是**產品決定**——這一頁一次只走一個引擎，
+   讓使用者自己說在找的是**字面**還是**意思**，那是他答得出來的問題；「兩個都要」不是一個他做得了
    的選擇。
-   **連帶結果：這一頁一律送出明確的 `strategy`**（兩顆 radio 恆有一顆勾著），永遠不會落回上游的
-   預設值；預設勾在「關鍵字檢索」——這一頁的第一格是關鍵字欄，找的是字面。
+   **連帶結果：這一頁一律送出明確的 `strategy`**（兩顆 radio 恆有一顆勾著），永遠不會落回預設值；
+   預設勾在「關鍵字檢索」——這一頁的第一格是關鍵字欄，找的是字面。
 
-   **「開始／結束時間」兩欄送的是日期本身（`SearchIn.start_date`／`end_date`），不是 DSL**：
-   組 `$filterDate >= '…' and $filterDate <= '…'` 的是 product（`build_date_range_dsl`），
-   前端一個字都不拼。`filterDate` 是上游 `DEFAULT_FILTER_FIELD_NAMES` 六欄之一。
-   **這件事決定了「結束時間早於開始時間」是誰擋的**：product 回 400 ＋ `code: date_range_reversed`，
-   不是前端送出前自己發現的（見下方查詢鈕那一段）。
-   ⚠️ **前提是匯入 pipeline 的 mapper 有把日期寫進 `filterDate`**——沒寫的資料集這兩欄篩不到東西。
+   **「開始／結束時間」兩欄送的是日期本身，不是查詢語句**：把兩個日期組成篩選條件是伺服器端的
+   事，前端一個字都不拼。
+   **這件事決定了「結束時間早於開始時間」是誰擋的**：它是送出之後才被擋下來的，不是前端送出前
+   自己發現的（見下方查詢鈕那一段）。
+   ⚠️ **前提是匯入時有把日期寫進 date 槽**——沒寫的資料集這兩欄篩不到東西。
    那一族在結果表上**看得出來**：時間欄就是那個值，沒有它的列那一格是空的（見下面時間欄那一段）。
    結果表的空狀態仍要把這件事說出來——一列都沒篩到的時候，連那個空格子都沒有東西可以看。
 
-   **檢索範圍逐一列舉，沒有「空＝全部」這一態**：`SearchIn.dataset_ids` 帶 `min_length=1`，
-   缺席或空陣列是 422。**「檢索全部」＝在檢索範圍窗把每一個 id 都勾起來送出去。**
-   理由在上游：`SearchParams.indexes` 空值是「不加索引條件」（GufoNet 那一側的
-   `_build_query_sentence()` 是 `if search_params.indexes:`），而 manager 沒有租戶概念
-   ⇒ 那一層的「全部」是**全平台**。product 有能力把空清單翻譯成「本租戶全部」，但只要那個值
-   還在契約上，少翻一次就是跨租戶檢索、而回應看起來完全正常——所以值域收在**送出的那一端**。
+   **檢索範圍逐一列舉，沒有「空＝全部」這一態**：資料集 id 至少要有一個，缺席或空陣列送不出去。
+   **「檢索全部」＝在檢索範圍窗把每一個 id 都勾起來送出去。**
+   理由是：再往下一層「不給索引清單」的意思是「不加索引條件」，而那一層沒有租戶概念 ⇒ 那裡的
+   「全部」是**全平台**。把空清單翻譯成「本租戶全部」是做得到的，但只要那個值還在，少翻一次就是
+   跨租戶檢索、而回應看起來完全正常——所以值域收在**送出的那一端**。
    由此三件事：檢索範圍窗一筆都沒勾時**彈 warning 並留在窗裡**（見該元件檔頭——「沒選任何一筆」
    的家是 warning 分支，不准用 `disabled` 收，REACT-CONVERSION §⑥）、查詢鈕多一段
    「沒有可檢索的資料集」的 warning（這個租戶一個資料集都沒有時按得到）、觸發鈕的 0 態**照數字印
@@ -139,41 +119,35 @@ permalink: 3-7_documentSearch.html
    ─────────────────────────────────────────────────────────────────────────────
    **這一頁刻意沒有的東西**（GUIDELINE §4「不做的那些在檔頭寫明理由」）：
      · **「檢索功能」六顆 radio**（標準字／同義／容錯／原形字／模糊／自然語言）與它的依賴說明：
-       那三個參數（`SearchMode`／`SameMeaningMode`／`SimilarMode`）在新後端**沒有任何入口**，
-       且 GufoNet 那一側的 `search()` 與非同步 `search()` 都把 `SearchMode` **寫死 "2"**（主題查詢）。
-     · **「只搜尋第一段」**：沒有這個參數；`chunkIndex` 屬 `RESERVED_SYSTEM_FIELD_NAMES`
-       （`RESERVED_SYSTEM_FIELD_NAMES`），DSL 明文不可引用它。
-     · **關鍵字自動完成**（`components/autocomplete-input` 那一顆）：這個後端零 suggest 端點。
+       這條路上沒有任何一個參數承載得了它們，關鍵字引擎那一側的比對模式是寫死的。
+     · **「只搜尋第一段」**：沒有這個參數；切塊序號是保留給系統用的欄位，篩選條件不得引用它。
+     · **關鍵字自動完成**（`components/autocomplete-input` 那一顆）：沒有任何地方生得出建議字。
        元件本身留著（元件庫頁仍有示範），只是這一頁不再用它。
-     · **「各最長 1000 字」提示**：`query` 只有 `min_length=1`，沒有上限；有 `max_length` 的是
-       `filter`（4096），而那串是 React 組的、不是使用者打的 ⇒ 沒有值域可以先告訴使用者。
-     · **進階篩選（facet 卡）整區**：兩個引擎那兩支只有 `total_count` 的 aggregate，
-       沒有任何 group-by／facet ⇒ 逐值 count 產不出來。要保留「用自訂欄位縮小範圍」的話是**改寫**
-       （拿 `GET /system/filter-fields` 的欄位定義組 DSL 條件、沒有計數），不是保留這一區。
-     · **排序下拉四顆**：`SearchParams` 沒有排序欄位（且 `extra=forbid`）；GufoNet 那側寫死
-       `SortField: "$TF$:-"`，而 `WeaviateSearcher.search()` docstring 自己註明「向量搜尋不支援排序」。
-     · **「命中處數」欄與「命中 N 處」總計**：GufoNet 那一側的 `_BASE_CONTENT_FIELD` 只取
-       `$Score$`，**沒有 `$TF$`** ⇒ TF 整個不回。
+     · **「各最長 1000 字」提示**：關鍵字欄至少一個字、沒有上限；有長度上限的是伺服器端組出來的
+       篩選條件字串，那不是使用者打的 ⇒ 沒有值域可以先告訴使用者。
+     · **進階篩選（facet 卡）整區**：兩個引擎都只回得出總筆數，沒有任何分組統計 ⇒ 逐值 count
+       產不出來。要保留「用自訂欄位縮小範圍」的話是**改寫**（拿可篩欄位的定義組條件、沒有計數），
+       不是保留這一區。
+     · **排序下拉四顆**：這條路上沒有排序參數；關鍵字引擎那側的排序是寫死的相關度遞減，
+       而向量檢索本來就不支援排序。
+     · **「命中處數」欄與「命中 N 處」總計**：關鍵字引擎回的欄位裡沒有詞頻 ⇒ 那個數字整個不回。
      · **「顯示圖片」開關與縮圖**：沒有縮圖來源欄位（連同 `ui/doc-search-block` 一起刪）。
-     · **「存入資料集」與「匯出整份檔案」**：新後端沒有 DocCollection 概念、也沒有
-       `DownloadSearchResult` ⇒ `components/store-to-collection-modal` 整顆刪。
+     · **「存入資料集」與「匯出整份檔案」**：這條路上沒有「文件集」這個概念、也沒有整份下載
+       ⇒ `components/store-to-collection-modal` 整顆刪。
      · **逐列勾選框與表頭全選**：唯一的消費者是「存入資料集」，那顆沒了它們就是零消費者的控制項。
-     · **檔名那一欄整欄**，連同它的三態（下載原檔／看欄位內容／純文字）：`DownloadOriginalFile`
-       與 `RetreiveContent` 兩支都沒有對應 ⇒ `components/field-content-modal` 整顆刪；而 `doc_name`
-       本身也不印——理由見上面「結果列印的是標題，不是檔名」那一段。
-     · **「摘要生成」逐列鈕與整顆 `components/doc-summary-modal`**：`GenerateSummary` 是 SolIdea2
-       的端點，`manager_backend` 與 GufoRAG `chatbot` 兩邊都沒有對應。
-     · **命中段落的「累計命中序號」與命中字標紅**：`search` 就是 GufoNet 的 `DocAbstract`，而
-       GufoNet 那一側的 `_ABSTRACT_RESULT_OPTIONS` 設 `AbstractMode=2`（只回**一段**）
-       ＋ `AbstractTermMark=0`（**刻意關掉** 01h/02h/03h 命中詞與分段標記，理由寫在那段檔頭）
-       ⇒ `{ no, before, hit, after }` 那種逐段拆解在這條路徑上沒有輸入。改畫成單一段純文字。
+     · **檔名那一欄整欄**，連同它的三態（下載原檔／看欄位內容／純文字）：下載原檔與取回全文都
+       沒有對應的路 ⇒ `components/field-content-modal` 整顆刪；而 `doc_name` 本身也不印——理由見
+       上面「結果列印的是標題，不是檔名」那一段。
+     · **「摘要生成」逐列鈕與整顆 `components/doc-summary-modal`**：這條路上沒有任何一支生得出
+       那份摘要。
+     · **命中段落的「累計命中序號」與命中字標紅**：命中段落只回**一段**，而命中詞與分段的標記
+       是**刻意關掉**的 ⇒ 「第幾段、命中詞前後各是什麼」那種逐段拆解在這條路徑上沒有輸入。
+       改畫成單一段純文字。
 
-   **上游回得出來、這一頁刻意不畫的欄位**（§4：不做的要寫明，否則下一個人分不出「不能」與「還沒」）：
-   `score`、`search_engine`（這一筆由哪個引擎命中）、`chunk_index`／`chunk_count`（Weaviate 路徑）、
-   以及 `GET /api/v1/search/documents/{id}` 的整份切塊。
-   **它們今天連投影都沒有**：`SearchRowOut` 的六欄是 product 挑過的，所以要補畫任何一欄，
-   得先讓 product 那一層把它投影出來。
-   （`index` 與 `data_source` 不在這一族：那兩顆是**刻意不外送**的內部識別，見上面回應那一段。）
+   **回得出來、這一頁刻意不畫的欄位**（§4：不做的要寫明，否則下一個人分不出「不能」與「還沒」）：
+   相關度分數、這一筆由哪個引擎命中、切塊序號／切塊總數，以及「這份文件的整份切塊」。
+   **它們今天連投影都沒有**：一列就是上面那六欄，所以要補畫任何一欄，得先讓那一份投影帶上它。
+   （內部索引名與來源路徑不在這一族：那兩顆是**刻意不外送**的內部識別，見上面回應那一段。）
    **補畫是另一次決策**：這一頁的判準是「只留接得住的旋鈕」，多畫一欄要各自論證它解決誰的問題，不夾帶。
 
    ─────────────────────────────────────────────────────────────────────────────
@@ -181,25 +155,19 @@ permalink: 3-7_documentSearch.html
    **沒有別的彈窗**：`docSummaryModal`／`fieldContentModal` 那兩顆條件開窗服務的功能，這一頁都沒有（見上）。
 
    ─────────────────────────────────────────────────────────────────────────────
-   **授權閘門是 `data:read`**（查詢鈕上那一顆 `data-capability`）。瀏覽器打不到 GufoRAG——
-   這支功能經 gufofaq-saas product 代理（`search_documents`，`POST /search/documents`），
-   而那一層掛的是 `require_capability("data", "read")`，與 3-1-5 檔案預覽同一族：讀的就是
-   租戶自己資料集裡的文件內容。
-     · **兩道 403 不是同一件事，故各佔一段 toast**：能力不足那道的收件人是貴租戶的管理者
-       （product 的 `require_capability`），系統授權檔那道的收件人是平台管理者
-       （GufoRAG `manager_backend` 的 `require_license()`，經 product 投影成
-       `gufo_license_invalid`）。折成一段等於把兩個修得掉的狀況指向同一個修不了的人。
-     · **不另標 `data-tenant-feature="data"`**：`require_capability(cap, mode)` 內部就串了
-       `require_tenant_feature`，再標一顆只是把同一句話說兩遍（GUIDELINE §4）。
-     · **「檢索全部」在這條路上是逐一列舉，不是送空清單**：上游 `SearchParams.indexes` 空值是
-       「不加索引條件」，而那一層沒有租戶概念 ⇒ 空清單的「全部」是全平台。值域因此收在送出端
-       （`min_length=1`），畫面上逐一勾、逐一送 id（「全選」是把列出來的那幾筆一次勾起來的捷徑，
-       不是另一種值）。
-     · **檢索範圍那一窗送的是 product 的 `dataset_id`，不是索引名**：清單來源是 product 的
-       `GET /datasets`（本租戶的資料集），勾起來的 id 組成 `SearchIn.dataset_ids`，索引名由
-       `resolve_indexes` 在伺服器端翻譯。manager 的 `GET /api/v1/indexes` **不能當那一窗的值域**
-       ——它只掛 `require_user`、manager 沒有租戶概念，回的是跨租戶全清單。逐條理由與示範 id 的
-       出處寫在 `components/search-scope-modal` 的檔頭。 #}
+   **授權閘門是 `data:read`**（查詢鈕上那一顆 `data-capability`）：讀的就是租戶自己資料集裡的
+   文件內容，與 3-1-5 檔案預覽同一族。
+     · **兩種「不准查」不是同一件事，故各佔一段 toast**：能力不足那一種的收件人是貴租戶的管理者；
+       系統授權檔沒過那一種的收件人是平台管理者。折成一段等於把兩個修得掉的狀況指向同一個
+       修不了的人。
+     · **不另標 `data-tenant-feature="data"`**：能力檢查裡面本來就串著租戶開通檢查，再標一顆
+       只是把同一句話說兩遍（GUIDELINE §4）。
+     · **「檢索全部」在這條路上是逐一列舉，不是送空清單**：理由見上面檢索範圍那一段。畫面上
+       逐一勾、逐一送 id（「全選」是把列出來的那幾筆一次勾起來的捷徑，不是另一種值）。
+     · **檢索範圍那一窗送的是資料集 id，不是索引名**：清單來源是本租戶的資料集，勾起來的 id
+       組成這一次的檢索範圍，索引名由伺服器端翻譯。**不可以拿平台層的索引清單當那一窗的值域**
+       ——那一層沒有租戶概念，回的是跨租戶全清單。逐條理由與示範 id 的出處寫在
+       `components/search-scope-modal` 的檔頭。 #}
 {% set breadcrumbItems = [
   { label: "首頁", href: "2-1_qaRecord.html", i18nKey: "nav.home" },
   { label: "文件檢索", i18nKey: "nav.documentSearch" }
@@ -209,7 +177,7 @@ permalink: 3-7_documentSearch.html
 </div>
 
 {# 檢索模式兩顆 radio 資料化：`value` 是**送出去的 `strategy` 值**（對上面那張表），不是畫面文字。
-     值逐字取自 `SearchStrategy` enum；enum 的第三顆 `hybrid` 刻意不在這份陣列裡（見檔頭）。 #}
+     值域三顆之中的 `hybrid` 刻意不在這份陣列裡（見檔頭）。 #}
 {% set searchStrategies = [
     { value: "gufonet_only", label: "關鍵字檢索", i18nKey: "search.modeKeyword", checked: true },
     { value: "weaviate_only", label: "語意檢索", i18nKey: "search.modeSemantic" }
@@ -278,41 +246,38 @@ permalink: 3-7_documentSearch.html
             </div>
         </div>
         {# 值域寫在填之前（§3-2），而這一段講的是「篩得到什麼」而不是格式：時間篩的是匯入時寫進
-             `filterDate` 的那一欄，沒寫的資料集這兩欄篩不到東西——那是使用者看得懂、也換得掉
+             date 槽的那一欄，沒寫的資料集這兩欄篩不到東西——那是使用者看得懂、也換得掉
              （改挑資料集）的狀況，不能等按下查詢才由 toast 說。 #}
         <p class="text-gray m-0" id="docSearchDateHint" data-i18n="search.dateRangeHint">時間篩的是匯入時寫入的文件日期；沒有寫入日期的資料集，這兩欄篩不到任何結果。</p>
         <div class="flex-row align-items-center justify-content-center gap-16">
             <button type="button" class="button button-border js-filter-clear" data-i18n="action.clear">清除</button>
             {# 八段逐條對回一條出口（§5 少列一段和多列一段一樣是說謊）：
                  info    「正在查詢資料...」＝版型比照 5-7 的查詢鈕
-                 warning 「權限不足，無法查詢」＝`require_capability("data", "read")` 第④層那道 403
-                         （gufofaq-saas product 的 `search_documents`）。**排在索引 1**：全站
+                 warning 「權限不足，無法查詢」＝這個帳號沒有 data:read。**排在索引 1**：全站
                          「權限不足」那一段一律緊接在 info 之後（3-5 的 `.js-health-query`、
                          4-1 的查詢鈕同形），子句與英譯逐字沿用（§4-2 同子句同英譯）。
-                 warning 「沒有搜尋字串」＝`SearchIn.query` 的 `min_length=1`（product 這一層先擋，
-                         對回上游 `SearchParams.query` 的同一道）
-                 warning 「沒有可檢索的資料集」＝`SearchIn.dataset_ids` 的 `min_length=1`，形狀同上一段
-                         （前端先擋，對回 product 的同一道）。**按得到的只有一種情境**：進頁預設全選、
+                 warning 「沒有搜尋字串」＝關鍵字至少要有一個字（送出前先擋，送出去也擋得下來）
+                 warning 「沒有可檢索的資料集」＝檢索範圍至少要有一個 id，形狀同上一段。
+                         **按得到的只有一種情境**：進頁預設全選、
                          範圍窗又擋著空選（一筆都沒勾就彈 warning、不關窗），所以 0 只發生在這個租戶
                          一個資料集都沒有的時候。這一段的下一步因此是**去建一個資料集**、不是「去勾
                          一個」——窗裡沒有東西可以勾。子句與英譯逐字沿用 `dataset.noSelectableDatasets`
                          （§4-2 同子句同英譯）。結果表的空狀態說的是「條件收太緊」，那是另一件事。
                          範圍窗那一側的同一道由該元件 js 的 warning 表達（見該元件檔頭）。
-                 warning 「結束時間不能早於開始時間」＝product 回 400 ＋ `code: date_range_reversed`
-                         （組日期 DSL 的是 product，不是前端，見檔頭）。**不得折進 error**：
+                 warning 「結束時間不能早於開始時間」＝送出之後才擋得下來的（把兩個日期組成篩選
+                         條件是伺服器端的事，不是前端，見檔頭）。**不得折進 error**：
                          那是使用者改得掉的輸入錯誤，而 error 那一段說的是「再試一次」——再試一次
                          不會有任何不同。**子句與英譯逐字沿用 4-1 下載鈕的同一句**（§4-2「相同的
                          繁中子句必須有相同英譯」，該條有測試掃 dist 把關），不另寫一種說法。
-                 warning 「授權驗證失敗」＝GufoRAG `manager_backend` 的 `require_license()`
-                         （驗簽章授權檔），經 product 投影成 `gufo_license_invalid`。
+                 warning 「授權驗證失敗」＝系統授權檔驗不過。
                          **這一段不得折進 error**：平台管理者去補授權檔就修得掉，而 error 說的是
-                         「再試一次」——兩件事。**也不得與上一顆 403 共用一段**：收件人不同
+                         「再試一次」——兩件事。**也不得與上面那一段權限不足共用一段**：收件人不同
                          （§4「兩組不同的鍵…失敗的方式也不同」）。
                  success 「查詢成功」
-                 error   「查詢失敗」＝`filter_dsl_invalid`（product 自己組的日期 DSL 被上游拒收
-                         ＝我方的錯，使用者做不了任何事）＋ 上游那一側的 500、以及網路層失敗。
-               **不列 404**：`resolve_indexes` 對別的租戶的 dataset id 回 404，而這一頁的資料集
-               清單就是本租戶的（`GET /datasets`）⇒ 畫面上按不出那一態。 #}
+                 error   「查詢失敗」＝伺服器端組出來的篩選條件被拒收（＝我方的錯，使用者做不了
+                         任何事）、檢索本身掛掉，以及網路層失敗。
+               **不列「找不到那個資料集」**：那一態要拿別的租戶的 id 才撞得到，而這一頁的資料集
+               清單就是本租戶的 ⇒ 畫面上按不出那一態。 #}
             <button data-capability="data:read" type="button" class="button button-primary js-doc-search" data-toast="正在查詢資料...|權限不足，無法查詢——請找貴租戶的管理者開通|沒有搜尋字串|沒有可檢索的資料集——先到「資料集管理」建一個並匯入資料|結束時間不能早於開始時間|授權驗證失敗，無法查詢——請找平台管理者確認系統授權檔|查詢成功|查詢失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.docSearch" data-toast-type="info|warning|warning|warning|warning|warning|success|error|warning" data-i18n="action.query">查詢</button>
         </div>
     </div>
@@ -321,26 +286,25 @@ permalink: 3-7_documentSearch.html
 {# ─────────────────────────────────────────────────────────────────────────────
    結果區。示範資料的自洽（§6）：
      · `docSearchTotal` ＝「共 N 筆」＋ `pager-row` 的 `total`，**一頁只有一個來源**（§6：同頁兩個
-       元件共享同一個語意參數時只能有一份）。它的正本是 `SearchResponse.total_count`，而那顆只有在
-       送 `need_total_count: true` 時才是真總數（否則是本頁筆數）——這是給 React 的契約。
-     · 列序＝後端回的順序。**排序不可調**（見檔頭），GufoNet 那側寫死 `SortField: "$TF$:-"`
-       ＝相關度高的在前，故示範列照相關度遞減排（§6：列序也是示範資料的一部分）。
-     · `did` 是列鍵（§6：清單的參數陣列要帶身分欄位，不用 loop.index），正本＝`SearchResult.document_id`。
-     · `abstract` ＝ `SearchResult.search`（GufoNet 的 `DocAbstract`）：**單一段純文字**，
-       `AbstractMaxCharNo` 設 1000 故上限一千字。命中的字沒有標記可以標紅（見檔頭）。
-     · `title` 與 `date` **第二列都刻意不給**（不給鍵＝上游的 null）：那一列演的是「這個資料集只指派
-       了少數幾個槽」——沒有 title 槽（畫面上是一句具名的空文字）、也沒有 date 槽（那一格留白，
-       而它同時就是 `search.dateRangeHint` 說的「這兩欄篩不到任何結果」的那一族）。不演的話，
+       元件共享同一個語意參數時只能有一份）。它是**符合條件的總筆數**，不是這一頁的列數——要它是
+       真總數，這一次查詢就得明說「我要總數」，否則回來的是本頁筆數。這是給 React 的契約。
+     · 列序＝回來的順序。**排序不可調**（見檔頭）：關鍵字引擎那側寫死相關度遞減，故示範列照
+       相關度遞減排（§6：列序也是示範資料的一部分）。
+     · `did` 是列鍵（§6：清單的參數陣列要帶身分欄位，不用 loop.index），值就是那份文件的識別碼。
+     · `abstract` ＝命中段落：**單一段純文字**，上限一千字。命中的字沒有標記可以標紅（見檔頭）。
+     · `title` 與 `date` **第二列都刻意不給**（不給鍵＝那一欄是 null）：那一列演的是「這個資料集
+       只指派了少數幾個槽」——沒有 title 槽（畫面上是一句具名的空文字）、也沒有 date 槽（那一格
+       留白，而它同時就是 `search.dateRangeHint` 說的「這兩欄篩不到任何結果」的那一族）。不演的話，
        全站沒有任何一頁看得到這兩態（§5：沒有頁面演得出來的分支等於沒驗收過）。
        **空標題只演一列**：兩列都空的話，那兩顆展開鈕的可及名稱會逐字相同（§4）。
-     · `fields` 的 `label` **逐字沿用這個示範租戶的 `RetrievalProfile.field_labels`**——正本是 5-2
-       「欄位命名」那一區，§6：同一份業務目錄不得各烤一份。另編一套的話，這一頁會長出那個租戶
-       在設定畫面上根本設不出來的欄名。那一份共七個槽有名字，扣掉各有自己落點的
+     · `fields` 的 `label` **逐字沿用這個示範租戶替各槽取的顯示名**——正本是 5-2「欄位命名」那一區，
+       §6：同一份業務目錄不得各烤一份。另編一套的話，這一頁會長出那個租戶在設定畫面上根本設不
+       出來的欄名。那一份共七個槽有名字，扣掉各有自己落點的
        `title`／`content`／`date` 與歸因槽 `note1`／`note2`（承辦組室／業務範疇，正本＝5-3 的歸因維度）
        ⇒ **這一頁列得出來的只有 `source`（參考資料）與 `category`（法規類別）**。
-       三列各演一種筆數：**多欄**（含一格被上游截斷、以「…」收尾的長值）、**單欄**（這一列只有
+       三列各演一種筆數：**多欄**（含一格被截斷、以「…」收尾的長值）、**單欄**（這一列只有
        那個槽有值）、**零欄**（那一句具名空狀態）。列與列之間欄數不同是常態，不是資料不齊。
-   `docSearchElapsed` ＝ `SearchResponse.processing_time_ms`，畫面上換算成秒。 #}
+   `docSearchElapsed` ＝這一次查詢花掉的毫秒數，畫面上換算成秒。 #}
 {% set docSearchTotal = 203 %}
 {% set docSearchElapsed = "0.42" %}
 {% set docSearchRows = [
@@ -399,7 +363,7 @@ permalink: 3-7_documentSearch.html
         <tbody>
             {% for row in docSearchRows %}
             <tr data-did="{{ row.did }}">
-                {# 標題是純文字：下載原檔與看欄位內容兩支端點都沒有對應（見檔頭），
+                {# 標題是純文字：下載原檔與看欄位內容這兩件事都沒有路可以走（見檔頭），
                      畫成連結或按鈕等於在 markup 裡宣告一條不存在的流程。
                      **沒有標題時不 fallback 回 `doc_name`／`document_id`**（見檔頭：那個值對一列一份
                      文件的那一族就是 1、2、3），改印一句具名的空文字——列的識別由標題承載，
@@ -421,7 +385,7 @@ permalink: 3-7_documentSearch.html
                 <td colspan="3" class="detail-cell">
                     <div class="accordion-content">
                         {# 兩區：命中段落（這一次為什麼命中）＋ 這份文件的逐欄內容（它到底是什麼）。
-                             `fields` 是 product 配好標籤、照 `SLOTS` 排好的清單 ⇒ 這裡不查表、不排序、
+                             `fields` 送來時就配好標籤、照固定槽序排好了 ⇒ 這裡不查表、不排序、
                              不印 slot key（見檔頭）。
                              ⚠️ `label` **一顆 `data-i18n` 都不掛**：那是租戶自己取的顯示名＝資料，
                              不是 chrome（§4-2；同 3-1-6 的比對表頭，理由寫在該頁檔頭）。 #}

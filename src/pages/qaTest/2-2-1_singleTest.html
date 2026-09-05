@@ -31,16 +31,14 @@ permalink: 2-2-1_singleTest.html
 </div>
 
 {# 測試設定區（比照對話設定頁：可切換對話模式、逐欄模式適用性）：設定為臨時，底部「回復儲存的設定」
-     隨時回復到已儲存的設定值。對話模式（傳統搜尋／Agent 對話，對齊 product qatest TestConfig.search_mode）
-     決定下方各欄適不適用：取用資料筆數僅傳統模式生效、Agent 最大迭代次數僅 Agent 模式生效
-     （modeMatrix 逐欄適用性，見 gufofaq-saas docs/mode-matrix.md）——切版為超集靜態 demo，兩欄常駐
+     隨時回復到已儲存的設定值。對話模式（傳統搜尋／Agent 對話）決定下方部分欄位適不適用：
+     Agent 最大迭代次數僅 Agent 模式生效——切版為超集靜態 demo，各欄常駐
      （適用性只寫在各該欄自己的註解裡，畫面上不標示），React 端依當前模式**不渲染**不符欄位
-     （gufofaq-saas `apps/web/lib/modeMatrix.ts` 的 `appliesToMode`；不用「顯示但標示不生效」，
-     理由見 5-2 檔頭「子頁籤 2：生成設定」那段註解）。
+     （不用「顯示但標示不生效」，理由見 5-2 檔頭「子頁籤 2：生成設定」那段註解）。
    **三個數值欄一律 `type="number"`**（§5 要記載）：不是 `type="text"`
-     ＋後端區間（product 的 TestConfig：search_*_number 1–100、agent_max_iterations 1–20，
-     常數在 product）。理由：這幾格的值 React 要讀去送 API，`Number("2o")` 是 NaN、
-     序列化成 JSON 是 null，而純文字欄要等到按下送出、後端回話才擋得到——`type="number"` 讓
+     ＋送出後才擋。區間在這裡宣告一次：兩個取樣數 1–100、Agent 最大迭代次數 1–20。
+     理由：這幾格的值 React 要讀去送 API，`Number("2o")` 是 NaN、
+     序列化成 JSON 是 null，而純文字欄要等到按下送出、整趟跑完才擋得到——`type="number"` 讓
      瀏覽器在打字當下就擋。id 契約（#sampleTotalInput…）原樣保留。
    值載體一律要有 React 綁定記號（§5 矩陣②）：本頁走 hook class（js-chat-mode／js-agent-max-iter／
      js-reasoning-effort／js-sample-selected／js-sample-total，全站 scss 不引用），React 受控、change 交業務層。
@@ -74,13 +72,11 @@ permalink: 2-2-1_singleTest.html
             <div class="label">
                 <label for="llmModelSelect" class="control-label" data-i18n="qaTest.llmModel">LLM模型</label>
             </div>
-            {# 識別字＝`GET /qatest/models` 回的 `value`（product 的
-                 `list_models`／`effective_models`，形狀是 `<provider>:<model>`）。
-                 **不可寫成 `OpenAI gpt-4o-mini` 這種給人看的字面**：它過不了 product 的
-                 `can_build_model`（`model.startswith(PROVIDER_PREFIXES)`，前綴只有 `openai:`／
-                 `anthropic:`），送出去必定判否，而畫面上兩種寫法長得幾乎一樣。
-                 這兩顆是版型示範的**子集**，完整目錄在 5-2 的 `llmModels`
-                 （同一支 `gufo.list_models()`）；值是業務識別字，不翻（§4-2）。 #}
+            {# 識別字的形狀是 `<provider>:<model>`，前綴只有 `openai:`／`anthropic:` 兩種。
+                 **不可寫成 `OpenAI gpt-4o-mini` 這種給人看的字面**：不合這個形狀的值送出去
+                 必定判否，而畫面上兩種寫法長得幾乎一樣。
+                 這兩顆是版型示範的**子集**，完整目錄在 5-2 的 `llmModels`；
+                 值是業務識別字，不翻（§4-2）。 #}
             <div class="field">
                 <select class="form-control singleSelect" id="llmModelSelect">
                     <option value="" data-i18n="common.pleaseSelect">請選擇</option>
@@ -90,7 +86,7 @@ permalink: 2-2-1_singleTest.html
             </div>
         </div>
         {# 思考深度（reasoning effort）：與模型同排的一次性測試覆寫。選項依所選模型的 reasoning_options
-             動態（React 端）；切版靜態列代表性枚舉。空＝沿用該模型預設（chatbot init_llm clamp）。 #}
+             動態（React 端）；切版靜態列代表性枚舉。空＝沿用該模型自己的預設值。 #}
         <div class="form-group filter-field row mobile-col col-4-md col-12-sm">
             <div class="label">
                 <label for="reasoningEffortSelect" class="control-label" data-i18n="settings.reasoningEffort">思考深度</label>
@@ -107,7 +103,7 @@ permalink: 2-2-1_singleTest.html
                 {% include "components/reasoning-effort-select/reasoning-effort-select.html" %}
             </div>
         </div>
-        {# 對話模式：傳統搜尋 / Agent 對話（value 對應 product TestConfig.search_mode，預設 traditional；option 文字是 chrome 走 i18n，value 為業務值不翻）。
+        {# 對話模式：傳統搜尋 / Agent 對話（值域就這兩顆，預設 traditional；option 文字是 chrome 走 i18n，value 為業務值不翻）。
              示範選 agent（§6 示範資料要自洽：本頁下方展示 agent 工具軌跡與串流狀態，傳統搜尋模式不會有）。 #}
         <div class="form-group filter-field row mobile-col col-4-md col-12-sm">
             <div class="label">
@@ -125,7 +121,7 @@ permalink: 2-2-1_singleTest.html
                 <span class="text-gray" id="chatModeSelectHint" data-i18n="qaTest.chatModeHint">傳統搜尋＝先檢索、再由模型把找到的資料整理成答案，資料集依高／中／低逐層優先序被查；Agent 對話＝模型自己決定要不要查、查幾次，還可以呼叫工具與 Skill。兩者吃的旋鈕不同，換了模式之後下面會有幾欄跟著失效或出現。</span>
             </div>
         </div>
-        {# 選用資料筆數（search_selected_number）：兩模式皆適用（modeMatrix both），不標模式。 #}
+        {# 選用資料筆數：兩種模式都畫、不標模式限定。 #}
         <div class="form-group filter-field row mobile-col col-4-md col-12-sm">
             <div class="label">
                 <label for="sampleSelectedInput" class="control-label" data-i18n="settings.searchSelectedNumber">選用資料筆數</label>
@@ -136,8 +132,9 @@ permalink: 2-2-1_singleTest.html
                 <span class="text-gray" id="sampleSelectedRange">1 – 100</span>
             </div>
         </div>
-        {# 取用資料筆數（search_total_number）：僅傳統搜尋模式生效（modeMatrix traditional）；agent 模式
-             改吃選用資料筆數。切版常駐（靜態稿為「該欄適用」的狀態）；React 依 modeMatrix 決定**渲染與否**——不適用的模式下整欄不出現。 #}
+        {# 取用資料筆數：兩種模式都畫、不標模式限定。**這一顆在某個模式下怎麼生效是會變的東西**，
+             把它固化成一條畫面規則，條件一變畫面就開始說謊——所以規格只講「兩種模式都畫」，
+             不講「在哪個模式下怎麼生效」。 #}
         <div class="form-group filter-field row mobile-col col-4-md col-12-sm">
             <div class="label">
                 <label for="sampleTotalInput" class="control-label" data-i18n="settings.searchTotalNumber">取用資料筆數</label>
@@ -147,8 +144,8 @@ permalink: 2-2-1_singleTest.html
                 <span class="text-gray" id="sampleTotalRange">1 – 100</span>
             </div>
         </div>
-        {# Agent 最大迭代次數（agent_max_iterations）：僅 Agent 模式生效（modeMatrix agent）；預設 5，
-             對齊 TestConfig.agent_max_iterations 預設。切版常駐（靜態稿為「該欄適用」的狀態）；React 依 modeMatrix 決定**渲染與否**——不適用的模式下整欄不出現。 #}
+        {# Agent 最大迭代次數：僅 Agent 模式生效；預設 5。切版常駐（靜態稿為「該欄適用」的狀態）；
+             React 依當前模式決定**渲染與否**——不適用的模式下整欄不出現。 #}
         <div class="form-group filter-field row mobile-col col-4-md col-12-sm">
             <div class="label">
                 <label for="agentMaxIterInput" class="control-label" data-i18n="qaTest.agentMaxIter">Agent 最大迭代次數</label>
@@ -163,10 +160,8 @@ permalink: 2-2-1_singleTest.html
     {# 提示詞（測試用，常駐展開輸入框）：測試頁的臨時提示詞。值載體 textarea 掛 js-prompt-input（React
        受控、change 交業務層）。不用 components/prompt-edit（那是含版本管理工具列的系統提示詞編輯器，
        仍用於對話設定頁）——測試頁只要一個常駐展開的輸入框，動作鈕在下方動作列。示範文案領域中性。 #}
-    {# 界線提示（§4 三件套的第三件：可見的界線 ＋ `aria-describedby` 接得上）。上限的正本是
-         product 的 `MAX_SINGLE_PROMPT_LEN`，這一欄的執行點是
-         product 的 `SingleTestIn.prompt`（`Field(max_length=…)`）——同一顆常數，
-         5-2 的三顆系統提示詞欄用的也是它，所以畫面上的數字要一致。
+    {# 界線提示（§4 三件套的第三件：可見的界線 ＋ `aria-describedby` 接得上）。上限 20000 字，
+         超過會被擋下；5-2 的三顆系統提示詞欄是同一道界線，所以畫面上的數字要一致。
          **不寫成 `maxlength` 屬性**（同 5-6-2 那一批的理由）：值是執行期才知道的，寫死就是第二份
          會過期的抄本；數字獨立成資料槽 `js-prompt-max-len`。
        不改的後果：貼一段超過上限的提示詞進去，422 會被折進送出鈕最後那一段 error「請稍後再試」，
@@ -212,7 +207,7 @@ permalink: 2-2-1_singleTest.html
      切版上當場動得起來，也因此不掛任何授權軸。
      這一頁對它**零 markup**：class 與內部結構逐字住在該元件，這裡只 include。
    **開場歡迎語關掉**（`chatWelcomeHidden`，理由正本在該元件檔頭）：招呼是前台的招呼，
-     後台測試區不讀 `GET /welcome`，而本頁演的是「已經有一輪對話、第二問正在跑」。 #}
+     後台測試區沒有招呼語這一段，而本頁演的是「已經有一輪對話、第二問正在跑」。 #}
 {% set chatWelcomeHidden = true %}
 <div class="mt-24">
     <div class="flex-row gap-10 mobile-column-xs xs-column-reverse">
@@ -226,20 +221,16 @@ permalink: 2-2-1_singleTest.html
      當前步驟，每節點可展開看工具/參數/結果/grounding 判定/agent 推理。
      工具軌跡與步驟列**合成這一處**、不拆成兩塊：同一輪的兩種視角分開擺，讀的人得自己把兩份時間軸
      對起來。
-     真值由 React 端串流事件驅動（gufofaq-saas 的 `apps/web/lib/sse`：steps／toolActivity／
-     thinkingByNode／summary，配 `apps/web/lib/domain/stepFlow`）；示範假資料住元件內
+     真值由 React 端的串流事件驅動（步驟、工具活動、逐節點推理、收尾摘要四路）；示範假資料住元件內
      （見該元件檔頭註解）。
    **這一頁的單一敘事＝「這一輪還在跑」**（§6 同頁自洽，全站唯一演這一態的頁）：
      上半聊天區已經演著串流中的第二問（`components/chatroom` 的狀態列「搜尋資料中…」，有字、沒有
      回覆泡泡），流程圖這一半就必須是同一時刻——生成答案 running、其後 pending、**頂端沒有執行摘要**。
-     摘要五欄全部來自整輪收尾才發的 `chat_room` 塊，`model` 更是只有重播那條路拿得到
-     （product 的 `_CHAT_ROOM_PUBLIC_KEYS` 沒有 `model_name`；gufofaq-saas `apps/web/lib/domain/sse.ts` 的
-     chat_room 分支逐字寫著「永遠讀不到」）⇒「串流中」與「報得出 Token／延遲／首字／模型」
-     兩件事互斥。
+     摘要五欄全部來自整輪收尾才發的那一塊資料，模型名更是只有重播那條路拿得到（串流當下不會帶）
+     ⇒「串流中」與「報得出 Token／延遲／首字／模型」兩件事互斥。
      **故本頁不設 stepFlowSummary、也不設結果截斷那一對**：一組「已顯示前 N 字／共 M 字」＋
-     「看完整輸出」的狀態**沒有任何一條路產得出來**（gufofaq-saas 的
-     `apps/web/components/StepFlow/StepFlow.tsx` 在同一格的註解逐字寫著這件事，該元件也沒有
-     任何「看完整輸出」的 prop），因為那顆連結要 chat log id，而串流中的這一輪還沒有落庫的 id。
+     「看完整輸出」的狀態**沒有任何一條路產得出來**，因為那顆連結要一筆已落庫的問答紀錄，
+     而串流中的這一輪還沒有落庫、沒有那顆列鍵。
      跑完並落庫那一態由 4-2 詳情頁與 2-2-3 演（那兩頁都是重播）。 #}
 {% set stepFlowInstance = "single" %}
 {% set stepFlowOwnerId = "" %}

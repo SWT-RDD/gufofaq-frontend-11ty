@@ -26,17 +26,17 @@ test("§3-1 每個有 permalink 的頁都要有導覽入口（或在檔頭註明
     // 例外＝真的沒有導覽入口且有理由的頁（理由同時要寫在該頁檔頭，§3-1 第③條：痕跡要成對）。
     const NO_NAV = new Map([
         ["5-6-1-2_platformIsoReviewPreview.html",
-            "ISO 審核精靈 preview 態。從 idle 過去要先打 GET /platform/review/overdue，是條件動作 ⇒ §5 只掛 hook class、不做靜態跳轉，所以沒有任何一頁連得到它"],
+            "ISO 審核精靈 preview 態。從 idle 過去要先把逾時名單取回來才畫得出這一頁，是條件動作 ⇒ §5 只掛 hook class、不做靜態跳轉，所以沒有任何一頁連得到它"],
         ["5-6-1-3_platformIsoReviewResult.html",
-            "同上，result 態：要 POST /platform/review/apply 成功之後才到得了"],
+            "同上，result 態：要在 preview 態按下套用、而且套用真的做成之後才到得了"],
         // 這兩頁的「有入口」是**假的**：1-1-4／1-2-1 那兩顆 `{% set stepNextHref %}` 從來沒有渲染過
         // （動作模式走 `<button>`，`<a href>` 那一支永遠走不到），而這條測試看的是 src 字串 ⇒ 一個
         // 沒有消費者的參數在替一條真規則背書。那兩個死參數撤掉之後，這條規則才真的對它們
         // 執行 ⇒ **補登記，不是放寬**（兩頁的理由同時寫在各自檔頭，§3-1 第③條：痕跡要成對）。
         ["1-1-6_uploadSuccess_excel.html",
-            "Excel 匯入的完成頁，也是那條流程的匯入報告落點（見 REPORT_HOSTS）。到得了它的唯一途徑是在 1-1-4 按下送出、POST /datasets/{id}/excel/import 成功之後換頁——那是條件動作，§5 只掛 hook class、不做靜態跳轉，所以沒有任何一頁 href 連得到它"],
+            "Excel 匯入的完成頁，也是那條流程的匯入報告落點（見 REPORT_HOSTS）。到得了它的唯一途徑是在 1-1-4 按下送出、而且匯入真的做成之後換頁——那是條件動作，§5 只掛 hook class、不做靜態跳轉，所以沒有任何一頁 href 連得到它"],
         ["1-2-6_uploadSuccess_pdf.html",
-            "PDF/WORD 批次匯入的完成頁（逐檔結果畫在 1-2-1 當頁，見 REPORT_HOSTS，這一頁只有整批彙總）。入口同上：1-2-1 的送出鈕是動作模式、POST /datasets/{id}/documents/batch-import 成功之後才換頁"],
+            "PDF/WORD 批次匯入的完成頁（逐檔結果畫在 1-2-1 當頁，見 REPORT_HOSTS，這一頁只有整批彙總）。入口同上：1-2-1 的送出鈕是動作模式，整批送出做成之後才換頁"],
         // 母體從「走 page-shell 的那一族」放寬到「每一支有 permalink 的 src 頁」之後才看得到的四頁
         // ——而它們正是最容易「只能從頁面目錄進」的那幾頁（§3-1 逐字）。
         ["404.html",

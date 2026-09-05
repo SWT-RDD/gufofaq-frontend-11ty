@@ -18,7 +18,7 @@
    示範資料用元件專屬名 selectDatasetRows（§6：泛用名 datasets 會與資料集頁的同名變數互相覆蓋）。
    **id 與名稱照跨頁的資料集目錄正本取**（3-5 的 `healthScanDatasets`，同 `components/search-scope-modal`）：
    自己另編一批的話，這一窗會長出一批在 3-1-1 資料集清單上根本找不到的資料集（§6：跨頁的目錄要有一份正本）。
-   這一窗挑的是**匯入目標**，所以只列 kind=file 那五顆（QA 集不是匯入目標）。
+   這一窗挑的是**匯入目標**，所以只列檔案集那五顆（QA 集不是匯入目標）。
    **radio 的 `value` 是 dataset id、不是名字**（同 search-scope-modal：送出去的是 id，名字只是給人看的），
    回填給模擬 select 的顯示字由同一列的 `<span>` 供給，見 select-dataset-modal.js。 #}
 {% set selectDatasetRows = [

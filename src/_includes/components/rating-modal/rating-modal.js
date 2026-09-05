@@ -8,7 +8,7 @@ document.addEventListener("DOMContentLoaded", function () {
     var buttons = modal.querySelectorAll(".feedback-vote-btn");
     var reason = modal.querySelector("#feedbackText");
     // 意見回饋欄的初始值＝目前存著的那段話（由使用頁的 ratingModalFeedback 預填）。
-    // 關閉時要還原成它而不是清空：評分一次寫三欄、`feedback` 一律送出，
+    // 關閉時要還原成它而不是清空：送出一次評分就是把評分別、理由與時間一起覆寫，理由欄一律跟著送，
     // 空著送出就是把對方寫的理由清掉（見 rating-modal.html 檔頭）。
     var initialReason = reason ? reason.value : "";
 

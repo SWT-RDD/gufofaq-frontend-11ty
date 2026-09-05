@@ -14,35 +14,29 @@ permalink: 5-8_widgetTokens.html
     {% include "ui/breadcrumb/breadcrumb.html" %}
 </div>
 
-{# **本頁打的端點**（§3-2：一頁多支端點時，檔頭第一段先列端點清單）：
-     POST   /widget-tokens             `WidgetTokenOut`（201）——`allowed_origins` 為空直接 400
-     GET    /widget-tokens             `list[WidgetTokenOut]`
-     DELETE /widget-tokens/{token_id}  回 `{"ok": True}`（軟刪＝撤銷）
-     全部在 product，整支 router `require_admin`。
+{# 前台嵌入用金鑰管理（僅租戶管理者）。這一頁做三件事，三件都要租戶管理者：
+     產生一把金鑰（允許網域為空直接 400）、列出全部金鑰、撤銷一把（軟刪，列留著）。
 
-   前台嵌入用金鑰管理（僅租戶管理者）。SaaS 新需求，逆向自 product：
-     UI 用語一律「嵌入金鑰」（沿用 5-9 的「金鑰」詞彙）；後端／API 的名字仍是 widget token
-     （標頭 X-Widget-Token、query ?wt=、router product），那是契約、不隨 UI 改名，
-     故 i18n key 仍為 widget.*／toast.*WidgetToken（key 名是識別碼、非使用者可見，且已被 saas 鏡射）。
-     token 綁允許網域（allowed_origins）、供瀏覽器端前台機器人以 X-Widget-Token 呼叫公開端點；
-     可撤銷（軟刪）。真正把關在 product（require_admin）。
+     UI 用語一律「嵌入金鑰」（沿用 5-9 的「金鑰」詞彙）；這顆東西技術上的名字仍是 widget token
+     （嵌入碼裡的屬性名、送請求時的標頭名都用它），那是契約、不隨 UI 改名，
+     故 i18n key 仍為 widget.*／toast.*WidgetToken（key 名是識別碼、非使用者可見，且已被鏡射）。
+     金鑰綁允許網域、供瀏覽器端前台機器人帶著它呼叫公開端點；可撤銷（軟刪）。
    **嵌入方式是一段 `<script>` 片段，不是一條連結**：
      `<script src="{origin}/widget.js" data-widget-token="<token>" defer></script>`
-     （runtime 是 gufofaq-saas `apps/web/public/widget.js`，讀 `data-widget-token` 屬性、以
-     `X-Widget-Token` 標頭從**客戶自己的頁面**發請求）。
-     ⚠️ **不可以把它寫成「前台嵌入連結＝ /faq?wt=<token>」**：那條路與本頁強制填的「允許網域」
-     互相矛盾——`/faq` 不論頂層開啟還是放進 iframe，跑的都是我們自己網域的文件，送出去的
-     `Origin` 永遠是平台，於是那份網域清單只有兩種結局：留 NULL（完全不限網域）或設了就壞掉。
-     而 `create_widget_token` 對空的 `allowed_origins` 直接 400（`credential.origins_required`），
-     也就是這一頁 mint 出來的每一把金鑰都必然非空 ⇒ 只有 `<script>` 片段那條路走得通。 #}
+     ——那段 script 讀 `data-widget-token` 屬性，並以 `X-Widget-Token` 標頭從**客戶自己的頁面**
+     發請求。
+     ⚠️ **不可以把它寫成「前台嵌入連結＝我們自己的一個網址帶上金鑰」**：那條路與本頁強制填的
+     「允許網域」互相矛盾——我們自己的頁面不論頂層開啟還是放進 iframe，跑的都是我們自己網域的
+     文件，送出去的 `Origin` 永遠是平台，於是那份網域清單只有兩種結局：留空（完全不限網域）
+     或設了就壞掉。而這一頁**允許網域為空就直接 400**，
+     也就是這裡 mint 出來的每一把金鑰都必然非空 ⇒ 只有 `<script>` 片段那條路走得通。 #}
 <p class="text-gray" data-i18n="widget.intro">嵌入金鑰供前台公開機器人認出是哪一個租戶。每把金鑰綁定允許的網域，可隨時撤銷。</p>
 
 {# 產生金鑰：名稱（選填）+ 允許網域（必填，一行一個 https://網域）+ 產生按鈕 #}
 <div class="block mb-16 flex-row column gap-16">
     {# ⓘ 說明：markup 同既有 info-btn 六件組（GUIDELINE §1-2 無 html 元件契約）。①出處：本頁檔頭
-         「token 綁允許網域……供瀏覽器端前台機器人以 X-Widget-Token 呼叫公開端點」一節，與 product 的
-         `create_widget_token`（強制 `allowed_origins` 非空）與 `require_widget_token`
-         （逐字比對 Origin／Referer）。
+         「金鑰綁允許網域……供瀏覽器端前台機器人帶著它呼叫公開端點」一節
+         （產生時強制允許網域非空；之後每一次呼叫都逐字比對來源網域）。
          **這把金鑰的威脅模型與 5-6-3／5-9 都不同**：它天生要出現在客戶自己的公開網頁上，
          防護不是保密而是網域白名單——①末句明寫這件事，避免套用另外兩頁「保密」的語意。 #}
     <div class="flex-row align-items-center gap-8">
@@ -58,10 +52,8 @@ permalink: 5-8_widgetTokens.html
                 <div class="label">
                     <label for="widgetNameInput" class="control-label" data-i18n="widget.tokenName">名稱</label>
                 </div>
-                {# 長度上限寫在填之前（§3-2）：正本是 gufofaq-saas product 的
-                     `MAX_WIDGET_TOKEN_NAME_LEN`，執行點是同 repo 的 `create_widget_token`
-                     （`assert_max_len`，400 指名欄位）；投影在 `GET /users/limits` 的
-                     `widget_token.name_len`，閘與本頁同為 `require_admin`。
+                {# 長度上限寫在填之前（§3-2）：名稱**最多 100 字**（在這裡宣告一次，就是正本），
+                     超過會被擋下、訊息指名是哪一欄。
                    數字走資料槽、不進譯文（§4-2）：值執行期才由契約給，故形狀比照 2-2-1 的
                      `js-prompt-max-len`——切版畫契約當前的值，React 由契約覆寫，也由契約決定
                      要不要掛 `maxLength`（載不到就不掛，猜一個數字兩個方向都看不出錯）。
@@ -79,23 +71,21 @@ permalink: 5-8_widgetTokens.html
                 </div>
                 <div class="field">
                     <textarea id="widgetOriginsInput" rows="3" placeholder="一行一個，例如 https://example.com" data-i18n-placeholder="widget.originsPlaceholder" class="form-control" aria-describedby="widgetOriginsHint widgetOriginsLimitHint" required></textarea>
-                    {# 格式是後端硬守的（product 的 `_normalize_origins`：非 http/https、
-                         沒有 netloc、帶 path 一律 400），所以講在填之前、而且要接得上輔具——
+                    {# 格式是送出之後硬守的（協定非 http／https、沒有網域主體、帶路徑一律 400），
+                         所以講在填之前、而且要接得上輔具——
                          寫在 placeholder 一打字就消失（§4 帶約束的輔助文字要掛 id ＋ aria-describedby）。
-                       ⚠️ **這一句不可以寫得比後端嚴**：`_normalize_origins` 的第一行是
-                         `o = (raw or "").strip().rstrip("/").lower()`——**先正規化再驗**，所以尾斜線與
-                         大小寫都是合法輸入，被擋的只有 path（上面那則註解列的三個 400 條件裡也沒有
-                         尾斜線）。所以措辭要把「會被自動整理掉」與「會被擋下」分成兩件事講；
+                       ⚠️ **這一句不可以寫得比實際更嚴**：每一筆是**先正規化再驗**
+                         （去頭尾空白、去尾斜線、轉小寫），所以尾斜線與
+                         大小寫都是合法輸入，被擋的只有路徑那一族。
+                         所以措辭要把「會被自動整理掉」與「會被擋下」分成兩件事講；
                          寫成「不含路徑與結尾斜線」的話，使用者會以為 `https://example.com/` 是錯的，
                          回頭去改一個根本不必改的東西。 #}
                     <span id="widgetOriginsHint" class="text-gray" data-i18n="widget.originsHint">一行一個，須為 https://網域 或 http://網域，不可帶路徑、問號後的參數或井號後的片段，也不可帶帳密；結尾斜線與大小寫會自動整理。</span>
                     {# **這一欄有兩顆界線，兩顆都要講**（§3-2「界線的正本若是一個 group，
-                         同 group 的姊妹界線要一起檢查有沒有落點」）：筆數（`MAX_ALLOWED_ORIGINS`）
-                         擋的是「每一題要比幾次」，單筆長度（`MAX_ORIGIN_LEN`）擋的是「每次比多長」
-                         ——兩個維度，只講一顆的話管理者會在另一個維度上撞到一句事前沒看過的 400。
-                         執行點都在 gufofaq-saas product 的 `create_widget_token`（筆數）與
-                         `_normalize_origins`（單筆長度），投影在 `GET /users/limits` 的
-                         `widget_token.allowed_origins`／`widget_token.origin_len`。
+                         同 group 的姊妹界線要一起檢查有沒有落點」）：筆數上限 50
+                         擋的是「每一題要比幾次」，單筆長度上限 270 字擋的是「每次比多長」
+                         ——兩個維度，只講一顆的話管理者會在另一個維度上撞到一句事前沒看過的 400
+                         （兩顆都在這裡宣告一次，就是正本）。
                        與上一句分成兩顆節點、兩個 id：上一句講**格式**（會被擋下 vs 會被自動整理），
                          這一句講**數量**——併成一句之後就沒有辦法只更新其中一半。兩顆都被
                          textarea 的 `aria-describedby` 指到。 #}
@@ -105,26 +95,26 @@ permalink: 5-8_widgetTokens.html
         </div>
     </div>
     <div class="flex-row">
-        {# 逐 raise 對回 `create_widget_token`（product），順序＝上游由上而下。**四道界線各有一段**
-             ——它們全部落在這一顆鈕上（沒有改名端點、沒有第二個 mint 入口），少列的那幾道會一起
+        {# 段序＝這些守衛真正撞到的先後。**四道界線各有一段**
+             ——它們全部落在這一顆鈕上（產生金鑰只有這一個入口），少列的那幾道會一起
              掉進紅色的「產生失敗，請稍後再試」，而每一道使用者都自己修得掉：
-             · 400 `credential.origins_required` —— 函式的**第一個 raise**（`if not body.allowed_origins`）。
+             · 400 允許網域為空 —— **第一道**。
                **本頁製造得出來、所以這一段不可省**：全站零 `<form>`（§4），textarea 上的 `required`
                不會觸發任何原生驗證，什麼都不填按下去就是它。
-             · 400 `limits.too_long`（`assert_max_len`，`MAX_WIDGET_TOKEN_NAME_LEN`）—— 名稱過長。
-             · 400 `limits.too_many`（`assert_max_count`，`MAX_ALLOWED_ORIGINS`）—— 允許網域筆數過多。
-             · 400 `limits.too_long`（`_normalize_origins` 逐筆，`MAX_ORIGIN_LEN`）—— 單筆網域過長。
-               **排在格式那一段之前**：長度那道在 `_normalize_origins` 的迴圈裡先量，才輪到形狀檢查。
-             · 400 `credential.origin_invalid` —— `_normalize_origins` 逐行驗（scheme 非 http/https、
-               沒有 netloc、帶 path／query／fragment、帶 userinfo）。
-             · 400 `limits.too_many`（`assert_max_count`，`MAX_WIDGET_TOKENS_PER_TENANT`）—— 這個租戶
-               **未撤銷**的金鑰數已經滿了。它排在最後：那道計數在列鎖之後才做，前面每一道都先過。
+             · 400 名稱過長（上限 100 字）。
+             · 400 允許網域筆數過多（上限 50 筆）。
+             · 400 單筆網域過長（上限 270 字）。
+               **排在格式那一段之前**：逐筆處理時先量長度，才輪到形狀檢查。
+             · 400 網域格式錯誤 —— 逐行驗（協定非 http／https、沒有網域主體、
+               帶路徑／問號參數／井號片段、帶帳密）。
+             · 400 金鑰數已達上限 —— 這個租戶**未撤銷**的金鑰數滿了（上限 50 把）。
+               它排在最後：那道計數在最後才做，前面每一道都先過。
                **這一段最容易被誤讀成「網域填錯」**——名稱與網域都完全正確，卻被擋下，而畫面上唯一
                的紅字如果是格式錯誤，管理者會反覆修改一個沒有問題的網域。
              · 其餘（含網路失敗）⇒ error。
-           `data-tenant-role="admin"`＝端點的 `Depends(require_admin)`（§4 授權軸第三軸）。
+           `data-tenant-role="admin"`＝這個動作要租戶管理者（§4 授權軸第三軸）。
            ⚠️ `|` 的段序是**索引契約**：React 端照 `split("|")` 的位置取 `toast.createWidgetToken`。
-             段序＝上游 raise 的先後，新分支照那個順序落位、不一律往後接——接在末位會讓段序不再
+             段序＝守衛撞到的先後，新分支照那個順序落位、不一律往後接——接在末位會讓段序不再
              說得出「先撞到哪一道」，而那正是這一族 toast 唯一的排序依據。 #}
         <button data-tenant-role="admin" type="button" class="button button-primary" data-toast="已產生金鑰|請至少填一個允許網域|名稱超過長度上限，請縮短後再送出|允許網域筆數超過上限，請刪掉幾筆再送出|有一筆網域超過長度上限，請確認沒有多貼到路徑或參數|網域格式錯誤，請確認格式為 https://網域|金鑰數已達上限，請先撤銷用不到的金鑰再產生新的|產生失敗，請稍後再試" data-i18n-data-toast="toast.createWidgetToken" data-toast-type="success|warning|warning|warning|warning|warning|warning|error">
             <img src="./images/icon_add_white.png" width="48" height="48" decoding="async" alt="" class="icon">
@@ -134,10 +124,9 @@ permalink: 5-8_widgetTokens.html
 </div>
 
 {# 「產生金鑰」的說明視窗：②留空（「現在生效的條件」由 React 執行期依實際租戶狀態算，切版只給
-     容器）；**③四列都要在**——判準是「這顆界線有沒有被上游投影成一支拿得到的端點」（見 help-modal
-     檔頭），而這四顆全部投影在 `GET /users/limits` 的 `widget_token.*`（gufofaq-saas product 的
-     `USER_LIMIT_GROUPS`），閘與本頁同為 `require_admin`。
-   **四列都掛在這一顆窗、不分給「金鑰清單」那一顆**：四道全部由 `create_widget_token` 執法，
+     容器）；**③四列都要在**——判準是「這顆界線執行期取得到當下生效的實際值」（見 help-modal
+     檔頭），而這四顆都取得到。
+   **四列都掛在這一顆窗、不分給「金鑰清單」那一顆**：四道全部在產生金鑰那一刻執法，
      這一區才是它們的消費點（§3-2「上限寫在做那個決定的控制項旁邊」）。清單那一區沒有任何
      使用者填得出來的值會被拒，故它的 ③ 維持空的。
    `bound` 一律走全站唯一的界線字串寫法（§3-2）：單邊 `≤ N`、不加千分位。 #}
@@ -170,14 +159,13 @@ permalink: 5-8_widgetTokens.html
      而且撤下去前台所有掛這把金鑰的嵌入頁當場失效。彈窗沿用 components/delete-modal，標題與內文
      由 `deleteTitleKey`／`deleteMessageKey` 帶進去（所以講的是「撤銷」不是「刪除」）；
      `toast.revokeWidgetToken` 因此掛在確認鈕上，不掛觸發鈕。 #}
-{# id＝WidgetToken 主鍵（product WidgetTokenOut.id），撤銷打的是 DELETE /widget-tokens/{token_id}。
+{# id＝這一把金鑰的主鍵，撤銷就是拿它指名要撤哪一把。
      **不可拿 loop.index 當列鍵**：這張表撤銷得掉列，位置不是身分——撤掉前一列之後，後面每一列的
      列鍵都會往前頂一格，React 的 key 與逐列動作的目標會一起指錯人（§6 列鍵，同 5-6-2／5-6-3）。 #}
-{# 列序＝**主鍵遞增**：`list_widget_tokens`（product）是
-     `select(WidgetToken).where(tenant_id == …).order_by(WidgetToken.id)`，沒有第二種排法，
-     所以 38 一定排在 41 前面。**不可以排成「新的在上」**（41、38）——那是這支端點回不出來的
+{# 列序＝**主鍵遞增**，清單就只有這一種排法，
+     所以 38 一定排在 41 前面。**不可以排成「新的在上」**（41、38）——那是這張清單回不出來的
      順序，畫面會演一個正式環境跑不出來的狀態（§6）。
-     金鑰字面量的長度也是推導值：`token="wgt_" + secrets.token_urlsafe(24)`（同一支模組 的建立端點）
+     金鑰字面量的長度也是推導值：金鑰＝前綴 `wgt_` ＋ 24 bytes 隨機的 base64url
      ⇒ 24 bytes 的 base64url 是 32 字元、加前綴共 36 字元，示範值要湊足這個長度。
      這一欄是整串顯示、可複製的——長度短一個字元，抄去做欄寬與換行測試的人第一眼就被誤導。 #}
 {% set tokens = [
@@ -200,13 +188,13 @@ permalink: 5-8_widgetTokens.html
      `tokens.length`」寫在清單標題那一列的註解裡；示範列增刪時這一顆要一起對帳。 #}
 {% set widgetActiveTokens = 1 %}
 <div class="block flex-row column gap-16">
-    {# ⓘ 說明：markup 同既有 info-btn 六件組。①出處：本頁上方檔頭「金鑰清單」一節（「token 本就
-         嵌在瀏覽器端、非機密，故清單直接顯示全值供複製」），與 product 的
-         `list_widget_tokens`／`revoke_widget_token`。**全值常態顯示、不是 show-once**——這是
+    {# ⓘ 說明：markup 同既有 info-btn 六件組。①出處：本頁上方檔頭「金鑰清單」一節（「金鑰本就
+         嵌在瀏覽器端、非機密，故清單直接顯示全值供複製」）。
+         **全值常態顯示、不是 show-once**——這是
          這一區與 5-6-3／5-9 兩頁最根本的不同，①末句刻意點出來，不要讓人以為這裡也該遮起來。 #}
     {# 「已經用掉幾把」畫在清單標題那一列，形狀與 3-6 別名表清單、3-2 術語表清單逐字同構
          （前綴／中段／後綴三顆 key 夾兩個資料槽，數字不進譯文）。**它數的是未撤銷的那些**：
-         上限 `MAX_WIDGET_TOKENS_PER_TENANT`（product）只數 `disabled=False` 的列
+         每租戶 50 把那道上限只數**未撤銷**的那些
          （撤銷是軟刪、保留稽核軌跡），計數器與上限用同一種數法，否則「還剩幾把可用」對不起來。
        左邊那顆**不是** `tokens.length`：nunjucks 的 `{% set %}` 出不了 `{% for %}` 的 scope，
          過濾後的筆數算不出來，故 `widgetActiveTokens` 由下方那份示範陣列手動對帳
@@ -248,10 +236,9 @@ permalink: 5-8_widgetTokens.html
                          而且兩顆都要寫 `data-toast-type`——只給一段又缺 type 時，測試會把 type 預設補成
                          `success`，於是一顆漏掉失敗分支的鈕照樣是綠的，沒有任何地方擋得住。
                        繁中一律以「已複製」起頭：閘門測試的唯讀豁免是**以錨定字串開頭**比對的
-                         （`READONLY` 的「已複製」＝寫進剪貼簿、完全不碰後端），寫成「嵌入片段已複製」
+                         （`READONLY` 的「已複製」＝只寫進剪貼簿、不送出任何請求），寫成「嵌入片段已複製」
                          就對不上那個錨點，而它其實是同一件事。 #}
-                    {# `name` 在上游是**選填**（`WidgetTokenCreate.name: str | None`，`create_widget_token`
-                         寫 `name=(body.name or None)`）⇒ 無名金鑰是正本回得出來的一態，而這一格是整列
+                    {# 名稱是**選填**（留空就真的沒有名字）⇒ 無名金鑰是一個真的會出現的狀態，而這一格是整列
                          三顆鈕的可及名稱來源：空著的話三顆的名稱會塌成「複製／複製嵌入片段／撤銷」，
                          跨列逐字相同（§4）。故給一個**可翻的 fallback**「未命名金鑰 #<id>」，
                          示範第二筆就演那一態。 #}

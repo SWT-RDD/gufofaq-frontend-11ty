@@ -1,38 +1,31 @@
 {# 租戶自訂 skill 編輯 modal，取自 3-4_skillManagement 頁「編輯」鈕（.js-edit-skill）：
      開窗需先選定「編輯哪一個 skill」＝業務條件開窗，故該鈕保留 hook class、不掛 data-open-modal
      （GUIDELINE §5）。
-   skill＝宣告式指令包：一段 instructions ＋ 一組工具白名單，以一顆工具暴露給問答 agent，
-     被呼叫時跑一個 scoped 子迴圈。逆向自 gufofaq-saas product 與
-     GufoRAG chatbot；欄位語意對齊 Agent Skills 開放標準
-     （name ≤64 小寫英數與連字號、description ≤1024 且須寫「做什麼＋何時用」）。
-   長度上限落地成 markup 的 maxlength（契約欄位，§6）——出處是 GufoRAG chatbot 的
-     `MAX_SKILL_NAME_LEN = 64`／`MAX_SKILL_DESCRIPTION_LEN = 1024`／
-     `MAX_SKILL_INSTRUCTIONS_LEN = 20000`（各由同一支模組的 `_validate_name`／`_validate_description`／
-     `_validate_instructions` 執法）。`SKILL_NAME_RE` 的格式驗證不掛 `pattern`：
+   skill＝宣告式指令包：一段執行步驟 ＋ 一組工具白名單，以一顆工具暴露給問答 agent，
+     被呼叫時跑一個 scoped 子迴圈。欄位語意對齊 Agent Skills 開放標準
+     （名稱 ≤64 小寫英數與連字號、用途說明 ≤1024 且須寫「做什麼＋何時用」）。
+   **長度上限在這裡宣告一次，就是正本**，並落地成 markup 的 maxlength（契約欄位，§6）：
+     名稱 64 字／用途說明 1024 字／執行步驟 20000 字。名稱的格式驗證不掛 `pattern`：
      §4 明訂驗證結果走 toast 的 warning 分支，長度才是宣告在控制項上的契約。
-   同一份清單還有兩顆，它們的落地方式不同、理由要寫下來：
-     · `MAX_SKILL_INPUT_SCHEMA_LEN = 4096`（同一支模組，由 `_validate_input_schema` 執法；
-       gufofaq-saas product 另有一份同名常數＋
-       `assert_skill_input_schema_within_limit` 再擋一次）——**參數格式欄刻意不掛 maxlength**：
-       上游量的是 `json.dumps(..., sort_keys=True)` 的**序列化後**字數，而編輯框裡是縮排過的
-       JSON，兩者不是同一個字串。product 那份常數的註解逐字寫著「掛上去只會在『看起來還沒滿』
-       的時候擋人，或反過來……記在這裡是為了讓『投影了卻沒人用』不被下一個人當成漏接而去補一個
-       錯的 `maxLength`」。故這一欄只給常駐可見的上限提示（說明它量的是序列化後的字數），
+   還有三顆界線，它們的落地方式不同、理由要寫下來：
+     · **參數格式 4096 字**——**這一欄刻意不掛 maxlength**：
+       量的是**序列化後**（去掉縮排）的字數，而編輯框裡是縮排過的
+       JSON，兩者不是同一個字串。掛上去只會在「看起來還沒滿」的時候擋人，或反過來放行一份其實
+       已經超過的 schema。故這一欄只給常駐可見的上限提示（說明它量的是序列化後的字數），
        超限那一態由 toast 的 warning 段承接。
-     · `MAX_SKILL_RECURSION_DEPTH = 3`（同一支模組）＝巢狀 skill 的深度上限，落在 #skillNestedHint。
-     · 迭代次數的值域＝同一支模組的 `MIN/MAX_SKILL_MAX_ITERATIONS`（1／20），落成 `min`／`max` ＋
+     · **巢狀 skill 的深度上限 3 層**，落在 #skillNestedHint。
+     · **迭代次數的值域 1 – 20**，落成 `min`／`max` ＋
        #skillMaxIterationsHint 的區間提示（§4 數字欄三件套）。
    兩個欄位的輔助文字是功能的一部分、不是裝飾：
-     - name 的規則若不寫出來，租戶只會反覆撞 400（後端才是權威，但不該讓人用猜的）。
-     - description 是 agent 選不選這個 skill 的**唯一**依據，寫得含糊 skill 就永遠不會被觸發。
-   工具白名單四個 multi-select 對應 allowed_tools 的四個桶（內建工具／術語表／巢狀 skill／
-     MCP server，桶序的出處與理由見下方那一則）。它是**安全邊界**——子圖只用勾選的工具建起來，沒勾的在執行時根本不存在，
+     - 名稱的規則若不寫出來，租戶只會反覆撞驗證失敗（不該讓人用猜的）。
+     - 用途說明是 agent 選不選這個 skill 的**唯一**依據，寫得含糊 skill 就永遠不會被觸發。
+   工具白名單四個 multi-select ＝白名單的四個桶（內建工具／術語表／巢狀 skill／
+     MCP server，桶序的理由見下方那一則）。它是**安全邊界**——子圖只用勾選的工具建起來，沒勾的在執行時根本不存在，
      故 UI 不提供「全選」之類的捷徑（勾了什麼就是什麼）。
    示範資料＝假資料，依 GUIDELINE §4-2「只翻 UI chrome、不翻假資料」不掛 data-i18n。
    示範資料變數用元件專屬名 skillEditorBuiltinTools（{% set %} 是頁面全域，§2/§6）。
-   欄位對齊正本：name／description／instructions／allowed_tools 四桶／input_schema／max_iterations
-     （chatbot SkillCreate、product SkillIn）；enabled 不在本窗，走清單列的啟用／停用直送鈕
-     （product SkillUpdateIn.enabled，見 3-4）。 #}
+   **這一窗編的欄位就是這幾顆**：名稱／用途說明／執行步驟／工具白名單四桶／參數格式／迭代次數上限；
+     啟用與否不在本窗，走清單列的啟用／停用直送鈕（見 3-4）。 #}
 {# 勾選群組的示範資料**只能有一份**，就在下面那個群組旁邊（帶 allowedInSkill／reason 欄）。
      ⚠️ 不要在這裡再 `{% set %}` 一份同名的：`{% set %}` 是頁面全域、後者整份覆蓋前者，而唯一的
      `{% for %}` 在後者之後 ⇒ 前面那一份一個字都渲染不出來，卻看起來像是正本，讀的人會照它改。
@@ -66,7 +59,7 @@
                             <div class="field">
                                 <textarea required maxlength="1024" id="skillDescriptionInput" class="form-control" aria-describedby="skillDescriptionHint">處理退貨與退款試算。使用者問到退貨、退款、換貨時使用。</textarea>
                                 {# 約束要在**填之前**讀得到（§4）：`maxlength` 只會在撞牆那一刻靜默截斷，說不出上限是多少。
-                                     1024 是資料節點、不進譯文（§3-2），出處見本檔檔頭的 `MAX_SKILL_*_LEN`。
+                                     1024 是資料節點、不進譯文（§3-2），值見本檔檔頭那幾條長度上限。
                  **數字前後要有 chrome 前後綴 key**（同上面 `skillNameHint` 的三件式）：裸的 `1024`
                  直接黏在一句完全沒提到長度的說明前面，英文模式讀到的就是一個沒有意義的數字
                  （`settings.skillDescriptionHint` 的英譯裡一個字都沒有講長度）＝約束等於沒有講出來（§4-2）。 #}
@@ -92,25 +85,22 @@
                                 <label class="control-label" id="skillBuiltinToolsLabel" data-i18n="settings.builtinTools">內建工具</label>
                             </div>
                             <div class="field col-12-sm">
-                                {# 清單來自 `GET /settings/builtin-tools`（product 原樣轉出 chatbot 的目錄）。
-                                     本元件自己帶示範資料：這份是**目錄投影**、不是頁面資料，而 3-4 並沒有
+                                {# 清單是內建工具的目錄，執行期取得。
+                                     本元件自己帶示範資料：這份是**目錄**、不是頁面資料，而 3-4 並沒有
                                      （也不該）替它烤一份。⚠️ 所以這個變數**必須由本元件 set**：
                                      沒有人 set 的話，這個勾選群組渲染出來是空的（一個 checkbox 都沒有），
                                      而空群組與「這個 skill 沒開任何工具」長得一模一樣。
-                                     `allowed_in_skill === false` 的那幾顆**灰掉、不拿掉**：拿掉會讓使用者
+                                     `allowedInSkill === false` 的那幾顆**灰掉、不拿掉**：拿掉會讓使用者
                                      以為那顆工具不存在，而它在 5-2「內建工具啟用」面板上看得到——同一顆
                                      工具在兩頁一個在一個不在，比灰掉難懂。
                                      判準是**欄位**不是名字：目前只有 answer_from_qa 是 false，寫死名字的話
-                                     下一顆被禁的工具出現時清單會漏（GufoRAG chatbot 的
-                                     `SKILL_FORBIDDEN_BUILTIN_TOOLS` 是一張 dict，名字集合由它導出成
-                                     `SKILL_FORBIDDEN_BUILTIN_TOOL_NAMES`）。
-                                     `allowed_in_skill=false` 時上游同時給 **`skill_restriction_reason`**
-                                     （本元件把它落在示範資料的 `reason` 欄），它**與存檔被擋時的 400 訊息是
-                                     同一句**（product 的 `assert_allowed_builtin_tools`
-                                     原樣塞進 400），所以不掛
+                                     下一顆被禁的工具出現時清單會漏。
+                                     `allowedInSkill: false` 的那幾顆同時帶一句**限制理由**
+                                     （示範資料的 `reason` 欄），它**與存檔被擋時的訊息是
+                                     同一句**，所以不掛
                                      data-i18n——掛了就是同一句話有兩份譯文，設定頁說一套、存檔說另一套。 #}
-                                {# **目錄是全集，不是摘要**：名字與順序逐字取自 GufoRAG chatbot 的
-                                     `BUILTIN_TOOL_NAMES`（14 顆），5-2 的 `builtinTools` 卡片群是同一份、
+                                {# **目錄是全集，不是摘要**：名字與順序就是下面這一份（在這裡宣告一次，
+                                     就是正本），5-2 的 `builtinTools` 卡片群是同一份、
                                      同一個順序，可逐顆對照。
                                      ⚠️ **不可以只列其中幾顆**：白名單是安全邊界，少列的那幾顆等於在 UI 上
                                      宣告「這個 skill 用不到它們」，實際上卻勾得到（`calculate` 正是本 skill
@@ -156,11 +146,10 @@
                                 </div>
                             </div>
                         </div>
-                        {# 四個桶的順序＝**內建 → 術語表 → 巢狀 skill → MCP**，逐字對回 GufoRAG chatbot
-                             `_resolve_skill_tools` 逐段 `tools.extend` 的順序
-                             （agent 實際拿到工具的順序）。⚠️ **順序不可自行對調**：桶序一分岔，全站就有
+                        {# 四個桶的順序＝**內建 → 術語表 → 巢狀 skill → MCP**（在這裡宣告一次，就是正本），
+                             那也是 agent 實際拿到工具的順序。⚠️ **順序不可自行對調**：桶序一分岔，全站就有
                              兩份，而 3-4 清單的「可使用的工具」欄要照其中一份攤平時，沒有任何依據挑得出來。
-                             3-4 的規格引用的是同一個出處。
+                             3-4 照的是這一份。
                              **巢狀 skill 排在 MCP 之前是安全論證，不是版面偏好**：撞名時先進來的那一顆勝，
                              後面同名的被丟棄。頂層建 skill 工具時手上的既有名字只有內建工具，於是撞名的
                              MCP 工具被丟掉 ⇒ **skill 勝**。這一層若把 MCP 排在巢狀 skill 之前，同一個名字
@@ -187,15 +176,13 @@
                                 {# 值＝Skill 主鍵，值域正本是 3-4 的管理表（11 refund-flow／12 lookup-order／
                                      13 policy-lookup），與 5-2 的「指派 Skill」同一組。
                                      **本窗編的是 refund-flow（11），所以清單裡沒有它自己**：
-                                     `allowed_tools.skill_ids` 不可成環（存檔會被 chatbot
-                                     `validate_skill_definition` 擋成 400），把自己列出來等於提供一顆
+                                     巢狀引用不可成環（成環的存不進去），把自己列出來等於提供一顆
                                      一勾就存不了的選項。 #}
                                 <select id="skillNestedSelect" class="form-control multiSelect js-skill-nested" multiple="multiple" data-placeholder="請選擇" data-placeholder-key="common.pleaseSelect" aria-describedby="skillNestedHint">
                                     <option value="12" selected>lookup-order</option>
                                     <option value="13">policy-lookup</option>
                                 </select>
-                                {# 深度上限走資料節點（§4-2）：出處＝chatbot 的
-                                     `MAX_SKILL_RECURSION_DEPTH`。 #}
+                                {# 深度上限走資料節點（§4-2）：巢狀深度最多 3 層，見檔頭。 #}
                                 <p class="skill-editor-hint" id="skillNestedHint"><span data-i18n="settings.skillNestedHintPrefix">被引用的 skill 會成為這個 skill 可呼叫的工具。不可互相引用成環，巢狀深度上限 </span><span>3</span><span data-i18n="settings.skillNestedHintSuffix"> 層。</span></p>
                             </div>
                         </div>
@@ -206,11 +193,10 @@
                             <div class="field col-12-sm">
                                 {# MCP 註冊表與 5-2（`#mcpServersSelect`）／5-6-2 是**同一份三台**，
                                      值也同源（id 1／2／3）。**停用中的不可濾掉**：理由與 5-2 那一段逐字相同
-                                     ——`allowed_tools.mcp_server_ids` 的驗證吃的是註冊表全集
-                                     （chatbot 的 `validate_mcp_server_ids`），
+                                     ——存檔時驗的是註冊表全集，
                                      濾掉清單等於在 UI 上把一個存得進去的合法值變成不存在；而停用期間它
-                                     本來就不會被呼叫（GufoRAG chatbot 的 `_select_mcp_servers` 以
-                                     `id.in_()` ＋ `is_active` 取交集）。⚠️ 示範清單裡**停用中那一台不可以少**：
+                                     本來就不會被呼叫（真正跑起來的是「勾選的」與「啟用中的」交集）。
+                                     ⚠️ 示範清單裡**停用中那一台不可以少**：
                                      少了它，同一份註冊表就變成在一頁看得到、在另一頁看不到（§6）。 #}
                                 <select id="skillMcpSelect" class="form-control multiSelect js-skill-mcp" multiple="multiple" data-placeholder="請選擇" data-placeholder-key="common.pleaseSelect">
                                     <option value="1">時間工具</option>
@@ -224,8 +210,8 @@
                                 <label for="skillInputSchemaInput" class="control-label" data-i18n="settings.skillInputSchema">參數格式</label>
                             </div>
                             <div class="field col-12-sm">
-                                {# 這一格的內容是**縮排過的** JSON（見檔頭：上游量的是序列化後的字數，
-                                     編輯框裡是縮排版），而它永遠是把 input_schema 那顆 JSON 物件縮排
+                                {# 這一格的內容是**縮排過的** JSON（見檔頭：量的是序列化後的字數，
+                                     編輯框裡是縮排版），而它永遠是把那顆參數格式物件縮排
                                      印出來的結果 ⇒ 示範值照 2 空格逐層展開。巢狀物件與陣列壓在同一行
                                      是任何縮排器都產不出來的形狀，寫成那樣等於演一個這一格到不了的狀態。 #}
                                 <textarea id="skillInputSchemaInput" class="form-control skill-editor-instructions" aria-describedby="skillInputSchemaHint skillInputSchemaLenHint">{
@@ -252,8 +238,7 @@
                             </div>
                             <div class="field col-12-sm">
                                 <input type="number" id="skillMaxIterationsInput" class="form-control" value="5" min="1" max="20" step="1" aria-describedby="skillMaxIterationsHint">
-                                {# 區間走資料節點（§4-2）：`1-20` 就是同一行的 min／max，
-                                     出處＝chatbot 的 `MIN/MAX_SKILL_MAX_ITERATIONS`。 #}
+                                {# 區間走資料節點（§4-2）：`1 – 20` 就是同一行的 min／max，見檔頭。 #}
                                 <p class="skill-editor-hint" id="skillMaxIterationsHint"><span data-i18n="settings.skillMaxIterationsHintPrefix">這個 skill 的子迴圈最多來回幾輪（</span><span>1 – 20</span><span data-i18n="settings.skillMaxIterationsHintSuffix">）。設太小會讓它還沒做完就被截斷。</span></p>
                             </div>
                         </div>
@@ -263,33 +248,30 @@
                     <div class="button-row center">
                         <button type="button" class="button button-border btn-close-modals" data-i18n="action.cancel">取消</button>
                         {# 不掛 btn-close-modals：驗證 warning 是「留在窗內就能改」的（名稱格式或撞內建工具名、
-                             用途說明必填、迭代 1-20、巢狀成環或超深、參數格式——全部是窗內欄位，chatbot
-                             validate_skill_definition 回 400），每點必關窗會把剛編好的內容一起關掉（§5）。
-                           warning 段逐項對回 `validate_skill_definition` 依序呼叫的那幾支
-                             （GufoRAG chatbot）：
-                             `_validate_name`（非字串／markup／長度／`SKILL_NAME_RE`／`name in BUILTIN_TOOL_NAMES`）、
-                             `_validate_description`（非字串／空值／長度／markup）、`_validate_instructions`（長度）、
-                             `_validate_max_iterations`（1-20）、**`_validate_input_schema`**（頂層不是
-                             `type: object`／`properties` 撞上 `SCOPE_PARAM_NAMES`／序列化後超過
-                             `MAX_SKILL_INPUT_SCHEMA_LEN`）、`_validate_whitelist_is_a_set`／
-                             `_validate_builtin_names`／`_validate_reference_existence`、
-                             `_validate_no_nesting_cycle`（成環）。
+                             用途說明必填、迭代 1 – 20、巢狀成環或超深、參數格式——全部是窗內欄位），
+                             每點必關窗會把剛編好的內容一起關掉（§5）。
+                           warning 段要涵蓋存檔時逐項擋得下來的每一件事：
+                             名稱（非字串／夾 markup／長度／格式／與內建工具同名）、
+                             用途說明（非字串／空值／長度／夾 markup）、執行步驟（長度）、
+                             迭代次數（1 – 20）、**參數格式**（頂層不是 object／`properties` 用到了保留的
+                             範圍參數名／序列化後超過 4096 字）、
+                             白名單本身（不是集合／內建工具名不存在／引用的 skill 或術語表不存在）、
+                             巢狀成環。
                              ⚠️ 參數格式那三顆**一顆都不能省**：它是本窗唯一沒有 maxlength 的欄位，
                              被擋下來時 toast 是使用者唯一的線索。
                            ⚠️ 這一段 warning 的字面是**「或與內建工具同名」，不是「或重複」**：
-                             skill 沒有「同名即衝突」這回事——`tenant_id` 是呼叫端自填的 tag、當不了唯一鍵的
-                             分組鍵，`_validate_name` 逐字寫著「這裡刻意不查『同名的 skill 是否已存在』，
-                             別加回來」。**唯一性在掛載面**：一份 config 不得掛兩顆同名 skill
-                             （`validate_skill_ids`），那一段的落點是 5-2 的 `toast.saveProfileConfig`，
+                             skill 沒有「同名即衝突」這回事——**刻意不查同名**：同名的 skill 允許並存，
+                             不要補一道重名檢查。**唯一性在掛載面**：一份設定檔不得掛兩顆同名 skill，
+                             而那一段的落點是 5-2 的 `toast.saveProfileConfig`，
                              不是這一顆。真正要列的是撞內建工具名那一道
-                             （skill 的名稱就是送進模型的工具名，`SKILL_NAME_RE` 允許純小寫英數 ⇒
+                             （skill 的名稱就是送進模型的工具名，而名稱格式允許純小寫英數 ⇒
                              `calculate` 這一族全是合法的 skill 名稱）——使用者換個名字就修得掉，
                              故併進同一段 warning。
-                           **末段是第二種 403**：product 的 `require_capability` 內部串著
-                             `require_tenant_feature`，所以這顆鈕的 403 有兩種——`missing_capability`
+                           **末段是第二種「被擋下來」**：能力閘門背後還串著租戶功能開關，
+                             所以這顆鈕擋得下來的方式有兩種——**這個帳號沒有這項能力**
                              （收件人＝貴租戶的管理者，就是「權限不足，無法儲存」那一段）與
-                             `tenant_feature_disabled`（平台把整個租戶的 `settings` 關掉，**連租戶管理者
-                             也擋**，收件人＝平台管理員）。§4 逐字寫著「折進同一個屬性＝把兩種 403 說成
+                             **整個租戶的設定功能被平台關掉**（**連租戶管理者
+                             也擋**，收件人＝平台管理員）。§4 逐字寫著「折進同一個屬性＝把兩種擋法說成
                              同一件事」——一句「請找貴租戶的管理者」對第二種是錯的指示。
                            **一律追加在末位**（正典＝2-2-4 的「開始執行」）：段序是 React 端
                              `split("|")[n]` 的索引契約，插在中間會讓其後每一段整批位移。

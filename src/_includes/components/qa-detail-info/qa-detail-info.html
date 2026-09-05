@@ -8,18 +8,18 @@
      「提示詞」欄才用 ui/collapse-text 收合（.collapse-text/.collapse-body/.collapse-toggle）：
      那是一大段設定文字、不是這一頁的主角，收起來但**打得開**，完整欄位清單不因此少一欄。 #}
 {# conversation 的欄位（頁面在 include 前 set，§3-2/§6）：
-     satisfaction ＝ `{ type, icon }`：`type` 是**上游字面**（`rating_type`：positive／negative／空＝未評分），
-       顯示名由本檔的 `{% if %}` 走 i18n key（值域正本＝product 的 `_RATING_LABEL`）
+     satisfaction ＝ `{ type, icon }`：`type` 的值域是 `positive`／`negative`／空＝未評分
+       （在這裡宣告一次，就是正本），顯示名由本檔的 `{% if %}` 走 i18n key
      feedback / chatroomId / id / time / userMessage —— 既有的基本欄
-     answerSource —— `chat_logs.answer_source`：`qa_direct` ＝逐字直答（掛徽章），其餘＝模型生成
-     chatMode / tag / intent / language —— **值一律給上游字面**：`chat_logs.search_mode`
-       （`traditional`／`agent`）／`chat_logs.tag`（`frontend`／`backend`／`ab_test`）／
-       `chat_logs.is_intension`（**可為 null 的布林**，故傳 `true`／`false`，不是「是」「否」）——
-       這三欄是封閉目錄，中文由本元件的 {% if %} 鏈產生；／`chat_logs.language`（LLM 的自由文字
-       判斷，如「繁體中文」「English」「日本語」，值域開放故原樣輸出）；未給一律畫「—」，不留白
+     answerSource —— `qa_direct` ＝逐字直答（掛徽章），其餘＝模型生成
+     chatMode / tag / intent / language —— **值一律給機器碼、不給顯示字**：chatMode
+       （`traditional`／`agent`）／tag（`frontend`／`backend`／`ab_test`）／
+       intent（**可為 null 的布林**，故傳 `true`／`false`，不是「是」「否」）——
+       這三欄是封閉目錄，中文由本元件的 {% if %} 鏈產生；language 是每一輪對「使用者用什麼語言」
+       的自由文字判斷（如「繁體中文」「English」「日本語」，值域開放故原樣輸出）；未給一律畫「—」，不留白
        （留白會被讀成「這一欄沒有東西」而不是「這一輪沒有值」，理由詳見那幾格旁邊的註解）
      canReadSettings —— **能力分級開關**：true 才渲染模型／取用筆數／選用筆數／提示詞四格。
-       正本 product 的 `_SETTINGS_SCOPED_LOG_FIELDS` 在沒有 `settings:read` 時是**把鍵整個拿掉**，
+       沒有 `settings:read` 的人拿到的資料裡**整個鍵不存在**，不是回一個空值，
        所以這裡切「有值 vs 整格不存在」兩態，不切「顯示空白」——詳見那四格旁邊的註解
      modelName / searchTotalNumber / searchSelectedNumber —— 上面那四格的值（canReadSettings 為真時才有）
    AI 回答與提示詞為長文，仍依 §3-2 寫死在下方 markup #}
@@ -39,9 +39,9 @@
                     <div class="col col-6-md col-12-sm">
                         <div class="th" data-i18n="qa.userSatisfaction">使用者滿意度</div>
                         <div class="td">
-                            {# 滿意度是**封閉枚舉**（`chat_logs.rating_type`，值域 positive／negative／NULL），
-                                 所以 `satisfaction.type` 存上游字面、顯示走 i18n key——同本檔對 `chatMode`／
-                                 `tag`／`intent` 立的規（值一律給上游字面）。塞顯示字的話 React 接真 API
+                            {# 滿意度是**封閉枚舉**（值域 `positive`／`negative`／空），
+                                 所以 `satisfaction.type` 存機器碼、顯示走 i18n key——同本檔對 `chatMode`／
+                                 `tag`／`intent` 立的規（值一律給機器碼）。塞顯示字的話 React 接真 API
                                  只印得出 `positive`，英文模式那一格永遠是中文（§6／§4-2）。 #}
                             <span class="text-bold">{% if conversation.satisfaction.type == "positive" %}<span data-i18n="qa.ratingLike">讚</span>{% elif conversation.satisfaction.type == "negative" %}<span data-i18n="qa.ratingDislike">倒讚</span>{% else %}<span data-i18n="qa.ratingNoOpinion">無意見</span>{% endif %}</span>
                             <img src="{{ conversation.satisfaction.icon }}" width="48" height="48" decoding="async" alt="" class="icon">
@@ -73,13 +73,10 @@
                         <div class="th" data-i18n="qa.conversationTime">對話時間</div>
                         <div class="td">{{ conversation.time }}</div>
                     </div>
-                    {# 意圖判斷＝`chat_logs.is_intension`，**可為 null 的布林**（gufofaq-saas product 的
-                         `_PUBLIC_LOG_FIELDS` 收了 `is_intension`，而
-                         `_project_log` 是 `{k: v for k, v in marked.items() if k in allowed}`＝原樣帶過
-                         ⇒ `/history/{id}` 回給畫面的就是布林本身，不是顯示字）⇒ 封閉目錄，走 {% if %} 鏈。
-                       ⚠️ **不要抄匯出那一份的「是／否／空」**：那三個字是同一支模組的 `_detail_cells` 為
-                         **CSV** 組的顯示層（欄名見 `_EXPORT_DETAIL_HEADER` 的「有無意圖判斷」），
-                         把它當成 API 值域，React 端就會拿一個布林去比對中文而恆為否。
+                    {# 意圖判斷是**可為 null 的布林**，畫面拿到的就是布林本身、不是顯示字
+                         ⇒ 封閉目錄，走 {% if %} 鏈。
+                       ⚠️ **值不是「是／否／空」那三個中文字**：那是匯出 CSV 那一欄的顯示層，
+                         把它當成這一欄的值域，React 端就會拿一個布林去比對中文而恆為否。
                        三態逐一對回：`true`＝有判斷、`false`＝沒判斷、null／未給＝「—」。**第三態不是
                          第二態**：agent 模式恆為 False（有跑、結論是不需要），而舊資料的 null 是「這一欄
                          比這筆紀錄晚出生」，兩件事畫成同一格就把「沒判斷」與「不知道」混為一談。 #}
@@ -87,37 +84,32 @@
                         <div class="th" data-i18n="qa.hasIntentDetection">有無進行意圖判斷</div>
                         <div class="td">{% if conversation.intent == true %}<span data-i18n="common.yes">是</span>{% elif conversation.intent == false %}<span data-i18n="common.no">否</span>{% else %}—{% endif %}</div>
                     </div>
-                    {# 「這一輪是怎麼回答的」四欄。**資料值一律是上游的字面**，要給人看的中文由這裡的
+                    {# 「這一輪是怎麼回答的」四欄。**資料值一律是機器碼**，要給人看的中文由這裡的
                          `{% if %}` 鏈配 i18n key 產生——不可以把「Agent」「繁體中文」這種顯示字塞進資料再
                          `{{ }}` 原樣輸出：React 接上真 API 只會印出 `agent`，而英文模式下那格永遠是中文。
-                         哪一欄走 `{% if %}` 鏈、哪一欄原樣輸出，取決於**上游那一欄是不是封閉目錄**：
-                         · 答案來源＝`chat_logs.answer_source`（DB 只有 `qa_direct` 與 NULL＝正常生成；
-                           product 的 `list_history`／`export_history` 對 NULL 那一側取的查詢字面是 `generated`）
+                         哪一欄走 `{% if %}` 鏈、哪一欄原樣輸出，取決於**那一欄是不是封閉目錄**：
+                         · 答案來源：只有 `qa_direct`（逐字直答）與空＝正常生成兩種
                            ⇒ 封閉，走 `{% if %}` 鏈。
-                         · 對話模式＝`chat_logs.search_mode`（`traditional`／`agent`；product 的請求模型與
-                           投影模型都宣告成 `Literal["traditional", "agent"]`，GufoRAG chatbot 的欄位註解
-                           同字）⇒ 封閉，走 `{% if %}` 鏈，沿用測試頁那兩顆
-                           既有的 key（`qaTest.chatModeTraditional`／`qaTest.chatModeAgent`）。NULL（欄位比
+                         · 對話模式：值域是 `traditional`／`agent` 兩顆（在這裡宣告一次，就是正本）
+                           ⇒ 封閉，走 `{% if %}` 鏈，沿用測試頁那兩顆
+                           既有的 key（`qaTest.chatModeTraditional`／`qaTest.chatModeAgent`）。空值（這一欄比
                            舊資料晚出生）落到「—」。
-                         · 語言＝`chat_logs.language`：**這一欄不是語言碼、也不是封閉目錄**，是 LLM 每一輪
-                           對「使用者最新輸入用什麼語言」的自由文字判斷（GufoRAG chatbot
-                           的 `ChatAnalysis.language`，欄位說明逐字舉例「English」「日本語」「繁體中文」）。
-                           ⚠️ **它沒有預設值**（`Optional[str] = None`；上游那一欄的註解逐字寫著
-                           「不給預設值……給預設值的話，agent 模式下的英日文對話會被記成繁中，那是『填了錯的
-                           值』，比 NULL 難察覺得多」）⇒ **NULL 是走得到的常態、不是只有舊資料才有**，
-                           所以下面那條「沒值就畫『—』」在這一欄尤其要成立。**不要拿 `Tenant.language`（`zh-TW`／`en`，帳號頁那顆
-                           下拉）去對它**——product 的檔頭專門寫了一段講這兩件事長得像
-                           但完全不同，`chat_logs.language` 是偵測結果、不是設定。既然值域開放，這一格就
+                         · 語言：**這一欄不是語言碼、也不是封閉目錄**，是每一輪
+                           對「使用者最新輸入用什麼語言」的自由文字判斷（例如「English」「日本語」「繁體中文」）。
+                           ⚠️ **它沒有預設值**：給了預設值的話，agent 模式下的英日文對話會被記成繁中，
+                           那是「填了錯的值」，比空值難察覺得多 ⇒ **空值是走得到的常態、不是只有舊資料才有**，
+                           所以下面那條「沒值就畫『—』」在這一欄尤其要成立。**不要拿帳號頁那顆介面語言
+                           下拉（`zh-TW`／`en`）去對它**——兩件事長得像但完全不同：這一欄是每一輪的偵測
+                           結果，那一顆是使用者自己選的設定。既然值域開放，這一格就
                            **原樣輸出**（同 §4-2：假資料／模型產出的自由文字不掛 data-i18n）。
-                         · 標籤＝`chat_logs.tag`，值域正本是 product 的
-                           `_TAG_LABEL`（鍵只有 `frontend`／`backend`／`ab_test`）⇒ 封閉，走 `{% if %}` 鏈。
+                         · 標籤：值域只有 `frontend`／`backend`／`ab_test` 三顆（在這裡宣告一次，就是正本）
+                           ⇒ 封閉，走 `{% if %}` 鏈。
                            它與 4-1 清單的「使用者類型」是**同一欄**，故三顆 key 逐字沿用那一頁的
                            （`qa.frontendQa`／`qa.backendQa`／`nav.abTest`，§4-2 同文沿用既有 key）——
                            兩頁對同一欄各拼一份中文，就是同一個值在站內長出兩種說法。
-                         ⚠️ `search_mode` **確實存在，不要斷言它沒有**：product 的 `_PUBLIC_LOG_FIELDS`
-                           收了它，`_EXPORT_DETAIL_HEADER` 那一欄的中文就叫「對話模式」，`/history/{id}`
-                           走 `_project_log` 一定回得出來。查證時拿猜的欄名（例如 `chat_mode`）去 grep
-                           會一無所獲，而「上游沒有這一欄」這種負面斷言的結論是「不渲染它」——照著做就
+                         ⚠️ **對話模式這一欄確實存在，不要斷言它沒有**：清單、匯出與這一頁三處都畫得出來，
+                           匯出那一欄的中文就叫「對話模式」。查證時拿猜的欄名去 grep
+                           會一無所獲，而「沒有這一欄」這種負面斷言的結論是「不渲染它」——照著做就
                            把一個出貨中的欄位從畫面上拿掉了。這正是 §3-2 說負面斷言舉證責任更重的理由。
                          四欄一律「沒值就畫『—』」，不留白（留白會被讀成「這一欄沒有東西」而不是
                            「這一輪沒有值」）。 #}
@@ -175,13 +167,11 @@
                         </div>
                     </div>
                     {# ── 租戶調校設定欄（能力分級）────────────────────────────────────────
-                         `system_prompt`／`single_prompt`／`model_name`／`search_total_number`／
-                         `search_selected_number` 這五欄只有具 `settings:read` 的人拿得到：正本
-                         product 的 `_SETTINGS_SCOPED_LOG_FIELDS`，投影時是
-                         `{k: v for k, v in marked.items() if k not in …}` ——**整個鍵不存在**，不是回空值。
+                         提示詞、模型、取用筆數、選用筆數這幾欄只有具 `settings:read` 的人拿得到，
+                         而沒有那項能力時是**整個鍵不存在**，不是回一個空值。
                          所以這裡切的兩態是「有值」與「整格不渲染」，**不是「顯示空白」**：
                          空白會被讀成「這一輪沒設提示詞／沒指定模型」，而事實是「你沒有權限看」。
-                         由使用頁傳 conversation.canReadSettings 決定（React 端依 /api/me 的能力）。 #}
+                         由使用頁傳 conversation.canReadSettings 決定（React 端依目前登入者的能力）。 #}
 
                     {% if conversation.canReadSettings %}
                     <div class="col col-4-md col-12-sm">

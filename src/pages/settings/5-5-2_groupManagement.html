@@ -14,10 +14,11 @@ permalink: 5-5-2_groupManagement.html
     {% include "ui/breadcrumb/breadcrumb.html" %}
 </div>
 
-{# 租戶群組（分組）＋群組權限管理（僅租戶管理者）。SaaS 新需求，逆向自 product：
+{# 租戶群組（分組）＋群組權限管理（僅租戶管理者）：
      群組＝權限群組，能力（細粒度 token）定在群組上，使用者屬於群組即繼承其能力（多群組聯集）。
-     真正把關在 product（require_admin），本頁僅提供管理介面。
-     能力 token 集合對齊 product CAPABILITY_TOKENS（data/settings 拆讀寫；ask/history/audit 單一）。
+     本頁僅提供管理介面，真正把關的是送出之後那一道授權檢查。
+     能力 token 的值域就是下面這七顆（`data`／`settings` 各拆讀寫；`ask`／`history`／`audit` 單一），
+     與 5-5-1 是同一份，在這裡宣告一次，就是正本。
      **memberCount 要與 5-5-1 的成員指派對得起來**（§6 跨頁自洽，兩頁是同一個示範租戶——
      群組名稱與能力聯集逐字相同、5-5-1 檔頭也明寫「群組本身在本頁維護」）：
      那一頁三位成員的 groupIds 是 []／[3]／[2, 3] ⇒ 管理 0、業務 1、研發 2。 #}
@@ -32,8 +33,7 @@ permalink: 5-5-2_groupManagement.html
 ] %}
 {# 列鍵（§6）：這張表刪得掉列（逐列 `.js-delete-group`），所以每一筆要帶身分欄位、逐列 id 不用
      `loop.index`——刪一筆之後位置整排前頂，React 的 key 與逐列動作會一起指錯人。`id` 就是
-     `PATCH /groups/{group_id}`／`DELETE /groups/{group_id}` 吃的那一顆（product
-     的 `update_group`／`delete_group`）。**號碼沿用 5-5-1 的同一批群組**（跨頁同源，§6）。 #}
+     同列「儲存」與「刪除」用來指名對象的那一顆。**號碼沿用 5-5-1 的同一批群組**（跨頁同源，§6）。 #}
 {% set groups = [
   { id: 1, name: "管理群組", capabilities: ["data:read", "data:write", "settings:read", "settings:write", "ask", "history", "audit"], memberCount: 0 },
   { id: 2, name: "業務群組", capabilities: ["data:read", "ask", "history"], memberCount: 1 },
@@ -45,9 +45,9 @@ permalink: 5-5-2_groupManagement.html
 {# 新增群組：名稱 + 能力 token 勾選（ui/checkbox）+ 新增按鈕（三態 toast：成功／名稱已存在／失敗）#}
 <div class="block mb-16 flex-row column gap-16">
     {# ⓘ 說明：markup 同既有 info-btn 六件組（GUIDELINE §1-2 無 html 元件契約）。①出處：本頁檔頭
-         「群組＝權限群組：能力定在群組上」一節，與 product 的
-         `GroupIn`（name／capabilities）、`create_group`（名稱必填、能力驗證於 `CAPABILITY_TOKENS`）。
-         成員指派**不在**本區——那是 `PATCH /users/{id}` 的 `group_ids`（見 5-5-1），本區只決定
+         「群組＝權限群組：能力定在群組上」一節（一個群組只有兩件事：名稱必填、勾到的能力
+         必須落在上面那七顆之內）。
+         成員指派**不在**本區——那是在 5-5-1 逐位成員指派的，本區只決定
          「這個群組帶什麼能力」，是能力疊加三件事裡的第二件（群組本身），與逐使用者的勾選、
          平台系統管理員的跨租戶身分都無關。 #}
     <div class="flex-row align-items-center gap-8">
@@ -101,11 +101,11 @@ permalink: 5-5-2_groupManagement.html
 {# 群組清單：default-table。名稱（可就地改名）＋能力勾選（同一格內 7 個 checkbox）＋成員數＋操作
      （儲存名稱與能力｜管理成員｜刪除）。管理成員與刪除都需先選定「哪一個群組」＝業務條件開窗，
      故用 hook class（.js-manage-members / .js-delete-group），不掛 data-open-modal（§5）。
-     刪除群組守衛（尚有資料集歸屬 → 409）由 product 把關，前端顯示錯誤。示範 3 筆。 #}
+     刪除群組守衛（底下還有資料集歸屬 → 409）要送出去才判得了，前端把結果原樣顯示出來。示範 3 筆。 #}
 <div class="block flex-row column gap-16">
-    {# ⓘ 說明：markup 同既有 info-btn 六件組。①出處：本頁上方檔頭「群組清單」一節，與 product 的
-         `update_group`／`delete_group`（409 `group_has_datasets`）、
-         `_member_count`。這一區仍是能力疊加三件事裡的第二件（群組本身的能力與成員數），
+    {# ⓘ 說明：markup 同既有 info-btn 六件組。①出處：本頁上方檔頭「群組清單」一節
+         （就地改名／改能力、成員數，以及「底下還有資料集就刪不掉」那道 409）。
+         這一區仍是能力疊加三件事裡的第二件（群組本身的能力與成員數），
          「管理成員」開的是成員↔群組的指派關係（見 5-5-1），與租戶管理者旗標、平台系統管理員
          的跨租戶身分都是各自獨立的事。 #}
     <div class="flex-row align-items-center gap-8">

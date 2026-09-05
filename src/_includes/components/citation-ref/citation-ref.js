@@ -2,7 +2,7 @@
 // （不是第 N 列——見 components/sources-block 檔頭的 sourceNo）。
 //
 // 只轉切版互動（點擊 → 定位）。答案內文的 [[N]] → 徽章 markup 這一步是業務層的事：
-// 真值來自 chatbot 生成的答案文字（agent 與傳統兩模式同一慣例），React 端於渲染時轉換；
+// 真值來自生成的答案文字（agent 與傳統兩模式同一慣例），React 端於渲染時轉換；
 // 切版這邊直接把徽章寫在示範答案裡（§3-2：示範資料寫死）。
 //
 // §5：定位/展開/高亮全是 components/sources-block 自己的事，這裡只呼叫它匯出的 reveal()，

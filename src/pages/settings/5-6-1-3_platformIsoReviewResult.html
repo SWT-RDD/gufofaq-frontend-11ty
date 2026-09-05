@@ -6,19 +6,18 @@ pageHeading: 租戶功能開通
 permalink: 5-6-1-3_platformIsoReviewResult.html
 ---
 {# ══ ISO 季度審核精靈：狀態 result（第 ③ 步「處理結果」）════════════════════════════════
-     **這一份稿演的是什麼**：平台管理頁在批次處置已經送出、逐筆結果回來之後的樣子——正本
-     gufofaq-saas `apps/web/app/(app)/platform/page.tsx` 的 `ReviewWizard`，`step === "result"`
-     （`{step === "result" && (…)}`，資料是 `POST /platform/review/apply` 回的 `results`）。
-     這一態同樣**畫面要停留**供稽核截圖：成功／失敗逐筆列出，失敗那一列附後端回的錯誤訊息。
+     **這一份稿演的是什麼**：平台管理頁在批次處置已經送出、逐筆結果回來之後的樣子——精靈三態
+     （`idle`／`preview`／`result`）裡的 `result`，畫的就是那一批逐筆結果。
+     這一態同樣**畫面要停留**供稽核截圖：成功／失敗逐筆列出，失敗那一列附上這一筆為什麼沒做成。
 
      **上一步**：`5-6-1-2_platformIsoReviewPreview.html`（`step === "preview"`）——按下那一頁的
        `.js-review-confirm` 才會到這裡。**這一態沒有回上一步的路**：處置已經送出去了，
-       `ReviewWizard` 只提供 `.js-review-done`（`reset()`）。
+       精靈在這一態只提供 `.js-review-done`（把自己重設回入口態）。
      **下一步**：`5-6-1_platformTenants.html`（`step === "idle"`）——`.js-review-done`（「完成／返回」）
        把整台精靈重設回入口態。**切版不做靜態跳轉**（§5 條件動作只掛 hook class）；三份稿在部署站台上
        由頁面目錄 `catalog.html` 進入、在檔頭互相指名。
      **本頁是無導覽入口頁**（§3-1 第③條，同時登記在測試的 `NO_NAV`）：到得了這一態的唯一途徑是
-       在上一頁按下 `.js-review-confirm` 並讓 `POST /platform/review/apply` 成功，那是條件動作、
+       在上一頁按下 `.js-review-confirm` 並讓處置送出成功，那是條件動作、
        沒有任何一頁連得到它。**檔頭裡的「上一步／下一步」是指路，不是導覽入口**——§3-1 第②條
        要的是真的連過去的 `href`，測試因此不看註解。
 
@@ -30,14 +29,14 @@ permalink: 5-6-1-3_platformIsoReviewResult.html
        `components/iso-review-wizard` 的區塊標題與說明、`components/platform-disclaimer-panel`。
      **步驟指示器**＝`platform.reviewStep3` 那一行標題本身（繁中與英譯都自帶 ③）。
 
-     ⚠️ 示範資料跨元件自洽（§6）：失敗那一列的 `error` 是**上游那顆穩定 code** `upstream_unavailable`
-       （product 的 `_review_failure_code`，值域五顆），畫面上那一句由切版寫、走 i18n key
+     ⚠️ 示範資料跨元件自洽（§6）：失敗那一列的 `error` 是那顆穩定的失敗 code `upstream_unavailable`
+       （失敗 code 的值域共五顆），畫面上那一句由切版寫、走 i18n key
        ——理由與五顆 code 的清單在 `components/iso-review-wizard` 的 `isoReviewFailResults` 上方。
        42 就是 `components/platform-tenants-panel` 裡示範租戶 D 的 id；而 C／D 兩筆正是
-       preview 態名單上的那兩列，preview 選的動作也必須是 **purge**（那一支保留 Tenant／User，
-       所以這一頁的租戶表照樣列得出 C 與 D）。改任何一邊都要回頭對另外兩處。
+       preview 態名單上的那兩列，preview 選的動作也必須是 **purge**（「刪除逾時資料」只清資料、
+       租戶與使用者留著，所以這一頁的租戶表照樣列得出 C 與 D）。改任何一邊都要回頭對另外兩處。
 
-     front matter 與另外兩份稿完全相同：三份在 React 端是**同一個路由**（`/platform`）的三個 state。 #}
+     front matter 與另外兩份稿完全相同：三份在 React 端是**同一個畫面**的三個 state。 #}
 {% set breadcrumbItems = [
   { label: "首頁", href: "2-1_qaRecord.html", i18nKey: "nav.home" },
   { label: "平台管理", href: "", i18nKey: "nav.platformMgmt" },
