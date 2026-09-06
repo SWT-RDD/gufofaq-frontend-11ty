@@ -2210,7 +2210,10 @@ permalink: 5-2_conversationSettings.html
                      那一族是正常設定，而綁 [0,1] 會讓關鍵字檢索那把尺（數百到上萬）整個填不進來。
                      唯一的約束是**必須是有限的數字**，而 `min`／`max` 表達不出「不是 NaN、不是
                      無限大」⇒ 兩顆屬性都不寫，那句約束由這一段常駐提示承載（§4：沒有量級邊界時，
-                     約束照樣要看得見）。 #}
+                     約束照樣要看得見）。
+                     送出之後那一道拒絕落在同頁儲存鈕的「部分欄位未通過驗證」那一段（warning），
+                     **不另立一段**：那顆鈕涵蓋這一頁幾十個欄位，逐欄各一段會沒有盡頭，而那一段
+                     本來就是「有欄位沒過」這個結果類別。 #}
                 <span class="text-gray" id="qaDirectScoreFloorRange" data-i18n="settings.scoreFloorRange">沒有上下界——尺由當次給分的那一方決定；唯一的限制是必須是有限的數字</span>
                 {# §6：同頁重複 include 同一元件時，**每次 include 前重設全部參數**（`set` 是頁面全域）。
                      `scaleNoteRecalibrated` 這一頁從沒設過，所以今天是 undefined＝falsy；但只要有人
