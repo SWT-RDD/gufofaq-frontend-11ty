@@ -6,6 +6,9 @@ layout: layouts/base/base.html
 <a class="skip-link" href="#main" data-i18n="a11y.skipToContent">跳到主要內容</a>
 
 <div class="chatbot-wrap">
+    {# 前台問答頁是本站前台唯一的首頁，所以這裡的 logo 連得回自己（§6：元件參數由使用端給）。
+         公開分享頁那支 layout 刻意不給這顆值，理由寫在元件檔頭。 #}
+    {% set chatbotLogoHref = "faq.html" %}
     {% include "components/chatbot-header/chatbot-header.html" %}
     <main class="chatbot-main" id="main" tabindex="-1">
         {# 本頁唯一的 h1：前台聊天頁沒有視覺標題，用品牌名提供給輔具（logo 已從 h1 降級為 div） #}

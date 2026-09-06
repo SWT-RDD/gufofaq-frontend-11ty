@@ -33,8 +33,10 @@ AI內容生成的性質
 本平台基於RAG（Retrieval-Augmented Generation）技術，提供專注於文字生成的人工智慧服務，包括對話或報告等文字形式的內容創作，主要透過由使用者上傳的資料作為參考進行。</textarea>
         </div>
     </div>
-    <div class="flex-row" data-platform-role="admin">
-        <button type="button" class="button button-primary" data-toast="免責聲明已儲存|儲存失敗，請稍後再試" data-i18n-data-toast="toast.saveDisclaimer" data-toast-type="success|error" data-i18n="platform.saveDisclaimer">儲存免責聲明</button>
+    {# 宣告掛在鈕自己身上，不由外層 div 代勞（§4：前三軸標在觸發寫入的那顆控制項上，不必往上推導祖先）——
+         同檔「還原此版本」與 iso-review-wizard、5-6-3 的寫入鈕都是這個形狀。 #}
+    <div class="flex-row">
+        <button type="button" class="button button-primary" data-platform-role="admin" data-toast="免責聲明已儲存|儲存失敗，請稍後再試" data-i18n-data-toast="toast.saveDisclaimer" data-toast-type="success|error" data-i18n="platform.saveDisclaimer">儲存免責聲明</button>
     </div>
     {# 免責聲明版本史：每次儲存 append 一版；可還原歷史版本（還原是把那一版複製成新的一版，不是覆寫）。示範 2 版。 #}
     <div class="flex-row column gap-8">

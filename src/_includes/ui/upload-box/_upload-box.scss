@@ -28,7 +28,9 @@
 
     &:hover,
     &.drag-over {
-        border-color: var(--brand-ink);
+        // 控制項自己的外框走填充族（§4）：墨色族是給圖形記號的，不是給邊界的。
+        // 同型的 hover 邊框（citation-ref／header-controls／rating-modal）都是 --brand。
+        border-color: var(--brand);
     }
 
     .upload-text {

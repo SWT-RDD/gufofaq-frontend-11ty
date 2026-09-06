@@ -26,7 +26,11 @@ document.addEventListener("DOMContentLoaded", function () {
         function updatePage(page) {
             page = parseInt(page, 10);
             if (isNaN(page) || page < 1) page = 1;
-            if (page > total) page = total;
+            // `total` 為 0 是走得到的態（§6：分母來自資料時 0 要畫得出來，不是被夾掉的邊界），
+            // 而夾到 0 會讓 value 掉出 `<input min="1">` 的值域，同時讓「上一頁」因為 page !== 1
+            // 判成可按、「下一頁」因為 page === total 判成不可按——兩顆鈕互相矛盾。
+            // 零筆時停在第 1 頁、兩顆鈕都關掉：那是「沒有第二頁可以翻」的忠實畫法。
+            if (total > 0 && page > total) page = total;
 
             inputPage.value = page;
 
@@ -39,8 +43,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 if (prevImg) prevImg.setAttribute("src", "./images/icon_arrow_left_blue.png");
             }
 
-            // 右箭頭
-            if (page === total) {
+            // 右箭頭（`total <= 0` 時沒有下一頁可翻，同樣關掉——見上面那段對零筆的處置）
+            if (page >= total) {
                 if (nextBtn) nextBtn.disabled = true;
                 if (nextImg) nextImg.setAttribute("src", "./images/icon_arrow_right_gray.png");
             } else {

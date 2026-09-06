@@ -7,10 +7,11 @@
 // **兩型**：下面這一段是**表格型**，逐字取自 `src/pages/dataset/3-1-3_previewDataset.html`。
 // 另一型是**清單型**（`components/search-scope-modal`）：沒有 `<table>`／`<th>`，
 // 全選框仍是 `.check-all` ＋ `aria-label` ＋ `data-i18n-aria-label`，逐列則是
-// `.check-one` ＋ 值載體三件（`value` ＝索引名、hook class、`checked` 由資料決定），
+// `.check-one` ＋ 值載體三件（`value` ＝**資料集 id、不是索引名**（理由見該元件檔頭：索引名是內部
+// 識別，讓瀏覽器持有它等於給前端一個猜別人索引名的起點）、hook class、`checked` 由資料決定），
 // 可及名稱來自它自己那一行的可見文字、不需要 `aria-labelledby` 組字。抄的時候先認自己是哪一型：
 //
-//   <div class="table-container scrollTable checkbox-container">
+//   <div class="table-container scrollTable checkbox-container" tabindex="0">
 //       <table class="default-table">
 //           <thead>
 //               <tr>

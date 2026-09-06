@@ -96,9 +96,9 @@
                                      判準是**欄位**不是名字：目前只有 answer_from_qa 是 false，寫死名字的話
                                      下一顆被禁的工具出現時清單會漏。
                                      `allowedInSkill: false` 的那幾顆同時帶一句**限制理由**
-                                     （示範資料的 `reason` 欄），它**與存檔被擋時的訊息是
-                                     同一句**，所以不掛
-                                     data-i18n——掛了就是同一句話有兩份譯文，設定頁說一套、存檔說另一套。 #}
+                                     （示範資料的 `reason` 欄），它**與存檔被擋時看到的是同一句**（同一份執行期字串的兩個顯示點），
+                                     所以**不掛 data-i18n**——那句話是資料不是 chrome，包一層 i18n 就會變成
+                                     同一句話有兩份譯文，設定頁說一套、存檔說另一套（有測試釘住這三件事）。 #}
                                 {# **目錄是全集，不是摘要**：名字與順序就是下面這一份（在這裡宣告一次，
                                      就是正本），5-2 的 `builtinTools` 卡片群是同一份、
                                      同一個順序，可逐顆對照。
@@ -276,7 +276,7 @@
                            **一律追加在末位**（正典＝2-2-4 的「開始執行」）：段序是 React 端
                              `split("|")[n]` 的索引契約，插在中間會讓其後每一段整批位移。
  #}
-                        <button data-capability="settings:write" type="button" class="button button-primary js-save-skill" data-toast="Skill 已更新|權限不足，無法儲存——請找貴租戶的管理者開通|欄位未通過驗證（名稱格式或與內建工具同名、用途說明必填、迭代 1-20、巢狀不可成環、參數格式頂層須為 object 且不可宣告範圍參數、序列化後不可超過上限）|更新失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.saveSkill" data-toast-type="success|warning|warning|error|warning" data-i18n="action.save">儲存</button>
+                        <button data-capability="settings:write" type="button" class="button button-primary js-save-skill" data-toast="Skill 已更新|權限不足，無法儲存——請找貴租戶的管理者開通|欄位未通過驗證（名稱格式或與內建工具同名、用途說明必填、迭代 1 – 20、巢狀不可成環、參數格式頂層須為 object 且不可宣告範圍參數、序列化後不可超過上限）|更新失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.saveSkill" data-toast-type="success|warning|warning|error|warning" data-i18n="action.save">儲存</button>
                     </div>
                 </div>
             </div>

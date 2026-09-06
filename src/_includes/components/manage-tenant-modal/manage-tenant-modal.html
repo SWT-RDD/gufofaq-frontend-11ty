@@ -14,11 +14,11 @@
        2. 使用期——「延展／縮短天數」數字欄 + 「指定到期日」日期欄（exactly-one：兩者都給
           會被退回，React 端送出前擇一；日期選擇不在
           切版範圍，沿用 .calendar hook class 交由 React 套件實作）
-       3. 模型開通——「不限制」開關（承載 `available_models = None`）+ checkbox 清單，欄位寫法比照
+       3. 模型開通——「不限制」開關（承載「這個租戶沒有名單」那一態，與「有名單但空」是兩件事）+ checkbox 清單，欄位寫法比照
           5-5-1_userManagement「能力」checkbox
        4. 凍結／解凍——暫停使用期時鐘（直接動作，data-toast 演出成敗）；兩個動作對稱，故切版也切兩態
        5. 成員——逐位成員：停用啟用（直接動作 data-toast）＋重設密碼（.js-reset-password）／刪除（.js-delete-user，button-red）＝業務條件用 hook class
-       6. 危險操作——刪除資料（.js-delete-tenant-data）／刪除帳號（.js-delete-tenant-account）：破壞性 button-red，需輸入該租戶名稱字串相符才可執行（type-to-confirm），屬業務條件、用 hook class 不掛 data-toast
+       6. 危險操作——刪除資料（.js-delete-tenant-data）／刪除帳號（.js-delete-tenant-account）：破壞性 button-red，需輸入該租戶名稱字串相符才可執行（type-to-confirm），屬業務條件、用 hook class；⚠️ **但兩顆照樣掛 data-toast**——type-to-confirm 只免除「片語沒打對」那一態，不免除送出之後的成敗（§5 ③，見那兩顆鈕旁的說明）
      額度／使用期／模型開通共用 footer「儲存」鈕（toast.manageTenant，成功/失敗）；停用啟用等逐成員動作各自 data-toast。
      成員清單為純示範假資料（§6b，通用名冊、不綁定使用頁的特定租戶列——本 modal 是全部列共用的一份本體，
      內容由業務 js 依「點了哪列的管理鈕」動態載入），正式環境由 React 讀那個租戶的成員名冊渲染。
@@ -204,8 +204,8 @@
                              會想退回直送的原因通常是「彈窗開不出來」——這扇窗出現的每一頁
                              （5-6-1／5-6-1-2／5-6-1-3 ＋ 元件庫）都已經有一顆 `#deleteModal`（成員那一顆），
                              而第二顆同 id 是 §4／§5 明文禁止的。正解是用 `components/delete-modal` 的
-                             `deleteModalId` 參數另給一個 id，不是放棄確認（5-8 也曾因為標題寫死「刪除」
-                             而落進同一種死法）。
+                             `deleteModalId` 參數另給一個 id，不是放棄確認（標題寫死「刪除」的話，
+                             第二顆窗就只能與第一顆撞名）。
                              於是這顆鈕落在 §5 矩陣①：只掛 hook class、不掛 `data-toast`；
                              成敗與閘門的家在彈窗裡那顆確認鈕
                              （彈窗本體 include 在開它的那顆鈕住的地方＝`components/platform-tenants-panel`
@@ -249,7 +249,10 @@
                                         <div class="field">
                                             {# 「正數延展、負數縮短」是常駐說明 ＋ aria-describedby，**不可以只放在 placeholder 裡**：
                                                  placeholder 一打字就消失，也接不上輔具，而這正是要一邊填一邊看的一句。
-                                                 「不可為 0」也是這一欄的值域，在這裡宣告。 #}
+                                                 「不可為 0」也是這一欄的值域，在這裡宣告。
+                                               **這一欄沒有量級邊界，所以三件套只給 `type` 與 `step`、不給 `min`／`max`**（§4）：
+                                                 它的值域是一個排除性約束（≠ 0），而 `min`／`max` 表達不出「不等於」。
+                                                 寫這一句是為了讓「真的沒有邊界」與「忘了寫」分得出來。 #}
                                             <input type="number" step="1" id="tenantTrialDaysInput" data-platform-role="admin" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control" aria-describedby="tenantTrialDaysHint tenantTrialOneOfHint">
                                             <span class="text-gray" id="tenantTrialDaysHint" data-i18n="platform.extendDaysHint">正數延展、負數縮短，不可為 0</span>
                                         </div>
@@ -373,9 +376,9 @@
                                              啟用態列出來就是「列出不可能的結果」（§5 與只演成功一樣是說謊）。
                                              同一行已經在依 `member.isActive` 分岔字面，分支集合跟著分。 #}
                                         {% if member.isActive %}
-                                        <button type="button" id="tenantMemberActive-{{ member.id }}" data-platform-role="admin" class="button button-border button-sm" aria-labelledby="tenantMemberEmail-{{ member.id }} tenantMemberActive-{{ member.id }}" data-toast="已更新使用者狀態|無法停用最後一位在職管理者|無法停用最後一位平台系統管理員|更新失敗，請稍後再試" data-i18n-data-toast="toast.setUserActive" data-toast-type="success|warning|warning|error" data-i18n="platform.disableUser">停用</button>
+                                        <button type="button" id="tenantMemberActive-{{ member.id }}" data-platform-role="admin" class="button button-border button-sm" aria-labelledby="tenantMemberEmail-{{ member.id }} tenantMemberActive-{{ member.id }}" data-toast="已更新使用者狀態|無法停用最後一位在職管理者|無法停用最後一位平台系統管理員|更新失敗，請稍後再試" data-i18n-data-toast="toast.setUserActive" data-toast-type="success|warning|warning|error" data-i18n="action.disable">停用</button>
                                         {% else %}
-                                        <button type="button" id="tenantMemberActive-{{ member.id }}" data-platform-role="admin" class="button button-border button-sm" aria-labelledby="tenantMemberEmail-{{ member.id }} tenantMemberActive-{{ member.id }}" data-toast="已更新使用者狀態|更新失敗，請稍後再試" data-i18n-data-toast="toast.setUserActiveEnable" data-toast-type="success|error" data-i18n="platform.enableUser">啟用</button>
+                                        <button type="button" id="tenantMemberActive-{{ member.id }}" data-platform-role="admin" class="button button-border button-sm" aria-labelledby="tenantMemberEmail-{{ member.id }} tenantMemberActive-{{ member.id }}" data-toast="已更新使用者狀態|更新失敗，請稍後再試" data-i18n-data-toast="toast.setUserActiveEnable" data-toast-type="success|error" data-i18n="action.enable">啟用</button>
                                         {% endif %}
                                         <button type="button" id="tenantMemberResetPw-{{ member.id }}" data-platform-role="admin" class="button button-border button-sm js-reset-password" aria-labelledby="tenantMemberEmail-{{ member.id }} tenantMemberResetPw-{{ member.id }}" data-i18n="settings.resetPassword">重設密碼</button>
                                         <button type="button" id="tenantMemberDelete-{{ member.id }}" data-platform-role="admin" class="button button-red button-sm js-delete-user" aria-labelledby="tenantMemberEmail-{{ member.id }} tenantMemberDelete-{{ member.id }}" data-i18n="action.delete">刪除</button>
@@ -419,7 +422,7 @@
                                          ⚠️ 要照著打的是**租戶名稱**（一個值，不是一句 chrome），所以 placeholder 那顆
                                          `platform.confirmTypeNamePlaceholder` 講的是「輸入租戶名稱以確認」這件事，
                                          不是把某個片語翻成兩種語言——同一道閘不可以在中英兩邊要求不同的輸入
-                                         （5-6-1 的 ISO 審核片語就是踩到這件事，該頁已改成語言中立字串）。 #}
+                                         （5-6-1 的 ISO 審核片語同樣是語言中立字串，同一件事）。 #}
                                     <input type="text" id="deleteDataConfirmInput" data-platform-role="admin" placeholder="輸入租戶名稱以確認" data-i18n-placeholder="platform.confirmTypeNamePlaceholder" aria-describedby="deleteDataIrreversible deleteDataConfirmHint" class="form-control">
                                     <span class="text-gray" id="deleteDataConfirmHint" data-i18n="platform.confirmTypeNameHint">要照著打的是這個租戶的名稱，逐字相同才解得開。</span>
                                 </div>

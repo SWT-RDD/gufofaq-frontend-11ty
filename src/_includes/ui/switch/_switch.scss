@@ -97,8 +97,9 @@ label.switch {
     // （§4：組合維度上的空格要由 markup 表達，而表達的前提是它在畫面上分得出來）。
     // 顏色一律走既有的停用族 token，不新增色；游標比照 `_form-check.scss` 的
     // `&:has(:disabled) { cursor: not-allowed }`（同一個語意兩處同值）。
-    // **落點在元件庫頁**：停用與「停用但開著」兩態各擺一顆。生產頁上今天沒有停用的開關，
-    // 而一份 markup 都演不出來的樣式就是出貨的死 CSS——沒有人看過它的長相（§5）。
+    // **兩態都有生產落點**：5-5-1 的成員列上，平台角色持有者那一列的「啟用」與「管理員」兩顆開關
+    // 都是「停用且已勾」（租戶端改不動平台角色持有者）。元件庫頁另擺兩顆是為了讓這兩態孤立看得到，
+    // 不是唯一看得到的地方——所以這兩態的顏色是使用者真的會遇到的畫面，不是展示用的邊角（§5）。
     &:has(.switch-checkbox:disabled) {
         cursor: not-allowed;
 
@@ -110,12 +111,14 @@ label.switch {
             background-color: var(--control-ink-disabled);
         }
 
-        // 停用但**開著**：軌道維持 `--toggle-on`，只把圓鈕轉成停用墨色。
-        // ⚠️ 這一行不可以省：上面那條 `.switch-box` 與「已勾」那條同權重，本區塊在後面 ⇒
+        // 停用但**開著**：軌道走專用的 `--toggle-on-disabled`，圓鈕維持停用墨色。
+        // ⚠️ 這一段不可以省：`.switch-box` 那條與「已勾」這條同權重、本區塊在後面 ⇒
         // 不明寫的話已勾的軌道會被蓋成停用底色，畫面上看起來就是**關的**——那是把值演掉了。
+        // ⚠️ 也**不可以沿用 `--toggle-on`**：那顆綠與停用墨色把手只有 1.34:1（深色 1.28），
+        // 把手整顆融進軌道，看不出它停在哪一側（WCAG 1.4.11 要 3:1；換成專用 token 後是 3.81／3.58）。
         // 也不可以改用 `--control-track`：那顆 token 的角色是 **off 軌道**，數值接近不代表角色對。
         .switch-checkbox:checked+.switch-box {
-            background-color: var(--toggle-on);
+            background-color: var(--toggle-on-disabled);
 
             .switch-btn {
                 background-color: var(--control-ink-disabled);

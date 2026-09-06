@@ -1,11 +1,15 @@
 {# 前台 FAQ chatbot 的頁首：logo + 右側控制群（無 Manager 導覽，故不套整個 header 元件、只留 logo）。
      語言＋深淺切換沿用共用 components/header-controls（與主站 header 同一份）。 #}
 <header class="chatbot-header">
-    {# logo 不是頁面標題 —— 用 div；本頁 h1 由 chatbot-shell 提供 #}
+    {# logo 不是頁面標題 —— 用 div；本頁 h1 由使用它的 layout 提供 #}
     <div class="logo">
-        {# 去向是**公開 FAQ 那一頁**（`faq.html`，本站前台唯一的首頁）：`#` 是死連結（§5），
-             而這顆 logo 的 title 逐字宣告了它會去某個地方。 #}
-        <a href="faq.html" title="GufoFAQ 首頁" data-i18n-title="header.logoHome">GufoFAQ</a>
+        {# **連不連得出去由使用它的 layout 決定**（`chatbotLogoHref`，沒給就不連）：
+             這顆 header 同時服務前台問答頁與公開分享頁，而**分享頁上沒有一個連得到的去處**——
+             前台問答頁靠嵌入金鑰認租戶，從分享頁點過去會落在一個問答停用、只剩提示的畫面。
+             那不是入口，是一條點得下去、到了沒有用的連結，比不連更貴（§5「死連結」）。
+             有 href 時 title 逐字宣告它會去哪裡；沒有時它就只是品牌字樣，不掛 title
+             （title 說得出「首頁」卻點不動，是同一種說謊）。 #}
+        {% if chatbotLogoHref %}<a href="{{ chatbotLogoHref }}" title="GufoFAQ 首頁" data-i18n-title="header.logoHome">GufoFAQ</a>{% else %}<span>GufoFAQ</span>{% endif %}
     </div>
     {% include "components/header-controls/header-controls.html" %}
 </header>

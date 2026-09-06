@@ -76,25 +76,25 @@
                 <td>
                     <div class="form-group">
                         <div class="field">
-                            {# .priority-select 是**業務掛點**：接手的程式用它做 change 委派，讀到新值後配上
-                                 該列的 `data-folder-sn` 送出，寫回這一份設定檔的資料集分層。
+                            {# .priority-select 是**值載體**（§5 矩陣②）：接手的程式用它做 change 委派，
+                                 讀到新值後配上該列的 `data-folder-sn`，寫回這一份設定檔的資料集分層。
                                  全站 scss 不得引用（§5）。
-                               **閘門標在這顆 select 上**：§4 要求標在「觸發寫入的那個控制項」，而這條路徑上
-                                 沒有鈕——改動本身就是送出。
-                               **它不掛 data-toast，失敗落在頁面上那條紅字**（5-2 頁首 `saveConfigError` 的
-                                 `role="alert"`）：toast 說的是「剛剛按的那顆鈕怎麼了」，而這是**值載體**，
-                                 同一批下拉常常連改好幾列，逐列各彈一顆 toast 會互相蓋掉；紅字留在畫面上，
-                                 而且能原樣帶出失敗訊息裡指名的那一段。同頁「啟用／停用全部意圖判斷」是鈕、走 toast，
-                                 兩條出口不混用——混用的話同一次失敗會同時彈 toast 與印紅字，等於兩套說法。#}
+                               **它的 change 自己不打 API**——那是②的唯一判準。值跟著使用頁那一區的
+                                 「儲存分層」鈕一起送出，所以這顆 select **不掛 data-toast、也不掛授權四軸**：
+                                 閘門的家是觸發寫入的那顆鈕（§4），成敗由那顆鈕的 data-toast 承載。
+                               **為什麼不做成「選了就送」**：那個形狀在畫面上沒有任何東西承載成敗，而受控
+                                 select 失敗時會彈回舊值，讀起來是「這顆下拉沒反應」；同一批下拉常常連改好
+                                 幾列，一列一次寫入還讓「哪一列沒存進去」無從分辨。正典同 5-6-1 的平台角色
+                                 列：值載體 ＋ 一顆送 API 的鈕（§5）。 #}
                             {% if tierless %}
-                            <select data-capability="settings:write" class="form-control select-sm singleSelect priority-select" aria-labelledby="{{ priorityTableOwnerId }} priorityCat-{{ priorityTableInstance }}-{{ row.sn }} priorityHead-{{ priorityTableInstance }}">
+                            <select class="form-control select-sm singleSelect priority-select" aria-labelledby="{{ priorityTableOwnerId }} priorityCat-{{ priorityTableInstance }}-{{ row.sn }} priorityHead-{{ priorityTableInstance }}">
                                 <option value="" data-i18n="common.pleaseSelect">請選擇</option>
                                 {# 值沿用「高優先級」＝使用中：agent 模式不分層，但切回傳統時分層資料要還在（見檔頭）。 #}
                                 <option value="高優先級" data-i18n="comp.inUse"{% if row.priority != "不使用" and row.priority %} selected{% endif %}>使用中</option>
                                 <option value="不使用" data-i18n="comp.doNotUse"{% if row.priority == "不使用" %} selected{% endif %}>不使用</option>
                             </select>
                             {% else %}
-                            <select data-capability="settings:write" class="form-control select-sm singleSelect priority-select" aria-labelledby="{{ priorityTableOwnerId }} priorityCat-{{ priorityTableInstance }}-{{ row.sn }} priorityHead-{{ priorityTableInstance }}">
+                            <select class="form-control select-sm singleSelect priority-select" aria-labelledby="{{ priorityTableOwnerId }} priorityCat-{{ priorityTableInstance }}-{{ row.sn }} priorityHead-{{ priorityTableInstance }}">
                                 <option value="" data-i18n="common.pleaseSelect">請選擇</option>
                                 <option value="高優先級" data-i18n="comp.highPriority"{% if row.priority == "高優先級" %} selected{% endif %}>高優先級</option>
                                 <option value="中優先級" data-i18n="comp.mediumPriority"{% if row.priority == "中優先級" %} selected{% endif %}>中優先級</option>

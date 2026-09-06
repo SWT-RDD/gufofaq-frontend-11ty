@@ -6,7 +6,8 @@
 // 全部展開／收合）兩者共用同一份實作——卡片模式不另寫一套 js。
 //
 // **生產契約**（§1-2）：`accordion.html` 是**展示片段**，而且它只演表格那一型；
-// 片段上的鈕沒有 `data-i18n-title`／`.sr-only` 的 `data-i18n`（元件庫頁整頁不翻，§4-2），
+// 片段上的鈕沒有 `data-i18n-title`／`.sr-only` 的 `data-i18n`（§4-2：展示片段的示範文字是示範素材、
+// 不掛 key——元件庫頁本身有語言鈕、在 i18n 範圍內，不掛的是這一族片段），
 // 生產實例有——照片段抄就會做出一顆切到英文之後 title 還是繁中的鈕。**兩型各一段完整 markup**：
 //
 // ① **表格型**（掃描根 `.js-accordion`；摘要列 ＋ 下一列 `tr.detail-row`）——逐字取自 3-7_documentSearch：
@@ -20,7 +21,7 @@
 //   </tr>
 //   <tr class="detail-row">
 //       <td colspan="3" class="detail-cell">
-//           <div class="accordion-content">…</div>
+//           <div class="accordion-content">{# 內容由使用頁決定 #}</div>
 //       </td>
 //   </tr>
 //
@@ -39,7 +40,7 @@
 //           </button>
 //           <span class="text-md text-bold" id="tool-{{ tool.name }}-title" data-i18n="tool.{{ tool.name }}.title">{{ tool.title }}</span>
 //       </div>
-//       <div class="accordion-content builtin-tool-body" role="group" aria-labelledby="tool-{{ tool.name }}-title">…</div>
+//       <div class="accordion-content builtin-tool-body" role="group" aria-labelledby="tool-{{ tool.name }}-title">{# 內容由使用頁決定 #}</div>
 //   </div>
 //
 // 抄的時候：

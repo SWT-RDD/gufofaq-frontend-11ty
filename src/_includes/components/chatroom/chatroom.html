@@ -157,7 +157,7 @@
                         <div class="suggested-questions" role="group" aria-labelledby="chatroomSuggestedLabel">
                             <span id="chatroomSuggestedLabel" class="suggested-questions-label" data-i18n="comp.suggestedQuestions">建議追問：</span>
                             {% for q in chatroomSuggested %}
-                            <button data-capability="ask" type="button" class="button button-border button-sm js-ask-suggested" data-toast="回答生成中...|權限不足，無法送出——請找貴租戶的管理者開通|回答生成成功|回答生成失敗，請重新送出一次|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.chatSubmit" data-toast-type="info|warning|success|error|warning" disabled>{{ q }}</button>
+                            <button data-capability="ask" type="button" class="button button-border button-sm js-ask-suggested" data-toast="回答生成中…|權限不足，無法送出——請找貴租戶的管理者開通|回答生成成功|回答生成失敗，請重新送出一次|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.chatSubmit" data-toast-type="info|warning|success|error|warning" disabled>{{ q }}</button>
                             {% endfor %}
                         </div>
                         {% endif %}
@@ -202,7 +202,7 @@
     {# chatInputHidden：true 時不渲染輸入區（2-1 是唯讀的問答紀錄預覽，沒有輸入框可言；
        單測頁 2-2-1 才要送問題）。qa-count 兩頁都留。 #}
     {% if not chatInputHidden %}
-    {# **「按下去要花錢」這件事一定要在 UI 上講出來**：上面那一格只寫得出
+    {# **「按下去要花錢」這件事一定要在 UI 上講出來**：`.qa-count` 那一格只寫得出
          「問答次數：12/3000」，講的是**現在用掉多少**，講不出「我按這一下會發生什麼」。
        三件事都要講，第三件最容易被誤會：
          ① 這不是預覽，是一次真的問答（真的去問一次、留下一筆問答紀錄）。
@@ -228,7 +228,7 @@
                  （輸入框標紅＋欄位旁的錯誤字），根本不會打 API。
                  建議追問的 chip 送的是固定問句、不可能空——共用同一顆 key 會讓那幾顆 chip 演一個
                  不可能的結果（§5）。 #}
-            <button data-capability="ask" type="button" class="button button-primary chat-input-submit" data-toast="回答生成中...|權限不足，無法送出——請找貴租戶的管理者開通|請先輸入問題|回答生成成功|回答生成失敗，請重新送出一次|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.chatSend" data-toast-type="info|warning|warning|success|error|warning" data-i18n="action.submit" disabled>送出</button>
+            <button data-capability="ask" type="button" class="button button-primary chat-input-submit" data-toast="回答生成中…|權限不足，無法送出——請找貴租戶的管理者開通|請先輸入問題|回答生成成功|回答生成失敗，請重新送出一次|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.chatSend" data-toast-type="info|warning|warning|success|error|warning" data-i18n="action.submit" disabled>送出</button>
         </div>
     </div>
     {% endif %}

@@ -1,10 +1,11 @@
 // 跳窗開關：標準 <dialog> API（showModal / close），不引任何跳窗套件。
 // 這裡**不做日期選擇器初始化**（flatpickr 那一族）——日期選擇不在切版範圍（§5 明列）。
 // 曝露 window.openModal 供其他元件呼叫（唯一消費者：components/rating-modal 的 openRating）。
-// `window.closeModal(modalEl)` 的消費點是 `components/select-dataset-modal`：那一窗的確認鈕**不能**
-// 掛 `.btn-close-modals`（一筆都沒選時要留在窗裡彈 warning，§5），所以它自己判斷成立與否再呼叫這一支
-// ——「有條件才關窗」表達不成宣告式屬性，正是這個匯出存在的理由。其餘關窗一律走 `.btn-close-modals`
-// 的委派；以 `grep -rn closeModal src --include=*.js` 為準（同 lang-toggle 對 `lang()` 的處置）。
+// `window.closeModal(modalEl)` 的消費點是 `components/select-dataset-modal` 與
+// `components/search-scope-modal`：這兩窗的確認鈕**都不能**掛 `.btn-close-modals`（一筆都沒選時要
+// 留在窗裡彈 warning，§5），所以各自判斷成立與否再呼叫這一支——「有條件才關窗」表達不成宣告式屬性，
+// 正是這個匯出存在的理由。**沒有這種窗內守衛的關窗才走 `.btn-close-modals` 的委派**；
+// 以 `grep -rn closeModal src --include=*.js` 為準（同 lang-toggle 對 `lang()` 的處置）。
 // （例：rating-modal.js 的 openRating 要先預選讚/倒讚再開窗，無法用宣告式屬性表達）。
 // 只是「點了就開窗」的按鈕不要寫 js —— 掛 data-open-modal="<dialog id>"，由下面的事件委派接手（§5）。
 //

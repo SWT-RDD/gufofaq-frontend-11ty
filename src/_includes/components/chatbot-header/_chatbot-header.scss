@@ -12,7 +12,11 @@
     .logo {
         margin: 0;
 
-        a {
+        // 兩種長相同一個字身：連得出去時是 `<a>`，不連時是 `<span>`（哪一種由使用它的
+        // layout 決定，見同資料夾的 html 檔頭）。只寫 `a` 的話，不連的那一頁會掉成一行
+        // 純文字「GufoFAQ」——而那是一個沒有人會在 app 內看到的畫面。
+        a,
+        span {
             display: block;
             width: 156px;
             height: 56px;

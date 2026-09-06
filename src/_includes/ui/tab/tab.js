@@ -18,8 +18,8 @@
 //                <button type="button" class="tab active" aria-current="true" data-target="panelRetrieval" title="檢索與欄位" data-i18n="settings.retrievalAndFields" data-i18n-title="settings.retrievalAndFields">檢索與欄位</button>
 //            </div>
 //        </div>
-//        <div class="tab-content" data-capability="settings:write" id="panelRetrieval">…</div>
-//        <div class="tab-content" data-capability="settings:write" id="panelGeneration" style="display: none;">…</div>
+//        <div class="tab-content" data-capability="settings:write" id="panelRetrieval">{# 內容由使用頁決定 #}</div>
+//        <div class="tab-content" data-capability="settings:write" id="panelGeneration" style="display: none;">{# 內容由使用頁決定 #}</div>
 //
 //      抄的時候：①選中那一顆要**同時**有 `.active` 與 `aria-current="true"`（§4）；②面板的 id 要與
 //      `data-target` 逐字相同（打錯＝死頁籤／死面板，有測試在 dist 把關）；③`.tab-group` 要帶

@@ -52,6 +52,12 @@
     --success: #00881d; // 白字 4.63:1
     --success-hover: #01781a;
     --success-text: #007a1a; // 語意綠的前景（讚的拇指等遮罩圖示）：疊 --surface 5.25:1（深色下提亮）
+    // 語意綠的前景墨色：不承載文字的圖形記號（step-flow 的「已完成」狀態點）。
+    // **不共用填充族 --success**：那顆為了襯白字而壓深，當圖形記號疊 --surface-raised 只有 4.63、
+    // 深色更只有 3.41——過得了 1.4.11 的 3:1，卻過不了墨色族該有的 4.5。實算：6.74（疊 raised）／
+    // 6.18（疊 sunken）。**淺色與 --success-text 同值是刻意的**（同 --danger-ink 之於 --danger-text 在深色）：
+    // 值一樣、角色不一樣，一顆 token 只能有一個角色（§4）。
+    --success-ink: #006b17;
     --danger: #e40f0f; // 白字 4.80:1
     --danger-hover: #c51313;
     --danger-text: #e40f0f; // 錯誤訊息 / 必填星號等「危險色文字」（深色下提亮）
@@ -84,6 +90,11 @@
     // 實算：4.57（#6c6c6c on #efefef）／4.55（#8a8a8a on #232323），兩邊都遠高於圖形記號 3:1。
     --control-ink-disabled: #6c6c6c;
     --toggle-on: #409144; // switch on 底
+    // 停用**且開著**的 switch 軌道。**不能沿用 --toggle-on**：那顆綠與停用把手 `--control-ink-disabled`
+    // 只有 1.34:1（深色 1.28），把手整顆融進軌道，看不出它停在哪一側，而 5-5-1 的平台角色持有者列
+    // 真的會渲染這一態。淡綠一方面讓把手拉到 3.81:1（≥3:1，WCAG 1.4.11），另一方面明度是可用態綠的
+    // 3.3 倍——「停用」與「可用」不靠色相分辨，色弱也看得出來。
+    --toggle-on-disabled: #cfe0d0;
 
     /* tooltip（淺色本就是深泡泡；深色反相成淺泡泡才跳得出來） */
     --tooltip-bg: #363636;
@@ -134,6 +145,7 @@
     --success: #1f8036; // 白字 5.00:1
     --success-hover: #208637;
     --success-text: #3aa851; // 語意綠當前景，黑底要亮：疊 --surface-raised 5.60:1
+    --success-ink: #47b95e; // 語意綠的圖形記號墨色：疊 raised 6.79／sunken 7.14（填充族 --success 在這裡只有 3.41）
     --danger: #d51319; // 白字 5.33:1
     --danger-hover: #dd2b31;
     --danger-text: #f0555a; // 危險色文字在黑底要亮：vs 卡片 4.99:1
@@ -161,6 +173,7 @@
     --control-knob: #e8e8e8;
     --control-ink-disabled: #8a8a8a; // 對 --surface-disabled(#232323) 4.55:1
     --toggle-on: #3d8749; // switch on 底：對把手 3.60:1——綠底要壓得夠深，白把手才不會在上面糊掉
+    --toggle-on-disabled: #223a26; // 停用且開著：對停用把手 #8a8a8a 3.58:1，且比可用態的綠暗 5.4 倍
 
     /* tooltip 反相成淺泡泡 */
     --tooltip-bg: #e5e5e5;

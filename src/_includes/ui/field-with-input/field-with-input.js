@@ -10,6 +10,15 @@
 // 點了沒反應的旋鈕。**這三個 class 是業務掛點／轉換契約，不是無主 class**：本 repo 沒有別的
 // 檔案指名它們，光看 scss 會誤判成死碼（§5：判死碼之前先確認它是不是掛點）。
 //
+// **契約裡的 class 只有三顆是本元件的，其餘全住在別人家**（§1-2：js-only 行為原子要在契約段開頭
+// 指名樣式主人——不指名的話，§4「A 元件的 scss 禁止出現 B 元件的 class」與 §5「只操作自己元件的
+// class」兩條對它都判不下去）：
+//   本元件自有（純掛點、零 scss 規則）：`.field-with-input-group`／`.field-with-input`／`.with-input`
+//   `.form-group`／`.control-label`／`.field`／`.function`／`.form-control`／`.time`＝`ui/form-control`
+//   `.form-radio`＝`ui/radio`（外框 base 在全域 `scss/_form-check`）；`.form-checkbox`＝`ui/checkbox`（同）
+//   `.text-gray`／`.sr-only`／`.flex-row`／`.gap-*`／`.mt-*`／`.w100`／`.m-0`／`.col-*`／`.mobile-column*`＝全域 `scss/_utilities`
+//   `.start-date`／`.end-date`＝**具名業務掛點**（區間日期的起訖欄成對讀值，零樣式、登記在測試的具名 hook 表）
+//
 // markup 契約（無 html 元件，§1-2；整段照抄）—— 選了哪顆 radio 就解除它附屬控制項的 disabled。
 // **有三型，逐型各一段完整 markup**（§1-2：同一個契約兩型以上時不得只用散文交代差異）：
 //   型①＝radio ＋ 附屬**文字欄**，正本 components/data-time-filter（5-3／5-4 的「資料時間篩選」）；
@@ -65,12 +74,12 @@
 //               <div class="flex-row align-items-center gap-16 mobile-column-xs col-12-xs">
 //                   <div class="field">
 //                       <input type="text" class="form-control time start-date with-input" placeholder="請選擇開始時間"
-//                           data-i18n-placeholder="settings.pleaseSelectStartTime" aria-label="開始時間" data-i18n-aria-label="settings.startTime" aria-describedby="{{ timeFilterRangeHintId }}" disabled>
+//                           data-i18n-placeholder="settings.pleaseSelectStartTime" aria-label="開始時間" data-i18n-aria-label="common.startTime" aria-describedby="{{ timeFilterRangeHintId }}" disabled>
 //                   </div>
 //                   <span data-i18n="settings.to">至</span>
 //                   <div class="field">
 //                       <input type="text" class="form-control time end-date with-input" placeholder="請選擇結束時間"
-//                           data-i18n-placeholder="settings.pleaseSelectEndTime" aria-label="結束時間" data-i18n-aria-label="settings.endTime" aria-describedby="{{ timeFilterRangeHintId }}" disabled>
+//                           data-i18n-placeholder="settings.pleaseSelectEndTime" aria-label="結束時間" data-i18n-aria-label="common.endTime" aria-describedby="{{ timeFilterRangeHintId }}" disabled>
 //                   </div>
 //               </div>
 //           </div>

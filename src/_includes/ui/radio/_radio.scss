@@ -108,7 +108,9 @@
             border-color: var(--border-subtle);
 
             &::before {
-                background-color: var(--control-knob);
+                // 停用圓點走專用墨色（見 _var.scss）：白圓點疊 --surface-disabled 只有 1.15:1，
+                // 淺色模式下「已選且停用」與「未選且停用」看起來一樣（同 ui/checkbox 的停用勾記）。
+                background-color: var(--control-ink-disabled);
                 transform: translate(-50%, -50%) scale(1);
             }
         }

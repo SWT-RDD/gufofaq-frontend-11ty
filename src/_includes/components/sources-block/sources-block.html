@@ -118,7 +118,7 @@
                 {# chrome（可翻）與資料值（滿意度本身＝假資料，不翻）分開，否則英文模式整串露出中文 #}
                 {# 冒號不折進 key：qa.userSatisfaction 同時是 qa-detail-info 的欄名（§4-2 例外——標點屬版面，
                      折了會污染那一處）。分隔符走 common.labelSep，裸的全形「：」在英文模式會原樣印出來。 #}
-                <span><span data-i18n="qa.userSatisfaction">使用者滿意度</span><span data-i18n="common.labelSep">：</span>{% if sourcesRating.type == "positive" %}<span data-i18n="qa.ratingLike">讚</span>{% elif sourcesRating.type == "negative" %}<span data-i18n="qa.ratingDislike">倒讚</span>{% else %}<span data-i18n="qa.ratingNoOpinion">無意見</span>{% endif %}</span>
+                <span><span data-i18n="qa.userSatisfaction">使用者滿意度</span><span data-i18n="common.labelSep">：</span>{% if sourcesRating.type == "positive" %}<span data-i18n="common.like">讚</span>{% elif sourcesRating.type == "negative" %}<span data-i18n="common.dislike">倒讚</span>{% else %}<span data-i18n="qa.ratingNoOpinion">無意見</span>{% endif %}</span>
                 <img src="{{ sourcesRating.icon }}" width="48" height="48" decoding="async" alt="" class="icon">
             </div>
             {% endif %}

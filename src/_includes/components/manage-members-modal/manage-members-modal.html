@@ -50,10 +50,15 @@
                     <div class="dataset-list-wrap">
                         <div class="form-group">
                             <div class="field">
-                                <input type="text" placeholder="搜尋成員..." data-i18n-placeholder="settings.searchMemberPlaceholder" aria-label="搜尋成員" data-i18n-aria-label="settings.searchMember" class="form-control search">
+                                <input type="text" placeholder="搜尋成員…" data-i18n-placeholder="settings.searchMemberPlaceholder" aria-label="搜尋成員" data-i18n-aria-label="settings.searchMember" class="form-control search">
                             </div>
                         </div>
-                        <div class="dataset-list" role="group" aria-labelledby="manageMembersHint">
+                        {# 群組名走**窗標題**（`manageMembersModal-title`＝「管理成員」），說明句改掛
+                             `aria-describedby`：§4「`aria-labelledby` 的擁有者節點必須是標題級的短字面
+                             ——指向一段說明散文＝把整段文章念成可及名稱，比不給名稱更糟」。
+                             同款清單 widget 的另外兩個消費點（select-dataset-modal 指窗標題、
+                             search-scope-modal 另立一顆兩字短標題）本來就是這個形狀。 #}
+                        <div class="dataset-list" role="group" aria-labelledby="manageMembersModal-title" aria-describedby="manageMembersHint">
                             {% for member in manageMemberRows %}
                             <label class="form-checkbox border-wrap">
                                 <input type="checkbox"{% if member.checked %} checked{% endif %}>

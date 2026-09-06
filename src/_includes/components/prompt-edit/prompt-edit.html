@@ -11,7 +11,7 @@
 {# 編輯 textarea 的長度上限：單一提示詞 20000 字，在這裡宣告一次
      （同一顆上限也夾住五層系統提示詞；正典寫法見 skill-editor-modal 的
      `skillInstructionsInput`）。**一個數字只有一份真相**（§6）：`data-max-len` 給 js 拿去掛到注入的
-     textarea 上，下面那句可見提示渲染同一顆變數——不是 js 寫死一份、markup 寫死另一份。
+     textarea 上，`#promptEditLenHint` 那句可見提示渲染同一顆變數——不是 js 寫死一份、markup 寫死另一份。
      那個數字是**資料不是譯文**（§4-2：契約裡有欄位的常數不准寫進 data-i18n 的句子裡）。
      提示常駐可見（收合態也在）：§4「帶約束的輔助文字要常駐可見」——只有展開時才出現的話，
      使用者是在「已經打完一大段」之後才第一次讀到它。 #}
@@ -52,7 +52,7 @@
     {# `js-prompt-len-hint` 是本元件 js 的掛點（拿它的 id 去接注入 textarea 的 aria-describedby）：
          js 走 class 找、不從自己那邊寫死 id 字面（§5：id 是頁面層的東西，正本在這行 markup）。
          ⚠️ 這顆 id 是**字面量**，所以本元件目前一頁只能有一份（5-2 一份、元件庫頁一份）——
-         要一頁兩份就得把 id 提成參數，上面那顆鈕的 `aria-describedby` 也要跟著吃同一個參數
+         要一頁兩份就得把 id 提成參數，`.js-prompt-toggle` 那顆鈕的 `aria-describedby` 也要跟著吃同一個參數
          （兩處是同一個交付單位，只改一邊會留下指不到的 describedby）。 #}
     <div class="text-gray js-prompt-len-hint" id="promptEditLenHint"><span data-i18n="settings.promptMaxLenPrefix">提示詞最多 </span><span>{{ promptEditMaxLen }}</span><span data-i18n="settings.promptMaxLenSuffix"> 字，超過的字打不進去。</span></div>
 

@@ -1,6 +1,9 @@
 {# 問答評分 modal（讚/倒讚二選一 ＋ 選填理由）。沿用 ui/modals 結構；二選一由 rating-modal.js 控制。
      三個生產消費點：前台 FAQ 訊息的讚/倒讚（components/faq-chatroom）、後台 4-2 對話詳細、
-     後台 2-2-3 AB 測試兩側；元件庫頁另有一份示範（顆數不寫死，§3-2；反查：正向 `grep -rl 'rating-modal/rating-modal.html' src`、反向 `grep -l 'id="likeModal"' dist/*.html`，兩邊推導出來的頁面集合相同）。
+     後台 2-2-3 AB 測試兩側；元件庫頁另有一份示範（顆數不寫死，§3-2）。
+     反查：正向 `grep -rl 'rating-modal/rating-modal.html' src`、反向 `grep -l 'id="likeModal"' dist/*.html`。
+     正向那條要先扣兩件事才推得出頁面集合（§1-2）：①它會命中本檔自己這一行；②`faq-chatroom` 是元件
+     不是頁，要把它扇出的 `faq.html` 算進來。扣完之後兩邊的**頁面**集合相同。
 
      **一筆問答只有一份評分**：送出一次評分就是把評分別、理由與時間三樣一起無條件覆寫，
      而前台訪客與後台登入者改的是**同一份**——沒有「管理者另外的一份評分」這種東西。因此：
@@ -34,8 +37,8 @@
                          不用 aria-label 複製字面（可及名稱會自動含 (必填)、切語言也不必另掛屬性翻譯） #}
                     <span id="feedbackVoteLabel"><span data-i18n="{{ ratingModalQuestionKey or 'modals.feedbackHelpful' }}">{{ ratingModalQuestion or '這個回答對你有幫助嗎？' }}</span><span class="text-red" data-i18n="common.required">(必填)</span></span>
                     <div class="feedback-vote" role="group" aria-labelledby="feedbackVoteLabel">
-                        <button type="button" class="feedback-vote-btn like" data-vote="like" aria-pressed="false" data-i18n="modals.like"><span class="feedback-vote-icon"></span>讚</button>
-                        <button type="button" class="feedback-vote-btn dislike" data-vote="dislike" aria-pressed="false" data-i18n="modals.dislike"><span class="feedback-vote-icon"></span>倒讚</button>
+                        <button type="button" class="feedback-vote-btn like" data-vote="like" aria-pressed="false" data-i18n="common.like"><span class="feedback-vote-icon"></span>讚</button>
+                        <button type="button" class="feedback-vote-btn dislike" data-vote="dislike" aria-pressed="false" data-i18n="common.dislike"><span class="feedback-vote-icon"></span>倒讚</button>
                     </div>
                     {% if ratingModalNoteKey %}
                     <p class="text-gray m-0" data-i18n="{{ ratingModalNoteKey }}">{{ ratingModalNote }}</p>

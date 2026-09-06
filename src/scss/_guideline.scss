@@ -76,274 +76,274 @@ body.guideline-page {
         height: 100vh;
         height: 100dvh; // 行動瀏覽器：扣掉會伸縮的網址列
 
-    .main-container {
-        width: calc(100% - 200px);
+        .main-container {
+            width: calc(100% - 200px);
+            height: 100vh;
+            height: 100dvh; // 行動瀏覽器：扣掉會伸縮的網址列
+            padding: 1rem;
+            background-color: var(--gl-bg);
+            overflow: auto;
+            @include scrollbar();
+            position: relative;
+        }
+    }
+
+    aside {
+        width: 200px;
         height: 100vh;
         height: 100dvh; // 行動瀏覽器：扣掉會伸縮的網址列
-        padding: 1rem;
-        background-color: var(--gl-bg);
-        overflow: auto;
+        background-color: var(--gl-aside-bg);
+        overflow-y: auto;
+        flex-shrink: 0;
         @include scrollbar();
-        position: relative;
-    }
-}
 
-aside {
-    width: 200px;
-    height: 100vh;
-    height: 100dvh; // 行動瀏覽器：扣掉會伸縮的網址列
-    background-color: var(--gl-aside-bg);
-    overflow-y: auto;
-    flex-shrink: 0;
-    @include scrollbar();
+        .title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            padding: 0.75em 1em;
+        }
 
-    .title {
-        font-size: 1.125rem;
-        font-weight: 600;
-        padding: 0.75em 1em;
-    }
+        ul {
+            li {
+                a {
+                    display: block;
+                    width: 100%;
+                    font-size: 1rem;
+                    color: var(--gl-nav-link);
+                    padding: 0.75em 1em;
+                    text-decoration: none;
+                    transition: all 0.3s;
 
-    ul {
-        li {
-            a {
-                display: block;
-                width: 100%;
-                font-size: 1rem;
-                color: var(--gl-nav-link);
-                padding: 0.75em 1em;
-                text-decoration: none;
-                transition: all 0.3s;
-
-                &:hover {
-                    background-color: var(--gl-dark);
-                    color: var(--on-accent);
+                    &:hover {
+                        background-color: var(--gl-dark);
+                        color: var(--on-accent);
+                    }
                 }
             }
         }
     }
-}
 
-section {
-    margin-bottom: 80px;
-}
-
-.section-title {
-    font-size: 1.75rem;
-    font-weight: 500;
-    margin-bottom: 0.8333em;
-    position: relative;
-    z-index: 1;
-
-    >span:first-child {
-        color: var(--gl-ink);
-        border-right: 3px solid var(--gl-ink);
-        padding-right: 10px;
-        background-color: var(--gl-bg);
+    section {
+        margin-bottom: 80px;
     }
 
-    >span:nth-child(2) {
-        color: var(--gl-title);
-        padding-left: 10px;
-        padding-right: 20px;
-        background-color: var(--gl-bg);
-    }
+    .section-title {
+        font-size: 1.75rem;
+        font-weight: 500;
+        margin-bottom: 0.8333em;
+        position: relative;
+        z-index: 1;
 
-    &::before {
-        content: "";
-        display: block;
-        width: 100%;
-        height: 1px;
-        background-color: var(--gl-divider);
-        opacity: 0.3;
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        z-index: -1;
-    }
-}
+        >span:first-child {
+            color: var(--gl-ink);
+            border-right: 3px solid var(--gl-ink);
+            padding-right: 10px;
+            background-color: var(--gl-bg);
+        }
 
-.modals .row {
-    margin-bottom: 0;
-}
+        >span:nth-child(2) {
+            color: var(--gl-title);
+            padding-left: 10px;
+            padding-right: 20px;
+            background-color: var(--gl-bg);
+        }
 
-.flex-row {
-    margin-bottom: 1.5rem;
-}
-
-.caption {
-    font-size: 1.125rem;
-    margin-bottom: 0.8888em;
-
-    ul {
-        padding-left: 24px;
-
-        li {
-            position: relative;
-            line-height: 1.5;
-            margin-bottom: 8px;
-            text-align: left;
-
-            &::before {
-                display: block;
-                content: "";
-                width: 10px;
-                height: 10px;
-                background: var(--gl-bullet);
-                position: absolute;
-                left: -24px;
-                top: 50%;
-                transform: translateY(-50%);
-            }
+        &::before {
+            content: "";
+            display: block;
+            width: 100%;
+            height: 1px;
+            background-color: var(--gl-divider);
+            opacity: 0.3;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: -1;
         }
     }
 
-    &.description {
-        font-size: 1rem;
-        background-color: var(--gl-panel-bg);
-        border-radius: 4px;
-        padding: 10px;
+    .modals .row {
+        margin-bottom: 0;
+    }
+
+    .flex-row {
+        margin-bottom: 1.5rem;
+    }
+
+    .caption {
+        font-size: 1.125rem;
+        margin-bottom: 0.8888em;
 
         ul {
-            padding-left: 18px;
+            padding-left: 24px;
 
             li {
+                position: relative;
+                line-height: 1.5;
+                margin-bottom: 8px;
+                text-align: left;
+
                 &::before {
                     display: block;
                     content: "";
-                    width: 6px;
-                    height: 6px;
+                    width: 10px;
+                    height: 10px;
                     background: var(--gl-bullet);
                     position: absolute;
-                    left: -18px;
+                    left: -24px;
                     top: 50%;
                     transform: translateY(-50%);
                 }
             }
         }
-    }
-}
 
+        &.description {
+            font-size: 1rem;
+            background-color: var(--gl-panel-bg);
+            border-radius: 4px;
+            padding: 10px;
 
-.subtitle {
-    font-size: 1rem;
-    background-color: var(--gl-panel-bg);
-    color: var(--gl-panel-text);
-    border-radius: 4px;
-    padding: 10px;
-    margin-top: 1em;
-    margin-bottom: 1.25em;
-    text-align: left;
-}
+            ul {
+                padding-left: 18px;
 
-
-
-
-.example-box {
-    width: 100%;
-    height: 60px;
-    background-color: var(--gl-example-bg);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.desktop-nav {
-    position: relative;
-}
-
-
-
-.field {
-    .flex-row {
-        margin-bottom: 0;
-    }
-}
-
-
-.btn_gotop {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start;
-    width: 2.5rem;
-    height: 2.5rem;
-    padding: 0.4375rem 0.5rem;
-    font-size: 0.75rem;
-    font-weight: 500;
-    line-height: 1;
-    position: fixed;
-    right: 1em;
-    bottom: -60px;
-    z-index: 99;
-    opacity: 0;
-    transition: all 0.3s;
-    background-color: var(--gl-gotop-bg);
-    color: var(--gl-gotop-ink);
-    box-shadow: 0 4px 10px 0 var(--shadow);
-    border-radius: 2px;
-}
-
-.btn_gotop.show {
-    opacity: 1;
-    bottom: 60px;
-}
-
-.btn_gotop::before {
-    content: "";
-    display: block;
-    width: 0;
-    height: 0;
-    border-style: solid;
-    border-width: 0 5px 6px 5px;
-    border-color: transparent transparent var(--gl-gotop-ink) transparent;
-}
-
-// ⚠️ **showcase 的頁尾要自己給填充，不准去借 `components/footer` 的底色。**
-//   `.footer` 的唯一主人是 `components/footer/_footer.scss`（`components/` 桶的元件根 class，
-//   §4 明文不外借），它的 `background-color: var(--brand)` 只服務那一顆元件；
-//   在 markup 上多掛一顆 `class="footer"` 把底色借過來，等於讓這裡的白字寄生在別人的規則上。
-//   借不到的時候白字會落在 `--gl-bg` 上——實算 **1.03:1**，整行字直接消失。
-//   而這種寄生在「還借著」的期間視覺指紋完全看不出異常（§4 第三種死法「祖先錯位」的變體：
-//   scss 找得到、markup 找得到，兩者其實搭不上），所以它是規則、不是隨手補的色。
-//   `--gl-dark` 是 `_guideline-var` 裡「襯 --on-accent 白字」的那一顆（淺 8.19:1／深 11.37:1，
-//   實算見該檔）。
-footer {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-top: 1px solid var(--gl-footer-border);
-    padding: 1rem 0;
-    background-color: var(--gl-dark);
-    color: var(--on-accent);
-}
-
-
-.mobile-nav {
-    position: relative;
-    padding-top: 0;
-}
-.mobile-nav .overlay {
-    position: absolute;
-}
-
-.form-table-wrap {
-    .form-table-group {
-        .subtitle {
-            background-color: var(--surface-raised);
-            border-radius: 0;
-            padding-top: 0;
-            padding-left: 0;
-            padding-right: 0;
-            margin: 0;
-        }
-
-        &+.form-table-group {
-            .subtitle {
-                padding: 0.5rem 0;
-                margin-bottom: 0.625rem;
+                li {
+                    &::before {
+                        display: block;
+                        content: "";
+                        width: 6px;
+                        height: 6px;
+                        background: var(--gl-bullet);
+                        position: absolute;
+                        left: -18px;
+                        top: 50%;
+                        transform: translateY(-50%);
+                    }
+                }
             }
         }
     }
-}
+
+
+    .subtitle {
+        font-size: 1rem;
+        background-color: var(--gl-panel-bg);
+        color: var(--gl-panel-text);
+        border-radius: 4px;
+        padding: 10px;
+        margin-top: 1em;
+        margin-bottom: 1.25em;
+        text-align: left;
+    }
+
+
+
+
+    .example-box {
+        width: 100%;
+        height: 60px;
+        background-color: var(--gl-example-bg);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .desktop-nav {
+        position: relative;
+    }
+
+
+
+    .field {
+        .flex-row {
+            margin-bottom: 0;
+        }
+    }
+
+
+    .btn_gotop {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        width: 2.5rem;
+        height: 2.5rem;
+        padding: 0.4375rem 0.5rem;
+        font-size: 0.75rem;
+        font-weight: 500;
+        line-height: 1;
+        position: fixed;
+        right: 1em;
+        bottom: -60px;
+        z-index: 99;
+        opacity: 0;
+        transition: all 0.3s;
+        background-color: var(--gl-gotop-bg);
+        color: var(--gl-gotop-ink);
+        box-shadow: 0 4px 10px 0 var(--shadow);
+        border-radius: 2px;
+    }
+
+    .btn_gotop.show {
+        opacity: 1;
+        bottom: 60px;
+    }
+
+    .btn_gotop::before {
+        content: "";
+        display: block;
+        width: 0;
+        height: 0;
+        border-style: solid;
+        border-width: 0 5px 6px 5px;
+        border-color: transparent transparent var(--gl-gotop-ink) transparent;
+    }
+
+    // ⚠️ **showcase 的頁尾要自己給填充，不准去借 `components/footer` 的底色。**
+    //   `.footer` 的唯一主人是 `components/footer/_footer.scss`（`components/` 桶的元件根 class，
+    //   §4 明文不外借），它的 `background-color: var(--brand)` 只服務那一顆元件；
+    //   在 markup 上多掛一顆 `class="footer"` 把底色借過來，等於讓這裡的白字寄生在別人的規則上。
+    //   借不到的時候白字會落在 `--gl-bg` 上——實算 **1.03:1**，整行字直接消失。
+    //   而這種寄生在「還借著」的期間視覺指紋完全看不出異常（§4 第三種死法「祖先錯位」的變體：
+    //   scss 找得到、markup 找得到，兩者其實搭不上），所以它是規則、不是隨手補的色。
+    //   `--gl-dark` 是 `_guideline-var` 裡「襯 --on-accent 白字」的那一顆（淺 8.19:1／深 11.37:1，
+    //   實算見該檔）。
+    footer {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-top: 1px solid var(--gl-footer-border);
+        padding: 1rem 0;
+        background-color: var(--gl-dark);
+        color: var(--on-accent);
+    }
+
+
+    .mobile-nav {
+        position: relative;
+        padding-top: 0;
+    }
+    .mobile-nav .overlay {
+        position: absolute;
+    }
+
+    .form-table-wrap {
+        .form-table-group {
+            .subtitle {
+                background-color: var(--surface-raised);
+                border-radius: 0;
+                padding-top: 0;
+                padding-left: 0;
+                padding-right: 0;
+                margin: 0;
+            }
+
+            &+.form-table-group {
+                .subtitle {
+                    padding: 0.5rem 0;
+                    margin-bottom: 0.625rem;
+                }
+            }
+        }
+    }
 } // 收尾：.guideline-page 包住全部元件庫頁專屬樣式（限定不外洩）

@@ -21,11 +21,12 @@
      canReadSettings —— **能力分級開關**：true 才渲染模型／取用筆數／選用筆數／提示詞四格。
        沒有 `settings:read` 的人拿到的資料裡**整個鍵不存在**，不是回一個空值，
        所以這裡切「有值 vs 整格不存在」兩態，不切「顯示空白」——詳見那四格旁邊的註解
-     modelName / searchTotalNumber / searchSelectedNumber —— 上面那四格的值（canReadSettings 為真時才有）
+     modelName / searchTotalNumber / searchSelectedNumber —— 模型／取用筆數／選用筆數三格的值
+       （canReadSettings 為真時才有；第四格「提示詞」是長文，值寫死在 markup）
    AI 回答與提示詞為長文，仍依 §3-2 寫死在下方 markup #}
 {# AI 回答內文的引用標記（components/citation-ref）：**這一頁也要畫**。它是一則過去問答的唯讀
-     詳情，而佐證那則答案的「參考來源」表就在同一頁的正下方——答案裡標著 [[7]]、下面那張表就有
-     序號 7 的那一列，點下去展開並高亮（citation-ref.js → GufoSources.reveal）。少了徽章，
+     詳情，而佐證那則答案的「參考來源」表（`components/sources-block`）就在同一頁——答案裡標著
+     [[7]]、那張表就有序號 7 的那一列，點下去展開並高亮（citation-ref.js → GufoSources.reveal）。少了徽章，
      使用者看得到答案也看得到來源，卻對不起來哪一句出自哪一份文件。
      號碼＝該筆來源的 source_no（見 components/sources-block 檔頭），故**必須與使用頁 sources 的
      sourceNo 是同一組**：本元件目前只被 4-2 include，那一頁演的是 3 與 7。 #}
@@ -43,7 +44,7 @@
                                  所以 `satisfaction.type` 存機器碼、顯示走 i18n key——同本檔對 `chatMode`／
                                  `tag`／`intent` 立的規（值一律給機器碼）。塞顯示字的話 React 接真 API
                                  只印得出 `positive`，英文模式那一格永遠是中文（§6／§4-2）。 #}
-                            <span class="text-bold">{% if conversation.satisfaction.type == "positive" %}<span data-i18n="qa.ratingLike">讚</span>{% elif conversation.satisfaction.type == "negative" %}<span data-i18n="qa.ratingDislike">倒讚</span>{% else %}<span data-i18n="qa.ratingNoOpinion">無意見</span>{% endif %}</span>
+                            <span class="text-bold">{% if conversation.satisfaction.type == "positive" %}<span data-i18n="common.like">讚</span>{% elif conversation.satisfaction.type == "negative" %}<span data-i18n="common.dislike">倒讚</span>{% else %}<span data-i18n="qa.ratingNoOpinion">無意見</span>{% endif %}</span>
                             <img src="{{ conversation.satisfaction.icon }}" width="48" height="48" decoding="async" alt="" class="icon">
                         </div>
                     </div>
@@ -98,7 +99,7 @@
                            對「使用者最新輸入用什麼語言」的自由文字判斷（例如「English」「日本語」「繁體中文」）。
                            ⚠️ **它沒有預設值**：給了預設值的話，agent 模式下的英日文對話會被記成繁中，
                            那是「填了錯的值」，比空值難察覺得多 ⇒ **空值是走得到的常態、不是只有舊資料才有**，
-                           所以下面那條「沒值就畫『—』」在這一欄尤其要成立。**不要拿帳號頁那顆介面語言
+                           所以「沒值就畫『—』」那一條在這一欄尤其要成立。**不要拿帳號頁那顆介面語言
                            下拉（`zh-TW`／`en`）去對它**——兩件事長得像但完全不同：這一欄是每一輪的偵測
                            結果，那一顆是使用者自己選的設定。既然值域開放，這一格就
                            **原樣輸出**（同 §4-2：假資料／模型產出的自由文字不掛 data-i18n）。

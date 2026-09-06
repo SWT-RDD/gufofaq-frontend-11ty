@@ -19,7 +19,9 @@
         }
     }
 
-    // 行距放鬆版（長文卡片內使用；唯一消費點是 5-2 提示詞子頁籤的草稿卡，見 ui/prompt-card 的 .prompt-content）
+    // 行距放鬆版（長文卡片內使用；唯一消費點是 5-2 提示詞子頁籤的**已發布版本卡**
+    //（`.prompt-card-list > .block.prompt-card`，即 ui/prompt-card 檔頭的型①），見它的 .prompt-content。
+    //  **不是草稿卡**：草稿卡只有一份、住在歡迎語子頁籤，而且卡裡只有 .prompt-text／.prompt-input，沒有清單）
     &.line-loose {
         >li {
             line-height: 1.625;

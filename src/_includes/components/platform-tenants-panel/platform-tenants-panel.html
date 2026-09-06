@@ -200,7 +200,7 @@
 </div>
 
 {# 授權用量（平台級）。**裁決：補畫，不是寫理由。**這一塊的六個值
-     （今日已用／授權上限／剩餘／使用率／目前狀態／授權型態）在此之前全站零落點，
+     （今日已用／授權上限／剩餘／使用率／目前狀態／授權型態）是全站唯一的落點，
      而這一塊的唯一用途就是讓平台管理員判斷容量——量得到、畫面上到不了等於沒做（§3-2）。
      整塊唯讀 ⇒ 標 auditor（同上面那塊平台時區）；塊內沒有任何控制項，
      所以不必再有 admin 的宣告。
@@ -229,7 +229,7 @@
      「今天沒人用」；也不是「—」——本 repo 的「—」是「沒量到／空值」，而這裡是**定義上不存在**，
      兩件事分得開才有意義，同 3-5「沒量到 ≠ 零筆」那條）。
      **同一個判斷連帶「授權上限」與「剩餘」兩格**：沒有上限，那兩個數也不成立（上限 → 沿用
-     既有的「不限量」`platform.licenseUnlimited`，剩餘 → 同「不適用」）。只給使用率那一格做
+     既有的「不限量」`common.unlimited`，剩餘 → 同「不適用」）。只給使用率那一格做
      不限量態，會做出「使用率：不適用、授權上限：5000」這種自打架的一列。四格（連「今日已用」，
      理由見下一段）都用 `data-text-unlimited`＋`data-key-unlimited` 一態槽：**這一族與旁邊那兩顆布林不同，
      capped 那一態的內容是資料（數字）不是文案**，所以只掛「另一態」那一顆槽、且不掛 `data-i18n`
@@ -247,17 +247,25 @@
      **也不用「—」**：本 repo 的「—」是「沒量到／空值」，方向對，但一個破折號講不出「這是刻意
      不數的」而不是「壞掉了」——後者會讓值班的人去追一個沒有壞掉的東西。
      **刻意不加 hint**：「為什麼不數」是實作細節；值班的人需要知道的只有「這個數字不存在，
-     別拿它做判斷」，那一句「未計數」本身講完了。 #}
+     別拿它做判斷」，那一句「未計數」本身講完了。
+
+     ── 這四格上不可以做的三件事（§6 資料契約）─────────────────────────────
+     ① **剩餘量上不做任何算術**（夾 0、算百分比都不行）：不限量時它是哨兵值，與「剩 0」語意
+        完全相反——夾一次就把「沒有上限」變成「一則都不剩」。
+     ② **「已用 ＋ 剩餘 ＝ 上限」不是不變量**：超額時剩餘被夾在 0，而已用可以大於上限。
+        任何一格由另外兩格推導出來，都會在超額那一態畫出一個不存在的數字。
+     ③ **要不要走哨兵那一態，只看「不限量」與「還能不能問答」這兩顆旗標**，不靠數字反推
+        （用 `max == 0` 或 `remaining < 0` 當判準，等於把哨兵的編碼方式烤進畫面）。 #}
 <div class="block mb-16 flex-row column gap-8" data-platform-role="auditor">
     <div class="text-md text-bold" data-i18n="platform.licenseUsageTitle">問答授權用量（平台級）</div>
     <p class="text-gray m-0" data-i18n="platform.licenseUsageDesc">這是問答授權賣給整個平台的當日上限，不分租戶，也不是任何一個租戶的額度。「今日」以上面那顆平台時區為日界。</p>
     <div class="flex-row flex-wrap gap-24">
-        <span><span data-i18n="platform.licenseCurrentUsage">今日已用：</span><span data-text-unlimited="未計數" data-key-unlimited="platform.licenseUsageNotCounted">3182</span></span>
-        <span><span data-i18n="platform.licenseMaxUsage">授權上限：</span><span data-text-unlimited="不限量" data-key-unlimited="platform.licenseUnlimited">5000</span></span>
-        <span><span data-i18n="platform.licenseRemaining">剩餘：</span><span data-text-unlimited="不適用" data-key-unlimited="platform.licenseNotApplicable">1818</span></span>
-        <span><span data-i18n="platform.licenseUsageRate">使用率：</span><span data-text-unlimited="不適用" data-key-unlimited="platform.licenseNotApplicable">63.6%</span></span>
+        <span><span data-i18n="platform.licenseCurrentUsage">今日已用：</span><span data-text-unlimited="未計數" data-key-unlimited="common.notCounted">3182</span></span>
+        <span><span data-i18n="platform.licenseMaxUsage">授權上限：</span><span data-text-unlimited="不限量" data-key-unlimited="common.unlimited">5000</span></span>
+        <span><span data-i18n="platform.licenseRemaining">剩餘：</span><span data-text-unlimited="不適用" data-key-unlimited="common.notApplicable">1818</span></span>
+        <span><span data-i18n="platform.licenseUsageRate">使用率：</span><span data-text-unlimited="不適用" data-key-unlimited="common.notApplicable">63.6%</span></span>
         <span><span data-i18n="platform.licenseAllowedLabel">目前狀態：</span><span data-text-allowed="尚可問答" data-key-allowed="platform.licenseAllowed" data-text-blocked="已達授權上限" data-key-blocked="platform.licenseBlocked" data-i18n="platform.licenseAllowed">尚可問答</span></span>
-        <span><span data-i18n="platform.licenseCapLabel">授權型態：</span><span data-text-capped="有每日上限" data-key-capped="platform.licenseCapped" data-text-unlimited="不限量" data-key-unlimited="platform.licenseUnlimited" data-i18n="platform.licenseCapped">有每日上限</span></span>
+        <span><span data-i18n="platform.licenseCapLabel">授權型態：</span><span data-text-capped="有每日上限" data-key-capped="platform.licenseCapped" data-text-unlimited="不限量" data-key-unlimited="common.unlimited" data-i18n="platform.licenseCapped">有每日上限</span></span>
     </div>
 </div>
 
@@ -320,7 +328,7 @@
                          形狀沿用 2-2-4 的 200（前綴 key ＋ 數字節點 ＋ 單位 key）。
                          同一頁的 placeholder（settings.pleaseEnterNewPassword）與送出鈕的 data-toast **維持**把 8 寫在譯文裡：
                          那是 §4-2「屬性型譯文」那條例外——屬性值是原子字串、切不出前後綴節點；例外的兩個條件這裡都
-                         成立（上面那顆常駐可見的資料節點承載同一個約束、界線本身已寫在本段）。
+                         成立（`#tenantAdminPasswordInputHint` 那顆常駐可見的資料節點承載同一個約束、界線本身已寫在本段）。
                          **上下界一起講、一起夾**：密碼政策是兩端的（8 – 1024，五個入口共用同一組），
                          兩端在執行期都讀得到。只講下界的話，貼進一段超長
                          passphrase 只會被退回，而畫面從頭到尾沒有任何地方說過有上限（§3-2「同一組的
@@ -708,10 +716,10 @@
 {% set resetToastType = "success|warning|warning|error" %}
 {% include "components/reset-password-modal/reset-password-modal.html" %}
 {# manage-tenant-modal 裡「重置當期用量」（`.js-reset-usage`）的二次確認窗。
-     ⚠️ **它是這一頁的第二顆 delete-modal**，故 `deleteModalId` 必給——`#deleteModal` 已經被上面那一顆
-     （刪成員）佔走，同頁兩顆同 id 是 §4 明文禁止的。⚠️ 這是這個動作唯一會被省掉二次確認的原因——
+     ⚠️ **它是這一頁的第二顆 delete-modal**，故 `deleteModalId` 必給——`#deleteModal` 已經被「刪除成員」那一顆
+     （`.js-delete-user` 開的那扇窗）佔走，同頁兩顆同 id 是 §4 明文禁止的。⚠️ 這是這個動作唯一會被省掉二次確認的原因——
      撞 id 的正解是另給一個 `deleteModalId`，不是把確認拿掉。
-     ⚠️ **本區塊把 delete-modal 的每一顆參數都重設一次**（§2：`set` 是頁面全域）：上面那一顆設過
+     ⚠️ **本區塊把 delete-modal 的每一顆參數都重設一次**（§2：`set` 是頁面全域）：「刪除成員」那一顆設過
      `deleteTargetId`／`deleteNote*`／`deleteConfirm*`／`deletePlatformRole`／`deleteToast*`，少重設一顆，
      這一窗就會沿用刪成員那一份的值——標題對、內文對，只有 toast 或 hook 悄悄變成別人的。
      為什麼走 delete-modal 而不是另做一顆窗：它就是全站破壞性動作的那一顆共用確認窗

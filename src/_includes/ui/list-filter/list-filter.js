@@ -41,10 +41,10 @@
 //               <div class="dataset-list-wrap">
 //                   <div class="form-group">
 //                       <div class="field">
-//                           <input type="text" placeholder="搜尋成員..." data-i18n-placeholder="settings.searchMemberPlaceholder" aria-label="搜尋成員" data-i18n-aria-label="settings.searchMember" class="form-control search">
+//                           <input type="text" placeholder="搜尋成員…" data-i18n-placeholder="settings.searchMemberPlaceholder" aria-label="搜尋成員" data-i18n-aria-label="settings.searchMember" class="form-control search">
 //                       </div>
 //                   </div>
-//                   <div class="dataset-list" role="group" aria-labelledby="manageMembersHint">
+//                   <div class="dataset-list" role="group" aria-labelledby="manageMembersModal-title" aria-describedby="manageMembersHint">
 //                       {% for member in manageMemberRows %}
 //                       <label class="form-checkbox border-wrap">
 //                           <input type="checkbox"{% if member.checked %} checked{% endif %}>
@@ -81,15 +81,17 @@
 //                       <div class="dataset-list-wrap">
 //                           <div class="form-group">
 //                               <div class="field">
-//                                   <input type="text" placeholder="搜尋資料集..." data-i18n-placeholder="modals.searchDatasetPlaceholder" aria-label="搜尋資料集" data-i18n-aria-label="modals.searchDataset" class="form-control search">
+//                                   <input type="text" placeholder="搜尋資料集…" data-i18n-placeholder="modals.searchDatasetPlaceholder" aria-label="搜尋資料集" data-i18n-aria-label="modals.searchDataset" class="form-control search">
 //                               </div>
 //                           </div>
 //                           <div class="dataset-list" role="radiogroup" aria-labelledby="datasetModal-title">
 //                               {% for dataset in selectDatasetRows %}
 //                               <label class="form-checkbox border-wrap">
-//                                   <input type="radio" name="dataset_radio" value="{{ dataset.label }}"{% if dataset.checked %} checked{% endif %}>
+//                                   <input type="radio" name="dataset_radio" value="{{ dataset.id }}"{% if dataset.checked %} checked{% endif %}>
 //                                   <span>{{ dataset.label }}</span>
 //                               </label>
+//                               {% else %}
+//                               <div class="text-center text-gray" data-i18n="dataset.noSelectableDatasets">這個租戶還沒有資料集可以選。先到「資料集管理」建一個並匯入資料。</div>
 //                               {% endfor %}
 //                           </div>
 //                       </div>
@@ -119,10 +121,10 @@
 //           </label>
 //           <div class="form-group">
 //               <div class="field">
-//                   <input type="text" placeholder="搜尋資料集..." data-i18n-placeholder="modals.searchDatasetPlaceholder" aria-label="搜尋資料集" data-i18n-aria-label="modals.searchDataset" class="form-control search">
+//                   <input type="text" placeholder="搜尋資料集…" data-i18n-placeholder="modals.searchDatasetPlaceholder" aria-label="搜尋資料集" data-i18n-aria-label="modals.searchDataset" class="form-control search">
 //               </div>
 //           </div>
-//           <div class="dataset-list" role="group" aria-labelledby="searchScopeDatasetLabel" aria-describedby="searchScopeEmptyHint">
+//           <div class="dataset-list" role="group" aria-labelledby="searchScopeDatasetLabel"{% if searchScopeDatasetRows %} aria-describedby="searchScopeEmptyHint"{% endif %}>
 //               {% for row in searchScopeDatasetRows %}
 //               <label class="form-checkbox border-wrap">
 //                   <input type="checkbox" class="check-one js-search-scope-dataset" value="{{ row.id }}"{% if row.selected %} checked{% endif %}>

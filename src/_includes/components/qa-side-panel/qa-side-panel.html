@@ -38,7 +38,7 @@
         {# 總筆數擺在**清單正上方**、靠右——不擺在收合鈕那一列：那顆鈕的標題是
              `writing-mode: vertical-rl` 的直立軌（見 _qa-side-panel.scss），它沒有「右側」可用，
              而且把數字塞進那顆鈕會把它的可及名稱從「問答紀錄」變成「問答紀錄共 128 筆」。
-             這一格描述的是下面那份清單，跟著清單走。 #}
+             這一格描述的是 `components/qa-record-tabs` 那份清單，跟著清單走。 #}
         {% if sidePanelTotal %}
         <div class="flex-row justify-content-end">
             <span class="text-gray"><span data-i18n="common.total">共</span> <span class="js-ab-history-total">{{ sidePanelTotal }}</span> <span data-i18n="common.recordsUnit">筆</span></span>
@@ -47,7 +47,7 @@
         <div class="tab-wrap qa-side-tab-wrap">
             {% include "components/qa-record-tabs/qa-record-tabs.html" %}
         </div>
-        {# 頁碼列：**只有給得出總數的那一頁才畫**，條件與上面那一格相同。
+        {# 頁碼列：**只有給得出總數的那一頁才畫**，條件與 `.js-ab-history-total` 那一格相同。
              為什麼非它不可：AB 比較歷史是**只增不刪**的（沒有任何清理路徑），而上一格只講得出
              「共 128 筆」——**光是說得出清單被切過，並沒有給人翻到第二頁的辦法**，那些更早的
              比較在畫面上仍然到不了。總數是徵狀，頁碼列才是出路，兩格都要有。

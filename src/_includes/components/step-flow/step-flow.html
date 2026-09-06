@@ -361,7 +361,7 @@
                                     {% endif %}
                                     {% if node.result %}
                                     <tr>
-                                        <th id="stepNodeResultHead-{{ stepFlowInstance }}-{{ loop.index }}" data-i18n="agent.result">結果</th>
+                                        <th id="stepNodeResultHead-{{ stepFlowInstance }}-{{ loop.index }}" data-i18n="common.result">結果</th>
                                         {# 工具輸出是長文 ⇒ 走 ui/collapse-text（夾住而且打得開）。**就這樣、沒有截斷指標**。
                                              ⚠️ **不要補一組 `resultShown`／`resultLength` 的「已顯示前 N 字／共 M 字」＋
                                              「看完整輸出」**：那需要「被截到的欄位會自述原始長度」，而兩條路都沒有——

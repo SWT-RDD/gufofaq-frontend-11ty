@@ -1,8 +1,8 @@
 // **生產契約**（§1-2）：`block.html` 是展示片段（只示範外觀變體），而生產的 `.block` 常常同時是
 // **授權宣告的容器**——那幾顆屬性照片段抄就會整批不見。兩種生產形狀，各取自一個實例：
 //
-//   <div class="block mb-16 flex-row column gap-16" data-platform-role="auditor">…</div>
-//   <div data-capability="settings:write" class="block mb-16 flex-row column gap-16">…</div>
+//   <div class="block mb-16 flex-row column gap-16" data-platform-role="auditor">{# 內容由使用頁決定 #}</div>
+//   <div data-capability="settings:write" class="block mb-16 flex-row column gap-16">{# 內容由使用頁決定 #}</div>
 //
 // 出處依序是 5-6-3 的唯讀稽核區塊與 5-10 的新增標籤維度區塊；
 // `…` 在這兩行是**內容槽**（區塊裡放什麼由使用頁決定），不是被略掉的屬性。

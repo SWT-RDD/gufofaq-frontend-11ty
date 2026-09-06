@@ -29,6 +29,9 @@ layout: layouts/base/base.html
      重譯 `<title>`）。**不要** `bodyClass`。 #}
 <a class="skip-link" href="#main" data-i18n="a11y.skipToContent">跳到主要內容</a>
 
+{# **不給 `chatbotLogoHref`**（§6：不給＝logo 不連出去）：這一頁的訪客手上只有一條分享連結，
+     站內沒有一個他進得去的去處——連到前台問答頁會落在問答停用、只剩提示的畫面（那一頁靠
+     嵌入金鑰認租戶）。理由與那顆 logo 的兩種長相寫在 `components/chatbot-header` 檔頭。 #}
 {% include "components/chatbot-header/chatbot-header.html" %}
 
 <main class="main" id="main" tabindex="-1">

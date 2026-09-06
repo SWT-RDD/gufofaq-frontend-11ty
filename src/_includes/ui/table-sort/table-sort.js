@@ -30,7 +30,12 @@
 // 變成空字串，而那些 id 正是 a11y 綁定的契約）：
 //
 //   {% set columns = [
-//       { key: "title", label: "品名", raw: "商品名稱" }
+//       { key: "title", label: "標題" },
+//       { key: "date", label: "時間" },
+//       { key: "content", label: "內容" },
+//       { key: "note1", label: "圖片網址" },
+//       { key: "note2", label: "供應商" },
+//       { key: "number", label: "價格" }
 //   ] %}
 //   <span id="sortWord" class="sr-only" data-i18n="common.sort">排序</span>
 //   <table class="default-table fixed-layout">
@@ -50,10 +55,17 @@
 //       </thead>
 //       <tbody>
 //           {% for row in rows %}
+//           {% set cmpRowNo = loop.index %}
 //           <tr>
 //               {% for col in columns %}
-//               <td>{{ row[col.key] }}</td>
+//               <td>
+//                   <div class="collapse-text"><div class="collapse-body"{% if loop.first %} id="cmpRowName-{{ cmpRowNo }}"{% endif %}>{{ row[col.key] }}</div><button type="button" id="cmpCellToggle-{{ cmpRowNo }}-{{ col.key }}" aria-labelledby="cmpRowName-{{ cmpRowNo }} cmpColName-{{ col.key }} cmpCellToggle-{{ cmpRowNo }}-{{ col.key }}" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>
+//               </td>
 //               {% endfor %}
+//           </tr>
+//           {% else %}
+//           <tr>
+//               <td colspan="{{ columns.length }}" class="text-center text-gray" data-i18n="dataset.compareNoRows">這個檔沒有資料列可以比對——活頁簿裡只有表頭，或這張工作表是空的。</td>
 //           </tr>
 //           {% endfor %}
 //       </tbody>

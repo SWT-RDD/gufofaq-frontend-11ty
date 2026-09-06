@@ -105,7 +105,9 @@
     // 只改狀態點顏色（前景記號），列不重寫填充族 token。
     .step-node {
         &.is-completed .step-node-dot {
-            background-color: var(--success);
+            // 狀態點是不承載文字的圖形記號 ⇒ 前景墨色族，不是填充族（§4）：
+            // --success 為了襯白字而壓深，當記號疊 raised 只有 4.63、深色更只有 3.41。
+            background-color: var(--success-ink);
         }
 
         // 進行中＝當前步驟：深墨點＋標籤加粗＋整列淡底，一眼看出「現在在這」。
@@ -141,7 +143,8 @@
         }
 
         &.is-failed .step-node-dot {
-            background-color: var(--danger);
+            // 同上：填充族 --danger 疊 raised 在深色只有 3.19，換前景墨色（§4）。
+            background-color: var(--danger-ink);
         }
     }
 

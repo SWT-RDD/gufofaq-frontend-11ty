@@ -64,7 +64,7 @@
                                      §4 三件套：type=number ＋ min/step ＋ 可見區間（下面那句 hint 已接上 aria-describedby）。
                                      寫成 type=text 時打錯一個字就是 NaN、序列化成 JSON 是 null。沒有上限故不寫 max。 #}
                                 <input type="number" min="1" step="1" id="fromLogId" class="form-control js-from-log-id" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" aria-describedby="fromLogIdHint" required>
-                                <p id="fromLogIdHint" class="text-gray" data-i18n="regression.fromLogNeedsHistory">正整數；在「歷史紀錄」頁每一列的對話編號就是它。這支端點除了設定權限，另需「問答紀錄」權限——它讀的是提問、答案與來源文件名。</p>
+                                <p id="fromLogIdHint" class="text-gray" data-i18n="regression.fromLogNeedsHistory">≥ 1 的整數；在「歷史紀錄」頁每一列的對話編號就是它。這支端點除了設定權限，另需「問答紀錄」權限——它讀的是提問、答案與來源文件名。</p>
                             </div>
                         </div>
                         <div class="form-group">

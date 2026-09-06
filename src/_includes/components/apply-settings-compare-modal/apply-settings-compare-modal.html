@@ -9,11 +9,12 @@
      `.js-apply-current-title` 定位**左欄「原設定」**、`.js-apply-title` 定位**右欄「要套用的那一側」**，
      兩欄各自去填自己那幾格的值。少了左欄那顆，React 端就只認得出「要套用的是哪一欄」，
      認不出「拿現值來填的是哪一欄」——而這顆彈窗的整個用途就是把那兩欄擺在一起比。
-     確認鈕 toast 三段（`toast.applyProduction`：success｜warning｜error）。**與 `components/apply-settings-modal`
+     確認鈕 toast 四段（`toast.applyProduction`：success｜warning｜error｜warning）。**與 `components/apply-settings-modal`
      共用同一顆 key**：同一個動作（把這一份設定寫成正式設定）、同一組結果，只是從兩顆不同的窗按下去
      ——各立一顆 key 就是同一句話兩份正本，英譯遲早自己分岔（§4-2）。**第 2 段是能力不足那一段**：
      這顆鈕掛 `data-capability="settings:write"`，而能力不足是走得到的結果路徑（有 `settings:read`
      沒有 `settings:write` 的人打得開頁面、看得到鈕），§4 明訂它要列成 warning 段、不做「不渲染／不可按」。
+     **末位那一段是租戶功能未開通**：掛了 `data-capability` 就一定走得到那條路（§4），故兩顆窗的同一顆 key 都以它收尾。
      ⚠️ 另有一條**不同機制**的權限路徑：AB 比較這一側的權限不足另外還開得出
      `apply-settings-no-permission-modal` 那顆獨立的窗。兩者不衝突——彈窗是那一頁自己多做的一層，
      toast 段列的是**這顆鈕送出去之後的結果集合**（§5：分支要對得上真實結果的機制）。

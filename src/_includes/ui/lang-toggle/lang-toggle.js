@@ -62,8 +62,10 @@
 //     （它走 layouts/base、沒有 header 也沒有 catalog chrome）。
 //   · `data-page-title-key` 來自 layouts/base 的 `titleKey`；**`component.html` 與 `faq.html` 沒有**
 //     （兩頁的 front matter 都沒有 `titleKey`）。
-// 判準：`grep -c 'js-lang-toggle' dist/*.html` 與 `grep -c 'data-page-title-key' dist/*.html`，
-// 例外就是上面那三頁。**別把它寫成「全站每一頁都有」**：那句話讀起來省事，但只要有一頁不成立，
+// 判準：`grep -c 'js-lang-toggle' dist/*.html` 與 `grep -c 'data-page-title-key' dist/*.html`。
+// **兩組的例外集合不一樣，不要合成一個數字**：`.js-lang-toggle` 缺的是 `404.html` 一頁，
+// `data-page-title-key` 缺的是 `component.html` 與 `faq.html` 兩頁——合起來寫成「那三頁」的話，
+// 任一邊的例外集合變動都不會有人發現。**也別把它寫成「全站每一頁都有」**：那句話讀起來省事，但只要有一頁不成立，
 // 這份檔頭就不再是可信的正本，而衍生抄本（README）反而變成比較準的那一份——正是 §1-2
 // 「參數的唯一正本是檔頭那一份枚舉」最怕的方向。
 (function () {
