@@ -95,7 +95,10 @@ test("§5/§6/§8 ui/table-sort：排序鍵取的是**值節點**，格內的收
 });
 
 test("§5 ui/table-sort 的負控：排序鍵改回整格 textContent 後，生產形狀那一條必須失敗", () => {
-    const js = read("src/_includes/ui/table-sort/table-sort.js");
+    // **換行一律先正規化**：這個 repo 的開發機是 Windows（簽出來是 CRLF）、CI 在 Linux，
+    // 而下面那個錨點是一段**多行**字面。不正規化的話，同一份原始碼在兩個平台上一邊命中、
+    // 一邊命中不到——而命中不到時這條負控直接倒在錨點那一行，症狀看起來像「取值那一段被改掉了」。
+    const js = read("src/_includes/ui/table-sort/table-sort.js").replace(/\r\n/g, "\n");
     const CUT = [
         "        var clone = cell.cloneNode(true);",
         "        clone.querySelectorAll(CHROME).forEach(function (el) { el.remove(); });",
