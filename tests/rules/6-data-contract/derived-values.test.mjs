@@ -211,22 +211,22 @@ test("§6 授權用量那一列：四格都要有「不限量」哨兵，而「�
     const line = (labelKey, zh, text, key) =>
         `<span><span data-i18n="${labelKey}">${zh}：</span><span data-text-unlimited="${text}" data-key-unlimited="${key}">1</span></span>`;
     const good = [
-        line("platform.licenseCurrentUsage", "今日已用", "未計數", "platform.licenseUsageNotCounted"),
-        line("platform.licenseMaxUsage", "授權上限", "不限量", "platform.licenseUnlimited"),
-        line("platform.licenseRemaining", "剩餘", "不適用", "platform.licenseNotApplicable"),
-        line("platform.licenseUsageRate", "使用率", "不適用", "platform.licenseNotApplicable"),
+        line("platform.licenseCurrentUsage", "今日已用", "未計數", "common.notCounted"),
+        line("platform.licenseMaxUsage", "授權上限", "不限量", "common.unlimited"),
+        line("platform.licenseRemaining", "剩餘", "不適用", "common.notApplicable"),
+        line("platform.licenseUsageRate", "使用率", "不適用", "common.notApplicable"),
     ];
-    const EN = { "platform.licenseUsageNotCounted": "Not counted", "platform.licenseUnlimited": "Unlimited", "platform.licenseNotApplicable": "Not applicable" };
+    const EN = { "common.notCounted": "Not counted", "common.unlimited": "Unlimited", "common.notApplicable": "Not applicable" };
     assert.equal(rule(good.join("\n"), EN).length, 0, "負控失效：正確的樣本被判成違規（規則寫太緊）");
     const noSlot = good.slice();
     noSlot[0] = `<span><span data-i18n="platform.licenseCurrentUsage">今日已用：</span>3182</span>`;
     assert.ok(rule(noSlot.join("\n"), EN).length > 0, "負控失效：漏掉一格哨兵抓不到（這就是原本的缺陷）");
     const clash = good.slice();
-    clash[0] = line("platform.licenseCurrentUsage", "今日已用", "不適用", "platform.licenseNotApplicable");
+    clash[0] = line("platform.licenseCurrentUsage", "今日已用", "不適用", "common.notApplicable");
     assert.ok(rule(clash.join("\n"), EN).length > 0, "負控失效：繁中撞字抓不到");
     const enClash = good.slice();
-    enClash[0] = line("platform.licenseCurrentUsage", "今日已用", "未計數", "platform.licenseUsageNotCounted");
-    assert.ok(rule(enClash.join("\n"), { ...EN, "platform.licenseUsageNotCounted": "Not applicable" }).length > 0,
+    enClash[0] = line("platform.licenseCurrentUsage", "今日已用", "未計數", "common.notCounted");
+    assert.ok(rule(enClash.join("\n"), { ...EN, "common.notCounted": "Not applicable" }).length > 0,
         "負控失效：英譯撞字抓不到");
 });
 

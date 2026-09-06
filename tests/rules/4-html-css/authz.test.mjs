@@ -8,6 +8,25 @@ import { SHOWCASE } from "../../_lib/inventory.mjs";
 import { fail, probe } from "../../_lib/probe.mjs";
 import { countLines, stripNjk } from "../../_lib/text.mjs";
 
+// 「這顆鈕不送出任何東西」的唯一判準。**兩條規則吃同一份**：下面「會成功的鈕要宣告閘門」
+// 那條拿它當豁免出口，「掛閘門的鈕要有 403 段」那條拿它排除繼承區塊閘門的唯讀鈕——
+// 各刻一份的話，一邊放寬另一邊不知道。每一筆都要寫「為什麼是唯讀」。
+const READONLY = [
+    ["下載", "把既有資料匯出成檔案，走讀取端點；產生檔案不落任何一筆新狀態"],
+    ["已複製為", "`import-report.js` 把被剝掉的連結組成出口替換規則寫進剪貼簿，不送出任何東西（貼到哪一區是下一步的指示，不是它做的事）"],
+    // 複製類的繁中一律是「**受詞在前** ＋ 已複製」（`X已複製`），所以這張**前綴**錨定的表
+    // 要逐句一筆、沒有共同前綴可收。刻意不改成子字串比對：子字串會放行
+    // 「已核發，請立即複製下方明碼」那顆要平台管理者才做得了的寫入。
+    ["文字已複製", "`.copyBtn` 寫進剪貼簿（faq-chatroom.js 的 clipboard ＋ execCommand 退路），沒有任何端點"],
+    ["連結已複製", "同上：`.shareBtn` 把**已經產生好的**分享連結寫進剪貼簿（faq-share-modal 那一顆旁邊就是唯讀的 textarea，連結是開窗前就有的）——產生連結是 share-manage-modal 的「建立分享連結」，那一顆自己標了 data-capability=\"history\""],
+    ["提示詞已複製", "同上：5-2 提示詞版本列的 `.copyBtn` 把該版本的內容寫進剪貼簿，不落任何一筆設定（套用是另一顆鈕）"],
+    ["歡迎語已複製", "同上：5-2 歡迎語版本列的 `.copyBtn`，理由與提示詞那一顆逐字相同"],
+    ["金鑰已複製", "同上：5-8／5-9 列上的 `.copyBtn` 把已經核發好的金鑰寫進剪貼簿——核發是另一顆鈕，那一顆自己標了閘門"],
+    ["嵌入片段已複製", "同上：5-8 的 `.copyBtn` 複製的是由已核發的 token 組出來的 <script> 片段，不打任何端點"],
+    ["量測完成", "5-10 的標註覆蓋率量測：讀既有標註算出覆蓋率，不改任何一筆標註"],
+    ["名單已載入", "iso-review-wizard 的 idle→preview：把逾時名單讀回來畫成 preview（唯讀，稽核員也做得了），寫入在下一態那顆 .js-review-confirm"],
+];
+
 test("§4 每一顆會改狀態的鈕都要宣告它需要哪一道閘門（四條授權軸，值＝§4 宣告的那四組值域）", () => {
     // 為什麼要有：唯讀使用者看到一顆按不動的鈕，是本專案反覆在修的那種「畫面說得出、實際做不到」。
     // 而「這一塊誰動得了」如果只存在 React 的應用層，切版與 React 就各有一份答案。
@@ -45,21 +64,6 @@ test("§4 每一顆會改狀態的鈕都要宣告它需要哪一道閘門（四�
     // （`data-capability="…:read"`）。零載重的豁免不是無害的：它對「下一顆同開頭的**寫入**鈕」開著門，
     // 而那顆鈕永遠不會被這條規則看到。下方 noLoad 那道斷言把這件事釘死，六筆同時移除。
     // 留下來的四筆各自有一顆真的沒有閘門、也標不出閘門的鈕。
-    const READONLY = [
-        ["下載", "把既有資料匯出成檔案，走讀取端點；產生檔案不落任何一筆新狀態"],
-        ["已複製為", "`import-report.js` 把被剝掉的連結組成出口替換規則寫進剪貼簿，不送出任何東西（貼到哪一區是下一步的指示，不是它做的事）"],
-        // 複製類的繁中一律是「**受詞在前** ＋ 已複製」（`X已複製`），所以這張**前綴**錨定的表
-        // 要逐句一筆、沒有共同前綴可收。刻意不改成子字串比對：子字串會放行
-        // 「已核發，請立即複製下方明碼」那顆要平台管理者才做得了的寫入。
-        ["文字已複製", "`.copyBtn` 寫進剪貼簿（faq-chatroom.js 的 clipboard ＋ execCommand 退路），沒有任何端點"],
-        ["連結已複製", "同上：`.shareBtn` 把**已經產生好的**分享連結寫進剪貼簿（faq-share-modal 那一顆旁邊就是唯讀的 textarea，連結是開窗前就有的）——產生連結是 share-manage-modal 的「建立分享連結」，那一顆自己標了 data-capability=\"history\""],
-        ["提示詞已複製", "同上：5-2 提示詞版本列的 `.copyBtn` 把該版本的內容寫進剪貼簿，不落任何一筆設定（套用是另一顆鈕）"],
-        ["歡迎語已複製", "同上：5-2 歡迎語版本列的 `.copyBtn`，理由與提示詞那一顆逐字相同"],
-        ["金鑰已複製", "同上：5-8／5-9 列上的 `.copyBtn` 把已經核發好的金鑰寫進剪貼簿——核發是另一顆鈕，那一顆自己標了閘門"],
-        ["嵌入片段已複製", "同上：5-8 的 `.copyBtn` 複製的是由已核發的 token 組出來的 <script> 片段，不打任何端點"],
-        ["量測完成", "5-10 的標註覆蓋率量測：讀既有標註算出覆蓋率，不改任何一筆標註"],
-        ["名單已載入", "iso-review-wizard 的 idle→preview：把逾時名單讀回來畫成 preview（唯讀，稽核員也做得了），寫入在下一態那顆 .js-review-confirm"],
-    ];
     // 這張豁免表若是**整檔級**的——`5-1-1_accountInfo` 的理由只涵蓋那兩顆「改自己的資料」的鈕，
     // 整支檔案的每一顆鈕卻跟著一起免檢，包括那些不是自助動作的。
     // 改成 **(檔, success 段) 兩層**：豁免的單位＝那一顆鈕做成的那件事，理由要對得上它。
@@ -355,9 +359,13 @@ test("§4 掛 data-capability 的鈕都要有 warning 型的「權限不足」�
     // React 只能拿 `disabled` 把那條路封死，而 REACT-CONVERSION §⑥ 逐字說那叫「把契約演掉了」。
     // 型別必須是 warning：那是使用者找得到人開通就修得掉的狀況，折進 error 就變成紅色終局。
     //
-    // **母體是 dist 的 `<button>`**：①參數化元件（delete-modal 那一族）的 toast 由使用頁灌進來，
-    // src 上只看得到 `{{ deleteToast }}`；②`data-capability` 另有 13 顆掛在 `<div>` 上（§4 的區塊級
-    // 宣告＝那一塊的下限，不是鈕），區塊沒有 toast 可言，收進來會製造一整批假紅。
+    // **母體是 dist 的 `<button>`**：參數化元件（delete-modal 那一族）的 toast 由使用頁灌進來，
+    // src 上只看得到 `{{ deleteToast }}`。
+    // **閘門來自祖先區塊的鈕也算**（§4 的區塊級宣告＝那一塊的下限）：只看鈕自己那顆屬性的話，
+    // 「區塊掛閘門、鈕自己不掛」那一族整個不在母體裡——那正是 5-10「重新量測」那顆鈕的形狀，
+    // 而它的 403 與同區塊那顆自己掛閘門的鈕完全一樣可達。區塊本身不進母體（沒有 toast 可言），
+    // 區塊裡**沒有 data-toast** 的鈕也不進（它不回報結果，這條規則沒有東西可驗）。
+    // 唯一的減項是 READONLY：那幾顆只寫剪貼簿、不送出任何請求，沒有 403 這條路。
     // 豁免逐筆列出＋理由，**目前是空的**：每一顆掛 data-capability 的鈕都自己有 warning 段。
     // 這一族的失敗方式是**死豁免**：規則不靠豁免也通得過，豁免卻還掛著，於是哪天有人把那一段
     // 拿掉，這條測試會靜靜放行。故下面另有一道「豁免必須真的用得到」的守門。
@@ -366,17 +374,34 @@ test("§4 掛 data-capability 的鈕都要有 warning 型的「權限不足」�
     // 拿掉豁免後還會不會產生 hit）走的必須是同一條規則，各寫一份的話改了其中一份就會分岔。
     const scanWhere = (html, inExempt) => {
         const out = [];
-        for (const [tag] of stripNonMarkup(html).matchAll(/<button\b[^>]*>/g)) {
-            if (!/\bdata-capability="/.test(tag)) continue;
-            const key = (tag.match(/\bdata-i18n-data-toast="([^"]*)"/) || [])[1] || "(無 i18n key)";
-            if (EXEMPT.has(key) !== inExempt) continue;
-            const zh = (tag.match(/\bdata-toast="([^"]*)"/) || [])[1];
-            if (zh === undefined) { out.push({ key, msg: `${key}：掛了 data-capability 卻連 data-toast 都沒有` }); continue; }
-            const segs = zh.split("|");
-            const types = ((tag.match(/\bdata-toast-type="([^"]*)"/) || [])[1] || "").split("|");
-            const i = segs.findIndex((s) => s.includes("權限不足"));
-            if (i === -1) out.push({ key, msg: `${key}：data-toast 沒有「權限不足」那一段 → ${zh}` });
-            else if (types[i] !== "warning") out.push({ key, msg: `${key}：第 ${i + 1} 段是「權限不足」，type 卻是 ${types[i] || "(缺)"}` });
+        const stack = [];       // 祖先鏈：每一層記它有沒有掛 data-capability
+        for (const m of stripNonMarkup(html).matchAll(/<(\/?)([a-zA-Z][\w-]*)((?:"[^"]*"|'[^']*'|[^>"'])*?)(\/?)>/g)) {
+            const [, closing, name, attrs, selfClose] = m;
+            const t = name.toLowerCase();
+            if (closing) { if (stack.length && stack[stack.length - 1].tag === t) stack.pop(); continue; }
+            const own = /\bdata-capability="/.test(attrs);
+            if (t === "button") {
+                const inherited = !own && stack.some((x) => x.cap);
+                if (own || inherited) {
+                    const key = (attrs.match(/\bdata-i18n-data-toast="([^"]*)"/) || [])[1] || "(無 i18n key)";
+                    const zh = (attrs.match(/\bdata-toast="([^"]*)"/) || [])[1];
+                    const types = ((attrs.match(/\bdata-toast-type="([^"]*)"/) || [])[1] || "").split("|");
+                    const segs = (zh || "").split("|");
+                    const success = segs[types.indexOf("success")];
+                    const readOnly = success !== undefined && READONLY.some(([v]) => success.startsWith(v));
+                    // 繼承來的閘門：沒有 toast 就沒有東西可驗；唯讀那幾顆沒有 403 這條路
+                    const skip = inherited && (zh === undefined || readOnly);
+                    if (!skip && EXEMPT.has(key) === inExempt) {
+                        if (zh === undefined) out.push({ key, msg: `${key}：掛了 data-capability 卻連 data-toast 都沒有` });
+                        else {
+                            const i = segs.findIndex((x) => x.includes("權限不足"));
+                            if (i === -1) out.push({ key, msg: `${key}：data-toast 沒有「權限不足」那一段 → ${zh}` });
+                            else if (types[i] !== "warning") out.push({ key, msg: `${key}：第 ${i + 1} 段是「權限不足」，type 卻是 ${types[i] || "(缺)"}` });
+                        }
+                    }
+                }
+            }
+            if (!selfClose && !VOID_TAGS.has(t)) stack.push({ tag: t, cap: own });
         }
         return out;
     };
@@ -384,15 +409,19 @@ test("§4 掛 data-capability 的鈕都要有 warning 型的「權限不足」�
     probe("能力閘鈕的 403 段", scan,
         [`<button type="button" data-capability="settings:write" data-toast="已儲存|儲存失敗" data-toast-type="success|error">儲存</button>`,
          `<button type="button" data-capability="data:write" data-toast="已刪除|權限不足，無法刪除|刪除失敗" data-toast-type="success|error|error">刪除</button>`,
-         `<button type="button" data-capability="settings:write">儲存</button>`],
-        // 合法：三段齊全且 warning 對位；沒掛能力軸的鈕不在母體；區塊級宣告掛在 div 上不算鈕。
+         `<button type="button" data-capability="settings:write">儲存</button>`,
+         `<div data-capability="settings:write"><button type="button" data-toast="已儲存|儲存失敗" data-toast-type="success|error">儲存</button></div>`],
+        // 合法：三段齊全且 warning 對位；沒掛能力軸的鈕不在母體；區塊裡的鈕補齊那一段就過；
+        // 區塊裡的唯讀鈕（只寫剪貼簿、沒有端點）沒有 403 這條路；區塊裡沒有 toast 的鈕不在母體。
         [`<button type="button" data-capability="settings:write" data-toast="已儲存|權限不足，無法儲存|儲存失敗" data-toast-type="success|warning|error">儲存</button>`,
          `<button type="button" data-toast="已複製" data-toast-type="success">複製</button>`,
-         `<div data-capability="settings:write"><button type="button" data-toast="已儲存|儲存失敗" data-toast-type="success|error">儲存</button></div>`]);
+         `<div data-capability="settings:write"><button type="button" data-toast="已儲存|權限不足，無法儲存|儲存失敗" data-toast-type="success|warning|error">儲存</button></div>`,
+         `<div data-capability="settings:write"><button type="button" data-toast="提示詞已複製|複製失敗，請手動選取後複製" data-toast-type="success|error">複製</button></div>`,
+         `<div data-capability="settings:write"><button type="button">展開</button></div>`]);
     const hits = [];
     let seen = 0;
     for (const f of distHtml) {
-        seen += [...stripNonMarkup(read(`dist/${f}`)).matchAll(/<button\b[^>]*\bdata-capability="/g)].length;
+        seen += [...stripNonMarkup(read(`dist/${f}`)).matchAll(/<button\b[^>]*\bdata-capability="/g)].length;   // 自己掛閘門的那一半（繼承的那幾顆另有 probe 守著）
         for (const h of scan(read(`dist/${f}`))) hits.push(`${f}  ${h}`);
     }
     assert.ok(seen >= 170, `dist 只掃到 ${seen} 顆掛 data-capability 的鈕 —— 這條測試在空轉`);
@@ -405,6 +434,46 @@ test("§4 掛 data-capability 的鈕都要有 warning 型的「權限不足」�
     const dead = [...EXEMPT.keys()].filter((k) => !needed.has(k));
     assert.equal(dead.length, 0, `EXEMPT 有死豁免（那顆鈕沒有豁免也會過，留著等於關掉它的守門）：${dead.join("、")}`);
     assert.equal(hits.length, 0, `§4：能力不足時 React 只剩 disabled 可用，而那是把契約演掉：\n${fail(hits)}`);
+});
+
+test("§4「此功能尚未對貴租戶開通」固定在最後一段（段序是索引契約，末位是保留位）", () => {
+    // 段序＝守衛撞到的先後，而消費端是照位置取字。**這一段是唯一不參與撞擊序的**：
+    // 租戶功能那道閘實際上比能力那一道更早撞到，但它全站固定在末位——
+    // **位置一致本身就是契約**，照撞擊序把它往前搬，會讓每一頁的索引各自不同，
+    // 而依位置取字的那一端分辨不出來（它拿到的只有位置，沒有語意）。
+    //
+    // 沒有這條的話，唯一寫下這件事的地方是幾支頁面的註解，而註解攔不住下一個人。
+    const LAST = "此功能尚未對貴租戶開通";
+    const scan = (html) => {
+        const out = [];
+        for (const [tag] of stripNonMarkup(html).matchAll(/<button\b[^>]*>/g)) {
+            if (!/\bdata-capability="/.test(tag)) continue;
+            const zh = (tag.match(/\bdata-toast="([^"]*)"/) || [])[1];
+            if (zh === undefined) continue;          // 另有一條驗「掛了閘門卻沒有 toast」
+            const segs = zh.split("|");
+            const i = segs.findIndex((s) => s.includes(LAST));
+            const key = (tag.match(/\bdata-i18n-data-toast="([^"]*)"/) || [])[1] || "(無 i18n key)";
+            if (i === -1) out.push(`${key}：掛了 data-capability 卻沒有「${LAST}」那一段`);
+            else if (i !== segs.length - 1)
+                out.push(`${key}：「${LAST}」排在第 ${i + 1} 段（共 ${segs.length} 段），它一律是最後一段`);
+        }
+        return out;
+    };
+    let seen = 0;
+    const hits = [];
+    for (const f of distHtml) {
+        const html = read(`dist/${f}`);
+        seen += [...stripNonMarkup(html).matchAll(/<button\b[^>]*\bdata-capability="[^>]*\bdata-toast="/g)].length;
+        hits.push(...scan(html).map((h) => `${f}  ${h}`));
+    }
+    assert.ok(seen >= 179, `只掃到 ${seen} 顆掛閘門又有 toast 的鈕 —— 這條測試在空轉`);
+    probe("§4 租戶未開通那一段的位置", scan,
+        [`<button data-capability="settings:write" data-toast="已儲存|此功能尚未對貴租戶開通，請聯絡平台管理員|權限不足，無法儲存——請找貴租戶的管理者開通|儲存失敗" data-toast-type="success|warning|warning|error">存</button>`,
+            `<button data-capability="settings:write" data-toast="已儲存|權限不足，無法儲存——請找貴租戶的管理者開通|儲存失敗" data-toast-type="success|warning|error">存</button>`],
+        [`<button data-capability="settings:write" data-toast="已儲存|權限不足，無法儲存——請找貴租戶的管理者開通|儲存失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-toast-type="success|warning|error|warning">存</button>`,
+            `<button data-toast="已複製" data-toast-type="success">複製</button>`,
+            `<div data-capability="settings:write">沒有鈕的區塊不在母體</div>`]);
+    assert.equal(hits.length, 0, fail(hits));
 });
 
 test("§4 共用元件把 data-toast 開成參數時，閘門也要開成參數，且每個使用頁都要 set", () => {

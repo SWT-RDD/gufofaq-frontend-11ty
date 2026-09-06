@@ -303,7 +303,7 @@ test("§6 可回答性判定與合規閘：三顆鍵的值域是閉合詞彙，�
         return out.length ? out.join("；") : null;
     };
     const demoValues = countInNodes(/\b(?:verdict|reason):\s*"[^"]*"/g);
-    assert.ok(demoValues >= 12, `只掃到 ${demoValues} 個 verdict／reason 示範值 —— 這條測試在空轉`);
+    assert.ok(demoValues >= 26, `只掃到 ${demoValues} 個 verdict／reason 示範值 —— 這條測試在空轉`);
     probe("§6 verdict／reason 示範值", (t) => scanText(t, badLiteral),
         ['{ label: "可回答性判定", verdict: "generate（素材足以回答）" },',
             '{ label: "可回答性判定", reason: "llm（判定器跑了）" },'],
@@ -499,6 +499,10 @@ test("§6/§8 元件讀得到、卻沒有任何使用頁 set 的參數，都要�
         ["components/import-report:importSyncFailed", "同 importSyncIndexed：1-2-1 檔頭逐字寫著整批區那三格「一律不 set」，逐檔的同名格畫在逐檔區"],
         ["components/import-report:importSyncReason", "同上；它另有一條硬規則——真的 set 了就照畫，關聯編號絕不可以無聲消失（見該元件檔頭）"],
         ["components/skill-try-sandbox:trySkillName", "試跑的是哪一顆 skill；3-4 的試跑面板由業務 js 開，skill 名執行期才知道（同檔的 js 靠 `#trySkillName` 填），切版走示範預設"],
+        ["components/sources-block:sourcesTotal", "標題後那句「（挑選規則 N 取 M；使用模型：X）」的三個資料槽之一，三顆一組：那是**那一輪檢索實際發生的事**，React 逐次傳；切版沒有頁面覆寫，走元件內建示範值（所以它就是那幾頁畫面上真正顯示的值，不是佔位字）"],
+        ["components/sources-block:sourcesSelected", "同 sourcesTotal 的三顆一組（取用／選用／模型），React 逐次傳；切版走內建示範值"],
+        ["components/sources-block:sourcesModel", "同 sourcesTotal 的三顆一組（取用／選用／模型），React 逐次傳；切版走內建示範值"],
+        ["components/untagged-files-modal:untaggedFileRows", "未標註檔案清單，React 依當下量測結果傳；切版走元件內建示範 `untaggedFileRowsDemo`（5-10 與元件庫頁都沒有覆寫）"],
         ["ui/upload-box:uploadHintText", "放置區主提示；**兩個版本的預設不同**（點選版／拖曳版），兩個實例各自要的就是自己那一版的預設，所以沒有人覆寫"],
         ["ui/upload-box:uploadHintKey", "與 uploadHintText 成對的 i18n key：兩個版本（點選／拖曳）各自的預設不同，兩個實例要的就是自己那一版，所以沒有人覆寫"],
         ["ui/widget-shell:widgetTitle", "面板標題＝**租戶設定值**，React 從設定讀進來傳；切版沒有那個來源，走 `{% else %}` 那一支的示範文字（那一支才是切版畫得出來的態）"],
@@ -527,6 +531,10 @@ test("§6/§8 元件讀得到、卻沒有任何使用頁 set 的參數，都要�
         for (const x of body.matchAll(/\{\{-?\s*([A-Za-z_]\w*)/g)) read1.add(x[1]);
         for (const x of body.matchAll(/\{%-?\s*(?:if|elif)\s+(?:not\s+)?([A-Za-z_]\w*)/g)) read1.add(x[1]);
         for (const x of body.matchAll(/\{%-?\s*for\s+\w+(?:\s*,\s*\w+)?\s+in\s+([A-Za-z_]\w*)/g)) read1.add(x[1]);
+        // `{% set xShown = x if x is defined else 內建示範 %}`——「值域含 0 的參數不得用真值判斷」
+        // （§6）逼出來的形狀。它讀的是外部參數 `x`，但那個名字既不在 `{{ }}` 也不在 `{% if %}` 裡，
+        // 上面三種 pattern 一種都收不到 ⇒ 整族靜靜地逃出這張登記表。
+        for (const x of body.matchAll(/\{%-?\s*set\s+\w+\s*=\s*([A-Za-z_]\w*)\s+if\s+([A-Za-z_]\w*)\s+is\s+defined/g)) { read1.add(x[1]); read1.add(x[2]); }
         // `loop`／字面量／版型注入的 `content` 不是參數；迴圈變數與自己 set 的也不是。
         for (const v of read1) {
             if (selfSet.has(v) || loopVars.has(v)) continue;
@@ -538,7 +546,7 @@ test("§6/§8 元件讀得到、卻沒有任何使用頁 set 的參數，都要�
             hits.push(`${key}  讀得到、卻沒有任何使用頁 set 它 —— 是 React 那一側會傳的轉換契約，還是該撤掉的死參數？兩種都要寫進 UNSET_OK`);
         }
     }
-    assert.ok(scanned >= 60, `只掃到 ${scanned} 支元件 html —— 這條測試在空轉`);
+    assert.ok(scanned >= 94, `只掃到 ${scanned} 支元件 html —— 這條測試在空轉`);
     const stale = [...UNSET_OK.keys()].filter((k) => !used.has(k));
     assert.deepEqual(stale, [], `UNSET_OK 有死豁免（那顆參數已經有人 set 了，或已經撤掉）：\n${stale.join("\n")}`);
     for (const [k, why] of UNSET_OK)

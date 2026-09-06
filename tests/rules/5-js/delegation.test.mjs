@@ -25,30 +25,72 @@ test("§5 元件 js 不得用 .isConnected 判斷「點外部」（零合法用�
     assert.equal(hits.length, 0, fail(hits));
 });
 
-test("§5 元件 js 若在 document click 委派裡做「收合/關閉」語意，必須用 composedPath() 判斷點外部", () => {
-    // 判準以「檔案」為單位：同一檔案內出現 document.addEventListener("click" 委派，且同檔任何
-    // 地方出現 dismiss 語意（setOpen(false) / classList.remove("open") / classList.add("collapsed")），
-    // 就代表這支 js 有「點外部收合」這條路徑，該檔就必須含 composedPath(——不管兩者是不是同一個
-    // 事件處理器內，用字串級門檻抓，涵蓋未來新元件（不必每次手動加檔名）。
-    // 現況命中 multi-select.js、qa-side-panel.js、search-select.js 三檔，每一檔都要含 composedPath(。
+test("§5 有 document click 委派的元件 js，逐支登記它判不判「點外部」；判的那幾支要用 composedPath()", () => {
+    // §5：document 級委派的「點外部」判斷用 `composedPath()`（`event.target` 在被替身元件
+    // 攔截、或事件從 shadow root 冒上來時指的不是那顆真正被點的東西）。
     //
+    // **母體不能靠「收合語意」的字面猜**：那一版的判準是三個寫死的字面
+    //（`setOpen(false)`／`classList.remove("open")`／`classList.add("collapsed")`），
+    // 下一個元件只要換一個狀態 class 名（`show`／`expanded`）就整支掉出母體，漏寫
+    // composedPath 也不會紅。我試過幾種機械推導（同檔既 add 又 remove 的 class、否定式
+    // containment 判斷），兩種都同時漏掉既有的一支、又把三支「開關 hidden 但與點外部無關」
+    // 的元件拉進來——也就是說這件事推導不出來。
+    //
+    // 所以改成**逐支登記**：有 document click 委派的每一支 js，都必須落在下面兩類之一。
+    // 新加一支就得先回答「它判不判點外部」，而那正是漏寫 composedPath 之前唯一該問的問題。
+    //   ① TRIGGER_ONLY —— 委派只問「這一下點在哪顆觸發器上」（`closest(".js-xxx")` 早退），
+    //      沒有「點在外面就收起來」這條路，故不需要 composedPath。
+    //   ② 其餘 —— 判「點外部」，必須含 `composedPath(`。
+    const TRIGGER_ONLY = new Map([
+        ["builtin-tool-card", "只問點在哪顆觸發器上（.js-tool-reset／.js-tool-description／.field），沒有點外部收起來這條路"],
+        ["chatroom", "只問點在不在 .watchBtn 上（揭示同頁的來源區），不是開關"],
+        ["citation-ref", "只問點在不在 .js-citation 上（捲到對應的來源列）"],
+        ["skill-try-sandbox", "只問點在哪顆觸發器上（.js-try-skill／.js-skill-try-close），關閉由那顆關閉鈕做，不是點外部"],
+        ["clipboard", "只問點在不在 .shareBtn 上（寫進剪貼簿）"],
+        ["dismiss-panel", "收合由 [data-dismiss-target] 那顆鈕觸發——它就是「按鈕關閉」那一種，不是點外部"],
+        ["filter-fields", "只問點在不在 .js-filter-clear 上（清掉同一塊 .block 內的篩選欄）"],
+        ["modals", "開窗／關窗都由具名觸發器做（[data-open-modal]／.btn-close-modals）；<dialog> 的點外部關閉是瀏覽器原生的 light dismiss，不由這支 js 判"],
+        ["pagination", "只問點在不在 .pagination 的按鈕上（換頁）"],
+        ["print", "只問點在不在 [data-print] 上"],
+        ["reveal-input", "只問點在不在 [data-reveal-target] 上（明碼／遮罩切換），再點一次那顆鈕才收回去"],
+        ["toast", "只問點在不在 [data-toast] 上（彈出下一則結果）；toast 自己的關閉鈕綁在自己身上，不走委派"],
+    ]);
+
     // 先剝掉 `//` 行內註解再判斷：composedPath 規則的說明註解本身就會寫「用 composedPath()…」，
     // 若不剝，退化成 event.target/contains() 的檔案光靠註解殘留的字面就能矇混過關（驗證過：
     // 把 multi-select.js 的實作改回 wrapper.contains(event.target)，但說明註解沒清乾淨時，
     // 不剝註解版本仍誤判為綠燈）。
     const stripComments = (t) => t.split(/\r?\n/).map((l) => l.replace(/\/\/.*$/, "")).join("\n");
-    const DISMISS = /setOpen\(false\)|classList\.remove\(\s*["']open["']\s*\)|classList\.add\(\s*["']collapsed["']\s*\)/;
-    const hits = [];
-    let checked = 0;
+    const nameOf = (f) => f.replace(/\\/g, "/").split("/").pop().replace(/\.js$/, "");
+
+    const delegates = [];
     for (const f of srcJs) {
         const code = stripComments(read(f));
-        const hasClickDelegate = /document\.addEventListener\(\s*["']click["']/.test(code);
-        const hasDismiss = DISMISS.test(code);
-        if (!hasClickDelegate || !hasDismiss) continue;
-        checked++;
-        if (!code.includes("composedPath(")) hits.push(`${f}  有 document click 委派＋dismiss 語意，卻沒有 composedPath(`);
+        if (!/document\.addEventListener\(\s*["']click["']/.test(code)) continue;
+        delegates.push({ f, name: nameOf(f), code });
     }
-    assert.ok(checked >= 3, `只命中 ${checked} 個檔 —— 這條測試在空轉（現況應命中 multi-select.js、qa-side-panel.js）`);
+    assert.ok(delegates.length >= 15, `只掃到 ${delegates.length} 支有 document click 委派的 js —— 這條測試在空轉`);
+
+    const hits = [];
+    for (const d of delegates) {
+        if (TRIGGER_ONLY.has(d.name)) {
+            // 零載重的反向：登記成「只認觸發器」，卻真的在做開關（同檔出現收合語意）⇒ 那筆登記是錯的
+            if (/setOpen\(false\)|setExpanded\(false\)|classList\.add\(\s*["']collapsed["']\s*\)/.test(d.code))
+                hits.push(`${d.f}  登記在 TRIGGER_ONLY，同檔卻有收合語意 —— 重新判斷它判不判點外部`);
+            continue;
+        }
+        if (!d.code.includes("composedPath("))
+            hits.push(`${d.f}  有 document click 委派、又沒有登記在 TRIGGER_ONLY ⇒ 視為判「點外部」，必須用 composedPath(`);
+    }
+    // 死豁免：登記的每一支都要還在、而且還有 document click 委派
+    const stale = [...TRIGGER_ONLY.keys()].filter((n) => !delegates.some((d) => d.name === n));
+    assert.deepEqual(stale, [], `TRIGGER_ONLY 有過期項（那支 js 沒了、改名了，或已經不掛 document click 委派）：${stale.join("、")}`);
+    for (const [n, why] of TRIGGER_ONLY)
+        assert.ok((why || "").length > 8, `TRIGGER_ONLY 的「${n}」沒寫「為什麼不必判點外部」——空白不等於查證過`);
+    // 正向：真的有幾支在判點外部（全部登記成 TRIGGER_ONLY 的話，這條規則等於沒有在守任何東西）
+    const outside = delegates.filter((d) => !TRIGGER_ONLY.has(d.name));
+    assert.ok(outside.length >= 3,
+        `只剩 ${outside.length} 支被判成「判點外部」 —— 現況應有 multi-select／search-select／qa-side-panel 三支`);
     assert.equal(hits.length, 0, fail(hits));
 });
 
@@ -93,7 +135,7 @@ test("§5 toast 不得把人送去別頁看一塊**當頁自己就 include 了**
     // 空轉守門三道：頁面母體、toast 載體、以及「報告就在當頁」那一型真的存在（規則有東西可管）
     assert.ok(pages.length > 45, `只掃到 ${pages.length} 個頁面 —— 這條測試在空轉`);
     const segs = pages.reduce((n, f) => n + toastsOfPage(read(f)).reduce((k, t) => k + t.split("|").length, 0), 0);
-    assert.ok(segs > 665, `只解析到 ${segs} 段 toast —— 載體解析壞了，這條在空轉`);
+    assert.ok(segs >= 816, `只解析到 ${segs} 段 toast —— 載體解析壞了，這條在空轉`);
     const sameForm = REPORT_HOSTS.filter((r) => r.submit === r.report);
     assert.ok(sameForm.length > 0, "REPORT_HOSTS 裡沒有「報告就在送出當頁」的流程 —— 這條規則沒有任何頁面可管（死規則）");
     for (const { flow, report } of sameForm) {

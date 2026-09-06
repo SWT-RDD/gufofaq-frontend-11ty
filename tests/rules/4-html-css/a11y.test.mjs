@@ -4,7 +4,7 @@ import { test } from "vitest";
 import assert from "node:assert/strict";
 import { basename } from "node:path";
 import { distHtml, read, srcHtml } from "../../_lib/corpus.mjs";
-import { attrValue, attrValuesIn, classesOf, distDoc, scanTags, tagEvents, tagsOf } from "../../_lib/html.mjs";
+import { attrValue, attrValuesIn, classesOf, distDoc, numberFieldHints, scanTags, tagEvents, tagsOf } from "../../_lib/html.mjs";
 import { SHOWCASE } from "../../_lib/inventory.mjs";
 import { fail, probe } from "../../_lib/probe.mjs";
 import { stripNjk } from "../../_lib/text.mjs";
@@ -245,13 +245,20 @@ test("§4 送 API 的數字欄三件套：type=number ＋ min/max/step ＋ 可�
     // 或把 type="number" 改回 type="text"，148 條照樣全綠。而 2-2-1 的檔頭正記載
     // 「這三個數值欄一開始是 type=text、切版改成 number」，回歸的形狀就是那個。三件一起驗。
     // 兩邊都沒有界線的欄位：逐筆列出＋理由（新增前先去正本確認它真的兩邊都不設限）
+    // 分數門檻那一族：**上下界一條都不發布**。尺由當次給分的那一方決定（重排序器 1–5／0–1、
+    // 未正規化 logits 可為負、關鍵字檢索數百到上萬），任一側寫死都會讓其中一種部署填不進
+    // 自己的合法值。唯一的約束是「必須是有限的數字」，而 `min`／`max` 表達不出「不是 NaN、
+    // 不是無限大」⇒ 兩顆屬性都不寫，那句約束由常駐提示承載（§4）。
+    const SCORE_FLOOR = "分數門檻：上下界一條都不發布（尺由當次給分的那一方決定，任一側寫死"
+        + "都會讓其中一種部署填不進合法值）；唯一的約束是「必須是有限的數字」，而 min／max"
+        + "表達不出「不是 NaN、不是無限大」——那句約束由常駐提示承載";
     const NO_BOUND = new Map([
         ["tenantTrialDaysInput",
          "延展天數：正數延展、負數縮短，所以兩邊都沒有界線（0 不是界線，它是「沒有動作」）"],
-        // 分數門檻兩顆（qaDirectScoreFloor／groundingScoreFloor）**不在這張表裡**：
-        // 上界不綁——分數的尺會隨評分方式換（有的 1–5、有的 0–1、有的數百到數千），
-        // 寫死 [0,1] 會讓其中一種填不進自己的合法值；但**下界綁 min="0"**：負的分數門檻
-        // 沒有任何意義。表單不夾＝把那個錯誤推遲到按下儲存之後，而使用者早就離開那一格了。
+        ["qaDirectScoreFloor", SCORE_FLOOR],
+        ["groundingScoreFloor", SCORE_FLOOR],
+        ["demoScoreFloor", `${SCORE_FLOOR}（元件庫頁的示範門檻欄，形狀比照 5-2）`],
+        ["demoScoreFloorNoRerank", `${SCORE_FLOOR}（元件庫頁的示範門檻欄，形狀比照 5-2）`],
     ]);
     const seenNoBound = new Set();
     let seen = 0;
@@ -287,6 +294,45 @@ test("§4 送 API 的數字欄三件套：type=number ＋ min/max/step ＋ 可�
     const staleNoBound = [...NO_BOUND.keys()].filter((k) => !seenNoBound.has(k));
     assert.equal(staleNoBound.length, 0, `NO_BOUND 有過期項（欄位已改名或已補上界線）：${staleNoBound.join("、")}`);
     assert.equal(hits.length, 0, fail(hits));
+});
+
+test("§4 三件套第三件是「區間本身」：被指到的節點裡讀得到 min／max 上的每一個數字", () => {
+    // 上面那條驗的是 `aria-describedby` **在不在**，而 §4 明文寫的是「第三件是**區間本身**，
+    // 不是任何一段 aria-describedby 文字」——**掛了 describedby、講的卻是別的事，是這條
+    // 最常見的假合規**。只驗屬性存不存在的話，把提示換成「這一欄會影響檢索品質」照樣全綠，
+    // 而使用者要按下送出才知道自己打的數字超出範圍。
+    //
+    // 單邊界線不豁免：只有下界時，那一個數字照樣要讀得到（`≥ N`／`N 以上`）。
+    // 兩邊都沒有界線的欄位不在這條的母體裡——那一族由上面那條的 NO_BOUND 逐筆登記。
+    const fields = numberFieldHints();
+    assert.ok(fields.length >= 42, `只掃到 ${fields.length} 顆數字欄 —— 這條測試在空轉`);
+
+    // 數字要以「整個數」出現：找 `8` 不可以命中 `8000` 的頭，也不可以命中 `0.8` 的尾。
+    const reads = (text, n) => new RegExp(`(?<![\\d.])${n.replace(".", "\\.")}(?![\\d.])`).test(text);
+    const hits = [];
+    for (const x of fields) {
+        const bounds = [["min", x.min], ["max", x.max]].filter(([, v]) => v !== null && v !== "");
+        if (!bounds.length) continue;                       // NO_BOUND 那一族，見上一條
+        const text = x.hints.map((h) => h.text).join(" ");
+        const dangling = x.hints.filter((h) => h.text === null).map((h) => h.id);
+        if (dangling.length) {
+            hits.push(`dist/${x.f}  ${x.id} 的 aria-describedby 指到不存在的 id：${dangling.join("、")}`);
+            continue;
+        }
+        for (const [which, v] of bounds)
+            if (!reads(text, v))
+                hits.push(`dist/${x.f}  ${x.id} 的區間提示裡讀不到 ${which}="${v}"`
+                    + `（提示目前是 ${JSON.stringify(text.trim().slice(0, 60))}）`
+                    + " ← 掛了 describedby、講的卻是別的事，等於沒給第三件");
+    }
+    assert.equal(hits.length, 0, fail(hits));
+
+    // 負控：規則被寫寬（例如改成「提示非空就算數」）時全綠，所以拿合成樣本走同一條判準各驗一次
+    assert.ok(reads("100 – 8000", "8000"), "整個數讀不出來");
+    assert.ok(!reads("100 – 8000", "8"), "`8` 命中了 `8000` 的頭 —— 判準被寫寬");
+    assert.ok(!reads("0.85 以上", "0"), "`0` 命中了 `0.85` 的頭 —— 判準被寫寬");
+    assert.ok(reads("≥ 0 的整數", "0"), "單邊界線的那一個數字被誤判成讀不到");
+    assert.ok(!reads("這一欄會影響檢索品質", "1"), "完全沒有數字的提示被判成合規");
 });
 
 test("§4 control-label required 與控制項的 required 成對（星號是視覺，required 是報讀器與 React 表單庫讀的那一份）", () => {
@@ -573,7 +619,7 @@ test("§4 同一個無障礙範圍內，控制項的可及名稱不得重複（�
     };
     const hits = [];
     for (const f of distHtml) hits.push(...dupsIn(distDoc(f)).map((s) => `dist/${f}  ${s}`));
-    assert.ok(seen >= 5389, `只掃到 ${seen} 顆控制項 —— 這條測試在空轉（母體含全部 <a href> 之後實測 5148）`);
+    assert.ok(seen >= 5389, `只掃到 ${seen} 顆控制項 —— 這條測試在空轉（棘輪＝上次實際量到的下限）`);
     assert.equal(hits.length, 0, `可及名稱撞名（可見字面可以逐列重複，可及名稱不在豁免之內，§4）：\n${fail(hits)}`);
 
     // 合成樣本：四種豁免各一顆 good（豁免被寫寬／寫窄都會當場變紅），bad 三顆。

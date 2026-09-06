@@ -144,7 +144,7 @@ test("§5 窗腳的每一顆鈕都要有主人（不掛 .btn-close-modals 的那
 ${fail(hits)}`);
 });
 
-test("§5 元件 js 查詢的 class 選擇器都要在 src markup 打得到（否則是打不到東西的死 js）", () => {
+test("§5 元件 js 查詢的 class 選擇器都要在 dist 的生產頁打得到（否則是打不到東西的死 js）", () => {
     // 頁面改版把某支元件 js 綁的 class 全從 markup 拿掉時，那支 js 變成「還在載入、querySelector 全落空」
     // 的死碼——三方登記測試（檔案在、登記在）看不出來。反面：草稿卡改成常時顯示之後，
     // .js-add-prompt / .js-prompt-input 全站 markup 消失，js 卻還登記著。
@@ -394,7 +394,7 @@ test("§5 每顆按鈕都要有主人：行為屬性／js- hook／具名業務�
 });
 
 test("§5 同一頁只放一套 data-target 切換系統（tab.js 的面板隱藏是 document 級全域）", () => {
-    // §5 那句「同頁只放一套 data-target 切換系統」自己標著 ⚠️「這後半句沒有網、靠人審」。
+    // §5 那句「同頁只放一套 data-target 切換系統」的網就是這一條。
     // tab.js 的 showPanel() 先對 **document** 上每一顆 `.tab-content` 下 display:none、再打開自己那一顆——
     // 同頁一旦有第二套切換系統，點 A 系統的頁籤會把 B 系統正在顯示的面板一起關掉。
     // 兩套各自看起來都對（初始態沒變，fpdiff 抓不到），只有真的點下去才看得見。

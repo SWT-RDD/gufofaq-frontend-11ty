@@ -34,7 +34,13 @@ export const fail = (hits) => hits.join("\n");
 // 正則被改壞、排除條件被寫寬、共用 helper 回傳空陣列，測試都會靜靜地全綠。
 // probe 拿合成樣本走同一條規則：抓不到刻意寫壞的樣本就當場失敗；
 // good 樣本則擋住反方向的腐化（把規則寫寬到會誤報，通常伴隨著有人去放寬排除清單）。
-export const probe = (label, run, bad, good = []) => {
+//
+// **兩邊都必填**：`good` 給預設空陣列時，漏傳的呼叫點會靜靜地只驗一半——
+// 而「規則被寫寬到誤報」正是放寬排除清單那一族腐化的長相，少了那一半看不出來。
+// 所以這裡自己擋，不靠呼叫端記得。
+export const probe = (label, run, bad, good) => {
+    assert.ok(Array.isArray(bad) && bad.length > 0, `${label}：probe 沒有給壞樣本 —— 這條規則沒有負控`);
+    assert.ok(Array.isArray(good) && good.length > 0, `${label}：probe 沒有給好樣本 —— 規則被寫寬到誤報時不會有人知道`);
     for (const s of bad)
         assert.ok(run(s).length > 0, `${label}：規則認不出合成違規樣本，這條測試永遠會綠 →\n${s}`);
     for (const s of good)

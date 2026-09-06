@@ -77,6 +77,58 @@ test("§4-2 i18n 的文字槽不得寫 markdown 強調（`**…**` 會原樣印�
     assert.equal(hits.length, 0, `星號會原樣印在畫面上，強調請改用字面或另拆節點：\n${fail(hits)}`);
 });
 
+test("§4-2 i18n 的文字槽不得寫行內碼的反引號、也不得寫 markdown 連結的方括號＋圓括號", () => {
+    // 上面那條只擋星號，而 §4-2 禁的是**任何** markdown 記號。另外兩種各有自己的長相：
+    //   · 反引號：需求單裡的識別字習慣寫成 \`document_id\`，貼進 data-i18n 的槽之後那兩撇會
+    //     原樣印在畫面上。要標示識別字就另拆一顆 \`<code class="inline-code">\` 節點
+    //     （ui/inline-code 是那顆原子的正本），識別字本身也就跟著移出 i18n 槽——它不翻譯。
+    //   · markdown 連結：\`[文字](網址)\` 同理，畫面上讀到的是方括號與圓括號本身。
+    // 兩邊都掃：en.json 的值（英譯）與 dist 渲染出來的繁中文字節點（原文）——只掃一邊的話，
+    // 另一個語系可以獨自長歪，而那一半沒有人在看。
+    const MARKS = [
+        [/`[^`]+`/, "行內碼的反引號（識別字請另拆一顆 <code class=\"inline-code\"> 節點）"],
+        [/\[[^\]]+\]\([^)]+\)/, "markdown 連結的方括號＋圓括號"],
+    ];
+    // **被引用的樣本字面**除外：那一句在講「這個設定會把東西轉成 markdown 連結」，
+    // 符號本身是被引用的資料，不是誤用記號（比照全形標點那條的 SAMPLE 機制）。
+    const SAMPLE = new Map([
+        ["settings.outputRuleLinkAnchorDesc",
+            "這一句講的就是「轉成 markdown 連結 [文字](網址)」，那組括號是被引用的語法樣本"],
+    ]);
+    const scan = (key, text) => {
+        if (SAMPLE.has(key)) return [];
+        return MARKS.filter(([re]) => re.test(text)).map(([, why]) => `${key}  ${why}  ←「${text.trim().slice(0, 50)}」`);
+    };
+
+    const en = JSON.parse(read("src/i18n/en.json"));
+    const hits = [];
+    const sampleHit = new Set();
+    const note = (key, text) => {
+        if (SAMPLE.has(key) && MARKS.some(([re]) => re.test(text))) sampleHit.add(key);
+        hits.push(...scan(key, text));
+    };
+    for (const [k, v] of Object.entries(en)) if (typeof v === "string") note(k, v);
+    let nodes = 0;
+    for (const f of distHtml)
+        for (const m of distDoc(f).matchAll(/<[a-z0-9]+\b[^>]*\bdata-i18n="([^"]+)"[^>]*>([^<]*)</g)) {
+            nodes++;
+            note(m[1], m[2]);
+        }
+    assert.ok(Object.keys(en).length >= 2133 && nodes >= 9097,
+        `只掃到 ${Object.keys(en).length} 個 key／${nodes} 個文字節點 —— 這條測試在空轉`);
+
+    // 死豁免：SAMPLE 登記的每一筆都要真的還命中某一種記號，否則那一筆是留著的空門
+    const stale = [...SAMPLE.keys()].filter((k) => !sampleHit.has(k));
+    assert.deepEqual(stale, [], `SAMPLE 有過期項（今天已經不含任何 markdown 記號了）：${stale.join("、")}`);
+
+    probe("§4-2 markdown 記號", (s) => scan("<probe>", s),
+        ["兩者擇一。`document_id` 是穩定定址。", "Pick one. `document_id` is stable addressing.",
+            "轉成 markdown 連結 [文字](網址)", "into markdown links [text](url)"],
+        ["兩者擇一。document_id 是穩定定址。", "Pick one. document_id is stable addressing.",
+            "一段 <script> 標籤，貼進客戶自己的網頁", "（不含任何記號的一句話）"]);
+    assert.equal(hits.length, 0, `markdown 記號會原樣印在畫面上：\n${fail(hits)}`);
+});
+
 test("§4-2 英譯字串不得含全形標點（那是繁中的字身，混在英文句子裡會露出來）", () => {
     const FULLWIDTH = /[　-〿＀-￯]/;
     // 例外：在講「一個字面上就是全形的東西」時，那個符號是被引用的樣本。
@@ -235,4 +287,59 @@ test("§4-2 相鄰的兩顆 i18n 節點之間要有分隔（前綴後面接的�
             '<span data-i18n="x.colon">門檻：</span><span data-i18n="x.b">頁</span>',
             '<span data-i18n="x.a">共</span> <span data-i18n="x.b">頁</span>']);   // 中間有空白＝不在這條的母體
     assert.equal(hits.length, 0, `§4-2 分隔空白的家在 key 的值裡：\n${fail([...new Set(hits)])}`);
+});
+
+test("§4-2 省略號一律 …（U+2026）：使用者讀得到的字面不准用三個半形點", () => {
+    // GUIDELINE §4-2「繁中原文的標點字身也只有一種拼法…省略號一律 `…`（U+2026，不用三個半形點）」。
+    // 為什麼要有網：這一族全部長在**進行中**的訊息與 placeholder 上（「正在查詢資料…」「搜尋…」），
+    // 兩種字身在畫面上只差幾個像素，而它們是同一顆 key 的兩份字面——繁中那份寫成三個點、
+    // 英譯那份寫成 U+2026 時，切語言就會看到標點在跳。實測過一次：37 處繁中與 7 顆英譯用三個點，
+    // 同一批 key 的另外 27 顆英譯卻是 U+2026，兩種拼法在同一份字典裡並存而沒有任何一關會紅。
+    //
+    // 母體兩份，兩份都要掃：dist 上使用者讀得到的字（五顆可翻屬性 ＋ 文字節點）與 en.json 的每一顆值。
+    // 只掃一邊的話，另一邊那份字面照樣活著——它們本來就是成對出現的。
+    const DOTS = "...";
+    const ATTRS = ["data-toast", "placeholder", "aria-label", "title", "alt"];
+    // 例外＝§4-2 明文的「被引用的樣本字面」：講的是「一個字面上就是三個點的東西」。
+    // 逐筆寫理由，並附死豁免守門——沒有理由的豁免會被下一個人當成「這一族都可以」。
+    const SAMPLE = new Map([
+        ['style="margin-..."', "元件庫頁的間距規則說明句：引用的是「行內 style 寫法」這個被禁止的字面本身，那三個點是樣本的一部分，不是這句話自己的標點"],
+    ]);
+    const exempt = (s) => [...SAMPLE.keys()].some((k) => s.includes(k));
+    const scan = (html, f = "<probe>") => {
+        const out = [];
+        const src = html.replace(/<script[\s\S]*?<\/script>/g, "");
+        for (const a of ATTRS)
+            for (const m of src.matchAll(new RegExp(a + '="([^"]*)"', "g")))
+                if (m[1].includes(DOTS)) out.push(`${f}  ${a}="${m[1].slice(0, 50)}"`);
+        for (const m of src.matchAll(/>([^<>]{2,})</g))
+            if (m[1].includes(DOTS) && !exempt(m[1])) out.push(`${f}  文字節點「${m[1].trim().slice(0, 50)}」`);
+        return out;
+    };
+
+    const hits = [];
+    let seen = 0;
+    for (const f of distHtml) {
+        const html = distDoc(f).replace(/<script[\s\S]*?<\/script>/g, "");
+        for (const a of ATTRS) seen += [...html.matchAll(new RegExp(a + '="[^"]*"', "g"))].length;
+        seen += [...html.matchAll(/>([^<>]{2,})</g)].length;
+        hits.push(...scan(distDoc(f), basename(f)));
+    }
+    const en = JSON.parse(read("src/i18n/en.json"));
+    for (const [k, v] of Object.entries(en)) if (typeof v === "string" && v.includes(DOTS)) hits.push(`en.json  ${k} = "${v.slice(0, 50)}"`);
+    seen += Object.keys(en).length;
+
+    assert.ok(seen >= 58000, `只掃到 ${seen} 個使用者讀得到的字面 —— 這條測試在空轉`);
+    // 死豁免：樣本字面已經不在畫面上了，那筆豁免就只剩「預先放行下一個同型寫法」的作用。
+    const distAll = distHtml.map((f) => distDoc(f)).join("");
+    for (const [s, why] of SAMPLE) {
+        assert.ok(distAll.includes(s), `SAMPLE 有死豁免：${s} 已經不在 dist 上`);
+        assert.ok(why.length > 20, `SAMPLE 的 ${s} 沒寫理由（空白不等於查證過）`);
+    }
+    probe("§4-2 省略號字身",
+        (s) => scan(s),
+        ['<input placeholder="搜尋...">', '<button data-toast="正在查詢資料...|失敗">x</button>', "<li>載入中...</li>"],
+        ['<input placeholder="搜尋…">', '<button data-toast="正在查詢資料…|失敗">x</button>', "<li>載入中…</li>",
+            '<li>不要寫行內 style="margin-..."</li>']);   // 被引用的樣本字面
+    assert.equal(hits.length, 0, `§4-2 省略號一律 …（U+2026）：\n${fail([...new Set(hits)])}`);
 });

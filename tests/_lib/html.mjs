@@ -173,6 +173,67 @@ export function* i18nTexts(html) {
     }
 }
 
+// dist 上某顆 id 節點的完整 textContent（跨過子元素、不 trim）。找不到那顆 id 時回 null。
+// 與 i18nTexts 同一套走法：收集開標籤之後、對應收尾標籤之前的每一段文字。
+export function textOfId(html, id) {
+    const TOKEN = /<(\/?)([a-zA-Z][\w-]*)((?:"[^"]*"|'[^']*'|[^>"'])*?)(\/?)>/g;
+    const IS_ID = new RegExp(`\\bid="${id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"`);
+    let depth = 0, last = 0, want = -1, buf = null, m;
+    while ((m = TOKEN.exec(html)) !== null) {
+        if (buf !== null) buf += html.slice(last, m.index);
+        last = TOKEN.lastIndex;
+        const [, close, tag, attrs, selfClose] = m;
+        const t = tag.toLowerCase();
+        if (close) {
+            depth--;
+            if (buf !== null && depth === want) return buf;
+            continue;
+        }
+        if (selfClose || VOID_TAGS.has(t)) continue;
+        if (buf === null && IS_ID.test(attrs)) { want = depth; buf = ""; }
+        depth++;
+    }
+    return buf;
+}
+
+// dist 上每一顆送 API 的數字欄，連同它 `aria-describedby` 指到的那幾段提示（§4 三件套第三件）。
+//
+// 母體收在這裡一次，兩條規則吃同一份：§4 驗「提示裡讀得到 `min`／`max` 的每一個數字」，
+// §3-2 驗「那段界線字串的寫法全站只有一種」。各自在自己的測試檔裡再收一次的話，
+// 兩份母體會在不同時間各自長歪，而長歪的那一邊看起來與有守門時逐字相同。
+//
+// 走 dist 不走 src：id 要在同一份**文件**裡解析得到，而提示節點常住在另一支元件檔裡
+//（`{% include %}` 之後才與這顆 input 同頁），而且 `max="{{ pagerTotal }}"` 這種
+// 值到 dist 才是真的數字。
+// 那顆 id 的元素自己掛不掛 i18n key。**界線字串的寫法規則只管不掛 key 的那一種**
+//（§3-2：同一份字面同時服務兩種語言，所以字身不能是 locale 相關的），掛了 key 的提示
+// 每個語系各有一份自己的字，不在那條的射程裡。
+const isKeyed = (html, id) => {
+    const esc = id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const tag = html.match(new RegExp(`<[a-zA-Z][\\w-]*(?:"[^"]*"|[^>"])*\\bid="${esc}"(?:"[^"]*"|[^>"])*>`));
+    return tag ? /\bdata-i18n(?:-[\w-]+)?=/.test(tag[0]) : false;
+};
+
+export function numberFieldHints() {
+    const out = [];
+    for (const f of distHtml) {
+        const doc = distDoc(f);
+        for (const m of doc.matchAll(/<input\b((?:"[^"]*"|[^>"])*)>/g)) {
+            const a = m[1];
+            if (!/type="number"/.test(a)) continue;
+            const ids = (attrValue(a, "aria-describedby") || "").split(/\s+/).filter(Boolean);
+            out.push({
+                f,
+                id: attrValue(a, "id") || "(無 id)",
+                min: attrValue(a, "min"),
+                max: attrValue(a, "max"),
+                hints: ids.map((id) => ({ id, text: textOfId(doc, id), keyed: isKeyed(doc, id) })),
+            });
+        }
+    }
+    return out;
+}
+
 // 卡內（或頁內）某個區塊的 outerHTML：從帶該 class 的 <div> 起，數 div 巢狀到它自己的結尾
 export function innerBlock(html, cls) {
     const open = new RegExp(`<div class="[^"]*\\b${cls}\\b[^"]*"[^>]*>`, "g");

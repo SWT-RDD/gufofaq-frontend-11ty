@@ -61,7 +61,7 @@ test("[docs] md 的相對連結都指向存在的檔案", () => {
             if (!existsSync(mdLinkTarget(doc, m[1]))) bad.push(`${doc}  → ${m[1]}`);
         }
     assert.ok(mdDocs.length >= 4, `只掃到 ${mdDocs.length} 支 md —— 掃描集合空了`);
-    assert.ok(seen >= 17, `只抓到 ${seen} 條相對連結 —— 正則壞了，這條在空轉`);
+    assert.ok(seen >= 19, `只抓到 ${seen} 條相對連結 —— 正則壞了，這條在空轉`);
     // probe 的樣本沒有真實住址，用根目錄的 README.md 當它的家（dirname＝"."）。
     probe("md 相對連結（巢狀目錄）",
         (s) => [...s.matchAll(LINKS)].filter((m) => !existsSync(mdLinkTarget("docs/a/b/x.md", m[1]))),

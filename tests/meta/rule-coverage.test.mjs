@@ -40,9 +40,21 @@ const titlesOf = (file) => {
 
 const allTests = () => testFiles().flatMap((f) => titlesOf(f).map((title) => ({ file: f, title })));
 
+// 「這條測試住錯資料夾了」：在 rules/ 底下、卻沒有領頭的 §，或領頭的章號與資料夾對不上。
+// 真測試與它的負控吃同一份——各刻一份的話，判準改了負控不會跟著改，
+// 而一個不跟著改的負控就是裝飾品（見 probe.mjs 檔頭）。
+const misfiledIn = (file, title) => {
+    const inRules = file.match(/^tests\/rules\/(\d+)-/);
+    const first = title.match(/^§(\d+)/);
+    if (!inRules) return null;
+    if (!first) return "沒有領頭的 §";
+    if (first[1] !== inRules[1]) return `領頭是 §${first[1]}，該落 tests/rules/${first[1]}-*`;
+    return null;
+};
+
 test("[meta] 每個測試標題引用的 §N 都要是 GUIDELINE 真的有的章節", () => {
     const sections = sectionsOfGuideline();
-    assert.ok(sections.size >= 15, `只從 GUIDELINE 掃出 ${sections.size} 個章節 —— 標題解析失準，這條測試在空轉`);
+    assert.ok(sections.size >= 17, `只從 GUIDELINE 掃出 ${sections.size} 個章節 —— 標題解析失準，這條測試在空轉`);
 
     const bad = [];
     let cited = 0;
@@ -66,11 +78,9 @@ test("[meta] 每條測試都住在它章號對應的資料夾裡", () => {
 
     const bad = [];
     for (const { file, title } of allTests()) {
-        const inRules = file.match(/^tests\/rules\/(\d+)-/);
-        const first = title.match(/^§(\d+)/);
-        if (inRules) {
-            if (!first) bad.push(`${file}\n     沒有領頭的 § ← ${title}`);
-            else if (first[1] !== inRules[1]) bad.push(`${file}\n     領頭是 §${first[1]}，該落 tests/rules/${first[1]}-* ← ${title}`);
+        const why = misfiledIn(file, title);
+        if (file.startsWith("tests/rules/")) {
+            if (why) bad.push(`${file}\n     ${why} ← ${title}`);
         } else if (file.startsWith("tests/docs/")) {
             if (!title.startsWith("[docs]")) bad.push(`${file}\n     docs/ 的測試要以 [docs] 開頭 ← ${title}`);
         } else if (file.startsWith("tests/meta/")) {
@@ -134,7 +144,7 @@ test("[meta] 測試總數的棘輪", () => {
     // 實測值。刪測試是一次有意識的決定，要連這個數字一起調下來並寫理由；
     // 沿用一個算出來的估值等於這條守門不存在。
     const total = allTests().length;
-    assert.ok(total >= 239, `只掃到 ${total} 條測試 —— 有測試在搬家途中掉了，或標題抽取失準`);
+    assert.ok(total >= 246, `只掃到 ${total} 條測試 —— 有測試在搬家途中掉了，或標題抽取失準`);
 });
 
 test("[meta] 上面那幾條的負控：壞掉的章號、住錯的資料夾、死豁免都要抓得出來", () => {
@@ -147,11 +157,8 @@ test("[meta] 上面那幾條的負控：壞掉的章號、住錯的資料夾、�
     assert.equal(citedBad.length, 1, "「章號存在」的判準認不出不存在的章號");
 
     // ② 住錯資料夾要抓得出來
-    const misfiled = (file, title) => {
-        const inRules = file.match(/^tests\/rules\/(\d+)-/);
-        const first = title.match(/^§(\d+)/);
-        return !!inRules && (!first || first[1] !== inRules[1]);
-    };
+    // 走真測試那一份判準，不重刻
+    const misfiled = (file, title) => misfiledIn(file, title) !== null;
     assert.ok(misfiled("tests/rules/5-js/x.test.mjs", "§4 這條是 §4 卻放在 5-js"), "住錯資料夾判不出來");
     assert.ok(misfiled("tests/rules/5-js/x.test.mjs", "沒有前綴"), "沒有領頭 § 判不出來");
     assert.ok(!misfiled("tests/rules/5-js/x.test.mjs", "§5/§8 這條領頭是 §5"), "複合前綴被誤判成住錯了");

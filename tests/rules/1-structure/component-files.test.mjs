@@ -368,8 +368,11 @@ test("§1-2 元件檔頭的 markup 契約要逐字對得上生產實例（形狀
     // aria-labelledby #}`）是這條規則逐字禁止的那一種：它形式上不是散文、也不會被貼進 HTML，
     // 於是上面兩張網（同構比對、屬性值比對）**兩張都碰不到它**——而被它帶過的，往往正是照抄時
     // 最常掉的那幾顆屬性。合法的只有兩種：①「重複 N 次同型節點」；②「此處接 <元件> 的 <節點>，
-    // 見該元件檔頭」（該元件檔頭要真的有完整契約）。
-    const OMIT_OK = /^(?:重複|此處接)/;
+    // 見該元件檔頭」（該元件檔頭要真的有完整契約）；③「內容由使用頁決定」——**容器型元件**
+    // （`ui/block`、`ui/tab` 的面板、`ui/accordion` 的 `.accordion-content`）的子內容本來就不屬於
+    // 這份契約，它是消費頁自己的東西。第三種與前兩種同樣要寫成 `{# #}`：寫成裸 `…` 的話，
+    // 照抄的人會把那三個點原樣貼成畫面上的可見文字（下面那條就是在擋這件事）。
+    const OMIT_OK = /^(?:重複|此處接|內容由)/;
     const omitHits = [];
     let omits = 0;
     for (const c of componentDirs)
@@ -382,6 +385,27 @@ test("§1-2 元件檔頭的 markup 契約要逐字對得上生產實例（形狀
             }
     assert.ok(omits >= 6, `契約段裡只找到 ${omits} 則 {# #} —— 契約段辨識壞了，這一條在空轉`);
     assert.equal(omitHits.length, 0, `§1-2 契約段的省略形式：\n${fail(omitHits)}`);
+
+    // ── 契約段內不准有裸的 `…`（§1-2）─────────────────────────────────────
+    // 上面那一條只看得到 `{# #}` 包起來的省略，看不到直接寫進標籤之間的 `…`——而那一種更糟：
+    // 它會被原樣貼進 HTML 變成畫面上的三個點。屬性值裡的 `…` 是**文案**（`placeholder="搜尋…"`），
+    // 不是省略，故先把帶引號的屬性值挖掉再看。
+    const bareHits = [];
+    let bareSeen = 0;
+    for (const c of componentDirs)
+        for (const b of contractBlocks(headsOf(c))) {
+            const stripped = b.replace(/"[^"]*"/g, '""');
+            bareSeen++;
+            for (const line of stripped.split("\n"))
+                if (line.includes("…"))
+                    bareHits.push(`${c.bucket}/${c.name}  契約段裡有裸的 …（照抄會把它貼成可見文字）：${line.trim().slice(0, 70)}`);
+        }
+    assert.ok(bareSeen >= 30, `只讀到 ${bareSeen} 段契約 —— 契約段辨識壞了，這一條在空轉`);
+    probe("§1-2 契約段內的裸省略號",
+        (s) => (s.replace(/"[^"]*"/g, '""').includes("…") ? ["bad"] : []),
+        ['<div class="block">…</div>'],
+        ['<div class="block">{# 內容由使用頁決定 #}</div>', '<input placeholder="搜尋…">']);
+    assert.equal(bareHits.length, 0, `§1-2 契約段內不准出現 …（要略就用那三種 {# #} 形式）：\n${fail(bareHits)}`);
 
     // 空轉守門：契約 parse 壞掉（挖掉插值挖過頭、多行標籤沒併回來）會讓一顆節點都不被驗、照樣全綠
     assert.ok(contractRoots >= 109, `只 parse 出 ${contractRoots} 顆契約根節點 —— 契約 parser 壞了，這條在空轉`);

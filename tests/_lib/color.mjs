@@ -16,7 +16,7 @@ export const COLOR_ROLES = {
         "--success-text"],
     // 前景墨色：文字與「不承載文字的圖形記號」（勾記、radio 圓點、進度條、步驟底線）共用一顆。
     // 它是前景不是填充，故套文字的 ≥4.5:1 門檻（自然也滿足圖形的 1.4.11 ≥3:1）。見 §4。
-    inkOnSurface: ["--brand-ink", "--danger-ink"],
+    inkOnSurface: ["--brand-ink", "--danger-ink", "--success-ink"],
     surfaces: ["--surface", "--surface-raised", "--surface-sunken", "--surface-hover", "--surface-disabled", "--surface-input"],
     // 成對的：[前景, 背景] 要 ≥4.5:1。只列 markup 裡真的疊在一起的組合 ——
     // token 的宣告只保證它疊在 --surface / --surface-raised 上讀得到，疊到 hover 面或 tint 面就得另外算。
@@ -52,6 +52,10 @@ export const COLOR_ROLES = {
         // 沿用 --control-knob（白）疊 #efefef 只有 1.15:1，淺色模式下「已勾且停用」與
         // 「未勾且停用」長得一模一樣，而深色是 12.83——光暗不對稱正是沒實算過的指紋。
         ["--control-ink-disabled", "--surface-disabled", "checkbox 停用勾記 vs 停用底"],
+        // 停用**且已勾**的 switch：把手疊在「開著」的軌道上。沿用 --toggle-on（可用態那顆綠）
+        // 只有 1.34:1（深色 1.28）——把手融進軌道，看不出它停在哪一側；5-5-1 的平台角色持有者列
+        // 真的會渲染這一態，所以它不是元件庫才踩得到的邊角。
+        ["--control-ink-disabled", "--toggle-on-disabled", "switch 停用且已勾：把手 vs 軌道"],
     ],
     // chrome 零件：不承載內文，不做內文對比斷言（邊框/捲軸/tint/陰影/遮罩/漸層）。
     // --control-track-alt 是 storage-bar 填色後面的軌道：資訊由「填色 vs 軌道」承載（已在 graphicPairs），

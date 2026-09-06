@@ -10,7 +10,7 @@ import { test } from "vitest";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { existsSync, readdirSync } from "node:fs";
-import { read } from "../_lib/corpus.mjs";
+import { gitFiles, read } from "../_lib/corpus.mjs";
 
 const CONFIG = ".pre-commit-config.yaml";
 const config = () => {
@@ -38,12 +38,9 @@ test("[meta] 每一顆會改檔的 hook 都宣告了範圍", () => {
     const hooks = hookBlocks();
     assert.ok(hooks.length >= 11, `只解析出 ${hooks.length} 顆 hook —— 切法壞了，這條測試在空轉`);
 
-    const homeless = hooks
-        .filter((h) => !/^\s*files: /m.test(h.body))
-        // 唯一的例外：跑全套的那一顆。它不改檔，射程本來就是整個工作區
-        // （`npm test` 的母體是全站），所以它走 always_run ＋ 不吃檔名。
-        .filter((h) => !(/^\s*always_run: true/m.test(h.body) && /^\s*pass_filenames: false/m.test(h.body)))
-        .map((h) => h.id);
+    // 唯一的例外收在 scoped() 裡：跑全套的那一顆不改檔，射程本來就是整個工作區
+    // （`npm test` 的母體是全站），所以它走 always_run ＋ 不吃檔名。
+    const homeless = hooks.filter((h) => !scoped(h.body)).map((h) => h.id);
     assert.deepEqual(homeless, [],
         `這幾顆 hook 沒有宣告範圍：${homeless.join("、")}。會改檔的 hook 沒有 files: 時，`
         + `--all-files 會去動產生出來的檔，而那種 diff 沒有人看得完。`);
@@ -52,6 +49,72 @@ test("[meta] 每一顆會改檔的 hook 都宣告了範圍", () => {
     // 不驗這一邊的話，任何一顆漏寫 files: 的 hook 只要順手加上 always_run 就能繞過上面那道。
     const always = hooks.filter((h) => /^\s*always_run: true/m.test(h.body)).map((h) => h.id);
     assert.deepEqual(always, ["full-check"], `走 always_run 的應該只有 full-check，實際是 ${always.join("、")}`);
+});
+
+// 「這顆 hook 宣告了射程」：有 files:，或它是那顆不改檔、射程本來就是整個工作區的
+// （always_run ＋ 不吃檔名）。真測試與負控吃同一份——各刻一份的話，判準改了負控不會
+// 跟著改，而一個不跟著改的負控就是裝飾品（見 probe.mjs 檔頭）。
+const scoped = (body) => /^\s*files: /m.test(body)
+    || (/^\s*always_run: true/m.test(body) && /^\s*pass_filenames: false/m.test(body));
+
+// 檔案衛生那一族（上游 pre-commit-hooks 的六顆）。`check-yaml`／`check-json` 不在裡面：
+// 那兩顆的射程本來就是「那一種副檔名」，不是「每一支檔」。
+const HYGIENE = ["mixed-line-ending", "check-merge-conflict", "end-of-file-fixer",
+    "trailing-whitespace", "check-added-large-files", "check-case-conflict"];
+
+// 產生出來的檔——不受這一族管，而且理由要寫在這裡
+const GENERATED = new Map([
+    ["package-lock.json", "npm 產生的：形狀由 lockfile 格式決定，動它的 diff 沒有人看得完，也看不出真正的改動在哪"],
+]);
+
+// 一顆 hook 的射程：`files:` 收得進來、而且沒有被 `exclude:` 排掉的，才算蓋到。
+// 真測試與它的負控吃同一份判準——各刻一份的話，判準改了負控不會跟著改，
+// 而一個不跟著改的負控就是裝飾品（見 probe.mjs 檔頭）。
+const scopeOf = (body) => {
+    const files = body.match(/^\s*files: (.+)$/m);
+    const exclude = body.match(/^\s*exclude: (.+)$/m);
+    const inRange = files ? new RegExp(files[1].trim()) : null;
+    const excluded = exclude ? new RegExp(exclude[1].trim()) : null;
+    const takes = (f) => !!inRange && inRange.test(f);
+    const drops = (f) => !!excluded && excluded.test(f);
+    return { declared: !!files, takes, drops, covers: (f) => takes(f) && !drops(f) };
+};
+
+// 那一族蓋不到的檔（`skip` 是登記過、刻意不管的產生檔）
+const uncoveredBy = (body, files, skip = GENERATED) =>
+    files.filter((f) => !skip.has(f)).filter((f) => !scopeOf(body).covers(f));
+
+test("[meta] 檔案衛生那一族的射程蓋得住版控內每一支手寫檔", () => {
+    // 「宣告了 `files:`」與「那個範圍是對的」是兩件事，而上面那條只驗前者。
+    // **範圍漏掉一塊時，畫面上與有守門時逐字相同**：混用 CRLF/LF、行尾空白、檔尾沒換行
+    // 都是看不見的字元，沒有人會因為少了守門而察覺——症狀是幾個月後某一次 diff 從三行
+    // 變成整檔重寫。所以母體不能是設定檔自己列的那幾個目錄（那是被驗的東西），
+    // 要是整個 repo 的檔案清單：新增一支落在範圍外的檔（下一個 e2e/、下一支根層設定檔）
+    // 當場點名。母體走 `corpus.gitFiles("")` 這份正本——它是**已追蹤 ∪ 未追蹤**，
+    // 而剛切好、還沒 `git add` 的新檔正是最容易帶著 CRLF 與行尾空白進來的那一種。
+    const tracked = gitFiles("");
+    assert.ok(tracked.length >= 399, `母體只拿到 ${tracked.length} 支檔 —— 塌了，這條測試在空轉`);
+
+    const hooks = hookBlocks();
+    for (const id of HYGIENE) {
+        const hook = hooks.find((h) => h.id === id);
+        assert.ok(hook, `找不到檔案衛生 hook \`${id}\` —— 它被刪掉或改名了，那一層守門沒了`);
+        assert.ok(scopeOf(hook.body).declared, `\`${id}\` 沒有 files:`);
+
+        const uncovered = uncoveredBy(hook.body, tracked);
+        assert.deepEqual(uncovered, [],
+            `這幾支版控內的檔不在 \`${id}\` 的射程裡：${uncovered.join("、")}。`
+            + "它們同樣是手寫、同樣會被腳本改到，而少了守門的樣子與有守門時逐字相同。"
+            + "把它們納進那一條 files:，或（若真的是產生出來的）連同理由登記進 GENERATED。");
+
+        // 反向：exclude 只准排除登記過的產生檔，不能拿來繞過上面那道
+        const stray = tracked.filter((f) => scopeOf(hook.body).drops(f)).filter((f) => !GENERATED.has(f));
+        assert.deepEqual(stray, [], `\`${id}\` 的 exclude 排掉了沒有登記理由的檔：${stray.join("、")}`);
+    }
+
+    // 死豁免：GENERATED 登記的檔要真的還在版控裡，否則那筆是留著的空門
+    const gone = [...GENERATED.keys()].filter((f) => !tracked.includes(f));
+    assert.deepEqual(gone, [], `GENERATED 登記了不存在的檔：${gone.join("、")}`);
 });
 
 test("[meta] core.hooksPath 必須是未設定的，否則 pre-commit 安靜地不執行", () => {
@@ -121,13 +184,25 @@ test("[meta] 每一支會擋下改動的 workflow 都跑同一份設定，而且
 });
 
 test("[meta] 上面那幾條的負控：沒有 files: 的 hook 與指不到的 entry 都要抓得出來", () => {
-    // 規則被寫窄（認不出違規）時全綠，所以拿合成樣本走同一條判準各驗一次。
-    const scoped = (body) => /^\s*files: /m.test(body)
-        || (/^\s*always_run: true/m.test(body) && /^\s*pass_filenames: false/m.test(body));
+    // 規則被寫窄（認不出違規）時全綠，所以拿合成樣本走**真測試那一份**判準各驗一次。
     assert.ok(!scoped("        entry: npx stylelint\n        language: system\n"), "沒有 files: 判不出來");
     assert.ok(scoped("        entry: npx stylelint\n        files: ^src/\n"), "有 files: 被誤判成沒有");
     assert.ok(scoped("        always_run: true\n        pass_filenames: false\n"), "全跑那一顆被誤判成沒有範圍");
     assert.ok(!scoped("        always_run: true\n"), "只有 always_run、沒有 pass_filenames: false 不該放行");
+
+    // 射程那一條：拿一份**寫窄的** hook 設定走真判準（uncoveredBy），要抓得出漏掉的那幾支
+    const sampleFiles = ["src/pages/faq/faq.html", "e2e/a11y.spec.mjs", "eleventy.config.js",
+        ".gitattributes", "README.md", "package-lock.json"];
+    const hookBody = (range, exclude) => `        files: ${range}\n`
+        + (exclude ? `        exclude: ${exclude}\n` : "");
+    assert.deepEqual(uncoveredBy(hookBody("^(src/)"), sampleFiles),
+        ["e2e/a11y.spec.mjs", "eleventy.config.js", ".gitattributes", "README.md"],
+        "寫窄的射程沒有被抓出來 —— 那條測試對「範圍漏了一塊」是零防護");
+    assert.deepEqual(uncoveredBy(hookBody("^(src/|e2e/|\\.[^/]+$|[^/]+\\.(md|js)$)"), sampleFiles), [],
+        "涵蓋齊全的射程被誤判成有洞");
+    // exclude 也要算進射程：收得進來、卻被排掉的檔等於沒蓋到
+    assert.deepEqual(uncoveredBy(hookBody("^(.*)$", "^README\\.md$"), sampleFiles), ["README.md"],
+        "被 exclude 排掉的檔被當成有守門 —— exclude 就成了繞過這條規則的後門");
 
     // 切塊器：對一份合成的兩顆 hook 設定要切出兩顆
     const sample = "repos:\n  - repo: local\n    hooks:\n      - id: a\n        files: ^x$\n      - id: b\n        files: ^y$\n";

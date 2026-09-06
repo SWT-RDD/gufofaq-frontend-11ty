@@ -10,7 +10,7 @@
   },
   "overrides": [
     {
-      "comment": "唯一色源：token 檔本身、showcase 專用色盤。vendor reset 已不需豁免（唯一的具名色已刪）",
+      "comment": "唯一色源：token 檔本身（語意 token 的定義處）、showcase 專用色盤；其餘 scss 一律不得出現裸色",
       "files": [
         "src/scss/_var.scss",
         "src/scss/_guideline-var.scss"

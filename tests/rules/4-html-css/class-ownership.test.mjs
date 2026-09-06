@@ -3,7 +3,7 @@
 import { test } from "vitest";
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
-import { distHtml, read, srcHtml, srcScss } from "../../_lib/corpus.mjs";
+import { distHtml, read, srcHtml, srcJs, srcScss } from "../../_lib/corpus.mjs";
 import { attrValuesIn, classesOf, distDoc } from "../../_lib/html.mjs";
 import { componentDirs } from "../../_lib/inventory.mjs";
 import { NAMED_BUTTON_EXTRA, NAMED_HOOKS, jsOwnedClasses } from "../../_lib/js-ownership.mjs";
@@ -141,6 +141,24 @@ test("§4 markup 上的每個 class 都要有主人（反向網：css 規則／�
         assert.ok((why || "").length > 8, `NAMED_HOOKS 的「${h}」沒寫它標記的是什麼 —— 寫不出一句話的豁免與憑空放行沒有分別`);
     for (const [h, why] of NAMED_BUTTON_EXTRA)
         assert.ok((why || "").length > 8, `NAMED_BUTTON_EXTRA 的「${h}」沒寫它標記的是什麼`);
+    // ①-3：描述**不必**指出處（這些名字由切版單方面定，沒有外部地址可指），但真的提到了一個
+    //    東西時，那個東西要在這個 repo 裡找得到。一個死地址比不寫更貴：讀的人會以為是自己
+    //    漏看了，而沒有任何一關說得出它不存在（§8-1 第 5 道）。
+    const jsText = srcJs.map((f) => read(f)).join("\n");
+    let cited = 0;
+    for (const [table, name] of [[NAMED_HOOKS, "NAMED_HOOKS"], [NAMED_BUTTON_EXTRA, "NAMED_BUTTON_EXTRA"]])
+        for (const [h, why] of table) {
+            for (const m of (why || "").matchAll(/\b(ui|components|layouts)\/([\w-]+)/g)) {
+                cited++;
+                assert.ok(existsSync(`src/_includes/${m[1]}/${m[2]}`),
+                    `${name} 的「${h}」指到不存在的元件 ${m[0]} —— 死地址比不寫更貴`);
+            }
+            for (const m of (why || "").matchAll(/\b(Gufo[A-Za-z]+)\b/g)) {
+                cited++;
+                assert.ok(jsText.includes(m[1]), `${name} 的「${h}」指到不存在的符號 ${m[1]}`);
+            }
+        }
+    assert.ok(cited >= 8, `兩張表的描述裡只認出 ${cited} 個可查證的指涉 —— 抽取失準，這一道在空轉`);
     // 同一道衛生也要套在 FAMILY 上（它現在是白名單，不是萬用前綴）：
     // ① 狀態契約那幾筆要真的還在 markup 上，且要真的沒有 css 規則（有了就該走 cssClasses 那一關）。
     for (const [c, why] of STATE_CONTRACT_ONLY) {

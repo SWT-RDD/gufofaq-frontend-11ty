@@ -210,15 +210,15 @@ test("§4-2 繁中原文相同的 chrome 沿用既有 key、不另立（同文�
     //      **但英譯也逐字相同的不放行**：那代表兩顆 key 連「怎麼說」都沒有分岔，也就沒有分成兩顆的理由，
     //      而它的失效方式是改一句、漏一句（§8-1：白名單不得寫成萬用前綴）。
     //   2) DELIBERATE 白名單——語意/單複數/兩套 app chrome/組字上下文確實不同（各附裁決理由）
+    // **白名單的條件是「英譯真的分岔了」**：同繁中而英譯也逐字相同 ⇒ 兩顆 key 連怎麼說都沒有
+    // 分岔，也就沒有分成兩顆的理由，而它的失效方式是改一句、漏一句。下面那道
+    // `sameEn` 逐組機械檢查這件事——理由寫在註解裡、卻沒有任何一關驗得到的話，
+    // 白名單就會變成「進了名單就不用管英譯」（§8-1 第 3 道：豁免要驗得到）。
     const DELIBERATE = new Set([
         "問答紀錄",                                                        // qa.qaRecords="Q&A records"（側欄／區塊標題，整批）vs qa.recordFallbackPrefix="Q&A record "（單一筆沒有 ChatTitle 時的 fallback 名，後面緊接序號 ⇒ 單數＋自帶尾空白）
-        "標題", "內容",                                                    // dataImport/dataset/audit 各區段表頭語境
-        // `field.title` 那一族不併回 common.*：它是**固定欄位槽**的預設名，一槽一顆 key
-        //（槽的正本是 ui/field-slot-catalog，併掉會讓那份目錄少一顆）。
-        "啟用", "停用",                                                  // 動作鈕（Enable/Disable，3-4 每列改了就直接送出）vs 狀態/選項（widget.active=Active、qaDirectModeOff=Off）
+        "啟用", "停用",                                                    // 動作鈕（action.enable/disable="Enable"/"Disable"，3-4 每列改了就直接送出）vs 狀態/選項（widget.active="Active"、common.off="Off"）
         "資料集", "所屬群組",                                              // 單/複數語意（Dataset/Datasets、Group/Groups）
-        "開始時間", "結束時間", "狀態",                                    // qa 篩選 vs settings 統計篩選；批次匯入欄 vs widget 欄
-        "結果", "共", "讚", "倒讚", "筆", "第", "頁",                       // 量詞/前綴/評價的組字上下文各異。「共」已把四顆同英譯的併回 common.total，剩下的兩顆是 common.total="Total"（markup 夾資料槽）vs pagination.totalPrefix="Total "（js 串接，§4-2 空白必須由 key 自帶）
+        "共", "筆", "第", "頁",                                            // 量詞/前綴的組字上下文各異。「共」已把四顆同英譯的併回 common.total，剩下的兩顆是 common.total="Total"（markup 夾資料槽）vs pagination.totalPrefix="Total "（js 串接，§4-2 空白必須由 key 自帶）
         "設定",                                                            // qaTest.setting="Setting"（2-2-3 的「設定 A／設定 B」組字前綴，單數）vs nav.settings="Settings"（選單項）
         "資料匯入",                                                        // audit.actImport（稽核日誌的動作詞彙）vs nav.dataImport（選單項，Title Case）
         // 下面兩組要掃 dist 才看得到（英譯本來就不同，屬 §4-2「語意確實不同才分 key」）：
@@ -226,6 +226,10 @@ test("§4-2 繁中原文相同的 chrome 沿用既有 key、不另立（同文�
         "來源",                                                            // qa.citationSourcePrefix="Source "（引用徽章前綴，§4-2 前綴 key 自帶尾空白）vs field.source="Source"（欄位槽名）
         "成員",                                                            // role.member="Member"（角色，單數）vs settings.members="Members"（欄名/計數，複數）
     ]);
+    // 唯一免驗英譯的一族：**同一份結構性目錄裡的槽位**。目錄自己要求一槽一顆 key
+    //（`ui/field-slot-catalog` 的欄位槽、每張內建工具卡自己的參數），兩個槽剛好翻出同一句英文
+    // 是正常的，收成一顆反而會讓那份目錄少一個槽——改其中一支的字會連帶改掉另一支。
+    const CATALOG_KEY = (k) => /^(field|tool)\./.test(k);
     const enDict = JSON.parse(read("src/i18n/en.json"));   // 判「英譯有沒有分岔」用
     const keyZh = new Map(); // key -> zh（第一個看到的原文；同 key 同繁中另有測試把關）
     const recordKZ = (key, zh) => {
@@ -241,6 +245,16 @@ test("§4-2 繁中原文相同的 chrome 沿用既有 key、不另立（同文�
                 const k = attrs.match(new RegExp(String.raw`data-i18n-${suffix}="([\w.]+)"`));
                 const v = attrs.match(new RegExp(String.raw`(?:^|\s)${target}="([^"]*)"`));
                 if (k && v) recordKZ(k[1], v[1]);
+            }
+        // **一態槽**（`data-text-<態>` ＋ `data-key-<態>`）：這一族的繁中住在屬性值裡、
+        // key 住在旁邊那顆屬性上，兩者都不長得像上面任何一種形狀。收不進來的話，
+        // 那一整族的 key 從來沒進過「同繁中另立 key」的視野——三顆哨兵（不限量／不適用／
+        // 未計數）各自另立一顆 platform.* 就是從這個縫掉出去的，其中「未計數」還長出了
+        // 兩顆英譯不同的 key（§6：三種哨兵各自只有一顆全站共用的 key）。
+        for (const { attrs } of tagsOf(html))
+            for (const m of attrs.matchAll(/data-key-([a-z]+)="([\w.]+)"/g)) {
+                const zh = attrs.match(new RegExp(String.raw`data-text-${m[1]}="([^"]*)"`));
+                if (zh) recordKZ(m[2], zh[1]);
             }
         // 這裡只認 `label`/`title` ＋ `i18nKey` 兩個欄位名的話——另一條
         // 測試（同 key 繁中一致）是看形狀的，這條不跟上就會讓 descKey↔desc、labelKey↔label…
@@ -288,8 +302,21 @@ test("§4-2 繁中原文相同的 chrome 沿用既有 key、不另立（同文�
     // 過期項當場報出來，逼人重新裁決。
     const usedDeliberate = new Set();
     const hits = [];
+    const sameEn = [];
     for (const [zh, keys] of byZh) {
-        if (keys.size >= 2 && DELIBERATE.has(zh)) usedDeliberate.add(zh);
+        if (keys.size >= 2 && DELIBERATE.has(zh)) {
+            usedDeliberate.add(zh);
+            // 白名單的條件：這一組裡沒有任何兩顆 key 的英譯逐字相同（結構性目錄那一族除外）
+            const byEn = new Map();
+            for (const k of keys) {
+                if (CATALOG_KEY(k)) continue;
+                const v = enDict[k];
+                if (!byEn.has(v)) byEn.set(v, []);
+                byEn.get(v).push(k);
+            }
+            for (const [v, ks] of byEn)
+                if (ks.length > 1) sameEn.push(`「${zh}」的 ${ks.join("、")} 英譯也逐字相同（${JSON.stringify(v)}）`);
+        }
         if (keys.size < 2 || DELIBERATE.has(zh)) continue;
         // toast.* 這一族**不是無條件放行**：同繁中而英譯不同 ⇒ 兩個動作各自的成敗句，同字屬巧合；
         // 同繁中而**英譯也逐字相同** ⇒ 那是同一個動作被寫成兩份正本（同一顆鈕從兩顆窗按下去、
@@ -301,6 +328,10 @@ test("§4-2 繁中原文相同的 chrome 沿用既有 key、不另立（同文�
         if ([...keys].every((k) => /^tool\./.test(k))) continue;
         hits.push(`「${zh}」 掛了 ${keys.size} 個 key：${[...keys].join("、")}`);
     }
+    assert.equal(sameEn.length, 0,
+        `DELIBERATE 放行了「同繁中且英譯也逐字相同」的 key（§4-2：白名單也不例外——`
+        + `兩顆 key 連怎麼說都沒有分岔，就沒有分成兩顆的理由，而它的失效方式是改一句、漏一句）：\n`
+        + fail(sameEn));
     const staleDeliberate = [...DELIBERATE].filter((z) => !usedDeliberate.has(z));
     assert.equal(
         staleDeliberate.length,
