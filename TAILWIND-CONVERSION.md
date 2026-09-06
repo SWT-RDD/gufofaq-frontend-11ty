@@ -282,7 +282,7 @@ scrollbar-thin scrollbar-thumb-scrollbar-thumb scrollbar-track-transparent
       檔頭常提到**別的** hook 名，照字面 grep 會把業務 hook 誤判成切版自有而刪掉。重疊案例（元件 js
       拿它算字數、值又要交給 React 送 API）**保留**並逐顆登記寫理由。詳見 REACT-CONVERSION §⑤。
 19. **一次性高亮需要 `@keyframes`**：`.is-cited`（`_sources-block.scss`）是全站唯一的 keyframe 動畫
-    （§5-9 已同步這件事）。它可用 `animate-[…]` arbitrary animation ＋ `@theme` 裡的 keyframes
+    （§5-9 講的是同一件事）。它可用 `animate-[…]` arbitrary animation ＋ `@theme` 裡的 keyframes
     定義承接，不需要 `tailwindcss-animate`。
 20. **相鄰兄弟選擇器機械轉抓不到**：`success-box p+p`、`header li+li`、`radio &+span`、`form-table &+.form-table-group`、`switch :checked+.switch-box` 這類 `+`/`~` 選擇器，class→className 會漏 → 用 `[&+p]:…` 等 arbitrary variant，或改結構。
 
