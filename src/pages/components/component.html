@@ -350,11 +350,21 @@ bodyClass: guideline-page
                         <label for="demoScoreFloor" class="control-label" data-i18n="settings.scoreFloor">分數門檻</label>
                     </div>
                     <div class="field">
-                        <input type="number" step="any" min="0" id="demoScoreFloor" class="form-control" value="3" aria-describedby="demoScoreScaleNote">
+                        <input type="number" step="any" id="demoScoreFloor" class="form-control" value="3" aria-describedby="demoScoreFloorRange demoScoreScaleNote">
+                        {# 這兩顆門檻**上下界一條都不發布**，唯一的約束是「必須是有限的數字」，
+                             而那句話 `min`／`max` 表達不出來 ⇒ 兩顆屬性都不寫，約束由這一段常駐提示
+                             承載（§4）。示範既然比照 5-2 附了門檻欄，就要連它的提示一起——只抄一半的
+                             示範會讓下一個人以為那一頁沒有這一段。 #}
+                        <span class="text-gray" id="demoScoreFloorRange" data-i18n="settings.scoreFloorRange">沒有上下界——尺由當次給分的那一方決定；唯一的限制是必須是有限的數字</span>
                     </div>
                 </div>
                 {% set scaleNoteId = "demoScoreScaleNote" %}
-                {% set scaleNoteText = "llm_reranker：1–5（分數越高越相關）" %}
+                {# ⚠️ 這一份演的是**沒開重排序、資料來源比例落在 0 與 1 之間**那一支，所以尺的原文
+                     **不可以指名某一顆重排序模型**：依元件檔頭那張四路分派表，「開了重排序」與
+                     「混合檢索警語」互斥——兩件事寫在同一份示範裡，就是一個依規格不可能出現的狀態
+                     （§5：示範資料不得為了讓它看得到而變成一個不可能的狀態；5-2 那兩處生產消費點
+                     正是為此把 `scaleNoteMixed` 設成空字串）。 #}
+                {% set scaleNoteText = "兩批結果各自帶著自己的尺（見下一行）" %}
                 {% set scaleNoteMixed = "目前同時使用兩種檢索來源，兩批結果的分數尺不同，單一門檻無法同時對兩者成立。" %}
                 {% set scaleNoteRecalibrated = true %}
                 {% include "ui/score-scale-note/score-scale-note.html" %}
@@ -370,13 +380,14 @@ bodyClass: guideline-page
             <div class="flex-row column gap-8 mt-16">
                 <div class="form-group">
                     <div class="label label-md">
-                        {# 可及名稱要與上面那顆分得開（§4：同頁同時可見、語意不同的控制項不得同名）——
+                        {# 可及名稱要與 `demoScoreFloor` 那顆分得開（§4：同頁同時可見、語意不同的控制項不得同名）——
                              兩顆都叫「分數門檻」的話報讀器聽不出在設哪一把尺。後綴是 showcase 自己的
                              字，整頁不翻故不掛 data-i18n（§4-2）。 #}
                         <span id="demoScoreFloorNoRerankLabel" class="control-label"><span data-i18n="settings.scoreFloor">分數門檻</span>（未啟用重排序）</span>
                     </div>
                     <div class="field">
-                        <input type="number" step="any" min="0" class="form-control" value="0.5" aria-labelledby="demoScoreFloorNoRerankLabel" aria-describedby="demoScoreScaleNoteNoRerank">
+                        <input type="number" step="any" id="demoScoreFloorNoRerank" class="form-control" value="0.5" aria-labelledby="demoScoreFloorNoRerankLabel" aria-describedby="demoScoreFloorNoRerankRange demoScoreScaleNoteNoRerank">
+                        <span class="text-gray" id="demoScoreFloorNoRerankRange" data-i18n="settings.scoreFloorRange">沒有上下界——尺由當次給分的那一方決定；唯一的限制是必須是有限的數字</span>
                     </div>
                 </div>
                 {% set scaleNoteId = "demoScoreScaleNoteNoRerank" %}
@@ -778,11 +789,11 @@ bodyClass: guideline-page
             <h2 class="section-title"><span>22</span><span>使用期閘門遮罩</span></h2>
             <div class="caption">
                 <ul>
-                    <li>純樣式元件 ui/subscription-gate：真實環境由 React app-shell 依 /me 的 subscription_status 疊在全站之上、四種狀態（待簽免責 pending_disclaimer／使用中 active／到期 expired／凍結 frozen）條件渲染——「強制改密」不是這一族的值，它是 /me 上另一顆布林，走別的閘門——本節是唯一看得到它的地方（GUIDELINE §5）</li>
+                    <li>純樣式元件 ui/subscription-gate：真實環境由 React app-shell 依 subscription_status 疊在全站之上、四種狀態（待簽免責 pending_disclaimer／使用中 active／到期 expired／凍結 frozen）條件渲染——「強制改密」不是這一族的值，它是另一顆獨立的布林，走別的閘門——本節是唯一看得到它的地方（GUIDELINE §5）</li>
                     <li>「.subscription-overlay」正式版是 position:fixed 全螢幕遮罩；此處掛示範變體「.demo-static」退回文流內，結構與正式版相同</li>
                     <li>面板兩型都住在同一組「.subscription-overlay &gt; .subscription-panel」之內，差別只在面板裡放哪一種內容：三段式（.panel-header/.panel-body/.panel-footer，首登免責與強制改密用）或置中訊息「.subscription-expired-box」（.title/.desc，到期與凍結用）。「.subscription-expired-box」不是根——少抄外面那兩層不會空白、只會走樣（沒有遮罩、沒有置中、沒有卡片底色與圓角），完整契約見 _subscription-gate.scss 檔頭</li>
-                    <li>下面演四份：<strong>首登免責</strong>、<strong>強制改密</strong>（三顆密碼欄——強制改密走的是 <code class="inline-code">POST /me/change-password</code>，收舊密碼，少一顆就是送不出去的表單）、<strong>到期</strong>、<strong>凍結</strong>。四份的 chrome 都掛 data-i18n：它們是使用者真的讀得到的字，只是全站只有這一節演得出來——不掛的話那幾句話的正本會掉回 React 的字典</li>
-                    <li><strong>「30 天」是資料節點、不是譯文的一部分</strong>（同意鈕與到期說明各一處，都走「前綴 key ＋ 數字 ＋ 後綴 key」）：試用天數在 API 契約裡有欄位（<code class="inline-code">trial_end</code>／<code class="inline-code">days_left</code>），烤進句子的話天數一改，繁中與英譯會各自靜默過期</li>
+                    <li>本節演的是：<strong>首登免責</strong>、<strong>強制改密</strong>（三顆密碼欄——強制改密要一併收舊密碼，少一顆就是送不出去的表單）、<strong>到期</strong>、<strong>凍結</strong>。四份的 chrome 都掛 data-i18n：它們是使用者真的讀得到的字，只是全站只有這一節演得出來——不掛的話那幾句話的正本會掉回 React 的字典</li>
+                    <li><strong>「30 天」是資料節點、不是譯文的一部分</strong>（同意鈕與到期說明各一處，都走「前綴 key ＋ 數字 ＋ 後綴 key」）：試用天數是資料欄位（<code class="inline-code">trial_end</code>／<code class="inline-code">days_left</code>），烤進句子的話天數一改，繁中與英譯會各自靜默過期</li>
                 </ul>
             </div>
             {# chrome（面板標題、同意鈕、到期／凍結標題與說明、強制改密那一面板的每一顆欄位）**掛
@@ -831,7 +842,7 @@ bodyClass: guideline-page
                            **這顆鈕標不出授權軸**（§4；同時登記在測試的 `NO_GATE`）：送出這份同意的
                              唯一條件是「已經登入」——首登流程按定義不可能要求任何能力，標任何一軸
                              都是宣告一道那裡不存在的閘。
-                             同一節下面那顆強制改密的鈕同理（改自己的密碼是自助動作，理由與
+                             同一節的強制改密鈕同理（改自己的密碼是自助動作，理由與
                              5-1-1 那一顆相同）。 #}
                         <button type="button" class="button button-primary" data-toast="已開始使用|送出失敗，請稍後再試" data-i18n-data-toast="toast.acceptDisclaimer" data-toast-type="success|error" data-text-busy="處理中…" data-key-busy="platform.applying"><span data-i18n="subscription.acceptDisclaimerPrefix">我已閱讀並同意，開始使用（</span><span>30</span><span data-i18n="subscription.acceptDisclaimerSuffix"> 天）</span></button>
                     </div>
@@ -1076,7 +1087,7 @@ bodyClass: guideline-page
             {% set stepFlowInstance = "demoQaDirect" %}
             {% set stepFlowOwnerId = "stepFlowQaDirectDemoTitle" %}
             {% include "components/step-flow/step-flow.html" %}
-            <div class="subtitle">描述：五種 decision 各至少一筆，＋三種判定層各一筆（第 1 筆分數門檻、第 2 筆完全命中、第 8 筆 LLM 裁判——判定層只有命中時才有值，而命中會結構性短路，所以真實執行流程演不到它們），＋「重用」小標一筆，＋最後一筆刻意給一個目錄裡沒有的值（<code class="inline-code">some_future_decision</code>）演那條 else：上游日後新增第六種結論時，畫面要看得到那個生字，不能因為查表查不到就靜靜消失。命中＝綠、判否／未達門檻＝中性灰、原文重組失敗＝警示、整輪未判定＝更淡的 .is-faint（那一顆是「沒判過」，與「判過了、判否」不是同一件事）。第 5 筆演 reused_from 的小標——它掛在徽章旁而不是做成第六種徽章：重用可能重用命中、也可能重用判否，一個值講不清楚是哪一種</div>
+            <div class="subtitle">描述：五種 decision 各至少一筆，＋三種判定層各一筆（第 1 筆分數門檻、第 2 筆完全命中、第 8 筆 LLM 裁判——判定層只有命中時才有值，而命中會結構性短路，所以真實執行流程演不到它們），＋「重用」小標一筆，＋最後一筆刻意給一個目錄裡沒有的值（<code class="inline-code">some_future_decision</code>）演那條 else：這一欄的值域日後多一種結論時，畫面要看得到那個生字，不能因為查表查不到就靜靜消失。命中＝綠、判否／未達門檻＝中性灰、原文重組失敗＝警示、整輪未判定＝更淡的 .is-faint（那一顆是「沒判過」，與「判過了、判否」不是同一件事）。第 5 筆演 reused_from 的小標——它掛在徽章旁而不是做成第六種徽章：重用可能重用命中、也可能重用判否，一個值講不清楚是哪一種</div>
             {# ── 可回答性判定與合規閘：三顆鍵的狀態目錄 ────────────────────────────────
                  **這一份也是「狀態目錄」，不是一次真實執行**（同示範二的理由）：這三顆鍵的值
                  分屬三種互斥的處境——閘開著判過、閘關著沒判、判定器炸了、被合規閘擋下——
@@ -1126,7 +1137,7 @@ bodyClass: guideline-page
             {% set stepFlowInstance = "demoVerdict" %}
             {% set stepFlowOwnerId = "stepFlowVerdictDemoTitle" %}
             {% include "components/step-flow/step-flow.html" %}
-            <div class="subtitle">描述：三種 <code class="inline-code">verdict</code>（素材足以回答／素材不足以回答／被規則擋下）＋五種 <code class="inline-code">reason</code> 各一筆，＋<code class="inline-code">blocked_rules</code> 的兩種有值形狀（具名規則清單／空陣列「無具名規則」；第三態是鍵不存在，其餘六筆就是它）。第 4 筆是這一節的重點：判定器故障走 fail-open ⇒ 「判定」那一列寫著「素材足以回答」，而那一輪的閘門根本沒有生效——只有「判定成因」那一列說得出來，那一站也因此是紅色的 failed。第 5 筆的閘關著 ⇒ 略過、時間留白（上游不送耗時）。最後一筆兩顆值都刻意給目錄裡沒有的字面，演那條 else：上游日後多一顆值時，畫面要看得到那個生字，不能因為查表查不到就靜靜消失</div>
+            <div class="subtitle">描述：三種 <code class="inline-code">verdict</code>（素材足以回答／素材不足以回答／被規則擋下）＋五種 <code class="inline-code">reason</code> 各一筆，＋<code class="inline-code">blocked_rules</code> 的兩種有值形狀（具名規則清單／空陣列「無具名規則」；第三態是鍵不存在，其餘六筆就是它）。第 4 筆是這一節的重點：判定器故障走 fail-open ⇒ 「判定」那一列寫著「素材足以回答」，而那一輪的閘門根本沒有生效——只有「判定成因」那一列說得出來，那一站也因此是紅色的 failed。第 5 筆的閘關著 ⇒ 略過、時間留白（上游不送耗時）。最後一筆兩顆值都刻意給目錄裡沒有的字面，演那條 else：這一欄的值域日後多一顆值時，畫面要看得到那個生字，不能因為查表查不到就靜靜消失</div>
         </section>
 
         <section id="conditionalTextSection">
@@ -1136,8 +1147,8 @@ bodyClass: guideline-page
                     <li>下面這幾句在正式環境是 React 依 state 條件渲染的分支，它們的「另一態」是<strong>什麼都不渲染</strong>——所以在那些頁上永遠看不到（GUIDELINE §5：沒有頁面演得出來的分支等於沒驗收過）</li>
                     <li>使用頁保留 <strong>.hidden</strong> 的那份 markup 當<strong>位置與樣式的規格</strong>（React 要知道它長在哪一格、用哪個字色），這一區則是它們<strong>長相</strong>的唯一可見處</li>
                     <li>示範資料刻意不觸發它們：把預設態畫成錯誤態，等於讓每個打開頁面的人都以為出事了</li>
-                    <li>本節混著兩族：<strong>條件式的另一支</strong>（`.hidden` 那份 markup 在使用頁）與<strong>枚舉的成員</strong>（使用頁的示範推導不到，例如 <code class="inline-code">regression.reasonAbsentInBaseline</code>）、5-1-1 的<strong>額度週期單位三態</strong>（那一格是 input 的 value 屬性，拆不出節點掛 key，所以只畫得出示範租戶那一個）、manage-tenant-modal 的<strong>平台系統管理員徽章</strong>（那份名冊裡沒有這一級的人）——三者的繁中在全站只有這裡渲染得出來</li>
-                    <li>末尾那一顆是另一種缺席：<strong>枚舉的成員</strong>，不是條件式的另一支。使用頁的示範資料推導下來只演得到同一個枚舉的其中幾個成員，剩下的成員沒有被否決、只是那一頁畫不到——它們的家在這裡，不是「刪掉 key、讓 React 自己拼字串」（GUIDELINE §4-2：繁中是原文，留在字串出現的地方）</li>
+                    <li>本節混著兩族：<strong>條件式的另一支</strong>（<code class="inline-code">.hidden</code> 那份 markup 在使用頁）與<strong>枚舉的成員</strong>（使用頁的示範推導不到，例如 <code class="inline-code">regression.reasonAbsentInBaseline</code>）、5-1-1 的<strong>額度週期單位三態</strong>（那一格是 input 的 value 屬性，拆不出節點掛 key，所以只畫得出示範租戶那一個）、manage-tenant-modal 的<strong>平台系統管理員徽章</strong>（那份名冊裡沒有這一級的人）——三者的繁中在全站只有這裡渲染得出來</li>
+                    <li>manage-tenant-modal 的平台系統管理員徽章是另一種缺席：<strong>枚舉的成員</strong>，不是條件式的另一支。使用頁的示範資料推導下來只演得到同一個枚舉的其中幾個成員，剩下的成員沒有被否決、只是那一頁畫不到——它們的家在這裡，不是「刪掉 key、讓 React 自己拼字串」（GUIDELINE §4-2：繁中是原文，留在字串出現的地方）</li>
                 </ul>
             </div>
             <div class="block flex-row column gap-8">
@@ -1478,7 +1489,7 @@ bodyClass: guideline-page
                     <li>前兩態是<strong>公開分享頁 shared.html</strong> 的錯誤態：<strong>404</strong>（連結無效／已撤銷／過期）與 <strong>429</strong>（被節流）。那一頁是靜態的、只演得出正常態，故這裡是這兩態唯一看得到的地方（GUIDELINE §5）</li>
                     <li>刻意分成兩顆 key、不共用一句話：429 那一條連結<strong>還有效</strong>、只是此刻太頻繁——寫成找不到會讓使用者以為連結被撤銷而回頭要新的；反過來把 404 寫成太頻繁，則會讓人一直重試一條永遠打不開的連結</li>
                     <li>後兩態是<strong>站內任何一頁被 403 擋下時的整頁態</strong>。導覽入口雖然依授權軸隱藏，但擋不了網址列——書籤或別人貼來的連結照樣打得開，而該頁的讀取端點回 403。不畫這一態的話整頁只剩一列麵包屑，<strong>空白與「你被擋住了」在畫面上長得一模一樣</strong></li>
-                    <li>403 分成兩顆 key，<strong>分界是收件人不是頁面</strong>：租戶層（能力／租戶管理員閘）找得到人開通 ⇒ 指向<strong>貴租戶的管理者</strong>；平台層（require_platform_admin／_auditor）租戶管理者也給不了 ⇒ 指向<strong>平台系統管理員</strong>。平台那一句刻意不寫「僅限系統管理員」——5-6-1 與 5-6-3 的頁層閘是 auditor，稽核員進得來</li>
+                    <li>403 分成兩顆 key，<strong>分界是收件人不是頁面</strong>：租戶層（能力／租戶管理員閘）找得到人開通 ⇒ 指向<strong>貴租戶的管理者</strong>；平台層（要平台角色才動得了）租戶管理者也給不了 ⇒ 指向<strong>平台系統管理員</strong>。平台那一句刻意不寫「僅限系統管理員」——5-6-1 與 5-6-3 的頁層閘是 auditor，稽核員進得來</li>
                     <li>四態都沒有動作鈕（404.html 那一份有「回頁面目錄」）：公開分享頁的訪客沒有登入態也沒有目錄可回；403 那兩顆換掉的只是 page-shell 的內容區，導覽列就在上面</li>
                 </ul>
             </div>
@@ -1704,7 +1715,7 @@ bodyClass: guideline-page
 {# untagged-files 的資料集下拉吃頁面上的 coverageDatasets（5-10 有 set，元件庫沒有）：
    元件庫這一份是示範資料，與 5-10 那一份同形狀即可（§6 的一份正本講的是同一頁內不重複，
    不是跨頁共用執行期資料）。
-   **但值要與 5-10 同一組**：元件自帶的 `untaggedFileRows` 每一列的「所屬資料集」欄是寫死在元件裡的，
+   **但值要與 5-10 同一組**：元件自帶的 `untaggedFileRowsDemo` 每一列的「所屬資料集」欄是寫死在元件裡的，
    兩個使用處共用它——這一頁的下拉若給另一組名字，同一份清單在元件庫頁就會列出兩個下拉裡沒有的
    資料集。故沿用 5-10 的 id 與名稱（法規彙編 3／2026 新制問答 12——id 對回 3-5 的
    `healthScanDatasets`，那是全站這份資料集目錄的正本）。 #}
@@ -1754,7 +1765,7 @@ bodyClass: guideline-page
 {# ②的每一條可以再帶一行**成因**（`noteKey`／`note`，灰字接在結論下面）——結論可掃視、成因講機制，
      分工與「不取代結論、不收進 ⓘ」的理由寫在該元件檔頭。**兩態都要演**：第一筆帶成因、其餘三筆
      不帶，那是 React 端要條件渲染的兩個分支。
-   成因同樣是 key（`help.state.knowledgeOffNote`），不是就地編的展示散文——理由與上面那四顆完全
+   成因同樣是 key（`help.state.knowledgeOffNote`），不是就地編的展示散文——理由與 `helpModalStateItems` 那四筆完全
      相同：編出來的示範沒有 key，正本就落到 React 的字典裡。這一句講的機制（知識使用模式為
      「不參考知識」時，生成端整段參考資料都不組，所以那幾顆旋鈕是沒有作用對象、不是被關掉）
      ——出處寫在 5-2 檔頭的值相依清單那一條，不在這裡抄第二份。 #}

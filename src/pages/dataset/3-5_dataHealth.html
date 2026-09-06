@@ -1013,7 +1013,7 @@ permalink: 3-5_dataHealth.html
                 {% endfor %}
             </select>
             <button data-capability="data:read" type="button" class="button button-primary js-health-query"
-                data-toast="正在查詢資料...|權限不足，無法查詢——請找貴租戶的管理者開通|查詢成功|載入資料失敗，請重新整理頁面|此功能尚未對貴租戶開通，請聯絡平台管理員"
+                data-toast="正在查詢資料…|權限不足，無法查詢——請找貴租戶的管理者開通|查詢成功|載入資料失敗，請重新整理頁面|此功能尚未對貴租戶開通，請聯絡平台管理員"
                 data-i18n-data-toast="toast.query" data-toast-type="info|warning|success|error|warning"
                 data-i18n="action.query">查詢</button>
         </div>
@@ -1185,7 +1185,7 @@ permalink: 3-5_dataHealth.html
                                         <div class="label">
                                             <span id="healthKeepLabel-{{ f.id }}" class="control-label required" data-i18n="health.mergeKeep">保留哪一筆</span>
                                         </div>
-                                        <div class="field flex-row column gap-8" role="radiogroup" aria-labelledby="healthKeepLabel-{{ f.id }}">
+                                        <div class="field flex-row column gap-8" role="radiogroup" aria-labelledby="healthFindingId-{{ f.id }} healthKeepLabel-{{ f.id }}">
                                             {% for r in f.records %}
                                             {% set recordIdentity = r %}
                                             <label class="form-radio">
@@ -1222,7 +1222,7 @@ permalink: 3-5_dataHealth.html
                                         <div class="label">
                                             <span id="healthDisableLabel-{{ f.id }}" class="control-label" data-i18n="health.disableRecords">要停用哪幾筆</span>
                                         </div>
-                                        <div class="field flex-row column gap-8" role="group" aria-labelledby="healthDisableLabel-{{ f.id }}">
+                                        <div class="field flex-row column gap-8" role="group" aria-labelledby="healthFindingId-{{ f.id }} healthDisableLabel-{{ f.id }}">
                                             {% for r in f.records %}
                                             {% set recordIdentity = r %}
                                             <label class="form-checkbox">
@@ -1259,7 +1259,7 @@ permalink: 3-5_dataHealth.html
                                         <div class="label">
                                             <span id="healthCurrentLabel-{{ f.id }}" class="control-label required" data-i18n="health.supersedeCurrent">哪一筆是現行版</span>
                                         </div>
-                                        <div class="field flex-row column gap-8" role="radiogroup" aria-labelledby="healthCurrentLabel-{{ f.id }}">
+                                        <div class="field flex-row column gap-8" role="radiogroup" aria-labelledby="healthFindingId-{{ f.id }} healthCurrentLabel-{{ f.id }}">
                                             {% for r in f.records %}
                                             {% set recordIdentity = r %}
                                             <label class="form-radio">
@@ -1285,7 +1285,7 @@ permalink: 3-5_dataHealth.html
                                         <div class="label">
                                             <span id="healthPhrasingRecordLabel-{{ f.id }}" class="control-label required" data-i18n="health.addPhrasingRecord">補寫在哪一筆</span>
                                         </div>
-                                        <div class="field flex-row column gap-8" role="radiogroup" aria-labelledby="healthPhrasingRecordLabel-{{ f.id }}">
+                                        <div class="field flex-row column gap-8" role="radiogroup" aria-labelledby="healthFindingId-{{ f.id }} healthPhrasingRecordLabel-{{ f.id }}">
                                             {% for r in f.records %}
                                             {% set recordIdentity = r %}
                                             <label class="form-radio">

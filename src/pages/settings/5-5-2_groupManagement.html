@@ -72,9 +72,14 @@ permalink: 5-5-2_groupManagement.html
     <div class="flex-row flex-wrap gap-20 align-items-center" role="group" aria-labelledby="newGroupCapabilitiesLabel">
         {# 冒號不折進 key：settings.capabilities 同時是下方列表的表頭（§4-2 例外——表頭的標點屬版面，折了會污染） #}
         <span id="newGroupCapabilitiesLabel" class="text-bold"><span data-i18n="settings.capabilities">能力</span><span data-i18n="common.labelSep">：</span></span>
+        {# 值載體要有 React 綁定記號，而且要說得出「勾的是哪一顆能力」（§5 矩陣②）：
+             全站同型的「一組可勾選的東西」慣例是 `class="js-<族名>"` ＋ `value="<那一顆的鍵>"`
+             （5-5-1 的 js-member-group、config-copy-modal 的 js-copy-group、3-5 的
+             js-health-disable-record）。少了 value，勾起來的 checkbox 送出的是 "on"，
+             要靠 DOM 順序回推是哪一顆能力——而順序是版面的事，不是契約。 #}
         {% for cap in capabilities %}
         <label class="form-checkbox">
-            <input type="checkbox" name="new_group_cap_{{ cap.key }}">
+            <input type="checkbox" class="js-new-group-cap" value="{{ cap.key }}">
             <span data-i18n="{{ cap.i18nKey }}">{{ cap.label }}</span>
         </label>
         {% endfor %}
@@ -141,7 +146,9 @@ permalink: 5-5-2_groupManagement.html
                              三列全叫「群組名稱」，還會跟上面新增區那顆同名）。名稱格本身就是可編輯輸入，
                              沒有現成的靜態辨識欄，故補一顆 sr-only 的列名當錨點。 #}
                         <span id="groupRowName-{{ group.id }}" class="sr-only">{{ group.name }}</span>
-                        <input type="text" class="form-control" value="{{ group.name }}" aria-labelledby="groupRowName-{{ group.id }} groupNameHead">
+                        {# 同上：值載體要有記號。`form-control` 是全域樣式 class、不是記號
+                             （掛它的輸入框全站上百顆），所以另掛 `js-group-name`。 #}
+                        <input type="text" class="form-control js-group-name" value="{{ group.name }}" aria-labelledby="groupRowName-{{ group.id }} groupNameHead">
                     </td>
                     {# 一格裡有 7 顆同型 checkbox（同頁三列 ⇒ 21 顆，加上上面新增區那 7 顆共 28 顆同名）：
                          列脈絡救不了一格內的重複（§4），那一格的容器要掛
@@ -150,9 +157,11 @@ permalink: 5-5-2_groupManagement.html
                          順序照正典「列名 → 表頭」。 #}
                     <td>
                         <div class="flex-row flex-wrap gap-16 align-items-center" role="group" aria-labelledby="groupRowName-{{ group.id }} groupCapabilitiesHead">
+                            {# 記號與上面新增區同一族（見那裡的說明）：這一格的 7 顆是值載體，
+                                 值隨同列那顆「儲存」一起送出。 #}
                             {% for cap in capabilities %}
                             <label class="form-checkbox">
-                                <input type="checkbox"{% if cap.key in group.capabilities %} checked{% endif %}>
+                                <input type="checkbox" class="js-group-cap" value="{{ cap.key }}"{% if cap.key in group.capabilities %} checked{% endif %}>
                                 <span data-i18n="{{ cap.i18nKey }}">{{ cap.label }}</span>
                             </label>
                             {% endfor %}

@@ -1,8 +1,8 @@
 ---
 layout: layouts/page-shell/page-shell.html
-title: GufoFAQ::資料集列表
-titleKey: nav.datasetList
-pageHeading: 資料集列表
+title: GufoFAQ::資料集預覽
+titleKey: catalog.linkDatasetPreview
+pageHeading: 資料集預覽
 permalink: 3-1-3_previewDataset.html
 ---
 {# 麵包屑 + 資料集名稱（editable-block）：第三層麵包屑與資料集名稱在執行期都要等資料回來才填得出字，
@@ -30,10 +30,15 @@ permalink: 3-1-3_previewDataset.html
          而同一道守衛在本頁下面兩顆 editable-block 早就列成 warning 了——同一道守衛同頁兩種語意型別
          是 §5 明文禁止的。子句沿用那兩顆的「權限不足，無法儲存」（§4-2 同子句同英譯）。 #}
     {% set editCapability = "data:write" %}
-{# **資源層 scope 不足是獨立的一段**（§4／§5）：改名第一道就驗「這個資料集的群組在不在我可以
-     寫入的範圍裡」，而清單不依寫入群組過濾 ⇒ 看得到一筆、按下去被擋。子句逐字沿用 3-1-1 的
-     刪除鈕（同繁中同英譯，§4-2）。 #}
-{% set editSaveToast = "資料集名稱已更新|資料集名稱不可為空|資料集名稱已存在，請換一個|權限不足，無法儲存——請找貴租戶的管理者開通|這個資料集不在你可以寫入的群組裡，請找管理員把你加進該群組|儲存失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" %}
+{# **資源層 scope 不足是獨立的一段，且與 capability 一起排在任何內容驗證之前**（§4／§5）：
+     這兩道都不看使用者打了什麼字——「這個資料集的群組在不在我可以寫入的範圍裡」在進到這一頁時
+     就已經定了，而清單不依寫入群組過濾 ⇒ 看得到一筆、按下去被擋。段序＝守衛撞到的先後（§4），
+     所以與同頁下面兩顆 editable-block、以及 3-1-1 的刪除鈕同序：success → capability → scope →
+     內容驗證。scope 子句逐字沿用 3-1-1 的刪除鈕（同繁中同英譯，§4-2）。
+     ⚠️ **末段是保留位、不參與撞擊序**：「此功能尚未對貴租戶開通」實際上比能力那一道更早撞到，
+       但它全站固定在最後一段（§4）——位置一致本身就是契約，照撞擊序把它往前搬，會讓每一頁的
+       索引各自不同。 #}
+{% set editSaveToast = "資料集名稱已更新|權限不足，無法儲存——請找貴租戶的管理者開通|這個資料集不在你可以寫入的群組裡，請找管理員把你加進該群組|資料集名稱不可為空|資料集名稱已存在，請換一個|儲存失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" %}
     {% set editSaveToastKey = "toast.saveDatasetName" %}
     {% set editSaveToastType = "success|warning|warning|warning|warning|error|warning" %}
     {% include "components/editable-block/editable-block.html" %}
@@ -112,7 +117,7 @@ permalink: 3-1-3_previewDataset.html
 <div class="flex-row justify-content-between flex-wrap gap-16 mobile-column my-16">
     <div class="form-group w-search">
         <div class="field">
-            <input type="text" placeholder="搜尋檔案..." data-i18n-placeholder="dataset.searchFilePlaceholder" class="form-control search" aria-label="搜尋檔案" data-i18n-aria-label="dataset.searchFile">
+            <input type="text" placeholder="搜尋檔案…" data-i18n-placeholder="dataset.searchFilePlaceholder" class="form-control search" aria-label="搜尋檔案" data-i18n-aria-label="dataset.searchFile">
         </div>
     </div>
     <div class="flex-row gap-16 justify-content-end align-items-center flex-wrap">

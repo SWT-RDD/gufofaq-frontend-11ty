@@ -1,8 +1,8 @@
 ---
 layout: layouts/page-shell/page-shell.html
-title: GufoFAQ::資料匯入
-titleKey: nav.dataImport
-pageHeading: 資料匯入
+title: GufoFAQ::上傳 PDF
+titleKey: dataImport.uploadPdf
+pageHeading: 上傳 PDF
 permalink: 1-2-1_uploadFile_pdf.html
 ---
 {% set breadcrumbItems = [
@@ -125,7 +125,7 @@ permalink: 1-2-1_uploadFile_pdf.html
         <thead>
             <tr>
                 <th data-i18n="dataset.fileName">檔案名稱</th>
-                <th data-i18n="dataset.title">標題</th>
+                <th data-i18n="field.title">標題</th>
                 <th data-i18n="common.time">時間</th>
                 <th data-i18n="common.fileSize">檔案大小</th>
                 <th data-i18n="common.functions">功能</th>
@@ -302,7 +302,7 @@ permalink: 1-2-1_uploadFile_pdf.html
             <thead>
                 <tr>
                     <th data-i18n="dataset.fileName">檔案名稱</th>
-                    <th data-i18n="dataImport.colStatus">狀態</th>
+                    <th data-i18n="common.status">狀態</th>
                     <th data-i18n="dataImport.colMessage">訊息</th>
                     {# 第四欄講的是**另一層**：前三欄是「進了資料集沒有」，這一欄是
                          「進了搜尋索引沒有」。兩者同一列並排是刻意的——「匯入成功、索引失敗」

@@ -31,7 +31,8 @@ permalink: 5-6-1-2_platformIsoReviewPreview.html
      **步驟指示器**＝`platform.reviewStep2` 那一行標題本身（繁中與英譯都自帶 ②）。
 
      front matter 與另外兩份稿完全相同：三份在 React 端是**同一個畫面**的三個 state
-     （同資料匯入精靈那一族，`1-1-2`～`1-1-6` 全部 `titleKey: nav.dataImport`）。 #}
+     ——生產環境只有一個網址，所以標題本來就該相同（§3-1：那條「各步驟頁標題要可分辨」管的是
+     各有自己網址的多步驟流程，不是同一頁的多個狀態）。 #}
 {% set breadcrumbItems = [
   { label: "首頁", href: "2-1_qaRecord.html", i18nKey: "nav.home" },
   { label: "平台管理", href: "", i18nKey: "nav.platformMgmt" },

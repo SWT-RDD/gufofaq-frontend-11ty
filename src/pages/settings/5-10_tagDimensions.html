@@ -368,7 +368,11 @@ permalink: 5-10_tagDimensions.html
                     <td><input type="text" class="form-control js-tag-dimension-desc" value="{{ dim.description }}" aria-labelledby="tagDimSlot-{{ dim.id }} tagDimDescHead"></td>
                     <td>{{ dim.kind }}</td>
                     <td>{% if dim.role %}{{ dim.role }}{% else %}<span class="text-gray" data-i18n="settings.tagRoleNone">不指定</span>{% endif %}</td>
-                    <td class="text-center">{% if dim.kind == "date" %}<span class="text-gray" data-i18n="settings.tagDateNoVocabulary">—</span>{% else %}{{ dim.vocabularyCount }}{% endif %}</td>
+                    {# 日期維度**定義上沒有詞彙表**（值是日期本身，不是一份可枚舉的代碼表）⇒ 這一格是
+                         §6 的第①種哨兵「不適用」，不是②的「—」（那是「量得到、只是這一刻沒有值」）。
+                         兩者共用一個破折號的話，這一列會被讀成「詞彙數還沒算出來」，而它永遠不會算出來。
+                         沿用全站唯一那顆 `common.notApplicable`，不另立（§6）。 #}
+                    <td class="text-center">{% if dim.kind == "date" %}<span class="text-gray" data-i18n="common.notApplicable">不適用</span>{% else %}{{ dim.vocabularyCount }}{% endif %}</td>
                     <td>
                         {# 條寬 style="width: N%" 是資料驅動的執行期尺寸（GUIDELINE §4 合法行內 style）。
                              文字同時給「已標註／讀到的份數」與百分比——只有百分比的話，89% 是 118/132
@@ -403,7 +407,7 @@ permalink: 5-10_tagDimensions.html
                         <button data-capability="settings:read data:read" type="button" class="button button-border button-sm js-view-untagged"
                             data-dimension-id="{{ dim.id }}"
                             id="tagDimUntagged-{{ dim.id }}" aria-labelledby="tagDimSlot-{{ dim.id }} tagDimUntagged-{{ dim.id }}"
-                            data-toast="正在查詢資料...|權限不足，無法查看——請找貴租戶的管理者開通|查詢成功|文件數超過單次掃描上限，請改用單一資料集範圍|載入資料失敗，請重新整理頁面|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.queryUntagged" data-toast-type="info|warning|success|warning|error|warning"
+                            data-toast="正在查詢資料…|權限不足，無法查看——請找貴租戶的管理者開通|查詢成功|文件數超過單次掃描上限，請改用單一資料集範圍|載入資料失敗，請重新整理頁面|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.queryUntagged" data-toast-type="info|warning|success|warning|error|warning"
                             data-i18n="settings.viewUntagged">查看未標註</button>
                         {% endif %}
                         {% endif %}
@@ -415,7 +419,7 @@ permalink: 5-10_tagDimensions.html
                             {# 日期維度沒有字典可編——替它新增代碼一律會被擋下，
                                  給一顆點了只會失敗的鈕就是說謊。 #}
                             {% if dim.kind != "date" %}
-                            <button data-capability="settings:read" type="button" id="tagDimVocabulary-{{ dim.id }}" aria-labelledby="tagDimSlot-{{ dim.id }} tagDimVocabulary-{{ dim.id }}" class="button button-border button-sm js-edit-vocabulary" data-toast="正在查詢資料...|權限不足，無法查詢——請找貴租戶的管理者開通|查詢成功|載入資料失敗，請重新整理頁面|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.query" data-toast-type="info|warning|success|error|warning" data-i18n="settings.editVocabulary">編輯字典</button>
+                            <button data-capability="settings:read" type="button" id="tagDimVocabulary-{{ dim.id }}" aria-labelledby="tagDimSlot-{{ dim.id }} tagDimVocabulary-{{ dim.id }}" class="button button-border button-sm js-edit-vocabulary" data-toast="正在查詢資料…|權限不足，無法查詢——請找貴租戶的管理者開通|查詢成功|載入資料失敗，請重新整理頁面|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.query" data-toast-type="info|warning|success|error|warning" data-i18n="settings.editVocabulary">編輯字典</button>
                             {% endif %}
                             <button type="button" id="tagDimDelete-{{ dim.id }}" aria-labelledby="tagDimSlot-{{ dim.id }} tagDimDelete-{{ dim.id }}" class="button button-red button-sm js-delete-tag-dimension" data-i18n="action.delete">刪除</button>
                         </div>
@@ -609,11 +613,11 @@ permalink: 5-10_tagDimensions.html
             </select>
             {# 這顆與上面「查看未標註」要的是**同一組能力**（`settings:read` ＋ `data:read`）
                  ⇒ 分支集合要一致（§5）。
-                 ⚠️ 這一顆的「權限不足」段**測不出來、只能靠人守**：它自己身上沒有 `data-capability`
-                 （吃的是區塊上那一顆），而「掛了 `data-capability` 的鈕要有 warning 型權限不足段」
-                 那條測試只看鈕**自己**的屬性，所以這顆整個不在母體裡，漏掉不會變紅。
+                 這一顆自己不掛 `data-capability`，吃的是區塊上那一顆——**閘門是繼承來的，
+                 403 卻一樣可達**，所以「權限不足」那一段照樣要有（有測試把關：那條規則的母體
+                 收得進「閘門來自祖先區塊」的鈕，唯一的減項是只寫剪貼簿、沒有端點的唯讀鈕）。
                  子句與英譯逐字沿用同頁「查看未標註」那一顆（§4-2）。 #}
-            <button type="button" class="button button-border" data-toast="正在量測標註覆蓋率...|權限不足，無法量測——請找貴租戶的管理者開通|量測完成|文件數超過單次掃描上限，請改用單一資料集範圍|量測失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.measureCoverage" data-toast-type="info|warning|success|warning|error|warning" data-i18n="settings.remeasureCoverage">重新量測</button>
+            <button type="button" class="button button-border" data-toast="正在量測標註覆蓋率…|權限不足，無法量測——請找貴租戶的管理者開通|量測完成|文件數超過單次掃描上限，請改用單一資料集範圍|量測失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.measureCoverage" data-toast-type="info|warning|success|warning|error|warning" data-i18n="settings.remeasureCoverage">重新量測</button>
         </div>
         {# 「查看範圍」的存在理由：量測有上限，選單是縮小範圍的出口。下面那一句是這顆上限**唯一**的
              常駐可見標籤（`help.settings.tagCoverageScan.what` 提到「上限」是散文、不是標籤）。 #}
@@ -750,7 +754,7 @@ permalink: 5-10_tagDimensions.html
                              值載體只掛 hook class、不掛 `data-toast`（§5 矩陣②）：`js-tag-filter-mode`
                              這個名字沿用不改，它是 React 端 e2e 的定址契約。 #}
                         <select class="form-control singleSelect js-tag-filter-mode" aria-labelledby="tagFilterProfileName-{{ loop.index }} tagFilterModeHead" aria-describedby="tagFilterModeIntro tagFilterLlmCatalogNote">
-                            <option value="off"{% if profile.mode == "off" %} selected{% endif %} data-i18n="settings.tagFilterModeOff">停用</option>
+                            <option value="off"{% if profile.mode == "off" %} selected{% endif %} data-i18n="common.off">停用</option>
                             <option value="on"{% if profile.mode == "on" %} selected{% endif %} data-i18n="settings.tagFilterModeOn">問答前系統判定</option>
                             <option value="llm"{% if profile.mode == "llm" %} selected{% endif %} data-i18n="settings.tagFilterModeLlm">AI 邊查邊收窄</option>
                         </select>

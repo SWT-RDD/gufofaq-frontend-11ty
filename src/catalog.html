@@ -16,7 +16,7 @@ bodyClass: catalog-page
    `nav.*`（header 選單那一族，全部 Title Case）與 `catalog.*` 混在同一張 `.catalog-links` 卡裡並列，
    兩種寫法夾雜時讀起來就是兩份清單黏在一起。`catalog.sec*`／`catalog.link*` 已全部對齊。
    ⚠️ 借用其他命名空間的那幾顆（`action.addDataset`／`qa.qaHistoryTitle`／`qa.detailPageTitle`／
-   `regression.runReportTitle`）**維持它們自己那一族的慣例**——它們同時是按鈕字面與分頁標題，
+   `regression.runReportTitle`／`shared.title`）**維持它們自己那一族的慣例**——它們同時是按鈕字面與分頁標題，
    為了這一頁改掉會讓那些地方跟著走鐘；新增項目時優先沿用 `nav.*`，沒有才另立 `catalog.link*`。 #}
 {% set sections = [
     {
@@ -26,9 +26,9 @@ bodyClass: catalog-page
             { label: "上傳 Excel", href: "1-1-2_uploadFile_excel.html", i18nKey: "dataImport.uploadExcel" },
             { label: "Excel 資料預覽", href: "1-1-3_preview_excel.html", i18nKey: "catalog.linkPreviewExcel" },
             { label: "Excel 欄位對應", href: "1-1-4_columnSelect_excel.html", i18nKey: "catalog.linkColumnSelect" },
-            { label: "Excel 上傳完成", href: "1-1-6_uploadSuccess_excel.html", i18nKey: "catalog.linkUploadSuccessExcel" },
+            { label: "Excel 匯入完成", href: "1-1-6_uploadSuccess_excel.html", i18nKey: "catalog.linkUploadSuccessExcel" },
             { label: "上傳 PDF", href: "1-2-1_uploadFile_pdf.html", i18nKey: "dataImport.uploadPdf" },
-            { label: "PDF 上傳完成", href: "1-2-6_uploadSuccess_pdf.html", i18nKey: "catalog.linkUploadSuccessPdf" }
+            { label: "PDF 匯入完成", href: "1-2-6_uploadSuccess_pdf.html", i18nKey: "catalog.linkUploadSuccessPdf" }
         ]
     },
     {

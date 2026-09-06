@@ -53,7 +53,7 @@ permalink: 2-2-3_abTest.html
      僅 Agent 模式生效）；設定為臨時，底部「回復儲存的設定」隨時回復已儲存值。提示詞是**就地寫的常駐 textarea**、不走 components/prompt-edit
      （理由見下方「提示詞（測試用，常駐展開輸入框）」那則註解：那是版本管理型編輯器，測試頁只要常駐展開的輸入框），
      套用/回復/儲存版本三鈕在每側底部同排。 #}
-{# 兩側的**差異**要放進資料：控制項全部渲染成同一組預設值、下面兩則回覆卻標著不同的設置與
+{# 兩側的**差異**要放進資料：控制項全部渲染成同一組預設值、`abSides` 那兩則回覆卻標著不同的設置與
      提示詞版本，那不是一個真實可能的狀態（§6），AB 測試的用途也演不出來。
      `promptVersion` 只是回覆標題上的版本註記（提示詞本文由使用者當場編，兩側各一份）。
      ⚠️ **版本只有號碼、沒有名字**：`V3-角色定位型` 這種示範值暗示了一個不存在的欄位——提示詞版本
@@ -340,16 +340,16 @@ permalink: 2-2-3_abTest.html
                                                      hook、不掛 data-open-modal（§5 ①），成敗由窗內的送出鈕演
                                                      （見本頁底部的 rating-modal 參數）。 #}
                                                 <button type="button" class="button-icon like js-vote has-tooltip" data-vote="like">
-                                                    <span class="tooltip" data-i18n="comp.like">讚</span>
+                                                    <span class="tooltip" data-i18n="common.like">讚</span>
                                                 </button>
                                                 <button type="button" class="button-icon dislike js-vote has-tooltip" data-vote="dislike">
-                                                    <span class="tooltip" data-i18n="comp.dislike">倒讚</span>
+                                                    <span class="tooltip" data-i18n="common.dislike">倒讚</span>
                                                 </button>
                                                 {# 分享：把這一側的答案建成唯讀分享連結。
                                                      同 4-2 的分享鈕：開窗前先讀那一筆既有的連結清單＝條件開窗，
                                                      保留 hook class；而**先讀就是自己送 API** ⇒ 照 §5 掛 `data-toast` 列全結果，
                                                      五段與 4-2 那一顆逐字相同（同一個動作、同一組結果）。 #}
-                                                <button data-capability="history" type="button" class="button-icon share js-share-log has-tooltip" data-toast="正在查詢資料...|權限不足，無法查詢——請找貴租戶的管理者開通|查詢成功|載入資料失敗，請重新整理頁面|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.query" data-toast-type="info|warning|success|error|warning">
+                                                <button data-capability="history" type="button" class="button-icon share js-share-log has-tooltip" data-toast="正在查詢資料…|權限不足，無法查詢——請找貴租戶的管理者開通|查詢成功|載入資料失敗，請重新整理頁面|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.query" data-toast-type="info|warning|success|error|warning">
                                                     <span class="tooltip" data-i18n="comp.share">分享</span>
                                                 </button>
                                             </div>
@@ -359,7 +359,7 @@ permalink: 2-2-3_abTest.html
                                                  串流、各自累積步驟），所以「這一輪怎麼跑的」本來就有兩份、而且正是
                                                  使用者要並排比的東西。
                                                  頁尾放一份等於問「這張流程圖是哪一側的」而答不出來。
-                                               **本頁兩側都演「跑完並落庫的重播」**（§6 單一敘事）：上面兩則答案都已
+                                               **本頁兩側都演「跑完並落庫的重播」**（§6 單一敘事）：`.ab-compare-item` 那兩則答案都已
                                                  完整渲染、讚/倒讚與分享都要有該側的紀錄編號才做得了事，側欄也選著一筆
                                                  既有的 AB 紀錄 ⇒ 節點九站全 completed，摘要五欄齊備。
                                                  **摘要的模型名只有重播那條路拿得到**（串流當下不會帶），
@@ -431,16 +431,16 @@ permalink: 2-2-3_abTest.html
                                                      hook、不掛 data-open-modal（§5 ①），成敗由窗內的送出鈕演
                                                      （見本頁底部的 rating-modal 參數）。 #}
                                                 <button type="button" class="button-icon like js-vote has-tooltip" data-vote="like">
-                                                    <span class="tooltip" data-i18n="comp.like">讚</span>
+                                                    <span class="tooltip" data-i18n="common.like">讚</span>
                                                 </button>
                                                 <button type="button" class="button-icon dislike js-vote has-tooltip" data-vote="dislike">
-                                                    <span class="tooltip" data-i18n="comp.dislike">倒讚</span>
+                                                    <span class="tooltip" data-i18n="common.dislike">倒讚</span>
                                                 </button>
                                                 {# 分享：把這一側的答案建成唯讀分享連結。
                                                      同 4-2 的分享鈕：開窗前先讀那一筆既有的連結清單＝條件開窗，
                                                      保留 hook class；而**先讀就是自己送 API** ⇒ 照 §5 掛 `data-toast` 列全結果，
                                                      五段與 4-2 那一顆逐字相同（同一個動作、同一組結果）。 #}
-                                                <button data-capability="history" type="button" class="button-icon share js-share-log has-tooltip" data-toast="正在查詢資料...|權限不足，無法查詢——請找貴租戶的管理者開通|查詢成功|載入資料失敗，請重新整理頁面|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.query" data-toast-type="info|warning|success|error|warning">
+                                                <button data-capability="history" type="button" class="button-icon share js-share-log has-tooltip" data-toast="正在查詢資料…|權限不足，無法查詢——請找貴租戶的管理者開通|查詢成功|載入資料失敗，請重新整理頁面|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.query" data-toast-type="info|warning|success|error|warning">
                                                     <span class="tooltip" data-i18n="comp.share">分享</span>
                                                 </button>
                                             </div>
@@ -505,7 +505,7 @@ permalink: 2-2-3_abTest.html
                          所以這一段也要有對應的 toast 段。
                          **不共用 `toast.chatSubmit`**：那會讓同一顆 key 同時代表「固定問句的 chip，
                          不可能空」與「自由輸入，可能空」兩種行為契約（§4-2）。 #}
-                    <button data-capability="ask" type="button" class="button button-primary chat-input-submit" data-toast="回答生成中...|權限不足，無法送出——請找貴租戶的管理者開通|請先輸入問題|回答生成成功|回答生成失敗，請重新送出一次|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.chatSend" data-toast-type="info|warning|warning|success|error|warning" data-i18n="action.submit">送出</button>
+                    <button data-capability="ask" type="button" class="button button-primary chat-input-submit" data-toast="回答生成中…|權限不足，無法送出——請找貴租戶的管理者開通|請先輸入問題|回答生成成功|回答生成失敗，請重新送出一次|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.chatSend" data-toast-type="info|warning|warning|success|error|warning" data-i18n="action.submit">送出</button>
                 </div>
             </div>
         </div>

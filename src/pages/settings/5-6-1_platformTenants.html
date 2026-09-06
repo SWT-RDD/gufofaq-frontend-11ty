@@ -29,8 +29,9 @@ permalink: 5-6-1_platformTenants.html
        自己那一顆號碼；本族不用 `components/step-nodes`（理由見 `components/iso-review-wizard` 檔頭）。
 
      三份稿在 React 端是**同一個畫面**的三個 state，所以 front matter 的
-     `title`／`titleKey`／`pageHeading` 三份完全相同——同資料匯入精靈那一族（`1-1-2`～`1-1-6` 全部
-     `titleKey: nav.dataImport`）。 #}
+     `title`／`titleKey`／`pageHeading` 三份完全相同。**這與「多步驟流程的各步驟頁」是兩件事**
+     （§3-1）：那一族在生產環境各有自己的網址，標題相同就等於瀏覽歷史與報讀器都分不出第幾步；
+     這一族在生產環境只有一個網址，三份稿是同一頁的三個狀態，標題本來就該相同。 #}
 {% set breadcrumbItems = [
   { label: "首頁", href: "2-1_qaRecord.html", i18nKey: "nav.home" },
   { label: "平台管理", href: "", i18nKey: "nav.platformMgmt" },

@@ -85,7 +85,7 @@ permalink: 5-2_conversationSettings.html
 
 {# ── 租戶層（跨三設置共用；profile 頁籤之外）──
      設置頁籤（沿用 ui/tab 的 .tab-row.fit-content > .tab-group Pattern A）+ 前台問答預設使用 radio，
-     兩者共用同一份「設置一/二/三」清單資料化（沿 5-2-1）。active＝檢視中頁籤；default＝前台預設設置，
+     兩者共用同一份「設置一/二/三」清單資料化。active＝檢視中頁籤；default＝前台預設設置，
      radio 綁 default，並帶 value=設置序號＋值載體 hook class js-front-qa-default 供 React 讀「選了哪個設置當前台預設」
      （否則 React 只能靠 DOM 索引猜，§5 值載體）。data-setting-sn 是 React 讀值（切換即重載該設置全部 config），非內容切換。
      （label `settings.frontQaDefault` 的英譯用 frontend、對齊站內拼寫。） #}
@@ -173,7 +173,10 @@ permalink: 5-2_conversationSettings.html
              選了哪一顆重排序器根本不會被採用）。
            - 「啟用可回答性閘」關閉 ⇒ 它的判準與分數門檻不顯示（閘關掉之後分數門檻不會被讀）。
            - 「QA 直答」＝停用 ⇒ 它的分數門檻／判定補充說明／QA 集選取不顯示
-             （停用時整條直答路徑第一步就結束了）。 #}
+             （停用時整條直答路徑第一步就結束了）。
+           ⚠️ **以上幾條講的是 React 執行期的渲染條件，不是這一份靜態稿的樣子**：切版把每一顆欄位都
+             畫出來（同「生成參數」子頁籤那段免責——不用「顯示但標示不生效」，那只是把問題描述出來、
+             使用者照樣填得下去）。讀某一區時看到「停用就不顯示」而眼前欄位還在，不是漏畫。 #}
     <div class="text-gray mt-8" data-i18n="settings.modeApplicabilityHint">哪些欄位會出現，取決於對話模式與其他欄位目前的值——在目前設定下不會生效的欄位一律不顯示。</div>
 </div>
 
@@ -192,7 +195,8 @@ permalink: 5-2_conversationSettings.html
     </div>
 </div>
 
-{# ═══ 子頁籤 1：檢索與欄位（沿用 5-2-1：意圖分級 priority-table + 高/中/低啟用開關 + 14 槽欄位命名）═══
+{# ═══ 子頁籤 1：檢索與欄位（意圖分級 priority-table ＋ 逐層啟用開關 ＋ 欄位命名；
+     槽的正本是 `ui/field-slot-catalog`，槽數不在這裡寫第二份）═══
      **本區有兩種版面，依對話模式擇一渲染**（比照本頁其他子頁籤的「不適用者不渲染」；切版是靜態
      稿故兩份常駐，React 依當下模式決定）。這一頁定的是：
        · 逐層資料集與逐層意圖僅傳統搜尋生效——agent 模式走扁平檢索、也沒有意圖路由階段。
@@ -316,6 +320,15 @@ permalink: 5-2_conversationSettings.html
             {% set priorityTableOwnerId = "priorityUnusedTitle" %}
             {% include "components/priority-table/priority-table.html" %}
         </div>
+        {# 分層下拉是**值載體**（§5 ②），它的 change 自己不打 API——這一顆才是送出的那一顆（③）。
+             理由見 priority-table 檔頭：「選了就送」在畫面上沒有任何東西承載成敗，而受控 select
+             失敗時會彈回舊值，讀起來是「這顆下拉沒反應」。正典同 5-6-1 的平台角色列。
+             **分支比上面那兩顆多一段**：那兩顆只翻逐層意圖的開關、逐層清單不動，這一顆改的正是
+             逐層清單本身 ⇒「某一層的資料集數超過上限」是它走得到、而那兩顆走不到的結果（§5：
+             逐顆鈕對回它自己的動作，不照抄鄰居的版型）。 #}
+        <div class="flex-row">
+            <button data-capability="settings:write" type="button" class="button button-primary js-save-tiers" data-toast="分層設定已儲存|權限不足，無法儲存——請找貴租戶的管理者開通|某一層的資料集數超過上限，請調整後再存|操作失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.saveTierAssignment" data-toast-type="success|warning|warning|error|warning" data-i18n="settings.saveTiersTraditional">儲存分層檢索</button>
+        </div>
     </div>
 
     {# ── 版面 B：Agent 對話模式（只分使用/不使用，無逐層意圖）──────────────────
@@ -350,6 +363,12 @@ permalink: 5-2_conversationSettings.html
             {% set priorityTableInstance = "agentUnused" %}
             {% set priorityTableOwnerId = "priorityAgentUnusedTitle" %}
             {% include "components/priority-table/priority-table.html" %}
+        </div>
+        {# 送出的那一顆（③）：同版面 A 那一顆的動作與分支集合（§5：同一道守衛不論從哪一顆鈕觸發，
+             分支集合與語意型別都要一致），故共用同一顆 toast key；**可見字面各自不同**，
+             兩個版面同時在畫面上時可及名稱才分得開（§4）。 #}
+        <div class="flex-row">
+            <button data-capability="settings:write" type="button" class="button button-primary js-save-tiers" data-toast="分層設定已儲存|權限不足，無法儲存——請找貴租戶的管理者開通|某一層的資料集數超過上限，請調整後再存|操作失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.saveTierAssignment" data-toast-type="success|warning|warning|error|warning" data-i18n="settings.saveTiersAgent">儲存檢索範圍</button>
         </div>
     </div>
     {# 本頁後續若再 include priority-table，須自行重設 tierless（§2：set 是頁面全域）。 #}
@@ -454,7 +473,7 @@ permalink: 5-2_conversationSettings.html
      不用「顯示但標示不生效」——那只是把問題描述出來，使用者照樣填得下去、存得起來，永遠不會被執行。 #}
 <div class="tab-content" data-capability="settings:write" id="panelGeneration" style="display: none;">
     <div class="block">
-        {# 區塊標題用 .text-md.text-bold（同本頁其餘七顆）：它不 label 任何控制項，寫成 <label> 會是
+        {# 區塊標題用 .text-md.text-bold（同本頁其餘每一顆區塊標題，顆數不寫死）：它不 label 任何控制項，寫成 <label> 會是
              一顆點了不會聚焦、對輔具也沒有語意的空殼（§4）。
              **字面刻意不是「主回答」**：下一行那顆 `reasoningGroupMain-label` 只罩得住 `role="group"`
              裡的兩顆（模型／思考深度），而這顆標題視覺上罩住整個 block 的十二欄。沿用同字面＝可見標題
@@ -758,7 +777,7 @@ permalink: 5-2_conversationSettings.html
 </div>
 
 {# ═══ 子頁籤 3：提示詞 ═══
-     產品系統提示詞（含版本史）沿用 components/prompt-edit + 版本卡（5-4-1 結構）；
+     產品系統提示詞（含版本史）走 components/prompt-edit ＋ 版本卡（ui/prompt-card 的型①）；
      機器人身分／Agent／回應／意圖判斷／聊天室提示詞為值載體、隨底部「儲存對話設定」直送。
      模式適用性由這一頁定：agent／respond 僅 Agent 模式生效、
      intension 僅傳統搜尋模式生效（agent 沒有意圖路由階段）、role／chatroom 兩模式皆用；**不適用者不渲染**
@@ -792,7 +811,7 @@ permalink: 5-2_conversationSettings.html
     {% set helpModalLimitRows = [] %}
     {% include "components/help-modal/help-modal.html" %}
 
-    {# 版本史篩選（關鍵字／日期區間／版本）——沿用 5-4-1 提示詞管理的篩選列，設定檔改由上方設置頁籤決定，
+    {# 版本史篩選（關鍵字／日期區間／版本）——與歡迎語子頁籤同一種篩選列（關鍵字／日期區間／版本），設定檔改由上方設置頁籤決定，
          故此處不含設定檔選擇。值載體掛 hook class（§5，React 接 change）；查詢＝直送版本列表 API 的鈕→data-toast。
          版本示範資料先 set 於此：版本下拉選項與版本卡都由它渲染（§6 能推導就從陣列渲染，兩處不會分岔）。 #}
     {% set versions = [
@@ -948,7 +967,7 @@ permalink: 5-2_conversationSettings.html
     {% include "components/help-modal/help-modal.html" %}
 </div>
 
-{# ═══ 子頁籤 4：歡迎語（沿用 5-4-2 編輯器＋版本卡）═══ #}
+{# ═══ 子頁籤 4：歡迎語（編輯器＋版本卡，與提示詞子頁籤同型）═══ #}
 <div class="tab-content" data-capability="settings:write" id="panelWelcome" style="display: none;">
     <div class="block prompt-card draft mb-10">
         <div class="flex-row column gap-16">
@@ -969,7 +988,7 @@ permalink: 5-2_conversationSettings.html
         </div>
     </div>
 
-    {# 版本史篩選（關鍵字／日期區間／版本）——沿用 5-4-2 歡迎語設定的篩選列，設定檔改由上方設置頁籤決定，
+    {# 版本史篩選（關鍵字／日期區間／版本）——與提示詞子頁籤同一種篩選列（關鍵字／日期區間／版本），設定檔改由上方設置頁籤決定，
          故此處不含設定檔選擇。值載體掛 hook class（§5，React 接 change）；查詢＝直送版本列表 API 的鈕→data-toast。
          版本示範資料先 set 於此：版本下拉選項與版本卡都由它渲染（§6 能推導就從陣列渲染）。 #}
     {% set welcomeVersions = [
@@ -1914,10 +1933,10 @@ permalink: 5-2_conversationSettings.html
                     {% for t in glossaryTableCatalog %}{% if t.id in glossaryBindIds %}<option value="{{ t.id }}"{% if t.id in glossaryApplyAgentIds %} selected{% endif %}>{{ t.name }}</option>{% endif %}{% endfor %}
                 </select>
                 {# 這段警語是必要的、不是裝飾。第二句是這個功能唯一可能做反的地方：**拿掉工具的同時也
-                     拿掉了路由訊號**——術語表那句「何時查」就是那顆查詢工具的描述，主 agent 據此決定
+                     拿掉了路由訊號**——術語表那句「何時查閱」就是那顆查詢工具的描述，主 agent 據此決定
                      要不要查這張表；表一旦不掛工具，那句話也一起從工具清單消失，若對應 skill 的
                      用途說明沒接手，主 agent 連 skill 都不會呼叫。 #}
-                <p id="glossaryApplyAgentHint" class="text-gray m-0" data-i18n="settings.glossaryApplyAgentHint">未勾選的表只有 skill 拿得到，主 agent 查不到。同時，該表的「何時查」也不再出現在主 agent 的工具清單裡 —— 那原本是路由訊號，請確認對應 skill 的說明已能接手，否則主 agent 可能連 skill 都不會呼叫。</p>
+                <p id="glossaryApplyAgentHint" class="text-gray m-0" data-i18n="settings.glossaryApplyAgentHint">未勾選的表只有 skill 拿得到，主 agent 查不到。同時，該表的「何時查閱」也不再出現在主 agent 的工具清單裡 —— 那原本是路由訊號，請確認對應 skill 的說明已能接手，否則主 agent 可能連 skill 都不會呼叫。</p>
                 {# 全部不勾（送 `[]`）那一態的文案：React 依 state 條件渲染，另一態是**什麼都不渲染**。
                      切版保留 markup 當**位置與字色的規格**、預設掛 `.hidden`；可見的一份在元件庫頁
                      「React 條件文案」節（那裡是唯一可見處，§5）。繁中原文兩邊逐字相同。
@@ -2119,7 +2138,7 @@ permalink: 5-2_conversationSettings.html
 <div class="tab-content" data-capability="settings:write" id="panelQaDirect" style="display: none;">
     <p class="text-gray" data-i18n="settings.qaDirectIntro">問句完全命中某 QA 集的問題時，直接回該問答的答案原文、不經 AI 重組；judge 模式再加一道 LLM 裁決。</p>
     <div class="block mb-16 flex-row column gap-16">
-        {# 區塊標題用 .text-md.text-bold ＋ ⓘ，形狀與本頁其餘七顆逐字相同（理由見「生成參數」那顆）。
+        {# 區塊標題用 .text-md.text-bold ＋ ⓘ，形狀與本頁其餘每一顆區塊標題逐字相同（顆數不寫死，§3-2）（理由見「生成參數」那顆）。
              頁層引言（上一行的 `settings.qaDirectIntro`）在 block **外**、位置不動，故這一區的順序是
              「引言 → 標題 → 欄位」；可回答性閘那一區的引言在 block 內，順序是「標題 → 引言 → 欄位」。
              ①出處＝本子頁籤檔頭 ＋「停用時整條直答路徑第一步就結束」這件事。
@@ -2145,7 +2164,7 @@ permalink: 5-2_conversationSettings.html
                 <div class="flex-row flex-wrap gap-24" role="radiogroup" aria-labelledby="qaDirectModeLabel">
                     <label class="form-radio">
                         <input type="radio" name="qaDirectMode" class="js-qa-direct-mode" value="off" checked>
-                        <span data-i18n="settings.qaDirectModeOff">停用</span>
+                        <span data-i18n="common.off">停用</span>
                     </label>
                     <label class="form-radio">
                         <input type="radio" name="qaDirectMode" class="js-qa-direct-mode" value="exact">
@@ -2183,13 +2202,16 @@ permalink: 5-2_conversationSettings.html
                 <label for="qaDirectScoreFloor" class="control-label" data-i18n="settings.qaDirectScoreFloorLabel">直答分數門檻</label>
             </div>
             <div class="field col-12-sm">
-                <input type="number" step="any" min="0" id="qaDirectScoreFloor" class="form-control js-qa-direct-score-floor"
+                <input type="number" step="any" id="qaDirectScoreFloor" class="form-control js-qa-direct-score-floor"
                     placeholder="留白＝未校準" data-i18n-placeholder="settings.scoreFloorUncalibrated"
                     value="3" aria-describedby="qaDirectScoreFloorRange qaDirectScoreFloorScale qaDirectScoreFloorDep">
-                {# 下界要看得見（§4 三件套）：`min="0"` 只活在屬性裡，畫面與無障礙樹上全站沒有一個字
-                     說得出「不可為負」——而負值正是那個「所有分數都 ≥ 它、粗篩永遠不觸發」的死條件。
-                     沒有上界要一起講：這一格與別的數字欄不同，空著不是漏寫。 #}
-                <span class="text-gray" id="qaDirectScoreFloorRange" data-i18n="settings.scoreFloorRange">0 以上；沒有上限（不同重排序器的尺不同）</span>
+                {# **上下界一條都不發布**（§4 三件套的第二件省略得掉）：尺由當次給分的那一方決定，
+                     任一側寫死都會讓其中一種部署填不進自己的合法值——負門檻對未正規化 logits
+                     那一族是正常設定，而綁 [0,1] 會讓關鍵字檢索那把尺（數百到上萬）整個填不進來。
+                     唯一的約束是**必須是有限的數字**，而 `min`／`max` 表達不出「不是 NaN、不是
+                     無限大」⇒ 兩顆屬性都不寫，那句約束由這一段常駐提示承載（§4：沒有量級邊界時，
+                     約束照樣要看得見）。 #}
+                <span class="text-gray" id="qaDirectScoreFloorRange" data-i18n="settings.scoreFloorRange">沒有上下界——尺由當次給分的那一方決定；唯一的限制是必須是有限的數字</span>
                 {# §6：同頁重複 include 同一元件時，**每次 include 前重設全部參數**（`set` 是頁面全域）。
                      `scaleNoteRecalibrated` 這一頁從沒設過，所以今天是 undefined＝falsy；但只要有人
                      為了演那一態在上面加一行 true，下面那一顆就會跟著亮一段它不該有的字。 #}
@@ -2212,7 +2234,7 @@ permalink: 5-2_conversationSettings.html
                 <label for="qaDirectCriteria" class="control-label" data-i18n="settings.qaDirectCriteria">judge 判準</label>
             </div>
             <div class="field col-12-sm">
-                <textarea aria-describedby="qaDirectCriteriaHint" id="qaDirectCriteria" class="form-control size-sm js-qa-direct-criteria" placeholder="補充判準..." data-i18n-placeholder="settings.qaDirectCriteriaPlaceholder"></textarea><span class="text-gray" id="qaDirectCriteriaHint"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-qa-direct-criteria-max-len">1024</span><span data-i18n="common.unitChars"> 字</span></span>
+                <textarea aria-describedby="qaDirectCriteriaHint" id="qaDirectCriteria" class="form-control size-sm js-qa-direct-criteria" placeholder="補充判準…" data-i18n-placeholder="settings.qaDirectCriteriaPlaceholder"></textarea><span class="text-gray" id="qaDirectCriteriaHint"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-qa-direct-criteria-max-len">1024</span><span data-i18n="common.unitChars"> 字</span></span>
             </div>
         </div>
     </div>
@@ -2228,9 +2250,9 @@ permalink: 5-2_conversationSettings.html
     {% include "components/help-modal/help-modal.html" %}
 
     {# 這一區**刻意不掛 ⓘ**：它只有「參與直答的 QA 集」一欄，而那一欄被 `qa_direct_mode="off"` 藏
-         （本頁檔頭清單第四條）⇒ 停用時整區消失。依 `components/help-modal` 檔頭「整區被隱藏時，
+         （本頁檔頭清單第四條）⇒ **React 執行期**停用時整區不渲染（切版靜態稿一律常駐，見頁層檔頭那段⚠️）。依 `components/help-modal` 檔頭「整區被隱藏時，
          這一區的 ⓘ 連同區塊本身一起不存在：沒有一顆按鈕去解釋一個看不到的東西」，這裡掛了也只會
-         跟著消失；這一欄該被說明的位置是上面那顆窗（它的 block 含「直答模式」開關本身，關掉之後
+         跟著消失；這一欄該被說明的位置是「直答模式」那一區的 ⓘ（它的 block 含「直答模式」開關本身，關掉之後
          必須留著讓人開回來）。 #}
     <div class="block flex-row column gap-16">
         <div class="form-group row mobile-col">
@@ -2256,7 +2278,7 @@ permalink: 5-2_conversationSettings.html
        mode(off/on)＋criteria 是租戶旋鈕，隨底部「儲存對話設定」直送 settings PUT；掛 hook class
        js-answerability-*（全站 scss 不引用），React 接手送 API。與 QA 直答同屬「可回答性」決策、故同頁。 #}
     <div class="block flex-row column gap-16 mt-16">
-        {# 區塊標題用 .text-md.text-bold ＋ ⓘ，形狀與本頁其餘七顆逐字相同（理由見「生成參數」那顆）。
+        {# 區塊標題用 .text-md.text-bold ＋ ⓘ，形狀與本頁其餘每一顆區塊標題逐字相同（顆數不寫死，§3-2）（理由見「生成參數」那顆）。
              標題加在既有引言**之上**（「標題 → 引言 → 欄位」），引言那顆 `.text-gray` 節點不動。
              ①出處＝本區塊上方那段檔頭 ＋「閘關掉之後分數門檻不會被讀」這件事。
              ①**只描述這顆閘開／關各自會發生什麼**，不點名「補充判準」與
@@ -2283,7 +2305,7 @@ permalink: 5-2_conversationSettings.html
                 <label for="answerabilityCriteria" class="control-label" data-i18n="settings.answerabilityCriteria">補充判準</label>
             </div>
             <div class="field col-12-sm">
-                <textarea aria-describedby="answerabilityCriteriaHint" id="answerabilityCriteria" class="form-control size-sm js-answerability-criteria" placeholder="補充判準（附加在內建 grounding 判準之後）..." data-i18n-placeholder="settings.answerabilityCriteriaPlaceholder"></textarea><span class="text-gray" id="answerabilityCriteriaHint"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-answerability-criteria-max-len">1024</span><span data-i18n="common.unitChars"> 字</span></span>
+                <textarea aria-describedby="answerabilityCriteriaHint" id="answerabilityCriteria" class="form-control size-sm js-answerability-criteria" placeholder="補充判準（附加在內建 grounding 判準之後）…" data-i18n-placeholder="settings.answerabilityCriteriaPlaceholder"></textarea><span class="text-gray" id="answerabilityCriteriaHint"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-answerability-criteria-max-len">1024</span><span data-i18n="common.unitChars"> 字</span></span>
             </div>
         </div>
         {# 可回答性判定前的分數粗篩門檻，預設 0.5。
@@ -2303,11 +2325,11 @@ permalink: 5-2_conversationSettings.html
                 <label for="groundingScoreFloor" class="control-label" data-i18n="settings.groundingScoreFloorLabel">可回答性分數門檻</label>
             </div>
             <div class="field col-12-sm">
-                <input type="number" step="any" min="0" id="groundingScoreFloor" class="form-control js-grounding-score-floor"
+                <input type="number" step="any" id="groundingScoreFloor" class="form-control js-grounding-score-floor"
                     value="0.5" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter"
                     aria-describedby="groundingScoreFloorRange groundingScoreFloorScale groundingScoreFloorNote">
                 {# 同直答分數門檻那一格：下界要看得見、沒有上界也要講出來（§4 三件套）。 #}
-                <span class="text-gray" id="groundingScoreFloorRange" data-i18n="settings.scoreFloorRange">0 以上；沒有上限（不同重排序器的尺不同）</span>
+                <span class="text-gray" id="groundingScoreFloorRange" data-i18n="settings.scoreFloorRange">沒有上下界——尺由當次給分的那一方決定；唯一的限制是必須是有限的數字</span>
                 {% set scaleNoteRecalibrated = false %}
                 {% set scaleNoteId = "groundingScoreFloorScale" %}
                 {% set scaleNoteText = activeScale.scale.note %}
@@ -2319,7 +2341,7 @@ permalink: 5-2_conversationSettings.html
                      矛盾的狀態；那一態的長相由元件庫展示頁負責演（§5）。 #}
                 {% set scaleNoteMixed = "" %}
                 {% include "ui/score-scale-note/score-scale-note.html" %}
-                <span class="text-gray" id="groundingScoreFloorNote" data-i18n="settings.groundingScoreFloorNote">這一格不可留白（預設 0.5）。它並不是判定前的門票——檢索最高分低於它時，這一輪不問 LLM 就直接判成誠實查無，來源也會一併清空。分數的尺由當次的重排序器決定（weaviate 0–1、llm_reranker 1–5、jina 0–1、bge_reranker 可為負），換一顆重排序器就要重新校準這個數字，否則同一個 0.5 可能一題都擋不到、也可能每一題都擋。與「QA 直答」那一格的可留白刻意不同。</span>
+                <span class="text-gray" id="groundingScoreFloorNote" data-i18n="settings.groundingScoreFloorNote">這一格不可留白（預設 0.5）。它不是判定前的門票——檢索最高分低於它時，這一輪不問 LLM 就直接判成誠實查無，來源也會一併清空。分數的尺由當次給分的那一方決定，沒有上界也沒有下界：開了重排序就是那顆重排序器（llm_reranker 1–5、jina 0–1、bge_reranker 可為負），沒開就是檢索本身，而檢索用哪一把尺由「資料來源比例」決定（純向量＝相似度 0–1、純關鍵字＝BM25 數百到上萬、之間＝兩把尺同時出現在同一批結果裡）。未開重排序、直接吃向量相似度的部署上，0.5 落在 0–1 這把尺上實務上擋不到任何東西；換成未正規化 logits 那一族之後，同一個 0.5 會讓每一題都被擋——換一種給分方式就必須重新校準這個數字。與「QA 直答」那一格的可留白刻意不同：那一顆在裁決關掉時是唯一判定，這一顆則是零 LLM 的終局拒答。</span>
             </div>
         </div>
     </div>

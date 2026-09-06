@@ -107,7 +107,7 @@ permalink: 3-7_documentSearch.html
    由此三件事：檢索範圍窗一筆都沒勾時**彈 warning 並留在窗裡**（見該元件檔頭——「沒選任何一筆」
    的家是 warning 分支，不准用 `disabled` 收，REACT-CONVERSION §⑥）、查詢鈕多一段
    「沒有可檢索的資料集」的 warning（這個租戶一個資料集都沒有時按得到）、觸發鈕的 0 態**照數字印
-   「已選 0 個資料集」**——0 不再是「全部」的別名，照著印就是真話。
+   「已選 0 個資料集」**——0 不是「全部」的別名，照著印就是真話。
    **進頁時預設全選**（給 React 的契約）：值域收緊之後，不預設就等於每次進來都要先開一次窗。
    **「清除」也回到全選**：檢索範圍是這一列的查詢參數之一，清除鈕卻搆不到它——值住在彈窗的勾選框上，
    而 `<dialog>` 不在篩選列的 `.block` 之內。清得掉關鍵字與日期、唯獨範圍原地不動的話，使用者眼中
@@ -230,7 +230,7 @@ permalink: 3-7_documentSearch.html
         <div class="flex-row gap-8 mobile-column sm-gap-16">
             <div class="form-group col-4-md col-12-sm">
                 <div class="label">
-                    <label for="docSearchStartDate" class="control-label" data-i18n="settings.startTime">開始時間</label>
+                    <label for="docSearchStartDate" class="control-label" data-i18n="common.startTime">開始時間</label>
                 </div>
                 <div class="field">
                     <input type="text" id="docSearchStartDate" class="form-control time start-date" placeholder="請選擇開始時間" data-i18n-placeholder="settings.pleaseSelectStartTime" aria-describedby="docSearchDateHint">
@@ -238,7 +238,7 @@ permalink: 3-7_documentSearch.html
             </div>
             <div class="form-group col-4-md col-12-sm">
                 <div class="label">
-                    <label for="docSearchEndDate" class="control-label" data-i18n="settings.endTime">結束時間</label>
+                    <label for="docSearchEndDate" class="control-label" data-i18n="common.endTime">結束時間</label>
                 </div>
                 <div class="field">
                     <input type="text" id="docSearchEndDate" class="form-control time end-date" placeholder="請選擇結束時間" data-i18n-placeholder="settings.pleaseSelectEndTime" aria-describedby="docSearchDateHint">
@@ -252,7 +252,7 @@ permalink: 3-7_documentSearch.html
         <div class="flex-row align-items-center justify-content-center gap-16">
             <button type="button" class="button button-border js-filter-clear" data-i18n="action.clear">清除</button>
             {# 八段逐條對回一條出口（§5 少列一段和多列一段一樣是說謊）：
-                 info    「正在查詢資料...」＝版型比照 5-7 的查詢鈕
+                 info    「正在查詢資料…」＝版型比照 5-7 的查詢鈕
                  warning 「權限不足，無法查詢」＝這個帳號沒有 data:read。**排在索引 1**：全站
                          「權限不足」那一段一律緊接在 info 之後（3-5 的 `.js-health-query`、
                          4-1 的查詢鈕同形），子句與英譯逐字沿用（§4-2 同子句同英譯）。
@@ -278,7 +278,7 @@ permalink: 3-7_documentSearch.html
                          任何事）、檢索本身掛掉，以及網路層失敗。
                **不列「找不到那個資料集」**：那一態要拿別的租戶的 id 才撞得到，而這一頁的資料集
                清單就是本租戶的 ⇒ 畫面上按不出那一態。 #}
-            <button data-capability="data:read" type="button" class="button button-primary js-doc-search" data-toast="正在查詢資料...|權限不足，無法查詢——請找貴租戶的管理者開通|沒有搜尋字串|沒有可檢索的資料集——先到「資料集管理」建一個並匯入資料|結束時間不能早於開始時間|授權驗證失敗，無法查詢——請找平台管理者確認系統授權檔|查詢成功|查詢失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.docSearch" data-toast-type="info|warning|warning|warning|warning|warning|success|error|warning" data-i18n="action.query">查詢</button>
+            <button data-capability="data:read" type="button" class="button button-primary js-doc-search" data-toast="正在查詢資料…|權限不足，無法查詢——請找貴租戶的管理者開通|沒有搜尋字串|沒有可檢索的資料集——先到「資料集管理」建一個並匯入資料|結束時間不能早於開始時間|授權驗證失敗，無法查詢——請找平台管理者確認系統授權檔|查詢成功|查詢失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.docSearch" data-toast-type="info|warning|warning|warning|warning|warning|success|error|warning" data-i18n="action.query">查詢</button>
         </div>
     </div>
 </div>
@@ -355,7 +355,7 @@ permalink: 3-7_documentSearch.html
         </colgroup>
         <thead>
             <tr>
-                <th data-i18n="dataset.title">標題</th>
+                <th data-i18n="field.title">標題</th>
                 <th data-i18n="common.time">時間</th>
                 <th><span class="sr-only" data-i18n="search.colDetail">明細</span></th>
             </tr>

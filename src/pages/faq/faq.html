@@ -5,5 +5,12 @@ permalink: faq.html
 bodyClass: chatbot-page
 ---
 {# 前台公開 FAQ 聊天機器人頁。用 chatbot-shell 外殼（無 Manager 導航）。
-   送問答的串流屬業務邏輯、不在切版範圍（§5），此處為靜態示範。 #}
+   送問答的串流屬業務邏輯、不在切版範圍（§5），此處為靜態示範。
+
+   **本頁是無導覽入口頁**（§3-1 第③條）：它的真實入口在 app 之外——嵌在客戶網站上的 widget，
+   以及帶嵌入金鑰的公開網址。站內唯一指向它的 href 是本頁自己 header 上那顆 logo（公開分享頁
+   共用同一顆 header，但**刻意不給它 href**，理由見 `components/chatbot-header` 檔頭）⇒ 進得去的
+   頁面裡沒有一條路連到這裡，這是對的。管理端右下角那顆前台入口指的是 `2-1` 的對話預覽、
+   不是這一頁（理由見 `ui/faq-launcher` 檔頭：這一頁靠嵌入金鑰認租戶，平台自己的來源過不了
+   那道檢查）。 #}
 {% include "components/faq-chatroom/faq-chatroom.html" %}

@@ -176,7 +176,7 @@ permalink: 2-2-4_regressionSuites.html
                     <td>{{ suite.createdAt }}</td>
                     <td>
                         <div class="btn-group">
-                            <button data-capability="settings:read" type="button" id="suiteOpen-{{ suite.id }}" aria-labelledby="suiteRowName-{{ suite.id }} suiteOpen-{{ suite.id }}" class="button button-border button-sm js-open-suite" data-toast="正在查詢資料...|權限不足，無法查詢——請找貴租戶的管理者開通|查詢成功|載入資料失敗，請重新整理頁面|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.query" data-toast-type="info|warning|success|error|warning" data-i18n="regression.openSuite">檢視案例</button>
+                            <button data-capability="settings:read" type="button" id="suiteOpen-{{ suite.id }}" aria-labelledby="suiteRowName-{{ suite.id }} suiteOpen-{{ suite.id }}" class="button button-border button-sm js-open-suite" data-toast="正在查詢資料…|權限不足，無法查詢——請找貴租戶的管理者開通|查詢成功|載入資料失敗，請重新整理頁面|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.query" data-toast-type="info|warning|success|error|warning" data-i18n="regression.openSuite">檢視案例</button>
                             <button type="button" id="suiteDelete-{{ suite.id }}" aria-labelledby="suiteRowName-{{ suite.id }} suiteDelete-{{ suite.id }}" class="button button-red button-sm js-delete-suite" data-i18n="action.delete">刪除</button>
                         </div>
                     </td>
@@ -562,7 +562,7 @@ permalink: 2-2-4_regressionSuites.html
                             </div>
                             <div class="field">
                                 <input type="text" id="assertionIdentity-{{ loop.index }}" class="form-control js-assertion-identity" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" aria-describedby="assertionIdentityHint-{{ loop.index }}" value="{{ a.identity }}">
-                                <p id="assertionIdentityHint-{{ loop.index }}" class="text-gray" data-i18n="regression.assertionIdentityHint">兩者擇一。`document_id` 是穩定定址，換檔名不會讓案例莫名變紅。</p>
+                                <p id="assertionIdentityHint-{{ loop.index }}" class="text-gray"><span data-i18n="regression.assertionIdentityHint">兩者擇一。</span><code class="inline-code">document_id</code><span data-i18n="regression.assertionIdentityHintSuffix"> 是穩定定址，換檔名不會讓案例莫名變紅。</span></p>
                             </div>
                         </div>
                     </div>
@@ -1033,10 +1033,10 @@ permalink: 2-2-4_regressionSuites.html
             <thead>
                 <tr>
                     <th data-i18n="regression.runNo">執行編號</th>
-                    <th data-i18n="qa.startTime">開始時間</th>
+                    <th data-i18n="common.startTime">開始時間</th>
                     <th data-i18n="qaTest.knowledgeRetrieval">知識檢索</th>
                     <th class="text-center" data-i18n="regression.configVersion">設定版本</th>
-                    <th data-i18n="dataImport.colStatus">狀態</th>
+                    <th data-i18n="common.status">狀態</th>
                     <th class="text-center" data-i18n="regression.passedOfTotal">通過 / 總數</th>
                     <th data-i18n="common.actions">操作</th>
                 </tr>

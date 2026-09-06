@@ -1,8 +1,8 @@
 ---
 layout: layouts/page-shell/page-shell.html
-title: GufoFAQ::資料集列表
-titleKey: nav.datasetList
-pageHeading: 資料集列表
+title: GufoFAQ::檔案內容預覽
+titleKey: catalog.linkFilePreview
+pageHeading: 檔案內容預覽
 permalink: 3-1-5_previewFile_detail.html
 ---
 {# 麵包屑 + 頁面標題：第三層麵包屑與 `.page-title` 在執行期都要等資料回來才填得出字，
@@ -43,11 +43,14 @@ permalink: 3-1-5_previewFile_detail.html
                         自己的標題時退它）
        · 檔案類型    → 「類型」那一格（大寫）
        · 區塊總數    → 標題下面那一行（理由見該行註解）
-       · 區塊        → 這一頁只畫**第一個**區塊的欄位（標題／日期／內容／檢索用字串）；逐塊全列
+       · 區塊        → 這一頁只畫**第一個**區塊的欄位（標題／日期／內容）；逐塊全列
                         是另一種畫面，這一頁的定位是「看一眼這個檔抽出來長什麼樣」
        · 檔案識別碼  → 不畫：它就是網址上的 `?sn=`（3-1-3 檔案列的列鍵、進到這一頁的憑據），
                         再印一次不會讓任何人多做得了一個決定
        · 文件識別碼  → 不畫：索引內部重算出來的雜湊，使用者讀不懂也用不上；查問題走日誌
+       · 檢索用字串  → 不畫：它是這一塊真正送進檢索的那一份文字，與畫出來的「標題」「內容」
+                        是同一塊的兩種呈現。這一頁要回答的是「抽出來長什麼樣」，多印一份
+                        供比對的字串不會讓任何人多做得了一個決定（同「檔案識別碼」那一條的判準）
    ⚠️ **「頻道」與「供應商」兩格畫「—」，那是實話不是偷懶**（§6：演的必須是一個真實可能的狀態）。
      一個區塊身上只有序號／標題／日期／內容／檢索用字串——頻道（來源資料集名稱）與供應商都不在
      裡面。那兩欄是 **Excel 匯入才有**的動態欄，而 excel 檔一律導去 3-1-6 的對照畫面（excel 一列
@@ -68,7 +71,7 @@ permalink: 3-1-5_previewFile_detail.html
         <div class="form-table">
             <div class="row">
                 <div class="col col-12-md">
-                    <div class="th" data-i18n="dataset.title">標題</div>
+                    <div class="th" data-i18n="field.title">標題</div>
                     <div class="td">常見問題.pdf</div>
                 </div>
             </div>
@@ -94,7 +97,7 @@ permalink: 3-1-5_previewFile_detail.html
             </div>
             <div class="row">
                 <div class="col col-12-md">
-                    <div class="th" data-i18n="dataset.content">內容</div>
+                    <div class="th" data-i18n="field.content">內容</div>
                     <div class="td">
                         <div class="long-text">Q：如何申請退換貨？<br>A：商品到貨後 7 日內，請至會員中心提出退換貨申請，並保持商品與吊牌完整，客服將於收到申請後 2 個工作天內完成審核並回覆處理進度。</div>
                     </div>

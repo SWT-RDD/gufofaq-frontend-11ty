@@ -22,18 +22,18 @@ permalink: 4-1_qaHistory.html
         <div class="flex-row gap-8 mobile-column sm-gap-16">
             <div class="form-group col-4-md col-12-sm">
                 <div class="label">
-                    <label for="startDateInput" class="control-label required" data-i18n="qa.startTime">開始時間</label>
+                    <label for="startDateInput" class="control-label required" data-i18n="common.startTime">開始時間</label>
                 </div>
                 <div class="field">
-                    <input type="text" id="startDateInput" class="form-control time start-date" placeholder="開始時間" data-i18n-placeholder="qa.startTime" aria-describedby="exportRangeHint" required>
+                    <input type="text" id="startDateInput" class="form-control time start-date" placeholder="開始時間" data-i18n-placeholder="common.startTime" aria-describedby="exportRangeHint" required>
                 </div>
             </div>
             <div class="form-group col-4-md col-12-sm">
                 <div class="label">
-                    <label for="endDateInput" class="control-label required" data-i18n="qa.endTime">結束時間</label>
+                    <label for="endDateInput" class="control-label required" data-i18n="common.endTime">結束時間</label>
                 </div>
                 <div class="field">
-                    <input type="text" id="endDateInput" class="form-control time end-date" placeholder="結束時間" data-i18n-placeholder="qa.endTime" aria-describedby="exportRangeHint" required>
+                    <input type="text" id="endDateInput" class="form-control time end-date" placeholder="結束時間" data-i18n-placeholder="common.endTime" aria-describedby="exportRangeHint" required>
                 </div>
             </div>
             <div class="form-group col-4-md col-12-sm">
@@ -140,8 +140,8 @@ permalink: 4-1_qaHistory.html
                          （§6：那兩個數字必須同源，見本頁 data-info 與 pagination 的 total）。 #}
                     <select id="ratingSelect" class="form-control singleSelect rating-select">
                         <option value="" data-i18n="common.pleaseSelect">請選擇</option>
-                        <option value="positive" data-i18n="qa.ratingLike">讚</option>
-                        <option value="negative" data-i18n="qa.ratingDislike">倒讚</option>
+                        <option value="positive" data-i18n="common.like">讚</option>
+                        <option value="negative" data-i18n="common.dislike">倒讚</option>
                         <option value="unrated" data-i18n="qa.ratingNoOpinion">無意見</option>
                     </select>
                 </div>
@@ -180,7 +180,7 @@ permalink: 4-1_qaHistory.html
                  段內烤著數字走的是 §4-2 屬性型譯文那條例外，兩個條件都成立：①同一個約束另有一處
                  常駐可見的資料節點承載（關鍵字欄下方那一句）②那個下界在本頁宣告一次，
                  改值時 grep 得到全部抄本。 #}
-            <button data-capability="history" type="button" class="button button-primary" data-toast="正在查詢資料...|權限不足，無法查詢——請找貴租戶的管理者開通|請填寫開始時間、結束時間與使用者類型|關鍵字至少 2 個字，前後空白不計|查詢成功|載入資料失敗，請重新整理頁面|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.queryHistory" data-toast-type="info|warning|warning|warning|success|error|warning" data-i18n="action.query">查詢</button>
+            <button data-capability="history" type="button" class="button button-primary" data-toast="正在查詢資料…|權限不足，無法查詢——請找貴租戶的管理者開通|請填寫開始時間、結束時間與使用者類型|關鍵字至少 2 個字，前後空白不計|查詢成功|載入資料失敗，請重新整理頁面|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.queryHistory" data-toast-type="info|warning|warning|warning|success|error|warning" data-i18n="action.query">查詢</button>
             {# 匯出格式：值域在這裡宣告一次，就三顆——`csv`／`xlsx`／`jsonl`，預設 csv。
                  **畫面只給兩顆**：csv 與 xlsx 是同一個
                  問題的兩種答案（要不要巢狀明細），jsonl 是給程式與稽核的那一份、沒有人會在這個
@@ -401,7 +401,7 @@ permalink: 4-1_qaHistory.html
                      React 接上真 API 只印得出 `positive`，而英文模式那一格永遠是中文（§6／§4-2）。
                      沒有值落「無意見」（沒評過與評了「無意見」在畫面上是同一格，值域本來就只有三顆）；
                      三顆 key 就是同頁篩選 select 用的那三顆。 #}
-                <td>{% if row.rating == "positive" %}<span data-i18n="qa.ratingLike">讚</span>{% elif row.rating == "negative" %}<span data-i18n="qa.ratingDislike">倒讚</span>{% else %}<span data-i18n="qa.ratingNoOpinion">無意見</span>{% endif %}</td>
+                <td>{% if row.rating == "positive" %}<span data-i18n="common.like">讚</span>{% elif row.rating == "negative" %}<span data-i18n="common.dislike">倒讚</span>{% else %}<span data-i18n="qa.ratingNoOpinion">無意見</span>{% endif %}</td>
                 <td>{{ row.date }}</td>
             </tr>
             {% else %}
