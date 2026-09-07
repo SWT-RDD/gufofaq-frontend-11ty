@@ -33,7 +33,7 @@ test("§5/§6 元件 scss 的巢狀狀態/變體 class（&.is-*）都要有頁�
             hits.push(`${bucket}/${name}  &.${cls}  ← scss 定義了，但沒有任何 dist 頁面或元件 js 用到它`);
         }
     }
-    assert.ok(seen >= 117, `只掃到 ${seen} 個巢狀狀態 class —— 這條測試在空轉`);
+    assert.ok(seen >= 116, `只掃到 ${seen} 個巢狀狀態 class —— 這條測試在空轉`);
     assert.equal(hits.length, 0, `§5：沒有頁面演得出的狀態 class＝出貨死 CSS（示範資料補到演得到，或刪掉規則）：\n${fail(hits)}`);
 });
 

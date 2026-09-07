@@ -553,7 +553,7 @@ permalink: 5-2_conversationSettings.html
             <div class="form-group col-6-md col-12-sm">
                 <div class="label"><label for="genTemp" class="control-label" data-i18n="settings.temperature">溫度</label></div>
                 <div class="field">
-                    <input type="number" min="0" max="1" step="any" id="genTemp" class="form-control js-temperature" value="0.0"
+                    <input type="number" min="0" max="1" step="any" id="genTemp" class="form-control js-temperature" value="0"
                         placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" aria-describedby="genTempRange">
                     <span class="text-gray" id="genTempRange">0 – 1</span>
                 </div>
@@ -577,7 +577,7 @@ permalink: 5-2_conversationSettings.html
             <div class="form-group col-6-md col-12-sm">
                 <div class="label"><label for="genRatio" class="control-label" data-i18n="settings.dataSourceRatio">資料來源比例（主題／向量）</label></div>
                 <div class="field">
-                    <input type="number" min="0" max="1" step="any" id="genRatio" class="form-control js-data-source-ratio" value="0.0"
+                    <input type="number" min="0" max="1" step="any" id="genRatio" class="form-control js-data-source-ratio" value="0"
                         placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" aria-describedby="genRatioRange">
                     <span class="text-gray" id="genRatioRange">0 – 1</span>
                 </div>
@@ -814,10 +814,42 @@ permalink: 5-2_conversationSettings.html
     {# 版本史篩選（關鍵字／日期區間／版本）——與歡迎語子頁籤同一種篩選列（關鍵字／日期區間／版本），設定檔改由上方設置頁籤決定，
          故此處不含設定檔選擇。值載體掛 hook class（§5，React 接 change）；查詢＝直送版本列表 API 的鈕→data-toast。
          版本示範資料先 set 於此：版本下拉選項與版本卡都由它渲染（§6 能推導就從陣列渲染，兩處不會分岔）。 #}
+    {# 卡片內文＝**那個版本的內容字串**（純文字、逐行換行），所以它是資料、不是手寫排版：
+         提示詞是上面那顆編輯器（`components/prompt-edit` 的 textarea）存下來的一整段字，
+         沒有標題階層、沒有項目符號元素、也沒有標紅——把它畫成 `<p>／<ul>／<li>` ＋
+         `.text-red`，等於在同一頁上讓同一份資料長出兩種形狀（§6）。歡迎語那三張卡本來就是
+         這個形狀（`{{ v.content }}`），兩邊一致。
+       **三版的字面必須不同**：版本是「提示詞被改過」才生出來的，三張卡印同一段字等於演一個
+         產不出來的狀態（而引用次數 204／14／300 已經在說它們是三份不同的東西）。
+       V3 與 2-2-3「設定 A」引的是同一版（那一頁的 `promptVersion: "V3"`）⇒ **字面逐字相同**，
+         否則同一個租戶的同一版提示詞在兩頁上長不一樣（§6 跨頁自洽）。
+       換行寫成**真的換行**（同 2-2-3 的 `prompt`）：這一格印的是原文，`.prompt-content` 靠
+         `white-space: pre-wrap` 把它照原樣攤開。 #}
     {% set versions = [
-      { label: "V3", timeRange: "2026/01/20 13:09:37～", refCount: "204" },
-      { label: "V2", timeRange: "2026/01/18 15:02:33～2026/01/20 13:09:36", refCount: "14" },
-      { label: "V1", timeRange: "2026/01/02 14:09:37～2026/01/18 15:02:32", refCount: "300" }
+      { label: "V3", timeRange: "2026/01/20 13:09:37～", refCount: "204",
+        content: "角色定位：
+你是一位專業的知識庫問答助手，負責依據已上傳的資料回應使用者詢問。
+知識來源限制：
+你的回答必須僅依據以下資料來源：
+• 《知識庫檢索結果》（本次問答檢索到的資料片段）
+回應原則：
+• 優先使用條列式呈現資訊
+• 語氣清楚、專業且易懂
+• 不可臆測或補充未出現在資料中的內容
+• 若資料不足，需明確說明『無法從現有資料判斷』
+輸出格式：
+• 使用條列式（• 或 -）
+• 必要時分段（例如：說明 / 流程 / 注意事項）" },
+      { label: "V2", timeRange: "2026/01/18 15:02:33～2026/01/20 13:09:36", refCount: "14",
+        content: "角色定位：
+你是一位專業的知識庫問答助手，負責依據已上傳的資料回應使用者詢問。
+知識來源限制：
+你的回答必須僅依據《知識庫檢索結果》，不得引用其他來源。
+輸出格式：
+• 必要時分段（例如：說明 / 流程 / 注意事項）" },
+      { label: "V1", timeRange: "2026/01/02 14:09:37～2026/01/18 15:02:32", refCount: "300",
+        content: "你是一位知識庫問答助手，請依據已上傳的資料回答使用者的問題。
+資料不足時直接告知使用者，不要自行補充。" }
     ] %}
     <div class="block mb-10">
         <div class="flex-row flex-wrap gap-24 mobile-column sm-gap-16">
@@ -885,23 +917,7 @@ permalink: 5-2_conversationSettings.html
                     </div>
                 </div>
                 <div class="prompt-content">
-                    <p>角色定位：<br>你是一位專業的知識庫問答助手，負責依據已上傳的資料回應使用者詢問。</p>
-                    <p>知識來源限制：<br>你的回答必須僅依據以下資料來源：</p>
-                    <ul class="list-style-disc line-loose">
-                        <li>《知識庫檢索結果》（本次問答檢索到的資料片段）</li>
-                    </ul>
-                    <p>回應原則：</p>
-                    <ul class="list-style-disc line-loose">
-                        <li>優先使用「<span class="text-red">條列式</span>」呈現資訊</li>
-                        <li>語氣清楚、專業且易懂</li>
-                        <li>不可臆測或補充未出現在資料中的內容</li>
-                        <li>若資料不足，需明確說明「無法從現有資料判斷」</li>
-                    </ul>
-                    <p>輸出格式：</p>
-                    <ul class="list-style-disc line-loose">
-                        <li>使用條列式（• 或 -）</li>
-                        <li>必要時分段（例如：說明 / 流程 / 注意事項）</li>
-                    </ul>
+                    <p>{{ v.content }}</p>
                 </div>
             </div>
         </div>

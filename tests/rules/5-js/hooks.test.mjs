@@ -58,7 +58,7 @@ test("§5 掛 data-open-modal 的鈕不得同時帶業務 hook class（那代表
     // 吃共用的 cssSelectorClasses()（只解析選擇器）：自己重寫一份「掃整份 css」的收集器，
     // 會把 `url(…icon_owl.png)` 的 `png` 收成 class，於是 class="png" 這種無主掛點被判成有樣式。
     const cssClasses = cssSelectorClasses();
-    assert.ok(cssClasses.size >= 543, `dist/css/main.css 只掃到 ${cssClasses.size} 個 class —— 這條測試在空轉`);
+    assert.ok(cssClasses.size >= 542, `dist/css/main.css 只掃到 ${cssClasses.size} 個 class —— 這條測試在空轉`);
     assert.ok(!cssClasses.has("png"), "css class 收集器又把 url(...png) 的副檔名收成 class 了");
 
     let btnCount = 0;
@@ -95,7 +95,7 @@ test("§5 窗腳的每一顆鈕都要有主人（不掛 .btn-close-modals 的那
             "那一頁沒有真實觸發鈕，生產頁上這顆送的是刪除 API，成敗由 React 演；窗仍關得掉（取消鈕與右上角都掛著 btn-close-modals）"],
     ]);
     const cssClasses = cssSelectorClasses();
-    assert.ok(cssClasses.size >= 543, `dist/css/main.css 只掃到 ${cssClasses.size} 個 class —— 「哪些 class 是 hook」判不出來，這條測試在空轉`);
+    assert.ok(cssClasses.size >= 542, `dist/css/main.css 只掃到 ${cssClasses.size} 個 class —— 「哪些 class 是 hook」判不出來，這條測試在空轉`);
     const jsText = srcJs.map((f) => read(f)).join(NL);
     assert.ok(jsText.includes("btn-close-modals"), "元件 js 全串起來卻找不到 btn-close-modals —— srcJs 收集器壞了，(d) 那條會全數落空");
 

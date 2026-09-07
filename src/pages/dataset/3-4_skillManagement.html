@@ -227,9 +227,19 @@ permalink: 3-4_skillManagement.html
      （refund-flow → lookup-order → 它的工具呼叫）與 skill 失敗的明細列。
 
    ⚠️ **「檢索知識庫」是 skill 子樹的宿主節點，所以它一定跑過**：skill 一定是在工具節點裡被
-     呼叫的，而父節點為空或指不到人的 skill 步驟一律掛到這一站底下。
+     呼叫的，而這一輪唯一的工具節點就是它 ⇒ **呼叫 refund-flow 本身就是這一站的那一次工具呼叫**，
+     故這一列自己帶 `tools` 與 `result`（`result` 就是 skill 失敗時父 agent 拿到的那一句，
+     與下方答案槽引的是同一份字面）。少了這兩欄，畫面上這一站看起來什麼都沒做，
+     底下卻掛著一棵跑了 1.8 秒的子樹。
+     （父節點為空或指不到人的 skill 步驟也一律掛到這一站底下，那是另一種輪次的形狀，不是這一份。）
+     **這一列刻意不給 `params`**：skill 的引數形狀來自那顆 skill 自己宣告的輸入結構，
+     而這一份示範沒有替 refund-flow 定過那份結構——`params` 只印形狀不印值，
+     憑空寫一個形狀就是替一個沒有定義的東西編一份契約（§6）。
      所以這一列**只能是 `completed`**：標成 `skipped` ＋ 時間空白，
      底下卻掛著一棵跑了 1.8 秒的子樹，等於同時宣稱「這一站沒有執行」與「它底下執行了 1.8 秒」（§6）。
+   ⚠️ **skill 子樹底下的那幾站沒有「推理」明細**：有推理明細的只有頂層那一站（`Agent 推理`），
+     子樹裡的每一站都沒有。所以 depth 2 的那一列只有站名與耗時、沒有可展開的明細——
+     那不是漏寫，是那一層拿不到那一欄。
      **父子的包含關係是「掛在誰底下」給的，不是畫面上兩個數字給的**：skill 子樹掛在 retrieve 之下
      ⇒ 這一站的耗時必須含得下整棵子樹。故 refund-flow 1,800ms ＜ retrieve 1,900ms，
      而 refund-flow 直屬子步驟的和 240 ＋ 430 ＋ 95 ＝ 765ms（再往下 lookup-order 的 180ms ⊆ 它的 430ms）
@@ -268,11 +278,11 @@ permalink: 3-4_skillManagement.html
   { label: "QA 直答比對", state: "completed", time: "14ms",
     decision: "not_attempted", entry: "pre_graph", poolSize: "0" },
   { label: "Agent 推理", state: "completed", time: "280ms", thinking: "使用者問「能退多少錢」，用途說明命中 refund-flow，決定呼叫它。" },
-  { label: "檢索知識庫", state: "completed", time: "1.9s" },
+  { label: "檢索知識庫", state: "completed", time: "1.9s", tools: "refund-flow", result: "[skill:refund-flow 失敗] 內部錯誤（TimeoutError），詳見伺服器日誌。" },
   { label: "skill：refund-flow", state: "failed", time: "1.8s", depth: 1, skill: "refund-flow", version: "v2", iterations: "2", tools: "calculate, lookup-order", error: "TimeoutError" },
-  { label: "Agent 推理", state: "completed", time: "240ms", depth: 2, thinking: "先用 lookup-order 取訂單金額，再依退貨政策試算。" },
+  { label: "Agent 推理", state: "completed", time: "240ms", depth: 2 },
   { label: "skill：lookup-order", state: "completed", time: "430ms", depth: 2, skill: "lookup-order", version: "v1", iterations: "1", tools: "search_knowledge_base" },
-  { label: "呼叫工具", state: "completed", time: "180ms", depth: 3, tools: "search_knowledge_base", result: "命中 4 筆訂單紀錄片段（相似度 0.74–0.91），取得訂單金額、狀態與品項。" },
+  { label: "呼叫工具", state: "completed", time: "180ms", depth: 3, tools: "search_knowledge_base", params: "[1/1] query: string", result: "命中 4 筆訂單紀錄片段（相似度 0.74–0.91），取得訂單金額、狀態與品項。" },
   { label: "呼叫工具", state: "completed", time: "95ms", depth: 2, tools: "calculate" },
   { label: "可回答性判定", state: "completed", time: "150ms", verdict: "no_answer", reason: "llm" },
   { label: "誠實查無", state: "completed", time: "260ms" },
@@ -293,8 +303,12 @@ permalink: 3-4_skillManagement.html
      「誠實查無」是**會串流給使用者**的答案節點，TTFT 記在它吐出的第一個字。
      **ttft 不可以留「—」、誠實查無也不可以標 running**：同一頁的 `trySkillAnswer` 已經渲染著
      一整段答案，畫面上有答案、摘要卻說還沒吐出第一個字。 #}
+{# **這一份摘要沒有 `model`**：那一欄只有回頭讀一筆落庫紀錄時才拿得到（4-2 對話詳細、
+     2-2-3 AB 測試都是那一種），而試跑沙盒畫的是當下這一輪——模型是設定值，不隨每一輪的
+     回應回來。給了它就等於宣稱這一份是重播（見元件庫頁對摘要那五欄的說明）。
+     其餘四欄當下這一輪都算得出來，故照樣備齊。 #}
 {% set stepFlowSummary = {
-    tokens: "612", latency: "2.8s", ttft: "2.4s", results: "4", model: "openai:gpt-4o-mini"
+    tokens: "612", latency: "2.8s", ttft: "2.4s", results: "4"
 } %}
 {# 這一份示範演的是 refund-flow **失敗**（走誠實查無，答案就是那段誠實查無的話），
      所以答案槽不能沿用元件內建那段「本次可退金額為 1,280 元」的成功答案——過程與產出

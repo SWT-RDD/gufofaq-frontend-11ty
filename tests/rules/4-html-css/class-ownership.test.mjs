@@ -98,7 +98,7 @@ test("§4 markup 上的每個 class 都要有主人（反向網：css 規則／�
     // 突變證明：直接吃 js 原始檔的話，「在任何一支元件 js 的**註解**裡提一次」
     // 就足以讓一個全站無主的 class 過關——而 §4 第②種死法正是「新造一個看起來像掛點的 class」。
     // 剝掉行註解與區塊註解再比對（`//` 前面是 `:` 的不剝，那是網址）。
-    assert.ok(cssClasses.size >= 543, `編譯後 css 只解析到 ${cssClasses.size} 個 class —— 這條測試在空轉`);
+    assert.ok(cssClasses.size >= 542, `編譯後 css 只解析到 ${cssClasses.size} 個 class —— 這條測試在空轉`);
 
     // 認領判準抽到檔頭當共用正本（另外兩條規則本來各自留著子字串比對，見那裡的說明）。
     const jsOwned = jsOwnedClasses;

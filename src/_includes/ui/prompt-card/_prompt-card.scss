@@ -36,19 +36,15 @@
 //                   </div>
 //               </div>
 //               <div class="prompt-content">
-//                   <p>角色定位：<br>你是一位專業的知識庫問答助手，負責依據已上傳的資料回應使用者詢問。</p>
-//                   <ul class="list-style-disc line-loose">
-//                       <li>《知識庫檢索結果》（本次問答檢索到的資料片段）</li>
-//                   </ul>
+//                   <p>{{ v.content }}</p>
 //               </div>
-//               {# 重複 N 次同型節點：一對 p ＋ ul，段數與項數由提示詞內容決定 #}
 //           </div>
 //       </div>
 //       {% endfor %}
 //   </div>
 //
-// ② 已發布的歡迎語版本卡（「歡迎語」子頁籤 #panelWelcome）——與 ① 同型，只差三處：外層容器沒有
-//    `.mb-10`、後設資訊列沒有「被問答引用次數」那一段、`.prompt-content` 只有一行 `<p>{{ v.content }}</p>`：
+// ② 已發布的歡迎語版本卡（「歡迎語」子頁籤 #panelWelcome）——與 ① 同型，只差兩處：外層容器沒有
+//    `.mb-10`、後設資訊列沒有「被問答引用次數」那一段（內文兩型相同，都是那個版本的內容字串）：
 //
 //   <div class="prompt-card-list flex-row column gap-10">
 //       {% for v in welcomeVersions %}
@@ -99,7 +95,10 @@
 //      提示詞編輯器，自帶 `.js-prompt-input`），它不掛本元件的 `.prompt-input`。
 //   ⓒ `.prompt-input` 是本元件的 slot class，與 `ui/form-control` 的 `.form-control.size-lg`
 //      同時掛（§4：不指名別人的 class 寫規則）；值載體的綁定記號是另一顆 `.js-welcome-input`（§5）。
-//   ⓓ `.prompt-content` 內含清單時配 `ui/list-style` 的 `.line-loose`。
+//   ⓓ `.prompt-content` **只有一顆資料節點**（`<p>{{ v.content }}</p>`）：那一格印的是那個版本的
+//      內容字串——提示詞與歡迎語都是編輯器存下來的一整段純文字，沒有標題階層、沒有項目符號元素、
+//      也沒有標紅。畫成 `<p>／<ul>／<li>` 就是讓同一份資料在同一頁長出兩種形狀（§6）；
+//      換行由本元件的 `white-space: pre-wrap` 照原樣攤開。
 //
 // 住在哪一頁（雙向）：只有 5-2_conversationSettings（提示詞／歡迎語兩個子頁籤）。
 // 反查：`grep -rn 'prompt-card' src --include=*.html` 除該頁外只命中元件庫頁的一行說明文字。
@@ -117,9 +116,11 @@
     }
 }
 
-// 卡片內文（提示詞全文）：行距放鬆為 1.625
+// 卡片內文（提示詞全文）：行距放鬆為 1.625。**照原樣攤開換行**——這一格印的是那個版本的
+// 內容字串（提示詞是編輯器存下來的一整段字），沒有 pre-wrap 的話整段會被折成一行。
 .prompt-content {
     line-height: 1.625;
+    white-space: pre-wrap;
 
     p {
         margin: 0;

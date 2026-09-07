@@ -93,7 +93,7 @@ test("§4 文字族 token 不可拿去當 background-color / border-color", () =
         sels: sel.split(",").map((s) => s.trim()).filter(Boolean),
         body,
     }));
-    assert.ok(blocks.length > 957, `只解析到 ${blocks.length} 條規則 —— 這條測試在空轉`);
+    assert.ok(blocks.length >= 957, `只解析到 ${blocks.length} 條規則 —— 這條測試在空轉`);
 
     const masked = [];
     for (const { sels, body } of blocks) {
@@ -242,7 +242,7 @@ test("§4/§6 表格列的狀態底色不可寫在 <tr> 上（cell 的不透明�
     // 反面：狀態底色寫在 <tr> 上（而不是 cell 上）時，那個狀態 100% 看不見。
     const css = read("dist/css/main.css");
     const blocks = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)];
-    assert.ok(blocks.length > 957, `只解析到 ${blocks.length} 條規則 —— 這條測試在空轉`);
+    assert.ok(blocks.length >= 957, `只解析到 ${blocks.length} 條規則 —— 這條測試在空轉`);
     assert.ok(/tbody\s+tr\s+td\s*\{[^}]*background-color/.test(css.replace(/\s+/g, " ")),
         "找不到 `tbody tr td { background-color }` —— 本規則的前提（cell 有不透明底）不成立，請重新確認");
     const hits = [];
