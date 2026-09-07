@@ -232,9 +232,11 @@ permalink: 3-4_skillManagement.html
      與下方答案槽引的是同一份字面）。少了這兩欄，畫面上這一站看起來什麼都沒做，
      底下卻掛著一棵跑了 1.8 秒的子樹。
      （父節點為空或指不到人的 skill 步驟也一律掛到這一站底下，那是另一種輪次的形狀，不是這一份。）
-     **這一列刻意不給 `params`**：skill 的引數形狀來自那顆 skill 自己宣告的輸入結構，
-     而這一份示範沒有替 refund-flow 定過那份結構——`params` 只印形狀不印值，
-     憑空寫一個形狀就是替一個沒有定義的東西編一份契約（§6）。
+     **`params` 是 `[1/1] payload: string`**：一顆 skill 暴露給模型時**參數永遠只有一顆**——
+     有參數格式（JSON Schema）時是 `payload`（一段 JSON 字串），留空時是 `task`（一句自然語言），
+     那句判準逐字寫在同頁編輯窗「參數格式」那一欄的說明裡。**那份 Schema 不會變成參數名**：
+     它是執行期用來驗 `payload` 內容的，所以這一格與 refund-flow 宣告了什麼欄位無關
+     （同頁編輯窗正演著它的 `order_id`）。
      所以這一列**只能是 `completed`**：標成 `skipped` ＋ 時間空白，
      底下卻掛著一棵跑了 1.8 秒的子樹，等於同時宣稱「這一站沒有執行」與「它底下執行了 1.8 秒」（§6）。
    ⚠️ **skill 子樹底下的那幾站沒有「推理」明細**：有推理明細的只有頂層那一站（`Agent 推理`），
@@ -278,7 +280,7 @@ permalink: 3-4_skillManagement.html
   { label: "QA 直答比對", state: "completed", time: "14ms",
     decision: "not_attempted", entry: "pre_graph", poolSize: "0" },
   { label: "Agent 推理", state: "completed", time: "280ms", thinking: "使用者問「能退多少錢」，用途說明命中 refund-flow，決定呼叫它。" },
-  { label: "檢索知識庫", state: "completed", time: "1.9s", tools: "refund-flow", result: "[skill:refund-flow 失敗] 內部錯誤（TimeoutError），詳見伺服器日誌。" },
+  { label: "檢索知識庫", state: "completed", time: "1.9s", tools: "refund-flow", params: "[1/1] payload: string", result: "[skill:refund-flow 失敗] 內部錯誤（TimeoutError），詳見伺服器日誌。" },
   { label: "skill：refund-flow", state: "failed", time: "1.8s", depth: 1, skill: "refund-flow", version: "v2", iterations: "2", tools: "calculate, lookup-order", error: "TimeoutError" },
   { label: "Agent 推理", state: "completed", time: "240ms", depth: 2 },
   { label: "skill：lookup-order", state: "completed", time: "430ms", depth: 2, skill: "lookup-order", version: "v1", iterations: "1", tools: "search_knowledge_base" },
