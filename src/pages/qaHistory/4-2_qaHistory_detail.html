@@ -273,12 +273,21 @@ permalink: 4-2_qaHistory_detail.html
 
 {# ── 合規與其他 ────────────────────────────────────────────────────────────────
      「被什麼擋下」與「合規命中」在沒被擋的那一輪是空的 ⇒ **有值才出現整塊**，不畫空白。
-     其餘四格（關鍵字／命中檔名／推薦問題／聊天室標題）是常態欄，沒有就畫「—」。
+     其餘四格（關鍵字／問句中的檔名／推薦問題／聊天室標題）是常態欄，沒有就畫「—」。
      「上一則」：多輪時可點回同一個聊天室的前一筆；首輪沒有 ⇒ 不渲染連結。 #}
 {% set detailBlockedBy = "" %}
 {% set detailPolicyDetections = [] %}
-{% set detailKeywords = "新住民, 結婚登記, 戶政事務所" %}
-{% set detailFilenames = "新住民結婚登記須知.pdf, 跨國婚姻健康檢查與居留.docx" %}
+{# 「關鍵字」與「問句中的檔名」是**同一步的兩個產出**（分析這一句話：關鍵字組檢索查詢串，
+     檔名當檢索的檔名條件），而那一步在 agent 模式下**只有模型真的呼叫「分析使用者意圖」
+     那顆內建工具時才會跑**（傳統模式才是固定一站）。
+   **本頁兩格都是空的**：這一份示範的節點清單沒有那一站、工具軌跡也只有一次知識庫檢索
+     ⇒ 那一步沒有發生 ⇒ 它的兩個產出都沒有值，兩格各畫「—」。
+     這與同一列 `intent` 設成 false 是**同一條判準的另外兩格**：那一格的理由是「意圖判斷在
+     agent 模式下不會發生」，這兩格吃的是同一步的產出。
+     要讓兩格有值，得先在節點清單補「分析使用者意圖」那一站與對應的工具軌跡——那會動到
+     九站的耗時總和與 TTFT（兩個數字都與節點對得起來，見摘要那則註解），所以這一份不補。 #}
+{% set detailKeywords = "" %}
+{% set detailFilenames = "" %}
 {% set detailSuggestQuestions = [
   "外籍配偶的單身證明要去哪裡驗證？",
   "結婚登記後多久可以申請居留？"
@@ -326,7 +335,7 @@ permalink: 4-2_qaHistory_detail.html
                         <div class="td">{{ detailKeywords or "—" }}</div>
                     </div>
                     <div class="col col-6-md col-12-sm">
-                        <div class="th" data-i18n="qa.filenames">命中檔名</div>
+                        <div class="th" data-i18n="qa.filenames">問句中的檔名</div>
                         <div class="td">{{ detailFilenames or "—" }}</div>
                     </div>
                     <div class="col col-12-md">
