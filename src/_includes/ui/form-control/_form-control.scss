@@ -106,7 +106,8 @@
 // `.field` 疊成單欄 grid：圖示與 <input> 佔同一格，垂直置中由 align-self 決定 ——
 // 這樣就算 `.error-prompt` 展開把 `.field` 撐高，圖示仍然對齊 <input> 的中線，不必寫死任何高度。
 .field:has(> .form-control.search),
-.field:has(> .form-control.time) {
+.field:has(> .form-control.time),
+.field:has(> .form-control.reveal) {
     display: grid;
     grid-template-columns: 1fr;
     // `.field` 常常被外層 flex 拉高（例：4-1 的日期欄）。grid 的 align-content 預設 stretch，
@@ -128,6 +129,24 @@
         width: 1.5rem;
         height: 1.5rem;
         pointer-events: none; // 點在圖示上要能聚焦到底下的 input
+    }
+}
+
+// 密碼欄的顯示/遮蔽鈕（`ui/reveal-input` 的圖示變體）。與上面兩顆的差別只有一件事：
+// 它是**可點的 `<button>`**，不是 `::after`。所以：
+//   · 它是真的 grid item（`::after` 那一族靠 `pointer-events: none` 讓點擊穿透到 <input>；
+//     這一顆正好相反，要點得到），因此不共用 `&::after` 那一段，自己指同一格。
+//   · `<input>` 的右內距要讓開它的寬度（`.button-icon` 是 36px），否則長密碼的字會壓在眼睛下面
+//     ——而那只在字夠長時才看得出來，短密碼下畫面完全正常。
+.field:has(> .form-control.reveal) {
+    > .form-control {
+        padding-right: 2.75rem;
+    }
+
+    > .button-icon {
+        grid-area: 1/1;
+        justify-self: end;
+        align-self: center;
     }
 }
 

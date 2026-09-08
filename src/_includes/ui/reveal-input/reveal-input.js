@@ -72,17 +72,58 @@
 // （欄位沒有可見欄名，少了 aria-label 就是無名輸入框，§4）。
 // 狀態語意走「換標籤」，**不掛 `aria-pressed`**（兩者並用會念出「隱藏、已按下」這種矛盾）。
 //
-// 住在哪一頁（雙向）：5-9_extractApiKey（萃取 API 金鑰）與 5-6-3_platformServiceKeys（平台服務憑證）。
+// ── 第三個消費點（login 的密碼欄）是**圖示變體**：字面不在鈕上，住在兩顆 span 裡 ──────
+//
+// 眼睛用既有素材（`ui/button` 的 `.button-icon.watch` → `icon_watch_black.png`，icon-mask 上色），
+// 位置用 `ui/form-control` 對「輸入框尾端控制項」既有的 `.field` 單欄 grid（`<input>` 要帶
+// `.reveal`，那是那條 `:has()` 的鉤子）。整段照抄：
+//
+//   <div class="field">
+//       <input type="password" id="password" name="password" aria-describedby="passwordError" placeholder="請輸入密碼" data-i18n-placeholder="faq.enterPassword" class="form-control reveal" required autocomplete="current-password">
+//       <button type="button" class="button-icon watch has-tooltip" data-reveal-target="password" data-text-show="顯示" data-text-hide="隱藏" data-key-show="extractKey.show" data-key-hide="extractKey.hide">
+//           <span class="tooltip" data-i18n="extractKey.show">顯示</span>
+//           <span class="sr-only" data-i18n="extractKey.show">顯示</span>
+//       </button>
+//       <span class="error-prompt" role="alert" id="passwordError"></span>
+//   </div>
+//
+// 與文字變體的差異只有兩處：鈕的 class（`button-icon watch has-tooltip` 取代
+// `button button-border`）、以及**兩態文字寫進 `.tooltip`／`.sr-only` 而不是鈕的 textContent**。
+// 五顆 data-* 一顆都沒少，key 也沿用 `extractKey.*`（同一句話不造第二份譯文）。
+//
+// ⚠️ **`.tooltip` 與 `.sr-only` 兩顆都要，而且文字要一起換**：只換其中一顆的下場是「看得見的
+// 提示說『隱藏』、螢幕閱讀器念的是『顯示』」——兩種使用者被告知相反的事，而畫面上看不出來。
+//
+// 住在哪一頁（雙向）：5-9_extractApiKey（萃取 API 金鑰）、5-6-3_platformServiceKeys（平台服務憑證），
+// 以及 login.html（登入頁的密碼欄，圖示變體）。
 // 反查：`grep -rn 'data-reveal-target' src --include=*.html` 命中三個檔——這兩頁的實例，加上元件庫頁一則 `{# … #}` 註解（講「這一態沒有那顆鈕」，不是實例）。
 document.addEventListener("DOMContentLoaded", function () {
     function t(key, zh) {
         return (window.GufoI18n && window.GufoI18n.t) ? window.GufoI18n.t(key, zh) : zh;
     }
 
-    // 同步改寫 data-i18n key，切換語言時 lang-toggle 才會依「當下狀態」重譯
+    // 同步改寫 data-i18n key，切換語言時 lang-toggle 才會依「當下狀態」重譯。
+    //
+    // **兩種變體，寫進去的節點不同**：
+    //   · 文字鈕（5-9／5-6-3）：字面就在鈕自己身上 ⇒ 寫 `btn.textContent` ＋ 鈕的 `data-i18n`。
+    //   · 圖示鈕（login 的密碼欄）：字面住在 `.tooltip` 與 `.sr-only` 兩顆 span 上（`ui/tooltip`
+    //     生產契約：tooltip 是可見 chrome、可及名稱另補 sr-only）。這一種**不能**寫
+    //     `btn.textContent`——那會把兩顆 span 連同眼睛的 tooltip 一起洗掉，而畫面上只會看到
+    //     鈕裡多出一段裸文字、tooltip 從此不再出現。
+    //
+    // `data-i18n` 要掛在**被換文字的那個節點**上：lang-toggle 換的是 `[data-i18n]` 自己的
+    // textContent（見該元件檔頭①）。掛錯節點的下場是切到英文之後那一顆卡在繁中。
     function label(btn, revealed) {
         var zh = revealed ? btn.getAttribute("data-text-hide") : btn.getAttribute("data-text-show");
         var key = revealed ? btn.getAttribute("data-key-hide") : btn.getAttribute("data-key-show");
+        var spans = btn.querySelectorAll(".tooltip, .sr-only");
+        if (spans.length) {
+            spans.forEach(function (el) {
+                el.textContent = t(key, zh || "");
+                el.setAttribute("data-i18n", key);
+            });
+            return;
+        }
         btn.textContent = t(key, zh || "");
         btn.setAttribute("data-i18n", key);
     }

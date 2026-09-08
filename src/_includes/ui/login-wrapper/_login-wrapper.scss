@@ -34,7 +34,11 @@
 //                           <label for="password" class="control-label required" data-i18n="common.password">密碼</label>
 //                       </div>
 //                       <div class="field">
-//                           <input type="password" id="password" name="password" aria-describedby="passwordError" placeholder="請輸入密碼" data-i18n-placeholder="faq.enterPassword" class="form-control" required autocomplete="current-password">
+//                           <input type="password" id="password" name="password" aria-describedby="passwordError" placeholder="請輸入密碼" data-i18n-placeholder="faq.enterPassword" class="form-control reveal" required autocomplete="current-password">
+//                           <button type="button" class="button-icon watch has-tooltip" data-reveal-target="password" data-text-show="顯示" data-text-hide="隱藏" data-key-show="extractKey.show" data-key-hide="extractKey.hide">
+//                               <span class="tooltip" data-i18n="extractKey.show">顯示</span>
+//                               <span class="sr-only" data-i18n="extractKey.show">顯示</span>
+//                           </button>
 //                           <span class="error-prompt" role="alert" id="passwordError"></span>
 //                       </div>
 //                   </div>

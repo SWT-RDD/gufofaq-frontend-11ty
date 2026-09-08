@@ -29,7 +29,19 @@ permalink: login.html
                         <label for="password" class="control-label required" data-i18n="common.password">密碼</label>
                     </div>
                     <div class="field">
-                        <input type="password" id="password" name="password" aria-describedby="passwordError" placeholder="請輸入密碼" data-i18n-placeholder="faq.enterPassword" class="form-control" required autocomplete="current-password">
+                        {# `.reveal` 是給 `ui/form-control` 那條 `:has()` 用的：它把 `.field`
+                             疊成單欄 grid，讓眼睛與 <input> 佔同一格（同搜尋放大鏡／時間時鐘
+                             的機制）。少了它，鈕會掉到 <input> 下面自成一列。 #}
+                        <input type="password" id="password" name="password" aria-describedby="passwordError" placeholder="請輸入密碼" data-i18n-placeholder="faq.enterPassword" class="form-control reveal" required autocomplete="current-password">
+                        {# 顯示/遮蔽鈕＝`ui/reveal-input` 的**圖示變體**（行為由 `data-reveal-target`
+                             委派，見該元件檔頭）。兩態文字沿用 `extractKey.*`：那兩個字說的是
+                             同一件事，另造 key 就是同一句話有兩份要對齊的譯文（§4-2）。
+                             `.tooltip` ＋ `.sr-only` 兩顆都要：前者是可見 chrome、後者是可及
+                             名稱（`ui/tooltip` 生產契約 ⓑ 的「不在迴圈裡且沒有可見字面」那一支）。 #}
+                        <button type="button" class="button-icon watch has-tooltip" data-reveal-target="password" data-text-show="顯示" data-text-hide="隱藏" data-key-show="extractKey.show" data-key-hide="extractKey.hide">
+                            <span class="tooltip" data-i18n="extractKey.show">顯示</span>
+                            <span class="sr-only" data-i18n="extractKey.show">顯示</span>
+                        </button>
                         <span class="error-prompt" role="alert" id="passwordError"></span>
                     </div>
                 </div>
