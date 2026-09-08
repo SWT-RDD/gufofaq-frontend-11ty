@@ -515,8 +515,11 @@ permalink: 2-2-3_abTest.html
              **無聲消失**，畫面上與「那些回合根本不存在」逐位元組相同。**而總數只是徵狀，真正的出路
              是它下面那一列頁碼**（見 qa-side-panel 檔頭：只有給得出總數的那一頁才畫）。
              128 與三顆示範頁籤刻意不相等：它演的正是「這張清單被切過」（同 pagination 的 `total`
-             是滑窗示範參數、不與示範列數對帳，§6）。值以字串傳入，理由見元件檔頭。 #}
+             是滑窗示範參數、不與示範列數對帳，§6）。值以字串傳入，理由見元件檔頭。
+             頁大小填的是上游預設值（`GET /qatest/limits` 的 `default_ab_history_page`）的當前值；
+             React 端讀執行期拿到的那一顆，不抄這個字面（理由見元件檔頭那一段）。 #}
         {% set sidePanelTotal = "128" %}
+        {% set sidePanelPerPage = 10 %}
         {% include "components/qa-side-panel/qa-side-panel.html" %}
     </div>
 </div>
