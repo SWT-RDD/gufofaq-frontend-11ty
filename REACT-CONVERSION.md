@@ -16,17 +16,21 @@
 ## ⓪ 從切版整份重寫
 
 - 每個元件從切版 `<name>.html` + `<name>.js` + `_<name>.scss` 整份重寫。
-- 從現況保留的只有 **React 應用層**：權限過濾、`fetch`、路由、Next 慣例。
+- 唯一不重寫的是 **React 應用層**：權限過濾、`fetch`、路由、框架慣例——那一層不在切版的射程內，切版沒有對應物可對。
 - 重建到符合切版的正確路徑／命名（`ui/` 原子→`components/ui/`）：consumer 改用新元件、刪掉走樣舊檔，不留新舊兩套。
-  （現況常有 undefined token 的走樣舊檔仍被 consumer import——那正是要退休的那份。）
+  （**不留新舊兩套**：舊實作若帶著未定義的 token，畫面會靜默回退成繼承色——那一份是要退休的那份，不是要修的那份。）
 - **有四分之一的元件沒有 `<name>.html`**，產出契約那句話對它們不成立。這種元件的 markup 正本寫在
   **它自己的 `_<name>.scss` 或 `<name>.js` 檔頭**，實例散在某一頁或元件庫展示頁——
   **去哪裡找由 README 的「無 html 元件」登記段落決定**（GUIDELINE §1-2 要求每一支都登記在那裡）。
   三種型態各自的做法：純 scss（無 html／無 js）**只決定「markup 正本住在 scss 檔頭」，不決定元件形態**
-  ——形態照 §② 那條判準另判：檔頭契約是**任意 element 貼一顆 class**（`ui/chat-message` 的 `.robot-msg`、
-  `ui/ab-compare`）→ scss-only，consumer 手寫 className；檔頭契約是**固定的多節點 markup**（`ui/info-btn`
-  的六件組：button ＋ img ＋ sr-only span，三顆缺一就沒有可及名稱）→ **tsx wrapper**，把契約鎖在元件裡。
-  判準一句話：**契約寫得出「缺一不可」的節點清單，就不能交給 consumer 手抄**；
+  ——形態照 §② 那條判準另判：檔頭契約是**任意 element 貼一顆 class**（`ui/inline-code` 的
+  `<code class="inline-code">`、`ui/tablelist-title`）→ scss-only，consumer 手寫 className；
+  檔頭契約是**固定的多節點 markup**（`ui/info-btn`：button ＋ img ＋ sr-only span，缺一就沒有
+  可及名稱；`ui/chat-message` 的 `.message-wrap > .message-row > .message-content + .message-time`，
+  時間戳挪出 `.message-row` 就對不齊；`ui/ab-compare` 的 `.ab-compare > .ab-compare-item > …`）
+  → **tsx wrapper**，把契約鎖在元件裡。
+  判準一句話：**契約寫得出「缺一不可」的節點清單，就不能交給 consumer 手抄**——
+  「純 scss」講的是正本住在哪，不是「這顆可以少抄幾層」；
   js only（`ui/print`、`ui/dismiss-panel`、`ui/list-filter`…）→ 行為改寫成 hook，沒有元件檔；
   正本寄生在別的頁（`ui/login-wrapper` 在 `src/login.html`）→ 見下一條。
   （反例提醒：`ui/block`、`ui/error-page` **有** `<name>.html`，只是那份只被元件庫頁 include 當展示片段——
@@ -43,19 +47,19 @@
   的宿主：做成一條開發用路由（不進正式導覽），把每個展示片段照抄成該路由的 section。
   它不轉的話，那幾個分支在 React 端就再也沒有人看得到了。
   **這一頁的節要一節對一節，三條**：①**節 id 與 `NN` 編號照抄**——那是唯一能機械比對「缺了哪一節」
-  的錨點（節數與順序一旦各判各的，缺節只能靠人工逐節比對，實測會整節整節地漏）；
+  的錨點（節數與順序一旦各判各的，缺節只能靠人工逐節比對，而人工比對會整節整節地漏）；
   ②**純說明節**（`#introSection`／`#layoutSection`／`#mainSection` 只有 caption）**照轉**：那幾段 caption
   是 grid／utility／`_guideline.scss` 用途的規格散文，React 端沒有第二個地方寫著它；
   ③切版**沒有** demo 的元件（`page-size-select`、`pager-row` 那一族）另開一區並標明「對照業務頁」——
   §⑥ 有那條規則，這裡定的是它在 gallery 裡怎麼分區。
 - 寄生 orphan class：某元件 `.scss` 裡出現、但它自己 tsx/markup 從不 render 的 selector，是別的 atom 寄生進來的——
-  追回它切版的 `ui/` atom、抽成獨立 `components/ui/<Name>/`、退掉寄生（例：`.data-info` 曾寄生在 `Pagination.scss`）。
+  追回它切版的 `ui/` atom、抽成獨立 `components/ui/<Name>/`、退掉寄生。
 - 走樣 scss 若把 hook class 選擇器寫成裸元素（如 `button:hover .tooltip` 而非 `.has-tooltip:hover .tooltip`），修回
   切版選擇器時 grep 所有 consumer、在觸發元素補上該 hook class——consumer 常是靠走樣的裸選擇器意外運作、自己沒掛 class。
 - **不引用任何其他專案的程式碼或作法**（GUIDELINE §3-2）：切版是每一顆介面的定義點，轉換時要對的是切版這一份，不是任何一份既有實作。既有實作與這裡不同，是那一份要改。
 - **切版搬桶（`ui/` ↔ `components/`）時 React 同步搬**：§1-1 的判準變了就搬（例：`citation-ref` 的 js 呼叫
   `GufoSources.reveal()`＝呼叫「會產出可見 UI 的元件匯出」），並 grep 全 repo 更新 import **與檔頭／測試／
-  e2e 註解裡的切版路徑字串**——那些路徑是下一輪審查對回正本的指標，留舊路徑會讓下一輪讀錯檔。
+  e2e 註解裡的切版路徑字串**——那些路徑是把 React 端的檔案對回正本的唯一指標，留舊路徑會讓讀的人開到不存在的檔。
 - **共用原子升格時三件一起交付**：切版把重複視覺升格成原子（`.step-flow-code`／`.skill-name`／裸 `<code>`
   → `ui/inline-code`）時，React 要①建原子 scss ②刪掉各元件 scss 裡那份抄本 ③把**每一個** consumer 的
   className 換成原子名（含 e2e locator 與測試的 selector）。只做前兩件＝那顆 class 全站無主人（渲染成裸文字），
@@ -88,9 +92,9 @@
   逐行比對會整份從頭紅到尾、噴上百行位移雜訊。要分出「檔頭改寫」（整段換掉的機械操作）與
   「宣告漂移」（要逐條判讀）——分不出來就會整批當雜訊掃過去，把夾在中間的真差異一起放行：
   反例：`_var.scss` 的 `--fontFamily`（字型名補引號）、新增的 `--control-ink-disabled` 與
-  `_checkbox.scss` 就混在同一批紅裡。而檔頭那段 markup 契約是**下一輪 §⓪「無 html 元件」唯一的
-  規格來源**，不是可跳過的散文：落後一輪就照舊契約轉出缺件的 markup（反例：`ui/chatroom-shell`
-  的契約補齊之後，才看得出 React 少了 `.first-chat`／`.chat-box` 兩層）。
+  `_checkbox.scss` 就混在同一批紅裡。而檔頭那段 markup 契約是 §⓪「無 html 元件」**唯一的
+  規格來源**，不是可跳過的散文：拿一份舊契約去轉，轉出來的 markup 會缺節點，而缺的那幾層通常正是
+  版型成立的關鍵（`ui/chatroom-shell` 的契約是 `.first-chat` ＋ `.chat-box` 兩層，少一層滿版就不成立）。
 - **照抄 scss ≠ 抄到 token**：抄完 grep 它用到的每個 `var(--…)` 是否存在於 React `styles/_var.scss`；缺的連同
   切版 `_var.scss` 的 **light + dark 兩處宣告**一起補（值與對比註解照抄）。缺 token 時 `scss-diff` 仍 exit 0、
   `fpdiff` 幾何也不變，畫面卻靜默回退成繼承色（反例：`--danger-ink`）。
@@ -107,9 +111,9 @@
 
 - ⚠️ **`{% if x %}` → `{x && …}` 不是機械替換：值域含 0 的欄兩邊壞法不同。**
   nunjucks 的 `{% if 0 %}` 整段不渲染；JSX 的 `{0 && <span/>}` 會**把 `0` 印在畫面上**。
-  上游真的會送 `0` 的欄至少有 `pool_size`（`not_attempted` 那一筆就是 0）、`score`、`duration_ms`
-  （`stepDurations` 的註解逐字寫著「不可寫成 `if (!s.durationMs)`，那會把量到的 `0` 一起丟掉」）、
-  `storage-bar` 的 `0%`。**轉換時一律換成 `!= null`**（或 `Number.isFinite`），不要照抄 truthiness。
+  真的會出現 `0` 的欄至少有 `poolSize`（建圖前閘門那一筆 `not_attempted` 就是 0）、`score`、耗時毫秒數、
+  `storage-bar` 的 `0%`。切版在**資料這一層**把這一族收斂成字串（`poolSize: "0"`）繞開它——`"0"` 在
+  nunjucks 是 true、在 JSX 也照樣渲染；理由逐條寫在 `components/step-flow` 的檔頭。React 拿到的是真數字，繞不開。**轉換時一律換成 `!= null`**（或 `Number.isFinite`），不要照抄 truthiness。
   切版端的對應要求見 GUIDELINE §6「值域含 0 的參數不得用真值判斷當渲染條件」。
   - **長度／筆數是同一種壞法、但處方相反：不可以用 `!= null`。** 切版有三種形狀——
     `{% if xs.length %}`、`{% if xs.length > 0 %}`、`{% if a.length < b %}`。`{xs.length && <section/>}`
@@ -202,7 +206,7 @@
 - **`{% for %}…{% else %}…{% endfor %}` 是「空狀態列」，不是 for 的一部分**（切版有幾十處）：
   → `{xs.length ? xs.map(…) : <EmptyRow/>}`。這條分支是 GUIDELINE §5「無資料列正典」＋一整條 CI 測試守著的規格，
   照 `{xs.map()}` 直翻會把它整個吃掉，而畫面上什麼都看不出來——空清單就是一張沒有任何列的表。
-  空狀態列的 `colspan` 要等於該表的欄數（切版側**沒有**測試把關這一項——既有的那條只驗 `{% else %}`
+  空狀態列的 `colspan` 要等於該表的欄數（切版側**已有測試**在 src 上把關這一項，連 `<colgroup>` 的 `<col>` 顆數一起驗——母體是 src 而不是 dist，因為示範資料恆非空、空狀態列在 dist 上根本不渲染。既有的另一條只驗 `{% else %}`
   分支在不在，所以轉換時要自己數一遍；順帶一提 `<col>` 的順序也要與 `<th>` 一一對齊）。
 - **`{% elif %}` 鏈 → 靜態查表，不是巢狀三元**：切版用 if/elif 鏈表達的是**枚舉**
   （`components/record-identity` 的 `titleSource` 種類標記，README 明寫「i18n key 逐條寫成字面」）。
@@ -217,9 +221,9 @@
 - a11y 綁定屬性成對帶：`aria-labelledby`／`aria-describedby` 連同它指到的 `id` 一起轉，兩端缺一不可
   （如 `<dialog aria-labelledby="x-title">` 配 `<h3 id="x-title">`），id 隨呼叫端 prop 衍生時兩處同一份運算式。
 - **`aria-label` → `aria-labelledby` 是有方向的遷移，不只是補一顆屬性**：切版把控制項的 `aria-label`
-  換成 `aria-labelledby` 時，React 那一端常常**早就有那顆 `id`**（反例：`excelUnpivotLabel`／
-  `excelConvertHtmlLabel`／`pdfConvertHtmlLabel` 三顆都在，只是沒有人指到它），逐項檢查「id 兩端成不
-  成對」會判成通過，漏掉的是「該被引用的那一端還掛著舊的 `aria-label`」。判準寫成可跑的：切版該元素
+  換成 `aria-labelledby` 時，被指到的那顆 `id`（`excelUnpivotLabel`／`excelConvertHtmlLabel`／
+  `pdfConvertHtmlLabel` 這一族）本來就是版面上既有的標題節點，兩邊都有；於是逐項檢查「id 兩端成不
+  成對」會判成通過，漏掉的是「該去引用它的那一端還掛著舊的 `aria-label`」。判準寫成可跑的：切版該元素
   有 `aria-labelledby` ⇒ React 同一元素上**不得同時出現 `aria-label`**，遷移時整顆刪掉。accname 的優先序
   是 `aria-labelledby` > `aria-label` > `<label for>`，並存時舊值多半只是死字面，但那顆 id 一旦解析不到就
   整條退回 `aria-label`＝「切版已遷移」在 React 端變成看不出來的原地不動。`aria-label` 不進 fpdiff 零容忍
@@ -264,10 +268,10 @@
   不是 export 給多頁共用的模組常數、更不是子元件的預設值。判準：切版**元件檔頭**的 fallback（`perPage or 10`）
   是元件預設；**使用頁** set 的值（`20`）是頁面資料。把頁面值搬進元件＝§6「元件不得寫死會因頁面而異的資料」。
 - **但 `{% set %}` 的列資料陣列不轉**：上一條只管非資料的頁面參數（`perPage`、預設頁籤那一類）。set 的
-  清單若對應執行期取回的一批資料（如 5-6-1 的 `{% set tenants = [...] %}` ↔ 租戶列表
-  的 `TenantOut`、5-8 的 `{% set tokens = [...] %}`），那是**示範資料**——React 的那幾格
-  來自 API，一個字都不搬。切版每一輪的頁面 diff 常有超過一半是這種陣列的修正（列序改成端點真實排序、id 換成
-  真主鍵、金鑰長度補足），逐條寫著理由但全部只對切版成立；照字面讀會把示範租戶 id（7/15/23/42/58）
+  清單若對應執行期取回的一批資料（如 `components/platform-tenants-panel` 的 `{% set platformTenantRows = [...] %}` ↔ 執行期取回的租戶列表
+  、5-8 的 `{% set tokens = [...] %}`），那是**示範資料**——React 的那幾格
+  來自 API，一個字都不搬。切版的頁面 diff 有很大一部分是這種陣列的修正（列序改成真實
+  排序、id 換成真主鍵、金鑰長度補足），逐條寫著理由但全部只對切版成立；照字面讀會把示範租戶 id（7/15/23/42/58）
   當成頁面資料寫進 React 常數。
 - **純版位元件（layout-only wrapper）照樣建成元件**：切版有一類元件不吃自己的參數，只提供版位並把頁面變數
   轉給子元件（`components/pager-row`）——不得在每個使用頁展開成 inline markup（展開後 N 份各自分岔，
@@ -317,10 +321,10 @@ portal 時的唯一辦法，**不是設計**。React 端一律收斂成**一顆�
   `aria-labelledby` 與 `id` 兩處必須是同一份運算式。
 - **②③ 兩塊的 `{% if …length > 0 %}` 照抄成長度比較**（見 §② 的長度那一條）。生產頁上這兩塊恆空，
   唯一演得出來的是元件庫頁的 `demoHelpModal`——§⓪ 判定元件庫頁要轉，這兩塊的長相就靠它。
-- **觸發鈕 `ui/info-btn` 是 tsx wrapper，不是 scss-only**：六件組缺一不可——
+- **觸發鈕 `ui/info-btn` 是 tsx wrapper，不是 scss-only**：三顆節點連同各自的屬性缺一不可——
   `button.info-btn[type][title][data-i18n-title][data-open-modal]` ＋ `img.icon[src][width][height][decoding][alt=""]`
   ＋ `span.sr-only[data-i18n]`。`.sr-only` 那顆是可及名稱的唯一來源（GUIDELINE §4：單掛 `title` 不算），
-  與 `title` 用**同一顆 key**。讓 consumer 各自手抄六件組，等於把「掉一顆 `alt=""`／掉一顆 `.sr-only`」
+  與 `title` 用**同一顆 key**。讓 consumer 各自手抄這一組，等於把「掉一顆 `alt=""`／掉一顆 `.sr-only`」
   複製幾十次，而那是屬性級失真、§⑥ 明文不進 fpdiff 零容忍比對。
 - **整區被隱藏時，ⓘ 與說明窗跟著區塊一起不渲染**（沒有一顆按鈕去解釋一個看不到的東西）——收斂成
   單一實例後這是「資料表要不要有那一筆」，別退化成「鈕不見了、資料還在」。
@@ -335,7 +339,7 @@ portal 時的唯一辦法，**不是設計**。React 端一律收斂成**一顆�
   - `<html lang>` ＋ `data-page-title-key`：前者由語言 state 同步（§③），後者是切版給 `lang-toggle` 重譯 `<title>` 用的，**不帶過去**——React 用 metadata / `useTranslation` 直接產生 title。
   - `<head>` 的 no-flash 主題 IIFE ＋ `<meta name="theme-color">`：照抄（§③ 已有），`<html suppressHydrationWarning>`。
   - `.full-wrap`：全站最外層版位容器，**是 scss 的定位基準**（`ui/subscription-gate` 的遮罩、fpdiff 的 full-width 元件容器算式都靠它），不可省略或改名。
-  - `#toastContainer`：`popover="manual"` ＋ `role="status" aria-live="polite" aria-atomic="true"`，**掛在 layout 層**。契約是「每次彈 toast 前重新 `showPopover()` 一次」（top layer 疊放＝進入順序），少了這句，跳窗裡彈的 toast 會被 `<dialog>` 蓋住。
+  - `#toastContainer`：`popover="manual"` ＋ `role="status" aria-live="polite"`，**掛在 layout 層**；**`aria-atomic` 不掛容器、由每一則 `.toast` 自己帶**（容器同時是堆疊器，掛容器等於第二則進場時把第一則連同第二則整串重唸一次）。契約是「每次彈 toast 前重新 `showPopover()` 一次」（top layer 疊放＝進入順序），少了這句，跳窗裡彈的 toast 會被 `<dialog>` 蓋住。
   - 元件 js 的 `<script defer>` 清單：全部不帶（行為已改寫成 hooks），但那份清單是**元件盤點的檢查表**——轉換時逐支對過去，漏一支就是漏一個元件。
 - **`layouts/page-shell`** → 管理端 route layout（`app/(app)/layout.tsx`）。提供：`.skip-link`（`href="#main"`，鍵盤第一個 Tab 的落點）、`components/header`、`<main class="main" id="main" tabindex="-1">` ＞ **`<div class="wrap">`**（全站內容容器，規則在全域 `src/scss/_base.scss`；少了它每一頁的內容都沒有寬度上限、直接貼齊視窗邊）、**每頁唯一的 `<h1 class="sr-only">`**（內容來自 front matter 的 `pageHeading`／`titleKey`）、`components/footer`、
   以及 **`ui/faq-launcher`（在 footer 之後——那是 DOM 順序上頁面最後一顆可聚焦元素，出現條件＝登入態）**。
@@ -361,8 +365,7 @@ portal 時的唯一辦法，**不是設計**。React 端一律收斂成**一顆�
   它自己**沒有** scss：`.main` 沿用 `layouts/page-shell/_page-shell.scss` 那一份（React 端即
   兩個 route layout 各 import 同一支），`.wrap`／`.skip-link` 在全域層。
 
-四支 layout 中**有三支各有一支** `layouts/<模板名>/_<模板名>.scss`（`main.scss` 以 `as layout-base`／
-`as layout-page-shell` 消歧；`public-shell` 沒有自己的樣式，見上一條）——
+四支 layout 中**有三支各有一支** `layouts/<模板名>/_<模板名>.scss`（`main.scss` 只有 `as layout-base` 這一個別名——它與全域 `scss/_base.scss` 同名；另兩支不撞名、無別名。`public-shell` 沒有自己的樣式，見上一條）——
 `layouts/base/_base.scss` 裝的正是本節說「不可省略或改名」的 `.full-wrap`，`layouts/page-shell/_page-shell.scss`
 裝的是撐開它讓頁尾貼底的 `.main { flex: 1 0 auto }`。**三支都要搬**，漏掉任何一支 `scss-diff` 都不會紅
 （它是逐對比清單，沒登記就沒有東西可比）；
@@ -380,7 +383,7 @@ portal 時的唯一辦法，**不是設計**。React 端一律收斂成**一顆�
   **索引契約的作用域是「那一顆鈕」，所以鈕的顆數也是契約**：一顆 toast key 的段集合＝那顆鈕送出去的
   那一次請求所有可能的結果，把切版的一顆共用送出鈕在 React 拆成 N 顆（正典反例：`manage-tenant-modal`：
   切版是額度／使用期／模型開通共用 footer「儲存」鈕、`toast.manageTenant` 一顆 key 涵蓋三區的守衛，
-  React 卻拆成 `js-save-quota`／`js-apply-trial`／`js-save-models` 三顆各配一顆 key），會同時產生兩種壞：
+  React 卻把它拆成三顆各配一顆 key），會同時產生兩種壞：
   切版那顆 key 在 React 變成零引用的孤兒，而三顆新 key 在切版沒有任何鈕掛得上去（掛上去就是零消費者的
   死翻譯，11ty 的孤兒 key 測試會擋）。**處方是 React 併回一顆鈕，不是回切版要三顆 key**——
   §⓪「切版是唯一真實來源」，鈕的顆數與它的結果集合是同一份設計，沒有登記過的分岔就是漂移。
@@ -409,7 +412,7 @@ portal 時的唯一辦法，**不是設計**。React 端一律收斂成**一顆�
 - **被拆成獨立節點的界線數字，React 端讀端點、不抄字面。** 判準是 markup 形狀：**一顆沒有 `data-i18n`
   的裸 `<span>`／`<td>` 夾在兩顆 `data-i18n` 之間，而切版檔頭指名了它是哪一顆界線**，那就是界線資料
   節點、不是文案。做法：走同一支
-  `useLimits(group)` ＋ 路徑取值 ＋ 單位換算函式（`52428800 → 50MB` 集中在那一支，不在消費點各寫一份）；
+  **同一支上限查詢** ＋ 路徑取值 ＋ 單位換算函式（換算集中在那一支，不在消費點各寫一份）；
   讀不到就**整段不畫**——不畫舊數字、不畫破折號、不畫半套。
   - **「先接成常數、之後再接端點」不算過渡**：那顆常數不會有人回來改，而它與正確答案在畫面上長得
     一模一樣。切版的字面（`50MB`／`5000`／`20000`）與 `{% set %}` 的示範列陣列同級（§②「列資料陣列不轉」）。
@@ -418,12 +421,12 @@ portal 時的唯一辦法，**不是設計**。React 端一律收斂成**一顆�
     前後綴兩顆 key ＋ 資料節點。
 - **切版改 UI 用語時只改字典的值、不改 key 名**：key 是識別碼、已被 React／e2e 鏡射，而且常對應不隨 UI 改名的
   後端契約（`widget.*` ↔ `X-Widget-Token`／`?wt=`）。React 端的工作量＝只改 `messages.{en,zh}.json`，`t()` 一行不動；
-  順手更新資料鏡射用的死 `label` 字面量（Breadcrumb items、`Header/menu.ts`），別留舊詞誤導下一個讀 code 的人。
+  順手更新資料鏡射用的死 `label` 字面量（麵包屑項目、導覽選單資料），別留舊詞誤導下一個讀 code 的人。
 - **字典用程式比對，不對讀**：`messages.en.json` vs 切版 `src/i18n/en.json` 同 key 同值；`messages.zh.json` vs
   從切版 `dist/*.html` 抽出的繁中同 key 同值（抽取形狀含 `data-i18n`、`data-i18n-<attr>`、`data-<槽>-key`＋
   `data-<槽>`、`data-key-<態>`＋`data-text-<態>`、`data-page-title-key`＋`<title>`）。可接受的差異只有三種：
   (a) 資料槽的繁中原文住 React 資料常數當 `t(key, fallback)` 的 fallback；(b) 純應用層 key。
-  **跑成 vitest**——LLM 對讀會漏（實測一次對讀漏掉 46 顆 key、45 條異值）。
+  **跑成 vitest**——LLM 對讀會漏，而且漏的量級是數十顆 key、數十條異值，讀起來卻像「幾乎都對」。
   孤兒 key（無 `t()` 引用）同進 CI，模板組合的 key 以前綴白名單放行。
 - **枚舉少了成員是切版的缺口，一律回切版補，而且補的是 markup 不只是字典**。靜態稿一次只畫得出一個狀態，
   於是同一組枚舉常常只有部分成員在切版現身；React 兩種形狀都會遇到，而它們是**同一個缺口**，處方也只有一個：
@@ -431,10 +434,10 @@ portal 時的唯一辦法，**不是設計**。React 端一律收斂成**一顆�
   - 使用頁的示範推導下來**畫不到**某個成員（`regression.reasonAbsentInBaseline`：2-2-5 演的是「這一次中斷過」，
     結果集必為案例集 id 序的前綴 ⇒ 那一頁的「沒得比」兩列必然都是 `absent_in_this_run`）。
 
-  **不要用「React 保留並登記 「只有 React 有」登記表」收掉它**：「只有 React 有」登記表 只解決英文，
+  **不要在 React 端另開一份「只有 React 有的 key」清單來收掉它**：那種清單只解決英文，
   而 §4-2 的硬不變量是**繁中才是原文、住在字串出現的地方**——切版沒有那顆 key 的渲染點時，缺的不只是
-  `en.json` 一行，是那一段繁中在全站沒有家。React 只好就地拼字串（現況那句
-  `` `(${t("qaTest.setting")}${sourcesSide})` `` 就是），等於在 React 端開了第二個文案正本，而字典比對、
+  `en.json` 一行，是那一段繁中在全站沒有家。React 只好在消費點就地把 `t()` 與變數拼成一句（形狀像 `` `(${t("…")}${變數})` ``），
+  等於在 React 端開了第二個文案正本，而字典比對、
   孤兒 key、fpdiff 三張網一張都看不到。**同理也不要去鬆綁 11ty 的孤兒 key 規則**：放行「沒有引用點的 key」
   會讓死翻譯與缺口長得一模一樣，那條規則的價值就沒了。
   切版該交的三種形狀（前兩種是「給它一個家」，第三種是「它不該有家」）：
@@ -444,11 +447,11 @@ portal 時的唯一辦法，**不是設計**。React 端一律收斂成**一顆�
   - **使用頁演不到的成員 → 元件庫頁**（`src/pages/components/component.html` 的「React 條件文案」區）：
     那一區本來就是「在生產頁上沒有人看得到的那一態」的家，枚舉成員與 `.hidden` 分支同住。
     - **整頁級的那一態走 `ui/error-page`，不是一行 `<p className="text-red">`。** 正典：各路由
-      `if (forbidden) return …` 那一支——不逐路由各留一顆 「只有 React 有」登記表（`platform.forbidden`／
+      `if (forbidden) return …` 那一支——不逐路由各留一顆 React 端自有的 key（形狀像 `<路由>.forbidden`／
       `users.forbidden`／`retrieval.forbidden` 這種），一律收斂成 `error.forbidden`／
       `error.forbiddenPlatform` 兩顆——**分界是收件人不是頁面**。轉換時整個內容區換成 `.error-page`（`error-code` ＋ `error-message`，
       契約逐字在 `_error-page.scss` 檔頭），麵包屑與導覽由 route layout 照畫。
-  - **那一態根本走不到 → 刪掉，不要給它版位。** 「只有 React 有」登記表 之所以留得住一顆 key，前提是「執行期真的
+  - **那一態根本走不到 → 刪掉，不要給它版位。** **在 React 端暫留一顆 key** 的前提是「執行期真的
     到得了那一態」；到不了的那些是**防禦性死碼配上一句翻譯**，而一句翻譯讀起來就像它會發生。判準是
     去讀那條路徑而不是讀那段程式碼的註解：`dataImport.uploadExcelFirst`／`dataImport.backToUpload`
     掛在 Excel 匯入精靈的 `// 後備：狀態不完整` 那一支，而 `step` 的初值是 `1`、每一次 `setStep(n)` 都與
@@ -473,7 +476,7 @@ portal 時的唯一辦法，**不是設計**。React 端一律收斂成**一顆�
 - **「送出中／載入中／載入失敗」這一族與枚舉成員同辦法。** 它們不是枚舉，是**執行期狀態**：切版是靜態
   原型，畫得出「送出」畫不出「送出中」，於是 React 端一律就地多一顆 key（`action.saving`、
   `dataImport.previewFailed`…）。處置與缺成員完全相同——**回切版給它一個渲染點**（會換字的那一格用
-  兩態槽、生產頁演不到的落在元件庫頁的「React 條件文案」區），「只有 React 有」登記表 只當**過渡登記**、不是終局。
+  兩態槽、生產頁演不到的落在元件庫頁的「React 條件文案」區），React 端自有的 key 只當**過渡**、不是終局。
   理由也一樣：那句繁中在切版沒有家，就等於在 React 端開了第二個文案正本，而字典比對、孤兒 key、
   fpdiff 三張網一張都看不到。（`disabled={submitting}` 本身合規——§⑥ 合規 disable 的第①種；
   不合規的是那顆**沒有人定過**的第二態文字。）
@@ -501,7 +504,7 @@ portal 時的唯一辦法，**不是設計**。React 端一律收斂成**一顆�
   轉成受控元件、hook class 留在 className、change 綁定交業務層。以 **id 契約**綁定的控制項（2-2-1 的
   `#knowledgeConfigSelect`／`#llmModelSelect`、faq-chatroom 的 `#chat-input-txt`）id 照帶。
 - **`data-platform-role="auditor|admin"` → 條件渲染的判準**（GUIDELINE §5）：值是**最低**需要的平台角色
-  （`auditor` ＝ auditor 與 admin 都可）。React 讀 `/api/me` 的 `platform_role`（不是只讀 `is_platform_admin`
+  （`auditor` ＝ auditor 與 admin 都可）。React 端要讀的是**平台角色那個欄位本身**（值域＝`auditor`／`admin`，§5 在這裡宣告一次），不是一個布林的「是不是平台管理員」（後者
   ——那會把唯讀稽核員一起排除掉）。低於該級時：**動作鈕不渲染**、**值控制項渲染成 `disabled`**（狀態要看得見
   才稽核得到）。屬性本身不帶進 tsx（它是切版寫給轉換用的規格，不是執行期 hook）。
 - **表單驗證的回報方式只有一種**（GUIDELINE §4）：送出鈕 `data-toast` 的 warning 段就是「哪裡填錯」，
@@ -647,7 +650,7 @@ portal 時的唯一辦法，**不是設計**。React 端一律收斂成**一顆�
 - **切版自有行為**的 `.js-*`（`js-accordion`／`js-expand-all`／`js-side-toggle`／`js-prompt-toggle`／`js-lang-toggle`…，
   行為已改寫成 state）不帶；**業務** `.js-*` hook 依 §④ 保留——兩者判準：GUIDELINE §5（hook 是否標記「React 業務 js 接手」）。
   **判準要用跑的、不要用背的**：某支切版元件 js 查得到它 ⇒ 切版自有（不帶）；查不到 ⇒ 業務（保留）。
-  全站兩百多顆，點名幾顆當例子永遠會漏。真正需要人判的只有重疊案例：
+  全站數百顆（顆數不寫死，§3-2；判準＝掃 `dist/*.html` 的 class 取 `js-` 前綴去重），點名幾顆當例子永遠會漏。真正需要人判的只有重疊案例：
   `.js-tool-description`／`.js-tool-extra-prompt` 兩邊都是（元件 js 拿它算字數、值又要交給 React 送 API）
   ——**保留**，因為漏帶業務 hook 是 fpdiff 抓不到的一類漂移，多帶一顆只是多一個 className。
   `fpdiff.mjs` element identity 排除 `.js-*`。
@@ -656,17 +659,23 @@ portal 時的唯一辦法，**不是設計**。React 端一律收斂成**一顆�
     的**程式碼**選得到它」，不是「這個檔案裡出現過這個字串」。
   - **這條規則要有網，不能只有判準。** 判準寫成可跑的還不夠——`fpdiff` 明文排除 `.js-*`、`scss-diff`
     不看 tsx、型別與 lint 都看不到，於是兩個方向的錯可以同時存在，
-    而且**錯的兩處各自都有註解宣稱自己是對的**（`.js-ask-suggested` 被刪掉還配了一條
-    「必須為 null」的反向斷言；`.js-accordion` 那一族被抄過來還寫著「切版 markup 有就保留」的錯判準）。
+    而且**兩個方向的錯都會自帶一條宣稱自己正確的註解**：漏帶的那一顆會配上「這裡本來就沒有」的反向
+    斷言，多帶的那一族會配上「切版 markup 有就保留」這種把判準寫錯一格的說法（正確的判準是**有沒有
+    程式碼選得到它**）。
     轉換方要有一支雙向對帳測試：兩個方向各一條斷言 ＋ 一條負控（兩族都必須
     非空，否則測試恆綠）。**兩側都保留的那幾顆逐顆登記在那支測試的白名單裡並寫理由**，清單只准短。
 
 ## ⑥ 視覺指紋驗收
 
 - `scss-diff.mjs`：去路徑映射後 byte-identical。
-- `fpdiff.mjs`：幾何（x/y/w/h/display/元素增減）零容忍；a11y 結構屬性（`role`／`aria-labelledby`／
-  `aria-describedby`／`aria-haspopup`／`aria-expanded`、以及被某個 `aria-*by` 引用到的元素 `id`）跟幾何同級零容忍
-  （值是結構性 id/常數，不隨語言變）；繪製白名單只含資產路徑 + i18n 文字；`title`／`aria-label`／`alt`／`placeholder`
+- `fpdiff.mjs`：幾何（x/y/w/h/display/元素增減）零容忍；a11y 結構屬性跟幾何同級零容忍。
+  **哪些屬性算「結構」由判準決定、不由清單決定**（清單會落後於新加的屬性，§3-2）：**值是結構性 id、
+  枚舉常數或布林，不隨語言變**的就進零容忍——`role`、指向 id 的 `aria-labelledby`／`aria-describedby`／
+  `aria-controls`、狀態的 `aria-expanded`／`aria-current`／`aria-pressed`／`aria-hidden`／`aria-sort`
+  （`aria-sort` 由 `ui/table-sort` 在執行期寫，且它是排序態的唯一真相源，漏掉就等於整條排序契約沒有網）、
+  `aria-haspopup`／`aria-live`／`aria-atomic`，以及被某個 `aria-*by` 引用到的元素 `id`。
+  反查＝`grep -rho 'aria-[a-z]*=' --include='*.html' src | sort -u` 再逐顆問「值會不會被翻譯」。
+  繪製白名單只含資產路徑 + i18n 文字；`title`／`aria-label`／`alt`／`placeholder`
   這類值隨語言翻譯的屬性不進零容忍比對（fpdiff 對照的切版 dist 跟 React 開發模式預設同語言，比不出翻譯錯誤，
   靠 §③ 規則 + code review 把關）；`--component` normalize 元件絕對位置；`--legacy-eval`／`--react-eval` 開隱藏元件；
   排除 `.js-*`；both-empty／loadFail 守門。
@@ -675,7 +684,7 @@ portal 時的唯一辦法，**不是設計**。React 端一律收斂成**一顆�
   對照業務頁（如 `5-1-1_accountInfo.html`）的元件用業務頁的 `.main > .wrap`（`.wrap` 在全域 `src/scss/_base.scss`、
   `.main` 在 `layouts/page-shell/_page-shell.scss`，兩支都是現成規則，
   不手推公式）。兩種容器寬不同，用錯邊 fpdiff width 必差。
-- 兩側資料前提不對等時（如 React 保留 `/api/me` 權限過濾、切版 `dist` 永遠無過濾）：用 `--react-route="<urlGlob>|<json>"`／
+- 兩側資料前提不對等時（如 React 端保留權限過濾、切版 `dist` 永遠無過濾）：用 `--react-route="<urlGlob>|<json>"`／
   `--legacy-route=`（`goto` 前 `page.route()` 攔截、回一致資料）對齊資料再比幾何；不放寬 (A)-(D) 判準。
 - WAAPI 動畫（如 `useSlideToggle` 300ms slide）open-state 截圖：`--legacy-eval`／`--react-eval` 用 async IIFE
   觸發後 `await` 超過動畫時長的 timeout（例 `(async()=>{el.click();await new Promise(r=>setTimeout(r,500))})()`），兩側同腳本同等待。
@@ -730,13 +739,13 @@ portal 時的唯一辦法，**不是設計**。React 端一律收斂成**一顆�
   - **送 API 的鈕，合規的 `disabled` 只有兩種**：①**進行中**（`disabled={submitting}`、問答生成中——那一刻不是使用者
     改得掉的）；②**type-to-confirm 尚未解鎖**（`manage-tenant-modal` 的兩顆刪除、`iso-review-wizard` 的
     「確認執行」）。**射程只到鈕**：值控制項（`<select>`／`<input>`／switch）在平台角色低於該級時
-    **渲染成 `disabled`** 是 §④ 的第三種、也是合規的——唯讀角色要看得見那些值才稽核得到（GUIDELINE §4）。②之所以走 disabled 而不是 warning，是因為 GUIDELINE §5 的 hook 矩陣①明文那一族
+    **渲染成 `disabled`** 是 §④ `data-platform-role` 那一條講的第三種情形、也是合規的——唯讀角色要看得見那些值才稽核得到（GUIDELINE §4）。②之所以走 disabled 而不是 warning，是因為 GUIDELINE §5 的 hook 矩陣①明文那一族
     **不掛 `data-toast`**，而解鎖條件就在同一個窗裡、常駐可見（片語欄 ＋ `aria-describedby` 接的 hint），
     使用者看得到自己差什麼。這兩種**切版自己就畫得出來**，所以 `disabled` 寫在切版 markup 上、React 照抄，
     不是 React 自己加的。
   - **其餘一律不准**：`data-capability` 不足、資源層 scope、上游 409／400、「沒選任何一筆」——理由都在畫面外，
     使用者只會看到一顆按不下去的鈕而不知道要去找誰。那些的家是 `data-toast` 的 warning 分支；切版沒有那一段
-    就是切版的缺口，回切版補，別在 React 端用 disabled 收掉（`SelectDatasetModal` 就是這樣被收掉過一輪的）。
+    就是切版的缺口，回切版補，別在 React 端用 disabled 收掉。
   - 兩者可以同時存在於一顆鈕上，不衝突：`data-toast` 列的是**它送得出去之後的結果集合**（契約），
     `disabled` 講的是**此刻能不能按**（狀態）。代價是那顆鈕在切版按不出 toast，要記在該處註解裡。
 - 新規則附負控 + 空轉守門；能白名單就別黑名單。
@@ -774,8 +783,7 @@ portal 時的唯一辦法，**不是設計**。React 端一律收斂成**一顆�
 
 - `vitest.config.ts` 的 `resolve.alias` 補 `tsconfig.json` `paths` 的 `@/` 映射（Vitest 底層 Vite 不自動套 tsconfig paths）。
 - **`scss-diff.mjs` 要進轉換方的 CI**：對一張「切版路徑 ↔ React 路徑」清單逐對跑、全綠才算過。
-  手動跑的結果是「當時對」不是「持續對」——反例：`_var.scss`／`_chat-message.scss`／`_multi-select.scss` 三支
-  同時悄悄分岔，就是缺這張網。清單本身也是覆蓋率證據（新元件忘了登記＝看得出來）。
+  手動跑的結果是「當時對」不是「持續對」，而分岔會同時發生在好幾支上、每一支都只差幾行，靠人看不出來。清單本身也是覆蓋率證據（新元件忘了登記＝看得出來）。
 - 顏色角色／對比度的正確性**不在 React 重算**（11ty 的 `COLOR_ROLES` 已守），React 只需守「複本沒跟上」。
   反之 React 獨有的東西（import 順序、consumer className、i18n 字典對帳）11ty 守不到，那才是 React 要自己加測試的地方。
 
