@@ -88,8 +88,9 @@
      **歸因欄不併進 `fields`**：兩者射程不同。`fields` 只列「這一列有值」的槽，歸因欄**值是空的也要
      出一列**——那正是統計報表把這一筆歸進「未標註」的原因，濾掉就在單則層看不見了。
 
-     每筆來源列（摘要列 + 隱藏的 accordion detail 列）以 for-source 迴圈直接內嵌渲染
-     （原 source-row 子元件已內嵌：Eleventy 的 include 巢狀在 for 內會渲染空白，故不再拆子元件 include）。 #}
+     每筆來源列（摘要列 + 隱藏的 accordion detail 列）以 for-source 迴圈**直接內嵌**渲染、
+     不拆成子元件：Eleventy 的 `{% include %}` 巢狀在 `{% for %}` 內會渲染成空白（§1-2 之所以
+     在這裡讓步的唯一理由——不是「這一段不值得抽成元件」）。 #}
 {# 「挑選規則 N 取 M」三顆槽的預設值走 `is defined`、**不用 `or`**（§6：值域含 0 的參數不得用真值判斷）：
      `sourcesSelected` 的 0（這一輪一筆都沒選中，同 `{% else %}` 那一態）用 `or 8` 會被靜默換成 8，
      而畫面上讀起來完全正常。`is defined` 是 test 不是 filter，不動 §2 白名單。 #}

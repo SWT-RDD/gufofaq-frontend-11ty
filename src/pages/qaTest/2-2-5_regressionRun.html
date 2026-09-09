@@ -8,7 +8,9 @@ permalink: 2-2-5_regressionRun.html
 {# **時間錨點**：站台的「現在」是 **2026-07-14**（§6「全站只有一個現在」；那個值由
      `components/iso-review-wizard` 名單上「查詢時間 2026-07-14 09:00 UTC」那一格釘死）。
      這一頁演的是**昨天**（2026/07/13）跑的那一批：開始時間早於結束時間，兩者都早於「現在」；
-     基準下拉選中的 `#310（2026/07/13 11:02）` 必須早於這一次執行的開始時間——基準是更早的一次執行。#}
+     基準下拉選中的 `#310 (2026/07/13 11:02)` 必須早於這一次執行的開始時間——基準是更早的一次執行。
+     那顆 `<option>` 的括號是**半形**：`<option>` 收不了子元素，標點折不進兩側的 key，而它同時
+     服務中英兩種語言（§4-2）——全形括號在英文模式會是句子裡唯一一個繁中字身。#}
 {# 一次回歸執行的報表。案例集與案例編輯在 2-2-4_regressionSuites（本頁由它的「看報表」連過來）。
 
      ## 比較有**五個**桶子，不是三個
@@ -573,7 +575,7 @@ permalink: 2-2-5_regressionRun.html
                          系統說還沒。示範仍停在「已經挑了 #310」那一態（下面五個桶子只有那一態才在）。 #}
                     <select id="baselineSelect" class="form-control js-baseline-select">
                         <option value="" data-i18n="common.pleaseSelect">請選擇</option>
-                        <option value="310" selected>#310（2026/07/13 11:02）</option>
+                        <option value="310" selected>#310 (2026/07/13 11:02)</option>
                     </select>
                 </div>
             </div>

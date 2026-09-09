@@ -19,7 +19,7 @@
 - 唯一不重寫的是 **React 應用層**：權限過濾、`fetch`、路由、框架慣例——那一層不在切版的射程內，切版沒有對應物可對。
 - 重建到符合切版的正確路徑／命名（`ui/` 原子→`components/ui/`）：consumer 改用新元件、刪掉走樣舊檔，不留新舊兩套。
   （**不留新舊兩套**：舊實作若帶著未定義的 token，畫面會靜默回退成繼承色——那一份是要退休的那份，不是要修的那份。）
-- **有四分之一的元件沒有 `<name>.html`**，產出契約那句話對它們不成立。這種元件的 markup 正本寫在
+- **有相當一批元件沒有 `<name>.html`**，產出契約那句話對它們不成立。這種元件的 markup 正本寫在
   **它自己的 `_<name>.scss` 或 `<name>.js` 檔頭**，實例散在某一頁或元件庫展示頁——
   **去哪裡找由 README 的「無 html 元件」登記段落決定**（GUIDELINE §1-2 要求每一支都登記在那裡）。
   三種型態各自的做法：純 scss（無 html／無 js）**只決定「markup 正本住在 scss 檔頭」，不決定元件形態**
@@ -452,12 +452,12 @@ portal 時的唯一辦法，**不是設計**。React 端一律收斂成**一顆�
       `error.forbiddenPlatform` 兩顆——**分界是收件人不是頁面**。轉換時整個內容區換成 `.error-page`（`error-code` ＋ `error-message`，
       契約逐字在 `_error-page.scss` 檔頭），麵包屑與導覽由 route layout 照畫。
   - **那一態根本走不到 → 刪掉，不要給它版位。** **在 React 端暫留一顆 key** 的前提是「執行期真的
-    到得了那一態」；到不了的那些是**防禦性死碼配上一句翻譯**，而一句翻譯讀起來就像它會發生。判準是
-    去讀那條路徑而不是讀那段程式碼的註解：`dataImport.uploadExcelFirst`／`dataImport.backToUpload`
-    掛在 Excel 匯入精靈的 `// 後備：狀態不完整` 那一支，而 `step` 的初值是 `1`、每一次 `setStep(n)` 都與
-    它的資料同批設定、`setPreview(null)` 只出現在 `resetWizard()` 裡（同批 `setStep(1)`）⇒ 那一支
-    render 不出來（兩顆一起退場，後備分支改成直接 `resetWizard()`——真的走到了，
-    使用者落在一個能用的畫面而不是一個死路）。
+    到得了那一態」；到不了的那些是**防禦性死碼配上一句翻譯**，而一句翻譯讀起來就像它會發生。
+    判準是**把每一處會設定那個狀態的地方列出來、看有沒有任何一條路徑滿足得了那一支的前提**，
+    不是讀那段程式碼的註解（註解記的是寫它當下的理解）。最常見的形狀是多步驟精靈的「狀態不完整」
+    後備支：每一次換步都與該步要用的資料同批設定、清空資料的那一支也同批把步數歸位 ⇒ 兩顆狀態
+    不會落單，那一支 render 不出來。處置不是替它補一句文案，是把後備支改成直接回到起點
+    （真的走到了，使用者落在一個能用的畫面而不是一個死路），那顆 key 一併刪掉。
   這條同時是 §⑥ 的驗收判準：**枚舉的每個成員都要有一個 render 得出它的地方**，否則它是出貨死碼。
 - **上游「沒有給這個欄位」是一個獨立的視覺態，不是枚舉的預設值。** 批次匯入 `results[]` 裡 `ok: false`
   的那一筆**沒有** `sync_state`（檔案連送出去都沒成功，沒有管道可查），而 `state ?? "unknown"`／
@@ -674,7 +674,9 @@ portal 時的唯一辦法，**不是設計**。React 端一律收斂成**一顆�
   `aria-controls`、狀態的 `aria-expanded`／`aria-current`／`aria-pressed`／`aria-hidden`／`aria-sort`
   （`aria-sort` 由 `ui/table-sort` 在執行期寫，且它是排序態的唯一真相源，漏掉就等於整條排序契約沒有網）、
   `aria-haspopup`／`aria-live`／`aria-atomic`，以及被某個 `aria-*by` 引用到的元素 `id`。
-  反查＝`grep -rho 'aria-[a-z]*=' --include='*.html' src | sort -u` 再逐顆問「值會不會被翻譯」。
+  反查＝`grep -rhoE 'aria-[a-z-]+' --include='*.html' --include='*.js' src | sort -u` 再逐顆問「值會不會被翻譯」。
+  **兩種副檔名都要掃**：`aria-sort`／`aria-atomic`／`aria-activedescendant` 這一族只在執行期由元件 js 設，
+  只掃 markup 的話，反查產出的清單會恰好漏掉上一句才剛強調「漏掉就等於整條排序契約沒有網」的那一顆。
   繪製白名單只含資產路徑 + i18n 文字；`title`／`aria-label`／`alt`／`placeholder`
   這類值隨語言翻譯的屬性不進零容忍比對（fpdiff 對照的切版 dist 跟 React 開發模式預設同語言，比不出翻譯錯誤，
   靠 §③ 規則 + code review 把關）；`--component` normalize 元件絕對位置；`--legacy-eval`／`--react-eval` 開隱藏元件；

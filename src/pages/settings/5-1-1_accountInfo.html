@@ -37,9 +37,9 @@ permalink: 5-1-1_accountInfo.html
        畫面上沒有它的位子。
      · 當前使用者有沒有「設定」寫入能力——切版**不**拿它去 disable 公司欄：
        §4「`data-capability` 不足時不做 disabled、把 403 列進 `data-toast`」，吃了它會把契約演掉。
-     · 使用期狀態三態（`pending_disclaimer`／`active`／`expired`，在這裡宣告一次，就是正本）
-       ——本頁不另畫一顆狀態徽章：`active` 由 `ui/countdown-box` 那條倒數橫幅承載，另外兩態的版型
-       在 `ui/subscription-gate`（蓋住整頁的遮罩，唯一可見處是元件庫頁）。三態各有落點，只是不都在這一頁。
+     · 使用期狀態（值域正本在 `ui/subscription-gate` 的 scss 檔頭）——本頁不另畫一顆狀態徽章：
+       `active` 由 `ui/countdown-box` 那條倒數橫幅承載，其餘幾態的版型都在 `ui/subscription-gate`
+       （蓋住整頁的遮罩，唯一可見處是元件庫頁）。每一態各有落點，只是不都在這一頁。
 
    帳號資訊區塊只放帳號層欄位——帳號(唯讀)/公司單位(可編輯)/規格·資料儲存上限(唯讀)。
      per-profile 的對話設定（系統提示詞／檢索模式／資料取用規則／選用模型）**不屬於這一頁**：

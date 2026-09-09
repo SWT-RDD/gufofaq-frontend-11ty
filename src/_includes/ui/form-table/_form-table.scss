@@ -11,15 +11,22 @@
 // （區段小標與欄名），照片段抄就是英文模式整張表露出繁中，而視覺指紋完全看不出來。
 // **契約要住在檔頭**：契約檢查讀的是「第一條非註解程式碼之前的那一段」，寫在檔尾等於
 // 那一份正本不受任何一條規則檢查（同構、屬性值落點、省略形式三張網一張都碰不到它）。
+// **從 `.form-table-wrap` 寫起**（§1-2：樣式靠祖先才成立時，契約要從那個祖先寫起）：本檔的
+// 每一條規則都巢在 `.form-table-wrap` 之內，從 `.form-table-group` 抄起的話，那幾顆 class
+// 在 scss 裡找得到、在 markup 裡也找得到，只是搭不上——間距、框線、欄名底色一條都不生效，
+// 而少了那層樣式視覺指紋看不出來（§4 第三種死法：祖先錯位）。
 // 逐字取自 components/qa-detail-info（4-2／shared 兩頁的問答詳情）：
 //
-//   <div class="form-table-group">
-//       <div class="subtitle" data-i18n="qa.basicConversationInfo">基本對話資訊</div>
-//       <div class="form-table">
-//           <div class="row">
-//               <div class="col col-12-md">
-//                   <div class="th" data-i18n="qa.chatroomId">聊天室編號</div>
-//                   <div class="td">{{ conversation.chatroomId }}</div>
+//   <div class="form-table-wrap">
+//       {# 重複 N 次同型節點：一個 wrap 底下有幾個小標題就幾組（qa-detail-info 有兩組） #}
+//       <div class="form-table-group">
+//           <div class="subtitle" data-i18n="qa.basicConversationInfo">基本對話資訊</div>
+//           <div class="form-table">
+//               <div class="row">
+//                   <div class="col col-12-md">
+//                       <div class="th" data-i18n="qa.chatroomId">聊天室編號</div>
+//                       <div class="td">{{ conversation.chatroomId }}</div>
+//                   </div>
 //               </div>
 //           </div>
 //       </div>

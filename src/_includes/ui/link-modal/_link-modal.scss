@@ -15,7 +15,7 @@
 //   ② **有條件開窗**（生產 markup＝1-2-1 的待上傳清單）——它要先知道「點的是哪一列」才開得了窗，
 //      所以**不掛 `data-open-modal`**、改留 hook class ＋ 列鍵（§5 矩陣①）：
 //
-//   {% for file in pendingFiles %}
+//   {% for file in fileRows %}
 //   <button type="button" id="pdfFileRowName-{{ loop.index }}" class="link-modal btn-preview-file" data-index="{{ loop.index0 }}">{{ file.name }}</button>
 //   {% endfor %}
 //

@@ -49,34 +49,40 @@
 //
 // 住在哪一頁（雙向）：`grep -rl 'shareBtn' src --include=*.html` ＝上面那兩支元件；
 // 反查渲染後 `grep -l 'shareBtn' dist/*.html`（faq 前台頁、4-2、2-2-3、元件庫頁）。
-window.GufoClipboard = {
-    write: function (text) {
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(text).catch(function () { fallback(text); });
-        } else {
-            fallback(text);
-        }
-    },
-};
+// **整支收在 IIFE 內**（§5）：所有元件 js 都是 `<script defer>`、共用同一個全域 scope，
+// 通用名字（`fallback`、`syncAll`、`raiseContainer`）誰後載入誰贏，而覆蓋是靜默的；
+// `const`／`let` 更硬——第二支同名宣告會讓**那一整支腳本** SyntaxError、一行都不執行，
+// 而畫面上只是「那個元件沒反應」。匯出走 `window.`，其餘一顆都不留在外面。
+(function () {
+    window.GufoClipboard = {
+        write: function (text) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).catch(function () { fallback(text); });
+            } else {
+                fallback(text);
+            }
+        },
+    };
 
-function fallback(text) {
-    var area = document.createElement("textarea");
-    area.value = text;
-    document.body.appendChild(area);
-    area.select();
-    try { document.execCommand("copy"); } catch (err) { /* 複製失敗即無聲，toast 已由 data-toast 演出 */ }
-    document.body.removeChild(area);
-}
-
-// 委派掛在 document 上：這兩顆鈕住在 `<dialog>` 裡，而分享管理窗的列是執行期才長出來的
-// （有幾條分享連結就幾列）——逐顆綁定只綁得到切版靜態稿裡的那幾顆（§5）。
-document.addEventListener("click", function (e) {
-    var btn = e.target.closest ? e.target.closest(".shareBtn") : null;
-    if (!btn) return;
-    var field = null;
-    for (var el = btn.parentElement; el; el = el.parentElement) {
-        field = el.querySelector("input[readonly], textarea[readonly]");
-        if (field || el.classList.contains("modals-body")) break;
+    function fallback(text) {
+        var area = document.createElement("textarea");
+        area.value = text;
+        document.body.appendChild(area);
+        area.select();
+        try { document.execCommand("copy"); } catch (err) { /* 複製失敗即無聲，toast 已由 data-toast 演出 */ }
+        document.body.removeChild(area);
     }
-    if (field) window.GufoClipboard.write(field.value);
-});
+
+    // 委派掛在 document 上：這兩顆鈕住在 `<dialog>` 裡，而分享管理窗的列是執行期才長出來的
+    // （有幾條分享連結就幾列）——逐顆綁定只綁得到切版靜態稿裡的那幾顆（§5）。
+    document.addEventListener("click", function (e) {
+        var btn = e.target.closest ? e.target.closest(".shareBtn") : null;
+        if (!btn) return;
+        var field = null;
+        for (var el = btn.parentElement; el; el = el.parentElement) {
+            field = el.querySelector("input[readonly], textarea[readonly]");
+            if (field || el.classList.contains("modals-body")) break;
+        }
+        if (field) window.GufoClipboard.write(field.value);
+    });
+})();

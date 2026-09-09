@@ -599,8 +599,8 @@ bodyClass: guideline-page
             <div>
                 <div class="flex-row gap-16 flex-wrap align-items-center">
                     <button type="button" class="button button-primary" data-open-modal="datasetModal">開啟選擇資料集modal</button>
-                    {# §1-2：同一個元件絕不複製貼上，要用就 include。這一顆本來是 ui/link-modal 的
-                         markup 被逐字元抄過來的（同一頁上方第 07 節已經在 include 它）。 #}
+                    {# §1-2：同一個元件絕不複製貼上，要用就 include——本頁的「按鈕」那一節也
+                         include 同一支 `ui/link-modal`，兩處各自 include、都不手抄。 #}
                     {% set linkModalOwnerId = "modalSectionTitle" %}
                     {% include "ui/link-modal/link-modal.html" %}
                     <button type="button" class="button button-primary" data-open-modal="previewModal">開啟檔案預覽modal（iframe）</button>

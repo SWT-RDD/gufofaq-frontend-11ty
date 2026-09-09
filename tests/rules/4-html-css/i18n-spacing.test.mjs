@@ -3,8 +3,10 @@
 import { test } from "vitest";
 import assert from "node:assert/strict";
 import { basename } from "node:path";
+import { parseHTML } from "linkedom";
 import { distHtml, read } from "../../_lib/corpus.mjs";
 import { distDoc } from "../../_lib/html.mjs";
+import { SHOWCASE } from "../../_lib/inventory.mjs";
 import { fail, probe } from "../../_lib/probe.mjs";
 
 test("§4-2 pagination 的前後綴 key 要自帶分隔空白（markup 刻意去空白、少了會黏成 Total12pages）", () => {
@@ -342,4 +344,73 @@ test("§4-2 省略號一律 …（U+2026）：使用者讀得到的字面不准�
         ['<input placeholder="搜尋…">', '<button data-toast="正在查詢資料…|失敗">x</button>', "<li>載入中…</li>",
             '<li>不要寫行內 style="margin-..."</li>']);   // 被引用的樣本字面
     assert.equal(hits.length, 0, `§4-2 省略號一律 …（U+2026）：\n${fail([...new Set(hits)])}`);
+});
+
+test("§4-2 不掛 key 的資料節點裡不准出現全形標點（同一串字面同時服務兩個語系）", () => {
+    // 為什麼要有網：全形括號／頓號／冒號／波浪號是**繁中的字身**。它們一旦落在不掛 key 的
+    // 資料節點裡，英文模式那一份就沒有第二種寫法可換——畫面上會是一句英文中間卡著一個繁中符號，
+    // 而繁中版永遠看起來是對的，所以只有切到英文才看得見（fpdiff 比的是繁中版的幾何，也看不到）。
+    // 這條與「英譯字串裡不得出現全形標點」是同一件事的另一半：那一條掃 en.json，這一條掃
+    // 兩種語言共用的那一份 markup 字面。
+    //
+    // 判準逐字照 §4-2：**dist 上不在任何 data-i18n 節點內、且不含漢字、卻含全形標點的文字節點**。
+    // 兩道排除各擋一種誤傷：
+    //   ① **含漢字的節點不算**。那是繁中原文本身，它的標點是那句話的一部分；「繁中字面要掛 key」
+    //      是另一條規則的事，在這裡一起判會把整個 markup 都拖進來，然後有人去放寬排除清單。
+    //   ② **showcase 頁除外**（元件庫頁刻意不譯，那裡的字面就是「長這樣」的樣本）。
+    // 走真 DOM 而不是正則：判準講的是「祖先鏈上有沒有 data-i18n」，那是樹的問題——
+    // 用正則近似祖先鏈的話，巢狀一深就會把「已經在 key 之內」的節點誤報成裸字面。
+    //
+    // 修法有兩條，選哪一條由節點自己的形狀決定：
+    //   ・**折進兩側的 key**（正典 `<span data-i18n="common.parenOpen">（</span>{{ 值 }}
+    //     <span data-i18n="common.parenClose">）</span>`）——markup 上寫得出子節點的都走這條。
+    //   ・**改半形字身**——`<option>`（收不了子元素）與純字串參數（`ui/storage-bar` 的
+    //     `storageBarText`）折不進去，那就用兩種語言共用的半形標點。
+    const FW = /[（）、：～「」；，。！？]/;
+    const HAN = /[\u3400-\u9fff\uf900-\ufaff]/;
+    const SKIP_TAGS = new Set(["SCRIPT", "STYLE", "TEMPLATE"]);
+    let seen = 0;
+    const scan = (html, f = "<probe>") => {
+        const out = [];
+        const { document } = parseHTML(`<!doctype html><html><body>${html}</body></html>`);
+        const walk = (el) => {
+            for (const node of el.childNodes) {
+                if (node.nodeType === 1) { if (!SKIP_TAGS.has(node.tagName)) walk(node); continue; }
+                if (node.nodeType !== 3) continue;
+                const t = node.textContent;
+                if (!t.trim()) continue;
+                seen++;
+                if (!FW.test(t) || HAN.test(t)) continue;
+                let p = node.parentNode, keyed = false;
+                while (p && p.nodeType === 1) { if (p.hasAttribute("data-i18n")) { keyed = true; break; } p = p.parentNode; }
+                if (keyed) continue;
+                const owner = node.parentNode;
+                const at = owner.getAttribute("id") ? `#${owner.getAttribute("id")}`
+                    : owner.getAttribute("class") ? `.${owner.getAttribute("class").split(/\s+/)[0]}` : "";
+                out.push(`${f}  <${owner.tagName.toLowerCase()}${at}>  ${JSON.stringify(t.trim().slice(0, 70))}`);
+            }
+        };
+        walk(document.body);
+        return out;
+    };
+
+    const hits = [];
+    for (const f of distHtml) {
+        if (f === SHOWCASE.dist) continue;                 // 見上②
+        hits.push(...scan(distDoc(f), `dist/${f}`));
+    }
+    assert.ok(seen >= 13000, `只走訪到 ${seen} 顆文字節點 —— 這條測試在空轉`);
+    probe("§4-2 資料節點的全形標點", (s) => scan(s),
+        // 四種真實壞法各一：版本卡的括號／<option> 的括號／節點名的冒號／進度條文字的括號
+        [`<div>V3（2026/01/20 13:09:37～）</div>`,
+         `<select><option value="310">#310（2026/07/13 11:02）</option></select>`,
+         `<span class="step-node-label">skill：refund-flow</span>`,
+         `<div class="text">118 / 132（89.4%）</div>`],
+        // 好樣本含三顆**被排除**的形狀：折進 key 的、落在 key 之內的、以及含漢字（另一條規則管）
+        [`<div>V3<span data-i18n="common.parenOpen">（</span>≥ 2026/01/20<span data-i18n="common.parenClose">）</span></div>`,
+         `<option value="310">#310 (2026/07/13 11:02)</option>`,
+         `<span data-i18n="storage.of">（共 <em>1000MB</em>）</span>`,
+         `<div>已使用（共 1000MB）</div>`,
+         `<div class="text">118 / 132 (89.4%)</div>`]);
+    assert.equal(hits.length, 0, `§4-2 不掛 key 的資料節點裡有全形標點（英文模式會露出繁中字身）：\n${fail(hits)}`);
 });

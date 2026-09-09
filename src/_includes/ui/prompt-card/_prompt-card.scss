@@ -2,8 +2,7 @@
 // 純樣式元件（無 html/js）：markup 寫在頁面上，兩型——草稿卡 `.prompt-card.draft` 與
 // 已發布的歷史版本卡 `.prompt-card`。
 // 本檔只寫自己那兩顆 slot class：卡內 textarea 走本元件的 `.prompt-input`，**不指名**
-// `ui/form-control` 的 class；卡內清單的行距走 `ui/list-style` 的 `.line-loose` variant，
-// 本檔也不碰它的 class（§4：A 元件的 scss 不得出現 B 元件的 class）。
+// `ui/form-control` 的 class（§4：A 元件的 scss 不得出現 B 元件的 class）。
 //
 // markup 契約（無 html 元件，§1-2；整段照抄）—— 生產 markup 全部寫在 5-2_conversationSettings.html。
 // **三型分開寫**，因為 `.prompt-text` 與 `.prompt-input` 的規則只在 `.prompt-card.draft` 之內成立
@@ -24,7 +23,7 @@
 //       <div class="block prompt-card">
 //           <div class="flex-row column gap-16">
 //               <div class="flex-row justify-content-between align-items-center flex-wrap gap-16">
-//                   <div class="text-md text-blue" id="promptVersionName-{{ loop.index }}">{{ v.label }}（{{ v.timeRange }}）</div>
+//                   <div class="text-md text-blue" id="promptVersionName-{{ loop.index }}">{{ v.label }}<span data-i18n="common.parenOpen">（</span>{{ v.timeRange }}<span data-i18n="common.parenClose">）</span></div>
 //                   <div class="flex-row align-items-center gap-8">
 //                       <span><span data-i18n="settings.referencedCount">被問答引用次數：</span> {{ v.refCount }} <span data-i18n="settings.timesUnit">次</span></span>
 //                       <span class="divider-vertical"></span>
@@ -40,6 +39,8 @@
 //               </div>
 //           </div>
 //       </div>
+//       {% else %}
+//       <div class="text-center text-gray" data-i18n="settings.noPromptVersions">沒有符合的提示詞版本。這個設定檔可能一版都還沒存過——上面編輯提示詞並儲存就會建立第一版；也可能是關鍵字、日期區間或版本收得太緊，清掉條件再查一次就看得到。</div>
 //       {% endfor %}
 //   </div>
 //
@@ -51,7 +52,7 @@
 //       <div class="block prompt-card">
 //           <div class="flex-row column gap-16">
 //               <div class="flex-row justify-content-between align-items-center flex-wrap gap-16">
-//                   <div class="text-md text-blue" id="welcomeVersionName-{{ loop.index }}">{{ v.label }}（{{ v.timeRange }}）</div>
+//                   <div class="text-md text-blue" id="welcomeVersionName-{{ loop.index }}">{{ v.label }}<span data-i18n="common.parenOpen">（</span>{{ v.timeRange }}<span data-i18n="common.parenClose">）</span></div>
 //                   <div class="flex-row align-items-center gap-8">
 //                       <button type="button" id="welcomeVersionCopy-{{ loop.index }}" aria-labelledby="welcomeVersionName-{{ loop.index }} welcomeVersionCopy-{{ loop.index }}" class="button-icon copy copyBtn has-tooltip" data-toast="歡迎語已複製|複製失敗，請手動選取後複製" data-i18n-data-toast="welcome.copied" data-toast-type="success|error">
 //                           <span class="tooltip" data-i18n="action.copy">複製</span>
@@ -65,6 +66,8 @@
 //               </div>
 //           </div>
 //       </div>
+//       {% else %}
+//       <div class="text-center text-gray" data-i18n="settings.noWelcomeVersions">沒有符合的歡迎語版本。這個設定檔可能一版都還沒存過——上面編輯歡迎語並按「儲存為新版本」就會建立第一版；也可能是關鍵字、日期區間或版本收得太緊，清掉條件再查一次就看得到。</div>
 //       {% endfor %}
 //   </div>
 //
@@ -79,7 +82,7 @@
 //               <p class="prompt-text" data-i18n="settings.draftSaveHint">儲存後將自動建立新版本，不覆蓋舊有版本</p>
 //               <div class="form-group">
 //                   <div class="field">
-//                       <textarea id="welcomeInput" class="form-control size-lg prompt-input js-welcome-input" aria-describedby="welcomeInputHint" placeholder="請輸入歡迎語內容" data-i18n-placeholder="settings.pleaseEnterWelcome" aria-label="歡迎語內容" data-i18n-aria-label="settings.welcomeContent">您好，我是智能客服，有什麼可以協助您的嗎？</textarea>
+//                       <textarea id="welcomeInput" class="form-control size-lg prompt-input js-welcome-input" aria-describedby="welcomeInputHint" placeholder="請輸入歡迎語內容" data-i18n-placeholder="settings.pleaseEnterWelcome" aria-label="歡迎語內容" data-i18n-aria-label="settings.welcomeContent">您好，我是智能客服，有什麼可以協助您的嗎？</textarea><span class="text-gray" id="welcomeInputHint"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-welcome-message-max-len">20000</span><span data-i18n="common.unitChars"> 字</span></span>
 //                   </div>
 //               </div>
 //           </div>
@@ -91,6 +94,12 @@
 //
 // 抄的時候注意：
 //   ⓐ **`.prompt-text` / `.prompt-input` 只能寫在 `.prompt-card.draft` 之內**（見上）。
+//   ⓐ′ **兩份已發布清單各自要帶自己的 `{% else %}`**：
+//      版本清單是**分頁／篩選型**的，空的成因有兩種（一版都還沒存過／條件收得太緊），
+//      下一步不同，所以兩種都要說出來，而且兩份**另立 key 不共用**——同一句話會把其中一邊
+//      送去錯的編輯器。少了它，篩到零筆時那一整塊在畫面上直接消失。
+//   ⓐ″ 版本名那一格的**括號折進兩側的 key**（`common.parenOpen`／`common.parenClose`），中間
+//      那一段是純資料、字身照 §4-2 的界線字串寫法；括號寫成裸字面就是英文模式的繁中字身。
 //   ⓑ **「提示詞」子頁籤沒有草稿卡**：那一頁的編輯器是 `components/prompt-edit`（版本管理型系統
 //      提示詞編輯器，自帶 `.js-prompt-input`），它不掛本元件的 `.prompt-input`。
 //   ⓒ `.prompt-input` 是本元件的 slot class，與 `ui/form-control` 的 `.form-control.size-lg`

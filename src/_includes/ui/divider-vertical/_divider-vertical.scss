@@ -1,8 +1,14 @@
-// 垂直分隔線：兩段並排文字（頁尾連結、來源列的中繼資料）之間那一條 1px 直線。
+// 垂直分隔線：一列裡兩組並排內容之間那一條 1px 直線——文字與文字（頁尾連結、來源列的
+// 中繼資料）之間，或**動作鈕與動作鈕**之間（5-2 版本卡那一排：引用次數／複製／還原）。
 // 它是**純視覺、沒有內容的 `<span>`**，全靠這幾條規則才看得見——寫成空規則等於全站分隔線消失，
 // 而 markup 照樣掛著 class，看起來一切正常。
-// 高度分三檔，全部由本元件自帶變體提供（基礎 24px、`.sm` 18px、`.lg` 28px）：依 GUIDELINE §4
-// 「外觀覆寫改成 owning 元件的 variant class」，不讓 footer／sources-block 反過來指名這顆 class 改高度。
+// 高度分三檔，全部由本元件自帶變體提供：依 GUIDELINE §4「外觀覆寫改成 owning 元件的
+// variant class」，不讓使用端反過來指名這顆 class 改高度。三檔各自的生產落點——
+//   基礎 24px：5-2_conversationSettings 的版本卡動作列（提示詞卡兩顆、歡迎語卡一顆）
+//   `.sm` 18px：components/footer 的連結列
+//   `.lg` 28px：components/sources-block 的來源中繼資料列
+// 判準＝`grep -rn 'divider-vertical' src --include=*.html`（本元件的展示片段與元件庫頁那兩顆
+// 只渲染在 component.html，不算生產落點）。
 .divider-vertical {
     display: block;
     flex-shrink: 0;

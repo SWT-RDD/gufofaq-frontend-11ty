@@ -1,5 +1,5 @@
 {# 租戶管理 modal，取自 5-6-1_platformTenants 頁「管理」鈕（.js-manage-tenant）：平台系統管理員管理指定租戶的
-     額度／使用期／模型開通／凍結解凍／成員治理／危險操作。開窗需先選定哪個租戶才知道管理誰＝業務條件開窗，故該鈕保留業務 hook class、
+     額度／使用期／模型開通／LLM 追蹤／凍結解凍／成員治理／危險操作。開窗需先選定哪個租戶才知道管理誰＝業務條件開窗，故該鈕保留業務 hook class、
      不掛 data-open-modal（GUIDELINE §5）。彈窗本體回歸切版，區塊：
        1. 額度——三個數字欄（問答額度／萃取額度／儲存上限 MB）+ 用量週期
           select（無/每日/每月，隨額度共用 footer「儲存」鈕一起送出）+ 重置當期用量鈕
@@ -16,10 +16,13 @@
           切版範圍，沿用 .calendar hook class 交由 React 套件實作）
        3. 模型開通——「不限制」開關（承載「這個租戶沒有名單」那一態，與「有名單但空」是兩件事）+ checkbox 清單，欄位寫法比照
           5-5-1_userManagement「能力」checkbox
-       4. 凍結／解凍——暫停使用期時鐘（直接動作，data-toast 演出成敗）；兩個動作對稱，故切版也切兩態
-       5. 成員——逐位成員：停用啟用（直接動作 data-toast）＋重設密碼（.js-reset-password）／刪除（.js-delete-user，button-red）＝業務條件用 hook class
-       6. 危險操作——刪除資料（.js-delete-tenant-data）／刪除帳號（.js-delete-tenant-account）：破壞性 button-red，需輸入該租戶名稱字串相符才可執行（type-to-confirm），屬業務條件、用 hook class；⚠️ **但兩顆照樣掛 data-toast**——type-to-confirm 只免除「片語沒打對」那一態，不免除送出之後的成敗（§5 ③，見那兩顆鈕旁的說明）
-     額度／使用期／模型開通共用 footer「儲存」鈕（toast.manageTenant，成功/失敗）；停用啟用等逐成員動作各自 data-toast。
+       4. LLM 追蹤——單一 checkbox（隨模型白名單共用 footer「儲存」鈕一起送出）。它不是一般的功能
+          開通：開了之後這個租戶每一次問答的提示詞、檢索原文與答案全文都會離開問答路徑進到另一套
+          系統，所以代價寫在控制項旁邊（§3-2），與「不限制」那顆同一種判準
+       5. 凍結／解凍——暫停使用期時鐘（直接動作，data-toast 演出成敗）；兩個動作對稱，故切版也切兩態
+       6. 成員——逐位成員：停用啟用（直接動作 data-toast）＋重設密碼（.js-reset-password）／刪除（.js-delete-user，button-red）＝業務條件用 hook class
+       7. 危險操作——刪除資料（.js-delete-tenant-data）／刪除帳號（.js-delete-tenant-account）：破壞性 button-red，需輸入該租戶名稱字串相符才可執行（type-to-confirm），屬業務條件、用 hook class；⚠️ **但兩顆照樣掛 data-toast**——type-to-confirm 只免除「片語沒打對」那一態，不免除送出之後的成敗（§5 ③，見那兩顆鈕旁的說明）
+     額度／使用期／模型開通／LLM 追蹤共用 footer「儲存」鈕（toast.manageTenant，成功/失敗）；停用啟用等逐成員動作各自 data-toast。
      成員清單為純示範假資料（§6b，通用名冊、不綁定使用頁的特定租戶列——本 modal 是全部列共用的一份本體，
      內容由業務 js 依「點了哪列的管理鈕」動態載入），正式環境由 React 讀那個租戶的成員名冊渲染。
      .js-reset-password／.js-delete-user／.js-reset-usage 的彈窗本體（components/reset-password-modal
@@ -75,14 +78,16 @@
      本窗**整份 auditor 進得來**，逐顆宣告，不整份標 admin。理由是這四類值本身都是唯讀就讀得到的：
        · 額度／已用量／用量週期／儲存已用量
        · 模型白名單
+       · Langfuse 追蹤旗標
        · 成員名冊
        · 訂閱狀態／到期日／凍結旗標
-     四者 auditor 都讀得到，而**這份 modal 是
+     五者 auditor 都讀得到，而**這份 modal 是
      全站唯一畫得出額度／用量／模型白名單／成員名冊的地方**——整份不渲染給稽核員，等於他在切版裡看不到
      任何一個租戶的這些值，而那正是 ISO 職責分離要他看的東西。
      故照 §5 的兩級渲染規則逐顆標：
        · **值控制項**（額度五顆 input、用量週期 select、使用期兩顆欄、模型開關與 checkbox 群、
-         兩顆 type-to-confirm 輸入框）標 `admin`＝照渲染但 disabled，狀態看得見、改不動。
+         Langfuse 追蹤 checkbox、兩顆 type-to-confirm 輸入框）標 `admin`＝照渲染但 disabled，
+         狀態看得見、改不動。
        · **動作鈕**（重置用量／凍結解凍／停用啟用／重設密碼／刪除／儲存／兩顆危險操作）
          標 `admin`＝低於該級不渲染，不給唯讀角色一排按了只會被拒的鈕。
      「關閉」不標：它是純前端互動，不送任何請求。
@@ -449,14 +454,15 @@
                     </div>
                 </div>
                 <div class="modals-footer">
-                    {# 這扇窗有**四塊**（額度／用量、模型白名單、凍結、危險操作），而 footer 只有一顆
-                         「儲存」——它送的是上面那幾塊裡**值控制項**目前的值，不是「我剛剛看的那一塊」。
-                         沒有這一句的話，改完額度就直接關窗是很自然的動作，而那等於什麼都沒做
-                         （同三張表的 `settings.rowDraftHint`：草稿 vs 落地）。
-                         **兩顆自帶動作的鈕不在這一句的範圍內**：凍結／解凍與「重置當期用量」是各自
-                         直接送出的（它們有自己的 data-toast），下面危險操作那兩顆更是——所以這句話
-                         只講「上面那幾格」，不說「這扇窗的全部」。 #}
-                    <p class="text-gray text-center" data-i18n="platform.tenantModalSaveHint">上面那幾格是編輯中的草稿，按下「儲存」才會一起送出。凍結／解凍、重置當期用量與危險操作那幾顆各自獨立、按下去就直接執行，不等這一顆。</p>
+                    {# footer 只有一顆「儲存」，而這扇窗有七塊——所以它送的是哪幾塊必須講出來：
+                         它送的是**值控制項**目前的值（額度／用量、使用期、模型白名單、LLM 追蹤），
+                         不是「我剛剛看的那一塊」。沒有這一句的話，改完額度就直接關窗是很自然的動作，
+                         而那等於什麼都沒做（同三張表的 `settings.rowDraftHint`：草稿 vs 落地）。
+                         **自帶動作的那幾顆鈕不在這一句的範圍內**：凍結／解凍、「重置當期用量」、
+                         逐成員的停用啟用／重設密碼／刪除，以及危險操作那兩顆，都是各自直接送出的
+                         （它們有自己的 data-toast 或自己的二次確認窗）——所以這句話只講「上面那幾格」，
+                         不說「這扇窗的全部」。 #}
+                    <p class="text-gray text-center" data-i18n="platform.tenantModalSaveHint">上面那幾格是編輯中的草稿，按下「儲存」才會一起送出。凍結／解凍、重置當期用量、成員那幾顆與危險操作各自獨立、按下去就直接執行，不等這一顆。</p>
                     <div class="button-row center">
                         <button type="button" class="button button-border btn-close-modals" data-i18n="action.close">關閉</button>
                         <button type="button" class="button button-primary" data-platform-role="admin" data-toast="已更新|額度不可小於 0|已用量不可大於額度|延展天數與到期日請擇一填寫，且天數不可為 0|儲存失敗，請稍後再試" data-i18n-data-toast="toast.manageTenant" data-toast-type="success|warning|warning|warning|error" data-i18n="action.save">儲存</button>

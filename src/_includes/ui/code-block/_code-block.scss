@@ -16,7 +16,7 @@
 //   · 內容是命令列樣本＝資料，**不掛 data-i18n**（同 ui/inline-code 的識別字）
 //   · 水平捲動由 `.code-block` 自己承擔，外面不要再包一層捲動容器
 //
-// 住在哪一頁（雙向；判準＝`grep -n 'class="code-block' src`）：唯一實例是 5-9_extractApiKey
+// 住在哪一頁（雙向；判準＝`grep -rn 'class="code-block' src --include=*.html`）：唯一實例是 5-9_extractApiKey
 // 的 curl 範例，頁面自寫、無 include；反向也只有 5-9 渲染得出 `.code-block`。
 .code-block {
     margin: 0;

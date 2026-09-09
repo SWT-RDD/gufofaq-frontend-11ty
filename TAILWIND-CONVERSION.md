@@ -43,7 +43,7 @@ Tailwind v4：把同一組名字加上 `--color-` 前綴放進 `@theme`，深色
 
 漸層 `--brand-gradient`（唯一消費點是 header／chatbot-header 那條 2px `border-image` 底線）不是顏色 token：設成一般 CSS 變數或用 `bg-[linear-gradient(...)]`。
 
-> ⚠️ **`_var.scss` 裡還有一族「非顏色旗標」**（成員以測試的 `COLOR_ROLES.nonColor` 為準，§3-2 不寫死計數），值是 `block`/`none`/`invert(.8)…`/`multiply` 之類，被元件當 `display`/`filter`/`background-blend-mode` 用：`--theme-icon-light`、`--theme-icon-dark`、`--raster-invert`、`--pattern-blend`。**不要加 `--color-` 前綴、不要放進 `@theme` 的顏色區**——改名就會讓 `var(--theme-icon-light)` 斷鏈，日/月圖示切換、插圖反相、底紋壓暗全部失效。（`--pattern-tint` 是**顏色** token（淺色 `transparent` ↔ 深色一顆實色，當 `background-color`；值以 `_var.scss` 為準），照常進 `@theme`。）
+> ⚠️ **`_var.scss` 裡還有一族「非顏色旗標」**（成員以測試的 `COLOR_ROLES.nonColor` 為準，§3-2 不寫死計數），值是 `block`/`none`/`invert(.8)…`/`multiply` 之類，被元件當 `display`/`filter`/`background-blend-mode` 用：`--theme-icon-light`、`--theme-icon-dark`、`--raster-invert`、`--pattern-blend`（`COLOR_ROLES.nonColor` 還有字型那兩顆，它們走下面「圓角 / 字級」那一段的 `--font-sans`／`--font-mono`，不在這一段的處置範圍）。**不要加 `--color-` 前綴、不要放進 `@theme` 的顏色區**——改名就會讓 `var(--theme-icon-light)` 斷鏈，日/月圖示切換、插圖反相、底紋壓暗全部失效。（`--pattern-tint` 是**顏色** token（淺色 `transparent` ↔ 深色一顆實色，當 `background-color`；值以 `_var.scss` 為準），照常進 `@theme`。）
 
 ### 全域基底：Tailwind preflight 沒給的三條，必須自己帶過去
 
@@ -91,7 +91,7 @@ preflight 已含 `box-sizing: border-box` 與 `img{max-width:100%; height:auto}`
 
 ### 圓角 / 字級
 
-- 圓角（**Tailwind v4 半徑階已改名**，本專案 §1 推 v4）：4px → v4 `rounded-sm`（v3 `rounded`）、8px → `rounded-lg`、2px → v4 `rounded-xs`（v3 `rounded-sm`）、圓形/膠囊 `50%`/`100px`/`1000px`（radio/switch handle/storage-bar/switch 軌道）→ `rounded-full`、30px（date 膠囊）→ `rounded-full`。**其餘尺標外的值一律 `rounded-[N]`，這裡刻意不列舉**（今天至少還有 `999px`／`18px`／`12px`／`0.75rem`／`1px` 五種，抄下來的清單注定過期，§3-2「能不寫死清單就不要寫」）——轉換時以實際 SCSS 為準。（字級 `text-*` v4 未改名，不受影響。）
+- 圓角（**Tailwind v4 半徑階已改名**，本專案 §1 推 v4）：4px → v4 `rounded-sm`（v3 `rounded`）、8px → `rounded-lg`、2px → v4 `rounded-xs`（v3 `rounded-sm`）、圓形/膠囊 `50%`/`100px`/`1000px`（radio/switch handle/storage-bar/switch 軌道）→ `rounded-full`、30px（date 膠囊）→ `rounded-full`。**其餘尺標外的值一律 `rounded-[N]`，清單不寫在這裡**（抄下來的清單注定過期，§3-2「能不寫死清單就不要寫」）：動手前 `grep -rn 'border-radius' src --include='*.scss'`，落在上面那幾階之外的每一個值就是一顆要寫成 arbitrary 的。（字級 `text-*` v4 未改名，不受影響。）
 - 字級（**注意命名偏移 +1，別同名對應**）：`text-md`(18px)→`text-lg`、`text-lg`(20px)→`text-xl`、`text-xl`(24px)→`text-2xl`；base 16px→`text-base`。
 - 字型：`--fontFamily` 設進 theme 的 `--font-sans` 或 config `fontFamily.sans`；**`--fontFamilyMono` 設進 `--font-mono`／`fontFamily.mono`**（消費者：`ui/inline-code`、`ui/code-block`、`ui/chat-message` 的行內碼、`components/skill-editor-modal`——GUIDELINE §4 要求它是全站唯一一份等寬堆疊，零 CSS 路線非映射不可，漏了那四處會落回瀏覽器預設等寬字）。
 
@@ -141,9 +141,7 @@ tailwind-scrollbar        → scrollbar-thin 等，處理自訂捲軸（見 §5-
 | `flex-row` | `flex` | `column`/`.flex-row.column` | `flex-col` |
 | `gap-16`（尺標） | `gap-4`（÷4） | `align-items-center` | `items-center` |
 | `justify-content-between` | `justify-between` | `align-items-end` | `items-end` |
-| `justify-content-center/end/between` | `justify-center/end/between` |
-
-> `*-start` 那一族切版**刻意沒有**（`flex-start` 產出的是 CSS 初始值，覆寫不了任何東西——理由寫在 `_utilities.scss` 那一段註解）。讀到這裡不要順手補一顆。 `flex-wrap` | `flex-wrap` |
+| `justify-content-center/end/between` | `justify-center/end/between` | `flex-wrap` | `flex-wrap` |
 | `mt-24`/`mb-*`/`my-*` | `mt-6`… | `m-0` | `m-0` |
 | `text-center/left/right` | 同名 | `hidden` | `hidden` |
 | `text-md/lg/xl` | `text-lg/xl/2xl`（偏移！） | `text-bold`（=500） | `font-medium`（**不是 font-bold**） |
@@ -153,6 +151,8 @@ tailwind-scrollbar        → scrollbar-thin 等，處理自訂捲軸（見 §5-
 | `flex-shrink-0` | `shrink-0` | `relative` | `relative` |
 | `ellipsis-1` | `truncate` | `ellipsis-2/3` | `line-clamp-2/3` |
 | `sr-only` | `sr-only` | `col-N-md`(見 gotcha) | grid `col-span-N` 或 `w-[N/12]` |
+
+> `justify-content-start` 那一族切版**刻意沒有**（`flex-start` 產出的是 CSS 初始值，覆寫不了任何東西——理由寫在 `_utilities.scss` 那一段註解）。讀到這裡不要順手補一顆。
 
 `!important`（`.text-center`/`mt-*`/`hidden` 帶）→ Tailwind utility 靠 layer 勝出，通常**不需**加 `!`。
 
@@ -195,16 +195,22 @@ scrollbar-thin scrollbar-thumb-scrollbar-thumb scrollbar-track-transparent
 - **或 `prose`（typography plugin）**：`<div className="prose ...">`，再用 `prose-h3:text-xl prose-th:border-border-subtle`… 等 modifier 校成 `_chat-message.scss` 的值。較快但要逐項校對，否則長相會跟 dist 不同。
 
 ### 5-3. 偽元素（`::before`/`::after`）——**清單要完整，別只處理明顯的幾個**
+
+**清單不寫在這裡**（§3-2：抄下來的清單注定過期，而漏掉的那幾顆正是「明顯的幾個」以外的）：動手前
+`grep -rn '::before\|::after' src --include='*.scss'`，每一命中就是一顆要處置的偽元素。下面講的是
+**分成哪幾類、各類的出口是什麼**，照分類把每一顆歸位；舉的例子是各類的代表，不是全部。
+
 純文字內容的可乾淨轉（`before:/after:` + `content`）：
 - 麵包屑分隔 `li+li::before{content:"/"}`（`_breadcrumb.scss`）→ 渲染成真元素，或 `after:content-['/'] after:px-2 after:text-text-muted`。
 - 必填星號 `.control-label.required::after{content:"*"}`（`_form-control.scss`）→ `after:content-['*'] after:text-danger-text`。
+- 巢狀子步驟的折線前綴 `.step-node-label.is-nested::before{content:"└"}`（`_step-flow.scss`）→ 同上，`before:content-['└'] before:mr-1 before:text-text-muted`。
 
 畫圖示的偽元素（`content:'' + 遮罩`）→ 見 §5-5，它們**不是** `background-image` 而是 `mask` + `background-color`（`icon-mask()`）；`after:content-[''] after:w-5 after:h-5 after:bg-text after:[mask:url(...)_no-repeat_center/contain]`，**或改內嵌 SVG component（建議，SVG 的 `fill=currentColor` 就是遮罩在做的事）**。code 裡實際有的（別漏）：
 - 下拉箭頭：`.dropdown::after`（`_header.scss` 與 `_mobile-nav.scss` **各一個**）、`.select-wrap::after`（`_form-control.scss`，模擬 select）、`.multi-select-control::after`（`_multi-select.scss`）、`.search-select-control::after`（`_search-select.scss`）。**兩顆自繪下拉各有一支**，別只轉其中一支。
 - 收合/切換箭頭：`.collapse-toggle::after`（`_collapse-text.scss`）、`.qa-side-panel-toggle::after`（`_qa-side-panel.scss`）。
 - 搜尋/時鐘：`.field:has(> .form-control.search)::after` / `.time`（`_form-control.scss`）—— `<input>` 沒有偽元素，故圖示掛在 `.field` 上，`.field` 疊成單欄 grid 讓圖示與 `<input>` 同格（`grid-area:1/1` + `align-content:start`）。轉 React 時直接把圖示畫成 `<input>` 的兄弟元素、外層 `relative`，不必照抄 grid。
 - `.button-icon::before`（`_button.scss`）：字形在偽元素上，因為按鈕自己的 `background-color` 要留給 hover 藥丸。
-- 純樣式偽元素（非圖）：header `a.logout::before` 分隔線、`li::after` hover 命中區（`_header.scss`）→ 用 `before:/after:` + 尺寸/背景。（注意：multi-select tag 的 `×` **不是**偽元素，是帶遮罩的真 `<button>`，歸 5-5 圖示類。）
+- 純樣式偽元素（非圖）：header `a.logout::before` 分隔線、`li::after` hover 命中區（`_header.scss`）、流程圖那條貫穿整欄的連接線 `.step-node-dot-cell::before`（`_step-flow.scss`；`position:absolute` ＋ 2px 寬、父層要留著 `relative`）→ 用 `before:/after:` + 尺寸/背景。（注意：multi-select tag 的 `×` **不是**偽元素，是帶遮罩的真 `<button>`，歸 5-5 圖示類。）
 
 ### 5-4. 自訂 checkbox / radio / switch（`_checkbox.scss`、`_radio.scss`、`_switch.scss`）——**零 CSS 的最弱點，特別注意**
 用 `appearance:none`（或隱藏 `opacity:0` 的 input）+ 偽元素/相鄰兄弟畫出控制項（checkbox 用旋轉 border 打勾、radio 用 scale 圓點，**switch 用隱藏 checkbox + `:checked + .switch-box .switch-btn` 相鄰兄弟 + custom property `calc()` 推 handle 位置**，含 `:checked`/`:disabled` 過渡）。純 Tailwind arbitrary `before:` 很難忠實重現。**建議做法：改成受控的 React 元件（SVG icon / 自畫 handle），或此處留一小段 CSS 逃生口**。這是整個轉換裡唯一「硬要零 CSS 會很痛」的地方——若團隊零 CSS 是硬底線，優先走受控元件。
@@ -264,16 +270,16 @@ scrollbar-thin scrollbar-thumb-scrollbar-thumb scrollbar-track-transparent
 11. **單色圖示是遮罩不是背景圖**（§5-5）：`.button-icon` 系列、箭頭、搜尋/時間框…清單自己數（`grep -o 'mask:url("[^"]*")' dist/css/main.css | sort -u`）→ 建議一律改成 `fill="currentColor"` 的內嵌 SVG。若照搬遮罩，記得上色的是 `background-color`（墨色）而非 `color`；Tailwind 無 mask utility，需 arbitrary property。
 12. **顏色不全在 token**（§1 附註）：一批 token 外硬寫色需 arbitrary color，別假設都有 token。
 13. **值以 SCSS + dist 為準**：本文件是規則；遇到衝突，以實際 `_<name>.scss` 的宣告與 `dist/<page>.html` 的最終外觀為準。
-14. **z-index 值一律 arbitrary**：Tailwind 只出 `z-0..z-50`，但 code 有 **清單不寫在這裡**（§3-2）：動手前 `grep -rn 'z-index' --include='*.scss' src`。分層關係是 toast／skip-link（2000）> modal／header／subscription-overlay（1000）> faq-launcher／widget-shell（900）> mobile-nav（97~100）> 其餘元件內部的小值（由 `layouts/page-shell` 掛在每一頁上，夾成 `z-50` 會被 header 的 1000 蓋掉）、`login-wrapper 1` → 一律 `z-[N]`，別夾成 `z-50` 破壞疊層（小值如 `5` 也沒有對應 utility）。**這份清單會過期**：動手前先 `grep -rn 'z-index' src`，以實際 SCSS 為準（§3-2）。
+14. **z-index 值一律 arbitrary**：Tailwind 只出 `z-0..z-50`，而 code 裡的值散在各元件（**顆數與清單不寫在這裡**，§3-2：動手前 `grep -rn 'z-index' --include='*.scss' src`，每一命中就是一顆要處置的值）。要保住的是**分層關係**：toast／skip-link（2000）> modal／header／subscription-overlay（1000）> faq-launcher／widget-shell（900）> mobile-nav（97~100）> 元件內部的小值。一律 `z-[N]`，別夾成 `z-50`——那會讓 900 那一層跑到 header 的 1000 底下，而小值（`5`、`1`）根本沒有對應的 utility。
 15. **事件委派的資料屬性不是樣式**：`data-open-modal="X"`（`ui/modals`）與 `data-toast="…"`（`ui/toast`）是切版期「markup 沒有 props 可傳」的替身，由掛在 `document` 的委派接手。轉 React 時**一律換成 `onClick`**（`onClick={() => openModal("X")}`），不要保留這兩個屬性、也不要保留 document-level 委派。
 16. **版面值裡的 `max()/min()/calc()`**：如 `qa-side-panel` 的 `top: max(72px, 100vh - 550px)` → arbitrary 並把算式包進 `calc()`：`top-[max(72px,calc(100vh-550px))]`（底線代空白、留意巢狀）。
 17. **模板算出來的 class 名 → 靜態列舉的查表，不是拼字串**：切版有 `is-{{ node.state }}`、
     `is-depth-{{ node.depth }}`（step-flow）、`field-{{ field.key }}`（multi-select-box）這種樣板組出來的
     class。Tailwind JIT 只掃字面 class，`` `pl-[${depth*16}px]` `` 與 `` `is-depth-${n}` `` 一律掃不到（且不是
-    §4-2 的資料驅動例外）→ 寫成 **key → 完整 utility 字串的靜態 map**，每個分支的 class 都字面出現在
+    §4 的資料驅動例外）→ 寫成 **key → 完整 utility 字串的靜態 map**，每個分支的 class 都字面出現在
     原始碼裡：`const PAD = { 1: "pl-4", 2: "pl-8", 3: "pl-12" }`。值域照 **scss 實際宣告了哪幾階**
     （`_step-flow.scss` 只到 `is-depth-3`，更深的由模板夾到第 3 階——照抄這個上限，別自己外推成公式）。
-    判準：**值域可枚舉 → 靜態 map；連續資料（storage-bar `84.3%`）→ §4-2 的行內 `style`**。
+    判準：**值域可枚舉 → 靜態 map；連續資料（storage-bar `84.3%`）→ §4 的行內 `style`**。
 18. **非樣式 class 不參與翻譯，原樣留在 `className`**：業務 hook（`.js-page-size`、`.copyBtn`…）與 slot
     class 在 scss 找不到樣式，但它們是 React 綁定契約（GUIDELINE §5），不是可以被 utility 取代的東西——
     utility 串**加在它旁邊**，不取代它。`page-size-select` 是極端例：除了 hook 什麼都沒有，零 CSS 路徑的

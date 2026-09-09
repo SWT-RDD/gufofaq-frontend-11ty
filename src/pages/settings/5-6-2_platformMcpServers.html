@@ -20,7 +20,8 @@ permalink: 5-6-2_platformMcpServers.html
 {# 平台管理者專屬：MCP Server 全域註冊表。
      MCP Server ＝ Stdio 子程序（command/args/env）＝在 agent 主機執行任意指令，等同 RCE，
      故只准平台管理者註冊；租戶端只能在對話設定頁「勾選」已註冊的 server（唯讀投影，不碰此頁）。
-     示範 3 筆：前 2 筆啟用、第 3 筆停用——**三筆都出現在 5-2 的勾選清單**，停用那筆在那邊以
+     `舊版文件搜尋` 是停用的那一台，其餘啟用（顆數與序位不寫死，§3-2）——**每一台都出現在
+     5-2 的勾選清單**，停用那台在那邊以
      「（停用中）」標示（跨頁自洽；理由見 5-2 該欄位註解：停用是可逆狀態，租戶端那份目錄
      **不濾掉停用中的**，濾掉會讓「先建好設定、之後再啟用」做不到，也會讓已選取的 server
      在被停用時從選單消失）。 #}
@@ -34,7 +35,7 @@ permalink: 5-6-2_platformMcpServers.html
      （跨頁同一份目錄，測試 §6「5-2 的 MCP Server 勾選清單與 5-6-2 註冊表跨頁自洽」把關）。 #}
 {# **列序＝建立時間降冪、同時間再以 id 降冪**，清單端出來就是這個順序，途中沒有第二層重排。
      id 是自增主鍵 ⇒ 建立時間升冪
-     ＝ id 升冪 ⇒ 這張表的順序是 **3 → 2 → 1**。**不可以順手排成 1 → 2 → 3**：那是這張清單
+     ＝ id 升冪 ⇒ 這張表照 id 由大到小排。**不可以順手排成由小到大**：那是這張清單
      產不出來的順序，而它讀起來完全合理，所以沒有人會覺得不對（§6 列序也是示範資料的一部分）。
      ⚠️ 改的是**列序**，不是 id 集合：5-2 對話設定那張勾選清單與本表有跨頁自洽測試，它比的是
      「同一組 id 與名稱、停用那筆要標示」，不比順序。 #}
@@ -53,8 +54,11 @@ permalink: 5-6-2_platformMcpServers.html
      · id 3 是**停用**且從未測試過的舊版套件——問工具這條路徑**不看啟用狀態**（拿到 server
        就直接起子行程去問），所以停用中的 server 照樣
        問得到；它問得到、但那個舊版套件的工具已經全數移除 ⇒ `"0"`。這一筆同時示範了
-       「工具欄有值」與「最近一次測試＝尚未測試」可以並存，也就是本欄與那一欄非分開不可的理由。 #}
+       「工具欄有值」與「最近一次測試＝尚未測試」可以並存，也就是本欄與那一欄非分開不可的理由。
+     `翻譯工具` 演的是另一態：**測得起來、而那一台就是一顆工具都沒有**（兩欄講同一件事）——
+       「最近一次測試」欄的那一支 `{% else %}` 只有這一台渲染得出來。 #}
 {% set mcpServers = [
+  { id: 4, name: "翻譯工具", command: "npx", args: ["-y", "@acme/translate-mcp"], env: [], description: "多語翻譯輔助。", active: true, liveToolCount: "0", lastTest: { ok: true, toolsCount: 0, tools: [], message: "", error: "" } },
   { id: 3, name: "舊版文件搜尋", command: "npx", args: ["-y", "@acme/doc-mcp-legacy"], env: ["ACME_API_KEY=***"], description: "舊版內部文件查詢，已停用。", active: false, liveToolCount: "0", lastTest: { ok: false, toolsCount: 0, tools: [], message: "", error: "" } },
   { id: 2, name: "內部文件搜尋", command: "npx", args: ["-y", "@acme/doc-mcp"], env: ["ACME_API_KEY=***", "ACME_REGION=ap-northeast-1"], description: "查詢內部知識庫文件。", active: true, lastTest: { ok: false, toolsCount: 0, tools: [], message: "MCP Server 連線異常", error: "TimeoutError" } },
   { id: 1, name: "時間工具", command: "uvx", args: ["mcp-server-time", "--local-timezone=Asia/Taipei"], env: [], description: "提供目前時間與時區換算。", active: true, liveToolCount: "3", lastTest: { ok: true, toolsCount: 3, tools: [{ name: "get_current_time", description: "回目前時間（可指定時區）" }, { name: "convert_time", description: "在兩個時區之間換算時間" }, { name: "list_timezones", description: "列出支援的 IANA 時區識別字" }], error: "" } }
@@ -318,8 +322,9 @@ permalink: 5-6-2_platformMcpServers.html
                               #}
                             {# **「連得上、但一顆工具都沒有」是走得到的一態**：同一張表的「工具數」欄
                                  就有 `settings.mcpToolsNone` 那一格在演它。沒有這個分支的話，那一列會畫出一個
-                                 空的收合區 ＋ 一顆點了什麼都不會發生的「展開」鈕（§5 不放按了沒反應的鈕），
-                                 而上面那句「0 個工具」已經把話說完了。
+                                 空的收合區 ＋ 一顆點了什麼都不會發生的「展開」鈕（§5 不放按了沒反應的鈕）。
+                                 **這一態在本頁演得到**：`翻譯工具` 那一台測得起來、而 `tools` 是空的
+                                 （它的「工具數」欄同時畫著「沒有工具」，兩軸講同一件事）。
                                  **寫成明確的長度比較**，不是直接拿 `server.lastTest.tools` 當條件：空陣列在
                                  nunjucks 是真值，那樣寫這個分支永遠走不到。 #}
                             {% if server.lastTest.tools.length > 0 %}

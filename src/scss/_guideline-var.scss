@@ -39,7 +39,7 @@
     --gl-title: #ededed; // 疊 --gl-bg 15.7:1
     --gl-bullet: #9fb0c2; // 項目符號是圖形記號，不承載文字
     --gl-panel-bg: rgba(70, 82, 95, 0.5); // 說明面板底
-    --gl-panel-text: #e6e6e6; // 疊面板 10.22:1。⚠️ 面板底是半透明的 rgba(70,82,95,.5)，要先與 --gl-bg 合成成 #2d333a 再算；直接拿宣告值當底算會得到 7.42（錯的）
+    --gl-panel-text: #e6e6e6; // 疊面板 10.22:1。⚠️ 面板底是半透明的 rgba(70,82,95,.5)，要先與 --gl-bg 合成成 #2d333a 再算；直接拿宣告值當底算會得到 6.39（錯的）
     --gl-example-bg: #3a3a3a; // 版位示意方塊
     --gl-gotop-bg: #3a3a3a;
     --gl-gotop-ink: #dfe4e8; // 疊 go-top 底 8.9:1

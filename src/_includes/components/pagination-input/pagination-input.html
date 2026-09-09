@@ -21,10 +21,13 @@
          使用者要按下去才知道打錯。上限由使用頁的 pagerTotal 供給（同一份資料，不另烤一個常數）。 #}
     {# describedby 指的是**區間**，不是後半句：下面那顆 `.pager-text`（「個對話，共 N 個」）——
          那是句子的下半截，報讀器會唸出「頁碼，個對話，共 12 個」這種從中間開始的殘句，而且它
-         沒有講出下界。區間另給一顆 .sr-only 節點（上下界都由 pagerTotal 推導，不另烤常數）；
-         看得見的那半句照舊留在畫面上給看得到的人（§4 三件套的「可見提示」由它負責）。 #}
+         沒有講出下界。區間另給一顆節點（上下界都由 pagerTotal 推導，不另烤常數），字身照
+         §4「界線字串全站只有一種寫法」的雙邊型 `N – M`，與全站每一顆 `…Range` 同形。
+         **它是可見的，不是 .sr-only**：§4 三件套的第三件寫的是「一段**可見的**區間提示」——
+         藏起來的話，看得到畫面的人手上只有「共 12 個」（沒有下界、也沒說那是這一格的合法範圍），
+         而打錯要按下去才知道，正是三件套要消滅的那件事。與「共 12 個」的重複是這條規則的代價：
+         重複的是上界，補進來的是下界與「這一格只收這個區間」這個資訊。 #}
     <input class="pager-input form-control" type="number" min="1" max="{{ pagerTotal }}" step="1" value="1" aria-label="頁碼" data-i18n-aria-label="qa.pageNumber" aria-describedby="pagerInputRange">
-    <span class="sr-only" id="pagerInputRange">1 – {{ pagerTotal }}</span>
 
     {# 分隔空白住在**譯文**、不留在 markup（§4-2；正典 ui/pagination 的 totalPrefix／totalSuffix）：
          留在 markup 會多出兩個半形空白，而 JSX 不會產生這種縮排空白，兩邊於是長不一樣。 #}
@@ -33,4 +36,6 @@
     <button type="button" class="pager-btn next">
         <img src="./images/icon_arrow_right_blue.png" width="48" height="48" decoding="async" alt="下一頁" data-i18n-alt="action.nextPage" class="icon">
     </button>
+
+    <span class="text-gray" id="pagerInputRange">1 – {{ pagerTotal }}</span>
 </div>

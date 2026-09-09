@@ -1298,10 +1298,13 @@ permalink: 3-5_dataHealth.html
                                     </div>
                                     <div class="form-group">
                                         <div class="label">
-                                            <label for="healthPhrasing-{{ f.id }}" class="control-label required" data-i18n="health.addPhrasingText">補寫的問法</label>
+                                            {# 可及名稱要帶「哪一筆發現」（§4）：同時展開兩筆以上時，那幾張「補寫問法」卡的
+                                                 這一格逐字都叫「補寫的問法」。`for`／`id` 的關聯保留（點 label 要能聚焦），
+                                                 名稱另走 aria-labelledby「辨識 → 欄位名」，同本頁「判定理由」那一格。 #}
+                                            <label id="healthPhrasingLabel-{{ f.id }}" for="healthPhrasing-{{ f.id }}" class="control-label required" data-i18n="health.addPhrasingText">補寫的問法</label>
                                         </div>
                                         <div class="field">
-                                            <input type="text" id="healthPhrasing-{{ f.id }}" class="form-control js-health-phrasing" placeholder="使用者實際會怎麼問這一題" data-i18n-placeholder="health.addPhrasingPlaceholder" required>
+                                            <input type="text" id="healthPhrasing-{{ f.id }}" aria-labelledby="healthFindingId-{{ f.id }} healthPhrasingLabel-{{ f.id }}" class="form-control js-health-phrasing" placeholder="使用者實際會怎麼問這一題" data-i18n-placeholder="health.addPhrasingPlaceholder" required>
                                         </div>
                                     </div>
                                     <div class="flex-row">
@@ -1323,10 +1326,11 @@ permalink: 3-5_dataHealth.html
                                     <p class="text-gray" data-i18n="health.actionUndoHint">把上一次處置對資料做的事退回去，並讓這一筆回到未處置。還原不是永遠成功的：它只在「處置寫下去的那一份原封不動」時才是確定的——資料在那之後又被改過的話，把舊值寫回去會連後來那次改動一起抹掉，所以後端會擋下並指名是哪一格對不上。合併尤其如此：同一筆被第二個發現再併一次之後，那一行同時裝著兩次的問法，沒有任何一種寫法算得上是反向操作。被擋下來的時候請直接編輯資料，不要用還原。</p>
                                     <div class="form-group">
                                         <div class="label">
-                                            <label for="healthUndoReason-{{ f.id }}" class="control-label required" data-i18n="health.undoReason">還原理由</label>
+                                            {# 同上（§4）：同時展開兩筆以上時，那幾張「還原」卡的這一格逐字都叫「還原理由」。 #}
+                                            <label id="healthUndoReasonLabel-{{ f.id }}" for="healthUndoReason-{{ f.id }}" class="control-label required" data-i18n="health.undoReason">還原理由</label>
                                         </div>
                                         <div class="field">
-                                            <textarea id="healthUndoReason-{{ f.id }}" class="form-control js-health-undo-reason" rows="2" placeholder="為什麼要把這次處置退回去" data-i18n-placeholder="health.undoReasonPlaceholder" required></textarea>
+                                            <textarea id="healthUndoReason-{{ f.id }}" aria-labelledby="healthFindingId-{{ f.id }} healthUndoReasonLabel-{{ f.id }}" class="form-control js-health-undo-reason" rows="2" placeholder="為什麼要把這次處置退回去" data-i18n-placeholder="health.undoReasonPlaceholder" required></textarea>
                                         </div>
                                     </div>
                                     <div class="flex-row">

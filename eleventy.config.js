@@ -42,6 +42,7 @@ module.exports = function (eleventyConfig) {
         "src/_includes/ui/toast/toast.js": "js/toast.js",
         "src/_includes/ui/collapse-text/collapse-text.js": "js/collapse-text.js",
         "src/_includes/ui/dismiss-panel/dismiss-panel.js": "js/dismiss-panel.js",
+        "src/_includes/ui/enable-target/enable-target.js": "js/enable-target.js",
         "src/_includes/ui/field-with-input/field-with-input.js": "js/field-with-input.js",
         "src/_includes/ui/reveal-input/reveal-input.js": "js/reveal-input.js",
         "src/_includes/ui/theme-toggle/theme-toggle.js": "js/theme-toggle.js",

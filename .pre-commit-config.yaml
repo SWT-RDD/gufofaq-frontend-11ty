@@ -9,7 +9,9 @@
 # ＋ build 之後才輪到；而檔案衛生那一族的典型失效是「中鏢的是別人的檔」，
 # 改動者根本不會想到去跑它。
 #
-# **同一份設定在 CI 也跑一次**（`ci.yml` 的「pre-commit（檔案衛生）」那一步，`--all-files`）。
+# **同一份設定在 CI 也跑一次**（`ci.yml` 與 `deploy.yml` 各有一步「pre-commit（檔案衛生）」，
+# `--all-files`）。**兩支都要有**：`ci.yml` 是 `branches-ignore: [master]`，而這個 repo 直推
+# master ⇒ 真正跑到的那一支是 `deploy.yml`。只在 ci.yml 放一份的話，唯一會部署的那條路上沒有網。
 # 這件事是必要的而不是保險：lint 與測試在 CI 各自另有一步，但**檔案衛生那一族在 CI
 # 沒有任何對應的東西**（行尾空白、檔尾換行、同檔混用 CRLF/LF、壞掉的 YAML/JSON）。
 # 不在那邊跑一次的話，那一層等於「有人記得裝就有、沒人記得就沒有」——而那種守門在
@@ -80,7 +82,7 @@ repos:
       - id: check-yaml
         files: ^(\.github/|\.pre-commit-config\.yaml$)
 
-      # i18n 字典（`src/i18n/en.json`，247 KB）壞掉時，測試裡看到的是一句
+      # i18n 字典（`src/i18n/en.json`，全站最大的一份 JSON）壞掉時，測試裡看到的是一句
       # 看不懂的 parse error，不是「這個檔壞了」。
       - id: check-json
         files: ^(src/i18n/.*\.json$|[^/]+\.json$)

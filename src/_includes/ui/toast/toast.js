@@ -21,148 +21,168 @@
 // **切語言時開著的那幾則要跟著重畫**（§4-2）：關閉鈕的可及名稱由本檔產生，訊息本文則依
 // 來源鈕的段索引重讀 `data-toast`。與其他元件不同的是，這裡不是可有可無的收尾——
 // `warning`／`error` 不自動消失，那兩型必然活得比一次語言切換久。
-function showToast(message, type = 'success', duration = 3000) {
-    // 舊簽名相容：showToast(msg, duration)
-    if (typeof type === 'number') { duration = type; type = 'success'; }
+// **整支收在 IIFE 內**（§5）：所有元件 js 都是 `<script defer>`、共用同一個全域 scope，
+// 通用名字（`fallback`、`syncAll`、`raiseContainer`）誰後載入誰贏，而覆蓋是靜默的；
+// `const`／`let` 更硬——第二支同名宣告會讓**那一整支腳本** SyntaxError、一行都不執行，
+// 而畫面上只是「那個元件沒反應」。匯出走 `window.`，其餘一顆都不留在外面。
+// `showToast` 是 §5 明列的凍結裸名匯出，故顯式掛回 `window`（見檔尾）。
+(function () {
+    function showToast(message, type = 'success', duration = 3000) {
+        // 舊簽名相容：showToast(msg, duration)
+        if (typeof type === 'number') { duration = type; type = 'success'; }
 
-    // permalink 一律扁平輸出到 dist/ 根（§1），故圖片路徑恆為 ./images/
-    const imagePath = './images/';
+        // permalink 一律扁平輸出到 dist/ 根（§1），故圖片路徑恆為 ./images/
+        const imagePath = './images/';
 
-    const toast = document.createElement('div');
-    toast.className = 'toast toast-' + type;
-    // 播報單位＝這一則（見檔頭）
-    toast.setAttribute('aria-atomic', 'true');
+        const toast = document.createElement('div');
+        toast.className = 'toast toast-' + type;
+        // 播報單位＝這一則（見檔頭）
+        toast.setAttribute('aria-atomic', 'true');
 
-    // 只有 success 有既有的白色勾勾圖示；其餘類型純色呈現（無對應白圖示）
-    if (type === 'success') {
-        const toastIcon = document.createElement('img');
-        toastIcon.className = 'toast-icon';
-        toastIcon.src = imagePath + 'finish_white.png';
-        toastIcon.width = 24;
-        toastIcon.height = 24;
-        toastIcon.decoding = 'async';
-        toastIcon.alt = '';
-        toast.appendChild(toastIcon);
+        // 只有 success 有既有的白色勾勾圖示；其餘類型純色呈現（無對應白圖示）
+        if (type === 'success') {
+            const toastIcon = document.createElement('img');
+            toastIcon.className = 'toast-icon';
+            toastIcon.src = imagePath + 'finish_white.png';
+            toastIcon.width = 24;
+            toastIcon.height = 24;
+            toastIcon.decoding = 'async';
+            toastIcon.alt = '';
+            toast.appendChild(toastIcon);
+        }
+
+        const toastText = document.createElement('span');
+        toastText.textContent = message;
+        toast.appendChild(toastText);
+
+        // 關閉鈕（WCAG 2.2.1 的「關掉」那一條出口）。可見字面是符號 ⇒ 對輔具隱藏，
+        // 名稱走 .sr-only 的可翻文字（§4-2：js 產生的 chrome 走 GufoI18n.t(key, 繁中原文)）。
+        const closeBtn = document.createElement('button');
+        closeBtn.type = 'button';
+        closeBtn.className = 'toast-close';
+        const closeGlyph = document.createElement('span');
+        closeGlyph.setAttribute('aria-hidden', 'true');
+        closeGlyph.textContent = '\u00D7';
+        const closeName = document.createElement('span');
+        closeName.className = 'sr-only';
+        closeBtn.appendChild(closeGlyph);
+        closeBtn.appendChild(closeName);
+        toast.appendChild(closeBtn);
+
+        // 這一則還開著的時候語言被切掉，它要跟著重畫（§4-2：js 產生的 chrome 走 GufoI18n.t，
+        // 並在 `gufo:langchange` 時依當下狀態重畫——全站每一支自己產字的元件都是這樣接的）。
+        // **這不是邊角**：`warning`／`error` 兩型不自動消失（見檔頭），所以它們必然活得比一次語言
+        // 切換久；少了這一段，切到英文之後畫面上會留著一則整句繁中的錯誤訊息，而它正是那一刻
+        // 唯一在說「剛剛那件事怎麼了」的東西。
+        // 訊息本文有兩條重讀的路，都掛在**回傳的那顆節點**上（呼叫端補、本檔讀）：
+        //   ・`_gufoSource`＝來源鈕與段索引（markup 觸發那一族）。`data-toast` 那一串已經由
+        //     lang-toggle 依 `data-i18n-data-toast` 重寫成新語言（它在 dispatch `gufo:langchange`
+        //     之前就跑完），所以同一個索引取到的就是同一段的新語言。
+        //   ・`_gufoI18n`＝`{ key, zh }`（元件 js 直接呼叫那一族）。那幾則的字是呼叫端自己用
+        //     `GufoI18n.t(key, 繁中)` 組的，沒有來源鈕，但 key 就在呼叫點上——把它掛回來就換得掉。
+        //     **這兩則正好都是 `warning`**（見檔頭：warning／error 不自動消失），必然活得比一次
+        //     語言切換久，所以它們是最需要這條路的，不是邊角。
+        // 連 key 都沒有的呼叫端（字是當場拼出來的）只換得掉關閉鈕的名稱——換不掉的東西不假裝換得掉。
+        function relabel() {
+            closeName.textContent = (window.GufoI18n && window.GufoI18n.t)
+                ? window.GufoI18n.t('action.close', '關閉') : '關閉';
+            if (toast._gufoI18n) {
+                const k = toast._gufoI18n;
+                toastText.textContent = (window.GufoI18n && window.GufoI18n.t)
+                    ? window.GufoI18n.t(k.key, k.zh) : k.zh;
+                return;
+            }
+            if (!toast._gufoSource) return;
+            const segs = (toast._gufoSource.el.getAttribute('data-toast') || '').split('|');
+            if (segs[toast._gufoSource.at] != null) toastText.textContent = segs[toast._gufoSource.at].trim();
+        }
+        relabel();
+        document.addEventListener('gufo:langchange', relabel);
+
+        const container = document.getElementById('toastContainer') || document.body;
+        raiseContainer(container);
+        container.appendChild(toast);
+
+        // 進場：先強制重排再加 class（同 sources-block.js 的重播寫法），不用 setTimeout 猜一個延遲。
+        void toast.offsetWidth;
+        toast.classList.add('show');
+
+        // 顯示時長留在 js —— 它是 showToast 的參數（一則提示要停多久是內容決定的），
+        // 而且不該被 prefers-reduced-motion 壓成 0.01ms：那是「動畫」的減量，不是「閱讀時間」的減量。
+        // **但淡出那 300ms 歸 CSS**（§5：有時長的視覺狀態，時長歸 CSS）：所以移除節點靠聽
+        // `transitionend`，不要再包一顆 `setTimeout(…, 300)`。那個 300 會變成 `_toast.scss`
+        // `transition: opacity 0.3s` 的第二份真相，而且在 reduced-motion 下（`_base` 把
+        // transition-duration 壓成 0.01ms）淡出瞬間就完成、節點卻還多留 300ms 在 #toastContainer 裡，
+        // popover 也跟著多佔 top layer 300ms。
+        function dismiss() {
+            toast.addEventListener('transitionend', function (e) {
+                if (e.target !== toast || e.propertyName !== 'opacity') return;
+                // 監聽跟著節點一起收：不拆的話，每彈一則就在 document 上多留一顆
+                // 永遠不會被回收的 listener（它閉包著已經離開 DOM 的那一則）。
+                document.removeEventListener('gufo:langchange', relabel);
+                toast.remove();
+                lowerIfEmpty(container);
+            }, { once: true });
+            toast.classList.remove('show');
+        }
+        closeBtn.addEventListener('click', dismiss);
+
+        // warning／error 不自動消失（見檔頭）：那兩型是使用者要動手修的事。
+        if (type !== 'warning' && type !== 'error') {
+            let timer = setTimeout(dismiss, duration);
+            const pause = function () { clearTimeout(timer); timer = null; };
+            const resume = function () { if (timer === null) timer = setTimeout(dismiss, duration); };
+            toast.addEventListener('mouseenter', pause);
+            toast.addEventListener('focusin', pause);
+            toast.addEventListener('mouseleave', resume);
+            toast.addEventListener('focusout', resume);
+        }
+
+        return toast;
     }
 
-    const toastText = document.createElement('span');
-    toastText.textContent = message;
-    toast.appendChild(toastText);
-
-    // 關閉鈕（WCAG 2.2.1 的「關掉」那一條出口）。可見字面是符號 ⇒ 對輔具隱藏，
-    // 名稱走 .sr-only 的可翻文字（§4-2：js 產生的 chrome 走 GufoI18n.t(key, 繁中原文)）。
-    const closeBtn = document.createElement('button');
-    closeBtn.type = 'button';
-    closeBtn.className = 'toast-close';
-    const closeGlyph = document.createElement('span');
-    closeGlyph.setAttribute('aria-hidden', 'true');
-    closeGlyph.textContent = '\u00D7';
-    const closeName = document.createElement('span');
-    closeName.className = 'sr-only';
-    closeBtn.appendChild(closeGlyph);
-    closeBtn.appendChild(closeName);
-    toast.appendChild(closeBtn);
-
-    // 這一則還開著的時候語言被切掉，它要跟著重畫（§4-2：js 產生的 chrome 走 GufoI18n.t，
-    // 並在 `gufo:langchange` 時依當下狀態重畫——全站每一支自己產字的元件都是這樣接的）。
-    // **這不是邊角**：`warning`／`error` 兩型不自動消失（見檔頭），所以它們必然活得比一次語言
-    // 切換久；少了這一段，切到英文之後畫面上會留著一則整句繁中的錯誤訊息，而它正是那一刻
-    // 唯一在說「剛剛那件事怎麼了」的東西。
-    // 訊息本文靠**來源鈕的索引**重讀：`data-toast` 那一串已經由 lang-toggle 依
-    // `data-i18n-data-toast` 重寫成新語言（它在 dispatch `gufo:langchange` 之前就跑完），
-    // 所以同一個索引取到的就是同一段的新語言。直接呼叫 `showToast(訊息)` 的呼叫端沒有來源鈕
-    // （那一段字是它自己組的），那一則就只換得掉關閉鈕的名稱——換不掉的東西不假裝換得掉。
-    function relabel() {
-        closeName.textContent = (window.GufoI18n && window.GufoI18n.t)
-            ? window.GufoI18n.t('action.close', '關閉') : '關閉';
-        if (!toast._gufoSource) return;
-        const segs = (toast._gufoSource.el.getAttribute('data-toast') || '').split('|');
-        if (segs[toast._gufoSource.at] != null) toastText.textContent = segs[toast._gufoSource.at].trim();
-    }
-    relabel();
-    document.addEventListener('gufo:langchange', relabel);
-
-    const container = document.getElementById('toastContainer') || document.body;
-    raiseContainer(container);
-    container.appendChild(toast);
-
-    // 進場：先強制重排再加 class（同 sources-block.js 的重播寫法），不用 setTimeout 猜一個延遲。
-    void toast.offsetWidth;
-    toast.classList.add('show');
-
-    // 顯示時長留在 js —— 它是 showToast 的參數（一則提示要停多久是內容決定的），
-    // 而且不該被 prefers-reduced-motion 壓成 0.01ms：那是「動畫」的減量，不是「閱讀時間」的減量。
-    // **但淡出那 300ms 歸 CSS**（§5：有時長的視覺狀態，時長歸 CSS）：所以移除節點靠聽
-    // `transitionend`，不要再包一顆 `setTimeout(…, 300)`。那個 300 會變成 `_toast.scss`
-    // `transition: opacity 0.3s` 的第二份真相，而且在 reduced-motion 下（`_base` 把
-    // transition-duration 壓成 0.01ms）淡出瞬間就完成、節點卻還多留 300ms 在 #toastContainer 裡，
-    // popover 也跟著多佔 top layer 300ms。
-    function dismiss() {
-        toast.addEventListener('transitionend', function (e) {
-            if (e.target !== toast || e.propertyName !== 'opacity') return;
-            // 監聽跟著節點一起收：不拆的話，每彈一則就在 document 上多留一顆
-            // 永遠不會被回收的 listener（它閉包著已經離開 DOM 的那一則）。
-            document.removeEventListener('gufo:langchange', relabel);
-            toast.remove();
-            lowerIfEmpty(container);
-        }, { once: true });
-        toast.classList.remove('show');
-    }
-    closeBtn.addEventListener('click', dismiss);
-
-    // warning／error 不自動消失（見檔頭）：那兩型是使用者要動手修的事。
-    if (type !== 'warning' && type !== 'error') {
-        let timer = setTimeout(dismiss, duration);
-        const pause = function () { clearTimeout(timer); timer = null; };
-        const resume = function () { if (timer === null) timer = setTimeout(dismiss, duration); };
-        toast.addEventListener('mouseenter', pause);
-        toast.addEventListener('focusin', pause);
-        toast.addEventListener('mouseleave', resume);
-        toast.addEventListener('focusout', resume);
+    // 把容器抬到 top layer 的最上面。
+    //
+    // 為什麼需要：`showModal()` 的 `<dialog>` 住在瀏覽器的 top layer，頁面層的 `position: fixed`
+    // 不管 z-index 開多大都蓋不過它 —— 跳窗裡按複製鈕，toast 會被畫在跳窗底下看不見。
+    // popover 也進 top layer，而 top layer 的疊放順序＝**進入順序**（實測：先開 popover 再開 dialog，
+    // popover 反而在下面）。所以每次彈 toast 前重新進場一次，就一定蓋在當下開著的跳窗上面。
+    // popover 不搶焦點（實測：showPopover() 後 activeElement 不變），也不會被 dialog 的 inert 影響繪製。
+    //
+    // 舊瀏覽器沒有 showPopover：容器退化成一般的頁面層節點，toast 在跳窗裡會被蓋住 —— 只是視覺退化，不會壞。
+    function raiseContainer(el) {
+        if (typeof el.showPopover !== 'function') return;
+        try {
+            if (el.matches(':popover-open')) el.hidePopover();
+            el.showPopover();
+        } catch (e) { }
     }
 
-    return toast;
-}
+    function lowerIfEmpty(el) {
+        if (typeof el.hidePopover !== 'function' || el.childElementCount > 0) return;
+        try { el.hidePopover(); } catch (e) { }
+    }
 
-// 把容器抬到 top layer 的最上面。
-//
-// 為什麼需要：`showModal()` 的 `<dialog>` 住在瀏覽器的 top layer，頁面層的 `position: fixed`
-// 不管 z-index 開多大都蓋不過它 —— 跳窗裡按複製鈕，toast 會被畫在跳窗底下看不見。
-// popover 也進 top layer，而 top layer 的疊放順序＝**進入順序**（實測：先開 popover 再開 dialog，
-// popover 反而在下面）。所以每次彈 toast 前重新進場一次，就一定蓋在當下開著的跳窗上面。
-// popover 不搶焦點（實測：showPopover() 後 activeElement 不變），也不會被 dialog 的 inert 影響繪製。
-//
-// 舊瀏覽器沒有 showPopover：容器退化成一般的頁面層節點，toast 在跳窗裡會被蓋住 —— 只是視覺退化，不會壞。
-function raiseContainer(el) {
-    if (typeof el.showPopover !== 'function') return;
-    try {
-        if (el.matches(':popover-open')) el.hidePopover();
-        el.showPopover();
-    } catch (e) { }
-}
+    // 掛了 data-toast 的元素被點到就彈 toast。用 document 級事件委派而不是逐顆綁：
+    // 動態插入的鈕（表格重繪、清單載入更多、彈窗內容換一批）也要吃得到，而且 markup 只要宣告屬性、
+    // 不必為了彈一則提示寫任何 js（§5：行為宣告在 markup、由 owning 元件的委派接手）。
+    document.addEventListener('DOMContentLoaded', function () {
+        document.addEventListener('click', function (e) {
+            const el = e.target.closest('[data-toast]');
+            if (!el) return;
 
-function lowerIfEmpty(el) {
-    if (typeof el.hidePopover !== 'function' || el.childElementCount > 0) return;
-    try { el.hidePopover(); } catch (e) { }
-}
-
-// 掛了 data-toast 的元素被點到就彈 toast。用 document 級事件委派而不是逐顆綁：
-// 動態插入的鈕（表格重繪、清單載入更多、彈窗內容換一批）也要吃得到，而且 markup 只要宣告屬性、
-// 不必為了彈一則提示寫任何 js（§5：行為宣告在 markup、由 owning 元件的委派接手）。
-document.addEventListener('DOMContentLoaded', function () {
-    document.addEventListener('click', function (e) {
-        const el = e.target.closest('[data-toast]');
-        if (!el) return;
-
-        // 一顆鈕可以宣告**多個結果**，用 `|` 分隔：切版是原型，API 的成功／失敗／警告都要演得出來，
-        // 每點一次換下一個。data-toast-type 用同樣的順序對位，少給就沿用最後一個。
-        // 用 `|` 而不是另開屬性，是為了讓 data-i18n-data-toast 照舊翻譯整串（en.json 的值也用 `|` 分隔）。
-        const messages = el.getAttribute('data-toast').split('|');
-        const types = (el.getAttribute('data-toast-type') || 'success').split('|');
-        const at = el._gufoToastAt || 0;
-        el._gufoToastAt = (at + 1) % messages.length;
-        // 來源鈕與段索引留在節點上：切語言時 relabel() 靠它重讀同一段的新語言（見 showToast）。
-        const toast = showToast(messages[at].trim(), (types[at] || types[types.length - 1]).trim());
-        toast._gufoSource = { el: el, at: at };
+            // 一顆鈕可以宣告**多個結果**，用 `|` 分隔：切版是原型，API 的成功／失敗／警告都要演得出來，
+            // 每點一次換下一個。data-toast-type 用同樣的順序對位，少給就沿用最後一個。
+            // 用 `|` 而不是另開屬性，是為了讓 data-i18n-data-toast 照舊翻譯整串（en.json 的值也用 `|` 分隔）。
+            const messages = el.getAttribute('data-toast').split('|');
+            const types = (el.getAttribute('data-toast-type') || 'success').split('|');
+            const at = el._gufoToastAt || 0;
+            el._gufoToastAt = (at + 1) % messages.length;
+            // 來源鈕與段索引留在節點上：切語言時 relabel() 靠它重讀同一段的新語言（見 showToast）。
+            const toast = showToast(messages[at].trim(), (types[at] || types[types.length - 1]).trim());
+            toast._gufoSource = { el: el, at: at };
+        });
     });
-});
+    // 凍結裸名匯出（§5）：本檔的 document 委派與兩處直接呼叫的元件 js 都認這個名字。
+    window.showToast = showToast;
+})();

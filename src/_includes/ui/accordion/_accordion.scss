@@ -4,7 +4,8 @@
 // **這幾條要知道理由（改動前先讀）**：
 //   ① 色值全數走語意 token，不寫死色碼——深色模式靠 `[data-theme]` 換 token 值，寫死就換不動。
 //   ② `th, td` 內不各寫一次 `box-sizing: border-box`（§4-1：`_base.scss` 已全域給，重複一份只會漂）。
-// **箭頭維持 `background-image`，刻意不用 `icon-mask()`**（§4 那條的前提是「單色 PNG」）：
+// **偏離**：箭頭維持 `background-image`、不用 `icon-mask()`（§4「單色 PNG 一律遮罩上色」的前提是
+//   不透明面積 ≤ 45%，這兩張過線）：
 //   `icon_table_arrow_default/open.png` 是**圓底 ＋ 箭頭**的雙色圖（48×48，不透明面積 57%，
 //   圓底 `#efefef`／`#13386f` 佔 85%，箭頭 `#494949`／`#ffffff` 只有 154 px），而 `icon-mask()` 是
 //   「alpha 當字形、顏色交給 token」——遮罩後整顆圓底連同箭頭一起被塗成同一個顏色，畫面上

@@ -6,9 +6,14 @@
      可能結果（data-toast-type 同序對位、每點一次輪播下一個）——設計師才看得到成功/失敗/警告各長什麼樣；
      說謊的是「只演成功那一種」。條件開窗鈕與業務值載體不掛（hook class 標記 React 接手）。
 
-     以下四顆是型別展示（showcase，不譯）。 #}
+     以下四顆是型別展示（showcase，不譯）。**這顆鈕標不出授權軸**：它示範的是 toast 的四種
+     長相，按下去只在本機彈一則字，沒有任何端點——授權軸講的是「送出這件事需要什麼權限」，
+     而這裡沒有那件事。（逐顆豁免登記在 `tests/rules/4-html-css/authz.test.mjs` 的 NO_GATE。）
+     **四顆都顯式寫出 `data-toast-type`，連 success 那一顆也是**（§5）：省略它會落回預設，而閘門
+     檢查的母體正是以那顆屬性判定的——省略＝整顆鈕靜默逃出 §4 的網。這一節是全站抄 `data-toast`
+     的樣板，樣板上省略一次，抄過去的每一顆都會跟著省。「success 是預設值」由上面那句話承載。 #}
 <div class="flex-row gap-16 flex-wrap">
-    <button class="button button-primary" type="button" data-toast="已成功儲存">success</button>
+    <button class="button button-primary" type="button" data-toast="已成功儲存" data-toast-type="success">success</button>
     <button class="button button-red" type="button" data-toast="發生錯誤，請稍後再試" data-toast-type="error">error</button>
     <button class="button button-border" type="button" data-toast="請先完成必填欄位" data-toast-type="warning">warning</button>
     <button class="button button-dark" type="button" data-toast="正在處理中…" data-toast-type="info">info</button>

@@ -67,8 +67,10 @@
 //
 // `.modals-footer` **整段可以沒有**，而且那不是少數例外：**判準是「這顆窗有沒有要使用者做決定」**
 // ——純告知型的窗（免責聲明、`components/help-modal` 的三塊式說明、預覽、權限不足、資訊型 info 窗）
-// 只有 header ＋ body，關閉走右上角那顆 `ui/modal-close`。顆數不寫死（§3-2），
-// 反查：`grep -l 'modals-footer' dist/*.html` 與 `grep -l '<dialog' dist/*.html` 的差集。
+// 只有 header ＋ body，關閉走右上角那顆 `ui/modal-close`。顆數不寫死（§3-2）。
+// **反查的單位是「一扇窗」不是「一支檔案」**：多數頁面同時有兩種窗，檔案層級的差集因此
+// 一顆都答不出來。逐窗看——`grep -rn '<dialog' src --include=*.html` 列出每一扇，再讀那一支
+// 自己的 markup 有沒有 `.modals-footer`；沒有的那幾扇，檔頭要說得出「這扇窗不要使用者做決定」。
 //
 // `aria-labelledby` **指向本窗那顆 `.modals-title` 的 id**（有測試釘住的是這件事，不是「等於
 // `<dialog id>`」）。多數彈窗的標題 id 恰好是 `<dialog id>-title`，但那只是命名慣例不是規則：

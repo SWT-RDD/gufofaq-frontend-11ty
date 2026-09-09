@@ -50,7 +50,8 @@
 // 唯一例外：`ui/block` 的展示片段寫 `<div class="data-info">共 12 筆資料</div>`——**零 i18n span**，
 // 與型① 直接牴觸。它只被元件庫頁 include，而 showcase 整頁不翻（§4-2），故不補 key；抄它就錯了。
 //
-// 住在哪一頁（雙向；判準＝`grep -rn 'class="data-info' src`，實跑過，命中就是下面這幾列）——
+// 住在哪一頁（雙向；判準＝`grep -rln 'class="data-info' src --include=*.html`——**要限 `*.html`**，
+//   否則會多出本檔自己那幾行契約，而那幾行不是實例）——
 //   型①（純計數列）：2-2-4_regressionSuites、4-1_qaHistory、5-7_auditLog（各一列，頁面自寫）
 //   型②（多欄統計列，另掛 `.flex-row.flex-wrap.gap-24`）：5-2_conversationSettings
 //        （三列：政策主題／出口替換規則／輸出規則）、5-10_tagDimensions（掃描結果，一列）

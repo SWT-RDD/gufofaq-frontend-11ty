@@ -37,7 +37,10 @@ document.addEventListener("DOMContentLoaded", function () {
         if (!checked) {
             // 守衛形狀同 rating-modal.js 呼叫 window.openModal：跨元件呼叫對方匯出的函式，
             // 對方沒載入時安靜跳過，不丟例外把整支 handler 打斷。
-            if (window.showToast) window.showToast(t(KEY_SELECT_FIRST, ZH_SELECT_FIRST), "warning");
+            // 這一則是 warning ⇒ 不自動消失，必然活得比一次語言切換久：key 掛回節點上，
+            // `ui/toast` 的 relabel() 才有東西可以重讀（見該檔 relabel 的兩條路）。
+            var pickToast = window.showToast && window.showToast(t(KEY_SELECT_FIRST, ZH_SELECT_FIRST), "warning");
+            if (pickToast) pickToast._gufoI18n = { key: KEY_SELECT_FIRST, zh: ZH_SELECT_FIRST };
             return; // 留在窗裡：要修的東西（那張清單）就在眼前
         }
         var fakeSelect = document.querySelector('[data-open-modal="datasetModal"]');

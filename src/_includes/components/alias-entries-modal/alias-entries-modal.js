@@ -68,7 +68,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         var rowSeq = 0;
 
-        // 這三顆 key **只**出現在 js 產生的 markup 上，所以 lang-toggle 的 collectDefaults()
+        // 下面這幾顆 key **只**出現在 js 產生的 markup 上，所以 lang-toggle 的 collectDefaults()
         // （只掃載入當下的 DOM）沒有它們的繁中快照 ⇒ 回繁中時 setText 直接跳過，繁中只剩本元件
         // 救得回來。繁中原文因此存成常數：拿 el.textContent 當 fallback 等於把「當下畫面上的英文」
         // 當成繁中原文，英→中變成 no-op，而靜態掃描與視覺指紋都看不到（§4-2）。
@@ -77,7 +77,11 @@ document.addEventListener("DOMContentLoaded", function () {
         var ZH_CANONICAL_TOO_LONG = "標準詞超過上限";
         var ZH_TOO_MANY_ALIASES = "別名數超過上限";
         var ZH_ALIAS_TOO_LONG = "單一別名超過上限";
-        var ERR_ZH = {
+        // **`settings.noAliasEntries` 也要在這張表裡**：空狀態列同樣是本檔生出來的，
+        // `collectDefaults()` 掃不到它（示範資料非空 ⇒ 載入當下 DOM 裡沒有那一列），
+        // 不列進來的話，在英文模式把列刪到零筆之後切回繁中，那一句會留在英文。
+        var ZH_BY_KEY = {
+            "settings.noAliasEntries": ZH_NO_ENTRIES,
             "settings.bulkPasteNoCanonical": ZH_NO_CANONICAL,
             "settings.bulkPasteNoAlias": ZH_NO_ALIAS,
             "settings.bulkPasteCanonicalTooLong": ZH_CANONICAL_TOO_LONG,
@@ -216,12 +220,24 @@ document.addEventListener("DOMContentLoaded", function () {
             if (btn && body.contains(btn)) { btn.closest("tr").remove(); syncCount(); }
         });
 
+        // 列名（`.sr-only` 的 `aliasRowName-*`）是這一列的辨識字：兩顆輸入與刪除鈕的可及名稱都由它
+        // 接在欄名／動作名前面（§4「列名 → 欄名」）。只在渲染當下寫一次的話，使用者把標準詞改掉之後，
+        // 報讀器唸的還是舊詞——那一列的刪除鈕會說「刪除 加值型營業稅」，而那一列現在裝的是別的詞，
+        // 使用者據以按下去的正是「聽起來對」的那一顆。可及名稱是**推導值**（跟著標準詞欄的值走，§6），
+        // 所以那一格改一個字就同步一次。委派掛在 tbody 上：模板列與本檔生成的列走同一條路徑。
+        body.addEventListener("input", function (e) {
+            var cell = e.target.closest('input[aria-labelledby$="aliasHeadCanonical"]');
+            if (!cell || !body.contains(cell)) return;
+            var nameNode = document.getElementById(cell.getAttribute("aria-labelledby").split(/\s+/)[0]);
+            if (nameNode) nameNode.textContent = cell.value;
+        });
+
         // 切語言時把 js 產生的那幾顆字重畫（markup 上的 data-i18n 由 lang-toggle 自己處理，
         // 但它只在切換當下掃一次——這裡重畫的是「切換之後才被貼出來」的那些列）
         document.addEventListener("gufo:langchange", function () {
             body.querySelectorAll("[data-i18n]").forEach(function (el) {
                 var key = el.getAttribute("data-i18n");
-                if (ERR_ZH[key]) el.textContent = t(key, ERR_ZH[key]);
+                if (ZH_BY_KEY[key]) el.textContent = t(key, ZH_BY_KEY[key]);
             });
         });
     });

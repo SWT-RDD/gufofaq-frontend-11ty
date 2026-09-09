@@ -388,7 +388,9 @@ permalink: 5-10_tagDimensions.html
                         {% else %}
                         {# 條下那行是純資料（幾筆 / 幾筆（幾 %）），不翻。 #}
                         {% set storageBarPct = dim.coveragePct %}
-                        {% set storageBarText = dim.tagged ~ " / " ~ dim.total ~ "（" ~ dim.coveragePct ~ "%）" %}
+                        {# 括號用**半形**：`storageBarText` 是純字串參數（元件把它整段輸出，收不了 `data-i18n` 子節點），
+                             這一份字面因此同時服務中英兩種語言——全形括號在英文模式會露出一個繁中字身（§4-2）。 #}
+                        {% set storageBarText = dim.tagged ~ " / " ~ dim.total ~ " (" ~ dim.coveragePct ~ "%)" %}
                         {% include "ui/storage-bar/storage-bar.html" %}
                         {# 「還差幾筆」點得進「是哪幾份」。量到 100%（tagged == total）時不給鈕——
                              點進去必定是空清單，那顆鈕就是說謊。日期維度同樣有這一格（它也有

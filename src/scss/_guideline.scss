@@ -57,8 +57,8 @@
     }
 
     /* Firefox 走另一組標準屬性，形狀與顏色要各給一次 */
-    scrollbar-color: var(--gl-scrollbar-thumb) transparent;
     scrollbar-width: thin;
+    scrollbar-color: var(--gl-scrollbar-thumb) transparent;
 }
 
 // 以下所有規則限定在元件庫展示頁（`body.guideline-page`）。

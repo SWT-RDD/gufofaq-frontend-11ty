@@ -112,7 +112,7 @@ permalink: 1-1-3_preview_excel.html
         <label class="switch">
             {# 名稱走 `aria-labelledby` 指那顆可見的 `control-label`，不另掛 `aria-label`：
                  §4 反向規則要求「掛了 id 的就要有人指到它」，而兩份同文的字串遲早分岔。 #}
-            <input type="checkbox" class="switch-checkbox js-excel-unpivot" role="switch" aria-labelledby="excelUnpivotLabel" aria-describedby="excelUnpivotHint">
+            <input type="checkbox" class="switch-checkbox js-excel-unpivot" role="switch" data-enable-target="excelUnpivotCols" aria-labelledby="excelUnpivotLabel" aria-describedby="excelUnpivotHint">
             <span class="switch-box"><span class="switch-btn"></span></span>
         </label>
         <span class="text-gray" id="excelUnpivotHint" data-i18n="dataImport.unpivotHint">開啟後，橫向展開的年度／月份欄會轉成「列標題／欄標題／值」三欄。</span>
@@ -124,10 +124,11 @@ permalink: 1-1-3_preview_excel.html
     </div>
     <div class="field">
         {# **開關關著 ⇒ 這一格 `disabled`**（§4：組合維度上的無效格要由 markup 表達，不能只寫在
-             hint 裡）。上面那顆「交叉表轉直式」在這一稿是關著的，所以這一格打了也不生效——
-             讓它看起來可以打，就是讓使用者做一件不會發生的事，而唯一的訊號是下面那半句灰字。
+             hint 裡）。上面那顆「交叉表轉直式」在這一稿是關著的，所以這一格打了也不生效。
+             **解得開它的是 `ui/enable-target`**（開關上那顆 `data-enable-target` 指過來）——切版自己
+             切得動這個狀態，不是一顆點了沒反應的旋鈕（§5 ④：純前端互動要當場動得起來）。
              `disabled` 說得出「現在不能填」、說不出「為什麼」，所以那句常駐說明照樣要在
-             （`aria-describedby` 接著它），兩件事缺一不可。React 端跟著開關的狀態切這顆屬性。 #}
+             （`aria-describedby` 接著它），兩件事缺一不可。 #}
         <textarea id="excelUnpivotCols" rows="2" class="form-control js-excel-unpivot-cols" placeholder="請輸入"
             data-i18n-placeholder="common.pleaseEnter" aria-describedby="excelUnpivotColsHint" disabled>1</textarea>
         <span class="text-gray" id="excelUnpivotColsHint" data-i18n="dataImport.unpivotRowLabelColsHint">一行一個欄位序號（從 1 起算），左側用來定位一列的欄；只在「交叉表轉直式」開啟時生效。</span>

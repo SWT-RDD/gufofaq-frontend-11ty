@@ -839,7 +839,7 @@ permalink: 5-2_conversationSettings.html
        換行寫成**真的換行**（同 2-2-3 的 `prompt`）：這一格印的是原文，`.prompt-content` 靠
          `white-space: pre-wrap` 把它照原樣攤開。 #}
     {% set versions = [
-      { label: "V3", timeRange: "2026/01/20 13:09:37～", refCount: "204",
+      { label: "V3", timeRange: "≥ 2026/01/20 13:09:37", refCount: "204",
         content: "角色定位：
 你是一位專業的知識庫問答助手，負責依據已上傳的資料回應使用者詢問。
 知識來源限制：
@@ -853,14 +853,14 @@ permalink: 5-2_conversationSettings.html
 輸出格式：
 • 使用條列式（• 或 -）
 • 必要時分段（例如：說明 / 流程 / 注意事項）" },
-      { label: "V2", timeRange: "2026/01/18 15:02:33～2026/01/20 13:09:36", refCount: "14",
+      { label: "V2", timeRange: "2026/01/18 15:02:33 – 2026/01/20 13:09:36", refCount: "14",
         content: "角色定位：
 你是一位專業的知識庫問答助手，負責依據已上傳的資料回應使用者詢問。
 知識來源限制：
 你的回答必須僅依據《知識庫檢索結果》，不得引用其他來源。
 輸出格式：
 • 必要時分段（例如：說明 / 流程 / 注意事項）" },
-      { label: "V1", timeRange: "2026/01/02 14:09:37～2026/01/18 15:02:32", refCount: "300",
+      { label: "V1", timeRange: "2026/01/02 14:09:37 – 2026/01/18 15:02:32", refCount: "300",
         content: "你是一位知識庫問答助手，請依據已上傳的資料回答使用者的問題。
 資料不足時直接告知使用者，不要自行補充。" }
     ] %}
@@ -915,8 +915,11 @@ permalink: 5-2_conversationSettings.html
             <div class="flex-row column gap-16">
                 <div class="flex-row justify-content-between align-items-center flex-wrap gap-16">
                     {# 這一行是本卡的辨識欄（§4）：三張版本卡的「複製」「還原此版本」逐字同名，
-                         卡片不是 <tr>、沒有列脈絡可倚靠，可及名稱要自己把版號帶進去。 #}
-                    <div class="text-md text-blue" id="promptVersionName-{{ loop.index }}">{{ v.label }}（{{ v.timeRange }}）</div>
+                         卡片不是 <tr>、沒有列脈絡可倚靠，可及名稱要自己把版號帶進去。
+                         括號折進兩側的 key（§4-2：不掛 key 的資料節點裡不准出現全形標點）——中間那一段
+                         於是「整段就是那個生效區間」，字身照界線字串的唯一寫法：雙邊 `N – M`（EN DASH
+                         兩側各一空白）、單邊 `≥ N`（現行版本沒有下台時間）。 #}
+                    <div class="text-md text-blue" id="promptVersionName-{{ loop.index }}">{{ v.label }}<span data-i18n="common.parenOpen">（</span>{{ v.timeRange }}<span data-i18n="common.parenClose">）</span></div>
                     <div class="flex-row align-items-center gap-8">
                         <span><span data-i18n="settings.referencedCount">被問答引用次數：</span> {{ v.refCount }} <span data-i18n="settings.timesUnit">次</span></span>
                         <span class="divider-vertical"></span>
@@ -1021,8 +1024,8 @@ permalink: 5-2_conversationSettings.html
          故此處不含設定檔選擇。值載體掛 hook class（§5，React 接 change）；查詢＝直送版本列表 API 的鈕→data-toast。
          版本示範資料先 set 於此：版本下拉選項與版本卡都由它渲染（§6 能推導就從陣列渲染）。 #}
     {% set welcomeVersions = [
-      { label: "V2", timeRange: "2026/01/20 13:09:37～", content: "您好，我是智能客服，有什麼可以協助您的嗎？" },
-      { label: "V1", timeRange: "2026/01/02 14:09:37～2026/01/20 13:09:36", content: "你好，請問有甚麼問題需要我幫你解答的?" }
+      { label: "V2", timeRange: "≥ 2026/01/20 13:09:37", content: "您好，我是智能客服，有什麼可以協助您的嗎？" },
+      { label: "V1", timeRange: "2026/01/02 14:09:37 – 2026/01/20 13:09:36", content: "你好，請問有甚麼問題需要我幫你解答的?" }
     ] %}
     <div class="block mb-10">
         <div class="flex-row flex-wrap gap-24 mobile-column sm-gap-16">
@@ -1069,8 +1072,8 @@ permalink: 5-2_conversationSettings.html
         <div class="block prompt-card">
             <div class="flex-row column gap-16">
                 <div class="flex-row justify-content-between align-items-center flex-wrap gap-16">
-                    {# 同提示詞版本卡：卡片辨識欄。 #}
-                    <div class="text-md text-blue" id="welcomeVersionName-{{ loop.index }}">{{ v.label }}（{{ v.timeRange }}）</div>
+                    {# 同提示詞版本卡：卡片辨識欄，括號與區間字身的理由逐字相同。 #}
+                    <div class="text-md text-blue" id="welcomeVersionName-{{ loop.index }}">{{ v.label }}<span data-i18n="common.parenOpen">（</span>{{ v.timeRange }}<span data-i18n="common.parenClose">）</span></div>
                     <div class="flex-row align-items-center gap-8">
                         <button type="button" id="welcomeVersionCopy-{{ loop.index }}" aria-labelledby="welcomeVersionName-{{ loop.index }} welcomeVersionCopy-{{ loop.index }}" class="button-icon copy copyBtn has-tooltip" data-toast="歡迎語已複製|複製失敗，請手動選取後複製" data-i18n-data-toast="welcome.copied" data-toast-type="success|error">
                             <span class="tooltip" data-i18n="action.copy">複製</span>
@@ -2112,6 +2115,7 @@ permalink: 5-2_conversationSettings.html
                 <select id="mcpServersSelect" class="form-control multiSelect js-mcp-servers" multiple="multiple" data-placeholder="請選擇" data-placeholder-key="common.pleaseSelect">
                     <option value="1" selected>時間工具</option>
                     <option value="2">內部文件搜尋</option>
+                    <option value="4">翻譯工具</option>
                     <option value="3" selected data-suffix="（停用中）" data-suffix-key="settings.mcpServerInactive">舊版文件搜尋</option>
                 </select>
                 <p class="text-gray" data-i18n="settings.mcpServersHint">標示「停用中」的 Server 仍可先加入設定，但要等平台啟用後才會被呼叫。</p>
