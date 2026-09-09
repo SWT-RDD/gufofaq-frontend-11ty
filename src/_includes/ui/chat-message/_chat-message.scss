@@ -86,6 +86,9 @@
 //           </button>
 //       </div>
 //       {% if not chatInputHidden %}
+//       <p class="text-red m-0 js-stream-truncated hidden" role="alert" data-i18n="comp.streamTruncated">這一輪的連線中斷了：答案的文字收到了，但來源清單與評分、分享所需的資訊沒有收到——所以這則答案下面沒有來源可看，也評不了分。把同一題再送一次就會有完整的一份。</p>
+//       {% endif %}
+//       {% if not chatInputHidden %}
 //       {% set chatroomSuggested = ["結婚登記要準備哪些文件？", "面談流程大約需要多久？"] %}
 //       <div class="suggested-questions" role="group" aria-labelledby="chatroomSuggestedLabel">
 //           <span id="chatroomSuggestedLabel" class="suggested-questions-label" data-i18n="comp.suggestedQuestions">建議追問：</span>
@@ -95,6 +98,12 @@
 //       </div>
 //       {% endif %}
 //   </div>
+//
+// **`.js-stream-truncated` 那一列是本型的一部分**（兩個生產實例都有，widget 那一份也有）：
+// 它是「答案的文字收到了、但收尾那一塊沒收到」那一態的落點，平時 `.hidden`、由業務 js 掀開。
+// 少抄它，那一態在那一頁就沒有任何地方畫得出來（§5：hook 是契約不是死碼）。
+// 它與建議追問**共用同一個 `{% if not chatInputHidden %}` 條件、但各自一個區塊**：唯讀的問答紀錄
+// 預覽沒有串流可以斷，也沒有「送出下一題」可言——兩者的理由不同，所以不折成同一個判斷。
 //
 // ③′ 同一則的**前台公開版**（生產 markup＝components/faq-chatroom）。與 ③ 的差異全在
 //    `.message-icon` 與 chip 上，**不可以拿 ③ 去抄**：
@@ -115,6 +124,7 @@
 //           <button type="button" class="button-icon copy copyBtn has-tooltip" data-toast="文字已複製|複製失敗，請手動選取後複製" data-i18n-data-toast="common.copied" data-toast-type="success|error"><span class="tooltip" data-i18n="action.copy">複製</span></button>
 //           <button type="button" data-tenant-feature="history" class="button-icon share js-share-message" data-toast="連結已建立|建立失敗，請稍後再試|本站沒有開通分享功能，這個回答分享不出去，請聯絡本網站管理者。" data-i18n-data-toast="toast.createPublicShare" data-toast-type="success|error|error" title="分享" data-i18n-title="comp.share"><span class="sr-only" data-i18n="comp.share">分享</span></button>
 //       </div>
+//       <p class="text-red m-0 js-stream-truncated hidden" role="alert" data-i18n="comp.streamTruncated">這一輪的連線中斷了：答案的文字收到了，但來源清單與評分、分享所需的資訊沒有收到——所以這則答案下面沒有來源可看，也評不了分。把同一題再送一次就會有完整的一份。</p>
 //       {% set faqSuggested = ["結婚登記要準備哪些文件？", "面談流程大約需要多久？"] %}
 //       <div class="suggested-questions" role="group" aria-labelledby="faqSuggestedLabel">
 //           <span id="faqSuggestedLabel" class="suggested-questions-label" data-i18n="comp.suggestedQuestions">建議追問：</span>
@@ -142,8 +152,16 @@
 //       </div>
 //   </div>
 //
-//    widget 那一份同形，只是照 ④ 的規則不畫 `.message-time`、沒有 `.avatar`，
-//    hook 換成 `.js-widget-default-greeting`、key 換成 `comp.widgetDefaultGreeting`。
+//    widget 那一份**逐字寫在下面**（§1-2：兩型以上不得只用散文交代差異）——照 ④ 的規則
+//    不畫 `.message-time`、沒有 `.avatar`，hook 與 key 也各自不同：
+//
+//   <div class="message-wrap js-widget-default-greeting hidden">
+//       <div class="message-row by-robot">
+//           <div class="message-content">
+//               <div class="robot-msg" data-i18n="comp.widgetDefaultGreeting">您好，這裡可以就本網站的內容提問，我會依據網站管理者提供的資料回答你。</div>
+//           </div>
+//       </div>
+//   </div>
 //
 // ④ widget 展示（markup 在 ui/widget-shell，住在 `.widget-panel-log` 裡；那支是**展示片段**、
 //    沒有生產頁在 include，見 README 的展示片段清單）——**沒有

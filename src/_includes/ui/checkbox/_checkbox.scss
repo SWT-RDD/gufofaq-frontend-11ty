@@ -5,11 +5,11 @@
 // 正本——這一族少一顆屬性視覺指紋完全看不出來，正是這條規則要防的狀況。
 //
 // **兩型**：下面這一段是**表格型**，逐字取自 `src/pages/dataset/3-1-3_previewDataset.html`。
-// 另一型是**清單型**（`components/search-scope-modal`）：沒有 `<table>`／`<th>`，
-// 全選框仍是 `.check-all` ＋ `aria-label` ＋ `data-i18n-aria-label`，逐列則是
-// `.check-one` ＋ 值載體三件（`value` ＝**資料集 id、不是索引名**（理由見該元件檔頭：索引名是內部
-// 識別，讓瀏覽器持有它等於給前端一個猜別人索引名的起點）、hook class、`checked` 由資料決定），
-// 可及名稱來自它自己那一行的可見文字、不需要 `aria-labelledby` 組字。抄的時候先認自己是哪一型：
+// 另一型是**清單型**（`components/search-scope-modal`）——它的完整 markup **逐字寫在
+// `ui/list-filter` 的型③**（同一段 markup 同時是那支的過濾清單契約；兩邊各留一份必然分岔，
+// 所以這裡不抄第二份，§1-2 允許的省略②）。兩型的差別逐條在那一段，這裡只記最容易抄錯的一件：
+// 清單型的逐列可及名稱來自它自己那一行的可見文字，**不需要** `aria-labelledby` 組字，而表格型
+// 非組不可（表頭那一格只有一顆全選框、沒有文字可引用）。抄的時候先認自己是哪一型：
 //
 //   <div class="table-container scrollTable checkbox-container" tabindex="0">
 //       <table class="default-table">
@@ -32,10 +32,18 @@
 //                       </label>
 //                   </td>
 //               </tr>
+//               {% else %}
+//               <tr>
+//                   <td colspan="6" class="text-center text-gray" data-i18n="dataset.noFiles">這個資料集裡沒有符合的檔案：可能一個都還沒匯入，也可能是上面的搜尋把它們濾掉了。先把搜尋清空看看；真的還沒有，就到「資料匯入」上傳第一份檔案。</td>
+//               </tr>
 //               {% endfor %}
 //           </tbody>
 //       </table>
 //   </div>
+//
+// **`{% else %}` 那一列一起抄**（§5 無資料列正典）：這張表是可搜尋的，「濾到零筆」是每天都走得到
+// 的一態。少了它，搜尋沒有結果時畫面上只剩一個表頭——那讀起來像資料壞了，而不是「沒有符合的」。
+// `colspan` 要等於**該表的表頭欄數**（這一份是 6，逐表各自算，有測試把關）。
 //
 // 抄的時候一個都不能省：
 //   ⓐ **`.check-all` 要有 `aria-label` ＋ `data-i18n-aria-label`**：它是一顆沒有可見字面的控制項。

@@ -85,8 +85,14 @@
 //           {% set chartDescId = "chart3" %}
 //           {% set chartDescRow = false %}
 //           {% include "ui/chart-desc/chart-desc.html" %}
+//           <p class="m-0 mt-10"><span class="text-bold" data-i18n="settings.unbucketedLogs">未計入本圖的則數：</span><span id="chart3-unbucketed">0</span></p>
 //       </div>
 //   </div>
+//
+// ③ 的 `ui/chart-desc` **後面還有一行**（上面那顆 `<p>`）：它是「這張圖沒算進去幾則」的資料槽，
+// 恆顯、`0` 也照畫（0 不畫的話，切版只能把示範值填成非 0 才看得到，等於把異常態畫成預設態）。
+// 它是 `.chart-desc` 的**兄弟**、吃不到那顆 flex 的 gap，所以自帶 `m-0 mt-10` 對齊同一個垂直節奏
+// ——少抄它，那個差額在畫面上沒有任何地方交代得了，而圖看起來完全正常。
 //
 // 抄的時候注意：
 //   ⓐ **`.chart-wrap` 只在「兩張圖並排」時才有。** 它是 `display:flex; gap:56px`（≤992px 改上下

@@ -99,14 +99,26 @@
 //       </div>
 //   </div>
 //
-// ② 置中訊息面板（`expired` 到期、`frozen` 凍結——兩者同結構，只有文案不同；凍結那一份
-//    把 `.desc` 的三顆節點收成一顆，因為它的句子裡沒有數字要拆）：
+// ② 置中訊息面板（`expired` 到期）——外殼與 `frozen` 相同，但 `.desc` **不同構**，故兩型
+//    各寫一段完整 markup（§1-2：差異不得只用散文或括號帶過）：
 //
 //   <div class="subscription-overlay demo-static mt-16">
 //       <div class="subscription-panel">
 //           <div class="subscription-expired-box">
 //               <div class="title" data-i18n="subscription.expiredTitle">使用期已到期</div>
 //               <div class="desc"><span data-i18n="subscription.expiredDescPrefix">您的 </span><span>30</span><span data-i18n="subscription.expiredDescSuffix"> 天使用期已結束。如需繼續使用，請聯絡平台管理員。</span></div>
+//           </div>
+//       </div>
+//   </div>
+//
+// ②′ 同一顆外殼、`frozen` 凍結那一型——`.desc` 是**單一掛 key 的節點**，不是三顆：
+//    它的句子裡沒有執行期填進來的數字，拆成前綴／值／後綴會多出一個永遠是空的資料槽。
+//
+//   <div class="subscription-overlay demo-static mt-16">
+//       <div class="subscription-panel">
+//           <div class="subscription-expired-box">
+//               <div class="title" data-i18n="subscription.frozenTitle">帳號已凍結</div>
+//               <div class="desc" data-i18n="subscription.frozenDesc">您的帳號已被平台管理員凍結，暫時無法使用。如需恢復，請聯絡平台管理員。</div>
 //           </div>
 //       </div>
 //   </div>

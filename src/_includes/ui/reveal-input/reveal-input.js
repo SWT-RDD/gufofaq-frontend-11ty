@@ -14,24 +14,36 @@
 //   `.flex-row`／`.align-items-center`／`.gap-8`／`.flex-wrap`／`.col-6-md`／`.col-12-sm`＝全域工具層；
 //   `.copyBtn`＝業務 hook（不屬本契約，見段後）。本元件只加行為（`data-reveal-target` 的委派）。
 //
-// markup 契約（無 html 元件，§1-2；整段照抄）—— **下面這一份是 5-9 的形狀**。它住在該頁
-// `{% if extractKeyPlain %}` 的**有明碼**那一支之內：外面還有 `{% set extractKeyPlain = "…" %}`
-// 那一行定義（§1-2：契約要含它自己需要的 `{% set %}` 定義行——缺一行的失敗方式和缺一層祖先
-// 完全相同），以及 `{% else %}` 那一支的唯讀提示欄。少了那兩層就是一顆無條件顯示明碼的欄位。
-// 另外，那顆 flex-row 還有**第三個子節點**（`.copyBtn`），不屬本契約。
+// markup 契約（無 html 元件，§1-2；整段照抄）—— **下面這一份是 5-9 的形狀**，
+// **含它自己需要的 `{% set %}` 定義行與兩支 `{% if %}`**：缺 `set` 那一行的失敗方式和缺一層祖先
+// 完全相同（欄位靜默變成空字串），而缺 `{% else %}` 那一支就是一顆**無條件顯示明碼**的欄位。
 //
+//   {% set extractKeyPlain = "sk_aB3xYz9Qle8sample000apikeyvalue000000000000" %}
+//   {% set extractKeyHint = "sk_…0000" %}
 //   <div class="flex-row align-items-center gap-8 flex-wrap">
 //       <div class="col-6-md col-12-sm">
 //           <div class="form-group">
 //               <div class="field">
+//                   {% if extractKeyPlain %}
 //                   <input type="password" id="apiKeyInput" class="form-control" value="{{ extractKeyPlain }}" readonly aria-label="目前金鑰" data-i18n-aria-label="extractKey.currentKey">
+//                   {% else %}
+//                   <input type="text" id="apiKeyInput" class="form-control" value="{{ extractKeyHint }}" readonly aria-label="目前金鑰" data-i18n-aria-label="extractKey.currentKey">
+//                   {% endif %}
 //               </div>
 //           </div>
 //       </div>
+//       {% if extractKeyPlain %}
 //       <button type="button" class="button button-border" data-reveal-target="apiKeyInput"
 //           data-text-show="顯示" data-text-hide="隱藏" data-key-show="extractKey.show" data-key-hide="extractKey.hide"
 //           data-i18n="extractKey.show">顯示</button>
+//       {# 此處接該頁的 .copyBtn（ui/clipboard 的宣告式掛點），不屬本契約 #}
+//       {% endif %}
 //   </div>
+//
+// **兩支 `{% if %}` 是同一個條件、但缺一不可**：欄位那一支決定「遮罩還是明文」，鈕那一支決定
+// 「有沒有這顆鈕」——只留欄位那一支的話，已存在態會出現一顆揭不開任何東西的「顯示」鈕；
+// 只留鈕那一支的話，已存在態會拿一串末碼提示去做 `type="password"` 的遮罩，畫出一排
+// 比真金鑰短的點。
 //
 // **`value` 的長度是規格的一部分**：這一格預設 `type="password"`，遮罩點數就等於字面量長度，
 // 短一顆點就是把「金鑰有多長」畫錯（這一把是 46 字元，推導寫在 5-9 檔頭）。值由該頁的

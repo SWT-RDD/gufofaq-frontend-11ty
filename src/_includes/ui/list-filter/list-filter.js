@@ -24,9 +24,10 @@
 // （§1-2：樣式靠祖先才成立時，契約要從那個祖先寫起）。
 // **既然從 `.modals-wrap` 寫起，殼的那幾層就要一起抄**：`.modals-wrap` 的直接子元素只准
 // `ui/modal-close` 的 include ＋ `.modals-content` 兩個，`.modals-header` 則是 `.modals-body`
-// 的前一個兄弟（§7 有測試逐顆比對這串巢狀順序）。下面兩段都從 `.modals-wrap` 抄到
-// `.modals-body` 收尾為止；`.modals-footer`（兩顆 modal 各有自己的按鈕列）與外面兩層
-// `<dialog class="modals"> > .modals-dialog.modals-md` 屬 `ui/modals` 的契約，見該元件檔頭。
+// 的前一個兄弟（§7 有測試逐顆比對這串巢狀順序）。**下面每一段都從 `.modals-wrap` 抄到
+// `.modals-body` 收尾為止**；`.modals-footer`（每一顆 modal 各有自己的按鈕列）與外面兩層
+// `<dialog class="modals"> > .modals-dialog.modals-<尺寸>` 屬 `ui/modals` 的契約，見該元件檔頭
+// （尺寸逐型不同：① ② 是 `modals-md`、③ 是 `modals-lg`）。
 //
 // ① 成員清單（checkbox，生產 markup＝components/manage-members-modal）：
 //
@@ -113,29 +114,49 @@
 //       `js-search-scope-dataset`，名字裡不留「index」正是為了不讓下一個人送錯東西。
 //    ⓖ 清單另掛 `aria-describedby` 指向窗內那句「一筆都沒有勾＝涵蓋全部」的常駐說明。
 //
-//   <div class="checkbox-container">
-//       <div class="dataset-list-wrap">
-//           <label class="form-checkbox">
-//               <input type="checkbox" class="check-all" aria-label="全選" data-i18n-aria-label="dataset.selectAll">
-//               <span class="text-md text-bold" id="searchScopeDatasetLabel" data-i18n="common.dataset">資料集</span>
-//           </label>
-//           <div class="form-group">
-//               <div class="field">
-//                   <input type="text" placeholder="搜尋資料集…" data-i18n-placeholder="modals.searchDatasetPlaceholder" aria-label="搜尋資料集" data-i18n-aria-label="modals.searchDataset" class="form-control search">
-//               </div>
+//   <div class="modals-wrap">
+//       {% include "ui/modal-close/modal-close.html" %}
+//       <div class="modals-content">
+//           <div class="modals-header">
+//               <h3 class="modals-title" id="searchScopeModal-title" data-i18n="search.searchScope">檢索範圍</h3>
 //           </div>
-//           <div class="dataset-list" role="group" aria-labelledby="searchScopeDatasetLabel"{% if searchScopeDatasetRows %} aria-describedby="searchScopeEmptyHint"{% endif %}>
-//               {% for row in searchScopeDatasetRows %}
-//               <label class="form-checkbox border-wrap">
-//                   <input type="checkbox" class="check-one js-search-scope-dataset" value="{{ row.id }}"{% if row.selected %} checked{% endif %}>
-//                   <span>{{ row.name }}</span>
-//               </label>
-//               {% else %}
-//               <div class="text-center text-gray" data-i18n="dataset.noSelectableDatasets">這個租戶還沒有資料集可以選。先到「資料集列表」建一個並匯入資料。</div>
-//               {% endfor %}
+//           <div class="modals-body">
+//               <p class="text-gray" data-i18n="search.searchScopeHint">勾選這次要納入檢索的資料集</p>
+//               <div class="checkbox-container">
+//                   <div class="dataset-list-wrap">
+//                       <label class="form-checkbox">
+//                           <input type="checkbox" class="check-all" aria-label="全選" data-i18n-aria-label="dataset.selectAll">
+//                           <span class="text-md text-bold" id="searchScopeDatasetLabel" data-i18n="common.dataset">資料集</span>
+//                       </label>
+//                       <div class="form-group">
+//                           <div class="field">
+//                               <input type="text" placeholder="搜尋資料集…" data-i18n-placeholder="modals.searchDatasetPlaceholder" aria-label="搜尋資料集" data-i18n-aria-label="modals.searchDataset" class="form-control search">
+//                           </div>
+//                       </div>
+//                       <div class="dataset-list" role="group" aria-labelledby="searchScopeDatasetLabel"{% if searchScopeDatasetRows %} aria-describedby="searchScopeEmptyHint"{% endif %}>
+//                           {% for row in searchScopeDatasetRows %}
+//                           <label class="form-checkbox border-wrap">
+//                               <input type="checkbox" class="check-one js-search-scope-dataset" value="{{ row.id }}"{% if row.selected %} checked{% endif %}>
+//                               <span>{{ row.name }}</span>
+//                           </label>
+//                           {% else %}
+//                           <div class="text-center text-gray" data-i18n="dataset.noSelectableDatasets">這個租戶還沒有資料集可以選。先到「資料集列表」建一個並匯入資料。</div>
+//                           {% endfor %}
+//                       </div>
+//                   </div>
+//               </div>
+//               {% if searchScopeDatasetRows %}
+//               <p class="text-gray m-0 mt-8" id="searchScopeEmptyHint" data-i18n="search.scopeEmptyHint">至少要勾選一個資料集。「全選」只會勾到目前列出來的那幾筆——要檢索全部，先把上面的搜尋框清空再按「全選」。</p>
+//               {% endif %}
 //           </div>
 //       </div>
 //   </div>
+//
+//    ⓗ **那顆 `<p id="searchScopeEmptyHint">` 與它的 `{% if %}` 一起抄**：清單的
+//    `aria-describedby` 指的就是它，少抄那一句整段描述當場落空（§4）。而 `{% if %}` 兩側
+//    **成對**——清單空的時候，那一句「至少要勾一個」指著一個沒有東西可勾的清單，所以兩邊同一個
+//    條件一起關掉（清單那一顆的 `aria-describedby` 也是插在同一個 `{% if %}` 裡，正是為了不留
+//    一顆指向不存在 id 的屬性）。
 //
 //    ⚠️ 這一型的全選與本元件的過濾是**同一顆容器上的兩種行為**：過濾把不符的列掛 `.hidden`，
 //    而全選只動看得見的那幾列（理由逐字在 `ui/checkbox/checkbox.js` 檔頭）。抄的時候兩支 js 都要在。

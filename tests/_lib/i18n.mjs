@@ -66,9 +66,12 @@ export const EMPTY_EN_ALLOWED = new Map([
     ["comp.copyright", "頁尾「版權所有© <年份> All Rights Reserved」：英文那半句是 key 外的字面量，" +
         "已經整句在畫面上（components/footer；年份是 .js-copyright-year 資料槽，不寫進理由裡免得每年過期），" +
         "前綴再翻一次會變成 “All rights reserved © … All Rights Reserved”"],
-    ["common.unitItems", "量詞「個」：英文由同一句話的另一半承載（settings.aliasBindLimitPrefix" +
-        "「A profile can bind at most」＋數字、qa.detailConvOf「 of」＋總數；5-6-2「工具數」那一格" +
-        "則由欄標題 settings.mcpTools「Tool count」承載），英文語序在數字後面不接單位字"],
+    ["common.unitItems", "量詞「個」：**英文語序在數字後面不接單位字**，所以這一顆恆空——" +
+        "句子的意思由同一句話的另一半承載，逐個消費點都對得出來：aliasBindLimitPrefix" +
+        "「A profile can bind at most」＋數字、qa.detailConvOf「 of」＋總數、" +
+        "settings.scanDocumentsCap「Document count cap per scan」＋labelSep＋數字、" +
+        "settings.glossaryLimitAliasCount「 characters, at most 」＋數字；5-6-2「工具數」那一格" +
+        "則由欄標題 settings.mcpTools「Tool count」承載"],
     ["pagination.pageSuffix", "「第 N 頁」的「頁」：英文是 pagination.pagePrefix「Page」＋數字，字尾無物"],
     ["health.recordRowSuffix", "「第 N 列」的「列」：英文是 health.recordRowPrefix「row」＋數字，字尾無物"],
     ["agent.qaPoolPrefix", "「共 N 筆」的「共」：英文是數字＋agent.qaPoolSuffix「 candidates」，字首無物"],

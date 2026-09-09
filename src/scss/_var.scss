@@ -2,6 +2,9 @@
 // 設計 token（全站唯一色源，單一層、直接給值、無別名）
 // ─────────────────────────────────────────────────────────────────────────────
 // 元件一律只用本檔的語意 token（--surface / --text / --brand …），不寫裸 hex、不留原色別名層。
+// **對比度註記一律寫基準面的 token 名，不寫「卡片」「頁底」這種暱稱**：同一族的兩顆若各自對
+// 不同的面量，讀的人看不出來（「4.65 對頁底」與「5.65 對卡片」看起來像同一個尺度上的兩個值，
+// 其實不是）。一顆 token 會落在不只一個面上時，兩個數字都寫出來，門檻看**最嚴的那一個**。
 // 深色（護眼／半夜關燈）由 [data-theme="dark"] 覆寫同一組 token → 全站換膚。
 // showcase 頁（component.html / catalog.html）另有自己的 --gl-* 色盤（見 _guideline-var.scss）。
 
@@ -38,8 +41,8 @@
        這兩個需求在深色模式互相矛盾，故一律：background/border 用 --brand，color 用 --brand-text。 */
     --brand: #1377b0; // 品牌填充（按鈕 / active）：白字 4.89:1
     --brand-hover: #036ca8; // 5.65:1
-    --brand-text: #1377b0; // 品牌色文字 / 圖示（淺色下與填充同值即可讀：對頁底 4.65:1）
-    --brand-text-hover: #036ca8; // 品牌色文字的 hover：對卡片 5.65:1
+    --brand-text: #1377b0; // 品牌色文字 / 圖示（淺色下與填充同值即可讀：疊 --surface 4.65:1、--surface-raised 4.89:1）
+    --brand-text-hover: #036ca8; // 品牌色文字的 hover：疊 --surface 5.37:1、--surface-raised 5.65:1
     --brand-ink: #13386f; // 深品牌：勾記 / radio 圓點 / 步驟條（深色下提亮）
     --brand-tint: #e7f7ff; // 品牌淡藍底（使用者泡泡 / selected / chip）
     // **只給不承載前景的裝飾**：目前的消費點是 header 與 chatbot-header 的 2px 底線（border-image）。
@@ -132,11 +135,11 @@
     --border: #2e2e2e;
     --border-subtle: #242424;
 
-    /* 品牌：填充壓深（白字可讀，且仍 ≥3:1 於卡片底），文字提亮（黑底可讀）——hover 依深色慣例「提亮」 */
-    --brand: #2271a3; // 填充：白字 5.30:1，vs 卡片 3.21:1
+    /* 品牌：填充壓深（白字可讀，且仍 ≥3:1 疊 --surface-raised），文字提亮（深底可讀）——hover 依深色慣例「提亮」 */
+    --brand: #2271a3; // 填充：白字 5.30:1，疊 --surface-raised 3.21:1
     --brand-hover: #1f79b1; // 4.74:1（比 base 亮）
-    --brand-text: #6fa8dd; // 品牌色文字：vs 卡片 6.75:1
-    --brand-text-hover: #8fbde8; // 品牌色文字的 hover：黑底要更亮，vs 卡片 8.61:1
+    --brand-text: #6fa8dd; // 品牌色文字：疊 --surface-raised 6.75:1
+    --brand-text-hover: #8fbde8; // 品牌色文字的 hover：深底要更亮，疊 --surface-raised 8.61:1
     --brand-ink: #6fa8dd; // 深品牌當文字，黑底不可讀 → 提亮
     --brand-tint: #16344a; // 淡藍底 → 深藍 tint
     --brand-gradient: linear-gradient(to right, #0a3f6e, #1c7f93);
@@ -148,7 +151,7 @@
     --success-ink: #47b95e; // 語意綠的圖形記號墨色：疊 raised 6.79／sunken 7.14（填充族 --success 在這裡只有 3.41）
     --danger: #d51319; // 白字 5.33:1
     --danger-hover: #dd2b31;
-    --danger-text: #f0555a; // 危險色文字在黑底要亮：vs 卡片 4.99:1
+    --danger-text: #f0555a; // 危險色文字在深底要亮：疊 --surface-raised 4.99:1
     --danger-ink: #f0555a; // 深色下 sunken 面已夠暗，與 --danger-text 同值即可（vs sunken 5.25:1）
     --warning: #e6b800; // 黃底仍配 --on-warning 深字
     --info: #1778b2; // 白字 4.81:1
@@ -168,7 +171,7 @@
     /* 控制項零件 */
     --scrollbar-thumb: #3a3a3a;
     --scrollbar-thumb-strong: #4a6a8a;
-    --control-track: #6b6b6b; // switch off 軌道：對卡片 3.20:1——軌道是圖形記號，低於 3:1 就看不出開關邊界
+    --control-track: #6b6b6b; // switch off 軌道：疊 --surface-raised 3.20:1——軌道是圖形記號，低於 3:1 就看不出開關邊界
     --control-track-alt: #33414d;
     --control-knob: #e8e8e8;
     --control-ink-disabled: #8a8a8a; // 對 --surface-disabled(#232323) 4.55:1

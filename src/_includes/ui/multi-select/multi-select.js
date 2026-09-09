@@ -17,9 +17,10 @@
 // ① 名稱來自 `<label for>`，另有一句可見提示 ⇒ `aria-describedby` 指它（5-2 的「綁定術語表」）：
 //
 //   {% set glossaryTableCatalog = [
-//       { id: 4, name: "人資術語" }
+//       { id: 4, name: "人資術語" },
+//       { id: 5, name: "產品術語" }
 //   ] %}
-//   {% set glossaryBindIds = [4] %}
+//   {% set glossaryBindIds = [4, 5] %}
 //   <div class="form-group row mobile-col">
 //       <div class="label label-md">
 //           <label for="glossaryTablesSelect" class="control-label" data-i18n="settings.glossaryTables">綁定術語表</label>
@@ -35,6 +36,13 @@
 // ② 標籤那一格裡除了名字還有一顆 ⓘ 鈕 ⇒ **不能用 `<label for>`**（`for` 會把整格的字都算進
 //    可及名稱，把「出口套用說明」黏進欄位名），改成具名 `<span>` ＋ `aria-labelledby`（5-2 的「出口套用」）：
 //
+//   {% set aliasTableCatalog = [
+//       { id: 12, name: "關務通用別名" },
+//       { id: 9, name: "系統別名" },
+//       { id: 7, name: "待整理別名" }
+//   ] %}
+//   {% set aliasApplyOutputIds = [] %}
+//   <div class="form-group row mobile-col">
 //   <div class="label label-md">
 //       <span id="aliasApplyOutputLabel" class="control-label" data-i18n="settings.aliasApplyOutput">出口套用</span>
 //       <button type="button" class="info-btn" title="出口套用說明" data-i18n-title="settings.aliasApplyOutputInfo" data-open-modal="aliasOutputInfoModal">
@@ -47,6 +55,12 @@
 //           {% for t in aliasTableCatalog %}<option value="{{ t.id }}"{% if t.id in aliasApplyOutputIds %} selected{% endif %}>{{ t.name }}</option>{% endfor %}
 //       </select>
 //   </div>
+//   </div>
+//
+// **兩型都從 `.form-group.row` 寫起**：`.label-md` 的定寬與 `.field` 的並排都靠那一層柵格列，
+// 從 `.label` 抄起會得到一組上下堆疊、標籤不對齊的欄位（§1-2：樣式靠祖先才成立時，契約要從那個
+// 祖先寫起）。型② 的 `aliasApplyOutputIds` 示範刻意是空陣列——出口是唯一會改寫答案文字的階段，
+// 預設勾起來會讓人以為那是預設值；照抄時連那個空一起抄。
 //
 // 抄的時候：
 //   ⓐ **名稱與說明是兩件事**：名字走 `<label for>` 或 `aria-labelledby` 二選一（型①／型②），

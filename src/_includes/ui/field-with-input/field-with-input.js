@@ -15,7 +15,9 @@
 // class」兩條對它都判不下去）：
 //   本元件自有（純掛點、零 scss 規則）：`.field-with-input-group`／`.field-with-input`／`.with-input`
 //   `.form-group`／`.control-label`／`.field`／`.function`／`.form-control`／`.time`＝`ui/form-control`
-//   `.form-radio`＝`ui/radio`（外框 base 在全域 `scss/_form-check`）；`.form-checkbox`＝`ui/checkbox`（同）
+//   `.form-radio`／`.border-wrap`＝`ui/radio`（外框 base 在全域 `scss/_form-check`）；`.form-checkbox`＝`ui/checkbox`（同）
+//   `.calendar`＝**具名業務掛點**（日期選擇器由 React 端的套件接手，切版只留這顆定位記號、零樣式）
+//   `.row`＝全域 `scss/_base` 的柵格列（`.form-group.row` 才排得成「左標籤右欄位」）
 //   `.text-gray`／`.sr-only`／`.flex-row`／`.gap-*`／`.mt-*`／`.w100`／`.m-0`／`.col-*`／`.mobile-column*`＝全域 `scss/_utilities`
 //   `.start-date`／`.end-date`＝**具名業務掛點**（區間日期的起訖欄成對讀值，零樣式、登記在測試的具名 hook 表）
 //
@@ -85,7 +87,15 @@
 //           </div>
 //       </div>
 //   </div>
+//   </div>
+//       </div>
+//   </div>
 //   <p class="text-gray m-0 mt-8" id="{{ timeFilterRangeHintId }}"><span data-i18n="settings.timeRangeLimitPrefix">時間區間最長 </span><span>365</span><span data-i18n="settings.timeRangeLimitMid"> 天，開始時間也不得早於 </span><span>365</span><span data-i18n="settings.timeRangeLimitSuffix"> 天前；超出的範圍送出會被退回。</span></p>
+//
+// ⚠️ 上面那三個收尾標籤缺一不可（`.field-with-input-group` → `.field.w100` → `.form-group.row`）：
+// 少了它們，照抄的人得到的是一份把後面整段內容吞進 `.field` 裡的 markup，而瀏覽器會自己補標籤
+// ⇒ 畫面看起來只是「間距怪怪的」，沒有任何一關會紅。這一段的縮排刻意在 group 那一層回到最左，
+// 是為了讓契約讀起來像獨立的一塊——但收尾標籤要照真實巢狀寫完。
 //
 // **最外面那兩層也屬本契約**（`.form-group.row` ＋ 帶 `id` 的 `<label>`，以及
 // `.field[role="group"][aria-labelledby]`）：從 `.field-with-input-group` 寫起的話，抄的人會得到
@@ -129,6 +139,13 @@
 //           </label>
 //       </div>
 //   </div>
+//   <span class="text-gray" id="exportWithHeaderHint" data-i18n="qa.exportWithHeaderHint">統計表頭只有「摘要（CSV）」這一種格式輸出得出來，選了完整明細就沒有這一段。開啟後 CSV 第一列不再是欄名，既有的下游解析會錯位</span>
+//   <span class="text-gray" id="exportFormatHint" data-i18n="qa.exportFullDetailHint">完整明細會多出三張工作表——每一步、每次工具呼叫的完整輸出、每一張來源卡的全文</span>
+//
+// 那兩顆 `<span>` 在 group **外面**、但屬於本契約：checkbox 與 xlsx 那顆 radio 的 `aria-describedby`
+// 指的就是它們，少抄一顆那一顆控制項的描述當場落空（§4：判準是無障礙樹讀得到，不是 markup 接上了）。
+// 它們同時是 §4「組合維度上的無效格要由 markup 表達」那條的另一半——`disabled` 說得出「現在不能勾」，
+// 說不出「為什麼」，那句常駐可見的依賴說明就是理由。
 //
 // 型② 與型① 差在四件事，抄的時候逐件對：
 //   · **容器是 `role="group"`，不是 `role="radiogroup"`。** `radiogroup` 的 owned element 只能是
@@ -200,7 +217,10 @@
 // 住在哪一頁（雙向；判準＝`grep -rn 'field-with-input-group' src`，實跑過，命中分屬三個檔）：
 //   · **markup 有三份**：型① `components/data-time-filter`（被 5-3_statsModule 與 5-4_coverageGaps
 //     各 include 一次）、型② `pages/qaHistory/4-1_qaHistory.html`（頁面自寫）、
-//     型③ `components/iso-review-wizard`（被 5-6-1_platformTenants include）。
+//     型③ `components/iso-review-wizard`。
+//   · **型③ 的扇出是條件的**（grep 產不出來的那一半，§1-2 要求交代扇出路徑）：`iso-review-wizard`
+//     被三份稿 include，而這一組 markup 關在 `isoReviewStep == "idle"` 那一支之內 ⇒ **只有 idle
+//     那一份稿渲染得出它**。所以正向 grep 命中一支元件，反向卻只多出一頁——那一頁不是漏，是分支。
 //   · 其餘命中**全是註解或本檔自己**，不是第四份實例（§1-2：反查要列出全部命中，含只是註解的
 //     那種）：`data-time-filter.html`、`4-1_qaHistory.html` 與 `iso-review-wizard.html` 的檔頭註解、
 //     本檔的檔頭與上面三段契約、以及下面那行 `querySelectorAll(".field-with-input-group")`。
