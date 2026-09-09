@@ -15,7 +15,7 @@ description: 動手改檔或跑指令前使用。要寫含跳脫字元或中文�
 
 ## 不寫逐檔 spawn 的迴圈
 
-- 這台機器 Git Bash 的 process 啟動成本是每次數百毫秒。`for f in $(git ls-files); do stat …` 或 `git show ":$f"` 這種形狀，**200 個檔跑不完 5 分鐘**就會被砍掉。
+- Windows 上 Git Bash 的 process 啟動成本是每次數百毫秒（開發機是 Windows，見 `.pre-commit-config.yaml` 檔頭）。`for f in $(git ls-files); do stat …` 或 `git show ":$f"` 這種形狀，**200 個檔跑不完 5 分鐘**就會被砍掉。
 - 對「一批檔案」做事就寫成**單次 node pass**（`execSync('git ls-files')` 一次拿清單，再用 `fs` 逐檔讀）——同一件事是秒級。
 - 這也是 hook 與測試的設計約束：**任何檢查都不能是逐檔 spawn**，否則沒人會留著它。
 
@@ -25,8 +25,9 @@ description: 動手改檔或跑指令前使用。要寫含跳脫字元或中文�
 - 想知道「某個 commit 版本測起來幾分」→ **不要動工作區**：`git worktree add` 到 repo 外的暫存目錄，或 `git archive <sha> | tar -x` 到別處再跑。
 - 負控注入的還原用**等量的字串移除**（Edit 反向替換），改完 grep 驗證注入物消失且真修正仍在。
 - **併行作業時早 commit**：修完一批就 commit，工作樹上留的東西愈少，被一鍋端的代價愈小。
-- 真的被捲走時：先 `git stash list`／`git reflog` 確認可救；`pop` 之前把「stash 之後才寫的檔」另存一份，pop 完再把那幾個差異補回去。
 - 同一個道理的 build 版：**併行 agent 不可跑 `npm run build` / `npm test`**（會清空 `dist/`），見 `carpet-audit`。
+
+**萬一工作區真的被捲走**：`git stash list`／`git reflog` 先確認救得回來；`pop` 之前把「stash 之後才寫的檔」另存一份，pop 完再把那幾個差異補回去。
 
 ## 本機守門用 pre-commit 框架
 

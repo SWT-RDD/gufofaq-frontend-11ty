@@ -40,11 +40,13 @@ description: 新增或修改 tests/rules 的測試、把 GUIDELINE 規則寫成�
 
 ## 視覺指紋的盲區
 
+視覺指紋（`fpdiff.mjs`）與 scss 逐位元組比對（`scss-diff.mjs`）**由轉換方提供，本 repo 不含實作**；它們要做到什麼定義在 `REACT-CONVERSION.md` §⑥。這一節講的是它們的射程，寫在這裡是因為**規則要不要補測試，取決於指紋抓不抓得到**。
+
 fpdiff 比 tagName+class／幾何／display／繪製／asset／文字節點，**不比 `aria-*`／`title`／`alt` 等非視覺屬性**。屬性級失真天生漏網，每個 task 的 fpdiff 都 exit 0 也照漏。
 
 - **i18n 屬性**（`title`／`aria-label`／`alt`／`placeholder`，切版帶 `data-i18n-<attr>`）：兩側都是中文、值相同 → 抓不到下游沒翻譯，bug 只在英文模式現形。→ 靠規則（有 `data-i18n-<attr>` 的屬性要走 `t()`）+ 測試（en 模式斷言 title = t 值）。
 - **a11y 綁定屬性**（`aria-labelledby`↔`id`、`role`、`aria-haspopup`）：值是 id／常數、兩側該同 → fpdiff **可以**補比，零容忍。
 - **`<html>` 層屬性**（`lang`／`data-theme` 的 live 切換）：fpdiff 比 selector 子樹、不含 `<html>` → 靠規則 + 測試（點語言鈕後 `document.documentElement.lang` 改變）。
 - **元件模式 normalize 絕對 x/y** → 對元件在頁面裡的 placement 也盲（浮空的 slot 驗不到）。開啟態要用 open-state（pre-eval 開 modal/drawer）才驗得到。
-- **full-width 元件**（breadcrumb／header／footer／mobile-nav）沒有內在寬度，width 由**容器**決定；元件模式不 normalize width（width 本來就是要比的）。展示槽必須給元件**與切版相同的寬度環境**（同視窗寬 + 同 `.wrap` max-width），否則內部逐像素對、外框 width 仍差。這是**展示環境 bug**，不要甩鍋成元件 defect，也不要用 pin width 的 workaround 蓋過去（那是 metric-gaming）。展示槽本身要 full-width，只有頁面自己的 chrome（頁標題）才套窄 max-width。
+- **full-width 元件**（breadcrumb／header／footer／mobile-nav）沒有內在寬度，width 由**容器**決定；元件模式不 normalize width（width 本來就是要比的）。展示槽必須給元件**與切版相同的寬度環境**（同視窗寬 + 同 `.wrap` max-width），否則內部逐像素對、外框 width 仍差。這是**展示環境的問題，不是元件的 defect**，也不要用 pin width 的 workaround 蓋過去（那是在遷就判準，不是修根因）。展示槽本身要 full-width，只有頁面自己的 chrome（頁標題）才套窄 max-width。
 - **加任何驗證能力時先問：這條規則視覺指紋抓得到嗎？** 抓不到就補靜態檢查／測試。
