@@ -17,7 +17,8 @@ description: 要求「地毯式審查／地毯式檢查／全面合規審查／�
 
 1. **完整讀檔**，不是 grep 片段。
 2. 每筆違規必須引用 `檔案:行號 + 原文`，**沒證據不准報**，另開 `[存疑]` 區。
-3. **已知假陽性陷阱清單**，否則每個 agent 都會重報同樣的假違規：`<a>` 是 transparent content model 可包區塊、HTML 註解內不是 markup、`GufoI18n.t(key,"繁中")` 第二參數是 fallback、showcase 頁不譯、`_normalize`／`_base` 可用裸元素選擇器、散文裡的 `style="…"` 範例不是行內樣式。
+3. **已知假陽性陷阱清單**，否則每個 agent 都會重報同樣的假違規：`<a>` 是 transparent content model 可包區塊、HTML 註解內不是 markup、`GufoI18n.t(key,"繁中")` 第二參數是 fallback、showcase 的**示範素材**不譯、`_normalize`／`_base` 可用裸元素選擇器、散文裡的 `style="…"` 範例不是行內樣式。
+   **陷阱清單本身要收窄，寫寬了會反過來蓋掉真違規**：「showcase 頁不譯」寫成整頁豁免，那一頁上真正的 app 文字（`ui/subscription-gate`、「React 條件文案」區）就整批被判成不用查。每一條陷阱都要寫到「豁免的射程到哪裡為止」。
 4. **禁止自己跑 `npm run build` / `npm test`**——`build:clean` 會清空 `dist/`，讓跑在 dist 上的結構測試中途讀到 ENOENT，產生數十條與規則無關的假紅（甚至「dist 只掃到 0 個 html」這種總開關斷言）。假紅比沒跑更貴：審查員會據此誤判規則已壞，或因為看不到綠而不敢報。改用「逐條讀 `tests/rules/` 底下的測試原始碼判斷哪些已被守住」；真要跑就開 `git worktree` 隔離副本。主線的最終驗證等所有 agent 結束後單獨跑。
 
 ## 扇出不縮水
