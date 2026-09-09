@@ -26,23 +26,38 @@ test("§4 .btn-group 只在 .default-table 裡有規則，表格外掛它等於�
         `.btn-group 出現了不帶 .default-table 祖先的規則，這條測試的前提變了：\n${rules.join("\n")}`,
     );
     let seen = 0;
+    // 突變證明：換成字面比對 `class="btn-group"`，`class="btn-group align-items-center"`
+    // （旁邊多一個工具 class，是常態）就完全看不到——故逐個 class 屬性掃。
+    // 吃共用的 attrValuesIn（不然單引號的 class 整批看不見）
+    const scanBtnGroup = (t, f = "<probe>") => {
+        const out = [];
+        for (const cm of attrValuesIn(t, "class")) {
+            if (!cm.value.split(/\s+/).includes("btn-group")) continue;
+            seen++;
+            const before = t.slice(0, cm.index);
+            const open = (before.match(/<table\b/g) || []).length;
+            const close = (before.match(/<\/table>/g) || []).length;
+            if (open <= close) out.push(`${f}:${before.split("\n").length}  .btn-group 在 <table> 之外`);
+        }
+        return out;
+    };
     const hits = [];
     for (const f of distHtml) {
         const t = read(`dist/${f}`);
         // 突變證明：換成字面比對 `class="btn-group"`，`class="btn-group align-items-center"`
         // （旁邊多一個工具 class，是常態）就完全看不到——故逐個 class 屬性掃。
         // 吃共用的 attrValuesIn（不然單引號的 class 整批看不見）
-        for (const cm of attrValuesIn(t, "class")) {
-            if (!cm.value.split(/\s+/).includes("btn-group")) continue;
-            const i = cm.index;
-            seen++;
-            const before = t.slice(0, i);
-            const open = (before.match(/<table\b/g) || []).length;
-            const close = (before.match(/<\/table>/g) || []).length;
-            if (open <= close) hits.push(`dist/${f}:${before.split("\n").length}  .btn-group 在 <table> 之外`);
-        }
+        hits.push(...scanBtnGroup(t, `dist/${f}`));
     }
     assert.ok(seen >= 58, `只掃到 ${seen} 個 .btn-group —— 這條測試在空轉`);
+    probe("§4 .btn-group 的祖先", (x) => scanBtnGroup(x),
+        // 三種壞法：完全在表外／表已收尾之後／旁邊多掛工具 class（字面比對看不到的那一種）
+        ['<div class="btn-group">x</div>',
+            "<table><tbody></tbody></table><div class='btn-group'>x</div>",
+            '<div class="btn-group align-items-center">x</div>'],
+        // 兩種被排除的：在表格內、以及只是名字裡有 btn-group 的別的 class
+        ["<table><tbody><tr><td><div class=\"btn-group\">x</div></td></tr></tbody></table>",
+            '<div class="btn-group-wrap">x</div>']);
     assert.equal(hits.length, 0, fail(hits));
 });
 
@@ -215,17 +230,20 @@ test("§4 不得依頁面覆寫元件（body-class 範圍選擇器只准出現�
     assert.equal(unregistered.length, 0, `這些 bodyClass 沒登記 chrome 檔歸屬（OWNER），測試看不見它們的覆寫：${unregistered.join("、")}`);
     const names = [...declared].map((b) => b.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|");
     const re = new RegExp(`\\.(${names})\\b`);
-    const hits = [];
     let seen = 0;
-    for (const f of srcScss) {
-        read(f).split("\n").forEach((line, i) => {
-            const m = line.match(re);
-            if (!m || line.trim().startsWith("//")) return;
-            seen++;
-            if (!OWNER[m[1]].test(f)) hits.push(`${f}:${i + 1}  用 body class .${m[1]} 做頁面範圍覆寫`);
-        });
-    }
+    const rule = (line, f, i) => {
+        const m = line.match(re);
+        if (!m || line.trim().startsWith("//")) return null;
+        seen++;
+        return OWNER[m[1]].test(f) ? null : `用 body class .${m[1]} 做頁面範圍覆寫`;
+    };
+    const hits = scanLines(srcScss, rule);
     assert.ok(seen >= 7, `只掃到 ${seen} 個 body-class 選擇器 —— 這條測試在空轉（bodyClass 慣例又變了？）`);
+    probe("§4 頁面範圍覆寫", (x) => scanText(x, rule, "src/_includes/ui/button/_button.scss"),
+        // 兩種壞法：元件 scss 拿別頁的 body class 當範圍（兩個不同的 body class 各一）
+        [".guideline-page .button { gap: 0 }", "body.chatbot-page .button { gap: 0 }"],
+        // 三種被排除的：註解行、不帶 body class 的一般選擇器、以及名字只是**前綴相同**的 class
+        ["// .guideline-page 這一行是註解", ".button.disabled { gap: 0 }", ".guideline-pageX { gap: 0 }"]);
     assert.equal(hits.length, 0, fail(hits));
 });
 
@@ -302,11 +320,10 @@ test("§4 元件 scss 不得指名別的元件擁有的 class（主人由 scss �
 test("§4 .form-control.search / .time 必須是 .field 的直接子元素（圖示畫在 .field::after）", () => {
     // 放大鏡／時鐘是 `.field:has(> .form-control.search)::after`。搬出 `.field`、或中間多包一層，
     // 圖示就無聲消失（沒有樣式會紅、沒有測試會抓）—— 這裡把那個前提釘住。
-    const hits = [];
     let seen = 0;
-    for (const f of srcHtml) {
-        const html = read(f);
-        // 逐個 <input …class="… search|time …"> 往前找最近的開標籤
+    // 逐個 <input …class="… search|time …"> 往前找最近的開標籤
+    const scan = (html, f = "<probe>") => {
+        const out = [];
         for (const m of html.matchAll(/<input\b[^>]*class="([^"]*\bform-control\b[^"]*)"[^>]*>/g)) {
             const cls = m[1].split(/\s+/);
             if (!cls.includes("search") && !cls.includes("time")) continue;
@@ -317,10 +334,21 @@ test("§4 .form-control.search / .time 必須是 .field 的直接子元素（圖
             // 直接父層必須是 <div class="field">，且兩者之間不得再有別的開標籤
             const between = before.slice(before.indexOf(">", lastOpen) + 1);
             if (!/class="[^"]*\bfield\b/.test(tag) || /<[a-z]/.test(between))
-                hits.push(`${f}: ${m[0].slice(0, 70)}… 的直接父層是 ${tag.slice(0, 50)}`);
+                out.push(`${f}: ${m[0].slice(0, 70)}… 的直接父層是 ${tag.slice(0, 50)}`);
         }
-    }
+        return out;
+    };
+    const hits = [];
+    for (const f of srcHtml) hits.push(...scan(read(f), f));
     assert.ok(seen >= 14, `只掃到 ${seen} 個 search/time 輸入框 —— 這條測試在空轉`);
+    probe("§4 放大鏡／時鐘的宿主", scan,
+        // 三種壞法：父層不是 .field／中間多包一層／時鐘那一種同辦
+        ['<div class="form-group"><input class="form-control search"></div>',
+            '<div class="field"><span><input class="form-control search"></span></div>',
+            '<div class="wrap"><input class="form-control time"></div>'],
+        // 兩種被排除的：正確的直接子元素、以及不是 search/time 的一般輸入框
+        ['<div class="field"><input class="form-control search"></div>',
+            '<div class="wrap"><input class="form-control"></div>']);
     assert.equal(hits.length, 0, `圖示會消失：\n${hits.join("\n")}`);
 });
 
@@ -359,10 +387,10 @@ test("§4 一列 col span 總和不得 > 12（nowrap flex-row 會把欄位擠扁
     };
     const walk = function* (n) { yield n; for (const c of n.children) yield* walk(c); };
 
-    const hits = [];
     let rowsWithCols = 0;
-    for (const f of distHtml) {
-        for (const n of walk(parse(distDoc(f)))) {
+    const scan = (html, f = "<probe>") => {
+        const hits = [];
+        for (const n of walk(parse(html))) {
             // .column ＝永遠直向（不掉 col 寬）；.flex-wrap ＝允許換行，兩者都不會擠扁
             if (!n.classes.includes("flex-row") || n.classes.includes("flex-wrap") || n.classes.includes("column")) continue;
             const has = (c) => n.classes.includes(c);
@@ -378,24 +406,47 @@ test("§4 一列 col span 總和不得 > 12（nowrap flex-row 會把欄位擠扁
             const sumXs = has("mobile-column") || has("mobile-column-xs") ? 0 : sum("xs"); // ≤768px：兩種 mobile-column 都堆疊
             if (sumMd > 0 || sumSm > 0 || sumXs > 0) rowsWithCols++;
             for (const [bp, s] of [["md", sumMd], ["sm", sumSm], ["xs", sumXs]])
-                if (s > 12) hits.push(`dist/${f}  <flex-row.${n.classes.join(".")}> 直接子欄位 col-${bp} 總和 ${s} > 12（加 .flex-wrap 或降 span）`);
+                if (s > 12) hits.push(`${f}  <flex-row.${n.classes.join(".")}> 直接子欄位 col-${bp} 總和 ${s} > 12（加 .flex-wrap 或降 span）`);
         }
-    }
+        return hits;
+    };
+    const hits = [];
+    for (const f of distHtml) hits.push(...scan(distDoc(f), `dist/${f}`));
     assert.ok(rowsWithCols >= 40, `只掃到 ${rowsWithCols} 個帶 col 的 flex-row —— 解析壞了？這條測試在空轉`);
+    const ROW = (rowCls, cols) => `<div class="${rowCls}">` + cols.map((c) => `<div class="${c}">x</div>`).join("") + "</div>";
+    probe("§4 一列 col span 總和", (x) => scan(x),
+        // 三種壞法：桌機爆表／只宣告 md 而在 sm 沿用（漏掉的那一種）／xs 爆表
+        [ROW("flex-row", ["col-4-md", "col-4-md", "col-4-md", "col-4-md", "col-4-md"]),
+            ROW("flex-row", ["col-8-md", "col-8-md"]),
+            ROW("flex-row", ["col-12-xs", "col-12-xs"])],
+        // 四種被排除的：剛好 12／有 flex-wrap／有 column／mobile-column 在窄斷點堆疊
+        [ROW("flex-row", ["col-4-md", "col-4-md", "col-4-md"]),
+            ROW("flex-row flex-wrap", ["col-8-md", "col-8-md"]),
+            ROW("flex-row column", ["col-8-md", "col-8-md"]),
+            ROW("flex-row mobile-column", ["col-12-sm", "col-12-sm"])]);
     assert.equal(hits.length, 0, `一列 col span 爆表，nowrap 下欄位會被擠扁（§4 欄位系統）：\n${fail(hits)}`);
 });
 
 test("§4 mobile-column 家族只能掛在 flex-row 上（情境限定工具掛錯地方是死 class）", () => {
     // .mobile-column 的規則只編譯成 .flex-row.mobile-column …——掛在別的元素上永遠不生效（form-table/qa-detail-info 的 .row 曾誤掛）。
-    const hits = [];
     let seen = 0;
-    for (const f of distHtml) {
-        for (const m of distDoc(f).matchAll(/class="([^"]*\bmobile-column(?:-xs)?\b[^"]*)"/g)) {
+    const scan = (html, f = "<probe>") => {
+        const out = [];
+        for (const m of html.matchAll(/class="([^"]*\bmobile-column(?:-xs)?\b[^"]*)"/g)) {
             seen++;
-            if (!/\bflex-row\b/.test(m[1])) hits.push(`dist/${f}  class="${m[1]}"`);
+            if (!/\bflex-row\b/.test(m[1])) out.push(`${f}  class="${m[1]}"`);
         }
-    }
+        return out;
+    };
+    const hits = [];
+    for (const f of distHtml) hits.push(...scan(distDoc(f), `dist/${f}`));
     assert.ok(seen >= 100, `只掃到 ${seen} 個 mobile-column —— 這條測試在空轉`);
+    probe("§4 mobile-column 的宿主", scan,
+        // 三種壞法：掛在沒有 flex-row 的元素上（兩種變體），以及掛在 .row 上（曾經真的發生過）
+        ['<div class="mobile-column">x</div>', '<div class="mobile-column-xs gap-16">x</div>',
+            '<div class="row mobile-column">x</div>'],
+        // 兩種被排除的：與 flex-row 同掛、以及完全不相干的 class 串
+        ['<div class="flex-row mobile-column gap-16">x</div>', '<div class="column">x</div>']);
     assert.equal(hits.length, 0, fail(hits));
 });
 
@@ -403,16 +454,31 @@ test("§4 元件檔案裡寫死的 id 只能由一個元件宣告（同 dialog i
     // chatroom 與 faq-chatroom 曾各寫一份 id="suggestedQuestionsLabel"——今天不同頁共存、
     // 哪天同頁 include 就是重複 id；dist 的 id 唯一測試只看「現在的頁面組合」，這裡在源頭堵。
     // layouts 除外：每頁恰用一個 layout（互斥），<main id="main"> 這類 skip-link 目標本來就各 layout 一份。
-    const owned = new Map(); // id -> [component html]
-    for (const f of srcHtml.filter((x) => x.includes("_includes") && !x.includes("_includes/layouts/"))) {
-        for (const m of stripNjk(read(f)).matchAll(/\sid="([^"{}]+)"/g)) {
-            if (!owned.has(m[1])) owned.set(m[1], new Set());
-            owned.get(m[1]).add(f);
-        }
-    }
-    const hits = [...owned].filter(([, files]) => files.size > 1)
-        .map(([id, files]) => `id="${id}" 由多個元件檔宣告：${[...files].join("、")}`);
+    // 規則吃「[檔名, 內容]」的清單，負控餵兩份合成檔走同一支（跨檔規則的負控非得這樣不可：
+    // 只餵一份字串永遠比不出「兩個檔宣告同一顆 id」）。
+    const scan = (files) => {
+        const owned = new Map(); // id -> Set(component html)
+        for (const [f, src] of files)
+            for (const m of stripNjk(src).matchAll(/\sid="([^"{}]+)"/g)) {
+                if (!owned.has(m[1])) owned.set(m[1], new Set());
+                owned.get(m[1]).add(f);
+            }
+        return { owned, hits: [...owned].filter(([, fs]) => fs.size > 1)
+            .map(([id, fs]) => `id="${id}" 由多個元件檔宣告：${[...fs].join("、")}`) };
+    };
+    const { owned, hits } = scan(srcHtml
+        .filter((x) => x.includes("_includes") && !x.includes("_includes/layouts/"))
+        .map((f) => [f, read(f)]));
     assert.ok(owned.size >= 181, `只收到 ${owned.size} 個寫死 id —— 空轉`);
+    // 負控（合成檔走同一支規則）：
+    assert.equal(scan([["a.html", '<span id="dup">x</span>'], ["b.html", '<div id="dup">y</div>']]).hits.length, 1,
+        "兩個元件檔宣告同一顆寫死 id —— 判準認不出來");
+    assert.equal(scan([["a.html", '<span id="one">x</span>'], ["b.html", '<div id="two">y</div>']]).hits.length, 0,
+        "不同的 id 被誤判成衝突");
+    assert.equal(scan([["a.html", '<span id="x{{ i }}">x</span>'], ["b.html", '<div id="x{{ i }}">y</div>']]).hits.length, 0,
+        "插值出來的 id 不是寫死的，不該進母體");
+    assert.equal(scan([["a.html", '{# <span id="dup">x</span> #}'], ["b.html", '<div id="dup">y</div>']]).hits.length, 0,
+        "註解掉的 id 被當成宣告");
     assert.equal(hits.length, 0, fail(hits));
 });
 
@@ -425,16 +491,28 @@ test("§4 頂層根 class 名只能有一個元件 scss 主人（兩份頂層宣
     // §4 明文的正典（`_form-check.scss` 拿走 checkbox／radio 共用的外框排版、兩個 atom 各留自己的部分；
     // `_guideline-var.scss` 給 token、`_guideline.scss` 給規則）。把全域 partial 一起收進來只會把那三組
     // 判成違規，而它們正是這條規則要的結果——一份共用正本，不是兩份會分岔的正本。
-    for (const f of srcScss.filter((x) => x.includes("_includes"))) {
-        for (const c of scssRootClasses(read(f))) {
-            if (SCSS_SHARED_STATE.has(c)) continue;
-            if (!owner.has(c)) owner.set(c, new Set());
-            owner.get(c).add(f);
-        }
-    }
-    const hits = [...owner].filter(([, files]) => files.size > 1)
-        .map(([c, files]) => `.${c} 由多份元件 scss 在頂層宣告：${[...files].join("、")}`);
+    // 規則吃「[檔名, 內容]」的清單，負控餵兩份合成 scss 走同一支（同上：跨檔規則的負控非得兩份不可）。
+    const scan = (files) => {
+        const own = new Map();
+        for (const [f, src] of files)
+            for (const c of scssRootClasses(src)) {
+                if (SCSS_SHARED_STATE.has(c)) continue;
+                if (!own.has(c)) own.set(c, new Set());
+                own.get(c).add(f);
+            }
+        return { own, hits: [...own].filter(([, fs]) => fs.size > 1)
+            .map(([c, fs]) => `.${c} 由多份元件 scss 在頂層宣告：${[...fs].join("、")}`) };
+    };
+    const { own, hits } = scan(srcScss.filter((x) => x.includes("_includes")).map((f) => [f, read(f)]));
+    owner.clear();
+    for (const [c, fs] of own) owner.set(c, fs);
     assert.ok(owner.size >= 154, `只收到 ${owner.size} 個頂層根 class —— 深度追蹤壞了？空轉`);
+    // 負控（合成檔走同一支規則）：
+    assert.equal(scan([["a.scss", ".tab-group { gap: 0 }"], ["b.scss", ".tab-group .no-records { gap: 0 }"]]).hits.length, 1,
+        "兩份元件 scss 在頂層宣告同一顆根 class —— 判準認不出來");
+    assert.equal(scan([["a.scss", ".tab-group { gap: 0 }"], ["b.scss", ".other { .tab-group { gap: 0 } }"]]).hits.length, 0,
+        "巢在自家根底下的同名子元素被誤判成第二份正本");
+    assert.equal(scan([["a.scss", ".x { gap: 0 }"], ["b.scss", ".y { gap: 0 }"]]).hits.length, 0, "不同的根被誤判成衝突");
     assert.equal(hits.length, 0, fail(hits));
 });
 
