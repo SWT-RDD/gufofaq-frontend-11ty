@@ -17,13 +17,23 @@ test("§4 文字色不可用填充 token（清單由 COLOR_ROLES 衍生、掃編
     // 衍生、掃編譯後 css（同遮罩層疊測試的理由）。
     const FILL = new Set([...COLOR_ROLES.fillOnWhiteText, ...COLOR_ROLES.fillOnDarkText]);
     const css = read("dist/css/main.css");
-    const hits = [];
     let seen = 0;
-    for (const m of css.matchAll(/(?:^|[;{])\s*(-webkit-text-fill-color|color)\s*:\s*var\((--[\w-]+)\)/g)) {
-        seen++;
-        if (FILL.has(m[2])) hits.push(`${m[1]}: var(${m[2]})`);
-    }
+    const scan = (text) => {
+        const out = [];
+        for (const m of text.matchAll(/(?:^|[;{])\s*(-webkit-text-fill-color|color)\s*:\s*var\((--[\w-]+)\)/g)) {
+            seen++;
+            if (FILL.has(m[2])) out.push(`${m[1]}: var(${m[2]})`);
+        }
+        return out;
+    };
+    const hits = scan(css);
     assert.ok(seen > 151, `只掃到 ${seen} 個文字色宣告 —— 這條測試在空轉`);
+    const aFill = [...FILL][0], aText = "--text";
+    probe("§4 文字色的 token 角色", scan,
+        // 兩種壞法：`color` 與 `-webkit-text-fill-color` 各拿一顆填充 token
+        [`.x{color:var(${aFill})}`, `.x{-webkit-text-fill-color:var(${aFill})}`],
+        // 三種被排除的：文字族當文字色、填充族當**底色**（那是它的本業）、以及裸色值那一族由別條管
+        [`.x{color:var(${aText})}`, `.x{background-color:var(${aFill})}`, ".x{color:#fff}"]);
     assert.equal(hits.length, 0, `填充 token 當文字色（深色模式讀不到）：\n${fail(hits)}`);
 });
 
@@ -48,10 +58,20 @@ test("§4 no-flash 腳本裡的 theme-color 色碼要等於 --surface-raised", (
     const meta = base.match(/<meta name="theme-color" content="(#[0-9a-fA-F]{3,8})">/);
     assert.ok(meta, "base.html 找不到 <meta name=theme-color> —— 這條測試在空轉");
 
-    const hits = [];
-    if (inline[1].toLowerCase() !== dark) hits.push(`no-flash 深色 ${inline[1]} ≠ --surface-raised ${dark}`);
-    if (inline[2].toLowerCase() !== light) hits.push(`no-flash 淺色 ${inline[2]} ≠ --surface-raised ${light}`);
-    if (meta[1].toLowerCase() !== light) hits.push(`<meta> 預設 ${meta[1]} ≠ 淺色 --surface-raised ${light}`);
+    // 規則抽成函式，負控走同一支（三個值任一顆脫鉤都要抓得到）
+    const cmp = (inl1, inl2, mt, lightVal, darkVal) => {
+        const out = [];
+        if (inl1.toLowerCase() !== darkVal) out.push(`no-flash 深色 ${inl1} ≠ --surface-raised ${darkVal}`);
+        if (inl2.toLowerCase() !== lightVal) out.push(`no-flash 淺色 ${inl2} ≠ --surface-raised ${lightVal}`);
+        if (mt.toLowerCase() !== lightVal) out.push(`<meta> 預設 ${mt} ≠ 淺色 --surface-raised ${lightVal}`);
+        return out;
+    };
+    const hits = cmp(inline[1], inline[2], meta[1], light, dark);
+    // 負控：三顆值各自脫鉤都要抓得到，而全部對上時要放行（大小寫不同不算脫鉤）
+    assert.equal(cmp("#111111", "#ffffff", "#ffffff", "#ffffff", "#000000").length, 1, "深色脫鉤抓不到");
+    assert.equal(cmp("#000000", "#eeeeee", "#ffffff", "#ffffff", "#000000").length, 1, "淺色脫鉤抓不到");
+    assert.equal(cmp("#000000", "#ffffff", "#eeeeee", "#ffffff", "#000000").length, 1, "<meta> 脫鉤抓不到");
+    assert.equal(cmp("#000000", "#FFFFFF", "#FFFFFF", "#ffffff", "#000000").length, 0, "大小寫不同被誤判成脫鉤");
     assert.equal(hits.length, 0, `theme-color 與 token 脫鉤：\n${fail(hits)}`);
 });
 
@@ -105,13 +125,22 @@ test("§4 文字族 token 不可拿去當 background-color / border-color", () =
         return masked.some((m) => [...m].every((t) => own.has(t)));
     };
 
-    const hits = [];
-    for (const { sels, body } of blocks) {
-        for (const decl of body.split(";")) {
-            if (!re.test(";" + decl)) continue;
-            for (const s of sels) if (!isMasked(s)) hits.push(`${s.replace(/\s+/g, " ")} { ${decl.trim()} }`);
-        }
-    }
+    const scanBlocks = (bs) => {
+        const out = [];
+        for (const { sels, body } of bs)
+            for (const decl of body.split(";")) {
+                if (!re.test(";" + decl)) continue;
+                for (const s of sels) if (!isMasked(s)) out.push(`${s.replace(/\s+/g, " ")} { ${decl.trim()} }`);
+            }
+        return out;
+    };
+    const hits = scanBlocks(blocks);
+    // 負控（合成規則走同一支）：文字族當底色／當框線要抓得到，別的用途要放行。
+    const aText = [...COLOR_ROLES.textOnSurface][0];
+    assert.equal(scanBlocks([{ sels: [".x"], body: `background-color:var(${aText})` }]).length, 1, "文字族當底色抓不到");
+    assert.equal(scanBlocks([{ sels: [".x"], body: `border-color:var(${aText})` }]).length, 1, "文字族當框線抓不到");
+    assert.equal(scanBlocks([{ sels: [".x"], body: `color:var(${aText})` }]).length, 0, "文字族當文字色被誤判");
+    assert.equal(scanBlocks([{ sels: [".x"], body: `outline-color:var(${aText})` }]).length, 0, "outline 是 §4-1 明文的焦點環，不該進母體");
     assert.equal(hits.length, 0, `白字疊上去會讀不到：\n${hits.join("\n")}`);
 });
 
@@ -151,6 +180,14 @@ test("§4 對比度硬規則：逐色實算（白字疊填充 ≥4.5、填充對
             return v;
         };
         const ratio = (a, b) => { const [x, y] = [lum(get(a)), lum(get(b))].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
+        // 負控：**公式自己**要分得出過與不過。它寫錯的時候（例如亮度算成線性平均、或忘了 +0.05）
+        // 每一顆 token 都會「通過」，而下面那一整批 check 全綠——那正是這條規則最貴的壞法。
+        const cr = (x, y) => { const [p, q] = [lum(x), lum(y)].sort((m, n) => n - m); return (p + 0.05) / (q + 0.05); };
+        assert.ok(cr("#ffffff", "#000000") > 20.9, "純黑白算不出 21:1 —— 對比度公式壞了");
+        assert.ok(cr("#ffffff", "#ffffff") < 1.01, "同色算出了對比 —— 公式壞了");
+        assert.ok(cr("#ffffff", "#767676") >= 4.5, "WCAG 4.5:1 的分界點被算低了");
+        assert.ok(cr("#ffffff", "#777777") < 4.5, "WCAG 4.5:1 的分界點被算高了");
+        assert.ok(Math.abs(cr("#fff", "#000") - cr("#ffffff", "#000000")) < 0.01, "三碼縮寫沒有展開成六碼");
         const check = (r, min, msg) => { if (r < min) bad.push(`${mode} ${msg} = ${r.toFixed(2)} < ${min}`); };
 
         for (const f of fillOnWhiteText) {
@@ -197,21 +234,33 @@ test("§4 遮罩圖示的墨色只能來自文字族／前景墨色（填充族�
     assert.ok(masked.length >= 29, `只找到 ${masked.length} 條帶遮罩的規則 —— 這條測試在空轉`);
     const isMasked = (sel) => { const own = compound(sel); return masked.some((m) => [...m].every((t) => own.has(t))); };
 
-    const hits = [];
     let checked = 0;
-    for (const { sels, body } of blocks) {
-        for (const decl of body.split(";")) {
-            const m = decl.match(/(?:^|[\s{])background-color\s*:\s*var\((--[\w-]+)\)/);
-            if (!m) continue;
-            for (const s of sels) {
-                if (!isMasked(s)) continue;
-                checked++;
-                if (!allowed.has(m[1]))
-                    hits.push(`${s.replace(/\s+/g, " ")} 的墨色是 ${m[1]}（它的角色不是文字／前景墨色）`);
+    const scanInk = (bs) => {
+        const out = [];
+        for (const { sels, body } of bs)
+            for (const decl of body.split(";")) {
+                const m = decl.match(/(?:^|[\s{])background-color\s*:\s*var\((--[\w-]+)\)/);
+                if (!m) continue;
+                for (const s of sels) {
+                    if (!isMasked(s)) continue;
+                    checked++;
+                    if (!allowed.has(m[1]))
+                        out.push(`${s.replace(/\s+/g, " ")} 的墨色是 ${m[1]}（它的角色不是文字／前景墨色）`);
+                }
             }
-        }
-    }
+        return out;
+    };
+    const hits = scanInk(blocks);
     assert.ok(checked >= 34, `只檢查到 ${checked} 個遮罩墨色 —— 這條測試在空轉`);
+    // 負控（合成規則走同一支）：借一個真的被遮罩的 compound 當選擇器，換上不同角色的 token。
+    const maskedSel = [...masked[0]].join("");
+    const okInk = [...COLOR_ROLES.inkOnSurface][0];
+    const badInk = [...COLOR_ROLES.fillOnWhiteText][0];
+    assert.equal(scanInk([{ sels: [maskedSel], body: `background-color:var(${badInk})` }]).length, 1, "填充族當墨色抓不到");
+    assert.equal(scanInk([{ sels: [maskedSel], body: `background-color:var(--border)` }]).length, 1, "chrome（線色）當墨色抓不到");
+    assert.equal(scanInk([{ sels: [maskedSel], body: `background-color:var(${okInk})` }]).length, 0, "墨色族被誤判");
+    assert.equal(scanInk([{ sels: [".not-masked-at-all"], body: `background-color:var(${badInk})` }]).length, 0,
+        "沒有遮罩的元素不在這條的射程內（那是它的本業）");
     assert.equal(hits.length, 0, `遮罩的顏色是前景，門檻同內文：\n${hits.join("\n")}`);
 });
 
@@ -245,15 +294,25 @@ test("§4/§6 表格列的狀態底色不可寫在 <tr> 上（cell 的不透明�
     assert.ok(blocks.length >= 957, `只解析到 ${blocks.length} 條規則 —— 這條測試在空轉`);
     assert.ok(/tbody\s+tr\s+td\s*\{[^}]*background-color/.test(css.replace(/\s+/g, " ")),
         "找不到 `tbody tr td { background-color }` —— 本規則的前提（cell 有不透明底）不成立，請重新確認");
-    const hits = [];
-    for (const [, sel, body] of blocks) {
-        if (!/(?:^|[\s;])background(?:-color)?\s*:/.test(body)) continue;
-        for (const one of sel.split(",")) {
-            const last = one.trim().split(/\s*[>+~]\s*|\s+/).pop() || "";
-            // 命中「最後一個 compound 是 tr 開頭且帶狀態 class」，如 `tr.is-cited`
-            if (/^tr\.[\w-]/.test(last)) hits.push(`${one.trim()} { ${body.trim().slice(0, 60)} } ← 底色請下到 > td`);
+    const scanCss = (text) => {
+        const out = [];
+        for (const [, sel, body] of text.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+            if (!/(?:^|[\s;])background(?:-color)?\s*:/.test(body)) continue;
+            for (const one of sel.split(",")) {
+                const last = one.trim().split(/\s*[>+~]\s*|\s+/).pop() || "";
+                // 命中「最後一個 compound 是 tr 開頭且帶狀態 class」，如 `tr.is-cited`
+                if (/^tr\.[\w-]/.test(last)) out.push(`${one.trim()} { ${body.trim().slice(0, 60)} } ← 底色請下到 > td`);
+            }
         }
-    }
+        return out;
+    };
+    const hits = scanCss(css);
+    probe("§4 <tr> 上的狀態底色", scanCss,
+        // 三種壞法：簡寫 background／background-color／逗號清單裡混一顆
+        ["tr.is-cited{background:#eee}", ".default-table tbody tr.is-inactive{background-color:#eee}",
+            "td.x,tr.is-cited{background-color:#eee}"],
+        // 三種被排除的：底色下到 td／tr 上不是底色的宣告／不帶狀態 class 的裸 tr
+        ["tbody tr.is-cited>td{background-color:#eee}", "tr.is-cited{color:#333}", "tbody tr{background-color:#fff}"]);
     assert.equal(hits.length, 0, `§4：<tr> 上的狀態底色被 cell 底色蓋掉（死樣式）：\n${fail(hits)}`);
 });
 

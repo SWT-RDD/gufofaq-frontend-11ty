@@ -181,14 +181,17 @@ test("[meta] §8-1 第 7 條：零命中型規則要有負控——沒有負控�
     // 棘輪擋的是這條規則真正會失控的方向：**新寫一條零命中型規則卻不附負控**。要讓數字
     // 往下走，就替其中一條補上 `probe()`（或等效的合成樣本斷言）再把它調下來。
     const ZERO_HIT = /assert\.(?:equal|deepEqual|strictEqual)\(\s*[\w.[\]]+(?:\.length)?\s*,\s*(?:0|\[\])\s*,/;
-    // 等效的合成樣本（§8-1 第 7 條寫的是「`probe(` **或等效的合成樣本斷言**」）。三種形狀都收：
+    // 等效的合成樣本（§8-1 第 7 條寫的是「`probe(` **或等效的合成樣本斷言**」）。四種都收：
     //   ・`probe(` —— 正典。
     //   ・`scanText("合成字串"…)` —— 直接把合成樣本餵給同一支掃描器。
-    //   ・`assert.ok(fn("合成字串"), …)` 或 `assert.equal(fn([["a.html", "…"]]).hits.length, 1, …)`
-    //     那一條的 `reads("100 – 8000", "8000")` 就是這一種，它擋的東西與 probe 完全相同）。
-    // 只認 `probe(` 的話，第三種會被算成「沒有負控」——那是**量具自己在假報**，而它會讓下面
-    // 那個棘輪永遠降不下來，最後沒有人相信這個數字。
-    const HAS_CONTROL = /\bprobe\(|\bscanText\(\s*[`"']|assert\.\w+\(\s*!?\w+\(\s*[`"'[]/;
+    //   ・`assert.ok(fn("合成字串"), …)` / `assert.equal(fn([["a.html", "…"]]).hits.length, 1, …)`
+    //     —— 把規則函式套在字面（或合成的檔案清單）上再斷言。跨檔規則只能長這樣：
+    //     單一字串永遠比不出「兩個檔宣告同一顆」。
+    //   ・區塊裡有一行以 `負控` 起頭的註解 —— **作者的具名宣告**。有些負控的輸入是算出來的
+    //     （`pngOpaqueRatio(那兩張真的會被塗平的圖)`），形狀上與一般斷言分不開；
+    //     機械偵測再怎麼放寬也收不到它，而一直放寬只會把不是負控的東西一起收進來。
+    //     這一族由作者標記，標了卻沒有就是說謊——與其他豁免同一種責任。
+    const HAS_CONTROL = /\bprobe\(|\bscanText\(\s*[`"']|assert\.\w+\(\s*!?\w+\(\s*[`"'[]|\/\/\s*負控/;
     const blocks = [];
     for (const f of testFiles()) {
         // 以 `\ntest(` 切區塊：同一支檔案裡的每一條測試各自算。
@@ -212,7 +215,7 @@ test("[meta] §8-1 第 7 條：零命中型規則要有負控——沒有負控�
     const missing = blocks.length - withControl;
     // 棘輪＝這次實際量出來的條數。**只准往下**：補了負控就把它調下來（那是一次有意識的決定），
     // 調上去等於把「新寫的規則不必附負控」寫進規則裡。
-    const MISSING_CEILING = 103;
+    const MISSING_CEILING = 93;
     assert.ok(missing <= MISSING_CEILING,
         `缺負控的零命中型測試從 ${MISSING_CEILING} 條增加到 ${missing} 條——新寫的零命中型規則要附 probe()：\n${blocks.filter((b) => !b.ok).map((b) => ` ${b.f}  ${b.title}`).join("\n")}`);
 });
