@@ -231,6 +231,9 @@ test("§4 每個 <dialog> 在它所在的那一頁上都有辦法被打開（反
     };
     const hits = [];
     for (const f of distHtml) hits.push(...scan(read(`dist/${f}`), jsOpened, demoOpeners, `dist/${f}`));
+    // 兩個下限先結算，之後負控的合成彈窗才不會灌進母體計數。
+    assert.ok(dialogCount >= 196, `只掃到 ${dialogCount}（門檻 196，＝這次實際量出來的）—— dist 裡一個 <dialog> 都掃不到 —— 這條測試在空轉`);
+    assert.ok(demoOpeners.size >= 26, `只掃到 ${demoOpeners.size}（門檻 26，＝這次實際量出來的）—— 元件庫頁的示範觸發器變少了，或收集器壞了`);
     // 負控（合成 markup ＋ 兩份合成集合走同一支）：三條路各要放行，都不成立的要抓得到。
     const NONE = new Set();
     const D = `<dialog id="probeModal"></dialog>`;
@@ -238,8 +241,6 @@ test("§4 每個 <dialog> 在它所在的那一頁上都有辦法被打開（反
     assert.equal(scan(`<button data-open-modal="probeModal">開</button>${D}`, NONE, NONE).length, 0, "(a) 同頁有開窗鈕的被誤判");
     assert.equal(scan(D, new Set(["probeModal"]), NONE).length, 0, "(b) 元件 js 開得起來的被誤判");
     assert.equal(scan(D, NONE, new Set(["probeModal"])).length, 0, "(c) 元件庫頁有示範觸發器的被誤判");
-    assert.ok(dialogCount >= 196, `只掃到 ${dialogCount}（門檻 196，＝這次實際量出來的）—— dist 裡一個 <dialog> 都掃不到 —— 這條測試在空轉`);
-    assert.ok(demoOpeners.size >= 26, `只掃到 ${demoOpeners.size}（門檻 26，＝這次實際量出來的）—— 元件庫頁的示範觸發器變少了，或收集器壞了`);
     assert.equal(hits.length, 0, `看不到的彈窗（元件庫頁要放示範觸發器）：
 ${fail(hits)}`);
 });
