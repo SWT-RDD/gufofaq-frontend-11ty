@@ -307,6 +307,8 @@ test("§1-2 元件檔頭的 markup 契約要逐字對得上生產實例（形狀
     // 它在 markup 上永遠是 `{{ gateDisclaimerError }}`（同 authz 對 data-toast 的處置）。
     const textPool = new Set();
     for (const g of srcHtml) {
+        // 這裡**刻意不是** `stripNjk`：那一支保位移（要報位置的規則吃它），而這裡只問
+        // 「這顆 class 有沒有出現在真的 markup 上」，把整段註解塌成一個空白最省事也夠用。
         const raw = read(g).replace(/\{#[\s\S]*?#\}/g, " ");   // 註解裡的引用不是實例
         for (const m of raw.matchAll(/>([^<>]*)</g)) { const s = m[1].trim(); if (s) textPool.add(s); }
         for (const m of raw.matchAll(/\{%-?\s*set\s+\w+\s*=\s*"([^"]*)"/g)) { const s = m[1].trim(); if (s) textPool.add(s); }

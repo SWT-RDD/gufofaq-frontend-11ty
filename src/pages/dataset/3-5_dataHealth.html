@@ -702,7 +702,7 @@ permalink: 3-5_dataHealth.html
          「這些也檢查過了」。0 也照畫（同 `hit_checks` 三態的理由）。
          **不寫「兩個／三個」**（§3-2 能不寫死計數就不要寫）：這一塊本來就是逐格補齊的，
          寫死數量的說法會在補進下一格的當下靜默過期。 #}
-    {# ⓘ 說明：同一顆 info-btn 六件組。①講的是這兩個數字各自算的是哪一批記錄——它們答的是
+    {# ⓘ 說明：同一顆 info-btn 六件組。①講的是這一塊每個數字各自算的是哪一批記錄——它們答的是
          「排除」不是「查過且乾淨」，
          與下面 uncoveredTitle「完全沒讀到內容」是不同的兩件事：這裡的記錄**有**被讀到，
          只是某幾項檢查對它們結構上不適用。 #}
@@ -765,8 +765,9 @@ permalink: 3-5_dataHealth.html
          **那張表自己有筆數上限**，所以「列出幾筆／總共幾個」並列，並把逐原因的計數畫出來
          （那一份算的是全部、不受截斷影響）——被切掉的那一族只剩那個數字看得見，
          而它往往正是最該看的那一個（例如整批裡唯一一個擷取失敗的檔）。 #}
-    {# ⓘ 說明：同一顆 info-btn 六件組。①講的是五種原因各是什麼意思（沒有擷取器／擷取失敗／
-         來源檔不見了／沒有擷取連結的舊列／不是逐列匯入）——這裡列的是**完全沒被任何一項檢查
+    {# ⓘ 說明：同一顆 info-btn 六件組。①講的是那幾種原因各是什麼意思（格式沒有本機擷取器／
+         原始檔找不到／擷取器讀不出來／不是逐列匯入——`not_row_imported` 一顆同時涵蓋「不是逐列
+         匯入」與「沒有記下逐列擷取連結」，那是同一種原因的兩種說法，不是兩種）——這裡列的是**完全沒被任何一項檢查
          讀過內容**的檔，與上面
          partialTitle「讀到了、但某幾項不適用」是不同的兩件事。 #}
     <div class="flex-row align-items-center gap-8">
@@ -1244,8 +1245,9 @@ permalink: 3-5_dataHealth.html
                                     <div class="flex-row">
                                         <button data-capability="data:write" type="button" class="button button-primary button-sm js-health-disable" id="healthDisableBtn-{{ f.id }}" aria-labelledby="healthFindingId-{{ f.id }} healthDisableBtn-{{ f.id }}"
                                             {# 第 3 段（index 2）是**切版自己定的閘**，不是送出那一側擋的——理由見本區塊上方那段。
-                                                 位置對齊姊妹兩顆（`toast.healthMerge`／`toast.healthSupersede` 的 index 2
-                                                 都是「請選擇…」那一族），讓「這一格選錯了」在四顆處置鈕上落在同一個索引。
+                                                 位置對齊另外三顆（`toast.healthMerge`／`toast.healthSupersede`／
+                                                 `toast.healthAddPhrasing` 的 index 2 都是「請選擇…」那一族），讓「這一格選錯了」
+                                                 在四顆處置鈕上落在同一個索引。
                                                ⚠️ `|` 是索引契約：插這一段之後「請填寫停用理由」由 2 移到 3，其後全部 +1。 #}
                                             data-toast="已停用（有效期設成哨兵日期，未刪除）|權限不足，無法停用——請找貴租戶的管理者開通|請至少勾選一筆要停用的記錄|請填寫停用理由|這個租戶還沒有宣告「有效期」維度，資料上沒有地方可以表達停用|這個發現已經處置過了，下一次檢查會依前提是否改變決定要不要把它推回清單|這幾筆記錄所在的資料集不在你可以寫入的群組裡——處置會就地改寫來源檔，需要與匯入、刪檔同一道群組寫入權限|操作失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員"
                                             data-i18n-data-toast="toast.healthDisable" data-toast-type="success|warning|warning|warning|warning|warning|warning|error|warning"

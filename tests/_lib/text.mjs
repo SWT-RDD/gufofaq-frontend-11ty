@@ -1,32 +1,21 @@
 // 低階文字工具：換行、CJK 判定、行號、njk 剝除、註解切出。
 // 不吃母體、不碰檔案系統——放最底層，讓其他 _lib 模組都能用而不成環。
-
-
+// （i18n key 的收集住 `i18n.mjs`，不在這裡。）
 
 export const CJK = /[一-鿿]/;
 
-// 收集全站「用到的 i18n key」——被 §4-2 的存在性測試與孤兒 key 反向測試共用（同一份收集邏輯，
-// 一份改就兩邊都跟著改，不會漏改其中一邊而分岔）。
-//
-// 除了 data-i18n* / data-key-<態> / data-placeholder-key / titleKey / {% set %} 資料陣列
-// 的 i18nKey 系欄位，還收斂幾種「間接引用」寫法（不收的話，孤兒 key 測試會把它們全部誤判成孤兒）：
-//   - `{% set xxxKey = "real.key" %}`：頁面先把 key 存進一個變數，之後用 `{{ xxxKey }}` 消費
-//     （dataImport 各頁與 3-1-6 的 deleteToastKey / successRetryKey / editPlaceholderKey…）
-//   - JS 的 `var KEY_XXX = "real.key"`：兩態切換時把 key 存常數，`t()` 呼叫時傳變數不是字面
-//     （accordion.js / collapse-text.js / qa-side-panel.js 的 KEY_COLLAPSE）
-//   - `data-i18n="{{ xxxKey or 'fallback.key' }}"`：元件參數的預設 key（chart-box / upload-box / success-box）
-//   - 條件字面值 `data-i18n="{% if %}key1{% else %}key2{% endif %}"`（5-5-1 的 role.admin／role.member）
-// 回傳 { used, dynamicPrefixes }：dynamicPrefixes 是 `data-i18n="field.{{ slot.key }}"` 這種串接出
-// 的 key 前綴——解不出是哪一支確切的 key，只能證明整個 field.* 家族都在服役，故只給孤兒 key 檢查用
-// （反向的「這個字面 key 有沒有英文」用不到前綴，也不該用，那條要的是精確的字面 key）。
-// 剝掉 nunjucks 註解、以換行等長替換（行號不位移）：註解掉的 include／data-i18n／{% set %} 不算
-// 「在服役」，否則死元件、孤兒 key、撞名變數靠一段 {# #} 就能永遠活著。
 export const countLines = (text, idx) => text.slice(0, idx).split(String.fromCharCode(10)).length;
 
 export const NL = String.fromCharCode(10);
 
+// 剝掉 nunjucks 註解，**換成等量的空白、換行原樣留著**：註解掉的 include／data-i18n／
+// {% set %} 不算「在服役」，否則死元件、孤兒 key、撞名變數靠一段 {# #} 就能永遠活著。
+// 等量空白（而不是整段刪掉）換到的是**行號與字元位移都不動**：吃它的規則多半要報位置
+// （`countLines(src, m.index)`），刪掉的那一版會讓報出來的位置與檔案裡的位置差好幾十行／幾百字。
+// **全站只有這一份**：各寫一份時，其中一份寫成「整段換成一個空白」而另一份沒有，同一段註解
+// 就會在一條規則裡是空白、在另一條裡把前後兩個 token 黏成一個。
 export function stripNjk(str) {
-    return str.replace(/\{#[\s\S]*?#\}/g, (m) => m.replace(/[^\n]/g, ""));
+    return str.replace(/\{#[\s\S]*?#\}/g, (m) => m.replace(/[^\n]/g, " "));
 }
 
 // 一份檔案裡的「一則註解」（提到模組層級：出處行號那條與出處 repo 名那條吃同一支解析器，

@@ -53,7 +53,7 @@ test("§2 同一頁第二次用到某個元件參數時，該參數必須先重�
     // 判準以「變數」為單位而不是以「元件」為單位 —— stepNodesLg 被 step-nodes 與
     // step-btn-wrap 兩個不同元件消費，以元件為單位會漏掉跨元件的殘留。
 
-    // 吃模組層級的 stripNjk（它把註解本體換成等量換行、**保留行數**）：這條測試的訊息會報行號，
+    // 吃模組層級的 stripNjk（它把註解本體換成等量空白、行號與字元位移都不動）：這條測試的訊息會報行號，
     // 而多數 `{% set %}` 前面都有一段十幾行的 `{# #}` 說明——整段刪掉的版本報出來的行號
     // 與檔案裡的位置差好幾十行，讀的人會照著去看一段不相干的 markup。
     const root = (v) => v.split(".")[0];
@@ -225,7 +225,7 @@ test("§2 畫得出內容的那一行要與收尾標籤同一行（縮排會併�
     };
     const bad = [];
     for (const f of srcHtml)
-        bad.push(...scanText(read(f).replace(/\{#[\s\S]*?#\}/g, (m) => m.replace(/[^\n]/g, " ")), rule, f));
+        bad.push(...scanText(stripNjk(read(f)), rule, f));
     assert.ok(seen >= 36, `只掃到 ${seen} 個「插值行 + 行內收尾標籤」的組合 —— 這條測試在空轉`);
     assert.equal(bad.length, 0, `把值與收尾標籤收成一行（縮排會變成輸出文字節點裡的字元）：\n${fail(bad)}`);
     // 合成樣本走同一支 rule：第二顆 good 就是上面那個假紅（屬性裡的 endif 不算），

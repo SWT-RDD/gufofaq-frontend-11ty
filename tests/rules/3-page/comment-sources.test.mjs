@@ -2,10 +2,10 @@
 
 import { test } from "vitest";
 import assert from "node:assert/strict";
-import { read, srcHtml } from "../../_lib/corpus.mjs";
+import { read, srcHtml, srcJs, srcScss } from "../../_lib/corpus.mjs";
 import { numberFieldHints } from "../../_lib/html.mjs";
 import { fail, probe } from "../../_lib/probe.mjs";
-import { countLines } from "../../_lib/text.mjs";
+import { commentsOf, countLines } from "../../_lib/text.mjs";
 
 test("§3-2 help-modal 的界線字串（bound）全站一種寫法：短破折號兩側各一空白、不加千分位", () => {
     //（GUIDELINE §3-2）。全站的寫法是 `1 – 1000`／`≥ 8`／`≤ 200`／`2 – 5000`／`≤ 50000`。
@@ -95,4 +95,76 @@ test("§3-2 界線字串的射程不只 bound：數字欄的區間提示也是�
         [`100 ${DASH} 8000`, "≥ 1", "0 以上；沒有上限（不同重排序器的尺不同）",
             "LLM 逐筆評分，1–5 整數（重排序提示詞裡寫的就是「評分範圍為1-5」）"]);
     assert.equal(hits.length, 0, `§3-2 界線字串只有一種寫法：\n${fail(hits)}`);
+});
+
+// §3-2 註解族規則的共用母體（§8-1 第 6 條：同一份母體只准有一個具名定義點）。
+// 一則註解＝`commentsOf` 切出來的一則：njk 的 `{# … #}` 一塊、js／scss 連續的 `//` 行、
+// md 的一行散文、mjs 的註解 ＋ 中文字串常值（測試的斷言訊息也是散文，同樣受這幾條約束）。
+// **repo 根的 md 一起收**：GUIDELINE／README／兩份轉換配方是這個 repo 產出的規範文件，
+// 「不寫行號、不指名別的專案」對它們與對 markup 逐字一樣成立。
+const COMMENT_CORPUS = [
+    ...srcHtml.map((f) => [f, "njk"]),
+    ...srcJs.map((f) => [f, "js"]),
+    ...srcScss.map((f) => [f, "js"]),
+    ["GUIDELINE.md", "md"], ["README.md", "md"],
+    ["REACT-CONVERSION.md", "md"], ["TAILWIND-CONVERSION.md", "md"],
+];
+
+test("§3-2 註解裡不寫行號（行號會漂，而漂掉之後指到的是隔壁那一段語意相反的東西）", () => {
+    // 為什麼要有網：行號漂移之後最貴的不是「指不到」，是**指到隔壁那一段**——照字面讀完全
+    // 看不出來，而沒有任何一關會紅。同檔的自我互指也不准（「見下方第 N 行」漂得一樣快）。
+    // 規則給的替代寫法是「那段註解的開頭幾個字」，那是 grep 得回來的東西。
+    // 兩種形狀各一條：**`<檔名>:<數字>`**（跨檔指路）與**中文的「第 N 行」／「行號 N」**。
+    // 兩種都收：只擋其中一種的話，換個寫法就繞過去了。
+    // ⚠️ 副檔名要**列舉**、不可以寫成 `\w+`：`4.5:1`（對比度）、`09:40`（時刻）、
+    // `1:1`（比例）全是註解裡的常客，收進來這條規則會整片誤報，然後有人去放寬排除清單。
+    const FILE_LINE = /[\w./-]+\.(?:html|js|mjs|scss|json|md|ya?ml)\s*[:：]\s*\d+/g;
+    const ZH_LINE = /第\s*\d+\s*行|行號\s*\d+/g;
+    const scan = (text, mode = "js", f = "<probe>") => {
+        const out = [];
+        for (const c of commentsOf(text, mode))
+            for (const re of [FILE_LINE, ZH_LINE])
+                for (const m of c.body.matchAll(re))
+                    out.push(`${f}:${c.line}  「${m[0]}」 ← 改成被指的那段註解的開頭幾個字`);
+        return out;
+    };
+    let seen = 0;
+    const hits = [];
+    for (const [f, mode] of COMMENT_CORPUS) {
+        const cs = commentsOf(read(f), mode);
+        seen += cs.length;
+        hits.push(...scan(read(f), mode, f));
+    }
+    assert.ok(seen >= 4330, `只切出 ${seen} 則註解 —— 母體塌了，這條測試在空轉`);
+    probe("§3-2 註解裡的行號", (str) => scan(str),
+        ["// 見 GUIDELINE.md:194 那一條", "// 理由見下方第 12 行", "// 見 _modals.scss: 71"],
+        // 好樣本含四顆**會被誤收**的形狀：對比度、時刻、比例、以及不帶行號的檔名指路
+        ["// 這一組對比度是 4.5:1", "// 落地時間 2026/07/14 09:40", "// 箭頭維持 1:1 比例",
+            "// 逐字契約在 `_modals.scss` 檔頭", "// 見那段以「箭頭維持 background-image」起頭的註解"]);
+    assert.equal(hits.length, 0, `§3-2 註解裡寫了行號：\n${fail(hits)}`);
+});
+
+test("§3-2 註解不指名別的專案的 HTTP 端點（要寫的是機制，不是出處）", () => {
+    // §3-2 逐項列出「不寫的東西」，其中**端點路徑**是唯一形狀夠固定、擋得住的一種
+    // （別的專案的常數名、資料表欄位名沒有可辨識的形狀，那幾條只能靠人審）。
+    // 為什麼非擋不可：端點會改，而這個 repo 的測試比不到別人的路由表——過期的那一筆
+    // 被埋在還沒過期的那一堆裡，沒有任何一關分得出兩者。更貴的是方向：一份規格只要以
+    // 別人的實作為根據，這個 repo 就不再是定義點，而是一份注定落後的抄本。
+    // 「這一格需要什麼形狀的資料」照樣要寫——被擋的只有「誰用哪一支端點產出它」。
+    const EP = /\b(?:GET|POST|PUT|PATCH|DELETE)\s+\/[A-Za-z0-9_\/{}.:-]+/g;
+    const scan = (text, mode = "js", f = "<probe>") => {
+        const out = [];
+        for (const c of commentsOf(text, mode))
+            for (const m of c.body.matchAll(EP))
+                out.push(`${f}:${c.line}  「${m[0]}」 ← 改寫成這一格需要什麼形狀的資料`);
+        return out;
+    };
+    const hits = [];
+    for (const [f, mode] of COMMENT_CORPUS) hits.push(...scan(read(f), mode, f));
+    probe("§3-2 註解裡的端點", (str) => scan(str),
+        ["// 上游預設值來自 GET /qatest/limits", "// React 端先 POST /datasets 再導去上傳"],
+        // 好樣本：講機制、講資料形狀、以及本站自己的頁面路徑（那不是別人的端點）
+        ["// 頁大小是執行期給的，切版這一顆只是示範值", "// 這一欄不可為空，送出空值會被擋下並指名是哪一欄",
+            "// 連到 4-2_qaHistory_detail.html?logSn=12173"]);
+    assert.equal(hits.length, 0, `§3-2 註解指名了別的專案的端點：\n${fail(hits)}`);
 });

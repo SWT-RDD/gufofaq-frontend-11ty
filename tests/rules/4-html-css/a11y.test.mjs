@@ -231,10 +231,17 @@ test("§4 有浮空群組標籤的 checkbox/radio 組要掛 role=group + aria-la
 });
 
 test("§4 dist 不得有空 <th>（控制欄表頭要有 sr-only 名稱）", () => {
+    // 空轉守門守的是**這條規則自己的母體**（掃到幾顆 `<th>`），不是頁數：頁數只擋得住
+    // 「dist 整個空了」，擋不住「`<th>` 的收集器認不出來」——那時 hits 一樣是空陣列，
+    // 而畫面上與有守門時逐字相同（§8-1 第 2 條）。
     const hits = [];
-    for (const f of distHtml)
-        if (/<th[^>]*>(?:\s|&nbsp;)*<\/th>/.test(distDoc(f))) hits.push(`dist/${f}  有空 <th></th>`);
-    assert.ok(distHtml.length > 45, "dist 頁面數異常 —— 空轉");
+    let seen = 0;
+    for (const f of distHtml) {
+        const doc = distDoc(f);
+        seen += [...doc.matchAll(/<th\b/g)].length;
+        if (/<th[^>]*>(?:\s|&nbsp;)*<\/th>/.test(doc)) hits.push(`dist/${f}  有空 <th></th>`);
+    }
+    assert.ok(seen >= 856, `只掃到 ${seen} 顆 <th> —— 這條測試在空轉`);
     assert.equal(hits.length, 0, `報讀器會念出無名欄：\n${fail(hits)}`);
 });
 

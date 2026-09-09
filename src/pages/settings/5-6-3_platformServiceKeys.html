@@ -329,11 +329,9 @@ permalink: 5-6-3_platformServiceKeys.html
                 <span class="sr-only" data-i18n="help.serviceKey.listTitle.title">現有憑證說明</span>
             </button>
         </div>
-        {# **預設勾起來**：篩選控制項的預設值就是示範資料的前提（§6）。下面三列裡**第 1 列**
-             （#1，2026/03/03 撤銷的初版）是已撤銷的，而沒勾這個框時清單只回還沒撤銷的那些
-             ——沒勾的話那一列不可能回得來，畫面會同時說著兩件互相矛盾的事。
-             ⚠️ 這一句指的是**列序上的位置**：列序是 id 升冪，而已撤銷的那一把 id 最小，
-             所以它在第一列；改動列序時這句話要跟著對。 #}
+        {# **預設勾起來**：篩選控制項的預設值就是示範資料的前提（§6）。示範清單裡有一把已撤銷的
+             （`#1`，2026/03/03 撤銷的初版），而沒勾這個框時清單只回還沒撤銷的那些——沒勾的話
+             那一列不可能回得來，畫面會同時說著兩件互相矛盾的事。 #}
         <label class="form-checkbox">
             <input type="checkbox" class="js-service-key-include-revoked" checked>
             <span data-i18n="serviceKey.includeRevoked">含已撤銷</span>

@@ -8,8 +8,9 @@
 // 每一條的現況由 tests/meta/harness.test.mjs 釘成事實——解析器換了那條會紅，
 // 那正是需要重新判斷分界的時刻。「找出所有 X 再斷言」那一類才走 dom.mjs 的真 DOM。
 //
-// 屬性讀取只有這一份正本：散成九處收集器時會各自只認雙引號，
-// nunjucks 輸出什麼引號由 markup 決定，單引號一寫下去那些規則就整條看不見。
+// 屬性讀取（含「這顆標籤有沒有某個屬性、值是什麼」）一律走 `attrValue`／`tagsOf`：
+// 散成各自一份時它們會各自只認雙引號，而 nunjucks 輸出什麼引號由 markup 決定——
+// 單引號一寫下去，那些規則就整條看不見，且畫面與測試都與有守門時逐字相同。
 
 import assert from "node:assert/strict";
 import { distHtml, read } from "./corpus.mjs";
@@ -208,19 +209,20 @@ export function textOfId(html, id) {
 // 那顆 id 的元素自己掛不掛 i18n key。**界線字串的寫法規則只管不掛 key 的那一種**
 //（§3-2：同一份字面同時服務兩種語言，所以字身不能是 locale 相關的），掛了 key 的提示
 // 每個語系各有一份自己的字，不在那條的射程裡。
+// 走共用的 `tagsOf` ＋ `attrValue`，不自己刻一份「`id="…"`」的正則：自刻那一份只認雙引號，
+// 而 `id='…'` 的節點會靜靜地被判成「沒掛 key」——那正是這條規則的放行方向。
 const isKeyed = (html, id) => {
-    const esc = id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const tag = html.match(new RegExp(`<[a-zA-Z][\\w-]*(?:"[^"]*"|[^>"])*\\bid="${esc}"(?:"[^"]*"|[^>"])*>`));
-    return tag ? /\bdata-i18n(?:-[\w-]+)?=/.test(tag[0]) : false;
+    for (const { attrs } of tagsOf(html))
+        if (attrValue(attrs, "id") === id) return /\bdata-i18n(?:-[\w-]+)?=/.test(attrs);
+    return false;
 };
 
 export function numberFieldHints() {
     const out = [];
     for (const f of distHtml) {
         const doc = distDoc(f);
-        for (const m of doc.matchAll(/<input\b((?:"[^"]*"|[^>"])*)>/g)) {
-            const a = m[1];
-            if (!/type="number"/.test(a)) continue;
+        for (const { tag, attrs: a } of tagsOf(doc)) {
+            if (tag !== "input" || attrValue(a, "type") !== "number") continue;
             const ids = (attrValue(a, "aria-describedby") || "").split(/\s+/).filter(Boolean);
             out.push({
                 f,

@@ -66,7 +66,8 @@
 //   ⓒ **textarea 的可及名稱是四顆一組**：`placeholder` ＋ `data-i18n-placeholder` ＋
 //      `aria-label` ＋ `data-i18n-aria-label`。它沒有 `<label for>`（輸入列上沒有可見欄名），
 //      少了 `aria-label` 就是一顆無名輸入框（§4），而視覺指紋看不出來。
-//   ⓓ **送出鈕是三件套 ＋ 閘門**：`data-toast`（五段，比建議追問的 chip 多一條「請先輸入問題」）＋
+//   ⓓ **送出鈕是三件套 ＋ 閘門**：`data-toast`（比建議追問的 chip 多一段「請先輸入問題」，
+//      段數不寫死）＋
 //      `data-i18n-data-toast="toast.chatSend"` ＋ `data-toast-type`（段數必須相等）＋
 //      `data-capability="ask"`（§4：toast 與閘門是同一個交付單位）。
 //   ⓔ 沒有輸入列的頁（2-1 唯讀預覽）：`.chat-input-container` **與它上面那句額度警語 `<p>` 一起**

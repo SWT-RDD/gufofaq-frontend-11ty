@@ -83,7 +83,7 @@ test("§5/§6 逐列可刪/撤銷的管理表要帶 {% else %} 無資料列（�
         // 那是規範要求的「把判準寫出來」），而這支 tokenizer 掃的是原始字元流 ⇒ 註解裡一個落單的
         // `{% if %}` 就會把堆疊推歪，讓它把某個 for 的 `{% else %}` 算給那個假 if，
         // 於是該張表被判成「有無資料列」而放行。實測：在一支頁面的註解裡多提一次 `{% if %}`，
-        // 掃到的表就從 15 張掉到 14 張——母體縮水在畫面上沒有任何訊號，只有下面那道門檻抓得到。
+        // 掃到的表就少一張——母體縮水在畫面上沒有任何訊號，只有下面那道門檻抓得到。
         // `stripNjk` 以等長換行替換，行號不位移。
         const src = stripNjk(read(f));
         // 追蹤 for 與 if 兩種區塊：{% else %} 同時是 for-else 與 if-else，必須歸給堆疊頂端的區塊——
@@ -121,7 +121,7 @@ test("§5/§6 逐列可刪/撤銷的管理表要帶 {% else %} 無資料列（�
             }
         }
     }
-    assert.ok(total >= 15, `只掃到 ${total} 張逐列刪除/撤銷表 —— for/endfor 掃描壞了？整條在空轉`);
+    assert.ok(total >= 16, `只掃到 ${total} 張逐列刪除/撤銷表 —— for/endfor 掃描壞了？整條在空轉`);
     const staleExempt = [...EXEMPT].filter((k) => !seenExempt.has(k));
     assert.equal(staleExempt.length, 0, `EXEMPT 有過期項（表已改名／加了 else／移除該列動作）——請重新核對：${staleExempt.join("、")}`);
     assert.equal(missing.length, 0, `逐列可刪的管理表缺無資料列（§5 無資料列正典；另有依據的請入 EXEMPT 並附理由）：\n${fail(missing)}`);

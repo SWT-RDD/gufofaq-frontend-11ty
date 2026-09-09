@@ -39,7 +39,7 @@
     data-i18n-placeholder（同示範檔名／資料集名不翻的慣例）。
     展開鈕的**字串**仍沿用 ui/accordion 的 common.expandRow／collapseRow（「展開表格」）——那串字由
     原子的 js 一手掌管（見 accordion.js 的 label()），卡片模式若另立一套 key 就會分岔成兩份實作。
-    但字串不等於可及名稱：accordion.js 的 label() 是無條件寫同一句，5-2 同畫面 14 張卡的展開鈕
+    但字串不等於可及名稱：accordion.js 的 label() 是無條件寫同一句，5-2 同畫面每一張卡的展開鈕
     因此全叫「展開表格」，報讀器聽不出在開哪一顆。故**只在 markup 補上下文**（不改 accordion.js）：
     鈕掛 aria-labelledby="tool-<工具名>-title <本卡的鈕標 id>"，念出來是「<工具中文標題>　展開表格」。
     `.builtin-tool-param`＝參數列的列身分（無樣式、版位由工具 class 供；React 端 `params.map()` 的 key），
@@ -111,7 +111,7 @@
         {% endif %}
         <label class="switch builtin-tool-switch">
             {# 值載體：只掛 hook class，成敗由 React 送 API 後演（§5 組合矩陣②）。
-                 可及名稱指向卡頭的中文標題——同頁 14 顆開關若共用「啟用」一個名稱，報讀器聽不出在開哪一顆（§4）。 #}
+                 可及名稱指向卡頭的中文標題——同頁每一顆開關若共用「啟用」一個名稱，報讀器聽不出在開哪一顆（§4）。 #}
             <input type="checkbox" class="switch-checkbox js-builtin-tool" role="switch" value="{{ tool.name }}"
                 aria-labelledby="tool-{{ tool.name }}-title"{% if tool.enabled %} checked{% endif %}>
             <span class="switch-box">
@@ -120,8 +120,8 @@
         </label>
     </div>
 
-    {# 展開區。role=group 把這一張卡的欄位框成一組（aria-labelledby 指卡頭標題）：同頁 14 張卡各有一顆
-         「工具描述（使用時機）」，不分組的話 14 個 textarea 的可及名稱一模一樣（§4）。
+    {# 展開區。role=group 把這一張卡的欄位框成一組（aria-labelledby 指卡頭標題）：同頁每一張卡各有一顆
+         「工具描述（使用時機）」，不分組的話那幾個 textarea 的可及名稱一模一樣（§4）。
          .accordion-content 是 ui/accordion 的契約 class（只沿用、不在本元件 scss 動它的樣式）；
          預設隱藏與 flex 版型畫在自有 slot class .builtin-tool-body 與內層 wrapper 上
          （GufoSlide 重開時會退回 display:block，故 flex 不放在被隱藏的這一層）。 #}

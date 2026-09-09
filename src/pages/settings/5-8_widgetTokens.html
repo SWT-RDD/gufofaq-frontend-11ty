@@ -256,7 +256,7 @@ permalink: 5-8_widgetTokens.html
                     {# 名稱是**選填**（留空就真的沒有名字）⇒ 無名金鑰是一個真的會出現的狀態，而這一格是整列
                          三顆鈕的可及名稱來源：空著的話三顆的名稱會塌成「複製／複製嵌入片段／撤銷」，
                          跨列逐字相同（§4）。故給一個**可翻的 fallback**「未命名金鑰 #<id>」，
-                         示範第二筆就演那一態。 #}
+                         示範資料裡留了一筆沒有名字的，就是在演那一態。 #}
                     <td id="widgetTokenRowName-{{ row.id }}">{% if row.name %}{{ row.name }}{% else %}<span data-i18n="widget.unnamedToken">未命名金鑰</span> #{{ row.id }}{% endif %}</td>
                     <td>
                         <div class="flex-row align-items-center gap-8">

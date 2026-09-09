@@ -268,7 +268,7 @@ permalink: 3-1-3_previewDataset.html
 {% set deleteNoteZh = "這個檔的內容會一併從搜尋索引移除，之後問答再也搜不到它；救不回來，要回來只能重新匯入同一份檔。" %}
 {% set deleteConfirmBinding = true %}
 {% set deleteConfirmClass = "confirm-delete-btn" %}
-{# 刪除檔案的六段——這個動作的出口不只成敗：
+{# 刪除檔案這顆鈕的每一段（顆數不寫死，§3-2）——這個動作的出口不只成敗：
      「這個資料集不在你可以寫入的群組裡」**必須從 error 段拆出來自成一段**：那道守衛驗的是
      「這個資料集的群組在不在我授予 data:write 的群組裡」，而把人帶進這一頁的讀取只驗租戶，
      所以「看得到檔案列、按下去被擋」是真實可達的一條路；它是使用者找得到人開通／換群組的

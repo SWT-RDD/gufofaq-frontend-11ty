@@ -265,7 +265,12 @@ test("§4 元件 scss 不得指名別的元件擁有的 class（主人由 scss �
     // 時規則對它從未執行過，而畫面上完全看不出來（那顆 class 真的有規則，只是規則屬於別人：
     // 主人改了 padding 這裡跟著變，而寫這裡的人不知道自己動到了誰）。
     // 這一條把母體換成「誰在自己的 scss 裡宣告了這顆 class」，補上資料夾名以外的那一族。
-    const globals = globalScssClasses(gitFiles('"src/scss/*.scss"'));
+    // **母體排除 `_guideline.scss`**：它是元件庫展示頁專用、整支收在 `.guideline-page` 之下的版型
+    // （§9 給它的那項豁免），不是全站樣式。把它算進「全域 class」的話，它為了排版 showcase 而
+    // 順手宣告的 `.field`／`.modals`／`.form-table-wrap`／`.row`／`.subtitle` 這一族會被當成
+    // 「全域正本」而整批退出歸戶表——於是真正的主人（ui/form-control、ui/modals、ui/form-table…）
+    // 認不回自己的 class，別的元件指名它們時這條規則對那幾顆從未執行過。
+    const globals = globalScssClasses(gitFiles('"src/scss/*.scss"').filter((f) => !f.endsWith("_guideline.scss")));
     assert.ok(globals.size > 40, `全域 class 只收到 ${globals.size} 顆 —— 全域 scss 沒讀到，工具 class 會被誤判成元件所有物`);
     const entries = componentDirs
         .map((c) => ({ name: c.name, file: `${c.path}/_${c.name}.scss` }))

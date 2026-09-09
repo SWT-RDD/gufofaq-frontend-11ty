@@ -1171,7 +1171,7 @@
   "regression.hitsTruncatedSuffix": " hits are listed)",
   "regression.hitsWhy": "Each block below gains two columns, “Cited in baseline” and “Cited in this run”: the most common cause of a regression is “it used to cite A and now cites B”, and that is only visible with both sides next to each other. Every stored hit keeps the document identity and where it came from, never the full text, and there is a per-case cap — when the list is capped the cell states the real total, so do not read it as “only these documents were cited”.",
   "regression.intro": "A suite is a set of questions that carry their own assertions. One execution replays the whole suite, judges each case pass or fail, and compares the result against a previous run — the regressed ones are exactly what this change broke.",
-  "regression.judgeNoThreshold": "Criteria do not decide pass or fail: a case whose criteria are all unmet still passes as long as its deterministic assertions do (#35 above is one). The criteria are re-judged by an LLM every run, so letting them drive the red/green light would read the judge’s jitter as a regression.",
+  "regression.judgeNoThreshold": "Criteria do not decide pass or fail: a case with unmet criteria still passes as long as its deterministic assertions do — the per-case section above has examples. The criteria are re-judged by an LLM every run, so letting them drive the red/green light would read the judge’s jitter as a regression.",
   "regression.judgeNone": "No criteria",
   "regression.judgeUnavailable": "Not evaluated",
   "regression.limitAssertions": "Assertion limit per case: ",

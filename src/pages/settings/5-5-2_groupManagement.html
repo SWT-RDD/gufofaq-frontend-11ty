@@ -150,7 +150,8 @@ permalink: 5-5-2_groupManagement.html
                              （掛它的輸入框全站上百顆），所以另掛 `js-group-name`。 #}
                         <input type="text" class="form-control js-group-name" value="{{ group.name }}" aria-labelledby="groupRowName-{{ group.id }} groupNameHead">
                     </td>
-                    {# 一格裡有 7 顆同型 checkbox（同頁三列 ⇒ 21 顆，加上上面新增區那 7 顆共 28 顆同名）：
+                    {# 一格裡有一整組同型 checkbox（能力目錄有幾顆就幾顆），而每一列都有這樣一格、
+                         上面新增區還有一格 ⇒ 同一顆能力標籤在同頁重複出現的次數＝列數＋1：
                          列脈絡救不了一格內的重複（§4），那一格的容器要掛
                          `role="group" aria-labelledby="<列辨識欄 id> <欄表頭 id>"`，每顆 checkbox 保留自己的
                          可見字面（能力標籤）。列辨識欄沿用名稱格那顆 sr-only 的 `groupRowName-N`，

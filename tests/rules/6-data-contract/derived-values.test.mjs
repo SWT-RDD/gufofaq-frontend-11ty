@@ -107,7 +107,7 @@ test("§6 可刪除清單的每一列都要帶列鍵（位置不是身分：刪�
             "同上：情境條件是出口規則那一顆物件裡的子陣列，成員也沒有身分欄"],
     ]);
 
-    const stripComments = (s) => s.replace(/\{#[\s\S]*?#\}/g, (m) => m.replace(/[^\n]/g, " "));
+    const stripComments = stripNjk;   // 共用那一份（§8-1 第 6 條：同一個判準只准有一個定義點）
     const hits = [];
     const used = new Set();
     let loops = 0;

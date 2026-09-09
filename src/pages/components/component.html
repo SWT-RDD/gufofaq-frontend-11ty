@@ -1662,7 +1662,7 @@ bodyClass: guideline-page
 {% include "components/apply-settings-compare-modal/apply-settings-compare-modal.html" %}
 {% include "components/knowledge-retrieval-modal/knowledge-retrieval-modal.html" %}
 {# 元件庫展示：這顆彈窗的 toast 由使用頁提供（兩頁的守衛集合不同，見元件檔頭），
-     展示頁沿用平台端那組三段。 #}
+     展示頁沿用平台端那一組（成功／長度不足／兩次不一致／重設失敗）。 #}
 {% set resetToast = "密碼已重設|新密碼至少 8 碼|兩次新密碼不一致|重設失敗，請稍後再試" %}
 {% set resetToastKey = "toast.resetPasswordPlatform" %}
 {% set resetToastType = "success|warning|warning|error" %}

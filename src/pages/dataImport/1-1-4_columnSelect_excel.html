@@ -7,8 +7,8 @@ permalink: 1-1-4_columnSelect_excel.html
 ---
 {# 欄位對應資料（多選/預覽兩欄共用）——依 §3-2/§6 由頁面提供，components/multi-select-box 只負責 for 渲染。
    固定槽 schema（title/content/source/date/category/number/flag/tags/privilege/note1..note10/date2/date3
-   ＋不進索引的 internal_note，共 22 槽——這份槽表、它的順序與各槽預設顯示名的正本是
-   ui/field-slot-catalog，這一頁只是消費它）；
+   ＋不進索引的 internal_note——這份槽表、它的順序、槽數與各槽預設顯示名的正本是
+   ui/field-slot-catalog，這一頁只是消費它，不另抄一份槽數）；
    **note1..note10 全部**是 TEXT 篩選槽、date2/date3 是 DATE 篩選槽，篩選語法裡的 `$note1`／`$date2`
    指的就是它們。寫成「note6..note10」會讓下一個人以為 note1..note5 指派不到篩選欄。少列一個槽的後果是那個篩選欄在 UI 上根本指派不到，
    而那個槽本來就收得下——使用者只會覺得「文件裡寫的篩選欄不存在」。

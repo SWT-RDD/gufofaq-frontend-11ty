@@ -4,10 +4,45 @@ import { test } from "vitest";
 import assert from "node:assert/strict";
 import { existsSync, readdirSync } from "node:fs";
 import { basename } from "node:path";
-import { distHtml, read, srcHtml, srcScss } from "../../_lib/corpus.mjs";
+import { distHtml, read, srcHtml, srcJs, srcScss } from "../../_lib/corpus.mjs";
 import { attrValuesIn } from "../../_lib/html.mjs";
 import { SHOWCASE, componentDirs, layoutDirs } from "../../_lib/inventory.mjs";
 import { stripNjk } from "../../_lib/text.mjs";
+
+
+// ── 「會產出可見 UI 的元件匯出」的母體（§1-1 判依賴時的第三種形式）─────────────
+// 母體從**實際的 `window.<名字> = ` 賦值**推導：手打一份清單時，新開一個匯出、或改一個名字，
+// 那條依賴就整條從桶歸屬的視野裡消失，而測試照樣全綠（實測漏過 `GufoSearchScope` 與
+// `GufoSearchSelect`——`components/filter-fields` 檔頭自己寫著「本檔呼叫這兩支所以住
+// components/」，而這條規則看不到那句話）。
+//
+// **共享行為工具不算依賴**（§1-1 明列）：它們等同 DOM API——呼叫端自己決定畫什麼，被呼叫的
+// 那一支不會生出任何一塊看得見的東西。逐顆寫理由，並由下面兩道守門確保這張表不會腐化。
+const INFRA_EXPORTS = new Map([
+    ["GufoSlide", "高度動畫原語（ui/slide-toggle）：它只改一顆既有節點的高度，內容是呼叫端自己畫的"],
+    ["GufoI18n", "翻譯查表（ui/lang-toggle）：回傳一個字串，不碰 DOM"],
+    ["GufoScrollLock", "把量到的捲軸寬度寫進 CSS 變數（ui/scroll-lock）：沒有任何節點產出"],
+    ["GufoClipboard", "寫剪貼簿（ui/clipboard）：畫面上一個字都不會變，成敗由呼叫端自己彈 toast"],
+    ["GufoCheckbox", "把全選框的三態同步回既有節點（ui/checkbox）：改的是 checked／indeterminate 兩顆 DOM property，不生節點也不寫任何文字"],
+]);
+const UI_EXPORTS = (() => {
+    const all = new Map();
+    for (const f of srcJs)
+        for (const m of read(f).matchAll(/^\s*window\.([A-Za-z]\w*)\s*=/gm)) {
+            if (m[1] === "addEventListener" || m[1] === "onresize") continue;
+            const parts = f.split("/");
+            all.set(m[1], `${parts[parts.length - 3]}/${parts[parts.length - 2]}`);
+        }
+    // ① 空轉守門：推導不出匯出＝這一整條依賴判準靜靜地不執行
+    assert.ok(all.size >= 12, `只推導出 ${all.size} 顆 window 匯出 —— 依賴判準的第三種形式在空轉`);
+    // ② 死豁免：INFRA 裡的名字必須真的還是一顆匯出（改名或刪掉之後，那一筆會靜靜地
+    //    替下一顆同名的**會產出 UI 的**匯出開門）
+    for (const [k, why] of INFRA_EXPORTS) {
+        assert.ok(all.has(k), `INFRA_EXPORTS 的 ${k} 已經不是任何一支元件的匯出（死豁免）`);
+        assert.ok(why.length > 15, `INFRA_EXPORTS 的 ${k} 沒寫「為什麼不算依賴」`);
+    }
+    return [...all].filter(([k]) => !INFRA_EXPORTS.has(k));
+})();
 
 test("§1-1 每個 layout 一個資料夾，只放 <名>.html / _<名>.scss", () => {
     const bad = layoutDirs.flatMap((d) =>
@@ -98,13 +133,10 @@ test("§1-1 桶歸屬：components/ 要用到其他元件（或是專屬子片�
         if (existsSync(scssPath))
             for (const cls of selectorClasses(read(scssPath))) add(ownerOf(cls));
         if (existsSync(jsPath))
-            // 只列「會產出可見 UI 的元件」匯出的函式（§1-1）：呼叫它們＝依賴。
-            // GufoSlide / GufoI18n / scroll-lock / print 是共享行為工具，等同 DOM API，刻意不列。
-            for (const [fn, o] of [
-                ["openModal", "ui/modals"], ["closeModal", "ui/modals"], ["showToast", "ui/toast"],
-                ["openRating", "components/rating-modal"], ["GufoSources", "components/sources-block"],
-                ["GufoAccordion", "ui/accordion"],
-            ]) {
+            // 「會產出可見 UI 的元件」匯出的函式（§1-1）：呼叫它們＝依賴。
+            // 名單**由實際的 `window.<名字> =` 匯出推導**（見檔頭 UI_EXPORTS），不手打：
+            // 手打那一份漏掉誰，那一條依賴就整條看不見，而桶歸屬照樣是綠的。
+            for (const [fn, o] of UI_EXPORTS) {
                 // 成員呼叫也算（`GufoSources.reveal(…)`／`GufoAccordion.setOpen(…)`）。只認 `fn(` 的話，
                 // 而命名空間物件的呼叫形狀永遠是 `fn.method(` —— 只認裸函式名的探針一個檔案都命中不到，
                 // 是讀起來像覆蓋、實際放行的死分支（`ui/citation-ref` 呼叫 GufoSources 就是這樣整批逃掉的）。

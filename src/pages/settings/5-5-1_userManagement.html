@@ -44,7 +44,7 @@ permalink: 5-5-1_userManagement.html
   { id: 3, name: "研發群組", capabilities: ["data:read", "data:write", "settings:read"] }
 ] %}
 {# isActive＝這個帳號還登不登得進來，可在同列切換後儲存。
-     示範第三筆為已停用：離職成員留著帳號但不能登入，那一列要一眼看得出來（§5 分支要演得到）。
+     `viewer@example.com` 那一筆是已停用：離職成員留著帳號但不能登入，那一列要一眼看得出來（§5 分支要演得到）。
    **`id` 是列鍵、不可省**（§6）：兩顆列動作（儲存、重設密碼）都得指名改的是哪一位，
      沒有它 React 連要改誰都送不出去；而這張清單**不是成員固定**
      的（本頁上方就有「新增成員」，平台端另有刪除），`loop.index` 會在刪一筆之後整排前頂、逐列動作指錯人。
@@ -54,7 +54,7 @@ permalink: 5-5-1_userManagement.html
      平台管理員／稽核員**寄生在一般租戶裡**，所以他們就在這張清單上，而這一欄對同租戶的管理者
      本來就看得見——擋這種目標時回的是 403 而不是 404，藏存在性沒有意義。少了它，那一列的
      「儲存」與「重設密碼」按下去必定 403，而使用者要按下去才知道（§5 不放按了必定失敗的鈕）。
-     示範第一筆非 `none`：`admin@example.com` 的 id 是 **12**，那正是 5-6-1 平台權限盤點裡的
+     示範資料裡有一筆非 `none`：`admin@example.com` 的 id 是 **12**，那正是 5-6-1 平台權限盤點裡的
      `{ id: 12, admin, 示範租戶 A }`（§6 跨頁同源）。 #}
 {% set members = [
   { id: 12, email: "admin@example.com", isAdmin: true, isActive: true, groupIds: [], platformRole: "admin" },
