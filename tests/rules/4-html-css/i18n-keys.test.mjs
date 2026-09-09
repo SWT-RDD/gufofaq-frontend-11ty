@@ -13,15 +13,28 @@ test("§4-2 data-i18n-<後綴> 的後綴，必須是同一個標籤上真的存�
     // 「後綴永遠等於它要翻譯的那個屬性名，零例外」。打錯字（data-i18n-arialabel）不會有人發現：
     // 繁中版看不出來，英文版就是那個屬性沒被翻譯，靜默的。
     let pairCount = 0;
+    const scan = (html, f = "<probe>") => {
+        const out = [];
+        for (const { tag, attrs, raw } of tagsOf(html))
+            for (const m of attrs.matchAll(/(?:^|\s)data-i18n-([\w-]+)=/g)) {
+                pairCount++;
+                const target = m[1];
+                if (!new RegExp(`(?:^|\\s)${target}=`).test(attrs))
+                    out.push(`${f}  <${tag}> 有 data-i18n-${target}，卻沒有 ${target} 屬性：${raw.slice(0, 70)}`);
+            }
+        return out;
+    };
     const hits = [];
-    for (const f of distHtml) for (const { tag, attrs, raw } of tagsOf(distDoc(f)))
-        for (const m of attrs.matchAll(/(?:^|\s)data-i18n-([\w-]+)=/g)) {
-            pairCount++;
-            const target = m[1];
-            if (!new RegExp(`(?:^|\\s)${target}=`).test(attrs))
-                hits.push(`dist/${f}  <${tag}> 有 data-i18n-${target}，卻沒有 ${target} 屬性：${raw.slice(0, 70)}`);
-        }
+    for (const f of distHtml) hits.push(...scan(distDoc(f), `dist/${f}`));
     assert.ok(pairCount >= 4434, `只掃到 ${pairCount}（門檻 4434，＝這次實際量出來的）—— dist 裡一個 data-i18n-<後綴> 都掃不到 —— 這條測試在空轉`);
+    probe("§4-2 後綴要對得上真屬性", scan,
+        // 三種壞法：後綴打錯字／屬性寫在**別的**標籤上／後綴對的屬性根本沒寫
+        ['<button data-i18n-arialabel="a.b" aria-label="關閉">x</button>',
+            '<span aria-label="關閉"></span><button data-i18n-aria-label="a.b">x</button>',
+            '<img data-i18n-alt="a.b" src="x.png">'],
+        // 兩種被排除的：成對的、以及只有 data-i18n（不帶後綴）那一種
+        ['<button data-i18n-aria-label="a.b" aria-label="關閉">x</button>',
+            '<span data-i18n="a.b">關閉</span>']);
     assert.equal(hits.length, 0, fail(hits));
 });
 
@@ -41,8 +54,12 @@ test("§4-2 data-i18n-<後綴> 的後綴，必須在 lang-toggle.js 的 ATTRS �
             if (!used.has(m[1])) used.set(m[1], `dist/${f} <${tag}>`);
     assert.ok(used.size >= 5, `只掃到 ${used.size}（門檻 5，＝這次實際量出來的）—— dist 裡一個 data-i18n-<後綴> 都掃不到 —— 這條測試在空轉`);
 
-    const hits = [...used].filter(([suffix]) => !allowed.has(suffix))
-        .map(([suffix, where]) => `data-i18n-${suffix}（${where}）不在 ATTRS：${[...allowed].join("／")}`);
+    const notAllowed = (m, allow) => [...m].filter(([suffix]) => !allow.has(suffix))
+        .map(([suffix, where]) => `data-i18n-${suffix}（${where}）不在 ATTRS：${[...allow].join("／")}`);
+    const hits = notAllowed(used, allowed);
+    // 負控（合成 map 走同一支）：不在白名單的後綴要抓得到，白名單裡的要放行。
+    assert.equal(notAllowed(new Map([["value", "x"]]), new Set(["title"])).length, 1, "白名單外的後綴抓不到");
+    assert.equal(notAllowed(new Map([["title", "x"]]), new Set(["title"])).length, 0, "白名單內的後綴被誤判");
     assert.equal(hits.length, 0, `英文版會靜默留著繁中：\n${hits.join("\n")}`);
 });
 
@@ -50,7 +67,13 @@ test("§4-2 markup 用到的靜態 i18n key 都要在 en.json 有英文", () => 
     const en = JSON.parse(read("src/i18n/en.json"));
     const { used } = collectUsedI18nKeys();
     assert.ok(used.size > 2042, `只收集到 ${used.size} 個用到的 key —— 這條測試在空轉`);
-    const missing = [...used.keys()].filter((k) => en[k] == null);
+    const missingOf = (ks, dict) => [...ks].filter((k) => dict[k] == null);
+    const missing = missingOf(used.keys(), en);
+    // 負控（合成集合走同一支）：字典裡沒有的要抓得到；有英文、以及**刻意留空**的都要放行
+    //（空字串那一族由另一條測試連同白名單一起管，這一條只問「有沒有這顆 key」）。
+    assert.deepEqual(missingOf(["a.b"], {}), ["a.b"], "字典裡沒有的 key 抓不到");
+    assert.deepEqual(missingOf(["a.b"], { "a.b": "X" }), [], "有英文的 key 被誤判");
+    assert.deepEqual(missingOf(["a.b"], { "a.b": "" }), [], "刻意留空的 key 不該由這一條報");
     assert.equal(missing.length, 0, `英文模式會默默顯示繁中：\n${missing.map((k) => `${k}  ← ${used.get(k)[0]}`).join("\n")}`);
 });
 
@@ -60,11 +83,19 @@ test("§4-2 markup 引用到的 key，en.json 的值不得是空字串（allowli
     const en = JSON.parse(read("src/i18n/en.json"));
     const { used } = collectUsedI18nKeys();
     assert.ok(used.size > 2042, `只收集到 ${used.size} 個用到的 key —— 這條測試在空轉`);
-    const hits = [];
-    for (const [k, where] of used) {
-        if (EMPTY_EN_ALLOWED.has(k)) continue;
-        if (en[k] === "") hits.push(`${k}  ← ${where[0]}`);
-    }
+    const emptyOf = (u, dict, allow) => {
+        const out = [];
+        for (const [k, where] of u) {
+            if (allow.has(k)) continue;
+            if (dict[k] === "") out.push(`${k}  ← ${where[0]}`);
+        }
+        return out;
+    };
+    const hits = emptyOf(used, en, EMPTY_EN_ALLOWED);
+    // 負控（合成 map 走同一支）：沒登記的空字串要抓得到；登記過的、以及有內容的要放行。
+    assert.equal(emptyOf(new Map([["a.b", ["x"]]]), { "a.b": "" }, new Map()).length, 1, "沒登記的空英譯抓不到");
+    assert.equal(emptyOf(new Map([["a.b", ["x"]]]), { "a.b": "" }, new Map([["a.b", "理由"]])).length, 0, "登記過的被誤判");
+    assert.equal(emptyOf(new Map([["a.b", ["x"]]]), { "a.b": "X" }, new Map()).length, 0, "有英文的被誤判");
     assert.equal(hits.length, 0, `英文模式下會顯示空白（如非刻意留空，請補上英文；如確實該空，請連同理由加進 EMPTY_EN_ALLOWED）：\n${hits.join("\n")}`);
 });
 
@@ -91,15 +122,23 @@ test("§4-2 dist 渲染出來的每個 i18n key 都要在 en.json（模板組出
     // 於是「動態 key 少一顆英文」的唯一症狀是英文模式默默顯示繁中（§4-2）。這條在渲染後的 dist 上驗，
     // 正反兩向都釘：dist 出現的 key 都要有英文，且動態家族（field.* / tool.* …）不得有沒被任何頁渲染到的孤兒。
     const en = JSON.parse(read("src/i18n/en.json"));
-    const rendered = new Set();
-    for (const f of distHtml) {
-        const html = distDoc(f);
-        for (const m of html.matchAll(/\bdata-i18n(?:-[a-z-]+)?="([^"]+)"/g)) rendered.add(m[1]);
+    const keysIn = (html) => {
+        const out = new Set();
+        for (const m of html.matchAll(/\bdata-i18n(?:-[a-z-]+)?="([^"]+)"/g)) out.add(m[1]);
         // 資料槽（data-<槽名>-key：placeholder／suffix／page-title…）與兩態切換（data-key-<態>）
-        for (const m of html.matchAll(/\bdata-[a-z-]+-key="([^"]+)"/g)) rendered.add(m[1]);
-        for (const m of html.matchAll(/\bdata-key-[a-z]+="([^"]+)"/g)) rendered.add(m[1]);
-    }
+        for (const m of html.matchAll(/\bdata-[a-z-]+-key="([^"]+)"/g)) out.add(m[1]);
+        for (const m of html.matchAll(/\bdata-key-[a-z]+="([^"]+)"/g)) out.add(m[1]);
+        return out;
+    };
+    const rendered = new Set();
+    for (const f of distHtml) for (const k of keysIn(distDoc(f))) rendered.add(k);
     assert.ok(rendered.size > 2071, `dist 只收到 ${rendered.size} 個 key —— 這條測試在空轉`);
+    // 負控（合成 markup 走同一支收集器）：三種形狀都要收得到，不相干的 data-* 不能收進來。
+    assert.ok(keysIn('<span data-i18n="a.b">x</span>').has("a.b"), "data-i18n 收不到");
+    assert.ok(keysIn('<img data-i18n-alt="a.b" alt="x">').has("a.b"), "data-i18n-<後綴> 收不到");
+    assert.ok(keysIn('<select data-placeholder-key="a.b"></select>').has("a.b"), "資料槽的 key 收不到");
+    assert.ok(keysIn('<button data-key-show="a.b">x</button>').has("a.b"), "兩態槽的 key 收不到");
+    assert.ok(!keysIn('<span data-chat-sn="6541">x</span>').has("6541"), "不相干的 data-* 被收進來了");
     const missing = [...rendered].filter((k) => en[k] == null);
     assert.equal(missing.length, 0, `英文模式會默默顯示繁中：\n${missing.join("\n")}`);
     // 動態前綴（由既有的收集邏輯推導，不手打清單）：那些家族在孤兒 key 測試裡是整批放行的
@@ -123,21 +162,28 @@ test("§4-2 ui/multi-select 的選項標籤＝資料 ＋ 選填狀態後綴（�
 });
 
 test("§4-2 選項的狀態後綴：data-suffix 與 data-suffix-key 必須成對（少一邊＝英文模式漏字或漏翻）", () => {
-    const hits = [];
     let pairs = 0;
-    for (const f of srcHtml) {
-        stripNjk(read(f)).split(/\r?\n/).forEach((line, i) => {
-            for (const { tag, attrs } of tagsOf(line)) {
-                if (tag !== "option") continue;
-                const hasSuffix = /\bdata-suffix="/.test(attrs);
-                const hasKey = /\bdata-suffix-key="/.test(attrs);
-                if (!hasSuffix && !hasKey) continue;
-                pairs++;
-                if (hasSuffix !== hasKey) hits.push(`${f}:${i + 1}  <option> 的 data-suffix／data-suffix-key 只給了一邊`);
-            }
-        });
-    }
+    const rule = (line, f, i) => {
+        for (const { tag, attrs } of tagsOf(line)) {
+            if (tag !== "option") continue;
+            const hasSuffix = /\bdata-suffix="/.test(attrs);
+            const hasKey = /\bdata-suffix-key="/.test(attrs);
+            if (!hasSuffix && !hasKey) continue;
+            pairs++;
+            if (hasSuffix !== hasKey) return "<option> 的 data-suffix／data-suffix-key 只給了一邊";
+        }
+        return null;
+    };
+    // **整份先 stripNjk 再逐行掃**：逐行剝剝不掉跨行的 `{# … #}`，註解裡的 <option> 會變成假陽性。
+    const hits = [];
+    for (const f of srcHtml) hits.push(...scanText(stripNjk(read(f)), rule, f));
     assert.ok(pairs >= 3, `只掃到 ${pairs}（門檻 3，＝這次實際量出來的）—— 沒有任何帶狀態後綴的 <option> —— 這條測試在空轉（5-2 的 MCP Server 清單應有一筆停用中）`);
+    probe("§4-2 選項狀態後綴成對", (x) => scanText(x, rule),
+        // 兩種壞法：只有繁中、只有 key
+        ['<option data-suffix="（停用中）">x</option>', '<option data-suffix-key="a.b">x</option>'],
+        // 三種被排除的：成對的、完全沒有後綴的、以及不是 <option> 的元素
+        ['<option data-suffix="（停用中）" data-suffix-key="a.b">x</option>', "<option>x</option>",
+            '<span data-suffix="（停用中）">x</span>']);
     assert.equal(hits.length, 0, fail(hits));
 });
 
