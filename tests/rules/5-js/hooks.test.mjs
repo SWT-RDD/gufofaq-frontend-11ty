@@ -22,21 +22,30 @@ test("§5 每顆 .tab 都要接得上東西（data-target 面板／業務 data-*
     // `data-tip`（純提示）、`data-i18n-aria-label`（翻譯屬性）都足以讓一顆死頁籤過關，
     // 而那兩者跟「點下去要切哪一筆業務資料」毫無關係。下面每一個都要真的還在用（見死名單守門）。
     const BIZ_TAB_ATTRS = ["data-setting-sn", "data-chat-sn"];
-    const bad = [];
     let seenTabs = 0;
-    for (const f of distHtml) {
-        if (f === SHOWCASE.dist) continue;
-        // 用 `class="[^"]*\btab\b…"` 這種字面正則的話，單引號的 class 一顆都看不到。
-        // 走 tagsOf ＋ 共用的 classesOf（兩種引號都吃）。
-        for (const t of tagsOf(distDoc(f))) {
+    // 用 `class="[^"]*\btab\b…"` 這種字面正則的話，單引號的 class 一顆都看不到。
+    // 走 tagsOf ＋ 共用的 classesOf（兩種引號都吃）。
+    const scan = (html, f = "<probe>") => {
+        const out = [];
+        for (const t of tagsOf(html)) {
             if (t.tag !== "button" || !classesOf(t.attrs).includes("tab")) continue;
             seenTabs++;
             if (attrValue(t.attrs, "data-target") !== null) continue;
             if (BIZ_TAB_ATTRS.some((a) => new RegExp(`(?:^|\\s)${a}=`).test(t.attrs))) continue;
-            bad.push(`dist/${f}  ${t.raw.slice(0, 100)}`);
+            out.push(`${f}  ${t.raw.slice(0, 100)}`);
         }
-    }
+        return out;
+    };
+    const bad = [];
+    for (const f of distHtml) { if (f === SHOWCASE.dist) continue; bad.push(...scan(distDoc(f), `dist/${f}`)); }
     assert.ok(seenTabs >= 28, `只掃到 ${seenTabs} 顆 .tab —— 這條測試在空轉`);
+    probe("§5 死頁籤", scan,
+        // 兩種壞法：什麼都不接／只有看起來像但不在 BIZ_TAB_ATTRS 的資料屬性
+        ['<button class="tab">x</button>', '<button class="tab" data-whatever="1">x</button>'],
+        // 三種被排除的：接同頁面板／接業務契約／根本不是頁籤
+        ['<button class="tab" data-target="panelA">x</button>',
+            `<button class="tab" ${BIZ_TAB_ATTRS[0]}="1">x</button>`,
+            '<button class="button">x</button>']);
     // 死名單：某個業務屬性不再掛在任何頁籤上時，它留在表裡不豁免任何東西，
     // 卻會在下一次有人用同名屬性當純資料標記時默默放行一顆死頁籤。
     const staleBiz = BIZ_TAB_ATTRS.filter((a) => !distHtml.some((f) => new RegExp(`<button[^>]*\\b${a}=`).test(distDoc(f))));
@@ -62,17 +71,31 @@ test("§5 掛 data-open-modal 的鈕不得同時帶業務 hook class（那代表
     assert.ok(!cssClasses.has("png"), "css class 收集器又把 url(...png) 的副檔名收成 class 了");
 
     let btnCount = 0;
-    const hits = [];
-    for (const f of distHtml)
-        for (const { attrs, raw } of tagsOf(distDoc(f))) {
+    const scan = (html, f = "<probe>", styled = cssClasses) => {
+        const out = [];
+        for (const { attrs, raw } of tagsOf(html)) {
             if (!/\sdata-open-modal=/.test(" " + attrs)) continue;
             btnCount++;
             const cls = attrs.match(/\sclass=["']([^"']*)["']/);
             for (const c of (cls ? cls[1] : "").split(/\s+/).filter(Boolean))
-                if (!cssClasses.has(c))
-                    hits.push(`dist/${f}  .${c} 沒有任何樣式 ⇒ 業務 js 掛點：<${raw.slice(0, 70)}`);
+                if (!styled.has(c))
+                    out.push(`${f}  .${c} 沒有任何樣式 ⇒ 業務 js 掛點：<${raw.slice(0, 70)}`);
         }
+        return out;
+    };
+    const hits = [];
+    for (const f of distHtml) hits.push(...scan(distDoc(f), `dist/${f}`));
     assert.ok(btnCount >= 150, `dist 只掃到 ${btnCount} 顆 data-open-modal —— 這條測試在空轉（門檻是實測值，§8-1）`);
+    const STYLED = new Set(["button", "button-primary"]);
+    probe("§5 無條件開窗鈕不得帶業務掛點",
+        (x) => scan(x, "<probe>", STYLED),
+        // 兩種壞法：帶 js- 掛點／帶具名的無樣式掛點（兩者都代表開窗是有條件的）
+        ['<button class="button js-manage-tenant" data-open-modal="x">y</button>',
+            "<button class='button copyBtn' data-open-modal=\"x\">y</button>"],
+        // 三種被排除的：只有有樣式的 class／沒有 class／不掛 data-open-modal 的鈕
+        ['<button class="button button-primary" data-open-modal="x">y</button>',
+            '<button data-open-modal="x">y</button>',
+            '<button class="js-manage-tenant">y</button>']);
     assert.equal(hits.length, 0, `有條件的開窗是業務邏輯，拿掉 data-open-modal、留 hook class 就好（§5）：\n${fail(hits)}`);
 });
 
@@ -176,9 +199,10 @@ test("§5 元件 js 查詢的 class 選擇器都要在 dist 的生產頁打得�
     const usedShowcase = new Set();
     const compJs = srcJs.filter((f) => /_includes\/(ui|components)\//.test(f));
     assert.ok(compJs.length > 36, `只掃到 ${compJs.length} 支元件 js —— 這條測試在空轉`);
+    // 規則吃「[檔名, js 原文] ＋ 兩份 class 母體」，負控就能餵合成檔走同一支。
+    const scanJs = (files, markup, showcase, used) => {
     const hits = [];
-    for (const f of compJs) {
-        const src = read(f);
+    for (const [f, src] of files) {
         const owned = new Set(); // js 自己建/操作的 class（不在 markup 是正常的）
         for (const m of src.matchAll(/className\s*=\s*["']([^"']+)["']/g)) m[1].split(/\s+/).forEach((c) => owned.add(c));
         // **`contains` 不算「自己建的」**：它是純讀取，讀一顆 markup 上不存在的 class 恆為 false，
@@ -190,14 +214,14 @@ test("§5 元件 js 查詢的 class 選擇器都要在 dist 的生產頁打得�
         const queried = new Set();
         for (const m of src.matchAll(/(?:querySelector(?:All)?|closest|matches)\(\s*["']([^"']+)["']/g))
             for (const cm of m[1].matchAll(/\.([A-Za-z][\w-]*)/g)) queried.add(cm[1]);
-        const rawMissing = [...queried].filter((c) => !owned.has(c) && !markupClasses.has(c));
+        const rawMissing = [...queried].filter((c) => !owned.has(c) && !markup.has(c));
         // 例外的三個條件在這裡逐一驗，不是無條件放行：
         //   ② 元件庫頁真的有那顆 class（showcaseClasses）
         //   ① 同一支 js 另有選擇器打得到生產頁（否則整支就是死 js，不適用「版型變體」的說法）
-        const hasLiveSelector = [...queried].some((c) => markupClasses.has(c) || owned.has(c));
+        const hasLiveSelector = [...queried].some((c) => markup.has(c) || owned.has(c));
         const missing = rawMissing.filter((c) => {
-            if (!SHOWCASE_INTERACTION.has(c) || !showcaseClasses.has(c) || !hasLiveSelector) return true;
-            usedShowcase.add(c);
+            if (!SHOWCASE_INTERACTION.has(c) || !showcase.has(c) || !hasLiveSelector) return true;
+            used.add(c);
             return false;
         });
         if (queried.size && missing.length === queried.size)
@@ -205,6 +229,18 @@ test("§5 元件 js 查詢的 class 選擇器都要在 dist 的生產頁打得�
         else if (missing.length)
             hits.push(`${f}  這些查詢在 markup 打不到東西：${missing.map((c) => "." + c).join(" ")}（§5）`);
     }
+        return hits;
+    };
+    const hits = scanJs(compJs.map((f) => [f, read(f)]), markupClasses, showcaseClasses, usedShowcase);
+    // 負控（合成檔走同一支；不用 SHOWCASE_INTERACTION 的名字，免得污染它的 stale 守門）
+    const noSet = new Set();
+    const probeJs = (src, markup) => scanJs([["a.js", src]], new Set(markup), noSet, new Set());
+    assert.equal(probeJs('q.querySelector(".ghost")', []).length, 1, "全數落空的死 js 抓不到");
+    assert.equal(probeJs('q.querySelector(".real")', ["real"]).length, 0, "打得到生產頁的被誤判");
+    assert.equal(probeJs('q.querySelector(".real");q.closest(".ghost")', ["real"]).length, 1, "只落空一顆的漏抓");
+    assert.equal(probeJs('el.className = "made";q.querySelector(".made")', []).length, 0, "js 自己建的 class 被誤判");
+    // contains 是純讀取、不是「自己建的」——這一條就是上面那段註解說的後門，負控把它釘住。
+    assert.equal(probeJs('el.classList.contains("x");q.querySelector(".x")', []).length, 1, "contains 又被當成認領了");
     // 白名單也會過期：那顆 class 一旦進了生產頁（或整個被撤掉），這一筆就不再放行任何東西，
     // 留著只會靜默放行下一次的新增。過期當場報出來，逼人重新裁決（同 DELIBERATE 的做法）。
     const staleShowcase = [...SHOWCASE_INTERACTION.keys()].filter((c) => !usedShowcase.has(c));
@@ -219,23 +255,34 @@ test("§5 元件 js 查詢的 class 選擇器都要在 dist 的生產頁打得�
 test("§5 頁籤 data-target 值必須命中同頁某元素 id；每個 .tab-content 都要被指到（打錯＝死頁籤/死面板）", () => {
     // tab.js 把 data-target 升格為「子頁籤→.tab-content 面板」契約（5-2 的 7 個主題子頁籤），
     // getElementById 落空是靜默失敗——與 data-open-modal↔dialog id 同型風險，正反兩向都鎖。
-    const bad = [];
     let buttons = 0, panels = 0;
-    for (const f of distHtml) {
-        const doc = distDoc(f);
+    const scan = (doc, f = "<probe>") => {
+        const out = [];
         const ids = new Set([...doc.matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]));
         const targets = [...doc.matchAll(/\bdata-target="([^"]+)"/g)].map((m) => m[1]);
         buttons += targets.length;
-        for (const t of targets) if (!ids.has(t)) bad.push(`${f}：data-target="${t}" 在頁上找不到這個 id`);
+        for (const t of targets) if (!ids.has(t)) out.push(`${f}：data-target="${t}" 在頁上找不到這個 id`);
         const contents = new Set();
         for (const m of doc.matchAll(/class="[^"]*\btab-content\b[^"]*"[^>]*\bid="([^"]+)"/g)) contents.add(m[1]);
         for (const m of doc.matchAll(/\bid="([^"]+)"[^>]*class="[^"]*\btab-content\b[^"]*"/g)) contents.add(m[1]);
         panels += contents.size;
         const tset = new Set(targets);
-        for (const c of contents) if (!tset.has(c)) bad.push(`${f}：.tab-content #${c} 沒有任何 data-target 指到它（死面板）`);
-    }
+        for (const c of contents) if (!tset.has(c)) out.push(`${f}：.tab-content #${c} 沒有任何 data-target 指到它（死面板）`);
+        return out;
+    };
+    const bad = [];
+    for (const f of distHtml) bad.push(...scan(distDoc(f), f));
+    // 兩個下限先結算，之後負控餵進去的合成樣本才不會灌水到母體計數裡。
     assert.ok(buttons >= 12, `全站只掃到 ${buttons} 顆 data-target 頁籤 —— 收集壞了？這條測試在空轉`);
     assert.ok(panels >= 10, `全站只掃到 ${panels} 個 .tab-content 面板 —— 收集壞了？這條測試在空轉`);
+    probe("§5 頁籤與面板的正反兩向", scan,
+        // 三種壞法：頁籤指到空氣／面板沒有人指（死面板）／屬性順序相反的死面板也要抓得到
+        ['<button data-target="nope">x</button>',
+            '<div class="tab-content" id="panelA">x</div>',
+            '<div id="panelA" class="tab-content">x</div>'],
+        // 兩種被排除的：兩向都對得上（屬性順序兩種都要放行）
+        ['<button data-target="panelA">x</button><div class="tab-content" id="panelA">y</div>',
+            '<button data-target="panelA">x</button><div id="panelA" class="tab-content">y</div>']);
     assert.equal(bad.length, 0, fail(bad));
 });
 
@@ -249,16 +296,30 @@ test("§5/§8 元件 scss 的頂層根 class 要打得到 markup 或元件 js（
             for (const c of value.split(/\s+/)) if (c) classAttr.add(c);
     const bad = [];
     let roots = 0;
-    for (const f of srcScss.filter((x) => x.includes("_includes") || x.includes("src/scss/"))) {
-        for (const c of scssRootClasses(read(f))) {
-            if (SCSS_SHARED_STATE.has(c)) continue;
-            roots++;
-            // 這裡寫成 `jsBlob.includes(c)` 的話——同一個子字串 bug 的第二份。
-            // 用共用的 jsOwnedClasses（選擇器字串／建構位置）判認領。
-            if (!classAttr.has(c) && !jsOwnedClasses.has(c))
-                bad.push(`${f}：頂層根 class .${c} 在全站 dist markup 與元件 js 都零出現——死 CSS`);
-        }
-    }
+    // 規則吃「[檔名, scss 原文]」＋兩份「誰認領得了」的集合，負控就能餵合成檔走同一支。
+    const scanScss = (files, inMarkup, inJs) => {
+        const out = [];
+        for (const [f, src] of files)
+            for (const c of scssRootClasses(src)) {
+                if (SCSS_SHARED_STATE.has(c)) continue;
+                roots++;
+                // 這裡寫成 `jsBlob.includes(c)` 的話——同一個子字串 bug 的第二份。
+                // 用共用的 jsOwnedClasses（選擇器字串／建構位置）判認領。
+                if (!inMarkup.has(c) && !inJs.has(c))
+                    out.push(`${f}：頂層根 class .${c} 在全站 dist markup 與元件 js 都零出現——死 CSS`);
+            }
+        return out;
+    };
+    // 負控（合成檔走同一支）：沒有人用的根要抓得到；markup 用得到、js 認領得了的都要放行。
+    assert.equal(scanScss([["a.scss", ".nobody-uses-this { gap: 0 }"]], new Set(), new Set()).length, 1, "死 CSS 抓不到");
+    assert.equal(scanScss([["a.scss", ".used { gap: 0 }"]], new Set(["used"]), new Set()).length, 0, "markup 用得到的被誤判");
+    assert.equal(scanScss([["a.scss", ".used { gap: 0 }"]], new Set(), new Set(["used"])).length, 0, "元件 js 認領的被誤判");
+    assert.equal(scanScss([["a.scss", ".outer { .inner { gap: 0 } }"]], new Set(["outer"]), new Set()).length, 0,
+        "巢在自家根底下的子元素不是頂層根，不該進母體");
+    roots = 0;   // 合成樣本不算母體，下限只計真檔案
+    bad.push(...scanScss(
+        srcScss.filter((x) => x.includes("_includes") || x.includes("src/scss/")).map((f) => [f, read(f)]),
+        classAttr, jsOwnedClasses));
     // 母體含「元件 scss ＋ src/scss/ 的全域 partial」——只掃元件 scss 的話，全域工具 class
     // 完全不受死 CSS 這條管（只掃元件 scss 的話，全域工具 class 整族在網外）。
     // 下限＝這次實際量出來的根 class 數，否則濾條一縮回去就靜靜地變綠。
@@ -355,12 +416,10 @@ test("§5 每顆按鈕都要有主人：行為屬性／js- hook／具名業務�
          "這一顆的目標由「按下它的那一列」決定：React 端從 map 的 row 閉包取得，不必往 DOM 印一份列鍵。3-1-3 之所以印，是因為那幾顆是逐列動作、要靠列鍵認列——兩頁不對稱是刻意的"],
     ]);
     let seen = 0;
-    const hits = [];
     const usedExempt = new Set();
     const onButtons = new Set();   // 全站 <button> 上真的出現過的 class（給下面的 stale 守門用）
-    for (const f of srcHtml) {
-        const key = f.split(String.fromCharCode(92)).join("/");
-        const t = stripNjk(read(f));
+    const scan = (t, key = "<probe>", f = key) => {
+        const out = [];
         for (const m of t.matchAll(/<button\b((?:"[^"]*"|'[^']*'|[^>"'])*)>([\s\S]*?)<\/button>/g)) {
             const a = m[1];
             for (const c of classesOf(a)) onButtons.add(c);
@@ -371,10 +430,20 @@ test("§5 每顆按鈕都要有主人：行為屬性／js- hook／具名業務�
             if (!txt) continue; // 純圖示鈕的可及名稱由另一條測試管
             const ex = `${key}::${txt}`;
             if (EXEMPT.has(ex)) { usedExempt.add(ex); continue; }
-            hits.push(`${f}:${countLines(t, m.index)}  「${txt}」既沒有行為屬性也沒有掛點`);
+            out.push(`${f}:${countLines(t, m.index)}  「${txt}」既沒有行為屬性也沒有掛點`);
         }
-    }
+        return out;
+    };
+    const hits = [];
+    for (const f of srcHtml) hits.push(...scan(stripNjk(read(f)), f.split(String.fromCharCode(92)).join("/"), f));
+    // 下限先結算，之後負控的合成樣本才不會灌進母體計數。
     assert.ok(seen >= 414, `只掃到 ${seen} 顆按鈕 —— 這條測試在空轉`);
+    probe("§5 沒有主人的鈕", scan,
+        // 兩種壞法：什麼都沒掛／只有純視覺的 class
+        ["<button>刪除</button>", '<button class="button-primary">刪除</button>'],
+        // 四種被排除的：行為屬性／js- 掛點／具名業務掛點／沒有文字的純圖示鈕
+        ['<button data-open-modal="x">刪除</button>', '<button class="js-remove-row">刪除</button>',
+            `<button class="${[...NAMED_BUTTON][0]}">刪除</button>`, "<button><svg></svg></button>"]);
     // ── NAMED_BUTTON_EXTRA 的衛生（沒有這幾道的話整張表零守門）────────────────────
     // ① 與 NAMED_HOOKS 互斥：同一個名字兩張表都有＝又回到「同一概念兩份清單」。
     const both = [...NAMED_BUTTON_EXTRA.keys()].filter((c) => NAMED_HOOKS.has(c));

@@ -51,22 +51,35 @@ test("§6 元件內部 {% set %} 示範變數名：跨元件唯一、且不與�
         }
         return false;
     };
-    const hits = [];
-    for (const [name, files] of compVars) {
-        const uniq = [...new Set(files)];
-        // 「多個元件宣告同一個名字」也要走 passesThrough：兩個元件各自 include 同一顆子元件、
-        // 各自在 include 前把它的參數設齊時，那不是撞名，是**同一顆子元件有兩個消費點**
-        // （`components/chunk-settings` 與 `components/platform-tenants-panel` 都 include
-        // `components/help-modal`，於是兩邊都 set 那七顆 `helpModal*`）。判準與下面那條頁面撞名
-        // 用同一支：名字要真的被自己 include 的某個子元件**當參數讀**（運算式開頭位置），
-        // 不是只在某處被提過。少了這一支，這條規則會把「元件 include 元件」整條路禁掉。
-        if (uniq.length > 1 && !uniq.every((f) => passesThrough(f, name)))
-            hits.push(`{% set ${name} %} 由多個元件宣告：${uniq.join("、")}`);
-        // 頁面 set 元件的「參數」是合法的（include 前傳值）；危險的是元件「內部示範」變數撞頁面自用變數。
-        // 參數與內部變數的機器判準：參數只在頁面 set、內部變數只在元件 set —— 兩邊都 set 同一個名字就是撞名。
-        if (pageVars.has(name) && !uniq.every((f) => passesThrough(f, name)))
-            hits.push(`{% set ${name} %} 元件內部（${uniq.join("、")}）與頁面（${[...new Set(pageVars.get(name))].join("、")}）同名`);
-    }
+    // 判準抽成一支（吃「兩張 set 表 ＋ 一支 passesThrough」），負控才餵得進合成表走同一支。
+    const collisions = (comp, page, through) => {
+        const out = [];
+        for (const [name, files] of comp) {
+            const uniq = [...new Set(files)];
+            // 「多個元件宣告同一個名字」也要走 through：兩個元件各自 include 同一顆子元件、
+            // 各自在 include 前把它的參數設齊時，那不是撞名，是**同一顆子元件有兩個消費點**
+            // （`components/chunk-settings` 與 `components/platform-tenants-panel` 都 include
+            // `components/help-modal`，於是兩邊都 set 那七顆 `helpModal*`）。判準與下面那條頁面撞名
+            // 用同一支：名字要真的被自己 include 的某個子元件**當參數讀**（運算式開頭位置），
+            // 不是只在某處被提過。少了這一支，這條規則會把「元件 include 元件」整條路禁掉。
+            if (uniq.length > 1 && !uniq.every((f) => through(f, name)))
+                out.push(`{% set ${name} %} 由多個元件宣告：${uniq.join("、")}`);
+            // 頁面 set 元件的「參數」是合法的（include 前傳值）；危險的是元件「內部示範」變數撞頁面自用變數。
+            // 參數與內部變數的機器判準：參數只在頁面 set、內部變數只在元件 set —— 兩邊都 set 同一個名字就是撞名。
+            if (page.has(name) && !uniq.every((f) => through(f, name)))
+                out.push(`{% set ${name} %} 元件內部（${uniq.join("、")}）與頁面（${[...new Set(page.get(name))].join("、")}）同名`);
+        }
+        return out;
+    };
+    const hits = collisions(compVars, pageVars, passesThrough);
+    // 負控（合成表走同一支）：兩種撞名各要抓得到，而 passesThrough 成立的那兩種要放行。
+    const never = () => false, always = () => true;
+    const one = (comp, page, through) => collisions(new Map(comp), new Map(page), through).length;
+    assert.equal(one([["x", ["a.html", "b.html"]]], [], never), 1, "多個元件宣告同名抓不到");
+    assert.equal(one([["x", ["a.html", "b.html"]]], [], always), 0, "傳給子元件的參數被誤判成撞名");
+    assert.equal(one([["x", ["a.html"]]], [["x", ["p.html"]]], never), 1, "元件內部變數撞頁面變數抓不到");
+    assert.equal(one([["x", ["a.html"]]], [["x", ["p.html"]]], always), 0, "頁面在 include 前傳參數被誤判");
+    assert.equal(one([["x", ["a.html"]]], [["y", ["p.html"]]], never), 0, "沒撞名的被誤判");
     assert.ok(compVars.size >= 92 && pageVars.size >= 287, "set 收集異常 —— 空轉");
     assert.equal(hits.length, 0, fail(hits));
 });
@@ -76,8 +89,15 @@ test("§6 step-flow：覆寫 stepFlowNodes 的頁面必須一起覆寫 stepFlowS
     // 也做成可覆寫參數。只覆寫節點、不覆寫摘要＝同頁「檢索 8」對上節點「命中 6」自打架（進度 X/N 已改由節點
     // 陣列推導故不會這樣，但摘要 set 不到就會）。判準：頁面 set 了 stepFlowNodes 就要 set stepFlowSummary。
     const pages = srcHtml.filter((x) => !x.includes("_includes"));
-    const setsNodes = pages.filter((f) => /\{%-?\s*set\s+stepFlowNodes\s*=/.test(stripNjk(read(f))));
-    const missing = setsNodes.filter((f) => !/\{%-?\s*set\s+stepFlowSummary\s*=/.test(stripNjk(read(f))));
+    // 判準抽成一支（吃頁面原文），負控餵合成頁走同一支。
+    const setsNodes_ = (t) => /\{%-?\s*set\s+stepFlowNodes\s*=/.test(t);
+    const lacksSummary = (t) => setsNodes_(t) && !/\{%-?\s*set\s+stepFlowSummary\s*=/.test(t);
+    const setsNodes = pages.filter((f) => setsNodes_(stripNjk(read(f))));
+    const missing = setsNodes.filter((f) => lacksSummary(stripNjk(read(f))));
+    // 負控（合成頁走同一支）
+    assert.ok(lacksSummary("{% set stepFlowNodes = [] %}"), "只覆寫節點的頁面抓不到");
+    assert.ok(!lacksSummary("{% set stepFlowNodes = [] %}\n{% set stepFlowSummary = {} %}"), "兩顆都覆寫的被誤判");
+    assert.ok(!lacksSummary("{% set somethingElse = 1 %}"), "沒覆寫節點的頁面被誤判");
     assert.ok(setsNodes.length >= 1, "沒有頁面覆寫 stepFlowNodes —— 空轉（step-flow demo 資料流可能已改）");
     assert.equal(missing.length, 0, fail(missing.map((f) => `${f}：set 了 stepFlowNodes 卻沒 set stepFlowSummary（摘要會沿用元件預設、與節點自打架）`)));
 });
@@ -145,28 +165,45 @@ test("§6 固定欄位槽目錄只有一份正本，附加資料的 key 都要�
     assert.ok(cm, "找不到正本目錄的陣列（形狀變了？這條測試會就此空轉）");
     const keys = [...cm[1].matchAll(/\bkey:\s*"(\w+)"/g)].map((x) => x[1]);
     assert.ok(keys.length >= 22, `正本只解析到 ${keys.length} 個槽 —— 這條測試在空轉`);
-    const hits = [];
+    // 兩條子規則各抽成一支（吃「檔名 ＋ 原文 ＋ 正本 key」），負控才餵得進合成檔走同一支。
+    let maps = 0;
     // ① 沒有第二份
-    for (const f of srcHtml) {
-        if (f.includes("field-slot-catalog")) continue;
-        for (const m of stripNjk(read(f)).matchAll(/\{% set (\w+) = \[([\s\S]*?)\n\s*\] %\}/g)) {
+    const secondCatalog = (f, body, canon) => {
+        const out = [];
+        if (f.includes("field-slot-catalog")) return out;
+        for (const m of body.matchAll(/\{% set (\w+) = \[([\s\S]*?)\n\s*\] %\}/g)) {
             // 判準是「與正本的 key 重疊多少」，不是「有幾個 key」——後者會誤抓別的資料陣列
             // （3-5 的 healthFindings 有 34 筆各帶一個 key，那不是槽清單）。
             const own = [...m[2].matchAll(/\bkey:\s*"(\w+)"/g)].map((x) => x[1]);
-            const overlap = own.filter((k) => keys.includes(k)).length;
-            if (overlap >= 10) hits.push(`${f}  {% set ${m[1]} %} 與正本重疊 ${overlap} 個槽 —— 槽目錄只能有一份（ui/field-slot-catalog）`);
+            const overlap = own.filter((k) => canon.includes(k)).length;
+            if (overlap >= 10) out.push(`${f}  {% set ${m[1]} %} 與正本重疊 ${overlap} 個槽 —— 槽目錄只能有一份（ui/field-slot-catalog）`);
         }
-    }
+        return out;
+    };
     // ② 附加資料 map 的 key 都要在正本裡
-    let maps = 0;
-    for (const f of srcHtml) {
-        for (const m of stripNjk(read(f)).matchAll(/\{% set (\w*(?:Extras|Labels)) = \{([\s\S]*?)\n\s*\} %\}/g)) {
+    const strayExtraKeys = (f, body, canon) => {
+        const out = [];
+        for (const m of body.matchAll(/\{% set (\w*(?:Extras|Labels)) = \{([\s\S]*?)\n\s*\} %\}/g)) {
             maps++;
             for (const k of m[2].matchAll(/^\s*(\w+):/gm))
-                if (!keys.includes(k[1])) hits.push(`${f}  ${m[1]} 的 "${k[1]}" 不是正本裡的槽（打錯字＝那一格永遠拿不到值，畫面上看不出來）`);
+                if (!canon.includes(k[1])) out.push(`${f}  ${m[1]} 的 "${k[1]}" 不是正本裡的槽（打錯字＝那一格永遠拿不到值，畫面上看不出來）`);
         }
+        return out;
+    };
+    const hits = [];
+    for (const f of srcHtml) {
+        const body = stripNjk(read(f));
+        hits.push(...secondCatalog(f, body, keys), ...strayExtraKeys(f, body, keys));
     }
     assert.ok(maps >= 4, `只掃到 ${maps} 張附加資料 map —— 這條測試在空轉`);
+    // 負控（合成檔走同一支）：抄本要抓得到、只有幾顆同名 key 的資料陣列不算抄本、正本自己不算；
+    // 附加資料裡打錯字的 key 要抓得到，正本裡有的要放行。
+    const slotList = (n) => `{% set slots = [\n${keys.slice(0, n).map((k) => `  { key: "${k}" },`).join("\n")}\n] %}`;
+    assert.equal(secondCatalog("x.html", slotList(12), keys).length, 1, "第二份槽清單抓不到");
+    assert.equal(secondCatalog("x.html", slotList(3), keys).length, 0, "只有幾顆同名 key 的資料陣列被誤判成抄本");
+    assert.equal(secondCatalog("ui/field-slot-catalog/x.html", slotList(12), keys).length, 0, "正本自己被判成抄本");
+    assert.equal(strayExtraKeys("x.html", `{% set fooExtras = {\n  ${keys[0]}: "a",\n  notASlotKey: "b"\n} %}`, keys).length, 1, "附加資料裡打錯字的 key 抓不到");
+    assert.equal(strayExtraKeys("x.html", `{% set fooExtras = {\n  ${keys[0]}: "a"\n} %}`, keys).length, 0, "正本裡有的 key 被誤判");
     assert.equal(hits.length, 0, fail(hits));
 });
 
@@ -370,26 +407,48 @@ test("§6 5-2 內建工具：14 張卡包在同一個 .js-accordion 根裡，並
 test("§6/§4 內建工具卡：卡頭有中文標題＋英文識別字＋啟用開關（識別字不翻、開關可及名稱各卡不同）", () => {
     const cards = builtinToolCards(distDoc("5-2_conversationSettings.html"));
     assert.equal(cards.length, BUILTIN_TOOL_CARDS, `空轉守門：切不出 ${BUILTIN_TOOL_CARDS} 張卡`);
-    const hits = [];
-    for (const { name, html } of cards) {
+    // 一張卡的判準抽成一支，負控才餵得進合成卡走同一支。
+    const checkCard = ({ name, html }) => {
+        const out = [];
         const head = innerBlock(html, "builtin-tool-head");
-        if (!head) { hits.push(`${name}：找不到卡頭 .builtin-tool-head`); continue; }
+        if (!head) return [`${name}：找不到卡頭 .builtin-tool-head`];
         // 中文標題走 i18n（key 由工具名組出）；標題文字必須是繁中，不是把識別字再印一次
         const title = head.match(new RegExp(`data-i18n="tool\\.${name}\\.title">([^<]+)<`));
-        if (!title) hits.push(`${name}：卡頭缺 data-i18n="tool.${name}.title" 的中文標題`);
-        else if (!CJK.test(title[1])) hits.push(`${name}：卡頭標題「${title[1]}」不是中文標題`);
+        if (!title) out.push(`${name}：卡頭缺 data-i18n="tool.${name}.title" 的中文標題`);
+        else if (!CJK.test(title[1])) out.push(`${name}：卡頭標題「${title[1]}」不是中文標題`);
         // 英文識別字：業務識別字，不翻譯（不掛 data-i18n），且用共用的行內碼原子
         if (!head.includes(`<code class="inline-code">${name}</code>`))
-            hits.push(`${name}：卡頭缺 <code class="inline-code">${name}</code> 識別字`);
+            out.push(`${name}：卡頭缺 <code class="inline-code">${name}</code> 識別字`);
         // 啟用開關：沿用勾選框的 hook class 與 value（React 端的啟用邏輯不換名字）
         const sw = head.match(/<input[^>]*\bjs-builtin-tool\b[^>]*>/);
-        if (!sw) { hits.push(`${name}：卡頭缺 .js-builtin-tool 開關`); continue; }
-        if (!sw[0].includes(`value="${name}"`)) hits.push(`${name}：開關的 value 不是工具名`);
-        if (!sw[0].includes(`role="switch"`)) hits.push(`${name}：開關缺 role="switch"`);
+        if (!sw) { out.push(`${name}：卡頭缺 .js-builtin-tool 開關`); return out; }
+        if (!sw[0].includes(`value="${name}"`)) out.push(`${name}：開關的 value 不是工具名`);
+        if (!sw[0].includes(`role="switch"`)) out.push(`${name}：開關缺 role="switch"`);
         // 同頁 14 顆開關不得共用同一個可及名稱（§4）：各自指向自己那張卡的標題
         if (!sw[0].includes(`aria-labelledby="tool-${name}-title"`))
-            hits.push(`${name}：開關的 aria-labelledby 沒有指向本卡標題（14 顆會同名）`);
-    }
+            out.push(`${name}：開關的 aria-labelledby 沒有指向本卡標題（14 顆會同名）`);
+        return out;
+    };
+    const hits = cards.flatMap(checkCard);
+    // 負控（合成卡走同一支）：湊齊的卡零命中，每一件缺件各自要抓得到。
+    const GOOD = {
+        title: `<span data-i18n="tool.probeTool.title">探針工具</span>`,
+        code: `<code class="inline-code">probeTool</code>`,
+        sw: `<input class="js-builtin-tool" type="checkbox" role="switch" value="probeTool" aria-labelledby="tool-probeTool-title">`,
+    };
+    const card = (over = {}) => {
+        const p = { ...GOOD, ...over };
+        return { name: "probeTool", html: `<div class="builtin-tool-head">${p.title}${p.code}${p.sw}</div>` };
+    };
+    assert.equal(checkCard(card()).length, 0, "湊齊的卡頭被誤判");
+    assert.equal(checkCard({ name: "probeTool", html: "<div>沒有卡頭</div>" }).length, 1, "缺卡頭抓不到");
+    assert.equal(checkCard(card({ title: `<span>探針工具</span>` })).length, 1, "標題沒掛 data-i18n 抓不到");
+    assert.equal(checkCard(card({ title: `<span data-i18n="tool.probeTool.title">probeTool</span>` })).length, 1, "標題只是把識別字再印一次，抓不到");
+    assert.equal(checkCard(card({ code: "" })).length, 1, "缺英文識別字抓不到");
+    assert.equal(checkCard(card({ sw: "" })).length, 1, "缺啟用開關抓不到");
+    assert.equal(checkCard(card({ sw: GOOD.sw.replace(`value="probeTool"`, `value="otherTool"`) })).length, 1, "開關 value 不是工具名，抓不到");
+    assert.equal(checkCard(card({ sw: GOOD.sw.replace(` role="switch"`, "") })).length, 1, "缺 role=switch 抓不到");
+    assert.equal(checkCard(card({ sw: GOOD.sw.replace(`tool-probeTool-title`, `shared-title`) })).length, 1, "開關的可及名稱沒指向本卡標題，抓不到");
     assert.equal(hits.length, 0, `內建工具卡卡頭不完整：\n${fail(hits)}`);
 });
 
@@ -406,20 +465,38 @@ test("§6 5-2 的 MCP Server 勾選清單與 5-6-2 註冊表跨頁自洽（三�
     const options = [...select[1].matchAll(/<option\b([^>]*)>([^<]*)<\/option>/g)].map(([, attrs, text]) => ({ attrs, text }));
     assert.equal(options.length, servers.length, `5-2 的選項數（${options.length}）與 5-6-2 的註冊數（${servers.length}）不一致`);
 
-    const hits = [];
-    for (const s of servers) {
-        const opt = options.find((o) => o.text === s.name);
-        if (!opt) { hits.push(`5-2 選單缺「${s.name}」（5-6-2 已註冊，濾掉就選不到）`); continue; }
-        // option 的 value 就是 5-6-2 的列鍵：兩邊各自寫死一組號碼，改了一邊不會有人發現
-        const val = opt.attrs.match(/\svalue="([^"]*)"/);
-        if (!val || val[1] !== s.id) hits.push(`「${s.name}」在 5-6-2 的 id 是 ${s.id}，5-2 的 <option value> 卻是 ${val ? val[1] : "（沒有 value）"}`);
-        const marked = /\bdata-suffix-key="settings\.mcpServerInactive"/.test(opt.attrs);
-        if (s.active && marked) hits.push(`「${s.name}」在 5-6-2 是啟用中，5-2 卻標了（停用中）`);
-        if (!s.active && !marked) hits.push(`「${s.name}」在 5-6-2 是停用中，5-2 卻沒標示——選了會以為立即生效`);
-    }
-    // 「已選取卻被停用」那一態要有頁面演得到（§5）
-    const selectedInactive = options.some((o) => /\bselected\b/.test(o.attrs) && /mcpServerInactive/.test(o.attrs));
-    if (!selectedInactive) hits.push("沒有任何示範演出「已選取、但已被平台停用」那一態");
+    // 比對抽成一支（吃「註冊表 ＋ 選單選項」兩份陣列），負控才餵得進合成資料走同一支。
+    const compare = (regs, opts) => {
+        const out = [];
+        for (const s of regs) {
+            const opt = opts.find((o) => o.text === s.name);
+            if (!opt) { out.push(`5-2 選單缺「${s.name}」（5-6-2 已註冊，濾掉就選不到）`); continue; }
+            // option 的 value 就是 5-6-2 的列鍵：兩邊各自寫死一組號碼，改了一邊不會有人發現
+            const val = opt.attrs.match(/\svalue="([^"]*)"/);
+            if (!val || val[1] !== s.id) out.push(`「${s.name}」在 5-6-2 的 id 是 ${s.id}，5-2 的 <option value> 卻是 ${val ? val[1] : "（沒有 value）"}`);
+            const marked = /\bdata-suffix-key="settings\.mcpServerInactive"/.test(opt.attrs);
+            if (s.active && marked) out.push(`「${s.name}」在 5-6-2 是啟用中，5-2 卻標了（停用中）`);
+            if (!s.active && !marked) out.push(`「${s.name}」在 5-6-2 是停用中，5-2 卻沒標示——選了會以為立即生效`);
+        }
+        // 「已選取卻被停用」那一態要有頁面演得到（§5）
+        const selectedInactive = opts.some((o) => /\bselected\b/.test(o.attrs) && /mcpServerInactive/.test(o.attrs));
+        if (!selectedInactive) out.push("沒有任何示範演出「已選取、但已被平台停用」那一態");
+        return out;
+    };
+    const hits = compare(servers, options);
+    // 負控（合成兩份陣列走同一支）：自洽的零命中，四種不自洽各要抓得到。
+    const REG = [{ id: "1", name: "甲", active: true }, { id: "2", name: "乙", active: false }];
+    const OPT = [{ attrs: ` value="1"`, text: "甲" },
+        { attrs: ` value="2" selected data-suffix-key="settings.mcpServerInactive"`, text: "乙" }];
+    assert.equal(compare(REG, OPT).length, 0, "兩邊自洽的被誤判");
+    assert.equal(compare(REG, OPT.slice(1)).length, 1, "5-2 把一筆濾掉了，抓不到");
+    assert.equal(compare(REG, [{ ...OPT[0], attrs: ` value="9"` }, OPT[1]]).length, 1, "兩邊的列鍵對不上，抓不到");
+    assert.equal(compare(REG, [{ attrs: `${OPT[0].attrs} data-suffix-key="settings.mcpServerInactive"`, text: "甲" }, OPT[1]]).length, 1,
+        "啟用中卻標了（停用中），抓不到");
+    assert.ok(compare(REG, [OPT[0], { attrs: ` value="2" selected`, text: "乙" }]).some((h) => h.includes("卻沒標示")),
+        "停用中卻沒標示，抓不到");
+    assert.ok(compare(REG, [OPT[0], { attrs: ` value="2" data-suffix-key="settings.mcpServerInactive"`, text: "乙" }]).some((h) => h.includes("已選取")),
+        "沒有一份示範演出「已選取卻被停用」，抓不到");
     assert.equal(hits.length, 0, fail(hits));
 });
 
@@ -518,11 +595,12 @@ test("§6/§8 元件讀得到、卻沒有任何使用頁 set 的參數，都要�
     const hits = [];
     const used = new Set();
     let scanned = 0;
-    for (const file of srcHtml) {
+    // 規則抽成一支（吃「檔名 ＋ 原文 ＋ 誰供給這個名字 ＋ 登記表」），負控才餵得進合成元件走同一支。
+    const scanComp = (file, body, supplied, allow, seen) => {
+        const out = [];
         const m0 = file.replace(/\\/g, "/").match(/src\/_includes\/((?:ui|components)\/([^/]+))\/\2\.html$/);
-        if (!m0) continue;
+        if (!m0) return out;
         scanned++;
-        const body = stripNjk(read(file));
         const selfSet = new Set([...body.matchAll(/\{%-?\s*set\s+([A-Za-z_]\w*)/g)].map((x) => x[1]));
         const loopVars = new Set([...body.matchAll(/\{%-?\s*for\s+(\w+)(?:\s*,\s*(\w+))?\s+in/g)].flatMap((x) => [x[1], x[2]].filter(Boolean)));
         const read1 = new Set();
@@ -537,14 +615,26 @@ test("§6/§8 元件讀得到、卻沒有任何使用頁 set 的參數，都要�
         for (const v of read1) {
             if (selfSet.has(v) || loopVars.has(v)) continue;
             if (["loop", "true", "false", "none", "range", "content"].includes(v)) continue;
-            const who = setNames.get(v);
+            const who = supplied.get(v);
             if (who && [...who].some((x) => x !== file)) continue;   // 有別人 set ⇒ 正常參數
             const key = `${m0[1]}:${v}`;
-            if (UNSET_OK.has(key)) { used.add(key); continue; }
-            hits.push(`${key}  讀得到、卻沒有任何使用頁 set 它 —— 是 React 那一側會傳的轉換契約，還是該撤掉的死參數？兩種都要寫進 UNSET_OK`);
+            if (allow.has(key)) { seen.add(key); continue; }
+            out.push(`${key}  讀得到、卻沒有任何使用頁 set 它 —— 是 React 那一側會傳的轉換契約，還是該撤掉的死參數？兩種都要寫進 UNSET_OK`);
         }
-    }
+        return out;
+    };
+    for (const file of srcHtml) hits.push(...scanComp(file, stripNjk(read(file)), setNames, UNSET_OK, used));
     assert.ok(scanned >= 94, `只掃到 ${scanned} 支元件 html —— 這條測試在空轉`);
+    // 負控（合成元件走同一支）：沒有人 set 的要抓得到，四種「有人供給／有登記／不是元件」要放行。
+    const PF = "src/_includes/ui/probe/probe.html";
+    const noOne = new Map(), noReg = new Map(), sink = new Set();
+    assert.equal(scanComp(PF, "{{ ghostParam }}", noOne, noReg, sink).length, 1, "沒有任何使用頁 set 的參數抓不到");
+    assert.equal(scanComp(PF, "{{ ghostParam }}", new Map([["ghostParam", new Set(["p.html"])]]), noReg, sink).length, 0, "有頁面 set 的正常參數被誤判");
+    assert.equal(scanComp(PF, "{{ ghostParam }}", noOne, new Map([["ui/probe:ghostParam", "理由"]]), sink).length, 0, "登記在 UNSET_OK 的被誤判");
+    assert.equal(scanComp(PF, "{% for row in ghostParam %}{{ row }}{% endfor %}", noOne, noReg, sink).length, 1, "迴圈來源沒人 set 抓不到（迴圈變數自己不算參數）");
+    assert.equal(scanComp(PF, "{% set xShown = ghostParam if ghostParam is defined else 1 %}", noOne, noReg, sink).length, 1,
+        "`x if x is defined` 那一族抓不到（這一族正是上面那段註解說的漏網形狀）");
+    assert.equal(scanComp("src/pages/x.html", "{{ ghostParam }}", noOne, noReg, sink).length, 0, "不是元件檔的也被掃進母體");
     const stale = [...UNSET_OK.keys()].filter((k) => !used.has(k));
     assert.deepEqual(stale, [], `UNSET_OK 有死豁免（那顆參數已經有人 set 了，或已經撤掉）：\n${stale.join("\n")}`);
     for (const [k, why] of UNSET_OK)

@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { basename } from "node:path";
 import { distHtml, read, srcHtml } from "../../_lib/corpus.mjs";
 import { distDoc, tagsOf } from "../../_lib/html.mjs";
-import { fail } from "../../_lib/probe.mjs";
+import { fail, probe } from "../../_lib/probe.mjs";
 import { stripNjk } from "../../_lib/text.mjs";
 
 test("§5 data-toast 的結果數與 data-toast-type 的語意數要對得起來", () => {
@@ -20,22 +20,36 @@ test("§5 data-toast 的結果數與 data-toast-type 的語意數要對得起來
         assert.ok(css.includes(`.toast-${t}`), `_toast.scss 少了 .toast-${t} —— 這條測試在空轉`);
 
     let count = 0;
-    const hits = [];
-    for (const f of distHtml)
-        for (const { attrs, raw } of tagsOf(distDoc(f))) {
+    const scan = (html, f = "<probe>") => {
+        const out = [];
+        for (const { attrs, raw } of tagsOf(html)) {
             const msg = attrs.match(/(?:^|\s)data-toast="([^"]*)"/);
             if (!msg) continue;
             count++;
             const types = (attrs.match(/(?:^|\s)data-toast-type="([^"]*)"/) || [, "success"])[1].split("|");
             const messages = msg[1].split("|");
             for (const t of types)
-                if (!TYPES.includes(t.trim())) hits.push(`dist/${f}  data-toast-type 的 "${t}" 不是 ${TYPES.join(" / ")}`);
+                if (!TYPES.includes(t.trim())) out.push(`${f}  data-toast-type 的 "${t}" 不是 ${TYPES.join(" / ")}`);
             if (types.length > messages.length)
-                hits.push(`dist/${f}  ${types.length} 個語意配 ${messages.length} 個結果，多出來的永遠演不到：<${raw.slice(0, 60)}`);
+                out.push(`${f}  ${types.length} 個語意配 ${messages.length} 個結果，多出來的永遠演不到：<${raw.slice(0, 60)}`);
             if (messages.some((m) => !m.trim()))
-                hits.push(`dist/${f}  data-toast 有空的結果（多打了一個 |）：<${raw.slice(0, 60)}`);
+                out.push(`${f}  data-toast 有空的結果（多打了一個 |）：<${raw.slice(0, 60)}`);
         }
+        return out;
+    };
+    const hits = [];
+    for (const f of distHtml) hits.push(...scan(distDoc(f), `dist/${f}`));
+    // 下限先結算，之後負控的合成樣本才不會灌進母體計數。
     assert.ok(count >= 349, `dist 只掃到 ${count} 個 data-toast —— 這條測試在空轉（門檻是實測值，§8-1）`);
+    probe("§5 toast 的結果數與語意數", scan,
+        // 三種壞法：型別不在值域／語意多過結果／多打一個 |
+        ['<button data-toast="已儲存" data-toast-type="err">x</button>',
+            '<button data-toast="已儲存" data-toast-type="success|error">x</button>',
+            '<button data-toast="已儲存|">x</button>'],
+        // 三種被排除的：一對一／多個結果共用一種語意（合法）／根本不掛 toast
+        ['<button data-toast="已儲存" data-toast-type="success">x</button>',
+            '<button data-toast="甲|乙|丙" data-toast-type="success">x</button>',
+            "<button>x</button>"]);
     assert.equal(hits.length, 0, fail(hits));
 });
 
@@ -43,20 +57,32 @@ test("§5 data-toast 的結果數，必須等於 en.json 裡同一個 key 的結
     // 多結果 toast 用 `|` 分段（成功|失敗）。en.json 的值也用 `|` 分段，由 lang-toggle 整串換掉。
     // 兩邊段數對不上時：英文版點第二下會拿到 undefined，或永遠只看得到第一種結果 —— 而且靜默。
     const en = JSON.parse(read("src/i18n/en.json"));
-    const hits = [];
     let checked = 0;
-    for (const f of distHtml) for (const { tag, attrs, raw } of tagsOf(distDoc(f))) {
-        const key = attrs.match(/(?:^|\s)data-i18n-data-toast="([^"]*)"/);
-        const zh = attrs.match(/(?:^|\s)data-toast="([^"]*)"/);
-        if (!key || !zh) continue;
-        if (!(key[1] in en)) continue; // 「key 都要在 en.json」是另一條測試的事
-        checked++;
-        const zhN = zh[1].split("|").length;
-        const enN = String(en[key[1]]).split("|").length;
-        if (zhN !== enN)
-            hits.push(`dist/${f} <${tag}> ${key[1]}：繁中 ${zhN} 段、英文 ${enN} 段\n      ${raw.slice(0, 90)}`);
-    }
+    // 規則吃「markup ＋ 字典」，負控才餵得進合成 markup 配合成字典走同一支。
+    const scan = (html, dict, f = "<probe>") => {
+        const out = [];
+        for (const { tag, attrs, raw } of tagsOf(html)) {
+            const key = attrs.match(/(?:^|\s)data-i18n-data-toast="([^"]*)"/);
+            const zh = attrs.match(/(?:^|\s)data-toast="([^"]*)"/);
+            if (!key || !zh) continue;
+            if (!(key[1] in dict)) continue; // 「key 都要在 en.json」是另一條測試的事
+            checked++;
+            const zhN = zh[1].split("|").length;
+            const enN = String(dict[key[1]]).split("|").length;
+            if (zhN !== enN)
+                out.push(`${f} <${tag}> ${key[1]}：繁中 ${zhN} 段、英文 ${enN} 段\n      ${raw.slice(0, 90)}`);
+        }
+        return out;
+    };
+    const hits = [];
+    for (const f of distHtml) hits.push(...scan(distDoc(f), en, `dist/${f}`));
     assert.ok(checked >= 338, `只比對到 ${checked} 個多結果 toast —— 這條測試在空轉`);
+    // 負控（合成 markup ＋ 合成字典走同一支）
+    const DICT = { "toast.k": "Done|Failed" };
+    assert.equal(scan(`<button data-toast="成功|失敗|警告" data-i18n-data-toast="toast.k">x</button>`, DICT).length, 1, "兩邊段數不同抓不到");
+    assert.equal(scan(`<button data-toast="成功|失敗" data-i18n-data-toast="toast.k">x</button>`, DICT).length, 0, "段數相同的被誤判");
+    assert.equal(scan(`<button data-toast="成功|失敗|警告" data-i18n-data-toast="toast.absent">x</button>`, DICT).length, 0, "字典裡沒有的 key 不歸這一條管");
+    assert.equal(scan(`<button data-toast="成功|失敗|警告">x</button>`, DICT).length, 0, "沒掛 i18n key 的不進母體");
     assert.equal(hits.length, 0, `英文版的結果數對不上：\n${hits.join("\n")}`);
 });
 
@@ -78,14 +104,15 @@ test("§5/§6 逐列可刪/撤銷的管理表要帶 {% else %} 無資料列（�
     let total = 0;
     const missing = [];
     const seenExempt = new Set();
-    for (const f of srcHtml) {
-        // **先剝掉 njk 註解**：檔頭註解到處引用 `{% if %}`／`{% else %}`／`{% for %}`（全站上百處，
-        // 那是規範要求的「把判準寫出來」），而這支 tokenizer 掃的是原始字元流 ⇒ 註解裡一個落單的
-        // `{% if %}` 就會把堆疊推歪，讓它把某個 for 的 `{% else %}` 算給那個假 if，
-        // 於是該張表被判成「有無資料列」而放行。實測：在一支頁面的註解裡多提一次 `{% if %}`，
-        // 掃到的表就少一張——母體縮水在畫面上沒有任何訊號，只有下面那道門檻抓得到。
-        // `stripNjk` 以等長換行替換，行號不位移。
-        const src = stripNjk(read(f));
+    // 規則抽成一支（吃「剝過註解的原文 ＋ 檔名 ＋ 豁免表」），負控才餵得進合成模板走同一支。
+    // 呼叫端負責 **先剝掉 njk 註解**：檔頭註解到處引用 `{% if %}`／`{% else %}`／`{% for %}`（全站上百處，
+    // 那是規範要求的「把判準寫出來」），而這支 tokenizer 掃的是原始字元流 ⇒ 註解裡一個落單的
+    // `{% if %}` 就會把堆疊推歪，讓它把某個 for 的 `{% else %}` 算給那個假 if，
+    // 於是該張表被判成「有無資料列」而放行。實測：在一支頁面的註解裡多提一次 `{% if %}`，
+    // 掃到的表就少一張——母體縮水在畫面上沒有任何訊號，只有下面那道門檻抓得到。
+    // `stripNjk` 以等長換行替換，行號不位移。
+    const scanTables = (src, f, exempt, seen) => {
+        const out = [];
         // 追蹤 for 與 if 兩種區塊：{% else %} 同時是 for-else 與 if-else，必須歸給堆疊頂端的區塊——
         // 否則列內的 {% if %}…{% else %} 會被誤記成 for 已有無資料列（假綠：漏抓真的缺 else 的管理表）。
         const tokRe = /\{%-?\s*(for|endfor|if|elif|endif|else)\b[^%]*%\}/g;
@@ -116,12 +143,26 @@ test("§5/§6 逐列可刪/撤銷的管理表要帶 {% else %} 無資料列（�
                 if (/js-remove-/.test(body)) continue;
                 total++;
                 const key = `${basename(f)}::${(fr.decl.match(forSrc) || [, ""])[1].trim()}`;
-                if (EXEMPT.has(key)) { seenExempt.add(key); continue; }
-                if (!fr.hasElse) missing.push(`${f}  ${fr.decl.trim()}  ← 逐列可刪的管理表缺 {% else %} 無資料列`);
+                if (exempt.has(key)) { seen.add(key); continue; }
+                if (!fr.hasElse) out.push(`${f}  ${fr.decl.trim()}  ← 逐列可刪的管理表缺 {% else %} 無資料列`);
             }
         }
-    }
+        return out;
+    };
+    for (const f of srcHtml) missing.push(...scanTables(stripNjk(read(f)), f, EXEMPT, seenExempt));
     assert.ok(total >= 16, `只掃到 ${total} 張逐列刪除/撤銷表 —— for/endfor 掃描壞了？整條在空轉`);
+    // 負控（合成模板走同一支）：缺 {% else %} 的要抓得到，四種不歸這條管的要放行。
+    const noExempt = new Set(), sink = new Set();
+    const t = (x) => scanTables(x, "probe.html", noExempt, sink).length;
+    const DEL = `<button class="js-delete-row">刪除</button>`;
+    assert.equal(t(`{% for r in rows %}<tr>${DEL}</tr>{% endfor %}`), 1, "缺無資料列的管理表抓不到");
+    assert.equal(t(`{% for r in rows %}<tr>${DEL}</tr>{% else %}<tr>無資料</tr>{% endfor %}`), 0, "有無資料列的被誤判");
+    assert.equal(t(`{% for c in [{ a: 1 }] %}<tr>${DEL}</tr>{% endfor %}`), 0, "行內字面陣列（表單 repeater 示範列）被誤判");
+    assert.equal(t(`{% for r in rows %}<tr><button class="js-remove-row">刪除</button></tr>{% endfor %}`), 0, "表單 repeater 的移除本地列被誤判");
+    assert.equal(t(`{% for r in rows %}<tr><td>{{ r.name }}</td></tr>{% endfor %}`), 0, "列上沒有刪除／撤銷動作的表被掃進母體");
+    // 列內的 {% if %}…{% else %} 不是 for 的無資料列——這是上面那段「堆疊頂端」註解說的假綠形狀。
+    assert.equal(t(`{% for r in rows %}<tr>${DEL}{% if r.x %}甲{% else %}乙{% endif %}</tr>{% endfor %}`), 1,
+        "列內 if-else 被誤記成 for 的無資料列");
     const staleExempt = [...EXEMPT].filter((k) => !seenExempt.has(k));
     assert.equal(staleExempt.length, 0, `EXEMPT 有過期項（表已改名／加了 else／移除該列動作）——請重新核對：${staleExempt.join("、")}`);
     assert.equal(missing.length, 0, `逐列可刪的管理表缺無資料列（§5 無資料列正典；另有依據的請入 EXEMPT 並附理由）：\n${fail(missing)}`);
