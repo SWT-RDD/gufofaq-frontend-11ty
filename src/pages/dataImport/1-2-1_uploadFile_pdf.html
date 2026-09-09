@@ -11,7 +11,8 @@ permalink: 1-2-1_uploadFile_pdf.html
      改錨點時整批同量平移，不要逐筆各挪各的。#}
 {% set breadcrumbItems = [
   { label: "首頁", href: "2-1_qaRecord.html", i18nKey: "nav.home" },
-  { label: "資料匯入", i18nKey: "nav.dataImport" }
+  { label: "資料匯入", href: "1-1-1_dataImport.html", i18nKey: "nav.dataImport" },
+  { label: "上傳 PDF", i18nKey: "dataImport.uploadPdf" }
 ] %}
 <div class="flex-row column gap-16">
     {% include "ui/breadcrumb/breadcrumb.html" %}
@@ -25,7 +26,7 @@ permalink: 1-2-1_uploadFile_pdf.html
 <p class="text-gray" data-i18n="dataImport.uploadFilePdfIntro">這一頁是 PDF、WORD 等非結構化文件的上傳與匯入介面：可以一次選取多個檔案、逐一編輯每個檔案的標題與內容。送出後會看到這批文件逐檔的匯入結果，包含哪些成功、哪些失敗與失敗原因。</p>
 {# 暫存檔存活時間：完整理由寫在 1-1-3 的同一段。這一頁的清單是**還沒送出**的待上傳檔，
      同一條 TTL 管得到它們。 #}
-<p class="text-gray"><span data-i18n="dataImport.stagedTtlPrefix">剛上傳的檔案先暫存在伺服器上：</span><span class="js-staged-ttl-hours">24</span><span data-i18n="dataImport.stagedTtlSuffix"> 小時內沒有完成送出就會被清掉，屆時要重新上傳。</span></p>
+{% include "ui/staged-ttl-note/staged-ttl-note.html" %}
 
 {# 步驟條 + 只有「下一步」：兩步、.lg 樣式。
      stepNoPrev / stepNodesLg 由本頁 set，交給參數化的 components/step-btn-wrap 渲染（§6）。
@@ -180,19 +181,10 @@ permalink: 1-2-1_uploadFile_pdf.html
      已是純文字的文件原樣通過。值載體，掛 hook class 交 React（§5）。
      逐檔的外部主鍵不在這裡——它是**每個檔各一把**（共用一把的話同批第二個檔會蓋掉第一個，而回應說兩筆都成功），
      故欄位在每一列的編輯 modal 裡（components/file-edit-modal）。 #}
-<div class="form-group row mobile-col mt-24">
-    <div class="label label-md">
-        <span id="pdfConvertHtmlLabel" class="control-label" data-i18n="dataImport.convertHtml">HTML 轉 Markdown</span>
-    </div>
-    <div class="field">
-        <label class="switch">
-            {# 名稱走 `aria-labelledby` 指那顆可見的 `control-label`（§4 反向規則），不另掛 `aria-label`。 #}
-            <input type="checkbox" class="switch-checkbox js-doc-convert-html" role="switch" aria-labelledby="pdfConvertHtmlLabel" aria-describedby="pdfConvertHtmlHint" checked>
-            <span class="switch-box"><span class="switch-btn"></span></span>
-        </label>
-        <span class="text-gray" id="pdfConvertHtmlHint" data-i18n="dataImport.convertHtmlHint">文字欄若含 HTML 標籤就轉成 Markdown：絕對位址的 http(s)／mailto／tel 連結會原樣轉成 Markdown 連結保留下來，表示不出來的那些（相對路徑、javascript:、片段錨點）才會被移除並列在匯入結果裡。純文字資料原樣通過。</span>
-    </div>
-</div>
+{% set convertHtmlId = "pdf" %}
+{% set convertHtmlHook = "js-doc-convert-html" %}
+{% set convertHtmlWrapClass = "mt-24" %}
+{% include "components/convert-html-switch/convert-html-switch.html" %}
 
 {# 檔案預覽 modal：id/class 與 components/file-preview-modal 一致，整包 include #}
 {% include "components/file-preview-modal/file-preview-modal.html" %}

@@ -123,6 +123,14 @@ permalink: 5-2_conversationSettings.html
             </div>
         </div>
     </div>
+    {# **這一顆鈕不能少**（同欄位命名那一區的理由）：左邊那組 radio 是**跨三個設置共用**的租戶層設定，
+         而頁尾「儲存對話設定」送的是**當前這一套設定檔**——它的酬載裡沒有這一欄。沒有這顆鈕的話，
+         使用者改得動它、卻永遠存不回去，而「一個控制項沒有送出路徑」不在任何測試的母體裡
+         （全站的閘門與 toast 檢查都是從按鈕出發的）。
+         三段分支：成功、能力不足、其餘失敗，末位是租戶未開通那一段。 #}
+    <div class="flex-row">
+        <button data-capability="settings:write" type="button" class="button button-primary js-save-front-qa-default" data-toast="前台預設設置已儲存|權限不足，無法儲存——請找貴租戶的管理者開通|儲存失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.saveFrontQaDefault" data-toast-type="success|warning|error|warning" data-i18n="settings.saveFrontQaDefault">儲存前台預設</button>
+    </div>
 </div>
 
 {# ── 設置層頂端：對話模式總開關（傳統／agent 二選一）＋ Agent 最大迭代次數（沿 2-2-1）。
@@ -379,7 +387,7 @@ permalink: 5-2_conversationSettings.html
     {# 本頁後續若再 include priority-table，須自行重設 tierless（§2：set 是頁面全域）。 #}
     {% set tierless = false %}
 
-    {# 槽目錄走**唯一正本** ui/field-slot-catalog（22 槽）。用 {% from … import %} 而不是 include：
+    {# 槽目錄走**唯一正本** ui/field-slot-catalog。用 {% from … import %} 而不是 include：
      include 是獨立 scope，子檔 set 的變數回不到父頁（實測那樣寫會渲染出 0 個欄位，而全站測試照樣綠）。
      §2 的標籤白名單為此放寬，僅限 *-catalog 這種共用目錄檔（見 GUIDELINE §2）。
      這一頁自己的附加資料只有「租戶已設的顯示名」——那是每一套設定檔各自一份的值，
@@ -399,7 +407,7 @@ permalink: 5-2_conversationSettings.html
         <div class="flex-row column gap-8">
             <div class="tablelist-title" data-i18n="settings.fieldNaming">欄位命名</div>
             {# 槽數從陣列推導、不烤進譯文（§6 能推導的數字不寫死；§4-2 那個數字是資料不是譯文）。
-                 值域是槽目錄全部 22 個（21 個進索引的 ＋ 產品內部欄位 internal_note）。
+                 值域是槽目錄的**全部**槽（進索引的那一批 ＋ 產品內部欄位 internal_note）。
                  **這張 map 同時決定文件明細上看得到哪幾欄**：3-7 的結果明細與 `components/sources-block`
                  的逐欄清單只列「這個租戶有取過名」的槽，再扣掉各有自己一列的 title／content／date
                  與歸因槽（note1／note2）⇒ `source`／`category` 是那兩處實際列得出來的欄。
@@ -407,22 +415,22 @@ permalink: 5-2_conversationSettings.html
                  note1／note2 的顯示名與 5-3 的歸因維度、4-2 的來源歸因列一致（「承辦組室」「業務範疇」）
                  ——那三頁演的是同一個示範租戶，而這一頁是那份顯示名的
                  **唯一編輯畫面**，不一致的話讀的人推不出哪一份算數（§6 跨頁自洽）。
-                 ⚠️ **22 個槽一個都不能少**：只列到 note5 的話，note6..note10／date2／date3 這七個槽
+                 ⚠️ **槽目錄裡的每一顆都要有輸入框**：只列到 note5 的話，note6 之後那幾個槽
                  就變成「裝得下資料卻永遠命不了名」——5-3 的歸因維度渲染得出它們的顯示名、
                  5-10 也讓維度掛得上去，只有這一頁沒有它們的輸入框。 #}
             <div class="text-gray"><span data-i18n="settings.fieldNamingDescPrefix">為此設定的 </span><span>{{ fieldSlotCatalog.length }}</span><span data-i18n="settings.fieldNamingDescSuffix"> 個欄位槽命名「此設定的顯示名」</span></div>
-            {# 長度界線：這一整區 22 顆輸入框**必須有一句常駐提示 ＋ `aria-describedby`**——
-                 每一顆超過上限都會被靜默擋掉，沒有這一句就是 22 個輸入框
+            {# 長度界線：這一整區的輸入框**必須有一句常駐提示 ＋ `aria-describedby`**——
+                 每一顆超過上限都會被靜默擋掉，沒有這一句就是整批輸入框
                  零界線宣告，使用者只有送出被拒時才知道有上限。上限 200 字在這裡宣告一次。
                  **一份 hint 給整組用**（同本頁 `policyTopicLimitsHint` 的做法）：每一個槽的標籤
-                 共用同一顆上界，逐槽各寫一句就是 22 句同樣的話。
+                 共用同一顆上界，逐槽各寫一句就是同一句話抄很多遍。
                  下面兩個迴圈（進索引的槽、產品內部槽）的輸入框都 `aria-describedby` 指這一顆。 #}
-            <p id="fieldNamingLimitHint" class="text-gray m-0"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-field-label-max-len">200</span><span data-i18n="common.unitChars"> 字</span><span data-i18n="settings.fieldNamingLimitWhy">；留空就是沿用左邊那個預設名，不會被寫成一顆顯式標籤。</span></p>
+            <p id="fieldNamingLimitHint" class="text-gray m-0"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-field-label-max-len">200</span><span data-i18n="common.unitChars"> 字</span><span data-i18n="settings.fieldNamingLimitWhy">；留空就是沿用該欄的預設名，不會被寫成一顆顯式標籤。</span></p>
         </div>
         <div class="flex-row flex-wrap gap-16">
             {# **沒改過名的槽留空**（下面兩個迴圈的 `value` 只吃 `fieldSlotLabels`，不退回 `defaultLabel`）：
                  送出的是**整份取代**，而且空字串會被丟掉——把
-                 22 顆槽全部預填成預設名再送出去，等於把每一顆都寫成顯式標籤，之後
+                 每一顆槽都預填成預設名再送出去，等於把每一顆都寫成顯式標籤，之後
                  再也分不出「沒改過名」與「改成跟預設一樣」。預填還會讓 `placeholder`
                  （`settings.displayNamePlaceholder`）在 dist 全站零可見。 #}
             {% for slot in fieldSlotCatalog %}{% if not slot.productOnly %}
@@ -462,7 +470,7 @@ permalink: 5-2_conversationSettings.html
         {# **這一區有自己的送出路徑**，不隨頁尾那顆「儲存對話設定」走：欄位命名寫的是這一套設定檔的
              欄位顯示名，那是獨立的一份東西——頁尾那顆送的整份對話設定裡**沒有**顯示名這一欄。
              ⚠️ **這顆鈕不能少**，而且少了不會被任何規則抓到：全站的檢查都是**從按鈕出發**的
-             （有鈕才查它的 toast 與閘門），一顆不存在的按鈕不在任何母體裡，所以「22 個輸入框
+             （有鈕才查它的 toast 與閘門），一顆不存在的按鈕不在任何母體裡，所以「一整區輸入框
              沒有送出路徑」這種缺口結構上看不見，只能靠人記得。
              三段分支：能力不足、欄位鍵不合法、其餘失敗。 #}
         <div class="flex-row">
@@ -2204,11 +2212,11 @@ permalink: 5-2_conversationSettings.html
              那是完全安全且有用的組態。所以這一格**不是必填、也不給預設數字**——用預設值假裝已設定
              更糟：0.5 在 weaviate 的尺上是死條件（刻意不相關的問句分數照樣高於它），
              一個永遠不觸發的數字比留白糟得多。
-             **不綁 max、但綁 `min="0"`**：上界綁不得——三顆重排序器的尺不同，還有 gufonet 的 BM25
-             是數百～數千的整數，寫死 [0, 1] 會讓 BM25 部署填不進合法值（`step="any"` 才收得下小數）。
-             下界則是端到端只收非負（負值讓所有分數都 ≥ 它、粗篩永遠不觸發），送出時也會被拒——
-             表單不夾等於把那次拒絕推遲到按下儲存之後，而這一格的規則是「讓拒絕發生在使用者還看得到
-             那一格的時候」。
+             **`min`／`max` 一顆都不綁**（`step="any"` 才收得下小數）：三顆重排序器的尺互不相同，
+             關鍵字檢索那把更是數百到上萬的整數——寫死 [0, 1] 會讓其中幾種部署填不進自己的合法值；
+             而下界同樣綁不得，未正規化 logits 那一族的合理門檻本來就可以是負的。唯一的約束是
+             「必須是有限的數字」，那句話 `min`／`max` 表達不出來，所以由這一格旁邊那段常駐提示承載
+             （§4：沒有量級邊界時，約束照樣要看得見）。
              ⚠️ **跨子頁籤的相依**（這一格最重要的一句）：「直答模式＝完全命中（judge 關）＋
              『生成』子頁籤的重排序關著 ＋ 這一格非空」這個組合會被擋下、什麼都不存，
              理由是那個組合下第二層會拿原始檢索分數當逐字直出的唯一依據，而原始分數不是可校準的尺。
@@ -2342,7 +2350,8 @@ permalink: 5-2_conversationSettings.html
              QA 直答的門檻在關掉裁判時是**唯一判定** ⇒ 那一格才可以為空。兩格的說明不共用一句話：
              寫成「都可留白」或「都必填」的話，錯的那一邊症狀是無聲的（這一格留白 ⇒ 存不進去；
              那一格必填 ⇒ 既有的完全命中租戶會直接失去直答）。
-             同樣**不綁 max、綁 `min="0"`**（尺不同見下方那段目前生效的尺；兩顆分數門檻一律不收負值）。
+             同樣**`min`／`max` 一顆都不綁**（尺不同見下方那段目前生效的尺；兩顆分數門檻的界線都由
+             旁邊那句常駐提示承載，不由屬性夾）。
              **這一格不可留白**：它有預設值 0.5，而且它的值域不含「未設定」。 #}
         <div class="form-group row mobile-col">
             <div class="label label-md">
@@ -2365,7 +2374,12 @@ permalink: 5-2_conversationSettings.html
                      矛盾的狀態；那一態的長相由元件庫展示頁負責演（§5）。 #}
                 {% set scaleNoteMixed = "" %}
                 {% include "ui/score-scale-note/score-scale-note.html" %}
-                <span class="text-gray" id="groundingScoreFloorNote" data-i18n="settings.groundingScoreFloorNote">這一格不可留白（預設 0.5）。它不是判定前的門票——檢索最高分低於它時，這一輪不問 LLM 就直接判成誠實查無，來源也會一併清空。分數的尺由當次給分的那一方決定，沒有上界也沒有下界：開了重排序就是那顆重排序器（llm_reranker 1–5、jina 0–1、bge_reranker 可為負），沒開就是檢索本身，而檢索用哪一把尺由「資料來源比例」決定（純向量＝相似度 0–1、純關鍵字＝BM25 數百到上萬、之間＝兩把尺同時出現在同一批結果裡）。未開重排序、直接吃向量相似度的部署上，0.5 落在 0–1 這把尺上實務上擋不到任何東西；換成未正規化 logits 那一族之後，同一個 0.5 會讓每一題都被擋——換一種給分方式就必須重新校準這個數字。與「QA 直答」那一格的可留白刻意不同：那一顆在裁決關掉時是唯一判定，這一顆則是零 LLM 的終局拒答。</span>
+                {# 三顆重排序器的名字與尺**從 `rerankerCatalog` 現渲染**，不烤進譯文（§4-2：翻譯字串不內嵌
+                     會隨資料變動的數字／名稱）。烤進去的那一份已經漂過一次——目錄裡叫 `jina_reranker`，
+                     譯文裡只寫 `jina`；而多一顆重排序器時要改的會是兩份譯文而不是一份資料。
+                     「沒有上下界」那一態走 key（那是字、不是數字），有界的那兩顆直接吐目錄裡的 min／max。
+                     預設值 `0.5` 同理走資料節點，與上面那顆輸入框的 `value` 同源。 #}
+                <span class="text-gray" id="groundingScoreFloorNote"><span data-i18n="settings.groundingScoreFloorNoteA">這一格不可留白（預設 </span><span class="js-grounding-score-floor-default">0.5</span><span data-i18n="settings.groundingScoreFloorNoteB">）。它不是判定前的門票——檢索最高分低於它時，這一輪不問 LLM 就直接判成誠實查無，來源也會一併清空。分數的尺由當次給分的那一方決定，沒有上界也沒有下界：開了重排序就是那顆重排序器（</span>{% for r in rerankerCatalog %}{% if r.scale.kind == "bounded" %}<span>{{ r.name }} {{ r.scale.min }}–{{ r.scale.max }}</span>{% else %}<span>{{ r.name }} </span><span data-i18n="settings.scaleUnbounded">可為負且無上下界</span>{% endif %}{% if not loop.last %}<span data-i18n="common.listSep">、</span>{% endif %}{% endfor %}<span data-i18n="settings.groundingScoreFloorNoteC">），沒開就是檢索本身，而檢索用哪一把尺由「資料來源比例」決定（純向量＝相似度 0–1、純關鍵字＝BM25 數百到上萬、之間＝兩把尺同時出現在同一批結果裡）。未開重排序、直接吃向量相似度的部署上，這個預設值落在 0–1 這把尺上實務上擋不到任何東西；換成未正規化 logits 那一族之後，同一個數字會讓每一題都被擋——換一種給分方式就必須重新校準它。與「QA 直答」那一格的可留白刻意不同：那一顆在裁決關掉時是唯一判定，這一顆則是零 LLM 的終局拒答。</span></span>
             </div>
         </div>
     </div>

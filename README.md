@@ -72,8 +72,8 @@ pre-commit run --all-files                 # 第一次接上先全掃一次
 src/
 ├── _includes/
 │   ├── layouts/            整頁模板（4 支，見下表）＋ 模板專屬樣式 `_base.scss` / `_page-shell.scss` / `_chatbot-shell.scss`（⚠️ 與 `src/scss/_base.scss` 同名，`main.scss` 以 `as layout-base` 消歧；`public-shell` 沒有自己的樣式，它沿用 page-shell 的 `.main`）
-│   ├── ui/                 不依賴其他元件的元件（61 個）
-│   └── components/         會用到其他元件，或某大元件的專屬子片段（61 個）
+│   ├── ui/                 不依賴其他元件的元件（62 個）
+│   └── components/         會用到其他元件，或某大元件的專屬子片段（62 個）
 ├── scss/                   全域層（元件樣式住在元件資料夾）
 │   ├── _var.scss           設計 token：語意色 + [data-theme=dark] 覆寫（全站唯一色源，單層直值）
 │   ├── _mixin.scss         共用 mixin：scrollbar 系列、icon-mask（單色 PNG 遮罩上色）、nav-collapsed（header↔mobile-nav 的 1250px 斷點，兩者必須同值）
@@ -151,6 +151,7 @@ dist/                       build 輸出（勿手改）
 | `components/data-type-filter` | `dataTypeName`（radio name，同頁多組要不同）/`dataTypeLabelId`（群組標題 id，同頁唯一）；用於 5-3／5-4。 |
 | `components/chunk-settings` | 切塊設定的欄位組（`chunkSize`／`chunkOverlap`／`prependTitleEachChunk`）＋ 它的 ⓘ 說明窗；`chunkSettingsBlockClass`（補在 `.block` 上的版位 class）／`chunkSettingsSubmit`（true 時畫這一區自己的儲存鈕）。用於 3-1-2（建立，送出走那三張 upload-card）與 3-1-3（改既有資料集，送出是自己的儲存鈕）——兩處是同一份設定的兩個入口，欄位與那兩句代價說明必須逐字相同，故收成一份。 |
 | `components/chatbot-header` | `chatbotLogoHref`（選填，logo 連結的目的地；**由使用它的 layout 給**）。不給＝logo 畫成 `<span>` 不連出去——`chatbot-shell` 給 `faq.html`，`public-shell` 刻意不給（公開分享頁的讀者沒有登入態，連過去只會到一個他進不了的地方）。內含 `components/header-controls`。 |
+| `components/convert-html-switch` | 「HTML 轉 Markdown」匯入選項（可見標籤 ＋ `ui/switch` ＋ 常駐說明）。`convertHtmlId`（**必填**，id 前綴，產出 `<前綴>ConvertHtmlLabel`／`<前綴>ConvertHtmlHint`）／`convertHtmlHook`（**必填**，checkbox 的值載體 hook class；1-1-4 是 `js-excel-convert-html`、1-2-1 是 `js-doc-convert-html`，兩頁不同名故為參數）／`convertHtmlWrapClass`（選填，外層 `.form-group` 的伴隨 utility——版位由使用頁決定）。住 `components/` 是因為它在自己的 markup 寫了 `ui/switch` 的 class。 |
 | `components/chart-box` | `chartBoxId`（圖表容器 id 前綴）/`chartBoxTitleText`/`chartBoxTitleKey`；用於 5-3。下段的數據槽走 `ui/chart-desc`（故住 `components/`）。 |
 | `ui/timezone-options` | `timezoneSelected`（**必填**，預設選中的 IANA 識別字——非 multiple 的 `<select>` 沒有 `selected` 時瀏覽器必定選第一顆並回報成 selected，見元件檔頭）；只輸出 `<option>`，外層 `<select>` 由使用頁給。消費點：5-2 直接 include，以及 `components/platform-tenants-panel`（它扇出到平台那一族三份稿）——正向 `grep -rln 'include "ui/timezone-options/' src`、反向 `grep -l 'Asia/Kuala_Lumpur' dist/*.html`，把扇出的頁算進來之後兩邊的頁面集合相同。 |
 | `ui/storage-bar` | `storageBarPct`（條寬百分比，**0 是合法值**）/`storageBarText`（條**右側**那行說明，窄容器時才換行落到條下；未給時走內建的儲存空間文案）。用於 3-1-1／5-10。 |
@@ -179,6 +180,7 @@ dist/                       build 輸出（勿手改）
 | `components/manage-tenant-modal` | 租戶管理窗（`<dialog>` 上掛 `data-platform-role="auditor"`＝整份 auditor 進得來，窗內動作各自再標 admin）。示範開關 `manageTenantShowUsageError`（取不到目前用量時的持久錯誤列）／`manageTenantFrozen`（這個租戶是不是凍結中，決定凍結區兩態）。 |
 | `components/qa-import-modal` | QA 集匯入窗（3-3）。示範開關 `qaImportShowParsing`（解析中）／`qaImportShowError`（讀取 Excel 欄位失敗）。內含 `ui/upload-box` 且**依賴它的預設值**——使用頁 include 前不得殘留 `upload*` 參數（GUIDELINE §6）。 |
 | `ui/widget-shell` | 嵌入式小工具外殼（launcher ＋ 面板）。`widgetTitle`（面板標題＝租戶設定值，不翻）／`widgetDemoStatic`（true 加 `.demo-static`，把 fixed 浮層退回文流內，並讓 launcher 報 `aria-expanded="true"`、面板帶 `[data-open]`）。**無生產頁**：正式環境是嵌進客戶網站的 shadow root，本站唯一可見處是元件庫頁。 |
+| `ui/staged-ttl-note` | 暫存檔存活時間的常駐提示（「剛上傳的檔案先暫存在伺服器上：24 小時內沒有完成送出就會被清掉」）。**零參數**——三個使用頁（1-1-3／1-1-4／1-2-1）的字面與版位逐字相同，差別只在「為什麼這一頁要講」，那一句留在各自的 include 處。時數是資料槽 `.js-staged-ttl-hours`，不進譯文。 |
 | `ui/score-scale-note` | 分數尺說明（5-2 兩個門檻各一份）。`scaleNoteId`（**必填**，同頁唯一；門檻輸入框以 `aria-describedby` 指過來）／`scaleNoteText`（目前生效那把尺的 note）／`scaleNoteMixed`（混合檢索兩把尺並存的警語，不給＝不渲染）／`scaleNoteRecalibrated`（true＝演「尺變了要重新校準」那一態，不給＝不渲染；元件庫頁是它唯一可見處）。 |
 | `ui/upload-card` | 檔案匯入類型卡（1-1-1 選檔型換頁／3-1-2 建立資料集）。**兩種型態**（判準見 GUIDELINE §4「`<a>` 或 `<button>`」）：純換頁是 `<a href>`；3-1-2 那幾張卡是那一頁**唯一的送出動作**（React 端先 `POST /datasets` 再導去上傳流程），由 `uploadCardAction`（true）＋ `uploadCardToast`・`uploadCardToastKey`・`uploadCardToastType`＋ `uploadCardCapability` 開啟，目的地改掛 `data-href`。卡面內部一律 `<span>`（`<button>` 不收 `<div>`／`<p>`）。 |
 | `ui/accordion` | 展開列表格示範。**必填** `accordionInstance`（id 消歧鍵）＋ **必填** `accordionOwnerId`（可及名稱的起頭）——元件庫頁 include 它兩次（`#tableSectionTitle` 那一節的表格示範夾帶一份、`#accordionSectionTitle` 自己一份），兩份的列名逐字都是「12173-1」。注意 `ui/default-table` 的檔尾也夾帶一份，使用頁要在 include 它之前先設好這兩顆。 |
@@ -211,7 +213,7 @@ dist/                       build 輸出（勿手改）
 **展示片段與生產形狀不一致時，生產契約逐字寫在該元件自己的 `_<名>.scss`／`<名>.js` 檔頭**
 （GUIDELINE §1-2；不另立第二份清單——判準是 `grep -rn '生產契約' src/_includes`，有測試比對契約與實例）。
 
-> **上列不是完整清單**（`src/_includes/` 目前有 122 個元件）。完整結構以 `src/_includes/` 與元件總覽頁 `dist/component.html` 為準。跨檔一致性由 `npm test` 把關：有 js 的元件必須三方登記（實體檔 ⇄ `eleventy.config.js` ⇄ `base.html`）、有 scss 的必須在 `main.scss` `@use`、每個元件 html 都必須被 include（無孤兒）、每張圖都必須被引用。
+> **上列不是完整清單**（`src/_includes/` 目前有 124 個元件）。完整結構以 `src/_includes/` 與元件總覽頁 `dist/component.html` 為準。跨檔一致性由 `npm test` 把關：有 js 的元件必須三方登記（實體檔 ⇄ `eleventy.config.js` ⇄ `base.html`）、有 scss 的必須在 `main.scss` `@use`、每個元件 html 都必須被 include（無孤兒）、每張圖都必須被引用。
 
 ---
 

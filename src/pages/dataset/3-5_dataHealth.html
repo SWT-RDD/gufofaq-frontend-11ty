@@ -328,13 +328,14 @@ permalink: 3-5_dataHealth.html
        · 918 內容已過期，**處置過又回到未處置**（`status` open 而 `resolvedAt` 還在）→ 這一格
          答的是「這一筆為什麼又出現了」
        · 930 事實衝突 → dismiss ＋ supersede
-       · 940 標題不是問句（**QA 集**，與 903 同一個資料集）→ dismiss ＋ add-phrasing。
+       · 940 標題不是問句（**QA 集**「檢疫問答集」）→ dismiss ＋ add-phrasing。
          **它非在 QA 集不可**：這一項檢查只看 QA 集的記錄，所以它不可能出現在檔案型資料集上。
-         ⚠️ **它不可以掛在「檢疫問答集」**：那個資料集上的 901 提供合併、907 已經合併過，而
-         「涉及的記錄有任何一筆不是檔案型」就會把合併濾掉——「這一集是 QA 集」與「這一集做得了
-         合併」在同一個資料集上不可能同時成立。掛在「客服問答集」兩邊才各自成立：那一集是
-         QA 集（903 的合併正是因此被拿掉的），而補寫問法不在被濾掉的那一族裡，QA 集照樣做得到。
-         列號另取（33），不與 903 的 4／19 相撞。
+         補寫問法**不在**「QA 集不提供」的那一族裡（被濾掉的只有合併），所以 QA 集照樣做得到。
+       ⚠️ **901 與 907 涉及的記錄一筆都不能在 QA 集裡**，這是被合併那一支反推出來的硬約束：
+         「涉及的記錄有任何一筆不是檔案型資料集的，就不提供合併」⇒ 一個提供合併（901）、一個
+         已經合併過（907），它們涉及的每一個檔就都必須屬於檔案型資料集（現在是「法規彙編」與
+         「2026 新制問答」）。把其中任何一筆挪進 QA 集，那一支動作就與它自己的過濾規則打架，
+         而**兩邊分開看都很合理**——那正是這種矛盾難查的原因。
        · 950 標籤缺口 → **只有 dismiss**：該標哪一個代碼是租戶自己才知道的業務值，系統挑一個
          填進去就是替使用者做業務判斷
        · 960 從未被命中，涉及的是**資料夾匯入的整份文件** → **只有 dismiss**：五支處置動作全部
@@ -433,7 +434,7 @@ permalink: 3-5_dataHealth.html
       { key: "max_similarity", value: "0.9884" }
     ],
     records: [
-      { key: "b7c1e93a4d20", title: "犬貓專案怎麼申請", titleChars: 8, titleSource: "title_slot", filename: "檢疫問答_2026Q1.xlsx", row: 12 },
+      { key: "b7c1e93a4d20", title: "犬貓專案怎麼申請", titleChars: 8, titleSource: "title_slot", filename: "法規彙編_2026.xlsx", row: 12 },
       { key: "1f4a08d6cc51", title: "犬貓專案怎麼申請", titleChars: 8, titleSource: "title_slot", filename: "客服話術彙編.xlsx", row: 137 },
       { key: "9e2b7710af83", title: "", titleChars: 0, titleSource: "title_slot", filename: "客服話術彙編.xlsx", row: 138 }
     ],
@@ -462,7 +463,7 @@ permalink: 3-5_dataHealth.html
     id: 907, checkLabel: "近似重複", checkLabelKey: "health.checkNearDuplicate", checkType: "near_duplicate",
     severityLabel: "候選", severityKey: "health.severityCandidate",
     statusLabel: "已處置", statusKey: "health.statusResolved", disposed: true, reopened: false,
-    datasetName: "檢疫問答集",
+    datasetName: "法規彙編",
     firstSeenAt: "2026/07/02 04:02", lastSeenAt: "2026/07/14 03:15",
     evidence: [
       { key: "representative", value: "44e1a7c0b96d" },
@@ -470,8 +471,8 @@ permalink: 3-5_dataHealth.html
       { key: "max_similarity", value: "0.9915" }
     ],
     records: [
-      { key: "44e1a7c0b96d", title: "犬貓輸入檢疫要準備哪些文件", titleChars: 13, titleSource: "title_slot", filename: "檢疫問答_2026Q1.xlsx", row: 41 },
-      { key: "e903cb2517f4", title: "本公司自一一三年一月一日起受理犬貓輸入檢疫申請案件，申請人應於預定輸入日前三十日，檢附輸出國政府動物檢疫機關簽發之動物檢疫證明書、狂犬病不活化疫苗接種證明書、狂犬病抗體力價檢測報告及晶片植入紀錄，向本公司客服信箱提出申請，經審查合格後核發輸入同意文件；未依規定檢附文件或文件內容與申請書所載不符者，本公司得不予受理並以書面通知補正，補正期限自通知送達之次日起算十四日，逾期未補正者駁回其申請案件，並函", titleChars: 231, titleSource: "title_slot", filename: "檢疫問答_2026Q1.xlsx", row: 42 },
+      { key: "44e1a7c0b96d", title: "犬貓輸入檢疫要準備哪些文件", titleChars: 13, titleSource: "title_slot", filename: "法規彙編_2026.xlsx", row: 41 },
+      { key: "e903cb2517f4", title: "本公司自一一三年一月一日起受理犬貓輸入檢疫申請案件，申請人應於預定輸入日前三十日，檢附輸出國政府動物檢疫機關簽發之動物檢疫證明書、狂犬病不活化疫苗接種證明書、狂犬病抗體力價檢測報告及晶片植入紀錄，向本公司客服信箱提出申請，經審查合格後核發輸入同意文件；未依規定檢附文件或文件內容與申請書所載不符者，本公司得不予受理並以書面通知補正，補正期限自通知送達之次日起算十四日，逾期未補正者駁回其申請案件，並函", titleChars: 231, titleSource: "title_slot", filename: "法規彙編_2026.xlsx", row: 42 },
       { key: "82fd6b0c4ae1", title: "", titleChars: "", titleSource: "",
         filename: "", row: "",
         unavailableReason: "record_not_found",
@@ -517,14 +518,14 @@ permalink: 3-5_dataHealth.html
     id: 940, checkLabel: "標題不是問句", checkLabelKey: "health.checkNonQuestion", checkType: "non_question",
     severityLabel: "候選", severityKey: "health.severityCandidate",
     statusLabel: "未處置", statusKey: "health.statusOpen", disposed: false, reopened: false,
-    datasetName: "客服問答集",
+    datasetName: "檢疫問答集",
     firstSeenAt: "2026/07/12 04:02", lastSeenAt: "2026/07/14 03:15",
     evidence: [
-      { key: "title", value: "退運作業" },
+      { key: "title", value: "檢疫規費收費標準" },
       { key: "kind", value: "noun_phrase" }
     ],
     records: [
-      { key: "6b02da4e9137", title: "退運作業", titleChars: 4, titleSource: "title_slot", filename: "客服問答集.xlsx", row: 33 }
+      { key: "6b02da4e9137", title: "檢疫規費收費標準", titleChars: 8, titleSource: "title_slot", filename: "檢疫問答_2026Q1.xlsx", row: 33 }
     ],
     noteLines: [], resolvedAt: "", resolvedBy: "",
     actions: ["dismiss", "add-phrasing"]
@@ -1051,9 +1052,9 @@ permalink: 3-5_dataHealth.html
                             <span class="sr-only" data-i18n="common.expandRow">展開表格</span>
                         </button>
                     </td>
-                    {# 逐列辨識欄（§4）：展開鈕與底下**六張動作卡**的送出鈕都指到它。
-                         同時展開兩筆發現時，兩張「判定為非問題」卡的鈕逐字同名——動作卡沒有 <tr> 的
-                         列脈絡可倚靠，可及名稱要自己把「哪一筆發現」帶進去。 #}
+                    {# 逐列辨識欄（§4）：展開鈕與底下每一張動作卡的送出鈕都指到它。
+                         同時展開兩筆以上的發現時，那幾張「判定為非問題」卡的鈕逐字同名——動作卡沒有 <tr>
+                         的列脈絡可倚靠，可及名稱要自己把「哪一筆發現」帶進去。 #}
                     <td id="healthFindingId-{{ f.id }}">{{ f.id }}</td>
                     <td><span data-i18n="{{ f.checkLabelKey }}">{{ f.checkLabel }}</span></td>
                     <td class="text-center"><span data-i18n="{{ f.severityKey }}">{{ f.severityLabel }}</span></td>
@@ -1158,10 +1159,10 @@ permalink: 3-5_dataHealth.html
                                 {% if action == "dismiss" %}
                                 <div class="block block-sm border corner-md flex-row column gap-8" data-health-action="dismiss">
                                     <div class="text-bold" data-i18n="health.actionDismiss">判定為非問題</div>
-                                    <p class="text-gray" data-i18n="health.actionDismissHint">五支裡唯一不動資料的一支：只在這一列記下「誰在什麼時候判定它不是問題、理由是什麼」。理由必填——空白的理由等於只查得到前半段，下次換人還是要重判一次。判定之後這一筆不再出現在未處置清單上，直到證據或確定程度真的變了才會回來。</p>
+                                    <p class="text-gray" data-i18n="health.actionDismissHint">處置動作裡唯一不動資料的一支：只在這一列記下「誰在什麼時候判定它不是問題、理由是什麼」。理由必填——空白的理由等於只查得到前半段，下次換人還是要重判一次。判定之後這一筆不再出現在未處置清單上，直到證據或確定程度真的變了才會回來。</p>
                                     <div class="form-group">
                                         <div class="label">
-                                            {# 可及名稱要帶「哪一筆發現」（§4）：同時展開兩筆時，八張「判定為非問題」卡的
+                                            {# 可及名稱要帶「哪一筆發現」（§4）：同時展開兩筆以上時，那幾張「判定為非問題」卡的
                                                  這一格逐字都叫「判定理由」。`for`／`id` 的關聯保留（點 label 要能聚焦），
                                                  名稱另走 aria-labelledby「辨識 → 欄位名」。 #}
                                             <label id="healthDismissReasonLabel-{{ f.id }}" for="healthDismissReason-{{ f.id }}" class="control-label required" data-i18n="health.disposalReason">判定理由</label>

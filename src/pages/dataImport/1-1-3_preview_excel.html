@@ -11,7 +11,8 @@ permalink: 1-1-3_preview_excel.html
      不是站台事件，所以只受一條約束：早於「現在」。#}
 {% set breadcrumbItems = [
   { label: "首頁", href: "2-1_qaRecord.html", i18nKey: "nav.home" },
-  { label: "資料匯入", i18nKey: "nav.dataImport" }
+  { label: "資料匯入", href: "1-1-1_dataImport.html", i18nKey: "nav.dataImport" },
+  { label: "Excel 資料預覽", i18nKey: "catalog.linkPreviewExcel" }
 ] %}
 <div class="flex-row column gap-16">
     {% include "ui/breadcrumb/breadcrumb.html" %}
@@ -38,8 +39,9 @@ permalink: 1-1-3_preview_excel.html
      **為什麼非畫出來不可**：這個數字取得到，但只要畫面上少了它，使用者把分頁擱著過夜、
      回來按下一步，拿到的就是一句「找不到檔案」而完全不知道為什麼、更不知道下次要多快做完。
      這一步與 1-1-4 是同一份暫存檔的兩個畫面，兩頁都要講（人可能直接落在任一頁）。
-     數字是資料槽（`js-staged-ttl-hours`），不烤進譯文（§4-2）。 #}
-<p class="text-gray"><span data-i18n="dataImport.stagedTtlPrefix">剛上傳的檔案先暫存在伺服器上：</span><span class="js-staged-ttl-hours">24</span><span data-i18n="dataImport.stagedTtlSuffix"> 小時內沒有完成送出就會被清掉，屆時要重新上傳。</span></p>
+     **這一句的正本是 `ui/staged-ttl-note`**（三頁逐字相同，§3-3）：字面、時數資料槽與兩顆前後綴
+     key 都在那裡，這裡只負責「為什麼這一頁要講」。 #}
+{% include "ui/staged-ttl-note/staged-ttl-note.html" %}
 
 {# ── 來源結構：工作表／表頭列數／交叉表 unpivot ────────────────────────────────────
      這三個設定決定「這份檔案讀出來的欄名長什麼樣」，而下一步（1-1-4）的欄位對應就是照這裡看到的

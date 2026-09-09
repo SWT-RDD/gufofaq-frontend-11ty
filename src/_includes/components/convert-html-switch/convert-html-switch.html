@@ -1,0 +1,34 @@
+{# 「HTML 轉 Markdown」匯入選項：一顆 `ui/switch` ＋ 可見標籤 ＋ 常駐說明。
+     §3-3「出現在 2 頁以上 → 切」——1-1-4（Excel 欄位對應）與 1-2-1（上傳 PDF）的 DOM 骨架
+     逐層相同，只差 id 前綴與 hook class。歸 `components/` 而不是 `ui/`：它在自己的 markup 裡
+     寫了 `ui/switch` 的 class（§1-1「用到其他元件」的第二種形式）。
+
+     參數（使用頁在 include 前 set，見 §6）：
+       convertHtmlId   —— 必填。id 前綴，產出 `<前綴>ConvertHtmlLabel`／`<前綴>ConvertHtmlHint`
+                          兩顆 id；同頁唯一。
+       convertHtmlHook —— 必填。checkbox 的值載體 hook class（§5：值交給 React 讀去送 API，
+                          不掛 `data-toast`）。兩個使用頁的 hook 名**不是同一個**
+                          （一頁是逐列匯入的 Excel、一頁是整份文件），所以它是參數而不是寫死。
+       convertHtmlWrapClass —— 選填。外層 `.form-group` 的伴隨 utility。
+                          **版位由使用頁決定**（§1-1「合併時容器各自保留」）：這一塊與上一塊之間
+                          要不要留間距，是那一頁版面的事，不是這顆元件的事。
+
+     **可及名稱走 `aria-labelledby` 指那顆可見的 `control-label`**（§4 反向規則），不另掛
+     `aria-label`：開關沒有可見字面，而那顆標籤就是它的名字；並存時舊的 `aria-label` 會靜默
+     勝出一邊，兩個語系各說一套。標籤用 `<span>` 而不是 `<label for>`：真正的控制項是包在
+     `label.switch` 裡的 checkbox，再給一顆 `for` 會有兩個 label 指同一顆。
+
+     說明那一句是**兩頁共用的同一顆 key**：它講的是轉換規則本身（哪幾種連結留得住、哪幾種會
+     被剝掉），與是逐列還是整份文件無關。預設 `checked`＝開啟，兩頁相同。 #}
+<div class="form-group row mobile-col{% if convertHtmlWrapClass %} {{ convertHtmlWrapClass }}{% endif %}">
+    <div class="label label-md">
+        <span id="{{ convertHtmlId }}ConvertHtmlLabel" class="control-label" data-i18n="dataImport.convertHtml">HTML 轉 Markdown</span>
+    </div>
+    <div class="field">
+        <label class="switch">
+            <input type="checkbox" class="switch-checkbox {{ convertHtmlHook }}" role="switch" aria-labelledby="{{ convertHtmlId }}ConvertHtmlLabel" aria-describedby="{{ convertHtmlId }}ConvertHtmlHint" checked>
+            <span class="switch-box"><span class="switch-btn"></span></span>
+        </label>
+        <span class="text-gray" id="{{ convertHtmlId }}ConvertHtmlHint" data-i18n="dataImport.convertHtmlHint">文字欄若含 HTML 標籤就轉成 Markdown：絕對位址的 http(s)／mailto／tel 連結會原樣轉成 Markdown 連結保留下來，表示不出來的那些（相對路徑、javascript:、片段錨點）才會被移除並列在匯入結果裡。純文字資料原樣通過。</span>
+    </div>
+</div>
