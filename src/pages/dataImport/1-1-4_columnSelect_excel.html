@@ -5,6 +5,11 @@ titleKey: catalog.linkColumnSelect
 pageHeading: Excel 欄位對應
 permalink: 1-1-4_columnSelect_excel.html
 ---
+{# **時間錨點**（§6「全站只有一個現在」）：站台的「現在」是 **2026-07-14**，那個值由
+     `components/iso-review-wizard` 名單上「查詢時間：2026-07-14 09:00 UTC」那一格釘死——
+     這一頁畫得出的時間只有欄位預覽那一格的來源資料（`2024年12月1日 下午1時`）——那是**被匯入的
+     檔案內容**、不是站台事件，只受一條約束：早於「現在」。它同時是 date 槽格式警告的示範髒資料
+     （那個字面不合 `YYYY/MM/DD` 也不合 `YYYY-MM-DD`），所以不可以順手改成合法格式。 #}
 {# 欄位對應資料（多選/預覽兩欄共用）——依 §3-2/§6 由頁面提供，components/multi-select-box 只負責 for 渲染。
    固定槽 schema（title/content/source/date/category/number/flag/tags/privilege/note1..note10/date2/date3
    ＋不進索引的 internal_note——這份槽表、它的順序、槽數與各槽預設顯示名的正本是

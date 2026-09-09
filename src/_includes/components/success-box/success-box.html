@@ -1,3 +1,7 @@
+{# **時間錨點**（§6「全站只有一個現在」）：站台的「現在」是 **2026-07-14**，那個值由
+     `components/iso-review-wizard` 名單上「查詢時間：2026-07-14 09:00 UTC」那一格釘死——
+     本元件畫得出的時間是內建示範檔名前綴那顆落地時間戳。這張卡演的是「剛匯完」，所以它落在
+     「現在」那一天；停在更早的日期會讓同一張卡自己說兩件相反的事。 #}
 {# 上傳成功通知。參數由使用頁面 include 前 set（§6：會因頁面而異的資料不寫死在元件裡）：
      successRetryHref：左鈕的去向，**必填、無預設**（未給整顆鈕不畫，見下方 markup 的理由）；
      successRetryLabel / successRetryKey：左鈕字面（預設 再次上傳／comp.uploadAgain）
@@ -40,7 +44,7 @@
         <p><span data-i18n="comp.dataTotalLabel">資料總量：</span>{{ successDataCount or "90" }}<span data-i18n="comp.recordsUnit">筆</span></p>
         <p><span data-i18n="comp.fileSizeLabel">檔案大小：</span>{{ successFileSize or "4KB" }}</p>
         {% else %}
-        <p><span data-i18n="comp.fileNameLabel">檔案名稱：</span>{{ successFileName or "20251119105623_a3f19c_0_FAQ測試用.xlsx" }}</p>
+        <p><span data-i18n="comp.fileNameLabel">檔案名稱：</span>{{ successFileName or "20260714105623_a3f19c_0_FAQ測試用.xlsx" }}</p>
         <p><span data-i18n="comp.fileSizeLabel">檔案大小：</span>{{ successFileSize or "4KB" }}</p>
         <p><span data-i18n="comp.dataTotalLabel">資料總量：</span>{{ successDataCount or "90" }}<span data-i18n="comp.recordsUnit">筆</span></p>
         {% endif %}

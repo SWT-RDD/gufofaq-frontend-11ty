@@ -5,6 +5,10 @@ titleKey: catalog.linkUploadSuccessExcel
 pageHeading: Excel 匯入完成
 permalink: 1-1-6_uploadSuccess_excel.html
 ---
+{# **時間錨點**（§6「全站只有一個現在」）：站台的「現在」是 **2026-07-14**，那個值由
+     `components/iso-review-wizard` 名單上「查詢時間：2026-07-14 09:00 UTC」那一格釘死。
+     這一頁畫得出的時間是落地檔名前綴那顆時間戳＝**這一次匯入落地的時刻**，所以它落在「現在」
+     那一天：這一整頁說的是「剛剛匯完」。 #}
 {% set breadcrumbItems = [
   { label: "首頁", href: "2-1_qaRecord.html", i18nKey: "nav.home" },
   { label: "資料匯入", href: "1-1-1_dataImport.html", i18nKey: "nav.dataImport" },
@@ -50,7 +54,10 @@ permalink: 1-1-6_uploadSuccess_excel.html
      （預覽讀出幾列、匯入就寫幾列；同一次流程的第 2 步與第 4 步不可能各講一個數，§6）。
      這裡是基準：42KB ÷ 980 ≈ 43 B/列，對得上一份純文字的問答表；1-1-3 的分頁 total 取同一顆
      980。**不可以拿 115**——那是資料集那一層的檔案總數，換一個量綱來當這裡的分母。 #}
-{% set successFileName = "20251119105623_a3f19c_0_客服問答集.xlsx" %}
+{# 落地檔名的前綴時間戳＝**這一次匯入落地的時刻**，所以它必須落在站台的「現在」那一天
+     （見檔頭錨點）：這一整頁說的是「剛剛匯完」，而時間戳停在幾個月前的話，畫面同時說著
+     兩件相反的事，而且沒有任何一格看得出來是哪一個在說謊。 #}
+{% set successFileName = "20260714105623_a3f19c_0_客服問答集.xlsx" %}
 {% set successFileSize = "42KB" %}
 {% set successDataCount = "980" %}
 {% set successRetryHref = "1-1-1_dataImport.html" %}

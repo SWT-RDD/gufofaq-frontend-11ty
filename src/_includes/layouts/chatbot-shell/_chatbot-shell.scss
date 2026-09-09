@@ -1,4 +1,5 @@
-// 前台 FAQ chatbot 外殼框架（chatbot-wrap + chatbot-main）。純樣式元件（class 寫在 layouts/chatbot-shell）。
+// 前台 FAQ chatbot 外殼框架（chatbot-wrap + chatbot-main）。**這是 layout 自己的樣式檔、不是元件**
+// （§1-1：模板不是元件，它的樣式跟模板同住、不進全域 scss/）；markup 就在同資料夾的 chatbot-shell.html。
 // flex 直欄：header 流頂、footer 流底、中間 .chatbot-main 佔滿並內捲——footer 直接沿用主站 components/footer（無需絕對定位或高度魔術數字）。
 // body 不整頁捲：比照 §9 陷阱用 body.chatbot-page 限定，不寫全域 body{overflow:hidden}（那會關掉全站每頁的捲動）。
 body.chatbot-page {

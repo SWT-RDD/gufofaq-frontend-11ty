@@ -13,8 +13,11 @@
     }
 }
 
-/* 整頁捲軸（掛在 html 上）：6px，thumb 走 --scrollbar-thumb-strong。
-   整頁捲軸是唯一貫穿全螢幕的那一條，顏色要比元件內的捲軸重，否則在長頁面上找不到自己捲到哪。 */
+/* 細捲軸：6px，thumb 走 --scrollbar-thumb-strong。
+   這一顆的**主要消費點是整頁捲軸**（`_base.scss` 掛在 html 上）：它是唯一貫穿全螢幕的那一條，
+   顏色要比元件內的捲軸重，否則在長頁面上找不到自己捲到哪。
+   **另一個消費點是 `components/mobile-nav` 的選單面板**——它在窄視窗上等同整頁的捲動區，
+   所以走同一份重色，不另調一套。判準＝`grep -rn 'scrollbar()' src`。 */
 @mixin scrollbar() {
 
     /* 捲軸粗細（WebKit／Blink） */

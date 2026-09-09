@@ -1,8 +1,10 @@
 // layouts/base 的模板專屬樣式（§1-1：模板不是元件，它的樣式跟模板同住，不進全域 scss/）。
 //
 // markup 契約：`base.html` 的 `<div class="full-wrap">` 直接包住整頁（header / {{ content }} / footer），
-// 全站每一頁都經過它——`.main`（page-shell）與 `.chatbot-main`（chatbot-shell）的 `flex: 1 0 auto`
-// 就是靠這個 column flex 容器才撐得開頁尾。
+// 全站每一頁都經過它——`.main`（page-shell）的 `flex: 1 0 auto` 就是靠這個 column flex 容器才撐得開頁尾。
+// ⚠️ **前台聊天那一支不是靠它**：`chatbot-shell` 自己再開一層 `.chatbot-wrap`（滿版 column flex、
+// `overflow: hidden`），`.chatbot-main` 的 `flex: 1 1 auto` 撐的是那一層——兩者的 flex 值也不同
+// （`1 0 auto` 是「撐開但不壓縮」，`1 1 auto` 是「填滿且可壓縮」，後者才捲得動內部的訊息串）。
 //
 // **不放全域 `src/scss/`**：那一層是每個元件都要遵守的地基，而 `.full-wrap` 全站只有 base.html
 // 一個消費者，擺上去會被當成共用詞彙拿去套。
