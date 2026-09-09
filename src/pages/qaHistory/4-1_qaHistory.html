@@ -402,7 +402,10 @@ permalink: 4-1_qaHistory.html
                      沒有值落「無意見」（沒評過與評了「無意見」在畫面上是同一格，值域本來就只有三顆）；
                      三顆 key 就是同頁篩選 select 用的那三顆。 #}
                 <td>{% if row.rating == "positive" %}<span data-i18n="common.like">讚</span>{% elif row.rating == "negative" %}<span data-i18n="common.dislike">倒讚</span>{% else %}<span data-i18n="qa.ratingNoOpinion">無意見</span>{% endif %}</td>
-                <td>{{ row.date }}</td>
+                {# 這一欄是唯一可排序的欄（`data-column="date"`）⇒ 值要包在 `.cell-value` 裡：
+                     `ui/table-sort` 的排序鍵讀的是白名單值節點，少了它這一欄整欄會沉底。
+                     契約段見該元件檔頭的 ⓕ。 #}
+                <td><span class="cell-value">{{ row.date }}</span></td>
             </tr>
             {% else %}
             {# 空清單那一列。這一頁在執行期一開始就是空的（查詢之後才有資料），所以這一態不是邊角、

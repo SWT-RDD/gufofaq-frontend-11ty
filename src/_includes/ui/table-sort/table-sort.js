@@ -11,9 +11,9 @@
 // 行為規格（轉 React 時這就是規格）：
 //   三態循環 none → asc → desc → none（回到 markup 原始列序）。
 //   同一張表同時只有一顆欄在排序；換欄時前一顆回 none。
-//   排序鍵＝該格的**值節點**文字：格子扣掉 button／input／select／textarea／`.sr-only` 之後的
-//   textContent。格內幾乎都還有一顆收合鈕（`.collapse-toggle`「展開」），整格拿會把那三個字
-//   併進鍵裡——空格因此不再是空的、數字因此不再 parse 得出來（見 cellText 那一段）。
+//   排序鍵＝該格的**值節點**文字（白名單：`.cell-value` 或 `.collapse-body`，見 cellText 那一段）。
+//   格內幾乎都還有一顆收合鈕（`.collapse-toggle`「展開」），整格拿會把那三個字併進鍵裡——
+//   空格因此不再是空的、數字因此不再 parse 得出來。
 //   比較子：兩邊都 parse 得出數字就數值比，否則 `localeCompare`（`zh-Hant`，`numeric: true`，
 //   讓「檔案10」排在「檔案9」之後）。空字串與「—」一律沉底，不參與升降（缺值不是最小值）。
 //   狀態的唯一真相源是該欄 `<th>` 的 `aria-sort`（ascending／descending／none）——**不另掛狀態 class**：
@@ -71,8 +71,9 @@
 //       </tbody>
 //   </table>
 //
-// **③′ 單顆排序鈕的欄頭**（同一張表只有一顆可排序的欄）——`4-1_qaHistory`：名稱不必併讀欄名，
-//   鈕內自帶一顆 `.sr-only`「排序」，故欄名那顆 `<span>` 不需要 id、鈕也不需要 `aria-labelledby`：
+// **③′ 單顆排序鈕的欄頭 ＋ 它的值格**（同一張表只有一顆可排序的欄）——`4-1_qaHistory`：名稱不必
+//   併讀欄名，鈕內自帶一顆 `.sr-only`「排序」，故欄名那顆 `<span>` 不需要 id、鈕也不需要
+//   `aria-labelledby`。**值格要包 `.cell-value`**（見 ⓕ）：
 //
 //   <div class="th-sort">
 //       <span data-i18n="qa.conversationDate">對話日期</span>
@@ -81,6 +82,7 @@
 //           <span class="sr-only" data-i18n="common.sort">排序</span>
 //       </button>
 //   </div>
+//   <td><span class="cell-value">{{ row.date }}</span></td>
 //
 // **③″ 展示片段**（`ui/default-table`，元件庫頁）——同 ③′ 但欄名是裸文字、且 showcase 不翻，
 //   也沒有 `data-column`（那顆是業務 js 讀的欄鍵，展示片段沒有欄位資料可指）：
@@ -92,6 +94,7 @@
 //           <span class="sr-only">排序</span>
 //       </button>
 //   </div>
+//   <td><span class="cell-value">{{ row.date }}</span></td>
 //
 // **哪一型用在哪裡的判準**：同一張表有兩顆以上排序鈕 ⇒ 一定走 ③（`aria-labelledby` 併讀
 //   「欄名 ＋ 排序」），因為 §4 禁止同頁同名；只有一顆時 ③′／③″ 的內嵌 `.sr-only` 就夠。
@@ -114,12 +117,20 @@
 //      提供——那支才是 `.sort` 的樣式主人（§4：A 元件的 scss 不得出現 B 元件的 class）。
 //   ⓔ `fixed-layout` 不是本契約的一部分（那是 3-1-6 自己的欄寬決策）；4-1 與 `ui/default-table`
 //      的展示片段都沒有它，排序照樣運作。
+//   ⓕ **可排序那一欄的值要包在一顆白名單值節點裡**：`.cell-value`（裸值那一族）或
+//      `.collapse-body`（包了 `ui/collapse-text` 的那一族，型③）。兩顆都是本檔 `querySelector`
+//      的資料槽（§4 第①族：owning 元件自己 js 查的槽），樣式主人分別是——`.cell-value` 零樣式
+//      （純資料槽）、`.collapse-body` 是 `ui/collapse-text`。少了它排序鍵會退回「該格自己的直接
+//      文字節點」，那一層對格內的子元素免疫、但讀不到被包起來的值（整格只有一顆 `<span>` 時
+//      鍵會是空的 ⇒ 那一欄整欄沉底）。
 //
-// 住在哪一頁（雙向；判準＝`grep -rn 'class="sort"' src --include=*.html`，命中四檔——
-//   其中 `pages/components/component.html` 那一筆是說明散文、不是實例）：
-//   3-1-6（兩個面板，型③——src 是兩處 `{% for %}`，渲染後 13 顆）、4-1（型③′）、
-//   `ui/default-table` 的展示片段（型③″）。顆數只在需要區分 src 與 dist 時才寫，且兩個數字要各自標明是哪一邊。
-// 反查：`grep -rn 'class="sort"' src --include=*.html`。
+// 住在哪一頁（雙向）：
+//   正向＝`grep -rln 'class="sort"' src --include=*.html`（命中四檔，其中
+//     `pages/components/component.html` 那一筆是說明散文、不是實例）；
+//   反向＝`grep -l 'class="sort"' dist/*.html`（母體是 dist，§1-2）。
+//   型③ 在 3-1-6（兩個面板，src 是兩處 `{% for %}`）、型③′ 在 4-1、型③″ 在 `ui/default-table`
+//   的展示片段（只渲染到元件庫頁）。顆數只在需要區分 src 與 dist 時才寫，且兩個數字要各自標明
+//   是哪一邊；`grep -c 'class="sort"' dist/<那一頁>.html` 查得到當下的顆數。
 document.addEventListener("DOMContentLoaded", function () {
     var NONE = "none", ASC = "ascending", DESC = "descending";
 
@@ -147,17 +158,25 @@ document.addEventListener("DOMContentLoaded", function () {
     // 整格 textContent 於是是「值展開」——
     //   ‧ 空格變成「展開」⇒ 它不再是 isBlank，缺值沉底整條規則在那張表上失效；
     //   ‧ 「1200」變成「1200展開」⇒ numOf() 回 null，整欄從數值比退化成字串比。
-    // 兩者都不會報錯、只是順序不對，所以判準是**取值節點**：把格子複製一份、拿掉格內的
-    // 控制項（button／input／select／textarea）與純報讀文字（.sr-only），剩下的才是這一格的值。
-    // `<a>` 不拿掉：它常常就是那一格的值本身（4-1 的問句欄）。
+    // 兩者都不會報錯、只是順序不對，所以判準是**白名單的取值節點**，兩層：
+    //   ① 格內有 `.cell-value`／`.collapse-body` 就讀它（契約段點名的那兩顆）。
+    //   ② 沒有值節點時只取該格**自己的直接文字節點**，不含任何子元素。
+    // 為什麼不用黑名單（「把 button／input／select／textarea／.sr-only 刪掉」）：沒列到的那一族
+    // 照樣混進鍵裡，而漏列不會報錯、只會讓順序悄悄不對。徽章就是現成的例子——4-1 的
+    // 「使用者類型」欄已經掛著 `<span class="verdict-tag is-muted">QA 直答</span>`，哪天那一欄
+    // 加一顆 `.sort`，黑名單會把徽章的字一起算進鍵裡。直接文字節點那一層對任何新增的
+    // 子元素都免疫，不必回頭維護一份清單。
     // 用 textContent 而不是 innerText：後者受 CSS 影響，而收合中的 collapse-text 內容仍是這一列的值。
-    var CHROME = "button, input, select, textarea, .sr-only";
+    var VALUE_NODE = ".cell-value, .collapse-body";
     function cellText(row, index) {
         var cell = row.children[index];
         if (!cell) return "";
-        var clone = cell.cloneNode(true);
-        clone.querySelectorAll(CHROME).forEach(function (el) { el.remove(); });
-        return clone.textContent.trim();
+        var value = cell.querySelector(VALUE_NODE);
+        if (value) return value.textContent.trim();
+        var own = "";
+        for (var i = 0; i < cell.childNodes.length; i++)
+            if (cell.childNodes[i].nodeType === 3) own += cell.childNodes[i].nodeValue;
+        return own.trim();
     }
 
     document.querySelectorAll(".default-table").forEach(function (table) {

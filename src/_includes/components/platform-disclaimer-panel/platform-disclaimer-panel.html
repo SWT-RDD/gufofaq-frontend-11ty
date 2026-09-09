@@ -74,6 +74,11 @@ AI內容生成的性質
             <button type="button" class="button button-border button-sm js-disclaimer-restore" data-platform-role="admin" id="disclaimerRestore-{{ v.no }}" aria-labelledby="disclaimerVersionNo-{{ v.no }} disclaimerRestore-{{ v.no }}" data-toast="已還原此版本|還原失敗，請稍後再試" data-i18n-data-toast="toast.restoreDisclaimer" data-toast-type="success|error" data-i18n="action.restore">還原此版本</button>
             {% endif %}
         </div>
+        {% else %}
+        {# 空狀態（§5 判準③：空集合是合法回應——平台還沒存過任何一版，那是開站第一天的常態）。
+             清單型的非表格版走置中灰字的 `<div>`（§5 無資料列正典）。句子要說得出「空著代表什麼」
+             與「下一步按哪裡」：下一步就是同一塊的儲存鈕，引號內逐字等於 `platform.saveDisclaimer`（§4-2）。 #}
+        <div class="text-center text-gray" data-i18n="platform.noDisclaimerVersions">這份免責聲明還沒有存過任何一版。按上面的「儲存免責聲明」會建立第 1 版；在那之前，每一頁頁尾的免責聲明窗裡是空的。</div>
         {% endfor %}
     </div>
 </div>

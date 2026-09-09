@@ -212,6 +212,13 @@ export function tableSortFixture(node, root, rows, shape) {
             const toggle = node("button", "collapse-toggle"); toggle.textContent = "展開";
             wrap.append(body, toggle);
             c1.append(wrap);
+        } else if (shape === "badge") {
+            // 生產形狀的第三型：值節點旁邊還有一顆徽章（4-1 的「使用者類型」欄就長這樣）。
+            // 黑名單扣除法（把 button／input／.sr-only 刪掉）對它無效——徽章是 `<span>`，
+            // 沒被列到，它的字會混進排序鍵裡。
+            const value = node("span", "cell-value"); value.textContent = val;
+            const badge = node("span", "verdict-tag"); badge.textContent = "直答";
+            c1.append(value, badge);
         } else c1.textContent = val;
         tr.append(c0, c1);
         tbody.appendChild(tr);

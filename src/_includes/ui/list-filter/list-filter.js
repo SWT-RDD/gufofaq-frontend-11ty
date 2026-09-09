@@ -91,7 +91,7 @@
 //                                   <span>{{ dataset.label }}</span>
 //                               </label>
 //                               {% else %}
-//                               <div class="text-center text-gray" data-i18n="dataset.noSelectableDatasets">這個租戶還沒有資料集可以選。先到「資料集管理」建一個並匯入資料。</div>
+//                               <div class="text-center text-gray" data-i18n="dataset.noSelectableDatasets">這個租戶還沒有資料集可以選。先到「資料集列表」建一個並匯入資料。</div>
 //                               {% endfor %}
 //                           </div>
 //                       </div>
@@ -131,7 +131,7 @@
 //                   <span>{{ row.name }}</span>
 //               </label>
 //               {% else %}
-//               <div class="text-center text-gray" data-i18n="dataset.noSelectableDatasets">這個租戶還沒有資料集可以選。先到「資料集管理」建一個並匯入資料。</div>
+//               <div class="text-center text-gray" data-i18n="dataset.noSelectableDatasets">這個租戶還沒有資料集可以選。先到「資料集列表」建一個並匯入資料。</div>
 //               {% endfor %}
 //           </div>
 //       </div>

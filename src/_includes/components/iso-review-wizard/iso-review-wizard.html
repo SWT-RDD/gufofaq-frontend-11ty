@@ -365,13 +365,20 @@
                     </tr>
                 </thead>
                 <tbody>
+                    {# 兩支迴圈都跑完仍是零列時要有一句話（§5 判準③：空集合是合法回應——
+                         preview 零命中時確認鈕仍按得下，送出的就是一份空名單）。
+                         **包在同一個 `{% if %}` 裡、不逐迴圈各給 `{% else %}`**：兩支只有一支空時
+                         會多印一列空狀態，而那一列說的是假話。 #}
+                    {% if isoReviewOkResults.length > 0 or isoReviewFailResults.length > 0 %}
                     {% for r in isoReviewOkResults %}
                     <tr data-tenant-id="{{ r.tenantId }}">
                         <td>{{ r.name }}</td>
                         <td class="text-bold" data-i18n="platform.resultOk">成功</td>
-                        {# 成功那一筆**根本沒有錯誤欄**（只有租戶編號、名稱、成敗）⇒ 畫「—」，
-                             不是留白：同表另一欄（preview 的「已凍結」）與 5-6-3 的撤銷者欄都是這個畫法。 #}
-                        <td>{% if r.error %}{{ r.error }}{% else %}—{% endif %}</td>
+                        {# 成功那一筆**定義上沒有錯誤欄**（回來的只有租戶編號、名稱、成敗）⇒ 直接畫「—」，
+                             不是留白：同表另一欄（preview 的「已凍結」）與 5-6-3 的撤銷者欄都是這個畫法。
+                             **不對它做真值判斷**：`{% if r.error %}{{ r.error }}` 是把 code 原樣印出來的那條路
+                             （檔頭逐字禁止它——資料存 code、顯示走 i18n key），而成功列上那個欄位根本不存在。 #}
+                        <td>—</td>
                     </tr>
                     {% endfor %}
                     {% for r in isoReviewFailResults %}
@@ -380,10 +387,15 @@
                         <td class="text-bold text-red" data-i18n="platform.resultFail">失敗</td>
                         {# 封閉枚舉（見檔頭的五顆 code）⇒ `{% if %}` 鏈 ＋ i18n key，資料存 code 字面。
                              末支不是「其他」的裝飾：`review_action_failed` 與其餘自帶 code 的拒絕理由
-                             都落在這裡，所以它要講得出「原因不在上面那幾種」而不是假裝知道原因。 #}
-                        <td>{% if r.error == "tenant_not_found" %}<span data-i18n="platform.reviewFailTenantNotFound">這個租戶已經不在了——名單是查詢當下的快照，重新拉一次逾期清單再送。</span>{% elif r.error == "cannot_delete_own_tenant" %}<span data-i18n="platform.reviewFailOwnTenant">這一筆是你自己所屬的租戶，平台管理員不能對它做這個處置——把那一筆取消勾選再送一次。</span>{% elif r.error == "upstream_unavailable" %}<span data-i18n="platform.reviewFailUpstream">檢索服務沒有回應，這一筆沒有處置成功——稍後重送，或聯絡維運。</span>{% elif r.error == "internal_error" %}<span data-i18n="platform.reviewFailInternal">這一筆遇到未預期的錯誤，處置沒有完成——完整例外在伺服器日誌裡，請聯絡維運。</span>{% else %}<span data-i18n="platform.reviewFailOther">這一筆的處置沒有完成，原因不在上面那幾種——請聯絡維運，並提供這一列的租戶編號。</span>{% endif %}</td>
+                             都落在這裡，所以它要講得出「回來的代碼不是這份規格認得的那幾顆」而不是假裝知道原因。 #}
+                        <td>{% if r.error == "tenant_not_found" %}<span data-i18n="platform.reviewFailTenantNotFound">這個租戶已經不在了——名單是查詢當下的快照，重新拉一次逾期清單再送。</span>{% elif r.error == "cannot_delete_own_tenant" %}<span data-i18n="platform.reviewFailOwnTenant">這一筆是你自己所屬的租戶，平台管理員不能對它做這個處置——把那一筆取消勾選再送一次。</span>{% elif r.error == "upstream_unavailable" %}<span data-i18n="platform.reviewFailUpstream">檢索服務沒有回應，這一筆沒有處置成功——稍後重送，或聯絡維運。</span>{% elif r.error == "internal_error" %}<span data-i18n="platform.reviewFailInternal">這一筆遇到未預期的錯誤，處置沒有完成——完整例外在伺服器日誌裡，請聯絡維運。</span>{% else %}<span data-i18n="platform.reviewFailOther">這一筆的處置沒有完成，而回來的原因代碼不是這份規格認得的任何一種——請聯絡維運，並提供這一列的租戶編號。</span>{% endif %}</td>
                     </tr>
                     {% endfor %}
+                    {% else %}
+                    <tr>
+                        <td colspan="3" class="text-center text-gray" data-i18n="platform.reviewNoResults">這一次沒有任何租戶被處置——送出時名單是空的。ISO 稽核要的是「跑過、零筆」這件事本身，所以這一頁照樣留存。</td>
+                    </tr>
+                    {% endif %}
                 </tbody>
             </table>
         </div>

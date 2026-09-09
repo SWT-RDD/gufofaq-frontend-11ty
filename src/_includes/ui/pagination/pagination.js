@@ -8,7 +8,7 @@
 // `hamburgerHidden()` 哲學）；也因此 resize 時只有跨過斷點才需要重繪（見檔尾）。
 // `.page-info` 的數字由 js 填總頁數，兩側標籤（共／頁）是 markup 原生的 `data-i18n` 節點，
 // 不是 js 產生的字串，所以不必再走 `GufoI18n.t`。
-// **省略號是可點的**：固定跳 ±3 頁、clamp 在 1～totalPages，外觀仍是「...」（不 hover 變箭頭），
+// **省略號是可點的**：固定跳 ±3 頁、clamp 在 1～totalPages，外觀仍是「…」（不 hover 變箭頭），
 // 靠同一顆 `data-page` 吃到跟頁碼一樣的委派與 hover 回饋——一顆看得到卻按不動的省略號就是 §5 的死鈕。
 // i18n：per-page aria-label（第N頁）、prev/next 兩態標籤、省略號的跳頁 aria-label，由 GufoI18n.t(key, 繁中原文) 產生；
 // 監聽 gufo:langchange 依「當下 data-current」重新 render，讓切語言後的頁碼列也是對的語言。
@@ -55,10 +55,10 @@ document.addEventListener("DOMContentLoaded", function () {
         return '<li><button type="button" data-page="' + n + '" aria-label="' + pageLabel(n) + '">' + n + '</button></li>';
     }
 
-    // 省略號可點，固定跳 ±3 頁（clamp 在 1~totalPages）。外觀不變（仍顯示 "..."，不 hover 變箭頭符號），
+    // 省略號可點，固定跳 ±3 頁（clamp 在 1~totalPages）。外觀不變（仍顯示「…」，不 hover 變箭頭符號），
     // data-page 吃到跟頁碼一樣的委派與 hover 回饋，不必另寫點擊處理。
     function ellipsisLi(target, label) {
-        return '<li class="ellipsis"><button type="button" data-page="' + target + '" aria-label="' + label + '">...</button></li>';
+        return '<li class="ellipsis"><button type="button" data-page="' + target + '" aria-label="' + label + '">…</button></li>';
     }
 
     function render(el) {

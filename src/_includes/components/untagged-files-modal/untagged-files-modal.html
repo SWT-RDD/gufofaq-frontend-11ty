@@ -36,7 +36,7 @@
 {# 示範資料變數用元件專屬名 `untaggedFileRowsDemo`（不用泛用名）——**它與 `untaggedFileRows` 是兩個東西**：
      前者是元件內建的示範清單，後者是使用頁覆寫用的參數名（見下方那行 `is defined` 的分派）。
      `{% set %}` 是頁面全域（§2/§6）。
-     與 5-10 的示範資料自洽（GUIDELINE §6）：`業務範疇` 未標註 14 筆，故 total=14、
+     與 5-10 的示範資料自洽（GUIDELINE §6）：`業務面向` 未標註 14 筆，故 total=14、
      每頁 10 筆 ⇒ 共 2 頁，這一頁列 3 筆代表性資料（切版只演形狀，不列滿 10 列）。
      第三筆演的是 **文件名稱為 null** 那一態（見檔頭）：`docName` 這個鍵整個不給，
      渲染出短標記，而識別碼那一欄照樣指得到人。 #}
@@ -70,11 +70,11 @@
                 <div class="modals-header">
                     {# 標題帶維度名稱：這個窗一次只講一個維度，而使用者是從表格某一列點進來的——不寫的話，
                          同時開過兩三個維度之後回頭看，畫面上沒有任何東西說得出這是哪一個。名稱是**資料槽**
-                         （由 React 填），示範值＝`業務範疇`，與下面那 14 筆同一個維度（§6 自洽）。
+                         （由 React 填），示範值＝`業務面向`，與下面那 14 筆同一個維度（§6 自洽）。
                          **破折號在槽外面**：那是版面的分隔符、不是維度名稱的一部分。放進槽裡的話，React
                          要嘛連分隔符一起寫（版面跑進資料裡），要嘛只寫名稱而分隔符當場消失——同 §4-2
                          「前後綴自帶分隔、值獨立成節點」的理由（正典：pagination 的 totalPrefix／totalSuffix）。 #}
-                    <h3 class="modals-title" id="untaggedFilesModal-title"><span data-i18n="settings.untaggedFiles">未標註文件</span> — <span class="js-untagged-dimension-name">業務範疇</span></h3>
+                    <h3 class="modals-title" id="untaggedFilesModal-title"><span data-i18n="settings.untaggedFiles">未標註文件</span> — <span class="js-untagged-dimension-name">業務面向</span></h3>
                 </div>
                 <div class="modals-body">
                     <div class="untagged-files-list">

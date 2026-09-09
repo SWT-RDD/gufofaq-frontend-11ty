@@ -487,8 +487,8 @@ permalink: 2-2-3_abTest.html
                  定案的語意，不要「優化」成整回合只扣一次。共用單測那一句會讓這一頁把兩次說成
                  一次（§4-2：行為不同就分 key，即使句型相同）。
                  「失敗也不退」與 chatroom 那一段講的是同一件事。 #}
-            <p class="text-gray" data-i18n="qaTest.quotaWarnAb">每按一次送出會同時問 A、B 兩側，也就是兩次真的問答：一次扣掉兩次問答額度，而且失敗也不退還。</p>
             <div class="qa-count"><span data-i18n="comp.qaCount">問答次數：</span>12/3000<span data-i18n="comp.extractionCount">，萃取次數：</span>3/1000</div>
+            <p class="text-gray" data-i18n="qaTest.quotaWarnAb">每按一次送出會同時問 A、B 兩側，也就是兩次真的問答：一次扣掉兩次問答額度，而且失敗也不退還。</p>
             <div class="chat-input-container">
                 <div class="input-wrap">
                     <div class="form-group chat-input-field">
@@ -525,8 +525,12 @@ permalink: 2-2-3_abTest.html
 </div>
 
 {# 參考來源表格區塊：與 2-2-1_singleTest 版本差異僅在標頭以 .js-sources-side 標示目前檢視的是哪一側（設定A/B），
-     來源列資料 set sources（示範 2 筆）同樣交給 components/sources-block 內嵌 for 渲染。
-     來源主題與本頁對話/agent 軌跡自洽（§6）：問的是 UH3240 規格，引用的就是產品規格書片段。 #}
+     來源列資料 set sources 同樣交給 components/sources-block 內嵌 for 渲染。
+     來源主題與本頁對話/agent 軌跡自洽（§6）：問的是 UH3240 規格，引用的就是產品規格書片段。
+     **列數要對得上這一側的檢索筆數**：A 側的 step-flow 節點寫著「命中 8 筆」，這張表列的就是那
+     8 筆（`sourceNo` 連續 1–8，見 `components/sources-block` 檔頭「號碼不會跳號」那一段）；
+     答案裡的 [[1]]／[[4]] 是其中被引用的那兩筆。只列被引用的那兩列的話，畫面會宣稱「取用 8 筆」
+     而表上只有兩列（§6）。靜態稿畫的是 A 側，B 側的那一批由執行期換過去。 #}
 {% set sources = [
     {
         sourceNo: 1,
@@ -540,12 +544,76 @@ permalink: 2-2-3_abTest.html
         ]
     },
     {
+        sourceNo: 2,
+        file: "spec_uh3240_chunk09_20240829024531_UH3240_USB-C多埠集線器規格書9頁.xlsx",
+        dataset: "產品規格 測試",
+        title: "UH3240 外觀與尺寸",
+        date: "2024/08/29 02:45:31",
+        content: "本體尺寸 112 × 46 × 15 mm，重量 96 g；鋁合金外殼，線長 20 cm 不可拆。",
+        fields: [
+            { label: "參考資料", value: "UH3240 規格書 v2.1" }
+        ]
+    },
+    {
+        sourceNo: 3,
+        file: "spec_uh3240_chunk10_20240829024533_UH3240_USB-C多埠集線器規格書10頁.xlsx",
+        dataset: "產品規格 測試",
+        title: "UH3240 相容性清單",
+        date: "2024/08/29 02:45:33",
+        content: "已驗證於 Windows 11、macOS 14 與 ChromeOS 122；Thunderbolt 3／4 主機以 USB-C 相容模式運作。",
+        fields: [
+            { label: "參考資料", value: "UH3240 規格書 v2.1" }
+        ]
+    },
+    {
         sourceNo: 4,
         file: "spec_uh3240_chunk13_20240829024538_UH3240_USB-C多埠集線器規格書13頁.xlsx",
         dataset: "產品規格 測試",
         title: "UH3240 連接埠配置",
         content: "擴充埠配置：2× USB Type-A（5Gbps）、1× HDMI 2.0、1× USB-C DC-in；本體 USB-C 上行埠支援筆電直連與行動裝置。",
         fields: []
+    },
+    {
+        sourceNo: 5,
+        file: "spec_uh3240_chunk14_20240829024540_UH3240_USB-C多埠集線器規格書14頁.xlsx",
+        dataset: "產品規格 測試",
+        title: "UH3240 供電與充電行為",
+        date: "2024/08/29 02:45:40",
+        content: "上行埠接入 100W 變壓器時，本體保留 8W、其餘 92W 傳遞給主機；未接變壓器時由主機供電，USB-A 每埠上限 900mA。",
+        fields: [
+            { label: "參考資料", value: "UH3240 規格書 v2.1" }
+        ]
+    },
+    {
+        sourceNo: 6,
+        file: "spec_uh3240_chunk15_20240829024542_UH3240_USB-C多埠集線器規格書15頁.xlsx",
+        dataset: "產品規格 測試",
+        title: "UH3240 顯示輸出限制",
+        date: "2024/08/29 02:45:42",
+        content: "單一 HDMI 輸出：4K@60Hz 需主機支援 DP Alt Mode 1.4；僅支援 1.2 時降為 4K@30Hz。不支援雙螢幕延伸。",
+        fields: [
+            { label: "參考資料", value: "UH3240 規格書 v2.1" }
+        ]
+    },
+    {
+        sourceNo: 7,
+        file: "spec_uh3240_chunk18_20240829024546_UH3240_USB-C多埠集線器規格書18頁.xlsx",
+        dataset: "產品規格 測試",
+        title: "UH3240 保固與維修",
+        date: "2024/08/29 02:45:46",
+        content: "保固兩年，人為損壞與線材斷裂不在保固範圍；維修送修前需附購買證明。",
+        fields: []
+    },
+    {
+        sourceNo: 8,
+        file: "spec_uh3240_chunk21_20240829024549_UH3240_USB-C多埠集線器規格書21頁.xlsx",
+        dataset: "產品規格 測試",
+        title: "UH3240 常見問題",
+        date: "2024/08/29 02:45:49",
+        content: "接上後外接螢幕無訊號：先確認主機的 USB-C 埠支援 DP Alt Mode，再更換 HDMI 線並重新插拔上行埠。",
+        fields: [
+            { label: "參考資料", value: "UH3240 規格書 v2.1" }
+        ]
     }
 ] %}
 {% set sourcesHidden = true %}

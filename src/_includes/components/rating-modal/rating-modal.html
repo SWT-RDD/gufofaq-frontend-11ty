@@ -22,8 +22,17 @@
        ratingModalToast / ...Key / ...Type          —— 送出鈕的結果（不給＝前台的三段）
        ratingCapability                             —— 送出鈕的能力閘門（§4）。後台兩頁（4-2／2-2-3）都給
                                                       "history"（後台的評分要有問答紀錄這項能力才按得動）；
-                                                      前台 faq 不給＝匿名無閘門，那是對的。
-     一個參數都不給＝前台現況逐字不變。 #}
+                                                      前台 faq 不給——匿名訪客身上沒有能力可以判。
+       ratingTenantFeature                          —— 送出鈕的**租戶功能開通**軸（§4），預設 "history"。
+                                                      **只在沒給 `ratingCapability` 時渲染**：能力軸已經
+                                                      涵蓋租戶開通那一道，兩軸一起標是把同一句話說兩遍。
+                                                      前台匿名那一份沒有能力可以判，這一軸就要自己標——
+                                                      它判的是租戶不是主體，整個租戶的問答紀錄功能被平台
+                                                      關掉時，這顆鈕在 markup 上不能與「永遠可用」長得
+                                                      一模一樣。同頁的分享鈕（`.js-share-message`）標的
+                                                      就是同一顆鍵。
+     不給參數＝標題／問句／toast 三處走前台預設字面；前台那一份另由 `components/faq-chatroom`
+     給 `ratingModalNote`／`ratingModalNoteKey`（那一句告訴訪客評分會被站方看到、且會覆寫上一次）。 #}
 <dialog class="modals" id="likeModal" aria-labelledby="likeModal-title">
     <div class="modals-dialog modals-md">
         <div class="modals-wrap">
@@ -69,7 +78,10 @@
                 <div class="modals-footer">
                     <div class="button-row center">
                         <button type="button" class="button button-border btn-close-modals" data-i18n="action.cancel">取消</button>
-                        <button type="button"{% if ratingCapability %} data-capability="{{ ratingCapability }}"{% endif %} class="button button-primary" data-toast="{{ ratingModalToast or '已送出回饋，感謝您！|請先選擇這個回答有沒有幫助|送出失敗，請稍後再試' }}" data-i18n-data-toast="{{ ratingModalToastKey or 'toast.feedback' }}" data-toast-type="{{ ratingModalToastType or 'success|warning|error' }}" data-i18n="action.submit">送出</button>
+                        {# 授權軸：能力軸本身已經涵蓋租戶開通那一道（§4），所以後台那兩頁只標
+                             `data-capability`；**前台匿名那一份沒有能力可以判，租戶開通那一軸就要自己標**
+                             ——它判的是租戶不是主體，公開入口照樣標得出來、也照樣要標（§4）。 #}
+                        <button type="button"{% if ratingCapability %} data-capability="{{ ratingCapability }}"{% else %} data-tenant-feature="{{ ratingTenantFeature or 'history' }}"{% endif %} class="button button-primary" data-toast="{{ ratingModalToast or '已送出回饋，感謝您|請先選擇這個回答有沒有幫助|送出失敗，請稍後再試|本站沒有開通問答紀錄，這則回饋送不出去，請聯絡本網站管理者。' }}" data-i18n-data-toast="{{ ratingModalToastKey or 'toast.feedback' }}" data-toast-type="{{ ratingModalToastType or 'success|warning|error|warning' }}" data-i18n="action.submit">送出</button>
                     </div>
                 </div>
             </div>

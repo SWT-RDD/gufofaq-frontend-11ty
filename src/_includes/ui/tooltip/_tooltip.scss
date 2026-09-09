@@ -1,17 +1,28 @@
 //
-// **生產契約**（§1-2）：`tooltip.html` 是展示片段，而生產的 `.has-tooltip` **一定是一顆圖示鈕**，
-// 那顆鈕自己的可及名稱不能靠 tooltip 那一段文字（tooltip 是視覺提示、不是名稱）。逐字取自 5-8：
+// **生產契約**（§1-2）：`tooltip.html` 是展示片段，而生產的 `.has-tooltip` **一定是一顆圖示鈕**。
+// `.tooltip` 只是 `opacity: 0`（不是 `display:none`、也不掛 `aria-hidden`），所以它**在無障礙樹上、
+// 就是那顆鈕的可及名稱**（§4：按鈕內的文字算可及名稱）。逐型各一段完整 markup：
+//
+// **① 迴圈內**（逐列同型鈕，可及名稱要併讀列脈絡）——逐字取自 5-8：
 //
 //   <button type="button" id="widgetTokenCopyKey-{{ row.id }}" aria-labelledby="widgetTokenRowName-{{ row.id }} widgetTokenCopyKey-{{ row.id }}" class="button-icon copy copyBtn has-tooltip" data-toast="金鑰已複製|複製失敗，請手動選取後複製" data-i18n-data-toast="toast.copyKey" data-toast-type="success|error">
 //       <span class="tooltip" data-i18n="action.copy">複製</span>
 //   </button>
 //
+// **①′ 不在迴圈裡**（同一個範圍內只有這一顆，`.tooltip` 自己就是名稱、不另加 `aria-labelledby`）
+//   ——逐字取自 `src/login.html` 的密碼欄：
+//
+//   <button type="button" class="button-icon watch has-tooltip field-tail-btn" data-reveal-target="password" data-text-show="顯示" data-text-hide="隱藏" data-key-show="extractKey.show" data-key-hide="extractKey.hide">
+//       <span class="tooltip" data-i18n="extractKey.show">顯示</span>
+//   </button>
+//
 // 抄的時候一個都不能省：
-//   ⓐ `.tooltip` 那一段**要有 `data-i18n`**——它是可見 chrome。
-//   ⓑ 鈕住在 `{% for %}` 裡時，可及名稱走 `aria-labelledby="<本列辨識欄> <本鈕自己>"`（§4）；
-//      不在迴圈裡且沒有可見字面時，`.tooltip` 之外另補一顆 `.sr-only`（正典 `ui/button` 的
-//      `.button-icon.copy`，那一份 markup 寫在 `ui/button` 的展示片段裡）。
-//   ⓒ 送 API 的那一族照 §5 ③ 掛 `data-toast` 三件套 ＋ 宣告閘門。
+//   ⓐ `.tooltip` 那一段**要有 `data-i18n`**——它同時是可見 chrome 與可及名稱。
+//   ⓑ **不要再補一顆同字面的 `.sr-only`**：兩顆都在無障礙樹上，報讀器會把同一個詞唸兩次
+//      （「顯示 顯示」）。要另加 `.sr-only` 的只有一種情形——同一個範圍內有兩顆字面相同、
+//      語意不同的 `.has-tooltip`，而那時加的是**區辨字**、不是同一個詞的第二份。
+//   ⓒ 迴圈內走型①的 `aria-labelledby="<本列辨識欄> <本鈕自己>"`（§4：逐列同型鈕不得同名）。
+//   ⓓ 送 API 的那一族照 §5 ③ 掛 `data-toast` 三件套 ＋ 宣告閘門。
 //
 // **這幾條要知道理由（改動前先讀）**：
 //   ① 色值走語意 token（`--tooltip-bg`／`--tooltip-text` 這一對，深色模式跟著換）。

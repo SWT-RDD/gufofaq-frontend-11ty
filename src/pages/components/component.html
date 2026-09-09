@@ -1189,7 +1189,12 @@ bodyClass: guideline-page
                 <p class="text-red m-0" data-i18n="platform.reviewFailTenantNotFound">這個租戶已經不在了——名單是查詢當下的快照，重新拉一次逾期清單再送。</p>
                 <p class="text-red m-0" data-i18n="platform.reviewFailOwnTenant">這一筆是你自己所屬的租戶，平台管理員不能對它做這個處置——把那一筆取消勾選再送一次。</p>
                 <p class="text-red m-0" data-i18n="platform.reviewFailInternal">這一筆遇到未預期的錯誤，處置沒有完成——完整例外在伺服器日誌裡，請聯絡維運。</p>
-                <p class="text-red m-0" data-i18n="platform.reviewFailOther">這一筆的處置沒有完成，原因不在上面那幾種——請聯絡維運，並提供這一列的租戶編號。</p>
+                <p class="text-red m-0" data-i18n="platform.reviewFailOther">這一筆的處置沒有完成，而回來的原因代碼不是這份規格認得的任何一種——請聯絡維運，並提供這一列的租戶編號。</p>
+                {# 結果表「一列都沒有」那一態：preview 零命中時確認鈕仍按得下，送出的就是一份空名單。
+                     它走的是 `{% if %}…{% else %}`（兩支迴圈只有一支空時，逐迴圈各給 `{% else %}`
+                     會多印一列說假話的空狀態），所以 for-else 那條結構性豁免碰不到它——
+                     這一區是它唯一的可見處（§5 第二條路）。 #}
+                <p class="text-gray m-0" data-i18n="platform.reviewNoResults">這一次沒有任何租戶被處置——送出時名單是空的。ISO 稽核要的是「跑過、零筆」這件事本身，所以這一頁照樣留存。</p>
                 {# 2-2-5 的終止鈕**兩態**：它只在 `status == "running"` 時出現，而那一頁演的是
                      已經中斷的執行 ⇒ 兩顆在使用頁上都畫不到。中間那一態（「終止中…」）尤其重要：
                      終止是在案例邊界收手，按下去之後那一輪還會把手上這一則跑完——沒有這一態，
@@ -1463,7 +1468,7 @@ bodyClass: guideline-page
                      還沒建過知識庫。後台那一句要指得出下一步（去匯入第一批資料）；**前台不另立第二顆
                      key**——訪客分不出「還沒建」與「設定成不使用」，能做的也是同一件事（告訴管理者），
                      兩句話在他眼裡是同一句（§4-2：繁中原文相同的 chrome 沿用既有 key，不另立）。 #}
-                <p class="text-red m-0" data-i18n="ask.noIndexes">這個租戶還沒有建立任何知識庫，所以問不到東西。先到「資料集管理」匯入第一批資料。</p>
+                <p class="text-red m-0" data-i18n="ask.noIndexes">這個租戶還沒有建立任何知識庫，所以問不到東西。先到「資料集列表」匯入第一批資料。</p>
                 {# **跨頁通用的執行期防線**：React 端拿到的回應與契約對不上時，那一區不硬畫、換上這一句。
                      它沒有固定的家（哪一區都可能發生），所以切版這一側只定文案與字色，不定位置——
                      這是它唯一的可見處。下一步要講得出來：重新整理通常就好，還是一樣就得有人去看

@@ -249,11 +249,45 @@ permalink: 2-2-1_singleTest.html
 {% include "components/step-flow/step-flow.html" %}
 
 {# 參考來源表格區塊：這一區預設 hidden，執行期要點訊息列的「查看來源」才展開；表頭與
-     components/sources-block 一致，來源列資料 set sources（示範 2 筆）交給該元件內嵌的 for
-     渲染（同 2-1_qaRecord.html 的作法）。
+     components/sources-block 一致，來源列資料 set sources 交給該元件內嵌的 for 渲染
+     （同 2-1_qaRecord.html 的作法，兩頁演的是同一則問答的同一批片段）。
+     **這張表列的是這一輪「取用」的每一筆**：元件那句 `qa.citationHint` 逐字這樣寫，而抬頭
+     「挑選規則 16 取 8」數的就是列數——只列被引用的那兩列，畫面會同時說兩件事（§6）。
      **sourceNo 就是上面那則答案裡的兩個 [[N]]**（3 與 7，見 components/chatroom 的示範答案）：
      「序號」欄與引用標記是同一組號碼（見 components/sources-block 檔頭）。 #}
 {% set sources = [
+    {
+        sourceNo: 1,
+        file: "vector8_chunk712_20240829024531_111-1021-1-_入出國及法令彙編1665頁.xlsx",
+        dataset: "法規彙編",
+        title: "結婚登記應備文件與辦理地點",
+        date: "2023/10/18 09:12:44",
+        content: "內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字",
+        fields: [
+            { label: "參考資料", value: "來源名稱" },
+            { label: "法規類別", value: "居留與定居" }
+        ],
+        attribution: [
+            { label: "承辦組室", value: "移民輔導組" },
+            { label: "業務範疇", value: "居留與定居" }
+        ]
+    },
+    {
+        sourceNo: 2,
+        file: "vector8_chunk715_20240829024532_111-1022-2-_入出國及法令彙編1668頁.xlsx",
+        dataset: "法規彙編",
+        title: "外籍配偶單身證明之驗證程序",
+        date: "2023/10/26 16:40:07",
+        content: "內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字",
+        fields: [
+            { label: "參考資料", value: "來源名稱" },
+            { label: "法規類別", value: "居留與定居" }
+        ],
+        attribution: [
+            { label: "承辦組室", value: "移民輔導組" },
+            { label: "業務範疇", value: "居留與定居" }
+        ]
+    },
     {
         sourceNo: 3,
         file: "vector8_chunk718_20240829024537_111-1021-5-_入出國及法令彙編1671頁.xlsx",
@@ -264,6 +298,58 @@ permalink: 2-2-1_singleTest.html
         fields: [
             { label: "參考資料", value: "來源名稱" },
             { label: "法規類別", value: "居留與定居" }
+        ],
+        attribution: [
+            { label: "承辦組室", value: "移民輔導組" },
+            { label: "業務範疇", value: "居留與定居" }
+        ]
+    },
+    {
+        sourceNo: 4,
+        file: "vector8_chunk720_20240829024534_111-1024-4-_入出國及法令彙編1673頁.xlsx",
+        dataset: "法規彙編",
+        title: "境外結婚證明文件之驗證與譯本",
+        date: "2023/11/08 10:22:19",
+        content: "內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字",
+        fields: [
+            { label: "參考資料", value: "來源名稱" },
+            { label: "法規類別", value: "居留與定居" }
+        ],
+        attribution: [
+            { label: "承辦組室", value: "移民輔導組" },
+            { label: "業務範疇", value: "居留與定居" }
+        ]
+    },
+    {
+        sourceNo: 5,
+        file: "vector8_chunk721_20240829024535_111-1025-5-_入出國及法令彙編1674頁.xlsx",
+        dataset: "法規彙編",
+        title: "跨國婚姻面談作業要點",
+        date: "2023/11/15 14:05:52",
+        content: "內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字",
+        fields: [
+            { label: "參考資料", value: "來源名稱" },
+            { label: "法規類別", value: "居留與定居" }
+        ],
+        attribution: [
+            { label: "承辦組室", value: "移民輔導組" },
+            { label: "業務範疇", value: "居留與定居" }
+        ]
+    },
+    {
+        sourceNo: 6,
+        file: "vector8_chunk722_20240829024536_111-1026-6-_入出國及法令彙編1675頁.xlsx",
+        dataset: "法規彙編",
+        title: "結婚登記之生效日與未辦理之效果",
+        date: "2023/11/23 11:47:36",
+        content: "內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字",
+        fields: [
+            { label: "參考資料", value: "來源名稱" },
+            { label: "法規類別", value: "居留與定居" }
+        ],
+        attribution: [
+            { label: "承辦組室", value: "移民輔導組" },
+            { label: "業務範疇", value: "居留與定居" }
         ]
     },
     {
@@ -271,7 +357,27 @@ permalink: 2-2-1_singleTest.html
         file: "vector8_chunk719_20240829024538_111-1022-6-_入出國及法令彙編1672頁.xlsx",
         dataset: "法規彙編",
         content: "內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字",
-        fields: []
+        fields: [],
+        attribution: [
+            { label: "承辦組室", value: "移民輔導組" },
+            { label: "業務範疇", value: "" }
+        ]
+    },
+    {
+        sourceNo: 8,
+        file: "vector8_chunk724_20240829024538_111-1028-8-_入出國及法令彙編1677頁.xlsx",
+        dataset: "法規彙編",
+        title: "常見退件原因與補正期限",
+        date: "2023/12/04 15:31:08",
+        content: "內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字內容文字",
+        fields: [
+            { label: "參考資料", value: "來源名稱" },
+            { label: "法規類別", value: "居留與定居" }
+        ],
+        attribution: [
+            { label: "承辦組室", value: "移民輔導組" },
+            { label: "業務範疇", value: "居留與定居" }
+        ]
     }
 ] %}
 {% set sourcesHidden = true %}

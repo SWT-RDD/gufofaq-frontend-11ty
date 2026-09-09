@@ -72,6 +72,13 @@
                                         <tr>
                                             <td>{{ category }}</td>
                                         </tr>
+                                        {% else %}
+                                        {# 空狀態（§5 判準③：某一層沒有分類是合法回應——租戶只用了高／中兩層、
+                                             或某一層設成不使用）。畫一張只有表頭、一列都沒有的表，說不出
+                                             「這一層本來就沒有東西」還是「這一區壞了」。 #}
+                                        <tr>
+                                            <td class="text-center text-gray" data-i18n="modals.priorityNoCategory">這一層沒有分類，檢索時不會用到它。</td>
+                                        </tr>
                                         {% endfor %}
                                     </tbody>
                                 </table>

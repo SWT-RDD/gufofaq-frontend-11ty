@@ -549,6 +549,14 @@
                         </div>
                     </td>
                 </tr>
+                {% else %}
+                {# 空狀態列（§5 判準③：來源陣列的空集合是合法回應——全新部署的平台一個租戶都沒有，
+                     而 ISO 審核的「刪除逾時帳號」也刪得掉租戶）。**下一步就在同一頁上方**：
+                     沒有租戶時，這底下每一塊平台設定都沒有作用對象。
+                     colspan 由那份功能欄清單推導（前四欄 ＋ 逐功能一欄 ＋ 操作欄），不寫死（§3-2／§6）。 #}
+                <tr>
+                    <td colspan="{{ platformFeatureCols.length + 5 }}" class="text-center text-gray" data-i18n="platform.noTenants">這個平台還沒有任何租戶。按上面的「建立租戶」建第一個——在那之前，底下每一塊平台設定都沒有作用對象。</td>
+                </tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -605,7 +613,11 @@
    「從哪個租戶編號之後開始」是游標（只掃編號嚴格大於它的租戶），下界 0。
    **「還有沒有下一批」不必再問一次**：回來的結果同時帶著平台租戶總數與這一趟
      真的處理過的那幾個 ⇒ 兩者不等就是被切過，下一個游標是最後處理的那一筆的租戶編號。 #}
-<div class="block mb-16 flex-row column gap-16" data-platform-role="auditor">
+{# **整塊標 admin，不是 auditor**（§4 的反向判準）：塊內每一顆控制項的初值都來自**請求參數**
+     而非現況值（勾選框未勾、兩個數字欄空白），沒有任何一顆值是唯讀角色讀得到的現況 ⇒
+     「值控制項照渲染但 disabled」那條理由在這裡不成立，區塊的級別就等於它的動作級別。
+     標成 auditor 的話，稽核員看到的是一塊只有標題、三個 disabled 空欄與零顆鈕的版面。 #}
+<div class="block mb-16 flex-row column gap-16" data-platform-role="admin">
     <div class="text-md text-bold" data-i18n="settings.healthScanDailyTitle">每日資料健檢</div>
     <div class="flex-row gap-16 align-items-end flex-wrap mobile-column sm-gap-16">
         <label class="form-checkbox">
@@ -660,7 +672,9 @@
      寫著「會隨上面選的動作換一組」，在這裡是假的。
    **兩段 toast**：「片語打錯」**不列**（同上面平台時區那一塊：解鎖條件由畫面
      自己保證 ⇒ UI 產不出那個請求）；其餘故障 ⇒ 一段 error。 #}
-<div class="block mb-16 flex-row column gap-8" data-platform-role="auditor">
+{# **整塊標 admin**（理由同「每日資料健檢」那一塊）：塊內只有一顆 type-to-confirm 欄與一顆鈕，
+     初值全部來自請求參數、零現況值 ⇒ 級別等於動作級別。 #}
+<div class="block mb-16 flex-row column gap-8" data-platform-role="admin">
     <div class="text-md text-bold text-red" data-i18n="settings.filterSlotsDeclareTitle">宣告實體篩選槽</div>
     <p class="text-gray m-0" data-i18n="settings.filterSlotsDeclareWarn">這會刪掉全部向量資料並重新建立索引。宣告是匯入的前置：沒有宣告的欄位槽，之後匯入的每一列都不會有欄位，而匯入本身會回報成功。</p>
     <div class="form-group">

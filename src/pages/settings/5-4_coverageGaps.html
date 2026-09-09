@@ -62,7 +62,7 @@ permalink: 5-4_coverageGaps.html
     totalLogs: 1200,
     totalNoAnswer: 333,
     excludedCount: 3,
-    dimensionName: "業務範疇", dimensionSlot: "note3",
+    dimensionName: "業務面向", dimensionSlot: "note3",
     classifiedQuestions: 200,
     classifyLimit: 200
 } %}
@@ -81,7 +81,7 @@ permalink: 5-4_coverageGaps.html
      文件密級兩者皆非 ⇒ 它**必須**在這份清單上，少一筆就是文案講的規則與實際列出的選項對不起來
      （§6 跨頁自洽：5-10 加一個分得了群的維度，這裡要跟著加）。 #}
 {% set gapDimensions = [
-    { slotKey: "note3", name: "業務範疇" },
+    { slotKey: "note3", name: "業務面向" },
     { slotKey: "note4", name: "業務方向" },
     { slotKey: "note5", name: "文件密級" }
 ] %}
@@ -208,7 +208,7 @@ permalink: 5-4_coverageGaps.html
          左邊那顆是篩選列正典的 `.js-filter-clear`「清除」，不寫成「取消」——那個字面全站沒有
          任何 js 選得到，會變成一顆按了不會有事發生的鈕（§5 ④）。
          **意圖分組那一段 400 不可以漏**：選了分群維度時，會在拉資料**之前**先檢查意圖判斷那一組的
-         模型設好了沒有，沒設好就直接擋下、連資料都不拉。本頁的示範預設就選著「業務範疇」
+         模型設好了沒有，沒設好就直接擋下、連資料都不拉。本頁的示範預設就選著「業務面向」
          （`gapSummary.dimensionName`），所以按一下查詢就撞得到，而它是**使用者自己修得掉**的
          ——去 5-2「生成設定」的分組 LLM 把「意圖判斷」那一組的模型設好——折進「載入資料失敗，
          請重新整理頁面」等於叫人重整一個永遠不會成功的請求（§5：逐 raise 對回鈕，不可折進紅色終局）。

@@ -1369,7 +1369,7 @@ permalink: 5-2_conversationSettings.html
      結果就是「哪一個槽 ＝ 哪一個代碼」的對應，槽鍵的值域是 note1…note10 ＋ date2／date3
      （見 5-10）。**這一格不會被驗**（它收的是一段自由字串，最多 64 字），所以填 `topic`／
      `channel` 這種名字不會報錯，只會讓規則永遠不命中——是靜默失效。
-     這份示範租戶的維度正本是 5-10 的 `tagDimensions`：note3 業務範疇（代碼見 5-4 的 `B06`／`B02`）、
+     這份示範租戶的維度正本是 5-10 的 `tagDimensions`：note3 業務面向（代碼見 5-4 的 `B06`／`B02`）、
      note4 業務方向（`both`／`export`／`import`）、note5 文件密級。 #}
 {% set outputRules = [
   { kind: "list_marker", enabled: true, descKey: "settings.outputRuleListMarkerDesc", desc: "把行首的 1)、(1)、一、 等寫法統一成 1.，保留原本的編號值與縮排（不重新編號）。" },
@@ -1563,7 +1563,7 @@ permalink: 5-2_conversationSettings.html
                                      用 role="group"＋aria-labelledby 指向浮空標題，讓報讀器先報出
                                      「逐代碼覆寫上限」這組在問什麼，再念組內的代碼／上限（§4）。 #}
                                 <div role="group" aria-labelledby="oruleCategoryOverridesLabel{{ loop.index }}" class="flex-row column gap-8">
-                                {# 代碼必須是 **note3（業務範疇）字典裡真的有的代碼**：`B06`（關稅與稅則）／
+                                {# 代碼必須是 **note3（業務面向）字典裡真的有的代碼**：`B06`（關稅與稅則）／
                                      `B02`（居留與簽證），正本是 5-10 的 `tagDimensions` note3 ＋ 5-4 的
                                      `gapGroups` 那兩個 key，而同一顆規則的 `case` 用的也是 `B06`。
                                      ⚠️ **不可以隨手編 `tariff`／`procedure` 這種字**：那正是上面那格說明字

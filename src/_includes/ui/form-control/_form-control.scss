@@ -106,8 +106,7 @@
 // `.field` 疊成單欄 grid：圖示與 <input> 佔同一格，垂直置中由 align-self 決定 ——
 // 這樣就算 `.error-prompt` 展開把 `.field` 撐高，圖示仍然對齊 <input> 的中線，不必寫死任何高度。
 .field:has(> .form-control.search),
-.field:has(> .form-control.time),
-.field:has(> .form-control.reveal) {
+.field:has(> .form-control.time) {
     display: grid;
     grid-template-columns: 1fr;
     // `.field` 常常被外層 flex 拉高（例：4-1 的日期欄）。grid 的 align-content 預設 stretch，
@@ -134,16 +133,26 @@
 
 // 密碼欄的顯示/遮蔽鈕（`ui/reveal-input` 的圖示變體）。與上面兩顆的差別只有一件事：
 // 它是**可點的 `<button>`**，不是 `::after`。所以：
+//   · 它**不進上面那一組選擇器**：那一組帶著 `&::after`，`.reveal` 併進去會多長一顆 24×24、
+//     沒有 mask 也沒有背景的空偽元素疊在輸入框左緣——看不見，但它是一顆死宣告。
 //   · 它是真的 grid item（`::after` 那一族靠 `pointer-events: none` 讓點擊穿透到 <input>；
-//     這一顆正好相反，要點得到），因此不共用 `&::after` 那一段，自己指同一格。
-//   · `<input>` 的右內距要讓開它的寬度（`.button-icon` 是 36px），否則長密碼的字會壓在眼睛下面
-//     ——而那只在字夠長時才看得出來，短密碼下畫面完全正常。
+//     這一顆正好相反，要點得到），所以自己指同一格。
+//   · `<input>` 的右內距要讓開它，多留一點呼吸空間（`ui/button` 的 `.button-icon` 是 36px，
+//     這裡給 44px）；否則長密碼的字會壓在眼睛下面——而那只在字夠長時才看得出來。
+//   · **排版掛在本檔自有的 slot class `.field-tail-btn` 上，不寫 `ui/button` 的 `.button-icon`**
+//     （§4：A 元件的 scss 禁止出現 B 元件的 class；要覆寫別人的排版就加 parent 自有的 slot class）。
+//     `.field-tail-btn` 只負責「貼在輸入框尾端、垂直置中」這件事，圖示與尺寸仍由 `ui/button` 給。
 .field:has(> .form-control.reveal) {
+    display: grid;
+    grid-template-columns: 1fr;
+    align-content: start;
+
     > .form-control {
+        grid-area: 1/1;
         padding-right: 2.75rem;
     }
 
-    > .button-icon {
+    > .field-tail-btn {
         grid-area: 1/1;
         justify-self: end;
         align-self: center;

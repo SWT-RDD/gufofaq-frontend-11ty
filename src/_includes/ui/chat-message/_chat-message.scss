@@ -348,8 +348,13 @@
             font-style: italic;
         }
 
+        // 答案內文的超連結走**墨色** `--brand-ink`，不是文字族 `--brand-text`：這一塊的底是
+        // `--surface-sunken`（`.by-robot .message-content`），而 `--brand-text` 疊 sunken 只有
+        // 4.49:1、低於 AA（§4：文字族疊到更暗的面時改用同族的墨色 token）。同一支 scss 的行內碼
+        // 已經走 `--brand-ink`，這一顆是同一個底、同一個門檻。
+        // 疊 `--surface-sunken`：淺色 10.57:1／深色 7.10:1。hover 維持 `--brand-text-hover`（5.19:1）。
         a {
-            color: var(--brand-text);
+            color: var(--brand-ink);
             text-decoration: underline;
 
             &:hover {

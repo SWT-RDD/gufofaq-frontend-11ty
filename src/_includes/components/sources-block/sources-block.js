@@ -28,10 +28,14 @@ document.addEventListener("DOMContentLoaded", function () {
             // **比對「序號」欄的值，不是拿 rows[no-1]**：那一欄是該筆來源的引用編號
             // （見 sources-block.html 檔頭），agent 模式跨工具呼叫累加、給到畫面前又會
             // 收掉候選池，兩件事都讓「第 N 號＝第 N 列」不成立——用位置定位會高亮到別筆，
-            // 而畫面上看起來一樣「有反應」。序號是第二欄（第一欄是展開鈕）。
+            // 而畫面上看起來一樣「有反應」。
+            // **讀的是 `.source-no` 這顆值節點，不是 `children[1]` 的整格 textContent**（§5）：
+            // 位置定址會被欄序調整弄錯，整格 textContent 會被格內新長出來的徽章或 `.sr-only`
+            // 汙染——兩者都讓比對恆為 false，而 `reveal()` 的落空分支是靜默 return，
+            // 畫面上與「這一筆本來就找不到」逐字相同。
             var row = null;
             for (var i = 0; i < rows.length; i++) {
-                var cell = rows[i].children[1];
+                var cell = rows[i].querySelector(".source-no");
                 if (cell && cell.textContent.trim() === String(no)) {
                     row = rows[i];
                     break;

@@ -88,7 +88,8 @@
                 </td>
                 <td>{{ row.userType }}</td>
                 <td>{{ row.satisfaction }}</td>
-                <td>{{ row.date }}</td>
+                {# 可排序那一欄的值包 `.cell-value`（`ui/table-sort` 的白名單值節點，見該元件檔頭 ⓕ） #}
+                <td><span class="cell-value">{{ row.date }}</span></td>
             </tr>
             {% endfor %}
         </tbody>

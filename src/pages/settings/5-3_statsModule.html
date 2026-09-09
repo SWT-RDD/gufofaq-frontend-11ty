@@ -62,10 +62,12 @@ permalink: 5-3_statsModule.html
 {# 這一份要與 5-2「欄位命名」區的 fieldSlotLabels **逐槽相同**：同一個租戶的同一份欄位命名，
      唯一的編輯畫面在 5-2，這裡只是讀它。少抄一個改過名的槽，同一顆槽在兩頁就會有兩個中文名
      （5-3 的下拉會回退成 slot.defaultLabel「標題」，而 5-2 說它叫「問題標題」）。
-     content 被 attributionExcluded 濾掉、其餘槽在 5-2 也沒改名，故補齊 title/date 即完全對齊。 #}
+     母體是 5-2 那一份的全部鍵扣掉被 attributionExcluded 濾掉的那些——**逐槽照抄，不挑**。 #}
 {% set attributionLabels = {
   title: "問題標題",
   date: "建立日期",
+  source: "參考資料",
+  category: "法規類別",
   note1: "承辦組室",
   note2: "業務範疇"
 } %}
@@ -89,8 +91,11 @@ permalink: 5-3_statsModule.html
         {% set timeFilterRangeHintId = "dataTimeRangeHint" %}
         {% include "components/data-time-filter/data-time-filter.html" %}
         {# 統計維度：`dataset`（依資料集）或 `attribution:<slot>`（依租戶指定的歸因欄位分群）。
-             值域＝上面那份可歸因的槽清單（`fieldSlotCatalog` 扣掉 `attributionExcluded`），選項文字是
-             租戶取的欄位名＝業務資料不翻；「資料集」那顆是 chrome 走 i18n。
+             值域＝上面那份可歸因的槽清單（`fieldSlotCatalog` 扣掉 `attributionExcluded`）。
+             **選項文字分兩種，不是一律不翻**（§4-2「那個字串是誰打的？」）：租戶改過名的走
+             `attributionLabels`＝租戶自己打的字＝資料，不掛 key；沒改過名的落回 `slot.defaultLabel`
+             ＝**產品的預設名**＝chrome，掛 `field.<key>`。整排一律不掛的話，英文模式下沒改過名的
+             那幾顆會原樣留繁中，而租戶分不出哪一個是自己取的名字。「資料集」那顆是 chrome 走 i18n。
              值載體 select → 只掛 hook class（GUIDELINE §5 組合矩陣②），成敗由旁邊的「查詢」鈕演。 #}
         <div class="form-group row flex-row mobile-column-xs gap-16">
             <div class="label mobile-align">
@@ -100,7 +105,7 @@ permalink: 5-3_statsModule.html
                 <select id="statsDimension" class="form-control js-stats-dimension" data-filter-reset="dataset">
                     <option value="dataset" selected data-i18n="common.dataset">資料集</option>
                     {% for slot in fieldSlotCatalog %}{% if not slot.productOnly and slot.key not in attributionExcluded %}
-                    <option value="attribution:{{ slot.key }}">{{ attributionLabels[slot.key] or slot.defaultLabel }}</option>
+                    {% if attributionLabels[slot.key] %}<option value="attribution:{{ slot.key }}">{{ attributionLabels[slot.key] }}</option>{% else %}<option value="attribution:{{ slot.key }}" data-i18n="field.{{ slot.key }}">{{ slot.defaultLabel }}</option>{% endif %}
                     {% endif %}{% endfor %}
                 </select>
             </div>
@@ -303,7 +308,7 @@ permalink: 5-3_statsModule.html
         <div class="field col-12-sm">
             <select id="attributionSlots" class="form-control multiSelect" multiple="multiple" data-placeholder="請選擇" data-placeholder-key="common.pleaseSelect">
                 {% for slot in fieldSlotCatalog %}{% if not slot.productOnly and slot.key not in attributionExcluded %}
-                <option value="{{ slot.key }}"{% if slot.key == "note1" or slot.key == "note2" %} selected{% endif %}>{{ attributionLabels[slot.key] or slot.defaultLabel }}</option>
+                {% if attributionLabels[slot.key] %}<option value="{{ slot.key }}"{% if slot.key == "note1" or slot.key == "note2" %} selected{% endif %}>{{ attributionLabels[slot.key] }}</option>{% else %}<option value="{{ slot.key }}"{% if slot.key == "note1" or slot.key == "note2" %} selected{% endif %} data-i18n="field.{{ slot.key }}">{{ slot.defaultLabel }}</option>{% endif %}
                 {% endif %}{% endfor %}
             </select>
         </div>

@@ -63,7 +63,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 content.appendChild(ta);
             } else {
                 var lines = fullText().split("\n").map(function (l) { return l.trim(); }).filter(Boolean);
-                var summary = lines.length ? (lines.length > 1 ? lines[0] + "..." : lines[0]) : "";
+                var summary = lines.length ? (lines.length > 1 ? lines[0] + "…" : lines[0]) : "";
                 var div = document.createElement("div");
                 div.className = "ellipsis-1";
                 div.title = fullText();

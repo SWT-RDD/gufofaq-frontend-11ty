@@ -44,10 +44,12 @@
                 的三個**資料**槽（預設 16／8／openai:gpt-4o-mini）。句子本身是 chrome，走前中後綴 key
                 （`qa.sourcesRulePrefix`／`qa.sourcesRuleMid`／`qa.sourcesModelMid`＋既有的 `common.parenClose`）
                 ——整串寫死、零 `data-i18n` 的話，英文模式在 2-1／2-2-1／4-2 三頁上會原樣印繁中。
-                ⚠️ **內建預設不是佔位字，那三個使用頁都沒有覆寫它**，所以它就是那三頁真正顯示的值：
-                16／8＝取用與選用資料筆數（4-2 的 `conversation.searchTotalNumber`／`searchSelectedNumber`、
-                2-2-1 的 `#sampleTotalInput`／`#sampleSelectedInput` 都是 16／8），模型＝那一輪真的用的那顆
-                （4-2 同一頁的「使用模型」欄與執行流程摘要都是 `openai:gpt-4o-mini`，§6 同頁自洽）。
+                ⚠️ **內建預設不是佔位字**：2-1 與 2-2-1 沒有覆寫它，所以 16／8／`openai:gpt-4o-mini`
+                就是那兩頁真正顯示的值（2-2-1 的 `#sampleTotalInput`／`#sampleSelectedInput` 也是 16／8）；
+                4-2 逐顆覆寫成同頁 `conversation` 的 `searchTotalNumber`／`searchSelectedNumber`／
+                `modelName`，目前算出來的值與內建預設相同（§6 同頁自洽）。
+                ⚠️ **這三顆數字與下面那張表的列數是同一批片段**：「取用 N 筆」數的是筆數、表逐列印它，
+                所以 `sourcesSelected` 就是 `sources` 的長度。少列的話畫面上會同時宣稱兩件事。
        sourcesSideKey / sourcesSideLabel：**改成標「這是哪一側的來源」**那一支（2-2-3 用）。
                 給了它就不畫上面那句挑選規則。字面是 chrome 故要 key，側別字母寫在繁中原文裡。
                 這兩顆是**目前顯示的那一態**（切版是靜態稿，只畫得出一態）。
@@ -166,7 +168,10 @@
                             <span class="sr-only" data-i18n="common.expandRow">展開表格</span>
                         </button>
                     </td>
-                    <td>{{ source.sourceNo or '—' }}</td>
+                    {# 序號包在 `.source-no` 裡：`sources-block.js` 的 `reveal(no)` 靠它定位那一列
+                         （§5：從 DOM 讀值要讀一顆可定址的值節點，不得取整格 textContent）。
+                         這一格哪天多一顆徽章或 `.sr-only`，整格 textContent 就再也比不中。 #}
+                    <td><span class="source-no">{{ source.sourceNo or '—' }}</span></td>
                     <td>
                         {# **這一顆是動作、不是連結**（§4「判準是它打不打 API」）：點檔名要打下載端點取回原稿，
                              不是換頁。⚠️ 寫成 `<a href="#">` 且零 `data-*` 的話，它就是一顆按了只會捲回

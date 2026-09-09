@@ -94,18 +94,38 @@ test("§5/§6/§8 ui/table-sort：排序鍵取的是**值節點**，格內的收
     assert.deepEqual(namesOf(tbody), ["a", "d", "c", "b"], "降冪：有值的反過來，空格**仍然**沉底");
 });
 
-test("§5 ui/table-sort 的負控：排序鍵改回整格 textContent 後，生產形狀那一條必須失敗", () => {
+test("§5/§6/§8 ui/table-sort：值節點旁邊的徽章不得混進排序鍵（4-1 那一族的生產形狀）", () => {
+    // 為什麼要有這一條：§5 要的是「讀一顆可定址的值節點」，而黑名單扣除法（把 button／input／
+    // select／textarea／.sr-only 刪掉）只對**列舉到的那幾種**有效。4-1 的「使用者類型」欄今天
+    // 就掛著 `<span class="verdict-tag is-muted">QA 直答</span>`——那一欄哪天加一顆 `.sort`，
+    // 黑名單會把徽章的字一起算進鍵裡，而 collapse 那一型的 fixture 完全演不到這件事
+    // （`.collapse-toggle` 是 `<button>`，黑名單剛好列到了）。
+    const js = read("src/_includes/ui/table-sort/table-sort.js");
+    const env = runComponentJs(js, (node, root) =>
+        tableSortFixture(node, root, [["c", "9"], ["a", "1200"], ["b", ""], ["d", "30"]], "badge"));
+    const { btn, tbody } = env.fixture;
+
+    env.click(btn);
+    assert.deepEqual(namesOf(tbody), ["c", "d", "a", "b"],
+        "升冪：9 < 30 < 1200 要走數值比，空格沉底——鍵裡混進徽章的「直答」三個字的話兩件事會同時壞掉");
+
+    env.click(btn);
+    assert.deepEqual(namesOf(tbody), ["a", "d", "c", "b"], "降冪：有值的反過來，空格**仍然**沉底");
+});
+
+test("§5 ui/table-sort 的負控：排序鍵改回整格 textContent 後，兩種生產形狀都必須失敗", () => {
     // **換行一律先正規化**：這個 repo 的開發機是 Windows（簽出來是 CRLF）、CI 在 Linux，
     // 而下面那個錨點是一段**多行**字面。不正規化的話，同一份原始碼在兩個平台上一邊命中、
     // 一邊命中不到——而命中不到時這條負控直接倒在錨點那一行，症狀看起來像「取值那一段被改掉了」。
+    //
+    // 錨點釘的是「查白名單值節點」那一行（§5 的規格），不是某一種實作的逐行原文：
+    // 上一版的錨點逐字釘住黑名單扣除法的三行，於是照 §5 把實作改成白名單會讓這條負控
+    // 倒在錨點上——測試把一個不合規的實作釘成了規格。
     const js = read("src/_includes/ui/table-sort/table-sort.js").replace(/\r\n/g, "\n");
-    const CUT = [
-        "        var clone = cell.cloneNode(true);",
-        "        clone.querySelectorAll(CHROME).forEach(function (el) { el.remove(); });",
-        "        return clone.textContent.trim();",
-    ].join("\n");
+    const CUT = "        var value = cell.querySelector(VALUE_NODE);";
     assert.ok(js.includes(CUT), "負控的錨點在原文裡找不到了——測試驗的可能不是取值節點那一段");
-    const mutated = js.replace(CUT, "        return cell.textContent.trim();");
+    const mutated = js.replace(CUT, "        var value = null;") // 值節點查不到 ⇒ 退回那一格自己
+        .replace("        var own = \"\";", "        return cell.textContent.trim();\n        var own = \"\";");
     const env = runComponentJs(mutated, (node, root) =>
         tableSortFixture(node, root, [["c", "9"], ["a", "1200"], ["b", ""], ["d", "30"]], "collapse"));
     // **降冪那一次才分得出來**：升冪的結果在這組資料上兩種實作相同——「9展開」「30展開」「1200展開」
@@ -118,6 +138,14 @@ test("§5 ui/table-sort 的負控：排序鍵改回整格 textContent 後，生�
         "整格 textContent 竟然也排得對——代表那顆收合鈕沒有真的長在 fixture 的格子裡，上一條是假綠");
     assert.equal(namesOf(env.fixture.tbody)[0], "b",
         "負控要壞在**指定的那個方式**上：空格被當成有值 ⇒ 降冪時浮到第一列。若壞在別處，這條負控守的不是那個 bug");
+
+    // 徽章那一型也要在同一個負控裡壞掉——它正是黑名單扣除法看不到、白名單看得到的那一族。
+    const badge = runComponentJs(mutated, (node, root) =>
+        tableSortFixture(node, root, [["c", "9"], ["a", "1200"], ["b", ""], ["d", "30"]], "badge"));
+    badge.click(badge.fixture.btn);
+    badge.click(badge.fixture.btn);
+    assert.notDeepEqual(namesOf(badge.fixture.tbody), ["a", "d", "c", "b"],
+        "整格 textContent 對徽章那一型竟然也排得對——代表徽章沒有真的長在 fixture 的格子裡，上一條是假綠");
 });
 
 test("§5 ui/table-sort 的負控：把重排那一段從原文移除後，上面那些斷言必須失敗", () => {
