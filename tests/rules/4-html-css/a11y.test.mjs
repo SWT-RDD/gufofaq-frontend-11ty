@@ -20,23 +20,35 @@ test("§4 a11y 綁定屬性：指到的 id 都要存在、aria-label 不得是�
     // 指到空氣的話兩邊會一起錯得很一致。dialog 的 aria-labelledby 另有一條專屬測試，這條是通用網。
     const MULTI = new Set(["aria-labelledby", "aria-describedby", "aria-controls"]);
     const ATTRS = ["for", "aria-labelledby", "aria-describedby", "aria-controls"];
-    const bad = [];
     let refs = 0;
-    for (const f of distHtml) {
-        const html = distDoc(f);
+    const scan = (html, f = "<probe>") => {
+        const out = [];
         const ids = new Set([...html.matchAll(/\sid="([^"]+)"/g)].map((m) => m[1]));
         for (const attr of ATTRS)
             for (const m of html.matchAll(new RegExp(String.raw`\s${attr}="([^"]*)"`, "g"))) {
                 const toks = MULTI.has(attr) ? m[1].split(/\s+/).filter(Boolean) : [m[1]];
                 for (const t of toks) {
                     refs++;
-                    if (!ids.has(t)) bad.push(`dist/${f}  ${attr}="${t}" —— 同頁沒有這個 id`);
+                    if (!ids.has(t)) out.push(`${f}  ${attr}="${t}" —— 同頁沒有這個 id`);
                 }
             }
         for (const m of html.matchAll(/\saria-label="([^"]*)"/g))
-            if (!m[1].trim()) bad.push(`dist/${f}  aria-label="" —— 空的可及名稱等於沒有名稱`);
-    }
+            if (!m[1].trim()) out.push(`${f}  aria-label="" —— 空的可及名稱等於沒有名稱`);
+        return out;
+    };
+    const bad = [];
+    for (const f of distHtml) bad.push(...scan(distDoc(f), `dist/${f}`));
     assert.ok(refs > 7505, `只掃到 ${refs} 個 id 參照 —— 這條測試在空轉`);
+    probe("§4 a11y 綁定的落點", scan,
+        // 四種壞法：單值屬性指空氣／多值屬性其中一顆指空氣／空的可及名稱／for 指空氣
+        ['<input aria-describedby="nope">',
+            '<div aria-labelledby="hit nope"></div><span id="hit">x</span>',
+            '<button aria-label="  ">x</button>',
+            '<label for="nope">x</label>'],
+        // 三種被排除的：指得到的單值與多值、以及有內容的 aria-label
+        ['<input aria-describedby="hint"><span id="hint">x</span>',
+            '<div aria-labelledby="a b"></div><span id="a">x</span><span id="b">y</span>',
+            '<button aria-label="關閉">×</button>']);
     assert.equal(bad.length, 0, `a11y 綁定指到不存在的 id／空的可及名稱：\n${fail(bad)}`);
 });
 
@@ -47,38 +59,57 @@ test("§4 頁籤的選中態要同時掛 .active 與 aria-current=\"true\"（.ac
     // 「③本身是 <a> 連到別頁」——`<a>` 頁籤是本專案認可的第三種形狀，它的選中態就沒有任何網。
     // 掃任何帶 `.tab` 的元素。
     let seen = 0;
-    const hits = [];
-    for (const f of distHtml) {
-        // 走共用的 classesOf／attrValue（`class="[^"]*…"` 那種字面正則看不到單引號）
-        for (const { attrs } of tagsOf(read(`dist/${f}`))) {
+    // 走共用的 classesOf／attrValue（`class="[^"]*…"` 那種字面正則看不到單引號）
+    const scan = (html, f = "<probe>") => {
+        const out = [];
+        for (const { attrs } of tagsOf(html)) {
             const cls = classesOf(attrs);
             if (!cls.includes("tab")) continue;
             const active = cls.includes("active");
             const current = attrValue(attrs, "aria-current") === "true";
             if (active) seen++;
-            if (active && !current) hits.push(`dist/${f}  .tab.active 少了 aria-current="true"`);
-            if (!active && current) hits.push(`dist/${f}  .tab 有 aria-current 卻沒有 .active`);
+            if (active && !current) out.push(`${f}  .tab.active 少了 aria-current="true"`);
+            if (!active && current) out.push(`${f}  .tab 有 aria-current 卻沒有 .active`);
         }
-    }
+        return out;
+    };
+    const hits = [];
+    for (const f of distHtml) hits.push(...scan(read(`dist/${f}`), `dist/${f}`));
     assert.ok(seen >= 12, `只掃到 ${seen} 顆選中的頁籤 —— 這條測試在空轉`);
+    probe("§4 頁籤選中態的兩半", scan,
+        // 三種壞法：選中卻沒有 aria-current／有 aria-current 卻沒有選中／`<a>` 頁籤同辦
+        ['<button class="tab active">x</button>',
+            '<button class="tab" aria-current="true">x</button>',
+            "<a class='tab active'>x</a>"],
+        // 三種被排除的：兩半都在、兩半都不在、以及不是頁籤的元素
+        ['<button class="tab active" aria-current="true">x</button>',
+            '<button class="tab">x</button>',
+            '<div class="tab-wrap active">x</div>']);
     assert.equal(hits.length, 0, fail(hits));
 });
 
 test("§4 每個 <dialog> 的 aria-labelledby 都要指向存在的 id", () => {
-    const hits = [];
     let dialogCount = 0;
-    for (const f of distHtml) {
-        const html = read(`dist/${f}`);
+    const scan = (html, f = "<probe>") => {
+        const out = [];
         const ids = new Set([...html.matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]));
         for (const t of tagsOf(html)) {
             if (t.tag !== "dialog") continue;
             dialogCount++;
             const m = t.attrs.match(/aria-labelledby="([^"]+)"/);
-            if (!m) hits.push(`dist/${f}  <dialog> 缺 aria-labelledby`);
-            else if (!ids.has(m[1])) hits.push(`dist/${f}  aria-labelledby="${m[1]}" 指向不存在的 id`);
+            if (!m) out.push(`${f}  <dialog> 缺 aria-labelledby`);
+            else if (!ids.has(m[1])) out.push(`${f}  aria-labelledby="${m[1]}" 指向不存在的 id`);
         }
-    }
+        return out;
+    };
+    const hits = [];
+    for (const f of distHtml) hits.push(...scan(read(`dist/${f}`), `dist/${f}`));
     assert.ok(dialogCount >= 196, `只掃到 ${dialogCount}（門檻 196，＝這次實際量出來的）—— dist 裡一個 <dialog> 都掃不到 —— 這條測試在空轉`);
+    probe("§4 dialog 的可及名稱", scan,
+        // 兩種壞法：整個沒掛、掛了但指到空氣
+        ["<dialog><h3>標題</h3></dialog>", '<dialog aria-labelledby="nope"><h3 id="real">標題</h3></dialog>'],
+        // 兩種被排除的：指得到的 dialog、以及不是 dialog 的元素
+        ['<dialog aria-labelledby="t"><h3 id="t">標題</h3></dialog>', "<div><h3>標題</h3></div>"]);
     assert.equal(hits.length, 0, fail(hits));
 });
 
@@ -86,9 +117,8 @@ test("§4 圖示按鈕要有可及名稱（aria-label、按鈕內的文字、或
     // title= 不算：輔具不保證會念，觸控與鍵盤焦點也永遠看不到它。
     // 實例：三處 .info-btn 只掛 title，按鈕裡只有一張 alt="" 的圖，對螢幕報讀器就是一顆無名按鈕。
     let btnCount = 0;
-    const hits = [];
-    for (const f of distHtml) {
-        const html = distDoc(f);
+    const scan = (html, f = "<probe>") => {
+        const out = [];
         for (const m of html.matchAll(/<button\b((?:"[^"]*"|'[^']*'|[^>"'])*)>([\s\S]*?)<\/button>/g)) {
             const [, attrs, inner] = m;
             btnCount++;
@@ -96,10 +126,23 @@ test("§4 圖示按鈕要有可及名稱（aria-label、按鈕內的文字、或
             // 按鈕裡的圖若有非空 alt，那就是這顆鈕的名字（.pager-btn 就靠這個）
             if ([...inner.matchAll(/<img\b[^>]*\salt="([^"]*)"/g)].some((i) => i[1].trim())) continue;
             if (inner.replace(/<[^>]*>/g, "").trim()) continue; // 有文字（含 .sr-only / .tooltip 的內容）
-            hits.push(`dist/${f}  無名按鈕：<button${attrs.slice(0, 60)}>`);
+            out.push(`${f}  無名按鈕：<button${attrs.slice(0, 60)}>`);
         }
-    }
+        return out;
+    };
+    const hits = [];
+    for (const f of distHtml) hits.push(...scan(distDoc(f), `dist/${f}`));
     assert.ok(btnCount >= 2021, `只掃到 ${btnCount}（門檻 2021，＝這次實際量出來的）—— dist 裡一顆 <button> 都掃不到 —— 這條測試在空轉`);
+    probe("§4 圖示鈕的可及名稱", scan,
+        // 三種壞法：只有一張空 alt 的圖／整顆空的／只掛 title（輔具不保證會念）
+        ['<button><img src="a.png" alt=""></button>',
+            "<button></button>",
+            '<button title="刪除"><img src="a.png" alt=""></button>'],
+        // 四種被排除的：aria-label／aria-labelledby／圖的非空 alt／鈕內的 .sr-only 文字
+        ['<button aria-label="關閉"><img src="a.png" alt=""></button>',
+            '<button aria-labelledby="x"><img src="a.png" alt=""></button>',
+            '<button><img src="a.png" alt="下一頁"></button>',
+            '<button><span class="sr-only">刪除</span></button>']);
     assert.equal(hits.length, 0, `螢幕報讀器只會念「按鈕」：\n${fail(hits)}`);
 });
 
@@ -146,9 +189,8 @@ test("§4/§5 target=\"_blank\" 三件套：rel=noopener ＋ 可及名稱講明�
 
 test("§4 <dialog aria-labelledby> 必須指向**自己的** .modals-title（指到別的元素照樣是錯的名字）", () => {
     let seen = 0;
-    const hits = [];
-    for (const f of distHtml) {
-        const t = read(`dist/${f}`);
+    const scan = (t, f = "<probe>") => {
+        const out = [];
         for (const m of t.matchAll(/<dialog\b((?:"[^"]*"|[^>"])*)>([\s\S]*?)<\/dialog>/g)) {
             const id = m[1].match(/\baria-labelledby="([^"]*)"/);
             if (!id) continue; // 「每個 dialog 都要有 aria-labelledby」是另一條測試的事
@@ -160,10 +202,21 @@ test("§4 <dialog aria-labelledby> 必須指向**自己的** .modals-title（指
             const hasTitle =
                 tagWithBoth(CLS, `id="${safeId}"`).test(m[2]) || tagWithBoth(`id="${safeId}"`, CLS).test(m[2]);
             if (!hasTitle)
-                hits.push(`dist/${f}  <dialog aria-labelledby="${id[1]}"> 指到的不是自己內部的 .modals-title`);
+                out.push(`${f}  <dialog aria-labelledby="${id[1]}"> 指到的不是自己內部的 .modals-title`);
         }
-    }
+        return out;
+    };
+    const hits = [];
+    for (const f of distHtml) hits.push(...scan(read(`dist/${f}`), `dist/${f}`));
     assert.ok(seen >= 195, `只掃到 ${seen} 顆帶 aria-labelledby 的 dialog —— 這條測試在空轉`);
+    probe("§4 dialog 指到自己的標題", scan,
+        // 三種壞法：那顆 id 在窗外／窗內有那顆 id 但不是 .modals-title／指到別的窗的標題
+        ['<h3 class="modals-title" id="t">標題</h3><dialog aria-labelledby="t"></dialog>',
+            '<dialog aria-labelledby="t"><h3 id="t">標題</h3></dialog>',
+            '<dialog aria-labelledby="t2"><h3 class="modals-title" id="t1">標題</h3></dialog>'],
+        // 兩種被排除的：屬性順序相反照樣算、沒掛 aria-labelledby 的交給另一條
+        ['<dialog aria-labelledby="t"><h3 id="t" class="modals-title">標題</h3></dialog>',
+            "<dialog><h3>標題</h3></dialog>"]);
     assert.equal(hits.length, 0, fail(hits));
 });
 
@@ -201,10 +254,8 @@ test("§4 有浮空群組標籤的 checkbox/radio 組要掛 role=group + aria-la
     //   (c) 元件庫展示頁 component.html —— showcase 片段的 a11y 由各自元件頁把關（同其他測試的 SHOWCASE 慣例）
     const TABLE = new Set(["table", "td", "th"]);
     let groupCount = 0;
-    const hits = [];
-    for (const f of distHtml) {
-        if (f === SHOWCASE.dist) continue;
-        const html = distDoc(f);
+    const scan = (html, f = "<probe>") => {
+        const out = [];
         const ids = new Set([...html.matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]));
         const stack = [];
         for (const ev of tagEvents(html)) {
@@ -220,13 +271,25 @@ test("§4 有浮空群組標籤的 checkbox/radio 組要掛 role=group + aria-la
                 groupCount++;
                 const role = /\brole=["'](?:group|radiogroup)["']/.test(top.attrs);
                 const lbl = top.attrs.match(/\baria-labelledby=["']([^"']+)["']/);
-                if (!role || !lbl) hits.push(`dist/${f}  <${top.tag}> 有 ${top.cb} 個 checkbox/radio，缺 role=group+aria-labelledby`);
+                if (!role || !lbl) out.push(`${f}  <${top.tag}> 有 ${top.cb} 個 checkbox/radio，缺 role=group+aria-labelledby`);
                 else if (!lbl[1].split(/\s+/).every((id) => ids.has(id)))
-                    hits.push(`dist/${f}  <${top.tag}> aria-labelledby="${lbl[1]}" 指向本頁不存在的 id`);
+                    out.push(`${f}  <${top.tag}> aria-labelledby="${lbl[1]}" 指向本頁不存在的 id`);
             }
         }
-    }
+        return out;
+    };
+    const hits = [];
+    for (const f of distHtml) { if (f === SHOWCASE.dist) continue; hits.push(...scan(distDoc(f), `dist/${f}`)); }
     assert.ok(groupCount >= 8, `只掃到 ${groupCount}（門檻 8，＝這次實際量出來的）—— dist 裡一組 checkbox/radio 群都掃不到 —— 這條測試在空轉`);
+    const G = (attrs, n = 2) => `<div${attrs}>` + '<label class="form-checkbox"><input type="checkbox"></label>'.repeat(n) + "</div>";
+    probe("§4 一組控制項報得出在問什麼", (x) => scan(x),
+        // 三種壞法：兩者都沒有／只有 role／role 有但 aria-labelledby 指到空氣
+        [G(""), G(' role="group"'), G(' role="group" aria-labelledby="nope"')],
+        // 四種被排除的：兩半都在／只有一顆（不成組）／表格列內（列脈絡就是名字）／可捲清單那一族
+        [G(' role="group" aria-labelledby="t"') + '<span id="t">x</span>',
+            G("", 1),
+            "<table><tbody><tr><td>" + G("") + "</td></tr></tbody></table>",
+            G(' class="dataset-list"')]);
     assert.equal(hits.length, 0, `checkbox/radio 群缺分組語意（§4）：\n${fail(hits)}`);
 });
 
@@ -234,14 +297,19 @@ test("§4 dist 不得有空 <th>（控制欄表頭要有 sr-only 名稱）", () 
     // 空轉守門守的是**這條規則自己的母體**（掃到幾顆 `<th>`），不是頁數：頁數只擋得住
     // 「dist 整個空了」，擋不住「`<th>` 的收集器認不出來」——那時 hits 一樣是空陣列，
     // 而畫面上與有守門時逐字相同（§8-1 第 2 條）。
-    const hits = [];
     let seen = 0;
-    for (const f of distHtml) {
-        const doc = distDoc(f);
+    const scan = (doc, f = "<probe>") => {
         seen += [...doc.matchAll(/<th\b/g)].length;
-        if (/<th[^>]*>(?:\s|&nbsp;)*<\/th>/.test(doc)) hits.push(`dist/${f}  有空 <th></th>`);
-    }
+        return /<th[^>]*>(?:\s|&nbsp;)*<\/th>/.test(doc) ? [`${f}  有空 <th></th>`] : [];
+    };
+    const hits = [];
+    for (const f of distHtml) hits.push(...scan(distDoc(f), `dist/${f}`));
     assert.ok(seen >= 856, `只掃到 ${seen} 顆 <th> —— 這條測試在空轉`);
+    probe("§4 空的 <th>", scan,
+        // 三種壞法：真的空／只有空白／只有 &nbsp;（那一種看起來「有東西」）
+        ["<tr><th></th></tr>", "<tr><th>   </th></tr>", "<tr><th class='check-cell'>&nbsp;</th></tr>"],
+        // 兩種被排除的：有文字、以及名字走 .sr-only
+        ["<tr><th>欄名</th></tr>", '<tr><th><span class="sr-only">選取此列</span></th></tr>']);
     assert.equal(hits.length, 0, `報讀器會念出無名欄：\n${fail(hits)}`);
 });
 

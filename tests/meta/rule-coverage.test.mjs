@@ -181,8 +181,14 @@ test("[meta] §8-1 第 7 條：零命中型規則要有負控——沒有負控�
     // 棘輪擋的是這條規則真正會失控的方向：**新寫一條零命中型規則卻不附負控**。要讓數字
     // 往下走，就替其中一條補上 `probe()`（或等效的合成樣本斷言）再把它調下來。
     const ZERO_HIT = /assert\.(?:equal|deepEqual|strictEqual)\(\s*[\w.[\]]+(?:\.length)?\s*,\s*(?:0|\[\])\s*,/;
-    // 等效的合成樣本：`probe(` 是正典，另外收「同一個 scan 直接餵合成字串再斷言」那一種。
-    const HAS_CONTROL = /\bprobe\(|\bscanText\(\s*[`"']/;
+    // 等效的合成樣本（§8-1 第 7 條寫的是「`probe(` **或等效的合成樣本斷言**」）。三種形狀都收：
+    //   ・`probe(` —— 正典。
+    //   ・`scanText("合成字串"…)` —— 直接把合成樣本餵給同一支掃描器。
+    //   ・`assert.ok(fn("合成字串"), …)` —— 把規則函式套在字面上再斷言（`numberFieldHints`
+    //     那一條的 `reads("100 – 8000", "8000")` 就是這一種，它擋的東西與 probe 完全相同）。
+    // 只認 `probe(` 的話，第三種會被算成「沒有負控」——那是**量具自己在假報**，而它會讓下面
+    // 那個棘輪永遠降不下來，最後沒有人相信這個數字。
+    const HAS_CONTROL = /\bprobe\(|\bscanText\(\s*[`"']|assert\.\w+\(\s*!?\w+\(\s*[`"']/;
     const blocks = [];
     for (const f of testFiles()) {
         // 以 `\ntest(` 切區塊：同一支檔案裡的每一條測試各自算。
@@ -206,7 +212,7 @@ test("[meta] §8-1 第 7 條：零命中型規則要有負控——沒有負控�
     const missing = blocks.length - withControl;
     // 棘輪＝這次實際量出來的條數。**只准往下**：補了負控就把它調下來（那是一次有意識的決定），
     // 調上去等於把「新寫的規則不必附負控」寫進規則裡。
-    const MISSING_CEILING = 124;
+    const MISSING_CEILING = 110;
     assert.ok(missing <= MISSING_CEILING,
         `缺負控的零命中型測試從 ${MISSING_CEILING} 條增加到 ${missing} 條——新寫的零命中型規則要附 probe()：\n${blocks.filter((b) => !b.ok).map((b) => ` ${b.f}  ${b.title}`).join("\n")}`);
 });
