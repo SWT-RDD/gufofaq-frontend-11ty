@@ -137,7 +137,7 @@ test("§5 toast 不得把人送去別頁看一塊**當頁自己就 include 了**
     const segs = pages.reduce((n, f) => n + toastsOfPage(read(f)).reduce((k, t) => k + t.split("|").length, 0), 0);
     assert.ok(segs >= 816, `只解析到 ${segs} 段 toast —— 載體解析壞了，這條在空轉`);
     const sameForm = REPORT_HOSTS.filter((r) => r.submit === r.report);
-    assert.ok(sameForm.length > 0, "REPORT_HOSTS 裡沒有「報告就在送出當頁」的流程 —— 這條規則沒有任何頁面可管（死規則）");
+    assert.ok(sameForm.length >= 1, `只掃到 ${sameForm.length}（門檻 1，＝這次實際量出來的）—— REPORT_HOSTS 裡沒有「報告就在送出當頁」的流程 —— 這條規則沒有任何頁面可管（死規則）`);
     for (const { flow, report } of sameForm) {
         const f = pages.find((p) => basename(p, ".html") === report);
         assert.ok(f && toastsOfPage(read(f)).length > 0, `${flow} 的 ${report} 一段 toast 都沒有 —— 這條規則對它空轉`);

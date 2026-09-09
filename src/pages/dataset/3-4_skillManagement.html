@@ -22,6 +22,8 @@ permalink: 3-4_skillManagement.html
 {# id＝這顆 Skill 的識別碼。**不可拿 loop.index 當列鍵**：
      這張表刪得掉列，位置不是身分——刪掉前一列之後，後面每一列的列鍵都會往前頂一格，
      React 端的 key 與逐列動作的目標會一起指錯人（§6 列鍵）。 #}
+{# **列序＝建立順序（id 升冪）**：這一頁沒有排序控制項，順序就是端點回的順序（§6）。
+     不照名稱字典序排：skill 名是使用者自取的識別字，字典序會讓新增一顆就整排跳位。 #}
 {% set skills = [
   { id: 11, name: "refund-flow", description: "處理退貨與退款試算。使用者問到退貨、退款、換貨時使用。", version: "v2", tools: "calculate, lookup-order", enabled: true },
   { id: 12, name: "lookup-order", description: "依訂單編號查出金額、狀態與品項。使用者提供訂單號時使用。", version: "v1", tools: "search_knowledge_base", enabled: true },

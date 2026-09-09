@@ -33,7 +33,7 @@ test("§1-2 頁面不得手寫與既有 modal 元件同 id 的 <dialog>（元件
     for (const p of srcHtml.filter((f) => !f.includes("_includes")))
         for (const id of dialogIds(read(p)))
             if (owned.has(id)) hits.push(`${p}  <dialog id="${id}"> 已有元件 ${owned.get(id).join("、")} —— 要用就 {% include %}`);
-    assert.ok(owned.size > 0, "元件裡一個 <dialog> 都掃不到 —— 這條測試在空轉");
+    assert.ok(owned.size >= 25, `只掃到 ${owned.size}（門檻 25，＝這次實際量出來的）—— 元件裡一個 <dialog> 都掃不到 —— 這條測試在空轉`);
     probe("§1-2 dialog id 收集", dialogIds,
         ['<dialog class="modals" id="likeModal">'],
         ['{# `<dialog id="likeModal">` 的 id 是轉換契約，不是這裡要收的東西 #}', "<div id=\"likeModal\">"]);
@@ -370,21 +370,28 @@ test("§1-2 元件檔頭的 markup 契約要逐字對得上生產實例（形狀
     // 上面那一條只看得到 `{# #}` 包起來的省略，看不到直接寫進標籤之間的 `…`——而那一種更糟：
     // 它會被原樣貼進 HTML 變成畫面上的三個點。屬性值裡的 `…` 是**文案**（`placeholder="搜尋…"`），
     // 不是省略，故先把帶引號的屬性值挖掉再看。
+    // 規則抽成一支函式，**負控走同一支**（probe.mjs 檔頭：各寫一份判斷式的自我檢查只是裝飾品，
+    // 規則改壞時裝飾品還是綠的——原本的 probe 自己另刻了一份 `includes("…")`，真掃描改了它不會知道）。
+    const bareEllipsis = (block, where = "<probe>") => {
+        const out = [];
+        for (const line of block.replace(/"[^"]*"/g, '""').split("\n"))
+            if (line.includes("…")) out.push(`${where}  契約段裡有裸的 …（照抄會把它貼成可見文字）：${line.trim().slice(0, 70)}`);
+        return out;
+    };
     const bareHits = [];
     let bareSeen = 0;
     for (const c of componentDirs)
         for (const b of contractBlocks(headsOf(c))) {
-            const stripped = b.replace(/"[^"]*"/g, '""');
             bareSeen++;
-            for (const line of stripped.split("\n"))
-                if (line.includes("…"))
-                    bareHits.push(`${c.bucket}/${c.name}  契約段裡有裸的 …（照抄會把它貼成可見文字）：${line.trim().slice(0, 70)}`);
+            bareHits.push(...bareEllipsis(b, `${c.bucket}/${c.name}`));
         }
     assert.ok(bareSeen >= 30, `只讀到 ${bareSeen} 段契約 —— 契約段辨識壞了，這一條在空轉`);
-    probe("§1-2 契約段內的裸省略號",
-        (s) => (s.replace(/"[^"]*"/g, '""').includes("…") ? ["bad"] : []),
-        ['<div class="block">…</div>'],
-        ['<div class="block">{# 內容由使用頁決定 #}</div>', '<input placeholder="搜尋…">']);
+    probe("§1-2 契約段內的裸省略號", (s) => bareEllipsis(s),
+        // 三種壞法：標籤之間的裸 …／散文行裡的裸 …／多行契約裡夾一行 …
+        ['<div class="block">…</div>', '<div>前面</div>\n…\n<div>後面</div>', '<ul>\n    <li>…</li>\n</ul>'],
+        // 好樣本含兩顆被排除的：法定的 {# #} 省略，以及屬性值裡的 …（那是文案不是省略）
+        ['<div class="block">{# 內容由使用頁決定 #}</div>', '<input placeholder="搜尋…">',
+            '<div>{# 重複 N 次同型節點 #}</div>']);
     assert.equal(bareHits.length, 0, `§1-2 契約段內不准出現 …（要略就用那三種 {# #} 形式）：\n${fail(bareHits)}`);
 
     // 空轉守門：契約 parse 壞掉（挖掉插值挖過頭、多行標籤沒併回來）會讓一顆節點都不被驗、照樣全綠

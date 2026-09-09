@@ -78,7 +78,7 @@ test("§4 每個 <dialog> 的 aria-labelledby 都要指向存在的 id", () => {
             else if (!ids.has(m[1])) hits.push(`dist/${f}  aria-labelledby="${m[1]}" 指向不存在的 id`);
         }
     }
-    assert.ok(dialogCount > 0, "dist 裡一個 <dialog> 都掃不到 —— 這條測試在空轉");
+    assert.ok(dialogCount >= 196, `只掃到 ${dialogCount}（門檻 196，＝這次實際量出來的）—— dist 裡一個 <dialog> 都掃不到 —— 這條測試在空轉`);
     assert.equal(hits.length, 0, fail(hits));
 });
 
@@ -99,7 +99,7 @@ test("§4 圖示按鈕要有可及名稱（aria-label、按鈕內的文字、或
             hits.push(`dist/${f}  無名按鈕：<button${attrs.slice(0, 60)}>`);
         }
     }
-    assert.ok(btnCount > 0, "dist 裡一顆 <button> 都掃不到 —— 這條測試在空轉");
+    assert.ok(btnCount >= 2021, `只掃到 ${btnCount}（門檻 2021，＝這次實際量出來的）—— dist 裡一顆 <button> 都掃不到 —— 這條測試在空轉`);
     assert.equal(hits.length, 0, `螢幕報讀器只會念「按鈕」：\n${fail(hits)}`);
 });
 
@@ -226,7 +226,7 @@ test("§4 有浮空群組標籤的 checkbox/radio 組要掛 role=group + aria-la
             }
         }
     }
-    assert.ok(groupCount > 0, "dist 裡一組 checkbox/radio 群都掃不到 —— 這條測試在空轉");
+    assert.ok(groupCount >= 8, `只掃到 ${groupCount}（門檻 8，＝這次實際量出來的）—— dist 裡一組 checkbox/radio 群都掃不到 —— 這條測試在空轉`);
     assert.equal(hits.length, 0, `checkbox/radio 群缺分組語意（§4）：\n${fail(hits)}`);
 });
 

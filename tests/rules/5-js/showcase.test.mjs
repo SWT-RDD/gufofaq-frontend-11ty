@@ -293,7 +293,7 @@ test("§5 `.hidden` 判準①的另一半：src 引用得到、dist 卻一頁都
             `（`+"`{% if %}` 的條件恆為某值？）——沒有人看過它的長相");
     }
     // 白名單衛生：登記了卻不需要＝死豁免；而 js 那一族的「是誰產生它」要真的回去那支檔案驗到
-    assert.ok(usedSpec.size > 0, "推導出來的 for-else 豁免一顆都沒有派上用場 —— 這條豁免在空轉（不豁免也會綠）");
+    assert.ok(usedSpec.size >= 51, `只掃到 ${usedSpec.size}（門檻 51，＝這次實際量出來的）—— 推導出來的 for-else 豁免一顆都沒有派上用場 —— 這條豁免在空轉（不豁免也會綠）`);
     const staleJs = [...JS_RENDERED.keys()].filter((k) => !usedJs.has(k));
     assert.deepEqual(staleJs, [], `JS_RENDERED 有死豁免：${staleJs.join("、")}`);
     for (const [k, jsFile] of JS_RENDERED) {

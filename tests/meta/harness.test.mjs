@@ -42,6 +42,10 @@ test("[meta] gitFiles 的 JS 篩選與 git ls-files 逐字相同（每一個實�
     const bad = [];
     for (const g of [...globs].sort()) {
         const mine = gitFiles(g), git = truth(g);
+        // 這一條**刻意留在「> 0」**，不換成實測棘輪：它在迴圈裡逐個 glob 各驗一次，
+        // 而每個 glob 的母體大小本來就不同（`src/**/*.html` 與 `tests/**/*.test.mjs` 差一個數量級）。
+        // 共用一個數字就是 §8-1 第 3 條說的「同一門檻被兩個母體共用」——大的那個永遠通過，
+        // 小的那個永遠紅。這裡要問的也不是「有沒有變少」，是「這個 glob 是不是已經死了」。
         assert.ok(git.length > 0, `glob ${g || "(整個 repo)"} 連 git 自己都掃到 0 個檔 —— 這個 glob 已經死了`);
         const only = (a, b) => a.filter((x) => !b.includes(x));
         if (mine.length !== git.length || only(mine, git).length || only(git, mine).length)

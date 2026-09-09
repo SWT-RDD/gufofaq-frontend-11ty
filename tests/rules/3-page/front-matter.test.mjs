@@ -9,7 +9,7 @@ import { stripNjk } from "../../_lib/text.mjs";
 
 test("§3-1 走 page-shell 的頁面都要有 titleKey 與 pageHeading", () => {
     const pages = gitFiles('"src/pages/**/*.html"').filter((f) => /^layout: layouts\/page-shell\/page-shell\.html\s*$/m.test(read(f)));
-    assert.ok(pages.length > 0, "找不到任何 page-shell 頁面");
+    assert.ok(pages.length >= 40, `只掃到 ${pages.length}（門檻 40，＝這次實際量出來的）—— 找不到任何 page-shell 頁面`);
     const miss = pages.filter((f) => !/^titleKey:/m.test(read(f)) || !/^pageHeading:/m.test(read(f)));
     assert.equal(miss.length, 0, `缺 titleKey / pageHeading：\n${miss.join("\n")}`);
 });

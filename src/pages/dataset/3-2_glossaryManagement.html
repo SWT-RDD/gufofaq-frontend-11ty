@@ -20,6 +20,8 @@ permalink: 3-2_glossaryManagement.html
 {# id＝這張術語表的識別碼。**不可拿 loop.index 當列鍵**：
      這張表刪得掉列，位置不是身分——刪掉前一列之後，後面每一列的列鍵都會往前頂一格，
      React 端的 key 與逐列動作的目標會一起指錯人（§6 列鍵）。 #}
+{# **列序＝建立順序（id 升冪）**：這一頁沒有排序控制項，順序就是端點回的順序，所以它要是一條
+     說得出來的規則（§6）。改成別的排法就要連這一句一起改，兩者不可並存。 #}
 {% set glossaryTables = [
   { id: 4, name: "人資術語", whenToConsult: "詢問薪資、假勤、福利相關名詞時查閱。", normalizeRegex: "", toolPrompt: "回答人資名詞時，優先採用本表定義。", entryCount: 2 },
   { id: 5, name: "產品術語", whenToConsult: "詢問產品功能與模組名稱時查閱。", normalizeRegex: "[-.\\s]", toolPrompt: "", entryCount: 8 }

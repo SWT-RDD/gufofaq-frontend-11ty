@@ -1483,7 +1483,7 @@ bodyClass: guideline-page
                 <p class="text-gray m-0" data-i18n="dataset.excelOriginalUnavailable">這個檔不是從 Excel 匯入的，所以沒有原始資料可以對照。</p>
                 <p class="text-red m-0" data-i18n="regression.runIdMissing">網址少了執行編號，這份報表開不起來。請回「回歸案例集」頁，從那一列的「看報表」進來。</p>
             </div>
-            <div class="subtitle">出處：2-2-4 的模型相容性兩句、2-2-5 的基準設定缺漏與命中清單截斷、2-2-5 的桶子列數截斷（每桶 20 則上限，那一頁只有 10 則案例故恆不觸發）、5-2 的逐代碼覆寫重複、5-2 的別名綁定與「沒有啟用任何輸出規則」、5-10 的覆蓋率可開啟與「尚未量測」、4-2 的兩欄合規、3-5 的「還沒跑過健檢」、2-2-5「沒得比」的另一個方向（基準沒有它）、5-9 的金鑰兩態（已存在／尚未產生）、4-2 意圖判斷的「是」、3-1-3 多選刪除的量詞、5-3 長條圖的系列欄名、import-sync-tag 索引同步演不到的兩態（1-1-6 停在最常見的 pending，1-2-1 逐檔演 pending／unknown／缺席態）、平台聯絡窗口沒設過時登入頁與無權限窗各自換上的那一句、3-5「內容過短」那一格的 null 態（那一欄在它存在之前寫下的掃描列上是 NULL，與量到的 0 不是同一件事）、四句具名的空狀態（稽核表／健檢清單／未標註文件窗／覆蓋缺口——四頁的示範陣列都非空，故那四句在正式環境渲染不出來）、前台問答的「連結沒有 widget token」與「租戶沒設歡迎語時的預設開場」（兩顆在 faq-chatroom 都掛 .hidden）。它們在各自的頁面上都掛著 .hidden，或由一個在該頁恆為某一值的條件式產出，或是那一頁的示範推導不出來的枚舉成員，或住在切版畫不出內容的容器裡（&lt;canvas&gt;、業務 js 填的空槽）——那一態沒有人看得到，這裡是唯一可見處</div>
+            <div class="subtitle">出處：本節每一句的出處就是它自己的 <code class="inline-code">data-i18n</code> key——命名空間指出它屬於哪一塊，<code class="inline-code">grep</code> 那顆 key 就找得到它在哪一頁被條件渲染。<strong>這裡刻意不列清單</strong>（GUIDELINE §3-2）：這一節每加一句就要回頭改一次，而漏改的那一筆與寫對的那一筆長得一模一樣。</div>
         </section>
 
         <section id="errorPageSection">

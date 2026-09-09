@@ -212,7 +212,7 @@ test("§5/§6 別名表：四個階段照管線排序、檢索與出口預設不
         assert.ok(at[i] > at[i - 1], `別名面板順序錯了：${ORDER[i]} 排在 ${ORDER[i - 1]} 前面（管線序＝綁定／比對／檢索／推理／出口）`);
     const bind = opts("aliasTablesSelect");
     const bound = new Set(bind.all.filter((o) => o.sel).map((o) => o.v));
-    assert.ok(bound.size > 0, "示範要綁幾張表，否則後四顆的「⊆ 綁定」驗不到");
+    assert.ok(bound.size >= 3, `只掃到 ${bound.size}（門檻 3，＝這次實際量出來的）—— 示範要綁幾張表，否則後四顆的「⊆ 綁定」驗不到`);
     for (const id of ORDER.slice(1)) {
         // 四個 apply 清單必須 ⊆ 已綁定的那幾張別名表：選項只能來自綁定過的表，
         // 否則畫面演得出一個存不下去的狀態

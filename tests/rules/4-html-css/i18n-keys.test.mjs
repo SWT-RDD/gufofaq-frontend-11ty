@@ -21,7 +21,7 @@ test("§4-2 data-i18n-<後綴> 的後綴，必須是同一個標籤上真的存�
             if (!new RegExp(`(?:^|\\s)${target}=`).test(attrs))
                 hits.push(`dist/${f}  <${tag}> 有 data-i18n-${target}，卻沒有 ${target} 屬性：${raw.slice(0, 70)}`);
         }
-    assert.ok(pairCount > 0, "dist 裡一個 data-i18n-<後綴> 都掃不到 —— 這條測試在空轉");
+    assert.ok(pairCount >= 4434, `只掃到 ${pairCount}（門檻 4434，＝這次實際量出來的）—— dist 裡一個 data-i18n-<後綴> 都掃不到 —— 這條測試在空轉`);
     assert.equal(hits.length, 0, fail(hits));
 });
 
@@ -39,7 +39,7 @@ test("§4-2 data-i18n-<後綴> 的後綴，必須在 lang-toggle.js 的 ATTRS �
     for (const f of distHtml) for (const { tag, attrs } of tagsOf(distDoc(f)))
         for (const m of attrs.matchAll(/(?:^|\s)data-i18n-([\w-]+)=/g))
             if (!used.has(m[1])) used.set(m[1], `dist/${f} <${tag}>`);
-    assert.ok(used.size > 0, "dist 裡一個 data-i18n-<後綴> 都掃不到 —— 這條測試在空轉");
+    assert.ok(used.size >= 5, `只掃到 ${used.size}（門檻 5，＝這次實際量出來的）—— dist 裡一個 data-i18n-<後綴> 都掃不到 —— 這條測試在空轉`);
 
     const hits = [...used].filter(([suffix]) => !allowed.has(suffix))
         .map(([suffix, where]) => `data-i18n-${suffix}（${where}）不在 ATTRS：${[...allowed].join("／")}`);
@@ -104,7 +104,7 @@ test("§4-2 dist 渲染出來的每個 i18n key 都要在 en.json（模板組出
     assert.equal(missing.length, 0, `英文模式會默默顯示繁中：\n${missing.join("\n")}`);
     // 動態前綴（由既有的收集邏輯推導，不手打清單）：那些家族在孤兒 key 測試裡是整批放行的
     const { dynamicPrefixes } = collectUsedI18nKeys();
-    assert.ok(dynamicPrefixes.size > 0, "收不到任何動態前綴 —— 這半條測試在空轉");
+    assert.ok(dynamicPrefixes.size >= 2, `只掃到 ${dynamicPrefixes.size}（門檻 2，＝這次實際量出來的）—— 收不到任何動態前綴 —— 這半條測試在空轉`);
     const orphans = Object.keys(en).filter((k) => [...dynamicPrefixes].some((p) => k.startsWith(p)) && !rendered.has(k));
     assert.equal(orphans.length, 0, `動態家族的孤兒 key（沒有任何頁面渲染得出來的死翻譯）：\n${orphans.join("\n")}`);
 });
@@ -137,7 +137,7 @@ test("§4-2 選項的狀態後綴：data-suffix 與 data-suffix-key 必須成對
             }
         });
     }
-    assert.ok(pairs > 0, "沒有任何帶狀態後綴的 <option> —— 這條測試在空轉（5-2 的 MCP Server 清單應有一筆停用中）");
+    assert.ok(pairs >= 3, `只掃到 ${pairs}（門檻 3，＝這次實際量出來的）—— 沒有任何帶狀態後綴的 <option> —— 這條測試在空轉（5-2 的 MCP Server 清單應有一筆停用中）`);
     assert.equal(hits.length, 0, fail(hits));
 });
 

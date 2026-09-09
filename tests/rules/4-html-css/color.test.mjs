@@ -99,7 +99,7 @@ test("§4 文字族 token 不可拿去當 background-color / border-color", () =
     for (const { sels, body } of blocks) {
         if (/(?:^|[\s;])(?:-webkit-)?mask\s*:/.test(body)) for (const s of sels) masked.push(compound(s));
     }
-    assert.ok(masked.length > 0, "找不到任何帶遮罩的規則 —— 豁免條件在空轉");
+    assert.ok(masked.length >= 29, `只掃到 ${masked.length}（門檻 29，＝這次實際量出來的）—— 找不到任何帶遮罩的規則 —— 豁免條件在空轉`);
     const isMasked = (sel) => {
         const own = compound(sel);
         return masked.some((m) => [...m].every((t) => own.has(t)));

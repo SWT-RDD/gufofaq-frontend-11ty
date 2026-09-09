@@ -495,7 +495,7 @@ test("§4 共用元件把 data-toast 開成參數時，閘門也要開成參數�
     for (const [toastParam, gateParams, exempt] of PAIRS) {
         // ① 元件那一側：吃了 toast 參數，就要吐得出閘門屬性
         const owners = srcHtml.filter((f) => f.includes("_includes/") && read(f).includes(`data-toast="{{ ${toastParam} `));
-        assert.ok(owners.length > 0, `找不到吃 ${toastParam} 的元件 —— 參數改名了？這條測試在空轉`);
+        assert.ok(owners.length >= 1, `只掃到 ${owners.length}（門檻 1，＝這次實際量出來的）—— 找不到吃 \${toastParam} 的元件 —— 參數改名了？這條測試在空轉`);
         for (const f of owners)
             if (!gateParams.some((g) => read(f).includes(`{{ ${g} }}`)))
                 hits.push(`${f}  吃了 ${toastParam} 卻沒有任何閘門參數（${gateParams.join("／")}）`);

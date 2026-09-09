@@ -31,7 +31,7 @@ test("§4 每個 <img> 都要有 width 與 height（消除版位跳動）", () =
         for (const t of tagsOf(doc)) if (t.tag === "img") imgCount++;
         hits.push(...scanTags(doc, rule, `dist/${f}`));
     }
-    assert.ok(imgCount > 0, "dist 裡一張 <img> 都掃不到 —— 這條測試在空轉");
+    assert.ok(imgCount >= 306, `只掃到 ${imgCount}（門檻 306，＝這次實際量出來的）—— dist 裡一張 <img> 都掃不到 —— 這條測試在空轉`);
     probe("§4 img 尺寸", (s) => scanTags(s, rule),
         // 缺一邊、兩邊都缺、以及只用 data-* 蒙混（那正是 \b 會放行的那一種）
         ['<img src="a.png" width="48">', '<img src="a.png">', '<img src="a.png" data-width="48" data-height="48">'],
@@ -54,7 +54,7 @@ test("§4 每個 <img> 都要 decoding=\"async\"，且不得 loading=\"lazy\"", 
         for (const t of tagsOf(doc)) if (t.tag === "img") imgCount++;
         hits.push(...scanTags(doc, rule, `dist/${f}`));
     }
-    assert.ok(imgCount > 0, "dist 裡一張 <img> 都掃不到 —— 這條測試在空轉");
+    assert.ok(imgCount >= 306, `只掃到 ${imgCount}（門檻 306，＝這次實際量出來的）—— dist 裡一張 <img> 都掃不到 —— 這條測試在空轉`);
     probe("§4 img decoding／loading", (s) => scanTags(s, rule),
         ['<img src="a.png" width="1" height="1">',
             '<img src="a.png" width="1" height="1" decoding="async" loading="lazy">',
@@ -183,7 +183,7 @@ test("§4 每個開窗鈕（data-open-modal / openModal('X')）在同一頁上�
                 if (!ids.has(m[1])) hits.push(`dist/${f}  開窗鈕指向 "${m[1]}"，本頁找不到對應的 id`);
             }
     }
-    assert.ok(refCount > 0, "dist 裡一個開窗鈕都掃不到 —— 機制換掉了就要跟著改這條測試，別讓它變假綠燈");
+    assert.ok(refCount >= 150, `只掃到 ${refCount}（門檻 150，＝這次實際量出來的）—— dist 裡一個開窗鈕都掃不到 —— 機制換掉了就要跟著改這條測試，別讓它變假綠燈`);
     assert.equal(hits.length, 0, `按鈕點了打不開：\n${fail(hits)}`);
 });
 
@@ -217,8 +217,8 @@ test("§4 每個 <dialog> 在它所在的那一頁上都有辦法被打開（反
             hits.push(`dist/${f}  <dialog id="${id}"> 這一頁上打不開它，元件庫頁也沒有示範觸發器`);
         }
     }
-    assert.ok(dialogCount > 0, "dist 裡一個 <dialog> 都掃不到 —— 這條測試在空轉");
-    assert.ok(demoOpeners.size > 0, "元件庫頁一個 data-open-modal 都掃不到 —— 這條測試在空轉");
+    assert.ok(dialogCount >= 196, `只掃到 ${dialogCount}（門檻 196，＝這次實際量出來的）—— dist 裡一個 <dialog> 都掃不到 —— 這條測試在空轉`);
+    assert.ok(demoOpeners.size >= 26, `只掃到 ${demoOpeners.size}（門檻 26，＝這次實際量出來的）—— 元件庫頁的示範觸發器變少了，或收集器壞了`);
     assert.equal(hits.length, 0, `看不到的彈窗（元件庫頁要放示範觸發器）：
 ${fail(hits)}`);
 });

@@ -75,7 +75,7 @@ test("§5 body 捲動鎖是純 CSS，js 不得自己鎖", () => {
     assert.ok(css.includes("html:has([data-scroll-lock].active)"), "_base.scss 少了浮層開關那半邊的捲動鎖");
     // 契約的另一半：至少要有一個元素真的掛了 data-scroll-lock，否則規則永遠不會命中
     const lockers = distHtml.filter((f) => /data-scroll-lock/.test(distDoc(f)));
-    assert.ok(lockers.length > 0, "沒有任何 markup 掛 data-scroll-lock —— 手機選單開著時不會鎖捲動");
+    assert.ok(lockers.length >= 41, `只掃到 ${lockers.length}（門檻 41，＝這次實際量出來的）—— 沒有任何 markup 掛 data-scroll-lock —— 手機選單開著時不會鎖捲動`);
 
     const hits = [];
     for (const f of srcJs)

@@ -86,7 +86,15 @@ test("[docs] README 列的「展示片段」名單，與「只被元件總覽頁
     assert.ok(line, "README 找不到那一行「展示片段」名單 —— 格式變了，這條測試在空轉");
     const listed = new Set([...line.matchAll(/`([a-z][a-z0-9-]*)`/g)].map((m) => m[1]));
     const missing = [...showcase].filter((n) => !listed.has(n)).sort();
-    const ghost = [...listed].filter((n) => !showcase.has(n) && includersOf.has(n)).sort();
+    // 幽靈有**兩種**，而 `includersOf.has(n)` 那道條件只擋得住第一種：
+    //   ① 元件還在，但已經被生產頁 include ⇒ 它不再是展示片段。
+    //   ② **元件整支被刪了** ⇒ 它連 `includersOf` 都沒有，於是那一筆從這條規則的視野裡整個消失，
+    //      README 上留著一個指向不存在元件的名字，而沒有任何一關會紅——那正是這支測試檔頭寫的
+    //      「文件還在、東西沒了」。兩種分開報：下一步不同（一個是移出清單，一個是清掉死名字）。
+    const allNames = new Set(componentDirs.map((c) => c.name));
+    const ghost = [...listed].filter((n) => !showcase.has(n) && allNames.has(n)).sort();
+    const dead = [...listed].filter((n) => !allNames.has(n)).sort();
     assert.deepEqual(missing, [], `README 那一行漏了這幾支展示片段：${missing.join("、")}`);
     assert.deepEqual(ghost, [], `README 那一行列了已經不是展示片段的元件（它已經被生產頁 include）：${ghost.join("、")}`);
+    assert.deepEqual(dead, [], `README 那一行列了已經不存在的元件（整支被刪了，名字還留在清單上）：${dead.join("、")}`);
 });

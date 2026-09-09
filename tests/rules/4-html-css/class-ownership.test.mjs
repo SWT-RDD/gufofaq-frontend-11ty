@@ -20,7 +20,7 @@ test("§4 .btn-group 只在 .default-table 裡有規則，表格外掛它等於�
     // 所以它看不到這一型；這條把「.btn-group」這個具體案例釘死。
     const css = read("dist/css/main.css");
     const rules = [...css.matchAll(/([^{}]*\.btn-group[^{}]*)\{/g)].map((m) => m[1].trim());
-    assert.ok(rules.length > 0, ".btn-group 在編譯後的 css 找不到任何規則 —— 這條測試在空轉");
+    assert.ok(rules.length >= 1, `只掃到 ${rules.length}（門檻 1，＝這次實際量出來的）—— .btn-group 在編譯後的 css 找不到任何規則 —— 這條測試在空轉`);
     assert.ok(
         rules.every((r) => r.includes(".default-table")),
         `.btn-group 出現了不帶 .default-table 祖先的規則，這條測試的前提變了：\n${rules.join("\n")}`,
