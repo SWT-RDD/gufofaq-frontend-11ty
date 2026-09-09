@@ -10,6 +10,9 @@ import { commentsOf } from "../_lib/text.mjs";
 test("[meta] commentsOf 的區塊註解起點要有字串／正則意識", () => {
     // 這支解析器是「出處不得引行號」「註解不得寫時間軸」等多條規則的共同母體，
     // 它多吃或少吃一段，那幾條會一起靜靜地換一套判準。
+    // 負控：整條測試就是那幾條規則共用母體的負控本身——三個合成樣本各釘一種形狀
+    //（不該收的字面／該收的行首區塊註解／該收的尾隨區塊註解），少了任一個，
+    // 解析器往那個方向壞掉時上游那幾條規則會一起靜靜地換判準而全綠。
     const ghost = commentsOf(`const a = glob('"src/**/*.html"');\nconst b = 1;\nconst c = /[*/]/;\n`, "js");
     assert.deepEqual(ghost, [], "glob 字面與正則字元類裡的斜線星號被當成區塊註解起點了");
     const real = commentsOf("code();\n/* 真的區塊註解 */\nmore();\n", "js");
@@ -39,6 +42,14 @@ test("[meta] gitFiles 的 JS 篩選與 git ls-files 逐字相同（每一個實�
         return [...new Set([...ls(""), ...ls("--others --exclude-standard")])]
             .filter(fileExists).sort();
     };
+    const only = (a, b) => a.filter((x) => !b.includes(x));
+    const differs = (mine, git) => mine.length !== git.length || !!only(mine, git).length || !!only(git, mine).length;
+    // 負控（合成兩份清單走同一支比對）：比對只看長度的話，「多收一個、漏收一個」這種
+    // 最典型的 pathspec 抄錯會靜靜地全綠——而那正是這條對帳要抓的東西。
+    assert.equal(differs(["a"], ["a"]), false, "兩份一樣的清單被判成不一致");
+    assert.equal(differs(["a", "b"], ["a"]), true, "JS 多收一個抓不到");
+    assert.equal(differs(["a"], ["a", "b"]), true, "JS 漏收一個抓不到");
+    assert.equal(differs(["a", "b"], ["a", "c"]), true, "數量相同、內容不同（多收一個又漏收一個）抓不到");
     const bad = [];
     for (const g of [...globs].sort()) {
         const mine = gitFiles(g), git = truth(g);
@@ -47,8 +58,7 @@ test("[meta] gitFiles 的 JS 篩選與 git ls-files 逐字相同（每一個實�
         // 共用一個數字就是 §8-1 第 3 條說的「同一門檻被兩個母體共用」——大的那個永遠通過，
         // 小的那個永遠紅。這裡要問的也不是「有沒有變少」，是「這個 glob 是不是已經死了」。
         assert.ok(git.length > 0, `glob ${g || "(整個 repo)"} 連 git 自己都掃到 0 個檔 —— 這個 glob 已經死了`);
-        const only = (a, b) => a.filter((x) => !b.includes(x));
-        if (mine.length !== git.length || only(mine, git).length || only(git, mine).length)
+        if (differs(mine, git))
             bad.push(`${g || "(整個 repo)"}：JS 多收 ${only(mine, git).join(",") || "無"}／漏收 ${only(git, mine).join(",") || "無"}`);
     }
     assert.equal(bad.length, 0, `gitFiles 的篩選與 git 不一致：\n${bad.join("\n")}`);

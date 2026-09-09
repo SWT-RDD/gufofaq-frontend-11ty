@@ -49,6 +49,16 @@ test("[meta] 每一顆會改檔的 hook 都宣告了範圍", () => {
     // 不驗這一邊的話，任何一顆漏寫 files: 的 hook 只要順手加上 always_run 就能繞過上面那道。
     const always = hooks.filter((h) => /^\s*always_run: true/m.test(h.body)).map((h) => h.id);
     assert.deepEqual(always, ["full-check"], `走 always_run 的應該只有 full-check，實際是 ${always.join("、")}`);
+
+    // 負控（合成 hook 設定走真判準）：規則寫窄了就認不出違規，而那時它一樣全綠。
+    assert.ok(!scoped("        entry: npx stylelint\n        language: system\n"), "沒有 files: 判不出來");
+    assert.ok(scoped("        entry: npx stylelint\n        files: ^src/\n"), "有 files: 被誤判成沒有");
+    assert.ok(scoped("        always_run: true\n        pass_filenames: false\n"), "全跑那一顆被誤判成沒有範圍");
+    assert.ok(!scoped("        always_run: true\n"), "只有 always_run、沒有 pass_filenames: false 不該放行");
+    // 切塊器本身：切不出東西的話，上面每一條都是在空集合上通過。
+    const sample = "repos:\n  - repo: local\n    hooks:\n      - id: a\n        files: ^x$\n      - id: b\n        files: ^y$\n";
+    const cut = sample.split(/\n(?=\s*- id: )/).slice(1).filter((c) => /^\s*- id: (\S+)/.test(c));
+    assert.equal(cut.length, 2, "切塊器切不出兩顆 hook —— 上面每一條都會在空集合上通過");
 });
 
 // 「這顆 hook 宣告了射程」：有 files:，或它是那顆不改檔、射程本來就是整個工作區的
@@ -115,6 +125,21 @@ test("[meta] 檔案衛生那一族的射程蓋得住版控內每一支手寫檔"
     // 死豁免：GENERATED 登記的檔要真的還在版控裡，否則那筆是留著的空門
     const gone = [...GENERATED.keys()].filter((f) => !tracked.includes(f));
     assert.deepEqual(gone, [], `GENERATED 登記了不存在的檔：${gone.join("、")}`);
+
+    // 負控（合成 hook 設定 ＋ 合成檔案清單走真判準 uncoveredBy）：
+    // 少了這幾條，「範圍漏了一塊」在這條規則下是零防護。
+    const sampleFiles = ["src/pages/faq/faq.html", "e2e/a11y.spec.mjs", "eleventy.config.js",
+        ".gitattributes", "README.md", "package-lock.json"];
+    const hookBody = (range, exclude) => `        files: ${range}\n`
+        + (exclude ? `        exclude: ${exclude}\n` : "");
+    assert.deepEqual(uncoveredBy(hookBody("^(src/)"), sampleFiles),
+        ["e2e/a11y.spec.mjs", "eleventy.config.js", ".gitattributes", "README.md"],
+        "寫窄的射程沒有被抓出來 —— 這條測試對「範圍漏了一塊」是零防護");
+    assert.deepEqual(uncoveredBy(hookBody("^(src/|e2e/|\\.[^/]+$|[^/]+\\.(md|js)$)"), sampleFiles), [],
+        "涵蓋齊全的射程被誤判成有洞");
+    // exclude 也要算進射程：收得進來、卻被排掉的檔等於沒蓋到
+    assert.deepEqual(uncoveredBy(hookBody("^(.*)$", "^README\\.md$"), sampleFiles), ["README.md"],
+        "被 exclude 排掉的檔被當成有守門 —— exclude 就成了繞過這條規則的後門");
 });
 
 test("[meta] core.hooksPath 必須是未設定的，否則 pre-commit 安靜地不執行", () => {
@@ -140,10 +165,15 @@ test("[meta] 本機那幾顆 local hook 的實作與規則組都指得到", () =
     //    腳本被搬走或改名時，只會在有人 commit 的那一刻報 No such file，而那時他正在做別的事。
     const entries = [...text.matchAll(/^\s*entry: (.+)$/gm)].map((m) => m[1].trim());
     assert.ok(entries.length >= 3, `只認出 ${entries.length} 個 entry —— 抽取失準，這條測試在空轉`);
-    const missing = entries
+    const missingScripts = (list, exists) => list
         .flatMap((e) => e.split(/\s+/))
         .filter((tok) => /^(scripts|tests)\/.+\.mjs$/.test(tok))
-        .filter((f) => !existsSync(f));
+        .filter((f) => !exists(f));
+    const missing = missingScripts(entries, existsSync);
+    // 負控（合成 entry 清單走同一支）
+    assert.deepEqual(missingScripts(["node scripts/ghost.mjs"], () => false), ["scripts/ghost.mjs"], "entry 指到不存在的腳本，抓不到");
+    assert.deepEqual(missingScripts(["node scripts/real.mjs"], () => true), [], "存在的腳本被誤判");
+    assert.deepEqual(missingScripts(["npx --no-install stylelint"], () => false), [], "不是本 repo 腳本的 entry 被掃進母體");
     assert.deepEqual(missing, [], `entry 指到不存在的腳本：${missing.join("、")}`);
 
     // ② entry 用到的 npm 指令要真的存在（`npm run check` 是 pre-push 那一顆的全部內容）
@@ -181,31 +211,4 @@ test("[meta] 每一支會擋下改動的 workflow 都跑同一份設定，而且
         assert.match(wf, /hashFiles\('\.pre-commit-config\.yaml'\)/,
             `${f} 的 pre-commit 環境快取沒有綁 .pre-commit-config.yaml 的內容 —— 改了 rev 也不會重建`);
     }
-});
-
-test("[meta] 上面那幾條的負控：沒有 files: 的 hook 與指不到的 entry 都要抓得出來", () => {
-    // 規則被寫窄（認不出違規）時全綠，所以拿合成樣本走**真測試那一份**判準各驗一次。
-    assert.ok(!scoped("        entry: npx stylelint\n        language: system\n"), "沒有 files: 判不出來");
-    assert.ok(scoped("        entry: npx stylelint\n        files: ^src/\n"), "有 files: 被誤判成沒有");
-    assert.ok(scoped("        always_run: true\n        pass_filenames: false\n"), "全跑那一顆被誤判成沒有範圍");
-    assert.ok(!scoped("        always_run: true\n"), "只有 always_run、沒有 pass_filenames: false 不該放行");
-
-    // 射程那一條：拿一份**寫窄的** hook 設定走真判準（uncoveredBy），要抓得出漏掉的那幾支
-    const sampleFiles = ["src/pages/faq/faq.html", "e2e/a11y.spec.mjs", "eleventy.config.js",
-        ".gitattributes", "README.md", "package-lock.json"];
-    const hookBody = (range, exclude) => `        files: ${range}\n`
-        + (exclude ? `        exclude: ${exclude}\n` : "");
-    assert.deepEqual(uncoveredBy(hookBody("^(src/)"), sampleFiles),
-        ["e2e/a11y.spec.mjs", "eleventy.config.js", ".gitattributes", "README.md"],
-        "寫窄的射程沒有被抓出來 —— 那條測試對「範圍漏了一塊」是零防護");
-    assert.deepEqual(uncoveredBy(hookBody("^(src/|e2e/|\\.[^/]+$|[^/]+\\.(md|js)$)"), sampleFiles), [],
-        "涵蓋齊全的射程被誤判成有洞");
-    // exclude 也要算進射程：收得進來、卻被排掉的檔等於沒蓋到
-    assert.deepEqual(uncoveredBy(hookBody("^(.*)$", "^README\\.md$"), sampleFiles), ["README.md"],
-        "被 exclude 排掉的檔被當成有守門 —— exclude 就成了繞過這條規則的後門");
-
-    // 切塊器：對一份合成的兩顆 hook 設定要切出兩顆
-    const sample = "repos:\n  - repo: local\n    hooks:\n      - id: a\n        files: ^x$\n      - id: b\n        files: ^y$\n";
-    const cut = sample.split(/\n(?=\s*- id: )/).slice(1).filter((c) => /^\s*- id: (\S+)/.test(c));
-    assert.equal(cut.length, 2, "切塊器切不出兩顆 hook —— 上面每一條都會在空集合上通過");
 });

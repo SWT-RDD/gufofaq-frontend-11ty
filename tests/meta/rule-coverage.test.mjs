@@ -167,7 +167,7 @@ test("[meta] 測試總數的棘輪", () => {
     // 實測值。刪測試是一次有意識的決定，要連這個數字一起調下來並寫理由；
     // 沿用一個算出來的估值等於這條守門不存在。
     const total = allTests().length;
-    assert.ok(total >= 253, `只掃到 ${total} 條測試 —— 有測試在搬家途中掉了，或標題抽取失準`);
+    assert.ok(total >= 252, `只掃到 ${total} 條測試 —— 有測試在搬家途中掉了，或標題抽取失準`);
 });
 
 test("[meta] §8-1 第 7 條：零命中型規則要有負控——沒有負控的條數只准往下走", () => {
@@ -218,7 +218,7 @@ test("[meta] §8-1 第 7 條：零命中型規則要有負控——沒有負控�
     const missing = blocks.length - withControl;
     // 棘輪＝這次實際量出來的條數。**只准往下**：補了負控就把它調下來（那是一次有意識的決定），
     // 調上去等於把「新寫的規則不必附負控」寫進規則裡。
-    const MISSING_CEILING = 24;
+    const MISSING_CEILING = 16;
     assert.ok(missing <= MISSING_CEILING,
         `缺負控的零命中型測試從 ${MISSING_CEILING} 條增加到 ${missing} 條——新寫的零命中型規則要附 probe()：\n${blocks.filter((b) => !b.ok).map((b) => ` ${b.f}  ${b.title}`).join("\n")}`);
 });
