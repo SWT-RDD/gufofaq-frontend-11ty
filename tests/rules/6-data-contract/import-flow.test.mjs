@@ -121,23 +121,43 @@ test("§6 匯入報告的落點表（REPORT_HOSTS）與實況一致——正反�
     const pages = srcHtml.filter((f) => !f.includes("_includes"));
     const byBase = new Map(pages.map((f) => [basename(f, ".html"), f]));
     assert.ok(REPORT_HOSTS.length >= 2, "REPORT_HOSTS 少於兩條流程 —— 那張表就沒有「不對稱」可記了");
-    const bad = [];
-    for (const { flow, submit, report } of REPORT_HOSTS) {
-        for (const [role, name] of [["submit", submit], ["report", report]])
-            if (!byBase.has(name)) bad.push(`${flow} 的 ${role} 頁 ${name} 不存在（幽靈列）`);
-        if (!byBase.has(submit) || !byBase.has(report)) continue;
-        // ① report 那一頁真的畫得出報告
-        if (!includesOfPage(read(byBase.get(report))).has(REPORT_COMPONENT))
-            bad.push(`${flow}：${report} 沒有 include ${REPORT_COMPONENT} —— 落點過期了`);
-        // ② submit 那一頁真的是「送出」那一步（動作模式的鈕，不是純換頁的連結）
-        if (!/\{%-?\s*set\s+stepNextAction\s*=\s*true/.test(stripNjk(read(byBase.get(submit)))))
-            bad.push(`${flow}：${submit} 不是動作模式（沒有 stepNextAction = true）—— 它不是送出那一步`);
-    }
+    // 正反兩向各抽成一支（吃「落點表 ＋ 三個查詢函式」），負控才餵得進合成表走同一支。
+    const checkHosts = (hosts, exists, drawsReport, isActionStep) => {
+        const out = [];
+        for (const { flow, submit, report } of hosts) {
+            for (const [role, name] of [["submit", submit], ["report", report]])
+                if (!exists(name)) out.push(`${flow} 的 ${role} 頁 ${name} 不存在（幽靈列）`);
+            if (!exists(submit) || !exists(report)) continue;
+            // ① report 那一頁真的畫得出報告
+            if (!drawsReport(report)) out.push(`${flow}：${report} 沒有 include ${REPORT_COMPONENT} —— 落點過期了`);
+            // ② submit 那一頁真的是「送出」那一步（動作模式的鈕，不是純換頁的連結）
+            if (!isActionStep(submit)) out.push(`${flow}：${submit} 不是動作模式（沒有 stepNextAction = true）—— 它不是送出那一步`);
+        }
+        return out;
+    };
     // ③ 反向：沒有第三個落點漏在表外（有人加了第三條匯入流程、卻沒進表 ⇒ 下面那條 toast 規則
     //    對它就永遠不會被執行到，而那正是這張表要防的靜默）
+    const unlisted = (actualPages, hosts) => {
+        const listed = new Set(hosts.map((r) => r.report));
+        return actualPages.filter((f) => !listed.has(f)).map((f) => `${f} include 了 ${REPORT_COMPONENT}，卻不在 REPORT_HOSTS 裡`);
+    };
+    const drawsReport = (name) => includesOfPage(read(byBase.get(name))).has(REPORT_COMPONENT);
+    const isActionStep = (name) => /\{%-?\s*set\s+stepNextAction\s*=\s*true/.test(stripNjk(read(byBase.get(name))));
     const actual = pages.filter((f) => includesOfPage(read(f)).has(REPORT_COMPONENT)).map((f) => basename(f, ".html"));
-    const listed = new Set(REPORT_HOSTS.map((r) => r.report));
-    for (const f of actual) if (!listed.has(f)) bad.push(`${f} include 了 ${REPORT_COMPONENT}，卻不在 REPORT_HOSTS 裡`);
+    const bad = [
+        ...checkHosts(REPORT_HOSTS, (n) => byBase.has(n), drawsReport, isActionStep),
+        ...unlisted(actual, REPORT_HOSTS),
+    ];
     assert.ok(actual.length >= 2, `只有 ${actual.length} 頁 include ${REPORT_COMPONENT} —— 這條測試在空轉`);
+    // 負控（合成落點表 ＋ 三個合成查詢走同一支）：四種過期各要抓得到，齊備的要放行。
+    const ROW = [{ flow: "probe", submit: "s", report: "r" }];
+    const yes = () => true, no = () => false;
+    assert.equal(checkHosts(ROW, yes, yes, yes).length, 0, "落點表與實況一致時被誤判");
+    assert.equal(checkHosts(ROW, (n) => n !== "r", yes, yes).length, 1, "report 頁已刪（幽靈列）抓不到");
+    assert.equal(checkHosts(ROW, (n) => n !== "s", yes, yes).length, 1, "submit 頁已刪（幽靈列）抓不到");
+    assert.equal(checkHosts(ROW, yes, no, yes).length, 1, "report 頁不再畫報告（落點過期）抓不到");
+    assert.equal(checkHosts(ROW, yes, yes, no).length, 1, "submit 頁不是動作模式，抓不到");
+    assert.deepEqual(unlisted(["r"], ROW), [], "表上有的落點被判成漏列");
+    assert.equal(unlisted(["r", "ghost"], ROW).length, 1, "第三個落點漏在表外，抓不到");
     assert.equal(bad.length, 0, `§6 匯入報告落點表過期：\n${fail(bad)}`);
 });

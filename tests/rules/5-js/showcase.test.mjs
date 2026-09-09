@@ -19,21 +19,36 @@ test("§5/§6 元件 scss 的巢狀狀態/變體 class（&.is-*）都要有頁�
     // 執行期以前綴串接生成的 class：由 toast 的型別常數推導，不手打（同 data-toast-type 白名單那條的來源）
     const runtimeGenerated = new Set(/toast\s+toast-/.test(jsBlob) ? TOAST_TYPES_ALLOWED.map((t) => `toast-${t}`) : []);
     // 下面也很容易寫成 `jsBlob.includes(cls)`（第三份子字串比對）。改吃共用正本。
-    const hits = [];
     let seen = 0;
+    // 規則吃「scss 原文 ＋ 三種『誰演得出來』的來源」，負控才餵得進合成 scss 走同一支。
+    const scanNested = (src, where, markup, runtime, jsOwned) => {
+        const out = [];
+        for (const m of src.matchAll(/&\.([a-zA-Z][\w-]*)/g)) {
+            const cls = m[1];
+            seen++;
+            if (runtime.has(cls)) continue;
+            const re = new RegExp(`(?:class="[^"]*\\b${cls}\\b|\\b${cls}\\b)`);
+            if (re.test(markup) || jsOwned.has(cls)) continue;
+            out.push(`${where}  &.${cls}  ← scss 定義了，但沒有任何 dist 頁面或元件 js 用到它`);
+        }
+        return out;
+    };
+    const hits = [];
     for (const { bucket, name, path } of componentDirs) {
         const scss = `${path}/_${name}.scss`;
         if (!existsSync(scss)) continue;
-        for (const m of read(scss).matchAll(/&\.([a-zA-Z][\w-]*)/g)) {
-            const cls = m[1];
-            seen++;
-            if (runtimeGenerated.has(cls)) continue;
-            const re = new RegExp(`(?:class="[^"]*\\b${cls}\\b|\\b${cls}\\b)`);
-            if (re.test(distMarkup) || jsOwnedClasses.has(cls)) continue;
-            hits.push(`${bucket}/${name}  &.${cls}  ← scss 定義了，但沒有任何 dist 頁面或元件 js 用到它`);
-        }
+        hits.push(...scanNested(read(scss), `${bucket}/${name}`, distMarkup, runtimeGenerated, jsOwnedClasses));
     }
+    // 下限先結算，之後負控的合成樣本才不會灌進母體計數。
     assert.ok(seen >= 116, `只掃到 ${seen} 個巢狀狀態 class —— 這條測試在空轉`);
+    // 負控（合成 scss ＋ 三種來源各一條走同一支）
+    const NO = new Set();
+    const SCSS = ".card { &.is-depth-3 { gap: 0 } }";
+    assert.equal(scanNested(SCSS, "p", "", NO, NO).length, 1, "沒有任何頁面演得出來的狀態 class，抓不到");
+    assert.equal(scanNested(SCSS, "p", `<div class="card is-depth-3">`, NO, NO).length, 0, "dist 上演得到的被誤判");
+    assert.equal(scanNested(SCSS, "p", "", new Set(["is-depth-3"]), NO).length, 0, "執行期生成的 class 被誤判");
+    assert.equal(scanNested(SCSS, "p", "", NO, new Set(["is-depth-3"])).length, 0, "元件 js 認領的被誤判");
+    assert.equal(scanNested(".card { gap: 0 }", "p", "", NO, NO).length, 0, "頂層根 class 被掃進母體（那是另一條規則）");
     assert.equal(hits.length, 0, `§5：沒有頁面演得出的狀態 class＝出貨死 CSS（示範資料補到演得到，或刪掉規則）：\n${fail(hits)}`);
 });
 
@@ -251,6 +266,7 @@ test("§5 `.hidden` 判準①的另一半：src 引用得到、dist 卻一頁都
         return out;
     })();
     assert.ok(forElseKeys.size >= 57, `for-else 空狀態 key 只推導出 ${forElseKeys.size} 顆 —— 解析器壞了，這條豁免在空轉`);
+    // 負控（推導器的兩個方向）：收得到既有的空狀態列，也不會把迴圈本體的 key 一起收進豁免面。
     for (const sample of ["dataset.noFiles", "serviceKey.none"])
         assert.ok(forElseKeys.has(sample), `for-else 推導漏了 ${sample} —— 解析器認不出既有的空狀態列`);
     assert.ok(!forElseKeys.has("action.delete"), "for-else 推導把迴圈**本體**的 key 也收進來了（豁免面被放到整個迴圈）");
@@ -284,14 +300,24 @@ test("§5 `.hidden` 判準①的另一半：src 引用得到、dist 卻一頁都
     assert.ok(used.size > 2042, `只收集到 ${used.size} 個用到的 key —— 這條測試在空轉`);
     assert.ok(rendered.size > 2071, `dist 只渲染出 ${rendered.size} 個 key —— 這條測試在空轉`);
     const unrendered = [...used.keys()].filter((k) => !rendered.has(k));
-    const hits = [];
-    const usedSpec = new Set(), usedJs = new Set();
-    for (const k of unrendered) {
-        if (forElseKeys.has(k)) { usedSpec.add(k); continue; }
-        if (JS_RENDERED.has(k)) { usedJs.add(k); continue; }
-        hits.push(`${k}  ← ${used.get(k)[0]}  這顆 key 在 dist 全站一頁都渲染不出來` +
-            `（`+"`{% if %}` 的條件恆為某值？）——沒有人看過它的長相");
-    }
+    // 分類抽成一支（吃「渲染不出來的 key ＋ 兩張豁免表」），負控才餵得進合成清單走同一支。
+    const classify = (keys, spec, js, where) => {
+        const hits = [], usedSpec = new Set(), usedJs = new Set();
+        for (const k of keys) {
+            if (spec.has(k)) { usedSpec.add(k); continue; }
+            if (js.has(k)) { usedJs.add(k); continue; }
+            hits.push(`${k}  ← ${where(k)}  這顆 key 在 dist 全站一頁都渲染不出來` +
+                `（`+"`{% if %}` 的條件恆為某值？）——沒有人看過它的長相");
+        }
+        return { hits, usedSpec, usedJs };
+    };
+    const { hits, usedSpec, usedJs } = classify(unrendered, forElseKeys, JS_RENDERED, (k) => used.get(k)[0]);
+    // 負控（合成 key 清單 ＋ 兩張合成豁免表走同一支）
+    const at = () => "p.html";
+    assert.equal(classify(["x.y"], new Set(), new Map(), at).hits.length, 1, "渲染不出來又沒登記的 key，抓不到");
+    assert.equal(classify(["x.y"], new Set(["x.y"]), new Map(), at).hits.length, 0, "for-else 空狀態那一族被誤判");
+    assert.equal(classify(["x.y"], new Set(), new Map([["x.y", "ui/x/x.js"]]), at).hits.length, 0, "js 產生的那一族被誤判");
+    assert.equal(classify([], new Set(), new Map(), at).hits.length, 0, "沒有任何渲染不出來的 key 時憑空生出違規");
     // 白名單衛生：登記了卻不需要＝死豁免；而 js 那一族的「是誰產生它」要真的回去那支檔案驗到
     assert.ok(usedSpec.size >= 51, `只掃到 ${usedSpec.size}（門檻 51，＝這次實際量出來的）—— 推導出來的 for-else 豁免一顆都沒有派上用場 —— 這條豁免在空轉（不豁免也會綠）`);
     const staleJs = [...JS_RENDERED.keys()].filter((k) => !usedJs.has(k));

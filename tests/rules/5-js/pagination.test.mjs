@@ -6,26 +6,40 @@ import { paginationWindowCalc } from "../../_lib/dom.mjs";
 
 test("§5 pagination 省略號跳頁 target 不落回目前視窗（totalPages 8~15 × visible 3/5 × current 全頁全組合）", () => {
     const windowCalc = paginationWindowCalc();
-    const bad = [];
-    for (const totalPages of [8, 9, 10, 11, 12, 13, 14, 15]) {
-        for (const VISIBLE of [3, 5]) {
-            for (let current = 1; current <= totalPages; current++) {
-                const { start, end, ellipsisCalls } = windowCalc(totalPages, VISIBLE, current);
-                const prevShown = start > 2;
-                const nextShown = end < totalPages - 1;
-                const calls = ellipsisCalls.slice();
-                const ctx = `totalPages=${totalPages} V=${VISIBLE} current=${current} 視窗[${start},${end}]`;
-                if (prevShown) {
-                    const target = calls.shift();
-                    if (!(target < start) || !(target < current)) bad.push(`${ctx}: 左省略號 target=${target} 應 <start 且 <current`);
-                }
-                if (nextShown) {
-                    const target = calls.shift();
-                    if (!(target > end) || !(target > current)) bad.push(`${ctx}: 右省略號 target=${target} 應 >end 且 >current`);
-                }
-            }
+    let leftSeen = 0, rightSeen = 0;
+    // 一組視窗的判準抽成一支，負控才餵得進合成視窗走同一支。
+    const checkWindow = (totalPages, current, { start, end, ellipsisCalls }, ctx = "<probe>") => {
+        const out = [];
+        const prevShown = start > 2;
+        const nextShown = end < totalPages - 1;
+        const calls = ellipsisCalls.slice();
+        if (prevShown) {
+            leftSeen++;
+            const target = calls.shift();
+            if (!(target < start) || !(target < current)) out.push(`${ctx}: 左省略號 target=${target} 應 <start 且 <current`);
         }
-    }
+        if (nextShown) {
+            rightSeen++;
+            const target = calls.shift();
+            if (!(target > end) || !(target > current)) out.push(`${ctx}: 右省略號 target=${target} 應 >end 且 >current`);
+        }
+        return out;
+    };
+    const bad = [];
+    for (const totalPages of [8, 9, 10, 11, 12, 13, 14, 15])
+        for (const VISIBLE of [3, 5])
+            for (let current = 1; current <= totalPages; current++)
+                bad.push(...checkWindow(totalPages, current, windowCalc(totalPages, VISIBLE, current),
+                    `totalPages=${totalPages} V=${VISIBLE} current=${current}`));
+    // 兩個分支都要真的被走到：只走到其中一邊時，另一邊的判準在這一整輪掃描裡等於不存在。
+    assert.ok(leftSeen >= 40 && rightSeen >= 40, `左省略號只出現 ${leftSeen} 次、右省略號 ${rightSeen} 次 —— 有一邊的判準沒有被執行到`);
+    // 負控（合成視窗走同一支）
+    const W = (start, end, ellipsisCalls) => ({ start, end, ellipsisCalls });
+    assert.equal(checkWindow(12, 6, W(5, 7, [4, 8])).length, 0, "兩顆 target 都跳出視窗的被誤判");
+    assert.equal(checkWindow(12, 6, W(5, 7, [6, 8])).length, 1, "左省略號跳回目前視窗內，抓不到");
+    assert.equal(checkWindow(12, 6, W(5, 7, [4, 6])).length, 1, "右省略號跳回目前視窗內，抓不到");
+    assert.equal(checkWindow(12, 1, W(1, 3, [4])).length, 0, "沒有左省略號的那一種被誤判（第一頁）");
+    assert.equal(checkWindow(12, 12, W(10, 12, [9])).length, 0, "沒有右省略號的那一種被誤判（最後一頁）");
     assert.equal(bad.length, 0, bad.join("\n"));
 });
 

@@ -60,21 +60,15 @@ test("§5 整頁需要平台角色的頁面：每個控制項都要落在宣告�
     // 反過來破壞性控制無條件渲染，稽核員每顆都按得到、每顆都失敗。這條把「哪一顆需要哪一級」變成可驗的宣告。
     const nav = platformNavPages();
     const CONTROL = new Set(["button", "input", "select", "textarea"]);
-    const hits = [];
     let checked = 0;
-    for (const page of nav.keys()) {
-        const html = distDoc(page);
-        // 只看 <main> 內的頁面內容：header／footer 是 layout 的 chrome，各有自己的 gate
-        const main = html.slice(html.indexOf("<main"), html.indexOf("</main>"));
-        // 結構式守門（§8-1）：問「切出來的那一段裡面有沒有頁面內容」，不問它有幾個位元組
-        // ——位元組數會被每一次文案編輯改掉，紅了也只代表有人改了字。
-        assert.ok(main.startsWith("<main") && /<\/?\w+/.test(main.slice(6)),
-            `${page} 取不到 <main> 內容 —— 這條測試在空轉`);
+    // 規則抽成一支（吃 <main> 那一段的 markup），負控才餵得進合成 markup 走同一支。
+    const scanMain = (main, page) => {
+        const out = [];
         const stack = [];
         for (const ev of tagEvents(main)) {
             if (ev.type === "open") {
                 const role = (ev.attrs.match(/\bdata-platform-role="(\w+)"/) || [])[1];
-                if (role && !["auditor", "admin"].includes(role)) hits.push(`dist/${page} data-platform-role="${role}" 不是合法值`);
+                if (role && !["auditor", "admin"].includes(role)) out.push(`dist/${page} data-platform-role="${role}" 不是合法值`);
                 if (CONTROL.has(ev.tag)) {
                     // <dialog> 內部豁免：彈窗打不打得開由**觸發鈕**決定，而觸發鈕本身在這條測試的涵蓋範圍內
                     // （manage-tenant-modal 仍自己標了 admin——那是給 React 讀的規格；reset-password／delete
@@ -83,7 +77,7 @@ test("§5 整頁需要平台角色的頁面：每個控制項都要落在宣告�
                     if (!inDialog) {
                         checked++;
                         const covered = role || stack.some((fr) => /\bdata-platform-role="/.test(fr.attrs));
-                        if (!covered) hits.push(`dist/${page} <${ev.tag}> 沒有任何祖先宣告 data-platform-role：${ev.attrs.trim().slice(0, 80)}`);
+                        if (!covered) out.push(`dist/${page} <${ev.tag}> 沒有任何祖先宣告 data-platform-role：${ev.attrs.trim().slice(0, 80)}`);
                     }
                 }
                 stack.push({ tag: ev.tag, attrs: ev.attrs });
@@ -91,8 +85,31 @@ test("§5 整頁需要平台角色的頁面：每個控制項都要落在宣告�
                 stack.pop();
             }
         }
+        return out;
+    };
+    const hits = [];
+    for (const page of nav.keys()) {
+        const html = distDoc(page);
+        // 只看 <main> 內的頁面內容：header／footer 是 layout 的 chrome，各有自己的 gate
+        const main = html.slice(html.indexOf("<main"), html.indexOf("</main>"));
+        // 結構式守門（§8-1）：問「切出來的那一段裡面有沒有頁面內容」，不問它有幾個位元組
+        // ——位元組數會被每一次文案編輯改掉，紅了也只代表有人改了字。
+        assert.ok(main.startsWith("<main") && /<\/?\w+/.test(main.slice(6)),
+            `${page} 取不到 <main> 內容 —— 這條測試在空轉`);
+        hits.push(...scanMain(main, page));
     }
+    // 下限先結算，之後負控的合成樣本才不會灌進母體計數。
     assert.ok(checked > 127, `只檢查到 ${checked} 個控制項 —— 這條測試在空轉`);
+    // 負控（合成 markup 走同一支）：祖先鏈與 <dialog> 豁免各釘一條，
+    // 少了它們時「沒有任何祖先宣告」與「宣告過了」在這條規則下長得一模一樣。
+    const one = (markup) => scanMain(markup, "probe.html").length;
+    assert.equal(one(`<div data-platform-role="admin"><button>凍結</button></div>`), 0, "祖先宣告過的控制項被誤判");
+    assert.equal(one(`<button data-platform-role="admin">凍結</button>`), 0, "自己宣告了的控制項被誤判");
+    assert.equal(one("<div><button>凍結</button></div>"), 1, "沒有任何祖先宣告的控制項，抓不到");
+    assert.equal(one(`<div data-platform-role="admin"></div><button>凍結</button>`), 1,
+        "宣告在別的區塊上、鈕落在作用域外，卻被算成宣告過了");
+    assert.equal(one("<dialog><button>確認</button></dialog>"), 0, "<dialog> 內部的鈕被掃進母體（它由觸發鈕決定）");
+    assert.equal(one(`<button data-platform-role="owner">凍結</button>`), 1, "不是合法值的層級抓不到");
     assert.equal(hits.length, 0, `平台頁的控制項缺少層級宣告：\n${fail(hits)}`);
 });
 

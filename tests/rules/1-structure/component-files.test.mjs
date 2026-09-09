@@ -41,11 +41,15 @@ test("§1-2 頁面不得手寫與既有 modal 元件同 id 的 <dialog>（元件
 });
 
 test("§1-2 元件資料夾內只放 <名>.html / _<名>.scss / <名>.js", () => {
-    const bad = componentDirs.flatMap(({ bucket, name, path }) =>
-        readdirSync(path)
-            .filter((f) => f !== `${name}.html` && f !== `_${name}.scss` && f !== `${name}.js`)
-            .map((f) => `${bucket}/${name}/${f}`)
-    );
+    const strayIn = (bucket, name, files) => files
+        .filter((f) => f !== `${name}.html` && f !== `_${name}.scss` && f !== `${name}.js`)
+        .map((f) => `${bucket}/${name}/${f}`);
+    const bad = componentDirs.flatMap(({ bucket, name, path }) => strayIn(bucket, name, readdirSync(path)));
+    // 負控（合成檔案清單走同一支）
+    assert.deepEqual(strayIn("ui", "tag", ["tag.html", "_tag.scss", "tag.js"]), [], "合法的三支被誤判");
+    assert.deepEqual(strayIn("ui", "tag", ["tag.html", "tag.md"]), ["ui/tag/tag.md"], "多出來的檔抓不到");
+    assert.deepEqual(strayIn("ui", "tag", ["_tag.html"]), ["ui/tag/_tag.html"], "名字對不上的檔被放行");
+    assert.deepEqual(strayIn("ui", "tag", ["tag.scss"]), ["ui/tag/tag.scss"], "少了底線的 scss 被放行");
     assert.equal(bad.length, 0, `命名不符或多餘的檔：\n${fail(bad)}`);
 });
 
@@ -573,5 +577,15 @@ test("§1-2 展示片段與生產實例的硬規則屬性不一致時，生產�
     assert.ok(showcases - declaredNoRoot >= 19,
         `展示片段母體只剩 ${showcases - declaredNoRoot} 支比得到根節點 —— 有元件的根 class 換名了，` +
         "請補進 ROOT_CLASS（比不到的那幾支會靜靜不受這條規則管）");
+    // 負控（合成 markup 走同一支 attrsOn）：漂移是從這支算出來的，它壞掉時 drift 恆空，
+    // 症狀就是「這一支沒有漂移」——與規則生效時逐字相同。
+    assert.deepEqual([...attrsOn(`<input class="form-checkbox" aria-labelledby="x">`, ["form-checkbox"])], ["aria-labelledby"],
+        "硬規則屬性抓不出來");
+    assert.deepEqual([...attrsOn(`<input class="form-checkbox" placeholder="x">`, ["form-checkbox"])], [],
+        "不在 HARD 名單裡的屬性被算成硬規則");
+    assert.deepEqual([...attrsOn(`<input class="js-form-checkbox" aria-labelledby="x">`, ["form-checkbox"])], [],
+        "class 比對沒有以整個 token 為單位（js- 前綴的被誤認成同一顆）");
+    assert.deepEqual([...attrsOn(`<div class="widget-shell{% if x %} y{% endif %}" role="group">`, ["widget-shell"])], ["role"],
+        "class 值裡夾著 njk 判斷時比不到根節點（那一支會整支不受規則管）");
     assert.equal(hits.length, 0, `§1-2：展示片段不是生產形狀時，生產契約要有一份可對答案的正本：\n${fail(hits)}`);
 });

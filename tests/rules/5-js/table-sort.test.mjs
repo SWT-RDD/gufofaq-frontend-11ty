@@ -60,6 +60,14 @@ test("§5/§8 ui/table-sort：成對的 .detail-row 跟著它前面那一列走�
 test("§5/§8 ui/table-sort：邊界輸入——0 列、1 列、全同值都不得丟例外或亂序", () => {
     const js = read("src/_includes/ui/table-sort/table-sort.js");
 
+    // 負控：下面三個邊界案例的斷言全是「排完之後沒有變化」，而 fixture 沒接上、
+    // 或 runComponentJs 根本沒把事件送到時，「沒有變化」正是它們的樣子。先拿一組**會變**的
+    // 輸入證明這支測試真的排得動，那三條才有意義。
+    const mixed = runComponentJs(js, (node, root) => tableSortFixture(node, root, [["b", "9"], ["a", "3"]]));
+    assert.deepEqual(namesOf(mixed.fixture.tbody), ["b", "a"], "前提：點之前是原始順序");
+    mixed.click(mixed.fixture.btn);
+    assert.deepEqual(namesOf(mixed.fixture.tbody), ["a", "b"], "同一組 fixture 排不動 —— 下面三個邊界案例的「沒有變化」是假綠");
+
     const empty = runComponentJs(js, (node, root) => tableSortFixture(node, root, []));
     empty.click(empty.fixture.btn);
     assert.equal(empty.fixture.tbody.children.length, 0, "0 列：點下去不得長出東西");

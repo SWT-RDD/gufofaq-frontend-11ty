@@ -18,12 +18,21 @@ test("§4 同頁多份同型元件的兩顆參數（OwnerId／Instance）都要�
     for (const f of srcHtml)
         for (const m of stripNjk(read(f)).matchAll(/\b(\w+(?:OwnerId|Instance))\b/g)) params.add(m[1]);
     assert.ok(params.size >= 8, `只掃到 ${params.size} 顆 OwnerId／Instance 參數 —— 這條測試在空轉`);
-    const missing = [...params].filter((p) => !readme.includes(p)).sort();
+    // 正反兩向各抽成一支（吃「src 上有哪幾顆」與「README 原文」），負控才餵得進合成輸入走同一支。
+    const unregistered = (used, doc) => [...used].filter((p) => !doc.includes(p)).sort();
+    const deadEntries = (doc, used) => [...doc.matchAll(/\b(\w+(?:OwnerId|Instance))\b/g)].map((m) => m[1])
+        .filter((p, i, a) => a.indexOf(p) === i && !used.has(p)).sort();
+    const missing = unregistered(params, readme);
     assert.deepEqual(missing, [], `這幾顆同頁多份參數在 README 找不到登記：${missing.join("、")}`);
     // 反向：README 登記了、src 卻一顆都不用 ⇒ 死登記（照它傳參數的人會發現元件根本不讀）
-    const stale = [...readme.matchAll(/\b(\w+(?:OwnerId|Instance))\b/g)].map((m) => m[1])
-        .filter((p, i, a) => a.indexOf(p) === i && !params.has(p)).sort();
+    const stale = deadEntries(readme, params);
     assert.deepEqual(stale, [], `README 登記了 src 上不存在的同頁多份參數：${stale.join("、")}`);
+    // 負控（合成參數集 ＋ 合成 README 走同一支）
+    assert.deepEqual(unregistered(new Set(["tagOwnerId"]), ""), ["tagOwnerId"], "沒登記的參數抓不到");
+    assert.deepEqual(unregistered(new Set(["tagOwnerId"]), "參數 tagOwnerId 是……"), [], "登記過的參數被誤判");
+    assert.deepEqual(deadEntries("參數 ghostInstance 是……", new Set()), ["ghostInstance"], "README 的死登記抓不到");
+    assert.deepEqual(deadEntries("參數 tagOwnerId 是……", new Set(["tagOwnerId"])), [], "還在用的登記被判成死登記");
+    assert.deepEqual(deadEntries("這一段沒有提到任何同頁多份參數", new Set()), [], "抽取器把不相干的字當成參數名");
 });
 
 test("§4/§5 元件 js 掛上的狀態 class 都要有樣式主人（半套交付＝掛了沒人畫）", () => {
@@ -32,26 +41,43 @@ test("§4/§5 元件 js 掛上的狀態 class 都要有樣式主人（半套交�
     // 白名單：全域工具 class（hidden/active…）由 utilities/base 擁有，不算元件的私有狀態。
     const globalCss = ["src/scss/_utilities.scss", "src/scss/_base.scss", "src/scss/_form-check.scss"]
         .filter((f) => existsSync(f)).map((f) => read(f)).join("\n");
-    const hits = [];
     let seen = 0;
-    for (const { bucket, name, path } of componentDirs) {
-        const js = `${path}/${name}.js`;
-        if (!existsSync(js)) continue;
-        const code = read(js).split(/\r?\n/).map((l) => l.replace(/\/\/.*$/, "")).join("\n");
-        const ownScss = existsSync(`${path}/_${name}.scss`) ? read(`${path}/_${name}.scss`) : "";
+    // 規則吃「元件 js 原始碼 ＋ 三層樣式主人的判定」，負控才餵得進合成原始碼走同一支。
+    const scanStates = (code, where, ownScss, global, anywhere) => {
+        const out = [];
         // classList.add("x") / .toggle("x", …) / .remove("x")
         for (const m of code.matchAll(/classList\.(?:add|toggle|remove)\(\s*["']([\w-]+)["']/g)) {
             const cls = m[1];
             seen++;
             if (ownScss.includes(cls)) continue;                       // 自家 scss 有規則
-            if (new RegExp(`\\.${cls}\\b`).test(globalCss)) continue;  // 全域工具
+            if (new RegExp(`\\.${cls}\\b`).test(global)) continue;     // 全域工具
             // 別的元件擁有它也算（跨元件狀態：sources-block 的 .is-cited 由自家 scss 畫，這裡是保險）
-            const anyScss = srcScss.some((f) => new RegExp(`\\.${cls}\\b`).test(read(f)));
-            if (anyScss) continue;
-            hits.push(`${bucket}/${name}/${name}.js  classList → "${cls}"  ← 全站 scss 找不到它的規則`);
+            if (anywhere(cls)) continue;
+            out.push(`${where}  classList → "${cls}"  ← 全站 scss 找不到它的規則`);
         }
+        return out;
+    };
+    const hits = [];
+    for (const { bucket, name, path } of componentDirs) {
+        const js = `${path}/${name}.js`;
+        if (!existsSync(js)) continue;
+        const code = read(js).split(/\r?\n/).map((l) => l.replace(/\/\/.*$/, "")).join("\n");
+        const ownScss = existsSync(`${path}/_${name}.scss`) ? read(`${path}/_${name}.scss`) : "";
+        hits.push(...scanStates(code, `${bucket}/${name}/${name}.js`, ownScss, globalCss,
+            (cls) => srcScss.some((f) => new RegExp(`\\.${cls}\\b`).test(read(f)))));
     }
+    // 下限先結算，之後負控的合成樣本才不會灌進母體計數。
     assert.ok(seen >= 48, `只掃到 ${seen} 個 js 狀態 class —— 這條測試在空轉`);
+    // 負控（合成原始碼 ＋ 三種主人各一條走同一支）
+    const none = () => false;
+    const CODE = `el.classList.add("is-cited");`;
+    assert.equal(scanStates(CODE, "p", "", "", none).length, 1, "沒有任何樣式主人的狀態 class 抓不到");
+    assert.equal(scanStates(CODE, "p", ".is-cited { color: red }", "", none).length, 0, "自家 scss 畫了的被誤判");
+    assert.equal(scanStates(CODE, "p", "", ".is-cited { color: red }", none).length, 0, "全域工具 class 被誤判");
+    assert.equal(scanStates(CODE, "p", "", "", (c) => c === "is-cited").length, 0, "別的元件畫了的被誤判");
+    assert.equal(scanStates(`el.classList.toggle("open", on); el.classList.remove("open");`, "p", "", "", none).length, 2,
+        "toggle／remove 兩種寫法沒有一起收進母體");
+    assert.equal(scanStates(`el.className = "open";`, "p", "", "", none).length, 0, "不是 classList 的寫法被掃進母體");
     assert.equal(hits.length, 0, `§4：js 掛的狀態 class 沒有樣式主人（scss 那一半沒交付）：\n${fail(hits)}`);
 });
 

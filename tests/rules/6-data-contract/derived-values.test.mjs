@@ -13,20 +13,32 @@ import { countLines, stripNjk } from "../../_lib/text.mjs";
 test("§6 同頁的 page-size 選中值必須等於 pagination 生效的 perPage（兩者同源）", () => {
     // 反面：元件寫死 selected=20、使用頁都沒 set perPage → pagination 落回預設 10，
     // 於是同一列同時顯示「每頁 20 筆」與「共 12 頁」（115÷20＝6）。
-    const hits = [];
     let seen = 0;
-    for (const f of distHtml) {
-        const html = distDoc(f);
-        if (!/class="[^"]*\bpage-size\b/.test(html)) continue;
+    const scan = (html, f = "<probe>") => {
+        if (!/class="[^"]*\bpage-size\b/.test(html)) return [];
         seen++;
         const sel = html.match(/<select[^>]*\bpage-size-select\b[\s\S]*?<\/select>/);
         const chosen = sel && (sel[0].match(/<option value="(\d+)"[^>]*\bselected\b/) || [])[1];
         const pager = html.match(/<div class="pagination"[^>]*>/);
         const perPage = pager && (pager[0].match(/data-per-page="(\d+)"/) || [, "10"])[1];
-        if (!chosen || !pager) { hits.push(`${basename(f)}  ← 有 .page-size 卻找不到 selected option 或 .pagination`); continue; }
-        if (chosen !== perPage) hits.push(`${basename(f)}  每頁筆數 selected=${chosen}，但 pagination 生效 perPage=${perPage}`);
-    }
+        if (!chosen || !pager) return [`${f}  ← 有 .page-size 卻找不到 selected option 或 .pagination`];
+        return chosen === perPage ? [] : [`${f}  每頁筆數 selected=${chosen}，但 pagination 生效 perPage=${perPage}`];
+    };
+    const hits = [];
+    for (const f of distHtml) hits.push(...scan(distDoc(f), basename(f)));
+    // 下限先結算，之後負控的合成樣本才不會灌進母體計數。
     assert.ok(seen >= 9, `只掃到 ${seen} 頁含 page-size-select —— 這條測試在空轉`);
+    // 負控（合成 markup 走同一支）
+    const SIZE = (v) => `<div class="page-size"><select class="page-size-select">`
+        + `<option value="10"${v === "10" ? " selected" : ""}>10</option>`
+        + `<option value="20"${v === "20" ? " selected" : ""}>20</option></select></div>`;
+    const PAGER = (n) => `<div class="pagination"${n ? ` data-per-page="${n}"` : ""}></div>`;
+    assert.equal(scan(SIZE("20") + PAGER(20)).length, 0, "兩邊同源的被誤判");
+    assert.equal(scan(SIZE("20") + PAGER(10)).length, 1, "選中值與 pagination 生效值對不上，抓不到");
+    assert.equal(scan(SIZE("20") + PAGER(null)).length, 1, "pagination 沒帶 per-page（落回預設 10）也要抓得到");
+    assert.equal(scan(SIZE("10") + PAGER(null)).length, 0, "兩邊都是預設 10 的被誤判");
+    assert.equal(scan(SIZE("20")).length, 1, "有每頁筆數卻沒有頁碼列，抓不到");
+    assert.equal(scan(PAGER(10)).length, 0, "沒有每頁筆數的頁被掃進母體");
     assert.equal(hits.length, 0, `§6：耦合參數要同源（使用頁 set 一次 perPage，兩個元件都吃它）：\n${fail(hits)}`);
 });
 
@@ -34,24 +46,35 @@ test("§6 有分頁的清單頁：「共 N 筆資料」必須等於頁碼列的�
     // 伺服器端分頁的頁面，計數列講的是**伺服器總筆數**。寫成 rows.length 的話，示範頁會出現
     // 「共 3 筆資料」配「共 6 頁」；真實環境則會變成「共 500 筆」——那正是稽核日誌的病灶：
     // 看起來像全部只有 500 筆，而第 501 筆以前的證跡在畫面上不存在。
-    const hits = [];
     let checked = 0;
+    const scan = (html, f = "<probe>") => {
+        const info = html.match(/<div class="data-info">[\s\S]*?<\/div>/);
+        const total = html.match(/data-total="(\d+)"/);
+        if (!info || !total) return [];
+        // 先剝標籤再找數字：屬性名 data-i18n 裡的「18」會被誤讀成計數
+        const n = info[0].replace(/<[^>]*>/g, "").match(/(\d[\d,]*)/);
+        if (!n) return [`${f} 的 .data-info 裡沒有數字`];
+        checked++;
+        return n[1].replace(/,/g, "") === total[1]
+            ? [] : [`${f} 計數列寫 ${n[1]}，頁碼列的總筆數是 ${total[1]}（同一個數字要同源，§6）`];
+    };
+    const hits = [];
     for (const f of distHtml) {
         // 元件庫頁是 showcase：`.data-info`（ui/block 的示範「共 12 筆資料」）與頁碼示範是兩個無關的展示，
         // 本來就不同源（名字住在模組層級的 SHOWCASE）。
         if (f === SHOWCASE.dist) continue;
-        const html = distDoc(f);
-        const info = html.match(/<div class="data-info">[\s\S]*?<\/div>/);
-        const total = html.match(/data-total="(\d+)"/);
-        if (!info || !total) continue;
-        // 先剝標籤再找數字：屬性名 data-i18n 裡的「18」會被誤讀成計數
-        const n = info[0].replace(/<[^>]*>/g, "").match(/(\d[\d,]*)/);
-        if (!n) { hits.push(`dist/${f} 的 .data-info 裡沒有數字`); continue; }
-        checked++;
-        if (n[1].replace(/,/g, "") !== total[1])
-            hits.push(`dist/${f} 計數列寫 ${n[1]}，頁碼列的總筆數是 ${total[1]}（同一個數字要同源，§6）`);
+        hits.push(...scan(distDoc(f), `dist/${f}`));
     }
+    // 下限先結算，之後負控的合成樣本才不會灌進母體計數。
     assert.ok(checked >= 3, `只檢查到 ${checked} 個「計數列 + 頁碼列」的頁面 —— 這條測試在空轉`);
+    // 負控（合成 markup 走同一支）
+    const INFO = (t) => `<div class="data-info"><span data-i18n="common.total18">共 </span>${t}<span> 筆資料</span></div>`;
+    const PAGER = (n) => `<div class="pagination" data-total="${n}"></div>`;
+    assert.equal(scan(INFO("115") + PAGER(115)).length, 0, "兩邊同源的被誤判");
+    assert.equal(scan(INFO("3") + PAGER(115)).length, 1, "計數列寫成這一頁的列數，抓不到");
+    assert.equal(scan(INFO("1,150") + PAGER(1150)).length, 0, "帶千分位的計數被誤判");
+    assert.equal(scan(INFO("") + PAGER(115)).length, 1, "計數列裡沒有數字，抓不到（屬性名裡的 18 不算）");
+    assert.equal(scan(PAGER(115)).length, 0, "沒有計數列的頁被掃進母體");
     assert.equal(hits.length, 0, fail(hits));
 });
 

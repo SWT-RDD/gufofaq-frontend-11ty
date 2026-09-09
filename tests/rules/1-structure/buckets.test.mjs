@@ -45,11 +45,14 @@ const UI_EXPORTS = (() => {
 })();
 
 test("§1-1 每個 layout 一個資料夾，只放 <名>.html / _<名>.scss", () => {
-    const bad = layoutDirs.flatMap((d) =>
-        readdirSync(`src/_includes/layouts/${d}`)
-            .filter((f) => f !== `${d}.html` && f !== `_${d}.scss`)
-            .map((f) => `layouts/${d}/${f}`)
-    );
+    const strayIn = (d, files) => files
+        .filter((f) => f !== `${d}.html` && f !== `_${d}.scss`)
+        .map((f) => `layouts/${d}/${f}`);
+    const bad = layoutDirs.flatMap((d) => strayIn(d, readdirSync(`src/_includes/layouts/${d}`)));
+    // 負控（合成檔案清單走同一支）
+    assert.deepEqual(strayIn("base", ["base.html", "_base.scss"]), [], "合法的那兩支被誤判");
+    assert.deepEqual(strayIn("base", ["base.html", "_base.scss", "base.js"]), ["layouts/base/base.js"], "多出來的檔抓不到");
+    assert.deepEqual(strayIn("base", ["_base.html"]), ["layouts/base/_base.html"], "名字對不上的檔被放行");
     assert.equal(bad.length, 0, `layout 資料夾內有不該存在的檔案：\n${bad.join("\n")}`);
 });
 
@@ -107,6 +110,13 @@ test("§1-1 桶歸屬：components/ 要用到其他元件（或是專屬子片�
         }
     }
 
+    // 兩個方向的判準抽成一支（吃「桶 ＋ 算出來的依賴 ＋ 是不是專屬子片段 ＋ 有沒有生產消費端」），
+    // 負控才餵得進合成證據走同一支。
+    const verdict = (bucket, deps, subFragment, isProduction) => {
+        if (bucket === "components" && deps.size === 0 && !subFragment && isProduction) return "零依賴、也不是專屬子片段 → 應搬去 ui/";
+        if (bucket === "ui" && deps.size > 0) return `用到 ${[...deps].join("、")} → 應搬去 components/`;
+        return null;
+    };
     const bad = [];
     for (const { bucket, name, path } of componentDirs) {
         const self = `${bucket}/${name}`;
@@ -151,9 +161,23 @@ test("§1-1 桶歸屬：components/ 要用到其他元件（或是專屬子片�
         // 具體會誤判成什麼：一個 markup 裡 include 了別的元件、但還沒有生產頁在用的新元件，會被
         // 判成「應搬去 ui/」；真照做搬過去，等第一個生產頁消費它、html 那一半的證據補齊之後，
         // 下面那條 `ui` 的規則就會反過來說「應搬去 components/」——搬兩次，而且兩次都是照規則搬的。
-        if (bucket === "components" && deps.size === 0 && !subFragment && production.has(name)) bad.push(`${self} 零依賴、也不是專屬子片段 → 應搬去 ui/`);
-        if (bucket === "ui" && deps.size > 0) bad.push(`${self} 用到 ${[...deps].join("、")} → 應搬去 components/`);
+        const why = verdict(bucket, deps, subFragment, production.has(name));
+        if (why) bad.push(`${self} ${why}`);
     }
+    // 負控（合成證據走同一支）：兩個方向各要抓得到，三種被排除的要放行。
+    const D = (...xs) => new Set(xs);
+    assert.ok(verdict("components", D(), false, true), "components 零依賴、非子片段，抓不到");
+    assert.ok(verdict("ui", D("ui/tag"), false, true), "ui 用到別的元件，抓不到");
+    assert.equal(verdict("components", D("ui/tag"), false, true), null, "有依賴的 components 被誤判");
+    assert.equal(verdict("components", D(), true, true), null, "專屬子片段被誤判");
+    assert.equal(verdict("components", D(), false, false), null,
+        "還沒有生產消費端就下結論——那時 html 那一半的證據根本沒進來（見上面那段註解）");
+    assert.equal(verdict("ui", D(), false, true), null, "零依賴的 ui 被誤判");
+    // 選擇器解析：它決定「誰定義了這顆 class」，壞掉時上面每一條依賴都會靜靜消失。
+    assert.deepEqual([...selectorClasses(".card { gap: 0 }")], ["card"], "解析不出選擇器裡的 class");
+    assert.deepEqual([...selectorClasses("// .card { gap: 0 }")], [], "註解掉的選擇器被算成定義");
+    assert.deepEqual([...selectorClasses("@use \"x\"; $gap: 0;")], [], "@ 與 $ 開頭的那幾行被算成選擇器");
+    assert.deepEqual([...selectorClasses(".card { color: var(--x) }")], ["card"], "宣告區裡的字被算成選擇器");
     assert.equal(bad.length, 0, `桶放錯了：\n${bad.join("\n")}`);
 });
 

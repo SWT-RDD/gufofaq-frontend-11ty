@@ -71,17 +71,25 @@ test("§5 有 document click 委派的元件 js，逐支登記它判不判「點
     }
     assert.ok(delegates.length >= 15, `只掃到 ${delegates.length} 支有 document click 委派的 js —— 這條測試在空轉`);
 
-    const hits = [];
-    for (const d of delegates) {
-        if (TRIGGER_ONLY.has(d.name)) {
+    // 判準抽成一支（吃「這一支的原始碼 ＋ 它有沒有登記在 TRIGGER_ONLY」），負控才餵得進合成原始碼。
+    const checkDelegate = ({ f, code }, registered) => {
+        if (registered) {
             // 零載重的反向：登記成「只認觸發器」，卻真的在做開關（同檔出現收合語意）⇒ 那筆登記是錯的
-            if (/setOpen\(false\)|setExpanded\(false\)|classList\.add\(\s*["']collapsed["']\s*\)/.test(d.code))
-                hits.push(`${d.f}  登記在 TRIGGER_ONLY，同檔卻有收合語意 —— 重新判斷它判不判點外部`);
-            continue;
+            return /setOpen\(false\)|setExpanded\(false\)|classList\.add\(\s*["']collapsed["']\s*\)/.test(code)
+                ? [`${f}  登記在 TRIGGER_ONLY，同檔卻有收合語意 —— 重新判斷它判不判點外部`] : [];
         }
-        if (!d.code.includes("composedPath("))
-            hits.push(`${d.f}  有 document click 委派、又沒有登記在 TRIGGER_ONLY ⇒ 視為判「點外部」，必須用 composedPath(`);
-    }
+        return code.includes("composedPath(")
+            ? [] : [`${f}  有 document click 委派、又沒有登記在 TRIGGER_ONLY ⇒ 視為判「點外部」，必須用 composedPath(`];
+    };
+    const hits = delegates.flatMap((d) => checkDelegate(d, TRIGGER_ONLY.has(d.name)));
+    // 負控（合成原始碼走同一支）：兩類各要抓得到自己的違規，也各要放行自己合規的那一種。
+    const P = (code) => ({ f: "<probe>", code });
+    assert.equal(checkDelegate(P(`if (!e.composedPath().includes(box)) close();`), false).length, 0, "用了 composedPath 的被誤判");
+    assert.equal(checkDelegate(P(`if (!box.contains(e.target)) close();`), false).length, 1,
+        "退回 event.target/contains 的抓不到（規則的說明註解本身就含 composedPath 字面，所以要先剝註解）");
+    assert.equal(checkDelegate(P(`if (e.target.closest(".js-print")) window.print();`), true).length, 0, "只認觸發器的那一類被誤判");
+    assert.equal(checkDelegate(P(`if (e.target.closest(".js-x")) setOpen(false);`), true).length, 1,
+        "登記成只認觸發器、同檔卻在做收合，抓不到");
     // 死豁免：登記的每一支都要還在、而且還有 document click 委派
     const stale = [...TRIGGER_ONLY.keys()].filter((n) => !delegates.some((d) => d.name === n));
     assert.deepEqual(stale, [], `TRIGGER_ONLY 有過期項（那支 js 沒了、改名了，或已經不掛 document click 委派）：${stale.join("、")}`);
