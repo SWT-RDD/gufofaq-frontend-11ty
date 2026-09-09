@@ -337,9 +337,9 @@ test("§4 送 API 的數字欄三件套：type=number ＋ min/max/step ＋ 可�
     ]);
     const seenNoBound = new Set();
     let seen = 0;
-    const hits = [];
-    for (const f of srcHtml) {
-        const t = stripNjk(read(f));
+    // 規則抽成一支（吃「原文 ＋ 檔名 ＋ 無界線登記表」），負控才餵得進合成 markup 走同一支。
+    const scanInputs = (t, f, noBound, usedNoBound) => {
+        const hits = [];
         for (const m of t.matchAll(/<input\b((?:"[^"]*"|[^>"])*)>/g)) {
             const a = m[1];
             const id = (a.match(/\bid="([^"]*)"/) || [, ""])[1];
@@ -358,14 +358,29 @@ test("§4 送 API 的數字欄三件套：type=number ＋ min/max/step ＋ 可�
             // 「負值合法」的欄位（延展天數：正數延展、負數縮短），逐筆豁免並附理由。
             if (!/\bstep="/.test(a)) hits.push(`${where} 缺 step（三件套第二件）`);
             if (!/\b(min|max)="/.test(a)) {
-                if (NO_BOUND.has(id)) seenNoBound.add(id);
+                if (noBound.has(id)) usedNoBound.add(id);
                 else hits.push(`${where} 缺 min／max（三件套第二件；真的兩邊都沒界線就進 NO_BOUND 並寫理由）`);
             }
             // 第三件：可見的區間提示，接得上輔具
             if (!/aria-describedby=/.test(a)) hits.push(`${where} 缺可見區間提示（aria-describedby）`);
         }
-    }
+        return hits;
+    };
+    const hits = [];
+    for (const f of srcHtml) hits.push(...scanInputs(stripNjk(read(f)), f, NO_BOUND, seenNoBound));
+    // 下限先結算，之後負控的合成樣本才不會灌進母體計數。
     assert.ok(seen >= 42, `只掃到 ${seen} 顆數字欄 —— 這條測試在空轉`);
+    // 負控（合成 markup 走同一支）：三件套各缺一件都要抓得到，湊齊的與登記過的要放行。
+    const sink = new Set();
+    const one = (markup, noBound = new Map()) => scanInputs(markup, "<probe>", noBound, sink).length;
+    assert.equal(one(`<input type="number" min="1" max="5" step="1" aria-describedby="h">`), 0, "三件套齊備的被誤判");
+    assert.equal(one(`<input type="text" min="1" max="5" step="1" aria-describedby="h">`), 1, "有 min/max/step 卻是 type=text，抓不到");
+    assert.equal(one(`<input type="number" min="1" max="5" aria-describedby="h">`), 1, "缺 step 抓不到");
+    assert.equal(one(`<input type="number" step="1" aria-describedby="h" id="probeFloor">`), 1, "缺 min／max 抓不到");
+    assert.equal(one(`<input type="number" step="1" aria-describedby="h" id="probeFloor">`, new Map([["probeFloor", "理由"]])), 0,
+        "登記在 NO_BOUND 的欄位被誤判");
+    assert.equal(one(`<input type="number" min="1" max="5" step="1">`), 1, "缺可見區間提示抓不到");
+    assert.equal(one(`<input type="text" id="keyword">`), 0, "不是數值欄的被掃進母體");
     const staleNoBound = [...NO_BOUND.keys()].filter((k) => !seenNoBound.has(k));
     assert.equal(staleNoBound.length, 0, `NO_BOUND 有過期項（欄位已改名或已補上界線）：${staleNoBound.join("、")}`);
     assert.equal(hits.length, 0, fail(hits));
@@ -418,28 +433,30 @@ test("§4 control-label required 與控制項的 required 成對（星號是視�
     // 3-1-2/3-3 的所屬群組、5-6-3 的授權範圍），既有測試一條都看不到。
     const esc = (x) => x.replace(/[^\w-]/g, (c) => "\\" + c);
     let pairs = 0;
-    const hits = [];
-    for (const f of srcHtml) {
-        const t = stripNjk(read(f));
+    const scanForward = (t, f = "<probe>") => {
+        const out = [];
         const controls = [...t.matchAll(/<(input|select|textarea)\b((?:"[^"]*"|[^>"])*)>/g)];
         for (const m of t.matchAll(/<label\b((?:"[^"]*"|[^>"])*)>/g)) {
             const attrs = m[1];
             if (!/class="[^"]*\bcontrol-label\b[^"]*"/.test(attrs)) continue;
             if (!/class="[^"]*\brequired\b[^"]*"/.test(attrs)) continue;
             const fo = attrs.match(/\bfor="([^"]+)"/);
-            if (!fo) { hits.push(`${f}  有 control-label required 卻沒有 for=`); continue; }
+            if (!fo) { out.push(`${f}  有 control-label required 卻沒有 for=`); continue; }
             const ctl = controls.find((c) => new RegExp("\\bid=\"" + esc(fo[1]) + "\"").test(c[2]));
-            if (!ctl) { hits.push(`${f}  #${fo[1]} 的 required label 指不到任何控制項`); continue; }
+            if (!ctl) { out.push(`${f}  #${fo[1]} 的 required label 指不到任何控制項`); continue; }
             if (/\brequired\b/.test(ctl[2])) pairs++;
-            else hits.push(`${f}  <${ctl[1]} id="${fo[1]}"> 少了 required（label 上的星號在說謊）`);
+            else out.push(`${f}  <${ctl[1]} id="${fo[1]}"> 少了 required（label 上的星號在說謊）`);
         }
-    }
+        return out;
+    };
+    const hits = [];
+    for (const f of srcHtml) hits.push(...scanForward(stripNjk(read(f)), f));
     // **反向也要驗**：控制項有 required、label 卻沒有星號，同樣是「兩份說不同的話」——
     // 報讀器會念「必填」而畫面沒有任何標示。突變證明：只驗一個方向的話——
     // 拿掉 label 的 required class（控制項照舊 required）測試照樣綠，而 login.html 兩顆就是那樣。
     let reverse = 0;
-    for (const f of srcHtml) {
-        const t = stripNjk(read(f));
+    const scanReverse = (t, f = "<probe>") => {
+        const out = [];
         const labels = [...t.matchAll(/<label\b((?:"[^"]*"|[^>"])*)>/g)]
             .map((m) => m[1])
             .filter((a) => /\bfor="/.test(a));
@@ -453,11 +470,29 @@ test("§4 control-label required 與控制項的 required 成對（星號是視�
             if (!/class="[^"]*\bcontrol-label\b[^"]*"/.test(lab)) continue; // 不是 control-label 版位
             reverse++;
             if (!/class="[^"]*\brequired\b[^"]*"/.test(lab))
-                hits.push(`${f}  <${m[1]} id="${id[1]}"> 有 required，但它的 label 沒有 required 星號`);
+                out.push(`${f}  <${m[1]} id="${id[1]}"> 有 required，但它的 label 沒有 required 星號`);
         }
-    }
+        return out;
+    };
+    for (const f of srcHtml) hits.push(...scanReverse(stripNjk(read(f)), f));
+    // 兩個下限先結算，之後負控的合成樣本才不會灌進母體計數。
     assert.ok(pairs >= 49, `只掃到 ${pairs} 組成對的必填欄 —— label/控制項掃描壞了？整條在空轉`);
     assert.ok(reverse >= 49, `反向只掃到 ${reverse} 顆必填控制項 —— 反向掃描壞了？半條在空轉`);
+    probe("§4 星號與 required 成對（正向）", scanForward,
+        // 三種壞法：控制項少了 required／label 沒有 for／for 指到不存在的控制項
+        [`<label class="control-label required" for="a">名</label><input id="a">`,
+            `<label class="control-label required">名</label>`,
+            `<label class="control-label required" for="ghost">名</label><input id="a" required>`],
+        // 兩種被排除的：兩邊都有／label 上本來就沒有星號
+        [`<label class="control-label required" for="a">名</label><input id="a" required>`,
+            `<label class="control-label" for="a">名</label><input id="a">`]);
+    probe("§4 星號與 required 成對（反向）", scanReverse,
+        // 壞法：控制項是必填、label 卻沒有星號（報讀器會念必填而畫面沒有標示）
+        [`<label class="control-label" for="a">名</label><input id="a" required>`],
+        // 三種被排除的：兩邊都有／沒有 label 指得到它／那顆 label 不是 control-label 版位
+        [`<label class="control-label required" for="a">名</label><input id="a" required>`,
+            `<input id="a" required>`,
+            `<label for="a">名</label><input id="a" required>`]);
     assert.equal(hits.length, 0, fail(hits));
 });
 
@@ -465,10 +500,9 @@ test("§4 <label> 必須有 for、或包住控制項、或有 id 被 aria-labell
     // 懸空 <label> 是 valid HTML（不報錯），但點了不聚焦、對輔具無語意，
     // 且 eslint-plugin-jsx-a11y 的 label-has-associated-control 在 Next.js 預設 config 是 build 阻斷。
     const LABELABLE = /<(?:input|select|textarea|button|meter|output|progress)\b/;
-    const hits = [];
     let seen = 0;
-    for (const f of distHtml) {
-        const html = distDoc(f);
+    const scanLabels = (html, f = "<probe>") => {
+        const out = [];
         const referenced = new Set();
         for (const m of html.matchAll(/aria-labelledby="([^"]+)"/g)) for (const id of m[1].split(/\s+/)) referenced.add(id);
         for (const m of html.matchAll(/<label\b([^>]*)>([\s\S]*?)<\/label>/g)) {
@@ -478,10 +512,20 @@ test("§4 <label> 必須有 for、或包住控制項、或有 id 被 aria-labell
             if (LABELABLE.test(inner)) continue;
             const id = (attrs.match(/\sid="([^"]+)"/) || [])[1];
             if (id && referenced.has(id)) continue;
-            hits.push(`${basename(f)}  <label${attrs.trim() ? " " + attrs.trim().slice(0, 70) : ""}>  ← 既無 for、未包控制項、也沒被 aria-labelledby 指到`);
+            out.push(`${f}  <label${attrs.trim() ? " " + attrs.trim().slice(0, 70) : ""}>  ← 既無 for、未包控制項、也沒被 aria-labelledby 指到`);
         }
-    }
+        return out;
+    };
+    const hits = [];
+    for (const f of distHtml) hits.push(...scanLabels(distDoc(f), basename(f)));
+    // 下限先結算，之後負控的合成樣本才不會灌進母體計數。
     assert.ok(seen >= 842, `只掃到 ${seen} 個 <label> —— 這條測試在空轉`);
+    probe("§4 懸空 label", scanLabels,
+        // 兩種壞法：什麼都沒有／有 id 但沒有人 aria-labelledby 指它
+        ["<label>純文字</label>", `<label id="orphanLabel">純文字</label>`],
+        // 三種被排除的：有 for／包住控制項／id 被指到
+        [`<label for="a">名</label>`, "<label>名<input></label>",
+            `<label id="l">名</label><div role="group" aria-labelledby="l"></div>`]);
     assert.equal(hits.length, 0, `§4：懸空 <label>（純標題文字請改 <span class="control-label">／.text-md.text-bold）：\n${fail(hits)}`);
 });
 

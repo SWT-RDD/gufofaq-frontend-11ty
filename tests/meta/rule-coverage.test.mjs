@@ -56,6 +56,7 @@ test("[meta] 每個測試標題引用的 §N 都要是 GUIDELINE 真的有的章
     const sections = sectionsOfGuideline();
     assert.ok(sections.size >= 17, `只從 GUIDELINE 掃出 ${sections.size} 個章節 —— 標題解析失準，這條測試在空轉`);
 
+    const deadRefs = (title, secs) => [...title.matchAll(/§(\d+(?:-\d+)?)/g)].filter((m) => !secs.has(m[1]));
     const bad = [];
     let cited = 0;
     for (const { file, title } of allTests())
@@ -64,6 +65,11 @@ test("[meta] 每個測試標題引用的 §N 都要是 GUIDELINE 真的有的章
             if (!sections.has(m[1])) bad.push(`${file}\n     §${m[1]} ← ${title}`);
         }
     assert.ok(cited >= 240, `只認出 ${cited} 個 § 引用 —— 這條測試在空轉`);
+    // 負控（合成標題配真的章節集走同一支）
+    assert.ok(!sections.has("4-9"), "GUIDELINE 真的有 §4-9 的話，這條負控要換一個不存在的章號");
+    assert.equal(deadRefs("§4-9 假的規則", sections).length, 1, "「章號存在」的判準認不出不存在的章號");
+    assert.equal(deadRefs("§4-2 真的規則", sections).length, 0, "存在的章號被誤判成死引用");
+    assert.equal(deadRefs("[docs] 這條不引用任何章", sections).length, 0, "沒有 § 引用的標題被掃進母體");
     assert.equal(bad.length, 0, `標題引用了 GUIDELINE 沒有的章節：\n  ${bad.join("\n  ")}`);
 });
 
@@ -87,6 +93,12 @@ test("[meta] 每條測試都住在它章號對應的資料夾裡", () => {
             if (!title.startsWith("[meta]")) bad.push(`${file}\n     meta/ 的測試要以 [meta] 開頭 ← ${title}`);
         } else bad.push(`${file}\n     測試檔不在 rules/ ／ docs/ ／ meta/ 任何一個桶裡 ← ${title}`);
     }
+    // 負控（合成檔名與標題走同一支 misfiledIn）：規則寫窄了就認不出違規，而那時它一樣全綠。
+    const misfiled = (file, title) => misfiledIn(file, title) !== null;
+    assert.ok(misfiled("tests/rules/5-js/x.test.mjs", "§4 這條是 §4 卻放在 5-js"), "住錯資料夾判不出來");
+    assert.ok(misfiled("tests/rules/5-js/x.test.mjs", "沒有前綴"), "沒有領頭 § 判不出來");
+    assert.ok(!misfiled("tests/rules/5-js/x.test.mjs", "§5/§8 這條領頭是 §5"), "複合前綴被誤判成住錯了");
+    assert.ok(!misfiled("tests/docs/x.test.mjs", "[docs] 這條不對應任何章"), "docs/ 的測試被當成住錯了");
     assert.equal(bad.length, 0, `測試住錯地方（找規則對應的測試時會找不到）：\n  ${bad.join("\n  ")}`);
 });
 
@@ -104,8 +116,14 @@ test("[meta] GUIDELINE 每一章都有測試，沒有的要在豁免表裡寫得
         for (const m of title.matchAll(/§(\d+(?:-\d+)?)/g)) tested.add(m[1]);
 
     // 有編號子節的母章，由子節代表：§3 的內容全在 3-1／3-2／3-3 裡。
-    const hasTestedChild = (n) => [...sections.keys()].some((k) => k.startsWith(`${n}-`) && tested.has(k));
-    const covered = (n) => tested.has(n) || hasTestedChild(n);
+    const coveredIn = (n, secs, got) => got.has(n) || [...secs.keys()].some((k) => k.startsWith(`${n}-`) && got.has(k));
+    const covered = (n) => coveredIn(n, sections, tested);
+    // 負控（合成章節集走同一支）
+    const S = new Map([["3", ""], ["3-1", ""], ["30", ""]]);
+    assert.ok(coveredIn("3", S, new Set(["3"])), "直接被測到的章沒有算數");
+    assert.ok(coveredIn("3", S, new Set(["3-1"])), "有子節被測到的母章沒有算成有覆蓋");
+    assert.ok(!coveredIn("3", S, new Set()), "一條測試都沒有的章抓不出來");
+    assert.ok(!coveredIn("3", S, new Set(["30"])), "章號只是前綴相同就被算成有覆蓋");
 
     const gaps = [...sections].filter(([n]) => !covered(n));
     const unexplained = gaps.filter(([n]) => !UNTESTED_SECTIONS.has(n));
@@ -126,7 +144,14 @@ test("[meta] GUIDELINE 每一章都有測試，沒有的要在豁免表裡寫得
 test("[meta] 沒有零測試的測試檔，也沒有空資料夾", () => {
     // 切檔搬家時最容易發生的事：檔建了、測試忘了搬。零測試的檔看起來一切正常，
     // 而它代表的那一塊主題其實沒有任何一條在跑。
-    const empty = testFiles().filter((f) => titlesOf(f).length === 0);
+    const emptyIn = (files, titles) => files.filter((f) => titles(f).length === 0);
+    const empty = emptyIn(testFiles(), titlesOf);
+    // 負控（合成清單走同一支）＋ 抽取器本身要真的抽得到：抽不到的話這一族每一條都在空轉，
+    // 而症狀是全綠。
+    assert.deepEqual(emptyIn(["a.test.mjs"], () => []), ["a.test.mjs"], "一條測試都沒有的檔抓不到");
+    assert.deepEqual(emptyIn(["a.test.mjs"], () => ["x"]), [], "有測試的檔被誤判");
+    const anyFile = testFiles()[0];
+    assert.ok(titlesOf(anyFile).length > 0, `${anyFile} 抽不出任何標題 —— 抽取器壞了`);
     assert.deepEqual(empty, [], `這幾支測試檔一條測試都沒有：\n  ${empty.join("\n  ")}`);
 
     const bare = [];
@@ -142,29 +167,7 @@ test("[meta] 測試總數的棘輪", () => {
     // 實測值。刪測試是一次有意識的決定，要連這個數字一起調下來並寫理由；
     // 沿用一個算出來的估值等於這條守門不存在。
     const total = allTests().length;
-    assert.ok(total >= 246, `只掃到 ${total} 條測試 —— 有測試在搬家途中掉了，或標題抽取失準`);
-});
-
-test("[meta] 上面那幾條的負控：壞掉的章號、住錯的資料夾、死豁免都要抓得出來", () => {
-    // 規則被寫窄（認不出違規）時全綠，所以拿合成樣本走同一條判準各驗一次。
-    const sections = sectionsOfGuideline();
-
-    // ① 不存在的章號要抓得出來
-    assert.ok(!sections.has("4-9"), "GUIDELINE 真的有 §4-9 的話，這條負控要換一個不存在的章號");
-    const citedBad = [..."§4-9 假的規則".matchAll(/§(\d+(?:-\d+)?)/g)].filter((m) => !sections.has(m[1]));
-    assert.equal(citedBad.length, 1, "「章號存在」的判準認不出不存在的章號");
-
-    // ② 住錯資料夾要抓得出來
-    // 走真測試那一份判準，不重刻
-    const misfiled = (file, title) => misfiledIn(file, title) !== null;
-    assert.ok(misfiled("tests/rules/5-js/x.test.mjs", "§4 這條是 §4 卻放在 5-js"), "住錯資料夾判不出來");
-    assert.ok(misfiled("tests/rules/5-js/x.test.mjs", "沒有前綴"), "沒有領頭 § 判不出來");
-    assert.ok(!misfiled("tests/rules/5-js/x.test.mjs", "§5/§8 這條領頭是 §5"), "複合前綴被誤判成住錯了");
-    assert.ok(!misfiled("tests/docs/x.test.mjs", "[docs] 這條不對應任何章"), "docs/ 的測試被當成住錯了");
-
-    // ③ 標題抽取要真的抽得到（抽不到的話上面每一條都在空轉）
-    const anyFile = testFiles()[0];
-    assert.ok(titlesOf(anyFile).length > 0, `${anyFile} 抽不出任何標題 —— 抽取器壞了`);
+    assert.ok(total >= 253, `只掃到 ${total} 條測試 —— 有測試在搬家途中掉了，或標題抽取失準`);
 });
 
 test("[meta] §8-1 第 7 條：零命中型規則要有負控——沒有負控的條數只准往下走", () => {
@@ -215,7 +218,7 @@ test("[meta] §8-1 第 7 條：零命中型規則要有負控——沒有負控�
     const missing = blocks.length - withControl;
     // 棘輪＝這次實際量出來的條數。**只准往下**：補了負控就把它調下來（那是一次有意識的決定），
     // 調上去等於把「新寫的規則不必附負控」寫進規則裡。
-    const MISSING_CEILING = 44;
+    const MISSING_CEILING = 33;
     assert.ok(missing <= MISSING_CEILING,
         `缺負控的零命中型測試從 ${MISSING_CEILING} 條增加到 ${missing} 條——新寫的零命中型規則要附 probe()：\n${blocks.filter((b) => !b.ok).map((b) => ` ${b.f}  ${b.title}`).join("\n")}`);
 });

@@ -17,7 +17,13 @@ test("§4-2 pagination 的前後綴 key 要自帶分隔空白（markup 刻意去
         ["pagination.pagePrefix", /\s$/, "要以空白結尾"],
         ["pagination.pageSuffix", /^(\s|$)/, "要以空白開頭或為空字串"],
     ];
-    const bad = PINNED.filter(([k, re]) => en[k] == null || !re.test(en[k]));
+    const lacking = (dict, pinned) => pinned.filter(([k, re]) => dict[k] == null || !re.test(dict[k]));
+    const bad = lacking(en, PINNED);
+    // 負控（合成字典走同一支）：缺空白、整顆 key 不見都要抓得到，自帶空白的要放行。
+    const P = [["x.prefix", /\s$/, "要以空白結尾"]];
+    assert.equal(lacking({ "x.prefix": "Total " }, P).length, 0, "自帶尾隨空白的被誤判");
+    assert.equal(lacking({ "x.prefix": "Total" }, P).length, 1, "缺尾隨空白抓不到");
+    assert.equal(lacking({}, P).length, 1, "整顆 key 不見了抓不到");
     assert.equal(bad.length, 0, `這些 en 值缺分隔空白（pagination.html 的 span 之間零空白）：\n${bad.map(([k, , why]) => `${k} ${why}`).join("\n")}`);
 });
 
@@ -139,8 +145,13 @@ test("§4-2 英譯字串不得含全形標點（那是繁中的字身，混在�
         ["settings.outputRuleListMarkerDesc", "輸出規則的清單符號說明：句中逐字列出「會被改寫的來源寫法」，其中一種就是全形頓號的「一、」——那是被引用的字面樣本，不是這句英文自己的標點"],
     ]);
     const en = JSON.parse(read("src/i18n/en.json"));
-    const hits = Object.entries(en).filter(([k, v]) => !SAMPLE.has(k) && FULLWIDTH.test(v))
+    const scanDict = (dict, exempt) => Object.entries(dict).filter(([k, v]) => !exempt.has(k) && FULLWIDTH.test(v))
         .map(([k, v]) => `${k}  ${v.slice(0, 60)}`);
+    const hits = scanDict(en, SAMPLE);
+    // 負控（合成字典走同一支）：全形要抓得到、半形要放行、登記在 SAMPLE 的要放行。
+    assert.equal(scanDict({ "x.a": "Done（yes）" }, new Map()).length, 1, "英譯裡的全形括號抓不到");
+    assert.equal(scanDict({ "x.a": "Done (yes)" }, new Map()).length, 0, "半形標點被誤判");
+    assert.equal(scanDict({ "x.a": "Done（yes）" }, new Map([["x.a", "被引用的字面樣本"]])).length, 0, "登記在 SAMPLE 的被誤判");
     assert.ok(Object.keys(en).length > 2133, `en.json 只讀到 ${Object.keys(en).length} 顆 key —— 這條測試在空轉`);
     for (const [k, why] of SAMPLE) {
         assert.ok(k in en, `SAMPLE 有死豁免：${k} 已經不在 en.json 裡`);
@@ -160,8 +171,14 @@ test("§4-2 英譯的引號與撇號只有一種拼法（直引號／直撇號�
         ["settings.tagCodeHint", "標籤代碼的字元限制：句中逐字列出「不可以出現的字元」，直引號與直撇號本身就是那份清單的成員"],
     ]);
     const STRAIGHT = /['"]/;
-    const bad = Object.entries(en).filter(([k, v]) => !SAMPLE.has(k) && STRAIGHT.test(v))
+    const scanDict = (dict, exempt) => Object.entries(dict).filter(([k, v]) => !exempt.has(k) && STRAIGHT.test(v))
         .map(([k, v]) => `${k}  ${v.slice(0, 80)}`);
+    const bad = scanDict(en, SAMPLE);
+    // 負控（合成字典走同一支）：直引號與直撇號各要抓得到，彎的要放行，登記在 SAMPLE 的要放行。
+    assert.equal(scanDict({ "x.a": `Say "no"` }, new Map()).length, 1, "直引號抓不到");
+    assert.equal(scanDict({ "x.a": `it's` }, new Map()).length, 1, "直撇號抓不到");
+    assert.equal(scanDict({ "x.a": `Say “no”, it’s fine` }, new Map()).length, 0, "彎引號與彎撇號被誤判");
+    assert.equal(scanDict({ "x.a": `Say "no"` }, new Map([["x.a", "字元清單的樣本字面"]])).length, 0, "登記在 SAMPLE 的被誤判");
     assert.ok(Object.keys(en).length > 2133, `en.json 只讀到 ${Object.keys(en).length} 顆 key —— 這條測試在空轉`);
     assert.ok(STRAIGHT.test(`it's`) && !STRAIGHT.test(`it’s`), "直撇號偵測式壞了，這條測試永遠會綠");
     for (const [k, why] of SAMPLE) {
@@ -176,17 +193,30 @@ test("§4-2 sr-only 前綴 ＋ 緊接的英數值：譯文必須自帶分隔空�
     // 繁中「來源1」正常（中文不需空格），要察覺得切到英文語境；sr-only 沒有視覺，fpdiff 也抓不到。
     // 收窄 population：只看「</span> 緊接英數字元」且該 key 的英譯尾字也是英數的情形（標點當邊界時不需空白）。
     const en = JSON.parse(read("src/i18n/en.json"));
+    const SR_PREFIX = /<span class="sr-only"[^>]*data-i18n="([^"]+)"[^>]*>[^<]*<\/span>([A-Za-z0-9])/g;
+    const scan = (html, dict, f = "<probe>") => {
+        const out = [];
+        for (const m of html.matchAll(SR_PREFIX)) {
+            const val = dict[m[1]];
+            if (typeof val === "string" && val && /[A-Za-z0-9]$/.test(val))
+                out.push(`${f}  ${m[1]} = "${val}" ＋緊接 "${m[2]}" → 可及名稱黏成一個字`);
+        }
+        return out;
+    };
     const hits = [];
     let seen = 0;
     for (const f of distHtml) {
-        for (const m of distDoc(f).matchAll(/<span class="sr-only"[^>]*data-i18n="([^"]+)"[^>]*>[^<]*<\/span>([A-Za-z0-9])/g)) {
-            seen++;
-            const val = en[m[1]];
-            if (typeof val === "string" && val && /[A-Za-z0-9]$/.test(val))
-                hits.push(`${basename(f)}  ${m[1]} = "${val}" ＋緊接 "${m[2]}" → 可及名稱黏成一個字`);
-        }
+        const html = distDoc(f);
+        seen += [...html.matchAll(SR_PREFIX)].length;
+        hits.push(...scan(html, en, basename(f)));
     }
     assert.ok(seen >= 10, `只掃到 ${seen} 處 sr-only 前綴＋英數值 —— 這條測試在空轉`);
+    // 負控（合成 markup ＋ 合成字典走同一支）
+    const D = { "x.bad": "Source", "x.ok": "Source ", "x.punct": "Source:" };
+    assert.equal(scan(`<span class="sr-only" data-i18n="x.bad">來源</span>1`, D).length, 1, "英數收尾的前綴黏住緊接的值，抓不到");
+    assert.equal(scan(`<span class="sr-only" data-i18n="x.ok">來源</span>1`, D).length, 0, "自帶尾隨空白的被誤判");
+    assert.equal(scan(`<span class="sr-only" data-i18n="x.punct">來源</span>1`, D).length, 0, "標點收尾的譯文被誤判（標點自己就是邊界）");
+    assert.equal(scan(`<span class="sr-only" data-i18n="x.bad">來源</span>：`, D).length, 0, "緊接的不是英數值，不歸這一條管");
     assert.equal(hits.length, 0, `§4-2：前綴 key 要自帶尾隨空白（同 pagination.totalPrefix 的正典）：\n${fail([...new Set(hits)])}`);
 });
 
