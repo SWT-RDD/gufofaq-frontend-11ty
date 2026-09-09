@@ -3,12 +3,12 @@
 import { test } from "vitest";
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
-import { distHtml, read, srcHtml, srcJs, srcScss } from "../../_lib/corpus.mjs";
+import { distHtml, gitFiles, read, srcHtml, srcJs, srcScss } from "../../_lib/corpus.mjs";
 import { attrValuesIn, classesOf, distDoc } from "../../_lib/html.mjs";
 import { componentDirs } from "../../_lib/inventory.mjs";
 import { NAMED_BUTTON_EXTRA, NAMED_HOOKS, jsOwnedClasses } from "../../_lib/js-ownership.mjs";
 import { fail, probe, scanLines, scanText } from "../../_lib/probe.mjs";
-import { SCSS_SHARED_STATE, cssSelectorClasses, scssRootClasses } from "../../_lib/scss.mjs";
+import { SCSS_SHARED_STATE, componentClassOwners, cssSelectorClasses, foreignClassHits, globalScssClasses, scssRootClasses } from "../../_lib/scss.mjs";
 import { stripNjk } from "../../_lib/text.mjs";
 
 test("§4 .btn-group 只在 .default-table 裡有規則，表格外掛它等於零樣式（祖先錯位）", () => {
@@ -257,6 +257,41 @@ test("§4 元件 scss 不得出現別的元件 class（祖先位或後裔位都�
             ".header .foo .header-controls { gap: 0 }"],
         [".header .header-title { gap: 0 }", ".header-controls { gap: 0 }", ".header { gap: 0 }"]);
     assert.equal(bad.length, 0, `改別人的樣式要用 owning 元件的 variant/slot class：\n${fail(bad)}`);
+});
+
+test("§4 元件 scss 不得指名別的元件擁有的 class（主人由 scss 宣告決定，不是資料夾名）", () => {
+    // 上一條的母體是**資料夾名**，於是只擋得住「元件名恰好等於 class 名」的那一族。
+    // `ui/button` 擁有的 `.button-icon` 不是任何一個資料夾的名字 ⇒ 別的元件寫 `.field > .button-icon`
+    // 時規則對它從未執行過，而畫面上完全看不出來（那顆 class 真的有規則，只是規則屬於別人：
+    // 主人改了 padding 這裡跟著變，而寫這裡的人不知道自己動到了誰）。
+    // 這一條把母體換成「誰在自己的 scss 裡宣告了這顆 class」，補上資料夾名以外的那一族。
+    const globals = globalScssClasses(gitFiles('"src/scss/*.scss"'));
+    assert.ok(globals.size > 40, `全域 class 只收到 ${globals.size} 顆 —— 全域 scss 沒讀到，工具 class 會被誤判成元件所有物`);
+    const entries = componentDirs
+        .map((c) => ({ name: c.name, file: `${c.path}/_${c.name}.scss` }))
+        .filter((e) => existsSync(e.file));
+    assert.ok(entries.length > 60, `只找到 ${entries.length} 支元件 scss —— 這條測試在空轉`);
+    const owner = componentClassOwners(entries, globals);
+    assert.ok(owner.size > 200, `只歸戶了 ${owner.size} 顆 class —— 歸戶壞了，這條測試在空轉`);
+    // 這條規則的價值全在「資料夾名以外的那一族」；歸戶表若塌回只剩資料夾名，測試會靜靜地退化成上一條。
+    const folderNames = new Set(componentDirs.map((c) => c.name));
+    assert.ok([...owner.keys()].filter((c) => !folderNames.has(c)).length > 150,
+        "歸戶表裡幾乎只剩資料夾名 —— 這條測試退化成上一條了");
+    assert.equal(owner.get("button-icon"), "button", "`.button-icon` 沒歸給 ui/button —— 歸戶判準壞了");
+    // 修飾詞不歸戶：`&.disabled`／`.x.disabled` 誰都掛得上，歸戶它會製造誤報
+    for (const m of SCSS_SHARED_STATE)
+        assert.equal(owner.get(m), undefined, `狀態修飾詞 .${m} 不該有主人（會誤報）`);
+
+    const bad = [];
+    for (const e of entries) bad.push(...foreignClassHits(e.name, read(e.file), owner, e.file));
+    probe("§4 指名別人的 class", (s) => foreignClassHits("form-control", s, owner),
+        // ①祖先位 ②後裔位 ③直接子代（組合子集合被縮成只認空白時要紅）④`:has()` 內部
+        [".field .button-icon { gap: 0 }", ".button-icon .form-control { gap: 0 }",
+            ".select-wrap>.button-icon { gap: 0 }", ".select-wrap:has(.button-icon) { gap: 0 }"],
+        // 自己的後裔、掛在自己元素上的修飾詞、`&` 開頭的自我巢狀，都不是指名別人
+        [".select-wrap .select-value { gap: 0 }", ".form-control.disabled { gap: 0 }",
+            "&.disabled .select-value { gap: 0 }"]);
+    assert.equal(bad.length, 0, `要改別人的樣式就請主人開一顆 variant／slot class：\n${fail(bad)}`);
 });
 
 test("§4 .form-control.search / .time 必須是 .field 的直接子元素（圖示畫在 .field::after）", () => {
