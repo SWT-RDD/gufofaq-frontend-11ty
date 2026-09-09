@@ -84,6 +84,7 @@ export const NAMED_HOOKS = new Map([
     ["chat-log-sn", "4-1 查詢列的「對話編號」欄（可見輸入框，值交給 React 讀去送查詢）"],
     ["chat-room-sn", "4-1 查詢列的「聊天室編號」欄（可見輸入框，值交給 React 讀去送查詢）"],
     ["confirm-delete-btn", "刪除確認窗裡真正送出的那一顆"],
+    ["confirm-switch-profile-btn", "5-2 切換設置確認窗裡真正切過去的那一顆（切換會丟掉整頁未存的編輯，所以送出的是這顆、不是頁籤本身）"],
     ["date-error", "日期格式的警告槽（驗證訊息由業務端填）"],
     ["delete-selected-btn", "批次刪除鈕（目標＝已勾選的那幾列）"],
     ["delete-single-btn", "逐列各自一顆的單筆刪除鈕（目標＝按下它的那一列）"],

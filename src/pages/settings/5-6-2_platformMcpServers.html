@@ -150,7 +150,7 @@ permalink: 5-6-2_platformMcpServers.html
                     <label for="newMcpEnvInput" class="control-label" data-i18n="settings.mcpEnv">環境變數</label>
                 </div>
                 <div class="field">
-                    <textarea id="newMcpEnvInput" class="form-control size-sm" placeholder="一行一個 KEY=value" data-i18n-placeholder="settings.pleaseEnterMcpEnv" aria-describedby="newMcpEnvHint"></textarea>
+                    <textarea id="newMcpEnvInput" class="form-control size-sm" placeholder="一行一個 KEY=value" data-i18n-placeholder="settings.pleaseEnterMcpEnv" aria-describedby="newMcpEnvHint mcpEnvBlockedPrefixesHint mcpEnvBlockedKeysHint"></textarea>
                     <span id="newMcpEnvHint" class="text-gray"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-mcp-env-max-items">50</span><span data-i18n="settings.mcpEnvLimitMid">組，鍵最多</span><span class="js-mcp-env-max-key-len">200</span><span data-i18n="settings.mcpEnvLimitMid2">字、值最多</span><span class="js-mcp-env-max-value-len">4000</span><span data-i18n="common.unitChars"> 字</span></span>
                 </div>
             </div>
@@ -228,6 +228,21 @@ permalink: 5-6-2_platformMcpServers.html
         <span id="mcpEnvLimitHint"><span data-i18n="settings.mcpEnv">環境變數</span><span data-i18n="common.labelSep">：</span><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-mcp-env-max-items">50</span><span data-i18n="settings.mcpEnvLimitMid">組，鍵最多</span><span class="js-mcp-env-max-key-len">200</span><span data-i18n="settings.mcpEnvLimitMid2">字、值最多</span><span class="js-mcp-env-max-value-len">4000</span><span data-i18n="common.unitChars"> 字</span></span>
         <span id="mcpDescLimitHint"><span data-i18n="settings.mcpDescription">描述</span><span data-i18n="common.labelSep">：</span><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-mcp-desc-max-len">1024</span><span data-i18n="common.unitChars"> 字</span></span>
     </div>
+    {# 環境變數的**黑名單**：`NODE_OPTIONS`、`LD_PRELOAD`、`UV_INDEX` 這一族的鍵一律拒收。
+         沒有這一格的時候，平台管理員打得完、存不進去——按下儲存才吃到 400，而表單上沒有任何
+         地方提過有黑名單。前綴那一族尤其反直覺：`UV_CACHE_DIR` 這種無害的鍵也一併被拒，
+         看不到清單的人只會覺得這一欄壞了。這一格要達成的事跟那句 400 一樣，只是提早到打字的當下。
+       **只寫一份**（不在新增區與編輯區各抄一份）：黑名單是全域的，兩顆 textarea 各自把這兩顆 id
+         接進自己的 `aria-describedby`，同上面那排界線提示的做法。
+       id 掛在**兩段文字自己身上**、不掛外層容器：外層還包著那顆「展開」鈕，指到外層會把
+         「展開」也一起讀進欄位的描述裡。
+       兩顆 `js-*` 是值載體：清單由執行期讀回來填，這裡的兩串只是示範值。
+       分隔用半形逗號而不是頓號：這兩顆不掛 key，同一串字面要同時服務兩個語系（§4-2）。
+       鍵那一串走 ui/collapse-text 的**型③**（不在迴圈裡、內容是一顆資料槽），逐字形狀見該元件檔頭。 #}
+    <div class="flex-row column gap-8 text-gray">
+        <div id="mcpEnvBlockedPrefixesHint"><span data-i18n="settings.mcpEnvBlockedPrefixes">這些開頭的鍵送不出去：</span><span class="js-mcp-env-blocked-prefixes">LD_, DYLD_, BASH_FUNC_, NPM_CONFIG_, UV_, PIP_, POETRY_, PDM_</span></div>
+        <div class="collapse-text"><div class="collapse-body" id="mcpEnvBlockedKeysHint"><span data-i18n="settings.mcpEnvBlockedKeys">這些鍵也送不出去：</span><span class="js-mcp-env-blocked-keys">BASH_ENV, BASHOPTS, ENV, GCONV_PATH, GIT_SSH_COMMAND, HOSTALIASES, JAVA_TOOL_OPTIONS, LOCPATH, NLSPATH, NODE_EXTRA_CA_CERTS, NODE_OPTIONS, NODE_PATH, PERL5LIB, PERL5OPT, PERLLIB, PYTHONBREAKPOINT, PYTHONEXECUTABLE, PYTHONHOME, PYTHONINSPECT, PYTHONPATH, PYTHONSTARTUP, PYTHONUSERBASE, PYTHONWARNINGS, RESOLV_HOST_CONF, RUBYLIB, RUBYOPT, SHELLOPTS</span></div><button type="button" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>
+    </div>
     <div class="table-container scrollTable" tabindex="0">
         <table class="default-table">
             <colgroup>
@@ -276,7 +291,7 @@ permalink: 5-6-2_platformMcpServers.html
                     {# 環境變數＝該 server 的憑證。值在讀取路徑已被遮成 "***"，
                          原樣送回等於沿用原值；要輪替就把該行的值改掉。
                          沒有這一欄的時候，輪替金鑰只能把整台 server 刪掉重建。 #}
-                    <td><textarea class="form-control size-sm" aria-labelledby="mcpRowName-{{ server.id }} mcpHeadEnv" aria-describedby="mcpEnvLimitHint" placeholder="一行一個 KEY=value" data-i18n-placeholder="settings.pleaseEnterMcpEnv">{% for pair in server.env %}{{ pair }}
+                    <td><textarea class="form-control size-sm" aria-labelledby="mcpRowName-{{ server.id }} mcpHeadEnv" aria-describedby="mcpEnvLimitHint mcpEnvBlockedPrefixesHint mcpEnvBlockedKeysHint" placeholder="一行一個 KEY=value" data-i18n-placeholder="settings.pleaseEnterMcpEnv">{% for pair in server.env %}{{ pair }}
 {% endfor %}</textarea></td>
                     <td><input type="text" class="form-control" value="{{ server.description }}" aria-labelledby="mcpRowName-{{ server.id }} mcpHeadDesc" aria-describedby="mcpDescLimitHint"></td>
                     <td class="text-center">

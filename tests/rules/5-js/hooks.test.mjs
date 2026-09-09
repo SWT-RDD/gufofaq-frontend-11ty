@@ -116,6 +116,10 @@ test("§5 窗腳的每一顆鈕都要有主人（不掛 .btn-close-modals 的那
     const REACT_BOUND_CONFIRM = new Map([
         ["js-confirm-delete-demo", "元件庫頁 delete-modal 的版型示範（deleteConfirmBinding＝確認鈕交給業務 js 綁）：" +
             "那一頁沒有真實觸發鈕，生產頁上這顆送的是刪除 API，成敗由 React 演；窗仍關得掉（取消鈕與右上角都掛著 btn-close-modals）"],
+        ["confirm-switch-profile-btn", "5-2 切換設置的確認鈕：按下去是**換一整套設定檔重載這一頁**，" +
+            "結果就是頁面自己變了，沒有第二種結局可以用 toast 演（成功即重載、失敗留在原地由 React 演）；" +
+            "也不能掛 btn-close-modals——真的要切換之前得先把未存的編輯丟掉，那是業務端的事。" +
+            "窗仍關得掉（取消鈕與右上角都掛著 btn-close-modals）"],
     ]);
     const cssClasses = cssSelectorClasses();
     assert.ok(cssClasses.size >= 542, `dist/css/main.css 只掃到 ${cssClasses.size} 個 class —— 「哪些 class 是 hook」判不出來，這條測試在空轉`);

@@ -8,9 +8,11 @@
 //   每一列的可及名稱都會是「展開」——正是 §4 第一句要擋的東西。）
 //
 // ③ 基本型——**不在迴圈裡**、同頁只有這一顆，鈕的可及名稱就是它自己的字面（沒有 `id`／
-//   `aria-labelledby`）。全站唯一實例是 components/qa-detail-info 的「提示詞」，而**它的內容是
-//   直接寫在 markup 的長文**，所以那一份是跨行的——逐字形狀見下面的變體②，不要照下面這一行抄。
-//   下面這一行是同一型「內容是一顆資料槽」時的寫法（今天沒有這種實例，形狀先釘在這裡）：
+//   `aria-labelledby`）。實例有兩份，而**它們的 `.collapse-body` 裡面長得不一樣**：
+//   components/qa-detail-info 的「提示詞」是**直接寫在 markup 的長文**，所以那一份是跨行的
+//   ——逐字形狀見下面的變體②，不要照下面這一行抄；5-6-2 的「這些鍵也送不出去」則是
+//   「一顆 key 標籤 ＋ 一顆資料槽」，屬於下面這一行的形狀（槽裡放什麼由那一格自己決定）。
+//   下面這一行是同一型「內容是一顆資料槽」時的寫法：
 //
 //   <div class="collapse-text"><div class="collapse-body">{{ row.answer }}</div><button type="button" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>
 //

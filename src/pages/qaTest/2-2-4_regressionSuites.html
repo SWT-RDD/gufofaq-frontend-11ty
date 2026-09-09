@@ -78,7 +78,13 @@ permalink: 2-2-4_regressionSuites.html
                     <label for="newSuiteDesc" class="control-label" data-i18n="regression.suiteDesc">說明</label>
                 </div>
                 <div class="field">
-                    <input type="text" id="newSuiteDesc" class="form-control" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter">
+                    {# 上限 2000 字，超過會被擋下（下面那一句是同一道界線的可見版）。
+                       形狀逐字照同頁 `#newSuiteName`：maxlength ＋ aria-describedby ＋
+                         「前綴 key ＋數字節點＋單位 key」的可見提示（§4-2 數字不烤進譯文）。
+                       沒有這一句時，打了兩千零一個字按下去只會拿到「建立失敗，請稍後再試」
+                         ——建立鈕的五段 data-toast 沒有任何一段在講長度，於是重試永遠不會成功。 #}
+                    <input type="text" id="newSuiteDesc" class="form-control" maxlength="2000" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" aria-describedby="newSuiteDescHint">
+                    <span class="text-gray" id="newSuiteDescHint"><span data-i18n="regression.suiteDescLimit">說明字數上限：</span><span>2000</span><span data-i18n="common.unitChars"> 字</span></span>
                 </div>
             </div>
         </div>
@@ -459,13 +465,16 @@ permalink: 2-2-4_regressionSuites.html
             {# 可及名稱走「sr-only 前綴 key ＋ 數字節點」＋ `aria-labelledby`（同本頁斷言列的
      `assertionRowLabel-N`），**不要一輪一顆 key**：上限是 10 輪、旁邊還有一顆「新增一輪」，
      照 `contextTurnAria1/2` 那個形狀要開到 `Aria10`，而數字本來就不該烤進譯文（§4-2）。 #}
+            {# 每一輪的提問吃的是與「案例的問題」同一道 2000 字界線（同一顆上游發布值），
+                 所以 maxlength 與旁邊那句可見提示兩邊都要有。同一道界線只投影一半的話，
+                 就是「打完才被擋下、而畫面上沒有任何地方提過」原封不動換一格重演。 #}
             <span id="newCaseContextRow1" class="sr-only"><span data-i18n="regression.contextTurnRowPrefix">前置對話第 </span>1<span data-i18n="regression.contextTurnRowSuffix"> 輪的提問</span></span>
-            <input type="text" id="newCaseContext1" class="form-control" aria-labelledby="newCaseContextRow1" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" value="我要出口鋼品到美國">
+            <input type="text" id="newCaseContext1" class="form-control" maxlength="2000" aria-labelledby="newCaseContextRow1" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" value="我要出口鋼品到美國">
             <span id="newCaseContextRow2" class="sr-only"><span data-i18n="regression.contextTurnRowPrefix">前置對話第 </span>2<span data-i18n="regression.contextTurnRowSuffix"> 輪的提問</span></span>
-<input type="text" id="newCaseContext2" class="form-control" aria-labelledby="newCaseContextRow2" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" value="先看關稅">
+            <input type="text" id="newCaseContext2" class="form-control" maxlength="2000" aria-labelledby="newCaseContextRow2" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" value="先看關稅">
             <div class="flex-row gap-16 align-items-center flex-wrap">
                 <button type="button" class="button button-border button-sm js-add-context-turn" data-i18n="regression.addContextTurn">新增一輪前置對話</button>
-                <span class="text-gray"><span data-i18n="regression.limitContextTurns">前置對話上限：</span><span>10</span><span data-i18n="regression.turnsUnit"> 輪</span><span data-i18n="regression.limitContextTurnsWhy">。每一輪在每一次執行都各扣一次問答額度。</span></span>
+                <span class="text-gray"><span data-i18n="regression.limitContextTurns">前置對話上限：</span><span>10</span><span data-i18n="regression.turnsUnit"> 輪</span><span data-i18n="regression.contextTurnLenLimit">；每一輪字數上限：</span><span>2000</span><span data-i18n="common.unitChars"> 字</span><span data-i18n="regression.limitContextTurnsWhy">。每一輪在每一次執行都各扣一次問答額度。</span></span>
             </div>
         </div>
     </div>
@@ -640,7 +649,11 @@ permalink: 2-2-4_regressionSuites.html
             <label for="newCaseNote" class="control-label" data-i18n="regression.caseNote">備註</label>
         </div>
         <div class="field">
-            <input type="text" id="newCaseNote" class="form-control" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter">
+            {# 上限 2000 字，超過會被擋下（下面那一句是同一道界線的可見版）。
+               形狀逐字照同頁 `#newSuiteName`／`#newSuiteDesc`。沒有這一句時，超長的備註
+                 只會換來「新增失敗，請稍後再試」——新增鈕那七段 data-toast 沒有一段在講長度。 #}
+            <input type="text" id="newCaseNote" class="form-control" maxlength="2000" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" aria-describedby="newCaseNoteHint">
+            <span class="text-gray" id="newCaseNoteHint"><span data-i18n="regression.caseNoteLimit">備註字數上限：</span><span>2000</span><span data-i18n="common.unitChars"> 字</span></span>
         </div>
     </div>
 
@@ -722,10 +735,17 @@ permalink: 2-2-4_regressionSuites.html
      「評審漂移」，沒有人會知道是這一顆旋鈕造成的。 #}
 {% set regressionTurnTotal = 21 %}
 {% set regressionOverrideCount = 4 %}
+{# 執行區的界線清單。**逐則與整批兩顆逾時都要在**：只給逐則的那一顆時，讀的人自己乘出來
+     的最壞情況是 200 則 × 600 秒 ≈ 33 小時，而真正的天花板是整批 3600 秒——超過就中斷
+     （已完成的結果保留）。以為要跑一天的人會去改排程，而那份報表最多一小時就會以「中斷」
+     收尾，兩件事要人做的處置完全不同。
+   同一份界線在 2-2-5 的執行報表也列一次（`runLimitRows`）：那一頁是事後看結果的地方，
+     「為什麼只跑到第 148 則」要在同一張表上答得出來，所以兩份逐列相同。 #}
 {% set regressionLimits = [
   { labelKey: "regression.limitCases", label: "單次執行案例上限：", value: "200", unitKey: "regression.casesUnit", unit: " 則" },
   { labelKey: "regression.limitContextTurns", label: "前置對話上限：", value: "10", unitKey: "regression.turnsUnit", unit: " 輪" },
   { labelKey: "regression.limitCaseTimeout", label: "單則案例逾時：", value: "600", unitKey: "regression.secondsUnit", unit: " 秒" },
+  { labelKey: "regression.limitTotalTimeout", label: "整批執行逾時：", value: "3600", unitKey: "regression.secondsUnit", unit: " 秒" },
   { labelKey: "regression.limitConcurrency", label: "同時執行的案例數：", value: "1", unitKey: "regression.casesUnit", unit: " 則" }
 ] %}
 <div class="block mt-16 flex-row column gap-16">

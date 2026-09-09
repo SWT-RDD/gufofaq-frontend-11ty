@@ -2435,3 +2435,27 @@ permalink: 5-2_conversationSettings.html
 {# 跨設定檔複製 modal（configCopyModal）：由檢索與欄位子頁籤的 .js-copy-config 業務條件開窗
    （不掛 data-open-modal，見 §5 註）。對應 React ConfigCopyModal。 #}
 {% include "components/config-copy-modal/config-copy-modal.html" %}
+
+{# 切換設置的二次確認（switchProfileModal）。
+   為什麼要有：這一頁一次編輯的是一整套設定檔（各段提示詞、檢索分層、內建工具、Agent 參數），
+     而上面那三顆設置頁籤按下去就把整頁重載成另一套的值——未存的修改無聲消失。使用者按下去
+     之前不知道會失去什麼，按下去之後也不知道失去了。這是全站單次編輯量最大的一頁，而頁籤就排
+     在標題旁邊，誤點的成本是重打一整輪設定。
+   沿用 components/delete-modal 而不是另做一顆：標題、內文、紅字後果、確認鈕記號全部是參數，
+     該元件檔頭寫明「撤銷分享連結／撤銷嵌入金鑰這種同樣不可逆的動作沿用同一顆彈窗」。它的確認鈕
+     是 button-primary（不是紅色的），配色本來就適合這種非破壞性但不可逆的確認。
+   `deleteHideTarget`：目標就是「另一套設置」，講不出是哪一個名字（要切到哪一套由按下的那顆頁籤
+     決定，而那是業務端的事），內文自己已經是完整句子。
+   三顆頁籤鈕**不掛 data-open-modal**：開窗是業務條件（只有在這一頁有未存編輯時才問），照 §5
+     ——與 3-3 那顆「匯入問答」同一種處置，頁籤保留 data-setting-sn 就好。 #}
+{% set deleteModalId = "switchProfileModal" %}
+{% set deleteTitleKey = "settings.switchProfileTitle" %}
+{% set deleteTitleZh = "切換設置" %}
+{% set deleteMessageKey = "settings.switchProfileMessage" %}
+{% set deleteMessageZh = "這一套設定檔還有沒有儲存的修改，切到別的設置會把它們丟掉。確定要切換嗎？" %}
+{% set deleteHideTarget = true %}
+{% set deleteNoteKey = "settings.switchProfileNote" %}
+{% set deleteNoteZh = "丟掉的是這一頁上所有還沒按過「儲存對話設定」的欄位，包含各段提示詞。切換之後回不來。" %}
+{% set deleteConfirmBinding = true %}
+{% set deleteConfirmClass = "confirm-switch-profile-btn" %}
+{% include "components/delete-modal/delete-modal.html" %}

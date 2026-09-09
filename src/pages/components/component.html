@@ -646,6 +646,8 @@ bodyClass: guideline-page
                     <button type="button" class="button button-dark" data-open-modal="caseFromLogModal">開啟從問答紀錄建案例 modal</button>
                     <button type="button" class="button button-dark" data-open-modal="untaggedFilesModal">開啟未標註文件modal</button>
                     <button type="button" class="button button-dark" data-open-modal="demoHelpModal">開啟說明視窗modal</button>
+                    <button type="button" class="button button-dark" data-open-modal="demoHelpModalLimitsUnavailable">開啟說明視窗modal（數字讀不到）</button>
+                    <button type="button" class="button button-dark" data-open-modal="switchProfileModal">開啟切換設置確認modal</button>
                 </div>
                 <div class="caption description mt-16">
                     <ul>
@@ -1689,6 +1691,28 @@ bodyClass: guideline-page
 {% set deleteToastKey = "toast.resetUsage" %}
 {% set deleteToastType = "success|error" %}
 {% include "components/delete-modal/delete-modal.html" %}
+{# 5-2「切換設置」的二次確認窗：那一頁的三顆設置頁籤是**條件開窗**（只有還有未存編輯時才問，
+     所以不掛 data-open-modal，§5），於是整個 5-2 上沒有任何東西打得開這扇窗——它的「看得見」
+     只能靠這一頁的示範觸發器（同 faq-share-modal 那一份的處置）。
+   **每一顆參數都重設一次**：上面兩顆 delete-modal 設過的東西是頁面全域的（§2），不重設就會
+     把重置用量那一顆的目標名稱、平台角色閘與 toast 一起帶進這一顆。清成空字串就是「不給」。
+   逐字與 5-2 那一份相同：文案分岔就是兩處對同一個動作說了兩種話。 #}
+{% set deleteModalId = "switchProfileModal" %}
+{% set deleteTitleKey = "settings.switchProfileTitle" %}
+{% set deleteTitleZh = "切換設置" %}
+{% set deleteMessageKey = "settings.switchProfileMessage" %}
+{% set deleteMessageZh = "這一套設定檔還有沒有儲存的修改，切到別的設置會把它們丟掉。確定要切換嗎？" %}
+{% set deleteTargetId = "" %}
+{% set deleteHideTarget = true %}
+{% set deleteNoteKey = "settings.switchProfileNote" %}
+{% set deleteNoteZh = "丟掉的是這一頁上所有還沒按過「儲存對話設定」的欄位，包含各段提示詞。切換之後回不來。" %}
+{% set deleteConfirmBinding = true %}
+{% set deleteConfirmClass = "confirm-switch-profile-btn" %}
+{% set deletePlatformRole = "" %}
+{% set deleteToast = "" %}
+{% set deleteToastKey = "" %}
+{% set deleteToastType = "" %}
+{% include "components/delete-modal/delete-modal.html" %}
 {% include "components/share-manage-modal/share-manage-modal.html" %}
 {% include "components/manage-members-modal/manage-members-modal.html" %}
 {# 前台分享窗的本體：在使用頁上它由 components/faq-chatroom include（那顆分享鈕住在那裡），
@@ -1715,6 +1739,13 @@ bodyClass: guideline-page
 {% include "components/config-copy-modal/config-copy-modal.html" %}
 {% set qaImportShowParsing = true %}
 {% set qaImportShowError = true %}
+{# 結果態演 pending：四態裡唯一會被誤讀成「成功了」的一種——徽章是進行中、兩顆計數還量不到
+     （畫「—」），而下面那句 hint 正是要擋「在那之前不要重新匯入」。演 succeeded 的話畫面上
+     沒有任何要人做的事，這一整區看起來只是多了一行字。
+   兩顆計數刻意不 set，演的就是「沒量到 ⇒ —」那一半（§6：不畫 0）。 #}
+{% set qaImportShowResult = true %}
+{% set qaImportSyncState = "pending" %}
+{% set qaImportRows = "128" %}
 {% include "components/qa-import-modal/qa-import-modal.html" %}
 {% include "components/case-from-log-modal/case-from-log-modal.html" %}
 {# untagged-files 的資料集下拉吃頁面上的 coverageDatasets（5-10 有 set，元件庫沒有）：
@@ -1785,6 +1816,22 @@ bodyClass: guideline-page
     { labelKey: "help.demo.maxAnswerChars", label: "回覆最大字數", bound: "≤ 50000", effectKey: "help.demo.maxAnswerCharsEffect", effect: "超過時從尾端截斷，並附加「內容過長，僅顯示前 N 字」" },
     { labelKey: "help.demo.maxSources", label: "來源引用筆數上限", bound: "1 – 1000", effectKey: "help.demo.maxSourcesEffect", effect: "超過時只顯示分數最高的前幾筆，其餘不列出" }
 ] %}
+{% include "components/help-modal/help-modal.html" %}
+
+{# ③ 的「拿不到」那一態：空陣列（＝這一區沒有上限）與查詢失敗（＝這一刻讀不到）在 markup 上
+     是兩個分支，而只有這裡演得出後者——生產頁那幾份都是「拿得到就寫一列」。
+   ②③ 兩顆陣列**要明確重設成空的**：`{% set %}` 是頁面全域的（§2），沿用上面那份示範的話
+     這一顆會連 ③ 的兩列一起畫出來，而那正是這一態不該有的東西。 #}
+{% set helpModalId = "demoHelpModalLimitsUnavailable" %}
+{% set helpModalTitleKey = "help.demoUnavailable.title" %}
+{% set helpModalTitle = "回覆長度上限說明（數字讀不到）" %}
+{# ① 逐字沿用上面那一份：兩顆窗講的是同一個假設性區塊，只有 ③ 那一塊的狀態不同。
+     `{% set %}` 是頁面全域的，所以即使值相同也要在這裡再宣告一次（§2）。 #}
+{% set helpModalWhatKey = "help.demo.what" %}
+{% set helpModalWhat = "這一區決定單次回答最多可以輸出多少字；超過上限的部分會被截斷，不會影響檢索到的來源筆數。" %}
+{% set helpModalStateItems = [] %}
+{% set helpModalLimitRows = [] %}
+{% set helpModalLimitsUnavailable = true %}
 {% include "components/help-modal/help-modal.html" %}
 
 <button type="button" class="button btn_gotop">

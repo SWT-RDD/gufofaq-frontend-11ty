@@ -37,10 +37,18 @@
      重設回空——沒有那一行，本元件裡的 upload-box 會在窗內長出一列別人的錯誤檔名。
      `pages/dataset/3-3_qaSetManagement.html` 則是整頁沒有任何 `upload*` 的 set。
 
-     參數（示範開關；這兩態元件庫頁 set true 演出）：
+     參數（示範開關；這幾態元件庫頁 set true 演出）：
        qaImportShowParsing＝上傳後解析中；
        qaImportShowError＝解析失敗的持久錯誤列（文案為執行期值——只收 Excel／讀取欄位失敗／
-         失敗細節，示範取「讀取 Excel 欄位失敗」）。 #}
+         失敗細節，示範取「讀取 Excel 欄位失敗」）；
+       qaImportShowResult＝結果態開關：匯入送出成功後窗不關，body 多一區結果、footer 只留關閉；
+       qaImportSyncState＝索引同步狀態，值域同 components/import-sync-tag：
+         "pending"／"succeeded"／"failed"／"unknown"；
+       qaImportRows＝送出的列數；
+       qaImportIndexed／qaImportFailed＝索引筆數與索引失敗筆數。**以字串傳入**（"12"／"0"），
+         理由與 components/import-report 檔頭那一條逐字相同：nunjucks 把數字 0 判成 false，
+         真的量到 0 那一次會靜默變成「—」，而 0 與「沒量到」正是這兩格要分開的兩件事；
+       qaImportReason＝執行期產生的原因字串（一句話＋關聯編號），只在 failed／unknown 有值。 #}
 {# 工作表。**只有一張時整個欄位不渲染**——單張活頁簿沒有可選的東西，
      擺一顆只有一個選項的下拉只是讓人多按一次（形狀比照 1-1-3 的 #excelSheetSelect）。
      故這裡走 `{% set %}` ＋ `{% if %}` ＋ `{% for %}`，不是寫死兩顆 option。
@@ -107,6 +115,38 @@
                                 </select>
                             </div>
                         </div>
+                        {# 結果態：匯入成功時窗**不關**，改成在窗內畫結果。
+                             寫進資料集與寫進檢索索引是兩條路，而索引那一條是非同步的：它整批失敗時
+                             匯入這一側完全看不到（回應 200、列數正確、失敗 0 筆）。把兩件事折成一句
+                             「問答已匯入」然後關窗的話，「已匯入但搜不到」與「已匯入且搜得到」在畫面上
+                             一模一樣，同一份檔會被重匯好幾次、每一次都以為成功。
+                           四態的語意、配色判準與「你該做什麼」那幾句的分工是 components/import-report
+                             檔頭的正本，徽章的對照表是 components/import-sync-tag——**這裡照用，
+                             不另寫一份 if 鏈**（另寫一份就是兩份會分岔的對照表）。
+                           結果不放在 3-3_qaSetManagement：那一頁沒有結果區，匯入是從列上的鈕觸發的，
+                             窗一關結果就沒有地方可以落。 #}
+                        {% if qaImportShowResult %}
+                        <div class="flex-row column gap-8">
+                            <div><span class="text-bold" data-i18n="qaSet.importedRows">送出的列數：</span><span>{{ qaImportRows }}</span></div>
+                            <div class="flex-row align-items-center gap-8">
+                                <span class="text-bold" data-i18n="dataImport.syncStateLabel">索引同步：</span>
+                                {% set syncTagState = qaImportSyncState %}
+                                {% include "components/import-sync-tag/import-sync-tag.html" %}
+                            </div>
+                            {# 兩顆計數槽：沒 set ＝ 沒量到 ＝ 畫「—」（§6），**不畫 0**。 #}
+                            <div class="flex-row gap-16 flex-wrap">
+                                <span><span data-i18n="dataImport.syncIndexedCount">索引筆數：</span>{% if qaImportIndexed %}{{ qaImportIndexed }}{% else %}—{% endif %}</span>
+                                <span><span data-i18n="dataImport.syncFailedCount">索引失敗筆數：</span>{% if qaImportFailed %}{{ qaImportFailed }}{% else %}—{% endif %}</span>
+                            </div>
+                            {# 原因字串＝執行期產生的業務字串（一句話＋關聯編號），只在 failed／unknown 有值；
+                                 不翻、不掛 data-i18n（同 import-report）。 #}
+                            {% if qaImportReason %}<p class="text-gray m-0">{{ qaImportReason }}</p>{% endif %}
+                            {# 三句 hint 的顏色與 role="alert" 的分配逐字照 import-report：succeeded 沒有
+                                 要做的事所以沒有 hint，第三支寫成「不是 succeeded」以吃下 unknown 與任何
+                                 不認得的態。unknown **不上色**——紅色會把它讀成 failed，而兩者的正確動作相反。 #}
+                            {% if qaImportSyncState == "pending" %}<p class="text-gray m-0" data-i18n="dataImport.syncPendingHint">索引是另一條非同步管道寫的，這一刻還量不到結果，而這一頁不會自己更新。過幾分鐘回到這個資料集或〈資料健檢〉看一次就知道有沒有進去；在那之前不要重新匯入，那會產生重複資料。</p>{% elif qaImportSyncState == "failed" %}<p class="text-red m-0" role="alert" data-i18n="dataImport.syncFailedHint">資料已經寫進資料集，但索引沒有建起來，所以這一批（或其中幾筆）現在搜不到。照該檔標示的原因把資料修好之後，只重新匯入標示為「寫入索引失敗」的檔案，不要整批重匯。</p>{% elif qaImportSyncState != "succeeded" %}<p class="m-0" role="alert" data-i18n="dataImport.syncUnknownHint">查詢同步結果這件事本身失敗了，不代表匯入失敗——資料已經送出、索引任務也已經派工。請不要重新匯入，那會產生重複資料；把該檔那句原因裡的關聯編號交給維運人員查。</p>{% endif %}
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
                 <div class="modals-footer">
@@ -117,10 +157,18 @@
                          「答案欄有空白的列」，回試算表看了半天什麼都沒少。
                        **這裡的下一步只有一條**：回試算表把那幾列補成文字。1-1-4 那一頁還可以關掉
                          「HTML 轉 Markdown」再送，這顆窗沒有那顆開關（理由見檔頭）。 #}
+                    {# 結果態只留一顆關閉：結果已經畫在窗裡，再放一顆「匯入」等於邀請人在看著
+                         「同步中」的時候再送一次，而那正是這一整段要擋的重複匯入。 #}
+                    {% if qaImportShowResult %}
+                    <div class="button-row center">
+                        <button type="button" class="button button-primary btn-close-modals" data-i18n="action.close">關閉</button>
+                    </div>
+                    {% else %}
                     <div class="button-row center">
                         <button type="button" class="button button-border btn-close-modals" data-i18n="action.cancel">取消</button>
                         <button data-capability="data:write" type="button" class="button button-primary js-qa-import-submit" data-toast="問答已匯入|權限不足，無法匯入——請找貴租戶的管理者開通|這個資料集不在你可以寫入的群組裡，請找管理員把你加進該群組|請選擇問題欄與答案欄|答案欄有空白的列，請補齊後再匯入|有幾列的答案經 HTML 轉換後一個字都不剩（整格只有一張圖或一個空連結），請回試算表把那幾列補成文字再匯入（錯誤訊息會逐列指名）|匯入失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.importQa" data-toast-type="success|warning|warning|warning|warning|warning|error|warning" data-i18n="action.import">匯入</button>
                     </div>
+                    {% endif %}
                 </div>
             </div>
         </div>

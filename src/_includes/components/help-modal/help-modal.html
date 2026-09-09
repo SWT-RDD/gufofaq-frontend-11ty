@@ -76,6 +76,12 @@
        helpModalLimitRows   —— 必填，物件陣列 `{labelKey, label, bound, effectKey, effect}`。
                                ③「這一區的所有數字」，`bound` 是獨立節點、不得烤進
                                `labelKey`／`effectKey` 的譯文字串裡。
+       helpModalLimitsUnavailable
+                            —— 選填布林。true＝那次執行期查詢**失敗了**，③ 改畫一句紅字說明。
+                               它與「陣列是空的」是兩件事：空陣列的意思是「這一區沒有上限」，
+                               而查不到的意思是「這一刻讀不到，不代表沒有上限」——不分開的話，
+                               後者會被讀成前者，然後有人打了超過上限的值。
+                               不給＝沒有這一態（③ 空著就是「沒有上限」）。
 
      住在哪一頁（雙向，**判準句而非清單**——這顆元件注定被數十頁 include，逐頁列在第三頁就
      開始腐化，而腐化的清單比沒有清單更貴）：
@@ -148,6 +154,17 @@
                                 </tbody>
                             </table>
                         </div>
+                    </section>
+                    {% elif helpModalLimitsUnavailable %}
+                    {# ③ 的「拿不到」那一半。③ 的數字要靠一次執行期查詢才拿得到，那次查詢失敗時
+                         傳進來的是空陣列，於是整塊 ③ 不畫——而那與「這一區本來就沒有上限」在畫面上
+                         完全相同。使用者因此會以為這一區沒有任何限制，然後打了超過上限的值、拿到
+                         一句他無法從畫面上解釋的失敗。
+                       標題照畫（讀的人要知道這一塊存在、只是這一刻空著），紅字＋`role="alert"`：
+                         它是「送出後才會出現的失敗」的提早版，要人動手（重開一次／找管理員）。 #}
+                    <section>
+                        <h4 class="help-modal-subtitle mb-8" data-i18n="help.limitsTitle">這一區的所有數字</h4>
+                        <p class="text-red m-0" role="alert" data-i18n="help.limitsUnavailable">這一區的數字這一刻讀不到，所以下面是空的——這不代表這一區沒有上限。關掉這個視窗重開一次；若還是讀不到，請聯絡平台管理員。</p>
                     </section>
                     {% endif %}
                 </div>

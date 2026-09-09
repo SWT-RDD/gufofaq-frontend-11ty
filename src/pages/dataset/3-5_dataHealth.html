@@ -203,7 +203,11 @@ permalink: 3-5_dataHealth.html
     hitChecks: "unavailable",
     hitChecksDetail: "取不到問答紀錄，這一次沒有重算「陳舊高頻／從未被命中／高頻查無」：這段期間的問答筆數超過單次彙總上限（5000 則），請縮短時間窗再試。",
     qaDirectChecks: "inactive",
-    qaDirectChecksDetail: "這一輪沒有評估「同問法重複」與「高頻查無」：這個設定檔的 QA 直答目前是停用狀態，這一輪一題都不會走直答，兩項檢查因此沒有比對對象。要讓它們重新進入評估，請到對話設定把 QA 直答打開並選好 QA 集，下一次檢查就會算。既有的發現仍然留在清單上，處置照舊。"
+    qaDirectChecksDetail: "這一輪沒有評估「同問法重複」與「高頻查無」：這個設定檔的 QA 直答目前是停用狀態，這一輪一題都不會走直答，兩項檢查因此沒有比對對象。要讓它們重新進入評估，請到對話設定把 QA 直答打開並選好 QA 集，下一次檢查就會算。既有的發現仍然留在清單上，處置照舊。",
+    notEvaluated: [
+        { checkLabel: "事實衝突", checkLabelKey: "health.checkConflict", reasonKey: "health.notEvaluatedNoRole", reason: "缺維度角色 ", role: "fact_topic" },
+        { checkLabel: "標籤缺口", checkLabelKey: "health.checkTagGap", reasonKey: "health.notEvaluatedNoFilterDimension", reason: "沒有任何純過濾維度", role: "" }
+    ]
 } %}
 {# 最近一次**失敗**的掃描嘗試。這一格只在它**比上一次成功的掃描新**的時候才畫（判準是時間，
      不是「有沒有」——一次成功之後舊的失敗只是噪音，而噪音會讓人連真的那一次也一起略過），
@@ -695,6 +699,27 @@ permalink: 3-5_dataHealth.html
     <p class="text-gray" data-i18n="health.qaDirectChecksLegend">ran ＝這一次評估了；no_config ＝這個租戶的對話設定還沒推到問答引擎，「同問法重複」與「高頻查無」這一次沒有跑（那不等於「跑了、沒發現」），到對話設定存一次就會恢復；inactive ＝設定在，但這一輪一題都不會走 QA 直答，那兩項同樣沒有跑，要把 QA 直答打開並選好 QA 集。兩種都不影響既有的發現——它們照樣留在下面的清單上，也照樣處置得了。</p>
     {% if healthScan.qaDirectChecksDetail %}
     <p class="text-red">{{ healthScan.qaDirectChecksDetail }}</p>
+    {% endif %}
+    {# 第三塊「沒有評估」：與上面兩塊是同一件事的第三個原因軸——上面兩塊是「取不到問答紀錄」
+         與「QA 直答沒開」，這一塊是「租戶沒宣告對應的標籤維度角色」。
+       這五項（事實衝突、內容已過期、陳舊高頻、缺基準日、標籤缺口）在沒有對應角色時回空清單，
+         那是對的——整批報「未填基準日」會蓋掉真正該看的東西。問題出在畫面：發現數是 0、計數
+         全零，而那與「這個租戶的資料很乾淨」逐位元組相同。看的人會得出「健檢沒發現問題」，
+         而實際發生的事是「這五項根本沒有被評估」。
+       逐列的原因與角色名都是執行期算出來的（哪一項缺哪一個角色），故走 `{% for %}` ＋ 逐列
+         `data-i18n="{{ … }}"` 的動態 key，不寫死五列。
+       角色名（`fact_topic`／`valid_until`／`as_of`）原樣顯示、不翻——5-10 的維度角色下拉與
+         `settings.tagRoleHint` 也是原樣寫這幾個字，這裡照它。
+       整塊在清單為空時不畫：那時候「沒有被評估的檢查」本來就是空集合，畫一個空標題會變成
+         第四種說不出話的狀態。 #}
+    {% if healthScan.notEvaluated.length > 0 %}
+    <p><span class="text-bold" data-i18n="health.notEvaluated">這一次沒有評估的檢查：</span></p>
+    <ul class="list-style-disc">
+        {% for row in healthScan.notEvaluated %}
+        <li><span data-i18n="{{ row.checkLabelKey }}">{{ row.checkLabel }}</span><span data-i18n="common.labelSep">：</span><span data-i18n="{{ row.reasonKey }}">{{ row.reason }}</span>{% if row.role %}<span>{{ row.role }}</span>{% endif %}</li>
+        {% endfor %}
+    </ul>
+    <p class="text-gray" data-i18n="health.notEvaluatedLegend">這幾項不是「查了、沒發現問題」，是結構上算不出東西：它們各自要靠一個標籤維度角色（事實衝突要 fact_topic、內容已過期要 valid_until、陳舊高頻與缺基準日要 as_of），標籤缺口則要至少一個沒有指定角色的純過濾維度。到〈標籤維度〉把對應的角色掛上去，下一次檢查就會算。在那之前，這幾項在清單上永遠是空的。</p>
     {% endif %}
     {# ⑦ 這一次沒有做到的檢查（沒有欄位槽的／只做得了完全相同比對的／內容太短沒進分群的）。
          **這幾個數字是「排除的事實」的載體**，不是統計花絮：它們與上面那排計數刻意分開一塊、
