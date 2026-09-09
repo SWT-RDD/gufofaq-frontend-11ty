@@ -5,6 +5,11 @@ titleKey: nav.datasetList
 pageHeading: 資料集列表
 permalink: 3-1-1_datasetList.html
 ---
+{# **時間錨點**：站台的「現在」是 **2026-07-14**（§6「全站只有一個現在」；那個值由
+     `components/iso-review-wizard` 名單上「查詢時間 2026-07-14 09:00 UTC」那一格釘死）。
+     這一頁每一列有建立與最後更新兩個時間。**同一列的 `updatedAt` 必須晚於自己的 `createdAt`**，
+     兩者都早於「現在」，而列序照 `updatedAt` 遞減（那個排序是這一頁自己宣告的，見下方陣列的註解）。
+     改錨點時整批同量平移，否則列序會與資料打架。#}
 {% set breadcrumbItems = [
   { label: "首頁", href: "2-1_qaRecord.html", i18nKey: "nav.home" },
   { label: "資料集列表", i18nKey: "nav.datasetList" }

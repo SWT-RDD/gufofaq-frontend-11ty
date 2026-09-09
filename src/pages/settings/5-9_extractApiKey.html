@@ -5,6 +5,10 @@ titleKey: nav.extractApiKey
 pageHeading: 萃取 API 金鑰
 permalink: 5-9_extractApiKey.html
 ---
+{# **時間錨點**：站台的「現在」是 **2026-07-14**（§6「全站只有一個現在」；那個值由
+     `components/iso-review-wizard` 名單上「查詢時間 2026-07-14 09:00 UTC」那一格釘死）。
+     這一頁唯一的日期在 curl 範例的 `time_reference` 參數裡，而它**就等於**「現在」——那顆參數的語意是
+     「以哪一天為基準解讀『下週三』」，所以它是這一頁唯一不該早於「現在」的時間。#}
 {% set breadcrumbItems = [
   { label: "首頁", href: "2-1_qaRecord.html", i18nKey: "nav.home" },
   { label: "設定", href: "", i18nKey: "nav.settings" },
