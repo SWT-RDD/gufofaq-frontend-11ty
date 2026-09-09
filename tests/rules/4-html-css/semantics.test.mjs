@@ -172,18 +172,28 @@ test("§4 每個開窗鈕（data-open-modal / openModal('X')）在同一頁上�
     // 只認 onclick 的 regex 就會在 dist 上零命中、變成對空集合斷言的假綠燈。openModal(id) 找不到 id 是靜默 return，
     // 所以一個拼錯的 data-open-modal 就是點了沒反應的死鈕。兩種寫法都要掃。
     const REFS = [/data-open-modal="([^"]+)"/g, /openModal\(\s*['"]([^'"]+)['"]/g];
-    const hits = [];
     let refCount = 0;
-    for (const f of distHtml) {
-        const html = read(`dist/${f}`);
+    const scan = (html, f = "<probe>") => {
+        const out = [];
         const ids = new Set([...html.matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]));
         for (const re of REFS)
             for (const m of html.matchAll(re)) {
                 refCount++;
-                if (!ids.has(m[1])) hits.push(`dist/${f}  開窗鈕指向 "${m[1]}"，本頁找不到對應的 id`);
+                if (!ids.has(m[1])) out.push(`${f}  開窗鈕指向 "${m[1]}"，本頁找不到對應的 id`);
             }
-    }
+        return out;
+    };
+    const hits = [];
+    for (const f of distHtml) hits.push(...scan(read(`dist/${f}`), `dist/${f}`));
+    // 下限先結算，之後負控的合成樣本才不會灌進母體計數。
     assert.ok(refCount >= 150, `只掃到 ${refCount}（門檻 150，＝這次實際量出來的）—— dist 裡一個開窗鈕都掃不到 —— 機制換掉了就要跟著改這條測試，別讓它變假綠燈`);
+    probe("§4 開窗鈕指得到同頁的 dialog", scan,
+        // 兩種寫法各一種壞法：宣告式的指向空氣／js 呼叫的指向空氣（openModal 找不到 id 是靜默 return）
+        [`<button data-open-modal="ghostModal">開</button><dialog id="realModal"></dialog>`,
+            `<button onclick="openModal('ghostModal')">開</button><dialog id="realModal"></dialog>`],
+        // 兩種被排除的：兩種寫法各自指得到
+        [`<button data-open-modal="realModal">開</button><dialog id="realModal"></dialog>`,
+            `<button onclick="openModal('realModal')">開</button><dialog id="realModal"></dialog>`]);
     assert.equal(hits.length, 0, `按鈕點了打不開：\n${fail(hits)}`);
 });
 
@@ -206,17 +216,28 @@ test("§4 每個 <dialog> 在它所在的那一頁上都有辦法被打開（反
     const demoOpeners = attrOpeners(read("dist/component.html"));
 
     let dialogCount = 0;
-    const hits = [];
-    for (const f of distHtml) {
-        const html = read(`dist/${f}`);
+    // 三條路的判準抽成一支（吃「這一頁的 markup ＋ 元件 js 開得起來的 ＋ 元件庫頁的示範觸發器」），
+    // 負控才餵得進合成 markup 走同一支。
+    const scan = (html, byJs, byDemo, f = "<probe>") => {
+        const out = [];
         const samePage = attrOpeners(html);
         for (const m of html.matchAll(/<dialog[^>]*\sid=["']([^"']+)["']/g)) {
             dialogCount++;
             const id = m[1];
-            if (samePage.has(id) || jsOpened.has(id) || demoOpeners.has(id)) continue;
-            hits.push(`dist/${f}  <dialog id="${id}"> 這一頁上打不開它，元件庫頁也沒有示範觸發器`);
+            if (samePage.has(id) || byJs.has(id) || byDemo.has(id)) continue;
+            out.push(`${f}  <dialog id="${id}"> 這一頁上打不開它，元件庫頁也沒有示範觸發器`);
         }
-    }
+        return out;
+    };
+    const hits = [];
+    for (const f of distHtml) hits.push(...scan(read(`dist/${f}`), jsOpened, demoOpeners, `dist/${f}`));
+    // 負控（合成 markup ＋ 兩份合成集合走同一支）：三條路各要放行，都不成立的要抓得到。
+    const NONE = new Set();
+    const D = `<dialog id="probeModal"></dialog>`;
+    assert.equal(scan(D, NONE, NONE).length, 1, "三條路都不成立的看不到的彈窗，抓不到");
+    assert.equal(scan(`<button data-open-modal="probeModal">開</button>${D}`, NONE, NONE).length, 0, "(a) 同頁有開窗鈕的被誤判");
+    assert.equal(scan(D, new Set(["probeModal"]), NONE).length, 0, "(b) 元件 js 開得起來的被誤判");
+    assert.equal(scan(D, NONE, new Set(["probeModal"])).length, 0, "(c) 元件庫頁有示範觸發器的被誤判");
     assert.ok(dialogCount >= 196, `只掃到 ${dialogCount}（門檻 196，＝這次實際量出來的）—— dist 裡一個 <dialog> 都掃不到 —— 這條測試在空轉`);
     assert.ok(demoOpeners.size >= 26, `只掃到 ${demoOpeners.size}（門檻 26，＝這次實際量出來的）—— 元件庫頁的示範觸發器變少了，或收集器壞了`);
     assert.equal(hits.length, 0, `看不到的彈窗（元件庫頁要放示範觸發器）：
@@ -236,16 +257,29 @@ test("§4 元件 scss 不得寫 [data-theme=dark] 分支（零例外）", () => 
 });
 
 test("§4 <table> 直下不放 <tr>（一律包 thead/tbody，否則 SSR/hydration 兩邊樹不同）", () => {
-    const hits = [];
     let tables = 0;
-    for (const f of distHtml) {
+    const scan = (html, f = "<probe>") => {
+        const out = [];
         // caption/colgroup 是 table 的合法前導子元素——跳過它們之後的第一個標籤也不可以是 tr
-        for (const m of distDoc(f).matchAll(/<table[^>]*>\s*(?:<caption[\s\S]*?<\/caption>\s*)?(?:<colgroup[\s\S]*?<\/colgroup>\s*)?<(\w+)/g)) {
+        for (const m of html.matchAll(/<table[^>]*>\s*(?:<caption[\s\S]*?<\/caption>\s*)?(?:<colgroup[\s\S]*?<\/colgroup>\s*)?<(\w+)/g)) {
             tables++;
-            if (m[1].toLowerCase() === "tr") hits.push(`dist/${f}  <table> 的列沒有包 tbody`);
+            if (m[1].toLowerCase() === "tr") out.push(`${f}  <table> 的列沒有包 tbody`);
         }
-    }
+        return out;
+    };
+    const hits = [];
+    for (const f of distHtml) hits.push(...scan(distDoc(f), `dist/${f}`));
+    // 下限先結算，之後負控的合成樣本才不會灌進母體計數。
     assert.ok(tables >= 165, `只掃到 ${tables} 個 table —— 這條測試在空轉`);
+    probe("§4 table 直下的 tr", scan,
+        // 三種壞法：直接放 tr／caption 之後直接放 tr／colgroup 之後直接放 tr
+        ["<table><tr><td>1</td></tr></table>",
+            "<table><caption>標題</caption><tr><td>1</td></tr></table>",
+            "<table><colgroup><col></colgroup><tr><td>1</td></tr></table>"],
+        // 三種被排除的：包了 tbody／包了 thead／前導子元素之後才是 tbody
+        ["<table><tbody><tr><td>1</td></tr></tbody></table>",
+            "<table><thead><tr><th>甲</th></tr></thead></table>",
+            "<table><colgroup><col></colgroup><tbody><tr><td>1</td></tr></tbody></table>"]);
     assert.equal(hits.length, 0, fail(hits));
 });
 

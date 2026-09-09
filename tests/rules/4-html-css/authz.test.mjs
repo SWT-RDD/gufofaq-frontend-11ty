@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { distHtml, read, srcHtml } from "../../_lib/corpus.mjs";
 import { VOID_TAGS, distDoc, stripNonMarkup } from "../../_lib/html.mjs";
 import { SHOWCASE } from "../../_lib/inventory.mjs";
-import { fail, probe } from "../../_lib/probe.mjs";
+import { fail, probe, scanText } from "../../_lib/probe.mjs";
 import { countLines, stripNjk } from "../../_lib/text.mjs";
 
 // 「這顆鈕不送出任何東西」的唯一判準。**兩條規則吃同一份**：下面「會成功的鈕要宣告閘門」
@@ -490,27 +490,44 @@ test("§4 共用元件把 data-toast 開成參數時，閘門也要開成參數�
         ["ratingModalToast", ["ratingCapability"], new Map()],
         ["resetToast", ["resetTenantRole", "resetPlatformRole"], new Map()],
     ];
+    // 兩側的判準各抽成一支（吃原文），負控才餵得進合成原文走同一支。
+    // ① 元件那一側：吃了 toast 參數，就要吐得出閘門屬性
+    const ownerLacksGate = (src, toastParam, gateParams) =>
+        !gateParams.some((g) => src.includes(`{{ ${g} }}`));
+    // ② 使用頁那一側：set 了 toast，就要 set 閘門
+    const setsToast = (src, toastParam) => new RegExp(String.raw`\{%\s*set\s+${toastParam}\s*=`).test(src);
+    const userLacksGate = (src, gateParams) =>
+        !gateParams.some((g) => new RegExp(String.raw`\{%\s*set\s+${g}\s*=`).test(src));
     const hits = [];
     let seen = 0;
     for (const [toastParam, gateParams, exempt] of PAIRS) {
-        // ① 元件那一側：吃了 toast 參數，就要吐得出閘門屬性
         const owners = srcHtml.filter((f) => f.includes("_includes/") && read(f).includes(`data-toast="{{ ${toastParam} `));
         assert.ok(owners.length >= 1, `只掃到 ${owners.length}（門檻 1，＝這次實際量出來的）—— 找不到吃 \${toastParam} 的元件 —— 參數改名了？這條測試在空轉`);
         for (const f of owners)
-            if (!gateParams.some((g) => read(f).includes(`{{ ${g} }}`)))
+            if (ownerLacksGate(read(f), toastParam, gateParams))
                 hits.push(`${f}  吃了 ${toastParam} 卻沒有任何閘門參數（${gateParams.join("／")}）`);
-        // ② 使用頁那一側：set 了 toast，就要 set 閘門
         for (const f of srcHtml.filter((p) => p.includes("pages/"))) {
             const src = stripNjk(read(f));
-            if (!new RegExp(String.raw`\{%\s*set\s+${toastParam}\s*=`).test(src)) continue;
+            if (!setsToast(src, toastParam)) continue;
             seen++;
             if (exempt.has(f)) continue;
             if (f === SHOWCASE.src) continue;   // 元件庫展示頁：演的是長相，不是某一支端點
-            if (!gateParams.some((g) => new RegExp(String.raw`\{%\s*set\s+${g}\s*=`).test(src)))
-                hits.push(`${f}  set 了 ${toastParam} 卻沒 set 閘門（${gateParams.join("／")}）`);
+            if (userLacksGate(src, gateParams)) hits.push(`${f}  set 了 ${toastParam} 卻沒 set 閘門（${gateParams.join("／")}）`);
         }
     }
+    // 下限先結算，之後負控的合成樣本才不會灌進母體計數。
     assert.ok(seen >= 23, `只掃到 ${seen} 個使用頁 —— 這條測試在空轉`);
+    // 負控（合成原文走同一支）：兩側各要抓得到「有 toast、沒閘門」，也各要放行齊備的那一種。
+    const GATES = ["deleteCapability", "deleteTenantRole"];
+    assert.ok(ownerLacksGate(`<button data-toast="{{ deleteToast }}">確認</button>`, "deleteToast", GATES),
+        "元件吃了 toast 參數卻沒有任何閘門參數，抓不到");
+    assert.ok(!ownerLacksGate(`<button{% if deleteCapability %} data-capability="{{ deleteCapability }}"{% endif %}>確認</button>`, "deleteToast", GATES),
+        "元件吐得出閘門參數卻被誤判");
+    assert.ok(setsToast(`{% set deleteToast = "已刪除|失敗" %}`, "deleteToast"), "使用頁 set 了 toast 卻掃不到");
+    assert.ok(!setsToast(`{% set otherToast = "x" %}`, "deleteToast"), "別的參數被當成這一顆");
+    assert.ok(userLacksGate(`{% set deleteToast = "已刪除|失敗" %}`, GATES), "使用頁沒 set 閘門，抓不到");
+    assert.ok(!userLacksGate(`{% set deleteToast = "已刪除|失敗" %}{% set deleteCapability = "data:write" %}`, GATES),
+        "使用頁 set 了閘門卻被誤判");
     assert.equal(hits.length, 0, `§4 toast 與閘門是同一個交付單位：\n${fail(hits)}`);
 });
 
@@ -545,25 +562,37 @@ test("§4 欄位級錯誤槽不得是通用佔位：.error-prompt 要嘛訊息�
     // 欄位本身只加 .error 標紅；佔位式的槽全數移除，這條擋它們回來。
     // 唯一豁免：ui/form-control 的展示片段——它就是「.error + .error-prompt 長什麼樣」那張示範圖，
     // 只被元件庫頁 include，不是任何真實表單的欄位槽（清單住在模組層級的 SHOWCASE.fragments）。
-    const hits = [];
     let checked = 0;
+    // 判準綁死 `<span class="error-prompt…">` 且逐行比對的話——換個標籤（<p>）
+    // 或把內文換行就整條繞過（以突變證實）。改成不看標籤、也不要求 class 在最前面。
+    const rule = (line) => {
+        const m = line.match(/<[a-z]+\b[^>]*class="[^"]*\berror-prompt\b[^"]*"[^>]*>([^<]*)<\/[a-z]+>/);
+        if (!m) return null;
+        checked++;
+        const text = m[1].trim();
+        const key = (line.match(/data-i18n="([\w.]+)"/) || [])[1];
+        // 空的 live region（由業務 js 填、通常另有 id）是合法的；有文字時必須是具體訊息
+        if (!text) return null;
+        if (/^錯誤訊息(文字)?$/.test(text) || key === "common.errorText")
+            return "通用佔位的欄位錯誤槽（訊息不具體、也沒有人會觸發它）";
+        return null;
+    };
+    const hits = [];
     for (const f of srcHtml) {
         if (SHOWCASE.fragments.has(f.replace(/\\/g, "/"))) continue;
-        stripNjk(read(f)).split(/\r?\n/).forEach((line, i) => {
-            // 判準綁死 `<span class="error-prompt…">` 且逐行比對的話——換個標籤（<p>）
-            // 或把內文換行就整條繞過（以突變證實）。改成不看標籤、也不要求 class 在最前面。
-            const m = line.match(/<[a-z]+\b[^>]*class="[^"]*\berror-prompt\b[^"]*"[^>]*>([^<]*)<\/[a-z]+>/);
-            if (!m) return;
-            checked++;
-            const text = m[1].trim();
-            const key = (line.match(/data-i18n="([\w.]+)"/) || [])[1];
-            // 空的 live region（由業務 js 填、通常另有 id）是合法的；有文字時必須是具體訊息
-            if (!text) return;
-            if (/^錯誤訊息(文字)?$/.test(text) || key === "common.errorText")
-                hits.push(`${f}:${i + 1}  通用佔位的欄位錯誤槽（訊息不具體、也沒有人會觸發它）`);
-        });
+        hits.push(...scanText(stripNjk(read(f)), rule, f));
     }
+    // 下限先結算，之後負控的合成樣本才不會灌進母體計數。
     assert.ok(checked >= 7, `只掃到 ${checked} 個 .error-prompt —— 這條測試在空轉`);
+    probe("§4 通用佔位的欄位錯誤槽", (s) => scanText(s, rule),
+        // 三種壞法：字面佔位／換個標籤的同一句／掛著通用 key
+        [`<span class="error-prompt">錯誤訊息文字</span>`,
+            `<p class="error-prompt">錯誤訊息</p>`,
+            `<span class="error-prompt" data-i18n="common.errorText">請輸入</span>`],
+        // 三種被排除的：空的 live region／具體訊息／根本不是錯誤槽
+        [`<span class="error-prompt" id="nameError" role="alert"></span>`,
+            `<span class="error-prompt">名稱已被使用，請換一個</span>`,
+            `<span class="text-gray">錯誤訊息文字</span>`]);
     assert.equal(hits.length, 0, fail(hits));
 });
 
@@ -576,12 +605,20 @@ test("§4 送出鈕的 data-toast 是驗證結果的唯一出口：需要驗證�
         ["5-8_widgetTokens.html", "toast.createWidgetToken"],
         ["3-4_skillManagement.html", "toast.createSkill"],
     ];
-    const hits = [];
-    for (const [page, key] of CASES) {
-        const btn = distDoc(page).match(new RegExp(`<button[^>]*data-i18n-data-toast="${key.replace(".", "\\.")}"[^>]*>`));
-        if (!btn) { hits.push(`${page} 找不到 ${key} 的鈕`); continue; }
+    // 判準抽成一支（吃「頁的 markup ＋ 那顆鈕的 key」），負控才餵得進合成 markup 走同一支。
+    const lacksWarning = (html, page, key) => {
+        const btn = html.match(new RegExp(`<button[^>]*data-i18n-data-toast="${key.replace(".", "\\.")}"[^>]*>`));
+        if (!btn) return [`${page} 找不到 ${key} 的鈕`];
         const types = (btn[0].match(/data-toast-type="([^"]*)"/) || ["", ""])[1].split("|");
-        if (!types.includes("warning")) hits.push(`${page} 的 ${key} 沒有 warning 段（填錯時只會顯示「失敗」）`);
-    }
+        return types.includes("warning") ? [] : [`${page} 的 ${key} 沒有 warning 段（填錯時只會顯示「失敗」）`];
+    };
+    const hits = CASES.flatMap(([page, key]) => lacksWarning(distDoc(page), page, key));
+    // 負控（合成 markup 走同一支）
+    const K = "toast.createUser";
+    assert.equal(lacksWarning(`<button data-i18n-data-toast="${K}" data-toast-type="success|warning|error">建立</button>`, "p", K).length, 0,
+        "有 warning 段的被誤判");
+    assert.equal(lacksWarning(`<button data-i18n-data-toast="${K}" data-toast-type="success|error">建立</button>`, "p", K).length, 1,
+        "只有成功／失敗兩段的抓不到（填錯時只會顯示「失敗」）");
+    assert.equal(lacksWarning("<button>建立</button>", "p", K).length, 1, "整顆鈕不見了抓不到（改名或搬走都長這樣）");
     assert.equal(hits.length, 0, fail(hits));
 });

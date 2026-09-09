@@ -106,6 +106,21 @@ test("§2 同一頁第二次用到某個元件參數時，該參數必須先重�
     assert.ok(pages.some((f) => f.includes("_includes")), "母體裡沒有元件檔 —— 這條測試又縮回只看頁面了");
 
     let checked = 0;
+    // 判準抽成一支（吃「變數→set 行號」與「變數→消費行號」兩張表），負控才餵得進合成表走同一支。
+    const staleReuse = (setAt, consume, page = "<probe>") => {
+        const out = [];
+        for (const [v, points] of consume) {
+            const sets = setAt.get(v) || [];
+            for (let k = 1; k < points.length; k++) {
+                const [prev, here] = [points[k - 1], points[k]];
+                if (!sets.some((l) => l < here)) continue; // 從沒設過 → 不可能有殘留
+                checked++;
+                if (!sets.some((l) => l > prev && l < here))
+                    out.push(`${page}:${here}  第二次用到參數 ${v} 之前沒有重設它，會沿用第 ${prev} 行那次的值`);
+            }
+        }
+        return out;
+    };
     const hits = [];
     for (const page of pages) {
         const lines = stripNjk(read(page)).split(/\r?\n/);
@@ -123,18 +138,16 @@ test("§2 同一頁第二次用到某個元件參數時，該參數必須先重�
                 }
         });
 
-        for (const [v, points] of consume) {
-            const sets = setAt.get(v) || [];
-            for (let k = 1; k < points.length; k++) {
-                const [prev, here] = [points[k - 1], points[k]];
-                if (!sets.some((l) => l < here)) continue; // 從沒設過 → 不可能有殘留
-                checked++;
-                if (!sets.some((l) => l > prev && l < here))
-                    hits.push(`${page}:${here}  第二次用到參數 ${v} 之前沒有重設它，會沿用第 ${prev} 行那次的值`);
-            }
-        }
+        hits.push(...staleReuse(setAt, consume, page));
     }
+    // 下限先結算，之後負控的合成樣本才不會灌進母體計數。
     assert.ok(checked >= 445, `只掃到 ${checked}（門檻 445，＝這次實際量出來的）—— 沒有任何『同頁重複消費同一參數』的情境 —— 這條測試在空轉`);
+    // 負控（合成的「set 行號」與「消費行號」走同一支）
+    const M = (rows) => new Map(rows);
+    assert.equal(staleReuse(M([["x", [1]]]), M([["x", [2, 5]]])).length, 1, "第二次消費之前沒有重設，抓不到");
+    assert.equal(staleReuse(M([["x", [1, 4]]]), M([["x", [2, 5]]])).length, 0, "兩次消費之間有重設卻被誤判");
+    assert.equal(staleReuse(M([]), M([["x", [2, 5]]])).length, 0, "從沒 set 過的參數不可能有殘留，卻被判違規");
+    assert.equal(staleReuse(M([["x", [1]]]), M([["x", [2]]])).length, 0, "只消費一次的參數被掃進母體");
     assert.equal(hits.length, 0, `{% set %} 是頁面全域的（§2）：\n${fail(hits)}`);
 });
 
@@ -170,29 +183,51 @@ test("§2 dist：data-i18n 節點的文字不得帶縮排換行（JSX 會把那�
     // `<a data-i18n><img …>新增資料集</a>` 這一族（節點內含子元素）整個在視野外——
     // 而那正是縮排最容易跑進文字節點的形狀（圖示鈕、帶圖的連結）。
     let seen = 0;
-    const hits = [];
-    for (const f of distHtml) {
-        for (const { key, text } of i18nTexts(read(`dist/${f}`))) {
+    const scan = (html, f = "<probe>") => {
+        const out = [];
+        for (const { key, text } of i18nTexts(html)) {
             if (!text.trim()) continue;
             seen++;
             if (!/[\r\n]/.test(text)) continue;
-            hits.push(`dist/${f}  data-i18n="${key}" 的文字帶縮排換行：${JSON.stringify(text.slice(0, 30))}`);
+            out.push(`${f}  data-i18n="${key}" 的文字帶縮排換行：${JSON.stringify(text.slice(0, 30))}`);
         }
-    }
+        return out;
+    };
+    const hits = [];
+    for (const f of distHtml) hits.push(...scan(read(`dist/${f}`), `dist/${f}`));
+    // 下限先結算，之後負控的合成樣本才不會灌進母體計數。
     assert.ok(seen >= 8936, `只掃到 ${seen} 個 data-i18n 文字節點 —— 這條測試在空轉`);
+    probe("§2 i18n 文字節點的縮排換行", scan,
+        // 兩種壞法：屬性寫成多行、文字獨占一行／節點內含子元素而文字被縮排推開
+        [`<span\n    data-i18n="a.b">\n    新增資料集\n</span>`,
+            `<a data-i18n="a.b" href="#main">\n    <img src="./images/x.png" alt="">\n    新增資料集\n</a>`],
+        // 三種被排除的：文字貼著標籤／含子元素但同一行／空白節點（另一條規則管）
+        [`<span data-i18n="a.b">新增資料集</span>`,
+            `<a data-i18n="a.b" href="#main"><img src="./images/x.png" alt="">新增資料集</a>`,
+            `<span data-i18n="a.b"></span>`]);
     assert.equal(hits.length, 0, fail(hits));
 });
 
 test("§2 {{ content | safe }} 只准出現在 layouts/（那是子頁內容注進 layout 的洞，不是通用逃生口）", () => {
-    const hits = [];
     let seen = 0;
-    for (const f of srcHtml) {
-        for (const m of stripNjk(read(f)).matchAll(/\{\{-?\s*content\s*\|\s*safe/g)) {
+    // 規則吃「原文 ＋ 它住在哪」，負控才餵得進合成原文配合成住址走同一支。
+    const scanEscape = (src, f) => {
+        const out = [];
+        for (const m of src.matchAll(/\{\{-?\s*content\s*\|\s*safe/g)) {
             seen++;
-            if (!/layouts/.test(f)) hits.push(`${f}:${countLines(read(f), m.index)}  content | safe 出現在 layouts 之外`);
+            if (!/layouts/.test(f)) out.push(`${f}:${countLines(src, m.index)}  content | safe 出現在 layouts 之外`);
         }
-    }
+        return out;
+    };
+    const hits = [];
+    for (const f of srcHtml) hits.push(...scanEscape(stripNjk(read(f)), f));
+    // 下限先結算，之後負控的合成樣本才不會灌進母體計數。
     assert.ok(seen >= 4, `只掃到 ${seen} 處 content | safe —— 這條測試在空轉（三支 layout 各一）`);
+    // 負控（合成原文配合成住址走同一支）
+    assert.equal(scanEscape("{{ content | safe }}", "src/_includes/layouts/base/base.html").length, 0, "layouts 裡的那個洞被誤判");
+    assert.equal(scanEscape("{{ content | safe }}", "src/_includes/components/x/x.html").length, 1, "layouts 之外的逃生口抓不到");
+    assert.equal(scanEscape("{{- content | safe }}", "src/_includes/components/x/x.html").length, 1, "帶空白控制的寫法漏抓");
+    assert.equal(scanEscape("{{ content }}", "src/_includes/components/x/x.html").length, 0, "沒有 | safe 的一般插值被掃進母體");
     assert.equal(hits.length, 0, fail(hits));
 });
 
