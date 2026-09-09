@@ -3,7 +3,6 @@
 import { test } from "vitest";
 import assert from "node:assert/strict";
 import { existsSync, readdirSync } from "node:fs";
-import { basename } from "node:path";
 import { read, srcHtml, srcScss } from "../../_lib/corpus.mjs";
 import { VOID_TAGS, distDoc } from "../../_lib/html.mjs";
 import { componentDirs } from "../../_lib/inventory.mjs";
@@ -94,13 +93,6 @@ test("§1-2 元件檔頭的 markup 契約要逐字對得上生產實例（形狀
     //      多行標籤（屬性斷行）也要先併回一行，否則整顆標籤在逐行掃描下直接消失。
     const noHtml = componentDirs.filter(({ name, path }) => !existsSync(`${path}/${name}.html`));
     assert.ok(noHtml.length >= 27, `只找到 ${noHtml.length} 個無 html 元件 —— 這條測試在空轉`);
-    // 消費頁真的「沒有清單」的元件：檔頭已經寫明判準句而不是清單，母體因此是全站 markup。
-    // 這是唯一能讓一份契約不綁消費頁的出口，逐筆寫理由；下面有死豁免檢查。
-    const CONTRACT_ANY_PAGE = new Map([
-        ["ui/lang-toggle", "本元件的契約是**可翻譯屬性的形狀**（data-i18n-<後綴> 五顆＋<html data-page-title-key>），" +
-            "示例刻意各取自不同頁（5-2 的關鍵字欄、1-1-3 的交叉表開關、pagination 的箭頭圖…）以涵蓋五種屬性。" +
-            "檔頭自己寫著「本元件沒有『只在某幾頁』的清單，判準是 grep -rn 'js-lang-toggle' src」——兩個掛點全站每一頁都有。"],
-    ]);
     // ── 契約 → 樹 ───────────────────────────────────────────────────────────
     const TAGRE = /<(\/?)([a-zA-Z][\w-]*)((?:"[^"]*"|'[^']*'|[^>"'])*?)(\/?)>/g;
     const attrNames = (a) => [...new Set([...a.matchAll(/(?:^|\s)([a-zA-Z_:][\w:.-]*)\s*=/g)].map((m) => m[1].toLowerCase()))].sort().join(",");
@@ -187,23 +179,14 @@ test("§1-2 元件檔頭的 markup 契約要逐字對得上生產實例（形狀
             }
         return out;
     };
-    // 檔頭宣告的消費頁 → src 路徑（`components/x`、`5-2_conversationSettings.html`、裸頁號 `5-6-2`）
-    const byBase = new Map();
-    for (const f of srcHtml) { const b = basename(f, ".html"); (byBase.get(b) ?? byBase.set(b, []).get(b)).push(f); }
-    const declaredConsumers = (head) => {
-        const out = new Set();
-        for (const m of head.matchAll(/\b((?:ui|components)\/[\w-]+)(?![\w-])/g)) {
-            const p = `src/_includes/${m[1]}/${m[1].split("/")[1]}.html`;
-            if (existsSync(p)) out.add(p);
-        }
-        for (const m of head.matchAll(/([\w][\w.-]*)\.html\b/g)) for (const f of byBase.get(m[1]) || []) out.add(f);
-        for (const m of head.matchAll(/(?<![\w./-])(\d[\w-]*_\w+)(?![\w.-])/g)) for (const f of byBase.get(m[1]) || []) out.add(f);
-        for (const m of head.matchAll(/(?<![\w./-])(\d+(?:-\d+)+)(?![\w.-])/g))
-            for (const [b, fs] of byBase) if (b.startsWith(`${m[1]}_`)) for (const f of fs) out.add(f);
-        return [...out];
-    };
+    // **母體是全站 markup，不從散文推導消費頁**：那個做法與 §1-2 直接對撞——那一條要求
+    // 「dist 落在三頁以上的元件，住在哪一頁寫**判準句 ＋ 反查指令**、不寫頁面清單」，
+    // 而母體若從那一段散文推導，照規則改寫的每一支元件都會讓母體縮成「檔頭順手提到的那兩三頁」
+    // ——契約的其他型本來就不在那裡，於是**照規則做就變紅**。規則與量具矛盾時改的是量具。
+    // 這條因此驗的是「契約在**某一份真的 markup** 上找得到同構子樹」，那正是它要擋的失敗：
+    // 契約與實例分岔、照抄的人抄到一份全站不存在的形狀。「它出現在哪幾頁」由反查指令回答，
+    // 不再抄一份到散文裡讓測試去讀。
     const hits = [];
-    let scopedComponents = 0;
     const headsOf = ({ path, name }) => [`${path}/_${name}.scss`, `${path}/${name}.js`].filter(existsSync).map((f) => {
         const t = read(f);
         // 檔頭＝第一條非註解程式碼之前的那一段
@@ -218,10 +201,7 @@ test("§1-2 元件檔頭的 markup 契約要逐字對得上生產實例（形狀
         const declarative = /`data-[\w-]+`|data-[\w-]+=|window\.Gufo\w+|`--[\w-]+`/.test(heads);
         const blocks = contractBlocks(heads);
         if (!blocks.length && !declarative) { hits.push(`${bucket}/${name}  檔頭沒有可照抄的 markup 契約（要有帶 < 的真標籤，或寫出 data-* 宣告式契約）`); continue; }
-        const cons = CONTRACT_ANY_PAGE.has(`${bucket}/${name}`) ? [] : declaredConsumers(heads);
-        if (cons.length) scopedComponents++;
-        const pool = cons.length ? allForest.filter(({ f }) => cons.includes(f)) : allForest;
-        hits.push(...checkContract(heads, pool).map((h) => `${bucket}/${name}  ${h}`));
+        hits.push(...checkContract(heads, allForest).map((h) => `${bucket}/${name}  ${h}`));
     }
     // **有 html 的元件也要驗**：`<名>.html` 只保證「展示片段」是對的，而 §1-2 要求
     // 「展示片段不是生產形狀時，生產契約要寫在 scss／js 檔頭」——那份契約一樣是拿來整段照抄的正本。
@@ -234,9 +214,7 @@ test("§1-2 元件檔頭的 markup 契約要逐字對得上生產實例（形狀
         const heads = headsOf({ path, name });
         if (!contractBlocks(heads).length) continue;
         withHtmlChecked++;
-        const cons = declaredConsumers(heads);
-        hits.push(...checkContract(heads, cons.length ? allForest.filter(({ f }) => cons.includes(f)) : allForest)
-            .map((h) => `${bucket}/${name}  ${h}`));
+        hits.push(...checkContract(heads, allForest).map((h) => `${bucket}/${name}  ${h}`));
     }
     assert.ok(withHtmlChecked >= 11, `只有 ${withHtmlChecked} 個有 html 的元件被驗到契約 —— 契約段辨識壞了，這一半在空轉`);
 
@@ -411,18 +389,6 @@ test("§1-2 元件檔頭的 markup 契約要逐字對得上生產實例（形狀
 
     // 空轉守門：契約 parse 壞掉（挖掉插值挖過頭、多行標籤沒併回來）會讓一顆節點都不被驗、照樣全綠
     assert.ok(contractRoots >= 109, `只 parse 出 ${contractRoots} 顆契約根節點 —— 契約 parser 壞了，這條在空轉`);
-    assert.ok(scopedComponents >= 26, `只有 ${scopedComponents} 個元件解析得出消費頁 —— 消費頁解析壞了，母體退化成全站，這條在空轉`);
-    // 豁免衛生：宣告「沒有消費頁清單」的元件，其契約仍必須在全站 markup 裡找得到；
-    // 而且它真的要用得到這個豁免（綁得回消費頁就代表清單寫得出來，該把豁免刪掉）。
-    for (const [key, why] of CONTRACT_ANY_PAGE) {
-        assert.ok(why.length > 20, `CONTRACT_ANY_PAGE 的 ${key} 沒寫理由（空白不等於查證過，§4）`);
-        const c = noHtml.find(({ bucket, name }) => `${bucket}/${name}` === key);
-        assert.ok(c, `CONTRACT_ANY_PAGE 指的 ${key} 已經不是無 html 元件（死豁免）`);
-        const heads = [`${c.path}/_${c.name}.scss`, `${c.path}/${c.name}.js`].filter(existsSync).map(read).join("\n");
-        const cons = declaredConsumers(heads);
-        assert.ok(checkContract(heads, allForest.filter(({ f }) => cons.includes(f))).length > 0,
-            `CONTRACT_ANY_PAGE 豁免了 ${key}，但它的契約其實在自己宣告的消費頁裡就對得上 —— 死豁免，請移除`);
-    }
     // 負控＝實測全綠的那四種突變（＋屬性名那兩種：多寫一顆、少寫一顆硬規則）。
     // good 樣本擋反方向：契約是節錄，消費頁多出來的兄弟節點不該被判成違規。
     const probeRule = (s) => checkContract(s, allForest);

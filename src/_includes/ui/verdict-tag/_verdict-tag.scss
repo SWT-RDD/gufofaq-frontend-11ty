@@ -71,26 +71,25 @@
 // 顏色一律語意 token：填充族（--success／--danger／--warning）配成對的前景
 // （--on-accent／--on-warning），中性態用表面色配次要文字（GUIDELINE §4 對比度硬規則）。
 //
-// 住在哪一頁（雙向；判準＝`grep -rn 'class="verdict-tag' src`）——
-//   實例寫在這些檔：2-2-4_regressionSuites（①③）、2-2-5_regressionRun（①②③④——全站唯一四種都齊的一頁）、
-//     4-1_qaHistory（「QA 直答」徽章，①）、4-2_qaHistory_detail（被什麼擋下——內容是執行期填進來的
-//     政策代碼、刻意無 key，故是**②不是①**）、components/qa-detail-info（「QA 直答」，①）、
-//     components/step-flow（QA 直答判定五態，① ＋一顆兜底的 `{{ node.decision }}`＝②：查表查不到的
-//     結論原樣輸出，那時字面是值）、components/import-sync-tag（索引同步四態＋缺席態，①——
-//     `.is-progress` 的唯一實例與 `.is-faint` 的第二個實例都在這裡；components/import-report
-//     的彙總那一顆與 1-2-1 結果表格逐列那幾顆都是 include 它）、component.html（4-2 合規兩欄的
-//     唯一可見處，② ＋索引同步演不到的兩態，①）。
-//   渲染後含 `.verdict-tag` 的頁（反向；判準＝`grep -rl 'class="verdict-tag' dist/*.html`）：
-//     1-1-6、1-2-1、2-2-1、2-2-3、2-2-4、2-2-5、3-4、4-1、4-2、component.html。
-//     ⚠️ 1-1-6／1-2-1 是**經由 components/import-sync-tag** 進去的：彙總那一顆關在
-//     `{% if importSyncState %}` 裡（判準是那一頁有沒有 set `importSyncState`——1-1-6 是
-//     `"pending"`、1-2-1 是逐檔優先序算出來的 `"unknown"`），1-2-1 另有逐列那幾顆直接 include，
-//     它們的判準是 `batchOkRows`／`batchFailRows` 有沒有列。同 step-flow 那條
-//     「include 了不等於渲染得出徽章」。
-//     ⚠️ 2-2-1／2-2-3／3-4 是**經由 components/step-flow** 進去的，而那顆徽章關在 `{% if node.decision %}`
-//     裡——「這一頁 include 了 step-flow」不等於「它渲染得出徽章」，判準是那份 `stepFlowNodes`
-//     有沒有帶 `decision`（2-2-1 吃元件內建示範、2-2-3 與 3-4 各自覆寫時都帶了）。
-//     所以改動任何一頁的 `stepFlowNodes` 都要回頭對這一行。
+// 住在哪一頁（雙向，§1-2：三頁以上不列頁名）：
+//   正向＝`grep -rln 'class="verdict-tag' src --include=*.html`；反向＝`grep -l 'class="verdict-tag' dist/*.html`。
+//
+// **扇出路徑**（grep 產不出來的那一半，逐條都是「include 了不等於渲染得出徽章」）：
+//   · 經由 `components/import-sync-tag`：彙總那一顆關在 `{% if importSyncState %}` 裡
+//     ⇒ 判準是那一頁有沒有 set `importSyncState`；另有逐列那幾顆直接 include，判準是
+//     `batchOkRows`／`batchFailRows` 有沒有列。
+//   · 經由 `components/step-flow`：徽章關在 `{% if node.decision %}` 裡 ⇒ 判準是那份
+//     `stepFlowNodes` 有沒有帶 `decision`（吃元件內建示範的那幾頁也算）。改動任何一頁的
+//     `stepFlowNodes` 都要回頭對這一段。
+//   · 經由 `components/qa-detail-info`：「QA 直答」那一顆，型①。
+//   · 其餘是頁面自寫。
+//
+// **哪一型在哪裡**（這一半 grep 也產不出來，而抄錯型就是英文模式整欄漏字）：
+//   · 型②（字面是**值**、刻意不掛 key）只有兩處——「被什麼擋下」那一欄（內容是執行期填進來的
+//     政策代碼），以及 step-flow 裡兜底的 `{{ node.decision }}`（查表查不到的結論原樣輸出）。
+//   · 各變體的**唯一實例**：`.is-progress` 與 `.is-faint` 的第二個實例都在 `components/import-sync-tag`；
+//     四種變體同時出現在同一頁的只有回歸執行那一頁；4-2 合規兩欄與索引同步演不到的那兩態，
+//     唯一可見處是元件庫頁（§5：沒有頁面演得出來的分支等於沒驗收過）。
 .verdict-tag {
     display: inline-flex;
     align-items: center;

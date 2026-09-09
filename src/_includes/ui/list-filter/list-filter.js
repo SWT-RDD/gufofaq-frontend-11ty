@@ -187,11 +187,12 @@
 // 一列一顆勾選框，所以清單裡只有一個分支——**不得放沒有實例的分支進去**（§5：選擇器要打得到
 // dist 上的東西，留著就是死選擇器；有測試逐分支把關）。
 //
-// 住在哪一頁（雙向）：三顆 modal 元件各一份 ⇒ `components/manage-members-modal`（5-5-2 群組管理、
-// 元件庫頁）、`components/select-dataset-modal`（1-1-1 資料匯入、元件庫頁）與
-// `components/search-scope-modal`（3-7 文件檢索）。
-// 反查：`grep -rln 'dataset-list-wrap' src --include=*.html` 除這三支元件之外，
-// 只多命中 `ui/checkbox/checkbox.html`——那是一則 `{# #}` 說明註解，不是實例。
+// 住在哪一頁（雙向，§1-2：三頁以上不列頁名）：
+//   正向＝`grep -rln 'dataset-list-wrap' src --include=*.html`；反向＝`grep -l 'dataset-list-wrap' dist/*.html`。
+// **扇出路徑**：markup 只有三份，各住在一支 modal 元件裡（`components/manage-members-modal`＝型①、
+// `components/select-dataset-modal`＝型②、`components/search-scope-modal`＝型③），渲染後的每一頁
+// 都是那三支帶進去的 ⇒ 使用頁的原始碼裡搜不到這顆 class。
+// 正向的命中裡有一筆是**註解不是實例**：`ui/checkbox/checkbox.html` 的一則 `{# #}` 說明。
 // 零命中的空狀態（§5「無資料列正典」逐字點名這一族：「`ui/list-filter` 那一族打到零命中時的空框
 // 同理」）。使用頁的 `{% for %}…{% else %}` 只覆蓋「來源陣列本來就空」那一態——它是 nunjucks
 // 的編譯期分支，救不了「有資料但關鍵字打不到」。而 `.dataset-list-wrap` 是定高可捲的框，零命中

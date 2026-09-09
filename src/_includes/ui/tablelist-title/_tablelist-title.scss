@@ -30,11 +30,12 @@
 //
 // 住在哪一頁（雙向；判準＝`grep -rln 'class="tablelist-title' src --include=*.html`——**要限 `*.html`**，
 //   否則會多出本檔自己那幾行契約，而那幾行不是實例）——
-//   實例寫在這些檔：5-2_conversationSettings（分層檢索兩種模式的標題、未使用／使用中、欄位命名、
-//     產品內部欄位；型② 的 `intentLevelTitle-` 也在這裡）、components/file-edit-modal、
-//     components/knowledge-retrieval-modal（型②）、components/multi-select-box（兩處）。
-//   渲染後含 `.tablelist-title` 的頁（反向）：1-1-4（multi-select-box）、1-2-1（file-edit-modal）、
-//     2-2-1／2-2-3（knowledge-retrieval-modal）、5-2、component.html。
+//   反向＝`grep -l 'class="tablelist-title' dist/*.html`（§1-2：三頁以上不列頁名）。
+//   **扇出路徑**（grep 產不出來的那一半）：只有一頁自己寫這顆 class，其餘每一頁都是
+//     `components/file-edit-modal`、`components/knowledge-retrieval-modal` 與
+//     `components/multi-select-box` 帶進去的 ⇒ 那些頁的原始碼裡搜不到它。
+//   **型② 的落點**：帶唯一 `id` 供 `aria-labelledby` 指的那一型只出現在自寫的那一頁
+//     與 `components/knowledge-retrieval-modal`，其餘都是型①。
 .tablelist-title {
     font-size: 1.125rem;
     text-align: left;

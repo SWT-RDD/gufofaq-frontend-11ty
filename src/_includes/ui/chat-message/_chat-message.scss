@@ -207,11 +207,13 @@
 // 兩個情境變體（成對契約，見 ui/ab-compare）：AB 雙欄比較時泡泡掛 `.message-content.in-compare`
 // （撐滿、無內距、等寬），緊接在雙欄之後的時間戳掛 `.message-time.after-compare`（加大下方間距）。
 //
-// 住在哪一頁（雙向）：`components/chatroom`（2-1 問答紀錄、2-2-1 單測）、`components/faq-chatroom`
-// （前台 faq）、`ui/widget-shell`（元件庫頁）、`2-2-3_abTest`（手寫）。
-// 反查：`grep -rn 'message-wrap' src --include=*.html` 命中這四個檔。其中兩筆是註解、不是實例：
-// `ui/widget-shell` 檔頭那句「訊息泡泡走 ui/chat-message…」，以及 `components/faq-chatroom`
-// 說明「房間說明不在 `.message-wrap` 之內」的那一句。
+// 住在哪一頁（雙向，§1-2：三頁以上不列頁名）：
+//   正向＝`grep -rln 'message-wrap' src --include=*.html`；反向＝`grep -l 'message-wrap' dist/*.html`。
+// **扇出路徑**（grep 產不出來的那一半）：多數頁面不是自己寫的，是 `components/chatroom`、
+// `components/faq-chatroom` 與 `ui/widget-shell` 帶進去的；只有 2-2-3_abTest 自己手寫一份
+// （它的回覆要換成 `ui/ab-compare` 的雙欄，include 不進去）。
+// 正向的命中裡有兩筆是**註解不是實例**：`ui/widget-shell` 檔頭那句「訊息泡泡走 ui/chat-message…」，
+// 以及 `components/faq-chatroom` 說明「房間說明不在 `.message-wrap` 之內」的那一句。
 .message-wrap {
     margin-bottom: 1rem;
 }

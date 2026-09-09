@@ -73,9 +73,10 @@
 // 住在哪一頁（雙向；判準＝`grep -rn 'filter-fields\|js-filter-clear' src --include=*.html`）——
 //   `.filter-fields`：2-2-1_singleTest（一列）、5-2_conversationSettings（三列：對話模式總開關、
 //     提示詞版本史、歡迎語版本史）。反向：渲染後含 `.filter-fields` 的頁只有這兩頁。
-//   `.js-filter-clear`：上面 5-2 的後兩列各一顆，其餘在**沒有 `.filter-fields`** 的就地篩選列上——
-//     3-7_documentSearch、4-1_qaHistory、5-3_statsModule、5-4_coverageGaps、5-7_auditLog 各一顆。
-//     反向：渲染後含這顆鈕的就是這六頁（3-7／4-1／5-2／5-3／5-4／5-7）。
+//   `.js-filter-clear`：**它不住在 `.filter-fields` 裡面**——有 `.filter-fields` 的那兩列它是兄弟，
+//     其餘幾顆所在的頁面根本沒有 `.filter-fields`。所以這一顆的落點集合比上面那一顆大，
+//     兩者各自反查（§1-2：三頁以上不列頁名）：`grep -l 'js-filter-clear' dist/*.html`。
+//     共通的形狀只有一句：每一顆都與查詢鈕同住一顆 `flex-row`，並以 `closest(".block")` 定範圍。
 .filter-fields {
     flex: 1 1 auto;
     min-width: 0;

@@ -8,11 +8,11 @@
 // **三型都各寫一段完整 markup**：只寫兩型再用散文交代第三型的差異，等於那一型沒有可照抄的正本
 // ——而下面「住在哪一頁」明明就列著它（§1-2：屬性一律不得略，逐型各一段）。
 //
-//   ① 計數列（2-2-4／4-1／5-7）：數字前後**是兩顆 i18n span**，抄的時候別漏（只留數字＝英文模式少一半字）
+//   ① 計數列（class 串上只有 `data-info` 一顆）：數字前後**是兩顆 i18n span**，抄的時候別漏（只留數字＝英文模式少一半字）
 //
 //      <div class="data-info"><span data-i18n="common.total">共</span> {{ total }} <span data-i18n="common.recordsUnit">筆</span></div>
 //
-//   ② 統計列（5-2／5-10）：同一顆 class 另掛 flex 工具，內含多組「標籤＋值」。
+//   ② 統計列：同一顆 class 另掛 flex 工具，內含多組「標籤＋值」。
 //      **每一組外面那顆無 class 的 `<span>` 不可省**——它把「標籤」與「值」綁成一個 flex item，
 //      少了它 gap-24 會落在標籤與值「之間」，把每一組拆成兩截散在整列上（視覺指紋看得到、但
 //      抄的人不會知道少了哪一層）。標點折進 i18n key 裡（§4-2），值就直接接在 span 後面。
@@ -37,7 +37,7 @@
 //          <span><span data-i18n="settings.outputRulesEnabledLabel">啟用中：</span> {{ outputRulesEnabledCount }}</span>
 //      </div>
 //
-//   ③ 計數 ＋ 統計並排（3-7）：型② 的版位（同一組 flex 工具 class），但第一組是型① 的計數。
+//   ③ 計數 ＋ 統計並排：型② 的版位（同一組 flex 工具 class），但第一組是型① 的計數。
 //      **它不是型①**：型① 是獨佔一列的計數，這一型的計數與別的統計並排，不掛那組 flex 工具
 //      class 兩組會黏在一起。第二組的單位是**前導空白**寫在 i18n 值裡（`" 秒"`），
 //      markup 就不再補——同型② 那條「半形空白只能有一份」。
@@ -52,14 +52,13 @@
 //
 // 住在哪一頁（雙向；判準＝`grep -rln 'class="data-info' src --include=*.html`——**要限 `*.html`**，
 //   否則會多出本檔自己那幾行契約，而那幾行不是實例）——
-//   型①（純計數列）：2-2-4_regressionSuites、4-1_qaHistory、5-7_auditLog（各一列，頁面自寫）
-//   型②（多欄統計列，另掛 `.flex-row.flex-wrap.gap-24`）：5-2_conversationSettings
-//        （三列：政策主題／出口替換規則／輸出規則）、5-10_tagDimensions（掃描結果，一列）
-//   型③（型②的版位 ＋ 第一組是型①的計數）：3-7_documentSearch 的搜尋結果列
-//        （「共 N 筆」＋「耗時：N 秒」）——**它不是型①**：型① 是獨佔一列的計數，這一型的計數
-//        與其他統計並排，所以要跟著型② 掛那組 flex 工具 class，否則兩組會黏在一起。
-//   例外：ui/block 的展示片段 → 只渲染在 component.html
-//   反向：渲染後含 `.data-info` 的頁只有 2-2-4、3-7、4-1、5-2、5-7、5-10、component.html
+//   三型**各自分得出來**，不必列頁名（§1-2）：型① 的 class 串上只有 `data-info` 一顆；
+//   型②③ 另掛 `.flex-row.flex-wrap.gap-24`（`grep -rln 'data-info flex-row' src --include=*.html`
+//   就是那一族），
+//   而型③ 是型②裡**第一組就是型①那種計數**的那一份——它不是型①：型① 是獨佔一列的計數，
+//   型③ 的計數與其他統計並排，所以要跟著型② 掛那組 flex 工具 class，否則兩組會黏在一起。
+//   **全部是頁面自寫**（沒有任何元件帶它進去），所以正反兩向推導得出同一組頁面。
+//   例外：`ui/block` 的展示片段那一份只渲染得到元件庫頁（見上面「唯一例外」）。
 
 .data-info {
     padding: 1rem 0;

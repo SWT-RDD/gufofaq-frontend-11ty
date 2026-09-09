@@ -47,8 +47,9 @@
 //      來源各不相同，由各自的元件 js 決定；`.shareBtn` 的來源固定是旁邊那顆唯讀欄位，
 //      所以只有它做得成宣告式。
 //
-// 住在哪一頁（雙向）：`grep -rl 'shareBtn' src --include=*.html` ＝上面那兩支元件；
-// 反查渲染後 `grep -l 'shareBtn' dist/*.html`（faq 前台頁、4-2、2-2-3、元件庫頁）。
+// 住在哪一頁（雙向，§1-2：三頁以上不列頁名）：正向＝`grep -rln 'shareBtn' src --include=*.html`、
+// 反向＝`grep -l 'shareBtn' dist/*.html`。**扇出路徑**：渲染後的每一頁都是上面那兩支元件帶進去的，
+// 沒有任何一頁自己寫這顆 class；正向的命中裡有一筆是 `ui/toast` 檔頭提到它的那一句註解。
 // **整支收在 IIFE 內**（§5）：所有元件 js 都是 `<script defer>`、共用同一個全域 scope，
 // 通用名字（`fallback`、`syncAll`、`raiseContainer`）誰後載入誰贏，而覆蓋是靜默的；
 // `const`／`let` 更硬——第二支同名宣告會讓**那一整支腳本** SyntaxError、一行都不執行，

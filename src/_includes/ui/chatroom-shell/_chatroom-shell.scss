@@ -80,10 +80,11 @@
 // ui/form-control 與 ui/button 的 class 選擇器**（§4）。前台 FAQ 不用這一套（走 components/faq-chatroom
 // 的 .faq-chatroom／.faq-chat-scroll，它的 .input-wrap 已依「一名一主」改名，不與本檔相撞）。
 //
-// 住在哪一頁（雙向）：`components/chatroom`（2-1 問答紀錄、2-2-1 單測）與 2-2-3_abTest（手寫一份，
-// 因為它的回覆要換成 ui/ab-compare 的雙欄，include 不進去）。
-// 反查：`grep -rln 'chatroom-wrap' src --include=*.html` 除這兩處之外，只多命中 2-1_qaRecord
-// ——那是該頁 include `components/chatroom` 時的一則 `{# #}` 說明註解，不是第三份實例。
+// 住在哪一頁（雙向，§1-2：三頁以上不列頁名）：
+//   正向＝`grep -rln 'chatroom-wrap' src --include=*.html`；反向＝`grep -l 'chatroom-wrap' dist/*.html`。
+// **扇出路徑**：多數頁面是 `components/chatroom` 帶進去的，2-2-3_abTest 自己手寫一份
+// （它的回覆要換成 `ui/ab-compare` 的雙欄，include 不進去）。
+// 正向的命中裡有一筆是**註解不是實例**：某一頁 include `components/chatroom` 時的一則 `{# #}` 說明。
 @use "../../../scss/mixin" as *;
 
 .chatroom-wrap {
