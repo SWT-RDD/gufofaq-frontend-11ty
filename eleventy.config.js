@@ -16,7 +16,7 @@ module.exports = function (eleventyConfig) {
         "src/_includes/ui/scroll-lock/scroll-lock.js": "js/scroll-lock.js",
         "src/_includes/ui/slide-toggle/slide-toggle.js": "js/slide-toggle.js",
         "src/_includes/ui/print/print.js": "js/print.js",
-        "src/_includes/ui/filter-fields/filter-fields.js": "js/filter-fields.js",
+        "src/_includes/components/filter-fields/filter-fields.js": "js/filter-fields.js",
         "src/_includes/components/sources-block/sources-block.js": "js/sources-block.js",
         "src/_includes/components/chatroom/chatroom.js": "js/chatroom.js",
         "src/_includes/components/header/header.js": "js/header.js",

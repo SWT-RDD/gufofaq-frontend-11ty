@@ -13,7 +13,7 @@
 //   ⓑ **可及名稱**：獨立一顆時給 `id` ＋ 頁面上的 `<label for>`；住在 `{% for %}` 裡（5-5-1 的
 //      狀態／角色兩欄）一律 `aria-labelledby="<本列辨識欄> <欄表頭>"`——掛靜態 `aria-label` 會蓋掉
 //      列脈絡，整欄的可及名稱會一模一樣（§4）。
-//   ⓒ 它若是**篩選值載體**要加 `data-filter-reset="checked|unchecked"`（見 `ui/filter-fields` 檔頭）。
+//   ⓒ 它若是**篩選值載體**要加 `data-filter-reset="checked|unchecked"`（見 `components/filter-fields` 檔頭）。
 //   ⓓ `.switch-box` / `.switch-btn` 兩層純視覺，缺一層軌道或圓鈕就不見。
 //
 // Switch 開關：一顆 `<input type="checkbox" role="switch">` 藏在 `opacity:0` 底下，

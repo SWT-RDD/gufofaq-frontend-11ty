@@ -2,7 +2,7 @@
 //   ① 字數提示：兩個文字欄各自的「已填 / 上限」即時更新。上限**讀 textarea 自己的 maxlength**，
 //      不在 js 再抄一份 1024——那個數字只有一份真相，寫在 markup 上（見元件 html 檔頭的宣告）。
 //   ② 還原預設：清掉本卡兩欄＝回到內建預設（placeholder 就是預設描述原文），順手把字數歸零。
-//      比照 ui/filter-fields 的 .js-filter-clear：同樣是「把欄位清回預設」的純 UI 行為，不送 API。
+//      比照 components/filter-fields 的 .js-filter-clear：同樣是「把欄位清回預設」的純 UI 行為，不送 API。
 //      這裡本來就沒有 API 可打：兩欄的自訂覆寫是這一份對話設定的一部分，隨頁尾
 //      「儲存對話設定」一起送出，所以這顆鈕不彈 toast。
 //

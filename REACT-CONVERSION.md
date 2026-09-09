@@ -528,7 +528,7 @@ portal 時的唯一辦法，**不是設計**。React 端一律收斂成**一顆�
   計數與欄位值同源（`value.length`）。React 端從同一顆常數/props 取上限，不要在計數器字串裡再抄一次數字；
   超過上限由 `maxLength` 擋，不用自己截字。
 - **「還原預設」是切版自有行為**（`.js-tool-reset`：清掉該卡的兩個文字欄＝回到內建預設，placeholder 就是
-  預設原文，同 `ui/filter-fields` 的 `.js-filter-clear`）→ 轉成 `onClick` 清那筆 state，class 不帶過去、
+  預設原文，同 `components/filter-fields` 的 `.js-filter-clear`）→ 轉成 `onClick` 清那筆 state，class 不帶過去、
   不打 API（override 隨整份 profile config 一起 PUT）。
 - 量測用臨時 DOM 節點（append 到 `document.body` 量文字寬等）加 `position:absolute`——append 目標可能是
   flex/grid 容器（節點會被 blockify 拉伸），absolute 讓它退出環境佈局。

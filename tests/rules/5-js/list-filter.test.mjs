@@ -9,7 +9,7 @@ import { fail, probe } from "../../_lib/probe.mjs";
 import { NL } from "../../_lib/text.mjs";
 
 test("§5 清除鈕射程內的每顆 radio／checkbox 都要宣告 data-filter-reset（沒宣告＝清不到）", () => {
-    // `ui/filter-fields` 的清除鈕以 `closest(".block")` 定範圍，而它**刻意不由控制項的 type
+    // `components/filter-fields` 的清除鈕以 `closest(".block")` 定範圍，而它**刻意不由控制項的 type
     // 推導**哪些算篩選參數——逐列的多選勾選框、匯出格式那種「不是篩選」的控制項都住在同一塊裡。
     // 判準因此寫在 markup 上：宣告了就回到宣告的那一態，沒宣告就一顆都不碰。
     // 漏宣告的失敗方式最難看見：畫面完全正常，只有「按下清除、那一格沒回去」才看得出來，
@@ -131,7 +131,7 @@ test("§5 篩選列的「清除」把 3-7 的檢索範圍帶回預設態（全�
     const parts = [
         "src/_includes/ui/checkbox/checkbox.js",
         "src/_includes/components/search-scope-modal/search-scope-modal.js",
-        "src/_includes/ui/filter-fields/filter-fields.js",
+        "src/_includes/components/filter-fields/filter-fields.js",
     ];
     const js = parts.map((f) => read(f)).join(NL);
 

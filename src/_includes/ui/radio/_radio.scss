@@ -17,7 +17,7 @@
 //      在這裡定義一次就是正本；同一組內不重複，也不為同一個選項另立第二種寫法。
 //   ⓑ **可見字面那顆 `<span>` 要掛 `data-i18n`**：它是 chrome、不是資料（§4-2）。
 //   ⓒ **住在清除鈕射程內的要宣告 `data-filter-reset`**（值＝這一顆的預設態）：清除鈕不由控制項
-//      的 type 推導哪些算篩選參數，沒宣告就一顆都不碰（見 `ui/filter-fields`，有測試把關）。
+//      的 type 推導哪些算篩選參數，沒宣告就一顆都不碰（見 `components/filter-fields`，有測試把關）。
 //   ⓓ 外面那顆 `<div class="function">` 不是裝飾：它是 `ui/form-control` 的全域原子
 //      （`flex-shrink:0` ＋ inline flex），少了它 radio 會在窄容器裡被壓扁。
 //   ⓔ 一組 radio 要報得出「這一組在問什麼」（§4）：容器掛 `role="radiogroup"` ＋

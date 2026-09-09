@@ -1,4 +1,8 @@
 // 篩選列的「清除」：把同一個 `.block` 裡的篩選欄位全部回到預設值。
+// **住 `components/` 不住 `ui/`**：本檔呼叫 `window.GufoSearchSelect.refresh()` 與
+//   `window.GufoSearchScope.reset()`，而那兩支都會產出可見 UI（一顆 combobox 重繪、一排勾選框
+//   回到預設）——「js 呼叫會產出可見 UI 的元件匯出的函式」是 §1-1「用到其他元件」的第三種形式。
+//   同 `components/citation-ref` 的先例（它呼叫 `GufoSources.reveal()`）。
 // 以 `closest(".block")` 定範圍——同頁兩條篩選列各清各的，不會互相清到。
 // 純 UI（只清 DOM 的值，查詢是另一顆鈕的業務 js）。**這幾條要知道理由（改動前先讀）**：
 //   ① 沒有 `.filter-fields` 時**回退清整個 `.block`**：4-1／5-3／5-4／5-7 的篩選列是就地寫的

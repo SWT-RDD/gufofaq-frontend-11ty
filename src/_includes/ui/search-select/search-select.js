@@ -18,7 +18,7 @@
 //   鍵盤：↑↓ 移動（首尾環繞）、Enter 選取並關閉、Esc 關閉、Home/End 跳首尾。
 // i18n：placeholder 與空狀態由 JS 產生，故走 GufoI18n.t(key, 繁中原文)，並在 gufo:langchange 重畫。
 //
-// **對外匯出一支重繪函式**（`window.GufoSearchSelect.refresh`）：`ui/filter-fields` 的「清除」
+// **對外匯出一支重繪函式**（`window.GufoSearchSelect.refresh`）：`components/filter-fields` 的「清除」
 // 直接寫 `select.value`，而它**刻意不 dispatch 合成 change**（§5 不得用合成事件跨元件驅動；
 // 那支檔案自己在同一段寫明「呼叫該元件匯出的重繪函式」才是正路）。沒有這條路的話，按下清除之後
 // 原生 select 已經回到「全部」，而畫面上那三顆 combobox 還顯示著舊標籤——值與畫面分家，
@@ -331,7 +331,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         document.addEventListener("gufo:langchange", render);
 
-        // 供 `ui/filter-fields` 的「清除」呼叫（見檔頭）。**不改成監聽 `change`**：那顆事件的
+        // 供 `components/filter-fields` 的「清除」呼叫（見檔頭）。**不改成監聽 `change`**：那顆事件的
         // 發送端就是本檔自己（`chooseOption`），接回來會變成「自己踩自己」的迴圈起點，而清除
         // 那條路根本不發事件——監聽 change 對它一點用都沒有，只是看起來有處理。
         repaint.set(select, render);
