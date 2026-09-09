@@ -651,7 +651,8 @@ permalink: 2-2-4_regressionSuites.html
         <div class="field">
             {# 上限 2000 字，超過會被擋下（下面那一句是同一道界線的可見版）。
                形狀逐字照同頁 `#newSuiteName`／`#newSuiteDesc`。沒有這一句時，超長的備註
-                 只會換來「新增失敗，請稍後再試」——新增鈕那七段 data-toast 沒有一段在講長度。 #}
+                 只會換來「新增失敗，請稍後再試」——新增鈕的 data-toast 唯一講到長度的那一段
+                 講的是「案例的問題」那一欄，不是這一欄。 #}
             <input type="text" id="newCaseNote" class="form-control" maxlength="2000" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" aria-describedby="newCaseNoteHint">
             <span class="text-gray" id="newCaseNoteHint"><span data-i18n="regression.caseNoteLimit">備註字數上限：</span><span>2000</span><span data-i18n="common.unitChars"> 字</span></span>
         </div>
@@ -739,8 +740,10 @@ permalink: 2-2-4_regressionSuites.html
      的最壞情況是 200 則 × 600 秒 ≈ 33 小時，而真正的天花板是整批 3600 秒——超過就中斷
      （已完成的結果保留）。以為要跑一天的人會去改排程，而那份報表最多一小時就會以「中斷」
      收尾，兩件事要人做的處置完全不同。
-   同一份界線在 2-2-5 的執行報表也列一次（`runLimitRows`）：那一頁是事後看結果的地方，
-     「為什麼只跑到第 148 則」要在同一張表上答得出來，所以兩份逐列相同。 #}
+   這幾條界線在 2-2-5 的執行報表也列一次（`runLimitRows`）：那一頁是事後看結果的地方，
+     「為什麼只跑到第 148 則」要在同一張表上答得出來。**兩份不是同一張表**——2-2-5 另有
+     兩條只有跑完才問得到的（評審理由字數上限、上游記憶輪數），這一頁沒有；重疊的那幾條
+     兩邊要逐字相同。 #}
 {% set regressionLimits = [
   { labelKey: "regression.limitCases", label: "單次執行案例上限：", value: "200", unitKey: "regression.casesUnit", unit: " 則" },
   { labelKey: "regression.limitContextTurns", label: "前置對話上限：", value: "10", unitKey: "regression.turnsUnit", unit: " 輪" },
