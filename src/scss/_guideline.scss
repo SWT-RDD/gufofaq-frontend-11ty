@@ -18,9 +18,12 @@
 //      `.guideline-page`，結構上永遠選不到，看起來卻很像有人在用）。§4／§8「零死碼」。
 //
 
-// 本頁專屬的細捲軸。形狀與 `_mixin.scss` 的 `scrollbar()` 相同，差別在顏色：thumb／track 走
-// showcase 色盤（`--gl-scrollbar-thumb`／`--surface-raised`），而不是 app 的 `--scrollbar-thumb-strong`。
-// showcase 的 chrome 不歸 app 色盤管（同 `_guideline-var.scss` 檔頭），故獨立一支，不共用。
+// 本頁專屬的細捲軸。**宣告逐條與 `_mixin.scss` 的整頁 `scrollbar()` 相同，唯一的偏離是拉桿顏色**：
+// 走 showcase 色盤的 `--gl-scrollbar-thumb`，而不是 app 的 `--scrollbar-thumb-strong`；軌道兩支都透明。
+// showcase 的 chrome 不歸 app 色盤管（同 `_guideline-var.scss` 檔頭），故獨立一支、不共用。
+// ⚠️ **兩個引擎的軌道要給同一個值**：WebKit 走 `::-webkit-scrollbar-track`、Firefox 走
+//   `scrollbar-color` 的第二個值，各給一次而給不同的顏色，同一條捲軸就會在兩種瀏覽器上長得不一樣
+//   ——而本機只看得到其中一種。
 @mixin scrollbar() {
 
     /* 捲軸粗細（WebKit／Blink） */
@@ -31,7 +34,7 @@
 
     /* 拉桿 */
     &::-webkit-scrollbar-thumb {
-        border-radius: 3px;
+        border-radius: 4px;
         background-color: var(--gl-scrollbar-thumb);
     }
 
@@ -54,8 +57,8 @@
     }
 
     /* Firefox 走另一組標準屬性，形狀與顏色要各給一次 */
+    scrollbar-color: var(--gl-scrollbar-thumb) transparent;
     scrollbar-width: thin;
-    scrollbar-color: var(--gl-scrollbar-thumb) var(--surface-raised);
 }
 
 // 以下所有規則限定在元件庫展示頁（`body.guideline-page`）。

@@ -6,6 +6,7 @@ import { basename } from "node:path";
 import { distHtml, read, srcHtml } from "../../_lib/corpus.mjs";
 import { distDoc, tagsOf } from "../../_lib/html.mjs";
 import { fail } from "../../_lib/probe.mjs";
+import { stripNjk } from "../../_lib/text.mjs";
 
 test("§5 data-toast 的結果數與 data-toast-type 的語意數要對得起來", () => {
     // toast.js 直接把 type 串成 class（'toast toast-' + type）。打成 data-toast-type="err"
@@ -78,7 +79,13 @@ test("§5/§6 逐列可刪/撤銷的管理表要帶 {% else %} 無資料列（�
     const missing = [];
     const seenExempt = new Set();
     for (const f of srcHtml) {
-        const src = read(f);
+        // **先剝掉 njk 註解**：檔頭註解到處引用 `{% if %}`／`{% else %}`／`{% for %}`（全站上百處，
+        // 那是規範要求的「把判準寫出來」），而這支 tokenizer 掃的是原始字元流 ⇒ 註解裡一個落單的
+        // `{% if %}` 就會把堆疊推歪，讓它把某個 for 的 `{% else %}` 算給那個假 if，
+        // 於是該張表被判成「有無資料列」而放行。實測：在一支頁面的註解裡多提一次 `{% if %}`，
+        // 掃到的表就從 15 張掉到 14 張——母體縮水在畫面上沒有任何訊號，只有下面那道門檻抓得到。
+        // `stripNjk` 以等長換行替換，行號不位移。
+        const src = stripNjk(read(f));
         // 追蹤 for 與 if 兩種區塊：{% else %} 同時是 for-else 與 if-else，必須歸給堆疊頂端的區塊——
         // 否則列內的 {% if %}…{% else %} 會被誤記成 for 已有無資料列（假綠：漏抓真的缺 else 的管理表）。
         const tokRe = /\{%-?\s*(for|endfor|if|elif|endif|else)\b[^%]*%\}/g;

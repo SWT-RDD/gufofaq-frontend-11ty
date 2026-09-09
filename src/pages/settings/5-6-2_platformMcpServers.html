@@ -312,8 +312,21 @@ permalink: 5-6-2_platformMcpServers.html
                                  `server_name` 是這一列自己（重複），`input_schema` 是給 LLM 的參數 schema、
                                  不是給人讀的。**不可以把整份清單壓成一行逗號串**——那會讓同一顆鍵
                                  在這一頁長成純量，形狀對不上。
+                                 **逐行走 `<br>` 而不是 `<ul>`**：`.collapse-body` 夾行靠 `-webkit-line-clamp`，
+                                 那要 `display:-webkit-box`，裡面放區塊元素會讓夾行整個失效（`ui/collapse-text`
+                                 的契約因此是「內容是一段文字」）。形狀的集合性由上面那句「N 個工具」承載。
                               #}
+                            {# **「連得上、但一顆工具都沒有」是走得到的一態**：同一張表的「工具數」欄
+                                 就有 `settings.mcpToolsNone` 那一格在演它。沒有這個分支的話，那一列會畫出一個
+                                 空的收合區 ＋ 一顆點了什麼都不會發生的「展開」鈕（§5 不放按了沒反應的鈕），
+                                 而上面那句「0 個工具」已經把話說完了。
+                                 **寫成明確的長度比較**，不是直接拿 `server.lastTest.tools` 當條件：空陣列在
+                                 nunjucks 是真值，那樣寫這個分支永遠走不到。 #}
+                            {% if server.lastTest.tools.length > 0 %}
                             <div class="collapse-text text-gray"><div class="collapse-body">{% for tool in server.lastTest.tools %}{% if not loop.first %}<br>{% endif %}{{ tool.name }}<span data-i18n="common.labelSep">：</span>{{ tool.description }}{% endfor %}</div><button type="button" id="mcpToolsToggle-{{ server.id }}" aria-labelledby="mcpRowName-{{ server.id }} mcpToolsToggle-{{ server.id }}" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>
+                            {% else %}
+                            <span class="text-gray" data-i18n="settings.mcpToolsNone">沒有工具</span>
+                            {% endif %}
                         </div>
                         {% elif server.lastTest.error %}
                         <div class="collapse-text text-red"><div class="collapse-body">{{ server.lastTest.message or server.lastTest.error }}</div><button type="button" id="mcpErrorToggle-{{ server.id }}" aria-labelledby="mcpRowName-{{ server.id }} mcpErrorToggle-{{ server.id }}" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div>

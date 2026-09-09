@@ -48,6 +48,14 @@
    看得見（§5）。 #}
 {% from "ui/upload-limit-catalog/upload-limit-catalog.html" import uploadLimitCatalog %}
 {% set uploadMaxMb = uploadLimitCatalog.maxMb %}
+{% set uploadBatchMaxMb = uploadLimitCatalog.batchMaxMb %}
+{# **開了多選才畫「一次最多送出 N MB」**：單選一次只送得出一個檔，總量恆等於單檔大小，那時多畫
+     一條界線只是雜訊。開了多選之後它就是真的會被撞到的那一道（單檔上限擋不住「一百個 49MB」），
+     而它在畫面上原本一個字都沒有——使用者只會在整批傳完之後被退回。
+   **這一支不做送出前的總量預檢**（單檔那一道有做）：總量要對的是**使用頁累積的那份清單**
+     （逐次拖放會累加），而本元件只看得到「這一次選了哪幾個檔」——照這一次的量去判，
+     分三次各拖 60MB 的人一次警告都不會拿到，那比不判更糟（§5：說得出口的檢查要真的成立）。
+     它的職責到「把界線講出來」為止，擋的那一道在送出時（`data-toast` 的 413 那一段）。 #}
 {% if uploadNextHref %}
 <a href="{{ uploadNextHref }}" class="upload-box">
     <span class="upload-text">
@@ -60,6 +68,7 @@
     <span class="upload-text">
         <span class="upload-message" data-i18n="{{ uploadHintKey or 'comp.uploadDropHint' }}">{{ uploadHintText or '點選或拖曳檔案至該區域上傳' }}</span>
         <span class="upload-desc"><span data-i18n="{{ uploadDescPrefixKey or 'comp.uploadDescXlsxPrefix' }}">{{ uploadDescPrefixText or '支援上傳xlsx檔案，檔案最大不超過' }}</span><span>{{ uploadMaxMb }}MB</span></span>
+        {% if uploadMultiple %}<span class="upload-desc"><span data-i18n="dataImport.batchMaxPrefix">一次最多送出 </span><span class="js-upload-batch-max-mb">{{ uploadBatchMaxMb }}</span><span data-i18n="dataImport.batchMaxSuffix">MB，整批超過會被退回</span></span>{% endif %}
     </span>
 </button>
 <input type="file" class="upload-input" accept="{{ uploadAccept or '.xlsx' }}"{% if uploadMultiple %} multiple{% endif %} hidden>

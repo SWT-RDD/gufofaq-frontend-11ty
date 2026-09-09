@@ -41,6 +41,31 @@ document.addEventListener("DOMContentLoaded", function () {
             toggle.setAttribute("aria-expanded", open ? "true" : "false");
         });
 
+        // **空狀態那一列要回得來。** 原本的作法是「加列之前把它移除」，而刪列那一條路徑沒有任何
+        // 對應的處置 ⇒ 使用者把列刪回零筆時，表格只剩表頭，沒有任何東西說得出「這張表還沒有詞條」
+        // ——而那一態正是 `{% else %}` 那一列存在的理由（§5）。
+        // 它**不能靠隱藏／還原既有節點**：那一列是 `{% for %}…{% else %}` 的產物，示範資料非空
+        // ⇒ 載入當下它根本不在 DOM 裡。所以由本檔按需要生成，並把可見性交給 `syncCount()`
+        // （貼上、新增、刪除三條路徑都會改變列數，各自處置必然漏掉其中一條）。
+        // 繁中原文逐字等於 markup 那一列（§4-2：同一顆 key 不得有第二種繁中，差一個字會互相覆蓋）。
+        var EMPTY_KEY = "settings.noAliasEntries";
+        var ZH_NO_ENTRIES = "這張別名表還沒有詞條。";
+        var EMPTY_COLS = 3;                               // ＝ markup 那一列的 colspan，跟著欄數走
+
+        function emptyRow() {
+            var row = body.querySelector("td[colspan]");
+            if (row) return row.closest("tr");
+            var tr = document.createElement("tr");
+            var td = document.createElement("td");
+            td.setAttribute("colspan", String(EMPTY_COLS));
+            td.className = "text-center text-gray";
+            td.setAttribute("data-i18n", EMPTY_KEY);      // 掛上去，切語言時 lang-toggle 翻得到它
+            td.textContent = t(EMPTY_KEY, ZH_NO_ENTRIES);
+            tr.appendChild(td);
+            body.appendChild(tr);
+            return tr;
+        }
+
         var rowSeq = 0;
 
         // 這三顆 key **只**出現在 js 產生的 markup 上，所以 lang-toggle 的 collectDefaults()
@@ -124,9 +149,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
         parse.addEventListener("click", function () {
             var lines = input.value.split("\n");
-            // 空狀態那一列（{% else %} 的 colspan 無資料列）要先讓位，否則新列會排在它下面
-            var empty = body.querySelector("td[colspan]");
-            if (empty && empty.parentNode) empty.parentNode.remove();
 
             lines.forEach(function (line) {
                 if (!line.trim()) return;                      // 空行略過
@@ -167,17 +189,25 @@ document.addEventListener("DOMContentLoaded", function () {
         // 若會改變被推導的值，改完就要同步）。少了它，使用者貼進 40 列之後看到的還是「已 3 筆」
         // ——而那個數字正是他判斷「還能不能再貼」的依據。
         var countNode = modal.querySelector(".js-alias-entry-count");
+        // 資料列＝不帶 colspan 的那幾列（空狀態列不是資料列）
+        function dataRows() {
+            var rows = body.querySelectorAll("tr"), out = 0;
+            for (var i = 0; i < rows.length; i++) if (!rows[i].querySelector("td[colspan]")) out++;
+            return out;
+        }
         function syncCount() {
-            if (!countNode) return;
-            // 空狀態那一列不是資料列（它是 {% else %} 的 colspan 無資料列）
-            countNode.textContent = String(body.querySelectorAll("tr").length - (body.querySelector("td[colspan]") ? 1 : 0));
+            var count = dataRows();
+            // 零筆時把空狀態列放回表格最後（新增／貼上之後它一定在資料列之前，故要搬到後面）；
+            // 非零時整列移除——留著一列 `.hidden` 的 `<tr>` 會讓「這張表有幾列」在 DOM 上多一個數字。
+            var empty = body.querySelector("td[colspan]");
+            if (count > 0) { if (empty) empty.closest("tr").remove(); }
+            else { body.appendChild(emptyRow()); }
+            if (countNode) countNode.textContent = String(count);
         }
 
         // 增刪列：與 glossary-entries-modal 同型（不送 API，儲存時才整批取代）
         var add = modal.querySelector(".js-add-alias-entry");
         if (add) add.addEventListener("click", function () {
-            var empty = body.querySelector("td[colspan]");
-            if (empty && empty.parentNode) empty.parentNode.remove();
             body.appendChild(makeRow("", "", null));
             syncCount();
         });

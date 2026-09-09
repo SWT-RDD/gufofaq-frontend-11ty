@@ -239,6 +239,8 @@
   "comp.viewSource": "View source",
   "comp.widgetDefaultGreeting": "Hello — you can ask about the content of this site here, and I will answer from the material the site owner has provided.",
   "comp.widgetDefaultTitle": "Help assistant",
+  "dataImport.batchMaxPrefix": "At most ",
+  "dataImport.batchMaxSuffix": "MB per submission; the whole batch is rejected if it goes over.",
   "dataImport.batchSummaryFailMid": ", failed",
   "dataImport.batchSummaryOkMid": "files, succeeded",
   "dataImport.colMessage": "Message",

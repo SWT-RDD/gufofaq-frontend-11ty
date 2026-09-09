@@ -253,8 +253,15 @@ document.addEventListener("DOMContentLoaded", function () {
             });
 
             if (!n) {
+                // 「無符合選項」住在 `role="listbox"` 容器裡，所以**它自己要是一顆合法的 owned element**：
+                // listbox 的 owned element 只能是 option／group，塞一顆裸 `<div>` 進去，那一段字在
+                // 輔具的樹上不屬於任何東西——報讀器不是唸不到、是位置說不出來（§4 的 role 容器約束）。
+                // `aria-disabled` 講明它選不得；鍵盤巡覽不會碰到它（`items()` 找的是 `.<族>-option`,
+                // 而這一顆是 `-option-empty`，class 不相等）。
                 var empty = document.createElement("div");
                 empty.className = "search-select-option-empty";
+                empty.setAttribute("role", "option");
+                empty.setAttribute("aria-disabled", "true");
                 empty.textContent = t("common.noMatchingOptions", "無符合選項");
                 dropdown.appendChild(empty);
             }

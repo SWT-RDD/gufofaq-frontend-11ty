@@ -14,7 +14,10 @@
      **值以字串傳入**（§6：值域含 0——一次比較都還沒跑過的租戶就是 0，而 `0` 在 nunjucks 是 false
        ⇒ 整段靜默消失，JSX 的 `{n && …}` 又會把 `0` 印出來。正典見 components/step-flow 檔頭）。
        `0` 那一態與 qa-record-tabs 的空狀態列（`qa.noRecords`）講的是同一件事，不會互相打架。
-     無其他參數：單測與 AB 測試**兩頁都交付這個側欄**，沒有「整頁把它藏起來」的開關——
+     參數 `sidePanelPerPage`（**設了 `sidePanelTotal` 就必填**）＝那份清單的頁大小；頁碼列要算
+       「總共幾頁」就得知道它。逐頁各自宣告、不給預設值——兩頁的頁大小是兩個獨立的決定，
+       給一顆預設值會讓少 set 的那一頁靜靜地用另一頁的數字算頁數。完整理由見下方頁碼列那一段。
+     **沒有第三顆參數**：單測與 AB 測試**兩頁都交付這個側欄**，沒有「整頁把它藏起來」的開關——
        兩頁都有問答紀錄要翻，給了開關就等於允許其中一頁悄悄少掉這份功能（見兩頁檔頭）。 #}
 <div class="qa-side-panel collapsed">
     {# 初始為 .collapsed，故 aria-expanded=false、標籤是「展開」；狀態與標籤由 qa-side-panel.js 同步 #}
@@ -39,16 +42,18 @@
         {# 總筆數擺在**清單正上方**、靠右——不擺在收合鈕那一列：那顆鈕的標題是
              `writing-mode: vertical-rl` 的直立軌（見 _qa-side-panel.scss），它沒有「右側」可用，
              而且把數字塞進那顆鈕會把它的可及名稱從「問答紀錄」變成「問答紀錄共 128 筆」。
-             這一格描述的是 `components/qa-record-tabs` 那份清單，跟著清單走。 #}
+             這一格描述的是 `components/qa-record-tabs` 那份清單，跟著清單走。
+             **hook 名是 `.js-side-panel-total` 而不是某一頁的名字**：兩頁數的東西不同（比較次數／
+             聊天室數），把其中一頁的語意寫進 class 名，另一頁的接手人就會把它接到錯的那份資料上。 #}
         {% if sidePanelTotal %}
         <div class="flex-row justify-content-end">
-            <span class="text-gray"><span data-i18n="common.total">共</span> <span class="js-ab-history-total">{{ sidePanelTotal }}</span> <span data-i18n="common.recordsUnit">筆</span></span>
+            <span class="text-gray"><span data-i18n="common.total">共</span> <span class="js-side-panel-total">{{ sidePanelTotal }}</span> <span data-i18n="common.recordsUnit">筆</span></span>
         </div>
         {% endif %}
         <div class="tab-wrap qa-side-tab-wrap">
             {% include "components/qa-record-tabs/qa-record-tabs.html" %}
         </div>
-        {# 頁碼列：**只有給得出總數的那一頁才畫**，條件與 `.js-ab-history-total` 那一格相同。
+        {# 頁碼列：**只有給得出總數的那一頁才畫**，條件與 `.js-side-panel-total` 那一格相同。
              為什麼非它不可：AB 比較歷史是**只增不刪**的（沒有任何清理路徑），而上一格只講得出
              「共 128 筆」——**光是說得出清單被切過，並沒有給人翻到第二頁的辦法**，那些更早的
              比較在畫面上仍然到不了。總數是徵狀，頁碼列才是出路，兩格都要有。
@@ -56,17 +61,17 @@
              分頁器要算「總共幾頁」就得知道它。**它與呼叫端向端點要那一頁時送出的 `limit`
              必須是同一顆數字**：兩邊各拿一個值的那天，頁碼從第 2 頁起全部指錯位置，
              而畫面上沒有任何訊號。
-             兩頁的來源不同（都不是抄一份字面）：AB 比較歷史的頁大小是**上游的預設值**
-             （`GET /qatest/limits` 的 `default_ab_history_page`），React 端讀執行期拿到的那一顆；
-             聊天室清單的頁大小由前端自己定，並照著它送 `limit`。切版這一格填的是當前值。
+             兩頁的來源不同（都不是抄一份字面）：AB 比較歷史的頁大小**由執行期讀回來的設定值決定**，
+             前端不自己定；聊天室清單的頁大小由前端自己定，並照著它送請求。兩頁都要把「自己用的那一顆」
+             set 進來，切版這一格填的是當前值。
            ⚠️ **同一組界線的另外兩顆刻意沒有可見落點**，理由查證過（§3-2：空白與「忘了標」
              長得一模一樣，所以寫在這裡）：
                · **頁大小的上界**——這一格沒有「每頁筆數」控制項，頁大小固定
                  吃預設值，UI 產不出域外的值。同 5-6-1 平台時區與 5-6-3 授權範圍的裁決
                  （值域由控制項自己決定 ⇒ 選不出域外值 ⇒ 那道錯誤不畫）。
-               · **比較批次識別碼的長度上界**——那顆識別碼由前端 `crypto.randomUUID()`
-                 產生（36 字），使用者碰不到它，畫成可見文字沒有任何人做得了決定。
-             兩顆的意義在**執行期**：React 端拿它們替退路那一支識別碼（`r-<毫秒>-<亂數>`）做自我檢查。
+               · **比較批次識別碼的長度上界**——那顆識別碼是前端產生的，使用者碰不到它，
+                 畫成可見文字沒有任何人做得了決定。
+             兩顆的意義在**執行期**：自己產生識別碼的那一端拿它們做自我檢查，確認產出的字串進得了那一格。
            `.pagination` 自帶 `flex-wrap: wrap`（見 ui/pagination 的 scss），在 269px 的面板裡
              會自己折行，故不需要 parent slot class 覆寫（§4：不覆寫就不加殼）。 #}
         {% if sidePanelTotal %}
