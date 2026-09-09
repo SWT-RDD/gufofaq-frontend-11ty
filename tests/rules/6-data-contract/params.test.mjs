@@ -503,7 +503,7 @@ test("§6/§8 元件讀得到、卻沒有任何使用頁 set 的參數，都要�
         ["components/untagged-files-modal:untaggedFileRows", "未標註檔案清單，React 依當下量測結果傳；切版走元件內建示範 `untaggedFileRowsDemo`（5-10 與元件庫頁都沒有覆寫）"],
         ["ui/upload-box:uploadHintText", "放置區主提示；**兩個版本的預設不同**（點選版／拖曳版），兩個實例各自要的就是自己那一版的預設，所以沒有人覆寫"],
         ["ui/upload-box:uploadHintKey", "與 uploadHintText 成對的 i18n key：兩個版本（點選／拖曳）各自的預設不同，兩個實例要的就是自己那一版，所以沒有人覆寫"],
-        ["ui/widget-shell:widgetTitle", "面板標題＝**租戶設定值**，React 從設定讀進來傳；切版沒有那個來源，走 `{% else %}` 那一支的示範文字（那一支才是切版畫得出來的態）"],
+        ["ui/widget-shell:widgetTitle", "面板標題＝**租戶設定值**，React 從設定讀進來傳；切版沒有那個來源，走 `{% else %}` 那一支的產品預設標題 `comp.widgetDefaultTitle`（那一支才是切版畫得出來的態，而且它會出貨、也會翻譯）"],
     ]);
     // 「誰供給這個名字」有兩種：使用頁的 `{% set %}`，以及**使用頁的迴圈變數**——
     // `{% for tool in builtinToolCards %}` 裡 include 一顆元件時，`tool` 是那一圈給的，

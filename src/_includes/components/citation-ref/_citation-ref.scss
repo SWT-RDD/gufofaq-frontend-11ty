@@ -19,9 +19,9 @@
 //   實例手寫在這三個檔的示範答案裡：components/chatroom（來源 3、7）、
 //   components/qa-detail-info（來源 3、7）、2-2-3_abTest（A 側 1、4；B 側 2、6——AB 兩側各是一筆
 //   獨立的問答紀錄，序號各自從 1 起算，兩側的 [[1]] 指的不是同一份文件）。
-//   渲染後含 `.citation-ref` 的頁（反向）：2-1_qaRecord 與 2-2-1_singleTest（chatroom）、
-//   4-2_qaHistory_detail（qa-detail-info）、2-2-3_abTest。元件庫頁沒有它——`ui/widget-shell`
-//   的聊天示範只用 ui/chat-message，不帶引用標記。
+//   反向＝`grep -l 'class="citation-ref' dist/*.html`（§1-2：三頁以上不列頁名）。**扇出路徑**：
+//   多數頁面不是自己寫的，是上面那兩支元件帶進去的——那幾頁的原始碼裡搜不到這顆 class。
+//   **元件庫頁沒有它**：`ui/widget-shell` 的聊天示範只用 ui/chat-message，不帶引用標記。
 .citation-ref {
     display: inline-flex;
     align-items: center;

@@ -9,7 +9,8 @@
      才組得出請求（不是一顆零輸入的鈕）。
      §5「hook 名一經訂下就凍結」——它是這個 repo 對外宣告的定位契約，不因命名風格改名；
 
-     每列複製鈕帶 .shareBtn（剪貼簿的**業務掛點**，與 faq-share-modal 的 .share-link-btn.shareBtn 同一族）；
+     每列複製鈕帶 .shareBtn（**切版自有的宣告式掛點**，不是業務掛點——`ui/clipboard` 的委派查得到它，
+     按下去當場把同一列那顆唯讀欄位的值寫進剪貼簿；與 faq-share-modal 的 .share-link-btn.shareBtn 同一族）；
      撤銷鈕每列目標需由業務 js 認列，保留 hook class（.js-revoke-share）。
 
   **有效期與狀態**：
@@ -34,6 +35,10 @@
    token 的長度也是推導值（同 5-8 既有處置）：`shr_` 前綴 ＋ 32 字的亂數 ⇒ 共 36 字元。
      這一欄整串顯示在可複製的
      `<input readonly>` 裡，長度不對，抄去做欄寬與換行測試的人第一眼就被誤導。 #}
+{# **時間錨點**（§6「全站只有一個現在」）：站台的「現在」是 **2026-07-14**，那個值由
+     `components/iso-review-wizard` 名單上「查詢時間 2026-07-14 09:00 UTC」那一格釘死。
+     下面幾條分享連結的到期時間都以它為準，狀態欄才對得起來：到期日在「現在」之後的是生效中、
+     之前的是已過期。錨點沒對上的話，畫面會出現一條標著「已過期」而到期日還在未來的連結。 #}
 {% set shareRows = [
   { id: 401, url: "https://gufofaq.com/shared/shr_aB3xYz9Qle8sample0000shareaaa001", expires: "", state: "active" },
   { id: 402, url: "https://gufofaq.com/shared/shr_kQ7mNp2Wdc4sample0000sharebbb002", expires: "2026/08/26 14:30", state: "active" },

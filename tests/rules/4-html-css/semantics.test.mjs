@@ -20,27 +20,48 @@ test("§4 不得用 div 假扮控制項（要用真 <button>）", () => {
 });
 
 test("§4 每個 <img> 都要有 width 與 height（消除版位跳動）", () => {
+    // 錨點用 (^|\s) 而非 \b：\bwidth= 會被 data-width= 蒙混過去（"-"→"w" 之間就有 word boundary）
+    const rule = (t) => (t.tag === "img"
+        && !(/(?:^|\s)width=/.test(t.attrs) && /(?:^|\s)height=/.test(t.attrs))
+        ? `缺尺寸：${t.raw.slice(0, 80)}` : null);
     const hits = [];
     let imgCount = 0;
-    for (const f of distHtml) for (const t of tagsOf(distDoc(f)))
-        // 錨點用 (^|\s) 而非 \b：\bwidth= 會被 data-width= 蒙混過去（"-"→"w" 之間就有 word boundary）
-        if (t.tag === "img" && ++imgCount && !(/(?:^|\s)width=/.test(t.attrs) && /(?:^|\s)height=/.test(t.attrs)))
-            hits.push(`dist/${f}  ${t.raw.slice(0, 80)}`);
+    for (const f of distHtml) {
+        const doc = distDoc(f);
+        for (const t of tagsOf(doc)) if (t.tag === "img") imgCount++;
+        hits.push(...scanTags(doc, rule, `dist/${f}`));
+    }
     assert.ok(imgCount > 0, "dist 裡一張 <img> 都掃不到 —— 這條測試在空轉");
+    probe("§4 img 尺寸", (s) => scanTags(s, rule),
+        // 缺一邊、兩邊都缺、以及只用 data-* 蒙混（那正是 \b 會放行的那一種）
+        ['<img src="a.png" width="48">', '<img src="a.png">', '<img src="a.png" data-width="48" data-height="48">'],
+        ['<img src="a.png" width="48" height="48">', '<span width="1">x</span>']);
     assert.equal(hits.length, 0, `缺尺寸（CLS）：\n${fail(hits)}`);
 });
 
 test("§4 每個 <img> 都要 decoding=\"async\"，且不得 loading=\"lazy\"", () => {
     // 站上圖多為首屏 icon：lazy 反而讓它們在捲進視窗時才開始下載，閃一下才出現。
+    const rule = (t) => {
+        if (t.tag !== "img") return null;
+        if (!/(?:^|\s)decoding="async"/.test(t.attrs)) return `缺 decoding="async"：${t.raw.slice(0, 70)}`;
+        if (/(?:^|\s)loading="lazy"/.test(t.attrs)) return `不該有 loading="lazy"：${t.raw.slice(0, 70)}`;
+        return null;
+    };
     let imgCount = 0;
     const hits = [];
-    for (const f of distHtml) for (const t of tagsOf(distDoc(f))) {
-        if (t.tag !== "img") continue;
-        imgCount++;
-        if (!/(?:^|\s)decoding="async"/.test(t.attrs)) hits.push(`dist/${f}  缺 decoding="async"：${t.raw.slice(0, 70)}`);
-        if (/(?:^|\s)loading="lazy"/.test(t.attrs)) hits.push(`dist/${f}  不該有 loading="lazy"：${t.raw.slice(0, 70)}`);
+    for (const f of distHtml) {
+        const doc = distDoc(f);
+        for (const t of tagsOf(doc)) if (t.tag === "img") imgCount++;
+        hits.push(...scanTags(doc, rule, `dist/${f}`));
     }
     assert.ok(imgCount > 0, "dist 裡一張 <img> 都掃不到 —— 這條測試在空轉");
+    probe("§4 img decoding／loading", (s) => scanTags(s, rule),
+        ['<img src="a.png" width="1" height="1">',
+            '<img src="a.png" width="1" height="1" decoding="async" loading="lazy">',
+            // `data-decoding="async"` 不算：錨點若寫成 \b 就會被它蒙混過去
+            '<img src="a.png" data-decoding="async">'],
+        ['<img src="a.png" width="1" height="1" decoding="async">',
+            '<img src="a.png" decoding="async" loading="eager">']);
     assert.equal(hits.length, 0, fail(hits));
 });
 

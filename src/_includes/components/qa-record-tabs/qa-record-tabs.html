@@ -1,10 +1,13 @@
 {# 問答紀錄頁籤（`.tab-group` 清單，資料化）。
      外層 .tab-wrap/.tabs-title/.qa-side-panel 等 chrome 由各頁自帶（每頁不同），本元件只負責重複的三顆頁籤本身。
 
-     住在哪一頁（雙向對得上，§1-2）：`2-1_qaRecord.html` 直接 include；`2-2-1_singleTest.html` 與
-     `2-2-3_abTest.html` 經 `components/qa-side-panel` include；`pages/components/component.html`
-     （元件庫頁）以 `qaRecordTabs = []` include ——**那是空狀態唯一被看得到的地方**（另外三個使用頁的
-     示範資料都非空），漏列它就等於這一段 `{% else %}` 沒有人驗收過（§5）。
+     住在哪一頁（雙向，§1-2：三頁以上不列頁名）：正向 `grep -rl 'qa-record-tabs' src --include=*.html`、
+     反向＝`grep -lE 'data-chat-sn|no-records' dist/*.html`（**兩個錨點缺一不可**：有紀錄的頁走
+     `data-chat-sn`，空狀態那一頁只有 `.no-records`）。**扇出路徑要交代**（grep 產不出來的那一半）：
+     有一部分頁面不是自己 include，而是由 `components/qa-side-panel` 帶進去的——那幾頁的原始碼裡
+     搜不到本元件的名字。
+     **元件庫頁以 `qaRecordTabs = []` include，那是空狀態唯一被看得到的地方**（生產使用頁的示範
+     資料都非空）：少了它，這一段 `{% else %}` 沒有任何一頁驗收得到（§5）。
 
      資料 `qaRecordTabs = [{ id, label, active }]` 由頁面提供（§3-2/§6），本元件不自帶：
        `id`（必填）＝**那一筆問答紀錄自己的識別碼**，寫進業務掛點 `data-chat-sn`：側欄那條委派

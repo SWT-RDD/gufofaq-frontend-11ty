@@ -43,7 +43,9 @@
 //   ⓐ **名稱走 `<label for>`、限制走 `aria-describedby`**：把那句提示併進名稱，報讀器唸出來的
 //      欄位名會是一整段說明。
 //   ⓑ **`disabled` 是一種要看得見的狀態，不是不渲染**：這一欄在「全部租戶」開著時沒有值域可言，
-//      照渲染但改不動（§5：狀態要看得見）。本檔對 `disabled` 的原生 select 不做替身。
+//      照渲染但改不動（§5：狀態要看得見）。本檔**照樣替它做替身**，只是把替身也畫成停用——
+//      wrapper 掛 `.disabled`（樣式在本元件 scss）、搜尋框跟著 `disabled`、展開一律擋掉。
+//      不做替身的話，同一列會出現一顆長得完全不一樣的原生 select，而那看起來像壞掉。
 //   ⓒ **`<option>` 的字是資料還是 chrome 要分清楚**：「全部」是 chrome（掛 `data-i18n`），
 //      底下的信箱是業務資料（不掛）。`data-placeholder`／`data-placeholder-key` 成對，理由同
 //      `ui/multi-select` 檔頭 ⓑ。

@@ -39,17 +39,27 @@ test("§4-1 每個 <N>vh 都要緊接一行同值 <N>dvh fallback（不只 100vh
     // 「同一行任何位置出現 dvh」（另一個屬性的、值不同的、甚至註解裡的）就讓該行所有 vh 免驗——
     // `max-height: 55vh; max-height: 88dvh;` 寫在同一行照樣全綠。故逐個 vh 值檢查
     // 「同一行或下一行」有沒有同值的 dvh，不再整行跳過。
-    let seen = 0;
-    const hits = scanLines(srcScss, (line, f, i, lines) => {
+    const rule = (line, f, i, lines) => {
         if (/^\s*\/\//.test(line)) return null;
         const nums = [...line.matchAll(/(\d+(?:\.\d+)?)vh\b/g)].map((m) => m[1]);
         if (!nums.length) return null;
-        seen += nums.length;
         const scope = line + "\n" + (lines[i + 1] || "");
         const missing = nums.filter((n) => !new RegExp(n + "dvh\\b").test(scope));
         return missing.length ? `缺 ${missing.map((n) => n + "dvh").join("、")} fallback` : null;
+    };
+    let seen = 0;
+    const hits = scanLines(srcScss, (line, f, i, lines) => {
+        if (!/^\s*\/\//.test(line)) seen += [...line.matchAll(/(\d+(?:\.\d+)?)vh\b/g)].length;
+        return rule(line, f, i, lines);
     });
     assert.ok(seen >= 11, `只掃到 ${seen} 個 vh 值 —— 這條測試在空轉`);
+    probe("§4-1 vh 的 dvh fallback", (s) => scanText(s, rule),
+        // 三種壞法：完全沒有 fallback／fallback 的值不同／同一行有別的屬性的 dvh（值不同）
+        ["    height: 100vh;", "    height: 100vh;\n    height: 88dvh;",
+            "    max-height: 55vh; min-height: 88dvh;"],
+        // 好樣本含兩顆被排除的：註解行、以及 fallback 寫在下一行的正典寫法
+        ["    height: 100vh;\n    height: 100dvh;", "    // height: 100vh 這一行是註解",
+            "    max-height: 88vh; max-height: 88dvh;"]);
     assert.equal(hits.length, 0, `行動瀏覽器網址列會裁掉內容：\n${fail(hits)}`);
 });
 

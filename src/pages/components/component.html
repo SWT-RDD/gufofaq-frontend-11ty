@@ -956,8 +956,8 @@ bodyClass: guideline-page
                 <ul>
                     <li>components/step-flow：後台測試區（單測 2-2-1／AB 2-2-3 <strong>每側各一份</strong>）與問答紀錄詳情（4-2）的詳細執行觀測——把整條正典管線畫成類 mermaid 直式流程圖，每節點可展開看工具/參數/結果/grounding 判定/agent 推理</li>
                     <li>頂端的整體執行摘要<strong>有條件</strong>：五欄全部來自整輪收尾才發的 <code class="inline-code">chat_room</code> 塊、<code class="inline-code">model</code> 更是只有重播那條路拿得到，所以還在串流的那一輪（2-2-1）整列不渲染；給得出摘要的頁＝在演一筆重播的落庫紀錄</li>
-                    <li>狀態點：is-completed（綠）／is-running（深墨，當前高亮）／is-skipped（空心環，未走分支）／is-failed（紅）／pending（灰）。正式環境演到 completed（2-2-3 兩側、4-2、3-4）、running 與 pending（<strong>只有 2-2-1</strong>——它是全站唯一演「這一輪還在跑」的頁，走元件內建示範；2-2-3 兩側與 4-2 演的是跑完並落庫的重播，全 completed）與 failed（3-4 的試跑沙盒）；<strong>只有 is-skipped 沒有任何生產頁演得到</strong>，靠這一節活著（GUIDELINE §5：scss 狀態 class 沒有頁面演得出＝補元件庫靜態示範）</li>
-                    <li>可回答性判定與合規閘三顆鍵（<code class="inline-code">verdict</code>／<code class="inline-code">reason</code>／<code class="inline-code">blocked_rules</code>）的每一個值都靠<strong>示範三</strong>活著：真實一輪只走得到其中一種組合，而 <code class="inline-code">blocked_rules</code> 更是只有軌跡重播那條路拿得到（即時串流上整顆不放行，規則名是租戶自取的字、不得跨匿名邊界）</li>
+                    <li>狀態點：is-completed（綠）／is-running（深墨，當前高亮）／is-skipped（空心環，未走分支）／is-failed（紅）／pending（灰）。正式環境演到 completed（2-2-3 兩側、4-2、3-4）、running 與 pending（<strong>只有 2-2-1</strong>——它是全站唯一演「這一輪還在跑」的頁，走元件內建示範；2-2-3 兩側與 4-2 演的是跑完並落庫的重播，全 completed）與 failed（3-4 的試跑沙盒；2-2-1 走的元件內建示範裡也有一顆）；<strong>只有 is-skipped 沒有任何生產頁演得到</strong>，靠這一節活著（GUIDELINE §5：scss 狀態 class 沒有頁面演得出＝補元件庫靜態示範）</li>
+                    <li>可回答性判定與合規閘三顆鍵（<code class="inline-code">verdict</code>／<code class="inline-code">reason</code>／<code class="inline-code">blockedRules</code>）的每一個值都靠<strong>示範三</strong>活著：真實一輪只走得到其中一種組合，而 <code class="inline-code">blockedRules</code> 更是只有軌跡重播那條路拿得到（即時串流上整顆不放行，規則名是租戶自取的字、不得跨匿名邊界）</li>
                     <li>進度「目前 X / N」與摘要「檢索」筆數全由節點資料推導、不烤字面量；收合復用 ui/accordion，本元件不自帶 js</li>
                 </ul>
             </div>
@@ -1013,7 +1013,7 @@ bodyClass: guideline-page
             {# 本節放三份執行流程（正典管線一份、QA 直答判定目錄一份、可回答性與合規閘目錄一份）
                  ⇒ 各給一句短標題當可及名稱的起頭（§4：instance 只解決 id 相撞，三份的
                  「全部展開」「序號 2 …」逐字同名）。 #}
-            <div class="subtitle" id="stepFlowFullDemoTitle">示範一：正典管線九節點（含巢狀 skill 子樹）</div>
+            <div class="subtitle" id="stepFlowFullDemoTitle">示範一：正典管線的節點與狀態</div>
             {% set stepFlowInstance = "demoFull" %}
             {% set stepFlowOwnerId = "stepFlowFullDemoTitle" %}
             {% include "components/step-flow/step-flow.html" %}
@@ -1100,7 +1100,7 @@ bodyClass: guideline-page
                  那一列寫的是「素材足以回答」——這正是這一列不能只有 verdict 的理由）、
                  `gate_off` ⇒ skipped（而 skipped 根本沒有耗時 ⇒ 時間欄留白）、其餘 ⇒ completed。
                  合規閘被擋那兩筆是 failed（輸入閘與輸出閘各一）。
-                 ⚠️ **`blocked_rules` 的空陣列與鍵不存在是兩件事**：第 6 筆有具名規則、第 7 筆是
+                 ⚠️ **`blockedRules` 的空陣列與鍵不存在是兩件事**：第 6 筆有具名規則、第 7 筆是
                  `[]`（那一輪確實被擋，只是擋它的不是具名規則，例如主題判定），其餘每一筆
                  連這顆鍵都沒有 ⇒ 整列不渲染。收成同一種的話，「被擋了但說不出被什麼擋」
                  與「這一輪根本沒被擋」在畫面上會一樣。
@@ -1124,7 +1124,7 @@ bodyClass: guideline-page
                  根本沒有耗時可算，所以它不進這個和）。取整規則見 step-flow 檔頭
                  （`formatMs`：≥1s 一位小數四捨五入）——`2.6s` 會小於那個和，`2624ms` 則是它
                  產不出來的形狀（≥1s 一律換成秒）。
-                 **給了 `model` ＝在演一筆重播的落庫紀錄**，而這一份非如此不可：`blocked_rules`
+                 **給了 `model` ＝在演一筆重播的落庫紀錄**，而這一份非如此不可：`blockedRules`
                  只有軌跡重播那條路拿得到（即時串流上那一顆整個不放行），所以它與 `model`
                  是同一條可得性判準的兩半，不能一給一不給。 #}
             {% set stepFlowSummary = {
@@ -1137,7 +1137,7 @@ bodyClass: guideline-page
             {% set stepFlowInstance = "demoVerdict" %}
             {% set stepFlowOwnerId = "stepFlowVerdictDemoTitle" %}
             {% include "components/step-flow/step-flow.html" %}
-            <div class="subtitle">描述：三種 <code class="inline-code">verdict</code>（素材足以回答／素材不足以回答／被規則擋下）＋五種 <code class="inline-code">reason</code> 各一筆，＋<code class="inline-code">blocked_rules</code> 的兩種有值形狀（具名規則清單／空陣列「無具名規則」；第三態是鍵不存在，其餘六筆就是它）。第 4 筆是這一節的重點：判定器故障走 fail-open ⇒ 「判定」那一列寫著「素材足以回答」，而那一輪的閘門根本沒有生效——只有「判定成因」那一列說得出來，那一站也因此是紅色的 failed。第 5 筆的閘關著 ⇒ 略過、時間留白（上游不送耗時）。最後一筆兩顆值都刻意給目錄裡沒有的字面，演那條 else：這一欄的值域日後多一顆值時，畫面要看得到那個生字，不能因為查表查不到就靜靜消失</div>
+            <div class="subtitle">描述：三種 <code class="inline-code">verdict</code>（素材足以回答／素材不足以回答／被規則擋下）＋五種 <code class="inline-code">reason</code> 各一筆，＋<code class="inline-code">blockedRules</code> 的兩種有值形狀（具名規則清單／空陣列「無具名規則」；第三態是鍵不存在，其餘六筆就是它）。第 4 筆是這一節的重點：判定器故障走 fail-open ⇒ 「判定」那一列寫著「素材足以回答」，而那一輪的閘門根本沒有生效——只有「判定成因」那一列說得出來，那一站也因此是紅色的 failed。第 5 筆的閘關著 ⇒ 略過、時間留白（上游不送耗時）。最後一筆兩顆值都刻意給目錄裡沒有的字面，演那條 else：這一欄的值域日後多一顆值時，畫面要看得到那個生字，不能因為查表查不到就靜靜消失</div>
         </section>
 
         <section id="conditionalTextSection">

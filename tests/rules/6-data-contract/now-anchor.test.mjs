@@ -24,7 +24,10 @@ const DECL = /現在」?\s*(?:是|＝|=)?\s*\*{0,2}`?(20\d\d[-/]\d{1,2}[-/]\d{1,
 const NJK_COMMENT = /\{#[\s\S]*?#\}/g;
 const norm = (d) => d.replace(/\//g, "-").replace(/-(\d)\b/g, "-0$1");
 
-const pageFiles = () => srcHtml.filter((f) => !f.startsWith("src/_includes/"));
+// 母體是**每一支畫得出時間的 src html**，元件也算。
+// 只收頁面的話，元件那一半整批在網外——而「同一個站台的現在」正是靠元件跨頁共用才容易分岔：
+// 一支元件被四頁 include，它的示範日期漂掉是四頁一起漂，卻沒有任何一頁的檔頭在對它。
+const pageFiles = () => srcHtml;
 
 // 一支檔案的錨點狀態：null＝沒問題，字串＝違規理由。
 const anchorIssue = (src) => {

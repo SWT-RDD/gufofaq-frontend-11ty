@@ -95,8 +95,6 @@ test("[meta] 每條測試都住在它章號對應的資料夾裡", () => {
 const UNTESTED_SECTIONS = new Map([
     ["3-3", "「什麼該切成元件」的判準是重複次數與有無獨立行為，那是人的判斷，沒有可機器化的界線。"
         + "切錯的後果由 §1-1 桶歸屬與 §8 零死碼兩條間接接住。"],
-    ["8-1", "它規範的是「規則怎麼寫成測試」，不是切版產物本身。那幾道防護以「每條規則各自附負控與空轉守門」"
-        + "的形式散在每一支測試檔裡，沒有單一條測試對得上它。"],
 ]);
 
 test("[meta] GUIDELINE 每一章都有測試，沒有的要在豁免表裡寫得出理由", () => {
@@ -167,4 +165,48 @@ test("[meta] 上面那幾條的負控：壞掉的章號、住錯的資料夾、�
     // ③ 標題抽取要真的抽得到（抽不到的話上面每一條都在空轉）
     const anyFile = testFiles()[0];
     assert.ok(titlesOf(anyFile).length > 0, `${anyFile} 抽不出任何標題 —— 抽取器壞了`);
+});
+
+test("[meta] §8-1 第 7 條：零命中型規則要有負控——沒有負控的條數只准往下走", () => {
+    // §8-1 第 7 條自己說得很清楚：`probe()` 的兩道必填守門**只在有人呼叫它時才生效**，
+    // 而呼叫點可以整個不存在——那一層原本沒有任何東西在看，「有沒有負控」只能靠每次有人
+    // 重新數一遍。這一條就是那個「數一遍」，每一次跑都數。
+    //
+    // **判準是「零命中型」**：斷言長成 `assert.equal(<某某>.length, 0, …)`／`deepEqual(…, [])`
+    // 的那一族——它們的失敗模式是「規則自己認不出違規」，而那時 hits 一樣是空陣列、測試一樣
+    // 全綠。清單型（兩份集合逐一相同）不在此列：那一種寫窄了會兩邊對不上而變紅。
+    //
+    // **為什麼是棘輪而不是逐條豁免表**：缺負控的條數是三位數，而「還沒補」不是理由——
+    // 一張三位數的「還沒補」清單是待辦事項不是豁免（§3-2：產出物不記別人佇列裡的狀態）。
+    // 棘輪擋的是這條規則真正會失控的方向：**新寫一條零命中型規則卻不附負控**。要讓數字
+    // 往下走，就替其中一條補上 `probe()`（或等效的合成樣本斷言）再把它調下來。
+    const ZERO_HIT = /assert\.(?:equal|deepEqual|strictEqual)\(\s*[\w.[\]]+(?:\.length)?\s*,\s*(?:0|\[\])\s*,/;
+    // 等效的合成樣本：`probe(` 是正典，另外收「同一個 scan 直接餵合成字串再斷言」那一種。
+    const HAS_CONTROL = /\bprobe\(|\bscanText\(\s*[`"']/;
+    const blocks = [];
+    for (const f of testFiles()) {
+        // 以 `\ntest(` 切區塊：同一支檔案裡的每一條測試各自算。
+        const parts = read(f).split(/\ntest\(/);
+        for (let i = 1; i < parts.length; i++) {
+            const body = parts[i];
+            if (!ZERO_HIT.test(body)) continue;
+            blocks.push({ f, title: (body.match(/^"([^"]*)"/) || [, "(無標題)"])[1], ok: HAS_CONTROL.test(body) });
+        }
+    }
+    // 空轉守門：切塊或判準壞掉時，下面那個棘輪會靜靜地變成「0 ≤ N」而永遠成立。
+    assert.ok(blocks.length >= 190, `只切出 ${blocks.length} 條零命中型測試 —— 切塊或判準壞了，這條在空轉`);
+    const withControl = blocks.filter((b) => b.ok).length;
+    assert.ok(withControl >= 65, `只認出 ${withControl} 條帶負控的 —— 負控的偵測式壞了`);
+    // 負控：判準要真的分得出兩種寫法（寫窄了就整條退化成「永遠 0 ≤ N」）。
+    const SAMPLE_BAD = `assert.equal(hits.length, 0, "壞了");`;
+    const SAMPLE_OK = SAMPLE_BAD + ` probe("x", scan, ["bad"], ["good"]);`;
+    assert.ok(ZERO_HIT.test(SAMPLE_BAD) && !HAS_CONTROL.test(SAMPLE_BAD), "零命中型／負控的判準認不出「缺負控」的樣子");
+    assert.ok(ZERO_HIT.test(SAMPLE_OK) && HAS_CONTROL.test(SAMPLE_OK), "負控的判準認不出 probe()");
+
+    const missing = blocks.length - withControl;
+    // 棘輪＝這次實際量出來的條數。**只准往下**：補了負控就把它調下來（那是一次有意識的決定），
+    // 調上去等於把「新寫的規則不必附負控」寫進規則裡。
+    const MISSING_CEILING = 124;
+    assert.ok(missing <= MISSING_CEILING,
+        `缺負控的零命中型測試從 ${MISSING_CEILING} 條增加到 ${missing} 條——新寫的零命中型規則要附 probe()：\n${blocks.filter((b) => !b.ok).map((b) => ` ${b.f}  ${b.title}`).join("\n")}`);
 });

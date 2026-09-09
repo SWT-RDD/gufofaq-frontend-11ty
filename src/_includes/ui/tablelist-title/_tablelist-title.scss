@@ -28,7 +28,8 @@
 //     這顆只是區段小標的視覺（`--brand-text` 字色 + 上下 padding），沒有 heading 語意
 //   · 它住在表格**外面**（`.table-container`／`<table>` 之前），不要塞進 `<caption>` 或 `<thead>`
 //
-// 住在哪一頁（雙向；判準＝`grep -rn 'class="tablelist-title' src`）——
+// 住在哪一頁（雙向；判準＝`grep -rln 'class="tablelist-title' src --include=*.html`——**要限 `*.html`**，
+//   否則會多出本檔自己那幾行契約，而那幾行不是實例）——
 //   實例寫在這些檔：5-2_conversationSettings（分層檢索兩種模式的標題、未使用／使用中、欄位命名、
 //     產品內部欄位；型② 的 `intentLevelTitle-` 也在這裡）、components/file-edit-modal、
 //     components/knowledge-retrieval-modal（型②）、components/multi-select-box（兩處）。

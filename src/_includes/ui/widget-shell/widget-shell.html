@@ -36,7 +36,9 @@
     （站內同源，沒有那個問題），兩邊的差異僅此一處。
 
   參數（使用頁在 include 前 set）：
-    widgetTitle    —— 面板標題（租戶設定值；不給＝示範文字）
+    widgetTitle    —— 面板標題（租戶設定值）。**不給＝走 `comp.widgetDefaultTitle` 的產品預設標題**，
+                      那是會出貨、也會翻譯的一句 chrome，不是示範文字——當成示範文字看待的話，
+                      「沒設定過的租戶看到什麼」就沒有人在維護了。
     widgetDemoStatic —— true 時加 `.demo-static`（元件庫頁用：把 fixed 浮層退回文流內）
 
   **展示態要自洽（§6）**：`.demo-static` 把面板顯示出來，那就是「面板開著」那一態——所以同一份
