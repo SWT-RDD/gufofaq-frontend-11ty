@@ -103,6 +103,7 @@ tests/                      GUIDELINE 規則的可執行版本（npm test）
 ├── docs/                   README／md 之間的一致性（不對應 GUIDELINE 任何一章）
 └── meta/                   規則↔測試的對應關係，以及驗收工具自己
 scripts/                    build 前後處理：clean-dist、hash-assets
+.claude/skills/             agent 技能：一顆一個主題，寫這個 repo 怎麼工作（誰說了算、架構判準、地毯式審查、驗證、規範與交辦單的寫法、工具鏈的坑、完成的定義）
 dist/                       build 輸出（勿手改）
 ```
 

@@ -39,8 +39,8 @@
 #
 # ## 檔案衛生那六顆的射程
 #
-# 六顆共用同一條範圍：**版控內每一支手寫檔**——四個目錄（`src/`、`tests/`、`scripts/`、
-# `e2e/`、`.github/`）、根層的 dotfile，加上根層的 md/yml/yaml/json/js/mjs。
+# 六顆共用同一條範圍：**版控內每一支手寫檔**——六個目錄（`src/`、`tests/`、`scripts/`、
+# `e2e/`、`.github/`、`.claude/`）、根層的 dotfile，加上根層的 md/yml/yaml/json/js/mjs。
 # 唯一被排除的是產生出來的 `package-lock.json`（見上）。
 # 少一塊的樣子看不出來：`e2e/` 與根層那三支設定檔（`eleventy.config.js`、
 # `playwright.config.mjs`、`vitest.config.mjs`）同樣是手寫、同樣會被腳本改到，
@@ -68,12 +68,12 @@ repos:
         # 一邊每次都被改動：`.gitattributes` 讓 repo 一律存 LF，但簽出來的形狀按平台
         # 而定（Windows 是 CRLF）。`auto` 對兩邊都成立。
         args: [--fix=auto]
-        files: ^(src/|tests/|scripts/|e2e/|\.github/|\.[^/]+$|[^/]+\.(md|yml|yaml|json|js|mjs)$)
+        files: ^(src/|tests/|scripts/|e2e/|\.github/|\.claude/|\.[^/]+$|[^/]+\.(md|yml|yaml|json|js|mjs)$)
         exclude: ^package-lock\.json$
 
       # 把 `<<<<<<< HEAD` 那幾行 commit 進去。
       - id: check-merge-conflict
-        files: ^(src/|tests/|scripts/|e2e/|\.github/|\.[^/]+$|[^/]+\.(md|yml|yaml|json|js|mjs)$)
+        files: ^(src/|tests/|scripts/|e2e/|\.github/|\.claude/|\.[^/]+$|[^/]+\.(md|yml|yaml|json|js|mjs)$)
 
       # workflow 的語法。壞掉的 YAML 在 GitHub 上是「workflow 不執行」，
       # 那比紅還難發現——而這個 repo 的 workflow 就是部署本身。
@@ -91,23 +91,23 @@ repos:
       # 這兩顆抓的是**看不見的字元**：註解行尾的空白在等寬字體下與沒有空白逐字相同，
       # 檔尾多一行空白則會讓下一次真正的改動多出一行雜訊 diff。
       - id: end-of-file-fixer
-        files: ^(src/|tests/|scripts/|e2e/|\.github/|\.[^/]+$|[^/]+\.(md|yml|yaml|json|js|mjs)$)
+        files: ^(src/|tests/|scripts/|e2e/|\.github/|\.claude/|\.[^/]+$|[^/]+\.(md|yml|yaml|json|js|mjs)$)
         exclude: ^package-lock\.json$
       - id: trailing-whitespace
         args: [--markdown-linebreak-ext=md]
-        files: ^(src/|tests/|scripts/|e2e/|\.github/|\.[^/]+$|[^/]+\.(md|yml|yaml|json|js|mjs)$)
+        files: ^(src/|tests/|scripts/|e2e/|\.github/|\.claude/|\.[^/]+$|[^/]+\.(md|yml|yaml|json|js|mjs)$)
         exclude: ^package-lock\.json$
 
       # 大檔案誤入。版控內最大的手寫檔是 `src/i18n/en.json`，512 KB 的門檻對它
       # 留了一倍餘裕；真的要放更大的東西是一次有意識的決定。
       - id: check-added-large-files
         args: [--maxkb=512]
-        files: ^(src/|tests/|scripts/|e2e/|\.github/|\.[^/]+$|[^/]+\.(md|yml|yaml|json|js|mjs)$)
+        files: ^(src/|tests/|scripts/|e2e/|\.github/|\.claude/|\.[^/]+$|[^/]+\.(md|yml|yaml|json|js|mjs)$)
 
       # 只差大小寫的兩個檔名。**開發機是 Windows（不分大小寫）、CI 與 Pages 在 Linux
       # （分大小寫）**：在這裡加得進去、在那裡是兩個檔，而症狀是「別人的機器上圖片 404」。
       - id: check-case-conflict
-        files: ^(src/|tests/|scripts/|e2e/|\.github/|\.[^/]+$|[^/]+\.(md|yml|yaml|json|js|mjs)$)
+        files: ^(src/|tests/|scripts/|e2e/|\.github/|\.claude/|\.[^/]+$|[^/]+\.(md|yml|yaml|json|js|mjs)$)
 
   # ── 這個 repo 自己的那幾顆 ───────────────────────────────────────────────────
   #
