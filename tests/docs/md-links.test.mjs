@@ -34,20 +34,39 @@ test("[docs] md 的 §N 引用都指向 GUIDELINE 存在的章節，README 的�
     const sections = new Set(
         [...guideline.matchAll(/^#{2,3} (\d+)(?:-(\d+))?\./gm)].map((m) => (m[2] ? `${m[1]}-${m[2]}` : m[1]))
     );
-    const bad = [];
+    // 兩條子規則各抽成一支（吃「原文 ＋ GUIDELINE 有哪些章節」），負控才餵得進合成原文走同一支。
     // GUIDELINE 內的 §N 一律指自己
-    guideline.split(/\r?\n/).forEach((line, i) => {
-        for (const m of line.matchAll(/§\s?(\d+(?:-\d+)?)/g))
-            if (!sections.has(m[1])) bad.push(`GUIDELINE.md:${i + 1}  §${m[1]} 不存在`);
-    });
+    const scanSelfRef = (text, secs, f = "<probe>") => {
+        const out = [];
+        text.split(/\r?\n/).forEach((line, i) => {
+            for (const m of line.matchAll(/§\s?(\d+(?:-\d+)?)/g))
+                if (!secs.has(m[1])) out.push(`${f}:${i + 1}  §${m[1]} 不存在`);
+        });
+        return out;
+    };
     // README 的 §N 必須寫明是 GUIDELINE 的（README 自己沒有 §N 章節）
-    read("README.md").split(/\r?\n/).forEach((line, i) => {
-        for (const m of line.matchAll(/§\s?(\d+(?:-\d+)?)/g)) {
-            const before = line.slice(Math.max(0, m.index - 30), m.index);
-            if (!/GUIDELINE/.test(before)) bad.push(`README.md:${i + 1}  §${m[1]} 沒標明是 GUIDELINE 的章節`);
-            else if (!sections.has(m[1])) bad.push(`README.md:${i + 1}  GUIDELINE §${m[1]} 不存在`);
-        }
-    });
+    const scanCrossRef = (text, secs, f = "<probe>") => {
+        const out = [];
+        text.split(/\r?\n/).forEach((line, i) => {
+            for (const m of line.matchAll(/§\s?(\d+(?:-\d+)?)/g)) {
+                const before = line.slice(Math.max(0, m.index - 30), m.index);
+                if (!/GUIDELINE/.test(before)) out.push(`${f}:${i + 1}  §${m[1]} 沒標明是 GUIDELINE 的章節`);
+                else if (!secs.has(m[1])) out.push(`${f}:${i + 1}  GUIDELINE §${m[1]} 不存在`);
+            }
+        });
+        return out;
+    };
+    const bad = [
+        ...scanSelfRef(guideline, sections, "GUIDELINE.md"),
+        ...scanCrossRef(read("README.md"), sections, "README.md"),
+    ];
+    // 負控（合成原文 ＋ 合成章節集走同一支）
+    const SEC = new Set(["4-2"]);
+    assert.equal(scanSelfRef("見 §4-2。", SEC).length, 0, "指得到的章節被誤判");
+    assert.equal(scanSelfRef("見 §9-9。", SEC).length, 1, "指向不存在章節的引用抓不到");
+    assert.equal(scanCrossRef("見 GUIDELINE §4-2。", SEC).length, 0, "標明了 GUIDELINE、章節也在的引用被誤判");
+    assert.equal(scanCrossRef("見 §4-2。", SEC).length, 1, "沒標明是 GUIDELINE 的引用抓不到");
+    assert.equal(scanCrossRef("見 GUIDELINE §9-9。", SEC).length, 1, "標明了 GUIDELINE、章節卻不存在，抓不到");
     assert.equal(bad.length, 0, fail(bad));
 });
 
@@ -80,18 +99,32 @@ test("[docs] md 的 §N 引用都指向存在的章節（GUIDELINE 的，或該�
     const secOf = (t) => new Set([...t.matchAll(/^#{2,4} (\d+)(?:-(\d+))?\./gm)].map((m) => (m[2] ? `${m[1]}-${m[2]}` : m[1])));
     const guideline = secOf(read("GUIDELINE.md"));
     assert.ok(guideline.size >= 17, `GUIDELINE 只解析出 ${guideline.size} 個章節 —— 標題正則壞了`);
-    const bad = [];
     let seen = 0;
-    for (const doc of mdDocs.filter((d) => /CONVERSION\.md$/.test(d))) {
-        const text = read(doc);
-        const own = secOf(text);
+    // 判準抽成一支（吃「原文 ＋ GUIDELINE 的章節 ＋ 這份文件自己的小節」），負控才餵得進合成原文。
+    const scanConv = (text, gl, own, f = "<probe>") => {
+        const out = [];
         text.split(/\r?\n/).forEach((line, i) => {
             for (const m of line.matchAll(/§\s?(\d+(?:-\d+)?)/g)) {
                 seen++;
-                if (!guideline.has(m[1]) && !own.has(m[1])) bad.push(`${doc}:${i + 1}  §${m[1]} 不存在`);
+                if (!gl.has(m[1]) && !own.has(m[1])) out.push(`${f}:${i + 1}  §${m[1]} 不存在`);
             }
         });
+        return out;
+    };
+    const bad = [];
+    for (const doc of mdDocs.filter((d) => /CONVERSION\.md$/.test(d))) {
+        const text = read(doc);
+        bad.push(...scanConv(text, guideline, secOf(text), doc));
     }
+    // 下限先結算，之後負控的合成樣本才不會灌進母體計數。
     assert.ok(seen >= 60, `只抓到 ${seen} 個 §N 引用 —— 正則壞了，這條在空轉`);
+    // 負控（合成原文 ＋ 兩份合成章節集走同一支）
+    const GL = new Set(["4"]), OWN = new Set(["5-1"]);
+    assert.equal(scanConv("見 §4。", GL, OWN).length, 0, "指得到 GUIDELINE 章節的被誤判");
+    assert.equal(scanConv("見 §5-1。", GL, OWN).length, 0, "指自己小節的被誤判");
+    assert.equal(scanConv("見 §9-9。", GL, OWN).length, 1, "兩邊都找不到的死引用抓不到");
+    // 順帶釘住 secOf：小節標題解析壞了，「指自己」那一半會整段失效而且看起來一直是綠的
+    assert.ok(secOf("### 5-1. 名字").has("5-1"), "secOf 認不出自己的小節標題");
+    assert.ok(!secOf("### 沒有編號的標題").has("5-1"), "secOf 憑空生出了小節");
     assert.equal(bad.length, 0, fail(bad));
 });

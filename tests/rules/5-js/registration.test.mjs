@@ -33,9 +33,18 @@ test("§5 元件 js 三方對齊：實體檔 ⇄ eleventy passthrough ⇄ base.h
     assert.ok(pass.length >= 37, `eleventy.config.js 只解析到 ${pass.length} 條 passthrough —— 解析壞了，這條在空轉`);
     assert.ok(tags.length >= 37, `base.html 只解析到 ${tags.length} 支 script —— 解析壞了，這條在空轉`);
 
-    const notRegistered = compJs.filter((n) => !pass.includes(n));
-    const notLoaded = pass.filter((n) => !tags.includes(n));
-    const noSource = tags.filter((n) => !pass.includes(n));
+    // 三向差集抽成一支（吃三個名字集合），負控才餵得進合成集合走同一支。
+    const align = (js, passthrough, scripts) => ({
+        notRegistered: js.filter((n) => !passthrough.includes(n)),
+        notLoaded: passthrough.filter((n) => !scripts.includes(n)),
+        noSource: scripts.filter((n) => !passthrough.includes(n)),
+    });
+    const { notRegistered, notLoaded, noSource } = align(compJs, pass, tags);
+    // 負控（合成三個集合走同一支）：三方齊備的放行，三種脫節各要抓得到。
+    assert.deepEqual(align(["a"], ["a"], ["a"]), { notRegistered: [], notLoaded: [], noSource: [] }, "三方齊備的被誤判");
+    assert.deepEqual(align(["a"], [], []).notRegistered, ["a"], "js 存在卻沒登記，抓不到");
+    assert.deepEqual(align([], ["a"], []).notLoaded, ["a"], "登記了卻沒載入，抓不到");
+    assert.deepEqual(align([], [], ["a"]).noSource, ["a"], "載入了不存在的 js，抓不到");
     assert.equal(notRegistered.length, 0, `js 存在但沒在 eleventy.config 登記：${notRegistered}`);
     assert.equal(notLoaded.length, 0, `已 passthrough 但 base.html 沒載入：${notLoaded}`);
     assert.equal(noSource.length, 0, `base.html 載入了不存在的 js：${noSource}`);
@@ -60,7 +69,13 @@ test("§5 會去 DOM 找元素的元件 js 都在 DOMContentLoaded 內綁定", (
     const DOM_QUERY = /document\.(querySelector(All)?|getElementById|getElementsBy\w+)\(/;
     const comp = srcJs.filter((f) => f.startsWith("src/_includes/"));
     assert.ok(comp.length >= 38, "掃不到任何元件 js —— 這條測試在空轉");
-    const bad = comp.filter((f) => DOM_QUERY.test(read(f)) && !read(f).includes("DOMContentLoaded"));
+    const bindsTooEarly = (src) => DOM_QUERY.test(src) && !src.includes("DOMContentLoaded");
+    const bad = comp.filter((f) => bindsTooEarly(read(f)));
+    // 負控（合成原始碼走同一支）
+    assert.ok(bindsTooEarly(`document.querySelector(".tab");`), "載入時就撈 DOM、又沒等 DOMContentLoaded，抓不到");
+    assert.ok(bindsTooEarly(`document.getElementById("x");`), "getElementById 那一族抓不到");
+    assert.ok(!bindsTooEarly(`document.addEventListener("DOMContentLoaded", () => document.querySelector(".tab"));`), "包在 DOMContentLoaded 裡的被誤判");
+    assert.ok(!bindsTooEarly(`window.GufoClamp = (n) => Math.max(0, n);`), "不碰 DOM 的純函式工具被誤判");
     assert.equal(bad.length, 0, fail(bad));
 });
 
@@ -77,15 +92,28 @@ test("§5 body 捲動鎖是純 CSS，js 不得自己鎖", () => {
     const lockers = distHtml.filter((f) => /data-scroll-lock/.test(distDoc(f)));
     assert.ok(lockers.length >= 41, `只掃到 ${lockers.length}（門檻 41，＝這次實際量出來的）—— 沒有任何 markup 掛 data-scroll-lock —— 手機選單開著時不會鎖捲動`);
 
-    const hits = [];
-    for (const f of srcJs)
-        read(f).split(/\r?\n/).forEach((raw, i) => {
+    const scanLock = (src, f = "<probe>") => {
+        const out = [];
+        src.split(/\r?\n/).forEach((raw, i) => {
             const line = raw.split("//")[0];
             if (/(document\.body|document\.documentElement)\.style\.(overflow|paddingRight)\s*=/.test(line))
-                hits.push(`${f}:${i + 1}  ${line.trim()}`);
+                out.push(`${f}:${i + 1}  ${line.trim()}`);
             if (/\.style\.setProperty\(\s*["']overflow/.test(line))
-                hits.push(`${f}:${i + 1}  用 setProperty 繞過：${line.trim()}`);
+                out.push(`${f}:${i + 1}  用 setProperty 繞過：${line.trim()}`);
         });
+        return out;
+    };
+    const hits = [];
+    for (const f of srcJs) hits.push(...scanLock(read(f), f));
+    probe("§5 js 自己鎖捲動", scanLock,
+        // 三種壞法：直接改 body 的 overflow／改 documentElement 的補償 padding／用 setProperty 繞過
+        [`document.body.style.overflow = "hidden";`,
+            `document.documentElement.style.paddingRight = "15px";`,
+            `document.body.style.setProperty("overflow", "hidden");`],
+        // 三種被排除的：改的不是 overflow／註解掉的那一行／量捲軸寬度那件 CSS 做不到的事
+        [`document.body.style.width = "100%";`,
+            `// document.body.style.overflow = "hidden";`,
+            `const w = window.innerWidth - document.documentElement.clientWidth;`]);
     assert.equal(hits.length, 0, `捲動鎖交給 _base.scss 的 :has() 規則：\n${fail(hits)}`);
 });
 
@@ -120,17 +148,28 @@ test("§5 JS 發起的平滑捲動一律要有 prefers-reduced-motion 守衛（_
     // 所以 _base 的 @media (prefers-reduced-motion) 對它完全無效——必須在 js 自己讀。
     // 白名單制：不帶 behavior 的 scrollIntoView（multi-select 的 block:"nearest"）預設就是 auto，不入列。
     const strip = (t) => t.split(/\r?\n/).map((l) => l.replace(/\/\/.*$/, "")).join("\n");
-    const hits = [];
     let sites = 0;
-    for (const f of [...srcJs, ...srcHtml]) {
-        const code = strip(read(f));
-        if (!/behavior\s*:/.test(code)) continue;
+    const scanScroll = (raw, f = "<probe>") => {
+        const code = strip(raw);
+        if (!/behavior\s*:/.test(code)) return [];
         sites++;
         // 字面 "smooth" ＝沒有分支，一定違規；動態值則要求同檔有 matchMedia 守衛
-        if (/behavior\s*:\s*["']smooth["']/.test(code)) hits.push(`${f}  ← behavior: "smooth" 寫死，沒有 reduced-motion 分支`);
-        else if (!/matchMedia\s*\(\s*["']\(prefers-reduced-motion/.test(code)) hits.push(`${f}  ← 有動態 behavior 但整檔沒有 prefers-reduced-motion 查詢`);
-    }
+        if (/behavior\s*:\s*["']smooth["']/.test(code)) return [`${f}  ← behavior: "smooth" 寫死，沒有 reduced-motion 分支`];
+        if (!/matchMedia\s*\(\s*["']\(prefers-reduced-motion/.test(code)) return [`${f}  ← 有動態 behavior 但整檔沒有 prefers-reduced-motion 查詢`];
+        return [];
+    };
+    const hits = [];
+    for (const f of [...srcJs, ...srcHtml]) hits.push(...scanScroll(read(f), f));
+    // 下限先結算，之後負控的合成樣本才不會灌進母體計數。
     assert.ok(sites >= 4, `只掃到 ${sites} 處 JS 捲動 —— 這條測試在空轉`);
+    probe("§5 平滑捲動的 reduced-motion 守衛", scanScroll,
+        // 兩種壞法：寫死 smooth／有分支但整檔沒有 matchMedia 查詢
+        [`el.scrollIntoView({ behavior: "smooth" });`,
+            `el.scrollIntoView({ behavior: reduced ? "auto" : "smooth" });`],
+        // 三種被排除的：查過 matchMedia 才決定／根本不帶 behavior／整行是註解
+        [`const m = matchMedia("(prefers-reduced-motion: reduce)");\nel.scrollIntoView({ behavior: m.matches ? "auto" : "smooth" });`,
+            `el.scrollIntoView({ block: "nearest" });`,
+            `// el.scrollIntoView({ behavior: "smooth" });`]);
     assert.equal(hits.length, 0, `§5：JS 平滑捲動要自行退 auto（正典見 faq-chatroom.js／sources-block.js）：\n${fail(hits)}`);
 });
 

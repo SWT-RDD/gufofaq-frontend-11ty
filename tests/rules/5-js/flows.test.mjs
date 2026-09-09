@@ -307,10 +307,11 @@ test("§5/§6 5-2 的數值旋鈕必須是 type=number 並帶這一欄的合法�
     ];
     const html = distDoc("5-2_conversationSettings.html");
     const ids = new Set([...html.matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]));
-    const hits = [];
-    for (const { hook, min, max, step } of SPEC) {
-        const tag = html.match(new RegExp(`<input[^>]*\\b${hook}\\b[^>]*>`));
-        if (!tag) { hits.push(`${hook}：5-2 找不到這個欄位`); continue; }
+    // 一欄的判準抽成一支（吃「markup ＋ 同頁 id 集合 ＋ 這一欄的規格」），負控才餵得進合成 markup。
+    const checkKnob = (markup, pageIds, { hook, min, max, step }) => {
+        const hits = [];
+        const tag = markup.match(new RegExp(`<input[^>]*\\b${hook}\\b[^>]*>`));
+        if (!tag) return [`${hook}：5-2 找不到這個欄位`];
         const attr = (name) => (tag[0].match(new RegExp(`\\b${name}="([^"]*)"`)) || [])[1] ?? null;
         if (attr("type") !== "number") hits.push(`${hook}：type 是 ${attr("type")}，不是 number`);
         if (attr("min") !== min) hits.push(`${hook}：min 是 ${attr("min")}，應為 ${min}`);
@@ -319,8 +320,23 @@ test("§5/§6 5-2 的數值旋鈕必須是 type=number 並帶這一欄的合法�
         // 區間要看得到，且用 aria-describedby 接起來（§4：帶約束條件的輔助文字）
         const describedby = attr("aria-describedby");
         if (!describedby) hits.push(`${hook}：沒有 aria-describedby 指向可見的範圍提示`);
-        else if (!describedby.split(/\s+/).every((id) => ids.has(id))) hits.push(`${hook}：aria-describedby 指向不存在的 id`);
-    }
+        else if (!describedby.split(/\s+/).every((id) => pageIds.has(id))) hits.push(`${hook}：aria-describedby 指向不存在的 id`);
+        return hits;
+    };
+    const hits = SPEC.flatMap((s) => checkKnob(html, ids, s));
+    // 負控（合成 markup 走同一支）：湊齊的零命中，七種缺件各要抓得到，而「刻意無上界」要放行。
+    const PS = { hook: "js-probe-knob", min: "1", max: "100", step: "1" };
+    const PIDS = new Set(["probeHint"]);
+    const ok = `<input class="js-probe-knob" type="number" min="1" max="100" step="1" aria-describedby="probeHint">`;
+    assert.equal(checkKnob(ok, PIDS, PS).length, 0, "湊齊的數值欄被誤判");
+    assert.equal(checkKnob("", PIDS, PS).length, 1, "整欄不見了抓不到");
+    assert.equal(checkKnob(ok.replace(`type="number"`, `type="text"`), PIDS, PS).length, 1, "type=text 抓不到");
+    assert.equal(checkKnob(ok.replace(`min="1"`, `min="0"`), PIDS, PS).length, 1, "min 對不上抓不到");
+    assert.equal(checkKnob(ok.replace(` max="100"`, ""), PIDS, PS).length, 1, "缺 max 抓不到");
+    assert.equal(checkKnob(ok.replace(`step="1"`, `step="any"`), PIDS, PS).length, 1, "step 對不上抓不到");
+    assert.equal(checkKnob(ok.replace(` aria-describedby="probeHint"`, ""), PIDS, PS).length, 1, "沒有可見區間提示抓不到");
+    assert.equal(checkKnob(ok.replace(`probeHint`, `ghostHint`), PIDS, PS).length, 1, "aria-describedby 指到不存在的 id 抓不到");
+    assert.equal(checkKnob(ok.replace(` max="100"`, ""), PIDS, { ...PS, max: null }).length, 0, "刻意無上界的那一欄被誤判");
     assert.equal(hits.length, 0, `§5 數值欄的區間契約：\n${fail(hits)}`);
 });
 
@@ -339,10 +355,11 @@ test("§5/§6 5-5-1 每位成員都要看得到啟用狀態、切得動，且停
     assert.ok(rows.length >= 3, `只掃到 ${rows.length} 列成員 —— 這條測試在空轉`);
 
     let inactive = 0;
-    const hits = [];
-    for (const [, attrs, body] of rows) {
+    // 一列的判準抽成一支，負控才餵得進合成列走同一支。
+    const checkRow = (attrs, body) => {
+        const hits = [];
         const sw = body.match(/<input[^>]*\bjs-member-active\b[^>]*>/);
-        if (!sw) { hits.push("有一列沒有啟用/停用切換（.js-member-active）"); continue; }
+        if (!sw) return ["有一列沒有啟用/停用切換（.js-member-active）"];
         if (!/role="switch"/.test(sw[0])) hits.push("啟用切換缺 role=switch");
         const checked = /\bchecked\b/.test(sw[0]);
         const showsEnabled = body.includes('data-i18n="settings.enabled"');
@@ -353,8 +370,19 @@ test("§5/§6 5-5-1 每位成員都要看得到啟用狀態、切得動，且停
         const rowInactive = /\bis-inactive\b/.test(attrs);
         if (rowInactive === checked) hits.push(`列的 .is-inactive(${rowInactive}) 與開關狀態(${checked}) 對不起來`);
         if (rowInactive) inactive++;
-    }
+        return hits;
+    };
+    const hits = rows.flatMap(([, attrs, body]) => checkRow(attrs, body));
     assert.ok(inactive >= 1, "示範資料裡沒有任何一列是已停用 —— 那個狀態沒有頁面演得出來（§5）");
+    // 負控（合成列走同一支）：兩種自洽的列零命中，四種不自洽各要抓得到。
+    const SW = (on) => `<input type="checkbox" class="js-member-active" role="switch"${on ? " checked" : ""}>`;
+    const TXT = (on) => `<span data-i18n="settings.${on ? "enabled" : "disabled"}">${on ? "啟用" : "停用"}</span>`;
+    assert.equal(checkRow("", `<td>${SW(true)}${TXT(true)}</td>`).length, 0, "在職那一列被誤判");
+    assert.equal(checkRow(` class="is-inactive"`, `<td>${SW(false)}${TXT(false)}</td>`).length, 0, "已停用那一列被誤判");
+    assert.equal(checkRow("", "<td>只有名字</td>").length, 1, "整列沒有切換抓不到");
+    assert.equal(checkRow("", `<td>${SW(true).replace(` role="switch"`, "")}${TXT(true)}</td>`).length, 1, "缺 role=switch 抓不到");
+    assert.equal(checkRow("", `<td>${SW(true)}${TXT(false)}</td>`).length, 1, "開關說啟用、文字說停用，抓不到");
+    assert.equal(checkRow(` class="is-inactive"`, `<td>${SW(true)}${TXT(true)}</td>`).length, 1, "列灰掉了、開關卻是啟用，抓不到");
     assert.equal(hits.length, 0, fail(hits));
 });
 

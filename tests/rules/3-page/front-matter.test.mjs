@@ -10,14 +10,23 @@ import { stripNjk } from "../../_lib/text.mjs";
 test("§3-1 走 page-shell 的頁面都要有 titleKey 與 pageHeading", () => {
     const pages = gitFiles('"src/pages/**/*.html"').filter((f) => /^layout: layouts\/page-shell\/page-shell\.html\s*$/m.test(read(f)));
     assert.ok(pages.length >= 40, `只掃到 ${pages.length}（門檻 40，＝這次實際量出來的）—— 找不到任何 page-shell 頁面`);
-    const miss = pages.filter((f) => !/^titleKey:/m.test(read(f)) || !/^pageHeading:/m.test(read(f)));
+    const lacksHeading = (src) => !/^titleKey:/m.test(src) || !/^pageHeading:/m.test(src);
+    const miss = pages.filter((f) => lacksHeading(read(f)));
+    // 負控（合成 front matter 走同一支）
+    assert.ok(!lacksHeading("titleKey: nav.x\npageHeading: 標題\n"), "兩顆都在的被誤判");
+    assert.ok(lacksHeading("pageHeading: 標題\n"), "缺 titleKey 抓不到");
+    assert.ok(lacksHeading("titleKey: nav.x\n"), "缺 pageHeading 抓不到");
     assert.equal(miss.length, 0, `缺 titleKey / pageHeading：\n${miss.join("\n")}`);
 });
 
 test("§3-1 每一頁恰好一個 <h1>", () => {
-    const bad = distHtml
-        .map((f) => [f, (read(`dist/${f}`).match(/<h1[\s>]/g) || []).length])
-        .filter(([, n]) => n !== 1);
+    const h1Count = (html) => (html.match(/<h1[\s>]/g) || []).length;
+    const bad = distHtml.map((f) => [f, h1Count(read(`dist/${f}`))]).filter(([, n]) => n !== 1);
+    // 負控（合成 markup 走同一支）：數得到帶屬性的那顆、不把 h2 算進來、兩顆時要數成兩顆。
+    assert.equal(h1Count("<h1>標題</h1>"), 1, "數不到唯一那一顆 h1");
+    assert.equal(h1Count(`<h1 class="sr-only">標題</h1>`), 1, "帶屬性的 h1 數不到");
+    assert.equal(h1Count("<h2>小標</h2>"), 0, "h2 被算成 h1");
+    assert.equal(h1Count("<h1>甲</h1><h1>乙</h1>"), 2, "兩顆 h1 只數到一顆");
     assert.equal(bad.length, 0, `h1 數量不對：\n${bad.map(([f, n]) => `dist/${f}: ${n} 個`).join("\n")}`);
 });
 
@@ -100,19 +109,39 @@ test("§3-1 每個有 permalink 的頁都要有導覽入口（或在檔頭註明
     // **「連過來的那一頁自己也不能是無入口頁」**（§3-1 逐字）：兩頁互相連來連去就能替對方背書
     // ——1-1-3 有一顆「回上一步」指著 1-1-2，而 1-1-2 的入口只有 1-1-3，兩頁於是互相證明對方進得去。
     // 所以從 header 那組 href 出發做**傳遞閉包**：進得去的頁連到的頁才算進得去。
-    const entered = new Set(pages.filter((x) => hrefs.has(x.pl)).map((x) => x.pl));
-    for (let grew = true; grew;) {
-        grew = false;
-        for (const x of pages) {
-            if (entered.has(x.pl)) continue;
-            // **catalog.html 不算**——它是部署首頁的全站連結清單，什麼都連得到；算進來這條測試就恆綠。
-            // **註解不算**（stripNjk）——`{# … #}` 裡的「下一步：X.html」是給讀的人看的指路，不是入口。
-            const by = pages.some((q) => q.pl !== x.pl && !q.f.endsWith("catalog.html") && entered.has(q.pl)
-                && (q.body.includes(x.pl)
-                    || [...componentsReachableFrom(q)].some((c) => incBody.get(c).includes(x.pl))));
-            if (by) { entered.add(x.pl); grew = true; }
+    // 傳遞閉包抽成一支（吃「頁清單 ＋ 導覽列的 href ＋ 一支「這一頁用得到哪些元件原文」的函式」），
+    // 負控才餵得進合成頁圖走同一支。
+    const reachable = (all, navHrefs, compBodiesOf) => {
+        const got = new Set(all.filter((x) => navHrefs.has(x.pl)).map((x) => x.pl));
+        for (let grew = true; grew;) {
+            grew = false;
+            for (const x of all) {
+                if (got.has(x.pl)) continue;
+                // **catalog.html 不算**——它是部署首頁的全站連結清單，什麼都連得到；算進來這條測試就恆綠。
+                // **註解不算**（stripNjk）——`{# … #}` 裡的「下一步：X.html」是給讀的人看的指路，不是入口。
+                const by = all.some((q) => q.pl !== x.pl && !q.f.endsWith("catalog.html") && got.has(q.pl)
+                    && (q.body.includes(x.pl) || compBodiesOf(q).some((b) => b.includes(x.pl))));
+                if (by) { got.add(x.pl); grew = true; }
+            }
         }
-    }
+        return got;
+    };
+    const entered = reachable(pages, hrefs, (q) => [...componentsReachableFrom(q)].map((c) => incBody.get(c)));
+    // 負控（合成頁圖走同一支）：這一支的四個判準各釘一條，沒有它們時每一條都會靜靜失效。
+    const P = (f, pl, body = "") => ({ f, pl, body });
+    const noComp = () => [];
+    const R = (...args) => [...reachable(...args)].sort();
+    assert.deepEqual(R([P("a.html", "a.html"), P("b.html", "b.html")], new Set(["a.html"]), noComp), ["a.html"],
+        "沒有任何進得去的頁連到它，卻算它進得去");
+    assert.deepEqual(R([P("a.html", "a.html", "去 b.html"), P("b.html", "b.html")], new Set(["a.html"]), noComp), ["a.html", "b.html"],
+        "進得去的頁連過去的那一頁沒有被算進來");
+    assert.deepEqual(R([P("x.html", "x.html", "去 y.html"), P("y.html", "y.html", "去 x.html")], new Set(), noComp), [],
+        "兩頁互相連來連去就替對方背了書");
+    assert.deepEqual(R([P("src/catalog.html", "index.html", "去 z.html"), P("z.html", "z.html")], new Set(["index.html"]), noComp), ["index.html"],
+        "頁面目錄替所有頁背了書（它什麼都連得到）");
+    assert.deepEqual(R([P("a.html", "a.html"), P("c.html", "c.html")], new Set(["a.html"]),
+        (q) => (q.pl === "a.html" ? ["去 c.html"] : [])), ["a.html", "c.html"],
+        "元件裡的 href 沒有算成入口");
     for (const x of pages) {
         if (entered.has(x.pl)) continue;
         if (NO_NAV.has(x.pl)) {
@@ -154,13 +183,23 @@ test("§3-1 各有自己網址的頁面，titleKey 要分得出來（同一路�
         if (!byKey.has(key)) byKey.set(key, []);
         byKey.get(key).push(basename(f));
     }
-    const hits = [];
-    for (const [key, files] of byKey) {
-        if (files.length < 2) continue;
-        if (SAME_ROUTE.has(key)) continue;
-        hits.push(`${key}  被 ${files.length} 頁共用：${files.join("、")}`
-            + "  ← 各有自己的網址，標題卻逐字相同（頁面目錄已經替每一頁取過名字，那幾顆 key 拿來用即可）");
-    }
+    // 判準抽成一支（吃「key → 用它的頁」與豁免表），負控才餵得進合成分組走同一支。
+    const sharedKeys = (groups, exempt) => {
+        const out = [];
+        for (const [key, files] of groups) {
+            if (files.length < 2) continue;
+            if (exempt.has(key)) continue;
+            out.push(`${key}  被 ${files.length} 頁共用：${files.join("、")}`
+                + "  ← 各有自己的網址，標題卻逐字相同（頁面目錄已經替每一頁取過名字，那幾顆 key 拿來用即可）");
+        }
+        return out;
+    };
+    const hits = sharedKeys(byKey, SAME_ROUTE);
+    // 負控（合成分組走同一支）
+    const two = new Map([["nav.x", ["a.html", "b.html"]]]);
+    assert.equal(sharedKeys(two, new Map()).length, 1, "兩頁共用同一顆 titleKey，抓不到");
+    assert.equal(sharedKeys(new Map([["nav.x", ["a.html"]]]), new Map()).length, 0, "只有一頁在用的 key 被誤判");
+    assert.equal(sharedKeys(two, new Map([["nav.x", "同一路由的兩份稿"]])).length, 0, "登記在 SAME_ROUTE 的被誤判");
     // ① 死豁免：那顆 key 已經沒有兩頁以上在用了
     for (const [key, why] of SAME_ROUTE) {
         const n = (byKey.get(key) || []).length;

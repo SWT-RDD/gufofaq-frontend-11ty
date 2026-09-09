@@ -13,13 +13,25 @@ import { NL } from "../_lib/text.mjs";
 
 test("[docs] README.md 有交代每一個 layout", () => {
     const doc = read("README.md");
-    const missing = layoutDirs.filter((d) => !doc.includes(`layouts/${d}/${d}.html`));
+    const unmentioned = (text, dirs) => dirs.filter((d) => !text.includes(`layouts/${d}/${d}.html`));
+    const missing = unmentioned(doc, layoutDirs);
+    // 負控（合成原文走同一支）
+    assert.deepEqual(unmentioned("見 layouts/base/base.html", ["base"]), [], "文件裡提過的 layout 被誤判");
+    assert.deepEqual(unmentioned("", ["base"]), ["base"], "文件裡沒提到的 layout 抓不到");
+    assert.deepEqual(unmentioned("見 layouts/base/base.html", ["page-shell"]), ["page-shell"], "只提到別的 layout 就算數了");
     assert.equal(missing.length, 0, `README 沒提到這些 layout：${missing}`);
 });
 
 test("[docs] GUIDELINE.md 不放會腐化的枚舉（頁數、元件數）", () => {
     const doc = read("GUIDELINE.md");
-    const bad = [/全\s*\d+\s*頁/, /目前有\s*\d+\s*個元件/, /\d+\s*個元件/].filter((re) => re.test(doc));
+    const ROTS = [/全\s*\d+\s*頁/, /目前有\s*\d+\s*個元件/, /\d+\s*個元件/];
+    const rotting = (text) => ROTS.filter((re) => re.test(text));
+    const bad = rotting(doc);
+    // 負控（合成原文走同一支）：三種寫法各要抓得到，不帶數字的說法要放行。
+    assert.equal(rotting("本站全 46 頁。").length, 1, "「全 N 頁」抓不到");
+    assert.equal(rotting("目前有 96 個元件。").length, 2, "「目前有 N 個元件」抓不到（它同時命中寬鬆那一條）");
+    assert.equal(rotting("拆成 96 個元件。").length, 1, "「N 個元件」抓不到");
+    assert.equal(rotting("頁數與元件數寫在 README。").length, 0, "不帶數字的說法被誤判");
     assert.equal(bad.length, 0, `GUIDELINE 出現了會隨專案變動的數字，應移到 README：${bad}`);
 });
 
@@ -28,15 +40,28 @@ test("[docs] README.md 樹狀圖每個 section 的頁數 (N) 與實際檔數一�
     // 沒人盯，新增一頁時最容易靜默過期（就這樣把 settings/(9) 留成過期值）。
     const doc = read("README.md");
     let checked = 0;
-    const bad = [];
-    for (const m of doc.matchAll(/([a-zA-Z][\w-]*)\/\((\d+)\)/g)) {
-        const [, folder, n] = m;
-        if (!existsSync(`src/pages/${folder}`)) continue; // 只認真的 pages section
-        checked++;
-        const actual = readdirSync(`src/pages/${folder}`).filter((x) => x.endsWith(".html")).length;
-        if (actual !== +n) bad.push(`README 樹狀 ${folder}/(${n})，實際 ${actual} 檔`);
-    }
+    // 規則吃「原文 ＋ 一支『這個資料夾實際幾支頁』的函式（不是 pages section 就回 null）」，
+    // 負控才餵得進合成原文走同一支。
+    const compareTree = (text, actualOf) => {
+        const out = [];
+        for (const m of text.matchAll(/([a-zA-Z][\w-]*)\/\((\d+)\)/g)) {
+            const [, folder, n] = m;
+            const actual = actualOf(folder);
+            if (actual === null) continue; // 只認真的 pages section
+            checked++;
+            if (actual !== +n) out.push(`README 樹狀 ${folder}/(${n})，實際 ${actual} 檔`);
+        }
+        return out;
+    };
+    const bad = compareTree(doc, (folder) => (existsSync(`src/pages/${folder}`)
+        ? readdirSync(`src/pages/${folder}`).filter((x) => x.endsWith(".html")).length
+        : null));
+    // 下限先結算，之後負控的合成樣本才不會灌進母體計數。
     assert.ok(checked >= 9, `README 樹狀只解析到 ${checked} 個 section 小計 —— 格式變了？這條測試在空轉`);
+    // 負控（合成原文走同一支）
+    assert.equal(compareTree("dataImport/(7)", () => 7).length, 0, "小計對得上的被誤判");
+    assert.equal(compareTree("dataImport/(7)", () => 8).length, 1, "小計過期抓不到");
+    assert.equal(compareTree("node_modules/(3)", () => null).length, 0, "不是 pages section 的被掃進母體");
     assert.equal(bad.length, 0, `README 樹狀 per-section 頁數過期：\n${bad.join("\n")}`);
 });
 
@@ -53,7 +78,11 @@ test("[docs] README.md 差異表引用的切版頁名都要存在（反向：幽
         .map((f) => basename(f, ".html")));
     const cited = [...new Set([...section.matchAll(/`(\d[\d-]*_[A-Za-z]\w*)`/g)].map((m) => m[1]))];
     assert.ok(cited.length >= 23, `差異表只解析到 ${cited.length} 個頁名 —— 格式變了？這條測試在空轉`);
-    const ghosts = cited.filter((n) => !pageNames.has(n));
+    const ghostsIn = (names, exist) => names.filter((n) => !exist.has(n));
+    const ghosts = ghostsIn(cited, pageNames);
+    // 負控（合成兩份清單走同一支）
+    assert.deepEqual(ghostsIn(["5-4-2_welcomeMessage"], new Set()), ["5-4-2_welcomeMessage"], "表上列了已刪的頁，抓不到");
+    assert.deepEqual(ghostsIn(["3-5_dataHealth"], new Set(["3-5_dataHealth"])), [], "真的存在的頁被判成幽靈列");
     assert.equal(ghosts.length, 0, `README 差異表列了不存在的頁（幽靈列）：\n${ghosts.join("\n")}`);
 });
 
@@ -72,15 +101,29 @@ test("[docs] README 列的「展示片段」名單，與「只被元件總覽頁
     }
     const nameOfFile = new Map();
     for (const { name, path } of componentDirs) nameOfFile.set(`${path}/${name}.html`, name);
-    const showcase = new Set();
-    for (let grew = true; grew;) {
-        grew = false;
-        for (const [name, inc] of includersOf) {
-            if (showcase.has(name) || !inc.length) continue;
-            if (inc.every((x) => x === GALLERY || showcase.has(nameOfFile.get(x)))) { showcase.add(name); grew = true; }
+    // 傳遞閉包抽成一支（吃「誰 include 了誰 ＋ 檔名→元件名 ＋ 元件庫頁的路徑」），
+    // 負控才餵得進合成 include 圖走同一支。
+    const deriveShowcase = (includers, nameOf, gallery) => {
+        const got = new Set();
+        for (let grew = true; grew;) {
+            grew = false;
+            for (const [name, inc] of includers) {
+                if (got.has(name) || !inc.length) continue;
+                if (inc.every((x) => x === gallery || got.has(nameOf.get(x)))) { got.add(name); grew = true; }
+            }
         }
-    }
+        return got;
+    };
+    const showcase = deriveShowcase(includersOf, nameOfFile, GALLERY);
     assert.ok(showcase.size >= 19, `只推導出 ${showcase.size} 支展示片段 —— 推導壞了，這條測試在空轉`);
+    // 負控（合成 include 圖走同一支）：這一支的每個判準各釘一條。
+    const NM = new Map([["p/a.html", "a"], ["p/b.html", "b"]]);
+    const D = (rows) => [...deriveShowcase(new Map(rows), NM, "g.html")].sort();
+    assert.deepEqual(D([["a", ["g.html"]]]), ["a"], "只被元件庫頁 include 的沒有被判成展示片段");
+    assert.deepEqual(D([["a", ["src/pages/x.html"]]]), [], "被生產頁 include 的被判成展示片段");
+    assert.deepEqual(D([["a", ["g.html"]], ["b", ["p/a.html"]]]), ["a", "b"], "只被另一支展示片段 include 的那一層沒有傳遞進來");
+    assert.deepEqual(D([["a", []]]), [], "沒有任何人 include 的孤兒被判成展示片段");
+    assert.deepEqual(D([["a", ["g.html", "src/pages/x.html"]]]), [], "同時被生產頁 include 的還算展示片段");
     const doc = read("README.md");
     const line = doc.split(NL).find((l) => l.includes("只被元件總覽頁") && l.includes("展示片段"));
     assert.ok(line, "README 找不到那一行「展示片段」名單 —— 格式變了，這條測試在空轉");
@@ -94,6 +137,16 @@ test("[docs] README 列的「展示片段」名單，與「只被元件總覽頁
     const allNames = new Set(componentDirs.map((c) => c.name));
     const ghost = [...listed].filter((n) => !showcase.has(n) && allNames.has(n)).sort();
     const dead = [...listed].filter((n) => !allNames.has(n)).sort();
+    // 負控（合成三個集合走同一支）：兩種幽靈要分得開，而名單與推導一致時三邊都要是空的。
+    const diff = (derived, names, all) => ({
+        missing: [...derived].filter((n) => !names.has(n)).sort(),
+        ghost: [...names].filter((n) => !derived.has(n) && all.has(n)).sort(),
+        dead: [...names].filter((n) => !all.has(n)).sort(),
+    });
+    assert.deepEqual(diff(new Set(["a"]), new Set(["a"]), new Set(["a"])), { missing: [], ghost: [], dead: [] }, "名單與推導一致時被誤判");
+    assert.deepEqual(diff(new Set(["a"]), new Set(), new Set(["a"])).missing, ["a"], "名單漏了一支展示片段，抓不到");
+    assert.deepEqual(diff(new Set(), new Set(["a"]), new Set(["a"])).ghost, ["a"], "元件還在但已不是展示片段（幽靈①），抓不到");
+    assert.deepEqual(diff(new Set(), new Set(["a"]), new Set()).dead, ["a"], "元件整支被刪、名字還留著（幽靈②），抓不到");
     assert.deepEqual(missing, [], `README 那一行漏了這幾支展示片段：${missing.join("、")}`);
     assert.deepEqual(ghost, [], `README 那一行列了已經不是展示片段的元件（它已經被生產頁 include）：${ghost.join("、")}`);
     assert.deepEqual(dead, [], `README 那一行列了已經不存在的元件（整支被刪了，名字還留在清單上）：${dead.join("、")}`);

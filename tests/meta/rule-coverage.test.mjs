@@ -215,7 +215,7 @@ test("[meta] §8-1 第 7 條：零命中型規則要有負控——沒有負控�
     const missing = blocks.length - withControl;
     // 棘輪＝這次實際量出來的條數。**只准往下**：補了負控就把它調下來（那是一次有意識的決定），
     // 調上去等於把「新寫的規則不必附負控」寫進規則裡。
-    const MISSING_CEILING = 65;
+    const MISSING_CEILING = 44;
     assert.ok(missing <= MISSING_CEILING,
         `缺負控的零命中型測試從 ${MISSING_CEILING} 條增加到 ${missing} 條——新寫的零命中型規則要附 probe()：\n${blocks.filter((b) => !b.ok).map((b) => ` ${b.f}  ${b.title}`).join("\n")}`);
 });
