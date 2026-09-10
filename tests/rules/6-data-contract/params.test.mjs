@@ -452,9 +452,11 @@ test("§6/§4 內建工具卡：卡頭有中文標題＋英文識別字＋啟用
     assert.equal(hits.length, 0, `內建工具卡卡頭不完整：\n${fail(hits)}`);
 });
 
-test("§6 5-2 的 MCP Server 勾選清單與 5-6-2 註冊表跨頁自洽（三筆都列得出來，停用那筆標示停用中）", () => {
-    // 5-2 只列啟用中的兩筆、停用那筆整個濾掉的話：「先建好設定、之後再啟用」在 UI 上做不到，
+test("§6 MCP Server 的兩顆勾選清單與 5-6-2 註冊表跨頁自洽（每一台都列得出來，停用那台標示停用中）", () => {
+    // 只列啟用中的、停用那台整個濾掉的話：「先建好設定、之後再啟用」在 UI 上做不到，
     // 而且已選取的 server 被平台停用後會從選單消失（多選的值來自 <option>，選單沒有它＝選取狀態不存在）。
+    // **母體是兩顆清單**：5-2 的對話設定與 skill 編輯器窗。只比 5-2 的話，編輯器窗那一份漂掉幾台
+    // 完全沒有訊號——症狀是同一顆多選在一頁選得到、在另一頁選不到，而 skill 的工具集少一個合法值。
     const registry = read("src/pages/settings/5-6-2_platformMcpServers.html");
     const servers = [...registry.matchAll(/\{\s*id:\s*(\d+),\s*name:\s*"([^"]+)",[^}]*active:\s*(true|false)/g)]
         .map(([, id, name, active]) => ({ id, name, active: active === "true" }));
@@ -466,24 +468,39 @@ test("§6 5-2 的 MCP Server 勾選清單與 5-6-2 註冊表跨頁自洽（三�
     assert.equal(options.length, servers.length, `5-2 的選項數（${options.length}）與 5-6-2 的註冊數（${servers.length}）不一致`);
 
     // 比對抽成一支（吃「註冊表 ＋ 選單選項」兩份陣列），負控才餵得進合成資料走同一支。
-    const compare = (regs, opts) => {
+    // `requireSelectedInactive`：「已選取卻被停用」那一態要不要在這一顆清單上演得到。
+    const compare = (regs, opts, { where = "5-2", requireSelectedInactive = true } = {}) => {
         const out = [];
         for (const s of regs) {
             const opt = opts.find((o) => o.text === s.name);
-            if (!opt) { out.push(`5-2 選單缺「${s.name}」（5-6-2 已註冊，濾掉就選不到）`); continue; }
+            if (!opt) { out.push(`${where} 選單缺「${s.name}」（5-6-2 已註冊，濾掉就選不到）`); continue; }
             // option 的 value 就是 5-6-2 的列鍵：兩邊各自寫死一組號碼，改了一邊不會有人發現
             const val = opt.attrs.match(/\svalue="([^"]*)"/);
-            if (!val || val[1] !== s.id) out.push(`「${s.name}」在 5-6-2 的 id 是 ${s.id}，5-2 的 <option value> 卻是 ${val ? val[1] : "（沒有 value）"}`);
+            if (!val || val[1] !== s.id) out.push(`「${s.name}」在 5-6-2 的 id 是 ${s.id}，${where} 的 <option value> 卻是 ${val ? val[1] : "（沒有 value）"}`);
             const marked = /\bdata-suffix-key="settings\.mcpServerInactive"/.test(opt.attrs);
-            if (s.active && marked) out.push(`「${s.name}」在 5-6-2 是啟用中，5-2 卻標了（停用中）`);
-            if (!s.active && !marked) out.push(`「${s.name}」在 5-6-2 是停用中，5-2 卻沒標示——選了會以為立即生效`);
+            if (s.active && marked) out.push(`「${s.name}」在 5-6-2 是啟用中，${where} 卻標了（停用中）`);
+            if (!s.active && !marked) out.push(`「${s.name}」在 5-6-2 是停用中，${where} 卻沒標示——選了會以為立即生效`);
         }
         // 「已選取卻被停用」那一態要有頁面演得到（§5）
-        const selectedInactive = opts.some((o) => /\bselected\b/.test(o.attrs) && /mcpServerInactive/.test(o.attrs));
-        if (!selectedInactive) out.push("沒有任何示範演出「已選取、但已被平台停用」那一態");
+        if (requireSelectedInactive) {
+            const selectedInactive = opts.some((o) => /\bselected\b/.test(o.attrs) && /mcpServerInactive/.test(o.attrs));
+            if (!selectedInactive) out.push(`${where} 沒有任何示範演出「已選取、但已被平台停用」那一態`);
+        }
         return out;
     };
     const hits = compare(servers, options);
+
+    // skill 編輯器窗那一份（`components/skill-editor-modal`，由 3-4 與元件庫各 include 一次）：
+    // 那一頁的示範清單刻意一列都沒有勾，故不要求演「已選取卻被停用」；其餘（缺台／列鍵對不上／
+    // 停用標示）逐條照同一支比。
+    const skill = distDoc("3-4_skillManagement.html").match(/<select[^>]*js-skill-mcp[^>]*>([\s\S]*?)<\/select>/);
+    assert.ok(skill, "3-4 找不到 .js-skill-mcp 多選");
+    const skillOpts = [...skill[1].matchAll(/<option\b([^>]*)>([^<]*)<\/option>/g)].map(([, attrs, text]) => ({ attrs, text }));
+    assert.equal(skillOpts.length, servers.length,
+        `skill 編輯器窗的選項數（${skillOpts.length}）與 5-6-2 的註冊數（${servers.length}）不一致`);
+    assert.ok(!skillOpts.some((o) => /\bselected\b/.test(o.attrs)),
+        "skill 編輯器窗的示範清單不該有任何 selected —— 有的話上面那道旗標就該打開");
+    hits.push(...compare(servers, skillOpts, { where: "skill 編輯器窗", requireSelectedInactive: false }));
     // 負控（合成兩份陣列走同一支）：自洽的零命中，四種不自洽各要抓得到。
     const REG = [{ id: "1", name: "甲", active: true }, { id: "2", name: "乙", active: false }];
     const OPT = [{ attrs: ` value="1"`, text: "甲" },
@@ -495,9 +512,44 @@ test("§6 5-2 的 MCP Server 勾選清單與 5-6-2 註冊表跨頁自洽（三�
         "啟用中卻標了（停用中），抓不到");
     assert.ok(compare(REG, [OPT[0], { attrs: ` value="2" selected`, text: "乙" }]).some((h) => h.includes("卻沒標示")),
         "停用中卻沒標示，抓不到");
-    assert.ok(compare(REG, [OPT[0], { attrs: ` value="2" data-suffix-key="settings.mcpServerInactive"`, text: "乙" }]).some((h) => h.includes("已選取")),
-        "沒有一份示範演出「已選取卻被停用」，抓不到");
+    // 新旗標的兩個方向：預設要抓得到「沒有人演已選取卻被停用」，關掉之後那一條不得再報，
+    // 而其餘每一條照樣要報——關掉旗標若順手把整支放行，編輯器窗那一份就等於沒有在比。
+    const NOSEL = [OPT[0], { attrs: ` value="2" data-suffix-key="settings.mcpServerInactive"`, text: "乙" }];
+    assert.ok(compare(REG, NOSEL).some((h) => h.includes("已選取")), "沒有一份示範演出「已選取卻被停用」，抓不到");
+    assert.equal(compare(REG, NOSEL, { requireSelectedInactive: false }).length, 0, "關掉旗標之後那一條還在報");
+    assert.equal(compare(REG, NOSEL.slice(1), { requireSelectedInactive: false }).length, 1, "關掉旗標之後連「缺一台」也一起放行了");
     assert.equal(hits.length, 0, fail(hits));
+});
+
+test("§6 2-2-4 的 direction_is 槽值域＝5-10 的非日期維度（槽鍵、維度名、列序三者都比）", () => {
+    // 維度名是租戶自己取的資料，正本是 5-10 的 `tagDimensions`；2-2-4 的斷言編輯器只是消費它。
+    // 兩邊各留一份名字時，同一個示範租戶會在一頁看到「業務面向」、在另一頁看到別的名字，
+    // 而畫面上兩邊各自都通順——只有跨頁比對得出來。
+    // 日期維度不在值域裡（日期沒有代碼可言，`direction_is` 比的是受控詞彙的代碼）。
+    // 母體收在 `tagDimensions` 那個陣列**之內**：同檔還有一顆 `vocabDimension`（字典編輯區當下
+    // 選中的那一維），形狀一模一樣——不收窄的話它會被算成第二筆 note4，而症狀是「正本比消費端多一列」。
+    const dimBlock = read("src/pages/settings/5-10_tagDimensions.html")
+        .match(/\{%\s*set\s+tagDimensions\s*=\s*\[([\s\S]*?)\n\]\s*%\}/);
+    assert.ok(dimBlock, "5-10 找不到 tagDimensions 陣列（形狀變了？這條測試會就此空轉）");
+    const dims = [...dimBlock[1]
+        .matchAll(/\{\s*id:\s*\d+,\s*slotKey:\s*"([^"]+)",\s*name:\s*"([^"]+)"[^}]*kind:\s*"([^"]+)"/g)]
+        .filter(([, , , kind]) => kind !== "date")
+        .map(([, slotKey, name]) => ({ value: slotKey, label: name }));
+    assert.ok(dims.length >= 3, `5-10 只解析到 ${dims.length} 個非日期維度 —— 這條測試在空轉`);
+    assert.ok(dims.some(({ value }) => value === "note4") && dims.filter(({ value }) => value === "note4").length === 1,
+        "note4 被解析出兩筆 —— 母體又把 vocabDimension 收進來了");
+    const slots = [...read("src/pages/qaTest/2-2-4_regressionSuites.html")
+        .matchAll(/\{\s*value:\s*"(note\d+)",\s*label:\s*"([^"]+)"\s*\}/g)]
+        .map(([, value, label]) => ({ value, label }));
+    assert.ok(slots.length >= 3, `2-2-4 只解析到 ${slots.length} 個槽 —— 這條測試在空轉`);
+    // 負控（合成兩份陣列走同一支）：改名、少一列、換序，三種都要抓得到。
+    const same = (a, b) => a.length === b.length && a.every((x, i) => x.value === b[i].value && x.label === b[i].label);
+    const A = [{ value: "note3", label: "業務面向" }, { value: "note4", label: "業務方向" }];
+    assert.ok(same(A, [...A]), "兩份一樣的被判成不一致");
+    assert.ok(!same(A, [{ value: "note3", label: "業務範疇" }, A[1]]), "維度名被改掉，抓不到");
+    assert.ok(!same(A, A.slice(1)), "少一列，抓不到");
+    assert.ok(!same(A, [A[1], A[0]]), "列序換了，抓不到");
+    assert.deepEqual(slots, dims, "2-2-4 的槽值域與 5-10 的維度清單對不上（槽鍵／維度名／列序）");
 });
 
 test("§6 delete-modal 參數化後，預設仍是「刪除」（沒傳參數的頁面不能被改到）", () => {

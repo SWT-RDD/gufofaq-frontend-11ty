@@ -409,3 +409,25 @@ test("§4-2 繁中原文相同的 chrome 沿用既有 key、不另立（同文�
     );
     assert.equal(hits.length, 0, `同繁中另立 key（§4-2：沿用既有 key；語意確實不同才進 DELIBERATE 白名單）：\n${fail(hits)}`);
 });
+
+test("§4-2 3-5「沒有評估」的原因值域是閉合的（en.json 的原因 key ⇄ markup 渲染得出來的字面）", () => {
+    // 那一塊的原因走「代碼 ＋ 逐支字面 key」（同 5-10 的 blockedSlots）：投影成模板變數的話，
+    // en.json 對帳時查不到引用處。而字面 key 的失效方式是**多一個原因軸、markup 那一支忘了寫**
+    // ——症狀是那一列印得出檢查名、原因整段空白，而空白與「原因是空的」在畫面上逐位元組相同。
+    // 兩邊各自的集合逐一相同：多一顆 en.json 沒人渲染的是死翻譯，多一支 markup 沒英文的是英文缺字。
+    const REASON = (ks) => ks.filter((k) => k.startsWith("health.notEvaluated")
+        && !["health.notEvaluated", "health.notEvaluatedLegend"].includes(k)).sort();
+    const en = JSON.parse(read("src/i18n/en.json"));
+    const inDict = REASON(Object.keys(en));
+    const src = read("src/pages/dataset/3-5_dataHealth.html");
+    const inMarkup = REASON([...src.matchAll(/data-i18n="(health\.notEvaluated[\w.]*)"/g)].map((m) => m[1])
+        .filter((k, i, a) => a.indexOf(k) === i));
+    assert.ok(inDict.length >= 2, `en.json 只認出 ${inDict.length} 顆原因 key —— 這條測試在空轉`);
+    // 負控（合成兩份集合走同一支）：兩種方向的落差各要抓得到，濾除器也不能把兩顆非原因 key 收進來。
+    assert.deepEqual(REASON(["health.notEvaluated", "health.notEvaluatedLegend"]), [], "把標題與圖例當成原因 key 收進來了");
+    assert.deepEqual(REASON(["health.notEvaluatedNoRole", "health.checkTagGap"]), ["health.notEvaluatedNoRole"], "濾除器把不相干的 key 收進來了");
+    assert.notDeepEqual(["a"], ["a", "b"], "比對式壞了：兩份不同的集合被判成相同");
+    assert.deepEqual(inMarkup, inDict,
+        `3-5「沒有評估」的原因值域兩邊對不上——markup 渲染得出來的：${inMarkup.join("、") || "（無）"}；`
+        + `en.json 裡的：${inDict.join("、") || "（無）"}`);
+});

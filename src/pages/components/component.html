@@ -1407,6 +1407,13 @@ bodyClass: guideline-page
                      3-5 的示範演 `inactive`（有值）⇒ 那一頁演不到它，這裡是它唯一的可見處。
                      繁中逐字照抄 3-5 那一格（§4-2 同 key 兩種繁中會互相覆蓋）。 #}
                 <p class="m-0"><span class="text-bold" data-i18n="health.qaDirectChecks">直答類檢查：</span><span class="text-gray" data-i18n="health.qaDirectChecksNotRecorded">上一次檢查跑的時候還沒有這一項，所以沒有記錄；下一次檢查就會有。</span></p>
+                {# 3-5「這一次沒有評估的檢查」的**第二個原因軸**：`no_filter_dimension`（標籤缺口
+                     要的不是角色，是「至少一個沒有指定角色的純過濾維度」）。3-5 的示範租戶在 5-10 上
+                     有三個沒有指定角色的過濾維度 ⇒ 標籤缺口對它是**算得出來的**（那一頁的發現清單裡
+                     就有一筆 `tag_gap`），所以那一頁演不到這一支，而**不可以為了演它加一列**——加了
+                     就與 5-10 直接互相打臉（§6）。這裡是它唯一的可見處。
+                     繁中逐字照抄 3-5 那一支分支（§4-2 同 key 兩種繁中會互相覆蓋）。 #}
+                <p class="m-0"><span data-i18n="health.checkTagGap">標籤缺口</span><span data-i18n="common.labelSep">：</span><span data-i18n="health.notEvaluatedNoFilterDimension">沒有可用的純過濾維度</span></p>
                 {# 前台問答「整站停用」那一態（`components/faq-chatroom` 與 `ui/widget-shell` 各一份
                      `.js-faq-unavailable`，兩處都掛 `.hidden`）。使用期閘與功能開通閘擋下來時
                      （兩道都是 403），輸入框停用、換上這一句。

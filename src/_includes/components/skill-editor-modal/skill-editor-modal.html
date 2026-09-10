@@ -191,8 +191,9 @@
                                 <label for="skillMcpSelect" class="control-label" data-i18n="settings.mcpServers">MCP Server</label>
                             </div>
                             <div class="field col-12-sm">
-                                {# MCP 註冊表與 5-2（`#mcpServersSelect`）／5-6-2 是**同一份三台**，
-                                     值也同源（id 1／2／3）。**停用中的不可濾掉**：理由與 5-2 那一段逐字相同
+                                {# MCP 註冊表與 5-2（`#mcpServersSelect`）／5-6-2 是**同一份四台**，
+                                     值也同源（列序照 5-2：啟用中的先、停用中的後，各自照 id ⇒ 1／2／4／3）。
+                                     **停用中的不可濾掉**：理由與 5-2 那一段逐字相同
                                      ——存檔時驗的是註冊表全集，
                                      濾掉清單等於在 UI 上把一個存得進去的合法值變成不存在；而停用期間它
                                      本來就不會被呼叫（真正跑起來的是「勾選的」與「啟用中的」交集）。
@@ -201,6 +202,7 @@
                                 <select id="skillMcpSelect" class="form-control multiSelect js-skill-mcp" multiple="multiple" data-placeholder="請選擇" data-placeholder-key="common.pleaseSelect">
                                     <option value="1">時間工具</option>
                                     <option value="2">內部文件搜尋</option>
+                                    <option value="4">翻譯工具</option>
                                     <option value="3" data-suffix="（停用中）" data-suffix-key="settings.mcpServerInactive">舊版文件搜尋</option>
                                 </select>
                             </div>
