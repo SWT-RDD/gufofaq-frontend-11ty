@@ -22,6 +22,19 @@
        `.save-icon` 只是 hook（全站 scss 找不到它），但按下去是**真的送 API**（逐列的就地編輯儲存），
        ③ 的 React 綁定記號可以是 hook，`data-toast` 不可省。未給就不掛——**那一態目前沒有消費點**
        （全站三份實例都給了 toast；元件庫頁沒有本元件的展示片段）。
+     editSaveRejectedNoteKey / editSaveRejectedNote：選填，**這一次送出裡「這一欄沒有存進去」那一態**
+       ——畫在欄位底下、預設 `.hidden` 的一行紅字（`role="alert"`）。給了 key 才渲染。
+       **它與 `editSaveToast` 的失敗段不是同一件事，兩個都要**：toast 講的是「這一次按下去的結果」，
+       幾秒鐘就沒了；而這一態按完之後**欄位是空的**，使用者接下來一直看著的就是那個空白，
+       沒有常駐的那一行，空白與「他自己本來就沒填」逐位元組相同。
+       句子要說滿三件事，缺一件就會被讀成另一種狀態：①這一欄沒有存進去 ②它已經被還原成空白
+       （不是「你打的字還在、只是沒送出去」）③**同一次送出裡的其他欄存好了**——少了第三件，
+       使用者會把整次送出當成失敗而重打一輪（§6「上游逐筆給的狀態不得壓成單一值」的同型：
+       一次送出裡有兩欄各自成敗，壓成一句就等於在講一件沒發生過的事）。
+       **紅字不等於指責使用者**：全站的 `.text-red` 是「後果／警語」那一族（`help.limitsUnavailable`、
+       RAGAS 那幾句都是），責任由句子承擔——所以句子要明說這不是欄位內容的問題、重打一次結果一樣。
+       **只有 textarea 樣式渲染這一行**：單行樣式是「值、輸入框、三顆鈕」擠在同一列的行內版面，
+       塞不進一行區塊級說明；那一型今天也沒有這一態的消費點。
      editCapability：確認鈕的能力閘門（§4 四軸；值是能力 token，形狀 `<資源>:<read|write>`）。
        **逐份不同，別假設同一個值**：3-1-3 的三份分成兩種送出——資料集名稱那份改的是資料集本身
        ⇒ `data:write`；任務描述與任務對應提示詞那兩份改的是檢索設定
@@ -49,6 +62,11 @@
         <div class="field">
             <textarea rows="{{ editRows or 10 }}" class="form-control size-sm edit-field disabled"
                 {% if editPlaceholder %}placeholder="{{ editPlaceholder }}"{% endif %}{% if editPlaceholderKey %} data-i18n-placeholder="{{ editPlaceholderKey }}"{% endif %} id="{{ editId }}" disabled>{{ editValue }}</textarea>
+            {# 「這一欄沒有存進去」那一態（見檔頭 `editSaveRejectedNoteKey`）：預設隱藏，長相的可見處
+                 在元件庫頁的「React 條件文案」區（§5：沒有頁面演得出來的分支等於沒驗收過）。
+                 `role="alert"` 是對的——它是**按下確認之後**才出現的訊息，插入的那一刻正是該被唸出來的
+                 那一刻（與載入中那種「還沒有結果」的空容器不同，§4）。 #}
+            {% if editSaveRejectedNoteKey %}<p class="text-red m-0 mt-4 hidden" role="alert" data-i18n="{{ editSaveRejectedNoteKey }}">{{ editSaveRejectedNote }}</p>{% endif %}
         </div>
     </div>
 </div>

@@ -64,14 +64,35 @@ permalink: 3-1-3_previewDataset.html
         {% set editPlaceholderKey = "comp.enterTaskDesc" %}
         {% set editValue = "回答客服常見問題，內容涵蓋帳號、訂單與退換貨相關問題。" %}
         {# 這兩欄與名稱那一顆是**兩件不同的事**：它們存的是給檢索用的敘述，儲存時要一起同步進
-             索引供意圖排序，所以吃的能力是 settings:write 而不是 data:write。結果只有三種：
+             索引供意圖排序，所以吃的能力是 settings:write 而不是 data:write。共通的結果有三種：
              權限不足（整個租戶沒開通，或這個資料集不在我可以寫入的群組裡）、資料集已經不在了、
              同步索引失敗整筆回滾。權限不足是使用者自己找得到人開通／換群組的 warning，
-             措辭同 5-1-1 的 `toast.saveAccount`；後兩者併進末段 error。 #}
+             措辭同 5-1-1 的 `toast.saveAccount`；後兩者併進末段 error。
+           **兩欄不共用一顆 toast key**：描述那一欄多一種結果（見下一段），而 §4-2 明訂同一顆 key
+             不得有兩種繁中（以 key 為索引就地擷取、文件序後者勝，兩份會互相覆蓋）。
+             把多出來的那一段也掛到提示詞那一欄，則是列一個那一欄產不出來的結果（§5）。 #}
         {% set editCapability = "settings:write" %}
-        {% set editSaveToast = "已更新|權限不足，無法儲存——請找貴租戶的管理者開通|這個資料集不在你可以寫入的群組裡，請找管理員把你加進該群組|儲存失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" %}
-        {% set editSaveToastKey = "toast.saveDatasetField" %}
-        {% set editSaveToastType = "success|warning|warning|error|warning" %}
+        {# **這一欄多一種結果：「存不進去」**。這一次送出走的是同一份檢索設定（描述與提示詞兩欄一起），
+             而描述那一欄可能被上游拒收——拒收的處置不是「保留原值」，是**把這一欄清成空白**，
+             同一次送出的提示詞照樣存進去。三件事缺一件就會被讀成另一種狀態：這一欄沒有存進去、
+             它已經被清成空白、另一欄存好了（§6「上游逐筆給的狀態不得壓成單一值」的同型——
+             一次送出裡兩欄各自成敗，壓成一句就是在講一件沒發生過的事）。
+           **是 warning 不是 error**：全站的 error 段一律是「請稍後再試」那一族（重試會好），
+             而這一種重試不會好——它是一個穩定的狀態，使用者要做的是繞過去（找管理員），
+             同「此功能尚未對貴租戶開通」那一段的性質。
+           **追在末段之前**：末段「此功能尚未對貴租戶開通」是保留位、全站固定在最後（§4）。
+           toast 只講得出「按下去的那一刻」，而按完之後**欄位是空的**——常駐的那一行由
+             `editSaveRejectedNote` 承擔（見元件檔頭）。
+           **那一行畫在欄位底下，不畫在卡片頂端**：這兩欄是左右並排的兩顆，而這一次送出裡一欄失敗、
+             一欄成功——訊息離開它講的那一欄，讀的人就分不出被清空的是左邊還是右邊。
+           **平時不掛「目前不可用」的標記**：進頁讀得到的資料沒有任何一欄講得出這一欄現在存不存得進去，
+             拿不到那個事實就不可能在使用者打字之前把它標起來（同本頁切塊設定那一區的處置）；
+             能誠實做的只有「照常給改，改不動時當場說清楚」。 #}
+        {% set editSaveToast = "已更新|權限不足，無法儲存——請找貴租戶的管理者開通|這個資料集不在你可以寫入的群組裡，請找管理員把你加進該群組|儲存失敗，請稍後再試|任務描述目前無法儲存，這一欄已經被清成空白；同一次送出的任務對應提示詞已經存好了|此功能尚未對貴租戶開通，請聯絡平台管理員" %}
+        {% set editSaveToastKey = "toast.saveTaskDesc" %}
+        {% set editSaveToastType = "success|warning|warning|error|warning|warning" %}
+        {% set editSaveRejectedNoteKey = "dataset.taskDescRejected" %}
+        {% set editSaveRejectedNote = "任務描述目前無法儲存：這一次送出沒有把它寫進去，而且這一欄已經被清成空白，你剛才打的字沒有留下來。這不是欄位內容的問題，重打一次也會是同樣的結果——請聯絡貴租戶的管理者。同一次送出的「任務對應提示詞」已經存好了。" %}
         {% include "components/editable-block/editable-block.html" %}
     </div>
     <div class="flex-1">
@@ -82,11 +103,17 @@ permalink: 3-1-3_previewDataset.html
         {% set editPlaceholder = "請輸入任務對應提示詞" %}
         {% set editPlaceholderKey = "comp.enterTaskPrompt" %}
         {% set editValue = "你是客服助理，請根據提供的資料集內容，以親切、精簡的語氣回答使用者的問題。" %}
-        {# 與任務描述是同一件事、同一組結果（見上），故分支集合逐字相同。 #}
+        {# 與任務描述是同一份檢索設定的另一欄，共通的那幾種結果逐字相同（見上）；
+             **少的是「存不進去」那一段**——被上游拒收並清空的是描述那一欄，提示詞這一欄沒有那條路，
+             列上去就是列一個這份規格產不出來的結果（§5）。
+           ⚠️ `editSaveRejectedNoteKey` 要清掉：`{% set %}` 是頁面全域（§2），沿用上一份就會讓這一欄
+             也長出一行「任務描述無法儲存」的紅字。 #}
         {% set editCapability = "settings:write" %}
         {% set editSaveToast = "已更新|權限不足，無法儲存——請找貴租戶的管理者開通|這個資料集不在你可以寫入的群組裡，請找管理員把你加進該群組|儲存失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" %}
-        {% set editSaveToastKey = "toast.saveDatasetField" %}
+        {% set editSaveToastKey = "toast.saveTaskPrompt" %}
         {% set editSaveToastType = "success|warning|warning|error|warning" %}
+        {% set editSaveRejectedNoteKey = "" %}
+        {% set editSaveRejectedNote = "" %}
         {% include "components/editable-block/editable-block.html" %}
     </div>
 </div>

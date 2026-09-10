@@ -24,10 +24,11 @@
      不含：麵包屑（頁面自己畫，§3-1 每頁的 breadcrumbItems 不同的那一族沿用頁面層）、
        ISO 審核精靈（`components/iso-review-wizard`）、免責聲明（`components/platform-disclaimer-panel`）。
 
-     ── 三個彈窗為什麼住在這裡 ────────────────────────────────────────────────────────
+     ── 彈窗為什麼住在這裡 ────────────────────────────────────────────────────────────
      §1-2「誰的按鈕開的彈窗，彈窗就 include 在誰裡面」：`.js-manage-tenant` 在下方的租戶功能開通表上，
      而 `.js-reset-password`／`.js-delete-user` 在 manage-tenant-modal 的成員區裡（那兩顆是業務條件開窗
-     ——先選定哪一位成員才知道重設／刪除誰，故不巢狀在 manage-tenant-modal 內，見該元件檔頭）。
+     ——先選定哪一位成員才知道重設／刪除誰，故不巢狀在 manage-tenant-modal 內，見該元件檔頭）；
+     `resetUsageModal` 與 `batchMetricsModal` 的觸發鈕同樣在本檔之內。
      **它們在 dist 上排在 ISO 審核精靈之前**（＝跟著觸發鈕走，而不是排在頁尾）：`<dialog>` 未開啟時
      `display:none`、不佔版位，放在哪一段之間都不影響三份稿的幾何。 #}
 
@@ -83,13 +84,15 @@
      頁層說明」，一句切版從未打算定義的行為——而同一條路由的三個狀態是逐位元組比對的，
      那個差異會就此被固化下來。 #}
 {# 這一段是**頁層說明**，不是區塊清單：底下每加一塊就要回來改的句子遲早會腐化（§3-2），
-     所以維運那幾塊（聯絡窗口／每日資料健檢／宣告實體篩選槽）收成「平台層的設定與維運操作」
+     所以維運那幾塊（聯絡窗口／批次品質指標計算／每日資料健檢／宣告實體篩選槽）收成「平台層的設定與維運操作」
      一句，不逐塊點名。 #}
 <p class="text-gray" data-i18n="settings.platformTenantsIntro">這一頁是平台管理者的跨租戶視角，不是任何單一租戶自己的設定頁：底下管理的是全平台每一個租戶的權限指派、功能開通、使用期與問答授權用量，加上 ISO 季度審核、平台層的設定與維運操作，以及平台免責聲明。稽核員唯讀看得到整頁，異動仍限平台系統管理員。</p>
 <div class="block mb-16 flex-row column gap-16" data-platform-role="auditor">
     {# ⓘ 說明：markup 同既有 info-btn 六件組（§1-2 無 html 元件契約）。
-         **這一整支元件的每一區都要有 ⓘ**：它管的是全平台的權限與計費，站內每一頁都有說明視窗，
-         最貴的這一頁反而沒有是說不過去的。
+         **哪幾區要有 ⓘ**：規則多到一兩句話講不完、要另起一段才說得清楚的那幾區（平台角色的歸屬、
+         租戶功能開通的相依），它管的是全平台的權限與計費，這種區塊沒有說明視窗是說不過去的。
+         反過來，後果一兩句話就講得完的區塊（平台時區、聯絡窗口、批次品質指標計算）把話直接寫在
+         區塊上——那句話已經常駐在做決定的控制項旁邊（§3-2），再開一顆窗只是替同一段話開第二個正本。
        ①這一區在做什麼：盤點誰握有平台角色，並逐列改它（改角色只有 admin 做得到）。
          要講的是最容易誤會的那件事：平台角色**不屬於任何租戶**——它是跨租戶的身分，
          與那個人在自己租戶裡的管理員旗標是兩回事；而把它改成「無」不是排程性的降級，
@@ -599,6 +602,51 @@
     </div>
 </div>
 
+{# 批次品質指標計算（全平台一顆開關，非 per-租戶）。
+   **為什麼一定要有這一格**：這顆旋鈕決定的是「租戶按不按得動『計算 RAGAS 指標』」，而它開著的時候
+     **任何一個租戶按一次就會讓全平台的問答中斷、要人工重啟才會恢復**。平台管理員是唯一有權
+     決定要不要承擔這件事的人，畫面上卻沒有任何地方講得出它現在是開是關——於是「今天問答會不會
+     被某個租戶按停」在整個平台上沒有人答得出來（§3-2「一個介面在這裡定完整」）。
+   **兩個方向的後果都要講**，所以是兩句而不是一句：開著的那句是紅字警語（會發生什麼），
+     關著的那句是灰字（被擋下的是什麼、以及**什麼不受影響**）。少了後半，關著的平台上
+     那顆被擋下的「計算 RAGAS 指標」會被讀成整份回歸報表都不算數——而回歸的判定結果與品質指標
+     是兩條路，判定照樣成立（同一句話的另一個落點在 2-2-5 那顆計算鈕上）。
+   **警語常駐 ＋ 送出前再確認一次，兩個都要**：常駐那一句是 §3-2（後果寫在做那個決定的控制項
+     旁邊），它在讀這一頁的時候就在；確認窗接的是**按下去的那一刻**——而按下去的人與觸發中斷的人
+     不是同一個人，中斷也不會當場發生，沒有那一道，這顆開關按起來與其他平台設定沒有兩樣。
+   **儲存鈕是無條件開窗** ⇒ 掛 `data-open-modal`（§5：有條件開窗才留 hook class）；真正送出去的是
+     窗裡那顆確認鈕，所以閘門與 `data-toast` 的家在那裡（見本檔末尾那份 include）。
+   **開關本身是值載體**（§5 矩陣②）：change 自己不打 API，值跟著儲存鈕一起送 ⇒ 只掛 hook class、
+     不掛 `data-toast`、不掛授權四軸。
+   **整塊標 auditor、控制項標 admin**（同上面「平台時區」那一塊）：這一格畫得出**現況值**，
+     而現況值是唯讀角色讀得到的東西；標成 admin 會讓稽核員看不到「這個平台現在是不是開著的」，
+     而那正是稽核要查的。
+   **不在開關旁邊放「上次是誰改的」**：那件事的正本是稽核日誌（5-7），而這個面板上每一顆平台設定
+     （平台時區、聯絡窗口）都沒有這一格——只給這一顆做，等於同一份 markup 對同一種形狀有兩套答案
+     （§5），而第二份答案還會與稽核日誌各自漂移。
+   **示範值是「開著」**：2-2-5 演的是一輪**已經算過 RAGAS 指標**的執行，那件事只有在這顆開關開著
+     的平台上做得到（§6 示範資料要跨頁自洽）。產品預設是關的——那句話由下面的灰字承載，
+     不靠示範值表達。 #}
+<div class="block mb-16 flex-row column gap-16" data-platform-role="auditor">
+    <div class="text-md text-bold" data-i18n="platform.batchMetricsTitle">批次品質指標計算</div>
+    <p class="text-red m-0" data-i18n="platform.batchMetricsWarn">開著的時候，任何一個租戶在後台按一次「計算 RAGAS 指標」，全平台的問答就會中斷，而且要人工重啟才會恢復。</p>
+    <p class="text-gray m-0" data-i18n="platform.batchMetricsOffHint">這一項預設是關的：關著的時候租戶按「計算 RAGAS 指標」會被擋下，而回歸測試的判定結果不受影響。</p>
+    <div class="flex-row gap-16 align-items-center flex-wrap">
+        {# 開關沒有可見字面，可及名稱靠 `aria-labelledby` 指旁邊那顆標籤（§4：不掛靜態 aria-label —— 這一頁
+             另有好幾顆開關，全叫同一個字就聽不出正在切哪一項）。 #}
+        <label class="switch">
+            <input type="checkbox" class="switch-checkbox js-batch-metrics-enabled" role="switch" data-platform-role="admin" aria-labelledby="batchMetricsSwitchLabel" checked>
+            <span class="switch-box">
+                <span class="switch-btn"></span>
+            </span>
+        </label>
+        <span id="batchMetricsSwitchLabel" data-i18n="platform.batchMetricsSwitch">開放租戶計算批次品質指標</span>
+        {# 鈕名要指名自己儲存的是哪一項：這個面板上已經有一顆可見字面是「儲存」的鈕（聯絡窗口），
+             同頁兩顆同名、語意不同是 §4 明文禁止的。 #}
+        <button type="button" class="button button-primary button-sm" data-platform-role="admin" data-open-modal="batchMetricsModal" data-i18n="platform.saveBatchMetrics">儲存批次品質指標設定</button>
+    </div>
+</div>
+
 {# 每日資料健檢：立刻重掃。三顆參數：忽略水位／這一批掃幾個租戶／從哪個租戶編號之後開始。
    **為什麼要有人手的入口**：例行的觸發者是排程，人手動觸發一趟是另一種合法身分。
      排程壞掉或想立刻重算時，沒有這一塊就只剩下從機器裡直接打這條路。
@@ -760,5 +808,35 @@
      （權限不足走的是 §5 的不渲染，不是 toast）。 #}
 {% set deleteToast = "已重置當期用量|重設失敗，請稍後再試" %}
 {% set deleteToastKey = "toast.resetUsage" %}
+{% set deleteToastType = "success|error" %}
+{% include "components/delete-modal/delete-modal.html" %}
+
+{# 批次品質指標計算的送出確認窗（`batchMetricsModal`），由上面那一區的儲存鈕**無條件**開啟。
+     沿用 components/delete-modal 而不是另做一顆：標題、內文、紅字後果、確認鈕記號全部是參數
+     （見該元件檔頭），而它的確認鈕是 button-primary 不是紅色的——同 5-2「切換設置」那一顆，
+     配色本來就適合這種「不是刪東西、但按下去會改變一件大事」的確認。
+   **內文同時講兩個方向**：這一顆窗接的是「把目前這個開關的值存下去」，而不是某一個方向的動作
+     ——只寫開著會怎樣的話，關掉的那一次按下去會讀到一句與自己無關的警告。
+   **`deleteHideTarget`：目標是這一項設定本身，講不出「哪一個」**（全平台只有這一顆），
+     而內文本身已經是完整句子，接上去會變成「…確定要儲存嗎？ 檔案名稱2.pdf」。
+   **真正送出去的是這顆確認鈕** ⇒ 閘門（`admin`）與 `data-toast` 的家在這裡，不在那顆開窗鈕上（§4／§5）。
+     兩段：這條路的出口只有成功與送不出去；「權限不足」不列——平台級走的是「不渲染」（§5）。
+   ⚠️ **本區塊把 delete-modal 的每一顆參數都重設一次**（§2：`set` 是頁面全域）：上面兩顆窗設過
+     `deleteTargetId`／`deleteNote*`／`deleteConfirm*`／`deleteToast*`，少重設一顆，這一窗就會沿用
+     它們的值——標題對、內文對，只有 toast 或掛點悄悄變成別人的。 #}
+{% set deleteModalId = "batchMetricsModal" %}
+{% set deleteTitleKey = "platform.batchMetricsTitle" %}
+{% set deleteTitleZh = "批次品質指標計算" %}
+{% set deleteMessageKey = "platform.batchMetricsConfirm" %}
+{% set deleteMessageZh = "確定要把這一項的目前設定存下去嗎？" %}
+{% set deleteHideTarget = true %}
+{% set deleteTargetId = "" %}
+{% set deleteNoteKey = "platform.batchMetricsNote" %}
+{% set deleteNoteZh = "開著的時候，任何一個租戶按一次「計算 RAGAS 指標」就會讓全平台的問答中斷，要人工重啟才會恢復；關著的時候，所有租戶的「計算 RAGAS 指標」都會被擋下，而回歸測試的判定結果不受影響。" %}
+{% set deleteConfirmBinding = true %}
+{% set deleteConfirmClass = "js-confirm-batch-metrics" %}
+{% set deletePlatformRole = "admin" %}
+{% set deleteToast = "批次品質指標計算設定已儲存|儲存失敗，請稍後再試" %}
+{% set deleteToastKey = "toast.saveBatchMetrics" %}
 {% set deleteToastType = "success|error" %}
 {% include "components/delete-modal/delete-modal.html" %}

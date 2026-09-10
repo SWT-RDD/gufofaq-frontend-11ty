@@ -34,7 +34,7 @@
      **同一條**單檔上限，沒有「PDF 專用上限」這種東西——每張卡描述的都是那一條，
      不同的只有格式清單。故每一顆 `desc` 都寫成不含數字的前綴，數字一律從目錄那一顆插進來。
      Excel 卡沿用 `comp.uploadDescXlsxPrefix`——與 `ui/upload-box` 的元件預設是同一顆 key、同一句話，
-     不另造第二份「xlsx 檔案最大不超過」的譯文；PDF 與 WORD 兩張的格式清單各不相同，
+     不另造第二份「xlsx 單檔最大不超過」的譯文；PDF 與 WORD 兩張的格式清單各不相同，
      故各留一顆自己的 key，但一律加 `Prefix` 後綴、句子裡不含數字。 #}
 {# 卡片圖示是**裝飾**，故 `alt=""`（§4）：格式名就寫在它下一行的 `.upload-title`（「Excel」／「PDF」…），
      再給圖一個 `alt="Excel Icon"` 只會讓這張卡的可及名稱變成「Excel Icon Excel 支援上傳…」。
@@ -50,7 +50,7 @@
         href: "1-1-2_uploadFile_excel.html",
         icon: "icon_XLSX_s.png",
         name: "Excel",
-        desc: "支援上傳xlsx檔案，檔案最大不超過",
+        desc: "支援上傳xlsx檔案，單檔最大不超過",
         descKey: "comp.uploadDescXlsxPrefix",
         titleKey: "dataImport.uploadExcel"
     },
@@ -59,7 +59,7 @@
         href: "1-2-1_uploadFile_pdf.html",
         icon: "icon_PDF_s.png",
         name: "PDF",
-        desc: "支援上傳pdf檔案，檔案最大不超過",
+        desc: "支援上傳pdf檔案，單檔最大不超過",
         descKey: "dataImport.uploadDescPdfPrefix",
         titleKey: "dataImport.uploadPdf"
     },
@@ -68,7 +68,7 @@
         href: "1-2-1_uploadFile_pdf.html",
         icon: "icon_doc_s.png",
         name: "WORD",
-        desc: "支援上傳docx檔案，檔案最大不超過",
+        desc: "支援上傳docx檔案，單檔最大不超過",
         descKey: "dataImport.uploadDescWordPrefix",
         titleKey: "dataImport.uploadWord"
     }

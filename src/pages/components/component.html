@@ -1158,6 +1158,11 @@ bodyClass: guideline-page
                 <p class="text-red m-0" data-i18n="regression.llmEffortUnsupported">本產品送不出思考深度給這顆模型：設定檔的判定分組若設了思考深度，評審一樣會建不起來（同樣只影響主觀分，不影響答案）。</p>
                 <p class="text-red m-0" data-i18n="regression.effectiveBaselineMissing">基準那一輪沒有留下實際使用的設定，所以「兩輪的設定差在哪」這一次答不出來——不要把下面這張表讀成「兩輪設定相同」。</p>
                 <p class="text-red m-0" data-i18n="settings.outputRuleCategoryDuplicate">代碼重複，只有最後一列會生效——請把重複的那列刪掉。</p>
+                {# 3-1-3「任務描述」那一顆 editable-block 的「存不進去」態（`editSaveRejectedNoteKey`）：
+                     那一頁的靜態稿演的是存得進去的那一態，所以這一行在使用頁上永遠是 `.hidden`。
+                     它與同一顆鈕的 toast 段不是同一件事——toast 講按下去的那一刻，這一行講的是
+                     **按完之後欄位是空的**那個常駐狀態。繁中逐字照抄 3-1-3（§4-2 同 key 兩種繁中會互相覆蓋）。 #}
+                <p class="text-red m-0" data-i18n="dataset.taskDescRejected">任務描述目前無法儲存：這一次送出沒有把它寫進去，而且這一欄已經被清成空白，你剛才打的字沒有留下來。這不是欄位內容的問題，重打一次也會是同樣的結果——請聯絡貴租戶的管理者。同一次送出的「任務對應提示詞」已經存好了。</p>
                 {# 4-2 的合規兩欄：未被擋的那一輪 blocked_by／policy_detections 都是 NULL，
                      所以那一頁**整塊不渲染**（不畫空白）——被擋那一輪長什麼樣只有這裡看得到。 #}
                 <div class="flex-row align-items-center gap-8">
@@ -1205,9 +1210,11 @@ bodyClass: guideline-page
                     <button data-capability="settings:write" type="button" class="button button-red button-sm js-abort-run" data-toast="已送出終止：這一輪會在跑完手上這一則之後停下來|權限不足，無法終止——請找貴租戶的管理者開通|這一輪已經不是進行中，沒有東西可以終止|終止失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.abortRun" data-toast-type="success|warning|warning|error|warning" data-i18n="regression.abortRun">終止</button>
                     <button type="button" class="button button-red button-sm js-abort-requested" disabled data-i18n="regression.abortRequested">終止中…</button>
                 </div>
-                {# 2-2-5 的 RAGAS 兩態：「還沒算過」是 `summary` 沒有 `ragas` 鍵那一支（那一頁演的是
-                     已經算過的），「多個評測模型」則要拆成多批才會發生。 #}
+                {# 2-2-5 的 RAGAS 三態：「還沒算過」是 `summary` 沒有 `ragas` 鍵那一支（那一頁演的是
+                     已經算過的），「平台沒有開放批次計算」在示範的平台上是開著的（平台管理頁那一顆開關
+                     演的是開著那一態，§6 跨頁自洽），「多個評測模型」則要拆成多批才會發生。 #}
                 <p class="text-gray m-0" data-i18n="regression.ragasNotComputed">這一輪還沒有算過 RAGAS 指標。按上面那顆鈕開始計算——它是逐筆發 LLM 的離線評測，會跑一段時間；算完之後也可以再算一次。</p>
+                <p class="text-gray m-0" data-i18n="regression.ragasNotEnabled">品質指標目前未開放計算：批次計算是一顆平台層的開關，現在關著，按「計算 RAGAS 指標」會被擋下來，按幾次都一樣——要開放請聯絡平台管理員。回歸測試的判定結果不受影響：通過與未通過是這一輪跑出來的，與離線評測是兩條路。</p>
                 <p class="text-red m-0" data-i18n="regression.ragasMultiModelWarn">這一批指標是由多個評測模型分批算出來的，彼此不該互相比較——離線評測的全部用途是把兩批拿來比，而只有同一個評測模型算出來的兩批才比得下去。</p>
                 {# 2-2-5 的 RAGAS 分母那一列演不到的三態。2-2-5 的示範是一輪乾淨的執行（單批、
                      零失敗批、零剔除），所以這三句在那一頁結構上畫不出來：

@@ -347,9 +347,20 @@ permalink: 2-2-5_regressionRun.html
      拿回來的那一份叫 `answer_relevancy`；抄成送出去那個名字的那一格不會報錯，
      只會永遠畫「—」。切版這一份把它資料化成 `ragasMetricRows`，React 端改成照讀回來的順序渲染。
 
+     ## 「整份指標都不在」有兩個原因，兩句話
+
+     · **還沒算過** ⇒ 「尚未計算」，下一步是按那顆鈕。
+     · **平台沒有開放批次計算** ⇒ 按了會被擋下，按幾次都一樣。這一句要說滿兩件事：
+       它不是故障（那是一顆平台層的開關，宣告它的地方是平台管理頁的「批次品質指標計算」那一區），
+       以及**回歸測試的判定結果不受影響**——通過與未通過是這一輪跑出來的，與離線評測是兩條路。
+       少了後半，讀的人會把整份回歸報表當成廢的。
+       這一格因此需要讀得到「平台有沒有開放批次品質指標計算」這顆布林：有了它，這一區在進頁的
+       當下就說得出「這條路現在是關著的」，而不是等使用者按下去才知道。讀不到時照常給按，
+       結果由那顆鈕的 `data-toast` 承擔（§5：分支結果由 data-toast 演，不預先假造一顆 disabled）。
+
      ## 三種「沒有數字」不可以混在一起
 
-       · **整份指標都不在** ＝ 還沒算過（不是「算出來是空的」）⇒ 畫「尚未計算」＋ 那顆鈕。
+       · **整份指標都不在**（不是「算出來是空的」）⇒ 畫「『整份指標都不在』有兩個原因」那一節的其中一句 ＋ 那顆鈕。
        · 某一顆指標**一筆樣本都沒量到**時，那一顆**整個不出現**（不是 0.0）⇒ 那一格畫「—」。
          **絕不是「0.00」**：0 分是「很差」，沒量到是另一件事。
        · **評測模型是空的** ＝ 沒有記錄下來 ⇒ 畫「—」。
@@ -390,11 +401,23 @@ permalink: 2-2-5_regressionRun.html
         {# ③ 直接送 API 的鈕 ⇒ `data-toast` 列全結果（§5）。第 3／4 段是那兩條錯誤路徑各自的畫面：
              還在跑不能算（分母下一刻就不對了）、這一輪一筆問答紀錄都沒有。
              **被擋下來之後這一區仍然是「尚未計算」，不是「分數 0」**——那一態由下面那一句承擔。
+             **倒數第二段是「平台沒有開放批次計算」**（見檔頭）：它與「權限不足」是兩件事——
+             那一段講的是這個人在自己租戶裡的能力，這一段講的是整個平台把這條路關著，
+             找貴租戶的管理者開通也沒有用，所以句子指的是平台管理員。
+             **是 warning 不是 error**：error 那一族一律是「請稍後再試」（重試會好），
+             而這一條重試不會好；它是一個穩定的狀態，使用者要做的是繞過去。
+             **追在末段之前**：末段「此功能尚未對貴租戶開通」是保留位、全站固定在最後（§4）。
              閘門 `settings:write`。 #}
-        <button data-capability="settings:write" type="button" class="button button-border button-sm js-compute-metrics" data-toast="指標已計算完成|權限不足，無法計算——請找貴租戶的管理者開通|這一輪還在跑，現在算指標的分母下一刻就不對了——等它結束再算|這一輪沒有留下任何問答紀錄編號，算不了指標|計算失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.computeMetrics" data-toast-type="success|warning|warning|warning|error|warning" data-i18n="regression.computeMetrics">計算 RAGAS 指標</button>
+        <button data-capability="settings:write" type="button" class="button button-border button-sm js-compute-metrics" data-toast="指標已計算完成|權限不足，無法計算——請找貴租戶的管理者開通|這一輪還在跑，現在算指標的分母下一刻就不對了——等它結束再算|這一輪沒有留下任何問答紀錄編號，算不了指標|計算失敗，請稍後再試|品質指標目前未開放計算，請聯絡平台管理員；這一輪的回歸判定結果不受影響|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.computeMetrics" data-toast-type="success|warning|warning|warning|error|warning|warning" data-i18n="regression.computeMetrics">計算 RAGAS 指標</button>
     </div>
     {# 還沒算過那一態（整份指標都不在）。**不是「分數 0」**：它是「這一輪還沒有人算過」。 #}
     <p class="text-gray m-0 js-ragas-not-computed hidden" data-i18n="regression.ragasNotComputed">這一輪還沒有算過 RAGAS 指標。按上面那顆鈕開始計算——它是逐筆發 LLM 的離線評測，會跑一段時間；算完之後也可以再算一次。</p>
+    {# 「整份指標都不在」的第二個原因：平台沒有開放批次計算（見檔頭那一節）。
+         **與上一句分開兩句**：上一句的下一步是「按那顆鈕」，這一句的下一步是「按了也沒有用」——
+         合成一句就會把讀的人送去按一顆按幾次都一樣的鈕。
+       **灰字不是紅字**：這不是這一輪出了什麼事，是一顆平台層的開關關著；而它同時要收掉
+         「所以整份回歸報表是不是也不算數」那個誤會，那一句是安心的話，不是警告。 #}
+    <p class="text-gray m-0 js-ragas-not-enabled hidden" data-i18n="regression.ragasNotEnabled">品質指標目前未開放計算：批次計算是一顆平台層的開關，現在關著，按「計算 RAGAS 指標」會被擋下來，按幾次都一樣——要開放請聯絡平台管理員。回歸測試的判定結果不受影響：通過與未通過是這一輪跑出來的，與離線評測是兩條路。</p>
     <div class="flex-row gap-24 flex-wrap">
         {% for m in ragasMetricRows %}
         {# 每一格各自寫出自己的樣本數（逐顆分母不同是正常的）。

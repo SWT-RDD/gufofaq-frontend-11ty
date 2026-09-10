@@ -49,7 +49,15 @@
 {% from "ui/upload-limit-catalog/upload-limit-catalog.html" import uploadLimitCatalog %}
 {% set uploadMaxMb = uploadLimitCatalog.maxMb %}
 {% set uploadBatchMaxMb = uploadLimitCatalog.batchMaxMb %}
-{# **開了多選才畫「一次最多送出 N MB」**：單選一次只送得出一個檔，總量恆等於單檔大小，那時多畫
+{# **多檔模式是兩段 `.upload-desc`，單檔模式一段**，兩段各講一條界線、不重述同一條：
+     · 第一段＝**這條路徑收哪些副檔名 ＋ 單檔上限**（撞到它的下一步是換一份檔或拆檔）。
+     · 第二段＝**這一次送出的總量上限**（撞到它的下一步是分批送）。
+     兩段各自帶自己的數字：界線與它的後果要寫在同一句裡，數字集中到其中一段，另一段的界線
+     就只剩一個沒有量綱的名詞（§3-2「後果、上限與代價寫在做那個決定的控制項旁邊」）。
+   ⚠️ **第一段的字面一定要說「單檔」**：多檔模式下兩段並排，「檔案最大不超過 50MB」與
+     「一次最多送出 200MB」讀起來像同一件事講了兩次，而它們擋的是不同的東西；
+     被擋下時的錯誤訊息本來就寫著「超過單檔上限」，畫面上先講的那一句要用同一個詞。
+   **開了多選才畫第二段**：單選一次只送得出一個檔，總量恆等於單檔大小，那時多畫
      一條界線只是雜訊。開了多選之後它就是真的會被撞到的那一道（單檔上限擋不住「一百個 49MB」），
      而它在畫面上原本一個字都沒有——使用者只會在整批傳完之後被退回。
    **這一支不做送出前的總量預檢**（單檔那一道有做）：總量要對的是**使用頁累積的那份清單**
@@ -60,14 +68,14 @@
 <a href="{{ uploadNextHref }}" class="upload-box">
     <span class="upload-text">
         <span class="upload-message" data-i18n="{{ uploadHintKey or 'comp.uploadClickHint' }}">{{ uploadHintText or '點選該區域上傳檔案' }}</span>
-        <span class="upload-desc"><span data-i18n="{{ uploadDescPrefixKey or 'comp.uploadDescXlsxPrefix' }}">{{ uploadDescPrefixText or '支援上傳xlsx檔案，檔案最大不超過' }}</span><span>{{ uploadMaxMb }}MB</span></span>
+        <span class="upload-desc"><span data-i18n="{{ uploadDescPrefixKey or 'comp.uploadDescXlsxPrefix' }}">{{ uploadDescPrefixText or '支援上傳xlsx檔案，單檔最大不超過' }}</span><span>{{ uploadMaxMb }}MB</span></span>
     </span>
 </a>
 {% else %}
 <button type="button" class="upload-box" data-max-mb="{{ uploadMaxMb }}">
     <span class="upload-text">
         <span class="upload-message" data-i18n="{{ uploadHintKey or 'comp.uploadDropHint' }}">{{ uploadHintText or '點選或拖曳檔案至該區域上傳' }}</span>
-        <span class="upload-desc"><span data-i18n="{{ uploadDescPrefixKey or 'comp.uploadDescXlsxPrefix' }}">{{ uploadDescPrefixText or '支援上傳xlsx檔案，檔案最大不超過' }}</span><span>{{ uploadMaxMb }}MB</span></span>
+        <span class="upload-desc"><span data-i18n="{{ uploadDescPrefixKey or 'comp.uploadDescXlsxPrefix' }}">{{ uploadDescPrefixText or '支援上傳xlsx檔案，單檔最大不超過' }}</span><span>{{ uploadMaxMb }}MB</span></span>
         {% if uploadMultiple %}<span class="upload-desc"><span data-i18n="dataImport.batchMaxPrefix">一次最多送出 </span><span class="js-upload-batch-max-mb">{{ uploadBatchMaxMb }}</span><span data-i18n="dataImport.batchMaxSuffix">MB，整批超過會被退回</span></span>{% endif %}
     </span>
 </button>
