@@ -139,9 +139,9 @@ permalink: 3-7_documentSearch.html
      · **「存入資料集」與「匯出整份檔案」**：這條路上沒有「文件集」這個概念、也沒有整份下載
        ⇒ `components/store-to-collection-modal` 整顆刪。
      · **逐列勾選框與表頭全選**：唯一的消費者是「存入資料集」，那顆沒了它們就是零消費者的控制項。
-     · **檔名那一欄整欄**，連同它的三態（下載原檔／看欄位內容／純文字）：下載原檔與取回全文都
-       沒有對應的路 ⇒ `components/field-content-modal` 整顆刪；而 `doc_name` 本身也不印——理由見
-       上面「結果列印的是標題，不是檔名」那一段。
+     · **檔名那一欄整欄**，連同它的三態（下載原檔／看欄位內容／純文字）：下載原檔沒有對應的路
+       ⇒ `components/field-content-modal` 整顆刪；而 `doc_name` 本身也不印——理由見
+       上面「結果列印的是標題，不是檔名」那一段。**看全文**另由明細裡的「看原文」承接（見下）。
      · **「摘要生成」逐列鈕與整顆 `components/doc-summary-modal`**：這條路上沒有任何一支生得出
        那份摘要。
      · **命中段落的「累計命中序號」與命中字標紅**：命中段落只回**一段**，而命中詞與分段的標記
@@ -149,18 +149,28 @@ permalink: 3-7_documentSearch.html
        改畫成單一段純文字。
 
    **回得出來、這一頁刻意不畫的欄位**（§4：不做的要寫明，否則下一個人分不出「不能」與「還沒」）：
-   相關度分數、這一筆由哪個引擎命中、切塊序號／切塊總數，以及「這份文件的整份切塊」。
+   相關度分數、這一筆由哪個引擎命中、切塊序號／切塊總數。
    **它們今天連投影都沒有**：一列就是上面那六欄，所以要補畫任何一欄，得先讓那一份投影帶上它。
+   （「這份文件的整份切塊」也不畫：切塊之間有重疊、長文件的切塊數沒有上限，拼起來不等於原文。
+   要看全文走「看原文」，那一窗要的是整份原文，不是切塊。）
+
+   **「看原文」**（明細裡「命中段落」下方那一顆）：列上的命中段落只有一段、最多一千字，看得到
+   「命中了」、看不到它前後在講什麼。按下去以這一列的 `document_id` ＋這一次查詢的關鍵字、檢索模式
+   與檢索範圍（租戶隔離靠它，理由見該元件檔頭）取回**整份原文與這次查詢在它裡面命中的所有段落**，由 `components/doc-fulltext-modal` 以 Markdown
+   渲染、標出命中、捲到這一列那一段。**搜尋結果列本身不帶原文**：一頁十列各背一整份文件，每一次
+   查詢都在搬它用不到的幾萬字。這一窗要的資料形狀、渲染規則與命中定位契約寫在該元件檔頭。
    （內部索引名與來源路徑不在這一族：那兩顆是**刻意不外送**的內部識別，見上面回應那一段。）
    **補畫是另一次決策**：這一頁的判準是「只留接得住的旋鈕」，多畫一欄要各自論證它解決誰的問題，不夾帶。
 
    ─────────────────────────────────────────────────────────────────────────────
    彈窗（§5）：`searchScopeModal`（檢索範圍）＝**無條件開窗** ⇒ 掛 `data-open-modal`。
-   **沒有別的彈窗**：`docSummaryModal`／`fieldContentModal` 那兩顆條件開窗服務的功能，這一頁都沒有（見上）。
+   `docFulltextModal`（看原文）＝**條件開窗**（先要知道是哪一列、而且要先取回原文）⇒ 觸發鈕只掛
+   hook `.js-doc-fulltext`，切版由元件 js 呼叫 `openModal`（§1-2 第二條路）。
+   `docSummaryModal`／`fieldContentModal` 那兩顆條件開窗服務的功能，這一頁都沒有（見上）。
 
    ─────────────────────────────────────────────────────────────────────────────
-   **授權閘門是 `data:read`**（查詢鈕上那一顆 `data-capability`）：讀的就是租戶自己資料集裡的
-   文件內容，與 3-1-5 檔案預覽同一族。
+   **授權閘門是 `data:read`**（查詢鈕與「看原文」鈕上各一顆 `data-capability`）：讀的就是租戶自己
+   資料集裡的文件內容，與 3-1-5 檔案預覽同一族。「看原文」讀的是同一份內容的全文，不是更高的一級。
      · **兩種「不准查」不是同一件事，故各佔一段 toast**：能力不足那一種的收件人是貴租戶的管理者；
        系統授權檔沒過那一種的收件人是平台管理者。折成一段等於把兩個修得掉的狀況指向同一個
        修不了的人。
@@ -397,7 +407,24 @@ permalink: 3-7_documentSearch.html
                             <tbody>
                                 <tr>
                                     <th data-i18n="search.hitPassages">命中段落</th>
-                                    <td>{{ row.abstract }}</td>
+                                    <td>
+                                        <p class="m-0">{{ row.abstract }}</p>
+                                        {# 「看原文」：開哪一份取決於哪一列、而且要先取回原文 ⇒ 不掛 `data-open-modal`（§5），
+                                             掛 hook `.js-doc-fulltext` ＋ `data-did`；切版由 `doc-fulltext-modal.js` 開窗。
+                                             每一段逐條對回一條出口（段數不寫死，§3-2）：
+                                               info    「正在載入原文…」
+                                               warning 「權限不足」＝沒有 data:read。排在索引 1，形狀同查詢鈕那一段；
+                                                       子句換成「查看原文」——動作不是查詢。
+                                               warning 「找不到這份文件」＝查詢之後、按下之前它被刪掉了，或它不在這一次的
+                                                       檢索範圍之內（兩者對使用者是同一件事）。下一步是重新查詢，
+                                                       所以不得折進 error（再試一次也不會有不同）。
+                                               warning 「授權驗證失敗」＝系統授權檔驗不過，收件人是平台管理者（同查詢鈕那一段的理由）。
+                                               success 「已載入原文」＝開窗
+                                               error   「載入原文失敗」＝伺服器端掛掉或網路層失敗
+                                               warning 「此功能尚未對貴租戶開通」＝子句與英譯逐字沿用查詢鈕的最後一段（§4-2）。
+                                             可及名稱＝這一列的標題 ＋ 鈕面（§4：迴圈裡的鈕不掛靜態名稱，動作排最後）。 #}
+                                        <button data-capability="data:read" type="button" id="docSearchFulltext-{{ row.did }}" aria-labelledby="docSearchRowTitle-{{ row.did }} docSearchFulltext-{{ row.did }}" class="button button-border button-sm mt-8 js-doc-fulltext" data-did="{{ row.did }}" data-toast="正在載入原文…|權限不足，無法查看原文——請找貴租戶的管理者開通|找不到這份文件——它可能已被刪除，請重新查詢|授權驗證失敗，無法查看原文——請找平台管理者確認系統授權檔|已載入原文|載入原文失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.docFulltext" data-toast-type="info|warning|warning|warning|success|error|warning" data-i18n="search.viewFulltext">看原文</button>
+                                    </td>
                                 </tr>
                                 {% for field in row.fields %}
                                 <tr>
@@ -436,3 +463,57 @@ permalink: 3-7_documentSearch.html
 {% include "components/pager-row/pager-row.html" %}
 
 {% include "components/search-scope-modal/search-scope-modal.html" %}
+
+{# 看原文的示範資料＝結果表上**每一列的文件**各一份（§6 示範資料自洽；切版與生產的差異見元件檔頭）。
+     每一份的 `current` 片段接起來逐字等於同 `did` 那一列的 `abstract`；`title` 與結果列同一個值
+     （90177 那一列沒有標題欄，這裡也不給）。三份各演一種：
+       · 90142 多命中，而且這一列那一段**橫跨一個粗體** ⇒ 拆成三顆 `<mark>`；另有一段其他命中。
+         末段是一條沒有空白的長網址（要斷得開）。
+       · 90177 單一命中；原文是逐列描述，形狀同匯入時表格被轉成的樣子。
+       · 90203 一段這一列的命中 ＋ 兩段其他命中，其中一段在清單項目裡。 #}
+{% set docFulltextDocs = [
+    { did: "90142", title: "外籍配偶依親居留應備文件函釋", blocks: [
+        { tag: "p", runs: [
+            { text: "本函釋說明外籍配偶依" },
+            { text: "入出國及移民法", href: "https://law.moj.gov.tw/LawClass/LawAll.aspx?pcode=D0080132" },
+            { text: "申請依親居留時的應備文件與效期計算，供受理窗口查詢引用。" }
+        ] },
+        { tag: "h4", runs: [{ text: "一、應備文件" }] },
+        { tag: "p", runs: [
+            { text: "外籍配偶申請依親居留時，應檢附", hit: "current" },
+            { text: "結婚證明文件正本", strong: true, hit: "current" },
+            { text: "；前項居留許可之效期，自核發之日起算三年，到期前三十日內得申請延期。", hit: "current" }
+        ] },
+        { tag: "ul", items: [
+            [{ text: "結婚證明文件在國外作成者，應先經我國駐外館處驗證。" }],
+            [{ text: "申請人未滿二十歲者，另附法定代理人同意書。" }]
+        ] },
+        { tag: "h4", runs: [{ text: "二、延期" }] },
+        { tag: "p", runs: [
+            { text: "延期申請經核准者，居留許可效期自原效期屆滿之翌日起算；依親居留期間得併計為申請永久居留之居留期間。", hit: "other" }
+        ] },
+        { tag: "p", runs: [
+            { text: "申請書表下載：" },
+            { text: "https://www.immigration.gov.tw/5382/5385/7445/7451/downloadFormsForResidencePermitApplication", href: "https://www.immigration.gov.tw/5382/5385/7445/7451/downloadFormsForResidencePermitApplication" }
+        ] }
+    ] },
+    { did: "90177", blocks: [
+        { tag: "p", runs: [{ text: "2026 年第一季居留案件辦理情形，依案件類別逐列描述。" }] },
+        { tag: "p", runs: [{ text: "本季依親居留案件受理 1,204 件，核發 1,118 件，平均處理天數 12.4 日。", hit: "current" }] },
+        { tag: "p", runs: [{ text: "本季永久居留案件受理 312 件，核發 287 件，平均處理天數 21.6 日。" }] }
+    ] },
+    { did: "90203", title: "換發居留證期限與罰則釋例", blocks: [
+        { tag: "p", runs: [{ text: "本釋例彙整外籍人士居留證件換發的期限與逾期處理方式。" }] },
+        { tag: "p", runs: [
+            { text: "換發居留證應於期限屆滿前三十日內辦理；逾期者依入出國及移民法第八十五條處罰鍰。", hit: "current" }
+        ] },
+        { tag: "ul", items: [
+            [{ text: "應備文件：護照、原居留證及" }, { text: "最近二年內", strong: true }, { text: "之照片一張。" }],
+            [{ text: "逾期未滿三十日者，處新臺幣二千元罰鍰；逾期三十日以上者，按日累計。", hit: "other" }]
+        ] },
+        { tag: "p", runs: [
+            { text: "居留證遺失者，應於十日內申請補發；補發不影響原居留期限之計算。", hit: "other" }
+        ] }
+    ] }
+] %}
+{% include "components/doc-fulltext-modal/doc-fulltext-modal.html" %}

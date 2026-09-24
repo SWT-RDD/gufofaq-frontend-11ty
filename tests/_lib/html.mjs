@@ -86,11 +86,12 @@ assert.equal(attrValue(" data-x='1'", "data-x"), "1", "attrValue 認不出單引
 // （GUIDELINE 自己在 component.html 寫了一句「不要寫行內 style="margin-..."」）
 export function* tagsOf(html) {
     for (const m of html.matchAll(/<([a-zA-Z][\w-]*)((?:"[^"]*"|'[^']*'|[^>"'])*)>/g)) {
-        yield { tag: m[1].toLowerCase(), attrs: m[2] || "", raw: m[0] };
+        yield { tag: m[1].toLowerCase(), attrs: m[2] || "", raw: m[0], index: m.index };
     }
 }
 
-// tagsOf 的規則版（同 scanText 的用意：讓 probe 走同一條規則函式）。fn 吃 {tag,attrs,raw}
+// tagsOf 的規則版（同 scanText 的用意：讓 probe 走同一條規則函式）。fn 吃 {tag,attrs,raw,index}
+// （`index`＝該標籤在輸入字串裡的起點：要看標籤**內文**的規則靠它往後切，例如 `_blank` 那條）
 export const scanTags = (html, fn, f = "<probe>") => {
     const hits = [];
     for (const t of tagsOf(html)) {

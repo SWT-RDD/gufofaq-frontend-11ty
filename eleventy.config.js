@@ -39,6 +39,7 @@ module.exports = function (eleventyConfig) {
         "src/_includes/components/search-scope-modal/search-scope-modal.js": "js/search-scope-modal.js",
         "src/_includes/ui/list-filter/list-filter.js": "js/list-filter.js",
         "src/_includes/components/rating-modal/rating-modal.js": "js/rating-modal.js",
+        "src/_includes/components/doc-fulltext-modal/doc-fulltext-modal.js": "js/doc-fulltext-modal.js",
         "src/_includes/ui/toast/toast.js": "js/toast.js",
         "src/_includes/ui/collapse-text/collapse-text.js": "js/collapse-text.js",
         "src/_includes/ui/dismiss-panel/dismiss-panel.js": "js/dismiss-panel.js",

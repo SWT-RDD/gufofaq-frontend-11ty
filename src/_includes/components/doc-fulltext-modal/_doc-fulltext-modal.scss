@@ -1,0 +1,106 @@
+@use "../../../scss/mixin" as *;
+
+// 文件原文燈箱。markup 與資料契約見 doc-fulltext-modal.html 檔頭。
+
+// 這一份文件的標題（列上的標題欄；沒有時是一句具名空文字）
+.doc-fulltext-doc-title {
+    margin: 0 0 0.5rem;
+    font-weight: 700;
+    color: var(--text-strong);
+}
+
+// 原文整篇放在一塊可捲動的區域裡（一份檔案抽出來可能是好幾萬字）。
+// 高度要讓出彈窗標題與說明那一段，否則手機上彈窗本身比螢幕高、變成兩層捲動。
+.doc-fulltext-scroll {
+    max-height: min(480px, calc(100vh - 340px));
+    max-height: min(480px, calc(100dvh - 340px));
+    min-height: 160px;
+    overflow-y: auto;
+    padding: 1rem 1.25rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    // 不用 --surface-sunken：命中的 --brand-tint 疊在灰底上幾乎看不出來（兩者只差一點明度）。
+    background-color: var(--surface-raised);
+
+    @include scrollbar_modal();
+}
+
+// 渲染後的 Markdown。`anywhere` 讓沒有空白的長網址斷得開。
+.doc-fulltext-body {
+    overflow-wrap: anywhere;
+    line-height: 1.8;
+
+    > :first-child {
+        margin-top: 0;
+    }
+
+    > :last-child {
+        margin-bottom: 0;
+    }
+
+    p,
+    ul,
+    ol {
+        margin: 0 0 0.75rem;
+    }
+
+    // 單一換行不會變成 `<br>`，段落文字裡留著換行字元 ⇒ 在這兩種節點上保留它（見 html 檔頭）。
+    // 只開在 `p`／`li`：區塊之間的換行是排版空白，開在容器上會多出空行。
+    p,
+    li {
+        white-space: pre-line;
+    }
+
+    ul,
+    ol {
+        padding-left: 1.5rem;
+    }
+
+    ul {
+        list-style: disc;
+    }
+
+    ol {
+        list-style: decimal;
+    }
+
+    // 契約是降級成 h4～h6；h1～h3 一起收：渲染端漏了降級時，字級至少不會在原文裡忽大忽小。
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        margin: 1.25rem 0 0.5rem;
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--text-strong);
+    }
+
+    a {
+        color: var(--brand-text);
+        text-decoration: underline;
+
+        &:hover {
+            color: var(--brand-text-hover);
+        }
+    }
+}
+
+// 命中位置的兩層標示。與 `ui/verdict-tag` 無關：「命中」不是判定，那支元件的每一顆填充色
+// 都綁著一條判定語意，挑哪一顆都是在畫面上說謊。
+// `<mark>` 的瀏覽器預設是黃底黑字，兩態都要蓋掉底色與字色，否則深色模式下是亮黃一塊。
+.doc-fulltext-hit {
+    color: inherit;
+    background-color: transparent;
+
+    &.is-current {
+        background-color: var(--brand-tint);
+        box-shadow: inset 0 -2px 0 var(--brand);
+    }
+
+    &.is-other {
+        text-decoration: underline dashed var(--brand);
+        text-underline-offset: 4px;
+    }
+}
