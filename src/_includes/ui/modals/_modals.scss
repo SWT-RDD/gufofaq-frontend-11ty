@@ -207,7 +207,9 @@
 
     .modals-header {
         background-color: var(--surface-raised);
-        padding: 1.25rem 1.5rem 1.25rem 2.5rem;
+        // 右側留 4rem＝關閉鈕的 right 24px ＋ 本體 24px ＋ 16px 間距。原本的 1.5rem 只等於它的 right，
+        // 沒算到鈕本身——標題一長（文件原文窗的標題是檔名）就壓在關閉鈕底下，手機寬度必中。
+        padding: 1.25rem 4rem 1.25rem 2.5rem;
 
         .modals-title {
             font-size: 1.25rem;
