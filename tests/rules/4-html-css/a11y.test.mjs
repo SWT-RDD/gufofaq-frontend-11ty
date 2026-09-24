@@ -151,16 +151,33 @@ test("§4/§5 target=\"_blank\" 三件套：rel=noopener ＋ 可及名稱講明�
     //   ① 少了 rel="noopener"：新分頁的 window.opener 指得回本頁
     //   ② 可及名稱不講「另開新視窗」：報讀器使用者看不到 target 屬性，焦點就是無預警跳到另一份文件
     //   ③ 中文講了、英譯漏掉：英文模式沒有這個提示（fpdiff 與「同繁中同英譯」兩張網都看不到屬性）
-    // 判準收在 aria-label 上（而不是可見文字）：這種鈕在本專案都是圖示鈕，名字本來就住在 aria-label。
-    // 哪天有一顆用可見文字當名字的 _blank 連結，再把判準擴到內文——別為了那個假設先把規則寫寬。
+    // 判準有兩種形狀，擇一：
+    //   ⓐ aria-label——圖示鈕的名字本來就住在 aria-label（正典 ui/faq-launcher）。
+    //   ⓑ 可見文字當名字的連結：內文裡接一顆 sr-only 的 i18n 節點講「另開新視窗」（正典
+    //      components/doc-fulltext-modal 的原文連結）。連結文字是**資料**，整句 aria-label 翻不了——
+    //      lang-toggle 換 aria-label 是整顆替換，會連連結文字一起換掉。那顆節點的 key 同樣要有講得出
+    //      new window/tab 的英譯（③ 不因為換了形狀就豁免）。
     const en = JSON.parse(read("src/i18n/en.json"));
     const NEW_WINDOW_ZH = /另開|新視窗|新分頁/;
     const NEW_WINDOW_EN = /new (window|tab)/i;
-    const rule = (t) => {
+    const SR_NODE = /<span\b[^>]*\bclass="[^"]*\bsr-only\b[^"]*"[^>]*>([^<]*)<\/span>/g;
+    const innerOf = (html, t) => {
+        const end = html.indexOf("</a>", t.index);
+        return end < 0 ? "" : html.slice(t.index + t.raw.length, end);
+    };
+    const ruleIn = (html) => (t) => {
         if (!/(?:^|\s)target="_blank"/.test(t.attrs)) return null;
         if (!/(?:^|\s)rel="[^"]*\bnoopener\b/.test(t.attrs)) return "少了 rel=\"noopener\"";
         const label = t.attrs.match(/(?:^|\s)aria-label="([^"]*)"/);
-        if (!label) return "沒有 aria-label（可及名稱要講得出「另開新視窗」）";
+        if (!label) {
+            const sr = [...innerOf(html, t).matchAll(SR_NODE)].find((m) => NEW_WINDOW_ZH.test(m[1]));
+            if (!sr) return "沒有 aria-label、內文也沒有講「另開新視窗」的 sr-only 節點";
+            const key = sr[0].match(/\bdata-i18n="([^"]+)"/);
+            if (!key) return "內文那顆 sr-only 節點沒有 data-i18n（英文模式會留著繁中）";
+            const v = en[key[1]];
+            if (typeof v !== "string" || !NEW_WINDOW_EN.test(v)) return `sr-only 節點的英譯沒講 new window/tab：${key[1]} = "${v}"`;
+            return null;
+        }
         if (!NEW_WINDOW_ZH.test(label[1])) return `可及名稱沒講另開新視窗："${label[1]}"`;
         const key = t.attrs.match(/(?:^|\s)data-i18n-aria-label="([^"]*)"/);
         if (!key) return "aria-label 沒有 data-i18n-aria-label（英文模式會留著繁中）";
@@ -173,16 +190,21 @@ test("§4/§5 target=\"_blank\" 三件套：rel=noopener ＋ 可及名稱講明�
     for (const f of srcHtml) {
         const src = stripNjk(read(f));
         seen += [...tagsOf(src)].filter((t) => /(?:^|\s)target="_blank"/.test(t.attrs)).length;
-        hits.push(...scanTags(src, rule, f));
+        hits.push(...scanTags(src, ruleIn(src), f));
     }
     assert.ok(seen >= 1, "全站一個 target=\"_blank\" 都沒有 —— 這條測試在空轉（正典：ui/faq-launcher）");
-    probe("§4 _blank 三件套", (s) => scanTags(s, rule),
+    probe("§4 _blank 三件套", (s) => scanTags(s, ruleIn(s)),
         ['<a href="faq.html" target="_blank" aria-label="開啟（另開新視窗）" data-i18n-aria-label="a11y.openFrontPreview">x</a>',
             '<a href="faq.html" target="_blank" rel="noopener">x</a>',
             '<a href="faq.html" target="_blank" rel="noopener" aria-label="開啟 FAQ" data-i18n-aria-label="a11y.openFrontPreview">x</a>',
             '<a href="faq.html" target="_blank" rel="noopener" aria-label="開啟（另開新視窗）">x</a>',
-            '<a href="faq.html" target="_blank" rel="noopener" aria-label="開啟（另開新視窗）" data-i18n-aria-label="a11y.skipToContent">x</a>'],
+            '<a href="faq.html" target="_blank" rel="noopener" aria-label="開啟（另開新視窗）" data-i18n-aria-label="a11y.skipToContent">x</a>',
+            '<a href="https://x.tw" target="_blank" rel="noopener">法規</a>',
+            '<a href="https://x.tw" target="_blank" rel="noopener">法規<span class="sr-only">（另開新視窗）</span></a>',
+            '<a href="https://x.tw" target="_blank" rel="noopener">法規<span class="sr-only" data-i18n="a11y.skipToContent">（另開新視窗）</span></a>',
+            '<a href="https://x.tw" target="_blank" rel="noopener">法規<span class="text-gray" data-i18n="a11y.opensInNewWindow">（另開新視窗）</span></a>'],
         ['<a href="faq.html" target="_blank" rel="noopener" aria-label="開啟（另開新視窗）" data-i18n-aria-label="a11y.openFrontPreview">x</a>',
+            '<a href="https://x.tw" target="_blank" rel="noopener noreferrer">法規<span class="sr-only" data-i18n="a11y.opensInNewWindow">（另開新視窗）</span></a>',
             '<a href="3-1-1_datasetList.html">同分頁導覽，不在此規則</a>']);
     assert.equal(hits.length, 0, `另開新視窗的三件套沒做齊：\n${fail(hits)}`);
 });

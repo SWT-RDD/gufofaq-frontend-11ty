@@ -48,6 +48,7 @@ test("§5 有 document click 委派的元件 js，逐支登記它判不判「點
         ["skill-try-sandbox", "只問點在哪顆觸發器上（.js-try-skill／.js-skill-try-close），關閉由那顆關閉鈕做，不是點外部"],
         ["clipboard", "只問點在不在 .shareBtn 上（寫進剪貼簿）"],
         ["dismiss-panel", "收合由 [data-dismiss-target] 那顆鈕觸發——它就是「按鈕關閉」那一種，不是點外部"],
+        ["doc-fulltext-modal", "只問點在不在 .js-doc-fulltext 上（挑出那一份文件、開窗、捲到命中）；關窗是 <dialog> 自己的事"],
         ["filter-fields", "只問點在不在 .js-filter-clear 上（清掉同一塊 .block 內的篩選欄）"],
         ["modals", "開窗／關窗都由具名觸發器做（[data-open-modal]／.btn-close-modals）；<dialog> 的點外部關閉是瀏覽器原生的 light dismiss，不由這支 js 判"],
         ["pagination", "只問點在不在 .pagination 的按鈕上（換頁）"],
