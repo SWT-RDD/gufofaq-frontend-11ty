@@ -382,6 +382,23 @@ permalink: 2-2-4_regressionSuites.html
      地板**講出來：答得好不好是主觀的，但「答不答得出來」不是。它讓「主觀品質」有一個客觀的
      地板可以站——判準沒有變鬆，是原本無法表達的那一半。
 
+     ## `policy_blocked`：結局是被合規規則擋下
+
+     被擋下是**第三種結局**，既不是答出內容（`answers`），也不是誠實查無（`no_answer`）。
+     沒有這一型的案例一旦被擋下，判未通過；有這一型的案例沒被擋下，也判未通過。
+     它存在的理由：有些題目的正確結局就是不回答（例如問的不是本單位業務），少了這一型，
+     這種期望收不成案例。
+
+     ⚠️ **「被合規規則擋下」只算規則判定要擋的那一種**。合規檢查自己也會失敗（逾時、出錯），
+     失敗時答案照樣被擋下，但那是**檢查沒判出來**，不是規則的結論——兩者在使用者眼裡長得一模一樣，
+     判定上必須分開：
+       · 檢查沒判出來而擋下 ⇒ `policy_blocked` 判**未通過**。算成通過的話，規則被刪掉或改壞的那一輪
+         只要剛好碰上檢查逾時就照樣是綠的，這一型要抓的回歸正好抓不到。
+       · 2-2-5 的報表給它**另一顆標籤、另一格計數**（「合規檢查沒跑成功」），不併進「被合規規則擋下」
+         ——併進去的話，看報表的人會去改其實沒問題的規則，而真正要查的是檢查本身。
+     所以每一則結果都要說得出**擋下它的是一條規則，還是檢查本身沒判出來**；說不出來時當成
+     檢查沒判出來（寧可多一則未通過，也不要一則假綠）。
+
      `matches`／`not_matches` 的 pattern 是**平台清單裡的名稱、不是正規表達式原文**：收原文的話
      任何呼叫端都能把一段會回溯爆炸的表達式存進案例，之後每次執行都在伺服器上跑它。
      所以這一欄是 select 不是輸入框。
@@ -406,6 +423,7 @@ permalink: 2-2-4_regressionSuites.html
   { value: "direction_is", label: "命中文件的維度值", i18nKey: "regression.typeDirectionIs" },
   { value: "no_answer", label: "須為誠實查無", i18nKey: "regression.typeNoAnswer" },
   { value: "answers", label: "必須答得出來", i18nKey: "regression.typeAnswers" },
+  { value: "policy_blocked", label: "須被合規規則擋下", i18nKey: "regression.typePolicyBlocked" },
   { value: "judge", label: "主觀評分判準", i18nKey: "regression.typeJudge" }
 ] %}
 {% set regressionPatterns = [
@@ -606,7 +624,7 @@ permalink: 2-2-4_regressionSuites.html
                     </div>
                 </div>
                 {% endif %}
-                {# 無參數那兩型（`no_answer`／`answers`，兩者都不吃參數）：
+                {# 無參數那三型（`no_answer`／`answers`／`policy_blocked`，三者都不吃參數）：
                      **這一格不留白**——空白會被讀成「這一型的參數欄還沒做出來」，而它本來就沒有參數。 #}
                 {% if a.shape == "none" %}
                 <p class="text-gray m-0" data-i18n="regression.assertionNoParams">這一型不需要填參數。</p>

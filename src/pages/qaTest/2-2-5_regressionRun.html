@@ -290,6 +290,19 @@ permalink: 2-2-5_regressionRun.html
      #37 的判定不是隨手挑的：比較區已經把它釘成「兩次都過」（無變化那 8 則裡的一員），
      所以它只能是「通過」那一種。
 
+     「被合規規則擋下」那一格：調一次合規規則可能讓一整批題目被擋下，摘要要直接講出被擋了幾則。
+     它**不與通過／未通過相加**——被擋下的那一則照樣落在其中一邊（沒有 `policy_blocked` 斷言的
+     判未通過、有的判通過），這一格是橫跨兩邊的另一種切法。
+     **被合規規則擋下＝0 是推導的**：被擋下的那一輪不會有命中，而這一次跑完的 10 則在比較區
+     「這一次引用」那一欄只有 #33 零命中（逐案例區那四則也都有命中文件）；#33 的斷言只有一條
+     `no_answer`，而被擋下不是誠實查無（2-2-4 檔頭 `policy_blocked` 那一節）——它若被擋下就會
+     判未通過，而它這一次通過了（無變化那一桶，兩次都通過），所以沒有一則被擋下。
+     「合規檢查沒跑成功」那一格：檢查自己失敗而擋下的則數，**不併進上一格**（分界見 2-2-4 檔頭
+     `policy_blocked` 那一節）。它要自己一格的理由同評審漂移：檢查服務在跑到一半時壞掉，會讓後面整批
+     一起被擋下、一起未通過，少了這一格，摘要只剩一個暴增的「未通過」，看不出是同一個故障。
+     同樣不與通過／未通過相加（這種擋下一律落在未通過）。＝0 的推導與上一格相同：零命中的只有 #33，
+     而它若是這樣被擋下，同樣不是誠實查無、會判未通過。
+
      「送出的前置對話」＝**跑完的那幾則**各自的前置輪數相加。母體與上界都在 2-2-4：
      這一套 12 則裡帶前置的有 4 則、
      逐則 5（#36）＋2（#39）＋1（#35）＋1，四則的 id 都 < 41（中斷點）⇒ 這一次都跑完了
@@ -309,6 +322,8 @@ permalink: 2-2-5_regressionRun.html
         <p><span class="text-bold" data-i18n="regression.summaryTotal">跑完的案例：</span><span>10</span></p>
         <p><span class="text-bold" data-i18n="regression.summaryPassed">通過：</span><span>8</span></p>
         <p><span class="text-bold" data-i18n="regression.summaryFailed">未通過：</span><span>2</span></p>
+        <p><span class="text-bold" data-i18n="regression.summaryBlocked">被合規規則擋下：</span><span>0</span></p>
+        <p><span class="text-bold" data-i18n="regression.summaryPolicyCheckFailed">合規檢查沒跑成功：</span><span>0</span></p>
         <p><span class="text-bold" data-i18n="regression.summaryContextTurns">送出的前置對話：</span><span>9</span><span data-i18n="regression.turnsUnit"> 輪</span></p>
     </div>
     {# 判準三態各自一格，燈號與逐案例區同一套（綠達成／紅未達成／黃未評出）。
@@ -330,7 +345,7 @@ permalink: 2-2-5_regressionRun.html
 {% set helpModalTitleKey = "help.regression.summary.title" %}
 {% set helpModalTitle = "執行摘要說明" %}
 {% set helpModalWhatKey = "help.regression.summary.what" %}
-{% set helpModalWhat = "這裡彙總這一次執行的整體結果：跑完幾則案例、通過與未通過各幾則、送出了幾輪前置對話，以及這一輪的判準達成情形。判準那三個數字的單位是「判準條數」而不是案例數，因為一則案例可以有好幾條判準；判準不參與通過與否，一則案例即使有判準未達成，只要確定性斷言都過就仍然是通過。" %}
+{% set helpModalWhat = "這裡彙總這一次執行的整體結果：跑完幾則案例、通過與未通過各幾則、其中幾則被合規規則擋下、幾則因為合規檢查沒跑成功而被擋下、送出了幾輪前置對話，以及這一輪的判準達成情形。被擋下的案例照樣算在通過或未通過裡——預期要被擋下的案例被合規規則擋下了就是通過，其餘被擋下的都是未通過；合規檢查沒跑成功而擋下的不是規則的結論，一律算未通過。判準那三個數字的單位是「判準條數」而不是案例數，因為一則案例可以有好幾條判準；判準不參與通過與否，一則案例即使有判準未達成，只要確定性斷言都過就仍然是通過。" %}
 {% set helpModalStateItems = [] %}
 {% set helpModalLimitRows = [] %}
 {% include "components/help-modal/help-modal.html" %}
@@ -1125,7 +1140,16 @@ permalink: 2-2-5_regressionRun.html
                     <td>{{ row.caseNo }}</td>
                     {# 逐列辨識欄（§4）：展開鈕指到它。 #}
                     <td id="runRowName-{{ row.id }}">{{ row.question }}</td>
-                    <td><span class="verdict-tag {{ row.verdictClass }}" data-i18n="{{ row.verdictKey }}">{{ row.verdict }}</span></td>
+                    {# 「被合規規則擋下」標籤：「未通過」可能只是因為被擋下，不展開就要看得出來；
+                         有 `policy_blocked` 斷言、如期被擋下而通過的那一則，也要看得出它是怎麼通過的。
+                         **顏色用中性**：通過與否交給旁邊那顆判定標籤表達。
+                         「合規檢查沒跑成功」是**另一顆**（分界見 2-2-4 檔頭 `policy_blocked` 那一節）：
+                         答案一樣被擋下，但那是檢查沒判出來、不是規則的結論，下一步是查檢查本身而不是改規則。
+                         **黃色**，與本頁「判準未評出」同一個意思——該給結論的那一方沒給出結論。
+                         兩顆互斥，一則結果最多掛其中一顆。
+                         示範四列都有命中文件、而被擋下的那一輪（不論哪一種）不會有命中 ⇒ 四列都沒被擋下，
+                         兩顆一律 `.hidden`（位置與樣式的規格）；長相的可見處在元件庫頁的「React 條件文案」區（§5）。 #}
+                    <td><span class="verdict-tag {{ row.verdictClass }}" data-i18n="{{ row.verdictKey }}">{{ row.verdict }}</span> <span class="verdict-tag is-muted hidden" data-i18n="regression.blockedTag">被合規規則擋下</span> <span class="verdict-tag is-warn hidden" data-i18n="regression.policyCheckFailedTag">合規檢查沒跑成功</span></td>
                     {# 三格計數恆常都畫（含 0）：形狀固定、每一格自帶文字標籤，
                          顏色不是唯一的載體（§4）。一條判準都沒有時整欄換成一顆「無判準」
                          ——那與「三條全部未評出」是兩件事，畫面不可以長得一樣（後者是三顆黃燈）。 #}
@@ -1223,7 +1247,7 @@ permalink: 2-2-5_regressionRun.html
 {% set helpModalTitleKey = "help.regression.perCase.title" %}
 {% set helpModalTitle = "逐案例結果說明" %}
 {% set helpModalWhatKey = "help.regression.perCase.what" %}
-{% set helpModalWhat = "這裡展開這一次執行裡每一則案例的完整結果：實際答案、有沒有通過、沒通過的斷言各自量到什麼實測值、每一條判準達成了沒有（未達成的那幾條會附上評審給的理由），以及這一則命中的文件與實際送出了幾輪前置對話。判準不參與通過與否：一則案例即使有判準未達成，只要確定性斷言都過，它仍然是通過。" %}
+{% set helpModalWhat = "這裡展開這一次執行裡每一則案例的完整結果：實際答案、有沒有通過（被合規規則擋下、或因為合規檢查沒跑成功而被擋下的那幾則，判定旁會另外標出是哪一種）、沒通過的斷言各自量到什麼實測值、每一條判準達成了沒有（未達成的那幾條會附上評審給的理由），以及這一則命中的文件與實際送出了幾輪前置對話。判準不參與通過與否：一則案例即使有判準未達成，只要確定性斷言都過，它仍然是通過。" %}
 {% set helpModalStateItems = [] %}
 {% set helpModalLimitRows = [] %}
 {% include "components/help-modal/help-modal.html" %}

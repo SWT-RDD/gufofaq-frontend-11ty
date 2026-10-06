@@ -1284,6 +1284,17 @@ bodyClass: guideline-page
                     <span data-i18n="regression.notComparedReason">哪一邊缺</span>
                     <span class="verdict-tag is-warn" data-i18n="regression.reasonAbsentInBaseline">基準沒有它</span>
                 </div>
+                {# 2-2-5「這一次判定」欄的**被合規規則擋下**標籤：那一頁逐案例區四則都有命中文件，而被擋下的
+                     那一輪不會有命中 ⇒ 四列都沒被擋下，那顆標籤在使用頁上一律 `.hidden`。這裡演兩種組合：
+                     沒有 `policy_blocked` 斷言的案例被擋下（未通過），與有這一型的案例如期被擋下（通過）
+                     ——標籤本身是中性色，通過與否由旁邊那顆判定標籤表達。
+                     繁中與 class 逐字照抄 2-2-5 那一格（§4-2 同 key 兩種繁中會互相覆蓋）。 #}
+                <p class="m-0"><span class="verdict-tag is-fail" data-i18n="regression.verdictFail">未通過</span> <span class="verdict-tag is-muted" data-i18n="regression.blockedTag">被合規規則擋下</span></p>
+                <p class="m-0"><span class="verdict-tag is-pass" data-i18n="regression.verdictPass">通過</span> <span class="verdict-tag is-muted" data-i18n="regression.blockedTag">被合規規則擋下</span></p>
+                {# 同一格的另一顆：合規檢查自己失敗而擋下（分界見 2-2-4 檔頭 `policy_blocked` 那一節）。
+                     **只有未通過這一種組合**——那一次擋下不是規則的結論，期望被擋下的案例遇到它也判未通過。
+                     繁中與 class 逐字照抄 2-2-5 那一格。 #}
+                <p class="m-0"><span class="verdict-tag is-fail" data-i18n="regression.verdictFail">未通過</span> <span class="verdict-tag is-warn" data-i18n="regression.policyCheckFailedTag">合規檢查沒跑成功</span></p>
                 {# manage-tenant-modal 成員列的平台角色徽章，`platformRole == "admin"` 那一態。
                      那份名冊就是 5-6-1 的示範租戶 B（那一頁給 B 的使用者數是三、狀態 FROZEN），
                      而 5-6-1 的平台權限盤點把僅有的兩位平台系統管理員分別配給租戶 A 與租戶 C
