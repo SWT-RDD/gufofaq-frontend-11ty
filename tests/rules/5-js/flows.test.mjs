@@ -422,7 +422,11 @@ test("§5/§6 5-6-2 列編輯要能改 env（輪替憑證），且 args／env �
     const html = distDoc("5-6-2_platformMcpServers.html");
     const rows = [...html.matchAll(/<tr data-mcp-id="\d+">([\s\S]*?)<\/tr>/g)].map((m) => m[1]);
     assert.ok(rows.length >= 3, `只掃到 ${rows.length} 列 server —— 這條測試在空轉`);
-    for (const row of rows) {
+    // HTTP 那種列沒有 command/args/env（那三格換成網址／標頭／驗證憑證），由下一條測試管；
+    // 分流的判準是那一列有沒有網址那一格，不是列序。
+    const stdioRows = rows.filter((row) => !/\bjs-mcp-url\b/.test(row));
+    assert.ok(stdioRows.length >= 3, `只掃到 ${stdioRows.length} 列 stdio server —— 這條測試在空轉`);
+    for (const row of stdioRows) {
         assert.match(row, /<textarea[^>]*aria-labelledby="mcpRowName-\d+ mcpHeadArgs"/, "參數要是一行一個的 textarea，且可及名稱＝列名＋欄表頭（§4）");
         assert.match(row, /<textarea[^>]*aria-labelledby="mcpRowName-\d+ mcpHeadEnv"/, "列編輯缺環境變數欄（輪替憑證用）");
         // 執行指令與參數要分開（擠在同一格就看不出界線）
@@ -439,4 +443,32 @@ test("§5/§6 5-6-2 列編輯要能改 env（輪替憑證），且 args／env �
         .map((s) => s.replace(/<[^>]*>/g, "")).filter((s) => s.trim());
     assert.ok(envCells.length >= 1, "示範資料裡沒有任何一台 server 帶 env —— 那一欄等於沒演到");
     assert.ok(envCells.some((s) => s.includes("***")), "env 值要演成遮罩字面 ***（讀取路徑本來就只回鍵名）");
+});
+
+test("§5/§3-2/§4 5-6-2 Streamable HTTP：新增區有連線方式下拉與 HTTP 三格，清單的 HTTP 列換成自己那一組、每格自帶欄名", () => {
+    // 兩種連線方式各有一組欄位、互不相通：HTTP 列若沿用 stdio 那三格，就是在畫一組它根本沒有的欄位；
+    // 而那三格的表頭寫的是 stdio 的欄名，可及名稱指向表頭的話，網址那一格會被念成「執行指令」。
+    const html = distDoc("5-6-2_platformMcpServers.html");
+    const select = html.match(/<select[^>]*id="newMcpTransportInput"[^>]*>([\s\S]*?)<\/select>/);
+    assert.ok(select, "新增區缺連線方式下拉 #newMcpTransportInput");
+    assert.match(select[0], /\bjs-mcp-transport\b/, "連線方式下拉是值載體，要掛 .js-mcp-transport");
+    const values = [...select[1].matchAll(/<option[^>]*value="([^"]*)"/g)].map((m) => m[1]);
+    assert.deepEqual(values, ["stdio", "streamable_http"], `連線方式的值域是 stdio｜streamable_http，實際是 ${values.join("、")}`);
+    for (const id of ["newMcpUrlInput", "newMcpHeadersInput", "newMcpTlsVerifyInput"])
+        assert.match(html, new RegExp(`id="${id}"`), `新增區缺 HTTP 那一組的 #${id}`);
+    assert.match(html, /<textarea[^>]*id="newMcpHeadersInput"/, "HTTP 標頭要是一行一筆的 textarea");
+
+    const rows = [...html.matchAll(/<tr data-mcp-id="(\d+)">([\s\S]*?)<\/tr>/g)].filter((m) => /\bjs-mcp-url\b/.test(m[2]));
+    assert.ok(rows.length >= 1, "示範清單裡沒有任何一台 streamable_http —— HTTP 列那一支整站畫不出來");
+    for (const [, id, row] of rows) {
+        assert.doesNotMatch(row, /mcpHead(Command|Args|Env)\b/, `HTTP 列 ${id} 不該有 stdio 那三格`);
+        for (const [hook, label] of [["js-mcp-url", `mcpRowUrl-${id}`], ["js-mcp-headers", `mcpRowHeaders-${id}`], ["js-mcp-tls-verify", `mcpRowTls-${id}`]]) {
+            const ctl = row.match(new RegExp(`<(?:input|textarea)[^>]*\\b${hook}\\b[^>]*>`));
+            assert.ok(ctl, `HTTP 列 ${id} 缺 .${hook}`);
+            assert.match(ctl[0], new RegExp(`aria-labelledby="mcpRowName-${id} ${label}"`), `HTTP 列 ${id} 的 .${hook} 可及名稱要是「列名＋自己那一格的欄名」`);
+            assert.match(row, new RegExp(`id="${label}"[^>]*data-i18n=`), `HTTP 列 ${id} 缺看得見的欄名 #${label}`);
+        }
+        const headers = row.match(/<textarea[^>]*js-mcp-headers[^>]*>([\s\S]*?)<\/textarea>/);
+        assert.ok(headers && headers[1].includes("***"), `HTTP 列 ${id} 的標頭值要演成遮罩字面 ***`);
+    }
 });

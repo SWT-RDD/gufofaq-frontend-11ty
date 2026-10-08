@@ -74,6 +74,27 @@ permalink: 5-2_conversationSettings.html
 {% set saveConfigError = "output_rules 第 7 條（link_max）的 value 必須介於 1 與 20 之間（收到 -1）" %}
 <p class="text-red mb-16{% if not saveConfigError %} hidden{% endif %}" role="alert">{{ saveConfigError }}</p>
 
+{# 模型能力提醒：存檔**成功**，但被用到的模型有某幾項不會照設定生效、或不確定會不會生效
+     （例：主模型不收溫度；某一組的思考深度在那顆模型上無從得知）。「一定不能」的那一種存不進去，
+     走上面那一條紅字；這一塊是「存得進去、但要讓人知道」的那一種——沒有它，畫面說「已儲存」，
+     而設定其實有一項不會照著跑。
+     **需要的資料**：這一份設定**存檔當下**算出的提醒清單，每一則一句寫給人看的話（指名模型、欄位
+     與會發生什麼）；讀設定時一併拿到，存檔成功後換成這一次的那一份（這一次沒有提醒＝整塊消失，
+     上一次的不能殘留）。每一則就是一句話，原樣列出、不翻（那是執行期資料，§4-2）。
+     它**不是旋鈕**：不進「有沒有未存修改」的比對、也不隨存檔送出。
+     中性字色、`role="status"`（不是 alert）：存檔是成功的，這不是失敗。
+     示範設定沒有任何提醒 ⇒ 整塊掛 `.hidden`，markup 留著當位置與樣式的規格；
+     它有提醒時的長相在元件庫頁「React 條件文案」那一節。 #}
+{% set capabilityWarnings = [] %}
+<div class="mb-16 js-capability-warnings{% if not capabilityWarnings.length %} hidden{% endif %}" role="status">
+    <p class="text-bold" data-i18n="settings.capabilityWarningsTitle">模型能力提醒：設定已經儲存，但下面這幾項不會照設定生效，或不確定會不會生效。</p>
+    <ul>
+        {% for w in capabilityWarnings %}
+        <li class="text-gray">{{ w }}</li>
+        {% endfor %}
+    </ul>
+</div>
+
 {# 頁層說明（`settings.conversationSettingsIntro`）**必須講出兩種模式的能力差異**，不能只講
      「三套設定檔各一份、於上方切換」：本頁是全站唯一有模式適用性的頁面，不生效的控制項一律隱藏
      （見下方 `settings.modeApplicabilityHint`）——使用者根本看不到那些欄位，這一段就是他唯一
@@ -562,7 +583,11 @@ permalink: 5-2_conversationSettings.html
                  輸入層：瀏覽器就地擋 + 使用者看得到範圍。每一顆的上下界就寫在它自己的
                  `min`／`max` 上，那裡就是正本。
                  浮點欄用 step="any"（界線只有上下界、沒有級距；寫死 0.1 會把 0.35 這種合法值判成無效），
-                 整數欄用 step="1"。對話記憶輪數刻意無上界（只有下界 0）。 #}
+                 整數欄用 step="1"。對話記憶輪數刻意無上界（只有下界 0）。
+               **溫度這一格可以清空，清空＝「不送溫度、用模型自己的預設」**，存出去是「沒有值」，
+                 **不是 0**（0 是一個真的溫度），也**不是整欄不送**（整欄不送＝維持原值）。理由：推理模型
+                 多半不收溫度，而主模型不收、設定卻帶著值時，整份設定都存不進去（連只改提示詞也一樣）；
+                 換成那種模型之後，使用者要有辦法把這一格清掉。讀回來是「沒有值」時這一格顯示空白。 #}
             <div class="form-group col-6-md col-12-sm">
                 <div class="label"><label for="genTemp" class="control-label" data-i18n="settings.temperature">溫度</label></div>
                 <div class="field">
@@ -609,7 +634,11 @@ permalink: 5-2_conversationSettings.html
                 <div class="label"><span class="control-label" data-i18n="settings.enableRerank">啟用重排序</span></div>
                 <div class="field">
                     {# 示範開著：分數尺的示範狀態是「重排序開著 ＋ llm_reranker」，而且 QA 直答那一格的
-                         門檻要填得進去（judge 關著又沒開重排序時那一格就填不得，見該處註解）。 #}
+                         門檻要填得進去（judge 關著又沒開重排序時那一格就填不得，見該處註解）。
+                       **重排序器目錄是空的時候，關著的這顆開關 `disabled`**（開著的照樣關得掉）：目錄一顆都
+                         沒有＝這個部署沒有任何重排序模型，打開它一定存不進去（下一格選不到任何值）。
+                         這是 §3-2「兩個控制項的組合存在無效格」那一條：無效格由 markup 表達，而
+                         「為什麼」由下一格的空下拉自己說出來。示範目錄有三顆，故不演這一態。 #}
                     <label class="switch">
                         <input type="checkbox" class="switch-checkbox js-enable-rerank" role="switch" checked aria-label="啟用重排序" data-i18n-aria-label="settings.enableRerank">
                         <span class="switch-box"><span class="switch-btn"></span></span>
@@ -623,7 +652,11 @@ permalink: 5-2_conversationSettings.html
                          少一個就是那顆重排序器選不到，而畫面上完全看不出來。重排序器名是照這份目錄
                          驗的白名單，不在名單上的存不進去；名字對不上時整段重排序會被靜默跳過，
                          而分數門檻照舊比對。
-                         option 的文字是資料帶來的 `label`，不掛 data-i18n（見頂端目錄註解）。 #}
+                         option 的文字是資料帶來的 `label`，不掛 data-i18n（見頂端目錄註解）。
+                       **目前值是空的（還沒選）時，最前面補一顆空值 option「請選擇」**（`common.pleaseSelect`）：
+                         新設定檔與剛打開重排序的那一刻都是這一態。不補的話 `<select>` 的值對不上任何 option，
+                         瀏覽器會**顯示第一顆**、實際值卻仍是空的——使用者以為選好了，存檔才被擋下；
+                         而且再選一次同一顆不算「改變」，連補救都做不到。**有值時不補**（示範就是有值那一態）。 #}
                     <select class="form-control singleSelect js-reranker-name" id="genReranker" aria-describedby="genRerankerScale">
                         {% for r in rerankerCatalog %}
                         <option value="{{ r.name }}"{% if r.name == activeScale.name %} selected{% endif %}>{{ r.label }}</option>
@@ -2105,7 +2138,7 @@ permalink: 5-2_conversationSettings.html
              就把它弄丟了（多選的值來自 <option>，選單沒有它＝選取狀態不存在）。
              停用期間不會被呼叫（呼叫前另有一道啟用狀態的過濾），故文案是「要等平台啟用後才會被
              呼叫」而不是「不能設定」。
-             示範 4 筆＝5-6-2 註冊表的四筆（跨頁自洽）；選取 1 筆啟用 ＋ 1 筆停用中，把「已選取卻被停用」
+             示範 5 筆＝5-6-2 註冊表的五筆（跨頁自洽；兩種連線方式都在裡面，這份清單不分）；選取 1 筆啟用 ＋ 1 筆停用中，把「已選取卻被停用」
              那一態演出來（§5：每個分支都要有頁面演得到）。「（停用中）」是 chrome 走 i18n，Server 名是
              業務識別字不翻——<option> 裡塞不進第二個節點，故用 ui/multi-select 的 data-suffix／
              data-suffix-key 兩個槽組出來（§4-2 資料槽慣例）。 #}
@@ -2118,6 +2151,7 @@ permalink: 5-2_conversationSettings.html
                     <option value="1" selected>時間工具</option>
                     <option value="2">內部文件搜尋</option>
                     <option value="4">翻譯工具</option>
+                    <option value="5">法規查詢</option>
                     <option value="3" selected data-suffix="（停用中）" data-suffix-key="settings.mcpServerInactive">舊版文件搜尋</option>
                 </select>
                 <p class="text-gray" data-i18n="settings.mcpServersHint">標示「停用中」的 Server 仍可先加入設定，但要等平台啟用後才會被呼叫。</p>

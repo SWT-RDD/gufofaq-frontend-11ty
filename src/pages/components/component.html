@@ -1154,8 +1154,16 @@ bodyClass: guideline-page
                 </ul>
             </div>
             <div class="block flex-row column gap-8">
-                <p class="text-red m-0" data-i18n="regression.llmProviderUnsupported">這顆模型的供應商不在本產品建得起來的範圍內：設定檔的判定分組沒有另外指定模型時，評審會繼承這一輪的模型而建不起來——這一輪每一則主觀分斷言都會是「評審未完成」。答案本身仍由問答引擎產生。</p>
-                <p class="text-red m-0" data-i18n="regression.llmEffortUnsupported">本產品送不出思考深度給這顆模型：設定檔的判定分組若設了思考深度，評審一樣會建不起來（同樣只影響主觀分，不影響答案）。</p>
+                {# 5-2 的「模型能力提醒」（`.js-capability-warnings`）：那一頁的示範設定沒有任何提醒，
+                     所以那一塊在使用頁上永遠是 `.hidden`。逐則是執行期的一句話（資料、不翻），
+                     這裡兩則只是長相示範；標題是 chrome，繁中逐字照抄 5-2（§4-2）。 #}
+                <div class="js-capability-warnings" role="status">
+                    <p class="text-bold" data-i18n="settings.capabilityWarningsTitle">模型能力提醒：設定已經儲存，但下面這幾項不會照設定生效，或不確定會不會生效。</p>
+                    <ul>
+                        <li class="text-gray">主模型 openai:o3-mini 不收溫度：這一項存下了，但問答時不會送出。</li>
+                        <li class="text-gray">「意圖判斷」那一組的模型 acme:custom-model 無從得知是否支援思考深度：設定照樣存下，實際是否生效要看那顆模型。</li>
+                    </ul>
+                </div>
                 <p class="text-red m-0" data-i18n="regression.effectiveBaselineMissing">基準那一輪沒有留下實際使用的設定，所以「兩輪的設定差在哪」這一次答不出來——不要把下面這張表讀成「兩輪設定相同」。</p>
                 <p class="text-red m-0" data-i18n="settings.outputRuleCategoryDuplicate">代碼重複，只有最後一列會生效——請把重複的那列刪掉。</p>
                 {# 3-1-3「任務描述」那一顆 editable-block 的「存不進去」態（`editSaveRejectedNoteKey`）：

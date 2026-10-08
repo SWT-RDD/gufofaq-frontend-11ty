@@ -746,12 +746,10 @@ permalink: 2-2-4_regressionSuites.html
      **自由輸入的失敗方式是「要按下開始執行才知道打錯」**
      ——回來的是「無權限使用模型」，而那一次已經耗掉了使用者的等待。
 
-     兩句紅字是**選了目錄裡本產品自己驅動不了的那種模型**時才出現的（切版用 `hidden` 演兩態）。
-     判準不在畫面上：可驅動的供應商前綴、以及「哪一種吃得下思考深度」，都是執行期讀回來的，
-     前端不得自己抄一份前綴清單。
-     為什麼會壞：judge 斷言的評審模型讀的是設定檔的判定分組，**分組沒設就繼承這一輪指定的
-     模型**；繼承到建不起來的供應商時，這一輪每一條判準都會變成「未評出」——報表看起來只是
-     「評審漂移」，沒有人會知道是這一顆旋鈕造成的。 #}
+     **這一欄底下只有一句說明，沒有「這顆模型建不建得起來」的警告**：目錄裡每一顆都是這一輪
+     跑得起來的模型（答案與評審都經同一個問答引擎、以設定檔各分組的模型呼叫），選哪一顆都
+     不存在「選得到、卻跑不起來」那一態，所以沒有分支可以演。評審出不了分數時由執行中的
+     「評審沒評出來」計數與報表講（`regression.runProgressUnscoredPrefix` 那一段）。 #}
 {% set regressionTurnTotal = 21 %}
 {% set regressionOverrideCount = 4 %}
 {# 執行區的界線清單。**逐則與整批兩顆逾時都要在**：只給逐則的那一顆時，讀的人自己乘出來
@@ -804,8 +802,7 @@ permalink: 2-2-4_regressionSuites.html
                 </div>
             </div>
         </div>
-        {# LLM模型——覆寫態：控制項是 select（值域＝這個租戶可用的模型目錄），不是輸入框。
-             兩句紅字用 hidden 演另一態：選到本產品驅動不了的供應商時才出現（見上方檔頭）。 #}
+        {# LLM模型——覆寫態：控制項是 select（值域＝這個租戶可用的模型目錄），不是輸入框。 #}
         <div class="col-4-md col-12-sm">
             <div class="form-group">
                 <div class="label">
@@ -818,12 +815,8 @@ permalink: 2-2-4_regressionSuites.html
                         <span id="overrideThisRunText" data-i18n="regression.overrideThisRun">這一次改用指定值</span>
                     </label>
                     {# 模型目錄與 5-2／manage-tenant-modal 是同一份（§6 不得各烤一份）。示範沿用 5-2 的
-                         `llmModels` 那一組值，多加一顆**供應商不在可驅動前綴裡**的
-                         （`google:gemini-2-flash`）——下面那兩條紅字才有觸發者：可驅動的供應商
-                         前綴只有 `openai:`／`anthropic:`（決定第一條），而吃得下思考深度的只有
-                         `openai:`（決定第二條）。
-                         ⚠️ **這份清單裡一定要留一顆前綴不合的模型**：五顆全落在 openai／anthropic 裡的話，
-                         第一條紅字整站沒有任何一顆選項演得出來（§5）。 #}
+                         `llmModels` 那一組值，另多一顆其他供應商的（`google:gemini-2-flash`）——目錄的
+                         供應商不只兩家，示範不要把它演成封閉的兩家。 #}
                     {% set runLlmModels = ["openai:gpt-4o", "openai:gpt-4o-mini", "openai:gpt-4.1", "anthropic:claude-3-5-sonnet", "google:gemini-2-flash"] %}
                     <select id="runLlmSelect" class="form-control js-llm-select" aria-describedby="runLlmSelectHint">
                         {% for m in runLlmModels %}
@@ -831,8 +824,6 @@ permalink: 2-2-4_regressionSuites.html
                         {% endfor %}
                     </select>
                     <p id="runLlmSelectHint" class="text-gray" data-i18n="regression.llmFromCatalog">可以選的就是這個租戶被允許使用的那幾顆模型；這一欄不接受自己打字——打錯的話要按下開始執行才會被擋掉，而那一次的等待已經花掉了。</p>
-                    <p class="text-red hidden" data-i18n="regression.llmProviderUnsupported">這顆模型的供應商不在本產品建得起來的範圍內：設定檔的判定分組沒有另外指定模型時，評審會繼承這一輪的模型而建不起來——這一輪每一則主觀分斷言都會是「評審未完成」。答案本身仍由問答引擎產生。</p>
-                    <p class="text-red hidden" data-i18n="regression.llmEffortUnsupported">本產品送不出思考深度給這顆模型：設定檔的判定分組若設了思考深度，評審一樣會建不起來（同樣只影響主觀分，不影響答案）。</p>
                 </div>
             </div>
         </div>

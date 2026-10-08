@@ -207,15 +207,15 @@ permalink: 5-4_coverageGaps.html
          也重新查一次同一份報表，故三顆共用同一顆 key、同一組分支（§5 同一道守衛分支集合一致）。
          左邊那顆是篩選列正典的 `.js-filter-clear`「清除」，不寫成「取消」——那個字面全站沒有
          任何 js 選得到，會變成一顆按了不會有事發生的鈕（§5 ④）。
-         **意圖分組那一段 400 不可以漏**：選了分群維度時，會在拉資料**之前**先檢查意圖判斷那一組的
-         模型設好了沒有，沒設好就直接擋下、連資料都不拉。本頁的示範預設就選著「業務面向」
-         （`gapSummary.dimensionName`），所以按一下查詢就撞得到，而它是**使用者自己修得掉**的
-         ——去 5-2「生成設定」的分組 LLM 把「意圖判斷」那一組的模型設好——折進「載入資料失敗，
-         請重新整理頁面」等於叫人重整一個永遠不會成功的請求（§5：逐 raise 對回鈕，不可折進紅色終局）。
-         不分群時這一段走不到，但同一顆鈕兩種選擇都送得出去，故照樣列。 #}
+         **沒有「意圖分組的模型還沒設好」那一段**（§3-2 刪掉結果分支的舉證）：分群不會在拉資料之前
+         先檢查任何一組模型，所以這顆鈕沒有「分不了群、整份擋下」這一態。分類這一步失敗時，那幾題照實
+         落進 `undetermined`「判不準」那一組（見本頁頂端 kind 那一段：它就包含「分類器整批失效」），
+         報表照樣出來——那一列異常大就是訊號。
+         **七段的段序是索引契約**：`info|warning|success|warning|warning|error|warning`，error 在第六段，
+         **不是最末段**（最末段是「未開通」的 warning）——假設「末段即 error」的消費端會接錯位。 #}
     <div class="flex-row align-items-center justify-content-center gap-16">
         <button type="button" class="button button-border js-filter-clear" data-i18n="action.clear">清除</button>
-        <button data-capability="history" type="button" class="button button-primary" data-toast="正在查詢資料…|權限不足，無法查詢——請找貴租戶的管理者開通|查詢成功|時間區間不正確（起訖需成對、開始須早於結束與現在、且在一年內、範圍不超過 365 天）|這段期間的資料量超過單次上限，請縮小時間範圍|意圖分組的模型還沒設好，這份報表分不了群——請先到對話設定的「生成設定」把「意圖判斷」那一組的模型設好|載入資料失敗，請重新整理頁面|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.queryStats" data-toast-type="info|warning|success|warning|warning|warning|error|warning" data-i18n="action.query">查詢</button>
+        <button data-capability="history" type="button" class="button button-primary" data-toast="正在查詢資料…|權限不足，無法查詢——請找貴租戶的管理者開通|查詢成功|時間區間不正確（起訖需成對、開始須早於結束與現在、且在一年內、範圍不超過 365 天）|這段期間的資料量超過單次上限，請縮小時間範圍|載入資料失敗，請重新整理頁面|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.queryStats" data-toast-type="info|warning|success|warning|warning|error|warning" data-i18n="action.query">查詢</button>
     </div>
 </div>
 
@@ -312,7 +312,7 @@ permalink: 5-4_coverageGaps.html
                 <span id="gapExclSessionName-{{ loop.index }}">{{ q }}</span>
                 <button data-capability="history" type="button" class="button button-border button-sm js-undo-exclude-question" data-question="{{ q }}"
                     id="gapExclSessionUndo-{{ loop.index }}" aria-labelledby="gapExclSessionName-{{ loop.index }} gapExclSessionUndo-{{ loop.index }}"
-                    data-toast="正在查詢資料…|權限不足，無法查詢——請找貴租戶的管理者開通|查詢成功|時間區間不正確（起訖需成對、開始須早於結束與現在、且在一年內、範圍不超過 365 天）|這段期間的資料量超過單次上限，請縮小時間範圍|意圖分組的模型還沒設好，這份報表分不了群——請先到對話設定的「生成設定」把「意圖判斷」那一組的模型設好|載入資料失敗，請重新整理頁面|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.queryStats" data-toast-type="info|warning|success|warning|warning|warning|error|warning"
+                    data-toast="正在查詢資料…|權限不足，無法查詢——請找貴租戶的管理者開通|查詢成功|時間區間不正確（起訖需成對、開始須早於結束與現在、且在一年內、範圍不超過 365 天）|這段期間的資料量超過單次上限，請縮小時間範圍|載入資料失敗，請重新整理頁面|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.queryStats" data-toast-type="info|warning|success|warning|warning|error|warning"
                     data-i18n="action.undoExclude">取消排除</button>
                 <button type="button" data-capability="settings:write" class="button button-border button-sm js-persist-exclusion" data-question="{{ q }}"
                     id="gapExclSessionPersist-{{ loop.index }}" aria-labelledby="gapExclSessionName-{{ loop.index }} gapExclSessionPersist-{{ loop.index }}"
@@ -377,7 +377,7 @@ permalink: 5-4_coverageGaps.html
                     <td>
                         <button data-capability="history" type="button" class="button button-border button-sm js-exclude-question" data-question="{{ sample.question }}"
                             id="gapSampleExclude-{{ gapGroupNo }}-{{ loop.index }}" aria-labelledby="gapSampleQ-{{ gapGroupNo }}-{{ loop.index }} gapSampleExclude-{{ gapGroupNo }}-{{ loop.index }}"
-                            data-toast="正在查詢資料…|權限不足，無法查詢——請找貴租戶的管理者開通|查詢成功|時間區間不正確（起訖需成對、開始須早於結束與現在、且在一年內、範圍不超過 365 天）|這段期間的資料量超過單次上限，請縮小時間範圍|意圖分組的模型還沒設好，這份報表分不了群——請先到對話設定的「生成設定」把「意圖判斷」那一組的模型設好|載入資料失敗，請重新整理頁面|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.queryStats" data-toast-type="info|warning|success|warning|warning|warning|error|warning"
+                            data-toast="正在查詢資料…|權限不足，無法查詢——請找貴租戶的管理者開通|查詢成功|時間區間不正確（起訖需成對、開始須早於結束與現在、且在一年內、範圍不超過 365 天）|這段期間的資料量超過單次上限，請縮小時間範圍|載入資料失敗，請重新整理頁面|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.queryStats" data-toast-type="info|warning|success|warning|warning|error|warning"
                             data-i18n="action.exclude">排除</button>
                     </td>
                 </tr>

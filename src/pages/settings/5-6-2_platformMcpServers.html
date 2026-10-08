@@ -18,15 +18,23 @@ permalink: 5-6-2_platformMcpServers.html
      這一頁的每一個動作（含列清單、問工具、測連線這些唯讀的）都要平台系統管理員，
      稽核員連讀都沒有，故導覽入口也標 admin（見 components/header 的 menuItems）。 #}
 {# 平台管理者專屬：MCP Server 全域註冊表。
-     MCP Server ＝ Stdio 子程序（command/args/env）＝在 agent 主機執行任意指令，等同 RCE，
+     MCP Server 有兩種連線方式，兩種都是高權限：
+       · **Stdio** 子程序（command/args/env）＝在 agent 主機執行任意指令，等同 RCE；
+       · **Streamable HTTP**（url/headers/tlsVerify）＝讓 agent 主機對任意網址發請求，
+         而且帶著標頭裡的憑證。
      故只准平台管理者註冊；租戶端只能在對話設定頁「勾選」已註冊的 server（唯讀投影，不碰此頁）。
+     **兩種方式各有自己的一組欄位，互不相通**：stdio 只有執行指令／參數／環境變數，HTTP 只有
+     網址／HTTP 標頭／驗證 HTTPS 憑證；名稱、描述、啟用兩種共用。一次寫入只送**自己那一組**——
+     混送另一種方式的欄位會被整筆擋下，所以切換連線方式時，另一組欄位裡殘留的字不會送出去。 #}
+{# 連線方式在**建立時**決定（新增區的「連線方式」下拉），之後不能改：清單逐列就地編輯沒有
+     連線方式這一格，HTTP 那種列只是把三格換成自己那一組（見清單表格那一段）。要換方式就刪掉重建。
      `舊版文件搜尋` 是停用的那一台，其餘啟用（顆數與序位不寫死，§3-2）——**每一台都出現在
      5-2 的勾選清單**，停用那台在那邊以
      「（停用中）」標示（跨頁自洽；理由見 5-2 該欄位註解：停用是可逆狀態，租戶端那份目錄
      **不濾掉停用中的**，濾掉會讓「先建好設定、之後再啟用」做不到，也會讓已選取的 server
      在被停用時從選單消失）。 #}
-{# env 的值在讀取路徑一律被遮成 "***"（原樣回傳等於任何連得到這台服務的人都讀得到那些憑證），
-     寫入時值仍是 "***" 的鍵沿用原值。
+{# env 與 HTTP 標頭的值在讀取路徑一律被遮成 "***"（原樣回傳等於任何連得到這台服務的人都讀得到
+     那些憑證——標頭的值通常就是 `Authorization: Bearer …`），寫入時值仍是 "***" 的鍵沿用原值。
      故示範值就是遮罩字面——這不是佔位符，是**真的會拿到的東西**。 #}
 {# id＝MCP Server 的主鍵（整數）。**不可拿 loop.index 當列鍵**：
      這張表刪得掉列，位置不是身分——刪掉前一列之後，後面每一列的列鍵都會往前頂一格，
@@ -49,6 +57,7 @@ permalink: 5-6-2_platformMcpServers.html
    **不帶這個鍵＝那一次取不到**（問不到那一台，或它的子行程起不來）——這是三態裡的第三態，
      與 `"0"`「問到了、它一顆工具都沒有」不是同一件事（§6：「這一格沒有數字」不是一種狀態）。
    三筆各演一態，而且與同列其餘欄位自洽（§6）：
+     · id 5（HTTP 那一台）與 id 1 上一次測試成功 ⇒ `liveToolCount` 與 `tools` 筆數對得上。
      · id 1 上一次測試成功、`tools` 三筆 ⇒ `liveToolCount: "3"`，兩欄對得上。
      · id 2 上一次測試是 `TimeoutError`（連得上才問得到工具）⇒ 這一次同樣問不到 ⇒ 不帶鍵。
      · id 3 是**停用**且從未測試過的舊版套件——問工具這條路徑**不看啟用狀態**（拿到 server
@@ -57,17 +66,26 @@ permalink: 5-6-2_platformMcpServers.html
        「工具欄有值」與「最近一次測試＝尚未測試」可以並存，也就是本欄與那一欄非分開不可的理由。
      `翻譯工具` 演的是另一態：**測得起來、而那一台就是一顆工具都沒有**（兩欄講同一件事）——
        「最近一次測試」欄的那一支 `{% else %}` 只有這一台渲染得出來。 #}
+{# `transport`＝連線方式，值域 `stdio`｜`streamable_http`；**不帶這個鍵＝stdio**（同一份清單裡
+     兩種都有，stdio 那幾筆就不寫它）。`法規查詢` 是 streamable_http 那一台——它沒有 command/args/env，
+     改帶 `url`／`headers`（一筆一個 `Name: value`，值同 env 演成遮罩字面）／`tlsVerify`，清單上那一列
+     三格因此換成自己那一組（§5：每個分支都要有頁面演得到——沒有這一台，HTTP 列那一支整站畫不出來）。 #}
 {% set mcpServers = [
+  { id: 5, name: "法規查詢", transport: "streamable_http", url: "https://mcp.example.com/regulations", headers: ["Authorization: ***"], tlsVerify: true, description: "連到外部法規資料庫的遠端 Server。", active: true, liveToolCount: "2", lastTest: { ok: true, toolsCount: 2, tools: [{ name: "search_regulations", description: "依關鍵字查法規條文" }, { name: "get_article", description: "取回單一條文全文" }], error: "" } },
   { id: 4, name: "翻譯工具", command: "npx", args: ["-y", "@acme/translate-mcp"], env: [], description: "多語翻譯輔助。", active: true, liveToolCount: "0", lastTest: { ok: true, toolsCount: 0, tools: [], message: "", error: "" } },
   { id: 3, name: "舊版文件搜尋", command: "npx", args: ["-y", "@acme/doc-mcp-legacy"], env: ["ACME_API_KEY=***"], description: "舊版內部文件查詢，已停用。", active: false, liveToolCount: "0", lastTest: { ok: false, toolsCount: 0, tools: [], message: "", error: "" } },
   { id: 2, name: "內部文件搜尋", command: "npx", args: ["-y", "@acme/doc-mcp"], env: ["ACME_API_KEY=***", "ACME_REGION=ap-northeast-1"], description: "查詢內部知識庫文件。", active: true, lastTest: { ok: false, toolsCount: 0, tools: [], message: "MCP Server 連線異常", error: "TimeoutError" } },
   { id: 1, name: "時間工具", command: "uvx", args: ["mcp-server-time", "--local-timezone=Asia/Taipei"], env: [], description: "提供目前時間與時區換算。", active: true, liveToolCount: "3", lastTest: { ok: true, toolsCount: 3, tools: [{ name: "get_current_time", description: "回目前時間（可指定時區）" }, { name: "convert_time", description: "在兩個時區之間換算時間" }, { name: "list_timezones", description: "列出支援的 IANA 時區識別字" }], error: "" } }
 ] %}
 
-<p class="text-gray" data-i18n="settings.mcpServersIntro">MCP Server 讓 Agent 連上外部工具。註冊即在 Agent 主機執行指定指令，屬高權限操作，僅平台管理者可管理；租戶只能在對話設定勾選已註冊的 Server。</p>
+<p class="text-gray" data-i18n="settings.mcpServersIntro">MCP Server 讓 Agent 連上外部工具。註冊一台等於讓 Agent 主機執行指定指令（Stdio）或對指定網址發請求（Streamable HTTP），屬高權限操作，僅平台管理者可管理；租戶只能在對話設定勾選已註冊的 Server。</p>
 
-{# 新增 MCP Server：名稱＋執行指令（必填）＋參數＋環境變數＋描述＋啟用＋新增鈕。連線測試是獨立的
-     動作、不在建立路徑上。
+{# 新增 MCP Server：名稱＋連線方式＋（stdio：執行指令（必填）＋參數＋環境變數｜HTTP：網址（必填）＋
+     HTTP 標頭＋驗證 HTTPS 憑證）＋描述＋啟用＋新增鈕。連線測試是獨立的動作、不在建立路徑上。
+     **連線方式是值相依規則**（§3-2 兩個軸的第二軸）：選了哪一種，就只畫那一種自己的三格、另一組
+     不渲染——被藏起來的那一組在這種連線方式下沒有作用對象（stdio 沒有網址可連、HTTP 沒有子程序可起），
+     而送出時也只送畫出來的那一組。示範停在 stdio（下拉的預設值），HTTP 那三格的 markup 保留在原位
+     掛 `.hidden`，當**位置與樣式的規格**；選了 HTTP 之後 React 換掉的就是 stdio 那三格的位置。
      **這條寫入路徑擋的是三件事**（第三件最常被漏掉，因為它比另外兩件更早發生）：
        ① 名稱重複；② `command` 不在白名單——白名單就是
           `python`／`python3`／`node`／`npx`／`uvx`／`uv` 這六顆（在這裡宣告一次，就是正本），
@@ -78,9 +96,16 @@ permalink: 5-6-2_platformMcpServers.html
           它回的訊息**沒有可辨識的錯誤碼** ⇒ React 端若不特別接，會落到最後那一段 error
           「請稍後再試」，而重試永遠不會成功（那些鍵根本不會被收下，就算存得進去，
           起子行程時也會被靜默剔除）。
-     還有一段 **422 超過上限**：名稱／執行指令／描述的字數，args 的項數與每項字數，
-     env 的組數與鍵值字數——就是下面那幾顆資料槽標出來的界線。
-     畫面上既然把上限標出來了，超過那一態就要有鈕演得出來。
+     ②③兩道只在 stdio 走得到（HTTP 沒有執行指令與環境變數）。
+     還有一段 **422 欄位不合格**：名稱／執行指令／網址／描述的字數，args 的項數與每項字數，
+     env 與 HTTP 標頭的組數與鍵值字數——就是下面那幾顆資料槽標出來的界線；HTTP 那一組另有
+     **格式**：網址只收 `http://`／`https://`，標頭名稱不可以是由連線本身管理的那一族（`Host` 這種），
+     標頭的值只收可見的 ASCII 字元。被擋下時回來的訊息會指名是哪一欄、
+     哪一條，頁上原樣外顯；toast 那一段只講「改哪裡」。
+     畫面上既然把上限與格式標出來了，不合格那一態就要有鈕演得出來。
+     HTTP 標頭那一格**拆不出 `Name: value` 的行在送出之前就擋下**，並講出是第幾行（同環境變數那一格
+     拆不出 `KEY=value` 的處置）：標頭的值就是憑證，靜靜丟掉那一行的話存回成功、而那一行消失了。
+     這一態不經伺服器，不是這顆鈕的 toast 段，是一句帶行號的 warning（行號是資料，不烤進譯文）。
      ⚠️ **`|` 的段序是索引契約，動它就要連 React 端一起動**：React 是以**段索引**把 400 的錯誤碼
      對到**中間**那三段（索引 1–3），最後那顆 error 則是按位置取最末段。
      往中間插一段而沒有同步改索引，錯誤就會顯示成「環境變數的值不可以是***」這種完全無關的話。 #}
@@ -111,6 +136,23 @@ permalink: 5-6-2_platformMcpServers.html
                 <div class="field">
                     <input type="text" id="newMcpNameInput" placeholder="請輸入 Server 名稱" data-i18n-placeholder="settings.pleaseEnterMcpName" class="form-control" aria-describedby="newMcpNameHint" required>
                     <span id="newMcpNameHint" class="text-gray"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-mcp-name-max-len">100</span><span data-i18n="common.unitChars"> 字</span></span>
+                </div>
+            </div>
+        </div>
+        {# 連線方式：值載體 select（§5 值載體：只掛 hook class），它的值決定下面畫哪一組欄位
+             （見本區檔頭「連線方式是值相依規則」）。option 的字面是 chrome、要翻：兩顆各自講出
+             那一種方式**實際做的事**（起子程序／連到遠端網址），只寫協定名的話，第一次來的平台
+             管理員分不出該選哪一顆。 #}
+        <div class="col-6-md col-12-sm js-mcp-transport-field">
+            <div class="form-group">
+                <div class="label">
+                    <label for="newMcpTransportInput" class="control-label" data-i18n="settings.mcpTransport">連線方式</label>
+                </div>
+                <div class="field">
+                    <select id="newMcpTransportInput" class="form-control singleSelect js-mcp-transport">
+                        <option value="stdio" selected data-i18n="settings.mcpTransportStdio">Stdio（在 Agent 主機起子程序）</option>
+                        <option value="streamable_http" data-i18n="settings.mcpTransportHttp">Streamable HTTP（連到遠端網址）</option>
+                    </select>
                 </div>
             </div>
         </div>
@@ -155,6 +197,41 @@ permalink: 5-6-2_platformMcpServers.html
                 </div>
             </div>
         </div>
+        {# ── Streamable HTTP 那一組（選了 HTTP 才畫，示範停在 stdio ⇒ 三格都掛 `.hidden`，見本區檔頭）──
+             網址必填（HTTP 那一種的必填欄，地位同 stdio 的執行指令）。placeholder 是示範網址、不翻
+             （它是一個值的形狀，不是一句話）。
+             HTTP 標頭一行一個 `Name: value`——HTTP 本身的寫法，冒號後的前導空白不算進值；與環境變數
+             同一個「以換行分隔」的理由（值裡本來就可能有空白與逗號）。三顆界線與 env 同一個形狀
+             （組數、名稱字數、值字數），沿用同一組前綴／中綴 key，數字是資料槽。
+             驗證 HTTPS 憑證：值載體 checkbox，新建一台的預設是不勾（＝不驗證）。 #}
+        <div class="col-6-md col-12-sm hidden">
+            <div class="form-group">
+                <div class="label">
+                    <label for="newMcpUrlInput" class="control-label required" data-i18n="settings.mcpUrl">網址</label>
+                </div>
+                <div class="field">
+                    <input type="text" id="newMcpUrlInput" placeholder="https://example.com/mcp" class="form-control" aria-describedby="newMcpUrlHint" required>
+                    <span id="newMcpUrlHint" class="text-gray"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-mcp-url-max-len">2048</span><span data-i18n="common.unitChars"> 字</span></span>
+                </div>
+            </div>
+        </div>
+        <div class="col-6-md col-12-sm hidden">
+            <div class="form-group">
+                <div class="label">
+                    <label for="newMcpHeadersInput" class="control-label" data-i18n="settings.mcpHeaders">HTTP 標頭</label>
+                </div>
+                <div class="field">
+                    <textarea id="newMcpHeadersInput" class="form-control size-sm" placeholder="一行一個 Name: value" data-i18n-placeholder="settings.pleaseEnterMcpHeaders" aria-describedby="newMcpHeadersHint"></textarea>
+                    <span id="newMcpHeadersHint" class="text-gray"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-mcp-headers-max-items">50</span><span data-i18n="settings.mcpEnvLimitMid">組，鍵最多</span><span class="js-mcp-headers-max-key-len">200</span><span data-i18n="settings.mcpEnvLimitMid2">字、值最多</span><span class="js-mcp-headers-max-value-len">4000</span><span data-i18n="common.unitChars"> 字</span></span>
+                </div>
+            </div>
+        </div>
+        <div class="col-6-md col-12-sm hidden">
+            <label class="form-checkbox">
+                <input type="checkbox" id="newMcpTlsVerifyInput">
+                <span data-i18n="settings.mcpTlsVerify">驗證 HTTPS 憑證</span>
+            </label>
+        </div>
         <div class="col-12-md">
             <div class="form-group">
                 <div class="label">
@@ -175,7 +252,7 @@ permalink: 5-6-2_platformMcpServers.html
             <input type="checkbox" id="newMcpActiveInput" checked>
             <span data-i18n="widget.active">啟用</span>
         </label>
-        <button type="button" class="button button-primary" data-toast="MCP Server 已建立|名稱已存在|執行指令不在允許清單（僅 python／python3／node／npx／uvx／uv）|環境變數的值不可以是「***」（那是讀取時的遮罩），請填入真正的值|參數（args）的值同樣不可以是那個遮罩字面，而這個位置沒有舊值可以沿用，請填入真正的值|環境變數裡有上游一定會剔除的載入器掛鉤鍵，存得進去也不會生效，請先移除它們|有欄位超過上面標示的長度或項數上限，請縮短後再送出|建立失敗，請稍後再試" data-i18n-data-toast="toast.createMcpServer" data-toast-type="success|warning|warning|warning|warning|warning|warning|error">
+        <button type="button" class="button button-primary" data-toast="MCP Server 已建立|名稱已存在|執行指令不在允許清單（僅 python／python3／node／npx／uvx／uv）|環境變數的值不可以是「***」（那是讀取時的遮罩），請填入真正的值|參數（args）的值同樣不可以是那個遮罩字面，而這個位置沒有舊值可以沿用，請填入真正的值|環境變數裡有上游一定會剔除的載入器掛鉤鍵，存得進去也不會生效，請先移除它們|有欄位超過上面標示的長度或項數上限，或網址／HTTP 標頭的格式不合，請修正後再送出|建立失敗，請稍後再試" data-i18n-data-toast="toast.createMcpServer" data-toast-type="success|warning|warning|warning|warning|warning|warning|error">
             <img src="./images/icon_add_white.png" width="48" height="48" decoding="async" alt="" class="icon">
             <span data-i18n="settings.addMcpServer">新增 MCP Server</span>
         </button>
@@ -189,7 +266,7 @@ permalink: 5-6-2_platformMcpServers.html
 {% set helpModalTitleKey = "help.settings.addMcpServer.title" %}
 {% set helpModalTitle = "新增 MCP Server 說明" %}
 {% set helpModalWhatKey = "help.settings.addMcpServer.what" %}
-{% set helpModalWhat = "這一區用來登記一台新的 MCP Server：填入名稱、執行指令等定義並送出，會新增到全平台共用的同一份登記表裡，不屬於任何單一租戶。因為註冊等同於在 agent 主機上執行你填入的指令，只有平台系統管理員能在這裡建立；各租戶只能到自己的對話設定頁勾選已登記好的 Server。" %}
+{% set helpModalWhat = "這一區用來登記一台新的 MCP Server：選好連線方式、填入名稱與那一種方式的定義（執行指令或網址）並送出，會新增到全平台共用的同一份登記表裡，不屬於任何單一租戶。因為註冊等同於讓 agent 主機執行你填入的指令、或對你填入的網址發請求，只有平台系統管理員能在這裡建立；各租戶只能到自己的對話設定頁勾選已登記好的 Server。" %}
 {% set helpModalStateItems = [] %}
 {% set helpModalLimitRows = [] %}
 {% include "components/help-modal/help-modal.html" %}
@@ -220,12 +297,15 @@ permalink: 5-6-2_platformMcpServers.html
          而 §4 明訂「同一個欄位在同一頁出現多次時每一處都要有：只掛在新增區＝那條約束
          在編輯路徑上不存在」，所以編輯區這五格也要有。不逐列複製五句（三列就是十五句同樣的話）：
          界線是全域的，故常駐一行、每一欄一顆 id，逐列的控制項各自 `aria-describedby` 指過來。
-         數字全部是資料槽（值由 React 在執行期填），與新增區同一批 class。 #}
+         數字全部是資料槽（值由 React 在執行期填），與新增區同一批 class。
+         網址與 HTTP 標頭兩句同樣常駐：清單裡同時有兩種連線方式的列，HTTP 那種列的兩格要有地方指。 #}
     <div class="flex-row flex-wrap gap-16 text-gray">
         <span id="mcpNameLimitHint"><span data-i18n="widget.tokenName">名稱</span><span data-i18n="common.labelSep">：</span><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-mcp-name-max-len">100</span><span data-i18n="common.unitChars"> 字</span></span>
         <span id="mcpCommandLimitHint"><span data-i18n="settings.mcpCommand">執行指令</span><span data-i18n="common.labelSep">：</span><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-mcp-command-max-len">100</span><span data-i18n="common.unitChars"> 字</span></span>
         <span id="mcpArgsLimitHint"><span data-i18n="agent.params">參數</span><span data-i18n="common.labelSep">：</span><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-mcp-args-max-items">50</span><span data-i18n="settings.mcpArgsLimitMid">個參數，每個最多</span><span class="js-mcp-args-max-len">500</span><span data-i18n="common.unitChars"> 字</span></span>
         <span id="mcpEnvLimitHint"><span data-i18n="settings.mcpEnv">環境變數</span><span data-i18n="common.labelSep">：</span><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-mcp-env-max-items">50</span><span data-i18n="settings.mcpEnvLimitMid">組，鍵最多</span><span class="js-mcp-env-max-key-len">200</span><span data-i18n="settings.mcpEnvLimitMid2">字、值最多</span><span class="js-mcp-env-max-value-len">4000</span><span data-i18n="common.unitChars"> 字</span></span>
+        <span id="mcpUrlLimitHint"><span data-i18n="settings.mcpUrl">網址</span><span data-i18n="common.labelSep">：</span><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-mcp-url-max-len">2048</span><span data-i18n="common.unitChars"> 字</span></span>
+        <span id="mcpHeadersLimitHint"><span data-i18n="settings.mcpHeaders">HTTP 標頭</span><span data-i18n="common.labelSep">：</span><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-mcp-headers-max-items">50</span><span data-i18n="settings.mcpEnvLimitMid">組，鍵最多</span><span class="js-mcp-headers-max-key-len">200</span><span data-i18n="settings.mcpEnvLimitMid2">字、值最多</span><span class="js-mcp-headers-max-value-len">4000</span><span data-i18n="common.unitChars"> 字</span></span>
         <span id="mcpDescLimitHint"><span data-i18n="settings.mcpDescription">描述</span><span data-i18n="common.labelSep">：</span><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-mcp-desc-max-len">1024</span><span data-i18n="common.unitChars"> 字</span></span>
     </div>
     {# 環境變數的**黑名單**：`NODE_OPTIONS`、`LD_PRELOAD`、`UV_INDEX` 這一族的鍵一律拒收。
@@ -282,6 +362,23 @@ permalink: 5-6-2_platformMcpServers.html
                      值取示範資料自己那一顆真 id、不用 `loop.index`（同 3-3 的 data-qa-set-id）。 #}
                 <tr data-mcp-id="{{ server.id }}">
                     <td><span id="mcpRowName-{{ server.id }}" class="sr-only">{{ server.name }}</span><input type="text" class="form-control" value="{{ server.name }}" aria-labelledby="mcpRowName-{{ server.id }} mcpHeadName" aria-describedby="mcpNameLimitHint"></td>
+                    {% if server.transport == "streamable_http" %}
+                    {# HTTP 那種列：沿用執行指令／參數／環境變數三格的**位置**，換成網址／HTTP 標頭／驗證 HTTPS
+                         憑證（連線方式建立後不能改，見本頁檔頭；這一列沒有 stdio 那三樣可以編）。
+                         表頭講的是 stdio 的欄名，所以**每一格自己帶一行看得見的小字欄名**，並拿它當
+                         `aria-labelledby` 的後半（同列名那一顆 sr-only 的做法）——指向表頭的話，報讀器會把
+                         網址那一格念成「執行指令」。三顆 hook 是值載體（§5）。
+                         標頭的值同 env 演成遮罩字面；原樣送回沿用原值，要輪替就把那一行的值改掉。 #}
+                    <td><span id="mcpRowUrl-{{ server.id }}" class="text-gray" data-i18n="settings.mcpUrl">網址</span><input type="text" class="form-control js-mcp-url" value="{{ server.url }}" placeholder="https://example.com/mcp" aria-labelledby="mcpRowName-{{ server.id }} mcpRowUrl-{{ server.id }}" aria-describedby="mcpUrlLimitHint"></td>
+                    <td><span id="mcpRowHeaders-{{ server.id }}" class="text-gray" data-i18n="settings.mcpHeaders">HTTP 標頭</span><textarea class="form-control size-sm js-mcp-headers" aria-labelledby="mcpRowName-{{ server.id }} mcpRowHeaders-{{ server.id }}" aria-describedby="mcpHeadersLimitHint" placeholder="一行一個 Name: value" data-i18n-placeholder="settings.pleaseEnterMcpHeaders">{% for header in server.headers %}{{ header }}
+{% endfor %}</textarea></td>
+                    <td>
+                        <label class="form-checkbox in-cell">
+                            <input type="checkbox" class="js-mcp-tls-verify" aria-labelledby="mcpRowName-{{ server.id }} mcpRowTls-{{ server.id }}"{% if server.tlsVerify %} checked{% endif %}>
+                            <span id="mcpRowTls-{{ server.id }}" data-i18n="settings.mcpTlsVerify">驗證 HTTPS 憑證</span>
+                        </label>
+                    </td>
+                    {% else %}
                     <td><input type="text" class="form-control" value="{{ server.command }}" aria-labelledby="mcpRowName-{{ server.id }} mcpHeadCommand" aria-describedby="mcpCommandLimitHint"></td>
                     {# 參數一行一個、env 一行一個 KEY=value——**以換行分隔，不用空白或逗號**：
                          args 以空白切、env 以逗號切的話，含空白或逗號的值表達不出來，
@@ -293,6 +390,7 @@ permalink: 5-6-2_platformMcpServers.html
                          沒有這一欄的時候，輪替金鑰只能把整台 server 刪掉重建。 #}
                     <td><textarea class="form-control size-sm" aria-labelledby="mcpRowName-{{ server.id }} mcpHeadEnv" aria-describedby="mcpEnvLimitHint mcpEnvBlockedPrefixesHint mcpEnvBlockedKeysHint" placeholder="一行一個 KEY=value" data-i18n-placeholder="settings.pleaseEnterMcpEnv">{% for pair in server.env %}{{ pair }}
 {% endfor %}</textarea></td>
+                    {% endif %}
                     <td><input type="text" class="form-control" value="{{ server.description }}" aria-labelledby="mcpRowName-{{ server.id }} mcpHeadDesc" aria-describedby="mcpDescLimitHint"></td>
                     <td class="text-center">
                         <label class="form-checkbox in-cell">
@@ -359,8 +457,12 @@ permalink: 5-6-2_platformMcpServers.html
                             {# 第 4 段講的是**值**不是鍵：規則是「值等於遮罩字面就沿用原值」，
                                  所以被拒的是「新增的那組鍵沒有舊值
                                  可以沿用、值卻還是遮罩」。**不可以寫成「鍵不可以填 ***」**——那會讓這一顆鈕
-                                 與同頁的建立鈕對同一道守衛說出兩件不同的事（§5 分支語意一致）。 #}
-                            <button type="button" id="mcpSave-{{ server.id }}" aria-labelledby="mcpRowName-{{ server.id }} mcpSave-{{ server.id }}" class="button button-border button-sm" data-toast="MCP Server 已更新|名稱已存在|執行指令不在允許清單（僅 python／python3／node／npx／uvx／uv）|新增的環境變數，值不可以是「***」（那是讀取時的遮罩，沒有舊值可以沿用），請填入真正的值|參數（args）的值同樣不可以是那個遮罩字面，而這個位置沒有舊值可以沿用，請填入真正的值|環境變數裡有上游一定會剔除的載入器掛鉤鍵，存得進去也不會生效，請先移除它們|有欄位超過上面標示的長度或項數上限，請縮短後再送出|儲存失敗，請稍後再試" data-i18n-data-toast="toast.saveMcpServer" data-toast-type="success|warning|warning|warning|warning|warning|warning|error" data-i18n="action.save">儲存</button>
+                                 與同頁的建立鈕對同一道守衛說出兩件不同的事（§5 分支語意一致）。
+                               **只送這一列動過的欄**（比的是這一列目前的伺服器值）：HTTP 那種列整列送回去會帶上
+                                 stdio 那三格的空值，而混送另一種連線方式的欄位會被整筆擋下——那種列連勾一下
+                                 「啟用」都存不了；遮罩的憑證沒動也不必往返一趟。**什麼都沒動就不送**，直接演
+                                 成功那一段（沒有東西要存，不是失敗）。 #}
+                            <button type="button" id="mcpSave-{{ server.id }}" aria-labelledby="mcpRowName-{{ server.id }} mcpSave-{{ server.id }}" class="button button-border button-sm" data-toast="MCP Server 已更新|名稱已存在|執行指令不在允許清單（僅 python／python3／node／npx／uvx／uv）|新增的環境變數，值不可以是「***」（那是讀取時的遮罩，沒有舊值可以沿用），請填入真正的值|參數（args）的值同樣不可以是那個遮罩字面，而這個位置沒有舊值可以沿用，請填入真正的值|環境變數裡有上游一定會剔除的載入器掛鉤鍵，存得進去也不會生效，請先移除它們|有欄位超過上面標示的長度或項數上限，或網址／HTTP 標頭的格式不合，請修正後再送出|儲存失敗，請稍後再試" data-i18n-data-toast="toast.saveMcpServer" data-toast-type="success|warning|warning|warning|warning|warning|warning|error" data-i18n="action.save">儲存</button>
                             <button type="button" id="mcpTest-{{ server.id }}" aria-labelledby="mcpRowName-{{ server.id }} mcpTest-{{ server.id }}" class="button button-border button-sm" data-toast="連線成功，「工具數」已更新|連線測試失敗，原因見「最近一次測試」欄" data-i18n-data-toast="toast.testMcpServer" data-toast-type="success|error" data-i18n="settings.testConnection">測試連線</button>
                             <button type="button" id="mcpDelete-{{ server.id }}" aria-labelledby="mcpRowName-{{ server.id }} mcpDelete-{{ server.id }}" class="button button-red button-sm js-delete-mcp" data-i18n="action.delete">刪除</button>
                         </div>
