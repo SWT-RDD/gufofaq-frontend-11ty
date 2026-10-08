@@ -31,17 +31,19 @@ permalink: 5-2_conversationSettings.html
      `label`／`note` 是**資料帶來的字串**，故不掛 data-i18n：那份資料自己就分語言，切版再包一層
      就是同一句話有兩份譯文，兩份分家的那天畫面說的與存檔被擋時說的不一樣。欄位標題
      （`settings.rerankerName` 之類）仍然是切版自己的 chrome，照舊掛 i18n。
-     `min`／`max` 一定在（沒有上下界時是 null），所以消費端不必為兩種形狀各寫一條分支。 #}
+     `min`／`max` 一定在（沒有上下界時是 null），所以消費端不必為兩種形狀各寫一條分支。
+     **示範的兩顆各演一種尺**（重排序器的分數尺不是一顆一把，而是依種類分兩族）：
+       · 名字帶 `jina:` 前綴的那一族：沒有上下界、可為負（`kind: "unbounded"`，`min`／`max` 皆 null）；
+       · 名字不帶前綴的那一族：0–1（`kind: "bounded"`，每一顆都是同一把尺）。
+     兩族的名字形狀照實際長相寫（`label` 就是名字本身）；尺的 `note` 是示範字面。 #}
 {% set rerankerCatalog = [
-  { name: "llm_reranker", label: "LLM Reranker",
-    scale: { kind: "bounded", min: 1, max: 5, note: "LLM 逐筆評分，1–5 整數（重排序提示詞裡寫的就是「評分範圍為1-5」）" } },
-  { name: "bge_reranker", label: "BGE Reranker",
-    scale: { kind: "unbounded", min: null, max: null, note: "bge-reranker-v2-m3 的未正規化 logits：可為負、無上下界，門檻要看實際資料分佈才校準得出來" } },
-  { name: "jina_reranker", label: "Jina Reranker",
-    scale: { kind: "bounded", min: 0, max: 1, note: "Jina 的 relevance_score，0–1" } }
+  { name: "jina:jina-reranker-v3", label: "jina:jina-reranker-v3",
+    scale: { kind: "unbounded", min: null, max: null, note: "relevance_score，未正規化：沒有上下界、可為負，門檻要看實際資料分佈才校準得出來" } },
+  { name: "bge-reranker-v2-m3", label: "bge-reranker-v2-m3",
+    scale: { kind: "bounded", min: 0, max: 1, note: "relevance_score，0–1（不帶前綴的這一族每一顆都是同一把尺）" } }
 ] %}
 {# **未啟用重排序時那兩把尺（weaviate／gufonet）的示範不住在這一頁**，它在元件庫頁
-     `ui/score-scale-note` 的第二份示範裡。理由：本頁的示範狀態是「重排序開著 ＋ llm_reranker」，
+     `ui/score-scale-note` 的第二份示範裡。理由：本頁的示範狀態是「重排序開著 ＋ jina:jina-reranker-v3」，
      依下面那個分派順序，「沒開重排序」那三支在這一頁
      **永遠走不到**。所以這一頁**不留 `retrievalBackends` 那份資料**：留著就是一份全站零消費點
      的陣列（沒有任何迴圈或插值讀它），而那段數字自稱是「使用者判斷門檻該填多少的唯一依據」。
@@ -50,7 +52,7 @@ permalink: 5-2_conversationSettings.html
 {# 目前生效的那把尺（這個分派順序本身是規格）：
        啟用重排序 ⇒ 目錄裡選中的那一顆重排序器
        否則 資料來源比例＝0 ⇒ weaviate ／＝1 ⇒ gufonet ／落在兩者之間 ⇒ 兩把尺並存，顯示並存警語
-     示範狀態：重排序開著 ＋ llm_reranker（有上下界，1–5）。切版沒有算術可以做那個分派，故把結果
+     示範狀態：重排序開著 ＋ jina:jina-reranker-v3（沒有上下界、可為負）。切版沒有算術可以做那個分派，故把結果
      列成資料；React 端照上面那三份目錄現算。 #}
 {% set activeScale = rerankerCatalog[0] %}
 {% set breadcrumbItems = [
@@ -80,7 +82,13 @@ permalink: 5-2_conversationSettings.html
      而設定其實有一項不會照著跑。
      **需要的資料**：這一份設定**存檔當下**算出的提醒清單，每一則一句寫給人看的話（指名模型、欄位
      與會發生什麼）；讀設定時一併拿到，存檔成功後換成這一次的那一份（這一次沒有提醒＝整塊消失，
-     上一次的不能殘留）。每一則就是一句話，原樣列出、不翻（那是執行期資料，§4-2）。
+     上一次的不能殘留）。**從別的設定檔複製進來也是一次寫入**（`components/config-copy-modal`
+     的「複製」鈕，目標就是目前檢視中的這一份）：複製成功後同樣換成**那一次複製**算出的那一份
+     ——不是複製完再讀一次的結果，複製的當下被清掉的那一項（例：來源帶著溫度、目標的主模型不收）
+     只在那一次的清單裡。每一則就是一句話，原樣列出、不翻（那是執行期資料，§4-2）。
+     **這一塊在頁首，按鈕在頁尾或彈窗裡**：所以「存得進去、但有提醒」在兩顆鈕的 toast 上各有一段
+     （`toast.saveProfileConfig`／`toast.copyConfig` 那一段「…已儲存／已複製，但有幾項…」），指名這一塊的
+     標題，讓按的人知道要回頭看。
      它**不是旋鈕**：不進「有沒有未存修改」的比對、也不隨存檔送出。
      中性字色、`role="status"`（不是 alert）：存檔是成功的，這不是失敗。
      示範設定沒有任何提醒 ⇒ 整塊掛 `.hidden`，markup 留著當位置與樣式的規格；
@@ -191,7 +199,7 @@ permalink: 5-2_conversationSettings.html
          這是**唯一**會被租戶讀到的一句總說明，它是出貨文案不是註解，說漏一半就是對租戶說謊。
          **隱藏有兩個維度，這句話兩個都要涵蓋**：
          ①**對話模式**：上面那顆「對話模式」選的是哪一個。
-         ②**同頁其他欄位目前的值**，四處：
+         ②**同頁其他欄位目前的值**，五處：
            - 知識使用模式＝`none` ⇒「可回答性閘」整區、「啟用引用標註」、「選用資料筆數」三處都不顯示。
              **這一條只套用在傳統搜尋模式。** 理由不是「知識使用模式在 Agent 不生效」——它**兩種模式
              都生效**——而是它在兩邊**作用的位置不同**：傳統模式下 `none` 讓參考視窗變成 0 筆、
@@ -208,6 +216,9 @@ permalink: 5-2_conversationSettings.html
            - 「啟用可回答性閘」關閉 ⇒ 它的判準與分數門檻不顯示（閘關掉之後分數門檻不會被讀）。
            - 「QA 直答」＝停用 ⇒ 它的分數門檻／判定補充說明／QA 集選取不顯示
              （停用時整條直答路徑第一步就結束了）。
+           - 「主回答」的模型（與思考深度）⇒「溫度」：那顆模型確知不收溫度時不顯示、值清空；只在思考
+             深度為 `none` 時才收的模型，思考深度不是 `none` 時同辦；收不收無從得知時照常顯示
+             （四態與理由見「生成設定」子頁籤溫度那一格的註解）。這一條不帶模式限定。
            ⚠️ **以上幾條講的是 React 執行期的渲染條件，不是這一份靜態稿的樣子**：切版把每一顆欄位都
              畫出來（同「生成參數」子頁籤那段免責——不用「顯示但標示不生效」，那只是把問題描述出來、
              使用者照樣填得下去）。讀某一區時看到「停用就不顯示」而眼前欄位還在，不是漏畫。 #}
@@ -517,7 +528,7 @@ permalink: 5-2_conversationSettings.html
              ⓘ 說明：markup 逐字照抄本頁既有的 info-btn 六件組（§1-2 無 html 元件契約），只換
              title/key/data-open-modal 三個值。①出處＝本子頁籤檔頭（全部欄位為值載體、統一由底部
              「儲存對話設定」直送）。
-             ①**不點名**「選用資料筆數」「啟用引用標註」「重排序模型」三欄：它們會被值相依藏起來
+             ①**不點名**「溫度」「選用資料筆數」「啟用引用標註」「重排序模型」四欄：它們會被值相依藏起來
              （見本頁 tab 列下方那段檔頭清單的②），把藏起來的欄位寫進說明等於從另一個出口把它攤回
              畫面上——`components/help-modal` 檔頭對②講的是同一件事，①手寫的那段同樣受它管。 #}
         <div class="flex-row align-items-center gap-8">
@@ -587,7 +598,21 @@ permalink: 5-2_conversationSettings.html
                **溫度這一格可以清空，清空＝「不送溫度、用模型自己的預設」**，存出去是「沒有值」，
                  **不是 0**（0 是一個真的溫度），也**不是整欄不送**（整欄不送＝維持原值）。理由：推理模型
                  多半不收溫度，而主模型不收、設定卻帶著值時，整份設定都存不進去（連只改提示詞也一樣）；
-                 換成那種模型之後，使用者要有辦法把這一格清掉。讀回來是「沒有值」時這一格顯示空白。 #}
+                 換成那種模型之後，使用者要有辦法把這一格清掉。讀回來是「沒有值」時這一格顯示空白。
+               **溫度這一格畫不畫，看主回答那顆模型收不收溫度**（值相依，本頁 tab 列下方那段檔頭清單的②）。
+                 每顆模型帶給這一格的資料要分得出四態，處置照 components/reasoning-effort-select 同一條規則
+                 ——**確知不收才整欄不渲染，無從得知照常渲染**：
+                   · 收 ⇒ 照常渲染；
+                   · 確知不收 ⇒ 整欄不渲染，而且**值清空**（存出去是「沒有值」，理由同上一段：
+                     帶著值的話整份設定都存不進去）；
+                   · 只在思考深度為 `none` 時才收 ⇒ 看「主回答」那一組的思考深度：是 `none` 才渲染；
+                     其餘（含空值「沿用模型預設」——那時實際用哪一級不是這一頁說得準的）一律同「確知不收」；
+                   · 無從得知（模型清單還沒載到、那顆模型不在清單上、或清單明講不知道）⇒ 照常渲染。
+                 換模型或換思考深度的當下就重算：從「收」換到「不收」時值當場清掉，換回來時這一格是空白
+                 （不還原舊值——舊值是對另一顆模型定的）。
+                 不畫「這顆模型不收溫度」這種說明句：不適用的欄位整欄不渲染，與本頁其餘值相依欄位同一種處置
+                 （§3-2，見 `settings.modeApplicabilityHint` 那一句總說明）。存下去之後若還是有一項不會照設定
+                 生效，頁首那一塊「模型能力提醒」會講。 #}
             <div class="form-group col-6-md col-12-sm">
                 <div class="label"><label for="genTemp" class="control-label" data-i18n="settings.temperature">溫度</label></div>
                 <div class="field">
@@ -633,12 +658,13 @@ permalink: 5-2_conversationSettings.html
             <div class="form-group col-6-md col-12-sm">
                 <div class="label"><span class="control-label" data-i18n="settings.enableRerank">啟用重排序</span></div>
                 <div class="field">
-                    {# 示範開著：分數尺的示範狀態是「重排序開著 ＋ llm_reranker」，而且 QA 直答那一格的
+                    {# 示範開著：分數尺的示範狀態是「重排序開著 ＋ jina:jina-reranker-v3」，而且 QA 直答那一格的
                          門檻要填得進去（judge 關著又沒開重排序時那一格就填不得，見該處註解）。
                        **重排序器目錄是空的時候，關著的這顆開關 `disabled`**（開著的照樣關得掉）：目錄一顆都
                          沒有＝這個部署沒有任何重排序模型，打開它一定存不進去（下一格選不到任何值）。
                          這是 §3-2「兩個控制項的組合存在無效格」那一條：無效格由 markup 表達，而
-                         「為什麼」由下一格的空下拉自己說出來。示範目錄有三顆，故不演這一態。 #}
+                         「為什麼」由下一格的空下拉自己說出來。示範目錄有兩顆，故不演這一態。
+                         **目錄「取不到」不是「空的」**（見下一格那句紅字）：取不到時不知道有沒有，這顆開關照常可切。 #}
                     <label class="switch">
                         <input type="checkbox" class="switch-checkbox js-enable-rerank" role="switch" checked aria-label="啟用重排序" data-i18n-aria-label="settings.enableRerank">
                         <span class="switch-box"><span class="switch-btn"></span></span>
@@ -656,17 +682,30 @@ permalink: 5-2_conversationSettings.html
                        **目前值是空的（還沒選）時，最前面補一顆空值 option「請選擇」**（`common.pleaseSelect`）：
                          新設定檔與剛打開重排序的那一刻都是這一態。不補的話 `<select>` 的值對不上任何 option，
                          瀏覽器會**顯示第一顆**、實際值卻仍是空的——使用者以為選好了，存檔才被擋下；
-                         而且再選一次同一顆不算「改變」，連補救都做不到。**有值時不補**（示範就是有值那一態）。 #}
+                         而且再選一次同一顆不算「改變」，連補救都做不到。**有值時不補**（示範就是有值那一態）。
+                       **目錄這一刻取不到**（查詢失敗，不是「還在載入」——載入中不得畫紅字，§3-2）：
+                         下拉只留**目前存著的那一個值**當唯一一顆 option（沒有值時只有「請選擇」），不得清空——
+                         取不到清單不是使用者改了設定；下面那行「目前這把尺」換成一句紅字
+                         （`settings.rerankerCatalogUnavailable`，同一句也畫在兩個門檻旁、`ui/score-scale-note`
+                         的 `scaleNoteUnavailable` 那一態），select 的 `aria-describedby` 改指那一句的 id。
+                         示範目錄取得到 ⇒ 那一句掛 `.hidden` 留在原位當位置與字色的規格，長相在元件庫頁
+                         `ui/score-scale-note` 的示範。這一句才是 live region（`role="alert"`）：同一個原因在
+                         同一頁有三處，只在這一處唸一次。
+                         重排序開著時存檔一樣會被擋（存檔前要對一次這份清單），結果落在儲存鈕的
+                         「暫時無法儲存」那一段。 #}
                     <select class="form-control singleSelect js-reranker-name" id="genReranker" aria-describedby="genRerankerScale">
                         {% for r in rerankerCatalog %}
                         <option value="{{ r.name }}"{% if r.name == activeScale.name %} selected{% endif %}>{{ r.label }}</option>
                         {% endfor %}
                     </select>
-                    {# 常駐提示（不是兩態、不是 toast）：三顆的分數尺完全不同，換一顆就要重新校準
+                    {# 常駐提示（不是兩態、不是 toast）：重排序器的分數尺依種類而不同，換一顆就要重新校準
                          QA 直答與可回答性那兩個門檻——而使用者改這一格的當下，那兩個門檻在另一個子頁籤上、
                          他看不到。被擋下時的訊息講的也是同一件事（門檻是照重排序器的分數尺校準的），
-                         所以這句話兩邊都要有（門檻那一側另有「目前這把尺」）。 #}
-                    <span class="text-gray" id="genRerankerScale"><span data-i18n="settings.rerankerScaleNote">每一顆重排序器的分數尺不同，換一顆就要重新校準「QA 直答」子頁籤的分數門檻與「可回答性閘」的門檻。目前這把尺：</span>{{ activeScale.scale.note }}</span>
+                         所以這句話兩邊都要有（門檻那一側另有「目前這把尺」）。
+                         **譯文不寫哪一族是哪一把尺**：那是目錄帶來的資料（§4-2），寫進譯文的那一天起，
+                         多一種重排序器就要改兩份譯文；目前那一把的原文接在句尾。 #}
+                    <span class="text-gray" id="genRerankerScale"><span data-i18n="settings.rerankerScaleNote">換一顆重排序器，分數尺可能跟著變（有的有上下界，有的沒有、還可能為負），所以換了就要重新校準「QA 直答」子頁籤的分數門檻與「可回答性閘」的門檻。目前這把尺：</span>{{ activeScale.scale.note }}</span>
+                    <span class="text-red hidden" id="genRerankerCatalogUnavailable" role="alert" data-i18n="settings.rerankerCatalogUnavailable">重排序模型清單暫時取不到，請稍後重新整理這一頁。在那之前選不到重排序模型、也看不到它的分數尺；重排序開著時，存檔會被擋下。</span>
                 </div>
             </div>
             <div class="form-group col-6-md col-12-sm">
@@ -725,7 +764,7 @@ permalink: 5-2_conversationSettings.html
     {% set helpModalTitleKey = "help.settings.generationParams.title" %}
     {% set helpModalTitle = "生成參數說明" %}
     {% set helpModalWhatKey = "help.settings.generationParams.what" %}
-    {% set helpModalWhat = "這一區設定主回答本身怎麼生成：用哪顆模型與思考深度、溫度、要從知識庫取用多少資料、主題與向量的來源比例、知識使用模式與要不要重排序，以及對話記憶輪數、回應格式與時區。這些值隨頁面底部的「儲存對話設定」一起送出；主回答以外各內部 LLM 呼叫要用哪顆模型，另見下方「分組 LLM（進階）」。" %}
+    {% set helpModalWhat = "這一區設定主回答本身怎麼生成：用哪顆模型與思考深度、要從知識庫取用多少資料、主題與向量的來源比例、知識使用模式與要不要重排序，以及對話記憶輪數、回應格式與時區。這些值隨頁面底部的「儲存對話設定」一起送出；主回答以外各內部 LLM 呼叫要用哪顆模型，另見下方「分組 LLM（進階）」。" %}
     {% set helpModalStateItems = [] %}
     {% set helpModalLimitRows = [] %}
     {% include "components/help-modal/help-modal.html" %}
@@ -2252,9 +2291,9 @@ permalink: 5-2_conversationSettings.html
              那是完全安全且有用的組態。所以這一格**不是必填、也不給預設數字**——用預設值假裝已設定
              更糟：0.5 在 weaviate 的尺上是死條件（刻意不相關的問句分數照樣高於它），
              一個永遠不觸發的數字比留白糟得多。
-             **`min`／`max` 一顆都不綁**（`step="any"` 才收得下小數）：三顆重排序器的尺互不相同，
-             關鍵字檢索那把更是數百到上萬的整數——寫死 [0, 1] 會讓其中幾種部署填不進自己的合法值；
-             而下界同樣綁不得，未正規化 logits 那一族的合理門檻本來就可以是負的。唯一的約束是
+             **`min`／`max` 一顆都不綁**（`step="any"` 才收得下小數）：重排序器的尺依種類而不同，
+             關鍵字檢索那把更沒有上界——寫死 [0, 1] 會讓其中幾種部署填不進自己的合法值；
+             而下界同樣綁不得，沒有下界、可為負的那一族重排序器，合理門檻本來就可以是負的。唯一的約束是
              「必須是有限的數字」，那句話 `min`／`max` 表達不出來，所以由這一格旁邊那段常駐提示承載
              （§4：沒有量級邊界時，約束照樣要看得見）。
              ⚠️ **跨子頁籤的相依**（這一格最重要的一句）：「直答模式＝完全命中（judge 關）＋
@@ -2273,10 +2312,12 @@ permalink: 5-2_conversationSettings.html
             <div class="field col-12-sm">
                 <input type="number" step="any" id="qaDirectScoreFloor" class="form-control js-qa-direct-score-floor"
                     placeholder="留白＝未校準" data-i18n-placeholder="settings.scoreFloorUncalibrated"
-                    value="3" aria-describedby="qaDirectScoreFloorRange qaDirectScoreFloorScale qaDirectScoreFloorDep">
+                    value="0.2" aria-describedby="qaDirectScoreFloorRange qaDirectScoreFloorScale qaDirectScoreFloorDep">
                 {# **上下界一條都不發布**（§4 三件套的第二件省略得掉）：尺由當次給分的那一方決定，
-                     任一側寫死都會讓其中一種部署填不進自己的合法值——負門檻對未正規化 logits
-                     那一族是正常設定，而綁 [0,1] 會讓關鍵字檢索那把尺（數百到上萬）整個填不進來。
+                     任一側寫死都會讓其中一種部署填不進自己的合法值——負門檻對沒有下界、可為負的
+                     那一族重排序器是正常設定，而綁 [0,1] 會讓關鍵字檢索那把尺（沒有上界）整個填不進來。
+                     示範值 `0.2` 是照示範狀態那把尺（`jina:jina-reranker-v3`，沒有上下界、相關的一筆通常
+                     落在零點幾）填的；換成 0–1 那一族或關鍵字檢索，這個數字就要重新校準。
                      唯一的約束是**必須是有限的數字**，而 `min`／`max` 表達不出「不是 NaN、不是
                      無限大」⇒ 兩顆屬性都不寫，那句約束由這一段常駐提示承載（§4：沒有量級邊界時，
                      約束照樣要看得見）。
@@ -2288,9 +2329,10 @@ permalink: 5-2_conversationSettings.html
                      `scaleNoteRecalibrated` 這一頁從沒設過，所以今天是 undefined＝falsy；但只要有人
                      為了演那一態在上面加一行 true，下面那一顆就會跟著亮一段它不該有的字。 #}
                 {% set scaleNoteRecalibrated = false %}
+                {% set scaleNoteUnavailable = false %}
                 {% set scaleNoteId = "qaDirectScoreFloorScale" %}
                 {% set scaleNoteText = activeScale.scale.note %}
-                {# **示範狀態是「重排序開著」**（activeScale ＝ llm_reranker），依頁首那個分派順序，
+                {# **示範狀態是「重排序開著」**（activeScale ＝ jina:jina-reranker-v3），依頁首那個分派順序，
                      兩把尺並存那一態只在「沒開重排序、而且資料來源比例落在 0 與 1 之間」時成立
                      ——兩件事不可能同時發生，所以這裡不傳 scaleNoteMixed（§6 示範資料演的必須是
                      一個真實可能的狀態）。
@@ -2385,8 +2427,9 @@ permalink: 5-2_conversationSettings.html
            ⚠️ **「只是判定前的門票，閘開著時 LLM 判定一定會跑」那句是假的，不可以寫回來**：
              分數粗篩命中時直接判成誠實查無，**零 LLM、終局拒答**，隨後整批來源卡被清空——
              它不是「多付一次判定」，是這一輪的結局。
-             0.5 看起來無害只是因為 weaviate 的分數幾乎恆大於 0.5；換 `bge_reranker`（未正規化
-             logits、可為負）同一個 0.5 會讓**每一題**都變成誠實查無。
+             0.5 看起來無害只是因為 weaviate 的分數幾乎恆大於 0.5；換成沒有上下界、可為負的那一族
+             重排序器（示範目錄裡的 `jina:jina-reranker-v3`，相關的一筆通常落在零點幾），同一個 0.5
+             會讓**幾乎每一題**都變成誠實查無。
              QA 直答的門檻在關掉裁判時是**唯一判定** ⇒ 那一格才可以為空。兩格的說明不共用一句話：
              寫成「都可留白」或「都必填」的話，錯的那一邊症狀是無聲的（這一格留白 ⇒ 存不進去；
              那一格必填 ⇒ 既有的完全命中租戶會直接失去直答）。
@@ -2404,9 +2447,10 @@ permalink: 5-2_conversationSettings.html
                 {# 同直答分數門檻那一格：下界要看得見、沒有上界也要講出來（§4 三件套）。 #}
                 <span class="text-gray" id="groundingScoreFloorRange" data-i18n="settings.scoreFloorRange">沒有上下界——尺由當次給分的那一方決定；唯一的限制是必須是有限的數字</span>
                 {% set scaleNoteRecalibrated = false %}
+                {% set scaleNoteUnavailable = false %}
                 {% set scaleNoteId = "groundingScoreFloorScale" %}
                 {% set scaleNoteText = activeScale.scale.note %}
-                {# **示範狀態是「重排序開著」**（activeScale ＝ llm_reranker），依頁首那個分派順序，
+                {# **示範狀態是「重排序開著」**（activeScale ＝ jina:jina-reranker-v3），依頁首那個分派順序，
                      兩把尺並存那一態只在「沒開重排序、而且資料來源比例落在 0 與 1 之間」時成立
                      ——兩件事不可能同時發生，所以這裡不傳 scaleNoteMixed（§6 示範資料演的必須是
                      一個真實可能的狀態）。
@@ -2414,12 +2458,12 @@ permalink: 5-2_conversationSettings.html
                      矛盾的狀態；那一態的長相由元件庫展示頁負責演（§5）。 #}
                 {% set scaleNoteMixed = "" %}
                 {% include "ui/score-scale-note/score-scale-note.html" %}
-                {# 三顆重排序器的名字與尺**從 `rerankerCatalog` 現渲染**，不烤進譯文（§4-2：翻譯字串不內嵌
-                     會隨資料變動的數字／名稱）。烤進去的那一份已經漂過一次——目錄裡叫 `jina_reranker`，
-                     譯文裡只寫 `jina`；而多一顆重排序器時要改的會是兩份譯文而不是一份資料。
+                {# 每一顆重排序器的名字與尺**從 `rerankerCatalog` 現渲染**，不烤進譯文（§4-2：翻譯字串不內嵌
+                     會隨資料變動的數字／名稱）。烤進譯文的那一份會跟著目錄漂——重排序器改名或換尺時，
+                     要改的會是兩份譯文而不是一份資料。
                      「沒有上下界」那一態走 key（那是字、不是數字），有界的那兩顆直接吐目錄裡的 min／max。
                      預設值 `0.5` 同理走資料節點，與上面那顆輸入框的 `value` 同源。 #}
-                <span class="text-gray" id="groundingScoreFloorNote"><span data-i18n="settings.groundingScoreFloorNoteA">這一格不可留白（預設 </span><span class="js-grounding-score-floor-default">0.5</span><span data-i18n="settings.groundingScoreFloorNoteB">）。它不是判定前的門票——檢索最高分低於它時，這一輪不問 LLM 就直接判成誠實查無，來源也會一併清空。分數的尺由當次給分的那一方決定，沒有上界也沒有下界：開了重排序就是那顆重排序器（</span>{% for r in rerankerCatalog %}{% if r.scale.kind == "bounded" %}<span>{{ r.name }} {{ r.scale.min }}–{{ r.scale.max }}</span>{% else %}<span>{{ r.name }} </span><span data-i18n="settings.scaleUnbounded">可為負且無上下界</span>{% endif %}{% if not loop.last %}<span data-i18n="common.listSep">、</span>{% endif %}{% endfor %}<span data-i18n="settings.groundingScoreFloorNoteC">），沒開就是檢索本身，而檢索用哪一把尺由「資料來源比例」決定（純向量＝相似度 0–1、純關鍵字＝BM25 數百到上萬、之間＝兩把尺同時出現在同一批結果裡）。未開重排序、直接吃向量相似度的部署上，這個預設值落在 0–1 這把尺上實務上擋不到任何東西；換成未正規化 logits 那一族之後，同一個數字會讓每一題都被擋——換一種給分方式就必須重新校準它。與「QA 直答」那一格的可留白刻意不同：那一顆在裁決關掉時是唯一判定，這一顆則是零 LLM 的終局拒答。</span></span>
+                <span class="text-gray" id="groundingScoreFloorNote"><span data-i18n="settings.groundingScoreFloorNoteA">這一格不可留白（預設 </span><span class="js-grounding-score-floor-default">0.5</span><span data-i18n="settings.groundingScoreFloorNoteB">）。它不是判定前的門票——檢索最高分低於它時，這一輪不問 LLM 就直接判成誠實查無，來源也會一併清空。分數的尺由當次給分的那一方決定，沒有上界也沒有下界：開了重排序就是那顆重排序器（</span>{% for r in rerankerCatalog %}{% if r.scale.kind == "bounded" %}<span>{{ r.name }} {{ r.scale.min }}–{{ r.scale.max }}</span>{% else %}<span>{{ r.name }} </span><span data-i18n="settings.scaleUnbounded">可為負且無上下界</span>{% endif %}{% if not loop.last %}<span data-i18n="common.listSep">、</span>{% endif %}{% endfor %}<span data-i18n="settings.groundingScoreFloorNoteC">），沒開就是檢索本身，而檢索用哪一把尺由「資料來源比例」決定（純向量＝相似度 0–1、純關鍵字＝沒有上界的 BM25 分數、之間＝兩把尺同時出現在同一批結果裡）。未開重排序、直接吃向量相似度的部署上，這個預設值落在 0–1 這把尺上實務上擋不到任何東西；換成沒有上下界、可為負的重排序器之後，同一個數字可能讓幾乎每一題都被擋——換一種給分方式就必須重新校準它。與「QA 直答」那一格的可留白刻意不同：那一顆在裁決關掉時是唯一判定，這一顆則是零 LLM 的終局拒答。</span></span>
             </div>
         </div>
     </div>
@@ -2459,9 +2503,19 @@ permalink: 5-2_conversationSettings.html
      選到的 id 不是這個租戶的 QA 集時**整批擋下**（不靜默略過那幾顆），
      以及選取數超過單一清單上限。
      **不寫出那個上限的數字**：它與這一頁沒有任何常駐可見的落點，抄一份在註解裡就是一份會漂的
-     計數（§3-2／§6）。 #}
+     計數（§3-2／§6）。
+   **「已儲存，但有幾項不會照設定生效」那一段（warning）**：存檔成功、而這一次算出的模型能力提醒
+     不是空的。頁首那一塊「模型能力提醒」會換成這一次的清單，但它在頁首、這顆鈕在頁尾——只彈
+     「對話設定已儲存」的話，按的人讀到的是「沒事」。是 warning 不是 success：要他回頭看那一塊
+     （warning 不自動消失）。
+   **「暫時無法儲存，這一次什麼都沒有存進去」那一段（warning）**：兩種暫時性的拒絕落在這一段——
+     ①重排序開著時，存檔前要對一次「可選的重排序模型」清單，那份清單這一刻取不到；
+     ②設定服務這一刻無法驗證或寫入。兩者**都沒有寫進任何東西**、等一下再按一次就好，所以與
+     「儲存失敗，請稍後再試」（error：結果不明）分開，也不是使用者要修什麼的那一種。
+     原因的那一句照樣由頁首那條紅字原樣外顯（`saveConfigError`）。
+   兩段同樣追加在後、不插中間（理由同上），排在「此功能尚未對貴租戶開通」之前——那一段固定是最後一段。 #}
 <div class="flex-row justify-content-center mt-24">
-    <button data-capability="settings:write" type="button" class="button button-primary js-save-profile-config" data-toast="對話設定已儲存|部分欄位未通過驗證|權限不足，無法儲存——請找貴租戶的管理者開通|儲存失敗，請稍後再試|這份設定檔掛了兩顆同名的 skill。skill 的名稱就是送進模型的工具名，同名時只有一顆會生效——請改名，或只掛其中一顆|有 QA 集不屬於這個租戶，或那不是 QA 集|選取的 QA 集數量超過單一清單上限|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.saveProfileConfig" data-toast-type="success|warning|warning|error|warning|warning|warning|warning" data-i18n="settings.saveConfig">儲存對話設定</button>
+    <button data-capability="settings:write" type="button" class="button button-primary js-save-profile-config" data-toast="對話設定已儲存|部分欄位未通過驗證|權限不足，無法儲存——請找貴租戶的管理者開通|儲存失敗，請稍後再試|這份設定檔掛了兩顆同名的 skill。skill 的名稱就是送進模型的工具名，同名時只有一顆會生效——請改名，或只掛其中一顆|有 QA 集不屬於這個租戶，或那不是 QA 集|選取的 QA 集數量超過單一清單上限|對話設定已儲存，但有幾項不會照設定生效，或不確定會不會生效——請看頁首的「模型能力提醒」|暫時無法儲存，這一次什麼都沒有存進去，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.saveProfileConfig" data-toast-type="success|warning|warning|error|warning|warning|warning|warning|warning|warning" data-i18n="settings.saveConfig">儲存對話設定</button>
 </div>
 
 {# 意圖啟用確認 modal（intentionModal）：檢索與欄位子頁籤開啟某層意圖、但仍有資料集未填任務描述時彈出

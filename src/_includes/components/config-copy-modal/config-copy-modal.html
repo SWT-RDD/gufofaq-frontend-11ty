@@ -97,10 +97,23 @@
                              不可以改用 disabled 讓它不可達（REACT-CONVERSION §⑥：切版列了那一段 warning
                              就不准 disable——合規的 disable 只有「進行中」與 type-to-confirm 未解鎖兩種，
                              而那兩種都不掛 data-toast）。 #}
+                        {# 複製成功之後的兩種「成功」：
+                             ①沒有任何模型能力提醒 ⇒「設定已複製」（success）；
+                             ②有 ⇒「設定已複製，但有幾項不會照設定生效…」（warning，不自動消失）——目標設定檔的
+                               主模型不收溫度、某一組的思考深度在那顆模型上無從得知這一類，複製本身成功了，
+                               但有一項不會照著跑。逐則的那一句話畫在 5-2 頁首那一塊「模型能力提醒」裡
+                               （換成**這一次複製**算出的清單，見 5-2 那一塊的註解），彈窗照常關掉；
+                               toast 只負責叫人回頭看那一塊（這顆鈕在彈窗裡，那一塊在頁首）。
+                           「暫時無法複製，這一次什麼都沒有複製」（warning）：設定服務這一刻無法驗證或寫入，
+                             整次複製沒有寫進任何東西（不是複製了一半）、等一下再按一次就好——與「複製失敗，
+                             請稍後再試」（error：結果不明）分開。原因那一句照樣畫在窗內那條持久錯誤列
+                             （`configCopyShowError` 那一列，內容是執行期回來的訊息）。
+                           兩段都追加在後、不插中間（React 讀 `split("|")` 的索引），排在「此功能尚未對貴租戶開通」
+                             之前——那一段固定是最後一段。 #}
                         {# 這一下會整份覆寫目標設定檔——「複製」是寫入動詞，不是唯讀，
                  故掛 `data-capability="settings:write"`；
                  姊妹彈窗 apply-settings-modal／apply-settings-compare-modal 也是同一道閘門。 #}
-            <button data-capability="settings:write" type="button" class="button button-primary js-config-copy-apply" data-toast="設定已複製|權限不足，無法複製——請找貴租戶的管理者開通|請先選擇來源設定檔|請至少勾選一個複製項目|複製失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.copyConfig" data-toast-type="success|warning|warning|warning|error|warning" data-i18n="action.copy">複製</button>
+            <button data-capability="settings:write" type="button" class="button button-primary js-config-copy-apply" data-toast="設定已複製|權限不足，無法複製——請找貴租戶的管理者開通|請先選擇來源設定檔|請至少勾選一個複製項目|複製失敗，請稍後再試|設定已複製，但有幾項不會照設定生效，或不確定會不會生效——請看頁首的「模型能力提醒」|暫時無法複製，這一次什麼都沒有複製，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.copyConfig" data-toast-type="success|warning|warning|warning|error|warning|warning|warning" data-i18n="action.copy">複製</button>
                     </div>
                 </div>
             </div>

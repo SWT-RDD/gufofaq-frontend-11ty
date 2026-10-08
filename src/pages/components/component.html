@@ -367,6 +367,7 @@ bodyClass: guideline-page
                 {% set scaleNoteText = "兩批結果各自帶著自己的尺（見下一行）" %}
                 {% set scaleNoteMixed = "目前同時使用兩種檢索來源，兩批結果的分數尺不同，單一門檻無法同時對兩者成立。" %}
                 {% set scaleNoteRecalibrated = true %}
+                {% set scaleNoteUnavailable = false %}
                 {% include "ui/score-scale-note/score-scale-note.html" %}
             </div>
             {# 第二把尺：`enable_rerank=false` 那一支，示範**住在這一頁**。
@@ -394,9 +395,34 @@ bodyClass: guideline-page
                 {% set scaleNoteText = "metadata.certainty ＝ (cos+1)/2。⚠️ 文字嵌入的 cosine 幾乎不為負：實測 12 句刻意不相關的問句最低仍有 0.5206，0.5 在這個後端上是一個永遠擋不下任何東西的死條件" %}
                 {% set scaleNoteMixed = "" %}
                 {% set scaleNoteRecalibrated = false %}
+                {% set scaleNoteUnavailable = false %}
                 {% include "ui/score-scale-note/score-scale-note.html" %}
             </div>
-            <div class="subtitle">描述：分數門檻旁的「目前這把尺」。三段都由使用頁的參數決定：尺的原文（端點字串，不翻）、混合尺警語（不給＝不渲染）、重新校準紅字（不給＝不渲染）。本區把後兩態一起打開，使用頁（5-2）只會在條件成立時各自出現一段</div>
+            {# 第三份：**重排序開著、而可選的重排序模型清單這一刻取不到**（`scaleNoteUnavailable`）。
+                 選中的那一顆查不到尺，「目前這把尺：」那一行換成一句紅字——5-2 上這一態由 React 依
+                 「清單查詢失敗」條件渲染，靜態稿演的是取得到的那一態，所以這裡是它唯一可見處（§5）。
+                 與 5-2「重排序模型」那一格掛 `.hidden` 的那一句同一顆 key、繁中逐字相同（§4-2）。
+                 這一態與混合尺警語互斥（那一句只在沒開重排序時成立），故 `scaleNoteMixed` 給空字串。
+                 ⚠️ 四個參數全部重設（同上一份的理由）。 #}
+            <div class="flex-row column gap-8 mt-16">
+                <div class="form-group">
+                    <div class="label label-md">
+                        {# 可及名稱同上一份的理由要分得開；後綴是 showcase 自己的字、不掛 key（§4-2）。 #}
+                        <span id="demoScoreFloorUnavailableLabel" class="control-label"><span data-i18n="settings.scoreFloor">分數門檻</span>（重排序模型清單取不到）</span>
+                    </div>
+                    <div class="field">
+                        <input type="number" step="any" id="demoScoreFloorUnavailable" class="form-control" value="0.2" aria-labelledby="demoScoreFloorUnavailableLabel" aria-describedby="demoScoreFloorUnavailableRange demoScoreScaleNoteUnavailable">
+                        <span class="text-gray" id="demoScoreFloorUnavailableRange" data-i18n="settings.scoreFloorRange">沒有上下界——尺由當次給分的那一方決定；唯一的限制是必須是有限的數字</span>
+                    </div>
+                </div>
+                {% set scaleNoteId = "demoScoreScaleNoteUnavailable" %}
+                {% set scaleNoteText = "" %}
+                {% set scaleNoteMixed = "" %}
+                {% set scaleNoteRecalibrated = false %}
+                {% set scaleNoteUnavailable = true %}
+                {% include "ui/score-scale-note/score-scale-note.html" %}
+            </div>
+            <div class="subtitle">描述：分數門檻旁的「目前這把尺」。都由使用頁的參數決定：尺的原文（端點字串，不翻）、混合尺警語（不給＝不渲染）、重新校準提示（不給＝不渲染）、重排序模型清單取不到的紅字（給了就取代「目前這把尺」那一行）。本區分三份演出，使用頁（5-2）只會在條件成立時各自出現一段</div>
             <div class="caption">
                 <ul>
                     <li>多選框（tag 多選 + 搜尋過濾，原生 JavaScript 實作，見 ui/multi-select）</li>

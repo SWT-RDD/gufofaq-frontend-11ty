@@ -356,6 +356,7 @@ test("§4 送 API 的數字欄三件套：type=number ＋ min/max/step ＋ 可�
         ["groundingScoreFloor", SCORE_FLOOR],
         ["demoScoreFloor", `${SCORE_FLOOR}（元件庫頁的示範門檻欄，形狀比照 5-2）`],
         ["demoScoreFloorNoRerank", `${SCORE_FLOOR}（元件庫頁的示範門檻欄，形狀比照 5-2）`],
+        ["demoScoreFloorUnavailable", `${SCORE_FLOOR}（元件庫頁的示範門檻欄，形狀比照 5-2）`],
     ]);
     const seenNoBound = new Set();
     let seen = 0;

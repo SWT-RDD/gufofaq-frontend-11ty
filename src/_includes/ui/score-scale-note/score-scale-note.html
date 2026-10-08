@@ -19,9 +19,21 @@
          正式環境不會常駐這一句（React 端依「重排序模型／開關／資料來源比例有沒有變」決定要不要出現），
          所以元件庫展示頁把它 set 起來當唯一可見處（§5，同 platform.usageError 的處置）。
          **開關是這顆參數，不是 `.hidden`**：寫死 `.hidden` 的話參數收得下、畫面卻永遠不顯示，
-         等於全站沒有人看過它的長相（同下面第二態那一則註解的理由）。 #}
+         等於全站沒有人看過它的長相（同下面第二態那一則註解的理由）。
+       scaleNoteUnavailable —— true＝演「重排序開著，但可選的重排序模型清單這一刻取不到」那一態
+         （不給＝不渲染）：那時選中的那一顆的尺查不到，「目前這把尺：」後面沒有東西可接。
+         **不是整段不畫**（§3-2：讀不到時保留位置、改畫一句紅字說明）——整段不畫與「這一格沒有尺可講」
+         在畫面上逐位元組相同，而使用者正要照著那把尺填一個數字。「還在載入」不算這一態（§3-2：
+         載入中與載不到是兩態），旗標宣告的是「那一次查詢失敗了」。
+         這一句與 5-2「重排序模型」那一格的紅字是同一顆 key、同一句話：兩個門檻在別的子頁籤上，
+         改門檻的人看不到那一格。這裡**不掛 live region**——同一個原因在同一頁會出現三處，
+         報讀器只該在「重排序模型」那一處唸一次。元件庫展示頁把它 set 起來當唯一可見處。 #}
 <div class="flex-row column gap-4">
+    {% if scaleNoteUnavailable %}
+    <span class="text-red" id="{{ scaleNoteId }}" data-i18n="settings.rerankerCatalogUnavailable">重排序模型清單暫時取不到，請稍後重新整理這一頁。在那之前選不到重排序模型、也看不到它的分數尺；重排序開著時，存檔會被擋下。</span>
+    {% else %}
     <span class="text-gray" id="{{ scaleNoteId }}"><span data-i18n="settings.currentScoreScale">目前這把尺：</span>{{ scaleNoteText }}</span>
+    {% endif %}
     {% if scaleNoteMixed %}
     {# 第二態：混合檢索（資料來源比例落在 0 與 1 之間）時兩把尺同時出現在同一批結果裡，
          單一門檻無法同時對兩者成立。
@@ -39,6 +51,6 @@
          ⚠️ 上面那一段推導的是 live region 的**範圍**（只框這一句），推不出 role 的**級別**——
          那是兩件事，各有各的判準，不要把其中一條的結論拿去當另一條的理由。 #}
     {% if scaleNoteRecalibrated %}
-    <span class="text-gray" role="status" data-i18n="settings.scoreScaleRecalibrate">分數尺剛才變了（改了重排序模型、重排序開關或資料來源比例）。這個門檻是照舊的尺定的，請重新校準：把 1–5 那把尺上的數字搬到 0–1 的尺上，就是一個永遠擋不下任何東西的死條件。</span>
+    <span class="text-gray" role="status" data-i18n="settings.scoreScaleRecalibrate">分數尺剛才變了（改了重排序模型、重排序開關或資料來源比例）。這個門檻是照舊的尺定的，請重新校準：同一個數字換到另一把尺上，可能變成永遠擋不下任何東西、或每一題都擋下的死條件。</span>
     {% endif %}
 </div>

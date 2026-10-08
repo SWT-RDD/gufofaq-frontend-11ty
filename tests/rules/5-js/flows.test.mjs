@@ -472,3 +472,61 @@ test("§5/§3-2/§4 5-6-2 Streamable HTTP：新增區有連線方式下拉與 HT
         assert.ok(headers && headers[1].includes("***"), `HTTP 列 ${id} 的標頭值要演成遮罩字面 ***`);
     }
 });
+
+test("§5/§4 5-6-2 整欄字數上限：新增區與清單逐列的名稱／執行指令／網址／描述都掛 maxlength，值等於旁邊那顆資料槽", () => {
+    // 同一組界線有兩條寫入路徑（新增、逐列儲存）：只在新增區掛 maxlength，那條約束在逐列編輯上就不存在（§4）。
+    // maxlength 的值與欄位旁那顆看得見的資料槽是同一顆界線，兩者分岔＝畫面說一個數、輸入框夾另一個數。
+    const FIELDS = [
+        ["js-mcp-name-max-len", /<input[^>]*id="newMcpNameInput"[^>]*>/g, /<input[^>]*aria-labelledby="mcpRowName-\d+ mcpHeadName"[^>]*>/g],
+        ["js-mcp-command-max-len", /<input[^>]*id="newMcpCommandInput"[^>]*>/g, /<input[^>]*aria-labelledby="mcpRowName-\d+ mcpHeadCommand"[^>]*>/g],
+        ["js-mcp-url-max-len", /<input[^>]*id="newMcpUrlInput"[^>]*>/g, /<input[^>]*\bjs-mcp-url\b[^>]*>/g],
+        ["js-mcp-desc-max-len", /<textarea[^>]*id="newMcpDescInput"[^>]*>/g, /<input[^>]*aria-labelledby="mcpRowName-\d+ mcpHeadDesc"[^>]*>/g],
+    ];
+    const check = (html) => {
+        const out = [];
+        for (const [cls, addRe, rowRe] of FIELDS) {
+            const slots = [...html.matchAll(new RegExp(`class="${cls}">([^<]*)<`, "g"))].map((m) => m[1]);
+            if (!slots.length) { out.push(`缺資料槽 .${cls}`); continue; }
+            if (new Set(slots).size > 1) out.push(`.${cls} 的資料槽有兩種值：${[...new Set(slots)].join("、")}`);
+            const add = html.match(addRe) || [];
+            const rows = html.match(rowRe) || [];
+            if (!add.length) out.push(`.${cls}：新增區找不到那一格輸入框`);
+            if (!rows.length) out.push(`.${cls}：清單逐列找不到那一格輸入框`);
+            for (const ctl of [...add, ...rows]) {
+                const m = ctl.match(/\bmaxlength="([^"]*)"/);
+                if (!m) out.push(`.${cls}：${ctl.slice(0, 80)}… 沒有 maxlength`);
+                else if (m[1] !== slots[0]) out.push(`.${cls}：maxlength="${m[1]}" ≠ 資料槽 ${slots[0]}`);
+            }
+        }
+        return out;
+    };
+    const slots = '<span class="js-mcp-name-max-len">100</span><span class="js-mcp-command-max-len">100</span><span class="js-mcp-url-max-len">2048</span><span class="js-mcp-desc-max-len">1024</span>';
+    const ctls = (rowUrl) => '<input type="text" id="newMcpNameInput" maxlength="100"><input type="text" id="newMcpCommandInput" maxlength="100"><input type="text" id="newMcpUrlInput" maxlength="2048"><textarea id="newMcpDescInput" maxlength="1024"></textarea>'
+        + '<input maxlength="100" aria-labelledby="mcpRowName-1 mcpHeadName"><input maxlength="100" aria-labelledby="mcpRowName-1 mcpHeadCommand">'
+        + rowUrl + '<input maxlength="1024" aria-labelledby="mcpRowName-1 mcpHeadDesc">';
+    probe("5-6-2 整欄字數上限", check,
+        [slots + ctls('<input class="form-control js-mcp-url">'), slots + ctls('<input class="form-control js-mcp-url" maxlength="2000">')],
+        [slots + ctls('<input class="form-control js-mcp-url" maxlength="2048">')]);
+    assert.equal(check(distDoc("5-6-2_platformMcpServers.html")).length, 0, fail(check(distDoc("5-6-2_platformMcpServers.html"))));
+});
+
+test("§5 5-6-2 新增與逐列儲存是同一道守衛：兩顆鈕的結果段數與型別序列逐段相同、最後一段是 error，被擋下的原句各有一條常駐的 alert", () => {
+    // 兩顆鈕對同一組拒絕各說各的話，使用者在新增區修得掉的事，到了逐列儲存就變成另一句（§5 分支語意一致）。
+    // 「有欄位不符合規定」那一段不指名原因，原因要靠那一條原樣外顯的紅字——沒有那一條，那一段就是一句空話。
+    const html = distDoc("5-6-2_platformMcpServers.html");
+    const btn = (key) => {
+        const tag = tagsOf(html).find(({ attrs }) => attrs.includes(`data-i18n-data-toast="${key}"`));
+        assert.ok(tag, `找不到 ${key} 那顆鈕`);
+        return {
+            msgs: tag.attrs.match(/(?:^|\s)data-toast="([^"]*)"/)[1].split("|"),
+            types: tag.attrs.match(/(?:^|\s)data-toast-type="([^"]*)"/)[1].split("|"),
+        };
+    };
+    const create = btn("toast.createMcpServer");
+    const save = btn("toast.saveMcpServer");
+    assert.equal(create.msgs.length, save.msgs.length, `新增 ${create.msgs.length} 段、逐列儲存 ${save.msgs.length} 段`);
+    assert.deepEqual(create.types, save.types, "兩顆鈕的型別序列要逐段相同");
+    assert.equal(create.types.at(-1), "error", "最後一段固定是 error（結果不明、請稍後再試）");
+    for (const id of ["newMcpError", "mcpRowSaveError"])
+        assert.match(html, new RegExp(`<p[^>]*id="${id}"[^>]*role="alert"`), `缺常駐的 #${id}（role="alert"）`);
+});
