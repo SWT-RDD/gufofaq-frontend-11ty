@@ -116,8 +116,9 @@ permalink: 5-6-2_platformMcpServers.html
      折進「不符合規定」那一段的話，使用者要自己從原句猜是哪一種。
      還有一段**「有欄位不符合規定」**：字數與項數超過下面那幾顆資料槽標出來的界線、HTTP 那一組的
      **格式**（網址只收 `http://`／`https://`，標頭名稱不可以是由連線本身管理的那一族（`Host` 這種），
-     標頭的值只收可見的 ASCII 字元）、必填欄（執行指令／網址）空著，以及上面幾種之外、這一頁分不出是
-     哪一種的拒絕，全部落在這一段。**這一段的 toast 不指名原因**——原因可能是其中任何一種，指名
+     標頭的值只收可見的 ASCII 字元）、必填欄（執行指令／網址）空著，以及**欄位被拒絕（輸入不合格）、
+     而這一頁分不出是上面哪一種**的那一族，全部落在這一段。**只收「輸入不合格」**：太頻繁、找不到那一台、
+     結果不明這三種不是改輸入就會好，各有自己的落點（見下一段），不得落進這一段。**這一段的 toast 不指名原因**——原因可能是其中任何一種，指名
      其中一種就會在另一種發生時說錯話；原因由被擋下時回來的那一句講，那一句**原樣**畫在 `#newMcpError`
      那條紅字（`role="alert"`，示範沒有錯誤 ⇒ 掛 `.hidden`、內容空），toast 只叫人去看它。
      畫面上既然把上限與格式標出來了，不合格那一態就要有鈕演得出來。
@@ -125,6 +126,11 @@ permalink: 5-6-2_platformMcpServers.html
      「混送了另一種連線方式的欄位」與「切換連線方式卻沒送齊新方式的必填欄」——新增只送畫出來的那一組，
      清單逐列沒有連線方式這一格、也只送動過的欄。真的收到這兩種，代表這一頁送錯了，照樣落在
      「不符合規定」那一段、原句照樣外顯，不得落進「請稍後再試」。
+     **太頻繁**（這一刻的請求太多、被暫時擋下，什麼都沒做）：三顆鈕（新增、逐列儲存、測試連線）都可能遇到，
+     各有一段 warning「操作太頻繁，這一次沒有執行，請稍後再試」——它是「等一下再按」，不是「改輸入」，
+     也不是結果不明的 error。
+     **那一台已經不存在**（被另一位管理者刪掉、而這一頁還沒重整）：逐列儲存與測試連線都指名某一台，
+     各有一段 warning 叫人重新整理；新增不指名任何一台，產不出這一態，所以新增鈕不列。
      **連線數已達上限**（同時開著的 MCP 連線滿了，等一下就會空出來）只發生在要真的連上那一台的動作：
      測試連線，以及「工具數」欄載入時現去問的那一趟——新增與儲存不連線，所以這兩顆鈕不列這一段；
      測試連線那顆鈕有，「工具數」那一格畫「讀不到」（見那一欄的註解）。
@@ -132,7 +138,7 @@ permalink: 5-6-2_platformMcpServers.html
      拆不出 `KEY=value` 的處置）：標頭的值就是憑證，靜靜丟掉那一行的話存回成功、而那一行消失了。
      這一態不經伺服器，不是這顆鈕的 toast 段，是一句帶行號的 warning（行號是資料，不烤進譯文）。
      ⚠️ **`|` 的段序是索引契約，動它就要連 React 端一起動**：每一段對一種**結果**（上面①–⑦、
-     「不符合規定」、以及最後那一段 error「結果不明、請稍後再試」），React 要逐種結果對到它自己那一段，
+     「不符合規定」、太頻繁、（逐列儲存才有的）那一台已經不存在、以及最後那一段 error「結果不明、請稍後再試」），React 要逐種結果對到它自己那一段，
      不是照舊索引平移——往中間插一段而沒有逐段重對，錯誤就會顯示成「環境變數的值不可以是***」這種
      完全無關的話。最後那一段固定是 error。 #}
 <div class="block mb-16 flex-row column gap-16" data-platform-role="admin">
@@ -277,7 +283,7 @@ permalink: 5-6-2_platformMcpServers.html
             <input type="checkbox" id="newMcpActiveInput" checked>
             <span data-i18n="widget.active">啟用</span>
         </label>
-        <button type="button" class="button button-primary" data-toast="MCP Server 已建立|名稱已存在|執行指令不在允許清單（僅 python／python3／node／npx／uvx／uv）|環境變數的值不可以是「***」（那是讀取時的遮罩），請填入真正的值|參數（args）的值同樣不可以是那個遮罩字面，而這個位置沒有舊值可以沿用，請填入真正的值|環境變數裡有上游一定會剔除的載入器掛鉤鍵，存得進去也不會生效，請先移除它們|參數裡有明文的憑證（密碼、金鑰、權杖這一類），請改放進環境變數|網址裡有明文的憑證（帳號密碼，或像金鑰的查詢參數），請改放進 HTTP 標頭|網址同樣不可以含那個遮罩字面，請填入完整的網址|HTTP 標頭的值同樣不可以是那個遮罩字面，請填入真正的值|有欄位不符合規定，請照紅字說明修正後再送出|建立失敗，請稍後再試" data-i18n-data-toast="toast.createMcpServer" data-toast-type="success|warning|warning|warning|warning|warning|warning|warning|warning|warning|warning|error">
+        <button type="button" class="button button-primary" data-toast="MCP Server 已建立|名稱已存在|執行指令不在允許清單（僅 python／python3／node／npx／uvx／uv）|環境變數的值不可以是「***」（那是讀取時的遮罩），請填入真正的值|參數（args）的值同樣不可以是那個遮罩字面，而這個位置沒有舊值可以沿用，請填入真正的值|環境變數裡有上游一定會剔除的載入器掛鉤鍵，存得進去也不會生效，請先移除它們|參數裡有明文的憑證（密碼、金鑰、權杖這一類），請改放進環境變數|網址裡有明文的憑證（帳號密碼，或像金鑰的查詢參數），請改放進 HTTP 標頭|網址同樣不可以含那個遮罩字面，請填入完整的網址|HTTP 標頭的值同樣不可以是那個遮罩字面，請填入真正的值|有欄位不符合規定，請照紅字說明修正後再送出|操作太頻繁，這一次沒有執行，請稍後再試|建立失敗，請稍後再試" data-i18n-data-toast="toast.createMcpServer" data-toast-type="success|warning|warning|warning|warning|warning|warning|warning|warning|warning|warning|warning|error">
             <img src="./images/icon_add_white.png" width="48" height="48" decoding="async" alt="" class="icon">
             <span data-i18n="settings.addMcpServer">新增 MCP Server</span>
         </button>
@@ -503,14 +509,15 @@ permalink: 5-6-2_platformMcpServers.html
                                  stdio 那三格的空值，而混送另一種連線方式的欄位會被整筆擋下——那種列連勾一下
                                  「啟用」都存不了；遮罩的憑證沒動也不必往返一趟。**什麼都沒動就不送**，直接演
                                  成功那一段（沒有東西要存，不是失敗）。
-                               **段序與新增鈕逐段同義**（同一道守衛、同一組結果，§5）：差別只在遮罩那幾段的措辭——
+                               **段序與新增鈕逐段同義**（同一道守衛、同一組結果，§5），只多一段「這一台已經不存在」
+                                 （排在「太頻繁」之後、最後那段 error 之前；新增不指名任何一台，產不出這一態）：差別只在遮罩那幾段的措辭——
                                  這裡有舊值可以沿用，所以講的是「新增的那一組沒有舊值」與「網址要整串原樣不動」。
                                  被擋下時回來的那一句畫在 `#mcpRowSaveError`。
                                **測試連線**多一段「同時開著的 MCP 連線已達上限」（warning）：那一次根本沒連上去測，
                                  「最近一次測試」欄不會更新——與「連線測試失敗，原因見『最近一次測試』欄」分開，
-                                 否則他會去看一格沒有變的欄位。 #}
-                            <button type="button" id="mcpSave-{{ server.id }}" aria-labelledby="mcpRowName-{{ server.id }} mcpSave-{{ server.id }}" class="button button-border button-sm" data-toast="MCP Server 已更新|名稱已存在|執行指令不在允許清單（僅 python／python3／node／npx／uvx／uv）|新增的環境變數，值不可以是「***」（那是讀取時的遮罩，沒有舊值可以沿用），請填入真正的值|參數（args）的值同樣不可以是那個遮罩字面，而這個位置沒有舊值可以沿用，請填入真正的值|環境變數裡有上游一定會剔除的載入器掛鉤鍵，存得進去也不會生效，請先移除它們|參數裡有明文的憑證（密碼、金鑰、權杖這一類），請改放進環境變數|網址裡有明文的憑證（帳號密碼，或像金鑰的查詢參數），請改放進 HTTP 標頭|網址含那個遮罩字面，卻不是讀取時拿到的那一整串——要沿用原網址就整串原樣不動，要換就完整重填|新增的 HTTP 標頭，值同樣不可以是那個遮罩字面（沒有舊值可以沿用），請填入真正的值|有欄位不符合規定，請照紅字說明修正後再送出|儲存失敗，請稍後再試" data-i18n-data-toast="toast.saveMcpServer" data-toast-type="success|warning|warning|warning|warning|warning|warning|warning|warning|warning|warning|error" data-i18n="action.save">儲存</button>
-                            <button type="button" id="mcpTest-{{ server.id }}" aria-labelledby="mcpRowName-{{ server.id }} mcpTest-{{ server.id }}" class="button button-border button-sm" data-toast="連線成功，「工具數」已更新|連線測試失敗，原因見「最近一次測試」欄|同時開著的 MCP 連線已達上限，這一次沒有測試，請稍後再試" data-i18n-data-toast="toast.testMcpServer" data-toast-type="success|error|warning" data-i18n="settings.testConnection">測試連線</button>
+                                 否則他會去看一格沒有變的欄位。另有「太頻繁」與「這一台已經不存在」兩段，同逐列儲存。 #}
+                            <button type="button" id="mcpSave-{{ server.id }}" aria-labelledby="mcpRowName-{{ server.id }} mcpSave-{{ server.id }}" class="button button-border button-sm" data-toast="MCP Server 已更新|名稱已存在|執行指令不在允許清單（僅 python／python3／node／npx／uvx／uv）|新增的環境變數，值不可以是「***」（那是讀取時的遮罩，沒有舊值可以沿用），請填入真正的值|參數（args）的值同樣不可以是那個遮罩字面，而這個位置沒有舊值可以沿用，請填入真正的值|環境變數裡有上游一定會剔除的載入器掛鉤鍵，存得進去也不會生效，請先移除它們|參數裡有明文的憑證（密碼、金鑰、權杖這一類），請改放進環境變數|網址裡有明文的憑證（帳號密碼，或像金鑰的查詢參數），請改放進 HTTP 標頭|網址含那個遮罩字面，卻不是讀取時拿到的那一整串——要沿用原網址就整串原樣不動，要換就完整重填|新增的 HTTP 標頭，值同樣不可以是那個遮罩字面（沒有舊值可以沿用），請填入真正的值|有欄位不符合規定，請照紅字說明修正後再送出|操作太頻繁，這一次沒有執行，請稍後再試|這一台 MCP Server 已經不存在（可能剛被刪掉），請重新整理這一頁|儲存失敗，請稍後再試" data-i18n-data-toast="toast.saveMcpServer" data-toast-type="success|warning|warning|warning|warning|warning|warning|warning|warning|warning|warning|warning|warning|error" data-i18n="action.save">儲存</button>
+                            <button type="button" id="mcpTest-{{ server.id }}" aria-labelledby="mcpRowName-{{ server.id }} mcpTest-{{ server.id }}" class="button button-border button-sm" data-toast="連線成功，「工具數」已更新|連線測試失敗，原因見「最近一次測試」欄|同時開著的 MCP 連線已達上限，這一次沒有測試，請稍後再試|操作太頻繁，這一次沒有執行，請稍後再試|這一台 MCP Server 已經不存在（可能剛被刪掉），請重新整理這一頁" data-i18n-data-toast="toast.testMcpServer" data-toast-type="success|error|warning|warning|warning" data-i18n="settings.testConnection">測試連線</button>
                             <button type="button" id="mcpDelete-{{ server.id }}" aria-labelledby="mcpRowName-{{ server.id }} mcpDelete-{{ server.id }}" class="button button-red button-sm js-delete-mcp" data-i18n="action.delete">刪除</button>
                         </div>
                     </td>

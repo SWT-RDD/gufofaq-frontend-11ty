@@ -2316,8 +2316,8 @@ permalink: 5-2_conversationSettings.html
                 {# **上下界一條都不發布**（§4 三件套的第二件省略得掉）：尺由當次給分的那一方決定，
                      任一側寫死都會讓其中一種部署填不進自己的合法值——負門檻對沒有下界、可為負的
                      那一族重排序器是正常設定，而綁 [0,1] 會讓關鍵字檢索那把尺（沒有上界）整個填不進來。
-                     示範值 `0.2` 是照示範狀態那把尺（`jina:jina-reranker-v3`，沒有上下界、相關的一筆通常
-                     落在零點幾）填的；換成 0–1 那一族或關鍵字檢索，這個數字就要重新校準。
+                     `0.2` 是示範值（示範狀態那把尺是 `jina:jina-reranker-v3`，沒有上下界）；換成 0–1 那一族
+                     或關鍵字檢索，這個數字就要重新校準。
                      唯一的約束是**必須是有限的數字**，而 `min`／`max` 表達不出「不是 NaN、不是
                      無限大」⇒ 兩顆屬性都不寫，那句約束由這一段常駐提示承載（§4：沒有量級邊界時，
                      約束照樣要看得見）。
@@ -2428,8 +2428,8 @@ permalink: 5-2_conversationSettings.html
              分數粗篩命中時直接判成誠實查無，**零 LLM、終局拒答**，隨後整批來源卡被清空——
              它不是「多付一次判定」，是這一輪的結局。
              0.5 看起來無害只是因為 weaviate 的分數幾乎恆大於 0.5；換成沒有上下界、可為負的那一族
-             重排序器（示範目錄裡的 `jina:jina-reranker-v3`，相關的一筆通常落在零點幾），同一個 0.5
-             會讓**幾乎每一題**都變成誠實查無。
+             重排序器（示範目錄裡的 `jina:jina-reranker-v3`），同一個 0.5 可能遠高於相關資料拿得到的分數，
+             讓大多數題目都變成誠實查無。
              QA 直答的門檻在關掉裁判時是**唯一判定** ⇒ 那一格才可以為空。兩格的說明不共用一句話：
              寫成「都可留白」或「都必填」的話，錯的那一邊症狀是無聲的（這一格留白 ⇒ 存不進去；
              那一格必填 ⇒ 既有的完全命中租戶會直接失去直答）。
@@ -2461,9 +2461,13 @@ permalink: 5-2_conversationSettings.html
                 {# 每一顆重排序器的名字與尺**從 `rerankerCatalog` 現渲染**，不烤進譯文（§4-2：翻譯字串不內嵌
                      會隨資料變動的數字／名稱）。烤進譯文的那一份會跟著目錄漂——重排序器改名或換尺時，
                      要改的會是兩份譯文而不是一份資料。
+                   **目錄列不出任何一顆時**（清單暫時取不到，或這個部署一顆重排序模型都沒有），括號裡不得
+                     留成空的「（）」：走 `{% else %}` 那一支，畫 `settings.rerankerScalesUnlisted`
+                     「目前列不出任何一顆重排序模型的尺」——兩種原因都成立的一句，取不到的那一種另由
+                     「重排序模型」那一格與門檻旁的紅字講原因。示範目錄非空，長相在元件庫頁「React 條件文案」。
                      「沒有上下界」那一態走 key（那是字、不是數字），有界的那兩顆直接吐目錄裡的 min／max。
                      預設值 `0.5` 同理走資料節點，與上面那顆輸入框的 `value` 同源。 #}
-                <span class="text-gray" id="groundingScoreFloorNote"><span data-i18n="settings.groundingScoreFloorNoteA">這一格不可留白（預設 </span><span class="js-grounding-score-floor-default">0.5</span><span data-i18n="settings.groundingScoreFloorNoteB">）。它不是判定前的門票——檢索最高分低於它時，這一輪不問 LLM 就直接判成誠實查無，來源也會一併清空。分數的尺由當次給分的那一方決定，沒有上界也沒有下界：開了重排序就是那顆重排序器（</span>{% for r in rerankerCatalog %}{% if r.scale.kind == "bounded" %}<span>{{ r.name }} {{ r.scale.min }}–{{ r.scale.max }}</span>{% else %}<span>{{ r.name }} </span><span data-i18n="settings.scaleUnbounded">可為負且無上下界</span>{% endif %}{% if not loop.last %}<span data-i18n="common.listSep">、</span>{% endif %}{% endfor %}<span data-i18n="settings.groundingScoreFloorNoteC">），沒開就是檢索本身，而檢索用哪一把尺由「資料來源比例」決定（純向量＝相似度 0–1、純關鍵字＝沒有上界的 BM25 分數、之間＝兩把尺同時出現在同一批結果裡）。未開重排序、直接吃向量相似度的部署上，這個預設值落在 0–1 這把尺上實務上擋不到任何東西；換成沒有上下界、可為負的重排序器之後，同一個數字可能讓幾乎每一題都被擋——換一種給分方式就必須重新校準它。與「QA 直答」那一格的可留白刻意不同：那一顆在裁決關掉時是唯一判定，這一顆則是零 LLM 的終局拒答。</span></span>
+                <span class="text-gray" id="groundingScoreFloorNote"><span data-i18n="settings.groundingScoreFloorNoteA">這一格不可留白（預設 </span><span class="js-grounding-score-floor-default">0.5</span><span data-i18n="settings.groundingScoreFloorNoteB">）。它不是判定前的門票——檢索最高分低於它時，這一輪不問 LLM 就直接判成誠實查無，來源也會一併清空。分數的尺由當次給分的那一方決定，沒有上界也沒有下界：開了重排序就是那顆重排序器（</span>{% for r in rerankerCatalog %}{% if r.scale.kind == "bounded" %}<span>{{ r.name }} {{ r.scale.min }}–{{ r.scale.max }}</span>{% else %}<span>{{ r.name }} </span><span data-i18n="settings.scaleUnbounded">可為負且無上下界</span>{% endif %}{% if not loop.last %}<span data-i18n="common.listSep">、</span>{% endif %}{% else %}<span data-i18n="settings.rerankerScalesUnlisted">目前列不出任何一顆重排序模型的尺</span>{% endfor %}<span data-i18n="settings.groundingScoreFloorNoteC">），沒開就是檢索本身，而檢索用哪一把尺由「資料來源比例」決定（純向量＝相似度 0–1、純關鍵字＝沒有上界的 BM25 分數、之間＝兩把尺同時出現在同一批結果裡）。未開重排序、直接吃向量相似度的部署上，這個預設值落在 0–1 這把尺上實務上擋不到任何東西；換成沒有上下界、可為負的重排序器之後，同一個數字可能讓幾乎每一題都被擋——換一種給分方式就必須重新校準它。與「QA 直答」那一格的可留白刻意不同：那一顆在裁決關掉時是唯一判定，這一顆則是零 LLM 的終局拒答。</span></span>
             </div>
         </div>
     </div>
@@ -2510,7 +2514,7 @@ permalink: 5-2_conversationSettings.html
      （warning 不自動消失）。
    **「暫時無法儲存，這一次什麼都沒有存進去」那一段（warning）**：兩種暫時性的拒絕落在這一段——
      ①重排序開著時，存檔前要對一次「可選的重排序模型」清單，那份清單這一刻取不到；
-     ②設定服務這一刻無法驗證或寫入。兩者**都沒有寫進任何東西**、等一下再按一次就好，所以與
+     ②這一刻無法驗證或寫入設定。兩者**都沒有寫進任何東西**、等一下再按一次就好，所以與
      「儲存失敗，請稍後再試」（error：結果不明）分開，也不是使用者要修什麼的那一種。
      原因的那一句照樣由頁首那條紅字原樣外顯（`saveConfigError`）。
    兩段同樣追加在後、不插中間（理由同上），排在「此功能尚未對貴租戶開通」之前——那一段固定是最後一段。 #}

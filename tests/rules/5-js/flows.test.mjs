@@ -510,23 +510,40 @@ test("§5/§4 5-6-2 整欄字數上限：新增區與清單逐列的名稱／執
     assert.equal(check(distDoc("5-6-2_platformMcpServers.html")).length, 0, fail(check(distDoc("5-6-2_platformMcpServers.html"))));
 });
 
-test("§5 5-6-2 新增與逐列儲存是同一道守衛：兩顆鈕的結果段數與型別序列逐段相同、最後一段是 error，被擋下的原句各有一條常駐的 alert", () => {
+test("§5 5-6-2 新增與逐列儲存是同一道守衛：除了「那一台已經不存在」之外段段同義、最後一段是 error，太頻繁／不存在各有落點，被擋下的原句各有一條常駐的 alert", () => {
     // 兩顆鈕對同一組拒絕各說各的話，使用者在新增區修得掉的事，到了逐列儲存就變成另一句（§5 分支語意一致）。
+    // 唯一的差別是「那一台已經不存在」：新增不指名任何一台，產不出那一態。
+    // 太頻繁不是「改輸入就會好」——沒有自己那一段，它會落進「有欄位不符合規定」，叫人去改一個沒錯的欄位。
     // 「有欄位不符合規定」那一段不指名原因，原因要靠那一條原樣外顯的紅字——沒有那一條，那一段就是一句空話。
     const html = distDoc("5-6-2_platformMcpServers.html");
     const btn = (key) => {
         const tag = tagsOf(html).find(({ attrs }) => attrs.includes(`data-i18n-data-toast="${key}"`));
         assert.ok(tag, `找不到 ${key} 那顆鈕`);
-        return {
-            msgs: tag.attrs.match(/(?:^|\s)data-toast="([^"]*)"/)[1].split("|"),
-            types: tag.attrs.match(/(?:^|\s)data-toast-type="([^"]*)"/)[1].split("|"),
-        };
+        const msgs = tag.attrs.match(/(?:^|\s)data-toast="([^"]*)"/)[1].split("|");
+        const types = tag.attrs.match(/(?:^|\s)data-toast-type="([^"]*)"/)[1].split("|");
+        return msgs.map((m, i) => ({ m, t: types[i] }));
     };
+    const TOO_MANY = "操作太頻繁，這一次沒有執行，請稍後再試";
+    const GONE = /已經不存在/;
     const create = btn("toast.createMcpServer");
     const save = btn("toast.saveMcpServer");
-    assert.equal(create.msgs.length, save.msgs.length, `新增 ${create.msgs.length} 段、逐列儲存 ${save.msgs.length} 段`);
-    assert.deepEqual(create.types, save.types, "兩顆鈕的型別序列要逐段相同");
-    assert.equal(create.types.at(-1), "error", "最後一段固定是 error（結果不明、請稍後再試）");
+    const testConn = btn("toast.testMcpServer");
+    assert.ok(!create.some((x) => GONE.test(x.m)), "新增不指名任何一台，不該有「已經不存在」那一段");
+    for (const [name, segs] of [["逐列儲存", save], ["測試連線", testConn]]) {
+        const gone = segs.filter((x) => GONE.test(x.m));
+        assert.equal(gone.length, 1, `${name} 要恰好一段「那一台已經不存在」`);
+        assert.equal(gone[0].t, "warning", `${name} 的「已經不存在」是 warning（重新整理就好）`);
+    }
+    for (const [name, segs] of [["新增", create], ["逐列儲存", save], ["測試連線", testConn]]) {
+        const tm = segs.filter((x) => x.m === TOO_MANY);
+        assert.equal(tm.length, 1, `${name} 要恰好一段「${TOO_MANY}」`);
+        assert.equal(tm[0].t, "warning", `${name} 的「太頻繁」是 warning`);
+    }
+    const saveSansGone = save.filter((x) => !GONE.test(x.m));
+    assert.equal(create.length, saveSansGone.length, `新增 ${create.length} 段、逐列儲存（扣掉不存在那段）${saveSansGone.length} 段`);
+    assert.deepEqual(create.map((x) => x.t), saveSansGone.map((x) => x.t), "兩顆鈕的型別序列要逐段相同（扣掉不存在那段）");
+    assert.equal(create.at(-1).t, "error", "新增的最後一段固定是 error（結果不明、請稍後再試）");
+    assert.equal(save.at(-1).t, "error", "逐列儲存的最後一段固定是 error（結果不明、請稍後再試）");
     for (const id of ["newMcpError", "mcpRowSaveError"])
         assert.match(html, new RegExp(`<p[^>]*id="${id}"[^>]*role="alert"`), `缺常駐的 #${id}（role="alert"）`);
 });

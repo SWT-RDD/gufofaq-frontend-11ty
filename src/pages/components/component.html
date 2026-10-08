@@ -422,7 +422,7 @@ bodyClass: guideline-page
                 {% set scaleNoteUnavailable = true %}
                 {% include "ui/score-scale-note/score-scale-note.html" %}
             </div>
-            <div class="subtitle">描述：分數門檻旁的「目前這把尺」。都由使用頁的參數決定：尺的原文（端點字串，不翻）、混合尺警語（不給＝不渲染）、重新校準提示（不給＝不渲染）、重排序模型清單取不到的紅字（給了就取代「目前這把尺」那一行）。本區分三份演出，使用頁（5-2）只會在條件成立時各自出現一段</div>
+            <div class="subtitle">描述：分數門檻旁的「目前這把尺」。都由使用頁的參數決定：尺的原文（執行期帶來的資料字串，不翻）、混合尺警語（不給＝不渲染）、重新校準提示（不給＝不渲染）、重排序模型清單取不到的紅字（給了就取代「目前這把尺」那一行）。本區分三份演出，使用頁（5-2）只會在條件成立時各自出現一段</div>
             <div class="caption">
                 <ul>
                     <li>多選框（tag 多選 + 搜尋過濾，原生 JavaScript 實作，見 ui/multi-select）</li>
@@ -1542,6 +1542,9 @@ bodyClass: guideline-page
                 <p class="text-gray m-0" data-i18n="dataset.noExtractedContent">這個檔還沒有擷取內容：可能還在擷取中，也可能它裡面沒有解得出來的文字。過幾分鐘再回來看，一直是空的就是後者。</p>
                 <p class="text-red m-0" data-i18n="dataset.noWritableGroup">你沒有任何可以寫入的群組，所以建不了資料集。請找租戶管理者建一個群組並把你加進去。</p>
                 <p class="text-gray m-0" data-i18n="dataset.excelOriginalUnavailable">這個檔不是從 Excel 匯入的，所以沒有原始資料可以對照。</p>
+                {# 5-2「可回答性分數門檻」說明句裡那段重排序器清單的 `{% else %}`：目錄列不出任何一顆
+                     （取不到，或一顆都沒有）時括號裡畫這一句，不留空括號。5-2 的示範目錄非空 ⇒ 這裡是唯一可見處。 #}
+                <p class="text-gray m-0"><span data-i18n="settings.rerankerScalesUnlisted">目前列不出任何一顆重排序模型的尺</span></p>
                 <p class="text-red m-0" data-i18n="regression.runIdMissing">網址少了執行編號，這份報表開不起來。請回「回歸案例集」頁，從那一列的「看報表」進來。</p>
             </div>
             <div class="subtitle">出處：本節每一句的出處就是它自己的 <code class="inline-code">data-i18n</code> key——命名空間指出它屬於哪一塊，<code class="inline-code">grep</code> 那顆 key 就找得到它在哪一頁被條件渲染。<strong>這裡刻意不列清單</strong>（GUIDELINE §3-2）：這一節每加一句就要回頭改一次，而漏改的那一筆與寫對的那一筆長得一模一樣。</div>
