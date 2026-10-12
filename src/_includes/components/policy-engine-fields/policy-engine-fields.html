@@ -1,0 +1,148 @@
+{#
+  合規判斷引擎（測試區的單次覆寫）：問答測試的這一次送出，合規閘要用哪一種引擎判主題、
+    以及（只有 Decisions 引擎才有的）門檻。測試區兩頁都有、AB 那一頁兩側各一份，依 §3-3（出現在 2 頁以上→切；
+    同頁重複出現→切）收成元件。
+  **這一區只影響這一次測試送出**：正式問答一律走預設的 LLM 引擎、沒有門檻可調。所以
+    「套用為正式設定」不帶這幾欄（套用寫出去的欄位裡沒有它們），「回復儲存的設定」則把這一區
+    整個回到預設（LLM、門檻全空）——已儲存的設定裡本來就沒有這幾欄可回復。
+  兩種引擎差在哪（`qaTest.policyEngineHint` 那一句是畫面上唯一的定義）：
+    LLM —— 只回報「命中了哪些主題」，沒有分數，所以也沒有門檻可設。
+    Decisions —— 逐個主題給一個分數，**分數 ≥ 門檻才算命中**。
+  **值相依規則（這一區只有一條）**：判斷引擎＝`llm` ⇒ 三組門檻控制項（輸入閘預設門檻、輸出閘預設門檻、
+    個別主題門檻整張表連同新增鈕）**不渲染**。機制：LLM 引擎不讀門檻——它只回答「命中與否」，沒有分數
+    可以拿去比；而且同一次送出帶著門檻又選 LLM，會被整筆擋下。所以這是 markup 表達的組合空格
+    （§3-2「兩個控制項的組合存在無效格時要由 markup 表達」），不是 disabled：被藏起來的那幾顆在這個
+    引擎下沒有作用對象。React 端照這一條做成具名布林（REACT-CONVERSION §②「值相依」）。
+  **常數在這裡宣告一次（§4 三件套、§3-2 界線值）**：門檻值域 0 – 1（`min="0" max="1"`）、
+    步距 0.01、留空時的預設門檻 0.5。三顆都以獨立的資料節點畫在消費點旁邊，不進譯文。
+  **送出之後的錯誤不在這一區畫**（§4「驗證結果走 toast 的 warning 分支」）：這一區送不出去的三種
+    情況——這個環境沒有開 Decisions 引擎、個別主題門檻裡有一個主題已經不在這份設定裡（頁面載入之後
+    主題被改名或刪掉）、門檻超出值域或一列兩格都空——由問答送出鈕的 `data-toast` warning 段承擔
+    （`toast.chatSend`／`toast.chatSubmit`，兩顆都只住在測試區）。三種都是使用者自己改得掉的，
+    所以是 warning 不是 error。
+  值載體一律只掛 hook class（§5 矩陣②，值跟著那一顆問答送出鈕一起送，`change` 本身不打 API）：
+    `js-policy-engine`／`js-policy-input-threshold`／`js-policy-output-threshold`／
+    `js-policy-threshold-topic`／`js-policy-threshold-input`／`js-policy-threshold-output`；
+    新增／刪除列動的是同一份待送出的表單，不打 API，掛 `js-add-policy-threshold`／`js-remove-policy-threshold`
+    （同 5-2 政策主題表的 `js-add-policy-topic`／`js-remove-policy-topic`）。全站 scss 不引用它們。
+  **個別主題門檻的列沒有身分欄**：這一份是單次送出的參數，送的是整份、從不落庫，成員沒有 id；
+    主題名稱是送出時的對應鍵，但編輯中隨時會被改選，不能拿來組 id——逐列 id 因此是 instance ＋ 列號，
+    React 端照樣用這一份陣列 re-render（刪一列整份重畫，位置與陣列永遠同步）。
+    同一個主題在整張表裡最多出現一次（對應鍵不能重複）。
+  主題下拉的選項＝**這一份設定檔目前的政策主題名稱**（租戶自己取的名字＝資料，不翻、不掛 data-i18n）；
+    設定檔換了，選項跟著換。
+  參數（§2：set 是頁面全域，同頁每次 include 前都要重新 set 全部參數）：
+    policyEngineInstance（必填）＝同頁多實例的消歧鍵（2-2-3 一頁兩側各一份）；
+      本元件的每一顆 id 都以它為後綴。
+    policyEngineSelected（選填，`llm`／`decisions`，空＝`llm`）＝目前選中的引擎；它同時決定門檻那幾組
+      渲染與否（見上面的值相依規則）。
+    policyEngineInputThreshold／policyEngineOutputThreshold（選填，字串）＝兩顆預設門檻目前的值；
+      空＝留空（沿用 0.5）。**以字串傳入**：值域含 0，`{% if 0 %}` 會把「真的填了 0」吞掉（§6）。
+    policyEngineTopicNames（Decisions 時必填，字串陣列）＝主題下拉的選項（這一份設定檔的政策主題名稱）。
+    policyEngineTopicRows（選填，[{ topic, input, output }]）＝個別主題門檻的列；`input`／`output`
+      同上以字串傳入、空字串＝那一格留空；每一列至少有一格有值。空陣列＝畫空狀態列。
+  住在哪一頁（§1-2，dist 三頁以上寫判準句）：正向 `grep -rl 'include "components/policy-engine-fields' src --include=*.html`
+    （會命中本檔自己這一行註解，扣掉它）；反向 `grep -l 'id="policyEngineSelect-' dist/*.html`。
+    兩邊比的是**頁面**集合，兩者相同。
+#}
+<div class="flex-row column gap-16" role="group" aria-labelledby="policyEngineTitle-{{ policyEngineInstance }}">
+    <span class="text-md text-bold" id="policyEngineTitle-{{ policyEngineInstance }}" data-i18n="qaTest.policyEngineSection">合規判斷引擎</span>
+    <div class="flex-row flex-wrap gap-16 mobile-column">
+        <div class="form-group col-4-md col-12-sm">
+            <div class="label">
+                <label for="policyEngineSelect-{{ policyEngineInstance }}" class="control-label" data-i18n="agent.policyEngine">判斷引擎</label>
+            </div>
+            <div class="field">
+                {# 值域就這兩顆（`llm`／`decisions`，在這裡宣告一次就是正本）；value 是送出去的識別字、不翻，
+                     option 文字是 chrome 走 i18n。「（預設）」是 LLM 那一顆的字面的一部分：沒選就是它。 #}
+                <select class="form-control singleSelect js-policy-engine" id="policyEngineSelect-{{ policyEngineInstance }}" aria-describedby="policyEngineHint-{{ policyEngineInstance }}">
+                    <option value="llm"{% if policyEngineSelected != "decisions" %} selected{% endif %} data-i18n="qaTest.policyEngineLlmDefault">LLM（預設）</option>
+                    <option value="decisions"{% if policyEngineSelected == "decisions" %} selected{% endif %} data-i18n="agent.policyEngineDecisions">Decisions</option>
+                </select>
+            </div>
+        </div>
+        {% if policyEngineSelected == "decisions" %}
+        <div class="form-group col-4-md col-12-sm">
+            <div class="label">
+                <label for="policyInputThreshold-{{ policyEngineInstance }}" class="control-label" data-i18n="qaTest.policyInputThreshold">輸入閘預設門檻</label>
+            </div>
+            <div class="field">
+                {# 三件套（§4）：type="number" ＋ min/max/step ＋ 可見區間（id ＋ aria-describedby）。
+                     第二段 describedby 指到「留空＝沿用 0.5」那一句——留空是合法值，要在填之前讀得到。 #}
+                <input type="number" min="0" max="1" step="0.01" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control js-policy-input-threshold" id="policyInputThreshold-{{ policyEngineInstance }}"{% if policyEngineInputThreshold %} value="{{ policyEngineInputThreshold }}"{% endif %} aria-describedby="policyInputThresholdRange-{{ policyEngineInstance }} policyThresholdDefaultHint-{{ policyEngineInstance }}">
+                <span class="text-gray" id="policyInputThresholdRange-{{ policyEngineInstance }}">0 – 1</span>
+            </div>
+        </div>
+        <div class="form-group col-4-md col-12-sm">
+            <div class="label">
+                <label for="policyOutputThreshold-{{ policyEngineInstance }}" class="control-label" data-i18n="qaTest.policyOutputThreshold">輸出閘預設門檻</label>
+            </div>
+            <div class="field">
+                <input type="number" min="0" max="1" step="0.01" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control js-policy-output-threshold" id="policyOutputThreshold-{{ policyEngineInstance }}"{% if policyEngineOutputThreshold %} value="{{ policyEngineOutputThreshold }}"{% endif %} aria-describedby="policyOutputThresholdRange-{{ policyEngineInstance }} policyThresholdDefaultHint-{{ policyEngineInstance }}">
+                <span class="text-gray" id="policyOutputThresholdRange-{{ policyEngineInstance }}">0 – 1</span>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {# 後果寫在做決定的控制項旁邊（§3-2）：選的人要先知道「只影響這一次」與「門檻只有 Decisions 才有」。
+         放在整列欄位的正下方、不塞進判斷引擎那一格：那一格只有三分之一寬，一句兩行的話會被擠成七、八行。 #}
+    <span class="text-gray" id="policyEngineHint-{{ policyEngineInstance }}" data-i18n="qaTest.policyEngineHint">只影響這一次測試，正式問答一律用 LLM。LLM 只回報命中了哪些主題；Decisions 逐個主題打分數，分數達到門檻才算命中，門檻欄位只在選了 Decisions 時出現。</span>
+    {% if policyEngineSelected == "decisions" %}
+    {# 預設門檻 0.5 是資料、獨立成節點（§4-2：契約裡有值的數字不進譯文）。 #}
+    <span class="text-gray" id="policyThresholdDefaultHint-{{ policyEngineInstance }}"><span data-i18n="qaTest.policyThresholdBlankPrefix">留空＝沿用預設值 </span><span>0.5</span></span>
+    <div class="flex-row column gap-8">
+        <span class="control-label" data-i18n="qaTest.policyTopicThresholds">個別主題門檻</span>
+        <div class="table-container scrollTable" tabindex="0">
+            <table class="default-table">
+                <colgroup>
+                    <col style="min-width:200px;">
+                    <col style="width:120px; min-width:120px;">
+                    <col style="width:120px; min-width:120px;">
+                    <col style="width:90px; min-width:90px;">
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th id="policyTopicThresholdHeadTopic-{{ policyEngineInstance }}" data-i18n="settings.policyTopicName">主題名稱</th>
+                        <th id="policyTopicThresholdHeadInput-{{ policyEngineInstance }}" data-i18n="qaTest.policyTopicInputThreshold">輸入門檻</th>
+                        <th id="policyTopicThresholdHeadOutput-{{ policyEngineInstance }}" data-i18n="qaTest.policyTopicOutputThreshold">輸出門檻</th>
+                        {# 這一欄的 `<th>` 不掛 id：刪除鈕走「本列辨識欄 ＋ 本鈕自己」（§4 動作鈕自指），沒有人指得到它
+                             （同 5-2 政策主題表）。sr-only 字面要留著（dist 不得有空 `<th>`）。 #}
+                        <th><span class="sr-only" data-i18n="common.actions">操作</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in policyEngineTopicRows %}
+                    {# 迴圈內的值控制項吃「本列辨識欄 ＋ 欄表頭」、刪除鈕吃「本列辨識欄 ＋ 本鈕自己」（§4）；
+                         辨識欄另立一顆 sr-only 節點，因為主題名稱那一格本身是 <select>（同 5-2 的 policyTopicRowName-*）。
+                         列號先存成 `policyEngineRowIdx`：選項那一圈內層的 `loop` 會蓋掉外層。 #}
+                    {% set policyEngineRowIdx = loop.index %}
+                    <tr>
+                        <td>
+                            <span id="policyTopicThresholdRowName-{{ policyEngineInstance }}-{{ policyEngineRowIdx }}" class="sr-only">{{ row.topic }}</span>
+                            <select class="form-control select-sm singleSelect js-policy-threshold-topic" aria-labelledby="policyTopicThresholdRowName-{{ policyEngineInstance }}-{{ policyEngineRowIdx }} policyTopicThresholdHeadTopic-{{ policyEngineInstance }}">
+                                <option value="" data-i18n="common.pleaseSelect">請選擇</option>
+                                {% for name in policyEngineTopicNames %}
+                                <option value="{{ name }}"{% if name == row.topic %} selected{% endif %}>{{ name }}</option>
+                                {% endfor %}
+                            </select>
+                        </td>
+                        <td><input type="number" min="0" max="1" step="0.01" class="form-control js-policy-threshold-input"{% if row.input %} value="{{ row.input }}"{% endif %} aria-labelledby="policyTopicThresholdRowName-{{ policyEngineInstance }}-{{ policyEngineRowIdx }} policyTopicThresholdHeadInput-{{ policyEngineInstance }}" aria-describedby="policyTopicThresholdHint-{{ policyEngineInstance }}"></td>
+                        <td><input type="number" min="0" max="1" step="0.01" class="form-control js-policy-threshold-output"{% if row.output %} value="{{ row.output }}"{% endif %} aria-labelledby="policyTopicThresholdRowName-{{ policyEngineInstance }}-{{ policyEngineRowIdx }} policyTopicThresholdHeadOutput-{{ policyEngineInstance }}" aria-describedby="policyTopicThresholdHint-{{ policyEngineInstance }}"></td>
+                        <td><button type="button" id="policyTopicThresholdDelete-{{ policyEngineInstance }}-{{ policyEngineRowIdx }}" class="button button-border button-sm js-remove-policy-threshold" aria-labelledby="policyTopicThresholdRowName-{{ policyEngineInstance }}-{{ policyEngineRowIdx }} policyTopicThresholdDelete-{{ policyEngineInstance }}-{{ policyEngineRowIdx }}" data-i18n="action.delete">刪除</button></td>
+                    </tr>
+                    {% else %}
+                    {# 空狀態是這一張表的預設態（沒有任何主題要另訂門檻），而且使用者刪得到零列（§5 無資料列正典）。 #}
+                    <tr><td colspan="4" class="text-center text-gray" data-i18n="qaTest.noPolicyTopicThresholds">沒有個別主題門檻——每個主題都沿用「輸入閘預設門檻」與「輸出閘預設門檻」。要讓某個主題的門檻不一樣，按「新增主題門檻」。</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {# 逐列門檻的界線與「至少一格」的約束常駐可見（§4：同一個欄位在同一頁出現多次時每一處都要接）。
+             區間是資料節點、夾在前後綴 key 之間（§3-2 界線字串一律 `N – M`）。 #}
+        <p class="text-gray m-0" id="policyTopicThresholdHint-{{ policyEngineInstance }}"><span data-i18n="qaTest.policyTopicThresholdHintPrefix">門檻範圍 </span><span>0 – 1</span><span data-i18n="qaTest.policyTopicThresholdHintSuffix">；每一列至少填一格，空著的那一格沿用預設門檻。</span></p>
+        <div class="flex-row">
+            <button type="button" class="button button-border button-sm js-add-policy-threshold" data-i18n="qaTest.addPolicyTopicThreshold">新增主題門檻</button>
+        </div>
+    </div>
+    {% endif %}
+</div>

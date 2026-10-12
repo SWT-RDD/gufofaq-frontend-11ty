@@ -148,5 +148,69 @@
         }
     }
 
-    // 行內碼的樣式主人是共用原子 ui/inline-code（.inline-code），本檔不抄一份（§4）。
+    // 合規閘的主題分數小表（展開後、接在明細鍵值表下面的一塊）。
+    // **為什麼選擇器要寫到三層**：這塊落在本元件外層那張流程表的 `tbody tr td`（明細列的那一格）
+    // 之內，而那張表的表格樣式是**後代選擇器**——`tbody tr td`／`thead tr th`（含 no-border 變體那幾條，
+    // 特異度最高到 (0,3,2)）會一路套到這張小表的每一格與每一列上。本塊的每一條因此都寫成
+    // `.step-flow .step-node-scores .step-node-score-table …`（(0,3,1) 起跳）把要的值蓋回來；
+    // 被那幾條蓋到、而這裡不重寫的只有列的上框線（那幾條本來就是 none，與這裡要的一樣）。
+    // 色：底 --surface-sunken 與上面那張明細鍵值表同一個面（看起來是同一塊明細的延續），格底
+    // --surface-raised；命中列＝前景墨色 --brand-ink 加粗 ＋ 首格內側一道墨色記號條——兩者都是
+    // 本檔既有的組合（`.is-skill` 標籤的 --brand-ink 疊 raised、`.is-running` 的深墨記號），
+    // 已在對比度測試的配對裡，不新增 token。只靠顏色不夠：命中與否另有「結果」欄的字面。
+    .step-node-scores {
+        padding: 0.625rem 1rem 0.75rem;
+        background-color: var(--surface-sunken);
+        border: 1px solid var(--border);
+        border-top: none;
+    }
+
+    .step-node-scores-title {
+        margin: 0 0 0.5rem;
+        color: var(--text);
+        font-weight: 500;
+    }
+
+    .step-node-scores .step-node-score-table {
+        width: 100%;
+        border-collapse: collapse;
+
+        tr {
+            border: none;
+        }
+
+        th,
+        td {
+            padding: 0.375rem 0.625rem;
+            border-bottom: 1px solid var(--border);
+            background-color: var(--surface-raised);
+            color: var(--text);
+            font-size: 0.875rem;
+            text-align: left;
+            vertical-align: middle;
+        }
+
+        th {
+            color: var(--text-muted);
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        // 分數與門檻：數字欄靠右、等寬數字，上下兩列的小數點才對得齊。
+        .step-node-score-num {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+        }
+
+        // 命中列（`tr.is-hit`）：狀態寫在 `> td` 上（列底色／前景寫在 tr 上會被格自己的規則蓋掉，§4）。
+        .is-hit > td {
+            color: var(--brand-ink);
+            font-weight: 700;
+        }
+
+        .is-hit > td:first-child {
+            box-shadow: inset 3px 0 0 var(--brand-ink);
+        }
+    }
 }

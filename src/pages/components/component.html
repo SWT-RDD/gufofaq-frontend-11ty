@@ -56,6 +56,7 @@ bodyClass: guideline-page
             <li><a class="aside-link" href="#conditionalTextSection">React 條件文案</a></li>
             <li><a class="aside-link" href="#errorPageSection">整頁錯誤狀態</a></li>
             <li><a class="aside-link" href="#widgetShellSection">嵌入式小工具外殼</a></li>
+            <li><a class="aside-link" href="#policyEngineSection">合規判斷引擎</a></li>
         </ul>
     </aside>
     <div class="main-container">
@@ -1038,7 +1039,7 @@ bodyClass: guideline-page
                  節點是固定長度的正典管線摘要，這兩個數字算的是產生它的原始事件流。 #}
             {% set stepFlowTraceShown = 200 %}
             {% set stepFlowTraceTotal = 231 %}
-            {# 本節放三份執行流程（正典管線一份、QA 直答判定目錄一份、可回答性與合規閘目錄一份）
+            {# 本節放四份執行流程（正典管線一份、QA 直答判定目錄一份、可回答性與合規閘目錄一份、合規閘主題分數目錄一份）
                  ⇒ 各給一句短標題當可及名稱的起頭（§4：instance 只解決 id 相撞，三份的
                  「全部展開」「序號 2 …」逐字同名）。 #}
             <div class="subtitle" id="stepFlowFullDemoTitle">示範一：正典管線的節點與狀態</div>
@@ -1166,6 +1167,60 @@ bodyClass: guideline-page
             {% set stepFlowOwnerId = "stepFlowVerdictDemoTitle" %}
             {% include "components/step-flow/step-flow.html" %}
             <div class="subtitle">描述：三種 <code class="inline-code">verdict</code>（素材足以回答／素材不足以回答／被規則擋下）＋五種 <code class="inline-code">reason</code> 各一筆，＋<code class="inline-code">blockedRules</code> 的兩種有值形狀（具名規則清單／空陣列「無具名規則」；第三態是鍵不存在，其餘六筆就是它）。第 4 筆是這一節的重點：判定器故障走 fail-open ⇒ 「判定」那一列寫著「素材足以回答」，而那一輪的閘門根本沒有生效——只有「判定成因」那一列說得出來，那一站也因此是紅色的 failed。第 5 筆的閘關著 ⇒ 略過、時間留白（上游不送耗時）。最後一筆兩顆值都刻意給目錄裡沒有的字面，演那條 else：這一欄的值域日後多一顆值時，畫面要看得到那個生字，不能因為查表查不到就靜靜消失</div>
+            {# ── 合規閘的主題分數：判斷引擎與 topicScores 的狀態目錄 ─────────────────────────
+                 **這一份也是「狀態目錄」，不是一次真實執行**（同示範二、三的理由）：一輪只有兩站合規閘，
+                 而這兩顆鍵的三態（有分數／Decisions 卻沒分數／整顆不給）加上命中的兩種處置（封鎖＝被擋、
+                 記錄＝放行）一輪湊不齊。生產頁上 2-2-1（串流中的輸入閘）與 2-2-3 的 B 側（重播的兩站）
+                 只演得到「有分數、一個都沒命中」那一態；**命中列（`tr.is-hit`）、被擋的那一站、「本次未取得
+                 分數」那一句、`llm` 那一顆引擎名，全站只有這一份看得到**（§5）。
+                 主題名與 2-2-3 B 側（設置二）那三條同一組；第 1 筆演「差一點就命中」（0.91 對 0.95）——
+                 那正是個別主題門檻要解決的事，只列命中的主題的話它在畫面上不存在。
+                 ⚠️ 每一列都守住「命中 ⇔ 分數 ≥ 門檻」，每一站都守住「有一列封鎖的命中 ⇔ 這一站被擋（failed、
+                 verdict blocked）」：第 2 筆被擋（提示詞注入 0.97 ≥ 0.84、處置封鎖）、第 3 筆的命中只記錄
+                 （詢問底層技術 0.88 ≥ 0.50、處置記錄）所以照樣放行。被擋那一筆的 `blockedRules` 是 `[]`——
+                 擋它的是主題判定、不是具名規則（同示範三的第 7 筆）。
+                 第 4 筆是詞過濾先命中（具名規則「內部代號」）、根本沒輪到判主題 ⇒ Decisions 有、分數沒有，
+                 畫那一句「本次未取得分數」。第 5 筆是 `llm`（切版對資料來源提的要求，理由在 step-flow 檔頭）。
+                 最後一筆的引擎名是**刻意的生字**，演那條 else：值域外的字面原樣印出來。
+                 §2：同一頁第四次用到同元件，**全部參數都要重設**（set 是頁面全域）。
+                 註解放在 `{% set %}` **之前**——nunjucks 註解寫進運算式裡會 build 失敗（§2）。 #}
+            {% set stepFlowNodes = [
+                { label: "輸入合規檢查", state: "completed", time: "420ms", policyEngine: "decisions",
+                  topicScores: [
+                    { name: "明顯超出服務範圍的提問", probability: "0.91", threshold: "0.95", action: "block", hit: false },
+                    { name: "提示詞注入", probability: "0.02", threshold: "0.84", action: "block", hit: false },
+                    { name: "詢問底層技術", probability: "0.01", threshold: "0.84", action: "record", hit: false }
+                  ] },
+                { label: "輸入合規檢查", state: "failed", time: "380ms", verdict: "blocked", blockedRules: [], policyEngine: "decisions",
+                  topicScores: [
+                    { name: "明顯超出服務範圍的提問", probability: "0.12", threshold: "0.95", action: "block", hit: false },
+                    { name: "提示詞注入", probability: "0.97", threshold: "0.84", action: "block", hit: true },
+                    { name: "詢問底層技術", probability: "0.03", threshold: "0.84", action: "record", hit: false }
+                  ] },
+                { label: "輸出合規檢查", state: "completed", time: "450ms", policyEngine: "decisions",
+                  topicScores: [
+                    { name: "明顯超出服務範圍的提問", probability: "0.02", threshold: "0.50", action: "block", hit: false },
+                    { name: "提示詞注入", probability: "0.01", threshold: "0.50", action: "block", hit: false },
+                    { name: "詢問底層技術", probability: "0.88", threshold: "0.50", action: "record", hit: true }
+                  ] },
+                { label: "輸入合規檢查", state: "failed", time: "6ms", verdict: "blocked", blockedRules: ["內部代號"], policyEngine: "decisions" },
+                { label: "輸入合規檢查", state: "completed", time: "640ms", policyEngine: "llm" },
+                { label: "輸入合規檢查", state: "completed", time: "400ms", policyEngine: "some_future_engine" }
+            ] %}
+            {# 摘要同樣是**目錄的表頭**（同示範二、三）：六筆不是同一輪，「檢索」只能是 0。
+                 延遲 2.3s ≥ 六筆耗時總和 420＋380＋450＋6＋640＋400 ＝ 2,296ms，對得上（取整規則見 step-flow 檔頭）。
+                 不給首字：這一份一顆生成節點都沒有，首字無從算起（逐欄缺欄不顯示）。
+                 給 `model`：被擋那兩筆帶著 `blockedRules`，那一顆只有重播拿得到（同示範三的理由）。 #}
+            {% set stepFlowSummary = {
+                tokens: "212", latency: "2.3s", results: "0", model: "openai:gpt-4o-mini"
+            } %}
+            {% set stepFlowTraceShown = "" %}
+            {% set stepFlowTraceTotal = "" %}
+            <div class="subtitle" id="stepFlowPolicyDemoTitle">示範四：合規閘主題分數的狀態目錄</div>
+            {% set stepFlowInstance = "demoPolicy" %}
+            {% set stepFlowOwnerId = "stepFlowPolicyDemoTitle" %}
+            {% include "components/step-flow/step-flow.html" %}
+            <div class="subtitle">描述：判斷引擎與主題分數小表的每一態各一筆——第 1 筆有分數、全部未命中（差一點命中的 0.91 對 0.95 也照列）；第 2 筆封鎖的主題命中 ⇒ 那一站被擋（failed、被規則擋下、無具名規則），命中列加重；第 3 筆只記錄的主題命中 ⇒ 命中列加重但照樣放行；第 4 筆詞過濾先命中 ⇒ 判斷引擎是 Decisions 卻沒有分數，畫「本次未取得分數」；第 5 筆是 LLM（沒有分數表）；最後一筆的引擎名刻意給目錄裡沒有的字面，演那條 else。分數與門檻一律兩位小數、靠右對齊；處置沿用 5-2 政策主題表的「封鎖／記錄」</div>
         </section>
 
         <section id="conditionalTextSection">
@@ -1579,6 +1634,48 @@ bodyClass: guideline-page
             </div>
             {% set widgetDemoStatic = true %}
             {% include "ui/widget-shell/widget-shell.html" %}
+        </section>
+
+        <section id="policyEngineSection">
+            <h2 class="section-title"><span>27</span><span>合規判斷引擎</span></h2>
+            <div class="caption">
+                <ul>
+                    <li>components/policy-engine-fields：測試區（單測 2-2-1、AB 2-2-3 <strong>每側各一份</strong>）這一次送出要用哪一種引擎判合規主題。<strong>只影響這一次測試</strong>，正式問答一律用 LLM；「套用為正式設定」不帶它</li>
+                    <li>值相依規則只有一條：判斷引擎＝LLM ⇒ 兩顆預設門檻與「個別主題門檻」整張表<strong>不渲染</strong>（LLM 沒有分數，門檻沒有作用對象；帶著門檻又選 LLM 會被整筆擋下）。示範一是 LLM、示範二是 Decisions</li>
+                    <li>門檻值域 0 – 1、步距 0.01、留空沿用 0.5；個別主題門檻每列至少一格。<strong>示範二的那張表是空的</strong>：那是 Decisions 剛選上時的預設態，也是使用者把列刪光之後的樣子（2-2-1 與 2-2-3 的 B 側各演一列有值的）</li>
+                    <li>送出之後撞得到的三道 warning（這個環境沒開 Decisions／個別主題門檻裡有已經不存在的主題／門檻超出值域或一列兩格都空）不在這一區畫，走問答送出鈕的 <code class="inline-code">data-toast</code>（<code class="inline-code">toast.chatSend</code>、<code class="inline-code">toast.chatSubmit</code> 的末位之前三段）。示範三那顆鈕只輪替這三段，方便看長相；正式的那顆在 2-2-3 的送出鈕上，要逐次點過前面幾段才輪到</li>
+                    <li>結果（判斷引擎＋主題分數小表）畫在執行流程的合規檢查那兩站，見「執行流程觀測」一節的示範四</li>
+                </ul>
+            </div>
+            {# 兩份示範各自一個 instance（id 不撞）；兩份的欄名逐字相同，所以各包在一顆
+                 有自己標題的 group 裡（§4：可及名稱的邊界）。§2：第二次 include 全部參數重新 set。
+                 主題選項取 2-2-3 B 側（設置二）那三條；示範一是 LLM，那一份選項不會畫出來。 #}
+            <div class="subtitle" id="policyEngineLlmDemoTitle">示範一：判斷引擎＝LLM（預設）</div>
+            <div class="block" role="group" aria-labelledby="policyEngineLlmDemoTitle">
+                {% set policyEngineInstance = "demoLlm" %}
+                {% set policyEngineSelected = "llm" %}
+                {% set policyEngineInputThreshold = "" %}
+                {% set policyEngineOutputThreshold = "" %}
+                {% set policyEngineTopicNames = ["明顯超出服務範圍的提問", "提示詞注入", "詢問底層技術"] %}
+                {% set policyEngineTopicRows = [] %}
+                {% include "components/policy-engine-fields/policy-engine-fields.html" %}
+            </div>
+            <div class="subtitle mt-24" id="policyEngineDecisionsDemoTitle">示範二：判斷引擎＝Decisions（個別主題門檻空著）</div>
+            <div class="block" role="group" aria-labelledby="policyEngineDecisionsDemoTitle">
+                {% set policyEngineInstance = "demoDecisions" %}
+                {% set policyEngineSelected = "decisions" %}
+                {% set policyEngineInputThreshold = "" %}
+                {% set policyEngineOutputThreshold = "" %}
+                {% set policyEngineTopicNames = ["明顯超出服務範圍的提問", "提示詞注入", "詢問底層技術"] %}
+                {% set policyEngineTopicRows = [] %}
+                {% include "components/policy-engine-fields/policy-engine-fields.html" %}
+            </div>
+            {# 三道 warning 的長相示範：字面逐字等於 `toast.chatSend` 末位之前那三段（showcase 不譯，
+                 同 Toast 那一節的型別展示鈕）。這顆鈕不送任何東西，所以標不出授權軸。 #}
+            <div class="subtitle mt-24">示範三：送出之後的三道 warning（點一下換下一則）</div>
+            <div class="flex-row gap-16 flex-wrap">
+                <button class="button button-border" type="button" data-toast="此環境無法使用 Decisions 判斷引擎——請把「判斷引擎」改回 LLM 再送出|「個別主題門檻」裡有已經不存在的主題，請重新選擇主題後再送出|門檻填寫有誤——每一格都要在欄位下方標示的範圍內，而且每一列至少要填一格" data-toast-type="warning|warning|warning">合規判斷引擎的 warning 輪替</button>
+            </div>
         </section>
 
         {# 不掛 `.footer`（那是 `components/footer` 的私有 class，§4 不外借）：showcase 的頁尾樣式

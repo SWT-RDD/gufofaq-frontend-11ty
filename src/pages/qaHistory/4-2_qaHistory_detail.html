@@ -246,7 +246,12 @@ permalink: 4-2_qaHistory_detail.html
      （不經生成、可回答性判定同樣跳過）
      ⇒ 這一頁畫得出檢索與生成，就代表那一站必然是未命中。分數 2.4 < 門檻 3 ⇒ `below_score_floor`，
      `poolSize` ＝ max(取用資料筆數, 候選池下限 2) ＝ max(16, 2) ＝ 16，而 16 就是上面那格
-     「取用資料筆數」（§6 同頁同源）。 #}
+     「取用資料筆數」（§6 同頁同源）。
+   **兩站合規檢查都不帶主題分數**（`policyEngine`／`topicScores`，見 step-flow 檔頭）：這一筆是前台問答
+     （`tag: frontend`），而正式問答一律用 LLM 引擎判主題——LLM 沒有分數，這兩顆鍵整顆不給，元件三態的
+     第③態（什麼都不畫）就是這一筆的正確樣子。詳情頁重播的若是一筆用 Decisions 測的紀錄（測試區那兩頁），
+     同一個元件照樣畫出判斷引擎與主題分數小表——那一態的重播在 2-2-3 的 B 側演得到，
+     其餘兩態（被擋的命中列、沒取得分數）在元件庫頁。 #}
 {% set stepFlowNodes = [
     { label: "輸入合規檢查", state: "completed", time: "8ms" },
     { label: "QA 直答比對", state: "completed", time: "14ms", decision: "below_score_floor", entry: "pre_graph", poolSize: "16", hits: "客服問答集 / 新住民結婚登記要準備什麼文件？", score: "2.4", floor: "3" },

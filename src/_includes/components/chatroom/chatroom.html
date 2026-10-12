@@ -161,7 +161,7 @@
                         <div class="suggested-questions" role="group" aria-labelledby="chatroomSuggestedLabel">
                             <span id="chatroomSuggestedLabel" class="suggested-questions-label" data-i18n="comp.suggestedQuestions">建議追問：</span>
                             {% for q in chatroomSuggested %}
-                            <button data-capability="ask" type="button" class="button button-border button-sm js-ask-suggested" data-toast="回答生成中…|權限不足，無法送出——請找貴租戶的管理者開通|回答生成成功|回答生成失敗，請重新送出一次|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.chatSubmit" data-toast-type="info|warning|success|error|warning" disabled>{{ q }}</button>
+                            <button data-capability="ask" type="button" class="button button-border button-sm js-ask-suggested" data-toast="回答生成中…|權限不足，無法送出——請找貴租戶的管理者開通|回答生成成功|回答生成失敗，請重新送出一次|此環境無法使用 Decisions 判斷引擎——請把「判斷引擎」改回 LLM 再送出|「個別主題門檻」裡有已經不存在的主題，請重新選擇主題後再送出|門檻填寫有誤——每一格都要在欄位下方標示的範圍內，而且每一列至少要填一格|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.chatSubmit" data-toast-type="info|warning|success|error|warning|warning|warning|warning" disabled>{{ q }}</button>
                             {% endfor %}
                         </div>
                         {% endif %}
@@ -231,8 +231,14 @@
             {# 送出鈕另立 key：它多一條「沒填問題」的結果——輸入框空著時，送出在前端就被擋下
                  （輸入框標紅＋欄位旁的錯誤字），根本不會打 API。
                  建議追問的 chip 送的是固定問句、不可能空——共用同一顆 key 會讓那幾顆 chip 演一個
-                 不可能的結果（§5）。 #}
-            <button data-capability="ask" type="button" class="button button-primary chat-input-submit" data-toast="回答生成中…|權限不足，無法送出——請找貴租戶的管理者開通|請先輸入問題|回答生成成功|回答生成失敗，請重新送出一次|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.chatSend" data-toast-type="info|warning|warning|success|error|warning" data-i18n="action.submit" disabled>送出</button>
+                 不可能的結果（§5）。
+               **倒數第二到第四段是「合規判斷引擎」那一區送出去才撞得到的三道 warning**（這個環境沒開 Decisions
+                 引擎／個別主題門檻裡有已經不存在的主題／門檻超出值域或一列兩格都空）：這顆鈕只住在測試區
+                 （2-1 唯讀預覽不渲染輸入區），而測試區的每一次送出都帶著那一區的值，所以三道都真實可達。
+                 三段都是使用者改得掉的（換引擎、重選主題、改數字），故是 warning；分支的正本在
+                 components/policy-engine-fields 檔頭。依「既有的一顆加分支追加在保留末位之前」排在倒數第二段起。
+                 建議追問的 chip（`toast.chatSubmit`）送的是同一份測試設定，同三段、同位置。 #}
+            <button data-capability="ask" type="button" class="button button-primary chat-input-submit" data-toast="回答生成中…|權限不足，無法送出——請找貴租戶的管理者開通|請先輸入問題|回答生成成功|回答生成失敗，請重新送出一次|此環境無法使用 Decisions 判斷引擎——請把「判斷引擎」改回 LLM 再送出|「個別主題門檻」裡有已經不存在的主題，請重新選擇主題後再送出|門檻填寫有誤——每一格都要在欄位下方標示的範圍內，而且每一列至少要填一格|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.chatSend" data-toast-type="info|warning|warning|success|error|warning|warning|warning|warning" data-i18n="action.submit" disabled>送出</button>
         </div>
     </div>
     {% endif %}

@@ -39,7 +39,7 @@
 //                           <span class="text-gray" id="chatAskMaxLenHint"><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-ask-max-len">2000</span><span data-i18n="common.unitChars"> 字</span></span>
 //                       </div>
 //                   </div>
-//                   <button data-capability="ask" type="button" class="button button-primary chat-input-submit" data-toast="回答生成中…|權限不足，無法送出——請找貴租戶的管理者開通|請先輸入問題|回答生成成功|回答生成失敗，請重新送出一次|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.chatSend" data-toast-type="info|warning|warning|success|error|warning" data-i18n="action.submit">送出</button>
+//                   <button data-capability="ask" type="button" class="button button-primary chat-input-submit" data-toast="回答生成中…|權限不足，無法送出——請找貴租戶的管理者開通|請先輸入問題|回答生成成功|回答生成失敗，請重新送出一次|此環境無法使用 Decisions 判斷引擎——請把「判斷引擎」改回 LLM 再送出|「個別主題門檻」裡有已經不存在的主題，請重新選擇主題後再送出|門檻填寫有誤——每一格都要在欄位下方標示的範圍內，而且每一列至少要填一格|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.chatSend" data-toast-type="info|warning|warning|success|error|warning|warning|warning|warning" data-i18n="action.submit">送出</button>
 //               </div>
 //           </div>
 //       </div>

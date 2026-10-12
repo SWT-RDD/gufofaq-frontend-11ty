@@ -163,6 +163,26 @@ permalink: 2-2-1_singleTest.html
         </div>
     </div>
 
+    {# 合規判斷引擎（components/policy-engine-fields）：這一次測試的合規閘用哪一種引擎、Decisions 的門檻。
+         **只影響這一次送出**，不是設定——「套用為正式設定」不帶它、「回復儲存的設定」把它回到預設（理由在元件檔頭）。
+       **這一區不是「切版常駐、React 依模式不渲染」那一族**：它的門檻欄有一條值相依規則
+         （判斷引擎＝LLM ⇒ 門檻那幾組不渲染），由元件自己的 `{% if %}` 表達，正本在元件檔頭。
+       示範選 Decisions（§6 同頁自洽：本頁 components/step-flow 的「輸入合規檢查」那一站帶著 Decisions 的主題分數）。
+         選項是設置一（本頁「知識檢索」選的那一份）的政策主題，與 5-2 設置一的政策主題表同源：
+         個資與隱私、醫療診斷。輸入閘預設門檻留空（＝0.5）、醫療診斷另訂輸入門檻 0.70——
+         執行流程那張分數表的門檻欄就是這兩個值推出來的。 #}
+    {% set policyEngineInstance = "single" %}
+    {% set policyEngineSelected = "decisions" %}
+    {% set policyEngineInputThreshold = "" %}
+    {% set policyEngineOutputThreshold = "" %}
+    {% set policyEngineTopicNames = ["個資與隱私", "醫療診斷"] %}
+    {% set policyEngineTopicRows = [
+        { topic: "醫療診斷", input: "0.70", output: "" }
+    ] %}
+    <div class="mt-24">
+        {% include "components/policy-engine-fields/policy-engine-fields.html" %}
+    </div>
+
     {# 提示詞（測試用，常駐展開輸入框）：測試頁的臨時提示詞。值載體 textarea 掛 js-prompt-input（React
        受控、change 交業務層）。不用 components/prompt-edit（那是含版本管理工具列的系統提示詞編輯器，
        仍用於對話設定頁）——測試頁只要一個常駐展開的輸入框，動作鈕在下方動作列。示範文案領域中性。 #}

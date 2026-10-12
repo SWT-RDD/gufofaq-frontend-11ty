@@ -75,6 +75,29 @@
          那在即時串流上是**常態**（整顆鍵不給）；而重播那條路上它另有一個成因——租戶自己的
          詞過濾命中規則名時，**整顆鍵會被丟掉**（不是抽掉那一筆，留下一份會誤導人的名單）。
          同一個缺席、兩種成因、消費端分不出來 ⇒ 只能不畫。
+   合規閘的主題分數（policyEngine／topicScores）：只掛在**合規閘**（`input_gate`／`output_gate`）那兩站，
+     放行與被擋都可能有。兩顆鍵（在這裡宣告一次，就是正本）：
+       policyEngine —— 這一站是哪一種引擎判的。值域 `decisions`／`llm` 兩顆；查表查不到的值**原樣輸出**
+         （同 decision）。⚠️ **`llm` 那一顆是切版對資料來源提的要求**（§4「切版主張需求」）：今天 LLM
+         引擎判的那一輪**整顆鍵不給**，而那與「沒有引擎資訊的舊紀錄」在畫面上分不開——要讓人讀得出
+         「這一輪是 LLM 判的、所以沒有分數」，這一格就要有 `llm`。拿不到時（鍵不存在）整列不渲染，
+         2-2-3 的 A 側（LLM）演的就是這一態；`llm` 那一態的長相在元件庫頁。
+       topicScores —— 物件陣列 `[{ name, probability, threshold, action, hit }]`，**每一個啟用中的主題一列，
+         未命中的也列**（只列命中的話，「差一點就命中」與「完全無關」長得一樣，而那正是要調門檻的人
+         唯一要看的東西）。`name` 是租戶自取的主題名＝資料（不翻）；`probability`／`threshold` 是 0 – 1
+         的分數與這一次實際用的門檻（個別主題門檻 → 該閘預設門檻 → 0.5，取第一個有值的），**一律以
+         字串傳入、畫成兩位小數**（`"0.91"`、`"0.50"`；值域含 0，§6 字串理由同 poolSize）——取整規則
+         只有這一份；`action` 是 `block`／`record` 兩顆（那個主題在這一閘的動作；設成「不處理」的主題
+         不算啟用、不會出現在這裡），查表查不到原樣輸出；`hit` 是布林，**命中 ⇔ probability ≥ threshold**，
+         示範資料要對得上這條。命中列整列加重（`tr.is-hit`）。
+         **同一站 hit 與 verdict 的綁定**：有一列 `hit` 且 `action` 是 `block` ⇔ 這一站 `verdict: "blocked"`、
+         state 是 failed；只有 `record` 的命中照樣放行（completed、不帶 verdict）。
+       **三態、三種畫法**：①有 topicScores ⇒ 判斷引擎一列 ＋ 主題分數小表；②policyEngine 是 `decisions`
+         卻沒有 topicScores ⇒ 判斷引擎一列 ＋ 一句「本次未取得分數」（詞過濾先命中、根本沒輪到判主題，
+         或判斷本身失敗——兩種成因消費端分不出來，所以句子兩種都講）；③兩顆都不在 ⇒ 什麼都不畫
+         （LLM 引擎、或這一站根本沒判）。**空陣列不會出現**：沒有啟用中的主題時這一站不判分數，整顆鍵不給。
+       可得性與 blockedRules 不同：即時串流與重播**兩條路都有**（主題名是租戶的設定、不是使用者打的字）。
+       只有測試區送得出 Decisions（正式問答一律用 LLM），所以畫得出這兩顆的使用頁＝測試區的一輪。
    **節點示範資料的三條形狀規則**（§6：演的必須是真的做得出來的狀態）。三處同源——本檔的內建示範
      ＋每一份使用頁的 `stepFlowNodes`——改一處就要一起改：
      ① **`params` 只印得出形狀、印不出值。** 工具呼叫的引數**原文一律不送到瀏覽器**，
@@ -102,7 +125,7 @@
      ③ **節點 `label` 是這裡宣告的正典名**——`qa_direct` 那一站叫 **「QA 直答比對」**，
         不是縮寫的「QA 直答」。React 端的顯示名是以 `step_id` 查一份字典，
         字面分岔時畫面不會報錯，只會兩邊各說各話。
-   參數：stepFlowInstance（**必填**）＝同頁多實例的消歧鍵（2-2-3 一頁 include 兩次、元件庫頁三次）。
+   參數：stepFlowInstance（**必填**）＝同頁多實例的消歧鍵（2-2-3 一頁 include 兩次、元件庫頁四次）。
      每一列的可及名稱要帶「哪一站」，那些 id 都以它為前綴；沒有它的話同頁十顆展開鈕全叫「展開表格」，
      而且 id 會直接撞（§4）。正典見 components/priority-table 的 priorityTableInstance。
    參數：stepFlowOwnerId（選填）＝**同頁另一份執行流程**時，指向「這一份是誰的」那個既有標題節點的 id。
@@ -113,7 +136,7 @@
      沙盒就演到了；元件庫的判定目錄更是十列同名），所以每一列的辨識欄前面掛一段 .sr-only 的
      「序號 N」。它不可見、不動版面，但讓「第幾站」進得了無障礙樹。
    參數：stepFlowNodes（選填，[{ label, state, time, depth, skill, version, iterations, error,
-     tools, params, result, verdict, reason, blockedRules, thinking, failedServers, offPipeline,
+     tools, params, result, verdict, reason, blockedRules, policyEngine, topicScores, thinking, failedServers, offPipeline,
      hits, score, decidedBy, floor, decision, entry, matchedRank, poolSize, reusedFrom }]）
      ——**值域含 0 的欄一律以「字串」傳入**（`poolSize: "0"`、`score: "0"`、`matchedRank: "1"`、
        `iterations: "0"`）：這些欄的渲染條件是 `{% if node.X %}` 真值判斷，而
@@ -160,7 +183,11 @@
      正典管線是固定長度的**摘要**，軌跡是產生它的原始事件流（一條九站的管線配數百筆原始事件不衝突）。
      **不覆寫＝主動採用內建示範**，那份示範必須與使用頁的其他內容自洽（內建示範是移民主題，配 2-2-1）。
      **內建示範演的是「這一輪還在跑」**（2-2-1 單測的唯一敘事）：生成答案 running、其後 pending、
-       **沒有摘要**（`stepFlowSummary` 不設）、**沒有結果截斷那一對**。這是全站唯一演得到
+       **沒有摘要**（`stepFlowSummary` 不設）、**沒有結果截斷那一對**。
+       輸入合規檢查那一站帶著 Decisions 的主題分數：2-2-1 的「合規判斷引擎」選的是 Decisions，
+       兩個主題是 5-2 設置一的那兩條（個資與隱私＝輸入封鎖、醫療診斷＝輸入記錄），門檻對上 2-2-1 的
+       表單——醫療診斷有個別輸入門檻 0.70，個資與隱私落回預設 0.50（輸入閘預設門檻留空）。
+       輸出合規檢查還沒跑到（pending），所以沒有分數。這是全站唯一演得到
        is-running／pending 與聊天區串流狀態列的地方——4-2 詳情頁與 2-2-3 演的是跑完並落庫的重播，
        兩態各有一頁，不重複也不留空（§5）。
    進度「目前 X / N」只數**正典管線節點**（無 depth 者）：N＝正典節點數、X＝已執行到的最後一個正典節點序號。
@@ -170,7 +197,11 @@
      會讓正常那一輪的 N 少一格。不烤字面量：使用頁改節點數，烤死的總數就會說謊（§6）。
    示範資料＝假資料（工具名/參數/結果/推理），依 GUIDELINE §4-2「只翻 UI chrome、不翻假資料」不掛 data-i18n。 #}
 {% set stepFlowNodeRows = stepFlowNodes or [
-    { label: "輸入合規檢查", state: "completed", time: "8ms" },
+    { label: "輸入合規檢查", state: "completed", time: "620ms", policyEngine: "decisions",
+      topicScores: [
+        { name: "個資與隱私", probability: "0.03", threshold: "0.50", action: "block", hit: false },
+        { name: "醫療診斷", probability: "0.12", threshold: "0.70", action: "record", hit: false }
+      ] },
     { label: "QA 直答比對", state: "completed", time: "18ms",
       hits: "客服問答集 / 新住民結婚登記要準備什麼文件？",
       score: "2.4", floor: "3",
@@ -297,7 +328,7 @@
                              展開鈕與整個 detail-row 都不渲染，資料靜默消失。
                              ⚠️ 這種漏很難被發現——只要示範節點順手多帶一顆 decision 或 skill，條件就成立了，
                              漏掉的那一欄要等到有人給出「只有它」的節點才會炸。加欄位時兩處一起改。 #}
-                        {% if node.tools or node.params or node.result or node.verdict or node.reason or node.blockedRules or node.thinking or node.skill or node.error or node.hits or node.score or node.decidedBy or node.floor or node.decision or node.iterations or node.entry or node.poolSize or node.failedServers %}
+                        {% if node.tools or node.params or node.result or node.verdict or node.reason or node.blockedRules or node.policyEngine or node.topicScores or node.thinking or node.skill or node.error or node.hits or node.score or node.decidedBy or node.floor or node.decision or node.iterations or node.entry or node.poolSize or node.failedServers %}
                         {# 可及名稱＝「這一站的名字 ＋ 本鈕自己的字」（§4）：自指是為了讓 WCAG 2.5.3
                              Label in Name 成立——鈕上看得到的字是「展開表格」，可及名稱裡就必須含它，
                              否則語音控制唸「展開表格」點不到；而 accordion.js 換 sr-only 文字時，
@@ -308,7 +339,7 @@
                         {% endif %}
                     </td>
                 </tr>
-                {% if node.tools or node.params or node.result or node.verdict or node.reason or node.blockedRules or node.thinking or node.skill or node.error or node.hits or node.score or node.decidedBy or node.floor or node.decision or node.iterations or node.entry or node.poolSize or node.failedServers %}
+                {% if node.tools or node.params or node.result or node.verdict or node.reason or node.blockedRules or node.policyEngine or node.topicScores or node.thinking or node.skill or node.error or node.hits or node.score or node.decidedBy or node.floor or node.decision or node.iterations or node.entry or node.poolSize or node.failedServers %}
                 <tr class="detail-row">
                     <td colspan="5" class="detail-cell">
                         <div class="accordion-content">
@@ -453,6 +484,30 @@
                                         <td>{% if node.blockedRules.length %}{% for rule in node.blockedRules %}{% if not loop.first %}<span data-i18n="common.listSep">、</span>{% endif %}{{ rule }}{% endfor %}{% else %}<span class="text-gray" data-i18n="agent.blockedRulesNone">無具名規則</span>{% endif %}</td>
                                     </tr>
                                     {% endif %}
+                                    {# 判斷引擎（合規閘）：值域與 `llm` 那一顆的來歷見檔頭「合規閘的主題分數」那一段。
+                                         引擎名是 chrome（兩個語系都寫 Decisions／LLM，但它們是產品詞、走 key），
+                                         收尾的 else **原樣輸出**（同 decision）。 #}
+                                    {% if node.policyEngine %}
+                                    <tr>
+                                        <th data-i18n="agent.policyEngine">判斷引擎</th>
+                                        {% if node.policyEngine == "decisions" %}
+                                        <td data-i18n="agent.policyEngineDecisions">Decisions</td>
+                                        {% elif node.policyEngine == "llm" %}
+                                        <td data-i18n="agent.policyEngineLlm">LLM</td>
+                                        {% else %}
+                                        <td>{{ node.policyEngine }}</td>
+                                        {% endif %}
+                                    </tr>
+                                    {% endif %}
+                                    {# 三態的第②態（見檔頭）：用 Decisions 判、卻沒有分數。**不可以留白**——留白會被讀成
+                                         「這一輪沒判」，而它其實判了（或該判卻失敗了）。只在 `decisions` 時畫：LLM 引擎本來
+                                         就沒有分數，對它講「本次未取得」是在描述一件不會發生的事。 #}
+                                    {% if node.policyEngine == "decisions" and not node.topicScores %}
+                                    <tr>
+                                        <th data-i18n="agent.topicScores">主題分數</th>
+                                        <td><span class="text-gray" data-i18n="agent.topicScoresAbsent">本次未取得分數（詞過濾先命中，或判斷失敗）</span></td>
+                                    </tr>
+                                    {% endif %}
                                     {# QA 直答的命中細節（S1）。**這幾欄不可省**：qa_direct 節點只有 label／state／time
                                          的話，連「可展開」的條件都不成立（那個判斷看 verdict／tools／iterations，
                                          三個都沒有）——畫面上就是一個綠盒子，說不出「憑什麼直出這一則」。
@@ -578,6 +633,41 @@
                                     {% endif %}
                                 </tbody>
                             </table>
+                            {# 主題分數小表（三態的第①態，見檔頭）。**不塞進上面那張兩欄表的某一格**：那張表是
+                                 「欄名｜值」的鍵值表，五欄的小表巢進它的 `<td>` 會被它的後代選擇器整個改寫
+                                 （每格都變成 120px 置中的欄名格）。故放在它後面、自成一塊，標題另立一顆節點，
+                                 表格以 aria-labelledby 接「這一站的名字 ＋ 主題分數」（§4：同頁多站都有這張表，
+                                 只叫「主題分數」的話分不出是哪一站的）。
+                               欄序固定：主題｜分數｜門檻｜處置｜結果——分數與門檻相鄰，讀的人才比得出「差多少」。
+                               處置沿用 5-2 政策主題表的「封鎖／記錄」兩顆 key（同一組值、同一個詞，不另立同義詞）。
+                               列序＝資料給的順序（這一站判主題時的順序，不另排序）。 #}
+                            {% if node.topicScores %}
+                            <div class="step-node-scores">
+                                <p class="step-node-scores-title" id="stepNodeScoresTitle-{{ stepFlowInstance }}-{{ loop.index }}" data-i18n="agent.topicScores">主題分數</p>
+                                <table class="step-node-score-table" aria-labelledby="{% if stepFlowOwnerId %}{{ stepFlowOwnerId }} {% endif %}stepNodeLabel-{{ stepFlowInstance }}-{{ loop.index }} stepNodeScoresTitle-{{ stepFlowInstance }}-{{ loop.index }}">
+                                    <thead>
+                                        <tr>
+                                            <th data-i18n="agent.topic">主題</th>
+                                            <th class="step-node-score-num" data-i18n="agent.qaScore">分數</th>
+                                            <th class="step-node-score-num" data-i18n="agent.threshold">門檻</th>
+                                            <th data-i18n="agent.policyAction">處置</th>
+                                            <th data-i18n="common.result">結果</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for score in node.topicScores %}
+                                        <tr{% if score.hit %} class="is-hit"{% endif %}>
+                                            <td>{{ score.name }}</td>
+                                            <td class="step-node-score-num">{{ score.probability }}</td>
+                                            <td class="step-node-score-num">{{ score.threshold }}</td>
+                                            <td>{% if score.action == "block" %}<span data-i18n="settings.policyActionBlock">封鎖</span>{% elif score.action == "record" %}<span data-i18n="settings.policyActionRecord">記錄</span>{% else %}<span>{{ score.action }}</span>{% endif %}</td>
+                                            <td>{% if score.hit %}<span data-i18n="agent.topicHit">命中</span>{% else %}<span data-i18n="agent.topicNotHit">未命中</span>{% endif %}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% endif %}
                         </div>
                     </td>
                 </tr>
