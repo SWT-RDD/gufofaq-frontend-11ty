@@ -65,7 +65,7 @@
      `OpenAI gpt-4o-mini`／`OpenAI gpt-4o`**：那個字面不是送得出去的值（provider 前綴只有
      `openai:`／`anthropic:`），
      而 2-2-3 的 `abSides` 也是這個形狀——兩邊沒同時是 `openai:` 就同時犯了兩件事。
-     四欄逐欄都是資料（不是迴圈內的寫死文字），否則兩欄結構上不可能不同。 #}
+     每一格都是資料（不是迴圈內的寫死文字），否則兩欄結構上不可能不同。 #}
 {# 變數用元件專屬名（§6：`set` 是頁面全域，泛用名如 `settingColumns` 會和使用頁自己的同名變數
      互相覆蓋，而渲染結果的靜默覆蓋沒有測試看得到）。
    `jsApplyCurrentTitle`／`jsApplyTitle` 是兩顆成對的業務掛點開關，見上方檔頭。 #}
@@ -107,10 +107,10 @@
                 <div class="modals-body">
                     <div class="flex-row gap-24">
                         {% for column in applyCompareColumns %}
-                        {# 欄號先存起來：下方合規判斷引擎那一圈內層的 `loop` 會蓋掉這一層的。 #}
+                        {# 欄號先存起來：合規判斷引擎那幾格是一個內層迴圈，它的 `loop` 會蓋掉這一層的。 #}
                         {% set columnIndex = loop.index %}
-                        {# 兩欄逐欄同名：「知識檢索」「LLM模型」「資料取樣數」×2「思考深度」在兩欄各一份，
-                             10 顆控制項的可及名稱兩兩一模一樣，報讀器聽不出正在讀的是原設定還是「設定 B」。
+                        {# 兩欄逐欄同名：每一格（「知識檢索」「LLM模型」…「個別主題輸出門檻」）在兩欄各一份，
+                             同名控制項的可及名稱兩兩一模一樣，報讀器聽不出正在讀的是原設定還是「設定 B」。
                              欄標題給 id、欄內欄位容器包 role="group" aria-labelledby——同功能的 2-2-3
                              設定區用的就是這招（abSideLabel-<側>），這顆彈窗比對的正是那兩側。 #}
                         <div class="flex-1">
@@ -166,7 +166,8 @@
                                      不是生效值：左欄＝前台預設（設置二）現在存的（Decisions、兩顆預設門檻未設、沒有個別主題門檻）；
                                      右欄＝照 policy-engine-fields 檔頭那條「有填的才寫、留空＝不動」套用之後存的
                                      （輸入閘 0.84 寫進去、輸出閘留空所以仍未設、個別主題寫進那一列）。未設的門檻格以 placeholder 說「未設定」。引擎值是枚舉成員、不翻（同思考深度）。
-                                     個別主題門檻一格寫「主題名 門檻」（兩者都是資料），沒有時留空、以 placeholder 說「沒有」。
+                                     個別主題門檻一格寫「主題名 門檻」（兩者都是資料），多個主題以 `common.listSep` 的字面串接
+                                     （繁中「、」——分隔符是 chrome，依語系換；主題名與數字不翻），沒有時留空、以 placeholder 說「沒有」。
                                      引擎那一格必有值，不掛 placeholder。 #}
                                 {% for row in [
                                     { id: "applyPolicyEngine", i18nKey: "agent.policyEngine", label: "判斷引擎", value: column.policyEngine },

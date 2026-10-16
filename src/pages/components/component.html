@@ -1170,7 +1170,7 @@ bodyClass: guideline-page
             {# ── 合規閘的主題分數：判斷引擎與 topicScores 的狀態目錄 ─────────────────────────
                  **這一份也是「狀態目錄」，不是一次真實執行**（同示範二、三的理由）：一輪只有兩站合規閘，
                  而這兩顆鍵的三態（有分數／Decisions 卻沒分數／整顆不給）加上命中的兩種處置（封鎖＝被擋、
-                 記錄＝放行）一輪湊不齊。生產頁上 2-2-1（串流中的輸入閘）與 2-2-3 的 B 側（重播的兩站）
+                 記錄＝放行）一輪湊不齊。生產頁上 2-2-3 的 B 側與 4-2（跑完之後重播的兩站）
                  只演得到「有分數、一個都沒命中」那一態；**命中列（`tr.is-hit`）、被擋的那一站、「本次未取得
                  分數」那一句、`llm` 那一顆引擎名，全站只有這一份看得到**（§5）。
                  主題名與 2-2-3 B 側（設置二）那三條同一組；第 1 筆演「差一點就命中」（0.91 對 0.95）——
@@ -1642,7 +1642,7 @@ bodyClass: guideline-page
                 <ul>
                     <li>components/policy-engine-fields：測試區（單測 2-2-1、AB 2-2-3 <strong>每側各一份</strong>）對設定檔的<strong>單次覆寫</strong>。預設「沿用設定檔」；正式問答照設定檔（見示範六、七的「主題判斷方式」）；「套用為正式設定」會寫出這一區生效的引擎與門檻</li>
                     <li>值相依規則只有一條：<strong>生效的</strong>判斷引擎＝LLM（明選 LLM，或沿用一份 LLM 的設定檔）⇒ 兩顆預設門檻與「個別主題門檻」整張表<strong>不渲染</strong>（LLM 沒有分數，門檻沒有作用對象；帶著門檻又選 LLM 會被整筆擋下）。示範一明選 LLM、示範二明選 Decisions、示範三沿用一份 Decisions 的設定檔、示範四沿用一份 LLM 的設定檔</li>
-                    <li>門檻值域 0 – 1、步距 0.01、留空沿用設定檔；個別主題門檻每列至少一格。<strong>示範二的那張表是空的</strong>：那是 Decisions 剛選上時的預設態，也是使用者把列刪光之後的樣子（2-2-1 與 2-2-3 的 B 側各演一列有值的）</li>
+                    <li>門檻值域 0 – 1、步距 0.01、留空沿用設定檔；個別主題門檻每列至少一格。<strong>示範二的那張表是空的</strong>：那是 Decisions 剛選上時的預設態，也是使用者把列刪光之後的樣子（2-2-3 的 B 側演一列有值的；2-2-1 沿用設定檔、這一次不覆寫，那張表是空的）</li>
                     <li>送出之後撞得到的三道 warning（這個環境沒開 Decisions／個別主題門檻裡有已經不存在的主題／門檻超出值域或一列兩格都空）不在這一區畫，走問答送出鈕的 <code class="inline-code">data-toast</code>（<code class="inline-code">toast.chatSend</code>、<code class="inline-code">toast.chatSubmit</code> 的末位之前三段）。示範五那顆鈕只輪替這三段，方便看長相；正式的那顆在 2-2-3 的送出鈕上，要逐次點過前面幾段才輪到</li>
                     <li>結果（判斷引擎＋主題分數小表）畫在執行流程的合規檢查那兩站，見「執行流程觀測」一節的示範四</li>
                     <li>components/policy-engine-config：5-2「內容政策」的主題判斷方式（設定檔欄位）。值相依與測試區<strong>刻意不同</strong>：引擎＝LLM ⇒ 兩顆預設門檻<strong>照畫但停用</strong>（設定檔存著的值要看得到），切換下拉時當場停用／解除；部署沒開放 Decisions 時該選項停用、原因句可見（示範七；設定檔本來就存著 Decisions 時是選中且停用、每次儲存都會被擋，示範八——兩態 5-2 的示範資料都演不到）</li>
@@ -1704,7 +1704,7 @@ bodyClass: guideline-page
             {# components/policy-engine-config（5-2 的設定檔欄位）兩態：一般態（Decisions、輸入閘預設門檻 0.84、輸出留空）、
                  部署不支援態（設定檔是 LLM、Decisions 停用、原因句可見）。後者在 5-2 的示範資料演不到——
                  示範資料演不到的態，元件庫頁是它唯一的可見處。§2：第二次 include 全部參數重新 set。
-                 兩份的 info-btn 開同一扇說明視窗（內容與實例無關，理由見元件檔頭），窗在兩份示範之後 include 一次。 #}
+                 兩份的 info-btn 開同一扇說明視窗（內容與實例無關，理由見元件檔頭），窗在這一節 include 一次（id `policyEngineHelpModal`）。 #}
             <div class="subtitle mt-24" id="policyConfigDemoTitle">示範六：主題判斷方式（設定檔欄位，5-2）</div>
             <div class="block" role="group" aria-labelledby="policyConfigDemoTitle" data-policy-engine-scope>
                 {% set policyConfigInstance = "demoConfig" %}

@@ -641,7 +641,8 @@ test("§5/§3-2 測試區合規判斷引擎：第一項「沿用設定檔」預�
     assert.ok(follow, "元件庫缺「沿用設定檔（目前：LLM）」示範 #policyEngineSelect-demoFollowLlm");
     assert.doesNotMatch(follow[0], /\bjs-policy-input-threshold\b/, "沿用的設定檔是 LLM ⇒ 門檻欄不渲染");
     assert.match(lib, /id="policyEngineSelect-demoFollowDecisions"/, "元件庫缺「沿用設定檔（目前：Decisions）」示範");
-    for (const f of srcHtml) assert.doesNotMatch(read(f), /qaTest\.policyEngineLlmDefault|正式問答一律/, `${f} 還留著「正式問答一律 LLM」的舊說法`);
+    for (const f of [...srcHtml, "README.md"]) assert.doesNotMatch(read(f), /qaTest\.policyEngineLlmDefault|正式問答一律|只影響這一次測試|只影響單次測試/, `${f} 還留著「正式問答一律 LLM／只影響單次測試」的舊說法`);
+    assert.doesNotMatch(JSON.stringify(JSON.parse(read("src/i18n/en.json"))), /production Q&A always uses LLM|Affects this test only/i, "en.json 還留著「正式問答一律 LLM」的舊英文");
     assert.equal(JSON.parse(read("src/i18n/en.json"))["qaTest.policyEngineLlmDefault"], undefined, "en.json 的 qaTest.policyEngineLlmDefault 要移除（沒人用了）");
 });
 
@@ -671,10 +672,15 @@ test("§5/§6 4-2 前台問答照前台預設設定檔（設置二＝Decisions�
         assert.deepEqual(names, ["明顯超出服務範圍的提問", "提示詞注入", "詢問底層技術"], "主題要是前台預設設定檔（設置二）的那三條");
         assert.doesNotMatch(t, /class="is-hit"/, "這一筆沒被擋 ⇒ 不得有命中列");
     }
-    // 延遲＝九站和 600＋14＋340＋1200＋210＋2100＋180＋8＋540＝5,192ms ⇒ 5.2s；首字＝前五站 2,364ms ⇒ 2.4s
-    assert.match(html, /5\.2s/, "延遲要隨合規兩站耗時重算成 5.2s");
-    assert.match(html, /2\.4s/, "首字要重算成 2.4s");
-    assert.doesNotMatch(html, /4\.1s/, "舊的延遲 4.1s 還在");
+    // 延遲＝九站和 600＋14＋340＋1200＋210＋2100＋180＋8＋540＝5,192ms ⇒ 5.2s；首字＝前五站 2,364ms ⇒ 2.4s；
+    // token 含兩道 Decisions 判主題那兩趟的輸入（＋136）：1,116 進＋304 出＝1,420
+    const metric = (key) => (html.match(new RegExp(`data-i18n="agent\\.${key}">[^<]*</span>\\s*([^<]+?)\\s*</span>`)) || [])[1];
+    assert.equal(metric("summaryLatency"), "5.2s", "延遲要隨合規兩站耗時重算成 5.2s");
+    assert.equal(metric("summaryTtft"), "2.4s", "首字要重算成 2.4s");
+    assert.equal(metric("summaryTokens"), "1,420", "token 總數要含 Decisions 那兩趟");
+    assert.equal(metric("summaryTokensIn"), "1,116", "輸入 token 要含 Decisions 那兩趟");
+    assert.equal(metric("summaryTokensOut"), "304", "輸出 token 不變");
+    assert.equal(metric("noSuchMetric"), undefined, "負控：不存在的指標不得對到任何一格");
 });
 
 test("§5 元件庫：設定檔存的是 Decisions、部署卻不支援——選中且停用、門檻照畫、原因句可見，元件檔頭寫明這一態", () => {
@@ -819,4 +825,14 @@ test("§5/§4-2 主題判斷方式的說明不得再說門檻欄「只在 Decisi
     // 窄數字欄：60px 欄扣掉儲存格內距後只剩 40px，預設內距放不下「0.70」，.no-spin 要一併縮內距
     const scss = read("src/_includes/ui/form-control/_form-control.scss");
     assert.match(scss.slice(scss.indexOf("&.no-spin")), /^[\s\S]{0,300}padding-inline:/, ".no-spin 要縮小左右內距，否則窄欄裡的 0.70 會被截成 0.7");
+});
+
+test("§5/§6 分數只在重播那條路有：2-2-1 跑到一半的那一輪不得帶判斷引擎與分數，跑完重播的 2-2-3 B 側與 4-2 才有", () => {
+    // 即時串流同一份形狀服務所有入口（含匿名對外問答），主題分數列的是租戶整份政策主題清單，不跨匿名邊界；
+    // 測試區是一題跑完之後向完整軌跡要一次補上（step-flow 檔頭「可得性」）。跑到一半就畫分數＝演一個產不出來的狀態（§6）。
+    const count = (f) => (distDoc(f).match(/class="step-node-score-table"/g) || []).length;
+    assert.equal(count("2-2-1_singleTest.html"), 0, "2-2-1 演的是跑到一半，兩站合規檢查還不該有分數表");
+    assert.ok(count("2-2-3_abTest.html") >= 2, "負控：2-2-3 B 側跑完重播的兩站要有分數表");
+    assert.equal(count("4-2_qaHistory_detail.html"), 2, "4-2 重播的兩站要有分數表");
+    assert.match(read("src/_includes/components/step-flow/step-flow.html"), /只有重播那條路有，即時串流上兩顆鍵都不給/, "step-flow 檔頭要寫明分數的可得性");
 });
