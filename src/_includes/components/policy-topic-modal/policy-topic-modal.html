@@ -1,0 +1,97 @@
+{# 政策主題「查看」彈窗（id policyTopicModal）：5-2「內容政策」政策主題表每一列的「查看」鈕開的就是它，
+     在一扇寬一點的窗裡看、改**那一列**的全部欄位——表格那一列的格子太窄，定義與拒絕訊息讀不完整。
+   **開窗是條件的**（先要知道是哪一列）⇒ 觸發鈕只掛 hook `.js-view-policy-topic`，由同資料夾的
+     policy-topic-modal.js 帶入那一列目前的值再呼叫 openModal（§1-2 第二條路，正典 doc-fulltext-modal）。
+     元件庫頁另有無條件的展示觸發器（§5「條件開窗只免除 data-open-modal，不免除彈窗本體」）。
+   **「套用」是純前端互動**：只把窗內的值寫回表格那一列、不打 API，所以不掛 data-toast；整份要按頁底
+     「儲存對話設定」才存進設定檔——這件事寫在套用鈕之前那一句常駐說明（§3-2：後果寫在做決定的控制項旁邊）。
+     套用鈕**不掛 btn-close-modals**：主題名稱空白、或沒停用的門檻超出 0 – 1 時要彈 warning、留在窗裡
+     （§5：窗內有可就地修正的驗證欄位）；驗過了由 js 寫回再關窗。取消、X、Esc 只關窗、不寫回。
+   **欄位與界線同表格那一列**（同一份東西的兩個編輯處，界線在兩處各自外顯，§4「同一個欄位在同一頁出現多次
+     時每一處都要接」）：主題名稱 200／定義 1024／拒絕訊息 500 字；範例以逗號分隔、最多 5 則、每則 200 字；
+     門檻 0 – 1、步距 0.01、留空沿用預設門檻。數字都是資料節點（§4-2）。
+   **門檻兩格跟著判斷引擎停用**：掛 `data-policy-threshold`，而本窗由使用頁 include 在 `data-policy-engine-scope`
+     的範圍裡（5-2＝「內容政策」面板），components/policy-engine-config 的切換就管得到它們。
+     初始 disabled 由參數宣告（與使用頁那一份判斷引擎同值）。
+   值載體只掛 hook：`.js-policy-topic-modal-<欄>`（欄名＝name／definition／examples／input-action／output-action／
+     input-threshold／output-threshold／refusal），與列上的 `.js-policy-topic-<欄>` 一一成對。
+   參數（§2）：policyTopicModalEngine（`llm`／`decisions`，決定門檻兩格的初始 disabled）；
+     policyTopicModalTopic（{ name, definition, examples, inputAction, outputAction, inputThreshold, outputThreshold, refusal }，
+     靜態稿畫出來的那一列——生產上開窗時由 js 帶入，這一份只是示範長相；門檻以字串傳入，值域含 0）。 #}
+<dialog class="modals" id="policyTopicModal" aria-labelledby="policyTopicModal-title">
+    <div class="modals-dialog modals-md">
+        <div class="modals-wrap">
+            {% include "ui/modal-close/modal-close.html" %}
+            <div class="modals-content">
+                <div class="modals-header">
+                    {# 標題＝前綴 key ＋ 資料槽（主題名稱是租戶的資料，不翻），分隔符在槽外（同 alias-entries-modal 的標題）。 #}
+                    <h3 class="modals-title" id="policyTopicModal-title"><span data-i18n="settings.policyTopicModalTitle">政策主題：</span><span class="js-policy-topic-modal-title-name">{{ policyTopicModalTopic.name }}</span></h3>
+                </div>
+                <div class="modals-body">
+                    <div class="flex-row column gap-16">
+                        <div class="form-group">
+                            <div class="label"><label for="policyTopicModalName" class="control-label" data-i18n="settings.policyTopicName">主題名稱</label></div>
+                            <div class="field"><input type="text" id="policyTopicModalName" class="form-control js-policy-topic-modal-name" value="{{ policyTopicModalTopic.name }}" aria-describedby="policyTopicModalLimitsHint"></div>
+                        </div>
+                        <div class="form-group">
+                            <div class="label"><label for="policyTopicModalDefinition" class="control-label" data-i18n="settings.definition">定義</label></div>
+                            <div class="field"><textarea id="policyTopicModalDefinition" rows="3" class="form-control js-policy-topic-modal-definition" aria-describedby="policyTopicModalLimitsHint">{{ policyTopicModalTopic.definition }}</textarea></div>
+                        </div>
+                        <div class="form-group">
+                            <div class="label"><label for="policyTopicModalExamples" class="control-label" data-i18n="settings.policyExamples">範例（逗號分隔）</label></div>
+                            <div class="field">
+                                <input type="text" id="policyTopicModalExamples" class="form-control js-policy-topic-modal-examples" value="{{ policyTopicModalTopic.examples }}" aria-describedby="policyTopicModalExamplesHint">
+                                <span class="text-gray" id="policyTopicModalExamplesHint"><span data-i18n="settings.policyExamplesHintPrefix">「範例」以逗號分隔，最多 </span><span>5</span><span data-i18n="settings.policyExamplesHintMid"> 則、每則 </span><span>200</span><span data-i18n="settings.policyExamplesHintSuffix"> 字；超過就存不起來，不會只留前幾則。</span></span>
+                            </div>
+                        </div>
+                        <div class="flex-row flex-wrap gap-16 mobile-column">
+                            <div class="form-group col-6-md col-12-sm">
+                                <div class="label"><label for="policyTopicModalInputAction" class="control-label" data-i18n="settings.policyInputAction">輸入動作</label></div>
+                                <div class="field">
+                                    <select id="policyTopicModalInputAction" class="form-control singleSelect js-policy-topic-modal-input-action">
+                                        <option value="block" data-i18n="settings.policyActionBlock"{% if policyTopicModalTopic.inputAction == "block" %} selected{% endif %}>封鎖</option>
+                                        <option value="record" data-i18n="settings.policyActionRecord"{% if policyTopicModalTopic.inputAction == "record" %} selected{% endif %}>記錄</option>
+                                        <option value="off" data-i18n="settings.policyActionOff"{% if policyTopicModalTopic.inputAction == "off" %} selected{% endif %}>不處理</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group col-6-md col-12-sm">
+                                <div class="label"><label for="policyTopicModalOutputAction" class="control-label" data-i18n="settings.policyOutputAction">輸出動作</label></div>
+                                <div class="field">
+                                    <select id="policyTopicModalOutputAction" class="form-control singleSelect js-policy-topic-modal-output-action">
+                                        <option value="block" data-i18n="settings.policyActionBlock"{% if policyTopicModalTopic.outputAction == "block" %} selected{% endif %}>封鎖</option>
+                                        <option value="record" data-i18n="settings.policyActionRecord"{% if policyTopicModalTopic.outputAction == "record" %} selected{% endif %}>記錄</option>
+                                        <option value="off" data-i18n="settings.policyActionOff"{% if policyTopicModalTopic.outputAction == "off" %} selected{% endif %}>不處理</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex-row flex-wrap gap-16 mobile-column">
+                            <div class="form-group col-6-md col-12-sm">
+                                <div class="label"><label for="policyTopicModalInputThreshold" class="control-label" data-i18n="qaTest.policyTopicInputThreshold">輸入門檻</label></div>
+                                <div class="field"><input type="number" min="0" max="1" step="0.01" id="policyTopicModalInputThreshold" class="form-control js-policy-topic-modal-input-threshold" data-policy-threshold{% if policyTopicModalTopic.inputThreshold %} value="{{ policyTopicModalTopic.inputThreshold }}"{% endif %}{% if policyTopicModalEngine != "decisions" %} disabled{% endif %} aria-describedby="policyTopicModalThresholdHint"></div>
+                            </div>
+                            <div class="form-group col-6-md col-12-sm">
+                                <div class="label"><label for="policyTopicModalOutputThreshold" class="control-label" data-i18n="qaTest.policyTopicOutputThreshold">輸出門檻</label></div>
+                                <div class="field"><input type="number" min="0" max="1" step="0.01" id="policyTopicModalOutputThreshold" class="form-control js-policy-topic-modal-output-threshold" data-policy-threshold{% if policyTopicModalTopic.outputThreshold %} value="{{ policyTopicModalTopic.outputThreshold }}"{% endif %}{% if policyTopicModalEngine != "decisions" %} disabled{% endif %} aria-describedby="policyTopicModalThresholdHint"></div>
+                            </div>
+                        </div>
+                        <p class="text-gray m-0" id="policyTopicModalThresholdHint"><span data-i18n="qaTest.policyTopicThresholdHintPrefix">門檻範圍 </span><span>0 – 1</span><span data-i18n="settings.policyTopicThresholdHintSuffix">；留空沿用上方的預設門檻。</span><span data-i18n="settings.policyThresholdDecisionsOnly">門檻只在判斷引擎為 Decisions 時生效；切成 LLM 不會清掉已填的值。</span></p>
+                        <div class="form-group">
+                            <div class="label"><label for="policyTopicModalRefusal" class="control-label" data-i18n="settings.policyRefusal">拒絕訊息</label></div>
+                            <div class="field"><textarea id="policyTopicModalRefusal" rows="2" class="form-control js-policy-topic-modal-refusal" aria-describedby="policyTopicModalLimitsHint">{{ policyTopicModalTopic.refusal }}</textarea></div>
+                        </div>
+                        <p id="policyTopicModalLimitsHint" class="text-gray m-0"><span data-i18n="settings.policyTopicName">主題名稱</span><span data-i18n="common.labelSep">：</span><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-topic-name-max-len">200</span><span data-i18n="common.unitChars"> 字</span><span data-i18n="common.listSep">、</span><span data-i18n="settings.definition">定義</span><span data-i18n="common.labelSep">：</span><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-topic-definition-max-len">1024</span><span data-i18n="common.unitChars"> 字</span><span data-i18n="common.listSep">、</span><span data-i18n="settings.policyRefusal">拒絕訊息</span><span data-i18n="common.labelSep">：</span><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-topic-refusal-max-len">500</span><span data-i18n="common.unitChars"> 字</span></p>
+                    </div>
+                </div>
+                <div class="modals-footer">
+                    <p class="text-gray text-center m-0 mb-16" data-i18n="settings.policyTopicModalApplyHint">「套用」只會改「政策主題」表裡的這一列；要按頁底「儲存對話設定」才會存進設定檔。</p>
+                    <div class="button-row center">
+                        <button type="button" class="button button-border btn-close-modals" data-i18n="action.cancel">取消</button>
+                        <button type="button" class="button button-primary js-apply-policy-topic" data-i18n="settings.applyPolicyTopic">套用</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</dialog>

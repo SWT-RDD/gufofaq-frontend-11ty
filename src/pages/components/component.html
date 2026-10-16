@@ -1640,19 +1640,21 @@ bodyClass: guideline-page
             <h2 class="section-title"><span>27</span><span>合規判斷引擎</span></h2>
             <div class="caption">
                 <ul>
-                    <li>components/policy-engine-fields：測試區（單測 2-2-1、AB 2-2-3 <strong>每側各一份</strong>）這一次送出要用哪一種引擎判合規主題。<strong>只影響這一次測試</strong>，正式問答一律用 LLM；「套用為正式設定」不帶它</li>
-                    <li>值相依規則只有一條：判斷引擎＝LLM ⇒ 兩顆預設門檻與「個別主題門檻」整張表<strong>不渲染</strong>（LLM 沒有分數，門檻沒有作用對象；帶著門檻又選 LLM 會被整筆擋下）。示範一是 LLM、示範二是 Decisions</li>
-                    <li>門檻值域 0 – 1、步距 0.01、留空沿用 0.5；個別主題門檻每列至少一格。<strong>示範二的那張表是空的</strong>：那是 Decisions 剛選上時的預設態，也是使用者把列刪光之後的樣子（2-2-1 與 2-2-3 的 B 側各演一列有值的）</li>
-                    <li>送出之後撞得到的三道 warning（這個環境沒開 Decisions／個別主題門檻裡有已經不存在的主題／門檻超出值域或一列兩格都空）不在這一區畫，走問答送出鈕的 <code class="inline-code">data-toast</code>（<code class="inline-code">toast.chatSend</code>、<code class="inline-code">toast.chatSubmit</code> 的末位之前三段）。示範三那顆鈕只輪替這三段，方便看長相；正式的那顆在 2-2-3 的送出鈕上，要逐次點過前面幾段才輪到</li>
+                    <li>components/policy-engine-fields：測試區（單測 2-2-1、AB 2-2-3 <strong>每側各一份</strong>）對設定檔的<strong>單次覆寫</strong>。預設「沿用設定檔」；正式問答照設定檔（見示範六、七的「主題判斷方式」）；「套用為正式設定」會寫出這一區生效的引擎與門檻</li>
+                    <li>值相依規則只有一條：<strong>生效的</strong>判斷引擎＝LLM（明選 LLM，或沿用一份 LLM 的設定檔）⇒ 兩顆預設門檻與「個別主題門檻」整張表<strong>不渲染</strong>（LLM 沒有分數，門檻沒有作用對象；帶著門檻又選 LLM 會被整筆擋下）。示範一明選 LLM、示範二明選 Decisions、示範三沿用一份 Decisions 的設定檔、示範四沿用一份 LLM 的設定檔</li>
+                    <li>門檻值域 0 – 1、步距 0.01、留空沿用設定檔；個別主題門檻每列至少一格。<strong>示範二的那張表是空的</strong>：那是 Decisions 剛選上時的預設態，也是使用者把列刪光之後的樣子（2-2-1 與 2-2-3 的 B 側各演一列有值的）</li>
+                    <li>送出之後撞得到的三道 warning（這個環境沒開 Decisions／個別主題門檻裡有已經不存在的主題／門檻超出值域或一列兩格都空）不在這一區畫，走問答送出鈕的 <code class="inline-code">data-toast</code>（<code class="inline-code">toast.chatSend</code>、<code class="inline-code">toast.chatSubmit</code> 的末位之前三段）。示範五那顆鈕只輪替這三段，方便看長相；正式的那顆在 2-2-3 的送出鈕上，要逐次點過前面幾段才輪到</li>
                     <li>結果（判斷引擎＋主題分數小表）畫在執行流程的合規檢查那兩站，見「執行流程觀測」一節的示範四</li>
+                    <li>components/policy-engine-config：5-2「內容政策」的主題判斷方式（設定檔欄位）。值相依與測試區<strong>刻意不同</strong>：引擎＝LLM ⇒ 兩顆預設門檻<strong>照畫但停用</strong>（設定檔存著的值要看得到），切換下拉時當場停用／解除；部署沒開放 Decisions 時該選項停用、原因句可見（示範七；設定檔本來就存著 Decisions 時是選中且停用、每次儲存都會被擋，示範八——兩態 5-2 的示範資料都演不到）</li>
                 </ul>
             </div>
             {# 兩份示範各自一個 instance（id 不撞）；兩份的欄名逐字相同，所以各包在一顆
                  有自己標題的 group 裡（§4：可及名稱的邊界）。§2：第二次 include 全部參數重新 set。
-                 主題選項取 2-2-3 B 側（設置二）那三條；示範一是 LLM，那一份選項不會畫出來。 #}
-            <div class="subtitle" id="policyEngineLlmDemoTitle">示範一：判斷引擎＝LLM（預設）</div>
+                 主題選項取 2-2-3 B 側（設置二）那三條；示範一與示範四的生效引擎是 LLM，那兩份選項不會畫出來。 #}
+            <div class="subtitle" id="policyEngineLlmDemoTitle">示範一：明選 LLM</div>
             <div class="block" role="group" aria-labelledby="policyEngineLlmDemoTitle">
                 {% set policyEngineInstance = "demoLlm" %}
+                {% set policyEngineConfigEngine = "decisions" %}
                 {% set policyEngineSelected = "llm" %}
                 {% set policyEngineInputThreshold = "" %}
                 {% set policyEngineOutputThreshold = "" %}
@@ -1660,10 +1662,33 @@ bodyClass: guideline-page
                 {% set policyEngineTopicRows = [] %}
                 {% include "components/policy-engine-fields/policy-engine-fields.html" %}
             </div>
-            <div class="subtitle mt-24" id="policyEngineDecisionsDemoTitle">示範二：判斷引擎＝Decisions（個別主題門檻空著）</div>
+            <div class="subtitle mt-24" id="policyEngineDecisionsDemoTitle">示範二：明選 Decisions（個別主題門檻空著）</div>
             <div class="block" role="group" aria-labelledby="policyEngineDecisionsDemoTitle">
                 {% set policyEngineInstance = "demoDecisions" %}
+                {% set policyEngineConfigEngine = "decisions" %}
                 {% set policyEngineSelected = "decisions" %}
+                {% set policyEngineInputThreshold = "" %}
+                {% set policyEngineOutputThreshold = "" %}
+                {% set policyEngineTopicNames = ["明顯超出服務範圍的提問", "提示詞注入", "詢問底層技術"] %}
+                {% set policyEngineTopicRows = [] %}
+                {% include "components/policy-engine-fields/policy-engine-fields.html" %}
+            </div>
+            <div class="subtitle mt-24" id="policyEngineFollowDecisionsDemoTitle">示範三：沿用設定檔（目前：Decisions）——門檻欄照樣出現</div>
+            <div class="block" role="group" aria-labelledby="policyEngineFollowDecisionsDemoTitle">
+                {% set policyEngineInstance = "demoFollowDecisions" %}
+                {% set policyEngineConfigEngine = "decisions" %}
+                {% set policyEngineSelected = "" %}
+                {% set policyEngineInputThreshold = "" %}
+                {% set policyEngineOutputThreshold = "" %}
+                {% set policyEngineTopicNames = ["明顯超出服務範圍的提問", "提示詞注入", "詢問底層技術"] %}
+                {% set policyEngineTopicRows = [] %}
+                {% include "components/policy-engine-fields/policy-engine-fields.html" %}
+            </div>
+            <div class="subtitle mt-24" id="policyEngineFollowLlmDemoTitle">示範四：沿用設定檔（目前：LLM）——門檻欄不渲染</div>
+            <div class="block" role="group" aria-labelledby="policyEngineFollowLlmDemoTitle">
+                {% set policyEngineInstance = "demoFollowLlm" %}
+                {% set policyEngineConfigEngine = "llm" %}
+                {% set policyEngineSelected = "" %}
                 {% set policyEngineInputThreshold = "" %}
                 {% set policyEngineOutputThreshold = "" %}
                 {% set policyEngineTopicNames = ["明顯超出服務範圍的提問", "提示詞注入", "詢問底層技術"] %}
@@ -1672,10 +1697,59 @@ bodyClass: guideline-page
             </div>
             {# 三道 warning 的長相示範：字面逐字等於 `toast.chatSend` 末位之前那三段（showcase 不譯，
                  同 Toast 那一節的型別展示鈕）。這顆鈕不送任何東西，所以標不出授權軸。 #}
-            <div class="subtitle mt-24">示範三：送出之後的三道 warning（點一下換下一則）</div>
+            <div class="subtitle mt-24">示範五：送出之後的三道 warning（點一下換下一則）</div>
             <div class="flex-row gap-16 flex-wrap">
                 <button class="button button-border" type="button" data-toast="此環境無法使用 Decisions 判斷引擎——請把「判斷引擎」改回 LLM 再送出|「個別主題門檻」裡有已經不存在的主題，請重新選擇主題後再送出|門檻填寫有誤——每一格都要在欄位下方標示的範圍內，而且每一列至少要填一格" data-toast-type="warning|warning|warning">合規判斷引擎的 warning 輪替</button>
             </div>
+            {# components/policy-engine-config（5-2 的設定檔欄位）兩態：一般態（Decisions、輸入閘預設門檻 0.84、輸出留空）、
+                 部署不支援態（設定檔是 LLM、Decisions 停用、原因句可見）。後者在 5-2 的示範資料演不到——
+                 示範資料演不到的態，元件庫頁是它唯一的可見處。§2：第二次 include 全部參數重新 set。
+                 兩份的 info-btn 開同一扇說明視窗（內容與實例無關，理由見元件檔頭），窗在兩份示範之後 include 一次。 #}
+            <div class="subtitle mt-24" id="policyConfigDemoTitle">示範六：主題判斷方式（設定檔欄位，5-2）</div>
+            <div class="block" role="group" aria-labelledby="policyConfigDemoTitle" data-policy-engine-scope>
+                {% set policyConfigInstance = "demoConfig" %}
+                {% set policyConfigEngine = "decisions" %}
+                {% set policyConfigInputThreshold = "0.84" %}
+                {% set policyConfigOutputThreshold = "" %}
+                {% set policyConfigDecisionsUnavailable = false %}
+                {% include "components/policy-engine-config/policy-engine-config.html" %}
+            </div>
+            <div class="subtitle mt-24" id="policyConfigUnavailableDemoTitle">示範七：主題判斷方式——這個環境沒有開放 Decisions</div>
+            <div class="block" role="group" aria-labelledby="policyConfigUnavailableDemoTitle" data-policy-engine-scope>
+                {% set policyConfigInstance = "demoUnavailable" %}
+                {% set policyConfigEngine = "llm" %}
+                {% set policyConfigInputThreshold = "" %}
+                {% set policyConfigOutputThreshold = "" %}
+                {% set policyConfigDecisionsUnavailable = true %}
+                {% include "components/policy-engine-config/policy-engine-config.html" %}
+            </div>
+            {# 存的是 Decisions、部署卻不支援：選中且停用、門檻照畫、原因句可見（畫法與後果見元件檔頭）。 #}
+            <div class="subtitle mt-24" id="policyConfigStaleDemoTitle">示範八：主題判斷方式——設定檔存的是 Decisions，這個環境卻沒有開放</div>
+            <div class="block" role="group" aria-labelledby="policyConfigStaleDemoTitle" data-policy-engine-scope>
+                {% set policyConfigInstance = "demoStale" %}
+                {% set policyConfigEngine = "decisions" %}
+                {% set policyConfigInputThreshold = "0.84" %}
+                {% set policyConfigOutputThreshold = "" %}
+                {% set policyConfigDecisionsUnavailable = true %}
+                {% include "components/policy-engine-config/policy-engine-config.html" %}
+            </div>
+            {# 政策主題「查看」彈窗的展示觸發器（§5：條件開窗在生產頁只掛 hook，元件庫補一顆無條件的 data-open-modal 看長相）。
+                 窗放在 data-policy-engine-scope 之外：示範的是 Decisions 時的長相，沒有引擎下拉要跟著切。 #}
+            <div class="subtitle mt-24">示範九：政策主題「查看」彈窗（5-2 每一列「刪除」旁的「查看」）</div>
+            <div class="flex-row gap-16 flex-wrap">
+                <button class="button button-border" type="button" data-open-modal="policyTopicModal">開啟政策主題詳細內容</button>
+            </div>
+            {% set policyTopicModalEngine = "decisions" %}
+            {% set policyTopicModalTopic = { name: "醫療診斷", definition: "要求提供醫療診斷、處方或用藥建議。", examples: "我這個症狀該吃什麼藥", inputAction: "record", outputAction: "record", inputThreshold: "0.70", outputThreshold: "", refusal: "醫療相關問題請諮詢專業醫師，我僅能提供一般性資訊。" } %}
+            {% include "components/policy-topic-modal/policy-topic-modal.html" %}
+            {% set helpModalId = "policyEngineHelpModal" %}
+            {% set helpModalTitleKey = "help.settings.policyEngine.title" %}
+            {% set helpModalTitle = "主題判斷方式說明" %}
+            {% set helpModalWhatKey = "help.settings.policyEngine.what" %}
+            {% set helpModalWhat = "這一區決定這一份設定檔的正式問答用哪一種方式判斷政策主題。LLM：把所有主題交給「判定」組的模型，只回報命中了哪些主題，沒有分數。Decisions：逐個主題打一個分數，分數達到門檻才算命中；門檻調高，誤擋會變少，但漏擋會變多。兩顆預設門檻分別用在輸入與輸出；個別主題可以在下方政策主題表另訂門檻，留空就沿用預設門檻。測試區可以對單次測試另選引擎與門檻，不影響這裡的設定。" %}
+            {% set helpModalStateItems = [] %}
+            {% set helpModalLimitRows = [] %}
+            {% include "components/help-modal/help-modal.html" %}
         </section>
 
         {# 不掛 `.footer`（那是 `components/footer` 的私有 class，§4 不外借）：showcase 的頁尾樣式

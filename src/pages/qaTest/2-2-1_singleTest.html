@@ -163,22 +163,21 @@ permalink: 2-2-1_singleTest.html
         </div>
     </div>
 
-    {# 合規判斷引擎（components/policy-engine-fields）：這一次測試的合規閘用哪一種引擎、Decisions 的門檻。
-         **只影響這一次送出**，不是設定——「套用為正式設定」不帶它、「回復儲存的設定」把它回到預設（理由在元件檔頭）。
+    {# 合規判斷引擎（components/policy-engine-fields）：這一次測試要不要覆寫設定檔的判斷引擎與門檻。
+         預設「沿用設定檔」；「套用為正式設定」會寫出這一區生效的引擎與門檻，「回復儲存的設定」把它回到「沿用設定檔」（理由在元件檔頭）。
        **這一區不是「切版常駐、React 依模式不渲染」那一族**：它的門檻欄有一條值相依規則
-         （判斷引擎＝LLM ⇒ 門檻那幾組不渲染），由元件自己的 `{% if %}` 表達，正本在元件檔頭。
-       示範選 Decisions（§6 同頁自洽：本頁 components/step-flow 的「輸入合規檢查」那一站帶著 Decisions 的主題分數）。
-         選項是設置一（本頁「知識檢索」選的那一份）的政策主題，與 5-2 設置一的政策主題表同源：
-         個資與隱私、醫療診斷。輸入閘預設門檻留空（＝0.5）、醫療診斷另訂輸入門檻 0.70——
-         執行流程那張分數表的門檻欄就是這兩個值推出來的。 #}
+         （生效的判斷引擎＝LLM ⇒ 門檻那幾組不渲染），由元件自己的 `{% if %}` 表達，正本在元件檔頭。
+       示範「沿用設定檔」（§6 同頁自洽：本頁 components/step-flow 的「輸入合規檢查」那一站帶著 Decisions 的主題分數）：
+         設置一（本頁「知識檢索」選的那一份）在 5-2 設成 Decisions，政策主題與 5-2 設置一的政策主題表同源
+         （個資與隱私、醫療診斷），醫療診斷的輸入門檻 0.70 存在設定檔裡、輸入閘預設門檻留空（＝0.5）——
+         執行流程那張分數表的門檻欄就是設定檔推出來的，這一次不覆寫任何門檻。 #}
     {% set policyEngineInstance = "single" %}
-    {% set policyEngineSelected = "decisions" %}
+    {% set policyEngineConfigEngine = "decisions" %}
+    {% set policyEngineSelected = "" %}
     {% set policyEngineInputThreshold = "" %}
     {% set policyEngineOutputThreshold = "" %}
     {% set policyEngineTopicNames = ["個資與隱私", "醫療診斷"] %}
-    {% set policyEngineTopicRows = [
-        { topic: "醫療診斷", input: "0.70", output: "" }
-    ] %}
+    {% set policyEngineTopicRows = [] %}
     <div class="mt-24">
         {% include "components/policy-engine-fields/policy-engine-fields.html" %}
     </div>
