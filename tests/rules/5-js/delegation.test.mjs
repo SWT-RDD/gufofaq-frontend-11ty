@@ -45,6 +45,7 @@ test("§5 有 document click 委派的元件 js，逐支登記它判不判「點
         ["builtin-tool-card", "只問點在哪顆觸發器上（.js-tool-reset／.js-tool-description／.field），沒有點外部收起來這條路"],
         ["chatroom", "只問點在不在 .watchBtn 上（揭示同頁的來源區），不是開關"],
         ["citation-ref", "只問點在不在 .js-citation 上（捲到對應的來源列）"],
+        ["policy-topic-modal", "只問點在不在 .js-view-policy-topic／.js-apply-policy-topic 上（開窗帶入／套用寫回），沒有點外部收起來這條路"],
         ["skill-try-sandbox", "只問點在哪顆觸發器上（.js-try-skill／.js-skill-try-close），關閉由那顆關閉鈕做，不是點外部"],
         ["clipboard", "只問點在不在 .shareBtn 上（寫進剪貼簿）"],
         ["dismiss-panel", "收合由 [data-dismiss-target] 那顆鈕觸發——它就是「按鈕關閉」那一種，不是點外部"],

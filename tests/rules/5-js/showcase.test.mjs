@@ -288,6 +288,8 @@ test("§5 `.hidden` 判準①的另一半：src 引用得到、dist 卻一頁都
         ["pagination.nextDisabled", "ui/pagination/pagination.js"],
         ["toast.selectDatasetFirst", "components/select-dataset-modal/select-dataset-modal.js"],
         ["toast.selectScopeFirst", "components/search-scope-modal/search-scope-modal.js"],
+        ["toast.policyTopicNameRequired", "components/policy-topic-modal/policy-topic-modal.js"],
+        ["toast.policyTopicThresholdOutOfRange", "components/policy-topic-modal/policy-topic-modal.js"],
     ]);
     const { used } = collectUsedI18nKeys();
     const rendered = new Set();

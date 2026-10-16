@@ -73,7 +73,7 @@ src/
 ├── _includes/
 │   ├── layouts/            整頁模板（4 支，見下表）＋ 模板專屬樣式 `_base.scss` / `_page-shell.scss` / `_chatbot-shell.scss`（⚠️ 與 `src/scss/_base.scss` 同名，`main.scss` 以 `as layout-base` 消歧；`public-shell` 沒有自己的樣式，它沿用 page-shell 的 `.main`）
 │   ├── ui/                 不依賴其他元件的元件（62 個）
-│   └── components/         會用到其他元件，或某大元件的專屬子片段（65 個）
+│   └── components/         會用到其他元件，或某大元件的專屬子片段（67 個）
 ├── scss/                   全域層（元件樣式住在元件資料夾）
 │   ├── _var.scss           設計 token：語意色 + [data-theme=dark] 覆寫（全站唯一色源，單層直值）
 │   ├── _mixin.scss         共用 mixin：scrollbar 系列、icon-mask（單色 PNG 遮罩上色）、nav-collapsed（header↔mobile-nav 的 1250px 斷點，兩者必須同值）
@@ -157,7 +157,9 @@ dist/                       build 輸出（勿手改）
 | `ui/storage-bar` | `storageBarPct`（條寬百分比，**0 是合法值**）/`storageBarText`（條**右側**那行說明，窄容器時才換行落到條下；未給時走內建的儲存空間文案）。用於 3-1-1／5-10。 |
 | `ui/chart-desc` | `chartDescId`（三顆 span 的 id 前綴）/`chartDescRow`（版位是否帶 `.row`）；由 `components/chart-box` 與 5-3 另外兩張圖各自 include。 |
 | `components/page-size-select` | 每頁筆數選擇器（pager 旁）。吃頁面的 `perPage`（**與同頁 `ui/pagination` 同源**：一邊寫死、另一邊落回預設 10 就會出現「每頁 20 筆／共 12 頁」）；未設沿用 pagination 的預設 10。值載體 hook `js-page-size`。住在哪一頁：判準句而非清單（GUIDELINE §1-2：三頁以上不列頁名）——它與 `components/pager-row` 恆成對，正向 `grep -rl 'include "components/pager-row/' src`、反向 `grep -l 'class="pager-row' dist/*.html`，兩邊推導出來的頁面集合相同。 |
-| `components/policy-engine-fields` | 測試區（2-2-1；2-2-3 每側各一份）這一次送出的合規判斷引擎（LLM／Decisions）與 Decisions 的門檻。**必填** `policyEngineInstance`（同頁多實例的 id 後綴）＋ `policyEngineSelected`（`llm`／`decisions`，空＝`llm`；**值相依**：`llm` ⇒ 兩顆預設門檻與個別主題門檻整張表不渲染）＋ `policyEngineInputThreshold`／`policyEngineOutputThreshold`（字串，空＝留空沿用 0.5）＋ `policyEngineTopicNames`（主題下拉的選項＝該設定檔的政策主題名稱，資料不翻）＋ `policyEngineTopicRows = [{ topic, input, output }]`（列沒有身分欄——單次送出的參數、從不落庫；逐列 id 由 instance ＋ 列號組成，空陣列畫空狀態列）。只影響單次測試：不進「套用為正式設定」。送出後的三道 warning 走 `toast.chatSend`／`toast.chatSubmit`。值載體與增刪鈕只掛 `js-policy-*` hook，本元件無 scss、無 js。 |
+| `components/policy-engine-config` | 5-2「內容政策」的主題判斷方式（設定檔欄位：LLM／Decisions 與兩顆預設門檻；部署不支援時 Decisions 停用並顯示原因）。**必填** `policyConfigInstance`（同頁多實例消歧）；選填 `policyConfigEngine`、`policyConfigInputThreshold`／`policyConfigOutputThreshold`（字串）、`policyConfigDecisionsUnavailable`。值相依：`llm` ⇒ 兩顆預設門檻照畫但停用（5-2 政策主題表的兩欄門檻同辦；設定檔存著的值要看得到），並以常駐說明接上原因。切換下拉時，同資料夾的 js 把往上最近的 `data-policy-engine-scope` 範圍裡所有 `data-policy-threshold` 控制項一起停用／解除——使用頁要掛那顆範圍屬性。值載體只掛 `js-policy-engine-config`／`js-policy-config-*` hook，本元件無 scss。 |
+| `components/policy-topic-modal` | 5-2 政策主題表每一列「查看」開的彈窗（id `policyTopicModal`）：看、改那一列的全部欄位，「套用」只寫回那一列（不打 API，要按「儲存對話設定」才存），主題名稱空白或門檻超出 0 – 1 就 warning 留在窗裡。條件開窗：觸發鈕只掛 `.js-view-policy-topic`，由同資料夾的 js 帶入再開窗；值載體 `.js-policy-topic-modal-<欄>` 與列上 `.js-policy-topic-<欄>` 成對。參數 `policyTopicModalEngine`（門檻兩格初始停用）、`policyTopicModalTopic`（示範長相）。要 include 在 `data-policy-engine-scope` 裡，門檻才會跟著判斷引擎停用。 |
+| `components/policy-engine-fields` | 測試區（2-2-1；2-2-3 每側各一份）這一次送出要不要覆寫設定檔的合規判斷引擎（沿用設定檔／LLM／Decisions）與 Decisions 的門檻。**必填** `policyEngineInstance`（同頁多實例的 id 後綴）＋ `policyEngineConfigEngine`（這一側所選設定檔目前的引擎，`llm`／`decisions`）＋ `policyEngineSelected`（`""`／`llm`／`decisions`，空＝沿用設定檔；**值相依**：生效引擎＝`llm` ⇒ 兩顆預設門檻與個別主題門檻整張表不渲染）＋ `policyEngineInputThreshold`／`policyEngineOutputThreshold`（字串，空＝留空沿用設定檔）＋ `policyEngineTopicNames`（主題下拉的選項＝該設定檔的政策主題名稱，資料不翻）＋ `policyEngineTopicRows = [{ topic, input, output }]`（列沒有身分欄——以主題名稱對應設定檔的主題；逐列 id 由 instance ＋ 列號組成，空陣列畫空狀態列）。對設定檔的單次覆寫，預設沿用設定檔；「套用為正式設定」會寫出這一區生效的引擎與門檻。送出後的三道 warning 走 `toast.chatSend`／`toast.chatSubmit`。值載體與增刪鈕只掛 `js-policy-*` hook，本元件無 scss、無 js。 |
 | `components/reasoning-effort-select` | 思考深度 select。`reasoningEffortId`（必填，同頁唯一）/`reasoningEffortHook`/`reasoningEffortGroup`（分組的 `data-group`）/`reasoningEffortEmptyKey`・`reasoningEffortEmptyZh`（空值語意：主回答＝沿用模型預設、分組＝最低思考，行為不同故不共用 key）/`reasoningEffortHintId`（選填，那句尺度說明的 id ＋ select 的 `aria-describedby`；不給＝整句不畫，同頁多顆各給各的唯一 id）／`reasoningEffortSelected`（選填，預設空＝選中「沿用模型預設」；`2-2-3` 的 B 側設 `high`，好讓 `apply-settings-compare-modal` 的思考深度欄對得上——思考深度是套用時真的會被寫過去的一欄）。用於對話設定的主回答與各分組，以及測試區那兩頁；落點的雙向判準在該元件檔頭。 |
 | `components/pager-row` | 分頁列（每頁筆數＋頁碼）。無自有參數，沿用兩個子元件的頁面層 `total`／`perPage`／`currentPage`；版位由自有 scss 負責——每頁筆數絕對定位釘左、`ui/pagination` 維持獨占一列所以頁碼相對整列置中（不可在這層開 flex，否則頁碼縮成內容寬跑到左端），≤768px 改回文件流上下堆疊。住在哪一頁：判準句而非清單（GUIDELINE §1-2）——正向 `grep -rl 'include "components/pager-row/' src`、反向 `grep -l 'class="pager-row' dist/*.html`，兩邊推導出來的頁面集合相同。 |
 | `components/untagged-files-modal` | 未標註檔案清單（5-10 的 `.js-view-untagged` 條件開窗）：吃頁面的 `coverageDatasets`（與 5-10 覆蓋率量測範圍同一份目錄，GUIDELINE §6 一份正本）／`untaggedFileRows`（選填；未給＝元件內建示範 `untaggedFileRowsDemo`）＋ `ui/pagination` 的 `total`／`perPage`／`currentPage`——**這三個必須在 include 前 set**（`{% set %}` 是頁面全域，而元件庫頁在本元件之前已經用過一次 pagination，不重設就會沿用上一次的值）。內含 `ui/modal-close`、`ui/pagination`。 |
@@ -215,7 +217,7 @@ dist/                       build 輸出（勿手改）
 **展示片段與生產形狀不一致時，生產契約逐字寫在該元件自己的 `_<名>.scss`／`<名>.js` 檔頭**
 （GUIDELINE §1-2；不另立第二份清單——判準是 `grep -rn '生產契約' src/_includes`，有測試比對契約與實例）。
 
-> **上列不是完整清單**（`src/_includes/` 目前有 127 個元件）。完整結構以 `src/_includes/` 與元件總覽頁 `dist/component.html` 為準。跨檔一致性由 `npm test` 把關：有 js 的元件必須三方登記（實體檔 ⇄ `eleventy.config.js` ⇄ `base.html`）、有 scss 的必須在 `main.scss` `@use`、每個元件 html 都必須被 include（無孤兒）、每張圖都必須被引用。
+> **上列不是完整清單**（`src/_includes/` 目前有 129 個元件）。完整結構以 `src/_includes/` 與元件總覽頁 `dist/component.html` 為準。跨檔一致性由 `npm test` 把關：有 js 的元件必須三方登記（實體檔 ⇄ `eleventy.config.js` ⇄ `base.html`）、有 scss 的必須在 `main.scss` `@use`、每個元件 html 都必須被 include（無孤兒）、每張圖都必須被引用。
 
 ---
 

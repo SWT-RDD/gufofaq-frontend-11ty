@@ -9,11 +9,13 @@
      `.js-apply-current-title` 定位**左欄「原設定」**、`.js-apply-title` 定位**右欄「要套用的那一側」**，
      兩欄各自去填自己那幾格的值。少了左欄那顆，React 端就只認得出「要套用的是哪一欄」，
      認不出「拿現值來填的是哪一欄」——而這顆彈窗的整個用途就是把那兩欄擺在一起比。
-     確認鈕 toast 四段（`toast.applyProduction`：success｜warning｜error｜warning）。**與 `components/apply-settings-modal`
+     確認鈕 toast 五段（`toast.applyProduction`：success｜warning｜error｜warning｜warning）。**與 `components/apply-settings-modal`
      共用同一顆 key**：同一個動作（把這一份設定寫成正式設定）、同一組結果，只是從兩顆不同的窗按下去
      ——各立一顆 key 就是同一句話兩份正本，英譯遲早自己分岔（§4-2）。**第 2 段是能力不足那一段**：
      這顆鈕掛 `data-capability="settings:write"`，而能力不足是走得到的結果路徑（有 `settings:read`
      沒有 `settings:write` 的人打得開頁面、看得到鈕），§4 明訂它要列成 warning 段、不做「不渲染／不可按」。
+     **倒數第二段是「這個環境沒有開放 Decisions，沒有套用」**（warning）：這一側的合規判斷引擎生效的是 Decisions、
+     而部署沒有開放它——整份沒有寫進去，改回 LLM 或沿用設定檔再按就好。追加在後、排在未開通之前（段索引契約）。
      **末位那一段是租戶功能未開通**：掛了 `data-capability` 就一定走得到那條路（§4），故兩顆窗的同一顆 key 都以它收尾。
      ⚠️ 另有一條**不同機制**的權限路徑：AB 比較這一側的權限不足另外還開得出
      `apply-settings-no-permission-modal` 那顆獨立的窗。兩者不衝突——彈窗是那一頁自己多做的一層，
@@ -22,8 +24,8 @@
      `.sample-count` 同樣是**取樣欄的讀值掛點**，本 repo scss／js 零引用，寬度來自同掛的 `.w100`
      （§4：非 `js-` 形狀的無樣式 class 要在檔頭交代它是誰的掛點）。 #}
 {# **左欄「原設定」＝套用前的正式設定**——也就是「前台現在跑的是哪一套設定檔、它的參數長什麼樣」，
-     不是「這一側自己的設定檔」。**五格同源**：知識檢索那一格取前台預設的那一組，其餘四格
-     （LLM 模型／取樣兩格／思考深度）取的是**同一份設定檔上的那幾個欄位**——這個 repo 沒有
+     不是「這一側自己的設定檔」。**各格同源**：知識檢索那一格取前台預設的那一組，其餘各格
+     （LLM 模型／取樣兩格／思考深度／合規判斷引擎與門檻）取的是**同一份設定檔上的那幾個欄位**——這個 repo 沒有
      「跨設定檔的共用參數」這種東西（見下面那段：套用寫得到的範圍就是該側設定檔的欄位）。
      （本 repo 全站統一用「設置一/二/三」——這裡講的是**那一格的值
      從哪裡來**，不是逐字沿用它的字面。）
@@ -37,8 +39,8 @@
      三處一律寫「設置二」：任一處寫成別的值（例如這一欄「設置一」、那顆窗標「設置二（預設）」），
      就沒有任何一個租戶狀態畫得出 2-2-3 那一頁（§6 同頁自洽）。
    本頁的示範狀態裡，B 側選的設定檔（設置二）**正好就是前台預設**，故左欄的知識檢索與右欄同值；
-     兩欄真正的差異落在其餘四格（`openai:gpt-4o-mini`／4／6／`medium` vs 這一側臨時改成的
-     `openai:gpt-4o`／8／16／`high`）。兩者不同時（側別設定檔 ≠ 前台預設）以「前台預設那一套」為準——
+     兩欄真正的差異落在其餘各格（`openai:gpt-4o-mini`／4／6／`medium`／輸入閘 0.50 vs 這一側臨時改成的
+     `openai:gpt-4o`／8／16／`high`／輸入閘 0.84、「明顯超出服務範圍的提問」輸入 0.95）。兩者不同時（側別設定檔 ≠ 前台預設）以「前台預設那一套」為準——
      這顆窗回答的是「按下去之後前台會變成什麼樣」。
    套用**沒有**跨設定檔的共用參數可寫：按下去做的是兩件事——把這幾格參數寫進**該側的設定檔**，
      再把「前台預設用哪一組設定」指到那個設定檔。
@@ -54,7 +56,7 @@
 {# 比對窗要看得到**差異**（§6 示範資料要自洽）：兩欄逐欄相同時，這顆彈窗演的是一個
      「套用了也不會有任何改變」的狀態，而它存在的理由正是讓人在套用前看出差在哪。
      「設定 B」欄必須等於使用頁 2-2-3 的 B 側（abSides[1]：設置二／openai:gpt-4o，取樣 8／16，
-     思考深度 `high`）——同一份資料在頁面與彈窗兩處說兩套，是跨區不自洽。
+     思考深度 `high`，合規判斷引擎 decisions／輸入閘 0.84／「明顯超出服務範圍的提問」輸入 0.95）——同一份資料在頁面與彈窗兩處說兩套，是跨區不自洽。
      ⚠️ 思考深度那一欄**連帶決定了 2-2-3 的示範值**：`components/reasoning-effort-select` 的預設是
      恆定選中「沿用模型預設」那顆空值，兩側都照那個預設走的話，這裡就只畫得出兩欄相同的
      「沿用模型預設」，而這顆窗存在的理由正是看出差異。故該元件開了 `reasoningEffortSelected`
@@ -86,13 +88,13 @@
      ——同一頁同一句話兩種字距是 §6 不自洽。`state` token 一律小寫（HTML 屬性名的限制），
      與 2-2-3 `abSides[].state` 同一組值。 #}
 {% set applyCompareColumns = [
-    { title: "原設定", titleKey: "modals.originalSettings", retrieval: "設置二", llm: "openai:gpt-4o-mini", sampleMin: "4", sampleMax: "6", reasoningEffort: "medium", jsApplyCurrentTitle: true },
+    { title: "原設定", titleKey: "modals.originalSettings", retrieval: "設置二", llm: "openai:gpt-4o-mini", sampleMin: "4", sampleMax: "6", reasoningEffort: "medium", policyEngine: "decisions", policyInputThreshold: "", policyOutputThreshold: "", policyTopicInput: "", policyTopicOutput: "", jsApplyCurrentTitle: true },
     { title: "設定 B", titleKey: "modals.settingB",
       titleStates: [
         { state: "a", label: "設定 A", i18nKey: "modals.settingA" },
         { state: "b", label: "設定 B", i18nKey: "modals.settingB" }
       ],
-      retrieval: "設置二", llm: "openai:gpt-4o", sampleMin: "8", sampleMax: "16", reasoningEffort: "high", jsApplyTitle: true }
+      retrieval: "設置二", llm: "openai:gpt-4o", sampleMin: "8", sampleMax: "16", reasoningEffort: "high", policyEngine: "decisions", policyInputThreshold: "0.84", policyOutputThreshold: "", policyTopicInput: "明顯超出服務範圍的提問 0.95", policyTopicOutput: "", jsApplyTitle: true }
 ] %}
 <dialog class="modals" id="ProductionSettingsCompareModal" aria-labelledby="ProductionSettingsCompareModal-title">
     <div class="modals-dialog modals-md">
@@ -105,6 +107,8 @@
                 <div class="modals-body">
                     <div class="flex-row gap-24">
                         {% for column in applyCompareColumns %}
+                        {# 欄號先存起來：下方合規判斷引擎那一圈內層的 `loop` 會蓋掉這一層的。 #}
+                        {% set columnIndex = loop.index %}
                         {# 兩欄逐欄同名：「知識檢索」「LLM模型」「資料取樣數」×2「思考深度」在兩欄各一份，
                              10 顆控制項的可及名稱兩兩一模一樣，報讀器聽不出正在讀的是原設定還是「設定 B」。
                              欄標題給 id、欄內欄位容器包 role="group" aria-labelledby——同功能的 2-2-3
@@ -158,6 +162,29 @@
                                             id="applyEffort-{{ loop.index }}" value="{{ column.reasoningEffort }}" disabled>
                                     </div>
                                 </div>
+                                {# 合規判斷引擎與門檻**會**跟著這顆鈕寫進正式設定檔（判準見檔頭）。兩欄畫的都是**設定檔存的值**，
+                                     不是生效值：左欄＝前台預設（設置二）現在存的（Decisions、兩顆預設門檻未設、沒有個別主題門檻）；
+                                     右欄＝照 policy-engine-fields 檔頭那條「有填的才寫、留空＝不動」套用之後存的
+                                     （輸入閘 0.84 寫進去、輸出閘留空所以仍未設、個別主題寫進那一列）。未設的門檻格以 placeholder 說「未設定」。引擎值是枚舉成員、不翻（同思考深度）。
+                                     個別主題門檻一格寫「主題名 門檻」（兩者都是資料），沒有時留空、以 placeholder 說「沒有」。
+                                     引擎那一格必有值，不掛 placeholder。 #}
+                                {% for row in [
+                                    { id: "applyPolicyEngine", i18nKey: "agent.policyEngine", label: "判斷引擎", value: column.policyEngine },
+                                    { id: "applyPolicyInputThreshold", i18nKey: "qaTest.policyInputThreshold", label: "輸入閘預設門檻", value: column.policyInputThreshold, placeholder: "未設定", placeholderKey: "modals.thresholdUnset" },
+                                    { id: "applyPolicyOutputThreshold", i18nKey: "qaTest.policyOutputThreshold", label: "輸出閘預設門檻", value: column.policyOutputThreshold, placeholder: "未設定", placeholderKey: "modals.thresholdUnset" },
+                                    { id: "applyPolicyTopicInput", i18nKey: "modals.policyTopicInputThresholds", label: "個別主題輸入門檻", value: column.policyTopicInput, placeholder: "沒有個別主題門檻", placeholderKey: "modals.noTopicThresholds" },
+                                    { id: "applyPolicyTopicOutput", i18nKey: "modals.policyTopicOutputThresholds", label: "個別主題輸出門檻", value: column.policyTopicOutput, placeholder: "沒有個別主題門檻", placeholderKey: "modals.noTopicThresholds" }
+                                ] %}
+                                <div class="form-group row mobile-col">
+                                    <div class="label">
+                                        <label for="{{ row.id }}-{{ columnIndex }}" class="control-label" data-i18n="{{ row.i18nKey }}">{{ row.label }}</label>
+                                    </div>
+                                    <div class="field">
+                                        <input type="text"{% if row.placeholder %} placeholder="{{ row.placeholder }}" data-i18n-placeholder="{{ row.placeholderKey }}"{% endif %} class="form-control disabled"
+                                            id="{{ row.id }}-{{ columnIndex }}" value="{{ row.value }}" disabled>
+                                    </div>
+                                </div>
+                                {% endfor %}
                             </div>
                         </div>
                         {% endfor %}
@@ -166,7 +193,7 @@
                 <div class="modals-footer">
                     <div class="button-row center">
                         <button type="button" class="button button-border btn-close-modals" data-i18n="action.cancel">取消</button>
-                        <button data-capability="settings:write" type="button" class="button button-primary btn-close-modals js-confirm-apply" data-toast="已套用為正式設定|權限不足，無法套用——請找貴租戶的管理者開通|套用為正式設定失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.applyProduction" data-toast-type="success|warning|error|warning" data-i18n="qaTest.applyProduction">套用為正式設定</button>
+                        <button data-capability="settings:write" type="button" class="button button-primary btn-close-modals js-confirm-apply" data-toast="已套用為正式設定|權限不足，無法套用——請找貴租戶的管理者開通|套用為正式設定失敗，請稍後再試|這個環境沒有開放 Decisions，沒有套用——請把「判斷引擎」改回 LLM 或沿用設定檔|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.applyProduction" data-toast-type="success|warning|error|warning|warning" data-i18n="qaTest.applyProduction">套用為正式設定</button>
                     </div>
                 </div>
             </div>

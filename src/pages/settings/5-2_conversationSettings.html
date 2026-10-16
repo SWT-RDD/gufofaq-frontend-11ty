@@ -804,7 +804,7 @@ permalink: 5-2_conversationSettings.html
             { key: "intent", label: "意圖判斷", labelKey: "settings.reasoningGroupIntent",
               desc: "分析使用者輸入的語言、關鍵字、時間範圍與檔名意圖（傳統搜尋模式的意圖判斷階段）。", descKey: "settings.reasoningGroupIntentDesc" },
             { key: "judge", label: "判定（可回答性／QA／政策）", labelKey: "settings.reasoningGroupJudge",
-              desc: "判定檢索素材是否足以回答（可回答性 grounding 閘與分層檢索的 IsAnswerable）、QA 直答裁決、內容政策 topics 裁決。", descKey: "settings.reasoningGroupJudgeDesc" },
+              desc: "判定檢索素材是否足以回答（可回答性 grounding 閘與分層檢索的 IsAnswerable）、QA 直答裁決、內容政策主題裁決（判斷引擎為 LLM 時；選 Decisions 的設定檔不經過這一組）。", descKey: "settings.reasoningGroupJudgeDesc" },
             { key: "tools", label: "工具迴圈", labelKey: "settings.reasoningGroupTools",
               desc: "Agent 對話模式下，每一輪選擇與呼叫工具的推理（不含最終答案生成）。", descKey: "settings.reasoningGroupToolsDesc" },
             { key: "skill", label: "技能子圖", labelKey: "settings.reasoningGroupSkill",
@@ -1175,11 +1175,33 @@ permalink: 5-2_conversationSettings.html
      故 hook class js-add-policy-topic／js-remove-policy-topic（§5）。詞彙過濾＋兩則封鎖訊息為值載體。
      `settings.policyActionOff` 英譯是 Ignore（對齊 policyIntro 的詞彙）。
      全部隨底部「儲存對話設定」直送。示範 2 筆。 #}
-<div class="tab-content" data-capability="settings:write" id="panelPolicy" style="display: none;">
+<div class="tab-content" data-capability="settings:write" id="panelPolicy" data-policy-engine-scope style="display: none;">
     <p class="text-gray" data-i18n="settings.policyIntro">定義敏感主題與詞彙過濾：對命中的輸入／輸出可封鎖、記錄或不處理，並設定被封鎖時回覆使用者的拒絕訊息。</p>
+    {# 主題判斷方式（components/policy-engine-config）：這一份設定檔的正式問答用哪一種引擎判主題。
+         示範選 Decisions（§6 同頁自洽：2-2-1 執行流程那張分數表就是設置一用 Decisions 判出來的），
+         兩顆預設門檻留空（＝0.5）。`policyConfigEngine` 同時決定下方政策主題表那兩欄門檻停不停用。
+         面板上的 `data-policy-engine-scope` 是切換的射程（理由見元件檔頭）。 #}
+    {% set policyConfigInstance = "settings" %}
+    {% set policyConfigEngine = "decisions" %}
+    {% set policyConfigInputThreshold = "" %}
+    {% set policyConfigOutputThreshold = "" %}
+    {% set policyConfigDecisionsUnavailable = false %}
+    <div class="block mb-16">
+        {% include "components/policy-engine-config/policy-engine-config.html" %}
+    </div>
+    {# 「主題判斷方式」的說明視窗（元件裡那顆 info-btn 開的就是它；理由見該元件檔頭）。②③留空，理由同本頁其他說明視窗。 #}
+    {% set helpModalId = "policyEngineHelpModal" %}
+    {% set helpModalTitleKey = "help.settings.policyEngine.title" %}
+    {% set helpModalTitle = "主題判斷方式說明" %}
+    {% set helpModalWhatKey = "help.settings.policyEngine.what" %}
+    {% set helpModalWhat = "這一區決定這一份設定檔的正式問答用哪一種方式判斷政策主題。LLM：把所有主題交給「判定」組的模型，只回報命中了哪些主題，沒有分數。Decisions：逐個主題打一個分數，分數達到門檻才算命中；門檻調高，誤擋會變少，但漏擋會變多。兩顆預設門檻分別用在輸入與輸出；個別主題可以在下方政策主題表另訂門檻，留空就沿用預設門檻。測試區可以對單次測試另選引擎與門檻，不影響這裡的設定。" %}
+    {% set helpModalStateItems = [] %}
+    {% set helpModalLimitRows = [] %}
+    {% include "components/help-modal/help-modal.html" %}
+    {# 示範列的 inputThreshold／outputThreshold 是字串（值域含 0），醫療診斷的 0.70 與 2-2-1 執行流程分數表的門檻同源。 #}
     {% set policyTopics = [
-      { name: "個資與隱私", definition: "涉及身分證字號、電話、住址等個人資料的查詢或代辦請求。", examples: "幫我查某人的電話與地址", inputAction: "block", outputAction: "block", refusal: "很抱歉，我無法協助處理涉及個人隱私的請求。" },
-      { name: "醫療診斷", definition: "要求提供醫療診斷、處方或用藥建議。", examples: "我這個症狀該吃什麼藥", inputAction: "record", outputAction: "record", refusal: "醫療相關問題請諮詢專業醫師，我僅能提供一般性資訊。" }
+      { name: "個資與隱私", definition: "涉及身分證字號、電話、住址等個人資料的查詢或代辦請求。", examples: "幫我查某人的電話與地址", inputAction: "block", outputAction: "block", refusal: "很抱歉，我無法協助處理涉及個人隱私的請求。", inputThreshold: "", outputThreshold: "" },
+      { name: "醫療診斷", definition: "要求提供醫療診斷、處方或用藥建議。", examples: "我這個症狀該吃什麼藥", inputAction: "record", outputAction: "record", refusal: "醫療相關問題請諮詢專業醫師，我僅能提供一般性資訊。", inputThreshold: "0.70", outputThreshold: "" }
     ] %}
     <div class="block mb-16 flex-row column gap-16">
         {# ⓘ 說明：markup 同 5-2 既有的 info-btn 六件組。①出處：本子頁籤檔頭（政策主題表的結構）
@@ -1201,14 +1223,18 @@ permalink: 5-2_conversationSettings.html
         </div>
         <div class="table-container scrollTable" tabindex="0">
             <table class="default-table">
+                {# 欄寬：門檻兩欄只放兩位小數的值，拿掉上下箭頭（ui/form-control 的 .no-spin）後各 60px 就夠；
+                     省下的寬度給主題名稱（160 → 280px）——那一欄是整列的辨識欄，最常被截斷。 #}
                 <colgroup>
-                    <col style="width:160px; min-width:160px;">
+                    <col style="width:280px; min-width:280px;">
                     <col style="min-width:220px;">
                     <col style="min-width:180px;">
                     <col style="width:120px; min-width:120px;">
                     <col style="width:120px; min-width:120px;">
+                    <col style="width:60px; min-width:60px;">
+                    <col style="width:60px; min-width:60px;">
                     <col style="min-width:220px;">
-                    <col style="width:90px; min-width:90px;">
+                    <col style="width:170px; min-width:170px;">
                 </colgroup>
                 <thead>
                     <tr>
@@ -1221,6 +1247,9 @@ permalink: 5-2_conversationSettings.html
                         <th id="policyHeadExamples" data-i18n="settings.policyExamples">範例（逗號分隔）</th>
                         <th id="policyHeadInputAction" data-i18n="settings.policyInputAction">輸入動作</th>
                         <th id="policyHeadOutputAction" data-i18n="settings.policyOutputAction">輸出動作</th>
+                        {# 兩欄門檻一律畫出，判斷引擎＝LLM 時停用（值相依正本在 components/policy-engine-config 檔頭）。 #}
+                        <th id="policyHeadInputThreshold" data-i18n="qaTest.policyTopicInputThreshold">輸入門檻</th>
+                        <th id="policyHeadOutputThreshold" data-i18n="qaTest.policyTopicOutputThreshold">輸出門檻</th>
                         <th id="policyHeadRefusal" data-i18n="settings.policyRefusal">拒絕訊息</th>
                         {# 這一欄的 `<th>` 不掛 id：同表刪除鈕走的是「本列辨識欄 ＋ 本鈕自己」（§4 動作鈕自指），
                              沒有人指得到它。掛了沒人指的 id 比完全沒有 id 更難查（§4 反向網）。
@@ -1236,33 +1265,40 @@ permalink: 5-2_conversationSettings.html
                              列名要另立節點：主題名稱那一欄本身是 <input>，value 不是可被 aria-labelledby 引用的文字。 #}
                         <td>
                             <span id="policyTopicRowName-{{ loop.index }}" class="sr-only">{{ topic.name }}</span>
-                            <input type="text" class="form-control" value="{{ topic.name }}" aria-labelledby="policyTopicRowName-{{ loop.index }} policyHeadName" aria-describedby="policyTopicLimitsHint">
+                            <input type="text" class="form-control js-policy-topic-name" value="{{ topic.name }}" aria-labelledby="policyTopicRowName-{{ loop.index }} policyHeadName" aria-describedby="policyTopicLimitsHint">
                         </td>
-                        <td><input type="text" class="form-control" value="{{ topic.definition }}" aria-labelledby="policyTopicRowName-{{ loop.index }} policyHeadDefinition" aria-describedby="policyTopicLimitsHint"></td>
-                        <td><input type="text" class="form-control" value="{{ topic.examples }}" aria-labelledby="policyTopicRowName-{{ loop.index }} policyHeadExamples" aria-describedby="policyExamplesHint"></td>
+                        <td><input type="text" class="form-control js-policy-topic-definition" value="{{ topic.definition }}" aria-labelledby="policyTopicRowName-{{ loop.index }} policyHeadDefinition" aria-describedby="policyTopicLimitsHint"></td>
+                        <td><input type="text" class="form-control js-policy-topic-examples" value="{{ topic.examples }}" aria-labelledby="policyTopicRowName-{{ loop.index }} policyHeadExamples" aria-describedby="policyExamplesHint"></td>
                         <td>
-                            <select class="form-control select-sm singleSelect" aria-labelledby="policyTopicRowName-{{ loop.index }} policyHeadInputAction">
+                            <select class="form-control select-sm singleSelect js-policy-topic-input-action" aria-labelledby="policyTopicRowName-{{ loop.index }} policyHeadInputAction">
                                 <option value="block" data-i18n="settings.policyActionBlock"{% if topic.inputAction == "block" %} selected{% endif %}>封鎖</option>
                                 <option value="record" data-i18n="settings.policyActionRecord"{% if topic.inputAction == "record" %} selected{% endif %}>記錄</option>
                                 <option value="off" data-i18n="settings.policyActionOff"{% if topic.inputAction == "off" %} selected{% endif %}>不處理</option>
                             </select>
                         </td>
                         <td>
-                            <select class="form-control select-sm singleSelect" aria-labelledby="policyTopicRowName-{{ loop.index }} policyHeadOutputAction">
+                            <select class="form-control select-sm singleSelect js-policy-topic-output-action" aria-labelledby="policyTopicRowName-{{ loop.index }} policyHeadOutputAction">
                                 <option value="block" data-i18n="settings.policyActionBlock"{% if topic.outputAction == "block" %} selected{% endif %}>封鎖</option>
                                 <option value="record" data-i18n="settings.policyActionRecord"{% if topic.outputAction == "record" %} selected{% endif %}>記錄</option>
                                 <option value="off" data-i18n="settings.policyActionOff"{% if topic.outputAction == "off" %} selected{% endif %}>不處理</option>
                             </select>
                         </td>
+                        <td><input type="number" min="0" max="1" step="0.01" class="form-control no-spin js-policy-topic-input-threshold" data-policy-threshold{% if topic.inputThreshold %} value="{{ topic.inputThreshold }}"{% endif %}{% if policyConfigEngine != "decisions" %} disabled{% endif %} aria-labelledby="policyTopicRowName-{{ loop.index }} policyHeadInputThreshold" aria-describedby="policyTopicThresholdHint"></td>
+                        <td><input type="number" min="0" max="1" step="0.01" class="form-control no-spin js-policy-topic-output-threshold" data-policy-threshold{% if topic.outputThreshold %} value="{{ topic.outputThreshold }}"{% endif %}{% if policyConfigEngine != "decisions" %} disabled{% endif %} aria-labelledby="policyTopicRowName-{{ loop.index }} policyHeadOutputThreshold" aria-describedby="policyTopicThresholdHint"></td>
                         {# 「拒絕訊息」也有長度界線，所以三欄**都**要接上 `policyTopicLimitsHint`
                              ——那份 hint 是這一區三條界線共用的家，漏掉任何一欄，那條界線在畫面上
                              就沒有落點。拒絕訊息是「命中時回給使用者的那一句話」（不是一份文件），
                              所以它的上限比「定義」那一欄短，不是少寫了一個位數。 #}
-                        <td><input type="text" class="form-control" value="{{ topic.refusal }}" aria-labelledby="policyTopicRowName-{{ loop.index }} policyHeadRefusal" aria-describedby="policyTopicLimitsHint"></td>
-                        <td><button type="button" id="policyTopicDelete-{{ loop.index }}" class="button button-border button-sm js-remove-policy-topic" aria-labelledby="policyTopicRowName-{{ loop.index }} policyTopicDelete-{{ loop.index }}" data-i18n="action.delete">刪除</button></td>
+                        <td><input type="text" class="form-control js-policy-topic-refusal" value="{{ topic.refusal }}" aria-labelledby="policyTopicRowName-{{ loop.index }} policyHeadRefusal" aria-describedby="policyTopicLimitsHint"></td>
+                        {# 「查看」＝條件開窗（先要知道是哪一列）⇒ 只掛 hook，由 components/policy-topic-modal 的 js 帶入這一列再開窗。
+                             可及名稱＝「本列辨識欄 ＋ 本鈕自己」（§4 動作鈕自指，同刪除鈕）。 #}
+                        <td><div class="flex-row gap-8">
+                            <button type="button" id="policyTopicView-{{ loop.index }}" class="button button-border button-sm js-view-policy-topic" aria-labelledby="policyTopicRowName-{{ loop.index }} policyTopicView-{{ loop.index }}" data-i18n="settings.viewPolicyTopic">查看</button>
+                            <button type="button" id="policyTopicDelete-{{ loop.index }}" class="button button-border button-sm js-remove-policy-topic" aria-labelledby="policyTopicRowName-{{ loop.index }} policyTopicDelete-{{ loop.index }}" data-i18n="action.delete">刪除</button>
+                        </div></td>
                     </tr>
                     {% else %}
-                    <tr><td colspan="7" class="text-center text-gray" data-i18n="settings.noPolicyTopics">這個設定檔沒有設任何政策主題，所以合規檢查不會擋下、也不會標記任何回答。要開始擋就先新增一個主題。</td></tr>
+                    <tr><td colspan="9" class="text-center text-gray" data-i18n="settings.noPolicyTopics">這個設定檔沒有設任何政策主題，所以合規檢查不會擋下、也不會標記任何回答。要開始擋就先新增一個主題。</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -1281,17 +1317,26 @@ permalink: 5-2_conversationSettings.html
              會在按下儲存之後才知道自己打太長。 #}
         <p id="policyTopicLimitsHint" class="text-gray"><span data-i18n="settings.policyTopicName">主題名稱</span><span data-i18n="common.labelSep">：</span><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-topic-name-max-len">200</span><span data-i18n="common.unitChars"> 字</span><span data-i18n="common.listSep">、</span><span data-i18n="settings.definition">定義</span><span data-i18n="common.labelSep">：</span><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-topic-definition-max-len">1024</span><span data-i18n="common.unitChars"> 字</span><span data-i18n="common.listSep">、</span><span data-i18n="settings.policyRefusal">拒絕訊息</span><span data-i18n="common.labelSep">：</span><span data-i18n="settings.mcpLimitAtMost">最多 </span><span class="js-topic-refusal-max-len">500</span><span data-i18n="common.unitChars"> 字</span></p>
         <p id="policyExamplesHint" class="text-gray"><span data-i18n="settings.policyExamplesHintPrefix">「範例」以逗號分隔，最多 </span><span>5</span><span data-i18n="settings.policyExamplesHintMid"> 則、每則 </span><span>200</span><span data-i18n="settings.policyExamplesHintSuffix"> 字；超過就存不起來，不會只留前幾則。</span></p>
+        {# 兩欄門檻的界線與依賴說明常駐可見（§4、§3-2），區間是資料節點、夾在前後綴 key 之間。前綴與測試區共用同一顆 key；
+             依賴說明與設定檔元件那一句同一顆 key（同一件事）。 #}
+        <p id="policyTopicThresholdHint" class="text-gray"><span data-i18n="qaTest.policyTopicThresholdHintPrefix">門檻範圍 </span><span>0 – 1</span><span data-i18n="settings.policyTopicThresholdHintSuffix">；留空沿用上方的預設門檻。</span><span data-i18n="settings.policyThresholdDecisionsOnly">門檻只在判斷引擎為 Decisions 時生效；切成 LLM 不會清掉已填的值。</span></p>
         <div class="flex-row">
             <button type="button" class="button button-border button-sm js-add-policy-topic" data-i18n="settings.addPolicyTopic">新增主題</button>
         </div>
     </div>
+
+    {# 「查看」彈窗（components/policy-topic-modal）：include 在本面板裡，窗內兩格門檻才在 data-policy-engine-scope 的射程內。
+         示範長相取「醫療診斷」那一列（有個別輸入門檻 0.70 的那一列）；生產上開窗時由 js 帶入被點的那一列。 #}
+    {% set policyTopicModalEngine = policyConfigEngine %}
+    {% set policyTopicModalTopic = policyTopics[1] %}
+    {% include "components/policy-topic-modal/policy-topic-modal.html" %}
 
     {# 「政策主題」的說明視窗：②③留空，理由同本頁其他說明視窗。 #}
     {% set helpModalId = "policyTopicsHelpModal" %}
     {% set helpModalTitleKey = "help.settings.policyTopics.title" %}
     {% set helpModalTitle = "政策主題說明" %}
     {% set helpModalWhatKey = "help.settings.policyTopics.what" %}
-    {% set helpModalWhat = "這一區逐條定義敏感主題：每條主題有名稱、定義、範例，並可對「輸入」與「輸出」各自獨立設定命中時要封鎖、記錄還是不處理；封鎖時回覆這一條自己的拒絕訊息，留空則改用下方的輸入／輸出全域擋下訊息。" %}
+    {% set helpModalWhat = "這一區逐條定義敏感主題：每條主題有名稱、定義、範例，並可對「輸入」與「輸出」各自獨立設定命中時要封鎖、記錄還是不處理；封鎖時回覆這一條自己的拒絕訊息，留空則改用下方的輸入／輸出全域擋下訊息。判斷引擎選 Decisions 時，表格多出「輸入門檻」「輸出門檻」兩欄：這個主題的分數達到門檻才算命中，留空就沿用上方的預設門檻。" %}
     {% set helpModalStateItems = [] %}
     {% set helpModalLimitRows = [] %}
     {% include "components/help-modal/help-modal.html" %}
@@ -2517,9 +2562,14 @@ permalink: 5-2_conversationSettings.html
      ②這一刻無法驗證或寫入設定。兩者**都沒有寫進任何東西**、等一下再按一次就好，所以與
      「儲存失敗，請稍後再試」（error：結果不明）分開，也不是使用者要修什麼的那一種。
      原因的那一句照樣由頁首那條紅字原樣外顯（`saveConfigError`）。
-   兩段同樣追加在後、不插中間（理由同上），排在「此功能尚未對貴租戶開通」之前——那一段固定是最後一段。 #}
+   兩段同樣追加在後、不插中間（理由同上），排在「此功能尚未對貴租戶開通」之前——那一段固定是最後一段。
+   **「這個環境沒有開放 Decisions，設定沒有儲存」那一段（warning）**：「內容政策」的判斷引擎選了 Decisions，
+     而這個部署沒有開放它。兩種來由：①頁面載入之後可用性才變掉；②設定檔本來就存著 Decisions、部署後來
+     不支援（那顆選項選中且停用，見 components/policy-engine-config 檔頭）——②這一態下**每一次**儲存都會撞到這一段，
+     直到把引擎改回 LLM。整份**沒有寫進去**，改回 LLM 再存就好，故是 warning。
+     同樣追加在後、排在「未開通」之前。 #}
 <div class="flex-row justify-content-center mt-24">
-    <button data-capability="settings:write" type="button" class="button button-primary js-save-profile-config" data-toast="對話設定已儲存|部分欄位未通過驗證|權限不足，無法儲存——請找貴租戶的管理者開通|儲存失敗，請稍後再試|這份設定檔掛了兩顆同名的 skill。skill 的名稱就是送進模型的工具名，同名時只有一顆會生效——請改名，或只掛其中一顆|有 QA 集不屬於這個租戶，或那不是 QA 集|選取的 QA 集數量超過單一清單上限|對話設定已儲存，但有幾項不會照設定生效，或不確定會不會生效——請看頁首的「模型能力提醒」|暫時無法儲存，這一次什麼都沒有存進去，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.saveProfileConfig" data-toast-type="success|warning|warning|error|warning|warning|warning|warning|warning|warning" data-i18n="settings.saveConfig">儲存對話設定</button>
+    <button data-capability="settings:write" type="button" class="button button-primary js-save-profile-config" data-toast="對話設定已儲存|部分欄位未通過驗證|權限不足，無法儲存——請找貴租戶的管理者開通|儲存失敗，請稍後再試|這份設定檔掛了兩顆同名的 skill。skill 的名稱就是送進模型的工具名，同名時只有一顆會生效——請改名，或只掛其中一顆|有 QA 集不屬於這個租戶，或那不是 QA 集|選取的 QA 集數量超過單一清單上限|對話設定已儲存，但有幾項不會照設定生效，或不確定會不會生效——請看頁首的「模型能力提醒」|暫時無法儲存，這一次什麼都沒有存進去，請稍後再試|這個環境沒有開放 Decisions，設定沒有儲存——請把「判斷引擎」改回 LLM|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.saveProfileConfig" data-toast-type="success|warning|warning|error|warning|warning|warning|warning|warning|warning|warning" data-i18n="settings.saveConfig">儲存對話設定</button>
 </div>
 
 {# 意圖啟用確認 modal（intentionModal）：檢索與欄位子頁籤開啟某層意圖、但仍有資料集未填任務描述時彈出

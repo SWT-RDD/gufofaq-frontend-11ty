@@ -3,7 +3,9 @@
      要並列比對的是 A/B 測試頁，那是另一個元件 apply-settings-compare-modal（兩份彈窗結構不同、
      各自一個 id；理由寫在那支的檔頭）。**權限不足在這一頁演成 inline warning**——由下方確認鈕
      `data-toast` 的第 2 段承接，本元件不開任何窗；`apply-settings-no-permission-modal` 是 AB 比較
-     那一側自己多做的一層，它的使用頁不是這裡。 #}
+     那一側自己多做的一層，它的使用頁不是這裡。
+   確認鈕的 toast 與 apply-settings-compare-modal 共用 `toast.applyProduction`（五段，各段的意思寫在那支的檔頭）；
+     倒數第二段「這個環境沒有開放 Decisions，沒有套用」接的是 2-2-1 合規判斷引擎生效為 Decisions、而部署沒開放它的那一次。 #}
 <dialog class="modals" id="ProductionSettingsModal" aria-labelledby="ProductionSettingsModal-title">
     <div class="modals-dialog modals-md">
         <div class="modals-wrap">
@@ -18,7 +20,7 @@
                 <div class="modals-footer">
                     <div class="button-row center">
                         <button type="button" class="button button-border btn-close-modals" data-i18n="action.cancel">取消</button>
-                        <button data-capability="settings:write" type="button" class="button button-primary btn-close-modals js-confirm-apply" data-toast="已套用為正式設定|權限不足，無法套用——請找貴租戶的管理者開通|套用為正式設定失敗，請稍後再試|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.applyProduction" data-toast-type="success|warning|error|warning" data-i18n="modals.confirmApply">確認套用</button>
+                        <button data-capability="settings:write" type="button" class="button button-primary btn-close-modals js-confirm-apply" data-toast="已套用為正式設定|權限不足，無法套用——請找貴租戶的管理者開通|套用為正式設定失敗，請稍後再試|這個環境沒有開放 Decisions，沒有套用——請把「判斷引擎」改回 LLM 或沿用設定檔|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.applyProduction" data-toast-type="success|warning|error|warning|warning" data-i18n="modals.confirmApply">確認套用</button>
                     </div>
                 </div>
             </div>

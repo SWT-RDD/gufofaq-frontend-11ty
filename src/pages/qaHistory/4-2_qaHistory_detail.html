@@ -247,13 +247,18 @@ permalink: 4-2_qaHistory_detail.html
      ⇒ 這一頁畫得出檢索與生成，就代表那一站必然是未命中。分數 2.4 < 門檻 3 ⇒ `below_score_floor`，
      `poolSize` ＝ max(取用資料筆數, 候選池下限 2) ＝ max(16, 2) ＝ 16，而 16 就是上面那格
      「取用資料筆數」（§6 同頁同源）。
-   **兩站合規檢查都不帶主題分數**（`policyEngine`／`topicScores`，見 step-flow 檔頭）：這一筆是前台問答
-     （`tag: frontend`），而正式問答一律用 LLM 引擎判主題——LLM 沒有分數，這兩顆鍵整顆不給，元件三態的
-     第③態（什麼都不畫）就是這一筆的正確樣子。詳情頁重播的若是一筆用 Decisions 測的紀錄（測試區那兩頁），
-     同一個元件照樣畫出判斷引擎與主題分數小表——那一態的重播在 2-2-3 的 B 側演得到，
-     其餘兩態（被擋的命中列、沒取得分數）在元件庫頁。 #}
+   **兩站合規檢查都帶主題分數**（`policyEngine`／`topicScores`，見 step-flow 檔頭）：這一筆是前台問答
+     （`tag: frontend`），用的是前台預設的設置二，而設置二在 5-2 設成 Decisions、兩顆預設門檻留空（＝0.50）、
+     沒有個別主題門檻——所以三個主題的門檻都是 0.50。這一題問的是結婚登記，三個主題的分數都遠低於門檻。
+     合規兩站的耗時是逐主題打分數那一趟（600／540ms），摘要隨之重算（見下）。「沒有分數」那一態（LLM）
+     在 2-2-3 的 A 側，被擋的命中列與沒取得分數在元件庫頁。 #}
 {% set stepFlowNodes = [
-    { label: "輸入合規檢查", state: "completed", time: "8ms" },
+    { label: "輸入合規檢查", state: "completed", time: "600ms", policyEngine: "decisions",
+      topicScores: [
+        { name: "明顯超出服務範圍的提問", probability: "0.03", threshold: "0.50", action: "block", hit: false },
+        { name: "提示詞注入", probability: "0.01", threshold: "0.50", action: "block", hit: false },
+        { name: "詢問底層技術", probability: "0.02", threshold: "0.50", action: "record", hit: false }
+      ] },
     { label: "QA 直答比對", state: "completed", time: "14ms", decision: "below_score_floor", entry: "pre_graph", poolSize: "16", hits: "客服問答集 / 新住民結婚登記要準備什麼文件？", score: "2.4", floor: "3" },
     { label: "Agent 推理", state: "completed", time: "340ms", thinking: "問題涉及具體法規與應備文件，決定先查知識庫再生成。" },
     { label: "檢索知識庫", state: "completed", time: "1.2s", tools: "search_knowledge_base", params: "[1/1] query: string", result: "命中 8 筆片段（相似度 0.79–0.92），注入後續生成脈絡。" },
@@ -261,17 +266,23 @@ permalink: 4-2_qaHistory_detail.html
     { label: "生成答案", state: "completed", time: "2.1s" },
     { label: "生成推薦問題", state: "completed", time: "180ms" },
     { label: "完成對話", state: "completed", time: "8ms" },
-    { label: "輸出合規檢查", state: "completed", time: "24ms" }
+    { label: "輸出合規檢查", state: "completed", time: "540ms", policyEngine: "decisions",
+      topicScores: [
+        { name: "明顯超出服務範圍的提問", probability: "0.02", threshold: "0.50", action: "block", hit: false },
+        { name: "提示詞注入", probability: "0.01", threshold: "0.50", action: "block", hit: false },
+        { name: "詢問底層技術", probability: "0.04", threshold: "0.50", action: "record", hit: false }
+      ] }
 ] %}
-{# 摘要是節點的衍生值（§6）：延遲＝九站耗時總和 8＋14＋340＋1200＋210＋2100＋180＋8＋24
-     ＝ 4,084ms ⇒ **4.1s**；TTFT 從同一個起點算到第一個回答 token，
-     生成答案的起點是前五站的和 8＋14＋340＋1200＋210 ＝ 1,772ms ⇒ **1.8s**。
-     取整規則只有一份、寫在 step-flow 檔頭（`formatMs`：≥1s 一位小數**四捨五入**）：4.084 → 4.1、
-     1.772 → 1.8。⚠️ 不是無條件進位——寫成 4.2s／1.9s 就是把同一個毫秒數往上多進了一格，
+{# 摘要是節點的衍生值（§6）：延遲＝九站耗時總和 600＋14＋340＋1200＋210＋2100＋180＋8＋540
+     ＝ 5,192ms ⇒ **5.2s**；TTFT 從同一個起點算到第一個回答 token，
+     生成答案的起點是前五站的和 600＋14＋340＋1200＋210 ＝ 2,364ms ⇒ **2.4s**。
+     token 含兩道 Decisions 判斷那兩趟的輸入（＋136）：980＋136＝1,116 進、304 出、合計 1,420。
+     取整規則只有一份、寫在 step-flow 檔頭（`formatMs`：≥1s 一位小數**四捨五入**）：5.192 → 5.2、
+     2.364 → 2.4。⚠️ 不是無條件進位——寫成 5.3s／2.5s 就是把同一個毫秒數往上多進了一格，
      而畫面上這兩個數字與節點的耗時是對得起來的，讀的人加得出來。 #}
 {% set stepFlowSummary = {
-    tokens: "1,284", tokensIn: "980", tokensOut: "304",
-    latency: "4.1s", ttft: "1.8s", results: "8", model: "openai:gpt-4o-mini"
+    tokens: "1,420", tokensIn: "1,116", tokensOut: "304",
+    latency: "5.2s", ttft: "2.4s", results: "8", model: "openai:gpt-4o-mini"
 } %}
 {% set stepFlowTraceShown = 200 %}
 {% set stepFlowTraceTotal = 231 %}

@@ -53,6 +53,8 @@ module.exports = function (eleventyConfig) {
         "src/_includes/components/builtin-tool-card/builtin-tool-card.js": "js/builtin-tool-card.js",
         "src/_includes/components/alias-entries-modal/alias-entries-modal.js": "js/alias-entries-modal.js",
         "src/_includes/components/import-report/import-report.js": "js/import-report.js",
+        "src/_includes/components/policy-engine-config/policy-engine-config.js": "js/policy-engine-config.js",
+        "src/_includes/components/policy-topic-modal/policy-topic-modal.js": "js/policy-topic-modal.js",
     });
 
     // scss 不由 eleventy 編譯——另一支 sass 行程直接輸出到 dist/css。

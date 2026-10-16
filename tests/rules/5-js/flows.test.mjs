@@ -304,6 +304,10 @@ test("§5/§6 5-2 的數值旋鈕必須是 type=number 並帶這一欄的合法�
         { hook: "js-data-source-ratio", min: "0", max: "1", step: "any" },
         { hook: "js-memory-count", min: "0", max: null, step: "1" }, // 刻意無上界
         { hook: "js-agent-max-iter", min: "1", max: "20", step: "1" },
+        { hook: "js-policy-config-input-threshold", min: "0", max: "1", step: "0.01" },
+        { hook: "js-policy-config-output-threshold", min: "0", max: "1", step: "0.01" },
+        { hook: "js-policy-topic-input-threshold", min: "0", max: "1", step: "0.01" },
+        { hook: "js-policy-topic-output-threshold", min: "0", max: "1", step: "0.01" },
     ];
     const html = distDoc("5-2_conversationSettings.html");
     const ids = new Set([...html.matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]));
@@ -546,4 +550,273 @@ test("§5 5-6-2 新增與逐列儲存是同一道守衛：除了「那一台已�
     assert.equal(save.at(-1).t, "error", "逐列儲存的最後一段固定是 error（結果不明、請稍後再試）");
     for (const id of ["newMcpError", "mcpRowSaveError"])
         assert.match(html, new RegExp(`<p[^>]*id="${id}"[^>]*role="alert"`), `缺常駐的 #${id}（role="alert"）`);
+});
+
+test("§5/§3-2 5-2 主題判斷方式：設定檔的引擎下拉＋兩顆預設門檻在政策主題表之上，一般態的「不支援」原因句隱藏且不被描述", () => {
+    // 引擎與門檻是設定檔欄位（正式問答照它判）。原因句常駐輸出、一般態掛 .hidden；
+    // 一般態的下拉若仍以 aria-describedby 指向它，報讀器會對一個能用的選項念「這個環境沒有開放」。
+    const html = distDoc("5-2_conversationSettings.html");
+    const start = html.indexOf('id="panelPolicy"');
+    assert.ok(start > 0, "5-2 找不到 #panelPolicy");
+    const panel = html.slice(start);
+    const select = panel.match(/<select[^>]*\bjs-policy-engine-config\b[^>]*>([\s\S]*?)<\/select>/);
+    assert.ok(select, "5-2 內容政策缺主題判斷方式下拉 .js-policy-engine-config");
+    const values = [...select[1].matchAll(/<option[^>]*value="([^"]*)"/g)].map((m) => m[1]);
+    assert.deepEqual(values, ["llm", "decisions"], `引擎值域是 llm｜decisions，實際是 ${values.join("、")}`);
+    assert.match(select[1], /<option[^>]*value="decisions"[^>]*\bselected\b/, "5-2 示範（設置一）是 Decisions");
+    assert.doesNotMatch(select[1], /\bdisabled\b/, "一般態的 Decisions 不得停用");
+    for (const hook of ["js-policy-config-input-threshold", "js-policy-config-output-threshold"])
+        assert.match(panel, new RegExp(`<input[^>]*\\b${hook}\\b`), `選 Decisions 時要渲染 .${hook}`);
+    assert.ok(panel.indexOf("js-policy-engine-config") < panel.indexOf("js-add-policy-topic"), "判斷方式要在政策主題表之上");
+    const reason = panel.match(/<p[^>]*id="(policyConfigUnavailable-[^"]+)"[^>]*>/);
+    assert.ok(reason, "不支援原因句要常駐輸出（React 依可用性切換）");
+    assert.match(reason[0], /\bhidden\b/, "一般態的不支援原因句要掛 .hidden");
+    assert.doesNotMatch(select[0], new RegExp(reason[1]), "一般態的下拉不得以 aria-describedby 指向隱藏的不支援原因");
+    const save = JSON.parse(read("src/i18n/en.json"))["toast.saveProfileConfig"].split("|");
+    assert.equal(save.length, 11, "儲存設定的 toast 要多一段「沒有開放 Decisions」");
+    assert.match(save[9], /Decisions/, "新段要插在最後一段（未開通）之前");
+});
+
+test("§5 元件庫：主題判斷方式的部署不支援態——Decisions 停用、原因看得見且被下拉描述", () => {
+    const html = distDoc("component.html");
+    const sel = html.match(/<select[^>]*id="policyConfigEngine-demoUnavailable"[^>]*>([\s\S]*?)<\/select>/);
+    assert.ok(sel, "元件庫缺部署不支援態示範 #policyConfigEngine-demoUnavailable");
+    assert.match(sel[1], /<option[^>]*value="decisions"[^>]*\bdisabled\b/, "不支援態的 Decisions 要停用");
+    const reason = html.match(/<p[^>]*id="policyConfigUnavailable-demoUnavailable"[^>]*>/);
+    assert.ok(reason, "不支援態缺原因句");
+    assert.doesNotMatch(reason[0], /\bhidden\b/, "不支援態的原因句要看得見");
+    assert.match(sel[0], /aria-describedby="[^"]*policyConfigUnavailable-demoUnavailable/, "下拉要以 aria-describedby 接上原因句");
+    assert.match(html, /id="policyConfigEngine-demoConfig"/, "元件庫缺一般態示範 #policyConfigEngine-demoConfig");
+    assert.match(html, /<dialog[^>]*id="policyEngineHelpModal"/, "元件庫的說明鈕要開得到 #policyEngineHelpModal");
+});
+
+test("§5/§4 5-2 政策主題表：Decisions 時多兩欄門檻，每格吃「本列列名＋欄表頭」，空狀態列跨滿欄數", () => {
+    const html = distDoc("5-2_conversationSettings.html");
+    const at = html.indexOf('id="policyHeadName"');
+    assert.ok(at > 0, "5-2 找不到政策主題表");
+    const table = html.slice(html.lastIndexOf("<table", at), html.indexOf("</table>", at));
+    const heads = [...table.matchAll(/<th\b/g)].length;
+    assert.equal(heads, 9, `Decisions 示範的政策主題表應有 9 欄，實際 ${heads}`);
+    const cols = [...table.matchAll(/<col\b/g)].length;
+    assert.equal(cols, heads, `colgroup ${cols} 顆對不上表頭 ${heads} 欄`);
+    for (const [hook, head] of [["js-policy-topic-input-threshold", "policyHeadInputThreshold"], ["js-policy-topic-output-threshold", "policyHeadOutputThreshold"]]) {
+        const ctls = [...table.matchAll(new RegExp(`<input[^>]*\\b${hook}\\b[^>]*>`, "g"))].map((m) => m[0]);
+        assert.equal(ctls.length, 2, `兩列示範主題都要有 .${hook}`);
+        ctls.forEach((c, i) => {
+            assert.match(c, new RegExp(`aria-labelledby="policyTopicRowName-${i + 1} ${head}"`), `第 ${i + 1} 列 .${hook} 的可及名稱要是「列名＋欄表頭」`);
+            assert.match(c, /aria-describedby="policyTopicThresholdHint"/, `第 ${i + 1} 列 .${hook} 要接上門檻提示`);
+        });
+    }
+    assert.match(table, /<input[^>]*js-policy-topic-input-threshold[^>]*value="0\.70"/, "醫療診斷的輸入門檻 0.70 要與 2-2-1 分數表同源");
+    assert.match(html, /<p[^>]*id="policyTopicThresholdHint"/, "門檻提示 #policyTopicThresholdHint 要存在");
+    const src = read("src/pages/settings/5-2_conversationSettings.html");
+    assert.ok(src.includes(`colspan="9" class="text-center text-gray" data-i18n="settings.noPolicyTopics"`), "門檻兩欄一律畫出，空狀態列固定跨 9 欄");
+});
+
+test("§5/§4-2 判斷引擎可以是 Decisions 之後，「判定」組、政策主題說明與複製設定的合規群組都要講到它", () => {
+    // 「判定」組原本寫的是「內容政策 topics 裁決」——設定檔選 Decisions 時這一組根本不經手政策，
+    // 說明不改，使用者會去調一顆對政策毫無作用的模型。
+    const src = read("src/pages/settings/5-2_conversationSettings.html");
+    assert.ok(src.includes("內容政策主題裁決（判斷引擎為 LLM 時；選 Decisions 的設定檔不經過這一組）"), "「判定」組說明沒改");
+    assert.ok(src.includes("判斷引擎選 Decisions 時，表格多出「輸入門檻」「輸出門檻」兩欄"), "政策主題說明沒補門檻兩欄");
+    assert.ok(read("src/_includes/components/config-copy-modal/config-copy-modal.html").includes("禁止主題（含判斷引擎與門檻）"), "複製設定的合規群組沒列判斷引擎與門檻");
+    const en = JSON.parse(read("src/i18n/en.json"));
+    assert.match(en["settings.reasoningGroupJudgeDesc"], /when the judging engine is LLM/);
+    assert.match(en["help.settings.policyTopics.what"], /Input threshold/);
+    assert.match(en["settings.copyConfigGroupPolicy"], /judging engine and thresholds/);
+});
+
+test("§5/§3-2 測試區合規判斷引擎：第一項「沿用設定檔」預設選中，門檻欄跟著實際生效的引擎", () => {
+    // 正式問答照設定檔判之後，測試區的預設必須是「照設定檔」——否則每一次測試都悄悄換成 LLM，
+    // 測到的不是正式問答的行為。門檻欄的值相依看「生效引擎」，只看選單值會把沿用 LLM／沿用 Decisions 畫成一樣。
+    const one = distDoc("2-2-1_singleTest.html");
+    const sel = one.match(/<select[^>]*id="policyEngineSelect-single"[^>]*>([\s\S]*?)<\/select>/);
+    assert.ok(sel, "2-2-1 缺 #policyEngineSelect-single");
+    const vals = [...sel[1].matchAll(/<option[^>]*value="([^"]*)"/g)].map((m) => m[1]);
+    assert.deepEqual(vals, ["", "llm", "decisions"], `值域要是 沿用｜llm｜decisions，實際 ${vals.join("、")}`);
+    assert.match(sel[1], /<option value="" selected data-i18n="qaTest\.policyEngineFollowConfigDecisions"/, "2-2-1 示範沿用設定檔（設置一＝Decisions）");
+    assert.match(one, /\bjs-policy-input-threshold\b/, "沿用的設定檔是 Decisions ⇒ 門檻欄要渲染");
+    const lib = distDoc("component.html");
+    const follow = lib.match(/id="policyEngineSelect-demoFollowLlm"[\s\S]*?(?=<div class="subtitle)/);
+    assert.ok(follow, "元件庫缺「沿用設定檔（目前：LLM）」示範 #policyEngineSelect-demoFollowLlm");
+    assert.doesNotMatch(follow[0], /\bjs-policy-input-threshold\b/, "沿用的設定檔是 LLM ⇒ 門檻欄不渲染");
+    assert.match(lib, /id="policyEngineSelect-demoFollowDecisions"/, "元件庫缺「沿用設定檔（目前：Decisions）」示範");
+    for (const f of srcHtml) assert.doesNotMatch(read(f), /qaTest\.policyEngineLlmDefault|正式問答一律/, `${f} 還留著「正式問答一律 LLM」的舊說法`);
+    assert.equal(JSON.parse(read("src/i18n/en.json"))["qaTest.policyEngineLlmDefault"], undefined, "en.json 的 qaTest.policyEngineLlmDefault 要移除（沒人用了）");
+});
+
+test("§5 套用為正式設定會寫出判斷引擎與門檻：比對窗兩欄都有那五格且看得出差異，確認鈕多「沒開放 Decisions」一段", () => {
+    // 判準（apply-settings-compare-modal 檔頭）：會因為按下那顆鈕而改變的欄位才進這顆窗——引擎與門檻現在會被寫進去。
+    const ab = distDoc("2-2-3_abTest.html");
+    const modal = ab.match(/<dialog[^>]*id="ProductionSettingsCompareModal"[\s\S]*?<\/dialog>/);
+    assert.ok(modal, "2-2-3 找不到比對窗");
+    const v = (id) => (modal[0].match(new RegExp(`id="${id}" value="([^"]*)"`)) || [])[1];
+    for (const id of ["applyPolicyEngine", "applyPolicyInputThreshold", "applyPolicyOutputThreshold", "applyPolicyTopicInput", "applyPolicyTopicOutput"])
+        for (const n of [1, 2]) assert.notEqual(v(`${id}-${n}`), undefined, `比對窗缺 #${id}-${n}`);
+    assert.equal(v("applyPolicyEngine-2"), "decisions", "設定 B 欄的引擎要等於 2-2-3 B 側");
+    assert.equal(v("applyPolicyInputThreshold-2"), "0.84", "設定 B 欄的輸入閘預設門檻要等於 2-2-3 B 側");
+    assert.equal(v("applyPolicyTopicInput-2"), "明顯超出服務範圍的提問 0.95", "設定 B 欄的個別輸入門檻要等於 2-2-3 B 側");
+    assert.notEqual(v("applyPolicyInputThreshold-1"), v("applyPolicyInputThreshold-2"), "兩欄門檻要看得出差異");
+    const en = JSON.parse(read("src/i18n/en.json"))["toast.applyProduction"].split("|");
+    assert.equal(en.length, 5, "套用的 toast 要多一段");
+    assert.match(en[3], /Decisions/, "新段要插在最後一段（未開通）之前");
+});
+
+test("§5/§6 4-2 前台問答照前台預設設定檔（設置二＝Decisions）判主題：兩站都有分數表，摘要與節點耗時加得起來", () => {
+    const html = distDoc("4-2_qaHistory_detail.html");
+    const tables = [...html.matchAll(/<table class="step-node-score-table"[\s\S]*?<\/table>/g)].map((m) => m[0]);
+    assert.equal(tables.length, 2, "4-2 的輸入與輸出合規檢查都要有主題分數表");
+    for (const t of tables) {
+        const names = [...t.matchAll(/<tr[^>]*>\s*<td>([^<]+)<\/td>/g)].map((m) => m[1]);
+        assert.deepEqual(names, ["明顯超出服務範圍的提問", "提示詞注入", "詢問底層技術"], "主題要是前台預設設定檔（設置二）的那三條");
+        assert.doesNotMatch(t, /class="is-hit"/, "這一筆沒被擋 ⇒ 不得有命中列");
+    }
+    // 延遲＝九站和 600＋14＋340＋1200＋210＋2100＋180＋8＋540＝5,192ms ⇒ 5.2s；首字＝前五站 2,364ms ⇒ 2.4s
+    assert.match(html, /5\.2s/, "延遲要隨合規兩站耗時重算成 5.2s");
+    assert.match(html, /2\.4s/, "首字要重算成 2.4s");
+    assert.doesNotMatch(html, /4\.1s/, "舊的延遲 4.1s 還在");
+});
+
+test("§5 元件庫：設定檔存的是 Decisions、部署卻不支援——選中且停用、門檻照畫、原因句可見，元件檔頭寫明這一態", () => {
+    // 這一態不是罕見競態：部署拿掉金鑰之後，每一份已設成 Decisions 的設定檔一打開就是它。
+    // 不演的話 React 只能自己決定長相；不寫明後果的話，沒人知道這份設定檔的每一次儲存都會被擋。
+    const html = distDoc("component.html");
+    const sel = html.match(/<select[^>]*id="policyConfigEngine-demoStale"[^>]*>([\s\S]*?)<\/select>/);
+    assert.ok(sel, "元件庫缺「存的是 Decisions、部署不支援」示範 #policyConfigEngine-demoStale");
+    assert.match(sel[1], /<option value="decisions" selected disabled/, "這一態的 Decisions 要選中且停用");
+    assert.match(html, /<input[^>]*id="policyConfigInputThreshold-demoStale"/, "這一態門檻欄照畫（存著的值看得到）");
+    const reason = html.match(/<p[^>]*id="policyConfigUnavailable-demoStale"[^>]*>/);
+    assert.ok(reason && !/\bhidden\b/.test(reason[0]), "這一態的原因句要看得見");
+    const head = read("src/_includes/components/policy-engine-config/policy-engine-config.html");
+    assert.ok(head.includes("存的是 Decisions、部署卻不支援"), "元件檔頭要寫明這一態的畫法與後果");
+});
+
+test("§5 套用為正式設定：比對窗的門檻格畫的是「套用後設定檔存的值」，留空＝不動、以 placeholder 說未設定", () => {
+    // 套用的規則（policy-engine-fields 檔頭）：有填的才寫、留空＝那一欄不動。所以比對窗不能畫生效值 0.50——
+    // 那會讓人以為套用會把 0.50 寫死進設定檔，日後預設值一改，兩種寫法的結果就分岔了。
+    const ab = distDoc("2-2-3_abTest.html");
+    const modal = ab.match(/<dialog[^>]*id="ProductionSettingsCompareModal"[\s\S]*?<\/dialog>/)[0];
+    const tag = (id) => (modal.match(new RegExp(`<input[^>]*id="${id}"[^>]*>`)) || [""])[0];
+    const val = (id) => (tag(id).match(/value="([^"]*)"/) || [])[1];
+    assert.equal(val("applyPolicyInputThreshold-1"), "", "原設定（設置二）的輸入閘預設門檻存的是空白");
+    assert.equal(val("applyPolicyOutputThreshold-2"), "", "B 側輸出閘留空＝不動，套用後仍是空白");
+    for (const id of ["applyPolicyInputThreshold-1", "applyPolicyOutputThreshold-1", "applyPolicyOutputThreshold-2"])
+        assert.match(tag(id), /data-i18n-placeholder="modals\.thresholdUnset"/, `#${id} 留空要以 placeholder 說「未設定」`);
+    const head = read("src/_includes/components/policy-engine-fields/policy-engine-fields.html");
+    assert.ok(head.includes("有填的才寫、留空＝那一欄不動"), "測試區元件檔頭要定義套用寫出什麼");
+});
+
+test("§5 測試區合規判斷引擎的說明不得再說它「從不落庫」（套用會把個別主題門檻寫進設定檔）", () => {
+    for (const f of ["src/_includes/components/policy-engine-fields/policy-engine-fields.html", "README.md"])
+        assert.doesNotMatch(read(f), /從不落庫/, `${f} 還說測試區的門檻從不落庫`);
+});
+
+test("§5/§4 5-2 門檻欄一律畫出、掛 data-policy-threshold，範圍掛在內容政策面板上，並以常駐說明講「只在 Decisions 生效」", () => {
+    // 判斷引擎＝LLM 時門檻顯示但停用（設定檔裡存著的值要看得到）。disabled 說得出「現在不能填」、
+    // 說不出「為什麼」，所以每一格都要以 aria-describedby 接上一句常駐的依賴說明（§3-2）。
+    const html = distDoc("5-2_conversationSettings.html");
+    assert.match(html, /<div[^>]*id="panelPolicy"[^>]*data-policy-engine-scope|<div[^>]*data-policy-engine-scope[^>]*id="panelPolicy"/, "內容政策面板要掛 data-policy-engine-scope（切換的射程）");
+    const near = (id) => { const at = html.indexOf(`id="${id}"`); return at < 0 ? "" : html.slice(at, at + 800); };
+    for (const hook of ["js-policy-config-input-threshold", "js-policy-config-output-threshold", "js-policy-topic-input-threshold", "js-policy-topic-output-threshold"]) {
+        const tag = (html.match(new RegExp(`<input[^>]*\\b${hook}\\b[^>]*>`)) || [""])[0];
+        assert.ok(tag, `5-2 缺 .${hook}`);
+        assert.match(tag, /\bdata-policy-threshold\b/, `.${hook} 要掛 data-policy-threshold（切換時被停用的對象）`);
+        assert.doesNotMatch(tag, /\bdisabled\b/, `5-2 示範是 Decisions，.${hook} 不得停用`);
+        const ids = ((tag.match(/aria-describedby="([^"]*)"/) || [])[1] || "").split(/\s+/);
+        assert.ok(ids.some((id) => near(id).includes("settings.policyThresholdDecisionsOnly")), `.${hook} 要以 aria-describedby 接上「只在 Decisions 生效」的常駐說明`);
+    }
+    const src = read("src/pages/settings/5-2_conversationSettings.html");
+    assert.ok(src.includes('colspan="9" class="text-center text-gray" data-i18n="settings.noPolicyTopics"'), "門檻兩欄一律畫出，空狀態列固定跨 9 欄");
+});
+
+test("§5 元件庫：判斷引擎是 LLM 的那幾份示範，門檻欄照畫但停用", () => {
+    const html = distDoc("component.html");
+    for (const inst of ["demoUnavailable"]) {
+        for (const id of [`policyConfigInputThreshold-${inst}`, `policyConfigOutputThreshold-${inst}`]) {
+            const tag = (html.match(new RegExp(`<input[^>]*id="${id}"[^>]*>`)) || [""])[0];
+            assert.ok(tag, `元件庫缺 #${id}（LLM 時門檻也要畫出來）`);
+            assert.match(tag, /\bdisabled\b/, `#${id} 在 LLM 時要停用`);
+        }
+    }
+    const on = (html.match(/<input[^>]*id="policyConfigInputThreshold-demoConfig"[^>]*>/) || [""])[0];
+    assert.ok(on && !/\bdisabled\b/.test(on), "Decisions 示範的門檻欄不得停用");
+    for (const title of ["policyConfigDemoTitle", "policyConfigUnavailableDemoTitle", "policyConfigStaleDemoTitle"]) {
+        const wrap = (html.match(new RegExp(`<div[^>]*aria-labelledby="${title}"[^>]*>`)) || [""])[0];
+        assert.match(wrap, /\bdata-policy-engine-scope\b/, `#${title} 那一份示範的外框要掛 data-policy-engine-scope（否則切換會動到別份示範）`);
+    }
+});
+
+test("§5/§4 5-2 政策主題表：每一列「刪除」旁有「查看」，可及名稱吃「列名＋本鈕」，開的那一扇窗住在內容政策面板裡", () => {
+    // 窗要住在 data-policy-engine-scope 的射程裡：窗內那兩格門檻也要跟著判斷引擎停用／解除。
+    const html = distDoc("5-2_conversationSettings.html");
+    const at = html.indexOf('id="policyHeadName"');
+    const table = html.slice(html.lastIndexOf("<table", at), html.indexOf("</table>", at));
+    const rows = [...table.matchAll(/<tr>([\s\S]*?)<\/tr>/g)].map((m) => m[1]).filter((r) => r.includes("js-remove-policy-topic"));
+    assert.equal(rows.length, 2, "示範兩列都要在");
+    rows.forEach((r, i) => {
+        const n = i + 1;
+        const view = r.match(/<button[^>]*\bjs-view-policy-topic\b[^>]*>/);
+        assert.ok(view, `第 ${n} 列缺「查看」鈕 .js-view-policy-topic`);
+        assert.match(view[0], new RegExp(`aria-labelledby="policyTopicRowName-${n} policyTopicView-${n}"`), `第 ${n} 列「查看」的可及名稱要是「列名＋本鈕」`);
+        assert.ok(r.indexOf("js-view-policy-topic") < r.indexOf("js-remove-policy-topic"), `第 ${n} 列「查看」要在「刪除」旁邊、排在它前面`);
+        for (const f of ["name", "definition", "examples", "input-action", "output-action", "refusal"])
+            assert.match(r, new RegExp(`\\bjs-policy-topic-${f}\\b`), `第 ${n} 列的值載體要掛 .js-policy-topic-${f}（查看／套用讀寫的那一格）`);
+    });
+    const panel = html.slice(html.indexOf('id="panelPolicy"'));
+    const nextPanel = panel.indexOf('class="tab-content"', 20);
+    const own = nextPanel > 0 ? panel.slice(0, nextPanel) : panel;
+    assert.match(own, /<dialog[^>]*id="policyTopicModal"/, "#policyTopicModal 要住在內容政策面板裡（門檻停用的射程）");
+    const modal = own.match(/<dialog[^>]*id="policyTopicModal"[\s\S]*?<\/dialog>/)[0];
+    for (const f of ["input-threshold", "output-threshold"])
+        assert.match(modal, new RegExp(`<input[^>]*\\bjs-policy-topic-modal-${f}\\b[^>]*\\bdata-policy-threshold\\b|<input[^>]*\\bdata-policy-threshold\\b[^>]*\\bjs-policy-topic-modal-${f}\\b`), `窗內 .js-policy-topic-modal-${f} 要掛 data-policy-threshold`);
+    assert.match(modal, /\bjs-apply-policy-topic\b/, "窗腳要有「套用」.js-apply-policy-topic");
+    assert.doesNotMatch((modal.match(/<button[^>]*js-apply-policy-topic[^>]*>/) || [""])[0], /btn-close-modals/, "「套用」由 js 守衛後關窗，不得掛 btn-close-modals（否則驗不過也會關）");
+    assert.match(modal, /data-i18n="settings\.policyTopicModalApplyHint"/, "窗內要寫明「套用只改表格這一列，要按儲存對話設定才存」");
+});
+
+test("§5 元件庫：政策主題「查看」彈窗有無條件的展示觸發器", () => {
+    const html = distDoc("component.html");
+    assert.match(html, /data-open-modal="policyTopicModal"/, "元件庫缺 #policyTopicModal 的展示觸發器");
+    assert.match(html, /<dialog[^>]*id="policyTopicModal"/, "元件庫要 include #policyTopicModal");
+});
+
+test("§5/§4 5-2 政策主題表：門檻兩欄是不帶上下箭頭的窄欄（各 60px），省下的寬度給主題名稱（280px）", () => {
+    // 門檻值只有兩位小數（0.70），120px 的欄位加上一對上下箭頭只是在吃版面；箭頭拿掉之後
+    // 欄位仍是 type="number"（瀏覽器照樣擋非數字、鍵盤上下鍵照樣能調）。
+    const html = distDoc("5-2_conversationSettings.html");
+    const at = html.indexOf('id="policyHeadName"');
+    const table = html.slice(html.lastIndexOf("<table", at), html.indexOf("</table>", at));
+    const cols = [...table.matchAll(/<col\b[^>]*style="([^"]*)"/g)].map((m) => m[1]);
+    const ths = [...table.matchAll(/<th\b([^>]*)>/g)].map((m) => (m[1].match(/id="([^"]*)"/) || [])[1] || "");
+    const widthOf = (id) => cols[ths.indexOf(id)];
+    assert.match(widthOf("policyHeadName"), /width:280px; min-width:280px/, "主題名稱欄要拿到門檻兩欄省下的寬度（280px）");
+    for (const id of ["policyHeadInputThreshold", "policyHeadOutputThreshold"])
+        assert.match(widthOf(id), /width:60px; min-width:60px/, `${id} 那一欄要縮成 60px`);
+    for (const hook of ["js-policy-topic-input-threshold", "js-policy-topic-output-threshold"]) {
+        const tags = [...table.matchAll(new RegExp(`<input[^>]*\\b${hook}\\b[^>]*>`, "g"))].map((m) => m[0]);
+        assert.equal(tags.length, 2, `兩列都要有 .${hook}`);
+        for (const tag of tags) {
+            assert.match(tag, /type="number"/, `.${hook} 仍要是 type="number"`);
+            assert.match(tag, /class="[^"]*\bno-spin\b/, `.${hook} 要掛 .no-spin 拿掉上下箭頭`);
+        }
+    }
+    const scss = read("src/_includes/ui/form-control/_form-control.scss");
+    const rule = scss.slice(scss.indexOf("&.no-spin"));
+    assert.ok(scss.includes("&.no-spin"), "ui/form-control 要定義 .form-control.no-spin");
+    for (const sel of ["::-webkit-inner-spin-button", "::-webkit-outer-spin-button", "appearance: textfield"])
+        assert.ok(rule.slice(0, 600).includes(sel), `.no-spin 要處理 ${sel}`);
+    // 負控：同一支 widthOf 對一個不存在的表頭要拿到 undefined，證明上面不是因為 slice 切到別張表而碰巧對上
+    assert.equal(widthOf("noSuchHeader"), undefined, "負控：不存在的表頭不得對到任何一欄");
+});
+
+test("§5/§4-2 主題判斷方式的說明不得再說門檻欄「只在 Decisions 時出現」（現在是一律畫出、LLM 時停用）", () => {
+    const src = read("src/_includes/components/policy-engine-config/policy-engine-config.html");
+    const zh = (src.match(/data-i18n="settings\.policyEngineConfigHint">([^<]*)</) || [])[1] || "";
+    const en = JSON.parse(read("src/i18n/en.json"))["settings.policyEngineConfigHint"];
+    assert.ok(zh, "找不到 settings.policyEngineConfigHint 的繁中原文");
+    assert.doesNotMatch(zh, /時出現/, "繁中說明還在描述舊行為（門檻欄只在 Decisions 時出現）");
+    assert.doesNotMatch(en, /appear only/, "英文說明還在描述舊行為（threshold fields appear only…）");
+    // 窄數字欄：60px 欄扣掉儲存格內距後只剩 40px，預設內距放不下「0.70」，.no-spin 要一併縮內距
+    const scss = read("src/_includes/ui/form-control/_form-control.scss");
+    assert.match(scss.slice(scss.indexOf("&.no-spin")), /^[\s\S]{0,300}padding-inline:/, ".no-spin 要縮小左右內距，否則窄欄裡的 0.70 會被截成 0.7");
 });

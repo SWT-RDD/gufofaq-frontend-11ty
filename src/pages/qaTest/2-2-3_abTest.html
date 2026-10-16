@@ -78,21 +78,24 @@ permalink: 2-2-3_abTest.html
        ⚠️ **提示詞不在跨區契約裡**：從這一頁的「套用為正式設定」開出來的
        `components/apply-settings-compare-modal` 逐字釘著「設定 B 欄必須等於使用頁 2-2-3 的 B 側」，
        但那顆窗**刻意不放提示詞**（套用寫出去的欄位裡沒有提示詞，按下去前台的提示詞不會變，
-       理由寫在該元件檔頭）。要與那份對齊的是**設定檔／模型／取樣兩格／思考深度**四樣，
-       改那四樣要連那一份一起改；這一欄改了不影響它。
-     `policyEngine`／`policyInputThreshold`／`policyOutputThreshold`／`policyTopics`／`policyTopicRows`
+       理由寫在該元件檔頭）。要與那份對齊的是**設定檔／模型／取樣兩格／思考深度／合規判斷引擎（含門檻）**五樣，
+       改那五樣要連那一份一起改；這一欄改了不影響它。
+     `policyConfigEngine`／`policyEngine`／`policyInputThreshold`／`policyOutputThreshold`／`policyTopics`／`policyTopicRows`
        是這一側的「合規判斷引擎」（components/policy-engine-fields，值域與值相依規則見該元件檔頭）。
-       **兩側刻意不同**（A＝LLM、B＝Decisions）：AB 比這一欄的用途就是「同一題、兩種引擎各判一次」，
-       兩側同引擎就演不出來；也因此元件的兩支 `{% if %}`（門檻畫／不畫）在這一頁同時看得到。
+       `policyConfigEngine` 是這一側所選設定檔目前的引擎：設置一、設置二在 5-2 都設成 Decisions。
+       兩側都**明選**引擎覆寫設定檔，而且**刻意不同**（A＝LLM、B＝Decisions）：AB 比這一欄的用途就是
+       「同一題、兩種引擎各判一次」，兩側同引擎就演不出來；也因此元件的兩支 `{% if %}`（門檻畫／不畫）
+       在這一頁同時看得到。A 那一份的第一項畫「沿用設定檔（目前：Decisions）」而沒選中。
        `policyTopics` 是**這一側所選設定檔的政策主題名稱**——A 是設置一（與 5-2 設置一的政策主題表同源：
        個資與隱私、醫療診斷），B 是設置二（另一份設定檔、另一組主題）。A 選 LLM，所以它那一份不會畫出來。
        B 的門檻與 B 側執行流程兩站分數表的門檻欄逐一對得上：輸入閘預設 0.84、「明顯超出服務範圍的提問」
        另訂輸入門檻 0.95；輸出閘預設留空（＝0.5）。
-       ⚠️ 這幾欄**不在跨區契約裡**：套用為正式設定不寫出它們（只影響單次測試），
-       `apply-settings-compare-modal` 不必跟著改。 #}
+       ⚠️ 這幾欄**在跨區契約裡**：套用為正式設定會寫出它們，`apply-settings-compare-modal` 的「設定 B」欄
+       逐格釘著 B 側的引擎與門檻（引擎 decisions、輸入閘 0.84、輸出閘留空＝0.50、「明顯超出服務範圍的提問」輸入 0.95），
+       改這裡要連那一份一起改。 #}
 {% set abSides = [
     { side: "A", state: "a", i18nKey: "qaTest.settingSideA", label: "（設定 A）", knowledge: "1", llm: "openai:gpt-4o-mini", configKey: "settings.config1", configLabel: "設置一", promptVersion: "V3", reasoningEffort: "",
-      policyEngine: "llm", policyInputThreshold: "", policyOutputThreshold: "", policyTopics: ["個資與隱私", "醫療診斷"], policyTopicRows: [],
+      policyConfigEngine: "decisions", policyEngine: "llm", policyInputThreshold: "", policyOutputThreshold: "", policyTopics: ["個資與隱私", "醫療診斷"], policyTopicRows: [],
       prompt: "角色定位：
 你是一位專業的知識庫問答助手，負責依據已上傳的資料回應使用者詢問。
 知識來源限制：
@@ -107,7 +110,7 @@ permalink: 2-2-3_abTest.html
 • 使用條列式（• 或 -）
 • 必要時分段（例如：說明 / 流程 / 注意事項）" },
     { side: "B", state: "b", i18nKey: "qaTest.settingSideB", label: "（設定 B）", knowledge: "2", llm: "openai:gpt-4o", configKey: "settings.config2", configLabel: "設置二", promptVersion: "V2", reasoningEffort: "high",
-      policyEngine: "decisions", policyInputThreshold: "0.84", policyOutputThreshold: "",
+      policyConfigEngine: "decisions", policyEngine: "decisions", policyInputThreshold: "0.84", policyOutputThreshold: "",
       policyTopics: ["明顯超出服務範圍的提問", "提示詞注入", "詢問底層技術"],
       policyTopicRows: [{ topic: "明顯超出服務範圍的提問", input: "0.95", output: "" }],
       prompt: "任務導向：
@@ -246,6 +249,7 @@ permalink: 2-2-3_abTest.html
                  `role="group"` 之內——兩側的欄名逐字相同，group 是區分可及名稱的那道邊界（§4）。
                  §2：同頁第二次 include，全部參數重新 set。 #}
             {% set policyEngineInstance = ab.side %}
+            {% set policyEngineConfigEngine = ab.policyConfigEngine %}
             {% set policyEngineSelected = ab.policyEngine %}
             {% set policyEngineInputThreshold = ab.policyInputThreshold %}
             {% set policyEngineOutputThreshold = ab.policyOutputThreshold %}

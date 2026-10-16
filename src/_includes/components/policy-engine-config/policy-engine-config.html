@@ -1,0 +1,83 @@
+{#
+  合規判斷引擎（設定檔欄位）：這一份設定檔的**正式問答**用哪一種引擎判合規主題，以及 Decisions 的兩顆預設門檻。
+    住在 5-2「內容政策」子頁籤（政策主題表之上）與元件庫頁（一般態、部署不支援態）——§3-3 出現在 2 頁以上→切。
+  與 components/policy-engine-fields 的分工：那一支是測試區對設定檔的**單次覆寫**；這一支是設定檔本身。
+  兩種引擎差在哪（`settings.policyEngineConfigHint` 是畫面上的定義）：LLM 只回報命中了哪些主題、沒有分數；
+    Decisions 逐個主題給分數，**分數 ≥ 門檻才算命中**。
+  **值相依（只有一條）**：引擎＝`llm` ⇒ 兩顆預設門檻**照畫但 `disabled`**，5-2 政策主題表那兩欄門檻同辦。
+    機制：LLM 不讀門檻（沒有分數可比），但這是**設定檔**——門檻存在設定檔裡、切成 LLM 也不會被清掉，切回
+    Decisions 時原樣生效。所以它們要看得到（知道存著什麼）、但現在不能改（改了也沒有作用對象）。
+    disabled 說不出「為什麼」，故每一格都以 aria-describedby 接上一句常駐的依賴說明
+    （`settings.policyThresholdDecisionsOnly`，§3-2）。
+    ⚠️ 與 components/policy-engine-fields（測試區的單次覆寫）**刻意不同**：那一支的門檻是這一次送出的參數，
+    LLM 時沒有任何東西可保留，所以整組不渲染。
+  **切換是純前端互動**（§5 ④）：同資料夾的 policy-engine-config.js 在下拉 change 時，把往上最近的
+    `[data-policy-engine-scope]` 範圍裡所有 `data-policy-threshold` 控制項一起停用／解除。**使用頁要負責掛那顆
+    範圍屬性**（5-2＝「內容政策」面板，因為主題表的兩欄門檻在元件外面；元件庫＝每一份示範的外框），
+    沒掛就切不動。初始的 disabled 由本元件的 markup 宣告，js 只接手之後的切換。
+  **部署不支援 Decisions**：Decisions 選項 `disabled`、下拉以 aria-describedby 接上原因句。原因句**常駐輸出**、
+    支援時掛 `.hidden` 且下拉不指向它（同 5-2「模型能力提醒」的 .hidden 作法）——React 依可用性切換兩者。
+  **存的是 Decisions、部署卻不支援**（部署拿掉金鑰之後，每一份已設成 Decisions 的設定檔一打開就是這一態）：
+    Decisions 選項**選中且停用**、兩顆預設門檻照畫（存著的值要看得到）、原因句可見。後果：這份設定檔的**每一次
+    儲存都會被擋**（5-2 儲存鈕的「沒有開放 Decisions」那段 warning），測試區「沿用設定檔」的每一次送出也一樣——
+    使用者要先把引擎改成 LLM（存著的門檻不會清掉）。長相在元件庫頁的示範八。
+  常數在這裡宣告一次（§4 三件套、§3-2）：門檻值域 0 – 1、步距 0.01、留空＝0.5，都以資料節點畫在消費點旁。
+  值載體只掛 hook（§5 矩陣②，隨 5-2 底部「儲存對話設定」一起送出，change 不打 API）：
+    `js-policy-engine-config`／`js-policy-config-input-threshold`／`js-policy-config-output-threshold`。
+  參數（§2：set 是頁面全域，同頁每次 include 前都要重新 set 全部參數）：
+    policyConfigInstance（必填）＝同頁多實例的消歧鍵；本元件每一顆 id 都以它為後綴。
+    policyConfigEngine（選填，`llm`／`decisions`，空＝`llm`）。
+    policyConfigInputThreshold／policyConfigOutputThreshold（選填，**字串**；空＝留空沿用 0.5）。
+    policyConfigDecisionsUnavailable（選填，布林）＝這個部署沒有開放 Decisions。
+  說明視窗（id `policyEngineHelpModal`）**由使用頁 include**、不住在本元件裡：help-modal 吃一組頁面全域參數，
+    元件內部 set 它們會被 §2 的「同頁第二次消費前要重設」那道守門算在使用頁頭上（同頁還有別的說明視窗）。
+    同頁多實例共用同一扇窗——內容與實例無關。
+  住在哪一頁（§1-2）：正向 `grep -rl 'include "components/policy-engine-config' src --include=*.html`（扣掉本檔）；
+    反向 `grep -l 'id="policyConfigEngine-' dist/*.html`。兩邊的頁面集合相同。
+#}
+<div class="flex-row column gap-16" role="group" aria-labelledby="policyConfigTitle-{{ policyConfigInstance }}">
+    <div class="flex-row align-items-center gap-8">
+        <div class="text-md text-bold" id="policyConfigTitle-{{ policyConfigInstance }}" data-i18n="settings.policyEngineConfig">主題判斷方式</div>
+        <button type="button" class="info-btn" title="主題判斷方式說明" data-i18n-title="help.settings.policyEngine.title" data-open-modal="policyEngineHelpModal">
+            <img src="./images/icon_info_black.png" width="48" height="48" decoding="async" alt="" class="icon">
+            <span class="sr-only" data-i18n="help.settings.policyEngine.title">主題判斷方式說明</span>
+        </button>
+    </div>
+    <div class="flex-row flex-wrap gap-16 mobile-column">
+        <div class="form-group col-4-md col-12-sm">
+            <div class="label">
+                <label for="policyConfigEngine-{{ policyConfigInstance }}" class="control-label" data-i18n="agent.policyEngine">判斷引擎</label>
+            </div>
+            <div class="field">
+                <select class="form-control singleSelect js-policy-engine-config" id="policyConfigEngine-{{ policyConfigInstance }}" aria-describedby="policyConfigHint-{{ policyConfigInstance }}{% if policyConfigDecisionsUnavailable %} policyConfigUnavailable-{{ policyConfigInstance }}{% endif %}">
+                    <option value="llm"{% if policyConfigEngine != "decisions" %} selected{% endif %} data-i18n="agent.policyEngineLlm">LLM</option>
+                    <option value="decisions"{% if policyConfigEngine == "decisions" %} selected{% endif %}{% if policyConfigDecisionsUnavailable %} disabled{% endif %} data-i18n="agent.policyEngineDecisions">Decisions</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-group col-4-md col-12-sm">
+            <div class="label">
+                <label for="policyConfigInputThreshold-{{ policyConfigInstance }}" class="control-label" data-i18n="qaTest.policyInputThreshold">輸入閘預設門檻</label>
+            </div>
+            <div class="field">
+                <input type="number" min="0" max="1" step="0.01" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control js-policy-config-input-threshold" id="policyConfigInputThreshold-{{ policyConfigInstance }}" data-policy-threshold{% if policyConfigInputThreshold %} value="{{ policyConfigInputThreshold }}"{% endif %}{% if policyConfigEngine != "decisions" %} disabled{% endif %} aria-describedby="policyConfigInputThresholdRange-{{ policyConfigInstance }} policyConfigThresholdDefaultHint-{{ policyConfigInstance }} policyConfigThresholdScopeHint-{{ policyConfigInstance }}">
+                <span class="text-gray" id="policyConfigInputThresholdRange-{{ policyConfigInstance }}">0 – 1</span>
+            </div>
+        </div>
+        <div class="form-group col-4-md col-12-sm">
+            <div class="label">
+                <label for="policyConfigOutputThreshold-{{ policyConfigInstance }}" class="control-label" data-i18n="qaTest.policyOutputThreshold">輸出閘預設門檻</label>
+            </div>
+            <div class="field">
+                <input type="number" min="0" max="1" step="0.01" placeholder="請輸入" data-i18n-placeholder="common.pleaseEnter" class="form-control js-policy-config-output-threshold" id="policyConfigOutputThreshold-{{ policyConfigInstance }}" data-policy-threshold{% if policyConfigOutputThreshold %} value="{{ policyConfigOutputThreshold }}"{% endif %}{% if policyConfigEngine != "decisions" %} disabled{% endif %} aria-describedby="policyConfigOutputThresholdRange-{{ policyConfigInstance }} policyConfigThresholdDefaultHint-{{ policyConfigInstance }} policyConfigThresholdScopeHint-{{ policyConfigInstance }}">
+                <span class="text-gray" id="policyConfigOutputThresholdRange-{{ policyConfigInstance }}">0 – 1</span>
+            </div>
+        </div>
+    </div>
+    <span class="text-gray" id="policyConfigHint-{{ policyConfigInstance }}" data-i18n="settings.policyEngineConfigHint">正式問答照這裡的判斷方式。LLM 只回報命中了哪些主題；Decisions 逐個主題打分數，分數達到門檻才算命中，門檻欄位只在選了 Decisions 時才能填。</span>
+    {# 預設門檻 0.5 是資料、獨立成節點（§4-2）。 #}
+    <span class="text-gray" id="policyConfigThresholdDefaultHint-{{ policyConfigInstance }}"><span data-i18n="qaTest.policyThresholdBlankPrefix">留空＝沿用預設值 </span><span>0.5</span></span>
+    {# 依賴說明（disabled 的「為什麼」）：常駐、不隨引擎改變（§3-2）。5-2 主題表那兩欄的提示也帶同一句。 #}
+    <span class="text-gray" id="policyConfigThresholdScopeHint-{{ policyConfigInstance }}" data-i18n="settings.policyThresholdDecisionsOnly">門檻只在判斷引擎為 Decisions 時生效；切成 LLM 不會清掉已填的值。</span>
+    <p class="text-gray m-0{% if not policyConfigDecisionsUnavailable %} hidden{% endif %}" id="policyConfigUnavailable-{{ policyConfigInstance }}" data-i18n="settings.policyEngineUnavailable">這個環境沒有開放 Decisions，只能用 LLM 判斷。</p>
+</div>

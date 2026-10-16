@@ -250,6 +250,21 @@
     &.select-md {
         padding: 0.375rem 0.5rem;
     }
+
+    // 數字欄去掉上下調整箭頭：給擠在表格窄欄裡、值很短的數字欄用（5-2 政策主題表的門檻，0.70 這種兩位小數）。
+    // 箭頭在窄欄裡會吃掉將近一半的可見寬度。仍是 `type="number"`：瀏覽器照樣擋非數字、鍵盤上下鍵照樣能調，
+    // 拿掉的只是那一對箭頭。左右內距一併縮小並置中：窄欄扣掉預設內距後放不下「0.70」四個字元，會被截成「0.7」。
+    &.no-spin {
+        appearance: textfield;
+        padding-inline: 0.125rem; // 2px：60px 欄扣掉儲存格內距後輸入框只剩 40px，「0.70」要 32px
+        text-align: center;
+
+        &::-webkit-inner-spin-button,
+        &::-webkit-outer-spin-button {
+            appearance: none;
+            margin: 0;
+        }
+    }
 }
 
 // 模擬 select 用的真 <button>：抵銷按鈕預設的置中對齊，讓文字像 input 一樣靠左
