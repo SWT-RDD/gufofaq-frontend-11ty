@@ -659,8 +659,11 @@ test("§5 套用為正式設定會寫出判斷引擎與門檻：比對窗兩欄�
     assert.equal(v("applyPolicyTopicInput-2"), "明顯超出服務範圍的提問 0.95", "設定 B 欄的個別輸入門檻要等於 2-2-3 B 側");
     assert.notEqual(v("applyPolicyInputThreshold-1"), v("applyPolicyInputThreshold-2"), "兩欄門檻要看得出差異");
     const en = JSON.parse(read("src/i18n/en.json"))["toast.applyProduction"].split("|");
-    assert.equal(en.length, 5, "套用的 toast 要多一段");
-    assert.match(en[3], /Decisions/, "新段要插在最後一段（未開通）之前");
+    assert.equal(en.length, 7, "套用的 toast 七段（Decisions 未開放、主題已不在、門檻有誤三段都在未開通之前）");
+    assert.match(en[3], /Decisions/, "Decisions 那一段在第 4 段");
+    assert.match(en[4], /no longer has/, "主題已不在正式設定檔那一段在第 5 段");
+    assert.match(en[5], /Invalid threshold/, "門檻有誤那一段在第 6 段");
+    assert.match(en[6], /not enabled/, "未開通永遠是末段（段索引契約）");
 });
 
 test("§5/§6 4-2 前台問答照前台預設設定檔（設置二＝Decisions）判主題：兩站都有分數表，摘要與節點耗時加得起來", () => {
