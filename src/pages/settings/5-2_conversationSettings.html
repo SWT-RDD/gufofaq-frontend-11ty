@@ -1170,7 +1170,9 @@ permalink: 5-2_conversationSettings.html
 </div>
 
 {# ═══ 子頁籤 5：內容政策（NET-NEW）═══
-     政策主題表（每列 主題/定義/範例/輸入動作/輸出動作/拒絕訊息，逐列可就地編輯）＋新增/刪除列，
+     最上面是「主題判斷方式」（components/policy-engine-config：判斷引擎＋兩顆預設門檻，引擎＝LLM 時本面板所有門檻停用）。
+     政策主題表（每列 主題/定義/範例/輸入動作/輸出動作/輸入門檻/輸出門檻/拒絕訊息，逐列可就地編輯；
+     每列「查看」開 components/policy-topic-modal 在大一點的窗裡看、改那一列）＋新增/刪除列，
      結構比照 glossary-entries-modal 的詞條編輯器；新增/刪除列動業務輸入（值交給 React 去 PUT），
      故 hook class js-add-policy-topic／js-remove-policy-topic（§5）。詞彙過濾＋兩則封鎖訊息為值載體。
      `settings.policyActionOff` 英譯是 Ignore（對齊 policyIntro 的詞彙）。
