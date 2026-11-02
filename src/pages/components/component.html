@@ -672,6 +672,7 @@ bodyClass: guideline-page
                     <button type="button" class="button button-dark" data-open-modal="qaImportModal">開啟 QA 匯入 modal</button>
                     <button type="button" class="button button-dark" data-open-modal="caseFromLogModal">開啟從問答紀錄建案例 modal</button>
                     <button type="button" class="button button-dark" data-open-modal="untaggedFilesModal">開啟未標註文件modal</button>
+                    <button type="button" class="button button-dark" data-open-modal="qaEntriesModal">開啟查看問答modal</button>
                     <button type="button" class="button button-dark" data-open-modal="demoHelpModal">開啟說明視窗modal</button>
                     <button type="button" class="button button-dark" data-open-modal="demoHelpModalLimitsUnavailable">開啟說明視窗modal（數字讀不到）</button>
                     <button type="button" class="button button-dark" data-open-modal="switchProfileModal">開啟切換設置確認modal</button>
@@ -1997,6 +1998,19 @@ bodyClass: guideline-page
 {% set perPage = 10 %}
 {% set currentPage = 1 %}
 {% include "components/untagged-files-modal/untagged-files-modal.html" %}
+{# 查看問答燈箱：生產頁 3-3 演「每一份匯入檔都讀得到」，**讀不到的那一態只有這裡看得見**
+   （示範資料演不到的態，元件庫頁是它唯一的可見處）。清單沿用元件內建示範（客服問答集的第一頁），
+   讀不到的那一份是同一個 QA 集的另一份匯入檔；原因那句是執行期由後端依語系產生的資料（它自己指名了檔名）。
+   頁碼列三參數由使用頁提供（同 pager-row）；本頁在此之前已用過 pagination，故要重設。
+   512 與 3-3 清單第一列「客服問答集」的資料筆數相同（§6 自洽）。 #}
+{% set qaEntriesUnreadable = [
+    { fileId: 34, filename: "客服問答集_補充.xlsx", detail: "檔案「客服問答集_補充.xlsx」的正規化來源檔已不在暫存區，列不出其中的問答。請重新匯入這份資料。" }
+] %}
+{% set total = 512 %}
+{% set perPage = 10 %}
+{% set currentPage = 1 %}
+{% set paginationOwnerId = "" %}
+{% include "components/qa-entries-modal/qa-entries-modal.html" %}
 
 {# `likeModal` 的 **AB 那一份**（2-2-3）三條路都走不到：那一頁的讚/倒讚只掛 `.js-vote`（條件開窗，
      合規），而全站唯一綁 `.js-vote` 的 `faq-chatroom.js` 把範圍收在 `.faq-chatroom` 之內、2-2-3 沒有

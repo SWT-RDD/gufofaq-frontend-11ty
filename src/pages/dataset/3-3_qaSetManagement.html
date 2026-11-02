@@ -106,7 +106,8 @@ permalink: 3-3_qaSetManagement.html
 {% set helpModalLimitRows = [] %}
 {% include "components/help-modal/help-modal.html" %}
 
-{# QA 集清單：名稱／所屬群組／資料筆數／建立時間／最後更新／操作（匯入問答、刪除）。
+{# QA 集清單：名稱／所屬群組／資料筆數／建立時間／最後更新／操作（查看問答、匯入問答、刪除）。
+     查看問答＝條件開窗（先選定看哪一個 QA 集）故 hook class js-view-qa-entries、不掛 data-open-modal（§5）；
      匯入問答＝條件開窗（先選定匯入到哪個 QA 集）故 hook class js-qa-import、不掛 data-open-modal（§5）；
      刪除同理 js-delete-qa-set（確認鈕由業務 js 綁定，名稱填入 #deleteQaSetName）。
      示範資料見上方 `qaSets`（筆數不在這裡寫死，§3-2）。 #}
@@ -128,7 +129,7 @@ permalink: 3-3_qaSetManagement.html
                 <col style="width:120px; min-width:120px;">
                 <col style="width:170px; min-width:170px;">
                 <col style="width:170px; min-width:170px;">
-                <col style="width:220px; min-width:220px;">
+                <col style="width:300px; min-width:300px;">
             </colgroup>
             <thead>
                 <tr>
@@ -151,6 +152,13 @@ permalink: 3-3_qaSetManagement.html
                     <td>{{ qa.updatedAt }}</td>
                     <td>
                         <div class="btn-group">
+                            {# 查看問答的 toast 與 5-10「查看未標註」那一顆同構（開窗就是一次查詢）：查詢中／
+                                 權限不足／查詢成功／載入失敗／租戶未開通，子句逐字沿用那一顆（同繁中同英譯，§4-2）。
+                                 燈箱裡的「查詢」鈕是同一件事（換關鍵字重查），演同一組；翻頁是分頁器、不演。
+                                 兩種 403 分兩段（§4）：缺 `data:read` 的收件人是貴租戶的管理者，整個租戶沒開通
+                                 資料功能的收件人是平台管理員——後者**連租戶管理者也擋**，折成一句等於叫人去找一個
+                                 改不動這件事的人；它照全站慣例追加在末位。 #}
+                            <button data-capability="data:read" type="button" id="qaSetView-{{ qa.id }}" aria-labelledby="qaSetRowName-{{ qa.id }} qaSetView-{{ qa.id }}" class="button button-border button-sm js-view-qa-entries" data-toast="正在查詢資料…|權限不足，無法查看——請找貴租戶的管理者開通|查詢成功|載入資料失敗，請重新整理頁面|此功能尚未對貴租戶開通，請聯絡平台管理員" data-i18n-data-toast="toast.viewQaEntries" data-toast-type="info|warning|success|error|warning" data-i18n="qaSet.viewEntries">查看問答</button>
                             <button type="button" id="qaSetImport-{{ qa.id }}" aria-labelledby="qaSetRowName-{{ qa.id }} qaSetImport-{{ qa.id }}" class="button button-border button-sm js-qa-import" data-i18n="qaSet.importQa">匯入問答</button>
                             <button type="button" id="qaSetDelete-{{ qa.id }}" aria-labelledby="qaSetRowName-{{ qa.id }} qaSetDelete-{{ qa.id }}" class="button button-red button-sm js-delete-qa-set" data-i18n="action.delete">刪除</button>
                         </div>
@@ -169,10 +177,18 @@ permalink: 3-3_qaSetManagement.html
 {% set helpModalTitleKey = "help.qaSet.qaSetList.title" %}
 {% set helpModalTitle = "QA 集清單說明" %}
 {% set helpModalWhatKey = "help.qaSet.qaSetList.what" %}
-{% set helpModalWhat = "這一區列出目前所有 QA 集，可以進去匯入問答或刪除。刪除一個 QA 集時，系統會同時把它從所有引用到它的對話設定裡拿掉，不留下指向已刪除 QA 集的殘留設定；如果某套對話設定本身另有一欄不合法，這次刪除會被擋下並提示去對話設定頁修正，而不是含混地說「刪除失敗」。" %}
+{% set helpModalWhat = "這一區列出目前所有 QA 集，可以查看裡面的問答、匯入問答或刪除。刪除一個 QA 集時，系統會同時把它從所有引用到它的對話設定裡拿掉，不留下指向已刪除 QA 集的殘留設定；如果某套對話設定本身另有一欄不合法，這次刪除會被擋下並提示去對話設定頁修正，而不是含混地說「刪除失敗」。" %}
 {% set helpModalStateItems = [] %}
 {% set helpModalLimitRows = [] %}
 {% include "components/help-modal/help-modal.html" %}
+
+{# 查看問答燈箱（qa-entries-modal）：由 .js-view-qa-entries 業務條件開窗（不掛 data-open-modal，見 §5 註）。
+   頁碼列三參數由使用頁提供（同 pager-row）；512 ＝清單第一列「客服問答集」的資料筆數，
+   燈箱標題演的就是那一個 QA 集（§6 自洽）。 #}
+{% set total = 512 %}
+{% set perPage = 10 %}
+{% set currentPage = 1 %}
+{% include "components/qa-entries-modal/qa-entries-modal.html" %}
 
 {# 匯入問答 modal（qa-import-modal）：由 .js-qa-import 業務條件開窗（不掛 data-open-modal，見 §5 註）。 #}
 {% include "components/qa-import-modal/qa-import-modal.html" %}
