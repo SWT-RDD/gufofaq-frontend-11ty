@@ -630,6 +630,8 @@ test("§6/§8 元件讀得到、卻沒有任何使用頁 set 的參數，都要�
         ["components/qa-import-modal:qaImportIndexed", "結果態的索引筆數，React 依同步查詢的結果傳；示範演的是 pending（那一刻還量不到），而「沒量到」畫的就是「—」——set 一個數字等於替一次沒有發生的量測編一個結果"],
         ["components/qa-import-modal:qaImportFailed", "同 qaImportIndexed：索引失敗筆數，pending 那一態量不到，示範刻意不給"],
         ["components/qa-import-modal:qaImportReason", "執行期產生的原因字串（一句話＋關聯編號），只在 failed／unknown 有值；示範演 pending，那一態沒有原因可講"],
+        ["components/qa-entries-modal:qaEntryRows", "這一頁的問答清單，React 依當下查詢結果傳；切版走元件內建示範 `qaEntryRowsDemo`（3-3 與元件庫頁都沒有覆寫）"],
+        ["components/qa-entries-modal:qaEntriesKeyword", "使用者送出的關鍵字，React 依輸入框的值傳；只決定空清單講哪一句（沒有任何問答／沒有符合關鍵字），而兩個使用頁的示範都有資料、走不到空清單那一支"],
         ["components/rating-modal:ratingTenantFeature", "送出鈕的租戶功能開通軸，預設 \"history\"；只在沒給 ratingCapability 的公開路徑渲染，而那一份要的正是預設值，所以沒有人覆寫。React 端要換成別的功能鍵時傳它"],
         ["components/skill-try-sandbox:trySkillName", "試跑的是哪一顆 skill；3-4 的試跑面板由業務 js 開，skill 名執行期才知道（同檔的 js 靠 `#trySkillName` 填），切版走示範預設"],
         ["components/untagged-files-modal:untaggedFileRows", "未標註檔案清單，React 依當下量測結果傳；切版走元件內建示範 `untaggedFileRowsDemo`（5-10 與元件庫頁都沒有覆寫）"],

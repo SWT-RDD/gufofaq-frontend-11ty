@@ -1,0 +1,136 @@
+{# 查看問答燈箱，取自 3-3_qaSetManagement 清單列的「查看問答」鈕（.js-view-qa-entries）：
+     開窗需先選定「看哪一個 QA 集」＝業務條件開窗，故該鈕保留 hook class、不掛 data-open-modal
+     （GUIDELINE §5）。
+
+     **這一窗只讀**：列出一個 QA 集裡的每一則問答（跨它的每一份匯入檔合併成一張表），可以用關鍵字
+     找、可以翻頁，沒有任何改動資料的鈕。改問答的路是改好 Excel 再到清單上「匯入問答」。
+
+     **列的是匯入時留下的問答原文**，不是問答引擎當下索引裡的那一份：兩者只在索引同步還沒跑完
+     時不一致，而這一窗要回答的是「這個 QA 集裡裝了什麼」——同步中的那一批照樣列得出來。
+     問題那一欄就是 QA 直答完全命中比對的那一欄（提示文字講的就是這件事）。
+
+     **列序＝匯入順序**：先依匯入檔的匯入時間（舊的在前），同一份檔裡依列號。清單是目錄型的，
+     位置穩定才找得到東西（同 3-3 清單「列序＝建立順序」的理由）。
+
+     **關鍵字同時比對問題與答案、不分大小寫**；送出之後回到第一頁。空白關鍵字＝不過濾。
+     頁碼列的 total 吃的是**符合關鍵字的總筆數**，不是這一頁的長度：分頁只切輸出。
+
+     **兩種空清單是兩句話**：這個 QA 集還沒匯入過任何問答（下一步是去「匯入問答」），與
+     有問答、只是沒有一則符合關鍵字（下一步是換一個關鍵字）。共用一句的話，搜尋落空會被讀成
+     「這個 QA 集是空的」。
+
+     **讀不出內容的匯入檔要說出來**：某一份匯入檔的原文不見了、解不開、或筆數與當初匯入時對不上，
+     那一份就列不出問答；其餘檔照樣列。清單上方逐檔列出是哪幾份、為什麼——不說的話，少掉的那幾
+     百則與「這個 QA 集本來就只有這些」在畫面上一模一樣。
+
+     **逐列帶四樣東西，逐樣的落點**（§3-2：回得出來的每個欄位都要有地方畫）：
+       · 問題 → 問題欄。它也是這一列的**列名**：答案那一格的展開鈕可及名稱併讀它（§4 列內型）。
+       · 答案 → 答案欄，長文走 ui/collapse-text 的列內型（夾三行、可展開）。
+       · 匯入檔名 ＋ 列號 → 來源檔欄。兩樣合起來才指得到人：同一個 QA 集可以有好幾份匯入檔，
+         而要回頭改一則問答，得先在那份 Excel 裡找到那一列。
+       · 匯入檔識別碼 → **不另開一欄**：它只用來組列鍵，檔名已經回答「出自哪一份」。
+
+     標題的 QA 集名稱是執行期資料，由 React 填。 #}
+{# 示範資料變數用元件專屬名 `qaEntryRowsDemo`（不用泛用名）——**它與 `qaEntryRows` 是兩個東西**：
+     前者是元件內建的示範清單，後者是使用頁覆寫用的參數名（見下方那行 `is defined` 的分派）。
+     `{% set %}` 是頁面全域（§2/§6）。
+     與 3-3 的示範資料自洽（GUIDELINE §6）：標題是 3-3 第一列「客服問答集」（512 筆），故 total=512、
+     每頁 10 筆；這一頁列 4 筆代表性資料（切版只演形狀，不列滿 10 列）。
+     匯入檔名 `客服問答集.xlsx` 取自 3-5 的資料集目錄正本（那一份寫著客服問答集的匯入檔就叫這個名字），
+     第 4 列「退貨的運費由誰負擔」與 3-5 那一筆近似重複發現涉及的記錄逐字相同——同一份檔的同一列，
+     兩頁講的必須是同一則問答。 #}
+{# **這份清單是可覆寫參數，不是寫死在元件裡的**（§6：兩個互相推導的值，可覆寫性必須同級——
+     不論方向）：與它耦合的 `total`／`perPage`／`currentPage` 由使用頁供給，清單卻只能由元件決定的話，
+     使用頁一改 `total` 這幾列不會跟，而畫面自洽只靠一段人工提醒撐著。使用頁沒給時走下面這份內建示範。
+     ⚠️ 使用頁 set 了它就要負責重設（`{% set %}` 是頁面全域，§2）。 #}
+{% set qaEntryRowsDemo = [
+    { fileId: 31, filename: "客服問答集.xlsx", row: 1, question: "訂單成立後可以修改收件地址嗎", answer: "出貨前都可以修改。請到「會員中心 ▸ 訂單查詢」點選該筆訂單的「修改收件資訊」；已出貨的訂單無法更改地址，請改與物流商聯繫改派。" },
+    { fileId: 31, filename: "客服問答集.xlsx", row: 2, question: "可以開立公司統編的發票嗎", answer: "可以。結帳時在發票欄選「三聯式」並填入統一編號與公司抬頭，發票會隨貨寄出；訂單成立後才補開統編，需於七日內來信客服信箱辦理。" },
+    { fileId: 31, filename: "客服問答集.xlsx", row: 3, question: "付款方式有哪些", answer: "目前提供信用卡（含分期）、ATM 轉帳、超商代碼繳費與貨到付款四種。" },
+    { fileId: 31, filename: "客服問答集.xlsx", row: 4, question: "退貨的運費由誰負擔", answer: "商品本身有瑕疵或寄錯品項時，來回運費由我們負擔；因個人因素退貨，退貨運費由買方負擔，會從退款金額中扣除。" }
+] %}
+{% set qaEntryRowsShown = qaEntryRows if qaEntryRows is defined else qaEntryRowsDemo %}
+{# 頁碼列的三個參數由**使用頁**提供（同 components/pager-row 與 untagged-files-modal 的慣例）：
+     `{% set %}` 是頁面全域，在元件內設的話，「同一頁第二次用到 pagination 前必須重設」那道守門
+     看不到它。 #}
+<dialog class="modals" id="qaEntriesModal" aria-labelledby="qaEntriesModal-title">
+    <div class="modals-dialog modals-lg">
+        <div class="modals-wrap">
+            {% include "ui/modal-close/modal-close.html" %}
+            <div class="modals-content">
+                <div class="modals-header">
+                    {# 標題帶 QA 集名稱，形狀＝`components/untagged-files-modal` 的標題（前綴 key ＋ 資料槽，
+                         **分隔符在槽外面**）：這個窗一次只看一個 QA 集，而使用者是從清單某一列點進來的——
+                         不寫的話，同時開過兩三個之後回頭看，畫面上沒有任何東西說得出這是哪一個。
+                         QA 集名稱是租戶自己取的名字＝資料，不掛 key（§4-2）。 #}
+                    <h3 class="modals-title" id="qaEntriesModal-title"><span data-i18n="qaSet.viewEntries">查看問答</span> — <span class="js-qa-entries-set-name">客服問答集</span></h3>
+                </div>
+                <div class="modals-body">
+                    <div class="qa-entries-list">
+                        <div class="form-group row flex-row mobile-column-xs gap-16">
+                            <div class="label mobile-align">
+                                <label for="qaEntriesKeyword" class="control-label" data-i18n="qa.keyword">關鍵字</label>
+                            </div>
+                            <div class="field flex-row gap-8">
+                                <input type="text" id="qaEntriesKeyword" class="form-control js-qa-entries-keyword" placeholder="請輸入關鍵字查詢" data-i18n-placeholder="settings.pleaseEnterKeyword">
+                                <button type="button" class="button button-primary flex-shrink-0 js-qa-entries-search" data-i18n="action.query">查詢</button>
+                            </div>
+                        </div>
+                        <p class="text-gray" data-i18n="qaSet.entriesHint">這裡列的是匯入時留下的問答原文；問題那一欄就是 QA 直答完全命中比對的那一欄。關鍵字同時比對問題與答案，不分大小寫。</p>
+                        {# 讀不出內容的匯入檔：逐檔一行原因。原因是執行期由後端產生、已依語系翻好的一句話
+                             （資料，不掛 key），**那一句自己指名了檔名**——前面再印一次檔名，同一個名字會在一行裡
+                             出現兩次。件數獨立成資料節點、前後綴各一顆 key
+                             （§4-2：翻譯字串不內嵌會隨資料變動的數字）。只在真的有讀不出來的檔時才渲染：
+                             3-3 的示範每一份都讀得到（元件庫頁演有讀不到的那一態）。 #}
+                        {% if qaEntriesUnreadable is defined and qaEntriesUnreadable.length %}
+                        <div role="alert">
+                            <p class="text-red"><span data-i18n="qaSet.entriesUnreadablePrefix">有 </span><span>{{ qaEntriesUnreadable.length }}</span><span data-i18n="qaSet.entriesUnreadableSuffix"> 份匯入檔讀不出內容，下面的清單不含它們：</span></p>
+                            <ul class="list-style-disc">
+                                {% for f in qaEntriesUnreadable %}
+                                <li>{{ f.detail }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        {% endif %}
+                        <div class="table-container scrollTable" tabindex="0">
+                            <table class="default-table">
+                                <colgroup>
+                                    <col style="min-width:240px;">
+                                    <col style="min-width:360px;">
+                                    <col style="min-width:200px;">
+                                </colgroup>
+                                <thead>
+                                    <tr>
+                                        <th data-i18n="qaSet.entryQuestion">問題</th>
+                                        <th data-i18n="qaSet.entryAnswer">答案</th>
+                                        <th data-i18n="qaSet.entrySource">來源檔</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for row in qaEntryRowsShown %}
+                                    <tr>
+                                        {# 列名欄（§4 列內型）：答案那一格的展開鈕可及名稱併讀它。id 用「匯入檔＋列號」
+                                             組——同一個 QA 集可以有好幾份檔，單用列號會撞。 #}
+                                        <td id="qaEntryQuestion-{{ row.fileId }}-{{ row.row }}">{{ row.question }}</td>
+                                        <td><div class="collapse-text"><div class="collapse-body">{{ row.answer }}</div><button type="button" id="qaEntryAnswerToggle-{{ row.fileId }}-{{ row.row }}" aria-labelledby="qaEntryQuestion-{{ row.fileId }}-{{ row.row }} qaEntryAnswerToggle-{{ row.fileId }}-{{ row.row }}" class="collapse-toggle" aria-expanded="false" data-i18n="common.expand">展開</button></div></td>
+                                        <td>{{ row.filename }}<br><span class="text-gray" data-i18n="health.recordRowPrefix">第 </span><span class="text-gray">{{ row.row }}</span><span class="text-gray" data-i18n="health.recordRowSuffix"> 列</span></td>
+                                    </tr>
+                                    {% else %}
+                                    {# 兩種空清單兩句話（見檔頭）：有沒有送關鍵字是分界。 #}
+                                    <tr><td colspan="3" class="text-center text-gray">{% if qaEntriesKeyword %}<span data-i18n="qaSet.entriesNoMatch">沒有符合這個關鍵字的問答。</span>{% else %}<span data-i18n="qaSet.entriesEmpty">這個 QA 集還沒有任何問答。按清單上的「匯入問答」把問答對匯進來。</span>{% endif %}</td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% include "ui/pagination/pagination.html" %}
+                    </div>
+                </div>
+                <div class="modals-footer">
+                    <div class="button-row center">
+                        <button type="button" class="button button-border btn-close-modals" data-i18n="action.close">關閉</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</dialog>
