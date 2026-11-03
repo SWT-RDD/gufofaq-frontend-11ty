@@ -5,6 +5,9 @@ titleKey: nav.aliasTablesMgmt
 pageHeading: 別名表管理
 permalink: 3-6_aliasTables.html
 ---
+{# **時間錨點**：站台的「現在」是 **2026-07-14**（§6「全站只有一個現在」；那個值由
+     `components/iso-review-wizard` 名單上「查詢時間 2026-07-14 09:00 UTC」那一格釘死）。
+     這一頁每一列有一個「最後更新時間」，全部早於「現在」。 #}
 {% set breadcrumbItems = [
   { label: "首頁", href: "2-1_qaRecord.html", i18nKey: "nav.home" },
   { label: "資料配置", href: "", i18nKey: "nav.dataConfig" },
@@ -48,10 +51,20 @@ permalink: 3-6_aliasTables.html
      ⚠️ 與同一族的術語表（3-2，id 升冪）**方向相反**是刻意的：別名表是一邊用一邊長出來的，
      剛建的那一張最常要回去補詞條；術語表是穩定的目錄。兩邊都要說得出自己是哪一種，
      不宣告的話讀的人只會看到兩張長得一樣的表用著兩種順序。 #}
+{# `updatedAt`＝這張表**最後一次被異動**的時間，語意與格式和 3-2 術語表那一欄同一份
+     （`YYYY/MM/DD HH:mm`，使用者所在時區）。「異動」涵蓋兩條寫入路徑：
+       ① 清單上就地改表名稱／說明後按「儲存」；
+       ② 「編輯詞條」視窗存檔（詞條整批換過一次）。
+     **剛建立、還沒動過的表，這一格就是它的建立時間**——建立本身就是第一次異動，所以這一格
+     恆有值，不留「—」那一態。示範的「待整理別名」（id 7）就是這一態：建好之後沒再動過，
+     這一格是它被建立的那一刻。
+     ①②任一成功之後，這一列的時間要換成那一次的時間（不必重新整理頁面）。
+     **列序不跟著它變**：列序仍是 id 降冪（上一則），這一欄只是顯示，不是排序鍵——所以示範裡
+     id 9 比 id 12 晚動過、卻排在後面，是對的。 #}
 {% set aliasTables = [
-  { id: 12, name: "關務通用別名", desc: "報關、稅費、單證的常見簡稱與口語說法。", entryCount: 8, aliasCount: 19 },
-  { id: 9, name: "系統別名", desc: "內部系統與模組的舊稱、代號。", entryCount: 3, aliasCount: 5 },
-  { id: 7, name: "待整理別名", desc: "", entryCount: 0, aliasCount: 0 }
+  { id: 12, name: "關務通用別名", desc: "報關、稅費、單證的常見簡稱與口語說法。", entryCount: 8, aliasCount: 19, updatedAt: "2026/06/30 11:20" },
+  { id: 9, name: "系統別名", desc: "內部系統與模組的舊稱、代號。", entryCount: 3, aliasCount: 5, updatedAt: "2026/07/09 09:35" },
+  { id: 7, name: "待整理別名", desc: "", entryCount: 0, aliasCount: 0, updatedAt: "2026/04/21 13:05" }
 ] %}
 
 {# 第二句一定要有：不然使用者建完表會以為它就生效了。 #}
@@ -160,6 +173,7 @@ permalink: 3-6_aliasTables.html
                 <col style="min-width:280px;">
                 <col style="width:100px; min-width:100px;">
                 <col style="width:110px; min-width:110px;">
+                <col style="width:170px; min-width:170px;">
                 <col style="width:280px; min-width:280px;">
             </colgroup>
             <thead>
@@ -168,6 +182,8 @@ permalink: 3-6_aliasTables.html
                     <th id="aliasTableHeadDesc" data-i18n="regression.suiteDesc">說明</th>
                     <th class="text-center" data-i18n="settings.entryCount">詞條數</th>
                     <th class="text-center" data-i18n="settings.aliasTotalCount">別名總數</th>
+                    {# 欄名、欄寬同 3-2（沿用 `dataset.lastUpdatedAt`，§4-2）。 #}
+                    <th data-i18n="dataset.lastUpdatedAt">最後更新時間</th>
                     <th data-i18n="common.actions">操作</th>
                 </tr>
             </thead>
@@ -192,6 +208,7 @@ permalink: 3-6_aliasTables.html
                     <td class="text-center">{{ table.entryCount }}</td>
                     {# 值域含 0（空表就是 0），故直接插值、不做真值判斷也不留哨兵那一態（見檔頭）。 #}
                     <td class="text-center">{{ table.aliasCount }}</td>
+                    <td>{{ table.updatedAt }}</td>
                     <td>
                         {# 「編輯詞條」與「刪除」要先選定「哪一張表」＝業務條件開窗 ⇒ 只掛 hook class、不掛
                              data-open-modal（§5）。刪除沿用既有的 delete-modal（本頁底部 include）。
@@ -209,7 +226,7 @@ permalink: 3-6_aliasTables.html
                 {% else %}
                 {# 具名空狀態：與 3-2 同一族——建了還要在對話設定綁給設定檔才生效
                      （5-2 的 `settings.aliasApplyNeedsBind`「請先綁定別名表」講的就是這件事）。 #}
-                <tr><td colspan="5" class="text-center text-gray" data-i18n="dataset.noAliasTables">這個租戶還沒有別名表。按上面的「新增別名表」建第一張，再到「對話設定」把它綁給要用的設定檔——沒有綁定的表不會被問答用到。</td></tr>
+                <tr><td colspan="6" class="text-center text-gray" data-i18n="dataset.noAliasTables">這個租戶還沒有別名表。按上面的「新增別名表」建第一張，再到「對話設定」把它綁給要用的設定檔——沒有綁定的表不會被問答用到。</td></tr>
                 {% endfor %}
             </tbody>
         </table>
