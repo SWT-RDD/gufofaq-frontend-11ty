@@ -1329,6 +1329,13 @@ bodyClass: guideline-page
                      少了這一句，畫面上就沒有任何地方說得出它。
                      繁中逐字照抄那三支（§4-2 同 key 兩種繁中會互相覆蓋）。 #}
                 <p class="text-red m-0" data-i18n="comp.streamTruncated">這一輪的連線中斷了：答案的文字收到了，但來源清單與評分、分享所需的資訊沒有收到——所以這則答案下面沒有來源可看，也評不了分。把同一題再送一次就會有完整的一份。</p>
+                {# `components/chatroom` 動作列上的「對話編號」**沒有 `history` 能力**那一態：同一個號碼畫成
+                     純文字、不是連結（理由在該元件那一段註解）。2-1／2-2-1 的示範看的人都有 `history`
+                     （側欄問答紀錄讀得出來），所以這一態在使用頁上畫不到。它是「條件式的另一支」，但另一態
+                     不是「什麼都不渲染」——號碼照樣在，只是點不了。
+                     純文字態不掛 `aria-labelledby`：它不是控制項，標籤與號碼本來就是同一行連續的字。
+                     這裡只演那一顆節點本身；它在動作列裡的位置看 `components/chatroom`。 #}
+                <span class="text-gray"><span data-i18n="qa.conversationId">對話編號</span> <span class="js-chat-log-sn">12173</span></span>
                 {# 5-2 的「主 agent 可直接查詢」全部不勾（送 `[]`）那一態：那一頁的示範是部分勾選，
                      所以它在使用頁上永遠看不到。 #}
                 <p class="text-gray m-0" data-i18n="settings.glossaryApplyAgentNoneHint">目前沒有任何表讓主 agent 直接查詢——術語表只能經 skill 取用。</p>
