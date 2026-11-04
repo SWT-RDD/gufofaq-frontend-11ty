@@ -135,6 +135,30 @@
                             <button type="button" class="button-icon watch watchBtn has-tooltip">
                                 <span class="tooltip" data-i18n="comp.viewSource">查看來源</span>
                             </button>
+                            {# 對話編號：這一則答案落庫後的那一筆問答紀錄編號，與 4-1 清單第一欄、
+                                 4-2「基本對話資訊」的對話編號是同一個號碼（示範答案＝#12173，§6 跨頁自洽）。
+                                 兩種模式都渲染（2-1 唯讀預覽與 2-2-1 單測頁）；串流中與串流被切斷時都還沒有這個號碼，
+                                 整顆不渲染（不畫「對話編號 —」：那一刻不是「沒有值」，是這一則還沒有身分）。
+                                 號碼是資料、不翻；標籤是 chrome，沿用 4-1／4-2 同一顆 key。
+                               **號碼是連往 4-2 那一筆的連結，前提是看的人有 `history` 能力**（`data-capability`）。
+                                 沒有的人畫**同一個號碼的純文字**（`<span class="js-chat-log-sn">`，那一態的長相在元件庫頁
+                                 「React 條件文案」區），不是一顆點了才 403 的連結：4-2 整頁都要 `history`，點進去只會
+                                 落在一頁什麼都讀不到的空殼，而「號碼本身」不需要任何能力就看得到。
+                                 這與 §4「`data-capability` 不足時不做不渲染、改列 403 段」**不衝突**：那一條管的是
+                                 會送 API、會失敗的鈕；這一顆是純換頁的 `<a>`（§5「它打不打 API」），能力不足的後果
+                                 不是一個 toast 講得出的結果，而是整頁落空——同族是導覽入口依能力隱藏。
+                                 號碼與編號標籤一起當可及名稱（`aria-labelledby` 指標籤＋自己）：同一串對話有幾則答案
+                                 就有幾顆，光唸號碼聽不出它是什麼；id 以號碼當後綴，同頁多則不撞。
+                               **另開新分頁**（`target="_blank"`）：這顆連結住在兩種頁上，在原地導覽的代價都在 2-2-1——
+                                 那一頁的測試設定（模型、思考深度、對話模式、兩個筆數、迭代次數、合規引擎覆寫、改到一半的
+                                 提示詞）全是臨時的，換頁回來就回到儲存值；剛才那段對話從側欄點回來只能檢視、接不下去
+                                 （下一題會開新的一段）；若另一題正在生成，那一題會被切斷而額度已經扣了。使用者要的只是
+                                 「去旁邊看一眼那一筆」，同 `ui/faq-launcher` 的理由。2-1 一起開新分頁，兩頁同一顆元件、
+                                 同一種行為。三件套照 GUIDELINE §4：`rel="noopener"`（同 doc-fulltext-modal 附 noreferrer）
+                                 ＋可及名稱講明另開新視窗——連結文字是資料（號碼），整句 aria-label 翻不了，故走內文
+                                 sr-only 節點那一型（正典 `components/doc-fulltext-modal`），它也自然併進
+                                 `aria-labelledby` 指到自己時算出的名字（「對話編號 12173（另開新視窗）」）。 #}
+                            <span class="text-gray"><span id="chatroomLogSnLabel-12173" data-i18n="qa.conversationId">對話編號</span> <a href="4-2_qaHistory_detail.html?logSn=12173" target="_blank" rel="noopener noreferrer" id="chatroomLogSn-12173" aria-labelledby="chatroomLogSnLabel-12173 chatroomLogSn-12173" class="link-file js-chat-log-sn" data-capability="history">12173<span class="sr-only" data-i18n="a11y.opensInNewWindow">（另開新視窗）</span></a></span>
                         </div>
                         {# **串流被切斷那一態**：與 components/faq-chatroom 同一件事、同一顆 key
                              ——完整理由寫在那個元件的同一段。後台這一條路少的是

@@ -26,6 +26,12 @@
 // 實例上它可能是迴圈變數（`components/chatroom` 的 ① ②）或寫死的示範字串（前台、widget、以及
 // chatroom 的 ③ 那一整段 markdown 長文）——§3-2 明文長文示範直接寫在使用它的地方，不進契約。
 // **除了這兩個槽以外的每一個字都要照抄**：class 串、巢狀層數、屬性、`{% set %}` 與 `{% if %}` 行。
+// ③ 另有第三個槽 `{{ logSn }}`（這一則答案的對話編號，同一個值出現在 id／href／字面四處；
+// 實例裡寫死示範的 12173）。那顆 `<a>` 另開新分頁（理由見 `components/chatroom`），
+// 只給有 `history` 能力的人；沒有的人同一格畫
+// `<span class="text-gray"><span data-i18n="qa.conversationId">對話編號</span> <span class="js-chat-log-sn">{{ logSn }}</span></span>`
+// （無連結、無 id），理由與那一態的長相見 `components/chatroom` 與元件庫頁「React 條件文案」區。
+// 串流中與串流被切斷時沒有編號，整顆 `.text-gray` 不渲染。
 //
 // ① 機器人訊息（生產 markup＝components/chatroom）：
 //
@@ -84,6 +90,7 @@
 //           <button type="button" class="button-icon watch watchBtn has-tooltip">
 //               <span class="tooltip" data-i18n="comp.viewSource">查看來源</span>
 //           </button>
+//           <span class="text-gray"><span id="chatroomLogSnLabel-{{ logSn }}" data-i18n="qa.conversationId">對話編號</span> <a href="4-2_qaHistory_detail.html?logSn={{ logSn }}" target="_blank" rel="noopener noreferrer" id="chatroomLogSn-{{ logSn }}" aria-labelledby="chatroomLogSnLabel-{{ logSn }} chatroomLogSn-{{ logSn }}" class="link-file js-chat-log-sn" data-capability="history">{{ logSn }}<span class="sr-only" data-i18n="a11y.opensInNewWindow">（另開新視窗）</span></a></span>
 //       </div>
 //       {% if not chatInputHidden %}
 //       <p class="text-red m-0 js-stream-truncated hidden" role="alert" data-i18n="comp.streamTruncated">這一輪的連線中斷了：答案的文字收到了，但來源清單與評分、分享所需的資訊沒有收到——所以這則答案下面沒有來源可看，也評不了分。把同一題再送一次就會有完整的一份。</p>
